@@ -1,3 +1,4 @@
+import { useDeviceDayKey } from "@shared/hooks/useDeviceDayKey";
 import { useEffect, useRef } from "react";
 import { STORAGE_KEYS } from "@sergeant/shared";
 import { computeFizrukQuickStats } from "@sergeant/fizruk-domain/domain";
@@ -14,17 +15,19 @@ import { emitHubBus } from "@shared/lib/modules/hubBus";
  * promise no matter how many workouts they logged (test-observations A1).
  *
  * Mounted once at the fizruk module root, this recomputes the snapshot
- * whenever the workout list changes and writes it back. The Kyiv Mon-first
+ * whenever the workout list changes and writes it back. The device-local Mon-first
  * week boundary lives in `computeWeeklyTotals`; a `storageUpdated` bump lets
  * any same-tab Hub consumer re-read immediately.
  */
 export function useFizrukQuickStatsWriter(workouts: Workout[]): void {
+  const dayKey = useDeviceDayKey();
   const lastWrittenRef = useRef<string | null>(null);
 
   useEffect(() => {
+    void dayKey;
     const payload = writeFizrukQuickStatsSnapshot(workouts);
     lastWrittenRef.current = payload;
-  }, [workouts]);
+  }, [workouts, dayKey]);
 }
 
 /**

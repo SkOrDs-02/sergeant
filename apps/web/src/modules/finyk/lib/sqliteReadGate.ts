@@ -10,9 +10,13 @@
  * їх мокають тести (`vi.mock("../lib/sqliteReadGate")`) і використовує
  * dual-write черга.
  */
+import { emitHubBus } from "@shared/lib/modules/hubBus";
 import { createSqliteReadGate } from "@shared/lib/db/createSqliteReadGate";
 
-const gate = createSqliteReadGate("finyk");
+const gate = createSqliteReadGate("finyk", {
+  // Hydration can change entries without changing the quick-stats totals.
+  onAfterNotify: () => emitHubBus("storageUpdated", undefined),
+});
 
 /** Opened by the dual-write queue at enqueue time (one per write). */
 export const __openFinykSqliteMutationWindow = gate.openMutationWindow;

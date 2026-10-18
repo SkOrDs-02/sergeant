@@ -7,8 +7,12 @@
  * вона лише переводиться в штуки й назад.
  */
 import { useDecimalDraft } from "@shared/hooks/useDecimalDraft";
+import {
+  choiceItemClass,
+  choiceRowClass,
+  stepButtonClass,
+} from "./choiceClasses";
 import { messages } from "@shared/i18n/uk";
-import { cn } from "@shared/lib/ui/cn";
 import type { FoodPortion } from "../../lib/foodDb/foodDb";
 import { MAX_PORTION_GRAMS } from "./mealFormUtils";
 import { GRAMS_UNIT, gramsToQty, qtyToGrams } from "./portionUnits";
@@ -33,7 +37,7 @@ export function PortionUnitPicker({
         aria-label={messages.nutrition.portionUnit.label}
         value={unitId}
         onChange={(event) => onChange(event.target.value)}
-        className="min-h-[44px] w-full rounded-xl border border-line bg-panel px-3 text-style-label text-text"
+        className="min-h-[44px] w-full rounded-lg border border-line bg-panel px-3 text-style-label text-text"
       >
         <option value={GRAMS_UNIT}>
           {messages.nutrition.portionUnit.grams}
@@ -54,7 +58,7 @@ export function PortionUnitPicker({
     <div
       role="radiogroup"
       aria-label={messages.nutrition.portionUnit.label}
-      className="flex gap-1 rounded-2xl bg-panelHi p-1"
+      className={choiceRowClass}
     >
       {options.map((o) => (
         <button
@@ -63,12 +67,7 @@ export function PortionUnitPicker({
           role="radio"
           aria-checked={unitId === o.id}
           onClick={() => onChange(o.id)}
-          className={cn(
-            "min-h-[44px] flex-1 rounded-xl px-2 text-style-caption transition-colors",
-            unitId === o.id
-              ? "bg-nutrition-strong text-white dark:bg-nutrition dark:text-bg"
-              : "text-muted hover:text-text",
-          )}
+          className={choiceItemClass(unitId === o.id)}
         >
           {o.label}
         </button>
@@ -84,8 +83,7 @@ interface PortionQuantityFieldProps {
 }
 
 const QTY_STEP = 0.5;
-const stepBtn =
-  "text-style-title w-8 h-8 pointer-coarse:min-h-[44px] pointer-coarse:min-w-[44px] rounded-full bg-panelHi text-text hover:bg-line transition-colors flex items-center justify-center";
+const stepBtn = stepButtonClass;
 
 export function PortionQuantityField({
   portion,
@@ -124,7 +122,7 @@ export function PortionQuantityField({
         value={draft.value}
         onChange={draft.onChange}
         aria-label={`Кількість, ${portion.name}`}
-        className="input-focus-nutrition w-[76px] text-center bg-panel border border-line rounded-xl px-2 py-2 text-style-label text-text"
+        className="input-focus-nutrition w-[76px] text-center bg-panel border border-line rounded-lg px-2 py-2 text-style-label text-text tabular-nums"
       />
       <button
         type="button"

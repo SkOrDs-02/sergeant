@@ -1,3 +1,4 @@
+import { finykRedesignEn } from "./en.finykRedesign";
 import type { messages as ukMessages, MessageGroupShape } from "./uk";
 import { pricingEn } from "./en.pricing";
 import { nutritionTdeeEn } from "./en.nutritionTdee";
@@ -17,6 +18,7 @@ import { nutritionTdeeEn } from "./en.nutritionTdee";
 export const messagesEn: Partial<{
   [K in keyof typeof ukMessages]: MessageGroupShape<(typeof ukMessages)[K]>;
 }> = {
+  finykRedesign: finykRedesignEn,
   auth: {
     /** Apple sign-in button label. */
     signInWithApple: "Sign in with Apple",
@@ -272,7 +274,7 @@ export const messagesEn: Partial<{
       title: "If Sergeant ever shuts down",
       body: "We will warn you at least 30 days ahead, and export will keep working the whole time. Your data is yours: take it whenever you like, no permission and no explanation needed.",
       bankNote:
-        "One honest caveat: we do not duplicate bank transactions, they can always be pulled from the bank again. But if you no longer have access to the bank, nobody can restore that history.",
+        "Monobank transactions Sergeant has already received are stored on Sergeant's server and included in your account's server export. Without bank access, recovery of bank history missing from Sergeant cannot be guaranteed.",
     },
   },
 
@@ -309,19 +311,26 @@ export const messagesEn: Partial<{
     nowPile: {
       heading: "Now",
       empty: "Everything is closed for today, nothing needs your attention.",
-      postponed: "Postponed",
-      showPostponed: "show",
       more: "more",
       doIt: "Do it",
       open: "Open",
       openWeekReport: "Open the week report",
-      askAiChip: "AI",
-      askAi: "Ask Sergeant about this",
-      askAiLimit: "Daily limit of Sergeant requests reached",
-      dismiss: "Dismiss tip",
+      check: "Close for today",
     },
     closedPile: {
-      heading: "Closed today",
+      heading: "Closed",
+      uncheck: "Back to Now",
+    },
+    spendHero: {
+      label: "Spent today",
+      plan: "plan",
+      left: "left",
+      over: "over",
+      noPlan: "no monthly plan",
+    },
+    daySummary: {
+      now: "now",
+      closed: "closed",
     },
     moduleRail: "Modules",
     chatQuickActions: "Quick scenarios",
@@ -331,17 +340,8 @@ export const messagesEn: Partial<{
     chatOfflineNotice:
       "The assistant is unavailable without internet. Module data is visible offline, but\n          AI responses require a connection.",
 
-    chatEmptyTitle: "Ask me anything, I'm here to help",
-    chatEmptyDescription:
-      "Tap a suggestion, it fills the input so you can edit it before sending.",
-    chatEmptyDescriptionSignedOut: "Here is what you can ask once you sign in.",
     chatEmptyAiDisclosure:
       "You are talking to an AI, not a person. It can be wrong, so double-check anything important.",
-    chatEmptyAriaLabel: "Chat starter suggestions",
-    chatEmptySuggestionFinyk: "How much did I spend this week?",
-    chatEmptySuggestionFizruk: "How are my workouts going?",
-    chatEmptySuggestionNutrition: "What did I eat today?",
-    chatEmptySuggestionRoutine: "Status of my habits",
 
     reportNoData: "No data",
     reportChartAria: "Chart",
@@ -363,7 +363,6 @@ export const messagesEn: Partial<{
 
   onboarding: {
     pickerAllOnHint: "Everything is on, switch off what you will not use.",
-    hideChecklist: "Hide checklist",
 
     capabilitiesGroupTitle: "Capabilities",
     tourLaunchLabel: "What the app can do",

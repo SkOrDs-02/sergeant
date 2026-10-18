@@ -34,6 +34,8 @@
  */
 
 import { logger } from "@shared/lib";
+import { deferReload } from "../app/swReload";
+import { isForcedReloadBlocked } from "../app/updateGate";
 
 const KEY = "__sergeant_chunk_reload_at";
 const COOLDOWN_MS = 10_000;
@@ -135,11 +137,31 @@ export class ChunkPersistentError extends Error {
   }
 }
 
+export interface ReloadOnceOptions {
+  /**
+   * Чи відмовляти в reload, коли у вкладці є незбережений ввід
+   * (`isForcedReloadBlocked`). За замовчуванням `true`.
+   *
+   * Виклик має передати `false` лише коли САМ знищує піддерево з формою:
+   * boundary, який у `getDerivedStateFromError` / `errorElement` підміняє
+   * дерево модуля карткою помилки (`ErrorBoundary`, `ModuleErrorBoundary`,
+   * `RouteErrorElement`). Там форма зникає незалежно від гейта, відмова нічого
+   * не рятує, а лишає людину без авто-відновлення й з тостом, що обіцяє
+   * збереження, якого вже нема. Гейт має сенс тільки там, де піддерево
+   * лишається змонтованим: window-слухачі `installChunkLoadRecover`,
+   * `ChunkErrorBoundary` (замінює лише власний `Suspense`), `lazyImport` і
+   * `sqlite.ts`.
+   */
+  guardUnsavedInput?: boolean;
+}
+
 /**
  * Reload page once. Returns `true` якщо релоад виконано, `false` якщо
- * cooldown ще не минув або якщо counter перевалив `MAX_RELOADS`.
+ * cooldown ще не минув, counter перевалив `MAX_RELOADS`, або у вкладці є
+ * незбережений ввід (`isForcedReloadBlocked`).
  *
- * Параметр `now` — лише для тестів.
+ * Параметр `now` — лише для тестів; `options.guardUnsavedInput` описано в
+ * {@link ReloadOnceOptions}.
  *
  * Захист має два шари (див. doc-string модуля):
  *   1. Time cooldown 10s — щоб два reload-event-и поспіль не зациклили
@@ -151,7 +173,10 @@ export class ChunkPersistentError extends Error {
  * глобальний `sergeant:chunk-persistent-error` event, щоб
  * `ErrorBoundary` міг показати UI замість blank-screen.
  */
-export function reloadOnceForChunkError(now: number = Date.now()): boolean {
+export function reloadOnceForChunkError(
+  now: number = Date.now(),
+  options: ReloadOnceOptions = {},
+): boolean {
   if (typeof window === "undefined") return false;
 
   // Офлайн reload не лікує нічого: перезавантаження без мережі дасть або той
@@ -159,6 +184,21 @@ export function reloadOnceForChunkError(now: number = Date.now()): boolean {
   // застосунку. Виходимо ДО обліку, щоб мережевий провал у тунелі чи метро не
   // зʼїдав бюджет `MAX_RELOADS`, який потрібен реальному stale-деплою.
   if (typeof navigator !== "undefined" && navigator.onLine === false) {
+    return false;
+  }
+
+  // Тихий reload не має стирати незбережений ввід (data-45): відкриту форму,
+  // непорожнє поле, стрім HubChat, мутацію в польоті. Інакше stale-чанк у
+  // вкладці, яку SW-оновлення вже не перезавантажило, знищував би те саме, що
+  // захищає `autoUpdate`/`reloadUnlessBlocked`. Виходимо ДО обліку cooldown і
+  // лічильника (відмова не зʼїдає бюджет `MAX_RELOADS`); `false` веде в
+  // ErrorBoundary-fallback з ручним «Перезавантажити», а тост нагадує про
+  // reload, коли людина збереже введене. Подію відкладаємо в мікротаск: цю
+  // функцію викликають і з render-фази (`getDerivedStateFromError`), а тост —
+  // `setState` в іншому компоненті.
+  if (options.guardUnsavedInput !== false && isForcedReloadBlocked()) {
+    const win = window;
+    queueMicrotask(() => deferReload(win, "stale-chunk"));
     return false;
   }
 

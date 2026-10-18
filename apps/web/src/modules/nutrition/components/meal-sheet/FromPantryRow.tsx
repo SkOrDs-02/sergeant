@@ -66,7 +66,7 @@ export function FromPantryRow({
       collapsedSubtitle={fromPantryItem ?? `${pantryItems.length} позицій`}
       className="mb-4"
     >
-      <div className="rounded-2xl border border-line bg-panel px-3 py-3">
+      <div>
         <div className="flex flex-wrap gap-1.5">
           {pantryItems.slice(0, 20).map((item) => {
             const isActive = fromPantryItem === item.name;
@@ -107,16 +107,17 @@ export function FromPantryRow({
                     onPicked(item.name, packGrams);
                   }
                 }}
+                aria-pressed={isActive}
                 className={cn(
-                  "px-2.5 py-1.5 rounded-xl text-style-caption border transition-[background-color,border-color,color,opacity]",
+                  "min-h-9 px-2.5 py-1.5 rounded-[7px] border text-style-label focus-ring",
                   isActive
-                    ? "bg-nutrition-strong text-white border-nutrition dark:bg-nutrition dark:text-bg"
-                    : "bg-panelHi text-text border-line hover:border-nutrition/50",
+                    ? "border-text font-semibold text-text"
+                    : "border-line text-text hover:bg-line/40",
                 )}
               >
                 {item.name}
                 {secondaryLabel && (
-                  <span className="ml-1 text-style-caption opacity-70">
+                  <span className="ml-1 text-style-caption font-normal text-muted tabular-nums">
                     {secondaryLabel}
                   </span>
                 )}

@@ -1,3 +1,5 @@
+import { useKyivDayNow } from "@shared/hooks/useKyivDayNow";
+import { useDeviceDayKey } from "@shared/hooks/useDeviceDayKey";
 /**
  * Lazy-loaded per-domain card for finyk/expense data in HubReports.
  * Reads its own localStorage shard and aggregates independently.
@@ -5,8 +7,6 @@
 import { ReportSheet } from "./ReportSheet";
 import { useMemo, useState } from "react";
 import { messages } from "@shared/i18n/uk";
-import { SectionHeading } from "@shared/components/ui/SectionHeading";
-import { Icon } from "@shared/components/ui/Icon";
 import { cn } from "@shared/lib/ui/cn";
 import { DeltaChip } from "@shared/components/ui/DeltaChip";
 import { Money } from "@shared/components/ui/Money";
@@ -15,6 +15,10 @@ import { toKyivISODate } from "@sergeant/shared";
 import { readFinykStatsContext } from "@finyk/utils";
 import { compareAmounts } from "@sergeant/finyk-domain/domain/selectors";
 import { useFinykMonoMirrorTick } from "@finyk/lib/monoMirrorGate";
+import {
+  HIDDEN_AMOUNT_MASK,
+  isFinykBalanceHidden,
+} from "@finyk/lib/balanceVisibility";
 import { useFinykSqliteReadTick } from "@finyk/lib/sqliteReadGate";
 import {
   aggregateSpending,
@@ -37,12 +41,14 @@ function BarChart({
   colorClass,
   maxValue,
   unit = "",
+  hidden = false,
 }: {
   data: Record<string, number>;
   dates: string[];
   colorClass: string;
   maxValue?: number;
   unit?: string;
+  hidden?: boolean;
 }) {
   const [selected, setSelected] = useState<number | null>(null);
   const vals = dates.map((d) => data[d] ?? 0);
@@ -61,7 +67,12 @@ function BarChart({
   const step = labelStep(dates.length);
   const formatLabel = (dateStr: string) => formatChartLabel(dateStr, isWeek);
   const formatTooltip = (dateStr: string, value: number) =>
-    formatChartTooltip(dateStr, value, unit);
+    hidden
+      ? formatChartTooltip(dateStr, 0, "").replace(
+          /:.*$/,
+          `: ${HIDDEN_AMOUNT_MASK}`,
+        )
+      : formatChartTooltip(dateStr, value, unit);
 
   const selectedDate = selected !== null ? dates[selected] : undefined;
   const selectedVal = selected !== null ? vals[selected] : undefined;
@@ -152,8 +163,18 @@ function BarChart({
  * читалось як дефект. Агрегат картки — цілі гривні (`calcFinykSpendingByDate`
  * округлює по днях), тож копійки тут `× 100`: точніших значень картка не має.
  */
-function SpendingDelta({ cur, prev }: { cur: number; prev: number }) {
+function SpendingDelta({
+  cur,
+  prev,
+  hidden,
+}: {
+  cur: number;
+  prev: number;
+  hidden: boolean;
+}) {
   const { pct } = compareAmounts(Math.round(cur * 100), Math.round(prev * 100));
+  // Абсолютна дельта в гривнях теж сума; відсоток суми не розкриває.
+  if (hidden && pct === null) return null;
   return (
     <DeltaChip
       cur={cur}
@@ -180,6 +201,8 @@ export default function ExpensesCard({ period, offset }: ExpensesCardProps) {
 
   // Re-aggregate when any module emits storageUpdated (same-tab) or when
   // the native storage event fires (cross-tab). See useHubStorageBump.ts.
+  const kyivNow = useKyivDayNow();
+  const dayKey = useDeviceDayKey();
   const bump = useHubStorageBump();
   const mirrorTick = useFinykMonoMirrorTick();
   // CALC-4 (2026-09-01 product audit): `readFinykStatsContext()` reads
@@ -194,8 +217,11 @@ export default function ExpensesCard({ period, offset }: ExpensesCardProps) {
   // `/finyk/*` it looked fine only because that route had already
   // warmed the same module-level cache before this card ever mounted.
   const sqliteCacheTick = useFinykSqliteReadTick();
+  const hidden = isFinykBalanceHidden();
 
   const { cur, prev, prevAny, dates, partial } = useMemo(() => {
+    void kyivNow;
+    void dayKey;
     void bump; // storage-write tick
     void mirrorTick; // Mono mirror refresh tick
     void sqliteCacheTick; // Finyk SQLite cache-refresh tick (pull hydration)
@@ -222,7 +248,7 @@ export default function ExpensesCard({ period, offset }: ExpensesCardProps) {
       dates: w.dates,
       partial: w.money.partial,
     };
-  }, [period, offset, bump, mirrorTick, sqliteCacheTick]);
+  }, [period, offset, bump, mirrorTick, sqliteCacheTick, dayKey, kyivNow]);
 
   // Нуль в обох вікнах: витрат ще не записували, «0 ₴» тут не результат.
   const empty = cur.total === 0 && !prevAny;
@@ -233,56 +259,36 @@ export default function ExpensesCard({ period, offset }: ExpensesCardProps) {
         type="button"
         onClick={() => setCollapsed((c) => !c)}
         aria-expanded={!collapsed}
-        className={cn(
-          "w-full flex items-center gap-2 text-left rounded-xl",
-          "-m-1 p-1 hover:bg-panelHi transition-[background-color,transform] active:scale-[0.99]",
-        )}
+        className="flex min-h-11 w-full items-center gap-3 text-left focus-ring"
       >
-        <Icon
-          name="credit-card"
-          size="lg"
-          className="shrink-0 text-finyk"
-          aria-hidden
-        />
-        <SectionHeading
-          as="span"
-          size="xs"
-          className="flex-1 min-w-0 text-muted truncate"
-        >
+        <span className="min-w-0 flex-1 truncate text-style-body font-medium text-text">
           {messages.finyk.reportHeading}
-        </SectionHeading>
+        </span>
         {collapsed && (
           <span className="flex items-baseline gap-2 shrink-0">
             {empty ? (
               <span className="text-style-body font-bold text-text">–</span>
             ) : (
               <>
-                <Money
-                  amount={cur.total}
-                  className="text-style-body font-bold text-text"
+                {hidden ? (
+                  <span className="text-style-body font-bold text-text">
+                    {HIDDEN_AMOUNT_MASK}
+                  </span>
+                ) : (
+                  <Money
+                    amount={cur.total}
+                    className="text-style-body font-bold text-text"
+                  />
+                )}
+                <SpendingDelta
+                  cur={cur.total}
+                  prev={prev.total}
+                  hidden={hidden}
                 />
-                <SpendingDelta cur={cur.total} prev={prev.total} />
               </>
             )}
           </span>
         )}
-        <svg
-          width="16"
-          height="16"
-          viewBox="0 0 24 24"
-          fill="none"
-          stroke="currentColor"
-          strokeWidth="2"
-          strokeLinecap="round"
-          strokeLinejoin="round"
-          aria-hidden
-          className={cn(
-            "shrink-0 text-muted transition-transform",
-            collapsed ? "-rotate-90" : "rotate-0",
-          )}
-        >
-          <path d="M6 9l6 6 6-6" />
-        </svg>
       </button>
       {!collapsed && empty && (
         <p className="text-style-body text-muted">
@@ -292,17 +298,23 @@ export default function ExpensesCard({ period, offset }: ExpensesCardProps) {
       {!collapsed && !empty && (
         <>
           <div className="flex items-baseline gap-2">
-            <Money
-              amount={cur.total}
-              className="text-style-headline text-text"
-            />
-            <SpendingDelta cur={cur.total} prev={prev.total} />
+            {hidden ? (
+              <span className="text-style-headline text-text">
+                {HIDDEN_AMOUNT_MASK}
+              </span>
+            ) : (
+              <Money
+                amount={cur.total}
+                className="text-style-headline text-text"
+              />
+            )}
+            <SpendingDelta cur={cur.total} prev={prev.total} hidden={hidden} />
           </div>
           <p className="text-style-caption text-muted">
             {partial
               ? messages.hub.reportPreviousToDate
               : messages.hub.reportPrevious}{" "}
-            <Money amount={prev.total} />
+            {hidden ? HIDDEN_AMOUNT_MASK : <Money amount={prev.total} />}
           </p>
           <BarChart
             key={`${period}-${offset}`}
@@ -310,6 +322,7 @@ export default function ExpensesCard({ period, offset }: ExpensesCardProps) {
             dates={dates}
             colorClass="bg-chart-finyk"
             unit=" ₴"
+            hidden={hidden}
           />
         </>
       )}

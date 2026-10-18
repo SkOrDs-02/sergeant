@@ -51,7 +51,6 @@ export function HubChatSheet({
     <Sheet
       open
       onClose={onClose}
-      variant="glass"
       // HubChat ships its own `<HubChatHeader>` (title popover + close
       // pill); we suppress Sheet's built-in header row to avoid a
       // duplicate stack. `title` is still consumed by `aria-labelledby`

@@ -98,7 +98,7 @@ describe("PantryCard add modes", () => {
   it("adds a single item on Enter", () => {
     const upsertItem = vi.fn();
     render(<Card {...baseProps({ newItemName: "Рис", upsertItem })} />);
-    fireEvent.keyDown(screen.getByPlaceholderText(/лосось/), {
+    fireEvent.keyDown(screen.getByPlaceholderText("Продукт"), {
       key: "Enter",
     });
     expect(upsertItem).toHaveBeenCalledWith("Рис");
@@ -107,7 +107,7 @@ describe("PantryCard add modes", () => {
   it("routes single-item input changes through setNewItemName", () => {
     const setNewItemName = vi.fn();
     render(<Card {...baseProps({ setNewItemName })} />);
-    fireEvent.change(screen.getByPlaceholderText(/лосось/), {
+    fireEvent.change(screen.getByPlaceholderText("Продукт"), {
       target: { value: "Авокадо" },
     });
     expect(setNewItemName).toHaveBeenCalledWith("Авокадо");
@@ -132,7 +132,7 @@ describe("PantryCard add modes", () => {
     const setPantryText = vi.fn();
     render(<Card {...baseProps({ setPantryText })} />);
     fireEvent.click(screen.getByText("Списком"));
-    fireEvent.change(screen.getByPlaceholderText(/2 яйця/), {
+    fireEvent.change(screen.getByPlaceholderText("Список продуктів"), {
       target: { value: "банани, молоко" },
     });
     expect(setPantryText).toHaveBeenCalledWith("банани, молоко");
@@ -160,7 +160,7 @@ describe("PantryCard inventory", () => {
   it("renders an empty state instead of hiding the inventory card", () => {
     render(<Card {...baseProps()} />);
     expect(screen.queryByText("Моя комора")).not.toBeInTheDocument();
-    expect(screen.getByText("Тут поки порожньо")).toBeInTheDocument();
+    expect(screen.getByText("Продуктів удома ще немає")).toBeInTheDocument();
   });
 
   it("renders inventory items and routes edit/remove", () => {
@@ -298,13 +298,13 @@ describe("PantryCard: список першим, додавання в арку�
 
   it("наповнена комора не показує форму інлайн, а «Додати» відкриває аркуш із фокусом у полі", () => {
     render(<Card {...filled()} />);
-    expect(screen.queryByPlaceholderText(/лосось/)).not.toBeInTheDocument();
+    expect(screen.queryByPlaceholderText("Продукт")).not.toBeInTheDocument();
     expect(screen.queryByRole("dialog")).not.toBeInTheDocument();
 
     fireEvent.click(screen.getByRole("button", { name: "Додати продукти" }));
 
     const dialog = screen.getByRole("dialog", { name: "Додати продукти" });
-    const field = screen.getByPlaceholderText(/лосось/);
+    const field = screen.getByPlaceholderText("Продукт");
     expect(dialog).toContainElement(field);
     expect(field).toHaveFocus();
     // Список стоїть у DOM раніше за форму. Роль тут не годиться: відкритий
@@ -326,7 +326,7 @@ describe("PantryCard: список першим, додавання в арку�
 
   it("порожня комора показує форму інлайн і не має кнопки аркуша", () => {
     render(<Card {...baseProps()} />);
-    expect(screen.getByPlaceholderText(/лосось/)).not.toHaveFocus();
+    expect(screen.getByPlaceholderText("Продукт")).not.toHaveFocus();
     expect(screen.queryByRole("dialog")).not.toBeInTheDocument();
     expect(
       screen.queryByRole("button", { name: "Додати продукти" }),
@@ -342,7 +342,7 @@ describe("PantryCard: список першим, додавання в арку�
         dismissAmbiguousPantryItem={vi.fn()}
       />,
     );
-    expect(screen.getByPlaceholderText(/лосось/)).toBeInTheDocument();
+    expect(screen.getByPlaceholderText("Продукт")).toBeInTheDocument();
     expect(screen.queryByRole("dialog")).not.toBeInTheDocument();
   });
 });
@@ -387,7 +387,7 @@ describe("PantryCard: режим «Списком» на порожній ком
     // Фантомної позиції «я» у списку немає: лишається порожній стан комори.
     expect(screen.queryByLabelText("Редагувати я")).not.toBeInTheDocument();
     expect(screen.queryByText("Моя комора")).not.toBeInTheDocument();
-    expect(screen.getByText("Тут поки порожньо")).toBeInTheDocument();
+    expect(screen.getByText("Продуктів удома ще немає")).toBeInTheDocument();
   });
 
   it("далі набір триває: наступні символи теж лягають у те саме поле", () => {

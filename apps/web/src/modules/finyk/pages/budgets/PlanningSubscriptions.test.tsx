@@ -7,7 +7,7 @@
  * комбінованого пікера «Запланувати» в `Budgets.tsx` (див. `FinykApp.tsx`).
  */
 import { describe, it, expect, vi, afterEach } from "vitest";
-import { render, screen, cleanup } from "@testing-library/react";
+import { render, screen, cleanup, act } from "@testing-library/react";
 import { ToastProvider } from "@shared/hooks/useToast";
 import type { ReactNode } from "react";
 
@@ -49,6 +49,7 @@ import {
 afterEach(() => {
   cleanup();
   clearFinykMonoMirrorCache();
+  vi.useRealTimers();
 });
 
 function wrap(children: ReactNode) {
@@ -208,6 +209,34 @@ describe("PlanningSubscriptions", () => {
     );
     expect(screen.getByTestId("subs-section")).toHaveTextContent("subs:1");
     expect(screen.getByText("1 активна")).toBeInTheDocument();
+  });
+
+  it("refreshes upcoming payments at Kyiv midnight without remounting", async () => {
+    vi.useFakeTimers();
+    vi.setSystemTime(new Date("2026-10-09T20:59:59Z"));
+    render(
+      wrap(
+        <PlanningSubscriptions
+          mono={mono}
+          storage={makeStorage({
+            subscriptions: [
+              {
+                id: "s1",
+                name: "Netflix",
+                keyword: "",
+                billingDay: 9,
+                currency: "UAH",
+              },
+            ] as unknown as AssetsProps["storage"]["subscriptions"],
+          })}
+        />,
+      ),
+    );
+    expect(screen.getByText("Netflix")).toBeInTheDocument();
+    await act(() => {
+      vi.advanceTimersByTime(2001);
+    });
+    expect(screen.queryByText("Netflix")).toBeNull();
   });
 
   it("shows «Найближчі платежі» for a subscription due within ten days", () => {

@@ -1,5 +1,6 @@
 import { memo } from "react";
 import { FlowRow, type FlowItem } from "../overview/FlowRow";
+import { SectionHeading } from "@shared/components/ui/SectionHeading";
 import { Card } from "@shared/components/ui/Card";
 import { messages } from "@shared/i18n/uk";
 
@@ -23,11 +24,11 @@ const PlannedFlowsCardImpl = function PlannedFlowsCard({
   if (plannedFlows.length === 0) return null;
 
   return (
-    <Card radius="lg" padding="none" className="overflow-hidden">
+    <Card padding="none" className="overflow-hidden">
       <div className="px-5 pt-4 pb-2">
-        <span className="text-style-caption text-subtle">
+        <SectionHeading size="lg" variant="muted">
           {messages.finyk.planning.upcomingTitle}
-        </span>
+        </SectionHeading>
       </div>
       <div className="px-5 pb-3">
         {plannedFlows.slice(0, 5).map((f) => (

@@ -28,7 +28,9 @@ export const nutritionTdeeMessages = {
   missingActivity: "рівень активності",
   missingWeight: "вага",
   profileLink: "Заповнити в профілі",
-  goalCutting: "Схуднення (-500 ккал)",
+  goalCutting: "Схуднення",
+  // `{rate}` і `{kcal}` підставляє DailyPlanGoalSelectors.
+  goalCuttingRate: "Схуднення, {rate} кг/тиж (-{kcal} ккал)",
   goalMaintenance: "Підтримка",
   goalBulking: "Набір (+300 ккал)",
   appliedToast: "Цілі підставлено з профілю",

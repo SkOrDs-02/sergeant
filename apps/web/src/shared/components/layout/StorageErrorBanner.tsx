@@ -1,5 +1,5 @@
 import { useEffect, useState, type ReactNode } from "react";
-import { Banner } from "@shared/components/ui/Banner";
+import { Notice } from "@shared/components/ui/Notice";
 import { cn } from "@shared/lib/ui/cn";
 import { messages } from "@shared/i18n/uk";
 
@@ -55,8 +55,8 @@ export function StorageErrorBanner({
   if (!reason) return null;
 
   return (
-    <Banner
-      variant="danger"
+    <Notice
+      tone="danger"
       role="alert"
       className={cn(
         "mx-4 mt-3 flex items-start justify-between gap-3",
@@ -72,6 +72,6 @@ export function StorageErrorBanner({
       >
         {messages.actions.close}
       </button>
-    </Banner>
+    </Notice>
   );
 }

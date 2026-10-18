@@ -53,55 +53,38 @@ vi.mock("../MyFoodsSheet", () => ({
 afterEach(() => cleanup());
 
 describe("ManualEntryTab", () => {
-  it("«Мої продукти» відкриває список власних продуктів", () => {
+  it("просить явний вибір одиниці перед полями", () => {
     render(<ManualEntryTab onCreated={vi.fn()} onWholeMeal={vi.fn()} />);
-    expect(screen.queryByTestId("my-foods-sheet")).toBeNull();
-    fireEvent.click(screen.getByRole("button", { name: "Мої продукти" }));
-    expect(screen.getByTestId("my-foods-sheet")).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: /На 100 г/ })).toBeVisible();
+    expect(screen.getByRole("button", { name: /За всю порцію/ })).toBeVisible();
+    expect(screen.queryByTestId("package-step")).not.toBeInTheDocument();
   });
-
-  it("типовий режим — «з упаковки», і поля етикетки видно одразу", () => {
-    render(<ManualEntryTab onCreated={vi.fn()} onWholeMeal={vi.fn()} />);
-    expect(screen.getByRole("radio", { name: /З упаковки/ })).toHaveAttribute(
-      "aria-checked",
-      "true",
-    );
-    expect(screen.getByTestId("package-step")).toBeInTheDocument();
-  });
-
-  it("підписує одиницю на кожному режимі", () => {
-    render(<ManualEntryTab onCreated={vi.fn()} onWholeMeal={vi.fn()} />);
-    expect(screen.getByRole("radio", { name: /З упаковки/ })).toHaveTextContent(
-      "на 100 г",
-    );
-    expect(
-      screen.getByRole("radio", { name: /Готова страва/ }),
-    ).toHaveTextContent("за всю порцію");
-  });
-
-  it("віддає нагору саме той продукт, який створив крок етикетки", () => {
+  it("передає справжній продукт і вагу з форми на 100 г", () => {
     const onCreated = vi.fn();
     render(<ManualEntryTab onCreated={onCreated} onWholeMeal={vi.fn()} />);
+    fireEvent.click(screen.getByRole("button", { name: /На 100 г/ }));
     fireEvent.click(screen.getByTestId("package-step"));
     expect(onCreated).toHaveBeenCalledWith(PRODUCT, "250");
   });
-
-  it("«Готова страва» ховає поля етикетки й веде на разовий запис", () => {
+  it("за всю порцію одразу відкриває форму без додаткового Далі", () => {
     const onWholeMeal = vi.fn();
     render(<ManualEntryTab onCreated={vi.fn()} onWholeMeal={onWholeMeal} />);
-    fireEvent.click(screen.getByRole("radio", { name: /Готова страва/ }));
-
-    // Поля «на 100 г» зникають: у режимі «за порцію» вони означали б інше.
-    expect(screen.queryByTestId("package-step")).toBeNull();
-    fireEvent.click(screen.getByRole("button", { name: "Далі" }));
+    fireEvent.click(screen.getByRole("button", { name: /За всю порцію/ }));
     expect(onWholeMeal).toHaveBeenCalledTimes(1);
+    expect(
+      screen.queryByRole("button", { name: "Далі" }),
+    ).not.toBeInTheDocument();
   });
-
-  it("повернення до «з упаковки» не тягне за собою стан разового запису", () => {
+  it("зміна одиниці не демонтує чернетку продукту", () => {
     render(<ManualEntryTab onCreated={vi.fn()} onWholeMeal={vi.fn()} />);
-    fireEvent.click(screen.getByRole("radio", { name: /Готова страва/ }));
-    fireEvent.click(screen.getByRole("radio", { name: /З упаковки/ }));
-    expect(screen.getByTestId("package-step")).toBeInTheDocument();
-    expect(screen.queryByRole("button", { name: "Далі" })).toBeNull();
+    fireEvent.click(screen.getByRole("button", { name: /На 100 г/ }));
+    const form = screen.getByTestId("package-step");
+    fireEvent.click(
+      screen.getByRole("button", { name: "Змінити одиницю калорійності" }),
+    );
+    expect(form).not.toBeVisible();
+    fireEvent.click(screen.getByRole("button", { name: /На 100 г/ }));
+    expect(screen.getByTestId("package-step")).toBe(form);
+    expect(form).toBeVisible();
   });
 });

@@ -44,6 +44,7 @@
  *   - both have data → newer `updatedAt` wins: newer-local pushes to the
  *     server, newer-or-equal-server hydrates local.
  */
+import { LOCAL_ANON_USER_ID } from "../auth/localIdentity";
 import { z } from "zod";
 import {
   meApi,
@@ -373,6 +374,12 @@ export async function reconcileBiometricsWithServerProfile(
   // немає рядка. Якщо рядок є, нижче `isLocalBiometricsEmpty` її гідратує.
   if (isBiometricsForeign()) {
     writeBiometrics(BIOMETRICS_DEFAULT);
+  }
+
+  // Перший вхід забирає анонімний профіль цього пристрою (В1): перештамповуємо
+  // власником до гілок нижче. Легасі `null` сюди не потрапляє.
+  if (readBiometricsOwnerId() === LOCAL_ANON_USER_ID) {
+    writeBiometrics(readBiometrics());
   }
 
   const local = readBiometrics();

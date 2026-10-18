@@ -192,7 +192,7 @@ export function WorkoutTemplatesSection({
       {!editingId && (
         <Button
           variant="solid"
-          tone="fizruk"
+          tone="neutral"
 
           className="w-full h-12 min-h-[44px]"
           onClick={startNew}
@@ -202,11 +202,11 @@ export function WorkoutTemplatesSection({
       )}
 
       {editingId && (
-        <Card radius="lg" className="space-y-3">
+        <Card className="space-y-3">
           <Label htmlFor={nameId}>Назва шаблону</Label>
           <Input
             id={nameId}
-            placeholder="Напр. Push day, Ноги (без назви: «Мій шаблон»)"
+            placeholder="Назва шаблону"
             value={name}
             onChange={(e) => setName(e.target.value)}
             aria-label="Назва шаблону"
@@ -227,7 +227,7 @@ export function WorkoutTemplatesSection({
               onChange={(e) => setQ(e.target.value)}
               aria-label="Пошук вправи для шаблону"
             />
-            <div className="mt-2 max-h-40 overflow-y-auto rounded-xl border border-line divide-y divide-line">
+            <div className="mt-2 max-h-40 overflow-y-auto rounded-panel border border-line divide-y divide-line">
               {pickList.map((ex) => (
                 <button
                   key={ex.id}
@@ -262,13 +262,12 @@ export function WorkoutTemplatesSection({
                   // правильна дія тут — лишити сирий розмір, а не
                   // підібрати найближчу роль. Те саме стосується
                   // `text-xs!` на компоненті `Button`.
-                  className="inline-flex items-center gap-1 text-xs px-2 py-1 rounded-xl border border-line text-subtle hover:text-text hover:bg-panelHi transition-colors"
+                  className="inline-flex items-center gap-1 text-xs px-2 py-1 rounded-lg border border-line text-subtle hover:text-text hover:bg-panelHi transition-colors"
                   onClick={() => {
                     setGroupSelectMode(true);
                     setGroupSelected(new Set());
                   }}
                 >
-                  <Icon name="plus-circle" size="sm" />
                   Суперсет
                 </button>
               )}
@@ -276,7 +275,7 @@ export function WorkoutTemplatesSection({
                 <div className="flex gap-1">
                   <button
                     type="button"
-                    className="text-xs px-2 py-1 rounded-xl border border-success/40 text-success-strong dark:text-success disabled:opacity-40"
+                    className="text-xs px-2 py-1 rounded-lg border border-line text-text disabled:opacity-40"
                     disabled={groupSelected.size < 2 || groupSelected.size > 3}
                     onClick={() => handleCreateGroup("superset")}
                     title="Обери 2-3 вправи"
@@ -285,7 +284,7 @@ export function WorkoutTemplatesSection({
                   </button>
                   <button
                     type="button"
-                    className="text-xs px-2 py-1 rounded-xl border border-fizruk/40 text-fizruk disabled:opacity-40"
+                    className="text-xs px-2 py-1 rounded-lg border border-line text-text disabled:opacity-40"
                     disabled={groupSelected.size < 2 || groupSelected.size > 3}
                     onClick={() => handleCreateGroup("circuit")}
                     title="Обери 2-3 вправи"
@@ -295,7 +294,7 @@ export function WorkoutTemplatesSection({
                   <button
                     type="button"
                     aria-label="Скасувати групування"
-                    className="text-xs px-2 py-1 rounded-xl border border-line text-subtle"
+                    className="text-xs px-2 py-1 rounded-lg border border-line text-subtle"
                     onClick={() => {
                       setGroupSelectMode(false);
                       setGroupSelected(new Set());
@@ -319,30 +318,22 @@ export function WorkoutTemplatesSection({
                   return (
                     <li
                       key={`${id}_${idx}`}
-                      className={`flex items-center gap-2 rounded-xl border px-2 py-1.5 transition-colors ${isSelected ? "border-success bg-success/5" : group ? "border-success/40 bg-success/5" : "border-line bg-bg"}`}
+                      className={`flex items-center gap-2 rounded-panel border px-2 py-1.5 transition-colors ${isSelected ? "border-line bg-panelHi" : group ? "border-line bg-panelHi" : "border-line bg-bg"}`}
                     >
                       {groupSelectMode && (
                         <button
                           type="button"
-                          className={`w-5 h-5 rounded-xl border flex items-center justify-center shrink-0 transition-colors ${isSelected ? "bg-success-strong border-success-strong text-white" : "border-line bg-bg"}`}
+                          className="focus-ring flex h-11 w-11 shrink-0 items-center justify-center rounded-lg"
+                          aria-label={ex?.name?.uk || ex?.name?.en || id}
+                          aria-pressed={isSelected}
                           onClick={() => handleToggleGroupSelect(id)}
                         >
-                          {isSelected && (
-                            <svg
-                              width="10"
-                              height="10"
-                              viewBox="0 0 10 10"
-                              fill="none"
-                            >
-                              <path
-                                d="M2 5l2.5 2.5L8 3"
-                                stroke="currentColor"
-                                strokeWidth="1.6"
-                                strokeLinecap="round"
-                                strokeLinejoin="round"
-                              />
-                            </svg>
-                          )}
+                          <span
+                            aria-hidden
+                            className={`flex h-[22px] w-[22px] items-center justify-center rounded-check border ${isSelected ? "border-text bg-text text-bg" : "border-line bg-bg"}`}
+                          >
+                            {isSelected ? "✓" : null}
+                          </span>
                         </button>
                       )}
                       <span className="text-style-caption text-muted w-5 text-center tabular-nums">
@@ -405,7 +396,7 @@ export function WorkoutTemplatesSection({
           <div className="flex gap-2">
             <Button
               variant="solid"
-              tone="fizruk"
+              tone="neutral"
 
               className="flex-1 h-12 min-h-[44px]"
               onClick={save}
@@ -429,7 +420,7 @@ export function WorkoutTemplatesSection({
         </Card>
       )}
 
-      <Card radius="lg" padding="none" className="overflow-hidden">
+      <Card padding="none" className="overflow-hidden">
         <div className="px-4 py-3 bg-panelHi border-b border-line">
           <SectionHeading as="div" size="xs" variant="fizruk">
             Збережені шаблони
@@ -438,8 +429,6 @@ export function WorkoutTemplatesSection({
         {(templates || []).length === 0 ? (
           <EmptyState
             compact
-            module="fizruk"
-            icon={<Icon name="dumbbell" size="lg" />}
             title="Поки немає шаблонів"
             description="Створи свій перший, кнопка вище."
           />
@@ -457,7 +446,7 @@ export function WorkoutTemplatesSection({
                   {(t.exerciseIds || []).length}{" "}
                   {pluralExercises((t.exerciseIds || []).length)}
                   {(t.groups || []).length > 0 && (
-                    <span className="ml-2 text-success-strong dark:text-success">
+                    <span className="ml-2 text-text">
                       · {(t.groups || []).length} суперсет
                       {(t.groups || []).length > 1 ? "и" : ""}
                     </span>
@@ -468,7 +457,7 @@ export function WorkoutTemplatesSection({
                 {typeof onStartTemplate === "function" && (
                   <Button
                     size="sm"
-                    className="h-10 min-h-[44px] px-3 bg-fizruk-strong text-white border-fizruk-strong hover:bg-fizruk-strong/90 dark:bg-fizruk dark:text-bg dark:hover:bg-fizruk/90 dark:border-fizruk"
+                    className="h-10 min-h-[44px] px-3 bg-text text-bg border-line hover:bg-panelHi dark:text-bg dark:hover:bg-panelHi"
                     onClick={() => onStartTemplate(t)}
                     disabled={!(t.exerciseIds || []).length}
                   >

@@ -5,7 +5,6 @@
 import { useState, type ReactNode } from "react";
 import { TxRow, type TxRowTx } from "../components/TxRow";
 import { Card } from "@shared/components/ui/Card";
-import { Icon } from "@shared/components/ui/Icon";
 import { Money } from "@shared/components/ui/Money";
 import { Sheet } from "@shared/components/ui/Sheet";
 import { Button } from "@shared/components/ui/Button";
@@ -121,17 +120,21 @@ function RoleSheet({
               key={role}
               type="button"
               aria-pressed={selected}
+              aria-label={describeLinkedTxRole(role, kind).label}
               onClick={() => onPick(role)}
               className={cn(
-                "w-full touch-target rounded-xl border px-4 py-3 text-left transition-colors",
+                "w-full touch-target rounded-lg border px-4 py-3 text-left transition-colors",
                 "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-finyk",
-                selected
-                  ? "border-finyk bg-finyk/10"
-                  : "border-line hover:bg-panel",
+                selected ? "border-line bg-bg" : "border-line hover:bg-line/40",
               )}
             >
               <div className="text-style-label text-text">
                 {describeLinkedTxRole(role, kind).label}
+                {selected && (
+                  <span className="ml-2 text-style-caption font-semibold text-text">
+                    {messages.finykRedesign.selected}
+                  </span>
+                )}
                 {currentRole === null && suggested === role && (
                   <span className="text-style-caption text-subtle ml-2">
                     {copy.suggestedHint}
@@ -229,7 +232,6 @@ export function AssetsDebtTxPicker({
           onClick={onBack}
           className="inline-flex items-center gap-1 text-style-label text-muted hover:text-text transition-colors"
         >
-          <Icon name="chevron-left" size="sm" />
           {copy.back}
         </button>
         <span className="text-style-label">
@@ -238,16 +240,12 @@ export function AssetsDebtTxPicker({
       </div>
       <div className="flex-1 overflow-y-auto">
         <div className="max-w-4xl mx-auto px-4 pt-4 page-tabbar-pad">
-          <Card variant="flat" radius="md" className="mb-4">
+          <Card className="mb-4">
             <div className="text-style-caption text-subtle inline-flex items-center gap-1.5">
               {/* До 2026-08-21 тут стояв `item.emoji` — засіяний дефолт
                   («💸» для боргу, «👤» для дебіторки), який форма не дає
                   редагувати. Тобто хардкод емодзі, а не вибір людини. */}
-              <Icon
-                name={isDebt ? "credit-card" : "user"}
-                size="sm"
-                aria-hidden
-              />
+
               {item.name}
             </div>
             <p className="text-style-caption text-subtle mt-2 leading-relaxed">

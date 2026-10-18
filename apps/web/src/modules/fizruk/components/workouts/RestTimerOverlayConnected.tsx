@@ -1,6 +1,7 @@
 import { useRestTimer } from "../../context/RestTimerContext";
 import { RestTimerOverlay } from "./RestTimerOverlay";
 import { trackFizrukRestTimerDone } from "../../lib/workoutTelemetry";
+import { adjustRestTimerState } from "../../lib/restTimer";
 
 /**
  * Thin connector that pulls `restTimer` / `setRestTimer` from the fizruk-level
@@ -34,11 +35,7 @@ export function RestTimerOverlayConnected({
       onAdjust={(seconds) =>
         setRestTimer((current) => {
           if (!current) return null;
-          const remaining = Math.max(1, current.remaining + seconds);
-          return {
-            remaining,
-            total: Math.max(current.total, remaining),
-          };
+          return adjustRestTimerState(current, seconds);
         })
       }
     />

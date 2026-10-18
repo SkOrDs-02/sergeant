@@ -494,7 +494,7 @@ function DropdownMenuPanel({
       onKeyDown={onPanelKeyDown}
       className={cn(
         "fixed min-w-[200px] max-w-[320px] py-1.5",
-        "bg-panel border border-line rounded-2xl shadow-float",
+        "bg-panel border border-line rounded-panel shadow-float",
         "motion-safe:animate-fade-in outline-none",
         menuClassName,
       )}

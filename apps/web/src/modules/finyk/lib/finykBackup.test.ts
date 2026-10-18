@@ -21,6 +21,7 @@ import {
   FINYK_BACKUP_VERSION,
   readFinykBackupFromStorage,
   persistFinykNormalizedToStorage,
+  persistFinykNormalizedToSqlite,
 } from "./finykBackup";
 import { HUB_FINYK_ROUTINE_SYNC_EVENT } from "../hubRoutineSync";
 
@@ -286,5 +287,63 @@ describe("persistFinykNormalizedToStorage", () => {
 
     expect(handler).toHaveBeenCalledTimes(1);
     window.removeEventListener(HUB_FINYK_ROUTINE_SYNC_EVENT, handler);
+  });
+});
+
+describe("txNotes у бекапі (аудит 2026-10-01, data-27)", () => {
+  beforeEach(() => {
+    localStorage.clear();
+  });
+
+  afterEach(() => {
+    localStorage.clear();
+  });
+
+  it("експорт на теплому кеші містить нотатки з LS, а normalize їх пропускає", () => {
+    fakeCache.value = warmCache({ networthHistory: [], customCategories: [] });
+    localStorage.setItem(
+      "finyk_tx_notes",
+      JSON.stringify({ "tx-1": "оренда" }),
+    );
+
+    const snapshot = readFinykBackupFromStorage();
+    expect(snapshot.txNotes).toEqual({ "tx-1": "оренда" });
+    expect(normalizeFinykBackup(snapshot).txNotes).toEqual({
+      "tx-1": "оренда",
+    });
+  });
+
+  it("старий бекап без txNotes проходить, поля в результаті немає", () => {
+    const out = normalizeFinykBackup({ version: 2, budgets: [] });
+    expect(out).toEqual({ budgets: [] });
+    expect("txNotes" in out).toBe(false);
+  });
+
+  it("відхиляє txNotes не-обʼєкт і нерядкові значення", () => {
+    expect(() => normalizeFinykBackup({ version: 3, txNotes: [] })).toThrow(
+      /обʼєктом/,
+    );
+    expect(() =>
+      normalizeFinykBackup({ version: 3, txNotes: { a: 1 } }),
+    ).toThrow(/txNotes/);
+  });
+
+  it("replace-імпорт (persistFinykNormalizedToStorage) пише нотатки в LS", () => {
+    persistFinykNormalizedToStorage({ txNotes: { "tx-2": "подарунок" } });
+    expect(
+      JSON.parse(localStorage.getItem("finyk_tx_notes") ?? "null"),
+    ).toEqual({ "tx-2": "подарунок" });
+  });
+
+  it("merge-імпорт додає відсутні нотатки й не затирає наявні на пристрої", async () => {
+    fakeCache.value = warmCache();
+    localStorage.setItem("finyk_tx_notes", JSON.stringify({ "tx-1": "моя" }));
+    await persistFinykNormalizedToSqlite(
+      { txNotes: { "tx-1": "з файлу", "tx-9": "нова" } },
+      "merge",
+    );
+    expect(
+      JSON.parse(localStorage.getItem("finyk_tx_notes") ?? "null"),
+    ).toEqual({ "tx-1": "моя", "tx-9": "нова" });
   });
 });

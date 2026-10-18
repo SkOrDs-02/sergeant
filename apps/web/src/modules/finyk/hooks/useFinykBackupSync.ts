@@ -19,6 +19,7 @@ import type {
   Debt,
   Receivable,
   TxSplitsMap,
+  TxNotesMap,
 } from "./useStorage.types";
 import type { FinykStorageSlots } from "./useFinykStorageSlots";
 
@@ -59,6 +60,8 @@ export function useFinykBackupSync(
     setTxCategories,
     txSplits,
     setTxSplits,
+    txNotes,
+    setTxNotes,
     monoDebtLinkedTxIds,
     setMonoDebtLinkedTxIds,
     networthHistory,
@@ -86,6 +89,7 @@ export function useFinykBackupSync(
     if (data.txCategories)
       setTxCategories(data.txCategories as TxCategoriesMap);
     if (data.txSplits) setTxSplits(data.txSplits as TxSplitsMap);
+    if (data.txNotes) setTxNotes(data.txNotes as TxNotesMap);
     if (data.monoDebtLinkedTxIds)
       setMonoDebtLinkedTxIds(data.monoDebtLinkedTxIds as MonoDebtLinkedMap);
     if (data.networthHistory)
@@ -113,6 +117,7 @@ export function useFinykBackupSync(
       monthlyPlan,
       txCategories,
       txSplits,
+      txNotes,
       monoDebtLinkedTxIds,
       networthHistory,
       customCategories,

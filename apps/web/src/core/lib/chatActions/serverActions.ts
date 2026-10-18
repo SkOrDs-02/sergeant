@@ -25,6 +25,8 @@ import {
   getTransactions,
   saveTransactions,
 } from "../../../modules/finyk/lib/finykStorage";
+import { isApiError, type ApiError } from "@sergeant/api-client";
+import { validateTransactionInput } from "./finykActions/transactionInputValidation";
 import { createTransaction as createTransactionLocal } from "./finykActions/transactions";
 import { finykChatMirrorManualExpenses } from "./finykActions/dualWriteBridge";
 import type { Transaction } from "@sergeant/finyk-domain/domain/types";
@@ -171,6 +173,24 @@ async function handleRecallMemory(action: RecallMemoryAction): Promise<string> {
   return formatRecallResults(trimmedQuery, out.memories);
 }
 
+/** 4xx = сервер відповів і відмовив по суті; 401 лишається в офлайн-фолбеку. */
+function isClientRejection(status: number): boolean {
+  return status >= 400 && status < 500 && status !== 401;
+}
+
+function rejectedByServerMessage(err: ApiError): string {
+  const detail = err.serverMessage?.trim().slice(0, 200);
+  const reason = detail ? `: ${detail}` : ` (HTTP ${err.status})`;
+  // Порада правити дані — лише на валідаційну відмову; 429/403 тощо — не про дані.
+  const hint =
+    err.status === 400 || err.status === 422
+      ? "виправ дані й спробуй ще раз"
+      : err.status === 429
+        ? "забагато запитів, спробуй трохи пізніше"
+        : "спробуй ще раз пізніше";
+  return `Сервер відхилив витрату${reason}. Нічого не записано; ${hint}.`;
+}
+
 /**
  * `create_transaction` — витрати йдуть через `POST /api/finyk/manual-expenses`
  * (server-of-record + локальне LS-дзеркало для миттєвого UI), доходи та
@@ -183,11 +203,11 @@ async function handleRecallMemory(action: RecallMemoryAction): Promise<string> {
 async function handleCreateTransaction(
   action: CreateTransactionAction,
 ): Promise<ChatActionResult> {
-  const { type, amount, category, description, date } = action.input;
-  const amt = Number(amount);
-  if (!Number.isFinite(amt) || amt <= 0) {
-    return "Некоректна сума операції.";
-  }
+  const { type, category, description, date } = action.input;
+  // Межі як на сервері — до першого запиту й до будь-якого локального запису.
+  const checked = validateTransactionInput(action.input);
+  if (!checked.ok) return checked.message;
+  const amt = checked.amount;
   // Income сервер не приймає (manual-expenses — лише витрати) — пишемо локально.
   if (type === "income") {
     return createTransactionLocal(action);
@@ -240,8 +260,19 @@ async function handleCreateTransaction(
       : undefined;
     const label = meta?.label || category?.trim() || "";
     return `Витрату ${formatNumberUk(amt)} грн${description?.trim() ? ` "${description.trim()}"` : ""}${label ? ` (${label})` : ""} записано на сервері (id:${expense.id})`;
-  } catch {
-    // Мережа/401/5xx — не губимо запис: пишемо локально зі старим undo-шляхом.
+  } catch (err) {
+    // 4xx (крім 401) — сервер відхилив САМ запис (валідація, межі, тариф):
+    // локальний фолбек обійшов би ці межі, а sync донiс би запис на сервер,
+    // і людина почула б неправду «сервер недоступний». Тож нічого не пишемо,
+    // а причину віддаємо моделі й користувачу.
+    if (
+      isApiError(err) &&
+      err.kind === "http" &&
+      isClientRejection(err.status)
+    ) {
+      return rejectedByServerMessage(err);
+    }
+    // Мережа/таймаут/5xx/401 — не губимо запис: пишемо локально зі старим undo-шляхом.
     const local = createTransactionLocal(action);
     const suffix = " (сервер недоступний, записано лише локально)";
     if (typeof local === "string") return local + suffix;

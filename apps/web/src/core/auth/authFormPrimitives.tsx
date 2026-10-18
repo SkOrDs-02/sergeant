@@ -24,10 +24,10 @@ export function PasswordStrengthBar({ password }: { password: string }) {
 
   return (
     <div className="mt-1.5 space-y-1">
-      <div className="h-1 rounded-full bg-line overflow-hidden">
+      <div className="h-1 rounded-mark bg-line overflow-hidden">
         <div
           className={cn(
-            "h-full rounded-full transition-all duration-slow",
+            "h-full rounded-lg transition-all duration-slow",
             widths[level],
             colors[level],
           )}
@@ -58,7 +58,7 @@ export function PasswordVisibilityToggle({
       onClick={onToggle}
       aria-label={visible ? "Сховати пароль" : "Показати пароль"}
       aria-pressed={visible}
-      className="absolute inset-y-0 right-1 inline-flex items-center justify-center p-3 text-muted hover:text-text transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-focus/45 rounded-xl"
+      className="absolute inset-y-0 right-1 inline-flex items-center justify-center p-3 text-muted hover:text-text transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-focus/45 rounded-lg"
     >
       <Icon name={visible ? "eye-off" : "eye"} size="lg" />
     </button>

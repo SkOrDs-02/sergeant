@@ -45,7 +45,7 @@ export function HubRestoreModePicker({
             htmlFor={`hub-restore-mode-${opt.value}`}
             aria-label={`${opt.label} · ${opt.hint}`}
             className={cn(
-              "flex min-h-[44px] cursor-pointer items-start gap-3 rounded-2xl border p-3 text-left transition-colors",
+              "flex min-h-[44px] cursor-pointer items-start gap-3 rounded-lg border p-3 text-left transition-colors",
               "has-[:focus-visible]:ring-2 has-[:focus-visible]:ring-focus/45 has-[:focus-visible]:ring-offset-2 has-[:focus-visible]:ring-offset-bg",
               checked
                 ? "border-control bg-brand-soft"
@@ -64,7 +64,7 @@ export function HubRestoreModePicker({
             <span
               aria-hidden="true"
               className={cn(
-                "mt-0.5 flex h-5 w-5 shrink-0 items-center justify-center rounded-full border",
+                "mt-0.5 flex h-5 w-5 shrink-0 items-center justify-center rounded-lg border",
                 checked
                   ? "border-transparent bg-brand-strong"
                   : "border-control",
@@ -72,7 +72,7 @@ export function HubRestoreModePicker({
             >
               <span
                 className={cn(
-                  "h-2 w-2 rounded-full bg-white",
+                  "h-2 w-2 rounded-mark bg-white",
                   checked ? "opacity-100" : "opacity-0",
                 )}
               />

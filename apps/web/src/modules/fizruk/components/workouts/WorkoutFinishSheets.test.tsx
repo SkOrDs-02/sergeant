@@ -7,7 +7,6 @@
  * nutrition nudge.
  */
 import { describe, it, expect, vi, afterEach } from "vitest";
-import { flatMatch } from "@shared/testing/numberText";
 import {
   render,
   screen,
@@ -19,6 +18,7 @@ import {
   WorkoutFinishSheets,
   type FinishFlashState,
 } from "./WorkoutFinishSheets";
+import type { Workout, WorkoutWellbeing } from "@sergeant/fizruk-domain";
 
 // Cross-module prompt helpers — default to not suppressed so the nudge shows.
 vi.mock("@shared/lib/modules/crossModulePrompt", () => ({
@@ -74,12 +74,14 @@ function renderSheets(
   flash: FinishFlashState | null,
   setFinishFlash = vi.fn(),
   updateWorkout = vi.fn(),
+  workoutWellbeing?: WorkoutWellbeing | null,
 ) {
   return render(
     <WorkoutFinishSheets
       finishFlash={flash}
       setFinishFlash={setFinishFlash}
       updateWorkout={updateWorkout}
+      workoutWellbeing={workoutWellbeing}
     />,
   );
 }
@@ -92,6 +94,41 @@ describe("WorkoutFinishSheets — null guard", () => {
 });
 
 describe("WorkoutFinishSheets — wellbeing step", () => {
+  it.each([
+    { sleep: 2, soreness: 3 },
+    { sleep: null, soreness: null },
+  ])(
+    "preserves readiness $sleep/$soreness while saving finish ratings",
+    (readiness) => {
+      let workout: Workout = {
+        id: "w-1",
+        startedAt: "2026-10-16T08:00:00.000Z",
+        endedAt: "2026-10-16T09:00:00.000Z",
+        items: [],
+        groups: [],
+        warmup: null,
+        cooldown: null,
+        note: "",
+        wellbeing: { ...readiness, energy: 1, mood: 2 },
+      };
+      // Same shallow patch semantics as useWorkouts.updateWorkout: replacing
+      // wellbeing here would remove the readiness answers from the saved session.
+      const updateWorkout = vi.fn((id: string, patch: Partial<Workout>) => {
+        if (id === workout.id) workout = { ...workout, ...patch };
+      });
+      renderSheets(
+        makeFlash({ energy: 4, mood: 5 }),
+        vi.fn(),
+        updateWorkout,
+        workout.wellbeing,
+      );
+
+      fireEvent.click(screen.getByRole("button", { name: "Зберегти" }));
+
+      expect(workout.wellbeing).toEqual({ ...readiness, energy: 4, mood: 5 });
+    },
+  );
+
   it("renders Самопочуття heading and rating buttons", () => {
     renderSheets(makeFlash({ step: "wellbeing" }));
     expect(screen.getByText("Самопочуття")).toBeInTheDocument();
@@ -237,7 +274,7 @@ describe("WorkoutFinishSheets — injury step", () => {
   // суглобів і обидві кнопки дій.
   it("показує суглоби без розкриття, а мʼязи — за ним", () => {
     renderSheets(makeFlash({ step: "injury" }));
-    expect(screen.getByText("Щось болить?")).toBeInTheDocument();
+    expect(screen.getByText("Біль після тренування")).toBeInTheDocument();
 
     expect(screen.getByRole("button", { name: "Коліно" })).toBeInTheDocument();
     expect(screen.getByRole("button", { name: "Поперек" })).toBeInTheDocument();
@@ -302,10 +339,12 @@ describe("WorkoutFinishSheets — injury step", () => {
   it("тримає шапку і рядок дій липкими, а скрол — у межах аркуша", () => {
     renderSheets(makeFlash({ step: "injury" }));
 
-    const dialog = screen.getByRole("dialog", { name: "Щось болить?" });
+    const dialog = screen.getByRole("dialog", {
+      name: "Біль після тренування",
+    });
     expect(dialog.className).toContain("overscroll-contain");
 
-    const header = screen.getByText("Щось болить?").parentElement;
+    const header = screen.getByText("Біль після тренування").parentElement;
     expect(header?.className).toContain("sticky");
 
     const actionsRow = screen.getByRole("button", {
@@ -347,17 +386,20 @@ describe("WorkoutFinishSheets — summary step collapsed", () => {
 });
 
 describe("WorkoutFinishSheets — summary step expanded", () => {
-  it("renders 'Завершено' heading and stat tiles", () => {
-    renderSheets(makeFlash({ step: "summary", collapsed: false }));
+  it("renders the 'Завершено' heading without metrics: the summary page under it shows them", () => {
+    renderSheets(
+      makeFlash({
+        step: "summary",
+        collapsed: false,
+        savedWellbeing: { energy: 3, mood: 4 },
+      }),
+    );
     expect(screen.getByText("Завершено")).toBeInTheDocument();
-    expect(screen.getByText("Час")).toBeInTheDocument();
-    expect(screen.getByText("Вправ")).toBeInTheDocument();
-    expect(screen.getByText("Обʼєм")).toBeInTheDocument();
-    expect(screen.getByText("5")).toBeInTheDocument();
-    // PR-Z3 (аудит 2026-09-13, хвиля 6): "кг" читалось як маса тіла, хоча
-    // це `вага_кг × повторення` — канонічний підпис "кг×повт" (уніфіковано
-    // з `WorkoutSummaryView` / `RecentWorkoutsSection`).
-    expect(screen.getByText(flatMatch("1 000 кг×повт"))).toBeInTheDocument();
+    expect(screen.getByText("Тренування виконано")).toBeInTheDocument();
+    expect(screen.queryByText("Час")).not.toBeInTheDocument();
+    expect(screen.queryByText("Обʼєм")).not.toBeInTheDocument();
+    expect(screen.queryByText(/кг×повт/)).not.toBeInTheDocument();
+    expect(screen.queryByText(/Самопочуття:/)).not.toBeInTheDocument();
   });
 
   it("clicking 'Закрити' calls setFinishFlash(null)", () => {
@@ -402,32 +444,5 @@ describe("WorkoutFinishSheets — summary step expanded", () => {
       screen.getByRole("button", { name: /Додати білок після тренування/ }),
     );
     expect(openHubModule).toHaveBeenCalledWith("nutrition", "log");
-  });
-
-  it("shows savedWellbeing section when energy and mood were saved", () => {
-    renderSheets(
-      makeFlash({
-        step: "summary",
-        collapsed: false,
-        savedWellbeing: { energy: 3, mood: 4 },
-      }),
-    );
-    expect(screen.getByText(/Самопочуття:/)).toBeInTheDocument();
-    expect(screen.getByText(/енергія 3\/5/)).toBeInTheDocument();
-    expect(screen.getByText(/настрій 4\/5/)).toBeInTheDocument();
-  });
-
-  it("hides savedWellbeing section when not set", () => {
-    renderSheets(
-      makeFlash({ step: "summary", collapsed: false, savedWellbeing: null }),
-    );
-    expect(screen.queryByText(/Самопочуття:/)).not.toBeInTheDocument();
-  });
-
-  it("shows '—' for tonnage when tonnageKg is 0", () => {
-    renderSheets(
-      makeFlash({ step: "summary", collapsed: false, tonnageKg: 0 }),
-    );
-    expect(screen.getByText("—")).toBeInTheDocument();
   });
 });

@@ -86,15 +86,15 @@ describe("DashboardSection", () => {
     expect(screen.queryByText("Показувати підказки")).not.toBeInTheDocument();
   });
 
-  it("під віссю дії лишає два тумблери вигляду: «Порада й звіт тижня» і «Мотиваційний підпис»", () => {
+  it("під віссю дії лишає один тумблер вигляду: «Порада й тиждень»", () => {
     renderSection();
     openSection();
     expect(
-      screen.getByRole("switch", { name: "Порада й звіт тижня" }),
+      screen.getByRole("switch", { name: "Порада й тиждень" }),
     ).toBeInTheDocument();
     expect(
-      screen.getByRole("switch", { name: "Мотиваційний підпис" }),
-    ).toBeInTheDocument();
+      screen.queryByRole("switch", { name: "Лічильник записів" }),
+    ).toBeNull();
     expect(screen.queryByText("Чистий режим")).toBeNull();
     expect(screen.queryByText("Адаптивний порядок")).toBeNull();
     expect(screen.queryByText("Картка «Сьогодні»")).toBeNull();
@@ -106,10 +106,10 @@ describe("DashboardSection", () => {
     ).toBeNull();
   });
 
-  it("flips «Порада й звіт тижня» on click and persists it to HUB_PREFS", () => {
+  it("flips «Порада й тиждень» on click and persists it to HUB_PREFS", () => {
     renderSection();
     openSection();
-    const toggle = screen.getByRole("switch", { name: "Порада й звіт тижня" });
+    const toggle = screen.getByRole("switch", { name: "Порада й тиждень" });
     expect(toggle).toHaveAttribute("aria-checked", "true");
 
     fireEvent.click(toggle);

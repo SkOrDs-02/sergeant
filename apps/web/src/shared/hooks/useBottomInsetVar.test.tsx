@@ -1,7 +1,7 @@
 /** @vitest-environment jsdom */
 import { useRef } from "react";
 import { describe, it, expect, afterEach } from "vitest";
-import { render, cleanup } from "@testing-library/react";
+import { render, cleanup, fireEvent } from "@testing-library/react";
 import { useBottomInsetVar } from "./useBottomInsetVar";
 
 const VAR = "--sgt-test-inset";
@@ -69,5 +69,26 @@ describe("useBottomInsetVar", () => {
     window.innerHeight = 800;
     render(<Probe top={900} />);
     expect(document.documentElement.style.getPropertyValue(VAR)).toBe("0px");
+  });
+  it("оновлює inset після повернення навігації CSS-transition без resize", () => {
+    window.innerHeight = 800;
+    const view = render(<Probe top={800} />);
+    const el = view.container.firstElementChild as HTMLElement;
+    el.getBoundingClientRect = () => ({ top: 728 }) as DOMRect;
+    fireEvent.transitionEnd(el, { propertyName: "translate" });
+    expect(document.documentElement.style.getPropertyValue(VAR)).toBe("72px");
+  });
+
+  it("оновлює смугу після анімації предка списку джерел", () => {
+    window.innerHeight = 800;
+    const view = render(
+      <section>
+        <Probe top={600} />
+      </section>,
+    );
+    const list = view.container.querySelector("section div") as HTMLElement;
+    list.getBoundingClientRect = () => ({ top: 520 }) as DOMRect;
+    fireEvent.animationEnd(view.container.firstElementChild!);
+    expect(document.documentElement.style.getPropertyValue(VAR)).toBe("280px");
   });
 });

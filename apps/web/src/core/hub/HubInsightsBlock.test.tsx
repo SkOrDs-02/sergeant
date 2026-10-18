@@ -257,7 +257,7 @@ describe("HubInsightsBlock", () => {
         {...props({ coachLoading: true, coachInsightText: null })}
       />,
     );
-    const report = screen.getByRole("region", { name: "Тиждень у цифрах" });
+    const report = screen.getByRole("region", { name: "Витрати тижня" });
     expect(within(report).getAllByRole("listitem")).toHaveLength(2);
     const advice = screen.getByTestId("assistant-advice");
     expect(
@@ -287,10 +287,10 @@ describe("HubInsightsBlock", () => {
       weekReportState.lines = [];
     });
 
-    it("revealRef указує на регіон «Тиждень у цифрах», і він може прийняти фокус", () => {
+    it("revealRef указує на регіон «Витрати тижня», і він може прийняти фокус", () => {
       weekReportState.lines = ["За тиждень витрачено 900 ₴"];
       render(<HubInsightsBlock {...props()} />);
-      const report = screen.getByRole("region", { name: "Тиждень у цифрах" });
+      const report = screen.getByRole("region", { name: "Витрати тижня" });
 
       fireEvent.click(screen.getByText("reveal target"));
 
@@ -322,11 +322,9 @@ describe("HubInsightsBlock", () => {
       />,
     );
     expect(weekReportState.enabledArgs.at(-1)).toBe(false);
-    expect(
-      screen.queryByRole("region", { name: "Тиждень у цифрах" }),
-    ).toBeNull();
+    expect(screen.queryByRole("region", { name: "Витрати тижня" })).toBeNull();
     expect(screen.getByTestId("collapsed-subtitle")).toHaveTextContent(
-      "Готую пораду Сержанта…",
+      "Порада Сержанта на день",
     );
     weekReportState.lines = [];
   });

@@ -46,6 +46,11 @@ export interface FinykBackup {
   monthlyPlan?: Record<string, unknown>;
   txCategories?: Record<string, unknown>;
   txSplits?: Record<string, unknown>;
+  /**
+   * Нотатки до банківських операцій (`txId → текст`, лише LS пристрою).
+   * Необовʼязкове поле: старі файли його не мають.
+   */
+  txNotes?: Record<string, string>;
   monoDebtLinkedTxIds?: Record<string, unknown>;
   networthHistory?: unknown[];
   customCategories?: unknown[];
@@ -136,6 +141,16 @@ export function normalizeFinykBackup(parsed: unknown): FinykBackup {
   for (const field of OBJECT_FIELDS) {
     const v = needObj(obj[field], field);
     if (v) out[field] = v;
+  }
+
+  const notes = needObj(obj["txNotes"], "txNotes");
+  if (notes) {
+    for (const note of Object.values(notes)) {
+      if (typeof note !== "string") {
+        throw new Error("Некоректний запис у txNotes");
+      }
+    }
+    out.txNotes = notes as Record<string, string>;
   }
 
   if (obj["networthHistory"] !== undefined && obj["networthHistory"] !== null) {

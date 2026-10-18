@@ -9,6 +9,7 @@ import {
 import { createPortal } from "react-dom";
 import { z } from "zod";
 import { useBodyScrollLock } from "@shared/hooks/useBodyScrollLock";
+import { useRegisterDirtyState } from "@shared/hooks/useRegisterDirtyState";
 import { useDialogFocusTrap } from "@shared/hooks/useDialogFocusTrap";
 import { useKeyboardAwareOverlay } from "@shared/hooks/useKeyboardAwareOverlay";
 import { useVisualKeyboardInset } from "@sergeant/shared";
@@ -55,7 +56,7 @@ type InputDialogValues = z.infer<typeof inputDialogSchema>;
  * Prompt-style dialog with a single text field.
  *
  * Shell aligned with Sheet / Modal (P4 Phase 2):
- * - portaled to `document.body` (escapes `.page-enter` transform traps)
+ * - portaled to `document.body` (escapes `.` transform traps)
  * - `bg-black/40` scrim
  * - `useBodyScrollLock` (iOS-safe)
  *
@@ -97,6 +98,8 @@ export function InputDialog({
 
   useDialogFocusTrap(open, ref, { onEscape: onCancel, inertBackground: true });
   useBodyScrollLock(open);
+  // Поле вводу відкритого діалогу — незбережений ввід (data-45).
+  useRegisterDirtyState(open);
 
   // Діалог із єдиним полем вводу — клавіатура тут відкривається завжди
   // (див. автофокус нижче), тож обидві половини keyboard-геометрії
@@ -138,7 +141,7 @@ export function InputDialog({
         aria-label={cancelLabel}
         onClick={onCancel}
         onKeyDown={handleScrimKey}
-        className="absolute inset-0 bg-black/40 backdrop-blur-sm"
+        className="absolute inset-0 bg-black/40 "
       />
 
       <form
@@ -156,7 +159,7 @@ export function InputDialog({
           // висота обрізається, і без власного скролу низ форми (кнопки)
           // став би недосяжним на низьких екранах.
           "relative z-10 w-full max-w-sm mx-4 mb-4 sm:mb-0 overscroll-contain overflow-y-auto",
-          "bg-panel rounded-3xl shadow-float border border-line p-6",
+          "bg-panel rounded-panel shadow-float border border-line p-6",
           "motion-safe:animate-in motion-safe:slide-in-from-bottom-4 motion-safe:duration-base",
         )}
       >
@@ -184,7 +187,7 @@ export function InputDialog({
           placeholder={placeholder}
           disabled={isSubmitting}
           className={cn(
-            "w-full h-12 rounded-xl bg-bg border border-line px-4 text-style-body text-text placeholder:text-subtle mb-4",
+            "w-full h-12 rounded-lg bg-bg border border-line px-4 text-style-body text-text placeholder:text-subtle mb-4",
             "transition-colors",
             "focus:outline-none",
             "focus-visible:outline-none focus-visible:border-brand-400 focus-visible:ring-2 focus-visible:ring-focus/45",

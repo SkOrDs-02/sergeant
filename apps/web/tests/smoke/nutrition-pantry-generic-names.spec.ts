@@ -325,6 +325,13 @@ test("@critical pantry: списання з позиції на два варі�
     .first()
     .click({ timeout: 60_000 });
 
+  // Загальний вхід спершу питає спосіб (погоджений food-flow #1512).
+  // Комора належить пошуку; обираємо його перед перевіркою списання.
+  await page
+    .getByRole("navigation", { name: "Спосіб додавання їжі" })
+    .getByRole("button", { name: "Пошук продукту", exact: true })
+    .click();
+
   // Regression 2026-09-07: «пікер комори зник». Комора в add-meal flow
   // має бути видима одразу; додатковий клік по заголовку тут згорнув би її
   // назад і сховав чіпи за `inert`.
@@ -360,7 +367,7 @@ test("@critical pantry: списання з позиції на два варі�
   // `getByLabel`, а не `getByText`: заголовок аркуша дублюється у sr-only
   // live-region, і пошук за текстом дає strict-mode violation на двох
   // збігах.
-  const choice = page.getByLabel("З чого списати?");
+  const choice = page.getByLabel("Списати з покупки");
   await expect(choice).toBeVisible({ timeout: 60_000 });
   await expect(choice.getByText("Молоко Яготинське 2.6% 900г")).toBeVisible();
   await expect(choice.getByText("Молоко Галичина 1%")).toBeVisible();

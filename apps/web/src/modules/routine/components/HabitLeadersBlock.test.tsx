@@ -119,12 +119,12 @@ describe("HabitLeadersBlock", () => {
     expect(screen.queryByText("Найслабша")).not.toBeInTheDocument();
   });
 
-  it("renders the section heading 'Лідери та аутсайдери (30 днів)'", () => {
+  it("renders the section heading 'Найстабільніша й найслабша · 30 днів'", () => {
     const habits = [makeHabit("h1", "Медитація")];
     const completions = { h1: [] } as unknown as Completions;
     render(<HabitLeadersBlock habits={habits} completions={completions} />);
     expect(
-      screen.getByText("Лідери та аутсайдери (30 днів)"),
+      screen.getByText("Найстабільніша й найслабша · 30 днів"),
     ).toBeInTheDocument();
   });
 

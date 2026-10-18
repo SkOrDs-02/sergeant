@@ -12,19 +12,18 @@
  * Last validated: 2026-08-24
  */
 import { Icon } from "@shared/components/ui/Icon";
+import { messages } from "@shared/i18n/uk";
 
 const STEP_TITLES: Record<string, string> = {
-  source: "Звідки страва?",
-  photo: "Аналіз фото страви",
-  package: "Продукт з упаковки",
+  source: "Додати прийом їжі",
+  photo: "Фото страви",
+  package: "На 100 г",
 };
 
 const FALLBACK_TITLE = "Додати прийом їжі";
-const EDIT_TITLE = "Редагувати прийом";
 
 interface AddMealSheetTitleProps {
   step: string;
-  /** Редагування наявного прийому: заголовок не обіцяє «додати». */
   editing?: boolean;
   /** Стрілка «назад» показується лише там, де backtrack справді можливий. */
   canBacktrack: boolean;
@@ -43,13 +42,17 @@ export function AddMealSheetTitle({
         <button
           type="button"
           onClick={onBacktrack}
-          className="w-9 h-9 min-h-[44px] min-w-[44px] flex items-center justify-center rounded-full bg-panelHi text-muted hover:text-text transition-colors"
-          aria-label="Назад до вибору джерела"
+          className="w-9 h-9 min-h-[44px] min-w-[44px] flex items-center justify-center rounded-lg text-text hover:bg-line/40 focus-ring"
+          aria-label="Назад до вибору способу"
         >
           <Icon name="chevron-left" size="lg" />
         </button>
       )}
-      <span className="truncate">{editing ? EDIT_TITLE : (STEP_TITLES[step] ?? FALLBACK_TITLE)}</span>
+      <span className="truncate">
+        {editing
+          ? messages.nutrition.addMeal.editTitle
+          : (STEP_TITLES[step] ?? FALLBACK_TITLE)}
+      </span>
     </div>
   );
 }

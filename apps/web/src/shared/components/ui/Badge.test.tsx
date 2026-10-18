@@ -82,7 +82,7 @@ describe("Badge", () => {
     const { container } = render(<Badge dot>Live</Badge>);
     const dot = container.querySelector("span > span[aria-hidden]");
     expect(dot).not.toBeNull();
-    expect(dot!.className).toContain("rounded-full");
+    expect(dot!.className).toContain("rounded-mark");
   });
 
   it("does not render a dot when dot is omitted (default)", () => {

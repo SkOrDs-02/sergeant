@@ -37,7 +37,6 @@ const EAGER_SURFACES = [
   "../../core/hub/HubDashboard.tsx",
   "../../core/hub/now/NowPile.tsx",
   "../../core/hub/now/ClosedTodayPile.tsx",
-  "../components/layout/ModuleRail.tsx",
   "../../core/hub/settingsSectionsCatalog.ts",
   "../../core/security/AppLock.tsx",
   "../components/ui/Toast.tsx",

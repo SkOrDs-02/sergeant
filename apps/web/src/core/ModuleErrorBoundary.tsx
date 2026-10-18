@@ -56,7 +56,12 @@ export default class ModuleErrorBoundary extends Component<
   override componentDidCatch(error: Error) {
     // Авто-відновлення: одне охоронюване перезавантаження підтягує свіжий
     // HTML і хеші чанків. Коли guard відмовляє — render() дає ручну кнопку.
-    if (isChunkLoadError(error)) reloadOnceForChunkError();
+    // Гейт незбереженого вводу вимкнено (data-45): `getDerivedStateFromError`
+    // уже підмінив дерево модуля карткою помилки, форма зникла, і відмова не
+    // повернула б її, а лише лишила б ручне «Перезавантажити».
+    if (isChunkLoadError(error)) {
+      reloadOnceForChunkError(undefined, { guardUnsavedInput: false });
+    }
   }
 
   private handleReload = () => {
@@ -104,7 +109,7 @@ export default class ModuleErrorBoundary extends Component<
       const isChunkError = isChunkLoadError(this.state.error);
       return (
         <div className="min-h-dvh bg-bg flex flex-col items-center justify-center p-6 text-text safe-area-pt-pb">
-          <div className="w-12 h-12 rounded-2xl bg-danger/10 text-danger flex items-center justify-center mb-3">
+          <div className="w-12 h-12 rounded-lg bg-danger/10 text-danger flex items-center justify-center mb-3">
             <svg
               width="24"
               height="24"
@@ -131,7 +136,7 @@ export default class ModuleErrorBoundary extends Component<
           )}
           {showRequestId && (
             <div
-              className="mb-6 max-w-xs w-full bg-panel rounded-xl p-3 border border-line flex items-center gap-2"
+              className="mb-6 max-w-xs w-full bg-panel rounded-panel p-3 border border-line flex items-center gap-2"
               data-testid="module-error-request-id"
             >
               <span className="text-style-caption text-muted shrink-0">
@@ -157,7 +162,7 @@ export default class ModuleErrorBoundary extends Component<
               <button
                 type="button"
                 onClick={this.handleReload}
-                className="flex-1 min-h-[44px] min-w-[44px] px-5 py-2.5 rounded-2xl bg-primary text-bg text-style-label shadow-card hover:brightness-110 transition-[filter,box-shadow,opacity] focus-ring"
+                className="flex-1 min-h-[44px] min-w-[44px] px-5 py-2.5 rounded-lg bg-primary text-bg text-style-label shadow-card hover:brightness-110 transition-[filter,box-shadow,opacity] focus-ring"
               >
                 {messages.actions.reload}
               </button>
@@ -165,7 +170,7 @@ export default class ModuleErrorBoundary extends Component<
               <button
                 type="button"
                 onClick={this.handleRetry}
-                className="flex-1 px-5 py-2.5 rounded-2xl bg-primary text-bg text-style-label shadow-card hover:brightness-110 transition-[filter,box-shadow,opacity] focus:outline-none focus-visible:ring-2 focus-visible:ring-focus/45"
+                className="flex-1 px-5 py-2.5 rounded-lg bg-primary text-bg text-style-label shadow-card hover:brightness-110 transition-[filter,box-shadow,opacity] focus:outline-none focus-visible:ring-2 focus-visible:ring-focus/45"
                 aria-label={messages.actions.tryAgain}
               >
                 {messages.sync.retryCta}
@@ -174,7 +179,7 @@ export default class ModuleErrorBoundary extends Component<
             <button
               type="button"
               onClick={this.handleBack}
-              className="flex-1 px-5 py-2.5 rounded-2xl bg-panel border border-line text-text text-style-label shadow-card hover:shadow-float transition-shadow focus:outline-none focus-visible:ring-2 focus-visible:ring-focus/45"
+              className="flex-1 px-5 py-2.5 rounded-lg bg-panel border border-line text-text text-style-label shadow-card hover:shadow-float transition-shadow focus:outline-none focus-visible:ring-2 focus-visible:ring-focus/45"
             >
               {messages.errors.generic.backToModulePicker}
             </button>

@@ -22,7 +22,7 @@ import {
  * - `create`: інпут — назва нового власного місця.
  * - `rename`: інпут — нова назва місця з `targetId`.
  *
- * UX-roast 2026-05 §3.4: без `idle` кнопка «+ Нове місце» не давала
+ * UX-roast 2026-05 §3.4: без `idle` кнопка «Нове місце» не давала
  * видимої реакції — форма вже й так стояла в режимі створення.
  */
 export type PantryFormMode = "idle" | "create" | "rename";
@@ -132,27 +132,24 @@ export function PantryManagerSheet({
       panelClassName="nutrition-sheet"
       zIndex={100}
     >
-      <div className="rounded-2xl border border-line bg-bg overflow-hidden mb-4">
+      <div className="divide-y divide-line border-y border-line mb-4">
         {safePantries.map((p) => {
           const known = isKnownStoragePlace(p.id);
           const count = Array.isArray(p.items) ? p.items.length : 0;
           return (
-            <div
-              key={p.id}
-              className="flex items-center gap-2 px-2 border-b border-line last:border-0"
-            >
+            <div key={p.id} className="flex items-center gap-2">
               <button
                 type="button"
                 onClick={() => onBeginRename(p.id)}
                 disabled={busy}
-                className="flex-1 min-w-0 text-left px-2 py-3 min-h-[44px] rounded-xl hover:bg-panelHi transition-colors"
+                className="flex-1 min-w-0 text-left py-3 min-h-[44px] rounded-lg hover:bg-line/40 focus-ring transition-colors"
                 aria-label={`Перейменувати «${p.name || "Комора"}»`}
               >
                 <div className="flex items-center justify-between gap-3">
-                  <span className="text-style-label text-text truncate">
+                  <span className="text-style-body font-semibold text-text truncate">
                     {p.name || "Комора"}
                   </span>
-                  <span className="text-style-caption text-subtle shrink-0">
+                  <span className="text-style-body font-medium text-text tabular-nums shrink-0">
                     {count}
                   </span>
                 </div>
@@ -171,7 +168,7 @@ export function PantryManagerSheet({
                   disabled={busy}
                   aria-label={`Видалити місце «${p.name || "Комора"}»`}
                   title="Видалити"
-                  className="shrink-0 text-subtle hover:text-danger hover:bg-danger/10 transition-colors"
+                  className="shrink-0 text-subtle hover:text-danger-strong transition-colors"
                 >
                   <Icon name="trash" size="md" aria-hidden />
                 </Button>
@@ -184,24 +181,21 @@ export function PantryManagerSheet({
       <div className="mb-4">
         <Button
           type="button"
-          variant="nutrition"
+          variant="outline"
           aria-pressed={pantryForm.mode === "create"}
           className={cn(
-            // `variant="nutrition"` ships its own lime glow shadow —
-            // suppressed here so this sheet's nutrition buttons read as one
-            // visual language instead of one glowing and one not.
-            "w-full h-12 min-h-[44px] shadow-none hover:shadow-none dark:shadow-none",
-            pantryForm.mode === "create" && "ring-2 ring-nutrition/60",
+            "w-full h-12 min-h-[44px]",
+            pantryForm.mode === "create" && "bg-line/60",
           )}
           onClick={onBeginCreate}
         >
-          + Нове місце
+          Нове місце
         </Button>
       </div>
 
       {isFormVisible && (
-        <div className="rounded-2xl border border-nutrition/40 bg-panelHi p-4">
-          <SectionHeading as="div" size="xs" variant="nutrition">
+        <div className="border-t border-line pt-4">
+          <SectionHeading as="div" size="md">
             {formTitle}
           </SectionHeading>
           <p className="text-style-caption text-subtle leading-relaxed mt-1">
@@ -225,7 +219,7 @@ export function PantryManagerSheet({
                 }
               }}
               placeholder={
-                pantryForm.mode === "rename" ? "Нова назва" : "напр. Балкон"
+                pantryForm.mode === "rename" ? "Нова назва" : "Назва місця"
               }
               disabled={busy}
               aria-label={
@@ -233,7 +227,7 @@ export function PantryManagerSheet({
               }
             />
             {pantryForm.err ? (
-              <div className="text-style-caption text-danger-strong dark:text-danger mt-2">
+              <div className="text-style-caption text-danger-strong mt-2">
                 {pantryForm.err}
               </div>
             ) : null}
@@ -242,8 +236,7 @@ export function PantryManagerSheet({
             <Button
               type="button"
               variant="solid"
-              tone="nutrition"
-              className="h-12 min-h-[44px] shadow-none hover:shadow-none dark:shadow-none"
+              className="h-12 min-h-[44px]"
               onClick={submit}
             >
               {pantryForm.mode === "rename" ? "Зберегти" : "Створити"}
@@ -274,29 +267,31 @@ export function PantryManagerSheet({
         має побачити її, поки ще може передумати.
       */}
       {redistributePlan.length > 0 && (
-        <div className="mt-4 rounded-2xl border border-line bg-panel p-4">
-          <SectionHeading as="div" size="xs" variant="nutrition">
+        <div className="mt-4 border-t border-line pt-4">
+          <SectionHeading as="div" size="md">
             Розкласти по місцях
           </SectionHeading>
           <p className="text-style-body text-subtle leading-relaxed mt-1">
             {redistributePlan.length} позицій лежать не там, де їх очікує
             автовизначення. Нічого не переїде, поки не натиснеш.
           </p>
-          <ul className="mt-3 grid gap-1">
+          <ul className="mt-3 divide-y divide-line">
             {redistributePlan.slice(0, 12).map((move, i) => (
               <li
                 key={`${move.name}_${i}`}
-                className="flex items-baseline justify-between gap-2 text-style-caption"
+                className="flex items-baseline justify-between gap-2 py-1.5 text-style-caption"
               >
-                <span className="min-w-0 truncate text-text">{move.name}</span>
-                <span className="shrink-0 text-subtle">
+                <span className="min-w-0 truncate text-style-body font-semibold text-text">
+                  {move.name}
+                </span>
+                <span className="shrink-0 text-muted">
                   {placeName(safePantries, move.fromId)} →{" "}
                   {placeName(safePantries, move.toId)}
                 </span>
               </li>
             ))}
             {redistributePlan.length > 12 && (
-              <li className="text-style-caption text-subtle">
+              <li className="py-1.5 text-style-caption text-subtle">
                 …і ще {redistributePlan.length - 12}
               </li>
             )}

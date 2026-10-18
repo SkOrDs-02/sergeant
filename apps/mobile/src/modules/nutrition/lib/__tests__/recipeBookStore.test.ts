@@ -164,3 +164,36 @@ describe("recipeBookStore", () => {
     expect(mockTriggerDualWrite).not.toHaveBeenCalled();
   });
 });
+
+describe("recipe components and cookedWeightG", () => {
+  const per100 = { kcal: 100, protein_g: 5, fat_g: 2, carbs_g: 10 };
+  const components = [{ name: "Гречка", grams: 200, foodId: null, per100 }];
+
+  it("normalizeSavedRecipe keeps components and cookedWeightG", () => {
+    const r = normalizeSavedRecipe({
+      id: "c1",
+      title: "Каша",
+      components,
+      cookedWeightG: 450,
+    });
+    expect(r.components).toEqual(components);
+    expect(r.cookedWeightG).toBe(450);
+  });
+
+  it("invalid weight becomes null, weight without components is dropped", () => {
+    const bad = normalizeSavedRecipe({
+      id: "c2",
+      title: "x",
+      components,
+      cookedWeightG: -5,
+    });
+    expect(bad.cookedWeightG).toBeNull();
+    const bare = normalizeSavedRecipe({
+      id: "c3",
+      title: "x",
+      cookedWeightG: 300,
+    });
+    expect(bare).not.toHaveProperty("components");
+    expect(bare).not.toHaveProperty("cookedWeightG");
+  });
+});

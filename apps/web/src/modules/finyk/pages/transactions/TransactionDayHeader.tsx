@@ -57,20 +57,8 @@ export function TransactionDayHeader({
         // dropped: wide letter-spacing on mixed-case day names (not
         // uppercase) just looked sparse rather than deliberate.
         "text-style-label font-semibold text-text transition-colors",
-        // A solid tint on the header band — distinct from the flush
-        // bg-panel rows beneath it — reads as "this label owns these
-        // rows" instead of blending into the first row's meta line.
-        // Суцільний `bg-panelHi`, не `/45`: напівпрозора заливка змішується
-        // з тим, що під нею, і втрачає частину відмінності від рядків. Hover
-        // — `bg-line/40` поверх, бо власний `hover:bg-panelHi` на суцільній
-        // смузі нічого б не міняв (той самий патерн у чипах хаба).
-        "bg-panelHi hover:bg-line/40",
-        // Роздільник під смугою завжди, а не лише в розгорнутому дні (було
-        // `!collapsed && border-b border-line/60`): згорнутий день — це смуга
-        // без власної межі, у світлій темі `panel`/`panelHi` дають їй лише
-        // 1.09 проти столу (`flat` за метрикою `surface`). Той самий
-        // `bg-panelHi border-b border-line`, що в смугах `WorkoutHistoryList`
-        // і `Measurements`; у темній смуга й так `ok` (1.21), лінія її не псує.
+        // The day shell owns its surface: today is tinted, other days neutral.
+        "bg-transparent hover:bg-line/40",
         "border-b border-line",
       )}
     >
@@ -98,14 +86,7 @@ export function TransactionDayHeader({
         </span>
       </span>
       {showTotal && (
-        <span
-          className={cn(
-            "shrink-0 tabular-nums",
-            summary.total > 0
-              ? "text-success-strong dark:text-success"
-              : "text-text",
-          )}
-        >
+        <span className={cn("shrink-0 tabular-nums", "text-text")}>
           {/* `signed` дає `+` для додатних — знак несе сама сума, тож
               префікс у розмітці не дублюємо (анти-слоп П4). */}
           <MaskedAmount
@@ -113,12 +94,7 @@ export function TransactionDayHeader({
             interactive={false}
             label={messages.finyk.daySummaryLabel}
           >
-            <Money
-              amount={summary.total / 100}
-              signed
-              kopecks
-              tone={summary.total > 0 ? "inherit" : "muted"}
-            />
+            <Money amount={summary.total / 100} signed kopecks tone="inherit" />
           </MaskedAmount>
         </span>
       )}

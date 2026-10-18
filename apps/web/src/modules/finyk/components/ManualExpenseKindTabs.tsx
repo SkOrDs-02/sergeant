@@ -11,8 +11,7 @@
  * `onKindChange` у батька, не цей компонент.
  */
 import type { ManualExpenseKind } from "@sergeant/finyk-domain/domain/transactions";
-import { cn } from "@shared/lib/ui/cn";
-import { useTablistArrowKeys } from "@shared/hooks/useTablistArrowKeys";
+
 import { messages } from "@shared/i18n/uk";
 
 export interface ManualExpenseKindTabsProps {
@@ -23,51 +22,34 @@ export interface ManualExpenseKindTabsProps {
 
 const copy = messages.finyk.manualExpenseSheet;
 
-const tabClass = (active: boolean) =>
-  cn(
-    "touch-target rounded-md text-style-body font-medium transition-colors duration-fast",
-    active
-      ? "bg-finyk-strong text-white shadow-sm dark:bg-finyk dark:text-bg"
-      : "text-muted hover:text-text",
-  );
-
 export function ManualExpenseKindTabs({
   isIncome,
   isSubmitting,
   onKindChange,
 }: ManualExpenseKindTabsProps) {
-  // Роль `tablist` обіцяє стрілки; без хука обіцянка була порожня.
-  const onTabKeyDown = useTablistArrowKeys();
   return (
-    <div
-      role="tablist"
-      aria-label={copy.kindTablistLabel}
-      className="grid grid-cols-2 gap-1 p-1 rounded-xl bg-panelHi"
-    >
-      <button
-        type="button"
-        role="tab"
-        aria-selected={!isIncome}
-        tabIndex={!isIncome ? 0 : -1}
-        disabled={isSubmitting}
-        onKeyDown={onTabKeyDown}
-        onClick={() => onKindChange("expense")}
-        className={tabClass(!isIncome)}
-      >
-        {copy.kindExpense}
-      </button>
-      <button
-        type="button"
-        role="tab"
-        aria-selected={isIncome}
-        tabIndex={isIncome ? 0 : -1}
-        disabled={isSubmitting}
-        onKeyDown={onTabKeyDown}
-        onClick={() => onKindChange("income")}
-        className={tabClass(isIncome)}
-      >
-        {copy.kindIncome}
-      </button>
-    </div>
+    <fieldset disabled={isSubmitting} className="divide-y divide-line">
+      <legend className="sr-only">{copy.kindTablistLabel}</legend>
+      {(
+        [
+          ["expense", copy.kindExpense],
+          ["income", copy.kindIncome],
+        ] as const
+      ).map(([kind, label]) => (
+        <label
+          key={kind}
+          className="flex min-h-touch-target items-center justify-between gap-3 py-3 text-style-body text-text"
+        >
+          <span>{label}</span>
+          <input
+            type="radio"
+            name="manual-operation-kind"
+            value={kind}
+            checked={isIncome === (kind === "income")}
+            onChange={() => onKindChange(kind)}
+          />
+        </label>
+      ))}
+    </fieldset>
   );
 }

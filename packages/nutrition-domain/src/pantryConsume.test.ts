@@ -1,5 +1,7 @@
 import { describe, it, expect } from "vitest";
+import type { PantryItem } from "./pantryTextParser.js";
 import {
+  applyConsumeToPantryItem,
   gramsToUnitQty,
   densityFor,
   pieceWeightFor,
@@ -76,5 +78,63 @@ describe("densityFor / pieceWeightFor", () => {
   it("повертає default для невідомого продукту", () => {
     expect(densityFor("невідома рідина")).toBe(DEFAULT_DENSITY_G_PER_ML);
     expect(pieceWeightFor("невідомий продукт")).toBe(DEFAULT_PIECE_WEIGHT_G);
+  });
+});
+
+describe("applyConsumeToPantryItem: позиція без варіантів (data-41)", () => {
+  const apply = (item: PantryItem, grams: number) => {
+    const res = applyConsumeToPantryItem(item, grams);
+    if (!res) throw new Error("очікували списання");
+    return res;
+  };
+
+  it("Сир 0.5 кг: 5 порцій по 40 г зменшують залишок, а сума deducted = різниця", () => {
+    let item: PantryItem | null = {
+      name: "Сир",
+      qty: 0.5,
+      unit: "кг",
+      notes: null,
+    };
+    let sum = 0;
+    for (let i = 0; i < 5; i++) {
+      const before: number = item!.qty as number;
+      const res = apply(item!, 40);
+      item = res.item;
+      expect(item).not.toBeNull();
+      // Подія журналу дорівнює реальній зміні залишку (ADR-0077).
+      expect(res.deducted).toBeCloseTo(before - (item!.qty as number), 9);
+      expect(res.deducted).toBeGreaterThan(0);
+      sum += res.deducted;
+    }
+    expect(item!.qty).toBeCloseTo(0.3, 9);
+    expect(sum).toBeCloseTo(0.2, 9);
+  });
+
+  it("Молоко 1 л, 30 г: залишок зменшується, deducted = qty до - qty після", () => {
+    const res = apply({ name: "Молоко", qty: 1, unit: "л", notes: null }, 30);
+    expect(res.item!.qty).toBeLessThan(1);
+    expect(res.item!.qty).toBeCloseTo(0.971, 3);
+    expect(res.deducted).toBeCloseTo(1 - (res.item!.qty as number), 9);
+  });
+
+  it("500 г - 200 г = 300 (без змін)", () => {
+    const res = apply({ name: "Рис", qty: 500, unit: "г", notes: null }, 200);
+    expect(res.item!.qty).toBe(300);
+    expect(res.deducted).toBe(200);
+  });
+
+  it("вичерпання: item null, deducted = сира перевитрата", () => {
+    const res = apply({ name: "Рис", qty: 100, unit: "г", notes: null }, 250);
+    expect(res.item).toBeNull();
+    expect(res.deducted).toBe(250);
+  });
+
+  it("залишок, що округлюється в нуль, прибирає позицію з deducted = qty", () => {
+    const res = apply(
+      { name: "Сіль", qty: 0.001, unit: "кг", notes: null },
+      0.8,
+    );
+    expect(res.item).toBeNull();
+    expect(res.deducted).toBe(0.001);
   });
 });

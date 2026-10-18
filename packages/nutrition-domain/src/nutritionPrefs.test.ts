@@ -24,6 +24,8 @@ describe("defaultNutritionPrefs", () => {
       reminderEnabled: false,
       reminderHour: 12,
       waterGoalMl: 2000,
+      weeklyRateKg: 0.5,
+      goalWeightKg: null,
       adaptiveGoalEnabled: true,
       adaptiveGoalIntent: "maintenance",
       adaptiveGoalLastUpdatedAt: null,
@@ -355,5 +357,28 @@ describe("adaptiveGoalLastReason", () => {
       normalizeNutritionPrefs({ adaptiveGoalLastReason: reason })
         .adaptiveGoalLastReason,
     ).toEqual(reason);
+  });
+
+  it("weeklyRateKg поза allowlist-ом нормалізується в 0.5, дозволені лишаються", () => {
+    expect(normalizeNutritionPrefs({ weeklyRateKg: 1 }).weeklyRateKg).toBe(0.5);
+    expect(normalizeNutritionPrefs({ weeklyRateKg: "x" }).weeklyRateKg).toBe(
+      0.5,
+    );
+    expect(normalizeNutritionPrefs({ weeklyRateKg: 0.25 }).weeklyRateKg).toBe(
+      0.25,
+    );
+    expect(normalizeNutritionPrefs({ weeklyRateKg: 0.75 }).weeklyRateKg).toBe(
+      0.75,
+    );
+  });
+
+  it("goalWeightKg поза діапазоном ваги → null", () => {
+    expect(
+      normalizeNutritionPrefs({ goalWeightKg: 5 }).goalWeightKg,
+    ).toBeNull();
+    expect(
+      normalizeNutritionPrefs({ goalWeightKg: 500 }).goalWeightKg,
+    ).toBeNull();
+    expect(normalizeNutritionPrefs({ goalWeightKg: 75 }).goalWeightKg).toBe(75);
   });
 });

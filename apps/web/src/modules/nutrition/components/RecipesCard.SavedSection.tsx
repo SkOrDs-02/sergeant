@@ -12,8 +12,10 @@
  */
 import type { Dispatch, SetStateAction } from "react";
 import { Card } from "@shared/components/ui/Card";
+import { SectionHeading } from "@shared/components/ui/SectionHeading";
 import { Input } from "@shared/components/ui/Input";
 import { Button } from "@shared/components/ui/Button";
+import { cn } from "@shared/lib/ui/cn";
 import { scaleMacros, type SavedRecipe } from "../lib/recipeBook";
 import {
   buildRecipeLogEntry,
@@ -22,7 +24,6 @@ import {
   supportsGramsLogging,
   type RecipeLogMode,
 } from "../lib/recipeLogging";
-import { ChevronIcon } from "./RecipesCard.ChevronIcon";
 import { parsePortionFactor } from "./RecipesCard.helpers";
 
 /** «2» → «2», «1.5» → «1,5»: десяткова кома, як усюди в інтерфейсі. */
@@ -74,29 +75,33 @@ export function SavedSection({
   fmtMacro,
 }: SavedSectionProps) {
   return (
-    <Card className="p-4">
+    <Card as="section" padding="md">
       <button
         type="button"
         onClick={() => setSavedOpen((v) => !v)}
-        className="w-full flex items-center justify-between gap-2"
+        className="flex w-full items-baseline justify-between gap-2 rounded-lg text-left focus-ring"
         aria-expanded={savedOpen}
       >
-        <div className="flex items-center gap-2">
-          <span className="text-style-label text-text">Мої рецепти</span>
+        <span className="flex items-baseline gap-2">
+          <SectionHeading as="span" size="lg">
+            Мої рецепти
+          </SectionHeading>
           {!savedBusy && saved.length > 0 && (
-            <span className="px-2 py-0.5 rounded-full text-style-caption bg-nutrition/15 text-nutrition-strong dark:text-nutrition">
+            <span className="text-style-label text-subtle tabular-nums">
               {saved.length}
             </span>
           )}
           {savedBusy && (
             <span className="text-style-caption text-muted">…</span>
           )}
-        </div>
-        <ChevronIcon open={savedOpen} />
+        </span>
+        <span aria-hidden className="text-style-label font-semibold text-muted">
+          {savedOpen ? "Сховати" : "Показати"}
+        </span>
       </button>
 
       {savedOpen && (
-        <div className="mt-3">
+        <div className="mt-4">
           <Button
             type="button"
             variant="outline"
@@ -122,7 +127,7 @@ export function SavedSection({
               &quot;Зберегти&quot;.
             </div>
           ) : (
-            <div className="grid gap-2">
+            <div className="divide-y divide-line border-y border-line">
               {saved.slice(0, 8).map((r) => {
                 const key = r.id;
                 const factorRaw = portionById[key] ?? "1";
@@ -147,22 +152,18 @@ export function SavedSection({
                   : null;
                 const isOpen = openSavedId === r.id;
                 return (
-                  <div
-                    key={r.id}
-                    className="rounded-2xl border border-line bg-panel p-3 overflow-hidden"
-                  >
+                  <div key={r.id} className="overflow-hidden py-3">
                     <div className="flex flex-wrap items-start justify-between gap-2">
                       <button
                         type="button"
                         onClick={() =>
                           setOpenSavedId((id) => (id === r.id ? null : r.id))
                         }
-                        className="min-w-0 flex-1 basis-full sm:basis-auto text-left flex items-start gap-2"
+                        className="flex min-w-0 flex-1 basis-full items-start justify-between gap-2 rounded-lg text-left focus-ring sm:basis-auto"
                         aria-expanded={isOpen}
                       >
-                        <ChevronIcon open={isOpen} />
                         <span className="min-w-0">
-                          <span className="text-style-label block text-text wrap-break-word">
+                          <span className="block text-style-body font-semibold text-text wrap-break-word">
                             {r.title}
                           </span>
                           <span className="block text-style-caption text-muted mt-0.5">
@@ -172,6 +173,12 @@ export function SavedSection({
                               ? ` · ≈ ${fmtMacro(r.macros.kcal)} ккал / порція`
                               : ""}
                           </span>
+                        </span>
+                        <span
+                          aria-hidden
+                          className="shrink-0 text-style-label font-semibold text-muted"
+                        >
+                          {isOpen ? "Сховати" : "Показати"}
                         </span>
                       </button>
                       <div className="flex gap-2 shrink-0 flex-wrap">
@@ -184,7 +191,7 @@ export function SavedSection({
                           }
                           onClick={() => onAddToLog(r, key)}
                         >
-                          + У журнал
+                          У журнал
                           {!gramsMode &&
                             factor !== 1 &&
                             ` ×${formatFactor(factor)}`}
@@ -201,9 +208,9 @@ export function SavedSection({
                         )}
                         <Button
                           type="button"
-                          variant="soft"
-                          tone="danger"
+                          variant="outline"
                           size="sm"
+                          className="text-danger-strong hover:text-danger-strong"
                           onClick={() => onDeleteClick(r)}
                         >
                           Видалити
@@ -222,11 +229,11 @@ export function SavedSection({
                               key={m}
                               type="button"
                               size="sm"
-                              variant={
-                                (gramsMode ? "grams" : "portions") === m
-                                  ? "soft"
-                                  : "outline"
-                              }
+                              variant="outline"
+                              className={cn(
+                                (gramsMode ? "grams" : "portions") === m &&
+                                  "bg-line/60",
+                              )}
                               aria-pressed={
                                 (gramsMode ? "grams" : "portions") === m
                               }
@@ -297,7 +304,7 @@ export function SavedSection({
                     </div>
 
                     {isOpen && (
-                      <div className="mt-3 pt-3 border-t border-line/40 space-y-3">
+                      <div className="mt-3 pt-3 border-t border-line space-y-3">
                         {Array.isArray(r.ingredients) &&
                           r.ingredients.length > 0 && (
                             <div className="text-style-body text-text wrap-break-word">

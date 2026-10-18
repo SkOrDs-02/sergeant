@@ -370,5 +370,36 @@ describe("useTransactionSelection", () => {
       act(() => result.current.stableSwipeDeleteManual(tx));
       expect(removeManualExpense).toHaveBeenCalledWith("m123");
     });
+
+    it("undo віддає у addManualExpense привʼязки, зняті removeManualExpense (data-24)", () => {
+      const links = [
+        {
+          type: "debt" as const,
+          itemId: "d1",
+          role: "payment" as const,
+          amount: 400,
+        },
+      ];
+      const removeManualExpense = vi.fn().mockReturnValue(links);
+      const addManualExpense = vi.fn();
+      const toast = mkToast();
+      const { result } = renderHook(() =>
+        useTransactionSelection(
+          buildParams({ removeManualExpense, addManualExpense, toast }),
+        ),
+      );
+      const tx = { ...mkTx("tx1", -100), manualId: "m123" } as Transaction & {
+        manualId: string;
+      };
+      act(() => result.current.stableSwipeDeleteManual(tx));
+
+      // `showUndoToast` кладе колбек у 4-й аргумент `toast.show` (`onClick`).
+      const show = toast.show as unknown as ReturnType<typeof vi.fn>;
+      const action = show.mock.calls[0]?.[3] as { onClick: () => void };
+      action.onClick();
+
+      expect(addManualExpense).toHaveBeenCalledTimes(1);
+      expect(addManualExpense.mock.calls[0]?.[1]).toEqual(links);
+    });
   });
 });

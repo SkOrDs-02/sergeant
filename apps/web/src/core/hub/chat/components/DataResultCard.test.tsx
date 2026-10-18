@@ -90,7 +90,7 @@ describe("DataResultCard (talk-to-your-data PR4)", () => {
     expect(items[0]).toHaveTextContent("m_1");
   });
 
-  it("використовує warning-стиль і alert-іконку для failed", () => {
+  it("показує warning-межу й факт помилки для failed", () => {
     render(
       <DataResultCard
         toolName="query_habits"

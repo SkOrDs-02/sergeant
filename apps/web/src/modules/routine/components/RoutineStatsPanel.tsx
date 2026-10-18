@@ -3,7 +3,7 @@ import { Measure } from "@shared/components/ui/Measure";
 import { SectionHeading } from "@shared/components/ui/SectionHeading";
 import { Card } from "@shared/components/ui/Card";
 import { Segmented } from "@shared/components/ui/Segmented";
-import { Stat } from "@shared/components/ui/Stat";
+import { messages } from "@shared/i18n/uk";
 import { HabitHeatmap } from "./HabitHeatmap";
 import { HabitRangeGrid } from "./HabitRangeGrid";
 import { HabitLeadersBlock } from "./HabitLeadersBlock";
@@ -87,7 +87,7 @@ export function RoutineStatsPanel({
       id="routine-panel-stats"
       aria-labelledby="routine-tab-stats"
       hidden={hidden}
-      className="space-y-4"
+      className="space-y-7"
     >
       {/* AI-DANGER: без `overflow-x-auto`, як і ряд чипів у «Огляді» — там
           скролер створював композиторний шар, який iOS малював зі зсувом
@@ -104,9 +104,14 @@ export function RoutineStatsPanel({
         onChange={setRangeId}
       />
 
-      <Card as="section" radius="lg" aria-label="Зведена статистика">
-        <SectionHeading as="p" size="xs" className="mb-3" variant="routine">
-          Зведення · {range.hint}
+      <Card
+        as="section"
+        prominence={summary.rate.scheduled > 0 ? "hero" : "panel"}
+        tone={summary.rate.scheduled > 0 ? "routine" : undefined}
+        aria-label="Зведена статистика"
+      >
+        <SectionHeading as="p" size="lg" className="mb-3">
+          Виконання · {range.hint}
         </SectionHeading>
         {/* F1 (анти-слоп аудит 2026-09-01): три однакові плитки «число +
             підпис» — це та сама stat-граматика, що й тайли хабу й
@@ -119,22 +124,22 @@ export function RoutineStatsPanel({
             2026-08-17) — боксів нема, нема й проблеми. */}
         {/* Відсотка від нуля не буває: коли в зрізі нічого не заплановано,
             «0%» при «0/0» читався б як провал. */}
-        <Stat
-          label="Виконано"
-          value={
-            summary.rate.scheduled > 0 ? (
-              <Measure value={Math.round(summary.rate.rate * 100)} unit="%" />
-            ) : (
-              "–"
-            )
-          }
-          sublabel={
-            summary.rate.scheduled > 0
-              ? `${summary.rate.completed}/${summary.rate.scheduled}`
-              : undefined
-          }
-          size="md"
-        />
+        <p className="text-style-overline text-muted">
+          {messages.routine.completionHeading}
+        </p>
+        <p className="mt-2 text-style-display text-text tabular-nums">
+          {summary.rate.scheduled > 0 ? (
+            <Measure value={Math.round(summary.rate.rate * 100)} unit="%" />
+          ) : (
+            "–"
+          )}
+        </p>
+        {summary.rate.scheduled > 0 && (
+          <p className="mt-2 text-style-label text-muted tabular-nums">
+            {summary.rate.completed}/{summary.rate.scheduled}
+          </p>
+        )}
+
         {/* Обидва числа — крос-звичкові МАКСИМУМИ, не «тримаю все N днів»:
             `currentStreak` приходить як `streakMax` (`flexibleMaxActiveStreak`
             по всіх звичках), `maxAllTime` — `flexibleMaxStreakAllTimeAcrossHabits`.

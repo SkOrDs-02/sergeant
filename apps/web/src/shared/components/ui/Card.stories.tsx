@@ -55,7 +55,7 @@ export const Default: Story = {
 
 export const Elevated: Story = {
   render: () => (
-    <Card prominence="elevated">
+    <Card prominence="panel">
       <SampleContent />
     </Card>
   ),
@@ -63,7 +63,7 @@ export const Elevated: Story = {
 
 export const Interactive: Story = {
   render: () => (
-    <Card prominence="interactive">
+    <Card prominence="panel">
       <SampleContent />
     </Card>
   ),
@@ -73,16 +73,16 @@ export const Interactive: Story = {
 export const ModuleHeroes: Story = {
   render: () => (
     <div className="grid gap-4 sm:grid-cols-2">
-      <Card module="finyk" prominence="hero" radius="xl">
+      <Card tone="finyk" prominence="hero">
         <SampleContent hero />
       </Card>
-      <Card module="fizruk" prominence="hero" radius="xl">
+      <Card tone="fizruk" prominence="hero">
         <SampleContent hero />
       </Card>
-      <Card module="routine" prominence="hero" radius="xl">
+      <Card tone="routine" prominence="hero">
         <SampleContent hero />
       </Card>
-      <Card module="nutrition" prominence="hero" radius="xl">
+      <Card tone="nutrition" prominence="hero">
         <SampleContent hero />
       </Card>
     </div>
@@ -93,16 +93,16 @@ export const ModuleHeroes: Story = {
 export const ModuleSoftSurfaces: Story = {
   render: () => (
     <div className="grid gap-4 sm:grid-cols-2">
-      <Card module="finyk" prominence="soft">
+      <Card tone="finyk" prominence="hero">
         <SampleContent />
       </Card>
-      <Card module="fizruk" prominence="soft">
+      <Card tone="fizruk" prominence="hero">
         <SampleContent />
       </Card>
-      <Card module="routine" prominence="soft">
+      <Card tone="routine" prominence="hero">
         <SampleContent />
       </Card>
-      <Card module="nutrition" prominence="soft">
+      <Card tone="nutrition" prominence="hero">
         <SampleContent />
       </Card>
     </div>

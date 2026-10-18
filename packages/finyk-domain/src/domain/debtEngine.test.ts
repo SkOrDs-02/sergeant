@@ -242,3 +242,59 @@ describe("debtEngine — ролі привʼязок", () => {
     );
   });
 });
+
+describe("debtEngine — пара ключів ручного запису (data-24)", () => {
+  const link = { role: "payment", amount: 400 } as const;
+
+  it("getDebtPaid рахує пару X / manual_X один раз", () => {
+    const debt = {
+      amount: 5000,
+      linkedTxIds: ["X", "manual_X"],
+      txLinks: { X: link, manual_X: link },
+    } as never;
+    expect(getDebtPaid(debt)).toBe(400);
+  });
+
+  it("порядок ключів не має значення, перемагає канонічний manual_X", () => {
+    const debt = {
+      amount: 5000,
+      linkedTxIds: ["manual_X", "X"],
+      txLinks: {
+        manual_X: { role: "payment", amount: 400 },
+        X: { role: "payment", amount: 999 },
+      },
+    } as never;
+    expect(getDebtPaid(debt)).toBe(400);
+    const reversed = {
+      amount: 5000,
+      linkedTxIds: ["X", "manual_X"],
+      txLinks: {
+        manual_X: { role: "payment", amount: 400 },
+        X: { role: "payment", amount: 999 },
+      },
+    } as never;
+    expect(getDebtPaid(reversed)).toBe(400);
+  });
+
+  it("різні операції не зливаються; привʼязка поза списком транзакцій лишається (знімок)", () => {
+    const debt = {
+      amount: 5000,
+      linkedTxIds: ["X", "manual_Y", "bank1"],
+      txLinks: {
+        X: link,
+        manual_Y: link,
+        bank1: { role: "payment", amount: 100 },
+      },
+    } as never;
+    expect(getDebtPaid(debt, [])).toBe(900);
+  });
+
+  it("getReceivablePaid теж дедуплікує пару", () => {
+    const recv = {
+      amount: 5000,
+      linkedTxIds: ["X", "manual_X"],
+      txLinks: { X: link, manual_X: link },
+    } as never;
+    expect(getReceivablePaid(recv)).toBe(400);
+  });
+});

@@ -27,15 +27,15 @@ export function PantryPortionField({
   const coarsePointer = useCoarsePointer();
   const wheel = useWheelGrams(value);
   return (
-    <div className="mb-4 rounded-2xl border border-line bg-panelHi p-3">
+    <div className="mb-4 border-y border-line py-3">
       <label
         id="pantry-portion-label"
-        className="block text-style-label text-text"
+        className="block text-style-body font-semibold text-text"
         htmlFor="pantry-portion"
       >
         {messages.nutrition.pantryPortion.label}
       </label>
-      <p className="mt-1 text-style-caption text-subtle">
+      <p className="mt-0.5 text-style-label text-muted">
         {messages.nutrition.pantryPortion.description}
       </p>
       {coarsePointer ? (

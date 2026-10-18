@@ -41,6 +41,7 @@ import type {
   Debt,
   LinkedTxRole,
 } from "@sergeant/finyk-domain/domain/debtEngine";
+import { findLinkedKey } from "@sergeant/finyk-domain/domain/debtLinkKeys";
 import type { TxSplit } from "@sergeant/finyk-domain/domain/types";
 import { formatMoney } from "@sergeant/shared";
 import { messages } from "@shared/i18n/uk";
@@ -108,9 +109,18 @@ export function useDebtPaymentSplitSync(
 
       if (decision.kind === "none") return;
 
+      // Ключ, під яким привʼязка реально лежить у пасиві: для ручного запису
+      // це `manual_<id>` (або спадкове сире `<id>`), а `txId` тут — сирий id
+      // з редактора спліту (`data-24`).
+      const linkedKey =
+        findLinkedKey(
+          manualDebts.find((d) => d.id === decision.debtId)?.linkedTxIds,
+          txId,
+        ) ?? txId;
+
       if (decision.kind === "confirm-unlink") {
         setPendingUnlink({
-          txId,
+          txId: linkedKey,
           debtId: decision.debtId,
           debtName: decision.debtName,
           previousAmountUAH: decision.previousAmountUAH,
@@ -120,7 +130,7 @@ export function useDebtPaymentSplitSync(
 
       setLinkedTxRole(
         decision.debtId,
-        txId,
+        linkedKey,
         "debt",
         "payment",
         decision.nextAmountUAH,

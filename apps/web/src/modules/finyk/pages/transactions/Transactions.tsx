@@ -1,3 +1,4 @@
+import { useKyivDayNow } from "@shared/hooks/useKyivDayNow";
 import { useCallback, useMemo, useState } from "react";
 import { useToast } from "@shared/hooks/useToast";
 import { requestCloudPull } from "@shared/lib/modules/cloudPullRequest";
@@ -48,6 +49,7 @@ import type {
   LinkedTxRole,
 } from "@sergeant/finyk-domain/domain/debtEngine";
 import type { ManualExpense } from "@sergeant/finyk-domain/domain/personalization";
+import type { ManualExpenseLinkSnapshot } from "../../hooks/manualExpenseDebtLinks";
 import type { Category } from "@sergeant/finyk-domain/domain/types";
 
 /**
@@ -173,8 +175,11 @@ export interface TransactionsStorageSlice {
   txNotes: Record<string, string | undefined>;
   setTxNote: (id: string, note: string | null) => void;
   manualExpenses: ManualExpense[] | undefined;
-  addManualExpense: (expense: Omit<ManualExpense, "id">) => void;
-  removeManualExpense: (id: string) => void;
+  addManualExpense: (
+    expense: Omit<ManualExpense, "id">,
+    restoredLinks?: readonly ManualExpenseLinkSnapshot[],
+  ) => void;
+  removeManualExpense: (id: string) => ManualExpenseLinkSnapshot[] | void;
 }
 
 export interface TransactionsProps {
@@ -324,7 +329,9 @@ export function Transactions({
     [jarIdsKey],
   );
 
+  const kyivNow = useKyivDayNow();
   const transferSuggestions = useMemo(() => {
+    void kyivNow;
     // До прогріву вже підтверджені перекази ще без категорії й поверталися
     // б у чергу пропозицій цілою пачкою.
     if (!storageReady) return [];
@@ -346,6 +353,7 @@ export function Transactions({
     jarAccountIds,
     rejectedTransferPairs,
     snoozedTransferPairs,
+    kyivNow,
   ]);
   const visibleTransferSuggestion = transferSuggestions[0] ?? null;
   const visibleTransferKey = visibleTransferSuggestion
@@ -542,8 +550,8 @@ export function Transactions({
               lastUpdated={lastUpdated}
             />
             {isDayFilterValid && (
-              <div className="flex items-center justify-between gap-3 rounded-xl border border-finyk/25 bg-finyk-soft px-3 py-2">
-                <span className="text-style-caption text-finyk-strong dark:text-finyk">
+              <div className="flex items-center justify-between gap-3 rounded-panel border border-line bg-panel px-3 py-2">
+                <span className="text-style-caption text-text">
                   {dayFilterLabel}
                 </span>
                 {onClearDayFilter && (

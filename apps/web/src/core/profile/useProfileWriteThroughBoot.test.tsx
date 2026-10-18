@@ -33,6 +33,11 @@ import { beforeEach, describe, expect, it } from "vitest";
 import { useState, type ReactNode } from "react";
 import { hubKeys } from "@shared/lib/api/queryKeys";
 import { writeMemoryEntries } from "./memoryBank";
+import {
+  readBiometricsOwnerId,
+  writeBiometrics,
+  BIOMETRICS_DEFAULT,
+} from "./biometrics";
 import { useProfileWriteThroughBoot } from "./useProfileWriteThroughBoot";
 
 // `useState`'s initializer runs exactly once per mounted component
@@ -67,6 +72,15 @@ describe("useProfileWriteThroughBoot", () => {
     await new Promise((r) => setTimeout(r, 0));
     expect(mockGetProfile).not.toHaveBeenCalled();
     expect(mockReconcile).not.toHaveBeenCalled();
+  });
+
+  it("штампує анонімну біометрику маркером local-anon, а не null", async () => {
+    mockUseAuth.mockReturnValue({ user: null });
+    renderHook(() => useProfileWriteThroughBoot(), { wrapper: Wrapper });
+    await waitFor(() => {
+      writeBiometrics({ ...BIOMETRICS_DEFAULT, heightCm: 180 });
+      expect(readBiometricsOwnerId()).toBe("local-anon");
+    });
   });
 
   it("fetches and reconciles once when authenticated, passing the userId through", async () => {

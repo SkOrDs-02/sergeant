@@ -1,6 +1,6 @@
 import { memo, useId } from "react";
 import { cn } from "@shared/lib/ui/cn";
-import { ROUTINE_THEME as C, WEEKDAY_LABELS } from "../../lib/routineConstants";
+import { WEEKDAY_LABELS } from "../../lib/routineConstants";
 import { messages } from "@shared/i18n/uk";
 
 export interface WeekdayPickerProps {
@@ -20,7 +20,7 @@ export const WeekdayPicker = memo(function WeekdayPicker({
         {messages.routine.weekdays}
       </p>
       <div
-        className="flex flex-wrap gap-2"
+        className="divide-y divide-line"
         role="group"
         aria-labelledby={labelId}
       >
@@ -42,11 +42,12 @@ export const WeekdayPicker = memo(function WeekdayPicker({
                 onChange(cur);
               }}
               className={cn(
-                "min-h-[44px] min-w-[44px] px-3 rounded-xl text-style-caption border transition-colors",
-                on ? C.chipOn : C.chipOff,
+                "flex min-h-11 w-full items-center justify-between py-2 text-left text-style-label-lg focus-ring",
+                on ? "font-semibold text-text" : "text-muted",
               )}
             >
-              {label}
+              <span>{label}</span>
+              <span aria-hidden>{on ? "✓" : ""}</span>
             </button>
           );
         })}

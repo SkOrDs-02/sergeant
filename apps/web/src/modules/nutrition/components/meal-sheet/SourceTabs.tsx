@@ -1,77 +1,77 @@
 /**
- * SourceTabs — крок «звідки страва» як смужка вкладок.
- *
- * AI-CONTEXT: доти цей крок був вертикальним стосом усіх джерел одразу
- * (шаблони → нещодавні → комора → пошук → штрихкод+фото → два ручні
- * режими). Кожне джерело було видно завжди, тож екран ріс, а вибір
- * читався як «прокрути й знайди своє». Вкладки роблять вибір джерела
- * одним рухом і тримають висоту кроку сталою.
- *
- * Порядок вкладок — за частотою, а не за складністю: більшість прийомів
- * додають пошуком або повтором, тож «Пошук» стоїть першим і є типовою
- * вкладкою. «Своє» останнє — це шлях, коли решта не спрацювала.
- *
+ * Last validated: 2026-10-13
  * Status: Active
- * Last validated: 2026-08-22
+ * Вибір способу — навігаційні дії; після вибору лишається один рядок.
  */
-import { Icon } from "@shared/components/ui/Icon";
-import { cn } from "@shared/lib/ui/cn";
-import { useTablistArrowKeys } from "@shared/hooks/useTablistArrowKeys";
+import { useEffect, useRef } from "react";
+import { messages } from "@shared/i18n/uk";
+import { Button } from "@shared/components/ui/Button";
 
 export type SourceTabId = "search" | "scan" | "photo" | "manual";
-
-const TABS: ReadonlyArray<{
-  id: SourceTabId;
-  label: string;
-  icon: "search" | "barcode" | "camera" | "edit";
-}> = [
-  { id: "search", label: "Пошук", icon: "search" },
-  { id: "scan", label: "Скан", icon: "barcode" },
-  { id: "photo", label: "Фото", icon: "camera" },
-  { id: "manual", label: "Своє", icon: "edit" },
-];
+export const SOURCE_LABELS: Record<SourceTabId, string> = {
+  search: messages.nutrition.addSources.search.label,
+  scan: messages.nutrition.addSources.scan.label,
+  photo: messages.nutrition.addSources.photo.label,
+  manual: messages.nutrition.addSources.manual.label,
+};
 
 interface SourceTabsProps {
   active: SourceTabId;
+  expanded?: boolean;
   onChange: (id: SourceTabId) => void;
+  onExpand?: () => void;
+  sources?: readonly SourceTabId[] | undefined;
 }
 
-export function SourceTabs({ active, onChange }: SourceTabsProps) {
-  // Роль `tablist` обіцяє стрілки; без хука обіцянка була порожня.
-  const onTabKeyDown = useTablistArrowKeys();
+export function SourceTabs({
+  active,
+  expanded = true,
+  onChange,
+  onExpand,
+  sources = Object.keys(SOURCE_LABELS) as SourceTabId[],
+}: SourceTabsProps) {
+  const navRef = useRef<HTMLElement>(null);
+  const changeRef = useRef<HTMLButtonElement>(null);
+  const previousExpanded = useRef(expanded);
+  useEffect(() => {
+    if (previousExpanded.current === expanded) return;
+    previousExpanded.current = expanded;
+    if (expanded)
+      navRef.current?.querySelector<HTMLButtonElement>("button")?.focus();
+    else changeRef.current?.focus();
+  }, [expanded]);
+  if (!expanded)
+    return (
+      <div className="mb-4 flex min-h-[44px] items-center justify-between gap-3 border-b border-line pb-2">
+        <span className="text-style-label text-text">
+          {SOURCE_LABELS[active]}
+        </span>
+        <Button
+          variant="ghost"
+          ref={changeRef}
+          onClick={onExpand}
+          aria-label="Змінити спосіб додавання"
+        >
+          Змінити
+        </Button>
+      </div>
+    );
   return (
-    <div
-      role="tablist"
-      aria-label="Звідки страва"
-      className="mb-4 grid grid-cols-4 gap-1 rounded-2xl bg-panelHi p-1"
+    <nav
+      ref={navRef}
+      aria-label="Спосіб додавання їжі"
+      className="mb-4 flex flex-col divide-y divide-line border-y border-line"
     >
-      {TABS.map((t) => {
-        const isActive = t.id === active;
-        return (
-          <button
-            key={t.id}
-            role="tab"
-            type="button"
-            id={`source-tab-${t.id}`}
-            aria-selected={isActive}
-            aria-controls={`source-panel-${t.id}`}
-            tabIndex={isActive ? 0 : -1}
-            onKeyDown={onTabKeyDown}
-            onClick={() => onChange(t.id)}
-            className={cn(
-              "min-h-[44px] rounded-xl px-2 py-2 flex flex-col items-center justify-center gap-0.5",
-              "transition-[background-color,color] focus-visible:outline-none",
-              "focus-visible:ring-2 focus-visible:ring-nutrition/60",
-              isActive
-                ? "bg-nutrition-strong text-white dark:bg-nutrition dark:text-bg"
-                : "text-muted hover:text-text",
-            )}
-          >
-            <Icon name={t.icon} size="sm" aria-hidden />
-            <span className="text-style-caption font-semibold">{t.label}</span>
-          </button>
-        );
-      })}
-    </div>
+      {sources.map((id) => (
+        <button
+          key={id}
+          type="button"
+          onClick={() => onChange(id)}
+          className="flex min-h-[44px] items-center justify-between gap-3 py-2 text-left text-style-body text-text focus-ring"
+        >
+          {SOURCE_LABELS[id]}
+        </button>
+      ))}
+    </nav>
   );
 }

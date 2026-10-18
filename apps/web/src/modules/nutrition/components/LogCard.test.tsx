@@ -130,7 +130,7 @@ describe("LogCard", () => {
   it("invokes onAddMeal", () => {
     const onAddMeal = vi.fn();
     renderLog({ onAddMeal });
-    fireEvent.click(screen.getByText("+ Додати прийом їжі"));
+    fireEvent.click(screen.getByText("Додати прийом їжі"));
     expect(onAddMeal).toHaveBeenCalled();
   });
 

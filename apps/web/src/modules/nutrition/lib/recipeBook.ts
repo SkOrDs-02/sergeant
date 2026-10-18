@@ -13,7 +13,7 @@ import type { RecipeComponent } from "@sergeant/nutrition-domain";
 import {
   normalizeCookedWeightG,
   normalizeRecipeComponents,
-} from "./recipeComponentsNormalize";
+} from "@sergeant/nutrition-domain";
 import {
   removeNutritionRecipe,
   upsertNutritionRecipe,

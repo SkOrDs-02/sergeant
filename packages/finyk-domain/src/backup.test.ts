@@ -130,3 +130,31 @@ describe("excludedStatTxIds round-trip", () => {
     expect(out.excludedStatTxIds).toEqual(["tx-1", "tx-2"]);
   });
 });
+
+describe("normalizeFinykBackup — txNotes (аудит 2026-10-01, data-27)", () => {
+  it("мапить txNotes на LS-ключ finyk_tx_notes", () => {
+    expect(FINYK_BACKUP_STORAGE_KEYS.txNotes).toBe("finyk_tx_notes");
+  });
+
+  it("пропускає мапу string→string", () => {
+    const out = normalizeFinykBackup({
+      version: FINYK_BACKUP_VERSION,
+      txNotes: { "tx-1": "оренда" },
+    });
+    expect(out.txNotes).toEqual({ "tx-1": "оренда" });
+  });
+
+  it("старий бекап без txNotes проходить", () => {
+    const out = normalizeFinykBackup({ version: 2, budgets: [] });
+    expect(out.txNotes).toBeUndefined();
+  });
+
+  it("відхиляє масив і нерядкові значення", () => {
+    expect(() => normalizeFinykBackup({ version: 3, txNotes: [] })).toThrow(
+      /обʼєктом/,
+    );
+    expect(() =>
+      normalizeFinykBackup({ version: 3, txNotes: { a: 5 } }),
+    ).toThrow(/txNotes/);
+  });
+});

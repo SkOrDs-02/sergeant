@@ -98,6 +98,26 @@ export async function markOutboxSuccess(
   await client.run(`DELETE FROM sync_op_outbox WHERE id = ?`, [id]);
 }
 
+/** Delete only server-acknowledged rows in one SQLite worker round trip. */
+export async function markOutboxSuccessBatch(
+  client: SqliteMigrationClient,
+  ids: readonly number[],
+): Promise<void> {
+  if (ids.length === 0) return;
+  if (
+    ids.length > 200 ||
+    ids.some((id) => !Number.isSafeInteger(id) || id <= 0)
+  ) {
+    throw new Error(
+      "markOutboxSuccessBatch: expected 1–200 positive integer ids",
+    );
+  }
+  await client.run(
+    `DELETE FROM sync_op_outbox WHERE id IN (${ids.map(() => "?").join(",")})`,
+    ids,
+  );
+}
+
 /**
  * Advance a row whose push attempt just failed transiently
  * (network error, 5xx, timeout). Updates `attempts`, `status`,

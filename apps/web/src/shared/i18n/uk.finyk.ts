@@ -1,6 +1,12 @@
 /** @status Active */
 
 export const finykPageMessages = {
+  // Аркуш «Додати» з кнопки в куті (redesign v3, PR4b): наявні входи модуля.
+  addSources: {
+    manual: { label: "Вручну", hint: "Сума, категорія і дата" },
+    receipt: { label: "Чек", hint: "Фото чека з магазину" },
+    import: { label: "Документи", hint: "Скріншоти банку й виписки" },
+  },
   reportHeading: "Витрати",
   budgetOverLimit: "перевищено",
   budgetOverSixtyPercent: "· понад 60% ліміту",
@@ -23,7 +29,7 @@ export const finykPageMessages = {
   },
   /** Пікер привʼязки транзакцій до пасиву / дебіторки (§ 4a канону). */
   debtTxLink: {
-    roleSheetTitle: "Чим є ця операція?",
+    roleSheetTitle: "Тип операції",
     noDescription: "Без опису",
     suggestedHint: "· схоже на це",
     unlink: "Зняти привʼязку",
@@ -235,10 +241,10 @@ export const finykPageMessages = {
     noDebtsHint: "Спершу створи пасив в Активах.",
     createNew: "Створити новий пасив",
     createTitle: "Новий пасив із цієї операції",
-    namePlaceholder: "Назва пасиву (кредит, борг)",
+    namePlaceholder: "Назва пасиву",
     create: "Створити",
     cancel: "Скасувати",
-    pickTitle: "Який це пасив?",
+    pickTitle: "Обери пасив",
     unlink: "Відвʼязати",
   },
   /**
@@ -247,7 +253,7 @@ export const finykPageMessages = {
    */
   debtAutoLink: {
     fieldLabel: "Автопривʼязка платежів за словом в описі",
-    placeholder: "Наприклад, ПриватБанк",
+    placeholder: "Слово з опису",
     hint: "Кожну майбутню витрату з таким словом в описі привʼяжу як сплату автоматично.",
     matchesFoundPrefix: "Знайдено збігів:",
     noMatches: "Збігів не знайдено",
@@ -314,7 +320,7 @@ export const finykPageMessages = {
   // не знайшов (або яку людина сама розлінкувала).
   silpoReceiptPicker: {
     cta: "Прикріпити чек",
-    title: "Який це чек?",
+    title: "Обери чек",
     description:
       "Чеки без пари, найближчі за датою – зверху. Прикріплення скасовує й попереднє «Це не той чек».",
     loading: "Шукаю чеки…",
@@ -469,7 +475,7 @@ export const finykPageMessages = {
   // Києвом, і порівнюються однакові відрізки (рішення власника 2026-10-01):
   // ті самі числа, що називає картка «Витрати на N% вище ніж минулого тижня».
   weekReport: {
-    heading: "Тиждень у цифрах",
+    heading: "Витрати тижня",
     // Звіт лише про гроші: «записів» читалось як усі модулі й суперечило
     // 12 прийомам їжі за тиждень (hands-on 2026-09-29, пункт 13).
     empty: "На цьому тижні витрат ще немає",

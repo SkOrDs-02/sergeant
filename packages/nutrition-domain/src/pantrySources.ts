@@ -21,7 +21,7 @@ import {
 import { baseUnitFor, massToVolumeIfKnown, toBase } from "./units.js";
 
 /** Гасить float-похибку (0.1+0.2=0.30000000000000004) до кухонної точності. */
-function roundBase(value: number): number {
+export function roundBase(value: number): number {
   return Math.round((value + Number.EPSILON) * 1000) / 1000;
 }
 

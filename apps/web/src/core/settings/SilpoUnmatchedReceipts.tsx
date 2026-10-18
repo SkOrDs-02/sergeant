@@ -16,7 +16,6 @@ import { useState } from "react";
 import { toKyivISODate } from "@sergeant/shared";
 import type { ManualExpenseKind } from "@sergeant/finyk-domain/domain/transactions";
 import { Button } from "@shared/components/ui/Button";
-import { Icon } from "@shared/components/ui/Icon";
 import { Money } from "@shared/components/ui/Money";
 import { messages } from "@shared/i18n/uk";
 import { useSilpoReceipts } from "@finyk/hooks/useSilpoReceipts";
@@ -60,17 +59,9 @@ export function SilpoUnmatchedReceipts({
 
   return (
     <>
-      <details className="rounded-xl border border-line bg-panel p-3">
+      <details className="rounded-panel border border-line bg-panel p-3">
         <summary className="touch-target flex cursor-pointer items-center justify-between gap-2 text-style-label text-text marker:content-none focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-finyk">
-          <span className="flex min-w-0 items-center gap-2">
-            <Icon
-              name="file-text"
-              size="md"
-              className="text-muted shrink-0"
-              aria-hidden
-            />
-            {copy.title}
-          </span>
+          <span className="flex min-w-0 items-center gap-2">{copy.title}</span>
           <span className="shrink-0 text-style-caption text-subtle">
             {unmatched.length} {copy.countSuffix}
           </span>

@@ -4,14 +4,11 @@
  */
 import { useLayoutEffect, useMemo, useRef, useState } from "react";
 import { Measure } from "@shared/components/ui/Measure";
-import { Icon } from "@shared/components/ui/Icon";
 import type { Dispatch, RefObject, SetStateAction } from "react";
-import { Link } from "react-router-dom";
 import { cn } from "@shared/lib/ui/cn";
 import { useToast } from "@shared/hooks/useToast";
 import { useOutsideClick } from "@shared/hooks/useOutsideClick";
 import { messages } from "@shared/i18n/uk";
-import { PROFILE_PATH } from "../../../core/app/appPaths";
 import { useBiometrics } from "../../../core/profile/useBiometrics";
 import { useLatestBodyWeightKg } from "../../../core/profile/useLatestBodyWeight";
 import { useAverageWorkoutKcalPerDay } from "../../../core/profile/useAverageWorkoutKcal";
@@ -19,6 +16,7 @@ import {
   NUTRITION_GOALS,
   computeNutritionTargetsFromBiometrics,
   resolveEffectiveWeightKg,
+  weeklyRateDeficitKcal,
   type NutritionGoalId,
   type NutritionTargets,
 } from "../lib/tdee";
@@ -27,14 +25,19 @@ import {
   type MissingBiometricsField,
 } from "../../../core/profile/biometrics";
 import type { NutritionPrefs } from "@sergeant/nutrition-domain";
+import { MyNormSheet } from "./MyNormSheet";
 
 const TDEE_COPY = messages.nutritionTdee;
 
-const TDEE_GOAL_LABELS: Record<NutritionGoalId, string> = {
-  cutting: TDEE_COPY.goalCutting,
-  maintenance: TDEE_COPY.goalMaintenance,
-  bulking: TDEE_COPY.goalBulking,
-};
+function goalLabels(weeklyRateKg: number): Record<NutritionGoalId, string> {
+  return {
+    cutting: TDEE_COPY.goalCuttingRate
+      .replace("{rate}", String(weeklyRateKg).replace(".", ","))
+      .replace("{kcal}", String(weeklyRateDeficitKcal(weeklyRateKg))),
+    maintenance: TDEE_COPY.goalMaintenance,
+    bulking: TDEE_COPY.goalBulking,
+  };
+}
 
 const MISSING_FIELD_LABEL: Record<MissingBiometricsField, string> = {
   heightCm: TDEE_COPY.missingHeight,
@@ -57,7 +60,7 @@ const MENU_EDGE_GAP_PX = 8;
  * trigger is closest to.
  *
  * `position: fixed` was tried first and rejected: this page renders inside
- * a route wrapper with its own `transform` (the `.page-enter` entry
+ * a route wrapper with its own `transform` (the `.` entry
  * animation — see `Sheet.tsx`'s identical note), which makes `fixed`
  * resolve against that ancestor's box instead of the real viewport. Live
  * 375px verification showed the menu landing off-screen either way until
@@ -122,6 +125,11 @@ export function DailyPlanGoalSelectors({
 }: DailyPlanGoalSelectorsProps) {
   const toast = useToast();
   const [menuOpen, setMenuOpen] = useState(false);
+  const [normOpen, setNormOpen] = useState(false);
+  const goalLabelById = useMemo(
+    () => goalLabels(prefs.weeklyRateKg),
+    [prefs.weeklyRateKg],
+  );
   const menuRef = useRef<HTMLDivElement | null>(null);
   const menuLeft = useClampedMenuLeft(menuOpen, menuRef);
 
@@ -154,12 +162,13 @@ export function DailyPlanGoalSelectors({
         undefined,
         fizrukWeightKg,
         workoutKcal,
+        prefs.weeklyRateKg,
       );
       if (!t) return null;
       result[goal] = t;
     }
     return result as Record<NutritionGoalId, NutritionTargets>;
-  }, [biometrics, fizrukWeightKg, workoutKcal]);
+  }, [biometrics, fizrukWeightKg, workoutKcal, prefs.weeklyRateKg]);
 
   // Той самий fizruk-фолбек, що й у computeNutritionTargetsFromBiometrics
   // вище, — інакше юзер із реальним fizruk-зважуванням, але порожнім
@@ -230,31 +239,16 @@ export function DailyPlanGoalSelectors({
           aria-haspopup="menu"
           aria-expanded={menuOpen}
           title={tdeeTargets ? undefined : missingHint}
-          className={cn(
-            "inline-flex items-center gap-1 rounded-xl border px-2.5 py-1 text-style-caption",
-            "border-nutrition/50 text-nutrition-strong dark:text-nutrition",
-            "hover:border-nutrition hover:bg-nutrition/10",
-            "disabled:opacity-50 transition-colors",
-            "focus:outline-none focus-visible:ring-2 focus-visible:ring-nutrition/60 focus-visible:ring-offset-2 focus-visible:ring-offset-panel",
-          )}
+          className="inline-flex h-9 items-center rounded-lg border border-line px-3 text-style-label font-semibold text-text hover:bg-line/40 focus-ring disabled:opacity-50"
         >
           {activeGoal
-            ? `Пресет: ${TDEE_GOAL_LABELS[activeGoal]}`
+            ? `Пресет: ${goalLabelById[activeGoal]}`
             : "Підказати з пресету"}
-          <span
-            aria-hidden
-            className={cn(
-              "inline-flex shrink-0 transition-transform",
-              menuOpen ? "rotate-180" : "rotate-0",
-            )}
-          >
-            <Icon name="chevron-down" size="sm" />
-          </span>
         </button>
         {menuOpen && (
           <div
             role="menu"
-            className="absolute top-full mt-1 z-10 rounded-xl border border-line bg-bg shadow-lg overflow-hidden"
+            className="absolute top-full mt-1 z-10 rounded-panel border border-line bg-bg overflow-hidden"
             style={{ width: MENU_WIDTH_PX, left: menuLeft }}
           >
             {tdeeTargets ? (
@@ -270,14 +264,13 @@ export function DailyPlanGoalSelectors({
                       disabled={busy || dayPlanBusy}
                       className={cn(
                         "w-full text-left px-3 py-2 border-b border-line",
-                        "hover:bg-panelHi disabled:opacity-50 transition-colors",
-                        "focus:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-nutrition/60",
-                        activeGoal === goal &&
-                          "bg-nutrition/10 text-nutrition-strong dark:text-nutrition",
+                        "hover:bg-line/40 disabled:opacity-50 transition-colors",
+                        "focus-ring",
+                        activeGoal === goal && "bg-line/60",
                       )}
                     >
                       <div className="text-style-label">
-                        {TDEE_GOAL_LABELS[goal]}
+                        {goalLabelById[goal]}
                       </div>
                       <div className="text-style-caption text-subtle mt-0.5">
                         <Measure value={targets.kcal} unit="ккал" /> · Б{" "}
@@ -285,7 +278,7 @@ export function DailyPlanGoalSelectors({
                         <Measure value={targets.fat_g} unit="г" /> · В{" "}
                         <Measure value={targets.carbs_g} unit="г" />
                       </div>
-                      <div className="text-style-caption text-nutrition-strong dark:text-nutrition mt-0.5">
+                      <div className="text-style-caption text-subtle mt-0.5">
                         розраховано з профілю
                       </div>
                     </button>
@@ -295,17 +288,20 @@ export function DailyPlanGoalSelectors({
             ) : (
               <div className="px-3 py-2 text-style-caption text-subtle border-b border-line">
                 <div className="text-text">{missingHint}</div>
-                <Link
-                  to={PROFILE_PATH}
+                <button
+                  type="button"
                   // Тач-таргет: сам текст має 16px висоти, чого мало для
                   // пальця (WCAG 2.5.5). `inline-flex` + px-флор під coarse
                   // pointer — той самий прийом, що в `Button`/`Input`
                   // (браузерний аудит 2026-08-26: було 108×16).
-                  className="mt-1 inline-flex items-center pointer-coarse:min-h-[44px] text-nutrition-strong dark:text-nutrition underline"
-                  onClick={() => setMenuOpen(false)}
+                  className="mt-1 inline-flex items-center pointer-coarse:min-h-[44px] text-text underline rounded-lg focus-ring"
+                  onClick={() => {
+                    setMenuOpen(false);
+                    setNormOpen(true);
+                  }}
                 >
                   {TDEE_COPY.profileLink}
-                </Link>
+                </button>
               </div>
             )}
             <button
@@ -326,9 +322,9 @@ export function DailyPlanGoalSelectors({
               disabled={busy || dayPlanBusy}
               className={cn(
                 "w-full text-left px-3 py-2",
-                "hover:bg-panelHi disabled:opacity-50 transition-colors",
-                "text-muted hover:text-danger",
-                "focus:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-nutrition/60",
+                "hover:bg-line/40 disabled:opacity-50 transition-colors",
+                "text-muted hover:text-text",
+                "focus-ring",
               )}
             >
               <div className="text-style-label">Скинути вибір</div>
@@ -339,6 +335,7 @@ export function DailyPlanGoalSelectors({
           </div>
         )}
       </div>
+      <MyNormSheet open={normOpen} onClose={() => setNormOpen(false)} />
     </div>
   );
 }

@@ -13,6 +13,8 @@
 // Тому домен більше не віддає колір. Він віддає РОЛЬ; колір обирає
 // вигляд — `ROLE_TONE` у `AssetsDebtTxPicker.tsx`.
 
+import { manualLinkKey, rawManualId } from "./debtLinkKeys.js";
+
 /**
  * Роль однієї привʼязаної транзакції всередині запису боргу.
  *
@@ -145,7 +147,18 @@ function resolveLinks(
   fallbackRole: (tx: Pick<Tx, "amount">) => LinkedTxRole,
 ): { role: LinkedTxRole; amount: number }[] {
   const index = new Map(transactions.map((tx) => [tx.id, tx]));
-  return linkedTxIds.map((id) => {
+  // Пара `X` / `manual_X` — один ручний запис (див. `debtLinkKeys`): рахуємо
+  // один раз, канонічна форма `manual_X` перемагає. Дедуп на читанні, без
+  // переписування сховища, тож лікує й уже подвоєні дані.
+  const byOperation = new Map<string, string>();
+  for (const id of linkedTxIds) {
+    const op = rawManualId(id);
+    const prev = byOperation.get(op);
+    if (prev === undefined || (id !== prev && id === manualLinkKey(op))) {
+      byOperation.set(op, id);
+    }
+  }
+  return [...byOperation.values()].map((id) => {
     const meta = txLinks?.[id];
     if (meta) return { role: meta.role, amount: Math.abs(meta.amount || 0) };
     const tx = index.get(id);

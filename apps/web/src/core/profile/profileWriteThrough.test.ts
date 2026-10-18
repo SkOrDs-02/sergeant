@@ -35,8 +35,10 @@ vi.mock("@shared/api", () => ({
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
 import { STORAGE_KEYS, UserProfilePayloadSchema } from "@sergeant/shared";
 import type { UserProfileResponse } from "@shared/api";
+import { LOCAL_ANON_USER_ID } from "../auth/localIdentity";
 import {
   BIOMETRICS_DEFAULT,
+  readBiometricsOwnerId,
   readBiometrics,
   setBiometricsOwner,
   writeBiometrics,
@@ -463,6 +465,71 @@ describe("reconcileBiometricsWithServerProfile — cross-account upload guard", 
     await reconcileBiometricsWithServerProfile(serverResponse(OLDER), USER_A);
 
     expect(mockUpdateProfile).toHaveBeenCalledWith(combined(NEWER));
+  });
+});
+
+// В1 (2026-10-08): анонімний профіль пристрою (`ownerId: "local-anon"`) переходить
+// до першого акаунта, що увійшов; далі LWW за `updatedAt`. Легасі `null`
+// лишається чужим (захист PR #627 не слабне).
+describe("reconcileBiometricsWithServerProfile - local-anon (В1)", () => {
+  const USER_A = "user-a";
+  const USER_B = "user-b";
+
+  it("local-anon + сервер без рядка: профіль їде нагору і перештамповується акаунтом", async () => {
+    setBiometricsOwner(LOCAL_ANON_USER_ID);
+    writeBiometrics(FRESH);
+
+    await reconcileBiometricsWithServerProfile(NO_SERVER_ROW, USER_A);
+
+    expect(mockUpdateProfile).toHaveBeenCalledWith(combined(FRESH));
+    expect(readBiometricsOwnerId()).toBe(USER_A);
+  });
+
+  it("local-anon новіший за серверний: PUT; старіший: гідратація серверним", async () => {
+    setBiometricsOwner(LOCAL_ANON_USER_ID);
+    writeBiometrics(NEWER);
+    await reconcileBiometricsWithServerProfile(serverResponse(FRESH), USER_A);
+    expect(mockUpdateProfile).toHaveBeenCalledWith(combined(NEWER));
+
+    mockUpdateProfile.mockClear();
+    localStorage.clear();
+    setBiometricsOwner(LOCAL_ANON_USER_ID);
+    writeBiometrics(OLDER);
+    await reconcileBiometricsWithServerProfile(serverResponse(FRESH), USER_A);
+    expect(mockUpdateProfile).not.toHaveBeenCalled();
+    expect(readBiometrics()).toEqual(FRESH);
+    expect(readBiometricsOwnerId()).toBe(USER_A);
+  });
+
+  it("легасі null лишається чужим: сервер перемагає, PUT немає (регрес PR #627)", async () => {
+    localStorage.setItem(STORAGE_KEYS.HUB_BIOMETRICS, JSON.stringify(NEWER));
+
+    await reconcileBiometricsWithServerProfile(serverResponse(OLDER), USER_A);
+
+    expect(mockUpdateProfile).not.toHaveBeenCalled();
+    expect(readBiometrics()).toEqual(OLDER);
+
+    localStorage.clear();
+    localStorage.setItem(STORAGE_KEYS.HUB_BIOMETRICS, JSON.stringify(NEWER));
+    await reconcileBiometricsWithServerProfile(NO_SERVER_ROW, USER_A);
+    expect(mockUpdateProfile).not.toHaveBeenCalled();
+  });
+
+  it("запис залогінованого A при вході B скидається (priv-02 без змін)", async () => {
+    setBiometricsOwner(USER_A);
+    writeBiometrics(NEWER);
+
+    await reconcileBiometricsWithServerProfile(NO_SERVER_ROW, USER_B);
+
+    expect(mockUpdateProfile).not.toHaveBeenCalled();
+    expect(readBiometrics()).toEqual(BIOMETRICS_DEFAULT);
+  });
+
+  it("анонімна сесія не бачить запис залогінованого A", () => {
+    setBiometricsOwner(USER_A);
+    writeBiometrics(FRESH);
+    setBiometricsOwner(LOCAL_ANON_USER_ID);
+    expect(readBiometrics()).toEqual(BIOMETRICS_DEFAULT);
   });
 });
 

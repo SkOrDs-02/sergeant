@@ -63,7 +63,7 @@ export function RoutineHabitsPanel({
       id="routine-panel-habits"
       aria-labelledby="routine-tab-habits"
       hidden={hidden}
-      className="space-y-4"
+      className="space-y-7"
     >
       <p className="text-style-body text-subtle leading-snug">{COPY.intro}</p>
 

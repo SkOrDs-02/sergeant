@@ -18,7 +18,11 @@ import {
   normalizeUnit,
   type PantryItem,
 } from "./pantryTextParser.js";
-import { consumeFromSources, sourcesTotal } from "./pantrySources.js";
+import {
+  consumeFromSources,
+  roundBase,
+  sourcesTotal,
+} from "./pantrySources.js";
 // Таблиця щільності живе в `density.ts` — її потребує і зведення одиниць
 // (`units.ts`), і списання тут; спільний файл нижче за обома розриває цикл
 // імпортів. Реекспорт зберігає сабпас `@sergeant/nutrition-domain/pantry-consume`.
@@ -130,9 +134,17 @@ export function applyConsumeToPantryItem(
 
   const remaining = qty - deduct;
   if (remaining <= 0) return { item: null, deducted: deduct, unit: item.unit };
+  // Округлення до 0.001 (як у гілці з варіантами), а не до 0.1: крок 0.1 для
+  // `кг`/`л` — це 100 г/мл, і порція < 50 г округлювалась назад до старого
+  // залишку. `deducted` — фактична різниця qty до/після, щоб подія журналу
+  // (ADR-0077) дорівнювала зміні залишку. Гілка вичерпання вище лишає сиру
+  // `deduct`: перевитрату журнал має показати, а не обрізати.
+  const newQty = roundBase(remaining);
+  // Залишок < 0.0005 округлюється в нуль — позиція зникає, подія = увесь qty.
+  if (newQty <= 0) return { item: null, deducted: qty, unit: item.unit };
   return {
-    item: { ...item, qty: Math.round(remaining * 10) / 10 },
-    deducted: deduct,
+    item: { ...item, qty: newQty },
+    deducted: roundBase(qty - newQty),
     unit: item.unit,
   };
 }

@@ -18,6 +18,7 @@ import { logger as webLogger } from "@shared/lib";
 
 import { insertGoalPeriod } from "./adapter.goalPeriods.js";
 import { appendPantryEvent } from "./adapter.pantryEvents.js";
+import { itemIdsDivergingFromSqlite } from "./adapter.pantryReconcile.js";
 import { enqueueOutboxUpsert } from "../../../../core/syncEngine/enqueueOutboxUpsert.js";
 import { fireSyncOutboxUpsert } from "../../../../core/syncEngine/fireSyncOutboxUpsert.js";
 
@@ -25,6 +26,7 @@ import type {
   NutritionDualWriteOp,
   NutritionMealSnapshot,
   NutritionPantrySnapshot,
+  PantryUpsertOp,
   NutritionPrefsSnapshot,
   NutritionRecipeSnapshot,
   NutritionShoppingListSnapshot,
@@ -68,7 +70,7 @@ const applyOps = createApplyOps<NutritionDualWriteOp>({
       return "applied";
     },
     "pantry-upsert": async (client, op, rt) => {
-      await upsertPantry(client, op.pantry, rt, op.keepMissing === true);
+      await upsertPantry(client, op.pantry, rt, op.keepMissing === true, op);
       return "applied";
     },
     "pantry-delete": async (client, op, rt) => {
@@ -389,28 +391,62 @@ async function upsertPantry(
   p: NutritionPantrySnapshot,
   { userId, clientTs }: DualWriteRuntime,
   keepMissing = false,
+  delta?: Pick<PantryUpsertOp, "changedItemIds" | "pantryFieldsChanged">,
 ): Promise<void> {
-  await client.run(PANTRY_UPSERT_SQL, [
-    p.id,
-    userId,
-    p.name ?? "",
-    p.text ?? "",
-    clientTs,
-    clientTs,
-  ]);
-  void enqueueOutboxUpsert(client, {
-    userId,
-    table: "nutrition_pantries",
-    op: "insert",
-    row: { id: p.id, user_id: userId, name: p.name ?? "", text: p.text ?? "" },
-    clientTs,
-    idempotencyKey: crypto.randomUUID(),
-  }).catch(() => {});
+  // rel-10: незмінені позиції не чіпаємо НІ в outbox, НІ локально. Локальний
+  // upsert незмінного рядка бампив би `updated_at` до `clientTs` без пушу, і
+  // pull-оп іншого пристрою з міткою між старим `updated_at` та `clientTs`
+  // відсікався б як stale (`isStaleLocal`): пристрій назавжди розходився б із
+  // сервером. Дельта з `prev` не довіряється сама: id у `prev` похідні від
+  // позиції в кеші і можуть не збігатись із id рядків SQLite, а позиція, якої
+  // там немає під цим id, інакше потрапила б під soft-delete нижче. Тому до неї
+  // додається все, що в SQLite відсутнє або відрізняється. Реплей
+  // (`keepMissing`) і op без `changedItemIds` лишаються повним upsert-ом.
+  let changedItems: Set<string> | null = null;
+  if (!keepMissing && delta?.changedItemIds) {
+    changedItems = new Set(delta.changedItemIds);
+    for (const id of await itemIdsDivergingFromSqlite(
+      client,
+      p.id,
+      userId,
+      p.items ?? [],
+    )) {
+      changedItems.add(id);
+    }
+  }
+  const enqueuePantryRow =
+    !changedItems ||
+    delta?.pantryFieldsChanged !== false ||
+    changedItems.size > 0;
+  if (enqueuePantryRow) {
+    await client.run(PANTRY_UPSERT_SQL, [
+      p.id,
+      userId,
+      p.name ?? "",
+      p.text ?? "",
+      clientTs,
+      clientTs,
+    ]);
+    void enqueueOutboxUpsert(client, {
+      userId,
+      table: "nutrition_pantries",
+      op: "insert",
+      row: {
+        id: p.id,
+        user_id: userId,
+        name: p.name ?? "",
+        text: p.text ?? "",
+      },
+      clientTs,
+      idempotencyKey: crypto.randomUUID(),
+    }).catch(() => {});
+  }
 
   // Upsert items
   const items = p.items ?? [];
   for (let i = 0; i < items.length; i++) {
     const it = items[i];
+    if (changedItems && !changedItems.has(it!.id!)) continue;
     await client.run(PANTRY_ITEM_UPSERT_SQL, [
       it!.id!,
       p.id,

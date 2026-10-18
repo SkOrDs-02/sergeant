@@ -34,10 +34,13 @@
  *
  * AI-CONTEXT: чотири рішення тут навмисні, і ламати їх не можна.
  *
- * 1. **Дата ДО найранішого періоду → `origin: 'unknown'`, а не найраніша
- *    ціль.** Ми ЧЕСНО не знаємо, що діяло тоді. Простягнути перший період
- *    назад у часі — це та сама ретроактивна брехня, від якої лікує вся
- *    задача, лише переставлена з кінця історії на її початок.
+ * 1. **Дата ДО найранішого періоду → найраніша ціль з `origin: 'extended'`**
+ *    (ADR-0091, поправка 2026-10-08; початково було `'unknown'`). До першої
+ *    сходинки не діяла жодна інша ціль, тож розтягнення її назад нічого не
+ *    перефарбовує, а запис заднім числом отримує норму. Дані не пишуться,
+ *    `origin` лишається розрізнюваним. `'unknown'` залишився лише для
+ *    порожнього журналу й некоректного ключа. Зміни ПІСЛЯ першої сходинки
+ *    й далі діють тільки вперед.
  * 2. **`origin` доїжджає до консюмера незміненим — зокрема `'backfill'`.**
  *    Споживач мусить МОГТИ відрізнити реконструкцію (міграція 087
  *    припустила сьогоднішню ціль) від факту. Якщо резолвер «нормалізує»
@@ -74,7 +77,7 @@ export type GoalOrigin = "manual" | "preset" | "tdee" | "backfill";
  * `'unknown'` означає «за цей день періоду НЕМАЄ» — день раніше за
  * найранішу відому сходинку.
  */
-export type EffectiveGoalOrigin = GoalOrigin | "unknown";
+export type EffectiveGoalOrigin = GoalOrigin | "unknown" | "extended";
 
 /** Один рядок `nutrition_goal_periods` у доменній формі (camelCase). */
 export interface GoalPeriod {
@@ -169,6 +172,10 @@ function toEffective(p: GoalPeriod): EffectiveGoal {
   };
 }
 
+function toExtended(p: GoalPeriod): EffectiveGoal {
+  return { ...toEffective(p), origin: "extended" };
+}
+
 /**
  * Ціль, що діяла в день `dateKey`.
  *
@@ -188,16 +195,25 @@ export function resolveEffectiveGoal(
   if (!DAY_KEY_RE.test(dateKey)) return UNKNOWN_GOAL;
 
   let best: GoalPeriod | null = null;
+  let earliest: GoalPeriod | null = null;
   for (const p of periods) {
     if (!isLive(p)) continue;
     if (!DAY_KEY_RE.test(p.effectiveFrom)) continue;
+    if (
+      earliest === null ||
+      compareDayKeys(p.effectiveFrom, earliest.effectiveFrom) < 0 ||
+      (p.effectiveFrom === earliest.effectiveFrom && beats(p, earliest))
+    ) {
+      earliest = p;
+    }
     // Період, що починається ПІСЛЯ цього дня, до нього не застосовується —
     // саме це й робить історію замороженою.
     if (compareDayKeys(p.effectiveFrom, dateKey) > 0) continue;
     if (best === null || beats(p, best)) best = p;
   }
 
-  return best === null ? UNKNOWN_GOAL : toEffective(best);
+  if (best !== null) return toEffective(best);
+  return earliest === null ? UNKNOWN_GOAL : toExtended(earliest);
 }
 
 /**
@@ -234,6 +250,14 @@ export function resolveEffectiveGoalsForRange(
       return aMs - bMs;
     });
 
+  // Дні до першої сходинки: переможець найранішого дня, `origin: 'extended'`.
+  let first: GoalPeriod | undefined;
+  for (const p of live) {
+    if (first === undefined || p.effectiveFrom === first.effectiveFrom) {
+      first = p;
+    } else break;
+  }
+
   let cursor = 0;
   let current: GoalPeriod | null = null;
   for (const dateKey of enumerateDayKeys(fromKey, toKey)) {
@@ -244,7 +268,14 @@ export function resolveEffectiveGoalsForRange(
       current = live[cursor]!;
       cursor += 1;
     }
-    out.set(dateKey, current === null ? UNKNOWN_GOAL : toEffective(current));
+    out.set(
+      dateKey,
+      current !== null
+        ? toEffective(current)
+        : first === undefined
+          ? UNKNOWN_GOAL
+          : toExtended(first),
+    );
   }
   return out;
 }

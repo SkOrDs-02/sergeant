@@ -9,8 +9,17 @@
  * Спредиться в `messages.nutrition` з `uk.ts`.
  */
 export const nutritionPageMessages = {
+  // Аркуш «Додати» з кнопки в куті (redesign v3, PR4b): ті самі джерела,
+  // що в кроці «Джерело страви» аркуша прийому.
+  addSources: {
+    search: { label: "Пошук продукту", hint: "Продукт або страва з бази" },
+    scan: { label: "Штрихкод", hint: "Штрихкод на упаковці" },
+    photo: { label: "Фото страви", hint: "AI оцінить страву на фото" },
+    manual: { label: "Ввести вручну", hint: "На 100 г або за всю порцію" },
+  },
   // Крок «Звідки страва?» і чекбокс повтору в `AddMealSheet`.
   addMeal: {
+    editTitle: "Редагувати прийом їжі",
     copyYesterday: "Як учора",
     rememberForRepeat: "Запамʼятати для повтору",
     rememberForRepeatHint:
@@ -202,7 +211,7 @@ export const nutritionPageMessages = {
     collapseLabel: "Сховати покупки",
     variantsHeading: "Покупки",
     unknownAddedAt: "без дати",
-    consumeTitle: "З чого списати?",
+    consumeTitle: "Списати з покупки",
     consumeDescription:
       "У цій позиції кілька покупок. Обери, з якої списати, або лишай найстарішу: вона псується першою.",
     consumeOldestCta: "З найстарішої",
@@ -289,7 +298,7 @@ export const nutritionPageMessages = {
    */
   shoppingListManualAdd: {
     inputLabel: "Назва товару для списку покупок",
-    placeholder: "напр. хліб",
+    placeholder: "Товар",
     addCta: "Додати",
   },
 
@@ -408,6 +417,12 @@ export const nutritionPageMessages = {
     addCta: "+ Додати позицію з каталогу",
     kcalUnit: "ккал",
     gramsUnit: "г",
+    editCta: "Змінити позиції",
+    total: "Разом",
+    saveHint: "Кожна позиція збережеться окремим записом у журналі.",
+    protein: "Білки",
+    fat: "Жири",
+    carbs: "Вуглеводи",
   },
 
   /** Додавання позиції у фото-список через каталог продуктів. */
@@ -496,7 +511,7 @@ export const nutritionPageMessages = {
     titleEdit: "Редагувати страву",
     description: "Склади страву з продуктів і грамів, КБЖВ порахується само.",
     nameLabel: "Назва",
-    namePlaceholder: "напр. Гречка з філе",
+    namePlaceholder: "Назва страви",
     nameAria: "Назва страви",
     gramsAriaPrefix: "Грами:",
     gramUnit: "г",
@@ -516,6 +531,49 @@ export const nutritionPageMessages = {
     reasonGrams: "Впиши вагу в грамах для кожного інгредієнта.",
     reasonServings: "Порцій має бути ціле число від 1.",
     save: "Зберегти",
+  },
+
+  // Аркуш «Моя норма»: працює без входу, пише в локальне сховище.
+  // Плейсхолдери `{...}` підставляє `MyNormSheet`.
+  myNorm: {
+    title: "Моя норма",
+    description:
+      "Рахую норму за формулою Міффлін-Сан-Жеор. Вхід не потрібен, дані лишаються на пристрої.",
+    goalLabel: "Мета",
+    goalCutting: "Схуднення",
+    goalMaintenance: "Підтримка",
+    goalBulking: "Набір",
+    rateLabel: "Темп, кг на тиждень",
+    rateOption: "{rate} кг",
+    goalWeightLabel: "Цільова вага, кг (необовʼязково)",
+    goalWeightRangeError: "Вага має бути від 20 до 400 кг",
+    goalDate: "Орієнтовно до цілі: {date}. Це прикидка, а не обіцянка.",
+    resultLabel: "Твоя норма",
+    resultKcal: "{kcal} ккал на день",
+    activitySedentary: "сидячий",
+    activityLight: "легка активність",
+    activityModerate: "помірна активність",
+    activityActive: "висока активність",
+    activityVeryActive: "дуже висока активність",
+    formulaLine: "Міффлін-Сан-Жеор · {activity} × {multiplier} · {delta}",
+    formulaLineDynamic:
+      "Міффлін-Сан-Жеор · сидячий × 1,2 + тренування за день ({workout} ккал) · {delta}",
+    deltaDeficit: "дефіцит {kcal} ккал",
+    deltaSurplus: "профіцит {kcal} ккал",
+    deltaNone: "без корекції",
+    howToggle: "Як пораховано",
+    howBody:
+      "BMR {bmr} × {multiplier} = {tdee}, {delta}, виходить {kcal} ккал.",
+    howBodyDynamic:
+      "BMR {bmr} × 1,2 + тренування {workout} = {tdee}, {delta}, виходить {kcal} ккал.",
+    floorNote: "Норма не опускається нижче 1000 ккал.",
+    incomplete:
+      "Заповни зріст, дату народження, стать, рівень активності й вагу, і я порахую норму.",
+    apply: "Застосувати",
+    retry: "Повторити",
+    applied: "Норму збережено",
+    saveError: "Не вдалося зберегти норму",
+    stillLoading: "Налаштування ще завантажуються, спробуй за мить",
   },
 
   photoAuth: {

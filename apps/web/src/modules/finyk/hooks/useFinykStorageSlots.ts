@@ -2,7 +2,11 @@ import { useRef, useState } from "react";
 import type { Dispatch, SetStateAction } from "react";
 import type { MerchantRule } from "@sergeant/finyk-domain/lib/merchantRules";
 import { readJSON, readRaw, finykStorageManager } from "../lib/finykStorage";
-import { useReadonlyPersist, reportSilentError } from "./useStorage.persist";
+import {
+  usePersist,
+  useReadonlyPersist,
+  reportSilentError,
+} from "./useStorage.persist";
 import { getCachedFinykSqliteState } from "../lib/sqliteReader";
 import { useFinykSqliteReadTick } from "../lib/sqliteReadGate";
 import type {
@@ -148,10 +152,9 @@ export function useFinykStorageSlots(): FinykStorageSlots {
     "finyk_tx_cats",
     {},
   );
-  const [txNotes, setTxNotes] = useReadonlyPersist<TxNotesMap>(
-    "finyk_tx_notes",
-    {},
-  );
+  // LS-only: нотатки не входять у SQLite dual-write, тож пишучий
+  // `usePersist` — єдиний писач ключа (аудит 2026-10-01, data-27).
+  const [txNotes, setTxNotes] = usePersist<TxNotesMap>("finyk_tx_notes", {});
   const [monoDebtLinkedTxIds, setMonoDebtLinkedTxIds] =
     useReadonlyPersist<MonoDebtLinkedMap>("finyk_mono_debt_linked", {});
   const [networthHistory, setNetworthHistory] = useReadonlyPersist<

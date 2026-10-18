@@ -2108,7 +2108,7 @@ How the loss happens:
 
 ### `data-23` [medium] Чат-екзекутори обходять серверні межі: create_transaction на будь-яку 400 пише локально з поясненням «сервер недоступний», а log_weight, log_measurement і log_meal не мають меж
 
-- **Стан:** відкрито
+- **Стан:** частково виправлено в гілці claude/fix-data-23-chat-server-bounds (лишилось: Idempotency-Key/client id у POST /manual-expenses, межі решти мутаторів у toolCallSchema, серверна валідація data_json у sync; add_asset, recurring_expense та log_meal/log_water без стелі)
 - **Перевірка:** підтверджено · **Зусилля:** M · **Область:** web: AI-чат (serverActions, toolCallSchema, nutritionActions, fizrukActions)
 - **Де:** apps/web/src/core/lib/chatActions/serverActions.ts:183-250; apps/web/src/core/lib/chatActions/finykActions/transactions.ts:28-71; apps/web/src/core/lib/chatActions/nutritionActions.ts:66-111,419-437; apps/web/src/core/lib/chatActions/fizrukActions/measurements.ts:13-62; apps/web/src/core/hub/chat/toolCallSchema.ts:41-337
 - **Першопричина:** serverActions ловить будь-яку помилку голим catch і йде в локальний fallback без MAX_AMOUNT, ліміту опису й межі дати, а sync потім доносить запис у ту саму таблицю. Аргументи інших мутаторів не валідуються спільними примітивами меж: toolCallSchema покриває близько 20 мутаторів лише numOrStr без діапазонів.
@@ -2197,7 +2197,7 @@ recordBodyWeight.ts:52-60 (`if (weightKg < min || weightKg > max) return;`). app
 
 ### `data-24` [medium] Привʼязки платежів до боргу рахуються двічі або лишаються після видалення платежу: залишок боргу й капітал неправильні
 
-- **Стан:** відкрито
+- **Стан:** виправлено в гілці claude/fix-data-24-debt-payment-links
 - **Перевірка:** підтверджено · **Зусилля:** M · **Область:** web: Фінік (борги, debtEngine, useDebtAutoLink)
 - **Де:** apps/web/src/modules/finyk/components/ManualExpenseSheet.tsx:194,663-674; apps/web/src/modules/finyk/components/DebtTxLinkSection.tsx:145-160; packages/finyk-domain/src/domain/transactions.ts:350; apps/web/src/modules/finyk/hooks/useFinykStorageMutations.ts:135-150; packages/finyk-domain/src/domain/debtEngine.ts:148-150; apps/web/src/modules/finyk/pages/AssetsDebtTxPicker.tsx:278-281
 - **Першопричина:** Аркуш витрати пише привʼязку за сирим id, а пікер і useDebtAutoLink — за manual_&lt;id&gt;, тож один платіж має два ключі. removeManualExpense не чистить linkedTxIds і txLinks пасивів та дебіторок, getDebtPaid бере суму зі знімка txLinks незалежно від того, чи транзакція існує, а restoreManualExpense відкидає id.
@@ -2428,7 +2428,7 @@ Verifier runs: pw_synclink_cold.mjs (key verify-cs-outbox-synclink) produced toa
 
 ### `data-27` [medium] Нотатки до банківських транзакцій не зберігаються ніде: зникають на reload, не синхронізуються й не потрапляють у бекап
 
-- **Стан:** відкрито
+- **Стан:** частково виправлено в гілці claude/fix-data-27-tx-notes-persist (нотатки пишуться в LS і входять у бекап; синк між пристроями лишився follow-up-ом з міграцією і рішенням власника)
 - **Перевірка:** підтверджено · **Зусилля:** M · **Область:** web: Фінік (txNotes)
 - **Де:** apps/web/src/modules/finyk/hooks/useFinykStorageSlots.ts:58-61,145-148; apps/web/src/modules/finyk/hooks/useStorage.persist.ts:50-73; apps/web/src/modules/finyk/hooks/useFinykStorageMutations.ts:367-375; apps/web/src/modules/finyk/lib/sqliteWriter/extract.ts:183-198
 - **Першопричина:** txNotes оголошено через useReadonlyPersist, який лише читає LS на першому кадрі й нічого не пише, а dual-write стан (extractFinykDualWriteState) і бекап (FINYK_BACKUP_STORAGE_KEYS) txNotes не містять.
@@ -3101,7 +3101,7 @@ v8-kcal.mjs / v8b-loop.mjs (пул-юзер vfy-smf-fiz1, «Біг, легкий
 
 ### `data-37` [medium] Ретро-тренування «Вправи по підходах»: введений кінець живе лише в sessionStorage, і після перезапуску вкладки чи PWA «Завершити» робить тренування на 60-111 годин
 
-- **Стан:** відкрито
+- **Стан:** частково виправлено в гілці claude/fix-data-37-ux-11-fizruk-history (слот кінця durable у localStorage; лишилось: перевірка implausiblyLong на «Завершити», редактор часу на WorkoutSummaryView, fizrukClosed за startedAt)
 - **Перевірка:** підтверджено · **Зусилля:** S · **Швидкий виграш** · **Область:** web: Фізрук (pendingRetroEnd, useWorkouts)
 - **Де:** apps/web/src/modules/fizruk/lib/pendingRetroEnd.ts:1-81; apps/web/src/modules/fizruk/hooks/useWorkouts.ts:187-206; apps/web/src/modules/fizruk/hooks/useWorkoutsOrchestrator.ts:524-533; apps/web/src/modules/fizruk/components/workouts/WorkoutJournalSection.tsx:160-162; apps/web/src/core/hub/now/closedToday.ts (fizrukClosed)
 - **Першопричина:** Кінець ретро-сесії зберігається лише в sessionStorage, а endWorkout бере takePendingRetroEnd(id) ?? now без перевірки неправдоподібної тривалості. Завершене тренування відкривається read-only без WorkoutTimeEditor, всупереч коментарю в коді, що мітки лишаються редагованими.
@@ -3345,7 +3345,7 @@ vb/04-concurrent.mjs, користувач vrf-nutri-conc-1. Сервер до �
 
 ### `data-41` [medium] Комора: списання менше 50 г з позиції в кг чи л губиться округленням, а журнал подій фіксує списання
 
-- **Стан:** відкрито
+- **Стан:** виправлено в гілці claude/fix-data-41-pantry-consume-rounding
 - **Перевірка:** підтверджено · **Зусилля:** S · **Швидкий виграш** · **Область:** packages/nutrition-domain (pantryConsume) + web: useNutritionPantries
 - **Де:** packages/nutrition-domain/src/pantryConsume.ts:131-137; apps/web/src/modules/nutrition/hooks/useNutritionPantries.ts:458-486
 - **Першопричина:** pantryConsume у гілці без варіантів округлює залишок до 0.1 одиниці позиції (100 г чи мл для кг і л), але повертає нерозкруглений deducted, який хук пише в журнал як consume.
@@ -3523,7 +3523,7 @@ Reproduced live with <scratch>/agents/verify-client-static-react-correctness/v2-
 
 ### `data-45` [medium] Оновлення сервіс-воркера і перехоплення бази іншою вкладкою перезавантажують чи розмонтовують сторінку без перевірки незбережених форм
 
-- **Стан:** відкрито
+- **Стан:** частково виправлено в гілці claude/fix-data-45-rel-14-sw-update (chunk-recovery reload теж не стирає незбережений ввід; лишилось: перехоплення бази іншою вкладкою, dbOwnership/yieldOwnership — окреме UX-рішення)
 - **Перевірка:** підтверджено · **Зусилля:** M · **Область:** web: PWA (autoUpdate, registerSW) + dbOwnership
 - **Де:** apps/web/src/core/app/autoUpdate.ts:247-265; apps/web/src/main.tsx:376-381; node_modules/vite-plugin-pwa/dist/client/build/register.js:55-64; apps/web/src/core/db/sqlite.ts:309-325; apps/web/src/core/db/dbOwnership.ts:106-140; docs/engineering/web/service-worker.md:41-43
 - **Першопричина:** Реєстру «брудного» стану немає: autoUpdate після 5+ хв у фоні робить triggerUpdate(true) при поверненні у вкладку, ігноруючи відкриті аркуші й «Пізніше»; слухач controlling у vite-plugin-pwa перезавантажує всі вкладки, коли оновлення прийнято в одній (onNeedReload не передано); yieldOwnership на claim іншої вкладки розмонтовує дерево маршрутів.

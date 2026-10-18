@@ -87,11 +87,23 @@ vi.mock("../modules/silpo/cart.js", () => ({
 // `../auth.js` → the Better Auth Drizzle adapter → `db.js`'s default pool
 // export. Pulling that whole graph in just to override 3 functions would
 // force this lightweight route test to also mock Better Auth/Drizzle.
-// `routes/silpo.ts` only imports these three names from the barrel, so a
+// `routes/silpo.ts` only imports these four names from the barrel, so a
 // fully-standalone mock is both simpler and correctly scoped.
 vi.mock("../http/index.js", () => ({
   rateLimitExpress: mocks.rateLimitExpress,
   setModule: () => (_req: unknown, _res: unknown, next: () => void) => next(),
+  // Стенд-ін для `optionalSession()`: так само ЧИТАЄ сесію (заголовок
+  // `x-test-user-id` = «браузер має сесію на цьому хості»), але ніколи не 401.
+  optionalSession:
+    () => (req: express.Request, _res: express.Response, next: () => void) => {
+      const userId = req.get("x-test-user-id");
+      if (userId) {
+        (req as express.Request & { user?: { id: string } }).user = {
+          id: userId,
+        };
+      }
+      next();
+    },
   requireSession:
     () =>
     (
@@ -115,6 +127,16 @@ vi.mock("../http/index.js", () => ({
 
 import { createSilpoRouter } from "./silpo.js";
 import { AppError, ExternalServiceError } from "../obs/errors.js";
+import { logger } from "../obs/logger.js";
+import {
+  SILPO_OAUTH_BINDING_COOKIE,
+  hashStateForBinding,
+} from "../modules/silpo/oauthBinding.js";
+
+/** Заголовок `Cookie`, який браузер, що зробив `/connect` з цим state, поверне на колбек. */
+function bindingCookie(state: string): string {
+  return `${SILPO_OAUTH_BINDING_COOKIE}=${hashStateForBinding(state)}`;
+}
 
 function appWith(): express.Express {
   const app = express();
@@ -237,6 +259,59 @@ describe("GET /api/silpo/connect", () => {
     });
   });
 
+  it("sec-15: ставить HttpOnly SameSite=Lax куку-привʼязку зі sha256(state)", async () => {
+    mocks.buildAuthorizationUrl.mockResolvedValue({
+      url: "https://auth.silpo.ua/authorize?state=abc",
+      state: "abc",
+    });
+
+    const res = await request(appWith())
+      .get("/api/silpo/connect")
+      .set("x-test-user-id", "user-1");
+
+    const setCookie = ([] as string[]).concat(res.headers["set-cookie"] ?? []);
+    const binding = setCookie.find((c) =>
+      c.startsWith(`${SILPO_OAUTH_BINDING_COOKIE}=`),
+    );
+    expect(binding).toBeDefined();
+    expect(binding).toContain(`=${hashStateForBinding("abc")};`);
+    expect(binding).toContain("HttpOnly");
+    expect(binding).toContain("SameSite=Lax");
+    expect(binding).toContain("Path=/api/silpo/callback");
+    expect(binding).toContain("Secure"); // callback-URL у тесті https
+    expect(binding).toMatch(/Max-Age=600/);
+    // Сам state у куку НЕ потрапляє (він bearer-секрет flow).
+    expect(binding).not.toContain("=abc;");
+  });
+
+  it("fail-loud: /connect із хоста, до якого колбек не дістанеться, логує error silpo_connect_host_mismatch", async () => {
+    mocks.buildAuthorizationUrl.mockResolvedValue({
+      url: "https://auth.silpo.ua/authorize?state=abc",
+      state: "abc",
+    });
+    const errorSpy = vi.spyOn(logger, "error").mockImplementation(() => {});
+
+    await request(appWith())
+      .get("/api/silpo/connect")
+      .set("Host", "api.other-host.example")
+      .set("x-test-user-id", "user-1");
+    expect(errorSpy).toHaveBeenCalledWith(
+      expect.objectContaining({ msg: "silpo_connect_host_mismatch" }),
+    );
+
+    errorSpy.mockClear();
+    await request(appWith())
+      .get("/api/silpo/connect")
+      .set("Host", "api.example.com")
+      .set("x-test-user-id", "user-1");
+    await request(appWith())
+      .get("/api/silpo/connect")
+      .set("Host", "internal:3000")
+      .set("X-Forwarded-Host", "app.example.com")
+      .set("x-test-user-id", "user-1");
+    expect(errorSpy).not.toHaveBeenCalled();
+  });
+
   it("503s when PUBLIC_API_BASE_URL is not configured", async () => {
     mocks.envState.PUBLIC_API_BASE_URL = "";
     const res = await request(appWith())
@@ -247,22 +322,29 @@ describe("GET /api/silpo/connect", () => {
   });
 });
 
+function primePending(userId: string): void {
+  mocks.consumeAuthorizationState.mockResolvedValue({
+    userId,
+    codeVerifier: "verifier",
+    redirectUri: "https://api.example.com/api/silpo/callback",
+  });
+  mocks.silpoKeyRing.mockReturnValue({ current: { version: 1 } });
+  mocks.exchangeCode.mockResolvedValue({
+    access_token: "at",
+    refresh_token: "rt",
+    expires_in: 3600,
+  });
+}
+
+const SETTINGS_ERROR = "https://app.example.com/settings?silpo=error";
+
 describe("GET /api/silpo/callback", () => {
   it("redirects to Settings with ?silpo=connected on a full happy path", async () => {
-    mocks.consumeAuthorizationState.mockResolvedValue({
-      userId: "user-1",
-      codeVerifier: "verifier",
-      redirectUri: "https://api.example.com/api/silpo/callback",
-    });
-    mocks.silpoKeyRing.mockReturnValue({ current: { version: 1 } });
-    mocks.exchangeCode.mockResolvedValue({
-      access_token: "at",
-      refresh_token: "rt",
-      expires_in: 3600,
-    });
+    primePending("user-1");
 
     const res = await request(appWith())
       .get("/api/silpo/callback?code=abc&state=xyz")
+      .set("Cookie", bindingCookie("xyz"))
       .set("x-test-user-id", "user-1");
 
     expect(res.status).toBe(302);
@@ -281,98 +363,225 @@ describe("GET /api/silpo/callback", () => {
 
     const res = await request(appWith())
       .get("/api/silpo/callback?code=abc&state=bogus")
+      .set("Cookie", bindingCookie("bogus"))
       .set("x-test-user-id", "user-1");
 
     expect(res.status).toBe(302);
     expect(res.headers["location"]).toBe(
-      "https://app.example.com/settings?silpo=error&reason=invalid_state",
+      `${SETTINGS_ERROR}&reason=invalid_state`,
     );
     expect(mocks.exchangeCode).not.toHaveBeenCalled();
   });
 
-  it("ПРАЦЮЄ БЕЗ СЕСІЇ — контекст приходить зі state, не з куки", async () => {
-    // Регресія на прод-інцидент 2026-08-25. Колбек приземляється на
-    // PUBLIC_API_BASE_URL (api.…sslip.io), а кука сесії живе в контексті
-    // BETTER_AUTH_URL (sergeant.vercel.app) — різні сайти, і Vercel не
-    // проксіює /api/* на бекенд. Тобто сесії тут немає НІ В КОГО, і поки
-    // роут стояв під router-level requireSession(), кожен тестер отримував
-    // 401-JSON у вкладку замість екрана налаштувань.
-    //
-    // Тест НАВМИСНО не шле x-test-user-id: рівно так поводиться браузер,
-    // що повертається з auth.silpo.ua. Усі попередні тести цього файлу
-    // заголовок ставили — саме тому баг прожив до продакшену.
-    mocks.consumeAuthorizationState.mockResolvedValue({
-      userId: "user-1",
-      codeVerifier: "verifier",
-      redirectUri: "https://api.example.com/api/silpo/callback",
-    });
-    mocks.silpoKeyRing.mockReturnValue({ current: { version: 1 } });
-    mocks.exchangeCode.mockResolvedValue({
-      access_token: "at",
-      refresh_token: "rt",
-      expires_in: 3600,
-    });
+  it("?error= від Сільпо при наявній сесії -> reason=denied, state не споживається", async () => {
+    const res = await request(appWith())
+      .get("/api/silpo/callback?error=access_denied&state=xyz")
+      .set("x-test-user-id", "user-1");
 
+    expect(res.headers["location"]).toBe(`${SETTINGS_ERROR}&reason=denied`);
+    expect(mocks.consumeAuthorizationState).not.toHaveBeenCalled();
+  });
+
+  it("роут не 401-ить без сесії (інцидент 2026-08-25): віддає 302, а не JSON", async () => {
+    // Регресія на прод-інцидент 2026-08-25: поки роут стояв під router-level
+    // requireSession(), кожен тестер отримував 401-JSON у вкладку замість
+    // екрана налаштувань. Тест НАВМИСНО не шле x-test-user-id: рівно так
+    // поводиться браузер, що повертається з auth.silpo.ua на api-хост.
     const res = await request(appWith()).get(
       "/api/silpo/callback?code=abc&state=xyz",
     );
-
     expect(res.status).toBe(302);
-    expect(res.headers["location"]).toBe(
-      "https://app.example.com/settings?silpo=connected",
-    );
-    // Токени зберігаються на власника state, не на «нікого».
-    expect(mocks.persistTokens).toHaveBeenCalledWith(
-      "user-1",
-      { current: { version: 1 } },
-      expect.objectContaining({ accessToken: "at", refreshToken: "rt" }),
-    );
   });
 
   it("решта роутів сесію ВИМАГАЄ — виняток лише для callback", async () => {
-    // Гарантія, що перенесення callback вище requireSession() не відкрило
-    // діру в сусідніх роутах.
     const res = await request(appWith()).get("/api/silpo/sync-state");
     expect(res.status).toBe(401);
     expect(res.body).toMatchObject({ code: "UNAUTHORIZED" });
   });
+});
 
-  it("власника визначає state, а не браузер, який приніс запит", async () => {
-    // Раніше тут очікувався invalid_state при розбіжності state ↔ сесія.
-    // Та перевірка знята: роут стоїть до requireSession(), тож req.user не
-    // заповнюється, і умова була б мертвим кодом, що вдає захист.
-    //
-    // Account-linking CSRF це не відкриває: підсунутий жертві чужий state
-    // привʼяже токени до акаунта ЗАМОВНИКА цього state (тобто самого
-    // зловмисника), а не до профілю жертви. Нижче — саме цей інваріант.
-    mocks.consumeAuthorizationState.mockResolvedValue({
-      userId: "state-owner",
-      codeVerifier: "verifier",
-      redirectUri: "https://api.example.com/api/silpo/callback",
-    });
-    mocks.silpoKeyRing.mockReturnValue({ current: { version: 1 } });
-    mocks.exchangeCode.mockResolvedValue({
-      access_token: "at",
-      refresh_token: "rt",
-      expires_in: 3600,
-    });
-
-    const res = await request(appWith())
-      .get("/api/silpo/callback?code=abc&state=xyz")
-      .set("x-test-user-id", "someone-else");
+describe("GET /api/silpo/callback: relay на хост сесії", () => {
+  it("без сесії на api-хості -> 302 на веб-origin з тим самим шляхом і маркером, нічого не споживається", async () => {
+    const res = await request(appWith()).get(
+      "/api/silpo/callback?code=abc&state=xyz&evil=1",
+    );
 
     expect(res.status).toBe(302);
+    expect(res.headers["location"]).toBe(
+      "https://app.example.com/api/silpo/callback?code=abc&state=xyz&silpo_relay=1",
+    );
+    expect(mocks.consumeAuthorizationState).not.toHaveBeenCalled();
+    expect(mocks.exchangeCode).not.toHaveBeenCalled();
+    expect(mocks.persistTokens).not.toHaveBeenCalled();
+  });
+
+  it("?error= без сесії теж relay-иться (відмову покаже хост сесії)", async () => {
+    const res = await request(appWith()).get(
+      "/api/silpo/callback?error=access_denied&state=xyz",
+    );
+    expect(res.headers["location"]).toBe(
+      "https://app.example.com/api/silpo/callback?state=xyz&error=access_denied&silpo_relay=1",
+    );
+  });
+
+  it("повторний прихід без сесії (маркер є) -> session_expired, БЕЗ другого relay (немає циклу)", async () => {
+    primePending("user-1");
+
+    const res = await request(appWith()).get(
+      "/api/silpo/callback?code=abc&state=xyz&silpo_relay=1",
+    );
+
+    expect(res.headers["location"]).toBe(
+      `${SETTINGS_ERROR}&reason=session_expired`,
+    );
+    expect(mocks.consumeAuthorizationState).not.toHaveBeenCalled();
+    expect(mocks.persistTokens).not.toHaveBeenCalled();
+  });
+
+  it("api-хост і веб-origin збігаються -> relay не потрібен: session_expired одразу", async () => {
+    const prev = mocks.envState.WEB_APP_URL;
+    mocks.envState.WEB_APP_URL = "https://api.example.com";
+    try {
+      const res = await request(appWith()).get(
+        "/api/silpo/callback?code=abc&state=xyz",
+      );
+      expect(res.headers["location"]).toBe(
+        "https://api.example.com/settings?silpo=error&reason=session_expired",
+      );
+    } finally {
+      mocks.envState.WEB_APP_URL = prev;
+    }
+  });
+});
+
+describe("GET /api/silpo/callback: sec-15, власник токенів = сесія браузера", () => {
+  it("атакер пересилає жертві СВІЙ authorize-URL: сесія жертви + валідний state, але без куки -> invalid_state, токени НЕ збережено", async () => {
+    primePending("attacker");
+
+    const res = await request(appWith())
+      .get("/api/silpo/callback?code=victim-code&state=xyz")
+      .set("x-test-user-id", "victim");
+
+    expect(res.status).toBe(302);
+    expect(res.headers["location"]).toBe(
+      `${SETTINGS_ERROR}&reason=invalid_state`,
+    );
+    expect(mocks.exchangeCode).not.toHaveBeenCalled();
+    expect(mocks.persistTokens).not.toHaveBeenCalled();
+  });
+
+  it("навіть з кукою, але сесія НЕ власник state -> invalid_state, code жертви не обмінюється, токени НЕ збережено", async () => {
+    // Ізолює шар «сесія»: без звірки pending.userId з сесією токени жертви
+    // лягли б на "attacker" (власника state).
+    primePending("attacker");
+
+    const res = await request(appWith())
+      .get("/api/silpo/callback?code=victim-code&state=xyz")
+      .set("Cookie", bindingCookie("xyz"))
+      .set("x-test-user-id", "victim");
+
+    expect(res.headers["location"]).toBe(
+      `${SETTINGS_ERROR}&reason=invalid_state`,
+    );
+    expect(mocks.exchangeCode).not.toHaveBeenCalled();
+    expect(mocks.persistTokens).not.toHaveBeenCalled();
+  });
+
+  it("жертва без сесії: relay, а на хості сесії (маркер) -> session_expired, токени НЕ збережено", async () => {
+    primePending("attacker");
+
+    const relayed = await request(appWith()).get(
+      "/api/silpo/callback?code=victim-code&state=xyz",
+    );
+    const relayUrl = new URL(String(relayed.headers["location"]));
+    expect(relayUrl.origin).toBe("https://app.example.com");
+
+    const res = await request(appWith()).get(
+      `${relayUrl.pathname}${relayUrl.search}`,
+    );
+    expect(res.headers["location"]).toBe(
+      `${SETTINGS_ERROR}&reason=session_expired`,
+    );
+    expect(mocks.persistTokens).not.toHaveBeenCalled();
+  });
+
+  it("кука від ІНШОГО state -> invalid_state, токени НЕ збережено, state не споживається", async () => {
+    primePending("user-1");
+
+    const res = await request(appWith())
+      .get("/api/silpo/callback?code=victim-code&state=xyz")
+      .set("Cookie", bindingCookie("other-flow"))
+      .set("x-test-user-id", "user-1");
+
+    expect(res.headers["location"]).toBe(
+      `${SETTINGS_ERROR}&reason=invalid_state`,
+    );
+    expect(mocks.consumeAuthorizationState).not.toHaveBeenCalled();
+    expect(mocks.persistTokens).not.toHaveBeenCalled();
+  });
+
+  it("сторонні cookie поруч і сміттєве значення привʼязки -> відмова", async () => {
+    primePending("user-1");
+
+    const res = await request(appWith())
+      .get("/api/silpo/callback?code=victim-code&state=xyz")
+      .set("Cookie", `a=b; ${SILPO_OAUTH_BINDING_COOKIE}=garbage; c=d`)
+      .set("x-test-user-id", "user-1");
+
+    expect(res.headers["location"]).toContain("reason=invalid_state");
+    expect(mocks.persistTokens).not.toHaveBeenCalled();
+  });
+
+  it("ДВА ХОСТИ (прод-топологія): кука й сесія на веб-хості, колбек на api-хості -> relay -> connected", async () => {
+    // Регресія на зауваження ревʼю: кука без Domain host-only, тож до
+    // api-хоста (PUBLIC_API_BASE_URL) вона не доїде. Тест моделює два хости
+    // двома запитами: «api-хост» бачить лише те, що браузер до нього шле
+    // (host-only кука й сесія веб-хоста туди НЕ їдуть), «веб-хост» бачить куку й
+    // сесію.
+    mocks.buildAuthorizationUrl.mockResolvedValue({
+      url: "https://auth.silpo.ua/authorize?state=roundtrip",
+      state: "roundtrip",
+    });
+    const connect = await request(appWith())
+      .get("/api/silpo/connect")
+      .set("x-test-user-id", "user-1");
+    const setCookie = ([] as string[]).concat(
+      connect.headers["set-cookie"] ?? [],
+    );
+    const rawCookie = setCookie[0] ?? "";
+    expect(rawCookie).not.toMatch(/;\s*Domain=/i); // host-only: на api-хост не поїде
+    const cookieHeader = rawCookie.split(";")[0] ?? "";
+
+    primePending("user-1");
+
+    // 1) Сільпо повертає браузер на api-хост: ні куки, ні сесії.
+    const apiHost = await request(appWith()).get(
+      "/api/silpo/callback?code=abc&state=roundtrip",
+    );
+    expect(apiHost.status).toBe(302);
+    const relayUrl = new URL(String(apiHost.headers["location"]));
+    expect(relayUrl.origin).toBe("https://app.example.com");
+    expect(mocks.persistTokens).not.toHaveBeenCalled();
+
+    // 2) Браузер йде на веб-хост (Vercel-проксі): тут і кука, і сесія.
+    const webHost = await request(appWith())
+      .get(`${relayUrl.pathname}${relayUrl.search}`)
+      .set("Cookie", cookieHeader)
+      .set("x-test-user-id", "user-1");
+
+    expect(webHost.headers["location"]).toBe(
+      "https://app.example.com/settings?silpo=connected",
+    );
     expect(mocks.persistTokens).toHaveBeenCalledWith(
-      "state-owner",
+      "user-1",
       expect.anything(),
       expect.anything(),
     );
-    // Найважливіше: НЕ на того, чий заголовок сесії прийшов із запитом.
-    expect(mocks.persistTokens).not.toHaveBeenCalledWith(
-      "someone-else",
-      expect.anything(),
-      expect.anything(),
-    );
+    const cleared = ([] as string[])
+      .concat(webHost.headers["set-cookie"] ?? [])
+      .find((c) => c.startsWith(`${SILPO_OAUTH_BINDING_COOKIE}=;`));
+    expect(cleared).toBeDefined();
+    expect(cleared).toContain("Path=/api/silpo/callback");
   });
 });
 

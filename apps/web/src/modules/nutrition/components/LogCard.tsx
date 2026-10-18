@@ -7,7 +7,6 @@ import type { Dispatch, SetStateAction } from "react";
 import { ConfirmDialog } from "@shared/components/ui/ConfirmDialog";
 import { EmptyState } from "@shared/components/ui/EmptyState";
 import { Icon } from "@shared/components/ui/Icon";
-import { NutritionEmptyIllustration } from "@shared/components/ui/EmptyStateIllustrations";
 import { estimateLogBytes } from "../lib/nutritionStorage";
 import {
   addDaysISODate,
@@ -95,32 +94,34 @@ export function LogCard({
 
   return (
     <>
-      <div className="flex flex-col gap-4">
+      <div className="flex flex-col gap-5">
         <div className="flex items-center justify-between gap-3">
-          <button
-            type="button"
-            onClick={() => shiftDate(-1)}
-            className="w-10 h-10 touch-target flex items-center justify-center rounded-full bg-panelHi text-muted hover:text-text transition-colors"
-            aria-label="Попередній день"
-          >
-            <Icon name="chevron-left" size="sm" />
-          </button>
-          <div className="flex flex-col items-center gap-0.5">
-            <span className="font-extrabold text-text text-base">
+          <div className="min-w-0">
+            <p className="text-style-title text-text">
               {formatDate(selectedDate)}
-            </span>
-            <span className="text-style-caption text-subtle">
+            </p>
+            <p className="text-style-label text-muted">
               {formatLogDateSubline(selectedDate)}
-            </span>
+            </p>
           </div>
-          <button
-            type="button"
-            onClick={() => shiftDate(1)}
-            className="w-10 h-10 touch-target flex items-center justify-center rounded-full bg-panelHi text-muted hover:text-text transition-colors"
-            aria-label="Наступний день"
-          >
-            <Icon name="chevron-right" size="sm" />
-          </button>
+          <div className="flex shrink-0 items-center">
+            <button
+              type="button"
+              onClick={() => shiftDate(-1)}
+              className="touch-target flex h-11 w-11 items-center justify-center rounded-lg text-text hover:bg-line/40 focus-ring"
+              aria-label="Попередній день"
+            >
+              <Icon name="chevron-left" size="md" />
+            </button>
+            <button
+              type="button"
+              onClick={() => shiftDate(1)}
+              className="touch-target flex h-11 w-11 items-center justify-center rounded-lg text-text hover:bg-line/40 focus-ring"
+              aria-label="Наступний день"
+            >
+              <Icon name="chevron-right" size="md" />
+            </button>
+          </div>
         </div>
 
         {/* Лише для порожнього дня: над заповненим днем копія вчорашнього
@@ -131,7 +132,7 @@ export function LogCard({
             <button
               type="button"
               onClick={() => setDuplicateConfirm(true)}
-              className="w-full h-10 touch-target rounded-2xl border border-line bg-panel px-3 text-style-caption text-subtle hover:text-text hover:border-nutrition/50 transition-colors flex items-center justify-center gap-1.5"
+              className="w-full h-11 touch-target rounded-lg border border-border-strong px-3 text-style-label font-semibold text-text hover:bg-line/40 focus-ring"
             >
               {/* Підпис бере той самий `formatDate`, що й заголовок вище:
                 він уміє «Вчора» / «Сьогодні» і лише для дальших дат падає
@@ -155,13 +156,7 @@ export function LogCard({
           відсутність запису, а не є записом.
         */}
         {meals.length === 0 ? (
-          <EmptyState
-            compact
-            illustration={<NutritionEmptyIllustration size={64} />}
-            module="nutrition"
-            title="Поки немає записів"
-            description="Додай перший прийом їжі, щоб почати вести журнал."
-          />
+          <EmptyState compact title="Поки немає записів" />
         ) : (
           <DayLogSheet
             groups={groups}
@@ -178,9 +173,9 @@ export function LogCard({
         <button
           type="button"
           onClick={onAddMeal}
-          className="text-style-label w-full h-12 min-h-[44px] rounded-2xl border-2 border-dashed border-line text-muted hover:border-nutrition/60 hover:text-nutrition-strong dark:hover:text-nutrition transition-[border-color,color,background-color]"
+          className="w-full h-11 rounded-lg border border-border-strong text-style-label font-semibold text-text hover:bg-line/40 focus-ring"
         >
-          + Додати прийом їжі
+          Додати прийом їжі
         </button>
 
         <LogCardSearch
@@ -190,7 +185,7 @@ export function LogCard({
         />
 
         {logSizeWarn && (
-          <div className="rounded-2xl border border-warning/40 bg-warning/10 px-3 py-2 text-style-caption text-warning-strong">
+          <div className="border-y border-line py-2 text-style-label text-text">
             Журнал великий (~{Math.round(logBytes / 1024)} КБ).{" "}
             <button
               type="button"

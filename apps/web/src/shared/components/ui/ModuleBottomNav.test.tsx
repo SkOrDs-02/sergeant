@@ -69,7 +69,7 @@ describe("ModuleBottomNav", () => {
     expect(track.className).not.toMatch(/(?:^|[\s:])h-\[\d+px\]/);
   });
 
-  it("active tab gets a solid accent fill + ink foreground in both themes (fix spec v2 § 1)", () => {
+  it("active tab uses ink and weight without an accent fill", () => {
     render(
       <ModuleBottomNav
         items={items}
@@ -83,21 +83,13 @@ describe("ModuleBottomNav", () => {
     const activeTab = screen.getByRole("button", { name: "Overview" });
     const inactiveTab = screen.getByRole("button", { name: "Stats" });
 
-    // Light: strong-tier solid fill. Dark: luminescent tier-400 solid
-    // fill. `text-bg` is theme-aware (cream in light, ink in dark), so
-    // one bare class covers the foreground in both themes.
-    expect(activeTab.firstElementChild?.className).toContain("bg-finyk-strong");
-    expect(activeTab.firstElementChild?.className).toContain(
-      "dark:bg-teal-400",
-    );
-    expect(activeTab.className).toContain("text-bg");
-    expect(activeTab.className).toContain("border-transparent");
-    expect(inactiveTab.firstElementChild?.className).not.toContain(
-      "dark:bg-teal-400",
-    );
+    expect(activeTab).toHaveAttribute("aria-current", "page");
+    expect(activeTab.className).toContain("text-text");
+    expect(inactiveTab.className).toContain("text-muted");
+    expect(activeTab.firstElementChild?.className).not.toContain("bg-finyk");
   });
 
-  it("shows the label only for the active item, matching Hub navigation", () => {
+  it("shows every label, matching Hub navigation", () => {
     render(
       <ModuleBottomNav
         items={items}
@@ -115,7 +107,7 @@ describe("ModuleBottomNav", () => {
       selector: "span:not(.sr-only)",
     });
     expect(activeVisualLabel.className).toContain("max-w-full");
-    expect(inactiveVisualLabel.className).toContain("max-w-0");
+    expect(inactiveVisualLabel.className).toContain("max-w-full");
   });
 
   // Founder-аудит R1 (2026-09-11): grid-колонки вже рівні

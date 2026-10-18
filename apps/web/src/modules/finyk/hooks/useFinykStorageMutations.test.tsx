@@ -415,6 +415,201 @@ describe("toggle helpers", () => {
   });
 });
 
+type LinkedDebtShape = {
+  linkedTxIds: string[];
+  txLinks: Record<string, unknown>;
+};
+
+describe("привʼязки ручного запису до боргу (data-24)", () => {
+  const expense = {
+    id: "X",
+    date: "2026-09-10T12:00:00.000Z",
+    description: "Платіж",
+    amount: 400,
+    category: "debt",
+  };
+
+  it("setLinkedTxRole(manual_X) прибирає спадкову сиру форму X і лишає один ключ", () => {
+    const { slots, state } = makeSlots({
+      manualDebts: [
+        {
+          id: "d1",
+          linkedTxIds: ["X", "keep"],
+          txLinks: { X: { role: "payment", amount: 400 } },
+        },
+      ],
+    });
+    const { result } = renderMutations(slots);
+
+    result.current.setLinkedTxRole("d1", "manual_X", "debt", "payment", 400);
+
+    const debt = (state["manualDebts"] as LinkedDebtShape[])[0]!;
+    expect(debt.linkedTxIds).toEqual(["keep", "manual_X"]);
+    expect(Object.keys(debt.txLinks)).toEqual(["manual_X"]);
+  });
+
+  it("відвʼязування за однією формою знімає обидві, auto-ключ іде в dismissed", () => {
+    const { slots, state } = makeSlots({
+      manualDebts: [
+        {
+          id: "d1",
+          linkedTxIds: ["X", "manual_X"],
+          txLinks: {
+            X: { role: "payment", amount: 400 },
+            manual_X: { role: "payment", amount: 400, auto: true },
+          },
+        },
+      ],
+    });
+    const { result } = renderMutations(slots);
+
+    result.current.setLinkedTxRole("d1", "manual_X", "debt", null);
+
+    expect((state["manualDebts"] as never[])[0]).toMatchObject({
+      linkedTxIds: [],
+      txLinks: {},
+      autoLinkDismissedTxIds: ["manual_X"],
+    });
+  });
+
+  it("removeManualExpense знімає привʼязки обох форм з боргів і дебіторок", () => {
+    const { slots, state } = makeSlots({
+      manualExpenses: [expense],
+      manualDebts: [
+        {
+          id: "d1",
+          linkedTxIds: ["manual_X", "other"],
+          txLinks: {
+            manual_X: { role: "payment", amount: 400 },
+            other: { role: "payment", amount: 10 },
+          },
+        },
+        {
+          id: "d2",
+          linkedTxIds: ["X"],
+          txLinks: { X: { role: "payment", amount: 400 } },
+        },
+      ],
+      receivables: [
+        {
+          id: "r1",
+          linkedTxIds: ["X", "manual_X"],
+          txLinks: {
+            X: { role: "payment", amount: 400 },
+            manual_X: { role: "payment", amount: 400 },
+          },
+        },
+      ],
+    });
+    const { result } = renderMutations(slots);
+
+    result.current.removeManualExpense("X");
+
+    const [d1, d2] = state["manualDebts"] as {
+      linkedTxIds: string[];
+      txLinks: Record<string, unknown>;
+    }[];
+    expect(d1!.linkedTxIds).toEqual(["other"]);
+    expect(Object.keys(d1!.txLinks)).toEqual(["other"]);
+    expect(d2).toMatchObject({ linkedTxIds: [], txLinks: {} });
+    expect((state["receivables"] as never[])[0]).toMatchObject({
+      linkedTxIds: [],
+      txLinks: {},
+    });
+  });
+
+  it("привʼязати manual_X, видалити X: привида не лишається", () => {
+    const first = makeSlots({
+      manualExpenses: [expense],
+      manualDebts: [{ id: "d1", amount: 5000, linkedTxIds: [] }],
+    });
+    renderMutations(first.slots).result.current.setLinkedTxRole(
+      "d1",
+      "manual_X",
+      "debt",
+      "payment",
+      400,
+    );
+    // Новий рендер хука бачить оновлений стан, як справжній React.
+    const second = makeSlots(first.state);
+    renderMutations(second.slots).result.current.removeManualExpense("X");
+
+    const debt = (second.state["manualDebts"] as LinkedDebtShape[])[0]!;
+    expect(debt.linkedTxIds).not.toContain("manual_X");
+    expect(debt.linkedTxIds).not.toContain("X");
+    expect(debt.txLinks).toEqual({});
+  });
+
+  it("removeManualExpense без привʼязок не чіпає стан боргів (та сама референція)", () => {
+    const debts = [{ id: "d1", linkedTxIds: ["bank1"] }];
+    const { slots, state } = makeSlots({
+      manualExpenses: [expense],
+      manualDebts: debts,
+    });
+    const { result } = renderMutations(slots);
+
+    expect(result.current.removeManualExpense("X")).toEqual([]);
+    expect(state["manualDebts"]).toBe(debts);
+  });
+
+  it("restoreManualExpense повертає привʼязку під manual_<новий id>", () => {
+    const first = makeSlots({
+      manualExpenses: [expense],
+      manualDebts: [
+        {
+          id: "d1",
+          amount: 5000,
+          linkedTxIds: ["manual_X"],
+          txLinks: { manual_X: { role: "payment", amount: 400, auto: true } },
+        },
+      ],
+    });
+    const removedLinks = renderMutations(
+      first.slots,
+    ).result.current.removeManualExpense("X");
+    expect(removedLinks).toEqual([
+      {
+        type: "debt",
+        itemId: "d1",
+        role: "payment",
+        amount: 400,
+        auto: true,
+      },
+    ]);
+
+    const second = makeSlots(first.state);
+    renderMutations(second.slots).result.current.restoreManualExpense(
+      expense,
+      removedLinks,
+    );
+
+    const restored = (second.state["manualExpenses"] as { id: string }[])[0]!;
+    expect(restored.id).not.toBe("X");
+    const debt = (second.state["manualDebts"] as LinkedDebtShape[])[0]!;
+    expect(debt.linkedTxIds).toEqual([`manual_${restored.id}`]);
+    expect(debt.txLinks).toEqual({
+      [`manual_${restored.id}`]: { role: "payment", amount: 400, auto: true },
+    });
+  });
+
+  it("addManualExpense(snapshot, links) — шлях swipe-undo — теж повертає привʼязку", () => {
+    const { slots, state } = makeSlots({
+      manualDebts: [{ id: "d1", amount: 5000, linkedTxIds: [] }],
+    });
+    const { result } = renderMutations(slots);
+
+    const entry = result.current.addManualExpense(
+      { amount: 400, description: "Платіж", category: "debt" },
+      [{ type: "debt", itemId: "d1", role: "payment", amount: 400 }],
+    );
+
+    expect((state["manualDebts"] as never[])[0]).toMatchObject({
+      linkedTxIds: [`manual_${entry.id}`],
+      txLinks: { [`manual_${entry.id}`]: { role: "payment", amount: 400 } },
+    });
+  });
+});
+
 describe("setSplitTx", () => {
   it("stores splits when there are >=2", () => {
     const { slots, state } = makeSlots();

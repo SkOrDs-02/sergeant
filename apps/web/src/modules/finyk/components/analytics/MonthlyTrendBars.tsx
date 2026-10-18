@@ -102,8 +102,8 @@ function MonthlyTrendBarsComponent({
                     className={cn(
                       "w-full max-w-8 rounded-t-md transition-opacity",
                       p.isCurrent
-                        ? "bg-finyk/30 border border-dashed border-finyk"
-                        : "bg-finyk",
+                        ? "bg-chart-finyk/30 border border-dashed border-line"
+                        : "bg-chart-finyk",
                       selectedPoint && !isSelected && "opacity-60",
                     )}
                     style={{

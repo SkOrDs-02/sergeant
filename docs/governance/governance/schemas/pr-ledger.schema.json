@@ -2,7 +2,7 @@
   "$schema": "http://json-schema.org/draft-07/schema#",
   "$id": "pr-ledger.schema.json",
   "title": "Sergeant PR Ledger",
-  "description": "Canonical reverse-index of merged PRs that touched canonical governance docs (ADR / initiative / playbook / hard-rule). Updated by scripts/ci/update-pr-backlinks.mjs: `--sync` reads merged PRs from the Bitbucket API (since 2026-09-23), older entries came from GitHub merge events. Drives the `<!-- AUTO-GENERATED: PR-BACKLINKS-START -->` block at the end of each canonical doc.",
+  "description": "Canonical reverse-index of merged PRs that touched canonical governance docs (ADR / initiative / playbook / hard-rule). Updated by scripts/ci/update-pr-backlinks.mjs: `--sync` / `--pr` read merged PRs from the GitHub REST API (since 2026-10-08; `--host bitbucket` for the 2026-09-23..29 Bitbucket archive), older entries came from GitHub merge events. Drives the `<!-- AUTO-GENERATED: PR-BACKLINKS-START -->` block at the end of each canonical doc.",
   "type": "object",
   "required": ["version", "generated_at", "prs"],
   "additionalProperties": false,
@@ -16,7 +16,7 @@
     },
     "examined": {
       "type": "object",
-      "description": "Номери змерджених PR, які вже оглянуті й НЕ торкнулись жодного канонічного документа, згруповані за хостом. Потрібні, щоб `--stale` не рахував їх пропущеними вічно: більшість PR канонічних доків не чіпає, запису не отримує, і без цього списку кожен пуш нагадував би про ті самі PR. Зберігається саме перелік, а не «найбільший оглянутий номер»: PR зі старішим номером може змерджитись пізніше за новіший, і відсічка по максимуму тихо проковтнула б його.",
+      "description": "Номери змерджених PR, які вже оглянуті й НЕ торкнулись жодного канонічного документа, згруповані за джерелом: ключ `bitbucket` для архіву, `github:<owner>/<repo>` для GitHub (номер унікальний лише в межах репо). Потрібні, щоб `--stale` не рахував їх пропущеними вічно: більшість PR канонічних доків не чіпає, запису не отримує, і без цього списку кожен пуш нагадував би про ті самі PR. Зберігається саме перелік, а не «найбільший оглянутий номер»: PR зі старішим номером може змерджитись пізніше за новіший, і відсічка по максимуму тихо проковтнула б його.",
       "additionalProperties": {
         "type": "array",
         "items": { "type": "integer", "minimum": 1 }

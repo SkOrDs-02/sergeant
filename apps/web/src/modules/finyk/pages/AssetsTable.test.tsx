@@ -105,7 +105,7 @@ describe("AssetsNetworthCard", () => {
     ).toBeNull();
   });
 
-  it("colours networth red when negative", () => {
+  it("preserves the negative networth amount", () => {
     const { container } = render(
       <AssetsNetworthCard
         networth={-68499}
@@ -114,14 +114,14 @@ describe("AssetsNetworthCard", () => {
         showBalance={true}
       />,
     );
-    const valueEl = container.querySelector(".text-danger-strong");
+    const valueEl = container.querySelector(".text-style-display");
     expect(valueEl).not.toBeNull();
     // Сума тепер `Money`, тож розкладена на тири — матчер по `textContent`,
     // мінус U+2212, нерозривний у розрядах.
     expect(valueEl?.textContent).toMatch(/−68\u00a0499/);
   });
 
-  it("colours networth in finyk tone when non-negative", () => {
+  it("preserves the positive networth amount", () => {
     const { container } = render(
       <AssetsNetworthCard
         networth={12345}
@@ -130,7 +130,7 @@ describe("AssetsNetworthCard", () => {
         showBalance={true}
       />,
     );
-    expect(container.querySelector(".text-finyk-strong")).not.toBeNull();
+    expect(container.querySelector(".text-style-display")).not.toBeNull();
     expect(container.querySelector(".text-danger-strong")).toBeNull();
   });
 

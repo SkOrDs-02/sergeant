@@ -350,7 +350,7 @@ describe("ExerciseDetailSheet – item type switcher (2026-08 redesign, item 5)"
       />,
     );
 
-    fireEvent.click(screen.getByRole("tab", { name: "Час: секунди" }));
+    fireEvent.click(screen.getByRole("radio", { name: "Час: секунди" }));
     expect(updateItem).toHaveBeenCalledWith(
       "w1",
       "item-1",

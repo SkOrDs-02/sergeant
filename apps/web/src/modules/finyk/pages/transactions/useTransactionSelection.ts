@@ -9,6 +9,7 @@ import type {
   TxSplit,
 } from "@sergeant/finyk-domain/domain/types";
 import type { ManualExpense } from "@sergeant/finyk-domain/domain/personalization";
+import type { ManualExpenseLinkSnapshot } from "../../hooks/manualExpenseDebtLinks";
 
 // Ukrainian one / few / many noun plural for "операція" (operation/transaction)
 // with grammatical case selector. Inline because the only consumers are the
@@ -34,8 +35,14 @@ export interface UseTransactionSelectionParams {
   overrideCategory: (id: string, catId: string | null) => void;
   setSplitTx: (id: string, splits: TxSplit[] | null) => void;
   setTxNote: (id: string, note: string | null) => void;
-  removeManualExpense: ((id: string) => void) | undefined;
-  addManualExpense: ((expense: Omit<ManualExpense, "id">) => void) | undefined;
+  removeManualExpense:
+    ((id: string) => ManualExpenseLinkSnapshot[] | void) | undefined;
+  addManualExpense:
+    | ((
+        expense: Omit<ManualExpense, "id">,
+        restoredLinks?: readonly ManualExpenseLinkSnapshot[],
+      ) => void)
+    | undefined;
   onEditManualExpense: ((id: string) => void) | undefined;
   toast: ReturnType<typeof useToast>;
 }
@@ -224,10 +231,12 @@ export function useTransactionSelection({
       category: String(legacyCategory || tx.categoryId || "інше"),
       kind: isIncome ? "income" : "expense",
     };
-    removeManualExpense(String(manualId));
+    // Привʼязки до боргів, зняті разом із записом, повертаються під
+    // `manual_<newId>` (`data-24`): інакше undo гасив би борг уже без платежу.
+    const removedLinks = removeManualExpense(String(manualId)) ?? [];
     showUndoToast(toast, {
       msg: isIncome ? "Надходження видалено" : "Витрату видалено",
-      onUndo: () => addManualExpense(snapshot),
+      onUndo: () => addManualExpense(snapshot, removedLinks),
     });
   }, []);
 

@@ -108,7 +108,7 @@ describe("DailyPlanCard «Підказати з пресету»", () => {
 
     expect(screen.getByText(/У профілі бракує:/u)).toBeInTheDocument();
     expect(
-      screen.getByRole("link", { name: /Заповнити в профілі/u }),
+      screen.getByRole("button", { name: /Заповнити в профілі/u }),
     ).toBeInTheDocument();
   });
 

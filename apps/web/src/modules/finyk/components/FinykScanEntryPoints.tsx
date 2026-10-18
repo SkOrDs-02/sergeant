@@ -5,18 +5,9 @@
  * Точка входу в чек-скан v1 і масове ведення (Фаза 2) — спека
  * `docs/work/specs/receipt-scan.md` § Флоу v1 / § Фаза 2.
  *
- * UX-РІШЕННЯ (задокументовано в звіті web-agent-а PR #818, розходиться з
- * буквальним текстом спеки "кнопка ... поруч із «+ Витрата» на сторінці
- * транзакцій"): існуючий `FloatingActionButton` у `FinykApp.tsx` уже й
- * так глобальний для ВСІХ сторінок модуля (не лише "Операції"), а не
- * привʼязаний до сторінки транзакцій. Замість другої, сторінко-локальної
- * кнопки — розширено ТОЙ САМИЙ FAB до fan-menu (`actions`, вже готова
- * можливість `FloatingActionButton`) з трьома діями: «Додати витрату»
- * (наявна поведінка), «Сканувати чек» (одне чи кілька фото — батч живе
- * там, бета-фідбек №2 2026-08-18), «Додати документи» (скрін/CSV). Це
- * найменш-інвазивний шлях (мінус друга кнопка, мінус друга copy-поверхня)
- * і дає доступ до сканування з БУДЬ-ЯКОЇ сторінки модуля — строго ширше
- * покриття, ніж буквальна вимога спеки.
+ * Мова H (redesign v3, поправка власника 2026-10-10): чорна кнопка
+ * «+ Додати» в куті над tab bar відкриває аркуш джерел «Вручну», «Чек»,
+ * «Документи»; усі три доступні з будь-якої сторінки модуля, як і раніше.
  *
  * Обидва sheet-и — ліниві (`lazyReceiptSheets.ts`, той самий
  * `lazyImport` патерн, що `pages/lazyPages.ts`) і монтуються лише коли
@@ -25,23 +16,24 @@
  * лише в момент відкриття `ReceiptScanSheet`.
  *
  * Suspense fallback — легкий Spinner, не `null` (CodeRabbit round 5, PR
- * #818): користувач щойно тапнув дію у FAB-меню — свідомий жест, а не
+ * #818): користувач щойно тапнув джерело в аркуші «Додати» — свідомий жест, а не
  * фонове preload. `null` під час завантаження чанка (JS цього sheet-а +
  * `vendor-zxing` для сканера) на повільному звʼязку виглядав би так, ніби
  * тап взагалі нічого не зробив.
  */
 import { Suspense, useState } from "react";
-import { FloatingActionButton } from "@shared/components/ui/FloatingActionButton";
+import { AddAction } from "@shared/components/ui/CornerAction";
 import { SectionErrorBoundary } from "@shared/components/ui/SectionErrorBoundary";
 import { Spinner } from "@shared/components/ui/Spinner";
 import { useToast } from "@shared/hooks/useToast";
+import { messages } from "@shared/i18n/uk";
 import type { CustomCategoryInput } from "@sergeant/finyk-domain";
 import type { ManualExpenseWriteThroughStorage } from "../hooks/manualExpenseWriteThrough";
 import { BulkImportSheet, ReceiptScanSheet } from "./lazyReceiptSheets";
 import { useAuthOptional } from "../../../core/auth/AuthContext";
 
 /** Shared between both lazy sheets below — matches `Sheet`'s own backdrop
- * treatment (`bg-black/40 backdrop-blur-sm`, `Sheet.tsx`) so the fallback
+ * treatment (`bg-black/40`, `Sheet.tsx`) so the fallback
  * reads as "the sheet is opening", not a separate flash of UI. */
 function SheetOpeningFallback() {
   return (
@@ -49,7 +41,7 @@ function SheetOpeningFallback() {
       role="status"
       aria-live="polite"
       aria-label="Відкриваю…"
-      className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm"
+      className="fixed inset-0 z-50 flex items-center justify-center bg-black/40"
     >
       <Spinner size="lg" />
     </div>
@@ -63,7 +55,7 @@ export interface FinykScanEntryPointsProps {
   customCategories?: readonly CustomCategoryInput[] | undefined;
   /**
    * Аркуш масового імпорту КОНТРОЛЬОВАНИЙ ззовні, на відміну від сканера
-   * чеків поруч. Причина: його відкриває не лише FAB, а й плашка
+   * чеків поруч. Причина: його відкриває не лише аркуш «Додати», а й плашка
    * нагадування в Огляді (`ImportReminderBanner`), і обидва входи мають
    * вести в один і той самий аркуш. Тримати стан тут означало б або
    * другий екземпляр аркуша, або сигнальний проп-костиль.
@@ -102,31 +94,22 @@ export function FinykScanEntryPoints({
     toast.info("Для сканування чеків і документів увійди в акаунт.");
     onOpenAuth();
   };
+  const src = messages.finyk.addSources;
 
   return (
     <>
-      <FloatingActionButton
-        variant="v2-finyk"
-        icon="plus"
-        aria-label="Додати"
-        actions={[
+      <AddAction
+        sources={[
+          { id: "manual", ...src.manual, onSelect: onAddExpense },
           {
-            id: "expense",
-            icon: "plus",
-            label: "Додати витрату",
-            onClick: onAddExpense,
+            id: "receipt",
+            ...src.receipt,
+            onSelect: () => requireAccount(() => setShowReceiptScan(true)),
           },
           {
-            id: "scan-receipt",
-            icon: "scanner",
-            label: "Сканувати чек",
-            onClick: () => requireAccount(() => setShowReceiptScan(true)),
-          },
-          {
-            id: "bulk-import",
-            icon: "upload",
-            label: "Додати документи",
-            onClick: () => requireAccount(() => onBulkImportOpenChange(true)),
+            id: "import",
+            ...src.import,
+            onSelect: () => requireAccount(() => onBulkImportOpenChange(true)),
           },
         ]}
       />

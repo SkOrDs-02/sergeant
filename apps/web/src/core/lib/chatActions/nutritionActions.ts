@@ -16,6 +16,7 @@ import {
   persistFizrukDailyLog,
   readFizrukDailyLog,
 } from "./fizrukActions/shared";
+import { measurementRangeMessage } from "./fizrukActions/measurementValidation";
 // AI-CONTEXT: chat-action executors run outside React, so they must write
 // through the module's canonical storage wrappers — NOT raw `lsSet`. After
 // Stage 8 (#057n-tombstone) the `nutrition_log/prefs/pantries` LS keys are no
@@ -451,6 +452,11 @@ export function handleNutritionAction(
       const n = Number(weight_kg);
       if (!Number.isFinite(n) || n <= 0)
         return "Вага має бути додатним числом (кг).";
+      // Та сама канонічна межа, що в `log_wellbeing` / `log_measurement`
+      // (ADR-0080): інакше 1000 кг перезаписує профіль і КБЖВ-цілі, а сервер
+      // реджектить рядок щоденного логу, тож він ніколи не синхронізується.
+      const weightRange = measurementRangeMessage("weightKg", n);
+      if (weightRange) return weightRange;
       const entry = {
         id: `dl_${Date.now().toString(36)}_${crypto.randomUUID()}`,
         at: new Date().toISOString(),

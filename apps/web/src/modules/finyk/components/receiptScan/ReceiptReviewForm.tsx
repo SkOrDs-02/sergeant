@@ -11,8 +11,8 @@
 import { useId } from "react";
 import type { Dispatch, SetStateAction } from "react";
 import { Badge } from "@shared/components/ui/Badge";
+import { Card } from "@shared/components/ui/Card";
 import { Button } from "@shared/components/ui/Button";
-import { Icon } from "@shared/components/ui/Icon";
 import { DateField } from "@shared/components/ui/DateField";
 import { Input } from "@shared/components/ui/Input";
 import { Label } from "@shared/components/ui/FormField";
@@ -94,7 +94,7 @@ export function ReceiptReviewForm({
   const handleAddItem = () => setDraft((d) => addBlankDraftItem(d));
 
   return (
-    <div className="space-y-4">
+    <Card prominence="receipt" className="space-y-4">
       {draft.source === "vision" && (
         <Badge
           variant="warning"
@@ -102,7 +102,6 @@ export function ReceiptReviewForm({
           size="sm"
           className="inline-flex items-center gap-1.5"
         >
-          <Icon name="camera" size="xs" aria-hidden />
           розпізнано з фото, перевір суми
         </Badge>
       )}
@@ -155,13 +154,13 @@ export function ReceiptReviewForm({
             }
             ariaLabel="Сума чека"
             disabled={disabled}
-            // `pointer-coarse:text-base!` мусить бути поруч із важливим
+            // `pointer-coarse:text-style-label-lg!` мусить бути поруч із важливим
             // `text-style-body!` (≈15px на вузькому екрані), інакше той
             // бʼє неважливий 16px-floor бази і iOS знову зумить екран на
             // фокусі саме цього поля (бета-фідбек №2, 2026-08-18 — «клік
             // по сумі все ще зумить»; той самий патерн, що BulkReviewTable).
-            // eslint-disable-next-line sergeant-design/no-raw-type-size -- анти-зум ІНВАРІАНТ контрола вводу (iOS: input <16px → авто-зум), не типографічна шкала.
-            className="h-11! w-full text-style-body! pointer-coarse:text-base!"
+
+            className="h-11! w-full text-style-body! pointer-coarse:text-style-label-lg!"
           />
         </div>
       </div>
@@ -197,12 +196,11 @@ export function ReceiptReviewForm({
             onClick={handleAddItem}
             disabled={disabled}
           >
-            <Icon name="plus" size={13} aria-hidden />
             Додати позицію
           </Button>
         </div>
         {draft.items.length > 0 ? (
-          <ul className="mt-1 rounded-2xl border border-line bg-panelHi px-3">
+          <ul className="mt-1 rounded-panel border border-line bg-panel px-3">
             {draft.items.map((item, index) => (
               <ReceiptReviewItemRow
                 key={`${item.position}-${index}`}
@@ -220,6 +218,6 @@ export function ReceiptReviewForm({
           </p>
         )}
       </div>
-    </div>
+    </Card>
   );
 }

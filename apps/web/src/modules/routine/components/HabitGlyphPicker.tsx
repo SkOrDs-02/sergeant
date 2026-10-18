@@ -64,7 +64,7 @@ export function HabitGlyphPicker({
         aria-expanded={open}
         className={cn(
           "routine-touch-field flex w-12 shrink-0 items-center justify-center",
-          "rounded-2xl border border-line bg-panelHi text-text",
+          "rounded-lg border border-line bg-panelHi text-text",
           "transition-colors hover:bg-panel",
           "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-focus/45",
         )}
@@ -81,8 +81,8 @@ export function HabitGlyphPicker({
           role="dialog"
           aria-label={label}
           className={cn(
-            "absolute left-0 z-30 mt-2 w-[17rem]",
-            "grid grid-cols-6 gap-1 rounded-2xl border border-line bg-panel p-2 shadow-float",
+            "absolute left-0 z-30 mt-2 w-[18rem]",
+            "grid grid-cols-6 gap-1 rounded-lg border border-line bg-panel p-2",
           )}
         >
           {ROUTINE_GLYPHS.map((glyph) => (
@@ -97,7 +97,7 @@ export function HabitGlyphPicker({
               aria-label={routineGlyphLabel(glyph)}
               aria-pressed={value === glyph}
               className={cn(
-                "flex h-10 w-10 items-center justify-center rounded-xl text-text",
+                "flex h-11 w-11 items-center justify-center rounded-lg text-text",
                 "transition-colors hover:bg-panelHi",
                 "focus:outline-none focus-visible:ring-2 focus-visible:ring-focus/45",
                 value === glyph && "bg-panelHi ring-1 ring-line",

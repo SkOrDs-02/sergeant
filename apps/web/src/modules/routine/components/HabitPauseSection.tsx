@@ -68,18 +68,17 @@ export function HabitPauseSection({
     : "";
 
   return (
-    <section className="mb-5" aria-label={t.heading}>
-      <SectionHeading as="h3" size="xs" className="mb-2" variant="routine">
+    <section className="mb-7" aria-label={t.heading}>
+      <SectionHeading as="h3" size="lg" className="mb-3">
         {t.heading}
       </SectionHeading>
 
       {active ? (
-        <div className="rounded-xl border border-line bg-panel px-3 py-2.5">
+        <div className="space-y-3">
           <p className="text-style-label text-text">{activeLabel}</p>
-          <p className="text-style-caption text-subtle mt-0.5">
-            {t.activeHint}
-          </p>
+          <p className="text-style-label text-subtle mt-0.5">{t.activeHint}</p>
           <Button
+            tone="neutral"
             type="button"
             size="sm"
             variant="outline"
@@ -92,7 +91,7 @@ export function HabitPauseSection({
           </Button>
         </div>
       ) : (
-        <div className="rounded-xl border border-line bg-panel px-3 py-2.5">
+        <div className="space-y-3">
           <p className="text-style-body text-subtle mb-2">{t.hint}</p>
           <div
             role="group"
@@ -118,6 +117,8 @@ export function HabitPauseSection({
           <Button
             type="button"
             size="sm"
+            variant="outline"
+            tone="neutral"
             className="mt-2 w-full sm:w-auto"
             onClick={declare}
           >
@@ -129,7 +130,7 @@ export function HabitPauseSection({
       {planned.length > 0 && (
         <ul className="mt-2 space-y-1">
           {planned.map((iv) => (
-            <li key={iv.from} className="text-style-caption text-subtle">
+            <li key={iv.from} className="text-style-label text-subtle">
               {`${t.plannedPrefix} ${rangeLabel(iv)}`}
             </li>
           ))}

@@ -125,7 +125,12 @@ for (const mod of MODULES) {
     // Click the canonical "На хаб" button. All four modules use
     // `ModuleHeaderHubButton` from `@shared/components/layout/ModuleHeader`,
     // so this aria-label is the single contract under test.
-    const hubButton = page.getByRole("button", { name: "На хаб" }).first();
+    const hubButton = page
+      .getByRole("button", {
+        name: mod.id === "fizruk" ? "Назад" : "На хаб",
+        exact: true,
+      })
+      .first();
     await expect(hubButton).toBeVisible();
     await hubButton.click();
 

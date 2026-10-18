@@ -234,4 +234,34 @@ describe("useDebtPaymentSplitSync — рівень 3 (2026-09-11)", () => {
     expect(toastSuccess).not.toHaveBeenCalled();
     expect(result.current.pendingUnlink).toBeNull();
   });
+
+  it("ручний запис привʼязаний під manual_<id>: сплітові зміни знаходять привʼязку за сирим id (data-24)", () => {
+    const debt: Debt = {
+      id: "d1",
+      amount: 5000,
+      name: "Кредитка",
+      linkedTxIds: ["manual_m1"],
+      txLinks: { manual_m1: { role: "payment", amount: 300 } },
+    };
+    const { result, setLinkedTxRole } = setup([debt]);
+
+    act(() => {
+      result.current.reconcile(
+        "m1",
+        [
+          { categoryId: "debt", amount: 150 },
+          { categoryId: "food", amount: 850 },
+        ],
+        1000,
+      );
+    });
+
+    expect(setLinkedTxRole).toHaveBeenCalledWith(
+      "d1",
+      "manual_m1",
+      "debt",
+      "payment",
+      150,
+    );
+  });
 });

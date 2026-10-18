@@ -89,9 +89,15 @@ test("@critical anonymous: витрата, створена без входу, �
   ).toBe(401);
   await waitForInitialSqliteRefresh(page, "finyk");
 
-  // FAB — фан-меню (PR #818): головна кнопка «Додати», дія — menuitem.
-  await page.getByRole("button", { name: "Додати", exact: true }).click();
-  await page.getByRole("menuitem", { name: "Додати витрату" }).click();
+  // «+ Додати» в куті, далі рядок «Вручну» в аркуші джерел.
+  await page
+    .getByTestId("corner-action")
+    .getByRole("button", { name: "Додати" })
+    .click();
+  await page
+    .getByTestId("add-sources")
+    .getByRole("button", { name: /^Вручну/ })
+    .click();
   const createDialog = page.getByRole("dialog", { name: "Додати витрату" });
   await expect(createDialog).toBeVisible();
   await page.getByLabel("Сума ₴").fill("77");

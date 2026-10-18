@@ -23,9 +23,7 @@ import { Card } from "@shared/components/ui/Card";
 import { Button } from "@shared/components/ui/Button";
 import { SectionHeading } from "@shared/components/ui/SectionHeading";
 import { injurySiteLabelUk } from "@sergeant/fizruk-domain/data";
-
 import { messages } from "@shared/i18n/uk";
-
 import { useInjuries } from "../hooks/useInjuries";
 
 const t = messages.fizruk.injuries;
@@ -52,7 +50,7 @@ export function InjurySection({ onOpenBody }: InjurySectionProps = {}) {
   const { active, clear } = useInjuries();
 
   return (
-    <Card as="section" radius="lg" padding="lg" aria-label={t.title}>
+    <Card as="section" padding="lg" aria-label={t.title}>
       <SectionHeading size="xs" variant="fizruk" as="h2">
         {t.title}
       </SectionHeading>
@@ -64,7 +62,7 @@ export function InjurySection({ onOpenBody }: InjurySectionProps = {}) {
           {active.map((m) => (
             <li
               key={m.id}
-              className="flex items-center justify-between gap-3 rounded-xl border border-border px-3 py-2"
+              className="flex items-center justify-between gap-3 rounded-panel border border-border px-3 py-2"
             >
               <span className="min-w-0">
                 <span className="block text-style-label font-medium truncate">
@@ -91,8 +89,8 @@ export function InjurySection({ onOpenBody }: InjurySectionProps = {}) {
         <div className="mt-3">
           <Button
             size="sm"
-            variant="soft"
-            tone="fizruk"
+            variant="outline"
+            tone="neutral"
 
             onClick={onOpenBody}
           >

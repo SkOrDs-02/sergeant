@@ -34,7 +34,7 @@ export function PrivacyPolicySheet({ open, onClose }: PrivacyPolicySheetProps) {
         {privacyDocument.sections.map((section) => (
           <section
             key={section.title}
-            className="rounded-2xl border border-line bg-panel p-4"
+            className="rounded-panel border border-line bg-panel p-4"
           >
             <h3 className="text-style-label font-semibold text-text">
               {section.title}
@@ -46,7 +46,7 @@ export function PrivacyPolicySheet({ open, onClose }: PrivacyPolicySheetProps) {
             </div>
           </section>
         ))}
-        <div className="rounded-2xl border border-warning-soft bg-warning-soft/40 p-3 text-left text-style-caption text-text">
+        <div className="rounded-panel border border-warning-soft bg-warning-soft/40 p-3 text-left text-style-caption text-text">
           <strong>Founder/lawyer review gate:</strong>{" "}
           {messages.legal.reviewGateNotice}
         </div>

@@ -12,10 +12,10 @@ export function OverallSlide({ slide }: { slide: Slide }) {
         {(slide.recommendations ?? []).map((rec: string, i: number) => (
           <div
             key={i}
-            className="flex items-start gap-3 rounded-2xl bg-white/15 border border-white/20 px-4 py-3"
+            className="flex items-start gap-3 rounded-panel bg-white/15 border border-white/20 px-4 py-3"
           >
             {/* icon-size, not type */}
-            <div className="shrink-0 w-7 h-7 rounded-full bg-white text-amber-600 flex items-center justify-center font-black text-sm">
+            <div className="shrink-0 w-7 h-7 rounded-lg bg-white text-amber-600 flex items-center justify-center font-black text-sm">
               {i + 1}
             </div>
             <p className="text-style-label leading-relaxed text-white">{rec}</p>

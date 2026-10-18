@@ -10,7 +10,10 @@
  * Mirror того ж pattern, що Stage 11 / PR #057n-tombstone-mobile
  * розгорнув для water-log + shopping-list.
  */
+import type { RecipeComponent } from "@sergeant/nutrition-domain";
 import { normalizeMacrosNullable, type NullableMacros } from "@sergeant/shared";
+
+import { recipeCompositionFields } from "@sergeant/nutrition-domain";
 
 import {
   isNutritionDualWriteRegistered,
@@ -24,6 +27,8 @@ import { getCachedNutritionSqliteState } from "./sqliteReader";
 export interface SavedRecipe {
   id: string;
   title: string;
+  components?: RecipeComponent[];
+  cookedWeightG?: number | null;
   timeMinutes: number | null;
   servings: number | null;
   ingredients: string[];
@@ -53,6 +58,7 @@ export function normalizeSavedRecipe(raw: unknown): SavedRecipe {
   return {
     id,
     title: title || "Без назви",
+    ...recipeCompositionFields(o),
     timeMinutes: o.timeMinutes != null ? clamp0(o.timeMinutes) : null,
     servings: o.servings != null ? clamp0(o.servings) : null,
     ingredients: Array.isArray(o.ingredients)

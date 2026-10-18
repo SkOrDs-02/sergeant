@@ -14,7 +14,7 @@ export function DayPlanLoadingSkeleton() {
     <div className="space-y-3 motion-safe:animate-in motion-safe:fade-in">
       <div className="flex items-center justify-between px-1 pb-1">
         <SkeletonText shimmer className="w-32" />
-        <Skeleton shimmer className="w-20 h-6 rounded-full" />
+        <Skeleton shimmer className="w-20 h-6 rounded-lg" />
       </div>
       {[0, 1, 2].map((i) => (
         <SkeletonMealCard

@@ -2,7 +2,6 @@
  * Last validated: 2026-08-07
  * Status: Active
  */
-import { Card } from "@shared/components/ui/Card";
 import type { Meal, MealTypeId } from "@sergeant/nutrition-domain";
 import { DayStrip } from "./DayStrip";
 import { VirtualMealList } from "./VirtualMealList";
@@ -35,9 +34,10 @@ interface DayLogSheetProps {
  * і сформулював: перш ніж питати «чи це аркуш», спитай «чи є вузол, який
  * є ЛИШЕ цим», і якщо ні — виділи його.
  *
- * `stub`, а не пара `rule`/`perf`: пара стверджує СУМІЖНІСТЬ у стосі, а
- * тут аркуш один і навколо нього `gap-4`. Той самий вибір, що в
- * `WeeklyDigestCard` і `RecentWorkoutsSection`.
+ * Мова H (redesign v3, PR4): матеріал «край і зріз» живе лише на чеках
+ * Фініка, тож аркуш дня більше не панель і не перфорація. Межу запису
+ * дня тримає сама секція: смуга доби (єдиний тинт екрана) і прийоми
+ * рядками на hairline.
  *
  * Порожнього стану тут немає навмисно — і це не спрощення. Порожній стан
  * повідомляє про ВІДСУТНІСТЬ запису, паперового аналога в нього немає
@@ -53,14 +53,11 @@ export function DayLogSheet({
   onCopyMeals,
 }: DayLogSheetProps) {
   return (
-    <Card
-      as="section"
-      edge="stub"
-      padding="none"
+    <section
       aria-label={`Записи за ${selectedDate}`}
+      className="flex flex-col gap-4"
     >
-      <div className="p-4 flex flex-col gap-3">
-        {/*
+      {/*
           Смуга стоїть НАД журналом, а не замість нього (анти-слоп П1,
           рішення власника 2026-08-06 на `signature-views.html`). Той самий
           вибір, що гребінь над списком підписок: у смузі нема чого
@@ -72,17 +69,16 @@ export function DayLogSheet({
           повертає `null`. Порога тут навмисно немає — інакше правило
           мовчання жило б у двох місцях.
         */}
-        <DayStrip meals={meals} />
+      <DayStrip meals={meals} />
 
-        <VirtualMealList
-          groups={groups}
-          meals={meals}
-          selectedDate={selectedDate}
-          onRemoveMeal={onRemoveMeal}
-          onEditMeal={onEditMeal}
-          onCopyMeals={onCopyMeals}
-        />
-      </div>
-    </Card>
+      <VirtualMealList
+        groups={groups}
+        meals={meals}
+        selectedDate={selectedDate}
+        onRemoveMeal={onRemoveMeal}
+        onEditMeal={onEditMeal}
+        onCopyMeals={onCopyMeals}
+      />
+    </section>
   );
 }

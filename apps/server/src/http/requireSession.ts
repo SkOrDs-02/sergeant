@@ -186,6 +186,32 @@ function buildRequireSession(
 }
 
 /**
+ * Лише ЧИТАЄ сесію: якщо вона є на цьому хості, кладе юзера в `req.user`,
+ * інакше мовчки пропускає далі. Ніколи не відповідає 401 і не гейтить вікно
+ * видалення: рішення «пускати чи ні» належить хендлеру.
+ *
+ * Для єдиного роуту, який не може вимагати сесію за побудовою, але має її
+ * використати, коли вона є: OAuth-колбек Сільпо (sec-15, `routes/silpoCallback.ts`).
+ * Збій lookup-у трактується як «сесії немає» (fail-closed: хендлер у цьому
+ * випадку не збереже жодних токенів), але логується.
+ */
+export function optionalSession(): RequestHandler {
+  return async (req, _res, next) => {
+    try {
+      const user = await getSessionUser(req);
+      if (user) (req as AuthedRequest).user = user;
+    } catch (err) {
+      logger.warn({
+        msg: "auth_session_lookup_failed",
+        variant: "optional",
+        err: err instanceof Error ? err.message : String(err),
+      });
+    }
+    next();
+  };
+}
+
+/**
  * Як `requireSession()`, але lookup-failure не падає у 500-error-handler.
  * Замість цього перші `SOFT_FAILURE_LOUD_THRESHOLD - 1` поспіль помилок
  * мапляться у 401 (зберігає історичну поведінку push-сервіс-воркера на

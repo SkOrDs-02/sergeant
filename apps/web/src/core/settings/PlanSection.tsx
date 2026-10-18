@@ -4,11 +4,11 @@ import { useQueryClient } from "@tanstack/react-query";
 import { isApiError } from "@sergeant/api-client";
 import { Badge } from "@shared/components/ui/Badge";
 import { Button } from "@shared/components/ui/Button";
-import { Icon } from "@shared/components/ui/Icon";
 import { billingApi } from "@shared/api";
 import { messages } from "@shared/i18n/uk";
 import { billingKeys } from "@shared/lib/api/queryKeys";
 import { usePlan } from "../billing";
+import { ContentGroup } from "@shared/components/ui/ContentGroup";
 import { SettingsGroup } from "./SettingsPrimitives";
 import { formatKyivLongDate } from "@shared/lib/time/kyivTime";
 
@@ -152,12 +152,8 @@ export function PlanSection() {
   }
 
   return (
-    <SettingsGroup
-      title="Підписка та план"
-      icon="wallet"
-      anchorId="settings-plan"
-    >
-      <div className="flex flex-col gap-4">
+    <SettingsGroup title="Підписка та план" anchorId="settings-plan">
+      <ContentGroup variant="bounded" className="flex flex-col gap-4">
         <div
           className="flex items-center gap-3"
           data-testid="plan-section-header"
@@ -264,7 +260,7 @@ export function PlanSection() {
           </p>
         )}
 
-        <div className="flex flex-col sm:flex-row gap-2">
+        <div className="flex flex-col sm:flex-row gap-2 border-t border-line pt-3">
           {isPro ? (
             <>
               {/* Customer Portal є лише у Stripe. Для liqpay/plata керування =
@@ -280,7 +276,6 @@ export function PlanSection() {
                   data-testid="plan-manage-button"
                   className="gap-2"
                 >
-                  <Icon name="credit-card" size="md" />
                   Керувати підпискою
                 </Button>
               )}
@@ -327,7 +322,6 @@ export function PlanSection() {
               data-testid="plan-upgrade-button"
               className="gap-2"
             >
-              <Icon name="sergeant" size="md" />
               Дивитися плани
             </Button>
           )}
@@ -350,7 +344,7 @@ export function PlanSection() {
             {cancelError}
           </p>
         ) : null}
-      </div>
+      </ContentGroup>
     </SettingsGroup>
   );
 }

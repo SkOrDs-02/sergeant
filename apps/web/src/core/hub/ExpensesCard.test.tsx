@@ -154,6 +154,20 @@ describe("ExpensesCard", () => {
     expect(screen.getByText(/Минулий за ті ж дні/)).toBeInTheDocument();
   });
 
+  it("«Приховувати суми»: у згорнутому й розгорнутому стані «••••», без ₴", () => {
+    localStorage.setItem("finyk_tx_cache", JSON.stringify(txCacheToday()));
+    fakeSqliteCache.value = { ...emptySqliteCache(), showBalance: false };
+    render(<ExpensesCard period="week" offset={0} />);
+
+    const toggle = screen.getByRole("button", { name: /Витрати/i });
+    expect(toggle).toHaveTextContent("••••");
+    expect(screen.queryByText(/₴/)).toBeNull();
+
+    fireEvent.click(toggle);
+    expect(screen.getAllByText(/••••/).length).toBeGreaterThanOrEqual(2);
+    expect(screen.queryByText(/₴/)).toBeNull();
+  });
+
   /**
    * Сума набрана `Money`, а не рядком `toLocaleString() + " ₴"`. Перевіряємо
    * саме тири: символ валюти має бути ОКРЕМИМ вузлом (П4), інакше цифра й

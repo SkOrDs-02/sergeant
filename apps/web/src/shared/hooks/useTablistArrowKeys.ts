@@ -31,36 +31,66 @@
  * через `closest('[role="tablist"]')`, тож контейнер може малювати хто
  * завгодно.
  *
- * **Активація автоматична** (`target.click()`), як у WAI-ARIA за
- * замовчуванням і як уже роблять обидва примітиви: фокус і вибір ходять
- * разом. Хук нічого не знає про моделі даних call-site-у, тож `onClick`
- * вкладки лишається єдиним місцем, де описана реакція на вибір.
+ * **Активація за замовчуванням автоматична** (`activation: 'auto'`,
+ * `target.click()`), як у WAI-ARIA за замовчуванням і як уже роблять обидва
+ * примітиви: фокус і вибір ходять разом. Хук нічого не знає про моделі даних
+ * call-site-у, тож `onClick` вкладки лишається єдиним місцем, де описана
+ * реакція на вибір.
  *
- * **Межа: лише горизонтальний ряд.** Усі поточні call-site-и — рядки, тож
- * `ArrowUp`/`ArrowDown` навмисно не чіпаємо: у вертикальному tablist вони
- * мали б замінити Left/Right, а не додатися до них, і це вимагає знати
- * орієнтацію. Робиш вертикальний — розширюй хук явно, не додавай стрілки
- * «про всяк випадок».
+ * **Коли `'auto'` шкодить — `activation: 'manual'`.** APG радить автоматичну
+ * активацію лише тоді, коли панель зʼявляється миттєво і без зміни
+ * контексту. Якщо активація вкладки має побічний ефект (навігація на інший
+ * маршрут, відкриття камери, файловий піккер), просте переміщення фокуса
+ * стрілкою порушує WCAG 3.2.1 (On Focus): рейок модулів переводив у сусідній
+ * модуль, а вкладка «Скан» у шторці їжі відкривала камеру з запитом дозволу
+ * (аудит 2026-10-01, ux-16). У `'manual'` стрілки/Home/End ЛИШЕ переносять
+ * фокус, а вибір робить Enter/Space на сфокусованій вкладці (нативний `click`
+ * кнопки). Обирай `'manual'` для рядів із побічним ефектом; для ряду, що
+ * лише перемикає видиму панель, лишай `'auto'`.
+ *
+ * **Орієнтація задається явно.** Горизонтальний ряд (дефолт) ходить
+ * `ArrowLeft`/`ArrowRight`; вертикальний (`orientation: 'vertical'`, разом
+ * з `aria-orientation="vertical"` на контейнері) — `ArrowUp`/`ArrowDown`
+ * ЗАМІСТЬ них, а не додатково: стрілки «про всяк випадок» з'їли б
+ * прокрутку сторінки. Перший вертикальний call-site — джерела вводу в
+ * аркуші прийому їжі (`meal-sheet/SourceTabs`, редизайн v3 PR4: джерела не
+ * сегмент, а список на hairline).
  */
 import { useCallback } from "react";
 import type { KeyboardEvent } from "react";
 
-const HANDLED_KEYS = ["ArrowLeft", "ArrowRight", "Home", "End"] as const;
+export type TablistOrientation = "horizontal" | "vertical";
+
+const KEYS: Record<TablistOrientation, { prev: string; next: string }> = {
+  horizontal: { prev: "ArrowLeft", next: "ArrowRight" },
+  vertical: { prev: "ArrowUp", next: "ArrowDown" },
+};
+
+/**
+ * `'auto'` — фокус і вибір разом (стрілка викликає `click()` вкладки);
+ * `'manual'` — стрілка лише переносить фокус, вибирає Enter/Space.
+ */
+export type TablistActivation = "auto" | "manual";
 
 /**
  * @param enabled Вимикає обробку, не змінюючи порядку хуків (напр. поки
  *   ряд прихований). За замовчуванням увімкнено.
+ * @param activation Режим активації, див. докстрінг файлу. За замовчуванням
+ *   `'auto'`.
+ * @param orientation Напрям ряду; визначає пару стрілок. За замовчуванням
+ *   `'horizontal'`.
  * @returns Обробник для `onKeyDown` КОЖНОЇ кнопки з `role="tab"`.
  */
 export function useTablistArrowKeys<T extends HTMLElement = HTMLButtonElement>(
   enabled = true,
+  activation: TablistActivation = "auto",
+  orientation: TablistOrientation = "horizontal",
 ): (event: KeyboardEvent<T>) => void {
   return useCallback(
     (event: KeyboardEvent<T>) => {
       if (!enabled) return;
-      if (!HANDLED_KEYS.includes(event.key as (typeof HANDLED_KEYS)[number])) {
-        return;
-      }
+      const { prev, next } = KEYS[orientation];
+      if (![prev, next, "Home", "End"].includes(event.key)) return;
       // Модифіковані стрілки належать браузеру, не нам: Alt+← це «Назад» на
       // Windows/Linux, Cmd+← — на macOS. Перехопивши їх, ми б викликали
       // preventDefault і ще й перемкнули вкладку — тобто зʼїли навігацію
@@ -92,15 +122,15 @@ export function useTablistArrowKeys<T extends HTMLElement = HTMLButtonElement>(
           ? 0
           : event.key === "End"
             ? tabs.length - 1
-            : event.key === "ArrowRight"
+            : event.key === next
               ? (from + 1) % tabs.length
               : (from - 1 + tabs.length) % tabs.length;
 
       const target = tabs[to];
       if (!target) return;
       target.focus();
-      target.click();
+      if (activation === "auto") target.click();
     },
-    [enabled],
+    [enabled, activation, orientation],
   );
 }

@@ -31,7 +31,7 @@ import type { SavedRecipe } from "./recipeBook";
 import {
   normalizeCookedWeightG,
   normalizeRecipeComponents,
-} from "./recipeComponentsNormalize";
+} from "@sergeant/nutrition-domain";
 
 export interface SqliteNutritionCache {
   /** Nutrition log keyed by date string (YYYY-MM-DD). */

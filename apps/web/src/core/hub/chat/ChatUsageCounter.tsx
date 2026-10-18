@@ -30,7 +30,7 @@ export function ChatUsageCounter() {
         // `min-w-0 truncate` замість `shrink-0 whitespace-nowrap`: на 393px
         // саме ця пігулка зʼїдала ширину заголовка шапки. Вона — підказка,
         // тож віддає простір першою (aria-label несе повне значення).
-        "min-w-0 truncate px-2 py-1 rounded-full text-style-caption font-semibold",
+        "min-w-0 truncate px-2 py-1 rounded-lg text-style-caption font-semibold",
         exhausted
           ? "bg-warning-soft text-warning-soft-fg"
           : "bg-panelHi text-muted",

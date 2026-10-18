@@ -21,7 +21,9 @@ import type { TxSplitsLike } from "@sergeant/finyk-domain/lib/transactions";
 import { manualCategoryToCanonicalId } from "@sergeant/finyk-domain/domain/personalization";
 import { resolveManualExpenseKind } from "@sergeant/finyk-domain/domain/transactions";
 import { INTERNAL_TRANSFER_ID } from "@finyk/constants";
+import { shiftDayKey } from "@sergeant/finyk-domain/domain/weekSlices";
 import { Recommendations } from "@sergeant/insights";
+import { kyivDayStartMs, toKyivISODate } from "@sergeant/shared";
 import { getVisibleFinykMonoMirrorState } from "../../../modules/finyk/lib/monoMirrorReader";
 import { readFinykStatsContext } from "../../../modules/finyk/lib/lsStats";
 import { getCachedFinykSqliteState } from "../../../modules/finyk/lib/sqliteReader";
@@ -42,6 +44,26 @@ function startOfCurrentMonth(): Date {
   return d;
 }
 
+/**
+ * Правий край «цього місяця» для сум і карток (мс, виключно): початок
+ * наступного місяця АБО кінець сьогоднішньої київської доби, що раніше.
+ * Запис, датований наперед (запланована ручна витрата), у «цього місяця»
+ * не входить: Звіти хабу рахують до сьогодні (logic-08). Початок місяця
+ * лишається за пристроєм, київську межу місяця не вводимо (hub-coach.md,
+ * журнал 2026-10-01).
+ */
+function monthUpperBoundMs(monthStart: Date, nowMs: number): number {
+  /* eslint-disable sergeant-design/prefer-kyiv-time -- ADR-0078: початок місяця хабу лишається за пристроєм (hub-coach.md, журнал 2026-10-01); верхня межа ходить парою з ним */
+  const nextMonthStartMs = new Date(
+    monthStart.getFullYear(),
+    monthStart.getMonth() + 1,
+    1,
+  ).getTime();
+  /* eslint-enable sergeant-design/prefer-kyiv-time */
+  const endOfTodayMs = kyivDayStartMs(shiftDayKey(toKyivISODate(nowMs), 1));
+  return Math.min(nextMonthStartMs, endOfTodayMs);
+}
+
 interface TxSplit {
   categoryId?: string;
   amount?: number;
@@ -56,6 +78,7 @@ export function buildFinanceContext(): FinanceContext {
   const now = new Date();
   const monthStart = startOfCurrentMonth();
   const monthStartMs = monthStart.getTime();
+  const monthEndMs = monthUpperBoundMs(monthStart, now.getTime());
 
   const stats = readFinykStatsContext();
   const transactions: Transaction[] = getVisibleFinykMonoMirrorState()
@@ -72,19 +95,28 @@ export function buildFinanceContext(): FinanceContext {
       .filter(([, v]) => v === INTERNAL_TRANSFER_ID)
       .map(([k]) => k),
   );
+  // Канонічний excluded-set (bank + manual: «Не враховувати», дебіторка, пари
+  // «Скасування», tx-level перекази) — той самий, що читають Огляд і звіт
+  // тижня. Раніше правила бачили лише hidden + перекази з мапи, тож
+  // виключене й скасоване роздувало темп (logic-08).
+  const excludedTxIds = stats.excludedTxIds;
   // `@sergeant/insights`' ManualExpense contract is expense-only (its rules
   // add every entry's `amount` straight to spend/velocity/pace totals).
   // The manual-income feature (fab-and-manual-income spec) writes income
   // rows into the same table, so they must be filtered out here — otherwise
   // a salary entry would count as spending in every AI-advice rule.
+  // Виключені/сховані ручні записи теж відпадають: їхній id у всесвіті —
+  // `manual_<id>`.
   const manualExpenses = getCachedFinykSqliteState().manualExpenses.filter(
-    (e) => resolveManualExpenseKind(e) === "expense",
+    (e) =>
+      resolveManualExpenseKind(e) === "expense" &&
+      !Recommendations.isManualExpenseExcluded(excludedTxIds, e),
   );
 
   const thisMonthTx = transactions.filter((tx) => {
-    if (hiddenTxIds.has(tx.id)) return false;
-    if (transferIds.has(tx.id)) return false;
-    return txTimestamp(tx) >= monthStartMs;
+    if (excludedTxIds.has(tx.id)) return false;
+    const ts = txTimestamp(tx);
+    return ts >= monthStartMs && ts < monthEndMs;
   });
 
   // Canonical-id витрати — делегуємо до getCategorySpendList (єдине
@@ -100,7 +132,8 @@ export function buildFinanceContext(): FinanceContext {
   }
   // Ручні витрати — додаємо поверх результатів getCategorySpendList.
   for (const me of manualExpenses) {
-    if (new Date(me.date).getTime() < monthStartMs) continue;
+    const meTs = new Date(me.date).getTime();
+    if (meTs < monthStartMs || meTs >= monthEndMs) continue;
     const canonKey = manualCategoryToCanonicalId(me.category) || "other";
     if (canonKey === INTERNAL_TRANSFER_ID) continue;
     canonicalMonthSpend.set(
@@ -114,7 +147,7 @@ export function buildFinanceContext(): FinanceContext {
   // поточний місяць); використовується правилом `frequentNoBudget`.
   const canonicalTotalCount = new Map<string, number>();
   for (const tx of transactions) {
-    if (hiddenTxIds.has(tx.id) || transferIds.has(tx.id)) continue;
+    if (excludedTxIds.has(tx.id)) continue;
     if ((tx.amount ?? 0) >= 0) continue;
     const splits = readSplits(txSplits, tx.id);
     if (splits.length > 0) {
@@ -148,7 +181,7 @@ export function buildFinanceContext(): FinanceContext {
 
   // Стан лімітів: універсум `bank + manual` без прихованих і виключених зі
   // статистики, вікно періоду кожного ліміту накладає сам `calcLimitUsages`.
-  const statTx = stats.txs.filter((tx) => !stats.excludedTxIds.has(tx.id));
+  const statTx = stats.txs.filter((tx) => !excludedTxIds.has(tx.id));
   const limitUsage = calcLimitUsages(budgets, statTx, {
     txCategories,
     txSplits,
@@ -167,6 +200,7 @@ export function buildFinanceContext(): FinanceContext {
     customCategories,
     hiddenTxIds,
     transferIds,
+    excludedTxIds,
     txSplits,
     thisMonthTx,
     limitUsage,

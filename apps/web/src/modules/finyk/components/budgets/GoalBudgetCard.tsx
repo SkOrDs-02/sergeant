@@ -5,12 +5,13 @@
 import { memo, useEffect, useId, useState } from "react";
 import { Button } from "@shared/components/ui/Button";
 import { Card } from "@shared/components/ui/Card";
+import { FinanceItemHeading } from "../FinanceItemHeading";
 import { Input } from "@shared/components/ui/Input";
 import { MoneyInput } from "@shared/components/ui/MoneyInput";
 import { Label } from "@shared/components/ui/FormField";
 import { DateField } from "@shared/components/ui/DateField";
 import { Icon } from "@shared/components/ui/Icon";
-import { cn } from "@shared/lib/ui/cn";
+import { messages } from "@shared/i18n";
 import { webKVStore } from "@shared/lib/storage/storage";
 import {
   dismissNudge,
@@ -176,7 +177,13 @@ function GoalBudgetCardComponent({
   return (
     <>
       {CelebrationComponent}
-      <Card radius="lg" padding="lg">
+      <Card
+        as="article"
+        aria-label={budget.name}
+        prominence="ghost"
+        padding="none"
+        className="border-t border-line rounded-none py-4"
+      >
         {isEditing ? (
           <div className="space-y-2">
             <div>
@@ -184,7 +191,7 @@ function GoalBudgetCardComponent({
               <Input
                 id={nameId}
                 size="sm"
-                placeholder="Напр. На відпустку"
+                placeholder="Назва"
                 value={budget.name || ""}
                 onChange={(e) => onChangeName?.(e.target.value)}
               />
@@ -194,7 +201,7 @@ function GoalBudgetCardComponent({
               <MoneyInput
                 id={targetId}
                 size="sm"
-                placeholder="Напр. 20 000 ₴"
+                placeholder="Сума"
                 value={draftTarget ?? ""}
                 onValueChange={setDraftTarget}
               />
@@ -213,7 +220,7 @@ function GoalBudgetCardComponent({
               id={dateId}
               size="sm"
               label="Дата завершення"
-              emptyLabel="Напр. 31.12.2026"
+              emptyLabel="Дата"
               value={budget.targetDate || ""}
               onChange={(e) => onChangeDate?.(e.target.value)}
             />
@@ -223,6 +230,8 @@ function GoalBudgetCardComponent({
                 size="sm"
                 onClick={handleSave}
                 disabled={!draftTargetValid}
+                tone="ink"
+                variant="solid"
               >
                 Зберегти
               </Button>
@@ -239,34 +248,36 @@ function GoalBudgetCardComponent({
           </div>
         ) : (
           <>
-            <div className="flex justify-between items-center mb-2">
-              <span className="text-style-label">
-                <Icon name="target" size="md" aria-hidden /> {budget.name}
-              </span>
-              <div className="flex items-center gap-2">
-                <span className="text-style-caption text-muted">
-                  {showBalance ? (
-                    <>
-                      <Money amount={saved} /> /{" "}
-                      <Money amount={budget.targetAmount} />
-                    </>
-                  ) : (
-                    "••••"
-                  )}
-                </span>
-                <button
+            <FinanceItemHeading
+              title={budget.name}
+              actions={
+                <Button
                   type="button"
+                  variant="ghost"
+                  size="sm"
+                  iconOnly
                   onClick={onBeginEdit}
-                  className="text-subtle hover:text-text transition-colors"
                   aria-label="Редагувати ціль"
                 >
                   <Icon name="edit" size="md" aria-hidden />
-                </button>
-              </div>
-            </div>
-            <div className="h-2 bg-bg rounded-full overflow-hidden">
+                </Button>
+              }
+              value={
+                showBalance ? (
+                  <>
+                    <Money amount={saved} />{" "}
+                    <span className="text-style-caption font-medium text-muted">
+                      / <Money amount={budget.targetAmount} />
+                    </span>
+                  </>
+                ) : (
+                  "••••"
+                )
+              }
+            />
+            <div className="h-2 bg-bg rounded-[3px] overflow-hidden">
               <div
-                className="h-full rounded-full bg-success transition-[width,background-color] duration-slower"
+                className="h-full rounded-[3px] bg-success transition-[width,background-color] duration-slower"
                 style={{ width: `${pct}%` }}
               />
             </div>
@@ -275,7 +286,7 @@ function GoalBudgetCardComponent({
                 {monthlyLabel}
               </div>
             )}
-            <div className="text-style-caption text-subtle mt-0.5">
+            <div className="text-style-caption text-muted mt-2">
               {pct}% ·{" "}
               {daysLeft !== null
                 ? daysLeft > 0
@@ -284,7 +295,7 @@ function GoalBudgetCardComponent({
                 : "Без дедлайну"}
             </div>
             {hasBreakdown && (
-              <div className="text-style-caption text-subtle mt-0.5">
+              <div className="text-style-caption text-muted mt-3 border-l border-line pl-3">
                 {showBalance ? (
                   <>
                     з банки{linkedJarLabel ? ` «${linkedJarLabel}»` : ""}{" "}
@@ -312,26 +323,22 @@ function GoalBudgetCardComponent({
                   className="text-style-caption text-subtle hover:text-text flex items-center gap-1 transition-colors"
                 >
                   Історія ({contributions.length})
-                  <Icon
-                    name="chevron-down"
-                    size="xs"
-                    aria-hidden
-                    className={cn(
-                      "transition-transform",
-                      historyOpen ? "rotate-180" : "",
-                    )}
-                  />
+                  <span>
+                    {historyOpen
+                      ? messages.finykRedesign.collapse
+                      : messages.finykRedesign.expand}
+                  </span>
                 </button>
               )}
             </div>
             {addingContribution && (
-              <div className="mt-2 space-y-2 p-3 rounded-xl bg-bg border border-line">
+              <div className="mt-2 space-y-2 p-3 rounded-panel bg-bg border border-line">
                 <div>
                   <Label htmlFor={contribAmountId}>Сума поповнення</Label>
                   <MoneyInput
                     id={contribAmountId}
                     size="sm"
-                    placeholder="Напр. 500 ₴"
+                    placeholder="Сума"
                     value={contribAmount}
                     onValueChange={(next) =>
                       setContribAmount(next == null ? "" : String(next))
@@ -343,7 +350,7 @@ function GoalBudgetCardComponent({
                   <Input
                     id={contribNoteId}
                     size="sm"
-                    placeholder="Напр. Готівка"
+                    placeholder="Нотатка"
                     value={contribNote}
                     onChange={(e) => setContribNote(e.target.value)}
                   />
@@ -354,6 +361,8 @@ function GoalBudgetCardComponent({
                     size="sm"
                     onClick={handleAddContribution}
                     disabled={!contribAmountValid}
+                    tone="ink"
+                    variant="solid"
                   >
                     Додати
                   </Button>
