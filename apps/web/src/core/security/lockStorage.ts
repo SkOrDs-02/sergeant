@@ -12,7 +12,8 @@
 //          signed-in user id, or "anon" when signed out. The "v1" prefix is
 //          the *key-namespace* version (bumpable independently of the value
 //          `v` below).
-//   value: { salt: Uint8Array, hash: Uint8Array, v?: 1 | 2, failed?: number }
+//   value: { salt: Uint8Array, hash: Uint8Array, v?: 1 | 2, failed?: number,
+//            lockedUntil?: number }
 //
 // `v` is the credential format version, not the IDB schema version (the
 // store layout is unchanged). `v` controls which PBKDF2 iteration count
@@ -52,23 +53,62 @@ export const CURRENT_PBKDF2_ITERATIONS =
   ITERATIONS_BY_VERSION[LATEST_CRED_VERSION];
 
 /**
- * Audit 10 / Decision #4 ("10 failed attempts wipe"): after this many
- * consecutive failed `verifyPin` calls the credential is wiped, the
- * counter is dropped, and `useAppLock` falls through to the setup flow.
+ * Brute-force protection (audit 10 / Decision #4, переглянуто sec-12/priv-14,
+ * рішення власника 2026-10): лічильник послідовних невдалих `verifyPin`
+ * живе в самому креденшелі.
  *
- * Why 10: PBKDF2 with 600k iterations + a 4-6 digit numeric PIN gives an
- * attacker who exfiltrates the IDB blob the upper hand offline. The wipe
- * protects only against an _online_ adversary with physical access to an
- * unlocked-but-pin-required device. 10 is a comfortable margin for a
- * fat-finger user (more than iOS, less than Android pattern-lock).
+ *   - перші `FREE_UNLOCK_ATTEMPTS` (5) спроб без пауз між ними;
+ *   - після 5-ї невдачі наростаюча пауза перед наступною спробою: 30 с,
+ *     60 с, 120 с, 240 с, 480 с після 5-ї..9-ї (`lockoutDelayMs`);
+ *     її кінець (`lockedUntil`) зберігається в IDB, тож перезавантаження
+ *     сторінки паузу не скидає;
+ *   - на `MAX_FAILED_UNLOCK_ATTEMPTS`-й (10) невдачі PIN перестає
+ *     прийматися взагалі (`lockedOut`). Креденшел НЕ стирається і замок НЕ
+ *     знімається: раніше 10-та невдача стирала хеш і пускала в застосунок,
+ *     тобто атака перебором закінчувалась входом. Вийти з цього стану
+ *     можна лише виходом з акаунта (`useAppLock.signOut`), який і стирає
+ *     креденшел після успішного виходу, а далі потрібен пароль акаунта.
+ *
+ * Чому 10 і чому затримка: PBKDF2 на 600k ітерацій + 4-6-значний PIN дає
+ * атакуючому, що витяг IDB-блоб, перевагу офлайн; затримка й ліміт
+ * захищають лише від ОНЛАЙН-перебору з фізичним доступом до розблокованого
+ * пристрою. Налаштування ітерацій PBKDF2 не змінюються.
  */
 export const MAX_FAILED_UNLOCK_ATTEMPTS = 10;
+export const FREE_UNLOCK_ATTEMPTS = 5;
+export const LOCKOUT_BASE_DELAY_MS = 30_000;
+
+/**
+ * Пауза (мс) після `failed`-ї поспіль невдалої спроби. 0 для перших
+ * `FREE_UNLOCK_ATTEMPTS - 1` невдач (5-та вже вмикає паузу) і для `failed >= MAX_FAILED_UNLOCK_ATTEMPTS`
+ * (там не пауза, а повне блокування PIN).
+ */
+export function lockoutDelayMs(failed: number): number {
+  if (failed < FREE_UNLOCK_ATTEMPTS || failed >= MAX_FAILED_UNLOCK_ATTEMPTS) {
+    return 0;
+  }
+  return LOCKOUT_BASE_DELAY_MS * 2 ** (failed - FREE_UNLOCK_ATTEMPTS);
+}
+
+// Стеля залишку паузи при читанні `lockedUntil`: годинник, відкручений
+// назад (або пошкоджене значення), не має зробити паузу довшою за найбільшу
+// легітимну.
+const MAX_LOCKOUT_DELAY_MS = lockoutDelayMs(MAX_FAILED_UNLOCK_ATTEMPTS - 1);
+
+function remainingDelayMs(lockedUntil: number | undefined): number {
+  if (typeof lockedUntil !== "number" || !Number.isFinite(lockedUntil)) {
+    return 0;
+  }
+  return Math.min(Math.max(lockedUntil - Date.now(), 0), MAX_LOCKOUT_DELAY_MS);
+}
 
 interface LockCredV1 {
   salt: Uint8Array;
   hash: Uint8Array;
   v?: 1;
   failed?: number;
+  /** Epoch ms, до якого нову спробу відхиляємо без PBKDF2. */
+  lockedUntil?: number;
 }
 
 interface LockCredV2 {
@@ -76,6 +116,7 @@ interface LockCredV2 {
   hash: Uint8Array;
   v: 2;
   failed?: number;
+  lockedUntil?: number;
 }
 
 type LockCred = LockCredV1 | LockCredV2;
@@ -128,7 +169,7 @@ function timingSafeEqual(a: Uint8Array, b: Uint8Array): boolean {
   return diff === 0;
 }
 
-async function writeCred(cred: LockCredV2, key: string): Promise<void> {
+async function writeCred(cred: LockCred, key: string): Promise<void> {
   const db = await openDb();
   await new Promise<void>((resolve, reject) => {
     const tx = db.transaction(STORE, "readwrite");
@@ -149,27 +190,65 @@ export async function savePinHash(
 }
 
 /**
- * Audit 10 / Decision #4: brute-force wipe protocol.
+ * Протокол перебору (див. `MAX_FAILED_UNLOCK_ATTEMPTS`):
  *
- *   - Success → resets the persisted `failed` counter to 0.
- *   - Failure → increments. On the `MAX_FAILED_UNLOCK_ATTEMPTS`-th
- *     consecutive failure the credential is wiped (`deleteCred`) and
- *     the result is `{ ok: false, wiped: true }`. The next mount of
- *     `useAppLock` will see `hasPinSet() === false` and fall through
- *     to "idle"; Settings shows the un-configured state and the user
- *     can re-enroll.
+ *   - Success → скидає `failed` і `lockedUntil`.
+ *   - Failure → збільшує лічильник; з 5-ї невдачі виставляє `lockedUntil`
+ *     (наростаюча пауза), на 10-й повертає `lockedOut: true`. Креденшел
+ *     лишається в сховищі.
+ *   - Спроба під час паузи або після `lockedOut` відхиляється ОДРАЗУ
+ *     (`throttled: true`) без PBKDF2 і без зміни лічильника, навіть якщо PIN
+ *     правильний.
  *
- * `verifyPin` is preserved as the legacy boolean entry point for
- * `useAppLock` and the existing tests. New call sites should prefer
- * `verifyPinAttempt` so the wipe signal is observable.
+ * `verifyPin` лишається булевим входом для старих викликів і тестів; код,
+ * якому потрібні пауза й `lockedOut`, викликає `verifyPinAttempt`.
  *
- * All reads/writes target the `userId` partition (audit F16) — the wipe
- * therefore only ever clears the credential of the user being verified.
+ * Усі читання/записи йдуть у партицію `userId` (audit F16), тож лічильник
+ * одного користувача не зачіпає іншого. Лічильник ведеться і для legacy
+ * v=1 записів (версія й хеш у записі лишаються як були; міграція на v=2
+ * відбувається лише при успішному розблокуванні).
  */
 export interface VerifyPinResult {
   ok: boolean;
+  /** Поточна кількість поспіль невдалих спроб (після цієї). */
   failed: number;
-  wiped: boolean;
+  /** PIN більше не приймається: лишився тільки вихід з акаунта. */
+  lockedOut: boolean;
+  /** Скільки мс до наступної дозволеної спроби (0 = можна зараз). */
+  retryAfterMs: number;
+  /** Спробу відхилено без перевірки PIN (пауза або `lockedOut`). */
+  throttled: boolean;
+}
+
+export interface LockStatus {
+  hasPin: boolean;
+  lockedOut: boolean;
+  retryAfterMs: number;
+}
+
+/** Одне читання креденшела: чи є PIN, чи він заблокований, скільки ще чекати. */
+export async function readLockStatus(
+  userId?: string | null,
+): Promise<LockStatus> {
+  const cred = await loadCred(recordKey(userId));
+  if (!cred) return { hasPin: false, lockedOut: false, retryAfterMs: 0 };
+  const lockedOut = (cred.failed ?? 0) >= MAX_FAILED_UNLOCK_ATTEMPTS;
+  return {
+    hasPin: true,
+    lockedOut,
+    retryAfterMs: lockedOut ? 0 : remainingDelayMs(cred.lockedUntil),
+  };
+}
+
+function withAttemptState(
+  cred: LockCred,
+  failed: number,
+  lockedUntil: number | undefined,
+): LockCred {
+  const next: LockCred = { ...cred, failed };
+  if (lockedUntil === undefined) delete next.lockedUntil;
+  else next.lockedUntil = lockedUntil;
+  return next;
 }
 
 export async function verifyPinAttempt(
@@ -178,7 +257,35 @@ export async function verifyPinAttempt(
 ): Promise<VerifyPinResult> {
   const key = recordKey(userId);
   const cred = await loadCred(key);
-  if (!cred) return { ok: false, failed: 0, wiped: false };
+  if (!cred) {
+    return {
+      ok: false,
+      failed: 0,
+      lockedOut: false,
+      retryAfterMs: 0,
+      throttled: false,
+    };
+  }
+  const failedSoFar = cred.failed ?? 0;
+  if (failedSoFar >= MAX_FAILED_UNLOCK_ATTEMPTS) {
+    return {
+      ok: false,
+      failed: failedSoFar,
+      lockedOut: true,
+      retryAfterMs: 0,
+      throttled: true,
+    };
+  }
+  const waitMs = remainingDelayMs(cred.lockedUntil);
+  if (waitMs > 0) {
+    return {
+      ok: false,
+      failed: failedSoFar,
+      lockedOut: false,
+      retryAfterMs: waitMs,
+      throttled: true,
+    };
+  }
   const version = credVersion(cred);
   const candidate = await deriveHash(
     pin,
@@ -189,51 +296,46 @@ export async function verifyPinAttempt(
   if (ok) {
     if (version < LATEST_CRED_VERSION) {
       await migrateCredIfNeeded(pin, key);
-    } else if ((cred.failed ?? 0) > 0) {
+    } else if (failedSoFar > 0 || cred.lockedUntil !== undefined) {
       try {
         await writeCred(
-          {
-            salt: cred.salt,
-            hash: cred.hash,
-            v: LATEST_CRED_VERSION,
-            failed: 0,
-          },
+          { salt: cred.salt, hash: cred.hash, v: LATEST_CRED_VERSION },
           key,
         );
       } catch {
         // best-effort reset
       }
     }
-    return { ok: true, failed: 0, wiped: false };
+    return {
+      ok: true,
+      failed: 0,
+      lockedOut: false,
+      retryAfterMs: 0,
+      throttled: false,
+    };
   }
-  const nextFailed = (cred.failed ?? 0) + 1;
-  if (nextFailed >= MAX_FAILED_UNLOCK_ATTEMPTS) {
-    try {
-      await deleteCred(key);
-    } catch {
-      // best-effort wipe
-    }
-    return { ok: false, failed: nextFailed, wiped: true };
-  }
+  const nextFailed = failedSoFar + 1;
+  const lockedOut = nextFailed >= MAX_FAILED_UNLOCK_ATTEMPTS;
+  const delayMs = lockoutDelayMs(nextFailed);
   try {
-    if (version >= LATEST_CRED_VERSION) {
-      await writeCred(
-        {
-          salt: cred.salt,
-          hash: cred.hash,
-          v: LATEST_CRED_VERSION,
-          failed: nextFailed,
-        },
-        key,
-      );
-    }
-    // Legacy v=1 records: skip the counter persist so the migration
-    // path stays focused on the single-pass re-derive. The counter
-    // will start tracking on the first successful unlock + re-write.
+    await writeCred(
+      withAttemptState(
+        cred,
+        nextFailed,
+        delayMs > 0 ? Date.now() + delayMs : undefined,
+      ),
+      key,
+    );
   } catch {
     // best-effort counter persist
   }
-  return { ok: false, failed: nextFailed, wiped: false };
+  return {
+    ok: false,
+    failed: nextFailed,
+    lockedOut,
+    retryAfterMs: delayMs,
+    throttled: false,
+  };
 }
 
 export async function verifyPin(
@@ -294,6 +396,18 @@ export async function __readRawCredForTests(
   userId?: string | null,
 ): Promise<LockCred | null> {
   return loadCred(recordKey(userId));
+}
+
+// Test-only: виставити лічильник невдач / паузу без 10 реальних PBKDF2-спроб.
+export async function __seedAttemptStateForTests(
+  failed: number,
+  lockedUntil?: number,
+  userId?: string | null,
+): Promise<void> {
+  const key = recordKey(userId);
+  const cred = await loadCred(key);
+  if (!cred) throw new Error("seed a PIN before seeding attempt state");
+  await writeCred(withAttemptState(cred, failed, lockedUntil), key);
 }
 
 // Test-only: write a legacy v=1 credential (derived with 200k iterations)

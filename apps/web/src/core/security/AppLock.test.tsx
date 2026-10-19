@@ -17,6 +17,7 @@ function renderLock(
     onSetupCancel: vi.fn(noop),
     onChangeCancel: vi.fn(noop),
     onSavePin: vi.fn(asyncNoop),
+    onSignOut: vi.fn(async () => true),
     ...overrides,
   };
   return { props, ...render(<AppLock {...props} />) };
@@ -64,6 +65,87 @@ describe("AppLock", () => {
     await waitFor(() =>
       expect(screen.getByRole("alert")).toHaveTextContent("Неправильний PIN"),
     );
+  });
+
+  // sec-12/priv-14: «Забув PIN?» більше не порожня підказка, а дія виходу.
+  it("the recovery hint is an action that signs out", async () => {
+    const onSignOut = vi.fn(async () => true);
+    renderLock({ state: "locked", onSignOut });
+    fireEvent.click(
+      screen.getByRole("button", {
+        name: "Забув PIN? Вийди з акаунта й увійди знову.",
+      }),
+    );
+    await waitFor(() => expect(onSignOut).toHaveBeenCalledTimes(1));
+  });
+
+  it("shows a sign-out error when the sign-out rejects", async () => {
+    const onSignOut = vi.fn(async () => {
+      throw new Error("network");
+    });
+    renderLock({ state: "locked", onSignOut });
+    fireEvent.click(screen.getByRole("button", { name: /Забув PIN/ }));
+    await waitFor(() =>
+      expect(screen.getByRole("alert")).toHaveTextContent(
+        "Не вдалося вийти з акаунта",
+      ),
+    );
+  });
+
+  it("disables the keypad and shows a countdown during the retry delay", () => {
+    renderLock({ state: "locked", retryAt: Date.now() + 90_000 });
+    expect(screen.getByTestId("app-lock-retry")).toHaveTextContent(
+      /Спробуй ще раз через 1:(2\d|30)/,
+    );
+    expect(screen.getByRole("button", { name: "1" })).toBeDisabled();
+    expect(screen.getByRole("button", { name: "Відкрити" })).toBeDisabled();
+  });
+
+  it("does not submit while the retry delay runs", async () => {
+    const onUnlock = vi.fn(async () => true);
+    renderLock({ state: "locked", onUnlock, retryAt: Date.now() + 60_000 });
+    fireEvent.change(screen.getByLabelText("PIN"), {
+      target: { value: "123456" },
+    });
+    await Promise.resolve();
+    expect(onUnlock).not.toHaveBeenCalled();
+  });
+
+  it("re-enables the keypad once the retry delay has passed", () => {
+    renderLock({ state: "locked", retryAt: Date.now() - 1 });
+    expect(screen.queryByTestId("app-lock-retry")).not.toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "1" })).toBeEnabled();
+  });
+
+  describe("lockedOut: 10 хибних PIN (sec-12/priv-14)", () => {
+    it("shows no keypad, only an explanation and a sign-out button", () => {
+      renderLock({ state: "lockedOut" });
+      expect(screen.getByText("PIN заблоковано")).toBeInTheDocument();
+      expect(screen.queryByLabelText("PIN")).not.toBeInTheDocument();
+      expect(
+        screen.queryByRole("button", { name: "Відкрити" }),
+      ).not.toBeInTheDocument();
+      expect(
+        screen.getByRole("button", { name: "Вийти з акаунта" }),
+      ).toBeInTheDocument();
+    });
+
+    it("the sign-out button calls onSignOut", async () => {
+      const onSignOut = vi.fn(async () => true);
+      renderLock({ state: "lockedOut", onSignOut });
+      fireEvent.click(screen.getByRole("button", { name: "Вийти з акаунта" }));
+      await waitFor(() => expect(onSignOut).toHaveBeenCalledTimes(1));
+    });
+
+    it("Escape cannot dismiss the lockedOut screen", () => {
+      const onSetupCancel = vi.fn(noop);
+      const onChangeCancel = vi.fn(noop);
+      renderLock({ state: "lockedOut", onSetupCancel, onChangeCancel });
+      fireEvent.keyDown(document, { key: "Escape" });
+      expect(onSetupCancel).not.toHaveBeenCalled();
+      expect(onChangeCancel).not.toHaveBeenCalled();
+      expect(screen.getByText("PIN заблоковано")).toBeInTheDocument();
+    });
   });
 
   it("backspace removes the last entered digit", async () => {

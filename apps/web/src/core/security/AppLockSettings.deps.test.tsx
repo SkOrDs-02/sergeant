@@ -21,6 +21,8 @@ vi.mock("./AppLockContext", () => ({
     savePin: vi.fn(),
     hasPin,
     disablePin: vi.fn(),
+    retryAt: null,
+    signOut: vi.fn(),
   }),
 }));
 vi.mock("../lib/featureFlags", () => ({

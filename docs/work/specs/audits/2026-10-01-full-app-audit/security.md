@@ -1111,7 +1111,7 @@ FORM correct pw → 200 + session cookies (form-вхід повністю роб
 
 ### `sec-12` [medium] 10 неправильних PIN підряд знімають блокування й пускають у застосунок
 
-- **Стан:** відкрито
+- **Стан:** виправлено в гілці claude/fix-sec-12-pin-lock-no-bypass
 - **Перевірка:** підтверджено · **Зусилля:** S · **Швидкий виграш** · **Область:** web: блокування застосунку
 - **Де:** apps/web/src/core/security/lockStorage.ts:209-216; apps/web/src/core/security/useAppLock.ts:168-176; apps/web/src/shared/i18n/uk.privacy.ts:40
 - **Першопричина:** На 10-й невдачі lockStorage стирає креденшел і повертає wiped:true, а useAppLock на це ставить state='idle', тобто замок просто зникає (навмисне «Decision #4»). Іншого шляху після стирання, як-от вихід чи повторний вхід, немає.

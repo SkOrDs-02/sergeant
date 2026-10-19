@@ -3,7 +3,12 @@ import { IDBFactory } from "fake-indexeddb";
 
 import {
   __readRawCredForTests,
+  __seedAttemptStateForTests,
   __seedLegacyCredForTests,
+  FREE_UNLOCK_ATTEMPTS,
+  LOCKOUT_BASE_DELAY_MS,
+  lockoutDelayMs,
+  readLockStatus,
   CURRENT_PBKDF2_ITERATIONS,
   LATEST_CRED_VERSION,
   clearPinHash,
@@ -107,49 +112,164 @@ describe("lockStorage", () => {
     }, 30_000);
   });
 
-  describe("Decision #4 — 10-failed-attempts brute-force wipe", () => {
-    it("MAX_FAILED_UNLOCK_ATTEMPTS is pinned at 10", () => {
+  describe("sec-12/priv-14 — brute-force: наростаюча пауза і lockedOut без стирання", () => {
+    // Керований годинник: пауза між спробами залежить від Date.now().
+    let nowMs: number;
+    beforeEach(() => {
+      nowMs = 1_800_000_000_000;
+      vi.spyOn(Date, "now").mockImplementation(() => nowMs);
+    });
+
+    it("limits are pinned: 10 attempts, 5 free, 30 s base delay", () => {
       expect(MAX_FAILED_UNLOCK_ATTEMPTS).toBe(10);
+      expect(FREE_UNLOCK_ATTEMPTS).toBe(5);
+      expect(LOCKOUT_BASE_DELAY_MS).toBe(30_000);
+    });
+
+    it("lockoutDelayMs: 0 for 1..4, then 30 s doubling for 5..9, 0 at the cap", () => {
+      expect([1, 2, 3, 4].map(lockoutDelayMs)).toEqual([0, 0, 0, 0]);
+      expect([5, 6, 7, 8, 9].map(lockoutDelayMs)).toEqual([
+        30_000, 60_000, 120_000, 240_000, 480_000,
+      ]);
+      expect(lockoutDelayMs(MAX_FAILED_UNLOCK_ATTEMPTS)).toBe(0);
     });
 
     // PBKDF2 with 600k iterations under fake-indexeddb costs ~1s per
-    // attempt in CI; 10 attempts → ~10s. Per-test timeout is bumped so
-    // the brute-force loop has room to breathe without leaking past
-    // the suite-wide default.
-    it("increments the failed counter on each wrong PIN", async () => {
+    // attempt in CI; the loop below runs the real 10-attempt scenario.
+    it("10 wrong PINs end in lockedOut: credential is KEPT, never wiped", async () => {
       await savePinHash("9999");
-      for (let i = 1; i < MAX_FAILED_UNLOCK_ATTEMPTS; i++) {
+      const results = [];
+      for (let i = 1; i <= MAX_FAILED_UNLOCK_ATTEMPTS; i++) {
         const r = await verifyPinAttempt("0000");
+        results.push(r);
         expect(r.ok).toBe(false);
-        expect(r.wiped).toBe(false);
+        expect(r.throttled).toBe(false);
         expect(r.failed).toBe(i);
+        expect(r.retryAfterMs).toBe(lockoutDelayMs(i));
+        // Пережити паузу, щоб наступна спроба справді дійшла до PBKDF2.
+        nowMs += r.retryAfterMs;
       }
+      expect(results.slice(0, 9).every((r) => !r.lockedOut)).toBe(true);
+      expect(results[9]?.lockedOut).toBe(true);
+      // Раніше тут було `hasPinSet() === false` (креденшел стирався).
       expect(await hasPinSet()).toBe(true);
+      expect(await readLockStatus()).toEqual({
+        hasPin: true,
+        lockedOut: true,
+        retryAfterMs: 0,
+      });
+    }, 60_000);
+
+    it("after lockedOut even the CORRECT PIN is refused, without running PBKDF2", async () => {
+      await savePinHash("9999");
+      await __seedAttemptStateForTests(MAX_FAILED_UNLOCK_ATTEMPTS);
+      const deriveBitsSpy = vi.spyOn(crypto.subtle, "deriveBits");
+
+      const r = await verifyPinAttempt("9999");
+
+      expect(r).toEqual({
+        ok: false,
+        failed: MAX_FAILED_UNLOCK_ATTEMPTS,
+        lockedOut: true,
+        retryAfterMs: 0,
+        throttled: true,
+      });
+      expect(deriveBitsSpy).not.toHaveBeenCalled();
+      expect(await verifyPin("9999")).toBe(false);
     }, 30_000);
 
-    it("wipes the credential on the 10th consecutive failure", async () => {
+    it("an attempt during the delay is refused without PBKDF2 and keeps the counter", async () => {
       await savePinHash("9999");
-      let last;
-      for (let i = 0; i < MAX_FAILED_UNLOCK_ATTEMPTS; i++) {
-        last = await verifyPinAttempt("0000");
-      }
-      expect(last?.ok).toBe(false);
-      expect(last?.wiped).toBe(true);
-      expect(last?.failed).toBe(MAX_FAILED_UNLOCK_ATTEMPTS);
-      expect(await hasPinSet()).toBe(false);
+      await __seedAttemptStateForTests(5, nowMs + 30_000);
+      const deriveBitsSpy = vi.spyOn(crypto.subtle, "deriveBits");
+
+      nowMs += 10_000;
+      const r = await verifyPinAttempt("9999"); // правильний PIN, але рано
+
+      expect(r.ok).toBe(false);
+      expect(r.throttled).toBe(true);
+      expect(r.lockedOut).toBe(false);
+      expect(r.retryAfterMs).toBe(20_000);
+      expect(r.failed).toBe(5);
+      expect(deriveBitsSpy).not.toHaveBeenCalled();
+      const raw = await __readRawCredForTests();
+      expect(raw?.failed).toBe(5);
+    }, 30_000);
+
+    it("after the delay the correct PIN unlocks and clears counter and delay", async () => {
+      await savePinHash("9999");
+      await __seedAttemptStateForTests(6, nowMs + 60_000);
+
+      nowMs += 60_001;
+      const r = await verifyPinAttempt("9999");
+
+      expect(r.ok).toBe(true);
+      const raw = await __readRawCredForTests();
+      expect(raw?.failed ?? 0).toBe(0);
+      expect(raw?.lockedUntil).toBeUndefined();
+    }, 30_000);
+
+    it("the delay survives a restart: readLockStatus reports the remaining time", async () => {
+      await savePinHash("9999");
+      await __seedAttemptStateForTests(5, nowMs + 30_000);
+      nowMs += 12_000;
+      expect(await readLockStatus()).toEqual({
+        hasPin: true,
+        lockedOut: false,
+        retryAfterMs: 18_000,
+      });
+    }, 30_000);
+
+    it("a wrong PIN right at the 5th failure persists a 30 s delay", async () => {
+      await savePinHash("9999");
+      await __seedAttemptStateForTests(4);
+      const r = await verifyPinAttempt("0000");
+      expect(r.failed).toBe(5);
+      expect(r.retryAfterMs).toBe(30_000);
+      expect((await __readRawCredForTests())?.lockedUntil).toBe(nowMs + 30_000);
+    }, 30_000);
+
+    it("a rewound clock cannot stretch the delay beyond the longest legitimate one", async () => {
+      await savePinHash("9999");
+      await __seedAttemptStateForTests(5, nowMs + 10 * 24 * 3600 * 1000);
+      expect((await readLockStatus()).retryAfterMs).toBe(480_000);
     }, 30_000);
 
     it("resets the counter on a successful unlock", async () => {
       await savePinHash("9999");
-      for (let i = 0; i < 5; i++) {
-        await verifyPinAttempt("0000");
-      }
+      await __seedAttemptStateForTests(3);
       const success = await verifyPinAttempt("9999");
       expect(success.ok).toBe(true);
       expect(success.failed).toBe(0);
       const after = await verifyPinAttempt("0000");
       expect(after.failed).toBe(1);
-      expect(after.wiped).toBe(false);
+      expect(after.lockedOut).toBe(false);
+    }, 30_000);
+
+    it("legacy v=1 credentials also count failures (version and hash stay as they were)", async () => {
+      await __seedLegacyCredForTests("4242");
+      const before = await __readRawCredForTests();
+      const r = await verifyPinAttempt("0000");
+      expect(r.failed).toBe(1);
+      const after = await __readRawCredForTests();
+      expect(after?.failed).toBe(1);
+      expect(after?.v).toBeUndefined();
+      expect(Array.from(after?.hash ?? [])).toEqual(
+        Array.from(before?.hash ?? []),
+      );
+    }, 30_000);
+
+    it("the lockout is per user: another user's slot is unaffected", async () => {
+      await savePinHash("1111", "user-a");
+      await savePinHash("2222", "user-b");
+      await __seedAttemptStateForTests(
+        MAX_FAILED_UNLOCK_ATTEMPTS,
+        undefined,
+        "user-a",
+      );
+      expect((await readLockStatus("user-a")).lockedOut).toBe(true);
+      expect((await readLockStatus("user-b")).lockedOut).toBe(false);
+      expect(await verifyPin("2222", "user-b")).toBe(true);
     }, 30_000);
   });
 
