@@ -1,7 +1,7 @@
 import { forwardRef, type ReactNode, type SelectHTMLAttributes } from "react";
 import { cn } from "../../lib/ui/cn";
 import type { FormVariant, SmallMediumLarge } from "./types";
-import { FIELD_ERROR, FIELD_INK_FOCUS } from "./Input";
+import { fieldFocus } from "./Input";
 
 /**
  * Sergeant Design System — Select
@@ -61,8 +61,7 @@ export const Select = forwardRef<HTMLSelectElement, SelectProps>(
             "disabled:opacity-50 disabled:cursor-not-allowed",
             sizes[size],
             variants[variant],
-            FIELD_INK_FOCUS,
-            error && FIELD_ERROR,
+            fieldFocus(error),
             className,
           )}
           {...props}

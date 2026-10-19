@@ -79,18 +79,28 @@ const sizes: Record<InputSize, string> = {
  * v3.1: `border-strong` дає 1.6:1 проти панелі, а межа поля за WCAG 1.4.11
  * мусить мати 3:1 (аудит контрасту 2026-10-01, A8, гейт
  * `theme.controlFocus.test.ts`). Розбіжність записано в журналі PR2.
+ *
+ * Фокус чорнилом і фокус помилки взаємовиключні й обираються `fieldFocus`,
+ * а не злиттям класів: tailwind-merge 2.x не знає групи `inset-ring-*`, тож
+ * `inset-ring-text` і `inset-ring-danger` лишились би обидва.
  */
-export const FIELD_INK_FOCUS =
+const FIELD_INK_FOCUS =
   "focus-visible:border-text focus-visible:inset-ring focus-visible:inset-ring-text";
 
-const variants: Record<InputVariant, string> = {
-  default: `bg-panelHi border border-control caret-brand ${FIELD_INK_FOCUS}`,
-  filled: `bg-panelHi border border-transparent caret-brand focus-visible:bg-panel ${FIELD_INK_FOCUS}`,
-  ghost: `bg-transparent border border-transparent caret-brand hover:bg-panelHi focus-visible:bg-panelHi ${FIELD_INK_FOCUS}`,
-};
+const FIELD_ERROR =
+  "border-danger/70 focus-visible:border-danger focus-visible:inset-ring focus-visible:inset-ring-danger";
 
-export const FIELD_ERROR =
-  "border-danger/70 focus-visible:border-danger focus-visible:inset-ring-danger";
+export function fieldFocus(error: boolean | undefined): string {
+  return error ? FIELD_ERROR : FIELD_INK_FOCUS;
+}
+
+const variants: Record<InputVariant, string> = {
+  default: "bg-panelHi border border-control caret-brand",
+  filled:
+    "bg-panelHi border border-transparent caret-brand focus-visible:bg-panel",
+  ghost:
+    "bg-transparent border border-transparent caret-brand hover:bg-panelHi focus-visible:bg-panelHi",
+};
 
 /** Помилка під полем: текст небезпеки 13 px (v3.1, І А6). */
 export const FIELD_ERROR_TEXT =
@@ -142,7 +152,10 @@ export const Input = forwardRef<HTMLInputElement, InputProps>(function Input(
   },
   ref,
 ) {
-  const stateClass = error ? FIELD_ERROR : success ? "border-brand-400" : "";
+  const stateClass = cn(
+    fieldFocus(error),
+    !error && success && "border-brand-400",
+  );
 
   const maxLen = props.maxLength;
   const currentLen =
@@ -279,7 +292,7 @@ export const Textarea = forwardRef<HTMLTextAreaElement, TextareaProps>(
     },
     ref,
   ) {
-    const stateClass = error ? FIELD_ERROR : "";
+    const stateClass = fieldFocus(error);
 
     return (
       <div className="flex flex-col gap-1">

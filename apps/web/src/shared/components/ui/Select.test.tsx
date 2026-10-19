@@ -51,6 +51,9 @@ describe("Select", () => {
     const cls = getByRole("combobox").className;
     expect(cls).toContain("border-danger/70");
     expect(cls).toContain("focus-visible:inset-ring-danger");
+    expect(cls).toMatch(/focus-visible:inset-ring(\s|$)/);
+    expect(cls).not.toContain("inset-ring-text");
+    expect(cls).not.toContain("focus-visible:border-text");
     expect(cls).not.toContain("focus-visible:ring-2");
   });
 
