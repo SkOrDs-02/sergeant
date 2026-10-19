@@ -19,7 +19,6 @@ const { FizrukAppStub } = vi.hoisted(() => ({
   FizrukAppStub: (props: {
     onBackToHub: () => void;
     onGoToHub: () => void;
-    onOpenSettings: () => void;
     onOpenModule: (id: string) => void;
     pwaAction: string | null;
     onPwaActionConsumed: () => void;
@@ -27,7 +26,6 @@ const { FizrukAppStub } = vi.hoisted(() => ({
     <div data-testid="fizruk-app-stub">
       <button onClick={props.onBackToHub}>back</button>
       <button onClick={props.onGoToHub}>hub</button>
-      <button onClick={props.onOpenSettings}>settings</button>
       <button onClick={() => props.onOpenModule("finyk")}>open-module</button>
       <button onClick={props.onPwaActionConsumed}>consume-pwa</button>
       <span data-testid="pwa-action">{props.pwaAction ?? "none"}</span>
@@ -93,13 +91,12 @@ describe("fizruk route Component", () => {
     expect(hub.clearPwaAction).toHaveBeenCalledTimes(1);
   });
 
-  it("calls goToModuleSettings('fizruk') when onOpenSettings fires", () => {
+  it("does not wire a settings action into the module header", () => {
     const hub = baseHub();
     useHubShellMock.mockReturnValue(hub);
-
     render(<Component />);
-    fireEvent.click(screen.getByText("settings"));
-    expect(hub.goToModuleSettings).toHaveBeenCalledWith("fizruk");
+    expect(screen.queryByText("settings")).not.toBeInTheDocument();
+    expect(hub.goToModuleSettings).not.toHaveBeenCalled();
   });
 
   it("passes through the current pwaAction from the hub shell", () => {

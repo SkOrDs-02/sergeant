@@ -117,14 +117,14 @@ export function HabitStatsSection({
   );
 
   return (
-    <section className="mb-5" aria-label="Статистика">
-      <SectionHeading as="h3" size="xs" className="mb-2" variant="routine">
+    <section className="mb-7" aria-label="Статистика">
+      <SectionHeading as="h3" size="lg" className="mb-3">
         Статистика
       </SectionHeading>
       {/* P2-4 (анти-слоп аудит 2026-09-23, хвіст F1 з 2026-09-01): та сама
           «однакові плитки» граматика, яку `RoutineStatsPanel` уже позбувся —
           один hero-показник, решта рядком тексту без власного бокса. */}
-      <Card as="div" radius="lg">
+      <Card as="div">
         {isOnce ? (
           <Stat label="Разів виконано" value={totalDone} size="md" />
         ) : (
@@ -162,7 +162,7 @@ export function HabitStatsSection({
           </p>
         )}
         {!isOnce && (
-          <p className="mt-1 flex flex-wrap items-baseline gap-1.5 text-style-caption text-subtle">
+          <p className="mt-1 flex flex-wrap items-baseline gap-1.5 text-style-label text-subtle">
             <span>% за 7 / 30 / 90 д</span>
             {pct7 !== null && (
               <span className="text-style-label text-text tabular-nums">
@@ -170,12 +170,12 @@ export function HabitStatsSection({
               </span>
             )}
             {pct30 !== null && (
-              <span className="text-style-caption text-muted tabular-nums">
+              <span className="text-style-label text-muted tabular-nums">
                 {pct30}
               </span>
             )}
             {pct90 !== null && (
-              <span className="text-style-caption text-subtle tabular-nums">
+              <span className="text-style-label text-subtle tabular-nums">
                 {pct90}
               </span>
             )}

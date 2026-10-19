@@ -1608,6 +1608,18 @@ export const paths: ZodOpenApiPathsObject = {
         },
         "400": validationError,
         "401": unauthorized,
+        "409": {
+          description:
+            "Checkout відхилено до звернення до провайдера. " +
+            "`ALREADY_SUBSCRIBED`: у користувача вже є діючий платний ентайтлмент " +
+            "(reverse trial і ручні гранти не рахуються). " +
+            "`CHECKOUT_PENDING`: є непідтверджений Plata-checkout молодший за годину " +
+            "(час життя pageUrl) - його ще можуть оплатити в іншій вкладці. " +
+            "Значення `code` описує схема `BillingCheckoutConflictCode`.",
+          content: {
+            "application/json": { schema: namedSchemas.ApiError },
+          },
+        },
         "503": {
           description: "Stripe billing env is not configured.",
           content: {
@@ -1718,7 +1730,8 @@ export const paths: ZodOpenApiPathsObject = {
         },
         "502": {
           description:
-            "`PROVIDER_CANCEL_FAILED`: провайдер відмовив або не відповів; " +
+            "`PROVIDER_CANCEL_FAILED`: провайдер (LiqPay, Plata/monobank, Stripe) " +
+            "відмовив або не відповів; cancel_at_period_end не виставлено, " +
             "підписка лишається активною, можна повторити.",
           content: {
             "application/json": { schema: namedSchemas.ApiError },
@@ -2069,7 +2082,9 @@ export const paths: ZodOpenApiPathsObject = {
       summary: "OAuth callback від Silpo (302 redirect на /settings)",
       description:
         "Server-only — браузер потрапляє сюди після Silpo consent screen, " +
-        "жоден клієнт не викликає цей шлях напряму.",
+        "жоден клієнт не викликає цей шлях напряму. Без сесії на цьому хості " +
+        "робить один 302-relay на веб-origin (`?silpo_relay=1`), де сесія є; " +
+        "власник токенів = користувач сесії (sec-15).",
       tags: ["silpo"],
       security: cookieOrBearer,
       responses: {

@@ -109,7 +109,7 @@ export function ResetPasswordPage() {
   const status =
     lastResponse !== undefined ? "done" : isSubmitting ? "sending" : "idle";
 
-  // Heading-focus pattern (same as `WelcomeOneScreen.tsx`) — gives the
+  // Heading-focus pattern used by the standalone welcome/auth surfaces — gives the
   // SR user the page context before they reach the first input. Replaces
   // `autoFocus` on the password field, which yanked focus past the
   // heading (F25 in `docs/audits/2026-05-13-page-audit-01-auth-onboarding.md`).
@@ -137,7 +137,7 @@ export function ResetPasswordPage() {
           <BrandLogo as="h1" size="md" className="justify-center" />
         </div>
 
-        <Card prominence="hero" radius="xl" padding="lg" className="space-y-5">
+        <Card prominence="hero" padding="lg" className="space-y-5">
           <div className="text-center">
             <h2
               ref={headingRef}
@@ -154,7 +154,7 @@ export function ResetPasswordPage() {
           {!token ? (
             <div
               role="alert"
-              className="text-style-label text-text bg-danger/10 border border-danger/30 rounded-xl px-4 py-3 leading-relaxed space-y-3"
+              className="text-style-label text-text bg-danger/10 border border-danger/30 rounded-lg px-4 py-3 leading-relaxed space-y-3"
             >
               <p>
                 Посилання на скидання пароля неповне або протерміноване. Відкрий
@@ -239,8 +239,8 @@ export function ResetPasswordPage() {
                   role={serverError ? "alert" : "status"}
                   className={
                     serverError
-                      ? "text-style-caption text-danger-strong dark:text-danger bg-danger/10 border border-danger/20 rounded-xl px-4 py-2.5"
-                      : "text-style-caption text-text bg-brand-500/10 border border-brand-500/30 rounded-xl px-4 py-2.5"
+                      ? "text-style-caption text-danger-strong dark:text-danger bg-danger/10 border border-danger/20 rounded-panel px-4 py-2.5"
+                      : "text-style-caption text-text bg-brand-500/10 border border-brand-500/30 rounded-panel px-4 py-2.5"
                   }
                 >
                   {serverError || "Пароль оновлено. Зараз перенесу на вхід…"}

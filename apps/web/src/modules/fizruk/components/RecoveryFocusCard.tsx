@@ -1,13 +1,8 @@
-/**
- * Last validated: 2026-05-14
- * Status: Active
- */
+import { messages } from "@shared/i18n/uk";
 import { useMemo, useState } from "react";
 import { Button } from "@shared/components/ui/Button";
 import { Card } from "@shared/components/ui/Card";
 import { SectionHeading } from "@shared/components/ui/SectionHeading";
-import { Icon } from "@shared/components/ui/Icon";
-import { cn } from "@shared/lib/ui/cn";
 import { BodyAtlas } from "./BodyAtlas";
 import { buildAtlasData } from "../lib/atlasData";
 import { useExerciseCatalog } from "../hooks/useExerciseCatalog";
@@ -56,7 +51,17 @@ export function RecoveryFocusCard({
   );
 
   return (
-    <Card as="section" radius="lg" aria-label="Відновлення та фокус тренування">
+    <Card
+      as="section"
+      prominence={
+        Object.values(rec.by).some((row) => row.lastAt != null) ||
+        rec.avoid.length > 0
+          ? "hero"
+          : "panel"
+      }
+      tone="fizruk"
+      aria-label="Відновлення та фокус тренування"
+    >
       <div className="flex items-start justify-between gap-2">
         {/*
           Toggle row was previously a borderless trailing-chevron button —
@@ -78,27 +83,23 @@ export function RecoveryFocusCard({
         <h2 className="contents">
           <button
             type="button"
-            className="focus-ring min-w-0 flex-1 text-left flex items-start gap-2 rounded-xl px-2 py-2 -mx-2 -my-2 hover:bg-panelHi/80 active:bg-panelHi transition-colors"
+            className="focus-ring min-w-0 flex-1 text-left flex items-start gap-2 rounded-lg px-2 py-2 -mx-2 -my-2 hover:bg-panelHi/80 active:bg-panelHi transition-colors"
             onClick={() => setOpen((o) => !o)}
             aria-expanded={open}
           >
-            <span
-              aria-hidden
-              className={cn(
-                "inline-flex items-center justify-center w-5 h-5 mt-0.5 rounded-md text-muted shrink-0 transition-transform",
-                open ? "rotate-180" : "rotate-0",
-              )}
-            >
-              <Icon name="chevron-down" size="md" />
-            </span>
             <span className="block min-w-0 flex-1 text-style-title text-text">
               Відновлення й фокус
+            </span>
+            <span className="text-style-body text-muted">
+              {open
+                ? messages.fizruk.disclosure.hide
+                : messages.fizruk.disclosure.show}
             </span>
           </button>
         </h2>
         <Button
-          variant="soft"
-          tone="fizruk"
+          variant="outline"
+          tone="neutral"
           size="sm"
           // AI-DANGER: розмір контрола на `Button`, не текст — див.
           // той самий випадок у WorkoutCatalogSection.
@@ -128,14 +129,14 @@ export function RecoveryFocusCard({
 
           <div className="flex flex-wrap items-center gap-x-3 gap-y-1 text-style-caption text-subtle mb-3 mt-3">
             <span className="inline-flex items-center gap-1">
-              <span className="w-2 h-2 rounded-full bg-success" /> готово
+              <span className="w-2 h-2 rounded-[3px] bg-success" /> готово
             </span>
             <span className="inline-flex items-center gap-1">
-              <span className="w-2 h-2 rounded-full bg-warning" /> краще
+              <span className="w-2 h-2 rounded-[3px] bg-warning" /> краще
               почекати
             </span>
             <span className="inline-flex items-center gap-1">
-              <span className="w-2 h-2 rounded-full bg-danger" /> рано
+              <span className="w-2 h-2 rounded-[3px] bg-danger" /> рано
             </span>
           </div>
 
@@ -151,14 +152,8 @@ export function RecoveryFocusCard({
           />
 
           {rec.wellbeingMult > 1.1 && (
-            <div className="mb-3 px-3 py-2 rounded-xl bg-warning/10 border border-warning/25 flex items-start gap-2">
-              <Icon
-                name="moon"
-                size="md"
-                className="shrink-0 text-warning-strong dark:text-warning"
-                aria-hidden
-              />
-              <p className="text-style-body text-warning-strong dark:text-warning leading-snug">
+            <div className="mb-3 px-3 py-2 rounded-panel bg-panelHi border border-line flex items-start gap-2">
+              <p className="text-style-body text-text leading-snug">
                 {rec.wellbeingMult >= 1.3
                   ? "Поганий сон або дуже низька енергія, відновлення значно сповільнене."
                   : "Недостатній сон або низька енергія, відновлення сповільнене."}{" "}
@@ -175,7 +170,7 @@ export function RecoveryFocusCard({
               {focus.map((m) => (
                 <span
                   key={m.id}
-                  className="px-2.5 py-1 bg-success/10 text-success-strong dark:text-success text-style-caption rounded-full border border-success/15"
+                  className="px-2.5 py-1 bg-panelHi text-text text-style-caption rounded-lg border border-line"
                 >
                   {m.label}
                   {m.daysSince == null ? "" : ` · ${m.daysSince}д без`}
@@ -189,9 +184,7 @@ export function RecoveryFocusCard({
             </div>
             {avoid.length > 0 && (
               <p className="text-style-caption text-muted mt-3 leading-relaxed">
-                <span className="font-semibold text-warning-strong dark:text-warning">
-                  Почекати:
-                </span>{" "}
+                <span className="font-semibold text-text">Почекати:</span>{" "}
                 {avoid.map((x) => x.label).join(", ")}
               </p>
             )}

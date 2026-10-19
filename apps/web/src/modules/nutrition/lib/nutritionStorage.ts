@@ -30,6 +30,7 @@ import {
   normalizeNutritionPrefs,
   normalizePantries,
   normalizeShoppingList,
+  resolvePantryItemIds,
   type NutritionLog,
   type GoalPeriod,
   type NutritionPrefs,
@@ -548,11 +549,11 @@ export function persistNutritionShoppingList(
 // contains it.
 // ─────────────────────────────────────────────
 
-function recipeSnapshot(r: SavedRecipe): NutritionRecipeSnapshot {
+export function recipeSnapshot(r: SavedRecipe): NutritionRecipeSnapshot {
   return { id: r.id, title: r.title, dataJson: JSON.stringify(r) };
 }
 
-function peekNutritionDualWriteState(): NutritionDualWriteState | null {
+export function peekNutritionDualWriteState(): NutritionDualWriteState | null {
   try {
     const cache = getCachedNutritionSqliteState();
     const prefs = getPrefsOverlay() ?? cache.prefs ?? defaultNutritionPrefs();
@@ -694,27 +695,35 @@ export function extractMealSnapshots(
 export function extractPantrySnapshots(
   pantries: readonly Pantry[],
 ): NutritionPantrySnapshot[] {
-  // Pantry items in LS are positional and have no stable `id`. Generate a
-  // deterministic id from `pantryId::index::name` so the same item gets
-  // the same row across reads — the adapter relies on `id` for upsert /
-  // soft-delete, and a stable derivation prevents thrash on every diff.
-  return pantries.map((p) => ({
-    id: p.id,
-    name: p.name,
-    text: p.text,
-    items: (p.items ?? []).map((it, idx) => ({
-      id: `${p.id}::${idx}::${it.name ?? ""}`,
-      name: it.name,
-      qty: typeof it.qty === "number" ? it.qty : null,
-      unit: typeof it.unit === "string" ? it.unit : null,
-      notes: typeof it.notes === "string" ? it.notes : null,
-      // Варіанти покупок їдуть одним JSON-полем разом зі своєю позицією
-      // (міграція 130). Порожній список і `null` означають одне й те саме —
-      // пишемо `null`, щоб diff не бачив зміни там, де її немає.
-      sources:
-        Array.isArray(it.sources) && it.sources.length > 0
-          ? JSON.stringify(it.sources)
-          : null,
-    })),
-  }));
+  // data-40: id позиції стабільний — береться з `PantryItem.id` (його видає
+  // `mergeItems` при появі позиції, а рідер SQLite повертає як `row.id`).
+  // Позиція без id (старий кеш, імпорт старого бекапу) отримує легасі-id за
+  // позицією `pantryId::index::name` — це рівно той id, під яким її рядок
+  // уже лежить у SQLite/на сервері, тож міграція даних не потрібна, а різні
+  // пристрої й версії клієнта сходяться на тому самому id без дублікатів.
+  // `taken` спільний для всіх місць: PK рядка — `(user_id, id)`.
+  const taken = new Set<string>();
+  return pantries.map((p) => {
+    const items = p.items ?? [];
+    const ids = resolvePantryItemIds(p.id, items, taken);
+    return {
+      id: p.id,
+      name: p.name,
+      text: p.text,
+      items: items.map((it, idx) => ({
+        id: ids[idx] as string,
+        name: it.name,
+        qty: typeof it.qty === "number" ? it.qty : null,
+        unit: typeof it.unit === "string" ? it.unit : null,
+        notes: typeof it.notes === "string" ? it.notes : null,
+        // Варіанти покупок їдуть одним JSON-полем разом зі своєю позицією
+        // (міграція 130). Порожній список і `null` означають одне й те саме —
+        // пишемо `null`, щоб diff не бачив зміни там, де її немає.
+        sources:
+          Array.isArray(it.sources) && it.sources.length > 0
+            ? JSON.stringify(it.sources)
+            : null,
+      })),
+    };
+  });
 }

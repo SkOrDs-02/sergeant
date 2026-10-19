@@ -172,7 +172,7 @@ export function Popover({
         zIndex: 1000,
       }}
       className={cn(
-        "bg-surface-glass backdrop-blur-md border border-surface-line shadow-nav rounded-3xl",
+        "bg-surface-glass border border-surface-line shadow-nav rounded-panel",
         "motion-safe:animate-fade-in",
         // Default padding only when no header/footer; with slots the
         // sections own their own padding for tighter alignment.
@@ -215,7 +215,7 @@ export function Popover({
         children
       )}
       {footer && (
-        <div className="px-4 py-3 border-t border-line bg-surface-muted/40 rounded-b-2xl">
+        <div className="px-4 py-3 border-t border-line bg-surface-muted/40 rounded-b-panel">
           {footer}
         </div>
       )}
@@ -282,7 +282,7 @@ export function PopoverItem({
       onClick={onClick}
       className={cn(
         "flex w-full items-center gap-2.5 px-3.5 py-2 text-style-label text-left",
-        "transition-colors duration-fast rounded-xl mx-1 outline-none",
+        "transition-colors duration-fast rounded-lg mx-1 outline-none",
         "focus-visible:ring-2 focus-visible:ring-accent/60",
         destructive
           ? "text-danger-strong dark:text-danger hover:bg-danger-soft hover:text-danger-soft-fg"

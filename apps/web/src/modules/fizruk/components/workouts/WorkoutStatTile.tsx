@@ -36,16 +36,11 @@ export function WorkoutStatTile({
   className,
 }: WorkoutStatTileProps) {
   return (
-    <div
-      className={cn(
-        "rounded-xl bg-fizruk-tile/10 border border-fizruk-tile-border/15 p-2.5 text-center",
-        className,
-      )}
-    >
-      <div className="text-style-caption text-fizruk-soft-fg">{label}</div>
+    <div className={cn("flex flex-col gap-1 py-2 text-left", className)}>
+      <div className="text-style-body text-muted">{label}</div>
       <div
         className={cn(
-          "font-black text-fizruk-soft-fg tabular-nums",
+          "font-medium text-text tabular-nums",
           size === "lg" ? "text-lg" : "text-sm mt-0.5",
         )}
       >

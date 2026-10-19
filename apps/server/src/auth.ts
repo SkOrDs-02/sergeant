@@ -39,6 +39,7 @@ import {
 import { emitSecurityEvent } from "./obs/securityEvents.js";
 import { hashUserId } from "./lib/userIdHash.js";
 import { elapsedMs } from "./lib/timing.js";
+import { AUTH_IP_ADDRESS_HEADERS, getClientIp } from "./http/clientIp.js";
 
 /**
  * Короткий fingerprint email-у для логів. Той самий патерн (sha256 → 12 hex),
@@ -659,7 +660,18 @@ export const auth = betterAuth({
    *     `bearer()` лишається завжди: його використовує Capacitor-shell.
    */
   plugins: [bearer(), ...(isExpoPluginEnabled() ? [expo()] : [])],
-  ...(advancedCookies ? { advanced: advancedCookies } : {}),
+  advanced: {
+    ...(advancedCookies ?? {}),
+    // rel-03: Better Auth бере IP клієнта (rate limit, session.ipAddress)
+    // спершу з перевіреного `x-sergeant-resolved-client-ip` (ставить
+    // `clientIpMiddleware` лише за валідного HMAC-підпису; клієнтське
+    // значення стирається), далі як і раніше — з `x-forwarded-for`. Без
+    // `SERGEANT_CLIENT_IP_SECRET` першого заголовка немає, тож поведінка
+    // не змінюється.
+    ipAddress: {
+      ipAddressHeaders: AUTH_IP_ADDRESS_HEADERS,
+    },
+  },
 });
 
 /**
@@ -813,7 +825,7 @@ export async function getSessionUser(
             typeof req.headers["user-agent"] === "string"
               ? req.headers["user-agent"]
               : null,
-          currentIp: typeof req.ip === "string" ? req.ip : null,
+          currentIp: getClientIp(req) ?? null,
         });
         if (drift) {
           logger.warn(

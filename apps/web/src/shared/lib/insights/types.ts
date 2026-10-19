@@ -42,7 +42,7 @@ export interface Insight {
   module: ModuleAccent | null;
   /** Bold title — стислий signal ("Витрати на каву ↑ 34%"). */
   title: string;
-  /** Subtitle — рекомендована дія ("Встановити ліміт?"). */
+  /** Subtitle — рекомендована дія ("Встановити ліміт"). */
   subtitle: string;
   /**
    * Розгорнуте питання з числами правила — префіл чипа «AI»

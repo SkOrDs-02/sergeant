@@ -45,12 +45,19 @@
  */
 import { computePantryDelta } from "./diff.pantryDelta.js";
 import {
+  diffGoalPeriodRestoreOps,
+  type GoalPeriodRestoreOp,
+  type NutritionGoalPeriodRestoreSnapshot,
+} from "./diff.goalPeriodRestore.js";
+import {
   diffPantryEventOps,
   type NutritionPantryEventSnapshot,
   type PantryEventAppendOp,
 } from "./diff.pantryEvents.js";
 // Re-export: types live in `diff.pantryEvents.ts` (Hard Rule #18 split).
 export type { NutritionPantryEventSnapshot, PantryEventAppendOp };
+// Те саме для відновлення сходинок цілей з бекапу (`diff.goalPeriodRestore.ts`).
+export type { GoalPeriodRestoreOp, NutritionGoalPeriodRestoreSnapshot };
 
 // -----------------------------------------------------------------------
 // Snapshot shapes — loose mirrors of the domain types, kept minimal so
@@ -173,6 +180,14 @@ export interface PantryUpsertOp {
    */
   readonly changedItemIds?: readonly string[];
   /**
+   * data-40: id позицій, яких більше немає в жодному місці. Адаптер видаляє
+   * саме їх (а не «усе, чого немає в знімку»), тож позиція, що доїхала в
+   * SQLite з іншого пристрою, але ще не потрапила в кеш, не знищується
+   * чужою несуміжною правкою. Відсутнє (старий op із журналу) - неявне
+   * видалення за відсутністю в знімку, як раніше.
+   */
+  readonly removedItemIds?: readonly string[];
+  /**
    * rel-10: чи змінились `name`/`text` самого місця. Разом із `changedItemIds`
    * вирішує, чи ставити в outbox рядок `nutrition_pantries`.
    */
@@ -256,6 +271,7 @@ export type NutritionDualWriteOp =
   | WaterLogSetOp
   | ShoppingListSetOp
   | GoalPeriodInsertOp
+  | GoalPeriodRestoreOp
   | PantryEventAppendOp;
 
 // -----------------------------------------------------------------------
@@ -283,6 +299,8 @@ export interface NutritionDualWriteState {
    * стани, зібрані вручну в тестах, не несуть цього поля — трактується як
    * `[]` (`diffPantryEventOps` уже робить `?? []`). */
   readonly pantryEvents?: readonly NutritionPantryEventSnapshot[];
+  /** Черга сходинок цілей, які відновлює бекап (`diff.goalPeriodRestore.ts`). */
+  readonly goalPeriodRestores?: readonly NutritionGoalPeriodRestoreSnapshot[];
   /** Походження зміни цілі лише для поточного переходу. */
   readonly goalOrigin?: "manual" | "preset" | "tdee";
 }
@@ -335,6 +353,12 @@ export function diffNutritionDualWriteOps(
   );
 
   // --- Pantries ---
+  // data-40: id усіх позицій `next` по всіх місцях — щоб переїзд позиції між
+  // місцями не вважався видаленням у старому місці.
+  const nextItemIds = new Set<string>();
+  for (const pantry of next.pantries) {
+    for (const item of pantry.items) nextItemIds.add(item.id);
+  }
   diffArray(
     prev.pantries,
     next.pantries,
@@ -346,9 +370,19 @@ export function diffNutritionDualWriteOps(
           ? {
               kind: "pantry-upsert",
               pantry: p,
-              ...computePantryDelta(prevPantry, p),
+              ...computePantryDelta(prevPantry, p, nextItemIds),
             }
-          : { kind: "pantry-upsert", pantry: p },
+          : // Місця немає в `prev` (новe або warm-кеш відстав від SQLite):
+            // явна дельта «усі позиції змінені, нічого не прибрано», інакше
+            // адаптер упав би на повний reconcile і поховав би рядки, що вже
+            // доїхали в SQLite з іншого пристрою.
+            {
+              kind: "pantry-upsert",
+              pantry: p,
+              changedItemIds: p.items.map((item) => item.id),
+              removedItemIds: [],
+              pantryFieldsChanged: true,
+            },
       ),
     (id) => ops.push({ kind: "pantry-delete", pantryId: id }),
   );
@@ -363,6 +397,7 @@ export function diffNutritionDualWriteOps(
   // --- Журнал цілей КБЖВ (W1-KBJU-APPEND, стадія 1) ---
   // ДОДАТКОВО до `prefs-upsert` вище, який навмисно лишився недоторканим.
   diffGoalPeriodOps(prev, next, ops);
+  diffGoalPeriodRestoreOps(prev, next, ops); // data-35: відновлення з бекапу
 
   // --- Recipes ---
   diffArray(

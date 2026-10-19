@@ -20,7 +20,6 @@
  * нічого: видно, що звʼязок є, з ким він і наскільки впевнений.
  */
 import { useState } from "react";
-import { cn } from "@shared/lib/ui/cn";
 import {
   CrossModuleLinkCard,
   MODULE_TEXT_CLASS,
@@ -53,13 +52,8 @@ export function CrossModuleLinkRow(props: CrossModuleLinkCardProps) {
       type="button"
       onClick={() => setOpen(true)}
       aria-expanded={false}
-      className={cn(
-        "w-full rounded-2xl border border-line bg-panel px-4 py-3 text-left",
-        // `panel-hi` — зареєстрований токен «трохи піднятої» панелі
-        // (`tailwind-preset.js` → `panelHi`). `panel-hover` у токенах немає.
-        "transition-colors hover:bg-panelHi",
-        "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent",
-      )}
+      // Мова H: рядок на hairline, без боксу.
+      className="w-full border-t border-line py-3 text-left focus-ring"
     >
       <div className="flex items-baseline justify-between gap-3">
         <span className="text-style-caption font-semibold">

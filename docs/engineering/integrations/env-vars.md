@@ -1,6 +1,6 @@
 # Environment variables — повний reference
 
-> **Last touched:** 2026-10-03 by @claude (sec-08: `AUTH_EXPO_PLUGIN_ENABLED`, нативні схеми в проді порожні); 2026-09-17 (§ `LLM_*` узгоджено з `env/aiRoutingEnv.ts` — OpenRouter живий, дефолти `openrouter`; продюсери ai-memory без ingest/mono). **Next review:** 2026-12-16.
+> **Last touched:** 2026-10-10 by @claude (rel-03: `SERGEANT_CLIENT_IP_SECRET`); 2026-10-03 by @claude (sec-08: `AUTH_EXPO_PLUGIN_ENABLED`, нативні схеми в проді порожні); 2026-09-17 (§ `LLM_*` узгоджено з `env/aiRoutingEnv.ts` — OpenRouter живий, дефолти `openrouter`; продюсери ai-memory без ingest/mono). **Next review:** 2026-12-16.
 > **Status:** Active
 
 Цей документ — канонічний reference усіх змінних оточення Sergeant. Мінімальний `.env` (12 змінних, потрібних для `pnpm dev:web` + `pnpm dev:server`) лежить у [`/.env.example`](../../../.env.example) у корені репо. Сюди винесено: повний опис, формати, default-и, наслідки незаповненості, перехресні посилання на код / ADR / hardening-ноти.
@@ -431,6 +431,14 @@ TRUST_PROXY=false                 ← повністю вимкнути XFF-па
 ```
 
 `true` **НЕ** підтримується — це робить кожен `req.ip` client-controlled.
+
+### `SERGEANT_CLIENT_IP_SECRET` _(optional)_
+
+Спільний секрет підпису IP клієнта між Vercel Edge Middleware ([`apps/web/middleware.ts`](../../../apps/web/middleware.ts)) і сервером ([`apps/server/src/http/clientIp.ts`](../../../apps/server/src/http/clientIp.ts)); закриває rel-03 / SECURITY-20260804-1-1 (per-IP ліміти за Vercel-проксі злипались в egress-адреси). Мін. **32 символи**, коротше валить boot сервера; порожній рядок = не задано. Згенерувати: `openssl rand -hex 32`.
+
+- **Vercel (web-проєкт):** middleware бере перше значення `x-forwarded-for`, ставить `x-sergeant-client-ip` і `x-sergeant-client-ip-sig` = `base64url(HMAC-SHA256(secret, ip))`; клієнтські копії обох заголовків стирає. Секрет у заголовок не передається. Слабший за 32 символи секрет тут вважається незаданим.
+- **Coolify (`sergeant-api-v2`):** `getIp()` (rate-limit, анонімна AI-квота, push), access-log, session-drift і Better Auth (`advanced.ipAddress`, через `x-sergeant-resolved-client-ip`) беруть IP із заголовка лише за timing-safe збігу підпису; інакше `req.ip`. Підписані loopback/private/link-local/CGNAT/unspecified адреси відхиляються. Мережевий гейт `requireInternalIp` (M14) підписаний заголовок ігнорує й читає лише `req.ip` (`getNetworkIp`).
+- **Не задано** на будь-якому з боків: поведінка точно як до rel-03 (`TRUST_PROXY` не чіпається). Тому порядок викочування: спершу бекенд, потім Vercel. Ротація: атомарно в обох місцях; у вікні розфазу запити просто повертаються до `req.ip`.
 
 ---
 

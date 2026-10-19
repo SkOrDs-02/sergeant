@@ -43,6 +43,7 @@ export {
 } from "./syncOpOutboxDrain.js";
 export {
   markOutboxSuccess,
+  markOutboxSuccessBatch,
   markOutboxRetry,
   markOutboxRejected,
 } from "./syncOpOutboxLifecycle.js";
@@ -120,6 +121,7 @@ export {
 export {
   finykHiddenAccounts,
   finykHiddenTransactions,
+  finykTxNotes,
   finykBudgets,
   finykSubscriptions,
   finykAssets,

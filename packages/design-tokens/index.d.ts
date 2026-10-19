@@ -28,7 +28,7 @@ export type SemanticOrModuleTone = SemanticTone | ModuleAccent;
 
 /** Primary brand colour ramps exposed by `brandColors` in tokens.js. */
 export type BrandColor =
-  "emerald" | "teal" | "cyan" | "cream" | "rose" | "lime";
+  "emerald" | "teal" | "cyan" | "rose" | "lime" | "stone";
 
 // ─── Runtime token shapes ────────────────────────────────────────────────
 
@@ -124,23 +124,6 @@ export interface ModuleAccentRgb {
 
 export declare const moduleAccentRgb: Readonly<
   Record<ModuleAccent, ModuleAccentRgb>
->;
-
-/**
- * Стіл і зона — фон сторінки (`desk`) і смуга під шапкою модуля (`zone`),
- * hex per theme. Mirrors `moduleSurfaces` in `tokens.js`; the CSS side is
- * `--module-desk-rgb` / `--module-zone-rgb` in `theme.css`.
- */
-export interface ModuleSurfacePair {
-  readonly desk: string;
-  readonly zone: string;
-}
-
-export declare const moduleSurfaces: Readonly<
-  Record<
-    ModuleAccent | "hub",
-    Readonly<{ light: ModuleSurfacePair; dark: ModuleSurfacePair }>
-  >
 >;
 
 /**

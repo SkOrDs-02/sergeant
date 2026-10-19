@@ -163,6 +163,6 @@ describe("PantryListGuide", () => {
     const { container } = render(<PantryListGuide />);
     const details = container.querySelector("details");
     expect(details?.open).toBe(false);
-    expect(screen.getByText(/Як писати список/)).toBeTruthy();
+    expect(screen.getByText(/Формат списку/)).toBeTruthy();
   });
 });

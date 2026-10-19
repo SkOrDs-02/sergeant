@@ -36,14 +36,6 @@ export type FinykStorageKey =
 export const FINYK_MANUAL_ONLY_KEY = "finyk_manual_only_v1";
 
 /**
- * Час (epoch ms, рядок) останнього закриття банера «підключити банк».
- * Банер ховається на `BANK_BANNER_SNOOZE_DAYS` днів від цієї позначки
- * і потім повертається, якщо банк так і не підключено. Пристрій-локальний.
- */
-export const FINYK_BANK_BANNER_DISMISSED_AT_KEY =
-  "finyk_bank_banner_dismissed_at_v1";
-
-/**
  * Keys covered by the JSON backup. Anything that
  * `readFinykBackupFromStorage` writes must appear here so the mobile
  * backup/restore adapters stay in lock-step with the web ones.
@@ -72,9 +64,11 @@ export const FINYK_BACKUP_STORAGE_KEYS = Object.freeze({
   txCategories: "finyk_tx_cats",
   txSplits: "finyk_tx_splits",
   /**
-   * Нотатки до банківських операцій (`{ [txId]: string }`). Живуть лише в
-   * localStorage пристрою (не в SQLite dual-write, не в синку), тож бекап —
-   * єдиний спосіб їх перенести (аудит 2026-10-01, data-27).
+   * Нотатки до банківських операцій (`{ [txId]: string }`). Джерело правди —
+   * SQLite-таблиця `finyk_tx_notes` (dual-write + синк між пристроями,
+   * аудит 2026-10-01, data-27); цей LS-ключ у вебі лишився лише холодним
+   * знімком і джерелом одноразового перелиття, а в файлі бекапу нотатки
+   * їдуть під цим самим полем `txNotes`.
    */
   txNotes: "finyk_tx_notes",
   monoDebtLinkedTxIds: "finyk_mono_debt_linked",

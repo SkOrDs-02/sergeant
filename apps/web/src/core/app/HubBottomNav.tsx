@@ -19,28 +19,20 @@ import { messages } from "@shared/i18n/uk";
 /**
  * Sergeant Design System — `HubBottomNav`
  *
- * Hub-level bottom navigation. Renders as a floating pill — inset from
- * the screen edges (`mx-3` + bottom margin clearing the home indicator)
- * with the page mesh background continuing behind and below it, matching
- * `ModuleBottomNav` so the whole app reads under one navigation pattern.
+ * Hub-level bottom navigation, the same pattern as `ModuleBottomNav` so the
+ * whole app reads under one navigation (мова H, redesign v3 PR1).
  *
  * Canonical shape:
  * - Мінімальна висота треку 60 px (64 px on coarse-pointer devices); при
  *   збільшеному тексті (low-vision, 200% root) трек росте разом із підписом.
  * - Docked edge-to-edge against the screen bottom in both browser and PWA
- *   standalone via `bottom-nav-shell` — no horizontal margins, flat bottom,
- *   rounded only at the top. The panel background fills the safe-area strip
+ *   standalone via `bottom-nav-shell`: opaque, square corners, a hairline
+ *   on top, no blur. The background fills the safe-area strip
  *   (padding-bottom) so there's no page-coloured dead space below the labels
  *   and the nav never floats above the home indicator
  *   (user report 2026-06-05 / bottom-nav-gap; mobile-audit A1).
- * - Active indicator (fix spec v2 § 1 — light mirrors dark, solid not
- *   outline):
- *   - Light: a solid emerald (`brand-strong`) square with an ink-on-cream
- *     foreground (`text-bg`). Module-agnostic — the hub carries emerald,
- *     not a per-module accent.
- *   - Dark («Чорнило»): a solid emerald (`brand-400`, the hub's default
- *     accent) square with the same ink foreground (`text-bg` resolves to
- *     `#14100e` under `.dark`, so one bare class covers both themes).
+ * - Active tab: ink text (`text-text`), inactive `text-subtle`; no pill and
+ *   no accent fill. The label under the icon is always visible.
  * - `role="tablist"` + `aria-selected` for AT.
  *
  * Layout contract:
@@ -141,16 +133,8 @@ function HubBottomNavTab({
         "aria-controls": panelId,
       } as const);
 
-  // #20 Variant C — pill wraps icon+label for the active tab; inactive tabs
-  // show only their icon. The pill itself carries the brand background so the
-  // button background stays transparent: this way the active "slot" doesn't
-  // change size and there is no layout shift as tabs switch. Width/opacity of
-  // the label span is animated with CSS transitions (collapsed to opacity-only
-  // under prefers-reduced-motion via the `reduceMotion` prop).
-  const transition = reduceMotion
-    ? "transition-opacity"
-    : "transition-[max-width,opacity]";
-
+  // Мова H: підпис під іконкою завжди видимий, активна вкладка чорнилом,
+  // без пігулки.
   return (
     <button
       type="button"
@@ -171,9 +155,8 @@ function HubBottomNavTab({
         // нерівність між центрами іконок).
         "relative flex items-center justify-center min-w-0",
         "min-h-[48px] pointer-coarse:min-h-[52px]",
-        "active:scale-[0.96]",
-        "focus:outline-none focus-visible:ring-2 focus-visible:ring-focus/45 focus-visible:ring-offset-2 focus-visible:ring-offset-panel",
-        "text-text",
+        "focus:outline-none focus-visible:ring-2 focus-visible:ring-focus/45 focus-visible:ring-offset-2 focus-visible:ring-offset-bg",
+        active ? "text-text" : "text-subtle",
         hiddenSlot && "invisible pointer-events-none",
         className,
       )}
@@ -203,30 +186,15 @@ function HubBottomNavTab({
           // колонки тут знову припустимі. Тобто це не дві незалежні правки, а
           // одна: `grid` рівних колонок діє лише в парі з `flex-col`. Зміниш
           // одне — перевір ширини 320-390px, інакше повернеш дефект 2026-08-26.
-          "flex h-full w-full min-w-0 items-center justify-center rounded-2xl px-1 py-1",
-          "duration-base ease-standard",
-          active
-            ? "flex-col gap-0.5 bg-brand-strong dark:bg-brand-400 text-bg"
-            : "bg-transparent text-text",
-          !reduceMotion && "transition-[background-color,color]",
+          "flex h-full w-full min-w-0 flex-col items-center justify-center gap-0.5 px-1 py-1",
+          !reduceMotion && "transition-colors duration-base ease-standard",
         )}
       >
-        <Icon
-          name={iconName}
-          size="lg"
-          strokeWidth={active ? 2.5 : 2}
-          className="shrink-0"
-        />
-        {/* Label: visible only for active tab, slides in/out */}
+        <Icon name={iconName} size="lg" strokeWidth={2} className="shrink-0" />
         <span
           data-nav-label
           className={cn(
-            "text-style-caption font-semibold leading-tight overflow-hidden whitespace-nowrap text-ellipsis",
-            transition,
-            "duration-base ease-standard",
-            active
-              ? "max-w-full opacity-100"
-              : "max-w-0 opacity-0 pointer-events-none",
+            "max-w-full text-style-caption font-medium leading-tight overflow-hidden whitespace-nowrap text-ellipsis",
           )}
         >
           {visibleLabel ?? label}
@@ -445,7 +413,7 @@ export function HubBottomNav({
       aria-hidden={kbHidden || undefined}
       className={cn(
         "shrink-0 relative z-30",
-        "bottom-nav-shell border border-line bg-panel shadow-lg",
+        "bottom-nav-shell border-t border-line bg-bg",
         "transition-transform duration-base motion-reduce:transition-none",
         kbHidden && "translate-y-full pointer-events-none",
       )}

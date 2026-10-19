@@ -83,22 +83,21 @@ function walk(dir: string): string[] {
 }
 
 /**
- * Файли, де матеріал застосовується сирими `edge-*` класами, а не
- * пропом `Card.edge` (Борг 1, інвентар 2026-08-07, PR #710). Кожен
- * запис має поруч у СВОЄМУ файлі коментар «Чому не проп `Card edge`»
- * з конкретною причиною несумісності. Без цього allowlist-у половина
- * застосувань краю не ловиться ґрепом по `edge=` — інвентар неповний
- * за побудовою; список нижче робить межу перевіркою, а не памʼяттю.
- *
- * Нове сире застосування МАЄ або перейти на проп `Card`, або додатись
- * сюди з таким самим поясненням у файлі — інакше цей тест червоніє.
+ * Мова H (redesign v3): матеріал «край і зріз» живе лише в `Card`
+ * `prominence="receipt"`, а той стоїть лише на чеку Фініка. Сирі `edge-*`
+ * класи поза `Card.tsx` заборонені, allowlist порожній.
  */
 const RAW_EDGE_CLASSES = ["edge-stub", "edge-rule", "edge-perf"];
-const RAW_EDGE_ALLOWLIST = [
-  join("core", "insights", "WeeklyDigestCard.tsx"),
-  join("core", "hub", "ReportSheet.tsx"),
-  join("modules", "finyk", "components", "BankTransactionDetailsSheet.tsx"),
-  join("modules", "finyk", "pages", "transactions", "TransactionList.tsx"),
+const RAW_EDGE_ALLOWLIST: string[] = [];
+const RECEIPT_FILES = [
+  join("modules", "finyk", "components", "ReceiptItemsSection.tsx"),
+  join(
+    "modules",
+    "finyk",
+    "components",
+    "receiptScan",
+    "ReceiptReviewForm.tsx",
+  ),
 ];
 
 describe("край і зріз — маска й підйом не живуть на одному вузлі", () => {
@@ -153,6 +152,18 @@ describe("край і зріз — маска й підйом не живуть 
       );
       if (usesRaw && !RAW_EDGE_ALLOWLIST.includes(rel)) offenders.push(rel);
     }
+    expect(offenders).toEqual([]);
+  });
+
+  it('`prominence="receipt"` стоїть лише на чеку', () => {
+    const offenders = files
+      .filter((f) => readFileSync(f, "utf8").includes('prominence="receipt"'))
+      .map((f) => relative(SRC, f))
+      .filter(
+        (rel) =>
+          !RECEIPT_FILES.includes(rel) &&
+          rel !== join("shared", "components", "ui", "Card.tsx"),
+      );
     expect(offenders).toEqual([]);
   });
 });

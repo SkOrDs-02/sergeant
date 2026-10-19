@@ -16,6 +16,7 @@
  * Last validated: 2026-08-22
  */
 import { useCallback, useEffect, useRef, useState } from "react";
+import { stepButtonClass } from "./choiceClasses";
 import type { Dispatch, SetStateAction } from "react";
 import { Icon } from "@shared/components/ui/Icon";
 import { Measure } from "@shared/components/ui/Measure";
@@ -25,10 +26,10 @@ import { useDecimalDraft } from "@shared/hooks/useDecimalDraft";
 import { cn } from "@shared/lib/ui/cn";
 import { ProductNutrientsRow } from "./ProductNutrientsRow";
 import { ProductThumb } from "./ProductThumb";
-import { macrosForGrams } from "../../lib/foodDb/foodDb";
+import { macrosForGramsNullable } from "../../lib/foodDb/foodDb";
 import {
   MAX_PORTION_GRAMS,
-  macroToFieldString,
+  macrosToFormFields,
   type MealFormState,
 } from "./mealFormUtils";
 import { useWheelGrams } from "./useWheelGrams";
@@ -119,7 +120,7 @@ export function PickedFoodCard({
           .replace(",", "."),
       );
       const grams = Number.isFinite(g) && g > 0 ? g : p.defaultGrams || 100;
-      const mac = macrosForGrams(p.per100, grams);
+      const mac = macrosForGramsNullable(p.per100, grams);
       setForm((s) => ({
         ...s,
         // Назва продукту сіється ЛИШЕ в порожнє поле. Ефект перезапускає
@@ -127,10 +128,7 @@ export function PickedFoodCard({
         // (`продукт || s.name`) затирав уже перейменовану людиною страву
         // щоразу, коли вона крутила порцію.
         name: s.name || [p.name, p.brand].filter(Boolean).join(" ").trim(),
-        kcal: macroToFieldString(Number(mac.kcal) || 0),
-        protein_g: macroToFieldString(Number(mac.protein_g) || 0),
-        fat_g: macroToFieldString(Number(mac.fat_g) || 0),
-        carbs_g: macroToFieldString(Number(mac.carbs_g) || 0),
+        ...macrosToFormFields(mac),
         err: "",
       }));
     },
@@ -160,26 +158,23 @@ export function PickedFoodCard({
   }, [pickedGrams, pickedFood, applyPickedFood]);
 
   return (
-    <div className="mb-4 rounded-2xl border border-nutrition/30 bg-nutrition/5 overflow-hidden">
+    <div className="mb-4 border-y border-line">
       {/* Назва + зміна продукту */}
-      <div className="flex items-center justify-between gap-2 px-4 pt-3 pb-2">
+      <div className="flex items-center justify-between gap-2 pt-3 pb-2">
         <ProductThumb
           name={pickedFood.name ?? ""}
           imageUrl={pickedFood.imageUrl}
         />
         <div className="min-w-0 flex-1">
-          <div className="text-style-label text-text truncate">
+          <div className="text-style-body font-semibold text-text truncate">
             {[pickedFood.name, pickedFood.brand].filter(Boolean).join(" · ")}
             {pickedFood.source === "off" && (
-              <Icon
-                name="link"
-                size="xs"
-                className="ml-1 inline-block align-baseline text-subtle"
-                title="Open Food Facts"
-              />
+              <span className="ml-1 text-style-caption font-normal text-subtle">
+                · Open Food Facts
+              </span>
             )}
           </div>
-          <div className="text-style-caption text-subtle mt-0.5">
+          <div className="text-style-caption text-muted mt-0.5 tabular-nums">
             <Measure
               value={Math.round(pickedFood.per100?.kcal || 0)}
               unit="ккал"
@@ -205,7 +200,7 @@ export function PickedFoodCard({
         <button
           type="button"
           onClick={onChangeProduct}
-          className="shrink-0 w-11 h-11 flex items-center justify-center rounded-full bg-line/50 text-muted hover:text-text hover:bg-line transition-colors"
+          className="shrink-0 w-11 h-11 flex items-center justify-center rounded-lg text-muted hover:text-text hover:bg-line/40 focus-ring"
           aria-label="Обрати інший продукт"
         >
           <Icon name="close" size="md" aria-hidden />
@@ -218,7 +213,7 @@ export function PickedFoodCard({
       )}
 
       {portions.length > 0 && (
-        <div className="px-4 pb-2">
+        <div className="pb-2">
           <PortionUnitPicker
             portions={portions}
             unitId={unitId}
@@ -228,8 +223,8 @@ export function PickedFoodCard({
       )}
 
       {/* Порція з кроками */}
-      <div className="px-4 pb-3 flex flex-wrap items-center gap-2">
-        <div className="text-style-caption text-subtle font-semibold shrink-0">
+      <div className="pb-3 flex flex-wrap items-center gap-2">
+        <div className="text-style-label text-muted font-semibold shrink-0">
           Скільки зʼїв
         </div>
         {portion ? (
@@ -260,7 +255,7 @@ export function PickedFoodCard({
                       String(Math.max(1, cur - (cur > 50 ? 10 : 5))),
                     );
                   }}
-                  className="text-style-title w-8 h-8 pointer-coarse:min-h-[44px] pointer-coarse:min-w-[44px] rounded-full bg-panelHi text-text hover:bg-line transition-colors flex items-center justify-center"
+                  className={stepButtonClass}
                 >
                   −
                 </button>
@@ -271,7 +266,7 @@ export function PickedFoodCard({
                     value={gramsDraft.value}
                     onChange={gramsDraft.onChange}
                     aria-label="Грами"
-                    className="input-focus-nutrition w-[76px] text-center bg-panel border border-line rounded-xl px-2 py-2 text-style-label text-text [appearance:textfield] [&::-webkit-inner-spin-button]:appearance-none [&::-webkit-outer-spin-button]:appearance-none"
+                    className="input-focus-nutrition w-[76px] text-center bg-panel border border-line rounded-lg px-2 py-2 tabular-nums text-style-label text-text [appearance:textfield] [&::-webkit-inner-spin-button]:appearance-none [&::-webkit-outer-spin-button]:appearance-none"
                   />
                   {/* AI-NOTE: «г» лишається сирим `text-xs`, і це не
                   недогляд проходу типографіки. Це одиниця, приліплена
@@ -297,7 +292,7 @@ export function PickedFoodCard({
                       ),
                     );
                   }}
-                  className="text-style-title w-8 h-8 pointer-coarse:min-h-[44px] pointer-coarse:min-w-[44px] rounded-full bg-panelHi text-text hover:bg-line transition-colors flex items-center justify-center"
+                  className={stepButtonClass}
                 >
                   +
                 </button>
@@ -310,15 +305,16 @@ export function PickedFoodCard({
                   key={g}
                   type="button"
                   onClick={() => setPickedGrams(String(g))}
+                  aria-pressed={Number(pickedGrams) === g}
                   className={cn(
-                    "px-2 py-0.5 rounded-xl text-style-caption border transition-[background-color,border-color,color,opacity]",
+                    "h-8 px-2.5 rounded-[7px] border text-style-label tabular-nums focus-ring",
                     // На coarse pointer степер підмінює `WheelPicker`, а ці
                     // чіпи лишаються — тобто стають найдрібнішим тапабельним
                     // контролом картки. 44×44 тут не опційні.
                     "pointer-coarse:min-h-[44px] pointer-coarse:min-w-[44px] inline-flex items-center justify-center",
                     Number(pickedGrams) === g
-                      ? "bg-nutrition-strong text-white border-nutrition dark:bg-nutrition dark:text-bg"
-                      : "bg-panelHi text-subtle border-line hover:border-nutrition/40",
+                      ? "border-text font-semibold text-text"
+                      : "border-line text-muted hover:text-text",
                   )}
                 >
                   {g}

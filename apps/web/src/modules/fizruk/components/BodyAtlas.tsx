@@ -33,7 +33,7 @@ import { formatNumberUk } from "@sergeant/shared";
 
 const t = messages.fizruk.atlas;
 
-export type { AtlasMuscleDatum, AtlasData } from "../lib/atlasData";
+export type { AtlasData, AtlasMuscleDatum } from "../lib/atlasData";
 
 type AtlasMode = "recovery" | "last" | "volume";
 
@@ -50,7 +50,7 @@ const SIDES: Array<{ id: BodyAtlasSide; label: string }> = [
 
 /**
  * Cold (unworked) muscles and silhouette fill with a theme-aware neutral
- * derived from design tokens — warm-gray on the cream theme, slate on ink.
+ * derived from design tokens — warm-gray on the light theme, slate on ink.
  * Exposed as a CSS var so it flips with the active theme (no raw light/dark
  * hex pair). Muscle `<path>`s reference `NEUTRAL_BASE`; the SVG sets the var.
  */
@@ -66,7 +66,7 @@ const SELECTED_STROKE = "rgb(var(--c-fg))";
  * Endpoints are var-backed (`--c-bg` / `--c-fg`), not literal `#ffffff`/
  * `#000000` — a static white/black mix reads as a fixed light-mode gloss
  * and goes muddy/blown-out on the ink (dark) surface. `--c-bg` (near-white
- * on cream, near-black on ink) and `--c-fg` (near-black on cream,
+ * on light, near-black on ink) and `--c-fg` (near-black on light,
  * near-white on ink) invert together with the theme, so "top" and
  * "bottom" stay the lighter/darker edge of the sculpt in both themes
  * instead of a hardcoded light-mode-only highlight direction.
@@ -187,7 +187,7 @@ function SilhouetteTap({
       type="button"
       onClick={onOpenFull}
       aria-label={t.openFullLabel}
-      className="block w-full rounded-2xl focus:outline-none focus-visible:ring-2 focus-visible:ring-focus/45"
+      className="block w-full rounded-lg focus:outline-none focus-visible:ring-2 focus-visible:ring-focus/45"
     >
       {children}
     </button>
@@ -345,7 +345,7 @@ export function BodyAtlas({
         <div
           ref={silhouetteBoxRef}
           className={cn(
-            "min-w-0 shrink rounded-2xl bg-bg p-3",
+            "min-w-0 shrink rounded-panel bg-bg p-3",
             compact
               ? "mx-auto max-w-[200px] basis-[200px]"
               : "max-w-[300px] basis-[300px]",
@@ -353,7 +353,7 @@ export function BodyAtlas({
         >
           <div className="mb-1.5 flex items-center justify-center gap-2 text-style-caption text-subtle">
             <span>{LEGEND_COPY[mode].left}</span>
-            <div className="flex h-1.5 w-28 overflow-hidden rounded-full">
+            <div className="flex h-1.5 w-28 overflow-hidden rounded-lg">
               {Array.from({ length: 24 }, (_, i) => (
                 <span
                   key={i}
@@ -588,7 +588,7 @@ export function BodyAtlas({
 
         {!compact && (
           <div className="min-w-0 flex-1 basis-[260px]">
-            <div className="rounded-2xl border border-line bg-bg p-4">
+            <div className="rounded-panel border border-line bg-bg p-4">
               {selected && selectedDatum ? (
                 <SelectedCard
                   label={BODY_ATLAS_MUSCLE_LABELS_UK[selected]}
@@ -633,8 +633,8 @@ function SelectedCard({
             собі, а те, що висота вузла вже узгоджена з чимось поруч.
             Пор. банер конфлікту в `WorkoutItemCard` — там роль ЗАСТОСОВАНА,
             бо line-height явно пришпилений `leading-snug`. */}
-        <span className="inline-flex items-center gap-1.5 rounded-full border border-line px-2.5 py-1 text-xs text-text">
-          <span className={cn("inline-block h-2 w-2 rounded-full", pill.dot)} />
+        <span className="inline-flex items-center gap-1.5 rounded-lg border border-line px-2.5 py-1 text-xs text-text">
+          <span className={cn("inline-block h-2 w-2 rounded-lg", pill.dot)} />
           {pill.label}
         </span>
       </div>
@@ -669,7 +669,7 @@ function SelectedCard({
                 // AI-DANGER: та сама геометрія, що й у пігулці вище —
                 // падинг узгоджений із 12px/1rem. Рамки немає, але
                 // висота однаково зафіксована фоном і падингом.
-                className="rounded-full bg-surface px-2.5 py-1 text-xs text-text"
+                className="rounded-lg bg-surface px-2.5 py-1 text-xs text-text"
               >
                 {ex}
               </span>
@@ -682,7 +682,7 @@ function SelectedCard({
         <button
           type="button"
           onClick={() => onAskCoach(label)}
-          className="mt-3 min-h-[44px] rounded-full border border-line px-3 text-style-caption text-text transition-colors hover:bg-surface focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-fizruk/50"
+          className="mt-3 min-h-[44px] rounded-lg border border-line px-3 text-style-caption text-text transition-colors hover:bg-surface focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-fizruk/50"
         >
           Підказати наступне тренування →
         </button>
@@ -693,7 +693,7 @@ function SelectedCard({
 
 function Stat({ label, value }: { label: string; value: string }) {
   return (
-    <div className="rounded-xl bg-surface p-2.5">
+    <div className="rounded-panel bg-surface p-2.5">
       <p className="text-style-caption text-subtle">{label}</p>
       <p className="mt-0.5 text-lg font-medium text-text">{value}</p>
     </div>

@@ -46,6 +46,8 @@ import type {
 } from "./context/RoutineCalendarContext";
 import type { HubCalendarEvent, RoutineState } from "./lib/types";
 import type { TimeState } from "./useRoutineTimeState";
+import { useFizrukSqliteReadTick } from "@fizruk/lib/sqliteReadGate";
+import { useFinykSqliteReadTick } from "@finyk/lib/sqliteReadGate";
 import { formatUaWeekdayDate } from "@shared/lib/time/uaWeekdayDate";
 import { formatMonthYear } from "@shared/lib/time/formatDate";
 
@@ -121,13 +123,21 @@ export function useRoutineDerivedData({
     return monthBounds(monthCursor.y, monthCursor.m);
   }, [timeMode, monthCursor.y, monthCursor.m, selectedDay]);
 
+  // План/шаблони Фізрука й підписки Фініка живуть у SQLite-кешах, які
+  // прогріваються асинхронно: без цих тіків події не зʼявились би після
+  // прогріву/мутації (кеш — модульна змінна, не React-стан).
+  const fizrukSqliteTick = useFizrukSqliteReadTick();
+  const finykSqliteTick = useFinykSqliteReadTick();
+
   const events = useMemo(() => {
     void finykCalendarTick; // Finyk mirror tick without mutating `routine`
+    void fizrukSqliteTick;
+    void finykSqliteTick;
     return buildHubCalendarEvents(routine, range, {
       showFizruk: routine.prefs.showFizrukInCalendar !== false,
       showFinykSubs: routine.prefs.showFinykSubscriptionsInCalendar !== false,
     });
-  }, [routine, range, finykCalendarTick]);
+  }, [routine, range, finykCalendarTick, fizrukSqliteTick, finykSqliteTick]);
 
   const filtered = useMemo(() => {
     let ev: HubCalendarEvent[] = events;

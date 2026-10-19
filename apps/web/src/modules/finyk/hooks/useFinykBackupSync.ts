@@ -6,6 +6,7 @@ import {
 } from "../lib/finykBackup";
 import { downloadJson, toKyivISODate } from "@sergeant/shared";
 import { sanitizeMerchantRules } from "@sergeant/finyk-domain/lib/merchantRules";
+import { sanitizeCashOnHand } from "@sergeant/finyk-domain/domain/cashOnHand";
 import { reportSilentError } from "./useStorage.persist";
 import type {
   Subscription,
@@ -72,6 +73,8 @@ export function useFinykBackupSync(
     setDismissedRecurring,
     merchantRules,
     setMerchantRules,
+    cashOnHand,
+    setCashOnHand,
   } = slots;
 
   const applyData = (data: FinykBackup) => {
@@ -100,6 +103,7 @@ export function useFinykBackupSync(
       setDismissedRecurring(data.dismissedRecurring as string[]);
     if (data.merchantRules)
       setMerchantRules(sanitizeMerchantRules(data.merchantRules));
+    if (data.cashOnHand) setCashOnHand(sanitizeCashOnHand(data.cashOnHand));
     notifyFinykRoutineCalendarSync();
   };
 
@@ -123,6 +127,7 @@ export function useFinykBackupSync(
       customCategories,
       dismissedRecurring,
       merchantRules,
+      ...(cashOnHand ? { cashOnHand: { ...cashOnHand } } : {}),
     };
     await downloadJson(`finyk-backup-${toKyivISODate()}.json`, data);
   };

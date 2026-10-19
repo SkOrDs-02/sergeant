@@ -6,13 +6,17 @@
    exemptions in logRetention/archivePoller.ts and modules/sync/audit.ts. */
 import type { PoolClient } from "pg";
 import type { SyncV2Op } from "../../../http/schemas.js";
-import {
-  parseOptionalDate,
-  parseOptionalNumber,
-  toJsonbParam,
-} from "../syncV2-core.js";
+import { parseOptionalDate, toJsonbParam } from "../syncV2-core.js";
 import type { AppliedStatus } from "../syncV2-types.js";
-import { applyIfNewer, deleteIfNewer } from "../applySync-helpers.js";
+import { applyIfNewer } from "../applySync-helpers.js";
+
+// data-15: soft-delete-таблиці без UUID-PK живуть в окремому модулі
+// (`max-lines`, Hard Rule #18); реекспорт тримає імпорти реєстру незмінними.
+export {
+  applyFinykNetworthHistory,
+  applyFinykPerTxJsonbArray,
+  applyFinykTxCategories,
+} from "./applyTxMappings.js";
 
 export async function applyFinykTombstone(
   client: PoolClient,
@@ -205,180 +209,6 @@ export async function applyFinykPerRowBlob(
     );
   }
   return { status: "applied" };
-}
-
-export async function applyFinykTxCategories(
-  client: PoolClient,
-  op: SyncV2Op,
-  userId: string,
-  clientTs: Date,
-): Promise<AppliedStatus> {
-  const row = op.row;
-  const transactionId =
-    typeof row["transaction_id"] === "string" ? row["transaction_id"] : null;
-  if (!transactionId) return { status: "rejected", reason: "missing_tx_id" };
-
-  if (row["user_id"] == null) {
-    return { status: "rejected", reason: "missing_user_id" };
-  }
-  if (row["user_id"] !== userId) {
-    return { status: "rejected", reason: "user_id_mismatch" };
-  }
-
-  const existing = await client.query<{ updated_at: Date }>(
-    `SELECT updated_at FROM finyk_tx_categories
-       WHERE user_id = $1 AND transaction_id = $2`,
-    [userId, transactionId],
-  );
-  if (existing.rows.length > 0) {
-    if (existing!.rows[0]!.updated_at.getTime() >= clientTs.getTime()) {
-      return { status: "rejected", reason: "lww_conflict" };
-    }
-  }
-
-  if (op.op === "delete") {
-    return deleteIfNewer(
-      client,
-      `DELETE FROM finyk_tx_categories
-         WHERE user_id = $1 AND transaction_id = $2 AND updated_at < $3`,
-      [userId, transactionId, clientTs],
-      existing.rows.length > 0,
-    );
-  }
-
-  const categoryId =
-    typeof row["category_id"] === "string" ? row["category_id"] : null;
-  if (!categoryId) {
-    return { status: "rejected", reason: "missing_category_id" };
-  }
-
-  return applyIfNewer(
-    client,
-    `INSERT INTO finyk_tx_categories
-       (user_id, transaction_id, category_id, created_at, updated_at)
-     VALUES ($1, $2, $3, $4, $5)
-     ON CONFLICT (user_id, transaction_id) DO UPDATE
-       SET category_id = EXCLUDED.category_id,
-           updated_at  = EXCLUDED.updated_at
-       WHERE finyk_tx_categories.updated_at < EXCLUDED.updated_at`,
-    [userId, transactionId, categoryId, clientTs, clientTs],
-  );
-}
-
-export async function applyFinykPerTxJsonbArray(
-  client: PoolClient,
-  op: SyncV2Op,
-  userId: string,
-  clientTs: Date,
-  table: "finyk_tx_splits" | "finyk_mono_debt_links",
-  jsonColumn: "splits_json" | "debt_ids_json",
-): Promise<AppliedStatus> {
-  const row = op.row;
-  const transactionId =
-    typeof row["transaction_id"] === "string" ? row["transaction_id"] : null;
-  if (!transactionId) return { status: "rejected", reason: "missing_tx_id" };
-
-  if (row["user_id"] == null) {
-    return { status: "rejected", reason: "missing_user_id" };
-  }
-  if (row["user_id"] !== userId) {
-    return { status: "rejected", reason: "user_id_mismatch" };
-  }
-
-  const existing = await client.query<{ updated_at: Date }>(
-    `SELECT updated_at FROM ${table}
-       WHERE user_id = $1 AND transaction_id = $2`,
-    [userId, transactionId],
-  );
-  if (existing.rows.length > 0) {
-    if (existing!.rows[0]!.updated_at.getTime() >= clientTs.getTime()) {
-      return { status: "rejected", reason: "lww_conflict" };
-    }
-  }
-
-  if (op.op === "delete") {
-    return deleteIfNewer(
-      client,
-      `DELETE FROM ${table}
-         WHERE user_id = $1 AND transaction_id = $2 AND updated_at < $3`,
-      [userId, transactionId, clientTs],
-      existing.rows.length > 0,
-    );
-  }
-
-  const jsonValue = toJsonbParam(row[jsonColumn]) ?? "[]";
-
-  return applyIfNewer(
-    client,
-    `INSERT INTO ${table}
-       (user_id, transaction_id, ${jsonColumn}, created_at, updated_at)
-     VALUES ($1, $2, $3::jsonb, $4, $5)
-     ON CONFLICT (user_id, transaction_id) DO UPDATE
-       SET ${jsonColumn} = EXCLUDED.${jsonColumn},
-           updated_at    = EXCLUDED.updated_at
-       WHERE ${table}.updated_at < EXCLUDED.updated_at`,
-    [userId, transactionId, jsonValue, clientTs, clientTs],
-  );
-}
-
-export async function applyFinykNetworthHistory(
-  client: PoolClient,
-  op: SyncV2Op,
-  userId: string,
-  clientTs: Date,
-): Promise<AppliedStatus> {
-  const row = op.row;
-  const month = typeof row["month"] === "string" ? row["month"] : null;
-  if (!month || !/^\d{4}-\d{2}$/.test(month)) {
-    return { status: "rejected", reason: "invalid_month" };
-  }
-
-  if (row["user_id"] == null) {
-    return { status: "rejected", reason: "missing_user_id" };
-  }
-  if (row["user_id"] !== userId) {
-    return { status: "rejected", reason: "user_id_mismatch" };
-  }
-
-  const existing = await client.query<{ updated_at: Date }>(
-    `SELECT updated_at FROM finyk_networth_history
-       WHERE user_id = $1 AND month = $2`,
-    [userId, month],
-  );
-  if (existing.rows.length > 0) {
-    if (existing!.rows[0]!.updated_at.getTime() >= clientTs.getTime()) {
-      return { status: "rejected", reason: "lww_conflict" };
-    }
-  }
-
-  if (op.op === "delete") {
-    return deleteIfNewer(
-      client,
-      `DELETE FROM finyk_networth_history
-         WHERE user_id = $1 AND month = $2 AND updated_at < $3`,
-      [userId, month, clientTs],
-      existing.rows.length > 0,
-    );
-  }
-
-  const networth = parseOptionalNumber(row["networth"]);
-  if (networth === "invalid") {
-    return { status: "rejected", reason: "invalid_networth" };
-  }
-  const snapshotJson = toJsonbParam(row["snapshot_json"]) ?? "{}";
-
-  return applyIfNewer(
-    client,
-    `INSERT INTO finyk_networth_history
-       (user_id, month, networth, snapshot_json, created_at, updated_at)
-     VALUES ($1, $2, $3, $4::jsonb, $5, $6)
-     ON CONFLICT (user_id, month) DO UPDATE
-       SET networth      = EXCLUDED.networth,
-           snapshot_json = EXCLUDED.snapshot_json,
-           updated_at    = EXCLUDED.updated_at
-       WHERE finyk_networth_history.updated_at < EXCLUDED.updated_at`,
-    [userId, month, networth ?? 0, snapshotJson, clientTs, clientTs],
-  );
 }
 
 export async function applyFinykPrefs(

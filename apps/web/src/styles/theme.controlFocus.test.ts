@@ -16,11 +16,7 @@
  * Тому тут пінимо не лише числа, а й ЛОКАЦІЮ правил.
  */
 import { readFileSync } from "node:fs";
-import {
-  brandColors,
-  controlEdge,
-  moduleSurfaces,
-} from "@sergeant/design-tokens/tokens";
+import { brandColors, controlEdge } from "@sergeant/design-tokens/tokens";
 import { describe, expect, it } from "vitest";
 
 const css = readFileSync(new URL("./theme.css", import.meta.url), "utf8");
@@ -66,6 +62,7 @@ function contrast(a: string, b: string): number {
   return (Math.max(la, lb) + 0.05) / (Math.min(la, lb) + 0.05);
 }
 
+const MODULES = ["finyk", "fizruk", "routine", "nutrition"] as const;
 const root = variablesFor(":root");
 const dark = { ...root, ...variablesFor(".dark") };
 
@@ -74,11 +71,9 @@ const LIGHT_SURFACES: Record<string, string> = {
   "c-panel": root["c-panel"]!,
   "c-panel-hi": root["c-panel-hi"]!,
   "c-bg": root["c-bg"]!,
+  // Мова H: стіл і зону модуля знято, єдина тонована поверхня - тинт.
   ...Object.fromEntries(
-    Object.entries(moduleSurfaces).flatMap(([name, s]) => [
-      [`${name} desk`, hexToTriplet(s.light.desk)],
-      [`${name} zone`, hexToTriplet(s.light.zone)],
-    ]),
+    MODULES.map((m) => [`${m} tint`, root[`c-${m}-tint`]!]),
   ),
 };
 const DARK_SURFACES: Record<string, string> = {
@@ -86,10 +81,7 @@ const DARK_SURFACES: Record<string, string> = {
   "c-panel-hi": dark["c-panel-hi"]!,
   "c-bg": dark["c-bg"]!,
   ...Object.fromEntries(
-    Object.entries(moduleSurfaces).map(([name, s]) => [
-      `${name} zone`,
-      hexToTriplet(s.dark.zone),
-    ]),
+    MODULES.map((m) => [`${m} tint`, dark[`c-${m}-tint`]!]),
   ),
 };
 
@@ -145,14 +137,7 @@ describe("--c-focus-solid (суцільний колір індикатора ф
       );
     });
     for (const [name, surface] of [
-      [
-        `${module} desk (light)`,
-        hexToTriplet(moduleSurfaces[module].light.desk),
-      ],
-      [
-        `${module} zone (light)`,
-        hexToTriplet(moduleSurfaces[module].light.zone),
-      ],
+      [`${module} tint (light)`, root[`c-${module}-tint`]!],
       ["c-panel (light)", LIGHT_SURFACES["c-panel"]!],
     ] as const) {
       it(`light: ${module}-ink проти ${name} ≥ 3:1`, () => {
@@ -162,7 +147,7 @@ describe("--c-focus-solid (суцільний колір індикатора ф
       });
     }
     for (const [name, surface] of [
-      [`${module} zone (dark)`, hexToTriplet(moduleSurfaces[module].dark.zone)],
+      [`${module} tint (dark)`, dark[`c-${module}-tint`]!],
       ["c-panel (dark)", DARK_SURFACES["c-panel"]!],
       ["c-panel-hi (dark)", DARK_SURFACES["c-panel-hi"]!],
     ] as const) {
@@ -170,43 +155,6 @@ describe("--c-focus-solid (суцільний колір індикатора ф
         expect(
           contrast(dark[`c-${module}-ink`]!, surface),
         ).toBeGreaterThanOrEqual(3);
-      });
-    }
-  }
-});
-
-describe("фокус на світлому hero-градієнті: `hero-ink` ≥ 4.5:1 проти кожної зупинки", () => {
-  // Follow-up аудиту 2026-10-01: у піддереві модуля `--c-focus-solid` =
-  // `--c-{m}-ink` (світла -800), а початок hero-градієнта — той самий тир, тож
-  // кільце зливалось із фоном (≈1.0-1.3:1). Правило в кінці `theme.css`
-  // підставляє чорнило `#fdf9f3`; тут пінимо, що воно тримає ≥4.5:1 (вище за
-  // 3:1 індикатора: те саме чорнило несе текст hero) і що правило справді
-  // ставить саме цей колір.
-  const HERO_INK = "253 249 243";
-  it("правило ставить `--c-focus-solid: 253 249 243`", () => {
-    expect(css).toMatch(
-      /html:not\(\.dark\) \[class\*="bg-hero-grad-"\]\s*\{\s*--c-focus-solid:\s*253 249 243;/,
-    );
-  });
-  for (const module of ["finyk", "fizruk", "routine", "nutrition"] as const) {
-    const decl = new RegExp(
-      `--hero-grad-${module}:\\s*linear-gradient\\(([^)]*)\\)`,
-    ).exec(css);
-    it(`${module}: градієнт у :root знайдено`, () => {
-      expect(
-        decl,
-        `--hero-grad-${module} не знайдено в theme.css`,
-      ).not.toBeNull();
-    });
-    const stops = [...(decl?.[1] ?? "").matchAll(/#([0-9a-fA-F]{6})\b/g)].map(
-      (m) => hexToTriplet(`#${m[1]}`),
-    );
-    it(`${module}: у градієнті є щонайменше дві зупинки`, () => {
-      expect(stops.length).toBeGreaterThanOrEqual(2);
-    });
-    for (const stop of stops) {
-      it(`${module}: hero-ink проти зупинки rgb(${stop}) ≥ 4.5:1`, () => {
-        expect(contrast(HERO_INK, stop)).toBeGreaterThanOrEqual(4.5);
       });
     }
   }
@@ -278,21 +226,14 @@ describe("Switch: трек і бігунок — стани розрізняют
   });
 });
 
-describe("світла `--c-line`: контур картки читається на столі", () => {
-  // Аудит A8: `#e2e0da` давав 1.05 проти столу хаба — межа картки на столі
-  // була невидима. Паритет із темною (1.56 проти картки): ≥1.5 / ≥1.2.
-  it("проти картки ≥ 1.5:1", () => {
-    expect(contrast(root["c-line"]!, root["c-panel"]!)).toBeGreaterThanOrEqual(
-      1.5,
+describe("світла `--c-line`: hairline між рядками", () => {
+  // Мова H: панель без бордера, `--c-line` лише роздільник рядків на
+  // сторінці й верх tab bar.
+  it("проти сторінки ≥ 1.15:1", () => {
+    expect(contrast(root["c-line"]!, root["c-bg"]!)).toBeGreaterThanOrEqual(
+      1.15,
     );
   });
-  for (const [name, s] of Object.entries(moduleSurfaces)) {
-    it(`проти столу ${name} ≥ 1.15:1`, () => {
-      expect(
-        contrast(root["c-line"]!, hexToTriplet(s.light.desk)),
-      ).toBeGreaterThanOrEqual(1.15);
-    });
-  }
   it("ієрархія weak < line < strong збережена (strong темніша за line)", () => {
     expect(luminance(root["c-border-strong"]!)).toBeLessThan(
       luminance(root["c-line"]!),
@@ -324,8 +265,6 @@ describe("локація правил: ПОЗА `@layer` (інакше вони 
       /\n\.peer:focus-visible ~ \[class\*="peer-focus-visible:ring"\]\s*\{/,
     "кільце невалідного поля":
       /\n\*:focus-visible\[aria-invalid="true"\]:not\(\.focus-ring\)\s*\{/,
-    "фокус на світлому hero-градієнті (hero-ink)":
-      /\nhtml:not\(\.dark\) \[class\*="bg-hero-grad-"\]\s*\{/,
   };
   for (const [name, re] of Object.entries(RULES)) {
     it(`${name}: правило є і стоїть на нульовій глибині`, () => {
@@ -378,16 +317,5 @@ describe("локація правил: ПОЗА `@layer` (інакше вони 
       const block = css.slice(match!.index, css.indexOf("}", match!.index));
       expect(block).not.toMatch(/:hover|:disabled|aria-invalid/);
     });
-  });
-
-  it("`.zone-chip` — у `@layer components`, а не поза шарами", () => {
-    // Відступ у два пробіли — це саме правило, а не згадка в коментарі.
-    const index = css.indexOf("\n  .zone-chip {") + 1;
-    expect(index).toBeGreaterThan(0);
-    expect(depthAt(index)).toBe(1);
-    const before = css.slice(0, index);
-    expect(before.lastIndexOf("@layer components")).toBeGreaterThan(
-      before.lastIndexOf("@layer base"),
-    );
   });
 });

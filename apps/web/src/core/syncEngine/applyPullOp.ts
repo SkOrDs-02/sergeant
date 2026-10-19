@@ -2,6 +2,7 @@ import type { SyncV2PullOp } from "@sergeant/api-client";
 import type { SqliteMigrationClient } from "@sergeant/db-schema/migrate/sqlite";
 
 import { applyNutritionGoalPeriodsPull } from "./applyPullGoalPeriods.js";
+import { applyTxNotesPullDelete } from "./applyPullTxNotes.js";
 
 export type ApplyPullOutcome = "applied" | "skipped" | "rejected";
 
@@ -59,6 +60,7 @@ export const CLIENT_PULL_SUPPORTED_TABLES = new Set<string>([
   "finyk_manual_expenses",
   "finyk_tx_filters",
   "finyk_tx_categories",
+  "finyk_tx_notes",
   "finyk_tx_splits",
   "finyk_mono_debt_links",
   "finyk_networth_history",
@@ -169,13 +171,15 @@ async function applyRoutineEntries(
 
   if (op.op === "delete") {
     if (!local) return "skipped";
-    await client.run(
+    const changed = await client.all(
       `UPDATE routine_entries
           SET deleted_at = ?, updated_at = ?
-        WHERE id = ? AND user_id = ?`,
-      [op.client_ts, op.client_ts, id, userId],
+        WHERE id = ? AND user_id = ?
+          AND (julianday(updated_at) IS NULL OR julianday(updated_at) < julianday(?))
+        RETURNING 1 AS applied`,
+      [op.client_ts, op.client_ts, id, userId, op.client_ts],
     );
-    return "applied";
+    return changed.length > 0 ? "applied" : "skipped";
   }
 
   const name = typeof row["name"] === "string" ? row["name"] : "";
@@ -186,7 +190,7 @@ async function applyRoutineEntries(
   const deletedAt =
     typeof row["deleted_at"] === "string" ? row["deleted_at"] : null;
 
-  await client.run(
+  const changed = await client.all(
     `INSERT INTO routine_entries
        (id, user_id, name, completed_at, created_at, updated_at, deleted_at)
      VALUES (?, ?, ?, ?, ?, ?, ?)
@@ -194,10 +198,14 @@ async function applyRoutineEntries(
        name = excluded.name,
        completed_at = excluded.completed_at,
        updated_at = excluded.updated_at,
-       deleted_at = excluded.deleted_at`,
+       deleted_at = excluded.deleted_at
+     WHERE routine_entries.user_id != excluded.user_id
+        OR julianday(routine_entries.updated_at) IS NULL
+        OR julianday(routine_entries.updated_at) < julianday(excluded.updated_at)
+     RETURNING 1 AS applied`,
     [id, userId, name, completedAt, createdAt, op.client_ts, deletedAt],
   );
-  return "applied";
+  return changed.length > 0 ? "applied" : "skipped";
 }
 
 async function applyRoutineStreaks(
@@ -334,14 +342,36 @@ async function applyGenericRegistryRow(
   }
 
   if (op.op === "delete") {
-    if (!hasDeletedAt) return "rejected";
-    await client.run(
+    if (!hasDeletedAt) {
+      // AI-CONTEXT (data-15): таблиця без `deleted_at` (є `updated_at`) —
+      // hard DELETE з тим самим LWW `julianday`-guard, що й soft-delete та
+      // upsert нижче: JS-guard вище (`isStaleLocal`) лише швидкий шлях, а
+      // локальний writer може закомітити між вибіркою й записом. Рядок, що не
+      // видалився (новіший локально або вже відсутній), дає "skipped", а не
+      // "applied", щоб таблиця не потрапила в affectedTables. Таблиця без
+      // `updated_at` лишається `rejected`. finyk_tx_categories / _splits /
+      // _mono_debt_links / _networth_history після клієнтської міграції 005
+      // мають `deleted_at` і йдуть soft-гілкою нижче (частина Б, ADR-0073);
+      // сюди вони потрапляють лише на клієнті, що ще не домігрував.
+      if (!hasUpdatedAt) return "rejected";
+      const removed = await client.all(
+        `DELETE FROM ${safeTable}
+          WHERE ${lookupWhere}
+            AND (julianday(updated_at) IS NULL OR julianday(updated_at) < julianday(?))
+        RETURNING 1 AS applied`,
+        [...lookupValues, op.client_ts],
+      );
+      return removed.length > 0 ? "applied" : "skipped";
+    }
+    const changed = await client.all(
       `UPDATE ${safeTable}
           SET deleted_at = ?, updated_at = ?
-        WHERE ${lookupWhere}`,
-      [op.client_ts, op.client_ts, ...lookupValues],
+        WHERE ${lookupWhere}
+          AND (julianday(updated_at) IS NULL OR julianday(updated_at) < julianday(?))
+        RETURNING 1 AS applied`,
+      [op.client_ts, op.client_ts, ...lookupValues, op.client_ts],
     );
-    return "applied";
+    return changed.length > 0 ? "applied" : "skipped";
   }
 
   const payload: Record<string, unknown> = { ...row, updated_at: op.client_ts };
@@ -364,13 +394,21 @@ async function applyGenericRegistryRow(
 
   if (nonPkAssignments.length === 0) return "skipped";
 
-  await client.run(
+  // The SELECT above is only a fast path. Another local writer can commit
+  // while it is awaited, so the mutation itself must enforce the same LWW.
+  const newerOnly = hasUpdatedAt
+    ? ` WHERE ${scopeByUser ? `${safeTable}.user_id != excluded.user_id OR ` : ""}
+        julianday(${safeTable}.updated_at) IS NULL
+        OR julianday(${safeTable}.updated_at) < julianday(excluded.updated_at)`
+    : "";
+  const changed = await client.all(
     `INSERT INTO ${safeTable} (${insertCols.join(", ")})
      VALUES (${placeholders})
-     ON CONFLICT(${pkColumns.join(", ")}) DO UPDATE SET ${nonPkAssignments}`,
+     ON CONFLICT(${pkColumns.join(", ")}) DO UPDATE SET ${nonPkAssignments}${newerOnly}
+     RETURNING 1 AS applied`,
     values,
   );
-  return "applied";
+  return changed.length > 0 ? "applied" : "skipped";
 }
 
 /**
@@ -480,6 +518,11 @@ export async function applyPullOp(
 
   if (!CLIENT_PULL_SUPPORTED_TABLES.has(op.table)) {
     return "rejected";
+  }
+
+  if (op.table === "finyk_tx_notes") {
+    const deleted = await applyTxNotesPullDelete(client, op, userId);
+    if (deleted !== null) return deleted;
   }
 
   const special = SPECIAL_HANDLERS[op.table];

@@ -217,7 +217,7 @@ export function WaitlistForm({
 
         <fieldset>
           <legend className="text-style-label text-text mb-2">
-            Який план цікавить найбільше?
+            Цікавий план
           </legend>
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
             {TIER_OPTIONS.map((opt) => {
@@ -234,7 +234,7 @@ export function WaitlistForm({
                     // фокус по групі не читався взагалі (аудит 2026-09-16,
                     // WF-24). Peer-кільце на обгортці — той самий патерн, що в
                     // `Switch.tsx:200`, з канонічною непрозорістю `/45`.
-                    "relative flex min-h-[56px] items-start gap-3 rounded-2xl border p-3 cursor-pointer transition-colors " +
+                    "relative flex min-h-[56px] items-start gap-3 rounded-lg border p-3 cursor-pointer transition-colors " +
                     "peer-focus-visible:ring-2 peer-focus-visible:ring-focus/45 peer-focus-visible:ring-offset-2 peer-focus-visible:ring-offset-bg " +
                     (checked
                       ? "border-brand-500 bg-brand/10 dark:bg-brand/15"
@@ -251,7 +251,7 @@ export function WaitlistForm({
                   />
                   <span
                     className={
-                      "mt-0.5 flex h-5 w-5 shrink-0 items-center justify-center rounded-full border transition-colors " +
+                      "mt-0.5 flex h-5 w-5 shrink-0 items-center justify-center rounded-lg border transition-colors " +
                       (checked
                         ? "border-brand-500 bg-brand-500"
                         : "border-muted bg-panel")
@@ -260,7 +260,7 @@ export function WaitlistForm({
                   >
                     <span
                       className={
-                        "h-2 w-2 rounded-full bg-white transition-opacity " +
+                        "h-2 w-2 rounded-mark bg-white transition-opacity " +
                         (checked ? "opacity-100" : "opacity-0")
                       }
                     />

@@ -34,6 +34,7 @@ export * from "./nutritionGoals.js";
 // Довжина серії днів у нормі калорій (O1 — віхи серії в Їжі).
 export * from "./kcalStreak.js";
 export * from "./adaptiveTdee.js";
+export * from "./pantryItemId.js";
 export * from "./mergeItems.js";
 export * from "./recipeIds.js";
 export * from "./foodCategories.js";

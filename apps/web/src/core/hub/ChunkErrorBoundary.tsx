@@ -28,6 +28,12 @@ interface ChunkErrorBoundaryState {
  * so a persistently broken chunk can't loop the tab. If that guard refuses the
  * automatic reload, the manual card below lets the user trigger one.
  *
+ * Unlike `ModuleErrorBoundary` / `ErrorBoundary` this boundary only replaces
+ * its own `<Suspense>` chunk, so a form elsewhere on the page survives. That is
+ * why it keeps the default unsaved-input gate of `reloadOnceForChunkError`
+ * (data-45): a dirty tab gets the "reload when you've saved" toast instead of
+ * a silent reload.
+ *
  * Non-chunk errors are re-thrown so the app-level ErrorBoundary owns them —
  * this boundary is deliberately narrow.
  */
@@ -66,7 +72,7 @@ export default class ChunkErrorBoundary extends Component<
         <div
           role="alert"
           style={minH ? { minHeight: `${minH}px` } : undefined}
-          className="bg-panel border border-line rounded-2xl p-4 flex flex-col items-center justify-center gap-3 text-center"
+          className="bg-panel border border-line rounded-panel p-4 flex flex-col items-center justify-center gap-3 text-center"
         >
           <p className="text-style-body text-muted">
             {messages.errors.generic.sectionFailed}
@@ -74,7 +80,7 @@ export default class ChunkErrorBoundary extends Component<
           <button
             type="button"
             onClick={this.handleReload}
-            className="min-h-[44px] min-w-[44px] px-4 py-2 rounded-xl bg-primary text-bg text-style-label shadow-card hover:brightness-110 transition-[filter] focus:outline-none focus-visible:ring-2 focus-visible:ring-focus/45"
+            className="min-h-[44px] min-w-[44px] px-4 py-2 rounded-lg bg-primary text-bg text-style-label shadow-card hover:brightness-110 transition-[filter] focus:outline-none focus-visible:ring-2 focus-visible:ring-focus/45"
           >
             {messages.actions.reload}
           </button>

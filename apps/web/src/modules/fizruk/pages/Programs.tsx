@@ -54,10 +54,10 @@ export function Programs({
 
   return (
     <div className="flex-1 overflow-y-auto">
-      <div className="max-w-4xl mx-auto px-4 pt-4 page-tabbar-pad space-y-4">
+      <div className="max-w-4xl mx-auto px-5 pt-4 page-tabbar-pad space-y-7">
         <div className="flex items-center justify-between gap-3">
           <div>
-            <h1 className="text-style-title text-text">
+            <h1 className="text-style-headline text-text">
               {messages.fizruk.programs.title}
             </h1>
             <p className="text-style-caption text-subtle mt-0.5">
@@ -94,8 +94,8 @@ export function Programs({
               <div
                 key={prog.id}
                 className={cn(
-                  "bg-panel border rounded-2xl shadow-card overflow-hidden transition-[background-color,border-color,box-shadow,opacity]",
-                  isActive ? "border-fizruk/60" : "border-line",
+                  "bg-panel border rounded-panel overflow-hidden transition-[background-color,border-color,box-shadow,opacity]",
+                  isActive ? "border-line" : "border-line",
                 )}
               >
                 <div className="p-4">
@@ -106,11 +106,11 @@ export function Programs({
                           {prog.name}
                         </h2>
                         {isActive && (
-                          <span className="text-style-caption font-bold px-2 py-0.5 rounded-full bg-fizruk/15 text-fizruk-strong dark:text-fizruk border border-fizruk/30">
+                          <span className="text-style-caption font-bold px-2 py-0.5 rounded-lg bg-panelHi text-text border border-line">
                             {messages.fizruk.programs.active}
                           </span>
                         )}
-                        <span className="text-style-caption text-subtle border border-line rounded-full px-2 py-0.5">
+                        <span className="text-style-caption text-subtle border border-line rounded-lg px-2 py-0.5">
                           {prog.days}{" "}
                           {messages.fizruk.programs.daysPerWeekSuffix}
                         </span>
@@ -143,11 +143,11 @@ export function Programs({
                             // CONTROL tier (12px) — `rounded` (4px) has no
                             // slot on the canonical radius scale (see
                             // `packages/design-tokens/tailwind-preset.js`).
-                            "flex-1 text-center rounded-xl py-1 text-style-caption font-bold transition-colors",
+                            "flex-1 text-center rounded-panel py-1 text-style-caption font-bold transition-colors",
                             hasSession
                               ? isToday && isActive
-                                ? "bg-fizruk-strong text-white"
-                                : "bg-fizruk/15 text-fizruk-strong dark:text-fizruk"
+                                ? "bg-text text-bg"
+                                : "bg-panelHi text-text"
                               : // Без `/40`: розведений `text-subtle` давав
                                 // 1.83:1 на світлій темі (#bab8b4 на #f6f6f4)
                                 // при 12px bold — axe `color-contrast`,
@@ -169,7 +169,7 @@ export function Programs({
                     {!isActive ? (
                       <button
                         type="button"
-                        className="focus-ring flex-1 py-2.5 rounded-xl bg-fizruk-strong text-white dark:bg-fizruk dark:text-bg text-style-label transition-[background-color,opacity,transform] active:scale-[0.98]"
+                        className="focus-ring flex-1 py-2.5 rounded-lg bg-text text-bg dark:text-bg text-style-label transition-[background-color,opacity,transform]"
                         onClick={() => activateProgram(prog.id)}
                       >
                         {messages.fizruk.programs.activate}
@@ -179,7 +179,7 @@ export function Programs({
                         {todaySession && onStartWorkout && (
                           <button
                             type="button"
-                            className="focus-ring flex-1 py-2.5 rounded-xl bg-fizruk-strong text-white dark:bg-fizruk dark:text-bg text-style-label transition-[background-color,opacity,transform] active:scale-[0.98]"
+                            className="focus-ring flex-1 py-2.5 rounded-lg bg-text text-bg dark:text-bg text-style-label transition-[background-color,opacity,transform]"
                             onClick={() => {
                               const session =
                                 prog.sessions[todaySession.sessionKey];
@@ -202,7 +202,7 @@ export function Programs({
                           </button>
                         )}
                         {!todaySession && (
-                          <div className="flex-1 py-2.5 rounded-xl bg-panelHi text-subtle text-style-label text-center">
+                          <div className="flex-1 py-2.5 rounded-lg bg-panelHi text-subtle text-style-label text-center">
                             {messages.fizruk.programs.restToday}
                           </div>
                         )}
@@ -216,7 +216,7 @@ export function Programs({
                           // precedent in `WorkoutItemCard.tsx`, where the
                           // control sits next to an input of matching
                           // height, not another labelled button).
-                          className="focus-ring py-2.5 px-4 rounded-xl border border-line text-subtle text-style-label hover:text-text hover:bg-panelHi transition-colors"
+                          className="focus-ring py-2.5 px-4 rounded-lg border border-line text-subtle text-style-label hover:text-text hover:bg-panelHi transition-colors"
                           onClick={deactivateProgram}
                         >
                           {messages.fizruk.programs.stop}
@@ -225,7 +225,7 @@ export function Programs({
                     )}
                     <button
                       type="button"
-                      className="focus-ring py-2.5 px-4 rounded-xl border border-line text-subtle text-style-label hover:text-text hover:bg-panelHi transition-colors"
+                      className="focus-ring py-2.5 px-4 rounded-lg border border-line text-subtle text-style-label hover:text-text hover:bg-panelHi transition-colors"
                       onClick={() =>
                         setExpandedProgram(isExpanded ? null : prog.id)
                       }
@@ -281,12 +281,12 @@ function ProgramDetails({ id, prog, exercises }: ProgramDetailsProps) {
         return (
           <div
             key={`${schedEntry.day}_${schedEntry.sessionKey}`}
-            className="rounded-xl bg-panel border border-line p-3"
+            className="rounded-panel bg-panel border border-line p-3"
           >
             <div className="flex items-center gap-2 mb-2">
               {/* Fizruk module accent throughout — was mixing the cyan
                   fill with the emerald `success` text/border pair. */}
-              <span className="text-style-caption font-bold px-2 py-0.5 rounded-full bg-fizruk/15 text-fizruk-strong dark:text-fizruk border border-fizruk/30">
+              <span className="text-style-caption font-bold px-2 py-0.5 rounded-lg bg-panelHi text-text border border-line">
                 {messages.fizruk.programs.daysPrefix} {schedEntry.day}
               </span>
               <span className="text-style-label text-text">
@@ -317,7 +317,7 @@ function ProgramDetails({ id, prog, exercises }: ProgramDetailsProps) {
                 {exList.map((ex: RawExerciseDef) => (
                   <span
                     key={ex.id}
-                    className="text-xs px-2 py-0.5 rounded-full bg-panelHi border border-line text-subtle"
+                    className="text-xs px-2 py-0.5 rounded-lg bg-panelHi border border-line text-subtle"
                   >
                     {ex.name?.uk || ex.name?.en || ex.id}
                   </span>

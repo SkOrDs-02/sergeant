@@ -10,6 +10,25 @@
  */
 
 export const fizrukPageMessages = {
+  recoveryWarnings: {
+    injury: "Позначено біль: не раджу навантажувати",
+    recovering: "Мʼязи ще відновлюються",
+  },
+  disclosure: { show: "Показати", hide: "Сховати" },
+  restSettingsHint: "Обраний час відпочинку діє для вправ цього типу.",
+  hero: {
+    start: "Почати",
+    activeLabel: "Тренування триває",
+    openSession: "Сесія відкрита",
+    recovery: "Стан відновлення",
+    noPlan: "На сьогодні нічого не заплановано",
+    noHistory: "Історії тренувань ще немає",
+    openPlan: "Відкрити план",
+    chooseTemplate: "Обрати шаблон",
+    createTemplate: "Створити шаблон",
+    quickStart: "Швидкий старт",
+    programs: "До програм",
+  },
   headerSubtitle: "Рух · сила · відновлення",
   // < sm: повний підпис не вміщається поруч із двома кнопками шапки на
   // 390 px (VIS-1, аудит 2026-09). «Рух і відновлення» теж не вміщався на
@@ -50,7 +69,7 @@ export const fizrukPageMessages = {
     pickerEmpty:
       "Нічого не знайшли. Спробуй інше слово або заведи своє заняття.",
     newActivityName: "Назва заняття",
-    newActivityNamePlaceholder: "Наприклад, TRX у моєму залі",
+    newActivityNamePlaceholder: "Назва активності",
     newActivityCategory: "Категорія",
     newActivityEffort: "Наскільки важке",
     newActivityEffortHint:
@@ -183,7 +202,7 @@ export const fizrukPageMessages = {
     note: "Нотатка",
     time: "Час",
     noteTitle: "Нотатки до тренування",
-    notePlaceholder: "Напр. важко на присіданнях, болить коліно",
+    notePlaceholder: "Нотатка",
     noteHint: "необовʼязково",
     warmupAdd: "Додати",
     // Той самий родовий відмінок, що й `setsGenitive*`: «0 з 1 вправи»,
@@ -268,10 +287,10 @@ export const fizrukPageMessages = {
   // Аркуш готовності перед стартом тренування
   // (спека docs/work/specs/fizruk-readiness-check.md).
   readiness: {
-    title: "Як ти сьогодні?",
-    subtitle: "Два питання, і підказка ваги врахує твій стан.",
-    sleepLabel: "Як спалось?",
-    sorenessLabel: "Як почуваються мʼязи?",
+    title: "Самопочуття",
+    subtitle: "Дві оцінки, і підказка ваги врахує твій стан.",
+    sleepLabel: "Сон",
+    sorenessLabel: "Мʼязи",
     scaleLow: "погано",
     scaleHigh: "добре",
     submit: "Готово",
@@ -589,7 +608,7 @@ export const fizrukPageMessages = {
     markedSuffix: "уже позначено",
     today: "сьогодні",
     yesterday: "вчора",
-    finishTitle: "Щось болить?",
+    finishTitle: "Біль після тренування",
     finishDescription:
       "Опційно познач одну або кілька зон: мʼяз, суглоб чи відділ хребта. Медичних порад тут немає: позначка лише прибирає позначене з порад з відновлення.",
     skip: "Нічого не позначати",
@@ -691,6 +710,12 @@ export const fizrukPageMessages = {
     outOfFive: "/5",
     noteHeading: "Нотатка",
     repeatCta: "Повторити це тренування",
+    /**
+     * ux-11 (аудит 2026-10-01): свайп в історії — touch-only жест, тож
+     * видалення завершеного тренування мусить мати кнопку, доступну мишею
+     * й клавіатурою. Тост з undo — `workoutHistory.deletedToast`.
+     */
+    deleteCta: "Видалити тренування",
     notFoundTitle: "Тренування не знайдено",
     notFoundDescription:
       "Його вже видалили, або посилання застаріле. Повернись до списку тренувань.",
@@ -719,7 +744,8 @@ export const fizrukPageMessages = {
     // `/fizruk/history` тепер один і належить шапці модуля, тож рядок
     // лишався б підписом до кнопки, якої немає.
     emptyTitle: "Поки немає тренувань",
-    emptyDescription: "Заверши перше тренування, воно зʼявиться тут.",
+    emptyDescription: "Завершене тренування зʼявиться тут.",
+    startCta: "Почати тренування",
     endedBadge: "Завершене",
     activeBadge: "Активне",
     /**

@@ -10,6 +10,7 @@ import type {
 } from "@sergeant/nutrition-domain";
 import { Card } from "@shared/components/ui/Card";
 import { EmptyState } from "@shared/components/ui/EmptyState";
+import { SectionHeading } from "@shared/components/ui/SectionHeading";
 import { Button } from "@shared/components/ui/Button";
 import { Input } from "@shared/components/ui/Input";
 import { cn } from "@shared/lib/ui/cn";
@@ -33,27 +34,6 @@ import type {
   ShoppingList,
 } from "@sergeant/nutrition-domain";
 import type { NutritionWeekPlan } from "../hooks/useNutritionUiState";
-import { Icon, type IconName } from "@shared/components/ui/Icon";
-import {
-  LOW_STOCK_CATEGORY_NAME,
-  findShoppingCategory,
-} from "@sergeant/nutrition-domain";
-
-// Іконка групи в списку покупок - це гліф категорії комори (одна таксономія
-// Харчування, рішення власника 2026-10-01): список більше не має власного
-// переліку категорій і власної мапи іконок. До 2026-08-03 тут лежали emoji,
-// які малювалися системним шрифтом («🫒» на Windows деградувало в порожній
-// прямокутник), а до 2026-10-01 - мапа з 11 назв, яких комора не знала.
-//
-// Назву віддає модель за промптом сервера (`shopping-list.ts`), тож апостроф і
-// регістр у ній не гарантовані; `findShoppingCategory` порівнює згорнутими
-// формами. «Закінчується вдома» - не категорія комори, а підсумкова група
-// вдоповнених low-stock позицій, тож гліф у неї власний.
-function getCategoryIcon(name: string): IconName {
-  if (name === LOW_STOCK_CATEGORY_NAME) return "trending-down";
-  const category = findShoppingCategory(name);
-  return (category?.iconName as IconName | undefined) ?? "shopping-cart";
-}
 
 const pm = messages.nutrition.shoppingListPantryMath;
 const ma = messages.nutrition.shoppingListManualAdd;
@@ -75,17 +55,18 @@ function ShoppingItemRow({
 
   if (isLowStockSuggestion) {
     return (
-      <div className="w-full px-3 py-2.5 flex items-start gap-3 text-left min-h-[44px]">
+      <div className="w-full py-2.5 flex items-start gap-3 text-left min-h-[44px]">
         <span
-          className="shrink-0 w-5 h-5 mt-0.5 rounded-full border-2 border-dashed border-line/60"
+          className="shrink-0 w-5 h-5 mt-0.5 rounded-[5px] border border-dashed border-border-strong"
           aria-hidden
         />
         <div className="min-w-0 flex-1">
-          <span className="text-style-label text-subtle">{item.name}</span>
-          <span className="ml-1.5 inline-flex items-center gap-1 text-style-caption text-warning-strong dark:text-warning">
-            <Icon name="trending-down" size="xs" aria-hidden />
-            {pm.lowStockBadge}
+          <span className="text-style-body font-semibold text-subtle">
+            {item.name}
           </span>
+          <div className="text-style-caption text-muted">
+            {pm.lowStockBadge}
+          </div>
         </div>
       </div>
     );
@@ -93,7 +74,7 @@ function ShoppingItemRow({
 
   return (
     // `aria-pressed` — стан «куплено». Доти він жив ЛИШЕ у візуалі:
-    // коло-індикатор нижче має `aria-hidden`, а `opacity-50` і
+    // чекбокс-індикатор нижче має `aria-hidden`, а `opacity-50` і
     // `line-through` скрінрідер не озвучує, тож куплений і некуплений
     // пункт звучали однаково (аудит 2026-09-16, WF-17). `aria-pressed`
     // на кнопці, а не `role="checkbox"`: роль лишається тією самою, тож
@@ -103,15 +84,15 @@ function ShoppingItemRow({
       aria-pressed={item.checked}
       onClick={() => onToggleItem(categoryName, item.id)}
       className={cn(
-        "w-full px-3 py-2.5 flex items-start gap-3 text-left transition-colors min-h-[44px]",
-        "hover:bg-nutrition/5 active:bg-nutrition/10",
+        "w-full py-2.5 flex items-start gap-3 text-left transition-colors min-h-[44px]",
+        "hover:bg-line/40 focus-ring",
         item.checked && "opacity-50",
       )}
     >
       <span
         className={cn(
-          "shrink-0 w-5 h-5 mt-0.5 rounded-full border-2 flex items-center justify-center transition-colors",
-          item.checked ? "bg-nutrition border-nutrition" : "border-line",
+          "shrink-0 w-5 h-5 mt-0.5 rounded-[5px] border-2 flex items-center justify-center transition-colors",
+          item.checked ? "bg-text border-text text-bg" : "border-border-strong",
         )}
         aria-hidden
       >
@@ -119,7 +100,7 @@ function ShoppingItemRow({
           <svg width="10" height="10" viewBox="0 0 10 10" fill="none">
             <path
               d="M2 5l2.5 2.5L8 2.5"
-              stroke="white"
+              stroke="currentColor"
               strokeWidth="1.5"
               strokeLinecap="round"
               strokeLinejoin="round"
@@ -130,17 +111,12 @@ function ShoppingItemRow({
       <div className="min-w-0 flex-1">
         <span
           className={cn(
-            "text-style-label text-text",
+            "text-style-body font-semibold text-text",
             item.checked && "line-through",
           )}
         >
           {item.name}
         </span>
-        {item.quantity && (
-          <span className="ml-1.5 text-style-caption text-muted">
-            {item.quantity}
-          </span>
-        )}
         {item.note && (
           <div className="text-style-caption text-muted mt-0.5">
             {item.note}
@@ -152,6 +128,11 @@ function ShoppingItemRow({
           </div>
         )}
       </div>
+      {item.quantity && (
+        <span className="shrink-0 text-style-body font-medium text-text tabular-nums">
+          {item.quantity}
+        </span>
+      )}
     </button>
   );
 }
@@ -165,66 +146,46 @@ function AtHomeSection({ items }: AtHomeSectionProps) {
   const [open, setOpen] = useState(false);
   if (items.length === 0) return null;
   return (
-    <div className="rounded-2xl border border-line bg-panel overflow-hidden">
+    <section>
       <button
         type="button"
         onClick={() => setOpen((v) => !v)}
-        className="w-full px-3 py-2 min-h-[44px] flex items-center gap-1.5 border-b border-line bg-panelHi focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-focus/45 focus-visible:ring-offset-2 focus-visible:ring-offset-bg"
+        className="w-full min-h-[44px] flex items-baseline gap-2 rounded-lg focus-ring text-left"
         aria-expanded={open}
       >
-        <Icon
-          name="chevron-right"
-          size="sm"
-          className={cn("transition-transform shrink-0", open && "rotate-90")}
-          aria-hidden
-        />
-        <Icon
-          name="check-circle"
-          size="md"
-          className="text-nutrition shrink-0"
-          aria-hidden
-        />
-        <span className="text-style-caption text-text">
+        <SectionHeading as="span" size="md" variant="muted">
           {pm.athomeSectionLabel}
-        </span>
-        <span className="text-style-caption text-muted ml-auto">
+        </SectionHeading>
+        <span className="text-style-caption text-subtle tabular-nums ml-auto">
           {items.length}
+        </span>
+        <span className="text-style-caption text-subtle shrink-0">
+          {open ? "Сховати" : "Показати"}
         </span>
       </button>
       {open && (
-        <div className="divide-y divide-line/30">
-          <div className="px-3 py-2 text-style-caption text-subtle">
+        <div className="divide-y divide-line border-t border-line">
+          <div className="py-2 text-style-caption text-subtle">
             {pm.athomeSectionHint}
           </div>
           {items.map((item) => (
             <div
               key={item.id}
-              className="w-full px-3 py-2.5 flex items-start gap-3 text-left opacity-60 min-h-[44px]"
+              className="w-full py-2.5 flex items-start gap-3 text-left opacity-60 min-h-[44px]"
             >
-              <span
-                className="shrink-0 w-5 h-5 mt-0.5 rounded-full bg-nutrition/20 flex items-center justify-center"
-                aria-hidden
-              >
-                <Icon
-                  name="check-circle"
-                  size="xs"
-                  className="text-nutrition"
-                  aria-hidden
-                />
+              <span className="min-w-0 flex-1 text-style-body font-semibold text-text">
+                {item.name}
               </span>
-              <div className="min-w-0 flex-1">
-                <span className="text-style-label text-text">{item.name}</span>
-                {item.quantity && (
-                  <span className="ml-1.5 text-style-caption text-muted">
-                    {item.quantity}
-                  </span>
-                )}
-              </div>
+              {item.quantity && (
+                <span className="shrink-0 text-style-body font-medium text-text tabular-nums">
+                  {item.quantity}
+                </span>
+              )}
             </div>
           ))}
         </div>
       )}
-    </div>
+    </section>
   );
 }
 
@@ -335,7 +296,9 @@ export function ShoppingListCard({
 
   return (
     <Card className="p-4">
-      <div className="text-style-label text-text">Список покупок</div>
+      <SectionHeading as="h2" size="lg">
+        Список покупок
+      </SectionHeading>
       {/* AI-NOTE: caption тут навмисно — це підзаголовок у парі з
           заголовком картки, а не текст, який читають окремо. */}
       <div className="text-style-caption text-muted mt-0.5">
@@ -357,68 +320,72 @@ export function ShoppingListCard({
             aria-label={ma.inputLabel}
             maxLength={NAME_MAX_LEN}
           />
-          <button
+          <Button
             type="button"
+            variant="solid"
             onClick={handleAddManualItem}
             disabled={!trimmedManualName}
-            className={cn(
-              // `h-11` = 2.75rem; на 320px корінний шрифт 15px дає ~41.25px і
-              // провалює 44px-флор, тож pointer-coarse-варіант тримає його
-              // явно — той самий патерн, що й «Додати» у `PantryCard`.
-              "text-style-label px-4 h-11 pointer-coarse:min-h-[44px] rounded-2xl shrink-0",
-              "bg-nutrition-strong text-white hover:bg-nutrition-hover disabled:opacity-50 transition-colors dark:bg-nutrition dark:text-bg dark:hover:bg-nutrition/90",
-            )}
+            // `h-11` = 2.75rem; на 320px корінний шрифт 15px дає ~41.25px і
+            // провалює 44px-флор, тож pointer-coarse-варіант тримає його
+            // явно — той самий патерн, що й «Додати» у `PantryCard`.
+            className="shrink-0 pointer-coarse:min-h-[44px]"
           >
             {ma.addCta}
-          </button>
+          </Button>
         </div>
 
         <div>
-          <div className="text-style-caption text-muted mb-2">
+          <div className="text-style-overline text-subtle mb-1">
             Джерело для списку
           </div>
-          <div className="flex gap-2">
-            <button
-              type="button"
-              onClick={() => setSource("recipes")}
-              disabled={shoppingBusy}
-              className={cn(
-                "flex-1 py-2 px-3 rounded-xl text-style-caption border transition-[background-color,border-color,color,opacity]",
-                source === "recipes"
-                  ? "bg-nutrition-strong text-white border-nutrition dark:bg-nutrition dark:text-bg"
-                  : "border-line text-text hover:border-nutrition/50",
-              )}
-            >
-              <div>Рецепти</div>
-              <div className="text-style-caption opacity-80 mt-0.5">
-                {hasRecipes
+          <div
+            role="radiogroup"
+            aria-label="Джерело для списку"
+            className="divide-y divide-line border-y border-line"
+          >
+            {[
+              {
+                id: "recipes",
+                label: "Рецепти",
+                meta: hasRecipes
                   ? `${allRecipeOptions.length} ${pluralUa(
                       allRecipeOptions.length,
                       { one: "рецепт", few: "рецепти", many: "рецептів" },
                     )}`
-                  : "немає рецептів"}
-              </div>
-            </button>
-            <button
-              type="button"
-              onClick={() => setSource("weekplan")}
-              disabled={shoppingBusy}
-              className={cn(
-                "flex-1 py-2 px-3 rounded-xl text-style-caption border transition-[background-color,border-color,color,opacity]",
-                source === "weekplan"
-                  ? "bg-nutrition-strong text-white border-nutrition dark:bg-nutrition dark:text-bg"
-                  : "border-line text-text hover:border-nutrition/50",
-              )}
-            >
-              <div>Тижневий план</div>
-              <div className="text-style-caption opacity-80 mt-0.5">
-                {hasWeekPlan
+                  : "немає рецептів",
+              },
+              {
+                id: "weekplan",
+                label: "Тижневий план",
+                meta: hasWeekPlan
                   ? `${weekPlan?.days?.length ?? 0} ${pluralDays(
                       weekPlan?.days?.length ?? 0,
                     )}`
-                  : "немає плану"}
-              </div>
-            </button>
+                  : "немає плану",
+              },
+            ].map((opt) => (
+              <button
+                key={opt.id}
+                type="button"
+                role="radio"
+                aria-checked={source === opt.id}
+                onClick={() => setSource(opt.id)}
+                disabled={shoppingBusy}
+                className="w-full min-h-[44px] flex items-baseline justify-between gap-3 text-left hover:bg-line/40 disabled:opacity-50 focus-ring transition-colors"
+              >
+                <span
+                  className={cn(
+                    "text-style-body text-text",
+                    source === opt.id ? "font-semibold" : "font-medium",
+                  )}
+                >
+                  {opt.label}
+                </span>
+                <span className="text-style-caption text-muted">
+                  {opt.meta}
+                </span>
+              </button>
+            ))}
           </div>
 
           {source === "recipes" && (
@@ -452,8 +419,9 @@ export function ShoppingListCard({
           )}
         </div>
 
-        <button
+        <Button
           type="button"
+          variant="solid"
           onClick={() =>
             source === "recipes"
               ? onGenerate(
@@ -463,20 +431,17 @@ export function ShoppingListCard({
               : onGenerate(source)
           }
           disabled={shoppingBusy || !canGenerate}
-          className={cn(
-            "text-style-label w-full h-11 rounded-2xl",
-            "bg-nutrition-strong text-white hover:bg-nutrition-hover disabled:opacity-50 transition-colors dark:bg-nutrition dark:text-bg dark:hover:bg-nutrition/90",
-          )}
+          className="w-full pointer-coarse:min-h-[44px]"
         >
           {shoppingBusy ? "Генерую список…" : "Згенерувати список покупок"}
-        </button>
+        </Button>
 
         {hasItems && (
           <>
             <div className="flex items-center justify-between gap-2">
-              <div className="text-style-label text-text">
+              <SectionHeading as="div" size="md">
                 Список ({checked}/{total})
-              </div>
+              </SectionHeading>
               <div className="flex flex-wrap gap-2 justify-end">
                 <SilpoCartEntry shoppingList={shoppingList} />
                 {checkedItems.length > 0 && (
@@ -486,7 +451,7 @@ export function ShoppingListCard({
                     size="sm"
                     onClick={onAddCheckedToPantry}
                   >
-                    + До комори
+                    До комори
                   </Button>
                 )}
                 {checked > 0 && (
@@ -511,9 +476,9 @@ export function ShoppingListCard({
             </div>
 
             {total > 0 && (
-              <div className="h-1.5 rounded-full bg-line overflow-hidden">
+              <div className="h-[5px] rounded-[3px] bg-line overflow-hidden">
                 <div
-                  className="h-full rounded-full bg-nutrition transition-[width,background-color]"
+                  className="h-full rounded-[3px] bg-chart-nutrition transition-[width,background-color]"
                   style={{ width: `${Math.round((checked / total) * 100)}%` }}
                 />
               </div>
@@ -527,27 +492,23 @@ export function ShoppingListCard({
             onClick={() => pantryMath.setEnabled(!pantryMath.enabled)}
             aria-pressed={pantryMath.enabled}
             className={cn(
-              "w-full min-h-[44px] px-3 py-2 rounded-xl border text-style-caption",
-              "flex items-center justify-between gap-2 transition-colors",
-              "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-focus/45 focus-visible:ring-offset-2 focus-visible:ring-offset-bg",
-              // Увімкнено: тонований фон + контур `nutrition-edge` (≥3:1 проти
-              // картки, A4 2026-10-01; `border-nutrition/40` давав 2.14).
-              pantryMath.enabled
-                ? "bg-nutrition/10 border-nutrition-edge text-nutrition-strong dark:text-nutrition"
-                : "border-line text-muted",
+              "w-full min-h-[44px] px-3 py-2 rounded-lg border border-border-strong text-style-label",
+              "flex items-center justify-between gap-2 transition-colors hover:bg-line/40 focus-ring",
+              // Увімкнено: нейтральна заливка, не hue модуля.
+              pantryMath.enabled ? "bg-line/60 text-text" : "text-muted",
             )}
           >
             <span>{pm.toggleLabel}</span>
             <span
               className={cn(
-                "relative inline-flex h-5 w-9 shrink-0 rounded-full transition-colors",
-                pantryMath.enabled ? "bg-nutrition-strong" : "bg-control",
+                "relative inline-flex h-5 w-9 shrink-0 rounded-[7px] transition-colors",
+                pantryMath.enabled ? "bg-text" : "bg-control",
               )}
               aria-hidden
             >
               <span
                 className={cn(
-                  "absolute top-0.5 h-4 w-4 rounded-full bg-white transition-transform",
+                  "absolute top-0.5 h-4 w-4 rounded-[5px] bg-bg transition-transform",
                   pantryMath.enabled ? "translate-x-4" : "translate-x-0.5",
                 )}
               />
@@ -557,30 +518,23 @@ export function ShoppingListCard({
 
         {hasItems && (
           <>
-            <div className="space-y-3">
+            <div className="space-y-5">
               {calculated.categories.map((cat) => (
-                <div
-                  key={cat.name}
-                  className="rounded-2xl border border-line bg-panel overflow-hidden"
-                >
-                  <div className="px-3 py-2 border-b border-line bg-panelHi">
-                    <div className="flex items-center gap-1.5">
-                      <Icon
-                        name={getCategoryIcon(cat.name)}
-                        size="md"
-                        className="text-nutrition shrink-0"
-                        aria-hidden
-                      />
-                      <span className="text-style-caption text-text">
-                        {cat.name}
-                      </span>
-                      <span className="text-style-caption text-muted ml-auto">
+                <section key={cat.name}>
+                  <SectionHeading
+                    as="div"
+                    size="md"
+                    className="pb-1"
+                    meta={
+                      <span className="text-style-caption">
                         {cat.items.filter((i) => i.checked).length}/
                         {cat.items.length}
                       </span>
-                    </div>
-                  </div>
-                  <div className="divide-y divide-line/30">
+                    }
+                  >
+                    {cat.name}
+                  </SectionHeading>
+                  <div className="divide-y divide-line border-t border-line">
                     {cat.items.map((item) => (
                       <ShoppingItemRow
                         key={item.id}
@@ -590,7 +544,7 @@ export function ShoppingListCard({
                       />
                     ))}
                   </div>
-                </div>
+                </section>
               ))}
             </div>
 
@@ -599,23 +553,15 @@ export function ShoppingListCard({
         )}
 
         {!hasItems && !shoppingBusy && (
-          <EmptyState
-            compact
-            module="nutrition"
-            icon={<Icon name="shopping-cart" size="lg" />}
-            title="Список покупок порожній"
-            description="Вибери джерело і натисни кнопку генерації."
-          />
+          <EmptyState compact title="Список покупок порожній" />
         )}
 
         <button
           type="button"
           onClick={() => openHubModule("finyk", "/analytics")}
-          className="w-full text-style-caption text-muted hover:text-text transition-colors pt-1 flex items-center justify-center gap-1.5"
+          className="w-full min-h-[44px] rounded-lg text-style-label font-semibold text-text hover:bg-line/40 transition-colors focus-ring"
         >
-          <Icon name="wallet" size="sm" aria-hidden />
-          <span>Скільки витратив на їжу цього місяця?</span>
-          <span aria-hidden>→</span>
+          Витрати на їжу за місяць
         </button>
       </div>
     </Card>

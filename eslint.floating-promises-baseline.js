@@ -14,6 +14,7 @@
 // 2026-09-30: HubInsightsBlock.tsx no longer floats a promise (81 files).
 // 2026-10-03: useFinykBackupSync.ts fixed (приймач ?sync= з navigate видалено, 80 files).
 // 2026-10-03: useAppLock.ts: усі проміси мають .catch (79 files).
+// 2026-10-09: ModuleChecklist.tsx видалено в PR1 редизайну (78 files).
 export const floatingPromisesBaseline = [
   "apps/mobile/src/components/ui/ConfirmDialog.tsx",
   "apps/mobile/src/components/ui/SwipeToAction.tsx",
@@ -58,7 +59,6 @@ export const floatingPromisesBaseline = [
   "apps/web/src/core/observability/PageviewTracker.test.tsx",
   "apps/web/src/core/observability/RouteChangeTracker.test.tsx",
   "apps/web/src/core/observability/webVitals.ts",
-  "apps/web/src/core/onboarding/ModuleChecklist.tsx",
   "apps/web/src/core/onboarding/route.tsx",
   "apps/web/src/core/profile/DangerZoneSection.tsx",
   "apps/web/src/core/profile/ProfilePage.tsx",

@@ -114,8 +114,9 @@ describe("applyFinykTxCategories", () => {
     expect(fake.queries).toHaveLength(1);
   });
 
-  it("deletes transaction categories without requiring category_id", async () => {
+  it("tombstones transaction categories without requiring category_id", async () => {
     const fake = new FakeClient();
+    fake.queueRows([{ updated_at: new Date("2026-07-21T07:00:00.000Z") }]);
     const clientTs = new Date("2026-07-21T08:00:00.000Z");
 
     await expect(
@@ -131,9 +132,76 @@ describe("applyFinykTxCategories", () => {
     ).resolves.toEqual({ status: "applied" });
 
     const deletion = lastQuery(fake);
-    expect(deletion.sql).toContain("DELETE FROM finyk_tx_categories");
-    expect(deletion.sql).toContain("AND updated_at < $3");
-    expect(deletion.params).toEqual(["user-1", "tx-1", clientTs]);
+    // data-15: tombstone (deleted_at + updated_at), не фізичний DELETE.
+    expect(deletion.sql).toContain("UPDATE finyk_tx_categories");
+    expect(deletion.sql).toContain("SET deleted_at = $1, updated_at = $1");
+    expect(deletion.sql).toContain("AND updated_at < $1");
+    expect(deletion.sql).not.toContain("DELETE FROM");
+    expect(deletion.params).toEqual([clientTs, "user-1", "tx-1"]);
+  });
+
+  it("застарілий upsert після tombstone відхиляється як lww_conflict (без запису)", async () => {
+    const fake = new FakeClient();
+    // tombstone поставлено в T2 (08:00), приходить запис з T1 (07:00)
+    fake.queueRows([{ updated_at: new Date("2026-07-21T08:00:00.000Z") }]);
+
+    await expect(
+      applyFinykTxCategories(
+        asClient(fake),
+        syncOp("finyk_tx_categories", "update", {
+          user_id: "user-1",
+          transaction_id: "tx-1",
+          category_id: "food",
+        }),
+        "user-1",
+        new Date("2026-07-21T07:00:00.000Z"),
+      ),
+    ).resolves.toEqual({ status: "rejected", reason: "lww_conflict" });
+    expect(fake.queries).toHaveLength(1);
+  });
+
+  it("передає deleted_at вхідного рядка (tombstone зі snapshot-а не воскресає)", async () => {
+    const fake = new FakeClient();
+    const clientTs = new Date("2026-07-21T08:00:00.000Z");
+
+    await expect(
+      applyFinykTxCategories(
+        asClient(fake),
+        syncOp("finyk_tx_categories", "insert", {
+          user_id: "user-1",
+          transaction_id: "tx-1",
+          category_id: "food",
+          deleted_at: "2026-07-21T07:30:00.000Z",
+        }),
+        "user-1",
+        clientTs,
+      ),
+    ).resolves.toEqual({ status: "applied" });
+    expect(lastQuery(fake).params).toEqual([
+      "user-1",
+      "tx-1",
+      "food",
+      clientTs,
+      clientTs,
+      new Date("2026-07-21T07:30:00.000Z"),
+    ]);
+  });
+
+  it("відхиляє непарсовний deleted_at", async () => {
+    const fake = new FakeClient();
+    await expect(
+      applyFinykTxCategories(
+        asClient(fake),
+        syncOp("finyk_tx_categories", "insert", {
+          user_id: "user-1",
+          transaction_id: "tx-1",
+          category_id: "food",
+          deleted_at: "not-a-date",
+        }),
+        "user-1",
+        new Date("2026-07-21T08:00:00.000Z"),
+      ),
+    ).resolves.toEqual({ status: "rejected", reason: "invalid_deleted_at" });
   });
 });
 

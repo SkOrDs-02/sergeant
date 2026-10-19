@@ -20,14 +20,10 @@ import { useHubPref } from "./hubPrefs";
 
 export function DashboardSection() {
   // Головна за віссю дії (спека `hub-action-axis.md`, рішення власника
-  // 2026-09-17): купи й рейок не вимикаються, тож у «Вигляді» лишаються два
-  // тумблери — «Порада й звіт тижня» і «Мотиваційний підпис».
+  // 2026-09-17): купи й панель модулів не вимикаються, тож у «Вигляді»
+  // лишається тумблер «Порада й тиждень».
   const [showInsights, setShowInsights] = useHubPref<boolean>(
     "showInsights",
-    true,
-  );
-  const [showMotivational, setShowMotivational] = useHubPref<boolean>(
-    "showMotivational",
     true,
   );
   const toast = useToast();
@@ -63,10 +59,9 @@ export function DashboardSection() {
   return (
     <SettingsGroup
       title={settingsSectionTitle("dashboard")}
-      icon="grid"
       anchorId="settings-dashboard"
     >
-      <SettingsSubGroup title="Вигляд">
+      <SettingsSubGroup variant="bounded" title="Вигляд">
         {/* Тема переїхала сюди з меню «⋯» у шапці (огляд 2026-09-04): це
             єдина підгрупа про вигляд, і саме тут її шукали — пошук
             «тема» доти давав порожнечу. */}
@@ -75,23 +70,17 @@ export function DashboardSection() {
           <ThemeSwitcher className="w-full" />
         </div>
         <ToggleRow
-          label="Порада й звіт тижня"
+          label="Порада й тиждень"
           description="Згорнутий блок із порадою Сержанта та звітом тижня внизу головної."
           checked={showInsights !== false}
           onChange={setShowInsights}
         />
-        <ToggleRow
-          label="Мотиваційний підпис"
-          description="Короткий заохочувальний рядок у самому низу головної."
-          checked={showMotivational !== false}
-          onChange={setShowMotivational}
-        />
       </SettingsSubGroup>
-      <SettingsSubGroup title="Розділи на головній">
+      <SettingsSubGroup variant="bounded" title="Розділи на головній">
         <p className="text-style-body text-subtle leading-snug">
           Які розділи показувати на головній. Неактивні розділи лишаються в
-          рейку приглушеними і не потрапляють у «Закрито сьогодні». Принаймні
-          один має залишатися активним.
+          панелі модулів приглушеними і не потрапляють у «Закрито сьогодні».
+          Принаймні один має залишатися активним.
         </p>
         {/* Огляд 2026-09-04: тут стояв нативний чекбокс 16px, тоді як
             решта «увімкнути/вимкнути» на сторінці — `Switch`. Один

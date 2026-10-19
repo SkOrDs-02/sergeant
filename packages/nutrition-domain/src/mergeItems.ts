@@ -11,6 +11,7 @@ import {
   sourcesTotal,
   syntheticSource,
 } from "./pantrySources.js";
+import { newPantryItemId } from "./pantryItemId.js";
 import { massToVolumeIfKnown } from "./units.js";
 
 interface BaseUnit {
@@ -256,6 +257,7 @@ export function mergeItems(
       const baseCur = toBaseUnit(cur.qty, normalizeUnit(cur.unit), cur.name);
       if (baseIncoming && baseCur && baseIncoming.base !== baseCur.base) {
         const fresh: PantryItem = {
+          id: it?.id || newPantryItemId(),
           name: display,
           qty: incomingQty,
           unit: incomingUnit,
@@ -302,6 +304,9 @@ export function mergeItems(
     }
 
     const fresh: PantryItem = {
+      // data-40: id призначається РАЗ, коли позиція потрапляє в список. Якщо
+      // позиція вже мала id (переїзд між місцями) — він зберігається.
+      id: it?.id || newPantryItemId(),
       name: display,
       qty: incomingQty,
       unit: incomingUnit,

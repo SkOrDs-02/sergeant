@@ -27,6 +27,7 @@ const FINYK_PULL_TABLES = new Set([
   "finyk_manual_expenses",
   "finyk_tx_filters",
   "finyk_tx_categories",
+  "finyk_tx_notes",
   "finyk_tx_splits",
   "finyk_mono_debt_links",
   "finyk_networth_history",

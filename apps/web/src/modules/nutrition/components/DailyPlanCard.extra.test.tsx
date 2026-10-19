@@ -5,7 +5,6 @@
  * Component-level tests for DailyPlanCard covering rendering branches not
  * exercised by the pure-function tests in DailyPlanCard.test.tsx:
  *   • Basic render structure
- *   • firstRunHint banner
  *   • Macro input onChange (protein → auto kcal recalc)
  *   • "Скинути" targets button
  *   • "Згенерувати денний план" button
@@ -53,23 +52,6 @@ vi.mock("@shared/components/ui/Input", () => ({
       placeholder={placeholder}
       data-testid={`input-${ariaLabel}`}
     />
-  ),
-}));
-
-vi.mock("../../../core/onboarding/FirstRunHintBanner", () => ({
-  FirstRunHintBanner: ({
-    title,
-    onDismiss,
-  }: {
-    title: string;
-    onDismiss: () => void;
-  }) => (
-    <div data-testid="first-run-hint">
-      <span>{title}</span>
-      <button type="button" onClick={onDismiss}>
-        Закрити
-      </button>
-    </div>
   ),
 }));
 
@@ -205,49 +187,6 @@ describe("DailyPlanCard — basic render", () => {
     );
     expect(screen.getByText(/Комору зараз не враховую/i)).toBeInTheDocument();
     expect(screen.queryByText(/Додай продукти в комору/i)).toBeNull();
-  });
-});
-
-describe("DailyPlanCard — firstRunHint", () => {
-  it("shows FirstRunHintBanner when firstRunHint=true", () => {
-    const onDismiss = vi.fn();
-    render(
-      <DailyPlanCard
-        prefs={EMPTY_PREFS}
-        {...defaultHandlers}
-        firstRunHint
-        onDismissFirstRunHint={onDismiss}
-      />,
-    );
-    expect(screen.getByTestId("first-run-hint")).toBeInTheDocument();
-    expect(
-      screen.getByText(/Цілі на день поки орієнтовні/i),
-    ).toBeInTheDocument();
-  });
-
-  it("calls onDismissFirstRunHint when the hint is dismissed", () => {
-    const onDismiss = vi.fn();
-    render(
-      <DailyPlanCard
-        prefs={EMPTY_PREFS}
-        {...defaultHandlers}
-        firstRunHint
-        onDismissFirstRunHint={onDismiss}
-      />,
-    );
-    fireEvent.click(screen.getByRole("button", { name: "Закрити" }));
-    expect(onDismiss).toHaveBeenCalledTimes(1);
-  });
-
-  it("does NOT show FirstRunHintBanner when firstRunHint=false", () => {
-    render(
-      <DailyPlanCard
-        prefs={EMPTY_PREFS}
-        {...defaultHandlers}
-        firstRunHint={false}
-      />,
-    );
-    expect(screen.queryByTestId("first-run-hint")).not.toBeInTheDocument();
   });
 });
 

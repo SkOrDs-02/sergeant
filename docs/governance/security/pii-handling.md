@@ -71,6 +71,7 @@ lint:pii-handling-drift`): if a key is added/removed in shared but not
 - `x-signature`
 - `x-webhook-signature`
 - `x-hmac-signature`
+- `x-sergeant-client-ip-sig`
 - `otp`
 - `otpCode`
 - `verificationCode`
@@ -124,6 +125,7 @@ sub-processor data sharing з Sentry/Loki/Coolify-host (до [ADR-0074](../adr/0
 | `groqKey` / `anthropicKey` / `voyageKey`                                                    | AI providers (HubChat, embeddings)   | redactPaths root + `*.<key>` (M3)               |
 | `connectionString` / `dsn`                                                                  | DB / Sentry config                   | redactPaths root                                |
 | `signature`                                                                                 | webhook signatures (Mono, OpenClaw)  | redactPaths root                                |
+| `x-sergeant-client-ip-sig`                                                                  | HMAC підписаного IP клієнта (rel-03) | redactPaths `req.headers["x-..."]` + Sentry     |
 | `x-mono-webhook-secret` / `x-openclaw-webhook-secret` / `x-api-secret` / `x-internal-token` | webhook headers                      | redactPaths `req.headers["x-..."]` (M3)         |
 | `authorization` / `cookie` / `set-cookie` / `x-csrf-token` / `x-api-key` / `x-token`        | HTTP auth headers                    | redactPaths `req.headers.*` + `res.headers.*`   |
 | `err.config.headers.Authorization` / `Cookie`                                               | axios upstream-failure capture       | redactPaths `err.config.headers.*` (M3)         |

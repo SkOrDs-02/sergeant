@@ -27,7 +27,7 @@ export function LocalWeekReport({ lines, sectionRef }: LocalWeekReportProps) {
       // озвучується, а контур не малюється, бо це не інтерактивний елемент.
       tabIndex={-1}
       aria-label={messages.finyk.weekReport.heading}
-      className="rounded-2xl border border-line bg-panel px-4 py-3 space-y-1.5 focus:outline-none"
+      className="rounded-panel border border-line bg-panel px-4 py-3 space-y-1.5 focus:outline-none"
     >
       <p className="text-style-caption text-subtle">
         {messages.finyk.weekReport.heading}

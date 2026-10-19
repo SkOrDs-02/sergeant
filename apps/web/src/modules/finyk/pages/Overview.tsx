@@ -1,3 +1,4 @@
+import { TodayOperations } from "./overview/TodayOperations";
 import { useMemo } from "react";
 import { Skeleton } from "@shared/components/ui/Skeleton";
 import {
@@ -9,8 +10,6 @@ import { useNavigate } from "react-router-dom";
 import type { Transaction } from "@sergeant/finyk-domain/domain/types";
 import type { useStorage } from "../hooks/useStorage";
 import type { useUnifiedFinanceData } from "../hooks/useUnifiedFinanceData";
-
-import { FirstInsightBanner } from "./overview/FirstInsightBanner";
 import { FinykInsightsBlock } from "../components/FinykInsightsBlock";
 import { HeroCard } from "./overview/HeroCard";
 import { OverviewTextRows } from "./overview/OverviewTextRows";
@@ -25,15 +24,8 @@ import { webKVStore } from "@shared/lib/storage/storage";
 import { MonoStalenessBanner } from "./overview/MonoStalenessBanner";
 import { LocalOnlyDataBanner } from "../../../core/durability/LocalOnlyDataBanner";
 import { useMonoStaleness } from "./overview/useMonoStaleness";
-import { ImportReminderBanner } from "./overview/ImportReminderBanner";
-import { useImportReminder } from "./overview/useImportReminder";
 import { useLocalUserId } from "../../../core/auth/useLocalUserId";
 import { isSyncableUserId } from "../../../core/syncEngine/syncableUserId";
-import { useFlag } from "../../../core/lib/featureFlags";
-import {
-  ANALYTICS_EVENTS,
-  trackEvent,
-} from "../../../core/observability/analytics";
 
 type StorageLike = ReturnType<typeof useStorage>;
 type MergedMonoLike = ReturnType<typeof useUnifiedFinanceData>["mergedMono"];
@@ -52,8 +44,6 @@ interface OverviewProps {
    */
   onOpenAuth: () => void;
   showBalance?: boolean;
-  /** Відкриває аркуш масового імпорту — той самий, що дія FAB. */
-  onOpenBulkImport?: (() => void) | undefined;
   /**
    * Відкриває Налаштування Hub на секції Фініка (`FinykWebhookServiceSection`
    * — саме там живе форма перепідключення токена). Без нього CTA staleness-
@@ -67,11 +57,11 @@ interface OverviewProps {
 
 const overviewLoadingSkeleton = (
   <div className="flex-1 overflow-y-auto">
-    <div className="px-4 pt-4 page-tabbar-pad space-y-4 max-w-4xl mx-auto">
-      <Skeleton className="h-[168px] rounded-3xl" />
-      <Skeleton className="h-[120px] opacity-80 rounded-2xl" />
-      <Skeleton className="h-[110px] opacity-60 rounded-2xl" />
-      <Skeleton className="h-[90px] opacity-40 rounded-2xl" />
+    <div className="px-5 pt-4 page-tabbar-pad space-y-7 max-w-4xl mx-auto">
+      <Skeleton className="h-[168px] rounded-panel" />
+      <Skeleton className="h-[120px] opacity-80 rounded-panel" />
+      <Skeleton className="h-[110px] opacity-60 rounded-panel" />
+      <Skeleton className="h-[90px] opacity-40 rounded-panel" />
     </div>
   </div>
 );
@@ -82,7 +72,6 @@ export function Overview({
   onNavigate,
   onOpenAuth,
   showBalance = true,
-  onOpenBulkImport,
   onOpenSettings,
 }: OverviewProps) {
   const navigate = useNavigate();
@@ -110,30 +99,14 @@ export function Overview({
     webhookActive: webhookSyncState?.webhookActive ?? false,
   });
 
-  // Плашка «залий документи» (спека finyk-import-reminders.md). Той самий
-  // предикат, яким `LocalOnlyDataBanner` вирішує показ, служить тут двом
-  // цілям: у незасинхронізованого користувача немає серверної історії
-  // імпортів (питати нема про що), і саме його банер має пріоритет над
-  // цією плашкою.
   const localUserId = useLocalUserId();
   const isSynced = localUserId !== null && isSyncableUserId(localUserId);
-  const importRemindersEnabled = useFlag("finyk_import_reminder");
-  const importReminder = useImportReminder({
-    enabled: isSynced && importRemindersEnabled,
-  });
 
-  // Бюджет плашок угорі Огляду — рівно одна. Порядок за незворотністю
-  // втрати: «дані можуть зникнути назавжди» > «банк мовчить» > «картина
-  // неповна» > FTUX-підказка. Четверта плашка перетворила б верх сторінки
-  // на стіну попереджень, де не читають жодної.
+  // Над Оглядом щонайбільше один системний сигнал: «дані можуть зникнути
+  // назавжди» важливіше за «банк мовчить».
   const showLocalOnlyBanner = localUserId !== null && !isSynced;
   const showStalenessBanner =
     !showLocalOnlyBanner && monoStaleness.stale && monoStaleness.days !== null;
-  const showImportReminder =
-    !showLocalOnlyBanner &&
-    !showStalenessBanner &&
-    importReminder.reminder !== null &&
-    onOpenBulkImport !== undefined;
 
   const overviewQuery: DataStateQueryLike<readonly Transaction[]> = {
     data: d.loadingTx && d.realTx.length === 0 ? undefined : d.realTx,
@@ -151,7 +124,7 @@ export function Overview({
           2026-09-16.
 
           Видимий, а не `sr-only` (рішення власника 2026-09-17). Стиль —
-          `text-style-title text-text`, єдиний у репо зразок видимого
+          `text-style-headline text-text`, єдиний у репо зразок видимого
           сторінкового заголовка (`fizruk/pages/Programs.tsx`,
           `fizruk/components/workouts/WorkoutsHeader.tsx`).
 
@@ -162,8 +135,8 @@ export function Overview({
           16px між заголовком і першою карткою — однаково для скелетона й
           для завантаженого стану, бо обидва лежать під цим блоком.
           `shrink-0`, щоб flex-колонка не стискала рядок. */}
-      <div className="shrink-0 w-full max-w-4xl mx-auto px-4 pt-4">
-        <h1 className="text-style-title text-text">
+      <div className="shrink-0 w-full max-w-4xl mx-auto px-5 pt-4">
+        <h1 className="text-style-headline text-text">
           {messages.nav.finykOverview}
         </h1>
       </div>
@@ -174,7 +147,7 @@ export function Overview({
       >
         {() => (
           <div className="flex-1 overflow-y-auto overscroll-contain">
-            <div className="px-4 pt-4 page-tabbar-pad space-y-4 max-w-4xl mx-auto">
+            <div className="px-5 pt-4 page-tabbar-pad space-y-7 max-w-4xl mx-auto">
               {(d.clientInfo ||
                 d.syncState?.status === "error" ||
                 d.syncState?.status === "loading" ||
@@ -199,32 +172,6 @@ export function Overview({
                 <MonoStalenessBanner
                   days={monoStaleness.days}
                   onReconnect={onOpenSettings}
-                />
-              )}
-
-              {showImportReminder && importReminder.reminder && (
-                <ImportReminderBanner
-                  source={importReminder.reminder.source}
-                  daysSince={importReminder.reminder.daysSince}
-                  expectedIntervalDays={
-                    importReminder.reminder.expectedIntervalDays
-                  }
-                  onAddDocuments={() => {
-                    trackEvent(ANALYTICS_EVENTS.FINYK_IMPORT_REMINDER_CLICKED, {
-                      source: importReminder.reminder?.source,
-                      daysSince: importReminder.reminder?.daysSince,
-                    });
-                    onOpenBulkImport?.();
-                  }}
-                  onSnooze={importReminder.snooze}
-                  onMute={importReminder.mute}
-                />
-              )}
-
-              {d.showFirstInsight && d.hasAnyData && (
-                <FirstInsightBanner
-                  onSetBudget={d.handleSetBudgetFromInsight}
-                  onDismiss={d.dismissFirstInsight}
                 />
               )}
 
@@ -265,12 +212,22 @@ export function Overview({
                     onOpenDay={(dayKey) =>
                       navigate(`/finyk/transactions?date=${dayKey}`)
                     }
-                    suppressMonthStripHint={d.showFirstInsight}
+                  />
+
+                  <TodayOperations
+                    transactions={d.todayTransactions}
+                    summary={{
+                      expense: d.todaySpent,
+                      income: d.todayIncome,
+                      balance: d.todayIncome - d.todaySpent,
+                    }}
+                    showBalance={showBalance}
+                    onOpenToday={() =>
+                      navigate("/finyk/transactions?date=today")
+                    }
                   />
 
                   <OverviewTextRows
-                    todaySpent={d.todaySpent}
-                    todayIncome={d.todayIncome}
                     income={d.income}
                     showMonthForecast={d.showMonthForecast && showBalance}
                     projectedSpend={d.projectedSpend}
@@ -280,9 +237,6 @@ export function Overview({
                     recurringInThisMonth={d.recurringInThisMonth}
                     unknownOutCount={d.unknownOutCount}
                     showBalance={showBalance}
-                    onOpenToday={() =>
-                      navigate("/finyk/transactions?date=today")
-                    }
                   />
 
                   <FinykInsightsBlock
@@ -300,7 +254,7 @@ export function Overview({
                   <NetworthSection networthHistory={d.networthHistory} />
 
                   {d.nonUahManualAssetCount > 0 && (
-                    <div className="rounded-2xl px-4 py-3 border bg-warning/8 border-warning/20">
+                    <div className="rounded-panel px-4 py-3 border bg-panel border-warning/20">
                       <span className="text-style-caption text-warning-strong dark:text-warning">
                         {d.nonUahManualAssetCount}{" "}
                         {pluralize(

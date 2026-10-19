@@ -1,6 +1,6 @@
 # Frontend Tech Debt — Sergeant Web
 
-> **Last validated:** 2026-10-08 by @claude (§5 exhaustive-deps: web 15 → 1; решта реєстру звірена 2026-09-17). **Next review:** 2026-12-16.
+> **Last touched:** 2026-10-12 by @claude (redesign v3 PR7). **Last validated:** 2026-10-08 by @claude (§5 exhaustive-deps: web 15 → 1; решта реєстру звірена 2026-09-17). **Next review:** 2026-12-16.
 > **Status:** Active
 
 > **Оновлено 2026-09-17 (звірка реєстру з HEAD).** Переміряно кожне число, яке цей файл наводить. Головне: **жоден лічильник із записаних не збігся з фактом**, і половина розійшлась у бік зростання, тобто реєстр систематично відстає.
@@ -240,7 +240,8 @@ targets)` у `ci.yml`; сам status check у branch protection вмикаєть
 > Нові leakers (раніше у doc не трекалися, тепер додані до таблиці §4):
 > `core/auth/AuthPage.tsx` (694), `modules/fizruk/lib/dualWrite/adapter.ts` (641).
 > `core/onboarding/OnboardingWizard.tsx` (691) декомпозовано в цьому ж циклі
-> (див. лог нижче). Початково запланований carry-over
+> (див. лог нижче), а недосяжну legacy web-гілку остаточно прибрано 2026-10-18.
+> Початково запланований carry-over
 > з Initiative 0001: `RoutineCalendarPanel.tsx` декомпоновано 2026-05-22 (`useCompletionNoteDrafts` extraction, 645 → 589 effective LOC); `FinykApp.tsx` тримається у raw>600 але <600 effective, monitor-only.
 > Розділ 9 (`any` типи) — таблиця з 10 файлів **повністю закрита**
 > (Phase 5a finyk-pages [#1452](https://github.com/Skords-01/Sergeant/pull/1452) + закриття
@@ -1412,7 +1413,7 @@ Codemod ідемпотентний: повторний запуск дасть `
 >
 > `core/App.tsx` (раніше 645 рядків) декомпозовано на
 > `core/App.tsx` (224 — outer provider tree + AppInner shell), `app/appPaths.ts`
-> (52 — URL constants + `KNOWN_PATHS`), `app/RedirectTo.tsx` (14),
+> (52 — URL constants і path-based module helpers), `app/RedirectTo.tsx` (14),
 > `app/useAppEffects.ts` (153 — idle-prefetch / SW message / cloud-pull /
 > hub-bus / `HUB_OPEN_MODULE_EVENT` listeners), `app/StandaloneRoutes.tsx`
 > (181 — `/sign-in`, `/reset-password`, `/profile`, `/design`, `/pricing`,
@@ -2210,12 +2211,11 @@ legacy-проп `danger` у `apps/mobile` `ConfirmDialog` (2 call-site-и → `v
 
 **Перенесено на 2026-12-01 — і це не «ще трохи», а різні причини.** `pushApi.subscribe`/`unsubscribe` знято разом із серверним роутом 2026-09-23 ([backend.md § Legacy web-push HTTP](./backend.md)), звірено 2026-10-08:
 
-| Маркер                                                                                  | Чому не знято 2026-09-03                                                                                                                                                                       | Що розблокує                                         |
-| --------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ---------------------------------------------------- |
-| `CardVariant` / `Card.variant` (`shared/components/ui/Card.tsx`)                        | **30** call-site-ів `<Card variant="…">` у `apps/web/src` (переміряно 2026-09-17; було записано ~68 — codemod подешевшав удвічі, але все одно окремий PR)                                      | codemod `variant` → `module` + `prominence`, один PR |
-| 5 tombstone-ключів у `packages/shared/src/lib/storageKeys.ts`                           | tombstone тримає residual-import drain у SQLite на boot; зняти — значить вирішити, що застарілі localStorage-дані бета-тестерів вже нікому не треба підбирати                                  | рішення власника про долю legacy LS-даних            |
-| `MONTHLY_PLAN_STORAGE_KEY` (`packages/fizruk-domain/src/constants.ts`)                  | той самий клас tombstone-ів, **31** жива згадка (переміряно 2026-09-17; було ~29) — drain + backup-ключі + тести                                                                               | те саме рішення                                      |
-| `ButtonVariantLegacy` + проп `Button.module` (`shared/components/ui/Button.tsx:76,249`) | плоскі варіанти і `module` замінені парою `variant` × `tone`; `@removeBy 2026-12-01` стояв у коді, але трекер його не згадував (знайдено аудитом 2026-10-08, кількість call-site-ів не міряли) | міграція call-site-ів на `variant` × `tone`          |
+| Маркер                                                                                  | Чому не знято 2026-09-03                                                                                                                                                                       | Що розблокує                                |
+| --------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------- |
+| 5 tombstone-ключів у `packages/shared/src/lib/storageKeys.ts`                           | tombstone тримає residual-import drain у SQLite на boot; зняти — значить вирішити, що застарілі localStorage-дані бета-тестерів вже нікому не треба підбирати                                  | рішення власника про долю legacy LS-даних   |
+| `MONTHLY_PLAN_STORAGE_KEY` (`packages/fizruk-domain/src/constants.ts`)                  | той самий клас tombstone-ів, **31** жива згадка (переміряно 2026-09-17; було ~29) — drain + backup-ключі + тести                                                                               | те саме рішення                             |
+| `ButtonVariantLegacy` + проп `Button.module` (`shared/components/ui/Button.tsx:76,249`) | плоскі варіанти і `module` замінені парою `variant` × `tone`; `@removeBy 2026-12-01` стояв у коді, але трекер його не згадував (знайдено аудитом 2026-10-08, кількість call-site-ів не міряли) | міграція call-site-ів на `variant` × `tone` |
 
 Урок для наступного разу той самий, що й у `_runner-report.md` (червень): маркер
 із датою без власника перетворюється на «September crunch». Перенесені дати тут
@@ -2223,6 +2223,8 @@ legacy-проп `danger` у `apps/mobile` `ConfirmDialog` (2 call-site-и → `v
 треба шукати.
 
 ## Recently completed
+
+- ✅ Redesign v3 PR7: `CardVariant` / `Card.variant`, legacy `module` / `radius` і старі prominence знято разом із call-site-ами; живі H-ролі `panel / hero / receipt / ghost` збережено.
 
 - ✅ Vitest path aliases — 80/80 файлів зелені
 - ✅ Codemod `.js`/`.jsx` extensions — 436 імпортів очищено

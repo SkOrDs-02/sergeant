@@ -85,13 +85,13 @@ export function ReturnScale({
       >
         <div className="absolute inset-x-0 top-1/2 h-px -translate-y-1/2 bg-line" />
         <div
-          className="absolute left-0 top-1/2 h-1 -translate-y-1/2 bg-fizruk/20"
+          className="absolute left-0 top-1/2 h-1 -translate-y-1/2 bg-panelHi"
           style={{ width: `${pos * 100}%` }}
         />
         <div
           className={cn(
             "absolute top-0 h-4 w-0.5 -translate-x-1/2",
-            isStale ? "bg-warning-strong dark:bg-warning" : "bg-fizruk-strong",
+            isStale ? "bg-text" : "bg-text",
           )}
           style={{ left: `${pos * 100}%` }}
         />
@@ -123,9 +123,7 @@ export function ReturnScale({
           («5 тижнів без роботи»), а не оцінка людини, і слово «спад»
           зʼявляється лише коли він справді дійшов до підлоги.
         */}
-        <span
-          className={cn(isStale && "text-warning-strong dark:text-warning")}
-        >
+        <span className={cn(isStale && "text-text")}>
           {atFloor
             ? copy.atFloor
             : daysSinceLastSession == null

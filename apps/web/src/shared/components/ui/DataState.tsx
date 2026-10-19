@@ -37,8 +37,7 @@ import { messages } from "@shared/i18n/uk";
  *
  * The wrapper also accepts the lower-level shape (`isLoading` /
  * `isError` / `data` / `error` / `refetch`) for hooks that don't expose
- * a full RQ object — see `useMonoTransactions` for the canonical
- * re-shape.
+ * a full RQ object.
  *
  * **What it does NOT do.** This is purely presentational: it does not
  * fetch, retry on its own, or talk to React Query directly. The host
@@ -49,7 +48,7 @@ import { messages } from "@shared/i18n/uk";
 /**
  * Minimal contract every consumer must satisfy. We intentionally avoid
  * a hard `UseQueryResult<T, E>` import because some callers only have
- * `{ data, isLoading, error }` (e.g. `useMonoTransactions`) and would
+ * `{ data, isLoading, error }` and would
  * otherwise have to fake the rest of the React Query shape.
  */
 export interface DataStateQueryLike<TData, TError = unknown> {
@@ -162,7 +161,6 @@ function DefaultErrorFallback<TError>({
   return (
     <EmptyState
       size="sm"
-      variant="danger"
       eyebrow={messages.errors.generic.title}
       title={messages.errors.generic.somethingWrong}
       description={message}

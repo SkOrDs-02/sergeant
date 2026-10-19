@@ -507,18 +507,6 @@ export const ANALYTICS_EVENTS = Object.freeze({
   WHATS_NEW_DISMISSED: "whats_new_dismissed",
   WHATS_NEW_CTA_CLICKED: "whats_new_cta_clicked",
 
-  // PR-13 / S5.1 goal-first wizard A/B.
-  //
-  // `ONBOARDING_GOAL_FIRST_SHOWN { variant }` fires the same render
-  // commit the user actually sees the goal-first screen (so PostHog
-  // can split exposure by `variant=control|goal_first` and confirm
-  // assignment stability before D7 retention is sampled). Sibling
-  // `ONBOARDING_GOAL_FIRST_PICKED { outcome, module }` fires the
-  // moment the user picks one of the four outcome cards — the screen
-  // is single-select so each user contributes at most one event.
-  ONBOARDING_GOAL_FIRST_SHOWN: "onboarding_goal_first_shown",
-  ONBOARDING_GOAL_FIRST_PICKED: "onboarding_goal_first_picked",
-
   // [Initiative 0017](../../../../docs/initiatives/0017-hub-tabs-mount-perf.md)
   // Sprint 0 — RUM baseline for `?tab=reports` / `?tab=settings` /
   // `?tab=profile` cold tab switches. Fires once per tab-switch when the

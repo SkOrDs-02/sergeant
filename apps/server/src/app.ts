@@ -9,6 +9,7 @@ import type {
 
 import { pool } from "./db.js";
 import { applyBodySizePolicy } from "./http/bodySizePolicy.js";
+import { clientIpMiddleware } from "./http/clientIp.js";
 import {
   apiCorsMiddleware,
   apiHelmetMiddleware,
@@ -114,6 +115,10 @@ export function createApp({
     app.set("trust proxy", trustProxy);
   }
 
+  // rel-03: стерти підроблені клієнтом службові IP-заголовки й виставити
+  // перевірений `x-sergeant-resolved-client-ip` ДО будь-яких споживачів
+  // (Better Auth читає IP саме з нього, див. auth.ts `advanced.ipAddress`).
+  app.use(clientIpMiddleware);
   app.use(requestIdMiddleware);
   app.use(withRequestContext);
   app.use(traceMiddleware);

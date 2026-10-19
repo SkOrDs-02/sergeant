@@ -9,6 +9,7 @@
  * Спека: `docs/work/specs/fizruk-hero-recovery-bars.md` § Рішення
  * дизайну, пункти 1 і 5.
  */
+import { messages } from "@shared/i18n/uk";
 import type { HeroRecoveryRow } from "@sergeant/fizruk-domain";
 import { fatiguePercent } from "../../lib/atlasHeat";
 
@@ -98,10 +99,10 @@ function FatigueBar({ percent }: { readonly percent: number }) {
   return (
     <span
       aria-hidden
-      className="flex h-1.5 w-16 shrink-0 justify-end overflow-hidden rounded-full bg-hero-ink/20"
+      className="flex h-[5px] w-16 shrink-0 justify-end overflow-hidden rounded-[3px] bg-line"
     >
       <span
-        className="h-full rounded-full bg-hero-ink/60"
+        className="h-full rounded-[3px] bg-chart-fizruk"
         style={{ width: `${percent}%` }}
       />
     </span>
@@ -123,15 +124,15 @@ function RecoveryRowButton({
     <button
       type="button"
       onClick={() => onOpenAtlas(row.atlasId)}
-      className="flex min-h-[44px] w-full items-center gap-3 rounded-xl px-1 py-1.5 text-left transition-[background-color,transform] active:scale-[0.99] hover:bg-white/5 focus:outline-none focus-visible:ring-2 focus-visible:ring-hero-ink focus-visible:ring-offset-0"
+      className="flex min-h-[44px] w-full items-center gap-3 px-1 py-1.5 text-left focus-ring hover:bg-line/30"
       aria-label={`${row.label}: ${caption.long}. Відкрити в атласі`}
     >
-      <span className="min-w-0 shrink truncate text-style-label text-hero-ink">
+      <span className="min-w-0 shrink truncate text-style-label-lg text-text">
         {row.label}
       </span>
       <span className="min-w-0 flex-1" />
       {row.kind === "muscle" && <FatigueBar percent={pct} />}
-      <span className="shrink-0 text-style-caption text-hero-ink">
+      <span className="shrink-0 text-style-body text-muted">
         {caption.short}
       </span>
     </button>
@@ -145,8 +146,8 @@ function RecoveryRowButton({
  */
 function EmptyBody() {
   return (
-    <p className="mt-4 text-style-body text-hero-ink">
-      Тіло ще не має історії. Перше тренування покаже, що відновлюється.
+    <p className="mt-4 text-style-body text-text">
+      {messages.fizruk.hero.noHistory}
     </p>
   );
 }
@@ -163,7 +164,7 @@ export function HeroRecoveryBars({
       // `aria-label` не експонується в accessibility tree взагалі, тож
       // підпис «Стан тіла» скрінрідер просто не озвучив би.
       role="group"
-      className="mt-4 flex flex-col divide-y divide-hero-ink/10"
+      className="mt-4 flex flex-col divide-y divide-line"
       aria-label="Стан тіла"
     >
       {rows.map((row) => (

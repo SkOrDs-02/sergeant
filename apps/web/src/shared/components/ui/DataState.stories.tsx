@@ -17,8 +17,8 @@ import { Skeleton, SkeletonText } from "./Skeleton";
  *   але бекграунд refetch — useful для непомітних "оновлюється…".
  *
  * `query` приймає мінімальний контракт: `{ data, isLoading?, isError?,
- * error?, refetch? }`. Це навмисно — деякі legacy-хуки (e.g.
- * `useMonoTransactions`) не повертають повну `UseQueryResult`-форму.
+ * error?, refetch? }`. Це навмисно: деякі адаптери не повертають повну
+ * `UseQueryResult`-форму.
  *
  * **Цей компонент НЕ викликає `useQuery`.** Host-page далі володіє
  * хуком + ключем; wrapper лише формалізує presentation contract.

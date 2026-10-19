@@ -4,16 +4,16 @@
  */
 import { useMemo } from "react";
 import { Button } from "@shared/components/ui/Button";
-import { SectionHeading } from "@shared/components/ui/SectionHeading";
 import { SwipeToAction } from "@shared/components/ui/SwipeToAction";
 import { VirtualList } from "@shared/components/ui/VirtualList";
 import { type Meal, type MealTypeId } from "@sergeant/nutrition-domain";
 import { MEAL_ORDER, MEAL_META } from "../lib/mealTypes";
-import { Icon, type IconName } from "@shared/components/ui/Icon";
+import { Icon } from "@shared/components/ui/Icon";
+import { formatNumberUk } from "@sergeant/shared";
 import { MealRow } from "./MealRow";
 
-const MEAL_ROW_HEIGHT = 68;
-const MEAL_HEADER_HEIGHT = 32;
+const MEAL_ROW_HEIGHT = 60;
+const MEAL_HEADER_HEIGHT = 44;
 const MAX_MEAL_LIST_HEIGHT = MEAL_ROW_HEIGHT * 8;
 
 interface VirtualMealListProps {
@@ -74,17 +74,18 @@ export function VirtualMealList({
       {(item) => {
         if (item.kind === "header") {
           const meta = MEAL_META[item.type];
+          const groupKcal = (groups[item.type] ?? []).reduce(
+            (sum, m) => sum + (m.macros?.kcal ?? 0),
+            0,
+          );
           return (
-            <div className="flex items-center gap-2 pt-2 pb-1">
-              <Icon
-                name={meta.iconName as IconName}
-                size="md"
-                className="text-nutrition"
-                aria-hidden
-              />
-              <SectionHeading as="span" size="xs" variant="nutrition">
+            <div className="flex items-center gap-2 pt-3 pb-1">
+              <span className="text-style-body font-bold text-text">
                 {meta.label}
-              </SectionHeading>
+              </span>
+              <span className="ml-auto text-style-label font-semibold text-text tabular-nums">
+                {formatNumberUk(Math.round(groupKcal))} ккал
+              </span>
               {onCopyMeals && (
                 <Button
                   variant="ghost"
@@ -92,7 +93,7 @@ export function VirtualMealList({
                   iconOnly
                   onClick={() => onCopyMeals(item.type)}
                   aria-label={`Скопіювати прийом: ${meta.label}`}
-                  className="ml-auto text-muted hover:text-text"
+                  className="text-muted hover:text-text"
                 >
                   <Icon name="more-horizontal" size="sm" aria-hidden />
                 </Button>
@@ -101,7 +102,7 @@ export function VirtualMealList({
           );
         }
         return (
-          <div className="mb-1.5">
+          <div className="border-t border-line">
             <SwipeToAction
               onSwipeLeft={() => onRemoveMeal?.(selectedDate, item.meal)}
               rightLabel={

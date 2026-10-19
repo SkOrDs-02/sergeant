@@ -1,6 +1,5 @@
-import { useRef } from "react";
 import { Button } from "@shared/components/ui/Button";
-import { cn } from "@shared/lib/ui/cn";
+import { Segmented } from "@shared/components/ui/Segmented";
 import { messages } from "@shared/i18n/uk";
 
 export interface TransactionFiltersProps {
@@ -57,8 +56,6 @@ export function TransactionFilters({
   hasCreditAccounts,
   activeCategoryLabel,
 }: TransactionFiltersProps) {
-  const toolbarRef = useRef<HTMLDivElement>(null);
-
   const filters = [
     { id: "all", label: "Всі" },
     { id: "expense", label: "Витрати" },
@@ -66,65 +63,20 @@ export function TransactionFilters({
     ...(hasCreditAccounts ? [{ id: "credit", label: "Кредитна" }] : []),
   ];
 
-  // Roving-tabindex anchor: активна пігулка володіє єдиною Tab-зупинкою.
-  // Коли фільтр — категорія (прийшла дрил-дауном), відповідної пігулки в
-  // смузі немає, тож якорем стає перша («Всі») і в тулбарі лишається рівно
-  // один `tabindex={0}`. Сам фільтр при цьому видно — знімним чипом нижче.
-  const activeId = filters.some((f) => f.id === filter)
-    ? filter
-    : (filters[0]?.id ?? "all");
-
-  const onKeyDown = (e: React.KeyboardEvent<HTMLDivElement>) => {
-    if (!["ArrowRight", "ArrowLeft", "Home", "End"].includes(e.key)) return;
-    const btns = Array.from(
-      toolbarRef.current?.querySelectorAll<HTMLButtonElement>(
-        "button[data-pill]",
-      ) ?? [],
-    );
-    if (btns.length === 0) return;
-    const cur = btns.findIndex((b) => b === document.activeElement);
-    let next = cur;
-    if (e.key === "ArrowRight") next = cur < 0 ? 0 : (cur + 1) % btns.length;
-    else if (e.key === "ArrowLeft")
-      next = cur < 0 ? btns.length - 1 : (cur - 1 + btns.length) % btns.length;
-    else if (e.key === "Home") next = 0;
-    else if (e.key === "End") next = btns.length - 1;
-    e.preventDefault();
-    btns[next]?.focus();
-  };
-
   return (
     <div
       data-no-swipe
       className="-mx-3 px-3 overflow-x-auto no-scrollbar [touch-action:pan-x_pan-y]"
     >
-      <div
-        ref={toolbarRef}
-        role="toolbar"
-        aria-label={messages.finyk.transactionsFilterLabel}
-        aria-orientation="horizontal"
-        onKeyDown={onKeyDown}
-        className="flex gap-1 whitespace-nowrap"
-      >
-        {filters.map((f) => (
-          // Фільтр — це той самий `Button`, що й решта контролів модуля:
-          // обраний — solid у тоні Фініка, решта — outline з hairline
-          // модуля. Власна розмітка пігулки прибрана (анти-слоп, chip-scroller
-          // як дефолтний фільтр); 44px на coarse pointer дає сам Button.
-          <Button
-            key={f.id}
-            data-pill
-            size="xs"
-            variant={filter === f.id ? "solid" : "outline"}
-            tone={filter === f.id ? "finyk" : "neutral"}
-            onClick={() => onChangeFilter(f.id)}
-            aria-pressed={filter === f.id}
-            tabIndex={f.id === activeId ? 0 : -1}
-            className={cn("shrink-0", filter !== f.id && "border-finyk/40")}
-          >
-            {f.label}
-          </Button>
-        ))}
+      <div className="flex items-center gap-1 whitespace-nowrap">
+        <Segmented
+          semantics="filter"
+          ariaLabel={messages.finyk.transactionsFilterLabel}
+          items={filters.map((item) => ({ value: item.id, label: item.label }))}
+          value={filter}
+          onChange={onChangeFilter}
+          className="flex-nowrap shrink-0"
+        />
         {activeCategoryLabel != null && (
           /*
             AI-CONTEXT: єдиний носій інформації про те, ЧОМУ список
@@ -139,8 +91,7 @@ export function TransactionFilters({
           */
           <Button
             size="xs"
-            variant="soft"
-            tone="finyk"
+            variant="outline"
             onClick={() => onChangeFilter("all")}
             className="shrink-0"
           >

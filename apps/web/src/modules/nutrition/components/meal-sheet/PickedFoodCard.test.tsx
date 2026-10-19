@@ -114,14 +114,41 @@ describe("PickedFoodCard", () => {
     });
   });
 
+  it("лишає порожнім поле нутрієнта, якого в продукту немає", () => {
+    const setForm = vi.fn();
+    render(
+      <PickedFoodCard
+        {...baseProps({
+          pickedFood: {
+            ...picked,
+            per100: { kcal: 120, protein_g: null, fat_g: 5, carbs_g: 10 },
+          },
+          pickedGrams: "50",
+          setForm,
+        })}
+      />,
+    );
+
+    const updater = setForm.mock.calls[0]?.[0] as (
+      state: MealFormState,
+    ) => MealFormState;
+    // Невідомий білок - порожнє поле («не вказано»), а не «0».
+    expect(updater(form({ name: "x" }))).toMatchObject({
+      kcal: "60",
+      protein_g: "",
+      fat_g: "2.5",
+      carbs_g: "5",
+    });
+  });
+
   it("renders the OFF badge for a picked Open Food Facts product", () => {
     render(
       <PickedFoodCard
         {...baseProps({ pickedFood: { ...picked, source: "off" } })}
       />,
     );
-    // Позначка «Open Food Facts» — тепер `<Icon title="…">`, а не emoji.
-    expect(screen.getByTitle("Open Food Facts")).toBeInTheDocument();
+    // Позначка джерела текстом у рядку назви (мова H: без іконки в рядку).
+    expect(screen.getByText(/Open Food Facts/)).toBeInTheDocument();
   });
 
   it("increments and decrements the gram portion", () => {

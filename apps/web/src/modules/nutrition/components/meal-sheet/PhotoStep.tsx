@@ -185,17 +185,17 @@ export function PhotoStep({ onApply }: PhotoStepProps) {
 
   if (!authenticated) {
     return (
-      <div className="rounded-xl border border-line bg-panel p-4 text-center">
-        <div className="text-style-label text-text">
+      <div className="border-y border-line py-4">
+        <div className="text-style-body font-semibold text-text">
           {messages.nutrition.photoAuth.heading}
         </div>
-        <p className="mt-1 text-style-body text-muted">
+        <p className="mt-0.5 text-style-label text-muted">
           {messages.nutrition.photoAuth.body}
         </p>
         <button
           type="button"
           onClick={openSignIn}
-          className="mt-3 inline-flex min-h-11 items-center justify-center rounded-lg bg-nutrition-strong px-4 text-style-label text-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-focus/45 dark:bg-nutrition dark:text-bg"
+          className="mt-3 inline-flex min-h-11 items-center justify-center rounded-lg bg-text px-4 text-style-label font-semibold text-bg focus-ring"
         >
           {messages.nutrition.photoAuth.signIn}
         </button>

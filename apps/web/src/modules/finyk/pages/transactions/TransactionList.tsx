@@ -1,15 +1,13 @@
-/**
- * Last validated: 2026-05-19
- * Status: Active
- */
+import { messages } from "@shared/i18n";
+import { txEpochMs } from "../../lib/monthWindow";
+import { getKyivDayKey } from "@shared/lib/time/kyivTime";
 import { useState, useMemo, type ReactNode } from "react";
 import { VirtualList } from "@shared/components/ui/VirtualList";
 import { TxListItem } from "../../components/TxListItem";
 import type { TxRowTx } from "../../components/TxRow";
 import { SkeletonTransactionRow } from "@shared/components/ui/Skeleton";
 import { Button } from "@shared/components/ui/Button";
-import { EmptyState } from "@shared/components/ui/EmptyState";
-import { FinykEmptyIllustration } from "@shared/components/ui/EmptyStateIllustrations";
+import { EmptyState, ModuleEmptyState } from "@shared/components/ui/EmptyState";
 import { PullToRefresh } from "@shared/components/ui/PullToRefresh";
 import {
   DataState,
@@ -58,17 +56,15 @@ function ListPlaceholder() {
  */
 function DayCardShell({
   stackPosition,
+  today = false,
   inset = false,
   children,
 }: {
   /**
-   * Позиція слайсу в стосі дня — НЕ матеріал краю (Борг 2, інвентар
-   * 2026-08-07). Раніше звалась `edge` і зіткнення з `CardEdge` (проп
-   * `Card`, `"stub" | "rule" | "perf"`) читалось як те саме API, ним не
-   * будучи: тут значення описують МІСЦЕ в стосі, а матеріал (`edge-rule`
-   * / `edge-perf`) із нього лише виводиться нижче.
+   * Позиція слайсу в стосі дня: визначає, які кути панелі скруглені.
    */
   stackPosition: "top" | "middle" | "bottom" | "single";
+  today?: boolean;
   inset?: boolean;
   children: ReactNode;
 }) {
@@ -77,48 +73,15 @@ function DayCardShell({
   const roundBottom = stackPosition === "bottom" || stackPosition === "single";
   return (
     <div className={cn(groupEnd && "pb-2.5")}>
-      {/* AI-CONTEXT: день транзакцій — це чек, і тепер він так і
-          виглядає (П3 «край і зріз», рішення власника 2026-08-06 на
-          `mockups/product/own-material-variants.html`). Замість
-          скруглень: друкарська лінійка там, де день починається, і
-          відривна перфорація там, де закінчується.
-
-          Утиліти РОЗДІЛЕНІ саме заради цього місця. Група дня — це
-          стос із кількох `DayCardShell`; якби лінійка й перфорація
-          були одним класом, кожна операція отримала б обидві, і
-          матеріал став би візерунком.
-
-          AI-DANGER: `overflow-hidden` тут більше НЕ ставиться на
-          перфорованому краю — він обрізав би маску, і зубці зникли б.
-          Замість нього обрізанням займається сама маска.
-
-          Підйому (`edge-lift`) тут навмисно немає — `edge-no-lift`.
-          Чек дня ЛЕЖИТЬ на папері, а не висить над ним: стос операцій
-          читають як один аркуш, і тінь під кожним днем зробила б із
-          нього купку карток — рівно те, від чого матеріал і відводить.
-          Тінь беруть окремі документи поза стосом (шторка операції,
-          тижневий дайджест).
-
-          Чому не проп `Card edge` (борг 1, інвентар 2026-08-07): `edge`
-          у `Card` приймає одне значення, а тут `edge-rule` і `edge-perf`
-          застосовуються НЕЗАЛЕЖНО одне від одного (`roundTop`/
-          `roundBottom`) — пряме переведення без зміни контракту `Card`
-          неможливе. Клас лишається сирим (allowlisted у
-          `edgeMaterial.test.ts`). */}
+      {/* Мова H: день операцій - панель; верх і низ стосу дня скруглені. */}
       <div
         className={cn(
-          "bg-panel",
-          roundTop && "edge-rule border-line",
-          roundBottom && "edge-perf",
-          roundTop && !roundBottom && "overflow-hidden",
+          today ? "bg-finyk-tint" : "bg-panel",
+          roundTop && "rounded-t-panel",
+          roundBottom && "rounded-b-panel",
         )}
       >
-        {inset && (
-          <div
-            aria-hidden
-            className="ml-[3.4rem] mr-3 border-t border-line/45"
-          />
-        )}
+        {inset && <div aria-hidden className="mx-3 border-t border-line" />}
         {children}
       </div>
     </div>
@@ -359,9 +322,8 @@ export function TransactionList({
   //     the surface still feels owned by the module.
   const emptyFallback =
     activeTx.length === 0 && hasTransactionsOutsideMonth ? (
-      <div className="rounded-2xl border border-dashed border-line bg-panelHi/40">
+      <div className="rounded-panel border border-dashed border-line bg-panel">
         <EmptyState
-          illustration={<FinykEmptyIllustration size={80} />}
           title="Цей місяць ще порожній"
           description={
             // `monthLabel` is nominative ("серпень 2026 р.") — keep it after
@@ -371,7 +333,6 @@ export function TransactionList({
               ? `За ${monthLabel} операцій поки немає. Попередні місяці на місці, гортай назад або додай запис вручну.`
               : "Операцій за цей місяць поки немає. Попередні місяці на місці, гортай назад або додай запис вручну."
           }
-          module="finyk"
           action={
             onGoPreviousMonth ? (
               <Button variant="outline" onClick={onGoPreviousMonth}>
@@ -382,28 +343,28 @@ export function TransactionList({
         />
       </div>
     ) : activeTx.length === 0 ? (
-      <div className="rounded-2xl border border-dashed border-line bg-panelHi/40">
-        <EmptyState
-          illustration={<FinykEmptyIllustration size={80} />}
-          title="Операцій ще немає"
-          description="Додай першу операцію вручну, підключи Monobank або імпортуй виписку: вони покажуться тут."
+      <div className="rounded-panel bg-panel px-5">
+        <ModuleEmptyState
           module="finyk"
+          variant="compact"
+          title={messages.finykRedesign.transactionsEmptyTitle}
+          description={messages.finykRedesign.transactionsEmptyDescription}
         />
       </div>
     ) : (
-      <div className="rounded-2xl border border-dashed border-line bg-panelHi/40">
+      <div className="rounded-panel border border-dashed border-line bg-panel">
         <EmptyState
-          illustration={<FinykEmptyIllustration size={80} />}
           title="Немає операцій"
           description="Зміни місяць, фільтр або переключи «приховані», якщо вони є."
-          module="finyk"
         />
       </div>
     );
 
   const content = (
-    <div className="max-w-4xl mx-auto px-4 pt-4 page-tabbar-pad">
-      <h1 className="sr-only">Операції</h1>
+    <div className="max-w-4xl mx-auto px-5 pt-4 page-tabbar-pad">
+      <h1 className="text-style-headline text-text mb-4">
+        {messages.finykRedesign.transactionsTitle}
+      </h1>
       {header}
       <DataState
         query={txQuery}
@@ -449,6 +410,7 @@ export function TransactionList({
                   const hasTotal = summary.statCount > 0;
                   return (
                     <DayCardShell
+                      today={key === getKyivDayKey()}
                       stackPosition={row.standalone ? "single" : "top"}
                     >
                       <TransactionDayHeader
@@ -468,6 +430,9 @@ export function TransactionList({
                 const rowTx = t as TxRowTx;
                 return (
                   <DayCardShell
+                    today={
+                      getKyivDayKey(txEpochMs(row.tx) ?? 0) === getKyivDayKey()
+                    }
                     stackPosition={row.lastInGroup ? "bottom" : "middle"}
                     inset={!row.firstInGroup}
                   >

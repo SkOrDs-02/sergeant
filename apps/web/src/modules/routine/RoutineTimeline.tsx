@@ -7,7 +7,7 @@
  * (initiative 0001).
  */
 
-import { Banner } from "@shared/components/ui/Banner";
+import { Notice } from "@shared/components/ui/Notice";
 import { PullToRefresh } from "@shared/components/ui/PullToRefresh";
 import { SectionErrorBoundary } from "@shared/components/ui/SectionErrorBoundary";
 import { useCloudPullPending } from "@shared/hooks/useCloudPullPending";
@@ -27,7 +27,6 @@ import type { RoutineState } from "./lib/types";
 export interface RoutineTimelineProps {
   storageErrorMsg: string | null;
   setRoutine: Dispatch<SetStateAction<RoutineState>>;
-  onOpenCalendarTab: () => void;
   onDismissStorageError: () => void;
   calendarData: RoutineCalendarData;
   calendarActions: RoutineCalendarActions;
@@ -42,7 +41,6 @@ export interface RoutineTimelineProps {
 export function RoutineTimeline({
   storageErrorMsg,
   setRoutine,
-  onOpenCalendarTab,
   onDismissStorageError,
   calendarData,
   calendarActions,
@@ -84,11 +82,11 @@ export function RoutineTimeline({
         enabled={!cloudPullPending}
         contentClassName="page-tabbar-pad routine-main-pad"
       >
-        <div className="max-w-4xl mx-auto w-full pt-4 space-y-4">
+        <div className="max-w-4xl mx-auto w-full pt-4 space-y-7">
           <h1 className="sr-only">Рутина</h1>
           {storageErrorMsg && (
-            <Banner
-              variant="danger"
+            <Notice
+              tone="danger"
               role="alert"
               className="flex items-start justify-between gap-3"
             >
@@ -101,7 +99,7 @@ export function RoutineTimeline({
               >
                 Закрити
               </button>
-            </Banner>
+            </Notice>
           )}
           <RoutineCalendarProvider
             data={calendarData}
@@ -119,7 +117,6 @@ export function RoutineTimeline({
               routine={routine}
               setRoutine={setRoutine}
               hidden={mainTab !== "habits"}
-              onOpenCalendar={onOpenCalendarTab}
             />
           </SectionErrorBoundary>
 

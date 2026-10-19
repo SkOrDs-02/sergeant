@@ -3,26 +3,16 @@ import { describe, it, expect, beforeEach, vi } from "vitest";
 import { fireEvent, render, screen, within } from "@testing-library/react";
 import { MemoryRouter } from "react-router-dom";
 import type { NowItem } from "./nowItems";
+import type { UseNowItemsResult } from "./useNowItems";
 
 const mocks = vi.hoisted(() => ({
-  items: [] as NowItem[],
-  postponed: 0,
-  restorePostponed: vi.fn(),
-  dismiss: vi.fn(),
+  check: vi.fn(),
   navigate: vi.fn(),
   emitHubBus: vi.fn(),
   openHubModuleWithAction: vi.fn(),
-  askAiExhausted: false,
+  trackEvent: vi.fn(),
 }));
 
-vi.mock("./useNowItems", () => ({
-  useNowItems: () => ({
-    items: mocks.items,
-    dismiss: mocks.dismiss,
-    postponed: mocks.postponed,
-    restorePostponed: mocks.restorePostponed,
-  }),
-}));
 vi.mock("react-router-dom", async (importOriginal) => ({
   ...(await importOriginal<typeof import("react-router-dom")>()),
   useNavigate: () => mocks.navigate,
@@ -35,11 +25,12 @@ vi.mock("@shared/lib/modules/hubNav", async (importOriginal) => ({
   openHubModuleWithAction: (...args: unknown[]) =>
     mocks.openHubModuleWithAction(...args),
 }));
-vi.mock("@shared/lib/insights/useAskAiQuota", () => ({
-  useAskAiQuotaExhausted: () => mocks.askAiExhausted,
+vi.mock("../../observability/analytics", async (importOriginal) => ({
+  ...(await importOriginal<typeof import("../../observability/analytics")>()),
+  trackEvent: (...args: unknown[]) => mocks.trackEvent(...args),
 }));
 
-const { NowPile, promoteDanger } = await import("./NowPile");
+const { NowPile, promoteDanger, actionLabel } = await import("./NowPile");
 
 function item(over: Partial<NowItem> & { id: string }): NowItem {
   return {
@@ -51,10 +42,16 @@ function item(over: Partial<NowItem> & { id: string }): NowItem {
   };
 }
 
-function renderPile(onOpenTarget = vi.fn()) {
+function renderPile(items: NowItem[], onOpenTarget = vi.fn()) {
+  const now: UseNowItemsResult = {
+    items,
+    check: mocks.check,
+    checked: [],
+    uncheck: vi.fn(),
+  };
   render(
     <MemoryRouter>
-      <NowPile onOpenTarget={onOpenTarget} />
+      <NowPile now={now} onOpenTarget={onOpenTarget} />
     </MemoryRouter>,
   );
   return onOpenTarget;
@@ -73,144 +70,121 @@ describe("promoteDanger", () => {
   });
 });
 
+describe("actionLabel", () => {
+  it("називає результат: імперативна дія модуля, відкриття модуля, звіт тижня", () => {
+    expect(
+      actionLabel(
+        item({
+          id: "a",
+          action: {
+            kind: "module_action",
+            module: "finyk",
+            action: "add_expense",
+          },
+        }),
+      ),
+    ).toBe("Додати витрату");
+    expect(
+      actionLabel(
+        item({ id: "b", action: { kind: "open_module", module: "routine" } }),
+      ),
+    ).toBe("Відкрити Рутину");
+    expect(
+      actionLabel(item({ id: "c", action: { kind: "open_week_report" } })),
+    ).toBe("Відкрити звіт тижня");
+  });
+});
+
 describe("NowPile", () => {
   beforeEach(() => {
-    mocks.items = [];
-    mocks.postponed = 0;
-    mocks.restorePostponed.mockClear();
-    mocks.dismiss.mockClear();
-    mocks.navigate.mockClear();
-    mocks.emitHubBus.mockClear();
-    mocks.openHubModuleWithAction.mockClear();
-    mocks.askAiExhausted = false;
+    for (const m of Object.values(mocks)) m.mockClear();
   });
 
-  it("порожня купа — один рядок без CTA, лічильник 0", () => {
-    renderPile();
+  it("порожня купа: один рядок факту без кнопок", () => {
+    renderPile([]);
     expect(screen.getByTestId("now-empty")).toHaveTextContent(
       "Сьогодні все закрито",
     );
     expect(screen.queryByRole("button")).toBeNull();
   });
 
-  it("порожньо лише через «✕» сьогодні: «Відкладено N · показати» замість «все закрито»", () => {
-    mocks.postponed = 3;
-    renderPile();
-
-    expect(screen.queryByTestId("now-empty")).toBeNull();
+  it("рядки мови H: чекбокс, назва, підзаголовок, дія; без «×» і чипа «Сержант»", () => {
+    renderPile([item({ id: "a", body: "Сільпо, Uklon" })]);
+    const row = screen.getByTestId("now-row");
     expect(
-      screen.queryByText(/Сьогодні все закрито/, { exact: false }),
+      within(row).getByRole("checkbox", { name: /title a/ }),
+    ).toHaveAttribute("aria-checked", "false");
+    expect(row).toHaveTextContent("Сільпо, Uklon");
+    expect(
+      within(row).getByRole("button", { name: "Відкрити Їжу: title a" }),
+    ).toBeInTheDocument();
+    expect(within(row).queryByRole("button", { name: /Сержант/ })).toBeNull();
+    expect(
+      within(row).queryByRole("button", { name: /Закрити підказку/ }),
     ).toBeNull();
-    const restore = screen.getByRole("button", {
-      name: "Відкладено 3 · показати",
-    });
-    // ≥44 px на coarse pointer.
-    expect(restore.className).toContain("touch-target");
-
-    fireEvent.click(restore);
-    expect(mocks.restorePostponed).toHaveBeenCalledTimes(1);
   });
 
-  it("«все закрито» лишається, коли відкладеного справді немає", () => {
-    mocks.postponed = 0;
-    renderPile();
-    expect(screen.getByTestId("now-empty")).toHaveTextContent(
-      "Сьогодні все закрито",
+  it("чекбокс закриває пункт (переносить у «Закрито»)", () => {
+    const items = [item({ id: "a" })];
+    renderPile(items);
+    fireEvent.click(screen.getByRole("checkbox", { name: /title a/ }));
+    expect(mocks.check).toHaveBeenCalledWith(items[0]);
+  });
+
+  it("три рядки + «ще N»; хвіст розгортається й згортається тим самим вузлом", () => {
+    renderPile(
+      [1, 2, 3, 4, 5].map((n) => item({ id: `i${n}`, priority: 100 - n })),
     );
-    expect(screen.queryByTestId("now-postponed")).toBeNull();
-  });
-
-  it("є рядки в «Зараз» — «Відкладено» не показується навіть із відкладеним", () => {
-    mocks.postponed = 2;
-    mocks.items = [item({ id: "a", priority: 90 })];
-    renderPile();
-    expect(screen.queryByTestId("now-postponed")).toBeNull();
-    expect(
-      screen.getByRole("heading", { name: "title a" }),
-    ).toBeInTheDocument();
-  });
-
-  it("hero + два рядки + «ще N»; хвіст розгортається лише тапом", () => {
-    mocks.items = [1, 2, 3, 4, 5].map((n) =>
-      item({ id: `i${n}`, priority: 100 - n }),
-    );
-    renderPile();
-    // Hero — заголовок першого рядка в картці, ще два — рядками.
-    expect(
-      screen.getByRole("heading", { name: "title i1" }),
-    ).toBeInTheDocument();
-    expect(screen.getAllByTestId("now-row")).toHaveLength(2);
-    const more = screen.getByRole("button", { name: "ще 2" });
-    expect(more).toHaveAttribute("aria-expanded", "false");
-
-    fireEvent.click(more);
-    expect(screen.getAllByTestId("now-row")).toHaveLength(4);
-    expect(screen.queryByRole("button", { name: /^ще / })).toBeNull();
-  });
-
-  it("розгорнутий хвіст згортається назад: «Згорнути» ↔ «ще N», aria-expanded відстежує стан", () => {
-    mocks.items = [1, 2, 3, 4, 5].map((n) =>
-      item({ id: `i${n}`, priority: 100 - n }),
-    );
-    renderPile();
-
+    expect(screen.getAllByTestId("now-row")).toHaveLength(3);
     const toggle = screen.getByRole("button", { name: "ще 2" });
     expect(toggle).toHaveAttribute("aria-expanded", "false");
 
     fireEvent.click(toggle);
-    expect(screen.getAllByTestId("now-row")).toHaveLength(4);
-    // Той самий вузол: фокус клавіатури не втрачається при перемиканні.
+    expect(screen.getAllByTestId("now-row")).toHaveLength(5);
     const collapse = screen.getByRole("button", { name: "Згорнути" });
     expect(collapse).toBe(toggle);
     expect(collapse).toHaveAttribute("aria-expanded", "true");
-    expect(collapse.className).toContain("touch-target");
 
     fireEvent.click(collapse);
-    expect(screen.getAllByTestId("now-row")).toHaveLength(2);
-    const more = screen.getByRole("button", { name: "ще 2" });
-    expect(more).toHaveAttribute("aria-expanded", "false");
-
-    // І знову розгортається: це перемикач, а не одноразова кнопка.
-    fireEvent.click(more);
-    expect(screen.getAllByTestId("now-row")).toHaveLength(4);
+    expect(screen.getAllByTestId("now-row")).toHaveLength(3);
   });
 
   it("без хвоста перемикача немає", () => {
-    mocks.items = [1, 2, 3].map((n) =>
-      item({ id: `i${n}`, priority: 100 - n }),
-    );
-    renderPile();
+    renderPile([1, 2, 3].map((n) => item({ id: `i${n}`, priority: 100 - n })));
     expect(screen.queryByRole("button", { name: /^ще / })).toBeNull();
-    expect(screen.queryByRole("button", { name: "Згорнути" })).toBeNull();
   });
 
-  it("hero з імперативною дією виконує її через шину з джерелом today_focus_cta", () => {
-    mocks.items = [
+  it("верхній рядок з імперативною дією: джерело today_focus_cta і подія CTA", () => {
+    renderPile([
       item({
         id: "nutrition_protein_low",
-        module: "nutrition",
         action: {
           kind: "module_action",
           module: "nutrition",
           action: "add_meal",
         },
-        recId: "nutrition_protein_low",
       }),
-    ];
-    renderPile();
-    // Primary CTA `TodayFocusCard` для `pwaAction` — «Додати прийом їжі» з
-    // `getModulePrimaryAction`.
-    fireEvent.click(screen.getByRole("button", { name: /Додати прийом їжі/ }));
+    ]);
+    fireEvent.click(
+      screen.getByRole("button", { name: /: title nutrition_protein_low/ }),
+    );
     expect(mocks.openHubModuleWithAction).toHaveBeenCalledWith(
       "nutrition",
       "add_meal",
       "today_focus_cta",
     );
+    expect(mocks.trackEvent).toHaveBeenCalledWith(
+      "today_focus_cta_clicked",
+      expect.objectContaining({
+        rec_id: "nutrition_protein_low",
+        has_pwa_action: true,
+      }),
+    );
   });
 
-  it("рядок нижче за hero: «Відкрити» іде через onOpenTarget з hash, чип AI — у чат, ✕ — dismiss", () => {
-    mocks.items = [
-      item({ id: "hero", priority: 99 }),
+  it("нижчий рядок: «Відкрити» іде через onOpenTarget з hash, без події CTA", () => {
+    const onOpenTarget = renderPile([
+      item({ id: "top", priority: 99 }),
       item({
         id: "x",
         module: "finyk",
@@ -219,105 +193,41 @@ describe("NowPile", () => {
           module: "finyk",
           hash: "budgets?cat=smoking",
         },
-        askAiPrompt: "Що з цигарками?",
       }),
-    ];
-    const onOpenTarget = renderPile();
-    const row = screen.getByTestId("now-row");
-    fireEvent.click(within(row).getByRole("button", { name: /Відкрити/ }));
+    ]);
+    fireEvent.click(
+      screen.getByRole("button", { name: "Відкрити Фінік: title x" }),
+    );
     expect(onOpenTarget).toHaveBeenCalledWith("finyk", "budgets?cat=smoking");
-
-    fireEvent.click(
-      within(row).getByRole("button", { name: "Спитати Сержанта про це" }),
-    );
-    expect(mocks.emitHubBus).toHaveBeenCalledWith("openChat", {
-      message: "Що з цигарками?",
-      autoSend: false,
-    });
-
-    fireEvent.click(
-      row.querySelector('button[aria-label="Закрити підказку"]') as HTMLElement,
-    );
-    expect(mocks.dismiss).toHaveBeenCalledWith(mocks.items[1]);
+    expect(mocks.trackEvent).not.toHaveBeenCalled();
   });
 
   it("рядок-інсайт із навігацією іде маршрутом, а не через модуль", () => {
-    mocks.items = [
-      item({ id: "hero", priority: 99 }),
+    renderPile([
       item({
         id: "fizruk-pr-pending",
         module: "fizruk",
         action: { kind: "navigate", path: "/fizruk/workouts" },
       }),
-    ];
-    renderPile();
-    fireEvent.click(
-      within(screen.getByTestId("now-row")).getByRole("button", {
-        name: /Відкрити/,
-      }),
-    );
+    ]);
+    fireEvent.click(screen.getByRole("button", { name: /Відкрити: / }));
     expect(mocks.navigate).toHaveBeenCalledWith("/fizruk/workouts");
-  });
-
-  it("чип AI на рядку не рендериться без askAiPrompt", () => {
-    mocks.items = [item({ id: "hero", priority: 99 }), item({ id: "x" })];
-    renderPile();
-    expect(
-      screen.queryByRole("button", { name: "Спитати Сержанта про це" }),
-    ).toBeNull();
   });
 
   // f3 (рішення власника 2026-10-01): «Відкрити» з тижневої картки веде в
   // «Звіт тижня» на хабі, а не в огляд Фініка за місяць.
-  describe("тижнева картка про темп: ціль «Звіт тижня»", () => {
-    const weekCard = (over: Partial<NowItem> = {}) =>
+  it("тижнева картка: кнопка називає призначення й шле подію хабу", () => {
+    const onOpenTarget = renderPile([
       item({
         id: "spending_velocity_high",
         module: "finyk",
         action: { kind: "open_week_report" },
-        recId: "spending_velocity_high",
-        ...over,
-      });
-
-    it("hero: кнопка називає призначення й шле подію хабу, а не відкриває Фінік", () => {
-      mocks.items = [weekCard()];
-      const onOpenTarget = renderPile();
-      // Без підпису hero казав би «Відкрити Фінік» і вів повз звіт.
-      expect(
-        screen.queryByRole("button", { name: /Відкрити Фінік/ }),
-      ).toBeNull();
-      fireEvent.click(
-        screen.getByRole("button", { name: /Відкрити звіт тижня/ }),
-      );
-      expect(mocks.emitHubBus).toHaveBeenCalledWith(
-        "openWeekReport",
-        undefined,
-      );
-      expect(onOpenTarget).not.toHaveBeenCalled();
-    });
-
-    it("рядок нижче за hero: так само, не через onOpenTarget", () => {
-      mocks.items = [item({ id: "hero", priority: 99 }), weekCard()];
-      const onOpenTarget = renderPile();
-      const row = screen.getByTestId("now-row");
-      fireEvent.click(
-        within(row).getByRole("button", { name: /Відкрити звіт тижня/ }),
-      );
-      expect(mocks.emitHubBus).toHaveBeenCalledWith(
-        "openWeekReport",
-        undefined,
-      );
-      expect(onOpenTarget).not.toHaveBeenCalled();
-      expect(mocks.navigate).not.toHaveBeenCalled();
-    });
-
-    it("кнопка не менша за 44 px на touch: клас touch-target на рядку", () => {
-      mocks.items = [item({ id: "hero", priority: 99 }), weekCard()];
-      renderPile();
-      const button = within(screen.getByTestId("now-row")).getByRole("button", {
-        name: /Відкрити звіт тижня/,
-      });
-      expect(button.className).toContain("touch-target");
-    });
+      }),
+    ]);
+    const button = screen.getByRole("button", { name: /Відкрити звіт тижня/ });
+    expect(button.className).toContain("touch-target");
+    fireEvent.click(button);
+    expect(mocks.emitHubBus).toHaveBeenCalledWith("openWeekReport", undefined);
+    expect(onOpenTarget).not.toHaveBeenCalled();
   });
 });

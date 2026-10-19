@@ -1,7 +1,7 @@
 /**
  * Cross-module insights engine.
  * Reads routine / fizruk / nutrition from their canonical SQLite warm caches
- * and Finyk from localStorage, and computes
+ * and Finyk from its canonical spending context, and computes
  * correlations / patterns across weeks and months.
  *
  * Data sufficiency thresholds (per task spec):
@@ -11,10 +11,13 @@
  * Last validated: 2026-05-19
  */
 
-import { formatNumberUk, STORAGE_KEYS } from "@sergeant/shared";
-import { getTxStatAmount } from "../../modules/finyk/utils";
-import { INTERNAL_TRANSFER_ID } from "@finyk/constants";
-import { safeReadLS } from "@shared/lib/storage/storage";
+import { txTimeMs } from "@sergeant/finyk-domain/lib/transactions";
+import { formatNumberUk } from "@sergeant/shared";
+import {
+  getTxStatAmount,
+  readFinykStatsContext,
+} from "../../modules/finyk/utils";
+import { maskAmountsInText } from "@finyk/lib/balanceVisibility";
 import { loadRoutineState } from "../../modules/routine/lib/routineStorage";
 import { getCachedFizrukSqliteState } from "@fizruk/lib/sqliteReader";
 import { loadNutritionLog } from "@nutrition/lib/nutritionStorage";
@@ -44,18 +47,6 @@ export interface Insight {
 export interface Workout {
   startedAt: string;
   endedAt?: string;
-}
-
-interface Transaction {
-  id: string;
-  amount: number;
-  time: number;
-  description?: string;
-  mcc?: number;
-}
-
-function safeLS<T>(key: string, fallback: T): T {
-  return safeReadLS<T>(key, fallback) ?? fallback;
 }
 
 export function parseFizrukWorkouts(): Workout[] {
@@ -144,27 +135,7 @@ export function workoutDayInsight(
  */
 function activeWeeksSpendingInsight(): Insight | null {
   const workouts = parseFizrukWorkouts().filter((w) => w.endedAt);
-  const raw = safeLS<Transaction[] | { txs?: Transaction[] }>(
-    STORAGE_KEYS.FINYK_TX_CACHE,
-    [],
-  );
-  const txs: Transaction[] = Array.isArray(raw) ? raw : (raw?.txs ?? []);
-  const hiddenSet = new Set<string>(
-    safeLS<string[]>(STORAGE_KEYS.FINYK_HIDDEN_TXS, []),
-  );
-  const txCategories = safeLS<Record<string, string>>(
-    STORAGE_KEYS.FINYK_TX_CATS,
-    {},
-  );
-  const transferIds = new Set<string>(
-    Object.entries(txCategories)
-      .filter(([, v]) => v === INTERNAL_TRANSFER_ID)
-      .map(([k]) => k),
-  );
-  const txSplits = safeLS<Record<string, unknown>>(
-    STORAGE_KEYS.FINYK_TX_SPLITS,
-    {},
-  );
+  const { txs, excludedTxIds, txSplits } = readFinykStatsContext();
 
   if (workouts.length < 6) return null;
 
@@ -187,8 +158,8 @@ function activeWeeksSpendingInsight(): Insight | null {
 
     const spending = txs
       .filter((tx) => {
-        if (hiddenSet.has(tx.id) || transferIds.has(tx.id)) return false;
-        const ts = tx.time > 1e10 ? tx.time : tx.time * 1000;
+        if (excludedTxIds.has(String(tx.id))) return false;
+        const ts = txTimeMs(tx.time);
         return inWeek(ts) && (tx.amount ?? 0) < 0;
       })
       .reduce((s, tx) => s + getTxStatAmount(tx, txSplits), 0);
@@ -482,7 +453,7 @@ function habitWeeksKcalInsight(): Insight | null {
 }
 
 /**
- * Returns up to 4 cross-module insights computed from localStorage data.
+ * Returns up to 4 cross-module insights computed from canonical module data.
  * Returns an empty array when there is not enough data in all insights.
  */
 export function generateInsights(): Insight[] {
@@ -494,5 +465,6 @@ export function generateInsights(): Insight[] {
     habitWeeksKcalInsight(),
   ]
     .filter((x): x is Insight => Boolean(x))
-    .slice(0, 4);
+    .slice(0, 4)
+    .map((i) => ({ ...i, detail: maskAmountsInText(i.detail) }));
 }

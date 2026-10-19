@@ -20,6 +20,10 @@ vi.mock("./useFinykStatTransactions", () => ({
   }),
 }));
 
+import {
+  __setFinykSqliteStateCacheForTests,
+  clearFinykSqliteCache,
+} from "../lib/sqliteReader";
 import { useFinykWeekReport } from "./useFinykWeekReport";
 
 function tx(id: string, amount: number, daysAgo: number, mcc = 5411) {
@@ -48,14 +52,26 @@ describe("useFinykWeekReport", () => {
   });
 
   afterEach(() => {
+    clearFinykSqliteCache();
     vi.useRealTimers();
   });
 
-  it("каже одним рядком, що на цьому тижні записів ще немає", () => {
+  it("«Приховувати суми» → у рядках «••••» замість гривень, текст лишається", () => {
+    state.statTransactions = [tx("f1", -80_000, 1, 5411)];
+    __setFinykSqliteStateCacheForTests({ showBalance: false });
+    const { result } = renderHook(() => useFinykWeekReport());
+    expect(result.current[0]).toBe(
+      "За тиждень витрачено ••••, за ті самі дні минулого тижня витрат не було",
+    );
+    expect(result.current[1]).toBe("Найбільше за тиждень: Продукти, ••••");
+    expect(result.current.join("")).not.toContain("₴");
+  });
+
+  it("каже одним рядком, що на цьому тижні витрат ще немає", () => {
     // Витрата минулого тижня (чт 11) – поза календарним тижнем пн–чт.
     state.statTransactions = [tx("old", -10_000, 7)];
     const { result } = renderHook(() => useFinykWeekReport());
-    expect(result.current).toEqual(["На цьому тижні записів ще немає"]);
+    expect(result.current).toEqual(["На цьому тижні витрат ще немає"]);
   });
 
   it("мовчить зовсім, коли Фінік вимкнено", () => {

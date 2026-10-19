@@ -3,7 +3,7 @@
  * Coverage tests for the Analytics page.
  *
  * Analytics receives `mono` + `storage` adapters as props, so we drive it with
- * plain stubs — no providers needed. We mock the lazy CategoryPieChart so the
+ * plain stubs — no providers needed. We mock the lazy CategoryBars so the
  * Suspense boundary resolves synchronously, and verify: initial render,
  * month navigation (prev/next + disabled next on current month), prior-month
  * fetch + comparison section, fetch-error + retry, manual-expense merge, and
@@ -27,8 +27,21 @@ import { hasViewedFinykAnalytics } from "../../../core/onboarding/useChecklistSi
 
 // Mock the lazy chart so Suspense resolves immediately and we don't pull recharts.
 vi.mock("../components/charts/lazy", () => ({
-  CategoryPieChart: ({ total }: { total?: number }) => (
-    <div data-testid="pie">pie total {total}</div>
+  CategoryBars: ({ data = [] }: { data?: { spent: number }[] }) => (
+    <div data-testid="category-bars">
+      bars total {data.reduce((sum, d) => sum + d.spent, 0)}
+    </div>
+  ),
+  // Розріз «За рахунками» тут лише кнопка фільтра: самі рядки покриває
+  // `AccountBars.test.tsx`, а цей набір перевіряє, що фільтр звужує сторінку.
+  AccountBars: ({
+    onSelect,
+  }: {
+    onSelect: (accountKey: string | null) => void;
+  }) => (
+    <button type="button" onClick={() => onSelect("cash_on_hand")}>
+      only-cash
+    </button>
   ),
 }));
 
@@ -104,7 +117,7 @@ describe("Analytics page", () => {
     expect(screen.getByText("Категорії")).toBeInTheDocument();
     // Поточний місяць: дельти продавців теж міряються тими ж днями.
     expect(
-      screen.getByText("Топ продавці: зміна за ті ж дні"),
+      screen.getByText("Найбільші витрати: зміна за ті ж дні"),
     ).toBeInTheDocument();
     // empty-state copy for no data
     expect(screen.getByText("Поки немає витрат")).toBeInTheDocument();
@@ -149,7 +162,7 @@ describe("Analytics page", () => {
     expect(screen.getByLabelText("Наступний місяць")).toBeDisabled();
   });
 
-  it("renders the pie chart when there is category distribution", async () => {
+  it("renders category bars when there is category distribution", async () => {
     const now = Math.floor(KYIV.getTime() / 1000);
     const realTx = [mkTx("a", -10000, now), mkTx("b", -5000, now)];
     await act(async () => {
@@ -157,7 +170,7 @@ describe("Analytics page", () => {
         <Analytics mono={buildMono({ realTx })} storage={buildStorage()} />,
       );
     });
-    expect(await screen.findByTestId("pie")).toBeInTheDocument();
+    expect(await screen.findByTestId("category-bars")).toBeInTheDocument();
   });
 
   it("renders skeleton placeholders while current-month transactions load", async () => {
@@ -175,7 +188,7 @@ describe("Analytics page", () => {
     expect(screen.queryByText("Поки немає продавців")).toBeNull();
     expect(
       container.querySelectorAll('[class*="animate-pulse"]').length,
-    ).toBeGreaterThanOrEqual(7);
+    ).toBeGreaterThanOrEqual(5);
   });
 
   it("keeps a failed background fetch of the prior month off the page", async () => {
@@ -308,7 +321,9 @@ describe("Analytics page", () => {
       );
     });
     // Лише червневі 100 грн у розподілі — травневі 9 000 грн поза вікном.
-    expect(await screen.findByTestId("pie")).toHaveTextContent("pie total 100");
+    expect(await screen.findByTestId("category-bars")).toHaveTextContent(
+      "bars total 100",
+    );
   });
 
   it("merges manual expenses for the selected month", async () => {
@@ -333,8 +348,45 @@ describe("Analytics page", () => {
         />,
       );
     });
-    // manual expense produces category distribution → pie renders
-    expect(await screen.findByTestId("pie")).toBeInTheDocument();
+    // manual expense produces category distribution → bars render
+    expect(await screen.findByTestId("category-bars")).toBeInTheDocument();
+  });
+
+  it("фільтр рахунку лишає в підсумку лише готівкові витрати (Р4.2)", async () => {
+    const manualExpenses = [
+      {
+        id: "cash",
+        amount: 200,
+        date: "2026-06-10T10:00:00.000Z",
+        category: "food",
+        account: "cash",
+      },
+      {
+        id: "none",
+        amount: 50,
+        date: "2026-06-10T10:00:00.000Z",
+        category: "food",
+      },
+    ];
+    await act(async () => {
+      render(
+        <Analytics
+          mono={buildMono()}
+          storage={buildStorage({
+            manualExpenses: manualExpenses as unknown as NonNullable<
+              AnalyticsProps["storage"]["manualExpenses"]
+            >,
+          })}
+        />,
+      );
+    });
+    expect(await screen.findByTestId("category-bars")).toHaveTextContent(
+      "bars total 250",
+    );
+    fireEvent.click(screen.getByRole("button", { name: "only-cash" }));
+    expect(screen.getByTestId("category-bars")).toHaveTextContent(
+      "bars total 200",
+    );
   });
 
   it("показує помилку завантаження банку навіть коли в місяці є ручна витрата", async () => {
@@ -380,7 +432,7 @@ describe("Analytics page", () => {
   it("renders the comparison section when a prior month has data", async () => {
     const now = Math.floor(KYIV.getTime() / 1000);
     // May 2026 timestamp (prev month)
-    const mayTs = Math.floor(new Date("2026-05-10T09:00:00Z").getTime() / 1000);
+    const mayTs = Math.floor(new Date("2026-05-01T09:00:00Z").getTime() / 1000);
     const fetchMonth = vi.fn().mockResolvedValue([mkTx("prev", -30000, mayTs)]);
     await act(async () => {
       render(
@@ -400,11 +452,11 @@ describe("Analytics page", () => {
   // PR-F3 (founder-UX audit wave 6, «Чесність показників»): `Analytics`
   // never accepted `showBalance` at all — the Overview toggle that hides
   // money left every figure here (summary, comparison, top merchants)
-  // visible one swipe away. `CategoryPieChart` is mocked above, so its own
-  // masking is covered separately in `CategoryPieChart.test.tsx`.
+  // visible one swipe away. `CategoryBars` is mocked above, so its own
+  // masking is covered separately in `CategoryBars.test.tsx`.
   it("masks Summary, Comparison, and Merchant amounts when showBalance=false", async () => {
     const now = Math.floor(KYIV.getTime() / 1000);
-    const mayTs = Math.floor(new Date("2026-05-10T09:00:00Z").getTime() / 1000);
+    const mayTs = Math.floor(new Date("2026-05-01T09:00:00Z").getTime() / 1000);
     const fetchMonth = vi.fn().mockResolvedValue([mkTx("prev", -30000, mayTs)]);
     await act(async () => {
       render(
@@ -427,7 +479,7 @@ describe("Analytics page", () => {
 
   it("shows real Summary/Comparison/Merchant amounts when showBalance=true (default)", async () => {
     const now = Math.floor(KYIV.getTime() / 1000);
-    const mayTs = Math.floor(new Date("2026-05-10T09:00:00Z").getTime() / 1000);
+    const mayTs = Math.floor(new Date("2026-05-01T09:00:00Z").getTime() / 1000);
     const fetchMonth = vi.fn().mockResolvedValue([mkTx("prev", -30000, mayTs)]);
     await act(async () => {
       render(
@@ -450,7 +502,7 @@ describe("Analytics page", () => {
   // абсолютну дельту, відсутній місяць — чесний рядок.
   it("shows an absolute delta instead of a percent when the prior month is under 10% of this one", async () => {
     const now = Math.floor(KYIV.getTime() / 1000);
-    const mayTs = Math.floor(new Date("2026-05-10T09:00:00Z").getTime() / 1000);
+    const mayTs = Math.floor(new Date("2026-05-01T09:00:00Z").getTime() / 1000);
     // 75 ₴ у травні проти 2 593 ₴ у червні.
     const fetchMonth = vi.fn().mockResolvedValue([mkTx("prev", -7_500, mayTs)]);
     await act(async () => {
@@ -476,7 +528,7 @@ describe("Analytics page", () => {
   // власника 2026-10-01): обидві суми вже в сусідніх колонках.
   it("lists category deltas against the previous month", async () => {
     const now = Math.floor(KYIV.getTime() / 1000);
-    const mayTs = Math.floor(new Date("2026-05-10T09:00:00Z").getTime() / 1000);
+    const mayTs = Math.floor(new Date("2026-05-01T09:00:00Z").getTime() / 1000);
     const fetchMonth = vi
       .fn()
       .mockResolvedValue([mkTx("prev", -20_000, mayTs)]);
@@ -518,7 +570,7 @@ describe("Analytics page", () => {
 
   // План фінплану діє лише на поточний місяць.
   it("does not compare the current savings plan against a past month", async () => {
-    const mayTs = Math.floor(new Date("2026-05-10T09:00:00Z").getTime() / 1000);
+    const mayTs = Math.floor(new Date("2026-05-01T09:00:00Z").getTime() / 1000);
     const fetchMonth = vi
       .fn()
       .mockResolvedValue([
@@ -552,8 +604,135 @@ describe("Analytics page", () => {
       );
     });
     await waitFor(() => {
-      expect(screen.getByText("Немає з чим порівняти")).toBeInTheDocument();
+      expect(screen.getByText(/^Немає з чим порівняти/)).toBeInTheDocument();
     });
     expect(screen.queryByText(/%/)).not.toBeInTheDocument();
+  });
+
+  // ── Періоди (спека finyk-analytics-v3, Р5) ────────────────────────────
+
+  async function choosePeriod(kind: string) {
+    await act(async () => {
+      fireEvent.click(screen.getByRole("button", { name: /Обрати період/ }));
+    });
+    await act(async () => {
+      fireEvent.click(screen.getByText(kind));
+    });
+  }
+
+  it("каже, з якої дати є дані, коли база порівняння неповна (Р5.5)", async () => {
+    const now = Math.floor(KYIV.getTime() / 1000);
+    const mayTs = Math.floor(new Date("2026-05-12T09:00:00Z").getTime() / 1000);
+    const fetchMonth = vi.fn().mockResolvedValue([mkTx("prev", -30000, mayTs)]);
+    await act(async () => {
+      render(
+        <Analytics
+          mono={buildMono({ realTx: [mkTx("cur", -10000, now)], fetchMonth })}
+          storage={buildStorage()}
+        />,
+      );
+    });
+    expect(
+      await screen.findByText(
+        /^Немає з чим порівняти: дані лише з 12 травня 2026/,
+      ),
+    ).toBeInTheDocument();
+    // Ні відсотків, ні дельт категорій від обрізаної бази.
+    expect(screen.queryByRole("table")).not.toBeInTheDocument();
+    expect(screen.queryByText(/%/)).not.toBeInTheDocument();
+  });
+
+  it("рік без попереднього року показує чесний стан, а не 0 %", async () => {
+    const now = Math.floor(KYIV.getTime() / 1000);
+    const fetchMonth = vi.fn().mockResolvedValue([]);
+    await act(async () => {
+      render(
+        <Analytics
+          mono={buildMono({ realTx: [mkTx("cur", -10000, now)], fetchMonth })}
+          storage={buildStorage()}
+        />,
+      );
+    });
+    await choosePeriod("Рік");
+    expect(screen.getByText("Підсумок року")).toBeInTheDocument();
+    expect(screen.getByLabelText("Наступний рік")).toBeDisabled();
+    expect(
+      await screen.findByText(
+        /^Немає з чим порівняти: дані лише з 15 червня 2026/,
+      ),
+    ).toBeInTheDocument();
+    expect(screen.queryByText(/%/)).not.toBeInTheDocument();
+    // Порівняння поточного року йде тими ж днями торік: січень-червень 2025.
+    expect(fetchMonth).toHaveBeenCalledWith(2025, 0);
+    expect(fetchMonth).toHaveBeenCalledWith(2025, 5);
+    expect(fetchMonth).not.toHaveBeenCalledWith(2025, 6);
+  });
+
+  it("показує прогрес догрузки року замість мовчазно неповних сум", async () => {
+    const fetchMonth = vi.fn(() => new Promise<Transaction[]>(() => {}));
+    await act(async () => {
+      render(
+        <Analytics mono={buildMono({ fetchMonth })} storage={buildStorage()} />,
+      );
+    });
+    // На місяці догрузка коротка (2 місяці), рядка прогресу немає.
+    expect(screen.queryByText(/Завантажую історію/)).not.toBeInTheDocument();
+    await choosePeriod("Рік");
+    // Січень-червень 2026, січень-червень 2025 і грудень 2024; червень 2026
+    // поточний і приходить з `realTx`.
+    expect(screen.getByText(/Завантажую історію/)).toHaveTextContent(
+      "Завантажую історію: 1 з 13 місяців",
+    );
+  });
+
+  it("тиждень гортається тижнями і не йде в майбутнє", async () => {
+    await act(async () => {
+      render(<Analytics mono={buildMono()} storage={buildStorage()} />);
+    });
+    await choosePeriod("Тиждень");
+    expect(screen.getByText("Підсумок тижня")).toBeInTheDocument();
+    expect(screen.getByLabelText("Наступний тиждень")).toBeDisabled();
+    await act(async () => {
+      fireEvent.click(screen.getByLabelText("Попередній тиждень"));
+    });
+    expect(screen.getByLabelText("Наступний тиждень")).not.toBeDisabled();
+  });
+
+  it("діапазон 10 днів порівнюється з попередніми 10 днями", async () => {
+    const at = (iso: string) => Math.floor(new Date(iso).getTime() / 1000);
+    const fetchMonth = vi
+      .fn()
+      .mockResolvedValue([
+        mkTx("in", -20_000, at("2026-05-25T09:00:00Z")),
+        mkTx("before", -50_000, at("2026-05-15T09:00:00Z")),
+      ]);
+    await act(async () => {
+      render(
+        <Analytics
+          mono={buildMono({
+            realTx: [mkTx("cur", -30_000, at("2026-06-05T09:00:00Z"))],
+            fetchMonth,
+          })}
+          storage={buildStorage()}
+        />,
+      );
+    });
+    await choosePeriod("Діапазон");
+    fireEvent.change(screen.getByLabelText("Від"), {
+      target: { value: "2026-06-01" },
+    });
+    fireEvent.change(screen.getByLabelText("До"), {
+      target: { value: "2026-06-10" },
+    });
+    await act(async () => {
+      fireEvent.click(screen.getByRole("button", { name: "Показати" }));
+    });
+    expect(screen.getByText("Підсумок періоду")).toBeInTheDocument();
+    expect(
+      await screen.findByText("Порівняння з попереднім періодом"),
+    ).toBeInTheDocument();
+    // 22-31 травня: лише «in» (200 ₴); «before» від 15 травня поза вікном.
+    const table = await screen.findByRole("table");
+    expect(table).toHaveTextContent(/\+100/);
   });
 });

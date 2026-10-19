@@ -4,7 +4,6 @@
  */
 import type { Dispatch, SetStateAction } from "react";
 import { Button } from "@shared/components/ui/Button";
-import { Icon } from "@shared/components/ui/Icon";
 import { BarcodeLookupNotice } from "../BarcodeLookupNotice";
 import type { BarcodeLookupNotice as BarcodeLookupNoticeState } from "./useBarcodeLookup";
 
@@ -53,7 +52,7 @@ export function BarcodeSection({
       <Button
         type="button"
         variant="outline"
-        className="w-full h-12 min-h-[44px] flex items-center justify-center gap-2"
+        className="w-full h-12 min-h-[44px]"
         onClick={() => {
           setBarcodeStatus("");
           onDismissBarcodeNotice?.();
@@ -61,18 +60,10 @@ export function BarcodeSection({
         }}
         aria-label={ariaLabel}
       >
-        <Icon
-          name="barcode"
-          size="sm"
-          aria-hidden
-          data-testid="barcode-action-icon"
-        />
-        <span>{actionLabel}</span>
+        {actionLabel}
       </Button>
       {barcodeStatus && !barcodeNotice && (
-        <div className="text-style-caption text-subtle mt-1">
-          {barcodeStatus}
-        </div>
+        <div className="text-style-label text-muted mt-1">{barcodeStatus}</div>
       )}
       {barcodeNotice && onDismissBarcodeNotice && (
         <BarcodeLookupNotice

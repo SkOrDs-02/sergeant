@@ -20,6 +20,11 @@
  *   параметрах. Це НЕ рефакторинг: колонка існувала з міграції 039 і раніше
  *   лишалась `{}`, а тепер несе `{ merchantRules }`. Серверний
  *   `applyFinykPrefs` уже читає `row.prefs_json`, тож контракт не міняється.
+ * - 2026-10-18, data-15 частина Б: finyk_tx_categories / _splits /
+ *   _mono_debt_links / _networth_history дістали `deleted_at`. UPSERT-и
+ *   пишуть `deleted_at = NULL` (воскресіння), а DELETE із hard guard-less
+ *   став soft (`SET deleted_at, updated_at` + LWW-guard). Це семантична
+ *   зміна за рішенням власника, ADR-0073 § Поправка 2026-10-18.
  */
 import { describe, expect, it, vi } from "vitest";
 import { applyFinykDualWriteOps } from "./adapter";

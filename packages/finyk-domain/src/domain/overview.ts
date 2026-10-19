@@ -1,9 +1,8 @@
 /**
  * Pure helpers for the Finyk Overview page.
  *
- * Extracted from `apps/web/src/modules/finyk/pages/Overview.tsx` and
- * `pages/overview/pulseStyle.ts` so both the web PWA and the React Native
- * port can reuse the same DOM-free business logic (`parseLocalDate`,
+ * Extracted from `apps/web/src/modules/finyk/pages/Overview.tsx` so both the
+ * web PWA and the React Native port can reuse the same DOM-free business logic (`parseLocalDate`,
  * `formatDaysLeft`, `getNextBillingDate`, planned-flow aggregation, pulse
  * classification).
  *

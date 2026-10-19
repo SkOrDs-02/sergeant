@@ -1149,7 +1149,7 @@ v2-run.log (v2-recipes.mjs): X=audit_pool99 зберіг 'VRX-k6ib борщ' (с
 
 ### `data-10` [high] Memory-режим (збій OPFS або квоти) пише порожні знімки комори, які після відновлення сховища видаляють продукти на сервері й на всіх пристроях
 
-- **Стан:** частково виправлено в #1343 (змерджено 2026-10-04) (джерело втрати закрите гейтом запису комори в memory-режимі й реплеєм memory-записів без неявного soft-delete; поелементні pantry-опи без soft-delete відсутніх дітей не робились, це окремий зсув моделі, закриє й data-40)
+- **Стан:** частково виправлено в #1343 (змерджено 2026-10-04) (джерело втрати закрите гейтом запису комори в memory-режимі й реплеєм memory-записів без неявного soft-delete; поелементні pantry-опи без неявного soft-delete відсутніх дітей зроблено в гілці claude/fix-data-40-pantry-stable-ids, data-40)
 - **Перевірка:** підтверджено · **Зусилля:** M · **Область:** web: Їжа (pantry) + durability (memory VFS, журнал)
 - **Де:** apps/web/src/modules/nutrition/lib/sqliteWriter/adapter.ts:446-448,641-675; apps/web/src/core/durability/dualWriteJournal.ts:90-91; apps/web/src/core/db/sqlite.ts:846-889; apps/web/src/modules/nutrition/hooks/useNutritionPantries.ts:118,161-179; packages/dualwrite-core/src/tableSpec.ts:200-215
 - **Першопричина:** У :memory:-режимі модуль бачить порожню базу і пише pantry-upsert {items: []} для дефолтних місць зберігання; ackDualWrite у memory навмисно не знімає журнал, тож знімок реплеїться на справжній OPFS-базі. upsertPantry → softDeleteRemovedChildren при порожньому keepIds видаляє всі живі позиції без LWW-перевірки і ставить delete з clientTs memory-сесії, який виграє на сервері.
@@ -1579,7 +1579,7 @@ I could not refute this. The bug is real. I think "high" overstates the severity
 
 ### `data-15` [medium] Таблиці з hard-delete без tombstone (категорії й розбивки транзакцій, привʼязки боргів, net-worth): видалення не доходить на інші пристрої, а застарілий оп воскрешає рядок
 
-- **Стан:** відкрито
+- **Стан:** виправлено (частина А — #1526: клієнтський pull-delete з LWW; частина Б — гілка claude/fix-data-15-finyk-soft-delete-tombstones: soft-delete `deleted_at` + `updated_at` на обох боках, серверна міграція 156 і клієнтська 005, застарілий upsert за tombstone-ом → `lww_conflict`, pull віддає tombstone, читачі фільтрують `deleted_at IS NULL`, ADR-0073 поправлено)
 - **Перевірка:** підтверджено · **Зусилля:** M · **Область:** server: sync finyk + web: applyPullOp + dualwrite-core
 - **Де:** apps/server/src/modules/sync/finyk/applySync.ts:239-265,299-321,354-381; apps/web/src/core/syncEngine/applyPullOp.ts:331-334; apps/web/src/modules/finyk/lib/sqliteWriter/adapter.ts:278-340; apps/web/src/modules/finyk/lib/sqliteWriter/specs.ts:194-209; packages/dualwrite-core/src/tableSpec.ts:183-189
 - **Першопричина:** finyk_tx_categories, finyk_tx_splits, finyk_mono_debt_links і finyk_networth_history видаляються справжнім DELETE без запису часу видалення. На сервері після DELETE гілка «рядка немає» вставляє запізнілий оп без порівняння з часом видалення; на клієнті pull для delete на таблиці без deleted_at повертає rejected (подія в Sentry), а курсор іде далі.
@@ -1926,7 +1926,7 @@ node <scratch>/agents/client-static-web-route-guards/palette-logout.mjs
 
 ### `data-20` [medium] Скасування підписки може не дійти до провайдера, а повторити його неможливо: cancel_at_period_end ставиться без підтвердження і успадковується новою підпискою
 
-- **Стан:** відкрито
+- **Стан:** виправлено в гілці claude/fix-data-20-21-billing-cancel-checkout (Plata кидає помилку замість ковтання відмови monobank, 502 `PROVIDER_CANCEL_FAILED`, прапорець ставиться лише після підтвердження; усі три upsert-и активації скидають `cancel_at_period_end` при новому `provider_subscription_id`; видалення акаунта лишається best-effort. Залишок: Stripe `customer.subscription.*`-вебхук (`upsertSubscriptionEvent`) не скидає прапорець і не скасовує попередню рекурентку, провайдер dormant)
 - **Перевірка:** підтверджено · **Зусилля:** S · **Швидкий виграш** · **Область:** server: billing (Plata, LiqPay)
 - **Де:** apps/server/src/modules/billing/plata.ts:373-439; apps/server/src/modules/billing/plataSync.ts:99-111; apps/server/src/modules/billing/liqpay.ts:352-364,515-553; apps/server/src/modules/billing/getUserPlan.ts:26-30; apps/server/src/modules/me/dataRights.ts:30-46
 - **Першопричина:** cancelSubscription вважає cancel_at_period_end = TRUE доказом, що провайдера повідомлено, і повертає already_canceling без запиту. Plata ставить прапорець навіть коли monobank відповів не-2xx чи мережа впала (відповідь subscription/remove не перевіряється), а upsert-и активації (Plata applyActive, LiqPay) не скидають прапорець при новому provider_subscription_id.
@@ -2003,7 +2003,7 @@ POST /api/billing/cancel у момент, коли monobank відповідає
 
 ### `data-21` [medium] Checkout не перевіряє наявну підписку, а мапінг Plata user→subscriptionId перезаписується: оплачена підписка губиться і не скасовується
 
-- **Стан:** відкрито
+- **Стан:** виправлено в гілці claude/fix-data-20-21-billing-cancel-checkout (409 `ALREADY_SUBSCRIBED` / `CHECKOUT_PENDING`; `plata_subscription` 1:N, міграція 154; cancel за `subscriptions.provider_subscription_id`; активація другої рекурентки ставить скасування попередньої в чергу `billing_pending_cancellation` у тій самій транзакції, виклик провайдера після коміту й ретрай-полер; термінальні події замінених Stripe/LiqPay-підписок скоуплені по id. Залишок: ліміт 24 спроб скасування замінених підписок вичерпується error-логом і ручним розбором; два паралельні checkout-и в межах мілісекунд до першого INSERT мапінгу гейт не ловить, але вебхуки обох резолвляться, а друга активація скасує першу)
 - **Перевірка:** підтверджено · **Зусилля:** M · **Область:** server: billing (routes/billing, Plata, LiqPay)
 - **Де:** apps/server/src/routes/billing.ts:110-159; apps/server/src/modules/billing/plata.ts:305-313,396; apps/server/src/modules/billing/plataSync.ts:100-110,202-219; apps/server/src/modules/billing/liqpay.ts:353-362
 - **Першопричина:** POST /api/billing/checkout не дивиться на subscriptions і незавершені checkout-и (є лише rate-limit), plata_subscription має PK user_id, і другий checkout перезаписує subscription_id. Вебхук за старим id не резолвиться, cancel бере останній, можливо неоплачений id, а upsert-и LiqPay і Plata мовчки перезаписують provider активного рядка іншого провайдера.
@@ -2108,7 +2108,7 @@ How the loss happens:
 
 ### `data-23` [medium] Чат-екзекутори обходять серверні межі: create_transaction на будь-яку 400 пише локально з поясненням «сервер недоступний», а log_weight, log_measurement і log_meal не мають меж
 
-- **Стан:** відкрито
+- **Стан:** частково виправлено в гілці claude/fix-data-23-chat-server-bounds (лишилось: Idempotency-Key/client id у POST /manual-expenses, межі решти мутаторів у toolCallSchema, серверна валідація data_json у sync; add_asset, recurring_expense та log_meal/log_water без стелі)
 - **Перевірка:** підтверджено · **Зусилля:** M · **Область:** web: AI-чат (serverActions, toolCallSchema, nutritionActions, fizrukActions)
 - **Де:** apps/web/src/core/lib/chatActions/serverActions.ts:183-250; apps/web/src/core/lib/chatActions/finykActions/transactions.ts:28-71; apps/web/src/core/lib/chatActions/nutritionActions.ts:66-111,419-437; apps/web/src/core/lib/chatActions/fizrukActions/measurements.ts:13-62; apps/web/src/core/hub/chat/toolCallSchema.ts:41-337
 - **Першопричина:** serverActions ловить будь-яку помилку голим catch і йде в локальний fallback без MAX_AMOUNT, ліміту опису й межі дати, а sync потім доносить запис у ту саму таблицю. Аргументи інших мутаторів не валідуються спільними примітивами меж: toolCallSchema покриває близько 20 мутаторів лише numOrStr без діапазонів.
@@ -2428,7 +2428,7 @@ Verifier runs: pw_synclink_cold.mjs (key verify-cs-outbox-synclink) produced toa
 
 ### `data-27` [medium] Нотатки до банківських транзакцій не зберігаються ніде: зникають на reload, не синхронізуються й не потрапляють у бекап
 
-- **Стан:** частково виправлено в гілці claude/fix-data-27-tx-notes-persist (нотатки пишуться в LS і входять у бекап; синк між пристроями лишився follow-up-ом з міграцією і рішенням власника)
+- **Стан:** виправлено в гілці claude/feat-data-27-tx-notes-sync (перша частина: нотатки в LS і в бекапі, #1469; друга: серверна таблиця `finyk_tx_notes` (міграція 155), клієнтська SQLite-таблиця, dual-write, sync v2 push/pull, одноразове перелиття LS-нотаток, перепостановка оп-ів, відхилених старим сервером у вікні деплою). Залишок: мобільний клієнт (ADR-0094, пауза) не знає таблиці `finyk_tx_notes`
 - **Перевірка:** підтверджено · **Зусилля:** M · **Область:** web: Фінік (txNotes)
 - **Де:** apps/web/src/modules/finyk/hooks/useFinykStorageSlots.ts:58-61,145-148; apps/web/src/modules/finyk/hooks/useStorage.persist.ts:50-73; apps/web/src/modules/finyk/hooks/useFinykStorageMutations.ts:367-375; apps/web/src/modules/finyk/lib/sqliteWriter/extract.ts:183-198
 - **Першопричина:** txNotes оголошено через useReadonlyPersist, який лише читає LS на першому кадрі й нічого не пише, а dual-write стан (extractFinykDualWriteState) і бекап (FINYK_BACKUP_STORAGE_KEYS) txNotes не містять.
@@ -2977,7 +2977,7 @@ Harness: finyk versions 999 and 4 accepted, 0/-1/1000 rejected; routine schemaVe
 
 ### `data-35` [medium] Бекап «всього Hub» неповний і з втратами: немає рецептів, списку покупок, води й періодів цілей, а restore стирає історію покупок комори (sources)
 
-- **Стан:** відкрито
+- **Стан:** виправлено в гілці claude/fix-data-35-nutrition-backup-complete (власні продукти foodDb і вода `data.water` додав окремо `main`, 2207eb038; ця гілка зливає схему v2 з ними)
 - **Перевірка:** підтверджено · **Зусилля:** M · **Область:** web: бекап Їжі (nutritionBackup)
 - **Де:** apps/web/src/modules/nutrition/domain/nutritionBackup.ts:71-89,146-226; apps/web/src/modules/nutrition/lib/nutritionStorage.ts:262-312,485-511; apps/web/src/modules/nutrition/lib/sqliteWriter/diff.ts:603; apps/web/src/core/hub/HubBackupPanel.tsx:177,189-193
 - **Першопричина:** normalizePantryItem на експорті й імпорті лишає лише name, qty, unit і notes, тож PantryItem.sources і ambiguousQty губляться, а extractPantrySnapshots пише sources = null поверх наявних. Payload Їжі не містить nutrition_recipes, nutrition_shopping_list, nutrition_water_log і nutrition_goal_periods.
@@ -3101,7 +3101,7 @@ v8-kcal.mjs / v8b-loop.mjs (пул-юзер vfy-smf-fiz1, «Біг, легкий
 
 ### `data-37` [medium] Ретро-тренування «Вправи по підходах»: введений кінець живе лише в sessionStorage, і після перезапуску вкладки чи PWA «Завершити» робить тренування на 60-111 годин
 
-- **Стан:** відкрито
+- **Стан:** частково виправлено в гілці claude/fix-data-37-ux-11-fizruk-history (слот кінця durable у localStorage; лишилось: перевірка implausiblyLong на «Завершити», редактор часу на WorkoutSummaryView, fizrukClosed за startedAt)
 - **Перевірка:** підтверджено · **Зусилля:** S · **Швидкий виграш** · **Область:** web: Фізрук (pendingRetroEnd, useWorkouts)
 - **Де:** apps/web/src/modules/fizruk/lib/pendingRetroEnd.ts:1-81; apps/web/src/modules/fizruk/hooks/useWorkouts.ts:187-206; apps/web/src/modules/fizruk/hooks/useWorkoutsOrchestrator.ts:524-533; apps/web/src/modules/fizruk/components/workouts/WorkoutJournalSection.tsx:160-162; apps/web/src/core/hub/now/closedToday.ts (fizrukClosed)
 - **Першопричина:** Кінець ретро-сесії зберігається лише в sessionStorage, а endWorkout бере takePendingRetroEnd(id) ?? now без перевірки неправдоподібної тривалості. Завершене тренування відкривається read-only без WorkoutTimeEditor, всупереч коментарю в коді, що мітки лишаються редагованими.
@@ -3300,7 +3300,7 @@ psql: обидва рядки fizruk_programs і всі 5 оп sync_op_log дл�
 
 ### `data-40` [medium] Позиційні id позицій комори: офлайн-правка тихо втрачається, якщо інший пристрій прибрав сусідню позицію
 
-- **Стан:** відкрито
+- **Стан:** частково виправлено в гілці claude/fix-data-40-pantry-stable-ids (стабільний `PantryItem.id` замість позиційного, поелементна дельта sync з одним delete на прибрану позицію і без перепису сусідів, `sort_order` існуючих рядків не чіпається, `itemId` журналу стабільний; без міграції даних, бо рядки вже несуть ці id; лишилось: показ відхилених `lww_conflict` користувачеві, бо рішення власника тримати його в `BENIGN_REJECT_REASONS`, одночасна правка ТІЄЇ САМОЇ позиції з двох пристроїв, яка далі розв'язується LWW по рядку; і дубль позиції від клієнта без фіксу, зокрема вже зібраного mobile або старої вкладки PWA: він перейменовує `pi_…` на позиційний id, нова правка воскрешає tombstone, дубль не загоюється сам; код mobile вирівняно в тій самій гілці)
 - **Перевірка:** підтверджено · **Зусилля:** L · **Область:** web: Їжа (pantry) + nutrition-domain
 - **Де:** apps/web/src/modules/nutrition/lib/nutritionStorage.ts:485-511 (id на :497); packages/nutrition-domain/src/pantryLedger.ts:79-83; apps/web/src/core/syncEngine/singleton.ts:45
 - **Першопричина:** Id позиції будується з місця, індексу й назви, а upsertPantry щоразу переписує весь список місця з новим client_ts; видалення чи переміщення зсуває id усіх наступних позицій, тож паралельна правка програє LWW, а lww_conflict клієнт вважає benign і нічого не показує.
@@ -3523,7 +3523,7 @@ Reproduced live with <scratch>/agents/verify-client-static-react-correctness/v2-
 
 ### `data-45` [medium] Оновлення сервіс-воркера і перехоплення бази іншою вкладкою перезавантажують чи розмонтовують сторінку без перевірки незбережених форм
 
-- **Стан:** відкрито
+- **Стан:** частково виправлено в гілці claude/fix-data-45-rel-14-sw-update (chunk-recovery reload теж не стирає незбережений ввід; лишилось: перехоплення бази іншою вкладкою, dbOwnership/yieldOwnership — окреме UX-рішення)
 - **Перевірка:** підтверджено · **Зусилля:** M · **Область:** web: PWA (autoUpdate, registerSW) + dbOwnership
 - **Де:** apps/web/src/core/app/autoUpdate.ts:247-265; apps/web/src/main.tsx:376-381; node_modules/vite-plugin-pwa/dist/client/build/register.js:55-64; apps/web/src/core/db/sqlite.ts:309-325; apps/web/src/core/db/dbOwnership.ts:106-140; docs/engineering/web/service-worker.md:41-43
 - **Першопричина:** Реєстру «брудного» стану немає: autoUpdate після 5+ хв у фоні робить triggerUpdate(true) при поверненні у вкладку, ігноруючи відкриті аркуші й «Пізніше»; слухач controlling у vite-plugin-pwa перезавантажує всі вкладки, коли оновлення прийнято в одній (onNeedReload не передано); yieldOwnership на claim іншої вкладки розмонтовує дерево маршрутів.

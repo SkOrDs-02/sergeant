@@ -15,16 +15,16 @@ export function RememberForRepeat({
   onChange: (next: boolean) => void;
 }) {
   return (
-    <label className="mt-4 flex min-h-[44px] cursor-pointer items-start gap-3 rounded-2xl border border-line bg-panelHi p-3">
+    <label className="mt-4 flex min-h-[44px] cursor-pointer items-start gap-3 border-y border-line py-3">
       <input
         type="checkbox"
         aria-label={copy.rememberForRepeat}
         checked={checked}
         onChange={(event) => onChange(event.currentTarget.checked)}
-        className="mt-0.5 h-5 w-5 shrink-0 accent-nutrition-strong"
+        className="mt-0.5 h-5 w-5 shrink-0 accent-text"
       />
       <span className="min-w-0">
-        <span className="block text-style-label text-text">
+        <span className="block text-style-body font-semibold text-text">
           {copy.rememberForRepeat}
         </span>
         {/* AI-NOTE: кегль тут навмисний — це підказка під

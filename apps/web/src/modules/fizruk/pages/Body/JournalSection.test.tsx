@@ -124,7 +124,10 @@ describe("JournalSection", () => {
     expect(screen.getByText("5/5")).toBeInTheDocument();
     expect(screen.getByText("Після легкого тренування")).toBeInTheDocument();
 
-    fireEvent.click(screen.getByRole("button", { name: "Видалити запис" }));
+    const deleteButton = screen.getByRole("button", { name: "Видалити запис" });
+    // Після зняття декоративної іконки текст зберігає видимий вхід у дію.
+    expect(deleteButton).toHaveTextContent("Видалити запис");
+    fireEvent.click(deleteButton);
     expect(onDelete).toHaveBeenCalledWith("entry-1");
   });
 

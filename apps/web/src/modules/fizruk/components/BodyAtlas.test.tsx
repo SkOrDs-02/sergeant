@@ -88,20 +88,11 @@ describe("BodyAtlas · segmented controls", () => {
     // defect #3: real button groups, not a fake tablist/tab pair — no
     // aria-controls/tabpanel/roving-tabindex machinery to half-implement.
     expect(
-      screen.getByRole("group", { name: "Режим карти мʼязів" }),
+      screen.getByRole("radiogroup", { name: "Режим карти мʼязів" }),
     ).toBeInTheDocument();
-    expect(screen.getByRole("button", { name: "Відновлення" })).toHaveAttribute(
-      "aria-pressed",
-      "true",
-    );
-    expect(screen.getByRole("button", { name: "Спереду" })).toHaveAttribute(
-      "aria-pressed",
-      "true",
-    );
-    expect(screen.getByRole("button", { name: "Ззаду" })).toHaveAttribute(
-      "aria-pressed",
-      "false",
-    );
+    expect(screen.getByRole("radio", { name: "Відновлення" })).toBeChecked();
+    expect(screen.getByRole("radio", { name: "Спереду" })).toBeChecked();
+    expect(screen.getByRole("radio", { name: "Ззаду" })).not.toBeChecked();
     expect(screen.queryByRole("tablist")).not.toBeInTheDocument();
     expect(screen.queryByRole("tab")).not.toBeInTheDocument();
   });
@@ -110,12 +101,9 @@ describe("BodyAtlas · segmented controls", () => {
     renderAtlas();
     expect(screen.getByRole("button", { name: "Груди" })).toBeInTheDocument();
 
-    fireEvent.click(screen.getByRole("button", { name: "Ззаду" }));
+    fireEvent.click(screen.getByRole("radio", { name: "Ззаду" }));
 
-    expect(screen.getByRole("button", { name: "Ззаду" })).toHaveAttribute(
-      "aria-pressed",
-      "true",
-    );
+    expect(screen.getByRole("radio", { name: "Ззаду" })).toBeChecked();
     expect(screen.getByRole("button", { name: "Сідниці" })).toBeInTheDocument();
     expect(
       screen.queryByRole("button", { name: "Груди" }),
@@ -169,7 +157,7 @@ describe("BodyAtlas · muscle selection", () => {
     fireEvent.click(screen.getByRole("button", { name: "Груди" }));
     expect(screen.getByText("потребує відпочинку")).toBeInTheDocument();
 
-    fireEvent.click(screen.getByRole("button", { name: "Ззаду" }));
+    fireEvent.click(screen.getByRole("radio", { name: "Ззаду" }));
     expect(screen.getByText(/Обери м.?яз/)).toBeInTheDocument();
   });
 });
@@ -210,7 +198,7 @@ describe("BodyAtlas · muscle a11y (fizruk audit wave 2)", () => {
     renderAtlas();
     expect(screen.queryByRole("tablist")).not.toBeInTheDocument();
     expect(screen.queryByRole("tab")).not.toBeInTheDocument();
-    expect(screen.getAllByRole("group").length).toBeGreaterThanOrEqual(2);
+    expect(screen.getAllByRole("radiogroup").length).toBeGreaterThanOrEqual(2);
   });
 });
 
@@ -311,10 +299,7 @@ describe("BodyAtlas · focusMuscleId (fizruk-hero-recovery-bars.md рішенн�
       "aria-pressed",
       "true",
     );
-    expect(screen.getByRole("button", { name: "Спереду" })).toHaveAttribute(
-      "aria-pressed",
-      "true",
-    );
+    expect(screen.getByRole("radio", { name: "Спереду" })).toBeChecked();
   });
 
   it("switches to the back side to focus a back-only group", () => {
@@ -326,10 +311,7 @@ describe("BodyAtlas · focusMuscleId (fizruk-hero-recovery-bars.md рішенн�
         />
       </ScreenReaderAnnouncerProvider>,
     );
-    expect(screen.getByRole("button", { name: "Ззаду" })).toHaveAttribute(
-      "aria-pressed",
-      "true",
-    );
+    expect(screen.getByRole("radio", { name: "Ззаду" })).toBeChecked();
     expect(screen.getByRole("button", { name: "Сідниці" })).toHaveAttribute(
       "aria-pressed",
       "true",

@@ -10,8 +10,6 @@ import { HubChatBody } from "./chat/HubChatBody";
 import { HubChatComposer } from "./chat/HubChatComposer";
 import { ChatAuthGate } from "./chat/ChatAuthGate";
 import { useAuthOptional } from "../auth/AuthContext";
-// Аліас навмисно: локальне `messages` у цьому файлі — це ходи чату,
-// не каталог копі.
 import { messages as catalog } from "@shared/i18n/uk";
 import { PaywallModal } from "../billing/PaywallModal";
 import { DestructiveConfirmModal } from "./chat/DestructiveConfirmModal";
@@ -48,7 +46,7 @@ interface HubChatProps {
  *
  * Renders inline as a regular page child (host: `HubChatPage` at
  * `/chat`). The previous fullscreen-modal frame (`fixed inset-0`,
- * `backdrop-blur`, `useDialogFocusTrap`, `useVisualKeyboardInset`,
+ * ``, `useDialogFocusTrap`, `useVisualKeyboardInset`,
  * minimize-FAB plumbing) was removed when the chat moved to its own
  * route — page semantics handle the focus order, browser
  * back/forward and the on-screen keyboard natively.
@@ -172,17 +170,6 @@ function HubChat({
         loading={loading}
         onSpeak={() => setSpeaking(true)}
         onCancel={cancelInFlight}
-        onPickSuggestion={
-          signedOut
-            ? undefined
-            : (text) => {
-                setInput(text);
-                // Затримка, щоб React встиг змонтувати оновлений value у
-                // input перед тим, як ми поставимо focus. Той самий
-                // pattern, що в `<ChatQuickActions onPrefill>`.
-                setTimeout(() => focusInputRef.current?.(), 0);
-              }
-        }
       />
 
       {signedOut ? (

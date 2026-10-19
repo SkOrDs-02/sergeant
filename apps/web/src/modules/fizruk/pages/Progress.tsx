@@ -6,7 +6,6 @@ import { useMemo, useState } from "react";
 import type { FizrukPage } from "../shell/fizrukRoute";
 import { Button } from "@shared/components/ui/Button";
 import { EmptyState } from "@shared/components/ui/EmptyState";
-import { Icon } from "@shared/components/ui/Icon";
 import { Skeleton } from "@shared/components/ui/Skeleton";
 import { messages } from "@shared/i18n/uk";
 import { cn } from "@shared/lib/ui/cn";
@@ -35,8 +34,6 @@ import { Stat } from "@shared/components/ui/Stat";
 import { PrBoard } from "./Progress/PrBoard";
 import { MuscleVolumeBlock } from "../components/MuscleWeekMatrix";
 import { buildMuscleWeekMatrix } from "../lib/muscleWeekMatrix";
-// Одна локаль на модуль: «Тіло» друкувало «82,5 кг», а «Прогрес» —
-// «82.5 кг» для того самого зважування (браузерне QA 2026-08-23).
 import { fmt, fmtLoose } from "../lib/numberFmt";
 import { formatDateShort } from "@shared/lib/time/formatDate";
 
@@ -257,10 +254,10 @@ export function Progress({ onNavigate }: ProgressProps) {
 
   return (
     <div className="flex-1 overflow-y-auto">
-      <div className="max-w-4xl mx-auto px-4 pt-4 page-tabbar-pad space-y-3">
+      <div className="max-w-4xl mx-auto px-5 pt-4 page-tabbar-pad space-y-7">
         <div className="flex items-center justify-between gap-3">
           <div>
-            <h1 className="text-style-title text-text">
+            <h1 className="text-style-headline text-text">
               {messages.fizruk.progress.title}
             </h1>
             <p className="text-style-caption text-subtle mt-0.5">
@@ -315,11 +312,9 @@ export function Progress({ onNavigate }: ProgressProps) {
             <button
               type="button"
               onClick={() => onNavigate("measurements")}
-              className="focus-ring touch-target w-full flex items-center gap-3 rounded-2xl border border-line bg-panelHi hover:bg-panel active:scale-[0.99] transition-[background-color,transform] px-4 py-3 text-left"
+              className="focus-ring touch-target w-full flex items-center gap-3 rounded-lg border border-line bg-panelHi hover:bg-panel transition-[background-color,transform] px-4 py-3 text-left"
             >
-              <div className="shrink-0 w-9 h-9 rounded-xl bg-fizruk/10 text-fizruk-strong dark:text-fizruk flex items-center justify-center">
-                <Icon name="ruler" size="md" />
-              </div>
+              <div className="shrink-0 w-9 h-9 rounded-lg bg-panelHi text-text flex items-center justify-center"></div>
               <div className="flex-1 min-w-0">
                 <div className="text-style-label text-text">
                   {messages.fizruk.progress.measurementsTitle}
@@ -335,12 +330,6 @@ export function Progress({ onNavigate }: ProgressProps) {
                   )}
                 </div>
               </div>
-              <Icon
-                name="chevron-right"
-                size="sm"
-                className="shrink-0 text-subtle"
-                aria-hidden
-              />
             </button>
 
             {/*
@@ -353,13 +342,12 @@ export function Progress({ onNavigate }: ProgressProps) {
             {!hasAny && (
               <EmptyState
                 compact
-                icon={<Icon name="trending-up" size={22} aria-hidden />}
                 title={messages.fizruk.progress.emptyTitle}
                 description={messages.fizruk.progress.emptyDescription}
                 primaryAction={
                   <Button
                     variant="solid"
-                    tone="fizruk"
+                    tone="neutral"
                     size="sm"
                     onClick={() => onNavigate("workouts")}
                   >
@@ -385,7 +373,7 @@ export function Progress({ onNavigate }: ProgressProps) {
               <>
                 {/* Weekly volume chart */}
                 {(workouts || []).some((w) => w.endedAt) && (
-                  <Card radius="lg" padding="lg">
+                  <Card prominence="hero" tone="fizruk" padding="lg">
                     <WeeklyVolumeChart
                       volumeKg={weekly.volumeKg}
                       isLoading={!loaded}
@@ -399,7 +387,7 @@ export function Progress({ onNavigate }: ProgressProps) {
                   const fatDelta = meas.delta("bodyFatPct");
                   return (
                     <div className="grid grid-cols-2 gap-3">
-                      <Card radius="lg">
+                      <Card>
                         <Stat
                           label={messages.fizruk.progress.weight}
                           value={
@@ -427,7 +415,7 @@ export function Progress({ onNavigate }: ProgressProps) {
                           }
                         />
                       </Card>
-                      <Card radius="lg">
+                      <Card>
                         <Stat
                           label={messages.fizruk.progress.bodyFat}
                           value={
@@ -442,9 +430,7 @@ export function Progress({ onNavigate }: ProgressProps) {
                               <span
                                 className={cn(
                                   "font-semibold",
-                                  fatDelta > 0
-                                    ? "text-warning-strong dark:text-warning"
-                                    : "text-success-strong dark:text-success",
+                                  fatDelta > 0 ? "text-text" : "text-text",
                                 )}
                               >
                                 {fatDelta > 0 ? "+" : ""}
@@ -460,7 +446,7 @@ export function Progress({ onNavigate }: ProgressProps) {
 
                 {/* Weight trend chart */}
                 {weightTrend.filter((d) => d.value != null).length >= 2 && (
-                  <Card radius="lg">
+                  <Card>
                     <SectionHeading size="xs" className="mb-3" variant="fizruk">
                       {messages.fizruk.progress.weightTrend}
                     </SectionHeading>
@@ -475,7 +461,7 @@ export function Progress({ onNavigate }: ProgressProps) {
 
                 {/* Body fat trend chart */}
                 {fatTrend.filter((d) => d.value != null).length >= 2 && (
-                  <Card radius="lg">
+                  <Card>
                     <SectionHeading size="xs" className="mb-3" variant="fizruk">
                       {messages.fizruk.progress.bodyFatTrend}
                     </SectionHeading>
@@ -490,7 +476,7 @@ export function Progress({ onNavigate }: ProgressProps) {
 
                 {/* Wellbeing chart */}
                 {wellbeingData.length >= 2 && (
-                  <Card radius="lg">
+                  <Card>
                     <SectionHeading size="xs" className="mb-3" variant="fizruk">
                       {messages.fizruk.progress.wellbeing}
                     </SectionHeading>
@@ -499,7 +485,7 @@ export function Progress({ onNavigate }: ProgressProps) {
                 )}
 
                 {/* Muscle volume bars */}
-                <Card radius="lg" padding="lg">
+                <Card padding="lg">
                   <SectionHeading size="xs" className="mb-1" variant="fizruk">
                     {messages.fizruk.progress.muscleVolume}
                   </SectionHeading>

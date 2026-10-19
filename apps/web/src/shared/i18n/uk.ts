@@ -1,3 +1,4 @@
+import { finykRedesign } from "./uk.finykRedesign";
 /**
  * Український message-каталог для apps/web.
  *
@@ -37,6 +38,27 @@ import { sergeantMessages } from "./uk.sergeant";
 import { coreMessages } from "./uk.core";
 
 export const messages = {
+  collection: {
+    finykCategoriesDescription:
+      "Окремі списки витрат і надходжень. Категорії доступні в операціях, сплітах і лімітах.",
+    categoryKindLabel: "Тип категорій",
+    categoryNameLabel: "Назва нової категорії",
+    categoryDeleteLabel: "Видалити категорію: {name}",
+    categoryEmptySearch: "Категорій не знайдено",
+    routineTagsDescription: "Теги допомагають знаходити звички за темою.",
+    routineCategoriesDescription:
+      "Категорії обʼєднують звички. Тут можна додати або змінити їх.",
+    categoryEditTitle: "Редагувати категорію",
+    pwaFilesTitle: "Файли застосунку",
+    countLabel: "Записів",
+    manage: "Керувати",
+    search: "Пошук",
+    searchPlaceholder: "Пошук за назвою",
+    foundLabel: "Знайдено",
+    emptySearch: "Нічого не знайдено",
+    limitReached:
+      "Ліміт: {limit} записів. Щоб додати новий, видали один з наявних.",
+  },
   // AI-CONTEXT (2026-09-12): групи, потрібні до першого екрана, живуть у
   // `./uk.core`, а тут розкладаються назад — щоб `messages.actions.save`
   // і решта call-site-ів працювали без жодної правки. Поділ зроблено не
@@ -180,8 +202,7 @@ export const messages = {
     addGoal: "Додати ціль",
     personaLabel: "Персона",
     goalTextLabel: "Текст цілі",
-    goalTextPlaceholder:
-      "напр.: Скоротити витрати в категорії «Кава» на 60% до неділі",
+    goalTextPlaceholder: "Ціль",
     saving: "Зберігаю…",
     thisWeeksGoals: "Цілі цього тижня",
     loading: "Завантаження…",
@@ -274,11 +295,11 @@ export const messages = {
   },
 
   // Phase 7 D4 — WelcomeScreen preset picker. The 2x2 module grid that
-  // replaces the row-based OnboardingWizard as the `/welcome` cold-start
+  // replaces the older row-based flow as the `/welcome` cold-start
   // surface. Taglines are kept short (~5-7 words each) so the cards stay
   // scannable at the 2-col mobile breakpoint without truncation.
   welcomeModulePicker: {
-    heading: "З чого почати?",
+    heading: "Модулі",
     // Копія мусить описувати ФАКТИЧНИЙ стан гріда: усі чотири модулі вже
     // ввімкнені (`WelcomeModulePicker` стартує з `[...ALL_MODULES]`). Стара
     // фраза «Обери модулі, з яких хочеш почати» читалася як «нічого не
@@ -437,7 +458,7 @@ export const messages = {
     },
     // Комора: згортка-гайд режиму «Списком» + превʼю розібраних позицій.
     pantryGuide: {
-      summary: "Як писати список?",
+      summary: "Формат списку",
       separators: "Розділяй продукти комою або новим рядком:",
       separatorsExample: "курка, рис, огірки",
       qtyPlacement: "Кількість можна ставити спереду або ззаду:",
@@ -461,10 +482,9 @@ export const messages = {
     pantryEmpty: {
       // Не «Комора порожня» — цей рядок уже показує NutritionPantrySelector
       // над карткою, і дослівний повтор читався як збій рендеру.
-      title: "Тут поки порожньо",
-      description:
-        "Тут зʼявляться продукти, які є вдома, і Сержант рахуватиме страви та список покупок з того, що вже маєш.",
-      hint: "Додай перший продукт полем вище або надиктуй одразу весь список.",
+      title: "Продуктів удома ще немає",
+      description: "З них Сержант рахує страви й список покупок.",
+      hint: "Додай перший продукт полем вище або надиктуй список.",
     },
     // Частка photoAI-оцінок у денному агрегаті (аудит nutrition E-5) —
     // винесено в `uk.nutrition.ts`, каталог поруч за 600-рядковим лімітом.
@@ -474,6 +494,7 @@ export const messages = {
   routine: routinePageMessages,
 
   finyk: finykPageMessages,
+  finykRedesign,
 
   // Profile sessions list (PR-10 ux-roast 2026-Q2 / §10.3 «Цей пристрій +
   // last-seen у людському форматі»). Section copy + accessibility-labels
@@ -649,7 +670,7 @@ export const messages = {
   // toast-success — перфект минулого часу.
   feedback: {
     settingsTitle: "Відгук",
-    settingsSubGroupTitle: "Є ідея чи знайшов баг?",
+    settingsSubGroupTitle: "Ідея або баг",
     settingsDescription:
       "Розкажи, що поламалось або чого бракує, кожне повідомлення читає людина.",
     openButton: "Написати відгук",
@@ -660,12 +681,12 @@ export const messages = {
     categoryBug: "Баг",
     categoryOther: "Інше",
     messageLabel: "Повідомлення",
-    placeholderIdea: "Чого тобі бракує в застосунку?",
-    placeholderBug: "Що саме поламалось і на якому екрані?",
-    placeholderOther: "Розкажи, що думаєш",
+    placeholderIdea: "Ідея",
+    placeholderBug: "Опис бага",
+    placeholderOther: "Повідомлення",
     submit: "Надіслати",
     submitting: "Надсилаю…",
-    submitted: "Дякую! Відгук надіслано.",
+    submitted: "Відгук надіслано.",
     emptyError: "Напиши хоча б кілька слів, порожній відгук не долетить.",
     // Помилки закриваються дією (style-guide.uk.md): людина щойно витратила
     // час на текст, і найгірше — залишити її без способу його врятувати.
@@ -691,7 +712,7 @@ export const messages = {
     picksLabel: "Обрані модулі для старту",
     otherModuleLabel: "Інший модуль",
     orPrefix: "Або:",
-    headingMany: "З чого хочеш почати?",
+    headingMany: "Перший запис",
     headingOne: "Почни з однієї дії",
     kicker: "Старт",
     // Три підзаголовки під одним кікером: single — один обраний модуль,
@@ -752,7 +773,7 @@ export const messages = {
   // і `category` Фініка (`cafe` — слаг «Кафе та ресторани», не мітка).
   presets: {
     routine: {
-      title: "З якої звички почати?",
+      title: "Перша звичка",
       desc: "Одне натискання, і вона у твоєму списку сьогодні.",
       fallbackLabel: "Своя звичка",
       items: {
@@ -774,7 +795,7 @@ export const messages = {
       },
     },
     finyk: {
-      title: "На що витратив?",
+      title: "Перша витрата",
       desc: "Тицяй, відкриється форма з назвою. Суму введеш сам.",
       fallbackLabel: "Своя витрата",
       items: {
@@ -799,7 +820,7 @@ export const messages = {
       },
     },
     nutrition: {
-      title: "Що зʼїв зараз?",
+      title: "Перший прийом їжі",
       desc: "Відкрию форму добавляння страви, калорії підтвердиш у модулі.",
       fallbackLabel: "Додати страву",
     },
@@ -822,7 +843,7 @@ export const messages = {
   // `string | MessageCatalog`, тобто дерево рядків без масивів і функцій
   // (та сама конвенція, що в гребені Фініка). Порядок збирає компонент.
   paywallModal: {
-    cta: "Перейти на Premium",
+    cta: "Дивитися плани",
     dismiss: "Не зараз",
     featureAi: "Сержант без тижневого ліміту, фото їжі й AI-скани чеків",
     featureSync: "Голосовий ввід і памʼять Сержанта",

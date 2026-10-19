@@ -1,44 +1,3 @@
-/* ═══════════════════════════════════════════════════════════════════════
-   ANIMATIONS — Page transitions, micro-interactions, choreography helpers.
-
-   Hard Rule #17 (Animation budget) — 3 tiers, max 1 AMBIENT + 1 RESPONSE
-   simultaneously on screen. Stagger groups count as 1 RESPONSE regardless
-   of child count. Stagger delay ≤ 30 ms × N, capped at 150 ms total.
-
-     AMBIENT   — looped, behind `motion-safe:`. Examples: shimmer,
-                 pulse-soft, wiggle, streak-glow, float-slow. Paused
-                 when `prefers-reduced-motion: reduce`.
-     RESPONSE  — one-shot, 75–320 ms, fires once per user action.
-                 Examples: fade-in, slide-up, scale-in, stagger-in.
-                 Collapsed to opacity-only fade ≤ 100 ms under reduced
-                 motion.
-     CELEBRATE — milestone, rare (streak 7/30/100/365, first-of-its-kind,
-                 weekly goal hit). Examples: confetti, check-pop,
-                 streak-milestone-burst. Also collapsed to opacity-only
-                 fade under reduced motion.
-
-   All timing values come from `--motion-duration-*` / `--motion-ease-*`
-   in `theme.css`. Raw values in `className` (e.g. `duration-[230ms]`)
-   are forbidden — see `docs/governance/governance/rules/17-animation-budget.md`.
-   ═══════════════════════════════════════════════════════════════════════ */
-
-/* ── Page & module entry (RESPONSE) ──────────────────────────────────── */
-
-@keyframes page-enter {
-  from {
-    opacity: 0;
-    transform: translateY(8px);
-  }
-  to {
-    opacity: 1;
-    transform: translateY(0);
-  }
-}
-.page-enter {
-  animation: page-enter var(--motion-duration-base)
-    var(--motion-ease-decelerate) both;
-}
-
 @keyframes module-slide-in {
   from {
     opacity: 0;
@@ -310,98 +269,6 @@
 .animate-module-card {
   animation: module-card-enter var(--motion-duration-slow)
     var(--motion-ease-overshoot) both;
-}
-
-/* ── Stagger choreography (RESPONSE) ─────────────────────────────────────
-   Hard Rule #17: ≤ 30 ms between children, total delay cap ≤ 150 ms. A
-   stagger group always counts as 1 RESPONSE regardless of child count.
-
-   `.stagger-children` — canonical, token-driven entry stagger. Apply to
-   the parent of a short list (cards, chips, hub modules). Children inherit
-   the same keyframe + duration; only `animation-delay` varies.
-
-   `.stagger-enter` — legacy alias kept for back-compat with existing
-   usages; pinned to the same 30 ms / 150 ms schedule.
-
-   `.skeleton-stagger` — skeleton sequential reveal (faster cadence so the
-   skeleton settles in before content swaps in).
-   ──────────────────────────────────────────────────────────────────────── */
-
-@keyframes stagger-in {
-  from {
-    opacity: 0;
-    transform: translateY(12px);
-  }
-  to {
-    opacity: 1;
-    transform: translateY(0);
-  }
-}
-
-.stagger-children > *,
-.stagger-enter > * {
-  animation: stagger-in var(--motion-duration-slow)
-    var(--motion-ease-decelerate) both;
-}
-.stagger-children > *:nth-child(1),
-.stagger-enter > *:nth-child(1) {
-  animation-delay: 0ms;
-}
-.stagger-children > *:nth-child(2),
-.stagger-enter > *:nth-child(2) {
-  animation-delay: 30ms;
-}
-.stagger-children > *:nth-child(3),
-.stagger-enter > *:nth-child(3) {
-  animation-delay: 60ms;
-}
-.stagger-children > *:nth-child(4),
-.stagger-enter > *:nth-child(4) {
-  animation-delay: 90ms;
-}
-.stagger-children > *:nth-child(5),
-.stagger-enter > *:nth-child(5) {
-  animation-delay: 120ms;
-}
-.stagger-children > *:nth-child(n + 6),
-.stagger-enter > *:nth-child(n + 6) {
-  animation-delay: 150ms;
-}
-
-/* Skeleton stagger — same 30 ms cadence, faster duration so the
-   placeholder settles before content swaps in. */
-@keyframes skeleton-fade-in {
-  from {
-    opacity: 0;
-    transform: translateY(4px);
-  }
-  to {
-    opacity: 1;
-    transform: translateY(0);
-  }
-}
-.skeleton-stagger > * {
-  opacity: 0;
-  animation: skeleton-fade-in var(--motion-duration-slow)
-    var(--motion-ease-decelerate) forwards;
-}
-.skeleton-stagger > *:nth-child(1) {
-  animation-delay: 0ms;
-}
-.skeleton-stagger > *:nth-child(2) {
-  animation-delay: 30ms;
-}
-.skeleton-stagger > *:nth-child(3) {
-  animation-delay: 60ms;
-}
-.skeleton-stagger > *:nth-child(4) {
-  animation-delay: 90ms;
-}
-.skeleton-stagger > *:nth-child(5) {
-  animation-delay: 120ms;
-}
-.skeleton-stagger > *:nth-child(n + 6) {
-  animation-delay: 150ms;
 }
 
 /* ── Sheet / modal / menu choreography helpers ───────────────────────────
@@ -909,23 +776,6 @@
     var(--motion-ease-decelerate) both;
 }
 
-/* ── FAB / floating items / cards (RESPONSE) ─────────────────────────── */
-
-@keyframes fab-item-enter {
-  0% {
-    opacity: 0;
-    transform: translateY(12px) scale(0.9);
-  }
-  100% {
-    opacity: 1;
-    transform: translateY(0) scale(1);
-  }
-}
-.animate-fab-item {
-  animation: fab-item-enter var(--motion-duration-base)
-    var(--motion-ease-overshoot) both;
-}
-
 @keyframes float-slow {
   0%,
   100% {
@@ -1073,15 +923,11 @@
   [class*="motion-sheet-"],
   [class*="motion-modal-"],
   [class*="motion-menu-"],
-  .page-enter,
   .page-exit,
   .module-enter,
   .module-exit,
   .hub-enter,
-  .hub-exit,
-  .stagger-children > *,
-  .stagger-enter > *,
-  .skeleton-stagger > * {
+  .hub-exit {
     animation-name: rm-opacity-fade !important;
     animation-delay: 0ms !important;
   }
@@ -1119,15 +965,11 @@
 .simulate-reduced-motion [class*="motion-sheet-"],
 .simulate-reduced-motion [class*="motion-modal-"],
 .simulate-reduced-motion [class*="motion-menu-"],
-.simulate-reduced-motion .page-enter,
 .simulate-reduced-motion .page-exit,
 .simulate-reduced-motion .module-enter,
 .simulate-reduced-motion .module-exit,
 .simulate-reduced-motion .hub-enter,
-.simulate-reduced-motion .hub-exit,
-.simulate-reduced-motion .stagger-children > *,
-.simulate-reduced-motion .stagger-enter > *,
-.simulate-reduced-motion .skeleton-stagger > * {
+.simulate-reduced-motion .hub-exit {
   animation-name: rm-opacity-fade !important;
   animation-delay: 0ms !important;
 }

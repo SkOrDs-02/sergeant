@@ -81,7 +81,9 @@ export interface AssetsSummary {
   manualDebtTotal: number;
   /** Sum of receivable remaining amounts (≥ 0 per row). */
   receivableTotal: number;
-  /** Assets side: mono + manual + receivables + jars. */
+  /** «Готівка на руках», UAH (0, коли рахунку немає). */
+  cashOnHandTotal: number;
+  /** Assets side: mono + manual + receivables + jars + cash on hand. */
   totalAssets: number;
   /** Liability side: mono credit debt + manual debts. */
   totalLiabilities: number;
@@ -103,4 +105,6 @@ export interface AssetsSummaryInput {
    * behaves exactly like `[]`.
    */
   jars?: readonly MonoJarLike[] | undefined;
+  /** Баланс «Готівки на руках» у копійках; `null`, коли рахунку немає. */
+  cashOnHandMinor?: number | null | undefined;
 }

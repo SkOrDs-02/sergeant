@@ -87,6 +87,16 @@ describe("purgeAppOwnedLocalStorage", () => {
     expect(localStorage.getItem("sentry_replay")).toBe("x");
   });
 
+  it("стирає відкладений кінець ретро-тренування (data-37: слот тепер у localStorage)", () => {
+    localStorage.setItem("fizruk_pending_retro_end_v1", "{}");
+    localStorage.setItem("ph_phc_project", "id");
+
+    expect(purgeAppOwnedLocalStorage()).toBe(1);
+
+    expect(localStorage.getItem("fizruk_pending_retro_end_v1")).toBeNull();
+    expect(localStorage.getItem("ph_phc_project")).toBe("id");
+  });
+
   it("leaves the kvvfs backing store untouched — a shared, non-per-user physical store that wipeSqliteDb() scopes by user_id instead", () => {
     localStorage.setItem("kvvfs-local-0", "blob-0");
     localStorage.setItem("kvvfs-local-1", "blob-1");
@@ -166,14 +176,12 @@ describe("purgeAppOwnedLocalData — sessionStorage (priv-16)", () => {
       "nutrition_recipes_cache_v1",
       JSON.stringify({ abc: { recipes: [{ title: "SECRET-X-suggest" }] } }),
     );
-    sessionStorage.setItem("fizruk_pending_retro_end_v1", "{}");
     sessionStorage.setItem("__sergeant_chunk_reload_at", "1000");
     sessionStorage.setItem("ph_session_marker", "1");
 
     await purgeAppOwnedLocalData();
 
     expect(sessionStorage.getItem("nutrition_recipes_cache_v1")).toBeNull();
-    expect(sessionStorage.getItem("fizruk_pending_retro_end_v1")).toBeNull();
     // Сторонні та неапповські ключі лишаються.
     expect(sessionStorage.getItem("ph_session_marker")).toBe("1");
     expect(sessionStorage.getItem("__sergeant_chunk_reload_at")).toBe("1000");

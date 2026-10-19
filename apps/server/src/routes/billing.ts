@@ -34,6 +34,7 @@ import {
 // Напряму, не через барель: знімок тягне `chat/aiQuota`, а барель імпортують
 // роути, яким цей граф не потрібен.
 import { buildAccessSnapshot } from "../modules/billing/accessSnapshot.js";
+import { assertCheckoutAllowed } from "../modules/billing/checkoutGuard.js";
 import { emitSecurityEvent } from "../obs/securityEvents.js";
 import { logger } from "../obs/logger.js";
 import { billingCheckoutTotal, billingWebhookTotal } from "../obs/metrics.js";
@@ -129,6 +130,10 @@ export function createBillingRouter({ pool }: { pool: Pool }): Router {
               throw new ProviderNotAvailableError("none");
             })());
 
+        // 409 ALREADY_SUBSCRIBED / CHECKOUT_PENDING - ДО звернення до
+        // провайдера: друга сторінка оплати = подвійне списання (data-21).
+        await assertCheckoutAllowed(pool, req.user!.id);
+
         const payload = BillingCheckoutResponseSchema.parse(
           await providerRegistry[providerId].createCheckoutSession({
             pool,
@@ -150,7 +155,9 @@ export function createBillingRouter({ pool }: { pool: Pool }): Router {
             ? "unavailable"
             : err instanceof BillingConfigurationError
               ? "unavailable"
-              : "error";
+              : err instanceof AppError && err.status === 409
+                ? "blocked"
+                : "error";
         billingCheckoutTotal.inc({
           provider: parsed.provider ?? providerId,
           result,

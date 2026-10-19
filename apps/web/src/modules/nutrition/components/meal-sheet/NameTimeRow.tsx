@@ -20,9 +20,17 @@ interface NameTimeRowProps {
   form: MealFormState;
   field: (key: keyof MealFormState) => (value: string) => void;
   setForm: Dispatch<SetStateAction<MealFormState>>;
+  showName?: boolean;
+  allowVoice?: boolean;
 }
 
-export function NameTimeRow({ form, field, setForm }: NameTimeRowProps) {
+export function NameTimeRow({
+  form,
+  field,
+  setForm,
+  showName = true,
+  allowVoice = true,
+}: NameTimeRowProps) {
   // 95%+ of the time the user logs a meal «right now». Showing the time
   // input on every open forces an extra tap past the picker in the
   // default case — parallels the «Не сьогодні? Змінити дату» collapse
@@ -51,25 +59,19 @@ export function NameTimeRow({ form, field, setForm }: NameTimeRowProps) {
       const portionSuffix =
         parsed.grams != null ? ` ${Math.round(parsed.grams)} г` : "";
       const spokenName = parsed.name ? `${parsed.name}${portionSuffix}` : "";
-      setForm((s) => ({
-        ...s,
-        name: spokenName || s.name,
-        kcal: parsed.kcal != null ? macroToFieldString(parsed.kcal) : s.kcal,
-        protein_g:
-          parsed.protein != null
-            ? macroToFieldString(parsed.protein)
-            : s.protein_g,
-        err: "",
-      }));
+      if (spokenName) field("name")(spokenName);
+      if (parsed.kcal != null) field("kcal")(macroToFieldString(parsed.kcal));
+      if (parsed.protein != null)
+        field("protein_g")(macroToFieldString(parsed.protein));
     },
-    [setForm],
+    [field],
   );
 
   return (
     <div className="mb-4">
       <div
         className={
-          timeVisible
+          timeVisible && showName
             ? // Обидва треки явні: `1fr` без `minmax(0,…)` має floor
               // min-content, а `auto` під поле часу брав ширину з контента —
               // рівно два канали, якими нативний контрол розпирає рядок.
@@ -77,40 +79,38 @@ export function NameTimeRow({ form, field, setForm }: NameTimeRowProps) {
             : "grid grid-cols-1 gap-3"
         }
       >
-        <div>
-          <SectionHeading
-            as="div"
-            size="xs"
-            variant="nutrition"
-            className="mb-1 flex items-center gap-2"
-          >
-            Назва страви
-            <VoiceMicButton
-              module="nutrition"
-              size="sm"
-              onResult={handleVoiceMeal}
-              onError={(e) => setForm((s) => ({ ...s, err: e }))}
-              label="Голосовий ввід страви"
-              promptHint="Прийом їжі: гречка 200 грам 180 ккал, овочевий салат 150 г 45 калорій, омлет 250 грам 30 г білка."
-            />
-          </SectionHeading>
-          <Input
-            value={form.name}
-            onChange={(e) => field("name")(e.target.value)}
-            placeholder="Вівсянка з бананом"
-            maxLength={NAME_MAX_LEN}
-            showCharCount={false}
-            aria-label="Назва страви"
-          />
-        </div>
-        {timeVisible && (
+        {showName && (
           <div>
             <SectionHeading
               as="div"
               size="xs"
-              variant="nutrition"
-              className="mb-1"
+              className="mb-1 flex items-center gap-2"
             >
+              Назва страви
+              {allowVoice && (
+                <VoiceMicButton
+                  module="nutrition"
+                  size="sm"
+                  onResult={handleVoiceMeal}
+                  onError={(e) => setForm((s) => ({ ...s, err: e }))}
+                  label="Голосовий ввід страви"
+                  promptHint="Прийом їжі: гречка 200 грам 180 ккал, овочевий салат 150 г 45 калорій, омлет 250 грам 30 г білка."
+                />
+              )}
+            </SectionHeading>
+            <Input
+              value={form.name}
+              onChange={(e) => field("name")(e.target.value)}
+              placeholder="Вівсянка з бананом"
+              maxLength={NAME_MAX_LEN}
+              showCharCount={false}
+              aria-label="Назва страви"
+            />
+          </div>
+        )}
+        {timeVisible && (
+          <div>
+            <SectionHeading as="div" size="xs" className="mb-1">
               Час
             </SectionHeading>
             {/* Спільний примітив, а не `Input type="time"` з фіксованим

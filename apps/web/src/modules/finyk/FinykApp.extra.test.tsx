@@ -4,7 +4,7 @@
  * primary smoke suite: pwaAction effect, URL-sync effect, first-run
  * navigation, ManualExpenseSheet onSave / onDelete callbacks,
  * handlePostSavePrompt cross-module prompts, login-overlay callbacks,
- * SyncPill balance toggle, and FAB.
+ * SyncPill balance toggle, and the corner add button.
  */
 import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
 import {
@@ -30,6 +30,12 @@ const navigateMock = vi.fn();
 // тестів цього файлу не цікавиться входом, тож усі рендери дістають
 // один спільний no-op замість `undefined`.
 const NOOP_AUTH = () => {};
+
+/** Кнопка «+ Додати» в куті, далі рядок «Вручну» в аркуші джерел. */
+function openManualExpense() {
+  fireEvent.click(screen.getByRole("button", { name: "Додати" }));
+  fireEvent.click(screen.getByRole("button", { name: /^Вручну/ }));
+}
 
 const storageMock: {
   showBalance: boolean;
@@ -125,7 +131,9 @@ vi.mock("./components/SyncIndicator", () => ({
   getSyncTone: vi.fn(() => ({
     dot: "bg-muted",
     text: "не підключено",
-    pill: "bg-panelHi text-muted border-line",
+    pill: "text-muted",
+    icon: "wifi-off",
+    needsAttention: true,
   })),
 }));
 
@@ -192,25 +200,6 @@ vi.mock("../../core/lib/lazyImport", () => ({
 
 vi.mock("./pages/Overview", () => ({
   Overview: () => <div data-testid="finyk-overview" />,
-}));
-
-vi.mock("./components/NoBankBanner", () => ({
-  NoBankBanner: ({
-    onConnect,
-    onContinueManually,
-  }: {
-    onConnect: () => void;
-    onContinueManually: () => void;
-  }) => (
-    <div data-testid="no-bank-banner">
-      <button type="button" onClick={onConnect}>
-        Підключити
-      </button>
-      <button type="button" onClick={onContinueManually}>
-        Без банку
-      </button>
-    </div>
-  ),
 }));
 
 vi.mock("./components/FinykManualExpenseConflictBanner", () => ({
@@ -298,42 +287,6 @@ vi.mock("./components/FinykLoginScreen", () => ({
   ),
 }));
 
-vi.mock("@shared/components/ui/FloatingActionButton", () => ({
-  // `FinykScanEntryPoints` (receipt-scan/PR #818) replaced the single
-  // `onClick` FAB with a 3-action fan-menu (`actions`) — the stub renders
-  // one button per action (plus the legacy bare `onClick` button, unused
-  // by the real call site now but kept for shape-compat with any other
-  // FAB usage this file's tests might exercise) so existing specs can
-  // target the specific action they mean instead of assuming a single
-  // FAB tap opens the expense sheet.
-  FloatingActionButton: ({
-    onClick,
-    actions,
-  }: {
-    onClick?: () => void;
-    actions?: Array<{ id: string; label: string; onClick: () => void }>;
-    variant?: string;
-    icon?: string;
-    "aria-label"?: string;
-  }) => (
-    <div>
-      <button type="button" data-testid="fab" onClick={onClick}>
-        FAB
-      </button>
-      {actions?.map((action) => (
-        <button
-          key={action.id}
-          type="button"
-          data-testid={`fab-action-${action.id}`}
-          onClick={action.onClick}
-        >
-          {action.label}
-        </button>
-      ))}
-    </div>
-  ),
-}));
-
 vi.mock("@shared/components/ui/ModuleBottomNav", () => ({
   ModuleBottomNav: ({
     activeId,
@@ -371,11 +324,11 @@ afterEach(() => {
 
 // ── FAB / expense sheet ───────────────────────────────────────────────────────
 
-describe("FinykApp (extra) — FAB opens expense sheet", () => {
-  it("clicking FAB opens ManualExpenseSheet", () => {
+describe("FinykApp (extra) — corner add button opens expense sheet", () => {
+  it("«Додати» → «Вручну» opens ManualExpenseSheet", () => {
     render(<FinykApp onOpenAuth={NOOP_AUTH} />);
     expect(screen.queryByTestId("expense-sheet")).not.toBeInTheDocument();
-    fireEvent.click(screen.getByTestId("fab-action-expense"));
+    openManualExpense();
     expect(screen.getByTestId("expense-sheet")).toBeInTheDocument();
   });
 
@@ -385,15 +338,15 @@ describe("FinykApp (extra) — FAB opens expense sheet", () => {
     "budgets",
     "analytics",
     "assets",
-  ] as const)("keeps the add-operation FAB available on %s", (page) => {
+  ] as const)("keeps the corner add button available on %s", (page) => {
     vi.mocked(useFinykRoute).mockReturnValueOnce([page, navigateMock]);
     render(<FinykApp onOpenAuth={NOOP_AUTH} />);
-    expect(screen.getByTestId("fab")).toBeInTheDocument();
+    expect(screen.getByTestId("corner-action")).toBeInTheDocument();
   });
 
   it("closing ManualExpenseSheet hides it", () => {
     render(<FinykApp onOpenAuth={NOOP_AUTH} />);
-    fireEvent.click(screen.getByTestId("fab-action-expense"));
+    openManualExpense();
     expect(screen.getByTestId("expense-sheet")).toBeInTheDocument();
     fireEvent.click(screen.getByTestId("close-sheet"));
     expect(screen.queryByTestId("expense-sheet")).not.toBeInTheDocument();
@@ -405,7 +358,7 @@ describe("FinykApp (extra) — FAB opens expense sheet", () => {
 describe("FinykApp (extra) — ManualExpenseSheet onSave", () => {
   it("onSave without id calls addManualExpense + success toast 'Витрату додано'", () => {
     render(<FinykApp onOpenAuth={NOOP_AUTH} />);
-    fireEvent.click(screen.getByTestId("fab-action-expense"));
+    openManualExpense();
     fireEvent.click(screen.getByTestId("save-add"));
     expect(storageMock.addManualExpense).toHaveBeenCalled();
     expect(toastMock.success).toHaveBeenCalledWith("Витрату додано.");
@@ -413,7 +366,7 @@ describe("FinykApp (extra) — ManualExpenseSheet onSave", () => {
 
   it("onSave with id calls editManualExpense + success toast 'Витрату оновлено'", () => {
     render(<FinykApp onOpenAuth={NOOP_AUTH} />);
-    fireEvent.click(screen.getByTestId("fab-action-expense"));
+    openManualExpense();
     fireEvent.click(screen.getByTestId("save-edit"));
     expect(storageMock.editManualExpense).toHaveBeenCalledWith(
       "exp-1",
@@ -424,7 +377,7 @@ describe("FinykApp (extra) — ManualExpenseSheet onSave", () => {
 
   it("onSave with category='cafe' triggers restaurant cross-module prompt", () => {
     render(<FinykApp onOpenAuth={NOOP_AUTH} />);
-    fireEvent.click(screen.getByTestId("fab-action-expense"));
+    openManualExpense();
     fireEvent.click(screen.getByTestId("save-cafe"));
     expect(tryShowCrossModulePrompt).toHaveBeenCalledWith(
       toastMock,
@@ -434,7 +387,7 @@ describe("FinykApp (extra) — ManualExpenseSheet onSave", () => {
 
   it("onSave with category='food' triggers food cross-module prompt", () => {
     render(<FinykApp onOpenAuth={NOOP_AUTH} />);
-    fireEvent.click(screen.getByTestId("fab-action-expense"));
+    openManualExpense();
     fireEvent.click(screen.getByTestId("save-food"));
     expect(tryShowCrossModulePrompt).toHaveBeenCalledWith(
       toastMock,
@@ -449,7 +402,7 @@ describe("FinykApp (extra) — ManualExpenseSheet onDelete", () => {
   it("onDelete without snapshot calls toast.success directly", () => {
     storageMock.manualExpenses = [];
     render(<FinykApp onOpenAuth={NOOP_AUTH} />);
-    fireEvent.click(screen.getByTestId("fab-action-expense"));
+    openManualExpense();
     fireEvent.click(screen.getByTestId("delete-exp"));
     expect(storageMock.removeManualExpense).toHaveBeenCalledWith("exp-1");
     expect(toastMock.success).toHaveBeenCalledWith("Витрату видалено");
@@ -459,7 +412,7 @@ describe("FinykApp (extra) — ManualExpenseSheet onDelete", () => {
   it("onDelete with snapshot calls showUndoToast", () => {
     storageMock.manualExpenses = [{ id: "exp-1", category: "food" }];
     render(<FinykApp onOpenAuth={NOOP_AUTH} />);
-    fireEvent.click(screen.getByTestId("fab-action-expense"));
+    openManualExpense();
     fireEvent.click(screen.getByTestId("delete-exp"));
     expect(storageMock.removeManualExpense).toHaveBeenCalledWith("exp-1");
     expect(showUndoToast).toHaveBeenCalledWith(
@@ -587,19 +540,17 @@ describe("FinykApp (extra) — first-run navigation", () => {
 // ── Login overlay callbacks ───────────────────────────────────────────────────
 
 describe("FinykApp (extra) — login overlay callbacks", () => {
-  it("'Без банку overlay' calls enableFinykManualOnly and closes overlay", () => {
-    render(<FinykApp onOpenAuth={NOOP_AUTH} />);
-    fireEvent.click(screen.getByText("Підключити"));
-    expect(screen.getByTestId("finyk-login-screen")).toBeInTheDocument();
+  it("'Без банку overlay' calls enableFinykManualOnly and closes overlay", async () => {
+    render(<FinykApp onOpenAuth={NOOP_AUTH} pwaAction="connect_bank" />);
+    await screen.findByTestId("finyk-login-screen");
     fireEvent.click(screen.getByText("Без банку overlay"));
     expect(enableFinykManualOnly).toHaveBeenCalled();
     expect(screen.queryByTestId("finyk-login-screen")).not.toBeInTheDocument();
   });
 
-  it("'Назад overlay' closes the login overlay", () => {
-    render(<FinykApp onOpenAuth={NOOP_AUTH} />);
-    fireEvent.click(screen.getByText("Підключити"));
-    expect(screen.getByTestId("finyk-login-screen")).toBeInTheDocument();
+  it("'Назад overlay' closes the login overlay", async () => {
+    render(<FinykApp onOpenAuth={NOOP_AUTH} pwaAction="connect_bank" />);
+    await screen.findByTestId("finyk-login-screen");
     fireEvent.click(screen.getByText("Назад overlay"));
     expect(screen.queryByTestId("finyk-login-screen")).not.toBeInTheDocument();
   });
@@ -705,7 +656,7 @@ describe("FinykApp (extra) — mid-drag render", () => {
 // ── Login overlay onConnect ───────────────────────────────────────────────────
 
 describe("FinykApp (extra) — login overlay onConnect callback", () => {
-  it("calls mono.connect with the token from the login overlay", () => {
+  it("calls mono.connect with the token from the login overlay", async () => {
     const connectMock = vi.fn();
     vi.mocked(useMonobank).mockReturnValue({
       clientInfo: null,
@@ -719,27 +670,14 @@ describe("FinykApp (extra) — login overlay onConnect callback", () => {
       syncState: null,
     } as unknown as ReturnType<typeof useMonobank>);
 
-    render(<FinykApp onOpenAuth={NOOP_AUTH} />);
-    // Open the login overlay
-    fireEvent.click(screen.getByText("Підключити"));
-    expect(screen.getByTestId("finyk-login-screen")).toBeInTheDocument();
+    // Оверлей входу відкриває PWA-дія `connect_bank` (банера «підключи
+    // банк» більше немає, redesign v3).
+    render(<FinykApp onOpenAuth={NOOP_AUTH} pwaAction="connect_bank" />);
+    await screen.findByTestId("finyk-login-screen");
 
     // Click the connect button in the overlay
     fireEvent.click(screen.getByText("Connect overlay"));
     expect(connectMock).toHaveBeenCalledWith("overlay-token");
-  });
-});
-
-// ── NoBankBanner onContinueManually ──────────────────────────────────────────
-
-describe("FinykApp (extra) — NoBankBanner onContinueManually", () => {
-  it("hides the banner on dismiss without setting manual-only", () => {
-    render(<FinykApp onOpenAuth={NOOP_AUTH} />);
-    expect(screen.getByTestId("no-bank-banner")).toBeInTheDocument();
-    fireEvent.click(screen.getByText("Без банку"));
-    expect(enableFinykManualOnly).not.toHaveBeenCalled();
-    // Banner should be gone after the dismiss timestamp is set
-    expect(screen.queryByTestId("no-bank-banner")).not.toBeInTheDocument();
   });
 });
 
@@ -789,14 +727,12 @@ describe("FinykApp (extra) — page routing", () => {
 // ── Auto-close login overlay on clientInfo change ─────────────────────────────
 
 describe("FinykApp (extra) — auto-close login overlay when clientInfo arrives", () => {
-  it("closes the overlay when clientInfo becomes non-null after opening", () => {
-    // Банер «підключити банк» живе лише на Огляді, а попередній describe
-    // лишає в моці маршруту постійне значення (`clearAllMocks` його не
-    // скидає), тож сторінку задаємо явно.
+  it("closes the overlay when clientInfo becomes non-null after opening", async () => {
     vi.mocked(useFinykRoute).mockReturnValue(["overview", navigateMock]);
-    const { rerender } = render(<FinykApp onOpenAuth={NOOP_AUTH} />);
-    fireEvent.click(screen.getByText("Підключити"));
-    expect(screen.getByTestId("finyk-login-screen")).toBeInTheDocument();
+    const { rerender } = render(
+      <FinykApp onOpenAuth={NOOP_AUTH} pwaAction="connect_bank" />,
+    );
+    await screen.findByTestId("finyk-login-screen");
 
     // Simulate clientInfo arriving (successful connect)
     vi.mocked(useMonobank).mockReturnValue({
@@ -810,7 +746,7 @@ describe("FinykApp (extra) — auto-close login overlay when clientInfo arrives"
       transactions: [],
       syncState: null,
     } as unknown as ReturnType<typeof useMonobank>);
-    rerender(<FinykApp onOpenAuth={NOOP_AUTH} />);
+    rerender(<FinykApp onOpenAuth={NOOP_AUTH} pwaAction="connect_bank" />);
 
     // Overlay should be closed
     expect(screen.queryByTestId("finyk-login-screen")).not.toBeInTheDocument();

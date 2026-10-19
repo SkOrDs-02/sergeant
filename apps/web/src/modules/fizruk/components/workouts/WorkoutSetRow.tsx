@@ -68,7 +68,7 @@ export function isSetDone(s: WorkoutSet | null | undefined): boolean {
 }
 
 const INPUT_CLASS =
-  "input-focus-fizruk h-11 min-w-0 flex-1 rounded-xl border border-line px-3 text-base font-semibold text-text tabular-nums placeholder:font-normal placeholder:text-subtle read-only:opacity-70 read-only:cursor-not-allowed";
+  "input-focus-fizruk h-11 min-w-0 flex-1 rounded-lg border border-line px-3 text-base font-semibold text-text tabular-nums placeholder:font-normal placeholder:text-subtle read-only:opacity-70 read-only:cursor-not-allowed";
 
 /**
  * One editable set row inside the exercise card: `№ · кг · повт · ✓`
@@ -140,24 +140,22 @@ export function WorkoutSetRow({
   return (
     <div
       className={cn(
-        "flex items-center gap-2 rounded-xl px-1 py-1 -mx-1 transition-colors",
-        isCurrent && !isReadOnly && "bg-fizruk-surface",
+        "flex items-center gap-2 rounded-lg px-1 py-1 -mx-1 transition-colors",
+        isCurrent && !isReadOnly && "bg-panelHi",
       )}
       data-current={isCurrent && !isReadOnly ? "true" : undefined}
     >
       <span
         className={cn(
           "w-6 shrink-0 text-center text-style-label tabular-nums",
-          isCurrent && !isReadOnly
-            ? "font-bold text-fizruk-strong dark:text-fizruk"
-            : "text-subtle",
+          isCurrent && !isReadOnly ? "font-bold text-text" : "text-subtle",
         )}
         aria-hidden
       >
         {setNumber}
       </span>
       <input
-        className={cn(INPUT_CLASS, isCurrent ? "bg-panel" : "bg-panelHi")}
+        className={cn(INPUT_CLASS, "bg-bg")}
         type="text"
         inputMode="decimal"
         // Плейсхолдер несе ТІЛЬКИ значення з минулого разу. Підпис колонки
@@ -172,7 +170,7 @@ export function WorkoutSetRow({
       />
       <input
         ref={repsRef}
-        className={cn(INPUT_CLASS, isCurrent ? "bg-panel" : "bg-panelHi")}
+        className={cn(INPUT_CLASS, "bg-bg")}
         type="number"
         inputMode="numeric"
         placeholder={ghostSet ? String(ghostSet.reps ?? 0) : ""}
@@ -199,14 +197,14 @@ export function WorkoutSetRow({
         disabled={isReadOnly}
         aria-label={checkAria}
         className={cn(
-          "flex h-11 w-11 shrink-0 items-center justify-center rounded-xl border transition-colors",
+          "flex h-11 w-11 shrink-0 items-center justify-center rounded-lg border transition-colors",
           "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-focus/45 focus-visible:ring-offset-2 focus-visible:ring-offset-bg",
           "disabled:cursor-not-allowed",
           done
-            ? "border-success bg-success/15 text-success-strong dark:text-success hover:bg-success/25"
+            ? "border-line bg-panelHi text-text hover:bg-panelHi"
             : ghostSet
-              ? "border-fizruk-strong bg-panel text-fizruk-strong dark:border-fizruk dark:text-fizruk hover:bg-fizruk-surface"
-              : "border-fizruk-ring bg-panel text-fizruk-strong dark:text-fizruk opacity-70 hover:opacity-100",
+              ? "border-line bg-panel text-text hover:bg-panelHi"
+              : "border-line bg-panel text-text opacity-70 hover:opacity-100",
         )}
         onClick={handleCheck}
       >
@@ -215,7 +213,7 @@ export function WorkoutSetRow({
       {isLast && !isReadOnly ? (
         <button
           type="button"
-          className="flex h-11 w-9 shrink-0 items-center justify-center rounded-xl pointer-coarse:min-h-[44px] text-subtle hover:text-danger transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-focus/45 focus-visible:ring-offset-2 focus-visible:ring-offset-bg"
+          className="flex h-11 w-9 shrink-0 items-center justify-center rounded-lg pointer-coarse:min-h-[44px] text-subtle hover:text-danger transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-focus/45 focus-visible:ring-offset-2 focus-visible:ring-offset-bg"
           onClick={onDelete}
           aria-label={`${sr.deleteAriaPrefix} ${setNumber}`}
         >

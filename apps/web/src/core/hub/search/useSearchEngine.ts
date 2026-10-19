@@ -21,6 +21,7 @@ import {
 import { performSearch } from "./searchSources";
 import type { Hit } from "./searchTypes";
 import { type UseInlineAiRailResult, useInlineAiRail } from "./useInlineAiRail";
+import { useCloseAfterNavigation } from "./useCloseAfterNavigation";
 
 export interface UseSearchEngineOptions {
   onClose: () => void;
@@ -41,6 +42,11 @@ export interface UseSearchEngineResult {
   listRef: React.MutableRefObject<HTMLDivElement | null>;
   commitQuery: (q: string) => void;
   openHit: (hit: Hit) => void;
+  /**
+   * Відкрити модуль із пошуку: `onOpenModule` + закриття пошуку після того,
+   * як навігація змінить адресу (див. {@link useCloseAfterNavigation}).
+   */
+  openModule: (moduleId: string) => void;
   pickRecent: (q: string) => void;
   clearRecents: () => void;
   /**
@@ -81,6 +87,7 @@ export function useSearchEngine({
   const inlineAi = useInlineAiRail();
   const inlineAsk = inlineAi.ask;
   const inlineReset = inlineAi.reset;
+  const { navigating, closeAfterNavigation } = useCloseAfterNavigation(onClose);
 
   useEffect(() => {
     inputRef.current?.focus();
@@ -156,8 +163,20 @@ export function useSearchEngine({
     [inlineReset, onClose],
   );
 
+  const openModule = useCallback(
+    (moduleId: string) => {
+      if (navigating) return;
+      closeAfterNavigation();
+      onOpenModule(moduleId);
+    },
+    [closeAfterNavigation, navigating, onOpenModule],
+  );
+
   const openHit = useCallback(
     (hit: Hit) => {
+      // Навігація вже запущена й чекає на лінивий чанк маршруту: другий клік
+      // чи Enter запустили б ще одну і скасували першу.
+      if (navigating) return;
       hapticTap();
       commitQuery(query);
       // AI handoff is a hot-path command — keep the launcher mounted and
@@ -168,7 +187,10 @@ export function useSearchEngine({
         void inlineAsk(hit.target.query);
         return;
       }
-      onClose();
+      // AI-CONTEXT: пошук закривається не тут, а після зміни адреси
+      // (`closeAfterNavigation`) для кожної цілі, що навігує. Закриття до
+      // навігації відкочувало запис історії раніше за `history.push` лінивого
+      // маршруту й скасовувало перехід (див. `useCloseAfterNavigation`).
       // `target` carries the navigation intent so we don't have to re-derive
       // it from `hit.module` (which is the visual grouping, not the route):
       //   - module hits  → existing onOpenModule plumbing
@@ -200,10 +222,11 @@ export function useSearchEngine({
       //                    the full /assistant catalogue route.
       switch (hit.target.kind) {
         case "module":
-          onOpenModule(hit.target.moduleId);
+          openModule(hit.target.moduleId);
           break;
         case "settings": {
           const sectionId = hit.target.sectionId;
+          closeAfterNavigation();
           // Audit finding #2b (2026-08-08): the previous version reused the
           // CURRENT `window.location.pathname`. On any module route
           // (`/finyk`, `/nutrition/menu`, …) that landed on e.g.
@@ -229,6 +252,7 @@ export function useSearchEngine({
           break;
         }
         case "profile": {
+          closeAfterNavigation();
           // PR-S5 (аудит 2026-09-13 хвиля 5): Профіль — окрема вкладка
           // хаба, не секція Налаштувань, тож ціль лише перемикає таб —
           // на відміну від `settings`, тут немає per-секційного hash-
@@ -241,11 +265,13 @@ export function useSearchEngine({
           const cap = hit.target.capability;
           const example = cap?.examples?.[0];
           if (example) {
+            onClose();
             // Phase 7 D5 — open overlay with the example prefilled.
             // Mirrors `AssistantCataloguePage`'s "Try in chat" CTA which
             // also routes through the hub bus.
             emitHubBus("openChat", { message: example, autoSend: false });
           } else {
+            closeAfterNavigation();
             navigate("/assistant");
           }
           break;
@@ -255,6 +281,7 @@ export function useSearchEngine({
           // the bento NextCard / FAB use. The destination module reads the
           // intent on mount via `useHubModuleAction` and opens its own
           // create-modal.
+          closeAfterNavigation();
           openHubModuleWithAction(
             hit.target.moduleId,
             hit.target.action,
@@ -267,7 +294,16 @@ export function useSearchEngine({
         // the rail. Adding a case here would be unreachable code.
       }
     },
-    [commitQuery, inlineAsk, navigate, onClose, onOpenModule, query],
+    [
+      closeAfterNavigation,
+      commitQuery,
+      inlineAsk,
+      navigate,
+      navigating,
+      onClose,
+      openModule,
+      query,
+    ],
   );
 
   useEffect(() => {
@@ -323,6 +359,7 @@ export function useSearchEngine({
     listRef,
     commitQuery,
     openHit,
+    openModule,
     pickRecent,
     clearRecents,
     inlineAi,

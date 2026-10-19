@@ -69,12 +69,7 @@ describe("TxRow", () => {
 
     expect(screen.getByText("Ручна витрата")).toBeInTheDocument();
     expect(screen.getByText("Розваги")).toBeInTheDocument();
-    const expectedTint = getCatTiers("entertainment").tint;
-    const categoryChips = container.querySelectorAll<HTMLElement>(".cat-chip");
-    expect(categoryChips).toHaveLength(2);
-    for (const chip of categoryChips) {
-      expect(chip.style.getPropertyValue("--cat-tint")).toBe(expectedTint);
-    }
+    expect(container.querySelectorAll(".cat-chip")).toHaveLength(0);
   });
 
   it("does not duplicate a legacy auto-filled category label as the title", () => {
@@ -105,16 +100,7 @@ describe("TxRow", () => {
     );
 
     expect(screen.getByText("Зарплата")).toBeInTheDocument();
-    const chips = container.querySelectorAll<HTMLElement>(".cat-chip");
-    expect(chips.length).toBeGreaterThan(0);
-    for (const chip of chips) {
-      expect(chip.style.getPropertyValue("--cat-tint")).toBe(
-        getCatTiers("income").tint,
-      );
-      expect(chip.style.getPropertyValue("--cat-tint")).not.toBe(
-        getCatTiers("transport").tint,
-      );
-    }
+    expect(container.querySelectorAll(".cat-chip")).toHaveLength(0);
   });
 
   it("renders a custom income category consistently in the transaction row", () => {
@@ -246,7 +232,7 @@ describe("TxRow", () => {
     expect(label?.className).not.toContain("rounded-full");
     expect(label?.className).not.toContain("danger");
     // Кредитність позначає іконка, а не колір.
-    expect(label?.querySelector("svg")).not.toBeNull();
+    expect(label?.querySelector("svg")).toBeNull();
   });
 
   it("hides the account name when there is a single account (no signal in it)", () => {
@@ -289,7 +275,7 @@ describe("TxRow", () => {
     const row = screen.getByText("Продукти").parentElement!;
     expect(row.firstElementChild).toBe(screen.getByText("Продукти"));
     // Рівно одна пігулка — категорія.
-    expect(row.querySelectorAll(".rounded-full")).toHaveLength(1);
+    expect(row.querySelectorAll(".rounded-full")).toHaveLength(0);
     expect(row.textContent?.replace(/\s+/g, "")).toContain("Біла·змін.");
   });
 
@@ -321,11 +307,10 @@ describe("TxRow", () => {
     expect(screen.getByText("Біла")).toBeInTheDocument();
   });
 
-  it("renders the highlighted check icon", () => {
-    render(<TxRow tx={mkTx()} highlighted />);
-    expect(
-      screen.getByRole("img", { name: "Вибрана операція" }),
-    ).toBeInTheDocument();
+  it("keeps a highlighted operation accessible without a decorative glyph", () => {
+    const { container } = render(<TxRow tx={mkTx()} highlighted />);
+    expect(container.querySelector("svg")).toBeNull();
+    expect(screen.getByText("Продукти")).toBeInTheDocument();
   });
 
   it("invokes onClick when the row body is clicked", () => {

@@ -1,10 +1,8 @@
 // URL path constants for the App shell.
 //
 // This module owns only the string constants (SIGN_IN_PATH, CHAT_PATH, etc.)
-// and path-based-module helpers. `KNOWN_PATHS` — the 404-guard allowlist —
-// is derived automatically in `routes.ts` from `STANDALONE_ROUTE_PATHS` so
-// that adding a new route to `StandaloneRoutes.tsx` automatically updates the
-// allowlist without a parallel edit here.
+// and path-based-module helpers. `StandaloneRoutes.tsx` owns the standalone
+// route registry and derives its 404 guard directly from that registry.
 
 import { HUB_MODULE_IDS } from "@shared/lib/modules/hubNav";
 

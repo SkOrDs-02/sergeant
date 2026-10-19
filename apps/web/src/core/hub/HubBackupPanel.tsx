@@ -3,7 +3,7 @@ import { downloadJson } from "@sergeant/shared";
 import type { BackupRestoreMode } from "@shared/lib/backup/restoreMode";
 import { useAuthOptional } from "../auth/AuthContext";
 import { outboxCheckpoint } from "../syncEngine/outboxCheckpoint";
-import { Banner } from "@shared/components/ui/Banner";
+import { Notice } from "@shared/components/ui/Notice";
 import { Button } from "@shared/components/ui/Button";
 import { ConfirmDialog } from "@shared/components/ui/ConfirmDialog";
 import { useToast } from "@shared/hooks/useToast";
@@ -14,6 +14,7 @@ import {
   buildHubBackupPayload,
 } from "./hubBackup";
 import { withNutritionFoods } from "../../modules/nutrition/domain/nutritionBackupFoods";
+import { withNutritionRecipes } from "../../modules/nutrition/domain/nutritionBackupSections";
 import { HubRestoreModePicker } from "./HubRestoreModePicker";
 import { useHubRestoreBlock } from "./useHubRestoreReady";
 
@@ -98,8 +99,8 @@ export function HubBackupPanel({ className }: HubBackupPanelProps) {
   const signedIn = Boolean(useAuthOptional()?.user);
 
   const exportJson = async () => {
-    const payload = await withNutritionFoods(
-      buildHubBackupPayload({ includeChat: false }),
+    const payload = await withNutritionRecipes(
+      await withNutritionFoods(buildHubBackupPayload({ includeChat: false })),
     );
     await downloadJson(
       `hub-backup-${new Date().toISOString().slice(0, 10)}.json`,
@@ -186,8 +187,10 @@ export function HubBackupPanel({ className }: HubBackupPanelProps) {
         // знімок не зберігся, замінювати не можна: кидаємо до будь-якого запису.
         await downloadJson(
           `hub-backup-before-replace-${new Date().toISOString().slice(0, 10)}.json`,
-          await withNutritionFoods(
-            buildHubBackupPayload({ includeChat: false }),
+          await withNutritionRecipes(
+            await withNutritionFoods(
+              buildHubBackupPayload({ includeChat: false }),
+            ),
           ),
         );
       }
@@ -217,7 +220,7 @@ export function HubBackupPanel({ className }: HubBackupPanelProps) {
   return (
     <div
       className={cn(
-        "rounded-2xl border border-line bg-panelHi px-3 py-2.5 flex flex-col gap-3 text-style-body text-subtle",
+        "rounded-panel border border-line bg-panelHi px-3 py-2.5 flex flex-col gap-3 text-style-body text-subtle",
         className,
       )}
     >
@@ -234,11 +237,11 @@ export function HubBackupPanel({ className }: HubBackupPanelProps) {
         вписував сам. Тримай його як приватний, у менеджері паролів чи
         зашифрованій хмарі, не пересилай у відкритих чатах.
       </p>
-      <Banner variant="warning" className="text-style-body leading-relaxed">
+      <Notice tone="ink">
         {signedIn
           ? "Ручні витрати, борги, підписки й бюджети синхронізуються з твоїм акаунтом, тож є на всіх твоїх пристроях. Банк відновлюється сам, а ручні дані з файлу ні. Експорт лишається страховкою на випадок, якщо плануєш міняти телефон чи чистити дані."
           : "Без входу в акаунт ручні витрати, борги, підписки й бюджети живуть лише на цьому пристрої, банк відновлюється сам, а це ні. Зроби експорт, якщо плануєш міняти телефон чи чистити дані."}
-      </Banner>
+      </Notice>
       <div className="flex flex-wrap items-center gap-2">
         <Button
           variant="ghost"

@@ -52,13 +52,11 @@
  * `TimeField` - його time-двійник. Скарга тестера 2026-08-16.
  */
 import { useEffect, useId, useMemo, useRef, useState } from "react";
-
 import { Button } from "@shared/components/ui/Button";
 import { DateField } from "@shared/components/ui/DateField";
 import { Input } from "@shared/components/ui/Input";
-import { Segmented } from "@shared/components/ui/Segmented";
+import { FizrukChoiceList } from "../FizrukChoiceList";
 import { Select } from "@shared/components/ui/Select";
-import { Icon } from "@shared/components/ui/Icon";
 import { Sheet } from "@shared/components/ui/Sheet";
 import { TimeField } from "@shared/components/ui/TimeField";
 import { cn } from "@shared/lib/ui/cn";
@@ -356,7 +354,7 @@ export function LogPastWorkoutSheet({
       footer={
         <Button
           variant="solid"
-          tone="fizruk"
+          tone="neutral"
 
           className="w-full h-11"
           disabled={submitDisabled}
@@ -371,9 +369,7 @@ export function LogPastWorkoutSheet({
           <span className="text-style-label text-text leading-snug block">
             {t.modeLabel}
           </span>
-          <Segmented
-            variant="fizruk"
-            layout="bar"
+          <FizrukChoiceList
             ariaLabel={t.modeLabel}
             items={modeItems}
             value={mode}
@@ -415,7 +411,7 @@ export function LogPastWorkoutSheet({
                   type="button"
                   onClick={() => setPickerOpen(true)}
                   aria-haspopup="dialog"
-                  className="input-focus-fizruk mt-1 flex h-11 w-full min-w-0 max-w-full items-center justify-between gap-2 rounded-2xl border border-line bg-panelHi pl-4 pr-3 text-left text-style-body text-text"
+                  className="input-focus-fizruk mt-1 flex h-11 w-full min-w-0 max-w-full items-center justify-between gap-2 rounded-lg border border-line bg-panelHi pl-4 pr-3 text-left text-style-body text-text"
                 >
                   <span
                     className={cn(
@@ -427,12 +423,6 @@ export function LogPastWorkoutSheet({
                       ? t.activityNew
                       : (selectedActivity?.nameUk ?? t.pickerTitle)}
                   </span>
-                  <Icon
-                    name="chevron-down"
-                    size="md"
-                    className="shrink-0 text-subtle"
-                    aria-hidden
-                  />
                 </button>
                 <ActivityPickerSheet
                   open={pickerOpen}
@@ -453,7 +443,7 @@ export function LogPastWorkoutSheet({
               /* Заводимо просто тут, а не окремим екраном: людина вже посеред
              запису, і відправити її в довідник означало б загубити введені
              дату й час. MET не питаємо числом - лише рівень навантаження. */
-              <div className="min-w-0 space-y-2 rounded-2xl border border-line bg-panelHi p-3">
+              <div className="min-w-0 space-y-2 rounded-panel border border-line bg-panelHi p-3">
                 <div className="min-w-0">
                   <label
                     htmlFor={newNameId}
@@ -497,8 +487,7 @@ export function LogPastWorkoutSheet({
                   <span className="text-style-label text-text leading-snug block">
                     {t.newActivityEffort}
                   </span>
-                  <Segmented
-                    variant="fizruk"
+                  <FizrukChoiceList
                     ariaLabel={t.newActivityEffort}
                     items={EFFORT_ITEMS}
                     value={newEffort}
@@ -563,8 +552,7 @@ export function LogPastWorkoutSheet({
                   >
                     {t.duration}
                   </label>
-                  <Segmented
-                    variant="fizruk"
+                  <FizrukChoiceList
                     ariaLabel={t.duration}
                     items={DURATION_PRESETS.map((value) => ({
                       value,
@@ -591,8 +579,7 @@ export function LogPastWorkoutSheet({
                   <span className="text-style-label text-text leading-snug block">
                     {t.zone}
                   </span>
-                  <Segmented
-                    variant="fizruk"
+                  <FizrukChoiceList
                     ariaLabel={t.zone}
                     items={ZONE_ITEMS}
                     value={zone}
@@ -604,8 +591,7 @@ export function LogPastWorkoutSheet({
                   <span className="text-style-label text-text leading-snug block">
                     {t.intensity}
                   </span>
-                  <Segmented
-                    variant="fizruk"
+                  <FizrukChoiceList
                     ariaLabel={t.intensity}
                     items={INTENSITY_ITEMS}
                     value={intensity}
@@ -638,7 +624,7 @@ export function LogPastWorkoutSheet({
                 ) : null}
 
                 {kcal !== null ? (
-                  <p className="text-style-caption text-fizruk-strong">
+                  <p className="text-style-caption text-text">
                     {t.kcalPreview} {kcal} {t.kcalUnit}
                   </p>
                 ) : null}

@@ -1,10 +1,8 @@
 import { useState } from "react";
 import { Button } from "@shared/components/ui/Button";
+import { Measure } from "@shared/components/ui/Measure";
 import { SectionHeading } from "@shared/components/ui/SectionHeading";
 import type { MealTypeId } from "@sergeant/nutrition-domain";
-import { MacroBadge } from "./DailyPlanMacros";
-import { Icon, type IconName } from "@shared/components/ui/Icon";
-import { cn } from "@shared/lib/ui/cn";
 
 export interface PlanMeal {
   type?: MealTypeId | string;
@@ -31,13 +29,6 @@ export const MEAL_TYPE_LABELS: Record<string, string> = {
   dinner: "Вечеря",
   snack: "Перекус",
 };
-export const MEAL_TYPE_ICONS: Record<string, IconName> = {
-  breakfast: "sun",
-  lunch: "utensils",
-  dinner: "moon",
-  snack: "leaf",
-};
-
 interface DailyPlanMealRowProps {
   meal: PlanMeal;
   onAddToLog: (meal: PlanMeal) => void | Promise<void>;
@@ -54,43 +45,44 @@ export function DailyPlanMealRow({
   const [expanded, setExpanded] = useState(false);
 
   return (
-    <div className="rounded-2xl border border-line bg-panel p-3">
-      <div className="flex items-start justify-between gap-2">
+    <div className="py-3">
+      <div className="flex items-start justify-between gap-3">
         <div className="min-w-0 flex-1">
-          <div className="flex items-center gap-1.5 mb-0.5">
-            <Icon
-              name={MEAL_TYPE_ICONS[String(meal.type ?? "")] || "utensils"}
-              size="md"
-              className="text-nutrition shrink-0"
-              aria-hidden
-            />
-            <SectionHeading as="span" size="xs" variant="nutrition">
-              {MEAL_TYPE_LABELS[String(meal.type ?? "")] || meal.label}
-            </SectionHeading>
-          </div>
-          <div className="text-style-label text-text leading-tight">
+          <SectionHeading as="div" size="xs" className="mb-0.5">
+            {MEAL_TYPE_LABELS[String(meal.type ?? "")] || meal.label}
+          </SectionHeading>
+          <div className="text-style-body font-semibold text-text">
             {meal.name}
           </div>
           {meal.description && (
-            <div className="text-style-caption text-subtle mt-0.5 leading-snug">
+            <div className="mt-0.5 text-style-caption text-muted">
               {meal.description}
             </div>
           )}
-          <div className="flex flex-wrap gap-1 mt-1.5">
+          <div className="mt-1 flex flex-wrap gap-x-2 text-style-caption text-muted tabular-nums">
             {meal.kcal != null && (
-              <MacroBadge
-                label="ккал"
-                value={meal.kcal}
-                unit=""
-                color="bg-nutrition/10 border border-nutrition/20 text-nutrition-strong dark:text-nutrition"
-              />
+              <span className="font-medium text-text">
+                <Measure value={Math.round(meal.kcal)} unit="ккал" />
+              </span>
             )}
-            <MacroBadge label="Б" value={meal.protein_g} />
-            <MacroBadge label="Ж" value={meal.fat_g} />
-            <MacroBadge label="В" value={meal.carbs_g} />
+            {meal.protein_g != null && (
+              <span>
+                Б <Measure value={Math.round(meal.protein_g)} unit="г" />
+              </span>
+            )}
+            {meal.fat_g != null && (
+              <span>
+                Ж <Measure value={Math.round(meal.fat_g)} unit="г" />
+              </span>
+            )}
+            {meal.carbs_g != null && (
+              <span>
+                В <Measure value={Math.round(meal.carbs_g)} unit="г" />
+              </span>
+            )}
           </div>
         </div>
-        <div className="flex flex-col gap-1 shrink-0 items-end">
+        <div className="flex shrink-0 flex-col items-end gap-1">
           <Button
             type="button"
             variant="outline"
@@ -98,7 +90,7 @@ export function DailyPlanMealRow({
             onClick={() => onAddToLog(meal)}
             disabled={busy}
           >
-            + Журнал
+            Журнал
           </Button>
           <Button
             type="button"
@@ -107,7 +99,6 @@ export function DailyPlanMealRow({
             onClick={() => onRegen(String(meal.type ?? ""))}
             disabled={busy}
           >
-            <Icon name="refresh-cw" size="sm" />
             Замінити
           </Button>
         </div>
@@ -115,24 +106,15 @@ export function DailyPlanMealRow({
       {(meal.ingredients?.length ?? 0) > 0 && (
         <button
           type="button"
-          className="mt-2 inline-flex items-center gap-1 text-style-caption text-nutrition-strong/90 dark:text-nutrition/70 hover:text-nutrition-strong dark:hover:text-nutrition transition-colors"
+          className="mt-2 rounded-lg text-style-label font-semibold text-muted hover:text-text focus-ring"
           onClick={() => setExpanded((v) => !v)}
           aria-expanded={expanded}
         >
-          <span
-            aria-hidden
-            className={cn(
-              "inline-flex shrink-0 transition-transform",
-              expanded ? "rotate-180" : "rotate-0",
-            )}
-          >
-            <Icon name="chevron-down" size="sm" />
-          </span>
           {expanded ? "Сховати інгредієнти" : "Інгредієнти"}
         </button>
       )}
       {expanded && (meal.ingredients?.length ?? 0) > 0 && (
-        <ul className="mt-1.5 text-style-caption text-text list-disc pl-4 space-y-0.5">
+        <ul className="mt-1.5 list-disc space-y-0.5 pl-4 text-style-caption text-text">
           {meal.ingredients?.map((ing: string, i: number) => (
             <li key={i}>{ing}</li>
           ))}

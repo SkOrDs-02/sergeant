@@ -18,7 +18,6 @@ import type {
   LinkedTxRole,
 } from "@sergeant/finyk-domain/domain/debtEngine";
 import { Button } from "@shared/components/ui/Button";
-import { Icon } from "@shared/components/ui/Icon";
 import { MaskedAmount } from "@shared/components/ui/MaskedAmount";
 import { Money } from "@shared/components/ui/Money";
 import { Sheet } from "@shared/components/ui/Sheet";
@@ -96,6 +95,12 @@ export interface BankTransactionDetailsSheetProps {
   onSplitChange: (id: string, splits: TxSplit[] | null) => void;
   onToggleHidden: (id: string) => void;
   onToggleExcludedFromStats: (id: string) => void;
+  /**
+   * Зняття готівки після створення «Готівки на руках» (ADR-0076): видима
+   * підказка «переказ на готівку» з перемикачем «Рахувати як витрату».
+   */
+  cashWithdrawal?:
+    { countedAsExpense: boolean; onToggle: () => void } | undefined;
   onClose: () => void;
 }
 
@@ -162,6 +167,7 @@ export function BankTransactionDetailsSheet({
   onSplitChange,
   onToggleHidden,
   onToggleExcludedFromStats,
+  cashWithdrawal,
   onClose,
 }: BankTransactionDetailsSheetProps) {
   const copy = messages.finyk.transactionDetails;
@@ -263,38 +269,18 @@ export function BankTransactionDetailsSheet({
       footer={
         <Button
           variant="solid"
-          tone="finyk"
 
           onClick={onClose}
           className="w-full"
+          tone="ink"
         >
           {copy.done}
         </Button>
       }
     >
       <div className="space-y-5">
-        {/*
-          Квитанція операції — власний матеріал (анти-слоп П3, рішення
-          власника 2026-08-06). Найпряміший випадок із усіх: банківська
-          операція В ЖИТТІ і є відривний талон, тож `edge-stub` тут не
-          метафора, а те саме, чим річ є. Решта секцій шторки лишаються
-          звичайними картками навмисно — матеріал позначає ФАКТ операції,
-          а не форму редагування під ним.
-
-          AI-DANGER: `edge-lift` мусить бути на БАТЬКУ. Маска `edge-stub`
-          зрізає тінь на своєму вузлі — і `box-shadow`, і `drop-shadow`
-          однаково (заміряно; див. `.edge-lift` у `tailwind-preset.js`).
-
-          Чому не проп `Card edge="stub"` (борг 1, інвентар 2026-08-07):
-          поверхня тут — `bg-panelHi` (підняте тло квитанції над
-          звичайним `bg-panel` шторки), а жодна `prominence` в `Card`
-          такого фону не дає — всі опираються на `bg-panel`. Переведення
-          означало б або підмінити фон, або тягти новий `prominence`
-          заради одного місця; клас лишається сирим (allowlisted у
-          `edgeMaterial.test.ts`).
-        */}
-        <div className="edge-lift">
-          <section className="edge-stub border border-line bg-panelHi p-4">
+        <div>
+          <section className="rounded-panel bg-panel p-4">
             <div className="flex items-start justify-between gap-4">
               <div className="min-w-0">
                 <p className="text-style-label text-text break-words">
@@ -383,7 +369,7 @@ export function BankTransactionDetailsSheet({
           )}
 
         {!isIncome && (
-          <section className="rounded-2xl border border-line bg-panel p-3">
+          <section className="rounded-panel border border-line bg-panel p-3">
             <div className="flex items-center justify-between gap-3">
               <div>
                 <h3 className="text-style-label text-text">
@@ -396,13 +382,11 @@ export function BankTransactionDetailsSheet({
                 </p>
               </div>
               <Button
-                variant="soft"
-                tone="finyk"
+                variant="outline"
 
                 size="xs"
                 onClick={openSplitEditor}
               >
-                <Icon name="shuffle" size={15} aria-hidden />
                 {existingSplits.length > 0
                   ? copy.changeSplit
                   : copy.createSplit}
@@ -446,7 +430,26 @@ export function BankTransactionDetailsSheet({
           />
         )}
 
-        <section className="space-y-2 rounded-2xl border border-line bg-panel p-3">
+        {cashWithdrawal && (
+          <section
+            data-testid="finyk-cash-withdrawal"
+            className="rounded-panel border border-line bg-panel p-3"
+          >
+            <Switch
+              checked={cashWithdrawal.countedAsExpense}
+              onChange={(next) => {
+                if (next !== cashWithdrawal.countedAsExpense) {
+                  cashWithdrawal.onToggle();
+                }
+              }}
+              label={messages.finyk.cashOnHand.countAsExpense}
+              description={messages.finyk.cashOnHand.countAsExpenseHint}
+              className="w-full"
+            />
+          </section>
+        )}
+
+        <section className="space-y-2 rounded-panel border border-line bg-panel p-3">
           <Switch
             checked={excludedFromStats}
             onChange={(next) => {

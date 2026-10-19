@@ -21,7 +21,6 @@
  * `ChatUsageCounter`: `HubChat` монтується поза `<Router>` у частині
  * юніт-тестів, а повна навігація на екран входу тут доречна.
  */
-import { Icon } from "@shared/components/ui/Icon";
 import { SIGN_IN_PATH } from "../../app/appPaths";
 
 /* eslint-disable sergeant-design/no-cyrillic-jsx-literal --
@@ -34,17 +33,11 @@ export function ChatAuthGate() {
     <div
       role="note"
       data-testid="chat-auth-gate"
-      className="shrink-0 border-t border-line bg-panel px-4 py-4 space-y-3"
+      className="shrink-0 border-t border-line bg-bg px-4 py-4 space-y-3"
     >
-      <div className="flex items-start gap-2.5">
-        <Icon
-          name="lock"
-          size="sm"
-          aria-hidden
-          className="shrink-0 mt-0.5 text-muted"
-        />
+      <div>
         <div className="space-y-1">
-          <p className="text-style-label font-semibold text-text">
+          <p className="text-style-body font-semibold text-text">
             Сержант працює після входу
           </p>
           <p className="text-style-body text-muted leading-snug">
@@ -56,7 +49,7 @@ export function ChatAuthGate() {
       <a
         href={SIGN_IN_PATH}
         data-testid="chat-auth-gate-signin"
-        className="flex items-center justify-center gap-2 w-full min-h-[44px] rounded-2xl bg-primary text-bg font-semibold text-style-label transition-colors hover:bg-primary/90 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-focus/45 focus-visible:ring-offset-2"
+        className="flex min-h-11 w-full items-center justify-center rounded-lg bg-text text-style-label font-semibold text-bg focus-ring"
       >
         Увійти в акаунт
       </a>

@@ -1,3 +1,10 @@
+import { useDeviceDayKey } from "@shared/hooks/useDeviceDayKey";
+import { useKyivDayNow } from "@shared/hooks/useKyivDayNow";
+import { useHubStorageBump } from "./useHubStorageBump";
+import { useFinykSqliteReadTick } from "../../modules/finyk/lib/sqliteReadGate";
+import { useFizrukSqliteReadTick } from "../../modules/fizruk/lib/sqliteReadGate";
+import { useNutritionSqliteReadTick } from "../../modules/nutrition/lib/sqliteReadGate";
+import { useFinykMonoMirrorTick } from "../../modules/finyk/lib/monoMirrorGate";
 /**
  * Last validated: 2026-09-03
  * Status: Active
@@ -10,7 +17,7 @@ import { useState, useMemo, useCallback, lazy, Suspense } from "react";
 import { SectionHeading } from "@shared/components/ui/SectionHeading";
 import { Button } from "@shared/components/ui/Button";
 import { Segmented } from "@shared/components/ui/Segmented";
-import { Icon, type IconName } from "@shared/components/ui/Icon";
+import { Icon } from "@shared/components/ui/Icon";
 import { generatePDFReport } from "@shared/lib/ui/export";
 import { messages } from "@shared/i18n/uk";
 import { useLocale } from "@shared/i18n/useLocale";
@@ -48,7 +55,7 @@ const CrossModuleLinksSection = lazy(
 function CardSkeleton() {
   return (
     <div
-      className="h-[56px] animate-pulse bg-panel border border-line rounded-2xl"
+      className="h-11 animate-pulse rounded-lg bg-panel"
       role="status"
       aria-label={messages.loaders.loadingSection}
       aria-busy="true"
@@ -76,7 +83,6 @@ function formatPeriodLabel(period: Period, offset: number): string {
 // ── InsightRow (kept local — not a lazy chunk, always needed) ─────────
 
 interface InsightRowProps {
-  iconName: IconName;
   title: string;
   stat: string;
   detail?: string;
@@ -89,7 +95,7 @@ interface InsightRowProps {
  * який можна взяти»).
  *
  * AI-CONTEXT (2026-09-03): до цього кожна закономірність була окремою
- * `rounded-2xl` карткою — тією ж формою, що й картка звʼязку над нею і
+ * `rounded-panel` карткою — тією ж формою, що й картка звʼязку над нею і
  * звітні аркуші під нею. Закономірність не тапається, не розгортається і
  * не є «річчю, яку можна взяти» — це один рядок факту. Чотири однакові
  * картки поспіль додавали сторінці третій ряд контейнерів між звʼязками
@@ -97,15 +103,9 @@ interface InsightRowProps {
  * Це НЕ ієрархія густини (`generateInsights` не ранжує) — це зняття
  * контейнера, якому немає що означати.
  */
-function InsightRow({ iconName, title, stat, detail }: InsightRowProps) {
+function InsightRow({ title, stat, detail }: InsightRowProps) {
   return (
     <li className="flex items-start gap-3 py-2.5">
-      <Icon
-        name={iconName}
-        size="md"
-        className="mt-0.5 shrink-0 text-subtle"
-        aria-hidden
-      />
       <div className="min-w-0 flex-1">
         <p className="text-style-body leading-snug text-text">{title}</p>
         {detail && (
@@ -132,6 +132,13 @@ export function HubReports() {
   // conversion-critical, тому йде через `useLocale`.
   const { messages: i18n } = useLocale();
 
+  const dayKey = useDeviceDayKey();
+  const kyivNow = useKyivDayNow();
+  const storageBump = useHubStorageBump();
+  const finykTick = useFinykSqliteReadTick();
+  const fizrukTick = useFizrukSqliteReadTick();
+  const nutritionTick = useNutritionSqliteReadTick();
+  const mirrorTick = useFinykMonoMirrorTick();
   const label = formatPeriodLabel(period, offset);
   const isCurrentPeriod = offset === 0;
 
@@ -165,7 +172,26 @@ export function HubReports() {
    * Замість підпису секція переїхала НАД перемикач — туди, де вже стоять
    * звʼязки, і рівно з тієї ж причини.
    */
-  const insights = useMemo(() => generateInsights(), []);
+  const insights = useMemo(() => {
+    // Warm caches hydrate after the first render; date windows also expire
+    // without any record write. Use the same signals as the domain reports.
+    void storageBump;
+    void finykTick;
+    void fizrukTick;
+    void nutritionTick;
+    void mirrorTick;
+    void dayKey;
+    void kyivNow;
+    return generateInsights();
+  }, [
+    storageBump,
+    finykTick,
+    fizrukTick,
+    nutritionTick,
+    mirrorTick,
+    dayKey,
+    kyivNow,
+  ]);
 
   // Phase 7 D2 — cross-module PDF export is Premium. Free users see
   // the button but tapping it opens the paywall instead of generating
@@ -255,7 +281,7 @@ export function HubReports() {
       */}
       {insights.length > 0 && (
         <section className="space-y-1">
-          <SectionHeading as="h2" size="xs">
+          <SectionHeading as="h2" size="lg">
             Закономірності
           </SectionHeading>
           <p className="text-style-caption text-muted">
@@ -279,7 +305,7 @@ export function HubReports() {
       <section className="space-y-3">
         <SectionHeading
           as="h2"
-          size="xs"
+          size="lg"
           action={
             <Segmented<Period>
               size="sm"
@@ -328,7 +354,7 @@ export function HubReports() {
         {/* Картка модуля, який людина вимкнула, не рендериться взагалі —
             не «порожній стан», не «підключити». Вимкнений модуль не має
             що звітувати, і рядок про це був би шумом, а не інформацією. */}
-        <div className="grid grid-cols-1 gap-3">
+        <div className="divide-y divide-line border-y border-line">
           {shows("fizruk") && (
             <ChunkErrorBoundary minH={56}>
               <Suspense fallback={<CardSkeleton />}>
@@ -377,7 +403,6 @@ export function HubReports() {
             (`useFeatureGate`). */}
         <div className="flex justify-end">
           <Button variant="ghost" size="sm" onClick={handleExportPdf}>
-            <Icon name="download" size="md" aria-hidden />
             Експортувати PDF
           </Button>
         </div>

@@ -128,15 +128,16 @@ describe("InsightCard", () => {
     expect(group.getAttribute("aria-labelledby")).toBe(titleEl.id);
   });
 
-  it("у темній темі не лишається білою плиткою ink-strong", () => {
+  it("нейтральна панель мови H без темної плитки й тіні", () => {
     const { container, getByText } = render(
       <InsightCard id="x" title="t" subtitle="s" onActivate={() => {}} />,
     );
     const group = container.querySelector('[role="group"]')!;
-    expect(group.className).toContain("dark:bg-panelHi");
-    expect(group.className).toContain("dark:border-line");
-    expect(getByText("t").className).toContain("dark:text-text");
-    expect(getByText("s").className).toContain("dark:text-text");
+    expect(group.className).toContain("bg-panel");
+    expect(group.className).not.toContain("bg-ink-strong");
+    expect(group.className).not.toMatch(/shadow-/);
+    expect(getByText("t").className).toContain("text-text");
+    expect(getByText("s").className).toContain("text-muted");
   });
 });
 

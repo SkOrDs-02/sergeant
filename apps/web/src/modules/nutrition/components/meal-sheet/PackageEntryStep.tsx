@@ -68,8 +68,7 @@ export function PackageEntryStep({ onCreated }: PackageEntryStepProps) {
   return (
     <div className="space-y-3">
       <p className="text-style-body text-muted">
-        Візьми КБЖВ з етикетки: вони майже завжди наведені на 100 г. Скільки
-        саме ти зʼїв, вкажи нижче: макроси перерахуються під цю вагу.
+        Введи значення на 100 г з етикетки та вагу зʼїденого.
       </p>
       <FoodFields
         idPrefix="package-food"

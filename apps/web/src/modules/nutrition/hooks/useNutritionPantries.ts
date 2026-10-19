@@ -36,6 +36,7 @@ import {
   ensureStoragePlaces,
   mergeItemsIntoPlaces,
   movePantryItem,
+  newPantryItemId,
   DEFAULT_PLACE_ID,
   type PantryItemSource,
 } from "@sergeant/nutrition-domain";
@@ -251,7 +252,7 @@ export function useNutritionPantries({
     appendNutritionPantryEvent({
       id: null,
       pantryId: target.pantryId,
-      itemId: null,
+      itemId: target.id ?? null,
       itemKey: canonicalFoodKey(n),
       kind: "adjust",
       deltaQty: null,
@@ -276,6 +277,8 @@ export function useNutritionPantries({
       updatePantry(cur, draftPantry?.id ?? DEFAULT_PLACE_ID, (p) => ({
         ...p,
         items: effectiveItems.map((x) => ({
+          // data-40: позиція вперше потрапляє в список — їй видається id.
+          id: x?.id || newPantryItemId(),
           name: displayFoodName(x?.name),
           qty: x?.qty ?? null,
           unit: x?.unit ?? null,
@@ -328,7 +331,7 @@ export function useNutritionPantries({
       appendNutritionPantryEvent({
         id: null,
         pantryId,
-        itemId: null,
+        itemId: target?.id ?? null,
         itemKey: canonicalFoodKey(n),
         kind: "adjust",
         deltaQty: null,
@@ -402,7 +405,7 @@ export function useNutritionPantries({
       appendNutritionPantryEvent({
         id: null,
         pantryId,
-        itemId: null,
+        itemId: target?.id ?? null,
         itemKey: canonicalFoodKey(n),
         kind: "adjust",
         deltaQty: null,
@@ -476,7 +479,7 @@ export function useNutritionPantries({
       appendNutritionPantryEvent({
         id: null,
         pantryId: holderId,
-        itemId: null,
+        itemId: holder.id ?? null,
         itemKey: canonicalFoodKey(norm),
         kind: "consume",
         deltaQty: -deductedQty,
@@ -643,7 +646,7 @@ export function useNutritionPantries({
     appendNutritionPantryEvent({
       id: null,
       pantryId: src.pantryId,
-      itemId: null,
+      itemId: src.id ?? null,
       itemKey,
       kind: "adjust",
       deltaQty: null,
@@ -656,7 +659,7 @@ export function useNutritionPantries({
       appendNutritionPantryEvent({
         id: null,
         pantryId: targetId,
-        itemId: null,
+        itemId: src.id ?? null,
         itemKey,
         kind: "adjust",
         deltaQty: null,

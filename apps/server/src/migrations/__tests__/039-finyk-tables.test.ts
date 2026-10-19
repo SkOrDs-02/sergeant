@@ -297,7 +297,7 @@ describe("039_finyk_tables migration", () => {
   );
 
   it(
-    "finyk_tx_categories has no soft-delete column (delete = DELETE FROM)",
+    "finyk_tx_categories: soft-delete колонка з 156 (data-15), а не з 039",
     async (ctx) => {
       if (!dockerAvailable || !pool) {
         ctx.skip();
@@ -314,8 +314,12 @@ describe("039_finyk_tables migration", () => {
         "category_id",
         "created_at",
         "updated_at",
+        // 156_finyk_soft_delete_tombstones.sql: hard DELETE замінено
+        // tombstone-ом (аудит 2026-10-01, data-15, частина Б).
+        "deleted_at",
       ]);
-      expect(cols.map((c) => c.name)).not.toContain("deleted_at");
+      const deletedAt = cols.find((c) => c.name === "deleted_at");
+      expect(deletedAt?.nullable).toBe("YES");
     },
     TIMEOUT_MS,
   );
@@ -480,6 +484,10 @@ describe("039_finyk_tables migration", () => {
       // `CREATE INDEX IF NOT EXISTS`, тож повторний прогін по таблицях,
       // яких цей цикл не чіпав, — no-op.
       await execSqlFile(pool, "142_cascade_user_id_indexes.sql");
+      // 156 додає `deleted_at` чотирьом таблицям 039 (data-15). Як і 108,
+      // накочується після відтворення 039; файл на `ADD COLUMN IF NOT
+      // EXISTS`, тож повторний прогін — no-op.
+      await execSqlFile(pool, "156_finyk_soft_delete_tombstones.sql");
 
       const after = {
         tables: await listTables(pool),

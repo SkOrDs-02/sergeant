@@ -29,12 +29,8 @@ describe("DailyPlanMealRow", () => {
         onRegen={onRegen}
       />,
     );
-    fireEvent.click(screen.getByRole("button", { name: "+ Журнал" }));
+    fireEvent.click(screen.getByRole("button", { name: "Журнал" }));
     expect(onAddToLog).toHaveBeenCalledWith(MEAL);
-    // Мітки були «↻ Замінити» / «▼ Інгредієнти» — типографічні гліфи в ролі
-    // іконок. Замінені на `Icon` (refresh-cw / chevron-down), а `<svg
-    // aria-hidden>` в accessible name не входить, тож у запитах лишився
-    // чистий текст.
     fireEvent.click(screen.getByRole("button", { name: "Замінити" }));
     expect(onRegen).toHaveBeenCalledWith("lunch");
   });
@@ -56,6 +52,6 @@ describe("DailyPlanMealRow", () => {
         busy
       />,
     );
-    expect(screen.getByRole("button", { name: "+ Журнал" })).toBeDisabled();
+    expect(screen.getByRole("button", { name: "Журнал" })).toBeDisabled();
   });
 });

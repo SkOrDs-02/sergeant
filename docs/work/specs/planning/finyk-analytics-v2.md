@@ -110,7 +110,7 @@ Hands-on замір 16 конкурентів на планшеті (прива�
 - `pages/transactions/exportTransactionsCsv.ts`, `apps/web/src/shared/lib/ui/export.ts` - час у CSV (Р6).
 - `pages/AssetsSubscriptionsSection.tsx`, `components/RecurringSuggestions.tsx` (+ `.test.tsx`), `hooks/useRecurringDetectedInsight.ts`, `hooks/useStorage.types.ts` (12-21, модель підписки), `pages/overview/FlowRow.tsx` (69-75, «сума невідома») - регулярні (Р19-Р21).
 - `apps/web/src/core/hub/HubInsightsBlock.tsx` (134, 138), `apps/web/src/core/insights/useCoachInsight.ts` (347) - звіт тижня (Р23).
-- `hooks/monoTxNormalize.ts`, `hooks/useMonoTransactions.ts` - опис Mono-транзакції як джерело мерчанта (Р16).
+- `hooks/monoTxNormalize.ts`, `hooks/useMonobankWebhook.ts` - опис Mono-транзакції як джерело мерчанта (Р16).
 - RQ-ключі лише через `apps/web/src/shared/lib/api/queryKeys.ts` (`finykKeys`) - Hard Rule #2.
 
 **Схема:** `packages/db-schema/src/sqlite/finyk.ts` - поле `expectedAmount` підписки (Р20), додаткове, nullable; серверна частина синку підписок - там, де вже їде модель підписки (знайти за `billingDay`).

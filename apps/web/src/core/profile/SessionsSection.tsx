@@ -6,6 +6,7 @@ import { useCallback, useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { Button } from "@shared/components/ui/Button";
 import { Card } from "@shared/components/ui/Card";
+import { ContentRow } from "@shared/components/ui/ContentGroup";
 import { ConfirmDialog } from "@shared/components/ui/ConfirmDialog";
 import { useToast } from "@shared/hooks/useToast";
 import { messages } from "@shared/i18n/uk";
@@ -21,9 +22,6 @@ import {
   type SessionItem,
 } from "../auth/authClient";
 import { flushPendingSyncOpsBeforeLogout } from "../syncEngine/flushBeforeLogout";
-// F6 (review): reuse the shared UA pluraliser instead of a hand-rolled
-// `=== 1 ? … : …` ternary — the ternary's "else" branch used the wrong
-// Ukrainian plural form for 2–4 (see the fix below).
 import { pluralize } from "../hub/useHubDashboardState";
 
 const COPY = messages.profileSessions;
@@ -213,7 +211,7 @@ export function SessionsSection({ online }: { online: boolean }) {
   };
 
   return (
-    <Card radius="lg" padding="none" className="overflow-hidden">
+    <Card padding="none" className="overflow-hidden">
       {/* V-4 (2026-08-08) прибрав звідси текстовий заголовок, і шапка
           картки лишилась із самотньою іконкою та кнопкою «Оновити» —
           залишок, а не дизайн (огляд 2026-09-04). Шапки більше немає:
@@ -247,16 +245,17 @@ export function SessionsSection({ online }: { online: boolean }) {
                 {COPY.currentUnknown}
               </p>
             )}
-            <ul className="space-y-2">
+            <ul>
               {sessions.map((s) => {
                 const isExpired = new Date(s.expiresAt) < new Date();
                 const isCurrent = currentSessionId === s.id;
                 const ua = parseUserAgent(s.userAgent);
                 const lastSeen = formatRelativeUk(s.updatedAt);
                 return (
-                  <li
+                  <ContentRow
+                    as="li"
                     key={s.id}
-                    className="flex items-start gap-3 p-3 rounded-xl border border-line bg-panel"
+                    className="flex items-start gap-3"
                   >
                     <div className="flex-1 min-w-0">
                       <div className="flex items-center gap-2 flex-wrap">
@@ -264,7 +263,7 @@ export function SessionsSection({ online }: { online: boolean }) {
                           {ua.label}
                         </p>
                         {isCurrent && (
-                          <span className="inline-flex items-center text-style-caption font-medium px-2 py-0.5 rounded-full bg-brand-500/10 text-brand-strong border border-brand-500/30">
+                          <span className="inline-flex items-center text-style-caption font-medium px-2 py-0.5 rounded-lg bg-brand-500/10 text-brand-strong border border-brand-500/30">
                             {COPY.thisDevice}
                           </span>
                         )}
@@ -281,7 +280,7 @@ export function SessionsSection({ online }: { online: boolean }) {
                       )}
                     </div>
                     <Button
-                      variant="soft"
+                      variant="outline"
                       tone="danger"
                       size="xs"
                       disabled={revoking === s.id || currentLookupFailed}
@@ -290,7 +289,7 @@ export function SessionsSection({ online }: { online: boolean }) {
                     >
                       {COPY.revoke}
                     </Button>
-                  </li>
+                  </ContentRow>
                 );
               })}
             </ul>

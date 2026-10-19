@@ -9,7 +9,8 @@ import { register } from "./registry.js";
 
 /**
  * Спроби checkout-у. `provider` = stripe|liqpay|plata; `result` =
- * ok | error | unavailable (503 BILLING_UNAVAILABLE / 400 PROVIDER_UNAVAILABLE).
+ * ok | error | unavailable (503 BILLING_UNAVAILABLE / 400 PROVIDER_UNAVAILABLE) |
+ * blocked (409 ALREADY_SUBSCRIBED / CHECKOUT_PENDING).
  */
 export const billingCheckoutTotal = new client.Counter({
   name: "billing_checkout_total",
@@ -38,6 +39,19 @@ export const billingWebhookTotal = new client.Counter({
 export const billingRecurringChargeTotal = new client.Counter({
   name: "billing_recurring_charge_total",
   help: "Recurring subscription charges by provider and result",
+  labelNames: ["provider", "result"],
+  registers: [register],
+});
+
+/**
+ * Скасування ЗАМІНЕНОЇ рекурентки у її провайдера (`supersede.ts`). `result` =
+ * cancelled (провайдер підтвердив) | gone (підписки в провайдера вже нема) |
+ * failed (відмова, рядок лишається в черзі на ретрай) | abandoned (вичерпано
+ * ліміт спроб, потрібен ручний розбір: стара підписка може й далі списувати).
+ */
+export const billingSupersedeCancelTotal = new client.Counter({
+  name: "billing_supersede_cancel_total",
+  help: "Cancellations of superseded recurring subscriptions by provider and result",
   labelNames: ["provider", "result"],
   registers: [register],
 });

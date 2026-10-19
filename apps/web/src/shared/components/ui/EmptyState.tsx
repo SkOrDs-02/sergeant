@@ -13,31 +13,13 @@
  * naked-string placeholders that used to drift in copy, focus styling,
  * and a11y wiring.
  *
- * Slots (all optional except `title`):
- * - `illustration` — large SVG (preferred for full-page surfaces); when
- *   passed, the smaller `icon` slot is suppressed.
- * - `icon` — compact glyph for dense surfaces (in-card placeholders).
- * - `eyebrow` — short tag above the title (e.g. "404", "ERROR", "WARNING").
- * - `title` — single-line headline (required for SR announcement).
- * - `description` — supporting copy under the title.
- * - `action` / `primaryAction` — CTA button.
- * - `secondaryAction` — supportive button next to the primary CTA.
- * - `tertiaryLink` — text link (e.g. "Дізнатись більше").
- * - `hint` — small lightbulb-prefixed footer note.
- * - `examplePreview` — optional inline mock of what real data would look like.
+ * Компактний стан показує факт і дію. Модульний first-run додає стриману
+ * лінійну ілюстрацію та видимий наступний крок.
  *
  * Sizes (`size: sm | md | lg`):
  * - `sm` (compact): in-card / inline empty placeholder
  * - `md` (default): full-page empty states inside Card or page bodies
  * - `lg`: error pages (`/404`, `/500`, `/offline`)
- *
- * Variants (`variant: neutral | info | success | warning | danger`):
- * - Drives the icon container tint and the eyebrow chip colour. Module
- *   accents (`module: finyk | fizruk | routine | nutrition`) are an
- *   orthogonal axis and take precedence over `variant` when both are set,
- *   because module belongingness is a stronger semantic signal than tone.
- *   Saturated brand fills used as background for white text always go
- *   through `-strong` companions (Hard Rule #9).
  *
  * Backward compat:
  * - `compact: true` keeps working — maps to `size="sm"`.
@@ -50,25 +32,19 @@
  * - `focus-visible:` only on CTAs (delegated to `<Button>` / `<a>`), per
  *   Hard Rule #14.
  */
-import type { ReactNode } from "react";
-import type { ModuleAccent } from "@sergeant/design-tokens";
+import { cloneElement, isValidElement, useId, type ReactNode } from "react";
 import type { OnboardingGoals } from "@sergeant/shared";
 import { cn } from "@shared/lib/ui/cn";
 import { Icon } from "./Icon";
-import { Button } from "./Button";
-import { ModuleEmptyIllustration } from "./EmptyStateIllustrations";
+import { Button, type ButtonProps } from "./Button";
 import { formatNumberUk, NARROW_NBSP } from "@sergeant/shared";
 import { coreMessages } from "@shared/i18n/uk.core";
+import { ModuleEmptyIllustration } from "./EmptyStateIllustrations";
 
 export type EmptyStateSize = "sm" | "md" | "lg";
 
-export type EmptyStateVariant =
-  "neutral" | "info" | "success" | "warning" | "danger";
-
 export interface EmptyStateProps {
-  icon?: ReactNode | undefined;
-  illustration?: ReactNode | undefined;
-  /** Short caps tag above the title (e.g. "404", "ERROR"). */
+  /** Ярлик над фактом (12 / 600 / caps), напр. «404». */
   eyebrow?: ReactNode | undefined;
   title?: ReactNode | undefined;
   /**
@@ -80,6 +56,13 @@ export interface EmptyStateProps {
    */
   titleAs?: "p" | "h1" | "h2" | "h3" | undefined;
   description?: ReactNode | undefined;
+  /**
+   * Видимий контекст для first-run станів. У компактних списках опис за
+   * замовчуванням лишається доступним лише скрінрідеру.
+   */
+  showDescription?: boolean | undefined;
+  /** Декоративна графіка для featured empty-state; завжди aria-hidden. */
+  illustration?: ReactNode | undefined;
   /**
    * Primary CTA. `action` is the original (pre-Track-8) name and stays
    * supported; `primaryAction` is the explicit alias new code should
@@ -100,145 +83,14 @@ export interface EmptyStateProps {
   compact?: boolean | undefined;
   /** Density token. Defaults to `md`. `sm` matches the legacy `compact` look. */
   size?: EmptyStateSize | undefined;
-  /**
-   * Semantic tone. Drives the icon container tint and eyebrow chip
-   * colour. `module` overrides it when both are set.
-   */
-  variant?: EmptyStateVariant | undefined;
-  /** Disable entry animation (useful inside already-animated containers). */
-  disableAnimation?: boolean | undefined;
+  /** Рядок мети під дією. */
   hint?: string | undefined;
-  examplePreview?: ReactNode | undefined;
-  /** Tint the icon container with a module accent (orthogonal to variant). */
-  module?: ModuleAccent | undefined;
   /**
    * Override live-region politeness. Default `"polite"`. Set to `"off"`
    * for empty states that mount on initial page load alongside other
    * landmark content (the heading already covers the announcement).
    */
   ariaLive?: "polite" | "off" | undefined;
-}
-
-/**
- * П3 «край і зріз»: порожній стан НЕ отримує матеріал краю. Межа рішення
- * власника 2026-08-07 — край для матеріалу ЗАПИСІВ І ЗВІТІВ (тест: чи існує
- * ця річ у житті як аркуш), а порожній стан навпаки повідомляє про
- * ВІДСУТНІСТЬ запису — паперового аналога в нього немає. До цього рішення
- * тут жив проп `surface: "none" | "document"`; `document` прибрано разом із
- * чотирма продуктовими виклик-сайтами (`NotFoundPage`, `ServerErrorPage`,
- * `OfflinePage`, `ActiveHabitsSection`), які його використовували.
- */
-
-interface TonePalette {
-  container: string;
-  icon: string;
-  eyebrow: string;
-}
-
-const NEUTRAL_TONE: TonePalette = {
-  container: "bg-panelHi border-line text-subtle",
-  icon: "text-brand-500/70",
-  eyebrow: "bg-panelHi text-subtle border border-line",
-};
-
-// The chip text uses the theme-aware `text-{c}-soft-fg` token (deep ink on
-// the pale light/HC `-soft` surface, bright accent on the deep dark
-// surface) instead of the static `text-{c}-strong dark:text-{palette}-100`
-// pair — the fixed `-strong` hex went sub-AA once HC bumped the `-soft`
-// surface a step darker. See `--c-{c}-soft-fg` in theme.css.
-const VARIANT_TONE: Record<EmptyStateVariant, TonePalette> = {
-  neutral: NEUTRAL_TONE,
-  info: {
-    container: "bg-info-soft border-info/30 text-info-soft-fg",
-    icon: "text-info-soft-fg/80",
-    eyebrow: "bg-info-soft text-info-soft-fg border border-info/30",
-  },
-  success: {
-    container: "bg-success-soft border-success/30 text-success-soft-fg",
-    icon: "text-success-soft-fg/80",
-    eyebrow: "bg-success-soft text-success-soft-fg border border-success/30",
-  },
-  warning: {
-    container: "bg-warning-soft border-warning/30 text-warning-soft-fg",
-    icon: "text-warning-soft-fg/80",
-    eyebrow: "bg-warning-soft text-warning-soft-fg border border-warning/30",
-  },
-  danger: {
-    container: "bg-danger-soft border-danger/30 text-danger-soft-fg",
-    icon: "text-danger-soft-fg/80",
-    eyebrow: "bg-danger-soft text-danger-soft-fg border border-danger/30",
-  },
-};
-
-const MODULE_TONE: Record<ModuleAccent, TonePalette> = {
-  finyk: {
-    container: "bg-finyk/10 border-finyk/20 text-finyk",
-    icon: "text-finyk/70",
-    eyebrow: "bg-finyk-soft text-finyk border border-finyk/30",
-  },
-  fizruk: {
-    container: "bg-fizruk/10 border-fizruk/20 text-fizruk",
-    icon: "text-fizruk/70",
-    eyebrow: "bg-fizruk-soft text-fizruk border border-fizruk/30",
-  },
-  routine: {
-    container: "bg-routine/10 border-routine/20 text-routine",
-    icon: "text-routine/70",
-    eyebrow: "bg-routine-soft text-routine border border-routine/30",
-  },
-  nutrition: {
-    container: "bg-nutrition/10 border-nutrition/20 text-nutrition",
-    icon: "text-nutrition/70",
-    eyebrow: "bg-nutrition-soft text-nutrition border border-nutrition/30",
-  },
-};
-
-interface SizeTokens {
-  outer: string;
-  iconBox: string;
-  title: string;
-  description: string;
-  descriptionMax: string;
-  eyebrow: string;
-  actionGap: string;
-}
-
-const SIZE_TOKENS: Record<EmptyStateSize, SizeTokens> = {
-  sm: {
-    outer: "py-8 px-4 gap-2",
-    iconBox: "w-10 h-10",
-    title: "text-style-label",
-    description: "text-style-caption",
-    descriptionMax: "max-w-xs",
-    eyebrow: "text-style-caption",
-    actionGap: "mt-1 gap-2",
-  },
-  md: {
-    outer: "py-14 px-6 gap-3",
-    iconBox: "w-14 h-14",
-    title: "text-style-title font-semibold",
-    description: "text-style-body",
-    descriptionMax: "max-w-sm",
-    eyebrow: "text-style-caption",
-    actionGap: "mt-2 gap-3",
-  },
-  lg: {
-    outer: "py-20 px-8 gap-4",
-    iconBox: "w-20 h-20",
-    title: "text-style-title font-extrabold",
-    description: "text-style-body",
-    descriptionMax: "max-w-md",
-    eyebrow: "text-style-overline",
-    actionGap: "mt-3 gap-3",
-  },
-};
-
-function resolveTone(
-  module: ModuleAccent | undefined,
-  variant: EmptyStateVariant,
-): TonePalette {
-  if (module) return MODULE_TONE[module];
-  return VARIANT_TONE[variant];
 }
 
 function resolveSize(
@@ -249,13 +101,24 @@ function resolveSize(
   return compact ? "sm" : "md";
 }
 
+const PADDING: Record<EmptyStateSize, string> = {
+  sm: "py-4",
+  md: "py-6",
+  lg: "py-10",
+};
+
+/**
+ * Мова H (redesign v3): компактний стан лишається фактом і дією. Featured
+ * стан може додати одну лінійну ілюстрацію та короткий видимий опис.
+ */
 export function EmptyState({
-  icon,
-  illustration,
   eyebrow,
+  hint,
   title,
   titleAs: TitleTag = "p",
   description,
+  showDescription = false,
+  illustration,
   action,
   primaryAction,
   secondaryAction,
@@ -263,147 +126,68 @@ export function EmptyState({
   className,
   compact = false,
   size,
-  variant = "neutral",
-  disableAnimation = false,
-  hint,
-  examplePreview,
-  module,
   ariaLive = "polite",
 }: EmptyStateProps) {
   const resolvedSize = resolveSize(size, compact);
-  const tokens = SIZE_TOKENS[resolvedSize];
-  const tone = resolveTone(module, variant);
-  const isSm = resolvedSize === "sm";
   const primary = primaryAction ?? action;
+  const id = useId();
+  const describedBy =
+    [description && `${id}-description`, hint && `${id}-hint`]
+      .filter(Boolean)
+      .join(" ") || undefined;
+  const primaryControl =
+    isValidElement<ButtonProps>(primary) && primary.type === Button
+      ? cloneElement(primary, { variant: "outline" })
+      : primary;
   return (
     // `role="status"` + `aria-live="polite"` keep the empty-state silent
     // until it appears dynamically (e.g. after a filter clears the list).
-    // SR then announces `title` + `description` together via `aria-atomic`.
     <div
       role="status"
       aria-live={ariaLive}
       aria-atomic="true"
+      aria-describedby={describedBy}
       className={cn(
-        "flex flex-col items-center justify-center text-center",
-        tokens.outer,
-        !disableAnimation &&
-          "motion-safe:animate-in motion-safe:fade-in motion-safe:zoom-in-95 motion-safe:duration-slow",
+        "flex flex-col gap-1",
+        illustration && "items-center text-center",
+        PADDING[resolvedSize],
         className,
       )}
     >
-      {illustration ? (
-        <div
-          aria-hidden="true"
-          className={cn(
-            "flex items-center justify-center",
-            !disableAnimation &&
-              "motion-safe:animate-in motion-safe:fade-in motion-safe:zoom-in-90 motion-safe:duration-slow motion-safe:delay-75",
-          )}
-        >
-          {illustration}
-        </div>
-      ) : (
-        icon && (
-          <div
-            aria-hidden="true"
-            className={cn(
-              "flex items-center justify-center rounded-2xl border",
-              tone.container,
-              tokens.iconBox,
-              !disableAnimation &&
-                "motion-safe:animate-in motion-safe:fade-in motion-safe:zoom-in-90 motion-safe:duration-slow motion-safe:delay-75",
-            )}
-          >
-            {icon}
-          </div>
-        )
-      )}
-      {eyebrow && (
-        <span
-          className={cn(
-            "inline-flex items-center rounded-full px-2.5 py-0.5 font-semibold",
-            tokens.eyebrow,
-            tone.eyebrow,
-          )}
-        >
-          {eyebrow}
-        </span>
-      )}
-      <TitleTag className={cn("text-text text-balance", tokens.title)}>
+      {illustration && <div aria-hidden="true">{illustration}</div>}
+      {eyebrow && <p className="text-style-overline text-subtle">{eyebrow}</p>}
+      <TitleTag
+        className={cn(
+          "font-semibold text-text text-pretty",
+          illustration ? "mt-2 text-style-title" : "text-style-body",
+        )}
+      >
         {title}
       </TitleTag>
-      {description && (
-        <p
-          className={cn(
-            "text-muted leading-relaxed text-pretty",
-            tokens.description,
-            tokens.descriptionMax,
-          )}
-        >
-          {description}
-        </p>
-      )}
-      {examplePreview && (
-        <div
-          className={cn(
-            "w-full mt-2 p-3 rounded-xl bg-panel/50 border border-dashed border-line/60",
-            tokens.descriptionMax,
-            !disableAnimation &&
-              "motion-safe:animate-in motion-safe:fade-in motion-safe:duration-slow motion-safe:delay-100",
-          )}
-        >
-          <p className="text-style-caption text-muted mb-2 font-medium">
-            Приклад
+      {description &&
+        (showDescription ? (
+          <p
+            id={`${id}-description`}
+            className="mt-1 max-w-sm text-style-body leading-snug text-subtle text-pretty"
+          >
+            {description}
           </p>
-          {examplePreview}
-        </div>
-      )}
+        ) : (
+          <span id={`${id}-description`} hidden>
+            {description}
+          </span>
+        ))}
       {(primary || secondaryAction) && (
-        <div
-          className={cn(
-            "flex flex-wrap items-center justify-center",
-            tokens.actionGap,
-            !disableAnimation &&
-              "motion-safe:animate-in motion-safe:fade-in motion-safe:slide-in-from-bottom-2 motion-safe:duration-slow motion-safe:delay-150",
-          )}
-        >
-          {primary}
+        <div className="mt-3 flex flex-wrap items-center gap-2">
+          {primaryControl}
           {secondaryAction}
         </div>
       )}
-      {tertiaryLink && (
-        <div
-          className={cn(
-            "mt-1",
-            !disableAnimation &&
-              "motion-safe:animate-in motion-safe:fade-in motion-safe:duration-slow motion-safe:delay-200",
-          )}
-        >
-          {tertiaryLink}
-        </div>
-      )}
+      {tertiaryLink && <div className="mt-1">{tertiaryLink}</div>}
       {hint && (
-        <p
-          className={cn(
-            // text-muted, НЕ text-subtle: hint — 12px normal-weight (не "large
-            // text"), тож потрібен контраст 4.5:1. Обрано тоді, коли темний
-            // `--c-subtle` був #5f6b64 і давав 3.33:1 на panel (axe
-            // color-contrast). 2026-08-21 тир піднято до #8a968e (5.84), тож
-            // формально `text-subtle` тут уже пройшов би — лишаємо `muted`
-            // навмисно: підказка з іконкою читається як дія, не як зноска.
-            "flex items-center gap-1.5 text-style-caption text-muted mt-2",
-            !disableAnimation &&
-              "motion-safe:animate-in motion-safe:fade-in motion-safe:duration-slow motion-safe:delay-200",
-          )}
-        >
-          <Icon
-            name="lightbulb"
-            size={isSm ? 12 : 14}
-            aria-hidden="true"
-            className={tone.icon}
-          />
+        <span id={`${id}-hint`} hidden>
           {hint}
-        </p>
+        </span>
       )}
     </div>
   );
@@ -417,6 +201,7 @@ export function EmptyState({
 export interface ModuleEmptyStateProps {
   module: "finyk" | "fizruk" | "routine" | "nutrition";
   variant?: "default" | "compact";
+  title?: string;
   onAction?: () => void;
   actionLabel?: string;
   /** Show a dismiss/close button in the top-right corner. */
@@ -435,7 +220,6 @@ export interface ModuleEmptyStateProps {
 }
 
 interface ModuleConfig {
-  icon: string;
   title: string;
   description: string;
   hint: string;
@@ -448,36 +232,27 @@ interface ModuleConfig {
    * with nothing ever reading it.
    */
   actionLabel?: string;
-  accent: string;
   exampleLine1: string;
   exampleLine2: string;
 }
 
 // Копія в `coreMessages.moduleEmpty` (чому саме там, а не в модульних
-// каталогах, пояснено біля неї); тут лише іконка й акцент.
+// каталогах, пояснено біля неї).
 const MODULE_EMPTY_CONFIG: Record<
   ModuleEmptyStateProps["module"],
   ModuleConfig
 > = {
   finyk: {
-    icon: "credit-card",
     // `actionLabel` навмисно відсутній — див. коментар над `ModuleConfig`.
-    accent: "text-finyk bg-finyk-soft dark:bg-finyk/10",
     ...coreMessages.moduleEmpty.finyk,
   },
   fizruk: {
-    icon: "dumbbell",
-    accent: "text-fizruk bg-fizruk-soft dark:bg-fizruk/10",
     ...coreMessages.moduleEmpty.fizruk,
   },
   routine: {
-    icon: "check-circle",
-    accent: "text-routine bg-routine-surface dark:bg-routine/10",
     ...coreMessages.moduleEmpty.routine,
   },
   nutrition: {
-    icon: "utensils",
-    accent: "text-nutrition bg-nutrition-soft dark:bg-nutrition/10",
     ...coreMessages.moduleEmpty.nutrition,
   },
 };
@@ -524,6 +299,7 @@ function resolveGoalAwareDesc(
 export function ModuleEmptyState({
   module,
   variant = "default",
+  title,
   onAction,
   actionLabel,
   dismissible = false,
@@ -543,25 +319,6 @@ export function ModuleEmptyState({
       ? resolveGoalAwareDesc(module, config.description, goalContext)
       : config.description);
 
-  const examplePreview = (
-    <div className="flex items-center gap-3 text-left">
-      <div
-        className={cn(
-          "w-9 h-9 rounded-xl flex items-center justify-center shrink-0",
-          config.accent,
-        )}
-      >
-        <Icon name={config.icon} size={18} />
-      </div>
-      <div className="min-w-0 flex-1">
-        <p className="text-style-label text-text truncate">
-          {config.exampleLine1}
-        </p>
-        <p className="text-style-caption text-muted">{config.exampleLine2}</p>
-      </div>
-    </div>
-  );
-
   return (
     <div className="relative">
       {dismissible && onDismiss && (
@@ -570,7 +327,7 @@ export function ModuleEmptyState({
           onClick={onDismiss}
           aria-label="Закрити"
           className={cn(
-            "absolute top-2 right-2 p-1.5 rounded-xl text-muted hover:text-text hover:bg-panelHi transition-colors z-10",
+            "absolute top-2 right-2 p-1.5 rounded-lg text-muted hover:text-text hover:bg-panelHi transition-colors z-10",
             // Hard Rule #14 — visible focus indicator via focus-visible:
             "focus:outline-none focus-visible:ring-2 focus-visible:ring-focus/45 focus-visible:ring-offset-2 focus-visible:ring-offset-panel",
           )}
@@ -579,39 +336,18 @@ export function ModuleEmptyState({
         </button>
       )}
       <EmptyState
-        // Compact keeps the small icon-in-rounded-square for dense
-        // surfaces; the default surface promotes to a module-shaped SVG
-        // illustration which carries far more recognisability than the
-        // generic lucide glyph the empty state used to render.
-        icon={
-          compact ? (
-            <Icon
-              name={config.icon}
-              size="lg"
-              className={config.accent.split(" ")[0]}
-            />
-          ) : undefined
-        }
-        illustration={
-          compact ? undefined : (
-            <ModuleEmptyIllustration
-              module={module}
-              size={120}
-              className="text-text"
-            />
-          )
-        }
-        title={config.title}
+        title={title ?? config.title}
         description={resolvedDescription}
-        hint={config.hint}
-        examplePreview={!compact ? examplePreview : undefined}
+        showDescription
+        illustration={
+          <ModuleEmptyIllustration module={module} size={compact ? 56 : 64} />
+        }
         size={compact ? "sm" : "md"}
         className={className}
-        module={module}
         action={
           onAction && (
             <Button
-              variant="solid"
+              variant="outline"
               size={compact ? "sm" : "md"}
               onClick={onAction}
             >

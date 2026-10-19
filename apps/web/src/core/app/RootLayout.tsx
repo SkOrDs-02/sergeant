@@ -43,7 +43,6 @@ import { useHubUIState } from "../hooks/useHubUIState";
 import { usePwaActions } from "../hooks/usePwaActions";
 import { useAppEffects } from "./useAppEffects";
 import { DbBusyScreen, useDbIsBusyElsewhere } from "./DbBusyScreen";
-import { useIosInstallBanner } from "./useIosInstallBanner";
 import { usePwaInstall } from "./usePwaInstall";
 import { useSWUpdate } from "./useSWUpdate";
 import { useRestoreWebPush } from "./useRestoreWebPush";
@@ -374,11 +373,6 @@ function RootLayoutInner() {
   useKeyboardShortcutsModal();
   const { openChat: openAssistantChat } = useHubChatOverlay();
   const { canInstall, install, dismiss } = usePwaInstall();
-  const {
-    visible: iosVisible,
-    dismissForever: iosDismissForever,
-    snooze: iosSnooze,
-  } = useIosInstallBanner();
   const { updateAvailable, applyUpdate } = useSWUpdate();
   const { user, isLoading: authLoading } = useAuth();
   // rel-12: «Скинути кеш PWA» знімає реєстрацію SW, а з нею і push-підписку.
@@ -527,9 +521,6 @@ function RootLayoutInner() {
     canInstall,
     onInstall: install,
     onDismissInstall: dismiss,
-    iosVisible,
-    onDismissIosForever: iosDismissForever,
-    onSnoozeIos: iosSnooze,
     updateAvailable,
     onApplyUpdate: applyUpdate,
     openAssistantChat,

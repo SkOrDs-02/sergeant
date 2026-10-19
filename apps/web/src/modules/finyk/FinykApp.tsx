@@ -1,11 +1,10 @@
 import { useState, useEffect, useRef, useCallback, Suspense } from "react";
 import { useDialogFocusTrap } from "@shared/hooks/useDialogFocusTrap";
+import { useHistoryDismiss } from "@shared/hooks/useHistoryDismiss";
 import { useMonobank } from "./hooks/useMonobank";
 import { usePrivatbank } from "./hooks/usePrivatbank";
 import { useStorage } from "./hooks/useStorage";
-import { readRaw, writeRaw } from "./lib/finykStorage";
-import { FINYK_BANK_BANNER_DISMISSED_AT_KEY } from "@sergeant/finyk-domain/storage-keys";
-import { FINYK_MANUAL_ONLY_KEY, enableFinykManualOnly } from "./lib/demoData";
+import { enableFinykManualOnly } from "./lib/demoData";
 import { ModuleBottomNav } from "@shared/components/ui/ModuleBottomNav";
 import { messages } from "@shared/i18n/uk";
 import {
@@ -18,9 +17,6 @@ import {
   ModuleHeaderSettingsButton,
   SwipePages,
 } from "@shared/components/layout";
-import { NoBankBanner } from "./components/NoBankBanner";
-import { shouldShowNoBankBanner } from "./components/NoBankBanner.visibility";
-import { useBankBannerClock } from "./hooks/useBankBannerClock";
 import { FinykManualExpenseConflictBanner } from "./components/FinykManualExpenseConflictBanner";
 import { SectionErrorBoundary } from "@shared/components/ui/SectionErrorBoundary";
 import { useToast } from "@shared/hooks/useToast";
@@ -99,7 +95,9 @@ export default function App({
   pwaAction,
   onPwaActionConsumed,
 }: FinykAppProps) {
-  const mono = useMonobank();
+  // FinykBootCluster owns mirror writes for the whole app. The screen
+  // observes the same query keys without persisting every response twice.
+  const mono = useMonobank({ writeMirror: false });
   const privat = usePrivatbank(PRIVAT_ENABLED);
   useMonoTokenMigration(true);
   const toast = useToast();
@@ -133,6 +131,11 @@ export default function App({
     year: number;
     month: number;
   } | null>(null);
+  // Тиждень, рік чи діапазон Аналітики поверх місяця (Р5.6 спеки v3).
+  const [categoryRange, setCategoryRange] = useState<{
+    fromKey: string;
+    toKey: string;
+  } | null>(null);
   const showBalance = storage.showBalance;
   const [showExpenseSheet, setShowExpenseSheet] = useState(false);
   // Аркуш масового імпорту живе тут, а не в `FinykScanEntryPoints`: його
@@ -144,6 +147,9 @@ export default function App({
     onEscape: () => setShowLoginOverlay(false),
     inertBackground: true,
   });
+  // Системний Back закриває оверлей Monobank, а не виводить із Фініка і не
+  // губить вставлений токен (аудит ux-02).
+  useHistoryDismiss(showLoginOverlay, () => setShowLoginOverlay(false));
   const [editingManualExpenseId, setEditingManualExpenseId] = useState<
     string | null
   >(null);
@@ -151,17 +157,6 @@ export default function App({
   const [quickAddDescription, setQuickAddDescription] = useState<string | null>(
     null,
   );
-  const [manualOnly, setManualOnly] = useState(
-    () => readRaw(FINYK_MANUAL_ONLY_KEY, "") === "1",
-  );
-  // Закриття банера «підключити банк» ховає його на 7 днів, а не назавжди
-  // (рішення власника 2026-09-30); `manualOnly` лишається постійним вибором.
-  const [bankBannerDismissedAt, setBankBannerDismissedAt] = useState<
-    number | null
-  >(() => {
-    const n = Number(readRaw(FINYK_BANK_BANNER_DISMISSED_AT_KEY, ""));
-    return Number.isFinite(n) && n > 0 ? n : null;
-  });
   // Комбінований пікер «Запланувати» на Плануванні (founder-UX audit
   // round 2, F2): `Budgets` і `PlanningSubscriptions` мають КОЖЕН свій
   // `useAssetsState`-інстанс, тож пункт «Підписка» з пікера в `Budgets` не
@@ -260,18 +255,6 @@ export default function App({
     setShowLoginOverlay(false);
   }
 
-  // Умова живе окремою чистою функцією поруч із самим банером — розбір
-  // чому саме там, і що означає `inDemo`, у її докстрінгу (PR-F5).
-  const bankBannerNow = useBankBannerClock(page, bankBannerDismissedAt);
-  const showNoBankBanner = shouldShowNoBankBanner({
-    hasConnectedProvider,
-    manualOnly,
-    manualExpenseCount: (storage.manualExpenses || []).length,
-    dismissedAt: bankBannerDismissedAt,
-    now: bankBannerNow,
-    page,
-  });
-
   // Page render helpers
   const renderPage = () => {
     if (page === "overview") {
@@ -286,7 +269,6 @@ export default function App({
             onNavigate={navigate}
             onOpenAuth={onOpenAuth}
             showBalance={showBalance}
-            onOpenBulkImport={() => setShowBulkImport(true)}
             onOpenSettings={onOpenSettings}
           />
         </SectionErrorBoundary>
@@ -305,9 +287,11 @@ export default function App({
             receiptLinks={receiptLinks}
             categoryFilter={categoryFilter}
             categoryMonth={categoryMonth}
+            categoryRange={categoryRange}
             onClearCategoryFilter={() => {
               setCategoryFilter(null);
               setCategoryMonth(null);
+              setCategoryRange(null);
             }}
             dayFilter={focusTransactionDate}
             onClearDayFilter={() => navigate("transactions")}
@@ -365,7 +349,17 @@ export default function App({
               // переходимо. `Transactions` монтується вже з нею й одразу
               // показує звужений список — інакше був би кадр із повним.
               setCategoryFilter(categoryId);
-              setCategoryMonth(period);
+              // Місяць списку = місяць останнього дня періоду; тиждень,
+              // рік і діапазон звужують його до своїх днів.
+              setCategoryMonth({
+                year: Number(period.toKey.slice(0, 4)),
+                month: Number(period.toKey.slice(5, 7)),
+              });
+              setCategoryRange(
+                period.kind === "month"
+                  ? null
+                  : { fromKey: period.fromKey, toKey: period.toKey },
+              );
               navigate("transactions");
             }}
           />
@@ -502,17 +496,6 @@ export default function App({
           }
         />
 
-        {showNoBankBanner && (
-          <NoBankBanner
-            onConnect={() => setShowLoginOverlay(true)}
-            onContinueManually={() => {
-              const now = Date.now();
-              writeRaw(FINYK_BANK_BANNER_DISMISSED_AT_KEY, String(now));
-              setBankBannerDismissedAt(now);
-            }}
-          />
-        )}
-
         <FinykManualExpenseConflictBanner />
 
         <SwipePages
@@ -577,7 +560,13 @@ export default function App({
           frequentCategories={frequentCategories}
           frequentMerchants={frequentMerchants}
           customCategories={storage.customCategories}
+          cashOnHandExists={storage.cashOnHand != null}
+          defaultAccount={storage.cashOnHand?.preferForManual ? "cash" : null}
+          onCreateCashOnHand={storage.createCashOnHand}
           onSave={(expense) => {
+            if (expense.account !== undefined) {
+              storage.rememberManualAccount(expense.account);
+            }
             handleExpenseSave(expense);
             handlePostSavePrompt(expense);
           }}
@@ -636,7 +625,6 @@ export default function App({
               onConnect={(token) => connect(token)}
               onContinueWithoutBank={() => {
                 enableFinykManualOnly();
-                setManualOnly(true);
                 setShowLoginOverlay(false);
               }}
               onBackToHub={() => setShowLoginOverlay(false)}

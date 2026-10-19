@@ -17,6 +17,17 @@
  *   - `BACKEND_URL` (Vercel env, без префіксу VITE_) — base URL бекенду,
  *     напр. `https://sergeant-production.up.railway.app`. Без неї
  *     middleware — no-op, запит йде далі (зручно для dev/preview без API).
+ *   - `SERGEANT_CLIENT_IP_SECRET` (Vercel env, ≥32 символи; той самий рядок у
+ *     Coolify для API) — секрет підпису IP клієнта (rel-03). Без нього
+ *     службові заголовки IP лише стираються і нічого не підписується.
+ *
+ * IP клієнта (rel-03). Бекенд за Traefik бачить лише egress-адресу Vercel,
+ * тож усі per-IP ліміти спільні. Тут беремо IP з ПЕРШОГО значення
+ * `x-forwarded-for` (Vercel перезаписує його справжнім IP клієнта) і
+ * передаємо як `x-sergeant-client-ip` + `x-sergeant-client-ip-sig` =
+ * base64url(HMAC-SHA256(secret, ip)). Секрет у заголовок не потрапляє.
+ * Вхідні копії обох заголовків від клієнта видаляються ДО підпису. Сервер
+ * довіряє IP лише за валідного підпису (`apps/server/src/http/clientIp.ts`).
  */
 
 export const config = {
@@ -44,6 +55,43 @@ function isAllowedBackend(raw: string): URL | undefined {
     return parsed;
   }
   return undefined;
+}
+
+const CLIENT_IP_HEADER = "x-sergeant-client-ip";
+const CLIENT_IP_SIG_HEADER = "x-sergeant-client-ip-sig";
+
+function toBase64Url(bytes: ArrayBuffer): string {
+  let bin = "";
+  for (const b of new Uint8Array(bytes)) bin += String.fromCharCode(b);
+  return btoa(bin).replace(/\+/g, "-").replace(/\//g, "_").replace(/=+$/, "");
+}
+
+/**
+ * Перше значення `x-forwarded-for` + HMAC-підпис. `undefined`, якщо секрету
+ * немає (фіча вимкнена) або XFF порожній. Мінімальна довжина секрету (32)
+ * перевіряється й тут: коротший секрет вважаємо незаданим, щоб не
+ * підписувати слабким ключем.
+ */
+async function signClientIp(
+  secret: string | undefined,
+  forwardedFor: string | null,
+): Promise<{ ip: string; sig: string } | undefined> {
+  if (!secret || secret.length < 32) return undefined;
+  const ip = forwardedFor?.split(",")[0]?.trim();
+  if (!ip) return undefined;
+  const key = await crypto.subtle.importKey(
+    "raw",
+    new TextEncoder().encode(secret),
+    { name: "HMAC", hash: "SHA-256" },
+    false,
+    ["sign"],
+  );
+  const mac = await crypto.subtle.sign(
+    "HMAC",
+    key,
+    new TextEncoder().encode(ip),
+  );
+  return { ip, sig: toBase64Url(mac) };
 }
 
 export default async function middleware(
@@ -77,6 +125,17 @@ export default async function middleware(
   ]) {
     headers.delete(h);
   }
+  // rel-03: клієнт не може принести власний «підписаний» IP.
+  headers.delete(CLIENT_IP_HEADER);
+  headers.delete(CLIENT_IP_SIG_HEADER);
+  const signed = await signClientIp(
+    process.env["SERGEANT_CLIENT_IP_SECRET"],
+    request.headers.get("x-forwarded-for"),
+  );
+  if (signed) {
+    headers.set(CLIENT_IP_HEADER, signed.ip);
+    headers.set(CLIENT_IP_SIG_HEADER, signed.sig);
+  }
   headers.set("x-forwarded-host", url.host);
   headers.set("x-forwarded-proto", url.protocol.replace(":", ""));
 
@@ -86,7 +145,7 @@ export default async function middleware(
   const upstream = await fetch(target.toString(), {
     method: request.method,
     headers,
-    body,
+    ...(body ? { body } : {}),
     redirect: "manual",
   });
 

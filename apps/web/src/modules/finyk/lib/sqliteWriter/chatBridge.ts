@@ -179,7 +179,7 @@ export async function mirrorFinykChatMonthlyPlan(
     dismissedRecurringJson: safeStringify(cache.dismissedRecurring ?? [], "[]"),
     // Чат знає лише місячний план, а `prefs_json` пишеться дослівно: без
     // правил із кешу цей апсерт обнулив би їх разом із планом.
-    prefsJson: serializePrefsJson(cache.merchantRules),
+    prefsJson: serializePrefsJson(cache.merchantRules, cache.cashOnHand),
   };
 
   const ops = diffFinykDualWriteOps(

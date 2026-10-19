@@ -54,6 +54,7 @@ vi.mock("../lib/monoMirrorGate", () => ({
 
 import { monoWebhookApi } from "@shared/api";
 import { useMonobankWebhook } from "./useMonobankWebhook";
+import { finykKeys } from "@shared/lib/api/queryKeys";
 
 const mockedSyncState = monoWebhookApi.syncState as unknown as ReturnType<
   typeof vi.fn
@@ -189,9 +190,54 @@ describe("useMonobankWebhook — extra callbacks", () => {
       expect(result.current.syncState.status).toBe("success");
     });
     await act(async () => {
-      result.current.clearTxCache();
+      await result.current.clearTxCache();
     });
     expect(result.current.error).toBe("");
+  });
+
+  it("resets date-bucketed transactions and refetches active operations", async () => {
+    mockedSyncState.mockResolvedValue(ACTIVE_STATE);
+    const client = new QueryClient({
+      defaultOptions: { queries: { retry: false } },
+    });
+    const historyKey = finykKeys.monoWebhookTransactions(
+      "2026-01-01|2026-02-01",
+    );
+    client.setQueryData(historyKey, [{ monoTxId: "old-history" }]);
+    const { result, unmount } = renderHook(
+      () => useMonobankWebhook({ loadJars: false }),
+      {
+        wrapper: ({ children }: { children: ReactNode }) => (
+          <QueryClientProvider client={client}>{children}</QueryClientProvider>
+        ),
+      },
+    );
+    await waitFor(() =>
+      expect(fetchAllMonoTransactions).toHaveBeenCalledTimes(1),
+    );
+    await waitFor(() => expect(result.current.loadingTx).toBe(false));
+    fetchAllMonoTransactions.mockResolvedValue([
+      {
+        monoTxId: "fresh",
+        monoAccountId: "card",
+        time: "2026-10-16T10:00:00Z",
+        amount: -100,
+        operationAmount: -100,
+        currencyCode: 980,
+        mcc: 5411,
+        description: "Fresh",
+      },
+    ]);
+    await act(async () => {
+      await result.current.clearTxCache();
+    });
+    await waitFor(() =>
+      expect(fetchAllMonoTransactions).toHaveBeenCalledTimes(2),
+    );
+    expect(client.getQueryData(historyKey)).toBeUndefined();
+    expect(result.current.transactions.map((tx) => tx.id)).toContain("fresh");
+    unmount();
+    client.clear();
   });
 
   it("fetchMonth rejects when not connected", async () => {

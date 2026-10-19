@@ -46,25 +46,6 @@ describe("Segmented", () => {
     expect(onChange).toHaveBeenCalledWith("month");
   });
 
-  it("style='solid' + variant='fizruk' paints the active tab inverted-ink", () => {
-    const { getAllByRole } = render(
-      <Segmented
-        items={ITEMS}
-        value="day"
-        onChange={() => {}}
-        style="solid"
-        variant="fizruk"
-      />,
-    );
-    const active = getAllByRole("tab")[0];
-    // «Чорнило» v3.1 § 6 — solid active is inverted-ink (bg-ink/text-bg,
-    // theme-aware) instead of a saturated module fill; border keeps the
-    // module accent for continuity with siblings.
-    expect(active!.className!).toContain("bg-ink");
-    expect(active!.className!).toContain("text-bg");
-    expect(active!.className!).toContain("border-fizruk");
-  });
-
   it("supports roving tabindex: only the active tab is a tab stop", () => {
     const { getAllByRole } = render(
       <Segmented items={ITEMS} value="week" onChange={() => {}} />,
@@ -103,67 +84,33 @@ describe("Segmented", () => {
     expect(document.activeElement).toBe(tabs[0]);
   });
 
-  it("style='soft' (default) + variant='routine' paints the active tab with routine-soft palette", () => {
-    const { getAllByRole } = render(
+  it("мова H: доріжка track, активний сегмент segment із тінню, без hue модуля", () => {
+    const { getByRole, getAllByRole } = render(
       <Segmented
         items={ITEMS}
-        value="day"
-        onChange={() => {}}
+        value="week"
         variant="routine"
+        onChange={() => {}}
       />,
     );
-    const active = getAllByRole("tab")[0];
-    expect(active!.className!).toContain("bg-routine-surface");
-    // Soft active label uses the theme-aware `-soft-fg` token (deep on the
-    // pale light/HC surface, bright on dark) instead of the static
-    // `text-routine-strong` hex that went sub-AA in HC. See VARIANT_SOFT.
-    expect(active!.className!).toContain("text-routine-soft-fg");
+    const track = getByRole("tablist").className;
+    expect(track).toContain("bg-track");
+    expect(track).toContain("rounded-[10px]");
+    const [inactive, active] = getAllByRole("tab");
+    expect(active!.className).toContain("bg-segment");
+    expect(active!.className).toContain("shadow-segment");
+    expect(active!.className).toContain("rounded-lg");
+    expect(active!.className).not.toMatch(/routine|border/);
+    expect(inactive!.className).toContain("text-muted");
   });
 
-  it("defaults to the pill layout: rounded chips on a wrapping row", () => {
+  it("layout='bar' розтягує доріжку й ділить сегменти порівну", () => {
     const { getByRole, getAllByRole } = render(
-      <Segmented items={ITEMS} value="day" onChange={() => {}} />,
+      <Segmented items={ITEMS} value="day" layout="bar" onChange={() => {}} />,
     );
-    expect(getByRole("tablist").className).toContain("flex-wrap");
-    for (const tab of getAllByRole("tab")) {
-      expect(tab.className).toContain("rounded-xl");
-      expect(tab.className).not.toContain("flex-1");
-    }
-  });
-
-  it("layout='bar' makes one full-width track of equal segments", () => {
-    const { getByRole, getAllByRole } = render(
-      <Segmented items={ITEMS} value="day" onChange={() => {}} layout="bar" />,
-    );
-    const tablist = getByRole("tablist");
-    expect(tablist.className).toContain("w-full");
-    // A wrapped segment would break the single track the layout promises.
-    expect(tablist.className).not.toContain("flex-wrap");
+    expect(getByRole("tablist").className).toContain("w-full");
     for (const tab of getAllByRole("tab")) {
       expect(tab.className).toContain("flex-1");
-      expect(tab.className).toContain("rounded-2xl");
     }
   });
-
-  it.each(["finyk", "fizruk", "routine", "nutrition"] as const)(
-    "style='soft' + variant='%s': вибраний піл = тонований фон + контур `-edge` (A4 аудиту контрасту)",
-    (variant) => {
-      // Тихі `{m}-ring` / `{m}-border-dark/40` давали 1.35 (світла) / 2.49
-      // (темна) проти сусіда; для СТАНУ потрібно ≥3:1 (WCAG 1.4.11).
-      const { getAllByRole } = render(
-        <Segmented
-          items={ITEMS}
-          value="day"
-          onChange={() => {}}
-          variant={variant}
-        />,
-      );
-      const [active, idle] = getAllByRole("tab");
-      expect(active!.className).toContain(`border-${variant}-edge`);
-      expect(active!.className).not.toContain(`border-${variant}-ring`);
-      expect(active!.className).not.toContain(`${variant}-border-dark`);
-      // Невибраний піл не змінився: тиха межа картки.
-      expect(idle!.className).toContain("border-line");
-    },
-  );
 });

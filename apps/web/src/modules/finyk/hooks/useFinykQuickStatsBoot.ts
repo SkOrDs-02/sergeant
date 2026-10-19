@@ -1,4 +1,5 @@
 import { useEffect } from "react";
+import { useKyivDayNow } from "@shared/hooks/useKyivDayNow";
 import { buildFinykExcludedTxIds } from "@sergeant/finyk-domain";
 import { manualExpenseToTransaction } from "@sergeant/finyk-domain/domain/transactions";
 import { getLimitBudgets } from "@sergeant/finyk-domain/domain/budget";
@@ -16,6 +17,7 @@ import { writeFinykQuickStatsSnapshot } from "./useFinykQuickStatsWriter";
  * empty Finyk card until the module screen happens to be opened.
  */
 export function useFinykQuickStatsBoot(): void {
+  const nowMs = useKyivDayNow();
   const sqliteTick = useFinykSqliteReadTick();
   const monoMirrorTick = useFinykMonoMirrorTick();
 
@@ -38,12 +40,14 @@ export function useFinykQuickStatsBoot(): void {
       txCategories: storage.txCategories,
       receivables: storage.receivables,
       excludedStatTxIds: storage.excludedStatTxIds,
+      cashOnHand: storage.cashOnHand,
       // Банк теж: пари «списання ↔ скасування» ловляться лише коли обидві
       // ноги у вході (рішення власника 2026-10-01).
       transactions: [...manualTxs, ...mono.transactions],
     });
 
     writeFinykQuickStatsSnapshot({
+      nowMs,
       transactions:
         manualTxs.length > 0
           ? [...mono.transactions, ...manualTxs]
@@ -52,6 +56,9 @@ export function useFinykQuickStatsBoot(): void {
       txSplits: storage.txSplits,
       planExpense: Number(storage.monthlyPlan?.expense || 0),
       limitsCount: getLimitBudgets(storage.budgets).length,
+      subscriptions: storage.subscriptions,
+      manualDebts: storage.manualDebts,
+      receivables: storage.receivables,
     });
-  }, [monoMirrorTick, sqliteTick]);
+  }, [monoMirrorTick, sqliteTick, nowMs]);
 }

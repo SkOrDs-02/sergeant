@@ -223,12 +223,22 @@ describe("syncEngineReader — отруйний оп (rel-11)", () => {
 
     const trace: string[] = [];
     const realRun = client.run.bind(client);
+    const realAll = client.all.bind(client);
     client.run = (sql, params) => {
       if (sql.includes("INSERT INTO routine_streaks")) trace.push("increment");
-      else if (sql.includes("INSERT INTO sync_op_cursor"))
+      else if (
+        sql.includes("INSERT INTO sync_op_cursor") &&
+        !String((params as unknown[])[0]).startsWith("backfill_")
+      )
         trace.push(`cursor:${String((params as unknown[])[1])}`);
       else if (sql.includes("INSERT INTO routine_habits")) trace.push("habit");
       return realRun(sql, params);
+    };
+    client.all = (sql, params) => {
+      // Atomic pull writes use RETURNING through `all`; observe the
+      // mutation as well as run() so the cursor-order assertion stays real.
+      if (sql.includes("INSERT INTO routine_habits")) trace.push("habit");
+      return realAll(sql, params);
     };
 
     await runtime.pullOnce();
