@@ -60,7 +60,7 @@
 //      Загальні імена (`expand`, `collapse`, `selected`) рахуються лише в
 //      ланцюжку від `messages` / `*Messages`, щоб не ловити `row.selected`.
 //  14. `capsFormLabel` - `uppercase` або `text-style-overline` на тезі
-//      `<label>` (у класах тега або в рядковій константі, яку тег бере
+//      `<label>` чи примітиві `<Label>` з `FormField` (у класах тега або в рядковій константі, яку тег бере
 //      `className={NAME}`). Підпис поля 14 / 500 звичайним регістром, капс
 //      лише на тинті hero, а там `<label>` немає.
 //
@@ -636,7 +636,7 @@ function stateHits(relPath, src) {
     consts.set(x[1], x[3]);
   }
   const caps = /(?<![\w-])(?:uppercase|text-style-overline)(?![\w-])/;
-  const labelRe = /<label(?![\w-])/g;
+  const labelRe = /<[lL]abel(?![\w-])/g;
   let m;
   while ((m = labelRe.exec(src))) {
     const end = tagEnd(src, m.index + m[0].length);
@@ -647,7 +647,7 @@ function stateHits(relPath, src) {
       push(
         "capsFormLabel",
         m.index,
-        "капс на <label> - підпис поля 14 / 500 звичайним регістром (капс лише на тинті hero)",
+        "капс на <label> / <Label> - підпис поля 14 / 500 звичайним регістром (капс лише на тинті hero)",
       );
     }
     labelRe.lastIndex = end + 1;

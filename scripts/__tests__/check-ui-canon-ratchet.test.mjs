@@ -525,11 +525,19 @@ test("capsFormLabel: uppercase і overline на <label> ловляться, че
   assert.equal(onlyTsx(src, "capsFormLabel").length, 3);
 });
 
-test("capsFormLabel: звичайний підпис, капс на <span> і чужий <Label> не рахуються", () => {
+test("capsFormLabel: примітив <Label> з капсом у className теж ловиться", () => {
+  const src = `
+    <Label htmlFor="a" className="uppercase tracking-wide">A</Label>
+    <Label className={cn("block", "text-style-overline")}>B</Label>
+    <Label htmlFor="c">C</Label>`;
+  assert.equal(onlyTsx(src, "capsFormLabel").length, 2);
+});
+
+test("capsFormLabel: звичайний підпис, капс на <span> і схожі теги не рахуються", () => {
   const src = `
     <label className="text-style-label normal-case text-muted">A</label>
     <label className="block"><span className="uppercase">B</span></label>
-    <Label className="uppercase">C</Label>
+    <LabelList className="uppercase" />
     <labelled className="uppercase" />`;
   assert.deepEqual(onlyTsx(src, "capsFormLabel"), []);
 });
