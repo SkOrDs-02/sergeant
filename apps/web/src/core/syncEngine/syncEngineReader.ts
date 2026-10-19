@@ -335,6 +335,10 @@ export function createSyncEngineReaderRuntime(
         }
       }
 
+      // Основний pull отримує власний бюджет чекань рейт-ліміту, навіть коли
+      // догін вичерпав свій.
+      rateLimitWaits = 0;
+
       for (;;) {
         const page = await fetchPage(since);
 

@@ -20,6 +20,7 @@ import {
 import type { SyncV2PullOp } from "@sergeant/api-client";
 
 import { __resetApplyPullOpCachesForTests } from "./applyPullOp";
+import { BACKFILL_PAGES_PER_TICK } from "./txNotesBackfill";
 import { createSyncEngineReaderRuntime } from "./syncEngineReader";
 import { readPullSinceCursor, writePullSinceCursor } from "./syncOpCursor";
 
@@ -52,11 +53,16 @@ const noteOp = (
     origin_device_id: "peer",
   }) as SyncV2PullOp;
 
-function makeRuntime(log: SyncV2PullOp[]) {
-  const pull = vi.fn(async (since: number) => ({
-    ops: log.filter((op) => op.id > since),
-    next_cursor: null,
-  }));
+function makeRuntime(log: SyncV2PullOp[], pageSize = Infinity) {
+  const pull = vi.fn(async (since: number) => {
+    const rest = log.filter((op) => op.id > since);
+    const ops = rest.slice(0, pageSize);
+    const last = ops.at(-1);
+    return {
+      ops,
+      next_cursor: rest.length > ops.length && last ? last.id : null,
+    };
+  });
   const runtime = createSyncEngineReaderRuntime({
     pull,
     resolveClient: async () => client,
@@ -184,5 +190,40 @@ describe("backfill finyk_tx_notes", () => {
     await runtime.pullOnce();
     // Курсор уже 10, прапор «зроблено» стоїть: від 0 не йдемо.
     expect(pull.mock.calls.map((c) => c[0])).toEqual([10]);
+  });
+
+  it("довга історія: догін бере обмежену кількість сторінок за тік і продовжує з прогресу", async () => {
+    await writePullSinceCursor(client, USER, 1000);
+    const total = BACKFILL_PAGES_PER_TICK + 2;
+    const log = Array.from({ length: total }, (_, i) =>
+      noteOp(
+        i + 1,
+        "insert",
+        `tx-${i + 1}`,
+        `n${i + 1}`,
+        "2026-10-10T10:00:00.000Z",
+      ),
+    );
+    const { pull, runtime } = makeRuntime(log, 1);
+
+    await runtime.pullOnce();
+    // Перший тік: рівно BACKFILL_PAGES_PER_TICK сторінок догону, далі основний pull.
+    const first = pull.mock.calls.map((c) => c[0]);
+    expect(first).toEqual([
+      ...Array.from({ length: BACKFILL_PAGES_PER_TICK }, (_, i) => i),
+      1000,
+    ]);
+    expect(await notes()).toHaveLength(BACKFILL_PAGES_PER_TICK);
+
+    pull.mockClear();
+    await runtime.pullOnce();
+    // Другий тік продовжує з прогресу і добиває журнал.
+    expect(pull.mock.calls[0]![0]).toBe(BACKFILL_PAGES_PER_TICK);
+    expect(await notes()).toHaveLength(total);
+    expect(await readPullSinceCursor(client, USER)).toBe(1000);
+
+    pull.mockClear();
+    await runtime.pullOnce();
+    expect(pull.mock.calls.map((c) => c[0])).toEqual([1000]);
   });
 });

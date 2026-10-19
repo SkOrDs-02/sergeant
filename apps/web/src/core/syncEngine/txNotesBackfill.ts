@@ -6,6 +6,12 @@ import { readCursorValue, writeCursorValue } from "./syncOpCursor.js";
 
 const TABLE = "finyk_tx_notes";
 
+/**
+ * Скільки сторінок журналу догін проходить за один тік. Довга історія не має
+ * затримувати основний pull: решту дотягнуть наступні тіки з `progressKey`.
+ */
+export const BACKFILL_PAGES_PER_TICK = 5;
+
 const doneKey = (userId: string): string =>
   `backfill_done:${TABLE}:v1:${userId}`;
 const progressKey = (userId: string): string =>
@@ -45,8 +51,9 @@ export async function markTxNotesBackfillDone(
  * журнал від 0 наявним `GET /api/v2/sync/pull` (нового контракту не треба) і
  * застосовуємо ЛИШЕ оп-и `finyk_tx_notes` через `applyPullOp` (LWW за
  * `updated_at`: новіші локальні правки не затираються). Прогрес пишеться
- * після кожної сторінки (рейт-ліміт чи обрив не починають з нуля), прапор
- * «зроблено» - після кінця журналу. Свіжа інсталяція (курсор 0) прапор ставить
+ * після кожної сторінки (рейт-ліміт чи обрив не починають з нуля), за тік
+ * не більше `BACKFILL_PAGES_PER_TICK` сторінок, прапор «зроблено» - після
+ * кінця журналу. Свіжа інсталяція (курсор 0) прапор ставить
  * одразу: основний цикл і так пройде весь журнал.
  *
  * Власні оп-и цього пристрою сервер не віддає (`originDeviceId`) - вони вже
@@ -63,7 +70,12 @@ export async function backfillTxNotesOnce(
   if (deps.mainCursor === 0) return;
 
   let since = await readCursorValue(client, progressKey(userId));
-  for (;;) {
+  for (let pages = 0; ; pages += 1) {
+    if (pages >= BACKFILL_PAGES_PER_TICK) {
+      // Бюджет тіка вичерпано: прогрес уже збережено, продовжимо наступного разу.
+      await writeCursorValue(client, progressKey(userId), since);
+      return;
+    }
     const page = await deps.fetchPage(since);
     let maxId = since;
     for (const op of page.ops) {
