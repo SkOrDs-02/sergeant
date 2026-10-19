@@ -309,6 +309,74 @@ describe("computeOneRmAging — режим повернення тримаєть
     expect(aging.reference1rm).toBe(100);
   });
 
+  describe("друга пауза посеред непройденого повернення", () => {
+    // Пік 140 → пауза 4 міс → 76/78 (орієнтир 105) → пропуск 30 днів → 80.
+    const base = [
+      { at: daysAgo(190), best1rm: 140 },
+      { at: daysAgo(33), best1rm: 76 },
+      { at: daysAgo(32), best1rm: 78 },
+    ];
+
+    it("після короткої другої паузи і сесії 80 орієнтир лишається 105, а не ~139", () => {
+      const aging = computeOneRmAging({
+        peak1rm: 140,
+        lastSessionAt: daysAgo(1),
+        sessions: [...base, { at: daysAgo(1), best1rm: 80 }],
+        now: NOW,
+      });
+      expect(aging.returnMode).toBe(true);
+      expect(aging.reference1rm).toBeLessThanOrEqual(105 + 1e-9);
+      expect(aging.reference1rm).toBeCloseTo(105, 5);
+      expect(aging.reductionPct).toBe(25);
+    });
+
+    it("під час самого пропуску (давність 30 днів) орієнтир теж не піднімається до піка", () => {
+      const aging = computeOneRmAging({
+        peak1rm: 140,
+        lastSessionAt: daysAgo(30),
+        sessions: [
+          { at: daysAgo(190), best1rm: 140 },
+          { at: daysAgo(31), best1rm: 76 },
+          { at: daysAgo(30), best1rm: 78 },
+        ],
+        now: NOW,
+      });
+      expect(aging.isStale).toBe(true);
+      expect(aging.returnMode).toBe(true);
+      expect(aging.reference1rm).toBeLessThanOrEqual(105 + 1e-9);
+    });
+
+    it("коли повернення завершене, друга пауза рахується від власної довжини", () => {
+      // 90 ≥ 0.9 × 75 → перша пауза відпрацьована; далі пропуск 40 днів.
+      const aging = computeOneRmAging({
+        peak1rm: 100,
+        lastSessionAt: daysAgo(40),
+        sessions: [
+          { at: daysAgo(400), best1rm: 100 },
+          { at: daysAgo(300), best1rm: 90 },
+          { at: daysAgo(40), best1rm: 90 },
+        ],
+        now: NOW,
+      });
+      expect(aging.isStale).toBe(true);
+      // 40 днів → −(12/7)×2.5% ≈ 4.3%, а не підлога 0.75 від давнього ланцюжка.
+      expect(aging.reference1rm).toBeGreaterThan(95);
+    });
+
+    it("вихід після другої паузи — за найсуворішим зниженням ланцюжка (94.5), не за коротким (≈125)", () => {
+      const at = (best1rm: number) =>
+        computeOneRmAging({
+          peak1rm: 140,
+          lastSessionAt: daysAgo(1),
+          sessions: [...base, { at: daysAgo(1), best1rm }],
+          now: NOW,
+        });
+      expect(at(94.4).returnMode).toBe(true);
+      expect(at(94.4).reference1rm).toBeCloseTo(105, 5);
+      expect(at(94.5).returnMode).toBe(false);
+    });
+  });
+
   it("без sessions поведінка попередня: свіжа сесія режим не тримає", () => {
     const aging = computeOneRmAging({
       peak1rm: 140,

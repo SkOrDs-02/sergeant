@@ -27,7 +27,10 @@
  * фактичних 76). Тому, коли викликач передає `sessions`, режим повернення
  * після паузи, що вже закінчилась, триває, доки найкращий e1RM сесій після
  * неї не досягне {@link RETURN_EXIT_RATIO} від зниженого піка (пік ×
- * коефіцієнт за довжину тієї паузи). Без `sessions` поведінка як раніше.
+ * коефіцієнт за довжину тієї паузи). Якщо після довгої паузи йде ще одна (≥ 28
+ * днів), поки повернення не завершене, береться найсуворіший коефіцієнт
+ * ланцюжка — ні друга пауза, ні її триваюча давність не піднімають орієнтир
+ * назад до піка. Без `sessions` поведінка як раніше.
  */
 
 import { epley1rm } from "../../lib/workoutStats.js";
@@ -176,21 +179,30 @@ function layoffFactor(days: number, staleAfterDays: number): number {
 }
 
 interface Comeback {
-  /** Коефіцієнт, розрахований від довжини паузи, що передувала поверненню. */
+  /** Найсуворіший коефіцієнт серед непройдених пауз ланцюжка. */
   readonly factor: number;
-  /** Найкращий e1RM сесій від першої після паузи і далі. */
+  /** Найкращий e1RM сесій від першої після найдавнішої паузи ланцюжка. */
   readonly freshBest1rm: number;
 }
 
 /**
- * Остання завершена пауза (≥ порогу між двома сусідніми сесіями) і те, що
- * людина підняла від першої сесії після неї. Фактор береться від ДОВЖИНИ цієї
- * паузи (від її початку — останньої сесії до неї), а не від давності
- * останньої сесії: та після повернення вже майже нуль.
+ * Незавершене повернення: ланцюжок пауз (≥ порогу між сусідніми сесіями), після
+ * кожної з яких найкращий e1RM ще нижчий за {@link RETURN_EXIT_RATIO} від
+ * `пік × коефіцієнт тієї паузи`. Іде від останньої паузи назад і зупиняється на
+ * першій, після якої людина вже повернулась. `null` — незавершеного повернення
+ * немає.
+ *
+ * Фактор береться від ДОВЖИНИ паузи (від її початку — останньої сесії до неї),
+ * а не від давності останньої сесії: та після повернення вже майже нуль. Для
+ * ланцюжка береться НАЙСУВОРІШИЙ фактор: друга, коротка пауза посеред
+ * непройденого повернення не повертає орієнтир до піка (пік 140 → 4 міс → 76 →
+ * 30 днів → 80 тримається на 105, а не на 139). Сила почала падати з початку
+ * довгої паузи, і ніяка коротка перерва після неї цього не скасовує.
  */
-function latestComeback(
+function unfinishedComeback(
   sessions: readonly OneRmSessionPoint[] | undefined,
   staleAfterDays: number,
+  peak1rm: number,
 ): Comeback | null {
   const points = (sessions ?? [])
     .map((s) => ({ t: Date.parse(s.at), best1rm: s.best1rm }))
@@ -200,18 +212,36 @@ function latestComeback(
     )
     .sort((a, b) => a.t - b.t);
 
+  // Паузи від останньої назад. Для кожної міряємо найкращий e1RM її СЕГМЕНТА
+  // (від першої сесії після неї до наступної, новішої паузи): повернення, яке
+  // не було завершене до того, як прийшла наступна пауза, лишається в ланцюжку.
+  let factor = 1;
+  let chainStart = -1;
+  let segmentEnd = points.length; // виключно
   for (let i = points.length - 1; i > 0; i--) {
-    const cur = points[i]!;
-    const prev = points[i - 1]!;
-    const gapDays = Math.floor((cur.t - prev.t) / MS_PER_DAY);
+    const gapDays = Math.floor((points[i]!.t - points[i - 1]!.t) / MS_PER_DAY);
     if (gapDays < staleAfterDays) continue;
-    let freshBest1rm = 0;
-    for (let j = i; j < points.length; j++) {
-      freshBest1rm = Math.max(freshBest1rm, points[j]!.best1rm);
+    const gapFactor = layoffFactor(gapDays, staleAfterDays);
+    let segmentBest = 0;
+    for (let j = i; j < segmentEnd; j++) {
+      segmentBest = Math.max(segmentBest, points[j]!.best1rm);
     }
-    return { factor: layoffFactor(gapDays, staleAfterDays), freshBest1rm };
+    // Після цієї паузи людина вже повернулась — давніші нас не стосуються.
+    if (segmentBest >= RETURN_EXIT_RATIO * peak1rm * gapFactor) break;
+    factor = Math.min(factor, gapFactor);
+    chainStart = i;
+    segmentEnd = i;
   }
-  return null;
+  if (chainStart < 0) return null;
+
+  // Вихід: усе підняте від початку ланцюжка досягло порога СУВОРІШОГО зниження.
+  let freshBest1rm = 0;
+  for (let j = chainStart; j < points.length; j++) {
+    freshBest1rm = Math.max(freshBest1rm, points[j]!.best1rm);
+  }
+  return freshBest1rm >= RETURN_EXIT_RATIO * peak1rm * factor
+    ? null
+    : { factor, freshBest1rm };
 }
 
 /**
@@ -241,23 +271,26 @@ export function computeOneRmAging(input: OneRmAgingInput): OneRmAging {
 
   // Затухання за простій: рахуємо лише ПОНАД поріг, тож на 28-й день
   // орієнтир ще дорівнює піку — застереження вмикається раніше за зниження.
+  // Незавершене повернення після попередніх пауз (якщо `sessions` передано).
+  // Воно діє і після паузи, що вже закінчилась, і ПІД ЧАС нової паузи: інакше
+  // друга перерва посеред непройденого повернення скидала б орієнтир до піка.
+  const comeback =
+    peak1rm > 0
+      ? unfinishedComeback(input.sessions, staleAfterDays, peak1rm)
+      : null;
   let factor = 1;
   let freshBest1rm = 0;
   let comebackActive = false;
   if (isStale && daysSinceLastSession !== null) {
     factor = layoffFactor(daysSinceLastSession, staleAfterDays);
-  } else if (peak1rm > 0) {
-    // Пауза закінчилась (була сесія) — але режим повернення не вимикається,
-    // доки свіжий e1RM не дійде до RETURN_EXIT_RATIO зниженого піка.
-    const comeback = latestComeback(input.sessions, staleAfterDays);
-    if (
-      comeback &&
-      comeback.freshBest1rm < RETURN_EXIT_RATIO * peak1rm * comeback.factor
-    ) {
-      comebackActive = true;
-      factor = comeback.factor;
+    if (comeback) {
+      factor = Math.min(factor, comeback.factor);
       freshBest1rm = comeback.freshBest1rm;
     }
+  } else if (comeback) {
+    comebackActive = true;
+    factor = comeback.factor;
+    freshBest1rm = comeback.freshBest1rm;
   }
 
   const injuryReturn =
@@ -277,9 +310,9 @@ export function computeOneRmAging(input: OneRmAgingInput): OneRmAging {
       : "layoff";
 
   // Орієнтир = max(свіжий e1RM, знижений пік). У режимі повернення свіжий
-  // e1RM за побудовою нижчий за 90% зниженого піка, тож `max` лише страхує
-  // від зсуву порога виходу: орієнтир не може опуститись нижче того, що
-  // людина вже підняла після паузи.
+  // e1RM за побудовою нижчий за 90% зниженого піка (найсуворішого в ланцюжку),
+  // тож `max` лише страхує: орієнтир не може опуститись нижче того, що людина
+  // вже підняла після паузи.
   const reference1rm =
     peak1rm > 0 ? Math.max(freshBest1rm, peak1rm * factor) : 0;
   const effectiveFactor = peak1rm > 0 ? reference1rm / peak1rm : 1;
