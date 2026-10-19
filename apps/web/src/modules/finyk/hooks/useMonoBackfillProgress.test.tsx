@@ -8,8 +8,8 @@
  * Verifies the progress-poll hook reads `GET /api/mono/backfill-progress`
  * through the `monoWebhookApi` endpoint, surfaces the snapshot + derived
  * status flags, and respects `enabled: false`. The endpoint is mocked at
- * the `@shared/api` boundary (matching the existing `useMonoTransactions`
- * test style) so the assertion stays on the hook's own logic, not the wire.
+ * the `@shared/api` boundary so the assertion stays on the hook's own logic,
+ * not the wire.
  */
 import { describe, it, expect, beforeEach, vi } from "vitest";
 import { renderHook, waitFor } from "@testing-library/react";

@@ -82,6 +82,10 @@
       "entry": [
         "src/entry-server.tsx",
         "scripts/generate-og.mjs",
+        // Manual asset generator documented in apps/landing/README.md. The
+        // generated favicon/apple-touch-icon are committed, so builds do not
+        // import this script.
+        "scripts/generate-icons.mjs",
         "middleware.ts"
       ],
       "ignore": ["scripts/site-url.d.mts"]

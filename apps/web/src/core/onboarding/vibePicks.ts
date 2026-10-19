@@ -2,7 +2,7 @@
  * Thin web adapter over `@sergeant/shared/lib/vibePicks`. The shared
  * module owns key constants, sanitization and normalization rules;
  * this file just binds them to a `window.localStorage`-backed
- * `KVStore` so existing call-sites (OnboardingWizard, HubDashboard,
+ * `KVStore` so existing call-sites (WelcomeScreen, HubDashboard,
  * FirstActionSheet, analytics, …) keep the exact same API they had
  * before the mobile port.
  */

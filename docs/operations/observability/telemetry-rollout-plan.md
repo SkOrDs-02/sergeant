@@ -331,7 +331,7 @@ Mitigation: PR-6 робиться **паралельно** з PR-3/4/5, але �
 
 ---
 
-### PR-7 — `chore(shared): drop dual-write for renamed events + remove onboarding_goal_first_shown`
+### PR-7 — `chore(shared): drop dual-write for renamed events`
 
 **Scope:** Cleanup PR-3 dual-write + deprecate duplicate exposure event.
 
@@ -339,20 +339,15 @@ Mitigation: PR-6 робиться **паралельно** з PR-3/4/5, але �
 
 - Після 2-тижневого dual-write window dashboards мають бути перемкнуті на
   new names. Time to clean up.
-- `ONBOARDING_GOAL_FIRST_SHOWN` дублюється `experiment_exposed`. Goal-first
-  screen fires обидва, double-counting exposure у funnel.
+- Goal-first web experiment and its two private events were removed with the
+  unreachable legacy wizard in the 2026-10-18 dead-code cleanup.
 
 **Файли:**
 
 - EDIT `trackEvent` — прибрати `RENAMED_EVENTS` dual-write
-- DELETE `ONBOARDING_GOAL_FIRST_SHOWN` з [`analyticsEvents.ts`](../../../packages/shared/src/lib/analyticsEvents.ts)
-- EDIT callsite у [`GoalFirstScreen.tsx`](../../../apps/web/src/core/onboarding/GoalFirstScreen.tsx) — replace з `experiment_exposed { experiment_id: "goal_first", variant }`
 - VERIFY: grep [`ops/n8n-workflows/`](https://github.com/SkOrDs-02/sergeant/blob/ffdf694cb60dcfeebc2c1de14887c5a8a1d71e6b/ops/n8n-workflows) + PostHog saved insights — ніхто не читає старі назви
 
-**Tests:** snapshot test для GoalFirstScreen що fires `experiment_exposed` з правильним `experiment_id`.
-
-**Verification:** PostHog показує `experiment_exposed` для goal-first;
-old event volume → 0.
+**Verification:** old renamed event volume → 0.
 
 **Risk:** medium — забутий dashboard. **Grep + dashboard audit обов'язковий
 перед merge.**
