@@ -306,6 +306,7 @@ describe("Button", () => {
       expect(cls).toContain("text-style-body");
       expect(cls).toContain("font-semibold");
       expect(cls).toContain("min-h-[44px]");
+      expect(cls).toContain("min-w-[44px]");
       expect(cls).toContain("hover:bg-panel");
       expect(cls).not.toMatch(/(^|\s)border(\s|$)/);
       expect(cls).not.toContain("bg-text");

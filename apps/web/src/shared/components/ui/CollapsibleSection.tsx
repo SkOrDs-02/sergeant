@@ -244,31 +244,24 @@ export function CollapsibleSection({
 
   return (
     <section ref={sectionRef} className={cn("space-y-2", className)}>
-      {open ? (
-        <button
-          type="button"
-          onClick={toggle}
-          aria-expanded={open}
-          className="flex items-center gap-1.5 w-full text-left touch-target pointer-coarse:py-2 focus:outline-none focus-visible:ring-2 focus-visible:ring-focus/45 rounded-lg -ml-0.5 pl-0.5"
-        >
+      {/* Одна кнопка на обидва стани: фокус клавіатури не губиться при
+          перемиканні, міняються лише класи й вміст. */}
+      <button
+        type="button"
+        onClick={toggle}
+        aria-expanded={open}
+        className={cn(
+          "flex w-full items-center text-left focus:outline-none focus-visible:ring-2 focus-visible:ring-focus/45",
+          open
+            ? "gap-1.5 touch-target pointer-coarse:py-2 rounded-lg -ml-0.5 pl-0.5"
+            : "gap-3 py-3 border-b border-line hover:bg-panel transition-colors",
+        )}
+      >
+        {open ? (
           <SectionHeading as="span" size={headingSize} className="px-0!">
             {title}
           </SectionHeading>
-          <MorphChevron open className="ml-auto text-subtle" />
-        </button>
-      ) : (
-        <button
-          type="button"
-          onClick={toggle}
-          aria-expanded={open}
-          className={cn(
-            "flex items-center gap-3 w-full text-left",
-            "py-3 border-b border-line",
-            "hover:bg-panel",
-            "transition-colors ",
-            "focus:outline-none focus-visible:ring-2 focus-visible:ring-focus/45",
-          )}
-        >
+        ) : (
           <span className="flex-1 min-w-0">
             <span className="text-style-label block text-text leading-tight">
               {title}
@@ -279,9 +272,9 @@ export function CollapsibleSection({
               </span>
             )}
           </span>
-          <MorphChevron open={false} className="ml-auto text-subtle" />
-        </button>
-      )}
+        )}
+        <MorphChevron open={open} className="ml-auto text-subtle" />
+      </button>
 
       {/* CSS grid row transition for smooth collapse */}
       <div

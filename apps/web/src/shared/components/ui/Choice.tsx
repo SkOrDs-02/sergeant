@@ -6,7 +6,8 @@ import { cn } from "@shared/lib/ui/cn";
  *
  * Один прийом для «обрано» в усіх виборах форм: обране = заливка чорнилом
  * (`bg-text text-bg`, у темній токени перевертаються самі), необране =
- * панель із текстом чорнилом. Без обводу, тіні й hue модуля. Стан передає
+ * панель із текстом чорнилом; плитку тримає межа `border-control`. Без
+ * тіні й hue модуля. Стан передає
  * `aria-checked`, а не текст «Обрано».
  *
  * - `tiles` - плитки в ряд або сітку (до 6 опцій, короткі підписи).
@@ -133,9 +134,14 @@ export function ChoiceGroup<V extends string = string>({
                     !checked && "hover:bg-panel",
                   )
                 : cn(
-                    "inline-flex items-center justify-center px-3 text-center text-style-label font-semibold",
+                    // Плитка живе на картках і в аркушах, тобто на тій самій
+                    // `panel`, тож необрану тримає межа контролу (3:1), а не
+                    // заливка. В обраної межа кольору заливки й не видна.
+                    "inline-flex items-center justify-center border px-3 text-center text-style-label font-semibold",
                     size === "sm" ? "rounded-segment" : "rounded-lg",
-                    !checked && "bg-panel hover:bg-panelHi",
+                    checked
+                      ? "border-text"
+                      : "border-control bg-panel hover:bg-panelHi",
                   ),
             )}
           >

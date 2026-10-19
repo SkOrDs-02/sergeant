@@ -201,7 +201,7 @@ const sizes: Record<ButtonSize, string> = {
 // 15 / 600 і 44 px у пікселях на будь-якому вказівнику: рядок із тихою дією
 // буває й на десктопі, а `h-11` у rem на вузькому вʼюпорті дає 41 px.
 const TEXT_SIZE =
-  "min-h-[44px] px-2 text-style-body font-semibold leading-tight rounded-lg gap-1.5";
+  "min-h-[44px] min-w-[44px] px-2 text-style-body font-semibold leading-tight rounded-lg gap-1.5";
 
 // Icon-only button sizes
 const iconSizes: Record<ButtonSize, string> = {

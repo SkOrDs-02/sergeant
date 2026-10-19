@@ -60,6 +60,9 @@ describe("ChoiceGroup", () => {
   it("tiles: необране на панелі, rows: необране на hairline без заливки", () => {
     const { unmount } = render(<Controlled variant="tiles" />);
     expect(radio("Надходження").className).toContain("bg-panel");
+    expect(radio("Надходження").className).toContain("border-control");
+    expect(radio("Витрата").className).toContain("border-text");
+    expect(radio("Витрата").className).not.toContain("border-control");
     unmount();
     render(<Controlled variant="rows" />);
     expect(screen.getByRole("radiogroup").className).toContain("divide-line");

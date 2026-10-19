@@ -133,6 +133,23 @@ describe("CollapsibleSection", () => {
     expect(localStorage.getItem("sergeant.test.persist")).toBe("true");
   });
 
+  it("фокус лишається на тій самій кнопці після перемикання в обидва боки", () => {
+    render(
+      <CollapsibleSection storageKey="sergeant.test.focus" title="Підказки">
+        <p>payload</p>
+      </CollapsibleSection>,
+    );
+    const toggle = screen.getByRole("button", { name: "Підказки" });
+    toggle.focus();
+    fireEvent.click(toggle);
+    expect(toggle).toHaveAttribute("aria-expanded", "false");
+    expect(screen.getByRole("button", { name: "Підказки" })).toBe(toggle);
+    expect(toggle).toHaveFocus();
+    fireEvent.click(toggle);
+    expect(toggle).toHaveAttribute("aria-expanded", "true");
+    expect(toggle).toHaveFocus();
+  });
+
   it("стан передають шеврон і aria-expanded, а не текст «Розгорнути» / «Згорнути»", () => {
     render(
       <CollapsibleSection
