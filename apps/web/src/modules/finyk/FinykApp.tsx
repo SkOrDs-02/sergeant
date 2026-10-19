@@ -12,9 +12,7 @@ import {
   ModuleAccentProvider,
   ModuleHeader,
   ModuleHeaderAssistantButton,
-  ModuleHeaderBackButton,
   ModuleHeaderHubButton,
-  ModuleHeaderSettingsButton,
   SwipePages,
 } from "@shared/components/layout";
 import { FinykManualExpenseConflictBanner } from "./components/FinykManualExpenseConflictBanner";
@@ -61,7 +59,6 @@ import { AuthErrorBanner, FinykHeaderIcon, SyncPill } from "./FinykAppChrome";
 const PRIVAT_ENABLED = false;
 
 interface FinykAppProps {
-  onBackToHub?: () => void;
   onGoToHub?: () => void;
   onOpenSettings?: () => void;
   /**
@@ -88,7 +85,6 @@ const FINYK_PWA_ACTIONS: ReadonlySet<string> = new Set([
 ]);
 
 export default function App({
-  onBackToHub,
   onGoToHub,
   onOpenSettings,
   onOpenAuth,
@@ -466,20 +462,16 @@ export default function App({
       <MeshBackground className="bottom-nav-height-var">
         <ModuleHeader
           module="finyk"
+          switcher="finyk"
+          onOpenSettings={onOpenSettings}
           left={
-            typeof onBackToHub === "function" ? (
-              <div className="flex items-center gap-1">
-                <ModuleHeaderBackButton onClick={onBackToHub} />
-                {typeof onGoToHub === "function" && (
-                  <ModuleHeaderHubButton onClick={onGoToHub} />
-                )}
-              </div>
+            typeof onGoToHub === "function" ? (
+              <ModuleHeaderHubButton onClick={onGoToHub} />
             ) : (
               <FinykHeaderIcon />
             )
           }
           title="Фінік"
-          subtitle="Фінанси"
           right={
             <div className="flex items-center gap-2 shrink-0">
               {showSyncPill ? <SyncPill syncTone={syncTone} /> : null}
@@ -489,9 +481,6 @@ export default function App({
                   шапці на 375px лишали назві модуля 27px, і «Фінік /
                   Фінанси» різалось до «Фі… / Фіна…». */}
               <ModuleHeaderAssistantButton />
-              {onOpenSettings && (
-                <ModuleHeaderSettingsButton onClick={onOpenSettings} />
-              )}
             </div>
           }
         />

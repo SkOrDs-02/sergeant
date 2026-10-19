@@ -161,13 +161,12 @@ describe("FinykApp — shell + default page (real component tree)", () => {
   it("renders the module chrome and the real Overview page for a disconnected visitor, without a no-bank nudge", async () => {
     renderApp();
 
-    // Chrome: header module title (also present in a module-switcher chip,
-    // hence `getAllByText`) plus the finance subtitle.
+    // Chrome: назва модуля як перемикач, без підзаголовка-дубля (v3.1, В2).
     expect(screen.getAllByText("Фінік").length).toBeGreaterThan(0);
     expect(
       screen.queryByRole("heading", { name: "Фінік" }),
     ).not.toBeInTheDocument();
-    expect(screen.getByText("Фінанси")).toBeInTheDocument();
+    expect(screen.queryByText("Фінанси")).not.toBeInTheDocument();
 
     // Real bottom nav landmark.
     expect(bottomNav()).toBeInTheDocument();
@@ -191,7 +190,7 @@ describe("FinykApp — shell + default page (real component tree)", () => {
 
   it("accepts optional props without crashing", async () => {
     renderApp({
-      onBackToHub: vi.fn(),
+      onGoToHub: vi.fn(),
       onOpenSettings: vi.fn(),
       onOpenAuth: NOOP_AUTH,
       pwaAction: null,

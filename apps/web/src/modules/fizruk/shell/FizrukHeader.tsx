@@ -2,15 +2,12 @@
  * Last validated: 2026-06-05
  * Status: Active
  */
-import type * as React from "react";
 import {
   ModuleHeader,
   ModuleHeaderAssistantButton,
-  ModuleHeaderBackButton,
   ModuleHeaderHubButton,
 } from "@shared/components/layout";
 import { cn } from "@shared/lib/ui/cn";
-import { messages } from "@shared/i18n/uk";
 import type { FizrukPage } from "./fizrukRoute";
 
 interface ActiveProgramHeaderView {
@@ -20,8 +17,9 @@ interface ActiveProgramHeaderView {
 export interface FizrukHeaderProps {
   page: FizrukPage;
   activeProgram?: ActiveProgramHeaderView | null | undefined;
-  onBackToHub?: (() => void) | undefined;
   onGoToHub?: (() => void) | undefined;
+  /** Останній рядок аркуша «Модулі»: налаштування Фізрука в хабі. */
+  onOpenSettings?: (() => void) | undefined;
   /**
    * Called when the user taps the contextual back arrow on a sub-page
    * (atlas / exercise / measurements). The parent decides where each
@@ -102,12 +100,13 @@ function ContextualBackButton({
 
 export function FizrukHeader({
   page,
-  onBackToHub,
   onGoToHub,
+  onOpenSettings,
   onContextualBack,
 }: FizrukHeaderProps) {
-  // Контекстний back не замінює прямий вихід на хаб: history-back може
-  // вести на іншу вкладку модуля, а людина має бачити обидва призначення.
+  // «Назад» лише на вкладених сторінках, і він веде на сторінку вище; на
+  // вкладках модуля ліворуч тільки «додому» (redesign v3.1, В1). Контекстний
+  // back не замінює прямий вихід на хаб (#1517): обидва видно поруч.
   const showContextualBack =
     page === "atlas" ||
     page === "exercise" ||
@@ -117,41 +116,28 @@ export function FizrukHeader({
     page === "history" ||
     page === "programs";
 
-  let left: React.ReactNode = null;
-  if (showContextualBack) {
-    left = (
-      <ContextualBackButton
-        label={backLabelFor(page)}
-        onClick={onContextualBack}
-      />
-    );
-  } else if (typeof onBackToHub === "function") {
-    left = <ModuleHeaderBackButton onClick={onBackToHub} />;
-  } else {
-    left = null;
-  }
-
   return (
     <ModuleHeader
       module={showContextualBack ? undefined : "fizruk"}
+      // Перемикач лише на вкладках модуля; на вкладеній сторінці заголовок
+      // звичайний, поруч «назад» на сторінку вище й «додому».
+      switcher={showContextualBack ? undefined : "fizruk"}
+      onOpenSettings={onOpenSettings}
       left={
-        left || onGoToHub ? (
+        showContextualBack || onGoToHub ? (
           <div className="flex items-center gap-1">
-            {left}
+            {showContextualBack && (
+              <ContextualBackButton
+                label={backLabelFor(page)}
+                onClick={onContextualBack}
+              />
+            )}
             {onGoToHub && <ModuleHeaderHubButton onClick={onGoToHub} />}
           </div>
         ) : null
       }
       title={titleFor(page)}
-      subtitle={showContextualBack ? undefined : messages.fizruk.headerSubtitle}
-      subtitleShort={
-        showContextualBack ? undefined : messages.fizruk.headerSubtitleShort
-      }
-      right={
-        <div className="flex items-center gap-2">
-          <ModuleHeaderAssistantButton />
-        </div>
-      }
+      right={<ModuleHeaderAssistantButton />}
     />
   );
 }

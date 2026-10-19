@@ -1,13 +1,11 @@
 /**
- * Last validated: 2026-06-15
+ * Last validated: 2026-10-18
  * Status: Active
  */
 import {
   ModuleHeader,
   ModuleHeaderAssistantButton,
-  ModuleHeaderBackButton,
   ModuleHeaderHubButton,
-  ModuleHeaderSettingsButton,
 } from "@shared/components/layout";
 import { MODULE_LABELS } from "@shared/lib/modules/moduleLabels";
 
@@ -37,51 +35,32 @@ function AppleBadge() {
 
 interface NutritionHeaderProps {
   busy?: boolean | undefined;
-  onBackToHub?: (() => void) | undefined;
   onGoToHub?: (() => void) | undefined;
+  /** Останній рядок аркуша «Модулі» (раніше шестерня в шапці). */
   onOpenSettings?: (() => void) | undefined;
-  /**
-   * N-12 (аудит 2026-09-16): раніше тут завжди стояло статичне «Мій
-   * раціон», хоча активна вкладка нижньої навігації називалась інакше
-   * («Меню», «Комора», «Журнал»…) - три різні назви одного екрана.
-   * Викликач передає мітку активної вкладки (`NUTRITION_NAV_LABELS`).
-   */
-  subtitle?: string | undefined;
 }
 
+// Підзаголовка немає (redesign v3.1, В2): мітка активної вкладки дублювала
+// нижню навігацію, а контекстного рядка (період, лічильник) у Їжі поки нема.
 export function NutritionHeader({
   busy: _busy,
-  onBackToHub,
   onGoToHub,
   onOpenSettings,
-  subtitle,
 }: NutritionHeaderProps) {
-  const left =
-    typeof onBackToHub === "function" ? (
-      <div className="flex items-center gap-1">
-        <ModuleHeaderBackButton onClick={onBackToHub} />
-        {typeof onGoToHub === "function" && (
-          <ModuleHeaderHubButton onClick={onGoToHub} />
-        )}
-      </div>
-    ) : (
-      <AppleBadge />
-    );
-
   return (
     <ModuleHeader
       module="nutrition"
-      left={left}
-      title={MODULE_LABELS.nutrition}
-      subtitle={subtitle}
-      right={
-        <div className="flex items-center gap-2">
-          <ModuleHeaderAssistantButton />
-          {onOpenSettings && (
-            <ModuleHeaderSettingsButton onClick={onOpenSettings} />
-          )}
-        </div>
+      switcher="nutrition"
+      onOpenSettings={onOpenSettings}
+      left={
+        typeof onGoToHub === "function" ? (
+          <ModuleHeaderHubButton onClick={onGoToHub} />
+        ) : (
+          <AppleBadge />
+        )
       }
+      title={MODULE_LABELS.nutrition}
+      right={<ModuleHeaderAssistantButton />}
     />
   );
 }
