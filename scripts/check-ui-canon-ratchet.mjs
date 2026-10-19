@@ -3,7 +3,7 @@
 //
 // Храповик канонічного UI-API в `apps/web/src`.
 //
-// ЩО МІРЯЄ І ЧОМУ САМЕ ТАК. Одинадцять метрик, усі — «скільки місць вживає
+// ЩО МІРЯЄ І ЧОМУ САМЕ ТАК. Чотирнадцять метрик, усі — «скільки місць вживає
 // НЕканонічний спосіб зробити те, що має канонічний»:
 //
 //   1. `legacyButton`  — легасі-варіанти `<Button>` (`primary`, `secondary`,
@@ -47,6 +47,26 @@
 //      `SectionHeading.tsx` саме `eyebrow` (супутні `eyebrowTone|As|Id` не
 //      рахуються: без `eyebrow` вони безглузді). Скануємо РІВНО тег
 //      `<SectionHeading`, як метрику кнопки.
+//
+//  12. `nativeChoice` - `type="radio"` / `type="checkbox"` у TSX (і в
+//      динамічній формі `type={x ? "radio" : …}`). Канон вибору -
+//      `ChoiceGroup` (`shared/components/ui/Choice.tsx`), обране заливкою
+//      чорнилом. Поза метрикою лише `NATIVE_CHOICE_ALLOWLIST` (пофайлово, з
+//      причиною).
+//  13. `textStateLabel` - текст стану «Розгорнути» / «Згорнути» / «Обрано» як
+//      видимий текст: ключі каталогу з `STATE_LABEL_KEYS` і літерали цих слів.
+//      Стан несуть шеврон, заливка й `aria-expanded` / `aria-checked`, тож
+//      значення всередині `aria-*` атрибута на тому ж рядку не рахується.
+//      Загальні імена (`expand`, `collapse`, `selected`) рахуються лише в
+//      ланцюжку від `messages` / `*Messages`, щоб не ловити `row.selected`.
+//  14. `capsFormLabel` - `uppercase` або `text-style-overline` на тезі
+//      `<label>` (у класах тега або в рядковій константі, яку тег бере
+//      `className={NAME}`). Підпис поля 14 / 500 звичайним регістром, капс
+//      лише на тинті hero, а там `<label>` немає.
+//
+// Метрики 12-14 (redesign v3.1 PR2, спека
+// docs/work/specs/planning/redesign-v3-1.md § Гейти) скануються лише в `.tsx`
+// і стартують зі стелі = факт, потім лише вниз, у PR6 нуль і заборона.
 //
 // Нові метрики 7-11 (CSS не скануємо: там ВИЗНАЧЕННЯ утиліт) стартують зі
 // стелі = факт на момент заведення, потім лише вниз. Без запису в
@@ -145,6 +165,35 @@ export const ROUNDED_FULL_ALLOWLIST = [
   // кружки звичок у місячній сітці Рутини
   "apps/web/src/modules/routine/components/RoutineCalendarMonthGrid.tsx",
 ];
+
+/**
+ * Файли, де нативний radio / checkbox легальний. Шляхи від кореня репо.
+ * Новий запис - лише з причиною.
+ */
+export const NATIVE_CHOICE_ALLOWLIST = [
+  // Сам примітив вибору.
+  "apps/web/src/shared/components/ui/Choice.tsx",
+  // Перемикач: прихований `sr-only` checkbox під `role="switch"`, не вибір.
+  "apps/web/src/shared/components/ui/Switch.tsx",
+];
+
+/**
+ * Ключі каталогу `@shared/i18n`, значення яких «Розгорнути», «Згорнути» або
+ * «Обрано». Звірку з каталогом тримає тест храповика: новий такий ключ без
+ * запису тут валить його.
+ */
+export const STATE_LABEL_KEYS = [
+  "expand",
+  "collapse",
+  "selected",
+  "collapseCta",
+  "collapseDetails",
+  "collapseFact",
+  "collapseFieldsLabel",
+  "selectedLabel",
+];
+const GENERIC_STATE_KEYS = new Set(["expand", "collapse", "selected"]);
+export const STATE_LABEL_WORDS = ["Розгорнути", "Згорнути", "Обрано"];
 
 export const LEGACY_BUTTON_VARIANTS = [
   "primary",
@@ -524,6 +573,85 @@ export function scanSource(relPath, src) {
     headingRe.lastIndex = end + 1;
   }
 
+  if (relPath.endsWith(".tsx")) hits.push(...stateHits(relPath, ringSrc));
+  return hits;
+}
+
+/** Метрики 12-14. `src` - текст із погашеними коментарями. */
+function stateHits(relPath, src) {
+  const hits = [];
+  const norm = relPath.replaceAll("\\", "/");
+  const lineOf = (idx) => src.slice(0, idx).split("\n").length;
+  const push = (metric, idx, detail) =>
+    hits.push({ metric, file: relPath, line: lineOf(idx), detail });
+
+  if (!NATIVE_CHOICE_ALLOWLIST.includes(norm)) {
+    const typeRe =
+      /\btype=(?:"(radio|checkbox)"|'(radio|checkbox)'|\{[^}]*?["'](radio|checkbox)["'])/g;
+    for (const x of src.matchAll(typeRe)) {
+      push(
+        "nativeChoice",
+        x.index,
+        `нативний ${x[1] ?? x[2] ?? x[3]} - канон: ChoiceGroup (shared/components/ui/Choice.tsx)`,
+      );
+    }
+  }
+
+  // Значення в `aria-*` на тому ж рядку - не видимий текст.
+  const insideAria = (idx) => {
+    const pre = src.slice(src.lastIndexOf("\n", idx - 1) + 1, idx);
+    const k = pre.lastIndexOf("aria-");
+    return k >= 0 && pre.lastIndexOf(">") < k;
+  };
+  const keyRe = new RegExp(
+    `\\b(\\w+)((?:\\.\\w+)*)\\.(${STATE_LABEL_KEYS.join("|")})(?![\\w$])`,
+    "g",
+  );
+  for (const x of src.matchAll(keyRe)) {
+    if (GENERIC_STATE_KEYS.has(x[3]) && !/messages$/i.test(x[1])) continue;
+    if (insideAria(x.index)) continue;
+    push(
+      "textStateLabel",
+      x.index,
+      `${x[0]} - текст стану; канон: шеврон / заливка + aria-expanded / aria-checked`,
+    );
+  }
+  const wordRe = new RegExp(
+    `(?<![\\p{L}\\p{N}_])(${STATE_LABEL_WORDS.join("|")})(?!\\p{L})`,
+    "gu",
+  );
+  for (const x of src.matchAll(wordRe)) {
+    if (insideAria(x.index)) continue;
+    push(
+      "textStateLabel",
+      x.index,
+      `«${x[1]}» - текст стану; канон: шеврон / заливка + aria-expanded / aria-checked`,
+    );
+  }
+
+  const consts = new Map();
+  for (const x of src.matchAll(
+    /\b(?:const|let)\s+(\w+)\s*=\s*(["'`])([^"'`]*)\2/g,
+  )) {
+    consts.set(x[1], x[3]);
+  }
+  const caps = /(?<![\w-])(?:uppercase|text-style-overline)(?![\w-])/;
+  const labelRe = /<label(?![\w-])/g;
+  let m;
+  while ((m = labelRe.exec(src))) {
+    const end = tagEnd(src, m.index + m[0].length);
+    if (end < 0) continue;
+    const tag = src.slice(m.index, end + 1);
+    const ref = tag.match(/\sclassName=\{\s*(\w+)\s*\}/);
+    if (caps.test(tag) || (ref && caps.test(consts.get(ref[1]) ?? ""))) {
+      push(
+        "capsFormLabel",
+        m.index,
+        "капс на <label> - підпис поля 14 / 500 звичайним регістром (капс лише на тинті hero)",
+      );
+    }
+    labelRe.lastIndex = end + 1;
+  }
   return hits;
 }
 
@@ -588,6 +716,9 @@ export function counts(hits) {
     glass: 0,
     bigRadius: 0,
     kicker: 0,
+    nativeChoice: 0,
+    textStateLabel: 0,
+    capsFormLabel: 0,
   };
   for (const h of hits) out[h.metric]++;
   return out;
@@ -646,7 +777,10 @@ function main() {
       `вхідної анімації ${now.enterMotion} (бюджет ${budget.budgets.enterMotion}), ` +
       `скла ${now.glass} (бюджет ${budget.budgets.glass}), ` +
       `великих радіусів ${now.bigRadius} (бюджет ${budget.budgets.bigRadius}), ` +
-      `кікерів ${now.kicker} (бюджет ${budget.budgets.kicker}).`,
+      `кікерів ${now.kicker} (бюджет ${budget.budgets.kicker}), ` +
+      `нативних виборів ${now.nativeChoice} (бюджет ${budget.budgets.nativeChoice}), ` +
+      `текстових станів ${now.textStateLabel} (бюджет ${budget.budgets.textStateLabel}), ` +
+      `капс-підписів полів ${now.capsFormLabel} (бюджет ${budget.budgets.capsFormLabel}).`,
   );
 
   const over = Object.keys(now).filter((k) => now[k] > budget.budgets[k]);
@@ -677,7 +811,8 @@ function main() {
     "Храповик можна лише опускати. Новий код мусить вживати канонічну форму:\n" +
       "  кнопка — `variant` ∈ solid|soft|outline|ghost + `tone`;\n" +
       "  фокус — утиліта `focus-ring`, не рукописний `focus-visible:ring-2`;\n" +
-      "  UA-рядок — у каталог `@shared/i18n`, не в компонент із записом в allowlist.\n" +
+      "  UA-рядок — у каталог `@shared/i18n`, не в компонент із записом в allowlist;\n" +
+      "  вибір — `ChoiceGroup`, стан — шеврон / заливка + aria, підпис поля без капсу.\n" +
       "Мапа легасі→канон і причини — docs/work/specs/c-section-consistency-migration.md\n",
   );
   return 1;
