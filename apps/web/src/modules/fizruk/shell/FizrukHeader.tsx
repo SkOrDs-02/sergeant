@@ -119,7 +119,9 @@ export function FizrukHeader({
   return (
     <ModuleHeader
       module={showContextualBack ? undefined : "fizruk"}
-      switcher="fizruk"
+      // Перемикач лише на вкладках модуля; на вкладеній сторінці заголовок
+      // звичайний, поруч «назад» на сторінку вище й «додому».
+      switcher={showContextualBack ? undefined : "fizruk"}
       onOpenSettings={onOpenSettings}
       left={
         showContextualBack || onGoToHub ? (

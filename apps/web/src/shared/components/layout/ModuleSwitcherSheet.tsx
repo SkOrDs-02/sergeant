@@ -1,22 +1,28 @@
 /**
  * Аркуш «Модулі» (redesign v3.1, PR1): відкривається тапом по назві модуля
  * в шапці. Чотири рядки модулів і останнім рядок налаштувань поточного
- * модуля, який раніше відкривала шестерня в шапці.
+ * модуля, який раніше відкривала шестерня в шапці. Рядки поводяться як
+ * панель модулів хаба: вимкнений модуль веде в налаштування дашборда.
  *
- * Last validated: 2026-10-18
+ * Last validated: 2026-10-19
  * Status: Active
  */
 import { cn } from "@shared/lib/ui/cn";
 import { hapticTap } from "@shared/lib/adapters/haptic";
-import { openHubModule, type HubModuleId } from "@shared/lib/modules/hubNav";
+import {
+  openHubModule,
+  openHubSettingsSection,
+  type HubModuleId,
+} from "@shared/lib/modules/hubNav";
 import { MODULE_LABELS } from "@shared/lib/modules/moduleLabels";
-import { messages } from "@shared/i18n/uk";
-import { Sheet } from "@shared/components/ui/Sheet";
 import {
   MODULE_HUE,
   MODULE_ORDER,
+  readActiveModules,
   readModuleFact,
-} from "../../../core/hub/ModulePanel";
+} from "@shared/lib/modules/moduleFacts";
+import { messages } from "@shared/i18n/uk";
+import { Sheet } from "@shared/components/ui/Sheet";
 
 export interface ModuleSwitcherSheetProps {
   open: boolean;
@@ -26,7 +32,7 @@ export interface ModuleSwitcherSheetProps {
 }
 
 const ROW =
-  "flex min-h-[56px] w-full items-center gap-3 px-3 text-left focus-ring";
+  "flex min-h-[56px] w-full items-center gap-3 rounded-lg px-3 text-left focus-ring";
 
 export function ModuleSwitcherSheet({
   open,
@@ -50,34 +56,50 @@ function ModuleRows({
   onClose,
   onOpenSettings,
 }: Omit<ModuleSwitcherSheetProps, "open">) {
+  const active = readActiveModules();
   return (
     <ul>
       {MODULE_ORDER.map((id) => {
         const isCurrent = id === current;
-        const fact = readModuleFact(id);
+        const enabled = isCurrent || active.includes(id);
+        const label = MODULE_LABELS[id];
+        const fact = enabled ? readModuleFact(id) : null;
         return (
           <li key={id}>
             <button
               type="button"
               aria-current={isCurrent ? "true" : undefined}
+              aria-label={
+                enabled
+                  ? undefined
+                  : `${label}: ${messages.modules.inactiveHint}`
+              }
+              data-inactive={enabled ? undefined : "true"}
               onClick={() => {
                 hapticTap();
                 onClose();
+                if (isCurrent) return;
                 // Той самий вхід, що й рядок панелі модулів хаба.
-                if (!isCurrent) openHubModule(id, undefined, "module_switcher");
+                if (!enabled) openHubSettingsSection("dashboard");
+                else openHubModule(id, undefined, "module_switcher");
               }}
-              className={cn(ROW, "rounded-lg", isCurrent && "bg-text text-bg")}
+              className={cn(
+                ROW,
+                isCurrent
+                  ? "bg-text text-bg"
+                  : cn("hover:bg-panel", enabled ? "text-text" : "text-subtle"),
+              )}
             >
               <span
                 aria-hidden
                 className={cn(
-                  "h-2.5 w-2.5 shrink-0 rounded-sm",
+                  "h-2.5 w-2.5 shrink-0 rounded-mark",
                   MODULE_HUE[id],
                 )}
               />
               <span className="min-w-0 flex-1">
                 <span className="block text-style-body font-semibold">
-                  {MODULE_LABELS[id]}
+                  {label}
                 </span>
                 {fact ? (
                   <span
@@ -104,7 +126,7 @@ function ModuleRows({
             }}
             className={cn(
               ROW,
-              "rounded-lg text-style-body font-semibold text-text hover:bg-panel",
+              "text-style-body font-semibold text-text hover:bg-panel",
             )}
           >
             {messages.modules.openSettings}

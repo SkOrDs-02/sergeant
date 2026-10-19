@@ -2,16 +2,21 @@
 import { describe, expect, it, beforeEach, vi } from "vitest";
 import { fireEvent, render, screen, within } from "@testing-library/react";
 
-const { hapticTap, emitHubBus, openHubModule } = vi.hoisted(() => ({
-  hapticTap: vi.fn(),
-  emitHubBus: vi.fn(),
-  openHubModule: vi.fn(),
-}));
+const { hapticTap, emitHubBus, openHubModule, openHubSettingsSection } =
+  vi.hoisted(() => ({
+    hapticTap: vi.fn(),
+    emitHubBus: vi.fn(),
+    openHubModule: vi.fn(),
+    openHubSettingsSection: vi.fn(),
+  }));
 
 vi.mock("@shared/lib/adapters/haptic", () => ({ hapticTap }));
 vi.mock("@shared/lib/modules/hubBus", () => ({ emitHubBus }));
-vi.mock("@shared/lib/modules/hubNav", () => ({ openHubModule }));
-vi.mock("../../../core/hub/ModulePanel", () => ({
+vi.mock("@shared/lib/modules/hubNav", () => ({
+  openHubModule,
+  openHubSettingsSection,
+}));
+vi.mock("@shared/lib/modules/moduleFacts", () => ({
   MODULE_ORDER: ["finyk", "fizruk", "routine", "nutrition"],
   MODULE_HUE: {
     finyk: "bg-chart-finyk",
@@ -20,6 +25,8 @@ vi.mock("../../../core/hub/ModulePanel", () => ({
     nutrition: "bg-chart-nutrition",
   },
   readModuleFact: (id: string) => (id === "routine" ? "3 / 5" : null),
+  // Їжу вимкнено в налаштуваннях дашборда.
+  readActiveModules: () => ["finyk", "fizruk", "routine"],
 }));
 
 import {
@@ -110,7 +117,7 @@ describe("ModuleHeader: перемикач модулів", () => {
 
     expect(title).toHaveAttribute("aria-expanded", "true");
     const sheet = screen.getByRole("dialog", { name: "Модулі" });
-    for (const name of ["Фінік", "Фізрук", "Рутина", "Їжа"]) {
+    for (const name of ["Фінік", "Фізрук", "Рутина"]) {
       expect(
         within(sheet).getByRole("button", { name: new RegExp(name) }),
       ).toBeInTheDocument();
@@ -145,6 +152,32 @@ describe("ModuleHeader: перемикач модулів", () => {
       "module_switcher",
     );
     expect(screen.queryByRole("dialog")).toBeNull();
+  });
+
+  it("вимкнений модуль веде в налаштування дашборда, як панель хаба", () => {
+    renderSwitcher();
+    fireEvent.click(screen.getByTestId("module-header-title"));
+    const sheet = screen.getByRole("dialog", { name: "Модулі" });
+    const off = within(sheet).getByRole("button", {
+      name: "Їжа: неактивний, увімкнути в налаштуваннях",
+    });
+    expect(off).toHaveClass("text-subtle", "hover:bg-panel");
+
+    fireEvent.click(off);
+
+    expect(openHubSettingsSection).toHaveBeenCalledWith("dashboard");
+    expect(openHubModule).not.toHaveBeenCalled();
+    expect(screen.queryByRole("dialog")).toBeNull();
+  });
+
+  it("неактивні рядки мають hover панеллю, свотч квадратом 3 px", () => {
+    renderSwitcher();
+    fireEvent.click(screen.getByTestId("module-header-title"));
+    const row = within(screen.getByRole("dialog")).getByRole("button", {
+      name: /Рутина/,
+    });
+    expect(row).toHaveClass("hover:bg-panel", "text-text");
+    expect(row.querySelector("[aria-hidden]")).toHaveClass("rounded-mark");
   });
 
   it("тап по поточному модулю лише закриває аркуш", () => {

@@ -98,11 +98,17 @@ describe("FizrukHeader", () => {
     },
   );
 
+  it("на вкладеній сторінці заголовок звичайний, без перемикача", () => {
+    render(<FizrukHeader page="atlas" onContextualBack={vi.fn()} />);
+    expect(screen.getByTestId("module-header-title").tagName).toBe("P");
+    expect(screen.queryByRole("dialog")).toBeNull();
+  });
+
   it("keeps settings out of the header and in the «Модулі» sheet", () => {
     const onOpenSettings = vi.fn();
     render(
       <FizrukHeader
-        page="atlas"
+        page="dashboard"
         onContextualBack={vi.fn()}
         onOpenSettings={onOpenSettings}
       />,
@@ -110,7 +116,6 @@ describe("FizrukHeader", () => {
     expect(
       screen.queryByRole("button", { name: /Налаштування модуля/i }),
     ).toBeNull();
-    // Перемикач лишається й на вкладеній сторінці.
     fireEvent.click(screen.getByTestId("module-header-title"));
     fireEvent.click(
       screen.getByRole("button", { name: "Налаштування модуля" }),

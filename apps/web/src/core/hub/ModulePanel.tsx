@@ -16,40 +16,15 @@ import {
   openHubModule,
   openHubSettingsSection,
 } from "@shared/lib/modules/hubNav";
-import {
-  MODULE_LABELS,
-  type HubModuleId,
-} from "@shared/lib/modules/moduleLabels";
+import { MODULE_LABELS } from "@shared/lib/modules/moduleLabels";
 import { coreMessages } from "@shared/i18n/uk.core";
-import { isFinykBalanceHidden, maskAmount } from "@finyk/lib/balanceVisibility";
-import type { ModulePreview } from "@sergeant/shared";
-import { MODULE_CONFIGS } from "./dashboard/moduleConfigs";
-
-export const MODULE_ORDER: readonly HubModuleId[] = [
-  "finyk",
-  "fizruk",
-  "routine",
-  "nutrition",
-];
-
-export const MODULE_HUE: Record<HubModuleId, string> = {
-  finyk: "bg-chart-finyk",
-  fizruk: "bg-chart-fizruk",
-  routine: "bg-chart-routine",
-  nutrition: "bg-chart-nutrition",
-};
-
-/** Значення дня модуля для рядка панелі й аркуша «Модулі» (`null` = даних немає). */
-export function readModuleFact(
-  id: HubModuleId,
-  preview: ModulePreview = MODULE_CONFIGS[id].getPreview(),
-  balanceHidden: boolean = isFinykBalanceHidden(),
-): string | null {
-  if (preview.main === null) return null;
-  return id === "finyk"
-    ? maskAmount(preview.main, balanceHidden)
-    : preview.main;
-}
+import { isFinykBalanceHidden } from "@finyk/lib/balanceVisibility";
+import {
+  MODULE_HUE,
+  MODULE_ORDER,
+  readModuleFact,
+  readModulePreview,
+} from "@shared/lib/modules/moduleFacts";
 
 export interface ModulePanelProps {
   activeModules: readonly string[];
@@ -63,7 +38,7 @@ export function ModulePanel({ activeModules, storageBump }: ModulePanelProps) {
     void storageBump;
     return MODULE_ORDER.map((id) => ({
       id,
-      preview: MODULE_CONFIGS[id].getPreview(),
+      preview: readModulePreview(id),
     }));
   }, [storageBump]);
 
@@ -100,7 +75,7 @@ export function ModulePanel({ activeModules, storageBump }: ModulePanelProps) {
                 <span
                   aria-hidden
                   className={cn(
-                    "h-2.5 w-2.5 shrink-0 rounded-sm",
+                    "h-2.5 w-2.5 shrink-0 rounded-mark",
                     MODULE_HUE[id],
                   )}
                 />
