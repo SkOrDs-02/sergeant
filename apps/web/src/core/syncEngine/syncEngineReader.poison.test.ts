@@ -226,7 +226,10 @@ describe("syncEngineReader — отруйний оп (rel-11)", () => {
     const realAll = client.all.bind(client);
     client.run = (sql, params) => {
       if (sql.includes("INSERT INTO routine_streaks")) trace.push("increment");
-      else if (sql.includes("INSERT INTO sync_op_cursor"))
+      else if (
+        sql.includes("INSERT INTO sync_op_cursor") &&
+        !String((params as unknown[])[0]).startsWith("backfill_")
+      )
         trace.push(`cursor:${String((params as unknown[])[1])}`);
       else if (sql.includes("INSERT INTO routine_habits")) trace.push("habit");
       return realRun(sql, params);

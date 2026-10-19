@@ -3,6 +3,7 @@ import { getTableConfig } from "drizzle-orm/pg-core";
 import {
   finykHiddenAccounts,
   finykHiddenTransactions,
+  finykTxNotes,
   finykBudgets,
   finykSubscriptions,
   finykAssets,
@@ -91,6 +92,39 @@ describe("pg/finykHiddenTransactions schema snapshot", () => {
       "user_id",
       "transaction_id",
     ]);
+  });
+});
+
+describe("pg/finykTxNotes schema snapshot (data-27, міграція 155)", () => {
+  const config = getTableConfig(finykTxNotes);
+
+  it("has the canonical table name", () => {
+    expect(config.name).toBe("finyk_tx_notes");
+  });
+
+  it("declares all expected columns", () => {
+    expect(config.columns.map((c) => c.name)).toEqual([
+      "user_id",
+      "transaction_id",
+      "note",
+      "created_at",
+      "updated_at",
+      "deleted_at",
+    ]);
+  });
+
+  it("declares (user_id, transaction_id) as a composite primary key", () => {
+    expect(config.primaryKeys).toHaveLength(1);
+    expect(config.primaryKeys[0]!.columns.map((c) => c.name)).toEqual([
+      "user_id",
+      "transaction_id",
+    ]);
+  });
+
+  it("declares the soft-delete partial index", () => {
+    expect(config.indexes.map((i) => i.config.name)).toContain(
+      "finyk_tx_notes_user_active_idx",
+    );
   });
 });
 
