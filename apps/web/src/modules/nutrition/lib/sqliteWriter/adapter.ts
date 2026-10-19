@@ -18,7 +18,11 @@ import { logger as webLogger } from "@shared/lib";
 
 import { insertGoalPeriod, restoreGoalPeriod } from "./adapter.goalPeriods.js";
 import { appendPantryEvent } from "./adapter.pantryEvents.js";
-import { itemIdsDivergingFromSqlite } from "./adapter.pantryReconcile.js";
+import {
+  softDeletePantryItemsById,
+  softDeleteRemovedChildren,
+} from "./adapter.pantryItemDelete.js";
+import { reconcilePantryItemsWithSqlite } from "./adapter.pantryReconcile.js";
 import { enqueueOutboxUpsert } from "../../../../core/syncEngine/enqueueOutboxUpsert.js";
 import { fireSyncOutboxUpsert } from "../../../../core/syncEngine/fireSyncOutboxUpsert.js";
 
@@ -396,28 +400,31 @@ async function upsertPantry(
   p: NutritionPantrySnapshot,
   { userId, clientTs }: DualWriteRuntime,
   keepMissing = false,
-  delta?: Pick<PantryUpsertOp, "changedItemIds" | "pantryFieldsChanged">,
+  delta?: Pick<
+    PantryUpsertOp,
+    "changedItemIds" | "removedItemIds" | "pantryFieldsChanged"
+  >,
 ): Promise<void> {
   // rel-10: незмінені позиції не чіпаємо НІ в outbox, НІ локально. Локальний
   // upsert незмінного рядка бампив би `updated_at` до `clientTs` без пушу, і
   // pull-оп іншого пристрою з міткою між старим `updated_at` та `clientTs`
   // відсікався б як stale (`isStaleLocal`): пристрій назавжди розходився б із
-  // сервером. Дельта з `prev` не довіряється сама: id у `prev` похідні від
-  // позиції в кеші і можуть не збігатись із id рядків SQLite, а позиція, якої
-  // там немає під цим id, інакше потрапила б під soft-delete нижче. Тому до неї
-  // додається все, що в SQLite відсутнє або відрізняється. Реплей
-  // (`keepMissing`) і op без `changedItemIds` лишаються повним upsert-ом.
+  // сервером. Дельта з `prev` не довіряється сама: `prev` - warm-кеш, що міг
+  // відстати від SQLite, тож до неї додається все, що в SQLite відсутнє або
+  // відрізняється (id стабільні, data-40). Реплей (`keepMissing`) і op без
+  // `changedItemIds` лишаються повним upsert-ом.
   let changedItems: Set<string> | null = null;
+  let sortOrder: Map<string, number> | null = null;
   if (!keepMissing && delta?.changedItemIds) {
-    changedItems = new Set(delta.changedItemIds);
-    for (const id of await itemIdsDivergingFromSqlite(
+    const rec = await reconcilePantryItemsWithSqlite(
       client,
       p.id,
       userId,
       p.items ?? [],
-    )) {
-      changedItems.add(id);
-    }
+      new Set(delta.changedItemIds),
+    );
+    changedItems = rec.changed;
+    sortOrder = rec.sortOrder;
   }
   const enqueuePantryRow =
     !changedItems ||
@@ -461,7 +468,7 @@ async function upsertPantry(
       it!.unit! ?? null,
       it!.notes! ?? null,
       it!.sources ?? null,
-      i,
+      sortOrder?.get(it!.id!) ?? i,
       clientTs,
       clientTs,
     ]);
@@ -478,7 +485,7 @@ async function upsertPantry(
         unit: it!.unit! ?? null,
         notes: it!.notes! ?? null,
         sources: it!.sources ?? null,
-        sort_order: i,
+        sort_order: sortOrder?.get(it!.id!) ?? i,
       },
       clientTs,
       idempotencyKey: crypto.randomUUID(),
@@ -490,6 +497,21 @@ async function upsertPantry(
   // в знімку немає: знімок знятий з порожньої бази, і це не «користувач
   // прибрав позицію», а «позиції ще не завантажились».
   if (keepMissing) return;
+  // data-40: коли є поелементна дельта, видаляємо рівно ті позиції, які
+  // користувач прибрав (`removedItemIds`), а не «усе, чого немає в знімку».
+  // Знімок будується з warm-кешу, що може відставати від SQLite: рядок, який
+  // щойно доїхав з іншого пристрою, у знімку відсутній, і неявний reconcile
+  // знищив би його разом із чужою правкою.
+  if (changedItems && delta?.removedItemIds) {
+    await softDeletePantryItemsById(
+      client,
+      p.id,
+      userId,
+      clientTs,
+      delta.removedItemIds,
+    );
+    return;
+  }
   const itemIds = items.map((it) => it.id);
   await softDeleteRemovedChildren(client, p.id, userId, clientTs, itemIds);
 }
@@ -677,45 +699,3 @@ async function setShoppingList(
 // -----------------------------------------------------------------------
 // Helpers
 // -----------------------------------------------------------------------
-
-/**
- * Soft-delete children of a pantry that are no longer in `keepIds`.
- * Delegates the SQL to `buildReconcileChildren` (both the empty and
- * NOT IN branches) — the params are laid out to match each branch.
- * Also enqueues a delete outbox op for each item that will be removed.
- */
-async function softDeleteRemovedChildren(
-  client: SqliteMigrationClient,
-  parentId: string,
-  userId: string,
-  clientTs: string,
-  keepIds: readonly string[],
-): Promise<void> {
-  const sql = buildReconcileChildren(
-    { table: "nutrition_pantry_items", parentColumn: "pantry_id" },
-    keepIds.length,
-  );
-  const BASE_QUERY = `SELECT id FROM nutrition_pantry_items WHERE pantry_id = ? AND user_id = ? AND deleted_at IS NULL`;
-  let toDelete: Array<{ id: string }>;
-  if (keepIds.length === 0) {
-    toDelete = await client.all<{ id: string }>(BASE_QUERY, [parentId, userId]);
-    await client.run(sql, [clientTs, clientTs, parentId, userId]);
-  } else {
-    const placeholders = keepIds.map(() => "?").join(",");
-    toDelete = await client.all<{ id: string }>(
-      `${BASE_QUERY} AND id NOT IN (${placeholders})`,
-      [parentId, userId, ...keepIds],
-    );
-    await client.run(sql, [clientTs, clientTs, parentId, userId, ...keepIds]);
-  }
-  for (const it of toDelete) {
-    void enqueueOutboxUpsert(client, {
-      userId,
-      table: "nutrition_pantry_items",
-      op: "delete",
-      row: { id: it.id, user_id: userId },
-      clientTs,
-      idempotencyKey: crypto.randomUUID(),
-    }).catch(() => {});
-  }
-}

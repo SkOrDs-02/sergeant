@@ -113,3 +113,37 @@ export function filterToKyivFirstDays<T extends TxLike>(
     return ms != null && Number(getKyivDayKey(ms).slice(8, 10)) <= lastDay;
   });
 }
+
+/**
+ * Keep only the rows whose Kyiv calendar day lies in `fromKey`..`toKey`
+ * (`YYYY-MM-DD`, both inclusive). The week / year / range windows of
+ * Analytics (spec finyk-analytics-v3, Р5) use it the way months use
+ * `filterToKyivMonth`.
+ */
+export function filterToKyivDays<T extends TxLike>(
+  transactions: readonly T[] | null | undefined,
+  fromKey: string,
+  toKey: string,
+): T[] {
+  const list = Array.isArray(transactions) ? transactions : [];
+  return list.filter((tx) => {
+    const ms = txEpochMs(tx);
+    if (ms == null) return false;
+    const key = getKyivDayKey(ms);
+    return key >= fromKey && key <= toKey;
+  });
+}
+
+/** Earliest Kyiv day key across the lists, or `null` when none is dated. */
+export function earliestKyivDayKey(
+  lists: readonly (readonly TxLike[])[],
+): string | null {
+  let min: number | null = null;
+  for (const list of lists) {
+    for (const tx of list) {
+      const ms = txEpochMs(tx);
+      if (ms != null && (min == null || ms < min)) min = ms;
+    }
+  }
+  return min == null ? null : getKyivDayKey(min);
+}

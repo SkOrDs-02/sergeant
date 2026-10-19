@@ -54,6 +54,7 @@ export function useFinykStatTransactions() {
           receivables: slots.receivables,
           excludedStatTxIds: slots.excludedStatTxIds,
           transactions: mergedTransactions,
+          cashOnHand: slots.cashOnHand,
         }),
       ),
     [
@@ -62,6 +63,7 @@ export function useFinykStatTransactions() {
       slots.txCategories,
       slots.receivables,
       slots.excludedStatTxIds,
+      slots.cashOnHand,
     ],
   );
   // Правила «Завжди так для цього магазину» (2026-10-01): споживачі цього

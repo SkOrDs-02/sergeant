@@ -44,6 +44,7 @@ export {
 export {
   finykHiddenAccounts,
   finykHiddenTransactions,
+  finykTxNotes,
   finykBudgets,
   finykSubscriptions,
   finykAssets,

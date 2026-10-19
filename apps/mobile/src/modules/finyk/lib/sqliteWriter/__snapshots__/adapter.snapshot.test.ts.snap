@@ -67,20 +67,25 @@ exports[`mobile finyk dual-write SQL snapshot (ADR-0073 Крок 0) emits a byte
       "2026-06-23T00:00:00.000Z",
     ],
     "sql": "INSERT INTO finyk_tx_categories
-       (user_id, transaction_id, category_id, created_at, updated_at)
-     VALUES (?, ?, ?, ?, ?)
+       (user_id, transaction_id, category_id, created_at, updated_at, deleted_at)
+     VALUES (?, ?, ?, ?, ?, NULL)
      ON CONFLICT(user_id, transaction_id) DO UPDATE SET
        category_id = excluded.category_id,
-       updated_at  = excluded.updated_at
+       updated_at  = excluded.updated_at,
+       deleted_at  = NULL
      WHERE excluded.updated_at > finyk_tx_categories.updated_at",
   },
   {
     "params": [
+      "2026-06-23T00:00:00.000Z",
+      "2026-06-23T00:00:00.000Z",
       "u1",
       "t1",
+      "2026-06-23T00:00:00.000Z",
     ],
-    "sql": "DELETE FROM finyk_tx_categories
-      WHERE user_id = ? AND transaction_id = ?",
+    "sql": "UPDATE finyk_tx_categories
+        SET deleted_at = ?, updated_at = ?
+      WHERE user_id = ? AND transaction_id = ? AND updated_at < ?",
   },
   {
     "params": [
@@ -91,20 +96,25 @@ exports[`mobile finyk dual-write SQL snapshot (ADR-0073 Крок 0) emits a byte
       "2026-06-23T00:00:00.000Z",
     ],
     "sql": "INSERT INTO finyk_tx_splits
-       (user_id, transaction_id, splits_json, created_at, updated_at)
-     VALUES (?, ?, ?, ?, ?)
+       (user_id, transaction_id, splits_json, created_at, updated_at, deleted_at)
+     VALUES (?, ?, ?, ?, ?, NULL)
      ON CONFLICT(user_id, transaction_id) DO UPDATE SET
        splits_json = excluded.splits_json,
-       updated_at  = excluded.updated_at
+       updated_at  = excluded.updated_at,
+       deleted_at  = NULL
      WHERE excluded.updated_at > finyk_tx_splits.updated_at",
   },
   {
     "params": [
+      "2026-06-23T00:00:00.000Z",
+      "2026-06-23T00:00:00.000Z",
       "u1",
       "t2",
+      "2026-06-23T00:00:00.000Z",
     ],
-    "sql": "DELETE FROM finyk_tx_splits
-      WHERE user_id = ? AND transaction_id = ?",
+    "sql": "UPDATE finyk_tx_splits
+        SET deleted_at = ?, updated_at = ?
+      WHERE user_id = ? AND transaction_id = ? AND updated_at < ?",
   },
   {
     "params": [
@@ -115,20 +125,25 @@ exports[`mobile finyk dual-write SQL snapshot (ADR-0073 Крок 0) emits a byte
       "2026-06-23T00:00:00.000Z",
     ],
     "sql": "INSERT INTO finyk_mono_debt_links
-       (user_id, transaction_id, debt_ids_json, created_at, updated_at)
-     VALUES (?, ?, ?, ?, ?)
+       (user_id, transaction_id, debt_ids_json, created_at, updated_at, deleted_at)
+     VALUES (?, ?, ?, ?, ?, NULL)
      ON CONFLICT(user_id, transaction_id) DO UPDATE SET
        debt_ids_json = excluded.debt_ids_json,
-       updated_at    = excluded.updated_at
+       updated_at    = excluded.updated_at,
+       deleted_at    = NULL
      WHERE excluded.updated_at > finyk_mono_debt_links.updated_at",
   },
   {
     "params": [
+      "2026-06-23T00:00:00.000Z",
+      "2026-06-23T00:00:00.000Z",
       "u1",
       "t3",
+      "2026-06-23T00:00:00.000Z",
     ],
-    "sql": "DELETE FROM finyk_mono_debt_links
-      WHERE user_id = ? AND transaction_id = ?",
+    "sql": "UPDATE finyk_mono_debt_links
+        SET deleted_at = ?, updated_at = ?
+      WHERE user_id = ? AND transaction_id = ? AND updated_at < ?",
   },
   {
     "params": [
@@ -139,11 +154,12 @@ exports[`mobile finyk dual-write SQL snapshot (ADR-0073 Крок 0) emits a byte
       "2026-06-23T00:00:00.000Z",
     ],
     "sql": "INSERT INTO finyk_networth_history
-       (user_id, month, networth, snapshot_json, created_at, updated_at)
-     VALUES (?, ?, ?, '{}', ?, ?)
+       (user_id, month, networth, snapshot_json, created_at, updated_at, deleted_at)
+     VALUES (?, ?, ?, '{}', ?, ?, NULL)
      ON CONFLICT(user_id, month) DO UPDATE SET
        networth   = excluded.networth,
-       updated_at = excluded.updated_at
+       updated_at = excluded.updated_at,
+       deleted_at = NULL
      WHERE excluded.updated_at > finyk_networth_history.updated_at",
   },
   {

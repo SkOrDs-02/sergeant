@@ -5,8 +5,9 @@
 
 import { describe, it, beforeEach, afterEach } from "node:test";
 import assert from "node:assert/strict";
-import { mkdtempSync, writeFileSync, rmSync } from "node:fs";
-import { join } from "node:path";
+import { mkdtempSync, writeFileSync, rmSync, readdirSync } from "node:fs";
+import { join, dirname } from "node:path";
+import { fileURLToPath } from "node:url";
 import { tmpdir } from "node:os";
 
 import {
@@ -1071,5 +1072,44 @@ describe("run() — rename of an applied migration", () => {
       renamedFiles: [{ from: "001_a.sql", to: "002_b.sql" }],
     });
     assert.equal(ok, true);
+  });
+});
+
+// ── реальна директорія міграцій ─────────────────────────────────────────────
+
+describe("реальна директорія apps/server/src/migrations", () => {
+  const dir = join(
+    dirname(fileURLToPath(import.meta.url)),
+    "..",
+    "..",
+    "apps",
+    "server",
+    "src",
+    "migrations",
+  );
+  const files = readdirSync(dir).filter((f) => f.endsWith(".sql"));
+
+  it("нумерація без прогалин і дублів (регресія data-27: 156 при 154 на main давала gap 155)", () => {
+    const { gaps, duplicates } = checkSequentialNumbers(files);
+    assert.deepEqual(gaps, []);
+    assert.deepEqual(
+      duplicates.filter((n) => !APPLIED_DUPLICATE_NUMBERS.includes(n)),
+      [],
+    );
+  });
+
+  it("finyk_tx_notes має пару up/down під одним номером, що замикає послідовність", () => {
+    const up = files.filter((f) => /^\d+_finyk_tx_notes\.sql$/.test(f));
+    const down = files.filter((f) => /^\d+_finyk_tx_notes\.down\.sql$/.test(f));
+    assert.equal(up.length, 1);
+    assert.equal(down.length, 1);
+    const n = Number(up[0].split("_")[0]);
+    assert.equal(
+      down[0],
+      `${String(n).padStart(3, "0")}_finyk_tx_notes.down.sql`,
+    );
+    const { numbers } = checkSequentialNumbers(files);
+    assert.ok(numbers.includes(n - 1), "попередній номер має існувати");
+    assert.equal(numbers[numbers.length - 1] >= n, true);
   });
 });

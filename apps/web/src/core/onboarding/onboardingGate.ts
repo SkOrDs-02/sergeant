@@ -3,8 +3,8 @@
  * module owns key constants, the existing-data heuristic, the
  * done-flag lifecycle and the splash taxonomy (icons / teasers / chip
  * order). This file binds them to a `window.localStorage`-backed
- * `KVStore` so existing call-sites (`App.tsx`, `OnboardingWizard.tsx`,
- * `WelcomeScreen.tsx`) keep the exact same API they had before the
+ * `KVStore` so existing call-sites (`App.tsx`, `WelcomeScreen.tsx`) keep
+ * the exact same API they had before the
  * mobile port.
  */
 

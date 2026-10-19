@@ -3,6 +3,7 @@ import { getTableConfig } from "drizzle-orm/sqlite-core";
 import {
   finykHiddenAccounts,
   finykHiddenTransactions,
+  finykTxNotes,
   finykBudgets,
   finykSubscriptions,
   finykAssets,
@@ -90,6 +91,34 @@ describe("sqlite/finykHiddenTransactions schema snapshot", () => {
   });
 });
 
+describe("sqlite/finykTxNotes schema snapshot (data-27)", () => {
+  const config = getTableConfig(finykTxNotes);
+
+  it("uses (user_id, transaction_id) composite PK", () => {
+    expect(config.primaryKeys[0]!.columns.map((c) => c.name)).toEqual([
+      "user_id",
+      "transaction_id",
+    ]);
+  });
+
+  it("declares note + soft-delete columns", () => {
+    expect(config.columns.map((c) => c.name)).toEqual([
+      "user_id",
+      "transaction_id",
+      "note",
+      "created_at",
+      "updated_at",
+      "deleted_at",
+    ]);
+  });
+
+  it("`_lite`-suffixed soft-delete partial index is declared", () => {
+    expect(config.indexes.map((i) => i.config.name)).toContain(
+      "finyk_tx_notes_user_active_idx_lite",
+    );
+  });
+});
+
 // ---------------------------------------------------------------------
 // Group 2 — per-row + JSONB→TEXT
 // ---------------------------------------------------------------------
@@ -160,6 +189,7 @@ describe("sqlite/finykTxCategories schema snapshot", () => {
       "category_id",
       "created_at",
       "updated_at",
+      "deleted_at",
     ]);
   });
 
@@ -170,8 +200,9 @@ describe("sqlite/finykTxCategories schema snapshot", () => {
     ]);
   });
 
-  it("has no soft-delete column", () => {
-    expect(config.columns.map((c) => c.name)).not.toContain("deleted_at");
+  it("declares the nullable deleted_at tombstone column (client migration 005)", () => {
+    const cols = Object.fromEntries(config.columns.map((c) => [c.name, c]));
+    expect(cols["deleted_at"]!.notNull).toBe(false);
   });
 });
 
@@ -219,6 +250,7 @@ describe("sqlite/finykNetworthHistory schema snapshot", () => {
       "snapshot_json",
       "created_at",
       "updated_at",
+      "deleted_at",
     ]);
   });
 
@@ -361,13 +393,36 @@ describe("sqlite/finykMonoAccountSnapshots schema snapshot", () => {
 // ---------------------------------------------------------------------
 
 describe("sqlite/finyk migrations exports", () => {
-  it("exports the ordered finyk migrations list (001 + 002 + 003)", () => {
-    expect(FINYK_CLIENT_MIGRATIONS).toHaveLength(3);
+  it("exports the ordered finyk migrations list (001 + 002 + 003 + 004 + 005)", () => {
+    expect(FINYK_CLIENT_MIGRATIONS).toHaveLength(5);
     expect(FINYK_CLIENT_MIGRATIONS[0]!.name).toBe("001_finyk_tables.sql");
     expect(FINYK_CLIENT_MIGRATIONS[1]!.name).toBe("002_finyk_mono_mirror.sql");
     expect(FINYK_CLIENT_MIGRATIONS[2]!.name).toBe(
       "003_finyk_prefs_excluded_dismissed.sql",
     );
+    expect(FINYK_CLIENT_MIGRATIONS[3]!.name).toBe("004_finyk_tx_notes.sql");
+    expect(FINYK_CLIENT_MIGRATIONS[4]!.name).toBe(
+      "005_finyk_soft_delete_tombstones.sql",
+    );
+  });
+
+  it("004 inline SQL creates finyk_tx_notes with a soft-delete column", () => {
+    const sql = FINYK_CLIENT_MIGRATIONS[3]!.sql;
+    expect(sql).toMatch(/CREATE TABLE IF NOT EXISTS finyk_tx_notes\b/);
+    expect(sql).toMatch(/deleted_at\s+TEXT/);
+    expect(sql).toMatch(/PRIMARY KEY \(user_id, transaction_id\)/);
+  });
+
+  it("005 додає nullable deleted_at чотирьом hard-delete таблицям (data-15)", () => {
+    const sql = FINYK_CLIENT_MIGRATIONS[4]!.sql;
+    for (const table of [
+      "finyk_tx_categories",
+      "finyk_tx_splits",
+      "finyk_mono_debt_links",
+      "finyk_networth_history",
+    ]) {
+      expect(sql).toContain(`ALTER TABLE ${table} ADD COLUMN deleted_at TEXT;`);
+    }
   });
 
   it("001 inline SQL contains every Stage-4 finyk_* table CREATE", () => {

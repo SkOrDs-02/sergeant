@@ -12,6 +12,8 @@ import { TransactionFilters } from "./TransactionFilters";
 import { CategoryTrend } from "./CategoryTrend";
 import { TransactionList } from "./TransactionList";
 import { TransactionSyncPill } from "./TransactionSyncPill";
+import { TransactionsFilterChip } from "./TransactionsFilterChip";
+import { formatAnalyticsPeriod } from "../../lib/analyticsPeriodLabel";
 import { useTransactionFilters } from "./useTransactionFilters";
 import { formatDayFilterDate, isDayFilterKey } from "./transactionsLib";
 import { useTransactionSelection } from "./useTransactionSelection";
@@ -23,7 +25,6 @@ import {
 } from "../../hooks/useMerchantRuleActions";
 import type { MerchantRuleIndex } from "@sergeant/finyk-domain/lib/merchantRules";
 import type { UseFinykReceiptLinksResult } from "../../hooks/useFinykReceiptLinks";
-import { Button } from "@shared/components/ui/Button";
 import { ConfirmDialog } from "@shared/components/ui/ConfirmDialog";
 import { TransferSuggestionCard } from "./TransferSuggestionCard";
 import {
@@ -36,6 +37,10 @@ import {
   FINYK_TRANSFER_SUGGESTION_SNOOZED_KEY,
 } from "@sergeant/finyk-domain/storage-keys";
 import { INTERNAL_TRANSFER_ID } from "@sergeant/finyk-domain/constants";
+import {
+  isCashWithdrawalCandidate,
+  type CashOnHandState,
+} from "@sergeant/finyk-domain/domain/cashOnHand";
 import { formatMoney } from "@sergeant/shared";
 import { messages } from "@shared/i18n/uk";
 import type {
@@ -145,6 +150,9 @@ export interface TransactionsStorageSlice {
   cancelledTxIds?: ReadonlySet<string> | undefined;
   excludedStatTxIds: string[] | undefined;
   toggleExcludeFromStats: (id: string) => void;
+  /** «Готівка на руках»: підказка й перебиття для знять (ADR-0076). */
+  cashOnHand?: CashOnHandState | null | undefined;
+  toggleCashCountAsExpense?: ((id: string) => void) | undefined;
   txCategories: TxCategoriesMap;
   /**
    * Правила «Завжди так для цього магазину» і їхні мутатори. Усе необовʼязкове:
@@ -188,6 +196,7 @@ export interface TransactionsProps {
   showBalance?: boolean;
   categoryFilter?: string | null;
   categoryMonth?: { year: number; month: number } | null;
+  categoryRange?: { fromKey: string; toKey: string } | null;
   onClearCategoryFilter?: () => void;
   onEditManualExpense?: (id: string) => void;
   dayFilter?: string | null;
@@ -218,6 +227,7 @@ export function Transactions({
   showBalance = true,
   categoryFilter,
   categoryMonth,
+  categoryRange,
   onClearCategoryFilter,
   onEditManualExpense,
   dayFilter,
@@ -247,6 +257,8 @@ export function Transactions({
     cancelledTxIds,
     excludedStatTxIds,
     toggleExcludeFromStats,
+    cashOnHand,
+    toggleCashCountAsExpense,
     txCategories,
     merchantRuleIndex,
     upsertMerchantRule,
@@ -283,6 +295,7 @@ export function Transactions({
     fetchMonth,
     categoryFilter,
     categoryMonth,
+    categoryRange,
     onClearCategoryFilter,
     dayFilter,
   });
@@ -550,22 +563,23 @@ export function Transactions({
               lastUpdated={lastUpdated}
             />
             {isDayFilterValid && (
-              <div className="flex items-center justify-between gap-3 rounded-panel border border-line bg-panel px-3 py-2">
-                <span className="text-style-caption text-text">
-                  {dayFilterLabel}
-                </span>
-                {onClearDayFilter && (
-                  <Button
-                    type="button"
-                    size="xs"
-                    variant="ghost"
-                    onClick={onClearDayFilter}
-                    aria-label={messages.finyk.todayFilter.showAllAria}
-                  >
-                    {messages.finyk.todayFilter.showAll}
-                  </Button>
+              <TransactionsFilterChip
+                label={dayFilterLabel}
+                clearLabel={messages.finyk.todayFilter.showAll}
+                clearAria={messages.finyk.todayFilter.showAllAria}
+                onClear={onClearDayFilter}
+              />
+            )}
+            {filters.rangeFilter && (
+              <TransactionsFilterChip
+                label={formatAnalyticsPeriod(
+                  { kind: "range", ...filters.rangeFilter },
+                  getKyivDayKey(),
                 )}
-              </div>
+                clearLabel={messages.finyk.analyticsPage.rangeChipClear}
+                clearAria={messages.finyk.analyticsPage.rangeChipAria}
+                onClear={filters.clearRangeFilter}
+              />
             )}
             {visibleTransferSuggestion && visibleTransferKey && (
               <TransferSuggestionCard
@@ -669,6 +683,19 @@ export function Transactions({
           onSplitChange={handleSplitChange}
           onToggleHidden={selection.stableHideTx}
           onToggleExcludedFromStats={toggleExcludeFromStats}
+          cashWithdrawal={
+            cashOnHand &&
+            toggleCashCountAsExpense &&
+            isCashWithdrawalCandidate(editingBankTransaction, cashOnHand)
+              ? {
+                  countedAsExpense: cashOnHand.countAsExpenseTxIds.includes(
+                    editingBankTransaction.id,
+                  ),
+                  onToggle: () =>
+                    toggleCashCountAsExpense(editingBankTransaction.id),
+                }
+              : undefined
+          }
           onClose={() => setEditingBankTransaction(null)}
         />
       )}

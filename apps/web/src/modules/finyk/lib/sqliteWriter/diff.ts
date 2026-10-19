@@ -28,6 +28,7 @@
  *     - `finyk_manual_expenses_v1`→ `finyk_manual_expenses`
  *
  *   - per-tx mapping (composite (user_id, transaction_id) PK)
+ *     - `finyk_tx_notes`          → `finyk_tx_notes`          (text, soft-delete; data-27)
  *     - `finyk_tx_cats`           → `finyk_tx_categories`     (string value)
  *     - `finyk_tx_splits`         → `finyk_tx_splits`         (jsonb array)
  *     - `finyk_mono_debt_linked`  → `finyk_mono_debt_links`   (jsonb array)
@@ -73,6 +74,16 @@ export interface FinykBlobEntry {
 export interface FinykTxCategoryEntry {
   readonly transactionId: string;
   readonly categoryId: string;
+}
+
+/**
+ * Нотатка користувача до операції (`finyk_tx_notes`). `note` уже обрізано й
+ * очищено екстрактором: порожніх нотаток у стані немає — їхня відсутність
+ * і є «нотатки нема» (діф дає `tx-note-delete` = soft-delete).
+ */
+export interface FinykTxNoteEntry {
+  readonly transactionId: string;
+  readonly note: string;
 }
 
 /** Per-tx splits (`finyk_tx_splits`). */
@@ -143,6 +154,7 @@ export interface FinykDualWriteState {
   readonly manualExpenses: readonly FinykBlobEntry[];
   readonly txCategories: readonly FinykTxCategoryEntry[];
   readonly txSplits: readonly FinykTxSplitsEntry[];
+  readonly txNotes: readonly FinykTxNoteEntry[];
   readonly monoDebtLinks: readonly FinykMonoDebtLinkEntry[];
   readonly networthHistory: readonly FinykNetworthEntry[];
   readonly prefs: FinykPrefsSnapshot | null;
@@ -160,6 +172,7 @@ export const EMPTY_FINYK_STATE: FinykDualWriteState = {
   manualExpenses: [],
   txCategories: [],
   txSplits: [],
+  txNotes: [],
   monoDebtLinks: [],
   networthHistory: [],
   prefs: null,
@@ -225,6 +238,16 @@ export interface TxSplitsDeleteOp {
   readonly transactionId: string;
 }
 
+export interface TxNoteUpsertOp {
+  readonly kind: "tx-note-upsert";
+  readonly entry: FinykTxNoteEntry;
+}
+
+export interface TxNoteDeleteOp {
+  readonly kind: "tx-note-delete";
+  readonly transactionId: string;
+}
+
 export interface MonoDebtLinkUpsertOp {
   readonly kind: "mono-debt-link-upsert";
   readonly entry: FinykMonoDebtLinkEntry;
@@ -254,6 +277,8 @@ export type FinykDualWriteOp =
   | TxCategoryDeleteOp
   | TxSplitsUpsertOp
   | TxSplitsDeleteOp
+  | TxNoteUpsertOp
+  | TxNoteDeleteOp
   | MonoDebtLinkUpsertOp
   | MonoDebtLinkDeleteOp
   | NetworthUpsertOp
@@ -269,7 +294,7 @@ export type FinykDualWriteOp =
  * Stable iteration order:
  *   1. id-tables (`finyk_hidden_accounts`, `finyk_hidden_transactions`)
  *   2. blob-tables in declaration order (budgets → subs → assets → …)
- *   3. tx-categories / tx-splits / mono-debt-links (id asc)
+ *   3. tx-categories / tx-splits / tx-notes / mono-debt-links (id asc)
  *   4. networth-history (month asc)
  *   5. prefs-upsert (singleton, last)
  */
@@ -340,6 +365,16 @@ export function diffFinykDualWriteOps(
     (a, b) => a.splitsJson !== b.splitsJson,
     (entry) => ops.push({ kind: "tx-splits-upsert", entry }),
     (transactionId) => ops.push({ kind: "tx-splits-delete", transactionId }),
+  );
+
+  // --- Per-tx notes (soft-delete: порожня нотатка = tombstone) ---
+  diffByKey(
+    prev.txNotes,
+    next.txNotes,
+    (e) => e.transactionId,
+    (a, b) => a.note !== b.note,
+    (entry) => ops.push({ kind: "tx-note-upsert", entry }),
+    (transactionId) => ops.push({ kind: "tx-note-delete", transactionId }),
   );
 
   // --- Per-tx mono-debt links ---

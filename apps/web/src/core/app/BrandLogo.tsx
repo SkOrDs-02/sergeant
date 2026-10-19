@@ -8,9 +8,9 @@
  *
  * Variants:
  *   - "badge" (default): Mark inside an emerald rounded badge + wordmark.
- *     Used in AuthPage, ResetPasswordPage, OnboardingWizard.
+ *     Used in AuthPage and ResetPasswordPage.
  *   - "inline":          Mark inline with text (no badge).
- *     Used in OnboardingWizard inside a sentence.
+ *     Kept for compact inline brand treatments.
  *   - "mark":            Raw mark only — no badge, no wordmark.
  *     Used in HubHeader for the V2E operational-center layout.
  *

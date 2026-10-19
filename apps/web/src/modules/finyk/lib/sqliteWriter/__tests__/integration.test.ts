@@ -28,6 +28,7 @@ import { createTestSqlite, type TestSqliteHandle } from "./testSqlite.js";
 const USER_ID = "u-1";
 const NOW = "2026-05-04T00:00:00.000Z";
 const LATER = "2026-05-05T00:00:00.000Z";
+const EVEN_LATER = "2026-05-06T00:00:00.000Z";
 
 let handle: TestSqliteHandle;
 
@@ -126,7 +127,7 @@ describe("Finyk dual-write — applyFinykDualWriteOps", () => {
     });
   });
 
-  it("hard-deletes per-tx category mapping on tx-category-delete", async () => {
+  it("soft-deletes per-tx category mapping (tombstone) on tx-category-delete", async () => {
     await applyFinykDualWriteOps(
       handle.client,
       [
@@ -143,9 +144,39 @@ describe("Finyk dual-write — applyFinykDualWriteOps", () => {
       { userId: USER_ID, clientTs: LATER },
     );
     const rows = await handle.client.all<Record<string, unknown>>(
-      "SELECT * FROM finyk_tx_categories",
+      "SELECT transaction_id, deleted_at, updated_at FROM finyk_tx_categories",
     );
-    expect(rows).toHaveLength(0);
+    // data-15: рядок лишається як tombstone (deleted_at = updated_at = LATER),
+    // щоб запізнілий pull-upsert не воскресив його.
+    expect(rows).toEqual([
+      { transaction_id: "tx-1", deleted_at: LATER, updated_at: LATER },
+    ]);
+  });
+
+  it("повторний upsert після tombstone воскрешає рядок (deleted_at скидається)", async () => {
+    const ops = (id: string) => [
+      {
+        kind: "tx-category-upsert" as const,
+        entry: { transactionId: "tx-1", categoryId: id },
+      },
+    ];
+    await applyFinykDualWriteOps(handle.client, ops("c-1"), {
+      userId: USER_ID,
+      clientTs: NOW,
+    });
+    await applyFinykDualWriteOps(
+      handle.client,
+      [{ kind: "tx-category-delete", transactionId: "tx-1" }],
+      { userId: USER_ID, clientTs: LATER },
+    );
+    await applyFinykDualWriteOps(handle.client, ops("c-2"), {
+      userId: USER_ID,
+      clientTs: EVEN_LATER,
+    });
+    const rows = await handle.client.all<Record<string, unknown>>(
+      "SELECT category_id, deleted_at FROM finyk_tx_categories",
+    );
+    expect(rows).toEqual([{ category_id: "c-2", deleted_at: null }]);
   });
 
   it("rejects invalid networth month silently (no row inserted)", async () => {

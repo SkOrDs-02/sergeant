@@ -20,6 +20,7 @@ import type {
   FinykNetworthEntry,
   FinykPrefsSnapshot,
   FinykTxCategoryEntry,
+  FinykTxNoteEntry,
   FinykTxSplitsEntry,
 } from "./diff.js";
 import {
@@ -33,6 +34,8 @@ import {
   PREFS_UPSERT_SQL,
   TX_CATEGORY_DELETE_SQL,
   TX_CATEGORY_UPSERT_SQL,
+  TX_NOTE_DELETE_SQL,
+  TX_NOTE_UPSERT_SQL,
   TX_SPLITS_DELETE_SQL,
   TX_SPLITS_UPSERT_SQL,
 } from "./specs.js";
@@ -94,6 +97,14 @@ const applyOps = createApplyOps<FinykDualWriteOp>({
     },
     "tx-category-delete": async (client, op, rt) => {
       await deleteTxCategory(client, op.transactionId, rt);
+      return "applied";
+    },
+    "tx-note-upsert": async (client, op, rt) => {
+      await upsertTxNote(client, op.entry, rt);
+      return "applied";
+    },
+    "tx-note-delete": async (client, op, rt) => {
+      await softDeleteTxNote(client, op.transactionId, rt);
       return "applied";
     },
     "tx-splits-upsert": async (client, op, rt) => {
@@ -244,7 +255,7 @@ async function softDeleteBlobEntry(
 }
 
 // -----------------------------------------------------------------------
-// Per-tx mappings (hard DELETE — absence is the "no override" state)
+// Per-tx mappings (soft DELETE — tombstone є станом «немає override»)
 // -----------------------------------------------------------------------
 
 async function upsertTxCategory(
@@ -280,10 +291,73 @@ async function deleteTxCategory(
   transactionId: string,
   { userId, clientTs }: DualWriteRuntime,
 ): Promise<void> {
-  await client.run(TX_CATEGORY_DELETE_SQL, [userId, transactionId]);
+  await client.run(TX_CATEGORY_DELETE_SQL, [
+    clientTs,
+    clientTs,
+    userId,
+    transactionId,
+    clientTs,
+  ]);
   await enqueueOutboxUpsert(client, {
     userId,
     table: "finyk_tx_categories",
+    op: "delete",
+    row: { user_id: userId, transaction_id: transactionId },
+    clientTs,
+    idempotencyKey: crypto.randomUUID(),
+  }).catch(() => {
+    /* sync-enqueue failure is intentionally swallowed */
+  });
+}
+
+// -----------------------------------------------------------------------
+// Нотатки до операцій (data-27): composite PK + soft-delete. На відміну від
+// мапінгів вище, порожня нотатка — tombstone з LWW-guard-ом, а не hard DELETE.
+// -----------------------------------------------------------------------
+
+async function upsertTxNote(
+  client: SqliteMigrationClient,
+  entry: FinykTxNoteEntry,
+  { userId, clientTs }: DualWriteRuntime,
+): Promise<void> {
+  await client.run(TX_NOTE_UPSERT_SQL, [
+    userId,
+    entry.transactionId,
+    entry.note,
+    clientTs,
+    clientTs,
+  ]);
+  await enqueueOutboxUpsert(client, {
+    userId,
+    table: "finyk_tx_notes",
+    op: "insert",
+    row: {
+      user_id: userId,
+      transaction_id: entry.transactionId,
+      note: entry.note,
+    },
+    clientTs,
+    idempotencyKey: crypto.randomUUID(),
+  }).catch(() => {
+    /* sync-enqueue failure is intentionally swallowed */
+  });
+}
+
+async function softDeleteTxNote(
+  client: SqliteMigrationClient,
+  transactionId: string,
+  { userId, clientTs }: DualWriteRuntime,
+): Promise<void> {
+  await client.run(TX_NOTE_DELETE_SQL, [
+    clientTs,
+    clientTs,
+    userId,
+    transactionId,
+    clientTs,
+  ]);
+  await enqueueOutboxUpsert(client, {
+    userId,
+    table: "finyk_tx_notes",
     op: "delete",
     row: { user_id: userId, transaction_id: transactionId },
     clientTs,
@@ -326,7 +400,13 @@ async function deleteTxSplits(
   transactionId: string,
   { userId, clientTs }: DualWriteRuntime,
 ): Promise<void> {
-  await client.run(TX_SPLITS_DELETE_SQL, [userId, transactionId]);
+  await client.run(TX_SPLITS_DELETE_SQL, [
+    clientTs,
+    clientTs,
+    userId,
+    transactionId,
+    clientTs,
+  ]);
   await enqueueOutboxUpsert(client, {
     userId,
     table: "finyk_tx_splits",
@@ -381,7 +461,13 @@ async function deleteMonoDebtLink(
   transactionId: string,
   { userId, clientTs }: DualWriteRuntime,
 ): Promise<void> {
-  await client.run(MONO_DEBT_LINK_DELETE_SQL, [userId, transactionId]);
+  await client.run(MONO_DEBT_LINK_DELETE_SQL, [
+    clientTs,
+    clientTs,
+    userId,
+    transactionId,
+    clientTs,
+  ]);
   await enqueueOutboxUpsert(client, {
     userId,
     table: "finyk_mono_debt_links",

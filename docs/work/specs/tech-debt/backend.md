@@ -546,12 +546,12 @@ E-1). Те саме для `routine_habits` / `routine_tags` / `routine_categori
 Гіпотеза 2026-07-25 підтвердилась, і знову виявилась ширшою: уражені не дві
 таблиці, а **чотири** — клієнт не шле UUID у жодній з них.
 
-| таблиця                  | форма клієнтського id        |
-| ------------------------ | ---------------------------- |
-| `nutrition_pantries`     | `home` \| `p_<ms>_<idx>`     |
-| `nutrition_pantry_items` | `<pantryId>::<idx>::<name>`  |
-| `nutrition_meals`        | `meal_mig_<ts>_<idx>_<uuid>` |
-| `nutrition_recipes`      | `rcp_ai_<hash>`              |
+| таблиця                  | форма клієнтського id                                            |
+| ------------------------ | ---------------------------------------------------------------- |
+| `nutrition_pantries`     | `home` \| `p_<ms>_<idx>`                                         |
+| `nutrition_pantry_items` | `pi_<uuid>` (до 2026-10-10 `<pantryId>::<idx>::<name>`, data-40) |
+| `nutrition_meals`        | `meal_mig_<ts>_<idx>_<uuid>`                                     |
+| `nutrition_recipes`      | `rcp_ai_<hash>`                                                  |
 
 Прогін `POST /api/v2/sync/push` із цими id: до міграції всі чотири
 `apply_failed` (контроль із голим UUID — `applied`), після — всі чотири
@@ -559,11 +559,11 @@ E-1). Те саме для `routine_habits` / `routine_tags` / `routine_categori
 `nutrition_prefs.active_pantry_id`; FK `pantry_id → nutrition_pantries(id)`
 знято й повернуто в тій самій транзакції.
 
-**Що НЕ полагоджено (і типом не лікується):** id позиції комори містить
-`index` і `name`, тож перейменування продукту чи зсув у масиві породжує новий
-id — LWW-upsert по такому ключу лишається нестабільним. Канонічний шлях —
-append-only `nutrition_pantry_events` із ключем `item_key` (ADR-0077 §3.2).
-Міграція 095 прибрала лише `22P02`.
+**Закрито data-40 (2026-10-10):** позиційний id позиції комори
+(`<pantryId>::<idx>::<name>`), через який перейменування чи зсув у масиві давали
+новий id і нестабільний LWW-upsert, замінено стабільним `pi_<uuid>` із
+поелементним записом із вебу. Межі (старі позиційні id, mobile й далі пише весь
+список) — у поправці ADR-0077 §3.2 від 2026-10-10. Міграція 095 прибрала лише `22P02`.
 
 <details>
 <summary>Історія запису (до закриття)</summary>

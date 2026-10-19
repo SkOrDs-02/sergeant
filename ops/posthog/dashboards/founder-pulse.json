@@ -14,10 +14,10 @@
     },
     "onboarding_completed": {
       "payload": {
-        "intent": "vibe_picked | vibe_empty",
+        "intent": "preset_picker",
         "picksCount": "number"
       },
-      "fired_by": "apps/web/src/core/onboarding/OnboardingWizard.tsx finish()",
+      "fired_by": "apps/web/src/core/app/WelcomeScreen.tsx completeOnboarding()",
       "idempotency": "hub_onboarding_completed_v1 KV flag (once per account)",
       "introduced_by": "PR-07 (#2566)"
     },

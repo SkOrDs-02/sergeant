@@ -9,6 +9,7 @@ import {
 } from "../obs/metrics.js";
 import { getRedis } from "../lib/redis.js";
 import { pluralSeconds } from "@sergeant/shared";
+import { getClientIp } from "./clientIp.js";
 
 type Outcome = "allowed" | "blocked";
 
@@ -77,6 +78,11 @@ function recordRateLimitDegraded(key: string, mode: "inmem" | "closed"): void {
  * a free-tier bypass: the attacker prepends a fresh fake IP per request and
  * the bucket key changes each time.
  *
+ * Виняток (rel-03): за Vercel-проксі `req.ip` — це egress Vercel, спільний для
+ * всіх користувачів. Тому `getClientIp` (`./clientIp.ts`) спершу приймає IP із
+ * заголовка `x-sergeant-client-ip`, але ЛИШЕ за timing-safe збігу HMAC-підпису
+ * (`SERGEANT_CLIENT_IP_SECRET`); без секрету чи з хибним підписом — `req.ip`.
+ *
  * Trust-proxy is configured in `createApp` (`apps/server/src/app.ts`) and
  * defaults to `1` (single reverse proxy in front of us — Railway
  * topology). If no trust-proxy is configured, `req.ip` falls back to the
@@ -90,11 +96,7 @@ function recordRateLimitDegraded(key: string, mode: "inmem" | "closed"): void {
  * limiter by stripping headers.
  */
 export function getIp(req: Request): string {
-  const fromExpress = req?.ip;
-  if (typeof fromExpress === "string" && fromExpress.trim()) {
-    return fromExpress.trim();
-  }
-  return "unknown";
+  return getClientIp(req) ?? "unknown";
 }
 
 interface Bucket {

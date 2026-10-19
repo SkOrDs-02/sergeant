@@ -311,7 +311,15 @@ describe("diffNutritionDualWriteOps — pantry-upsert / pantry-delete", () => {
   it("емітить pantry-upsert для нової pantry", () => {
     const p = makePantry();
     const ops = diffNutritionDualWriteOps(EMPTY, makeState({ pantries: [p] }));
-    expect(ops).toEqual([{ kind: "pantry-upsert", pantry: p }]);
+    expect(ops).toEqual([
+      {
+        kind: "pantry-upsert",
+        pantry: p,
+        changedItemIds: p.items.map((item) => item.id),
+        removedItemIds: [],
+        pantryFieldsChanged: true,
+      },
+    ]);
   });
 
   it("емітить pantry-delete для видаленої pantry", () => {
@@ -332,6 +340,7 @@ describe("diffNutritionDualWriteOps — pantry-upsert / pantry-delete", () => {
         kind: "pantry-upsert",
         pantry: after,
         changedItemIds: [],
+        removedItemIds: [],
         pantryFieldsChanged: true,
       },
     ]);
@@ -349,6 +358,7 @@ describe("diffNutritionDualWriteOps — pantry-upsert / pantry-delete", () => {
         kind: "pantry-upsert",
         pantry: after,
         changedItemIds: [],
+        removedItemIds: [],
         pantryFieldsChanged: true,
       },
     ]);
@@ -382,6 +392,7 @@ describe("diffNutritionDualWriteOps — pantry-upsert / pantry-delete", () => {
         kind: "pantry-upsert",
         pantry: after,
         changedItemIds: ["it1"],
+        removedItemIds: [],
         pantryFieldsChanged: false,
       },
     ]);
@@ -406,6 +417,7 @@ describe("diffNutritionDualWriteOps — pantry-upsert / pantry-delete", () => {
         kind: "pantry-upsert",
         pantry: after,
         changedItemIds: [],
+        removedItemIds: ["it2"],
         pantryFieldsChanged: false,
       },
     ]);

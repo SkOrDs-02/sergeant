@@ -41,7 +41,18 @@ type StorageSlice = Pick<
   | "toggleMonoDebtTx"
   | "customCategories"
   | "manualExpenses"
->;
+> &
+  // «Готівка на руках» (ADR-0076): необовʼязкова, щоб тестові стенди без
+  // неї рендерили Активи як раніше.
+  Partial<
+    Pick<
+      ReturnType<typeof import("../hooks/useStorage").useStorage>,
+      | "cashOnHand"
+      | "cashBalanceMinor"
+      | "createCashOnHand"
+      | "setCashActualAmount"
+    >
+  >;
 
 type AccountLike = Partial<MonoAccount> & {
   id?: string | undefined;
@@ -120,6 +131,7 @@ export function useAssetsState({
     toggleMonoDebtTx,
     customCategories,
     manualExpenses,
+    cashBalanceMinor = null,
   } = storage;
 
   const linkableTransactions = useMemo(
@@ -211,6 +223,7 @@ export function useAssetsState({
       goal: j.goal,
       currencyCode: j.currencyCode,
     })),
+    cashOnHandMinor: cashBalanceMinor,
   });
   const {
     monoBalance: monoTotal,
@@ -317,6 +330,10 @@ export function useAssetsState({
   return {
     // Raw data from props
     accounts,
+    cashOnHand: storage.cashOnHand ?? null,
+    cashBalanceMinor,
+    createCashOnHand: storage.createCashOnHand,
+    setCashActualAmount: storage.setCashActualAmount,
     jars: jars ?? [],
     jarsTotal,
     transactions: linkableTransactions,

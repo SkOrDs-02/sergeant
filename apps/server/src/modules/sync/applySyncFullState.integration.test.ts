@@ -172,7 +172,7 @@ describe("full-state LWW under concurrent pushes", () => {
   );
 
   it(
-    "hard delete: older delete committed after newer upsert does not remove the row",
+    "tombstone delete: older delete committed after newer upsert does not remove the row",
     async (ctx) => {
       if (!harness || !dockerAvailable) return ctx.skip();
       const pool = harness.pool;

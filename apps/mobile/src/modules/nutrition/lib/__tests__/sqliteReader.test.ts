@@ -131,6 +131,7 @@ describe("nutrition sqliteReader (mobile)", () => {
         text: "",
         items: [
           {
+            id: "item-1",
             name: "Гречка",
             qty: 2,
             unit: null,

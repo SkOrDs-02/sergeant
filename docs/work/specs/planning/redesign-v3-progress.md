@@ -1,11 +1,11 @@
 # Редизайн v3: журнал виконання
 
-> **Last touched:** 2026-10-18 by @codex (#1519 merged; порожні стани опубліковано в draft [#1522](https://github.com/SkOrDs-02/sergeant/pull/1522); прибирання підтвердженого застарілого коду лишається окремим наступним PR; native заморожений власником). **Next review:** 2026-11-09.
+> **Last touched:** 2026-10-19 by @codex (cleanup підтвердженого застарілого web-коду опубліковано як draft [#1536](https://github.com/SkOrDs-02/sergeant/pull/1536); #1522 merged; native заморожений власником). **Next review:** 2026-11-09.
 > **Status:** Active
 
 Журнал виконання спеки [`redesign-v3.md`](./redesign-v3.md), PR за PR. Сесія, що бере наступний PR, читає цей файл першим: усе, чого немає в спеці, але треба знати далі, записано тут.
 
-**Поточний зріз:** #1519 merged 2026-10-18T08:21:53Z. Активний draft [#1522](https://github.com/SkOrDs-02/sergeant/pull/1522), `claude/empty-states-refresh`: спільний web-канон порожніх станів і чотири реальні поверхні. Після його мержу окремим PR прибрати лише підтверджені знахідки застарілого коду з попереднього аудиту. Native не чіпати.
+**Поточний зріз:** спеку закрито 2026-10-18 (§ [Закриття спеки](#закриття-спеки--2026-10-18)), нових PR у межах спеки немає. Журнал лишається активним для погоджених доповнень власника: [#1522](https://github.com/SkOrDs-02/sergeant/pull/1522) (спільний канон порожніх станів) змерджено 2026-10-18 15:04 UTC; окремий cleanup підтверджених знахідок опубліковано як draft [#1536](https://github.com/SkOrDs-02/sergeant/pull/1536). Native не чіпати.
 
 | PR                | Гілка                                | GitHub PR                                                | Стан   | Позиції каталогу § 2                                               |
 | ----------------- | ------------------------------------ | -------------------------------------------------------- | ------ | ------------------------------------------------------------------ |
@@ -21,7 +21,8 @@
 | PR7               | `claude/redesign-v3-pr7`             | [#1508](https://github.com/SkOrDs-02/sergeant/pull/1508) | merged | 24, 25, 32, 33; пʼять v3 baseline = 0                              |
 | Review fix        | `claude/redesign-v3-review-fixes`    | [#1510](https://github.com/SkOrDs-02/sergeant/pull/1510) | merged | Повторне приймання 1–37; регресії п. 7, 9, 18–29, 34–37            |
 | Content hierarchy | `claude/redesign-v3-content-groups`  | [#1511](https://github.com/SkOrDs-02/sergeant/pull/1511) | merged | Погоджене доповнення 02+03 до 18–22 і спільних web-примітивів      |
-| Empty states      | `claude/empty-states-refresh`        | [#1522](https://github.com/SkOrDs-02/sergeant/pull/1522) | active | Погоджений post-spec канон first-run станів у чотирьох web-модулях |
+| Empty states      | `claude/empty-states-refresh`        | [#1522](https://github.com/SkOrDs-02/sergeant/pull/1522) | merged | Погоджений post-spec канон first-run станів у чотирьох web-модулях |
+| Cleanup           | `claude/redesign-v3-cleanup`         | [#1536](https://github.com/SkOrDs-02/sergeant/pull/1536) | active | Підтверджені post-spec знахідки застарілого web-коду               |
 
 ## Поправка власника 2026-10-10: швидка дія (PR4b, після мержу PR4, перед PR5)
 
@@ -1288,9 +1289,31 @@ Types-final, root-lint-final, format-final, build-final, size-final, eager-final
 
 **Фактично опубліковано sync-фікси:** #1519 має title `fix(web): захистити дані під час синхронізації`, фінальний body за шаблоном із14178passed; connector update і push exit0. Source/docs publication head `cbc158e0d9b2107a951c1df931915c807a165c20` перевірений через gh: OPEN, mergedAtnull, drafttrue, MERGEABLE; збігається з локальним HEAD. На ньому вже стартував новий CI check/Critical-flow E2E/commitlint/migration down drill, тож green старого4db не видається за новий. SHA256 усіх web source/tests після push0, дерево чисте. Цей запис додається наступним docs-only комітом, без змін перевіреного runtime071732df0; після його push gh знов звіряє actualhead/CI. Джерело вже на remote, повторно імплементувати чи створювати новий PR не треба. Перший крок після /clear — стан #1519 і CI його поточного head.
 
+## Закриття спеки · 2026-10-18
+
+Прохід по критеріях § Мета і § Верифікація спеки на `main` `58e08687d` (після мержу #1519).
+
+| Критерій                         | Команда / джерело                                                                | Результат                                                                                |
+| -------------------------------- | -------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------- |
+| 37 позицій каталогу § 2          | [мемо § 2](../audits/2026-10-08-redesign-v3-gap-memo.md), колонка «закрито в PR» | усі 37 позначені закритими; пропуски первинних PR закрито повторним прийманням у #1510   |
+| Гейти не дають слопу повернутись | `node scripts/check-ui-canon-ratchet.mjs`                                        | exit 0; `hoverMotion`, `enterMotion`, `glass`, `bigRadius`, `kicker` = 0, тепер заборони |
+| Бюджети CSS 40 kB і JS 1,51 MB   | `pnpm --filter @sergeant/web build` → `npx size-limit --json`                    | exit 0; JS 1 509 713 B з 1 510 000 (запас 287 B), CSS 32 578 B з 40 000                  |
+| Прод на `main`                   | `pnpm deploy:status`                                                             | бекенд, фронт і лендинг без відставання від `main`                                       |
+| CI `main`                        | `gh run list --branch main --workflow ci.yml`                                    | success на `58e08687d`                                                                   |
+
+Невживаних `@keyframes` в `animations.css` немає (прохід по всіх 49 іменах). `module-surfaces.css` лишається: у ньому живі кольори теплової карти Рутини, а не hero модулів.
+
+**Межі приймання.** Повторний прохід оком по 37 позиціях і 312 знімків до/після виконав агент (#1510), у Chromium 390×844, не на фізичному iPhone і без VoiceOver. Сирі логи, приватні Playwright-обвʼязки й PNG лежать у `/workspace/artifacts/` середовища Codex і в репо не потрапили, тож повторити ці докази з репо не можна. Мобільні застосунки заморожені рішенням власника й не перевірялись.
+
+**Урок.** Пʼять нульових метрик храповика не доводять приймання: вони не бачать ролей сегментів, іконографії й умовних станів. PR7 спершу оголосив спеку завершеною, а ревʼю після нього знайшло пропуски в п. 7, 9, 15-16, 18-29, 34-37 і перекриття tab bar кнопкою в куті. Для наступних спек візуальної мови приймання = повторний прохід по каталогу, а не зелений гейт.
+
+**Поза скоупом спеки.** Спека міняла форму, не поведінку. Розділи журналу від «Погоджена ієрархія змісту web» (2026-10-13) до «Додаткове доручення власника · 2026-10-17» описують окремі доручення власника, які велись у цьому журналі за інерцією: ієрархія змісту (#1511, #1514), потік додавання їжі (#1512), синк беклогу (#1513), свіжість хабу й модулів (#1515, #1516), навігація Фізрука (#1517), аудит шляхів (#1518), захист даних під час синхронізації SYNC-DUR-01..03 (#1519). Нові доручення поза спекою краще вести окремим журналом, щоб історію не шукали в журналі редизайну.
+
+**Хвости.** JS-бюджет на межі: наступна фіча з новою залежністю зробить `size-limit` червоним; рішення (прибирати мертве чи піднімати стелю з записом у ratchet-log) за власником.
+
 ## Follow-up · 2026-10-18: спільний канон порожніх станів
 
-**Гілка:** `claude/empty-states-refresh`, перед публікацією перебазована без конфліктів на актуальний `origin/main` `096ca332a`. **PR:** draft [#1522](https://github.com/SkOrDs-02/sergeant/pull/1522). Це погоджене доповнення після завершених PR0–PR7, без нової позиції каталогу § 2. Native заморожений і не змінюється.
+**Гілка:** `claude/empty-states-refresh`, перед публікацією перебазована без конфліктів на актуальний `origin/main` `096ca332a`. **PR:** [#1522](https://github.com/SkOrDs-02/sergeant/pull/1522), змерджено 2026-10-18 15:04 UTC. Це погоджене доповнення після завершених PR0–PR7, без нової позиції каталогу § 2. Native заморожений і не змінюється.
 
 **Що зроблено.** `ModuleEmptyState` став first-run патерном із компактною статичною лінійною ілюстрацією, видимим коротким описом і максимум однією дією. Звичайний `EmptyState` лишився тихим станом для фільтрів і підсекцій. Finyk `/finyk/transactions` пояснює два джерела операцій і не дублює глобальну кнопку «Додати». Fizruk `/fizruk/history` веде кнопкою у канонічний Workouts home, а не запускає сесію на місці. Routine `/routine/habits` ховає пошук і підказку сортування, доки звичок немає; «Створити звичку» відкриває чинний `HabitQuickCreateDialog`. Nutrition `/nutrition/log` пояснює, де зʼявляться калорії та КБЖВ, і зберігає чинний зовнішній сценарій додавання. Нові користувацькі рядки без довгого тире, риторичних питань і обіцянок.
 
@@ -1300,4 +1323,18 @@ Types-final, root-lint-final, format-final, build-final, size-final, eager-final
 
 **Відхилення й межі.** Каталожні рішення redesign v3 не переглядались. Дані, синхронізація, формули, сховища та mobile не змінені. Підтверджені знахідки мертвого або застарілого коду свідомо не змішуються з цим UI PR; власник попросив прибрати їх окремо після мержу цього PR.
 
-**Наступній сесії:** перевірити стан останнього draft PR цієї гілки. Якщо OPEN, лише CI та виправлення червоного. Якщо MERGED, позначити merged і взяти окремий cleanup застарілого коду; не додавати до нього нові візуальні рішення без запиту власника.
+**Наступній сесії:** #1522 змерджено. Взяти окремий cleanup лише підтверджених знахідок застарілого коду; не додавати до нього нові візуальні рішення без запиту власника.
+
+## Follow-up · 2026-10-18: cleanup застарілого web-коду
+
+**Гілка:** `claude/redesign-v3-cleanup`, від актуального `origin/main` `a02a58217`. **PR:** draft [#1536](https://github.com/SkOrDs-02/sergeant/pull/1536). Це окремий cleanup після змердженого #1522, без нової позиції каталогу § 2 і без зміни вигляду чи поведінки продукту. Native заморожений і не змінюється.
+
+**Що прибрано.** Видалено недосяжний legacy web-onboarding: старий wizard, goal-first A/B, його приватні події, локальне сховище вибору й тести цієї гілки. Чинний first-run лишається у `WelcomeScreen` та `WelcomeModulePicker`. Видалено невикористані `useMonoTransactions`, web-дублікат `pulseStyle`, UI-примітиви `CounterReveal`, `HeroValueLine`, `KpiRowCompact`, hook `useTablistArrowKeys` і похідний `routes.ts` із тавтологічними тестами. Маршрути тепер напряму використовують `STANDALONE_ROUTE_PATHS`; канонічний розрахунок стану Фініка лишається у `@sergeant/finyk-domain`. Документацію, коментарі та PostHog manifest приведено до фактичних власників. `apps/landing/scripts/generate-icons.mjs` перевірено і збережено як документований ручний генератор; його додано до entry Knip.
+
+**Аудит і перевірка.** `pnpm knip`: exit 0. `pnpm dead-code:files`: exit 0, `No unmarked unused files`. `pnpm lint:test-orphans`: exit 0, 2475 тестових файлів без сиріт. Focused web Vitest: 11 файлів, 118 passed, exit 0. Focused shared onboarding/analytics Vitest: 8 файлів, 106 passed, exit 0. Pre-rebase root `pnpm check` на `eae005b19`: exit 0; 35/35 test tasks, web 1372 файли і 14133 passed / 5 skipped, production build 4/4, E2E seed boundary passed. Перший merge-state `pnpm check` на `ef8f77166`: exit 1 у lint, бо новий `CashAmountForm` із #1532 приніс `Button variant="finyk"` і підняв `legacyButton` з 0 до 1. Локальна канонічна заміна пройшла повторний gate: exit 0; 35/35 test/typecheck tasks, web 1379 файлів і 14181 passed / 5 skipped, production build 4/4, E2E seed boundary passed. Поки gate виконувався, ту саму причину окремо виправив і змерджив #1533. Cleanup перенесено на `4994c625d`, локальну зміну `CashAmountForm` прибрано; гілка бере актуальний main-канон `variant="solid" tone="ink"`. Фінальний root `pnpm check` на `4994c625d`: exit 0; 35/35 test/typecheck tasks, web 1379 файлів і 14181 passed / 5 skipped, server 450 файлів і 6706 passed / 5 skipped / 11 todo, production build 4/4, E2E seed boundary passed. Після цього main прийняв #1527 і #1530; cleanup без конфліктів перенесено на `a02a58217` (перетин лише в похідному `docs/open-work.md`). Фінальний root `pnpm check` на цьому merge-state: exit 0; 35/35 test/typecheck tasks, web 1390 файлів і 14241 passed / 5 skipped, server 451 файл і 6716 passed / 5 skipped / 11 todo, production build 4/4, E2E seed boundary passed.
+
+**Межі.** Не змінено rendered UI, копі, маршрути користувача, дані, формули, синхронізацію, API, схеми чи mobile. Канонічна форма кнопки з merge-state дає той самий class string, що й legacy alias. Скріншоти не потрібні, бо rendered output не змінюється. Залишено свідомі entry/barrel/test-support файли, які імпорт-граф позначає як корені або інфраструктуру; cleanup не перетворюється на видалення робочих scaffold-поверхонь.
+
+**Публікація.** Draft #1536 створено через GitHub-конектор після push перевіреного дерева. Runtime-коміт і два docs-коміти пройшли штатні hooks; `--no-verify` не використовувався. Після цього запису буде окремий docs-only publication commit; його SHA та actual-head CI звіряються після push.
+
+**Наступній сесії:** якщо cleanup PR OPEN, перевірити лише actual-head CI й виправити червоне. Після мержу cleanup завершений; нову роботу брати лише за окремим дорученням власника.

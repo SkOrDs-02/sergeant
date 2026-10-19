@@ -2,7 +2,7 @@
  * Onboarding gate — DOM-free helpers.
  *
  * Ported from the inline helpers in
- * `apps/web/src/core/OnboardingWizard.tsx` (`shouldShowOnboarding`,
+ * `apps/web/src/core/app/WelcomeScreen.tsx` (`shouldShowOnboarding`,
  * `markOnboardingDone`, `hasExistingData`). The original version reads
  * `localStorage` directly; here we accept a platform-agnostic
  * `KVStore` so the web adapter (localStorage-backed) and the mobile

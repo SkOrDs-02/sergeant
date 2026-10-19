@@ -47,8 +47,7 @@ import {
 > [`toast-policy.md`](../../ui/toast-policy.md)), `ThemeSwitcher`
 > ([`03 § 8`](./03-spacing-elevation-theming.md)), `InsightCard`,
 > `DataState`, `DataTable`, `DateField` / `TimeField` / `WheelPicker`,
-> `Money` / `MoneyInput` / `MaskedAmount` / `AnimatedNumber`,
-> `HeroValueLine` / `KpiRowCompact` / `DeltaChip`, `FloatingActionButton`,
+> `Money` / `MoneyInput` / `MaskedAmount` / `AnimatedNumber`, `DeltaChip`,
 > `CollapsibleSection`, `PullToRefresh`, `SwipeToAction`, `VirtualList`,
 > `CommandPaletteUI` / `KeyboardShortcutsModal`, `SectionErrorBoundary`,
 > `SuspenseWithMinDelay`, `StreakFlame`, `VoiceMicButton`, `OptimizedImage`.
@@ -342,21 +341,17 @@ Home/End, `role="tablist"`.
 > стрілок робив неактивні модулі недосяжними з клавіатури взагалі (Tab
 > пропускає, стрілки не працюють).
 >
-> **Пишеш свій ряд вкладок — бери
-> [`useTablistArrowKeys`](../../../../apps/web/src/shared/hooks/useTablistArrowKeys.ts)**
-> і вішай його `onKeyDown` на КОЖНУ кнопку `role="tab"` (не на контейнер:
-> `div[role="tablist"]` без `tabIndex` — це
-> `jsx-a11y/interactive-supports-focus`). Контракт «роль ↔ поведінка»
-> тримає `tablistKeyboardContract.test.ts`: файл із `role="tablist"` або
-> бере хук, або стоїть у його списку власних реалізацій із поясненням.
+> **Пишеш ряд вкладок — бери `Tabs`, `Segmented` чи `ModuleBottomNav`.**
+> Усі три мають ArrowLeft/Right, Home/End і roving tabindex. Контракт
+> «роль ↔ поведінка» тримає `tablistKeyboardContract.test.ts`: новий файл із
+> `role="tablist"` має бути канонічним контролом або довести власну клавіатурну
+> машинерію тестом.
 >
 > **Активація: `auto` чи `manual`.** За замовчуванням стрілка переносить
 > фокус І активує вкладку (`click()`). Якщо активація має побічний ефект
-> (навігація, камера, файловий піккер), бери
-> `useTablistArrowKeys(true, "manual")`: стрілки/Home/End лише переносять
-> фокус, а вкладку вибирає Enter/Space (WCAG 3.2.1 On Focus). Так зроблено в
-> `ModuleRail` (навігація між модулями) і `SourceTabs` аркуша їжі (вкладка
-> «Скан» відкриває камеру); аудит 2026-10-01, ux-16.
+> (навігація, камера, файловий піккер), стрілки/Home/End мають лише
+> переносити фокус, а вкладку вибирають Enter/Space (WCAG 3.2.1 On Focus). Цю поведінку тримає
+> сам контрол разом із тестом.
 >
 > Роль можна й НЕ брати — це нормальний вибір для смужки фільтрів, яка
 > вкладками не є. Так уже зроблено у `BodyAtlasSegGroup` і

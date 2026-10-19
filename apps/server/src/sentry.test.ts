@@ -220,6 +220,24 @@ describe("applyBeforeSend", () => {
     expect(headers["user-agent"]).toBe("vitest");
   });
 
+  it("скрабить HMAC-підпис IP клієнта (rel-03), але не сам IP", () => {
+    const ev = makeEvent({
+      request: {
+        url: "/api/me",
+        headers: {
+          "x-sergeant-client-ip": "203.0.113.5",
+          "x-sergeant-client-ip-sig": "c2lnbmF0dXJl",
+        },
+      },
+    });
+    const headers = applyBeforeSend(ev).request!.headers as Record<
+      string,
+      unknown
+    >;
+    expect(headers["x-sergeant-client-ip-sig"]).toBe("[redacted]");
+    expect(headers["x-sergeant-client-ip"]).toBe("203.0.113.5");
+  });
+
   // ── C1 — URL redaction для secret-bearing path-ів ────────────
   // `docs/security/hardening/C1-mono-webhook-secret-in-url.md`
   // Sentry capture-ить `req.originalUrl` у `event.request.url`. Якщо webhook

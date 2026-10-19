@@ -137,6 +137,7 @@ export function computeAssetsSummary(input: AssetsSummaryInput): AssetsSummary {
     receivables,
     transactions,
     jars,
+    cashOnHandMinor,
   } = input;
 
   const { balance: monoBalance, debt: monoDebt } = getMonoTotals(
@@ -148,9 +149,16 @@ export function computeAssetsSummary(input: AssetsSummaryInput): AssetsSummary {
   const jarsTotal = sumJarsUAH(jars);
   const manualDebtTotal = sumDebtsRemaining(manualDebts, transactions);
   const receivableTotal = sumReceivablesRemaining(receivables, transactions);
+  // «Готівка на руках» входить у капітал (Р2.8); зняття його не змінює,
+  // бо картка тратить рівно стільки, скільки отримує готівка.
+  const cashOnHandTotal = (cashOnHandMinor ?? 0) / 100;
 
   const totalAssets =
-    monoBalance + manualAssetTotal + receivableTotal + jarsTotal;
+    monoBalance +
+    manualAssetTotal +
+    receivableTotal +
+    jarsTotal +
+    cashOnHandTotal;
   const totalLiabilities = monoDebt + manualDebtTotal;
   const networth = totalAssets - totalLiabilities;
 
@@ -161,6 +169,7 @@ export function computeAssetsSummary(input: AssetsSummaryInput): AssetsSummary {
     jarsTotal,
     manualDebtTotal,
     receivableTotal,
+    cashOnHandTotal,
     totalAssets,
     totalLiabilities,
     networth,

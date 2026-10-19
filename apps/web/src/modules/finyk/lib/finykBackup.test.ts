@@ -21,7 +21,6 @@ import {
   FINYK_BACKUP_VERSION,
   readFinykBackupFromStorage,
   persistFinykNormalizedToStorage,
-  persistFinykNormalizedToSqlite,
 } from "./finykBackup";
 import { HUB_FINYK_ROUTINE_SYNC_EVENT } from "../hubRoutineSync";
 
@@ -38,6 +37,7 @@ function coldCache(): SqliteFinykCache {
     manualExpenses: [],
     txCategories: {},
     txSplits: {},
+    txNotes: {},
     monoDebtLinkedTxIds: {},
     networthHistory: [],
     monthlyPlan: null,
@@ -299,11 +299,16 @@ describe("txNotes у бекапі (аудит 2026-10-01, data-27)", () => {
     localStorage.clear();
   });
 
-  it("експорт на теплому кеші містить нотатки з LS, а normalize їх пропускає", () => {
-    fakeCache.value = warmCache({ networthHistory: [], customCategories: [] });
+  it("експорт на теплому кеші бере нотатки з SQLite-кешу, а не з LS, і normalize їх пропускає", () => {
+    fakeCache.value = warmCache({
+      networthHistory: [],
+      customCategories: [],
+      txNotes: { "tx-1": "оренда" },
+    });
+    // Залишок LS (напр. після replace-бекапу) теплий кеш не перебиває.
     localStorage.setItem(
       "finyk_tx_notes",
-      JSON.stringify({ "tx-1": "оренда" }),
+      JSON.stringify({ "tx-1": "застаріла з LS" }),
     );
 
     const snapshot = readFinykBackupFromStorage();
@@ -311,6 +316,13 @@ describe("txNotes у бекапі (аудит 2026-10-01, data-27)", () => {
     expect(normalizeFinykBackup(snapshot).txNotes).toEqual({
       "tx-1": "оренда",
     });
+  });
+
+  it("експорт на холодному кеші читає нотатки з LS-знімка", () => {
+    fakeCache.value = coldCache();
+    localStorage.setItem("finyk_tx_notes", JSON.stringify({ "tx-2": "кава" }));
+
+    expect(readFinykBackupFromStorage().txNotes).toEqual({ "tx-2": "кава" });
   });
 
   it("старий бекап без txNotes проходить, поля в результаті немає", () => {
@@ -334,16 +346,30 @@ describe("txNotes у бекапі (аудит 2026-10-01, data-27)", () => {
       JSON.parse(localStorage.getItem("finyk_tx_notes") ?? "null"),
     ).toEqual({ "tx-2": "подарунок" });
   });
+});
 
-  it("merge-імпорт додає відсутні нотатки й не затирає наявні на пристрої", async () => {
-    fakeCache.value = warmCache();
-    localStorage.setItem("finyk_tx_notes", JSON.stringify({ "tx-1": "моя" }));
-    await persistFinykNormalizedToSqlite(
-      { txNotes: { "tx-1": "з файлу", "tx-9": "нова" } },
-      "merge",
-    );
-    expect(
-      JSON.parse(localStorage.getItem("finyk_tx_notes") ?? "null"),
-    ).toEqual({ "tx-1": "моя", "tx-9": "нова" });
+describe("«Готівка на руках» у бекапі (ADR-0076)", () => {
+  const cash = {
+    initialAmount: 100_000,
+    createdAt: 1_700_000_000_000,
+    adjustments: [],
+    countAsExpenseTxIds: [],
+    preferForManual: false,
+  };
+
+  it("експорт на теплому кеші несе рахунок, normalize його зберігає", () => {
+    fakeCache.value = warmCache({
+      cashOnHand: cash,
+      networthHistory: [],
+      customCategories: [],
+    });
+    const snapshot = readFinykBackupFromStorage();
+    expect(snapshot.cashOnHand).toEqual(cash);
+    expect(normalizeFinykBackup(snapshot).cashOnHand).toEqual(cash);
+  });
+
+  it("без рахунку поля у файлі немає", () => {
+    fakeCache.value = warmCache({ cashOnHand: null });
+    expect("cashOnHand" in readFinykBackupFromStorage()).toBe(false);
   });
 });

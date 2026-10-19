@@ -127,6 +127,11 @@ export default function App({
     year: number;
     month: number;
   } | null>(null);
+  // Тиждень, рік чи діапазон Аналітики поверх місяця (Р5.6 спеки v3).
+  const [categoryRange, setCategoryRange] = useState<{
+    fromKey: string;
+    toKey: string;
+  } | null>(null);
   const showBalance = storage.showBalance;
   const [showExpenseSheet, setShowExpenseSheet] = useState(false);
   // Аркуш масового імпорту живе тут, а не в `FinykScanEntryPoints`: його
@@ -278,9 +283,11 @@ export default function App({
             receiptLinks={receiptLinks}
             categoryFilter={categoryFilter}
             categoryMonth={categoryMonth}
+            categoryRange={categoryRange}
             onClearCategoryFilter={() => {
               setCategoryFilter(null);
               setCategoryMonth(null);
+              setCategoryRange(null);
             }}
             dayFilter={focusTransactionDate}
             onClearDayFilter={() => navigate("transactions")}
@@ -338,7 +345,17 @@ export default function App({
               // переходимо. `Transactions` монтується вже з нею й одразу
               // показує звужений список — інакше був би кадр із повним.
               setCategoryFilter(categoryId);
-              setCategoryMonth(period);
+              // Місяць списку = місяць останнього дня періоду; тиждень,
+              // рік і діапазон звужують його до своїх днів.
+              setCategoryMonth({
+                year: Number(period.toKey.slice(0, 4)),
+                month: Number(period.toKey.slice(5, 7)),
+              });
+              setCategoryRange(
+                period.kind === "month"
+                  ? null
+                  : { fromKey: period.fromKey, toKey: period.toKey },
+              );
               navigate("transactions");
             }}
           />
@@ -532,7 +549,13 @@ export default function App({
           frequentCategories={frequentCategories}
           frequentMerchants={frequentMerchants}
           customCategories={storage.customCategories}
+          cashOnHandExists={storage.cashOnHand != null}
+          defaultAccount={storage.cashOnHand?.preferForManual ? "cash" : null}
+          onCreateCashOnHand={storage.createCashOnHand}
           onSave={(expense) => {
+            if (expense.account !== undefined) {
+              storage.rememberManualAccount(expense.account);
+            }
             handleExpenseSave(expense);
             handlePostSavePrompt(expense);
           }}

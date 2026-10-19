@@ -121,7 +121,13 @@ describe("diffNutritionDualWriteOps", () => {
     const next: NutritionDualWriteState = { ...EMPTY, pantries: [p] };
     const ops = diffNutritionDualWriteOps(EMPTY, next);
     expect(ops).toHaveLength(1);
-    expect(ops[0]).toEqual({ kind: "pantry-upsert", pantry: p });
+    expect(ops[0]).toEqual({
+      kind: "pantry-upsert",
+      pantry: p,
+      changedItemIds: p.items.map((item) => item.id),
+      removedItemIds: [],
+      pantryFieldsChanged: true,
+    });
   });
 
   it("detects pantry delete", () => {

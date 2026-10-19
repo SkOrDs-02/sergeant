@@ -31,6 +31,8 @@ import { logger } from "@shared/lib";
 import { recordReadFallback } from "../../../core/observability/dualWriteTelemetry.js";
 import { getSqliteDb } from "../../../core/db/sqlite.js";
 import { migrateFinyk } from "./clientMigrate.js";
+import { runTxNotesImportStep, runTxNotesRequeueStep } from "./txNotesBoot.js";
+import { LEGACY_LS_IMPORT_CLIENT_TS } from "./txNotesLsImport.js";
 import { registerRealEntryCounter } from "../../../core/onboarding/realEntryProbe.js";
 import { getVisibleFinykMonoMirrorState } from "./monoMirrorReader.js";
 import {
@@ -72,9 +74,22 @@ export async function bootFinykSqliteReadPath(
     const client = handle.migrationClient();
     await migrateFinyk(client);
 
+    // Нотатки (data-27), крок 1: перелиття LS (#1469) ДО першого refresh -
+    // кеш, опублікований без імпортованих нотаток, перекрив би слот порожнім
+    // обʼєктом. Збій не валить буг читального шляху: LS-ключ лишається,
+    // наступний старт повторить.
+    // Мітка консервативна (епоха), а не «зараз»: нотатка з LS давня, і будь-який
+    // серверний стан (зокрема видалення з іншого пристрою) має її перебивати.
+    await runTxNotesImportStep(client, userId, LEGACY_LS_IMPORT_CLIENT_TS);
+
     await refreshFinykSqliteState(client, userId);
 
+    // Крок 2: перепостановка нотаток, відхилених старим сервером. Не
+    // чекаємо її: вона не змінює таблицю нотаток (лише ставить оп-и в outbox),
+    // а очікування відсувало б `notifyFinykSqliteCacheRefresh` (див.
+    // застереження в `txNotesBoot.ts`). Збої крок гасить сам.
     booted = true;
+    void runTxNotesRequeueStep(client, userId);
     return true;
   } catch (err) {
     logger.warn(

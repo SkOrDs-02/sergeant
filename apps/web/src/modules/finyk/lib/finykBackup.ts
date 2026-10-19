@@ -36,6 +36,10 @@ import { notifyFinykRoutineCalendarSync } from "../hubRoutineSync";
 import { readJSON, writeJSON } from "./finykStorage";
 import { getCachedFinykSqliteState } from "./sqliteReader";
 import {
+  sanitizeCashOnHand,
+  type CashOnHandState,
+} from "@sergeant/finyk-domain/domain/cashOnHand";
+import {
   dualWriteFinykState,
   type FinykDualWriteState,
 } from "./sqliteWriter/index.js";
@@ -47,6 +51,7 @@ import {
   networthHistoryFrom,
   serializePrefsJson,
   txCatsFromMap,
+  txNotesFromMap,
   txSplitsFromMap,
 } from "./sqliteWriter/extract.js";
 import {
@@ -119,9 +124,11 @@ export function readFinykBackupFromStorage() {
     monoDebtLinkedTxIds: warm
       ? cache.monoDebtLinkedTxIds
       : readJSON(FINYK_FIELD_TO_STORAGE_KEY.monoDebtLinkedTxIds, {}),
-    // Нотатки живуть лише в LS (поза SQLite dual-write), тож і на теплому
-    // кеші джерело одне — LS (аудит 2026-10-01, data-27).
-    txNotes: readJSON(FINYK_FIELD_TO_STORAGE_KEY.txNotes, {}),
+    // Нотатки в SQLite (`finyk_tx_notes`, data-27): на теплому кеші беремо
+    // їх звідти, на холодному - LS-знімок (він же першоджерело перелиття).
+    txNotes: warm
+      ? cache.txNotes
+      : readJSON(FINYK_FIELD_TO_STORAGE_KEY.txNotes, {}),
     networthHistory: warm
       ? cache.networthHistory
       : readJSON(FINYK_FIELD_TO_STORAGE_KEY.networthHistory, []),
@@ -136,6 +143,8 @@ export function readFinykBackupFromStorage() {
     // нема: холодний кеш → порожньо, як і для решти prefs без LS-дубля.
     merchantRules:
       warm && cache.merchantRules !== null ? cache.merchantRules : [],
+    // «Готівка на руках» теж лише в SQLite; без рахунку поля у файлі немає.
+    ...(warm && cache.cashOnHand ? { cashOnHand: cache.cashOnHand } : {}),
   };
 }
 
@@ -192,29 +201,12 @@ export async function persistFinykNormalizedToSqlite(
   if (getCachedFinykSqliteState().refreshedAt === null) {
     throw new Error(BACKUP_RESTORE_NOT_READY_MESSAGE);
   }
-  // Нотатки не в SQLite: `replace` уже записав їх у LS через
-  // `persistFinykNormalizedToStorage`, а `merge` до LS не торкається, тож
-  // дописуємо відсутні тут (існуюча нотатка пристрою лишається).
-  if (mode === "merge") mergeTxNotesIntoStorage(normalized.txNotes);
   const prev = cacheToDualWriteState();
   const next =
     mode === "replace"
       ? backupOntoState(prev, normalized)
       : mergeBackupOntoState(prev, normalized);
   return dualWriteFinykState(prev, next);
-}
-
-function mergeTxNotesIntoStorage(incoming: FinykBackup["txNotes"]): void {
-  if (!incoming) return;
-  const current = readJSON<Record<string, string>>(
-    FINYK_FIELD_TO_STORAGE_KEY.txNotes,
-    {},
-  );
-  const base =
-    current && typeof current === "object" && !Array.isArray(current)
-      ? current
-      : {};
-  writeJSON(FINYK_FIELD_TO_STORAGE_KEY.txNotes, { ...incoming, ...base });
 }
 
 function cacheToDualWriteState(): FinykDualWriteState {
@@ -231,6 +223,7 @@ function cacheToDualWriteState(): FinykDualWriteState {
     manualExpenses: blobsFromArray(cache.manualExpenses),
     txCategories: txCatsFromMap(cache.txCategories),
     txSplits: txSplitsFromMap(cache.txSplits),
+    txNotes: txNotesFromMap(cache.txNotes),
     monoDebtLinks: monoDebtLinksFromMap(cache.monoDebtLinkedTxIds),
     networthHistory: networthHistoryFrom(cache.networthHistory),
     prefs: {
@@ -238,7 +231,7 @@ function cacheToDualWriteState(): FinykDualWriteState {
       showBalance: cache.showBalance ?? true,
       excludedStatTxIdsJson: toJson(cache.excludedStatTxIds ?? [], "[]"),
       dismissedRecurringJson: toJson(cache.dismissedRecurring ?? [], "[]"),
-      prefsJson: serializePrefsJson(cache.merchantRules),
+      prefsJson: serializePrefsJson(cache.merchantRules, cache.cashOnHand),
     },
   };
 }
@@ -263,6 +256,7 @@ function backupOntoState(
   if (b.manualExpenses) next.manualExpenses = blobsFromArray(b.manualExpenses);
   if (b.txCategories) next.txCategories = txCatsFromMap(b.txCategories);
   if (b.txSplits) next.txSplits = txSplitsFromMap(b.txSplits);
+  if (b.txNotes) next.txNotes = txNotesFromMap(b.txNotes);
   if (b.monoDebtLinkedTxIds) {
     next.monoDebtLinks = monoDebtLinksFromMap(b.monoDebtLinkedTxIds);
   }
@@ -357,6 +351,9 @@ function mergeBackupOntoState(
       byTx,
     );
   }
+  if (b.txNotes) {
+    next.txNotes = addMissingBy(prev.txNotes, txNotesFromMap(b.txNotes), byTx);
+  }
   if (b.monoDebtLinkedTxIds) {
     next.monoDebtLinks = addMissingBy(
       prev.monoDebtLinks,
@@ -408,7 +405,7 @@ function mergePrefs(
           "[]",
         )
       : curRaw;
-  const hasRules = (getCachedFinykSqliteState().merchantRules ?? []).length > 0;
+  const curBlob = parsePrefsBlob(cur.prefsJson);
   return {
     showBalance: cur.showBalance,
     monthlyPlanJson: isEmptyJson(cur.monthlyPlanJson)
@@ -422,8 +419,33 @@ function mergePrefs(
       cur.dismissedRecurringJson,
       b.dismissedRecurring,
     ),
-    prefsJson: hasRules ? cur.prefsJson : fromFile.prefsJson,
+    // Злиття лише додає відсутнє: наявні правила і наявна готівка на
+    // пристрої лишаються, з файлу береться тільки те, чого тут немає.
+    prefsJson: serializePrefsJson(
+      curBlob.merchantRules.length > 0
+        ? curBlob.merchantRules
+        : (b.merchantRules ?? []),
+      curBlob.cashOnHand ?? sanitizeCashOnHand(b.cashOnHand),
+    ),
   };
+}
+
+/** Розібраний `prefs_json`; зіпсований рядок дає порожній стан. */
+function parsePrefsBlob(raw: string): {
+  merchantRules: unknown[];
+  cashOnHand: CashOnHandState | null;
+} {
+  try {
+    const parsed = JSON.parse(raw) as Record<string, unknown> | null;
+    return {
+      merchantRules: Array.isArray(parsed?.["merchantRules"])
+        ? (parsed["merchantRules"] as unknown[])
+        : [],
+      cashOnHand: sanitizeCashOnHand(parsed?.["cashOnHand"]),
+    };
+  } catch {
+    return { merchantRules: [], cashOnHand: null };
+  }
 }
 
 const EMPTY_PREFS: FinykPrefsSnapshot = {
@@ -456,9 +478,15 @@ function prefsOntoSnapshot(
       : base.dismissedRecurringJson,
     // Файл без правил (старий бекап) лишає наявні: «Замінити» діє на
     // зріз лише тоді, коли файл його несе — як і для решти полів.
-    prefsJson: b.merchantRules
-      ? serializePrefsJson(b.merchantRules)
-      : base.prefsJson,
+    prefsJson:
+      b.merchantRules || b.cashOnHand
+        ? serializePrefsJson(
+            b.merchantRules ?? parsePrefsBlob(base.prefsJson).merchantRules,
+            b.cashOnHand
+              ? sanitizeCashOnHand(b.cashOnHand)
+              : parsePrefsBlob(base.prefsJson).cashOnHand,
+          )
+        : base.prefsJson,
   };
 }
 

@@ -30,6 +30,7 @@ import type {
   NetworthEntry,
   Subscription,
   TxCategoriesMap,
+  TxNotesMap,
   TxSplitsMap,
 } from "../hooks/useStorage.types";
 import type { Debt, Receivable, TxSplit } from "@sergeant/finyk-domain/domain";
@@ -37,6 +38,10 @@ import {
   sanitizeMerchantRules,
   type MerchantRule,
 } from "@sergeant/finyk-domain/lib/merchantRules";
+import {
+  sanitizeCashOnHand,
+  type CashOnHandState,
+} from "@sergeant/finyk-domain/domain/cashOnHand";
 import {
   EMPTY_FINYK_SQLITE_CACHE,
   getCachedFinykSqliteState,
@@ -89,6 +94,12 @@ interface BlobRow {
 interface TxCategoryRow {
   transaction_id: string;
   category_id: string;
+  [key: string]: unknown;
+}
+
+interface TxNoteRow {
+  transaction_id: string;
+  note: string | null;
   [key: string]: unknown;
 }
 
@@ -182,6 +193,7 @@ export async function refreshFinykSqliteState(
     manualExpenseRows,
     txCategoryRows,
     txSplitsRows,
+    txNoteRows,
     monoDebtLinkRows,
     networthRows,
     prefsRows,
@@ -252,25 +264,31 @@ export async function refreshFinykSqliteState(
     client.all<TxCategoryRow>(
       `SELECT transaction_id, category_id
          FROM finyk_tx_categories
-        WHERE user_id = ?`,
+        WHERE user_id = ? AND deleted_at IS NULL`,
       [userId],
     ),
     client.all<TxSplitsRow>(
       `SELECT transaction_id, splits_json
          FROM finyk_tx_splits
-        WHERE user_id = ?`,
+        WHERE user_id = ? AND deleted_at IS NULL`,
+      [userId],
+    ),
+    client.all<TxNoteRow>(
+      `SELECT transaction_id, note
+         FROM finyk_tx_notes
+        WHERE user_id = ? AND deleted_at IS NULL`,
       [userId],
     ),
     client.all<MonoDebtLinkRow>(
       `SELECT transaction_id, debt_ids_json
          FROM finyk_mono_debt_links
-        WHERE user_id = ?`,
+        WHERE user_id = ? AND deleted_at IS NULL`,
       [userId],
     ),
     client.all<NetworthRow>(
       `SELECT month, networth
          FROM finyk_networth_history
-        WHERE user_id = ?
+        WHERE user_id = ? AND deleted_at IS NULL
         ORDER BY month ASC`,
       [userId],
     ),
@@ -318,6 +336,13 @@ export async function refreshFinykSqliteState(
     }
   }
 
+  const txNotes: TxNotesMap = {};
+  for (const row of txNoteRows) {
+    if (typeof row.note === "string" && row.note.length > 0) {
+      txNotes[row.transaction_id] = row.note;
+    }
+  }
+
   const monoDebtLinkedTxIds: MonoDebtLinkedMap = {};
   for (const row of monoDebtLinkRows) {
     const debtIds = safeParseJson<string[]>(row.debt_ids_json, []);
@@ -349,6 +374,9 @@ export async function refreshFinykSqliteState(
   const merchantRules = prefsRow
     ? parseMerchantRules(prefsRow.prefs_json)
     : null;
+  const cashOnHand = prefsRow
+    ? parseCashOnHand(prefsRow.prefs_json)
+    : undefined;
 
   if (seq <= publishedSeq) return getCachedFinykSqliteState();
   publishedSeq = seq;
@@ -364,6 +392,7 @@ export async function refreshFinykSqliteState(
     manualExpenses,
     txCategories,
     txSplits,
+    txNotes,
     monoDebtLinkedTxIds,
     networthHistory,
     monthlyPlan,
@@ -371,6 +400,7 @@ export async function refreshFinykSqliteState(
     excludedStatTxIds,
     dismissedRecurring,
     merchantRules,
+    cashOnHand,
     // eslint-disable-next-line no-restricted-syntax -- UTC-anchored refresh timestamp (updatedAt-style), not a Kyiv day boundary; pre-existing
     refreshedAt: new Date().toISOString(),
   });
@@ -384,6 +414,15 @@ function parseMerchantRules(raw: string | null | undefined): MerchantRule[] {
   return sanitizeMerchantRules(
     (parsed as { merchantRules?: unknown }).merchantRules,
   );
+}
+
+/** `finyk_prefs.prefs_json` → «Готівка на руках»; немає або зіпсовано = `null`. */
+function parseCashOnHand(
+  raw: string | null | undefined,
+): CashOnHandState | null {
+  const parsed = safeParseJson<unknown>(raw ?? null, null);
+  if (!parsed || typeof parsed !== "object") return null;
+  return sanitizeCashOnHand((parsed as { cashOnHand?: unknown }).cashOnHand);
 }
 
 function safeStringArray(raw: string | null | undefined): string[] {

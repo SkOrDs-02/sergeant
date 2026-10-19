@@ -295,7 +295,7 @@ export const messages = {
   },
 
   // Phase 7 D4 — WelcomeScreen preset picker. The 2x2 module grid that
-  // replaces the row-based OnboardingWizard as the `/welcome` cold-start
+  // replaces the older row-based flow as the `/welcome` cold-start
   // surface. Taglines are kept short (~5-7 words each) so the cards stay
   // scannable at the 2-col mobile breakpoint without truncation.
   welcomeModulePicker: {

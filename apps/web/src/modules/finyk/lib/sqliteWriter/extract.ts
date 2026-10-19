@@ -29,6 +29,11 @@
  */
 
 import { sanitizeMerchantRules } from "@sergeant/finyk-domain/lib/merchantRules";
+import {
+  sanitizeCashOnHand,
+  type CashOnHandState,
+} from "@sergeant/finyk-domain/domain/cashOnHand";
+import { NOTE_MAX_LEN } from "@shared/lib/text/limits";
 import type { FinykStorageSlots } from "../../hooks/useFinykStorageSlots";
 import {
   EMPTY_FINYK_STATE,
@@ -38,6 +43,7 @@ import {
   type FinykMonoDebtLinkEntry,
   type FinykNetworthEntry,
   type FinykTxCategoryEntry,
+  type FinykTxNoteEntry,
   type FinykTxSplitsEntry,
 } from "./diff.js";
 
@@ -92,6 +98,41 @@ export function txCatsFromMap(
     out.push({ transactionId, categoryId });
   }
   return out;
+}
+
+/**
+ * Convert a tx-id → note map into FinykTxNoteEntry[].
+ *
+ * Нотатка обрізається й тримається у стані вже ОЧИЩЕНОЮ (`trim` + стеля
+ * `NOTE_MAX_LEN`, та сама, що на сервері): порожні та не-рядкові значення
+ * просто відсутні, а отже діф бачить їхню появу як `tx-note-delete`.
+ * Без стелі довга нотатка (імпорт, старий бекап) відхилялась би сервером
+ * термінальним `text_too_long` і назавжди висіла б у outbox.
+ */
+export function txNotesFromMap(
+  map: Record<string, unknown> | null | undefined,
+): FinykTxNoteEntry[] {
+  if (!map || typeof map !== "object" || Array.isArray(map)) return [];
+  const out: FinykTxNoteEntry[] = [];
+  for (const [transactionId, raw] of Object.entries(map)) {
+    if (typeof raw !== "string") continue;
+    if (typeof transactionId !== "string" || transactionId.length === 0)
+      continue;
+    const note = clampNote(raw);
+    if (note.length === 0) continue;
+    out.push({ transactionId, note });
+  }
+  return out;
+}
+
+/** `trim` + стеля `NOTE_MAX_LEN` без розрізаної сурогатної пари на кінці. */
+function clampNote(raw: string): string {
+  const trimmed = raw.trim();
+  if (trimmed.length <= NOTE_MAX_LEN) return trimmed;
+  let end = NOTE_MAX_LEN;
+  const last = trimmed.charCodeAt(end - 1);
+  if (last >= 0xd800 && last <= 0xdbff) end -= 1;
+  return trimmed.slice(0, end).trim();
 }
 
 /** Convert a tx-id → splits[] map into FinykTxSplitsEntry[]. */
@@ -177,7 +218,7 @@ export function extractFinykDualWriteState(
   // щоб серверний `applyFinykPrefs` отримав чистий `string[]`.
   const excludedStatTxIdsJson = serializeStringArray(slots.excludedStatTxIds);
   const dismissedRecurringJson = serializeStringArray(slots.dismissedRecurring);
-  const prefsJson = serializePrefsJson(slots.merchantRules);
+  const prefsJson = serializePrefsJson(slots.merchantRules, slots.cashOnHand);
 
   return {
     hiddenAccounts: idsFromArray(slots.hiddenAccounts),
@@ -191,6 +232,7 @@ export function extractFinykDualWriteState(
     manualExpenses: blobsFromArray(slots.manualExpenses),
     txCategories: txCatsFromMap(slots.txCategories),
     txSplits: txSplitsFromMap(slots.txSplits),
+    txNotes: txNotesFromMap(slots.txNotes),
     monoDebtLinks: monoDebtLinksFromMap(slots.monoDebtLinkedTxIds),
     networthHistory: networthHistoryFrom(slots.networthHistory),
     prefs: {
@@ -217,17 +259,23 @@ export function stateWithSlice<K extends keyof FinykDualWriteState>(
 }
 
 /**
- * `prefs_json` = `{ merchantRules }`. Порядок масиву лишається як у слоті:
- * діф порівнює РЯДКИ, тож перестановка без зміни складу не має чіпати
- * мережу, а стабільний порядок із SQLite (перечитується тим самим JSON)
- * гарантує, що ехо власного запису не виглядає як зміна.
+ * `prefs_json` = `{ merchantRules, cashOnHand? }`. Порядок масиву лишається
+ * як у слоті: діф порівнює РЯДКИ, тож перестановка без зміни складу не має
+ * чіпати мережу, а стабільний порядок із SQLite (перечитується тим самим
+ * JSON) гарантує, що ехо власного запису не виглядає як зміна.
+ *
+ * `cashOnHand` обовʼязковий аргумент навмисно: блоб пишеться цілком, тож
+ * виклик, який забув про готівку, обнулив би рахунок (ADR-0076).
  */
 export function serializePrefsJson(
   merchantRules: readonly unknown[] | null | undefined,
+  cashOnHand: CashOnHandState | null | undefined,
 ): string {
   try {
+    const cash = sanitizeCashOnHand(cashOnHand);
     return JSON.stringify({
       merchantRules: sanitizeMerchantRules(merchantRules),
+      ...(cash ? { cashOnHand: cash } : {}),
     });
   } catch {
     return "{}";

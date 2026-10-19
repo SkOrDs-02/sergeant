@@ -4,6 +4,9 @@ import { MANUAL_INCOME_TAXONOMY } from "./lib/manualTaxonomy.js";
 // Транзакції з цією категорією НЕ рахуються у витратах і доходах.
 export const INTERNAL_TRANSFER_ID = "internal_transfer";
 
+// `accountId` операцій рахунку «Готівка на руках» (ADR-0076).
+export const CASH_ACCOUNT_ID = "cash_on_hand";
+
 export const MCC_CATEGORIES = [
   {
     id: "food",

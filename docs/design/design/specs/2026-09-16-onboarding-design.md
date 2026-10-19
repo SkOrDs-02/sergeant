@@ -2,7 +2,7 @@
 
 # Дизайн-контракт: онбординг
 
-> **Last touched:** 2026-09-19 by @claude. **Next review:** 2027-04-19.
+> **Last touched:** 2026-10-19 by @Skords-01. **Next review:** 2027-05-19.
 > **Status:** Active — контракт as-built: описує `/welcome` (`WelcomeScreen.tsx` + `WelcomeModulePicker.tsx`), `core/onboarding/{PresetSheet,FirstActionSheet,FirstRunHintBanner,ModuleChecklist,DailyNudge,SoftAuthPromptCard}.tsx`, `presetApply.ts`, `useModuleFirstRun.ts` станом на 2026-09-16 (рішення власника по аудиту дизайн-доків, пункт 4, варіант A). Усі розбіжності з кодом, які контракт вимагав закрити, закриті 2026-09-16; відкритих боргів немає.
 
 Онбординг — перше враження: `/welcome` з вибором модулів, перший вхід у
@@ -151,9 +151,8 @@ via:"fallback"}`, `onboarding_first_action_shown / _picked`. Новий крок
 
 - `AuthPage` / верифікація / скидання пароля — D1 «лише візуальне
   оновлення», контракт auth окремий, поки не потрібен.
-- Legacy `OnboardingWizard` (`/onboarding/*`, тур-реплей із Налаштувань) —
-  описаний у playbook, стилістично успадковує це ж правило, але нових
-  кроків туди не додаємо.
+- Legacy web `OnboardingWizard` видалено 2026-10-18: жоден маршрут чи
+  кнопка його не монтували. Канонічний web-потік живе на `/welcome`.
 - Мобільний онбординг (`apps/mobile/src/core/OnboardingWizard.tsx`) —
   контур на паузі ([ADR-0094](../../../governance/adr/0094-mobile-web-first-freeze.md)).
 
@@ -162,7 +161,8 @@ via:"fallback"}`, `onboarding_first_action_shown / _picked`. Новий крок
 - `pnpm --filter @sergeant/web exec vitest run src/core/app/WelcomeModulePicker src/core/app/WelcomeScreen src/core/onboarding`
   — стани з таблиці покриті `WelcomeModulePicker.test.tsx`,
   `PresetSheet.test.tsx`, `FirstActionSheet.test.tsx`,
-  `OnboardingWizard.*.test.tsx`, `ModuleChecklist.test.tsx`.
+  `WelcomeScreen.test.tsx`, `WelcomeModulePicker.test.tsx`,
+  `PresetSheet.test.tsx`, `FirstActionSheet.test.tsx`, `ModuleChecklist.test.tsx`.
 - `pnpm --filter @sergeant/web e2e` — `onboarding-happy-path.spec.ts`
   (`@critical`): аналітика читається з `window.__hubAnalytics`.
 - `pnpm lint:ui-canon` — храповик `cyrillicJsxAllowlist` стоїть на 299 і
