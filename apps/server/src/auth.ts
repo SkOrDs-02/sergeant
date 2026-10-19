@@ -19,6 +19,10 @@ import { grantReverseTrial } from "./modules/billing/reverseTrial.js";
 import { sanitizeUserImage } from "./auth/sanitizeUserImage.js";
 import { guardUserName } from "./auth/sanitizeUserName.js";
 import {
+  guardChangeEmailBefore,
+  notifyOldEmailAfter,
+} from "./auth/changeEmailGuard.js";
+import {
   hardenSessionBefore,
   stripSessionTokenAfter,
 } from "./auth/sessionHardeningHooks.js";
@@ -346,7 +350,10 @@ export const auth = betterAuth({
      *   - Поточний email НЕ підтверджений → `updateEmailWithoutVerification`
      *     дозволяє оновити адресу одразу, після чого на НОВУ адресу летить
      *     звичайний верифікаційний лист. Підтверджувати старий ящик немає
-     *     сенсу: власність над ним ніколи не була доведена.
+     *     сенсу: власність над ним ніколи не була доведена. Без підтвердження
+     *     це дірка для вкраденої сесії (sec-06), тому хук `hooks.before`
+     *     вимагає сесію молодше 10 хв (`SESSION_NOT_FRESH`), а `hooks.after`
+     *     шле лист-сповіщення на СТАРУ адресу (auth/changeEmailGuard.ts).
      *   - Поточний email підтверджений → лист-підтвердження йде на СТАРУ
      *     адресу; лише після кліку летить верифікація на нову. Це захист
      *     від тихого перепривʼязування вкраденої сесії — саме той вектор,
@@ -634,6 +641,8 @@ export const auth = betterAuth({
       // sec-02 / sec-05: `/update-user` лише з живою сесією в БД,
       // `/revoke-session` за `{ id }` — див. auth/sessionHardeningHooks.ts.
       await hardenSessionBefore(ctx);
+      // sec-06: change-email непідтвердженого акаунта лише зі свіжою сесією.
+      await guardChangeEmailBefore(ctx);
       if (ctx.path !== "/change-password") return;
       const body = ctx.body;
       if (body && typeof body === "object" && !Array.isArray(body)) {
@@ -643,6 +652,8 @@ export const auth = betterAuth({
     // sec-05: сирий session token не віддаємо в get-session / list-sessions.
     after: createAuthMiddleware(async (ctx) => {
       stripSessionTokenAfter(ctx);
+      // sec-06: лист на СТАРУ адресу, якщо email справді переписано.
+      await notifyOldEmailAfter(ctx);
     }),
   },
   trustedOrigins: getTrustedOrigins(),
