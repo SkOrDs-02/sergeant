@@ -44,15 +44,12 @@ interface WelcomeScreenProps {
  * Full-page cold-start at `/welcome`. Owns the page chrome + peek
  * backdrop and delegates the splash card to `WelcomeModulePicker`.
  *
- * Phase 7 D4 (2026-05-22) swapped the row-based `OnboardingWizard`
- * splash for a preset-first 2x2 module-card grid — see
+ * Phase 7 D4 (2026-05-22) replaced the row-based welcome flow with a
+ * preset-first 2x2 module-card grid — see
  * `docs/design/design/redesign-v2/phase-7-product-decisions-2026-05-22.md`
- * § D4. The wizard component still ships for tour-replay launched
- * from Settings → «Переглянути вступну екскурсію»; only this
- * `/welcome` cold-start surface swapped. Persistence still flows
- * through `vibePicks` + `onboardingGate` so HubDashboard,
- * `getActiveModules` observe the same
- * downstream state regardless of which welcome surface ran.
+ * § D4. This is the only web cold-start flow. Persistence flows through
+ * `vibePicks` + `onboardingGate`, so HubDashboard and `getActiveModules`
+ * observe the same downstream state.
  *
  * До 2026-09-17 картка несла ще й другорядний CTA «Подивитись
  * приклад», що сіяв демо-payload. Демо-режим знято — лишається один
@@ -88,15 +85,12 @@ export function WelcomeScreen({ onDone, onOpenAuth }: WelcomeScreenProps) {
 
   // Phase 7 D4 preset-picker submit path. Persists the user's module
   // selection, marks onboarding done, fires the canonical analytics
-  // funnel and bubbles the picks up to App-level navigation. Mirrors
-  // `useOnboardingWizardState.finish()` so legacy consumers
-  // (onboardingGate) see identical state.
+  // funnel and bubbles the picks up to App-level navigation.
   const completeOnboarding = useCallback(
     (picks: DashboardModuleId[]) => {
       saveVibePicks(picks);
-      // Див. `useOnboardingWizardState`: boot-гідрація вже відпрацювала на
-      // порожньому стані, тож без явного пушу вибір не потрапляє на акаунт
-      // до наступного буту.
+      // Boot-гідрація вже відпрацювала на порожньому стані, тож без
+      // явного пушу вибір не потрапляє на акаунт до наступного буту.
       pushActiveModules(picks);
       markOnboardingDone();
       trackEvent(ANALYTICS_EVENTS.ONBOARDING_VIBE_PICKED, {
@@ -173,10 +167,7 @@ export function WelcomeScreen({ onDone, onOpenAuth }: WelcomeScreenProps) {
       <div className="relative min-h-full flex items-center justify-center p-4 pb-safe">
         <h1 className="sr-only">{messages.nav.welcome}</h1>
         <div className="w-full max-w-md space-y-3">
-          {/* Phase 7 D4 — preset picker replaces the row-based
-              OnboardingWizard as the cold-start surface. The wizard
-              still ships for tour-replay (Settings → "Подивитись
-              екскурсію"); only this `/welcome` entry point swaps. */}
+          {/* Phase 7 D4: preset picker is the canonical cold-start surface. */}
           {pendingPicks ? (
             <OnboardingConsentStep onDecided={handleConsentDecided} />
           ) : (

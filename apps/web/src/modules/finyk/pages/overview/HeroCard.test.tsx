@@ -3,9 +3,8 @@ import { afterEach, beforeEach, describe, it, expect, vi } from "vitest";
 import { render, screen, cleanup, fireEvent } from "@testing-library/react";
 import { HeroCard } from "./HeroCard";
 
-// CounterReveal reads window.matchMedia for prefers-reduced-motion; stub it to
-// return matches:true so the component renders the final value synchronously
-// in tests rather than deferring to requestAnimationFrame.
+// Motion-aware children read window.matchMedia; stub it to keep the hero
+// render deterministic in jsdom.
 beforeEach(() => {
   Object.defineProperty(window, "matchMedia", {
     configurable: true,

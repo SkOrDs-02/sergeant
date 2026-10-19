@@ -126,7 +126,7 @@ export const SYSTEM_PATHS: Record<string, ReactNode> = {
     </>
   ),
   // Padlock — Lucide `lock`. Used by `ChangePasswordSection` (the
-  // "Зміна пароля" eyebrow icon) and `OnboardingWizard`'s privacy step.
+  // "Зміна пароля" eyebrow icon).
   lock: (
     <>
       <rect x="3" y="11" width="18" height="11" rx="2" ry="2" />

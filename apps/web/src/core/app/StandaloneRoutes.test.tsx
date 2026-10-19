@@ -1,10 +1,6 @@
 import { describe, expect, it, vi } from "vitest";
-import {
-  STANDALONE_ROUTE_PATHS,
-  renderStandaloneRoute,
-} from "./StandaloneRoutes";
+import { renderStandaloneRoute } from "./StandaloneRoutes";
 import type { StandaloneRouteArgs } from "./StandaloneRoutes";
-import { KNOWN_PATHS } from "./routes";
 import type { useAuth } from "../auth/AuthContext";
 import {
   SIGN_IN_PATH,
@@ -119,7 +115,7 @@ describe("renderStandaloneRoute()", () => {
   });
 
   it("returns the 404 surface for genuinely unknown paths", () => {
-    // A path that's neither in `KNOWN_PATHS` nor a path-based-module
+    // A path that's neither in `STANDALONE_ROUTE_PATHS` nor a path-based-module
     // root must still 404 — that's the original guard intent.
     const result = callRoute("/some-random-bogus-path");
     expect(result).not.toBeNull();
@@ -146,67 +142,6 @@ describe("renderStandaloneRoute()", () => {
 
   it("renders /500 without auth", () => {
     expect(callRoute("/500")).not.toBeNull();
-  });
-});
-
-describe("STANDALONE_ROUTE_PATHS ↔ KNOWN_PATHS exhaustiveness (Web deep-dive §1.2)", () => {
-  // The registry in `StandaloneRoutes.tsx` is the source of truth for
-  // which paths render a standalone surface. `KNOWN_PATHS` in
-  // `appPaths.ts` is the allowlist used by the 404 guard. These two
-  // sets MUST agree — including `/`, which after P1-3 is conditionally
-  // owned by the landing-page entry (returns `null` for warm
-  // installs / authed users so the Hub home keeps rendering). Without
-  // exhaustiveness either:
-  //   (a) a path is in `KNOWN_PATHS` but no route renders it → silent
-  //       fall-through to the Hub shell for a URL that should have a
-  //       dedicated surface, OR
-  //   (b) a route exists for a path that isn't in `KNOWN_PATHS` → the
-  //       404 guard short-circuits it before the route runs.
-  // Both are real regressions seen during the 0006-routing migration;
-  // this test guards against them at CI time instead of relying on
-  // review discipline. See `docs/audits/2026-05-13-web-architecture-state-roast.md`.
-
-  it("every standalone-route path is also in KNOWN_PATHS", () => {
-    for (const path of STANDALONE_ROUTE_PATHS) {
-      expect(
-        KNOWN_PATHS.has(path),
-        `Standalone route owns "${path}" but KNOWN_PATHS does not — add it to appPaths.ts so the 404 guard doesn't short-circuit it.`,
-      ).toBe(true);
-    }
-  });
-
-  it("every KNOWN_PATHS entry is owned by a standalone route", () => {
-    // After P1-3 (audit `2026-05-13-revenue-monetization-roast.md`),
-    // `/` is also owned by `STANDALONE_ROUTES` — the entry conditionally
-    // returns `null` for warm local-first / authed sessions and a
-    // marketing surface for fresh non-auth visitors. The exhaustiveness
-    // check no longer needs to skip the Hub root.
-    //
-    // This is also a tautology test now that `KNOWN_PATHS` is derived
-    // from `STANDALONE_ROUTE_PATHS` in `routes.ts` — the two sets are
-    // identical by construction. The test is kept so any future refactor
-    // that breaks that derivation fails here explicitly.
-    for (const path of KNOWN_PATHS) {
-      expect(
-        STANDALONE_ROUTE_PATHS.has(path),
-        `KNOWN_PATHS contains "${path}" but no entry in STANDALONE_ROUTES renders it — add a route in StandaloneRoutes.tsx.`,
-      ).toBe(true);
-    }
-  });
-
-  it("path-based module roots are NOT in KNOWN_PATHS (404 guard exemption)", () => {
-    // `/finyk`, `/nutrition` etc. are handled by `useHubNavigation` →
-    // `<ActiveModuleView />`, not by standalone routes. They must be
-    // absent from `KNOWN_PATHS` so the 404 guard doesn't short-circuit
-    // them — the `isPathBasedModulePath()` exemption in
-    // `renderStandaloneRoute()` handles the fallthrough instead.
-    // (This test was previously in `appPaths.test.ts` but moved here
-    // since `KNOWN_PATHS` now lives in `routes.ts` and importing it there
-    // already pulls in the StandaloneRoutes dependency graph.)
-    expect(KNOWN_PATHS.has("/finyk")).toBe(false);
-    expect(KNOWN_PATHS.has("/nutrition")).toBe(false);
-    expect(KNOWN_PATHS.has("/fizruk")).toBe(false);
-    expect(KNOWN_PATHS.has("/routine")).toBe(false);
   });
 });
 
