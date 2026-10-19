@@ -521,4 +521,11 @@ export const finykPageMessages = {
     filterClear: "Усі рахунки",
     cardFallback: "Картка",
   },
+  // Сторінка «Аналітика» Фініка.
+  analyticsPage: {
+    planPrefix: "План відкласти",
+    planFact: "вийшло",
+    prevMonth: "Попередній місяць",
+    nextMonth: "Наступний місяць",
+  },
 } as const;
