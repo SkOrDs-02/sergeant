@@ -43,6 +43,12 @@ vi.mock("../components/charts/lazy", () => ({
       only-cash
     </button>
   ),
+  // «За тегами» так само: рядки покриває `TagBars.test.tsx`.
+  TagBars: ({ onSelect }: { onSelect: (tagKey: string | null) => void }) => (
+    <button type="button" onClick={() => onSelect("відпустка")}>
+      only-vacation
+    </button>
+  ),
 }));
 
 const KYIV = new Date("2026-06-15T09:00:00Z"); // mid-June 2026, Kyiv-local
@@ -381,6 +387,58 @@ describe("Analytics page", () => {
       );
     });
     expect(await screen.findByTestId("category-bars")).toHaveTextContent(
+      "bars total 250",
+    );
+    fireEvent.click(screen.getByRole("button", { name: "only-cash" }));
+    expect(screen.getByTestId("category-bars")).toHaveTextContent(
+      "bars total 200",
+    );
+  });
+
+  it("фільтр тегу звужує підсумок і працює поверх фільтра рахунку (Р6.4)", async () => {
+    const manualExpenses = [
+      {
+        id: "a",
+        amount: 200,
+        date: "2026-06-10T10:00:00.000Z",
+        category: "food",
+        account: "cash",
+      },
+      {
+        id: "b",
+        amount: 50,
+        date: "2026-06-10T10:00:00.000Z",
+        category: "food",
+      },
+      {
+        id: "c",
+        amount: 30,
+        date: "2026-06-10T10:00:00.000Z",
+        category: "food",
+        account: "cash",
+      },
+    ];
+    await act(async () => {
+      render(
+        <Analytics
+          mono={buildMono()}
+          storage={buildStorage({
+            manualExpenses: manualExpenses as unknown as NonNullable<
+              AnalyticsProps["storage"]["manualExpenses"]
+            >,
+            txTags: {
+              manual_a: ["Відпустка"],
+              manual_b: ["відпустка", "ремонт"],
+            },
+          })}
+        />,
+      );
+    });
+    expect(await screen.findByTestId("category-bars")).toHaveTextContent(
+      "bars total 280",
+    );
+    fireEvent.click(screen.getByRole("button", { name: "only-vacation" }));
+    expect(screen.getByTestId("category-bars")).toHaveTextContent(
       "bars total 250",
     );
     fireEvent.click(screen.getByRole("button", { name: "only-cash" }));

@@ -13,6 +13,7 @@ import type {
   TxSplitsMap,
 } from "@sergeant/finyk-domain/domain/types";
 import type { CustomCategoryInput } from "@sergeant/finyk-domain/constants";
+import type { TagSummary } from "@sergeant/finyk-domain/domain/tags";
 import type {
   Debt,
   LinkedTxRole,
@@ -21,6 +22,7 @@ import { Button } from "@shared/components/ui/Button";
 import { MaskedAmount } from "@shared/components/ui/MaskedAmount";
 import { Money } from "@shared/components/ui/Money";
 import { Sheet } from "@shared/components/ui/Sheet";
+import { TxTagsField } from "./TxTagsField";
 import { Switch } from "@shared/components/ui/Switch";
 import { messages } from "@shared/i18n/uk";
 import {
@@ -92,6 +94,10 @@ export interface BankTransactionDetailsSheetProps {
   ) => void;
   onCategoryChange: (id: string, categoryId: string | null) => void;
   onNoteChange: (id: string, note: string | null) => void;
+  /** Теги операції (Р6.2); без `onTagsChange` поле не показується. */
+  tags?: readonly string[] | undefined;
+  knownTags?: readonly TagSummary[] | undefined;
+  onTagsChange?: ((id: string, tags: readonly string[]) => void) | undefined;
   onSplitChange: (id: string, splits: TxSplit[] | null) => void;
   onToggleHidden: (id: string) => void;
   onToggleExcludedFromStats: (id: string) => void;
@@ -103,6 +109,9 @@ export interface BankTransactionDetailsSheetProps {
     { countedAsExpense: boolean; onToggle: () => void } | undefined;
   onClose: () => void;
 }
+
+const NO_TAGS: readonly string[] = [];
+const NO_TAGS_KNOWN: readonly TagSummary[] = [];
 
 const ACCOUNT_LABELS: Readonly<Record<string, string>> = {
   black: "Чорна картка",
@@ -164,6 +173,9 @@ export function BankTransactionDetailsSheet({
   setLinkedTxRole,
   onCategoryChange,
   onNoteChange,
+  tags = NO_TAGS,
+  knownTags = NO_TAGS_KNOWN,
+  onTagsChange,
   onSplitChange,
   onToggleHidden,
   onToggleExcludedFromStats,
@@ -324,6 +336,14 @@ export function BankTransactionDetailsSheet({
             onClose={() => undefined}
           />
         </section>
+
+        {onTagsChange && (
+          <TxTagsField
+            tags={tags}
+            known={knownTags}
+            onChange={(next) => onTagsChange(transaction.id, next)}
+          />
+        )}
 
         {(onCreateMerchantRule || onRemoveMerchantRule) && (
           <MerchantRuleOffer

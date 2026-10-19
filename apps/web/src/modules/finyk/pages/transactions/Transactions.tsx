@@ -1,3 +1,4 @@
+import type { FinykTxTagsApi } from "../../hooks/useFinykTxTags";
 import { useKyivDayNow } from "@shared/hooks/useKyivDayNow";
 import { useCallback, useMemo, useState } from "react";
 import { useToast } from "@shared/hooks/useToast";
@@ -136,7 +137,9 @@ export interface TransactionsMonoSlice {
  * Slice of `useStorage` that the Transactions page reads. Defined inline
  * for the same reason as {@link TransactionsMonoSlice}.
  */
-export interface TransactionsStorageSlice {
+export interface TransactionsStorageSlice extends Partial<
+  Pick<FinykTxTagsApi, "txTags" | "tagList" | "setTxTags" | "addTagToTxs">
+> {
   /** `false`, поки SQLite-кеш не прогрітий і `txCategories` ще з LS-знімка. */
   storageReady?: boolean;
   hiddenTxIds: string[];
@@ -645,6 +648,15 @@ export function Transactions({
             onCloseCatPicker={() => selection.setBatchCatPicker(false)}
             onApplyCategory={selection.applyBatchCategory}
             customCategories={customCategories}
+            knownTags={storage.tagList}
+            onApplyTag={
+              storage.addTagToTxs
+                ? (tag) => {
+                    storage.addTagToTxs?.([...selection.selectedIds], tag);
+                    selection.exitSelectMode();
+                  }
+                : undefined
+            }
           />
         }
       />
@@ -680,6 +692,9 @@ export function Transactions({
           setLinkedTxRole={setLinkedTxRole}
           onCategoryChange={selection.stableOverrideCategory}
           onNoteChange={selection.stableSetTxNote}
+          tags={storage.txTags?.[editingBankTransaction.id]}
+          knownTags={storage.tagList}
+          onTagsChange={storage.setTxTags}
           onSplitChange={handleSplitChange}
           onToggleHidden={selection.stableHideTx}
           onToggleExcludedFromStats={toggleExcludeFromStats}

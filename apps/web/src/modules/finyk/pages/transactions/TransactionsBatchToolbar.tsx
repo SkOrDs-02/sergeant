@@ -1,4 +1,9 @@
+import { useState } from "react";
+import type { TagSummary } from "@sergeant/finyk-domain/domain/tags";
+import { Button } from "@shared/components/ui/Button";
 import { Sheet } from "@shared/components/ui/Sheet";
+import { messages } from "@shared/i18n/uk";
+import { TxTagsField } from "../../components/TxTagsField";
 import { mergeExpenseCategoryDefinitions } from "../../constants";
 import { stripLeadingEmoji } from "../../components/txRowHelpers";
 
@@ -15,7 +20,13 @@ export interface TransactionsBatchToolbarProps {
   onCloseCatPicker: () => void;
   onApplyCategory: (catId: string) => void;
   customCategories: Parameters<typeof mergeExpenseCategoryDefinitions>[0];
+  /** Пакетне додавання тегу (Р6.2); без нього кнопки «Тег» немає. */
+  onApplyTag?: ((tag: string) => void) | undefined;
+  knownTags?: readonly TagSummary[] | undefined;
 }
+
+const NO_TAGS: readonly string[] = [];
+const NO_KNOWN: readonly TagSummary[] = [];
 
 /**
  * Floating bottom toolbar that appears while the user is in batch
@@ -43,7 +54,11 @@ export function TransactionsBatchToolbar({
   onCloseCatPicker,
   onApplyCategory,
   customCategories,
+  onApplyTag,
+  knownTags = NO_KNOWN,
 }: TransactionsBatchToolbarProps) {
+  const [tagSheet, setTagSheet] = useState(false);
+  const tagCopy = messages.finyk.tags;
   return (
     <>
       {selectMode && selectedSize > 0 && (
@@ -69,6 +84,16 @@ export function TransactionsBatchToolbar({
                 >
                   Категорія
                 </button>
+                {onApplyTag && (
+                  <Button
+                    type="button"
+                    variant="outline"
+                    size="sm"
+                    onClick={() => setTagSheet(true)}
+                  >
+                    {tagCopy.batchAction}
+                  </Button>
+                )}
                 <button
                   type="button"
                   onClick={allSelectedHidden ? onApplyUnhide : onApplyHide}
@@ -108,6 +133,28 @@ export function TransactionsBatchToolbar({
             </div>
           </div>
         </div>
+      )}
+
+      {onApplyTag && (
+        <Sheet
+          open={tagSheet}
+          onClose={() => setTagSheet(false)}
+          title={tagCopy.batchTitle}
+          description={tagCopy.batchHint}
+          panelClassName="finyk-sheet"
+          zIndex={70}
+          bodyClassName="px-4 pb-6"
+        >
+          <TxTagsField
+            tags={NO_TAGS}
+            known={knownTags}
+            onChange={(next) => {
+              const tag = next[0];
+              if (tag) onApplyTag(tag);
+              setTagSheet(false);
+            }}
+          />
+        </Sheet>
       )}
 
       <Sheet
