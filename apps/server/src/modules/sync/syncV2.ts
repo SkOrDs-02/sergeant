@@ -20,6 +20,7 @@ import {
   syncOpLogPullQueueDepth,
 } from "../../obs/metrics.js";
 import { notifySyncV2OpsApplied, type SyncV2StreamOp } from "./syncV2Stream.js";
+import { lockUserSyncOpLog } from "./serverOpLog.js";
 import { elapsedMs } from "../../lib/timing.js";
 import {
   APPLY_REJECT_REASONS,
@@ -354,6 +355,11 @@ export async function syncV2Push(req: Request, res: Response): Promise<void> {
   const client = await pool.connect();
   try {
     await client.query("BEGIN");
+    // data-12: user-lock sync_op_log одразу після BEGIN, до дедуп-SELECT і
+    // будь-якого apply/INSERT: оп-и одного користувача не перемішуються між
+    // транзакціями, тож курсор pull не перескакує чужі id (див. докстрінг
+    // `lockUserSyncOpLog`).
+    await lockUserSyncOpLog(client, user.id);
 
     // Один дедуп-SELECT на весь батч замість одного на оп. Мапа
     // доповнюється по ходу циклу, тож повтор ключа всередині одного пуша
