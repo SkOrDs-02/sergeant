@@ -1,5 +1,5 @@
 /**
- * Шлях тегів операцій (`finyk_tx_tags`, міграція 157): слот → extract →
+ * Шлях тегів операцій (`finyk_tx_tags`, міграція 158): слот → extract →
  * diff → SQL + outbox. Окремо від замороженого `adapter.snapshot.test.ts`,
  * бо таблиця нова (аддитивно).
  */

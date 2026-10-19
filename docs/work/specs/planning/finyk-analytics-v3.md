@@ -78,7 +78,7 @@ Owner-скіли: `sergeant-module-finyk` + за поверхнею `sergeant-we
 
 **Фаза 1 - готівка + рахунки (розмір L):**
 
-- `apps/server/src/migrations/<N>_*.sql` (+ `.down.sql`): таблиця(і) готівкового рахунку (початкова сума, момент створення, поправки) і поле рахунку ручного запису. Нумерація послідовна (Hard Rule #4). Номер береться наступний вільний на `main` у момент PR: на 2026-10-18 у `main` остання 153, а 154 уже займає відкритий [#1331](https://github.com/SkOrDs-02/sergeant/pull/1331) (`154_sergeant_app_role`). Будь-який `bigint` коерситься в `number` у серіалізаторі (Hard Rule #1), а суми зберігаються в копійках як `number`.
+- `apps/server/src/migrations/<N>_*.sql` (+ `.down.sql`): таблиця(і) готівкового рахунку (початкова сума, момент створення, поправки) і поле рахунку ручного запису. Нумерація послідовна (Hard Rule #4). Номер береться наступний вільний на `main` у момент PR: на 2026-10-18 у `main` остання 153, а відкритий [#1331](https://github.com/SkOrDs-02/sergeant/pull/1331) займає `157_sergeant_app_role`. Будь-який `bigint` коерситься в `number` у серіалізаторі (Hard Rule #1), а суми зберігаються в копійках як `number`.
 - `apps/server/src/modules/sync/finyk/applySync.ts`: нові таблиці в sync.
 - `apps/server/src/modules/me/dataRights.ts`: нові таблиці в експорті й видаленні даних користувача.
 - `packages/db-schema`: типи нових таблиць.

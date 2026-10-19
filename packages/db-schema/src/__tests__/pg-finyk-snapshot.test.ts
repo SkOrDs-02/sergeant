@@ -129,7 +129,7 @@ describe("pg/finykTxNotes schema snapshot (data-27, міграція 155)", () =
   });
 });
 
-describe("pg/finykTxTags schema snapshot (міграція 157)", () => {
+describe("pg/finykTxTags schema snapshot (міграція 158)", () => {
   const config = getTableConfig(finykTxTags);
 
   it("has the canonical table name and columns", () => {

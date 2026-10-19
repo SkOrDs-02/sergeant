@@ -295,7 +295,7 @@ export const messages = {
   },
 
   // Phase 7 D4 — WelcomeScreen preset picker. The 2x2 module grid that
-  // replaces the row-based OnboardingWizard as the `/welcome` cold-start
+  // replaces the older row-based flow as the `/welcome` cold-start
   // surface. Taglines are kept short (~5-7 words each) so the cards stay
   // scannable at the 2-col mobile breakpoint without truncation.
   welcomeModulePicker: {
@@ -355,6 +355,10 @@ export const messages = {
   modules: {
     // PR-2 UX-roast 2026-Q2 — gear-icon shortcut in module headers.
     openSettings: "Налаштування модуля",
+    // Аркуш перемикача модулів, що відкривається тапом по назві в шапці.
+    switcherTitle: "Модулі",
+    // Рядок вимкненого модуля в аркуші: як у панелі модулів хаба.
+    inactiveHint: "неактивний, увімкнути в налаштуваннях",
   },
 
   // Планована пауза звички (канон `routine.md` §4, Хвиля 4 — гнучкий стрік).

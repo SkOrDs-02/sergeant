@@ -31,8 +31,8 @@ import type { useAuth } from "../auth/AuthContext";
 
 type AuthUser = ReturnType<typeof useAuth>["user"];
 
-// Welcome / Onboarding chunk: lazy-loaded so the ~2k LOC onboarding flow
-// (`WelcomeScreen` + `OnboardingWizard` + per-module `seedDemoData/*`) stays
+// Welcome chunk: lazy-loaded so the first-run flow
+// (`WelcomeScreen` + per-module `seedDemoData/*`) stays
 // out of the eager app shell. Returning users bypass it entirely; first-time
 // users redirect to `/welcome` via `shouldShowOnboarding()` and pay the
 // one-time fetch cost on the splash screen.
@@ -116,9 +116,7 @@ export interface StandaloneRouteArgs {
  * `StandaloneRoutes.tsx`, and (sometimes) `useAppEffects.ts` with no
  * shared type to keep them in sync. The registry below collapses the
  * ladder into a typed list, the catch-all 404 lives once at the bottom,
- * and the exhaustiveness contract (every `KNOWN_PATHS` member must be
- * owned by some entry) is now testable in
- * `StandaloneRoutes.test.tsx` rather than relying on review discipline.
+ * and the registry now drives both dispatch and the 404 guard.
  */
 interface StandaloneRoute {
   /** Path(s) this entry owns. `"*"` means "no path predicate — entry decides on its own". */
@@ -436,8 +434,7 @@ const STANDALONE_ROUTES: ReadonlyArray<StandaloneRoute> = [
 
 /**
  * Static set of all paths owned by `STANDALONE_ROUTES`. Used by
- * `StandaloneRoutes.test.tsx` to verify the exhaustiveness contract:
- * every member of `KNOWN_PATHS` must be mapped here. The Hub root `/`
+ * `StandaloneRoutes.test.tsx` and by the 404 guard below. The Hub root `/`
  * is now conditionally owned by the landing-page entry (P1-3) — the
  * entry returns `null` for warm local-first / authed sessions so the
  * Hub home keeps rendering, and the marketing surface only shows for
@@ -474,17 +471,11 @@ export function renderStandaloneRoute(args: StandaloneRouteArgs): ReactNode {
   // `<ActiveModuleView />` further down the App shell, **not** by
   // `renderStandaloneRoute`. Without this exemption, every entry into
   // a migrated module short-circuits into `<NotFoundPage />` (regression
-  // introduced together with the KNOWN_PATHS allowlist + 0006 Phase 2
+  // introduced together with the old path allowlist + 0006 Phase 2
   // when path-based modules were not added to the standalone-route
   // surface map).
   //
-  // Note: `STANDALONE_ROUTE_PATHS` is the source of truth here — we
-  // check it directly instead of importing the derived `KNOWN_PATHS`
-  // from `routes.ts`, which would create a circular dependency
-  // (`routes.ts` imports `STANDALONE_ROUTE_PATHS` from this module).
-  // Both sets are equivalent for this guard: every entry in
-  // `STANDALONE_ROUTES` is in `STANDALONE_ROUTE_PATHS`, and `KNOWN_PATHS`
-  // is `new Set(STANDALONE_ROUTE_PATHS)`.
+  // `STANDALONE_ROUTE_PATHS` is the single source of truth for this guard.
   if (
     !STANDALONE_ROUTE_PATHS.has(pathname) &&
     !isPathBasedModulePath(pathname)

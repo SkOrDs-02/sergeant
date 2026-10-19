@@ -89,20 +89,16 @@ describe("module lazy route entries", () => {
       expect(screen.getByTestId("lazy-app")).toBeInTheDocument();
       expect(lastLazyProps).not.toBeNull();
 
-      (lastLazyProps!["onBackToHub"] as () => void)();
       (lastLazyProps!["onPwaActionConsumed"] as () => void)();
+      (lastLazyProps!["onGoToHub"] as () => void)();
+      (lastLazyProps!["onOpenSettings"] as () => void)();
 
-      expect(hubShell.goBackOrHub).toHaveBeenCalledTimes(1);
-      if (moduleId === "routine" || moduleId === "fizruk") {
-        // H: налаштування Рутини — у хабі; у шапці лише Сержант.
-        expect(lastLazyProps).not.toHaveProperty("onOpenSettings");
-        (lastLazyProps!["onGoToHub"] as () => void)();
-        expect(hubShell.goToHub).toHaveBeenCalledTimes(1);
-        expect(hubShell.goToModuleSettings).not.toHaveBeenCalled();
-      } else {
-        (lastLazyProps!["onOpenSettings"] as () => void)();
-        expect(hubShell.goToModuleSettings).toHaveBeenCalledWith(moduleId);
-      }
+      // v3.1: «назад» на вкладках модуля знято, лишився прямий вихід на хаб;
+      // налаштування кожного модуля відкриває рядок аркуша «Модулі».
+      expect(lastLazyProps).not.toHaveProperty("onBackToHub");
+      expect(hubShell.goBackOrHub).not.toHaveBeenCalled();
+      expect(hubShell.goToHub).toHaveBeenCalledTimes(1);
+      expect(hubShell.goToModuleSettings).toHaveBeenCalledWith(moduleId);
       expect(hubShell.clearPwaAction).toHaveBeenCalledTimes(1);
       expect(lastLazyProps!["pwaAction"]).toBeNull();
     },

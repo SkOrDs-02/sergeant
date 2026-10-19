@@ -29,16 +29,16 @@ import { useStreakMilestoneCelebration } from "@shared/hooks/useStreakMilestoneC
 import { messages } from "@shared/i18n/uk";
 
 export interface RoutineAppProps {
-  onBackToHub?: () => void;
   onGoToHub?: () => void;
+  onOpenSettings?: () => void;
   onOpenModule?: (moduleId: string, opts?: { hash?: string }) => void;
   pwaAction?: string | null;
   onPwaActionConsumed?: () => void;
 }
 
 export default function RoutineApp({
-  onBackToHub,
   onGoToHub,
+  onOpenSettings,
   onOpenModule,
   pwaAction,
   onPwaActionConsumed,
@@ -92,14 +92,17 @@ export default function RoutineApp({
             (Рутина рендерить власний `<main id="routine-main">` нижче, і
             два `<main>` були б порушенням). Наслідок: у фініка, фізрука й
             їжі шапка потрапляє всередину `<main>`, а тут — нікуди, тож
-            «Рутина» і «Звички й події» висіли поза landmark-ами на всіх
+            назва «Рутина» висіла поза landmark-ами на всіх
             трьох сторінках модуля (axe `region`, свіп 2026-09-16).
 
             `<header>` не вкладений у main/article/section, тож дає роль
             `banner` — єдиний banner на сторінці (перевірено: ані
             `RootLayout`, ані `ModuleShell` свого не мають). */}
         <header>
-          <RoutineHeader onBackToHub={onBackToHub} onGoToHub={onGoToHub} />
+          <RoutineHeader
+            onGoToHub={onGoToHub}
+            onOpenSettings={onOpenSettings}
+          />
         </header>
 
         <SwipePages

@@ -120,7 +120,7 @@ describe("sqlite/finykTxNotes schema snapshot (data-27)", () => {
   });
 });
 
-describe("sqlite/finykTxTags schema snapshot (міграція 157)", () => {
+describe("sqlite/finykTxTags schema snapshot (міграція 158)", () => {
   const config = getTableConfig(finykTxTags);
 
   it("uses (user_id, transaction_id) composite PK and tags_json + soft-delete columns", () => {

@@ -408,21 +408,28 @@ describe("FizrukApp (extra) — page routing", () => {
 // ── Header callbacks ──────────────────────────────────────────────────────────
 
 describe("FizrukApp (extra) — header callbacks", () => {
-  it("calls onBackToHub from the hub back button on dashboard", () => {
-    const onBackToHub = vi.fn();
-    render(<FizrukApp onBackToHub={onBackToHub} />);
-    fireEvent.click(screen.getByLabelText("Назад"));
-    expect(onBackToHub).toHaveBeenCalled();
+  it("calls onGoToHub from the hub button on dashboard, without a back arrow", () => {
+    const onGoToHub = vi.fn();
+    render(<FizrukApp onGoToHub={onGoToHub} />);
+    expect(screen.queryByLabelText("Назад")).not.toBeInTheDocument();
+    fireEvent.click(screen.getByLabelText("На хаб"));
+    expect(onGoToHub).toHaveBeenCalled();
   });
 
-  it("keeps the assistant in the header and settings in the hub", () => {
-    render(<FizrukApp />);
+  it("keeps the assistant in the header and settings in the «Модулі» sheet", () => {
+    const onOpenSettings = vi.fn();
+    render(<FizrukApp onOpenSettings={onOpenSettings} />);
     expect(
       screen.queryByLabelText("Налаштування модуля"),
     ).not.toBeInTheDocument();
     expect(
       screen.getByRole("button", { name: "Відкрити Сержанта" }),
     ).toBeInTheDocument();
+    fireEvent.click(screen.getByTestId("module-header-title"));
+    fireEvent.click(
+      screen.getByRole("button", { name: "Налаштування модуля" }),
+    );
+    expect(onOpenSettings).toHaveBeenCalledTimes(1);
   });
 
   it("shows contextual page title on atlas", () => {

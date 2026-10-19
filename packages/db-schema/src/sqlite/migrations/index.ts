@@ -1815,7 +1815,7 @@ ALTER TABLE finyk_networth_history ADD COLUMN deleted_at TEXT;
 // ---------------------------------------------------------------------------
 // Finyk module - теги до операцій (спека finyk-analytics-v3, Р6.3).
 //
-// Дзеркало серверної міграції `157_finyk_tx_tags.sql`: composite PK
+// Дзеркало серверної міграції `158_finyk_tx_tags.sql`: composite PK
 // `(user_id, transaction_id)`, `tags_json` - JSON-масив рядків, soft-delete
 // через `deleted_at` (порожній список = tombstone, як нотатки 004 і
 // tombstone-и 005). Адитивно: нова таблиця, існуючих даних не торкається.

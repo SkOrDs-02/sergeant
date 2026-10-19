@@ -25,7 +25,7 @@ function parseTags(raw: unknown): unknown[] | null {
 }
 
 /**
- * `finyk_tx_tags` - теги користувача до операцій (міграція 157, спека
+ * `finyk_tx_tags` - теги користувача до операцій (міграція 158, спека
  * finyk-analytics-v3 Р6.3). Ключ, LWW і soft-delete ті самі, що в
  * `finyk_tx_splits` (tombstone-и 156): delete ставить `deleted_at`, застарілий
  * upsert за tombstone-ом відсіюється як `lww_conflict`, новіший воскрешає

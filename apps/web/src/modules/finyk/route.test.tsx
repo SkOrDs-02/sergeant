@@ -17,14 +17,12 @@ const useHubShellMock = vi.fn();
 // to avoid a temporal-dead-zone ReferenceError.
 const { FinykAppStub } = vi.hoisted(() => ({
   FinykAppStub: (props: {
-    onBackToHub: () => void;
     onGoToHub: () => void;
     onOpenSettings: () => void;
     pwaAction: string | null;
     onPwaActionConsumed: () => void;
   }) => (
     <div data-testid="finyk-app-stub">
-      <button onClick={props.onBackToHub}>back</button>
       <button onClick={props.onGoToHub}>hub</button>
       <button onClick={props.onOpenSettings}>settings</button>
       <button onClick={props.onPwaActionConsumed}>consume-pwa</button>
@@ -76,9 +74,6 @@ describe("finyk route Component", () => {
     const shell = screen.getByTestId("module-shell");
     expect(shell.getAttribute("data-module-id")).toBe("finyk");
     expect(screen.getByTestId("finyk-app-stub")).toBeInTheDocument();
-
-    fireEvent.click(screen.getByText("back"));
-    expect(hub.goBackOrHub).toHaveBeenCalledTimes(1);
 
     fireEvent.click(screen.getByText("hub"));
     expect(hub.goToHub).toHaveBeenCalledTimes(1);

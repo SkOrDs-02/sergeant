@@ -109,7 +109,7 @@ export function ResetPasswordPage() {
   const status =
     lastResponse !== undefined ? "done" : isSubmitting ? "sending" : "idle";
 
-  // Heading-focus pattern (same as `WelcomeOneScreen.tsx`) — gives the
+  // Heading-focus pattern used by the standalone welcome/auth surfaces — gives the
   // SR user the page context before they reach the first input. Replaces
   // `autoFocus` on the password field, which yanked focus past the
   // heading (F25 in `docs/audits/2026-05-13-page-audit-01-auth-onboarding.md`).

@@ -1,6 +1,6 @@
 # Playbook: Add New Page Route
 
-> **Last touched:** 2026-09-11 by @claude. **Next review:** 2027-01-04.
+> **Last touched:** 2026-10-19 by @Skords-01. **Next review:** 2027-02-11.
 > **Status:** Active
 > **Runtime-specific:** no
 
@@ -9,7 +9,7 @@
 ## Owner surface
 
 - Primary surface: `apps/web/src/modules/<module>/pages`, `apps/web/src/core` (top-level pages: Landing/Pricing/NotFound/AssistantCatalogue)
-- Coupled surface: `apps/web/src/core/app/StandaloneRoutes.tsx` (реєстрація route у `STANDALONE_ROUTES`) + `apps/web/src/core/app/routes.ts` (звідти похідний `KNOWN_PATHS` — allowlist 404-guard-а)
+- Coupled surface: `apps/web/src/core/app/StandaloneRoutes.tsx` (реєстрація route у `STANDALONE_ROUTES` і єдине джерело 404-guard-а)
 - Governing skill: `sergeant-web-ui`
 
 ---
@@ -37,7 +37,7 @@ export function NewPage() {
 
 ### 2. Додати route
 
-Додати route у відповідний router-файл (`apps/web/src/core/app/StandaloneRoutes.tsx` — top-level routes живуть у наборі `STANDALONE_ROUTES`, звідки `routes.ts` виводить `KNOWN_PATHS` для 404-guard-а — або module-level router, e.g. `FizrukRouter.tsx`):
+Додати route у відповідний router-файл (`apps/web/src/core/app/StandaloneRoutes.tsx` — top-level routes живуть у наборі `STANDALONE_ROUTES`, який також живить 404-guard, або module-level router, e.g. `FizrukRouter.tsx`):
 
 ```tsx
 import { NewPage } from "@module/pages/NewPage";

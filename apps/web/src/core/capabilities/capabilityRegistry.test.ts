@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
 
 import { isPathBasedModulePath } from "../app/appPaths";
-import { KNOWN_PATHS } from "../app/routes";
+import { STANDALONE_ROUTE_PATHS } from "../app/StandaloneRoutes";
 import { ALL_CAPABILITIES, CAPABILITY_GROUPS } from "./capabilityRegistry";
 
 /**
@@ -13,8 +13,8 @@ import { ALL_CAPABILITIES, CAPABILITY_GROUPS } from "./capabilityRegistry";
 describe("capabilityRegistry", () => {
   /**
    * Топ-рівневі сегменти, які володіє САМ роутер (`core/app/router.tsx`), а
-   * не `StandaloneRoutes`. `KNOWN_PATHS` їх не бачить, бо виводиться лише зі
-   * standalone-таблиці. Список короткий і майже не змінюється, тож тримати
+   * не `StandaloneRoutes`. `STANDALONE_ROUTE_PATHS` їх не бачить. Список короткий і майже не
+   * змінюється, тож тримати
    * його тут дешевше, ніж моделювати весь роутер; головна помилка, яку ловить
    * цей тест, — це все одно одруківка в href.
    */
@@ -27,7 +27,7 @@ describe("capabilityRegistry", () => {
       const pathname = item.href.split(/[?#]/)[0] ?? "";
       const firstSegment = pathname.split("/")[1] ?? "";
       const reachable =
-        KNOWN_PATHS.has(pathname) ||
+        STANDALONE_ROUTE_PATHS.has(pathname) ||
         isPathBasedModulePath(pathname) ||
         ROUTER_OWNED_SEGMENTS.includes(firstSegment);
       expect(

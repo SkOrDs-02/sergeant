@@ -19,10 +19,10 @@ const WelcomeScreen = lazyImport(
  * catch-all `path:"*"` HubPage).
  *
  * Exported as `Component` so React Router 7's `lazy()` picks it up, mirroring
- * the per-module route entries (`modules/<mod>/route.tsx`). The ~2k-LOC
- * onboarding flow (`WelcomeScreen` + `OnboardingWizard` + per-module
- * `seedDemoData/*`) loads on demand — first-time visitors pay the one-time
- * fetch on the splash, returning users never reach it.
+ * the per-module route entries (`modules/<mod>/route.tsx`). The onboarding
+ * flow (`WelcomeScreen` + `WelcomeModulePicker`) loads on demand — first-time
+ * visitors pay the one-time fetch on the splash, returning users never reach
+ * it.
  *
  * `WelcomeScreen` renders its own `<main id="main">` landmark, so the gate
  * here does not add a second one (a double-`<main>` would be an a11y

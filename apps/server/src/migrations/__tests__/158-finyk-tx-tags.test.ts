@@ -1,4 +1,4 @@
-// Міграція 157 - `finyk_tx_tags` (спека finyk-analytics-v3, Р6.3).
+// Міграція 158 - `finyk_tx_tags` (спека finyk-analytics-v3, Р6.3).
 //
 // Два лейни, як у `153-ai-photo-refine-grants.test.ts`.
 // 1. СТАТИЧНИЙ фіксує намір: additive, FK на "user" з каскадом, PK
@@ -17,8 +17,8 @@ import type { StartedTestContainer } from "testcontainers";
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const MIGRATIONS_DIR = path.resolve(__dirname, "..");
-const UP_FILE = "157_finyk_tx_tags.sql";
-const DOWN_FILE = "157_finyk_tx_tags.down.sql";
+const UP_FILE = "158_finyk_tx_tags.sql";
+const DOWN_FILE = "158_finyk_tx_tags.down.sql";
 const TIMEOUT_MS = 180_000;
 
 let up = "";
@@ -31,7 +31,7 @@ function statementsOnly(sql: string): string {
     .join("\n");
 }
 
-describe("157 - форма (статичний лейн)", () => {
+describe("158 - форма (статичний лейн)", () => {
   beforeAll(async () => {
     up = await fs.readFile(path.join(MIGRATIONS_DIR, UP_FILE), "utf8");
     down = await fs.readFile(path.join(MIGRATIONS_DIR, DOWN_FILE), "utf8");
@@ -66,7 +66,7 @@ describe("157 - форма (статичний лейн)", () => {
   });
 });
 
-describe("157 - живий Postgres", () => {
+describe("158 - живий Postgres", () => {
   let container: StartedTestContainer | null = null;
   let pool: pg.Pool | null = null;
   let dockerAvailable = false;
@@ -103,7 +103,7 @@ describe("157 - живий Postgres", () => {
       dockerAvailable = true;
     } catch (e) {
       console.warn(
-        `[157-finyk-tx-tags] Skipping live lane: Testcontainers unavailable - ${
+        `[158-finyk-tx-tags] Skipping live lane: Testcontainers unavailable - ${
           e instanceof Error ? e.message : String(e)
         }`,
       );

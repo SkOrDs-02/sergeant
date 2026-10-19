@@ -50,8 +50,7 @@ export interface WelcomeModulePickerProps {
  * Defaults to all four modules picked so a user who taps through
  * without changing anything keeps the current "populated Hub"
  * experience. Tapping a card toggles its pick state; CTA is disabled
- * while the selection is empty, matching `useOnboardingWizardState`'s
- * `ctaDisabled` contract on the `none` A/B arm.
+ * while the selection is empty.
  */
 export function WelcomeModulePicker({
   onComplete,

@@ -2,41 +2,43 @@
  * Last validated: 2026-05-14
  * Status: Active
  */
-import type { ReactNode } from "react";
+import { useState, type ReactNode } from "react";
 import type { ModuleAccent } from "@sergeant/design-tokens";
 import { cn } from "@shared/lib/ui/cn";
 import { hapticTap } from "@shared/lib/adapters/haptic";
 import { emitHubBus } from "@shared/lib/modules/hubBus";
-import { messages } from "@shared/i18n/uk";
+import { ModuleSwitcherSheet } from "./ModuleSwitcherSheet";
 
 /**
- * Шапка модуля (мова H, redesign v3): кнопка «назад» 44 px ліворуч, назва
- * модуля 26 / 700, під нею контекстний рядок 14 px другим сірим (період,
- * лічильник), праворуч слот дій (один вхід до Сержанта). Без ряду пігулок
- * модулів, без скла, без смужки акценту: колір модуля живе лише в даних.
+ * Шапка модуля (мова H, redesign v3.1): ліворуч «додому» 44 px (на вкладених
+ * сторінках перед ним «назад» на сторінку вище), назва модуля 26 / 700, під
+ * нею лише контекстний рядок 14 px другим сірим (період, лічильник),
+ * праворуч один вхід до Сержанта. З `switcher` назва стає кнопкою «Назва ⌄»,
+ * що відкриває аркуш «Модулі» (`ModuleSwitcherSheet`).
  *
  *     <ModuleHeader
- *       left={<ModuleHeaderBackButton onClick={onBackToHub} />}
+ *       module="finyk"
+ *       switcher="finyk"
+ *       onOpenSettings={onOpenSettings}
+ *       left={<ModuleHeaderHubButton onClick={onGoToHub} />}
  *       right={<ModuleHeaderAssistantButton />}
  *       title="Фінік"
- *       subtitle="Жовтень"
  *     />
  */
 
 export interface ModuleHeaderProps {
   title?: ReactNode | undefined;
   subtitle?: ReactNode | undefined;
-  /**
-   * Коротша версія `subtitle` для вузьких екранів (< `sm`): осмислений
-   * короткий рядок замість обрізання крапками (VIS-1, аудит 2026-09).
-   */
-  subtitleShort?: string | undefined;
   left?: ReactNode | undefined;
   right?: ReactNode | undefined;
   /** Override the default title/subtitle body entirely. */
   titleSlot?: ReactNode | undefined;
   /** Модуль шапки: дає `view-transition-name` для морфу з хаба. */
   module?: ModuleAccent | undefined;
+  /** Поточний модуль перемикача: назва стає кнопкою, що відкриває аркуш «Модулі». */
+  switcher?: ModuleAccent | undefined;
+  /** Останній рядок аркуша «Модулі»: налаштування поточного модуля. */
+  onOpenSettings?: (() => void) | undefined;
   className?: string | undefined;
 }
 
@@ -46,13 +48,15 @@ const ICON_BUTTON =
 export function ModuleHeader({
   title,
   subtitle,
-  subtitleShort,
   left,
   right,
   titleSlot,
   module,
+  switcher,
+  onOpenSettings,
   className,
 }: ModuleHeaderProps) {
+  const [switcherOpen, setSwitcherOpen] = useState(false);
   return (
     <div
       className={cn("shrink-0 z-40 relative safe-area-pt bg-bg", className)}
@@ -65,10 +69,38 @@ export function ModuleHeader({
         <div className="min-w-0 flex-1">
           {titleSlot ?? (
             <>
-              {title ? (
-                // AI-CONTEXT: навмисно `<p>`, не заголовок - назва модуля це
-                // хром оболонки, який у DOM-порядку йде ПЕРЕД сторінковим
-                // `<h1>` і інвертував би структуру заголовків (#527).
+              {/* AI-CONTEXT: назва навмисно `<p>` / `<button>`, не заголовок -
+                  це хром оболонки, який у DOM-порядку йде ПЕРЕД сторінковим
+                  `<h1>` і інвертував би структуру заголовків (#527). */}
+              {title && switcher ? (
+                <button
+                  type="button"
+                  data-testid="module-header-title"
+                  aria-haspopup="dialog"
+                  aria-expanded={switcherOpen}
+                  onClick={() => {
+                    hapticTap();
+                    setSwitcherOpen(true);
+                  }}
+                  className="-ml-1 flex min-h-[44px] max-w-full items-center gap-1 rounded-lg px-1 text-style-headline text-text focus-ring"
+                >
+                  <span className="truncate">{title}</span>
+                  <svg
+                    width="16"
+                    height="16"
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="currentColor"
+                    strokeWidth="2"
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    className="shrink-0 text-subtle"
+                    aria-hidden
+                  >
+                    <path d="m6 9 6 6 6-6" />
+                  </svg>
+                </button>
+              ) : title ? (
                 <p
                   data-testid="module-header-title"
                   className="text-style-headline text-text truncate"
@@ -79,14 +111,7 @@ export function ModuleHeader({
               {subtitle ? (
                 // `block` обовʼязковий: `truncate` на інлайн-боксі не діє.
                 <span className="block text-style-label text-muted truncate">
-                  {subtitleShort ? (
-                    <>
-                      <span className="sm:hidden">{subtitleShort}</span>
-                      <span className="hidden sm:inline">{subtitle}</span>
-                    </>
-                  ) : (
-                    subtitle
-                  )}
+                  {subtitle}
                 </span>
               ) : null}
             </>
@@ -95,6 +120,14 @@ export function ModuleHeader({
         <span data-sync-status-slot className="contents" />
         {right}
       </div>
+      {switcher ? (
+        <ModuleSwitcherSheet
+          open={switcherOpen}
+          onClose={() => setSwitcherOpen(false)}
+          current={switcher}
+          onOpenSettings={onOpenSettings}
+        />
+      ) : null}
     </div>
   );
 }
@@ -108,7 +141,7 @@ export interface ModuleHeaderIconButtonProps {
 }
 
 /**
- * Кнопка-іконка 44 px у шапці модуля (назад, налаштування).
+ * Кнопка-іконка 44 px у шапці модуля (додому).
  */
 export function ModuleHeaderIconButton({
   onClick,
@@ -190,64 +223,6 @@ export function ModuleHeaderAssistantButton({
   );
 }
 
-export interface ModuleHeaderBackButtonProps {
-  onClick: () => void;
-  /** Видимий підпис біля шеврона. За замовчуванням лише шеврон 44 px. */
-  label?: string;
-  ariaLabel?: string;
-  className?: string;
-}
-
-/**
- * "Back" button — steps back one in-app entry (`useHubNavigation.goBackOrHub`
- * falls back to the hub itself when there's no history to step through).
- * Always reads "Назад": the adjacent {@link ModuleHeaderHubButton} is the
- * dedicated always-hub affordance, so this button no longer needs to lie
- * about its destination on a fresh/deep-link entry (round-2 UI audit X3 —
- * users landing on a deep link never saw a way to reach the hub because
- * this button rendered but the label/behavior split was implicit).
- */
-export function ModuleHeaderBackButton({
-  onClick,
-  label,
-  ariaLabel = "Назад",
-  className,
-}: ModuleHeaderBackButtonProps) {
-  return (
-    <button
-      type="button"
-      onClick={onClick}
-      className={cn(
-        // `h-11 min-h-[44px]` — round-2 UI audit X3 requires this pair
-        // (back + hub) meet the 44px touch-target floor explicitly, even
-        // though other module-header icon buttons in this file stayed at
-        // 40px (pre-existing, out of scope here).
-        ICON_BUTTON,
-        "-ml-1 gap-1.5",
-        label && "w-auto px-2",
-        className,
-      )}
-      aria-label={ariaLabel}
-      title={ariaLabel}
-    >
-      <svg
-        width="20"
-        height="20"
-        viewBox="0 0 24 24"
-        fill="none"
-        stroke="currentColor"
-        strokeWidth="2"
-        strokeLinecap="round"
-        strokeLinejoin="round"
-        aria-hidden
-      >
-        <path d="M15 18l-6-6 6-6" />
-      </svg>
-      {label ? <span className="text-style-label">{label}</span> : null}
-    </button>
-  );
-}
-
 export interface ModuleHeaderHubButtonProps {
   onClick: () => void;
   ariaLabel?: string;
@@ -256,10 +231,10 @@ export interface ModuleHeaderHubButtonProps {
 
 /**
  * Dedicated "always go to hub" icon button — pairs with
- * {@link ModuleHeaderBackButton} so a one-tap hub exit is reachable from any
- * navigation depth, including a cold-start deep link where `goBackOrHub`
- * would otherwise be the only exit and history-dependent (round-2 UI audit
- * X3, owner decision 2026-07-12).
+ * the contextual back on nested pages, so a one-tap hub exit is reachable
+ * from any navigation depth, including a cold-start deep link (round-2 UI
+ * audit X3, owner decision 2026-07-12). On a module overview it is the only
+ * left action (redesign v3.1).
  */
 export function ModuleHeaderHubButton({
   onClick,
@@ -324,47 +299,5 @@ export function ModuleHeaderChevronButton({
         <path d="M15 18l-6-6 6-6" />
       </svg>
     </button>
-  );
-}
-
-export interface ModuleHeaderSettingsButtonProps {
-  onClick: () => void;
-  ariaLabel?: string;
-  title?: string;
-  className?: string;
-}
-
-/**
- * Gear-icon button in module headers that deep-links to the module's
- * Settings section in the hub. PR-2 UX-roast 2026-Q2.
- */
-export function ModuleHeaderSettingsButton({
-  onClick,
-  ariaLabel = messages.modules.openSettings,
-  title,
-  className,
-}: ModuleHeaderSettingsButtonProps) {
-  return (
-    <ModuleHeaderIconButton
-      onClick={onClick}
-      ariaLabel={ariaLabel}
-      title={title ?? ariaLabel}
-      className={className}
-    >
-      <svg
-        width="20"
-        height="20"
-        viewBox="0 0 24 24"
-        fill="none"
-        stroke="currentColor"
-        strokeWidth="1.8"
-        strokeLinecap="round"
-        strokeLinejoin="round"
-        aria-hidden
-      >
-        <circle cx="12" cy="12" r="3" />
-        <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z" />
-      </svg>
-    </ModuleHeaderIconButton>
   );
 }

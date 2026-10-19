@@ -16,8 +16,8 @@
  * там пінив тест, друга половина через це виглядала свідомо пропущеною —
  * саме тому гейт перевіряє ПАРУ, а не окремі половини.
  *
- * Правило: файл із `role="tablist"` або бере `useTablistArrowKeys`, або
- * стоїть у списку нижче з поясненням, чому машинерія в нього своя.
+ * Правило: файл із `role="tablist"` має бути канонічним примітивом або
+ * стояти у списку нижче з поясненням власної клавіатурної машинерії.
  */
 import { describe, expect, it } from "vitest";
 import { readFileSync, readdirSync, statSync } from "node:fs";
@@ -28,12 +28,11 @@ const HERE = dirname(fileURLToPath(import.meta.url));
 const WEB_SRC = resolve(HERE, "../..");
 
 /**
- * Файли з ВЛАСНОЮ реалізацією стрілок. Кожен рядок — примітив, який хук і
- * не мав би використовувати: він сам є тим, звідки хук витягнуто, або має
- * ширшу логіку (приховування навбару, pending-стан).
+ * Файли з власною реалізацією стрілок. Кожен рядок є канонічним примітивом
+ * або має ширшу логіку (приховування навбару, pending-стан).
  *
- * Це не «дозволені винятки на майбутнє»: новий call-site сюди не додають,
- * він бере хук. Додавати рядок можна лише разом із доказом, що стрілки в
+ * Це не «дозволені винятки на майбутнє»: новий call-site має взяти `Tabs`,
+ * `Segmented` чи `ModuleBottomNav`. Додавати рядок можна лише разом із доказом, що стрілки в
  * тому файлі є і працюють.
  */
 const OWN_IMPLEMENTATION = new Map<string, string>([
@@ -44,7 +43,7 @@ const OWN_IMPLEMENTATION = new Map<string, string>([
   ],
   [
     "shared/components/ui/ModuleBottomNav.tsx",
-    "джерело, з якого витягнуто хук; додатково знає про приховування навбару",
+    "канонічний навбар з приховуванням і власним roving tabindex",
   ],
   ["core/app/HubBottomNav.tsx", "нижній навбар хабу, власний roving tabindex"],
   [
@@ -64,7 +63,7 @@ const OWN_IMPLEMENTATION = new Map<string, string>([
  *
  * Форма навмисно широка (`role=` … `"tablist"` у межах рядка), а не перелік
  * відомих написань: перелік уже раз розійшовся сам із собою і розійдеться
- * знову. Хибне спрацювання тут дешеве — воно лише вимагає хук або запис у
+ * знову. Хибне спрацювання тут дешеве — воно лише вимагає канонічний контрол або запис у
  * списку; пропуск коштує мовчазної дірки в гейті.
  */
 const TABLIST_ROLE = /role=\{?[^}\n]*"tablist"/;
@@ -110,10 +109,9 @@ describe("контракт role=tablist ↔ клавіатура", () => {
 
       const rel = relative(WEB_SRC, file).split("\\").join("/");
       if (OWN_IMPLEMENTATION.has(rel)) continue;
-      if (code.includes("useTablistArrowKeys")) continue;
 
       offenders.push(
-        `${rel} — має role="tablist", але ні useTablistArrowKeys, ні запису в OWN_IMPLEMENTATION`,
+        `${rel} — має role="tablist", але не є канонічним контролом і не має перевіреної власної машинерії`,
       );
     }
     expect(offenders).toEqual([]);

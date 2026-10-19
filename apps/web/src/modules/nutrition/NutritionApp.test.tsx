@@ -158,7 +158,7 @@ describe("NutritionApp — shell + routing (real component tree)", () => {
   it("accepts optional props without crashing", () => {
     markNutritionFirstRunSeen();
     renderApp({
-      onBackToHub: vi.fn(),
+      onGoToHub: vi.fn(),
       onOpenSettings: vi.fn(),
       pwaAction: null,
       onPwaActionConsumed: vi.fn(),

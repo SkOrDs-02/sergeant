@@ -6,7 +6,7 @@ import { enqueueOutboxUpsert } from "../../../../core/syncEngine/enqueueOutboxUp
 import type { FinykTxTagsEntry } from "./diff.js";
 import { TX_TAGS_DELETE_SQL, TX_TAGS_UPSERT_SQL } from "./specs.js";
 
-// Теги операцій (`finyk_tx_tags`, міграція 157): та сама форма, що
+// Теги операцій (`finyk_tx_tags`, міграція 158): та сама форма, що
 // `finyk_tx_splits` (JSON-масив, soft-delete). Сервер приймає таблицю через
 // `applyFinykTxTags`. Окремий файл, щоб `adapter.ts` лишався під 600 рядків.
 

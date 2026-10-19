@@ -115,7 +115,7 @@ export const finykTxNotes = pgTable(
 /**
  * Теги користувача до операцій Фініка (спека finyk-analytics-v3, Р6.3).
  * Форма як у `finykTxNotes`: composite PK, `tags_json` - масив рядків,
- * порожній список = soft-delete (`deleted_at`). Дзеркалить міграцію 157.
+ * порожній список = soft-delete (`deleted_at`). Дзеркалить міграцію 158.
  */
 export const finykTxTags = pgTable(
   "finyk_tx_tags",

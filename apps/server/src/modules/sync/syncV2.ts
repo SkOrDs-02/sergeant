@@ -214,7 +214,7 @@ const OP_LOG_TABLE_REGISTRY: Record<string, ApplyFn> = {
   finyk_hidden_transactions: applyFinykHiddenTransactions,
   // Нотатки до операцій (data-27, міграція 155): composite-PK tombstone з `note`.
   finyk_tx_notes: applyFinykTxNotes,
-  // Теги операцій (міграція 157): per-tx JSONB-масив із tombstone-ами 156.
+  // Теги операцій (міграція 158): per-tx JSONB-масив із tombstone-ами 156.
   finyk_tx_tags: applyFinykTxTags,
   finyk_budgets: perRowBlob("finyk_budgets"),
   finyk_subscriptions: perRowBlob("finyk_subscriptions"),

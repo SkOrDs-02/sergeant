@@ -105,7 +105,7 @@ export const finykTxNotes = sqliteTable(
 
 /**
  * Теги користувача до операцій Фініка (спека finyk-analytics-v3, Р6.3).
- * Дзеркалить серверну `finyk_tx_tags` (міграція 157): composite PK,
+ * Дзеркалить серверну `finyk_tx_tags` (міграція 158): composite PK,
  * `tags_json` - JSON-масив рядків, порожній список = soft-delete.
  */
 export const finykTxTags = sqliteTable(

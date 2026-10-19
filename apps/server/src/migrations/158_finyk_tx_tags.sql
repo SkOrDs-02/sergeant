@@ -1,4 +1,4 @@
--- 157: finyk_tx_tags - теги користувача до операцій Фініка
+-- 158: finyk_tx_tags - теги користувача до операцій Фініка
 -- (спека docs/work/specs/planning/finyk-analytics-v3.md, Р6.3: теги
 -- синкаються як категорії й нотатки, не через localStorage).
 --

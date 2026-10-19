@@ -145,7 +145,7 @@ describe("FizrukApp smoke tests", () => {
     expect(() =>
       render(
         <FizrukApp
-          onBackToHub={vi.fn()}
+          onGoToHub={vi.fn()}
           pwaAction={null}
           onPwaActionConsumed={vi.fn()}
         />,

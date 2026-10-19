@@ -5,11 +5,9 @@ import {
   isPathBasedModulePath,
 } from "./appPaths";
 
-// Note: tests that cross-check `KNOWN_PATHS` ↔ `isPathBasedModulePath`
-// live in `StandaloneRoutes.test.tsx` (which already imports the full
-// routing graph). `appPaths.test.ts` stays lightweight — it only imports
-// from `appPaths.ts` so it can run without the StandaloneRoutes dependency
-// chain (which requires `@sergeant/db-schema/sqlite` to be built).
+// Standalone route behavior and path-based module fallthrough are covered in
+// `StandaloneRoutes.test.tsx`. This file stays lightweight so it can run
+// without the StandaloneRoutes dependency chain.
 
 describe("PATH_BASED_MODULE_IDS", () => {
   it("includes the modules migrated to path-based URLs (initiative 0006 Phase 2)", () => {
