@@ -296,6 +296,40 @@ describe("Button", () => {
       );
       expect(getByRole("button").className).toContain("bg-transparent");
     });
+
+    it("text = тихий рівень: чорнило 15 / 600, без рамки й заливки, зона 44 px", () => {
+      const { getByRole } = render(
+        <Button variant="text">Показати всі</Button>,
+      );
+      const cls = getByRole("button").className;
+      expect(cls).toContain("text-text");
+      expect(cls).toContain("text-style-body");
+      expect(cls).toContain("font-semibold");
+      expect(cls).toContain("min-h-[44px]");
+      expect(cls).toContain("hover:bg-panel");
+      expect(cls).not.toMatch(/(^|\s)border(\s|$)/);
+      expect(cls).not.toContain("bg-text");
+      // Шкала `sizes` не протікає: інакше `md` додав би h-11 і px-5.
+      expect(cls).not.toContain("h-11");
+      expect(cls).not.toContain("px-5");
+    });
+
+    it("text лишається чорнилом усередині модуля й з будь-яким тоном", () => {
+      const { getByRole, rerender } = render(
+        <Button variant="text" tone="finyk">
+          A
+        </Button>,
+      );
+      const base = getByRole("button").className;
+      expect(base).toContain("text-text");
+      expect(base).not.toContain("finyk");
+      rerender(
+        <Button variant="text" module="routine">
+          A
+        </Button>,
+      );
+      expect(getByRole("button").className).toBe(base);
+    });
   });
 
   describe("legacy ⇄ canonical output equivalence", () => {

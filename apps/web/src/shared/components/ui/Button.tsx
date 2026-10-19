@@ -12,7 +12,7 @@ import { cn } from "../../lib/ui/cn";
  * (`variant` × `tone`) and `Card` (`module` × `prominence`) contracts so
  * the primitives stay mentally consistent:
  *
- * - **`variant`** — the *emphasis / shape*: `solid` | `soft` | `outline` | `ghost`.
+ * - **`variant`** — the *emphasis / shape*: `solid` | `soft` | `outline` | `ghost` | `text`.
  * - **`tone`** — the *colour family*: `neutral` | `finyk` | `fizruk` |
  *   `routine` | `nutrition` | `danger` | `success` | `ink`.
  *
@@ -54,7 +54,7 @@ import { cn } from "../../lib/ui/cn";
 /**
  * Emphasis / shape axis (canonical). Combine with {@link ButtonTone}.
  */
-export type ButtonEmphasis = "solid" | "soft" | "outline" | "ghost";
+export type ButtonEmphasis = "solid" | "soft" | "outline" | "ghost" | "text";
 
 /**
  * Colour-family axis (canonical). Combine with {@link ButtonEmphasis}.
@@ -108,7 +108,7 @@ export type ButtonSize = "xs" | "sm" | "md" | "lg" | "xl";
 // string that is already covered by the contract tests. Do not inline these
 // into the resolver — keeping them flat guarantees byte-identical output
 // across the legacy and canonical entry points.
-type ButtonStyleKey = ButtonVariantLegacy | "danger-outline";
+type ButtonStyleKey = ButtonVariantLegacy | "danger-outline" | "text";
 
 const variants: Record<ButtonStyleKey, string> = {
   // Мова H (redesign v3): `primary` = чорнило на сторінці (у темній
@@ -133,6 +133,11 @@ const variants: Record<ButtonStyleKey, string> = {
   // Налаштування — `core/settings/settingsActionButtonVariants.test.ts`.
   ghost:
     "bg-transparent text-muted hover:bg-panelHi hover:text-text active:bg-line/50",
+  // Тихий третій рівень (redesign v3.1): дія в рядку чи заголовку секції.
+  // На відміну від `ghost` текст чорнилом, бо межі немає ні в кнопки, ні в
+  // рядка, і саме вага 600 відрізняє дію від підпису. Кегль і зону дотику
+  // задає `TEXT_SIZE`, а не шкала `sizes`.
+  text: "bg-transparent text-text hover:bg-panel active:bg-panelHi",
   // Темна тема: `--c-danger-soft` там суцільний red-800 (його беруть і
   // банери помилок), тож soft-кнопка ставала насиченим червоним блоком і
   // «Видалити» важило більше за головну дію (критика екранів, хвиля 3).
@@ -192,6 +197,11 @@ const sizes: Record<ButtonSize, string> = {
   lg: "h-12 px-6 text-style-label-lg font-semibold rounded-lg gap-2",
   xl: "h-14 px-8 text-style-label-lg font-bold rounded-lg gap-2.5",
 };
+
+// 15 / 600 і 44 px у пікселях на будь-якому вказівнику: рядок із тихою дією
+// буває й на десктопі, а `h-11` у rem на вузькому вʼюпорті дає 41 px.
+const TEXT_SIZE =
+  "min-h-[44px] px-2 text-style-body font-semibold leading-tight rounded-lg gap-1.5";
 
 // Icon-only button sizes
 const iconSizes: Record<ButtonSize, string> = {
@@ -299,6 +309,9 @@ const EMPHASIS_TONE_MAP: Record<
   ghost: {
     neutral: "ghost",
   },
+  text: {
+    neutral: "text",
+  },
 };
 
 /**
@@ -392,7 +405,11 @@ export const Button = forwardRef<HTMLButtonElement, ButtonProps>(
           // collapsed by resolveStyleKey (see its mapping tables).
           variants[resolvedVariant],
           // Size
-          iconOnly ? iconSizes[size] : sizes[size],
+          iconOnly
+            ? iconSizes[size]
+            : resolvedVariant === "text"
+              ? TEXT_SIZE
+              : sizes[size],
           className,
         )}
         {...props}
