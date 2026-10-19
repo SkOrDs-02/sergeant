@@ -1770,7 +1770,7 @@ ALTER TABLE finyk_prefs
 // Finyk module — soft-delete tombstone-и для per-tx мапінгів і networth
 // (аудит 2026-10-01, data-15, частина Б).
 //
-// Дзеркало серверної міграції `156_finyk_per_tx_soft_delete.sql`. До неї
+// Дзеркало серверної міграції `156_finyk_soft_delete_tombstones.sql`. До неї
 // `finyk_tx_categories` / `finyk_tx_splits` / `finyk_mono_debt_links` /
 // `finyk_networth_history` видалялись фізично, тож запізнілий upsert
 // воскрешав рядок. Тепер delete ставить `deleted_at` + `updated_at`
