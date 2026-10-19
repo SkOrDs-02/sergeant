@@ -20,6 +20,7 @@ import type {
   Subscription,
   TxCategoriesMap,
   TxNotesMap,
+  TxTagsMap,
   TxSplitsMap,
 } from "../hooks/useStorage.types";
 import type { Debt, Receivable } from "@sergeant/finyk-domain/domain";
@@ -51,6 +52,8 @@ export interface SqliteFinykCache {
   txSplits: TxSplitsMap;
   /** Нотатки користувача до операцій keyed by transactionId (без tombstone). */
   txNotes: TxNotesMap;
+  /** Теги операцій keyed by transactionId (без tombstone). */
+  txTags: TxTagsMap;
   /** Per-tx mono-debt links keyed by transactionId. */
   monoDebtLinkedTxIds: MonoDebtLinkedMap;
   /** Time-series networth history (oldest → newest). */
@@ -99,6 +102,7 @@ export const EMPTY_FINYK_SQLITE_CACHE: SqliteFinykCache = {
   txCategories: {},
   txSplits: {},
   txNotes: {},
+  txTags: {},
   monoDebtLinkedTxIds: {},
   networthHistory: [],
   monthlyPlan: null,

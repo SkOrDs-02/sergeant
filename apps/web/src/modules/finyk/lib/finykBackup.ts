@@ -52,6 +52,7 @@ import {
   serializePrefsJson,
   txCatsFromMap,
   txNotesFromMap,
+  txTagsFromMap,
   txSplitsFromMap,
 } from "./sqliteWriter/extract.js";
 import {
@@ -129,6 +130,8 @@ export function readFinykBackupFromStorage() {
     txNotes: warm
       ? cache.txNotes
       : readJSON(FINYK_FIELD_TO_STORAGE_KEY.txNotes, {}),
+    // Теги лише в SQLite (`finyk_tx_tags`), LS-ключа немає.
+    txTags: warm ? (cache.txTags as Record<string, string[]>) : {},
     networthHistory: warm
       ? cache.networthHistory
       : readJSON(FINYK_FIELD_TO_STORAGE_KEY.networthHistory, []),
@@ -224,6 +227,7 @@ function cacheToDualWriteState(): FinykDualWriteState {
     txCategories: txCatsFromMap(cache.txCategories),
     txSplits: txSplitsFromMap(cache.txSplits),
     txNotes: txNotesFromMap(cache.txNotes),
+    txTags: txTagsFromMap(cache.txTags),
     monoDebtLinks: monoDebtLinksFromMap(cache.monoDebtLinkedTxIds),
     networthHistory: networthHistoryFrom(cache.networthHistory),
     prefs: {
@@ -257,6 +261,7 @@ function backupOntoState(
   if (b.txCategories) next.txCategories = txCatsFromMap(b.txCategories);
   if (b.txSplits) next.txSplits = txSplitsFromMap(b.txSplits);
   if (b.txNotes) next.txNotes = txNotesFromMap(b.txNotes);
+  if (b.txTags) next.txTags = txTagsFromMap(b.txTags);
   if (b.monoDebtLinkedTxIds) {
     next.monoDebtLinks = monoDebtLinksFromMap(b.monoDebtLinkedTxIds);
   }
@@ -353,6 +358,9 @@ function mergeBackupOntoState(
   }
   if (b.txNotes) {
     next.txNotes = addMissingBy(prev.txNotes, txNotesFromMap(b.txNotes), byTx);
+  }
+  if (b.txTags) {
+    next.txTags = addMissingBy(prev.txTags, txTagsFromMap(b.txTags), byTx);
   }
   if (b.monoDebtLinkedTxIds) {
     next.monoDebtLinks = addMissingBy(

@@ -31,6 +31,7 @@ import type {
   Subscription,
   TxCategoriesMap,
   TxNotesMap,
+  TxTagsMap,
   TxSplitsMap,
 } from "../hooks/useStorage.types";
 import type { Debt, Receivable, TxSplit } from "@sergeant/finyk-domain/domain";
@@ -100,6 +101,12 @@ interface TxCategoryRow {
 interface TxNoteRow {
   transaction_id: string;
   note: string | null;
+  [key: string]: unknown;
+}
+
+interface TxTagsRow {
+  transaction_id: string;
+  tags_json: string | null;
   [key: string]: unknown;
 }
 
@@ -194,6 +201,7 @@ export async function refreshFinykSqliteState(
     txCategoryRows,
     txSplitsRows,
     txNoteRows,
+    txTagsRows,
     monoDebtLinkRows,
     networthRows,
     prefsRows,
@@ -279,6 +287,12 @@ export async function refreshFinykSqliteState(
         WHERE user_id = ? AND deleted_at IS NULL`,
       [userId],
     ),
+    client.all<TxTagsRow>(
+      `SELECT transaction_id, tags_json
+         FROM finyk_tx_tags
+        WHERE user_id = ? AND deleted_at IS NULL`,
+      [userId],
+    ),
     client.all<MonoDebtLinkRow>(
       `SELECT transaction_id, debt_ids_json
          FROM finyk_mono_debt_links
@@ -343,6 +357,12 @@ export async function refreshFinykSqliteState(
     }
   }
 
+  const txTags: TxTagsMap = {};
+  for (const row of txTagsRows) {
+    const tags = safeStringArray(row.tags_json);
+    if (tags.length > 0) txTags[row.transaction_id] = tags;
+  }
+
   const monoDebtLinkedTxIds: MonoDebtLinkedMap = {};
   for (const row of monoDebtLinkRows) {
     const debtIds = safeParseJson<string[]>(row.debt_ids_json, []);
@@ -393,6 +413,7 @@ export async function refreshFinykSqliteState(
     txCategories,
     txSplits,
     txNotes,
+    txTags,
     monoDebtLinkedTxIds,
     networthHistory,
     monthlyPlan,
