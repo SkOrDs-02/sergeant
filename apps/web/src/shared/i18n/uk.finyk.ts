@@ -521,6 +521,40 @@ export const finykPageMessages = {
     filterClear: "Усі рахунки",
     cardFallback: "Картка",
   },
+  // Теги операцій (спека finyk-analytics-v3, Р6).
+  tags: {
+    fieldLabel: "Теги",
+    inputLabel: "Новий тег",
+    inputPlaceholder: "Новий тег",
+    add: "Додати",
+    removeAria: "Прибрати тег «{tag}»",
+    limitReached: "На операції вже {max} тегів, більше не додати",
+    batchAction: "Тег",
+    batchTitle: "Тег для вибраних операцій",
+    batchHint: "Тег додасться до кожної вибраної операції.",
+    batchApply: "Додати тег",
+    analyticsTitle: "За тегами",
+    analyticsNote:
+      "Операція може мати кілька тегів, тому суми тегів не складаються в загальну.",
+    filterActive: "Лише тег «{tag}»",
+    filterClear: "Усі теги",
+    settingsTitle: "Теги",
+    settingsDescription:
+      "Теги з усіх операцій. Перейменування й видалення діють на кожній операції з цим тегом.",
+    usedCount: "Операцій: {count}",
+    rename: "Перейменувати",
+    renameAria: "Перейменувати тег «{tag}»",
+    renameLabel: "Нова назва тегу «{tag}»",
+    save: "Зберегти",
+    cancel: "Скасувати",
+    remove: "Видалити",
+    removeTagAria: "Видалити тег «{tag}»",
+    confirmTitle: "Видалити тег?",
+    confirmDescription:
+      "Тег «{tag}» зникне з усіх операцій ({count}). Самі операції лишаться.",
+    emptyTitle: "Поки немає тегів",
+    emptyDescription: "Додай тег у деталях операції, і він зʼявиться тут.",
+  },
   // Сторінка «Аналітика» Фініка.
   analyticsPage: {
     planPrefix: "План відкласти",

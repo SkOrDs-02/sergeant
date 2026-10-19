@@ -23,6 +23,7 @@ import { useToast } from "@shared/hooks/useToast";
 import { ConfirmDialog } from "@shared/components/ui/ConfirmDialog";
 import { formatMoney } from "@sergeant/shared";
 import type { TxSplit } from "@sergeant/finyk-domain/domain/types";
+import { manualLinkKey } from "@sergeant/finyk-domain/domain/debtLinkKeys";
 import { showUndoToast } from "@shared/lib/ui/undoToast";
 import { tryShowCrossModulePrompt } from "@shared/lib/modules/crossModulePrompt";
 import { openHubModuleWithAction } from "@shared/lib/modules/hubNav";
@@ -554,6 +555,17 @@ export default function App({
           }
           txSplits={storage.txSplits}
           onSplitChange={handleManualSplitChange}
+          tags={
+            editingManualExpenseId
+              ? storage.txTags[manualLinkKey(editingManualExpenseId)]
+              : undefined
+          }
+          knownTags={storage.tagList}
+          onTagsChange={(next) => {
+            if (editingManualExpenseId) {
+              storage.setTxTags(manualLinkKey(editingManualExpenseId), next);
+            }
+          }}
           manualDebts={storage.manualDebts}
           setManualDebts={storage.setManualDebts}
           setLinkedTxRole={storage.setLinkedTxRole}

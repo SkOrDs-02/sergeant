@@ -81,6 +81,8 @@ import {
 } from "./ManualExpenseAccountSection";
 import { manualLinkKey } from "@sergeant/finyk-domain/domain/debtLinkKeys";
 import { DebtTxLinkSection } from "./DebtTxLinkSection";
+import { TxTagsField } from "./TxTagsField";
+import type { TagSummary } from "@sergeant/finyk-domain/domain/tags";
 import { decideManualDebtLink } from "./manualDebtLink";
 
 // Re-exported for backward-compat with existing importers / tests.
@@ -163,6 +165,10 @@ interface ManualExpenseSheetProps {
    * наявну ручну.
    */
   txSplits?: TxSplitsMap | undefined;
+  /** Теги збереженого запису (Р6.2): лише в режимі редагування. */
+  tags?: readonly string[] | undefined;
+  knownTags?: readonly TagSummary[] | undefined;
+  onTagsChange?: ((tags: readonly string[]) => void) | undefined;
   /** Той самий сетер, що й у деталях банківської операції. Без нього
    * секція чека не рендериться. */
   onSplitChange?: ((id: string, splits: TxSplit[] | null) => void) | undefined;
@@ -202,6 +208,9 @@ export function ManualExpenseSheet({
   receiptId = null,
   txSplits,
   onSplitChange,
+  tags,
+  knownTags,
+  onTagsChange,
   manualDebts,
   setManualDebts,
   setLinkedTxRole,
@@ -727,6 +736,14 @@ export function ManualExpenseSheet({
             onSplitChange={onSplitChange}
             customCategories={customCategories}
             existingSplitsCount={(txSplits?.[expenseId] ?? []).length}
+          />
+        )}
+
+        {isEditing && onTagsChange && (
+          <TxTagsField
+            tags={tags ?? []}
+            known={knownTags ?? []}
+            onChange={onTagsChange}
           />
         )}
 

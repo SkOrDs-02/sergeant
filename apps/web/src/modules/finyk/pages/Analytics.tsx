@@ -10,8 +10,12 @@ import {
   periodOf,
   type AnalyticsPeriod,
 } from "@sergeant/finyk-domain/domain/analyticsPeriod";
-import { AccountBars, CategoryBars } from "../components/charts/lazy";
+import { AccountBars, CategoryBars, TagBars } from "../components/charts/lazy";
 import { filterByAccountKey } from "@sergeant/finyk-domain/domain/accountBreakdown";
+import {
+  filterByTagKey,
+  type TxTagsMap,
+} from "@sergeant/finyk-domain/domain/tags";
 import { ChartFallback } from "../components/charts/ChartFallback";
 import { AnalyticsSection as Section } from "../components/analytics/AnalyticsSection";
 import { AnalyticsSummary } from "../components/analytics/AnalyticsSummary";
@@ -63,6 +67,8 @@ export interface AnalyticsProps {
     customCategories?: Category[];
     /** Фінплан: план накопичень ставиться поруч із фактом (Р15). */
     monthlyPlan?: { savings?: string | number };
+    /** Теги операцій для блоку «За тегами» і фільтра (Р6.4). */
+    txTags?: TxTagsMap;
   };
   /**
    * Дрил-даун із кільця категорій у список операцій. Саме він робить
@@ -77,6 +83,8 @@ export interface AnalyticsProps {
    */
   showBalance?: boolean;
 }
+
+const NO_TAGS: TxTagsMap = {};
 
 export function Analytics({
   mono,
@@ -135,14 +143,25 @@ export function Analytics({
 
   // Фільтр «За рахунками» (Р4.2) звужує всі блоки нижче, крім самого
   // розрізу і помісячного тренду (той читає всю історію з дзеркала).
+  // Фільтр тегу (Р6.4) діє поверх рахунку; блок тегів бачить усі теги рахунку.
   const [accountFilter, setAccountFilter] = useState<string | null>(null);
-  const activeTx = useMemo(
+  const [tagFilter, setTagFilter] = useState<string | null>(null);
+  const txTags = storage.txTags ?? NO_TAGS;
+  const accountTx = useMemo(
     () => filterByAccountKey(allActiveTx, accountFilter),
     [allActiveTx, accountFilter],
   );
-  const prevTx = useMemo(
+  const accountPrevTx = useMemo(
     () => filterByAccountKey(allPrevTx, accountFilter),
     [allPrevTx, accountFilter],
+  );
+  const activeTx = useMemo(
+    () => filterByTagKey(accountTx, txTags, tagFilter),
+    [accountTx, txTags, tagFilter],
+  );
+  const prevTx = useMemo(
+    () => filterByTagKey(accountPrevTx, txTags, tagFilter),
+    [accountPrevTx, txTags, tagFilter],
   );
 
   const analyticsMono = useMemo(
@@ -356,6 +375,18 @@ export function Analytics({
               onSelect={setAccountFilter}
               showBalance={showBalance}
               title={messages.finyk.cashOnHand.analyticsTitle}
+            />
+            <TagBars
+              transactions={accountTx}
+              previousTransactions={
+                prevLoaded && !historyGap ? accountPrevTx : null
+              }
+              txTags={txTags}
+              excludedTxIds={storage.excludedTxIds}
+              txSplits={storage.txSplits}
+              selected={tagFilter}
+              onSelect={setTagFilter}
+              showBalance={showBalance}
             />
           </Suspense>
         )}

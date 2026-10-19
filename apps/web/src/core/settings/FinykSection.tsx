@@ -15,6 +15,8 @@ import type { Budget } from "@sergeant/finyk-domain/domain/types";
 import type { MerchantRule } from "@sergeant/finyk-domain/lib/merchantRules";
 import { CollectionManager } from "@shared/components/ui/CollectionManager";
 import { FinykMerchantRulesSection } from "./FinykMerchantRulesSection";
+import { FinykTagsSection } from "./FinykTagsSection";
+import type { TagSummary } from "@sergeant/finyk-domain/domain/tags";
 import { FinykPrivatBankSection } from "./FinykPrivatBankSection";
 import { FinykWebhookServiceSection } from "./FinykWebhookServiceSection";
 import { SilpoIntegrationSection } from "./SilpoIntegrationSection";
@@ -73,6 +75,10 @@ interface FinykStorageShape {
   // тестах секції їх не дає.
   showBalance?: boolean | undefined;
   setShowBalance?: ((next: boolean) => void) | undefined;
+  // Теги операцій (Р6.6); необовʼязкові з тієї ж причини: мок хука в тестах.
+  tagList?: readonly TagSummary[] | undefined;
+  renameTag?: ((key: string, newLabel: string) => void) | undefined;
+  removeTag?: ((key: string) => void) | undefined;
 }
 
 const NO_MERCHANT_RULES: readonly MerchantRule[] = [];
@@ -92,6 +98,9 @@ export function FinykSection() {
     restoreMerchantRules,
     showBalance = true,
     setShowBalance,
+    tagList,
+    renameTag,
+    removeTag,
   } = useFinykStorage({}) as FinykStorageShape;
   const [newCategoryLabel, setNewCategoryLabel] = useState("");
   const [newCategoryKind, setNewCategoryKind] = useState<"expense" | "income">(
@@ -281,6 +290,14 @@ export function FinykSection() {
           deleteMerchantRule={deleteMerchantRule}
           restoreMerchantRules={restoreMerchantRules}
         />
+
+        {tagList && renameTag && removeTag && (
+          <FinykTagsSection
+            tags={tagList}
+            renameTag={renameTag}
+            removeTag={removeTag}
+          />
+        )}
 
         <FinykWebhookServiceSection inView={inView} />
         <SilpoIntegrationSection

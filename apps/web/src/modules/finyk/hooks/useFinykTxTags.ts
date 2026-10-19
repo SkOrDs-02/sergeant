@@ -27,6 +27,11 @@ export interface FinykTxTagsApi {
   removeTag: (key: string) => void;
 }
 
+/** Зріз для поверхонь, що лише читають і ставлять теги (Операції, аркуш). */
+export type FinykTxTagsSlice = Partial<
+  Pick<FinykTxTagsApi, "txTags" | "tagList" | "setTxTags" | "addTagToTxs">
+>;
+
 export function useFinykTxTags(
   slots: Pick<FinykStorageSlots, "txTags" | "setTxTags">,
 ): FinykTxTagsApi {

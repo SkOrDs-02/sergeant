@@ -26,6 +26,12 @@ interface CategoryBarsProps {
   onSelectCategory?: (categoryId: string) => void;
   /** «Приховати суми» (PR-F3): суми маскуються, частки й бари лишаються. */
   showBalance?: boolean;
+  /**
+   * Рядки перекриваються (теги, Р6.4): частка рахується від витрат періоду,
+   * а не від суми рядків, і рядка «Інше» немає, бо його сума була б
+   * подвійним обліком.
+   */
+  overlapTotal?: number | undefined;
 }
 
 const TOP_N = 5;
@@ -56,6 +62,7 @@ function CategoryBarsComponent({
   className,
   onSelectCategory,
   showBalance = true,
+  overlapTotal,
 }: CategoryBarsProps) {
   const [showAll, setShowAll] = useState(false);
   // `spent` у гривнях, `prevMinor` у копійках.
@@ -63,7 +70,7 @@ function CategoryBarsComponent({
     previous?.map((r) => [r.categoryId, r.prevMinor / 100]) ?? [],
   );
   const sorted = [...data].sort((a, b) => b.spent - a.spent);
-  const total = sorted.reduce((s, d) => s + d.spent, 0);
+  const total = overlapTotal ?? sorted.reduce((s, d) => s + d.spent, 0);
   if (sorted.length === 0 || total === 0) return null;
 
   const hasOverflow = sorted.length > TOP_N;
@@ -71,15 +78,17 @@ function CategoryBarsComponent({
   const rows =
     showAll || !hasOverflow
       ? sorted
-      : [
-          ...sorted.slice(0, TOP_N),
-          {
-            categoryId: "_other",
-            label: "Інше",
-            spent: otherSpent,
-            color: chartHex.neutral,
-          },
-        ];
+      : overlapTotal !== undefined
+        ? sorted.slice(0, TOP_N)
+        : [
+            ...sorted.slice(0, TOP_N),
+            {
+              categoryId: "_other",
+              label: "Інше",
+              spent: otherSpent,
+              color: chartHex.neutral,
+            },
+          ];
   const max = Math.max(
     ...rows.map((r) => Math.max(r.spent, prevBy.get(r.categoryId) ?? 0)),
   );
