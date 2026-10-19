@@ -7,12 +7,81 @@
 
 | PR  | Зміст                                          | Стан      | Позиції інвентарю |
 | --- | ---------------------------------------------- | --------- | ----------------- |
-| PR1 | Шапка й перемикач модулів                      | у роботі  | В1, В2, В3        |
-| PR2 | Примітиви станів (Choice, text, шеврон, Input) | не почато | -                 |
+| PR1 | Шапка й перемикач модулів                      | злито     | В1, В2, В3        |
+| PR2 | Примітиви станів (Choice, text, шеврон, Input) | у роботі  | А6, Б1, Г1-Г3     |
 | PR3 | Фінік і кольори категорій                      | не почато | -                 |
 | PR4 | Їжа                                            | не почато | -                 |
 | PR5 | Рутина й Фізрук                                | не почато | -                 |
 | PR6 | Хаб, Налаштування, копі, фінальне знімання     | не почато | -                 |
+
+## PR2 · стан
+
+**Де зупинився:** код PR2 і храповик закомічено (`7d26dde2b`..`1247aba73`), правки за ревʼю design-reviewer закомічено (`edb5b4c2e`, `92fc87ff3`, `1423ece71`, § Правки за ревʼю), кадри «після» перезняті. Відкрито: повний `web test` (хук `guard-heavy-commands` блокує локально, вердикт з CI), лінт `@sergeant/server` у цьому worktree (скоупований install, див. нижче), рішення власника щодо межі поля (відхилення 1). Далі: PR відкриває координатор. Worktree `D:\Sergeant\.claude\worktrees\agent-a03d9777472fcaf8a`, гілка `claude/redesign-v3-1-pr2`.
+
+## PR2 · примітиви станів
+
+### Що зроблено
+
+- `Button variant="text"`: тихий третій рівень, чорнило 15 / 600 (`text-style-body font-semibold`), без рамки й заливки, зона 44 px у пікселях, hover `bg-panel`; тон і модуль ігноруються, як у `ghost`. Рядок у таблиці `04-components.md`.
+- Новий `shared/components/ui/Choice.tsx` (`ChoiceGroup`): варіанти `tiles` (панель, радіус 8, `size="sm"` радіус 6) і `rows` (hairline, обраний рядок заливкою на всю ширину, радіус 8, опційний опис). Обране `bg-text text-bg`, без hue й обводу. Семантика `radiogroup` + `radio`, `aria-checked`, roving tabindex, стрілки по колу з пропуском вимкнених, Home / End. Тести (12) і stories. Модулі не переводились.
+- `CollapsibleSection`: текст «Розгорнути» / «Згорнути» знято, стан показує наявний `MorphChevron` (16 px, `text-subtle`, поворот 90°, `motion-safe`, тепер `duration-fast` = 150 мс), `aria-expanded` лишився.
+- `Input` / `Textarea` / `Select`: `md` 48 px, радіус 8, фокус обводом 2 px чорнилом (межа `border-text` + `inset-ring-text`) без зовнішнього кільця, помилка 13 px текстом небезпеки (`text-style-label`), підпис 14 / 500 другим сірим. `Select` втратив проп `accent` (hue модуля в контролах знято; єдиний call-site у `LogPastWorkoutSheet`). `Label` у `FormField` бере той самий клас підпису, невживаний `caps` / `capsLabel` видалено.
+- Храповик: метрики `nativeChoice`, `textStateLabel`, `capsFormLabel` (рецепт у шапці скрипта, 8 break-тестів, зокрема звірка `STATE_LABEL_KEYS` з каталогом). Baseline 13 / 47 / 2 записано руками, бо `--update` лише знижує; `handRolledFocusRing` 157 → 146 і `cyrillicJsxAllowlist` 297 → 296 опущено `--update`.
+
+### Закриті позиції інвентарю
+
+- **А6** поле вводу з попередньої мови: `Input` / `Select` на мові H.
+- **Б1** тихого рівня немає: `variant="text"` є; переведення дій у модулях у PR3-PR6.
+- **Г1-Г3** текст стану розгортання: примітив `CollapsibleSection` на шевроні; модульні тексти рахує `textStateLabel` і знімуть PR3-PR6.
+
+### Верифікація
+
+Прогони 2026-10-19 на `1247aba73`.
+
+| Команда                                                  | Код | Ключове число                                                                                                |
+| -------------------------------------------------------- | --- | ------------------------------------------------------------------------------------------------------------ |
+| `pnpm --filter @sergeant/design-tokens test`             | 0   | -                                                                                                            |
+| `pnpm --filter @sergeant/web typecheck`                  | 0   | -                                                                                                            |
+| `pnpm lint`                                              | 134 | OOM у `@sergeant/server#lint`; повтор з 4 ГБ heap: код 1, 954 помилки «Tsconfig not found @sergeant/config»  |
+| ланцюжок `pnpm lint` з `turbo run lint --filter=!server` | 0   | 16/16 задач, усі `node --test` fail 0                                                                        |
+| `node scripts/check-ui-canon-ratchet.mjs`                | 0   | нативних виборів 13, текстових станів 47, капс-підписів 2, фокус-рамок 146                                   |
+| `node --test scripts/__tests__/check-ui-canon-ratchet…`  | 0   | 49 / 49                                                                                                      |
+| `pnpm design:check-md`                                   | 0   | -                                                                                                            |
+| `pnpm lint:specs`                                        | 0   | -                                                                                                            |
+| `pnpm --filter @sergeant/web build`                      | 0   | `inset-ring` і `inset-ring-text` є в CSS білду                                                               |
+| `size-limit` JS                                          | 1   | 1,52 MB, на 13,54 kB над старою стелею 1,51 MB, під новою 1,55 MB (окремий PR власника)                      |
+| `size-limit` CSS                                         | 0   | 32 kB із 40                                                                                                  |
+| `vitest run src/shared/components/ui src/styles`         | 0   | 88 файлів, 1 175 тестів                                                                                      |
+| `vitest` 10 тек call-site-ів примітивів                  | 1   | 86 файлів, 1 018 passed; 4 помилки «Failed to start forks worker» (навантаження), ці 4 файли окремо: 24 / 24 |
+| `pnpm --filter @sergeant/web test`                       | -   | не запущено: хук `guard-heavy-commands` блокує повний прогін на слабкому залізі, вердикт з CI                |
+
+Лінт сервера: install у worktree скоупований (`--filter @sergeant/web...`), тож `@sergeant/config` для сервера не злінковано; PR2 сервер не чіпає. Кадри (сценарій `__shots__` поза репо, 390×844, `VITE_E2E_SEED=true`, база `1dac4008b` і гілка): `finyk-expense-form`, `finyk-expense-form-end`, `finyk-budgets`, `nutrition-meal-search`, `routine-new-habit`, світла й темна, 10 + 10, Playwright exit 0 обидва рази. Видно поля 48 px, сірі підписи, фокус чорнилом; модульні вибори (радіо, teal-день) лишаються до PR3-PR5.
+
+### Відхилення від спеки
+
+1. **Межа поля `border-control`, а не `border-strong`.** Спека § Підписи полів: «обвід 1 px `border-strong`». Але `border-strong` (#c9c9c5 / #343b45) дає ~1,6:1 проти панелі, а межа поля за WCAG 1.4.11 мусить мати 3:1 (аудит контрасту 2026-10-01, A8; `--c-control` заведено саме для цього, гейт `theme.controlFocus.test.ts`). Межу не мінено; рішення за власником.
+2. **`useTablistArrowKeys` не існує.** Спека велить брати стрілки «за наявним `useTablistArrowKeys`», але хук видалено в #1536 (`217b029c1`). Клавіатуру `ChoiceGroup` написано в самому компоненті за патерном radiogroup.
+3. **Baseline не через `--update`.** Скрипт на відсутній ключ падає, а `--update` лише знижує, тож стартові числа нових метрик вписано руками з абзацом у `rationale`, як велить шапка скрипта.
+4. **Checkbox мультивибору.** Шість із 13 `nativeChoice` - checkbox мультивибору (Їжа, Налаштування); `ChoiceGroup` має лише одиничний вибір. Щоб PR6 вийшов у нуль, потрібен або режим мультивибору, або allowlist із причиною.
+
+### Правки за ревʼю (design-reviewer)
+
+1. **Помилка й фокус чорнилом разом** (`edb5b4c2e`). tailwind-merge 2.x не знає групи `inset-ring-*`, тож при `error` лишались і `inset-ring-text`, і `inset-ring-danger`. Тепер `fieldFocus(error)` у `Input.tsx` обирає один набір, а набір помилки має власну базу `focus-visible:inset-ring`. Тести `Input`, `Textarea`, `Select` перевіряють відсутність `inset-ring-text` і `focus-visible:border-text` при помилці.
+2. **HC-контракт фокусу поля** (`edb5b4c2e`). Загальне HC-правило `theme.css` розширювало лише `--tw-ring-shadow`. Поля з `focus-visible:inset-ring` тепер виключені з нього (інакше зʼявлялось би зовнішнє кільце), а нове правило поза `@layer` дає їхньому внутрішньому кільцю `--focus-ring-width` у трьох HC-скоупах. Пін у `theme.focusRingHc.test.ts`.
+3. **`variant="text"` 44 px завширшки** (`92fc87ff3`): `min-w-[44px]` поруч із `min-h-[44px]`.
+4. **`capsFormLabel` ловить `<Label>`** (`1423ece71`), break-тест; baseline лишився 2, у коді `<Label>` з капсом немає.
+5. **Спека** `redesign-v3-1.md` § Підписи полів: `border-strong` замінено на `border-control` з причиною й позначкою «рішення ревʼю PR2, підтвердження за власником».
+6. **Необрана плитка `ChoiceGroup` на панелі** (`92fc87ff3`): межа `border-control`; в обраної межа `border-text`, тобто кольору заливки.
+7. **Одна кнопка `CollapsibleSection`** (`92fc87ff3`). Тест на збереження фокусу проходив і на старому коді (React перевикористовував `<button>` у тернарнику), але гарантія трималась на реконсиляції; тепер кнопка одна, класи й вміст умовні. `handRolledFocusRing` 146 → 145.
+
+| Команда                                                   | Код | Ключове число                                                     |
+| --------------------------------------------------------- | --- | ----------------------------------------------------------------- |
+| `tsc -p tsconfig.json --noEmit` (`apps/web`)              | 0   | -                                                                 |
+| `node scripts/check-ui-canon-ratchet.mjs`                 | 0   | 13 / 47 / 2, фокус-рамок 145                                      |
+| `node --test scripts/__tests__/check-ui-canon-ratchet…`   | 0   | 50 / 50                                                           |
+| `vitest` зачеплених файлів і `src/styles`, `maxWorkers=1` | 0   | 17 файлів, 520 тестів                                             |
+| `VITE_E2E_SEED=true vite build` (для кадрів)              | 0   | `pnpm build` блокує хук `guard-heavy-commands`, тож лише цей білд |
+| кадри «після», 5 маршрутів × 2 теми                       | 0   | 10 passed, перезаписано в scratchpad `v31-pr2/after`              |
 
 ## PR1 · стан
 

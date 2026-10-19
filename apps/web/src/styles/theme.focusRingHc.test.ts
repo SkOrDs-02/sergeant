@@ -168,3 +168,35 @@ describe("focus-ring: HC-ширина доходить і до рукописн�
     expect(decl).not.toMatch(/0 0 0\s+\d+px/);
   });
 });
+
+describe("focus-ring: HC-ширина доходить до внутрішнього кільця полів (v3.1)", () => {
+  // Поля мовою H фокусуються `focus-visible:inset-ring`, а не `ring-*`, тож
+  // правило вище їх не розширювало б і додало б зовнішнє кільце.
+  const RULE =
+    /--tw-inset-ring-shadow:\s*inset 0 0 0 var\(--focus-ring-width\)/;
+  const FIELD = String.raw`\.focus-visible\\:inset-ring:focus-visible`;
+
+  it("правило існує, одне й поза `@layer`", () => {
+    expect(code).toMatch(RULE);
+    expect([...code.matchAll(new RegExp(RULE, "g"))]).toHaveLength(1);
+    expect(layerDepthAt(code.search(RULE))).toBe(0);
+  });
+
+  it("покриті всі три HC-скоупи", () => {
+    for (const scope of [
+      String.raw`html\.hc`,
+      String.raw`\[data-theme-preview="hc-light"\]`,
+      String.raw`\[data-theme-preview="hc-dark"\]`,
+    ]) {
+      expect(code).toMatch(new RegExp(scope + String.raw`\s+` + FIELD));
+    }
+  });
+
+  it("загальне HC-правило поля виключає, інакше поле отримало б зовнішнє кільце", () => {
+    const at = code.search(/--tw-ring-shadow:\s*var\(--tw-ring-inset,\s*\)/);
+    const head = code.slice(code.lastIndexOf("}", at) + 1, at);
+    expect([
+      ...head.matchAll(/:not\(\s*\.focus-visible\\:inset-ring\s*\)/g),
+    ]).toHaveLength(3);
+  });
+});
