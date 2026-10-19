@@ -77,10 +77,11 @@ export type PantryEventSource =
 /**
  * Один рядок `nutrition_pantry_events` у доменній формі (camelCase).
  *
- * `itemId` нестабільний за конструкцією — клієнт формує його як
- * `${pantryId}::${index}::${name}`, тож перейменування чи зсув у масиві
- * породжує НОВИЙ id. Саме тому згортка ключується на `itemKey`
- * (`canonicalFoodKey(name)`), а `itemId` лишається довідковим.
+ * `itemId` — стабільний `PantryItem.id` (з 2026-10-10, data-40; до того був
+ * позиційним `${pantryId}::${index}::${name}`, і події старих рядків його
+ * ще несуть). Згортка все одно ключується на `itemKey`
+ * (`canonicalFoodKey(name)`): перейменування позиції не повинно рвати її
+ * історію, а `itemId` лишається довідковим.
  */
 export interface PantryEvent {
   readonly id: string;

@@ -346,6 +346,9 @@ export async function refreshNutritionSqliteState(
   for (const row of pantryItemRows) {
     const arr = itemsByPantry.get(row.pantry_id) ?? [];
     arr.push({
+      // data-40: id рядка і є стабільний id позиції; без нього запис назад
+      // перейменовував би рядок на позиційний id (див. extractPantrySnapshots).
+      id: row.id,
       name: row.name ?? "",
       qty: row.qty ?? null,
       unit: row.unit ?? null,
