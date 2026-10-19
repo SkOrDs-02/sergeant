@@ -1,6 +1,6 @@
 # Playbook: Bump Dependency Safely
 
-> **Last touched:** 2026-10-08 by @claude. **Next review:** 2027-01-30.
+> **Last touched:** 2026-10-19 by @claude. **Next review:** 2027-02-10.
 > **Status:** Active
 > **Runtime-specific:** no
 

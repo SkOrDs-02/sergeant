@@ -1,4 +1,4 @@
--- Migration 154: runtime-роль `sergeant_app` без суперправ і без BYPASSRLS.
+-- Migration 157: runtime-роль `sergeant_app` без суперправ і без BYPASSRLS.
 --
 -- Навіщо. Спека `docs/work/specs/rls-ai-tables-and-isolation-gate.md`
 -- (знахідка 2026-10-02): прод ходить у Postgres роллю `postgres`
