@@ -5,8 +5,8 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 // Тут перевіряємо саме те, що міст передає в нього: `prev → next` від
 // КАНОНІЧНОГО кешу (data-08), а не від порожнього kv.
 const mirror = vi.hoisted(() => ({
-  mirrorFinykChatDualWrite: vi.fn(async () => {}),
-  mirrorFinykChatMonthlyPlan: vi.fn(async () => {}),
+  mirrorFinykChatDualWrite: vi.fn(async () => true),
+  mirrorFinykChatMonthlyPlan: vi.fn(async () => true),
 }));
 vi.mock("../../../../modules/finyk/lib/sqliteWriter/chatBridge", () => mirror);
 
@@ -17,6 +17,7 @@ import {
 } from "../../../../modules/finyk/lib/sqliteReader";
 import { diffFinykDualWriteOps } from "../../../../modules/finyk/lib/sqliteWriter/diff";
 import { finykChatWrite } from "./dualWriteBridge";
+import { captureChatWrites } from "../chatWrites";
 import { markDebtPaid } from "./debts";
 import { setBudgetLimit, setMonthlyPlan } from "./budgets";
 
@@ -55,7 +56,7 @@ describe("finykChatWrite: prev береться з кешу SQLite", () => {
   it("видалення елемента емітить delete, хоча kv порожній", () => {
     seedFinykCache({ manualDebts: [uiDebt] });
     // kv порожній: UI його не пише. Раніше prev=[] → delete не емітився.
-    finykChatWrite("finyk_debts", []);
+    void finykChatWrite("finyk_debts", []);
     expect(lastSliceDiff()).toEqual([
       expect.objectContaining({ kind: "blob-delete", id: "d_ui" }),
     ]);
@@ -63,7 +64,7 @@ describe("finykChatWrite: prev береться з кешу SQLite", () => {
 
   it("додавання не чіпає решту рядків із кешу (лише один upsert)", () => {
     seedFinykCache({ manualDebts: [uiDebt] });
-    finykChatWrite("finyk_debts", [uiDebt, { ...uiDebt, id: "d_new" }]);
+    void finykChatWrite("finyk_debts", [uiDebt, { ...uiDebt, id: "d_new" }]);
     expect(lastSliceDiff()).toEqual([
       expect.objectContaining({
         kind: "blob-upsert",
@@ -102,7 +103,7 @@ describe("finykChatWrite: prev береться з кешу SQLite", () => {
   });
 
   it("холодний кеш не патчиться (нічого оптимістично вигадувати)", () => {
-    finykChatWrite("finyk_debts", [uiDebt]);
+    void finykChatWrite("finyk_debts", [uiDebt]);
     expect(getCachedFinykSqliteState().refreshedAt).toBeNull();
     expect(getCachedFinykSqliteState().manualDebts).toEqual([]);
   });
@@ -184,5 +185,38 @@ describe("mark_debt_paid поверх боргу з UI (наскрізно че�
         table: "finyk_manual_expenses",
       }),
     );
+  });
+});
+
+// rel-16: міст віддає підтвердження запису і реєструє його в збирачі батча.
+describe("finykChatWrite: підтвердження довговічності (rel-16)", () => {
+  it("віддає результат дзеркала (true і false) для слайсів і місячного плану", async () => {
+    seedFinykCache({ manualDebts: [uiDebt] });
+    await expect(finykChatWrite("finyk_debts", [])).resolves.toBe(true);
+
+    mirror.mirrorFinykChatDualWrite.mockResolvedValueOnce(false);
+    await expect(finykChatWrite("finyk_debts", [uiDebt])).resolves.toBe(false);
+
+    mirror.mirrorFinykChatMonthlyPlan.mockResolvedValueOnce(false);
+    await expect(
+      finykChatWrite("finyk_monthly_plan", { income: "1" }),
+    ).resolves.toBe(false);
+  });
+
+  it("ключ поза dual-write-контрактом лишається LS-only і віддає true", async () => {
+    await expect(finykChatWrite("finyk_unknown_key", { a: 1 })).resolves.toBe(
+      true,
+    );
+    expect(mirror.mirrorFinykChatDualWrite).not.toHaveBeenCalled();
+  });
+
+  it("у межах батча запис потрапляє в збирач", async () => {
+    seedFinykCache({ manualDebts: [uiDebt] });
+    mirror.mirrorFinykChatDualWrite.mockResolvedValueOnce(false);
+    const { writes } = captureChatWrites(() => {
+      void finykChatWrite("finyk_debts", []);
+    });
+    expect(writes).toHaveLength(1);
+    await expect(writes[0]).resolves.toBe(false);
   });
 });

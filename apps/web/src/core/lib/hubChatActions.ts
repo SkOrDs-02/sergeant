@@ -11,9 +11,10 @@ import {
   handleAsyncChatAction,
   ASYNC_CHAT_ACTION_NAMES,
 } from "./chatActions/serverActions";
-import { captureRoutineWrites } from "./chatActions/routinePersistence";
+import { captureChatWrites, combineChatWrites } from "./chatActions/chatWrites";
 import {
   hasPendingNutritionDualWrites,
+  nutritionDualWriteFailedRuns,
   nutritionDualWriteIdle,
 } from "../../modules/nutrition/lib/sqliteWriter/index";
 import type { ChatActionResult } from "./chatActions/types";
@@ -277,13 +278,31 @@ export async function executeActions(
       );
       continue;
     }
-    const { value: out } = captureRoutineWrites(() => dispatch(action));
+    const nutritionFailedBefore = nutritionDualWriteFailedRuns();
+    const { value: dispatched, writes } = captureChatWrites(() =>
+      dispatch(action),
+    );
+    // Підтвердження довговічності: що дія зареєструвала в збирачі (Фінік через
+    // `finykChatWrite`, Рутина через `persistRoutineState`) + власний `confirm`
+    // хендлера. `settle()` дочікується їх і замінює «створено» на відмову.
+    const confirms = [...writes];
+    if (dispatched.confirm) confirms.push(dispatched.confirm);
     // Мутація Їжі лишила запис у черзі dual-write → дочекатися, поки кеш його
     // побачить, і лише тоді віддати керування наступній дії батча. Очікування
     // обмежене: завислий SQLite не має вішати весь хід чату.
-    if (hasPendingNutritionDualWrites() && !(await waitNutritionIdle())) {
-      nutritionStalled = true;
+    if (hasPendingNutritionDualWrites()) {
+      if (!(await waitNutritionIdle())) {
+        nutritionStalled = true;
+      } else if (nutritionDualWriteFailedRuns() > nutritionFailedBefore) {
+        // Черга спорожніла, але запуск не записав у SQLite («sqlite
+        // недоступна» тощо): це не успіх.
+        confirms.push(Promise.resolve(false));
+      }
     }
+    const out: ExecutedAction & { ok: boolean } =
+      confirms.length > 0
+        ? { ...dispatched, confirm: combineChatWrites(confirms) }
+        : dispatched;
     pending.push(settle(action.name, out, out.ok).then(withLatency));
   }
   return Promise.all(pending);

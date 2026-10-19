@@ -1062,7 +1062,7 @@ Push пішов: routine_entries.insert …:2026-10-02; після reload: «1/1
 
 ### `rel-16` [medium] Дії HubChat у Фініку, Харчуванні й Фізруку рапортують «записано», навіть коли запис нікуди не ліг
 
-- **Стан:** відкрито
+- **Стан:** частково виправлено в гілці claude/fix-rel-16-hubchat-honest-writes (лишилось: `add_program_day` пише мертвий ключ `fizruk_plan_template_v1`, `set_goal` пише `hub_goals_v1` без читача; рішення власника 2026-10-19: прибрати `add_program_day`, звузити `set_goal` до денних ккал, виконується окремим PR, бо чіпає серверні tool defs і кеш префікса. Фінік і Харчування вже не рапортують успіх без запису: `confirm` збирається в `executeActions`. Запис, що після відмови все ж долетить, повтор користувача може задублювати)
 - **Перевірка:** підтверджено · **Зусилля:** M · **Область:** web: HubChat action executors
 - **Де:** apps/web/src/core/lib/hubChatActions.ts:86-117; apps/web/src/modules/finyk/lib/sqliteWriter/chatBridge.ts:71-87,130-131,148-149; apps/web/src/core/lib/chatActions/fizrukActions/programs.ts:33-41; apps/web/src/core/lib/chatActions/crossActions/goalAndUtility.ts:151-198
 - **Першопричина:** settle() чекає на durability лише коли хендлер повертає confirm, а повертає його тільки Рутина. Finyk chatBridge мовчки виходить, якщо dual-write runtime ще не зареєстрований: без буфера й без журналу. add_program_day пише в deprecated-ключ fizruk_plan_template_v1, а set_goal — у hub_goals_v1, і жоден з цих ключів ніхто не читає.

@@ -23,7 +23,11 @@ import {
   __setFinykSqliteStateCacheForTests,
   clearFinykSqliteCache,
 } from "../sqliteReader";
-import { mirrorFinykChatMonthlyPlan } from "./chatBridge";
+import {
+  mirrorFinykChatDualWrite,
+  mirrorFinykChatMonthlyPlan,
+} from "./chatBridge";
+import { blobsFromArray, stateWithSlice } from "./extract";
 
 beforeEach(() => {
   vi.clearAllMocks();
@@ -85,5 +89,48 @@ describe("mirrorFinykChatMonthlyPlan (data-08)", () => {
       JSON.stringify({ income: "1" }),
     );
     expect(hoisted.applyFinykDualWriteOps).not.toHaveBeenCalled();
+  });
+});
+
+// rel-16: міст віддає чесне «ліг у SQLite», а не тихий no-op.
+describe("підтвердження запису (rel-16)", () => {
+  const debtsDiff = () =>
+    [
+      stateWithSlice("debts", blobsFromArray([])),
+      stateWithSlice("debts", blobsFromArray([{ id: "d1", name: "Борг" }])),
+    ] as const;
+
+  it("false, коли dual-write runtime не зареєстровано", async () => {
+    hoisted.getFinykDualWriteRuntime.mockReturnValue(null);
+    await expect(mirrorFinykChatDualWrite(...debtsDiff())).resolves.toBe(false);
+    await expect(
+      mirrorFinykChatMonthlyPlan(JSON.stringify({ income: "2" }), "{}"),
+    ).resolves.toBe(false);
+    expect(hoisted.applyFinykDualWriteOps).not.toHaveBeenCalled();
+  });
+
+  it("false, коли SQLite-клієнт недоступний", async () => {
+    hoisted.getFinykDualWriteRuntime.mockReturnValue({
+      userId: "u1",
+      getMigrationClient: async () => null,
+      getNow: () => "2026-10-01T00:00:00.000Z",
+    });
+    await expect(mirrorFinykChatDualWrite(...debtsDiff())).resolves.toBe(false);
+  });
+
+  it("false, коли apply кинув або повернув errored > 0", async () => {
+    hoisted.applyFinykDualWriteOps.mockRejectedValueOnce(new Error("boom"));
+    await expect(mirrorFinykChatDualWrite(...debtsDiff())).resolves.toBe(false);
+    hoisted.applyFinykDualWriteOps.mockResolvedValueOnce({
+      applied: 0,
+      errored: 1,
+    } as never);
+    await expect(mirrorFinykChatDualWrite(...debtsDiff())).resolves.toBe(false);
+  });
+
+  it("true після вдалого apply і для порожнього diff", async () => {
+    await expect(mirrorFinykChatDualWrite(...debtsDiff())).resolves.toBe(true);
+    const same = stateWithSlice("debts", blobsFromArray([]));
+    await expect(mirrorFinykChatDualWrite(same, same)).resolves.toBe(true);
   });
 });

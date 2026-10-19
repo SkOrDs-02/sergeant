@@ -29,6 +29,7 @@ import {
 } from "./diff.js";
 import { probeNutritionParity } from "./parity.js";
 import {
+  isDualWriteOutcomeClean,
   journalDualWrite,
   pendingDualWrites,
   settleDualWriteEntry,
@@ -280,6 +281,18 @@ let pendingBeforeRegistration: {
 let inFlightRuns = 0;
 
 /**
+ * Скільки запусків черги завершились БЕЗ запису в SQLite («sqlite недоступна»,
+ * немає userId, `errored > 0`). Порожній diff (`no-ops`) сюди не входить: там
+ * нічого було писати. Лічильник монотонний: викликач знімає значення ДО дії й
+ * порівнює ПІСЛЯ `nutritionDualWriteIdle()` (rel-16, чесний рапорт HubChat).
+ */
+let failedRuns = 0;
+
+export function nutritionDualWriteFailedRuns(): number {
+  return failedRuns;
+}
+
+/**
  * `true`, поки є запис, чий результат ще не потрапив у кеш: буферизований до
  * реєстрації контексту або в черзі. `nutritionStorage` тримає «останній
  * записаний prefs» саме на цей час (data-04).
@@ -409,6 +422,12 @@ function enqueueNutritionRun(
       const outboxSettled = outboxCheckpoint();
       const outcome = await runNutritionOps(ctx, ops, clientTs, next);
       recordDualWriteOutcome("nutrition", outcome);
+      if (
+        !isDualWriteOutcomeClean(outcome) &&
+        !(outcome.status === "skipped" && outcome.reason === "no-ops")
+      ) {
+        failedRuns += 1;
+      }
       // «sqlite недоступна» лишає запис у журналі для наступного буту.
       // Рядок outbox, що ще не ліг, теж лишає запис (див. outboxCheckpoint).
       // Чекаємо поза чергою: завислий outbox не має гальмувати наступні записи.

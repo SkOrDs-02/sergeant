@@ -44,6 +44,22 @@ vi.mock("../../modules/routine/lib/routineStorage", () => ({
   saveRoutineStateDurable: vi.fn(() => Promise.resolve(true)),
 }));
 
+import {
+  __setFinykSqliteStateCacheForTests,
+  clearFinykSqliteCache,
+} from "../../modules/finyk/lib/sqliteReader";
+import {
+  __clearFinykDualWriteContextForTests,
+  registerFinykDualWriteContext,
+} from "../../modules/finyk/lib/sqliteWriter";
+// SQLite-шар Фініка не потрібен: тест про чесність рапорту, не про apply.
+const finykApply = vi.hoisted(() => ({
+  fn: vi.fn(async () => ({ applied: 1, errored: 0, skipped: 0 })),
+}));
+vi.mock("../../modules/finyk/lib/sqliteWriter/adapter", () => ({
+  applyFinykDualWriteOps: finykApply.fn,
+}));
+
 import { executeActions } from "./hubChatActions";
 
 describe("executeActions — довговічність routine-write-тулів", () => {
@@ -82,5 +98,72 @@ describe("executeActions — довговічність routine-write-тулів
       { name: "habit_stats", input: { habit_id: "hab-1" } } as never,
     ]);
     expect(out?.result).not.toContain("Не вдалося зберегти");
+  });
+});
+
+// rel-16: Фінік рапортував «створено», коли dual-write runtime ще не
+// зареєстровано (chatBridge мовчки `return`-ив). Кеш при цьому прогрітий, тож
+// екзекутор писав в LS і оптимістично патчив кеш, а в SQLite нічого не лягало.
+describe("executeActions — довговічність finyk-write-тулів (rel-16)", () => {
+  beforeEach(() => {
+    clearFinykSqliteCache();
+    __clearFinykDualWriteContextForTests();
+    __setFinykSqliteStateCacheForTests({});
+  });
+
+  const createDebt = {
+    name: "create_debt",
+    input: { name: "Оренда", amount: 5000 },
+  } as never;
+
+  it("без зареєстрованого runtime create_debt НЕ рапортує «створено»", async () => {
+    const [out] = await executeActions([createDebt]);
+    expect(out?.ok).toBe(false);
+    expect(out?.result).toContain("Не вдалося зберегти");
+    expect(out?.result).not.toContain("Оренда");
+    expect(out?.undo).toBeUndefined();
+  });
+
+  it("із зареєстрованим runtime, який приймає запис, рапортує успіх", async () => {
+    finykApply.fn.mockClear();
+    const unregister = registerFinykDualWriteContext({
+      getUserId: () => "u1",
+      getMigrationClient: async () => ({}) as never,
+      getNow: () => "2026-10-01T00:00:00.000Z",
+    });
+    try {
+      const [out] = await executeActions([createDebt]);
+      expect(out?.ok).toBe(true);
+      expect(out?.result).toContain("Оренда");
+      expect(finykApply.fn).toHaveBeenCalledTimes(1);
+    } finally {
+      unregister();
+    }
+  });
+});
+
+describe("executeActions — finyk apply провалився (rel-16)", () => {
+  it("errored > 0 від apply -> відмова, а не «створено»", async () => {
+    clearFinykSqliteCache();
+    __clearFinykDualWriteContextForTests();
+    __setFinykSqliteStateCacheForTests({});
+    finykApply.fn.mockResolvedValueOnce({ applied: 0, errored: 1, skipped: 0 });
+    const unregister = registerFinykDualWriteContext({
+      getUserId: () => "u1",
+      getMigrationClient: async () => ({}) as never,
+      getNow: () => "2026-10-01T00:00:00.000Z",
+    });
+    try {
+      const [out] = await executeActions([
+        {
+          name: "create_debt",
+          input: { name: "Оренда", amount: 5000 },
+        } as never,
+      ]);
+      expect(out?.ok).toBe(false);
+      expect(out?.result).toContain("Не вдалося зберегти");
+    } finally {
+      unregister();
+    }
   });
 });

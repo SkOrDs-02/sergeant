@@ -322,7 +322,11 @@ export function handleNutritionAction(
       } else {
         next[idx] = { ...pantry, items: items.filter((_, i) => i !== itemIdx) };
       }
-      persistPantries(undefined, undefined, next, activeId);
+      // rel-16: `false` = комору ще не гідровано, запис відхилено; без цього
+      // рядка нижче «прибрано з комори» рапортувалось би без запису.
+      if (!persistPantries(undefined, undefined, next, activeId)) {
+        return NUTRITION_STILL_LOADING;
+      }
 
       // Дельта — рівно те, що фактично зникло з `qty`, а не те, що попросили:
       // якщо просили більше за наявне, журнал має записати наявне. Без
@@ -360,12 +364,16 @@ export function handleNutritionAction(
         return "Комора і так порожня.";
       }
 
-      persistPantries(
-        undefined,
-        undefined,
-        pantries.map((p) => ({ ...p, items: [] })),
-        null,
-      );
+      if (
+        !persistPantries(
+          undefined,
+          undefined,
+          pantries.map((p) => ({ ...p, items: [] })),
+          null,
+        )
+      ) {
+        return NUTRITION_STILL_LOADING;
+      }
 
       // Подія на позицію — `adjust` з `absQty: 0`, а не `consume` з дельтою.
       // Чекпойнт каже «тепер нуль» і не потребує знати попередній залишок:
