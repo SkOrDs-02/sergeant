@@ -34,15 +34,23 @@
  * Deliberately **out of scope** (see PR notes — owner decision):
  *   - the per-user OPFS SQLite DB file → handled by `wipeSqliteDb()` in
  *     `AuthContext.logout`; other users' files stay isolated by filename;
- *   - the `kvvfs-*` `localStorage` keys backing the sqlite-wasm `kvvfs`
- *     fallback (Safari < 17 / iOS < 16.4) → also handled by `wipeSqliteDb()`,
- *     which runs a row-level `DELETE ... WHERE user_id = ?` scoped to the
- *     signed-out user's own rows instead of a wholesale key-removal. `kvvfs`
- *     is a single physical store shared by every partition on the device (no
- *     per-user filename, unlike OPFS), so blindly deleting every `kvvfs-*`
- *     key here would erase the anonymous visitor's rows too — see
- *     `docs/work/specs/anonymous-local-first-persistence.md`
+ *   - the `kvvfs-*` `localStorage` keys of the legacy sqlite-wasm `kvvfs`
+ *     store (before the OPFS migration it was the primary store). Since
+ *     stage 2 of `docs/work/specs/sqlite-opfs-worker.md` this store is
+ *     deliberately left untouched: `wipeSqliteDb()` runs its row-level
+ *     `DELETE ... WHERE user_id = ?` ONLY when the open connection is
+ *     `kvvfs` (after the hand-off it is OPFS, which merely unlinks the
+ *     user's file), so the kvvfs rows are NOT erased on logout. The store
+ *     waits for stage 3 (removal after confirmed outbox delivery, owner
+ *     decision, audit priv-17). It is a single physical store shared by every
+ *     partition, so a blind key-removal here would also erase the anonymous
+ *     visitor's rows and the only copy of undelivered `sync_op_outbox` ops —
+ *     see `docs/work/specs/anonymous-local-first-persistence.md`
  *     § «Відомий залишковий ризик»;
+ *   - the OPFS hand-off markers `sergeant.storage.opfsHandoff.*` (see
+ *     {@link PRESERVED_LS_PREFIXES}): they match the `sergeant.` prefix but
+ *     must survive logout, otherwise the legacy kvvfs snapshot is imported
+ *     again and the kvvfs branch is reopened after a worker crash;
  *   - the nutrition food/barcode catalogue IndexedDB stores (a product cache
  *     plus user-added foods with no server copy), the meal photo thumbnail
  *     store (`nutrition_meal_thumbs`: Blobs exist only on this device, the
@@ -69,8 +77,9 @@ import { resetKvStoreBoot } from "../../../core/db/kvStoreBoot";
  * Finyk prefix still drained by `storageManager`.
  *
  * `kvvfs-` (the sqlite-wasm `JsStorageDb("local")` backing store) is
- * intentionally NOT in this list — see the "Deliberately out of scope"
- * note in the module doc comment above.
+ * intentionally NOT in this list, and `sergeant.storage.opfsHandoff.` is
+ * excluded from the purge via {@link PRESERVED_LS_PREFIXES} — see the
+ * "Deliberately out of scope" note in the module doc comment above.
  */
 const APP_OWNED_LS_PREFIXES = [
   "hub_",
@@ -84,6 +93,18 @@ const APP_OWNED_LS_PREFIXES = [
   "sync_origin_device_id",
   "sergeant.",
 ] as const;
+
+/**
+ * `localStorage` prefixes that match {@link APP_OWNED_LS_PREFIXES} but must
+ * survive a purge (priv-17). `sergeant.storage.opfsHandoff.v1.<userKey>` marks
+ * a partition as already handed off from the legacy kvvfs store to OPFS; its
+ * value is the constant `"done"` (no user data). Wiping it on logout makes
+ * `needsHandoff` true again and re-imports the whole kvvfs snapshot, and the
+ * `!isHandoffDone` check reopens the dead kvvfs store after a worker failure.
+ * Literal mirrors `MARKER_PREFIX` in `core/db/kvvfsHandoff.ts` (importing it
+ * would pull the sqlite layer into this module; a pin test keeps them equal).
+ */
+const PRESERVED_LS_PREFIXES = ["sergeant.storage.opfsHandoff."] as const;
 
 /**
  * Exact app-owned keys: every literal in the central registry plus the two
@@ -114,6 +135,8 @@ export function purgeAppOwnedLocalStorage(): number {
   let removed = 0;
   // Snapshot keys first — removing while iterating a live keyspace is unsafe.
   for (const key of [...store.listKeys()]) {
+    if (PRESERVED_LS_PREFIXES.some((prefix) => key.startsWith(prefix)))
+      continue;
     if (isAppOwnedLocalStorageKey(key)) {
       store.remove(key);
       removed += 1;
