@@ -1,6 +1,6 @@
 # Редизайн v3: журнал виконання
 
-> **Last touched:** 2026-10-18 by @claude (спеку закрито, § Закриття спеки; #1522 merged); 2026-10-18 by @codex (#1519 merged; порожні стани в [#1522](https://github.com/SkOrDs-02/sergeant/pull/1522); прибирання підтвердженого застарілого коду лишається окремим наступним PR; native заморожений власником). **Next review:** 2026-11-09.
+> **Last touched:** 2026-10-19 by @codex (cleanup підтвердженого застарілого web-коду готується в `claude/redesign-v3-cleanup`; #1522 merged; native заморожений власником). **Next review:** 2026-11-09.
 > **Status:** Active
 
 Журнал виконання спеки [`redesign-v3.md`](./redesign-v3.md), PR за PR. Сесія, що бере наступний PR, читає цей файл першим: усе, чого немає в спеці, але треба знати далі, записано тут.
@@ -21,7 +21,8 @@
 | PR7               | `claude/redesign-v3-pr7`             | [#1508](https://github.com/SkOrDs-02/sergeant/pull/1508) | merged | 24, 25, 32, 33; пʼять v3 baseline = 0                              |
 | Review fix        | `claude/redesign-v3-review-fixes`    | [#1510](https://github.com/SkOrDs-02/sergeant/pull/1510) | merged | Повторне приймання 1–37; регресії п. 7, 9, 18–29, 34–37            |
 | Content hierarchy | `claude/redesign-v3-content-groups`  | [#1511](https://github.com/SkOrDs-02/sergeant/pull/1511) | merged | Погоджене доповнення 02+03 до 18–22 і спільних web-примітивів      |
-| Empty states      | `claude/empty-states-refresh`        | [#1522](https://github.com/SkOrDs-02/sergeant/pull/1522) | active | Погоджений post-spec канон first-run станів у чотирьох web-модулях |
+| Empty states      | `claude/empty-states-refresh`        | [#1522](https://github.com/SkOrDs-02/sergeant/pull/1522) | merged | Погоджений post-spec канон first-run станів у чотирьох web-модулях |
+| Cleanup           | `claude/redesign-v3-cleanup`         | буде додано після створення draft                        | active | Підтверджені post-spec знахідки застарілого web-коду               |
 
 ## Поправка власника 2026-10-10: швидка дія (PR4b, після мержу PR4, перед PR5)
 
@@ -1323,3 +1324,15 @@ Types-final, root-lint-final, format-final, build-final, size-final, eager-final
 **Відхилення й межі.** Каталожні рішення redesign v3 не переглядались. Дані, синхронізація, формули, сховища та mobile не змінені. Підтверджені знахідки мертвого або застарілого коду свідомо не змішуються з цим UI PR; власник попросив прибрати їх окремо після мержу цього PR.
 
 **Наступній сесії:** #1522 змерджено. Взяти окремий cleanup лише підтверджених знахідок застарілого коду; не додавати до нього нові візуальні рішення без запиту власника.
+
+## Follow-up · 2026-10-18: cleanup застарілого web-коду
+
+**Гілка:** `claude/redesign-v3-cleanup`, від актуального `origin/main` `4994c625d`. **PR:** буде додано після створення draft. Це окремий cleanup після змердженого #1522, без нової позиції каталогу § 2 і без зміни вигляду чи поведінки продукту. Native заморожений і не змінюється.
+
+**Що прибрано.** Видалено недосяжний legacy web-onboarding: старий wizard, goal-first A/B, його приватні події, локальне сховище вибору й тести цієї гілки. Чинний first-run лишається у `WelcomeScreen` та `WelcomeModulePicker`. Видалено невикористані `useMonoTransactions`, web-дублікат `pulseStyle`, UI-примітиви `CounterReveal`, `HeroValueLine`, `KpiRowCompact`, hook `useTablistArrowKeys` і похідний `routes.ts` із тавтологічними тестами. Маршрути тепер напряму використовують `STANDALONE_ROUTE_PATHS`; канонічний розрахунок стану Фініка лишається у `@sergeant/finyk-domain`. Документацію, коментарі та PostHog manifest приведено до фактичних власників. `apps/landing/scripts/generate-icons.mjs` перевірено і збережено як документований ручний генератор; його додано до entry Knip.
+
+**Аудит і перевірка.** `pnpm knip`: exit 0. `pnpm dead-code:files`: exit 0, `No unmarked unused files`. `pnpm lint:test-orphans`: exit 0, 2475 тестових файлів без сиріт. Focused web Vitest: 11 файлів, 118 passed, exit 0. Focused shared onboarding/analytics Vitest: 8 файлів, 106 passed, exit 0. Pre-rebase root `pnpm check` на `eae005b19`: exit 0; 35/35 test tasks, web 1372 файли і 14133 passed / 5 skipped, production build 4/4, E2E seed boundary passed. Перший merge-state `pnpm check` на `ef8f77166`: exit 1 у lint, бо новий `CashAmountForm` із #1532 приніс `Button variant="finyk"` і підняв `legacyButton` з 0 до 1. Локальна канонічна заміна пройшла повторний gate: exit 0; 35/35 test/typecheck tasks, web 1379 файлів і 14181 passed / 5 skipped, production build 4/4, E2E seed boundary passed. Поки gate виконувався, ту саму причину окремо виправив і змерджив #1533. Cleanup перенесено на `4994c625d`, локальну зміну `CashAmountForm` прибрано; гілка бере актуальний main-канон `variant="solid" tone="ink"`. Фінальний root `pnpm check` на `4994c625d`: exit 0; 35/35 test/typecheck tasks, web 1379 файлів і 14181 passed / 5 skipped, server 450 файлів і 6706 passed / 5 skipped / 11 todo, production build 4/4, E2E seed boundary passed.
+
+**Межі.** Не змінено rendered UI, копі, маршрути користувача, дані, формули, синхронізацію, API, схеми чи mobile. Канонічна форма кнопки з merge-state дає той самий class string, що й legacy alias. Скріншоти не потрібні, бо rendered output не змінюється. Залишено свідомі entry/barrel/test-support файли, які імпорт-граф позначає як корені або інфраструктуру; cleanup не перетворюється на видалення робочих scaffold-поверхонь.
+
+**Наступній сесії:** якщо cleanup PR OPEN, перевірити лише actual-head CI й виправити червоне. Після мержу cleanup завершений; нову роботу брати лише за окремим дорученням власника.

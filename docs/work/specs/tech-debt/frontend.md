@@ -240,7 +240,8 @@ targets)` у `ci.yml`; сам status check у branch protection вмикаєть
 > Нові leakers (раніше у doc не трекалися, тепер додані до таблиці §4):
 > `core/auth/AuthPage.tsx` (694), `modules/fizruk/lib/dualWrite/adapter.ts` (641).
 > `core/onboarding/OnboardingWizard.tsx` (691) декомпозовано в цьому ж циклі
-> (див. лог нижче). Початково запланований carry-over
+> (див. лог нижче), а недосяжну legacy web-гілку остаточно прибрано 2026-10-18.
+> Початково запланований carry-over
 > з Initiative 0001: `RoutineCalendarPanel.tsx` декомпоновано 2026-05-22 (`useCompletionNoteDrafts` extraction, 645 → 589 effective LOC); `FinykApp.tsx` тримається у raw>600 але <600 effective, monitor-only.
 > Розділ 9 (`any` типи) — таблиця з 10 файлів **повністю закрита**
 > (Phase 5a finyk-pages [#1452](https://github.com/Skords-01/Sergeant/pull/1452) + закриття
@@ -1412,7 +1413,7 @@ Codemod ідемпотентний: повторний запуск дасть `
 >
 > `core/App.tsx` (раніше 645 рядків) декомпозовано на
 > `core/App.tsx` (224 — outer provider tree + AppInner shell), `app/appPaths.ts`
-> (52 — URL constants + `KNOWN_PATHS`), `app/RedirectTo.tsx` (14),
+> (52 — URL constants і path-based module helpers), `app/RedirectTo.tsx` (14),
 > `app/useAppEffects.ts` (153 — idle-prefetch / SW message / cloud-pull /
 > hub-bus / `HUB_OPEN_MODULE_EVENT` listeners), `app/StandaloneRoutes.tsx`
 > (181 — `/sign-in`, `/reset-password`, `/profile`, `/design`, `/pricing`,

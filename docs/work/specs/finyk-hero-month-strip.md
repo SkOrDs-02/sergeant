@@ -42,7 +42,7 @@ Hero Фініка стає **стрічкою місяця**: ряд кліти�
 
   Так `MonthStrip` дістає один тип для обох режимів і не має гілки під `null`. `useOverviewData.test.ts` — кейси з планом / без плану (`todayRemaining === null`) / перший день / перебір 120% / **`dayBudget === 0` і `dayBudget < 0`** (ratio скінченний, `over120 === true` при ненульових витратах).
 
-- `apps/web/src/modules/finyk/pages/overview/HeroCard.tsx` — головне число за рішенням 2, стрічка (`MonthStrip.tsx` новий + `MonthStrip.test.tsx`), футер із витратами місяця і відсотком плану; `HeroCard.test.tsx` оновити. `pulseStyle.ts` (`statusText`, колір стану) — лишити, статус-текст переїжджає під число.
+- `apps/web/src/modules/finyk/pages/overview/HeroCard.tsx` — головне число за рішенням 2, стрічка (`MonthStrip.tsx` новий + `MonthStrip.test.tsx`), футер із витратами місяця і відсотком плану; `HeroCard.test.tsx` оновити. Статус рахує `computePulseStyle` з `@sergeant/finyk-domain`.
 - `apps/web/src/modules/finyk/pages/overview/OverviewTextRows.tsx` (новий) — два текстові рядки з рішення 3 + тест; приймає ті самі пропи, що мали `TodaySummaryCard`/`MonthPulseCard`.
 - `apps/web/src/modules/finyk/pages/Overview.tsx` — прибрати `<TodaySummaryCard>` і `<MonthPulseCard>`, додати `<OverviewTextRows>` одразу під `<HeroCard>` (до `FinykInsightsBlock`).
 - Видалити: `TodaySummaryCard.tsx` + `.test.tsx`, `MonthPulseCard.tsx` + `.test.tsx` (перед видаленням `grep -rn` по монорепо; `messages.finyk.todaySummary.*` — прибрати невикористані ключі, `openAria`/`operations` перевикористати для лінка рядка 1).
