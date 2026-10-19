@@ -432,7 +432,7 @@ describe("Analytics page", () => {
   it("renders the comparison section when a prior month has data", async () => {
     const now = Math.floor(KYIV.getTime() / 1000);
     // May 2026 timestamp (prev month)
-    const mayTs = Math.floor(new Date("2026-05-10T09:00:00Z").getTime() / 1000);
+    const mayTs = Math.floor(new Date("2026-05-01T09:00:00Z").getTime() / 1000);
     const fetchMonth = vi.fn().mockResolvedValue([mkTx("prev", -30000, mayTs)]);
     await act(async () => {
       render(
@@ -456,7 +456,7 @@ describe("Analytics page", () => {
   // masking is covered separately in `CategoryBars.test.tsx`.
   it("masks Summary, Comparison, and Merchant amounts when showBalance=false", async () => {
     const now = Math.floor(KYIV.getTime() / 1000);
-    const mayTs = Math.floor(new Date("2026-05-10T09:00:00Z").getTime() / 1000);
+    const mayTs = Math.floor(new Date("2026-05-01T09:00:00Z").getTime() / 1000);
     const fetchMonth = vi.fn().mockResolvedValue([mkTx("prev", -30000, mayTs)]);
     await act(async () => {
       render(
@@ -479,7 +479,7 @@ describe("Analytics page", () => {
 
   it("shows real Summary/Comparison/Merchant amounts when showBalance=true (default)", async () => {
     const now = Math.floor(KYIV.getTime() / 1000);
-    const mayTs = Math.floor(new Date("2026-05-10T09:00:00Z").getTime() / 1000);
+    const mayTs = Math.floor(new Date("2026-05-01T09:00:00Z").getTime() / 1000);
     const fetchMonth = vi.fn().mockResolvedValue([mkTx("prev", -30000, mayTs)]);
     await act(async () => {
       render(
@@ -502,7 +502,7 @@ describe("Analytics page", () => {
   // абсолютну дельту, відсутній місяць — чесний рядок.
   it("shows an absolute delta instead of a percent when the prior month is under 10% of this one", async () => {
     const now = Math.floor(KYIV.getTime() / 1000);
-    const mayTs = Math.floor(new Date("2026-05-10T09:00:00Z").getTime() / 1000);
+    const mayTs = Math.floor(new Date("2026-05-01T09:00:00Z").getTime() / 1000);
     // 75 ₴ у травні проти 2 593 ₴ у червні.
     const fetchMonth = vi.fn().mockResolvedValue([mkTx("prev", -7_500, mayTs)]);
     await act(async () => {
@@ -528,7 +528,7 @@ describe("Analytics page", () => {
   // власника 2026-10-01): обидві суми вже в сусідніх колонках.
   it("lists category deltas against the previous month", async () => {
     const now = Math.floor(KYIV.getTime() / 1000);
-    const mayTs = Math.floor(new Date("2026-05-10T09:00:00Z").getTime() / 1000);
+    const mayTs = Math.floor(new Date("2026-05-01T09:00:00Z").getTime() / 1000);
     const fetchMonth = vi
       .fn()
       .mockResolvedValue([mkTx("prev", -20_000, mayTs)]);
@@ -570,7 +570,7 @@ describe("Analytics page", () => {
 
   // План фінплану діє лише на поточний місяць.
   it("does not compare the current savings plan against a past month", async () => {
-    const mayTs = Math.floor(new Date("2026-05-10T09:00:00Z").getTime() / 1000);
+    const mayTs = Math.floor(new Date("2026-05-01T09:00:00Z").getTime() / 1000);
     const fetchMonth = vi
       .fn()
       .mockResolvedValue([
@@ -604,8 +604,135 @@ describe("Analytics page", () => {
       );
     });
     await waitFor(() => {
-      expect(screen.getByText("Немає з чим порівняти")).toBeInTheDocument();
+      expect(screen.getByText(/^Немає з чим порівняти/)).toBeInTheDocument();
     });
     expect(screen.queryByText(/%/)).not.toBeInTheDocument();
+  });
+
+  // ── Періоди (спека finyk-analytics-v3, Р5) ────────────────────────────
+
+  async function choosePeriod(kind: string) {
+    await act(async () => {
+      fireEvent.click(screen.getByRole("button", { name: /Обрати період/ }));
+    });
+    await act(async () => {
+      fireEvent.click(screen.getByText(kind));
+    });
+  }
+
+  it("каже, з якої дати є дані, коли база порівняння неповна (Р5.5)", async () => {
+    const now = Math.floor(KYIV.getTime() / 1000);
+    const mayTs = Math.floor(new Date("2026-05-12T09:00:00Z").getTime() / 1000);
+    const fetchMonth = vi.fn().mockResolvedValue([mkTx("prev", -30000, mayTs)]);
+    await act(async () => {
+      render(
+        <Analytics
+          mono={buildMono({ realTx: [mkTx("cur", -10000, now)], fetchMonth })}
+          storage={buildStorage()}
+        />,
+      );
+    });
+    expect(
+      await screen.findByText(
+        /^Немає з чим порівняти: дані лише з 12 травня 2026/,
+      ),
+    ).toBeInTheDocument();
+    // Ні відсотків, ні дельт категорій від обрізаної бази.
+    expect(screen.queryByRole("table")).not.toBeInTheDocument();
+    expect(screen.queryByText(/%/)).not.toBeInTheDocument();
+  });
+
+  it("рік без попереднього року показує чесний стан, а не 0 %", async () => {
+    const now = Math.floor(KYIV.getTime() / 1000);
+    const fetchMonth = vi.fn().mockResolvedValue([]);
+    await act(async () => {
+      render(
+        <Analytics
+          mono={buildMono({ realTx: [mkTx("cur", -10000, now)], fetchMonth })}
+          storage={buildStorage()}
+        />,
+      );
+    });
+    await choosePeriod("Рік");
+    expect(screen.getByText("Підсумок року")).toBeInTheDocument();
+    expect(screen.getByLabelText("Наступний рік")).toBeDisabled();
+    expect(
+      await screen.findByText(
+        /^Немає з чим порівняти: дані лише з 15 червня 2026/,
+      ),
+    ).toBeInTheDocument();
+    expect(screen.queryByText(/%/)).not.toBeInTheDocument();
+    // Порівняння поточного року йде тими ж днями торік: січень-червень 2025.
+    expect(fetchMonth).toHaveBeenCalledWith(2025, 0);
+    expect(fetchMonth).toHaveBeenCalledWith(2025, 5);
+    expect(fetchMonth).not.toHaveBeenCalledWith(2025, 6);
+  });
+
+  it("показує прогрес догрузки року замість мовчазно неповних сум", async () => {
+    const fetchMonth = vi.fn(() => new Promise<Transaction[]>(() => {}));
+    await act(async () => {
+      render(
+        <Analytics mono={buildMono({ fetchMonth })} storage={buildStorage()} />,
+      );
+    });
+    // На місяці догрузка коротка (2 місяці), рядка прогресу немає.
+    expect(screen.queryByText(/Завантажую історію/)).not.toBeInTheDocument();
+    await choosePeriod("Рік");
+    // Січень-червень 2026, січень-червень 2025 і грудень 2024; червень 2026
+    // поточний і приходить з `realTx`.
+    expect(screen.getByText(/Завантажую історію/)).toHaveTextContent(
+      "Завантажую історію: 1 з 13 місяців",
+    );
+  });
+
+  it("тиждень гортається тижнями і не йде в майбутнє", async () => {
+    await act(async () => {
+      render(<Analytics mono={buildMono()} storage={buildStorage()} />);
+    });
+    await choosePeriod("Тиждень");
+    expect(screen.getByText("Підсумок тижня")).toBeInTheDocument();
+    expect(screen.getByLabelText("Наступний тиждень")).toBeDisabled();
+    await act(async () => {
+      fireEvent.click(screen.getByLabelText("Попередній тиждень"));
+    });
+    expect(screen.getByLabelText("Наступний тиждень")).not.toBeDisabled();
+  });
+
+  it("діапазон 10 днів порівнюється з попередніми 10 днями", async () => {
+    const at = (iso: string) => Math.floor(new Date(iso).getTime() / 1000);
+    const fetchMonth = vi
+      .fn()
+      .mockResolvedValue([
+        mkTx("in", -20_000, at("2026-05-25T09:00:00Z")),
+        mkTx("before", -50_000, at("2026-05-15T09:00:00Z")),
+      ]);
+    await act(async () => {
+      render(
+        <Analytics
+          mono={buildMono({
+            realTx: [mkTx("cur", -30_000, at("2026-06-05T09:00:00Z"))],
+            fetchMonth,
+          })}
+          storage={buildStorage()}
+        />,
+      );
+    });
+    await choosePeriod("Діапазон");
+    fireEvent.change(screen.getByLabelText("Від"), {
+      target: { value: "2026-06-01" },
+    });
+    fireEvent.change(screen.getByLabelText("До"), {
+      target: { value: "2026-06-10" },
+    });
+    await act(async () => {
+      fireEvent.click(screen.getByRole("button", { name: "Показати" }));
+    });
+    expect(screen.getByText("Підсумок періоду")).toBeInTheDocument();
+    expect(
+      await screen.findByText("Порівняння з попереднім періодом"),
+    ).toBeInTheDocument();
+    // 22-31 травня: лише «in» (200 ₴); «before» від 15 травня поза вікном.
+    const table = await screen.findByRole("table");
+    expect(table).toHaveTextContent(/\+100/);
   });
 });
