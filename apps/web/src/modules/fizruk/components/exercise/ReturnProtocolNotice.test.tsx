@@ -54,4 +54,21 @@ describe("ReturnProtocolNotice", () => {
     expect(screen.getByText(/Повернення після позначки/)).toBeTruthy();
     expect(screen.getByText(flatMatch(/орієнтир: 90 кг/))).toBeTruthy();
   });
+
+  it("після паузи й однієї легкої сесії тримає знижений орієнтир і не каже «давно»", () => {
+    const aging = computeOneRmAging({
+      peak1rm: 100,
+      lastSessionAt: daysAgo(1),
+      sessions: [
+        { at: daysAgo(125), best1rm: 100 },
+        { at: daysAgo(1), best1rm: 55 },
+      ],
+      now: NOW,
+    });
+    render(<ReturnProtocolNotice aging={aging} />);
+    expect(screen.getByText(/Повертаєшся після перерви/)).toBeTruthy();
+    expect(screen.queryByText(/Рекорд застарів/)).toBeNull();
+    // Пауза >100 днів → підлога 75%, і на екрані 75 кг, а не пік 100.
+    expect(screen.getByText(flatMatch(/орієнтир: 75 кг/))).toBeTruthy();
+  });
 });

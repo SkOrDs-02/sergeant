@@ -25,6 +25,7 @@ import {
 import {
   REGRESSION_NOTICE_PCT,
   computeOneRmAging,
+  type OneRmSessionPoint,
 } from "@sergeant/fizruk-domain/domain";
 import { pluralize } from "../../../core/hub/useHubDashboardState";
 import { chartStatusSeries } from "@shared/charts";
@@ -126,13 +127,18 @@ export function Progress({ onNavigate }: ProgressProps) {
     // про СЬОГОДНІ: він міг бути півтора роки тому. Тому поруч тримаємо
     // останню силову сесію вправи і її результат.
     const latest: Record<string, { at: string; best1rm: number }> = {};
+    // Сесії вправи — для режиму повернення після паузи (`logic-04`): без них
+    // орієнтир на борді повертався б до піка після одного легкого підходу.
+    const sessionsByEx: Record<string, OneRmSessionPoint[]> = {};
     for (const w of workouts || []) {
       for (const it of w.items || []) {
         const exId = it.exerciseId;
         if (!exId || it.type !== "strength") continue;
+        let sessionBest = 0;
         for (const s of it.sets || []) {
           const est = epley1rm(s.weightKg, s.reps);
           if (!est) continue;
+          sessionBest = Math.max(sessionBest, est);
           if (!by[exId] || est > by[exId].best1rm)
             by[exId] = {
               best1rm: est,
@@ -148,6 +154,12 @@ export function Progress({ onNavigate }: ProgressProps) {
           } else if (at === prevLatest.at && est > prevLatest.best1rm) {
             prevLatest.best1rm = est;
           }
+        }
+        if (sessionBest > 0 && w.startedAt) {
+          (sessionsByEx[exId] ??= []).push({
+            at: w.startedAt,
+            best1rm: sessionBest,
+          });
         }
       }
     }
@@ -167,6 +179,7 @@ export function Progress({ onNavigate }: ProgressProps) {
         const aging = computeOneRmAging({
           peak1rm: v.best1rm,
           lastSessionAt: last?.at ?? null,
+          sessions: sessionsByEx[id],
         });
         const lastBest = last?.best1rm ?? 0;
         return {

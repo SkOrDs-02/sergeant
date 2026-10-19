@@ -7,8 +7,10 @@ import {
 import {
   INJURY_RETURN_FACTOR,
   INJURY_RETURN_WINDOW_DAYS,
+  RETURN_EXIT_RATIO,
   ONE_RM_DECAY_FLOOR,
   ONE_RM_STALE_AFTER_DAYS,
+  collectStrengthSessionPoints,
   computeOneRmAging,
   computeOneRmAgingForSummary,
 } from "./oneRmAging.js";
@@ -193,5 +195,143 @@ describe("computeExerciseBest — регрес і давність", () => {
     const aging = computeOneRmAgingForSummary(best, { now: NOW });
     expect(aging.isStale).toBe(true);
     expect(aging.daysSinceLastSession).toBe(40);
+  });
+});
+
+describe("computeOneRmAging — режим повернення тримається після паузи (logic-04)", () => {
+  // Пік 120×5 → e1RM 140 у травні; пауза 4 місяці (≈ 120 днів); далі сесії.
+  const PEAK_AT = daysAgo(125);
+  const peakWorkout = strengthWorkout("w_peak", PEAK_AT, [
+    { weightKg: 120, reps: 5 },
+  ]);
+
+  function agingFor(
+    comebackSets: ReadonlyArray<ReadonlyArray<[number, number]>>,
+  ) {
+    // comebackSets[i] — підходи i-ї сесії повернення; сесії йдуть щодня, остання — вчора.
+    const comeback = comebackSets.map((sets, i) =>
+      strengthWorkout(
+        `w_back_${i}`,
+        daysAgo(comebackSets.length - i),
+        sets.map(([weightKg, reps]) => ({ weightKg, reps })),
+      ),
+    );
+    const history = collectExerciseHistory([peakWorkout, ...comeback], "squat");
+    const best = computeExerciseBest(history);
+    return computeOneRmAgingForSummary(best, {
+      sessions: collectStrengthSessionPoints(history),
+      now: NOW,
+    });
+  }
+
+  it("пік 140, пауза 4 міс, одна сесія 60×8 → режим триває, орієнтир не 140", () => {
+    const aging = agingFor([[[60, 8]]]);
+    expect(aging.peak1rm).toBeCloseTo(140, 5);
+    expect(aging.isStale).toBe(false);
+    expect(aging.returnMode).toBe(true);
+    expect(aging.returnReason).toBe("layoff");
+    // Пауза ≈ 124 дні → 1 − (124−28)/7 × 0.025 < 0.75 → підлога 0.75 → 105.
+    expect(aging.reference1rm).toBeLessThanOrEqual(105 + 1e-9);
+    expect(aging.reference1rm).toBeCloseTo(105, 5);
+    expect(aging.reductionPct).toBe(25);
+  });
+
+  it("вихід з режиму: найкращий e1RM після паузи ≥ 90% зниженого піка", () => {
+    // Знижений пік 105 → поріг 94.5. 70×8 → 88.7 (ще режим), 85×6 → 102 (вихід).
+    expect(agingFor([[[70, 8]]]).returnMode).toBe(true);
+    const out = agingFor([[[70, 8]], [[85, 6]]]);
+    expect(out.returnMode).toBe(false);
+    expect(out.returnReason).toBeNull();
+    expect(out.reference1rm).toBeCloseTo(140, 5);
+  });
+
+  it("поріг виходу — саме RETURN_EXIT_RATIO від зниженого піка", () => {
+    expect(RETURN_EXIT_RATIO).toBe(0.9);
+    const history = (best1rm: number) => ({
+      peak1rm: 140,
+      lastSessionAt: daysAgo(1),
+      sessions: [
+        { at: daysAgo(125), best1rm: 140 },
+        { at: daysAgo(1), best1rm },
+      ],
+      now: NOW,
+    });
+    expect(computeOneRmAging(history(94.4)).returnMode).toBe(true);
+    expect(computeOneRmAging(history(94.5)).returnMode).toBe(false);
+  });
+
+  it("коефіцієнт рахується від довжини паузи, а не від давності останньої сесії", () => {
+    // Пауза рівно 28+14 днів → −5%; остання сесія вчора (давність ≈ 0).
+    const aging = computeOneRmAging({
+      peak1rm: 100,
+      lastSessionAt: daysAgo(1),
+      sessions: [
+        { at: daysAgo(1 + ONE_RM_STALE_AFTER_DAYS + 14), best1rm: 100 },
+        { at: daysAgo(1), best1rm: 50 },
+      ],
+      now: NOW,
+    });
+    expect(aging.returnMode).toBe(true);
+    expect(aging.reference1rm).toBeCloseTo(95, 5);
+  });
+
+  it("без паузи між сесіями (<28 днів) режим не вмикається", () => {
+    const aging = computeOneRmAging({
+      peak1rm: 100,
+      lastSessionAt: daysAgo(1),
+      sessions: [
+        { at: daysAgo(20), best1rm: 100 },
+        { at: daysAgo(1), best1rm: 40 },
+      ],
+      now: NOW,
+    });
+    expect(aging.returnMode).toBe(false);
+    expect(aging.reference1rm).toBe(100);
+  });
+
+  it("враховується лише ОСТАННЯ пауза: давня, вже відпрацьована, режим не вмикає", () => {
+    // Пауза 100 днів між -400 і -300, там же повернення на 60 (<90% від 75).
+    // Далі людина тренується кожні 20 днів (нових пауз немає) і виходить на 90+.
+    const sessions = [
+      { at: daysAgo(400), best1rm: 100 },
+      { at: daysAgo(300), best1rm: 60 },
+    ];
+    for (let d = 280; d >= 0; d -= 20) {
+      sessions.push({ at: daysAgo(d + 1), best1rm: 90 });
+    }
+    const aging = computeOneRmAging({
+      peak1rm: 100,
+      lastSessionAt: daysAgo(1),
+      sessions,
+      now: NOW,
+    });
+    expect(aging.returnMode).toBe(false);
+    expect(aging.reference1rm).toBe(100);
+  });
+
+  it("без sessions поведінка попередня: свіжа сесія режим не тримає", () => {
+    const aging = computeOneRmAging({
+      peak1rm: 140,
+      lastSessionAt: daysAgo(1),
+      now: NOW,
+    });
+    expect(aging.returnMode).toBe(false);
+    expect(aging.reference1rm).toBe(140);
+  });
+
+  it("травма суворіша за повернення після паузи — береться менший коефіцієнт", () => {
+    const aging = computeOneRmAging({
+      peak1rm: 100,
+      lastSessionAt: daysAgo(1),
+      injuryClearedAt: daysAgo(1),
+      sessions: [
+        { at: daysAgo(100), best1rm: 100 },
+        { at: daysAgo(1), best1rm: 50 },
+      ],
+      now: NOW,
+    });
+    // Пауза 99 днів → підлога 0.75, травма 0.9 → суворіший 0.75.
+    expect(aging.reference1rm).toBeCloseTo(75, 5);
+    expect(aging.returnReason).toBe("injury");
   });
 });
