@@ -97,6 +97,27 @@ const transferLikelySchema = z.boolean().optional();
  * вмикабельним — той самий UX-патерн, що `transferLikely`. */
 const duplicateLikelySchema = z.boolean().optional();
 
+/** Верхня межа `occurrenceIndex`: preview віддає до 10 000 рядків, тож
+ * індекс у групі однакових рядків не може бути більшим. Захист від
+ * патологічного клієнта, а не продуктове обмеження. */
+export const IMPORT_OCCURRENCE_INDEX_MAX = 10_000;
+
+/** 0-based порядковий номер рядка серед УСІХ рядків файлу/скріна, що мають
+ * ту саму групу (дата, сума, напрям, нормалізований опис) — тобто серед
+ * рядків превʼю, а не серед тих, які користувач вибрав до коміту (data-29).
+ * Сервер рахує його на превʼю тим самим `groupKey`, що будує id рядка
+ * (`rowKey.ts`), а клієнт повертає його в `commit` без змін.
+ *
+ * ОПЦІЙНЕ в обох напрямках (адитивний контракт): web і server деплояться
+ * окремо, тож старий сервер не віддає поле, а старий клієнт його не шле.
+ * Відсутнє поле на commit = сервер рахує індекс по тілу запиту, як раніше. */
+const occurrenceIndexSchema = z
+  .number()
+  .int()
+  .min(0)
+  .max(IMPORT_OCCURRENCE_INDEX_MAX)
+  .optional();
+
 /**
  * Категорія, яку сервер ЗДОГАДАВСЯ поставити рядку — з власної колонки
  * категорії банку, з MCC або з ключових слів опису
@@ -126,6 +147,7 @@ export const ImportScreenshotRowSchema = z.object({
   transferLikely: transferLikelySchema,
   duplicateLikely: duplicateLikelySchema,
   categoryHint: categoryHintSchema,
+  occurrenceIndex: occurrenceIndexSchema,
 });
 export type ImportScreenshotRow = z.infer<typeof ImportScreenshotRowSchema>;
 
@@ -262,6 +284,7 @@ export const ImportStatementRowSchema = z.object({
   transferLikely: transferLikelySchema,
   duplicateLikely: duplicateLikelySchema,
   categoryHint: categoryHintSchema,
+  occurrenceIndex: occurrenceIndexSchema,
 });
 export type ImportStatementRow = z.infer<typeof ImportStatementRowSchema>;
 
@@ -320,6 +343,9 @@ export const ImportCommitRowSchema = z
      * finyk (`manualIncomeCategories.ts`); сервер зберігає опаково,
      * так само як `ManualExpenseCreateSchema.category`. */
     category: z.string().min(1).max(120),
+    /** Індекс із превʼю (див. `occurrenceIndexSchema`). Є — сервер бере його
+     * в id рядка; немає — рахує по тілу запиту (старий клієнт). */
+    occurrenceIndex: occurrenceIndexSchema,
   })
   .strict();
 export type ImportCommitRow = z.infer<typeof ImportCommitRowSchema>;

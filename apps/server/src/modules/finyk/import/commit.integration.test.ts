@@ -36,6 +36,7 @@ import type { DedupMonoInput } from "./dedupMono.js";
 let testPool: pg.Pool;
 let findMonoMatchedRows: typeof import("./dedupMono.js").findMonoMatchedRows;
 let commitImportHandler: typeof import("./commit.js").default;
+let statementPreviewHandler: typeof import("./statementPreview.js").default;
 let dockerAvailable = false;
 
 const USER_A = "finyk_import_int_a";
@@ -53,6 +54,7 @@ beforeAll(async () => {
     }));
     findMonoMatchedRows = (await import("./dedupMono.js")).findMonoMatchedRows;
     commitImportHandler = (await import("./commit.js")).default;
+    statementPreviewHandler = (await import("./statementPreview.js")).default;
     dockerAvailable = true;
   } catch (err) {
     if (process.env["CI"]) throw err;
@@ -395,5 +397,130 @@ describe("finyk import commit - батч-дедуп на реальному Post
       [USER_A],
     );
     expect(Number(ops[0]!.n)).toBe(3 + 3);
+  });
+});
+
+/**
+ * data-29: превʼю → commit на реальному Postgres. Друга однакова покупка за
+ * день не губиться, коли клієнт (за замовчуванням) не шле першу, бо вона
+ * помічена `duplicateLikely`.
+ */
+describe("finyk import - occurrenceIndex з превʼю (data-29)", () => {
+  const MONO_HEADER =
+    "Дата i час операції,Деталі операції,МСС,Сума в валюті картки (UAH),Сума в валюті операції,Валюта операції,Курс обміну,Сума комісій (UAH),Сума кешбеку (UAH),Залишок після операції";
+  const COFFEE_MORNING =
+    "16.07.2026 09:10:00,Кава,5814,-95.00,-95.00,UAH,1,0.00,0.00,1000.00";
+  const COFFEE_EVENING =
+    "16.07.2026 18:10:00,Кава,5814,-95.00,-95.00,UAH,1,0.00,0.00,905.00";
+
+  interface PreviewRow {
+    date: string;
+    amountKopiykas: number;
+    direction: "expense" | "income";
+    description: string;
+    duplicateLikely?: boolean;
+    occurrenceIndex?: number;
+  }
+  interface CommitBody {
+    created: number;
+    skipped: { monoMatched: number; duplicate: number };
+    rows: Array<{ id: string; status: string }>;
+  }
+
+  async function preview(
+    userId: string,
+    lines: string[],
+  ): Promise<PreviewRow[]> {
+    const res = makeRes();
+    await statementPreviewHandler(
+      {
+        user: { id: userId },
+        body: { csv_text: [MONO_HEADER, ...lines].join("\n") },
+      } as unknown as Request,
+      res,
+    );
+    expect(res.statusCode).toBe(200);
+    return (res.body as { rows: PreviewRow[] }).rows;
+  }
+
+  async function commit(
+    userId: string,
+    rows: PreviewRow[],
+    { withIndex = true }: { withIndex?: boolean } = {},
+  ): Promise<CommitBody> {
+    const res = makeRes();
+    await commitImportHandler(
+      {
+        user: { id: userId },
+        body: {
+          source: "bank_statement",
+          rows: rows.map((r) => ({
+            date: r.date,
+            amountKopiykas: r.amountKopiykas,
+            direction: r.direction,
+            description: r.description,
+            category: "food",
+            ...(withIndex && r.occurrenceIndex !== undefined
+              ? { occurrenceIndex: r.occurrenceIndex }
+              : {}),
+          })),
+        },
+      } as unknown as Request,
+      res,
+    );
+    expect(res.statusCode).toBe(201);
+    return res.body as CommitBody;
+  }
+
+  async function liveCount(userId: string): Promise<number> {
+    const { rows } = await testPool.query<{ n: string }>(
+      `SELECT COUNT(*)::text AS n FROM finyk_manual_expenses
+        WHERE user_id = $1 AND deleted_at IS NULL`,
+      [userId],
+    );
+    return Number(rows[0]!.n);
+  }
+
+  it("друга кава, надіслана без першої (знята як duplicateLikely), створюється (created=1, у БД 2 рядки)", async () => {
+    if (!dockerAvailable) return;
+    // Виписка 1 обірвана посеред дня: лише ранкова кава.
+    const first = await commit(USER_A, await preview(USER_A, [COFFEE_MORNING]));
+    expect(first.created).toBe(1);
+
+    // Виписка 2: обидві кави. Перша збігається з уже збереженою.
+    const second = await preview(USER_A, [COFFEE_EVENING, COFFEE_MORNING]);
+    expect(second.map((r) => r.duplicateLikely)).toEqual([true, undefined]);
+    // Дефолт UI: рядок з duplicateLikely не вибраний, шлеться тільки другий.
+    const result = await commit(USER_A, [second[1]!]);
+
+    expect(result.created).toBe(1);
+    expect(result.skipped.duplicate).toBe(0);
+    expect(result.rows.map((r) => r.status)).toEqual(["created"]);
+    expect(await liveCount(USER_A)).toBe(2);
+  });
+
+  it("повторний commit того самого файлу цілком ідемпотентний (0 created)", async () => {
+    if (!dockerAvailable) return;
+    const lines = [COFFEE_MORNING, COFFEE_EVENING];
+    const rows = await preview(USER_A, lines);
+    const first = await commit(USER_A, rows);
+    expect(first.created).toBe(2);
+
+    const again = await commit(USER_A, await preview(USER_A, lines));
+    expect(again.created).toBe(0);
+    expect(again.skipped.duplicate).toBe(2);
+    expect(again.rows.map((r) => r.id)).toEqual(first.rows.map((r) => r.id));
+    expect(await liveCount(USER_A)).toBe(2);
+  });
+
+  it("старий клієнт без occurrenceIndex: файл цілком теж ідемпотентний", async () => {
+    if (!dockerAvailable) return;
+    const rows = await preview(USER_A, [COFFEE_MORNING, COFFEE_EVENING]);
+    const first = await commit(USER_A, rows, { withIndex: false });
+    expect(first.created).toBe(2);
+    const again = await commit(USER_A, rows, { withIndex: false });
+    expect(again.created).toBe(0);
+    expect(again.skipped.duplicate).toBe(2);
+    expect(await liveCount(USER_A)).toBe(2);
   });
 });
