@@ -53,7 +53,7 @@ export const PeriodNav = memo(function PeriodNav({
         onClick={() => setOpen(true)}
         className="min-h-[44px] min-w-0 px-3 rounded-lg flex items-center gap-1 text-style-label text-text hover:bg-line/40 transition-colors"
         aria-haspopup="dialog"
-        aria-label={`${formatAnalyticsPeriod(period, todayKey)}. ${copy.choosePeriod}`}
+        aria-label={`${copy.choosePeriod}: ${formatAnalyticsPeriod(period, todayKey)}`}
       >
         <span className="truncate">
           {formatAnalyticsPeriod(period, todayKey)}
