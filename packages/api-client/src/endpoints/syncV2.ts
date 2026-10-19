@@ -45,9 +45,13 @@ export interface SyncV2OpResult {
 /**
  * Серверна відповідь на `POST /api/v2/sync/push`. `last_op_id` —
  * максимальний `id` у `sync_op_log`, який торкнули цей push (включно з
- * idempotency-кешованими попадайнями). Клієнт може використовувати
- * його як cursor для подальшого `pull?since=<last_op_id>` без
- * додаткового round-trip-у.
+ * idempotency-кешованими попадайнями).
+ *
+ * НЕ використовуй `last_op_id` як курсор `pull?since=` (аудит data-12):
+ * між оп-ами цього push-а в журналі можуть стояти оп-и ІНШИХ пристроїв
+ * користувача з меншими `id`, і курсор за `last_op_id` пропустить їх
+ * назавжди. Курсор pull рухай лише за `next_cursor` / `max(op.id)` з
+ * відповіді самого `pull`.
  */
 export interface SyncV2PushResponse {
   accepted: number;

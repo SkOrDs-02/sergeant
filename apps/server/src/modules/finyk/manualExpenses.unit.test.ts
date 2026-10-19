@@ -349,12 +349,14 @@ describe("createManualExpense", () => {
       // clientTs = updated_at РЯДКА, не час запиту (докстрінг serverOpLog.ts).
       expect(tss[0]).toBe("2026-07-10T10:00:00.000Z");
 
-      // Порядок: BEGIN → INSERT рядка → INSERT оп → COMMIT.
+      // Порядок: BEGIN → user-lock sync_op_log (data-12) → INSERT рядка →
+      // INSERT оп → COMMIT.
       const order = clientCalls.map((c) =>
         c.sql.trim().split(/\s+/).slice(0, 3).join(" "),
       );
       expect(order).toEqual([
         "BEGIN",
+        "SELECT pg_advisory_xact_lock(hashtext('sync_op_log'), hashtext($1))",
         "INSERT INTO finyk_manual_expenses",
         "INSERT INTO sync_op_log",
         "COMMIT",
@@ -367,6 +369,10 @@ describe("createManualExpense", () => {
       client.query.mockImplementationOnce(async (sql: string) => {
         clientCalls.push({ sql, params: [] });
         return { rows: [] }; // BEGIN
+      });
+      client.query.mockImplementationOnce(async (sql: string) => {
+        clientCalls.push({ sql, params: [] });
+        return { rows: [] }; // user-lock sync_op_log (data-12)
       });
       client.query.mockImplementationOnce(
         async (sql: string, params: unknown[] = []) => {
