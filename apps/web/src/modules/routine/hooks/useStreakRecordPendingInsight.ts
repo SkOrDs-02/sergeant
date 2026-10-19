@@ -1,4 +1,5 @@
 import { useMemo } from "react";
+import { isFlexibleHabit } from "@sergeant/routine-domain";
 import { pluralDays } from "@sergeant/shared";
 import { flexibleMaxActiveStreak, maxStreakAllTime } from "../lib/streaks";
 import { useDeviceDayKey } from "@shared/hooks/useDeviceDayKey";
@@ -45,6 +46,10 @@ export function useStreakRecordPendingInsight(
     let best = 0;
     for (const h of routine.habits) {
       if (h.archived) continue;
+      // Гнучка звичка міряє `maxStreakAllTime` ТИЖНЯМИ, а `currentStreak`
+      // вище — дні, і гнучкі звички з нього виключені (logic-11): рекорд
+      // у тижнях порівнювався б із серією в днях.
+      if (isFlexibleHabit(h)) continue;
       best = Math.max(best, maxStreakAllTime(h, routine.completions[h.id]));
     }
     return best;
