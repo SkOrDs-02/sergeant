@@ -16,7 +16,7 @@
 
 ## PR2 · стан
 
-**Де зупинився:** код PR2 і храповик закомічено (`7d26dde2b`..`1247aba73`), верифікація пройдена (таблиця нижче), кадри до / після зняті. Відкрито: повний `web test` (хук `guard-heavy-commands` блокує локально, вердикт з CI), лінт `@sergeant/server` у цьому worktree (скоупований install, див. нижче), рішення власника щодо межі поля (відхилення 1). Далі: PR відкриває координатор. Worktree `D:\Sergeant\.claude\worktrees\agent-a03d9777472fcaf8a`, гілка `claude/redesign-v3-1-pr2`.
+**Де зупинився:** код PR2 і храповик закомічено (`7d26dde2b`..`1247aba73`), правки за ревʼю design-reviewer закомічено (`edb5b4c2e`, `92fc87ff3`, `1423ece71`, § Правки за ревʼю), кадри «після» перезняті. Відкрито: повний `web test` (хук `guard-heavy-commands` блокує локально, вердикт з CI), лінт `@sergeant/server` у цьому worktree (скоупований install, див. нижче), рішення власника щодо межі поля (відхилення 1). Далі: PR відкриває координатор. Worktree `D:\Sergeant\.claude\worktrees\agent-a03d9777472fcaf8a`, гілка `claude/redesign-v3-1-pr2`.
 
 ## PR2 · примітиви станів
 
@@ -63,6 +63,25 @@
 2. **`useTablistArrowKeys` не існує.** Спека велить брати стрілки «за наявним `useTablistArrowKeys`», але хук видалено в #1536 (`217b029c1`). Клавіатуру `ChoiceGroup` написано в самому компоненті за патерном radiogroup.
 3. **Baseline не через `--update`.** Скрипт на відсутній ключ падає, а `--update` лише знижує, тож стартові числа нових метрик вписано руками з абзацом у `rationale`, як велить шапка скрипта.
 4. **Checkbox мультивибору.** Шість із 13 `nativeChoice` - checkbox мультивибору (Їжа, Налаштування); `ChoiceGroup` має лише одиничний вибір. Щоб PR6 вийшов у нуль, потрібен або режим мультивибору, або allowlist із причиною.
+
+### Правки за ревʼю (design-reviewer)
+
+1. **Помилка й фокус чорнилом разом** (`edb5b4c2e`). tailwind-merge 2.x не знає групи `inset-ring-*`, тож при `error` лишались і `inset-ring-text`, і `inset-ring-danger`. Тепер `fieldFocus(error)` у `Input.tsx` обирає один набір, а набір помилки має власну базу `focus-visible:inset-ring`. Тести `Input`, `Textarea`, `Select` перевіряють відсутність `inset-ring-text` і `focus-visible:border-text` при помилці.
+2. **HC-контракт фокусу поля** (`edb5b4c2e`). Загальне HC-правило `theme.css` розширювало лише `--tw-ring-shadow`. Поля з `focus-visible:inset-ring` тепер виключені з нього (інакше зʼявлялось би зовнішнє кільце), а нове правило поза `@layer` дає їхньому внутрішньому кільцю `--focus-ring-width` у трьох HC-скоупах. Пін у `theme.focusRingHc.test.ts`.
+3. **`variant="text"` 44 px завширшки** (`92fc87ff3`): `min-w-[44px]` поруч із `min-h-[44px]`.
+4. **`capsFormLabel` ловить `<Label>`** (`1423ece71`), break-тест; baseline лишився 2, у коді `<Label>` з капсом немає.
+5. **Спека** `redesign-v3-1.md` § Підписи полів: `border-strong` замінено на `border-control` з причиною й позначкою «рішення ревʼю PR2, підтвердження за власником».
+6. **Необрана плитка `ChoiceGroup` на панелі** (`92fc87ff3`): межа `border-control`; в обраної межа `border-text`, тобто кольору заливки.
+7. **Одна кнопка `CollapsibleSection`** (`92fc87ff3`). Тест на збереження фокусу проходив і на старому коді (React перевикористовував `<button>` у тернарнику), але гарантія трималась на реконсиляції; тепер кнопка одна, класи й вміст умовні. `handRolledFocusRing` 146 → 145.
+
+| Команда                                                   | Код | Ключове число                                                     |
+| --------------------------------------------------------- | --- | ----------------------------------------------------------------- |
+| `tsc -p tsconfig.json --noEmit` (`apps/web`)              | 0   | -                                                                 |
+| `node scripts/check-ui-canon-ratchet.mjs`                 | 0   | 13 / 47 / 2, фокус-рамок 145                                      |
+| `node --test scripts/__tests__/check-ui-canon-ratchet…`   | 0   | 50 / 50                                                           |
+| `vitest` зачеплених файлів і `src/styles`, `maxWorkers=1` | 0   | 17 файлів, 520 тестів                                             |
+| `VITE_E2E_SEED=true vite build` (для кадрів)              | 0   | `pnpm build` блокує хук `guard-heavy-commands`, тож лише цей білд |
+| кадри «після», 5 маршрутів × 2 теми                       | 0   | 10 passed, перезаписано в scratchpad `v31-pr2/after`              |
 
 ## PR1 · стан
 
