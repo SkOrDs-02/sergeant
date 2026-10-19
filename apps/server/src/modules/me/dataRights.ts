@@ -373,6 +373,18 @@ const EXPORT_EXCLUSIONS: ReadonlyArray<{
   },
 ];
 
+/**
+ * Таблиці з soft-delete (`deleted_at`, міграція 156, data-15): експорт не
+ * віддає tombstone-и — людина забирає свої живі записи, а не службові
+ * позначки видалення. Список статичний, як і `MODULE_EXPORT_TABLES`.
+ */
+const EXPORT_SOFT_DELETE_FILTERED: ReadonlySet<string> = new Set([
+  "finyk_tx_categories",
+  "finyk_tx_splits",
+  "finyk_mono_debt_links",
+  "finyk_networth_history",
+]);
+
 async function fetchModuleTables(
   db: Queryable,
   userId: string,
@@ -388,7 +400,11 @@ async function fetchModuleTables(
       }
       // eslint-disable-next-line no-restricted-syntax -- інтерполюється ЛИШЕ імʼя таблиці з замороженого `MODULE_EXPORT_TABLES` (перевірено рядком нижче); `userId` іде $-параметром. Той самий "allowlisted identifier" case, що alerts/store.ts.
       const { rows } = await db.query<Record<string, unknown>>(
-        `SELECT * FROM ${table} WHERE user_id = $1`,
+        `SELECT * FROM ${table} WHERE user_id = $1${
+          EXPORT_SOFT_DELETE_FILTERED.has(table)
+            ? " AND deleted_at IS NULL"
+            : ""
+        }`,
         [userId],
       );
       // GDPR: людина забирає свій текст, а не шифротекст (spec

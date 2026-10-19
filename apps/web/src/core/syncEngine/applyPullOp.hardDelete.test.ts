@@ -19,10 +19,19 @@ import {
 } from "./applyPullOp.js";
 
 /**
- * data-15: finyk-таблиці з hard-delete (є `updated_at`, нема `deleted_at`).
- * Сервер віддає їм справжній `delete`-оп; клієнт раніше повертав `rejected`
- * і рядок лишався на інших пристроях.
+ * data-15, частина А: таблиці з hard-delete (є `updated_at`, нема
+ * `deleted_at`). Сервер віддає їм справжній `delete`-оп; клієнт раніше
+ * повертав `rejected` і рядок лишався на інших пристроях.
+ *
+ * Частина Б (клієнтська міграція 005) додала `deleted_at` чотирьом finyk-
+ * таблицям, тож у актуальній схемі вони йдуть soft-гілкою (див.
+ * `applyPullOp.softDelete.test.ts`). Hard-гілка лишається для таблиць без
+ * `deleted_at`, а тут її тримає схема ДО міграції 005 — клієнт, що ще не
+ * домігрував (порядок бута: міграція до першого pull, але гілка чесна).
  */
+const PRE_TOMBSTONE_MIGRATIONS = FINYK_CLIENT_MIGRATIONS.filter(
+  (m) => m.name !== "005_finyk_soft_delete_tombstones.sql",
+);
 
 const USER = "user-1";
 const T0 = "2026-07-10T08:00:00.000Z";
@@ -64,7 +73,7 @@ function op(
   };
 }
 
-describe("applyPullOp — hard-delete finyk-таблиці (data-15)", () => {
+describe("applyPullOp — hard-delete для таблиць без deleted_at (data-15, частина А)", () => {
   let db: BetterSqliteDatabase;
   let client: SqliteMigrationClient;
 
@@ -84,7 +93,7 @@ describe("applyPullOp — hard-delete finyk-таблиці (data-15)", () => {
     client = makeSqliteClient(db);
     await runMigrations({
       adapter: createSqliteAdapter(client),
-      files: FINYK_CLIENT_MIGRATIONS,
+      files: PRE_TOMBSTONE_MIGRATIONS,
       tableName: FINYK_MIGRATIONS_TABLE,
     });
   });

@@ -319,8 +319,10 @@ export const finykTxFilters = pgTable(
 /**
  * Per-transaction category override. The LS shape is
  * `Record<txId, categoryId>` with `undefined` values meaning "fall
- * back to MCC default". No `deleted_at` — absence of a row is the
- * "no override" state, so sync `delete` ops just `DELETE FROM`.
+ * back to MCC default". `deleted_at` (migration 156, data-15) is the
+ * tombstone: a sync `delete` op marks the row instead of `DELETE FROM`,
+ * so a stale upsert cannot resurrect it. Readers filter
+ * `deleted_at IS NULL` — a tombstoned row is the "no override" state.
  */
 export const finykTxCategories = pgTable(
   "finyk_tx_categories",
@@ -334,6 +336,7 @@ export const finykTxCategories = pgTable(
     updatedAt: timestamp("updated_at", { withTimezone: true })
       .notNull()
       .defaultNow(),
+    deletedAt: timestamp("deleted_at", { withTimezone: true }),
   },
   (table) => [
     primaryKey({ columns: [table.userId, table.transactionId] }),
@@ -357,6 +360,7 @@ export const finykTxSplits = pgTable(
     updatedAt: timestamp("updated_at", { withTimezone: true })
       .notNull()
       .defaultNow(),
+    deletedAt: timestamp("deleted_at", { withTimezone: true }),
   },
   (table) => [
     primaryKey({ columns: [table.userId, table.transactionId] }),
@@ -381,6 +385,7 @@ export const finykMonoDebtLinks = pgTable(
     updatedAt: timestamp("updated_at", { withTimezone: true })
       .notNull()
       .defaultNow(),
+    deletedAt: timestamp("deleted_at", { withTimezone: true }),
   },
   (table) => [
     primaryKey({ columns: [table.userId, table.transactionId] }),
@@ -417,6 +422,7 @@ export const finykNetworthHistory = pgTable(
     updatedAt: timestamp("updated_at", { withTimezone: true })
       .notNull()
       .defaultNow(),
+    deletedAt: timestamp("deleted_at", { withTimezone: true }),
   },
   (table) => [
     primaryKey({ columns: [table.userId, table.month] }),

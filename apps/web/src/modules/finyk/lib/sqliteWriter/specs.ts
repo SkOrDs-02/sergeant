@@ -20,13 +20,15 @@ import type { FinykBlobTable, FinykIdTable } from "./diff.js";
  *  - **blob-tables** (`data_json`): PK `id`, tombstone soft-delete.
  *  - **per-tx mappings** (`finyk_tx_categories` / `finyk_tx_splits` /
  *    `finyk_mono_debt_links`): composite PK `(user_id, transaction_id)`.
- *    Upsert is `strictly-newer`; DELETE is **hard, guard-less** — absence is
- *    the "no override" state (ADR-0073 § НЕ абстрагуємо #2, Open Q #2). The
- *    hard `DELETE` carries no `WHERE updated_at < ?` on purpose.
+ *    Upsert is `strictly-newer` і скидає `deleted_at`; DELETE — **soft**
+ *    (`deleted_at` + `updated_at`, LWW-guard `updated_at < ?`), як у
+ *    `finyk_budgets`: tombstone не дає запізнілому pull-upsert-у воскресити
+ *    рядок (data-15, міграція 156 / клієнтська 005, ADR-0073 § Рішення).
  *  - **tx notes** (`finyk_tx_notes`): composite PK `(user_id, transaction_id)`
  *    з `note`, tombstone soft-delete (`strictly-newer` upsert, `soft` delete).
  *  - **time-series** (`finyk_networth_history`): composite PK
- *    `(user_id, month)`; no delete op.
+ *    `(user_id, month)`; no delete op у writer-і (сервер і pull приймають
+ *    tombstone, читачі фільтрують `deleted_at IS NULL`).
  *  - **singleton prefs** (`finyk_prefs`): PK `user_id`.
  */
 
@@ -148,16 +150,20 @@ export function blobDeleteSql(table: FinykBlobTable): string {
 }
 
 // -----------------------------------------------------------------------
-// per-tx mappings (composite (user_id, transaction_id); hard guard-less DELETE)
+// per-tx mappings (composite (user_id, transaction_id); soft DELETE з tombstone-ом)
 // -----------------------------------------------------------------------
 
 const TX_CATEGORY_UPSERT_SPEC: TableSpec = {
   table: "finyk_tx_categories",
   insertClause: `INSERT INTO finyk_tx_categories
-       (user_id, transaction_id, category_id, created_at, updated_at)
-     VALUES (?, ?, ?, ?, ?)`,
+       (user_id, transaction_id, category_id, created_at, updated_at, deleted_at)
+     VALUES (?, ?, ?, ?, ?, NULL)`,
   conflictTarget: ["user_id", "transaction_id"],
-  updateColumns: [{ column: "category_id" }, { column: "updated_at" }],
+  updateColumns: [
+    { column: "category_id" },
+    { column: "updated_at" },
+    { column: "deleted_at", value: "NULL" },
+  ],
   upsertGuard: "strictly-newer",
   conflictIndent: 5,
   setIndent: 7,
@@ -166,10 +172,14 @@ const TX_CATEGORY_UPSERT_SPEC: TableSpec = {
 const TX_SPLITS_UPSERT_SPEC: TableSpec = {
   table: "finyk_tx_splits",
   insertClause: `INSERT INTO finyk_tx_splits
-       (user_id, transaction_id, splits_json, created_at, updated_at)
-     VALUES (?, ?, ?, ?, ?)`,
+       (user_id, transaction_id, splits_json, created_at, updated_at, deleted_at)
+     VALUES (?, ?, ?, ?, ?, NULL)`,
   conflictTarget: ["user_id", "transaction_id"],
-  updateColumns: [{ column: "splits_json" }, { column: "updated_at" }],
+  updateColumns: [
+    { column: "splits_json" },
+    { column: "updated_at" },
+    { column: "deleted_at", value: "NULL" },
+  ],
   upsertGuard: "strictly-newer",
   conflictIndent: 5,
   setIndent: 7,
@@ -178,10 +188,14 @@ const TX_SPLITS_UPSERT_SPEC: TableSpec = {
 const MONO_DEBT_LINK_UPSERT_SPEC: TableSpec = {
   table: "finyk_mono_debt_links",
   insertClause: `INSERT INTO finyk_mono_debt_links
-       (user_id, transaction_id, debt_ids_json, created_at, updated_at)
-     VALUES (?, ?, ?, ?, ?)`,
+       (user_id, transaction_id, debt_ids_json, created_at, updated_at, deleted_at)
+     VALUES (?, ?, ?, ?, ?, NULL)`,
   conflictTarget: ["user_id", "transaction_id"],
-  updateColumns: [{ column: "debt_ids_json" }, { column: "updated_at" }],
+  updateColumns: [
+    { column: "debt_ids_json" },
+    { column: "updated_at" },
+    { column: "deleted_at", value: "NULL" },
+  ],
   upsertGuard: "strictly-newer",
   conflictIndent: 5,
   setIndent: 7,
@@ -193,20 +207,22 @@ export const MONO_DEBT_LINK_UPSERT_SQL = buildLwwUpsert(
   MONO_DEBT_LINK_UPSERT_SPEC,
 );
 
-// Hard, guard-less DELETE — no `WHERE updated_at < ?` (ADR-0073, Open Q #2).
+// Soft DELETE з tombstone-ом (data-15, ADR-0073 § Рішення): `deleted_at` +
+// `updated_at`, LWW-guard `updated_at < ?`. Раніше тут був hard guard-less
+// DELETE, і запізнілий pull-upsert воскрешав видалений рядок.
 export const TX_CATEGORY_DELETE_SQL = buildDelete({
   table: "finyk_tx_categories",
-  deletePolicy: "hard",
+  deletePolicy: "soft",
   matchColumns: ["user_id", "transaction_id"],
 });
 export const TX_SPLITS_DELETE_SQL = buildDelete({
   table: "finyk_tx_splits",
-  deletePolicy: "hard",
+  deletePolicy: "soft",
   matchColumns: ["user_id", "transaction_id"],
 });
 export const MONO_DEBT_LINK_DELETE_SQL = buildDelete({
   table: "finyk_mono_debt_links",
-  deletePolicy: "hard",
+  deletePolicy: "soft",
   matchColumns: ["user_id", "transaction_id"],
 });
 
@@ -250,10 +266,14 @@ export const TX_NOTE_DELETE_SQL = `UPDATE finyk_tx_notes
 const NETWORTH_UPSERT_SPEC: TableSpec = {
   table: "finyk_networth_history",
   insertClause: `INSERT INTO finyk_networth_history
-       (user_id, month, networth, snapshot_json, created_at, updated_at)
-     VALUES (?, ?, ?, '{}', ?, ?)`,
+       (user_id, month, networth, snapshot_json, created_at, updated_at, deleted_at)
+     VALUES (?, ?, ?, '{}', ?, ?, NULL)`,
   conflictTarget: ["user_id", "month"],
-  updateColumns: [{ column: "networth" }, { column: "updated_at" }],
+  updateColumns: [
+    { column: "networth" },
+    { column: "updated_at" },
+    { column: "deleted_at", value: "NULL" },
+  ],
   upsertGuard: "strictly-newer",
   conflictIndent: 5,
   setIndent: 7,

@@ -255,7 +255,7 @@ async function softDeleteBlobEntry(
 }
 
 // -----------------------------------------------------------------------
-// Per-tx mappings (hard DELETE — absence is the "no override" state)
+// Per-tx mappings (soft DELETE — tombstone є станом «немає override»)
 // -----------------------------------------------------------------------
 
 async function upsertTxCategory(
@@ -291,7 +291,13 @@ async function deleteTxCategory(
   transactionId: string,
   { userId, clientTs }: DualWriteRuntime,
 ): Promise<void> {
-  await client.run(TX_CATEGORY_DELETE_SQL, [userId, transactionId]);
+  await client.run(TX_CATEGORY_DELETE_SQL, [
+    clientTs,
+    clientTs,
+    userId,
+    transactionId,
+    clientTs,
+  ]);
   await enqueueOutboxUpsert(client, {
     userId,
     table: "finyk_tx_categories",
@@ -394,7 +400,13 @@ async function deleteTxSplits(
   transactionId: string,
   { userId, clientTs }: DualWriteRuntime,
 ): Promise<void> {
-  await client.run(TX_SPLITS_DELETE_SQL, [userId, transactionId]);
+  await client.run(TX_SPLITS_DELETE_SQL, [
+    clientTs,
+    clientTs,
+    userId,
+    transactionId,
+    clientTs,
+  ]);
   await enqueueOutboxUpsert(client, {
     userId,
     table: "finyk_tx_splits",
@@ -449,7 +461,13 @@ async function deleteMonoDebtLink(
   transactionId: string,
   { userId, clientTs }: DualWriteRuntime,
 ): Promise<void> {
-  await client.run(MONO_DEBT_LINK_DELETE_SQL, [userId, transactionId]);
+  await client.run(MONO_DEBT_LINK_DELETE_SQL, [
+    clientTs,
+    clientTs,
+    userId,
+    transactionId,
+    clientTs,
+  ]);
   await enqueueOutboxUpsert(client, {
     userId,
     table: "finyk_mono_debt_links",
