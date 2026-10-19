@@ -14,6 +14,7 @@ import { useInertWhileCollapsed } from "@shared/hooks/useInertWhileCollapsed";
 import { cn } from "../../lib/ui/cn";
 import { motionScrollBehavior } from "../../lib/ui/motion";
 import { SectionHeading, type SectionHeadingSize } from "./SectionHeading";
+import { MorphChevron } from "./MorphChevron";
 import { safeReadLS, safeWriteLS } from "../../lib/storage/storage";
 
 export interface CollapsibleSectionProps {
@@ -253,7 +254,7 @@ export function CollapsibleSection({
           <SectionHeading as="span" size={headingSize} className="px-0!">
             {title}
           </SectionHeading>
-          <StateChevron open />
+          <MorphChevron open className="ml-auto text-subtle" />
         </button>
       ) : (
         <button
@@ -278,7 +279,7 @@ export function CollapsibleSection({
               </span>
             )}
           </span>
-          <StateChevron open={false} />
+          <MorphChevron open={false} className="ml-auto text-subtle" />
         </button>
       )}
 
@@ -295,33 +296,5 @@ export function CollapsibleSection({
         </div>
       </div>
     </section>
-  );
-}
-
-/**
- * Шеврон 16 px третім сірим, поворот на 90° при розгортанні. Останній
- * дочірній вузол в обох станах, тож React перевикористовує той самий `svg`
- * і поворот анімується, хоч кнопка між станами міняє розкладку.
- */
-function StateChevron({ open }: { open: boolean }) {
-  return (
-    <svg
-      aria-hidden="true"
-      focusable="false"
-      data-state-chevron
-      viewBox="0 0 24 24"
-      fill="none"
-      stroke="currentColor"
-      strokeWidth="2"
-      strokeLinecap="round"
-      strokeLinejoin="round"
-      className={cn(
-        "ml-auto h-4 w-4 shrink-0 text-subtle",
-        "motion-safe:transition-transform motion-safe:duration-fast",
-        open && "rotate-90",
-      )}
-    >
-      <polyline points="9 18 15 12 9 6" />
-    </svg>
   );
 }

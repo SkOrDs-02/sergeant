@@ -26,9 +26,9 @@ export interface ChoiceItem<V extends string = string> {
   value: V;
   label: ReactNode;
   /** Другий рядок у `rows`: 14 другим сірим. */
-  description?: ReactNode;
-  ariaLabel?: string;
-  disabled?: boolean;
+  description?: ReactNode | undefined;
+  ariaLabel?: string | undefined;
+  disabled?: boolean | undefined;
 }
 
 export interface ChoiceGroupProps<V extends string = string> {
@@ -36,13 +36,13 @@ export interface ChoiceGroupProps<V extends string = string> {
   /** `null`, поки нічого не обрано: тоді Tab веде на першу доступну опцію. */
   value: V | null;
   onChange: (value: V) => void;
-  variant?: ChoiceVariant;
+  variant?: ChoiceVariant | undefined;
   /** `sm` - дрібні плитки (швидкі суми, шкали): радіус 6. */
-  size?: ChoiceSize;
-  ariaLabel?: string;
-  ariaLabelledBy?: string;
-  disabled?: boolean;
-  className?: string;
+  size?: ChoiceSize | undefined;
+  ariaLabel?: string | undefined;
+  ariaLabelledBy?: string | undefined;
+  disabled?: boolean | undefined;
+  className?: string | undefined;
 }
 
 const NEXT_KEYS = new Set(["ArrowRight", "ArrowDown"]);
@@ -76,7 +76,7 @@ export function ChoiceGroup<V extends string = string>({
       .filter((index) => index >= 0);
     if (order.length === 0) return;
     event.preventDefault();
-    const from = order.indexOf(Number(event.currentTarget.dataset.index));
+    const from = order.indexOf(Number(event.currentTarget.dataset["index"]));
     const to =
       key === "Home"
         ? order[0]

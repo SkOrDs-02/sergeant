@@ -144,7 +144,7 @@ describe("CollapsibleSection", () => {
       </CollapsibleSection>,
     );
     const toggle = screen.getByRole("button", { name: "Підказки" });
-    const chevron = () => toggle.querySelector("[data-state-chevron]");
+    const chevron = () => toggle.querySelector("svg");
     expect(toggle).toHaveAttribute("aria-expanded", "false");
     expect(chevron()).toHaveAttribute("aria-hidden", "true");
     expect(chevron()?.getAttribute("class")).not.toContain("rotate-90");
