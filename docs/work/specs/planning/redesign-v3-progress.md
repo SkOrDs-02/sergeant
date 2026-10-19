@@ -1337,4 +1337,6 @@ Types-final, root-lint-final, format-final, build-final, size-final, eager-final
 
 **Публікація.** Draft #1536 створено через GitHub-конектор після push перевіреного дерева. Runtime-коміт і два docs-коміти пройшли штатні hooks; `--no-verify` не використовувався. Після цього запису буде окремий docs-only publication commit; його SHA та actual-head CI звіряються після push.
 
+**CI follow-up.** CI run `39187140355` на head `5b57dd682` упав лише в `Script unit tests`: cleanup прибрав останні три згадки одного мертвого docs-шляху, а ratchet лишився на 104 шляхах / 232 згадках проти фактичних 103 / 229. Штатний `node scripts/check-dead-doc-links.mjs --update` знизив baseline до 103 / 229, без нових винятків і без послаблення правила. Повтор сканера: 103 шляхи, 229 згадок, `appeared=[]`, exit 0. Точний CI glob `node --test "scripts/__tests__/*.test.mjs"`: 722 passed / 0 failed, exit 0. Інші виконані job першого run, включно з Critical-flow E2E, migration drills, commitlint і gitleaks, зелені.
+
 **Наступній сесії:** якщо cleanup PR OPEN, перевірити лише actual-head CI й виправити червоне. Після мержу cleanup завершений; нову роботу брати лише за окремим дорученням власника.
