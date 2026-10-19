@@ -16,7 +16,53 @@
 
 ## PR2 · стан
 
-**Де зупинився:** `Button variant="text"` (`7d26dde2b`) і `ChoiceGroup` (`25c3ce550`) готові з тестами й stories, шеврон у `CollapsibleSection` замість тексту (`b89612fe4`, `806314d23`), `Input` / `Select` / `Label` мовою H (`93db4a294`), метрики храповика `nativeChoice` 13, `textStateLabel` 47, `capsFormLabel` 2 з break-тестами. Далі: верифікація § Верифікація п. 1 і кадри. Worktree `D:\Sergeant\.claude\worktrees\agent-a03d9777472fcaf8a`, гілка `claude/redesign-v3-1-pr2`.
+**Де зупинився:** код PR2 і храповик закомічено (`7d26dde2b`..`1247aba73`), верифікація пройдена (таблиця нижче), кадри до / після зняті. Відкрито: повний `web test` (хук `guard-heavy-commands` блокує локально, вердикт з CI), лінт `@sergeant/server` у цьому worktree (скоупований install, див. нижче), рішення власника щодо межі поля (відхилення 1). Далі: PR відкриває координатор. Worktree `D:\Sergeant\.claude\worktrees\agent-a03d9777472fcaf8a`, гілка `claude/redesign-v3-1-pr2`.
+
+## PR2 · примітиви станів
+
+### Що зроблено
+
+- `Button variant="text"`: тихий третій рівень, чорнило 15 / 600 (`text-style-body font-semibold`), без рамки й заливки, зона 44 px у пікселях, hover `bg-panel`; тон і модуль ігноруються, як у `ghost`. Рядок у таблиці `04-components.md`.
+- Новий `shared/components/ui/Choice.tsx` (`ChoiceGroup`): варіанти `tiles` (панель, радіус 8, `size="sm"` радіус 6) і `rows` (hairline, обраний рядок заливкою на всю ширину, радіус 8, опційний опис). Обране `bg-text text-bg`, без hue й обводу. Семантика `radiogroup` + `radio`, `aria-checked`, roving tabindex, стрілки по колу з пропуском вимкнених, Home / End. Тести (12) і stories. Модулі не переводились.
+- `CollapsibleSection`: текст «Розгорнути» / «Згорнути» знято, стан показує наявний `MorphChevron` (16 px, `text-subtle`, поворот 90°, `motion-safe`, тепер `duration-fast` = 150 мс), `aria-expanded` лишився.
+- `Input` / `Textarea` / `Select`: `md` 48 px, радіус 8, фокус обводом 2 px чорнилом (межа `border-text` + `inset-ring-text`) без зовнішнього кільця, помилка 13 px текстом небезпеки (`text-style-label`), підпис 14 / 500 другим сірим. `Select` втратив проп `accent` (hue модуля в контролах знято; єдиний call-site у `LogPastWorkoutSheet`). `Label` у `FormField` бере той самий клас підпису, невживаний `caps` / `capsLabel` видалено.
+- Храповик: метрики `nativeChoice`, `textStateLabel`, `capsFormLabel` (рецепт у шапці скрипта, 8 break-тестів, зокрема звірка `STATE_LABEL_KEYS` з каталогом). Baseline 13 / 47 / 2 записано руками, бо `--update` лише знижує; `handRolledFocusRing` 157 → 146 і `cyrillicJsxAllowlist` 297 → 296 опущено `--update`.
+
+### Закриті позиції інвентарю
+
+- **А6** поле вводу з попередньої мови: `Input` / `Select` на мові H.
+- **Б1** тихого рівня немає: `variant="text"` є; переведення дій у модулях у PR3-PR6.
+- **Г1-Г3** текст стану розгортання: примітив `CollapsibleSection` на шевроні; модульні тексти рахує `textStateLabel` і знімуть PR3-PR6.
+
+### Верифікація
+
+Прогони 2026-10-19 на `1247aba73`.
+
+| Команда                                                  | Код | Ключове число                                                                                                |
+| -------------------------------------------------------- | --- | ------------------------------------------------------------------------------------------------------------ |
+| `pnpm --filter @sergeant/design-tokens test`             | 0   | -                                                                                                            |
+| `pnpm --filter @sergeant/web typecheck`                  | 0   | -                                                                                                            |
+| `pnpm lint`                                              | 134 | OOM у `@sergeant/server#lint`; повтор з 4 ГБ heap: код 1, 954 помилки «Tsconfig not found @sergeant/config»  |
+| ланцюжок `pnpm lint` з `turbo run lint --filter=!server` | 0   | 16/16 задач, усі `node --test` fail 0                                                                        |
+| `node scripts/check-ui-canon-ratchet.mjs`                | 0   | нативних виборів 13, текстових станів 47, капс-підписів 2, фокус-рамок 146                                   |
+| `node --test scripts/__tests__/check-ui-canon-ratchet…`  | 0   | 49 / 49                                                                                                      |
+| `pnpm design:check-md`                                   | 0   | -                                                                                                            |
+| `pnpm lint:specs`                                        | 0   | -                                                                                                            |
+| `pnpm --filter @sergeant/web build`                      | 0   | `inset-ring` і `inset-ring-text` є в CSS білду                                                               |
+| `size-limit` JS                                          | 1   | 1,52 MB, на 13,54 kB над старою стелею 1,51 MB, під новою 1,55 MB (окремий PR власника)                      |
+| `size-limit` CSS                                         | 0   | 32 kB із 40                                                                                                  |
+| `vitest run src/shared/components/ui src/styles`         | 0   | 88 файлів, 1 175 тестів                                                                                      |
+| `vitest` 10 тек call-site-ів примітивів                  | 1   | 86 файлів, 1 018 passed; 4 помилки «Failed to start forks worker» (навантаження), ці 4 файли окремо: 24 / 24 |
+| `pnpm --filter @sergeant/web test`                       | -   | не запущено: хук `guard-heavy-commands` блокує повний прогін на слабкому залізі, вердикт з CI                |
+
+Лінт сервера: install у worktree скоупований (`--filter @sergeant/web...`), тож `@sergeant/config` для сервера не злінковано; PR2 сервер не чіпає. Кадри (сценарій `__shots__` поза репо, 390×844, `VITE_E2E_SEED=true`, база `1dac4008b` і гілка): `finyk-expense-form`, `finyk-expense-form-end`, `finyk-budgets`, `nutrition-meal-search`, `routine-new-habit`, світла й темна, 10 + 10, Playwright exit 0 обидва рази. Видно поля 48 px, сірі підписи, фокус чорнилом; модульні вибори (радіо, teal-день) лишаються до PR3-PR5.
+
+### Відхилення від спеки
+
+1. **Межа поля `border-control`, а не `border-strong`.** Спека § Підписи полів: «обвід 1 px `border-strong`». Але `border-strong` (#c9c9c5 / #343b45) дає ~1,6:1 проти панелі, а межа поля за WCAG 1.4.11 мусить мати 3:1 (аудит контрасту 2026-10-01, A8; `--c-control` заведено саме для цього, гейт `theme.controlFocus.test.ts`). Межу не мінено; рішення за власником.
+2. **`useTablistArrowKeys` не існує.** Спека велить брати стрілки «за наявним `useTablistArrowKeys`», але хук видалено в #1536 (`217b029c1`). Клавіатуру `ChoiceGroup` написано в самому компоненті за патерном radiogroup.
+3. **Baseline не через `--update`.** Скрипт на відсутній ключ падає, а `--update` лише знижує, тож стартові числа нових метрик вписано руками з абзацом у `rationale`, як велить шапка скрипта.
+4. **Checkbox мультивибору.** Шість із 13 `nativeChoice` - checkbox мультивибору (Їжа, Налаштування); `ChoiceGroup` має лише одиничний вибір. Щоб PR6 вийшов у нуль, потрібен або режим мультивибору, або allowlist із причиною.
 
 ## PR1 · стан
 
