@@ -2,7 +2,7 @@
 
 - **Status:** Accepted
 - **Date:** 2026-07-03
-- **Last validated:** 2026-09-04 by @codex
+- **Last validated:** 2026-10-18 by @claude
 - **Next review:** 2027-03-04
 - **Deciders:** @Skords-01
 - **Supersedes:** —
@@ -28,7 +28,23 @@ The framework is intentionally not a generic domain model. Hard delete,
 tombstone, child-cascade, timestamp, and LWW/no-guard choices remain explicit
 in each adapter and are verified by SQL/result tests.
 
+**Поправка 2026-10-18 (data-15, рішення власника): явний вибір soft-delete для
+finyk-адаптерів.** `finyk_tx_categories`, `finyk_tx_splits`,
+`finyk_mono_debt_links` і `finyk_networth_history` більше не hard-delete:
+DeleteSpec `soft` (`deleted_at` + `updated_at`, LWW-guard `updated_at < ?`), як
+у `finyk_budgets`. Причина: hard DELETE не лишає часу видалення, тож
+запізнілий upsert зі старого пристрою (insert@T1 після delete@T2)
+воскрешав рядок через `INSERT ... ON CONFLICT`. Tombstone відхиляє такий
+запис як `lww_conflict`; новіший запис воскрешає (`deleted_at = NULL`).
+Серверна міграція 156 і клієнтська `005_finyk_soft_delete_tombstones`; читачі
+фільтрують `deleted_at IS NULL`. Правило для нових адаптерів: hard delete
+припустимий лише там, де застарілий upsert не може прийти (локальна таблиця
+поза синком); для синхронізованих таблиць за замовчуванням soft.
+
 ## Consequences
+
+Кожен новий читач soft-таблиці зобовʼязаний фільтрувати `deleted_at IS NULL`
+(sqliteReader, експорт/GDPR, бекап); забутий фільтр показує видалене.
 
 New dual-write paths must reuse the core only for shared mechanics and add
 parity/replay tests for the domain semantics they own. A change to a shared

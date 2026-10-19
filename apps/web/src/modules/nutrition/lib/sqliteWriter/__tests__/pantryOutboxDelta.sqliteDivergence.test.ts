@@ -1,8 +1,9 @@
-// rel-10 (зауваження ревʼю): дельта комори рахується відносно `prev`, а `prev`
-// - warm-кеш, де id позицій виведено заново з позиції (`pid::idx::name`), тоді
-// як рядки SQLite мають свої id. Незмінна позиція, чийого похідного id немає в
-// SQLite, не має ставати жертвою soft-delete: тест іде реальним шляхом
-// (dualWrite -> applyPullOp -> refresh кешу -> peek-знімок -> правка).
+// rel-10 + data-40: дельта комори рахується відносно `prev`, а `prev` - warm-кеш.
+// Раніше id позицій у кеші виводились заново з позиції (`pid::idx::name`) і не
+// збігались з id рядків SQLite, тож незмінна позиція ставала жертвою
+// soft-delete. Тепер рідер віддає `row.id`, і правка однієї позиції не чіпає
+// сусідів. Тест іде реальним шляхом (dualWrite -> applyPullOp -> refresh кешу
+// -> peek-знімок -> правка).
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 vi.mock("../../../../../core/syncEngine/enqueueOutboxUpsert.js", () => ({
@@ -89,8 +90,8 @@ async function livePantryRows() {
   );
 }
 
-describe("rel-10: дельта комори звіряється з SQLite, а не лише з prev", () => {
-  it("збіг sort_order після pull: правка іншої позиції не soft-delete-ить незмінну", async () => {
+describe("rel-10 + data-40: дельта комори звіряється з SQLite, а не лише з prev", () => {
+  it("збіг sort_order після pull: правка іншої позиції не чіпає ні сусідів, ні позицію з pull", async () => {
     // Пристрій A: [a, milk] -> рядки p1::0::a, p1::1::milk.
     await dualWriteNutritionState(
       state([snap([])]),
@@ -124,12 +125,13 @@ describe("rel-10: дельта комори звіряється з SQLite, а �
     );
     expect(outcome).toBe("applied");
 
-    // Знімок із кешу: похідні id не збігаються з id рядків SQLite.
+    // Знімок із кешу: id рядків збережено як є (data-40), нічого не виводиться
+    // заново з позиції.
     const prev = await peekPantries();
-    const derivedIds = prev[0]!.items.map((i) => i.id);
-    expect(derivedIds).toHaveLength(3);
-    const sqliteIds = (await livePantryRows()).map((r) => r.id).sort();
-    expect(derivedIds.slice().sort()).not.toEqual(sqliteIds);
+    const ids = prev[0]!.items.map((i) => i.id);
+    const sqliteIds = (await livePantryRows()).map((r) => r.id);
+    expect(ids).toEqual(sqliteIds);
+    expect(ids).toHaveLength(3);
 
     // Користувач змінює qty у першій позиції "a".
     const next = [
@@ -149,20 +151,41 @@ describe("rel-10: дельта комори звіряється з SQLite, а �
         { table: string; op: string; row: { id: string } },
       ][]
     ).map(([, input]) => input);
-    // Позиція milk переїздить під похідний id (позиційні id, data-40): новий
-    // рядок йде в outbox, старий id soft-delete-иться. Без звірки з SQLite
-    // нового рядка не було б, і delete старого id знищував би позицію.
     const ops = (op: string) =>
       calls
         .filter((c) => c.table === "nutrition_pantry_items" && c.op === op)
         .map((c) => c.row.id);
-    expect(ops("insert")).toContain(
-      derivedIds.find((id) => id.endsWith("milk")),
-    );
-    expect(ops("delete")).toEqual(
-      sqliteIds.filter((id) => !derivedIds.includes(id)),
-    );
+    // Пишеться ЛИШЕ змінена позиція; milk і bread не переписуються (нового
+    // client_ts вони не отримують) і не видаляються.
+    expect(ops("insert")).toEqual(["p1::0::a"]);
+    expect(ops("delete")).toEqual([]);
     const live = (await livePantryRows()).map((r) => r.name).sort();
     expect(live).toEqual(["a", "bread", "milk"]);
+  });
+
+  it("місця немає в prev (кеш відстав): позиції SQLite, яких немає в знімку, не ховаються", async () => {
+    // У SQLite уже є p1 з milk (наприклад, доїхало з іншого пристрою).
+    await dualWriteNutritionState(
+      state([snap([])]),
+      state([snap([entry(0, "milk")])]),
+    );
+    // Warm-кеш відстав: у prev місця p1 немає зовсім, а користувач додає bread.
+    enqueueMock.mockClear();
+    await dualWriteNutritionState(
+      state([]),
+      state([snap([entry(0, "bread")])]),
+    );
+
+    const deletes = (
+      enqueueMock.mock.calls as [
+        unknown,
+        { table: string; op: string; row: { id: string } },
+      ][]
+    )
+      .map(([, input]) => input)
+      .filter((c) => c.table === "nutrition_pantry_items" && c.op === "delete");
+    expect(deletes).toEqual([]);
+    const live = (await livePantryRows()).map((r) => r.name).sort();
+    expect(live).toEqual(["bread", "milk"]);
   });
 });

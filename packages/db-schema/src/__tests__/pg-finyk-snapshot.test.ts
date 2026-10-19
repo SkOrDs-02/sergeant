@@ -3,6 +3,7 @@ import { getTableConfig } from "drizzle-orm/pg-core";
 import {
   finykHiddenAccounts,
   finykHiddenTransactions,
+  finykTxNotes,
   finykBudgets,
   finykSubscriptions,
   finykAssets,
@@ -94,6 +95,39 @@ describe("pg/finykHiddenTransactions schema snapshot", () => {
   });
 });
 
+describe("pg/finykTxNotes schema snapshot (data-27, міграція 155)", () => {
+  const config = getTableConfig(finykTxNotes);
+
+  it("has the canonical table name", () => {
+    expect(config.name).toBe("finyk_tx_notes");
+  });
+
+  it("declares all expected columns", () => {
+    expect(config.columns.map((c) => c.name)).toEqual([
+      "user_id",
+      "transaction_id",
+      "note",
+      "created_at",
+      "updated_at",
+      "deleted_at",
+    ]);
+  });
+
+  it("declares (user_id, transaction_id) as a composite primary key", () => {
+    expect(config.primaryKeys).toHaveLength(1);
+    expect(config.primaryKeys[0]!.columns.map((c) => c.name)).toEqual([
+      "user_id",
+      "transaction_id",
+    ]);
+  });
+
+  it("declares the soft-delete partial index", () => {
+    expect(config.indexes.map((i) => i.config.name)).toContain(
+      "finyk_tx_notes_user_active_idx",
+    );
+  });
+});
+
 // ---------------------------------------------------------------------
 // Group 2 — per-row + JSONB
 // ---------------------------------------------------------------------
@@ -172,6 +206,7 @@ describe("pg/finykTxCategories schema snapshot", () => {
       "category_id",
       "created_at",
       "updated_at",
+      "deleted_at",
     ]);
   });
 
@@ -182,8 +217,9 @@ describe("pg/finykTxCategories schema snapshot", () => {
     ]);
   });
 
-  it("declares no soft-delete column (delete = DELETE FROM)", () => {
-    expect(config.columns.map((c) => c.name)).not.toContain("deleted_at");
+  it("declares the nullable deleted_at tombstone column (migration 156)", () => {
+    const cols = Object.fromEntries(config.columns.map((c) => [c.name, c]));
+    expect(cols["deleted_at"]!.notNull).toBe(false);
   });
 
   it("category_id is a NOT NULL TEXT", () => {
@@ -203,6 +239,7 @@ describe("pg/finykTxSplits schema snapshot", () => {
       "splits_json",
       "created_at",
       "updated_at",
+      "deleted_at",
     ]);
   });
 
@@ -231,6 +268,7 @@ describe("pg/finykMonoDebtLinks schema snapshot", () => {
       "debt_ids_json",
       "created_at",
       "updated_at",
+      "deleted_at",
     ]);
   });
 
@@ -257,6 +295,7 @@ describe("pg/finykNetworthHistory schema snapshot", () => {
       "snapshot_json",
       "created_at",
       "updated_at",
+      "deleted_at",
     ]);
   });
 

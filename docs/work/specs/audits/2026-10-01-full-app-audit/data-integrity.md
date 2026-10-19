@@ -1149,7 +1149,7 @@ v2-run.log (v2-recipes.mjs): X=audit_pool99 зберіг 'VRX-k6ib борщ' (с
 
 ### `data-10` [high] Memory-режим (збій OPFS або квоти) пише порожні знімки комори, які після відновлення сховища видаляють продукти на сервері й на всіх пристроях
 
-- **Стан:** частково виправлено в #1343 (змерджено 2026-10-04) (джерело втрати закрите гейтом запису комори в memory-режимі й реплеєм memory-записів без неявного soft-delete; поелементні pantry-опи без soft-delete відсутніх дітей не робились, це окремий зсув моделі, закриє й data-40)
+- **Стан:** частково виправлено в #1343 (змерджено 2026-10-04) (джерело втрати закрите гейтом запису комори в memory-режимі й реплеєм memory-записів без неявного soft-delete; поелементні pantry-опи без неявного soft-delete відсутніх дітей зроблено в гілці claude/fix-data-40-pantry-stable-ids, data-40)
 - **Перевірка:** підтверджено · **Зусилля:** M · **Область:** web: Їжа (pantry) + durability (memory VFS, журнал)
 - **Де:** apps/web/src/modules/nutrition/lib/sqliteWriter/adapter.ts:446-448,641-675; apps/web/src/core/durability/dualWriteJournal.ts:90-91; apps/web/src/core/db/sqlite.ts:846-889; apps/web/src/modules/nutrition/hooks/useNutritionPantries.ts:118,161-179; packages/dualwrite-core/src/tableSpec.ts:200-215
 - **Першопричина:** У :memory:-режимі модуль бачить порожню базу і пише pantry-upsert {items: []} для дефолтних місць зберігання; ackDualWrite у memory навмисно не знімає журнал, тож знімок реплеїться на справжній OPFS-базі. upsertPantry → softDeleteRemovedChildren при порожньому keepIds видаляє всі живі позиції без LWW-перевірки і ставить delete з clientTs memory-сесії, який виграє на сервері.
@@ -1579,7 +1579,7 @@ I could not refute this. The bug is real. I think "high" overstates the severity
 
 ### `data-15` [medium] Таблиці з hard-delete без tombstone (категорії й розбивки транзакцій, привʼязки боргів, net-worth): видалення не доходить на інші пристрої, а застарілий оп воскрешає рядок
 
-- **Стан:** частково виправлено в гілці claude/fix-data-15-client-hard-delete-pull (клієнтська частина: pull-delete на таблиці без `deleted_at`, але з `updated_at`, виконує hard DELETE з LWW `julianday(updated_at) < julianday(client_ts)` у самому DELETE (RETURNING, відсутній або новіший локально рядок -> skipped) замість `rejected`; лишилось: soft-delete (`deleted_at` + `updated_at`) на обох боках з міграцією і tombstone-перевіркою в серверній гілці INSERT, воскресіння застарілим опом на сервері досі можливе, правка ADR-0073 — окремим стековим PR за рішенням власника)
+- **Стан:** виправлено (частина А — #1526: клієнтський pull-delete з LWW; частина Б — гілка claude/fix-data-15-finyk-soft-delete-tombstones: soft-delete `deleted_at` + `updated_at` на обох боках, серверна міграція 156 і клієнтська 005, застарілий upsert за tombstone-ом → `lww_conflict`, pull віддає tombstone, читачі фільтрують `deleted_at IS NULL`, ADR-0073 поправлено)
 - **Перевірка:** підтверджено · **Зусилля:** M · **Область:** server: sync finyk + web: applyPullOp + dualwrite-core
 - **Де:** apps/server/src/modules/sync/finyk/applySync.ts:239-265,299-321,354-381; apps/web/src/core/syncEngine/applyPullOp.ts:331-334; apps/web/src/modules/finyk/lib/sqliteWriter/adapter.ts:278-340; apps/web/src/modules/finyk/lib/sqliteWriter/specs.ts:194-209; packages/dualwrite-core/src/tableSpec.ts:183-189
 - **Першопричина:** finyk_tx_categories, finyk_tx_splits, finyk_mono_debt_links і finyk_networth_history видаляються справжнім DELETE без запису часу видалення. На сервері після DELETE гілка «рядка немає» вставляє запізнілий оп без порівняння з часом видалення; на клієнті pull для delete на таблиці без deleted_at повертає rejected (подія в Sentry), а курсор іде далі.
@@ -2428,7 +2428,7 @@ Verifier runs: pw_synclink_cold.mjs (key verify-cs-outbox-synclink) produced toa
 
 ### `data-27` [medium] Нотатки до банківських транзакцій не зберігаються ніде: зникають на reload, не синхронізуються й не потрапляють у бекап
 
-- **Стан:** частково виправлено в гілці claude/fix-data-27-tx-notes-persist (нотатки пишуться в LS і входять у бекап; синк між пристроями лишився follow-up-ом з міграцією і рішенням власника)
+- **Стан:** виправлено в гілці claude/feat-data-27-tx-notes-sync (перша частина: нотатки в LS і в бекапі, #1469; друга: серверна таблиця `finyk_tx_notes` (міграція 155), клієнтська SQLite-таблиця, dual-write, sync v2 push/pull, одноразове перелиття LS-нотаток, перепостановка оп-ів, відхилених старим сервером у вікні деплою). Залишок: мобільний клієнт (ADR-0094, пауза) не знає таблиці `finyk_tx_notes`
 - **Перевірка:** підтверджено · **Зусилля:** M · **Область:** web: Фінік (txNotes)
 - **Де:** apps/web/src/modules/finyk/hooks/useFinykStorageSlots.ts:58-61,145-148; apps/web/src/modules/finyk/hooks/useStorage.persist.ts:50-73; apps/web/src/modules/finyk/hooks/useFinykStorageMutations.ts:367-375; apps/web/src/modules/finyk/lib/sqliteWriter/extract.ts:183-198
 - **Першопричина:** txNotes оголошено через useReadonlyPersist, який лише читає LS на першому кадрі й нічого не пише, а dual-write стан (extractFinykDualWriteState) і бекап (FINYK_BACKUP_STORAGE_KEYS) txNotes не містять.
@@ -3300,7 +3300,7 @@ psql: обидва рядки fizruk_programs і всі 5 оп sync_op_log дл�
 
 ### `data-40` [medium] Позиційні id позицій комори: офлайн-правка тихо втрачається, якщо інший пристрій прибрав сусідню позицію
 
-- **Стан:** відкрито
+- **Стан:** частково виправлено в гілці claude/fix-data-40-pantry-stable-ids (стабільний `PantryItem.id` замість позиційного, поелементна дельта sync з одним delete на прибрану позицію і без перепису сусідів, `sort_order` існуючих рядків не чіпається, `itemId` журналу стабільний; без міграції даних, бо рядки вже несуть ці id; лишилось: показ відхилених `lww_conflict` користувачеві, бо рішення власника тримати його в `BENIGN_REJECT_REASONS`, одночасна правка ТІЄЇ САМОЇ позиції з двох пристроїв, яка далі розв'язується LWW по рядку; і дубль позиції від клієнта без фіксу, зокрема вже зібраного mobile або старої вкладки PWA: він перейменовує `pi_…` на позиційний id, нова правка воскрешає tombstone, дубль не загоюється сам; код mobile вирівняно в тій самій гілці)
 - **Перевірка:** підтверджено · **Зусилля:** L · **Область:** web: Їжа (pantry) + nutrition-domain
 - **Де:** apps/web/src/modules/nutrition/lib/nutritionStorage.ts:485-511 (id на :497); packages/nutrition-domain/src/pantryLedger.ts:79-83; apps/web/src/core/syncEngine/singleton.ts:45
 - **Першопричина:** Id позиції будується з місця, індексу й назви, а upsertPantry щоразу переписує весь список місця з новим client_ts; видалення чи переміщення зсуває id усіх наступних позицій, тож паралельна правка програє LWW, а lww_conflict клієнт вважає benign і нічого не показує.

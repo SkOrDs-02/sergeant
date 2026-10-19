@@ -2,6 +2,7 @@ import type { SyncV2PullOp } from "@sergeant/api-client";
 import type { SqliteMigrationClient } from "@sergeant/db-schema/migrate/sqlite";
 
 import { applyNutritionGoalPeriodsPull } from "./applyPullGoalPeriods.js";
+import { applyTxNotesPullDelete } from "./applyPullTxNotes.js";
 
 export type ApplyPullOutcome = "applied" | "skipped" | "rejected";
 
@@ -59,6 +60,7 @@ export const CLIENT_PULL_SUPPORTED_TABLES = new Set<string>([
   "finyk_manual_expenses",
   "finyk_tx_filters",
   "finyk_tx_categories",
+  "finyk_tx_notes",
   "finyk_tx_splits",
   "finyk_mono_debt_links",
   "finyk_networth_history",
@@ -341,18 +343,16 @@ async function applyGenericRegistryRow(
 
   if (op.op === "delete") {
     if (!hasDeletedAt) {
-      // AI-CONTEXT (data-15): finyk_tx_categories / finyk_tx_splits /
-      // finyk_mono_debt_links / finyk_networth_history — hard-delete-таблиці
-      // (є `updated_at`, нема `deleted_at`). Сервер віддає їм справжній
-      // `delete`-оп, а раніше тут стояв `rejected`: видалення не доходило на
-      // інші пристрої, рядок воскресав. Тепер це hard DELETE з тим самим LWW
-      // `julianday`-guard, що й soft-delete та upsert нижче: JS-guard вище
-      // (`isStaleLocal`) лише швидкий шлях, а локальний writer може закомітити
-      // між вибіркою й записом. Рядок, що не видалився (новіший локально або
-      // вже відсутній), дає "skipped", а не "applied", щоб таблиця не потрапила
-      // в affectedTables і не будила зайвий refresh кешу. Таблиця без
-      // `updated_at` (нема з чим порівняти) лишається `rejected`. Soft-delete
-      // з міграцією — окремий PR (ADR-0073).
+      // AI-CONTEXT (data-15): таблиця без `deleted_at` (є `updated_at`) —
+      // hard DELETE з тим самим LWW `julianday`-guard, що й soft-delete та
+      // upsert нижче: JS-guard вище (`isStaleLocal`) лише швидкий шлях, а
+      // локальний writer може закомітити між вибіркою й записом. Рядок, що не
+      // видалився (новіший локально або вже відсутній), дає "skipped", а не
+      // "applied", щоб таблиця не потрапила в affectedTables. Таблиця без
+      // `updated_at` лишається `rejected`. finyk_tx_categories / _splits /
+      // _mono_debt_links / _networth_history після клієнтської міграції 005
+      // мають `deleted_at` і йдуть soft-гілкою нижче (частина Б, ADR-0073);
+      // сюди вони потрапляють лише на клієнті, що ще не домігрував.
       if (!hasUpdatedAt) return "rejected";
       const removed = await client.all(
         `DELETE FROM ${safeTable}
@@ -518,6 +518,11 @@ export async function applyPullOp(
 
   if (!CLIENT_PULL_SUPPORTED_TABLES.has(op.table)) {
     return "rejected";
+  }
+
+  if (op.table === "finyk_tx_notes") {
+    const deleted = await applyTxNotesPullDelete(client, op, userId);
+    if (deleted !== null) return deleted;
   }
 
   const special = SPECIAL_HANDLERS[op.table];

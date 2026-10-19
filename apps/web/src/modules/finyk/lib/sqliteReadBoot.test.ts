@@ -1,8 +1,19 @@
 import { describe, it, expect, beforeEach, vi } from "vitest";
 
 const migrateFinyk = vi.fn(async (..._a: unknown[]) => {});
-const refreshFinykSqliteState = vi.fn(async (..._a: unknown[]) => {});
+const refreshFinykSqliteState = vi.fn(async (..._a: unknown[]) => {
+  calls.push("refresh");
+});
 const recordReadFallback = vi.fn();
+const calls: string[] = [];
+const runTxNotesImportStep = vi.fn(async (..._a: unknown[]) => {
+  calls.push("notes-import");
+  return undefined;
+});
+const runTxNotesRequeueStep = vi.fn(async (..._a: unknown[]) => {
+  calls.push("notes-requeue");
+  return undefined;
+});
 const migrationClient = { run: vi.fn() };
 const getSqliteDb = vi.fn(async () => ({
   migrationClient: () => migrationClient,
@@ -17,6 +28,10 @@ vi.mock("./clientMigrate.js", () => ({
 vi.mock("./sqliteReader.js", () => ({
   refreshFinykSqliteState: (...a: unknown[]) => refreshFinykSqliteState(...a),
 }));
+vi.mock("./txNotesBoot.js", () => ({
+  runTxNotesImportStep: (...a: unknown[]) => runTxNotesImportStep(...a),
+  runTxNotesRequeueStep: (...a: unknown[]) => runTxNotesRequeueStep(...a),
+}));
 vi.mock("../../../core/observability/dualWriteTelemetry.js", () => ({
   recordReadFallback: (...a: unknown[]) => recordReadFallback(...a),
 }));
@@ -28,6 +43,7 @@ import {
 
 beforeEach(() => {
   vi.clearAllMocks();
+  calls.length = 0;
   __resetFinykSqliteReadBootForTests();
 });
 
@@ -61,5 +77,27 @@ describe("bootFinykSqliteReadPath", () => {
       "finyk",
       expect.stringContaining("boot-failed"),
     );
+  });
+
+  it("перелиття LS іде ДО першого refresh (data-27), інакше кеш затре слот порожнім; перепостановка - ПІСЛЯ, щоб не гальмувати публікацію кешу", async () => {
+    await bootFinykSqliteReadPath("u1");
+    expect(runTxNotesImportStep).toHaveBeenCalledWith(
+      migrationClient,
+      "u1",
+      expect.any(String),
+    );
+    expect(runTxNotesRequeueStep).toHaveBeenCalledWith(migrationClient, "u1");
+    expect(calls).toEqual(["notes-import", "refresh", "notes-requeue"]);
+  });
+
+  it("кроки нотаток самі гасять свої збої, тож прогрів завершується", async () => {
+    const ok = await bootFinykSqliteReadPath("u1");
+    expect(ok).toBe(true);
+    expect(refreshFinykSqliteState).toHaveBeenCalledTimes(1);
+  });
+
+  it("бут не чекає перепостановку: зависла перепостановка не відсуває завершення прогріву", async () => {
+    runTxNotesRequeueStep.mockImplementationOnce(() => new Promise(() => {}));
+    await expect(bootFinykSqliteReadPath("u1")).resolves.toBe(true);
   });
 });

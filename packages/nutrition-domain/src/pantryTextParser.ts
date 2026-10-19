@@ -33,6 +33,17 @@ export interface PantryItemSource {
 
 export interface PantryItem {
   /**
+   * Стабільний id позиції (data-40, ADR-0077 § 3.2): призначається один раз,
+   * коли позиція потрапляє в список (`newPantryItemId` у `mergeItems`), і не
+   * залежить ні від порядку, ні від назви, ні від місця зберігання. Це ключ
+   * рядка в `nutrition_pantry_items` і поелементних sync-операцій.
+   *
+   * Опційне, бо чернетки парсера (`parseLoosePantryText`) ще не «у списку», а
+   * позиції зі старого кешу id не мали: у знімку вони отримують легасі-id за
+   * позицією (`resolvePantryItemIds`). НЕ виводь id з індексу для нових позицій.
+   */
+  id?: string;
+  /**
    * Display-назва — рівно те, що ввела людина (`displayFoodName`).
    * Для будь-якого порівняння бери `matchFoodName(name)` чи
    * `canonicalFoodKey(name)`: саме поле для зіставлення НЕ придатне.

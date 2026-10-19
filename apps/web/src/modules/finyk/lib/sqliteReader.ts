@@ -30,6 +30,7 @@ import type {
   NetworthEntry,
   Subscription,
   TxCategoriesMap,
+  TxNotesMap,
   TxSplitsMap,
 } from "../hooks/useStorage.types";
 import type { Debt, Receivable, TxSplit } from "@sergeant/finyk-domain/domain";
@@ -93,6 +94,12 @@ interface BlobRow {
 interface TxCategoryRow {
   transaction_id: string;
   category_id: string;
+  [key: string]: unknown;
+}
+
+interface TxNoteRow {
+  transaction_id: string;
+  note: string | null;
   [key: string]: unknown;
 }
 
@@ -186,6 +193,7 @@ export async function refreshFinykSqliteState(
     manualExpenseRows,
     txCategoryRows,
     txSplitsRows,
+    txNoteRows,
     monoDebtLinkRows,
     networthRows,
     prefsRows,
@@ -256,25 +264,31 @@ export async function refreshFinykSqliteState(
     client.all<TxCategoryRow>(
       `SELECT transaction_id, category_id
          FROM finyk_tx_categories
-        WHERE user_id = ?`,
+        WHERE user_id = ? AND deleted_at IS NULL`,
       [userId],
     ),
     client.all<TxSplitsRow>(
       `SELECT transaction_id, splits_json
          FROM finyk_tx_splits
-        WHERE user_id = ?`,
+        WHERE user_id = ? AND deleted_at IS NULL`,
+      [userId],
+    ),
+    client.all<TxNoteRow>(
+      `SELECT transaction_id, note
+         FROM finyk_tx_notes
+        WHERE user_id = ? AND deleted_at IS NULL`,
       [userId],
     ),
     client.all<MonoDebtLinkRow>(
       `SELECT transaction_id, debt_ids_json
          FROM finyk_mono_debt_links
-        WHERE user_id = ?`,
+        WHERE user_id = ? AND deleted_at IS NULL`,
       [userId],
     ),
     client.all<NetworthRow>(
       `SELECT month, networth
          FROM finyk_networth_history
-        WHERE user_id = ?
+        WHERE user_id = ? AND deleted_at IS NULL
         ORDER BY month ASC`,
       [userId],
     ),
@@ -319,6 +333,13 @@ export async function refreshFinykSqliteState(
     const splits = safeParseJson<TxSplit[]>(row.splits_json, []);
     if (Array.isArray(splits)) {
       txSplits[row.transaction_id] = splits;
+    }
+  }
+
+  const txNotes: TxNotesMap = {};
+  for (const row of txNoteRows) {
+    if (typeof row.note === "string" && row.note.length > 0) {
+      txNotes[row.transaction_id] = row.note;
     }
   }
 
@@ -371,6 +392,7 @@ export async function refreshFinykSqliteState(
     manualExpenses,
     txCategories,
     txSplits,
+    txNotes,
     monoDebtLinkedTxIds,
     networthHistory,
     monthlyPlan,
