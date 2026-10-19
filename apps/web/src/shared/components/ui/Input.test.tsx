@@ -107,3 +107,39 @@ describe("Input: лічильник символів", () => {
     expect(queryByText("4/200")).toBeNull();
   });
 });
+
+describe("Input мовою H (v3.1)", () => {
+  it("поле 48 px, радіус 8, межа контролу, плейсхолдер третім сірим", () => {
+    const { container } = render(<Input />);
+    const cls = container.querySelector("input")!.className;
+    expect(cls).toContain("h-12");
+    expect(cls).toContain("rounded-lg");
+    expect(cls).toContain("border-control");
+    expect(cls).toContain("placeholder:text-subtle");
+  });
+
+  it("фокус обводом 2 px чорнилом без зовнішнього кільця", () => {
+    const { container } = render(<Input />);
+    const cls = container.querySelector("input")!.className;
+    expect(cls).toContain("focus-visible:border-text");
+    expect(cls).toContain("focus-visible:inset-ring-text");
+    expect(cls).not.toContain("focus-visible:ring-2");
+    expect(cls).not.toContain("brand-400");
+  });
+
+  it("підпис 14 / 500 другим сірим без капсу, помилка 13 px текстом небезпеки", () => {
+    const { container, getByText } = render(
+      <Input id="f" label="Назва" error helperText="Вкажи назву" />,
+    );
+    const label = getByText("Назва");
+    expect(label.className).toContain("text-style-label");
+    expect(label.className).toContain("text-muted");
+    expect(label.className).not.toContain("uppercase");
+    const helper = getByText("Вкажи назву");
+    expect(helper.className).toContain("text-style-label");
+    expect(helper.className).toContain("text-danger-strong");
+    expect(container.querySelector("input")!.className).toContain(
+      "focus-visible:inset-ring-danger",
+    );
+  });
+});

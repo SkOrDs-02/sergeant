@@ -16,7 +16,7 @@
 
 ## PR2 · стан
 
-**Де зупинився:** `Button variant="text"` (`7d26dde2b`) і `ChoiceGroup` (`25c3ce550`) готові з тестами й stories, шеврон у `CollapsibleSection` замість тексту. Далі: `Input` / `Select`, три метрики храповика, верифікація й кадри. Worktree `D:\Sergeant\.claude\worktrees\agent-a03d9777472fcaf8a`, гілка `claude/redesign-v3-1-pr2`.
+**Де зупинився:** `Button variant="text"` (`7d26dde2b`) і `ChoiceGroup` (`25c3ce550`) готові з тестами й stories, шеврон у `CollapsibleSection` замість тексту (`b89612fe4`, `806314d23`), `Input` / `Select` / `Label` мовою H. Далі: три метрики храповика, верифікація й кадри. Worktree `D:\Sergeant\.claude\worktrees\agent-a03d9777472fcaf8a`, гілка `claude/redesign-v3-1-pr2`.
 
 ## PR1 · стан
 

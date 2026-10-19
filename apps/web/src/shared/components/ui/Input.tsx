@@ -61,27 +61,44 @@ export type InputVariant = FormVariant;
  */
 const COARSE_TOUCH_FLOOR = "pointer-coarse:min-h-[44px]";
 
+// Мова H (v3.1): поле 48 px, радіус 8. `sm` лишається для щільних рядків.
 const sizes: Record<InputSize, string> = {
   sm: `h-9 px-3 text-style-body rounded-lg ${COARSE_TOUCH_FLOOR}`,
-  md: `h-11 px-4 text-style-body rounded-lg ${COARSE_TOUCH_FLOOR}`,
+  md: `h-12 px-4 text-style-body rounded-lg ${COARSE_TOUCH_FLOOR}`,
   lg: `h-12 px-5 text-style-body rounded-lg ${COARSE_TOUCH_FLOOR}`,
 };
 
 /**
- * Focus treatment — mirrors `Button`'s `focus-visible:ring-2 ring-focus/45`
- * contract so all interactive elements share one a11y language. Keyboard
- * users always see a ring; pointer clicks on text inputs don't flash it.
- * Uses the semantic `ring-focus` token (Hard Rule #14) and the
- * `caret-brand` utility for the text-caret colour.
+ * Фокус мовою H (v3.1): обвід 2 px чорнилом без зовнішнього кільця. Межа
+ * 1 px стає чорнилом, а `inset-ring` домальовує другий піксель усередину,
+ * тож поле не стрибає на піксель. Саме `inset-ring`, а не `ring`: глобальне
+ * правило `theme.css` перефарбовує `--tw-ring-color` на `:focus-visible` у
+ * колір фокусу, а `--tw-inset-ring-color` не чіпає.
+ *
+ * AI-DANGER: межа лишається `border-control`, а не `border-strong` зі спеки
+ * v3.1: `border-strong` дає 1.6:1 проти панелі, а межа поля за WCAG 1.4.11
+ * мусить мати 3:1 (аудит контрасту 2026-10-01, A8, гейт
+ * `theme.controlFocus.test.ts`). Розбіжність записано в журналі PR2.
  */
+export const FIELD_INK_FOCUS =
+  "focus-visible:border-text focus-visible:inset-ring focus-visible:inset-ring-text";
+
 const variants: Record<InputVariant, string> = {
-  default:
-    "bg-panelHi border border-control caret-brand focus-visible:border-brand-400 focus-visible:ring-2 focus-visible:ring-focus/45",
-  filled:
-    "bg-panelHi border-transparent caret-brand focus-visible:bg-panel focus-visible:border-brand-400 focus-visible:ring-2 focus-visible:ring-focus/45",
-  ghost:
-    "bg-transparent border-transparent caret-brand hover:bg-panelHi focus-visible:bg-panelHi focus-visible:ring-2 focus-visible:ring-focus/45",
+  default: `bg-panelHi border border-control caret-brand ${FIELD_INK_FOCUS}`,
+  filled: `bg-panelHi border border-transparent caret-brand focus-visible:bg-panel ${FIELD_INK_FOCUS}`,
+  ghost: `bg-transparent border border-transparent caret-brand hover:bg-panelHi focus-visible:bg-panelHi ${FIELD_INK_FOCUS}`,
 };
+
+export const FIELD_ERROR =
+  "border-danger/70 focus-visible:border-danger focus-visible:inset-ring-danger";
+
+/** Помилка під полем: текст небезпеки 13 px (v3.1, І А6). */
+export const FIELD_ERROR_TEXT =
+  "text-style-label text-danger-strong dark:text-danger";
+
+/** Підпис поля: 14 / 500 другим сірим, звичайний регістр (v3.1, І А4). */
+export const FIELD_LABEL =
+  "text-style-label normal-case text-muted leading-snug";
 
 export interface InputProps extends Omit<
   InputHTMLAttributes<HTMLInputElement>,
@@ -125,11 +142,7 @@ export const Input = forwardRef<HTMLInputElement, InputProps>(function Input(
   },
   ref,
 ) {
-  const stateClass = error
-    ? "border-danger/70 focus-visible:border-danger focus-visible:ring-danger/25"
-    : success
-      ? "border-brand-400 focus-visible:border-brand-500 focus-visible:ring-focus/45"
-      : "";
+  const stateClass = error ? FIELD_ERROR : success ? "border-brand-400" : "";
 
   const maxLen = props.maxLength;
   const currentLen =
@@ -167,10 +180,7 @@ export const Input = forwardRef<HTMLInputElement, InputProps>(function Input(
   return (
     <div className="flex w-full min-w-0 max-w-full flex-col gap-1">
       {label && (
-        <label
-          htmlFor={id}
-          className="text-style-label font-medium text-text leading-snug"
-        >
+        <label htmlFor={id} className={FIELD_LABEL}>
           {label}
         </label>
       )}
@@ -215,8 +225,8 @@ export const Input = forwardRef<HTMLInputElement, InputProps>(function Input(
               id={id ? `${id}-helper` : undefined}
               role={error ? "alert" : "status"}
               className={cn(
-                "text-style-caption leading-snug",
-                error ? "text-danger-strong dark:text-danger" : "text-subtle",
+                "leading-snug",
+                error ? FIELD_ERROR_TEXT : "text-style-caption text-subtle",
               )}
             >
               {helperText}
@@ -269,17 +279,12 @@ export const Textarea = forwardRef<HTMLTextAreaElement, TextareaProps>(
     },
     ref,
   ) {
-    const stateClass = error
-      ? "border-danger/70 focus-visible:border-danger focus-visible:ring-danger/25"
-      : "";
+    const stateClass = error ? FIELD_ERROR : "";
 
     return (
       <div className="flex flex-col gap-1">
         {label && (
-          <label
-            htmlFor={id}
-            className="text-style-label font-medium text-text leading-snug"
-          >
+          <label htmlFor={id} className={FIELD_LABEL}>
             {label}
           </label>
         )}
@@ -304,8 +309,8 @@ export const Textarea = forwardRef<HTMLTextAreaElement, TextareaProps>(
             id={id ? `${id}-helper` : undefined}
             role={error ? "alert" : "status"}
             className={cn(
-              "text-style-caption leading-snug",
-              error ? "text-danger" : "text-subtle",
+              "leading-snug",
+              error ? FIELD_ERROR_TEXT : "text-style-caption text-subtle",
             )}
           >
             {helperText}
