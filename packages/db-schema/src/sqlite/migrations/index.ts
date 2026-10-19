@@ -1812,6 +1812,31 @@ ALTER TABLE finyk_mono_debt_links ADD COLUMN deleted_at TEXT;
 ALTER TABLE finyk_networth_history ADD COLUMN deleted_at TEXT;
 `;
 
+// ---------------------------------------------------------------------------
+// Finyk module - теги до операцій (спека finyk-analytics-v3, Р6.3).
+//
+// Дзеркало серверної міграції `157_finyk_tx_tags.sql`: composite PK
+// `(user_id, transaction_id)`, `tags_json` - JSON-масив рядків, soft-delete
+// через `deleted_at` (порожній список = tombstone, як нотатки 004 і
+// tombstone-и 005). Адитивно: нова таблиця, існуючих даних не торкається.
+// ---------------------------------------------------------------------------
+
+const FINYK_006_SQL = `
+CREATE TABLE IF NOT EXISTS finyk_tx_tags (
+  user_id         TEXT NOT NULL,
+  transaction_id  TEXT NOT NULL,
+  tags_json       TEXT NOT NULL DEFAULT '[]',
+  created_at      TEXT NOT NULL DEFAULT (datetime('now')),
+  updated_at      TEXT NOT NULL DEFAULT (datetime('now')),
+  deleted_at      TEXT,
+  PRIMARY KEY (user_id, transaction_id)
+);
+
+CREATE INDEX IF NOT EXISTS finyk_tx_tags_user_active_idx_lite
+  ON finyk_tx_tags (user_id)
+  WHERE deleted_at IS NULL;
+`;
+
 /**
  * Ordered list of bundled client migrations for the Finyk module on
  * SQLite. Pass this directly to `runMigrations` from
@@ -1829,6 +1854,7 @@ export const FINYK_CLIENT_MIGRATIONS: readonly MigrationFile[] = [
   { name: "003_finyk_prefs_excluded_dismissed.sql", sql: FINYK_003_SQL },
   { name: "004_finyk_tx_notes.sql", sql: FINYK_004_SQL },
   { name: "005_finyk_soft_delete_tombstones.sql", sql: FINYK_005_SQL },
+  { name: "006_finyk_tx_tags.sql", sql: FINYK_006_SQL },
 ] as const;
 
 /**

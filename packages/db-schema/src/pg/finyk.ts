@@ -112,6 +112,33 @@ export const finykTxNotes = pgTable(
   ],
 );
 
+/**
+ * Теги користувача до операцій Фініка (спека finyk-analytics-v3, Р6.3).
+ * Форма як у `finykTxNotes`: composite PK, `tags_json` - масив рядків,
+ * порожній список = soft-delete (`deleted_at`). Дзеркалить міграцію 157.
+ */
+export const finykTxTags = pgTable(
+  "finyk_tx_tags",
+  {
+    userId: text("user_id").notNull(),
+    transactionId: text("transaction_id").notNull(),
+    tagsJson: jsonb("tags_json").notNull().default([]),
+    createdAt: timestamp("created_at", { withTimezone: true })
+      .notNull()
+      .defaultNow(),
+    updatedAt: timestamp("updated_at", { withTimezone: true })
+      .notNull()
+      .defaultNow(),
+    deletedAt: timestamp("deleted_at", { withTimezone: true }),
+  },
+  (table) => [
+    primaryKey({ columns: [table.userId, table.transactionId] }),
+    index("finyk_tx_tags_user_active_idx")
+      .on(table.userId)
+      .where(sql`${table.deletedAt} IS NULL`),
+  ],
+);
+
 // ---------------------------------------------------------------------
 // Per-row + JSONB tables — open-ended user-edited shapes
 // ---------------------------------------------------------------------
