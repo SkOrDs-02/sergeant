@@ -132,6 +132,32 @@ describe("CollapsibleSection", () => {
     expect(toggle).toHaveAttribute("aria-expanded", "true");
     expect(localStorage.getItem("sergeant.test.persist")).toBe("true");
   });
+
+  it("стан передають шеврон і aria-expanded, а не текст «Розгорнути» / «Згорнути»", () => {
+    render(
+      <CollapsibleSection
+        storageKey="sergeant.test.chevron"
+        title="Підказки"
+        defaultOpen={false}
+      >
+        <p>payload</p>
+      </CollapsibleSection>,
+    );
+    const toggle = screen.getByRole("button", { name: "Підказки" });
+    const chevron = () => toggle.querySelector("[data-state-chevron]");
+    expect(toggle).toHaveAttribute("aria-expanded", "false");
+    expect(chevron()).toHaveAttribute("aria-hidden", "true");
+    expect(chevron()?.getAttribute("class")).not.toContain("rotate-90");
+    expect(screen.queryByText("Розгорнути")).toBeNull();
+
+    fireEvent.click(toggle);
+    expect(toggle).toHaveAttribute("aria-expanded", "true");
+    expect(chevron()?.getAttribute("class")).toContain("rotate-90");
+    expect(chevron()?.getAttribute("class")).toContain(
+      "motion-safe:transition-transform",
+    );
+    expect(screen.queryByText("Згорнути")).toBeNull();
+  });
   // L-7: вміст ховається лише візуально (`grid-rows-[0fr] overflow-hidden`),
   // без цього тесту DOM-підтерево лишалось у tab-порядку й дереві
   // доступності при defaultOpen={false} — Tab від заголовка провалювався

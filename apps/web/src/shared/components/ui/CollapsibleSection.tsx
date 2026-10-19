@@ -12,7 +12,6 @@ import {
 } from "react";
 import { useInertWhileCollapsed } from "@shared/hooks/useInertWhileCollapsed";
 import { cn } from "../../lib/ui/cn";
-import { messages } from "@shared/i18n/uk";
 import { motionScrollBehavior } from "../../lib/ui/motion";
 import { SectionHeading, type SectionHeadingSize } from "./SectionHeading";
 import { safeReadLS, safeWriteLS } from "../../lib/storage/storage";
@@ -72,9 +71,12 @@ export interface CollapsibleSectionProps {
  * the "Підказки" and "Аналітика" sections to reduce scroll depth.
  *
  * Two visual states:
- * - **Expanded** — section heading and a textual collapse action.
+ * - **Expanded** — section heading and a chevron pointing down.
  * - **Collapsed** — factual hairline row with an optional preview and
- *   a textual expand action; no decorative icons.
+ *   a chevron pointing right.
+ *
+ * Шеврон тут стан, а не декор (v3.1 § Згорнуто / розгорнуто): текст
+ * «Розгорнути» / «Згорнути» знято, стан для скрінрідера несе `aria-expanded`.
  *
  * Collapse animation uses CSS `grid-template-rows` for smooth height
  * transitions (no JavaScript measurement needed).
@@ -248,12 +250,10 @@ export function CollapsibleSection({
           aria-expanded={open}
           className="flex items-center gap-1.5 w-full text-left touch-target pointer-coarse:py-2 focus:outline-none focus-visible:ring-2 focus-visible:ring-focus/45 rounded-lg -ml-0.5 pl-0.5"
         >
-          <span className="text-style-caption text-muted ml-auto order-last">
-            {messages.actions.collapse}
-          </span>
           <SectionHeading as="span" size={headingSize} className="px-0!">
             {title}
           </SectionHeading>
+          <StateChevron open />
         </button>
       ) : (
         <button
@@ -278,9 +278,7 @@ export function CollapsibleSection({
               </span>
             )}
           </span>
-          <span className="text-style-caption text-muted">
-            {messages.actions.expand}
-          </span>
+          <StateChevron open={false} />
         </button>
       )}
 
@@ -297,5 +295,33 @@ export function CollapsibleSection({
         </div>
       </div>
     </section>
+  );
+}
+
+/**
+ * Шеврон 16 px третім сірим, поворот на 90° при розгортанні. Останній
+ * дочірній вузол в обох станах, тож React перевикористовує той самий `svg`
+ * і поворот анімується, хоч кнопка між станами міняє розкладку.
+ */
+function StateChevron({ open }: { open: boolean }) {
+  return (
+    <svg
+      aria-hidden="true"
+      focusable="false"
+      data-state-chevron
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="2"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      className={cn(
+        "ml-auto h-4 w-4 shrink-0 text-subtle",
+        "motion-safe:transition-transform motion-safe:duration-fast",
+        open && "rotate-90",
+      )}
+    >
+      <polyline points="9 18 15 12 9 6" />
+    </svg>
   );
 }
