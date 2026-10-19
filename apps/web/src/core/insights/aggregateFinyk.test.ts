@@ -44,6 +44,7 @@ const EMPTY_CACHE = {
   txCategories: {},
   txSplits: {},
   txNotes: {},
+  txTags: {},
   monoDebtLinkedTxIds: {},
   networthHistory: [],
   monthlyPlan: null,

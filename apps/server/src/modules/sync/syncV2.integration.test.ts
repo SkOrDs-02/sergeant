@@ -173,7 +173,7 @@ beforeEach(async () => {
               finyk_manual_expenses, finyk_tx_filters,
               finyk_tx_categories, finyk_tx_splits,
               finyk_mono_debt_links, finyk_networth_history,
-              finyk_tx_notes, finyk_prefs
+              finyk_tx_notes, finyk_tx_tags, finyk_prefs
               RESTART IDENTITY CASCADE`,
   );
 });
@@ -3023,6 +3023,94 @@ describe("syncV2Push: finyk apply-функції (PR #035)", () => {
       );
       expect(tooLong.reason).toBe("text_too_long");
       expect((await readRow())!.note).toBe("знову");
+    },
+    TIMEOUT_MS,
+  );
+
+  it(
+    "finyk_tx_tags: теги доїздять на інший пристрій, видалення - tombstone без воскресіння старим записом",
+    async (ctx) => {
+      if (!dockerAvailable || !testPool) return ctx.skip();
+      await ensureUser("u-ftt");
+
+      const push = async (
+        key: string,
+        op: "insert" | "update" | "delete",
+        tags: string[] | null,
+        clientTs: string,
+        device: string,
+      ) => {
+        const res = makeRes();
+        await syncV2Push(
+          makeReq({
+            userId: "u-ftt",
+            headers: { "x-origin-device-id": device },
+            body: {
+              ops: [
+                {
+                  table: "finyk_tx_tags",
+                  op,
+                  row: {
+                    user_id: "u-ftt",
+                    transaction_id: "mono-tx-1",
+                    ...(tags === null
+                      ? {}
+                      : { tags_json: JSON.stringify(tags) }),
+                  },
+                  client_ts: clientTs,
+                  idempotency_key: key,
+                },
+              ],
+            },
+          }),
+          res,
+        );
+        return (
+          res.body as {
+            results: Array<{ status: string; reason?: string }>;
+          }
+        ).results[0]!;
+      };
+      const readRow = async () =>
+        (
+          await testPool!.query<{
+            tags_json: string[];
+            deleted_at: Date | null;
+          }>(
+            `SELECT tags_json, deleted_at FROM finyk_tx_tags
+               WHERE user_id = $1 AND transaction_id = $2`,
+            ["u-ftt", "mono-tx-1"],
+          )
+        ).rows[0];
+
+      expect(
+        (
+          await push(
+            "ftt-1",
+            "insert",
+            ["Відпустка", "ремонт"],
+            isoNow(-6_000),
+            "device-A",
+          )
+        ).status,
+      ).toBe("applied");
+      expect((await readRow())!.tags_json).toEqual(["Відпустка", "ремонт"]);
+
+      expect(
+        (await push("ftt-2", "delete", null, isoNow(-2_000), "device-A"))
+          .status,
+      ).toBe("applied");
+      expect((await readRow())!.deleted_at).not.toBeNull();
+
+      const stale = await push(
+        "ftt-3",
+        "update",
+        ["ремонт"],
+        isoNow(-4_000),
+        "device-B",
+      );
+      expect(stale.reason).toBe("lww_conflict");
+      expect((await readRow())!.deleted_at).not.toBeNull();
     },
     TIMEOUT_MS,
   );

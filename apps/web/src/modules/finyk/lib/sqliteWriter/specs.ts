@@ -201,7 +201,24 @@ const MONO_DEBT_LINK_UPSERT_SPEC: TableSpec = {
   setIndent: 7,
 };
 
+const TX_TAGS_UPSERT_SPEC: TableSpec = {
+  table: "finyk_tx_tags",
+  insertClause: `INSERT INTO finyk_tx_tags
+       (user_id, transaction_id, tags_json, created_at, updated_at, deleted_at)
+     VALUES (?, ?, ?, ?, ?, NULL)`,
+  conflictTarget: ["user_id", "transaction_id"],
+  updateColumns: [
+    { column: "tags_json" },
+    { column: "updated_at" },
+    { column: "deleted_at", value: "NULL" },
+  ],
+  upsertGuard: "strictly-newer",
+  conflictIndent: 5,
+  setIndent: 7,
+};
+
 export const TX_CATEGORY_UPSERT_SQL = buildLwwUpsert(TX_CATEGORY_UPSERT_SPEC);
+export const TX_TAGS_UPSERT_SQL = buildLwwUpsert(TX_TAGS_UPSERT_SPEC);
 export const TX_SPLITS_UPSERT_SQL = buildLwwUpsert(TX_SPLITS_UPSERT_SPEC);
 export const MONO_DEBT_LINK_UPSERT_SQL = buildLwwUpsert(
   MONO_DEBT_LINK_UPSERT_SPEC,
@@ -217,6 +234,11 @@ export const TX_CATEGORY_DELETE_SQL = buildDelete({
 });
 export const TX_SPLITS_DELETE_SQL = buildDelete({
   table: "finyk_tx_splits",
+  deletePolicy: "soft",
+  matchColumns: ["user_id", "transaction_id"],
+});
+export const TX_TAGS_DELETE_SQL = buildDelete({
+  table: "finyk_tx_tags",
   deletePolicy: "soft",
   matchColumns: ["user_id", "transaction_id"],
 });

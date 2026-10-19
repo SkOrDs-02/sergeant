@@ -158,3 +158,25 @@ describe("normalizeFinykBackup — txNotes (аудит 2026-10-01, data-27)", ()
     ).toThrow(/txNotes/);
   });
 });
+
+describe("normalizeFinykBackup - txTags (спека finyk-analytics-v3 Р6)", () => {
+  it("пропускає мапу txId → string[], старий файл без поля теж", () => {
+    const out = normalizeFinykBackup({
+      version: FINYK_BACKUP_VERSION,
+      txTags: { "tx-1": ["відпустка", "ремонт"] },
+    });
+    expect(out.txTags).toEqual({ "tx-1": ["відпустка", "ремонт"] });
+    expect(normalizeFinykBackup({ version: 2, budgets: [] }).txTags).toBe(
+      undefined,
+    );
+  });
+
+  it("відхиляє не-масив і нерядкові теги", () => {
+    expect(() =>
+      normalizeFinykBackup({ version: 3, txTags: { a: "x" } }),
+    ).toThrow(/txTags/);
+    expect(() =>
+      normalizeFinykBackup({ version: 3, txTags: { a: [1] } }),
+    ).toThrow(/txTags/);
+  });
+});

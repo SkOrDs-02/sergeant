@@ -51,6 +51,8 @@ export interface FinykBackup {
    * Необовʼязкове поле: старі файли його не мають.
    */
   txNotes?: Record<string, string>;
+  /** Теги операцій (`txId → string[]`, спека finyk-analytics-v3 Р6). */
+  txTags?: Record<string, string[]>;
   monoDebtLinkedTxIds?: Record<string, unknown>;
   networthHistory?: unknown[];
   customCategories?: unknown[];
@@ -161,6 +163,16 @@ export function normalizeFinykBackup(parsed: unknown): FinykBackup {
       }
     }
     out.txNotes = notes as Record<string, string>;
+  }
+
+  const tags = needObj(obj["txTags"], "txTags");
+  if (tags) {
+    for (const list of Object.values(tags)) {
+      if (!Array.isArray(list) || list.some((t) => typeof t !== "string")) {
+        throw new Error("Некоректний запис у txTags");
+      }
+    }
+    out.txTags = tags as Record<string, string[]>;
   }
 
   if (obj["networthHistory"] !== undefined && obj["networthHistory"] !== null) {
