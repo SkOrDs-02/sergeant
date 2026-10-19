@@ -15,7 +15,8 @@ import type { MerchantRuleIndex } from "@sergeant/finyk-domain/lib/merchantRules
 import type { TxAccount } from "./Transactions";
 import { perfMark, perfEnd } from "@shared/lib/ui/perf";
 import { getKyivDateParts, getKyivDayKey } from "@shared/lib/time/kyivTime";
-import { filterToKyivMonth } from "../../lib/monthWindow";
+import { filterToKyivDays, filterToKyivMonth } from "../../lib/monthWindow";
+import { useFinykMirrorTransactions } from "../../hooks/useFinykStatTransactions";
 import { mergeExpenseCategoryDefinitions } from "../../constants";
 import { stripLeadingEmoji } from "../../components/txRowHelpers";
 import {
@@ -72,6 +73,11 @@ export interface UseTransactionFiltersParams {
   categoryFilter: string | null | undefined;
   /** Місяць дрил-дауну разом із `categoryFilter` (`month` 1-based, як в Аналітиці). */
   categoryMonth?: { year: number; month: number } | null | undefined;
+  /**
+   * Тиждень, рік чи діапазон дрил-дауну з Аналітики (Р5.6 спеки v3), дні
+   * `YYYY-MM-DD` включно. Список звужується до цих днів поверх місяця.
+   */
+  categoryRange?: { fromKey: string; toKey: string } | null | undefined;
   onClearCategoryFilter?: (() => void) | undefined;
   /**
    * URL-driven calendar shortcut (`?date=...`): `"today"` from Overview's
@@ -113,10 +119,15 @@ export function useTransactionFilters({
   fetchMonth,
   categoryFilter,
   categoryMonth,
+  categoryRange,
   onClearCategoryFilter,
   dayFilter,
 }: UseTransactionFiltersParams) {
   const [filter, setFilter] = useState("all");
+  const [rangeFilter, setRangeFilter] = useState<{
+    fromKey: string;
+    toKey: string;
+  } | null>(null);
   const [showHidden, setShowHidden] = useState(false);
   const [selMonth, setSelMonth] = useState(() => kyivNowMonth());
 
@@ -149,6 +160,7 @@ export function useTransactionFilters({
     setSeenCategoryFilter(incomingCategory);
     if (incomingCategory) {
       setFilter(incomingCategory);
+      setRangeFilter(categoryRange ?? null);
       // Дрил-даун несе місяць Аналітики: без цього список стартував би на
       // поточному й категорія за минулий місяць показувала б порожньо.
       if (categoryMonth) {
@@ -189,14 +201,30 @@ export function useTransactionFilters({
   // місяця — це період, а не доба.
   const monthKey = `${selMonth.year}-${String(selMonth.month + 1).padStart(2, "0")}`;
 
-  const manualExpenseTxs = useMemo(
-    () =>
-      filterToKyivMonth(
-        (manualExpenses || []).map((e) => manualExpenseToTransaction(e)),
-        monthKey,
-      ),
-    [manualExpenses, monthKey],
-  );
+  const manualExpenseTxs = useMemo(() => {
+    const all = (manualExpenses || []).map((e) =>
+      manualExpenseToTransaction(e),
+    );
+    return rangeFilter
+      ? filterToKyivDays(all, rangeFilter.fromKey, rangeFilter.toKey)
+      : filterToKyivMonth(all, monthKey);
+  }, [manualExpenses, monthKey, rangeFilter]);
+
+  // Діапазон може зачепити кілька місяців, а `historyTx` тримає лише
+  // останній. Аналітика, з якої прийшов дрил-даун, уже записала кожен
+  // місяць періоду в SQLite-дзеркало, тож діапазон читається звідти.
+  const mirrorTx = useFinykMirrorTransactions();
+  const rangeBankTxs = useMemo(() => {
+    if (!rangeFilter) return null;
+    const byId = new Map<string, Transaction>();
+    for (const tx of [...mirrorTx, ...historyTx, ...realTx])
+      byId.set(tx.id, tx);
+    return filterToKyivDays(
+      [...byId.values()],
+      rangeFilter.fromKey,
+      rangeFilter.toKey,
+    );
+  }, [rangeFilter, mirrorTx, historyTx, realTx]);
 
   // The bank-side slice can carry rows outside `selMonth`: the read-overlay
   // in `useMonobankWebhook` falls back to the full SQLite mirror on a cold
@@ -204,8 +232,10 @@ export function useTransactionFilters({
   // in flight. Clamp to the selected month so the rendered rows always match
   // `monthLabel` instead of leaking adjacent-month groups under the header.
   const monthBankTxs = useMemo(
-    () => filterToKyivMonth(isCurrentMonth ? realTx : historyTx, monthKey),
-    [isCurrentMonth, realTx, historyTx, monthKey],
+    () =>
+      rangeBankTxs ??
+      filterToKyivMonth(isCurrentMonth ? realTx : historyTx, monthKey),
+    [rangeBankTxs, isCurrentMonth, realTx, historyTx, monthKey],
   );
 
   const activeTx = useMemo(
@@ -232,6 +262,7 @@ export function useTransactionFilters({
   // стабільний handler уникає створення нових замикань на кожен рендер.
   const goMonth = useCallback(
     (delta: number) => {
+      setRangeFilter(null);
       setSelMonth((prev) => {
         let m = prev.month + delta;
         let y = prev.year;
@@ -535,6 +566,8 @@ export function useTransactionFilters({
     isCurrentMonth,
     goMonth,
     monthLabel,
+    rangeFilter,
+    clearRangeFilter: () => setRangeFilter(null),
     // derived
     activeTx,
     activeLoading,

@@ -1,17 +1,22 @@
 import { messages } from "@shared/i18n";
-import { useCallback, useState, useEffect, useMemo, Suspense } from "react";
+import { useState, useEffect, useMemo, Suspense } from "react";
 import { Skeleton } from "@shared/components/ui/Skeleton";
 import { EmptyState } from "@shared/components/ui/EmptyState";
-import { getKyivDateParts } from "@shared/lib/time/kyivTime";
+import { getKyivDayKey } from "@shared/lib/time/kyivTime";
 import { useAnalytics } from "../hooks/useAnalytics";
-import { useAnalyticsMonthData } from "../hooks/useAnalyticsMonthData";
+import { useAnalyticsPeriodData } from "../hooks/useAnalyticsPeriodData";
+import { formatHistoryStart } from "../lib/analyticsPeriodLabel";
+import {
+  periodOf,
+  type AnalyticsPeriod,
+} from "@sergeant/finyk-domain/domain/analyticsPeriod";
 import { AccountBars, CategoryBars } from "../components/charts/lazy";
 import { filterByAccountKey } from "@sergeant/finyk-domain/domain/accountBreakdown";
 import { ChartFallback } from "../components/charts/ChartFallback";
 import { AnalyticsSection as Section } from "../components/analytics/AnalyticsSection";
 import { AnalyticsSummary } from "../components/analytics/AnalyticsSummary";
 import { ComparisonRow } from "../components/analytics/ComparisonRow";
-import { MonthNav } from "../components/analytics/MonthNav";
+import { PeriodNav } from "../components/analytics/PeriodNav";
 import { MerchantList } from "../components/analytics/MerchantList";
 import { MonthlyTrendBars } from "../components/analytics/MonthlyTrendBars";
 import { CategoryDeltaTable } from "../components/analytics/CategoryDeltaTable";
@@ -64,10 +69,7 @@ export interface AnalyticsProps {
    * Аналітику не глухим кутом: доти вона казала «скільки», але дійти від
    * числа до самих операцій було ніяк.
    */
-  onSelectCategory?: (
-    categoryId: string,
-    period: { year: number; month: number },
-  ) => void;
+  onSelectCategory?: (categoryId: string, period: AnalyticsPeriod) => void;
   /**
    * «Приховати суми» (PR-F3 founder-UX audit 2026-09-13): доти сторінка
    * не приймала цей проп узагалі, тож перемикач з Огляду не діяв тут —
@@ -82,10 +84,12 @@ export function Analytics({
   onSelectCategory,
   showBalance = true,
 }: AnalyticsProps) {
-  // Use Kyiv-local year/month so "current month" tracks Europe/Kyiv day boundaries.
-  const nowKyiv = getKyivDateParts();
-  const [year, setYear] = useState(nowKyiv.year);
-  const [month, setMonth] = useState(nowKyiv.month);
+  // Київський день: «поточний період» живе за межами доби Europe/Kyiv.
+  const todayKey = getKyivDayKey();
+  const [period, setPeriod] = useState<AnalyticsPeriod>(() =>
+    periodOf("month", todayKey),
+  );
+  const copy = messages.finyk.analyticsPage;
 
   // Fire-and-forget: record that the analytics view was opened. Intentionally
   // runs once on mount (no month dep) so re-selecting months doesn't spam.
@@ -108,7 +112,8 @@ export function Analytics({
   }, []);
 
   const {
-    isCurrentMonth,
+    isCurrent,
+    comparison: comparisonWindow,
     loading,
     fetchError,
     retry: retryCurrentMonth,
@@ -116,9 +121,13 @@ export function Analytics({
     allActiveTx,
     allPrevTx,
     prevLoaded,
-  } = useAnalyticsMonthData({
-    year,
-    month,
+    periodLoaded,
+    historyStartKey,
+    neededMonths,
+    pendingMonths,
+  } = useAnalyticsPeriodData({
+    period,
+    todayKey,
     realTx: mono.realTx,
     fetchMonth: mono.fetchMonth,
     manualExpenses: storage.manualExpenses,
@@ -156,12 +165,6 @@ export function Analytics({
     [storage, activeTx, prevTx, prevLoaded],
   );
 
-  const { summary, distribution, topMerchants } = useAnalytics({
-    mono: analyticsMono,
-    storage: analyticsStorage,
-    prevTx: prevLoaded ? prevTx : null,
-  });
-
   const comparison = useMemo(() => {
     if (!prevLoaded) return null;
     const c = getTrendComparison(activeTx, prevTx, {
@@ -176,6 +179,23 @@ export function Analytics({
     return c;
   }, [activeTx, prevTx, prevLoaded, storage.excludedTxIds, storage.txSplits]);
 
+  // Р5.5: база порівняння мусить бути повною. Коли найраніший відомий
+  // запис пізніший за початок вікна порівняння, база обрізана, і замість
+  // відсотків секція чесно каже, з якої дати є дані.
+  const historyGap =
+    comparison && historyStartKey && historyStartKey > comparisonWindow.fromKey
+      ? historyStartKey
+      : null;
+  const canCompare = Boolean(
+    comparison && comparison.prevTxCount > 0 && !historyGap,
+  );
+
+  const { summary, distribution, topMerchants } = useAnalytics({
+    mono: analyticsMono,
+    storage: analyticsStorage,
+    prevTx: canCompare ? prevTx : null,
+  });
+
   const trend = useMonthlyTrend(
     { ...storage, merchantRules: storage.merchantRuleIndex },
     null,
@@ -184,7 +204,7 @@ export function Analytics({
 
   const categoryDeltas = useMemo(
     () =>
-      comparison && comparison.prevTxCount > 0
+      canCompare
         ? getCategoryDeltas(activeTx, prevTx, {
             excludedTxIds: storage.excludedTxIds,
             txSplits: storage.txSplits,
@@ -193,7 +213,7 @@ export function Analytics({
           })
         : [],
     [
-      comparison,
+      canCompare,
       activeTx,
       prevTx,
       storage.excludedTxIds,
@@ -207,14 +227,11 @@ export function Analytics({
   const plannedSavings = Number(storage.monthlyPlan?.savings) || 0;
 
   const pageLoading =
-    (isCurrentMonth ? mono.loadingTx : loading) && allActiveTx.length === 0;
-
-  // useCallback — передається у memo(MonthNav); стабільне посилання дозволяє
-  // уникати перерендеру навігації при оновленні інших частин сторінки.
-  const handleMonthChange = useCallback((y: number, m: number) => {
-    setYear(y);
-    setMonth(m);
-  }, []);
+    allActiveTx.length === 0 &&
+    ((isCurrent && mono.loadingTx) || (!periodLoaded && !fetchError));
+  const sameDays = comparisonWindow.partial;
+  const withSameDays = (title: string) =>
+    sameDays ? `${title} ${copy.sameDays}` : title;
 
   return (
     <div className="flex-1 overflow-y-auto">
@@ -222,7 +239,15 @@ export function Analytics({
         <h1 className="text-style-headline text-text">
           {messages.finykRedesign.analyticsTitle}
         </h1>
-        <MonthNav year={year} month={month} onChange={handleMonthChange} />
+        <PeriodNav period={period} todayKey={todayKey} onChange={setPeriod} />
+        {/* Рік тягне до 25 місяців: прогрес замість мовчазно неповних сум. */}
+        {pendingMonths > 0 && neededMonths > 3 && (
+          <p role="status" className="text-style-caption text-muted">
+            {copy.historyLoading
+              .replace("{done}", String(neededMonths - pendingMonths))
+              .replace("{total}", String(neededMonths))}
+          </p>
+        )}
 
         {fetchError && bankTx.length === 0 && (
           <div className="flex items-center justify-between gap-3 px-4 py-3 rounded-lg bg-panel border border-danger/20 text-style-label text-danger-strong dark:text-danger">
@@ -238,28 +263,29 @@ export function Analytics({
         )}
 
         <AnalyticsSummary
-          title="Підсумок місяця"
+          title={copy.summaryTitle[period.kind]}
           loading={pageLoading}
           summary={summary}
           savingsRate={savingsRate}
-          // План фінплану діє лише на поточний місяць: для минулих
-          // місяців його тоді ще не було.
-          plannedSavings={isCurrentMonth ? plannedSavings : 0}
+          // План фінплану місячний і діє лише на поточний місяць: для
+          // минулих місяців його тоді ще не було.
+          plannedSavings={
+            period.kind === "month" && isCurrent ? plannedSavings : 0
+          }
           showBalance={showBalance}
         />
 
         {/* Comparison */}
         {comparison && (
-          <Section
-            title={
-              isCurrentMonth
-                ? "Порівняння з попереднім місяцем за ті ж дні"
-                : "Порівняння з попереднім місяцем"
-            }
-          >
-            {comparison.prevTxCount === 0 ? (
+          <Section title={withSameDays(copy.comparisonTitle[period.kind])}>
+            {!canCompare ? (
               <p className="text-style-label text-muted">
-                Немає з чим порівняти
+                {historyGap
+                  ? copy.noComparisonSince.replace(
+                      "{date}",
+                      formatHistoryStart(historyGap),
+                    )
+                  : copy.noComparison}
               </p>
             ) : (
               <div className="space-y-2">
@@ -291,7 +317,11 @@ export function Analytics({
             <EmptyState
               compact
               title="Поки немає витрат"
-              description="Цього місяця витрат ще немає. Додай першу або підключи Monobank."
+              description={
+                period.kind === "month"
+                  ? "Цього місяця витрат ще немає. Додай першу або підключи Monobank."
+                  : copy.emptyPeriod
+              }
             />
           ) : (
             <Suspense fallback={<ChartFallback className="h-40" />}>
@@ -301,10 +331,10 @@ export function Analytics({
                 showBalance={showBalance}
                 {...(onSelectCategory
                   ? {
-                      // Несемо вибраний місяць Аналітики (month 1-based),
-                      // інакше Операції відкриються на поточному (PR-F6).
+                      // Несемо обраний період Аналітики, інакше Операції
+                      // відкриються на поточному місяці (PR-F6, Р5.6).
                       onSelectCategory: (categoryId: string) =>
-                        onSelectCategory(categoryId, { year, month }),
+                        onSelectCategory(categoryId, period),
                     }
                   : {})}
               />
@@ -316,7 +346,9 @@ export function Analytics({
           <Suspense fallback={null}>
             <AccountBars
               transactions={allActiveTx}
-              previousTransactions={prevLoaded ? allPrevTx : null}
+              previousTransactions={
+                prevLoaded && !historyGap ? allPrevTx : null
+              }
               excludedTxIds={storage.excludedTxIds}
               txSplits={storage.txSplits}
               accounts={mono.accounts ?? []}
@@ -340,13 +372,7 @@ export function Analytics({
         )}
 
         {categoryDeltas.length > 0 && (
-          <Section
-            title={
-              isCurrentMonth
-                ? "Категорії проти минулого місяця за ті ж дні"
-                : "Категорії проти минулого місяця"
-            }
-          >
+          <Section title={withSameDays(copy.categoryDeltasTitle[period.kind])}>
             <CategoryDeltaTable
               rows={categoryDeltas}
               showBalance={showBalance}
@@ -356,10 +382,10 @@ export function Analytics({
 
         {/* Merchants */}
         {/* Дельти продавців рахуються з того ж `prevTx`, що й порівняння
-            вище, тож у незавершеному місяці це теж «ті ж дні». */}
+            вище, тож у незавершеному періоді це теж «ті ж дні». */}
         <Section
           title={
-            isCurrentMonth
+            sameDays
               ? "Найбільші витрати: зміна за ті ж дні"
               : "Найбільші витрати"
           }
@@ -374,7 +400,11 @@ export function Analytics({
             <EmptyState
               compact
               title="Поки немає продавців"
-              description="Витрат за цей місяць ще не записано."
+              description={
+                period.kind === "month"
+                  ? "Витрат за цей місяць ще не записано."
+                  : copy.emptyPeriodMerchants
+              }
             />
           ) : (
             <MerchantList
