@@ -347,7 +347,7 @@ app.ts:147 applyBodySizePolicy стоїть до registerRoutes (169), тож п
 
 ### `rel-05` [medium] GET /api/v2/sync/stream не має стелі одночасних з'єднань і backpressure
 
-- **Стан:** відкрито
+- **Стан:** частково виправлено в гілці claude/fix-rel-05-sync-stream-backpressure (глобальної стелі стрімів немає свідомо: потрібна лише при multi-instance, ADR-0065; маршрут і далі вимкнений прапорцем `SYNC_V2_STREAM_ENABLED`)
 - **Перевірка:** підтверджено · **Зусилля:** S · **Швидкий виграш** · **Область:** server: sync SSE
 - **Та сама першопричина, що й** [`sec-09`](./security.md#sec-09): Обидва дефекти в /api/v2/sync/stream, у якого немає споживача: немає повторної перевірки сесії, TTL і стелі з'єднань. Найдешевший спільний фікс — закрити маршрут прапорцем до Phase 3.
 - **Де:** apps/server/src/modules/sync/syncV2Stream.ts:90-97,214-412,341,355; apps/server/src/routes/sync.ts:90-98; apps/server/src/http/timeout.ts:53-63
