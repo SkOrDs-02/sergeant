@@ -184,6 +184,16 @@ describe("Overview page (branches)", () => {
     expect(screen.queryByText("Капітал")).toBeNull();
   });
 
+  it("не показує порожній стан, поки сховище ще прогрівається", () => {
+    renderOverview({ storage: buildStorage({ storageReady: false }) });
+    expect(screen.queryByText("Витрат ще немає")).toBeNull();
+  });
+
+  it("показує порожній стан, коли сховище прогріте і даних немає", () => {
+    renderOverview({ storage: buildStorage({ storageReady: true }) });
+    expect(screen.getByText("Витрат ще немає")).toBeInTheDocument();
+  });
+
   it("renders hero content when transactions are available", () => {
     renderOverview({
       mono: buildMono({ realTx: [mkTx("t1", -5000)] }),
