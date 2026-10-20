@@ -169,3 +169,23 @@ export const aiMemoryRecallResultsTotal = new client.Counter({
   labelNames: ["caller", "outcome"],
   registers: [register],
 });
+
+// ───────────────────── Reminder sweep (setTimeout-драйвер) ─────────────────
+/**
+ * Результати хвилинного проходу серверних нагадувань (`lib/reminders`).
+ *
+ * WHY (rel-01). Виняток із `runReminderSweep` ловить лише `scheduler.ts` і
+ * пише `warn reminder_sweep_failed`. Без лічильника отруєний рядок (одна
+ * звичка з непридатним `start_date`) тихо вимикав нагадування ВСІМ, а
+ * моніторинг цього не бачив: пропущені хвилини не повертаються. Прохід
+ * щохвилини, тож стабільний збій дає ~1 приріст `failed` на хвилину.
+ *
+ * Лейбл лише `outcome` (`ok|failed`): userId/причину в лейбл не кладемо
+ * (кардинальність + Hard Rule #21); деталі в логу `reminder_sweep_failed`.
+ */
+export const reminderSweepRunsTotal = new client.Counter({
+  name: "reminder_sweep_runs_total",
+  help: "Reminder sweep runs by outcome (ok|failed)",
+  labelNames: ["outcome"],
+  registers: [register],
+});

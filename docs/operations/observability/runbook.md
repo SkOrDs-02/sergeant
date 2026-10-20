@@ -1,6 +1,6 @@
 # Observability-runbook
 
-> **Last touched:** 2026-10-03 by @claude (секція Renovate PR → PR Dependabot, ADR-0103). **Next review:** 2026-12-02.
+> **Last touched:** 2026-10-20 by @claude (секція ReminderSweepFailed, rel-01); 2026-10-03 by @claude (секція Renovate PR → PR Dependabot, ADR-0103). **Next review:** 2026-12-02.
 > **Status:** Active
 
 > **Update 2026-07-21:** API/server logs — **Coolify** ([ADR-0074](../../governance/adr/0074-hosting-hetzner-coolify.md)). Посилання на «n8n Railway env» нижче — legacy n8n hosting (migrate TBD). OpenClaw WF-103 env — historical ([ADR-0075](../../governance/adr/0075-openclaw-gateway-decommissioned.md)).
@@ -232,6 +232,15 @@ latency вже достатньо висока, щоб rolling deploy / cold sta
 2. Correlate за `requestId` у лозі з HTTP-access логом.
 3. Patch гіпотетично в наступному релізі; temporary — тримай за алерт.
 4. `unhandledRejectionsTotal` не має бути >0 у нормі, навіть не короткочасно.
+
+## ReminderSweepFailed
+
+Хвилинний прохід серверних нагадувань (`apps/server/src/lib/reminders/scheduler.ts`) кидає виняток, тож нагадування не йдуть нікому: звички, Фізрук, харчування, nudge. Пропущені хвилини не повертаються.
+
+1. Лог Pino за той самий інтервал: `msg="reminder_sweep_failed"`, поле `err.message`. Без `userId`: виняток вилітає ще до claim/send.
+2. `parseDateKey: invalid date key` означає отруєний рядок `routine_habits` (`recurrence=monthly` із непридатним `start_date`). Знайди його у БД і виправ або soft-delete: `SELECT id, user_id, recurrence, start_date FROM routine_habits WHERE deleted_at IS NULL AND recurrence = 'monthly' AND start_date !~ '^\d{4}-\d{2}-\d{2}$';`.
+3. Інша причина (БД, push-апстрім) видно в `err`; звір з `db_pool_waiting` і `external_http_*`.
+4. Метрика `reminder_sweep_runs_total{outcome="failed"}` зростає на ~1/хв, поки причина жива; після виправлення приріст зупиняється, алерт гасне сам.
 
 ## DbPoolWaitingSustained
 

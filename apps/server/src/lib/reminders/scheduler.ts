@@ -19,6 +19,7 @@
 import type { Pool } from "pg";
 
 import { logger, serializeError } from "../../obs/logger.js";
+import { reminderSweepRunsTotal } from "../../obs/metrics.js";
 import { pruneReminderLog, runReminderSweep } from "./sweep.js";
 
 export interface StartedReminderScheduler {
@@ -64,8 +65,13 @@ export function startReminderScheduler(pool: Pool): StartedReminderScheduler {
 
   const tick = async (): Promise<void> => {
     if (stopped) return;
+    // `true` після того, як сам прохід (claim + send) відпрацював: падіння
+    // добового prune нижче не означає втрачену хвилину нагадувань.
+    let sweepCompleted = false;
     try {
       const result = await runReminderSweep(pool);
+      sweepCompleted = true;
+      reminderSweepRunsTotal.inc({ outcome: "ok" });
       // Прибирання привʼязане до київської години, а не до інтервалу: так
       // воно трапляється рівно раз на добу незалежно від рестартів.
       if (result.hm === PRUNE_AT_HM && lastPruneDayKey !== result.dayKey) {
@@ -76,6 +82,9 @@ export function startReminderScheduler(pool: Pool): StartedReminderScheduler {
         }
       }
     } catch (err) {
+      // Метрика лише для збою самого проходу (rel-01): саме він мовчки
+      // відбирає нагадування в усіх. Збій prune лишається логом.
+      if (!sweepCompleted) reminderSweepRunsTotal.inc({ outcome: "failed" });
       logger.warn({
         msg: "reminder_sweep_failed",
         err: serializeError(err, { includeStack: false }),

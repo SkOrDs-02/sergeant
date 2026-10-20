@@ -30,6 +30,7 @@ vi.mock("../../obs/logger.js", () => ({
 }));
 
 const { startReminderScheduler } = await import("./scheduler.js");
+const { reminderSweepRunsTotal } = await import("../../obs/metrics.js");
 
 const pool = {} as Pool;
 
@@ -121,5 +122,56 @@ describe("startReminderScheduler", () => {
 
     await vi.advanceTimersByTimeAsync(5 * 62_000);
     expect(runReminderSweep).not.toHaveBeenCalled();
+  });
+
+  describe("метрика reminder_sweep_runs_total (rel-01)", () => {
+    async function count(outcome: "ok" | "failed"): Promise<number> {
+      const { values } = await reminderSweepRunsTotal.get();
+      return values.find((v) => v.labels.outcome === outcome)?.value ?? 0;
+    }
+
+    it("рахує failed, коли прохід кидає виняток, і лишає warn у логу", async () => {
+      runReminderSweep.mockRejectedValue(new Error("parseDateKey: invalid"));
+      const failedBefore = await count("failed");
+      const okBefore = await count("ok");
+
+      const scheduler = startReminderScheduler(pool);
+      await fireTick();
+      await scheduler.stop();
+
+      expect(await count("failed")).toBe(failedBefore + 1);
+      expect(await count("ok")).toBe(okBefore);
+      expect(logger.warn).toHaveBeenCalledWith(
+        expect.objectContaining({ msg: "reminder_sweep_failed" }),
+      );
+    });
+
+    it("рахує ok на успішному проході і не чіпає failed", async () => {
+      runReminderSweep.mockResolvedValue({ dayKey: "2026-09-16", hm: "08:00" });
+      const failedBefore = await count("failed");
+      const okBefore = await count("ok");
+
+      const scheduler = startReminderScheduler(pool);
+      await fireTick();
+      await scheduler.stop();
+
+      expect(await count("ok")).toBe(okBefore + 1);
+      expect(await count("failed")).toBe(failedBefore);
+    });
+
+    it("збій добового prune не рахується як втрачений прохід", async () => {
+      runReminderSweep.mockResolvedValue({ dayKey: "2026-09-16", hm: "03:07" });
+      pruneReminderLog.mockRejectedValueOnce(new Error("prune boom"));
+      const failedBefore = await count("failed");
+
+      const scheduler = startReminderScheduler(pool);
+      await fireTick();
+      await scheduler.stop();
+
+      expect(await count("failed")).toBe(failedBefore);
+      expect(logger.warn).toHaveBeenCalledWith(
+        expect.objectContaining({ msg: "reminder_sweep_failed" }),
+      );
+    });
   });
 });

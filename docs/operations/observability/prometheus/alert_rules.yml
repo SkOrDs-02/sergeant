@@ -389,6 +389,26 @@ groups:
             у `db_slow_queries_total{op}`.
           runbook: "docs/operations/observability/runbook.md#dbpoolsaturated"
 
+      # rel-01. Хвилинний reminder sweep (`apps/server/src/lib/reminders`)
+      # падає цілком, якщо один рядок користувача отруює предикат розкладу, і
+      # тоді нагадування зникають у ВСІХ. Прохід щохвилини, тож стабільний
+      # збій = ~1 приріст `failed` на хвилину; поріг 3 за 10m відсікає
+      # одиничний збій (рестарт, блінк БД). Ключ у логу: `reminder_sweep_failed`.
+      # Правило треба залити в Mimir вручну (`mimirtool rules sync`).
+      - alert: ReminderSweepFailed
+        expr: increase(reminder_sweep_runs_total{outcome="failed"}[10m]) >= 3
+        for: 0m
+        labels:
+          severity: ticket
+        annotations:
+          summary: "Reminder sweep падає ({{ $value }} збоїв за 10m): серверні нагадування не йдуть"
+          description: |
+            `runReminderSweep` кидає виняток на кількох проходах поспіль.
+            Типова причина: отруєний рядок `routine_habits` (непридатний
+            `start_date`/`recurrence`), який валить `routineDueNow` для всіх
+            користувачів. Пропущені хвилини не надолужуються.
+          runbook: "docs/operations/observability/runbook.md#remindersweepfailed"
+
       - alert: ProgrammerErrorsIncreasing
         expr: increase(app_errors_total{kind="programmer"}[5m]) > 0
         for: 0m
