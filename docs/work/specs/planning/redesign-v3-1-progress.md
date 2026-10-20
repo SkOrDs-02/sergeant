@@ -16,7 +16,7 @@
 
 ## PR4 · стан
 
-**Де зупинився:** PR4 закомічено, ревʼю design-reviewer: зроблено пп. 1-4. Далі: typecheck, тести зачеплених файлів, ratchet і перезнімання кадрів after (`hub-settings`, `nutrition`, `nutrition-pantry`). Worktree `D:/Sergeant/.claude/worktrees/agent-a3fa5bdf3bf79960f`, гілка `claude/redesign-v3-1-pr4`, попередній SHA `f906310e6`.
+**Де зупинився:** PR4 і правки ревʼю design-reviewer (пп. 1-4) закомічено й запушено, останній код `be9e4062d`. Після правок: typecheck 0, ratchet 0 (4 / 23 / 1), vitest `src/modules/nutrition`, `src/shared/components/ui`, `src/core/settings`, інсайт-блоки Фініка й хаба: 3 116 passed, 0 failed. Кадри after перезняті (`hub-settings`, `nutrition`, `nutrition-pantry`, `finyk`, 8 / 8); сценарій Фініка картку інсайту не показує, тож п. 2 на Фініку перевірено тестом. Далі: PR відкриває координатор; мультивибір із заливкою позначки чекає підтвердження власника. Worktree `D:/Sergeant/.claude/worktrees/agent-a3fa5bdf3bf79960f`, гілка `claude/redesign-v3-1-pr4`.
 
 ## PR4 · Їжа
 
