@@ -293,6 +293,19 @@ export function nutritionDualWriteFailedRuns(): number {
 }
 
 /**
+ * Скільки записів пішло в буфер {@link pendingBeforeRegistration}, бо контекст
+ * ще (або вже не) зареєстровано. Такий запис не стартує чергу: `failedRuns` не
+ * росте, `nutritionDualWriteIdle()` завершується одразу, тож без цього
+ * лічильника HubChat рапортував би «записано» без запису (rel-16). Монотонний:
+ * викликач знімає значення ДО дії й порівнює ПІСЛЯ.
+ */
+let bufferedRuns = 0;
+
+export function nutritionDualWriteBufferedRuns(): number {
+  return bufferedRuns;
+}
+
+/**
  * `true`, поки є запис, чий результат ще не потрапив у кеш: буферизований до
  * реєстрації контексту або в черзі. `nutritionStorage` тримає «останній
  * записаний prefs» саме на цей час (data-04).
@@ -326,6 +339,7 @@ export function triggerNutritionDualWrite(
     // переживе (userId ще невідомий, журналювати нема під чим) — вужче
     // вікно, ніж поточний гарантований дроп на кожному ранньому записі.
     pendingBeforeRegistration.push({ prev, next });
+    bufferedRuns += 1;
     return;
   }
   // Диф, мітку часу і журнал беремо синхронно, ДО асинхронної межі нижче:

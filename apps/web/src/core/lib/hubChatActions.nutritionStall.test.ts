@@ -14,6 +14,7 @@ const dispatched: string[] = [];
 vi.mock("../../modules/nutrition/lib/sqliteWriter/index", () => ({
   hasPendingNutritionDualWrites: () => true,
   nutritionDualWriteFailedRuns: () => 0,
+  nutritionDualWriteBufferedRuns: () => 0,
   nutritionDualWriteIdle: () => new Promise<void>(() => {}),
 }));
 

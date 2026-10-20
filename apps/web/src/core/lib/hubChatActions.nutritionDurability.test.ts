@@ -97,4 +97,30 @@ describe("executeActions — довговічність дій Їжі (rel-16)",
     const [good] = await executeActions([water(100, "2026-10-06")]);
     expect(good?.ok).toBe(true);
   });
+
+  it("НЕ рапортує успіх, коли dual-write контекст не зареєстровано (запис осів у буфері)", async () => {
+    // Кеш прогрітий (beforeEach), але контекст знято: вихід, зміна користувача
+    // або вікно до auth-резолву. `triggerNutritionDualWrite` лише буферизує
+    // запис, черга не стартує, `nutritionDualWriteIdle()` завершується одразу.
+    teardown();
+    const [out] = await executeActions([water(250, "2026-10-05")]);
+    expect(out?.ok).toBe(false);
+    expect(out?.result).toContain("Не вдалося зберегти");
+    expect(out?.undo).toBeUndefined();
+  });
+
+  it("буфер, що лишився від попередньої дії, не отруює наступну дію із зареєстрованим контекстом", async () => {
+    teardown();
+    const [bad] = await executeActions([water(250, "2026-10-05")]);
+    expect(bad?.ok).toBe(false);
+    teardown = registerNutritionDualWriteContext({
+      getUserId: () => UID,
+      getMigrationClient: async () => handle.client,
+      getNow: nextTs,
+      logger: () => {},
+    });
+    await nutritionDualWriteIdle();
+    const [good] = await executeActions([water(100, "2026-10-06")]);
+    expect(good?.ok).toBe(true);
+  });
 });

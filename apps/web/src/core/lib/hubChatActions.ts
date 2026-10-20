@@ -14,6 +14,7 @@ import {
 import { captureChatWrites, combineChatWrites } from "./chatActions/chatWrites";
 import {
   hasPendingNutritionDualWrites,
+  nutritionDualWriteBufferedRuns,
   nutritionDualWriteFailedRuns,
   nutritionDualWriteIdle,
 } from "../../modules/nutrition/lib/sqliteWriter/index";
@@ -287,6 +288,7 @@ export async function executeActions(
       continue;
     }
     const nutritionFailedBefore = nutritionDualWriteFailedRuns();
+    const nutritionBufferedBefore = nutritionDualWriteBufferedRuns();
     const { value: dispatched, writes } = captureChatWrites(() =>
       dispatch(action),
     );
@@ -301,9 +303,14 @@ export async function executeActions(
     if (hasPendingNutritionDualWrites()) {
       if (!(await waitNutritionIdle())) {
         nutritionStalled = true;
-      } else if (nutritionDualWriteFailedRuns() > nutritionFailedBefore) {
+      } else if (
+        nutritionDualWriteFailedRuns() > nutritionFailedBefore ||
+        nutritionDualWriteBufferedRuns() > nutritionBufferedBefore
+      ) {
         // Черга спорожніла, але запуск не записав у SQLite («sqlite
-        // недоступна» тощо): це не успіх.
+        // недоступна» тощо) або запис осів у буфері до реєстрації
+        // dual-write контексту (черга не стартувала, idle завершився
+        // одразу): це не успіх.
         confirms.push(Promise.resolve(false));
       }
     }
