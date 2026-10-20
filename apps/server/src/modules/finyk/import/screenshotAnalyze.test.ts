@@ -22,6 +22,7 @@ vi.mock("../../../db.js", () => ({
 }));
 
 import { anthropicMessages as _anthropicMessages } from "../../../lib/anthropic.js";
+import pool from "../../../db.js";
 import screenshotAnalyzeHandler, {
   normalizeImportScreenshotResult,
   salvageRowsFromTruncatedJson,
@@ -538,6 +539,47 @@ describe("screenshotAnalyzeHandler", () => {
       draft: { rows: Array<{ occurrenceIndex?: number }> };
     };
     expect(body.draft.rows.map((r) => r.occurrenceIndex)).toEqual([0, 1]);
+  });
+
+  it("data-30: скрін, що збігається з mono-операцією, отримує monoMatchLikely, а не зникає", async () => {
+    envMock.LLM_RECEIPT_PROVIDER = "openrouter";
+    envMock.OPENROUTER_API_KEY = "or-key";
+    anthropicMessages.mockResolvedValueOnce(
+      anthropicResponses.text(
+        JSON.stringify({
+          doc_type: "bank_screenshot",
+          bank: "monobank",
+          rows: [
+            {
+              date: "2026-07-16",
+              time: "09:10",
+              amount_kopiykas: 9500,
+              direction: "expense",
+              description: "АТБ",
+              confidence: 0.9,
+            },
+          ],
+        }),
+      ),
+    );
+    const query = pool.query as unknown as Mock;
+    // 1-й запит – сітка дублів (порожньо), 2-й – пари з mono_transaction.
+    query.mockResolvedValueOnce({ rows: [] });
+    query.mockResolvedValueOnce({
+      rows: [{ ord: "1", mono_tx_id: "tx-1", day_diff: 0 }],
+    });
+
+    const res = makeRes();
+    await screenshotAnalyzeHandler(
+      makeReq({ image_base64: PNG_BASE64, mime_type: "image/png" }),
+      res,
+    );
+
+    const body = res.body as {
+      draft: { rows: Array<{ monoMatchLikely?: boolean }> };
+    };
+    expect(body.draft.rows).toHaveLength(1);
+    expect(body.draft.rows[0]?.monoMatchLikely).toBe(true);
   });
 });
 

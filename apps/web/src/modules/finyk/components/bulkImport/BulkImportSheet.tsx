@@ -29,6 +29,7 @@ import { Button } from "@shared/components/ui/Button";
 import { Sheet } from "@shared/components/ui/Sheet";
 import { useResetPinchZoomAfterCameraCapture } from "@shared/hooks/useResetPinchZoomOnResume";
 import type {
+  ImportCommitProfile,
   ImportScreenshotDraft,
   ImportSkippedRow,
   ImportSource,
@@ -169,6 +170,10 @@ export function BulkImportSheet({
   const [stage, setStage] = useState<Stage>("choose");
   const [flowError, setFlowError] = useState<string | null>(null);
   const [importSource, setImportSource] = useState<ImportSource | null>(null);
+  // Звідки рядки (профіль виписки або скрін): сервер застосовує тір-1
+  // mono-дедуп лише для `mono` (data-30), тож профіль їде в commit.
+  const [importProfile, setImportProfile] =
+    useState<ImportCommitProfile | null>(null);
   const [reviewRows, setReviewRows] = useState<BulkReviewRow[]>([]);
   const [skippedNote, setSkippedNote] = useState<string | null>(null);
   const [pendingStatementFile, setPendingStatementFile] =
@@ -221,6 +226,7 @@ export function BulkImportSheet({
       setStage("choose");
       setFlowError(null);
       setImportSource(null);
+      setImportProfile(null);
       setReviewRows([]);
       setSkippedNote(null);
       setPendingStatementFile(null);
@@ -272,6 +278,7 @@ export function BulkImportSheet({
         return;
       }
       setImportSource("bank_screenshot");
+      setImportProfile("screenshot");
       setReviewRows(screenshotRowsToBulkReviewRows(draft.rows, rowOptions));
       setSkippedNote(null);
       setProcessing(null);
@@ -312,6 +319,9 @@ export function BulkImportSheet({
       return;
     }
     setImportSource("bank_statement");
+    // `needsMapping: false` завжди має профіль; `null` лише для старого
+    // сервера, тоді профіль не шлемо (= без тір-1, рядки не зникають мовчки).
+    setImportProfile(response.profile ?? null);
     setReviewRows(statementRowsToBulkReviewRows(response.rows, rowOptions));
     setSkippedNote(summarizeSkipped(response.skipped));
     setStage("bulk-review");
@@ -364,6 +374,7 @@ export function BulkImportSheet({
     try {
       const response = await commit.mutateAsync({
         source: importSource,
+        ...(importProfile ? { profile: importProfile } : {}),
         rows: toCommitRows(reviewRows),
       });
       setCommitResult(response);
