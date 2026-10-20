@@ -45,6 +45,11 @@ export interface Insight {
   /** Subtitle — рекомендована дія ("Встановити ліміт"). */
   subtitle: string;
   /**
+   * Підзаголовок справді дія, а не факт із числами: картка тоді пише його
+   * чорнилом жирним (v3.1, інвентар Е3). Без прапорця - другий сірий.
+   */
+  subtitleIsAction?: boolean;
+  /**
    * Розгорнуте питання з числами правила — префіл чипа «AI»
    * (`emitHubBus("openChat", { message: askAiPrompt, autoSend: false })`).
    * Числа детерміновані з даних хука, НЕ парсяться з `title`/`subtitle`.

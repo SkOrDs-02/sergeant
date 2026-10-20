@@ -137,7 +137,21 @@ describe("InsightCard", () => {
     expect(group.className).not.toContain("bg-ink-strong");
     expect(group.className).not.toMatch(/shadow-/);
     expect(getByText("t").className).toContain("text-text");
-    // v3.1 Е3: підзаголовок - дія, чорнилом; гліф Сержанта без рамки.
+    // Факт без прапорця лишається другим сірим.
+    expect(getByText("s").className).toContain("text-muted");
+    expect(getByText("s").className).not.toContain("font-semibold");
+  });
+
+  it("v3.1 Е3: підзаголовок-дія чорнилом жирним", () => {
+    const { getByText } = render(
+      <InsightCard
+        id="x"
+        title="t"
+        subtitle="s"
+        subtitleIsAction
+        onActivate={() => {}}
+      />,
+    );
     expect(getByText("s").className).toContain("text-text");
     expect(getByText("s").className).toContain("font-semibold");
   });
