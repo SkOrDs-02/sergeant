@@ -118,7 +118,13 @@ export function CategoryPickerField({
           : "border-control bg-panel text-text hover:bg-panelHi",
       )}
     >
-      <CategorySwatch categoryId={category.id} customCategories={categories} />
+      <CategorySwatch
+        categoryId={category.id}
+        customCategories={categories}
+        // На заливці чорнилом колір свотча зливається з нею в обох темах:
+        // кільце кольору сторінки відділяє його.
+        className={category.id === selectedId ? "ring-2 ring-bg" : undefined}
+      />
       <span className="min-w-0 truncate text-style-body">
         {stripLeadingEmoji(category.label)}
       </span>

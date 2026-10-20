@@ -86,11 +86,7 @@ export function TransactionsHeader({
         ) : (
           <>
             {hiddenCount > 0 && (
-              <Button
-                variant="text"
-                aria-pressed={showHidden}
-                onClick={() => setShowHidden((v) => !v)}
-              >
+              <Button variant="text" onClick={() => setShowHidden((v) => !v)}>
                 {showHidden ? "Сховати прих." : `${hiddenCount} прих.`}
               </Button>
             )}

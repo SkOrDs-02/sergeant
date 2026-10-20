@@ -358,7 +358,7 @@ export function Analytics({
                 data={distribution}
                 previous={categoryDeltas}
                 showBalance={showBalance}
-                categorySwatches={storage.customCategories ?? []}
+                categorySwatches
                 {...(onSelectCategory
                   ? {
                       // Несемо обраний період Аналітики, інакше Операції

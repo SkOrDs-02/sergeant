@@ -3,7 +3,6 @@ import { chartHex } from "@sergeant/design-tokens/tokens";
 import { cn } from "@shared/lib/ui/cn";
 import { Money } from "@shared/components/ui/Money";
 import { Button } from "@shared/components/ui/Button";
-import { CategorySwatch } from "../CategorySwatch";
 import { stripLeadingEmoji } from "../txRowHelpers";
 
 /**
@@ -36,10 +35,11 @@ interface CategoryBarsProps {
   overlapTotal?: number | undefined;
   /**
    * Рядки це категорії: перед назвою свотч 10 px у кольорі категорії
-   * (redesign v3.1). Рахунки й теги свотча не мають, їхній бар один колір.
-   * Масив кастомних категорій дає стабільний відтінок (`catChipVars`).
+   * (redesign v3.1). Колір той самий `row.color`, що й у бару, щоб у рядку
+   * був один відтінок. Рахунки й теги свотча не мають, їхній бар один колір;
+   * агрегат «Інше» теж, бо він не категорія.
    */
-  categorySwatches?: readonly { id: string }[] | undefined;
+  categorySwatches?: boolean | undefined;
 }
 
 const TOP_N = 5;
@@ -118,13 +118,12 @@ function CategoryBarsComponent({
                 }
               >
                 <span className="flex items-baseline gap-2">
-                  {categorySwatches && (
-                    <CategorySwatch
-                      categoryId={
-                        row.categoryId === "_other" ? "other" : row.categoryId
-                      }
-                      customCategories={categorySwatches}
-                      className="self-center"
+                  {categorySwatches && row.categoryId !== "_other" && (
+                    <span
+                      aria-hidden
+                      data-testid="category-swatch"
+                      className="h-2.5 w-2.5 shrink-0 self-center rounded-mark"
+                      style={{ background: row.color }}
                     />
                   )}
                   <span className="min-w-0 flex-1 truncate text-style-body font-semibold text-text">

@@ -42,10 +42,23 @@ describe("CategoryBars (мова H)", () => {
   it("свотч категорії перед назвою лише для категорій", () => {
     const { rerender } = render(<CategoryBars data={DATA} />);
     expect(screen.queryAllByTestId("category-swatch")).toHaveLength(0);
-    rerender(<CategoryBars data={DATA} categorySwatches={[]} />);
+    rerender(<CategoryBars data={DATA} categorySwatches />);
     const swatches = screen.getAllByTestId("category-swatch");
     expect(swatches).toHaveLength(2);
-    expect(swatches[0]).toHaveClass("cat-dot");
+    // Свотч і бар з одного джерела кольору (`row.color`).
+    expect(swatches[0]).toHaveStyle({ background: "#222222" });
+  });
+
+  it("агрегат «Інше» свотча не має", () => {
+    const many = Array.from({ length: 7 }, (_, i) => ({
+      categoryId: `c${i}`,
+      label: `Категорія ${i}`,
+      spent: 100 + i,
+      color: "#333333",
+    }));
+    render(<CategoryBars data={many} categorySwatches />);
+    expect(screen.getByText("Інше")).toBeTruthy();
+    expect(screen.getAllByTestId("category-swatch")).toHaveLength(5);
   });
 
   it("«Показати всі» тиха кнопка, без тексту стану", () => {
