@@ -36,6 +36,10 @@
  * lookup the bucketed Sentry tag is sufficient.
  */
 
+import {
+  noteStorageWriteFailed,
+  noteStorageWriteRecovered,
+} from "../durability/storageDegradedState";
 import { addSentryBreadcrumb, setSentryTag } from "./sentry";
 
 export type DualWriteModule = "routine" | "fizruk" | "nutrition" | "finyk";
@@ -180,8 +184,12 @@ export function recordDualWriteOutcome(
   if (outcome.status === "applied") {
     c.applied += 1;
     const erroredThisBatch = outcome.result?.errored ?? 0;
+    if (erroredThisBatch === 0 && (outcome.result?.applied ?? 0) > 0) {
+      noteStorageWriteRecovered();
+    }
     if (erroredThisBatch > 0) {
       c.erroredOps += erroredThisBatch;
+      noteStorageWriteFailed();
       addSentryBreadcrumb({
         category: "storage",
         level: "warning",

@@ -5,6 +5,7 @@ import { ActiveWorkoutBanner } from "../../core/app/ActiveWorkoutBanner";
 import { HubModals } from "../../core/app/HubModals";
 import { OfflineBanner } from "../../core/app/OfflineBanner";
 import { MemoryOnlyStorageBanner } from "../durability/MemoryOnlyStorageBanner";
+import { StorageDegradedBanner } from "../durability/StorageDegradedBanner";
 import ModuleErrorBoundary from "../../core/ModuleErrorBoundary";
 import { useModuleRouteLoader } from "../../core/lib/useModuleRouteLoader";
 import { useHubShell } from "../../core/app/HubShellContext";
@@ -54,6 +55,7 @@ export function ModuleShell({
     <div className="h-dvh flex flex-col bg-bg text-text overflow-hidden">
       <OfflineBanner />
       <MemoryOnlyStorageBanner />
+      <StorageDegradedBanner />
       {moduleId !== "fizruk" && <ActiveWorkoutBanner />}
       <Tag
         id="main"

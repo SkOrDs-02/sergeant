@@ -253,6 +253,11 @@ export const messagesEn: Partial<{
         "The database is open in another tab. Close extra Sergeant tabs and reload this one.",
       reload: "Reload",
     },
+    storageDegraded: {
+      title: "Some entries were not saved",
+      body: "Browser storage rejected a write, most likely because the device is running out of space. Free up space and reload the page: I will try to write the unsaved entries on the next launch.",
+      dismissLabel: "Dismiss the save failure notice",
+    },
   },
 
   dataDisclosure: {
