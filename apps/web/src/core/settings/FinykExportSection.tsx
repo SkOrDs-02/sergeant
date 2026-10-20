@@ -78,7 +78,7 @@ export function FinykExportSection({
       <Button
         type="button"
         variant="outline"
-        tone="finyk"
+        tone="neutral"
         className="min-h-[44px]"
         onClick={() => void run()}
       >
