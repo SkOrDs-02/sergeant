@@ -209,6 +209,12 @@ export const EXPORT_EXCLUSIONS: ReadonlyArray<{
       "Кеш останньої поради Сержанта: текст згенеровано з твоїх даних і переписується щодня, тож це не твій запис.",
   },
   {
+    group: "avatar",
+    tables: ["user_avatars"],
+    reason:
+      "Твоє фото профілю: двійковий файл, який JSON не несе. Воно лишається в профілі, а прибрати його можна там же («Видалити аватар»); посилання на нього є в user.image.",
+  },
+  {
     group: "authSessions",
     tables: ["session", "account"],
     reason:
