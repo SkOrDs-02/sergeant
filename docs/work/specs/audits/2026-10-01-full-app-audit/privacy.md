@@ -904,7 +904,7 @@ cleanupWorker.test.ts:215 tests only `stripe_customer_id: 'cus_1'` + unset key; 
 
 ### `priv-14` [medium] 10 неправильних PIN знімають блокування: «стирання» видаляє лише PIN і пускає в застосунок з усіма даними
 
-- **Стан:** відкрито
+- **Стан:** виправлено в гілці claude/fix-sec-12-pin-lock-no-bypass (разом із [`sec-12`](./security.md#sec-12), одним фіксом)
 - **Перевірка:** підтверджено · **Зусилля:** S · **Швидкий виграш** · **Область:** web: блокування застосунку
 - **Та сама першопричина, що й** [`sec-12`](./security.md#sec-12): Одна поведінка: після 10 невдалих PIN lockStorage стирає лише креденшел, а useAppLock переводить стан в idle і пускає в застосунок. Фікс один: вихід зі стиранням або вимога пароля акаунта.
 - **Де:** apps/web/src/core/security/useAppLock.ts:163-175; apps/web/src/core/security/lockStorage.ts:55-65, 226-233
