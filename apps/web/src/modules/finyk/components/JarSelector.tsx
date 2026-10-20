@@ -1,5 +1,5 @@
+import { Select } from "@shared/components/ui/Select";
 import { memo } from "react";
-import { cn } from "@shared/lib/ui/cn";
 import { messages } from "@shared/i18n/uk";
 
 export interface JarOption {
@@ -24,11 +24,8 @@ function JarSelectorComponent({
   className,
 }: JarSelectorProps) {
   return (
-    <select
-      className={cn(
-        "focus-ring w-full h-10 rounded-lg border border-line bg-bg px-3 text-style-label text-text",
-        className,
-      )}
+    <Select
+      className={className}
       aria-label={messages.finyk.jarSelector.ariaLabel}
       value={value || ""}
       onChange={(e) => onChange(e.target.value)}
@@ -39,7 +36,7 @@ function JarSelectorComponent({
           {j.label}
         </option>
       ))}
-    </select>
+    </Select>
   );
 }
 

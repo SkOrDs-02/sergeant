@@ -2,6 +2,7 @@
  * Last validated: 2026-05-14
  * Status: Active
  */
+import { MorphChevron } from "@shared/components/ui/MorphChevron";
 import { useMemo, useState } from "react";
 import type { Transaction } from "@sergeant/finyk-domain/domain/types";
 import { cn } from "@shared/lib/ui/cn";
@@ -121,7 +122,9 @@ export function RecurringSuggestions({
   return (
     <section className="mb-4">
       <button
+        type="button"
         onClick={() => setOpen((v) => !v)}
+        aria-expanded={open}
         className="w-full flex items-center justify-between px-4 py-3 bg-panel border border-line rounded-lg text-left transition-colors hover:border-muted/50"
       >
         <div className="flex items-center gap-2">
@@ -137,9 +140,7 @@ export function RecurringSuggestions({
             </div>
           </div>
         </div>
-        <span className="inline-flex items-center gap-1 text-style-caption text-muted shrink-0 ml-2">
-          {open ? "Згорнути" : "Розгорнути"}
-        </span>
+        <MorphChevron open={open} className="ml-2 text-subtle" />
       </button>
 
       {open && (

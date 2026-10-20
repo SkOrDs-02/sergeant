@@ -10,7 +10,9 @@ import { groupIntegerDigits } from "@shared/lib/format/digitGrouping";
 import { useGroupedAmountField } from "@shared/hooks/useGroupedAmountField";
 import { Button } from "@shared/components/ui/Button";
 import { Card } from "@shared/components/ui/Card";
+import { ChoiceGroup } from "@shared/components/ui/Choice";
 import { Input } from "@shared/components/ui/Input";
+import { Select } from "@shared/components/ui/Select";
 import { Label } from "@shared/components/ui/FormField";
 import { DateField } from "@shared/components/ui/DateField";
 import { useApiForm } from "@shared/forms";
@@ -376,29 +378,17 @@ function AddBudgetFormComponent({
 
   return (
     <Card padding="lg" className="space-y-3">
-      <fieldset className="divide-y divide-line" disabled={isSubmitting}>
-        <legend className="sr-only">{messages.finykRedesign.budgetType}</legend>
-        {(
-          [
-            ["limit", messages.finykRedesign.limit],
-            ["goal", messages.finykRedesign.goal],
-          ] as const
-        ).map(([type, label]) => (
-          <label
-            key={type}
-            className="flex min-h-touch-target items-center justify-between gap-3 py-3 text-style-body text-text"
-          >
-            <span>{label}</span>
-            <input
-              type="radio"
-              name="budget-type"
-              value={type}
-              checked={formType === type}
-              onChange={() => setFormType(type)}
-            />
-          </label>
-        ))}
-      </fieldset>
+      <ChoiceGroup<"limit" | "goal">
+        items={[
+          { value: "limit", label: messages.finykRedesign.limit },
+          { value: "goal", label: messages.finykRedesign.goal },
+        ]}
+        value={formType}
+        onChange={setFormType}
+        ariaLabel={messages.finykRedesign.budgetType}
+        disabled={isSubmitting}
+        className="grid grid-cols-2"
+      />
       {formType === "limit" ? (
         <form
           onSubmit={limitForm.submit}
@@ -408,16 +398,15 @@ function AddBudgetFormComponent({
         >
           <div>
             <Label htmlFor={`${fieldId}-period`}>Період</Label>
-            <select
+            <Select
               id={`${fieldId}-period`}
-              className="focus-ring w-full h-10 min-w-0 rounded-lg border border-line bg-bg px-3 text-style-label text-text"
               disabled={isSubmitting}
               {...limitForm.register("period")}
             >
               <option value="month">Щомісяця</option>
               <option value="week">Щотижня</option>
               <option value="one_time">Одноразово</option>
-            </select>
+            </Select>
           </div>
           <div>
             {limitCategoryIds.length > 0 && (
@@ -562,12 +551,8 @@ function AddBudgetFormComponent({
           className="space-y-3"
           aria-label="Нова ціль бюджету"
         >
-          <div className="flex items-center gap-2">
-            {/* Превʼю обраної іконки — нативний `<option>` малює лише
-                текст, тож без нього вибір лишався б невидимим. */}
-
-            <select
-              className="focus-ring h-10 min-w-0 flex-1 rounded-lg border border-line bg-bg px-3 text-style-label text-text"
+          <div>
+            <Select
               value={goalIconOf(goalEmoji)}
               aria-label="Іконка цілі"
               onChange={(e) =>
@@ -581,7 +566,7 @@ function AddBudgetFormComponent({
                   {opt.label}
                 </option>
               ))}
-            </select>
+            </Select>
           </div>
           <div>
             <Label htmlFor={goalNameId}>Назва цілі</Label>

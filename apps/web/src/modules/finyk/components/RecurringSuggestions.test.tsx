@@ -48,7 +48,9 @@ describe("RecurringSuggestions", () => {
   it("renders a collapsed header with the candidate count", () => {
     render(<RecurringSuggestions transactions={recurringTxs} />);
     expect(screen.getByText("Можливі підписки")).toBeInTheDocument();
-    expect(screen.getByText(/Розгорнути/)).toBeInTheDocument();
+    expect(
+      screen.getByRole("button", { name: /Можливі підписки/ }),
+    ).toHaveAttribute("aria-expanded", "false");
   });
 
   it("expands the list and fires onAdd / onDismiss", () => {
@@ -63,7 +65,9 @@ describe("RecurringSuggestions", () => {
     );
     // Expand.
     fireEvent.click(screen.getByText("Можливі підписки"));
-    expect(screen.getByText(/Згорнути/)).toBeInTheDocument();
+    expect(
+      screen.getByRole("button", { name: /Можливі підписки/ }),
+    ).toHaveAttribute("aria-expanded", "true");
     fireEvent.click(screen.getByText("+ Підписка"));
     expect(onAdd).toHaveBeenCalledTimes(1);
     fireEvent.click(screen.getByText("Приховати"));
