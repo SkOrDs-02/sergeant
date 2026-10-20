@@ -230,7 +230,7 @@ test("@critical pantry: назва з чека згортається до ро�
   // Наповнена комора ховає форму додавання в аркуш за кнопкою шапки списку.
   await page.getByRole("button", { name: "Додати продукти" }).click();
   await page.getByRole("button", { name: "З покупок Сільпо" }).click();
-  await page.getByRole("button", { name: /21\.08\.2026/ }).click();
+  await page.getByRole("radio", { name: /21\.08\.2026/ }).click();
   await expect(
     page.getByRole("listitem").filter({ hasText: "Молоко Галичина" }),
   ).toBeVisible({ timeout: 15_000 });
@@ -304,7 +304,7 @@ test("@critical pantry: списання з позиції на два варі�
   // Наповнена комора ховає форму додавання в аркуш за кнопкою шапки списку.
   await page.getByRole("button", { name: "Додати продукти" }).click();
   await page.getByRole("button", { name: "З покупок Сільпо" }).click();
-  await page.getByRole("button", { name: /21\.08\.2026/ }).click();
+  await page.getByRole("radio", { name: /21\.08\.2026/ }).click();
   await expect(
     page.getByRole("listitem").filter({ hasText: "Молоко Галичина" }),
   ).toBeVisible({ timeout: 20_000 });
@@ -418,7 +418,7 @@ test("@critical pantry: картка продукту не ламає мобіл
   // Наповнена комора ховає форму додавання в аркуш за кнопкою шапки списку.
   await page.getByRole("button", { name: "Додати продукти" }).click();
   await page.getByRole("button", { name: "З покупок Сільпо" }).click();
-  await page.getByRole("button", { name: /21\.08\.2026/ }).click();
+  await page.getByRole("radio", { name: /21\.08\.2026/ }).click();
   await expect(
     page.getByRole("listitem").filter({ hasText: "Молоко Галичина" }),
   ).toBeVisible({ timeout: 30_000 });
