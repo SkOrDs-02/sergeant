@@ -75,6 +75,33 @@ describe("mealPhotoStorage – db=null / open fails paths", () => {
   });
 });
 
+describe("mealPhotoStorage – legacy thumbnail migration", () => {
+  it("copies old thumbnail rows to the shared database before reading", async () => {
+    const request = indexedDB.open("hub_nutrition_meal_photos", 1);
+    request.onupgradeneeded = () => {
+      request.result.createObjectStore("thumbs");
+    };
+    const legacyDb = await new Promise<IDBDatabase>((resolve, reject) => {
+      request.onsuccess = () => resolve(request.result);
+      request.onerror = () => reject(request.error);
+    });
+    const write = legacyDb.transaction("thumbs", "readwrite");
+    write.objectStore("thumbs").put(makeBlob("legacy"), "meal-legacy");
+    await new Promise<void>((resolve, reject) => {
+      write.oncomplete = () => resolve();
+      write.onerror = () => reject(write.error);
+    });
+    legacyDb.close();
+
+    // The migration is lazy: the first normal read moves the legacy key.
+    await getMealThumbnailBlob("meal-legacy");
+    expect(await gcMealThumbnails(["meal-legacy"])).toMatchObject({
+      ok: true,
+      deleted: 0,
+    });
+  });
+});
+
 describe("mealPhotoStorage – gcMealThumbnails transaction failure", () => {
   it("returns { ok:false, deleted:0 } when store.getAllKeys() transaction fails", async () => {
     const { openSergeantDb } =

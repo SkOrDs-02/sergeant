@@ -1,3 +1,4 @@
+import type { FinykTxTagsSlice } from "../../hooks/useFinykTxTags";
 import { useKyivDayNow } from "@shared/hooks/useKyivDayNow";
 import { useCallback, useMemo, useState } from "react";
 import { useToast } from "@shared/hooks/useToast";
@@ -48,6 +49,7 @@ import type {
   TxCategoriesMap,
   TxSplit,
   TxSplitsMap,
+  Category,
 } from "@sergeant/finyk-domain/domain/types";
 import type {
   Debt,
@@ -55,7 +57,6 @@ import type {
 } from "@sergeant/finyk-domain/domain/debtEngine";
 import type { ManualExpense } from "@sergeant/finyk-domain/domain/personalization";
 import type { ManualExpenseLinkSnapshot } from "../../hooks/manualExpenseDebtLinks";
-import type { Category } from "@sergeant/finyk-domain/domain/types";
 
 /**
  * Merged-account shape produced by `useUnifiedFinanceData` (Mono + Privat).
@@ -136,7 +137,7 @@ export interface TransactionsMonoSlice {
  * Slice of `useStorage` that the Transactions page reads. Defined inline
  * for the same reason as {@link TransactionsMonoSlice}.
  */
-export interface TransactionsStorageSlice {
+export interface TransactionsStorageSlice extends FinykTxTagsSlice {
   /** `false`, поки SQLite-кеш не прогрітий і `txCategories` ще з LS-знімка. */
   storageReady?: boolean;
   hiddenTxIds: string[];
@@ -645,6 +646,7 @@ export function Transactions({
             onCloseCatPicker={() => selection.setBatchCatPicker(false)}
             onApplyCategory={selection.applyBatchCategory}
             customCategories={customCategories}
+            tagBatch={{ tagsApi: storage, selection }}
           />
         }
       />
@@ -680,6 +682,7 @@ export function Transactions({
           setLinkedTxRole={setLinkedTxRole}
           onCategoryChange={selection.stableOverrideCategory}
           onNoteChange={selection.stableSetTxNote}
+          tagsApi={storage}
           onSplitChange={handleSplitChange}
           onToggleHidden={selection.stableHideTx}
           onToggleExcludedFromStats={toggleExcludeFromStats}

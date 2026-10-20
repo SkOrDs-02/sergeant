@@ -68,6 +68,8 @@ export type TxCategoriesMap = Record<string, string | undefined>;
 /** Per-transaction user note (free text). Bank facts stay immutable — this
  * is the user's own annotation, keyed by transaction id. */
 export type TxNotesMap = Record<string, string | undefined>;
+/** Теги операції (`finyk_tx_tags`), написання першого вжитку. */
+export type TxTagsMap = Record<string, readonly string[]>;
 export type MonoDebtLinkedMap = Record<string, string[]>;
 
 export type MonthlyPlan = {

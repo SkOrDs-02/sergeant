@@ -8,6 +8,7 @@ import { useFinykStorageSlots } from "./useFinykStorageSlots";
 import { useFinykStorageMutations } from "./useFinykStorageMutations";
 import { useFinykBackupSync } from "./useFinykBackupSync";
 import { useFinykMerchantRules } from "./useFinykMerchantRules";
+import { useFinykTxTags } from "./useFinykTxTags";
 import { useFinykDualWriteBoot } from "./useFinykDualWriteBoot";
 import { useFinykDualWriteSync } from "./useFinykDualWriteSync";
 import { useFinykSqliteReadBoot } from "./useFinykSqliteReadBoot";
@@ -60,6 +61,7 @@ export function useStorage({
   const slots = useFinykStorageSlots();
   const mutations = useFinykStorageMutations(slots);
   const merchantRulesApi = useFinykMerchantRules(slots);
+  const txTagsApi = useFinykTxTags(slots);
   const backupSync = useFinykBackupSync(slots, toast);
 
   // Mirror every slot mutation into SQLite (best-effort). `FinykBootGate`
@@ -279,6 +281,8 @@ export function useStorage({
     restoreMerchantRules: merchantRulesApi.restoreMerchantRules,
     txNotes,
     setTxNote: mutations.setTxNote,
+    // Теги операцій (Р6 спеки finyk-analytics-v3): синк через finyk_tx_tags.
+    ...txTagsApi,
     txSplits,
     setSplitTx: mutations.setSplitTx,
     monoDebtLinkedTxIds,

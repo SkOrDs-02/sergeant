@@ -245,6 +245,32 @@ describe("PersonalInfoSection — email change", () => {
     expect(toastSuccessMock).not.toHaveBeenCalled();
   });
 
+  /**
+   * `sec-06`: сервер віддає `403 SESSION_NOT_FRESH` непідтвердженому акаунту
+   * зі старою сесією. Користувач має побачити прохання увійти знову, а не
+   * generic «Не вдалося змінити email», і жодного success-тосту.
+   */
+  it("SESSION_NOT_FRESH просить увійти знову", async () => {
+    changeEmailMock.mockResolvedValue({
+      error: { code: "SESSION_NOT_FRESH", message: "Session is not fresh" },
+    });
+    renderSection({ emailVerified: false });
+
+    fireEvent.click(screen.getByRole("button", { name: "Змінити" }));
+    fireEvent.change(screen.getByLabelText("Email"), {
+      target: { value: "new@example.com" },
+    });
+    const saves = screen.getAllByRole("button", { name: "Зберегти" });
+    fireEvent.click(saves[saves.length - 1]!);
+
+    await waitFor(() => {
+      expect(
+        screen.getByText("Для цієї дії потрібен свіжий вхід. Увійди ще раз."),
+      ).toBeTruthy();
+    });
+    expect(toastSuccessMock).not.toHaveBeenCalled();
+  });
+
   it("email save stays disabled when the value equals the current email", () => {
     renderSection();
     fireEvent.click(screen.getByRole("button", { name: "Змінити" }));

@@ -7,7 +7,8 @@ import { Button } from "./Button";
  * ## Ортогональний API (канонічний)
  *
  * Кнопка описується двома незалежними осями (як `Badge`: `variant` × `tone`):
- * - **`variant`** — емфаза/форма: `solid` | `soft` | `outline` | `ghost`
+ * - **`variant`** — емфаза/форма: `solid` | `soft` | `outline` | `ghost` |
+ *   `text` (тихий третій рівень: дія в рядку чи заголовку секції)
  * - **`tone`** — колірна родина: `neutral` | `finyk` | `fizruk` | `routine` |
  *   `nutrition` | `danger` | `success` | `ink`
  *
@@ -32,6 +33,7 @@ const meta: Meta<typeof Button> = {
         "soft",
         "outline",
         "ghost",
+        "text",
         // legacy aliases (deprecated)
         "primary",
         "secondary",
@@ -85,6 +87,10 @@ export const Secondary: Story = {
 };
 
 export const Ghost: Story = { args: { variant: "ghost" } };
+
+export const Text: Story = {
+  args: { variant: "text", children: "Показати всі" },
+};
 
 export const Destructive: Story = {
   args: { variant: "solid", tone: "danger", children: "Видалити" },

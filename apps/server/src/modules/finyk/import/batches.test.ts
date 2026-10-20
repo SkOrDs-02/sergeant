@@ -135,6 +135,8 @@ function makeFakeClient(
   const query = vi.fn(async (sql: string, params: unknown[] = []) => {
     calls.push({ sql, params });
     if (/^BEGIN|^COMMIT|^ROLLBACK/.test(sql.trim())) return { rows: [] };
+    // data-12: user-lock sync_op_log одразу після BEGIN.
+    if (/pg_advisory_xact_lock/.test(sql)) return { rows: [] };
     if (/SELECT .* FROM import_batches/s.test(sql) && /FOR UPDATE/.test(sql)) {
       return overrides.selectBatch
         ? overrides.selectBatch(params)
@@ -203,6 +205,14 @@ describe("deleteImportBatchHandler", () => {
     expect(tombstoneCall?.sql).toContain("deleted_at IS NULL");
 
     expect(client.calls.some((c) => c.sql.trim() === "COMMIT")).toBe(true);
+
+    // data-12: user-lock sync_op_log одразу після BEGIN, до SELECT ... FOR
+    // UPDATE батча і tombstone-UPDATE (undo емітить delete-оп-и).
+    expect(client.calls[0]?.sql.trim()).toBe("BEGIN");
+    expect(client.calls[1]?.sql).toContain(
+      "pg_advisory_xact_lock(hashtext('sync_op_log'), hashtext($1))",
+    );
+    expect(client.calls[1]?.params).toEqual(["u1"]);
   });
 
   it("ідемпотентний повторний виклик: tombstoned:0, все одно 200 (не помилка)", async () => {

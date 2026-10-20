@@ -17,10 +17,16 @@
  *
  * ## Що саме експортується
  *
- * Рівно те, що людина бачить на екрані: відфільтрований список обраного
- * місяця (`useTransactionFilters.filtered`) у тому самому порядку. Не «всі
- * операції за весь час»: експорт, який мовчки віддає більше за видиме,
- * робить із кнопки лотерею — людина не може перевірити результат очима.
+ * Кнопка в Операціях: рівно те, що людина бачить на екрані: відфільтрований
+ * список обраного місяця (`useTransactionFilters.filtered`) у тому самому
+ * порядку. Експорт, який мовчки віддає більше за видиме, робить із кнопки
+ * лотерею — людина не може перевірити результат очима.
+ *
+ * Уся історія — ОКРЕМА явно підписана дія в Налаштуваннях → Фінік
+ * (`exportAllHistoryCsv`): той самий формат і правила рядка, джерело —
+ * SQLite-дзеркало банку плюс ручні записи без прихованих (так само, як
+ * екран за замовчуванням; виключені зі статистики лишаються, бо екран їх
+ * теж показує). Імʼя файла несе діапазон дат.
  *
  * ## Рішення, які тут не випадкові
  *
@@ -47,6 +53,10 @@ import type {
   Category,
   Transaction,
 } from "@sergeant/finyk-domain/domain/types";
+import {
+  withManualExpenses,
+  type ManualExpenseEntry,
+} from "@sergeant/finyk-domain/domain/transactions";
 import { txTimeMs } from "@sergeant/finyk-domain/lib/transactions";
 import {
   exportToCSV,
@@ -147,5 +157,49 @@ export async function exportTransactionsCsv(
 ): Promise<{ count: number; result: FileDeliveryResult }> {
   const rows = toCsvRows(transactions, getEffectiveCat);
   const result = await exportToCSV(rows, COLUMNS, csvFilename(monthKey));
+  return { count: rows.length, result };
+}
+
+/**
+ * Уся історія для експорту: банк із SQLite-дзеркала + ручні записи, без
+ * прихованих, від нових до старих (той самий порядок, що в списку Операцій).
+ */
+export function collectAllHistory(
+  mirrorTransactions: readonly Transaction[],
+  manualExpenses: readonly ManualExpenseEntry[],
+  hiddenTxIds: readonly string[],
+): Transaction[] {
+  const hidden = new Set(hiddenTxIds);
+  return withManualExpenses(mirrorTransactions, manualExpenses)
+    .filter((tx) => !hidden.has(tx.id))
+    .sort((a, b) => (b.time || 0) - (a.time || 0));
+}
+
+/** `finyk-2024-01-15_2026-10-20.csv`: найстаріший і найновіший київський день. */
+export function csvRangeFilename(transactions: readonly Transaction[]): string {
+  const keys = transactions
+    .filter((tx) => txTimeMs(tx.time) > 0)
+    .map((tx) => dayKeyFromTx(tx.time))
+    .sort();
+  const from = keys[0];
+  const to = keys[keys.length - 1];
+  return from && to ? `finyk-${from}_${to}.csv` : "finyk.csv";
+}
+
+/**
+ * Віддати всю історію одним файлом. Порожній набір файлу не створює
+ * (`result: "empty"`), щоб не віддавати CSV лише із заголовками.
+ */
+export async function exportAllHistoryCsv(
+  transactions: readonly Transaction[],
+  getEffectiveCat: EffectiveCategoryResolver,
+): Promise<{ count: number; result: FileDeliveryResult | "empty" }> {
+  if (transactions.length === 0) return { count: 0, result: "empty" };
+  const rows = toCsvRows(transactions, getEffectiveCat);
+  const result = await exportToCSV(
+    rows,
+    COLUMNS,
+    csvRangeFilename(transactions),
+  );
   return { count: rows.length, result };
 }

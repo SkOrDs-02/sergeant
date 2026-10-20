@@ -31,6 +31,7 @@
  *     - `finyk_tx_notes`          → `finyk_tx_notes`          (text, soft-delete; data-27)
  *     - `finyk_tx_cats`           → `finyk_tx_categories`     (string value)
  *     - `finyk_tx_splits`         → `finyk_tx_splits`         (jsonb array)
+ *     - теги (без LS-ключа)       → `finyk_tx_tags`           (jsonb array, soft-delete)
  *     - `finyk_mono_debt_linked`  → `finyk_mono_debt_links`   (jsonb array)
  *
  *   - time-series
@@ -90,6 +91,12 @@ export interface FinykTxNoteEntry {
 export interface FinykTxSplitsEntry {
   readonly transactionId: string;
   readonly splitsJson: string;
+}
+
+/** Теги операції (`finyk_tx_tags`): непорожній JSON-масив рядків. */
+export interface FinykTxTagsEntry {
+  readonly transactionId: string;
+  readonly tagsJson: string;
 }
 
 /** Per-tx mono-debt links (`finyk_mono_debt_linked`). */
@@ -155,6 +162,7 @@ export interface FinykDualWriteState {
   readonly txCategories: readonly FinykTxCategoryEntry[];
   readonly txSplits: readonly FinykTxSplitsEntry[];
   readonly txNotes: readonly FinykTxNoteEntry[];
+  readonly txTags: readonly FinykTxTagsEntry[];
   readonly monoDebtLinks: readonly FinykMonoDebtLinkEntry[];
   readonly networthHistory: readonly FinykNetworthEntry[];
   readonly prefs: FinykPrefsSnapshot | null;
@@ -173,6 +181,7 @@ export const EMPTY_FINYK_STATE: FinykDualWriteState = {
   txCategories: [],
   txSplits: [],
   txNotes: [],
+  txTags: [],
   monoDebtLinks: [],
   networthHistory: [],
   prefs: null,
@@ -248,6 +257,16 @@ export interface TxNoteDeleteOp {
   readonly transactionId: string;
 }
 
+export interface TxTagsUpsertOp {
+  readonly kind: "tx-tags-upsert";
+  readonly entry: FinykTxTagsEntry;
+}
+
+export interface TxTagsDeleteOp {
+  readonly kind: "tx-tags-delete";
+  readonly transactionId: string;
+}
+
 export interface MonoDebtLinkUpsertOp {
   readonly kind: "mono-debt-link-upsert";
   readonly entry: FinykMonoDebtLinkEntry;
@@ -279,6 +298,8 @@ export type FinykDualWriteOp =
   | TxSplitsDeleteOp
   | TxNoteUpsertOp
   | TxNoteDeleteOp
+  | TxTagsUpsertOp
+  | TxTagsDeleteOp
   | MonoDebtLinkUpsertOp
   | MonoDebtLinkDeleteOp
   | NetworthUpsertOp
@@ -375,6 +396,16 @@ export function diffFinykDualWriteOps(
     (a, b) => a.note !== b.note,
     (entry) => ops.push({ kind: "tx-note-upsert", entry }),
     (transactionId) => ops.push({ kind: "tx-note-delete", transactionId }),
+  );
+
+  // --- Per-tx tags (soft-delete: порожній список = tombstone) ---
+  diffByKey(
+    prev.txTags,
+    next.txTags,
+    (e) => e.transactionId,
+    (a, b) => a.tagsJson !== b.tagsJson,
+    (entry) => ops.push({ kind: "tx-tags-upsert", entry }),
+    (transactionId) => ops.push({ kind: "tx-tags-delete", transactionId }),
   );
 
   // --- Per-tx mono-debt links ---
