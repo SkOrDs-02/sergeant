@@ -92,6 +92,7 @@ export function SearchTabPanel({
         <CollapsibleSection
           storageKey={ADD_MEAL_SECTION_KEYS.recent}
           title="Нещодавні прийоми"
+          headingSize="md"
           // Єдина секція, відкрита за замовчуванням: повторити вчорашній
           // сніданок — найкоротший шлях у цьому аркуші, і згорнути його
           // означало б додати клік саме туди, де їх і так найменше.

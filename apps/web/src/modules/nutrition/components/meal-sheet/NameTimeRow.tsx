@@ -2,10 +2,10 @@
  * Last validated: 2026-06-15
  * Status: Active
  */
+import { cn } from "@shared/lib/ui/cn";
 import { useCallback, useState } from "react";
 import type { Dispatch, SetStateAction } from "react";
-import { SectionHeading } from "@shared/components/ui/SectionHeading";
-import { Input } from "@shared/components/ui/Input";
+import { Input, FIELD_LABEL } from "@shared/components/ui/Input";
 import { TimeField } from "@shared/components/ui/TimeField";
 import { VoiceMicButton } from "@shared/components/ui/VoiceMicButton";
 import { parseMealSpeech } from "@sergeant/shared";
@@ -81,11 +81,7 @@ export function NameTimeRow({
       >
         {showName && (
           <div>
-            <SectionHeading
-              as="div"
-              size="xs"
-              className="mb-1 flex items-center gap-2"
-            >
+            <div className={cn(FIELD_LABEL, "mb-1 flex items-center gap-2")}>
               Назва страви
               {allowVoice && (
                 <VoiceMicButton
@@ -97,7 +93,7 @@ export function NameTimeRow({
                   promptHint="Прийом їжі: гречка 200 грам 180 ккал, овочевий салат 150 г 45 калорій, омлет 250 грам 30 г білка."
                 />
               )}
-            </SectionHeading>
+            </div>
             <Input
               value={form.name}
               onChange={(e) => field("name")(e.target.value)}
@@ -110,9 +106,7 @@ export function NameTimeRow({
         )}
         {timeVisible && (
           <div>
-            <SectionHeading as="div" size="xs" className="mb-1">
-              Час
-            </SectionHeading>
+            <div className={cn(FIELD_LABEL, "mb-1")}>Час</div>
             {/* Спільний примітив, а не `Input type="time"` з фіксованим
                 `w-[100px]`: фіксована ширина задає БАЖАНУ, не мінімальну, і
                 нативний контрол зі своїм intrinsic inline-size все одно

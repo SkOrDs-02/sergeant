@@ -2,12 +2,12 @@
  * Last validated: 2026-06-15
  * Status: Active
  */
+import { cn } from "@shared/lib/ui/cn";
 import { useRef, useState } from "react";
 import type { ChangeEvent, Dispatch, SetStateAction } from "react";
 import { useDialogFocusTrap } from "@shared/hooks/useDialogFocusTrap";
 import { useHistoryDismiss } from "@shared/hooks/useHistoryDismiss";
-import { SectionHeading } from "@shared/components/ui/SectionHeading";
-import { Input } from "@shared/components/ui/Input";
+import { Input, FIELD_LABEL } from "@shared/components/ui/Input";
 import { Button } from "@shared/components/ui/Button";
 import type { PickedFood } from "./FoodPickerSection";
 import {
@@ -132,9 +132,7 @@ export function MacrosEditor({
       <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
         {MACRO_FIELDS.map(({ key, label, placeholder }) => (
           <div key={key}>
-            <SectionHeading as="div" size="xs" className="mb-1">
-              {label}
-            </SectionHeading>
+            <div className={cn(FIELD_LABEL, "mb-1")}>{label}</div>
             <Input
               value={form[key]}
               onChange={handleMacroChange(key)}

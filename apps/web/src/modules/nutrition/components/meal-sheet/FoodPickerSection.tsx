@@ -12,8 +12,7 @@
  */
 import { Fragment, useMemo } from "react";
 import type { Dispatch, SetStateAction } from "react";
-import { SectionHeading } from "@shared/components/ui/SectionHeading";
-import { Input } from "@shared/components/ui/Input";
+import { Input, FIELD_LABEL } from "@shared/components/ui/Input";
 import type { FoodSearchProduct } from "@shared/api";
 import { FoodHitRow } from "./FoodHitRow";
 import type { FoodPortion, FoodProduct } from "../../lib/foodDb/foodDb";
@@ -123,9 +122,7 @@ export function FoodPickerSection({
   return (
     <div className="mb-4 space-y-2">
       <div className="flex items-center justify-between gap-2">
-        <SectionHeading as="div" size="xs">
-          Продукт
-        </SectionHeading>
+        <div className={FIELD_LABEL}>Продукт</div>
         {(foodBusy || offBusy) && (
           <span className="text-style-caption text-subtle flex items-center gap-1.5">
             пошук…
@@ -171,7 +168,7 @@ export function FoodPickerSection({
                 {/* Роздільник потрібен, коли є з чим розділяти: локальні
                     хіти вище або більше ніж одне зовнішнє джерело. */}
                 {(foodHits.length > 0 || offHitGroups.length > 1) && (
-                  <li className="pt-3 pb-1 text-style-overline text-subtle">
+                  <li className="pt-3 pb-1 text-style-label text-muted">
                     {group.label}
                   </li>
                 )}

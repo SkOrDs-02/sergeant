@@ -59,6 +59,7 @@ export function FromPantryRow({
     <CollapsibleSection
       storageKey={ADD_MEAL_SECTION_KEYS.pantry}
       title={messages.nutrition.fromPantry}
+      headingSize="md"
       defaultOpen
       // Обране з комори мусить бути видно і згорнутим: інакше людина не
       // побачить, що прийом уже прив'язаний до позиції, і списання
@@ -109,15 +110,20 @@ export function FromPantryRow({
                 }}
                 aria-pressed={isActive}
                 className={cn(
-                  "min-h-9 px-2.5 py-1.5 rounded-[7px] border text-style-label focus-ring",
+                  "min-h-9 px-2.5 py-1.5 rounded-lg border text-style-label font-semibold focus-ring pointer-coarse:min-h-[44px]",
                   isActive
-                    ? "border-text font-semibold text-text"
-                    : "border-line text-text hover:bg-line/40",
+                    ? "border-text bg-text text-bg"
+                    : "border-control bg-panel text-text hover:bg-panelHi",
                 )}
               >
                 {item.name}
                 {secondaryLabel && (
-                  <span className="ml-1 text-style-caption font-normal text-muted tabular-nums">
+                  <span
+                    className={cn(
+                      "ml-1 text-style-caption font-normal tabular-nums",
+                      isActive ? "text-bg" : "text-muted",
+                    )}
+                  >
                     {secondaryLabel}
                   </span>
                 )}

@@ -25,12 +25,13 @@
  *
  * @last-validated 2026-08-13
  */
+import { cn } from "@shared/lib/ui/cn";
+import { FIELD_LABEL } from "@shared/components/ui/Input";
 import { useEffect, useRef, useState } from "react";
 import type { Dispatch, SetStateAction } from "react";
 import { Button } from "@shared/components/ui/Button";
 import { ConfirmDialog } from "@shared/components/ui/ConfirmDialog";
 import { DateField } from "@shared/components/ui/DateField";
-import { SectionHeading } from "@shared/components/ui/SectionHeading";
 import { Sheet } from "@shared/components/ui/Sheet";
 import { hapticSuccess } from "@shared/lib/adapters/haptic";
 import { clampText } from "@shared/lib/text/limits";
@@ -700,9 +701,7 @@ export function AddMealSheet({
 
             {initialMeal?.id && initialDate && (
               <div className="mb-4">
-                <SectionHeading as="div" size="xs" className="mb-1">
-                  Дата
-                </SectionHeading>
+                <div className={cn(FIELD_LABEL, "mb-1")}>Дата</div>
                 <DateField
                   value={date}
                   onChange={(e) => setDate(e.target.value)}
