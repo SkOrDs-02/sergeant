@@ -243,8 +243,12 @@ function commitReq(
 }
 
 /** Рахує запити commit-у: обгортка над `pool.connect`. */
-function countCommitQueries(): { count: () => number; restore: () => void } {
-  let n = 0;
+function countCommitQueries(): {
+  count: () => number;
+  queries: unknown[][];
+  restore: () => void;
+} {
+  const queries: unknown[][] = [];
   const original = testPool.connect.bind(
     testPool,
   ) as () => Promise<pg.PoolClient>;
@@ -252,13 +256,17 @@ function countCommitQueries(): { count: () => number; restore: () => void } {
     const client = await original();
     return {
       query: (...args: Parameters<pg.PoolClient["query"]>) => {
-        n++;
+        queries.push(args);
         return (client.query as (...a: unknown[]) => unknown)(...args);
       },
       release: () => client.release(),
     };
   }) as unknown as typeof testPool.connect);
-  return { count: () => n, restore: () => spy.mockRestore() };
+  return {
+    count: () => queries.length,
+    queries,
+    restore: () => spy.mockRestore(),
+  };
 }
 
 describe("finyk import commit - батч-дедуп на реальному Postgres", () => {
@@ -358,8 +366,19 @@ describe("finyk import commit - батч-дедуп на реальному Post
     expect(body.skipped.monoMatched).toBe(
       expected.filter((s) => s === "mono_matched").length,
     );
-    // BEGIN, mono-матч, upsert, import_batches, sync_op_log, COMMIT.
-    expect(counter.count()).toBe(6);
+    // BEGIN, advisory-лок користувача (data-12), mono-матч, upsert,
+    // import_batches, sync_op_log, COMMIT. Лок мусить передувати записам,
+    // інакше конкурентні писарі можуть перемішати id оп-логу.
+    expect(counter.queries.slice(0, 2)).toEqual([
+      ["BEGIN"],
+      [
+        expect.stringContaining(
+          "pg_advisory_xact_lock(hashtext('sync_op_log'), hashtext($1))",
+        ),
+        [USER_A],
+      ],
+    ]);
+    expect(counter.count()).toBe(7);
 
     const one = countCommitQueries();
     try {
@@ -373,6 +392,7 @@ describe("finyk import commit - батч-дедуп на реальному Post
       one.restore();
     }
     expect(one.count()).toBe(counter.count());
+    expect(one.queries.slice(0, 2)).toEqual(counter.queries.slice(0, 2));
   });
 
   it("повторний commit: duplicate для живих, tombstoned для видалених, лічильники", async () => {

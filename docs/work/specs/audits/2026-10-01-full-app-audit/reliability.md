@@ -158,7 +158,7 @@ Scripts are in <sc …[обрізано]
 
 ### `rel-03` [medium] Per-IP ліміти за Vercel-проксі злипаються в адреси egress-вузлів: одна людина блокує вхід іншим
 
-- **Стан:** частково виправлено в гілці claude/fix-rel-03-signed-client-ip (код підписаного IP клієнта: Vercel Edge ставить `x-sergeant-client-ip` + HMAC-підпис, сервер довіряє лише за збігу `SERGEANT_CLIENT_IP_SECRET`; діє після того, як власник виставить секрет у Coolify і Vercel; без секрету поведінка не змінена. Лишається: виставити змінні, перевірити на проді; ключування auth-лімітів за email не робилось)
+- **Стан:** частково виправлено в [#1529](https://github.com/SkOrDs-02/sergeant/pull/1529) (змерджено 2026-10-18) (код підписаного IP клієнта: Vercel Edge ставить `x-sergeant-client-ip` + HMAC-підпис, сервер довіряє лише за збігу `SERGEANT_CLIENT_IP_SECRET`; діє після того, як власник виставить секрет у Coolify і Vercel; без секрету поведінка не змінена. Лишається: виставити змінні, перевірити на проді; ключування auth-лімітів за email не робилось)
 - **Перевірка:** підтверджено · **Зусилля:** M · **Область:** web: edge middleware + server: rate limit
 - **Де:** apps/web/middleware.ts:23,61-81; apps/server/src/config.ts:46-49; apps/server/src/http/rateLimit.ts:277-281,716; apps/server/src/modules/chat/aiQuota.ts:282
 - **Першопричина:** apps/web/middleware.ts проксіює /api на бекенд, копіює заголовки й виставляє лише x-forwarded-host/proto. Express з trust proxy=1 бере req.ip від Traefik, тобто адресу egress Vercel. Усі per-IP бакети ключуються за цією спільною адресою: auth 5/60 с fail-closed, анонімна AI-квота, анонімні ліміти.
@@ -173,7 +173,7 @@ Scripts are in <sc …[обрізано]
 - **ID:** `client-static/infra-headers-ci-deps#1` · **Вердикт:** підтверджено · **Лейн:** Статика клієнта та інфри · **Категорія:** `reliability`
 - **Уже відстежується:** docs/work/specs/audits/verification/findings.json
 - **Де:** apps/web/middleware.ts:23,61,80-81; apps/server/src/config.ts:46-49 (trustProxy fallback 1); apps/server/src/http/rateLimit.ts:281,716; apps/server/src/modules/chat/aiQuota.ts:282; apps/server/src/env/env.ts:507 (AUTH_RATE_LIMIT_MAX=5)
-- **Вплив:** Ліміт входу/скидання пароля (5 за 60 с на IP, fail-closed) фактично спільний для всіх веб-користувачів, яких обслуговує той самий egress-вузол Vercel. Одна людина, що надсилає 5 запитів sign-in на хвилину через app.sergeant.com.ua/api/auth/*, блокує вхід усім. Анонімні AI-квоти теж спільні, а зловживання не прив'язати до конкретного клієнта.
+- **Вплив:** Ліміт входу/скидання пароля (5 за 60 с на IP, fail-closed) фактично спільний для всіх веб-користувачів, яких обслуговує той самий egress-вузол Vercel. Одна людина, що надсилає 5 запитів sign-in на хвилину через app.sergeant.com.ua/api/auth/\*, блокує вхід усім. Анонімні AI-квоти теж спільні, а зловживання не прив'язати до конкретного клієнта.
 - **Рекомендація:** У middleware виставляти окремий заголовок з IP клієнта (напр. `x-sergeant-client-ip` з `request.headers.get('x-forwarded-for')`, який перезаписує сам Vercel) разом зі спільним секретом (`x-sergeant-proxy-secret`). На сервері довіряти цьому IP лише за збігу секрету, в інших випадках брати req.ip. Альтернатива: ключувати auth-ліміти за email/сесією, а IP-бакет зробити значно ширшим. Спершу заміряти фактичний ланцюг проксі на проді.
 
 **Докази:**
@@ -347,7 +347,7 @@ app.ts:147 applyBodySizePolicy стоїть до registerRoutes (169), тож п
 
 ### `rel-05` [medium] GET /api/v2/sync/stream не має стелі одночасних з'єднань і backpressure
 
-- **Стан:** частково виправлено в гілці claude/fix-rel-05-sync-stream-backpressure (глобальної стелі стрімів немає свідомо: потрібна лише при multi-instance, ADR-0065; маршрут і далі вимкнений прапорцем `SYNC_V2_STREAM_ENABLED`)
+- **Стан:** частково виправлено в [#1556](https://github.com/SkOrDs-02/sergeant/pull/1556) (змерджено 2026-10-20) (глобальної стелі стрімів немає свідомо: потрібна лише при multi-instance, ADR-0065; маршрут і далі вимкнений прапорцем `SYNC_V2_STREAM_ENABLED`)
 - **Перевірка:** підтверджено · **Зусилля:** S · **Швидкий виграш** · **Область:** server: sync SSE
 - **Та сама першопричина, що й** [`sec-09`](./security.md#sec-09): Обидва дефекти в /api/v2/sync/stream, у якого немає споживача: немає повторної перевірки сесії, TTL і стелі з'єднань. Найдешевший спільний фікс — закрити маршрут прапорцем до Phase 3.
 - **Де:** apps/server/src/modules/sync/syncV2Stream.ts:90-97,214-412,341,355; apps/server/src/routes/sync.ts:90-98; apps/server/src/http/timeout.ts:53-63
@@ -708,7 +708,7 @@ psql по user dIm64MnZQlIhT5MHzwEsDHftBLz8sUwJ: client_ts 04:47:21.085 n=18 (w4
 
 ### `rel-10` [medium] Кожна зміна комори перезаписує всі позиції місця: O(n²) sync-оп і порожня комора на новому пристрої
 
-- **Стан:** частково виправлено в гілці claude/fix-rel-10-pantry-dualwrite-diff (квадратичний обсяг оп-ів: у outbox ідуть лише нові/змінені позиції; стабільні id позицій і поелементні операції зроблено в гілці claude/fix-data-40-pantry-stable-ids (data-40); лишилось: стан «синхронізую» на першому pull замість порожньої комори, Retry-After у push)
+- **Стан:** частково виправлено в [#1473](https://github.com/SkOrDs-02/sergeant/pull/1473) (змерджено 2026-10-08) (квадратичний обсяг оп-ів: у outbox ідуть лише нові/змінені позиції; стабільні id позицій і поелементні операції зроблено в [#1527](https://github.com/SkOrDs-02/sergeant/pull/1527) (змерджено 2026-10-19) (data-40); лишилось: стан «синхронізую» на першому pull замість порожньої комори, Retry-After у push)
 - **Перевірка:** підтверджено · **Зусилля:** M · **Область:** web: Харчування (комора) dual-write
 - **Та сама першопричина, що й** [`data-40`](./data-integrity.md#data-40): Обидва випливають з моделі комори «переписати весь список місця» з позиційними id: rel-10 дає O(n²) оп-ів і 429, data-40 тихі втрати при паралельних правках. Стабільні UUID позицій і поелементні операції закривають обидва (і полегшують data-10).
 - **Де:** apps/web/src/modules/nutrition/lib/sqliteWriter/diff.ts:560-566; apps/web/src/modules/nutrition/lib/sqliteWriter/adapter.ts; apps/web/src/core/syncEngine/syncEngineReader.ts:195-206
@@ -804,7 +804,7 @@ Verifier rerun of t3_wedge.mts with the real createSyncEngineReaderRuntime: pull
 - **Стан:** виправлено в [#1396](https://github.com/SkOrDs-02/sergeant/pull/1396) (змерджено 2026-10-08) (побічна ціна unregister - втрата push-підписки - закрита відновленням `restoreWebPushSubscriptionIfLost` після reload)
 - **Перевірка:** підтверджено · **Зусилля:** S · **Швидкий виграш** · **Область:** web: service worker
 - **Де:** apps/web/src/sw/cache.ts:237-253; apps/web/src/sw/messages.ts:66-95; apps/web/src/core/auth/AuthContext.tsx:618-622; apps/web/src/core/app/swControl.ts:162-171; apps/web/src/core/settings/PWASection.tsx:20-27
-- **Першопричина:** clearAppCaches видаляє і workbox-precache*, хоча там лише ассети збірки без даних користувача. Workbox відновлює precache тільки коли в маніфесті є integrity, а її немає, тож кеш лишається порожнім до встановлення нового SW. Кнопка скидання при цьому не викликає ні update(), ні unregister().
+- **Першопричина:** clearAppCaches видаляє і workbox-precache\*, хоча там лише ассети збірки без даних користувача. Workbox відновлює precache тільки коли в маніфесті є integrity, а її немає, тож кеш лишається порожнім до встановлення нового SW. Кнопка скидання при цьому не викликає ні update(), ні unregister().
 - **Вплив:** Хто хоч раз вийшов з акаунта, втрачає офлайн-запуск PWA: без мережі білий екран або ERR_FAILED (відтворено двома лейнами). «Скинути кеш PWA» не лікує застряглу версію, бо старий SW лишається активним. Заодно стираються ~5,6 МБ зображень вправ.
 - **Що зробити:** На logout чистити лише користувацькі кеші (api-cache-_, navigations-_). Для «Скинути кеш PWA» після очищення робити registration.unregister() або update() разом зі skipWaiting і лише потім reload.
 
@@ -813,7 +813,7 @@ Verifier rerun of t3_wedge.mts with the real createSyncEngineReaderRuntime: pull
 #### [medium] Logout і «Скинути кеш PWA» назавжди видаляють precache: застосунок перестає відкриватися офлайн до наступного деплою, а застряглий SW лишається
 
 - **ID:** `client-static/service-worker-pwa#3` · **Вердикт:** підтверджено · **Лейн:** Статика клієнта та інфри · **Категорія:** `reliability`
-- **Де:** apps/web/src/sw/cache.ts:237-253 (clearAppCaches видаляє workbox-precache*); apps/web/src/sw/messages.ts:66-95; apps/web/src/core/auth/AuthContext.tsx:619; apps/web/src/core/settings/PWASection.tsx:20-27; node_modules/workbox-precaching/PrecacheStrategy.js:99-112
+- **Де:** apps/web/src/sw/cache.ts:237-253 (clearAppCaches видаляє workbox-precache\*); apps/web/src/sw/messages.ts:66-95; apps/web/src/core/auth/AuthContext.tsx:619; apps/web/src/core/settings/PWASection.tsx:20-27; node_modules/workbox-precaching/PrecacheStrategy.js:99-112
 - **Вплив:** Кожен явний вихід (і кожне натискання «Скинути кеш PWA») мовчки вимикає офлайн-режим на весь час життя поточного SW — після тосту «Додаток готовий до роботи офлайн». Кнопка, яка за текстом лікує «застряглу версію», не викликає registration.update()/unregister(), тож старий воркер лишається активним.
 - **Рекомендація:** На logout чистити лише користувацькі кеші (api-cache-_, navigations-_); precache і exercise-images не містять даних користувача. Для «Скинути кеш PWA» після очищення робити registration.unregister() (або update() + skipWaiting) і лише тоді reload, щоб новий SW заново встановив precache.
 
@@ -861,7 +861,7 @@ sw.js manifest: 434 entries, 0 with integrity.
 - **ID:** `browser-crosscut/data-isolation-browser#7` · **Вердикт:** підтверджено · **Лейн:** Браузер · наскрізне · **Категорія:** `reliability`
 - **Де:** apps/web/src/sw/cache.ts:237-252 (clearAppCaches видаляє і `workbox-precache*`), викликається з logout через swClearCaches (apps/web/src/core/auth/AuthContext.tsx:618-622, core/app/swControl.ts:162-171)
 - **Вплив:** Кожен користувач, який хоч раз вийшов з акаунта, втрачає офлайн-запуск PWA до наступного деплою: застосунок без мережі показує білий екран. У precache лише ассети збірки, тож для ізоляції користувачів його видаляти не потрібно.
-- **Рекомендація:** У CLEAR_SW_CACHES при logout чистити лише navigations-_, api-cache-_, exercise-images-*, а workbox-precache не чіпати. Повне очищення лишити для ручного «Очистити кеш», а після нього викликати registration.update() або повторно наповнювати precache.
+- **Рекомендація:** У CLEAR*SW_CACHES при logout чистити лише navigations-*, api-cache-\_, exercise-images-\*, а workbox-precache не чіпати. Повне очищення лишити для ручного «Очистити кеш», а після нього викликати registration.update() або повторно наповнювати precache.
 
 **Докази:**
 
@@ -935,7 +935,7 @@ Independent repro with v5-chunk.mjs (serviceWorkers: block, abort FinykApp-*.js)
 
 ### `rel-14` [medium] Кнопка «Оновити» PWA ненадійна: активація зависає на 5 хв або проходить без перезавантаження
 
-- **Стан:** частково виправлено в гілці claude/fix-data-45-rel-14-sw-update (лишилось: web-vitals beacon на першому input і далі тримає старий SW до 5 хв, але тап «Оновити» вже не мовчить: статус-тост через 3 с з ручним reload)
+- **Стан:** частково виправлено в [#1491](https://github.com/SkOrDs-02/sergeant/pull/1491) (змерджено 2026-10-09) (лишилось: web-vitals beacon на першому input і далі тримає старий SW до 5 хв, але тап «Оновити» вже не мовчить: статус-тост через 3 с з ручним reload)
 - **Перевірка:** підтверджено · **Зусилля:** M · **Область:** web: SW update flow
 - **Де:** apps/web/src/core/app/useSWUpdate.ts:74-91; apps/web/src/sw/messages.ts:24; apps/web/src/core/observability/webVitals.ts:59-69,224; node_modules/workbox-window/Workbox.js:294; vite-plugin-pwa register.js:57-63
 - **Першопричина:** applyUpdate шле SKIP_WAITING і покладається на reload від vite-plugin-pwa, а той спрацьовує лише при event.isUpdate. Якщо першим input на сторінці став тап «Оновити», LCP-beacon web-vitals іде через fetch-обробник старого SW і тримає його до 5-хвилинного ліміту. У першій сесії, коли SW встановився під час цього ж завантаження, isUpdate=false і reload не відбувається взагалі.
@@ -1012,7 +1012,7 @@ verify dir v20.log: `after tap {"sw":{"waiting":null,...},"newLoads":[],"toastSt
 
 ### `rel-15` [medium] Перша звичка нового користувача: відмітка одразу після створення «відкочується» в UI
 
-- **Стан:** виправлено в гілці claude/fix-rel-15-routine-first-habit
+- **Стан:** виправлено в [#1487](https://github.com/SkOrDs-02/sergeant/pull/1487) (змерджено 2026-10-09)
 - **Перевірка:** підтверджено · **Зусилля:** M · **Область:** web: Рутина (кеші після pull)
 - **Де:** apps/web/src/modules/routine/lib/routineStorage.ts:150-230; apps/web/src/modules/routine/hooks/useRoutineState.ts; apps/web/src/core/syncEngine/refreshCachesAfterPull.ts
 - **Першопричина:** Перший цикл синку (pull since=0 → refreshCachesAfterPull → refreshSqliteCompletions/RoutineState → emitRoutineStorage) перезаписує свіжіший write-through кеш старішим снапшотом SQLite. Кеш не версіонований відносно останнього локального запису.
@@ -1062,7 +1062,7 @@ Push пішов: routine_entries.insert …:2026-10-02; після reload: «1/1
 
 ### `rel-16` [medium] Дії HubChat у Фініку, Харчуванні й Фізруку рапортують «записано», навіть коли запис нікуди не ліг
 
-- **Стан:** частково виправлено в гілці claude/fix-rel-16-hubchat-honest-writes (лишилось: `add_program_day` пише мертвий ключ `fizruk_plan_template_v1`, `set_goal` пише `hub_goals_v1` без читача; рішення власника 2026-10-19: прибрати `add_program_day`, звузити `set_goal` до денних ккал, виконується окремим PR, бо чіпає серверні tool defs і кеш префікса. Фінік і Харчування вже не рапортують успіх без запису (Харчування й коли запис осів у буфері до реєстрації dual-write контексту: лічильник `nutritionDualWriteBufferedRuns`): `confirm` збирається в `executeActions`, а `create_transaction` (дохід, офлайн-фолбек) із async-гілки теж проходить `settle()`; витрата, прийнята сервером, не чекає дзеркала в SQLite. Запис, що після відмови все ж долетить, повтор користувача може задублювати)
+- **Стан:** частково виправлено в [#1563](https://github.com/SkOrDs-02/sergeant/pull/1563) (змерджено 2026-10-20) (лишилось: `add_program_day` пише мертвий ключ `fizruk_plan_template_v1`, `set_goal` пише `hub_goals_v1` без читача; рішення власника 2026-10-19: прибрати `add_program_day`, звузити `set_goal` до денних ккал, виконується окремим PR, бо чіпає серверні tool defs і кеш префікса. Фінік і Харчування вже не рапортують успіх без запису (Харчування й коли запис осів у буфері до реєстрації dual-write контексту: лічильник `nutritionDualWriteBufferedRuns`): `confirm` збирається в `executeActions`, а `create_transaction` (дохід, офлайн-фолбек) із async-гілки теж проходить `settle()`; витрата, прийнята сервером, не чекає дзеркала в SQLite. Запис, що після відмови все ж долетить, повтор користувача може задублювати)
 - **Перевірка:** підтверджено · **Зусилля:** M · **Область:** web: HubChat action executors
 - **Де:** apps/web/src/core/lib/hubChatActions.ts:86-117; apps/web/src/modules/finyk/lib/sqliteWriter/chatBridge.ts:71-87,130-131,148-149; apps/web/src/core/lib/chatActions/fizrukActions/programs.ts:33-41; apps/web/src/core/lib/chatActions/crossActions/goalAndUtility.ts:151-198
 - **Першопричина:** settle() чекає на durability лише коли хендлер повертає confirm, а повертає його тільки Рутина. Finyk chatBridge мовчки виходить, якщо dual-write runtime ще не зареєстрований: без буфера й без журналу. add_program_day пише в deprecated-ключ fizruk_plan_template_v1, а set_goal — у hub_goals_v1, і жоден з цих ключів ніхто не читає.
@@ -1197,7 +1197,7 @@ verify-server-static-ai-layer/coachmem-v2.mjs (юзер audit_pool152): POST /ap
 
 ### `rel-19` [medium] Фонові полери не мають першого тіку: годинні задачі зсуваються після кожного деплою, а добова звірка Plata не виконується ніколи
 
-- **Стан:** частково виправлено в гілці claude/fix-rel-19-worker-first-tick (стартовий тік у п'яти полерах і годинний slow tick Plata за `updated_at`; lastRunAt Plata у /health/workers та алерт на застарілий lastRunAt лишились)
+- **Стан:** частково виправлено в [#1443](https://github.com/SkOrDs-02/sergeant/pull/1443) (змерджено 2026-10-08) (стартовий тік у п'яти полерах і годинний slow tick Plata за `updated_at`; lastRunAt Plata у /health/workers та алерт на застарілий lastRunAt лишились)
 - **Перевірка:** підтверджено · **Зусилля:** M · **Область:** server: background workers
 - **Де:** apps/server/src/modules/billing/plataSync.ts:47,293-300; apps/server/src/modules/gdpr/cleanupPoller.ts:105-113; apps/server/src/modules/me/deletionPoller.ts:118-126; apps/server/src/modules/webhooks/retentionPoller.ts:72; apps/server/src/modules/logRetention/archivePoller.ts:175; apps/server/src/obs/anthropicBudgetGuard.ts:381; apps/server/src/index.ts:220-264
 - **Першопричина:** GDPR-cleanup, добивач видалень акаунтів, retention, архів логів, budget guard і Plata роблять лише setInterval і не запускають тік на старті, на відміну від SilpoSyncPoller. Slow-tick Plata — 24-годинний таймер процесу, який скидається кожним рестартом, а деплої йдуть кілька разів на день.
@@ -1319,7 +1319,7 @@ cd apps/server && node --import tsx <scratch>/agents/verify-server-static-gap-fi
 
 ### `rel-21` [medium] Пошук їжі: збій Open Food Facts чи USDA видається за «нічого не знайдено» і публічно кешується до 10 хв
 
-- **Стан:** виправлено в гілці claude/fix-rel-21-22-23-food-search-silpo
+- **Стан:** виправлено в [#1445](https://github.com/SkOrDs-02/sergeant/pull/1445) (змерджено 2026-10-08)
 - **Перевірка:** підтверджено · **Зусилля:** S · **Швидкий виграш** · **Область:** server: nutrition food-search / barcode
 - **Де:** apps/server/src/modules/nutrition/food-search.ts:110,130,218-224; apps/server/src/routes/food-search.ts; apps/server/src/routes/barcode.ts
 - **Першопричина:** fetchOFF і fetchUSDA на !r.ok повертають [], а виклики обгорнуті в .catch(() =&gt; []), тож таймаут чи 503 не відрізнити від порожнього результату. cachingMiddleware стоїть перед лімітером і хендлером і безумовно ставить public, max-age=300, stale-while-revalidate=300, зокрема на 4xx і 5xx barcode.
@@ -1363,7 +1363,7 @@ x5_food.mjs: /api/food-search?q=apple 200 126ms `public, max-age=300, stale-whil
 
 ### `rel-22` [medium] Пошук їжі для підключених до Сільпо: гілка Сільпо без дедлайну і з 12-18 HTTP-запитами на кожне натискання
 
-- **Стан:** частково виправлено в гілці claude/fix-rel-21-22-23-food-search-silpo (лишилось: кеш initialize-сесії, серверний кеш per user+query, мінімальна довжина запиту, 429 у breaker і Retry-After, ліміт розміру тіла MCP-відповіді)
+- **Стан:** частково виправлено в [#1445](https://github.com/SkOrDs-02/sergeant/pull/1445) (змерджено 2026-10-08) (лишилось: кеш initialize-сесії, серверний кеш per user+query, мінімальна довжина запиту, 429 у breaker і Retry-After, ліміт розміру тіла MCP-відповіді)
 - **Перевірка:** підтверджено · **Зусилля:** M · **Область:** server: Сільпо MCP / food-search
 - **Де:** apps/server/src/modules/nutrition/food-search.ts:146,214-234; apps/server/src/modules/silpo/foodSource.ts:464-518; apps/server/src/modules/silpo/mcpClient.ts:96-98,178-211,255-330,408-436
 - **Першопричина:** AbortSignal.timeout(8000) передається лише в OFF і USDA, а searchSilpoProducts стоїть у тому самому Promise.all без сигналу. Кожен callMcpTool робить initialize, notifications/initialized і tools/call з власними ретраями по 15 с, і етапи йдуть послідовно. 429 не відкриває breaker, Retry-After ігнорується, розмір відповіді не обмежено.
@@ -1408,7 +1408,7 @@ food-search.ts:146 створює `AbortSignal.timeout(8000)` (NUTRITION_AI_TIME
 
 ### `rel-23` [medium] Здорове підключення Сільпо переводиться в reauth_required через хибну класифікацію помилок
 
-- **Стан:** виправлено в гілці claude/fix-rel-21-22-23-food-search-silpo (повтор refresh з backoff свідомо не додано)
+- **Стан:** виправлено в [#1445](https://github.com/SkOrDs-02/sergeant/pull/1445) (змерджено 2026-10-08) (повтор refresh з backoff свідомо не додано)
 - **Перевірка:** підтверджено · **Зусилля:** S · **Швидкий виграш** · **Область:** server: Сільпо OAuth/MCP
 - **Де:** apps/server/src/modules/silpo/mcpClient.ts:475-488,554-558; apps/server/src/modules/silpo/tokenStore.ts:382-422,524-555; apps/server/src/modules/silpo/oauth.ts:58-101,281-320
 - **Першопричина:** looksLikeAuthRefusal застосовує регекс /unauthor|...|401|403|token|expired|сесі|авториз|токен/i до будь-якого тексту isError, тож бізнес-відмови на кшталт «Товар 3401567 відсутній» чи «Promo period expired» стають auth_required. Якщо відмова повторюється після refresh, ставиться reauth_required. performRefresh так само ловить будь-який виняток (таймаут, 5xx, 429, збій discovery чи БД) і безумовно викликає markReauthRequired, без retry.
@@ -1926,7 +1926,7 @@ probe1.mjs: рядки 'POST plata-charge anon', 'POST liqpay-callback anon' →
 - **ID:** `api-live/ai-billing-integrations-live#8` · **Вердикт:** підтверджено · **Лейн:** Живе API · **Категорія:** `reliability`
 - **Де:** apps/server/src/routes/billing.ts:355-421 (liqpay-callback, plata-charge/status: BillingConfigurationError не мапиться, на відміну від checkout/portal); apps/server/src/obs/securityEvents.ts (MAX_EVENTS_PER_MINUTE=10 на тип глобально)
 - **Вплив:** Будь-хто може генерувати необмежену кількість 500 і error-логів зі стеками (шум у Sentry/алертах, витрата квоти) на будь-якому середовищі, де один із провайдерів не налаштований (preview, staging, прод після вимкнення провайдера). Флуд підробленими підписами в межах 10/хв на тип ховає справжні bad_sig-події того ж типу.
-- **Рекомендація:** У вебхуках ловити BillingConfigurationError і віддавати 503 (або 404, якщо провайдер вимкнений) без стеку. Додати per-IP rateLimitExpress на /api/billing/*-webhook/callback і /api/mono/webhook (Monobank і платіжки шлють з обмеженого пулу IP). Прибирання security-подій робити за (тип, IP).
+- **Рекомендація:** У вебхуках ловити BillingConfigurationError і віддавати 503 (або 404, якщо провайдер вимкнений) без стеку. Додати per-IP rateLimitExpress на /api/billing/\*-webhook/callback і /api/mono/webhook (Monobank і платіжки шлють з обмеженого пулу IP). Прибирання security-подій робити за (тип, IP).
 
 **Докази:**
 
@@ -2432,7 +2432,7 @@ verify-.../rl.mjs: POST /api/finyk/receipts/lookup з body {} → 400 VALIDATION
 - **Та сама першопричина, що й** [`sec-25`](./security.md#sec-25): Той самий дефект: send-verification-email (і change-email) без app-ліміту і без стелі на акаунт.
 - **Де:** apps/server/src/routes/auth.ts:23-28; apps/server/src/auth.ts:345-409; node_modules/better-auth/dist/context/create-context.mjs:171
 - **Першопричина:** Цей шлях не входить у підрядки authSensitiveRateLimit і authAccountRateLimit. auth.ts не задає rateLimit явно, тож вбудований лімітер Better Auth увімкнений лише при NODE_ENV=production (дефолт 3 запити за 60 с на IP).
-- **Вплив:** Скрипт без Origin і без CSRF-заголовка змушує систему слати верифікаційні листи на чужу адресу. У проді розсилка з багатьох IP бомбить скриньку жертви і палить квоту Resend. У будь-якому non-production деплої весь catch-all /api/auth/* поза п'ятьма захищеними шляхами не має throttle.
+- **Вплив:** Скрипт без Origin і без CSRF-заголовка змушує систему слати верифікаційні листи на чужу адресу. У проді розсилка з багатьох IP бомбить скриньку жертви і палить квоту Resend. У будь-якому non-production деплої весь catch-all /api/auth/\* поза п'ятьма захищеними шляхами не має throttle.
 - **Що зробити:** Додати send-verification-email і решту чутливих catch-all шляхів до власних auth-лімітерів з per-email бакетом або явно задати rateLimit.enabled=true у betterAuth, щоб не залежати від NODE_ENV.
 - **Примітка:** Енумерації акаунтів не виявлено: відповідь іде за константні ~500 мс. Фіндер ставив medium.
 
@@ -2443,7 +2443,7 @@ verify-.../rl.mjs: POST /api/finyk/receipts/lookup з body {} → 400 VALIDATION
 - **ID:** `api-live/gap-better-auth-catchall-subroutes#2` · **Вердикт:** підтверджено · **Лейн:** Живе API · **Категорія:** `reliability`
 - **Серйозність від шукача:** medium
 - **Де:** apps/server/src/routes/auth.ts:23-28; apps/server/src/auth.ts:345-409 (немає блоку rateLimit); upstream better-auth/dist/context/create-context.mjs:171 (enabled ?? isProduction), better-auth/dist/api/rate-limiter/index.mjs:377-383 (дефолт send-verification-email -&gt; 60s/max3 per-IP)
-- **Вплив:** Будь-який скрипт (у т.ч. server-to-server без Origin) змушує систему слати верифікаційні листи на чужу адресу. У проді єдиний захист — дефолтний per-IP ліміт Better Auth 3/60с: per-account стелі немає зовсім, тож розподілена розсилка (ботнет IP) безмежно бомбить скриньку жертви (Resend); акаунти з REQUIRE_EMAIL_VERIFICATION=false (дефолт) лишаються unverified назавжди — постійна ціль. Гірше: у будь-якому non-production деплої (preview/staging, NODE_ENV!=production) весь catch-all /api/auth/* поза 5 підрядками не має жодного auth-throttlу. Репо гартує лише 5 шляхів, покладаючись на env-гейтнутий per-IP upstream-дефолт.
+- **Вплив:** Будь-який скрипт (у т.ч. server-to-server без Origin) змушує систему слати верифікаційні листи на чужу адресу. У проді єдиний захист — дефолтний per-IP ліміт Better Auth 3/60с: per-account стелі немає зовсім, тож розподілена розсилка (ботнет IP) безмежно бомбить скриньку жертви (Resend); акаунти з REQUIRE_EMAIL_VERIFICATION=false (дефолт) лишаються unverified назавжди — постійна ціль. Гірше: у будь-якому non-production деплої (preview/staging, NODE_ENV!=production) весь catch-all /api/auth/\* поза 5 підрядками не має жодного auth-throttlу. Репо гартує лише 5 шляхів, покладаючись на env-гейтнутий per-IP upstream-дефолт.
 - **Рекомендація:** Додати до authSensitiveRateLimit/authAccountRateLimit покриття send-verification-email (і решти чутливих катч-ол шляхів) АБО явно задати rateLimit:{enabled:true,...} у betterAuth із per-account правилом, щоб не залежати від NODE_ENV. Додати per-email бакет для send-verification-email.
 
 **Докази:**
@@ -2612,7 +2612,7 @@ v9_coupling: '[181ms] user U push committed ... last_op_id=11358' / '[206ms][386
 
 - **Стан:** відкрито
 - **Перевірка:** підтверджено · **Зусилля:** M · **Область:** web: durability / sync engine
-- **Де:** apps/web/src/core/durability/dualWriteJournal.ts:90-91; apps/web/src/core/syncEngine/singleton.ts:503; apps/web/src/modules/*/lib/sqliteWriter/index.ts
+- **Де:** apps/web/src/core/durability/dualWriteJournal.ts:90-91; apps/web/src/core/syncEngine/singleton.ts:503; apps/web/src/modules/\*/lib/sqliteWriter/index.ts
 - **Першопричина:** У :memory: ack журналу пропускається. originDeviceId живе в kv_store цієї ж бази і на кожному буті новий, а адаптери генерують свіжий idempotency_key. Кожен memory-бут ще й додає до журналу новий знімок дефолтних комор.
 - **Вплив:** Поки диск повний (а це може тривати днями), кожен reload додає до 200 відхилених рядків у sync_op_log, палить push-ліміт і ламає ехо-фільтр pull: сервер повертає пристрою його ж старі оп-и. Цілісність даних не страждає, бо LWW відкидає повтори.
 - **Що зробити:** Дублювати SYNC_ORIGIN_DEVICE_ID у localStorage, давати записам журналу детермінований idempotency_key і знімати журнал за підтвердженням push, а не лише за записом у SQLite.
@@ -2624,7 +2624,7 @@ v9_coupling: '[181ms] user U push committed ... last_op_id=11358' / '[206ms][386
 
 - **ID:** `browser-crosscut/gap-long-session-storage-pressure#6` · **Вердикт:** підтверджено · **Лейн:** Браузер · наскрізне · **Категорія:** `reliability`
 - **Серйозність від шукача:** medium
-- **Де:** apps/web/src/core/durability/dualWriteJournal.ts:90-91 (ack пропускається в memory, реплей на кожному буті), apps/web/src/core/syncEngine/singleton.ts:503 (originDeviceId у webKVStore → kv_store у :memory:), apps/web/src/modules/*/lib/sqliteWriter/index.ts (реплей журналу)
+- **Де:** apps/web/src/core/durability/dualWriteJournal.ts:90-91 (ack пропускається в memory, реплей на кожному буті), apps/web/src/core/syncEngine/singleton.ts:503 (originDeviceId у webKVStore → kv_store у :memory:), apps/web/src/modules/\*/lib/sqliteWriter/index.ts (реплей журналу)
 - **Вплив:** Поки пристрій у memory-режимі (тобто поки диск повний, може бути днями), кожен reload додає до 200 відхилених рядків журналу на сервері. Push-ліміти вигорають, сервер росте без меж, ехо-фільтр pull ламається через новий device id на кожному буті.
 - **Рекомендація:** Зберігати SYNC_ORIGIN_DEVICE_ID дублем у localStorage (safeWriteStringLSDurable), щоб він переживав memory-режим. Записам журналу давати детермінований idempotency_key (від id запису журналу), щоб повтори ставали 'duplicate' без нових рядків. Не реплеїти в memory-режимі записи, які сервер уже прийняв: знімати журнал за підтвердженням push, а не лише за SQLite.
 
@@ -2827,7 +2827,7 @@ Re-ran the fresh-device scenario (cookies only, no LS or OPFS) with my user at l
 - **Перевірка:** підтверджено · **Зусилля:** S · **Швидкий виграш** · **Область:** web: HubChat
 - **Де:** apps/web/src/core/hub/chat/useDestructiveConfirm.ts:80-110; apps/web/src/core/hub/chat/useChatSend.ts:379-383,475,808-813,850-854; apps/web/src/core/app/useSWUpdate.ts:139-147
 - **Першопричина:** useDestructiveConfirm не має unmount-cleanup, тож promise з request() ніколи не завершується і finally з setHubStreaming(false) не виконується. 90-секундний таймаут ходу стартує ще до діалогу.
-- **Вплив:** Глобальний _streaming лишається true, і тост оновлення PWA відкладається до 10 хв. Якщо підтвердити пізніше ніж за 90 с, деструктивні інструменти все одно виконуються, а бульбашка показує помилку, хоча дані вже змінено.
+- **Вплив:** Глобальний \_streaming лишається true, і тост оновлення PWA відкладається до 10 хв. Якщо підтвердити пізніше ніж за 90 с, деструктивні інструменти все одно виконуються, а бульбашка показує помилку, хоча дані вже змінено.
 - **Що зробити:** У useDestructiveConfirm на unmount робити settle(false). Таймаут ставити лише на мережеві виклики, а не на час очікування підтвердження.
 - **Примітка:** Перевірено статично, бо LLM-ключів локально немає.
 
@@ -3228,9 +3228,9 @@ Probe <scratch>/agents/verify-server-static-privacy-logging/v3/probe.mjs → `RE
 - **Стан:** відкрито
 - **Перевірка:** підтверджено · **Зусилля:** S · **Область:** server: db-schema
 - **Де:** apps/server/src/migrations/003_baseline_schema.sql:41-48; apps/server/src/migrations/009_waitlist.sql:12; apps/server/src/migrations/028_openclaw.sql; apps/server/src/modules/logRetention/archivePoller.ts:74,294
-- **Першопричина:** Таблиця verification має лише PK(id), хоча Better Auth на кожен lookup робить findMany за identifier з сортуванням за createdAt і deleteMany за expiresAt. FK waitlist_entries.user_id і openclaw__.invocation_id не мають індексу. Таблиці finyk__ мають індекси, що є префіксами PK.
+- **Першопричина:** Таблиця verification має лише PK(id), хоча Better Auth на кожен lookup робить findMany за identifier з сортуванням за createdAt і deleteMany за expiresAt. FK waitlist_entries.user_id і openclaw**.invocation_id не мають індексу. Таблиці finyk** мають індекси, що є префіксами PK.
 - **Вплив:** Поки таблиці малі, вплив мізерний. З їх ростом сповільнюються reset-password, verify-email і видалення акаунта, а зайві індекси збільшують вартість запису.
-- **Що зробити:** Створити індекси verification(identifier, createdAt DESC), verification(expiresAt) і waitlist_entries(user_id). Прибрати дублікати в finyk_*. Індекси openclaw — разом із фазою 2 видалення цих таблиць.
+- **Що зробити:** Створити індекси verification(identifier, createdAt DESC), verification(expiresAt) і waitlist*entries(user_id). Прибрати дублікати в finyk*\*. Індекси openclaw — разом із фазою 2 видалення цих таблиць.
 
 Знахідок у кластері: 1.
 
@@ -3239,7 +3239,7 @@ Probe <scratch>/agents/verify-server-static-privacy-logging/v3/probe.mjs → `RE
 - **ID:** `server-static/db-migrations#8` · **Вердикт:** підтверджено · **Лейн:** Статика сервера · **Категорія:** `perf`
 - **Де:** apps/server/src/migrations/003_baseline_schema.sql:41-48 (verification); 009_waitlist.sql:12; 028_openclaw.sql (invocation FK); apps/server/src/modules/logRetention/archivePoller.ts:74, 294; node_modules/better-auth/dist/db/internal-adapter.mjs:590-627
 - **Вплив:** Поки таблиці малі — копійки; з ростом verification/waitlist сповільнюються reset-password/verify-email і видалення акаунта; зайві індекси додають write amplification на гарячі sync-таблиці.
-- **Рекомендація:** CREATE INDEX на verification(identifier, "createdAt" DESC) і verification("expiresAt"); індекс на waitlist_entries(user_id); прибрати дублікати індексів (finyk_*), openclaw FK-індекси — разом із фазою 2 видалення цих таблиць (152).
+- **Рекомендація:** CREATE INDEX на verification(identifier, "createdAt" DESC) і verification("expiresAt"); індекс на waitlist*entries(user_id); прибрати дублікати індексів (finyk*\*), openclaw FK-індекси — разом із фазою 2 видалення цих таблиць (152).
 
 **Докази:**
 
@@ -3822,7 +3822,7 @@ psql repro: session 1 held pg_advisory_lock(918273645001) for 4 s; session 2 ran
 - **Стан:** відкрито
 - **Перевірка:** підтверджено · **Зусилля:** S · **Область:** web: service worker
 - **Де:** apps/web/src/sw.ts:14,72,113-116,145; apps/web/src/sw/notifiedKeys.ts:113-153; apps/web/src/sw/debug.ts:57-63
-- **Першопричина:** recordNotified у notificationclose пише ключі; для серверних пушів без tag це унікальні push_${Date.now()}. Читає їх лише debug-снапшот, а prune спрацьовує тільки для ключів із денним суфіксом. Шапки sw.ts і notifiedKeys.ts посилаються на неіснуючий sw/reminders.
+- **Першопричина:** recordNotified у notificationclose пише ключі; для серверних пушів без tag це унікальні push\_${Date.now()}. Читає їх лише debug-снапшот, а prune спрацьовує тільки для ключів із денним суфіксом. Шапки sw.ts і notifiedKeys.ts посилаються на неіснуючий sw/reminders.
 - **Вплив:** IDB sergeant-sw/notified-keys росте з кожним закритим пушем без жодної користі, а документація SW описує шар, якого вже немає.
 - **Що зробити:** Прибрати recordNotified з notificationclose або обмежити кількість ключів і оновити шапку sw.ts.
 
@@ -3861,11 +3861,11 @@ Dead state confirmed. notifiedKeys is written by recordNotified, from sw.ts:113-
 
 <a id="rel-64"></a>
 
-### `rel-64` [info] Евалюація entry-чанка index-*.js — найдовша задача головного потоку на старті (300-440 мс на 1x CPU)
+### `rel-64` [info] Евалюація entry-чанка index-\*.js — найдовша задача головного потоку на старті (300-440 мс на 1x CPU)
 
 - **Стан:** відкрито
 - **Перевірка:** спірне · **Зусилля:** M · **Область:** web: bundle / perf
-- **Де:** apps/server/dist/assets/index-*.js (entry chunk); apps/web/index.html
+- **Де:** apps/server/dist/assets/index-\*.js (entry chunk); apps/web/index.html
 - **Першопричина:** Top-level side effects entry-модуля (ініціалізація каталогів, схем, observability boot) виконуються синхронно до першого малювання, а index.html має порожній #root без статичного сплешу.
 - **Вплив:** На телефонах середнього класу це відкладає FCP і LCP. Цифри «TBT 1,2-3,2 с» у звіті насправді є сумою long tasks від навігації в навантаженій пісочниці, а не справжнім TBT, тож масштаб перебільшено.
 - **Що зробити:** Профілювати top-level side effects entry-чанка і відкласти некритичне в idle. Перевірити мобільним LHCI з реальним throttling.
@@ -3873,7 +3873,7 @@ Dead state confirmed. notifiedKeys is written by recordNotified, from sw.ts:113-
 
 Знахідок у кластері: 1.
 
-#### [info] Довгі задачі головного потоку: евалюація entry-модуля index-*.js займає 300-440 мс на 1x CPU; TBT 1.2-3.2 с на 4x CPU (/finyk, /?tab=profile, /)
+#### [info] Довгі задачі головного потоку: евалюація entry-модуля index-\*.js займає 300-440 мс на 1x CPU; TBT 1.2-3.2 с на 4x CPU (/finyk, /?tab=profile, /)
 
 - **ID:** `browser-crosscut/resilience-offline-perf#11` · **Вердикт:** сумнівно · **Лейн:** Браузер · наскрізне · **Категорія:** `perf`
 - **Серйозність від шукача:** low
