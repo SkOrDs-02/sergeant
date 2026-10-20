@@ -94,7 +94,7 @@ export function createMeRouter(): Router {
     "/api/me/export",
     requireFreshSession(),
     // Найважчий запит у застосунку — і єдиний дорогий, що лишався зовсім
-    // без лімітера. `buildMeExport` пускає девʼять паралельних запитів,
+    // без лімітера. `buildMeExport` пускає кількадесят паралельних запитів,
     // два з них `LIMIT 5000` (`mono_transaction` з `ORDER BY time DESC`,
     // `ai_memories`), а `requireFreshSession()` зверху додає окремий
     // лукап сесії в обхід cookie-кешу на КОЖЕН виклик. Тобто цикл із

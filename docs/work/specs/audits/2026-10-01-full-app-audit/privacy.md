@@ -776,7 +776,7 @@ grep: PhotoPrivacyNotice/photoPrivacyAck appear only in apps/web/src/modules/nut
 
 ### `priv-12` [medium] GDPR-експорт неповний: біометрія профілю, пам'ять коуча, чеки з позиціями, Сільпо, банківські підключення, фідбек та інше не потрапляють у файл і не перелічені у винятках
 
-- **Стан:** відкрито
+- **Стан:** виправлено в гілці claude/fix-priv-12-gdpr-export-complete (за рішенням власника: первинні записи їдуть у файл, coach_memory, кеш нуджів, session/account та службові таблиці названі в `excluded` з причиною; залишок: `waitlist_entries` шукається лише за `user_id`, запис за самим email без акаунта не вивантажується)
 - **Перевірка:** підтверджено · **Зусилля:** M · **Область:** server: права на дані (/api/me/export)
 - **Де:** apps/server/src/modules/me/dataRights.ts:268-325 (MODULE_EXPORT_TABLES), 329-370 (EXPORT_EXCLUSIONS), 417-520 (buildMeExport); apps/server/src/modules/me/exportTables.drift.test.ts:16
 - **Першопричина:** buildMeExport читає фіксований MODULE_EXPORT_TABLES і кілька окремих таблиць. Drift-гейт exportTables.drift.test.ts перевіряє лише таблиці з префіксами finyk_/fizruk_/nutrition_/routine_. Тому таблиці без префікса мовчки випадають: user_profile, coach_memory, receipts, receipt_items, silpo_*, mono_jar, privat_connection, import_batches, feedback_entries тощо.
