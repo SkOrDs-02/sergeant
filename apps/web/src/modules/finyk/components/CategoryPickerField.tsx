@@ -17,8 +17,7 @@ import { Input } from "@shared/components/ui/Input";
 import { Sheet } from "@shared/components/ui/Sheet";
 import { Label } from "@shared/components/ui/FormField";
 import { cn } from "@shared/lib/ui/cn";
-import { messages } from "@shared/i18n";
-import { catChipVars } from "../lib/categoryChip";
+import { CategorySwatch } from "./CategorySwatch";
 import { stripLeadingEmoji } from "./txRowHelpers";
 
 export interface CategoryPickerOption {
@@ -111,27 +110,24 @@ export function CategoryPickerField({
       aria-pressed={category.id === selectedId}
       aria-label={stripLeadingEmoji(category.label)}
       onClick={() => choose(category.id)}
-      style={catChipVars(category.id, categories)}
       className={cn(
-        "w-full touch-target rounded-lg border px-2.5 py-2.5 text-left",
-        "flex items-center justify-between gap-2 transition-colors",
+        "w-full touch-target rounded-lg border px-2.5 py-2.5 text-left focus-ring",
+        "flex items-center gap-2 transition-colors",
         category.id === selectedId
-          ? "bg-bg border-line"
-          : "border-line hover:bg-line/40",
+          ? "border-text bg-text text-bg"
+          : "border-control bg-panel text-text hover:bg-panelHi",
       )}
     >
-      <span className="inline-flex min-w-0 items-center gap-2 text-style-body">
-        <span
-          aria-hidden
-          className="cat-dot h-2.5 w-2.5 shrink-0 rounded-[3px]"
-        />
-        <span className="truncate">{stripLeadingEmoji(category.label)}</span>
+      <CategorySwatch
+        categoryId={category.id}
+        customCategories={categories}
+        // На заливці чорнилом колір свотча зливається з нею в обох темах:
+        // кільце кольору сторінки відділяє його.
+        className={category.id === selectedId ? "ring-2 ring-bg" : undefined}
+      />
+      <span className="min-w-0 truncate text-style-body">
+        {stripLeadingEmoji(category.label)}
       </span>
-      {category.id === selectedId && (
-        <span className="text-style-caption font-semibold text-text">
-          {messages.finykRedesign.selected}
-        </span>
-      )}
     </button>
   );
 
@@ -146,14 +142,24 @@ export function CategoryPickerField({
         aria-describedby={describedBy}
         onClick={() => setOpen(true)}
         className={cn(
-          "focus-ring w-full min-h-11 rounded-lg border bg-panel px-3",
-          "flex items-center justify-between gap-3 text-left text-style-body",
-          error ? "border-danger" : "border-line",
+          "focus-ring w-full min-h-12 rounded-lg border bg-panelHi px-4",
+          "flex items-center gap-2 text-left text-style-body",
+          error ? "border-danger" : "border-control",
         )}
       >
-        <span className={selected ? "text-text" : "text-subtle"}>
-          {selected ? stripLeadingEmoji(selected.label) : placeholder}
-        </span>
+        {selected ? (
+          <>
+            <CategorySwatch
+              categoryId={selected.id}
+              customCategories={categories}
+            />
+            <span className="min-w-0 truncate text-text">
+              {stripLeadingEmoji(selected.label)}
+            </span>
+          </>
+        ) : (
+          <span className="text-subtle">{placeholder}</span>
+        )}
       </button>
 
       <Sheet

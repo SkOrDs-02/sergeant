@@ -91,7 +91,10 @@ export function ManualExpenseDateSection({
         open={otherOpen}
         onToggle={(event) => setOtherOpenOverride(event.currentTarget.open)}
       >
-        <summary className="text-style-caption text-muted hover:text-text cursor-pointer list-none underline decoration-dotted underline-offset-2">
+        {/* Тиха текст-кнопка (рівень 3, redesign v3.1): ті самі класи,
+            що `Button variant="text"`, бо `<summary>` мусить лишатись
+            нативним перемикачем `<details>`. */}
+        <summary className="-ml-2 inline-flex min-h-[44px] min-w-[44px] cursor-pointer list-none items-center rounded-lg px-2 text-style-body font-semibold text-text hover:bg-panel focus-ring [&::-webkit-details-marker]:hidden">
           {copy.dateOther}
         </summary>
         <DateField

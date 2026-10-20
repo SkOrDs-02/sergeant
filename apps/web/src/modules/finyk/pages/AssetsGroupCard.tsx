@@ -1,6 +1,6 @@
 import { useState, type ReactNode } from "react";
 import { ContentGroup } from "@shared/components/ui/ContentGroup";
-import { messages } from "@shared/i18n";
+import { MorphChevron } from "@shared/components/ui/MorphChevron";
 import { type IconName } from "@shared/components/ui/Icon";
 import { SectionHeading } from "@shared/components/ui/SectionHeading";
 import { safeReadLS, safeWriteLS } from "@shared/lib/storage/storage";
@@ -43,11 +43,7 @@ export function AssetsGroupCard({
         <SectionHeading as="span" size="lg" variant="muted">
           <span>{title}</span>
         </SectionHeading>
-        <span className="shrink-0 text-style-caption text-muted">
-          {open
-            ? messages.finykRedesign.collapse
-            : messages.finykRedesign.expand}
-        </span>
+        <MorphChevron open={open} className="text-subtle" />
       </button>
       <div hidden={!open} className="space-y-2">
         {children}

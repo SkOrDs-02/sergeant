@@ -38,4 +38,43 @@ describe("CategoryBars (мова H)", () => {
     fireEvent.click(screen.getByText("Кафе"));
     expect(onSelect).toHaveBeenCalledWith("cafe");
   });
+
+  it("свотч категорії перед назвою лише для категорій", () => {
+    const { rerender } = render(<CategoryBars data={DATA} />);
+    expect(screen.queryAllByTestId("category-swatch")).toHaveLength(0);
+    rerender(<CategoryBars data={DATA} categorySwatches />);
+    const swatches = screen.getAllByTestId("category-swatch");
+    expect(swatches).toHaveLength(2);
+    // Свотч і бар з одного джерела кольору (`row.color`).
+    expect(swatches[0]).toHaveStyle({ background: "#222222" });
+  });
+
+  it("агрегат «Інше» свотча не має", () => {
+    const many = Array.from({ length: 7 }, (_, i) => ({
+      categoryId: `c${i}`,
+      label: `Категорія ${i}`,
+      spent: 100 + i,
+      color: "#333333",
+    }));
+    render(<CategoryBars data={many} categorySwatches />);
+    expect(screen.getByText("Інше")).toBeTruthy();
+    expect(screen.getAllByTestId("category-swatch")).toHaveLength(5);
+  });
+
+  it("«Показати всі» тиха кнопка, без тексту стану", () => {
+    const many = Array.from({ length: 7 }, (_, i) => ({
+      categoryId: `c${i}`,
+      label: `Категорія ${i}`,
+      spent: 100 + i,
+      color: "#333333",
+    }));
+    render(<CategoryBars data={many} />);
+    const toggle = screen.getByRole("button", { name: "Показати всі (7)" });
+    expect(toggle).toHaveAttribute("aria-expanded", "false");
+    fireEvent.click(toggle);
+    expect(
+      screen.getByRole("button", { name: "Показати менше" }),
+    ).toHaveAttribute("aria-expanded", "true");
+    expect(screen.queryByText("Згорнути")).toBeNull();
+  });
 });

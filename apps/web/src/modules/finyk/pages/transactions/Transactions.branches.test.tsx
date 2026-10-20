@@ -188,7 +188,7 @@ describe("Transactions page (branches)", () => {
     renderTransactions({
       mono: { realTx: [SAMPLE_TX] },
     });
-    fireEvent.click(screen.getByRole("button", { name: "Режим вибору" }));
+    fireEvent.click(screen.getByRole("button", { name: "Вибрати" }));
     expect(screen.getByText("Обери операції")).toBeInTheDocument();
     expect(
       screen.getByRole("button", { name: "Скасувати" }),
@@ -197,7 +197,7 @@ describe("Transactions page (branches)", () => {
   });
 
   function enterSelectModeWithExpandedDay() {
-    fireEvent.click(screen.getByRole("button", { name: "Режим вибору" }));
+    fireEvent.click(screen.getByRole("button", { name: "Вибрати" }));
     fireEvent.click(
       screen.getByRole("button", { name: /Розгорнути четвер, 4 червня/i }),
     );

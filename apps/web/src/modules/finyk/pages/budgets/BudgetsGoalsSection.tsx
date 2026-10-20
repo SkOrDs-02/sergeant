@@ -2,7 +2,7 @@ import { Card } from "@shared/components/ui/Card";
 import { useMemo } from "react";
 import type { Dispatch, SetStateAction } from "react";
 import { SectionHeading } from "@shared/components/ui/SectionHeading";
-import { messages } from "@shared/i18n";
+import { MorphChevron } from "@shared/components/ui/MorphChevron";
 import { EmptyState } from "@shared/components/ui/EmptyState";
 import { toKyivISODate } from "@sergeant/shared";
 import type { MonoJarDto } from "@shared/api";
@@ -101,11 +101,7 @@ export function BudgetsGoalsSection({
             )}
           </SectionHeading>
         </span>
-        <span className="text-style-caption text-muted">
-          {goalsOpen
-            ? messages.finykRedesign.collapse
-            : messages.finykRedesign.expand}
-        </span>
+        <MorphChevron open={goalsOpen} className="text-subtle" />
       </button>
       {goalsOpen && goalBudgets.length === 0 && (
         <EmptyState

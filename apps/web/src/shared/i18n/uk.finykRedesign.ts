@@ -6,10 +6,7 @@ export const finykRedesign = {
   planningTitle: "План",
 
   analyticsTitle: "Аналіз",
-  selected: "Обрано",
   creditCard: "кредитна",
-  expand: "Розгорнути",
-  collapse: "Згорнути",
   overPlan: "Понад план",
   withinPlan: "У межах плану",
   savingsDeficit: "Дефіцит заощаджень",

@@ -135,15 +135,17 @@ export function DateScrubber({
               "snap-end shrink-0 flex flex-col items-center justify-center gap-0.5",
               "min-w-[3rem] min-h-[3.25rem] rounded-lg px-2 py-1.5",
               "border transition-colors focus-ring",
+              // Обране чорнилом, як у `ChoiceGroup` (redesign v3.1, Д1):
+              // без hue модуля й teal-плитки в темній.
               selected
-                ? "bg-accent text-bg border-transparent font-semibold"
-                : "bg-panel text-text border-line hover:bg-panelHi",
+                ? "bg-text text-bg border-text font-semibold"
+                : "bg-panel text-text border-control hover:bg-panelHi",
             )}
           >
             <span
               className={cn(
                 "text-style-caption",
-                selected ? "text-bg/80" : "text-muted",
+                selected ? "text-bg" : "text-muted",
               )}
             >
               {isToday ? messages.period.today : label}

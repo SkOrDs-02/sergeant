@@ -182,3 +182,52 @@ describe("словник шаблону поза копією", () => {
     expect(hits).toEqual([]);
   }, 180_000);
 });
+
+/**
+ * Плейсхолдер-перелік прикладів («Кава, продукти, таксі»): каталог
+ * `2026-10-08-redesign-v3-gap-memo.md` п. 23, заборонений у PR0 редизайну v3.
+ * Гейт вище ловив лише префікси «Напр.» / «Наприклад», а перелік без
+ * префікса, ще й у тернарнику на кількох рядках, проходив повз нього, тож
+ * він пережив PR0 у формі витрати Фініка (інвентар v3.1, Е1). Ловимо
+ * атрибут `placeholder=` і ключі `*placeholder:` з кириличним рядком, у якому
+ * дві й більше коми; квадратні дужки означають шаблон юридичного тексту, а
+ * не поле вводу.
+ */
+const PLACEHOLDER_LIST =
+  /placeholder\s*(?:=\s*\{?|:)\s*(?:[^"'`;{}]{0,80}\?\s*)?["'`]([^"'`\n]*)["'`](?:\s*:\s*["'`]([^"'`\n]*)["'`])?/giu;
+
+function placeholderLists(text: string): string[] {
+  return [...text.matchAll(PLACEHOLDER_LIST)].flatMap((m) =>
+    [m[1], m[2]].filter(
+      (body): body is string =>
+        body !== undefined &&
+        CYRILLIC.test(body) &&
+        !body.includes("[") &&
+        (body.match(/,/g) ?? []).length >= 2,
+    ),
+  );
+}
+
+describe("плейсхолдер без переліку прикладів", () => {
+  it("ловить перелік і в тернарнику на кількох рядках", () => {
+    const sample = `placeholder={
+          isIncome
+            ? "Зарплата, повернення боргу, підробіток"
+            : "Кава, продукти, таксі"
+        }`;
+    expect(placeholderLists(sample)).toEqual([
+      "Зарплата, повернення боргу, підробіток",
+      "Кава, продукти, таксі",
+    ]);
+    expect(placeholderLists(`placeholder="Назва"`)).toEqual([]);
+  });
+
+  it("у src немає плейсхолдера-переліку", () => {
+    const hits = sourceFiles(SRC).flatMap((f) =>
+      placeholderLists(withoutComments(f)).map(
+        (body) => `${path.relative(SRC, f)}: «${body}»`,
+      ),
+    );
+    expect(hits).toEqual([]);
+  }, 180_000);
+});

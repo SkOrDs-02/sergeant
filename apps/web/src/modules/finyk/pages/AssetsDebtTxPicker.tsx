@@ -8,6 +8,7 @@ import { Card } from "@shared/components/ui/Card";
 import { Money } from "@shared/components/ui/Money";
 import { Sheet } from "@shared/components/ui/Sheet";
 import { Button } from "@shared/components/ui/Button";
+import { ChoiceGroup } from "@shared/components/ui/Choice";
 import { cn } from "@shared/lib/ui/cn";
 import {
   calcDebtRemaining,
@@ -113,40 +114,27 @@ function RoleSheet({
       }
     >
       <div className="space-y-2">
-        {ROLE_ORDER.map((role) => {
-          const selected = currentRole === role;
-          return (
-            <button
-              key={role}
-              type="button"
-              aria-pressed={selected}
-              aria-label={describeLinkedTxRole(role, kind).label}
-              onClick={() => onPick(role)}
-              className={cn(
-                "w-full touch-target rounded-lg border px-4 py-3 text-left transition-colors",
-                "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-finyk",
-                selected ? "border-line bg-bg" : "border-line hover:bg-line/40",
-              )}
-            >
-              <div className="text-style-label text-text">
+        <ChoiceGroup<LinkedTxRole>
+          variant="rows"
+          ariaLabel={copy.roleSheetTitle}
+          value={currentRole}
+          onChange={onPick}
+          items={ROLE_ORDER.map((role) => ({
+            value: role,
+            label: (
+              <>
                 {describeLinkedTxRole(role, kind).label}
-                {selected && (
-                  <span className="ml-2 text-style-caption font-semibold text-text">
-                    {messages.finykRedesign.selected}
-                  </span>
-                )}
                 {currentRole === null && suggested === role && (
-                  <span className="text-style-caption text-subtle ml-2">
+                  <span className="ml-2 text-style-caption text-subtle">
                     {copy.suggestedHint}
                   </span>
                 )}
-              </div>
-              <div className="text-style-caption text-subtle mt-0.5">
-                {ROLE_HINT[role][kind]}
-              </div>
-            </button>
-          );
-        })}
+              </>
+            ),
+            ariaLabel: describeLinkedTxRole(role, kind).label,
+            description: ROLE_HINT[role][kind],
+          }))}
+        />
         {currentRole !== null && (
           <Button variant="ghost" size="sm" onClick={onUnlink} className="mt-1">
             {copy.unlink}

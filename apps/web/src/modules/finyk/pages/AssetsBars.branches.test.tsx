@@ -54,7 +54,7 @@ describe("AssetsBars (branches)", () => {
   });
 
   describe("SectionBar", () => {
-    it("shows 'Розкласти' when section is closed", () => {
+    it("shows the collapsed state with a chevron, no state text", () => {
       render(
         <SectionBar
           title="Підписки"
@@ -63,18 +63,19 @@ describe("AssetsBars (branches)", () => {
           onToggle={vi.fn()}
         />,
       );
-      expect(screen.getByText("Розгорнути")).toBeInTheDocument();
+      expect(screen.queryByText("Розгорнути")).toBeNull();
+      expect(screen.getByRole("button").querySelector("svg")).not.toBeNull();
       expect(screen.getByRole("button")).toHaveAttribute(
         "aria-expanded",
         "false",
       );
     });
 
-    it("shows 'Згорнути' when section is open", () => {
+    it("shows the expanded state through aria-expanded, no state text", () => {
       render(
         <SectionBar title="Активи" iconName="wallet" open onToggle={vi.fn()} />,
       );
-      expect(screen.getByText("Згорнути")).toBeInTheDocument();
+      expect(screen.queryByText("Згорнути")).toBeNull();
       expect(screen.getByRole("button")).toHaveAttribute(
         "aria-expanded",
         "true",

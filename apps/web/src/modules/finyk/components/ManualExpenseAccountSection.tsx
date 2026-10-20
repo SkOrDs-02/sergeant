@@ -4,9 +4,12 @@
  * свої операції, і запис на картку дав би дубль.
  *
  * Вибір готівки, поки рахунку немає, спершу просить поточну суму (Р3.3).
- * Радіо на hairline, як перемикач типу запису вище.
+ * Плитки `ChoiceGroup`, як перемикач типу запису вище.
  */
-import { useState } from "react";
+import { useId, useState } from "react";
+import { ChoiceGroup } from "@shared/components/ui/Choice";
+import { FIELD_LABEL } from "@shared/components/ui/Input";
+import { cn } from "@shared/lib/ui/cn";
 import { messages } from "@shared/i18n/uk";
 import { CashAmountForm } from "./CashAmountForm";
 
@@ -28,6 +31,7 @@ export function ManualExpenseAccountSection({
   isSubmitting: boolean;
 }) {
   const [settingUp, setSettingUp] = useState(false);
+  const legendId = useId();
 
   const pick = (next: ManualAccount) => {
     if (next === "cash" && !cashExists) {
@@ -40,34 +44,20 @@ export function ManualExpenseAccountSection({
 
   return (
     <div>
-      <fieldset disabled={isSubmitting} className="divide-y divide-line">
-        <legend className="text-style-label text-muted">
-          {t.accountLegend}
-        </legend>
-        {(
-          [
-            ["cash", t.title],
-            [null, t.noAccount],
-          ] as const
-        ).map(([value, label]) => (
-          <label
-            key={label}
-            className="flex min-h-touch-target items-center justify-between gap-3 py-3 text-style-body text-text"
-          >
-            <span>{label}</span>
-            <input
-              type="radio"
-              name="manual-operation-account"
-              checked={
-                value === "cash"
-                  ? account === "cash" || settingUp
-                  : account === null && !settingUp
-              }
-              onChange={() => pick(value)}
-            />
-          </label>
-        ))}
-      </fieldset>
+      <p id={legendId} className={cn(FIELD_LABEL, "mb-1")}>
+        {t.accountLegend}
+      </p>
+      <ChoiceGroup<"cash" | "none">
+        items={[
+          { value: "cash", label: t.title },
+          { value: "none", label: t.noAccount },
+        ]}
+        value={account === "cash" || settingUp ? "cash" : "none"}
+        onChange={(value) => pick(value === "cash" ? "cash" : null)}
+        ariaLabelledBy={legendId}
+        disabled={isSubmitting}
+        className="grid grid-cols-2"
+      />
       {settingUp && !cashExists && (
         <div className="mt-3" data-testid="finyk-manual-cash-setup">
           <CashAmountForm

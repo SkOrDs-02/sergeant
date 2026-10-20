@@ -295,9 +295,7 @@ describe("MonthlyPlanCard", () => {
         { selector: "span" },
       ).length,
     ).toBeGreaterThan(0);
-    expect(
-      screen.getByRole("button", { name: "Згорнути" }),
-    ).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "Готово" })).toBeInTheDocument();
   });
 
   it("shows the plan pace forecast under the progress bar", () => {

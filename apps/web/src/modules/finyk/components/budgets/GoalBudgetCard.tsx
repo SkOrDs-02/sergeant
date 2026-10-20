@@ -11,7 +11,7 @@ import { MoneyInput } from "@shared/components/ui/MoneyInput";
 import { Label } from "@shared/components/ui/FormField";
 import { DateField } from "@shared/components/ui/DateField";
 import { Icon } from "@shared/components/ui/Icon";
-import { messages } from "@shared/i18n";
+import { MorphChevron } from "@shared/components/ui/MorphChevron";
 import { webKVStore } from "@shared/lib/storage/storage";
 import {
   dismissNudge,
@@ -316,19 +316,14 @@ function GoalBudgetCardComponent({
                 + Поповнити
               </Button>
               {contributions.length > 0 && (
-                <button
-                  type="button"
+                <Button
+                  variant="text"
                   onClick={() => setHistoryOpen((v) => !v)}
                   aria-expanded={historyOpen}
-                  className="text-style-caption text-subtle hover:text-text flex items-center gap-1 transition-colors"
                 >
                   Історія ({contributions.length})
-                  <span>
-                    {historyOpen
-                      ? messages.finykRedesign.collapse
-                      : messages.finykRedesign.expand}
-                  </span>
-                </button>
+                  <MorphChevron open={historyOpen} className="text-subtle" />
+                </Button>
               )}
             </div>
             {addingContribution && (

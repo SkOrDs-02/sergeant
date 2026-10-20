@@ -1,3 +1,4 @@
+import { Button } from "@shared/components/ui/Button";
 import { useState } from "react";
 import { DebtCard } from "../components/DebtCard";
 import { Icon } from "@shared/components/ui/Icon";
@@ -137,15 +138,15 @@ export function AssetsAssetsSection({ state }: { state: State }) {
             />
           ))}
         {receivables.length > 3 && (
-          <button
-            type="button"
+          <Button
+            variant="text"
             onClick={() => setAllReceivablesVisible((visible) => !visible)}
-            className="touch-target w-full text-style-caption text-text hover:underline"
+            aria-expanded={allReceivablesVisible}
           >
             {allReceivablesVisible
-              ? "Згорнути"
+              ? "Показати менше"
               : `Показати всі (${receivables.length})`}
-          </button>
+          </Button>
         )}
         {showRecvForm && (
           <ReceivableForm
@@ -296,15 +297,15 @@ export function AssetsAssetsSection({ state }: { state: State }) {
           </div>
         ))}
         {manualAssets.length > 3 && (
-          <button
-            type="button"
+          <Button
+            variant="text"
             onClick={() => setAllAssetsVisible((visible) => !visible)}
-            className="touch-target w-full text-style-caption text-text hover:underline"
+            aria-expanded={allAssetsVisible}
           >
             {allAssetsVisible
-              ? "Згорнути"
+              ? "Показати менше"
               : `Показати всі (${manualAssets.length})`}
-          </button>
+          </Button>
         )}
       </AssetsGroupCard>
     </div>

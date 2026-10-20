@@ -14,7 +14,9 @@ import { formatNumberUk, NARROW_NBSP } from "@sergeant/shared";
 import { MoneyInput } from "@shared/components/ui/MoneyInput";
 import { Label } from "@shared/components/ui/FormField";
 import { Tooltip } from "@shared/components/ui/Tooltip";
-import { messages } from "@shared/i18n";
+import { Select } from "@shared/components/ui/Select";
+import { MorphChevron } from "@shared/components/ui/MorphChevron";
+import { CategorySwatch } from "../CategorySwatch";
 
 interface LimitBudgetInput {
   id: string;
@@ -82,6 +84,7 @@ interface LimitBudgetCardProps {
 function LimitBudgetCardComponent({
   budget,
   categoryLabel,
+  customCategories,
   showBalance = true,
   breakdown,
   forecast,
@@ -101,6 +104,9 @@ function LimitBudgetCardComponent({
   onDelete,
 }: LimitBudgetCardProps) {
   const overLimit = pctRaw >= 100;
+  const categoryIds = budget.categoryIds ?? [];
+  const singleCategoryId =
+    categoryIds.length > 1 ? null : (categoryIds[0] ?? budget.categoryId);
   const warnLimit = pctRaw >= 80 && !overLimit;
   const [adviceOpen, setAdviceOpen] = useState(true);
   const fieldId = useId();
@@ -162,7 +168,7 @@ function LimitBudgetCardComponent({
             />
           </div>
           <Label htmlFor={periodId}>Період</Label>
-          <select
+          <Select
             id={periodId}
             value={budget.period ?? "month"}
             onChange={(event) =>
@@ -170,12 +176,11 @@ function LimitBudgetCardComponent({
                 event.target.value as "month" | "week" | "one_time",
               )
             }
-            className="focus-ring w-full h-10 min-w-0 rounded-lg border border-line bg-bg px-3 text-style-label text-text"
           >
             <option value="month">Щомісяця</option>
             <option value="week">Щотижня</option>
             <option value="one_time">Одноразово</option>
-          </select>
+          </Select>
           <div className="flex gap-2">
             <Button
               className="flex-1"
@@ -200,7 +205,21 @@ function LimitBudgetCardComponent({
       ) : (
         <>
           <FinanceItemHeading
-            title={categoryLabel || "—"}
+            title={
+              singleCategoryId ? (
+                <span className="inline-flex min-w-0 items-center gap-2">
+                  <CategorySwatch
+                    categoryId={singleCategoryId}
+                    customCategories={customCategories}
+                  />
+                  <span className="min-w-0 truncate">
+                    {categoryLabel || "—"}
+                  </span>
+                </span>
+              ) : (
+                categoryLabel || "—"
+              )
+            }
             meta={periodLabel}
             actions={
               <Button
@@ -281,6 +300,10 @@ function LimitBudgetCardComponent({
                   className="flex items-center justify-between gap-2 text-style-caption text-subtle"
                 >
                   <span className="flex items-center gap-1.5 min-w-0">
+                    <CategorySwatch
+                      categoryId={row.categoryId}
+                      customCategories={customCategories}
+                    />
                     <span className="truncate">{row.label}</span>
                   </span>
                   <span className="tabular-nums shrink-0">
@@ -306,24 +329,19 @@ function LimitBudgetCardComponent({
                         <span className="flex items-center gap-2 text-style-caption text-text">
                           Порада Сержанта
                         </span>
-                        <span className="text-style-caption text-muted">
-                          {adviceOpen
-                            ? messages.finykRedesign.collapse
-                            : messages.finykRedesign.expand}
-                        </span>
+                        <MorphChevron
+                          open={adviceOpen}
+                          className="text-subtle"
+                        />
                       </button>
                       {onDismissAdvice && (
                         <Tooltip
                           content="Прибрати пораду до наступної генерації"
                           placement="top-center"
                         >
-                          <button
-                            type="button"
-                            onClick={onDismissAdvice}
-                            className="px-3 text-style-caption text-muted hover:text-text border-l border-line transition-colors"
-                          >
+                          <Button variant="text" onClick={onDismissAdvice}>
                             Зрозуміло
-                          </button>
+                          </Button>
                         </Tooltip>
                       )}
                     </div>

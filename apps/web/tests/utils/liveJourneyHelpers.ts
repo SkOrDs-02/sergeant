@@ -312,7 +312,7 @@ export async function addExpense(
   await page.getByRole("button", { name: "Додати", exact: true }).click();
   await page.getByRole("menuitem", { name: "Додати витрату" }).click();
   await page.getByPlaceholder("0").first().fill(amount);
-  await page.getByPlaceholder(/Кава, продукти, таксі/).fill(title);
+  await page.getByPlaceholder("Назва", { exact: true }).fill(title);
   await page
     .getByRole("button", { name: "Додати витрату", exact: true })
     .last()

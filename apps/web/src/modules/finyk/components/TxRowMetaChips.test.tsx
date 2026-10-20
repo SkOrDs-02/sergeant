@@ -154,4 +154,47 @@ describe("TxRowMetaChips", () => {
 
     expect(screen.queryByText("не в статистиці")).not.toBeInTheDocument();
   });
+
+  it("puts the category swatch right before the category name", () => {
+    render(
+      <TxRowMetaChips
+        tx={TX}
+        catId="food"
+        catName="Продукти"
+        isIncome={false}
+        overrideCatId={null}
+        existingSplitsCount={0}
+        isCreditCard={false}
+        account={undefined}
+        accountName={null}
+      />,
+    );
+
+    const name = screen.getByText("Продукти");
+    const swatch = name.querySelector('[data-testid="category-swatch"]');
+    expect(swatch).not.toBeNull();
+    expect(swatch).toHaveClass("cat-dot");
+    expect(swatch).toHaveAttribute("aria-hidden");
+    expect(
+      (swatch as HTMLElement).style.getPropertyValue("--cat-ink"),
+    ).not.toBe("");
+  });
+
+  it("gives «Без категорії» no swatch: it stays danger text", () => {
+    render(
+      <TxRowMetaChips
+        tx={TX}
+        catId="other"
+        catName="Інше"
+        isIncome={false}
+        overrideCatId={null}
+        existingSplitsCount={0}
+        isCreditCard={false}
+        account={undefined}
+        accountName={null}
+      />,
+    );
+
+    expect(screen.queryByTestId("category-swatch")).toBeNull();
+  });
 });

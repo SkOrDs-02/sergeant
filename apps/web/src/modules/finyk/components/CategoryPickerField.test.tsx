@@ -24,7 +24,19 @@ describe("CategoryPickerField", () => {
     const dialog = screen.getByRole("dialog", { name: "Категорія" });
     const selected = within(dialog).getByRole("button", { name: "Продукти" });
     expect(selected).toHaveAttribute("aria-pressed", "true");
-    expect(within(selected).getByText("Обрано")).toBeVisible();
+    expect(selected).toHaveClass("bg-text", "text-bg");
+    expect(within(selected).queryByText("Обрано")).toBeNull();
+  });
+  it("puts the category swatch into the field before the chosen name", () => {
+    render(
+      <CategoryPickerField
+        categories={[{ id: "food", label: "Продукти" }]}
+        selectedId="food"
+        onSelect={() => {}}
+      />,
+    );
+    const field = screen.getByRole("button", { name: /Продукти/ });
+    expect(within(field).getByTestId("category-swatch")).toHaveClass("cat-dot");
   });
   it("тримає 80 категорій за одним полем і фільтрує їх пошуком", () => {
     const categories = Array.from({ length: 80 }, (_, index) => ({

@@ -2,6 +2,7 @@
  * Last validated: 2026-05-14
  * Status: Active
  */
+import { Select } from "@shared/components/ui/Select";
 import { useMemo, useState } from "react";
 import { TxRow, type TxRowTx } from "../components/TxRow";
 import { Card } from "@shared/components/ui/Card";
@@ -186,11 +187,10 @@ export function AssetsTxPickerView({
         value={query}
         onChange={(event) => setQuery(event.target.value)}
       />
-      <select
+      <Select
         aria-label="Період операцій"
         value={month}
         onChange={(event) => setMonth(event.target.value)}
-        className="focus-ring h-10 w-full rounded-lg border border-line bg-bg px-3 text-style-label text-text"
       >
         <option value="">Останні 90 днів</option>
         {monthOptions.map((option) => (
@@ -198,7 +198,7 @@ export function AssetsTxPickerView({
             {option}
           </option>
         ))}
-      </select>
+      </Select>
       {isLoading && sourceTransactions.length === 0 && (
         <div aria-busy="true" className="space-y-2">
           <Skeleton className="h-14 rounded-panel" />

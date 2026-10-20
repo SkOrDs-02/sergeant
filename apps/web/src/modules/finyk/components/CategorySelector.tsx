@@ -1,5 +1,5 @@
+import { Select } from "@shared/components/ui/Select";
 import { memo } from "react";
-import { cn } from "@shared/lib/ui/cn";
 import { stripLeadingEmoji } from "./txRowHelpers";
 
 interface CategoryOption {
@@ -34,15 +34,12 @@ function CategorySelectorComponent({
   ariaLabel,
 }: CategorySelectorProps) {
   return (
-    <select
+    <Select
       // `?? ` ловить лише null/undefined: порожній чи пробільний рядок від
       // виклику лишив би поле безіменним — тобто рівно тим дефектом, який
       // цей проп і закриває (ревʼю CodeRabbit 2026-08-26).
       aria-label={ariaLabel?.trim() || placeholder}
-      className={cn(
-        "focus-ring w-full h-10 pointer-coarse:min-h-[44px] rounded-lg border border-line bg-bg px-3 text-style-label text-text",
-        className,
-      )}
+      className={className}
       value={value || ""}
       onChange={(e) => onChange(e.target.value)}
     >
@@ -56,7 +53,7 @@ function CategorySelectorComponent({
           {c.label ? stripLeadingEmoji(c.label) : c.label}
         </option>
       ))}
-    </select>
+    </Select>
   );
 }
 

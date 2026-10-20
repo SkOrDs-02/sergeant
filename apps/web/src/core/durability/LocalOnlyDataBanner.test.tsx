@@ -59,18 +59,11 @@ describe("LocalOnlyDataBanner", () => {
     expect(container.firstChild).toBeNull();
   });
 
-  it("копія називає саме те, що НЕ відновлюється з банку", () => {
-    // Робить неможливим «помʼякшення» тексту до абстрактного «увійди, щоб
-    // синхронізувати». Цінність попередження саме в предметності: людина
-    // має впізнати свою готівку, борги й категорії, а не прочитати
-    // маркетинговий заклик.
+  it("банер - один рядок факту без абзацу пояснення (redesign v3.1, Е2)", () => {
     useLocalUserIdMock.mockReturnValue("local-anon");
     render(<LocalOnlyDataBanner onSignIn={vi.fn()} />);
-    const body = screen.getByText(/Витрати готівкою/);
-    expect(body.textContent).toMatch(/активи/);
-    expect(body.textContent).toMatch(/борги/);
-    expect(body.textContent).toMatch(/категорії/);
-    expect(body.textContent).toMatch(/банк їх не поверне/);
+    expect(screen.getByText("Дані лише на цьому пристрої")).toBeTruthy();
+    expect(screen.queryByText(/Витрати готівкою/)).toBeNull();
   });
 
   it("кнопка входу викликає onSignIn", () => {
@@ -81,23 +74,12 @@ describe("LocalOnlyDataBanner", () => {
     expect(onSignIn).toHaveBeenCalledTimes(1);
   });
 
-  // Регресія A1 (аудит 2026-09-11, хвиля 2): `body` закінчувався фразою
-  // «Вхід в акаунт вмикає копію на сервері» — plain-текст без жодної дії,
-  // що виглядав як другий заклик поруч зі справжньою кнопкою нижче. Око
-  // бачило два однакових шматки тексту, палець тиснув у мертвий верхній.
-  it("тіло попередження не обіцяє дію текстом — заклик живе лише в кнопці", () => {
-    useLocalUserIdMock.mockReturnValue("local-anon");
-    render(<LocalOnlyDataBanner onSignIn={vi.fn()} />);
-    const body = screen.getByText(/Витрати готівкою/);
-    expect(body.textContent).not.toMatch(/Вхід в акаунт/);
-  });
-
-  it("кнопка входу — не найтихіший ghost-варіант: вона єдина дія в попередженні", () => {
+  it("«Увійти» тиха текст-кнопка, без рамки й заливки", () => {
     useLocalUserIdMock.mockReturnValue("local-anon");
     render(<LocalOnlyDataBanner onSignIn={vi.fn()} />);
     const button = screen.getByRole("button", { name: "Увійти" });
-    // `ghost` - найтихіший варіант, без рамки; кнопка входу має обвід outline.
-    expect(button.className).toContain("border-border-strong");
+    expect(button.className).toContain("bg-transparent");
+    expect(button.className).not.toContain("border-border-strong");
   });
 
   it("кнопка бекапу зʼявляється лише коли є куди її повісити", () => {
