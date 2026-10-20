@@ -96,6 +96,21 @@ describe("drainLegacyActiveProgram", () => {
     expect(localStorage.getItem(KEY)).toBeNull();
   });
 
+  it("a failed outbox enqueue leaves NO local row, so the next boot retries and the choice still syncs", async () => {
+    localStorage.setItem(KEY, "ppl");
+    vi.mocked(enqueueOutboxUpsert).mockRejectedValueOnce(new Error("killed"));
+
+    expect(await drainLegacyActiveProgram(handle.client, UID)).toBe(false);
+    // Порядок «outbox, потім рядок»: збій outbox не лишає рядка без op-а.
+    expect(programRows()).toEqual([]);
+    expect(localStorage.getItem(KEY)).toBe("ppl");
+
+    // Наступний бут: рядка нема -> повторний запис проходить і синхронізується.
+    expect(await drainLegacyActiveProgram(handle.client, UID)).toBe(true);
+    expect(programRows()).toEqual([{ active_program_id: "ppl" }]);
+    expect(enqueueOutboxUpsert).toHaveBeenCalledTimes(2);
+  });
+
   it("keeps the LS key when the write fails, so the next boot retries", async () => {
     localStorage.setItem(KEY, "ppl");
     vi.mocked(enqueueOutboxUpsert).mockRejectedValueOnce(new Error("disk"));

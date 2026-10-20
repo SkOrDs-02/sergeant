@@ -48,7 +48,11 @@ export async function setPrograms(
   { userId, clientTs }: DualWriteRuntime,
 ): Promise<void> {
   const activeProgramId = programs.activeProgramId ?? null;
-  await client.run(PROGRAMS_UPSERT_SQL, [userId, activeProgramId, clientTs]);
+  // Порядок важливий (транзакції тут нема): спершу outbox, потім локальний
+  // рядок. Обрив між кроками лишає op без рядка - дрен LS побачить «рядка
+  // нема», повторить запис, а повторний op з тим самим `clientTs` за LWW
+  // (strictly-newer) нешкідливий. Зворотний порядок лишив би рядок без op:
+  // дрен вважав би міграцію виконаною, і вибір ніколи б не синхронізувався.
   await enqueueOutboxUpsert(client, {
     userId,
     table: "fizruk_programs",
@@ -57,4 +61,5 @@ export async function setPrograms(
     clientTs,
     idempotencyKey: crypto.randomUUID(),
   });
+  await client.run(PROGRAMS_UPSERT_SQL, [userId, activeProgramId, clientTs]);
 }
