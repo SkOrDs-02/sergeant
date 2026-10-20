@@ -17,14 +17,14 @@ const useHubShellMock = vi.fn();
 // to avoid a temporal-dead-zone ReferenceError.
 const { FizrukAppStub } = vi.hoisted(() => ({
   FizrukAppStub: (props: {
-    onBackToHub: () => void;
+    onOpenSettings: () => void;
     onGoToHub: () => void;
     onOpenModule: (id: string) => void;
     pwaAction: string | null;
     onPwaActionConsumed: () => void;
   }) => (
     <div data-testid="fizruk-app-stub">
-      <button onClick={props.onBackToHub}>back</button>
+      <button onClick={props.onOpenSettings}>settings</button>
       <button onClick={props.onGoToHub}>hub</button>
       <button onClick={() => props.onOpenModule("finyk")}>open-module</button>
       <button onClick={props.onPwaActionConsumed}>consume-pwa</button>
@@ -78,8 +78,8 @@ describe("fizruk route Component", () => {
     expect(shell.getAttribute("data-module-id")).toBe("fizruk");
     expect(screen.getByTestId("fizruk-app-stub")).toBeInTheDocument();
 
-    fireEvent.click(screen.getByText("back"));
-    expect(hub.goBackOrHub).toHaveBeenCalledTimes(1);
+    fireEvent.click(screen.getByText("settings"));
+    expect(hub.goToModuleSettings).toHaveBeenCalledWith("fizruk");
 
     fireEvent.click(screen.getByText("hub"));
     expect(hub.goToHub).toHaveBeenCalledTimes(1);
@@ -89,14 +89,6 @@ describe("fizruk route Component", () => {
 
     fireEvent.click(screen.getByText("consume-pwa"));
     expect(hub.clearPwaAction).toHaveBeenCalledTimes(1);
-  });
-
-  it("does not wire a settings action into the module header", () => {
-    const hub = baseHub();
-    useHubShellMock.mockReturnValue(hub);
-    render(<Component />);
-    expect(screen.queryByText("settings")).not.toBeInTheDocument();
-    expect(hub.goToModuleSettings).not.toHaveBeenCalled();
   });
 
   it("passes through the current pwaAction from the hub shell", () => {

@@ -4,6 +4,7 @@ import {
   finykHiddenAccounts,
   finykHiddenTransactions,
   finykTxNotes,
+  finykTxTags,
   finykBudgets,
   finykSubscriptions,
   finykAssets,
@@ -115,6 +116,31 @@ describe("sqlite/finykTxNotes schema snapshot (data-27)", () => {
   it("`_lite`-suffixed soft-delete partial index is declared", () => {
     expect(config.indexes.map((i) => i.config.name)).toContain(
       "finyk_tx_notes_user_active_idx_lite",
+    );
+  });
+});
+
+describe("sqlite/finykTxTags schema snapshot (міграція 158)", () => {
+  const config = getTableConfig(finykTxTags);
+
+  it("uses (user_id, transaction_id) composite PK and tags_json + soft-delete columns", () => {
+    expect(config.primaryKeys[0]!.columns.map((c) => c.name)).toEqual([
+      "user_id",
+      "transaction_id",
+    ]);
+    expect(config.columns.map((c) => c.name)).toEqual([
+      "user_id",
+      "transaction_id",
+      "tags_json",
+      "created_at",
+      "updated_at",
+      "deleted_at",
+    ]);
+  });
+
+  it("`_lite`-suffixed soft-delete partial index is declared", () => {
+    expect(config.indexes.map((i) => i.config.name)).toContain(
+      "finyk_tx_tags_user_active_idx_lite",
     );
   });
 });
@@ -393,8 +419,8 @@ describe("sqlite/finykMonoAccountSnapshots schema snapshot", () => {
 // ---------------------------------------------------------------------
 
 describe("sqlite/finyk migrations exports", () => {
-  it("exports the ordered finyk migrations list (001 + 002 + 003 + 004 + 005)", () => {
-    expect(FINYK_CLIENT_MIGRATIONS).toHaveLength(5);
+  it("exports the ordered finyk migrations list (001..006)", () => {
+    expect(FINYK_CLIENT_MIGRATIONS).toHaveLength(6);
     expect(FINYK_CLIENT_MIGRATIONS[0]!.name).toBe("001_finyk_tables.sql");
     expect(FINYK_CLIENT_MIGRATIONS[1]!.name).toBe("002_finyk_mono_mirror.sql");
     expect(FINYK_CLIENT_MIGRATIONS[2]!.name).toBe(
@@ -404,6 +430,14 @@ describe("sqlite/finyk migrations exports", () => {
     expect(FINYK_CLIENT_MIGRATIONS[4]!.name).toBe(
       "005_finyk_soft_delete_tombstones.sql",
     );
+  });
+
+  it("006 inline SQL creates finyk_tx_tags with a soft-delete column", () => {
+    expect(FINYK_CLIENT_MIGRATIONS[5]!.name).toBe("006_finyk_tx_tags.sql");
+    const sql = FINYK_CLIENT_MIGRATIONS[5]!.sql;
+    expect(sql).toMatch(/CREATE TABLE IF NOT EXISTS finyk_tx_tags\b/);
+    expect(sql).toMatch(/deleted_at\s+TEXT/);
+    expect(sql).toMatch(/PRIMARY KEY \(user_id, transaction_id\)/);
   });
 
   it("004 inline SQL creates finyk_tx_notes with a soft-delete column", () => {

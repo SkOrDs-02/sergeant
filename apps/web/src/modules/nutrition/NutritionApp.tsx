@@ -10,10 +10,7 @@ import { useQuickAddMealFromChip } from "./hooks/useQuickAddMealFromChip";
 import type { DataStateQueryLike } from "@shared/components/ui/DataState";
 import type { NutritionDayPlan } from "./hooks/useNutritionUiState";
 import { NutritionHeader } from "./components/NutritionHeader";
-import {
-  NutritionBottomNav,
-  NUTRITION_NAV_LABELS,
-} from "./components/NutritionBottomNav";
+import { NutritionBottomNav } from "./components/NutritionBottomNav";
 import { NutritionOverlays } from "./components/NutritionOverlays";
 import { NutritionStartPage } from "./pages/NutritionStartPage";
 import { NutritionPantryPage } from "./pages/NutritionPantryPage";
@@ -67,7 +64,6 @@ import { usePantryAddedToast } from "./hooks/usePantryAddedToast";
 import { useNutritionFirstRun } from "./hooks/useNutritionFirstRun";
 
 interface NutritionAppProps {
-  onBackToHub?: () => void;
   onGoToHub?: () => void;
   onOpenSettings?: () => void;
   pwaAction?: string | null;
@@ -78,7 +74,6 @@ interface NutritionAppProps {
 // committed. Resolved by effects keyed on the relevant page/state, not timers.
 
 export default function NutritionApp({
-  onBackToHub,
   onGoToHub,
   onOpenSettings,
   pwaAction,
@@ -511,10 +506,8 @@ export default function NutritionApp({
       <MeshBackground className="bottom-nav-height-var">
         <NutritionHeader
           busy={busy}
-          onBackToHub={onBackToHub}
           onGoToHub={onGoToHub}
           onOpenSettings={onOpenSettings}
-          subtitle={NUTRITION_NAV_LABELS[activePage]}
         />
 
         <SwipePages

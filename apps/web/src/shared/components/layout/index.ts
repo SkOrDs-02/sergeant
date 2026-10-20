@@ -15,23 +15,22 @@ export type { ModuleAccentProviderProps } from "./ModuleAccentProvider";
 export {
   ModuleHeader,
   ModuleHeaderAssistantButton,
-  ModuleHeaderBackButton,
   ModuleHeaderChevronButton,
   ModuleHeaderHubButton,
   ModuleHeaderIconButton,
-  ModuleHeaderSettingsButton,
 } from "./ModuleHeader";
 export type {
   ModuleHeaderAssistantButtonProps,
-  ModuleHeaderBackButtonProps,
   ModuleHeaderHubButtonProps,
   ModuleHeaderIconButtonProps,
   ModuleHeaderProps,
-  ModuleHeaderSettingsButtonProps,
 } from "./ModuleHeader";
 
 export { ModuleSettingsDrawer } from "./ModuleSettingsDrawer";
 export type { ModuleSettingsDrawerProps } from "./ModuleSettingsDrawer";
+
+export { ModuleSwitcherSheet } from "./ModuleSwitcherSheet";
+export type { ModuleSwitcherSheetProps } from "./ModuleSwitcherSheet";
 
 export { SwipePages, SWIPE_THRESHOLD_PX } from "./SwipePages";
 export type { SwipePagesProps } from "./SwipePages";

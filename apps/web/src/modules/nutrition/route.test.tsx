@@ -60,13 +60,11 @@ vi.mock("../../core/lib/lazyImport", () => ({
   lazyDefault:
     () =>
     ({
-      onBackToHub,
       onGoToHub,
       onOpenSettings,
       onPwaActionConsumed,
       pwaAction,
     }: {
-      onBackToHub: () => void;
       onGoToHub: () => void;
       onOpenSettings: () => void;
       onPwaActionConsumed: () => void;
@@ -74,9 +72,6 @@ vi.mock("../../core/lib/lazyImport", () => ({
     }) => (
       <div data-testid="nutrition-app">
         <span>{pwaAction.kind}</span>
-        <button type="button" onClick={onBackToHub}>
-          Назад
-        </button>
         <button type="button" onClick={onGoToHub}>
           До хабу
         </button>
@@ -117,12 +112,10 @@ describe("nutrition route Component", () => {
       "open-nutrition-log",
     );
 
-    fireEvent.click(screen.getByRole("button", { name: "Назад" }));
     fireEvent.click(screen.getByRole("button", { name: "До хабу" }));
     fireEvent.click(screen.getByRole("button", { name: "Налаштування" }));
     fireEvent.click(screen.getByRole("button", { name: "PWA виконано" }));
 
-    expect(hubShell.goBackOrHub).toHaveBeenCalledTimes(1);
     expect(hubShell.goToHub).toHaveBeenCalledTimes(1);
     expect(hubShell.goToModuleSettings).toHaveBeenCalledWith("nutrition");
     expect(hubShell.clearPwaAction).toHaveBeenCalledTimes(1);

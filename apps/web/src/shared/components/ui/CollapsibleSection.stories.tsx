@@ -42,7 +42,7 @@ export const Expanded: Story = {
   ),
 };
 
-/** Collapsed — `defaultOpen=false` із текстовою дією розгортання. */
+/** Collapsed - `defaultOpen=false`, стан показує шеврон праворуч. */
 export const Collapsed: Story = {
   args: {
     storageKey: "sb-collapsible-collapsed",

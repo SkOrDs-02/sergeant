@@ -39,6 +39,7 @@ import {
   TX_SPLITS_DELETE_SQL,
   TX_SPLITS_UPSERT_SQL,
 } from "./specs.js";
+import { deleteTxTags, upsertTxTags } from "./adapter.txTags.js";
 
 /**
  * Async SQLite-side adapter for the Finyk dual-write layer.
@@ -113,6 +114,14 @@ const applyOps = createApplyOps<FinykDualWriteOp>({
     },
     "tx-splits-delete": async (client, op, rt) => {
       await deleteTxSplits(client, op.transactionId, rt);
+      return "applied";
+    },
+    "tx-tags-upsert": async (client, op, rt) => {
+      await upsertTxTags(client, op.entry, rt);
+      return "applied";
+    },
+    "tx-tags-delete": async (client, op, rt) => {
+      await deleteTxTags(client, op.transactionId, rt);
       return "applied";
     },
     "mono-debt-link-upsert": async (client, op, rt) => {

@@ -13,14 +13,8 @@ const FinykApp = lazyDefault(() => import("./FinykApp"));
  * Renders `ModuleShell` (shared UI) + `FinykApp` (domain UI).
  */
 export function Component() {
-  const {
-    goBackOrHub,
-    goToHub,
-    goToModuleSettings,
-    onOpenAuth,
-    pwaAction,
-    clearPwaAction,
-  } = useHubShell();
+  const { goToHub, goToModuleSettings, onOpenAuth, pwaAction, clearPwaAction } =
+    useHubShell();
 
   return (
     <ModuleShell moduleId="finyk">
@@ -29,7 +23,6 @@ export function Component() {
         className="flex-1 min-h-0 flex flex-col"
       >
         <FinykApp
-          onBackToHub={goBackOrHub}
           onGoToHub={goToHub}
           onOpenSettings={() => goToModuleSettings("finyk")}
           onOpenAuth={onOpenAuth}
