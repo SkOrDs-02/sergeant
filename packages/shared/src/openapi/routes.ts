@@ -140,7 +140,7 @@ export const paths: ZodOpenApiPathsObject = {
   },
 
   // ────────────────────── /api/avatar (ux-14) ──────────────────────
-  // Байти аватара живуть у Postgres (`user_avatars`, migration 161), без
+  // Байти аватара живуть у Postgres (`user_avatars`, migration 160), без
   // S3/CDN. `user.image` = короткий відносний URL на GET нижче.
   "/api/avatar": {
     put: {

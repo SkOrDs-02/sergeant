@@ -78,6 +78,11 @@ export const MIN_DEPRECATION_DAYS = 14;
 export const APPLIED_DUPLICATE_FILENAMES = new Set([
   "091_privat_connection.sql",
   "091_telegram_beta_survey.sql",
+  // 2026-10-20: #1571 і #1572 злились паралельно з номером 160. Обидва файли
+  // на main, перейменування застосованого блокує перевірка нижче, тож колізію
+  // лишено; порядок виконання детермінований за імʼям файлу.
+  "160_gdpr_cleanup_email_redaction.sql",
+  "160_user_avatars.sql",
 ]);
 
 /**

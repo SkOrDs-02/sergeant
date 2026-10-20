@@ -4,7 +4,7 @@ import { userAvatars } from "../pg/profile.js";
 
 /**
  * SQL snapshot test: Drizzle-схема `user_avatars` збігається з міграцією
- * 161_user_avatars.sql (аудит 2026-10-01, ux-14: аватар у Postgres/bytea).
+ * 160_user_avatars.sql (аудит 2026-10-01, ux-14: аватар у Postgres/bytea).
  */
 describe("pg/userAvatars schema snapshot", () => {
   const config = getTableConfig(userAvatars);

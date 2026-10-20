@@ -31,7 +31,7 @@ function mimeOf(req: Request): string {
 }
 
 /**
- * `/api/avatar` - аватар користувача, байти в Postgres (ux-14, migration 161).
+ * `/api/avatar` - аватар користувача, байти в Postgres (ux-14, migration 160).
  *
  *  - `PUT    /api/avatar`         сире зображення (webp|png|jpeg, до 50 КБ),
  *                                 upsert + `user.image` = короткий URL;

@@ -1,4 +1,4 @@
--- 161: user_avatars - завантажений аватар користувача (аудит 2026-10-01, ux-14).
+-- 160: user_avatars - завантажений аватар користувача (аудит 2026-10-01, ux-14).
 -- Спека: docs/work/specs/audits/2026-10-01-full-app-audit/ux-a11y.md § ux-14.
 --
 -- Проблема. Клієнт слав `canvas.toDataURL()` у Better Auth `updateUser({image})`,

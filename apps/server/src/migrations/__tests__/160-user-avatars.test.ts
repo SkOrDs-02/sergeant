@@ -1,4 +1,4 @@
-// Міграція 161 - `user_avatars` (аудит 2026-10-01, ux-14).
+// Міграція 160 - `user_avatars` (аудит 2026-10-01, ux-14).
 //
 // Два лейни, як у `158-finyk-tx-tags.test.ts`.
 // 1. СТАТИЧНИЙ фіксує намір: additive, PK + FK на "user" з каскадом, bytea,
@@ -16,8 +16,8 @@ import type { StartedTestContainer } from "testcontainers";
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const MIGRATIONS_DIR = path.resolve(__dirname, "..");
-const UP_FILE = "161_user_avatars.sql";
-const DOWN_FILE = "161_user_avatars.down.sql";
+const UP_FILE = "160_user_avatars.sql";
+const DOWN_FILE = "160_user_avatars.down.sql";
 const TIMEOUT_MS = 180_000;
 
 let up = "";
@@ -30,7 +30,7 @@ function statementsOnly(sql: string): string {
     .join("\n");
 }
 
-describe("161 - форма (статичний лейн)", () => {
+describe("160 - форма (статичний лейн)", () => {
   beforeAll(async () => {
     up = await fs.readFile(path.join(MIGRATIONS_DIR, UP_FILE), "utf8");
     down = await fs.readFile(path.join(MIGRATIONS_DIR, DOWN_FILE), "utf8");
@@ -64,7 +64,7 @@ describe("161 - форма (статичний лейн)", () => {
   });
 });
 
-describe("161 - живий Postgres", () => {
+describe("160 - живий Postgres", () => {
   let container: StartedTestContainer | null = null;
   let pool: pg.Pool | null = null;
   let dockerAvailable = false;
@@ -101,7 +101,7 @@ describe("161 - живий Postgres", () => {
       dockerAvailable = true;
     } catch (e) {
       console.warn(
-        `[161-user-avatars] Skipping live lane: Testcontainers unavailable - ${
+        `[160-user-avatars] Skipping live lane: Testcontainers unavailable - ${
           e instanceof Error ? e.message : String(e)
         }`,
       );

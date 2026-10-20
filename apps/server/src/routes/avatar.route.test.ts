@@ -3,12 +3,12 @@ import request from "supertest";
 import { AVATAR_MAX_BYTES, AvatarPutResponseSchema } from "@sergeant/shared";
 
 /**
- * Route-level тест `/api/avatar` (ux-14, migration 161).
+ * Route-level тест `/api/avatar` (ux-14, migration 160).
  *
  * Пул замоканий невеликим in-memory «Postgres» для `user_avatars` і
  * `"user".image`: тест перевіряє не SQL-рядки, а поведінку роуту -
  * авторизацію, ліміти, magic bytes, upsert, заголовки GET. Живий SQL
- * (bytea, FK-каскад) закриває `migrations/__tests__/161-user-avatars.test.ts`.
+ * (bytea, FK-каскад) закриває `migrations/__tests__/160-user-avatars.test.ts`.
  */
 
 const { mockPool, queryMock, getSessionUserMock, store } = vi.hoisted(() => {
