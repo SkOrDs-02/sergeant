@@ -79,6 +79,24 @@ describe("AppLock", () => {
     await waitFor(() => expect(onSignOut).toHaveBeenCalledTimes(1));
   });
 
+  it("guest sees a data-reset action instead of sign-out", async () => {
+    const onSignOut = vi.fn(async () => true);
+    renderLock({ state: "locked", onSignOut, isGuest: true });
+    fireEvent.click(
+      screen.getByRole("button", {
+        name: "Забув PIN? Скинь дані й почни заново.",
+      }),
+    );
+    await waitFor(() => expect(onSignOut).toHaveBeenCalledTimes(1));
+  });
+
+  it("guest locked-out screen offers «Скинути дані й почати заново»", () => {
+    renderLock({ state: "lockedOut", isGuest: true });
+    expect(
+      screen.getByRole("button", { name: "Скинути дані й почати заново" }),
+    ).toBeInTheDocument();
+  });
+
   it("shows a sign-out error when the sign-out rejects", async () => {
     const onSignOut = vi.fn(async () => {
       throw new Error("network");

@@ -32,6 +32,7 @@ const appLock: UseAppLockReturn = {
   disablePin: vi.fn().mockResolvedValue(undefined),
   retryAt: null,
   signOut: vi.fn().mockResolvedValue(true),
+  isGuest: false,
 };
 vi.mock("./AppLockContext", () => ({
   useAppLockContext: () => appLock,

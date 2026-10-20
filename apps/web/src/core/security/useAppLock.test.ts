@@ -36,7 +36,7 @@ const { useAuth } = vi.hoisted(() => ({
 }));
 vi.mock("../auth/AuthContext", () => ({ useAuth }));
 
-import { useFlag } from "../lib/featureFlags";
+import { useFlag, setFlag } from "../lib/featureFlags";
 import {
   savePinHash,
   clearPinHash,
@@ -411,6 +411,16 @@ describe("useAppLock", () => {
           lockedOut: false,
         });
         expect(result.current.state).toBe("idle");
+      }, 30_000);
+
+      it("turns the app-lock-enabled toggle off on a confirmed sign-out (L-11)", async () => {
+        const nav = logoutThatNavigates();
+        const { result } = await renderLockedOut();
+        await act(async () => {
+          await result.current.signOut();
+        });
+        nav.restoreIdb();
+        expect(setFlag).toHaveBeenCalledWith("app-lock-enabled", false);
       }, 30_000);
 
       it("keeps the credential and the lock when the logout is cancelled", async () => {

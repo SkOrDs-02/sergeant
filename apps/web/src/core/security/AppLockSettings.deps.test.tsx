@@ -23,6 +23,7 @@ vi.mock("./AppLockContext", () => ({
     disablePin: vi.fn(),
     retryAt: null,
     signOut: vi.fn(),
+    isGuest: false,
   }),
 }));
 vi.mock("../lib/featureFlags", () => ({

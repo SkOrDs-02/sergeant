@@ -487,6 +487,10 @@ export const messagesEn: Partial<{
       lockedOutBody:
         "Too many wrong attempts, so the PIN is no longer accepted. Sign out and sign in again with your password.",
       signOut: "Sign out",
+      guestReset: "Reset data and start over",
+      guestResetHint: "Forgot your PIN? Reset data and start over.",
+      guestLockedOutBody:
+        "Too many wrong attempts, so the PIN is no longer accepted. Reset the data on this device and start over.",
       signingOut: "Signing out…",
       signOutFailed: "Couldn't sign out. Try again.",
       next: "Next",

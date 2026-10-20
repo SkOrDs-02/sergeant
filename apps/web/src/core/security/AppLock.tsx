@@ -304,9 +304,15 @@ interface UnlockScreenProps {
   onUnlock: (pin: string) => Promise<boolean>;
   onSignOut: () => Promise<boolean>;
   retryAt?: number | null | undefined;
+  isGuest?: boolean | undefined;
 }
 
-function UnlockScreen({ onUnlock, onSignOut, retryAt }: UnlockScreenProps) {
+function UnlockScreen({
+  onUnlock,
+  onSignOut,
+  retryAt,
+  isGuest,
+}: UnlockScreenProps) {
   const [pin, setPin] = useState("");
   const [error, setError] = useState("");
   const [busy, setBusy] = useState(false);
@@ -382,7 +388,7 @@ function UnlockScreen({ onUnlock, onSignOut, retryAt }: UnlockScreenProps) {
       <SignOutAction
         onSignOut={onSignOut}
         variant="ghost"
-        label={m.recoveryHint}
+        label={isGuest ? m.guestResetHint : m.recoveryHint}
         className="mt-2 h-auto whitespace-normal text-center"
       />
     </div>
@@ -391,16 +397,22 @@ function UnlockScreen({ onUnlock, onSignOut, retryAt }: UnlockScreenProps) {
 
 // ---- Locked-out screen: 10 хибних PIN, лишається тільки вихід -------------
 
-function LockedOutScreen({ onSignOut }: { onSignOut: () => Promise<boolean> }) {
+function LockedOutScreen({
+  onSignOut,
+  isGuest,
+}: {
+  onSignOut: () => Promise<boolean>;
+  isGuest?: boolean | undefined;
+}) {
   return (
     <div className="flex flex-col items-center gap-4 w-full">
       <p className="text-style-body text-muted text-center">
-        {m.lockedOutBody}
+        {isGuest ? m.guestLockedOutBody : m.lockedOutBody}
       </p>
       <SignOutAction
         onSignOut={onSignOut}
         variant="solid"
-        label={m.signOut}
+        label={isGuest ? m.guestReset : m.signOut}
         className="w-full"
       />
     </div>
@@ -433,6 +445,8 @@ export interface AppLockProps {
   onSignOut: () => Promise<boolean>;
   /** Epoch ms завершення паузи між спробами PIN; `null` – паузи нема. */
   retryAt?: number | null | undefined;
+  /** Гість без акаунта: «вихід» стирає локальні дані, тому інший текст. */
+  isGuest?: boolean | undefined;
 }
 
 export function AppLock({
@@ -444,6 +458,7 @@ export function AppLock({
   onSavePin,
   onSignOut,
   retryAt,
+  isGuest,
 }: AppLockProps) {
   const panelRef = useRef<HTMLDivElement>(null);
   const visible =
@@ -521,9 +536,10 @@ export function AppLock({
             onUnlock={onUnlock}
             onSignOut={onSignOut}
             retryAt={retryAt}
+            isGuest={isGuest}
           />
         ) : state === "lockedOut" ? (
-          <LockedOutScreen onSignOut={onSignOut} />
+          <LockedOutScreen onSignOut={onSignOut} isGuest={isGuest} />
         ) : (
           <PinSetupFlow
             onDone={onSetupDone}

@@ -2,6 +2,7 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import { ANALYTICS_EVENTS } from "@sergeant/shared";
 import { capturePostHogEvent } from "../observability/posthog";
 import { useAuth } from "../auth/AuthContext";
+import { setFlag } from "../lib/featureFlags";
 import {
   clearPinHash,
   hasPinSet,
@@ -71,6 +72,8 @@ export interface UseAppLockReturn {
    * незбережені записи); тоді креденшел і замок лишаються як були.
    */
   signOut: () => Promise<boolean>;
+  /** Гість без акаунта: «вихід» стирає локальні дані. */
+  isGuest: boolean;
 }
 
 export function useAppLock(): UseAppLockReturn {
@@ -266,6 +269,10 @@ export function useAppLock(): UseAppLockReturn {
         await clearPinHash(signedOutUserId).catch(() => {
           /* best-effort: IndexedDB недоступна — креденшела й так не прочитати */
         });
+        // L-11: без креденшела тумблер «PIN увімкнено» нічого не значить, тож
+        // після виходу вимикаємо його, щоб наступний вхід не показував його
+        // увімкненим.
+        setFlag("app-lock-enabled", false);
       },
     });
     if (!done) return false;
@@ -286,5 +293,6 @@ export function useAppLock(): UseAppLockReturn {
     disablePin,
     retryAt,
     signOut,
+    isGuest: userId === null,
   };
 }
