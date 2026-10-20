@@ -18,6 +18,7 @@
 import { describe, expect, it, vi, beforeEach } from "vitest";
 import { act, render, screen, fireEvent } from "@testing-library/react";
 import type { Meal } from "@sergeant/nutrition-domain";
+import { todayISODate } from "@sergeant/nutrition-domain";
 
 // ─── Storage chain ─────────────────────────────────────────────────────────
 vi.mock("@shared/lib/storage/storage", () => ({
@@ -91,7 +92,7 @@ vi.mock("./hooks/useNutritionPantries", () => ({
 }));
 
 const mockLog = {
-  nutritionLog: {},
+  nutritionLog: {} as Record<string, { meals: Meal[] }>,
   setNutritionLog: vi.fn(),
   selectedDate: "2026-01-01",
   setSelectedDate: vi.fn(),
@@ -283,6 +284,8 @@ vi.mock("./components/NutritionOverlays", () => ({
     addMealInitialSourceTab,
     onQuickAddMeal,
     editingMeal,
+    openMealTypeSheet,
+    onCloseMealTypeSheet,
   }: {
     wrappedSaveMeal: (meal: Meal) => Promise<void>;
     addMealInitialStep?: "source" | "photo";
@@ -298,12 +301,22 @@ vi.mock("./components/NutritionOverlays", () => ({
       grams: number;
     }) => void;
     editingMeal: Meal | null;
+    openMealTypeSheet: string | null;
+    onCloseMealTypeSheet: () => void;
   }) => (
     <div
       data-testid="nutrition-overlays"
       data-initial-step={addMealInitialStep ?? "source"}
       data-initial-source-tab={addMealInitialSourceTab ?? "search"}
+      data-meal-type={openMealTypeSheet ?? "closed"}
     >
+      <button
+        type="button"
+        data-testid="close-meal-type"
+        onClick={onCloseMealTypeSheet}
+      >
+        Close meal type
+      </button>
       <button
         type="button"
         data-testid="save-meal-add"
@@ -365,11 +378,51 @@ vi.mock("./components/NutritionOverlays", () => ({
 
 // NutritionStartPage owns navigation from the dashboard.
 vi.mock("./pages/NutritionStartPage", () => ({
-  NutritionStartPage: () => <div data-testid="nutrition-start-page" />,
+  NutritionStartPage: ({
+    onPickMeal,
+  }: {
+    onPickMeal: (type: string) => void;
+  }) => (
+    <div data-testid="nutrition-start-page">
+      <button type="button" onClick={() => onPickMeal("breakfast")}>
+        pick-breakfast
+      </button>
+    </div>
+  ),
 }));
 
 vi.mock("./pages/NutritionPantryPage", () => ({
-  NutritionPantryPage: () => <div data-testid="nutrition-pantry-page" />,
+  NutritionPantryPage: (props: {
+    setPantrySubTab: (id: string) => void;
+    setPantryScanStatus: (status: string) => void;
+    setPantryScannerOpen: (open: boolean) => void;
+    onRetryPantryBarcode: () => void;
+    onDismissPantryBarcodeNotice: () => void;
+    generateShoppingList: () => void;
+    addCheckedItemsToPantry: () => void;
+  }) => (
+    <div data-testid="nutrition-pantry-page">
+      <button onClick={() => props.setPantrySubTab("shopping")}>subtab</button>
+      <button onClick={() => props.setPantryScanStatus("ready")}>
+        scan-status
+      </button>
+      <button onClick={() => props.setPantryScannerOpen(true)}>
+        open-scanner
+      </button>
+      <button onClick={() => props.onRetryPantryBarcode()}>
+        retry-barcode
+      </button>
+      <button onClick={() => props.onDismissPantryBarcodeNotice()}>
+        dismiss-barcode
+      </button>
+      <button onClick={() => props.generateShoppingList()}>
+        generate-list
+      </button>
+      <button onClick={() => props.addCheckedItemsToPantry()}>
+        add-checked
+      </button>
+    </div>
+  ),
 }));
 
 vi.mock("./pages/NutritionLogPage", () => ({
@@ -456,6 +509,7 @@ function mockRoute(activePage: NutritionPage): UseNutritionRouteResult {
 
 beforeEach(() => {
   vi.clearAllMocks();
+  mockLog.nutritionLog = {};
   vi.mocked(useNutritionRoute).mockReturnValue(mockRoute("start"));
 });
 
@@ -637,6 +691,44 @@ describe("NutritionApp — page shells", () => {
     vi.mocked(useNutritionRoute).mockReturnValue(mockRoute(page));
     render(<NutritionApp />, { wrapper: QueryWrapper });
     expect(screen.getByTestId(testId)).toBeInTheDocument();
+  });
+
+  it("exposes pantry actions and forwards their callbacks", () => {
+    vi.mocked(useNutritionRoute).mockReturnValue(mockRoute("pantry"));
+    render(<NutritionApp />, { wrapper: QueryWrapper });
+    for (const label of [
+      "subtab",
+      "scan-status",
+      "open-scanner",
+      "retry-barcode",
+      "dismiss-barcode",
+      "generate-list",
+      "add-checked",
+    ]) {
+      fireEvent.click(screen.getByRole("button", { name: label }));
+    }
+    expect(screen.getByTestId("nutrition-pantry-page")).toBeInTheDocument();
+  });
+
+  it("opens the populated meal segment and closes its detail sheet", () => {
+    mockLog.nutritionLog = {
+      [todayISODate()]: {
+        meals: [{ id: "m1", mealType: "breakfast" }],
+      },
+    } as typeof mockLog.nutritionLog;
+    vi.mocked(useNutritionRoute).mockReturnValue(mockRoute("start"));
+    render(<NutritionApp />, { wrapper: QueryWrapper });
+
+    fireEvent.click(screen.getByRole("button", { name: "pick-breakfast" }));
+    expect(screen.getByTestId("nutrition-overlays")).toHaveAttribute(
+      "data-meal-type",
+      "breakfast",
+    );
+    fireEvent.click(screen.getByTestId("close-meal-type"));
+    expect(screen.getByTestId("nutrition-overlays")).toHaveAttribute(
+      "data-meal-type",
+      "closed",
+    );
   });
 });
 

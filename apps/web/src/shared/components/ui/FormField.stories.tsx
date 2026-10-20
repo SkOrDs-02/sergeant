@@ -59,12 +59,3 @@ export const Optional: Story = {
     </FormField>
   ),
 };
-
-/** Капс-брова — рідкісний випадок: службова позначка, а не питання. */
-export const CapsLabel: Story = {
-  render: (args) => (
-    <FormField {...args} label="Валюта" capsLabel>
-      <Input placeholder="UAH" />
-    </FormField>
-  ),
-};

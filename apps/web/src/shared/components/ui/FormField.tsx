@@ -8,6 +8,7 @@ import {
   type ReactNode,
 } from "react";
 import { cn } from "../../lib/ui/cn";
+import { FIELD_ERROR_TEXT, FIELD_LABEL } from "./Input";
 
 /**
  * Sergeant Design System — Label / FormField
@@ -17,8 +18,8 @@ import { cn } from "../../lib/ui/cn";
  *   - `text-2xs font-bold text-subtle uppercase tracking-widest`
  *   - `text-style-label text-text`
  *
- * The canonical label is the first variant (Finyk/ManualExpenseSheet
- * pattern), which is already the most prevalent.
+ * The canonical label is `FIELD_LABEL` from `Input.tsx` (мова H v3.1):
+ * 14 / 500 другим сірим, звичайний регістр.
  *
  * <FormField> wires `id`/`htmlFor` + optional helper and error slot
  * for you — if the child is a single <Input>/<Select>/<Textarea>,
@@ -27,50 +28,23 @@ import { cn } from "../../lib/ui/cn";
  */
 
 export interface LabelProps extends LabelHTMLAttributes<HTMLLabelElement> {
-  /**
-   * Намалювати мітку ВЕЛИКИМИ ЛІТЕРАМИ — «бровою», як службовий напис.
-   *
-   * За замовчуванням вимкнено (рішення власника 2026-08-06 на
-   * `mockups/product/pending-decisions.html`). Раніше було навпаки, і
-   * проп звався `normalCase` — тобто дефолтом був капс, а викликач мусив
-   * від нього відмовлятись.
-   *
-   * AI-CONTEXT: перевертання дефолту вирішило й питання, через яке ця
-   * правка стояла на паузі — що взагалі означає цей проп. Поки капс був
-   * дефолтом, `normalCase` був перемикачем між двома майже однаковими
-   * станами й не називав жодного наміру. `caps` називає: «це не питання
-   * до людини, а позначка на приладі». Такий намір рідкісний, тому й
-   * опція, а не дефолт.
-   *
-   * Замір, що вирішив: підписів у продукті було 36, і 7 із них уже
-   * примусово вимикали капс. Коли пʼята частина коду бореться з
-   * налаштуванням, воно не дефолт.
-   */
-  caps?: boolean;
   /** Show a `· необовʼязково` suffix for optional fields. */
   optional?: boolean;
 }
 
+/**
+ * Підпис поля мовою H (v3.1): 14 / 500 другим сірим, звичайний регістр.
+ * Капс-варіант (`caps`) прибрано: капс-ярлик живе лише на тинті hero, а не
+ * над полем форми (гейт `capsFormLabel`).
+ */
 export function Label({
   className,
-  caps = false,
   optional = false,
   children,
   ...props
 }: LabelProps) {
   return (
-    <label
-      className={cn(
-        caps
-          ? "block text-style-caption text-muted uppercase tracking-wide font-semibold mb-1"
-          : // `normal-case` явно: роль `text-style-label` задає лише кегль,
-            // вагу й трекінг — `text-transform` вона НЕ скидає, тож
-            // успадкований `uppercase` протік би крізь новий дефолт.
-            "text-style-label normal-case block text-text mb-1",
-        className,
-      )}
-      {...props}
-    >
+    <label className={cn(FIELD_LABEL, "block mb-1", className)} {...props}>
       {children}
       {optional && (
         <span className="text-subtle normal-case font-normal">
@@ -92,8 +66,6 @@ export interface FormFieldProps {
   error?: ReactNode;
   /** Mark label as optional. */
   optional?: boolean;
-  /** Намалювати мітку капсом-бровою. За замовчуванням — звичайний регістр. */
-  capsLabel?: boolean;
   className?: string;
   children: ReactNode;
 }
@@ -104,7 +76,6 @@ export function FormField({
   helperText,
   error,
   optional = false,
-  capsLabel = false,
   className,
   children,
 }: FormFieldProps) {
@@ -137,12 +108,7 @@ export function FormField({
   return (
     <div className={cn("space-y-1", className)}>
       {label && (
-        <Label
-          htmlFor={controlId}
-          optional={optional}
-          caps={capsLabel}
-          className="mb-0"
-        >
+        <Label htmlFor={controlId} optional={optional} className="mb-0">
           {label}
         </Label>
       )}
@@ -150,7 +116,7 @@ export function FormField({
       {hasError ? (
         <p
           id={`${controlId}-error`}
-          className="text-style-caption text-danger-strong mt-1"
+          className={cn(FIELD_ERROR_TEXT, "mt-1")}
           role="alert"
         >
           {error}

@@ -188,6 +188,30 @@ describe("CelebrationModal", () => {
     expect(onClose).toHaveBeenCalled();
   });
 
+  it("pauses the auto-close countdown while the dialog is being used", () => {
+    const onClose = vi.fn();
+    render(
+      <CelebrationModal
+        type="success"
+        open
+        onClose={onClose}
+        title="x"
+        autoCloseMs={1_000}
+      />,
+    );
+    const dialog = screen.getByRole("dialog").querySelector(".relative.z-10")!;
+    act(() => vi.advanceTimersByTime(400));
+    fireEvent.mouseEnter(dialog);
+    act(() => vi.advanceTimersByTime(2_000));
+    expect(onClose).not.toHaveBeenCalled();
+
+    fireEvent.mouseLeave(dialog);
+    act(() => vi.advanceTimersByTime(600));
+    expect(onClose).not.toHaveBeenCalled();
+    act(() => vi.advanceTimersByTime(250));
+    expect(onClose).toHaveBeenCalledTimes(1);
+  });
+
   it("renders a custom icon when supplied", () => {
     render(
       <CelebrationModal

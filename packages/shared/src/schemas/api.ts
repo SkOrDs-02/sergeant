@@ -241,7 +241,42 @@ export const MeExportResponseSchema = z.object({
       connection: ExportRecordSchema.nullable(),
       accounts: z.array(ExportRecordSchema),
       transactions: z.array(ExportRecordSchema),
+      /** Банки Mono (`mono_jar`). Відсутнє у відповіді старого сервера. */
+      jars: z.array(ExportRecordSchema).default([]),
     }),
+    /**
+     * Первинні записи поза чотирма модулями (priv-12, аудит 2026-10-01).
+     *
+     * Нові ключі мають `.default`, а не обовʼязкові: фронт викочується раніше
+     * за бекенд, і відповідь старого сервера без них не має ламати розбір
+     * в `api-client`. Чеки (`receipts`, `receipt_items`) та `import_batches`
+     * їдуть у секції `finyk` під іменами таблиць.
+     *
+     * Шифротекст і токени (`privat_connection`, `silpo_connection`) у файл не
+     * потрапляють: явні списки колонок у `modules/me/exportBuilder.ts`.
+     */
+    profile: ExportRecordSchema.nullable().default(null),
+    feedback: z.array(ExportRecordSchema).default([]),
+    emailUnsubscribes: z.array(ExportRecordSchema).default([]),
+    waitlist: z.array(ExportRecordSchema).default([]),
+    privat: z
+      .object({ connection: ExportRecordSchema.nullable() })
+      .default({ connection: null }),
+    silpo: z
+      .object({
+        connection: ExportRecordSchema.nullable(),
+        receipts: z.array(ExportRecordSchema),
+        receiptItems: z.array(ExportRecordSchema),
+        txReceiptLinks: z.array(ExportRecordSchema),
+        txReceiptLinkRejections: z.array(ExportRecordSchema),
+      })
+      .default({
+        connection: null,
+        receipts: [],
+        receiptItems: [],
+        txReceiptLinks: [],
+        txReceiptLinkRejections: [],
+      }),
     billing: z.object({
       subscriptions: z.array(ExportRecordSchema),
     }),

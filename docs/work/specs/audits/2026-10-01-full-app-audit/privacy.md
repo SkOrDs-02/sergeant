@@ -776,7 +776,7 @@ grep: PhotoPrivacyNotice/photoPrivacyAck appear only in apps/web/src/modules/nut
 
 ### `priv-12` [medium] GDPR-експорт неповний: біометрія профілю, пам'ять коуча, чеки з позиціями, Сільпо, банківські підключення, фідбек та інше не потрапляють у файл і не перелічені у винятках
 
-- **Стан:** відкрито
+- **Стан:** виправлено в гілці claude/fix-priv-12-gdpr-export-complete (за рішенням власника: первинні записи їдуть у файл, coach_memory, кеш нуджів, session/account та службові таблиці названі в `excluded` з причиною; залишок: `waitlist_entries` шукається лише за `user_id`, запис за самим email без акаунта не вивантажується)
 - **Перевірка:** підтверджено · **Зусилля:** M · **Область:** server: права на дані (/api/me/export)
 - **Де:** apps/server/src/modules/me/dataRights.ts:268-325 (MODULE_EXPORT_TABLES), 329-370 (EXPORT_EXCLUSIONS), 417-520 (buildMeExport); apps/server/src/modules/me/exportTables.drift.test.ts:16
 - **Першопричина:** buildMeExport читає фіксований MODULE_EXPORT_TABLES і кілька окремих таблиць. Drift-гейт exportTables.drift.test.ts перевіряє лише таблиці з префіксами finyk_/fizruk_/nutrition_/routine_. Тому таблиці без префікса мовчки випадають: user_profile, coach_memory, receipts, receipt_items, silpo_*, mono_jar, privat_connection, import_batches, feedback_entries тощо.
@@ -1041,7 +1041,7 @@ v4-run.log (v4-foods.mjs): після виходу X 'VFX-n777' знайдено
 
 ### `priv-17` [medium] Легасі-сховище kvvfs (kvvfs-local-*) з повною базою всіх акаунтів пристрою ніколи не стирається, а вихід ламає маркери перелиття
 
-- **Стан:** відкрито
+- **Стан:** частково виправлено в гілці claude/fix-priv-17-kvvfs-cleanup (маркери `sergeant.storage.opfsHandoff.` більше не стираються при виході, хибний коментар у purgeLocalData.ts виправлено; лишилось за рішенням власника «a»: стадія 3 — стирання `kvvfs-local-*` після підтвердженого перелиття і порожньої черги, `kv_store` лише першому акаунту в `pruneForeignPartitionRows`, гілка kvvfs у sqlite.ts при `!isHandoffDone`)
 - **Перевірка:** підтверджено · **Зусилля:** M · **Область:** web: локальна БД (kvvfs → OPFS)
 - **Де:** apps/web/src/core/db/kvvfsHandoff.ts:16-27, 47-71, 115-150; apps/web/src/core/db/sqlite.ts:227-233, 477-507, 838-876; apps/web/src/shared/lib/storage/purgeLocalData.ts:26-34, 55-70
 - **Першопричина:** Після переїзду на OPFS старий kvvfs-стор навмисно не чіпається. APP_OWNED_LS_PREFIXES не містить kvvfs-, а рядковий DELETE у wipeSqliteDb виконується лише для open.vfs === 'kvvfs'. Водночас purge стирає всі ключі sergeant.*, зокрема маркери sergeant.storage.opfsHandoff.v1.&lt;userKey&gt;, а pruneForeignPartitionRows не чистить kv_store.
