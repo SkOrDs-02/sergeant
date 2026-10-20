@@ -259,6 +259,71 @@ describe("lockStorage", () => {
       );
     }, 30_000);
 
+    // Зауваження review: read -> PBKDF2 -> write давали всім паралельним
+    // викликам те саме `failed = k`, тож N здогадок коштували один крок.
+    it("parallel wrong attempts each advance the counter (no lost updates)", async () => {
+      await savePinHash("9999");
+      const results = await Promise.all([
+        verifyPinAttempt("000000"),
+        verifyPinAttempt("111111"),
+        verifyPinAttempt("222222"),
+      ]);
+      expect(results.every((r) => !r.ok && !r.throttled)).toBe(true);
+      expect(results.map((r) => r.failed).sort()).toEqual([1, 2, 3]);
+      expect((await __readRawCredForTests())?.failed).toBe(3);
+    }, 60_000);
+
+    it("a parallel burst cannot outrun the delay: only one guess passes the 5th failure", async () => {
+      await savePinHash("9999");
+      await __seedAttemptStateForTests(FREE_UNLOCK_ATTEMPTS - 1);
+      const deriveBitsSpy = vi.spyOn(crypto.subtle, "deriveBits");
+
+      const results = await Promise.all([
+        verifyPinAttempt("000000"),
+        verifyPinAttempt("111111"),
+        verifyPinAttempt("222222"),
+        verifyPinAttempt("333333"),
+      ]);
+
+      expect(results.filter((r) => !r.throttled)).toHaveLength(1);
+      expect(results.filter((r) => r.throttled)).toHaveLength(3);
+      expect(deriveBitsSpy).toHaveBeenCalledTimes(1);
+      expect((await __readRawCredForTests())?.failed).toBe(
+        FREE_UNLOCK_ATTEMPTS,
+      );
+    }, 60_000);
+
+    it("a parallel burst cannot exceed the 10-attempt cap", async () => {
+      await savePinHash("9999");
+      await __seedAttemptStateForTests(MAX_FAILED_UNLOCK_ATTEMPTS - 2);
+      // Пауза після 8-ї невдачі вже минула.
+      const results = await Promise.all([
+        verifyPinAttempt("000000"),
+        verifyPinAttempt("111111"),
+        verifyPinAttempt("222222"),
+        verifyPinAttempt("333333"),
+      ]);
+      const checked = results.filter((r) => !r.throttled);
+      // 9-та спроба ставить паузу, тож решта відхилена без перевірки.
+      expect(checked).toHaveLength(1);
+      expect((await __readRawCredForTests())?.failed).toBe(
+        MAX_FAILED_UNLOCK_ATTEMPTS - 1,
+      );
+    }, 60_000);
+
+    it("a correct PIN after reservation clears the pessimistic counter", async () => {
+      await savePinHash("9999");
+      const [ok, wrong] = await Promise.all([
+        verifyPinAttempt("9999"),
+        verifyPinAttempt("0000"),
+      ]);
+      expect(ok.ok).toBe(true);
+      expect(wrong.ok).toBe(false);
+      const raw = await __readRawCredForTests();
+      expect(raw?.lockedUntil).toBeUndefined();
+      expect(await verifyPin("9999")).toBe(true);
+    }, 60_000);
+
     it("the lockout is per user: another user's slot is unaffected", async () => {
       await savePinHash("1111", "user-a");
       await savePinHash("2222", "user-b");

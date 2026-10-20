@@ -313,18 +313,35 @@ function UnlockScreen({ onUnlock, onSignOut, retryAt }: UnlockScreenProps) {
   const remainingMs = useRetryRemaining(retryAt);
   const waiting = remainingMs > 0;
 
+  // Синхронний замок поверх `busy`: стан React оновлюється асинхронно, а
+  // шоста цифра викликає submit автоматично, тож без ref-а друга спроба
+  // встигала стартувати, поки перша ще рахує PBKDF2 (sec-12/priv-14).
+  const inFlightRef = useRef(false);
+
   const handleSubmit = async (candidate: string) => {
-    if (candidate.length < PIN_MIN || waiting) return;
+    if (inFlightRef.current || waiting || candidate.length < PIN_MIN) return;
+    inFlightRef.current = true;
     setBusy(true);
-    const ok = await onUnlock(candidate);
-    if (!ok) {
+    try {
+      const ok = await onUnlock(candidate);
+      if (!ok) {
+        setError(m.pinWrong);
+        setPin("");
+      }
+    } catch {
+      // Лічильник не вдалося записати (IDB) – спробу не зараховано як успіх.
       setError(m.pinWrong);
       setPin("");
+    } finally {
+      inFlightRef.current = false;
+      setBusy(false);
     }
-    setBusy(false);
   };
 
   const handlePinChange = (v: string) => {
+    // Поки перевірка триває, ввід ігноруємо: інакше можна підмінити останню
+    // цифру й надіслати нову спробу, не дочекавшись результату попередньої.
+    if (inFlightRef.current) return;
     setPin(v);
     setError("");
     if (v.length === PIN_MAX) {

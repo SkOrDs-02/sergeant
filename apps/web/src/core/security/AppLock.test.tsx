@@ -111,6 +111,35 @@ describe("AppLock", () => {
     expect(onUnlock).not.toHaveBeenCalled();
   });
 
+  // Зауваження review: шоста цифра сабмітить сама, а ввід під час перевірки
+  // дозволяв підмінити цифру й надіслати наступну спробу паралельно.
+  it("ignores input while a check is running: no second attempt in flight", async () => {
+    let resolveUnlock: (ok: boolean) => void = () => {};
+    const onUnlock = vi.fn(
+      () =>
+        new Promise<boolean>((resolve) => {
+          resolveUnlock = resolve;
+        }),
+    );
+    renderLock({ state: "locked", onUnlock });
+    "123456".split("").forEach(pressDigit);
+    await waitFor(() => expect(onUnlock).toHaveBeenCalledTimes(1));
+
+    pressDigit("⌫");
+    pressDigit("7");
+    fireEvent.click(screen.getByRole("button", { name: "Відкрити" }));
+    await Promise.resolve();
+    expect(onUnlock).toHaveBeenCalledTimes(1);
+
+    resolveUnlock(false);
+    await waitFor(() =>
+      expect(screen.getByRole("alert")).toHaveTextContent("Неправильний PIN"),
+    );
+    // Після відповіді ввід знову працює.
+    "123456".split("").forEach(pressDigit);
+    await waitFor(() => expect(onUnlock).toHaveBeenCalledTimes(2));
+  });
+
   it("re-enables the keypad once the retry delay has passed", () => {
     renderLock({ state: "locked", retryAt: Date.now() - 1 });
     expect(screen.queryByTestId("app-lock-retry")).not.toBeInTheDocument();

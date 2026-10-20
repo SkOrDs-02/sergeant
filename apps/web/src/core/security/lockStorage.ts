@@ -69,6 +69,10 @@ export const CURRENT_PBKDF2_ITERATIONS =
  *     можна лише виходом з акаунта (`useAppLock.signOut`), який і стирає
  *     креденшел після успішного виходу, а далі потрібен пароль акаунта.
  *
+ * Лічильник песимістичний: резервування спроби (`failed + 1`, `lockedUntil`)
+ * пишеться в одній readwrite-транзакції ДО PBKDF2, тож ліміт тримається і при
+ * паралельних викликах та кількох вкладках; успіх скидає лічильник.
+ *
  * Чому 10 і чому затримка: PBKDF2 на 600k ітерацій + 4-6-значний PIN дає
  * атакуючому, що витяг IDB-блоб, перевагу офлайн; затримка й ліміт
  * захищають лише від ОНЛАЙН-перебору з фізичним доступом до розблокованого
@@ -192,10 +196,13 @@ export async function savePinHash(
 /**
  * Протокол перебору (див. `MAX_FAILED_UNLOCK_ATTEMPTS`):
  *
+ *   - Лічильник збільшується АТОМАРНО ДО перевірки PIN (`reserveAttempt`):
+ *     паралельні спроби (швидкі submit-и, кілька вкладок) не діляться одним
+ *     значенням `failed`.
  *   - Success → скидає `failed` і `lockedUntil`.
- *   - Failure → збільшує лічильник; з 5-ї невдачі виставляє `lockedUntil`
- *     (наростаюча пауза), на 10-й повертає `lockedOut: true`. Креденшел
- *     лишається в сховищі.
+ *   - Failure → лічильник уже збільшено; з 5-ї невдачі виставлено
+ *     `lockedUntil` (наростаюча пауза), на 10-й повертає `lockedOut: true`.
+ *     Креденшел лишається в сховищі.
  *   - Спроба під час паузи або після `lockedOut` відхиляється ОДРАЗУ
  *     (`throttled: true`) без PBKDF2 і без зміни лічильника, навіть якщо PIN
  *     правильний.
@@ -251,13 +258,120 @@ function withAttemptState(
   return next;
 }
 
+/** Результат атомарного резервування спроби (див. `reserveAttempt`). */
+type Reservation =
+  | { kind: "none" }
+  | { kind: "lockedOut"; failed: number }
+  | { kind: "wait"; failed: number; waitMs: number }
+  | {
+      kind: "reserved";
+      cred: LockCred;
+      nextFailed: number;
+      delayMs: number;
+    };
+
+/**
+ * Песимістичний лічильник: ОДНА readwrite-транзакція IDB робить `get` →
+ * перевірку ліміту/паузи → `put` із `failed + 1` і новим `lockedUntil` ДО
+ * PBKDF2. Транзакції на одному сховищі IDB виконуються послідовно (і між
+ * вкладками), тож паралельні спроби бачать лічильник одна одної: N одночасних
+ * здогадок коштують N кроків лічильника, а не один. Раніше read → PBKDF2 →
+ * write давали всім паралельним викликам той самий `failed = k`, і ліміт у 10
+ * спроб та пауза з 5-ї обходились потоком одночасних submit-ів.
+ *
+ * Якщо записати резервування не вдалось, транзакція відхиляє проміс і спроба
+ * НЕ перевіряється (fail-closed): без надійного лічильника перебір не
+ * обмежити.
+ */
+async function reserveAttempt(key: string): Promise<Reservation> {
+  const db = await openDb();
+  try {
+    return await new Promise<Reservation>((resolve, reject) => {
+      const tx = db.transaction(STORE, "readwrite");
+      const store = tx.objectStore(STORE);
+      let outcome: Reservation = { kind: "none" };
+      const req = store.get(key);
+      req.onsuccess = () => {
+        const cred = (req.result ?? null) as LockCred | null;
+        if (!cred) return;
+        const failedSoFar = cred.failed ?? 0;
+        if (failedSoFar >= MAX_FAILED_UNLOCK_ATTEMPTS) {
+          outcome = { kind: "lockedOut", failed: failedSoFar };
+          return;
+        }
+        const waitMs = remainingDelayMs(cred.lockedUntil);
+        if (waitMs > 0) {
+          outcome = { kind: "wait", failed: failedSoFar, waitMs };
+          return;
+        }
+        const nextFailed = failedSoFar + 1;
+        const delayMs = lockoutDelayMs(nextFailed);
+        store.put(
+          withAttemptState(
+            cred,
+            nextFailed,
+            delayMs > 0 ? Date.now() + delayMs : undefined,
+          ),
+          key,
+        );
+        outcome = { kind: "reserved", cred, nextFailed, delayMs };
+      };
+      req.onerror = () => reject(req.error);
+      tx.oncomplete = () => resolve(outcome);
+      tx.onerror = () => reject(tx.error);
+      tx.onabort = () => reject(tx.error);
+    });
+  } finally {
+    db.close();
+  }
+}
+
+/**
+ * Після успішної перевірки знімає `failed`/`lockedUntil`, але лише якщо в
+ * сховищі досі той самий хеш (PIN не змінили між резервуванням і успіхом).
+ * Транзакційно, щоб не затерти чужий запис. Best-effort: збій лишає
+ * лічильник вищим, а це безпечний бік.
+ */
+async function resetAttemptState(
+  key: string,
+  verified: LockCred,
+): Promise<boolean> {
+  try {
+    const db = await openDb();
+    try {
+      await new Promise<void>((resolve, reject) => {
+        const tx = db.transaction(STORE, "readwrite");
+        const store = tx.objectStore(STORE);
+        const req = store.get(key);
+        req.onsuccess = () => {
+          const cur = (req.result ?? null) as LockCred | null;
+          if (!cur || !timingSafeEqual(cur.hash, verified.hash)) return;
+          const { failed: _failed, lockedUntil: _lockedUntil, ...rest } = cur;
+          void _failed;
+          void _lockedUntil;
+          store.put(rest as LockCred, key);
+        };
+        req.onerror = () => reject(req.error);
+        tx.oncomplete = () => resolve();
+        tx.onerror = () => reject(tx.error);
+        tx.onabort = () => reject(tx.error);
+      });
+    } finally {
+      db.close();
+    }
+    return true;
+  } catch {
+    return false;
+  }
+}
+
 export async function verifyPinAttempt(
   pin: string,
   userId?: string | null,
 ): Promise<VerifyPinResult> {
   const key = recordKey(userId);
-  const cred = await loadCred(key);
-  if (!cred) {
+  const reservation = await reserveAttempt(key);
+  if (reservation.kind === "none") {
     return {
       ok: false,
       failed: 0,
@@ -266,46 +380,37 @@ export async function verifyPinAttempt(
       throttled: false,
     };
   }
-  const failedSoFar = cred.failed ?? 0;
-  if (failedSoFar >= MAX_FAILED_UNLOCK_ATTEMPTS) {
+  if (reservation.kind === "lockedOut") {
     return {
       ok: false,
-      failed: failedSoFar,
+      failed: reservation.failed,
       lockedOut: true,
       retryAfterMs: 0,
       throttled: true,
     };
   }
-  const waitMs = remainingDelayMs(cred.lockedUntil);
-  if (waitMs > 0) {
+  if (reservation.kind === "wait") {
     return {
       ok: false,
-      failed: failedSoFar,
+      failed: reservation.failed,
       lockedOut: false,
-      retryAfterMs: waitMs,
+      retryAfterMs: reservation.waitMs,
       throttled: true,
     };
   }
+  // Спробу вже враховано в IDB (`failed + 1`): далі лише перевірка PIN.
+  const { cred, nextFailed, delayMs } = reservation;
   const version = credVersion(cred);
   const candidate = await deriveHash(
     pin,
     cred.salt,
     ITERATIONS_BY_VERSION[version],
   );
-  const ok = timingSafeEqual(candidate, cred.hash);
-  if (ok) {
-    if (version < LATEST_CRED_VERSION) {
-      await migrateCredIfNeeded(pin, key);
-    } else if (failedSoFar > 0 || cred.lockedUntil !== undefined) {
-      try {
-        await writeCred(
-          { salt: cred.salt, hash: cred.hash, v: LATEST_CRED_VERSION },
-          key,
-        );
-      } catch {
-        // best-effort reset
-      }
-    }
+  if (timingSafeEqual(candidate, cred.hash)) {
+    const migrated =
+      version < LATEST_CRED_VERSION &&
+      (await migrateCredIfNeeded(pin, key, cred));
+    if (!migrated) await resetAttemptState(key, cred);
     return {
       ok: true,
       failed: 0,
@@ -314,25 +419,10 @@ export async function verifyPinAttempt(
       throttled: false,
     };
   }
-  const nextFailed = failedSoFar + 1;
-  const lockedOut = nextFailed >= MAX_FAILED_UNLOCK_ATTEMPTS;
-  const delayMs = lockoutDelayMs(nextFailed);
-  try {
-    await writeCred(
-      withAttemptState(
-        cred,
-        nextFailed,
-        delayMs > 0 ? Date.now() + delayMs : undefined,
-      ),
-      key,
-    );
-  } catch {
-    // best-effort counter persist
-  }
   return {
     ok: false,
     failed: nextFailed,
-    lockedOut,
+    lockedOut: nextFailed >= MAX_FAILED_UNLOCK_ATTEMPTS,
     retryAfterMs: delayMs,
     throttled: false,
   };
@@ -346,16 +436,25 @@ export async function verifyPin(
 }
 
 // Re-derive an already-verified PIN at the current iteration count and
-// persist the upgraded credential. Best-effort: if the write fails we
-// swallow so a transient IDB error never blocks unlock — the next
-// successful verify will retry the migration.
-async function migrateCredIfNeeded(pin: string, key: string): Promise<void> {
+// persist the upgraded credential (fresh record: counter and delay are gone).
+// Best-effort: if the write fails we swallow so a transient IDB error never
+// blocks unlock — the next successful verify will retry the migration.
+// Повертає `false`, коли міграції не відбулось: тоді виклик скидає лічильник.
+// Записуємо лише якщо в сховищі досі той самий хеш (PIN не змінили).
+async function migrateCredIfNeeded(
+  pin: string,
+  key: string,
+  verified: LockCred,
+): Promise<boolean> {
   try {
     const salt = crypto.getRandomValues(new Uint8Array(16));
     const hash = await deriveHash(pin, salt, CURRENT_PBKDF2_ITERATIONS);
+    const current = await loadCred(key);
+    if (!current || !timingSafeEqual(current.hash, verified.hash)) return false;
     await writeCred({ salt, hash, v: LATEST_CRED_VERSION }, key);
+    return true;
   } catch {
-    // ignore
+    return false;
   }
 }
 
