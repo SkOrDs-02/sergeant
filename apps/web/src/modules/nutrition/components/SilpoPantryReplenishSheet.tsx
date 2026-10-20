@@ -17,7 +17,7 @@
 import { useState } from "react";
 import { Sheet } from "@shared/components/ui/Sheet";
 import { Button } from "@shared/components/ui/Button";
-import { ChoiceCheckbox } from "@shared/components/ui/Choice";
+import { ChoiceCheckbox, ChoiceGroup } from "@shared/components/ui/Choice";
 import { SectionHeading } from "@shared/components/ui/SectionHeading";
 import { Money } from "@shared/components/ui/Money";
 import { EmptyState } from "@shared/components/ui/EmptyState";
@@ -235,41 +235,37 @@ export function SilpoPantryReplenishSheet({
           ) : receipts.length === 0 ? (
             <EmptyState compact title={COPY.receiptsEmptyTitle} />
           ) : (
-            <div className="divide-y divide-line border-y border-line">
-              {receipts.map((r) => {
-                const active = r.receiptId === selectedReceiptId;
-                return (
-                  <button
-                    key={r.receiptId}
-                    type="button"
-                    onClick={() => selectReceipt(r.receiptId)}
-                    className={cn(
-                      "w-full flex items-center justify-between gap-3 touch-target py-2.5 hover:bg-line/40 focus-ring transition-colors text-left",
-                      active && "bg-line/60",
-                    )}
-                    aria-pressed={active}
-                  >
-                    <span className="min-w-0 flex items-center gap-2">
+            <ChoiceGroup
+              variant="rows"
+              ariaLabel={COPY.receiptsHeading}
+              className="border-y border-line"
+              value={selectedReceiptId}
+              onChange={selectReceipt}
+              items={receipts.map((r) => ({
+                value: r.receiptId,
+                label: (
+                  <span className="flex items-center justify-between gap-3">
+                    <span className="flex min-w-0 items-center gap-2">
                       {/* Фінансовий запис → Kyiv-час (domain invariants):
                           день чека не має плавати за TZ пристрою. */}
-                      <span className="min-w-0 text-style-body font-semibold text-text truncate">
+                      <span className="min-w-0 truncate text-style-body font-semibold">
                         {formatDateNumeric(new Date(r.purchasedAt), {
                           timeZone: KYIV_TIME_ZONE,
                         })}
                       </span>
                       {r.pantryClaimedCount > 0 && (
-                        <span className="shrink-0 text-style-caption text-muted">
+                        <span className="shrink-0 text-style-caption">
                           {COPY.inPantryChip}
                         </span>
                       )}
                     </span>
-                    <span className="shrink-0 tabular-nums text-style-body font-medium text-text">
+                    <span className="shrink-0 tabular-nums text-style-body font-medium">
                       <Money amount={r.totalKop / 100} kopecks />
                     </span>
-                  </button>
-                );
-              })}
-            </div>
+                  </span>
+                ),
+              }))}
+            />
           )}
         </section>
 
