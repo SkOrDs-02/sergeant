@@ -100,7 +100,7 @@ function RadioList<V extends string>({
 }: RadioListProps<V>) {
   return (
     <div role="radiogroup" aria-label={label} className="space-y-1">
-      <div className="text-style-overline text-subtle">{label}</div>
+      <div className="text-style-label text-muted">{label}</div>
       <div className="divide-y divide-line border-y border-line">
         {items.map((item) => {
           const checked = item.value === value;
@@ -284,7 +284,7 @@ function MyNormBody({ onClose }: { onClose: () => void }) {
         <div className="space-y-2">
           <label
             htmlFor="my-norm-goal-weight"
-            className="block text-style-overline text-subtle"
+            className="block text-style-label text-muted"
           >
             {COPY.goalWeightLabel}
           </label>
@@ -320,7 +320,7 @@ function MyNormBody({ onClose }: { onClose: () => void }) {
       <div className="border-t border-line pt-3" aria-live="polite">
         {explanation ? (
           <>
-            <div className="text-style-overline text-subtle">
+            <div className="text-style-label text-muted">
               {COPY.resultLabel}
             </div>
             <div className="text-style-heading text-text">

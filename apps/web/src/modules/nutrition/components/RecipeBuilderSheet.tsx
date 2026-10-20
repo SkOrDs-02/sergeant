@@ -7,6 +7,7 @@
  * (`computeRecipe*` у nutrition-domain) і зберігається в `macros` на порцію.
  * Працює без входу: рецепт лягає в ту саму книгу, що й AI-рецепти.
  */
+import { cn } from "@shared/lib/ui/cn";
 import { useState } from "react";
 import type { Dispatch, SetStateAction } from "react";
 import {
@@ -17,8 +18,7 @@ import {
 } from "@sergeant/nutrition-domain";
 import type { NullableMacros } from "@sergeant/shared";
 import { Button } from "@shared/components/ui/Button";
-import { Input } from "@shared/components/ui/Input";
-import { SectionHeading } from "@shared/components/ui/SectionHeading";
+import { Input, FIELD_LABEL } from "@shared/components/ui/Input";
 import { Sheet } from "@shared/components/ui/Sheet";
 import { messages } from "@shared/i18n/uk";
 import { NAME_MAX_LEN } from "@shared/lib/text/limits";
@@ -189,9 +189,7 @@ export function RecipeBuilderSheet({
       zIndex={120}
     >
       <div className="mb-3">
-        <SectionHeading as="div" size="xs" className="mb-1">
-          {t.nameLabel}
-        </SectionHeading>
+        <div className={cn(FIELD_LABEL, "mb-1")}>{t.nameLabel}</div>
         <Input
           value={title}
           onChange={(e) => setTitle(e.target.value)}
@@ -259,9 +257,7 @@ export function RecipeBuilderSheet({
 
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
         <div>
-          <SectionHeading as="div" size="xs" className="mb-1">
-            {t.servingsLabel}
-          </SectionHeading>
+          <div className={cn(FIELD_LABEL, "mb-1")}>{t.servingsLabel}</div>
           <Input
             value={servingsRaw}
             onChange={(e) => setServingsRaw(e.target.value)}
@@ -272,9 +268,7 @@ export function RecipeBuilderSheet({
           />
         </div>
         <div>
-          <SectionHeading as="div" size="xs" className="mb-1">
-            {t.cookedLabel}
-          </SectionHeading>
+          <div className={cn(FIELD_LABEL, "mb-1")}>{t.cookedLabel}</div>
           <Input
             value={cookedRaw}
             onChange={(e) => setCookedRaw(e.target.value)}

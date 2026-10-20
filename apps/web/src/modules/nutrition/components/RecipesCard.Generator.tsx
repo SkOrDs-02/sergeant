@@ -73,7 +73,7 @@ export function GeneratorCard({
       <div className="mt-4 grid gap-4">
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
           <div>
-            <div className="text-style-overline text-subtle mb-1">Ціль</div>
+            <div className="text-style-label text-muted mb-1">Ціль</div>
             <select
               aria-label="Ціль"
               value={prefs.goal}
@@ -90,7 +90,7 @@ export function GeneratorCard({
           </div>
           <div className="grid grid-cols-2 gap-3">
             <div>
-              <div className="text-style-overline text-subtle mb-1">Порції</div>
+              <div className="text-style-label text-muted mb-1">Порції</div>
               <Input
                 value={String(prefs.servings)}
                 onChange={(e) => {
@@ -105,7 +105,7 @@ export function GeneratorCard({
               />
             </div>
             <div>
-              <div className="text-style-overline text-subtle mb-1">Хвилин</div>
+              <div className="text-style-label text-muted mb-1">Хвилин</div>
               <Input
                 value={String(prefs.timeMinutes)}
                 onChange={(e) => {
@@ -123,7 +123,7 @@ export function GeneratorCard({
         </div>
 
         <div>
-          <div className="text-style-overline text-subtle mb-1">
+          <div className="text-style-label text-muted mb-1">
             Не використовувати / алергени
           </div>
           <Input
@@ -138,7 +138,7 @@ export function GeneratorCard({
 
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
           <label className="block">
-            <span className="block text-style-overline text-subtle mb-1">
+            <span className="block text-style-label text-muted mb-1">
               Прийом їжі
             </span>
             <select
@@ -224,7 +224,7 @@ export function GeneratorCard({
 
                 {Array.isArray(r.ingredients) && r.ingredients.length > 0 && (
                   <div className="mt-3 text-style-body text-text wrap-break-word">
-                    <div className="text-style-overline text-subtle mb-1">
+                    <div className="text-style-label text-muted mb-1">
                       Інгредієнти
                     </div>
                     {r.ingredients.join(", ")}
@@ -233,7 +233,7 @@ export function GeneratorCard({
 
                 {Array.isArray(r.steps) && r.steps.length > 0 && (
                   <div className="mt-3 text-style-body text-text">
-                    <div className="text-style-overline text-subtle mb-1">
+                    <div className="text-style-label text-muted mb-1">
                       Кроки
                     </div>
                     <ol className="list-decimal pl-5 space-y-1">
@@ -246,7 +246,7 @@ export function GeneratorCard({
 
                 {Array.isArray(r.tips) && r.tips.length > 0 && (
                   <div className="mt-3 text-style-body text-text">
-                    <div className="text-style-overline text-subtle mb-1">
+                    <div className="text-style-label text-muted mb-1">
                       Поради
                     </div>
                     <ul className="list-disc pl-5 space-y-1">
