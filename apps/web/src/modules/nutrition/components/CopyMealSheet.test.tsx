@@ -26,7 +26,7 @@ describe("CopyMealSheet", () => {
     fireEvent.change(screen.getByLabelText("Дата копії"), {
       target: { value: "2026-05-09" },
     });
-    fireEvent.click(screen.getByRole("button", { name: /Вечеря/ }));
+    fireEvent.click(screen.getByRole("radio", { name: /Вечеря/ }));
     fireEvent.click(screen.getByRole("button", { name: "Скопіювати" }));
     expect(onCopy).toHaveBeenCalledWith("2026-05-09", "dinner");
   });

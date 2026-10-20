@@ -18,12 +18,12 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { stepButtonClass } from "./choiceClasses";
 import type { Dispatch, SetStateAction } from "react";
+import { ChoiceGroup } from "@shared/components/ui/Choice";
 import { Icon } from "@shared/components/ui/Icon";
 import { Measure } from "@shared/components/ui/Measure";
 import { WheelPicker } from "@shared/components/ui/WheelPicker";
 import { useCoarsePointer } from "@shared/hooks/useCoarsePointer";
 import { useDecimalDraft } from "@shared/hooks/useDecimalDraft";
-import { cn } from "@shared/lib/ui/cn";
 import { ProductNutrientsRow } from "./ProductNutrientsRow";
 import { ProductThumb } from "./ProductThumb";
 import { macrosForGramsNullable } from "../../lib/foodDb/foodDb";
@@ -36,6 +36,9 @@ import { useWheelGrams } from "./useWheelGrams";
 import { PortionQuantityField, PortionUnitPicker } from "./PortionUnitControls";
 import { pickInitialUnit, readLastUnit } from "./portionUnits";
 import type { PickedFood } from "./FoodPickerSection";
+import { messages } from "@shared/i18n/uk";
+
+const QUICK_GRAMS = ["50", "100", "150", "200"] as const;
 
 /** Ідентичність «цей продукт під цією вагою» для гарда перерахунку. */
 function rescaleKey(food: PickedFood, grams: string): string {
@@ -298,29 +301,19 @@ export function PickedFoodCard({
                 </button>
               </div>
             )}
-            {/* Швидкі порції */}
-            <div className="flex gap-1 flex-wrap">
-              {[50, 100, 150, 200].map((g) => (
-                <button
-                  key={g}
-                  type="button"
-                  onClick={() => setPickedGrams(String(g))}
-                  aria-pressed={Number(pickedGrams) === g}
-                  className={cn(
-                    "h-8 px-2.5 rounded-[7px] border text-style-label tabular-nums focus-ring",
-                    // На coarse pointer степер підмінює `WheelPicker`, а ці
-                    // чіпи лишаються — тобто стають найдрібнішим тапабельним
-                    // контролом картки. 44×44 тут не опційні.
-                    "pointer-coarse:min-h-[44px] pointer-coarse:min-w-[44px] inline-flex items-center justify-center",
-                    Number(pickedGrams) === g
-                      ? "border-text font-semibold text-text"
-                      : "border-line text-muted hover:text-text",
-                  )}
-                >
-                  {g}
-                </button>
-              ))}
-            </div>
+            <ChoiceGroup
+              size="sm"
+              ariaLabel={messages.nutrition.quickPortionsLabel}
+              value={
+                QUICK_GRAMS.find((g) => Number(pickedGrams) === Number(g)) ??
+                null
+              }
+              onChange={setPickedGrams}
+              items={QUICK_GRAMS.map((g) => ({
+                value: g,
+                label: <span className="tabular-nums">{g}</span>,
+              }))}
+            />
           </>
         )}
       </div>

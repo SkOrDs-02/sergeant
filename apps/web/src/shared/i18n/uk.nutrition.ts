@@ -484,6 +484,8 @@ export const nutritionPageMessages = {
     add: "Додати порцію",
   },
 
+  quickPortionsLabel: "Швидка вага, г",
+
   portionUnit: {
     label: "Одиниця",
     grams: "г",

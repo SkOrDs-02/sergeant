@@ -2,11 +2,12 @@
  * Last validated: 2026-10-08
  * Status: Active
  */
-import { useState } from "react";
+import { useId, useState } from "react";
 import { cn } from "@shared/lib/ui/cn";
 import { Button } from "@shared/components/ui/Button";
 import { DateField } from "@shared/components/ui/DateField";
-import { SectionHeading } from "@shared/components/ui/SectionHeading";
+import { ChoiceGroup } from "@shared/components/ui/Choice";
+import { FIELD_LABEL } from "@shared/components/ui/Input";
 import { Sheet } from "@shared/components/ui/Sheet";
 import { todayISODate, type MealTypeId } from "@sergeant/nutrition-domain";
 import { messages } from "@shared/i18n/uk";
@@ -32,6 +33,7 @@ export function CopyMealSheet({
 }: CopyMealSheetProps) {
   const [date, setDate] = useState(() => todayISODate());
   const [target, setTarget] = useState<MealTypeId | null>(null);
+  const mealLabelId = useId();
   if (!mealType) return null;
   const chosen = target ?? mealType;
 
@@ -45,9 +47,7 @@ export function CopyMealSheet({
       zIndex={120}
     >
       <div className="mb-4">
-        <SectionHeading as="div" size="xs" className="mb-1">
-          {copy.dateLabel}
-        </SectionHeading>
+        <div className={cn(FIELD_LABEL, "mb-1")}>{copy.dateLabel}</div>
         <DateField
           value={date}
           onChange={(e) => setDate(e.target.value)}
@@ -55,27 +55,15 @@ export function CopyMealSheet({
         />
       </div>
       <div className="mb-4">
-        <SectionHeading as="div" size="xs" className="mb-2">
+        <div id={mealLabelId} className={cn(FIELD_LABEL, "mb-2")}>
           {copy.mealLabel}
-        </SectionHeading>
-        <div className="flex gap-2 flex-wrap">
-          {MEAL_TYPES.map((mt) => (
-            <button
-              key={mt.id}
-              type="button"
-              aria-pressed={chosen === mt.id}
-              onClick={() => setTarget(mt.id)}
-              className={cn(
-                "text-style-label px-3 py-1.5 min-h-[44px] rounded-lg border border-border-strong focus-ring",
-                chosen === mt.id
-                  ? "bg-line/60 text-text font-semibold"
-                  : "text-muted hover:bg-line/40",
-              )}
-            >
-              {mt.label}
-            </button>
-          ))}
         </div>
+        <ChoiceGroup
+          ariaLabelledBy={mealLabelId}
+          value={chosen}
+          onChange={setTarget}
+          items={MEAL_TYPES.map((mt) => ({ value: mt.id, label: mt.label }))}
+        />
       </div>
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
         <Button
