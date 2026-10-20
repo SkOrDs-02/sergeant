@@ -20,6 +20,7 @@ import pool from "../../../db.js";
 import { callImportScreenshotVision } from "./visionClient.js";
 import { isLikelyOwnTransfer } from "./transferDetect.js";
 import { markDuplicateLikely } from "./duplicateDetect.js";
+import { markMonoMatchLikely } from "./monoMatchDetect.js";
 import { withOccurrenceIndices } from "./rowKey.js";
 import { receiptVisionViaOpenRouter } from "../receipts/visionTransport.js";
 import { resolveCategoryHint } from "./categoryHint.js";
@@ -339,9 +340,15 @@ export default async function screenshotAnalyzeHandler(
   // описи, тож тір-2 хеш його не ловить; трійка дата+сума+напрям — ловить.
   // `occurrenceIndex` – по ВСІХ рядках скріна, не за вибіркою (data-29).
   const indexedRows = withOccurrenceIndices(draft.rows);
+  // Скрін не `mono`-профіль, тож тір-1 на commit-і для нього вимкнено, а збіг з
+  // mono-операцією лише мітка (monoMatchDetect.ts, data-30).
   const rows =
     userId && indexedRows.length > 0
-      ? await markDuplicateLikely(pool, userId, indexedRows)
+      ? await markMonoMatchLikely(
+          pool,
+          userId,
+          await markDuplicateLikely(pool, userId, indexedRows),
+        )
       : indexedRows;
 
   res.status(200).json(

@@ -25,6 +25,7 @@ import {
 import {
   REGRESSION_NOTICE_PCT,
   computeOneRmAging,
+  type OneRmSessionPoint,
 } from "@sergeant/fizruk-domain/domain";
 import { pluralize } from "../../../core/hub/useHubDashboardState";
 import { chartStatusSeries } from "@shared/charts";
@@ -126,13 +127,24 @@ export function Progress({ onNavigate }: ProgressProps) {
     // про СЬОГОДНІ: він міг бути півтора роки тому. Тому поруч тримаємо
     // останню силову сесію вправи і її результат.
     const latest: Record<string, { at: string; best1rm: number }> = {};
+    // Сесії вправи — для режиму повернення після паузи (`logic-04`): без них
+    // орієнтир на борді повертався б до піка після одного легкого підходу.
+    // Точка є для КОЖНОЇ силової сесії, навіть з e1RM = 0 (легка вага на
+    // 12-15 повторів): така сесія закінчує паузу, і без неї сторінка вправи
+    // (`collectStrengthSessionPoints`) та борд розходились би.
+    const sessionsByEx: Record<string, OneRmSessionPoint[]> = {};
+    // Остання силова сесія за БУДЬ-ЯКОГО e1RM — як `lastStrengthAt` у
+    // `computeExerciseBest`: давність для старіння одна на борді й сторінці.
+    const lastStrengthAtByEx: Record<string, string> = {};
     for (const w of workouts || []) {
       for (const it of w.items || []) {
         const exId = it.exerciseId;
         if (!exId || it.type !== "strength") continue;
+        let sessionBest = 0;
         for (const s of it.sets || []) {
           const est = epley1rm(s.weightKg, s.reps);
           if (!est) continue;
+          sessionBest = Math.max(sessionBest, est);
           if (!by[exId] || est > by[exId].best1rm)
             by[exId] = {
               best1rm: est,
@@ -147,6 +159,16 @@ export function Progress({ onNavigate }: ProgressProps) {
             latest[exId] = { at, best1rm: est };
           } else if (at === prevLatest.at && est > prevLatest.best1rm) {
             prevLatest.best1rm = est;
+          }
+        }
+        if (typeof w.startedAt === "string" && w.startedAt.length > 0) {
+          (sessionsByEx[exId] ??= []).push({
+            at: w.startedAt,
+            best1rm: sessionBest,
+          });
+          const prevAt = lastStrengthAtByEx[exId];
+          if (prevAt === undefined || w.startedAt > prevAt) {
+            lastStrengthAtByEx[exId] = w.startedAt;
           }
         }
       }
@@ -166,7 +188,8 @@ export function Progress({ onNavigate }: ProgressProps) {
         const last = latest[id];
         const aging = computeOneRmAging({
           peak1rm: v.best1rm,
-          lastSessionAt: last?.at ?? null,
+          lastSessionAt: lastStrengthAtByEx[id] ?? last?.at ?? null,
+          sessions: sessionsByEx[id],
         });
         const lastBest = last?.best1rm ?? 0;
         return {

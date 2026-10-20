@@ -63,6 +63,7 @@ import {
   SYNC_V2_STREAM_HEARTBEAT_MS,
   SYNC_V2_STREAM_MAX_AGE_MS,
   SYNC_V2_STREAM_MAX_PER_USER,
+  SYNC_V2_STREAM_MAX_WRITABLE_BYTES,
   SYNC_V2_STREAM_REPLAY_LIMIT,
   type SyncV2StreamOp,
 } from "./syncV2Stream.js";
@@ -79,6 +80,12 @@ interface FakeRes {
   writableEnded: boolean;
   flushHeadersCalled: boolean;
   closeListeners: Array<() => void>;
+  drainListeners: Array<() => void>;
+  /** rel-05: що поверне `write()` (false = внутрішній буфер Node переповнено). */
+  writeResult: boolean;
+  /** rel-05: скільки байтів «застрягло» в сокеті; росте на кожен write, якщо `growBy` > 0. */
+  writableLength: number;
+  growBy: number;
 }
 
 interface FakeReq {
@@ -97,6 +104,10 @@ function makeRes(): FakeRes & Response {
     writableEnded: false,
     flushHeadersCalled: false,
     closeListeners: [] as Array<() => void>,
+    drainListeners: [] as Array<() => void>,
+    writeResult: true,
+    writableLength: 0,
+    growBy: 0,
     status(code: number) {
       res.statusCode = code;
       return res;
@@ -110,7 +121,8 @@ function makeRes(): FakeRes & Response {
     },
     write(chunk: string) {
       res.writes.push(chunk);
-      return true;
+      res.writableLength += res.growBy;
+      return res.writeResult;
     },
     end() {
       res.ended = true;
@@ -119,6 +131,7 @@ function makeRes(): FakeRes & Response {
     },
     on(event: string, listener: () => void) {
       if (event === "close") res.closeListeners.push(listener);
+      if (event === "drain") res.drainListeners.push(listener);
       return res;
     },
   };
@@ -588,5 +601,109 @@ describe("syncV2Stream handler — sec-09 session / max-age / per-user cap", () 
     expect(slowRes.writes.some((w) => w.includes("event: op"))).toBe(false);
     expect(closedFrame(slowRes, "evicted")).toBe(true);
     expect(opLogEmitter.listenerCount("user:u1")).toBe(3);
+  });
+});
+
+// ───────────────────────── rel-05: backpressure ─────────────────────────
+
+describe("syncV2Stream handler — rel-05 backpressure", () => {
+  const liveOp = (id: number): SyncV2StreamOp => ({
+    id,
+    table: "routine_entries",
+    op: "insert",
+    row: { id: `r${id}` },
+    client_ts: "2026-05-04T11:00:00.000Z",
+    server_ts: "2026-05-04T11:00:00.250Z",
+    origin_device_id: null,
+  });
+  const closedFrame = (res: FakeRes, reason: string): boolean =>
+    res.writes.some(
+      (w) => w.includes("event: closed") && w.includes(`"reason":"${reason}"`),
+    );
+
+  async function open(userId = "u1"): Promise<{
+    req: FakeReq & Request;
+    res: FakeRes & Response;
+  }> {
+    pool.query.mockResolvedValueOnce({ rows: [] });
+    const req = makeReq({ userId });
+    const res = makeRes();
+    await syncV2Stream(req as Request, res as Response);
+    return { req, res };
+  }
+
+  it("closes a stalled stream (writableLength over the cap) with reason `backpressure` and drops its listener", async () => {
+    const { res } = await open();
+    // Клієнт не читає: кожен кадр лишається в сокеті (write() при цьому true,
+    // тож спрацьовує саме поріг writableLength, а не прапорець drain).
+    res.growBy = SYNC_V2_STREAM_MAX_WRITABLE_BYTES / 2 + 1;
+
+    for (let i = 1; i <= 5 && !res.ended; i++) {
+      notifySyncV2OpsApplied("u1", [liveOp(i)]);
+    }
+
+    expect(res.ended).toBe(true);
+    expect(closedFrame(res, "backpressure")).toBe(true);
+    expect(opLogEmitter.listenerCount("user:u1")).toBe(0);
+
+    // Без фіксу записи накопичувались би далі; тепер після закриття - жодного.
+    const before = res.writes.length;
+    notifySyncV2OpsApplied("u1", [liveOp(99)]);
+    expect(res.writes.length).toBe(before);
+  });
+
+  it("closes when write() returned false and `drain` has not arrived by the next emit", async () => {
+    const { res } = await open();
+    res.writeResult = false;
+
+    notifySyncV2OpsApplied("u1", [liveOp(1)]);
+    expect(res.ended).toBe(false); // перший false ще не вирок
+
+    notifySyncV2OpsApplied("u1", [liveOp(2)]);
+    expect(res.ended).toBe(true);
+    expect(closedFrame(res, "backpressure")).toBe(true);
+    expect(opLogEmitter.listenerCount("user:u1")).toBe(0);
+  });
+
+  it("keeps the stream open when `drain` arrives between emits", async () => {
+    const { res } = await open();
+    res.writeResult = false;
+    notifySyncV2OpsApplied("u1", [liveOp(1)]);
+
+    for (const fn of res.drainListeners) fn();
+    notifySyncV2OpsApplied("u1", [liveOp(2)]);
+
+    expect(res.ended).toBe(false);
+    expect(opLogEmitter.listenerCount("user:u1")).toBe(1);
+    expect(res.writes.some((w) => w.includes("id: 2\n"))).toBe(true);
+  });
+
+  it("does not close a healthy stream on one big batch (false mid-batch, drain is async)", async () => {
+    const { res } = await open();
+    res.writeResult = false;
+
+    notifySyncV2OpsApplied(
+      "u1",
+      Array.from({ length: 50 }, (_, i) => liveOp(i + 1)),
+    );
+
+    expect(res.ended).toBe(false);
+    expect(res.writes.filter((w) => w.includes("event: op")).length).toBe(50);
+  });
+
+  it("serializes each op once and hands the same ready frames to every stream", async () => {
+    const a = await open();
+    const b = await open();
+    const stringify = vi.spyOn(JSON, "stringify");
+
+    notifySyncV2OpsApplied("u1", [liveOp(7)]);
+
+    const opSerializations = stringify.mock.calls.filter(
+      ([v]) => (v as { id?: number } | null)?.id === 7,
+    );
+    stringify.mockRestore();
+    expect(opSerializations).toHaveLength(1);
+    expect(a.res.writes.at(-1)).toBe(b.res.writes.at(-1));
+    expect(a.res.writes.at(-1)).toContain("id: 7\nevent: op\n");
   });
 });
