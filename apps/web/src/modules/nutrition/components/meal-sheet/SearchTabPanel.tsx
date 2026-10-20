@@ -124,7 +124,7 @@ export function SearchTabPanel({
       )}
 
       <Button
-        variant="ghost"
+        variant="text"
         className="w-full min-h-[44px]"
         onClick={() => setMyFoodsOpen(true)}
       >

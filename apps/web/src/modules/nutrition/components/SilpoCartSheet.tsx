@@ -332,7 +332,7 @@ function SuccessView({
       ) : (
         <Button
           type="button"
-          variant="ghost"
+          variant="text"
           size="sm"
           className="min-h-[44px] text-danger-strong hover:text-danger-strong"
           onClick={onClear}

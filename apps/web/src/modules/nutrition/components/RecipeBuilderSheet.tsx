@@ -241,7 +241,7 @@ export function RecipeBuilderSheet({
               </span>
               <Button
                 type="button"
-                variant="ghost"
+                variant="text"
                 size="sm"
                 aria-label={`${t.removeAriaPrefix} ${r.name}`}
                 onClick={() =>

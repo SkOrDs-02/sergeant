@@ -79,7 +79,7 @@ export function BarcodeLookupNotice({
         )}
         <Button
           type="button"
-          variant="ghost"
+          variant="text"
           size="sm"
           onClick={onManualEntry ?? onDismiss}
         >
