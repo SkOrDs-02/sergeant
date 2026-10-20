@@ -2,6 +2,7 @@
  * Last validated: 2026-05-14
  * Status: Active
  */
+import { MorphChevron } from "@shared/components/ui/MorphChevron";
 import { useEffect, useMemo, useRef, useState, type ReactNode } from "react";
 import { Card } from "@shared/components/ui/Card";
 import { Input } from "@shared/components/ui/Input";
@@ -36,8 +37,6 @@ type PantryItemView = Partial<PantryItem> & {
   /** Місце зберігання позиції. Відсутнє лише на легасі-шляху сирого тексту. */
   pantryId?: string;
 };
-
-const DISCLOSE = { open: "Сховати", closed: "Показати" } as const;
 
 interface ItemRowProps {
   item: PantryItemView;
@@ -144,7 +143,7 @@ function ItemRow({
             }
             className="shrink-0 touch-target flex items-center justify-center rounded-lg px-1 text-style-caption text-subtle hover:text-text focus-ring transition-colors"
           >
-            {open ? DISCLOSE.open : DISCLOSE.closed}
+            <MorphChevron open={open} className="text-subtle" />
           </button>
         )}
         <Button
@@ -196,7 +195,7 @@ function CategorySection({
         </SectionHeading>
         <span className="flex shrink-0 items-baseline gap-2 text-style-caption text-subtle">
           <span className="tabular-nums">{items.length}</span>
-          <span>{open ? DISCLOSE.open : DISCLOSE.closed}</span>
+          <MorphChevron open={open} className="text-subtle" />
         </span>
       </button>
       {open && (
@@ -300,9 +299,7 @@ function InventoryCard({
               )
             </span>
           </span>
-          <span className="shrink-0 text-style-caption text-subtle">
-            {mainOpen ? DISCLOSE.open : DISCLOSE.closed}
-          </span>
+          <MorphChevron open={mainOpen} className="text-subtle" />
         </button>
         <Button
           variant="outline"

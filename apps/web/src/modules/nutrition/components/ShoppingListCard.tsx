@@ -2,6 +2,7 @@
  * Last validated: 2026-08-18
  * Status: Active
  */
+import { MorphChevron } from "@shared/components/ui/MorphChevron";
 import { useMemo, useState } from "react";
 import { pluralDays, pluralUa } from "@sergeant/shared";
 import type {
@@ -159,9 +160,7 @@ function AtHomeSection({ items }: AtHomeSectionProps) {
         <span className="text-style-caption text-subtle tabular-nums ml-auto">
           {items.length}
         </span>
-        <span className="text-style-caption text-subtle shrink-0">
-          {open ? "Сховати" : "Показати"}
-        </span>
+        <MorphChevron open={open} className="text-subtle" />
       </button>
       {open && (
         <div className="divide-y divide-line border-t border-line">
