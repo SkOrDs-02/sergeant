@@ -300,7 +300,7 @@ describe("log_measurement", () => {
 // add_program_day
 // ---------------------------------------------------------------------------
 describe("add_program_day", () => {
-  it("happy: adds program day", () => {
+  it("honest refusal: no 'saved' report and no localStorage write", () => {
     const out = call({
       name: "add_program_day",
       input: {
@@ -310,34 +310,9 @@ describe("add_program_day", () => {
       },
     });
     expect(typeof out).toBe("string");
-    expect(out).toContain("Push");
-    expect(out).toContain("1 вправ");
-  });
-
-  it("error: invalid weekday returns error", () => {
-    const out = call({
-      name: "add_program_day",
-      input: { weekday: 10, name: "Bad" },
-    });
-    expect(typeof out).toBe("string");
-    expect(out).toContain("weekday");
-  });
-
-  it("error: empty name returns error", () => {
-    const out = call({
-      name: "add_program_day",
-      input: { weekday: 1, name: "" },
-    });
-    expect(typeof out).toBe("string");
-    expect(out).toContain("назва");
-  });
-
-  it("shape: result is a string", () => {
-    const out = call({
-      name: "add_program_day",
-      input: { weekday: 0, name: "Rest" },
-    });
-    expect(typeof out).toBe("string");
+    expect(out).toMatch(/^Не вдалося/);
+    expect(out).not.toContain("збережено:");
+    expect(localStorage.getItem("fizruk_plan_template_v1")).toBeNull();
   });
 });
 

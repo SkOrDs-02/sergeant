@@ -15,7 +15,6 @@ import {
   startWorkout,
 } from "./fizrukActions/workouts";
 import type {
-  AddProgramDayAction,
   Calculate1rmAction,
   ChatAction,
   ChatActionResult,
@@ -54,7 +53,7 @@ export function handleFizrukAction(
     case "log_measurement":
       return logMeasurement(action as LogMeasurementAction);
     case "add_program_day":
-      return addProgramDay(action as AddProgramDayAction);
+      return addProgramDay();
     case "log_wellbeing":
       return logWellbeing(action as LogWellbeingAction);
     case "suggest_workout":

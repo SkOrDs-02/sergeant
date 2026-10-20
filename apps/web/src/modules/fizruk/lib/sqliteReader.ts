@@ -53,6 +53,14 @@ export interface CachedMonthlyPlanState {
   days: Record<string, { templateId: string }>;
 }
 
+/**
+ * Активна тренувальна програма (singleton `fizruk_programs`). Каталог програм
+ * - це код (`BUILTIN_PROGRAMS`), а не стан користувача: у кеші лише id.
+ */
+export interface CachedProgramsState {
+  activeProgramId: string | null;
+}
+
 export interface CachedWorkoutTemplate {
   id: string;
   name: string;
@@ -92,6 +100,11 @@ export interface SqliteFizrukCache {
    */
   monthlyPlan: CachedMonthlyPlanState | null;
   /**
+   * Singleton `fizruk_programs`. `null` = «рядка ще немає» (програму не
+   * обирали на жодному пристрої, або pull ще не приїхав). data-39.
+   */
+  programs: CachedProgramsState | null;
+  /**
    * Workout templates ordered newest-first by `updatedAt`. Stage 12 /
    * PR #070f-dualwrite. Empty array means «no template rows yet».
    */
@@ -114,6 +127,7 @@ const EMPTY_CACHE: SqliteFizrukCache = {
   measurements: [],
   dailyLog: [],
   monthlyPlan: null,
+  programs: null,
   workoutTemplates: [],
   injuries: [],
   refreshedAt: null,
@@ -343,6 +357,11 @@ interface MonthlyPlanRow {
   [key: string]: unknown;
 }
 
+interface ProgramsRow {
+  active_program_id: string | null;
+  [key: string]: unknown;
+}
+
 interface WorkoutTemplateRow {
   id: string;
   name: string | null;
@@ -397,6 +416,19 @@ function rowToInjury(row: InjuryRow): CachedInjury {
   };
 }
 
+function rowToPrograms(
+  row: ProgramsRow | undefined,
+): CachedProgramsState | null {
+  if (!row) return null;
+  return {
+    activeProgramId:
+      typeof row.active_program_id === "string" &&
+      row.active_program_id.length > 0
+        ? row.active_program_id
+        : null,
+  };
+}
+
 function rowToMonthlyPlan(
   row: MonthlyPlanRow | undefined,
 ): CachedMonthlyPlanState | null {
@@ -441,6 +473,7 @@ export async function refreshFizrukSqliteState(
     measurementRows,
     dailyLogRows,
     monthlyPlanRows,
+    programsRows,
     workoutTemplateRows,
     injuryRows,
   ] = await Promise.all([
@@ -501,6 +534,10 @@ export async function refreshFizrukSqliteState(
       `SELECT data_json FROM fizruk_monthly_plan WHERE user_id = ?`,
       [userId],
     ),
+    client.all<ProgramsRow>(
+      `SELECT active_program_id FROM fizruk_programs WHERE user_id = ?`,
+      [userId],
+    ),
     client.all<WorkoutTemplateRow>(
       `SELECT id, name, exercise_ids_json, groups_json,
               updated_at, last_used_at
@@ -548,6 +585,7 @@ export async function refreshFizrukSqliteState(
   const measurements = measurementRows.map(rowToMeasurement);
   const dailyLog = dailyLogRows.map(rowToDailyLog);
   const monthlyPlan = rowToMonthlyPlan(monthlyPlanRows[0]);
+  const programs = rowToPrograms(programsRows[0]);
   const workoutTemplates = workoutTemplateRows.map(rowToWorkoutTemplate);
   const injuries = injuryRows.map(rowToInjury);
 
@@ -560,6 +598,7 @@ export async function refreshFizrukSqliteState(
     measurements,
     dailyLog,
     monthlyPlan,
+    programs,
     workoutTemplates,
     injuries,
     // eslint-disable-next-line no-restricted-syntax -- cache-freshness stamp: UTC wall-clock instant, not a Kyiv day boundary

@@ -17,6 +17,7 @@ import {
   extractDailyLogSnapshots,
   extractMeasurementSnapshots,
   extractMonthlyPlanSnapshot,
+  extractProgramsSnapshot,
   extractWorkoutSnapshots,
   extractWorkoutTemplateSnapshots,
   peekFizrukDualWriteState,
@@ -39,6 +40,7 @@ describe("EMPTY_FIZRUK_DUAL_WRITE_STATE", () => {
       workoutTemplates: [],
       injuries: [],
       customActivities: [],
+      programs: null,
     });
   });
 });
@@ -342,9 +344,11 @@ describe("peekFizrukDualWriteState", () => {
       measurements: [{ id: "m1", at: "2024-01-01" }],
       dailyLog: [{ id: "d1", at: "2024-01-01" }],
       monthlyPlan: { reminderHour: 8 },
+      programs: { activeProgramId: "ppl" },
       workoutTemplates: [{ id: "t1", name: "T" }],
     });
     const state = peekFizrukDualWriteState();
+    expect(state!.programs).toEqual({ activeProgramId: "ppl" });
     expect(state!.workouts).toHaveLength(1);
     expect(state!.customExercises).toEqual([{ id: "e1" }]);
     expect(state!.measurements).toHaveLength(1);
@@ -363,7 +367,27 @@ describe("peekFizrukDualWriteState", () => {
     const state = peekFizrukDualWriteState();
     expect(state!.dailyLog).toEqual([]);
     expect(state!.monthlyPlan).toBeNull();
+    expect(state!.programs).toBeNull();
     expect(state!.workoutTemplates).toEqual([]);
+  });
+});
+
+describe("extractProgramsSnapshot", () => {
+  it("keeps null (no row yet) distinct from a cleared choice", () => {
+    expect(extractProgramsSnapshot(null)).toBeNull();
+    expect(extractProgramsSnapshot(undefined)).toBeNull();
+    expect(extractProgramsSnapshot({ activeProgramId: null })).toEqual({
+      activeProgramId: null,
+    });
+  });
+
+  it("normalises empty and non-string ids to null", () => {
+    expect(extractProgramsSnapshot({ activeProgramId: "" })).toEqual({
+      activeProgramId: null,
+    });
+    expect(extractProgramsSnapshot({ activeProgramId: "ppl" })).toEqual({
+      activeProgramId: "ppl",
+    });
   });
 });
 

@@ -11,6 +11,8 @@
  *  1. Runs the fizruk SQLite migrations so the tables exist.
  *  2. Performs the initial `refreshFizrukSqliteState()` so the cache
  *     is warm before the first overlay read.
+ *  2a. data-39: `drainLegacyActiveProgram()` переносить LS-значення
+ *     `fizruk_active_program_id_v1` у `fizruk_programs` (одноразово).
  *  3. W1-WEIGHT-SOT стадія 3: `bootstrapBodyWeightFromBiometrics()`
  *     seeds `fizruk_measurements` from `hub_biometrics.weightKg` when
  *     the journal has no weight sample yet. Idempotent; no-ops once a
@@ -37,6 +39,7 @@ import { recordReadFallback } from "../../../core/observability/dualWriteTelemet
 import { getSqliteDb } from "../../../core/db/sqlite.js";
 import { bootstrapBodyWeightFromBiometrics } from "./bodyWeightBootstrap.js";
 import { migrateFizruk } from "./clientMigrate.js";
+import { drainLegacyActiveProgram } from "./legacyActiveProgramDrain.js";
 import { registerRealEntryCounter } from "../../../core/onboarding/realEntryProbe.js";
 import {
   getCachedFizrukSqliteState,
@@ -75,6 +78,10 @@ export async function bootFizrukSqliteReadPath(
     await migrateFizruk(client);
 
     await refreshFizrukSqliteState(client, userId);
+
+    // data-39: вибір програми жив у LS (`fizruk_active_program_id_v1`) - переносимо
+    // в `fizruk_programs`, поки хук ще не прочитав кеш. Самоізольований, не кидає.
+    await drainLegacyActiveProgram(client, userId);
 
     // W1-WEIGHT-SOT стадія 3: seed the journal from the Profile
     // biometrics cache when it has no weight sample yet — see
