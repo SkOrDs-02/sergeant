@@ -1,4 +1,4 @@
-import { useRef, type KeyboardEvent, type ReactNode } from "react";
+import { useId, useRef, type KeyboardEvent, type ReactNode } from "react";
 import { cn } from "@shared/lib/ui/cn";
 import { Icon } from "./Icon";
 
@@ -120,12 +120,15 @@ export function ChoiceCheckbox({
   disabled = false,
   className,
 }: ChoiceCheckboxProps) {
+  const id = useId();
   return (
     <button
       type="button"
       role="checkbox"
       aria-checked={checked}
       aria-label={ariaLabel}
+      aria-labelledby={ariaLabel ? undefined : `${id}-label`}
+      aria-describedby={description ? `${id}-hint` : undefined}
       disabled={disabled}
       onClick={() => onChange(!checked)}
       className={cn(
@@ -144,9 +147,14 @@ export function ChoiceCheckbox({
         {checked ? <Icon name="check" size="xs" strokeWidth={3} /> : null}
       </span>
       <span className="min-w-0 flex-1">
-        <span className="block min-w-0">{label}</span>
+        <span id={`${id}-label`} className="block min-w-0">
+          {label}
+        </span>
         {description ? (
-          <span className="mt-0.5 block min-w-0 text-style-label text-muted">
+          <span
+            id={`${id}-hint`}
+            className="mt-0.5 block min-w-0 text-style-label text-muted"
+          >
             {description}
           </span>
         ) : null}
