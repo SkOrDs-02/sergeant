@@ -166,7 +166,7 @@ gate.mjs, той самий контекст, /finyk + 2 reload (load avg ~7-10)
 
 ### `ux-02` [medium] Системний Back не закриває кастомні оверлеї: виводить з модуля або закриває PWA, губить введене, закриває вкладені рівні разом, а частина оверлеїв лишається висіти над іншим маршрутом
 
-- **Стан:** частково виправлено в гілці claude/fix-ux-02-back-closes-overlays (перша хвиля: `useHistoryDismiss` підключено в ConfirmDialog, DeleteAccountDialog, BarcodeScanner, HabitGlyphPicker, alertdialog MacrosEditor, HubChatHistoryDrawer, HubSearch (закривається лише після зміни адреси, щоб відкат запису не скасував перехід у ще не завантажений лінивий маршрут), оверлей Monobank у FinykApp; лишилось: CommandPalette, KeyboardShortcutsModal, NotificationBell, DropdownMenu, Popover, меню FAB, WorkoutFinishSheets, InputDialog, PdfPreviewModal, CelebrationModal; закриття на зміну `location.key` для оверлеїв зі станом вище маршруту; Ctrl+K з модуля без push на «/»; lint/тест на role=dialog без хука; e2e «sheet → picker → Back»; фантомні записи в самому хуку - ux-74; після переходу з пошуку лишається зайвий запис історії, замінювати його має ux-74)
+- **Стан:** частково виправлено в [#1528](https://github.com/SkOrDs-02/sergeant/pull/1528) (змерджено 2026-10-18) (перша хвиля: `useHistoryDismiss` підключено в ConfirmDialog, DeleteAccountDialog, BarcodeScanner, HabitGlyphPicker, alertdialog MacrosEditor, HubChatHistoryDrawer, HubSearch (закривається лише після зміни адреси, щоб відкат запису не скасував перехід у ще не завантажений лінивий маршрут), оверлей Monobank у FinykApp; лишилось: CommandPalette, KeyboardShortcutsModal, NotificationBell, DropdownMenu, Popover, меню FAB, WorkoutFinishSheets, InputDialog, PdfPreviewModal, CelebrationModal; закриття на зміну `location.key` для оверлеїв зі станом вище маршруту; Ctrl+K з модуля без push на «/»; lint/тест на role=dialog без хука; e2e «sheet → picker → Back»; фантомні записи в самому хуку - ux-74; після переходу з пошуку лишається зайвий запис історії, замінювати його має ux-74)
 - **Перевірка:** підтверджено · **Зусилля:** M · **Область:** web: оверлеї та історія (Back)
 - **Де:** apps/web/src/shared/hooks/useHistoryDismiss.ts; apps/web/src/shared/components/ui/Sheet.tsx:162; Modal.tsx:109; ConfirmDialog.tsx:85-112; apps/web/src/core/hub/search/HubSearch.tsx:63-68; apps/web/src/modules/finyk/FinykApp.tsx:638-645; apps/web/src/modules/nutrition/components/BarcodeScanner.tsx:172; apps/web/src/modules/routine/components/HabitGlyphPicker.tsx:81; nutrition/components/meal-sheet/MacrosEditor.tsx:96-104; apps/web/src/core/app/RootLayout.tsx:349-357; apps/web/src/core/app/ModuleShell.tsx:67-72; apps/web/src/core/app/HubModals.tsx:46
 - **Першопричина:** useHistoryDismiss підключено лише в Sheet і Modal. Близько 15 кастомних оверлеїв не пушать власний запис історії й не закриваються на зміну location: ConfirmDialog, DeleteAccountDialog, HubSearch, CommandPalette, KeyboardShortcutsModal, BarcodeScanner, оверлей Monobank, NotificationBell, DropdownMenu, меню FAB, HabitGlyphPicker, alertdialog у MacrosEditor, HubChatHistoryDrawer, Popover, WorkoutFinishSheets. Частина їхнього стану (searchOpen, pantryScannerOpen, showLoginOverlay) живе вище маршруту.
@@ -482,7 +482,7 @@ grep found no EMAIL_VERIFICATION_REQUIRED handling in apps/web/src or packages/a
 
 ### `ux-07` [medium] Виписка на 1000+ рядків проходить прев'ю, але «Імпортувати» падає з «Некоректні дані запиту»
 
-- **Стан:** частково виправлено в гілці claude/fix-ux-07-import-large-statement (кнопка блокується понад 1000 вибраних рядків з поясненням; клієнтська нарізка на кілька commit-ів лишилась follow-up-ом після data-29)
+- **Стан:** частково виправлено в [#1470](https://github.com/SkOrDs-02/sergeant/pull/1470) (змерджено 2026-10-18) (кнопка блокується понад 1000 вибраних рядків з поясненням; клієнтська нарізка на кілька commit-ів лишилась follow-up-ом після data-29)
 - **Перевірка:** підтверджено · **Зусилля:** M · **Область:** web+shared: Фінік / імпорт виписок
 - **Де:** packages/shared/src/schemas/import.ts:315; apps/server/src/modules/finyk/import/statementPreview.ts (MAX_PREVIEW_DATA_ROWS); apps/web/src/modules/finyk/components/bulkImport/BulkImportSheet.tsx:330-343
 - **Першопричина:** Прев'ю приймає до MAX_PREVIEW_DATA_ROWS=10 000 рядків, а схема commit обмежує rows значенням IMPORT_COMMIT_MAX_ROWS=1000. Коментар у схемі передбачає кілька commit-ів, але BulkImportSheet.handleCommit шле все одним запитом, а кнопка блокується лише тоді, коли не вибрано жодного рядка.
@@ -526,7 +526,7 @@ Live API (v8-v9-api.mjs). Preview of f3-mono-2000.csv returns 200, profile=mono,
 
 ### `ux-08` [medium] Фокус падає на &lt;body&gt; після закриття діалогів і дій: глобальний пошук, створення першої звички, readiness-аркуш, крок аркуша їжі, видалення запису, невдалий вхід
 
-- **Стан:** частково виправлено в гілці claude/fix-ux-08-16-focus-tabs-a11y (лишилось: запасні цілі фокуса для розмонтованих тригерів у HabitQuickCreate, ReadinessSheet, кроці AddMealSheet і видаленні запису; перенесення «Забули пароль?» у DOM)
+- **Стан:** частково виправлено в [#1492](https://github.com/SkOrDs-02/sergeant/pull/1492) (змерджено 2026-10-09) (лишилось: запасні цілі фокуса для розмонтованих тригерів у HabitQuickCreate, ReadinessSheet, кроці AddMealSheet і видаленні запису; перенесення «Забули пароль?» у DOM)
 - **Перевірка:** підтверджено · **Зусилля:** M · **Область:** web: a11y / керування фокусом
 - **Де:** apps/web/src/shared/hooks/useDialogFocusTrap.ts:89-91,195-205; apps/web/src/core/hub/search/HubSearch.tsx:55-58; apps/web/src/core/hub/search/useSearchEngine.ts:85-87; apps/web/src/core/auth/LoginForm.tsx:58-111; apps/web/src/modules/fizruk/pages/Workouts.tsx:472; routine HabitQuickCreate
 - **Першопричина:** useDialogFocusTrap запамʼятовує «попередній фокус» в ефекті, який виконується після власних автофокусів компонента. У HubSearch ефект useSearchEngine фокусує інпут раніше, тож пастка запамʼятовує сам інпут, який потім розмонтовується. Якщо тригер розмонтовано (порожній стан звичок, видалений запис), запасної цілі для фокуса немає. LoginForm на час сабміту робить сфокусовані поля disabled, тож після помилки фокус губиться.
@@ -677,7 +677,7 @@ node <scratch>/agents/browser-crosscut-a11y-keyboard/menus2.mjs desktop; menus4.
 
 ### `ux-10` [medium] Після виходу з акаунта «Назад» лишає порожній екран на «/» із застряглим «Перенаправлення…»
 
-- **Стан:** виправлено в гілці claude/fix-ux-10-logout-back-redirect
+- **Стан:** виправлено в [#1448](https://github.com/SkOrDs-02/sergeant/pull/1448) (змерджено 2026-10-08)
 - **Перевірка:** підтверджено · **Зусилля:** S · **Швидкий виграш** · **Область:** web: auth / навігація
 - **Де:** apps/web/src/core/app/HubPage.tsx:127-128; apps/web/src/core/app/RedirectTo.tsx; apps/web/src/core/app/useAppEffects.ts:108-113; apps/web/src/core/hooks/useHubUIState.ts:88-103
 - **Першопричина:** Для аноніма /?tab=profile одночасно обробляють два механізми. HubPage рендерить RedirectTo(/welcome), а useAppEffects у ту саму мить робить navigate на «/» за застарілим locationRef (replace:false). Уже змонтований RedirectTo з тим самим to свій ефект повторно не запускає, тож на «/» лишається лише sr-only «Перенаправлення…».
@@ -721,7 +721,7 @@ v31-back-loop.mjs: back2+1s і back2+8s → url "/", у DOM лише sr-only «�
 
 ### `ux-11` [medium] Завершене тренування можна видалити лише свайпом на тач-екрані, а мишею чи з клавіатури не можна
 
-- **Стан:** виправлено в гілці claude/fix-data-37-ux-11-fizruk-history
+- **Стан:** виправлено в [#1485](https://github.com/SkOrDs-02/sergeant/pull/1485) (змерджено 2026-10-09)
 - **Перевірка:** підтверджено · **Зусилля:** S · **Швидкий виграш** · **Область:** web: Фізрук / історія
 - **Де:** apps/web/src/modules/fizruk/components/workouts/WorkoutHistoryList.tsx:176-182; apps/web/src/shared/components/ui/SwipeToAction.tsx:259-262; fizruk WorkoutSummaryView.tsx; WorkoutJournalSection.tsx:160
 - **Першопричина:** Єдиний шлях видалення — SwipeToAction.onSwipeLeft у WorkoutHistoryList, а SwipeToAction слухає лише touch-події. WorkoutSummaryView для завершеного тренування має тільки «Назад» і «Повторити», а меню «⋯ Видалити» є лише в активній сесії.
@@ -735,7 +735,7 @@ v31-back-loop.mjs: back2+1s і back2+8s → url "/", у DOM лише sr-only «�
 
 - **ID:** `browser-surfaces/fizruk-flows#7` · **Вердикт:** підтверджено · **Лейн:** Браузер · поверхні · **Категорія:** `a11y`
 - **Уже відстежується:** docs/work/specs/audits/2026-09-16-product-noise-and-navigation.md (таблиця «25 високих знахідок як ліди»: «/fizruk/history — Видалення тренування лише свайпом — недосяжне з клавіатури й миші»)
-- **Де:** apps/web/src/modules/fizruk/components/workouts/WorkoutHistoryList.tsx:176-182 (onSwipeLeft); apps/web/src/shared/components/ui/SwipeToAction.tsx:259-262 (лише onTouch*); WorkoutSummaryView.tsx (лише «Назад» і «Повторити»)
+- **Де:** apps/web/src/modules/fizruk/components/workouts/WorkoutHistoryList.tsx:176-182 (onSwipeLeft); apps/web/src/shared/components/ui/SwipeToAction.tsx:259-262 (лише onTouch\*); WorkoutSummaryView.tsx (лише «Назад» і «Повторити»)
 - **Вплив:** Порушення WCAG 2.1.1 (Keyboard) і 2.5.1 (Pointer Gestures): функція доступна лише через path-based жест. Користувачі десктопу й клавіатури не можуть прибрати помилкові записи, які псують історію, стрік і статистику (див. знахідку про порожнє тренування).
 - **Рекомендація:** Додати явну кнопку чи пункт меню «Видалити» на рядку історії або на сторінці підсумку (з тим самим undo-тостом), доступний з клавіатури; свайп лишити як прискорювач.
 
@@ -811,12 +811,12 @@ vb/05-list-typing.mjs, новий користувач. На старті «Ту
 
 ### `ux-13` [medium] У прийомі, доданому з бази продуктів, на іншому пристрої чи після очищення даних не можна змінити вагу, і він підписаний «Вручну»
 
-- **Стан:** частково виправлено в гілці claude/fix-ux-13-meal-weight-edit (старі рядки `productDb` із ручними КБЖВ, збережені до фіксу, на пристрої без локального продукту отримують масштабоване поле ваги: потрібне рішення власника, див. журнал рішень nutrition.md 2026-10-08)
+- **Стан:** частково виправлено в [#1474](https://github.com/SkOrDs-02/sergeant/pull/1474) (змерджено 2026-10-18) (старі рядки `productDb` із ручними КБЖВ, збережені до фіксу, на пристрої без локального продукту отримують масштабоване поле ваги: потрібне рішення власника, див. журнал рішень nutrition.md 2026-10-08)
 - **Перевірка:** підтверджено · **Зусилля:** M · **Область:** web: Їжа / журнал
 - **Де:** apps/web/src/modules/nutrition/components/meal-sheet/useEditedFoodRehydration.ts; nutrition foodDb (makeFoodProduct, ensureSeedFoods); nutrition_meals.food_id
-- **Першопричина:** Seed-продукти отримують випадковий локальний id food_&lt;uuid&gt; окремо на кожному пристрої. Прийом зберігає цей id без per100, а useEditedFoodRehydration шукає продукт лише в локальній IndexedDB. На іншому пристрої продукт не знаходиться, поля ваги немає, і запис показується як ручний.
+- **Першопричина:** Seed-продукти отримують випадковий локальний id food\_&lt;uuid&gt; окремо на кожному пристрої. Прийом зберігає цей id без per100, а useEditedFoodRehydration шукає продукт лише в локальній IndexedDB. На іншому пристрої продукт не знаходиться, поля ваги немає, і запис показується як ручний.
 - **Вплив:** Фікс, позначений AI-DANGER («порцію страви з продукту змінити неможливо»), працює лише на пристрої, де прийом додали. На іншому телефоні чи ноутбуці або після очищення даних сайту вагу не змінити, а ручна правка КБЖВ лишає запис із macro_source=productDb і невідповідним amount_g.
-- **Що зробити:** Зберігати в записі прийому per100 або стабільний серверний id каталогу (gen_/usda_) замість локального food_&lt;uuid&gt; і відновлювати продукт із нього. Не показувати «Вручну» для productDb-записів.
+- **Що зробити:** Зберігати в записі прийому per100 або стабільний серверний id каталогу (gen*/usda*) замість локального food\_&lt;uuid&gt; і відновлювати продукт із нього. Не показувати «Вручну» для productDb-записів.
 - **Примітка:** Дані не втрачаються: КБЖВ можна правити вручну або вибрати продукт заново.
 
 Знахідок у кластері: 1.
@@ -824,9 +824,9 @@ vb/05-list-typing.mjs, новий користувач. На старті «Ту
 #### [medium] Редагування прийому, доданого з бази продуктів, на іншому пристрої не дає змінити вагу і помилково підписане «Вручну»
 
 - **ID:** `browser-surfaces/nutrition-flows#6` · **Вердикт:** підтверджено · **Лейн:** Браузер · поверхні · **Категорія:** `ux-broken`
-- **Де:** apps/web/src/modules/nutrition/components/meal-sheet/useEditedFoodRehydration.ts (getFoodById з локальної foodDb); nutrition_meals.food_id = 'food_&lt;uuid&gt;' (локальний id)
+- **Де:** apps/web/src/modules/nutrition/components/meal-sheet/useEditedFoodRehydration.ts (getFoodById з локальної foodDb); nutrition*meals.food_id = 'food*&lt;uuid&gt;' (локальний id)
 - **Вплив:** Фікс із AI-DANGER («порцію страви з продукту змінити неможливо») працює лише на пристрої-автора; на телефоні/ноутбуці або після очищення даних сайту порцію змінити не можна, а ручна правка КБЖВ лишає запис позначеним DB з невідповідним amount_g.
-- **Рекомендація:** Зберігати в записі прийому per100 (або серверний id каталогу gen_/usda_ замість локального food_&lt;uuid&gt;) і відновлювати продукт з нього; не показувати підпис «Вручну» для productDb-записів.
+- **Рекомендація:** Зберігати в записі прийому per100 (або серверний id каталогу gen*/usda* замість локального food\_&lt;uuid&gt;) і відновлювати продукт з нього; не показувати підпис «Вручну» для productDb-записів.
 
 **Докази:**
 
@@ -862,14 +862,14 @@ vb/08-edit-device.mjs, новий користувач. Контекст 1, «Я
 - **Першопричина:** Клієнт шле canvas.toDataURL('image/webp') у updateUser({image}), а серверний databaseHooks.user.update.before → sanitizeUserImage навмисно обнуляє будь-який data: URL (після інциденту з 504). Better Auth відповідає {status:true}, і PersonalInfoSection показує toast.success, не перевіривши user.image.
 - **Вплив:** Аватар не працює за побудовою, а користувач отримує хибне підтвердження успіху.
 - **Що зробити:** Поки немає upload-пайплайна (обʼєктне сховище або CDN з коротким URL), сховати завантаження аватара. Як мінімум перевіряти user.image у відповіді й показувати помилку, якщо сервер його обнулив.
-- **Примітка:** Уже згадано в docs/work/specs/audits/_runner-report.md. Сервер у коментарі сам називає це сигналом на UI-фікс. Повноцінний upload-пайплайн — окрема задача розміру L.
+- **Примітка:** Уже згадано в docs/work/specs/audits/\_runner-report.md. Сервер у коментарі сам називає це сигналом на UI-фікс. Повноцінний upload-пайплайн — окрема задача розміру L.
 
 Знахідок у кластері: 1.
 
 #### [medium] Завантаження аватара ніколи не зберігається, хоча UI показує «Аватар оновлено»
 
 - **ID:** `browser-surfaces/hub-shell#6` · **Вердикт:** підтверджено · **Лейн:** Браузер · поверхні · **Категорія:** `ux-broken`
-- **Уже відстежується:** docs/work/specs/audits/_runner-report.md
+- **Уже відстежується:** docs/work/specs/audits/\_runner-report.md
 - **Де:** apps/web/src/core/profile/PersonalInfoSection.tsx:134-147 (updateUser({ image: dataUrl }) → toast.success); apps/web/src/core/profile/avatar.ts:34 (canvas.toDataURL("image/webp")); apps/server/src/auth/sanitizeUserImage.ts:106-111 (data: URL → image=null); apps/server/src/auth.ts:432-447; URL /?tab=profile
 - **Вплив:** Функція аватара повністю не працює, а користувач отримує хибне підтвердження успіху. Сервер навмисно вирізає data: URL (інцидент із 504), але клієнт так і шле base64.
 - **Рекомендація:** Або прибрати/сховати завантаження аватара, доки немає upload-пайплайна (CDN/обʼєктне сховище з URL ≤2 КБ), або реалізувати такий пайплайн. Як мінімум перевіряти відповідь (user.image після update) і показувати помилку, якщо сервер його обнулив.
@@ -947,7 +947,7 @@ v3-paywall.mjs with mocked usage {plan:free, remaining:0}, 1280x900. Trace: keyd
 
 ### `ux-16` [medium] Стрілки на вкладках одразу їх активують: рейок модулів переводить в інший модуль, а вкладка «Скан» відкриває камеру
 
-- **Стан:** частково виправлено в гілці claude/fix-ux-08-16-focus-tabs-a11y (лишилось: перевід рейки з tablist на nav з aria-current; автовідкриття сканера в AddMealSheet при sourceTab===scan)
+- **Стан:** частково виправлено в [#1492](https://github.com/SkOrDs-02/sergeant/pull/1492) (змерджено 2026-10-09) (лишилось: перевід рейки з tablist на nav з aria-current; автовідкриття сканера в AddMealSheet при sourceTab===scan)
 - **Перевірка:** підтверджено · **Зусилля:** S · **Швидкий виграш** · **Область:** web: a11y / вкладки
 - **Де:** apps/web/src/shared/hooks/useTablistArrowKeys.ts:102; apps/web/src/shared/components/layout/ModuleRail.tsx:183-215; apps/web/src/modules/nutrition/components/AddMealSheet.tsx:323-332; apps/web/src/modules/nutrition/components/meal-sheet/SourceTabs.tsx:41-60
 - **Першопричина:** useTablistArrowKeys викликає target.click() на кожну стрілку, тобто вкладки активуються автоматично. Активація вкладки в ModuleRail означає навігацію (openHubModule), а вкладка scan в AddMealSheet сама відкриває модальний сканер. До того ж рейок оголошено як tablist без tabpanel і aria-controls.
@@ -991,7 +991,7 @@ node <scratch>/agents/browser-crosscut-a11y-keyboard/tabs.mjs ; kb-meal2.mjs ; �
 
 ### `ux-17` [medium] Сканер штрих-коду на десктопі й у ландшафті вилазить за верх екрана: заголовок і «Закрити сканер» недосяжні, а помилка камери не оголошується
 
-- **Стан:** виправлено в гілці claude/fix-ux-17-barcode-scanner-viewport
+- **Стан:** виправлено в [#1449](https://github.com/SkOrDs-02/sergeant/pull/1449) (змерджено 2026-10-08)
 - **Перевірка:** підтверджено · **Зусилля:** S · **Швидкий виграш** · **Область:** web: Їжа / сканер штрихкоду
 - **Де:** apps/web/src/modules/nutrition/components/BarcodeScanner.tsx:163-215; apps/web/src/modules/finyk/components/receiptScan/ReceiptScanCameraView.tsx:38-41
 - **Першопричина:** Оверлей BarcodeScanner має класи fixed inset-0 items-end, панель w-full без max-height і overflow, а відео w-full aspect-video. На широкому вʼюпорті панель стає вищою за екран і зсувається вгору. Статус і помилка камери рендеряться як &lt;p&gt; без role і aria-live; так само в ReceiptScanCameraView.
@@ -1037,25 +1037,25 @@ v10.mjs: `1366x768 titleY:-84, xY:-96, panelTop:-117, panelH:885, wheelScrollabl
 
 <a id="ux-18"></a>
 
-### `ux-18` [low] Друга вкладка замінює всі маршрути екраном «Sergeant уже відкрито в іншій вкладці», включно з /reset-password, /verify-email, /legal/*, /status, /sign-in
+### `ux-18` [low] Друга вкладка замінює всі маршрути екраном «Sergeant уже відкрито в іншій вкладці», включно з /reset-password, /verify-email, /legal/\*, /status, /sign-in
 
 - **Стан:** відкрито
 - **Перевірка:** підтверджено · **Зусилля:** S · **Швидкий виграш** · **Область:** web: RootLayout / друга вкладка
 - **Де:** apps/web/src/core/app/RootLayout.tsx:330,480; apps/web/src/core/app/DbBusyScreen.tsx:57-65
 - **Першопричина:** RootLayout рендерить dbBusyElsewhere ? &lt;DbBusyScreen/&gt; : &lt;Outlet/&gt; для будь-якого маршруту. Списку винятків для сторінок, які не читають локальну БД, немає.
 - **Вплив:** Типовий сценарій: застосунок уже відкритий, людина клікає посилання з листа. Нова вкладка замість форми скидання пароля чи результату підтвердження email показує екран зайнятої БД. Юридичні сторінки й /status теж недоступні. «Працювати тут» перезавантажує вкладку й забирає БД у першої.
-- **Що зробити:** Не показувати DbBusyScreen на маршрутах, що не торкаються локальної БД: /reset-password, /verify-email, /legal/*, /status, /pricing, /sign-in, /offline, /500. Це розширений аналог GATE_EXEMPT_PATHS міграційного гейта.
+- **Що зробити:** Не показувати DbBusyScreen на маршрутах, що не торкаються локальної БД: /reset-password, /verify-email, /legal/\*, /status, /pricing, /sign-in, /offline, /500. Це розширений аналог GATE_EXEMPT_PATHS міграційного гейта.
 - **Примітка:** Файндер оцінив medium, верифікатор low: «Працювати тут» розвʼязує ситуацію одним кліком, а сам email підтверджується на сервері ще до показу сторінки. Лишаю low.
 
 Знахідок у кластері: 1.
 
-#### [low] Друга вкладка замінює ВСІ маршрути екраном «Sergeant уже відкрито в іншій вкладці» — включно з /reset-password, /verify-email, /legal/*, /status, /sign-in
+#### [low] Друга вкладка замінює ВСІ маршрути екраном «Sergeant уже відкрито в іншій вкладці» — включно з /reset-password, /verify-email, /legal/\*, /status, /sign-in
 
 - **ID:** `client-static/web-route-guards#2` · **Вердикт:** підтверджено · **Лейн:** Статика клієнта та інфри · **Категорія:** `ux-broken`
 - **Серйозність від шукача:** medium
 - **Де:** apps/web/src/core/app/RootLayout.tsx:330,480; apps/web/src/core/app/DbBusyScreen.tsx:57-65
 - **Вплив:** Типовий сценарій: застосунок відкритий, людина просить скидання пароля/підтвердження email і клікає лінк із листа → нова вкладка показує екран зайнятої БД замість форми скидання/результату верифікації. Юридичні сторінки і /status (публічна сторінка довіри) теж недоступні. «Працювати тут» перезавантажує й відбирає БД у першої вкладки — зайва деструктивна дія заради сторінки без даних.
-- **Рекомендація:** Не блокувати маршрути, що не читають локальну БД: винести /reset-password, /verify-email, /legal/*, /status, /pricing, /sign-in, /offline, /500 з-під `dbBusyElsewhere` (той самий exempt-список, що GATE_EXEMPT_PATHS у міграційному гейті, але ширший).
+- **Рекомендація:** Не блокувати маршрути, що не читають локальну БД: винести /reset-password, /verify-email, /legal/\*, /status, /pricing, /sign-in, /offline, /500 з-під `dbBusyElsewhere` (той самий exempt-список, що GATE_EXEMPT_PATHS у міграційному гейті, але ширший).
 
 **Докази:**
 
@@ -2351,7 +2351,7 @@ Read-only psql: finyk_manual_expenses data_json for «XL-2 Ресторан, в�
 
 <a id="ux-38"></a>
 
-### `ux-38` [low] Видалена власна вправа лишає в шаблоні «висячий» id: редактор показує сирий custom_…, а старт мовчки викидає вправу й суперсет
+### `ux-38` [low] Видалена власна вправа лишає в шаблоні «висячий» id: редактор показує сирий custom\_…, а старт мовчки викидає вправу й суперсет
 
 - **Стан:** відкрито
 - **Перевірка:** підтверджено · **Зусилля:** M · **Область:** web: Фізрук / шаблони
@@ -2362,7 +2362,7 @@ Read-only psql: finyk_manual_expenses data_json for «XL-2 Ресторан, в�
 
 Знахідок у кластері: 1.
 
-#### [low] Видалена своя вправа лишає в шаблоні «висячий» id: у редакторі видно сирий custom_…, на старті вправа й суперсет мовчки випадають, а картка далі пише «3 вправи · 1 суперсет»
+#### [low] Видалена своя вправа лишає в шаблоні «висячий» id: у редакторі видно сирий custom\_…, на старті вправа й суперсет мовчки випадають, а картка далі пише «3 вправи · 1 суперсет»
 
 - **ID:** `browser-surfaces/gap-module-secondary-mutating-flows#9` · **Вердикт:** підтверджено · **Лейн:** Браузер · поверхні · **Категорія:** `ux-broken`
 - **Де:** apps/web/src/modules/fizruk/components/WorkoutTemplatesSection.tsx (byId.get(id) → fallback на id); hooks/useWorkoutsOrchestrator.ts:322-360 (executeTemplateStart фільтрує picks, групи &lt;2 відкидаються, тост лише якщо picks порожні); hooks/useExerciseCatalog.ts:130-140; components/workouts/AddExerciseSheet («Збережеться локально на цьому пристрої»)
@@ -3295,7 +3295,7 @@ v6-slash.mjs: `/sign-in/ 200 -> ["Сторінку не знайдено"]`, `/l
 
 - **ID:** `client-static/web-route-guards#10` · **Вердикт:** підтверджено · **Лейн:** Статика клієнта та інфри · **Категорія:** `ux-broken`
 - **Серйозність від шукача:** low
-- **Де:** apps/web/src/core/app/StandaloneRoutes.tsx:467-505; apps/web/src/core/app/router.tsx:65-133; apps/web/src/modules/*/lib/*Router.ts (parse*Segments)
+- **Де:** apps/web/src/core/app/StandaloneRoutes.tsx:467-505; apps/web/src/core/app/router.tsx:65-133; apps/web/src/modules/*/lib/*Router.ts (parse\*Segments)
 - **Вплив:** Лінки з кінцевим слешем (поширено в email-клієнтах/скорочувачах) ведуть на 404; биті deep-link-и в модулях виглядають «робочими», а помилкові URL розходяться в аналітиці/закладках.
 - **Рекомендація:** Нормалізувати pathname (зрізати кінцевий `/`, lower-case для статичних шляхів) перед `renderStandaloneRoute`; для невідомих підшляхів модулів робити `replace` на канонічний URL (або модульний NotFound), використати `redirectFrom` для канонізації аліасів.
 
@@ -4161,18 +4161,18 @@ v1.mjs: '#12 banner count (logged-in): 1', '#12 /api/me status from page: 200'; 
 - **Стан:** відкрито
 - **Перевірка:** підтверджено · **Зусилля:** S · **Швидкий виграш** · **Область:** web+server: Їжа / пошук продуктів
 - **Де:** apps/web/src/modules/nutrition/components/meal-sheet/FoodPickerSection.tsx; apps/server/src/modules/nutrition/food-search.ts
-- **Першопричина:** Клієнтський seed і серверні generic_foods — той самий корпус, а useFoodSearch і FoodPickerSection не прибирають дублікати. Сервер віддає записи gen_* з source 'usda'. Список рендериться лише тоді, коли є збіги.
+- **Першопричина:** Клієнтський seed і серверні generic*foods — той самий корпус, а useFoodSearch і FoodPickerSection не прибирають дублікати. Сервер віддає записи gen*\* з source 'usda'. Список рендериться лише тоді, коли є збіги.
 - **Вплив:** Список зашумлений повторами, джерело даних підписане неправдиво, а порожній результат виглядає як зависання пошуку.
-- **Що зробити:** Прибирати дублікати за id або нормалізованою назвою. Для gen_* віддавати власне джерело. Показувати «Нічого не знайдено» з переходом до ручного вводу.
+- **Що зробити:** Прибирати дублікати за id або нормалізованою назвою. Для gen\_\* віддавати власне джерело. Показувати «Нічого не знайдено» з переходом до ручного вводу.
 
 Знахідок у кластері: 1.
 
 #### [low] Пошук продуктів: дублікати локальних і серверних збігів, курований корпус підписаний як «USDA», немає стану «нічого не знайдено»
 
 - **ID:** `browser-surfaces/nutrition-flows#11` · **Вердикт:** підтверджено · **Лейн:** Браузер · поверхні · **Категорія:** `ux-broken`
-- **Де:** apps/web/src/modules/nutrition/components/meal-sheet/FoodPickerSection.tsx (offHitGroups без дедупу з foodHits; рендер лише якщо є хіти); apps/server/src/modules/nutrition/food-search.ts (gen_* з source 'usda')
+- **Де:** apps/web/src/modules/nutrition/components/meal-sheet/FoodPickerSection.tsx (offHitGroups без дедупу з foodHits; рендер лише якщо є хіти); apps/server/src/modules/nutrition/food-search.ts (gen\_\* з source 'usda')
 - **Вплив:** Список зашумлений повторами, джерело даних підписане неправдиво, а порожній результат виглядає як зависання пошуку.
-- **Рекомендація:** Дедуп за id/нормалізованою назвою між локальними й серверними хітами; для gen_* віддавати власне джерело; показувати «Нічого не знайдено» з кнопкою переходу до ручного вводу.
+- **Рекомендація:** Дедуп за id/нормалізованою назвою між локальними й серверними хітами; для gen\_\* віддавати власне джерело; показувати «Нічого не знайдено» з кнопкою переходу до ручного вводу.
 
 **Докази:**
 
@@ -4251,7 +4251,7 @@ s47: PNG у полі виписки (accept=.csv,.xls,.xlsx,… обходить
 - **Де:** apps/server/src/modules/mono/connection.ts:47-51,83,298,420-468; apps/server/src/env.ts:334; apps/web/src/core/lib/useModuleRouteLoader.ts:62-80; apps/server/src/modules/mono/privat.ts:51-61
 - **Першопричина:** assertWebhookEnabled кидає NotFoundError лише на connect, disconnect і sync-state, а решта mono-роутів відповідає 200 чи 400. Тож контракт вимкненої інтеграції неоднорідний, і такий 404 не відрізнити від неіснуючого маршруту. useModuleRouteLoader на кожен вхід префетчить sync-state і vapid-public, а CTA підключення не залежить від стану інтеграції. Окремо: GET /api/privat без ключа дає 500 навіть користувачеві без Privat.
 - **Вплив:** Де прапорець вимкнено (preview, self-host, тимчасове вимкнення в проді), кожен вхід у Фінік дає 404 і 503 у консолі та шум у логах, а CTA веде в глухий кут.
-- **Що зробити:** Для вимкненої інтеграції відповідати 200 {status:"unavailable"} або віддавати capability-прапорці (у /api/me чи окремому config-ендпоінті) і ховати CTA. Однаково гейтувати всі /api/mono/*. У privat відповідати 409 PRIVAT_NOT_CONNECTED ще до звернення до key ring. Не префетчити vapid-public, якщо push не налаштовано.
+- **Що зробити:** Для вимкненої інтеграції відповідати 200 {status:"unavailable"} або віддавати capability-прапорці (у /api/me чи окремому config-ендпоінті) і ховати CTA. Однаково гейтувати всі /api/mono/\*. У privat відповідати 409 PRIVAT_NOT_CONNECTED ще до звернення до key ring. Не префетчити vapid-public, якщо push не налаштовано.
 - **Примітка:** Залежить від прод-конфігу: якщо в проді MONO_WEBHOOK_ENABLED=true, користувач без підключення отримує 200 {status:"disconnected"}, і 404 не виникає. Значення в проді аудит не бачив.
 
 Знахідок у кластері: 1.
@@ -4261,7 +4261,7 @@ s47: PNG у полі виписки (accept=.csv,.xls,.xlsx,… обходить
 - **ID:** `api-live/ai-billing-integrations-live#14` · **Вердикт:** підтверджено · **Лейн:** Живе API · **Категорія:** `ux-broken`
 - **Де:** apps/server/src/modules/mono/connection.ts:47-51 (assertWebhookEnabled -&gt; NotFoundError), :420; env.ts:334 (MONO_WEBHOOK_ENABLED за замовчуванням false); apps/web/src/core/lib/useModuleRouteLoader.ts:62-80 (prefetch vapid-public і sync-state); apps/server/src/modules/mono/privat.ts:51-61
 - **Вплив:** На будь-якому середовищі без прапорця (preview, self-host, тимчасово вимкнена інтеграція) кожен вхід у Фінік дає консольні 404/503 і шум у логах, а CTA веде в глухий кут. Клієнт не може відрізнити «інтеграцію вимкнено» від «маршрут не існує».
-- **Рекомендація:** Для вимкненої інтеграції повертати 200 {status:"unavailable"} (або віддавати capability-прапорці в /api/me чи окремому config-ендпоінті) і ховати CTA на клієнті. Однаково гейтувати всі /api/mono/*. У privat перевіряти наявність рядка до key ring і відповідати 409 PRIVAT_NOT_CONNECTED. vapid-public не префетчити, якщо push не налаштовано (кешувати 503 довше за 30 с).
+- **Рекомендація:** Для вимкненої інтеграції повертати 200 {status:"unavailable"} (або віддавати capability-прапорці в /api/me чи окремому config-ендпоінті) і ховати CTA на клієнті. Однаково гейтувати всі /api/mono/\*. У privat перевіряти наявність рядка до key ring і відповідати 409 PRIVAT_NOT_CONNECTED. vapid-public не префетчити, якщо push не налаштовано (кешувати 503 довше за 30 с).
 
 **Докази:**
 
@@ -4477,7 +4477,7 @@ v7.mjs, routine habit sheet: Back -> Forward -> `{hs:'{"sergeantDialog":1}',dial
 - **Стан:** відкрито
 - **Перевірка:** підтверджено · **Зусилля:** S · **Швидкий виграш** · **Область:** web: оновлення service worker
 - **Де:** apps/web/src/core/app/useSWUpdate.ts:196-198; apps/web/src/core/app/RootLayout.tsx:324
-- **Першопричина:** useSWUpdate показує тост при монтуванні, якщо __pwaUpdateReady, а захист від повтору тримає в useRef. На старті авторизованої сесії хук монтується двічі, і новий екземпляр має свіжий ref, тож захист не спрацьовує.
+- **Першопричина:** useSWUpdate показує тост при монтуванні, якщо \_\_pwaUpdateReady, а захист від повтору тримає в useRef. На старті авторизованої сесії хук монтується двічі, і новий екземпляр має свіжий ref, тож захист не спрацьовує.
 - **Вплив:** Це косметика, але на мобільному дубль займає пів екрана над нижньою навігацією.
 - **Що зробити:** Тримати факт показу в модульній змінній або дати тосту стабільний id, щоб дублікати зливались.
 
@@ -4486,7 +4486,7 @@ v7.mjs, routine habit sheet: Back -> Forward -> `{hs:'{"sergeantDialog":1}',dial
 #### [low] Два однакові тости «Доступна нова версія», якщо сторінка стартує з уже waiting-SW
 
 - **ID:** `browser-crosscut/gap-sw-update-new-deploy#8` · **Вердикт:** підтверджено · **Лейн:** Браузер · наскрізне · **Категорія:** `ux-broken`
-- **Де:** apps/web/src/core/app/useSWUpdate.ts:196-198 (show при mount, якщо __pwaUpdateReady) + RootLayout.tsx:324
+- **Де:** apps/web/src/core/app/useSWUpdate.ts:196-198 (show при mount, якщо \_\_pwaUpdateReady) + RootLayout.tsx:324
 - **Вплив:** Косметика, але дубль займає пів екрана на мобільному. Ймовірно, хук монтується двічі при бутстрапі, а ref-захист живе лише в одному екземплярі.
 - **Рекомендація:** Тримати факт «тост показано» в модульній змінній або в `window`, а не в useRef, або давати тосту стабільний id і коалесити.
 
@@ -4689,7 +4689,7 @@ v13.mjs: `200 application/manifest+json "orientation":"portrait"`, `<link rel="m
 - **Де:** apps/web/src/modules/nutrition/components/meal-sheet/ProductThumb.tsx:53-63; apps/web/vercel.json:50-61; apps/web/vite.config.js:122-126
 - **Першопричина:** Прод (vercel.json) і preview віддають Cross-Origin-Embedder-Policy: require-corp, а ProductThumb рендерить &lt;img&gt; з images.openfoodfacts.org без атрибута crossOrigin. OFF не віддає CORP, тож браузер блокує завантаження, а onError тихо підставляє іконку.
 - **Вплив:** Фото продуктів за штрихкодом (рішення власника 2026-09-11) у проді не працюють узагалі, і цього не видно ні користувачу, ні тестам.
-- **Що зробити:** Додати crossOrigin="anonymous" на &lt;img&gt; у ProductThumb (OFF віддає ACAO *) або проксувати картинки через API з Cross-Origin-Resource-Policy: cross-origin. Додати &lt;img&gt; з OFF у COEP-матрицю docs/operations/deploy/vercel.md.
+- **Що зробити:** Додати crossOrigin="anonymous" на &lt;img&gt; у ProductThumb (OFF віддає ACAO \*) або проксувати картинки через API з Cross-Origin-Resource-Policy: cross-origin. Додати &lt;img&gt; з OFF у COEP-матрицю docs/operations/deploy/vercel.md.
 - **Примітка:** Заголовки проду перевірено наживо: app.sergeant.com.ua віддає COEP require-corp. На HEAD атрибута crossOrigin досі немає.
 
 Знахідок у кластері: 1.
@@ -4699,7 +4699,7 @@ v13.mjs: `200 application/manifest+json "orientation":"portrait"`, `<link rel="m
 - **ID:** `client-static/infra-headers-ci-deps#4` · **Вердикт:** підтверджено · **Лейн:** Статика клієнта та інфри · **Категорія:** `ux-broken`
 - **Де:** apps/web/src/modules/nutrition/components/meal-sheet/ProductThumb.tsx:53-62; apps/web/vercel.json:58 (Cross-Origin-Embedder-Policy: require-corp); apps/web/vite.config.js:122-126 (preview має ті самі заголовки)
 - **Вплив:** Фіча U1 (рішення власника 2026-09-11, фото з OFF за штрихкодом) у проді та в preview мертва на 100%. onError тихо підставляє іконку, тож поломку не видно ні користувачу, ні тестам.
-- **Рекомендація:** Додати `crossOrigin="anonymous"` на &lt;img&gt; у ProductThumb: OFF віддає ACAO *, тож CORS-завантаження проходить під COEP. Альтернатива: проксувати картинки через API з `Cross-Origin-Resource-Policy: cross-origin`. Внести &lt;img&gt; з OFF у COEP-матрицю vercel.md.
+- **Рекомендація:** Додати `crossOrigin="anonymous"` на &lt;img&gt; у ProductThumb: OFF віддає ACAO \*, тож CORS-завантаження проходить під COEP. Альтернатива: проксувати картинки через API з `Cross-Origin-Resource-Policy: cross-origin`. Внести &lt;img&gt; з OFF у COEP-матрицю vercel.md.
 
 **Докази:**
 
@@ -4727,19 +4727,19 @@ node <scratch>/agents/client-static-infra-headers-ci-deps/coep2.mjs (локал�
 
 <a id="ux-80"></a>
 
-### `ux-80` [low] Каталог /assistant показує користувачам технічні описи інструментів (dry_run, m_*, recurrence='weekly', Read-only, memory bank)
+### `ux-80` [low] Каталог /assistant показує користувачам технічні описи інструментів (dry*run, m*\*, recurrence='weekly', Read-only, memory bank)
 
 - **Стан:** відкрито
 - **Перевірка:** підтверджено · **Зусилля:** S · **Швидкий виграш** · **Область:** shared: каталог асистента
 - **Де:** packages/shared/src/lib/assistantCatalogue.ts:195,227,399,586,703,775,794,879,962,981,1092,1234,1259; AssistantCataloguePage.tsx:417
 - **Першопричина:** capability.description в assistantCatalogue.ts водночас слугує підказкою для AI і видимим текстом на AssistantCataloguePage, тож внутрішні ідентифікатори й англіцизми потрапляють в інтерфейс.
 - **Вплив:** Каталог виглядає як документація для розробників, усупереч UA-гайду копірайту.
-- **Що зробити:** Розділити поле на description для користувача і технічний aiHint, переписати 13 описів людською мовою за style-guide.uk.md і додати лінт на латиницю, «_» і «=» в description.
+- **Що зробити:** Розділити поле на description для користувача і технічний aiHint, переписати 13 описів людською мовою за style-guide.uk.md і додати лінт на латиницю, «\_» і «=» в description.
 - **Примітка:** Це дублікат відомої знахідки PR-A13 з docs/work/specs/audits/2026-09-13-product-full-review.md (статус «ЧИННА»).
 
 Знахідок у кластері: 1.
 
-#### [low] Каталог /assistant показує користувачам технічні описи інструментів (dry_run, m_*, recurrence='weekly', Read-only, memory bank)
+#### [low] Каталог /assistant показує користувачам технічні описи інструментів (dry*run, m*\*, recurrence='weekly', Read-only, memory bank)
 
 - **ID:** `browser-crosscut/onboarding-ai-billing-ui#13` · **Вердикт:** підтверджено · **Лейн:** Браузер · наскрізне · **Категорія:** `ux-broken`
 - **Уже відстежується:** docs/work/specs/audits/2026-09-13-product-full-review.md
@@ -4864,7 +4864,7 @@ apps/web/src/shared/i18n/uk.crossModuleLink.ts:99-100: коментар `«14 д
 
 <a id="ux-83"></a>
 
-### `ux-83` [info] Невідомі /api/* маршрути повертають HTML-сторінку Express «Cannot GET …» замість JSON-помилки
+### `ux-83` [info] Невідомі /api/\* маршрути повертають HTML-сторінку Express «Cannot GET …» замість JSON-помилки
 
 - **Стан:** відкрито
 - **Перевірка:** підтверджено · **Зусилля:** S · **Швидкий виграш** · **Область:** server: маршрути /api
@@ -4876,7 +4876,7 @@ apps/web/src/shared/i18n/uk.crossModuleLink.ts:99-100: коментар `«14 д
 
 Знахідок у кластері: 1.
 
-#### [info] Невідомі /api/* маршрути повертають HTML-сторінку Express «Cannot GET ...» замість JSON-помилки
+#### [info] Невідомі /api/\* маршрути повертають HTML-сторінку Express «Cannot GET ...» замість JSON-помилки
 
 - **ID:** `server-static/reliability-ops#12` · **Вердикт:** підтверджено · **Лейн:** Статика сервера · **Категорія:** `ux-broken`
 - **Серйозність від шукача:** low
