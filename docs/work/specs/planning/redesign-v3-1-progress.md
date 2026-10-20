@@ -16,7 +16,7 @@
 
 ## PR4 · стан
 
-**Де зупинився:** PR4 закомічено, іде ревʼю design-reviewer: зроблено пп. 1-2 (названі групи, підзаголовок `InsightCard`). Далі: п. 3 hover `ChoiceCheckbox`, п. 4 тест Space, потім ratchet і перезнімання кадрів after. Worktree `D:/Sergeant/.claude/worktrees/agent-a3fa5bdf3bf79960f`, гілка `claude/redesign-v3-1-pr4`, попередній SHA `5546d7146`.
+**Де зупинився:** PR4 закомічено, ревʼю design-reviewer: зроблено пп. 1-4. Далі: typecheck, тести зачеплених файлів, ratchet і перезнімання кадрів after (`hub-settings`, `nutrition`, `nutrition-pantry`). Worktree `D:/Sergeant/.claude/worktrees/agent-a3fa5bdf3bf79960f`, гілка `claude/redesign-v3-1-pr4`, попередній SHA `f906310e6`.
 
 ## PR4 · Їжа
 
@@ -65,6 +65,8 @@
 
 1. **Групи навколо `ChoiceCheckbox`.** Контракт рядка вимагає названу групу: список розбору комори (`aria-labelledby` на «Розібрано N»), кошик Сільпо (`aria-label` «Позиції для кошика») і товари чека (`aria-labelledby` на заголовок) тепер `role="group"`. Тест у `PantryParsePanel.test.tsx`.
 2. **Підзаголовок `InsightCard` чорнилом лише як дія.** У Фініка підзаголовок буває фактом із числами, і жирне чорнило робило дані схожими на кнопку. Новий необовʼязковий прапорець `Insight.subtitleIsAction` / проп `subtitleIsAction`: виставляють лише інсайти Їжі з дією («Додати джерело білка», «План на наступний тиждень»); без нього колишній другий сірий. Тест на обидва стани.
+3. **Hover `ChoiceCheckbox` видно на панелі.** `enabled:hover:bg-panel` зливався з карткою `panel` (Налаштування, аркуші), тепер `bg-panelHi`, як у плитки `ChoiceGroup`; тест на клас.
+4. **Тест Space для мультивибору.** `Choice.test.tsx`: Space на сфокусованій опції ставить і знімає позначку в обох варіантах (`user-event`); Enter лишається, як у нативної кнопки.
 
 ## PR3 · стан
 
