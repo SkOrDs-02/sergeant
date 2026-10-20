@@ -2,7 +2,12 @@
 import { useState } from "react";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { cleanup, fireEvent, render, screen } from "@testing-library/react";
-import { ChoiceGroup, type ChoiceItem, type ChoiceVariant } from "./Choice";
+import {
+  ChoiceCheckbox,
+  ChoiceGroup,
+  type ChoiceItem,
+  type ChoiceVariant,
+} from "./Choice";
 
 const KIND: ChoiceItem<"expense" | "income" | "transfer">[] = [
   { value: "expense", label: "Витрата" },
@@ -203,5 +208,114 @@ describe("ChoiceGroup", () => {
       "aria-disabled",
       "true",
     );
+  });
+});
+
+function MultiControlled({
+  variant,
+  initial = ["expense"],
+  onChange,
+}: {
+  variant?: ChoiceVariant;
+  initial?: string[];
+  onChange?: (v: string[]) => void;
+}) {
+  const [value, setValue] = useState(initial);
+  return (
+    <ChoiceGroup
+      multiple
+      items={[KIND[0]!, KIND[1]!, { ...KIND[2]!, disabled: true }]}
+      value={value}
+      variant={variant}
+      ariaLabel="Типи"
+      onChange={(v) => {
+        setValue(v);
+        onChange?.(v);
+      }}
+    />
+  );
+}
+
+const checkbox = (name: string) => screen.getByRole("checkbox", { name });
+
+describe("ChoiceGroup multiple", () => {
+  it.each<ChoiceVariant>(["tiles", "rows"])(
+    "%s: group + checkbox з aria-checked, позначене заливкою чорнилом",
+    (variant) => {
+      render(<MultiControlled variant={variant} />);
+      expect(screen.getByRole("group", { name: "Типи" })).toBeInTheDocument();
+      expect(screen.queryByRole("radio")).toBeNull();
+      expect(checkbox("Витрата")).toHaveAttribute("aria-checked", "true");
+      expect(checkbox("Надходження")).toHaveAttribute("aria-checked", "false");
+      const fill =
+        variant === "tiles"
+          ? checkbox("Витрата")
+          : checkbox("Витрата").querySelector("[aria-hidden]")!;
+      expect(fill.className).toContain("bg-text");
+      expect(fill.className).toContain("text-bg");
+      const empty =
+        variant === "tiles"
+          ? checkbox("Надходження")
+          : checkbox("Надходження").querySelector("[aria-hidden]")!;
+      expect(empty.className).not.toContain("bg-text");
+    },
+  );
+
+  it("клік додає й знімає значення, вимкнена опція не перемикається", () => {
+    const onChange = vi.fn();
+    render(<MultiControlled variant="rows" onChange={onChange} />);
+    fireEvent.click(checkbox("Надходження"));
+    expect(onChange).toHaveBeenLastCalledWith(["expense", "income"]);
+    expect(checkbox("Надходження")).toHaveAttribute("aria-checked", "true");
+    fireEvent.click(checkbox("Витрата"));
+    expect(onChange).toHaveBeenLastCalledWith(["income"]);
+    expect(checkbox("Переказ")).toBeDisabled();
+  });
+
+  it("кожна опція - своя зупинка Tab, стрілки вибір не міняють", () => {
+    const onChange = vi.fn();
+    render(<MultiControlled onChange={onChange} />);
+    expect(checkbox("Витрата")).not.toHaveAttribute("tabindex", "-1");
+    expect(checkbox("Надходження")).not.toHaveAttribute("tabindex", "-1");
+    fireEvent.keyDown(checkbox("Витрата"), { key: "ArrowRight" });
+    expect(onChange).not.toHaveBeenCalled();
+    expect(checkbox("Витрата").tagName).toBe("BUTTON");
+  });
+});
+
+describe("ChoiceCheckbox", () => {
+  it("перемикає стан, несе опис і aria-checked", () => {
+    const onChange = vi.fn();
+    const { rerender } = render(
+      <ChoiceCheckbox
+        checked={false}
+        onChange={onChange}
+        label="Запамʼятати"
+        description="Для повтору"
+      />,
+    );
+    const box = screen.getByRole("checkbox");
+    expect(box).toHaveAttribute("aria-checked", "false");
+    expect(screen.getByText("Для повтору").className).toContain("text-muted");
+    fireEvent.click(box);
+    expect(onChange).toHaveBeenCalledWith(true);
+    rerender(
+      <ChoiceCheckbox checked onChange={onChange} label="Запамʼятати" />,
+    );
+    expect(screen.getByRole("checkbox")).toHaveAttribute(
+      "aria-checked",
+      "true",
+    );
+    fireEvent.click(screen.getByRole("checkbox"));
+    expect(onChange).toHaveBeenLastCalledWith(false);
+  });
+
+  it("вимкнений не перемикається", () => {
+    const onChange = vi.fn();
+    render(
+      <ChoiceCheckbox checked onChange={onChange} label="Молоко" disabled />,
+    );
+    fireEvent.click(screen.getByRole("checkbox"));
+    expect(onChange).not.toHaveBeenCalled();
   });
 });

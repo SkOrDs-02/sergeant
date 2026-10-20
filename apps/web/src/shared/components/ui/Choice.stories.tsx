@@ -1,6 +1,10 @@
 import { useState } from "react";
 import type { Meta, StoryObj } from "@storybook/react-vite";
-import { ChoiceGroup, type ChoiceGroupProps } from "./Choice";
+import {
+  ChoiceCheckbox,
+  ChoiceGroup,
+  type ChoiceGroupSingleProps,
+} from "./Choice";
 
 /**
  * `ChoiceGroup` - один прийом «обрано» для всіх виборів форм (v3.1):
@@ -17,7 +21,9 @@ export default meta;
 
 type Story = StoryObj<typeof ChoiceGroup>;
 
-function Stateful(props: Omit<ChoiceGroupProps, "value" | "onChange">) {
+function Stateful(
+  props: Omit<ChoiceGroupSingleProps, "value" | "onChange" | "multiple">,
+) {
   const [value, setValue] = useState<string | null>(
     props.items[0]?.value ?? null,
   );
@@ -60,4 +66,48 @@ export const Rows: Story = {
       ]}
     />
   ),
+};
+
+const PRODUCTS = [
+  { value: "milk", label: "Молоко", description: "2 л" },
+  { value: "eggs", label: "Яйця", description: "10 шт" },
+  { value: "bread", label: "Хліб", description: "1 шт" },
+];
+
+function MultiStateful({ variant }: { variant: "tiles" | "rows" }) {
+  const [value, setValue] = useState<string[]>(["milk", "eggs"]);
+  return (
+    <ChoiceGroup
+      multiple
+      variant={variant}
+      ariaLabel="Що додати в комору"
+      items={PRODUCTS}
+      value={value}
+      onChange={setValue}
+    />
+  );
+}
+
+export const MultipleTiles: Story = {
+  render: () => <MultiStateful variant="tiles" />,
+};
+
+export const MultipleRows: Story = {
+  render: () => <MultiStateful variant="rows" />,
+};
+
+function CheckboxStateful() {
+  const [checked, setChecked] = useState(true);
+  return (
+    <ChoiceCheckbox
+      checked={checked}
+      onChange={setChecked}
+      label="Запамʼятати для повтору"
+      description="Зʼявиться в «Повторити» на наступний прийом"
+    />
+  );
+}
+
+export const Checkbox: Story = {
+  render: () => <CheckboxStateful />,
 };
