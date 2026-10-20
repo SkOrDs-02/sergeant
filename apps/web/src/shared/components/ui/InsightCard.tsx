@@ -9,6 +9,9 @@
  * `useInsightDismissal()` hook що зберігає dismissals у localStorage
  * (`sergeant.v2.insights.dismissed`).
  *
+ * v3.1 (інвентар Е3): гліф Сержанта без рамки-боксу, підзаголовок-дія
+ * чорнилом тихого рівня.
+ *
  * Структура (мова H, redesign v3 PR4):
  *   [Title 
  Subtitle (button → activate)] [Сержант (icon-button)] [× (dismiss)]
@@ -234,7 +237,12 @@ export function InsightCard({
         >
           {title}
         </div>
-        <div className="text-style-label truncate text-muted">{subtitle}</div>
+        {/* Підзаголовок - це дія, тож чорнилом і жирним, як тиха кнопка
+            v3.1, а не другим сірим (інвентар Е3); кегль 14 тримає заголовок
+            першим. */}
+        <div className="text-style-label font-semibold truncate text-text">
+          {subtitle}
+        </div>
       </button>
 
       {/* Чип «Спитати Сержанта» — окремий, праворуч перед dismiss (тап по
@@ -263,10 +271,10 @@ export function InsightCard({
             askAiDisabled ? "Ліміт запитів до Сержанта на сьогодні" : undefined
           }
           className={cn(
-            "shrink-0 touch-target inline-flex h-9 w-9 items-center justify-center rounded-[7px] border border-line focus-ring",
+            "shrink-0 touch-target inline-flex h-9 w-9 items-center justify-center rounded-lg focus-ring",
             askAiDisabled
               ? "text-subtle cursor-not-allowed"
-              : "text-text hover:bg-line/40",
+              : "text-text hover:bg-panelHi",
           )}
         >
           <Icon name="sergeant" size="sm" strokeWidth={2} aria-hidden />
