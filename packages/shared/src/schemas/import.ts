@@ -97,6 +97,37 @@ const transferLikelySchema = z.boolean().optional();
  * вмикабельним — той самий UX-патерн, що `transferLikely`. */
 const duplicateLikelySchema = z.boolean().optional();
 
+/** Мʼяка мітка «схоже, вже є в mono» (data-30; рішення власника: варіант A).
+ * Тір-1 дедуп на `commit` мовчки скіпає рядок лише для профілю `mono`: у
+ * виписці/скріні іншого банку збіг суми й дати з mono-операцією (кава, проїзд,
+ * переказ) нічого не доводить. Для решти джерел сервер на ПРЕВʼЮ звіряє рядок
+ * з `mono_transaction` (гривневі рахунки без банок, одна mono-операція на
+ * один рядок) і ставить ЛИШЕ `true` (відсутнє поле = збігу немає) — детектор
+ * `monoMatchDetect.ts`; клієнт знімає рядок з вибору за замовчуванням, лишаючи
+ * його видимим і вмикабельним — той самий UX, що `duplicateLikely`. */
+const monoMatchLikelySchema = z.boolean().optional();
+
+/** Верхня межа `occurrenceIndex`: preview віддає до 10 000 рядків, тож
+ * індекс у групі однакових рядків не може бути більшим. Захист від
+ * патологічного клієнта, а не продуктове обмеження. */
+export const IMPORT_OCCURRENCE_INDEX_MAX = 10_000;
+
+/** 0-based порядковий номер рядка серед УСІХ рядків файлу/скріна, що мають
+ * ту саму групу (дата, сума, напрям, нормалізований опис) — тобто серед
+ * рядків превʼю, а не серед тих, які користувач вибрав до коміту (data-29).
+ * Сервер рахує його на превʼю тим самим `groupKey`, що будує id рядка
+ * (`rowKey.ts`), а клієнт повертає його в `commit` без змін.
+ *
+ * ОПЦІЙНЕ в обох напрямках (адитивний контракт): web і server деплояться
+ * окремо, тож старий сервер не віддає поле, а старий клієнт його не шле.
+ * Відсутнє поле на commit = сервер рахує індекс по тілу запиту, як раніше. */
+const occurrenceIndexSchema = z
+  .number()
+  .int()
+  .min(0)
+  .max(IMPORT_OCCURRENCE_INDEX_MAX)
+  .optional();
+
 /**
  * Категорія, яку сервер ЗДОГАДАВСЯ поставити рядку — з власної колонки
  * категорії банку, з MCC або з ключових слів опису
@@ -125,7 +156,9 @@ export const ImportScreenshotRowSchema = z.object({
   confidence: z.number().min(0).max(1),
   transferLikely: transferLikelySchema,
   duplicateLikely: duplicateLikelySchema,
+  monoMatchLikely: monoMatchLikelySchema,
   categoryHint: categoryHintSchema,
+  occurrenceIndex: occurrenceIndexSchema,
 });
 export type ImportScreenshotRow = z.infer<typeof ImportScreenshotRowSchema>;
 
@@ -261,7 +294,9 @@ export const ImportStatementRowSchema = z.object({
   description: z.string().max(IMPORT_DESCRIPTION_MAX_LEN),
   transferLikely: transferLikelySchema,
   duplicateLikely: duplicateLikelySchema,
+  monoMatchLikely: monoMatchLikelySchema,
   categoryHint: categoryHintSchema,
+  occurrenceIndex: occurrenceIndexSchema,
 });
 export type ImportStatementRow = z.infer<typeof ImportStatementRowSchema>;
 
@@ -320,6 +355,9 @@ export const ImportCommitRowSchema = z
      * finyk (`manualIncomeCategories.ts`); сервер зберігає опаково,
      * так само як `ManualExpenseCreateSchema.category`. */
     category: z.string().min(1).max(120),
+    /** Індекс із превʼю (див. `occurrenceIndexSchema`). Є — сервер бере його
+     * в id рядка; немає — рахує по тілу запиту (старий клієнт). */
+    occurrenceIndex: occurrenceIndexSchema,
   })
   .strict();
 export type ImportCommitRow = z.infer<typeof ImportCommitRowSchema>;
@@ -334,9 +372,28 @@ export type ImportCommitRow = z.infer<typeof ImportCommitRowSchema>;
 // реальна потреба.
 export const IMPORT_COMMIT_MAX_ROWS = 1000;
 
+/** Звідки рядки батчу: `mono` / `privat24` (автопрофілі виписки), `custom`
+ * (виписка з ручним мапінгом), `screenshot` (скрін банкінгу). Це `profile` з
+ * відповіді `statement/preview` (без `null`) плюс `screenshot`. Від нього
+ * залежить лише одне: тір-1 дедуп проти `mono_transaction` на `commit`
+ * застосовується ВИКЛЮЧНО для `mono` (data-30). */
+export const IMPORT_COMMIT_PROFILES = [
+  "mono",
+  "privat24",
+  "custom",
+  "screenshot",
+] as const;
+export type ImportCommitProfile = (typeof IMPORT_COMMIT_PROFILES)[number];
+
 export const ImportCommitRequestSchema = z
   .object({
     source: z.enum(IMPORT_SOURCES),
+    /** ОПЦІЙНЕ (адитивний контракт, web і server деплояться окремо). Немає
+     * поля = клієнт до data-30: тір-1 mono-дедуп діє, як і раніше (але вже з
+     * фільтром гривневих рахунків без банок і «споживанням» операції).
+     * `privat24` / `custom` / `screenshot` вимикають автоскіп; це робить
+     * явний `profile`, тому клієнт має його слати. */
+    profile: z.enum(IMPORT_COMMIT_PROFILES).optional(),
     rows: z.array(ImportCommitRowSchema).min(1).max(IMPORT_COMMIT_MAX_ROWS),
   })
   .strict();

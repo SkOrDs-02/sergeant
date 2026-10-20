@@ -74,23 +74,41 @@ function renderSheet(
   customCategories: Parameters<
     typeof BulkImportSheet
   >[0]["customCategories"] = [],
+  initiallyOpen = true,
 ) {
   const storage = makeStorage();
   const onClose = vi.fn();
   const client = new QueryClient({
     defaultOptions: { queries: { retry: false }, mutations: { retry: false } },
   });
-  render(
+  const { rerender } = render(
     <QueryClientProvider client={client}>
       <BulkImportSheet
-        open
+        open={initiallyOpen}
         onClose={onClose}
         storage={storage}
         customCategories={customCategories}
       />
     </QueryClientProvider>,
   );
-  return { storage, onClose };
+  return {
+    storage,
+    onClose,
+    setOpen(open: boolean) {
+      // Re-render through the same provider so closing and reopening exercises
+      // the sheet's real reset effect rather than remounting a fresh instance.
+      rerender(
+        <QueryClientProvider client={client}>
+          <BulkImportSheet
+            open={open}
+            onClose={onClose}
+            storage={storage}
+            customCategories={customCategories}
+          />
+        </QueryClientProvider>,
+      );
+    },
+  };
 }
 
 function fileInputFor(label: RegExp): HTMLInputElement {
@@ -125,6 +143,93 @@ describe("BulkImportSheet — choose stage", () => {
     expect(
       screen.queryByRole("button", { name: /Кілька фото чеків/ }),
     ).not.toBeInTheDocument();
+  });
+
+  it("rejects a non-image screenshot and an empty statement without getting stuck", async () => {
+    renderSheet();
+    fireEvent.click(screen.getByRole("button", { name: /Скрін банкінгу/i }));
+    await act(async () => {
+      fireEvent.change(fileInputFor(/скрін банкінгу/i), {
+        target: {
+          files: [
+            new File(["not an image"], "note.txt", { type: "text/plain" }),
+          ],
+        },
+      });
+    });
+    expect(screen.getByText(/Обери файл зображення/)).toBeInTheDocument();
+    expect(
+      screen.getByRole("button", { name: /Скрін банкінгу/i }),
+    ).toBeInTheDocument();
+
+    await act(async () => {
+      fireEvent.change(fileInputFor(/виписку файлом/i), {
+        target: { files: [new File([], "empty.csv", { type: "text/csv" })] },
+      });
+    });
+    expect(screen.getByText(/Порожній файл/)).toBeInTheDocument();
+    expect(previewImportStatementMock).not.toHaveBeenCalled();
+  });
+
+  it("returns to file selection when the initial statement preview fails", async () => {
+    previewImportStatementMock.mockRejectedValue(new Error("preview failed"));
+    renderSheet();
+    fireEvent.click(screen.getByRole("button", { name: /Виписка файлом/i }));
+
+    await act(async () => {
+      fireEvent.change(fileInputFor(/виписку файлом/i), {
+        target: {
+          files: [new File(["a,b"], "mono.csv", { type: "text/csv" })],
+        },
+      });
+    });
+
+    await waitFor(() =>
+      expect(screen.getByText(/preview failed/)).toBeInTheDocument(),
+    );
+    expect(
+      screen.getByRole("button", { name: /Виписка файлом/i }),
+    ).toBeInTheDocument();
+    expect(screen.queryByRole("status")).not.toBeInTheDocument();
+  });
+
+  it("resets every in-progress stage when closed and opened again", async () => {
+    analyzeImportScreenshotMock.mockResolvedValue({
+      draft: {
+        docType: "bank_screenshot",
+        bank: "mono",
+        rows: [
+          {
+            date: "2026-08-01",
+            amountKopiykas: 100,
+            direction: "expense",
+            description: "RESET-ME",
+            confidence: 1,
+          },
+        ],
+      },
+    });
+    const { setOpen } = renderSheet();
+    await act(async () => {
+      fireEvent.change(fileInputFor(/скрін банкінгу/i), {
+        target: {
+          files: [
+            new File([new Uint8Array(10)], "s.png", { type: "image/png" }),
+          ],
+        },
+      });
+    });
+    await waitFor(() =>
+      expect(screen.getByDisplayValue("RESET-ME")).toBeInTheDocument(),
+    );
+
+    setOpen(false);
+    await act(async () => Promise.resolve());
+    setOpen(true);
+    expect(
+      screen.getByRole("button", { name: /Скрін банкінгу/i }),
+    ).toBeInTheDocument();
+    expect(screen.queryByDisplayValue("RESET-ME")).not.toBeInTheDocument();
   });
 });
 
@@ -378,6 +483,64 @@ describe("BulkImportSheet — screenshot path", () => {
     expect(screen.getByText(/3 операції/)).toBeInTheDocument();
   });
 
+  it("пояснює порожній результат, коли всі транзакції відхилені", async () => {
+    analyzeImportScreenshotMock.mockResolvedValue({
+      draft: {
+        docType: "bank_screenshot",
+        bank: "monobank",
+        rows: [],
+        dropped: { failed: 2, nonUah: 0, unreadable: 0 },
+        truncated: false,
+      },
+    });
+    renderSheet();
+
+    await act(async () => {
+      fireEvent.change(fileInputFor(/скрін банкінгу/i), {
+        target: {
+          files: [
+            new File([new Uint8Array(10)], "s.png", { type: "image/png" }),
+          ],
+        },
+      });
+    });
+
+    await waitFor(() =>
+      expect(
+        screen.getByText(/Усі 2 .*позначені як невдалі/i),
+      ).toBeInTheDocument(),
+    );
+  });
+
+  it("радить новий скрін, коли результати змішані або нечитабельні", async () => {
+    analyzeImportScreenshotMock.mockResolvedValue({
+      draft: {
+        docType: "bank_screenshot",
+        bank: "monobank",
+        rows: [],
+        dropped: { failed: 1, nonUah: 1, unreadable: 0 },
+        truncated: false,
+      },
+    });
+    renderSheet();
+
+    await act(async () => {
+      fireEvent.change(fileInputFor(/скрін банкінгу/i), {
+        target: {
+          files: [
+            new File([new Uint8Array(10)], "s.png", { type: "image/png" }),
+          ],
+        },
+      });
+    });
+
+    await waitFor(() =>
+      expect(
+        screen.getByText(/жодну не вдалось прочитати/i),
+      ).toBeInTheDocument(),
+    );
+  });
+
   it("docType: other shows an unrecognised-screen error", async () => {
     analyzeImportScreenshotMock.mockResolvedValue({
       draft: {
@@ -446,6 +609,47 @@ describe("BulkImportSheet — CSV path", () => {
       expect(screen.getByDisplayValue("АТБ")).toBeInTheDocument(),
     );
     expect(screen.getByText(/не гривня/)).toBeInTheDocument();
+  });
+
+  it("applies bulk and per-row review edits to the selected transaction", async () => {
+    previewImportStatementMock.mockResolvedValue({
+      profile: "mono",
+      needsMapping: false,
+      rows: [
+        {
+          date: "2026-08-01",
+          amountKopiykas: 25000,
+          direction: "expense",
+          description: "АТБ",
+        },
+      ],
+      skipped: [],
+    });
+    renderSheet();
+    await act(async () => {
+      fireEvent.change(fileInputFor(/виписку файлом/i), {
+        target: { files: [new File(["x"], "mono.csv", { type: "text/csv" })] },
+      });
+    });
+    await waitFor(() =>
+      expect(screen.getByDisplayValue("АТБ")).toBeInTheDocument(),
+    );
+
+    fireEvent.click(screen.getByRole("button", { name: "Обрано 1 з 1" }));
+    expect(
+      screen.getByRole("button", { name: "Обрано 0 з 1" }),
+    ).toBeInTheDocument();
+    fireEvent.click(screen.getByRole("button", { name: "Обрано 0 з 1" }));
+    fireEvent.change(screen.getByLabelText("Категорія для вибраних витрат"), {
+      target: { value: "food" },
+    });
+    fireEvent.click(screen.getByRole("button", { name: "Застосувати" }));
+    expect(screen.getByLabelText("Категорія")).toHaveValue("food");
+
+    fireEvent.change(screen.getByLabelText("Опис"), {
+      target: { value: "АТБ біля дому" },
+    });
+    expect(screen.getByDisplayValue("АТБ біля дому")).toBeInTheDocument();
   });
 
   it("показує статус читання виписки, поки превʼю у польоті", async () => {
@@ -622,6 +826,40 @@ describe("BulkImportSheet — commit + undo", () => {
     return helpers;
   }
 
+  it("тіло commit містить лише ключі, які знає чинний .strict() API (вікно «фронт раніше за бекенд»)", async () => {
+    // Старий API відхиляє невідомий ключ верхнього рівня 400-кою (strict), а
+    // превʼю старого сервера повертає `profile`. Тож web не має слати нічого
+    // понад `source` і `rows`, поки бекенд цього не прийняв.
+    commitImportMock.mockResolvedValue({
+      batchId: 9,
+      created: 1,
+      linked: 0,
+      skipped: { monoMatched: 0, duplicate: 0 },
+      rows: [],
+    });
+    getImportBatchMock.mockResolvedValue({
+      batch: {
+        id: 9,
+        source: "bank_statement",
+        status: "completed",
+        rowsTotal: 1,
+        rowsCreated: 1,
+        rowsLinked: 0,
+        rowsSkipped: 0,
+        createdRowIds: ["imp1:aaa"],
+        createdAt: "x",
+        updatedAt: "x",
+      },
+    });
+    await reachBulkReview();
+
+    fireEvent.click(screen.getByRole("button", { name: "Імпортувати" }));
+
+    await waitFor(() => expect(commitImportMock).toHaveBeenCalledTimes(1));
+    const body = commitImportMock.mock.calls[0]?.[0] as Record<string, unknown>;
+    expect(Object.keys(body).sort()).toEqual(["rows", "source"]);
+  });
+
   it("commit shows the created/skipped summary and an undo button", async () => {
     commitImportMock.mockResolvedValue({
       batchId: 9,
@@ -739,6 +977,54 @@ describe("BulkImportSheet — commit + undo", () => {
       screen.queryByRole("button", { name: "Скасувати імпорт" }),
     ).not.toBeInTheDocument();
     expect(screen.getByText(/вже є в mono/)).toBeInTheDocument();
+  });
+
+  it("shows a recoverable error when committing fails", async () => {
+    commitImportMock.mockRejectedValue(new Error("network down"));
+    await reachBulkReview();
+
+    fireEvent.click(screen.getByRole("button", { name: "Імпортувати" }));
+
+    await waitFor(() =>
+      expect(screen.getByText("network down")).toBeInTheDocument(),
+    );
+    expect(screen.getByDisplayValue("АТБ")).toBeInTheDocument();
+  });
+
+  it("keeps the commit summary visible when undo fails", async () => {
+    commitImportMock.mockResolvedValue({
+      batchId: 9,
+      created: 1,
+      linked: 0,
+      skipped: { monoMatched: 0, duplicate: 0 },
+      rows: [],
+    });
+    getImportBatchMock.mockResolvedValue({
+      batch: {
+        id: 9,
+        source: "bank_statement",
+        status: "completed",
+        rowsTotal: 1,
+        rowsCreated: 1,
+        rowsLinked: 0,
+        rowsSkipped: 0,
+        createdRowIds: ["imp1:aaa"],
+        createdAt: "x",
+        updatedAt: "x",
+      },
+    });
+    deleteImportBatchMock.mockRejectedValue(new Error("network down"));
+    await reachBulkReview();
+    fireEvent.click(screen.getByRole("button", { name: "Імпортувати" }));
+    await waitFor(() =>
+      expect(screen.getByText("Створено: 1")).toBeInTheDocument(),
+    );
+    fireEvent.click(screen.getByRole("button", { name: "Скасувати імпорт" }));
+
+    await waitFor(() =>
+      expect(screen.getByText("network down")).toBeInTheDocument(),
+    );
+    expect(screen.getByText("Створено: 1")).toBeInTheDocument();
   });
 });
 

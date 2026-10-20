@@ -17,6 +17,10 @@ import type { ImportDirection } from "@sergeant/shared";
  * легітимно однакові платежі в один день лишаються ДВОМА різними id
  * завдяки `occurrenceIndex` (порядковий номер рядка всередині своєї групи,
  * у порядку появи у вхідному масиві — стабільно, без пере-сортування).
+ *
+ * Індекс видає превʼю по ВСІХ рядках файлу (`withOccurrenceIndices`), а
+ * commit бере його з рядка (data-29): інакше індекс залежав би від того, які
+ * рядки групи користувач вибрав, і друга покупка отримувала б 0.
  */
 
 const SOURCE_FAMILY = "bank";
@@ -92,17 +96,73 @@ export function buildImportRowId(input: ImportRowKeyInput): string {
   return ROW_ID_PREFIX + createHash("sha256").update(preimage).digest("hex");
 }
 
+/** Рядок, що може нести `occurrenceIndex`, виданий превʼю (data-29). */
+export interface ImportRowIdInput extends RowKeyFields {
+  occurrenceIndex?: number | undefined;
+}
+
 /**
- * Зручний одноразовий виклик для `commit.ts`: рахує `occurrenceIndex` для
- * ВСЬОГО батчу за один прохід (стабільно відносно порядку `rows` у самому
- * HTTP-тілі запиту), потім будує id для кожного рядка в тому самому
- * порядку. Повертає масив id тієї самої довжини й порядку, що `rows`.
+ * Додає `occurrenceIndex` кожному рядку ПОВНОГО набору (усі рядки файлу чи
+ * скріна, а не вибрана підмножина) – для превʼю. Клієнт повертає індекс у
+ * `commit` без змін, тож id рядка не залежить від того, які саме рядки групи
+ * користувач вибрав (data-29: єдиний вибраний рядок групи отримував 0 і
+ * збігався з уже імпортованою першою покупкою).
+ *
+ * Групування те саме, що в `computeOccurrenceIndices` / `groupKey`, тож для
+ * commit усього файлу цілком id не змінюються відносно рахунку по тілу.
+ */
+export function withOccurrenceIndices<T extends RowKeyFields>(
+  rows: ReadonlyArray<T>,
+): Array<T & { occurrenceIndex: number }> {
+  const indices = computeOccurrenceIndices(rows);
+  return rows.map((row, idx) => ({
+    ...row,
+    occurrenceIndex: indices[idx] ?? 0,
+  }));
+}
+
+/**
+ * Індекси для commit: рядок із `occurrenceIndex` (з превʼю) бере його як є;
+ * рядок без нього (старий клієнт, відредагований у review рядок) отримує
+ * найменший ще НЕ зайнятий індекс своєї групи в цьому тілі. Пропуск зайнятих
+ * потрібен, щоб рядок без індексу не збігся з id рядка, який несе явний
+ * індекс (напр. відредагований опис злив два рядки в одну групу). Коли жоден
+ * рядок індексу не має, результат дорівнює `computeOccurrenceIndices`.
+ */
+function resolveOccurrenceIndices(
+  rows: ReadonlyArray<ImportRowIdInput>,
+): number[] {
+  const taken = new Map<string, Set<number>>();
+  for (const row of rows) {
+    if (row.occurrenceIndex === undefined) continue;
+    const key = groupKey(row);
+    const set = taken.get(key) ?? new Set<number>();
+    set.add(row.occurrenceIndex);
+    taken.set(key, set);
+  }
+  const next = new Map<string, number>();
+  return rows.map((row) => {
+    if (row.occurrenceIndex !== undefined) return row.occurrenceIndex;
+    const key = groupKey(row);
+    const used = taken.get(key);
+    let idx = next.get(key) ?? 0;
+    while (used?.has(idx)) idx += 1;
+    next.set(key, idx + 1);
+    return idx;
+  });
+}
+
+/**
+ * Зручний одноразовий виклик для `commit.ts`: визначає `occurrenceIndex` для
+ * ВСЬОГО батчу за один прохід (явний індекс із превʼю, а за його відсутності
+ * – порядок появи в HTTP-тілі), потім будує id для кожного рядка в тому
+ * самому порядку. Повертає масив id тієї самої довжини й порядку, що `rows`.
  */
 export function assignImportRowIds(
   userId: string,
-  rows: ReadonlyArray<RowKeyFields>,
+  rows: ReadonlyArray<ImportRowIdInput>,
 ): string[] {
-  const occurrenceIndices = computeOccurrenceIndices(rows);
+  const occurrenceIndices = resolveOccurrenceIndices(rows);
   return rows.map((row, idx) =>
     buildImportRowId({
       userId,

@@ -86,6 +86,7 @@ describe("statementPreviewHandler — mono autoprofile", () => {
         amountKopiykas: 84750,
         direction: "expense",
         description: "Сільпо",
+        occurrenceIndex: 0,
         categoryHint: "food",
       },
       {
@@ -93,6 +94,7 @@ describe("statementPreviewHandler — mono autoprofile", () => {
         amountKopiykas: 1500000,
         direction: "income",
         description: "Зарплата",
+        occurrenceIndex: 0,
         categoryHint: "salary",
       },
     ]);
@@ -241,6 +243,7 @@ describe("statementPreviewHandler — privat24 autoprofile", () => {
         amountKopiykas: 50000,
         direction: "expense",
         description: "АТБ",
+        occurrenceIndex: 0,
         categoryHint: "food",
       },
     ]);
@@ -313,12 +316,14 @@ describe("statementPreviewHandler — невідомий формат", () => {
       amountKopiykas: 10000,
       direction: "expense",
       description: "Кава",
+      occurrenceIndex: 0,
     });
     expect(body.rows[1]).toEqual({
       date: "2026-01-16",
       amountKopiykas: 5025,
       direction: "income",
       description: "Повернення",
+      occurrenceIndex: 0,
       categoryHint: "refund",
     });
   });
@@ -603,6 +608,118 @@ describe("statementPreviewHandler — «сітка 2» дедуп-превʼю (
   });
 });
 
+describe("statementPreviewHandler — мʼяка мітка «схоже, є в mono» (monoMatchLikely, data-30)", () => {
+  /** Дедуп-сітка нічого не знаходить; запит до `mono_transaction` віддає пару
+   * для першого рядка. */
+  function mockMonoPairs(pairs: Array<{ ord: string; mono_tx_id: string }>) {
+    dbMocks.query.mockImplementation(async (sql: string) => ({
+      rows: sql.includes("FROM unnest") ? pairs : [],
+    }));
+  }
+
+  const monoSqlCalls = () =>
+    dbMocks.query.mock.calls.filter((c) =>
+      String(c[0]).includes("mono_transaction"),
+    );
+
+  it("профіль Privat24: збіг із mono-операцією дає лише мітку, рядок лишається в превʼю", async () => {
+    mockMonoPairs([{ ord: "1", mono_tx_id: "tx-1" }]);
+    const res = makeRes();
+    await statementPreviewHandler(makeReq({ csv_text: PRIVAT24_CSV }), res);
+
+    const body = res.body as {
+      profile: string;
+      rows: Array<{ monoMatchLikely?: boolean }>;
+    };
+    expect(body.profile).toBe("privat24");
+    expect(body.rows[0]?.monoMatchLikely).toBe(true);
+    expect(monoSqlCalls()).toHaveLength(1);
+  });
+
+  it("профіль mono: мітки немає і mono_transaction не опитується (скіп робить commit)", async () => {
+    mockMonoPairs([{ ord: "1", mono_tx_id: "tx-1" }]);
+    const res = makeRes();
+    await statementPreviewHandler(makeReq({ csv_text: MONO_CSV }), res);
+
+    const body = res.body as { rows: Array<{ monoMatchLikely?: boolean }> };
+    expect(body.rows.every((r) => r.monoMatchLikely === undefined)).toBe(true);
+    expect(monoSqlCalls()).toHaveLength(0);
+  });
+
+  it("custom-мапінг: теж мітка, не скіп", async () => {
+    mockMonoPairs([{ ord: "1", mono_tx_id: "tx-1" }]);
+    const csv = "Дата,Сума,Опис\n15.01.2026,-95.00,АТБ\n";
+    const res = makeRes();
+    await statementPreviewHandler(
+      makeReq({
+        csv_text: csv,
+        mapping: {
+          dateCol: "Дата",
+          amountCol: "Сума",
+          descriptionCol: "Опис",
+          dateFormat: "DD.MM.YYYY",
+          decimalComma: false,
+        },
+      }),
+      res,
+    );
+    const body = res.body as {
+      profile: string;
+      rows: Array<{ monoMatchLikely?: boolean }>;
+    };
+    expect(body.profile).toBe("custom");
+    expect(body.rows[0]?.monoMatchLikely).toBe(true);
+  });
+});
+
+describe("statementPreviewHandler — occurrenceIndex по всіх рядках файлу (data-29)", () => {
+  const HEADER =
+    "Дата i час операції,Деталі операції,МСС,Сума в валюті картки (UAH),Сума в валюті операції,Валюта операції,Курс обміну,Сума комісій (UAH),Сума кешбеку (UAH),Залишок після операції";
+
+  it("однакові покупки одного дня нумеруються 0,1,2 у порядку файлу, інші групи незалежні", async () => {
+    const csv = [
+      HEADER,
+      "16.07.2026 09:10:00,Кава,5814,-95.00,-95.00,UAH,1,0.00,0.00,1000.00",
+      "16.07.2026 09:20:00,Метро,4111,-8.00,-8.00,UAH,1,0.00,0.00,992.00",
+      "16.07.2026 12:10:00,  кава ,5814,-95.00,-95.00,UAH,1,0.00,0.00,897.00",
+      "17.07.2026 09:10:00,Кава,5814,-95.00,-95.00,UAH,1,0.00,0.00,802.00",
+      "16.07.2026 18:00:00,Кава,5814,-95.00,-95.00,UAH,1,0.00,0.00,707.00",
+    ].join("\n");
+    const res = makeRes();
+    await statementPreviewHandler(makeReq({ csv_text: csv }), res);
+    const body = res.body as {
+      rows: Array<{ date: string; occurrenceIndex?: number }>;
+    };
+    expect(body.rows.map((r) => [r.date, r.occurrenceIndex])).toEqual([
+      ["2026-07-16", 0],
+      ["2026-07-16", 0],
+      ["2026-07-16", 1],
+      ["2026-07-17", 0],
+      ["2026-07-16", 2],
+    ]);
+  });
+
+  it("індекс не залежить від duplicateLikely: помічена перша кава не зсуває другу", async () => {
+    // Сервер уже має одну збережену каву: перша з двох у файлі отримує
+    // duplicateLikely, друга — ні; обидві зберігають свій індекс у файлі.
+    dbMocks.query.mockResolvedValue({
+      rows: [{ date: "2026-07-16", amount: "95", kind: "expense", count: "1" }],
+    });
+    const csv = [
+      HEADER,
+      "16.07.2026 09:10:00,Кава,5814,-95.00,-95.00,UAH,1,0.00,0.00,1000.00",
+      "16.07.2026 12:10:00,Кава,5814,-95.00,-95.00,UAH,1,0.00,0.00,905.00",
+    ].join("\n");
+    const res = makeRes();
+    await statementPreviewHandler(makeReq({ csv_text: csv }), res);
+    const body = res.body as {
+      rows: Array<{ duplicateLikely?: boolean; occurrenceIndex?: number }>;
+    };
+    expect(body.rows.map((r) => r.duplicateLikely)).toEqual([true, undefined]);
+    expect(body.rows.map((r) => r.occurrenceIndex)).toEqual([0, 1]);
+  });
+});
+
 // ─────────────── Файлова гілка контракту (`file_base64`) ────────────────
 // Спека Фази 2 приймала лише `csv_text`, і Privat24 — банк, який віддає
 // виписку таблицею, — не імпортувався взагалі. Тести нижче ганяють ту саму
@@ -680,6 +797,7 @@ describe("statement/preview — файл замість тексту", () => {
         amountKopiykas: 12345,
         direction: "expense",
         description: "АТБ-Маркет",
+        occurrenceIndex: 0,
         categoryHint: "food",
       },
       {
@@ -687,6 +805,7 @@ describe("statement/preview — файл замість тексту", () => {
         amountKopiykas: 2_000_000,
         direction: "income",
         description: "Зарплата",
+        occurrenceIndex: 0,
         categoryHint: "salary",
       },
     ]);
@@ -760,6 +879,7 @@ describe("statement/preview — файл замість тексту", () => {
         amountKopiykas: 7550,
         direction: "expense",
         description: "Coffee",
+        occurrenceIndex: 0,
       },
     ]);
   });
@@ -906,6 +1026,7 @@ describe("statement/preview — Privat24 за реальними заголов�
         amountKopiykas: 74784,
         direction: "expense",
         description: "Сільпо",
+        occurrenceIndex: 0,
         // Категорія з ВЛАСНОЇ колонки банку («Супермаркети та продукти»)
         // — найнадійніший шар `categoryHint.ts`.
         categoryHint: "food",
@@ -915,6 +1036,7 @@ describe("statement/preview — Privat24 за реальними заголов�
         amountKopiykas: 136682,
         direction: "expense",
         description: "Apple",
+        occurrenceIndex: 0,
         categoryHint: "subscriptions",
       },
       {
@@ -922,6 +1044,7 @@ describe("statement/preview — Privat24 за реальними заголов�
         amountKopiykas: 2_000_000,
         direction: "income",
         description: "від DMYTRO STAKHOV",
+        occurrenceIndex: 0,
         // «Зарахування переказу» осмисленого чипа доходу не має —
         // сервер мовчить, клієнт лишає свій дефолт.
       },
@@ -930,6 +1053,7 @@ describe("statement/preview — Privat24 за реальними заголов�
         amountKopiykas: 650_800,
         direction: "income",
         description: "Зі своєї картки *1524",
+        occurrenceIndex: 0,
         // Гроші не покидали кишеню — рядок лишається видимим, але без
         // галочки за замовчуванням.
         transferLikely: true,

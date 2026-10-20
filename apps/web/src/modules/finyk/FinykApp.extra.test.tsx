@@ -44,6 +44,10 @@ const storageMock: {
   addManualExpense: ReturnType<typeof vi.fn>;
   editManualExpense: ReturnType<typeof vi.fn>;
   removeManualExpense: ReturnType<typeof vi.fn>;
+  restoreManualExpense: ReturnType<typeof vi.fn>;
+  setSplitTx: ReturnType<typeof vi.fn>;
+  setTxTags: ReturnType<typeof vi.fn>;
+  rememberManualAccount: ReturnType<typeof vi.fn>;
   loadFromUrl: ReturnType<typeof vi.fn>;
 } = {
   showBalance: true,
@@ -52,6 +56,10 @@ const storageMock: {
   addManualExpense: vi.fn(),
   editManualExpense: vi.fn(),
   removeManualExpense: vi.fn(),
+  restoreManualExpense: vi.fn(),
+  setSplitTx: vi.fn(),
+  setTxTags: vi.fn(),
+  rememberManualAccount: vi.fn(),
   loadFromUrl: vi.fn(() => false),
 };
 
@@ -213,11 +221,15 @@ vi.mock("./components/ManualExpenseSheet", () => ({
     onSave,
     onDelete,
     onClose,
+    onSplitChange,
+    onTagsChange,
   }: {
     open: boolean;
-    onSave: (e: { id?: string; category?: string }) => void;
+    onSave: (e: { id?: string; category?: string; account?: string }) => void;
     onDelete: (id: string) => void;
     onClose: () => void;
+    onSplitChange: (id: string, splits: null) => void;
+    onTagsChange: (next: string[]) => void;
   }) =>
     open ? (
       <div data-testid="expense-sheet">
@@ -227,6 +239,27 @@ vi.mock("./components/ManualExpenseSheet", () => ({
           onClick={() => onSave({ category: "other" })}
         >
           save-add
+        </button>
+        <button
+          type="button"
+          data-testid="split-change"
+          onClick={() => onSplitChange("other", null)}
+        >
+          Split
+        </button>
+        <button
+          type="button"
+          data-testid="tags-change"
+          onClick={() => onTagsChange(["tag"])}
+        >
+          Tags
+        </button>
+        <button
+          type="button"
+          data-testid="save-with-account"
+          onClick={() => onSave({ category: "other", account: "cash" })}
+        >
+          Account
         </button>
         <button
           type="button"
@@ -419,6 +452,36 @@ describe("FinykApp (extra) — ManualExpenseSheet onDelete", () => {
       toastMock,
       expect.objectContaining({ msg: "Витрату видалено" }),
     );
+  });
+
+  it("restores the captured income snapshot from the undo action", () => {
+    const income = { id: "exp-1", category: "salary", kind: "income" };
+    storageMock.manualExpenses = [income];
+    render(<FinykApp onOpenAuth={NOOP_AUTH} />);
+    openManualExpense();
+    fireEvent.click(screen.getByTestId("delete-exp"));
+
+    const undo = vi.mocked(showUndoToast).mock.calls.at(-1)?.[1]?.onUndo;
+    expect(undo).toBeTypeOf("function");
+    undo?.();
+    expect(storageMock.restoreManualExpense).toHaveBeenCalledWith(
+      income,
+      undefined,
+    );
+  });
+});
+
+describe("FinykApp (extra) — optional manual expense callbacks", () => {
+  it("stores the chosen account and ignores split or tag edits before an expense is selected", () => {
+    render(<FinykApp onOpenAuth={NOOP_AUTH} />);
+    openManualExpense();
+    fireEvent.click(screen.getByTestId("split-change"));
+    fireEvent.click(screen.getByTestId("tags-change"));
+    fireEvent.click(screen.getByTestId("save-with-account"));
+
+    expect(storageMock.setSplitTx).toHaveBeenCalledWith("other", null);
+    expect(storageMock.setTxTags).not.toHaveBeenCalled();
+    expect(storageMock.rememberManualAccount).toHaveBeenCalledWith("cash");
   });
 });
 

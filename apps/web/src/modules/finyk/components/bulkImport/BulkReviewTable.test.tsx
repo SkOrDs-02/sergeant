@@ -119,6 +119,43 @@ describe("BulkReviewTable", () => {
     expect(screen.getByText(/збігаються датою і сумою/)).toBeInTheDocument();
   });
 
+  it("бейдж «схоже, є в mono» на невибраному monoMatchLikely-рядку + власна підказка (data-30)", () => {
+    const withMono = rows().map((r) =>
+      r.id === "r1" ? { ...r, monoMatchLikely: true, selected: false } : r,
+    );
+    render(
+      <BulkReviewTable
+        rows={withMono}
+        onToggleRow={vi.fn()}
+        onToggleAll={vi.fn()}
+        onBulkCategory={vi.fn()}
+        onEditRow={vi.fn()}
+      />,
+    );
+    expect(screen.getAllByText("схоже, є в mono")).toHaveLength(1);
+    expect(
+      screen.getByText(
+        /збігаються датою і сумою з операцією в підключеному mono/,
+      ),
+    ).toBeInTheDocument();
+  });
+
+  it("бейдж «схоже, є в mono» зникає, щойно рядок вибрано", () => {
+    const withMono = rows().map((r) =>
+      r.id === "r1" ? { ...r, monoMatchLikely: true } : r,
+    );
+    render(
+      <BulkReviewTable
+        rows={withMono}
+        onToggleRow={vi.fn()}
+        onToggleAll={vi.fn()}
+        onBulkCategory={vi.fn()}
+        onEditRow={vi.fn()}
+      />,
+    );
+    expect(screen.queryByText("схоже, є в mono")).not.toBeInTheDocument();
+  });
+
   it("бейдж «схоже, вже є» зникає, щойно рядок вибрано для імпорту", () => {
     // Галочка = людина підтвердила, що це окрема операція.
     const selectedDuplicate = rows().map((r) =>

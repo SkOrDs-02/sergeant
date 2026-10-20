@@ -46,11 +46,14 @@ function makeReq(body: unknown, userId = "u1"): Request {
 
 const NOW = "2026-01-15T12:35:00.000Z";
 
+/** `profile` за замовчуванням `mono`: тір-1 дедуп застосовується лише для нього
+ * (data-30), а решта сценаріїв цього файлу якраз про mono-матч. */
 function commitBody(
   rows: Array<Record<string, unknown>>,
   source = "bank_statement",
+  profile: string | null = "mono",
 ) {
-  return { source, rows };
+  return profile === null ? { source, rows } : { source, profile, rows };
 }
 
 function row(overrides: Record<string, unknown> = {}) {
@@ -129,6 +132,8 @@ function makeFakeClient(
   const query = vi.fn(async (sql: string, params: unknown[] = []) => {
     calls.push({ sql, params });
     if (/^BEGIN|^COMMIT|^ROLLBACK/.test(sql.trim())) return { rows: [] };
+    // data-12: user-lock sync_op_log одразу після BEGIN.
+    if (/pg_advisory_xact_lock/.test(sql)) return { rows: [] };
     if (/INSERT INTO finyk_manual_expenses/.test(sql)) {
       const ids = params[0] as string[];
       const rows = ids.flatMap((id, i) => {
@@ -239,6 +244,14 @@ describe("commitImportHandler — happy path, усі рядки нові", () =>
     expect(body.rows.every((r) => r.id.startsWith("imp1:"))).toBe(true);
     expect(client.calls.some((c) => c.sql.trim() === "COMMIT")).toBe(true);
     expect(client.release).toHaveBeenCalledTimes(1);
+
+    // data-12: user-lock sync_op_log ПЕРШИМ після BEGIN, до INSERT
+    // import_batches (інакше xid імпорту береться раніше за лок).
+    expect(client.calls[0]?.sql.trim()).toBe("BEGIN");
+    expect(client.calls[1]?.sql).toContain(
+      "pg_advisory_xact_lock(hashtext('sync_op_log'), hashtext($1))",
+    );
+    expect(client.calls[1]?.params).toEqual(["u1"]);
   });
 
   it("blob income-рядка несе kind:'income', amount у гривнях (не копійках)", async () => {
@@ -330,6 +343,57 @@ describe("commitImportHandler — mono-дедуп (тір 1)", () => {
         c.sql.includes("INSERT INTO finyk_manual_expenses"),
       ),
     ).toBe(false);
+  });
+
+  it.each(["privat24", "custom", "screenshot"])(
+    "профіль %s: тір-1 НЕ викликається, рядок створюється навіть за збігу суми з mono (data-30)",
+    async (profile) => {
+      mocks.findMonoMatch.mockResolvedValue({ monoTxId: "tx-1" });
+      const client = makeFakeClient();
+      mocks.connect.mockResolvedValue(client);
+
+      const res = makeRes();
+      await commitImportHandler(
+        makeReq(
+          commitBody(
+            [row()],
+            profile === "screenshot" ? "bank_screenshot" : "bank_statement",
+            profile,
+          ),
+        ),
+        res,
+      );
+
+      const body = res.body as {
+        created: number;
+        skipped: { monoMatched: number; duplicate: number };
+        rows: Array<{ status: string }>;
+      };
+      expect(mocks.findMonoMatchedRows).not.toHaveBeenCalled();
+      expect(body.created).toBe(1);
+      expect(body.skipped).toEqual({ monoMatched: 0, duplicate: 0 });
+      expect(body.rows.map((r) => r.status)).toEqual(["created"]);
+    },
+  );
+
+  it("без profile (клієнт до data-30): тір-1 діє, як і раніше", async () => {
+    mocks.findMonoMatchedRows.mockResolvedValue([true]);
+    const client = makeFakeClient();
+    mocks.connect.mockResolvedValue(client);
+
+    const res = makeRes();
+    await commitImportHandler(
+      makeReq(commitBody([row()], "bank_statement", null)),
+      res,
+    );
+
+    const body = res.body as {
+      created: number;
+      skipped: { monoMatched: number };
+    };
+    expect(mocks.findMonoMatchedRows).toHaveBeenCalledTimes(1);
+    expect(body.created).toBe(0);
+    expect(body.skipped.monoMatched).toBe(1);
   });
 
   it("mono-matched для expense передає direction='expense' у батч-матчер", async () => {

@@ -1,6 +1,6 @@
 // @vitest-environment jsdom
 import { describe, it, expect, vi } from "vitest";
-import { render, screen } from "@testing-library/react";
+import { fireEvent, render, screen } from "@testing-library/react";
 import { MonthStrip, MonthStripHint, type MonthStripDay } from "./MonthStrip";
 
 function buildDays(daysInMonth: number, todayKey: string): MonthStripDay[] {
@@ -125,6 +125,29 @@ describe("MonthStrip", () => {
     expect(onOpenDay).toHaveBeenCalledWith("2026-06-12");
   });
 
+  it("moves the roving focus with arrows, Home, and End", () => {
+    render(
+      <MonthStrip
+        days={buildDays(30, todayKey)}
+        todayKey={todayKey}
+        dayBudget={900}
+        showBalance
+        onOpenDay={() => {}}
+      />,
+    );
+    const buttons = screen.getAllByRole("button");
+    const today = buttons[11]!;
+    today.focus();
+    fireEvent.keyDown(today, { key: "ArrowLeft" });
+    expect(buttons[10]).toHaveFocus();
+    fireEvent.keyDown(buttons[10]!, { key: "ArrowDown" });
+    expect(buttons[11]).toHaveFocus();
+    fireEvent.keyDown(buttons[11]!, { key: "Home" });
+    expect(buttons[0]).toHaveFocus();
+    fireEvent.keyDown(buttons[0]!, { key: "End" });
+    expect(buttons[11]).toHaveFocus();
+  });
+
   it("masks the aria-label amounts when showBalance is false", () => {
     const days = buildDays(30, todayKey).map((d, i) => ({
       ...d,
@@ -204,6 +227,14 @@ describe("MonthStripHint", () => {
   it("renders when not suppressed and not dismissed", () => {
     render(<MonthStripHint hasPlan />);
     expect(screen.getByRole("note")).toBeInTheDocument();
+  });
+
+  it("persists dismissal and stays hidden for the rest of the session", () => {
+    const { rerender } = render(<MonthStripHint hasPlan={false} />);
+    fireEvent.click(screen.getByRole("button", { name: "Зрозуміло" }));
+    expect(screen.queryByRole("note")).not.toBeInTheDocument();
+    rerender(<MonthStripHint hasPlan={false} />);
+    expect(screen.queryByRole("note")).not.toBeInTheDocument();
   });
 
   // N-3 (аудит 2026-09-16): один слот навчання на екран - коли `FirstInsightBanner`

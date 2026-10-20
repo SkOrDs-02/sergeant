@@ -20,6 +20,7 @@ import {
 import {
   collectExerciseHistory,
   computeExerciseBest,
+  collectStrengthSessionPoints,
   computeOneRmAgingForSummary,
 } from "@sergeant/fizruk-domain/domain";
 import { Card } from "@shared/components/ui/Card";
@@ -87,9 +88,10 @@ export function Exercise({ exerciseId, onNavigate }: ExerciseProps) {
   const aging = useMemo(
     () =>
       computeOneRmAgingForSummary(best, {
+        sessions: collectStrengthSessionPoints(history),
         injuryClearedAt: latestClearedInjuryAtForExercise(ex, injuryMarks),
       }),
-    [best, ex, injuryMarks],
+    [best, history, ex, injuryMarks],
   );
 
   const suggestedNext = useMemo(

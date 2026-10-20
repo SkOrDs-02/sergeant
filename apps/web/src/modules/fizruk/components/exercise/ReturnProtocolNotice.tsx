@@ -25,15 +25,18 @@ export function ReturnProtocolNotice({ aging }: ReturnProtocolNoticeProps) {
   if (!aging.returnMode) return null;
   const t = messages.fizruk.oneRmAging;
   const injury = aging.returnReason === "injury";
+  // Пауза вже закінчилась (була сесія), але свіжі ваги ще не дійшли до
+  // порога виходу: «останній підхід був давно» тут було б неправдою.
+  const comeback = !injury && !aging.isStale;
 
   return (
     <div className="flex items-start gap-2.5 rounded-panel border border-line bg-panelHi px-4 py-3">
       <div className="min-w-0">
         <p className="text-style-label text-text">
-          {injury ? t.injuryTitle : t.staleTitle}
+          {injury ? t.injuryTitle : comeback ? t.comebackTitle : t.staleTitle}
         </p>
         <p className="text-style-caption text-text">
-          {injury ? t.injuryNote : t.staleNote}
+          {injury ? t.injuryNote : comeback ? t.comebackNote : t.staleNote}
         </p>
         <p className="text-style-caption text-subtle mt-1 tabular-nums">
           {t.referenceLabel}:{" "}

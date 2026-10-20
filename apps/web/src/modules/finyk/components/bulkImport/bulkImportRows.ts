@@ -42,6 +42,19 @@ export interface BulkReviewRow {
    * цей документ (чи період) уже імпортували — знятий з вибору за
    * замовчуванням, але видимий і вмикабельний. */
   duplicateLikely: boolean;
+  /** Рядок з не-mono джерела (Privat24, довільний файл, скрін) збігається
+   * сумою й датою з гривневою операцією підключеного mono
+   * (monoMatchDetect.ts, data-30). Тір-1 автоскіпу на commit-і для такого
+   * джерела немає, тому це лише мітка: знятий з вибору за замовчуванням, але
+   * видимий і вмикабельний. Відсутнє = збігу немає (або старий сервер). */
+  monoMatchLikely?: boolean;
+  /** Порядковий номер рядка серед УСІХ однакових рядків файлу/скріна
+   * (дата, сума, напрям, опис), який видав сервер на превʼю. Іде в commit
+   * без змін, щоб id рядка не залежав від того, які рядки групи вибрано
+   * (data-29: єдина вибрана друга кава отримувала індекс 0 і збігалась з
+   * уже імпортованою першою). Немає — старий сервер або рядок відредаговано
+   * (`updateRowField`): сервер тоді рахує індекс по тілу запиту. */
+  occurrenceIndex?: number;
   selected: boolean;
 }
 
@@ -51,14 +64,22 @@ export interface BulkReviewRow {
  * (follow-up тієї ж ратифікації): переказ на власну банку — не витрата,
  * галочку користувач ставить свідомо. І `duplicateLikely` («сітка 2»,
  * бета-фідбек №4): схожий запис уже збережено — повторний імпорт має
- * бути свідомим кліком, не дефолтом.
+ * бути свідомим кліком, не дефолтом. `monoMatchLikely` (data-30) — те саме
+ * для збігу з mono-операцією у виписці/скріні не-mono джерела: сервер там не
+ * скіпає рядок сам, тож рішення лишається за людиною.
  */
 function defaultSelected(
   direction: ImportDirection,
   transferLikely: boolean,
   duplicateLikely: boolean,
+  monoMatchLikely: boolean,
 ): boolean {
-  return direction === "expense" && !transferLikely && !duplicateLikely;
+  return (
+    direction === "expense" &&
+    !transferLikely &&
+    !duplicateLikely &&
+    !monoMatchLikely
+  );
 }
 
 /**
@@ -82,6 +103,22 @@ function categoryFor(
   return defaultCategoryFor(direction);
 }
 
+/** Спред для мітки: під `exactOptionalPropertyTypes` без `undefined`, тож
+ * відсутня мітка означає відсутній ключ. */
+function monoMatchLikelyField(
+  monoMatchLikely: boolean,
+): { monoMatchLikely: true } | Record<string, never> {
+  return monoMatchLikely ? { monoMatchLikely: true } : {};
+}
+
+/** Спред для опційного поля: під `exactOptionalPropertyTypes` не можна
+ * присвоїти `undefined`, тож відсутній індекс означає відсутній ключ. */
+function occurrenceIndexField(
+  occurrenceIndex: number | undefined,
+): { occurrenceIndex: number } | Record<string, never> {
+  return occurrenceIndex === undefined ? {} : { occurrenceIndex };
+}
+
 export interface BulkReviewRowOptions {
   defaultCategoryFor: (direction: ImportDirection) => string;
   /** Чи знає пікер такий слаг для цього напряму. */
@@ -95,6 +132,7 @@ export function screenshotRowsToBulkReviewRows(
   return rows.map((row, i) => {
     const transferLikely = row.transferLikely === true;
     const duplicateLikely = row.duplicateLikely === true;
+    const monoMatchLikely = row.monoMatchLikely === true;
     return {
       id: `screenshot-${i}`,
       date: row.date,
@@ -110,7 +148,14 @@ export function screenshotRowsToBulkReviewRows(
       confidence: row.confidence,
       transferLikely,
       duplicateLikely,
-      selected: defaultSelected(row.direction, transferLikely, duplicateLikely),
+      ...monoMatchLikelyField(monoMatchLikely),
+      ...occurrenceIndexField(row.occurrenceIndex),
+      selected: defaultSelected(
+        row.direction,
+        transferLikely,
+        duplicateLikely,
+        monoMatchLikely,
+      ),
     };
   });
 }
@@ -122,6 +167,7 @@ export function statementRowsToBulkReviewRows(
   return rows.map((row, i) => {
     const transferLikely = row.transferLikely === true;
     const duplicateLikely = row.duplicateLikely === true;
+    const monoMatchLikely = row.monoMatchLikely === true;
     return {
       id: `statement-${i}`,
       date: row.date,
@@ -137,7 +183,14 @@ export function statementRowsToBulkReviewRows(
       confidence: null,
       transferLikely,
       duplicateLikely,
-      selected: defaultSelected(row.direction, transferLikely, duplicateLikely),
+      ...monoMatchLikelyField(monoMatchLikely),
+      ...occurrenceIndexField(row.occurrenceIndex),
+      selected: defaultSelected(
+        row.direction,
+        transferLikely,
+        duplicateLikely,
+        monoMatchLikely,
+      ),
     };
   });
 }
@@ -189,7 +242,22 @@ export function updateRowField(
     Pick<BulkReviewRow, "description" | "amountKopiykas" | "category">
   >,
 ): BulkReviewRow[] {
-  return rows.map((r) => (r.id === id ? { ...r, ...patch } : r));
+  return rows.map((r) => {
+    if (r.id !== id) return r;
+    const next = { ...r, ...patch };
+    // Індекс із превʼю описує групу ОРИГІНАЛЬНОГО (дата, сума, опис). Після
+    // правки опису чи суми рядок може опинитись в іншій групі, де цей індекс
+    // уже зайнятий іншим рядком; тому індекс скидаємо, і сервер призначить
+    // вільний (`rowKey.ts#resolveOccurrenceIndices`).
+    const regrouped =
+      next.description !== r.description ||
+      next.amountKopiykas !== r.amountKopiykas;
+    if (regrouped && next.occurrenceIndex !== undefined) {
+      const { occurrenceIndex: _dropped, ...rest } = next;
+      return rest;
+    }
+    return next;
+  });
 }
 
 export function selectedRowCount(rows: readonly BulkReviewRow[]): number {
@@ -202,8 +270,9 @@ export function selectedRowCount(rows: readonly BulkReviewRow[]): number {
  * запиту»), а превʼю пропускає до 10 000 рядків, тож без цієї перевірки
  * велика виписка доходила до кнопки «Імпортувати» і падала без підказки
  * (аудит 2026-10-01, ux-07). Клієнтської нарізки на кілька commit-ів тут
- * свідомо немає: кожен commit має свій batchId для undo, а розріз групи
- * однакових рядків між запитами ламає нумерацію повторів (data-29).
+ * свідомо немає: кожен commit має свій batchId для undo. Розріз групи однакових рядків
+ * між запитами більше не ламає нумерацію повторів: індекс іде з превʼю
+ * (`BulkReviewRow.occurrenceIndex`, data-29).
  */
 export function exceedsCommitCap(rows: readonly BulkReviewRow[]): boolean {
   return selectedRowCount(rows) > IMPORT_COMMIT_MAX_ROWS;
@@ -226,5 +295,6 @@ export function toCommitRows(
       direction: r.direction,
       description: r.description,
       category: r.category,
+      ...occurrenceIndexField(r.occurrenceIndex),
     }));
 }

@@ -136,6 +136,10 @@ describe(
                   // present-and-true only when an already-saved expense
                   // shares the same date+amount+direction; ABSENT elsewhere.
                   duplicateLikely: true,
+                  // Optional marker (monoMatchDetect.ts, data-30): present-
+                  // and-true only on a non-mono source (screenshot here) when
+                  // a UAH mono operation matches amount+date; ABSENT elsewhere.
+                  monoMatchLikely: true,
                 },
               ],
             },
@@ -160,6 +164,8 @@ describe(
           expect(out.draft.rows[2]!.transferLikely).toBe(true);
           expect(out.draft.rows[0]!.duplicateLikely).toBeUndefined();
           expect(out.draft.rows[3]!.duplicateLikely).toBe(true);
+          expect(out.draft.rows[0]!.monoMatchLikely).toBeUndefined();
+          expect(out.draft.rows[3]!.monoMatchLikely).toBe(true);
           expect(out.draft.rows[0]!.categoryHint).toBe("food");
           expect(out.draft.rows[1]!.categoryHint).toBeUndefined();
           // `dropped`/`truncated` навмисно ВІДСУТНІ у тілі вище: web і
@@ -348,6 +354,10 @@ describe(
                 // matched. ABSENT on the rows below: that is "no evidence",
                 // NOT "other" — the client then applies its own default.
                 categoryHint: "food",
+                // Optional (rowKey.ts#withOccurrenceIndices, data-29): index
+                // of the row among ALL identical rows of the file, echoed
+                // back unchanged in `commit`.
+                occurrenceIndex: 0,
               },
               {
                 date: "2026-01-16",
@@ -357,6 +367,7 @@ describe(
                 // Optional marker (transferDetect.ts) — true only on
                 // own-jar/own-account transfers, absent on the row above.
                 transferLikely: true,
+                occurrenceIndex: 0,
               },
               {
                 date: "2026-01-17",
@@ -367,6 +378,7 @@ describe(
                 // only when an already-saved expense shares the same
                 // date+amount+direction; absent on the rows above.
                 duplicateLikely: true,
+                occurrenceIndex: 0,
               },
             ],
             skipped: [],
@@ -390,6 +402,7 @@ describe(
           expect(out.rows[0]!.duplicateLikely).toBeUndefined();
           expect(out.rows[2]!.duplicateLikely).toBe(true);
           expect(out.rows[0]!.categoryHint).toBe("food");
+          expect(out.rows[2]!.occurrenceIndex).toBe(0);
           // Both branches of the optional field are locked by this one
           // interaction — absent means "no evidence", not "other".
           expect(out.rows[1]!.categoryHint).toBeUndefined();
@@ -634,6 +647,8 @@ describe(
           });
           req.jsonBody({
             source: "bank_statement",
+            // Optional (data-30): tier-1 mono dedup applies only to "mono".
+            profile: "mono",
             rows: [
               {
                 date: "2026-01-15",
@@ -655,6 +670,8 @@ describe(
                 direction: "expense",
                 description: "АЗС",
                 category: "transport",
+                // Optional (data-29): index echoed from the preview.
+                occurrenceIndex: 0,
               },
             ],
           });
@@ -682,6 +699,8 @@ describe(
           const imports = createFinykImportEndpoints(http);
           const out = await imports.commitImport({
             source: "bank_statement",
+            // Optional (data-30): tier-1 mono dedup applies only to "mono".
+            profile: "mono",
             rows: [
               {
                 date: "2026-01-15",
@@ -703,6 +722,8 @@ describe(
                 direction: "expense",
                 description: "АЗС",
                 category: "transport",
+                // Optional (data-29): index echoed from the preview.
+                occurrenceIndex: 0,
               },
             ],
           });

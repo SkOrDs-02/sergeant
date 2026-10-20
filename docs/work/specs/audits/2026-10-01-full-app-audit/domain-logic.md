@@ -199,7 +199,7 @@ Own live run (debtpaid.mjs, audit_pool97). create_debt VPaidDebt 300 → d_17909
 
 ### `logic-04` [medium] Старіння 1ПМ скидається одним легким підходом: калькулятор навантаження знову рахує від піку за всю історію
 
-- **Стан:** відкрито
+- **Стан:** частково виправлено в гілці claude/fix-logic-04-1rm-decay-return (режим повернення тримається до ≥90% зниженого піка; пік за датою досягнення не старіє, а підказка наступного підходу в активному тренуванні та мобілка далі без сесій)
 - **Перевірка:** підтверджено · **Зусилля:** M · **Область:** fizruk-domain / web: Фізрук
 - **Де:** packages/fizruk-domain/src/domain/workouts/oneRmAging.ts:151-186; packages/fizruk-domain/src/domain/workouts/exerciseDetail.ts:216-290; apps/web/src/modules/fizruk/pages/Exercise.tsx:88-95, 418-426
 - **Першопричина:** computeOneRmAging визначає застарілість лише за давністю останньої силової сесії, а орієнтир бере як peak1rm за всю історію, помножений на коефіцієнт. Будь-який підхід до вправи обнуляє давність (factor = 1, returnMode = false), і орієнтир повертається до повного піку, хоч би якою слабкою була сесія повернення.
@@ -648,7 +648,7 @@ useRestTimerCountdown (useWorkoutsLifecycle.ts:107-130) робить {remaining:
 
 ### `logic-11` [medium] Гнучкі звички («N разів на тиждень») у кількох агрегатах Рутини рахуються поденно
 
-- **Стан:** відкрито
+- **Стан:** частково виправлено в гілці claude/fix-logic-11-flex-habits-aggregates (лишилось: поденний `flexibleStreakBreakdown` по одній гнучкій звичці в моменті серії `moments.ts` і чат-тулі `habit_stats` — logic-22; мобілка `useCalendarAggregates` не чіпалась)
 - **Перевірка:** підтверджено · **Зусилля:** M · **Область:** routine-domain / web: Рутина
 - **Де:** packages/routine-domain/src/flexStreak.ts:144-269, 365-382; packages/routine-domain/src/habitRangeRows.ts:121-171; packages/routine-domain/src/dayProgress.ts:28-40; packages/routine-domain/src/streaks.ts:196-206; apps/web/src/modules/routine/useRoutineDerivedData.ts:217-226, 272-289
 - **Першопричина:** Спека routine-flexible-weekly-frequency.md вимагає, щоб споживачі «класу Б» не питали денний предикат для гнучкої звички. Проте flexibleStreakBreakdown і flexibleMaxActiveStreak, buildHabitRangeRows і calcRoutineDayProgress (weekDoneCount = 0) вважають кожен невідмічений день незакритого тижня запланованим, тобто пропуском.

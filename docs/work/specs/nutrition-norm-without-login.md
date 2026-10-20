@@ -1,7 +1,7 @@
 # SPEC: норма і вага в модулі «Їжа» без входу, з названою формулою
 
-> **Last touched:** 2026-10-08 by @claude (перша редакція: розвідка коду, чотири рішення за власником). **Next review:** 2027-01-08.
-> **Status:** Active - власник відповів на всі чотири питання 2026-10-08, спека готова до `spec-executor`.
+> **Last touched:** 2026-10-20 by @claude (статус: реалізовано). **Next review:** 2027-01-08.
+> **Status:** Implemented - [#1466](https://github.com/SkOrDs-02/sergeant/pull/1466) у `main` (рішення від 2026-10-08 збережено нижче).
 
 Джерело задачі: пункт 2 шортлиста [`2026-09-29-nutrition-handson.md`](audits/2026-09-29-nutrition-handson.md#2-норма-і-вага-без-входу-з-названою-формулою) (ND1 і ND3 `blocked` у сліпому анонімному замірі 2026-09-28). Докази-кадри лежать у приватному репо `D:\competitor-research\` (`apps/nutrition/sergeant.nutrition.web/blind-2026-09-28/frames/nd1-01-profile.json`).
 

@@ -15,14 +15,28 @@ export interface DedupMonoInput {
  * (`|amount| = amountKopiykas`), у вікні ±1 Kyiv-календарна доба від `date`.
  * Повертає масив `boolean` 1:1 з `rows` (той самий порядок).
  *
+ * **Що вважається кандидатом (data-30).** Тільки операція ГРИВНЕВОГО рахунку
+ * (`mono_account.currency_code = 980`) і НЕ банки (`is_jar = FALSE`).
+ * `mono_transaction.amount` лежить у валюті РАХУНКУ: -9500 на USD-рахунку це
+ * 95.00 $, а не 95.00 грн, тож без цього фільтра гривневий рядок виписки на
+ * 95.00 мовчки «знаходив» долларову покупку. Банка (`is_jar`) — не місце, де
+ * людина платить: рух по ній це переказ, а не витрата. Імпорт-рядки завжди
+ * в UAH (`not_uah` відсікається ще на превʼю), тож порівнювати їх більше ні з
+ * чим.
+ *
+ * **Кожна mono-транзакція «споживається» максимум одним рядком батчу
+ * (data-30).** Два однакові рядки імпорту й ОДНА mono-операція — це одна
+ * покупка і одна копія, а не два скіпи: перший рядок отримує збіг, другий
+ * лишається новим і створюється. Запит повертає всі пари «рядок -
+ * кандидат», а розподіл робить `claimMonoMatches` нижче.
+ *
  * Один SQL на весь батч: рядки їдуть масивами через `unnest ... WITH
- * ORDINALITY`, а предикат `EXISTS` дослівно той самий, що був у колишньому
- * per-row запиті (до 2026-09-28 було N round-trip-ів на N рядків). Kyiv-день
- * рахує Postgres, не JS, тож межі доби не зсуваються.
+ * ORDINALITY`. Kyiv-день рахує Postgres, не JS, тож межі доби не зсуваються.
  *
  * Викликається ВСЕРЕДИНІ вже відкритої транзакції `commit.ts` (`client` —
  * checked-out `PoolClient`, не module-level `pool`) — той самий патерн, що
- * `receipts/matcher.ts#matchReceiptToMono`.
+ * `receipts/matcher.ts#matchReceiptToMono`. На превʼю (`monoMatchDetect.ts`)
+ * його кличуть з `pool`: потрібен лише `query`.
  *
  * НА ВІДМІНУ ВІД `receipts/matcher.ts`: (1) підтримує ОБИДВА напрями
  * (`expense`/`income`), не лише `amount < 0`, бо виписки/скріни несуть і
@@ -34,6 +48,14 @@ export interface DedupMonoInput {
  * правильно СКІПАЄТЬСЯ (не створює другий запис), просто з іншої причини
  * (matched-on-mono, не matched-on-receipt-link). Немає розрізнення
  * "чому саме" на рівні цього запиту — обидва дають `skipped-mono`.
+ * (4) Слабкий матч чеків (`matcher.ts`) цими фільтрами НЕ звужено навмисно
+ * (рішення власника 2026-10, data-30): там сума+день — задокументований
+ * компроміс спеки, а чек може бути оплачений з будь-якої картки.
+ *
+ * ХТО ЗАСТОСОВУЄ ТІР-1: лише `commit.ts` і лише для профілю `mono`
+ * (`ImportCommitRequest.profile`). Для виписки/скріна іншого банку збіг суми
+ * й дати з mono-операцією нічого не доводить (кава, проїзд, круглий
+ * переказ), тож там це лише мʼяка мітка на превʼю.
  *
  * `date` — вже готовий `YYYY-MM-DD` (Kyiv календарний день, як
  * надрукований на джерелі, без TZ-конвертації в JS — `::date` порівнює
@@ -41,46 +63,42 @@ export interface DedupMonoInput {
  *
  * Ніколи не видаляє й не зливає дані (та сама гарантія, що
  * `matchReceiptToMono`) — лише читає. Який саме mono-tx збігся, caller-у
- * не потрібно (`commit.ts` рахує лише факт збігу), тому запит його й не
- * вибирає.
- *
- * AI-DANGER: НЕ "consume"-ить (не позначає) знайдену `mono_transaction` як
- * "вже використану цим import-рядком" — два різні import-рядки з
- * однаковою (сума, дата, напрям) теоретично можуть обидва matched-нути
- * на ОДИН mono-tx і обидва скіпнутись, навіть якщо лише один із них
- * справді той самий платіж. Той самий клас "слабкого" ризику, що вже
- * прийнятий у `receipts/matcher.ts`-слабкому матчі (сума+день, без
- * додаткового розрізнення) — не нова регресія, а той самий компроміс,
- * поширений на N рядків замість одного чека. Батчинг цю семантику
- * зберігає: кожен рядок перевіряється незалежно.
+ * не потрібно (`commit.ts` рахує лише факт збігу).
  */
 export async function findMonoMatchedRows(
-  client: PoolClient,
+  client: Pick<PoolClient, "query">,
   userId: string,
   rows: ReadonlyArray<DedupMonoInput>,
 ): Promise<boolean[]> {
   const matched = rows.map(() => false);
   if (rows.length === 0) return matched;
-  // `ord` це bigint (WITH ORDINALITY), node-pg віддає його рядком: Number()
-  // перед індексацією (Hard Rule #1).
-  const { rows: hits } = await client.query<{ ord: string }>(
-    `SELECT r.ord
+  // `ord` і `day_diff` це bigint/int (WITH ORDINALITY, date - date), node-pg
+  // віддає bigint рядком: Number() перед індексацією (Hard Rule #1).
+  const { rows: pairs } = await client.query<{
+    ord: string;
+    mono_tx_id: string;
+    day_diff: number;
+  }>(
+    `SELECT r.ord,
+            t.mono_tx_id,
+            ABS((timezone('Europe/Kyiv', t.time))::date - r.day) AS day_diff
        FROM unnest($2::date[], $3::bigint[], $4::text[])
             WITH ORDINALITY AS r(day, amount, direction, ord)
-      WHERE EXISTS (
-        SELECT 1
-          FROM mono_transaction t
-         WHERE t.user_id = $1
-           AND t.deleted_at IS NULL
-           AND ABS(t.amount) = r.amount
-           AND (
-             (r.direction = 'expense' AND t.amount < 0)
-             OR (r.direction = 'income' AND t.amount > 0)
-           )
-           AND ABS(
-             (timezone('Europe/Kyiv', t.time))::date - r.day
-           ) <= 1
-      )`,
+       JOIN mono_transaction t
+         ON t.user_id = $1
+        AND t.deleted_at IS NULL
+        AND ABS(t.amount) = r.amount
+        AND (
+          (r.direction = 'expense' AND t.amount < 0)
+          OR (r.direction = 'income' AND t.amount > 0)
+        )
+        AND ABS((timezone('Europe/Kyiv', t.time))::date - r.day) <= 1
+       JOIN mono_account a
+         ON a.user_id = t.user_id
+        AND a.mono_account_id = t.mono_account_id
+        AND a.currency_code = 980
+        AND a.is_jar = FALSE
+      ORDER BY day_diff ASC, r.ord ASC, t.time ASC, t.mono_tx_id ASC`,
     [
       userId,
       rows.map((r) => r.date),
@@ -88,6 +106,16 @@ export async function findMonoMatchedRows(
       rows.map((r) => r.direction),
     ],
   );
-  for (const { ord } of hits) matched[Number(ord) - 1] = true;
+  // Пари вже впорядковано: спершу точний день, потім ±1; всередині дня за
+  // номером рядка. Жадібний прохід віддає mono-транзакцію першому рядку, що
+  // її хоче, і тримає її зайнятою: точний збіг (той самий день) ніколи не
+  // програє рядку з сусіднього дня.
+  const claimed = new Set<string>();
+  for (const { ord, mono_tx_id } of pairs) {
+    const idx = Number(ord) - 1;
+    if (matched[idx] || claimed.has(mono_tx_id)) continue;
+    matched[idx] = true;
+    claimed.add(mono_tx_id);
+  }
   return matched;
 }

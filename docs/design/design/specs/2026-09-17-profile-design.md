@@ -263,7 +263,10 @@ WebAuthn), не форма «Біометрія». Отже, воронок ви
 - **Зміна email** — `user.changeEmail.enabled` + `updateEmailWithoutVerification`:
   непідтверджений акаунт міняє адресу одразу, підтверджений — спершу лист на
   СТАРУ адресу (захист від перепривʼязування вкраденої сесії, H6;
-  `auth.ts:339-372`).
+  `auth.ts:339-372`). Для непідтвердженого акаунта зміна можлива лише зі
+  свіжою сесією (до 10 хв, інакше `403 SESSION_NOT_FRESH`), а після зміни на
+  СТАРУ адресу йде лист-сповіщення (`sec-06`, `auth/changeEmailGuard.ts`,
+  `databaseHooks.user.update`, тож однаково для cookie і `Authorization: Bearer`).
 - **Сесії** — `revokeSession({ token })`, не `{ id }` (Better Auth валідує
   `body.token`, `SessionsSection.tsx:174-181`); поточна сесія без успішного
   `getSession` не відкликається взагалі (`:55-61`).

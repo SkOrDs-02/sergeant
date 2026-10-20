@@ -412,7 +412,7 @@ export const paths: ZodOpenApiPathsObject = {
     get: {
       summary: "SSE-стрім op-ів (hello / op / caught_up / heartbeat)",
       description:
-        "`text/event-stream`. Курсор — `?since=` або `Last-Event-ID` (останній перемагає). Backlog обмежений replay-лімітом: після `caught_up.truncated` клієнт перепідключається з новим `since`. Маршрут закритий серверним прапорцем `SYNC_V2_STREAM_ENABLED` (дефолт вимкнено → 404). Коли ввімкнено: сервер перевіряє сесію на кожному heartbeat і закриває стрім без неї, зʼєднання живе не довше 15 хв, одночасних стрімів на юзера не більше 3 (новий витісняє найстаріший); перед серверним закриттям летить `event: closed` із `reason` (`max_age` / `session_revoked` / `session_check_failed` / `evicted`).",
+        "`text/event-stream`. Курсор — `?since=` або `Last-Event-ID` (останній перемагає). Backlog обмежений replay-лімітом: після `caught_up.truncated` клієнт перепідключається з новим `since`. Маршрут закритий серверним прапорцем `SYNC_V2_STREAM_ENABLED` (дефолт вимкнено → 404). Коли ввімкнено: сервер перевіряє сесію на кожному heartbeat і закриває стрім без неї, зʼєднання живе не довше 15 хв, одночасних стрімів на юзера не більше 3 (новий витісняє найстаріший); перед серверним закриттям летить `event: closed` із `reason` (`max_age` / `session_revoked` / `session_check_failed` / `evicted` / `backpressure`); `backpressure` - клієнт не читає потік (у сокеті понад 1 МБ непереданих байтів або `write()` без `drain` до наступної події), стрім закрито, клієнт перепідключається з `Last-Event-ID`.",
       tags: ["sync"],
       security: cookieOrBearer,
       requestParams: { query: namedSchemas.SyncV2PullQuery },

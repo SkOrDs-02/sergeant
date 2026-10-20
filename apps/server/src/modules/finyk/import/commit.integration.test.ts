@@ -1,10 +1,11 @@
 /**
  * Інтеграційні тести батч-дедупу import-commit-у на реальному Postgres.
  *
- * 1. Еквівалентність: батч-матчер `findMonoMatchedRows` дає рівно той самий
- *    результат, що колишній per-row запит (`legacyFindMonoMatch` нижче,
- *    дослівна копія SQL до батчингу), на фікстурі з межами Kyiv-доби, DST,
- *    нічиями, tombstone-ами, чужим користувачем і дублями рядків.
+ * 1. Відповідність: кожен збіг батч-матчера `findMonoMatchedRows` є і збігом
+ *    колишнього per-row запиту (`legacyFindMonoMatch` нижче, дослівна копія
+ *    SQL до батчингу), але тепер mono-операція «споживається» не більше ніж
+ *    одним рядком (data-30), на фікстурі з межами Kyiv-доби, DST, нічиями,
+ *    tombstone-ами, чужим користувачем і дублями рядків.
  * 2. Кількість round-trip-ів commit-у стала: 1 рядок і 300 рядків дають
  *    однакове число запитів.
  * 3. Статуси рядків (created / mono_matched / duplicate / tombstoned) на
@@ -36,6 +37,7 @@ import type { DedupMonoInput } from "./dedupMono.js";
 let testPool: pg.Pool;
 let findMonoMatchedRows: typeof import("./dedupMono.js").findMonoMatchedRows;
 let commitImportHandler: typeof import("./commit.js").default;
+let statementPreviewHandler: typeof import("./statementPreview.js").default;
 let dockerAvailable = false;
 
 const USER_A = "finyk_import_int_a";
@@ -53,6 +55,7 @@ beforeAll(async () => {
     }));
     findMonoMatchedRows = (await import("./dedupMono.js")).findMonoMatchedRows;
     commitImportHandler = (await import("./commit.js")).default;
+    statementPreviewHandler = (await import("./statementPreview.js")).default;
     dockerAvailable = true;
   } catch (err) {
     if (process.env["CI"]) throw err;
@@ -128,6 +131,27 @@ async function seedMono(
   }
 }
 
+/** Додатковий рахунок (валютний чи банка) з однією операцією (data-30). */
+async function seedExtraAccount(
+  userId: string,
+  account: { id: string; currency: number; isJar?: boolean },
+  tx: { id: string; time: string; amount: number },
+) {
+  await testPool.query(
+    `INSERT INTO mono_account
+       (user_id, mono_account_id, type, currency_code, balance, credit_limit, is_jar)
+     VALUES ($1, $2, 'black', $3, 0, 0, $4)`,
+    [userId, account.id, account.currency, account.isJar ?? false],
+  );
+  await testPool.query(
+    `INSERT INTO mono_transaction
+       (user_id, mono_account_id, mono_tx_id, time, amount, operation_amount,
+        currency_code, description, source, raw)
+     VALUES ($1, $2, $3, $4, $5, $5, $6, 'tx', 'webhook', '{}')`,
+    [userId, account.id, tx.id, new Date(tx.time), tx.amount, account.currency],
+  );
+}
+
 /**
  * Фікстура з гострими кутами:
  * - межа Kyiv-доби (UTC+2 взимку): 22:30Z = наступна доба за Києвом,
@@ -178,7 +202,8 @@ function trickyRows(): DedupMonoInput[] {
       }
     }
   }
-  // Дублі рядків: той самий рядок двічі матчиться незалежно (не consume).
+  // Дублі рядків: mono-операція «споживається» (data-30), тож копія рядка
+  // матчиться лише коли для неї лишилась ще одна операція.
   return [...rows, ...rows.slice(0, 40)];
 }
 
@@ -198,11 +223,16 @@ function makeRes() {
   return res as typeof res & Response;
 }
 
-function commitReq(userId: string, rows: DedupMonoInput[]): Request {
+function commitReq(
+  userId: string,
+  rows: DedupMonoInput[],
+  profile: string | null = "mono",
+): Request {
   return {
     user: { id: userId },
     body: {
       source: "bank_statement",
+      ...(profile === null ? {} : { profile }),
       rows: rows.map((r, i) => ({
         ...r,
         description: `рядок ${i}`,
@@ -232,7 +262,7 @@ function countCommitQueries(): { count: () => number; restore: () => void } {
 }
 
 describe("finyk import commit - батч-дедуп на реальному Postgres", () => {
-  it("батч-матчер еквівалентний колишньому per-row запиту на гострій фікстурі", async () => {
+  it("батч-матчер ⊆ колишнього per-row запиту, і кожна mono-операція спожита не більше разу", async () => {
     if (!dockerAvailable) return;
     await seedTrickyFixture();
     const rows = trickyRows();
@@ -244,10 +274,17 @@ describe("finyk import commit - батч-дедуп на реальному Post
         legacy.push((await legacyFindMonoMatch(client, USER_A, row)) !== null);
       }
       const batched = await findMonoMatchedRows(client, USER_A, rows);
-      expect(batched).toEqual(legacy);
-      // Фікстура справді містить і матчі, і не-матчі.
-      expect(legacy.filter(Boolean).length).toBeGreaterThan(5);
-      expect(legacy.filter((m) => !m).length).toBeGreaterThan(5);
+      // Нічого нового, чого не знаходив колишній запит.
+      batched.forEach((m, i) => {
+        if (m) expect(legacy[i]).toBe(true);
+      });
+      // Живих операцій користувача A сім (tombstone і чужий не рахуються):
+      // понад це збігів бути не може, хоч кандидатів у рядків багато.
+      const matches = batched.filter(Boolean).length;
+      expect(matches).toBeGreaterThan(5);
+      expect(matches).toBeLessThanOrEqual(7);
+      // Колишній запит без споживання знаходив значно більше.
+      expect(legacy.filter(Boolean).length).toBeGreaterThan(matches);
     } finally {
       client.release();
     }
@@ -287,7 +324,7 @@ describe("finyk import commit - батч-дедуп на реальному Post
     }
   });
 
-  it("commit: статуси рядків збігаються з per-row оракулом; round-trip-ів стало", async () => {
+  it("commit: статуси рядків збігаються з батч-матчером; round-trip-ів стало", async () => {
     if (!dockerAvailable) return;
     await seedTrickyFixture();
     const rows = trickyRows();
@@ -295,12 +332,9 @@ describe("finyk import commit - батч-дедуп на реальному Post
     const oracleClient = await testPool.connect();
     const expected: string[] = [];
     try {
-      for (const row of rows) {
-        expected.push(
-          (await legacyFindMonoMatch(oracleClient, USER_A, row))
-            ? "mono_matched"
-            : "created",
-        );
+      const flags = await findMonoMatchedRows(oracleClient, USER_A, rows);
+      for (const matched of flags) {
+        expected.push(matched ? "mono_matched" : "created");
       }
     } finally {
       oracleClient.release();
@@ -396,4 +430,240 @@ describe("finyk import commit - батч-дедуп на реальному Post
     );
     expect(Number(ops[0]!.n)).toBe(3 + 3);
   });
+});
+
+/**
+ * data-29: превʼю → commit на реальному Postgres. Друга однакова покупка за
+ * день не губиться, коли клієнт (за замовчуванням) не шле першу, бо вона
+ * помічена `duplicateLikely`.
+ */
+describe("finyk import - occurrenceIndex з превʼю (data-29)", () => {
+  const MONO_HEADER =
+    "Дата i час операції,Деталі операції,МСС,Сума в валюті картки (UAH),Сума в валюті операції,Валюта операції,Курс обміну,Сума комісій (UAH),Сума кешбеку (UAH),Залишок після операції";
+  const COFFEE_MORNING =
+    "16.07.2026 09:10:00,Кава,5814,-95.00,-95.00,UAH,1,0.00,0.00,1000.00";
+  const COFFEE_EVENING =
+    "16.07.2026 18:10:00,Кава,5814,-95.00,-95.00,UAH,1,0.00,0.00,905.00";
+
+  interface PreviewRow {
+    date: string;
+    amountKopiykas: number;
+    direction: "expense" | "income";
+    description: string;
+    duplicateLikely?: boolean;
+    occurrenceIndex?: number;
+  }
+  interface CommitBody {
+    created: number;
+    skipped: { monoMatched: number; duplicate: number };
+    rows: Array<{ id: string; status: string }>;
+  }
+
+  async function preview(
+    userId: string,
+    lines: string[],
+  ): Promise<PreviewRow[]> {
+    const res = makeRes();
+    await statementPreviewHandler(
+      {
+        user: { id: userId },
+        body: { csv_text: [MONO_HEADER, ...lines].join("\n") },
+      } as unknown as Request,
+      res,
+    );
+    expect(res.statusCode).toBe(200);
+    return (res.body as { rows: PreviewRow[] }).rows;
+  }
+
+  async function commit(
+    userId: string,
+    rows: PreviewRow[],
+    { withIndex = true }: { withIndex?: boolean } = {},
+  ): Promise<CommitBody> {
+    const res = makeRes();
+    await commitImportHandler(
+      {
+        user: { id: userId },
+        body: {
+          source: "bank_statement",
+          rows: rows.map((r) => ({
+            date: r.date,
+            amountKopiykas: r.amountKopiykas,
+            direction: r.direction,
+            description: r.description,
+            category: "food",
+            ...(withIndex && r.occurrenceIndex !== undefined
+              ? { occurrenceIndex: r.occurrenceIndex }
+              : {}),
+          })),
+        },
+      } as unknown as Request,
+      res,
+    );
+    expect(res.statusCode).toBe(201);
+    return res.body as CommitBody;
+  }
+
+  async function liveCount(userId: string): Promise<number> {
+    const { rows } = await testPool.query<{ n: string }>(
+      `SELECT COUNT(*)::text AS n FROM finyk_manual_expenses
+        WHERE user_id = $1 AND deleted_at IS NULL`,
+      [userId],
+    );
+    return Number(rows[0]!.n);
+  }
+
+  it("друга кава, надіслана без першої (знята як duplicateLikely), створюється (created=1, у БД 2 рядки)", async () => {
+    if (!dockerAvailable) return;
+    // Виписка 1 обірвана посеред дня: лише ранкова кава.
+    const first = await commit(USER_A, await preview(USER_A, [COFFEE_MORNING]));
+    expect(first.created).toBe(1);
+
+    // Виписка 2: обидві кави. Перша збігається з уже збереженою.
+    const second = await preview(USER_A, [COFFEE_EVENING, COFFEE_MORNING]);
+    expect(second.map((r) => r.duplicateLikely)).toEqual([true, undefined]);
+    // Дефолт UI: рядок з duplicateLikely не вибраний, шлеться тільки другий.
+    const result = await commit(USER_A, [second[1]!]);
+
+    expect(result.created).toBe(1);
+    expect(result.skipped.duplicate).toBe(0);
+    expect(result.rows.map((r) => r.status)).toEqual(["created"]);
+    expect(await liveCount(USER_A)).toBe(2);
+  });
+
+  it("повторний commit того самого файлу цілком ідемпотентний (0 created)", async () => {
+    if (!dockerAvailable) return;
+    const lines = [COFFEE_MORNING, COFFEE_EVENING];
+    const rows = await preview(USER_A, lines);
+    const first = await commit(USER_A, rows);
+    expect(first.created).toBe(2);
+
+    const again = await commit(USER_A, await preview(USER_A, lines));
+    expect(again.created).toBe(0);
+    expect(again.skipped.duplicate).toBe(2);
+    expect(again.rows.map((r) => r.id)).toEqual(first.rows.map((r) => r.id));
+    expect(await liveCount(USER_A)).toBe(2);
+  });
+
+  it("старий клієнт без occurrenceIndex: файл цілком теж ідемпотентний", async () => {
+    if (!dockerAvailable) return;
+    const rows = await preview(USER_A, [COFFEE_MORNING, COFFEE_EVENING]);
+    const first = await commit(USER_A, rows, { withIndex: false });
+    expect(first.created).toBe(2);
+    const again = await commit(USER_A, rows, { withIndex: false });
+    expect(again.created).toBe(0);
+    expect(again.skipped.duplicate).toBe(2);
+    expect(await liveCount(USER_A)).toBe(2);
+  });
+});
+
+/**
+ * data-30: тір-1 дедуп лише для mono, лише проти гривневих рахунків без банок
+ * і з «споживанням» mono-операції. Приклад із аудиту: mono_transaction -9500 від
+ * 16.08 на USD-рахунку не повинна ковтати гривневий рядок «АТБ -95.00».
+ */
+describe("finyk import commit - тір-1 mono-дедуп звужено (data-30)", () => {
+  const ATB: DedupMonoInput = {
+    date: "2026-08-16",
+    amountKopiykas: 9500,
+    direction: "expense",
+  };
+
+  async function commitStatuses(
+    rows: DedupMonoInput[],
+    profile: string | null,
+  ): Promise<{ statuses: string[]; created: number; monoMatched: number }> {
+    const res = makeRes();
+    await commitImportHandler(commitReq(USER_A, rows, profile), res);
+    expect(res.statusCode).toBe(201);
+    const body = res.body as {
+      created: number;
+      skipped: { monoMatched: number };
+      rows: Array<{ status: string }>;
+    };
+    return {
+      statuses: body.rows.map((r) => r.status),
+      created: body.created,
+      monoMatched: body.skipped.monoMatched,
+    };
+  }
+
+  it("mono-операція -9500 на USD-рахунку НЕ збігається з гривневим рядком 95.00", async () => {
+    if (!dockerAvailable) return;
+    await seedExtraAccount(
+      USER_A,
+      { id: "usd", currency: 840 },
+      { id: "usd-tx", time: "2026-08-16T10:00:00Z", amount: -9500 },
+    );
+    const client = await testPool.connect();
+    try {
+      expect(await findMonoMatchedRows(client, USER_A, [ATB])).toEqual([false]);
+    } finally {
+      client.release();
+    }
+    const out = await commitStatuses([ATB], "mono");
+    expect(out.statuses).toEqual(["created"]);
+    expect(out.monoMatched).toBe(0);
+  });
+
+  it("операція банки (is_jar) не збігається з рядком", async () => {
+    if (!dockerAvailable) return;
+    await seedExtraAccount(
+      USER_A,
+      { id: "jar", currency: 980, isJar: true },
+      { id: "jar-tx", time: "2026-08-16T10:00:00Z", amount: -9500 },
+    );
+    const out = await commitStatuses([ATB], "mono");
+    expect(out.statuses).toEqual(["created"]);
+  });
+
+  it("гривнева операція звичайного рахунку збігається (контроль: фільтри не вбили тір-1)", async () => {
+    if (!dockerAvailable) return;
+    await seedExtraAccount(
+      USER_A,
+      { id: "uah", currency: 980 },
+      { id: "uah-tx", time: "2026-08-16T10:00:00Z", amount: -9500 },
+    );
+    const out = await commitStatuses([ATB], "mono");
+    expect(out.statuses).toEqual(["mono_matched"]);
+  });
+
+  it("два однакові рядки й одна mono-операція: 1 mono_matched і 1 created", async () => {
+    if (!dockerAvailable) return;
+    await seedExtraAccount(
+      USER_A,
+      { id: "uah", currency: 980 },
+      { id: "uah-tx", time: "2026-08-16T10:00:00Z", amount: -9500 },
+    );
+    const out = await commitStatuses([ATB, ATB], "mono");
+    expect(out.statuses).toEqual(["mono_matched", "created"]);
+    expect(out.monoMatched).toBe(1);
+    expect(out.created).toBe(1);
+  });
+
+  it("без profile (клієнт до data-30) тір-1 діє, як і раніше", async () => {
+    if (!dockerAvailable) return;
+    await seedExtraAccount(
+      USER_A,
+      { id: "uah", currency: 980 },
+      { id: "uah-tx", time: "2026-08-16T10:00:00Z", amount: -9500 },
+    );
+    const out = await commitStatuses([ATB], null);
+    expect(out.statuses).toEqual(["mono_matched"]);
+  });
+
+  it.each(["privat24", "custom", "screenshot"])(
+    "профіль %s: рядок зі збігом суми й дати з mono створюється, не скіпається",
+    async (profile) => {
+      if (!dockerAvailable) return;
+      await seedExtraAccount(
+        USER_A,
+        { id: "uah", currency: 980 },
+        { id: "uah-tx", time: "2026-08-16T10:00:00Z", amount: -9500 },
+      );
+      const out = await commitStatuses([ATB], profile);
+      expect(out.statuses).toEqual(["created"]);
+      expect(out.monoMatched).toBe(0);
+    },
+  );
 });

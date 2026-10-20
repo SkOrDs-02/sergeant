@@ -1,7 +1,7 @@
 # Спека: рецепт з інгредієнтів і порцій, без входу
 
-> **Last touched:** 2026-10-19 by @claude. **Next review:** 2027-04-21.
-> **Status:** Active - власник відповів на Р1-Р4 2026-10-08 (Р1-А, Р2-А, Р3-А, Р4-Б); спека готова до `spec-executor`.
+> **Last touched:** 2026-10-20 by @claude (статус: реалізовано). **Next review:** 2027-04-21.
+> **Status:** Implemented - [#1454](https://github.com/SkOrDs-02/sergeant/pull/1454) у `main`; нормалізатор складу для mobile [#1467](https://github.com/SkOrDs-02/sergeant/pull/1467).
 
 ## Проблема
 
