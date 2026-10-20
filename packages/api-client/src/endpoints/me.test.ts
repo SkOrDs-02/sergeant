@@ -326,10 +326,38 @@ describe("createMeEndpoints", () => {
       },
       data: {
         moduleData: [],
-        mono: { connection: null, accounts: [], transactions: [] },
+        mono: {
+          connection: null,
+          accounts: [],
+          transactions: [],
+          jars: [{ mono_jar_id: "j-1", balance: 150000, goal: null }],
+        },
+        // priv-12: первинні записи поза чотирма модулями. Сервер віддає ці
+        // ключі завжди (`modules/me/exportBuilder.ts`), числові колонки
+        // (`BIGINT`/`NUMERIC`) уже приведені до number (Hard Rule #1).
+        profile: {
+          payload: { biometrics: { heightCm: 181 } },
+          updated_at: "2026-06-01T10:00:00.000Z",
+        },
+        feedback: [{ id: 7, category: "idea", message: "Привіт" }],
+        emailUnsubscribes: [],
+        waitlist: [],
+        privat: { connection: null },
+        silpo: {
+          connection: null,
+          receipts: [],
+          receiptItems: [],
+          txReceiptLinks: [],
+          txReceiptLinkRejections: [],
+        },
         billing: { subscriptions: [] },
         push: { webSubscriptions: [], devices: [] },
-        finyk: { finyk_assets: [] },
+        finyk: {
+          finyk_assets: [],
+          receipts: [{ id: 23, total_kopiykas: 12550 }],
+          receipt_items: [{ id: 5, receipt_id: 23, qty: 1.5 }],
+          import_batches: [],
+        },
         fizruk: { fizruk_workouts: [] },
         nutrition: { nutrition_meals: [] },
         routine: { routine_habits: [{ id: "h-1", name: "Вода" }] },
@@ -346,6 +374,52 @@ describe("createMeEndpoints", () => {
     const me = createMeEndpoints(createHttpClient());
 
     await expect(me.exportData()).resolves.toEqual(payload);
+  });
+
+  it("GET /api/me/export від сервера без секцій priv-12 отримує порожні дефолти", async () => {
+    // Фронт викочується раніше за бекенд: відповідь старого сервера не має
+    // ламати розбір, але й не має вигадувати дані, яких сервер не віддав.
+    mockFetchOnce({
+      generatedAt: "2026-06-06T10:10:00.000Z",
+      user: {
+        id: "user-123",
+        email: "test@example.com",
+        name: null,
+        image: null,
+        emailVerified: true,
+        createdAt: "2026-01-15T08:30:00.000Z",
+      },
+      preferences: {
+        analytics: true,
+        aiMemory: true,
+        pushNotifications: false,
+        sergeantNudges: false,
+        pushDailyCap: 2,
+        healthDataConsent: false,
+        activeModules: null,
+        hubPrefs: null,
+        updatedAt: null,
+      },
+      data: {
+        moduleData: [],
+        mono: { connection: null, accounts: [], transactions: [] },
+        billing: { subscriptions: [] },
+        push: { webSubscriptions: [], devices: [] },
+        finyk: {},
+        fizruk: {},
+        nutrition: {},
+        routine: {},
+        excluded: [],
+      },
+    });
+    const me = createMeEndpoints(createHttpClient());
+
+    const result = await me.exportData();
+    expect(result.data.profile).toBeNull();
+    expect(result.data.feedback).toEqual([]);
+    expect(result.data.mono.jars).toEqual([]);
+    expect(result.data.privat).toEqual({ connection: null });
+    expect(result.data.silpo.receipts).toEqual([]);
   });
 
   it("DELETE /api/me повертає deletion acknowledgement", async () => {
