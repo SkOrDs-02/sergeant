@@ -2614,7 +2614,7 @@ Code path:
 
 ### `data-30` [medium] Тір-1 mono-дедуп і слабкий матчер чеків звіряють лише суму, знак і ±1 добу: рядки виписки іншого банку чи чеки мовчки не створюються
 
-- **Стан:** відкрито
+- **Стан:** частково виправлено в гілці claude/fix-data-30-dedup-tier1-mono-only (тір-1 лише для mono, лише гривневі рахунки без банок, «споживання» операції, мітка `monoMatchLikely` для решти джерел; слабкий матч чеків `receipts/matcher.ts` НЕ звужено за рішенням власника; ЛИШИЛОСЬ: web ще не шле `profile`, тож для Privat24/скріна з web автоскіп діє до окремого web-мержу після викочування бекенду)
 - **Перевірка:** підтверджено · **Зусилля:** M · **Область:** server: finyk import (dedupMono) + receipts (matcher)
 - **Де:** apps/server/src/modules/finyk/import/dedupMono.ts:47-90; apps/server/src/modules/finyk/import/commit.ts:225-241; apps/server/src/modules/finyk/receipts/matcher.ts:83-107; apps/server/src/modules/finyk/receipts/save.ts:388-433
 - **Першопричина:** findMonoMatchedRows (EXISTS по mono_transaction) не фільтрує за банком, профілем, рахунком, валютою чи описом і не «споживає» знайдену mono-транзакцію; commit викликає його для будь-якого source, а слабкий матчер чеків має той самий предикат і тоді не створює manual-expense.
