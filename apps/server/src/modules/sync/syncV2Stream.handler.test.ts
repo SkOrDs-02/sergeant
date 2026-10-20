@@ -86,6 +86,8 @@ interface FakeRes {
   /** rel-05: скільки байтів «застрягло» в сокеті; росте на кожен write, якщо `growBy` > 0. */
   writableLength: number;
   growBy: number;
+  /** rel-05: `res.destroy()` викликано (сокет відпущено без очікування flush). */
+  destroyed: boolean;
 }
 
 interface FakeReq {
@@ -108,6 +110,11 @@ function makeRes(): FakeRes & Response {
     writeResult: true,
     writableLength: 0,
     growBy: 0,
+    destroyed: false,
+    destroy() {
+      res.destroyed = true;
+      return res;
+    },
     status(code: number) {
       res.statusCode = code;
       return res;
@@ -650,6 +657,41 @@ describe("syncV2Stream handler — rel-05 backpressure", () => {
     const before = res.writes.length;
     notifySyncV2OpsApplied("u1", [liveOp(99)]);
     expect(res.writes.length).toBe(before);
+  });
+
+  it("releases the socket (destroy) when closing for backpressure, not only end()", async () => {
+    const { res } = await open();
+    res.growBy = SYNC_V2_STREAM_MAX_WRITABLE_BYTES / 2 + 1;
+    for (let i = 1; i <= 5 && !res.ended; i++) {
+      notifySyncV2OpsApplied("u1", [liveOp(i)]);
+    }
+    expect(res.destroyed).toBe(true);
+  });
+
+  it("does not destroy the socket on an ordinary close", async () => {
+    const { req, res } = await open();
+    for (const fn of req.closeListeners) fn();
+    expect(res.destroyed).toBe(false);
+  });
+
+  it("applies the writable cap during replay: a stalled client does not get the whole backlog", async () => {
+    pool.query.mockResolvedValueOnce({
+      rows: Array.from({ length: 10 }, (_, i) => ({
+        ...SAMPLE_DB_ROW,
+        id: String(i + 1),
+      })),
+    });
+    const req = makeReq({ userId: "u1" });
+    const res = makeRes();
+    res.growBy = SYNC_V2_STREAM_MAX_WRITABLE_BYTES / 2 + 1;
+    await syncV2Stream(req as Request, res as Response);
+
+    const opFrames = res.writes.filter((w) => w.includes("event: op")).length;
+    expect(opFrames).toBeLessThan(10);
+    expect(res.writes.some((w) => w.includes("event: caught_up"))).toBe(false);
+    expect(closedFrame(res, "backpressure")).toBe(true);
+    expect(res.destroyed).toBe(true);
+    expect(opLogEmitter.listenerCount("user:u1")).toBe(0);
   });
 
   it("closes when write() returned false and `drain` has not arrived by the next emit", async () => {

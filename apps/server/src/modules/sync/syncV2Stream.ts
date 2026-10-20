@@ -415,17 +415,29 @@ export async function syncV2Stream(req: Request, res: Response): Promise<void> {
           replay_limit: SYNC_V2_STREAM_REPLAY_LIMIT,
         }),
       );
+      let replayStalled = false;
       for (const row of result.rows) {
+        // rel-05: той самий ліміт, що й для live-emit, діє і на replay:
+        // клієнт, який не читає, не отримує весь backlog у памʼять.
+        if (res.writableLength > SYNC_V2_STREAM_MAX_WRITABLE_BYTES) {
+          replayStalled = true;
+          break;
+        }
         const op = rowToStreamOp(row);
         lastReplayedId = op.id;
         res.write(formatSseFrame("op", op, op.id));
       }
-      res.write(
-        formatSseFrame("caught_up", {
-          last_id: lastReplayedId,
-          truncated: result.rows.length === SYNC_V2_STREAM_REPLAY_LIMIT,
-        }),
-      );
+      if (replayStalled) {
+        // Закриваємо нижче, коли `closeStream` уже створено.
+        closing.reason ??= "backpressure";
+      } else {
+        res.write(
+          formatSseFrame("caught_up", {
+            last_id: lastReplayedId,
+            truncated: result.rows.length === SYNC_V2_STREAM_REPLAY_LIMIT,
+          }),
+        );
+      }
     }
   } catch (err: unknown) {
     unregisterStream(user.id, handle);
@@ -609,6 +621,15 @@ export async function syncV2Stream(req: Request, res: Response): Promise<void> {
       /* logging must never break a request */
     }
     cleanup();
+    // rel-05: `res.end()` чекає, доки черга спорожніє, а клієнт, що не читає,
+    // цього ніколи не дасть. Для backpressure відпускаємо сокет одразу.
+    if (reason === "backpressure") {
+      try {
+        res.destroy();
+      } catch {
+        /* res може бути вже закрите */
+      }
+    }
   };
   closing.live = closeStream;
 
