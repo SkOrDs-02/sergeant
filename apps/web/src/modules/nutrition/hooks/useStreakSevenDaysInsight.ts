@@ -105,6 +105,7 @@ export function useStreakSevenDaysInsight(
       module: "nutrition",
       title: `7 днів у нормі калорій`,
       subtitle: `План на наступний тиждень`,
+      subtitleIsAction: true,
       askAiPrompt: `Тиждень тримаю калорії в межах своїх поденних цілей (± 5%). Що з цього закріпити, а де я можливо недоїдаю по макросах?`,
       action: { type: "navigate", path: "/nutrition/menu" },
       // Hub surface promoted post-Phase 5e: 7-day streak achievement +

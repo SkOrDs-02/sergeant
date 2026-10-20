@@ -295,6 +295,7 @@ export function NutritionDashboard({
           id={insight.id}
           title={insight.title}
           subtitle={insight.subtitle}
+          subtitleIsAction={insight.subtitleIsAction}
           onActivate={() => {
             if (insight.action.type === "navigate") {
               // Map insight paths to in-module navigation callbacks.

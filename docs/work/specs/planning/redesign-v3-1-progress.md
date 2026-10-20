@@ -16,7 +16,7 @@
 
 ## PR4 · стан
 
-**Де зупинився:** PR4 закомічено (`a521ceaa4`..`249fbbdc4`), іде ревʼю design-reviewer: зроблено п. 1 (названі групи навколо `ChoiceCheckbox`). Далі: п. 2 підзаголовок `InsightCard`, п. 3 hover `ChoiceCheckbox`, п. 4 тест Space, потім typecheck, тести, ratchet і перезнімання кадрів after. Worktree `D:/Sergeant/.claude/worktrees/agent-a3fa5bdf3bf79960f`, гілка `claude/redesign-v3-1-pr4`.
+**Де зупинився:** PR4 закомічено, іде ревʼю design-reviewer: зроблено пп. 1-2 (названі групи, підзаголовок `InsightCard`). Далі: п. 3 hover `ChoiceCheckbox`, п. 4 тест Space, потім ratchet і перезнімання кадрів after. Worktree `D:/Sergeant/.claude/worktrees/agent-a3fa5bdf3bf79960f`, гілка `claude/redesign-v3-1-pr4`, попередній SHA `5546d7146`.
 
 ## PR4 · Їжа
 
@@ -64,6 +64,7 @@
 ### Правки за ревʼю (design-reviewer)
 
 1. **Групи навколо `ChoiceCheckbox`.** Контракт рядка вимагає названу групу: список розбору комори (`aria-labelledby` на «Розібрано N»), кошик Сільпо (`aria-label` «Позиції для кошика») і товари чека (`aria-labelledby` на заголовок) тепер `role="group"`. Тест у `PantryParsePanel.test.tsx`.
+2. **Підзаголовок `InsightCard` чорнилом лише як дія.** У Фініка підзаголовок буває фактом із числами, і жирне чорнило робило дані схожими на кнопку. Новий необовʼязковий прапорець `Insight.subtitleIsAction` / проп `subtitleIsAction`: виставляють лише інсайти Їжі з дією («Додати джерело білка», «План на наступний тиждень»); без нього колишній другий сірий. Тест на обидва стани.
 
 ## PR3 · стан
 

@@ -9,8 +9,8 @@
  * `useInsightDismissal()` hook що зберігає dismissals у localStorage
  * (`sergeant.v2.insights.dismissed`).
  *
- * v3.1 (інвентар Е3): гліф Сержанта без рамки-боксу, підзаголовок-дія
- * чорнилом тихого рівня.
+ * v3.1 (інвентар Е3): гліф Сержанта без рамки-боксу; підзаголовок-дія
+ * (`subtitleIsAction`) чорнилом тихого рівня, факт другим сірим.
  *
  * Структура (мова H, redesign v3 PR4):
  *   [Title 
@@ -86,6 +86,8 @@ export interface InsightCardProps {
   title: string;
   /** Subtitle / recommended action ("Встановити ліміт"). */
   subtitle: string;
+  /** Підзаголовок - дія (а не факт): тоді чорнилом жирним. */
+  subtitleIsAction?: boolean | undefined;
   /** CTA glyph — defaults to → arrow. */
   ctaLabel?: string;
   /** Called when user taps the activate area. Navigate / open chat etc. */
@@ -113,6 +115,7 @@ export function InsightCard({
   id,
   title,
   subtitle,
+  subtitleIsAction = false,
   ctaLabel,
   onActivate,
   onDismiss,
@@ -237,10 +240,15 @@ export function InsightCard({
         >
           {title}
         </div>
-        {/* Підзаголовок - це дія, тож чорнилом і жирним, як тиха кнопка
-            v3.1, а не другим сірим (інвентар Е3); кегль 14 тримає заголовок
-            першим. */}
-        <div className="text-style-label font-semibold truncate text-text">
+        {/* Підзаголовок-дія чорнилом і жирним, як тиха кнопка v3.1
+            (інвентар Е3); факт із числами лишається другим сірим, інакше дані
+            читаються як кнопка. */}
+        <div
+          className={cn(
+            "text-style-label truncate",
+            subtitleIsAction ? "font-semibold text-text" : "text-muted",
+          )}
+        >
           {subtitle}
         </div>
       </button>
