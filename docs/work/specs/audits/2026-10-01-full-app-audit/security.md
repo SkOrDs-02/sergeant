@@ -27,10 +27,10 @@
 - **Перевірка:** підтверджено · **Зусилля:** S · **Швидкий виграш** · **Область:** server: CORS / auth
 - **Де:** apps/server/src/http/cors.ts:23-27,62-66,129-133; apps/server/src/auth.ts:69-84; apps/web/src/core/observability/deployEnvironment.ts:52-54; apps/mobile-shell/src/index.ts:172; apps/mobile-shell/android/app/src/main/AndroidManifest.xml:66; apps/mobile/app.config.ts:69; apps/mobile/src/lib/deepLinks.ts:34; apps/web/public/.well-known/security.txt:5
 - **Першопричина:** Колишній кастомний домен лишився захардкодженим у PROD_ORIGINS (cors.ts:25). Цей список діє і в production, а ALLOWED_ORIGINS/ALLOWED_ORIGIN_REGEX можуть лише додавати origin-и. Домен 2dmanager.com.ua нікому не належить (NXDOMAIN, WHOIS hostmaster.ua: «доступне для реєстрації»), а сесійна кука в проді SameSite=None; Secure. Той самий хост досі в deep link/App Links, deployEnvironment і Canonical у security.txt.
-- **Вплив:** Хто зареєструє домен за кілька доларів, з першого ж візиту залогіненого користувача в Chrome/Edge читає /api/auth/get-session із сирим token (працює як Bearer до 7 днів), /api/me/export і будь-які дані, а також пише через /api/* з X-Requested-With. Це повне захоплення акаунта будь-якого відвідувача. Прод-preflight підтвердив ACAO+ACAC для цього origin. Заодно новий власник отримує «офіційну» адресу security.txt для звітів про вразливості і хост App Links мобільних оболонок.
+- **Вплив:** Хто зареєструє домен за кілька доларів, з першого ж візиту залогіненого користувача в Chrome/Edge читає /api/auth/get-session із сирим token (працює як Bearer до 7 днів), /api/me/export і будь-які дані, а також пише через /api/\* з X-Requested-With. Це повне захоплення акаунта будь-якого відвідувача. Прод-preflight підтвердив ACAO+ACAC для цього origin. Заодно новий власник отримує «офіційну» адресу security.txt для звітів про вразливості і хост App Links мобільних оболонок.
 - **Що зробити:** Негайно прибрати sergeant.2dmanager.com.ua з PROD_ORIGINS разом із DEFAULT_CANONICAL_HOSTS (deployEnvironment.ts; check-canonical-hosts звіряє обидва списки), mobile-shell, AndroidManifest, apps/mobile, security.txt і beta-tester-brief, і захисно викупити 2dmanager.com.ua. У check-canonical-hosts додати перевірку, що кожен хост резолвиться на інфру проєкту, і заодно прибрати незайняті beta-tau-gilt.vercel.app та fizruk.vercel.app.
 - **Примітка:** На HEAD 7611f169 не виправлено (cors.ts без змін від c7c09607). Три лінзи і три скептики незалежно підтвердили ланцюг, зокрема браузерною симуляцією з реальними атрибутами куки. Обмеження: потрібен візит жертви і браузер, що шле сторонні SameSite=None-куки (Chrome/Edge за замовчуванням; Safari ITP, Firefox TCP і Brave блокують). Ескалацію до Bearer дає sec-05.
-- **Повторна перевірка на свіжому `main`:** так, досі є, серйозність critical. Проблема досі є на HEAD cf057000. У цю гілку вже злито origin/main 8d570b70, і main на GitHub теж не змінився. Останній коміт, що торкався cors.ts, це 88c5f091, тобто ще до аудиту. Жодного фіксу після c7c09607 немає. Код: - apps/server/src/http/cors.ts:23-27: у PROD_ORIGINS досі стоїть "https://sergeant.2dmanager.com.ua" (рядок 25). - cors.ts:57-67: getAllowedOrigins() у production бере PROD_ORIGINS як базу. ALLOWED_ORIGINS і ALLOWED_ORIGIN_REGEX можуть лише додати origin, прибрати не можуть. - cors.ts:128-133: setCorsHeaders віддає дзеркальний ACAO і ACAC=true. - apps/server/src/http/apiCors.ts:43-56 + app.ts:151: це middleware змонтоване на весь /api, тобто і на /api/auth/get-session. - apps/server/src/auth.ts:69-84: кука сесії має SameSite=None; Secure, коли BETTER_AUTH_URL на https (так у проді). - app.ts:164 requireCsrfHeader: його закриває та сама CORS-перевірка, бо для allowed origin preflight з X-Requested-With проходить. Отже запис у /api/* теж відкритий. - Better Auth POST-ендпоінти частково захищені: getTrustedOrigins (auth.ts:654+) цього хоста не містить, якщо його немає в ALLOWED_ORIGINS у Coolify. Спробував спростувати, не вийшло: 1. Чи домен справді вільний. DNS-over-HTTPS (dns.google) повертає для 2dmanager.com.ua і sergeant.2dmanager.com.ua Status 3 (NXDOMAIN), а authority-відповідь іде від SOA зони com.ua (hostmaster.ua). Тобто домен не делеговано. Локальний резолвер теж каже "Name or service not known", хоча sergeant.vercel.app і app.sergeant.com.ua резолвляться. 2. Чи прод справді віддає CORS. Живий запит до https://api.sergeant.com.ua/api/auth/get-session з Origin: https://sergeant.2dmanager.com.ua: OPTIONS 200 і GET 200 повертають ACAO=https://sergeant.2dmanager.com.ua, ACAC=true. Контрольний Origin https://evil.example отримує ACAO=null. Локальний стек :3000 поводиться так само. Залишкові обмеження, вони вже є в note кластера: потрібен візит жертви, і браузер, що шле сторонні SameSite=None-куки. Chrome і Edge роблять це за замовчуванням, бо Google відмовився від 3PCD. Safari, Firefox і Brave такі куки блокують. Severity: critical виправдана. За чистим CVSS це 8.1 (UI:R), тобто межа з high. Але експлуатація коштує кілька доларів за реєстрацію домену, ланцюг підтверджено на живому проді, а результат дає читання і запис даних будь-якого залогіненого відвідувача, з ескалацією до Bearer-токена через sec-05. Вторинні місця на HEAD теж без змін: - apps/web/src/core/observability/deployEnvironment.ts:52 - apps/web/public/.well-known/security.txt:5 (Canonical) - apps/mobile-shell/src/index.ts:172 - apps/mobile-shell/android/app/src/main/AndroidManifest.xml:66 - apps/mobile/app.config.ts:69 - apps/mobile/src/lib/deepLinks.ts:34 - docs/governance/security/beta-tester-brief.md:8: посилання на security.txt на мертвому домені, тож новий власник може перехоплювати звіти про вразливості. - docs/engineering/integrations/env-vars.md:470 - docs/governance/governance/external-link-allowlist.json:238 Варто знати: scripts/check-canonical-hosts.mjs вимагає лише, щоб PROD_ORIGINS входили в DEFAULT_CANONICAL_HOSTS. Тому прибрати хост з одного cors.ts можна, і лінт не почервоніє.
+- **Повторна перевірка на свіжому `main`:** так, досі є, серйозність critical. Проблема досі є на HEAD cf057000. У цю гілку вже злито origin/main 8d570b70, і main на GitHub теж не змінився. Останній коміт, що торкався cors.ts, це 88c5f091, тобто ще до аудиту. Жодного фіксу після c7c09607 немає. Код: - apps/server/src/http/cors.ts:23-27: у PROD_ORIGINS досі стоїть "https://sergeant.2dmanager.com.ua" (рядок 25). - cors.ts:57-67: getAllowedOrigins() у production бере PROD_ORIGINS як базу. ALLOWED_ORIGINS і ALLOWED_ORIGIN_REGEX можуть лише додати origin, прибрати не можуть. - cors.ts:128-133: setCorsHeaders віддає дзеркальний ACAO і ACAC=true. - apps/server/src/http/apiCors.ts:43-56 + app.ts:151: це middleware змонтоване на весь /api, тобто і на /api/auth/get-session. - apps/server/src/auth.ts:69-84: кука сесії має SameSite=None; Secure, коли BETTER_AUTH_URL на https (так у проді). - app.ts:164 requireCsrfHeader: його закриває та сама CORS-перевірка, бо для allowed origin preflight з X-Requested-With проходить. Отже запис у /api/\* теж відкритий. - Better Auth POST-ендпоінти частково захищені: getTrustedOrigins (auth.ts:654+) цього хоста не містить, якщо його немає в ALLOWED_ORIGINS у Coolify. Спробував спростувати, не вийшло: 1. Чи домен справді вільний. DNS-over-HTTPS (dns.google) повертає для 2dmanager.com.ua і sergeant.2dmanager.com.ua Status 3 (NXDOMAIN), а authority-відповідь іде від SOA зони com.ua (hostmaster.ua). Тобто домен не делеговано. Локальний резолвер теж каже "Name or service not known", хоча sergeant.vercel.app і app.sergeant.com.ua резолвляться. 2. Чи прод справді віддає CORS. Живий запит до https://api.sergeant.com.ua/api/auth/get-session з Origin: https://sergeant.2dmanager.com.ua: OPTIONS 200 і GET 200 повертають ACAO=https://sergeant.2dmanager.com.ua, ACAC=true. Контрольний Origin https://evil.example отримує ACAO=null. Локальний стек :3000 поводиться так само. Залишкові обмеження, вони вже є в note кластера: потрібен візит жертви, і браузер, що шле сторонні SameSite=None-куки. Chrome і Edge роблять це за замовчуванням, бо Google відмовився від 3PCD. Safari, Firefox і Brave такі куки блокують. Severity: critical виправдана. За чистим CVSS це 8.1 (UI:R), тобто межа з high. Але експлуатація коштує кілька доларів за реєстрацію домену, ланцюг підтверджено на живому проді, а результат дає читання і запис даних будь-якого залогіненого відвідувача, з ескалацією до Bearer-токена через sec-05. Вторинні місця на HEAD теж без змін: - apps/web/src/core/observability/deployEnvironment.ts:52 - apps/web/public/.well-known/security.txt:5 (Canonical) - apps/mobile-shell/src/index.ts:172 - apps/mobile-shell/android/app/src/main/AndroidManifest.xml:66 - apps/mobile/app.config.ts:69 - apps/mobile/src/lib/deepLinks.ts:34 - docs/governance/security/beta-tester-brief.md:8: посилання на security.txt на мертвому домені, тож новий власник може перехоплювати звіти про вразливості. - docs/engineering/integrations/env-vars.md:470 - docs/governance/governance/external-link-allowlist.json:238 Варто знати: scripts/check-canonical-hosts.mjs вимагає лише, щоб PROD_ORIGINS входили в DEFAULT_CANONICAL_HOSTS. Тому прибрати хост з одного cors.ts можна, і лінт не почервоніє.
 - **Мінімальний фікс:** Мінімальний фікс, щоб закрити діру, зводиться до одного рядка: видалити "https://sergeant.2dmanager.com.ua" з PROD_ORIGINS у apps/server/src/http/cors.ts:25. Далі задеплоїти бекенд і перевірити в Coolify, що цього хоста немає в ALLOWED_ORIGINS і ALLOWED_ORIGIN_REGEX. Потім повторити preflight: ACAO для цього origin має зникнути. У тому ж PR варто додати регресійний тест у cors.test (поруч із cors.ts): при NODE_ENV=production isOriginAllowed("https://sergeant.2dmanager.com.ua") === false. Прибрати хост ще з таких місць: - apps/web/src/core/observability/deployEnvironment.ts:52 (DEFAULT_CANONICAL_HOSTS) і тест deployEnvironment.test.ts:38; - apps/web/public/.well-known/security.txt:5; - apps/mobile-shell/src/index.ts:172 і apps/mobile-shell/src/**tests**/parseDeepLink.test.ts:119-187; - apps/mobile-shell/android/app/src/main/AndroidManifest.xml:66; - apps/mobile/app.config.ts:69; - apps/mobile/src/lib/deepLinks.ts:34; - docs/governance/security/beta-tester-brief.md:8 (посилання на https://app.sergeant.com.ua/.well-known/security.txt); - docs/engineering/integrations/env-vars.md:470; - docs/governance/governance/external-link-allowlist.json:238. Фікстуру в scripts/**tests**/check-canonical-hosts.test.mjs можна лишити або замінити на нейтральний хост. Захисно, поза кодом: викупити 2dmanager.com.ua (вирішує власник). Окремим кроком у scripts/check-canonical-hosts.mjs: перевіряти, що хости з PROD_ORIGINS резолвляться (DNS) на інфраструктуру проєкту. Там же прибрати незайняті beta-tau-gilt.vercel.app і fizruk.vercel.app.
 
 Знахідок у кластері: 4.
@@ -84,7 +84,7 @@ I tried to refute this from several directions and could not. Each link in the c
 
 - **ID:** `client-static/landing-shell-mobile#1` · **Вердикт:** підтверджено · **Лейн:** Статика клієнта та інфри · **Категорія:** `auth-session`
 - **Де:** apps/server/src/http/cors.ts:23-27 (PROD_ORIGINS, рядок 25); той самий хост також у apps/mobile-shell/src/index.ts:172, apps/mobile-shell/android/app/src/main/AndroidManifest.xml:66, apps/mobile/app.config.ts:69, apps/mobile/src/lib/deepLinks.ts:34, apps/web/src/core/observability/deployEnvironment.ts:52, apps/web/public/.well-known/security.txt:5; cookie SameSite=None: apps/server/src/auth.ts:69-83
-- **Вплив:** Будь-хто може зареєструвати 2dmanager.com.ua. Тоді сторінка на sergeant.2dmanager.com.ua прочитає /api/auth/get-session залогіненого відвідувача разом із session.token і використає його як Bearer до 7 днів (rolling). Це повне захоплення акаунта: фінанси, здоровʼя, AI-чат, експорт, видалення даних. Також доступні будь-які мутації /api/v1/*, бо X-Requested-With дозволений у preflight для цього origin.
+- **Вплив:** Будь-хто може зареєструвати 2dmanager.com.ua. Тоді сторінка на sergeant.2dmanager.com.ua прочитає /api/auth/get-session залогіненого відвідувача разом із session.token і використає його як Bearer до 7 днів (rolling). Це повне захоплення акаунта: фінанси, здоровʼя, AI-чат, експорт, видалення даних. Також доступні будь-які мутації /api/v1/\*, бо X-Requested-With дозволений у preflight для цього origin.
 - **Рекомендація:** Негайно прибрати https://sergeant.2dmanager.com.ua з PROD_ORIGINS (cors.ts) і перевірити ALLOWED_ORIGINS/ALLOWED_ORIGIN_REGEX у Coolify. Прибрати хост із DEEP_LINK_HTTPS_HOSTS, AndroidManifest, app.config.ts, deepLinks.ts, deployEnvironment.ts і security.txt. Варто викупити 2dmanager.com.ua, щоб домен не перехопили. Додати CI-перевірку, що кожен hardcoded prod-origin резолвиться і належить проєкту. Розглянути SameSite=Lax: app.sergeant.com.ua і api.sergeant.com.ua є same-site.
 
 **Докази:**
@@ -556,7 +556,7 @@ Verifier script <scratch>/agents/verify-api-live-gap-better-auth-catchall-subrou
 
 ### `sec-06` [medium] Непідтверджений акаунт міняє email миттєво без пароля: крадіжка сесії → скидання пароля → захоплення акаунта
 
-- **Стан:** частково виправлено в гілці claude/fix-sec-06-email-change-fresh-session (рішення власника «а»: для непідтвердженого акаунта change-email лише зі свіжою сесією до 10 хв, інакше 403 SESSION_NOT_FRESH, і лист-сповіщення на СТАРУ адресу після зміни; перевірка стоїть у databaseHooks.user.update, тож Bearer-запит її не обходить; лишилось: пароль не вимагається, ліміту змін email на добу немає, `updateEmailWithoutVerification` не вимкнено, REQUIRE_EMAIL_VERIFICATION не вмикали; гілку підтвердженого email не чіпали)
+- **Стан:** частково виправлено в [#1551](https://github.com/SkOrDs-02/sergeant/pull/1551) (змерджено 2026-10-20) (рішення власника «а»: для непідтвердженого акаунта change-email лише зі свіжою сесією до 10 хв, інакше 403 SESSION_NOT_FRESH, і лист-сповіщення на СТАРУ адресу після зміни; перевірка стоїть у databaseHooks.user.update, тож Bearer-запит її не обходить; лишилось: пароль не вимагається, ліміту змін email на добу немає, `updateEmailWithoutVerification` не вимкнено, REQUIRE_EMAIL_VERIFICATION не вмикали; гілку підтвердженого email не чіпали)
 - **Перевірка:** підтверджено · **Зусилля:** S · **Швидкий виграш** · **Область:** server: auth/акаунт
 - **Де:** apps/server/src/auth.ts:310-342,368; apps/server/src/env/env.ts:85-88; node_modules/better-auth/dist/api/routes/update-user.mjs:375-450
 - **Першопричина:** changeEmail.updateEmailWithoutVerification: true при REQUIRE_EMAIL_VERIFICATION=false за замовчуванням: для emailVerified=false Better Auth одразу перезаписує адресу, не питаючи пароля чи свіжої сесії і не повідомляючи стару адресу. Рішення задокументоване як навмисне (auth.ts:310-342), але сценарій зловмисника з чужою сесією там не розглянуто.
@@ -1111,7 +1111,7 @@ FORM correct pw → 200 + session cookies (form-вхід повністю роб
 
 ### `sec-12` [medium] 10 неправильних PIN підряд знімають блокування й пускають у застосунок
 
-- **Стан:** виправлено в гілці claude/fix-sec-12-pin-lock-no-bypass
+- **Стан:** виправлено в [#1561](https://github.com/SkOrDs-02/sergeant/pull/1561) (змерджено 2026-10-20)
 - **Перевірка:** підтверджено · **Зусилля:** S · **Швидкий виграш** · **Область:** web: блокування застосунку
 - **Де:** apps/web/src/core/security/lockStorage.ts:209-216; apps/web/src/core/security/useAppLock.ts:168-176; apps/web/src/shared/i18n/uk.privacy.ts:40
 - **Першопричина:** На 10-й невдачі lockStorage стирає креденшел і повертає wiped:true, а useAppLock на це ставить state='idle', тобто замок просто зникає (навмисне «Decision #4»). Іншого шляху після стирання, як-от вихід чи повторний вхід, немає.
@@ -1248,7 +1248,7 @@ routes/nutrition.ts:100-104 analyze-photo: `requireAiQuota("photo")`; :117-130 r
 
 ### `sec-15` [medium] Сільпо OAuth: state не прив'язаний до браузера, тож посилання атакера прив'язує Сільпо-акаунт жертви до Sergeant-акаунта атакера
 
-- **Стан:** виправлено в гілці claude/fix-sec-15-silpo-oauth-state
+- **Стан:** виправлено в [#1493](https://github.com/SkOrDs-02/sergeant/pull/1493) (змерджено 2026-10-09)
 - **Перевірка:** підтверджено · **Зусилля:** M · **Область:** server: інтеграція Сільпо
 - **Де:** apps/server/src/routes/silpo.ts:103-133,135-225 (165-197),582-592; apps/server/src/modules/silpo/oauth.ts:246-265
 - **Першопричина:** /api/silpo/connect зберігає state з userId ініціатора і віддає 302 на authorize-URL, а анонімний /api/silpo/callback визначає власника лише за state з БД (PKCE verifier теж лежить на сервері). Немає ні cookie-nonce, ні звірки сесії, а коментар у callbackHandler вважає цей сценарій нешкідливим.
@@ -1371,7 +1371,7 @@ silpo.ts:165-197: `const pending = await consumeAuthorizationState(state); ... c
 - **ID:** `api-live/input-fuzz#3` · **Вердикт:** підтверджено · **Лейн:** Живе API · **Категорія:** `auth-session`
 - **Де:** apps/server/src/auth.ts:427-431 (session.cookieCache maxAge 300s, без ліміту довжини name); sanitizeUserImage фільтрує лише image; web ставить max(80) у apps/web/src/core/profile/PersonalInfoSection.tsx:27, сервер — ні
 - **Вплив:** Поле name не має серверного ліміту й не проходить ту саму санітизацію, що image (sanitizeUserImage існує саме через інцидент з 19KB-аватаркою). Один update-user із довгим name роздуває JWT-cookie-кеш у 8 chunk-ів, після чого власний браузер акаунта впирається в ліміт заголовків (431) і застосунок не вантажиться ~5 хв. Вектор self-DoS/грифінгу для будь-кого з валідною сесією.
-- **Рекомендація:** Додати серверний ліміт довжини name (дзеркалити web-ліміт 80, напр. у databaseHooks.user.*.before поряд із sanitizeUserImage) і відкидати не-рядкові типи замість JSON-коерції.
+- **Рекомендація:** Додати серверний ліміт довжини name (дзеркалити web-ліміт 80, напр. у databaseHooks.user.\*.before поряд із sanitizeUserImage) і відкидати не-рядкові типи замість JSON-коерції.
 
 **Докази:**
 
@@ -1773,7 +1773,7 @@ deploy-landing.yml:25-26 (dispatch only), jobs.deploy has no `if`. deploy-api.mj
 
 <a id="sec-21"></a>
 
-### `sec-21` [low] /api/internal/* і /api/push/send у проді тримаються на одному статичному секреті: IP-allowlist і HMAC необов'язкові, loopback пропускається завжди
+### `sec-21` [low] /api/internal/\* і /api/push/send у проді тримаються на одному статичному секреті: IP-allowlist і HMAC необов'язкові, loopback пропускається завжди
 
 - **Стан:** відкрито
 - **Перевірка:** підтверджено · **Зусилля:** M · **Область:** server: internal API
@@ -1788,7 +1788,7 @@ deploy-landing.yml:25-26 (dispatch only), jobs.deploy has no `if`. deploy-api.mj
 #### [low] У проді не вимагаються секрети внутрішнього контуру; WEBHOOK_HMAC — no-op без секрета, loopback завжди дозволено на /api/push/send
 
 - **ID:** `server-static/gap-blocked-input-route-findings#9` · **Вердикт:** підтверджено · **Лейн:** Статика сервера · **Категорія:** `config`
-- **Уже відстежується:** docs/work/specs/audits/ai-pipeline-2026-08-05.md (B27 — /api/internal/* тримається на одному статичному секреті; «Лишається: HMAC-обовʼязковість»)
+- **Уже відстежується:** docs/work/specs/audits/ai-pipeline-2026-08-05.md (B27 — /api/internal/\* тримається на одному статичному секреті; «Лишається: HMAC-обовʼязковість»)
 - **Де:** apps/server/src/env/env.ts:246,252,475,477 (stringWithDefault('')), assertStartupEnv env.ts:713+ (throw лише для METRICS_TOKEN/BETTER_AUTH_URL/SENTRY_DSN/token-enc-key); http/requireInternalIp.ts:84,204-211 (LOOPBACK_DEFAULTS завжди); http/verifyWebhookSignature.ts:80-82 (no-op без секрета); routes/internal/index.ts:66-100
 - **Вплив:** Defense-in-depth внутрішнього контуру тримається на одному bearer-секреті: якщо WEBHOOK_HMAC_SECRET не виставлено (а старт це лише warn'ить), HMAC-шар мовчки вимкнений. Якщо API_SECRET/INTERNAL_API_KEY колись виставлять порожніми — лише 503 рятує. Loopback-always у поєднанні з хибним TRUST_PROXY відкриває IP-рівень push/send. Прямої експлуатації у поточній конфігурації немає (fail-closed тримає), тому low.
 - **Рекомендація:** У assertStartupEnv для production зробити throw (а не warn) при WEBHOOK_HMAC_REQUIRED=true &amp;&amp; !WEBHOOK_HMAC_SECRET, і вимагати явний PUSH_INTERNAL_ALLOWED_IPS/INTERNAL_ALLOWED_IPS у проді (або свідомий opt-out). Перекалібрувати та зафіксувати TRUST_PROXY під фактичним ланцюгом Vercel→Traefik і покрити тестом, щоб req.ip не спуфився у loopback.
@@ -1821,7 +1821,7 @@ node --import tsx iip.mts — показує next() для 127.0.0.1 та ::ffff
 Прогін <scratch>/agents/verify-server-static-gap-blocked-input-route-findings/iip.mts (node --import tsx): 'prod-mode, empty allowlist, ip 127.0.0.1 -> next() (allowed)'; '::ffff:127.0.0.1 -> next() (allowed)'; '203.0.113.5 -> 403 IP_NOT_ALLOWED'. Гілка 503 NOT_CONFIGURED у requireInternalIp.ts:190-200 недосяжна, бо buildBlockList завжди містить LOOPBACK_DEFAULTS. Ланцюжок на /api/push/send (routes/push.ts:108-126): broadRateLimit, далі requireInternalIp(PUSH_INTERNAL_ALLOWED_IPS), далі requireApiSecret('API_SECRET'), отже навіть пройдений IP-шар упирається в constant-time перевірку секрета. INTERNAL_ALLOWED_IPS (env.ts:248-252) свідомо не монтується, коли порожній, і це теж задокументовано в рамках B27.
 ```
 
-#### [low] /api/internal/* у проді тримається на одному статичному bearer; IP-allowlist і HMAC опційні, а HMAC має дефекти, через які його непрактично вмикати
+#### [low] /api/internal/\* у проді тримається на одному статичному bearer; IP-allowlist і HMAC опційні, а HMAC має дефекти, через які його непрактично вмикати
 
 - **ID:** `server-static-redo/route-authz#8` · **Вердикт:** підтверджено · **Лейн:** Статика сервера · повтор route-authz · **Категорія:** `authz`
 - **Уже відстежується:** docs/work/specs/audits/ai-pipeline-2026-08-05.md
@@ -2185,7 +2185,7 @@ v1.log, той самий непідтверджений користувач: P
 - **Серйозність від шукача:** medium
 - **Де:** apps/web/src/sw/pushPayload.ts:82-87; apps/web/src/sw.ts:84-108; packages/shared/src/schemas/api.ts:1336-1352; apps/server/src/modules/push/push.ts:388-397
 - **Вплив:** Захисний контроль, задокументований як «без цієї перевірки нотифікація стає вектором фішингу», не працює. Разом із підпискою, що переживає logout, будь-який власник акаунта може слати фішингові пуші від імені Sergeant на пристрої, де він колись вмикав сповіщення.
-- **Рекомендація:** Валідувати через парсинг: `const u = new URL(raw, self.location.origin); return u.origin === self.location.origin ? u.pathname + u.search + u.hash : null;` і відкидати рядки з `\` чи керівними символами. На сервері обмежити url у PushTestRequestSchema відносним шляхом застосунку (regex ^/[A-Za-z0-9/_?=&amp;.-]*$) або allowlist-ом.
+- **Рекомендація:** Валідувати через парсинг: `const u = new URL(raw, self.location.origin); return u.origin === self.location.origin ? u.pathname + u.search + u.hash : null;` і відкидати рядки з `\` чи керівними символами. На сервері обмежити url у PushTestRequestSchema відносним шляхом застосунку (regex ^/[A-Za-z0-9/_?=&amp;.-]\*$) або allowlist-ом.
 
 **Докази:**
 
@@ -2446,7 +2446,7 @@ The finder's export agents/browser-surfaces-finyk-flows/r3-csvinj.csv contains u
 - **Де:** apps/server/src/modules/chat/toolOutputWrapping.ts:98-102,116-118; apps/web/src/core/lib/hubChatContext/finance.ts:187-189
 - **Першопричина:** escapeUserDataClose/escapeToolOutputClose замінюють тільки буквальні '&lt;/user_data&gt;' і '&lt;/tool_output&gt;', тож варіанти з пробілом чи переносом ('&lt;/user_data &gt;', '&lt;/ user_data&gt;') проходять і візуально закривають огорожу.
 - **Вплив:** Сторонній текст (опис банківської операції в блоці [Останні операції]) може «вийти» з огорожі даних і подати інструкції поза нею; разом із reversible-інструментами без підтвердження це полегшує непряму prompt-injection. DATA_FENCE_RULE у системному промпті лишається другою лінією.
-- **Що зробити:** Екранувати будь-які варіанти &lt;\s*/?\s*(user_data|tool_output)\s*&gt; або повністю замінювати &lt; і &gt; у недовірених даних на сутності.
+- **Що зробити:** Екранувати будь-які варіанти &lt;\s*/?\s*(user_data|tool_output)\s\*&gt; або повністю замінювати &lt; і &gt; у недовірених даних на сутності.
 
 Знахідок у кластері: 1.
 
@@ -2670,7 +2670,7 @@ verify-server-static-auth-session/v2.mjs + v2.log. Sign-in з `X-Forwarded-For: 
 - **Лише локальне середовище:** так
 - **Уже відстежується:** docs/work/specs/audits/security-comprehensive-2026-08-04.md §1.1 «Увесь per-IP rate-limit веб-трафіку схлопнутий в один бакет» (калібрування TRUST_PROXY під Vercel Edge→Traefik, ADR-0074 TBD)
 - **Де:** apps/server/src/http/rateLimit.ts:92 (getIp-&gt;req.ip); apps/server/src/app.ts:110,113-115 (trustProxy=1 default); apps/server/src/lib/trustProxy.ts; apps/server/src/http/authMiddleware.ts:25-50 (authSensitiveRateLimit — default subject ip:&lt;req.ip&gt;)
-- **Вплив:** Локально будь-який per-IP лімітер обходиться ротацією X-Forwarded-For: anti-brute-force на /api/auth/* (per-IP бакет), pre-auth IP-лімітери sync/finyk, добові стелі barcode/food-search. У проді з ОДНИМ довіреним проксі (TRUST_PROXY=1, Coolify дописує реальний IP) це не експлуатується, і M2-хардинг забороняє TRUST_PROXY=true — тому envOnly для локального спостереження. Але вся per-IP безпека тримається на припущенні рівно одного довіреного хопа: якщо в проді зʼявиться другий хоп (напр. Cloudflare) без підняття TRUST_PROXY до 2, req.ip знову стане підробним і brute-force/квоти-лімітери впадуть.
+- **Вплив:** Локально будь-який per-IP лімітер обходиться ротацією X-Forwarded-For: anti-brute-force на /api/auth/\* (per-IP бакет), pre-auth IP-лімітери sync/finyk, добові стелі barcode/food-search. У проді з ОДНИМ довіреним проксі (TRUST_PROXY=1, Coolify дописує реальний IP) це не експлуатується, і M2-хардинг забороняє TRUST_PROXY=true — тому envOnly для локального спостереження. Але вся per-IP безпека тримається на припущенні рівно одного довіреного хопа: якщо в проді зʼявиться другий хоп (напр. Cloudflare) без підняття TRUST_PROXY до 2, req.ip знову стане підробним і brute-force/квоти-лімітери впадуть.
 - **Рекомендація:** Тримати TRUST_PROXY у відповідності з фактичною кількістю хопів у проді (перевірити, чи немає Cloudflare перед Coolify; якщо є — 2, інакше 1) і покрити перевіркою при деплою; для критичних лімітів додати per-account/per-target шар (як authAccountRateLimit), щоб не залежати лише від req.ip.
 
 **Докази:**
@@ -2881,7 +2881,7 @@ repro1.mjs, output in v2-parent-out.txt. A creates workout 7f2421f8…. B pushes
 #### [low] Більшість sync-апплаєрів не обмежують текстові й числові поля на сервері (межі є лише в nutrition)
 
 - **ID:** `server-static/sync-contract#9` · **Вердикт:** підтверджено · **Лейн:** Статика сервера · **Категорія:** `injection`
-- **Де:** apps/server/src/modules/sync/routine/applySyncFullState.ts:47-48,182-230 (habit/tag/category name, emoji, scope), routine/applySync.ts:90 (entries.name), fizruk/applySync.ts:81 (workout note), 206-209 (name_uk), fizruk/applyMisc.ts (data_json), finyk/applySync.ts:169 (data_json будь-якої форми), nutrition/applySync.ts:98-102 (kcal без меж); isWithinTextBound використовується лише в nutrition/*
+- **Де:** apps/server/src/modules/sync/routine/applySyncFullState.ts:47-48,182-230 (habit/tag/category name, emoji, scope), routine/applySync.ts:90 (entries.name), fizruk/applySync.ts:81 (workout note), 206-209 (name_uk), fizruk/applyMisc.ts (data_json), finyk/applySync.ts:169 (data_json будь-якої форми), nutrition/applySync.ts:98-102 (kcal без меж); isWithinTextBound використовується лише в nutrition/\*
 - **Вплив:** Обхід клієнтських лімітів через curl: роздуті імена ламають push-payload (ліміт 4 КБ), роздувають токени AI-контексту і збільшують обсяг БД. Здебільшого шкодить власному акаунту, але витрати LLM лягають на оператора.
 - **Рекомендація:** Застосувати isWithinTextBound/parseOptionalBoundedNumber в усіх апплаєрах (routine, fizruk, finyk) за тим самим каноном, що й у nutrition, і обмежити розмір data_json для blob-таблиць.
 
@@ -3234,7 +3234,7 @@ psql: `hub|t|f` (rolname, rolsuper, rolbypassrls); tableowner=hub для всі�
 
 - **ID:** `server-static/db-migrations#10` · **Вердикт:** підтверджено · **Лейн:** Статика сервера · **Категорія:** `authz`
 - **Уже відстежується:** docs/work/specs/rls-ai-tables-and-isolation-gate.md
-- **Де:** apps/server/src/migrations/* (жодного ENABLE ROW LEVEL SECURITY/CREATE POLICY); apps/server/src/dbContext.ts:17-18; docs/work/specs/rls-ai-tables-and-isolation-gate.md
+- **Де:** apps/server/src/migrations/\* (жодного ENABLE ROW LEVEL SECURITY/CREATE POLICY); apps/server/src/dbContext.ts:17-18; docs/work/specs/rls-ai-tables-and-isolation-gate.md
 - **Вплив:** Ізоляція тенантів тримається лише на ручних `WHERE user_id = $1` у коді; другої лінії оборони в БД ще немає (відомо, у роботі).
 - **Рекомендація:** Завершити стадію 4 спеки (політики USING/WITH CHECK на AI-таблицях, роль без BYPASSRLS, FORCE ROW LEVEL SECURITY) і поширити на sync_op_log та модульні таблиці.
 
@@ -3379,7 +3379,7 @@ v3-signup-existing.mjs: `422 {"message":"User already exists. Use another email.
 - **Де:** apps/landing/vercel.json:50-56; apps/server/src/http/cors.ts:23-27
 - **Першопричина:** Лендинг оголошує Reporting-Endpoints і report-to на https://api.sergeant.com.ua/api/csp-report, але sergeant.com.ua і www немає в CORS-allowlist; за наявності report-to Chromium ігнорує report-uri.
 - **Вплив:** Порушення CSP на лендингу з Chrome/Edge (більшість трафіку) не доходять до csp_violation_total, тож регресія CSP чи спроба ін'єкції непомітні, хоча моніторинг формально налаштовано.
-- **Що зробити:** Дозволити https://sergeant.com.ua і www лише для /api/csp-report без credentials (або ACAO * на цьому шляху), чи прибрати report-to з лендингу й лишити report-uri.
+- **Що зробити:** Дозволити https://sergeant.com.ua і www лише для /api/csp-report без credentials (або ACAO \* на цьому шляху), чи прибрати report-to з лендингу й лишити report-uri.
 
 Знахідок у кластері: 1.
 
@@ -3423,7 +3423,7 @@ Scripts are in <scratch>/agents/verify-client-static-infra-headers-ci-deps/. v8-
 - **Де:** apps/web/package.json:9; .github/workflows/mobile-shell-android-release.yml; .github/workflows/mobile-shell-ios-release.yml; apps/web/src/shared/lib/api/apiUrl.ts:71-79; apps/web/src/core/auth/authClient.ts:10-16; apps/mobile-shell/capacitor.config.ts:22; apps/web/vite.config.js:316-319
 - **Першопричина:** Release-воркфлоу збирають веб без VITE_API_BASE_URL, тож apiUrl() і getAuthBaseURL() ведуть на https://localhost WebView; прод-CORS не дозволяє https://localhost і capacitor://localhost. Видалення source map делеговано Sentry-плагіну, який без SENTRY_AUTH_TOKEN вимкнений.
 - **Вплив:** Будь-який APK/IPA з release-воркфлоу не залогіниться, а в пакет потрапляють 405 файлів .map (24 МБ) з кодом. Мобільний контур на паузі (ADR-0094), тож це міна для майбутнього релізу.
-- **Що зробити:** У build:capacitor і воркфлоу вимагати VITE_API_BASE_URL (падати, якщо порожній при VITE_TARGET=capacitor); додати origin-и WebView у ALLOWED_ORIGINS і trustedOrigins лише разом із релізом; для capacitor-білду sourcemap: false або постбілд-видалення *.map.
+- **Що зробити:** У build:capacitor і воркфлоу вимагати VITE_API_BASE_URL (падати, якщо порожній при VITE_TARGET=capacitor); додати origin-и WebView у ALLOWED_ORIGINS і trustedOrigins лише разом із релізом; для capacitor-білду sourcemap: false або постбілд-видалення \*.map.
 - **Примітка:** Частково відомо: docs/work/specs/launch/phases/02-capacitor-launch.md (лише CORS). Той самий корінь видалення мап, що в sec-57.
 
 Знахідок у кластері: 1.
@@ -3432,9 +3432,9 @@ Scripts are in <scratch>/agents/verify-client-static-infra-headers-ci-deps/. v8-
 
 - **ID:** `client-static/landing-shell-mobile#6` · **Вердикт:** підтверджено · **Лейн:** Статика клієнта та інфри · **Категорія:** `config`
 - **Уже відстежується:** docs/work/specs/launch/phases/02-capacitor-launch.md (partial: CORS only, line 25)
-- **Де:** apps/web/package.json:9 (build:capacitor без VITE_API_BASE_URL); .github/workflows/mobile-shell-android-release.yml (крок «Build web bundle», жодного VITE__/SENTRY__); mobile-shell-ios-release.yml; apps/web/src/shared/lib/api/apiUrl.ts:71-79; apps/web/src/core/auth/authClient.ts:10-16; apps/server/src/http/cors.ts:23-27; apps/mobile-shell/capacitor.config.ts:22 (webDir ../server/dist); apps/web/vite.config.js:317-319
+- **Де:** apps/web/package.json:9 (build:capacitor без VITE_API_BASE_URL); .github/workflows/mobile-shell-android-release.yml (крок «Build web bundle», жодного VITE**/SENTRY**); mobile-shell-ios-release.yml; apps/web/src/shared/lib/api/apiUrl.ts:71-79; apps/web/src/core/auth/authClient.ts:10-16; apps/server/src/http/cors.ts:23-27; apps/mobile-shell/capacitor.config.ts:22 (webDir ../server/dist); apps/web/vite.config.js:317-319
 - **Вплив:** Будь-який APK/IPA з release-воркфлоу не зможе залогінитись: запити йдуть на локальний asset-сервер WebView, а з явним base URL їх відріже CORS. Продукт на паузі (ADR-0094), тож це міна для майбутнього релізу. Плюс зайві 24 МБ у пакеті.
-- **Рекомендація:** У build:capacitor/воркфлоу вимагати VITE_API_BASE_URL (fail build, якщо порожній при VITE_TARGET=capacitor). Додати https://localhost і capacitor://localhost у ALLOWED_ORIGINS прод-сервера і в trustedOrigins Better Auth лише разом із релізом shell. Для capacitor-білду ставити sourcemap: false або видаляти *.map після білду.
+- **Рекомендація:** У build:capacitor/воркфлоу вимагати VITE_API_BASE_URL (fail build, якщо порожній при VITE_TARGET=capacitor). Додати https://localhost і capacitor://localhost у ALLOWED_ORIGINS прод-сервера і в trustedOrigins Better Auth лише разом із релізом shell. Для capacitor-білду ставити sourcemap: false або видаляти \*.map після білду.
 
 **Докази:**
 
@@ -3508,15 +3508,15 @@ docker-compose.yml:38 `- "5432:5432"`; ops/docker-compose.ops.yml:17 `"127.0.0.1
 
 <a id="sec-50"></a>
 
-### `sec-50` [info] CSP script-src ширший, ніж потрібно: wildcard *.posthog.com і зайві Sentry CDN-хости, Report-Only нічого не ловить, meta-CSP у проді теж діє
+### `sec-50` [info] CSP script-src ширший, ніж потрібно: wildcard \*.posthog.com і зайві Sentry CDN-хости, Report-Only нічого не ловить, meta-CSP у проді теж діє
 
 - **Стан:** відкрито
 - **Перевірка:** підтверджено · **Зусилля:** S · **Область:** web+landing: CSP
 - **Де:** apps/web/vercel.json:41-46; apps/landing/vercel.json (Content-Security-Policy); apps/web/index.html:55-90
-- **Першопричина:** script-src обох сайтів дозволяє https://*.posthog.com, а веб ще *.sentry-cdn.com, *.sentry.io і js.sentry-cdn.com, хоча Sentry бандлиться з npm. Report-Only є строгим надмножинним варіантом enforced-політики. Коментар index.html:59 хибно стверджує, що meta-CSP у проді невидимий.
+- **Першопричина:** script-src обох сайтів дозволяє https://_.posthog.com, а веб ще _.sentry-cdn.com, \*.sentry.io і js.sentry-cdn.com, хоча Sentry бандлиться з npm. Report-Only є строгим надмножинним варіантом enforced-політики. Коментар index.html:59 хибно стверджує, що meta-CSP у проді невидимий.
 - **Вплив:** При будь-якій майбутній HTML-ін'єкції широкий script-src лишає потенційні гаджети на доменах, що роздають JS чужих PostHog-проєктів; Report-Only лише дублює звіти; розширення політики тільки у vercel.json тихо зріже meta-тег. Прямого вектора сьогодні немає, вразливого sink-а в apps/web не знайдено.
 - **Що зробити:** Прибрати Sentry CDN-хости з script-src, звузити PostHog до конкретного assets-хоста (або disable_external_dependency_loading чи проксі через власний домен), видалити або посилити Report-Only, виправити коментар в index.html і додати тест, що meta-CSP не вужча за заголовок.
-- **Примітка:** Конкретний гаджет через config.js (landing-shell-mobile#9, uncertain) верифікатор не підтвердив: прод-config.js лише виставляє window._POSTHOG_REMOTE_CONFIG. Wildcard задокументовано як навмисний у C2-frontend-csp.md; прибирання Report-Only уже в open-work.
+- **Примітка:** Конкретний гаджет через config.js (landing-shell-mobile#9, uncertain) верифікатор не підтвердив: прод-config.js лише виставляє window.\_POSTHOG_REMOTE_CONFIG. Wildcard задокументовано як навмисний у C2-frontend-csp.md; прибирання Report-Only уже в open-work.
 
 Знахідок у кластері: 3.
 
@@ -3526,7 +3526,7 @@ docker-compose.yml:38 `- "5432:5432"`; ops/docker-compose.ops.yml:17 `"127.0.0.1
 - **Серйозність від шукача:** low
 - **Уже відстежується:** docs/work/specs/security-hardening/C2-frontend-csp.md
 - **Де:** apps/web/vercel.json:41-46; apps/web/index.html:55-90 (коментар рядок 59, meta рядок 87)
-- **Вплив:** Якщо з'явиться HTML-інʼєкція, script-src з *.posthog.com дає готовий гаджет для обходу CSP. Report-Only лише дублює звіти. Через неправильне уявлення про meta-CSP майбутнє розширення політики лише у vercel.json (новий connect-src тощо) у проді тихо заблокує meta-тег.
+- **Вплив:** Якщо з'явиться HTML-інʼєкція, script-src з \*.posthog.com дає готовий гаджет для обходу CSP. Report-Only лише дублює звіти. Через неправильне уявлення про meta-CSP майбутнє розширення політики лише у vercel.json (новий connect-src тощо) у проді тихо заблокує meta-тег.
 - **Рекомендація:** Прибрати Sentry CDN-хости з script-src. Звузити PostHog до конкретного assets-хоста (напр. https://eu-assets.i.posthog.com) або ввімкнути `disable_external_dependency_loading`, якщо replay/heatmaps можна вантажити з бандла. Видалити Report-Only або зробити його строгішим кандидатом (напр. з trusted-types). Виправити коментар в index.html і додати тест, що meta-CSP не вужча за заголовок.
 
 **Докази:**
@@ -3553,13 +3553,13 @@ The facts check out, but the impact is overstated. (1) Report-Only is strictly l
 v9-diff.mjs: `script-src | RO-extra: 'unsafe-inline' | RO-missing: -`; `connect-src | RO-extra: http://localhost:3000 http://127.0.0.1:3000 wss: ws: | RO-missing: -`. Meta vs enforced: meta-missing is '-' for every comparable directive. v9-meta.mjs: prod /sign-in returns both the header CSP and the `<meta http-equiv="Content-Security-Policy">`. The guard test is cspMonitoringAllowlist.test.ts:256-322 (S11 parity, both directions).
 ```
 
-#### [info] CSP обох сайтів дозволяє script-src https://*.posthog.com: config.js чужого PostHog-проєкту стає гаджетом обходу CSP
+#### [info] CSP обох сайтів дозволяє script-src https://\*.posthog.com: config.js чужого PostHog-проєкту стає гаджетом обходу CSP
 
 - **ID:** `client-static/landing-shell-mobile#9` · **Вердикт:** сумнівно · **Лейн:** Статика клієнта та інфри · **Категорія:** `xss`
 - **Серйозність від шукача:** low
 - **Де:** apps/landing/vercel.json (Content-Security-Policy: script-src 'self' https://_.posthog.com); apps/web/vercel.json (Content-Security-Policy: script-src 'self' 'wasm-unsafe-eval' https://_.posthog.com …)
 - **Вплив:** Defense-in-depth: за наявності будь-якої HTML-інʼєкції (на web: markdown AI-чату, назви тощо) CSP не зупинить &lt;script src="https://eu-assets.i.posthog.com/array/phc_ATTACKER/config.js"&gt;. Ризик реалізується лише разом з іншою вразливістю.
-- **Рекомендація:** Увімкнути в posthog-js disable_external_dependency_loading: true (розширення бандлити або вимкнути) і прибрати *.posthog.com зі script-src, лишивши тільки connect-src. Або проксіювати PostHog через власний домен і дозволити лише його.
+- **Рекомендація:** Увімкнути в posthog-js disable_external_dependency_loading: true (розширення бандлити або вимкнути) і прибрати \*.posthog.com зі script-src, лишивши тільки connect-src. Або проксіювати PostHog через власний домен і дозволити лише його.
 
 **Докази:**
 
@@ -3588,7 +3588,7 @@ Verifier script verify-client-static-landing-shell-mobile/phcfg.mjs saved prod c
 #### [info] CSP `script-src` дозволяє wildcard `https://*.posthog.com` (і `*.sentry.io`), тобто домени, які роздають JS, налаштований будь-яким клієнтом PostHog
 
 - **ID:** `client-static/web-xss-injection#8` · **Вердикт:** підтверджено · **Лейн:** Статика клієнта та інфри · **Категорія:** `config`
-- **Де:** apps/web/vercel.json (headers → Content-Security-Policy); apps/landing/vercel.json (script-src 'self' https://*.posthog.com)
+- **Де:** apps/web/vercel.json (headers → Content-Security-Policy); apps/landing/vercel.json (script-src 'self' https://\*.posthog.com)
 - **Вплив:** Якщо колись з'явиться HTML-ін'єкція, CSP її не зупинить: атакувальник підключить свій скрипт із дозволеного домену PostHog. Зараз прямого впливу немає.
 - **Рекомендація:** Звузити до конкретних хостів (наприклад, `https://eu-assets.i.posthog.com`) або проксувати PostHog через власний домен і заборонити remote config/site apps. Те саме зробити для `*.sentry.io`: потрібен лише конкретний ingest у connect-src, а не в script-src.
 
@@ -3628,24 +3628,24 @@ The code shows these allowances are wider than the app uses:
 
 <a id="sec-51"></a>
 
-### `sec-51` [info] Латентний ризик: VITE_INTERNAL_API_KEY для /api/internal/* вшивається в браузерний бандл, якщо змінну колись задати
+### `sec-51` [info] Латентний ризик: VITE_INTERNAL_API_KEY для /api/internal/\* вшивається в браузерний бандл, якщо змінну колись задати
 
 - **Стан:** відкрито
 - **Перевірка:** підтверджено · **Зусилля:** S · **Область:** web: збірка
 - **Де:** apps/web/src/shared/lib/api/internalFetch.ts:39-63; apps/web/src/pages/strategy/StrategyPage.tsx:24-33; apps/web/vite.config.js
 - **Першопричина:** internalFetch.ts читає import.meta.env.VITE_INTERNAL_API_KEY і ставить його в Authorization; механічного запобіжника у vite.config чи лінтах немає, а /strategy має позначку @nextStep на монтування.
-- **Вплив:** Якщо StrategyPage змонтують і хтось задасть змінну у Vercel, m2m-ключ до /api/internal/* (видача Pro, email користувачів, реплей вебхуків) опиниться в публічному JS. Поточний бандл чистий, код tree-shaken.
+- **Вплив:** Якщо StrategyPage змонтують і хтось задасть змінну у Vercel, m2m-ключ до /api/internal/\* (видача Pro, email користувачів, реплей вебхуків) опиниться в публічному JS. Поточний бандл чистий, код tree-shaken.
 - **Що зробити:** У vite.config.js падати, якщо mode=production або VERCEL=1 і задано VITE_INTERNAL_API_KEY; довгостроково перевести strategic UI на сесійну авторизацію з роллю founder.
 - **Примітка:** Потребує двох майбутніх дій, тому верифікатор знизив до info. Пов'язано з sec-21 (один статичний bearer).
 
 Знахідок у кластері: 1.
 
-#### [info] Латентний ризик: VITE_INTERNAL_API_KEY (bearer для /api/internal/*) вшивається в браузерний бандл, якщо змінну колись задати
+#### [info] Латентний ризик: VITE_INTERNAL_API_KEY (bearer для /api/internal/\*) вшивається в браузерний бандл, якщо змінну колись задати
 
 - **ID:** `client-static/landing-shell-mobile#10` · **Вердикт:** підтверджено · **Лейн:** Статика клієнта та інфри · **Категорія:** `config`
 - **Серйозність від шукача:** low
 - **Де:** apps/web/src/shared/lib/api/internalFetch.ts:39-62; apps/web/src/pages/strategy/StrategyPage.tsx:24-33 (@nextStep — змонтувати /strategy у router); apps/web/vite.config.js (жодного guard-а)
-- **Вплив:** Якщо StrategyPage змонтують за @nextStep і хтось виставить VITE_INTERNAL_API_KEY у Vercel env, n8n-PAT для /api/internal/* (GDPR, mono, webhook replay) опиниться в публічному JS. Від повного доступу до internal API тоді відділяє лише requireInternalIp.
+- **Вплив:** Якщо StrategyPage змонтують за @nextStep і хтось виставить VITE_INTERNAL_API_KEY у Vercel env, n8n-PAT для /api/internal/\* (GDPR, mono, webhook replay) опиниться в публічному JS. Від повного доступу до internal API тоді відділяє лише requireInternalIp.
 - **Рекомендація:** Додати у vite.config.js fail-fast: кидати помилку, якщо mode=production або VERCEL=1 і заданий VITE_INTERNAL_API_KEY. Довгостроково перевести strategic UI на звичайну сесійну авторизацію з роллю founder замість m2m-ключа.
 
 **Докази:**
@@ -3907,7 +3907,7 @@ w18-legal.mjs: /legal/privacy → «Founder/lawyer review gate: це робоч�
 - **Де:** apps/web/vite.config.js:150-151,316-318,340
 - **Першопричина:** Видалення мап зроблено через filesToDeleteAfterUpload Sentry-плагіна, а окремий injectManifest-білд VitePWA цей крок не покриває.
 - **Вплив:** Нових секретів це не розкриває (репо публічне), але суперечить наміру «мапи не серваться публічно» і показує, що інший пізній артефакт так само проскочить повз видалення.
-- **Що зробити:** Вимкнути sourcemap для injectManifest-білду або видаляти dist/**/*.map окремим постбілд-кроком після VitePWA.
+- **Що зробити:** Вимкнути sourcemap для injectManifest-білду або видаляти dist/\*_/_.map окремим постбілд-кроком після VitePWA.
 - **Примітка:** Той самий корінь, що й .map в APK у sec-48.
 
 Знахідок у кластері: 1.
@@ -3917,7 +3917,7 @@ w18-legal.mjs: /legal/privacy → «Founder/lawyer review gate: це робоч�
 - **ID:** `client-static/landing-shell-mobile#12` · **Вердикт:** підтверджено · **Лейн:** Статика клієнта та інфри · **Категорія:** `config`
 - **Де:** apps/web/vite.config.js:150-151 (VitePWA strategies: injectManifest), :316-318 (filesToDeleteAfterUpload), :340 (sourcemap: hidden)
 - **Вплив:** Репо публічне, тож нових секретів це не розкриває. Але це розбіжність із наміром «Map-файли видаляються, щоб не серватись публічно», і ознака того, що інший пізній артефакт так само проскочить повз видалення.
-- **Рекомендація:** Вимкнути sourcemap для injectManifest-білду (injectManifest.rollupOptions / buildPlugins) або видаляти dist/**/*.map окремим постбілд-кроком після VitePWA.
+- **Рекомендація:** Вимкнути sourcemap для injectManifest-білду (injectManifest.rollupOptions / buildPlugins) або видаляти dist/\*_/_.map окремим постбілд-кроком після VitePWA.
 
 **Докази:**
 
@@ -3945,7 +3945,7 @@ Verifier hdrs.mjs: app.sergeant.com.ua/sw.js.map 200 (body begins with workbox-c
 
 <a id="sec-58"></a>
 
-### `sec-58` [info] Прод віддає assetlinks.json і apple-app-site-association з плейсхолдерами REPLACE_WITH_…
+### `sec-58` [info] Прод віддає assetlinks.json і apple-app-site-association з плейсхолдерами REPLACE*WITH*…
 
 - **Стан:** відкрито
 - **Перевірка:** підтверджено · **Зусилля:** S · **Область:** web: .well-known / мобільні лінки
@@ -3957,7 +3957,7 @@ Verifier hdrs.mjs: app.sergeant.com.ua/sw.js.map 200 (body begins with workbox-c
 
 Знахідок у кластері: 1.
 
-#### [info] Прод віддає assetlinks.json і apple-app-site-association з плейсхолдерами REPLACE_WITH_…
+#### [info] Прод віддає assetlinks.json і apple-app-site-association з плейсхолдерами REPLACE*WITH*…
 
 - **ID:** `client-static/landing-shell-mobile#7` · **Вердикт:** підтверджено · **Лейн:** Статика клієнта та інфри · **Категорія:** `config`
 - **Серйозність від шукача:** low
@@ -3992,18 +3992,18 @@ hdrs.mjs підтвердив тіла обох файлів на проді. П
 
 <a id="sec-59"></a>
 
-### `sec-59` [info] Allowlist-и нативних deep-link у вебі й оболонці розійшлися: мертві префікси і бракує /verify-email, /settings, /legal/*
+### `sec-59` [info] Allowlist-и нативних deep-link у вебі й оболонці розійшлися: мертві префікси і бракує /verify-email, /settings, /legal/\*
 
 - **Стан:** відкрито
 - **Перевірка:** підтверджено · **Зусилля:** S · **Область:** web+mobile-shell: deep links
 - **Де:** apps/web/src/core/app/ShellDeepLinkBridge.tsx:31-67; apps/mobile-shell/src/index.ts:72-91,124-150
-- **Першопричина:** Два незалежні списки (ShellDeepLinkBridge і mobile-shell) ведуться вручну: обидва містять мертві /help, /coach, /oauth, /design, не містять /verify-email, /settings, /insights, /legal/*, /capabilities, /onboarding, а '/?query' shell пропускає, веб відкидає.
+- **Першопричина:** Два незалежні списки (ShellDeepLinkBridge і mobile-shell) ведуться вручну: обидва містять мертві /help, /coach, /oauth, /design, не містять /verify-email, /settings, /insights, /legal/\*, /capabilities, /onboarding, а '/?query' shell пропускає, веб відкидає.
 - **Вплив:** У нативній оболонці App Links на верифікацію email, повернення з оплати чи Сільпо і юридичні сторінки мовчки відкидаються. Мобільний контур на паузі, але баг-фікси дозволені.
 - **Що зробити:** Генерувати обидва allowlist-и з одного джерела (STANDALONE_ROUTE_PATHS, PATH_BASED_MODULE_IDS, redirect-префікси), вирівняти обробку '/?query', прибрати мертві префікси.
 
 Знахідок у кластері: 1.
 
-#### [info] Дрейф allowlist-ів нативних deep-link: мертві /help,/coach,/oauth,/design; бракує /verify-email,/settings,/legal/*,/capabilities,/insights,/onboarding; web відкидає `/?query`, який shell пропускає
+#### [info] Дрейф allowlist-ів нативних deep-link: мертві /help,/coach,/oauth,/design; бракує /verify-email,/settings,/legal/\*,/capabilities,/insights,/onboarding; web відкидає `/?query`, який shell пропускає
 
 - **ID:** `client-static/web-route-guards#9` · **Вердикт:** підтверджено · **Лейн:** Статика клієнта та інфри · **Категорія:** `config`
 - **Серйозність від шукача:** low

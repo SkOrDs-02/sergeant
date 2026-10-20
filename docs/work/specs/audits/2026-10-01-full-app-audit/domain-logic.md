@@ -199,7 +199,7 @@ Own live run (debtpaid.mjs, audit_pool97). create_debt VPaidDebt 300 → d_17909
 
 ### `logic-04` [medium] Старіння 1ПМ скидається одним легким підходом: калькулятор навантаження знову рахує від піку за всю історію
 
-- **Стан:** частково виправлено в гілці claude/fix-logic-04-1rm-decay-return (режим повернення тримається до ≥90% зниженого піка; пік за датою досягнення не старіє, а підказка наступного підходу в активному тренуванні та мобілка далі без сесій)
+- **Стан:** частково виправлено в [#1562](https://github.com/SkOrDs-02/sergeant/pull/1562) (змерджено 2026-10-20) (режим повернення тримається до ≥90% зниженого піка; пік за датою досягнення не старіє, а підказка наступного підходу в активному тренуванні та мобілка далі без сесій)
 - **Перевірка:** підтверджено · **Зусилля:** M · **Область:** fizruk-domain / web: Фізрук
 - **Де:** packages/fizruk-domain/src/domain/workouts/oneRmAging.ts:151-186; packages/fizruk-domain/src/domain/workouts/exerciseDetail.ts:216-290; apps/web/src/modules/fizruk/pages/Exercise.tsx:88-95, 418-426
 - **Першопричина:** computeOneRmAging визначає застарілість лише за давністю останньої силової сесії, а орієнтир бере як peak1rm за всю історію, помножений на коефіцієнт. Будь-який підхід до вправи обнуляє давність (factor = 1, returnMode = false), і орієнтир повертається до повного піку, хоч би якою слабкою була сесія повернення.
@@ -333,7 +333,7 @@ Live API (v8-v9-api.mjs, user verify-gapfinyk2-v1) with f2-debit-credit-cp1251.c
 
 ### `logic-07` [medium] Ліміти рахуються по-різному на Огляді, Плануванні й хабі: період і глибина історії не збігаються
 
-- **Стан:** виправлено в гілці claude/fix-logic-07-limits-period
+- **Стан:** виправлено в [#1471](https://github.com/SkOrDs-02/sergeant/pull/1471) (змерджено 2026-10-08)
 - **Перевірка:** підтверджено · **Зусилля:** M · **Область:** web: Фінік (Огляд, Планування)
 - **Де:** apps/web/src/modules/finyk/pages/overview/useOverviewData.ts:120-133, 176-179, 314-331; apps/web/src/modules/finyk/pages/overview/BudgetAlertsList.tsx:46-56; apps/web/src/modules/finyk/pages/budgets/Budgets.tsx:209-235, 283-290; apps/web/src/modules/finyk/hooks/useMonobankWebhook.ts:160-179, 257-267; apps/web/src/modules/finyk/hooks/useCoffeeLimitInsight.ts:100-117
 - **Першопричина:** Єдиного обчислення використання ліміту на всіх поверхнях немає. Алерти Огляду (budgetAlerts, BudgetAlertsList) порівнюють будь-який ліміт, зокрема тижневий і разовий, з витратами за весь київський місяць і ігнорують period. Сторінка Планування накладає період правильно, але бере realTx, який після мережевого запиту містить лише поточний місяць, тож тиждень на межі місяців і старі разові ліміти недораховуються.
@@ -409,7 +409,7 @@ useMonobankWebhook.ts:160-172 запитує транзакції лише за 
 
 ### `logic-08` [medium] Фінансові картки хабу рахують інший «всесвіт» витрат, ніж Фінік і звіт тижня
 
-- **Стан:** виправлено в гілці claude/fix-logic-08-hub-finance-universe
+- **Стан:** виправлено в [#1476](https://github.com/SkOrDs-02/sergeant/pull/1476) (змерджено 2026-10-08)
 - **Перевірка:** підтверджено · **Зусилля:** M · **Область:** web: хаб / insights (FinanceContext)
 - **Де:** apps/web/src/core/lib/recommendations/financeContext.ts:55-110; packages/insights/src/recommendations/financeContext.ts:90-95; packages/insights/src/recommendations/finance/spendingVelocity.ts:40-58; packages/insights/src/recommendations/finance/dailyVsWeeklyPace.ts; packages/finyk-domain/src/domain/weekReport.ts:5-8
 - **Першопричина:** buildFinanceContext виключає лише hidden і перекази з мапи txCategories (financeExcludedTxIds), а не канонічний buildFinykExcludedTxIds (excludedStat, дебіторка, пари «Скасування», tx-level перекази). Ручні витрати додаються без фільтра excluded/hidden, а canonicalMonthSpend не має верхньої межі, тож рахує й записи, датовані наперед.
@@ -496,7 +496,7 @@ The exclusion half belongs to the class in docs/work/specs/audits/unification-mo
 
 ### `logic-09` [medium] Крос-модульні дані читаються з localStorage-ключів, у які після переходу на SQLite ніхто не пише: календар Рутини, контекст HubChat і пошук бачать порожнечу
 
-- **Стан:** виправлено в гілці claude/fix-logic-09-crossmodule-readers
+- **Стан:** виправлено в [#1488](https://github.com/SkOrDs-02/sergeant/pull/1488) (змерджено 2026-10-09)
 - **Перевірка:** підтверджено · **Зусилля:** M · **Область:** web: Рутина / хаб (крос-модульні читачі)
 - **Де:** apps/web/src/modules/routine/lib/hubCalendarAggregate.ts:33-80; apps/web/src/modules/routine/lib/finykSubscriptionCalendar.ts:15-25; apps/web/src/modules/finyk/hooks/useStorage.persist.ts:50-77; apps/web/src/core/lib/hubChatContext/readAllData.ts:34-47; apps/web/src/core/hub/search/searchSources.ts:64; packages/shared/src/lib/storageKeys.ts:191-194
 - **Першопричина:** Писачі UI (useMonthlyPlan, useWorkoutTemplates, підписки Фініка) пишуть лише в SQLite через dual-write, а LS-дзеркала прибрані. Читачі ж досі беруть safeReadLS: hubCalendarAggregate читає 'fizruk_monthly_plan_v1' і 'fizruk_workout_templates_v1', finykSubscriptionCalendar читає 'finyk_subs' (tombstone). Так само працюють readAllData (контекст HubChat) і searchSources (пошук хабу) для бюджетів, боргів, дебіторки, підписок і власних категорій.
@@ -572,7 +572,7 @@ apps/web/src/modules/fizruk/hooks/useMonthlyPlan.ts:73-90 (saveState → лиш�
 
 ### `logic-10` [medium] Таймер відпочинку рахує тіки setInterval, а не реальний час: на заблокованому телефоні стоїть, після reload зникає
 
-- **Стан:** частково виправлено в гілці claude/fix-logic-10-rest-timer-wallclock (лишилось: персист `endsAt` між reload/убитим PWA (sessionStorage/SQLite) і Notification/Web Push у фоні — окремі рішення)
+- **Стан:** частково виправлено в [#1486](https://github.com/SkOrDs-02/sergeant/pull/1486) (змерджено 2026-10-09) (лишилось: персист `endsAt` між reload/убитим PWA (sessionStorage/SQLite) і Notification/Web Push у фоні — окремі рішення)
 - **Перевірка:** підтверджено · **Зусилля:** S · **Швидкий виграш** · **Область:** web: Фізрук (тренування)
 - **Де:** apps/web/src/modules/fizruk/hooks/useWorkoutsLifecycle.ts:107-131; apps/web/src/modules/fizruk/context/RestTimerProvider.tsx:24-38; apps/web/src/modules/fizruk/hooks/useFizrukRestSound.ts:64-67
 - **Першопричина:** useRestTimerCountdown на кожен тік робить remaining − 1. Стан містить лише {remaining, total} без моменту закінчення, досинхронізації на visibilitychange немає, і живе він тільки в useState. Сигнал завершення (звук і телеметрія) викликається всередині updater-а setRestTimer, тобто сайд-ефектом у чистій функції.
@@ -648,7 +648,7 @@ useRestTimerCountdown (useWorkoutsLifecycle.ts:107-130) робить {remaining:
 
 ### `logic-11` [medium] Гнучкі звички («N разів на тиждень») у кількох агрегатах Рутини рахуються поденно
 
-- **Стан:** частково виправлено в гілці claude/fix-logic-11-flex-habits-aggregates (лишилось: поденний `flexibleStreakBreakdown` по одній гнучкій звичці в моменті серії `moments.ts` і чат-тулі `habit_stats` — logic-22; мобілка `useCalendarAggregates` не чіпалась)
+- **Стан:** частково виправлено в [#1553](https://github.com/SkOrDs-02/sergeant/pull/1553) (змерджено 2026-10-20) (лишилось: поденний `flexibleStreakBreakdown` по одній гнучкій звичці в моменті серії `moments.ts` і чат-тулі `habit_stats` — logic-22; мобілка `useCalendarAggregates` не чіпалась)
 - **Перевірка:** підтверджено · **Зусилля:** M · **Область:** routine-domain / web: Рутина
 - **Де:** packages/routine-domain/src/flexStreak.ts:144-269, 365-382; packages/routine-domain/src/habitRangeRows.ts:121-171; packages/routine-domain/src/dayProgress.ts:28-40; packages/routine-domain/src/streaks.ts:196-206; apps/web/src/modules/routine/useRoutineDerivedData.ts:217-226, 272-289
 - **Першопричина:** Спека routine-flexible-weekly-frequency.md вимагає, щоб споживачі «класу Б» не питали денний предикат для гнучкої звички. Проте flexibleStreakBreakdown і flexibleMaxActiveStreak, buildHabitRangeRows і calcRoutineDayProgress (weekDoneCount = 0) вважають кожен невідмічений день незакритого тижня запланованим, тобто пропуском.
@@ -758,13 +758,13 @@ domain_check.mts: 18.09, Flex 3 відмічено 14,15,16, Daily G і MWF S в
 
 ### `logic-12` [medium] Рекомендації хабу про звички ігнорують розклад: «N звичок ще не виконано» і понеділковий відсоток з наївним знаменником
 
-- **Стан:** виправлено в гілці claude/fix-logic-12-hub-habit-recs
+- **Стан:** виправлено в [#1489](https://github.com/SkOrDs-02/sergeant/pull/1489) (змерджено 2026-10-09)
 - **Перевірка:** підтверджено · **Зусилля:** S · **Швидкий виграш** · **Область:** web: хаб (recommendationEngine)
 - **Де:** apps/web/src/core/lib/recommendationEngine.ts:296-365 (buildRoutineRecs), 505-521 (buildWeeklyDigestRecs); apps/web/src/core/hub/hubReports.aggregation.ts:302; apps/web/src/core/insights/useWeeklyDigest.ts:377
 - **Першопричина:** buildRoutineRecs рахує total = habits.length і серію через habits.every(...includes(dk)) для кожного дня. buildWeeklyDigestRecs бере знаменник habits.length × 7. Жодна з функцій не враховує habitScheduledOnDate, паузи, startDate, once чи flexible, хоча модуль, Звіти й дайджест рахують через calcRoutinePeriodCompletion / calcRoutineDayProgress.
 - **Вплив:** Головний екран суперечить модулю: у суботу пише «6 звичок ще не виконано», коли за розкладом їх дві, а понеділкова картка показує «звички 38%» проти 53% у Звітах і дайджесті. Серії «N днів поспіль» для будь-кого з нещоденною звичкою не спрацьовують.
 - **Що зробити:** Рахувати todayDone/total, серію й тижневий відсоток через ті самі доменні функції, що й модуль (calcRoutineDayProgress, calcRoutinePeriodCompletion з pausedFrom, flexibleMaxActiveStreak або знімок ROUTINE_QUICK_STATS).
-- **Примітка:** Після аудиту 2fa3b39b виправив лише дію кнопки «Відкрити» картки підсумку тижня. Формула (habits.length * 7) і buildRoutineRecs без розкладу на 7611f169 не змінились.
+- **Примітка:** Після аудиту 2fa3b39b виправив лише дію кнопки «Відкрити» картки підсумку тижня. Формула (habits.length \* 7) і buildRoutineRecs без розкладу на 7611f169 не змінились.
 
 Знахідок у кластері: 2.
 
@@ -803,9 +803,9 @@ domain_check.mts: 18.09, Flex 3 відмічено 14,15,16, Daily G і MWF S в
 
 - **ID:** `browser-surfaces/gap-hub-cross-module-aggregates#4` · **Вердикт:** підтверджено · **Лейн:** Браузер · поверхні · **Категорія:** `logic`
 - **Серйозність від шукача:** medium
-- **Де:** apps/web/src/core/lib/recommendationEngine.ts:505-521 (buildWeeklyDigestRecs: done по всіх днях, total = habits.length * 7) — без змін на HEAD; порівняти з calcRoutinePeriodCompletion у hubReports.aggregation.ts:aggregateHabits і useWeeklyDigest.ts:aggregateRoutine; http://127.0.0.1:4173/ (купа «Зараз», пн 07:00–12:00)
+- **Де:** apps/web/src/core/lib/recommendationEngine.ts:505-521 (buildWeeklyDigestRecs: done по всіх днях, total = habits.length \* 7) — без змін на HEAD; порівняти з calcRoutinePeriodCompletion у hubReports.aggregation.ts:aggregateHabits і useWeeklyDigest.ts:aggregateRoutine; http://127.0.0.1:4173/ (купа «Зараз», пн 07:00–12:00)
 - **Вплив:** Три поверхні хабу дають три різні числа про той самий тиждень; люди з будніми чи «N разів на тиждень» звичками отримують занижений «провал» щопонеділка. Ті самі корені, що й у відомому «N звичок ще не виконано», але інше число на іншій картці.
-- **Рекомендація:** Рахувати habitPctText через calcRoutinePeriodCompletion(habits, completions, weekDays, { pausedFrom }) — той самий канон, що в Звітах і дайджесті; пройтись так само по routine_streak_* / routine_streak_at_risk у buildRoutineRecs.
+- **Рекомендація:** Рахувати habitPctText через calcRoutinePeriodCompletion(habits, completions, weekDays, { pausedFrom }) — той самий канон, що в Звітах і дайджесті; пройтись так само по routine*streak*\* / routine_streak_at_risk у buildRoutineRecs.
 
 **Докази:**
 
@@ -1551,15 +1551,15 @@ domain_check.mts: Daily G щодня з 10.09, відмічено 10–16 і 18�
 
 <a id="logic-23"></a>
 
-### `logic-23` [low] /onboarding/* без гварда: залогінений бачить анонімний сплеш, а «Почати» перезаписує активні модулі акаунта
+### `logic-23` [low] /onboarding/\* без гварда: залогінений бачить анонімний сплеш, а «Почати» перезаписує активні модулі акаунта
 
 - **Стан:** відкрито
 - **Перевірка:** підтверджено · **Зусилля:** S · **Швидкий виграш** · **Область:** web: онбординг / роутинг
 - **Де:** apps/web/src/core/onboarding/route.tsx:32-46; apps/web/src/core/app/StandaloneRoutes.tsx:408-445; apps/web/src/core/app/WelcomeScreen.tsx:238-262
 - **Першопричина:** onboarding/route.tsx рендерить WelcomeScreen безумовно, для будь-якого підшляху. /welcome у StandaloneRoutes має гвард (authed → /, storageReady, shouldShowOnboarding), а /onboarding ні.
 - **Вплив:** Залогіненому пропонують «У мене вже є акаунт», а пікер стартує з «усі чотири ввімкнено» і тихо переписує серверний activeModules на всіх пристроях, ховаючи модулі з наявними даними. Онбординг-воронка в аналітиці брудниться повторними подіями.
-- **Що зробити:** Дати /onboarding/* той самий гвард, що й /welcome, або редиректити /onboarding* → /welcome однією точкою. Невідомі підшляхи віддавати 404. Посилань у застосунку на маршрут немає.
-- **Примітка:** Знайдено трьома lane-ами незалежно. Частину спостереження про /welcome (onboarding-ai-billing-ui#7) verifier не підтвердив: /welcome захищений. Попередній аудит 2026-09-01 фіксував «залогінений → /» для /onboarding/*, тобто це регресія.
+- **Що зробити:** Дати /onboarding/_ той самий гвард, що й /welcome, або редиректити /onboarding_ → /welcome однією точкою. Невідомі підшляхи віддавати 404. Посилань у застосунку на маршрут немає.
+- **Примітка:** Знайдено трьома lane-ами незалежно. Частину спостереження про /welcome (onboarding-ai-billing-ui#7) verifier не підтвердив: /welcome захищений. Попередній аудит 2026-09-01 фіксував «залогінений → /» для /onboarding/\*, тобто це регресія.
 
 Знахідок у кластері: 3.
 
@@ -1632,7 +1632,7 @@ node <scratch>/agents/browser-surfaces-route-matrix/onb.mjs (юзер route-matr
 - **ID:** `browser-crosscut/onboarding-ai-billing-ui#7` · **Вердикт:** підтверджено · **Лейн:** Браузер · наскрізне · **Категорія:** `logic`
 - **Де:** apps/web/src/core/onboarding/route.tsx (Component без guard-а на isOnboardingDone/auth); http://127.0.0.1:4173/welcome, /onboarding, /onboarding/&lt;будь-що&gt;
 - **Вплив:** Повернення на старий лінк скидає вибір модулів на сервері й ховає модулі з наявними даними. Кнопка «У мене вже є акаунт» для залогіненого збиває з пантелику.
-- **Рекомендація:** У route для /welcome і /onboarding/* редіректити на / при isOnboardingDone() або status==='authenticated' з наявними activeModules. Невідомі підшляхи /onboarding/* віддавати на 404 або редіректити.
+- **Рекомендація:** У route для /welcome і /onboarding/_ редіректити на / при isOnboardingDone() або status==='authenticated' з наявними activeModules. Невідомі підшляхи /onboarding/_ віддавати на 404 або редіректити.
 
 **Докази:**
 
@@ -1666,14 +1666,14 @@ v7-onb.mjs with my pool user. authed /welcome → http://127.0.0.1:4173/ (redire
 - **Перевірка:** підтверджено · **Зусилля:** S · **Швидкий виграш** · **Область:** web: service worker (cachePolicy)
 - **Та сама першопричина, що й** [`priv-08`](./privacy.md#priv-08): Обидва про runtime-кеш SW для /api/v1: виключення не матчать /api/v1, а CacheableResponsePlugin кешує будь-яку 200 попри no-store. Allowlist несекретних GET закриває обидва.
 - **Де:** apps/web/src/sw/cachePolicy.ts:30-59; apps/web/src/sw/cache.ts:150-175; apps/web/src/sw/cache.test.ts:44-48; apps/web/src/core/status/StatusPage.tsx:81; packages/api-client/src/httpClient.ts:70, 96-116
-- **Першопричина:** VOLATILE_API_PREFIXES порівнюються з неверсіонованими шляхами, а клієнт ходить у /api/v1/* (applyApiPrefix), тож /api/v1/coach/memory потрапляє в NetworkFirst-кеш. /api/status у списку виключень немає взагалі, а networkTimeoutSeconds = 5. Предикат не дивиться на url.origin, тож під NetworkFirst може потрапити й сторонній GET /api/....
+- **Першопричина:** VOLATILE_API_PREFIXES порівнюються з неверсіонованими шляхами, а клієнт ходить у /api/v1/\* (applyApiPrefix), тож /api/v1/coach/memory потрапляє в NetworkFirst-кеш. /api/status у списку виключень немає взагалі, а networkTimeoutSeconds = 5. Предикат не дивиться на url.origin, тож під NetworkFirst може потрапити й сторонній GET /api/....
 - **Вплив:** Статус-сторінка показує «Усі сервіси працюють · оновлено щойно» саме тоді, коли бекенд висить або мережі немає. Coach-відповіді віддаються з кешу до 30 хв. Будь-який новий volatile-ендпоінт, доданий за інструкцією в коментарі, теж не буде виключено.
 - **Що зробити:** Нормалізувати шлях перед перевіркою (зрізати /api/vN → /api), додати /api/status у виключення (або fetch з cache: 'no-store'), обмежити origin у match-колбеку. У cache.test.ts перевіряти й форми /api/v1/....
 - **Примітка:** Не перевірено: StatusPage ходить на відносний /api/status на web-origin, а rewrite у vercel.json виключає api/, тож у проді запит, імовірно, дає 404.
 
 Знахідок у кластері: 2.
 
-#### [low] Список «volatile» префіксів SW порівнюється з неверсіонованими шляхами, а клієнт ходить у /api/v1/* — /api/v1/coach/* кешується; предикат ігнорує origin
+#### [low] Список «volatile» префіксів SW порівнюється з неверсіонованими шляхами, а клієнт ходить у /api/v1/_ — /api/v1/coach/_ кешується; предикат ігнорує origin
 
 - **ID:** `client-static/service-worker-pwa#5` · **Вердикт:** підтверджено · **Лейн:** Статика клієнта та інфри · **Категорія:** `logic`
 - **Де:** apps/web/src/sw/cachePolicy.ts:30-35, 50-59; apps/web/src/sw/cache.test.ts:44-48; packages/api-client/src/httpClient.ts:70, 96-116; apps/web/src/shared/lib/api/apiUrl.ts:60-84
@@ -1707,7 +1707,7 @@ packages/api-client/src/endpoints/coach.ts:18 getMemory → http.get("/api/coach
 #### [low] /status віддає з кешу SW «Усі сервіси працюють · оновлено щойно», коли бекенд висить або мережі немає
 
 - **ID:** `browser-crosscut/gap-sw-update-new-deploy#7` · **Вердикт:** підтверджено · **Лейн:** Браузер · наскрізне · **Категорія:** `logic`
-- **Де:** apps/web/src/sw/cache.ts:150-175 (NetworkFirst для будь-якого /api/*, networkTimeoutSeconds 5), apps/web/src/sw/cachePolicy.ts:31-36 (/api/status не у VOLATILE_API_PREFIXES), apps/web/src/core/status/StatusPage.tsx:81 (fetch("/api/status")); URL http://127.0.0.1:4173/status
+- **Де:** apps/web/src/sw/cache.ts:150-175 (NetworkFirst для будь-якого /api/\*, networkTimeoutSeconds 5), apps/web/src/sw/cachePolicy.ts:31-36 (/api/status не у VOLATILE_API_PREFIXES), apps/web/src/core/status/StatusPage.tsx:81 (fetch("/api/status")); URL http://127.0.0.1:4173/status
 - **Вплив:** Статус-сторінка показує «все працює, щойно оновлено» саме тоді, коли бекенд недоступний або висить, тобто коли людина й відкриває її, щоб перевірити.
 - **Рекомендація:** Додати `/api/status` у VOLATILE_API_PREFIXES (або фетчити з `cache: "no-store"` і заголовком, який SW оминає), показувати час відповіді сервера, а не клієнта. Перевірити, що /api/status на web-origin у проді взагалі доходить до бекенду (apiUrl()).
 
@@ -1737,19 +1737,19 @@ verify dir v19.log: `hang: ... Усі сервіси працюють оновл
 
 <a id="logic-25"></a>
 
-### `logic-25` [low] delete_transaction не може видалити витрату, яку щойно створив сам чат: ручні витрати розпізнаються за префіксом m_
+### `logic-25` [low] delete*transaction не може видалити витрату, яку щойно створив сам чат: ручні витрати розпізнаються за префіксом m*
 
 - **Стан:** відкрито
 - **Перевірка:** підтверджено · **Зусилля:** M · **Область:** web: HubChat / Фінік
 - **Де:** apps/web/src/core/lib/chatActions/finykActions/transactions.ts:111-128; apps/web/src/core/lib/chatActions/serverActions.ts:183-242; apps/server/src/modules/finyk/manualExpenses.ts:96; apps/server/src/modules/chat/toolDefs/finyk.ts:224-236
-- **Першопричина:** deleteTransaction відхиляє будь-який id без префікса m_ і називає його монобанк-операцією. Серверний create_transaction зберігає витрату з randomUUID, і tool def сам каже моделі, що ручні id починаються з m_. Перевірка існування читає kv-ключ finyk_manual_expenses_v1, у який UI не пише.
+- **Першопричина:** deleteTransaction відхиляє будь-який id без префікса m* і називає його монобанк-операцією. Серверний create_transaction зберігає витрату з randomUUID, і tool def сам каже моделі, що ручні id починаються з m*. Перевірка існування читає kv-ключ finyk_manual_expenses_v1, у який UI не пише.
 - **Вплив:** Помилково записану через асистента витрату не прибрати ні undo, ні командою «видали»: модель отримує хибне «це монобанк-операція». Лишається тільки ручне видалення в UI.
 - **Що зробити:** Визначати ручні витрати за джерелом у канонічному кеші (getCachedFinykSqliteState().manualExpenses), а не за префіксом id. Виправити опис у toolDefs/finyk.ts. Додати DELETE /api/finyk/manual-expenses/:id (або soft-delete через dual-write) для серверного шляху.
 - **Примітка:** Читання kv-ключа, у який ніхто не пише, належить до того ж класу, що й logic-09.
 
 Знахідок у кластері: 1.
 
-#### [low] delete_transaction не може видалити витрату, яку щойно створив сам чат (UUID без префікса m_), а серверний create_transaction не має undo
+#### [low] delete*transaction не може видалити витрату, яку щойно створив сам чат (UUID без префікса m*), а серверний create_transaction не має undo
 
 - **ID:** `client-static/gap-ai-chat-action-executors#9` · **Вердикт:** підтверджено · **Лейн:** Статика клієнта та інфри · **Категорія:** `logic`
 - **Де:** apps/web/src/core/lib/chatActions/finykActions/transactions.ts:111-128; serverActions.ts:183-242
@@ -2681,7 +2681,7 @@ Code refs: apps/web/src/modules/nutrition/components/LogCard.tsx:39-50,85-87; Nu
 - **Стан:** відкрито
 - **Перевірка:** підтверджено · **Зусилля:** S · **Швидкий виграш** · **Область:** finyk-domain / web: Фінік
 - **Де:** packages/finyk-domain/src/domain/budget.ts:~595-617 (getMonthlyPlanUsage); apps/web/src/modules/finyk/pages/overview/useOverviewData.ts:431-446
-- **Першопричина:** getMonthlyPlanUsage рахує floor((план − факт) / днів_після_сьогодні) без регулярних потоків, а Огляд (ADR-0079) рахує (план − витрачено_до_сьогодні − recurringOut + recurringIn) / днів_разом_із_сьогодні. Двох формул ніхто не звів.
+- **Першопричина:** getMonthlyPlanUsage рахує floor((план − факт) / днів*після*сьогодні) без регулярних потоків, а Огляд (ADR-0079) рахує (план − витрачено*до*сьогодні − recurringOut + recurringIn) / днів*разом*із_сьогодні. Двох формул ніхто не звів.
 - **Вплив:** Один модуль дає дві відповіді на «скільки можна витрачати на день», і людина не знає, якій вірити.
 - **Що зробити:** Звести до однієї функції денного ліміту в finyk-domain (задокументована формула Огляду) і показувати те саме число на обох екранах.
 
