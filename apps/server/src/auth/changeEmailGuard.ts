@@ -1,4 +1,4 @@
-import { APIError, getAuthoritativeSessionFromCtx } from "better-auth/api";
+import { APIError } from "better-auth/api";
 
 import { queueAuthTransactionalEmail } from "../email/authTransactionalMail.js";
 import { emailChangedNoticeMail } from "./verificationMail.js";
@@ -18,59 +18,74 @@ import { emailChangedNoticeMail } from "./verificationMail.js";
  * скидання пароля, а `revokeSessionsOnPasswordReset` вибиває власника.
  *
  * Рішення власника (a): свіжа сесія + сповіщення на стару адресу.
- *   1. `guardChangeEmailBefore`: сесія старша за `CHANGE_EMAIL_FRESH_MAX_AGE_MS`
- *      → `403 SESSION_NOT_FRESH` ДО ендпоінта. Код і текст ті самі, що в
- *      нативного `freshSessionMiddleware` Better Auth, тож веб уже мапить його
- *      на «Для цієї дії потрібен свіжий вхід» (`mapApiErrorToUserCopy`).
- *   2. `notifyOldEmailAfter`: якщо адресу справді переписано, на СТАРУ
- *      адресу летить лист у ту саму durable-чергу `auth-mail`.
+ *   1. `guardChangeEmailUserUpdate`: сесія старша за
+ *      `CHANGE_EMAIL_FRESH_MAX_AGE_MS` → `403 SESSION_NOT_FRESH` ДО запису в
+ *      БД. Код і текст ті самі, що в нативного `freshSessionMiddleware` Better
+ *      Auth, тож веб уже мапить його на «Для цієї дії потрібен свіжий вхід»
+ *      (`mapApiErrorToUserCopy`).
+ *   2. `notifyOldEmailAfterUserUpdate`: якщо адресу справді переписано, на
+ *      СТАРУ адресу летить лист у ту саму durable-чергу `auth-mail`.
+ *
+ * ЧОМУ `databaseHooks.user.update`, а не `hooks.before`. Глобальний
+ * `hooks.before` Better Auth виконує ПЕРШИМ, раніше за before-хуки плагінів
+ * (dispatch.mjs, `getHooks`). Плагін `bearer()` підставляє session-куку з
+ * `Authorization: Bearer …` саме в своєму before-хуку, тобто вже ПІСЛЯ
+ * користувацького: guard у `hooks.before` бачив для Bearer-запиту сесію
+ * `null`, мовчки пропускав його, а ендпоінт потім знаходив сесію через
+ * підставлену куку й переписував email (перевірка рев'ю: 200, email змінено,
+ * лист не пішов; той самий шлях у Capacitor-shell). DB-хук виконується
+ * всередині ендпоінта, коли `sensitiveSessionMiddleware` уже визначив сесію
+ * незалежно від транспорту (cookie чи Bearer), тож обійти його неможливо.
  *
  * Гілку ПІДТВЕРДЖЕНОГО email (лист-підтвердження на стару адресу, зміна
  * лише після кліку) навмисно не чіпаємо: власність над скринькою там доведена,
- * і крадіжка сесії без доступу до пошти нічого не змінює.
+ * і крадіжка сесії без доступу до пошти нічого не змінює. Вона не доходить до
+ * `updateUserByEmail` у `/change-email`, а запис після кліку йде шляхом
+ * `/verify-email`, який хук ігнорує.
  */
 
 /** Скільки живе «свіжість» сесії для зміни email непідтвердженого акаунта. */
 export const CHANGE_EMAIL_FRESH_MAX_AGE_MS = 10 * 60 * 1000;
 
-/**
- * Ключ, яким before-хук передає after-хуку стару адресу. Обидва хуки
- * отримують ОДИН і той самий `ctx.context` (dispatch.mjs Better Auth), тому
- * мутація вціліє між ними. Лише для непідтверджених акаунтів.
- */
-const PENDING_KEY = "__sergeantChangeEmailPending";
-
-interface HookCtx {
+/** Мінімум контексту ендпоінта, який Better Auth передає в DB-хуки. */
+interface EndpointCtxLike {
   path?: string;
-  context?: unknown;
-}
-
-interface PendingChange {
-  userId: string;
-  oldEmail: string;
-}
-
-interface AuthCtxLike {
-  returned?: unknown;
-  internalAdapter?: {
-    findUserById: (id: string) => Promise<{ email: string } | null>;
+  context?: {
+    session?: {
+      session?: { createdAt?: Date | string | number };
+      user?: { email?: string; emailVerified?: boolean };
+    } | null;
   };
-  [PENDING_KEY]?: PendingChange;
 }
 
-export async function guardChangeEmailBefore(
-  ctx: HookCtx,
-  now: () => number = Date.now,
-): Promise<void> {
-  if (ctx.path !== "/change-email") return;
-  const fresh = await getAuthoritativeSessionFromCtx(
-    ctx as Parameters<typeof getAuthoritativeSessionFromCtx>[0],
-  );
-  // Без сесії ендпоінт сам віддасть 401 (`sensitiveSessionMiddleware`).
-  if (!fresh?.session) return;
-  if (fresh.user.emailVerified === true) return;
+/**
+ * Сесія, що ініціювала `/change-email`, якщо це зміна email НЕпідтвердженого
+ * акаунта; інакше `null` (інший шлях, підтверджений акаунт, виклик без
+ * ендпоінта, наприклад серверний `internalAdapter` поза HTTP).
+ */
+function unverifiedChangeEmailSession(ctx: EndpointCtxLike | null) {
+  if (ctx?.path !== "/change-email") return null;
+  const session = ctx.context?.session;
+  if (!session?.user || session.user.emailVerified === true) return null;
+  return session;
+}
 
-  const createdAt = new Date(fresh.session.createdAt).getTime();
+/**
+ * `databaseHooks.user.update.before`. Спрацьовує лише для запису з `email`
+ * (`updateUserByEmail` у гілці без верифікації).
+ */
+export function guardChangeEmailUserUpdate(
+  data: Record<string, unknown>,
+  ctx: EndpointCtxLike | null,
+  now: () => number = Date.now,
+): void {
+  if (typeof data["email"] !== "string") return;
+  const session = unverifiedChangeEmailSession(ctx);
+  if (!session) return;
+
+  const createdAt = new Date(
+    session.session?.createdAt ?? Number.NaN,
+  ).getTime();
   if (
     !Number.isFinite(createdAt) ||
     now() - createdAt >= CHANGE_EMAIL_FRESH_MAX_AGE_MS
@@ -80,44 +95,25 @@ export async function guardChangeEmailBefore(
       message: "Session is not fresh",
     });
   }
-
-  const authCtx = ctx.context as AuthCtxLike | undefined;
-  if (authCtx) {
-    authCtx[PENDING_KEY] = {
-      userId: fresh.user.id,
-      oldEmail: fresh.user.email,
-    };
-  }
 }
 
 /**
- * `{ status: true }` віддає й гілка «такий email уже зайнятий» (щоб не
- * видавати існування адреси), тож успіх відповіді нічого не доводить. Тому
- * читаємо користувача з БД і шлемо лист лише коли email справді змінився.
+ * `databaseHooks.user.update.after` (Better Auth ставить його в чергу до
+ * коміту транзакції, тож лист не піде за відкоченою зміною). Гілка «такий
+ * email уже зайнятий» до запису не доходить зовсім, тож хук спрацьовує лише
+ * на справжню зміну; порівняння адрес лишається як запобіжник.
  */
-export async function notifyOldEmailAfter(ctx: HookCtx): Promise<void> {
-  if (ctx.path !== "/change-email") return;
-  const authCtx = ctx.context as AuthCtxLike | undefined;
-  const pending = authCtx?.[PENDING_KEY];
-  if (!authCtx || !pending) return;
-  delete authCtx[PENDING_KEY];
-
-  const returned = authCtx.returned;
-  if (
-    !returned ||
-    typeof returned !== "object" ||
-    returned instanceof Response ||
-    returned instanceof APIError
-  ) {
-    return;
-  }
-  const user = await authCtx.internalAdapter?.findUserById(pending.userId);
-  if (!user || user.email.toLowerCase() === pending.oldEmail.toLowerCase()) {
-    return;
-  }
+export function notifyOldEmailAfterUserUpdate(
+  updated: { email?: unknown } | null,
+  ctx: EndpointCtxLike | null,
+): void {
+  const session = unverifiedChangeEmailSession(ctx);
+  const oldEmail = session?.user?.email;
+  if (!oldEmail || typeof updated?.email !== "string") return;
+  if (updated.email.toLowerCase() === oldEmail.toLowerCase()) return;
   queueAuthTransactionalEmail({
     kind: "email_change_notice",
-    to: pending.oldEmail,
-    ...emailChangedNoticeMail(user.email),
+    to: oldEmail,
+    ...emailChangedNoticeMail(updated.email),
   });
 }

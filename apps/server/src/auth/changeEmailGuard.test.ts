@@ -1,6 +1,5 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
 import { betterAuth } from "better-auth";
-import { createAuthMiddleware } from "better-auth/api";
 import { bearer } from "better-auth/plugins";
 import { memoryAdapter } from "better-auth/adapters/memory";
 
@@ -11,16 +10,19 @@ vi.mock("../email/authTransactionalMail.js", () => ({
 
 import {
   CHANGE_EMAIL_FRESH_MAX_AGE_MS,
-  guardChangeEmailBefore,
-  notifyOldEmailAfter,
+  guardChangeEmailUserUpdate,
+  notifyOldEmailAfterUserUpdate,
 } from "./changeEmailGuard.js";
 
 /**
  * Регресія `sec-06` проти СПРАВЖНЬОГО `betterAuth()` (memory-адаптер, без
- * Postgres): та сама конфігурація `user.changeEmail` і ті самі хуки, що в
- * `auth.ts`. `guarded: false` – контрольна група без хуків: доводить, що тест
- * ловить саме дефект (там непідтверджений акаунт зі старою сесією міняє email
- * і отримує 200).
+ * Postgres): та сама конфігурація `user.changeEmail`, той самий плагін
+ * `bearer()` і ті самі `databaseHooks.user.update`, що в `auth.ts`.
+ * `guarded: false` – контрольна група без хуків: доводить, що тест ловить саме
+ * дефект (там непідтверджений акаунт зі старою сесією міняє email і отримує
+ * 200). Окремий блок ходить з `Authorization: Bearer` без cookie: на першій
+ * версії guard жив у глобальному `hooks.before`, який Better Auth виконує
+ * раніше за before-хук `bearer()`, і Bearer-запит обходив перевірку.
  */
 const ORIGIN = "http://localhost:3000";
 const OLD_EMAIL = "owner@example.com";
@@ -51,13 +53,23 @@ function makeAuth(guarded: boolean) {
     },
     ...(guarded
       ? {
-          hooks: {
-            before: createAuthMiddleware(async (ctx) => {
-              await guardChangeEmailBefore(ctx);
-            }),
-            after: createAuthMiddleware(async (ctx) => {
-              await notifyOldEmailAfter(ctx);
-            }),
+          databaseHooks: {
+            user: {
+              update: {
+                before: async (
+                  data: Record<string, unknown>,
+                  context: Parameters<typeof guardChangeEmailUserUpdate>[1],
+                ) => {
+                  guardChangeEmailUserUpdate(data, context);
+                },
+                after: async (
+                  updated: { email?: unknown } | null,
+                  context: Parameters<typeof notifyOldEmailAfterUserUpdate>[1],
+                ) => {
+                  notifyOldEmailAfterUserUpdate(updated, context);
+                },
+              },
+            },
           },
         }
       : {}),
@@ -83,7 +95,11 @@ function readCookies(res: Response, jar: Map<string, string> = new Map()) {
 function call(
   a: TestAuth,
   path: string,
-  init: { jar?: Map<string, string>; body?: unknown } = {},
+  init: {
+    jar?: Map<string, string>;
+    body?: unknown;
+    bearerToken?: string;
+  } = {},
 ) {
   const headers: Record<string, string> = {
     origin: ORIGIN,
@@ -91,6 +107,9 @@ function call(
   };
   if (init.jar) {
     headers["cookie"] = [...init.jar].map(([k, v]) => `${k}=${v}`).join("; ");
+  }
+  if (init.bearerToken) {
+    headers["authorization"] = `Bearer ${init.bearerToken}`;
   }
   return a.handler(
     new Request(`${ORIGIN}/api/auth${path}`, {
@@ -107,6 +126,17 @@ async function signUp(a: TestAuth, email = OLD_EMAIL) {
   });
   expect(up.status).toBe(200);
   return readCookies(up);
+}
+
+/** Реєстрація без кук: лише `set-auth-token` (підписане значення сесії). */
+async function signUpBearer(a: TestAuth, email = OLD_EMAIL) {
+  const up = await call(a, "/sign-up/email", {
+    body: { email, password: PASSWORD, name: "U" },
+  });
+  expect(up.status).toBe(200);
+  const token = up.headers.get("set-auth-token");
+  expect(token).toBeTruthy();
+  return token!;
 }
 
 /** Робить єдину сесію «старою»: createdAt на годину в минулому. */
@@ -245,5 +275,55 @@ describe("sec-06: change-email непідтвердженого акаунта",
     ageSession(db);
     const res = await call(auth, "/get-session", { jar });
     expect(res.status).toBe(200);
+  });
+});
+
+describe("sec-06: той самий захист для Authorization: Bearer (без cookie)", () => {
+  it("стара сесія через Bearer: 403 SESSION_NOT_FRESH, email не змінився, листа немає", async () => {
+    const { auth, db } = makeAuth(true);
+    const bearerToken = await signUpBearer(auth);
+    ageSession(db);
+
+    const res = await call(auth, "/change-email", {
+      bearerToken,
+      body: { newEmail: NEW_EMAIL },
+    });
+
+    expect(res.status).toBe(403);
+    const body = (await res.json()) as { code?: string };
+    expect(body.code).toBe("SESSION_NOT_FRESH");
+    expect(emailOf(db)).toBe(OLD_EMAIL);
+    expect(queueMail).not.toHaveBeenCalled();
+  });
+
+  it("контроль без хуків: стара сесія через Bearer міняє email (дефект відтворюється)", async () => {
+    const { auth, db } = makeAuth(false);
+    const bearerToken = await signUpBearer(auth);
+    ageSession(db);
+
+    const res = await call(auth, "/change-email", {
+      bearerToken,
+      body: { newEmail: NEW_EMAIL },
+    });
+
+    expect(res.status).toBe(200);
+    expect(emailOf(db)).toBe(NEW_EMAIL);
+  });
+
+  it("свіжа сесія через Bearer: 200, email змінено, лист іде на СТАРУ адресу", async () => {
+    const { auth, db } = makeAuth(true);
+    const bearerToken = await signUpBearer(auth);
+
+    const res = await call(auth, "/change-email", {
+      bearerToken,
+      body: { newEmail: NEW_EMAIL },
+    });
+
+    expect(res.status).toBe(200);
+    expect(emailOf(db)).toBe(NEW_EMAIL);
+    expect(queueMail).toHaveBeenCalledTimes(1);
+    const mail = queueMail.mock.calls[0]![0] as { kind: string; to: string };
+    expect(mail.kind).toBe("email_change_notice");
+    expect(mail.to).toBe(OLD_EMAIL);
   });
 });
