@@ -243,12 +243,20 @@ export async function executeActions(
               return withLatency({ name: action.name, result, ok: true });
             }
             if (result) {
-              return withLatency({
-                name: action.name,
-                result: result.result,
-                ok: true,
-                ...(result.undo ? { undo: result.undo } : {}),
-              });
+              // `confirm` (дохід і офлайн-фолбек `create_transaction` пишуть
+              // через finykChatWrite) теж іде крізь settle: без цього async-гілка
+              // рапортувала «записано» при незареєстрованому dual-write (rel-16).
+              return withLatency(
+                await settle(
+                  action.name,
+                  {
+                    result: result.result,
+                    ...(result.undo ? { undo: result.undo } : {}),
+                    ...(result.confirm ? { confirm: result.confirm } : {}),
+                  },
+                  true,
+                ),
+              );
             }
             return withLatency({
               name: action.name,

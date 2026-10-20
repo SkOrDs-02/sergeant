@@ -10,6 +10,10 @@ import {
   clearFinykSqliteCache,
 } from "../../modules/finyk/lib/sqliteReader";
 import {
+  __clearFinykDualWriteContextForTests,
+  registerFinykDualWriteContext,
+} from "../../modules/finyk/lib/sqliteWriter";
+import {
   clearSqliteCompletionsCache,
   clearSqliteRoutineStateCache,
 } from "../../modules/routine/lib/sqliteReader";
@@ -33,6 +37,17 @@ vi.mock("./chatActions/routinePersistence", async (orig) => {
     ),
   };
 });
+
+// rel-16: finyk-запис чесно відмовляє без dual-write runtime. Ці специфікації
+// про текст і порядок результатів, тож runtime реєструється, а apply приймає
+// все (контракт відмови пінить `hubChatActions.durability.test.ts`).
+vi.mock("../../modules/finyk/lib/sqliteWriter/adapter", () => ({
+  applyFinykDualWriteOps: vi.fn(async () => ({
+    applied: 1,
+    errored: 0,
+    skipped: 0,
+  })),
+}));
 
 import { executeAction, executeActions } from "./hubChatActions";
 import type { Workout as FizrukWorkout } from "@sergeant/fizruk-domain";
@@ -70,6 +85,8 @@ vi.mock("./chatActions/fizrukActions/shared", async (orig) => {
   };
 });
 
+let unregisterFinykRuntime: (() => void) | undefined;
+
 beforeEach(() => {
   // Stage 8 PR #057r-tombstone — routine state lives in the SQLite
   // warm cache, not localStorage. Reset both so each spec starts clean.
@@ -81,10 +98,17 @@ beforeEach(() => {
   // data-08: фінансові екзекутори пишуть лише на прогрітому кеші SQLite.
   clearFinykSqliteCache();
   __setFinykSqliteStateCacheForTests({});
+  unregisterFinykRuntime = registerFinykDualWriteContext({
+    getUserId: () => "u1",
+    getMigrationClient: async () => ({}) as never,
+    getNow: () => "2024-06-15T12:00:00.000Z",
+  });
   vi.useFakeTimers();
   vi.setSystemTime(new Date("2024-06-15T12:00:00Z"));
 });
 afterEach(() => {
+  unregisterFinykRuntime?.();
+  __clearFinykDualWriteContextForTests();
   localStorage.clear();
   clearFinykSqliteCache();
   clearSqliteCompletionsCache();

@@ -11,6 +11,7 @@ import {
   combineChatWrites,
   isCapturingChatWrites,
   trackChatWrite,
+  withChatWriteConfirm,
 } from "./chatWrites";
 
 afterEach(() => {
@@ -62,5 +63,33 @@ describe("combineChatWrites", () => {
     const run = combineChatWrites([new Promise<boolean>(() => {})]);
     await vi.advanceTimersByTimeAsync(CHAT_WRITE_CONFIRM_TIMEOUT_MS);
     await expect(run).resolves.toBe(false);
+  });
+});
+
+describe("withChatWriteConfirm", () => {
+  it("без записів віддає результат як є", () => {
+    expect(withChatWriteConfirm(() => "ok")).toBe("ok");
+  });
+
+  it("рядок із записом -> обʼєкт із confirm", async () => {
+    const out = withChatWriteConfirm(() => {
+      trackChatWrite(Promise.resolve(false));
+      return "готово";
+    });
+    expect(typeof out).toBe("object");
+    if (typeof out === "string") return;
+    expect(out.result).toBe("готово");
+    await expect(out.confirm).resolves.toBe(false);
+  });
+
+  it("зберігає undo і додає confirm", async () => {
+    const undo = vi.fn();
+    const out = withChatWriteConfirm(() => {
+      trackChatWrite(Promise.resolve(true));
+      return { result: "r", undo };
+    });
+    if (typeof out === "string") throw new Error("expected object");
+    expect(out.undo).toBe(undo);
+    await expect(out.confirm).resolves.toBe(true);
   });
 });

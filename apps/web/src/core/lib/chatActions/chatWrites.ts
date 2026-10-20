@@ -14,6 +14,8 @@
  * нічого не робить: undo не має впливати на результат початкової дії.
  */
 
+import type { ChatActionResult } from "./types.result";
+
 /** Стеля очікування підтвердження запису (мс): завислий SQLite не вішає хід. */
 export const CHAT_WRITE_CONFIRM_TIMEOUT_MS = 10_000;
 
@@ -71,4 +73,21 @@ export function combineChatWrites(
   return Promise.race([all, timeout]).finally(() => {
     if (timer !== undefined) clearTimeout(timer);
   });
+}
+
+/**
+ * Виконати синхронний екзекутор, який викликається ПОЗА збирачем `executeActions`
+ * (async-гілка: після `await` у `create_transaction`), і зафіксувати його
+ * write-підтвердження в `confirm` результату. Без цього `trackChatWrite`
+ * нічого не бачить (sink === null), а `settle()` не має що чекати (rel-16).
+ */
+export function withChatWriteConfirm(
+  run: () => ChatActionResult,
+): ChatActionResult {
+  const { value, writes } = captureChatWrites(run);
+  if (writes.length === 0) return value;
+  const confirm = combineChatWrites(writes);
+  return typeof value === "string"
+    ? { result: value, confirm }
+    : { ...value, confirm };
 }
