@@ -26,6 +26,7 @@ import type {
   SqliteWorkerBind,
   SqliteWorkerCall,
   SqliteWorkerDiagnostics,
+  SqliteWorkerPruneResult,
   SqliteWorkerRequest,
   SqliteWorkerResponse,
   SqliteWorkerRowMode,
@@ -62,6 +63,11 @@ export interface SqliteWorkerConnection {
   diagnostics(): Promise<SqliteWorkerDiagnostics | null>;
   close(): Promise<void>;
   wipe(): Promise<void>;
+  /** priv-05: прибрати осиротілі файли баз цього пулу (див. воркер). */
+  prune(
+    keep: readonly string[],
+    force: readonly string[],
+  ): Promise<SqliteWorkerPruneResult>;
 }
 
 export interface SqliteWorkerOpenOptions {
@@ -261,6 +267,12 @@ export async function openSqliteInWorker(
       } finally {
         terminate();
       }
+    },
+    async prune(keep, force) {
+      const response = await call({ kind: "prune", keep, force });
+      return response.ok && response.kind === "prune"
+        ? response.result
+        : { removed: [], kept: [] };
     },
     async wipe() {
       // Обробник `wipe` у воркері сам закриває БД і лише тоді робить

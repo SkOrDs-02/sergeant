@@ -21,6 +21,11 @@ import {
 import { isHandoffDone } from "./kvvfsHandoff.js";
 import { claimDbOwnership, onYieldRequested } from "./dbOwnership.js";
 import { watchOpfsWipe } from "./opfsWipeGuard.js";
+import {
+  cleanupOrphanSqliteFiles,
+  clearPendingSqliteWipe,
+  markPendingSqliteWipe,
+} from "./sqliteOrphanCleanup.js";
 import { markKvAnonPartition, refreshKvWarmCache } from "./kvStoreBoot.js";
 import {
   makeLocalConnection,
@@ -235,10 +240,16 @@ export async function wipeSqliteDb(): Promise<void> {
   //   - main-thread OPFS-SAH's `unlink` is the opposite: the pool leaves the
   //     result undefined while the file is still open, so it runs AFTER
   //     `close()` releases the sync-access-handle lock.
+  // priv-05: файл на диску стирається ПІСЛЯ маркера «стирання не завершилось»;
+  // маркер знімається лише після успіху, інакше наступний старт довершить
+  // стирання (`cleanupOrphanSqliteFiles`).
+  const pendingFile = open?.vfs === "opfs-sahpool" ? open.dbName : null;
+  if (pendingFile) markPendingSqliteWipe(pendingFile);
   const wipeStorage = async (): Promise<void> => {
     if (!open) return;
     try {
       await open.wipe(userIdBeingWiped);
+      if (pendingFile) clearPendingSqliteWipe(pendingFile);
     } catch (err) {
       // Не ковтаємо мовчки: файл із даними користувача лишився на диску.
       // `logger.error` у проді йде в Sentry (breadcrumb + captureException).
@@ -516,6 +527,9 @@ async function attemptWorkerBackedDb(
     });
   }
   lastWorkerDiagnostics = await conn.diagnostics();
+  // priv-05: довести недостерте після виходу й прибрати осиротілі файли.
+  // Без await: прибирання не затримує бут і не кидає.
+  void cleanupOrphanSqliteFiles(conn, dbName);
   addSentryBreadcrumb({
     category: "storage",
     level: "info",

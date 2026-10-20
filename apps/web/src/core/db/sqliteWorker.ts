@@ -22,6 +22,7 @@
  */
 import sqlite3InitModule from "@sqlite.org/sqlite-wasm";
 
+import { pruneOrphanPartitions, type PrunePool } from "./sqliteWorkerPrune";
 import type {
   SqliteWorkerDiagnostics,
   SqliteWorkerErrorPayload,
@@ -159,6 +160,15 @@ async function handle(
       if (pool && openDbName) pool.unlink(openDbName);
       return { id, ok: true, kind: "wipe" };
     }
+    case "prune": {
+      if (!pool) throw new Error("sqlite-worker: pool is not installed");
+      const result = pruneOrphanPartitions(
+        pool satisfies PrunePool,
+        request.keep,
+        request.force,
+      );
+      return { id, ok: true, kind: "prune", result };
+    }
   }
 }
 
@@ -180,6 +190,7 @@ const KNOWN_KINDS: ReadonlySet<string> = new Set([
   "diagnostics",
   "close",
   "wipe",
+  "prune",
 ]);
 
 function isRequest(value: unknown): value is SqliteWorkerRequest {

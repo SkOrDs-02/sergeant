@@ -59,7 +59,22 @@ export type SqliteWorkerRequest =
     }
   | { readonly id: number; readonly kind: "diagnostics" }
   | { readonly id: number; readonly kind: "close" }
-  | { readonly id: number; readonly kind: "wipe" };
+  | { readonly id: number; readonly kind: "wipe" }
+  | {
+      readonly id: number;
+      readonly kind: "prune";
+      /** Імена файлів баз, які НЕ чіпаємо (активна й анонімна партиції). */
+      readonly keep: readonly string[];
+      /** Імена, що лишились після невдалого виходу: видаляємо безумовно. */
+      readonly force: readonly string[];
+    };
+
+/** Підсумок прибирання осиротілих файлів баз (priv-05). */
+export interface SqliteWorkerPruneResult {
+  readonly removed: readonly string[];
+  /** Осиротілі, але з недоставленою чергою (або нечитані): не чіпали. */
+  readonly kept: readonly string[];
+}
 
 /** Заповненість SAH-пулу — те саме, що `readSqliteStorageDiagnostics()`. */
 export interface SqliteWorkerDiagnostics {
@@ -115,6 +130,12 @@ export type SqliteWorkerResponse =
       readonly id: number;
       readonly ok: true;
       readonly kind: "exec" | "run" | "close" | "wipe";
+    }
+  | {
+      readonly id: number;
+      readonly ok: true;
+      readonly kind: "prune";
+      readonly result: SqliteWorkerPruneResult;
     }
   | {
       readonly id: number;

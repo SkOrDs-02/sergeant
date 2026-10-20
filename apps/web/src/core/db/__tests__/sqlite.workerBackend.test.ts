@@ -51,6 +51,7 @@ function fakeWorkerConnection() {
     diagnostics: vi.fn(async () => ({ capacity: 24, fileCount: 2 })),
     close: vi.fn(async () => {}),
     wipe: vi.fn(async () => {}),
+    prune: vi.fn(async () => ({ removed: [], kept: [] })),
   };
 }
 
