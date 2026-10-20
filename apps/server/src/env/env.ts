@@ -158,11 +158,15 @@ const envSchema = z.object({
   /**
    * Тіньовий Jev-детектор інʼєкцій у `tool_result` (`chat/injectionShadowJev.ts`):
    * лише метрика, нічого не блокує. Без `OPENROUTER_API_KEY` не діє.
-   * Увімкнений за замовчуванням (явне рішення власника 2026-09-23): змінна
-   * потрібна лише як аварійний вимикач `false`.
+   * Вимкнений за замовчуванням з 2026-10-19 (аудит приватності `priv-10`):
+   * TypeSafe, що отримує кожен `tool_result`, ще не названий у політиці
+   * приватності (`AI_PROCESSORS`) і в `llm-subprocessors.md`, а політика
+   * обіцяє повідомляти про нового субпроцесора за 30 днів. Вмикати
+   * `CHAT_INJECTION_JEV_SHADOW=true` лише після публікації власником
+   * оновленого переліку субпроцесорів і повідомлення.
    * Умова зняття - `docs/work/specs/planning/jev-injection-shadow.md`.
    */
-  CHAT_INJECTION_JEV_SHADOW: boolFromEnv(true),
+  CHAT_INJECTION_JEV_SHADOW: boolFromEnv(false),
 
   /**
    * Верифікація чисел у відповідях чату (ADR-0097, `chat/numberVerify/`).

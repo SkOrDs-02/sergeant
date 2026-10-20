@@ -81,12 +81,16 @@ describe("injectionShadowJev", () => {
     ]);
   });
 
-  it("незадана змінна вмикає детектор: змінна лише аварійний вимикач", async () => {
+  it("незадана змінна лишає детектор вимкненим: TypeSafe не названий у політиці приватності (priv-10)", async () => {
     vi.stubEnv("CHAT_INJECTION_JEV_SHADOW", undefined);
+    vi.stubEnv("OPENROUTER_API_KEY", "test-key");
     vi.resetModules();
     try {
       const fresh = await import("../../env/env.js");
-      expect(fresh.env.CHAT_INJECTION_JEV_SHADOW).toBe(true);
+      expect(fresh.env.CHAT_INJECTION_JEV_SHADOW).toBe(false);
+      const { isJevShadowEnabled: freshEnabled } =
+        await import("./injectionShadowJev.js");
+      expect(freshEnabled()).toBe(false);
     } finally {
       vi.unstubAllEnvs();
       vi.resetModules();
