@@ -1,8 +1,19 @@
 {
   "$schema": "../governance/schemas/pr-ledger.schema.json",
   "version": 1,
-  "generated_at": "2026-09-29",
+  "generated_at": "2026-10-20",
   "prs": [
+    {
+      "number": 1571,
+      "title": "fix(server): unblock GDPR redaction and cover OAuth storage boundaries",
+      "merged_at": "2026-10-20T16:24:59Z",
+      "author": "@SkOrDs-02",
+      "host": "github",
+      "repo": "SkOrDs-02/sergeant",
+      "touchedDocs": [
+        "docs/governance/adr/0016-user-deletion-and-pii-handling.md"
+      ]
+    },
     {
       "number": 1283,
       "title": "ci(web): deploy web and landing from main only, no per-PR Vercel builds",

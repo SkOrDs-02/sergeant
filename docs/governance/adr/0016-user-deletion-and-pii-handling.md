@@ -47,9 +47,10 @@
 
 ## Recent PRs
 
-| PR                                                     | Title                                                            | Merged     |
-| ------------------------------------------------------ | ---------------------------------------------------------------- | ---------- |
-| [#95](https://github.com/zaebal-beep/sergeant/pull/95) | fix(server): закрити знахідки аудиту серверного шару, БД і синку | 2026-09-17 |
+| PR                                                       | Title                                                                  | Merged     |
+| -------------------------------------------------------- | ---------------------------------------------------------------------- | ---------- |
+| [#1571](https://github.com/SkOrDs-02/sergeant/pull/1571) | fix(server): unblock GDPR redaction and cover OAuth storage boundaries | 2026-10-20 |
+| [#95](https://github.com/zaebal-beep/sergeant/pull/95)   | fix(server): закрити знахідки аудиту серверного шару, БД і синку       | 2026-09-17 |
 
-_Auto-derived from `docs/governance/pr-ledger/index.json`. Top 1 most recent PRs touching this file._
+_Auto-derived from `docs/governance/pr-ledger/index.json`. Top 2 most recent PRs touching this file._
 <!-- AUTO-GENERATED: PR-BACKLINKS-END -->
