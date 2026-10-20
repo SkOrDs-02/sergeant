@@ -41,6 +41,7 @@ import {
   savePinHash,
   clearPinHash,
   hasPinSet,
+  readLockStatus,
   MAX_FAILED_UNLOCK_ATTEMPTS,
   __seedAttemptStateForTests,
 } from "./lockStorage";
@@ -356,18 +357,59 @@ describe("useAppLock", () => {
         return hook;
       }
 
-      it("logs out, then erases the credential, so the next sign-in is not locked out again", async () => {
-        logout.mockResolvedValue(true);
+      /**
+       * Справжній `logout()` завершується повним `location.assign`, який
+       * вивантажує документ: IndexedDB-транзакція, запущена ПІСЛЯ повернення
+       * з `logout()`, переривається. Мок відтворює це: виконує хук
+       * `beforeNavigate` (як справжній), потім «навігує» — відрізає IDB.
+       */
+      function logoutThatNavigates() {
+        const idbBeforeNavigation = (globalThis as { indexedDB?: IDBFactory })
+          .indexedDB;
+        const order: string[] = [];
+        logout.mockImplementation(
+          async (opts?: { beforeNavigate?: () => Promise<void> }) => {
+            await opts?.beforeNavigate?.();
+            order.push("navigate");
+            (globalThis as { indexedDB?: unknown }).indexedDB = {
+              open() {
+                throw new Error("document unloaded");
+              },
+              deleteDatabase() {
+                throw new Error("document unloaded");
+              },
+            };
+            return true;
+          },
+        );
+        return {
+          order,
+          restoreIdb() {
+            (globalThis as { indexedDB?: unknown }).indexedDB =
+              idbBeforeNavigation;
+          },
+        };
+      }
+
+      it("erases the credential BEFORE the logout navigation, so the next sign-in is not locked out again", async () => {
+        const nav = logoutThatNavigates();
         const { result } = await renderLockedOut();
 
         let done = false;
         await act(async () => {
           done = await result.current.signOut();
         });
+        nav.restoreIdb();
 
         expect(done).toBe(true);
         expect(logout).toHaveBeenCalledTimes(1);
+        // Креденшел стертий ДО навігації, а не після неї (інакше IDB уже
+        // вивантажена і запис `failed >= 10` вцілів би).
         expect(await hasPinSet("user-x")).toBe(false);
+        expect(await readLockStatus("user-x")).toMatchObject({
+          hasPin: false,
+          lockedOut: false,
+        });
         expect(result.current.state).toBe("idle");
       }, 30_000);
 

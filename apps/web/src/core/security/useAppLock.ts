@@ -252,16 +252,23 @@ export function useAppLock(): UseAppLockReturn {
   const disablePin = useCallback(() => clearPinHash(userId), [userId]);
 
   // sec-12/priv-14: єдиний шлях з `lockedOut` і дія «Забув PIN?». Креденшел
-  // стираємо ЛИШЕ після підтвердженого виходу: якщо `logout()` скасовано
-  // (діалог про незбережені записи), замок має лишитись. Без стирання
-  // повторний вхід того ж користувача знову побачив би `lockedOut`.
+  // стираємо ЛИШЕ в межах підтвердженого виходу: якщо `logout()` скасовано
+  // (діалог про незбережені записи), хук не викликається і замок лишається.
+  // Стирання йде хуком `beforeNavigate` ВСЕРЕДИНІ `logout()`, а не після
+  // нього: `logout()` завершується повним `location.assign`, який вивантажує
+  // документ і переривав би IndexedDB-транзакцію, запущену вже після
+  // повернення. Тоді запис із `failed >= 10` вцілів би, і повторний вхід
+  // знову показав би `lockedOut` — вихід з якого знову не працює.
   const signOut = useCallback(async (): Promise<boolean> => {
     const signedOutUserId = userId;
-    const done = await logout();
-    if (!done) return false;
-    await clearPinHash(signedOutUserId).catch(() => {
-      /* best-effort: IndexedDB недоступна — креденшела й так не прочитати */
+    const done = await logout({
+      beforeNavigate: async () => {
+        await clearPinHash(signedOutUserId).catch(() => {
+          /* best-effort: IndexedDB недоступна — креденшела й так не прочитати */
+        });
+      },
     });
+    if (!done) return false;
     setRetryAt(null);
     setState("idle");
     return true;
