@@ -36,17 +36,25 @@ vi.mock("../components/charts/lazy", () => ({
   // `AccountBars.test.tsx`, а цей набір перевіряє, що фільтр звужує сторінку.
   AccountBars: ({
     onSelect,
+    transactions = [],
   }: {
     onSelect: (accountKey: string | null) => void;
+    transactions?: unknown[];
   }) => (
     <button type="button" onClick={() => onSelect("cash_on_hand")}>
-      only-cash
+      only-cash {transactions.length}
     </button>
   ),
   // «За тегами» так само: рядки покриває `TagBars.test.tsx`.
-  TagBars: ({ onSelect }: { onSelect: (tagKey: string | null) => void }) => (
+  TagBars: ({
+    onSelect,
+    transactions = [],
+  }: {
+    onSelect: (tagKey: string | null) => void;
+    transactions?: unknown[];
+  }) => (
     <button type="button" onClick={() => onSelect("відпустка")}>
-      only-vacation
+      only-vacation {transactions.length}
     </button>
   ),
 }));
@@ -389,7 +397,7 @@ describe("Analytics page", () => {
     expect(await screen.findByTestId("category-bars")).toHaveTextContent(
       "bars total 250",
     );
-    fireEvent.click(screen.getByRole("button", { name: "only-cash" }));
+    fireEvent.click(screen.getByRole("button", { name: /^only-cash/ }));
     expect(screen.getByTestId("category-bars")).toHaveTextContent(
       "bars total 200",
     );
@@ -437,14 +445,67 @@ describe("Analytics page", () => {
     expect(await screen.findByTestId("category-bars")).toHaveTextContent(
       "bars total 280",
     );
-    fireEvent.click(screen.getByRole("button", { name: "only-vacation" }));
+    fireEvent.click(screen.getByRole("button", { name: /^only-vacation/ }));
     expect(screen.getByTestId("category-bars")).toHaveTextContent(
       "bars total 250",
     );
-    fireEvent.click(screen.getByRole("button", { name: "only-cash" }));
+    fireEvent.click(screen.getByRole("button", { name: /^only-cash/ }));
     expect(screen.getByTestId("category-bars")).toHaveTextContent(
       "bars total 200",
     );
+  });
+
+  it("фільтр тегу звужує «За рахунками», а фільтр рахунку звужує «За тегами»", async () => {
+    const manualExpenses = [
+      {
+        id: "a",
+        amount: 200,
+        date: "2026-06-10T10:00:00.000Z",
+        category: "food",
+        account: "cash",
+      },
+      {
+        id: "b",
+        amount: 50,
+        date: "2026-06-10T10:00:00.000Z",
+        category: "food",
+      },
+      {
+        id: "c",
+        amount: 30,
+        date: "2026-06-10T10:00:00.000Z",
+        category: "food",
+        account: "cash",
+      },
+    ];
+    await act(async () => {
+      render(
+        <Analytics
+          mono={buildMono()}
+          storage={buildStorage({
+            manualExpenses: manualExpenses as unknown as NonNullable<
+              AnalyticsProps["storage"]["manualExpenses"]
+            >,
+            txTags: { manual_a: ["Відпустка"], manual_b: ["відпустка"] },
+          })}
+        />,
+      );
+    });
+    const accountBlock = await screen.findByRole("button", {
+      name: /^only-cash/,
+    });
+    const tagBlock = screen.getByRole("button", { name: /^only-vacation/ });
+    expect(accountBlock).toHaveTextContent("only-cash 3");
+    expect(tagBlock).toHaveTextContent("only-vacation 3");
+
+    fireEvent.click(tagBlock);
+    // Рахунки бачать лише операції з тегом, але свій рядок вибору тег зберігає.
+    expect(accountBlock).toHaveTextContent("only-cash 2");
+    expect(tagBlock).toHaveTextContent("only-vacation 3");
+
+    fireEvent.click(accountBlock);
+    expect(tagBlock).toHaveTextContent("only-vacation 2");
+    expect(accountBlock).toHaveTextContent("only-cash 2");
   });
 
   it("показує помилку завантаження банку навіть коли в місяці є ручна витрата", async () => {
