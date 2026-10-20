@@ -16,6 +16,7 @@ import { OverviewTextRows } from "./overview/OverviewTextRows";
 import { NetworthSection } from "./overview/NetworthSection";
 import { BudgetAlertsList } from "./overview/BudgetAlertsList";
 import { useOverviewData } from "./overview/useOverviewData";
+import { useStorageWarmGate } from "../hooks/useStorageWarmGate";
 import { pluralize } from "../../../core/hub/useHubDashboardState";
 import { messages } from "@shared/i18n/uk";
 import { ModuleEmptyState } from "@shared/components/ui/EmptyState";
@@ -26,6 +27,8 @@ import { LocalOnlyDataBanner } from "../../../core/durability/LocalOnlyDataBanne
 import { useMonoStaleness } from "./overview/useMonoStaleness";
 import { useLocalUserId } from "../../../core/auth/useLocalUserId";
 import { isSyncableUserId } from "../../../core/syncEngine/syncableUserId";
+
+const OVERVIEW_WARM_TIMEOUT_MS = 2_500;
 
 type StorageLike = ReturnType<typeof useStorage>;
 type MergedMonoLike = ReturnType<typeof useUnifiedFinanceData>["mergedMono"];
@@ -108,9 +111,18 @@ export function Overview({
   const showStalenessBanner =
     !showLocalOnlyBanner && monoStaleness.stale && monoStaleness.days !== null;
 
+  // Ручні витрати живуть лише в SQLite-кеші, який прогрівається асинхронно:
+  // до прогріву `hasAnyData` хибно false і блимав би порожній стан.
+  // Таймаут короткий: якщо кеш так і не прогрівся (boot упав чи флаг вимкнено),
+  // скелетон не має висіти довше за блимання, яке він лікує.
+  const storageWarming = useStorageWarmGate(
+    storage.storageReady,
+    OVERVIEW_WARM_TIMEOUT_MS,
+  );
+  const loading = d.loadingTx || storageWarming;
   const overviewQuery: DataStateQueryLike<readonly Transaction[]> = {
-    data: d.loadingTx && d.realTx.length === 0 ? undefined : d.realTx,
-    isLoading: d.loadingTx,
+    data: loading && d.realTx.length === 0 ? undefined : d.realTx,
+    isLoading: loading,
   };
 
   return (
