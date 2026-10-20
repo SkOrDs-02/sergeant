@@ -17,7 +17,13 @@ import type {
   Category,
   Transaction,
 } from "@sergeant/finyk-domain/domain/types";
-import { toCsvRows, csvFilename } from "./exportTransactionsCsv";
+import {
+  toCsvRows,
+  csvFilename,
+  csvRangeFilename,
+  collectAllHistory,
+  exportAllHistoryCsv,
+} from "./exportTransactionsCsv";
 
 function tx(partial: Partial<Transaction>): Transaction {
   return {
@@ -114,5 +120,44 @@ describe("exportTransactionsCsv", () => {
   it("називає файл місяцем, який експортували", () => {
     expect(csvFilename("2026-09")).toBe("finyk-2026-09.csv");
     expect(csvFilename(null)).toBe("finyk.csv");
+  });
+
+  describe("уся історія", () => {
+    const sec = (iso: string) => Math.floor(Date.parse(iso) / 1000);
+
+    it("зливає банк і ручні, ховає приховані, від нових до старих", () => {
+      const bank = [
+        tx({ id: "old", time: sec("2025-01-10T10:00:00Z") }),
+        tx({ id: "hid", time: sec("2026-03-01T10:00:00Z") }),
+      ];
+      const manual = [
+        {
+          id: "m1",
+          date: "2026-02-01T09:00:00.000Z",
+          amount: 50,
+          category: "x",
+        },
+      ];
+      const all = collectAllHistory(bank, manual, ["hid"]);
+
+      expect(all.map((t) => t.id)).toEqual(["manual_m1", "old"]);
+    });
+
+    it("називає файл діапазоном київських днів", () => {
+      const txs = [
+        tx({ time: sec("2026-10-20T10:00:00Z") }),
+        tx({ time: sec("2025-01-10T10:00:00Z") }),
+      ];
+
+      expect(csvRangeFilename(txs)).toBe("finyk-2025-01-10_2026-10-20.csv");
+      expect(csvRangeFilename([])).toBe("finyk.csv");
+    });
+
+    it("порожня історія не створює файл", async () => {
+      await expect(exportAllHistoryCsv([], () => cat("Їжа"))).resolves.toEqual({
+        count: 0,
+        result: "empty",
+      });
+    });
   });
 });

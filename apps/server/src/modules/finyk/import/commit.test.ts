@@ -129,6 +129,8 @@ function makeFakeClient(
   const query = vi.fn(async (sql: string, params: unknown[] = []) => {
     calls.push({ sql, params });
     if (/^BEGIN|^COMMIT|^ROLLBACK/.test(sql.trim())) return { rows: [] };
+    // data-12: user-lock sync_op_log одразу після BEGIN.
+    if (/pg_advisory_xact_lock/.test(sql)) return { rows: [] };
     if (/INSERT INTO finyk_manual_expenses/.test(sql)) {
       const ids = params[0] as string[];
       const rows = ids.flatMap((id, i) => {
@@ -239,6 +241,14 @@ describe("commitImportHandler — happy path, усі рядки нові", () =>
     expect(body.rows.every((r) => r.id.startsWith("imp1:"))).toBe(true);
     expect(client.calls.some((c) => c.sql.trim() === "COMMIT")).toBe(true);
     expect(client.release).toHaveBeenCalledTimes(1);
+
+    // data-12: user-lock sync_op_log ПЕРШИМ після BEGIN, до INSERT
+    // import_batches (інакше xid імпорту береться раніше за лок).
+    expect(client.calls[0]?.sql.trim()).toBe("BEGIN");
+    expect(client.calls[1]?.sql).toContain(
+      "pg_advisory_xact_lock(hashtext('sync_op_log'), hashtext($1))",
+    );
+    expect(client.calls[1]?.params).toEqual(["u1"]);
   });
 
   it("blob income-рядка несе kind:'income', amount у гривнях (не копійках)", async () => {

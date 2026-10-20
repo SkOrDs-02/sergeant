@@ -21,7 +21,7 @@ describe("Select", () => {
   it("defaults to size='md' and variant='default'", () => {
     const { getByRole } = render(<Select />);
     const select = getByRole("combobox");
-    expect(select.className).toContain("h-11");
+    expect(select.className).toContain("h-12");
     expect(select.className).toContain("bg-panelHi");
   });
 
@@ -35,47 +35,26 @@ describe("Select", () => {
     expect(getByRole("combobox").className).toContain("hover:bg-panelHi");
   });
 
-  // Число `/45` звірене з каноном (`Button.tsx:400`), а не з тим, що рендерив
-  // компонент. До 2026-09-15 тут стояло `/30` — значення, яке дрейфонуло разом
-  // із кодом і суперечило докстрінгу самого `Select`, де заявлено дзеркалення
-  // `Input` і `Button`. Предмет тесту від цього не змінився: він сторожить, що
-  // бренд-сімейство кільця не змішується з модульним (`input-focus-*`), а не
-  // конкретний рівень непрозорості.
-  it("keeps the brand focus ring when accent is omitted (default stays brand)", () => {
+  it("фокус мовою H: обвід 2 px чорнилом без зовнішнього кільця й без hue", () => {
     const { getByRole } = render(<Select />);
     const cls = getByRole("combobox").className;
-    expect(cls).toContain("focus-visible:border-brand-400");
-    expect(cls).toContain("focus-visible:ring-focus/45");
+    expect(cls).toContain("border-control");
+    expect(cls).toContain("focus-visible:border-text");
+    expect(cls).toContain("focus-visible:inset-ring-text");
+    expect(cls).not.toContain("focus-visible:ring-2");
+    expect(cls).not.toContain("brand-400");
     expect(cls).not.toContain("input-focus-");
   });
 
-  it.each(["finyk", "fizruk", "nutrition", "routine"] as const)(
-    "accent='%s' swaps the brand focus classes for input-focus-%s (exactly one ring family)",
-    (accent) => {
-      const { getByRole } = render(<Select accent={accent} />);
-      const cls = getByRole("combobox").className;
-      expect(cls).toContain(`input-focus-${accent}`);
-      expect(cls).not.toContain("focus-visible:border-brand-400");
-      expect(cls).not.toContain("focus-visible:ring-focus/45");
-    },
-  );
-
-  it("accent='brand' is byte-identical to the omitted default", () => {
-    const { getByRole, unmount } = render(<Select accent="brand" />);
-    const explicit = getByRole("combobox").className;
-    unmount();
-    const { getByRole: getByRole2 } = render(<Select />);
-    expect(explicit).toBe(getByRole2("combobox").className);
-  });
-
-  it("error takes precedence over a module accent — danger ring, no module utility", () => {
-    const { getByRole } = render(<Select accent="finyk" error />);
+  it("error: межа й внутрішнє кільце небезпеки", () => {
+    const { getByRole } = render(<Select error />);
     const cls = getByRole("combobox").className;
-    expect(cls).not.toContain("input-focus-finyk");
     expect(cls).toContain("border-danger/70");
-    expect(cls).toContain("focus-visible:border-danger");
-    expect(cls).toContain("focus-visible:ring-danger/25");
-    expect(cls).toContain("focus-visible:ring-2");
+    expect(cls).toContain("focus-visible:inset-ring-danger");
+    expect(cls).toMatch(/focus-visible:inset-ring(\s|$)/);
+    expect(cls).not.toContain("inset-ring-text");
+    expect(cls).not.toContain("focus-visible:border-text");
+    expect(cls).not.toContain("focus-visible:ring-2");
   });
 
   it("sets aria-invalid and the danger border when error=true", () => {

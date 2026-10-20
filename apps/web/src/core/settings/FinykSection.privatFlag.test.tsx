@@ -43,15 +43,20 @@ vi.mock("@finyk/hooks/useStorage", () => ({
   }),
 }));
 
-function renderWithProviders(Component: React.ComponentType) {
+// `ToastProvider` імпортується після `vi.resetModules()`, щоб контекст був
+// тим самим екземпляром модуля, що й `useToast` у свіжо завантаженій секції.
+async function renderWithProviders(Component: React.ComponentType) {
+  const { ToastProvider } = await import("@shared/hooks/useToast");
   const client = new QueryClient({
     defaultOptions: { queries: { retry: false } },
   });
   return render(
     <QueryClientProvider client={client}>
-      <MemoryRouter>
-        <Component />
-      </MemoryRouter>
+      <ToastProvider>
+        <MemoryRouter>
+          <Component />
+        </MemoryRouter>
+      </ToastProvider>
     </QueryClientProvider>,
   );
 }
@@ -70,7 +75,7 @@ describe("FinykSection — PRIVAT_ENABLED env gate", () => {
   it("defaults to disabled when VITE_PRIVAT_ENABLED is unset", async () => {
     vi.unstubAllEnvs();
     const { FinykSection } = await import("./FinykSection");
-    renderWithProviders(FinykSection);
+    await renderWithProviders(FinykSection);
 
     expect(privatBankMock).toHaveBeenCalledWith(
       expect.objectContaining({ enabled: false }),
@@ -81,7 +86,7 @@ describe("FinykSection — PRIVAT_ENABLED env gate", () => {
   it("stays disabled for any value other than the literal string 'true'", async () => {
     vi.stubEnv("VITE_PRIVAT_ENABLED", "1");
     const { FinykSection } = await import("./FinykSection");
-    renderWithProviders(FinykSection);
+    await renderWithProviders(FinykSection);
 
     expect(privatBankMock).toHaveBeenCalledWith(
       expect.objectContaining({ enabled: false }),
@@ -92,7 +97,7 @@ describe("FinykSection — PRIVAT_ENABLED env gate", () => {
   it("enables the PrivatBank section when VITE_PRIVAT_ENABLED='true'", async () => {
     vi.stubEnv("VITE_PRIVAT_ENABLED", "true");
     const { FinykSection } = await import("./FinykSection");
-    renderWithProviders(FinykSection);
+    await renderWithProviders(FinykSection);
 
     expect(privatBankMock).toHaveBeenCalledWith(
       expect.objectContaining({ enabled: true }),

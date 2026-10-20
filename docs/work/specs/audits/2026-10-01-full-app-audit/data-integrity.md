@@ -1271,7 +1271,7 @@ My own live run (fresh user `skeptic_cs_gap4_2463@example.com`; script and outpu
 
 ### `data-12` [medium] Курсор pull перескакує оп-и паралельних транзакцій: вотермарк tx_id &lt; xmin не закриває гонку, і пристрій назавжди пропускає чужі зміни
 
-- **Стан:** відкрито
+- **Стан:** виправлено в гілці claude/fix-data-12-pull-cursor-advisory-lock (advisory-лок на користувача; не відновлює оп-и, вже втрачені в проді: пристрої з перестрибнутим курсором доганяє лише скидання курсора)
 - **Перевірка:** підтверджено · **Зусилля:** M · **Область:** server: sync (syncV2 pull, SSE replay)
 - **Де:** apps/server/src/modules/sync/syncV2.ts:343-583,653-680; apps/server/src/modules/sync/syncV2-core.ts:40-41; apps/server/src/modules/sync/syncV2Stream.ts:266-277; apps/server/src/migrations/147_sync_op_log_tx_watermark.sql; apps/web/src/core/syncEngine/syncEngineReader.ts:210-233; packages/api-client/src/endpoints/syncV2.ts:46-51
 - **Першопричина:** Pull віддає id &gt; since AND tx_id &lt; pg_snapshot_xmin ORDER BY id, а клієнт зберігає курсор = max(op.id). Push не бере per-user локу, тож BIGSERIAL id двох паралельних транзакцій чергуються; якщо транзакція зі старшим xid комітиться першою, поки молодша (з меншими id) ще відкрита, рядки старшої видимі, курсор стрибає вперед, і рядки молодшої вже ніколи не повертаються.
