@@ -17,16 +17,22 @@
 
 import { test } from "node:test";
 import assert from "node:assert/strict";
+import { readdirSync, readFileSync } from "node:fs";
+import { dirname, join, resolve } from "node:path";
+import { fileURLToPath } from "node:url";
 
 import {
   allowlistHits,
   blankComments,
   CANON_RING_OPACITY,
   counts,
+  NATIVE_CHOICE_ALLOWLIST,
   ROUNDED_FULL_ALLOWLIST,
   ICON_SIZE_TOKENS,
   maskedRanges,
   scanSource,
+  STATE_LABEL_KEYS,
+  STATE_LABEL_WORDS,
   tagEnd,
 } from "../check-ui-canon-ratchet.mjs";
 
@@ -253,9 +259,10 @@ test("allowlist не масивом — голосна помилка, а не �
   assert.throws(() => allowlistHits({ files: [] }), /масивом/);
 });
 
-test("лічильник знає про всі одинадцять метрик — інакше baseline-гейт не побачить нову", () => {
+test("лічильник знає про всі чотирнадцять метрик — інакше baseline-гейт не побачить нову", () => {
   assert.deepEqual(Object.keys(counts([])).sort(), [
     "bigRadius",
+    "capsFormLabel",
     "cyrillicJsxAllowlist",
     "enterMotion",
     "glass",
@@ -264,8 +271,10 @@ test("лічильник знає про всі одинадцять метри�
     "hoverMotion",
     "kicker",
     "legacyButton",
+    "nativeChoice",
     "numericIconSize",
     "offCanonRingOpacity",
+    "textStateLabel",
   ]);
 });
 
@@ -425,4 +434,110 @@ test("нові метрики не читають згадки в комента
 test("CSS не сканується новими метриками - там визначення утиліт", () => {
   const css = ".x { @apply backdrop-blur-md rounded-2xl hover:scale-105; }";
   assert.deepEqual(scanSource("apps/web/src/styles/u.css", css), []);
+});
+
+// ── 12-14: мова станів v3.1 ──
+
+const T = "apps/web/src/example.tsx";
+const onlyTsx = (src, metric) =>
+  scanSource(T, src).filter((h) => h.metric === metric);
+
+test("nativeChoice: radio і checkbox ловляться, зокрема динамічні", () => {
+  const src = `
+    <input type="radio" name="a" />
+    <input type='checkbox' />
+    <input type={multi ? "checkbox" : "radio"} />
+    <input type="text" />
+    <Button type="button" />`;
+  const hits = onlyTsx(src, "nativeChoice");
+  assert.equal(hits.length, 3);
+  assert.match(hits[0].detail, /ChoiceGroup/);
+});
+
+test("nativeChoice: файли allowlist не рахуються, коментар теж", () => {
+  for (const file of NATIVE_CHOICE_ALLOWLIST) {
+    const hits = scanSource(file, `<input type="checkbox" />`).filter(
+      (h) => h.metric === "nativeChoice",
+    );
+    assert.deepEqual(hits, [], file);
+  }
+  assert.deepEqual(onlyTsx(`// <input type="radio" />`, "nativeChoice"), []);
+});
+
+test("nativeChoice: лише TSX, рядок у .ts не є розміткою", () => {
+  const hits = scanSource(
+    "apps/web/src/example.ts",
+    `const sel = 'input[type="checkbox"]'; const t = 'type="radio"';`,
+  ).filter((h) => h.metric === "nativeChoice");
+  assert.deepEqual(hits, []);
+});
+
+test("textStateLabel: ключі каталогу й літерали ловляться", () => {
+  const src = `
+    <span>{messages.actions.collapse}</span>
+    <span>{open ? coreMessages.actions.collapse : messages.finykRedesign.expand}</span>
+    <span>{m.collapseFact}</span>
+    <span>{messages.finykRedesign.selected}</span>
+    <button>{open ? "Згорнути" : "Розгорнути"}</button>
+    <span>Обрано {n}</span>`;
+  assert.equal(onlyTsx(src, "textStateLabel").length, 8);
+});
+
+test("textStateLabel: row.selected, похідні слова й aria-атрибути не рахуються", () => {
+  const src = `
+    <input checked={row.selected} />
+    <p>{state.expand}</p>
+    <p>Згорнутий блок, Розгорнутий список</p>
+    <button aria-label="Згорнути звіт тижня" />
+    <button aria-label={\`\${open ? messages.actions.collapse : messages.actions.expand} \${label}\`} />
+    // «Згорнути» у коментарі
+    <p>Показати всі</p>`;
+  assert.deepEqual(onlyTsx(src, "textStateLabel"), []);
+});
+
+test("textStateLabel: STATE_LABEL_KEYS покриває всі ключі каталогу зі словами стану", () => {
+  const here = dirname(fileURLToPath(import.meta.url));
+  const i18n = resolve(here, "../../apps/web/src/shared/i18n");
+  const words = STATE_LABEL_WORDS.join("|");
+  const re = new RegExp(`(\\w+):\\s*"(?:${words})"`, "g");
+  const found = new Set();
+  for (const f of readdirSync(i18n)) {
+    if (!/^uk.*\.ts$/.test(f)) continue;
+    for (const x of readFileSync(join(i18n, f), "utf8").matchAll(re)) {
+      found.add(x[1]);
+    }
+  }
+  assert.ok(found.size > 0, "каталог має містити хоч один такий ключ");
+  for (const key of found) {
+    assert.ok(
+      STATE_LABEL_KEYS.includes(key),
+      `ключ ${key} не в STATE_LABEL_KEYS`,
+    );
+  }
+});
+
+test("capsFormLabel: uppercase і overline на <label> ловляться, через константу теж", () => {
+  const src = `
+    const labelCls = "px-1 block text-xs uppercase tracking-wider";
+    <label className="block text-style-overline text-subtle">A</label>
+    <label className={cn("block", caps && "uppercase")}>B</label>
+    <label className={labelCls}>C</label>`;
+  assert.equal(onlyTsx(src, "capsFormLabel").length, 3);
+});
+
+test("capsFormLabel: примітив <Label> з капсом у className теж ловиться", () => {
+  const src = `
+    <Label htmlFor="a" className="uppercase tracking-wide">A</Label>
+    <Label className={cn("block", "text-style-overline")}>B</Label>
+    <Label htmlFor="c">C</Label>`;
+  assert.equal(onlyTsx(src, "capsFormLabel").length, 2);
+});
+
+test("capsFormLabel: звичайний підпис, капс на <span> і схожі теги не рахуються", () => {
+  const src = `
+    <label className="text-style-label normal-case text-muted">A</label>
+    <label className="block"><span className="uppercase">B</span></label>
+    <LabelList className="uppercase" />
+    <labelled className="uppercase" />`;
+  assert.deepEqual(onlyTsx(src, "capsFormLabel"), []);
 });

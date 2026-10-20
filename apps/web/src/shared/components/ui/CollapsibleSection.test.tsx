@@ -132,6 +132,49 @@ describe("CollapsibleSection", () => {
     expect(toggle).toHaveAttribute("aria-expanded", "true");
     expect(localStorage.getItem("sergeant.test.persist")).toBe("true");
   });
+
+  it("фокус лишається на тій самій кнопці після перемикання в обидва боки", () => {
+    render(
+      <CollapsibleSection storageKey="sergeant.test.focus" title="Підказки">
+        <p>payload</p>
+      </CollapsibleSection>,
+    );
+    const toggle = screen.getByRole("button", { name: "Підказки" });
+    toggle.focus();
+    fireEvent.click(toggle);
+    expect(toggle).toHaveAttribute("aria-expanded", "false");
+    expect(screen.getByRole("button", { name: "Підказки" })).toBe(toggle);
+    expect(toggle).toHaveFocus();
+    fireEvent.click(toggle);
+    expect(toggle).toHaveAttribute("aria-expanded", "true");
+    expect(toggle).toHaveFocus();
+  });
+
+  it("стан передають шеврон і aria-expanded, а не текст «Розгорнути» / «Згорнути»", () => {
+    render(
+      <CollapsibleSection
+        storageKey="sergeant.test.chevron"
+        title="Підказки"
+        defaultOpen={false}
+      >
+        <p>payload</p>
+      </CollapsibleSection>,
+    );
+    const toggle = screen.getByRole("button", { name: "Підказки" });
+    const chevron = () => toggle.querySelector("svg");
+    expect(toggle).toHaveAttribute("aria-expanded", "false");
+    expect(chevron()).toHaveAttribute("aria-hidden", "true");
+    expect(chevron()?.getAttribute("class")).not.toContain("rotate-90");
+    expect(screen.queryByText("Розгорнути")).toBeNull();
+
+    fireEvent.click(toggle);
+    expect(toggle).toHaveAttribute("aria-expanded", "true");
+    expect(chevron()?.getAttribute("class")).toContain("rotate-90");
+    expect(chevron()?.getAttribute("class")).toContain(
+      "motion-safe:transition-transform",
+    );
+    expect(screen.queryByText("Згорнути")).toBeNull();
+  });
   // L-7: вміст ховається лише візуально (`grid-rows-[0fr] overflow-hidden`),
   // без цього тесту DOM-підтерево лишалось у tab-порядку й дереві
   // доступності при defaultOpen={false} — Tab від заголовка провалювався

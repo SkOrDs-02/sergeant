@@ -16,7 +16,10 @@ import type {
   ReceiptRow,
 } from "./serialize.js";
 import { kyivDateString } from "./kyivClock.js";
-import { emitServerSyncOps } from "../../sync/serverOpLog.js";
+import {
+  emitServerSyncOps,
+  lockUserSyncOpLog,
+} from "../../sync/serverOpLog.js";
 import {
   MANUAL_EXPENSES_TABLE,
   buildManualExpenseInsertOpWithKey,
@@ -286,6 +289,9 @@ export default async function saveReceiptHandler(
   const client = await pool.connect();
   try {
     await client.query("BEGIN");
+    // data-12: user-lock sync_op_log до будь-якого запису (емісія опа в
+    // insertManualExpenseForReceipt).
+    await lockUserSyncOpLog(client, userId);
 
     let receiptRow: ReceiptRow | undefined;
     let isNew: boolean;
