@@ -33,7 +33,16 @@
  * `syncV2.integration.test.ts`.
  */
 
-import { describe, it, expect, beforeAll, afterAll } from "vitest";
+import {
+  describe,
+  it,
+  expect,
+  beforeAll,
+  afterAll,
+  beforeEach,
+  afterEach,
+  vi,
+} from "vitest";
 import fs from "fs/promises";
 import path from "path";
 import { fileURLToPath } from "url";
@@ -333,6 +342,49 @@ async function probe(express: Express, route: RouteSpec): Promise<string> {
 }
 
 describe("session-protection — every sensitive route goes through requireSession*", () => {
+  beforeEach(() => {
+    // Probe the live protected surface, including opt-in routes. With the
+    // stream disabled its 404 guard intentionally runs before session lookup,
+    // so CORP alone cannot measure auth coverage in that state.
+    vi.stubEnv("SYNC_V2_STREAM_ENABLED", "true");
+  });
+
+  afterEach(() => {
+    vi.unstubAllEnvs();
+  });
+
+  it("enabled SSE rejects an anonymous request with 401 and same-origin CORP", async (ctx) => {
+    if (!dockerAvailable || !app) return ctx.skip();
+
+    const res = await request(app).get("/api/v2/sync/stream");
+    expect(res.status).toBe(401);
+    expect(res.body).toMatchObject({ code: "UNAUTHORIZED" });
+    expect(res.headers["cross-origin-resource-policy"]).toBe("same-origin");
+  });
+
+  it("disabled SSE returns the same 404 before auth for anonymous and real signed-in clients", async (ctx) => {
+    if (!dockerAvailable || !app) return ctx.skip();
+
+    const agent = request.agent(app);
+    const signUp = await agent.post("/api/auth/sign-up/email").send({
+      email: "stream-guard@test.local",
+      password: "correct horse battery staple 42",
+      name: "Stream guard test",
+    });
+    expect(signUp.status).toBe(200);
+    expect(signUp.headers["set-cookie"]).toBeDefined();
+    expect((await agent.get("/api/me")).status).toBe(200);
+
+    vi.stubEnv("SYNC_V2_STREAM_ENABLED", "false");
+    const anonymous = await request(app).get("/api/v2/sync/stream");
+    const authenticated = await agent.get("/api/v2/sync/stream");
+    for (const res of [anonymous, authenticated]) {
+      expect(res.status).toBe(404);
+      expect(res.body).toMatchObject({ code: "NOT_FOUND" });
+      expect(res.headers["cross-origin-resource-policy"]).toBe("cross-origin");
+    }
+  });
+
   it(
     "enumerates routes and probes coverage",
     async (ctx) => {
