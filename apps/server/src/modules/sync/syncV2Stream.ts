@@ -45,6 +45,9 @@ import { decryptOpRowForPull } from "../../lib/healthTextCrypto.js";
  *     `SYNC_V2_STREAM_MAX_AGE_MS`; не більше `SYNC_V2_STREAM_MAX_PER_USER`
  *     одночасних стрімів на юзера (новий витісняє найстаріший). Перед
  *     серверним закриттям летить кадр `event: closed` із `reason`.
+ *   * rel-05: стрім, який не читає (сокет тримає понад
+ *     `SYNC_V2_STREAM_MAX_WRITABLE_BYTES` або `write()` повернув false без
+ *     `drain` до наступного emit), закривається з reason `backpressure`.
  *
  * Single-process замітка: емітер in-memory; multi-instance деплоймент
  * у майбутньому потребуватиме cross-process fan-out. Рішення зафіксовано
@@ -71,9 +74,21 @@ export const SYNC_V2_STREAM_MAX_AGE_MS = 15 * 60_000;
  */
 export const SYNC_V2_STREAM_MAX_PER_USER = 3;
 
+/**
+ * rel-05: стеля непереданих байтів у сокеті одного стріму. Більше - клієнт не
+ * читає (завислий мобільний канал, мертвий проксі), і далі `res.write()` лише
+ * роздуває буфер Node у памʼяті. Стрім закривається з reason `backpressure`;
+ * клієнт перепідключається з `Last-Event-ID` і добирає пропущене replay-ем.
+ */
+export const SYNC_V2_STREAM_MAX_WRITABLE_BYTES = 1_048_576;
+
 /** Чому сервер закрив стрім; іде клієнту в `event: closed` (best-effort). */
 export type SyncV2StreamCloseReason =
-  "max_age" | "session_revoked" | "session_check_failed" | "evicted";
+  | "max_age"
+  | "session_revoked"
+  | "session_check_failed"
+  | "evicted"
+  | "backpressure";
 
 type WithSessionUser = Request & { user?: { id: string } };
 
@@ -205,8 +220,15 @@ export function notifySyncV2OpsApplied(
   applied: readonly SyncV2StreamOp[],
 ): void {
   if (applied.length === 0) return;
+  const channel = `user:${userId}`;
+  // Немає відкритих стрімів - серіалізувати нікому.
+  if (opLogEmitter.listenerCount(channel) === 0) return;
   try {
-    opLogEmitter.emit(`user:${userId}`, applied);
+    // rel-05: кадр `op` серіалізується ОДИН раз на оп і летить усім стрімам
+    // юзера готовим рядком (другий аргумент, вирівняний з `applied` за
+    // індексом). Раніше кожен стрім робив власний JSON.stringify.
+    const frames = applied.map((op) => formatSseFrame("op", op, op.id));
+    opLogEmitter.emit(channel, applied, frames);
   } catch (err: unknown) {
     // Emitter exception в одного listener-а не повинна валити push-handler.
     try {
@@ -442,17 +464,42 @@ export async function syncV2Stream(req: Request, res: Response): Promise<void> {
 
   // 2. Live subscription. Listener живе доки клієнт не закриє connection;
   //    `req.on('close')` прибирає subscription і clearInterval.
+  //
+  //    rel-05: backpressure. `res.write()` у повільного клієнта не блокує, а
+  //    складає дані в памʼять. Стрім закривається (`backpressure`), коли
+  //    сокет тримає понад `SYNC_V2_STREAM_MAX_WRITABLE_BYTES`, або коли
+  //    попередній `write()` повернув false і до нового emit `drain` так і не
+  //    прийшов. Перевірка drain - лише МІЖ emit-ами: один великий батч
+  //    законно перевищує highWaterMark, а `drain` приходить асинхронно.
+  let awaitingDrain = false;
+  res.on("drain", () => {
+    awaitingDrain = false;
+  });
   const channel = `user:${user.id}`;
-  const onOps = (applied: readonly SyncV2StreamOp[]): void => {
+  const onOps = (
+    applied: readonly SyncV2StreamOp[],
+    frames?: readonly string[],
+  ): void => {
     if (res.writableEnded) return;
-    for (const op of applied) {
+    if (awaitingDrain) {
+      closeStream("backpressure");
+      return;
+    }
+    for (const [i, op] of applied.entries()) {
       // Симетрично з backlog-replay: ops з тим самим origin device id
       // не реплеються власному клієнту.
       if (originDeviceId != null && op.origin_device_id === originDeviceId) {
         continue;
       }
+      if (res.writableLength > SYNC_V2_STREAM_MAX_WRITABLE_BYTES) {
+        closeStream("backpressure");
+        return;
+      }
       try {
-        res.write(formatSseFrame("op", op, op.id));
+        // `frames` вирівняні з `applied`; fallback - прямий emit без них.
+        if (!res.write(frames?.[i] ?? formatSseFrame("op", op, op.id))) {
+          awaitingDrain = true;
+        }
       } catch {
         // socket-помилка → cleanup-handler нижче (req.on('close')).
         return;
