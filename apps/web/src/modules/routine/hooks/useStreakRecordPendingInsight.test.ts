@@ -133,4 +133,18 @@ describe("useStreakRecordPendingInsight", () => {
     // currentStreak=2 === longestStreak-1=2 fires the insight.
     expect(result.current?.subtitle).toBe("Ще день, і повториш рекорд 3 дні");
   });
+
+  it("не бере гнучку звичку в рекорд: тижні не порівнюються з днями (logic-11)", () => {
+    mockActive.mockReturnValue(2);
+    // `maxStreakAllTime` гнучкої звички міряє ТИЖНІ — 99 тут не має вплинути.
+    mockAllTime.mockImplementation((habit) =>
+      habit.id === "flex-habit" ? 99 : 3,
+    );
+    const state = makeState([
+      makeHabit({ id: "flex-habit", recurrence: "flexible" }),
+      makeHabit({ id: "daily-habit" }),
+    ]);
+    const { result } = renderHook(() => useStreakRecordPendingInsight(state));
+    expect(result.current?.subtitle).toBe("Ще день, і повториш рекорд 3 дні");
+  });
 });

@@ -19,7 +19,7 @@
  * shape consumers read from `STORAGE_KEYS.ROUTINE_QUICK_STATS`.
  */
 
-import { completionRateForRange } from "./streaks.js";
+import { calcRoutineDayProgress } from "./dayProgress.js";
 import { flexibleMaxActiveStreak } from "./flexStreak.js";
 import type { Habit, HabitSkip } from "./types.js";
 
@@ -38,18 +38,18 @@ export function computeRoutineQuickStats(
   todayKey: string,
   skips: Record<string, Record<string, HabitSkip>> = {},
 ): RoutineQuickStats {
-  // `includeOnce` — todayDone/todayTotal є лічильником чек-листа дня, а не
-  // метрикою: разова подія в списку видима, тож і тут рахується (канон
-  // §7 п.2). Стрік нижче лишається метрикою — там `once` не бере участі.
-  // `pausedFrom: todayKey` — заморозка минулого (ADR-0079 §2): quick-stats
-  // завжди рахує «сьогодні», тож пауза, поставлена сьогодні, не має
-  // ретроактивно вимивати звичку з цього самого дня.
-  const { completed, scheduled } = completionRateForRange(
+  // Той самий селектор, що й кільце «Прогрес дня» в модулі
+  // (`calcRoutineDayProgress`): `includeOnce` (лічильник чек-листа, не
+  // метрика — канон §7 п.2), `pausedFrom: todayKey` (заморозка минулого,
+  // ADR-0079 §2) і гнучкі звички за `weekDoneCount`, а не тижневою
+  // арифметикою (logic-11). Стрік нижче лишається метрикою — там `once` не
+  // бере участі.
+  const { completed, scheduled } = calcRoutineDayProgress(
     habits,
     completions,
     todayKey,
     todayKey,
-    { includeOnce: true, skips, pausedFrom: todayKey },
+    skips,
   );
   return {
     todayDone: completed,

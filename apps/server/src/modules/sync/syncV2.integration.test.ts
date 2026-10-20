@@ -13,7 +13,15 @@
  * та LWW-семантику без full-stack-у.
  */
 
-import { describe, it, expect, beforeAll, afterAll, beforeEach } from "vitest";
+import {
+  describe,
+  it,
+  expect,
+  beforeAll,
+  afterAll,
+  beforeEach,
+  vi,
+} from "vitest";
 import fs from "fs/promises";
 import path from "path";
 import { fileURLToPath } from "url";
@@ -21,6 +29,7 @@ import pg from "pg";
 import { GenericContainer, Wait } from "testcontainers";
 import type { StartedTestContainer } from "testcontainers";
 import type { Request, Response } from "express";
+import { emitServerSyncOps, lockUserSyncOpLog } from "./serverOpLog.js";
 
 // `syncV2.js` імпортується ДИНАМІЧНО у beforeAll — після того, як
 // DATABASE_URL вказує на Testcontainers. Статичний імпорт тут тягнув
@@ -5790,6 +5799,190 @@ describe("syncV2Pull — вотермарк транзакцій (міграці
       } finally {
         await long.query("ROLLBACK").catch(() => {});
         long.release();
+      }
+    },
+    TIMEOUT_MS,
+  );
+});
+
+// ── Advisory-лок оп-логу (аудит data-12) ────────────────────────────────────
+//
+// Вотермарк `tx_id < xmin` не закриває зворотний випадок: транзакція зі
+// СТАРШИМ xid комітиться першою, поки молодша (з меншим `id`) ще відкрита.
+// Рядки старшої видимі, курсор = max(id) стрибає, оп-и молодшої не
+// повертаються ніколи. Лок на користувача не дає id чергуватись.
+describe("sync_op_log — per-user advisory lock (data-12)", () => {
+  const USER = "u-oplock";
+
+  const op = (key: string) => ({
+    idempotencyKey: key,
+    op: "insert" as const,
+    row: { id: key, user_id: USER },
+    clientTs: new Date(),
+  });
+
+  const pullIds = async (since: number): Promise<number[]> => {
+    const res = makeRes();
+    await syncV2Pull(
+      makeReq({
+        userId: USER,
+        query: { since },
+        headers: { "x-origin-device-id": "device-reader" },
+      }),
+      res,
+    );
+    expect(res.statusCode).toBe(200);
+    return (res.body as { ops: Array<{ id: number }> }).ops.map((o) => o.id);
+  };
+
+  /** Є бекенд, що чекає на advisory-лок. */
+  const advisoryWaiters = async (): Promise<number> => {
+    const r = await testPool!.query<{ n: string }>(
+      `SELECT count(*) AS n FROM pg_stat_activity
+        WHERE datname = current_database()
+          AND wait_event_type = 'Lock' AND wait_event = 'advisory'`,
+    );
+    return Number(r.rows[0]!.n);
+  };
+
+  it(
+    "старший xid комітиться першим, молодший з меншим id ще відкритий: читач не губить оп молодшого",
+    async (ctx) => {
+      if (!dockerAvailable || !testPool) return ctx.skip();
+      await ensureUser(USER);
+
+      const a = await testPool.connect();
+      const b = await testPool.connect();
+      try {
+        // A бере xid ПЕРШОЮ (старший), але пише в журнал пізніше за B.
+        await a.query("BEGIN");
+        await a.query("SELECT pg_current_xact_id()");
+
+        await b.query("BEGIN");
+        await lockUserSyncOpLog(b, USER);
+        await emitServerSyncOps(b, USER, "routine_entries", [op("b-op")]);
+
+        let aDone = false;
+        const aRun = (async () => {
+          await lockUserSyncOpLog(a, USER);
+          await emitServerSyncOps(a, USER, "routine_entries", [op("a-op")]);
+          await a.query("COMMIT");
+          aDone = true;
+        })();
+
+        // Дочекатися усталеного стану: з локом A стає в чергу за B, без
+        // нього комітиться одразу (тоді читач нижче бачить лише оп A, його
+        // курсор перескакує id опа B, і фінальна перевірка падає).
+        await vi.waitFor(
+          async () => {
+            if (!aDone && (await advisoryWaiters()) === 0) {
+              throw new Error("A ні не чекає на лок, ні не завершилась");
+            }
+          },
+          { timeout: 5_000, interval: 25 },
+        );
+
+        // Читач пулить у вікні між комітами й рухає курсор.
+        const seen = new Set<number>();
+        let cursor = 0;
+        const poll = async () => {
+          for (const id of await pullIds(cursor)) seen.add(id);
+          cursor = Math.max(cursor, ...seen);
+        };
+        await poll();
+
+        await b.query("COMMIT");
+        await aRun;
+        await poll();
+
+        const all = await testPool.query<{ id: string; k: string }>(
+          `SELECT id, idempotency_key AS k FROM sync_op_log
+            WHERE user_id = $1 ORDER BY id`,
+          [USER],
+        );
+        expect(all.rows.map((r) => r.k)).toEqual(["b-op", "a-op"]);
+        // Головна перевірка data-12: читач, що рухав курсор у вікні між
+        // комітами, зрештою отримав ОБИДВА оп-и (оп B не втрачено).
+        expect(
+          [...seen].sort((x, y) => x - y),
+          "оп B (молодший xid, нижчий id) втрачено: курсор перескочив його",
+        ).toEqual(all.rows.map((r) => Number(r.id)));
+      } finally {
+        await a.query("ROLLBACK").catch(() => {});
+        await b.query("ROLLBACK").catch(() => {});
+        a.release();
+        b.release();
+      }
+    },
+    TIMEOUT_MS,
+  );
+
+  it(
+    "syncV2Push бере лок одразу після BEGIN: чекає на відкриту транзакцію того ж користувача",
+    async (ctx) => {
+      if (!dockerAvailable || !testPool) return ctx.skip();
+      await ensureUser(USER);
+
+      const holder = await testPool.connect();
+      try {
+        await holder.query("BEGIN");
+        await lockUserSyncOpLog(holder, USER);
+        await emitServerSyncOps(holder, USER, "routine_entries", [
+          op("holder-op"),
+        ]);
+
+        const ts = isoNow();
+        const pushRes = makeRes();
+        let pushDone = false;
+        const push = syncV2Push(
+          makeReq({
+            userId: USER,
+            body: {
+              ops: [
+                {
+                  table: "routine_entries",
+                  op: "insert" as const,
+                  row: {
+                    id: "55555555-5555-5555-5555-555555555555",
+                    user_id: USER,
+                    name: "push after holder",
+                    completed_at: ts,
+                  },
+                  client_ts: ts,
+                  idempotency_key: "push-after-holder",
+                },
+              ],
+            },
+            headers: { "x-origin-device-id": "device-A" },
+          }),
+          pushRes,
+        ).then(() => {
+          pushDone = true;
+        });
+
+        await vi.waitFor(
+          async () => {
+            if (!pushDone && (await advisoryWaiters()) === 0) {
+              throw new Error("push ні не чекає на лок, ні не завершився");
+            }
+          },
+          { timeout: 5_000, interval: 25 },
+        );
+        expect(
+          pushDone,
+          "push не взяв user-лок sync_op_log одразу після BEGIN",
+        ).toBe(false);
+
+        await holder.query("COMMIT");
+        await push;
+        expect(pushRes.statusCode).toBe(200);
+
+        const ids = await pullIds(0);
+        expect(ids).toHaveLength(2);
+        expect(ids[0]).toBeLessThan(ids[1]!);
+      } finally {
+        await holder.query("ROLLBACK").catch(() => {});
+        holder.release();
       }
     },
     TIMEOUT_MS,
