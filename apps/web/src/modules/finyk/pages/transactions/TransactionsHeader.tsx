@@ -50,7 +50,9 @@ export function TransactionsHeader({
   exportCount = 0,
 }: TransactionsHeaderProps) {
   return (
-    <div className="flex items-center justify-between mb-3">
+    // На 360 px навігація місяцем і три текст-кнопки («N прих.», «CSV»,
+    // «Вибрати») у ряд не вміщаються, тож дії переносяться під місяць.
+    <div className="flex flex-wrap items-center justify-between gap-x-2 mb-3">
       <div className="flex items-center gap-1">
         <button
           onClick={() => goMonth(-1)}
