@@ -83,9 +83,11 @@ function MerchantListComponent({
                 )}
               </div>
               <div className="flex items-center gap-2">
-                <div className="flex-1 h-1.5 bg-bg rounded-[3px] overflow-hidden">
+                {/* Нейтральний бар (redesign v3.1, Д4): колір на екрані
+                    Аналізу означає лише категорію. */}
+                <div className="flex-1 h-1.5 bg-line rounded-mark overflow-hidden">
                   <div
-                    className="h-full bg-chart-finyk/70 rounded-[3px]"
+                    className="h-full bg-text rounded-mark"
                     style={{ width: `${barPct}%` }}
                   />
                 </div>

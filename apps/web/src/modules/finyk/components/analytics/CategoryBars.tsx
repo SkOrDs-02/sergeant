@@ -2,6 +2,8 @@ import { memo, useState, type ReactNode } from "react";
 import { chartHex } from "@sergeant/design-tokens/tokens";
 import { cn } from "@shared/lib/ui/cn";
 import { Money } from "@shared/components/ui/Money";
+import { Button } from "@shared/components/ui/Button";
+import { CategorySwatch } from "../CategorySwatch";
 import { stripLeadingEmoji } from "../txRowHelpers";
 
 /**
@@ -32,6 +34,12 @@ interface CategoryBarsProps {
    * подвійним обліком.
    */
   overlapTotal?: number | undefined;
+  /**
+   * Рядки це категорії: перед назвою свотч 10 px у кольорі категорії
+   * (redesign v3.1). Рахунки й теги свотча не мають, їхній бар один колір.
+   * Масив кастомних категорій дає стабільний відтінок (`catChipVars`).
+   */
+  categorySwatches?: readonly { id: string }[] | undefined;
 }
 
 const TOP_N = 5;
@@ -63,6 +71,7 @@ function CategoryBarsComponent({
   onSelectCategory,
   showBalance = true,
   overlapTotal,
+  categorySwatches,
 }: CategoryBarsProps) {
   const [showAll, setShowAll] = useState(false);
   // `spent` у гривнях, `prevMinor` у копійках.
@@ -109,6 +118,15 @@ function CategoryBarsComponent({
                 }
               >
                 <span className="flex items-baseline gap-2">
+                  {categorySwatches && (
+                    <CategorySwatch
+                      categoryId={
+                        row.categoryId === "_other" ? "other" : row.categoryId
+                      }
+                      customCategories={categorySwatches}
+                      className="self-center"
+                    />
+                  )}
                   <span className="min-w-0 flex-1 truncate text-style-body font-semibold text-text">
                     {stripLeadingEmoji(row.label)}
                   </span>
@@ -151,15 +169,15 @@ function CategoryBarsComponent({
         })}
       </ul>
       {hasOverflow && (
-        <button
-          type="button"
+        <Button
+          variant="text"
           onClick={() => setShowAll((v) => !v)}
           aria-expanded={showAll}
           data-testid="finyk-analytics-donut-toggle"
-          className="mt-1 min-h-[44px] text-style-label font-semibold text-text focus-ring rounded-lg"
+          className="mt-1 -ml-2"
         >
-          {showAll ? "Згорнути" : `Показати всі (${sorted.length})`}
-        </button>
+          {showAll ? "Показати менше" : `Показати всі (${sorted.length})`}
+        </Button>
       )}
     </div>
   );

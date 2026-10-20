@@ -1,26 +1,27 @@
 import { messages } from "@shared/i18n";
-import { cn } from "@shared/lib/ui/cn";
 /**
  * Last validated: 2026-09-03
  * Status: Active
  *
- * Meta row under the TxRow description, in fixed order: category pill ·
- * AI glyph · plain text «рахунок · статуси» · receipt glyph · note.
+ * Meta row under the TxRow description, in fixed order: swatch + category
+ * name · AI glyph · plain text «рахунок · статуси» · receipt glyph · note.
  *
  * AI-CONTEXT: до 2026-09-03 рахунок і кожен статус («не в статистиці»,
  * «змін.», «П24», «спліт») були ОКРЕМИМИ пігулками різної ширини й ваги
  * шрифту, тож рядок із трьома-чотирма плашками читався як хаос — навіть
- * при спокійних кольорах (звіт власника зі скриншотом Операцій). Тепер
- * пігулка в рядку рівно одна — категорія, бо лише вона несе колір. Решта
- * стає одним приглушеним текстом через « · »: довжина слів більше не
- * ламає ритм, а категорія завжди стоїть першою, тож кольорова колонка
- * вирівняна по лівому краю на всіх рядках. Note (§3, ex-#466) лишається
- * останнім і обрізається першим.
+ * при спокійних кольорах (звіт власника зі скриншотом Операцій). Плашок
+ * у рядку немає зовсім: колір категорії несе лише свотч 10 px перед її
+ * назвою (redesign v3.1, рішення власника 2026-10-18), сама назва й решта
+ * рядка приглушеним текстом через « · ». Категорія завжди стоїть першою,
+ * тож колонка свотчів вирівняна по лівому краю на всіх рядках. «Без
+ * категорії» свотча не має: це текст небезпеки. Note (§3, ex-#466)
+ * лишається останнім і обрізається першим.
  */
 import { INTERNAL_TRANSFER_ID } from "../constants";
 
 import type { MonoAccount } from "@sergeant/finyk-domain/lib/accounts";
 
+import { CategorySwatch } from "./CategorySwatch";
 import type { TxRowTx } from "./txRowHelpers";
 
 interface TxRowMetaChipsProps {
@@ -85,12 +86,14 @@ export function TxRowMetaChips({
   account,
   accountName,
   showAccount = true,
+  customCategories,
   hasReceipt = false,
   note,
   isExcludedFromStats = false,
   isCancelled = false,
 }: TxRowMetaChipsProps) {
   const isTransfer = catId === INTERNAL_TRANSFER_ID;
+  const uncategorized = catId === "other" && !isIncome;
   // Порядок фіксований: рахунок → переказ → «змін.» → П24 → спліт.
   const statuses: string[] = [];
   if (isCreditCard) statuses.push(messages.finykRedesign.creditCard);
@@ -117,19 +120,19 @@ export function TxRowMetaChips({
 
   return (
     <div className="flex items-center gap-1.5 mt-0.5 overflow-hidden">
-      {/* Назва категорії — єдиний елемент рядка, що несе колір самої
-          категорії (`.cat-chip` бере його з CSS-змінних), і єдина
-          пігулка. Решта — приглушений текст. */}
-      <span
-        className={cn(
-          "shrink-0 text-style-label",
-          catId === "other" && !isIncome ? "text-danger-strong" : "text-muted",
-        )}
-      >
-        {catId === "other" && !isIncome
-          ? messages.finykRedesign.uncategorized
-          : catName}
-      </span>
+      {uncategorized ? (
+        <span className="shrink-0 text-style-label text-danger-strong">
+          {messages.finykRedesign.uncategorized}
+        </span>
+      ) : (
+        <span className="inline-flex shrink-0 items-center gap-1.5 text-style-label text-muted">
+          <CategorySwatch
+            categoryId={catId}
+            customCategories={customCategories}
+          />
+          {catName}
+        </span>
+      )}
       {hasMeta && (
         <span className="shrink-0 inline-flex items-center gap-1 text-style-caption text-muted">
           {/* 6.4: AI-source mark — surfaces auto-categorized expense rows
