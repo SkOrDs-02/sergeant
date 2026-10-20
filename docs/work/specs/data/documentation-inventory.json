@@ -837,7 +837,7 @@
       "canonical_owner": "docs/engineering/testing/2026-05-05-tests-review.md"
     },
     {
-      "old_path": null,
+      "old_path": "docs/engineering/testing/2026-10-20-test-coverage-review.md",
       "new_path": "docs/engineering/testing/2026-10-20-test-coverage-review.md",
       "action": "keep",
       "genre": "reference",
