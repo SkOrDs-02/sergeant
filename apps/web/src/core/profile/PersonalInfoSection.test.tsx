@@ -7,6 +7,7 @@ import {
   screen,
   waitFor,
 } from "@testing-library/react";
+import { ApiError } from "@sergeant/api-client";
 
 /**
  * Regression tests for `PersonalInfoSection` — name save, email change, and
@@ -20,10 +21,21 @@ import {
  */
 
 const updateUserMock = vi.fn();
+const putAvatarMock = vi.fn();
+const deleteAvatarMock = vi.fn();
+const refreshSessionMock = vi.fn(async () => {});
+vi.mock("@shared/api", async (importOriginal) => ({
+  ...(await importOriginal<typeof import("@shared/api")>()),
+  meApi: {
+    putAvatar: (blob: unknown) => putAvatarMock(blob),
+    deleteAvatar: () => deleteAvatarMock(),
+  },
+}));
 const changeEmailMock = vi.fn();
 const sendVerificationEmailMock = vi.fn();
 vi.mock("../auth/authClient", () => ({
   updateUser: (args: unknown) => updateUserMock(args),
+  refreshSessionCookieCache: () => refreshSessionMock(),
   changeEmail: (args: unknown) => changeEmailMock(args),
   sendVerificationEmail: (args: unknown) => sendVerificationEmailMock(args),
 }));
@@ -38,9 +50,13 @@ vi.mock("@shared/hooks/useToast", () => ({
   }),
 }));
 
-vi.mock("./avatar", () => ({
+const STUB_BLOB = new Blob([new Uint8Array([1, 2, 3])], {
+  type: "image/webp",
+});
+vi.mock("./avatar", async (importOriginal) => ({
+  ...(await importOriginal<typeof import("./avatar")>()),
   assertAvatarFile: vi.fn(),
-  compressAvatar: vi.fn(async () => "data:image/png;base64,stub"),
+  compressAvatar: vi.fn(async () => STUB_BLOB),
 }));
 
 import { PersonalInfoSection } from "./PersonalInfoSection";
@@ -64,6 +80,9 @@ function renderSection(overrides: Partial<ProfileUser> = {}, online = true) {
 
 beforeEach(() => {
   updateUserMock.mockReset();
+  putAvatarMock.mockReset();
+  deleteAvatarMock.mockReset();
+  refreshSessionMock.mockClear();
   changeEmailMock.mockReset();
   sendVerificationEmailMock.mockReset();
   toastSuccessMock.mockReset();
@@ -287,56 +306,124 @@ describe("PersonalInfoSection — avatar", () => {
     ) as HTMLInputElement;
   }
 
-  it("uploads a compressed avatar on file change (happy path)", async () => {
-    updateUserMock.mockResolvedValue({ data: { ok: true }, error: null });
+  it("uploads a compressed avatar as a raw Blob (happy path), НЕ через updateUser", async () => {
+    putAvatarMock.mockResolvedValue({
+      image: "/api/avatar/u1?v=1",
+      updatedAt: "2026-10-20T10:00:00.000Z",
+    });
     const { onRefresh } = renderSection();
 
     const file = new File(["x"], "a.png", { type: "image/png" });
     fireEvent.change(avatarInput(), { target: { files: [file] } });
 
     await waitFor(() => {
-      expect(updateUserMock).toHaveBeenCalledWith({
-        image: "data:image/png;base64,stub",
-      });
+      expect(putAvatarMock).toHaveBeenCalledWith(STUB_BLOB);
     });
     await waitFor(() => {
       expect(toastSuccessMock).toHaveBeenCalledWith("Аватар оновлено");
       expect(onRefresh).toHaveBeenCalled();
+      expect(refreshSessionMock).toHaveBeenCalled();
     });
+    expect(updateUserMock).not.toHaveBeenCalled();
   });
 
-  it("surfaces an updateUser error toast on avatar upload failure", async () => {
-    updateUserMock.mockResolvedValue({
-      error: { code: "BAD", message: "nope" },
-    });
+  it.each([
+    [413, "завелике"],
+    [415, "JPEG, PNG або WebP"],
+  ])(
+    "%i від сервера: чесний error-тост, жодного success-тосту",
+    async (status, text) => {
+      putAvatarMock.mockRejectedValue(
+        new ApiError({
+          kind: "http",
+          message: "x",
+          status,
+          url: "/api/avatar",
+        }),
+      );
+      const { onRefresh } = renderSection();
+
+      const file = new File(["x"], "a.png", { type: "image/png" });
+      fireEvent.change(avatarInput(), { target: { files: [file] } });
+
+      await waitFor(() => {
+        expect(toastErrorMock).toHaveBeenCalledWith(
+          expect.stringContaining(text),
+          undefined,
+          expect.objectContaining({ label: "Обрати інший" }),
+        );
+      });
+      expect(toastSuccessMock).not.toHaveBeenCalled();
+      expect(onRefresh).not.toHaveBeenCalled();
+    },
+  );
+
+  it("мережева помилка: error-тост з «Повторити», success-тосту нема", async () => {
+    putAvatarMock.mockRejectedValue(
+      new ApiError({ kind: "network", message: "offline", url: "/api/avatar" }),
+    );
     renderSection();
 
     const file = new File(["x"], "a.png", { type: "image/png" });
     fireEvent.change(avatarInput(), { target: { files: [file] } });
 
     await waitFor(() => {
-      expect(toastErrorMock).toHaveBeenCalled();
+      expect(toastErrorMock).toHaveBeenCalledWith(
+        expect.stringContaining("зʼєднання"),
+        undefined,
+        expect.objectContaining({ label: "Повторити" }),
+      );
     });
     expect(toastSuccessMock).not.toHaveBeenCalled();
   });
 
-  it("confirm + remove avatar calls updateUser({image:null})", async () => {
-    updateUserMock.mockResolvedValue({ data: { ok: true }, error: null });
-    renderSection({ image: "data:image/png;base64,existing" });
+  it("зовнішній https-аватар (OAuth) малюється як є, наш /api/avatar - через API", () => {
+    renderSection({ image: "https://lh3.googleusercontent.com/a/x" });
+    expect(document.querySelector("img")?.getAttribute("src")).toBe(
+      "https://lh3.googleusercontent.com/a/x",
+    );
+    cleanup();
+    renderSection({ image: "/api/avatar/u1?v=1" });
+    expect(document.querySelector("img")?.getAttribute("src")).toMatch(
+      /\/api\/v1\/avatar\/u1\?v=1$/,
+    );
+  });
+
+  it("confirm + remove avatar calls DELETE /api/avatar", async () => {
+    deleteAvatarMock.mockResolvedValue({ ok: true });
+    renderSection({ image: "/api/avatar/u1?v=1" });
 
     fireEvent.click(screen.getByRole("button", { name: "Видалити фото" }));
     fireEvent.click(screen.getByRole("button", { name: "Так" }));
 
     await waitFor(() => {
-      expect(updateUserMock).toHaveBeenCalledWith({ image: null });
+      expect(deleteAvatarMock).toHaveBeenCalled();
     });
     await waitFor(() => {
       expect(toastSuccessMock).toHaveBeenCalledWith("Аватар видалено");
     });
+    expect(updateUserMock).not.toHaveBeenCalled();
+  });
+
+  it("DELETE впав - error-тост без success", async () => {
+    deleteAvatarMock.mockRejectedValue(new Error("boom"));
+    renderSection({ image: "/api/avatar/u1?v=1" });
+
+    fireEvent.click(screen.getByRole("button", { name: "Видалити фото" }));
+    fireEvent.click(screen.getByRole("button", { name: "Так" }));
+
+    await waitFor(() => {
+      expect(toastErrorMock).toHaveBeenCalledWith(
+        "Не вдалося видалити аватар",
+        undefined,
+        expect.objectContaining({ label: "Повторити" }),
+      );
+    });
+    expect(toastSuccessMock).not.toHaveBeenCalled();
   });
 
   it("can cancel the avatar-remove confirmation", () => {
-    renderSection({ image: "data:image/png;base64,existing" });
+    renderSection({ image: "/api/avatar/u1?v=1" });
     fireEvent.click(screen.getByRole("button", { name: "Видалити фото" }));
     fireEvent.click(screen.getByRole("button", { name: "Ні" }));
     expect(
