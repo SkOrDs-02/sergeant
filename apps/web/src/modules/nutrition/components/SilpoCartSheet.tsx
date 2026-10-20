@@ -19,6 +19,7 @@ import { formatMoneyFromKopecks } from "@sergeant/shared";
 import { Sheet } from "@shared/components/ui/Sheet";
 import { Notice } from "@shared/components/ui/Notice";
 import { Button } from "@shared/components/ui/Button";
+import { ChoiceCheckbox } from "@shared/components/ui/Choice";
 import { ConfirmDialog } from "@shared/components/ui/ConfirmDialog";
 import { Icon } from "@shared/components/ui/Icon";
 import { Money } from "@shared/components/ui/Money";
@@ -192,66 +193,64 @@ function CartRow({
   return (
     <li className="grid gap-2 py-2">
       <div className="flex items-center gap-2.5">
-        <label className="flex items-center gap-2.5 min-w-0 flex-1 touch-target cursor-pointer">
-          <input
-            type="checkbox"
-            checked={row.checked}
-            disabled={disabled}
-            onChange={() => onToggle(index)}
-            className="shrink-0 w-5 h-5 accent-text"
-          />
-          {/* `min-w-0` на кожній дитині grid — трек інакше має
-              `min-width: auto` і `truncate` не спрацьовує (та сама пастка,
-              що лагоджена в `SilpoPantryReplenishSheet`). */}
-          <span className="min-w-0 flex-1 grid">
-            <span
-              className={cn(
-                "min-w-0 text-style-body font-semibold text-text truncate",
-                !row.checked && "opacity-50",
-              )}
-            >
-              {selected?.name ?? row.query}
-            </span>
-            {selected && (
-              <span className="min-w-0 text-style-caption text-subtle truncate">
-                <Money amount={selected.priceKop / 100} kopecks />
-                {/* Стара ціна поруч, а не замість: сам по собі значок
-                    «-14%» не каже, скільки це в гривнях, а перекреслена
-                    сума робить вигоду видимою без арифметики. Сервер уже
-                    гарантує, що вона строго більша (`normalizeCartMatch`). */}
-                {selected.oldPriceKop != null && (
-                  <>
-                    {" "}
-                    <s className="opacity-60">
-                      <Money amount={selected.oldPriceKop / 100} kopecks />
-                    </s>{" "}
-                    <span className="text-text font-semibold">
-                      −
-                      {Math.round(
-                        (1 - selected.priceKop / selected.oldPriceKop) * 100,
-                      )}
-                      %
-                    </span>
-                  </>
+        <ChoiceCheckbox
+          checked={row.checked}
+          disabled={disabled}
+          onChange={() => onToggle(index)}
+          className="min-w-0 flex-1"
+          label={
+            // `min-w-0` на кожній дитині grid — трек інакше має
+            // `min-width: auto` і `truncate` не спрацьовує.
+            <span className="grid min-w-0">
+              <span
+                className={cn(
+                  "min-w-0 truncate text-style-body font-semibold text-text",
+                  !row.checked && "opacity-50",
                 )}
-                {" / "}
-                {selected.displayRatio ?? selected.unit}
-                {!selected.available && (
-                  <span className="ml-1 text-text font-semibold">
-                    {COPY.outOfStock}
-                  </span>
-                )}
+              >
+                {selected?.name ?? row.query}
               </span>
-            )}
-          </span>
-        </label>
+              {selected && (
+                <span className="min-w-0 truncate text-style-caption text-subtle">
+                  <Money amount={selected.priceKop / 100} kopecks />
+                  {/* Стара ціна поруч, а не замість: сам по собі значок
+                      «-14%» не каже, скільки це в гривнях, а перекреслена
+                      сума робить вигоду видимою без арифметики. Сервер уже
+                      гарантує, що вона строго більша (`normalizeCartMatch`). */}
+                  {selected.oldPriceKop != null && (
+                    <>
+                      {" "}
+                      <s className="opacity-60">
+                        <Money amount={selected.oldPriceKop / 100} kopecks />
+                      </s>{" "}
+                      <span className="text-text font-semibold">
+                        −
+                        {Math.round(
+                          (1 - selected.priceKop / selected.oldPriceKop) * 100,
+                        )}
+                        %
+                      </span>
+                    </>
+                  )}
+                  {" / "}
+                  {selected.displayRatio ?? selected.unit}
+                  {!selected.available && (
+                    <span className="ml-1 text-text font-semibold">
+                      {COPY.outOfStock}
+                    </span>
+                  )}
+                </span>
+              )}
+            </span>
+          }
+        />
         <QtyStepper
           qty={row.qty}
           disabled={disabled || !row.checked}
           onChange={(qty) => onQty(index, qty)}
         />
       </div>
-      <div className="pl-[30px]">
+      <div className="pl-11">
         <MatchPicker
           matches={row.matches}
           selectedLagerId={row.selectedLagerId}

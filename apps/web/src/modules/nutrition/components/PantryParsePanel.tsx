@@ -4,7 +4,7 @@
  *
  * Два допоміжні блоки режиму «Списком» у Коморі:
  * - `PantryListGuide` — згортка з правилами запису (нативний `<details>`,
- *   тому нуль стану і нуль записів у localStorage);
+ *   тому нуль стану і нуль записів у localStorage; стан показує шеврон);
  * - `PantryParsePreview` — підтвердження розібраних позицій перед тим,
  *   як вони потраплять у комору.
  *
@@ -17,6 +17,8 @@
  */
 import { useState } from "react";
 import { Button } from "@shared/components/ui/Button";
+import { ChoiceCheckbox, ChoiceGroup } from "@shared/components/ui/Choice";
+import { MorphChevron } from "@shared/components/ui/MorphChevron";
 import { messages } from "@shared/i18n/uk";
 import { cn } from "@shared/lib/ui/cn";
 import type { PantryItem } from "../lib/pantryTextParser";
@@ -29,22 +31,24 @@ function formatQty(item: PantryItem): string {
   return item.unit || "";
 }
 
-const DISCLOSE_OPEN = "Сховати";
-const DISCLOSE_CLOSED = "Показати";
 const GUIDE = messages.nutrition.pantryGuide;
 const PREVIEW = messages.nutrition.pantryPreview;
 const AMBIGUOUS = messages.nutrition.pantryAmbiguousQty;
+const UNIT_CTA: Record<AmbiguousPantryUnit, string> = {
+  шт: AMBIGUOUS.piecesCta,
+  г: AMBIGUOUS.gramsCta,
+};
+const UNITS = Object.keys(UNIT_CTA) as AmbiguousPantryUnit[];
 
 export function PantryListGuide() {
   return (
     <details className="mt-2 group">
       <summary className="text-style-caption text-subtle cursor-pointer list-none flex items-center justify-between gap-2 min-h-[44px] rounded-lg focus-ring">
         {GUIDE.summary}
-        {/* Стан згортки текстом, не каретою. `<details>` міняє `group-open`. */}
-        <span aria-hidden className="shrink-0">
-          <span className="group-open:hidden">{DISCLOSE_CLOSED}</span>
-          <span className="hidden group-open:inline">{DISCLOSE_OPEN}</span>
-        </span>
+        <MorphChevron
+          open={false}
+          className="text-subtle group-open:rotate-90"
+        />
       </summary>
       <div className="mt-1 text-style-caption text-subtle grid gap-1">
         <p>
@@ -146,59 +150,55 @@ export function PantryParsePreview({
             : formatQty(item);
           return (
             <li key={`${item.name}_${i}`}>
-              <label className="flex items-center gap-2.5 min-h-[44px] cursor-pointer">
-                <input
-                  type="checkbox"
-                  checked={!excluded.has(i)}
-                  onChange={() =>
-                    setExcluded((cur) => {
-                      const next = new Set(cur);
-                      if (next.has(i)) next.delete(i);
-                      else next.add(i);
-                      return next;
-                    })
-                  }
-                  className="shrink-0 w-5 h-5 accent-text"
-                />
-                <span
-                  className={cn(
-                    "text-style-label text-text truncate",
-                    excluded.has(i) && "line-through opacity-50",
-                  )}
-                >
-                  {item.name}
-                </span>
-                {qty && (
-                  <span className="text-style-caption text-subtle shrink-0">
-                    {qty}
+              <ChoiceCheckbox
+                checked={!excluded.has(i)}
+                onChange={() =>
+                  setExcluded((cur) => {
+                    const next = new Set(cur);
+                    if (next.has(i)) next.delete(i);
+                    else next.add(i);
+                    return next;
+                  })
+                }
+                label={
+                  <span className="flex items-center gap-2.5">
+                    <span
+                      className={cn(
+                        "min-w-0 flex-1 truncate text-style-label text-text",
+                        excluded.has(i) && "line-through opacity-50",
+                      )}
+                    >
+                      {item.name}
+                    </span>
+                    {qty && (
+                      <span className="shrink-0 text-style-caption text-subtle">
+                        {qty}
+                      </span>
+                    )}
+                    {item.ambiguousQty && (
+                      <span className="shrink-0 text-style-caption text-muted">
+                        {AMBIGUOUS.badge}
+                      </span>
+                    )}
                   </span>
-                )}
-                {item.ambiguousQty && (
-                  <span className="text-style-caption text-muted shrink-0">
-                    {AMBIGUOUS.badge}
-                  </span>
-                )}
-              </label>
+                }
+              />
               {item.ambiguousQty && (
-                <div className="flex items-center gap-2 pl-[30px] pb-2">
+                // Відступ = позначка рядка: `px-3` (12) + 20 + `gap-3` (12).
+                <div className="flex items-center gap-2 pb-2 pl-11">
                   <span className="text-style-caption text-subtle">
                     {AMBIGUOUS.question}
                   </span>
-                  {(["шт", "г"] as const).map((unit) => (
-                    <button
-                      key={unit}
-                      type="button"
-                      onClick={() => chooseUnit(i, unit)}
-                      aria-pressed={resolvedUnit === unit}
-                      className={cn(
-                        "text-style-caption font-semibold px-2.5 py-1 min-h-[32px] rounded-[7px] border border-line text-text transition-colors hover:bg-line/40 focus-ring",
-                        resolvedUnit === unit && "bg-line/60",
-                      )}
-                    >
-                      {item.qty}{" "}
-                      {unit === "шт" ? AMBIGUOUS.piecesCta : AMBIGUOUS.gramsCta}
-                    </button>
-                  ))}
+                  <ChoiceGroup
+                    size="sm"
+                    ariaLabel={`${item.name}: ${AMBIGUOUS.question}`}
+                    value={UNITS.find((u) => u === resolvedUnit) ?? null}
+                    onChange={(unit) => chooseUnit(i, unit)}
+                    items={UNITS.map((unit) => ({
+                      value: unit,
+                      label: `${item.qty} ${UNIT_CTA[unit]}`,
+                    }))}
+                  />
                 </div>
               )}
             </li>

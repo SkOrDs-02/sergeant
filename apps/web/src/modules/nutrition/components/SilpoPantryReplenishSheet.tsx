@@ -17,6 +17,7 @@
 import { useState } from "react";
 import { Sheet } from "@shared/components/ui/Sheet";
 import { Button } from "@shared/components/ui/Button";
+import { ChoiceCheckbox } from "@shared/components/ui/Choice";
 import { SectionHeading } from "@shared/components/ui/SectionHeading";
 import { Money } from "@shared/components/ui/Money";
 import { EmptyState } from "@shared/components/ui/EmptyState";
@@ -45,7 +46,7 @@ const COPY = messages.nutrition.pantryReplenish;
  * Рядок згортання: під якою назвою позиція ляже в комору і як це скасувати.
  *
  * Показується ЛИШЕ коли згортання щось змінює — інакше він був би шумом на
- * кожному рядку чека. Кнопка живе поза `<label>` чекбокса: вкладений
+ * кожному рядку чека. Кнопка живе поза `ChoiceCheckbox`: вкладений
  * інтерактив перехоплював би тап, призначений перемиканню самої позиції.
  */
 function CollapseHint({
@@ -57,12 +58,9 @@ function CollapseHint({
 }) {
   if (!row.genericName) return null;
   return (
-    // Відступ тримає підказку під назвою позиції, а не під чекбоксом, тож
-    // він СУМУЄ провідні елементи рядка: чекбокс `w-5` (20) + `gap-2.5` (10)
-    // = 30px. Міняєш склад або розміри провідних елементів у
-    // `ReceiptItemRow` — перерахуй тут; звʼязок структурний, але
-    // виражений числом, і мовчить, коли розходиться.
-    <div className="flex items-center gap-2 pl-[30px] pr-1 pb-1">
+    // Відступ тримає підказку під назвою позиції: позначка `ChoiceCheckbox`
+    // = `px-3` (12) + 20 + `gap-3` (12) = 44px.
+    <div className="flex items-center gap-2 pl-11 pr-1 pb-1">
       <span className="min-w-0 text-style-caption text-subtle truncate">
         {row.keepFull ? (
           COPY.keepFullActive
@@ -73,14 +71,14 @@ function CollapseHint({
           </>
         )}
       </span>
-      <button
+      <Button
         type="button"
+        variant="text"
         onClick={() => onToggleKeepFull(row.item.id)}
-        aria-pressed={row.keepFull}
-        className="shrink-0 text-style-caption text-subtle underline underline-offset-2 touch-target px-2 rounded-lg hover:text-text focus-ring transition-colors"
+        className="shrink-0"
       >
-        {row.keepFull ? COPY.collapseCta : COPY.keepFullCta}
-      </button>
+        {row.keepFull ? COPY.shortenCta : COPY.keepFullCta}
+      </Button>
     </div>
   );
 }
@@ -97,51 +95,42 @@ function ReceiptItemRow({
   const qtyLabel = formatReceiptQty(row.item.qty, row.item.unit);
   return (
     <li>
-      {/* Native label+checkbox — той самий touch-target-патерн, що вже
-          несе `PantryParsePreview` (input min 20px усередині 44px label). */}
-      <label
-        className={cn(
-          "flex items-center gap-2.5 touch-target transition-colors",
-          row.locked ? "cursor-default" : "hover:bg-line/40 cursor-pointer",
-        )}
-      >
-        <input
-          type="checkbox"
-          checked={row.checked}
-          disabled={row.locked}
-          onChange={() => onToggle(row.item.id)}
-          className="shrink-0 w-5 h-5 accent-text"
-        />
-        {/* `min-w-0` потрібен і на СОБІ, і на кожній дитині: у grid трек
-            за замовчуванням `min-width: auto`, тож дитина не стискається
-            менше за свій текст і `truncate` мовчки не спрацьовує — рядок
-            розпирає лист. З рукописними назвами комори це непомітно, а
-            назви з чеків Сільпо («Молоко Яготинське 2,6% 900г») довгі. */}
-        <span className="min-w-0 flex-1 grid">
-          <span
-            className={cn(
-              "min-w-0 text-style-body font-semibold text-text truncate",
-              !row.checked && "opacity-50",
+      <ChoiceCheckbox
+        checked={row.checked}
+        disabled={row.locked}
+        onChange={() => onToggle(row.item.id)}
+        label={
+          <span className="flex items-center gap-2.5">
+            {/* `min-w-0` і на собі, і на дітях: назви з чеків Сільпо
+                («Молоко Яготинське 2,6% 900г») довгі, без нього `truncate`
+                мовчить і рядок розпирає лист. */}
+            <span className="grid min-w-0 flex-1">
+              <span
+                className={cn(
+                  "min-w-0 truncate text-style-body font-semibold text-text",
+                  !row.checked && "opacity-50",
+                )}
+              >
+                {row.item.name}
+              </span>
+              <span className="min-w-0 truncate text-style-caption text-muted">
+                {/* «Вже в коморі» переважає над «Уже є»/«Нова позиція», поки
+                    взятий із чека продукт лежить у коморі (`row.locked`). */}
+                {row.locked
+                  ? COPY.alreadyInPantry
+                  : row.matchedName
+                    ? `${COPY.matchedPrefix} ${row.matchedName}`
+                    : COPY.newPosition}
+              </span>
+            </span>
+            {qtyLabel && (
+              <span className="shrink-0 text-style-body font-medium tabular-nums text-text">
+                {qtyLabel}
+              </span>
             )}
-          >
-            {row.item.name}
           </span>
-          <span className="min-w-0 text-style-caption text-muted truncate">
-            {/* «Вже в коморі» переважає над «Уже є»/«Нова позиція», поки
-                взятий із чека продукт лежить у коморі (`row.locked`). */}
-            {row.locked
-              ? COPY.alreadyInPantry
-              : row.matchedName
-                ? `${COPY.matchedPrefix} ${row.matchedName}`
-                : COPY.newPosition}
-          </span>
-        </span>
-        {qtyLabel && (
-          <span className="text-style-body font-medium text-text tabular-nums shrink-0">
-            {qtyLabel}
-          </span>
-        )}
-      </label>
+        }
+      />
       <CollapseHint row={row} onToggleKeepFull={onToggleKeepFull} />
     </li>
   );

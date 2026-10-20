@@ -270,7 +270,7 @@ export const nutritionPageMessages = {
     collapsedTo: "Ляже як",
     keepFullCta: "лишити повну",
     keepFullActive: "Лишаю повну назву",
-    collapseCta: "згорнути",
+    shortenCta: "скоротити",
     confirmCta: "Додати в комору",
     cancelCta: "Скасувати",
     loading: "Завантажую…",
