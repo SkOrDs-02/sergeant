@@ -130,7 +130,7 @@ afterEach(cleanup);
 describe("логування рецепта зі складом", () => {
   it("без ваги: порції, перемикача немає, amount_g null, macroSource recipe", async () => {
     await open(base);
-    expect(screen.queryByRole("button", { name: "Грами" })).toBeNull();
+    expect(screen.queryByRole("radio", { name: "Грами" })).toBeNull();
     fireEvent.click(screen.getByRole("button", { name: /У журнал/ }));
     expect(lastMeal().macros.kcal).toBeCloseTo(305.45, 0);
     expect(lastMeal().amount_g).toBeNull();
@@ -146,7 +146,7 @@ describe("логування рецепта зі складом", () => {
 
   it("з вагою, грами 150: макроси з рядка «150 г» і amount_g 150", async () => {
     await open(withWeight);
-    fireEvent.click(screen.getByRole("button", { name: "Грами" }));
+    fireEvent.click(screen.getByRole("radio", { name: "Грами" }));
     fireEvent.change(screen.getByLabelText(/Скільки грамів/), {
       target: { value: "150" },
     });
@@ -162,7 +162,7 @@ describe("логування рецепта зі складом", () => {
 
   it("невалідні грами: кнопка вимкнена, у журнал нічого не пишеться", async () => {
     await open(withWeight);
-    fireEvent.click(screen.getByRole("button", { name: "Грами" }));
+    fireEvent.click(screen.getByRole("radio", { name: "Грами" }));
     fireEvent.change(screen.getByLabelText(/Скільки грамів/), {
       target: { value: "0" },
     });
