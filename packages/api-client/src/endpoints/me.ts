@@ -5,6 +5,8 @@ import {
   MeRestoreResponseSchema,
   AiMemoryClearResponseSchema,
   AiMemoryDeleteResponseSchema,
+  AvatarDeleteResponseSchema,
+  AvatarPutResponseSchema,
   AiMemoryListResponseSchema,
   MeExportResponseSchema,
   MeResponseSchema,
@@ -18,6 +20,8 @@ import {
   type MeRestoreResponse,
   type AiMemoryClearResponse,
   type AiMemoryDeleteResponse,
+  type AvatarDeleteResponse,
+  type AvatarPutResponse,
   type AiMemoryListItem,
   type AiMemoryListResponse,
   type MeExportResponse,
@@ -88,6 +92,20 @@ export interface MeEndpoints {
   restoreAccount: (
     opts?: Pick<RequestOptions, "signal">,
   ) => Promise<MeRestoreResponse>;
+  /**
+   * `PUT /api/avatar` (ux-14) - завантажити аватар СИРИМИ байтами
+   * (`Blob`, `Content-Type: image/webp | png | jpeg`, до 50 КБ). Сервер
+   * сам виставляє `user.image` на короткий URL і повертає його. 413/415/429
+   * приходять як `ApiError` (`status`), UI показує чесну помилку.
+   */
+  putAvatar: (
+    image: Blob,
+    opts?: Pick<RequestOptions, "signal">,
+  ) => Promise<AvatarPutResponse>;
+  /** `DELETE /api/avatar` - прибрати аватар (ідемпотентно). */
+  deleteAvatar: (
+    opts?: Pick<RequestOptions, "signal">,
+  ) => Promise<AvatarDeleteResponse>;
   clearAiMemory: (
     opts?: Pick<RequestOptions, "signal">,
   ) => Promise<AiMemoryClearResponse>;
@@ -162,6 +180,19 @@ export function createMeEndpoints(http: HttpClient): MeEndpoints {
         signal,
       });
       return MeRestoreResponseSchema.parse(raw);
+    },
+    putAvatar: async (image, { signal } = {}) => {
+      const raw = await http.put<unknown>("/api/avatar", image, {
+        signal,
+        headers: { "Content-Type": image.type },
+      });
+      return AvatarPutResponseSchema.parse(raw);
+    },
+    deleteAvatar: async ({ signal } = {}) => {
+      const raw = await http.del<unknown>("/api/avatar", undefined, {
+        signal,
+      });
+      return AvatarDeleteResponseSchema.parse(raw);
     },
     clearAiMemory: async ({ signal } = {}) => {
       const raw = await http.del<unknown>("/api/ai-memory", undefined, {

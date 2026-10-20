@@ -340,6 +340,34 @@ export const MeRestoreResponseSchema = z.object({
 });
 export type MeRestoreResponse = z.infer<typeof MeRestoreResponseSchema>;
 
+// ────────────────────── Avatar (/api/avatar, ux-14) ───────────────────────
+
+/** Стеля тіла `PUT /api/avatar`, байт. Клієнт стискає до 128px webp (≈3-10 КБ). */
+export const AVATAR_MAX_BYTES = 50 * 1024;
+
+/** MIME-типи, які приймає `PUT /api/avatar` (разом із перевіркою magic bytes). */
+export const AVATAR_CONTENT_TYPES = [
+  "image/webp",
+  "image/png",
+  "image/jpeg",
+] as const;
+export type AvatarContentType = (typeof AVATAR_CONTENT_TYPES)[number];
+
+/**
+ * `PUT /api/avatar` — аватар збережено. `image` — КОРОТКИЙ відносний URL
+ * (`/api/avatar/<userId>?v=<epoch>`, ≤2 КБ), який сервер уже записав у
+ * `user.image`; клієнт лише оновлює сесію й малює його через `apiUrl()`.
+ */
+export const AvatarPutResponseSchema = z.object({
+  image: z.string().min(1).max(2048),
+  updatedAt: z.string().datetime({ offset: true }),
+});
+export type AvatarPutResponse = z.infer<typeof AvatarPutResponseSchema>;
+
+/** `DELETE /api/avatar` — рядок прибрано, `user.image` обнулено. Ідемпотентно. */
+export const AvatarDeleteResponseSchema = z.object({ ok: z.literal(true) });
+export type AvatarDeleteResponse = z.infer<typeof AvatarDeleteResponseSchema>;
+
 // ────────────────────── Profile write-through (/api/me/profile) ───────────
 
 /**

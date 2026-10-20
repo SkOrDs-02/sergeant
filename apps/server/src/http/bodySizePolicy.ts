@@ -101,6 +101,7 @@ export type BodySizeRule =
  *   csp-report                             : 16kb (Sentry CSP-ingest cap)
  *   metrics/web-vitals                     : 10kb (≤10 metrics × ~120B JSON)
  *   transcribe                             : 10mb raw audio
+ *   avatar                                 : 50kb raw image (AVATAR_MAX_BYTES)
  *   default                                : 128kb (99% endpoint-ів <4KB JSON)
  */
 export const BODY_SIZE_POLICY: ReadonlyArray<BodySizeRule> = [
@@ -266,6 +267,15 @@ export const BODY_SIZE_POLICY: ReadonlyArray<BodySizeRule> = [
     kind: "json",
     limit: "16kb",
     reason: "CSP report fallback (default content-type)",
+  },
+  {
+    pathPrefix: "/api/avatar",
+    inflate: false,
+    kind: "raw",
+    limit: "50kb",
+    reason:
+      "Аватар (ux-14): сирі байти webp/png/jpeg, ліміт = AVATAR_MAX_BYTES (50 КБ); клієнт стискає до 128px, типовий розмір 3-10 КБ",
+    type: "image/*",
   },
   {
     pathPrefix: "/api/transcribe",

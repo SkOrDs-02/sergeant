@@ -406,6 +406,37 @@ const ISOLATION_CASES: IsolationCase[] = [
       ),
     expectsOwn: true,
   },
+  // ── Аватар (user_avatars, ux-14) ──
+  {
+    route: "GET /api/avatar/:userId",
+    // А просить аватар Б за його id: 404 (як і «аватара нема», без oracle);
+    // байти Б у відповідь не потрапляють.
+    act: ({ app }) =>
+      asA(request(app).get(`/api/avatar/${encodeURIComponent(USER_B)}?v=1`)),
+    statuses: [404],
+  },
+  {
+    route: "PUT /api/avatar",
+    // PUT пише лише в рядок самого А; рядок і `user.image` Б не змінюються.
+    act: ({ app }) =>
+      asA(
+        request(app)
+          .put("/api/avatar")
+          .set(MUTATING)
+          .set("Content-Type", "image/png")
+          .send(
+            Buffer.concat([
+              Buffer.from([0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a]),
+              Buffer.alloc(16, 1),
+            ]),
+          ),
+      ),
+  },
+  {
+    route: "DELETE /api/avatar",
+    // «Прибрати» від А не зачіпає аватар Б (знімок user_avatars).
+    act: ({ app }) => asA(request(app).delete("/api/avatar").set(MUTATING)),
+  },
   // ── Finyk: ручні витрати, імпорт, чеки ──
   {
     route: "POST /api/finyk/manual-expenses",
@@ -773,6 +804,10 @@ const B_SNAPSHOT_QUERIES: ReadonlyArray<readonly [string, string]> = [
   ["coach_memory", `SELECT data, version FROM coach_memory WHERE user_id = $1`],
   ["user_profile", `SELECT payload FROM user_profile WHERE user_id = $1`],
   [
+    "user_avatars",
+    `SELECT content_type, encode(data, 'hex') AS data_hex, updated_at FROM user_avatars WHERE user_id = $1`,
+  ],
+  [
     "user_preferences",
     `SELECT push_daily_cap, analytics FROM user_preferences WHERE user_id = $1`,
   ],
@@ -894,6 +929,15 @@ async function seed(pool: Pool): Promise<SeedIds> {
     `UPDATE "user" SET deletion_requested_at = NOW() - INTERVAL '1 day' WHERE id = $1`,
     [USER_B],
   );
+  // Аватар Б: байти + `user.image` на наш короткий URL (знімок ловить зміну).
+  await pool.query(
+    `INSERT INTO user_avatars (user_id, content_type, data) VALUES ($1, 'image/png', $2)`,
+    [USER_B, Buffer.from(B_SECRET)],
+  );
+  await pool.query(`UPDATE "user" SET image = $2 WHERE id = $1`, [
+    USER_B,
+    `/api/avatar/${encodeURIComponent(USER_B)}?v=1`,
+  ]);
   await insertMemory(pool, USER_A, `${A_OWN} memory`);
   const bMemoryId = await insertMemory(pool, USER_B, `${B_SECRET} memory`);
   await pool.query(

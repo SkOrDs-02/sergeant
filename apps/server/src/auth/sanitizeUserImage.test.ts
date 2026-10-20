@@ -56,6 +56,26 @@ describe("sanitizeUserImage", () => {
     );
   });
 
+  it("наш короткий URL аватара `/api/avatar/<id>?v=<epoch>` — пропускає без змін (ux-14)", () => {
+    const image =
+      "/api/avatar/Xk3p9QwErTyUiOpAsDfGhJkLzXcVbNm1?v=1790000000000";
+    const result = sanitizeUserImage({ image });
+    expect(result.imageStripped).toBe(false);
+    expect(result.reason).toBeNull();
+    expect(result.data.image).toBe(image);
+    // Сесійний cookie-кеш несе весь `user`: шлях мусить бути далеко під 2 КБ.
+    expect(image.length).toBeLessThan(__testing.MAX_IMAGE_URL_LENGTH / 10);
+  });
+
+  it("data: URL і далі нулиться навіть після появи пайплайна аватара", () => {
+    const result = sanitizeUserImage({
+      image: "data:image/webp;base64,UklGRg==",
+    });
+    expect(result.imageStripped).toBe(true);
+    expect(result.data.image).toBeNull();
+    expect(result.reason).toBe("data_url");
+  });
+
   it("payload без поля `image` — return-проксі, нічого не торкається", () => {
     const input = { name: "Тарас", email: "taras@example.com" };
     const r = sanitizeUserImage(input);
