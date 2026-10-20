@@ -3677,7 +3677,7 @@ Reproduced on HEAD with my own user (v8-takeover.mjs). Tab 1 had /finyk/transact
 
 ### `data-47` [medium] «Видалити всі дані Сільпо назавжди» мовчки відкочується: полер знову тягне чеки, відновлює зняті лінки, а автоімпорт удруге додає продукти в комору
 
-- **Стан:** відкрито
+- **Стан:** частково виправлено в гілці claude/fix-data-47-silpo-wipe-sticks (варіант «а» рішення власника: маркер `receipts_wiped_at` на підключенні, міграція 159; синк і auto-claim комори більше не повертають стерте. Лишається: «wipe -> disconnect -> reconnect» повертає історію, бо disconnect видаляє рядок підключення разом із маркером; синк, що почався ДО wipe і дописує чеки після нього, не відсівається, бо маркер читається раз на початку)
 - **Перевірка:** спірне · **Зусилля:** M · **Область:** server: silpo (wipe, syncAll, pantryClaim) + web: автоімпорт
 - **Де:** apps/server/src/routes/silpo.ts:255-270; apps/server/src/modules/silpo/syncAll.ts:87-98; apps/server/src/modules/silpo/pantryClaim.ts:72-86; apps/web/src/modules/nutrition/hooks/useSilpoPantryAutoImport.ts:150-160; apps/web/src/modules/nutrition/components/SilpoIntegrationSection.tsx:425-440
 - **Першопричина:** wipeHandler робить лише DELETE FROM silpo_receipts і лишає silpo_connection у статусі connected (з last_sync_at і pantry_auto_import_since); каскад видаляє й silpo_tx_receipt_link_rejections, а нові позиції приходять з pantry_claimed_at = NULL.
