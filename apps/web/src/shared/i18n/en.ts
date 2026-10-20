@@ -243,7 +243,6 @@ export const messagesEn: Partial<{
   durability: {
     localOnly: {
       title: "Data lives on this device only",
-      body: "Cash expenses, assets, debts and your own categories for bank transactions are stored here only. Clearing browser data wipes them, and the bank cannot bring them back. Signing in enables a server copy.",
       signIn: "Sign in",
       backup: "Download a copy",
     },

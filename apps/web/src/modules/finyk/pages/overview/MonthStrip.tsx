@@ -7,7 +7,7 @@ import {
 import { formatMoney } from "@sergeant/shared";
 import { cn } from "@shared/lib/ui/cn";
 import { messages } from "@shared/i18n/uk";
-import { Icon } from "@shared/components/ui/Icon";
+import { Button } from "@shared/components/ui/Button";
 import { safeReadLS, safeWriteLS } from "@shared/lib/storage/storage";
 import { formatDayMonth } from "@shared/lib/time/formatDate";
 
@@ -269,22 +269,22 @@ export function MonthStripHint({
   return (
     <div
       role="note"
-      className="mt-2 flex items-start gap-2 text-style-caption text-text"
+      className="mt-2 flex items-center gap-2 text-style-caption text-text"
     >
       <span className="min-w-0 flex-1 leading-snug">
         {hasPlan ? m.hintWithPlan : m.hintNoPlan}
       </span>
-      <button
-        type="button"
+      {/* Тиха дія замість «×» у hero (redesign v3.1, Г4). */}
+      <Button
+        variant="text"
+        className="-mr-2 shrink-0"
         onClick={() => {
           safeWriteLS(STRIP_HINT_DISMISSED_SLOT, true);
           setDismissed(true);
         }}
-        aria-label={m.hintDismiss}
-        className="touch-target -m-2 inline-flex shrink-0 items-center justify-center rounded-lg p-2 text-text hover:bg-line/40 focus:outline-none focus-visible:ring-2 focus-visible:ring-focus/45"
       >
-        <Icon name="close" size="sm" aria-hidden />
-      </button>
+        {m.hintDismiss}
+      </Button>
     </div>
   );
 }

@@ -83,15 +83,15 @@ describe("TransactionsHeader", () => {
     expect(screen.getByText("Скасувати")).toBeInTheDocument();
     expect(screen.queryByText(/прих\./)).not.toBeInTheDocument();
     expect(
-      screen.queryByRole("button", { name: "Режим вибору" }),
+      screen.queryByRole("button", { name: "Вибрати" }),
     ).not.toBeInTheDocument();
     fireEvent.click(screen.getByText("Скасувати"));
     expect(exitSelectMode).toHaveBeenCalledTimes(1);
   });
 
-  it("enters select mode via the Режим вибору button", () => {
+  it("enters select mode via the Вибрати button", () => {
     const { setSelectMode } = renderHeader({ hiddenCount: 1 });
-    fireEvent.click(screen.getByRole("button", { name: "Режим вибору" }));
+    fireEvent.click(screen.getByRole("button", { name: "Вибрати" }));
     expect(setSelectMode).toHaveBeenCalledWith(true);
   });
 

@@ -15,7 +15,9 @@
  * афорданс поруч тільки повторив би проблему в новій формі (inline-
  * кнопка в тексті — типове місце, де забувають про 44px touch target).
  * Кнопка вхід підняли з `ghost` до `secondary` — вона єдина дія в
- * попередженні про втрату даних.
+ * попередженні про втрату даних. Redesign v3.1 (Е2, рішення власника
+ * 2026-10-18): банер став одним рядком факту, абзац пояснення знято, а
+ * «Увійти» тиха текст-кнопка.
  *
  * Канон `finyk` §6.2 (durability обовʼязкова): втрата ручного світу
  * неприйнятна. Ручний світ — це те, що з банку НЕ відновлюється: готівкові
@@ -82,12 +84,12 @@ export function LocalOnlyDataBanner({
       tone="ink"
       role="status"
       action={
-        <div className="flex flex-wrap gap-2">
-          <Button type="button" variant="outline" size="sm" onClick={onSignIn}>
+        <div className="flex flex-wrap gap-1">
+          <Button type="button" variant="text" onClick={onSignIn}>
             {m.signIn}
           </Button>
           {onBackup ? (
-            <Button type="button" variant="ghost" size="sm" onClick={onBackup}>
+            <Button type="button" variant="text" onClick={onBackup}>
               {m.backup}
             </Button>
           ) : null}
@@ -95,7 +97,6 @@ export function LocalOnlyDataBanner({
       }
     >
       <p>{m.title}</p>
-      <p className="mt-0.5 font-normal text-muted">{m.body}</p>
     </Notice>
   );
 }

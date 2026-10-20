@@ -1,4 +1,4 @@
-import { cn } from "@shared/lib/ui/cn";
+import { Button } from "@shared/components/ui/Button";
 import { Icon } from "@shared/components/ui/Icon";
 
 export interface TransactionsHeaderProps {
@@ -69,7 +69,9 @@ export function TransactionsHeader({
           <Icon name="chevron-right" size="sm" />
         </button>
       </div>
-      <div className="flex items-center gap-1.5">
+      {/* Дії над видимим списком тихими текст-кнопками (redesign v3.1,
+          Б5): іконки в боксах були єдиними такими в контенті. */}
+      <div className="flex items-center gap-1">
         {selectMode ? (
           <>
             {selectedCount === 0 && (
@@ -77,78 +79,38 @@ export function TransactionsHeader({
                 Обери операції
               </span>
             )}
-            <button
-              onClick={exitSelectMode}
-              className="text-style-caption px-3 py-2 rounded-lg border border-line bg-line/40 text-text min-h-[36px] font-semibold"
-            >
+            <Button variant="outline" size="sm" onClick={exitSelectMode}>
               Скасувати
-            </button>
+            </Button>
           </>
         ) : (
           <>
             {hiddenCount > 0 && (
-              <button
+              <Button
+                variant="text"
+                aria-pressed={showHidden}
                 onClick={() => setShowHidden((v) => !v)}
-                className={cn(
-                  "text-style-caption px-3 py-2 rounded-lg border border-line transition-colors min-h-[36px]",
-                  showHidden ? "text-text border-primary" : "text-subtle",
-                )}
               >
-                {showHidden ? (
-                  <svg
-                    width="14"
-                    height="14"
-                    viewBox="0 0 24 24"
-                    fill="none"
-                    stroke="currentColor"
-                    strokeWidth="2"
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    aria-hidden
-                  >
-                    <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z" />
-                    <circle cx="12" cy="12" r="3" />
-                  </svg>
-                ) : (
-                  <span>{hiddenCount} прих.</span>
-                )}
-              </button>
+                {showHidden ? "Сховати прих." : `${hiddenCount} прих.`}
+              </Button>
             )}
             {/* Експорт стоїть поруч із «прих.» і режимом вибору — у тому
                 самому кластері дій над видимим списком. Ховається разом із
                 ними в select-режимі: вивантажувати те, що людина зараз
                 перебирає, означало б віддати файл із проміжного стану. */}
             {onExportCsv && exportCount > 0 && (
-              <button
+              <Button
+                variant="text"
                 onClick={onExportCsv}
-                className="w-11 h-11 flex items-center justify-center rounded-lg border border-line text-subtle hover:text-text hover:border-muted transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-focus/45"
                 title={`Вивантажити ${exportCount} у CSV`}
                 aria-label={`Вивантажити операції у CSV: ${exportCount}`}
               >
-                <Icon name="download" size="md" aria-hidden />
-              </button>
+                CSV
+              </Button>
             )}
-            <button
-              onClick={() => setSelectMode(true)}
-              className="w-11 h-11 flex items-center justify-center rounded-lg border border-line text-subtle hover:text-text hover:border-muted transition-colors"
-              title="Вибрати кілька"
-              aria-label="Режим вибору"
-            >
-              <svg
-                width="16"
-                height="16"
-                viewBox="0 0 24 24"
-                fill="none"
-                stroke="currentColor"
-                strokeWidth="2"
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                aria-hidden
-              >
-                <polyline points="9 11 12 14 22 4" />
-                <path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11" />
-              </svg>
-            </button>
+            <Button variant="text" onClick={() => setSelectMode(true)}>
+              Вибрати
+            </Button>
           </>
         )}
       </div>
