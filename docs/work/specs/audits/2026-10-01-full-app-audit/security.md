@@ -556,7 +556,7 @@ Verifier script <scratch>/agents/verify-api-live-gap-better-auth-catchall-subrou
 
 ### `sec-06` [medium] Непідтверджений акаунт міняє email миттєво без пароля: крадіжка сесії → скидання пароля → захоплення акаунта
 
-- **Стан:** відкрито
+- **Стан:** частково виправлено в гілці claude/fix-sec-06-email-change-fresh-session (рішення власника «а»: для непідтвердженого акаунта change-email лише зі свіжою сесією до 10 хв, інакше 403 SESSION_NOT_FRESH, і лист-сповіщення на СТАРУ адресу після зміни; перевірка стоїть у databaseHooks.user.update, тож Bearer-запит її не обходить; лишилось: пароль не вимагається, ліміту змін email на добу немає, `updateEmailWithoutVerification` не вимкнено, REQUIRE_EMAIL_VERIFICATION не вмикали; гілку підтвердженого email не чіпали)
 - **Перевірка:** підтверджено · **Зусилля:** S · **Швидкий виграш** · **Область:** server: auth/акаунт
 - **Де:** apps/server/src/auth.ts:310-342,368; apps/server/src/env/env.ts:85-88; node_modules/better-auth/dist/api/routes/update-user.mjs:375-450
 - **Першопричина:** changeEmail.updateEmailWithoutVerification: true при REQUIRE_EMAIL_VERIFICATION=false за замовчуванням: для emailVerified=false Better Auth одразу перезаписує адресу, не питаючи пароля чи свіжої сесії і не повідомляючи стару адресу. Рішення задокументоване як навмисне (auth.ts:310-342), але сценарій зловмисника з чужою сесією там не розглянуто.

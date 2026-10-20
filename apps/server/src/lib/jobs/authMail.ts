@@ -45,8 +45,14 @@ export interface AuthMailJobData {
    * kind, а не `email_verification`, бо це різні кроки флоу і в метриках
    * (`authMailJobsProcessedTotal{kind}`) їх треба розрізняти: падіння саме
    * confirmation-листа означає, що юзер не може змінити пошту взагалі.
+   * `email_change_notice` – сповіщення на СТАРУ адресу після зміни email
+   * НЕпідтвердженим акаунтом (без кроку підтвердження, `sec-06`).
    */
-  kind: "password_reset" | "email_verification" | "email_change_confirmation";
+  kind:
+    | "password_reset"
+    | "email_verification"
+    | "email_change_confirmation"
+    | "email_change_notice";
   to: string;
   subject: string;
   text: string;
