@@ -315,7 +315,7 @@ export const nutritionPageMessages = {
   shoppingRecipePicker: {
     groupSaved: "Мої рецепти",
     groupGenerated: "Згенеровані",
-    selectedLabel: "Обрано",
+    checkedLabel: "Позначено",
     selectedOf: "з",
     selectAll: "Обрати всі",
     clearSelection: "Зняти вибір",

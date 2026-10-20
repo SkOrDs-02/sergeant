@@ -5,11 +5,13 @@
  * Вибір рецептів для списку покупок: «Мої рецепти» (збережені) і
  * «Згенеровані» (щойно запропоновані) двома підписаними групами, кожен рядок
  * - чекбокс. Список складається з усіх позначених разом (рішення власника
- * 2026-10-01). Рядок - нативний `label` + `input[type=checkbox]` з
- * `touch-target` (той самий патерн, що в `SilpoPantryReplenishSheet`).
+ * 2026-10-01). Група - `ChoiceGroup multiple` (мова станів v3.1).
  */
 import { pluralUa } from "@sergeant/shared";
+import { useId } from "react";
 import { Button } from "@shared/components/ui/Button";
+import { ChoiceGroup } from "@shared/components/ui/Choice";
+import { FIELD_LABEL } from "@shared/components/ui/Input";
 import { messages } from "@shared/i18n/uk";
 import { cn } from "@shared/lib/ui/cn";
 import {
@@ -45,48 +47,6 @@ function ingredientsLabel(count: number): string {
   })}`;
 }
 
-function OptionRow({
-  option,
-  checked,
-  disabled,
-  onToggle,
-}: {
-  option: RecipeOption;
-  checked: boolean;
-  disabled: boolean;
-  onToggle: (key: string) => void;
-}) {
-  return (
-    <li>
-      <label
-        className={cn(
-          "flex items-center gap-2.5 touch-target transition-colors",
-          disabled ? "cursor-default opacity-60" : "cursor-pointer",
-          !disabled && "hover:bg-line/40",
-        )}
-      >
-        <input
-          type="checkbox"
-          checked={checked}
-          disabled={disabled}
-          onChange={() => onToggle(option.key)}
-          className="shrink-0 w-5 h-5 accent-text"
-        />
-        {/* `min-w-0` на кожній дитині grid: інакше трек тримає
-            `min-width: auto` і довга назва рецепта розпирає картку. */}
-        <span className="min-w-0 flex-1 grid">
-          <span className="min-w-0 text-style-body font-semibold text-text truncate">
-            {option.title}
-          </span>
-          <span className="min-w-0 text-style-caption text-muted truncate">
-            {ingredientsLabel(option.ingredientCount)}
-          </span>
-        </span>
-      </label>
-    </li>
-  );
-}
-
 function Group({
   title,
   options,
@@ -102,26 +62,43 @@ function Group({
   disabled: boolean;
   onToggle: (key: string) => void;
 }) {
+  const titleId = useId();
   if (options.length === 0) return null;
   return (
-    <div role="group" aria-label={title}>
-      <div className="pt-3 pb-1 text-style-overline text-subtle">{title}</div>
-      <ul className="divide-y divide-line border-t border-line">
-        {options.map((o) => {
-          const checked = selectedKeys.has(o.key);
-          return (
-            <OptionRow
-              key={o.key}
-              option={o}
-              checked={checked}
-              // Стеля запиту: понад неї сервер відповів би 400, тож зайві
-              // рядки не вибираються, а знятий вибір повертає їх назад.
-              disabled={disabled || (atLimit && !checked)}
-              onToggle={onToggle}
-            />
+    <div>
+      <div id={titleId} className={cn(FIELD_LABEL, "pt-3 pb-1")}>
+        {title}
+      </div>
+      <ChoiceGroup
+        multiple
+        variant="rows"
+        ariaLabelledBy={titleId}
+        className="border-t border-line"
+        value={options.filter((o) => selectedKeys.has(o.key)).map((o) => o.key)}
+        onChange={(next) => {
+          const changed = options.find(
+            (o) => next.includes(o.key) !== selectedKeys.has(o.key),
           );
-        })}
-      </ul>
+          if (changed) onToggle(changed.key);
+        }}
+        items={options.map((o) => ({
+          value: o.key,
+          // `min-w-0` + `truncate`: довга назва рецепта не розпирає картку.
+          label: (
+            <span className="block truncate text-style-body font-semibold">
+              {o.title}
+            </span>
+          ),
+          description: (
+            <span className="block truncate">
+              {ingredientsLabel(o.ingredientCount)}
+            </span>
+          ),
+          // Стеля запиту: понад неї сервер відповів би 400, тож зайві
+          // рядки не вибираються, а знятий вибір повертає їх назад.
+          disabled: disabled || (atLimit && !selectedKeys.has(o.key)),
+        }))}
+      />
     </div>
   );
 }
@@ -168,14 +145,13 @@ export function ShoppingRecipePicker({
     <div className="border-t border-line" aria-label={pk.listAria} role="group">
       <div className="py-1 flex items-center justify-between gap-2">
         <span className="text-style-caption text-muted tabular-nums">
-          {pk.selectedLabel} {selectedCount} {pk.selectedOf} {total}
+          {pk.checkedLabel} {selectedCount} {pk.selectedOf} {total}
         </span>
         <div className="flex flex-wrap justify-end gap-1">
           {!allSelected && (
             <Button
               type="button"
-              variant="ghost"
-              size="sm"
+              variant="text"
               disabled={disabled}
               onClick={onSelectAll}
             >
@@ -185,8 +161,7 @@ export function ShoppingRecipePicker({
           {selectedCount > 0 && (
             <Button
               type="button"
-              variant="ghost"
-              size="sm"
+              variant="text"
               disabled={disabled}
               onClick={onClear}
             >
