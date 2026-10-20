@@ -16,7 +16,7 @@
 
 ## PR4 · стан
 
-**Де зупинився:** гілку `claude/redesign-v3-1-pr4` створено від `origin/main` `22303f8d8`, рішення власника про мультивибір записано в спеку § Обране. Далі: режим мультивибору в `ChoiceGroup`, потім екрани Їжі. Worktree `D:/Sergeant/.claude/worktrees/agent-a3fa5bdf3bf79960f`, останній SHA у `git log` гілки.
+**Де зупинився:** зроблено `ChoiceGroup multiple` і `ChoiceCheckbox`, шість нативних checkbox замінено, аркуш прийому (тип, одиниця, швидка вага, чипи комори, «Нещодавні» без обрізання), підписи 14 / 500 замість капс-кікерів поза тинтом. Далі: `MyNormSheet`, інсайт Е3, «Показати всі», решта `aria-pressed`-виборів, храповик, гейти, кадри «після». Кадри «до» зняті (`v31-pr4/before`). Worktree `D:/Sergeant/.claude/worktrees/agent-a3fa5bdf3bf79960f`, останній SHA `6555dc8d7`.
 
 ## PR3 · стан
 

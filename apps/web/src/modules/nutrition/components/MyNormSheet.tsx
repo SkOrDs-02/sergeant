@@ -8,12 +8,12 @@
  * патчем у `NutritionPrefs` (origin `preset`, як «Розрахувати з профілю»).
  * Мережа не потрібна, тому гейта `online` тут немає.
  */
-import { useMemo, useState } from "react";
+import { useId, useMemo, useState } from "react";
 import { Button } from "@shared/components/ui/Button";
-import { Input } from "@shared/components/ui/Input";
+import { ChoiceGroup, type ChoiceItem } from "@shared/components/ui/Choice";
+import { FIELD_LABEL, Input } from "@shared/components/ui/Input";
 import { Sheet } from "@shared/components/ui/Sheet";
 import { normalizeAmountInput } from "@shared/lib/format/amount";
-import { cn } from "@shared/lib/ui/cn";
 import { useToast } from "@shared/hooks/useToast";
 import { messages } from "@shared/i18n/uk";
 import {
@@ -84,47 +84,32 @@ function parseGoalWeight(raw: string): number | null | "invalid" {
     : "invalid";
 }
 
-interface RadioListProps<V extends string> {
+interface NormChoiceProps<V extends string> {
   label: string;
   value: V;
   onChange: (value: V) => void;
-  items: ReadonlyArray<{ value: V; label: string; title?: string }>;
+  items: ReadonlyArray<ChoiceItem<V>>;
 }
 
-/** Вибір налаштування: список радіо на hairline, обраний пункт жирніший. */
-function RadioList<V extends string>({
+/** Вибір налаштування норми: підпис поля і плитки `ChoiceGroup` (v3.1). */
+function NormChoice<V extends string>({
   label,
   value,
   onChange,
   items,
-}: RadioListProps<V>) {
+}: NormChoiceProps<V>) {
+  const labelId = useId();
   return (
-    <div role="radiogroup" aria-label={label} className="space-y-1">
-      <div className="text-style-label text-muted">{label}</div>
-      <div className="divide-y divide-line border-y border-line">
-        {items.map((item) => {
-          const checked = item.value === value;
-          return (
-            <button
-              key={item.value}
-              type="button"
-              role="radio"
-              aria-checked={checked}
-              title={item.title}
-              onClick={() => onChange(item.value)}
-              className={cn(
-                "flex min-h-[44px] w-full items-center justify-between gap-2 rounded-lg text-left text-style-body focus-ring",
-                checked ? "font-semibold text-text" : "font-medium text-muted",
-              )}
-            >
-              <span>{item.label}</span>
-              <span aria-hidden className="text-text">
-                {checked ? "✓" : ""}
-              </span>
-            </button>
-          );
-        })}
+    <div className="space-y-1">
+      <div id={labelId} className={FIELD_LABEL}>
+        {label}
       </div>
+      <ChoiceGroup
+        ariaLabelledBy={labelId}
+        value={value}
+        onChange={onChange}
+        items={items}
+      />
     </div>
   );
 }
@@ -250,7 +235,7 @@ function MyNormBody({ onClose }: { onClose: () => void }) {
 
   return (
     <div className="space-y-3">
-      <RadioList
+      <NormChoice
         label={COPY.goalLabel}
         value={goal}
         onChange={setGoal}
@@ -261,14 +246,17 @@ function MyNormBody({ onClose }: { onClose: () => void }) {
       />
 
       {goal === "cutting" && (
-        <RadioList
+        <NormChoice
           label={COPY.rateLabel}
           value={String(rate)}
           onChange={(v) => setRate(Number(v) as WeeklyRateKg)}
           items={WEEKLY_RATES_KG.map((value) => ({
             value: String(value),
-            label: fill(COPY.rateOption, { rate: fmtDecimal(value) }),
-            title: `-${weeklyRateDeficitKcal(value)}`,
+            label: (
+              <span title={`-${weeklyRateDeficitKcal(value)}`}>
+                {fill(COPY.rateOption, { rate: fmtDecimal(value) })}
+              </span>
+            ),
           }))}
         />
       )}
