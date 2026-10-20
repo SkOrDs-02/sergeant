@@ -101,7 +101,11 @@ export const RETURN_EXIT_RATIO = 0.9;
 /** Чому ввімкнено мʼякий режим. `null` — режим вимкнено. */
 export type ReturnReason = "layoff" | "injury";
 
-/** Одна силова сесія вправи: коли і який найкращий e1RM у ній. */
+/**
+ * Одна силова сесія вправи: коли і який найкращий e1RM у ній. `best1rm = 0` —
+ * сесія була, але жоден підхід не дає e1RM (понад `E1RM_REP_CAP` повторів):
+ * вона рахується виходом у зал (закінчує паузу), але повернення не просуває.
+ */
 export interface OneRmSessionPoint {
   readonly at: string;
   readonly best1rm: number;
@@ -204,11 +208,15 @@ function unfinishedComeback(
   staleAfterDays: number,
   peak1rm: number,
 ): Comeback | null {
+  // Сесія з `best1rm = 0` (силова, але без підходу в межах формули Еплі:
+  // легка вага на 12-15 повторів) лишається в списку: це справжній вихід у
+  // зал, і саме нею закінчується пауза. Відкинути її — значить не побачити
+  // паузи й скинути орієнтир до піка після найтиповішого легкого повернення.
   const points = (sessions ?? [])
     .map((s) => ({ t: Date.parse(s.at), best1rm: s.best1rm }))
     .filter(
       (s) =>
-        Number.isFinite(s.t) && Number.isFinite(s.best1rm) && s.best1rm > 0,
+        Number.isFinite(s.t) && Number.isFinite(s.best1rm) && s.best1rm >= 0,
     )
     .sort((a, b) => a.t - b.t);
 
@@ -333,8 +341,8 @@ export function computeOneRmAging(input: OneRmAgingInput): OneRmAging {
 
 /**
  * Силові сесії вправи з історії (`collectExerciseHistory`): по одній точці на
- * запис вправи, з найкращим e1RM у ньому. Вхід `sessions` для
- * {@link computeOneRmAging}.
+ * запис вправи, з найкращим e1RM у ньому (0, якщо e1RM порахувати нема з чого).
+ * Вхід `sessions` для {@link computeOneRmAging}.
  */
 export function collectStrengthSessionPoints(
   history: readonly ExerciseHistoryEntry[],
@@ -348,7 +356,10 @@ export function collectStrengthSessionPoints(
     for (const s of Array.isArray(item.sets) ? item.sets : []) {
       best1rm = Math.max(best1rm, epley1rm(s.weightKg, s.reps));
     }
-    if (best1rm > 0) out.push({ at, best1rm });
+    // Точка є для КОЖНОЇ силової сесії, навіть коли e1RM = 0 (reps понад
+    // E1RM_REP_CAP): `computeExerciseBest.lastStrengthAt` теж рахує її, тож
+    // список сесій і давність останньої не мають розходитись.
+    out.push({ at, best1rm });
   }
   return out;
 }

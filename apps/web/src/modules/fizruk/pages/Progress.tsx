@@ -129,7 +129,13 @@ export function Progress({ onNavigate }: ProgressProps) {
     const latest: Record<string, { at: string; best1rm: number }> = {};
     // Сесії вправи — для режиму повернення після паузи (`logic-04`): без них
     // орієнтир на борді повертався б до піка після одного легкого підходу.
+    // Точка є для КОЖНОЇ силової сесії, навіть з e1RM = 0 (легка вага на
+    // 12-15 повторів): така сесія закінчує паузу, і без неї сторінка вправи
+    // (`collectStrengthSessionPoints`) та борд розходились би.
     const sessionsByEx: Record<string, OneRmSessionPoint[]> = {};
+    // Остання силова сесія за БУДЬ-ЯКОГО e1RM — як `lastStrengthAt` у
+    // `computeExerciseBest`: давність для старіння одна на борді й сторінці.
+    const lastStrengthAtByEx: Record<string, string> = {};
     for (const w of workouts || []) {
       for (const it of w.items || []) {
         const exId = it.exerciseId;
@@ -155,11 +161,15 @@ export function Progress({ onNavigate }: ProgressProps) {
             prevLatest.best1rm = est;
           }
         }
-        if (sessionBest > 0 && w.startedAt) {
+        if (typeof w.startedAt === "string" && w.startedAt.length > 0) {
           (sessionsByEx[exId] ??= []).push({
             at: w.startedAt,
             best1rm: sessionBest,
           });
+          const prevAt = lastStrengthAtByEx[exId];
+          if (prevAt === undefined || w.startedAt > prevAt) {
+            lastStrengthAtByEx[exId] = w.startedAt;
+          }
         }
       }
     }
@@ -178,7 +188,7 @@ export function Progress({ onNavigate }: ProgressProps) {
         const last = latest[id];
         const aging = computeOneRmAging({
           peak1rm: v.best1rm,
-          lastSessionAt: last?.at ?? null,
+          lastSessionAt: lastStrengthAtByEx[id] ?? last?.at ?? null,
           sessions: sessionsByEx[id],
         });
         const lastBest = last?.best1rm ?? 0;

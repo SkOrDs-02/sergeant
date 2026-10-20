@@ -236,6 +236,51 @@ describe("computeOneRmAging — режим повернення тримаєть
     expect(aging.reductionPct).toBe(25);
   });
 
+  it("легка сесія повернення на 12 повторів (e1RM = 0) режим не скидає: пік 140, пауза, 50×12", () => {
+    // Epley на reps > E1RM_REP_CAP дає 0, але вихід у зал був і закінчив паузу.
+    const aging = agingFor([[[50, 12]]]);
+    expect(aging.peak1rm).toBeCloseTo(140, 5);
+    expect(aging.isStale).toBe(false);
+    expect(aging.returnMode).toBe(true);
+    expect(aging.returnReason).toBe("layoff");
+    expect(aging.reference1rm).toBeLessThanOrEqual(105 + 1e-9);
+    expect(aging.reference1rm).toBeCloseTo(105, 5);
+  });
+
+  it("collectStrengthSessionPoints лишає силову сесію з e1RM = 0 точкою (як lastStrengthAt)", () => {
+    const history = collectExerciseHistory(
+      [
+        peakWorkout,
+        strengthWorkout("w_light", daysAgo(1), [{ weightKg: 50, reps: 12 }]),
+      ],
+      "squat",
+    );
+    const points = collectStrengthSessionPoints(history);
+    expect(points).toHaveLength(2);
+    expect(points.find((p) => p.at === daysAgo(1))?.best1rm).toBe(0);
+    expect(computeExerciseBest(history).lastStrengthAt).toBe(daysAgo(1));
+  });
+
+  it("після легкої 50×12 важка 85×6 виводить з режиму (e1RM 102 ≥ 94.5)", () => {
+    const aging = agingFor([[[50, 12]], [[85, 6]]]);
+    expect(aging.returnMode).toBe(false);
+    expect(aging.reference1rm).toBe(aging.peak1rm);
+  });
+
+  it("сесія з e1RM = 0 у sessions напряму: пауза до неї знайдена", () => {
+    const aging = computeOneRmAging({
+      peak1rm: 100,
+      lastSessionAt: daysAgo(1),
+      sessions: [
+        { at: daysAgo(100), best1rm: 100 },
+        { at: daysAgo(1), best1rm: 0 },
+      ],
+      now: NOW,
+    });
+    expect(aging.returnMode).toBe(true);
+    expect(aging.reference1rm).toBeCloseTo(75, 5);
+  });
+
   it("вихід з режиму: найкращий e1RM після паузи ≥ 90% зниженого піка", () => {
     // Знижений пік 105 → поріг 94.5. 70×8 → 88.7 (ще режим), 85×6 → 102 (вихід).
     expect(agingFor([[[70, 8]]]).returnMode).toBe(true);
