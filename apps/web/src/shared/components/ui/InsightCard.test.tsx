@@ -137,7 +137,24 @@ describe("InsightCard", () => {
     expect(group.className).not.toContain("bg-ink-strong");
     expect(group.className).not.toMatch(/shadow-/);
     expect(getByText("t").className).toContain("text-text");
-    expect(getByText("s").className).toContain("text-muted");
+    // v3.1 Е3: підзаголовок - дія, чорнилом; гліф Сержанта без рамки.
+    expect(getByText("s").className).toContain("text-text");
+    expect(getByText("s").className).toContain("font-semibold");
+  });
+
+  it("v3.1 Е3: кнопка Сержанта без рамки-боксу", () => {
+    const { getByLabelText } = render(
+      <InsightCard
+        id="x"
+        title="t"
+        subtitle="s"
+        onActivate={() => {}}
+        onAskAi={() => {}}
+      />,
+    );
+    expect(getByLabelText("Спитати Сержанта про це").className).not.toMatch(
+      /(^|\s)border(\s|-)/,
+    );
   });
 });
 
