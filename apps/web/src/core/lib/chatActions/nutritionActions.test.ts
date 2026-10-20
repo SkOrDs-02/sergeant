@@ -57,6 +57,7 @@ vi.mock("../../../modules/nutrition/lib/nutritionStorage", async () => {
     loadActivePantryId: vi.fn(() => mem.active),
     persistPantries: vi.fn(
       (_k?: unknown, _ak?: unknown, p?: unknown, aid?: unknown) => {
+        if (mem.blocked) return false;
         if (Array.isArray(p))
           mem.pantries = p as typeof mem.pantries extends infer T ? T : never;
         if (aid != null) mem.active = String(aid);
@@ -654,6 +655,33 @@ describe("data-04: Їжа ще не гідратована", () => {
     });
     expect(out).toBe(LOADING);
     expect(mem.shopping).toBeNull();
+  });
+
+  // rel-16: persistPantries віддавав `false`, а екзекутор його ігнорував і
+  // рапортував «прибрано з комори» без запису.
+  it("consume_from_pantry: комору не гідровано — не рапортує «прибрано»", () => {
+    mem.pantries = [
+      { id: "home", name: "Домашня", items: [{ name: "Молоко" }] },
+    ];
+    mem.blocked = true;
+    const out = handleNutritionAction({
+      name: "consume_from_pantry",
+      input: { name: "Молоко" },
+    });
+    expect(out).toBe(LOADING);
+    expect(mem.pantries[0]!.items).toHaveLength(1);
+    expect(appendPantryEventSpy).not.toHaveBeenCalled();
+  });
+
+  it("clear_pantry: комору не гідровано — не рапортує «очищено»", () => {
+    mem.pantries = [
+      { id: "home", name: "Комора", items: [{ name: "Молоко" }] },
+    ];
+    mem.blocked = true;
+    const out = handleNutritionAction({ name: "clear_pantry", input: {} });
+    expect(out).toBe(LOADING);
+    expect(mem.pantries[0]!.items).toHaveLength(1);
+    expect(appendPantryEventSpy).not.toHaveBeenCalled();
   });
 });
 

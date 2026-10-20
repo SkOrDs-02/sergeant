@@ -68,7 +68,7 @@ export function createTransaction(
     type: txType,
   };
   manualExpenses.unshift(entry);
-  finykChatWrite("finyk_manual_expenses_v1", manualExpenses);
+  void finykChatWrite("finyk_manual_expenses_v1", manualExpenses);
   const label = categoryLabel ? ` (${categoryLabel})` : "";
   const human = txType === "income" ? "Дохід" : "Витрату";
   const result = `${human} ${formatNumberUk(amt)} грн${description ? ` "${description.trim()}"` : ""}${label} записано (id:${manualId})`;
@@ -82,7 +82,7 @@ export function createTransaction(
       const current = warmFinykCache()?.manualExpenses ?? [];
       const next = current.filter((tx) => tx.id !== manualId);
       if (next.length !== current.length) {
-        finykChatWrite("finyk_manual_expenses_v1", next);
+        void finykChatWrite("finyk_manual_expenses_v1", next);
       }
       // Keep SQLite in step with the LS undo so the row stops showing up
       // in the overlay read. Soft-delete is idempotent — safe to fire
@@ -102,7 +102,7 @@ export function hideTransaction(
   const hidden = [...cache.hiddenTransactions];
   if (!hidden.includes(txId)) {
     hidden.push(txId);
-    finykChatWrite("finyk_hidden_txs", hidden);
+    void finykChatWrite("finyk_hidden_txs", hidden);
   }
   // Mirror into `finyk_hidden_transactions` — the hidden-tx read
   // (search / analytics / report) overlays from SQLite. Idempotent.
@@ -126,7 +126,7 @@ export function deleteTransaction(
   if (idx < 0) return `Операцію ${id} не знайдено (вже видалена).`;
   const next = list.slice();
   next.splice(idx, 1);
-  finykChatWrite("finyk_manual_expenses_v1", next);
+  void finykChatWrite("finyk_manual_expenses_v1", next);
   triggerManualExpenseDeleteSqliteMirror(id);
   return `Операцію ${id} видалено`;
 }
@@ -162,7 +162,7 @@ export function splitTransaction(
     >
   )[id];
   splits[id] = newSplits;
-  finykChatWrite("finyk_tx_splits", splits);
+  void finykChatWrite("finyk_tx_splits", splits);
   const desc = newSplits
     .map((s) => {
       const cat = resolveExpenseCategoryMeta(s.categoryId, customC);
@@ -179,7 +179,7 @@ export function splitTransaction(
       };
       if (prevSplit === undefined) delete cur[id];
       else cur[id] = prevSplit;
-      finykChatWrite("finyk_tx_splits", cur);
+      void finykChatWrite("finyk_tx_splits", cur);
     },
   };
 }

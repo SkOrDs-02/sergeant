@@ -27,17 +27,21 @@
  * gate stays meaningful because the manual-UI path (full-state) keeps
  * probing.
  *
- * Best-effort, same contract as the orchestrator: never throws; a missing
- * dual-write context (e.g. the assistant is invoked from a surface where
- * the Finyk module never mounted) is a no-op. Екзекутори до того ж не
- * пишуть на холодному кеші (`warmFinykCache`), тож «втрата» тут — лише
- * гонка зі скиданням контексту. Залишкового LS→SQLite імпорту на буті
- * більше немає (прибрано 2026-08, `sqliteReadBoot.ts`): kv-копія значення
- * НЕ дренується в базу, лише дзеркалить канон для first-paint.
+ * Best-effort, same contract as the orchestrator: never throws. Відсутній
+ * dual-write контекст (асистент викликано з поверхні, де модуль Фініка не
+ * змонтувався, або runtime ще не зареєстровано) — це НЕ тихий no-op, а
+ * `false`: обидві функції віддають `Promise<boolean>` («запис ліг у SQLite»),
+ * і `executeActions` через `settle()` підміняє «створено» на чесну відмову
+ * (rel-16). Буфера чи журналу тут немає навмисно: залишкового LS→SQLite
+ * імпорту на буті більше немає (прибрано 2026-08, `sqliteReadBoot.ts`),
+ * kv-копія значення НЕ дренується в базу, лише дзеркалить канон для
+ * first-paint. Екзекутори до того ж не пишуть на холодному кеші
+ * (`warmFinykCache`).
  */
 
 import type { SqliteMigrationClient } from "@sergeant/db-schema/migrate/sqlite";
 
+import { isDualWriteOutcomeClean } from "../../../../core/durability/dualWriteJournal.js";
 import {
   recordDualWriteOutcome,
   recordReadFallback,
@@ -93,17 +97,33 @@ async function resolveChatDualWriteRuntime(): Promise<ChatDualWriteRuntime | nul
  * Apply a pre-computed op list, record telemetry, then refresh the read
  * cache + bump the read-gate so mounted UI re-renders. No parity probe
  * (see module docstring).
+ *
+ * Повертає `true`, лише коли всі ops застосовано без помилок (або ops нема);
+ * збій apply або `errored > 0` — `false`. Збій ОНОВЛЕННЯ кешу після вдалого
+ * запису на результат не впливає: дані в базі вже лежать.
  */
 async function applyOpsAndRefresh(
   rt: ChatDualWriteRuntime,
   ops: readonly FinykDualWriteOp[],
-): Promise<void> {
-  if (ops.length === 0) return;
-  const result = await applyFinykDualWriteOps(rt.client, ops, {
-    userId: rt.userId,
-    clientTs: rt.getNow(),
-  });
-  recordDualWriteOutcome("finyk", { status: "applied", result });
+): Promise<boolean> {
+  if (ops.length === 0) return true;
+  let result: Awaited<ReturnType<typeof applyFinykDualWriteOps>>;
+  try {
+    result = await applyFinykDualWriteOps(rt.client, ops, {
+      userId: rt.userId,
+      clientTs: rt.getNow(),
+    });
+  } catch (err) {
+    recordReadFallback(
+      "finyk",
+      err instanceof Error
+        ? `chat-apply-failed: ${err.message}`
+        : "chat-apply-failed",
+    );
+    return false;
+  }
+  const outcome = { status: "applied", result } as const;
+  recordDualWriteOutcome("finyk", outcome);
 
   try {
     await refreshFinykSqliteState(rt.client, rt.userId);
@@ -116,22 +136,23 @@ async function applyOpsAndRefresh(
         : "chat-refresh-failed",
     );
   }
+  return isDualWriteOutcomeClean(outcome);
 }
 
 /**
  * Mirror a single-slice `prev → next` transition (built via
- * {@link stateWithSlice}) into local SQLite. Fire-and-forget from the
- * chat-action call site.
+ * {@link stateWithSlice}) into local SQLite. Віддає `true`, коли запис ліг
+ * (або diff порожній), `false` — коли runtime недоступний чи apply впав.
  */
 export async function mirrorFinykChatDualWrite(
   prev: FinykDualWriteState,
   next: FinykDualWriteState,
-): Promise<void> {
+): Promise<boolean> {
   const ops = diffFinykDualWriteOps(prev, next);
-  if (ops.length === 0) return;
+  if (ops.length === 0) return true;
   const rt = await resolveChatDualWriteRuntime();
-  if (!rt) return;
-  await applyOpsAndRefresh(rt, ops);
+  if (!rt) return false;
+  return applyOpsAndRefresh(rt, ops);
 }
 
 /**
@@ -152,9 +173,9 @@ export async function mirrorFinykChatDualWrite(
 export async function mirrorFinykChatMonthlyPlan(
   monthlyPlanJson: string,
   prevMonthlyPlanJson?: string,
-): Promise<void> {
+): Promise<boolean> {
   const rt = await resolveChatDualWriteRuntime();
-  if (!rt) return;
+  if (!rt) return false;
 
   let cache = getCachedFinykSqliteState();
   if (cache.refreshedAt === null) {
@@ -167,7 +188,7 @@ export async function mirrorFinykChatMonthlyPlan(
           ? `chat-prefs-read-failed: ${err.message}`
           : "chat-prefs-read-failed",
       );
-      return;
+      return false;
     }
   }
 
@@ -186,7 +207,7 @@ export async function mirrorFinykChatMonthlyPlan(
     stateWithSlice("prefs", base),
     stateWithSlice("prefs", { ...base, monthlyPlanJson }),
   );
-  await applyOpsAndRefresh(rt, ops);
+  return applyOpsAndRefresh(rt, ops);
 }
 
 function safeStringify(value: unknown, fallback: string): string {

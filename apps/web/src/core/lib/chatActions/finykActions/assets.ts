@@ -33,14 +33,14 @@ export function addAsset(action: AddAssetAction): ChatActionResult {
     amount: amt,
     currency: cur,
   };
-  finykChatWrite("finyk_assets", [...prevAssets, newEntry]);
+  void finykChatWrite("finyk_assets", [...prevAssets, newEntry]);
   return {
     result: `Актив "${trimmed}" додано: ${formatNumberUk(amt)} ${cur}`,
     undo: () => {
       const list = warmFinykCache()?.manualAssets ?? [];
       const next = list.filter((e) => e.id !== assetId);
       if (next.length !== list.length) {
-        finykChatWrite("finyk_assets", next);
+        void finykChatWrite("finyk_assets", next);
       }
     },
   };
@@ -73,6 +73,6 @@ export function recurringExpense(
     category: category?.trim() || "",
   };
   subs.push(newSub);
-  finykChatWrite("finyk_subs", subs);
+  void finykChatWrite("finyk_subs", subs);
   return `Підписку "${trimmed}" створено: ${formatNumberUk(amt)} грн, ${dayN}-го числа (id:${newSub.id})`;
 }

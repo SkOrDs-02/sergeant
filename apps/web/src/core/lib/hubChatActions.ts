@@ -11,9 +11,11 @@ import {
   handleAsyncChatAction,
   ASYNC_CHAT_ACTION_NAMES,
 } from "./chatActions/serverActions";
-import { captureRoutineWrites } from "./chatActions/routinePersistence";
+import { captureChatWrites, combineChatWrites } from "./chatActions/chatWrites";
 import {
   hasPendingNutritionDualWrites,
+  nutritionDualWriteBufferedRuns,
+  nutritionDualWriteFailedRuns,
   nutritionDualWriteIdle,
 } from "../../modules/nutrition/lib/sqliteWriter/index";
 import type { ChatActionResult } from "./chatActions/types";
@@ -242,12 +244,20 @@ export async function executeActions(
               return withLatency({ name: action.name, result, ok: true });
             }
             if (result) {
-              return withLatency({
-                name: action.name,
-                result: result.result,
-                ok: true,
-                ...(result.undo ? { undo: result.undo } : {}),
-              });
+              // `confirm` (дохід і офлайн-фолбек `create_transaction` пишуть
+              // через finykChatWrite) теж іде крізь settle: без цього async-гілка
+              // рапортувала «записано» при незареєстрованому dual-write (rel-16).
+              return withLatency(
+                await settle(
+                  action.name,
+                  {
+                    result: result.result,
+                    ...(result.undo ? { undo: result.undo } : {}),
+                    ...(result.confirm ? { confirm: result.confirm } : {}),
+                  },
+                  true,
+                ),
+              );
             }
             return withLatency({
               name: action.name,
@@ -277,13 +287,37 @@ export async function executeActions(
       );
       continue;
     }
-    const { value: out } = captureRoutineWrites(() => dispatch(action));
+    const nutritionFailedBefore = nutritionDualWriteFailedRuns();
+    const nutritionBufferedBefore = nutritionDualWriteBufferedRuns();
+    const { value: dispatched, writes } = captureChatWrites(() =>
+      dispatch(action),
+    );
+    // Підтвердження довговічності: що дія зареєструвала в збирачі (Фінік через
+    // `finykChatWrite`, Рутина через `persistRoutineState`) + власний `confirm`
+    // хендлера. `settle()` дочікується їх і замінює «створено» на відмову.
+    const confirms = [...writes];
+    if (dispatched.confirm) confirms.push(dispatched.confirm);
     // Мутація Їжі лишила запис у черзі dual-write → дочекатися, поки кеш його
     // побачить, і лише тоді віддати керування наступній дії батча. Очікування
     // обмежене: завислий SQLite не має вішати весь хід чату.
-    if (hasPendingNutritionDualWrites() && !(await waitNutritionIdle())) {
-      nutritionStalled = true;
+    if (hasPendingNutritionDualWrites()) {
+      if (!(await waitNutritionIdle())) {
+        nutritionStalled = true;
+      } else if (
+        nutritionDualWriteFailedRuns() > nutritionFailedBefore ||
+        nutritionDualWriteBufferedRuns() > nutritionBufferedBefore
+      ) {
+        // Черга спорожніла, але запуск не записав у SQLite («sqlite
+        // недоступна» тощо) або запис осів у буфері до реєстрації
+        // dual-write контексту (черга не стартувала, idle завершився
+        // одразу): це не успіх.
+        confirms.push(Promise.resolve(false));
+      }
     }
+    const out: ExecutedAction & { ok: boolean } =
+      confirms.length > 0
+        ? { ...dispatched, confirm: combineChatWrites(confirms) }
+        : dispatched;
     pending.push(settle(action.name, out, out.ok).then(withLatency));
   }
   return Promise.all(pending);
