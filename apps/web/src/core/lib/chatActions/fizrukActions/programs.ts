@@ -1,42 +1,23 @@
-import { ls, lsSet } from "../../hubChatUtils";
-import type { AddProgramDayAction, ChatActionResult } from "../types";
+import type { ChatActionResult } from "../types";
 
-export function addProgramDay(action: AddProgramDayAction): ChatActionResult {
-  const { weekday, name, exercises } = action.input;
-  const wd = Number(weekday);
-  if (!Number.isInteger(wd) || wd < 0 || wd > 6)
-    return "weekday має бути цілим 0..6.";
-  const dayName = (name || "").trim();
-  if (!dayName) return "Потрібна назва тренування.";
-  const exList: Array<{
-    name: string;
-    sets?: number | undefined;
-    reps?: number | undefined;
-    weight?: number | undefined;
-  }> = [];
-  if (Array.isArray(exercises)) {
-    for (const ex of exercises) {
-      if (!ex || typeof ex !== "object") continue;
-      const exName = String(ex.name || "").trim();
-      if (!exName) continue;
-      const setsN = Number(ex.sets);
-      const repsN = Number(ex.reps);
-      const weightN = Number(ex.weight);
-      exList.push({
-        name: exName,
-        sets: Number.isFinite(setsN) && setsN > 0 ? setsN : undefined,
-        reps: Number.isFinite(repsN) && repsN > 0 ? repsN : undefined,
-        weight: Number.isFinite(weightN) && weightN >= 0 ? weightN : undefined,
-      });
-    }
-  }
-  const tpl = ls<{
-    schemaVersion?: number;
-    days?: Record<string, { name: string; exercises: unknown[] }>;
-  }>("fizruk_plan_template_v1", {});
-  const days = { ...(tpl.days || {}) };
-  days[String(wd)] = { name: dayName, exercises: exList };
-  lsSet("fizruk_plan_template_v1", { schemaVersion: 1, days });
-  const weekdayLabels = ["нд", "пн", "вт", "ср", "чт", "пт", "сб"];
-  return `День "${dayName}" (${weekdayLabels[wd]}) збережено: ${exList.length} вправ.`;
+/**
+ * Відповідь на `add_program_day`, поки тул ще в реєстрі моделі.
+ *
+ * Тул писав `fizruk_plan_template_v1`, який у вебі ніхто не читає, і при цьому
+ * казав «День … збережено» (аудит 2026-10-01, data-39): фальшивий успіх, дані
+ * нікуди не їхали. Рішення власника - тул прибрати. Повне видалення з
+ * `toolDefs`/`toolSelectionCases` змінює системний промпт і ламає записані
+ * касети tool-eval (перезапис платний), тож іде окремим кроком; до того тул
+ * чесно відмовляє і НІЧОГО не пише.
+ *
+ * Текст адресований моделі (`tool_result`): вона переказує його людині. Префікс
+ * «Не вдалося» робить картку дії провальною (`FAILURE_RE`).
+ */
+export const ADD_PROGRAM_DAY_UNSUPPORTED =
+  "Не вдалося змінити тижневий план: чат не вміє редагувати дні програми. " +
+  "Скажи користувачу відкрити Фізрук, розділ «Програми», і обрати програму там. " +
+  "НЕ стверджуй, що день збережено.";
+
+export function addProgramDay(): ChatActionResult {
+  return ADD_PROGRAM_DAY_UNSUPPORTED;
 }

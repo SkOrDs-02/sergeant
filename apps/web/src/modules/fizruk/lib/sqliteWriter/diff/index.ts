@@ -42,6 +42,9 @@
  *      mark in `fizruk_injuries`. Unlike the six above there is no
  *      localStorage origin: injuries were born SQLite-only, so this class
  *      has no LS key to mirror from.
+ *
+ *   8. **Programs** - singleton `fizruk_programs` row with the active
+ *      program id (data-39). Раніше id жив лише у localStorage і не їхав у sync.
  */
 
 import { diffCustomActivitiesOps } from "./customActivities";
@@ -50,6 +53,7 @@ import { diffDailyLogOps } from "./dailyLog";
 import { diffInjuriesOps } from "./injuries";
 import { diffMeasurementsOps } from "./measurements";
 import { diffMonthlyPlanOps } from "./monthlyPlan";
+import { diffProgramsOps } from "./programs";
 import { diffWorkoutTemplatesOps } from "./workoutTemplates";
 import { diffWorkoutsOps } from "./workouts";
 
@@ -82,6 +86,7 @@ import type {
   FizrukMonthlyPlanSnapshot,
   MonthlyPlanSetOp,
 } from "./monthlyPlan";
+import type { FizrukProgramsSnapshot, ProgramsSetOp } from "./programs";
 import type {
   FizrukWorkoutTemplateSnapshot,
   WorkoutTemplateDeleteOp,
@@ -112,6 +117,7 @@ export type {
   FizrukItemSnapshot,
   FizrukMeasurementSnapshot,
   FizrukMonthlyPlanSnapshot,
+  FizrukProgramsSnapshot,
   FizrukSetSnapshot,
   FizrukWorkoutSnapshot,
   FizrukWorkoutTemplateSnapshot,
@@ -120,6 +126,7 @@ export type {
   MeasurementDeleteOp,
   MeasurementUpsertOp,
   MonthlyPlanSetOp,
+  ProgramsSetOp,
   WorkoutDeleteOp,
   WorkoutTemplateDeleteOp,
   WorkoutTemplateUpsertOp,
@@ -138,6 +145,7 @@ export type FizrukDualWriteOp =
   | DailyLogUpsertOp
   | DailyLogDeleteOp
   | MonthlyPlanSetOp
+  | ProgramsSetOp
   | WorkoutTemplateUpsertOp
   | WorkoutTemplateDeleteOp
   | InjuryUpsertOp
@@ -175,6 +183,12 @@ export interface FizrukDualWriteState {
    * самий контракт, що `pantryEvents` у nutrition-диффі).
    */
   readonly customActivities?: readonly FizrukCustomActivitySnapshot[];
+  /**
+   * Singleton `fizruk_programs` - id активної тренувальної програми. Опційне
+   * з тієї ж причини, що й `customActivities`: вручну зібрані стани у старих
+   * тестах поля не несуть; `null`/відсутнє = «рядка ще немає».
+   */
+  readonly programs?: FizrukProgramsSnapshot | null;
 }
 
 // -----------------------------------------------------------------------
@@ -192,6 +206,7 @@ export interface FizrukDualWriteState {
  *   5. monthly-plan-set (at most one)
  *   6. workout-template-upsert / workout-template-delete (by id asc)
  *   7. injury-upsert / injury-delete (by id asc)
+ *   8. programs-set (at most one)
  */
 export function diffFizrukDualWriteOps(
   prev: FizrukDualWriteState,
@@ -206,5 +221,6 @@ export function diffFizrukDualWriteOps(
     ...diffMonthlyPlanOps(prev.monthlyPlan, next.monthlyPlan),
     ...diffWorkoutTemplatesOps(prev.workoutTemplates, next.workoutTemplates),
     ...diffInjuriesOps(prev.injuries, next.injuries),
+    ...diffProgramsOps(prev.programs, next.programs),
   ];
 }

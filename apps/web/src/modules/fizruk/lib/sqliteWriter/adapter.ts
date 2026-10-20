@@ -16,6 +16,7 @@ import {
   softDeleteCustomActivity,
   upsertCustomActivity,
 } from "./adapter.customActivities.js";
+import { setPrograms } from "./adapter.programs.js";
 import type {
   FizrukCustomExerciseSnapshot,
   FizrukDualWriteOp,
@@ -158,6 +159,10 @@ const applyOps = createApplyOps<FizrukDualWriteOp>({
           data_json: op.monthlyPlan.dataJson ?? "{}",
         },
       });
+      return "applied";
+    },
+    "programs-set": async (client, op, rt) => {
+      await setPrograms(client, op.programs, rt);
       return "applied";
     },
     "workout-template-upsert": async (client, op, rt) => {

@@ -3223,7 +3223,7 @@ kill1.mjs: у вправі «Віджимання» вага s0 = 20, далі �
 
 ### `data-39` [medium] Активна тренувальна програма і план тижня з чат-тулу add_program_day живуть лише в localStorage: не синхронізуються й не читаються з pulled fizruk_programs
 
-- **Стан:** відкрито
+- **Стан:** частково виправлено в гілці claude/fix-data-39-program-sync (вибір програми тепер в `fizruk_programs` з sync і LS-дреном; `add_program_day` чесно відмовляє й нічого не пише, але ще лишається в реєстрі тулів сервера: повне видалення за рішенням власника потребує платного перезапису касет tool-eval; `fizruk_plan_templates` і `fizruk_wellbeing` у вебі досі без писаря)
 - **Перевірка:** підтверджено · **Зусилля:** M · **Область:** web: Фізрук (useTrainingProgram) + AI-чат (fizrukActions)
 - **Де:** apps/web/src/modules/fizruk/hooks/useTrainingProgram.ts:9-22; apps/web/src/core/lib/chatActions/fizrukActions/programs.ts:34-41; apps/server/src/modules/sync/fizruk/applySyncFullState.ts:187-197; packages/shared/src/lib/storageKeys.ts:272-293
 - **Першопричина:** useTrainingProgram читає й пише лише LS-ключ fizruk_active_program_id_v1 (позначений @deprecated на користь SQLite fizruk_programs), а чат-тул add_program_day пише fizruk_plan_template_v1, який у вебі ніхто не читає. Веб-писача fizruk_programs і fizruk_plan_templates немає, хоча сервер і pull їх підтримують.

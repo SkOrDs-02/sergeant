@@ -35,6 +35,7 @@ import {
   type FizrukItemSnapshot,
   type FizrukMeasurementSnapshot,
   type FizrukMonthlyPlanSnapshot,
+  type FizrukProgramsSnapshot,
   type FizrukSetSnapshot,
   type FizrukWorkoutSnapshot,
   type FizrukWorkoutTemplateSnapshot,
@@ -97,6 +98,7 @@ export const EMPTY_FIZRUK_DUAL_WRITE_STATE: FizrukDualWriteState = {
   workoutTemplates: [],
   injuries: [],
   customActivities: [],
+  programs: null,
 };
 
 /**
@@ -121,6 +123,7 @@ export function peekFizrukDualWriteState(): FizrukDualWriteState | null {
       customActivities: extractCustomActivitySnapshots(
         cache.customActivities ?? [],
       ),
+      programs: extractProgramsSnapshot(cache.programs),
     };
   } catch {
     return null;
@@ -259,6 +262,20 @@ export function extractMonthlyPlanSnapshot(
         : {},
   };
   return { dataJson: JSON.stringify(safe) };
+}
+
+/**
+ * Активна програма -> снапшот для diff-у. `null` (рядка немає) лишається
+ * `null`, щоб diff відрізняв «ще не обирали» від «обрали й зняли».
+ */
+export function extractProgramsSnapshot(
+  state: { activeProgramId?: string | null } | null | undefined,
+): FizrukProgramsSnapshot | null {
+  if (!state || typeof state !== "object") return null;
+  const id = state.activeProgramId;
+  return {
+    activeProgramId: typeof id === "string" && id.length > 0 ? id : null,
+  };
 }
 
 /**

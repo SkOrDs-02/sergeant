@@ -178,6 +178,7 @@ pnpm check
 - [x] Server: apply для fizruk misc + nutrition water/shopping (8).
 - [x] Extend `OP_LOG_TABLE_REGISTRY` (27 → **42**); PG migrations не потрібні (050/051/052).
 - [x] Client enqueue web + mobile для нових таблиць.
+  - Уточнення 2026-10-20 (аудит data-39): для `fizruk_programs` у вебі це стало правдою лише тепер; `fizruk_plan_templates` і `fizruk_wellbeing` у вебі досі без писаря.
 - [ ] Contract tests — N/A (push/pull shape unchanged).
 - [ ] Integration test (Testcontainers) — **blocked cloud**; run locally/CI.
 - [ ] Manual E2E habit round-trip — **blocked cloud**; run locally.

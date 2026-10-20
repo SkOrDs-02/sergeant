@@ -88,6 +88,8 @@ rg 'enqueueOutboxUpsert' apps/ packages/ --glob '*.{ts,tsx}' \
 
 **Fizruk (7):** `fizruk_daily_log`, `fizruk_monthly_plan`, `fizruk_plan_templates`, `fizruk_programs`, `fizruk_wellbeing`, `fizruk_workout_templates` (+ `fizruk_rest_settings_v1` — LS residue, Phase 4)
 
+> **Оновлення 2026-10-20 (data-39):** `fizruk_programs` у вебі вже не SQLite-only backlog: слайс `programs` у fizruk dual-write (`diff/programs.ts`, `adapter.programs.ts`) кладе op у `sync_op_outbox`, `useTrainingProgram` читає з SQLite-кешу. `fizruk_plan_templates` і `fizruk_wellbeing` у вебі досі без писаря (веб-читачів теж немає; мобільний пише обидві).
+
 **Nutrition (2):** `nutrition_water_log`, `nutrition_shopping_list`
 
 **Finyk mono mirror (3, R7 local-only):** `finyk_mono_transactions`, `finyk_mono_accounts`, `finyk_mono_account_snapshots`. R7 стосується лише цих трьох. `finyk_mono_debt_links` (привʼязки транзакцій до боргу) — дані користувача, а не дзеркало банку: вони ходять через outbox, як `finyk_tx_splits` (аудит 2026-10-01, data-28)

@@ -43,6 +43,7 @@ function emptyCache(
     measurements: [],
     dailyLog: [],
     monthlyPlan: null,
+    programs: null,
     workoutTemplates: [],
     injuries: [],
     refreshedAt: null,

@@ -593,36 +593,18 @@ describe("log_measurement", () => {
 });
 
 describe("add_program_day", () => {
-  it("додає день з вправами у шаблон", () => {
+  it("чесно відмовляє й не пише план у localStorage", () => {
     const msg = executeAction({
       name: "add_program_day",
       input: {
         weekday: 1,
         name: "Груди/трицепс",
-        exercises: [
-          { name: "Жим лежачи", sets: 4, reps: 8, weight: 80 },
-          { name: "Розводка", sets: 3, reps: 12 },
-        ],
+        exercises: [{ name: "Жим лежачи", sets: 4, reps: 8, weight: 80 }],
       },
     });
-    expect(msg).toContain("Груди/трицепс");
-    expect(msg).toContain("2 вправ");
-    const tpl = readLS<{
-      days: Record<
-        string,
-        { name: string; exercises: Array<{ name: string }> }
-      >;
-    }>("fizruk_plan_template_v1", { days: {} });
-    expect(tpl.days["1"]!.name).toBe("Груди/трицепс");
-    expect(tpl.days["1"]!.exercises).toHaveLength(2);
-  });
-
-  it("відмовляє на невалідний weekday", () => {
-    const msg = executeAction({
-      name: "add_program_day",
-      input: { weekday: 9, name: "X" },
-    });
-    expect(msg).toContain("0..6");
+    expect(msg).toMatch(/^Не вдалося/);
+    expect(msg).not.toContain("збережено:");
+    expect(readLS("fizruk_plan_template_v1", null)).toBeNull();
   });
 });
 
