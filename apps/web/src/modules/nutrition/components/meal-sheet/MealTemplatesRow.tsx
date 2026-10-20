@@ -87,6 +87,7 @@ export function MealTemplatesRow({
       <CollapsibleSection
         storageKey={ADD_MEAL_SECTION_KEYS.templates}
         title={messages.nutrition.templates}
+        headingSize="md"
         defaultOpen={false}
         collapsedSubtitle={`${mealTemplates.length} шаблонів`}
         className="mb-4"
