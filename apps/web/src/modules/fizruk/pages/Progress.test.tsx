@@ -235,4 +235,47 @@ describe("Progress page", () => {
     expect(screen.getByText("Присідання зі штангою")).toBeInTheDocument();
     expect(screen.queryByText("squat")).not.toBeInTheDocument();
   });
+
+  // logic-04: легка сесія повернення на 12-15 повторів (e1RM = 0) не повертає
+  // борд до піка і не вдає, що давність 150 днів — «свіжа» лише на сторінці
+  // вправи: борд і Exercise.tsx мають однаково бачити паузу.
+  it("логіка повернення після паузи: 50×12 вчора після піка 150 днів тому — орієнтир 105, а не 140", () => {
+    const dayMs = 24 * 60 * 60 * 1000;
+    const iso = (daysAgo: number) =>
+      new Date(Date.now() - daysAgo * dayMs).toISOString();
+    const item = (
+      id: string,
+      sets: Array<{ weightKg: number; reps: number }>,
+    ) => ({
+      id,
+      exerciseId: "squat",
+      nameUk: "Присідання",
+      type: "strength",
+      musclesPrimary: ["quadriceps"],
+      musclesSecondary: [],
+      sets,
+    });
+    setHooks({
+      workouts: [
+        {
+          id: "w_peak",
+          startedAt: iso(150),
+          endedAt: iso(150),
+          items: [item("i_peak", [{ weightKg: 120, reps: 5 }])],
+        },
+        {
+          id: "w_light",
+          startedAt: iso(1),
+          endedAt: iso(1),
+          items: [item("i_light", [{ weightKg: 50, reps: 12 }])],
+        },
+      ],
+    });
+    render(<Progress onNavigate={onNavigate} />);
+    expect(screen.getByText("105 кг")).toBeInTheDocument();
+    expect(screen.queryByText("140 кг")).not.toBeInTheDocument();
+    // Давність — від останньої СИЛОВОЇ сесії (вчора), як на сторінці вправи
+    // (`lastStrengthAt`), тож «застарілого рекорду» тут немає: є режим повернення.
+    expect(screen.queryByText(/давно не робив/)).not.toBeInTheDocument();
+  });
 });
