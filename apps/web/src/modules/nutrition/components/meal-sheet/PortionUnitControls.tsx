@@ -7,11 +7,9 @@
  * вона лише переводиться в штуки й назад.
  */
 import { useDecimalDraft } from "@shared/hooks/useDecimalDraft";
-import {
-  choiceItemClass,
-  choiceRowClass,
-  stepButtonClass,
-} from "./choiceClasses";
+import { ChoiceGroup } from "@shared/components/ui/Choice";
+import { Select } from "@shared/components/ui/Select";
+import { stepButtonClass } from "./choiceClasses";
 import { messages } from "@shared/i18n/uk";
 import type { FoodPortion } from "../../lib/foodDb/foodDb";
 import { MAX_PORTION_GRAMS } from "./mealFormUtils";
@@ -25,7 +23,7 @@ interface PortionUnitPickerProps {
   onChange: (unitId: string) => void;
 }
 
-/** 1-2 порції: сегменти; 3+: `select`, щоб не ламати ширину 393 px. */
+/** 1-2 порції: плитки `ChoiceGroup`; 3+: `Select`, щоб не ламати ширину 393 px. */
 export function PortionUnitPicker({
   portions,
   unitId,
@@ -33,11 +31,10 @@ export function PortionUnitPicker({
 }: PortionUnitPickerProps) {
   if (portions.length > 2) {
     return (
-      <select
+      <Select
         aria-label={messages.nutrition.portionUnit.label}
         value={unitId}
         onChange={(event) => onChange(event.target.value)}
-        className="min-h-[44px] w-full rounded-lg border border-line bg-panel px-3 text-style-label text-text"
       >
         <option value={GRAMS_UNIT}>
           {messages.nutrition.portionUnit.grams}
@@ -47,32 +44,19 @@ export function PortionUnitPicker({
             {portionLabel(p)}
           </option>
         ))}
-      </select>
+      </Select>
     );
   }
-  const options = [
-    { id: GRAMS_UNIT, label: messages.nutrition.portionUnit.grams },
-    ...portions.map((p) => ({ id: p.id, label: portionLabel(p) })),
-  ];
   return (
-    <div
-      role="radiogroup"
-      aria-label={messages.nutrition.portionUnit.label}
-      className={choiceRowClass}
-    >
-      {options.map((o) => (
-        <button
-          key={o.id}
-          type="button"
-          role="radio"
-          aria-checked={unitId === o.id}
-          onClick={() => onChange(o.id)}
-          className={choiceItemClass(unitId === o.id)}
-        >
-          {o.label}
-        </button>
-      ))}
-    </div>
+    <ChoiceGroup
+      ariaLabel={messages.nutrition.portionUnit.label}
+      value={unitId}
+      onChange={onChange}
+      items={[
+        { value: GRAMS_UNIT, label: messages.nutrition.portionUnit.grams },
+        ...portions.map((p) => ({ value: p.id, label: portionLabel(p) })),
+      ]}
+    />
   );
 }
 

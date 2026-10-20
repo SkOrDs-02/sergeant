@@ -2,12 +2,12 @@
  * Last validated: 2026-06-15
  * Status: Active
  */
-import type { Dispatch, SetStateAction } from "react";
-import { SectionHeading } from "@shared/components/ui/SectionHeading";
+import { useId, type Dispatch, type SetStateAction } from "react";
+import { ChoiceGroup } from "@shared/components/ui/Choice";
+import { FIELD_LABEL } from "@shared/components/ui/Input";
 import { MEAL_TYPES, type MealTypeId } from "../../lib/mealTypes";
 import type { MealFormState } from "./mealFormUtils";
 import { messages } from "@shared/i18n/uk";
-import { choiceItemClass, choiceRowClass } from "./choiceClasses";
 
 interface MealTypePickerProps {
   mealType: MealTypeId;
@@ -15,24 +15,18 @@ interface MealTypePickerProps {
 }
 
 export function MealTypePicker({ mealType, setForm }: MealTypePickerProps) {
+  const labelId = useId();
   return (
     <div className="mb-4">
-      <SectionHeading as="div" size="xs" className="mb-1">
+      <div id={labelId} className={`${FIELD_LABEL} mb-1`}>
         {messages.nutrition.mealType}
-      </SectionHeading>
-      <div className={choiceRowClass}>
-        {MEAL_TYPES.map((mt) => (
-          <button
-            key={mt.id}
-            type="button"
-            aria-pressed={mealType === mt.id}
-            onClick={() => setForm((s) => ({ ...s, mealType: mt.id }))}
-            className={choiceItemClass(mealType === mt.id)}
-          >
-            {mt.label}
-          </button>
-        ))}
       </div>
+      <ChoiceGroup
+        ariaLabelledBy={labelId}
+        value={mealType}
+        onChange={(id) => setForm((s) => ({ ...s, mealType: id }))}
+        items={MEAL_TYPES.map((mt) => ({ value: mt.id, label: mt.label }))}
+      />
     </div>
   );
 }

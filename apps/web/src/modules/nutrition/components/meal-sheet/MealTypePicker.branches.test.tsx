@@ -30,7 +30,7 @@ describe("MealTypePicker", () => {
     // Імʼя кнопки — самий підпис. До 2026-08-21 перед ним стояло емодзі
     // («🌅 Сніданок»), яке малювалось системним шрифтом; тепер гліф —
     // `<Icon aria-hidden>`, тож в accessible name він не потрапляє.
-    fireEvent.click(screen.getByRole("button", { name: "Сніданок" }));
+    fireEvent.click(screen.getByRole("radio", { name: "Сніданок" }));
     expect(setForm).toHaveBeenCalled();
   });
 });
