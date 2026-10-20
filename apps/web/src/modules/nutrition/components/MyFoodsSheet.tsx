@@ -195,7 +195,7 @@ export function MyFoodsSheet({ open, onClose, zIndex }: MyFoodsSheetProps) {
                 </Button>
                 <Button
                   type="button"
-                  variant="ghost"
+                  variant="text"
                   className="min-h-[44px] shrink-0 text-danger-strong hover:text-danger-strong"
                   aria-label={t.deleteAria.replace("{name}", food.name)}
                   onClick={() => setDeleting(food)}

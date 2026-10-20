@@ -47,7 +47,7 @@ export function SourceTabs({
           {SOURCE_LABELS[active]}
         </span>
         <Button
-          variant="ghost"
+          variant="text"
           ref={changeRef}
           onClick={onExpand}
           aria-label="Змінити спосіб додавання"

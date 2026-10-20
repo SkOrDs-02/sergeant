@@ -218,7 +218,7 @@ export function PantryParsePreview({
         </Button>
         <Button
           type="button"
-          variant="ghost"
+          variant="outline"
           onClick={onDismiss}
           disabled={busy}
           className="pointer-coarse:min-h-[44px]"

@@ -81,7 +81,7 @@ export function PantryAmbiguousQtyPrompt({
             </Button>
             <Button
               type="button"
-              variant="ghost"
+              variant="text"
               size="xs"
               disabled={busy}
               onClick={() => onDismiss(i)}

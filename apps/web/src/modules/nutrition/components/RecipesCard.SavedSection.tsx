@@ -115,7 +115,7 @@ export function SavedSection({
               <p className="text-style-body text-danger-strong" role="alert">
                 Не вдалося прочитати збережені рецепти.
               </p>
-              <Button type="button" variant="ghost" size="sm" onClick={onRetry}>
+              <Button type="button" variant="text" size="sm" onClick={onRetry}>
                 Спробувати ще раз
               </Button>
             </div>

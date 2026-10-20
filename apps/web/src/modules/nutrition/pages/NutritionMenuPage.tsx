@@ -109,7 +109,7 @@ export function NutritionMenuPage({
           />
           <div className="flex justify-end">
             <Button
-              variant="ghost"
+              variant="text"
               size="sm"
               onClick={() => setMyFoodsOpen(true)}
             >
@@ -130,7 +130,7 @@ export function NutritionMenuPage({
               // when it fails, a full reload rebuilds that state reliably
               // when a bare retry of the query doesn't.
               <Button
-                variant="ghost"
+                variant="text"
                 size="sm"
                 onClick={() => window.location.reload()}
               >

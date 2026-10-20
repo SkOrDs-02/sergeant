@@ -70,7 +70,7 @@ export function PortionRows({ rows, errors = {}, onChange }: PortionRowsProps) {
               </div>
               <Button
                 type="button"
-                variant="ghost"
+                variant="text"
                 className="min-h-[44px] min-w-[44px] shrink-0"
                 aria-label={`Прибрати порцію ${label}`}
                 onClick={() => onChange(rows.filter((r) => r.id !== row.id))}

@@ -33,7 +33,7 @@ export function ManualEntryTab({
         <div className="flex min-h-[44px] items-center justify-between gap-3 border-b border-line pb-2">
           <span className="text-style-label text-text">На 100 г</span>
           <Button
-            variant="ghost"
+            variant="text"
             onClick={() => setPackageChosen(false)}
             aria-label="Змінити одиницю калорійності"
           >
