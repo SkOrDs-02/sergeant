@@ -93,10 +93,9 @@ describe("useNutritionQuickChips", () => {
     expect(result.current).toHaveLength(5);
   });
 
-  it("truncates long labels with an ellipsis", () => {
-    const log = mkLog(1, [{ name: "Дуже-довга-назва-страви", kcal: 100 }]);
+  it("keeps the full label: the chip logs the meal under this name", () => {
+    const log = mkLog(1, [{ name: "Йогурт грецький 2%", kcal: 100 }]);
     const { result } = renderHook(() => useNutritionQuickChips(log, []));
-    expect(result.current[0]!.label.endsWith("…")).toBe(true);
-    expect(result.current[0]!.label.length).toBeLessThanOrEqual(12);
+    expect(result.current[0]!.label).toBe("Йогурт грецький 2%");
   });
 });

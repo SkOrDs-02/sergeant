@@ -2,7 +2,8 @@
  * Phase 6.6 — pantry-aware quick-add chips for the add-meal source step.
  *
  * Pure presentational component. Receives chip data from
- * `useNutritionQuickChips` and surfaces them as a horizontal scroll row. One
+ * `useNutritionQuickChips` and surfaces them as a wrapping row of full names
+ * (v3.1, inventory A4: a clipped «Йогурт грец…» hid what gets logged). One
  * tap = log a meal with the chip's
  * pre-derived macros via `onTap`; the parent owns the storage write so this
  * stays free of side-effects.
@@ -31,27 +32,14 @@ export function QuickAddChips({ chips, onTap }: QuickAddChipsProps) {
   if (!Array.isArray(chips) || chips.length === 0) return null;
   return (
     <div
-      // No negative-margin "bleed" — `-mx-1` used to pull this row 4px past
-      // the parent card's own padding on each side (a wider edge-to-edge
-      // scroll look), but the card itself doesn't clip overflow, so the row
-      // genuinely widened past the card's rounded border at narrow
-      // viewports (page-audit nutrition-overview-01). Plain padding keeps
-      // the row inside the card's existing horizontal padding.
-      //
-      // AI-DANGER: `contain:inline-size` тут — не косметика, знімати не можна.
-      // `overflow-x-auto` робить рядок прокручуваним, але НЕ обнуляє його
-      // внесок у min-content ancestor-ів: min-content цього flex-рядка =
-      // сума чіпів (усі `shrink-0` + `whitespace-nowrap`). Хост — grid-item
-      // (`Card` у `grid gap-3` всередині `NutritionDashboard`) з дефолтним
-      // `min-width:auto`, тож той min-content ставав базою grid-треку і
-      // розпирав УСІ картки колонки далеко за viewport (заміряно в
-      // Chromium 390px: 996px замість 358px — і hero-карту, і графік тижня
-      // обрізало `overflow-x-hidden` сторінки). `min-w-0` на самому рядку
-      // цього не лікує — вона діє на нього як на item, а не на його внесок.
-      // Inline-size containment робить ширину рядка незалежною від вмісту,
-      // тож хост більше не бачить сумарну ширину чіпів. Дублюючий захист —
-      // `min-w-0` на hero-`Card` (працює і там, де немає `contain`).
-      className="flex gap-2 overflow-x-auto pb-1 min-w-0 [contain:inline-size]"
+      // AI-DANGER: `contain:inline-size` лишається і після переходу з
+      // горизонтального скролу на перенос (v3.1, А4). Хост - grid-item
+      // (`Card` у `grid gap-3` у `NutritionDashboard`) з `min-width:auto`:
+      // коли рядок був `overflow-x-auto` із `nowrap`-чіпами, його min-content
+      // (сума чіпів) ставав базою треку й розпирав колонку до 996px на 390px.
+      // Перенос це прибирає, але одна довга назва без пробілів усе ще дала б
+      // той самий ефект; containment робить ширину рядка незалежною від вмісту.
+      className="flex flex-wrap gap-2 min-w-0 [contain:inline-size]"
       role="group"
       aria-label={LABELS.group}
     >
@@ -65,9 +53,9 @@ export function QuickAddChips({ chips, onTap }: QuickAddChipsProps) {
           variant="outline"
           onClick={() => onTap(chip)}
           aria-label={LABELS.chip(chip.label, chip.grams)}
-          className="shrink-0 rounded-lg"
+          className="h-auto min-h-8 max-w-full py-1.5 text-left"
         >
-          <span className="whitespace-nowrap">{chip.label}</span>
+          <span className="min-w-0">{chip.label}</span>
           <span className="text-style-caption text-muted whitespace-nowrap">
             · {chip.macros.kcal} {messages.nutrition.kcalUnit}
           </span>
