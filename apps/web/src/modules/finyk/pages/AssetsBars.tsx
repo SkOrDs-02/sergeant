@@ -1,5 +1,6 @@
 import { forwardRef, type ButtonHTMLAttributes, type ReactNode } from "react";
 import { Button } from "@shared/components/ui/Button";
+import { MorphChevron } from "@shared/components/ui/MorphChevron";
 import { type IconName } from "@shared/components/ui/Icon";
 import { cn } from "@shared/lib/ui/cn";
 import { formatNumberUk } from "@sergeant/shared";
@@ -112,8 +113,7 @@ export type SectionBarProps = {
 
 /**
  * Collapsible section header used for Subscriptions / Assets / Liabilities
- * blocks. The trailing label switches between "Розкласти ↓" / "Згорнути ↑"
- * to make the affordance unambiguous on mobile.
+ * blocks. Стан несуть шеврон праворуч і `aria-expanded` (redesign v3.1).
  */
 export function SectionBar({
   title,
@@ -126,7 +126,7 @@ export function SectionBar({
       type="button"
       onClick={onToggle}
       aria-expanded={open}
-      // Нейтральна група: назва, сума й текстовий стан розгортання.
+      // Нейтральна група: назва, сума й шеврон стану розгортання.
       className={cn(
         "touch-target group w-full flex items-center justify-between gap-3 px-4 py-3 text-left transition-colors hover:bg-line/40 focus-ring",
         open && "border-b border-line",
@@ -142,9 +142,7 @@ export function SectionBar({
           )}
         </div>
       </div>
-      <span className="inline-flex items-center gap-1 text-style-caption text-muted shrink-0 ml-2 group-hover:text-text transition-colors">
-        <span>{open ? "Згорнути" : "Розгорнути"}</span>
-      </span>
+      <MorphChevron open={open} className="ml-2 text-subtle" />
     </button>
   );
 }

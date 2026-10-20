@@ -12,6 +12,8 @@ import { MoneyInput } from "@shared/components/ui/MoneyInput";
 import { Label } from "@shared/components/ui/FormField";
 import { Money } from "@shared/components/ui/Money";
 import { messages } from "@shared/i18n";
+import { Button } from "@shared/components/ui/Button";
+import { MorphChevron } from "@shared/components/ui/MorphChevron";
 
 // Mirrors `useStorage`'s MonthlyPlan: required income/expense/savings,
 // each persisted as the canonical dot-form value (string while editing,
@@ -157,12 +159,7 @@ function MonthlyPlanCardComponent({
             План на місяць
           </SectionHeading>
         </div>
-        <div className="flex items-center gap-2 shrink-0">
-          <span className="text-style-caption text-text">
-            {open
-              ? messages.finykRedesign.collapse
-              : messages.finykRedesign.expand}
-          </span>
+        <div className="flex items-center gap-3 shrink-0">
           {hasPlan && !open && (
             <span
               className={cn(
@@ -191,6 +188,7 @@ function MonthlyPlanCardComponent({
           {!hasPlan && !open && (
             <span className="text-style-caption text-text">Не заданий</span>
           )}
+          <MorphChevron open={open} className="text-subtle" />
         </div>
       </button>
       {planExpense > 0 && (
@@ -374,14 +372,14 @@ function MonthlyPlanCardComponent({
           )}
 
           <div className="flex items-center justify-end pt-1">
-            <button
-              type="button"
+            <Button
+              variant={editing || hasPlan ? "text" : "outline"}
+              size="sm"
               onClick={() => setEditing((v) => !v)}
               aria-expanded={editing}
-              className="text-style-caption text-text hover:text-text inline-flex items-center gap-1 px-2 py-1 rounded-lg hover:bg-line/40 transition-colors"
             >
-              {editing ? "Згорнути" : hasPlan ? "Редагувати" : "Задати план"}
-            </button>
+              {editing ? "Готово" : hasPlan ? "Редагувати" : "Задати план"}
+            </Button>
           </div>
 
           {editing && (
