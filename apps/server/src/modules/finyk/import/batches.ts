@@ -7,7 +7,10 @@ import {
 } from "@sergeant/shared";
 import { serializeImportBatch } from "./serialize.js";
 import type { ImportBatchRow } from "./serialize.js";
-import { emitServerSyncOps } from "../../sync/serverOpLog.js";
+import {
+  emitServerSyncOps,
+  lockUserSyncOpLog,
+} from "../../sync/serverOpLog.js";
 import {
   MANUAL_EXPENSES_TABLE,
   buildManualExpenseDeleteOp,
@@ -91,6 +94,8 @@ export async function deleteImportBatchHandler(
   const client = await pool.connect();
   try {
     await client.query("BEGIN");
+    // data-12: user-lock sync_op_log до будь-якого запису (undo емітить delete-оп-и).
+    await lockUserSyncOpLog(client, userId);
 
     const { rows: existingRows } = await client.query<ImportBatchRow>(
       `SELECT id, user_id, source, status, rows_total, rows_created,

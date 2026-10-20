@@ -4,7 +4,7 @@ import { toKyivISODate } from "@sergeant/shared";
 import pool from "../../db.js";
 import { parseBody } from "../../http/validate.js";
 import { ManualExpenseCreateSchema } from "../../http/schemas.js";
-import { emitServerSyncOps } from "../sync/serverOpLog.js";
+import { emitServerSyncOps, lockUserSyncOpLog } from "../sync/serverOpLog.js";
 import {
   MANUAL_EXPENSES_TABLE,
   buildManualExpenseInsertOpWithKey,
@@ -118,6 +118,8 @@ export async function createManualExpense(
   let expense: ReturnType<typeof serializeManualExpense>;
   try {
     await client.query("BEGIN");
+    // data-12: user-lock sync_op_log до INSERT (емісія опа нижче).
+    await lockUserSyncOpLog(client, userId);
     const result = await client.query<ManualExpenseRow>(
       `INSERT INTO finyk_manual_expenses (id, user_id, data_json)
        VALUES ($1, $2, $3::jsonb)

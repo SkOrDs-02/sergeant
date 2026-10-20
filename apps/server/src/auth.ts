@@ -19,6 +19,10 @@ import { grantReverseTrial } from "./modules/billing/reverseTrial.js";
 import { sanitizeUserImage } from "./auth/sanitizeUserImage.js";
 import { guardUserName } from "./auth/sanitizeUserName.js";
 import {
+  guardChangeEmailUserUpdate,
+  notifyOldEmailAfterUserUpdate,
+} from "./auth/changeEmailGuard.js";
+import {
   hardenSessionBefore,
   stripSessionTokenAfter,
 } from "./auth/sessionHardeningHooks.js";
@@ -346,7 +350,10 @@ export const auth = betterAuth({
      *   - Поточний email НЕ підтверджений → `updateEmailWithoutVerification`
      *     дозволяє оновити адресу одразу, після чого на НОВУ адресу летить
      *     звичайний верифікаційний лист. Підтверджувати старий ящик немає
-     *     сенсу: власність над ним ніколи не була доведена.
+     *     сенсу: власність над ним ніколи не була доведена. Без підтвердження
+     *     це дірка для вкраденої сесії (sec-06), тому хук `hooks.before`
+     *     вимагає сесію молодше 10 хв (`SESSION_NOT_FRESH`), а `hooks.after`
+     *     шле лист-сповіщення на СТАРУ адресу (auth/changeEmailGuard.ts).
      *   - Поточний email підтверджений → лист-підтвердження йде на СТАРУ
      *     адресу; лише після кліку летить верифікація на нову. Це захист
      *     від тихого перепривʼязування вкраденої сесії — саме той вектор,
@@ -556,6 +563,10 @@ export const auth = betterAuth({
       },
       update: {
         before: async (data, context) => {
+          // sec-06: change-email непідтвердженого акаунта лише зі свіжою
+          // сесією. Саме тут, а не в `hooks.before`: там Bearer-запит ще не
+          // має сесії (див. auth/changeEmailGuard.ts).
+          guardChangeEmailUserUpdate(data, context);
           // sec-16: див. коментар в `create.before`.
           const result = sanitizeUserImage(
             guardUserName(data, context, "update"),
@@ -571,6 +582,10 @@ export const auth = betterAuth({
             );
           }
           return { data: result.data };
+        },
+        // sec-06: лист-сповіщення на СТАРУ адресу після справжньої зміни.
+        after: async (updated, context) => {
+          notifyOldEmailAfterUserUpdate(updated, context);
         },
       },
     },

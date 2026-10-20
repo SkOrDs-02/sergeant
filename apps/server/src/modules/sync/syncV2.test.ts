@@ -236,6 +236,7 @@ describe("syncV2Push · idempotency replay (duplicate-only)", () => {
     // BEGIN, один дедуп-SELECT на весь батч, потім COMMIT.
     client.query
       .mockResolvedValueOnce({ rows: [] }) // BEGIN
+      .mockResolvedValueOnce({ rows: [] }) // user-lock sync_op_log (data-12)
       .mockResolvedValueOnce({
         rows: [
           {
@@ -281,6 +282,14 @@ describe("syncV2Push · idempotency replay (duplicate-only)", () => {
       },
     ]);
 
+    // data-12: user-lock sync_op_log береться ДРУГИМ запитом — одразу після
+    // BEGIN і до дедуп-SELECT та будь-якого запису.
+    expect(String(client.query.mock.calls[0]?.[0])).toBe("BEGIN");
+    expect(String(client.query.mock.calls[1]?.[0])).toContain(
+      "pg_advisory_xact_lock(hashtext('sync_op_log'), hashtext($1))",
+    );
+    expect(client.query.mock.calls[1]?.[1]).toEqual(["u_1"]);
+
     // Жодного INSERT INTO sync_op_log не зроблено.
     const insertCalls = client.query.mock.calls.filter((c) =>
       String(c[0]).includes("INSERT INTO sync_op_log"),
@@ -298,6 +307,7 @@ describe("syncV2Push · idempotency replay (duplicate-only)", () => {
   it("status='duplicate' (legacy-replay) → reason='duplicate' у відповіді", async () => {
     client.query
       .mockResolvedValueOnce({ rows: [] }) // BEGIN
+      .mockResolvedValueOnce({ rows: [] }) // user-lock sync_op_log (data-12)
       .mockResolvedValueOnce({
         rows: [
           {
@@ -320,6 +330,7 @@ describe("syncV2Push · idempotency replay (duplicate-only)", () => {
   it("транзакція кидає → ROLLBACK + release + throw наверх", async () => {
     client.query
       .mockResolvedValueOnce({ rows: [] }) // BEGIN
+      .mockResolvedValueOnce({ rows: [] }) // user-lock sync_op_log (data-12)
       .mockRejectedValueOnce(new Error("DB exploded")) // SELECT fails
       .mockResolvedValueOnce({ rows: [] }); // ROLLBACK
 
@@ -360,6 +371,7 @@ describe("syncV2Push · new-op apply path", () => {
   function mockInsertPath(insertedId: string, serverTs: Date) {
     client.query
       .mockResolvedValueOnce({ rows: [] }) // BEGIN
+      .mockResolvedValueOnce({ rows: [] }) // user-lock sync_op_log (data-12)
       .mockResolvedValueOnce({ rows: [] }) // дедуп-SELECT батча
       .mockResolvedValueOnce({ rows: [] }) // SAVEPOINT op_apply
       .mockResolvedValueOnce({ rows: [] }) // SAVEPOINT op_log_write
@@ -412,6 +424,7 @@ describe("syncV2Push · new-op apply path", () => {
     const serverTs = new Date("2026-01-01T00:00:05.000Z");
     client.query
       .mockResolvedValueOnce({ rows: [] }) // BEGIN
+      .mockResolvedValueOnce({ rows: [] }) // user-lock sync_op_log (data-12)
       .mockResolvedValueOnce({ rows: [] }) // дедуп-SELECT батча
       .mockResolvedValueOnce({ rows: [] }) // SAVEPOINT op_log_write
       .mockResolvedValueOnce({ rows: [{ id: "42", server_ts: serverTs }] })
@@ -450,6 +463,7 @@ describe("syncV2Push · new-op apply path", () => {
     const serverTs = new Date("2026-01-01T00:00:05.000Z");
     client.query
       .mockResolvedValueOnce({ rows: [] }) // BEGIN
+      .mockResolvedValueOnce({ rows: [] }) // user-lock sync_op_log (data-12)
       .mockResolvedValueOnce({ rows: [] }) // дедуп-SELECT батча
       .mockResolvedValueOnce({ rows: [] }) // SAVEPOINT op_log_write
       .mockResolvedValueOnce({ rows: [{ id: "43", server_ts: serverTs }] })
@@ -512,6 +526,7 @@ describe("syncV2Push · new-op apply path", () => {
     applyRoutineEntries.mockRejectedValueOnce(new Error("apply boom"));
     client.query
       .mockResolvedValueOnce({ rows: [] }) // BEGIN
+      .mockResolvedValueOnce({ rows: [] }) // user-lock sync_op_log (data-12)
       .mockResolvedValueOnce({ rows: [] }) // дедуп-SELECT батча
       .mockResolvedValueOnce({ rows: [] }) // SAVEPOINT op_apply
       .mockResolvedValueOnce({ rows: [] }) // ROLLBACK TO SAVEPOINT op_apply
@@ -551,6 +566,7 @@ describe("syncV2Push · new-op apply path", () => {
     function mockRetryPath(insertedId: string) {
       client.query
         .mockResolvedValueOnce({ rows: [] }) // BEGIN
+        .mockResolvedValueOnce({ rows: [] }) // user-lock sync_op_log (data-12)
         .mockResolvedValueOnce({ rows: [] }) // дедуп-SELECT батча
         .mockResolvedValueOnce({ rows: [] }) // SAVEPOINT op_apply
         .mockResolvedValueOnce({ rows: [] }) // ROLLBACK TO SAVEPOINT op_apply (перед ретраєм)
@@ -640,6 +656,7 @@ describe("syncV2Push · new-op apply path", () => {
         .mockRejectedValueOnce(uniqueViolation());
       client.query
         .mockResolvedValueOnce({ rows: [] }) // BEGIN
+        .mockResolvedValueOnce({ rows: [] }) // user-lock sync_op_log (data-12)
         .mockResolvedValueOnce({ rows: [] }) // дедуп-SELECT батча
         .mockResolvedValueOnce({ rows: [] }) // SAVEPOINT op_apply
         .mockResolvedValueOnce({ rows: [] }) // ROLLBACK TO SAVEPOINT op_apply (перед ретраєм)
@@ -676,6 +693,7 @@ describe("syncV2Push · new-op apply path", () => {
         );
       client.query
         .mockResolvedValueOnce({ rows: [] }) // BEGIN
+        .mockResolvedValueOnce({ rows: [] }) // user-lock sync_op_log (data-12)
         .mockResolvedValueOnce({ rows: [] }) // дедуп-SELECT батча
         .mockResolvedValueOnce({ rows: [] }) // SAVEPOINT op_apply
         .mockResolvedValueOnce({ rows: [] }) // ROLLBACK TO SAVEPOINT op_apply
@@ -731,6 +749,7 @@ describe("syncV2Push · op-log write під savepoint", () => {
     const serverTs = new Date("2026-01-01T00:00:05.000Z");
     client.query
       .mockResolvedValueOnce({ rows: [] }) // BEGIN
+      .mockResolvedValueOnce({ rows: [] }) // user-lock sync_op_log (data-12)
       // --- оп 1: журнал падає ---
       .mockResolvedValueOnce({ rows: [] }) // дедуп-SELECT батча
       .mockResolvedValueOnce({ rows: [] }) // SAVEPOINT op_apply
@@ -799,6 +818,7 @@ describe("syncV2Push · op-log write під savepoint", () => {
     // унікальний `sync_op_log_user_idem_key`.
     client.query
       .mockResolvedValueOnce({ rows: [] }) // BEGIN
+      .mockResolvedValueOnce({ rows: [] }) // user-lock sync_op_log (data-12)
       .mockResolvedValueOnce({ rows: [] }) // дедуп-SELECT батча: ще порожньо
       .mockResolvedValueOnce({ rows: [] }) // SAVEPOINT op_apply
       .mockResolvedValueOnce({ rows: [] }) // SAVEPOINT op_log_write
@@ -831,6 +851,7 @@ describe("syncV2Push · op-log write під savepoint", () => {
   it("гонка з відхиленим рядком переможця віддає його reason, а не свій", async () => {
     client.query
       .mockResolvedValueOnce({ rows: [] }) // BEGIN
+      .mockResolvedValueOnce({ rows: [] }) // user-lock sync_op_log (data-12)
       .mockResolvedValueOnce({ rows: [] }) // дедуп-SELECT батча
       .mockResolvedValueOnce({ rows: [] }) // SAVEPOINT op_apply
       .mockResolvedValueOnce({ rows: [] }) // SAVEPOINT op_log_write
@@ -861,6 +882,7 @@ describe("syncV2Push · op-log write під savepoint", () => {
   it("конфлікт без рядка — oplog_write_failed, а не мовчазний applied", async () => {
     client.query
       .mockResolvedValueOnce({ rows: [] }) // BEGIN
+      .mockResolvedValueOnce({ rows: [] }) // user-lock sync_op_log (data-12)
       .mockResolvedValueOnce({ rows: [] }) // дедуп-SELECT батча
       .mockResolvedValueOnce({ rows: [] }) // SAVEPOINT op_apply
       .mockResolvedValueOnce({ rows: [] }) // SAVEPOINT op_log_write
@@ -890,6 +912,7 @@ describe("syncV2Push · op-log write під savepoint", () => {
     const serverTs = new Date("2026-01-01T00:00:05.000Z");
     client.query
       .mockResolvedValueOnce({ rows: [] }) // BEGIN
+      .mockResolvedValueOnce({ rows: [] }) // user-lock sync_op_log (data-12)
       .mockResolvedValueOnce({ rows: [] }) // дедуп-SELECT батча
       .mockResolvedValueOnce({ rows: [] }) // SAVEPOINT op_apply
       .mockResolvedValueOnce({ rows: [] }) // SAVEPOINT op_log_write
@@ -1001,6 +1024,7 @@ describe("syncV2Push · sync_conflicts_total observability (W4)", () => {
   function mockInsertPath(insertedId: string, serverTs: Date) {
     client.query
       .mockResolvedValueOnce({ rows: [] }) // BEGIN
+      .mockResolvedValueOnce({ rows: [] }) // user-lock sync_op_log (data-12)
       .mockResolvedValueOnce({ rows: [] }) // дедуп-SELECT батча
       .mockResolvedValueOnce({ rows: [] }) // SAVEPOINT op_apply
       .mockResolvedValueOnce({ rows: [] }) // SAVEPOINT op_log_write
@@ -1050,6 +1074,7 @@ describe("syncV2Push · sync_conflicts_total observability (W4)", () => {
     // свіжий виклик apply-функції.
     client.query
       .mockResolvedValueOnce({ rows: [] }) // BEGIN
+      .mockResolvedValueOnce({ rows: [] }) // user-lock sync_op_log (data-12)
       .mockResolvedValueOnce({
         rows: [
           {
@@ -1259,6 +1284,7 @@ describe("syncV2Push · NULL origin-device-id telemetry", () => {
 
     client.query
       .mockResolvedValueOnce({ rows: [] }) // BEGIN
+      .mockResolvedValueOnce({ rows: [] }) // user-lock sync_op_log (data-12)
       .mockResolvedValueOnce({
         rows: [{ id: "21", status: "applied", reject_reason: null }],
       }) // duplicate-replay (avoid actual INSERT path)
@@ -1284,6 +1310,7 @@ describe("syncV2Push · NULL origin-device-id telemetry", () => {
     // op increments would explode cardinality on a busy push).
     client.query
       .mockResolvedValueOnce({ rows: [] }) // BEGIN
+      .mockResolvedValueOnce({ rows: [] }) // user-lock sync_op_log (data-12)
       .mockResolvedValueOnce({
         rows: [{ id: "31", status: "applied", reject_reason: null }],
       })
@@ -1329,6 +1356,7 @@ describe("syncV2Push · data-17 / data-48", () => {
   function mockRejectedNoApplyPath(insertedId: string) {
     client.query
       .mockResolvedValueOnce({ rows: [] }) // BEGIN
+      .mockResolvedValueOnce({ rows: [] }) // user-lock sync_op_log (data-12)
       .mockResolvedValueOnce({ rows: [] }) // дедуп-SELECT батча
       .mockResolvedValueOnce({ rows: [] }) // SAVEPOINT op_log_write
       .mockResolvedValueOnce({
@@ -1343,6 +1371,7 @@ describe("syncV2Push · data-17 / data-48", () => {
   function mockAppliedPath(insertedId: string) {
     client.query
       .mockResolvedValueOnce({ rows: [] }) // BEGIN
+      .mockResolvedValueOnce({ rows: [] }) // user-lock sync_op_log (data-12)
       .mockResolvedValueOnce({ rows: [] }) // дедуп-SELECT батча
       .mockResolvedValueOnce({ rows: [] }) // SAVEPOINT op_apply
       .mockResolvedValueOnce({ rows: [] }) // SAVEPOINT op_log_write
@@ -1432,6 +1461,7 @@ describe("syncV2Push · data-17 / data-48", () => {
   it("поганий оп не валить здорового сусіда з того ж батча", async () => {
     client.query
       .mockResolvedValueOnce({ rows: [] }) // BEGIN
+      .mockResolvedValueOnce({ rows: [] }) // user-lock sync_op_log (data-12)
       .mockResolvedValueOnce({ rows: [] }) // дедуп-SELECT батча
       // --- оп 1: відхилено до apply ---
       .mockResolvedValueOnce({ rows: [] }) // SAVEPOINT op_log_write
