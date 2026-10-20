@@ -199,7 +199,7 @@ function CartRow({
           onChange={() => onToggle(index)}
           className="min-w-0 flex-1"
           label={
-            // `min-w-0` на кожній дитині grid — трек інакше має
+            // `min-w-0` на кожній дитині grid: трек інакше має
             // `min-width: auto` і `truncate` не спрацьовує.
             <span className="grid min-w-0">
               <span
