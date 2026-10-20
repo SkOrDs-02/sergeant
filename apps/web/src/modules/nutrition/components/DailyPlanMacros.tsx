@@ -2,12 +2,12 @@
  * Last validated: 2026-10-10
  * Status: Active
  */
+import { FIELD_LABEL } from "@shared/components/ui/Input";
 import { Measure } from "@shared/components/ui/Measure";
 import {
   ATWATER_KCAL_PER_G,
   type NutritionPrefs,
 } from "@sergeant/nutrition-domain";
-import { SectionHeading } from "@shared/components/ui/SectionHeading";
 
 // Мова H: співвідношення макро читається довжиною сегмента, а не кольором.
 // Усі три в hue даних модуля, різна прозорість; легенда несе слова.
@@ -32,9 +32,7 @@ export function MacroRatioBar({ prefs }: { prefs: NutritionPrefs }) {
 
   return (
     <div className="space-y-1.5">
-      <SectionHeading as="div" size="xs">
-        Відсоткове співвідношення макро
-      </SectionHeading>
+      <div className={FIELD_LABEL}>Відсоткове співвідношення макро</div>
       <div className="flex h-2 gap-0.5 overflow-hidden rounded-[3px]">
         {segments.map(
           (pct, i) =>

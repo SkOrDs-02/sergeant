@@ -1,7 +1,8 @@
+import { cn } from "@shared/lib/ui/cn";
+import { FIELD_LABEL } from "@shared/components/ui/Input";
 import { useState } from "react";
 import { Button } from "@shared/components/ui/Button";
 import { Measure } from "@shared/components/ui/Measure";
-import { SectionHeading } from "@shared/components/ui/SectionHeading";
 import type { MealTypeId } from "@sergeant/nutrition-domain";
 
 export interface PlanMeal {
@@ -48,9 +49,9 @@ export function DailyPlanMealRow({
     <div className="py-3">
       <div className="flex items-start justify-between gap-3">
         <div className="min-w-0 flex-1">
-          <SectionHeading as="div" size="xs" className="mb-0.5">
+          <div className={cn(FIELD_LABEL, "mb-0.5")}>
             {MEAL_TYPE_LABELS[String(meal.type ?? "")] || meal.label}
-          </SectionHeading>
+          </div>
           <div className="text-style-body font-semibold text-text">
             {meal.name}
           </div>

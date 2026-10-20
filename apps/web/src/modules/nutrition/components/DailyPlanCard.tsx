@@ -145,7 +145,7 @@ export function DailyPlanCard({
                     числом» діє для чисел, які читають, а не для полів, які
                     заповнюють. Усі чотири підписи нейтральні: колір макро
                     живе лише в даних (мова H). */}
-                <div className="mb-1 text-style-overline text-subtle">
+                <div className="mb-1 text-style-label text-muted">
                   {label}
                   {unit && ` (${unit})`}
                 </div>

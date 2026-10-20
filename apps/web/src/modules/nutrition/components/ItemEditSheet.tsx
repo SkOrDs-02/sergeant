@@ -2,9 +2,9 @@
  * Last validated: 2026-06-15
  * Status: Active
  */
+import { cn } from "@shared/lib/ui/cn";
 import type { Dispatch, SetStateAction } from "react";
-import { SectionHeading } from "@shared/components/ui/SectionHeading";
-import { Input } from "@shared/components/ui/Input";
+import { Input, FIELD_LABEL } from "@shared/components/ui/Input";
 import { Button } from "@shared/components/ui/Button";
 import { Sheet } from "@shared/components/ui/Sheet";
 import { normalizeUnit } from "../lib/pantryTextParser";
@@ -62,9 +62,7 @@ export function ItemEditSheet({
           єдиним способом її поправити було видалити позицію і створити
           заново, втративши залишок. */}
       <div className="mb-3">
-        <SectionHeading as="div" size="xs" className="mb-1">
-          Назва
-        </SectionHeading>
+        <div className={cn(FIELD_LABEL, "mb-1")}>Назва</div>
         <Input
           value={itemEdit.name}
           onChange={(e) =>
@@ -79,9 +77,7 @@ export function ItemEditSheet({
 
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
         <div>
-          <SectionHeading as="div" size="xs" className="mb-1">
-            Кількість
-          </SectionHeading>
+          <div className={cn(FIELD_LABEL, "mb-1")}>Кількість</div>
           <Input
             value={itemEdit.qty}
             onChange={(e) =>
@@ -95,9 +91,7 @@ export function ItemEditSheet({
           />
         </div>
         <div>
-          <SectionHeading as="div" size="xs" className="mb-1">
-            Одиниця
-          </SectionHeading>
+          <div className={cn(FIELD_LABEL, "mb-1")}>Одиниця</div>
           <Input
             value={itemEdit.unit}
             onChange={(e) =>
@@ -120,9 +114,7 @@ export function ItemEditSheet({
       */}
       {itemEdit.pantryId && places.length > 1 && (
         <div className="mt-3">
-          <SectionHeading as="div" size="xs" className="mb-1">
-            Місце
-          </SectionHeading>
+          <div className={cn(FIELD_LABEL, "mb-1")}>Місце</div>
           <select
             value={itemEdit.pantryId}
             onChange={(e) =>

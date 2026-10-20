@@ -335,7 +335,7 @@ export function ShoppingListCard({
         </div>
 
         <div>
-          <div className="text-style-overline text-subtle mb-1">
+          <div className="text-style-label text-muted mb-1">
             Джерело для списку
           </div>
           <div

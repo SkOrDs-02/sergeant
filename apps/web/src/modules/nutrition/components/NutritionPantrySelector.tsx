@@ -15,8 +15,8 @@
  * прямоту без ваги. Дефолт «Усі місця» — те, заради чого активної комори й
  * позбулись.
  */
+import { FIELD_LABEL } from "@shared/components/ui/Input";
 import type { Pantry } from "@sergeant/nutrition-domain";
-import { SectionHeading } from "@shared/components/ui/SectionHeading";
 import { cn } from "@shared/lib/ui/cn";
 import type { useNutritionPantries } from "../hooks/useNutritionPantries";
 
@@ -99,9 +99,7 @@ export function NutritionPantrySelector({
   return (
     <div className="mb-4 flex items-center gap-3">
       <div className="min-w-0 flex-1">
-        <SectionHeading as="div" size="xs" className="mb-0.5">
-          Місце перегляду
-        </SectionHeading>
+        <div className={cn(FIELD_LABEL, "mb-0.5")}>Місце перегляду</div>
         <div className="truncate text-style-body font-semibold text-text">
           {selectedPlace?.name || "Усі місця"}
         </div>
