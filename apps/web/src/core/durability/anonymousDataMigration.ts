@@ -146,25 +146,10 @@ async function snapshotAnonymousRows(
   return snapshot;
 }
 
-/**
- * Повертає claim переносу для `targetUserId` або `null`, якщо анонімна
- * партиція зараз зарезервована за ІНШИМ акаунтом.
- *
- * AI-CONTEXT: `null` — це «перенос не для цього акаунта», а не помилка.
- * Незавершений claim (`pending`) лишається за акаунтом A, у якого перенос
- * упав на push, а потім A вийшов. Раніше тут кидалось `pending-for-other-user`
- * без шляху відновлення: кожен вхід B давав екран збою, `isReady` не ставав
- * true, `useLocalUserId` віддавав null і записи B мовчки не писались
- * (аудит 2026-10-01, `data-46`). Тепер B просто входить без переносу, а
- * анонімні рядки й claim A лишаються недоторканими: коли A повернеться,
- * `target_user_id` збігається і перенос продовжується з того самого місця.
- * Завершений claim, як і раніше, перепривʼязується до нового акаунта
- * (a1be3e94, anonymous-local-first-persistence.md Р2(а)/Р3).
- */
 async function getOrCreateClaim(
   client: SqliteMigrationClient,
   targetUserId: string,
-): Promise<MigrationClaim | null> {
+): Promise<MigrationClaim> {
   const existing = await client.all<MigrationClaim>(
     `SELECT target_user_id, batch_id, status
        FROM anonymous_profile_migrations
@@ -174,7 +159,12 @@ async function getOrCreateClaim(
   const claim = existing[0];
   if (claim) {
     if (claim.target_user_id !== targetUserId) {
-      if (claim.status !== "completed") return null;
+      if (claim.status !== "completed") {
+        throw new AnonymousMigrationStepError(
+          "claim",
+          "pending-for-other-user",
+        );
+      }
       const batchId = crypto.randomUUID();
       await client.run(
         `UPDATE anonymous_profile_migrations
@@ -840,18 +830,9 @@ async function runMigration(
     );
     return { migratedRows: 0 };
   }
+  options.onTransferStart?.();
   tracker.step = "claim";
   const claim = await getOrCreateClaim(sourceClient, targetUserId);
-  if (!claim) {
-    // Анонімні рядки зарезервовані незавершеним переносом іншого акаунта.
-    // Нічого не копіюємо й не чіпаємо claim: просто пускаємо цього
-    // користувача в його власну партицію (див. `getOrCreateClaim`).
-    await sqlite.switchSqliteUser(targetUserId);
-    return { migratedRows: 0 };
-  }
-  // Після claim, а не до: у «чужому» випадку справжнього переносу нема, і
-  // провайдер не мусить на мить показати панель «переношу дані».
-  options.onTransferStart?.();
 
   tracker.step = "open-target-partition";
   await sqlite.switchSqliteUser(targetUserId);

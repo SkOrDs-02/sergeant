@@ -3632,7 +3632,7 @@ Reproduced on HEAD with my own user (v8-takeover.mjs). Tab 1 had /finyk/transact
 
 ### `data-46` [medium] Незавершений перенос анонімних даних назавжди блокує наступного користувача пристрою: екран збою і вічна смуга «дані ще не в профілі»
 
-- **Стан:** частково виправлено в гілці claude/fix-data-46-anon-migration-unblock (вхід B більше не блокується: pending-claim A дає no-op-ready; анонімна партиція й claim A лишаються на пристрої до повернення A, очищення при виході A не робилось)
+- **Стан:** відкрито
 - **Перевірка:** підтверджено · **Зусилля:** M · **Область:** web: durability (anonymousDataMigration)
 - **Де:** apps/web/src/core/durability/anonymousDataMigration.ts:149-192,809-833; apps/web/src/core/durability/AnonymousDataMigrationProvider.tsx:219-242,342-360
 - **Першопричина:** Якщо claim лишився pending для акаунта A (перенос упав на push, потім A вийшов), вихід стирає лише партицію A, а не анонімну партицію чи claim. Кожен вхід B кидає claim: pending-for-other-user, «Повторити» падає завжди, а isReady ніколи не стає true.

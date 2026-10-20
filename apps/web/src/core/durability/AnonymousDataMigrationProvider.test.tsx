@@ -52,7 +52,6 @@ vi.mock("@shared/hooks/useToast", () => ({
 import {
   AnonymousDataMigrationProvider,
   PROBE_GRACE_MS,
-  useAnonymousDataMigrationReady,
   __resetAnonymousMigrationSingleFlightForTests,
 } from "./AnonymousDataMigrationProvider";
 
@@ -206,25 +205,6 @@ describe("AnonymousDataMigrationProvider", () => {
       expect(bootReader).toHaveBeenCalled();
       expect(bootWriter).toHaveBeenCalled();
     });
-  });
-
-  // data-46: анонімні рядки зарезервовані незавершеним переносом іншого
-  // акаунта, тож `migrateAnonymousDataToProfile` повертає 0 рядків. Гейт
-  // мусить стати `isReady` (інакше `useLocalUserId` дає null і записи нового
-  // користувача мовчки не пишуться) і не лишати вічної смуги.
-  it("стає ready без смуги й екрана збою, коли перенос для цього акаунта не потрібен", async () => {
-    migrate.mockResolvedValue({ migratedRows: 0 });
-    function ReadyProbe() {
-      return (
-        <div>{useAnonymousDataMigrationReady() ? "ready" : "not-ready"}</div>
-      );
-    }
-    renderAt("/", <ReadyProbe />);
-
-    await screen.findByText("ready");
-    expect(screen.queryByRole("status")).toBeNull();
-    expect(screen.queryByRole("alert")).toBeNull();
-    expect(success).not.toHaveBeenCalled();
   });
 
   it("boots both sync runtimes even when the migration fails", async () => {
