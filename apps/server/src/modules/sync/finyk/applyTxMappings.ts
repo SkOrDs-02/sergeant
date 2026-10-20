@@ -33,6 +33,7 @@ type KeyedTable =
   | "finyk_tx_categories"
   | "finyk_tx_splits"
   | "finyk_mono_debt_links"
+  | "finyk_tx_tags"
   | "finyk_networth_history";
 
 interface KeyedTarget {
@@ -154,8 +155,8 @@ export async function applyFinykPerTxJsonbArray(
   op: SyncV2Op,
   userId: string,
   clientTs: Date,
-  table: "finyk_tx_splits" | "finyk_mono_debt_links",
-  jsonColumn: "splits_json" | "debt_ids_json",
+  table: "finyk_tx_splits" | "finyk_mono_debt_links" | "finyk_tx_tags",
+  jsonColumn: "splits_json" | "debt_ids_json" | "tags_json",
 ): Promise<AppliedStatus> {
   const row = op.row;
   const transactionId =

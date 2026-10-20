@@ -865,3 +865,81 @@ describe("Dashboard — program primaryAction hero state", () => {
     );
   });
 });
+
+describe("Dashboard — starting a plan while another workout is active", () => {
+  function renderConflict() {
+    const createWorkout = vi.fn(() => ({ id: "w-next", items: [] }));
+    const addItem = vi.fn();
+    const endWorkout = vi.fn();
+    const deleteWorkout = vi.fn();
+    vi.mocked(useActiveFizrukWorkout).mockReturnValue("w-active");
+    vi.mocked(useWorkouts).mockReturnValue({
+      workouts: [
+        {
+          id: "w-active",
+          startedAt: "2026-09-01T08:00:00Z",
+          endedAt: null,
+          items: [],
+        },
+      ],
+      loaded: true,
+      createWorkout: createWorkout as unknown as ReturnType<
+        typeof useWorkouts
+      >["createWorkout"],
+      addItem,
+      endWorkout,
+      deleteWorkout,
+    } as unknown as ReturnType<typeof useWorkouts>);
+    vi.mocked(useExerciseCatalog).mockReturnValue({
+      exercises: [
+        {
+          id: "squat",
+          name: { uk: "Присідання" },
+          primaryGroup: "legs",
+          muscles: { primary: ["quad"], secondary: [] },
+        },
+      ],
+      musclesUk: {},
+    } as unknown as ReturnType<typeof useExerciseCatalog>);
+    vi.mocked(useWorkoutTemplates).mockReturnValue({
+      templates: [{ id: "tpl", name: "Ноги", exerciseIds: ["squat"] }],
+      loaded: true,
+      recentlyUsed: [],
+      markTemplateUsed: vi.fn(),
+    } as unknown as ReturnType<typeof useWorkoutTemplates>);
+    render(<Dashboard {...defaultProps} />);
+    return { createWorkout, addItem, endWorkout, deleteWorkout };
+  }
+
+  it("finishes the active workout, then starts the selected plan", () => {
+    const { createWorkout, addItem, endWorkout, deleteWorkout } =
+      renderConflict();
+    fireEvent.click(screen.getByTestId("hero-start-today"));
+    expect(screen.getByText("Уже є активне тренування")).toBeInTheDocument();
+    fireEvent.click(
+      screen.getByRole("button", { name: "Завершити старе й почати нове" }),
+    );
+
+    expect(endWorkout).toHaveBeenCalledWith("w-active");
+    expect(deleteWorkout).not.toHaveBeenCalled();
+    expect(createWorkout).toHaveBeenCalledTimes(1);
+    expect(addItem).toHaveBeenCalledWith(
+      "w-next",
+      expect.objectContaining({ exerciseId: "squat" }),
+    );
+    expect(mockNavigate).toHaveBeenCalledWith("workout/w-next");
+  });
+
+  it("discards the active workout when that resolution is chosen", () => {
+    const { createWorkout, deleteWorkout, endWorkout } = renderConflict();
+    fireEvent.click(screen.getByTestId("hero-start-today"));
+    fireEvent.click(
+      screen.getByRole("button", { name: "Викинути старе й почати нове" }),
+    );
+
+    expect(deleteWorkout).toHaveBeenCalledWith("w-active");
+    expect(endWorkout).not.toHaveBeenCalled();
+    expect(createWorkout).toHaveBeenCalledTimes(1);
+    expect(mockNavigate).toHaveBeenCalledWith("workout/w-next");
+  });
+});

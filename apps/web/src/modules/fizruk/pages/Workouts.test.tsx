@@ -81,6 +81,7 @@ vi.mock("../components/workouts/WorkoutsHome", () => ({
     onOpenPrograms,
     onRequestStart,
     onOpenSchedule,
+    onOpenWorkout,
   }: {
     onOpenSession: () => void;
     onOpenCatalog: () => void;
@@ -88,6 +89,7 @@ vi.mock("../components/workouts/WorkoutsHome", () => ({
     onOpenPrograms: () => void;
     onRequestStart: () => void;
     onOpenSchedule?: () => void;
+    onOpenWorkout: (id: string) => void;
   }) => (
     <div data-testid="workouts-home">
       <button type="button" onClick={onOpenSession} data-testid="open-session">
@@ -108,6 +110,13 @@ vi.mock("../components/workouts/WorkoutsHome", () => ({
       </button>
       <button
         type="button"
+        data-testid="open-specific-workout"
+        onClick={() => onOpenWorkout("w-old")}
+      >
+        Запис
+      </button>
+      <button
+        type="button"
         onClick={onRequestStart}
         data-testid="request-start"
       >
@@ -125,7 +134,46 @@ vi.mock("../components/workouts/WorkoutsHome", () => ({
 }));
 
 vi.mock("../components/workouts/WorkoutJournalSection", () => ({
-  WorkoutJournalSection: () => <div data-testid="workout-journal-section" />,
+  WorkoutJournalSection: ({
+    onOpenItem,
+    onAddExercise,
+    onOpenExerciseInfo,
+    onOpenExerciseStats,
+    onClose,
+  }: {
+    onOpenItem: (itemId?: string) => void;
+    onAddExercise: () => void;
+    onOpenExerciseInfo: (exerciseId: string) => void;
+    onOpenExerciseStats: (exerciseId: string) => void;
+    onClose: () => void;
+  }) => (
+    <div data-testid="workout-journal-section">
+      <button data-testid="journal-open-item" onClick={() => onOpenItem("i1")}>
+        Вправа
+      </button>
+      <button data-testid="journal-open-empty" onClick={() => onOpenItem()}>
+        Сесія
+      </button>
+      <button data-testid="journal-add-exercise" onClick={onAddExercise}>
+        Додати вправу
+      </button>
+      <button
+        data-testid="journal-exercise-info"
+        onClick={() => onOpenExerciseInfo("e1")}
+      >
+        Інфо
+      </button>
+      <button
+        data-testid="journal-exercise-stats"
+        onClick={() => onOpenExerciseStats("e1")}
+      >
+        Статистика
+      </button>
+      <button data-testid="journal-close" onClick={onClose}>
+        Закрити
+      </button>
+    </div>
+  ),
 }));
 
 vi.mock("../components/workouts/WorkoutCatalogSection", () => ({
@@ -178,9 +226,11 @@ vi.mock("../components/workouts/QuickStartSheet", () => ({
   QuickStartSheet: ({
     onClose,
     onPickTemplate,
+    onConfirmExercises,
   }: {
     onClose: () => void;
     onPickTemplate: () => void;
+    onConfirmExercises: (picks: Array<{ id: string }>) => void;
   }) => (
     <div data-testid="quick-start-sheet">
       <button type="button" data-testid="close-quick-start" onClick={onClose}>
@@ -192,6 +242,13 @@ vi.mock("../components/workouts/QuickStartSheet", () => ({
         onClick={onPickTemplate}
       >
         З шаблону
+      </button>
+      <button
+        type="button"
+        data-testid="confirm-quick-picks"
+        onClick={() => onConfirmExercises([{ id: "e1" }, { id: "e2" }])}
+      >
+        Вибрати вправи
       </button>
     </div>
   ),
@@ -473,6 +530,78 @@ describe("Workouts page — log view", () => {
       screen.queryByTestId("workout-catalog-section"),
     ).not.toBeInTheDocument();
   });
+
+  it("forwards journal navigation and exercise callbacks to their routes", () => {
+    const onNavigate = vi.fn();
+    const setSelected = vi.fn();
+    mockedOrchestrator.mockReturnValue(
+      makeOrchestrator("log", {
+        activeWorkout: { id: "w1", endedAt: null },
+        exercises: [{ id: "e1" }],
+        setSelected,
+      }) as unknown as ReturnType<typeof useWorkoutsOrchestrator>,
+    );
+    renderWorkouts({ onNavigate });
+
+    fireEvent.click(screen.getByTestId("journal-open-item"));
+    fireEvent.click(screen.getByTestId("journal-open-empty"));
+    fireEvent.click(screen.getByTestId("journal-exercise-info"));
+    fireEvent.click(screen.getByTestId("journal-exercise-stats"));
+    fireEvent.click(screen.getByTestId("journal-close"));
+
+    expect(onNavigate.mock.calls).toEqual([
+      ["workout/w1/i1"],
+      ["workout/w1"],
+      ["exercise/e1"],
+      ["workouts"],
+    ]);
+    expect(setSelected).toHaveBeenCalledWith({ id: "e1" });
+  });
+
+  it("does not select an exercise that is absent from the local catalog", () => {
+    const setSelected = vi.fn();
+    mockedOrchestrator.mockReturnValue(
+      makeOrchestrator("log", { setSelected }) as unknown as ReturnType<
+        typeof useWorkoutsOrchestrator
+      >,
+    );
+    renderWorkouts();
+    fireEvent.click(screen.getByTestId("journal-exercise-info"));
+    expect(setSelected).not.toHaveBeenCalled();
+  });
+
+  it("opens the exercise catalog sheet from an active session", () => {
+    mockedOrchestrator.mockReturnValue(
+      makeOrchestrator("log", {
+        activeWorkout: { id: "w1", endedAt: null, items: [] },
+      }) as unknown as ReturnType<typeof useWorkoutsOrchestrator>,
+    );
+    renderWorkouts();
+    fireEvent.click(screen.getByTestId("journal-add-exercise"));
+    expect(
+      screen
+        .getAllByRole("dialog")
+        .some((dialog) => dialog.textContent?.includes("Додати вправу")),
+    ).toBe(true);
+  });
+
+  it("stores readiness scores before the session proceeds", () => {
+    const updateWorkout = vi.fn();
+    mockedOrchestrator.mockReturnValue(
+      makeOrchestrator("log", {
+        activeWorkout: { id: "w1", endedAt: null },
+        updateWorkout,
+      }) as unknown as ReturnType<typeof useWorkoutsOrchestrator>,
+    );
+    renderWorkouts();
+    fireEvent.click(screen.getByRole("button", { name: "Сон 4" }));
+    fireEvent.click(screen.getByRole("button", { name: "Мʼязи 2" }));
+    fireEvent.click(screen.getByRole("button", { name: "Готово" }));
+
+    expect(updateWorkout).toHaveBeenCalledWith("w1", {
+      wellbeing: { sleep: 4, soreness: 2 },
+    });
+  });
 });
 
 describe("Workouts page — catalog view", () => {
@@ -656,6 +785,29 @@ describe("Workouts page — home action wiring", () => {
     fireEvent.click(screen.getByTestId("open-journal"));
 
     expect(onNavigate).toHaveBeenCalledWith("history");
+  });
+
+  it("opens the selected workout and confirms a one-off exercise selection", () => {
+    const onNavigate = vi.fn();
+    const startWorkoutFromTemplate = vi.fn();
+    mockedOrchestrator.mockReturnValue(
+      makeOrchestrator("home", {
+        startWorkoutFromTemplate,
+      }) as unknown as ReturnType<typeof useWorkoutsOrchestrator>,
+    );
+    renderWorkouts({ onNavigate });
+
+    fireEvent.click(screen.getByTestId("open-specific-workout"));
+    fireEvent.click(screen.getByTestId("request-start"));
+    fireEvent.click(screen.getByTestId("confirm-quick-picks"));
+
+    expect(onNavigate).toHaveBeenCalledWith("workout/w-old");
+    expect(startWorkoutFromTemplate).toHaveBeenCalledWith({
+      id: "",
+      name: "",
+      exerciseIds: ["e1", "e2"],
+      groups: [],
+    });
   });
 
   // 04-A — permanent "Програми" entry in the Довідники block.

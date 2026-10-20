@@ -35,6 +35,9 @@ vi.mock("./SilpoIntegrationSection", () => ({
 vi.mock("./FinykMerchantRulesSection", () => ({
   FinykMerchantRulesSection: () => null,
 }));
+vi.mock("./FinykExportSection", () => ({
+  FinykExportSection: () => null,
+}));
 vi.mock("@finyk/hooks/useStorage", () => ({
   useStorage: () => ({
     customCategories: [],

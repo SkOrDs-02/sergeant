@@ -91,6 +91,7 @@ describe("extractFinykDualWriteState — порожні slots дають мін�
       txCategories: [],
       txSplits: [],
       txNotes: [],
+      txTags: [],
       monoDebtLinks: [],
       networthHistory: [],
       prefs: {

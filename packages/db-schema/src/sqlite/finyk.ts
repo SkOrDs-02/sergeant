@@ -103,6 +103,33 @@ export const finykTxNotes = sqliteTable(
   ],
 );
 
+/**
+ * Теги користувача до операцій Фініка (спека finyk-analytics-v3, Р6.3).
+ * Дзеркалить серверну `finyk_tx_tags` (міграція 158): composite PK,
+ * `tags_json` - JSON-масив рядків, порожній список = soft-delete.
+ */
+export const finykTxTags = sqliteTable(
+  "finyk_tx_tags",
+  {
+    userId: text("user_id").notNull(),
+    transactionId: text("transaction_id").notNull(),
+    tagsJson: text("tags_json").notNull().default("[]"),
+    createdAt: text("created_at")
+      .notNull()
+      .default(sql`(datetime('now'))`),
+    updatedAt: text("updated_at")
+      .notNull()
+      .default(sql`(datetime('now'))`),
+    deletedAt: text("deleted_at"),
+  },
+  (table) => [
+    primaryKey({ columns: [table.userId, table.transactionId] }),
+    index("finyk_tx_tags_user_active_idx_lite")
+      .on(table.userId)
+      .where(sql`${table.deletedAt} IS NULL`),
+  ],
+);
+
 // ---------------------------------------------------------------------
 // Per-row + JSONB tables
 // ---------------------------------------------------------------------

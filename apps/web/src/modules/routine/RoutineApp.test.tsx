@@ -2,7 +2,7 @@
 /**
  * Smoke + wiring tests for RoutineApp — the thin composition root.
  * Mocks useRoutineAppState and child shards; verifies public props
- * (onBackToHub, pwaAction, onPwaActionConsumed, onOpenModule) reach
+ * (onOpenSettings, pwaAction, onPwaActionConsumed, onOpenModule) reach
  * the right call-sites without pulling the full orchestrator graph.
  */
 import { describe, it, expect, vi, beforeEach } from "vitest";
@@ -91,7 +91,7 @@ const routineAppMocks = vi.hoisted(() => {
     stateBundle,
     useRoutineAppState: vi.fn(() => stateBundle),
     headerProps: null as {
-      onBackToHub?: (() => void) | undefined;
+      onOpenSettings?: (() => void) | undefined;
     } | null,
     timelineProps: null as Record<string, unknown> | null,
     actionsProps: null as Record<string, unknown> | null,
@@ -103,13 +103,13 @@ vi.mock("./useRoutineAppState", () => ({
 }));
 
 vi.mock("./RoutineHeader", () => ({
-  RoutineHeader: (props: { onBackToHub?: () => void }) => {
+  RoutineHeader: (props: { onOpenSettings?: () => void }) => {
     routineAppMocks.headerProps = props;
     return (
       <div data-testid="routine-header">
-        {typeof props.onBackToHub === "function" ? (
-          <button type="button" onClick={props.onBackToHub}>
-            Назад
+        {typeof props.onOpenSettings === "function" ? (
+          <button type="button" onClick={props.onOpenSettings}>
+            Налаштування
           </button>
         ) : null}
       </div>
@@ -156,12 +156,12 @@ describe("RoutineApp", () => {
     expect(screen.getByTestId("routine-actions")).toBeInTheDocument();
   });
 
-  it("wires onBackToHub through RoutineHeader", () => {
-    const onBackToHub = vi.fn();
-    renderApp(<RoutineApp onBackToHub={onBackToHub} />);
-    expect(routineAppMocks.headerProps?.onBackToHub).toBe(onBackToHub);
-    fireEvent.click(screen.getByRole("button", { name: "Назад" }));
-    expect(onBackToHub).toHaveBeenCalledTimes(1);
+  it("wires onOpenSettings through RoutineHeader", () => {
+    const onOpenSettings = vi.fn();
+    renderApp(<RoutineApp onOpenSettings={onOpenSettings} />);
+    expect(routineAppMocks.headerProps?.onOpenSettings).toBe(onOpenSettings);
+    fireEvent.click(screen.getByRole("button", { name: "Налаштування" }));
+    expect(onOpenSettings).toHaveBeenCalledTimes(1);
   });
 
   it("passes pwaAction and callbacks into useRoutineAppState", async () => {

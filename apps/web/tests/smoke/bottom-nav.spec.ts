@@ -12,8 +12,8 @@ import { test, expect, type Page } from "@playwright/test";
  *   6. Module · ХАРЧУВАННЯ (`/?module=nutrition`)
  *
  * Each module is tested via the canonical URL (the only entry the app
- * supports for direct linking) AND via the `ModuleHeaderBackButton`
- * (aria-label: "До хабу") which returns to the hub. Combined, that
+ * supports for direct linking) AND via the `ModuleHeaderHubButton`
+ * (aria-label: "На хаб") which returns to the hub. Combined, that
  * exercises both the forward (route → mount module shell) and the
  * reverse (click → unmount module, remount HubBottomNav) navigation
  * legs without touching dashboard tile internals (which depend on
@@ -127,7 +127,7 @@ for (const mod of MODULES) {
     // so this aria-label is the single contract under test.
     const hubButton = page
       .getByRole("button", {
-        name: mod.id === "fizruk" ? "Назад" : "На хаб",
+        name: "На хаб",
         exact: true,
       })
       .first();
