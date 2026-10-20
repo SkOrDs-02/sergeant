@@ -143,7 +143,7 @@ export function Analytics({
 
   // Фільтр «За рахунками» (Р4.2) звужує всі блоки нижче, крім самого
   // розрізу і помісячного тренду (той читає всю історію з дзеркала).
-  // Фільтр тегу (Р6.4) діє поверх рахунку; блок тегів бачить усі теги рахунку.
+  // Фільтр тегу (Р6.4) діє поверх рахунку.
   const [accountFilter, setAccountFilter] = useState<string | null>(null);
   const [tagFilter, setTagFilter] = useState<string | null>(null);
   const txTags = storage.txTags ?? NO_TAGS;
@@ -154,6 +154,16 @@ export function Analytics({
   const accountPrevTx = useMemo(
     () => filterByAccountKey(allPrevTx, accountFilter),
     [allPrevTx, accountFilter],
+  );
+  // Кожен блок-фільтр бачить решту фільтрів, але не власний: інакше в ньому
+  // лишився б один рядок і зняти чи змінити вибір було б нічим.
+  const tagOnlyTx = useMemo(
+    () => filterByTagKey(allActiveTx, txTags, tagFilter),
+    [allActiveTx, txTags, tagFilter],
+  );
+  const tagOnlyPrevTx = useMemo(
+    () => filterByTagKey(allPrevTx, txTags, tagFilter),
+    [allPrevTx, txTags, tagFilter],
   );
   const activeTx = useMemo(
     () => filterByTagKey(accountTx, txTags, tagFilter),
@@ -364,9 +374,9 @@ export function Analytics({
         {!pageLoading && (
           <Suspense fallback={null}>
             <AccountBars
-              transactions={allActiveTx}
+              transactions={tagOnlyTx}
               previousTransactions={
-                prevLoaded && !historyGap ? allPrevTx : null
+                prevLoaded && !historyGap ? tagOnlyPrevTx : null
               }
               excludedTxIds={storage.excludedTxIds}
               txSplits={storage.txSplits}
