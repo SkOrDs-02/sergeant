@@ -789,6 +789,46 @@ describe("run() — integration", () => {
       `expected a duplicate-091 error, got: ${errors.join(" | ")}`,
     );
   });
+
+  it("accepts the two published 160 filenames without renaming migration history", () => {
+    for (const name of [
+      "159_before.sql",
+      "160_gdpr_cleanup_email_redaction.sql",
+      "160_user_avatars.sql",
+      "161_after.sql",
+    ])
+      writeFileSync(join(tmpDir, name), "SELECT 1;\n");
+    const { ok, errors } = run({
+      migrationsDir: tmpDir,
+      changedFiles: [],
+      newFiles: [],
+      renamedFiles: [],
+      mainFiles: [],
+    });
+    assert.equal(ok, true, errors.join(" | "));
+  });
+
+  it("rejects a third 160 filename even beside both published migrations", () => {
+    for (const name of [
+      "159_before.sql",
+      "160_gdpr_cleanup_email_redaction.sql",
+      "160_user_avatars.sql",
+      "160_future.sql",
+      "161_after.sql",
+    ])
+      writeFileSync(join(tmpDir, name), "SELECT 1;\n");
+    const { ok, errors } = run({
+      migrationsDir: tmpDir,
+      changedFiles: [],
+      newFiles: [],
+      renamedFiles: [],
+      mainFiles: [],
+    });
+    assert.equal(ok, false);
+    assert.ok(
+      errors.some((e) => e.includes("Duplicate migration numbers: 160")),
+    );
+  });
 });
 
 // ── findCrossBranchCollisions ────────────────────────────────────────────────
