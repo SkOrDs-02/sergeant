@@ -2,19 +2,30 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import { ANALYTICS_EVENTS } from "@sergeant/shared";
 import { capturePostHogEvent } from "../observability/posthog";
 import { useAuth } from "../auth/AuthContext";
+import { setFlag } from "../lib/featureFlags";
 import {
   clearPinHash,
   hasPinSet,
+  readLockStatus,
   savePinHash,
   verifyPinAttempt,
+  type LockStatus,
 } from "./lockStorage";
 
 /**
  * `checking` — холодний старт: наявність PIN-креденшела ще не перевірена
  * (IndexedDB + розв'язання користувача). `AppLock` у цьому стані закриває
  * екран непрозорою завісою, щоб дані не блимнули до екрана PIN (priv-03).
+ *
+ * `lockedOut` — вичерпано ліміт хибних PIN (sec-12/priv-14): замок НЕ
+ * знімається, цифрова панель не показується, лишається тільки вихід з акаунта.
  */
-export type LockState = "checking" | "idle" | "locked" | "setup" | "change";
+export type LockState =
+  "checking" | "idle" | "locked" | "lockedOut" | "setup" | "change";
+
+function lockedStateOf(status: LockStatus): LockState {
+  return status.lockedOut ? "lockedOut" : "locked";
+}
 
 // How long (ms) without pointer/keyboard activity before auto-lock.
 const IDLE_TIMEOUT_MS = 5 * 60 * 1000;
@@ -49,18 +60,33 @@ export interface UseAppLockReturn {
    * disabling the lock). Scoped to `user?.id` so the right slot is wiped.
    */
   disablePin: () => Promise<void>;
+  /**
+   * Epoch ms, до якого нові спроби PIN відхиляються (наростаюча пауза після
+   * 5-ї невдачі), або `null`, якщо паузи нема.
+   */
+  retryAt: number | null;
+  /**
+   * Вийти з акаунта з екрана замка («Забув PIN?» і стан `lockedOut`). Після
+   * ПІДТВЕРДЖЕНОГО виходу стирає PIN-креденшел вийденого користувача, тож
+   * далі потрібен пароль акаунта. `false` — вихід скасовано (діалог про
+   * незбережені записи); тоді креденшел і замок лишаються як були.
+   */
+  signOut: () => Promise<boolean>;
+  /** Гість без акаунта: «вихід» стирає локальні дані. */
+  isGuest: boolean;
 }
 
 export function useAppLock(): UseAppLockReturn {
   // Audit F16: the credential store is partitioned per Better-Auth user id.
   // Resolve it once here so every storage call below — and the closures we
   // hand to `AppLock` / `PrivacySection` — target the right partition.
-  const { user, status } = useAuth();
+  const { user, status, logout } = useAuth();
   const userId = user?.id ?? null;
   // Поки сесія не розв'язалась, `userId === null` ще не означає «анонім»:
   // PIN залогіненого лежить у ЙОГО партиції, тож перевірку відкладаємо.
   const authLoading = status === "loading";
   const [state, setState] = useState<LockState>("checking");
+  const [retryAt, setRetryAt] = useState<number | null>(null);
   const idleTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const lastIdleResetRef = useRef(0);
   const setupModeRef = useRef<"setup" | "change">("setup");
@@ -74,11 +100,20 @@ export function useAppLock(): UseAppLockReturn {
   useEffect(() => {
     if (authLoading) return;
     let cancelled = false;
-    hasPinSet(userId)
-      .then((has) => {
+    readLockStatus(userId)
+      .then((lockStatus) => {
         if (cancelled) return;
+        setRetryAt(
+          lockStatus.retryAfterMs > 0
+            ? Date.now() + lockStatus.retryAfterMs
+            : null,
+        );
         setState((prev) =>
-          has ? "locked" : prev === "checking" ? "idle" : prev,
+          lockStatus.hasPin
+            ? lockedStateOf(lockStatus)
+            : prev === "checking"
+              ? "idle"
+              : prev,
         );
       })
       .catch(() => {
@@ -98,9 +133,9 @@ export function useAppLock(): UseAppLockReturn {
   useEffect(() => {
     const handleVisibility = () => {
       if (document.visibilityState !== "visible") return;
-      hasPinSet(userId)
-        .then((has) => {
-          if (has) setState("locked");
+      readLockStatus(userId)
+        .then((lockStatus) => {
+          if (lockStatus.hasPin) setState(lockedStateOf(lockStatus));
         })
         .catch(() => {
           /* IndexedDB недоступна — нічого блокувати */
@@ -120,9 +155,9 @@ export function useAppLock(): UseAppLockReturn {
     lastIdleResetRef.current = now;
     if (idleTimer.current) clearTimeout(idleTimer.current);
     idleTimer.current = setTimeout(() => {
-      hasPinSet(userId)
-        .then((has) => {
-          if (has) setState("locked");
+      readLockStatus(userId)
+        .then((lockStatus) => {
+          if (lockStatus.hasPin) setState(lockedStateOf(lockStatus));
         })
         .catch(() => {
           /* IndexedDB недоступна — нічого блокувати */
@@ -177,6 +212,7 @@ export function useAppLock(): UseAppLockReturn {
     async (pin: string): Promise<boolean> => {
       const result = await verifyPinAttempt(pin, userId);
       if (result.ok) {
+        setRetryAt(null);
         setState("idle");
         capturePostHogEvent(ANALYTICS_EVENTS.APP_LOCK_UNLOCK_SUCCESS, {
           method: "pin",
@@ -187,19 +223,21 @@ export function useAppLock(): UseAppLockReturn {
         resetIdleTimer();
         return true;
       }
-      capturePostHogEvent(ANALYTICS_EVENTS.APP_LOCK_UNLOCK_FAILED, {
-        method: "pin",
-        attempt: result.failed,
-        wiped: result.wiped,
-      });
-      if (result.wiped) {
-        // Decision #4 / 10-attempt wipe: credential was nuked. Drop the
-        // lock so the user gets back into the app — Settings shows the
-        // un-configured state and they must re-enroll. The single
-        // `APP_LOCK_UNLOCK_FAILED` event above already carries
-        // `wiped: true`, so dashboards filter on it without aggregating
-        // a duplicate event.
-        setState("idle");
+      setRetryAt(
+        result.retryAfterMs > 0 ? Date.now() + result.retryAfterMs : null,
+      );
+      // sec-12/priv-14: вичерпаний ліміт НЕ знімає замок (раніше тут було
+      // `setState("idle")` після стирання креденшела, і 10 хибних PIN
+      // відкривали застосунок). Показуємо `lockedOut`: лишається тільки вихід.
+      if (result.lockedOut) setState("lockedOut");
+      // Відхилена без перевірки спроба (пауза / lockedOut) не є спробою
+      // підбору, тож подію не шлемо: дашборди рахують лише реальні невдачі.
+      if (!result.throttled) {
+        capturePostHogEvent(ANALYTICS_EVENTS.APP_LOCK_UNLOCK_FAILED, {
+          method: "pin",
+          attempt: result.failed,
+          locked_out: result.lockedOut,
+        });
       }
       return false;
     },
@@ -216,6 +254,33 @@ export function useAppLock(): UseAppLockReturn {
   const hasPin = useCallback(() => hasPinSet(userId), [userId]);
   const disablePin = useCallback(() => clearPinHash(userId), [userId]);
 
+  // sec-12/priv-14: єдиний шлях з `lockedOut` і дія «Забув PIN?». Креденшел
+  // стираємо ЛИШЕ в межах підтвердженого виходу: якщо `logout()` скасовано
+  // (діалог про незбережені записи), хук не викликається і замок лишається.
+  // Стирання йде хуком `beforeNavigate` ВСЕРЕДИНІ `logout()`, а не після
+  // нього: `logout()` завершується повним `location.assign`, який вивантажує
+  // документ і переривав би IndexedDB-транзакцію, запущену вже після
+  // повернення. Тоді запис із `failed >= 10` вцілів би, і повторний вхід
+  // знову показав би `lockedOut` — вихід з якого знову не працює.
+  const signOut = useCallback(async (): Promise<boolean> => {
+    const signedOutUserId = userId;
+    const done = await logout({
+      beforeNavigate: async () => {
+        await clearPinHash(signedOutUserId).catch(() => {
+          /* best-effort: IndexedDB недоступна — креденшела й так не прочитати */
+        });
+        // L-11: без креденшела тумблер «PIN увімкнено» нічого не значить, тож
+        // після виходу вимикаємо його, щоб наступний вхід не показував його
+        // увімкненим.
+        setFlag("app-lock-enabled", false);
+      },
+    });
+    if (!done) return false;
+    setRetryAt(null);
+    setState("idle");
+    return true;
+  }, [logout, userId]);
+
   return {
     state,
     startSetup,
@@ -226,5 +291,8 @@ export function useAppLock(): UseAppLockReturn {
     savePin,
     hasPin,
     disablePin,
+    retryAt,
+    signOut,
+    isGuest: userId === null,
   };
 }

@@ -17,6 +17,8 @@ interface PinPadProps {
   maxLength: number;
   error?: string;
   focusOnMount?: boolean;
+  /** Пауза між спробами (sec-12): ввід вимкнено, доки вона триває. */
+  disabled?: boolean;
 }
 
 function PinDisplay({ length, filled }: { length: number; filled: number }) {
@@ -40,6 +42,7 @@ function PinPad({
   maxLength,
   error,
   focusOnMount,
+  disabled,
 }: PinPadProps) {
   const inputRef = useRef<HTMLInputElement>(null);
 
@@ -57,6 +60,7 @@ function PinPad({
         pattern="[0-9]*"
         maxLength={maxLength}
         value={value}
+        disabled={disabled}
         onChange={(e) => {
           const digits = e.target.value.replace(/\D/g, "").slice(0, maxLength);
           onChange(digits);
@@ -79,8 +83,9 @@ function PinPad({
               <button
                 key={key}
                 type="button"
+                disabled={disabled}
                 aria-label={isBackspace ? m.deleteDigit : key}
-                className="w-16 h-16 rounded-lg bg-panel border border-line text-style-title text-text hover:bg-panelHi transition-colors select-none"
+                className="w-16 h-16 rounded-lg bg-panel border border-line text-style-title text-text hover:bg-panelHi transition-colors select-none disabled:opacity-50 disabled:pointer-events-none"
                 onClick={() => {
                   if (isBackspace) {
                     onChange(value.slice(0, -1));
@@ -210,29 +215,139 @@ function PinSetupFlow({ onDone, onCancel, onSave }: PinSetupFlowProps) {
   );
 }
 
-// ---- Unlock screen -------------------------------------------------------
+// ---- Sign-out from the lock screen (sec-12 / priv-14) --------------------
 
-interface UnlockScreenProps {
-  onUnlock: (pin: string) => Promise<boolean>;
+/** «м:сс» – без плюралізації, щоб тікати щосекунди без стрибків ширини. */
+function formatMmSs(ms: number): string {
+  const total = Math.ceil(ms / 1000);
+  const mm = Math.floor(total / 60);
+  const ss = String(total % 60).padStart(2, "0");
+  return `${mm}:${ss}`;
 }
 
-function UnlockScreen({ onUnlock }: UnlockScreenProps) {
-  const [pin, setPin] = useState("");
-  const [error, setError] = useState("");
-  const [busy, setBusy] = useState(false);
+/** Скільки мс лишилось до `retryAt`; тікає раз на секунду, поки пауза триває. */
+function useRetryRemaining(retryAt: number | null | undefined): number {
+  const [now, setNow] = useState(() => Date.now());
+  useEffect(() => {
+    if (!retryAt) return;
+    const tick = () => {
+      const t = Date.now();
+      setNow(t);
+      if (t >= retryAt) clearInterval(id);
+    };
+    const id = setInterval(tick, 1000);
+    // Одразу синхронізуємо `now` (початкове значення могло застаріти до
+    // появи `retryAt`), але з таймера, а не синхронно в ефекті.
+    const first = setTimeout(tick, 0);
+    return () => {
+      clearInterval(id);
+      clearTimeout(first);
+    };
+  }, [retryAt]);
+  return retryAt ? Math.max(retryAt - now, 0) : 0;
+}
 
-  const handleSubmit = async (candidate: string) => {
-    if (candidate.length < PIN_MIN) return;
+interface SignOutActionProps {
+  onSignOut: () => Promise<boolean>;
+  variant: "solid" | "ghost";
+  label: string;
+  className?: string;
+}
+
+/** Кнопка виходу з busy-станом і помилкою. `false` від onSignOut = скасовано. */
+function SignOutAction({
+  onSignOut,
+  variant,
+  label,
+  className,
+}: SignOutActionProps) {
+  const [busy, setBusy] = useState(false);
+  const [error, setError] = useState("");
+
+  const handleClick = async () => {
     setBusy(true);
-    const ok = await onUnlock(candidate);
-    if (!ok) {
-      setError(m.pinWrong);
-      setPin("");
+    setError("");
+    try {
+      await onSignOut();
+    } catch {
+      setError(m.signOutFailed);
     }
     setBusy(false);
   };
 
+  return (
+    <>
+      <Button
+        variant={variant}
+        size={variant === "solid" ? "md" : "sm"}
+        className={className}
+        disabled={busy}
+        onClick={handleClick}
+      >
+        {busy ? m.signingOut : label}
+      </Button>
+      {error && (
+        <p
+          role="alert"
+          className="text-style-body text-danger-strong dark:text-danger text-center"
+        >
+          {error}
+        </p>
+      )}
+    </>
+  );
+}
+
+// ---- Unlock screen -------------------------------------------------------
+
+interface UnlockScreenProps {
+  onUnlock: (pin: string) => Promise<boolean>;
+  onSignOut: () => Promise<boolean>;
+  retryAt?: number | null | undefined;
+  isGuest?: boolean | undefined;
+}
+
+function UnlockScreen({
+  onUnlock,
+  onSignOut,
+  retryAt,
+  isGuest,
+}: UnlockScreenProps) {
+  const [pin, setPin] = useState("");
+  const [error, setError] = useState("");
+  const [busy, setBusy] = useState(false);
+  const remainingMs = useRetryRemaining(retryAt);
+  const waiting = remainingMs > 0;
+
+  // Синхронний замок поверх `busy`: стан React оновлюється асинхронно, а
+  // шоста цифра викликає submit автоматично, тож без ref-а друга спроба
+  // встигала стартувати, поки перша ще рахує PBKDF2 (sec-12/priv-14).
+  const inFlightRef = useRef(false);
+
+  const handleSubmit = async (candidate: string) => {
+    if (inFlightRef.current || waiting || candidate.length < PIN_MIN) return;
+    inFlightRef.current = true;
+    setBusy(true);
+    try {
+      const ok = await onUnlock(candidate);
+      if (!ok) {
+        setError(m.pinWrong);
+        setPin("");
+      }
+    } catch {
+      // Лічильник не вдалося записати (IDB) – спробу не зараховано як успіх.
+      setError(m.pinWrong);
+      setPin("");
+    } finally {
+      inFlightRef.current = false;
+      setBusy(false);
+    }
+  };
+
   const handlePinChange = (v: string) => {
+    // Поки перевірка триває, ввід ігноруємо: інакше можна підмінити останню
+    // цифру й надіслати нову спробу, не дочекавшись результату попередньої.
+    if (inFlightRef.current) return;
     setPin(v);
     setError("");
     if (v.length === PIN_MAX) {
@@ -249,19 +364,57 @@ function UnlockScreen({ onUnlock }: UnlockScreenProps) {
         maxLength={PIN_MAX}
         error={error}
         focusOnMount
+        disabled={waiting}
       />
+      {waiting && (
+        // Без role="alert"/live-регіону: оновлення щосекунди засмітило б
+        // скрінрідер. Перше повідомлення про хибний PIN вже озвучене вище.
+        <p
+          className="text-style-body text-danger-strong dark:text-danger text-center"
+          data-testid="app-lock-retry"
+        >
+          {m.retryIn.replace("{time}", formatMmSs(remainingMs))}
+        </p>
+      )}
       <Button
         variant="solid"
         size="md"
         className="w-full mt-2"
-        disabled={pin.length < PIN_MIN || busy}
+        disabled={pin.length < PIN_MIN || busy || waiting}
         onClick={() => handleSubmit(pin)}
       >
         {m.open}
       </Button>
-      <p className="text-style-caption text-subtle text-center mt-2">
-        {m.recoveryHint}
+      <SignOutAction
+        onSignOut={onSignOut}
+        variant="ghost"
+        label={isGuest ? m.guestResetHint : m.recoveryHint}
+        className="mt-2 h-auto whitespace-normal text-center"
+      />
+    </div>
+  );
+}
+
+// ---- Locked-out screen: 10 хибних PIN, лишається тільки вихід -------------
+
+function LockedOutScreen({
+  onSignOut,
+  isGuest,
+}: {
+  onSignOut: () => Promise<boolean>;
+  isGuest?: boolean | undefined;
+}) {
+  return (
+    <div className="flex flex-col items-center gap-4 w-full">
+      <p className="text-style-body text-muted text-center">
+        {isGuest ? m.guestLockedOutBody : m.lockedOutBody}
       </p>
+      <SignOutAction
+        onSignOut={onSignOut}
+        variant="solid"
+        label={isGuest ? m.guestReset : m.signOut}
+        className="w-full"
+      />
     </div>
   );
 }
@@ -285,6 +438,15 @@ export interface AppLockProps {
   onChangeCancel: () => void;
   /** Persist a new PIN, scoped to the current user (audit F16). */
   onSavePin: (pin: string) => Promise<void>;
+  /**
+   * Вихід з акаунта з екрана замка: дія «Забув PIN?» і єдиний вихід зі
+   * стану `lockedOut` (sec-12/priv-14). `false` – вихід скасовано.
+   */
+  onSignOut: () => Promise<boolean>;
+  /** Epoch ms завершення паузи між спробами PIN; `null` – паузи нема. */
+  retryAt?: number | null | undefined;
+  /** Гість без акаунта: «вихід» стирає локальні дані, тому інший текст. */
+  isGuest?: boolean | undefined;
 }
 
 export function AppLock({
@@ -294,17 +456,26 @@ export function AppLock({
   onSetupCancel,
   onChangeCancel,
   onSavePin,
+  onSignOut,
+  retryAt,
+  isGuest,
 }: AppLockProps) {
   const panelRef = useRef<HTMLDivElement>(null);
-  const visible = state === "locked" || state === "setup" || state === "change";
+  const visible =
+    state === "locked" ||
+    state === "lockedOut" ||
+    state === "setup" ||
+    state === "change";
   // "change" і "setup" скасовуються по-різному (audit L-6) — change лишає
   // блокування увімкненим і стару PIN недоторканою, setup-скасування вимикає
   // блокування, бо його ще не було. Обираємо правильний handler один раз.
   const cancelHandler = state === "change" ? onChangeCancel : onSetupCancel;
 
-  // ESC intentionally disabled on locked — user cannot bypass with keyboard.
+  // ESC intentionally disabled on locked / lockedOut — user cannot bypass
+  // with keyboard.
   useDialogFocusTrap(visible, panelRef, {
-    onEscape: state === "locked" ? undefined : cancelHandler,
+    onEscape:
+      state === "locked" || state === "lockedOut" ? undefined : cancelHandler,
     inertBackground: true,
   });
 
@@ -335,9 +506,11 @@ export function AppLock({
   const title =
     state === "locked"
       ? m.unlockTitle
-      : state === "change"
-        ? m.changeTitle
-        : m.setupTitle;
+      : state === "lockedOut"
+        ? m.lockedOutTitle
+        : state === "change"
+          ? m.changeTitle
+          : m.setupTitle;
 
   return (
     <div
@@ -359,7 +532,14 @@ export function AppLock({
         </h2>
 
         {state === "locked" ? (
-          <UnlockScreen onUnlock={onUnlock} />
+          <UnlockScreen
+            onUnlock={onUnlock}
+            onSignOut={onSignOut}
+            retryAt={retryAt}
+            isGuest={isGuest}
+          />
+        ) : state === "lockedOut" ? (
+          <LockedOutScreen onSignOut={onSignOut} isGuest={isGuest} />
         ) : (
           <PinSetupFlow
             onDone={onSetupDone}

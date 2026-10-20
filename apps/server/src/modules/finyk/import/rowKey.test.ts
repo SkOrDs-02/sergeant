@@ -4,6 +4,7 @@ import {
   buildImportRowId,
   computeOccurrenceIndices,
   normalizeDescriptionForRowKey,
+  withOccurrenceIndices,
 } from "./rowKey.js";
 
 const BASE = {
@@ -196,5 +197,90 @@ describe("assignImportRowIds", () => {
     const idsFull = assignImportRowIds("u1", full);
     const idsPartial = assignImportRowIds("u1", partial);
     expect(idsFull.slice(0, 2)).toEqual(idsPartial);
+  });
+});
+
+describe("withOccurrenceIndices — індекс по ВСІХ рядках файлу (data-29)", () => {
+  it("додає occurrenceIndex кожному рядку, зберігаючи решту полів і порядок", () => {
+    const other = { ...BASE, description: "Інше" };
+    const out = withOccurrenceIndices([BASE, other, BASE]);
+    expect(out.map((r) => r.occurrenceIndex)).toEqual([0, 0, 1]);
+    expect(out[1]).toEqual({ ...other, occurrenceIndex: 0 });
+  });
+
+  it("не мутує вхідні рядки", () => {
+    const input = { ...BASE };
+    withOccurrenceIndices([input, input]);
+    expect("occurrenceIndex" in input).toBe(false);
+  });
+
+  it("порожній вхід → порожній вихід", () => {
+    expect(withOccurrenceIndices([])).toEqual([]);
+  });
+});
+
+describe("assignImportRowIds — явний occurrenceIndex з превʼю (data-29)", () => {
+  it("єдиний рядок групи з індексом 1 отримує id ДРУГОГО рядка повного файлу", () => {
+    // Регресія data-29: клієнт не шле першу каву (duplicateLikely), а друга без
+    // явного індексу отримувала 0 і збігалась з id першої.
+    const full = assignImportRowIds("u1", [BASE, BASE]);
+    const [onlySecond] = assignImportRowIds("u1", [
+      { ...BASE, occurrenceIndex: 1 },
+    ]);
+    expect(onlySecond).toBe(full[1]);
+    expect(onlySecond).not.toBe(full[0]);
+  });
+
+  it("без явного індексу єдиний рядок отримує 0 (старий клієнт, як раніше)", () => {
+    const full = assignImportRowIds("u1", [BASE, BASE]);
+    expect(assignImportRowIds("u1", [BASE])[0]).toBe(full[0]);
+  });
+
+  it("повний файл з явними індексами дає ті самі id, що рахунок по тілу", () => {
+    const rows = [BASE, { ...BASE, description: "Б" }, BASE, BASE];
+    const indexed = withOccurrenceIndices(rows);
+    expect(assignImportRowIds("u1", indexed)).toEqual(
+      assignImportRowIds("u1", rows),
+    );
+  });
+
+  it("рядок без індексу пропускає індекси, зайняті явними рядками своєї групи", () => {
+    // Відредагований у review рядок (індекс скинуто) потрапив у групу рядка з
+    // явним індексом 0: його id не має збігтись з id цього рядка.
+    const ids = assignImportRowIds("u1", [
+      { ...BASE, occurrenceIndex: 0 },
+      BASE,
+    ]);
+    expect(ids[0]).not.toBe(ids[1]);
+    const [explicit0, explicit1] = assignImportRowIds("u1", [
+      { ...BASE, occurrenceIndex: 0 },
+      { ...BASE, occurrenceIndex: 1 },
+    ]);
+    expect(ids[0]).toBe(explicit0);
+    expect(ids[1]).toBe(explicit1);
+  });
+
+  it("рядок без індексу ПЕРЕД рядком з явним 0 не збігається з ним", () => {
+    // Без пропуску зайнятих обидва отримали б 0 → один id → другий рядок
+    // тихо став би 'duplicate'.
+    const [implicit, explicit] = assignImportRowIds("u1", [
+      BASE,
+      { ...BASE, occurrenceIndex: 0 },
+    ]);
+    expect(implicit).not.toBe(explicit);
+  });
+
+  it("рядки без індексу нумеруються у порядку появи, обминаючи зайняті", () => {
+    const ids = assignImportRowIds("u1", [
+      BASE,
+      { ...BASE, occurrenceIndex: 1 },
+      BASE,
+    ]);
+    const byIndex = assignImportRowIds("u1", [
+      { ...BASE, occurrenceIndex: 0 },
+      { ...BASE, occurrenceIndex: 1 },
+      { ...BASE, occurrenceIndex: 2 },
+    ]);
+    expect(ids).toEqual(byIndex);
   });
 });

@@ -348,6 +348,10 @@ describe(
                 // matched. ABSENT on the rows below: that is "no evidence",
                 // NOT "other" — the client then applies its own default.
                 categoryHint: "food",
+                // Optional (rowKey.ts#withOccurrenceIndices, data-29): index
+                // of the row among ALL identical rows of the file, echoed
+                // back unchanged in `commit`.
+                occurrenceIndex: 0,
               },
               {
                 date: "2026-01-16",
@@ -357,6 +361,7 @@ describe(
                 // Optional marker (transferDetect.ts) — true only on
                 // own-jar/own-account transfers, absent on the row above.
                 transferLikely: true,
+                occurrenceIndex: 0,
               },
               {
                 date: "2026-01-17",
@@ -367,6 +372,7 @@ describe(
                 // only when an already-saved expense shares the same
                 // date+amount+direction; absent on the rows above.
                 duplicateLikely: true,
+                occurrenceIndex: 0,
               },
             ],
             skipped: [],
@@ -390,6 +396,7 @@ describe(
           expect(out.rows[0]!.duplicateLikely).toBeUndefined();
           expect(out.rows[2]!.duplicateLikely).toBe(true);
           expect(out.rows[0]!.categoryHint).toBe("food");
+          expect(out.rows[2]!.occurrenceIndex).toBe(0);
           // Both branches of the optional field are locked by this one
           // interaction — absent means "no evidence", not "other".
           expect(out.rows[1]!.categoryHint).toBeUndefined();
@@ -655,6 +662,8 @@ describe(
                 direction: "expense",
                 description: "АЗС",
                 category: "transport",
+                // Optional (data-29): index echoed from the preview.
+                occurrenceIndex: 0,
               },
             ],
           });
@@ -703,6 +712,8 @@ describe(
                 direction: "expense",
                 description: "АЗС",
                 category: "transport",
+                // Optional (data-29): index echoed from the preview.
+                occurrenceIndex: 0,
               },
             ],
           });

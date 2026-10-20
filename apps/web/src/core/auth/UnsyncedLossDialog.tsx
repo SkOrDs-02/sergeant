@@ -41,6 +41,9 @@ export default function UnsyncedLossDialog({
     <ConfirmDialog
       open
       danger
+      // Вихід може стартувати з екрана замка (z-300): без підйому діалог
+      // лишається під ним, а `logout()` чекає відповіді вічно.
+      elevated
       title={m.title}
       description={`${pending} ${pluralUa(pending, UNSYNCED_RECORD_FORMS)} ${m.notSavedSuffix} ${m.warning}`}
       confirmLabel={m.confirm}

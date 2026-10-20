@@ -1,6 +1,6 @@
 # Журнал: редизайн v3.1, мова станів і доведення системи
 
-> **Last touched:** 2026-10-19 by @test. **Next review:** 2028-01-19.
+> **Last touched:** 2026-10-20 by @claude. **Next review:** 2028-01-20.
 > **Status:** Active
 
 Журнал виконання спеки [`redesign-v3-1.md`](./redesign-v3-1.md). Інвентар і критерії приймання: [`2026-10-18-design-v3-1-inventory.md`](../audits/2026-10-18-design-v3-1-inventory.md).

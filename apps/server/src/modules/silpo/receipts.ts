@@ -22,6 +22,10 @@ import {
 } from "./orderLimits.js";
 import { matchAndLink } from "./receiptsMatch.js";
 import {
+  dropReceiptsBeforeWipe,
+  loadReceiptsWipedAtMs,
+} from "./receiptsWipe.js";
+import {
   defaultWithTransaction,
   upsertReceipt,
   type ParsedItem,
@@ -695,12 +699,21 @@ export async function pullAndSyncReceipts(
     throw appError;
   }
 
-  const offlineParsed = call.data.offline
-    .map((raw) => normalizeRawOrder(raw, "offline"))
-    .filter((r): r is ParsedReceipt => r !== null);
-  const onlineParsed = call.data.online
-    .map((raw) => normalizeRawOrder(raw, "online"))
-    .filter((r): r is ParsedReceipt => r !== null);
+  // Після `POST /api/silpo/wipe` підключення живе, тож без цього відсіву
+  // синк повертав би стерті чеки (аудит 2026-10-01, data-47).
+  const wipedAtMs = await loadReceiptsWipedAtMs(userId, queryFn);
+  const offlineParsed = dropReceiptsBeforeWipe(
+    call.data.offline
+      .map((raw) => normalizeRawOrder(raw, "offline"))
+      .filter((r): r is ParsedReceipt => r !== null),
+    wipedAtMs,
+  );
+  const onlineParsed = dropReceiptsBeforeWipe(
+    call.data.online
+      .map((raw) => normalizeRawOrder(raw, "online"))
+      .filter((r): r is ParsedReceipt => r !== null),
+    wipedAtMs,
+  );
 
   let receiptsInserted = 0;
   let itemsInserted = 0;

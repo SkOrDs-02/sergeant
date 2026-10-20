@@ -8,7 +8,6 @@ import {
   UserPreferencesSchema,
 } from "@sergeant/shared";
 import {
-  MODULE_EXPORT_TABLES,
   buildMeExport,
   getAccountDeletionStatus,
   getUserPreferences,
@@ -17,6 +16,7 @@ import {
   restoreAccount,
   upsertUserPreferences,
 } from "./dataRights.js";
+import { MODULE_EXPORT_TABLES } from "./exportBuilder.js";
 
 // Minimal Queryable mock — returns empty rows unless overridden.
 function mockDb(rows: unknown[] = []) {
@@ -347,7 +347,7 @@ describe("buildMeExport — contract fixture (Hard Rule #3)", () => {
     expect(limited).toEqual([]);
   });
 
-  it("excluded перелічує рівно чотири групи з причиною кожної", async () => {
+  it("excluded перелічує кожну групу з причиною, а виключене не протікає в секції", async () => {
     const db = mockDb([]);
     const result = await buildMeExport(db, ME_USER);
 
@@ -356,10 +356,18 @@ describe("buildMeExport — contract fixture (Hard Rule #3)", () => {
       "nutritionBackups",
       "aiMemories",
       "aiUsage",
+      "coachMemory",
+      "nudgeCache",
+      "authSessions",
+      "billingProviderIds",
+      "integrationSecrets",
+      "serviceQueues",
     ]);
     for (const item of result.data.excluded) {
       expect(item.reason.length).toBeGreaterThan(0);
       expect(item.tables.length).toBeGreaterThan(0);
+      // Стиль-гайд: без довгого тире в тексті для людини.
+      expect(item.reason).not.toContain("\u2014");
     }
     // Виключене не має протікати в секції модулів.
     expect(result.data.nutrition).not.toHaveProperty("nutrition_backups");
