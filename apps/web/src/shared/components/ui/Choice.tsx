@@ -133,7 +133,7 @@ export function ChoiceCheckbox({
       onClick={() => onChange(!checked)}
       className={cn(
         OPTION_BASE,
-        "flex w-full items-center gap-3 rounded-lg px-3 py-2 text-left text-style-label-lg text-text enabled:hover:bg-panel",
+        "flex w-full items-center gap-3 rounded-lg px-3 py-2 text-left text-style-label-lg text-text enabled:hover:bg-panelHi",
         className,
       )}
     >

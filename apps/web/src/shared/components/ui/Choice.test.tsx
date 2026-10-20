@@ -2,6 +2,7 @@
 import { useState } from "react";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { cleanup, fireEvent, render, screen } from "@testing-library/react";
+import userEvent from "@testing-library/user-event";
 import {
   ChoiceCheckbox,
   ChoiceGroup,
@@ -270,6 +271,25 @@ describe("ChoiceGroup multiple", () => {
     fireEvent.click(checkbox("Витрата"));
     expect(onChange).toHaveBeenLastCalledWith(["income"]);
     expect(checkbox("Переказ")).toBeDisabled();
+  });
+
+  it.each<ChoiceVariant>(["tiles", "rows"])(
+    "%s: Space перемикає сфокусовану опцію",
+    async (variant) => {
+      const onChange = vi.fn();
+      render(<MultiControlled variant={variant} onChange={onChange} />);
+      checkbox("Надходження").focus();
+      await userEvent.keyboard(" ");
+      expect(onChange).toHaveBeenLastCalledWith(["expense", "income"]);
+      expect(checkbox("Надходження")).toHaveAttribute("aria-checked", "true");
+      await userEvent.keyboard(" ");
+      expect(checkbox("Надходження")).toHaveAttribute("aria-checked", "false");
+    },
+  );
+
+  it("рядок: hover видно на панелі (рівень вище за panel)", () => {
+    render(<MultiControlled variant="rows" />);
+    expect(checkbox("Витрата").className).toContain("enabled:hover:bg-panelHi");
   });
 
   it("кожна опція - своя зупинка Tab, стрілки вибір не міняють", () => {
