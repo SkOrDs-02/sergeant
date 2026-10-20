@@ -211,7 +211,7 @@ export function changeCategory(action: ChangeCategoryAction): ChatActionResult {
   // instead of writing back an `undefined` string.
   const prevCategoryId = cats[txId];
   cats[txId] = categoryId;
-  finykChatWrite("finyk_tx_cats", cats);
+  void finykChatWrite("finyk_tx_cats", cats);
   const cat = resolveExpenseCategoryMeta(categoryId, cache.customCategories);
   const result = `Категорію операції ${txId} змінено на ${cat?.label || categoryId}`;
   return {
@@ -225,7 +225,7 @@ export function changeCategory(action: ChangeCategoryAction): ChatActionResult {
       } else {
         current[txId] = prevCategoryId;
       }
-      finykChatWrite("finyk_tx_cats", current);
+      void finykChatWrite("finyk_tx_cats", current);
     },
   };
 }
@@ -305,6 +305,6 @@ export function batchCategorize(
   }
   const cats = { ...cache.txCategories } as Record<string, string>;
   for (const tx of matches) cats[tx.id] = categoryId;
-  finykChatWrite("finyk_tx_cats", cats);
+  void finykChatWrite("finyk_tx_cats", cats);
   return `Категорію ${matches.length} операц. змінено на ${categoryId}: ${preview}`;
 }

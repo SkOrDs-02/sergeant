@@ -28,6 +28,7 @@ import {
 import { isApiError, type ApiError } from "@sergeant/api-client";
 import { validateTransactionInput } from "./finykActions/transactionInputValidation";
 import { createTransaction as createTransactionLocal } from "./finykActions/transactions";
+import { withChatWriteConfirm } from "./chatWrites";
 import { finykChatMirrorManualExpenses } from "./finykActions/dualWriteBridge";
 import type { Transaction } from "@sergeant/finyk-domain/domain/types";
 import type {
@@ -210,7 +211,7 @@ async function handleCreateTransaction(
   const amt = checked.amount;
   // Income сервер не приймає (manual-expenses — лише витрати) — пишемо локально.
   if (type === "income") {
-    return createTransactionLocal(action);
+    return withChatWriteConfirm(() => createTransactionLocal(action));
   }
   try {
     const { expense } = await apiClient.finyk.createManualExpense({
@@ -273,7 +274,7 @@ async function handleCreateTransaction(
       return rejectedByServerMessage(err);
     }
     // Мережа/таймаут/5xx/401 — не губимо запис: пишемо локально зі старим undo-шляхом.
-    const local = createTransactionLocal(action);
+    const local = withChatWriteConfirm(() => createTransactionLocal(action));
     const suffix = " (сервер недоступний, записано лише локально)";
     if (typeof local === "string") return local + suffix;
     return { ...local, result: local.result + suffix };

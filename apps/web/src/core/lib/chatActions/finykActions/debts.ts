@@ -51,14 +51,14 @@ export function createDebt(action: CreateDebtAction): ChatActionResult {
     linkedTxIds: [],
   };
   debts.push(newDebt);
-  finykChatWrite("finyk_debts", debts);
+  void finykChatWrite("finyk_debts", debts);
   const debtId = newDebt.id;
   return {
     result: `Борг "${name}" на ${formatNumberUk(amountN)} грн створено (id:${debtId})`,
     undo: () => {
       const cur = warmFinykCache()?.manualDebts ?? [];
       const next = cur.filter((d) => d.id !== debtId);
-      if (next.length !== cur.length) finykChatWrite("finyk_debts", next);
+      if (next.length !== cur.length) void finykChatWrite("finyk_debts", next);
     },
   };
 }
@@ -80,14 +80,14 @@ export function createReceivable(
     linkedTxIds: [],
   };
   recv.push(newRecv);
-  finykChatWrite("finyk_recv", recv);
+  void finykChatWrite("finyk_recv", recv);
   const recvId = newRecv.id;
   return {
     result: `Дебіторку "${name}" на ${formatNumberUk(amountN)} грн додано (id:${recvId})`,
     undo: () => {
       const cur = warmFinykCache()?.receivables ?? [];
       const next = cur.filter((r) => r.id !== recvId);
-      if (next.length !== cur.length) finykChatWrite("finyk_recv", next);
+      if (next.length !== cur.length) void finykChatWrite("finyk_recv", next);
     },
   };
 }
@@ -126,7 +126,7 @@ export function markDebtPaid(action: MarkDebtPaidAction): ChatActionResult {
     type: "expense",
   };
   manualExpenses.unshift(payEntry);
-  finykChatWrite("finyk_manual_expenses_v1", manualExpenses);
+  void finykChatWrite("finyk_manual_expenses_v1", manualExpenses);
   debt.linkedTxIds = [...(debt.linkedTxIds || []), txId];
   // Як у UI (`useFinykStorageMutations`): платіж пишемо знімком у `txLinks`,
   // інакше ручна `m_…` не потрапляє в залишок на банк-only транзакціях
@@ -140,7 +140,7 @@ export function markDebtPaid(action: MarkDebtPaidAction): ChatActionResult {
   // рахується за залишком і лишається в списку з історією платежів
   // (logic-03). Видалення було незворотним і без підтвердження.
   debts[idx] = debt;
-  finykChatWrite("finyk_debts", debts);
+  void finykChatWrite("finyk_debts", debts);
   return {
     result: `Погашено ${formatNumberUk(payAmount)} грн з "${debt.name}"${closed ? ", борг закрито" : ""} (tx:${txId})`,
     // Undo знімає лише цей платіж: читає свіжий кеш (як undo createDebt),
@@ -151,7 +151,7 @@ export function markDebtPaid(action: MarkDebtPaidAction): ChatActionResult {
       const curExpenses = fresh.manualExpenses as ManualExpenseRow[];
       const nextExpenses = curExpenses.filter((e) => e.id !== txId);
       if (nextExpenses.length !== curExpenses.length) {
-        finykChatWrite("finyk_manual_expenses_v1", nextExpenses);
+        void finykChatWrite("finyk_manual_expenses_v1", nextExpenses);
       }
       triggerManualExpenseDeleteSqliteMirror(txId);
       const curDebts = fresh.manualDebts as Debt[];
@@ -167,7 +167,7 @@ export function markDebtPaid(action: MarkDebtPaidAction): ChatActionResult {
           ...(Object.keys(restLinks).length > 0 ? { txLinks: restLinks } : {}),
         };
       });
-      if (debtsChanged) finykChatWrite("finyk_debts", nextDebts);
+      if (debtsChanged) void finykChatWrite("finyk_debts", nextDebts);
     },
   };
 }

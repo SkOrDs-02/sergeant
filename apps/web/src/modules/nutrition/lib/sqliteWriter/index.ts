@@ -29,6 +29,7 @@ import {
 } from "./diff.js";
 import { probeNutritionParity } from "./parity.js";
 import {
+  isDualWriteOutcomeClean,
   journalDualWrite,
   pendingDualWrites,
   settleDualWriteEntry,
@@ -280,6 +281,31 @@ let pendingBeforeRegistration: {
 let inFlightRuns = 0;
 
 /**
+ * Скільки запусків черги завершились БЕЗ запису в SQLite («sqlite недоступна»,
+ * немає userId, `errored > 0`). Порожній diff (`no-ops`) сюди не входить: там
+ * нічого було писати. Лічильник монотонний: викликач знімає значення ДО дії й
+ * порівнює ПІСЛЯ `nutritionDualWriteIdle()` (rel-16, чесний рапорт HubChat).
+ */
+let failedRuns = 0;
+
+export function nutritionDualWriteFailedRuns(): number {
+  return failedRuns;
+}
+
+/**
+ * Скільки записів пішло в буфер {@link pendingBeforeRegistration}, бо контекст
+ * ще (або вже не) зареєстровано. Такий запис не стартує чергу: `failedRuns` не
+ * росте, `nutritionDualWriteIdle()` завершується одразу, тож без цього
+ * лічильника HubChat рапортував би «записано» без запису (rel-16). Монотонний:
+ * викликач знімає значення ДО дії й порівнює ПІСЛЯ.
+ */
+let bufferedRuns = 0;
+
+export function nutritionDualWriteBufferedRuns(): number {
+  return bufferedRuns;
+}
+
+/**
  * `true`, поки є запис, чий результат ще не потрапив у кеш: буферизований до
  * реєстрації контексту або в черзі. `nutritionStorage` тримає «останній
  * записаний prefs» саме на цей час (data-04).
@@ -313,6 +339,7 @@ export function triggerNutritionDualWrite(
     // переживе (userId ще невідомий, журналювати нема під чим) — вужче
     // вікно, ніж поточний гарантований дроп на кожному ранньому записі.
     pendingBeforeRegistration.push({ prev, next });
+    bufferedRuns += 1;
     return;
   }
   // Диф, мітку часу і журнал беремо синхронно, ДО асинхронної межі нижче:
@@ -409,6 +436,12 @@ function enqueueNutritionRun(
       const outboxSettled = outboxCheckpoint();
       const outcome = await runNutritionOps(ctx, ops, clientTs, next);
       recordDualWriteOutcome("nutrition", outcome);
+      if (
+        !isDualWriteOutcomeClean(outcome) &&
+        !(outcome.status === "skipped" && outcome.reason === "no-ops")
+      ) {
+        failedRuns += 1;
+      }
       // «sqlite недоступна» лишає запис у журналі для наступного буту.
       // Рядок outbox, що ще не ліг, теж лишає запис (див. outboxCheckpoint).
       // Чекаємо поза чергою: завислий outbox не має гальмувати наступні записи.

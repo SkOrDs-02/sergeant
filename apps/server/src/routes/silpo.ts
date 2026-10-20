@@ -136,18 +136,37 @@ export async function disconnectHandler(
   res.status(200).json(SilpoDisconnectResponseSchema.parse({ ok: true }));
 }
 
-/** Full erasure: `silpo_receipts` cascades to items + `silpo_tx_receipt_links`. User-confirmed `finyk_tx_splits` / pantry-events are NEVER touched. */
+/**
+ * Full erasure: `silpo_receipts` cascades to items + `silpo_tx_receipt_links`
+ * + link rejections. User-confirmed `finyk_tx_splits` / pantry-events are NEVER touched.
+ *
+ * Підключення лишається, тож у ТОМУ САМОМУ запиті ставимо
+ * `silpo_connection.receipts_wiped_at = NOW()`: синк (полер, «Оновити чеки»)
+ * пропускає замовлення з `purchased_at <= маркер`, а auto-claim комори їх не
+ * бронює. Без маркера стерте поверталось за ≤8 год, а автоімпорт удруге
+ * писав позиції в комору (аудит 2026-10-01, data-47). Один оператор із
+ * data-modifying CTE = одна транзакція: маркер і DELETE не розʼїдуться.
+ * Маркера не буде, якщо підключення немає (синкати нікому), а повторний
+ * OAuth без disconnect його не скидає (`persistTokens` колонку не чіпає).
+ */
 export async function wipeHandler(req: Request, res: Response): Promise<void> {
   if (!assertSilpoEnabled(res)) return;
   const userId = getUserId(req as AuthedRequest, res);
   if (!userId) return;
 
-  const result = await query(
-    "DELETE FROM silpo_receipts WHERE user_id = $1",
+  const result = await query<{ deletedReceipts: number }>(
+    `WITH marker AS (
+       UPDATE silpo_connection
+          SET receipts_wiped_at = NOW(), updated_at = NOW()
+        WHERE user_id = $1
+     ), wiped AS (
+       DELETE FROM silpo_receipts WHERE user_id = $1 RETURNING 1
+     )
+     SELECT COUNT(*)::int AS "deletedReceipts" FROM wiped`,
     [userId],
     { op: "silpo_receipts_wipe" },
   );
-  const deletedReceipts = result.rowCount ?? 0;
+  const deletedReceipts = Number(result.rows[0]?.deletedReceipts ?? 0);
   logger.info({ msg: "silpo.wiped", deletedReceipts });
   res
     .status(200)

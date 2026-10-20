@@ -27,13 +27,19 @@
  *      builds on top of this write;
  *   4. mirrors the per-slice `prev → next` delta into SQLite and bumps
  *      the read-gate so any mounted Finyk UI re-renders (see
- *      `modules/finyk/lib/sqliteWriter/chatBridge`).
+ *      `modules/finyk/lib/sqliteWriter/chatBridge`);
+ *   5. віддає `Promise<boolean>` («ліг у SQLite») і реєструє його в збирачі
+ *      чат-батча (`trackChatWrite`): `executeActions` зводить підтвердження
+ *      всіх записів дії в `confirm`, а `settle()` замінює «створено» на
+ *      `WRITE_NOT_PERSISTED`, якщо runtime не зареєстровано чи apply впав
+ *      (rel-16). Екзекутори нічого не прокидають вручну.
  *
  * Keys not covered by the dual-write contract fall through to a plain
  * `lsSet`, preserving the previous behaviour.
  */
 
 import { ls, lsSet } from "../../hubChatUtils";
+import { trackChatWrite } from "../chatWrites";
 import {
   getCachedFinykSqliteState,
   patchFinykSqliteStateCache,
@@ -133,11 +139,18 @@ function safeStringifyPlan(value: unknown): string {
 
 /**
  * Write a Finyk LS key from a chat action AND mirror the change into the
- * SQLite dual-write store. Fire-and-forget for the SQLite side — the LS
- * write and the cache patch are synchronous so the returning tool-result
- * and the next executor of the same turn observe the value immediately.
+ * SQLite dual-write store. The LS write and the cache patch are synchronous
+ * so the returning tool-result and the next executor of the same turn
+ * observe the value immediately; the SQLite side is async, and its outcome
+ * is returned (and tracked for the current chat batch) as `Promise<boolean>`.
  */
-export function finykChatWrite(key: string, value: unknown): void {
+export function finykChatWrite(key: string, value: unknown): Promise<boolean> {
+  const write = mirrorChatWrite(key, value);
+  trackChatWrite(write);
+  return write;
+}
+
+function mirrorChatWrite(key: string, value: unknown): Promise<boolean> {
   const cache = getCachedFinykSqliteState();
   const warm = cache.refreshedAt !== null;
 
@@ -151,15 +164,14 @@ export function finykChatWrite(key: string, value: unknown): void {
         monthlyPlan: (value ?? {}) as SqliteFinykCache["monthlyPlan"],
       });
     }
-    void mirrorFinykChatMonthlyPlan(safeStringifyPlan(value), prevPlanJson);
-    return;
+    return mirrorFinykChatMonthlyPlan(safeStringifyPlan(value), prevPlanJson);
   }
 
   const build = SLICE_BUILDERS[key];
   if (!build) {
     // Not a dual-write-covered key — keep the previous LS-only behaviour.
     lsSet(key, value);
-    return;
+    return Promise.resolve(true);
   }
 
   // Snapshot BEFORE the write: канонічне pre-mutation значення — з кешу
@@ -173,7 +185,7 @@ export function finykChatWrite(key: string, value: unknown): void {
       [field]: value,
     } as Partial<SqliteFinykCache>);
   }
-  void mirrorFinykChatDualWrite(build(prevRaw), build(value));
+  return mirrorFinykChatDualWrite(build(prevRaw), build(value));
 }
 
 /**

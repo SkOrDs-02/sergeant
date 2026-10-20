@@ -24,6 +24,11 @@ import { identifyPostHogUser, resetPostHog } from "../observability/posthog";
 import { swClearCaches, swSetActiveUser } from "../app/swControl";
 import { useSwControllerResync } from "./useSwControllerResync";
 import { logger } from "@shared/lib";
+import {
+  navigateToSignIn,
+  runBeforeNavigate,
+  type LogoutOptions,
+} from "./logoutBeforeNavigate";
 import { buildIdentifyTraits } from "../observability/identifyTraits";
 import { trackEvent, ANALYTICS_EVENTS } from "../observability/analytics";
 import { billingKeys } from "@shared/lib/api/queryKeys";
@@ -34,7 +39,6 @@ import {
 import { clearPersistedQueryCache } from "@shared/lib/api/queryClientPersister";
 import { flushPendingSyncOpsBeforeLogout } from "../syncEngine/flushBeforeLogout";
 import { teardownLocalStateAfterSessionLoss } from "./sessionLossTeardown";
-import { SIGN_IN_PATH } from "../app/appPaths";
 import { releasePushSubscriptionOnLogout } from "./releasePushOnLogout";
 import * as pendingSignOut from "./pendingSignOut";
 import { usePendingSignOutRetry } from "./usePendingSignOutRetry";
@@ -426,8 +430,16 @@ interface AuthContextValue {
    * неактуальне: `SessionsSection` питає ДО відкликання сесії (після нього
    * пуш усе одно впаде 401), а видалення акаунта нищить дані свідомо й теж
    * іде з уже вбитою сесією.
+   *
+   * `beforeNavigate` — асинхронний хук, який `logout()` виконує ПІСЛЯ точки
+   * неповернення (сесія вбита, UI у signed-out) і ДО фінальної навігації на
+   * `SIGN_IN_PATH`. Навігація вивантажує документ: IndexedDB-транзакція, яку
+   * викликач запустив ПІСЛЯ повернення з `logout()`, переривається разом із
+   * ним. Тож усе, що мусить вціліти після виходу (стирання PIN-креденшела
+   * замка, `sec-12`), робиться тут. Збій чи завис хука вихід не блокує
+   * (best-effort під таймаутом).
    */
-  logout: (options?: { skipUnsyncedLossPrompt?: boolean }) => Promise<boolean>;
+  logout: (options?: LogoutOptions) => Promise<boolean>;
   requestPasswordReset: (email: string) => Promise<boolean>;
   refresh: () => Promise<void>;
 }
@@ -798,7 +810,7 @@ export function AuthProvider({ children }: AuthProviderProps) {
   }, []);
 
   const logout = useCallback(
-    async (options?: { skipUnsyncedLossPrompt?: boolean }) => {
+    async (options?: LogoutOptions) => {
       // Це МУСИТЬ бути найпершим — до `setSignedOut`, до `signOut()`, до
       // будь-якого teardown. Далі по функції йде `wipeSqliteDb()`, який
       // видаляє файл локальної БД РАЗОМ із чергою синхронізації; поки
@@ -866,6 +878,10 @@ export function AuthProvider({ children }: AuthProviderProps) {
       //      up-front makes the UI transition unconditional; everything below is
       //      cleanup that must never gate it.
       queryClient.clear();
+      // Хук викликача (стирання PIN-замка) — ДО повільних кроків teardown і
+      // тим більше до навігації: `location.assign` вивантажує документ і
+      // переривало б IndexedDB-транзакцію, запущену після `await logout()`.
+      await runBeforeNavigate(options?.beforeNavigate);
       // Audit 03 / Decision #2 (C): wipe SW caches on logout so user B
       // never resolves a stale cache entry that belonged to user A on
       // shared devices. Fire-and-forget — ignore SW failures since the
@@ -939,13 +955,7 @@ export function AuthProvider({ children }: AuthProviderProps) {
       // onboarding-прапорці, тож перезавантаження поточного маршруту
       // висаджує щойно розлогіненого користувача на `/welcome` — пройти
       // онбординг заново замість того, щоб просто увійти.
-      try {
-        globalThis.location?.assign(SIGN_IN_PATH);
-      } catch (err) {
-        // jsdom (`Not implemented: navigation`) і будь-який headless-раннер.
-        // Logout уже завершений — reload лише прибирає залишковий стан.
-        logger.warn("[auth.logout] reload after teardown failed", err);
-      }
+      navigateToSignIn();
       return true;
     },
     [askUnsyncedLoss, queryClient],

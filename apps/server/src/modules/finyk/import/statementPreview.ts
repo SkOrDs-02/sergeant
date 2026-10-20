@@ -11,6 +11,7 @@ import type { ImportSkippedRow, ImportStatementRow } from "@sergeant/shared";
 import { isBlankRow, parseCalendarDateKey } from "@sergeant/tabular-import";
 import { isLikelyOwnTransfer } from "./transferDetect.js";
 import { markDuplicateLikely } from "./duplicateDetect.js";
+import { withOccurrenceIndices } from "./rowKey.js";
 import { parseSignedAmountKopiykas } from "./csvParser.js";
 import {
   detectCsvProfile,
@@ -290,10 +291,16 @@ export default async function statementPreviewHandler(
       ImportStatementPreviewResponseSchema.parse({
         profile: autodetected.profile,
         needsMapping: false,
+        // `occurrenceIndex` рахується по ВСІХ рядках файлу (rowKey.ts) і
+        // їде в commit разом із рядком (data-29).
         // «Сітка 2» дедуп-превʼю (duplicateDetect.ts): мʼяка мітка
         // «схоже, вже є» за трійкою дата+сума+напрям проти вже збережених
         // витрат — до того, як людина побачить галочки.
-        rows: await markDuplicateLikely(pool, userId, rows),
+        rows: await markDuplicateLikely(
+          pool,
+          userId,
+          withOccurrenceIndices(rows),
+        ),
         skipped,
       }),
     );
@@ -319,7 +326,11 @@ export default async function statementPreviewHandler(
         ImportStatementPreviewResponseSchema.parse({
           profile: "custom",
           needsMapping: false,
-          rows: await markDuplicateLikely(pool, userId, rows),
+          rows: await markDuplicateLikely(
+            pool,
+            userId,
+            withOccurrenceIndices(rows),
+          ),
           skipped,
         }),
       );

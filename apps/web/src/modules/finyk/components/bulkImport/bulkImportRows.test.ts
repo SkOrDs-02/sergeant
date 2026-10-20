@@ -442,3 +442,61 @@ describe("exceedsCommitCap", () => {
     expect(message).toContain("Зніми частину галочок");
   });
 });
+
+describe("occurrenceIndex з превʼю (data-29)", () => {
+  const coffee = (occurrenceIndex?: number): ImportStatementRow => ({
+    date: "2026-07-16",
+    amountKopiykas: 9500,
+    direction: "expense",
+    description: "Кава",
+    ...(occurrenceIndex === undefined ? {} : { occurrenceIndex }),
+  });
+
+  it("друга кава шлеться з індексом превʼю, навіть коли перша не вибрана", () => {
+    // Сервер позначив першу каву duplicateLikely: вона знята з вибору, тож у
+    // commit іде лише друга. Без індексу сервер рахував би її першою (0).
+    const rows = statementRowsToBulkReviewRows(
+      [{ ...coffee(0), duplicateLikely: true }, coffee(1)],
+      rowOptions,
+    );
+    expect(rows.map((r) => r.selected)).toEqual([false, true]);
+    expect(toCommitRows(rows)).toEqual([
+      expect.objectContaining({ description: "Кава", occurrenceIndex: 1 }),
+    ]);
+  });
+
+  it("скрін-рядки теж несуть індекс", () => {
+    const rows = screenshotRowsToBulkReviewRows(
+      [{ ...coffee(1), time: "12:10", confidence: 0.9 }],
+      rowOptions,
+    );
+    expect(toCommitRows(rows)[0]?.occurrenceIndex).toBe(1);
+  });
+
+  it("без індексу від сервера (старий сервер) ключ не додається до commit-рядка", () => {
+    const rows = statementRowsToBulkReviewRows([coffee()], rowOptions);
+    const [commitRow] = toCommitRows(rows);
+    expect(commitRow).toBeDefined();
+    expect("occurrenceIndex" in commitRow!).toBe(false);
+  });
+
+  it("правка опису чи суми скидає індекс: рядок міг опинитись в іншій групі", () => {
+    const rows = statementRowsToBulkReviewRows([coffee(1)], rowOptions);
+    const id = rows[0]!.id;
+    const renamed = updateRowField(rows, id, { description: "Чай" });
+    expect(renamed[0]?.occurrenceIndex).toBeUndefined();
+    const repriced = updateRowField(rows, id, { amountKopiykas: 10000 });
+    expect(repriced[0]?.occurrenceIndex).toBeUndefined();
+  });
+
+  it("зміна категорії або те саме значення опису індекс зберігає", () => {
+    const rows = statementRowsToBulkReviewRows([coffee(1)], rowOptions);
+    const id = rows[0]!.id;
+    expect(
+      updateRowField(rows, id, { category: "cafe" })[0]?.occurrenceIndex,
+    ).toBe(1);
+    expect(
+      updateRowField(rows, id, { description: "Кава" })[0]?.occurrenceIndex,
+    ).toBe(1);
+  });
+});

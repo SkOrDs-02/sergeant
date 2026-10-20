@@ -826,6 +826,40 @@ describe("BulkImportSheet — commit + undo", () => {
     return helpers;
   }
 
+  it("тіло commit містить лише ключі, які знає чинний .strict() API (вікно «фронт раніше за бекенд»)", async () => {
+    // Старий API відхиляє невідомий ключ верхнього рівня 400-кою (strict), а
+    // превʼю старого сервера повертає `profile`. Тож web не має слати нічого
+    // понад `source` і `rows`, поки бекенд цього не прийняв.
+    commitImportMock.mockResolvedValue({
+      batchId: 9,
+      created: 1,
+      linked: 0,
+      skipped: { monoMatched: 0, duplicate: 0 },
+      rows: [],
+    });
+    getImportBatchMock.mockResolvedValue({
+      batch: {
+        id: 9,
+        source: "bank_statement",
+        status: "completed",
+        rowsTotal: 1,
+        rowsCreated: 1,
+        rowsLinked: 0,
+        rowsSkipped: 0,
+        createdRowIds: ["imp1:aaa"],
+        createdAt: "x",
+        updatedAt: "x",
+      },
+    });
+    await reachBulkReview();
+
+    fireEvent.click(screen.getByRole("button", { name: "Імпортувати" }));
+
+    await waitFor(() => expect(commitImportMock).toHaveBeenCalledTimes(1));
+    const body = commitImportMock.mock.calls[0]?.[0] as Record<string, unknown>;
+    expect(Object.keys(body).sort()).toEqual(["rows", "source"]);
+  });
+
   it("commit shows the created/skipped summary and an undo button", async () => {
     commitImportMock.mockResolvedValue({
       batchId: 9,

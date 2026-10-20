@@ -59,6 +59,7 @@ beforeEach(() => {
     if (key === "finyk_tx_cats") {
       cacheState.txCategories = value as Record<string, string>;
     }
+    return Promise.resolve(true);
   });
 });
 
