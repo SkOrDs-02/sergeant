@@ -19,7 +19,9 @@ describe("syncV2 wire reason/type registries", () => {
     // передпліччя, стегно, литка, ліва/права сторони біцепса).
     // Аудит 2026-10-01 (rel-01): +3 причини розкладу звички
     // (`invalid_recurrence`, `invalid_start_date`, `invalid_end_date`).
-    expect(APPLY_REJECT_REASONS).toHaveLength(78);
+    // Аудит 2026-10-01 (data-04): +1 `invalid_prefs_patch` (nutrition_prefs
+    // із prefs_merge мусить нести JSON-обʼєкт).
+    expect(APPLY_REJECT_REASONS).toHaveLength(79);
     expect(new Set(APPLY_REJECT_REASONS).size).toBe(
       APPLY_REJECT_REASONS.length,
     );

@@ -26,6 +26,13 @@ export type SyncV2OpKind = "insert" | "update" | "delete" | "increment";
  * унікальний у межах `(user_id, idempotency_key)`. Реплеї з тим самим
  * ключем повертають кешований результат, не виконуючи DML повторно.
  */
+// data-04: форма `row` для `nutrition_prefs` і прапорець поле-рівневого
+// злиття живуть у `@sergeant/shared`, щоб сервер і клієнт читали одне джерело.
+export {
+  NUTRITION_PREFS_MERGE_FIELD,
+  type NutritionPrefsSyncRow,
+} from "@sergeant/shared";
+
 export interface SyncV2PushOp {
   table: string;
   op: SyncV2OpKind;

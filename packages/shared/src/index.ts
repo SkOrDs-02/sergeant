@@ -23,6 +23,7 @@ export * from "./billing/entitlements";
 export * from "./lib/storageKeys";
 export * from "./lib/correlationStandard";
 export * from "./lib/nutritionPantryMode";
+export * from "./lib/nutritionPrefsSync";
 
 // Stable per-install origin-device-id resolver used by the web and
 // mobile sync-engine singletons to populate `X-Origin-Device-Id` on
