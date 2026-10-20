@@ -39,7 +39,7 @@ export const userProfile = pgTable("user_profile", {
 
 /**
  * Postgres schema for `user_avatars` table.
- * Mirrors migration 160_user_avatars.sql (audit 2026-10-01, ux-14).
+ * Mirrors migration 161_user_avatars.sql (audit 2026-10-01, ux-14).
  *
  * Байти завантаженого аватара (webp/png/jpeg, до 50 КБ) прямо в Postgres:
  * рішення власника без S3/R2/CDN. Один рядок на користувача;

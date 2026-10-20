@@ -2,7 +2,7 @@
  * Last validated: 2026-10-20
  * Status: Active
  *
- * Аватар у Postgres (`user_avatars`, migration 160) - аудит 2026-10-01, ux-14.
+ * Аватар у Postgres (`user_avatars`, migration 161) - аудит 2026-10-01, ux-14.
  *
  * AI-CONTEXT: чому так. Клієнт слав `data:` URL у `user.image`, а
  * `sanitizeUserImage` його навмисно обнуляє (cookie-chunking, інцидент 504).
