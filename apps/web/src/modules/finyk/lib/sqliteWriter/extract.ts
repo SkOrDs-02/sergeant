@@ -45,6 +45,7 @@ import {
   type FinykTxCategoryEntry,
   type FinykTxNoteEntry,
   type FinykTxSplitsEntry,
+  type FinykTxTagsEntry,
 } from "./diff.js";
 
 /** Convert a per-row array (rows with `id`) into FinykBlobEntry[]. */
@@ -156,6 +157,27 @@ export function txSplitsFromMap(
   return out;
 }
 
+/**
+ * Мапа тегів → FinykTxTagsEntry[]. Теги вже нормалізовані доменом
+ * (`addTxTag`), тут лише відсів сміття: не-рядки, порожні рядки і
+ * операції без тегів (їхня відсутність = `tx-tags-delete`).
+ */
+export function txTagsFromMap(
+  map: Record<string, unknown> | null | undefined,
+): FinykTxTagsEntry[] {
+  if (!map || typeof map !== "object" || Array.isArray(map)) return [];
+  const out: FinykTxTagsEntry[] = [];
+  for (const [transactionId, raw] of Object.entries(map)) {
+    if (!Array.isArray(raw) || transactionId.length === 0) continue;
+    const tags = raw.filter(
+      (t): t is string => typeof t === "string" && t.trim().length > 0,
+    );
+    if (tags.length === 0) continue;
+    out.push({ transactionId, tagsJson: JSON.stringify(tags) });
+  }
+  return out;
+}
+
 /** Convert a tx-id → debtIds[] map into FinykMonoDebtLinkEntry[]. */
 export function monoDebtLinksFromMap(
   map: Record<string, unknown> | null | undefined,
@@ -233,6 +255,7 @@ export function extractFinykDualWriteState(
     txCategories: txCatsFromMap(slots.txCategories),
     txSplits: txSplitsFromMap(slots.txSplits),
     txNotes: txNotesFromMap(slots.txNotes),
+    txTags: txTagsFromMap(slots.txTags),
     monoDebtLinks: monoDebtLinksFromMap(slots.monoDebtLinkedTxIds),
     networthHistory: networthHistoryFrom(slots.networthHistory),
     prefs: {

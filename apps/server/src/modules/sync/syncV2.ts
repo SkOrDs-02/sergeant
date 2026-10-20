@@ -20,6 +20,7 @@ import {
   syncOpLogPullQueueDepth,
 } from "../../obs/metrics.js";
 import { notifySyncV2OpsApplied, type SyncV2StreamOp } from "./syncV2Stream.js";
+import { lockUserSyncOpLog } from "./serverOpLog.js";
 import { elapsedMs } from "../../lib/timing.js";
 import {
   APPLY_REJECT_REASONS,
@@ -87,6 +88,7 @@ import {
   applyFinykPrefs,
 } from "./finyk/applySync.js";
 import { applyFinykTxNotes } from "./finyk/applyTxNotes.js";
+import { applyFinykTxTags } from "./finyk/applyTxTags.js";
 
 export { APPLY_REJECT_REASONS, ENGINE_REJECT_REASONS };
 export type { ApplyRejectReason, EngineRejectReason, RejectReason };
@@ -213,6 +215,8 @@ const OP_LOG_TABLE_REGISTRY: Record<string, ApplyFn> = {
   finyk_hidden_transactions: applyFinykHiddenTransactions,
   // Нотатки до операцій (data-27, міграція 155): composite-PK tombstone з `note`.
   finyk_tx_notes: applyFinykTxNotes,
+  // Теги операцій (міграція 158): per-tx JSONB-масив із tombstone-ами 156.
+  finyk_tx_tags: applyFinykTxTags,
   finyk_budgets: perRowBlob("finyk_budgets"),
   finyk_subscriptions: perRowBlob("finyk_subscriptions"),
   finyk_assets: perRowBlob("finyk_assets"),
@@ -351,6 +355,11 @@ export async function syncV2Push(req: Request, res: Response): Promise<void> {
   const client = await pool.connect();
   try {
     await client.query("BEGIN");
+    // data-12: user-lock sync_op_log одразу після BEGIN, до дедуп-SELECT і
+    // будь-якого apply/INSERT: оп-и одного користувача не перемішуються між
+    // транзакціями, тож курсор pull не перескакує чужі id (див. докстрінг
+    // `lockUserSyncOpLog`).
+    await lockUserSyncOpLog(client, user.id);
 
     // Один дедуп-SELECT на весь батч замість одного на оп. Мапа
     // доповнюється по ходу циклу, тож повтор ключа всередині одного пуша

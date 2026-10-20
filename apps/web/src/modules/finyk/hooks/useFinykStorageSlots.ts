@@ -14,6 +14,7 @@ import type {
   CustomCategory,
   TxCategoriesMap,
   TxNotesMap,
+  TxTagsMap,
   MonoDebtLinkedMap,
   MonthlyPlan,
   NetworthEntry,
@@ -68,6 +69,9 @@ export interface FinykStorageSlots {
    * перелиття (`lib/txNotesLsImport.ts`). */
   txNotes: TxNotesMap;
   setTxNotes: Dispatch<SetStateAction<TxNotesMap>>;
+  /** Теги операцій (`finyk_tx_tags`): LS-ключа немає, лише SQLite і синк. */
+  txTags: TxTagsMap;
+  setTxTags: Dispatch<SetStateAction<TxTagsMap>>;
   monoDebtLinkedTxIds: MonoDebtLinkedMap;
   setMonoDebtLinkedTxIds: Dispatch<SetStateAction<MonoDebtLinkedMap>>;
   networthHistory: NetworthEntry[];
@@ -189,6 +193,7 @@ export function useFinykStorageSlots(): FinykStorageSlots {
   // SQLite (`prefs_json`) і sync-у, переносити нема чого.
   const [merchantRules, setMerchantRules] = useState<MerchantRule[]>([]);
   const [cashOnHand, setCashOnHand] = useState<CashOnHandState | null>(null);
+  const [txTags, setTxTags] = useState<TxTagsMap>({});
   // Stage 13 PR #074 — `finyk_show_balance_v1` slot. Default `true`
   // (UI shows balances unless user toggled off). Raw-string LS shape
   // (`"0"` / `"1"`), не JSON, тож беремо ручну useState + readRaw
@@ -243,6 +248,7 @@ export function useFinykStorageSlots(): FinykStorageSlots {
       setTxCategories(cache.txCategories);
       setTxSplits(cache.txSplits);
       setTxNotes(cache.txNotes);
+      setTxTags(cache.txTags);
       setMonoDebtLinkedTxIds(cache.monoDebtLinkedTxIds);
       setNetworthHistory(cache.networthHistory);
       if (cache.monthlyPlan !== null) setMonthlyPlan(cache.monthlyPlan);
@@ -286,6 +292,8 @@ export function useFinykStorageSlots(): FinykStorageSlots {
     setTxCategories,
     txNotes,
     setTxNotes,
+    txTags,
+    setTxTags,
     monoDebtLinkedTxIds,
     setMonoDebtLinkedTxIds,
     networthHistory,

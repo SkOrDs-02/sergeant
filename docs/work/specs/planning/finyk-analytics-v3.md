@@ -1,7 +1,7 @@
 # SPEC: Фінік, аналітика v3 - рахунки з готівкою, періоди, теги
 
-> **Last touched:** 2026-10-18 by @claude (звірка з `main` після редизайну v3: номер міграції, мова H, ієрархія Активів; рішення власника про перемикач періоду і керування тегами). **Next review:** 2027-01-08.
-> **Status:** Draft - рішення власника зібрано 2026-10-08 і 2026-10-18, виконання чекає «ок».
+> **Last touched:** 2026-10-20 by @claude (статус: реалізовано). **Next review:** 2027-01-08.
+> **Status:** Implemented - усі три фази в `main` і в проді: готівка й рахунки [#1532](https://github.com/SkOrDs-02/sergeant/pull/1532) + [#1533](https://github.com/SkOrDs-02/sergeant/pull/1533), періоди [#1537](https://github.com/SkOrDs-02/sergeant/pull/1537), теги [#1542](https://github.com/SkOrDs-02/sergeant/pull/1542); фільтри в обидва боки [#1543](https://github.com/SkOrDs-02/sergeant/pull/1543). Сліпий перезамір D5 (§ Верифікація п.4) ще не проведено.
 
 Попередник: [`finyk-analytics-v2.md`](./finyk-analytics-v2.md) (закрита 2026-09-27; та спека й була «v2 аналітики», тому ця - v3). Її § 6 «Поза скоупом v1» - джерело скоупу тут.
 

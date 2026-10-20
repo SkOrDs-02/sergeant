@@ -1,11 +1,11 @@
 # Редизайн v3: журнал виконання
 
-> **Last touched:** 2026-10-19 by @codex (cleanup підтвердженого застарілого web-коду опубліковано як draft [#1536](https://github.com/SkOrDs-02/sergeant/pull/1536); #1522 merged; native заморожений власником). **Next review:** 2026-11-09.
+> **Last touched:** 2026-10-19 by @codex ([#1536](https://github.com/SkOrDs-02/sergeant/pull/1536) merged; dead-doc baseline follow-up опубліковано як draft [#1541](https://github.com/SkOrDs-02/sergeant/pull/1541); native заморожений власником). **Next review:** 2026-11-09.
 > **Status:** Active
 
 Журнал виконання спеки [`redesign-v3.md`](./redesign-v3.md), PR за PR. Сесія, що бере наступний PR, читає цей файл першим: усе, чого немає в спеці, але треба знати далі, записано тут.
 
-**Поточний зріз:** спеку закрито 2026-10-18 (§ [Закриття спеки](#закриття-спеки--2026-10-18)), нових PR у межах спеки немає. Журнал лишається активним для погоджених доповнень власника: [#1522](https://github.com/SkOrDs-02/sergeant/pull/1522) (спільний канон порожніх станів) змерджено 2026-10-18 15:04 UTC; окремий cleanup підтверджених знахідок опубліковано як draft [#1536](https://github.com/SkOrDs-02/sergeant/pull/1536). Native не чіпати.
+**Поточний зріз:** спеку закрито 2026-10-18 (§ [Закриття спеки](#закриття-спеки--2026-10-18)), нових PR у межах спеки немає. [#1522](https://github.com/SkOrDs-02/sergeant/pull/1522) і cleanup [#1536](https://github.com/SkOrDs-02/sergeant/pull/1536) змерджено. Післямержевий CI #1536 знайшов протухлий dead-doc baseline; draft [#1541](https://github.com/SkOrDs-02/sergeant/pull/1541) знижує ratchet до факту. Native не чіпати.
 
 | PR                | Гілка                                | GitHub PR                                                | Стан   | Позиції каталогу § 2                                               |
 | ----------------- | ------------------------------------ | -------------------------------------------------------- | ------ | ------------------------------------------------------------------ |
@@ -22,7 +22,8 @@
 | Review fix        | `claude/redesign-v3-review-fixes`    | [#1510](https://github.com/SkOrDs-02/sergeant/pull/1510) | merged | Повторне приймання 1–37; регресії п. 7, 9, 18–29, 34–37            |
 | Content hierarchy | `claude/redesign-v3-content-groups`  | [#1511](https://github.com/SkOrDs-02/sergeant/pull/1511) | merged | Погоджене доповнення 02+03 до 18–22 і спільних web-примітивів      |
 | Empty states      | `claude/empty-states-refresh`        | [#1522](https://github.com/SkOrDs-02/sergeant/pull/1522) | merged | Погоджений post-spec канон first-run станів у чотирьох web-модулях |
-| Cleanup           | `claude/redesign-v3-cleanup`         | [#1536](https://github.com/SkOrDs-02/sergeant/pull/1536) | active | Підтверджені post-spec знахідки застарілого web-коду               |
+| Cleanup           | `claude/redesign-v3-cleanup`         | [#1536](https://github.com/SkOrDs-02/sergeant/pull/1536) | merged | Підтверджені post-spec знахідки застарілого web-коду               |
+| Cleanup CI        | `claude/redesign-v3-cleanup-ci`      | [#1541](https://github.com/SkOrDs-02/sergeant/pull/1541) | active | Зниження dead-doc baseline після #1536                             |
 
 ## Поправка власника 2026-10-10: швидка дія (PR4b, після мержу PR4, перед PR5)
 
@@ -1327,7 +1328,7 @@ Types-final, root-lint-final, format-final, build-final, size-final, eager-final
 
 ## Follow-up · 2026-10-18: cleanup застарілого web-коду
 
-**Гілка:** `claude/redesign-v3-cleanup`, від актуального `origin/main` `a02a58217`. **PR:** draft [#1536](https://github.com/SkOrDs-02/sergeant/pull/1536). Це окремий cleanup після змердженого #1522, без нової позиції каталогу § 2 і без зміни вигляду чи поведінки продукту. Native заморожений і не змінюється.
+**Гілка:** `claude/redesign-v3-cleanup`, від `origin/main` `a02a58217`. **PR:** [#1536](https://github.com/SkOrDs-02/sergeant/pull/1536), змерджено 2026-10-19 14:19 UTC як `4cf384334`. Це окремий cleanup після змердженого #1522, без нової позиції каталогу § 2 і без зміни вигляду чи поведінки продукту. Native заморожений і не змінюється.
 
 **Що прибрано.** Видалено недосяжний legacy web-onboarding: старий wizard, goal-first A/B, його приватні події, локальне сховище вибору й тести цієї гілки. Чинний first-run лишається у `WelcomeScreen` та `WelcomeModulePicker`. Видалено невикористані `useMonoTransactions`, web-дублікат `pulseStyle`, UI-примітиви `CounterReveal`, `HeroValueLine`, `KpiRowCompact`, hook `useTablistArrowKeys` і похідний `routes.ts` із тавтологічними тестами. Маршрути тепер напряму використовують `STANDALONE_ROUTE_PATHS`; канонічний розрахунок стану Фініка лишається у `@sergeant/finyk-domain`. Документацію, коментарі та PostHog manifest приведено до фактичних власників. `apps/landing/scripts/generate-icons.mjs` перевірено і збережено як документований ручний генератор; його додано до entry Knip.
 
@@ -1335,6 +1336,8 @@ Types-final, root-lint-final, format-final, build-final, size-final, eager-final
 
 **Межі.** Не змінено rendered UI, копі, маршрути користувача, дані, формули, синхронізацію, API, схеми чи mobile. Канонічна форма кнопки з merge-state дає той самий class string, що й legacy alias. Скріншоти не потрібні, бо rendered output не змінюється. Залишено свідомі entry/barrel/test-support файли, які імпорт-граф позначає як корені або інфраструктуру; cleanup не перетворюється на видалення робочих scaffold-поверхонь.
 
-**Публікація.** Draft #1536 створено через GitHub-конектор після push перевіреного дерева. Runtime-коміт і два docs-коміти пройшли штатні hooks; `--no-verify` не використовувався. Після цього запису буде окремий docs-only publication commit; його SHA та actual-head CI звіряються після push.
+**Публікація.** Draft #1536 створено через GitHub-конектор після push перевіреного дерева. Runtime-коміт і два docs-коміти пройшли штатні hooks; `--no-verify` не використовувався. PR змерджено до завершення першого CI run.
 
-**Наступній сесії:** якщо cleanup PR OPEN, перевірити лише actual-head CI й виправити червоне. Після мержу cleanup завершений; нову роботу брати лише за окремим дорученням власника.
+**CI follow-up.** CI run `39187140355` на змердженому head `5b57dd682` упав лише в `Script unit tests`: cleanup прибрав останні три згадки одного мертвого docs-шляху, а ratchet лишився на 104 шляхах / 232 згадках проти фактичних 103 / 229. Штатний `node scripts/check-dead-doc-links.mjs --update` знизив baseline до 103 / 229, без нових винятків і без послаблення правила. Повтор сканера: 103 шляхи, 229 згадок, `appeared=[]`, exit 0. Точний CI glob `node --test "scripts/__tests__/*.test.mjs"`: 722 passed / 0 failed, exit 0. Інші виконані job першого run, включно з Critical-flow E2E, migration drills, commitlint і gitleaks, зелені. Fix опубліковано як draft [#1541](https://github.com/SkOrDs-02/sergeant/pull/1541) із `origin/main` `1dac4008b`, бо #1536 уже merged.
+
+**Наступній сесії:** якщо Cleanup CI PR OPEN, перевірити лише actual-head CI й виправити червоне. Після його мержу cleanup завершений; нову роботу брати лише за окремим дорученням власника.

@@ -46,6 +46,7 @@ function emptyCache(): SqliteFinykCache {
     txCategories: {},
     txSplits: {},
     txNotes: {},
+    txTags: {},
     monoDebtLinkedTxIds: {},
     networthHistory: [],
     monthlyPlan: null,

@@ -283,6 +283,7 @@ export const MODULE_EXPORT_TABLES = {
     "finyk_tx_filters",
     "finyk_tx_notes",
     "finyk_tx_splits",
+    "finyk_tx_tags",
   ],
   fizruk: [
     "fizruk_custom_activities",
@@ -381,6 +382,7 @@ const EXPORT_EXCLUSIONS: ReadonlyArray<{
 const EXPORT_SOFT_DELETE_FILTERED: ReadonlySet<string> = new Set([
   "finyk_tx_categories",
   "finyk_tx_splits",
+  "finyk_tx_tags",
   "finyk_mono_debt_links",
   "finyk_networth_history",
 ]);

@@ -123,6 +123,8 @@ function makeFakeClient(
     calls.push({ sql, params });
     if (/^BEGIN|^COMMIT|^ROLLBACK|^SAVEPOINT/.test(sql.trim()))
       return { rows: [] };
+    // data-12: user-lock sync_op_log одразу після BEGIN.
+    if (/pg_advisory_xact_lock/.test(sql)) return { rows: [] };
     if (overrides["insertReceipt"] && /INSERT INTO receipts/.test(sql)) {
       return overrides["insertReceipt"](params);
     }
@@ -350,6 +352,12 @@ describe("saveReceiptHandler — новий чек, unmatched", () => {
       idx(/INSERT INTO finyk_manual_expenses/),
     );
     expect(idx(/INSERT INTO sync_op_log/)).toBeLessThan(idx(/^COMMIT/));
+
+    // data-12: user-lock sync_op_log береться одразу після BEGIN, до першого
+    // запису (receipts/finyk_manual_expenses), а не в момент емісії.
+    expect(idx(/^BEGIN/)).toBe(0);
+    expect(idx(/pg_advisory_xact_lock\(hashtext\('sync_op_log'\)/)).toBe(1);
+    expect(client.calls[1]?.params).toEqual(["u1"]);
   });
 
   it("data-16: mono-гілка НЕ емітить оп manual-витрати", async () => {
