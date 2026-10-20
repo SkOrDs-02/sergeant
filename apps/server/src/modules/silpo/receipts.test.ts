@@ -281,6 +281,8 @@ function makeFakeDb(
     rejections?: Array<{ transactionId: string; receiptId: string }>;
     /** Транзакції, що вже мають фіскальний чек finyk (`finyk_tx_receipt_links`). */
     finykLinkedTxIds?: string[];
+    /** `silpo_connection.receipts_wiped_at` (міграція 159) — wipe уже був. */
+    receiptsWipedAt?: Date | null;
   } = {},
 ) {
   const receipts = new Map<string, FakeReceiptRow>();
@@ -386,6 +388,12 @@ function makeFakeDb(
         links.push({ transactionId, receiptId });
       }
       return { rows: [], rowCount: 1 };
+    }
+    if (text.includes("SELECT receipts_wiped_at FROM silpo_connection")) {
+      return {
+        rows: [{ receipts_wiped_at: seed.receiptsWipedAt ?? null }],
+        rowCount: 1,
+      };
     }
     if (text.includes("UPDATE silpo_connection")) {
       // last_sync_at touch наприкінці успішного pullAndSyncReceipts.
@@ -590,6 +598,57 @@ describe("pullAndSyncReceipts", () => {
 
     expect(second).toMatchObject({ receiptsInserted: 0, itemsInserted: 0 });
     expect(db.items).toHaveLength(2); // still just the first sync's items
+  });
+
+  it("після wipe синк того самого набору замовлень не вставляє нічого (receipts_wiped_at)", async () => {
+    // data-47: wipe лишав підключення живим, тож наступний синк мовчки
+    // тягнув усі замовлення назад. Без відсіву за маркером тут було б
+    // receiptsInserted: 1 і 2 позиції.
+    const db = makeFakeDb({
+      // OFFLINE_ORDER куплено 2026-08-10, wipe — пізніше.
+      receiptsWipedAt: new Date("2026-08-20T00:00:00.000Z"),
+    });
+    mocks.callWithFreshAccessToken.mockResolvedValue({
+      ok: true,
+      data: { offline: [OFFLINE_ORDER], online: [] },
+    });
+
+    const result = await pullAndSyncReceipts("user-1", {
+      query: db.query,
+      withTransaction: db.withTransaction,
+    });
+
+    expect(result).toMatchObject({
+      offlinePulled: 1,
+      receiptsInserted: 0,
+      itemsInserted: 0,
+    });
+    expect(db.receipts.size).toBe(0);
+    expect(db.items).toHaveLength(0);
+  });
+
+  it("після wipe приймає лише замовлення, куплене ПІСЛЯ маркера", async () => {
+    const db = makeFakeDb({
+      // Між OFFLINE_ORDER (2026-08-10 12:00Z) і NEWER_ORDER (2026-08-15).
+      receiptsWipedAt: new Date("2026-08-12T00:00:00.000Z"),
+    });
+    const NEWER_ORDER = {
+      ...OFFLINE_ORDER,
+      createdAt: "2026-08-15T15:00:00",
+      receiptUrl: "https://receipt.silpo.elkasa.com.ua/r2token",
+    };
+    mocks.callWithFreshAccessToken.mockResolvedValue({
+      ok: true,
+      data: { offline: [OFFLINE_ORDER, NEWER_ORDER], online: [] },
+    });
+
+    const result = await pullAndSyncReceipts("user-1", {
+      query: db.query,
+      withTransaction: db.withTransaction,
+    });
+
+    expect(result).toMatchObject({ receiptsInserted: 1, itemsInserted: 2 });
+    expect([...db.receipts.keys()]).toEqual(["r2token"]);
   });
 
   it("leaves a receipt unmatched (first-class state) when no mono transaction candidate exists", async () => {

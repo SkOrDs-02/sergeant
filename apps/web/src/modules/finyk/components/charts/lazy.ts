@@ -23,3 +23,8 @@ export const AccountBars = lazyImport(
   () => import("../analytics/AccountBars"),
   "AccountBars",
 );
+
+export const TagBars = lazyImport(
+  () => import("../analytics/TagBars"),
+  "TagBars",
+);

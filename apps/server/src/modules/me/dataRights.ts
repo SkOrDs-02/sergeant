@@ -14,9 +14,16 @@ import {
   PUSH_DAILY_CAP_DEFAULT,
 } from "@sergeant/shared";
 import { logger } from "../../obs/logger.js";
-import { decryptHealthText } from "../../lib/healthTextCrypto.js";
 import { providerRegistry, type ProviderId } from "../billing/index.js";
 import { enqueueGdprCleanup } from "../gdpr/cleanupQueue.js";
+import {
+  EXPORT_EXCLUSIONS,
+  MODULE_EXPORT_TABLES,
+  fetchExtraExportSections,
+  fetchFinykReceiptLinks,
+  fetchModuleTables,
+  rowArray,
+} from "./exportBuilder.js";
 
 type Queryable = Pick<Pool | PoolClient, "query">;
 
@@ -83,12 +90,6 @@ function maybeIso(value: Date | string | null | undefined): string | null {
   if (!value) return null;
   const d = value instanceof Date ? value : new Date(value);
   return Number.isNaN(d.getTime()) ? null : d.toISOString();
-}
-
-function rowArray(
-  rows: ReadonlyArray<Record<string, unknown>>,
-): Record<string, unknown>[] {
-  return rows.map((row) => ({ ...row }));
 }
 
 function serializePreferences(
@@ -248,181 +249,6 @@ export async function upsertUserPreferences(
   return serializePreferences(result.rows[0]);
 }
 
-/**
- * Таблиці чотирьох продуктових модулів, які їдуть в експорт.
- *
- * AI-CONTEXT: до 2026-09-20 експорт про них не знав узагалі — віддавав
- * `moduleData: []` від таблиці `module_data`, дропнутої міграцією 046, і
- * людина забирала файл без жодного свого запису з модулів (рада скептиків
- * § A, спека `docs/work/specs/honest-export-and-first-screen.md`).
- *
- * Список статичний, а не `information_schema`-скан, навмисно: експорт —
- * найчутливіший файл у продукті, і те, що в нього потрапляє, має читатись
- * очима в ревʼю. Гейт від дрейфу — тест `dataRights.test.ts`
- * («перелік таблиць збігається з живими міграціями»).
- *
- * Мертві таблиці сюди не входять: `routine_pushups` знято міграцією 139,
- * `fizruk_pushups` — 140 (історія віджимань конвертована у звичайні
- * `fizruk_workouts`, щоб не мати трьох джерел однієї цифри).
- */
-export const MODULE_EXPORT_TABLES = {
-  finyk: [
-    "finyk_assets",
-    "finyk_budgets",
-    "finyk_custom_categories",
-    "finyk_debts",
-    "finyk_hidden_accounts",
-    "finyk_hidden_transactions",
-    "finyk_manual_expenses",
-    "finyk_mono_debt_links",
-    "finyk_networth_history",
-    "finyk_prefs",
-    "finyk_receivables",
-    "finyk_subscriptions",
-    "finyk_tx_categories",
-    "finyk_tx_filters",
-    "finyk_tx_notes",
-    "finyk_tx_splits",
-  ],
-  fizruk: [
-    "fizruk_custom_activities",
-    "fizruk_custom_exercises",
-    "fizruk_daily_log",
-    "fizruk_injuries",
-    "fizruk_measurements",
-    "fizruk_monthly_plan",
-    "fizruk_plan_templates",
-    "fizruk_programs",
-    "fizruk_wellbeing",
-    "fizruk_workout_items",
-    "fizruk_workout_sets",
-    "fizruk_workout_templates",
-    "fizruk_workouts",
-  ],
-  nutrition: [
-    "nutrition_goal_periods",
-    "nutrition_meals",
-    "nutrition_pantries",
-    "nutrition_pantry_events",
-    "nutrition_pantry_items",
-    "nutrition_prefs",
-    "nutrition_recipes",
-    "nutrition_shopping_list",
-    "nutrition_water_log",
-  ],
-  routine: [
-    "routine_categories",
-    "routine_completion_events",
-    "routine_completion_notes",
-    "routine_entries",
-    "routine_habit_order",
-    "routine_habit_skips",
-    "routine_habits",
-    "routine_prefs",
-    "routine_streaks",
-    "routine_tags",
-  ],
-} as const satisfies Record<string, readonly string[]>;
-
-export type ExportModuleId = keyof typeof MODULE_EXPORT_TABLES;
-
-/**
- * `finyk_tx_receipt_links` — єдина модульна таблиця без власного
- * `user_id`: вона привʼязана до `receipts(id)`, і людина в ній визначена
- * через чек (міграція 121). Тому окремий запит із join, а не спільний
- * шлях нижче.
- */
-const FINYK_RECEIPT_LINKS_SQL = `SELECT l.*
-     FROM finyk_tx_receipt_links l
-     JOIN receipts r ON r.id = l.receipt_id
-    WHERE r.user_id = $1`;
-
-/**
- * Що НЕ їде в експорт і чому. Секція публічна всередині файлу навмисно:
- * людина має бачити межу того, що забрала, а не здогадуватись про неї
- * (рішення власника, spec-інтервʼю 2026-09-20, раунд 3).
- */
-const EXPORT_EXCLUSIONS: ReadonlyArray<{
-  group: string;
-  tables: readonly string[];
-  reason: string;
-}> = [
-  {
-    group: "syncLog",
-    tables: ["sync_op_log", "sync_audit_log"],
-    reason:
-      "Технічний журнал синхронізації між пристроями, не твої записи: та сама зміна лежить у власній таблиці модуля.",
-  },
-  {
-    group: "nutritionBackups",
-    tables: ["nutrition_backups"],
-    reason:
-      "Знімки стану модуля харчування, а не первинні записи: страви, комора й вода їдуть у секції nutrition.",
-  },
-  {
-    group: "aiMemories",
-    tables: ["ai_memories"],
-    reason:
-      "Памʼять асистента. Переглянути й стерти її можна в налаштуваннях, у розділі «Згода та дані».",
-  },
-  {
-    group: "aiUsage",
-    tables: ["ai_usage_daily"],
-    reason:
-      "Службовий лічильник звернень до моделі й вартості, не дані про тебе.",
-  },
-];
-
-/**
- * Таблиці з soft-delete (`deleted_at`, міграція 156, data-15): експорт не
- * віддає tombstone-и — людина забирає свої живі записи, а не службові
- * позначки видалення. Список статичний, як і `MODULE_EXPORT_TABLES`.
- */
-const EXPORT_SOFT_DELETE_FILTERED: ReadonlySet<string> = new Set([
-  "finyk_tx_categories",
-  "finyk_tx_splits",
-  "finyk_mono_debt_links",
-  "finyk_networth_history",
-]);
-
-async function fetchModuleTables(
-  db: Queryable,
-  userId: string,
-  tables: readonly string[],
-): Promise<Record<string, Record<string, unknown>[]>> {
-  const allowed = new Set<string>(Object.values(MODULE_EXPORT_TABLES).flat());
-  const results = await Promise.all(
-    tables.map(async (table) => {
-      // Другий рубіж під інтерполяцією нижче: якщо список колись почне
-      // приходити не з константи, запит не піде взагалі.
-      if (!allowed.has(table)) {
-        throw new Error(`export: таблиця «${table}» не в allowlist-і`);
-      }
-      // eslint-disable-next-line no-restricted-syntax -- інтерполюється ЛИШЕ імʼя таблиці з замороженого `MODULE_EXPORT_TABLES` (перевірено рядком нижче); `userId` іде $-параметром. Той самий "allowlisted identifier" case, що alerts/store.ts.
-      const { rows } = await db.query<Record<string, unknown>>(
-        `SELECT * FROM ${table} WHERE user_id = $1${
-          EXPORT_SOFT_DELETE_FILTERED.has(table)
-            ? " AND deleted_at IS NULL"
-            : ""
-        }`,
-        [userId],
-      );
-      // GDPR: людина забирає свій текст, а не шифротекст (spec
-      // health-text-encryption). Legacy plaintext проходить без змін.
-      const out =
-        table === "fizruk_injuries"
-          ? rows.map((r) =>
-              typeof r["note"] === "string"
-                ? { ...r, note: decryptHealthText(r["note"]) }
-                : r,
-            )
-          : rows;
-      return [table, rowArray(out)] as const;
-    }),
-  );
-  return Object.fromEntries(results);
-}
-
 export async function buildMeExport(
   db: Queryable,
   user: MeResponse["user"],
@@ -450,6 +276,7 @@ export async function buildMeExport(
     nutrition,
     routine,
     finykReceiptLinks,
+    extra,
   ] = await Promise.all([
     getUserPreferences(db, user.id),
     db.query<Record<string, unknown>>(
@@ -503,7 +330,8 @@ export async function buildMeExport(
     fetchModuleTables(db, user.id, MODULE_EXPORT_TABLES.fizruk),
     fetchModuleTables(db, user.id, MODULE_EXPORT_TABLES.nutrition),
     fetchModuleTables(db, user.id, MODULE_EXPORT_TABLES.routine),
-    db.query<Record<string, unknown>>(FINYK_RECEIPT_LINKS_SQL, [user.id]),
+    fetchFinykReceiptLinks(db, user.id),
+    fetchExtraExportSections(db, user.id),
   ]);
 
   return {
@@ -518,7 +346,14 @@ export async function buildMeExport(
           : null,
         accounts: rowArray(monoAccounts.rows),
         transactions: rowArray(monoTransactions.rows),
+        jars: extra.monoJars,
       },
+      privat: extra.privat,
+      silpo: extra.silpo,
+      profile: extra.profile,
+      feedback: extra.feedback,
+      emailUnsubscribes: extra.emailUnsubscribes,
+      waitlist: extra.waitlist,
       billing: {
         subscriptions: rowArray(subscriptions.rows),
       },
@@ -528,7 +363,8 @@ export async function buildMeExport(
       },
       finyk: {
         ...finyk,
-        finyk_tx_receipt_links: rowArray(finykReceiptLinks.rows),
+        finyk_tx_receipt_links: finykReceiptLinks,
+        ...extra.finykRecords,
       },
       fizruk,
       nutrition,

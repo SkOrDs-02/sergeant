@@ -15,6 +15,11 @@ import type { Budget } from "@sergeant/finyk-domain/domain/types";
 import type { MerchantRule } from "@sergeant/finyk-domain/lib/merchantRules";
 import { CollectionManager } from "@shared/components/ui/CollectionManager";
 import { FinykMerchantRulesSection } from "./FinykMerchantRulesSection";
+import { FinykTagsSection } from "./FinykTagsSection";
+import { FinykExportSection } from "./FinykExportSection";
+import type { ManualExpenseEntry } from "@sergeant/finyk-domain/domain/transactions";
+import type { MerchantRuleIndex } from "@sergeant/finyk-domain/lib/merchantRules";
+import type { TagSummary } from "@sergeant/finyk-domain/domain/tags";
 import { FinykPrivatBankSection } from "./FinykPrivatBankSection";
 import { FinykWebhookServiceSection } from "./FinykWebhookServiceSection";
 import { SilpoIntegrationSection } from "./SilpoIntegrationSection";
@@ -73,6 +78,15 @@ interface FinykStorageShape {
   // тестах секції їх не дає.
   showBalance?: boolean | undefined;
   setShowBalance?: ((next: boolean) => void) | undefined;
+  // Дані для «Експорт» усієї історії; необовʼязкові з тієї ж причини.
+  hiddenTxIds?: readonly string[] | undefined;
+  txCategories?: Record<string, string | undefined> | undefined;
+  merchantRuleIndex?: MerchantRuleIndex | undefined;
+  manualExpenses?: readonly ManualExpenseEntry[] | undefined;
+  // Теги операцій (Р6.6); необовʼязкові з тієї ж причини: мок хука в тестах.
+  tagList?: readonly TagSummary[] | undefined;
+  renameTag?: ((key: string, newLabel: string) => void) | undefined;
+  removeTag?: ((key: string) => void) | undefined;
 }
 
 const NO_MERCHANT_RULES: readonly MerchantRule[] = [];
@@ -92,6 +106,13 @@ export function FinykSection() {
     restoreMerchantRules,
     showBalance = true,
     setShowBalance,
+    tagList,
+    renameTag,
+    removeTag,
+    hiddenTxIds,
+    txCategories,
+    merchantRuleIndex,
+    manualExpenses,
   } = useFinykStorage({}) as FinykStorageShape;
   const [newCategoryLabel, setNewCategoryLabel] = useState("");
   const [newCategoryKind, setNewCategoryKind] = useState<"expense" | "income">(
@@ -280,6 +301,22 @@ export function FinykSection() {
           customCategories={customCategories}
           deleteMerchantRule={deleteMerchantRule}
           restoreMerchantRules={restoreMerchantRules}
+        />
+
+        {tagList && renameTag && removeTag && (
+          <FinykTagsSection
+            tags={tagList}
+            renameTag={renameTag}
+            removeTag={removeTag}
+          />
+        )}
+
+        <FinykExportSection
+          manualExpenses={manualExpenses ?? []}
+          hiddenTxIds={hiddenTxIds ?? []}
+          txCategories={txCategories ?? {}}
+          merchantRuleIndex={merchantRuleIndex}
+          customCategories={customCategories}
         />
 
         <FinykWebhookServiceSection inView={inView} />

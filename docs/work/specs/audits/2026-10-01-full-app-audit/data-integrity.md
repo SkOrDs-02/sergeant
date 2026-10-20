@@ -1271,7 +1271,7 @@ My own live run (fresh user `skeptic_cs_gap4_2463@example.com`; script and outpu
 
 ### `data-12` [medium] Курсор pull перескакує оп-и паралельних транзакцій: вотермарк tx_id &lt; xmin не закриває гонку, і пристрій назавжди пропускає чужі зміни
 
-- **Стан:** відкрито
+- **Стан:** виправлено в гілці claude/fix-data-12-pull-cursor-advisory-lock (advisory-лок на користувача; не відновлює оп-и, вже втрачені в проді: пристрої з перестрибнутим курсором доганяє лише скидання курсора)
 - **Перевірка:** підтверджено · **Зусилля:** M · **Область:** server: sync (syncV2 pull, SSE replay)
 - **Де:** apps/server/src/modules/sync/syncV2.ts:343-583,653-680; apps/server/src/modules/sync/syncV2-core.ts:40-41; apps/server/src/modules/sync/syncV2Stream.ts:266-277; apps/server/src/migrations/147_sync_op_log_tx_watermark.sql; apps/web/src/core/syncEngine/syncEngineReader.ts:210-233; packages/api-client/src/endpoints/syncV2.ts:46-51
 - **Першопричина:** Pull віддає id &gt; since AND tx_id &lt; pg_snapshot_xmin ORDER BY id, а клієнт зберігає курсор = max(op.id). Push не бере per-user локу, тож BIGSERIAL id двох паралельних транзакцій чергуються; якщо транзакція зі старшим xid комітиться першою, поки молодша (з меншими id) ще відкрита, рядки старшої видимі, курсор стрибає вперед, і рядки молодшої вже ніколи не повертаються.
@@ -2550,7 +2550,7 @@ sync-client-wiring-playbook.md:53 (R7), :93 (3 таблиці дзеркала),
 
 ### `data-29` [medium] Імпорт виписки: друга однакова покупка за день губиться як «вже імпортовано»
 
-- **Стан:** відкрито
+- **Стан:** виправлено в гілці claude/fix-data-29-import-duplicate-purchase-v2 (рішення власника A: `occurrenceIndex` у превʼю по всіх рядках файлу, адитивне поле в `commit`; залишок: підмножина групи без індексу від старого клієнта чи відредагований рядок рахується від 0 за тілом запиту)
 - **Перевірка:** підтверджено · **Зусилля:** M · **Область:** server: finyk import (rowKey, commit) + web: bulkImport
 - **Де:** apps/server/src/modules/finyk/import/rowKey.ts:64-115; apps/server/src/modules/finyk/import/commit.ts:117,194,243-252; apps/web/src/modules/finyk/components/bulkImport/bulkImportRows.ts:55-61,199-203
 - **Першопричина:** computeOccurrenceIndices нумерує групу (дата, сума, напрям, опис) лише серед рядків тіла commit, а клієнт за замовчуванням не вибирає рядки з duplicateLikely і шле лише вибрані. Єдиний поданий рядок групи отримує index 0, збігається з id уже імпортованої покупки, і ON CONFLICT DO NOTHING повертає duplicate.
@@ -3632,7 +3632,7 @@ Reproduced on HEAD with my own user (v8-takeover.mjs). Tab 1 had /finyk/transact
 
 ### `data-46` [medium] Незавершений перенос анонімних даних назавжди блокує наступного користувача пристрою: екран збою і вічна смуга «дані ще не в профілі»
 
-- **Стан:** відкрито
+- **Стан:** частково виправлено в гілці claude/fix-data-46-anon-migration-unblock (вхід B більше не блокується: pending-claim A дає no-op-ready; анонімна партиція й claim A лишаються на пристрої до повернення A, очищення при виході A не робилось)
 - **Перевірка:** підтверджено · **Зусилля:** M · **Область:** web: durability (anonymousDataMigration)
 - **Де:** apps/web/src/core/durability/anonymousDataMigration.ts:149-192,809-833; apps/web/src/core/durability/AnonymousDataMigrationProvider.tsx:219-242,342-360
 - **Першопричина:** Якщо claim лишився pending для акаунта A (перенос упав на push, потім A вийшов), вихід стирає лише партицію A, а не анонімну партицію чи claim. Кожен вхід B кидає claim: pending-for-other-user, «Повторити» падає завжди, а isReady ніколи не стає true.
@@ -3677,7 +3677,7 @@ Reproduced on HEAD with my own user (v8-takeover.mjs). Tab 1 had /finyk/transact
 
 ### `data-47` [medium] «Видалити всі дані Сільпо назавжди» мовчки відкочується: полер знову тягне чеки, відновлює зняті лінки, а автоімпорт удруге додає продукти в комору
 
-- **Стан:** відкрито
+- **Стан:** частково виправлено в гілці claude/fix-data-47-silpo-wipe-sticks (варіант «а» рішення власника: маркер `receipts_wiped_at` на підключенні, міграція 159; синк і auto-claim комори більше не повертають стерте. Лишається: «wipe -> disconnect -> reconnect» повертає історію, бо disconnect видаляє рядок підключення разом із маркером; синк, що почався ДО wipe і дописує чеки після нього, не відсівається, бо маркер читається раз на початку)
 - **Перевірка:** спірне · **Зусилля:** M · **Область:** server: silpo (wipe, syncAll, pantryClaim) + web: автоімпорт
 - **Де:** apps/server/src/routes/silpo.ts:255-270; apps/server/src/modules/silpo/syncAll.ts:87-98; apps/server/src/modules/silpo/pantryClaim.ts:72-86; apps/web/src/modules/nutrition/hooks/useSilpoPantryAutoImport.ts:150-160; apps/web/src/modules/nutrition/components/SilpoIntegrationSection.tsx:425-440
 - **Першопричина:** wipeHandler робить лише DELETE FROM silpo_receipts і лишає silpo_connection у статусі connected (з last_sync_at і pantry_auto_import_since); каскад видаляє й silpo_tx_receipt_link_rejections, а нові позиції приходять з pantry_claimed_at = NULL.

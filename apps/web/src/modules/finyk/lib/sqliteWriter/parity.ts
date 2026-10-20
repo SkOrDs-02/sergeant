@@ -147,6 +147,13 @@ export async function probeFinykParity(
     userId,
   );
 
+  const sqliteTxTags = await readTombstonedKeyedIds(
+    client,
+    "finyk_tx_tags",
+    "transaction_id",
+    userId,
+  );
+
   // --- Tx notes (tombstone, payload `note`) ---
   const sqliteTxNotes = await readKeyedIds(
     client,
@@ -179,6 +186,7 @@ export async function probeFinykParity(
   const lsTxCategories = buildKeySet(next.txCategories, "transactionId");
   const lsTxSplits = buildKeySet(next.txSplits, "transactionId");
   const lsTxNotes = buildKeySet(next.txNotes, "transactionId");
+  const lsTxTags = buildKeySet(next.txTags, "transactionId");
   const lsMonoDebtLinks = buildKeySet(next.monoDebtLinks, "transactionId");
   const lsNetworthHistory = buildKeySet(next.networthHistory, "month");
   const lsHasPrefs = next.prefs !== null && next.prefs !== undefined;
@@ -208,6 +216,7 @@ export async function probeFinykParity(
   const txCategoriesDiff = compareSets(lsTxCategories, sqliteTxCategories);
   const txSplitsDiff = compareSets(lsTxSplits, sqliteTxSplits);
   const txNotesDiff = compareSets(lsTxNotes, sqliteTxNotes);
+  const txTagsDiff = compareSets(lsTxTags, sqliteTxTags);
   const monoDebtLinksDiff = compareSets(lsMonoDebtLinks, sqliteMonoDebtLinks);
   const networthHistoryDiff = compareSets(
     lsNetworthHistory,
@@ -228,6 +237,7 @@ export async function probeFinykParity(
     txCategoriesDiff.match &&
     txSplitsDiff.match &&
     txNotesDiff.match &&
+    txTagsDiff.match &&
     monoDebtLinksDiff.match &&
     networthHistoryDiff.match &&
     prefsMatch;
@@ -266,6 +276,7 @@ export async function probeFinykParity(
         },
         txSplits: { ls: lsTxSplits.size, sqlite: sqliteTxSplits.size },
         txNotes: { ls: lsTxNotes.size, sqlite: sqliteTxNotes.size },
+        txTags: { ls: lsTxTags.size, sqlite: sqliteTxTags.size },
         monoDebtLinks: {
           ls: lsMonoDebtLinks.size,
           sqlite: sqliteMonoDebtLinks.size,
@@ -327,6 +338,7 @@ export async function probeFinykParity(
       ),
       txSplits: detailWithDiff(lsTxSplits, sqliteTxSplits, txSplitsDiff),
       txNotes: detailWithDiff(lsTxNotes, sqliteTxNotes, txNotesDiff),
+      txTags: detailWithDiff(lsTxTags, sqliteTxTags, txTagsDiff),
       monoDebtLinks: detailWithDiff(
         lsMonoDebtLinks,
         sqliteMonoDebtLinks,
@@ -407,6 +419,7 @@ async function readTombstonedKeyedIds(
   table:
     | "finyk_tx_categories"
     | "finyk_tx_splits"
+    | "finyk_tx_tags"
     | "finyk_mono_debt_links"
     | "finyk_networth_history",
   keyColumn: "transaction_id" | "month",

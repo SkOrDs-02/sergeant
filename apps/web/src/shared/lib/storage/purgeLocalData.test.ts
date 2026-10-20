@@ -24,6 +24,7 @@ async function putInline(
   });
 }
 
+import { isHandoffDone, markHandoffDone } from "../../../core/db/kvvfsHandoff";
 import {
   isAppOwnedLocalStorageKey,
   purgeAppOwnedLocalData,
@@ -112,6 +113,35 @@ describe("purgeAppOwnedLocalStorage", () => {
 
   it("is a no-op on an empty store", () => {
     expect(purgeAppOwnedLocalStorage()).toBe(0);
+  });
+
+  // priv-17: маркери перелиття kvvfs → OPFS підпадають під префікс `sergeant.`,
+  // але мусять пережити вихід. Інакше `needsHandoff` знову імпортує знімок
+  // старого сховища, а гілка `!isHandoffDone` відкриває мертвий kvvfs.
+  it("лишає маркери перелиття OPFS (priv-17), решту sergeant.* стирає", () => {
+    localStorage.setItem("sergeant.storage.opfsHandoff.v1.user_42", "done");
+    localStorage.setItem("sergeant.storage.opfsHandoff.v1.anon", "done");
+    localStorage.setItem("sergeant.foo", "bar");
+
+    const removed = purgeAppOwnedLocalStorage();
+
+    expect(removed).toBe(1);
+    expect(
+      localStorage.getItem("sergeant.storage.opfsHandoff.v1.user_42"),
+    ).toBe("done");
+    expect(localStorage.getItem("sergeant.storage.opfsHandoff.v1.anon")).toBe(
+      "done",
+    );
+    expect(localStorage.getItem("sergeant.foo")).toBeNull();
+  });
+
+  it("pin: префікс виключення збігається з маркером, який реально пише kvvfsHandoff", () => {
+    markHandoffDone("user_pin");
+    expect(isHandoffDone("user_pin")).toBe(true);
+
+    purgeAppOwnedLocalStorage();
+
+    expect(isHandoffDone("user_pin")).toBe(true);
   });
 });
 

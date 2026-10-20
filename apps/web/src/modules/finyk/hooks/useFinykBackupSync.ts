@@ -63,6 +63,8 @@ export function useFinykBackupSync(
     setTxSplits,
     txNotes,
     setTxNotes,
+    txTags,
+    setTxTags,
     monoDebtLinkedTxIds,
     setMonoDebtLinkedTxIds,
     networthHistory,
@@ -93,6 +95,7 @@ export function useFinykBackupSync(
       setTxCategories(data.txCategories as TxCategoriesMap);
     if (data.txSplits) setTxSplits(data.txSplits as TxSplitsMap);
     if (data.txNotes) setTxNotes(data.txNotes as TxNotesMap);
+    if (data.txTags) setTxTags(data.txTags);
     if (data.monoDebtLinkedTxIds)
       setMonoDebtLinkedTxIds(data.monoDebtLinkedTxIds as MonoDebtLinkedMap);
     if (data.networthHistory)
@@ -122,6 +125,7 @@ export function useFinykBackupSync(
       txCategories,
       txSplits,
       txNotes,
+      txTags,
       monoDebtLinkedTxIds,
       networthHistory,
       customCategories,

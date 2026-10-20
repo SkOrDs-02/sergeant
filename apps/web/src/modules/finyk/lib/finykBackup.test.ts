@@ -38,6 +38,7 @@ function coldCache(): SqliteFinykCache {
     txCategories: {},
     txSplits: {},
     txNotes: {},
+    txTags: {},
     monoDebtLinkedTxIds: {},
     networthHistory: [],
     monthlyPlan: null,

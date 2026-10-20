@@ -603,7 +603,10 @@ describe("POST /api/silpo/disconnect", () => {
 
 describe("POST /api/silpo/wipe", () => {
   it("deletes silpo_receipts and reports the deleted count", async () => {
-    mocks.queryMock.mockResolvedValueOnce({ rows: [], rowCount: 3 });
+    mocks.queryMock.mockResolvedValueOnce({
+      rows: [{ deletedReceipts: 3 }],
+      rowCount: 1,
+    });
 
     const res = await request(appWith())
       .post("/api/silpo/wipe")
@@ -611,11 +614,31 @@ describe("POST /api/silpo/wipe", () => {
 
     expect(res.status).toBe(200);
     expect(res.body).toEqual({ ok: true, deletedReceipts: 3 });
-    expect(mocks.queryMock).toHaveBeenCalledWith(
-      "DELETE FROM silpo_receipts WHERE user_id = $1",
-      ["user-1"],
-      expect.anything(),
+    const sql = String(mocks.queryMock.mock.calls[0]?.[0]);
+    expect(sql).toContain("DELETE FROM silpo_receipts WHERE user_id = $1");
+    expect(mocks.queryMock.mock.calls[0]?.[1]).toEqual(["user-1"]);
+  });
+
+  it("у тому ж запиті ставить receipts_wiped_at на підключення (data-47)", async () => {
+    // Без маркера підключення лишалось connected, і полер за ≤8 год тягнув
+    // стерті чеки назад. DELETE і UPDATE мусять їхати ОДНИМ оператором
+    // (data-modifying CTE), щоб не розʼїхатись.
+    mocks.queryMock.mockResolvedValueOnce({
+      rows: [{ deletedReceipts: 0 }],
+      rowCount: 1,
+    });
+
+    const res = await request(appWith())
+      .post("/api/silpo/wipe")
+      .set("x-test-user-id", "user-1");
+
+    expect(res.status).toBe(200);
+    expect(mocks.queryMock).toHaveBeenCalledTimes(1);
+    const sql = String(mocks.queryMock.mock.calls[0]?.[0]);
+    expect(sql).toMatch(
+      /UPDATE silpo_connection\s+SET receipts_wiped_at = NOW\(\)/,
     );
+    expect(sql).toContain("WHERE user_id = $1");
   });
 });
 

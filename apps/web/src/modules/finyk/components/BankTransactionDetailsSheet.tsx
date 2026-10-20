@@ -13,6 +13,7 @@ import type {
   TxSplitsMap,
 } from "@sergeant/finyk-domain/domain/types";
 import type { CustomCategoryInput } from "@sergeant/finyk-domain/constants";
+import type { FinykTxTagsSlice } from "../hooks/useFinykTxTags";
 import type {
   Debt,
   LinkedTxRole,
@@ -21,6 +22,7 @@ import { Button } from "@shared/components/ui/Button";
 import { MaskedAmount } from "@shared/components/ui/MaskedAmount";
 import { Money } from "@shared/components/ui/Money";
 import { Sheet } from "@shared/components/ui/Sheet";
+import { TxTagsField } from "./TxTagsField";
 import { Switch } from "@shared/components/ui/Switch";
 import { messages } from "@shared/i18n/uk";
 import {
@@ -92,6 +94,8 @@ export interface BankTransactionDetailsSheetProps {
   ) => void;
   onCategoryChange: (id: string, categoryId: string | null) => void;
   onNoteChange: (id: string, note: string | null) => void;
+  /** Теги операції (Р6.2); без `setTxTags` поле не показується. */
+  tagsApi?: FinykTxTagsSlice | undefined;
   onSplitChange: (id: string, splits: TxSplit[] | null) => void;
   onToggleHidden: (id: string) => void;
   onToggleExcludedFromStats: (id: string) => void;
@@ -164,6 +168,7 @@ export function BankTransactionDetailsSheet({
   setLinkedTxRole,
   onCategoryChange,
   onNoteChange,
+  tagsApi,
   onSplitChange,
   onToggleHidden,
   onToggleExcludedFromStats,
@@ -324,6 +329,14 @@ export function BankTransactionDetailsSheet({
             onClose={() => undefined}
           />
         </section>
+
+        {tagsApi?.setTxTags && (
+          <TxTagsField
+            tags={tagsApi.txTags?.[transaction.id] ?? []}
+            known={tagsApi.tagList ?? []}
+            onChange={(next) => tagsApi.setTxTags?.(transaction.id, next)}
+          />
+        )}
 
         {(onCreateMerchantRule || onRemoveMerchantRule) && (
           <MerchantRuleOffer

@@ -33,6 +33,13 @@ export interface ConfirmDialogProps {
   confirmLabel: string;
   cancelLabel?: string;
   danger?: boolean;
+  /**
+   * Підняти діалог над оверлеєм замка застосунку (`z-300` проти звичайних
+   * `z-200`). Потрібно лише діалогам, що відкриваються ПОВЕРХ екрана PIN,
+   * напр. «є незбережені записи» при виході з акаунта з екрана замка
+   * (sec-12/priv-14): під замком такий діалог недосяжний, а `logout()` висить.
+   */
+  elevated?: boolean;
   onConfirm?: () => void;
   onCancel?: () => void;
 }
@@ -55,6 +62,7 @@ export const ConfirmDialog = memo(function ConfirmDialog({
   confirmLabel,
   cancelLabel = "Скасувати",
   danger = true,
+  elevated = false,
   onConfirm,
   onCancel,
 }: ConfirmDialogProps) {
@@ -90,7 +98,7 @@ export const ConfirmDialog = memo(function ConfirmDialog({
 
   return createPortal(
     <div
-      className="fixed inset-0 z-200 flex items-end justify-center sm:items-center motion-safe:animate-fade-in"
+      className={`fixed inset-0 ${elevated ? "z-300" : "z-200"} flex items-end justify-center sm:items-center motion-safe:animate-fade-in`}
       role="presentation"
     >
       {/* Scrim — real <button> keeps dismiss reachable by keyboard & AT.
