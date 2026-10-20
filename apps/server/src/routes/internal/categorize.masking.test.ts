@@ -66,6 +66,23 @@ describe("categorizeTransaction: що маскується перед відпр
     }
   });
 
+  it("маскує номер картки без роздільників (суцільні 16 цифр)", async () => {
+    const { categorizeTransaction } = await import("./categorize.js");
+
+    await categorizeTransaction(
+      {
+        description: "оплата 4141111111111111 магазин",
+        amount: -10000,
+        mcc: 0,
+      },
+      "test-key",
+    );
+
+    const payload = JSON.stringify(generateMock.mock.calls[0]?.[0]);
+    expect(payload).toContain("[card]");
+    expect(payload).not.toContain("4141111111111111");
+  });
+
   it("імена фізосіб в описі (невідомий MCC) НЕ маскуються: політика цього не обіцяє", async () => {
     const { categorizeTransaction } = await import("./categorize.js");
 

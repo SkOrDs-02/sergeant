@@ -70,6 +70,8 @@ const PATTERNS: [RegExp, string][] = [
   [/\bUA\d{27}\b/g, "[iban]"],
   // Card numbers: 4 groups of 4 digits (with spaces or dashes)
   [/\b\d{4}[\s-]\d{4}[\s-]\d{4}[\s-]\d{4}\b/g, "[card]"],
+  // Card numbers written without separators: 13-19 contiguous digits (PAN).
+  [/\b\d{13,19}\b/g, "[card]"],
   // Phone: +380 / 0 prefix + 9 more digits
   [/(?:\+380|0)\d{9}\b/g, "[phone]"],
   // Ukrainian РНОКПП: standalone 10-digit number

@@ -17,6 +17,18 @@ describe("maskPii", () => {
     expect(masked).not.toContain("+380501112233");
   });
 
+  it("masks a card number written without separators", () => {
+    const masked = maskPii("оплата картка 4141111111111111 магазин");
+    expect(masked).toBe("оплата картка [card] магазин");
+    expect(maskPii("4141 1111 1111 1111")).toBe("[card]");
+  });
+
+  it("does not touch ordinary amounts and short numbers", () => {
+    expect(maskPii("рахунок 12345 на 1500.50 грн")).toBe(
+      "рахунок 12345 на 1500.50 грн",
+    );
+  });
+
   it("is safe to apply repeatedly", () => {
     const once = maskPii("buyer@example.com paid with 4141 1111 1111 1111");
 
