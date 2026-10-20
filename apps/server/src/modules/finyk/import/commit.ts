@@ -167,9 +167,9 @@ async function upsertManualExpenseRows(
  * самолікується). Tombstone-рядки (undo/ручне видалення) свідомо НЕ
  * реплікуються — інакше повторний імпорт воскрешав би видалене.
  *
- * Порядок дедупу ЗА рядком — (а) mono, потім (б) between-imports
- * (буквально зі спеки): рядок, що matched на mono, НІКОЛИ не доходить до
- * ON CONFLICT-перевірки. AI-DANGER: якщо рядок раніше (в іншому commit)
+ * Порядок дедупу ЗА рядком — (а) mono (для `profile = "mono"` або без `profile`, data-30),
+ * потім (б) between-imports (буквально зі спеки): рядок, що matched на mono,
+ * НІКОЛИ не доходить до ON CONFLICT-перевірки. AI-DANGER: якщо рядок раніше (в іншому commit)
  * уже створив `finyk_manual_expenses`-запис БЕЗ мono-матчу, а тепер (у
  * цьому commit-і) той самий рядок matched-иться на mono, яка зʼявилась
  * пізніше (backfill/webhook-лаг) — стара manual-expense НЕ видаляється
@@ -218,15 +218,27 @@ export default async function commitImportHandler(
      * їх реплікуємо опом (created + живі дублі, § докстрінг handler-а). */
     const replicable: Array<{ id: string; state: UpsertedManualExpense }> = [];
 
-    // Два запити на весь батч незалежно від кількості рядків: mono-матч
-    // читає лише mono_transaction, тож вставки manual-expense на нього не
-    // впливають і порядок «спершу всі матчі, потім одна вставка» дає той
-    // самий результат, що колишній цикл «матч, вставка» по рядку.
-    const monoMatchedFlags = await findMonoMatchedRows(
-      client,
-      userId,
-      rowsWithIds.map(({ row }) => row),
-    );
+    // Два запити на весь батч незалежно від кількості рядків (для не-mono
+    // профілю mono-запиту немає взагалі): mono-матч читає лише
+    // mono_transaction, тож вставки manual-expense на нього не впливають і
+    // порядок «спершу всі матчі, потім одна вставка» дає той самий результат,
+    // що колишній цикл «матч, вставка» по рядку.
+    //
+    // Тір-1 лише для `mono` (data-30, рішення власника): виписка чи скрін
+    // іншого банку з тією ж сумою й датою в mono-операції не збігається «з того
+    // самого платежу», тож для `privat24` / `custom` / `screenshot` рядки НЕ
+    // скіпаємо. Відсутній `profile` (клієнт до data-30, у т.ч. чинний web, що
+    // його ще не шле) лишає колишню поведінку: інакше деплой бекенду мовчки
+    // вимкнув би mono-дедуп усім, а звужують його вже фільтри рахунку й
+    // споживання операції в `findMonoMatchedRows`.
+    const monoMatchedFlags =
+      body.profile === undefined || body.profile === "mono"
+        ? await findMonoMatchedRows(
+            client,
+            userId,
+            rowsWithIds.map(({ row }) => row),
+          )
+        : rowsWithIds.map(() => false);
     const upsertedById = await upsertManualExpenseRows(
       client,
       userId,

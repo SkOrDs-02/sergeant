@@ -7437,6 +7437,10 @@
             "type": "string",
             "enum": ["bank_screenshot", "bank_statement"]
           },
+          "profile": {
+            "type": "string",
+            "enum": ["mono", "privat24", "custom", "screenshot"]
+          },
           "rows": {
             "minItems": 1,
             "maxItems": 1000,
@@ -9811,6 +9815,9 @@
                     "duplicateLikely": {
                       "type": "boolean"
                     },
+                    "monoMatchLikely": {
+                      "type": "boolean"
+                    },
                     "categoryHint": {
                       "type": "string",
                       "minLength": 1,
@@ -9939,6 +9946,9 @@
                   "type": "boolean"
                 },
                 "duplicateLikely": {
+                  "type": "boolean"
+                },
+                "monoMatchLikely": {
                   "type": "boolean"
                 },
                 "categoryHint": {
