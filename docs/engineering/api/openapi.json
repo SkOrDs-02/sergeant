@@ -7465,6 +7465,11 @@
                   "type": "string",
                   "minLength": 1,
                   "maxLength": 120
+                },
+                "occurrenceIndex": {
+                  "type": "integer",
+                  "minimum": 0,
+                  "maximum": 10000
                 }
               },
               "required": [
@@ -9973,6 +9978,11 @@
                       "type": "string",
                       "minLength": 1,
                       "maxLength": 120
+                    },
+                    "occurrenceIndex": {
+                      "type": "integer",
+                      "minimum": 0,
+                      "maximum": 10000
                     }
                   },
                   "required": [
@@ -10098,6 +10108,11 @@
                   "type": "string",
                   "minLength": 1,
                   "maxLength": 120
+                },
+                "occurrenceIndex": {
+                  "type": "integer",
+                  "minimum": 0,
+                  "maximum": 10000
                 }
               },
               "required": [

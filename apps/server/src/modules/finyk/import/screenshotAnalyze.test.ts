@@ -506,6 +506,39 @@ describe("screenshotAnalyzeHandler", () => {
     expect(body.draft.bank).toBe("privat24");
     expect(body.draft.rows[0]?.amountKopiykas).toBe(500);
   });
+
+  it("data-29: однакові рядки скріна отримують occurrenceIndex 0,1 по всьому скріну", async () => {
+    envMock.LLM_RECEIPT_PROVIDER = "openrouter";
+    envMock.OPENROUTER_API_KEY = "or-key";
+    const coffee = (time: string) => ({
+      date: "2026-07-16",
+      time,
+      amount_kopiykas: 9500,
+      direction: "expense",
+      description: "Кава",
+      confidence: 0.9,
+    });
+    anthropicMessages.mockResolvedValueOnce(
+      anthropicResponses.text(
+        JSON.stringify({
+          doc_type: "bank_screenshot",
+          bank: "monobank",
+          rows: [coffee("09:10"), coffee("12:10")],
+        }),
+      ),
+    );
+
+    const res = makeRes();
+    await screenshotAnalyzeHandler(
+      makeReq({ image_base64: PNG_BASE64, mime_type: "image/png" }),
+      res,
+    );
+
+    const body = res.body as {
+      draft: { rows: Array<{ occurrenceIndex?: number }> };
+    };
+    expect(body.draft.rows.map((r) => r.occurrenceIndex)).toEqual([0, 1]);
+  });
 });
 
 // ───────── Обірвана відповідь і діагностика порожнього результату ────────

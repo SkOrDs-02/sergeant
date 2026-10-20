@@ -2550,7 +2550,7 @@ sync-client-wiring-playbook.md:53 (R7), :93 (3 таблиці дзеркала),
 
 ### `data-29` [medium] Імпорт виписки: друга однакова покупка за день губиться як «вже імпортовано»
 
-- **Стан:** відкрито
+- **Стан:** виправлено в гілці claude/fix-data-29-import-duplicate-purchase-v2 (рішення власника A: `occurrenceIndex` у превʼю по всіх рядках файлу, адитивне поле в `commit`; залишок: підмножина групи без індексу від старого клієнта чи відредагований рядок рахується від 0 за тілом запиту)
 - **Перевірка:** підтверджено · **Зусилля:** M · **Область:** server: finyk import (rowKey, commit) + web: bulkImport
 - **Де:** apps/server/src/modules/finyk/import/rowKey.ts:64-115; apps/server/src/modules/finyk/import/commit.ts:117,194,243-252; apps/web/src/modules/finyk/components/bulkImport/bulkImportRows.ts:55-61,199-203
 - **Першопричина:** computeOccurrenceIndices нумерує групу (дата, сума, напрям, опис) лише серед рядків тіла commit, а клієнт за замовчуванням не вибирає рядки з duplicateLikely і шле лише вибрані. Єдиний поданий рядок групи отримує index 0, збігається з id уже імпортованої покупки, і ON CONFLICT DO NOTHING повертає duplicate.

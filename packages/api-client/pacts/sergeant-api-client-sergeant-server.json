@@ -2137,7 +2137,8 @@
               "category": "transport",
               "date": "2026-01-16",
               "description": "АЗС",
-              "direction": "expense"
+              "direction": "expense",
+              "occurrenceIndex": 0
             }
           ],
           "source": "bank_statement"
@@ -2407,13 +2408,15 @@
               "categoryHint": "food",
               "date": "2026-01-15",
               "description": "Сільпо",
-              "direction": "expense"
+              "direction": "expense",
+              "occurrenceIndex": 0
             },
             {
               "amountKopiykas": 500000,
               "date": "2026-01-16",
               "description": "Поповнення «просто»",
               "direction": "expense",
+              "occurrenceIndex": 0,
               "transferLikely": true
             },
             {
@@ -2421,7 +2424,8 @@
               "date": "2026-01-17",
               "description": "АТБ",
               "direction": "expense",
-              "duplicateLikely": true
+              "duplicateLikely": true,
+              "occurrenceIndex": 0
             }
           ],
           "skipped": []
