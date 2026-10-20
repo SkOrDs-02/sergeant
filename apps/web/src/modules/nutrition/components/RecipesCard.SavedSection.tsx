@@ -16,7 +16,7 @@ import { Card } from "@shared/components/ui/Card";
 import { SectionHeading } from "@shared/components/ui/SectionHeading";
 import { Input } from "@shared/components/ui/Input";
 import { Button } from "@shared/components/ui/Button";
-import { cn } from "@shared/lib/ui/cn";
+import { ChoiceGroup } from "@shared/components/ui/Choice";
 import { scaleMacros, type SavedRecipe } from "../lib/recipeBook";
 import {
   buildRecipeLogEntry,
@@ -213,32 +213,18 @@ export function SavedSection({
                     </div>
                     <div className="mt-2 flex flex-wrap items-center gap-2">
                       {canGrams && (
-                        <div
-                          role="group"
-                          aria-label={`Як додати: ${r.title}`}
-                          className="flex gap-1"
-                        >
-                          {(["portions", "grams"] as const).map((m) => (
-                            <Button
-                              key={m}
-                              type="button"
-                              size="sm"
-                              variant="outline"
-                              className={cn(
-                                (gramsMode ? "grams" : "portions") === m &&
-                                  "bg-line/60",
-                              )}
-                              aria-pressed={
-                                (gramsMode ? "grams" : "portions") === m
-                              }
-                              onClick={() =>
-                                setLogModeById((s) => ({ ...s, [key]: m }))
-                              }
-                            >
-                              {m === "portions" ? "Порції" : "Грами"}
-                            </Button>
-                          ))}
-                        </div>
+                        <ChoiceGroup
+                          size="sm"
+                          ariaLabel={`Як додати: ${r.title}`}
+                          value={gramsMode ? "grams" : "portions"}
+                          onChange={(m) =>
+                            setLogModeById((s) => ({ ...s, [key]: m }))
+                          }
+                          items={[
+                            { value: "portions", label: "Порції" },
+                            { value: "grams", label: "Грами" },
+                          ]}
+                        />
                       )}
                       {gramsMode ? (
                         <>

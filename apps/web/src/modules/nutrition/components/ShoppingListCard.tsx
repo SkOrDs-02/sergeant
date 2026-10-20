@@ -3,7 +3,7 @@
  * Status: Active
  */
 import { MorphChevron } from "@shared/components/ui/MorphChevron";
-import { useMemo, useState } from "react";
+import { useId, useMemo, useState } from "react";
 import { pluralDays, pluralUa } from "@sergeant/shared";
 import type {
   AtHomeShoppingItem,
@@ -13,6 +13,7 @@ import { Card } from "@shared/components/ui/Card";
 import { EmptyState } from "@shared/components/ui/EmptyState";
 import { SectionHeading } from "@shared/components/ui/SectionHeading";
 import { Button } from "@shared/components/ui/Button";
+import { ChoiceGroup } from "@shared/components/ui/Choice";
 import { Input } from "@shared/components/ui/Input";
 import { cn } from "@shared/lib/ui/cn";
 import { openHubModule } from "@shared/lib/modules/hubNav";
@@ -231,7 +232,8 @@ export function ShoppingListCard({
   onAddItem,
   checkedItems,
 }: ShoppingListCardProps) {
-  const [source, setSource] = useState("recipes");
+  const [source, setSource] = useState<"recipes" | "weekplan">("recipes");
+  const sourceLabelId = useId();
   const [manualItemName, setManualItemName] = useState("");
   const trimmedManualName = manualItemName.trim();
   const handleAddManualItem = () => {
@@ -334,19 +336,21 @@ export function ShoppingListCard({
         </div>
 
         <div>
-          <div className="text-style-label text-muted mb-1">
+          <div id={sourceLabelId} className="text-style-label text-muted mb-1">
             Джерело для списку
           </div>
-          <div
-            role="radiogroup"
-            aria-label="Джерело для списку"
-            className="divide-y divide-line border-y border-line"
-          >
-            {[
+          <ChoiceGroup
+            variant="rows"
+            ariaLabelledBy={sourceLabelId}
+            className="border-y border-line"
+            value={source}
+            onChange={setSource}
+            disabled={shoppingBusy}
+            items={[
               {
-                id: "recipes",
+                value: "recipes",
                 label: "Рецепти",
-                meta: hasRecipes
+                description: hasRecipes
                   ? `${allRecipeOptions.length} ${pluralUa(
                       allRecipeOptions.length,
                       { one: "рецепт", few: "рецепти", many: "рецептів" },
@@ -354,38 +358,16 @@ export function ShoppingListCard({
                   : "немає рецептів",
               },
               {
-                id: "weekplan",
+                value: "weekplan",
                 label: "Тижневий план",
-                meta: hasWeekPlan
+                description: hasWeekPlan
                   ? `${weekPlan?.days?.length ?? 0} ${pluralDays(
                       weekPlan?.days?.length ?? 0,
                     )}`
                   : "немає плану",
               },
-            ].map((opt) => (
-              <button
-                key={opt.id}
-                type="button"
-                role="radio"
-                aria-checked={source === opt.id}
-                onClick={() => setSource(opt.id)}
-                disabled={shoppingBusy}
-                className="w-full min-h-[44px] flex items-baseline justify-between gap-3 text-left hover:bg-line/40 disabled:opacity-50 focus-ring transition-colors"
-              >
-                <span
-                  className={cn(
-                    "text-style-body text-text",
-                    source === opt.id ? "font-semibold" : "font-medium",
-                  )}
-                >
-                  {opt.label}
-                </span>
-                <span className="text-style-caption text-muted">
-                  {opt.meta}
-                </span>
-              </button>
-            ))}
-          </div>
+            ]}
+          />
 
           {source === "recipes" && (
             <div className="mt-2">
