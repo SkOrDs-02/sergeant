@@ -1,6 +1,7 @@
 import { useSyncExternalStore } from "react";
 import { z } from "zod";
 import { messages } from "@shared/i18n/uk";
+import { ChoiceCheckbox } from "@shared/components/ui/Choice";
 import { Notice } from "@shared/components/ui/Notice";
 import { createTypedStore } from "../../shared/lib/storage/typedStore";
 import { FLAG_REGISTRY, setFlag, useAllFlags } from "../lib/featureFlags";
@@ -68,25 +69,12 @@ export function ExperimentalSection() {
           {copy.warningBanner}
         </Notice>
         {!acknowledged && (
-          <div className="flex items-start gap-3 text-text">
-            <input
-              id="experimental-opt-in"
-              type="checkbox"
-              checked={acknowledged}
-              onChange={(e) => setExperimentalAcknowledged(e.target.checked)}
-              className="mt-1 h-4 w-4 shrink-0 accent-brand cursor-pointer"
-              data-testid="experimental-opt-in"
-            />
-            <label
-              htmlFor="experimental-opt-in"
-              className="flex-1 min-w-0 cursor-pointer"
-            >
-              <span className="text-style-label block">{copy.optInLabel}</span>
-              <span className="text-style-caption text-subtle mt-1 block leading-relaxed">
-                {copy.optInHint}
-              </span>
-            </label>
-          </div>
+          <ChoiceCheckbox
+            checked={acknowledged}
+            onChange={setExperimentalAcknowledged}
+            label={copy.optInLabel}
+            description={copy.optInHint}
+          />
         )}
         {/*
         Блокування тепер на САМОМУ тумблері, а не на коробці навколо нього.

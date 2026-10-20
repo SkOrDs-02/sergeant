@@ -64,7 +64,9 @@ describe("ExperimentalSection (PR-36 / §9.3)", () => {
 
     // Acceptance: «Перший раз — checkbox обовʼязковий…»
     expect(screen.getByText(COPY.optInLabel)).toBeTruthy();
-    expect(screen.getByTestId("experimental-opt-in")).toBeTruthy();
+    expect(
+      screen.getByRole("checkbox", { name: new RegExp(COPY.optInLabel) }),
+    ).toBeTruthy();
 
     const firstFlag = FLAG_REGISTRY.find((f) => f.experimental);
     if (!firstFlag) throw new Error("expected at least one experimental flag");
@@ -101,7 +103,9 @@ describe("ExperimentalSection (PR-36 / §9.3)", () => {
     // зеленим, а це інший дефект — секція, яку неможливо розблокувати.
     render(<ExperimentalSection />);
     expandSection();
-    fireEvent.click(screen.getByTestId("experimental-opt-in"));
+    fireEvent.click(
+      screen.getByRole("checkbox", { name: new RegExp(COPY.optInLabel) }),
+    );
 
     const firstFlag = FLAG_REGISTRY.find((f) => f.experimental);
     if (!firstFlag) throw new Error("expected at least one experimental flag");
@@ -134,10 +138,12 @@ describe("ExperimentalSection (PR-36 / §9.3)", () => {
 
     // «… потім toggle відкритий»: ack stays in storage, поки користувач не
     // очистив сайт-дату.
-    fireEvent.click(screen.getByTestId("experimental-opt-in"));
+    fireEvent.click(
+      screen.getByRole("checkbox", { name: new RegExp(COPY.optInLabel) }),
+    );
 
     expect(screen.queryByText(COPY.optInLabel)).toBeNull();
-    expect(screen.queryByTestId("experimental-opt-in")).toBeNull();
+    expect(screen.queryByRole("checkbox")).toBeNull();
     expect(__experimentalAcknowledgmentStoreForTests.get().acknowledged).toBe(
       true,
     );

@@ -294,7 +294,8 @@ describe("ChoiceCheckbox", () => {
         description="Для повтору"
       />,
     );
-    const box = screen.getByRole("checkbox");
+    const box = screen.getByRole("checkbox", { name: "Запамʼятати" });
+    expect(box).toHaveAccessibleDescription("Для повтору");
     expect(box).toHaveAttribute("aria-checked", "false");
     expect(screen.getByText("Для повтору").className).toContain("text-muted");
     fireEvent.click(box);

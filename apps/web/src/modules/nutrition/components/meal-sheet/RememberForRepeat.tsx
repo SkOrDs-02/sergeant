@@ -2,11 +2,12 @@
  * Last validated: 2026-10-08
  * Status: Active
  */
+import { ChoiceCheckbox } from "@shared/components/ui/Choice";
 import { messages } from "@shared/i18n/uk";
 
 const copy = messages.nutrition.addMeal;
 
-/** Чекбокс «Запамʼятати для повтору» на кроці «fill» (нові записи). */
+/** Позначка «Запамʼятати для повтору» на кроці «fill» (нові записи). */
 export function RememberForRepeat({
   checked,
   onChange,
@@ -15,26 +16,17 @@ export function RememberForRepeat({
   onChange: (next: boolean) => void;
 }) {
   return (
-    <label className="mt-4 flex min-h-[44px] cursor-pointer items-start gap-3 border-y border-line py-3">
-      <input
-        type="checkbox"
-        aria-label={copy.rememberForRepeat}
+    <div className="mt-4 border-y border-line py-1">
+      <ChoiceCheckbox
         checked={checked}
-        onChange={(event) => onChange(event.currentTarget.checked)}
-        className="mt-0.5 h-5 w-5 shrink-0 accent-text"
+        onChange={onChange}
+        label={
+          <span className="text-style-body font-semibold">
+            {copy.rememberForRepeat}
+          </span>
+        }
+        description={copy.rememberForRepeatHint}
       />
-      <span className="min-w-0">
-        <span className="block text-style-body font-semibold text-text">
-          {copy.rememberForRepeat}
-        </span>
-        {/* AI-NOTE: кегль тут навмисний — це підказка під
-            контролом («Запамʼятати для повтору»), а не текст,
-            який читають окремо; `text-style-body` зрівняв би
-            її з підписом самого чекбокса. */}
-        <span className="mt-0.5 block text-style-caption text-muted">
-          {copy.rememberForRepeatHint}
-        </span>
-      </span>
-    </label>
+    </div>
   );
 }
