@@ -575,4 +575,53 @@ describe("createMeEndpoints", () => {
       deleted: false,
     });
   });
+
+  it("PUT /api/avatar шле сирий Blob із його Content-Type і парсить відповідь", async () => {
+    const fetchMock = mockFetchOnce({
+      image: "/api/avatar/u1?v=1790000000000",
+      updatedAt: "2026-10-20T10:00:00.000Z",
+    });
+    const me = createMeEndpoints(createHttpClient());
+    const blob = new Blob([new Uint8Array([1, 2, 3])], { type: "image/webp" });
+
+    await expect(me.putAvatar(blob)).resolves.toEqual({
+      image: "/api/avatar/u1?v=1790000000000",
+      updatedAt: "2026-10-20T10:00:00.000Z",
+    });
+    const [url, init] = firstCall(fetchMock);
+    expect(String(url)).toMatch(/\/avatar$/);
+    const req = init as RequestInit;
+    expect(req.method).toBe("PUT");
+    expect(req.body).toBe(blob);
+    expect(new Headers(req.headers).get("content-type")).toBe("image/webp");
+  });
+
+  it("PUT /api/avatar відхиляє відповідь без image (контракт з сервером)", async () => {
+    mockFetchOnce({ status: true });
+    const me = createMeEndpoints(createHttpClient());
+    await expect(
+      me.putAvatar(new Blob([new Uint8Array([1])], { type: "image/png" })),
+    ).rejects.toThrow();
+  });
+
+  it("PUT /api/avatar: 413 і 415 піднімаються як ApiError зі status", async () => {
+    const me = createMeEndpoints(createHttpClient());
+    for (const status of [413, 415]) {
+      globalThis.fetch = vi.fn(async () =>
+        jsonResponse({ error: "x", code: "X" }, { status }),
+      ) as unknown as typeof fetch;
+      await expect(
+        me.putAvatar(new Blob([new Uint8Array([1])], { type: "image/png" })),
+      ).rejects.toMatchObject({ status });
+    }
+  });
+
+  it("DELETE /api/avatar бʼє в /avatar без тіла", async () => {
+    const fetchMock = mockFetchOnce({ ok: true });
+    const me = createMeEndpoints(createHttpClient());
+    await expect(me.deleteAvatar()).resolves.toEqual({ ok: true });
+    const [url, init] = firstCall(fetchMock);
+    expect(String(url)).toMatch(/\/avatar$/);
+    expect((init as RequestInit).method).toBe("DELETE");
+  });
 });

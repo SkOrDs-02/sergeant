@@ -50,6 +50,15 @@ const MeRestoreResponse = schemas.MeRestoreResponseSchema.meta({
   id: "MeRestoreResponse",
   description: "Відповідь POST /api/me/restore — прохання скасоване.",
 });
+const AvatarPutResponse = schemas.AvatarPutResponseSchema.meta({
+  id: "AvatarPutResponse",
+  description:
+    "Відповідь PUT /api/avatar. `image` — короткий відносний URL, уже записаний у `user.image`.",
+});
+const AvatarDeleteResponse = schemas.AvatarDeleteResponseSchema.meta({
+  id: "AvatarDeleteResponse",
+  description: "Відповідь DELETE /api/avatar — ідемпотентно.",
+});
 const UserProfilePutBody = schemas.UserProfilePutBodySchema.meta({
   id: "UserProfilePutBody",
   description:
@@ -554,6 +563,8 @@ export const namedSchemas = {
   MeDeleteResponse,
   MeDeletionStatusResponse,
   MeRestoreResponse,
+  AvatarPutResponse,
+  AvatarDeleteResponse,
   UserProfilePutBody,
   UserProfileResponse,
   UserPreferences,

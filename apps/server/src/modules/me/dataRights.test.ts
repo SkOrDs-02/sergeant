@@ -358,6 +358,7 @@ describe("buildMeExport — contract fixture (Hard Rule #3)", () => {
       "aiUsage",
       "coachMemory",
       "nudgeCache",
+      "avatar",
       "authSessions",
       "billingProviderIds",
       "integrationSecrets",

@@ -1,4 +1,15 @@
-import { jsonb, pgTable, text, timestamp } from "drizzle-orm/pg-core";
+import {
+  customType,
+  jsonb,
+  pgTable,
+  text,
+  timestamp,
+} from "drizzle-orm/pg-core";
+
+/** Postgres `bytea`; драйвер `pg` віддає/приймає `Buffer`. */
+const bytea = customType<{ data: Buffer; driverData: Buffer }>({
+  dataType: () => "bytea",
+});
 
 /**
  * Postgres schema for `user_profile` table.
@@ -21,6 +32,25 @@ import { jsonb, pgTable, text, timestamp } from "drizzle-orm/pg-core";
 export const userProfile = pgTable("user_profile", {
   userId: text("user_id").primaryKey(),
   payload: jsonb().notNull().default({}),
+  updatedAt: timestamp("updated_at", { withTimezone: true })
+    .notNull()
+    .defaultNow(),
+});
+
+/**
+ * Postgres schema for `user_avatars` table.
+ * Mirrors migration 160_user_avatars.sql (audit 2026-10-01, ux-14).
+ *
+ * Байти завантаженого аватара (webp/png/jpeg, до 50 КБ) прямо в Postgres:
+ * рішення власника без S3/R2/CDN. Один рядок на користувача;
+ * `user.image` вказує на короткий URL `/api/avatar/<userId>?v=<epoch>`.
+ * FK на `"user"(id)` з каскадом живе в SQL (Drizzle його не моделює, як і
+ * для сусідніх таблиць цього файлу).
+ */
+export const userAvatars = pgTable("user_avatars", {
+  userId: text("user_id").primaryKey(),
+  contentType: text("content_type").notNull(),
+  data: bytea("data").notNull(),
   updatedAt: timestamp("updated_at", { withTimezone: true })
     .notNull()
     .defaultNow(),

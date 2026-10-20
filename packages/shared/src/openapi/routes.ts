@@ -139,6 +139,92 @@ export const paths: ZodOpenApiPathsObject = {
     },
   },
 
+  // ────────────────────── /api/avatar (ux-14) ──────────────────────
+  // Байти аватара живуть у Postgres (`user_avatars`, migration 160), без
+  // S3/CDN. `user.image` = короткий відносний URL на GET нижче.
+  "/api/avatar": {
+    put: {
+      summary: "Завантажити аватар (сирі байти image/webp | png | jpeg)",
+      description:
+        "Body — сире зображення, не JSON; ліміт 50 КБ, magic bytes мусять збігатися із `Content-Type`. " +
+        "Upsert по користувачу; після успіху `user.image` = `/api/avatar/<userId>?v=<epoch>`.",
+      tags: ["auth"],
+      security: cookieOrBearer,
+      requestBody: {
+        required: true,
+        content: {
+          "image/webp": { schema: { type: "string", format: "binary" } },
+          "image/png": { schema: { type: "string", format: "binary" } },
+          "image/jpeg": { schema: { type: "string", format: "binary" } },
+        },
+      },
+      responses: {
+        "200": {
+          description: "Аватар збережено.",
+          content: {
+            "application/json": { schema: namedSchemas.AvatarPutResponse },
+          },
+        },
+        "400": validationError,
+        "401": unauthorized,
+        "413": {
+          description: "Payload завеликий (>50 КБ).",
+          content: { "application/json": { schema: namedSchemas.ApiError } },
+        },
+        "415": {
+          description:
+            "Непідтримуваний Content-Type або байти не збігаються з ним.",
+          content: { "application/json": { schema: namedSchemas.ApiError } },
+        },
+        "429": {
+          description: "Перевищено ліміт завантажень.",
+          content: { "application/json": { schema: namedSchemas.ApiError } },
+        },
+      },
+    },
+    delete: {
+      summary: "Видалити аватар",
+      tags: ["auth"],
+      security: cookieOrBearer,
+      responses: {
+        "200": {
+          description: "Аватар прибрано (або його й не було).",
+          content: {
+            "application/json": { schema: namedSchemas.AvatarDeleteResponse },
+          },
+        },
+        "401": unauthorized,
+      },
+    },
+  },
+  "/api/avatar/{userId}": {
+    get: {
+      summary: "Байти аватара власника сесії",
+      description:
+        "Лише власник (сесія): чужий `userId` або відсутній аватар - 404. " +
+        "Відповідь `image/*` з `Cache-Control: private, max-age=31536000, immutable` " +
+        "(версія в `?v=`), `X-Content-Type-Options: nosniff`.",
+      tags: ["auth"],
+      security: cookieOrBearer,
+      requestParams: {
+        path: z.object({ userId: z.string() }),
+        query: z.object({ v: z.string().optional() }),
+      },
+      responses: {
+        "200": {
+          description: "Байти зображення.",
+          content: {
+            "image/webp": { schema: { type: "string", format: "binary" } },
+            "image/png": { schema: { type: "string", format: "binary" } },
+            "image/jpeg": { schema: { type: "string", format: "binary" } },
+          },
+        },
+        "401": unauthorized,
+        "404": { description: "Аватара немає (або він не твій)." },
+      },
+    },
+  },
+
   // ────────────────────── /api/me/profile ──────────────────────
   // Write-through сховище профілю/біометрії (migration 115) — НЕ oplog-sync.
   "/api/me/profile": {

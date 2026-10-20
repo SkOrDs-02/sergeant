@@ -3,6 +3,7 @@ import type { Pool } from "pg";
 import { createInternalRouter } from "./internal/index.js";
 import { createAiMemoryRouter } from "./ai-memory.js";
 import { createAuthRouter } from "./auth.js";
+import { createAvatarRouter } from "./avatar.js";
 import { createBanksRouter } from "./banks.js";
 import { createMonoWebhookRouter } from "./mono-webhook.js";
 import { createBarcodeRouter } from "./barcode.js";
@@ -45,6 +46,7 @@ export function registerRoutes(app: Express, { pool }: { pool: Pool }): void {
   app.use(createStatusRouter({ pool }));
   app.use(createAuthRouter());
   app.use(createMeRouter());
+  app.use(createAvatarRouter());
   app.use(createBillingRouter({ pool }));
   app.use(createSyncRouter());
   app.use(createChatRouter());

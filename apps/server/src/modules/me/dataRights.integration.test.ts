@@ -325,6 +325,7 @@ describe("GET /api/me/export — GDPR data export", () => {
       "aiUsage",
       "coachMemory",
       "nudgeCache",
+      "avatar",
       "authSessions",
       "billingProviderIds",
       "integrationSecrets",

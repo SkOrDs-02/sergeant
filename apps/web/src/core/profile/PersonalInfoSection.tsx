@@ -13,12 +13,19 @@ import { useResetPinchZoomAfterCameraCapture } from "@shared/hooks/useResetPinch
 import { useApiForm } from "@shared/forms";
 import { mapApiErrorToUserCopy } from "@shared/lib/api/mapApiErrorToUserCopy";
 import { cn } from "@shared/lib/ui/cn";
+import { meApi } from "@shared/api";
 import {
   changeEmail,
+  refreshSessionCookieCache,
   sendVerificationEmail,
   updateUser,
 } from "../auth/authClient";
-import { assertAvatarFile, compressAvatar } from "./avatar";
+import {
+  assertAvatarFile,
+  avatarUploadErrorCopy,
+  compressAvatar,
+  resolveAvatarSrc,
+} from "./avatar";
 import type { ProfileUser } from "./types";
 
 // ── Zod schemas ────────────────────────────────────────────────────────────
@@ -122,37 +129,38 @@ export function PersonalInfoSection({
   // ── Non-form actions (avatar, verification) ───────────────────────────────
 
   /**
-   * Завантаження аватара. `file` тримаємо в замиканні, тому «Повторити» у
-   * тості жене той самий файл ще раз — користувачу не треба знову лізти в
-   * файловий діалог (тим паче що `fileRef.value` ми вже очистили).
+   * Завантаження аватара (ux-14). Стиснутий Blob іде СИРИМИ байтами на
+   * `PUT /api/avatar`; сервер сам кладе короткий URL у `user.image`.
+   * `toast.success` - ЛИШЕ після підтвердженої відповіді (200 зі схемою
+   * `AvatarPutResponse`, її парсить api-client): раніше `updateUser` віддавав
+   * `{status:true}`, хоч сервер тихо обнуляв `data:` URL, і людина бачила
+   * хибне «Аватар оновлено».
    *
-   * Валідаційні відмови (`assertAvatarFile` — не зображення, >5 MB) НЕ
-   * отримують «Повторити»: другий такий самий запит впаде так само, а
-   * реальний вихід — обрати інший файл. Тому для них окрема гілка з
-   * «Обрати інший», яка відкриває діалог вибору.
+   * `file` тримаємо в замиканні, тому «Повторити» у тості жене той самий
+   * файл ще раз (тим паче що `fileRef.value` ми вже очистили). Помилки, які
+   * повтором не лікуються (413/415/429, непридатний файл), отримують замість
+   * цього «Обрати інший».
    */
   const uploadAvatar = async (file: File) => {
     setUploadingAvatar(true);
     try {
-      const dataUrl = await compressAvatar(file);
-      const res = await updateUser({ image: dataUrl });
-      if (res.error) {
-        toast.error(
-          mapApiErrorToUserCopy(res.error, "Не вдалося оновити аватар"),
-          undefined,
-          { label: "Повторити", onClick: () => void uploadAvatar(file) },
-        );
-        return;
-      }
+      const blob = await compressAvatar(file);
+      await meApi.putAvatar(blob);
       toast.success("Аватар оновлено");
-      await onRefresh();
+      // Сесійний cookie-кеш Better Auth живе до 5 хв і тримав би старий
+      // `user.image`: скидаємо його, інакше нове фото зʼявилось би із
+      // запізненням. Збережено вже підтверджено - збій оновлення сесії не
+      // має перетворювати успіх на хибну помилку.
+      await refreshSessionCookieCache();
+      await onRefresh().catch(() => {});
     } catch (error) {
+      const copy = avatarUploadErrorCopy(error);
       toast.error(
-        error instanceof Error
-          ? error.message
-          : "Не вдалося обробити зображення",
+        copy.message,
         undefined,
-        { label: "Повторити", onClick: () => void uploadAvatar(file) },
+        copy.retryable
+          ? { label: "Повторити", onClick: () => void uploadAvatar(file) }
+          : { label: "Обрати інший", onClick: () => fileRef.current?.click() },
       );
     } finally {
       setUploadingAvatar(false);
@@ -183,17 +191,10 @@ export function PersonalInfoSection({
     setConfirmRemoveAvatar(false);
     setUploadingAvatar(true);
     try {
-      const res = await updateUser({ image: null });
-      if (res.error) {
-        toast.error(
-          mapApiErrorToUserCopy(res.error, "Не вдалося видалити аватар"),
-          undefined,
-          { label: "Повторити", onClick: () => void handleRemoveAvatar() },
-        );
-        return;
-      }
+      await meApi.deleteAvatar();
       toast.success("Аватар видалено");
-      await onRefresh();
+      await refreshSessionCookieCache();
+      await onRefresh().catch(() => {});
     } catch {
       toast.error("Не вдалося видалити аватар", undefined, {
         label: "Повторити",
@@ -251,7 +252,7 @@ export function PersonalInfoSection({
           >
             {user.image ? (
               <img
-                src={user.image}
+                src={resolveAvatarSrc(user.image)}
                 alt=""
                 className="w-full h-full object-cover"
               />
