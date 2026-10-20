@@ -11,10 +11,13 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 vi.mock("../lib/sqliteWriter/index", () => ({
   triggerFizrukDualWrite: vi.fn(),
-  isFizrukDualWriteRegistered: () => true,
+  isFizrukDualWriteRegistered: vi.fn(() => true),
 }));
 
-import { triggerFizrukDualWrite } from "../lib/sqliteWriter/index";
+import {
+  isFizrukDualWriteRegistered,
+  triggerFizrukDualWrite,
+} from "../lib/sqliteWriter/index";
 import { diffFizrukDualWriteOps } from "../lib/sqliteWriter/diff/index";
 import {
   __setFizrukSqliteCacheForTests,
@@ -125,6 +128,19 @@ describe("useTrainingProgram", () => {
     const { result } = renderHook(() => useTrainingProgram());
     act(() => result.current.deactivateProgram());
     expect(localStorage.getItem(LEGACY_LS_KEY)).toBeNull();
+  });
+
+  it("guest without a dual-write context keeps the choice in LS (the trigger is a no-op)", () => {
+    vi.mocked(isFizrukDualWriteRegistered).mockReturnValue(false);
+    try {
+      const { result } = renderHook(() => useTrainingProgram());
+      act(() => result.current.activateProgram("ppl"));
+      expect(localStorage.getItem(LEGACY_LS_KEY)).toBe("ppl");
+      act(() => result.current.deactivateProgram());
+      expect(localStorage.getItem(LEGACY_LS_KEY)).toBeNull();
+    } finally {
+      vi.mocked(isFizrukDualWriteRegistered).mockReturnValue(true);
+    }
   });
 
   it("pre-warm: a cold cache falls back to the legacy LS key until the boot drain runs", () => {

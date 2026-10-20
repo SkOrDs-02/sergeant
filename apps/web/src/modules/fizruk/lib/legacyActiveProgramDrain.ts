@@ -34,6 +34,9 @@ import {
 } from "./sqliteReader.js";
 import { applyFizrukDualWriteOps } from "./sqliteWriter/adapter.js";
 
+/** LWW-час міграції LS-значення: старіший за будь-який реальний вибір. */
+const LEGACY_MIGRATION_CLIENT_TS = "1970-01-01T00:00:00.000Z";
+
 /**
  * Має викликатися після `refreshFizrukSqliteState()`: перевірка «рядок уже є»
  * читає свіжий кеш.
@@ -58,8 +61,9 @@ export async function drainLegacyActiveProgram(
     const result = await applyFizrukDualWriteOps(
       client,
       [{ kind: "programs-set", programs: { activeProgramId } }],
-      // eslint-disable-next-line no-restricted-syntax -- LWW clientTs wall-clock, not a Kyiv day key
-      { userId, clientTs: new Date().toISOString() },
+      // Значення з LS не має справжнього часу вибору: беремо «епоху», щоб
+      // будь-який реальний вибір (локальний чи з іншого пристрою) переміг за LWW.
+      { userId, clientTs: LEGACY_MIGRATION_CLIENT_TS },
     );
     if (result.errored > 0 || result.applied === 0) return false;
 

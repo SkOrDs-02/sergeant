@@ -6,9 +6,16 @@ import {
   BUILTIN_PROGRAMS,
   getTodaySession,
 } from "@sergeant/fizruk-domain";
-import { safeReadStringLS, safeRemoveLS } from "@shared/lib/storage/storage";
+import {
+  safeReadStringLS,
+  safeRemoveLS,
+  safeWriteLS,
+} from "@shared/lib/storage/storage";
 
-import { triggerFizrukDualWrite } from "../lib/sqliteWriter/index";
+import {
+  isFizrukDualWriteRegistered,
+  triggerFizrukDualWrite,
+} from "../lib/sqliteWriter/index";
 import { extractProgramsSnapshot } from "../lib/fizrukDualWriteState";
 import {
   fizrukDualWriteTransition,
@@ -55,8 +62,14 @@ export function useTrainingProgram() {
     (id: string | null) => {
       setActiveProgramId(id);
       // Явний вибір користувача витісняє застарілий LS-ключ: інакше
-      // «знятий» вибір воскресне з нього при наступному буті.
-      safeRemoveLS(ACTIVE_PROGRAM_KEY);
+      // «знятий» вибір воскресне з нього при наступному буті. Гість без
+      // зареєстрованого dual-write-контексту: тригер нижче - no-op, тож LS
+      // лишається єдиним носієм вибору (інакше він жив би лише в стані React).
+      if (isFizrukDualWriteRegistered() || id === null) {
+        safeRemoveLS(ACTIVE_PROGRAM_KEY);
+      } else {
+        safeWriteLS(ACTIVE_PROGRAM_KEY, id);
+      }
       // SQLite-only запис через dual-write (-> sync_op_outbox). Fire-and-forget;
       // без зареєстрованого контексту тригер - no-op.
       try {

@@ -67,6 +67,14 @@ describe("drainLegacyActiveProgram", () => {
     });
   });
 
+  it("migrates with an epoch clientTs so any real synced choice wins LWW", async () => {
+    localStorage.setItem(KEY, "ppl");
+    await drainLegacyActiveProgram(handle.client, UID);
+    expect(vi.mocked(enqueueOutboxUpsert).mock.calls[0]![1]).toMatchObject({
+      clientTs: "1970-01-01T00:00:00.000Z",
+    });
+  });
+
   it("is a no-op without an LS key", async () => {
     expect(await drainLegacyActiveProgram(handle.client, UID)).toBe(false);
     expect(programRows()).toEqual([]);
