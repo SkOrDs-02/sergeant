@@ -100,6 +100,18 @@ Coverage include в обох прогонах обмежено саме цим �
 
 Node 22.19.0, pnpm 9.15.1; залежності з незміненого lockfile.
 
+Повний `pnpm --filter @sergeant/server test:coverage` завершився з exit 0:
+459 файлів, 6816 passed, 5 skipped, 11 todo; рядки 94.70%, гілки 85.88%.
+Порівнювати цей відсоток із CI 19 жовтня як чистий ефект PR не можна:
+відтоді змінився код і знаменник покриття. Чистий вимір до / після для
+`dbReplica.ts` наведено вище.
+
+Повний `CI=true pnpm --filter @sergeant/server test:integration`, розпочатий
+до правки SQL-бюджету, дав 254 passed / 1 failed у 28 файлах. Єдине
+падіння — `expected 7 to be 6`; після правки весь відповідний файл
+повторно дав 15 passed. Повторного повного прогону всіх 255 сценаріїв
+після цієї правки не було; це не твердження про повний зелений integration-run.
+
 | Команда                                                                                                                                                                                                                   | Результат                                                     |
 | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------- |
 | `pnpm --filter @sergeant/server exec vitest run src/dbReplica.test.ts src/dbReplica.routing.test.ts --coverage --coverage.include=src/dbReplica.ts --coverage.reportsDirectory=/workspace/scratch/replica-final-coverage` | 22 passed; 100% рядків, 95.83% гілок helper-а                 |
