@@ -39,6 +39,9 @@ import {
 import { clearPersistedQueryCache } from "@shared/lib/api/queryClientPersister";
 import { flushPendingSyncOpsBeforeLogout } from "../syncEngine/flushBeforeLogout";
 import { teardownLocalStateAfterSessionLoss } from "./sessionLossTeardown";
+import { broadcastSessionEnded } from "./sessionBroadcast";
+import { clearHubQuickStatsSnapshots } from "./hubQuickStatsSnapshots";
+import { useCrossTabSessionEnd } from "./useCrossTabSessionEnd";
 import { releasePushSubscriptionOnLogout } from "./releasePushOnLogout";
 import * as pendingSignOut from "./pendingSignOut";
 import { usePendingSignOutRetry } from "./usePendingSignOutRetry";
@@ -58,7 +61,6 @@ import {
   safeReadStringSS,
   safeWriteSS,
   safeRemoveSS,
-  safeRemoveLS,
   webKVStore,
 } from "@shared/lib/storage/storage";
 
@@ -444,22 +446,6 @@ interface AuthContextValue {
   refresh: () => Promise<void>;
 }
 
-/**
- * Derived hub bento snapshots. Flat, not keyed by user, so they must be
- * dropped on every identity change — including a UI logout, which
- * pre-stamps the chat owner and therefore bypasses the reconcile effect.
- */
-const HUB_QUICK_STATS_KEYS = [
-  "finyk_quick_stats",
-  "fizruk_quick_stats",
-  "routine_quick_stats",
-  "nutrition_quick_stats",
-] as const;
-
-function clearHubQuickStatsSnapshots(): void {
-  for (const key of HUB_QUICK_STATS_KEYS) safeRemoveLS(key);
-}
-
 const AuthContext = createContext<AuthContextValue | null>(null);
 
 interface AuthProviderProps {
@@ -628,9 +614,15 @@ export function AuthProvider({ children }: AuthProviderProps) {
         );
       })
       .finally(() => {
+        // priv-02: решта вкладок цього браузера теж не мусять далі показувати
+        // дані попередньої сесії.
+        broadcastSessionEnded();
         window.location.reload();
       });
   }, [status, user?.id, queryClient]);
+
+  // priv-02: сесію завершила ІНША вкладка — див. `useCrossTabSessionEnd`.
+  useCrossTabSessionEnd(Boolean(user), queryClient, setSignedOut);
 
   const [authError, setAuthError] = useState<string | null>(null);
 
@@ -848,6 +840,10 @@ export function AuthProvider({ children }: AuthProviderProps) {
       // `sec-07`: маркер ДО запиту — обрив/закриття вкладки посеред `signOut()`
       // теж лишає його. Знімається лише після підтвердження сервера нижче.
       pendingSignOut.markPendingSignOut();
+      // `priv-02`: інші вкладки цього браузера діляться cookie сесії й тримають
+      // дані в памʼяті. Сигналимо ПІСЛЯ маркера: вкладка, що перезавантажиться
+      // раніше за підтвердження сервера, побачить маркер і лишиться розлогіненою.
+      broadcastSessionEnded();
       // `priv-04`: зняти web-push підписку ДО `signOut()` — серверний
       // `unregister` потребує живої сесії. Best-effort під таймаутом, не
       // кидає; інакше банківські пуші A далі приходили б наступній людині
