@@ -10,6 +10,7 @@
  * Extracted in page-audit-08 F7 split (see
  * docs/audits/2026-05-13-page-audit-08-nutrition.md).
  */
+import { MorphChevron } from "@shared/components/ui/MorphChevron";
 import type { Dispatch, SetStateAction } from "react";
 import { Card } from "@shared/components/ui/Card";
 import { SectionHeading } from "@shared/components/ui/SectionHeading";
@@ -95,9 +96,7 @@ export function SavedSection({
             <span className="text-style-caption text-muted">…</span>
           )}
         </span>
-        <span aria-hidden className="text-style-label font-semibold text-muted">
-          {savedOpen ? "Сховати" : "Показати"}
-        </span>
+        <MorphChevron open={savedOpen} className="text-subtle" />
       </button>
 
       {savedOpen && (
@@ -174,12 +173,7 @@ export function SavedSection({
                               : ""}
                           </span>
                         </span>
-                        <span
-                          aria-hidden
-                          className="shrink-0 text-style-label font-semibold text-muted"
-                        >
-                          {isOpen ? "Сховати" : "Показати"}
-                        </span>
+                        <MorphChevron open={isOpen} className="text-subtle" />
                       </button>
                       <div className="flex gap-2 shrink-0 flex-wrap">
                         <Button

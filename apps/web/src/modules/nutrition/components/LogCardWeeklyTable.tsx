@@ -3,6 +3,7 @@
  * Status: Active
  */
 /* eslint-disable sergeant-design/no-cyrillic-jsx-literal -- pre-existing i18n tech debt; strings moved from LogCard.tsx during T3 decomposition */
+import { MorphChevron } from "@shared/components/ui/MorphChevron";
 import { useMemo, useState } from "react";
 import { getMacrosForDateRange } from "../lib/nutritionStorage";
 import type { NutritionLog } from "@sergeant/nutrition-domain";
@@ -42,9 +43,7 @@ export function LogCardWeeklyTable({
         <span className="text-style-body font-semibold text-text">
           Журнал за тиждень
         </span>
-        <span className="text-style-label text-muted">
-          {weekOpen ? "Сховати" : "Показати"}
-        </span>
+        <MorphChevron open={weekOpen} className="text-subtle" />
       </button>
 
       {weekOpen && (

@@ -1,3 +1,4 @@
+import { MorphChevron } from "@shared/components/ui/MorphChevron";
 import { cn } from "@shared/lib/ui/cn";
 import { FIELD_LABEL } from "@shared/components/ui/Input";
 import { useState } from "react";
@@ -107,11 +108,12 @@ export function DailyPlanMealRow({
       {(meal.ingredients?.length ?? 0) > 0 && (
         <button
           type="button"
-          className="mt-2 rounded-lg text-style-label font-semibold text-muted hover:text-text focus-ring"
+          className="mt-2 inline-flex min-h-[44px] items-center gap-1.5 rounded-lg text-style-label font-semibold text-text focus-ring"
           onClick={() => setExpanded((v) => !v)}
           aria-expanded={expanded}
         >
-          {expanded ? "Сховати інгредієнти" : "Інгредієнти"}
+          Інгредієнти
+          <MorphChevron open={expanded} className="text-subtle" />
         </button>
       )}
       {expanded && (meal.ingredients?.length ?? 0) > 0 && (
