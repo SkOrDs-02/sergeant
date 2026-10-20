@@ -200,6 +200,17 @@ describe("шаблони листів", () => {
     expect(mail.html).not.toContain("<script>");
     expect(mail.html).toContain("&lt;script&gt;");
   });
+
+  it("сповіщення про вже зроблену зміну показує нову адресу і екранує HTML", async () => {
+    const m = await loadModule(BETTER_AUTH_URL_KEYS);
+    const mail = m.emailChangedNoticeMail(
+      '"><script>alert(1)</script>@example.com',
+    );
+    expect(mail.text).toContain("@example.com");
+    expect(mail.text).toContain("Якщо це був не ти");
+    expect(mail.html).not.toContain("<script>");
+    expect(mail.html).toContain("&lt;script&gt;");
+  });
 });
 
 /**
