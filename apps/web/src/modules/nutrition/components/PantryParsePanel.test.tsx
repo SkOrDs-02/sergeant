@@ -4,7 +4,7 @@
  * Status: Active
  */
 import { describe, expect, it, vi } from "vitest";
-import { fireEvent, render, screen } from "@testing-library/react";
+import { fireEvent, render, screen, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { PantryListGuide, PantryParsePreview } from "./PantryParsePanel";
 import type { PantryParsePreview as PantryParsePreviewData } from "../hooks/useNutritionPantries";
@@ -19,6 +19,19 @@ const PREVIEW: PantryParsePreviewData = {
 };
 
 describe("PantryParsePreview", () => {
+  it("тримає позначки в названій групі (контракт ChoiceCheckbox)", () => {
+    render(
+      <PantryParsePreview
+        preview={PREVIEW}
+        onConfirm={vi.fn()}
+        onDismiss={vi.fn()}
+        busy={false}
+      />,
+    );
+    const group = screen.getByRole("group", { name: /Розібрано 2/ });
+    expect(within(group).getAllByRole("checkbox")).toHaveLength(2);
+  });
+
   it("confirms only the items left checked", async () => {
     const onConfirm = vi.fn();
     render(

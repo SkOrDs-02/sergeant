@@ -14,7 +14,7 @@
  * `pantry.upsertItem` (нічого не пишеться мовчки — див.
  * `useSilpoPantryReplenish.ts`).
  */
-import { useState } from "react";
+import { useId, useState } from "react";
 import { Sheet } from "@shared/components/ui/Sheet";
 import { Button } from "@shared/components/ui/Button";
 import { ChoiceCheckbox, ChoiceGroup } from "@shared/components/ui/Choice";
@@ -144,6 +144,7 @@ export function SilpoPantryReplenishSheet({
   busy,
 }: SilpoPantryReplenishSheetProps) {
   const toast = useToast();
+  const itemsHeadingId = useId();
   const {
     receipts,
     receiptsLoading,
@@ -271,7 +272,12 @@ export function SilpoPantryReplenishSheet({
 
         {selectedReceiptId && (
           <section>
-            <SectionHeading as="h3" size="md" className="mb-2">
+            <SectionHeading
+              as="h3"
+              size="md"
+              id={itemsHeadingId}
+              className="mb-2"
+            >
               {COPY.itemsHeading}
             </SectionHeading>
             {/* Нагадування приватності перед поповненням комори — повний
@@ -287,7 +293,11 @@ export function SilpoPantryReplenishSheet({
                 {COPY.itemsEmpty}
               </p>
             ) : (
-              <ul className="divide-y divide-line">
+              <ul
+                role="group"
+                aria-labelledby={itemsHeadingId}
+                className="divide-y divide-line"
+              >
                 {rows.map((row) => (
                   <ReceiptItemRow
                     key={row.item.id}

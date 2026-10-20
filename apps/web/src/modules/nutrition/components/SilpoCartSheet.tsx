@@ -454,7 +454,11 @@ export function SilpoCartSheet({ open, onClose, items }: SilpoCartSheetProps) {
           )}
           {!isLoading && !previewErrorKind && rows.length > 0 && (
             <>
-              <ul className="divide-y divide-line">
+              <ul
+                role="group"
+                aria-label={COPY.listAria}
+                className="divide-y divide-line"
+              >
                 {rows.map((row, i) => (
                   <CartRow
                     key={`${i}:${row.query}`}

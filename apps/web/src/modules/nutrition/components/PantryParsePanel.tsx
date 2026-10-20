@@ -15,7 +15,7 @@
  * підтвердження решти — «Додати N» лишається доступним із дефолтом «шт»,
  * доки людина не тапне.
  */
-import { useState } from "react";
+import { useId, useState } from "react";
 import { Button } from "@shared/components/ui/Button";
 import { ChoiceCheckbox, ChoiceGroup } from "@shared/components/ui/Choice";
 import { MorphChevron } from "@shared/components/ui/MorphChevron";
@@ -97,6 +97,7 @@ export function PantryParsePreview({
   busy,
   onResolveAmbiguousUnit,
 }: PantryParsePreviewProps) {
+  const countId = useId();
   const [excluded, setExcluded] = useState<Set<number>>(() => new Set());
   const [unitOverrides, setUnitOverrides] = useState<
     Record<number, AmbiguousPantryUnit>
@@ -132,7 +133,7 @@ export function PantryParsePreview({
   return (
     <div className="mt-3 border-t border-line pt-3">
       <div className="flex items-center justify-between gap-2 mb-2">
-        <span className="text-style-label text-text">
+        <span id={countId} className="text-style-label text-text">
           {PREVIEW.parsedCount} {preview.items.length}
         </span>
         {preview.source === "local" && (
@@ -142,7 +143,11 @@ export function PantryParsePreview({
         )}
       </div>
 
-      <ul className="divide-y divide-line mb-3">
+      <ul
+        role="group"
+        aria-labelledby={countId}
+        className="divide-y divide-line mb-3"
+      >
         {preview.items.map((item, i) => {
           const resolvedUnit = unitOverrides[i] ?? item.unit;
           const qty = item.ambiguousQty
