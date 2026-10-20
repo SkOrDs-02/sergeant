@@ -34,12 +34,14 @@ describe("QuickAddChips", () => {
   // (Chromium @390px — 996px замість 358px), бо `overflow-x-auto` не
   // обнуляє внесок вмісту в min-content grid-item-а. Пін на containment —
   // jsdom не рахує розкладку, тож механізм перевіряємо по класу.
-  it("keeps the scroll row's width independent of its content", () => {
+  // v3.1 А4: рядок переноситься, а не скролиться, щоб назву не обрізало.
+  it("wraps chips and keeps the row's width independent of its content", () => {
     render(<QuickAddChips chips={[CHIP]} onTap={vi.fn()} />);
     const row = screen.getByRole("group", {
       name: "Нещодавні прийоми їжі",
     });
-    expect(row.className).toContain("overflow-x-auto");
+    expect(row.className).toContain("flex-wrap");
+    expect(row.className).not.toContain("overflow-x-auto");
     expect(row.className).toContain("[contain:inline-size]");
   });
 

@@ -77,12 +77,6 @@ function nullableToChipMacros(m: NullableMacros): QuickChipMacros {
   };
 }
 
-function truncateLabel(name: string, maxChars = 12): string {
-  const trimmed = name.trim();
-  if (trimmed.length <= maxChars) return trimmed;
-  return trimmed.slice(0, maxChars - 1).trimEnd() + "…";
-}
-
 /**
  * Aggregate meals over the recent window keyed by normalized name.
  * Last entry wins for macros/grams; total occurrences inform ranking.
@@ -151,7 +145,7 @@ export function useNutritionQuickChips(
       const isPantry = pantryNorms.has(entry.norm);
       chips.push({
         id: `quickchip:${entry.norm}`,
-        label: truncateLabel(entry.label),
+        label: entry.label.trim(),
         grams: entry.lastGrams,
         macros: nullableToChipMacros(entry.lastMacros),
         source: isPantry ? "pantry" : "recent-meal",
