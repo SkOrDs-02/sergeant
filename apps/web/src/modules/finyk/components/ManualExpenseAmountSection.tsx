@@ -15,6 +15,7 @@
 import { useEffect, useRef } from "react";
 import type { MutableRefObject } from "react";
 import type { UseFormRegister, UseFormSetValue } from "react-hook-form";
+import { ChoiceGroup } from "@shared/components/ui/Choice";
 import { Input } from "@shared/components/ui/Input";
 import { Label } from "@shared/components/ui/FormField";
 import { VoiceMicButton } from "@shared/components/ui/VoiceMicButton";
@@ -76,36 +77,29 @@ export function ManualExpenseAmountSection({
       <div className="flex-1">
         <Label htmlFor={amountId}>Сума ₴</Label>
         {amountSuggestions.length > 0 && (
-          <div
-            className="flex flex-wrap items-center gap-1.5 mb-2"
-            role="group"
-            aria-label="Швидкі суми"
-          >
-            {amountSuggestions.map(({ value, personal }) => (
-              <button
-                key={`${personal ? "f" : "q"}-${value}`}
-                type="button"
-                onClick={() =>
-                  setValue("amount", groupIntegerDigits(String(value)), {
-                    shouldDirty: true,
-                    shouldValidate: Boolean(amountError),
-                  })
-                }
-                className={
-                  personal
-                    ? "inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-style-caption bg-panel text-text border border-line hover:bg-line/40 transition-colors tabular-nums"
-                    : "px-2.5 py-1 rounded-lg text-style-caption bg-panel text-muted border border-line hover:border-muted/50 transition-colors tabular-nums"
-                }
-                aria-label={
-                  personal
-                    ? `${formatMoney(value)} · часта сума`
-                    : `${formatMoney(value)}`
-                }
-              >
-                {formatMoney(value)}
-              </button>
-            ))}
-          </div>
+          <ChoiceGroup
+            size="sm"
+            ariaLabel="Швидкі суми"
+            className="mb-2"
+            items={amountSuggestions.map(({ value, personal }) => ({
+              value: String(value),
+              label: <span className="tabular-nums">{formatMoney(value)}</span>,
+              ariaLabel: personal
+                ? `${formatMoney(value)} · часта сума`
+                : formatMoney(value),
+            }))}
+            value={
+              amountSuggestions.some(({ value }) => value === amountNumeric)
+                ? String(amountNumeric)
+                : null
+            }
+            onChange={(value) =>
+              setValue("amount", groupIntegerDigits(value), {
+                shouldDirty: true,
+                shouldValidate: Boolean(amountError),
+              })
+            }
+          />
         )}
         {/* 6.2: display-hero preview anchors the sheet on the single
             "must-fill" field. Input stays editable below so users can

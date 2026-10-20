@@ -38,12 +38,8 @@ describe("ManualExpenseAccountSection", () => {
       />,
     );
     expect(
-      (
-        screen.getByRole("radio", {
-          name: "Готівка на руках",
-        }) as HTMLInputElement
-      ).checked,
-    ).toBe(true);
+      screen.getByRole("radio", { name: "Готівка на руках" }),
+    ).toHaveAttribute("aria-checked", "true");
     fireEvent.click(screen.getByRole("radio", { name: "Без рахунку" }));
     expect(onAccountChange).toHaveBeenCalledWith(null);
   });

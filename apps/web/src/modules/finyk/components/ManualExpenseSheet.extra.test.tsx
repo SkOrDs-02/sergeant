@@ -62,12 +62,11 @@ const merchants: FrequentMerchant[] = [
 ];
 
 describe("ManualExpenseSheet — interactive surfaces", () => {
-  it("uses an income-specific description placeholder", () => {
+  it("uses the plain «Назва» placeholder for both kinds, no example list", () => {
     render(<ManualExpenseSheet open onClose={() => {}} onSave={() => {}} />);
+    expect(screen.getByPlaceholderText("Назва")).toBeInTheDocument();
     fireEvent.click(screen.getByRole("radio", { name: "Надходження" }));
-    expect(
-      screen.getByPlaceholderText("Зарплата, повернення боргу, підробіток"),
-    ).toBeInTheDocument();
+    expect(screen.getByPlaceholderText("Назва")).toBeInTheDocument();
     expect(screen.queryByPlaceholderText("Кава, продукти, таксі")).toBeNull();
   });
 
@@ -79,13 +78,13 @@ describe("ManualExpenseSheet — interactive surfaces", () => {
     // hero preview is aria-hidden; assert the formatted value appears twice
     // (hero + input). Just check the group is present via the suggestions row.
     expect(
-      screen.getByRole("group", { name: "Швидкі суми" }),
+      screen.getByRole("radiogroup", { name: "Швидкі суми" }),
     ).toBeInTheDocument();
   });
 
   it("applies a default amount suggestion chip", () => {
     render(<ManualExpenseSheet open onClose={() => {}} onSave={() => {}} />);
-    const group = screen.getByRole("group", { name: "Швидкі суми" });
+    const group = screen.getByRole("radiogroup", { name: "Швидкі суми" });
     // default chips are 50/100/200/500
     fireEvent.click(within(group).getByText("100 ₴"));
     expect(screen.getByLabelText("Сума ₴")).toHaveValue("100");
@@ -100,7 +99,7 @@ describe("ManualExpenseSheet — interactive surfaces", () => {
         frequentMerchants={merchants}
       />,
     );
-    const group = screen.getByRole("group", { name: "Швидкі суми" });
+    const group = screen.getByRole("radiogroup", { name: "Швидкі суми" });
     // Сільпо avg = 1600/8 = 200 → personal chip labelled as a часта сума
     expect(
       within(group).getByLabelText("200 ₴ · часта сума"),
@@ -119,7 +118,7 @@ describe("ManualExpenseSheet — interactive surfaces", () => {
     const hints = screen.getByRole("group", { name: "Нещодавні продавці" });
     fireEvent.click(within(hints).getByText("Сільпо"));
     // description set + AI badge surfaces the auto-applied "food" category
-    expect(screen.getByPlaceholderText(/Кава, продукти/)).toHaveValue("Сільпо");
+    expect(screen.getByPlaceholderText("Назва")).toHaveValue("Сільпо");
     expect(screen.getByText(/Сержант ·/)).toBeInTheDocument();
   });
 

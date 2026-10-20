@@ -83,11 +83,16 @@ describe("ManualExpenseAmountSection", () => {
       isSubmitting: true,
     });
 
-    const quickAmounts = screen.getByRole("group", { name: "Швидкі суми" });
-    expect(within(quickAmounts).getByText("200 ₴")).toBeInTheDocument();
-    fireEvent.click(within(quickAmounts).getByLabelText("200 ₴ · часта сума"));
+    const quickAmounts = screen.getByRole("radiogroup", {
+      name: "Швидкі суми",
+    });
+    // Сума в полі збігається з плиткою: вона обрана, як будь-який вибір.
+    expect(
+      within(quickAmounts).getByRole("radio", { name: "200 ₴ · часта сума" }),
+    ).toHaveAttribute("aria-checked", "true");
+    fireEvent.click(within(quickAmounts).getByRole("radio", { name: "50 ₴" }));
 
-    expect(setValue).toHaveBeenCalledWith("amount", "200", {
+    expect(setValue).toHaveBeenCalledWith("amount", "50", {
       shouldDirty: true,
       shouldValidate: true,
     });
@@ -100,7 +105,7 @@ describe("ManualExpenseAmountSection", () => {
     renderSection();
 
     expect(
-      screen.queryByRole("group", { name: "Швидкі суми" }),
+      screen.queryByRole("radiogroup", { name: "Швидкі суми" }),
     ).not.toBeInTheDocument();
     expect(screen.queryByText("0 ₴")).not.toBeInTheDocument();
     expect(screen.getByLabelText("Сума ₴")).not.toBeDisabled();

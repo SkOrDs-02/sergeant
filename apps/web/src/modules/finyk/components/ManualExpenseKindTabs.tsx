@@ -12,6 +12,7 @@
  */
 import type { ManualExpenseKind } from "@sergeant/finyk-domain/domain/transactions";
 
+import { ChoiceGroup } from "@shared/components/ui/Choice";
 import { messages } from "@shared/i18n/uk";
 
 export interface ManualExpenseKindTabsProps {
@@ -22,34 +23,24 @@ export interface ManualExpenseKindTabsProps {
 
 const copy = messages.finyk.manualExpenseSheet;
 
+const KIND_ITEMS = [
+  { value: "expense", label: copy.kindExpense },
+  { value: "income", label: copy.kindIncome },
+] as const;
+
 export function ManualExpenseKindTabs({
   isIncome,
   isSubmitting,
   onKindChange,
 }: ManualExpenseKindTabsProps) {
   return (
-    <fieldset disabled={isSubmitting} className="divide-y divide-line">
-      <legend className="sr-only">{copy.kindTablistLabel}</legend>
-      {(
-        [
-          ["expense", copy.kindExpense],
-          ["income", copy.kindIncome],
-        ] as const
-      ).map(([kind, label]) => (
-        <label
-          key={kind}
-          className="flex min-h-touch-target items-center justify-between gap-3 py-3 text-style-body text-text"
-        >
-          <span>{label}</span>
-          <input
-            type="radio"
-            name="manual-operation-kind"
-            value={kind}
-            checked={isIncome === (kind === "income")}
-            onChange={() => onKindChange(kind)}
-          />
-        </label>
-      ))}
-    </fieldset>
+    <ChoiceGroup<ManualExpenseKind>
+      items={KIND_ITEMS}
+      value={isIncome ? "income" : "expense"}
+      onChange={onKindChange}
+      ariaLabel={copy.kindTablistLabel}
+      disabled={isSubmitting}
+      className="grid grid-cols-2"
+    />
   );
 }

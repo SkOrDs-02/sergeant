@@ -104,7 +104,7 @@ describe("ManualExpenseSheet — useApiForm + zod (Item #8 round-13)", () => {
     fireEvent.change(screen.getByLabelText("Сума ₴"), {
       target: { value: "120.5" },
     });
-    fireEvent.change(screen.getByPlaceholderText(/Кава, продукти/), {
+    fireEvent.change(screen.getByPlaceholderText("Назва"), {
       target: { value: "  Кава  " },
     });
     fireEvent.click(screen.getByRole("button", { name: "Додати витрату" }));

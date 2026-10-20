@@ -19,7 +19,6 @@ interface ManualExpenseDescriptionSectionProps {
   formId: string;
   descId: string;
   isSubmitting: boolean;
-  isIncome?: boolean;
   showMerchantHints: boolean;
   merchantSuggestions: FrequentMerchant[];
   setDescFocused: Dispatch<SetStateAction<boolean>>;
@@ -33,7 +32,6 @@ export function ManualExpenseDescriptionSection({
   formId,
   descId,
   isSubmitting,
-  isIncome = false,
   showMerchantHints,
   merchantSuggestions,
   setDescFocused,
@@ -48,11 +46,7 @@ export function ManualExpenseDescriptionSection({
       </Label>
       <Input
         id={descId}
-        placeholder={
-          isIncome
-            ? "Зарплата, повернення боргу, підробіток"
-            : "Кава, продукти, таксі"
-        }
+        placeholder="Назва"
         disabled={isSubmitting}
         maxLength={NAME_MAX_LEN}
         showCharCount={false}
@@ -95,7 +89,11 @@ export function ManualExpenseDescriptionSection({
                   setAiAppliedCategory(suggested);
                 }
               }}
-              className="px-2.5 py-1 rounded-lg text-style-caption bg-panel text-muted border border-line hover:border-muted/50 transition-colors"
+              // Підказка мерчанта ніколи не «обрана» (поточну назву список
+              // уже виключає), тож це необрана плитка ChoiceGroup sm. Сам
+              // примітив не підходить: йому бракує onMouseDown, який
+              // тримає фокус поля, поки підказки видно.
+              className="inline-flex min-h-[44px] items-center rounded-segment border border-control bg-panel px-3 text-style-label font-semibold text-text hover:bg-panelHi focus-ring motion-safe:transition-colors motion-safe:duration-fast"
               title={`${m.count} ${pluralTimes(m.count)} · ${formatMoney(m.total)}`}
             >
               {m.name}

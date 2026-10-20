@@ -769,7 +769,6 @@ export function ManualExpenseSheet({
           formId={formId}
           descId={descId}
           isSubmitting={isSubmitting}
-          isIncome={isIncome}
           showMerchantHints={showMerchantHints}
           merchantSuggestions={merchantSuggestions}
           setDescFocused={setDescFocused}
