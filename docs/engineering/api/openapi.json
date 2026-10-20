@@ -8239,9 +8239,166 @@
                       },
                       "additionalProperties": {}
                     }
+                  },
+                  "jars": {
+                    "default": [],
+                    "type": "array",
+                    "items": {
+                      "type": "object",
+                      "propertyNames": {
+                        "type": "string"
+                      },
+                      "additionalProperties": {}
+                    }
                   }
                 },
-                "required": ["connection", "accounts", "transactions"],
+                "required": ["connection", "accounts", "transactions", "jars"],
+                "additionalProperties": false
+              },
+              "profile": {
+                "default": null,
+                "anyOf": [
+                  {
+                    "type": "object",
+                    "propertyNames": {
+                      "type": "string"
+                    },
+                    "additionalProperties": {}
+                  },
+                  {
+                    "type": "null"
+                  }
+                ]
+              },
+              "feedback": {
+                "default": [],
+                "type": "array",
+                "items": {
+                  "type": "object",
+                  "propertyNames": {
+                    "type": "string"
+                  },
+                  "additionalProperties": {}
+                }
+              },
+              "emailUnsubscribes": {
+                "default": [],
+                "type": "array",
+                "items": {
+                  "type": "object",
+                  "propertyNames": {
+                    "type": "string"
+                  },
+                  "additionalProperties": {}
+                }
+              },
+              "waitlist": {
+                "default": [],
+                "type": "array",
+                "items": {
+                  "type": "object",
+                  "propertyNames": {
+                    "type": "string"
+                  },
+                  "additionalProperties": {}
+                }
+              },
+              "privat": {
+                "default": {
+                  "connection": null
+                },
+                "type": "object",
+                "properties": {
+                  "connection": {
+                    "anyOf": [
+                      {
+                        "type": "object",
+                        "propertyNames": {
+                          "type": "string"
+                        },
+                        "additionalProperties": {}
+                      },
+                      {
+                        "type": "null"
+                      }
+                    ]
+                  }
+                },
+                "required": ["connection"],
+                "additionalProperties": false
+              },
+              "silpo": {
+                "default": {
+                  "connection": null,
+                  "receipts": [],
+                  "receiptItems": [],
+                  "txReceiptLinks": [],
+                  "txReceiptLinkRejections": []
+                },
+                "type": "object",
+                "properties": {
+                  "connection": {
+                    "anyOf": [
+                      {
+                        "type": "object",
+                        "propertyNames": {
+                          "type": "string"
+                        },
+                        "additionalProperties": {}
+                      },
+                      {
+                        "type": "null"
+                      }
+                    ]
+                  },
+                  "receipts": {
+                    "type": "array",
+                    "items": {
+                      "type": "object",
+                      "propertyNames": {
+                        "type": "string"
+                      },
+                      "additionalProperties": {}
+                    }
+                  },
+                  "receiptItems": {
+                    "type": "array",
+                    "items": {
+                      "type": "object",
+                      "propertyNames": {
+                        "type": "string"
+                      },
+                      "additionalProperties": {}
+                    }
+                  },
+                  "txReceiptLinks": {
+                    "type": "array",
+                    "items": {
+                      "type": "object",
+                      "propertyNames": {
+                        "type": "string"
+                      },
+                      "additionalProperties": {}
+                    }
+                  },
+                  "txReceiptLinkRejections": {
+                    "type": "array",
+                    "items": {
+                      "type": "object",
+                      "propertyNames": {
+                        "type": "string"
+                      },
+                      "additionalProperties": {}
+                    }
+                  }
+                },
+                "required": [
+                  "connection",
+                  "receipts",
+                  "receiptItems",
+                  "txReceiptLinks",
+                  "txReceiptLinkRejections"
+                ],
                 "additionalProperties": false
               },
               "billing": {
@@ -8318,6 +8475,12 @@
               "nutrition",
               "routine",
               "mono",
+              "profile",
+              "feedback",
+              "emailUnsubscribes",
+              "waitlist",
+              "privat",
+              "silpo",
               "billing",
               "push",
               "excluded"

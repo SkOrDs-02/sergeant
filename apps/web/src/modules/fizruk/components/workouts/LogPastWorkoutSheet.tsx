@@ -469,7 +469,6 @@ export function LogPastWorkoutSheet({
                   </label>
                   <Select
                     id={newCategoryId}
-                    accent="fizruk"
                     value={newCategory}
                     onChange={(e) =>
                       setNewCategory(e.target.value as ActivityCategory)

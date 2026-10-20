@@ -12,9 +12,9 @@ import {
 } from "react";
 import { useInertWhileCollapsed } from "@shared/hooks/useInertWhileCollapsed";
 import { cn } from "../../lib/ui/cn";
-import { messages } from "@shared/i18n/uk";
 import { motionScrollBehavior } from "../../lib/ui/motion";
 import { SectionHeading, type SectionHeadingSize } from "./SectionHeading";
+import { MorphChevron } from "./MorphChevron";
 import { safeReadLS, safeWriteLS } from "../../lib/storage/storage";
 
 export interface CollapsibleSectionProps {
@@ -72,9 +72,12 @@ export interface CollapsibleSectionProps {
  * the "Підказки" and "Аналітика" sections to reduce scroll depth.
  *
  * Two visual states:
- * - **Expanded** — section heading and a textual collapse action.
+ * - **Expanded** — section heading and a chevron pointing down.
  * - **Collapsed** — factual hairline row with an optional preview and
- *   a textual expand action; no decorative icons.
+ *   a chevron pointing right.
+ *
+ * Шеврон тут стан, а не декор (v3.1 § Згорнуто / розгорнуто): текст
+ * «Розгорнути» / «Згорнути» знято, стан для скрінрідера несе `aria-expanded`.
  *
  * Collapse animation uses CSS `grid-template-rows` for smooth height
  * transitions (no JavaScript measurement needed).
@@ -241,33 +244,24 @@ export function CollapsibleSection({
 
   return (
     <section ref={sectionRef} className={cn("space-y-2", className)}>
-      {open ? (
-        <button
-          type="button"
-          onClick={toggle}
-          aria-expanded={open}
-          className="flex items-center gap-1.5 w-full text-left touch-target pointer-coarse:py-2 focus:outline-none focus-visible:ring-2 focus-visible:ring-focus/45 rounded-lg -ml-0.5 pl-0.5"
-        >
-          <span className="text-style-caption text-muted ml-auto order-last">
-            {messages.actions.collapse}
-          </span>
+      {/* Одна кнопка на обидва стани: фокус клавіатури не губиться при
+          перемиканні, міняються лише класи й вміст. */}
+      <button
+        type="button"
+        onClick={toggle}
+        aria-expanded={open}
+        className={cn(
+          "flex w-full items-center text-left focus:outline-none focus-visible:ring-2 focus-visible:ring-focus/45",
+          open
+            ? "gap-1.5 touch-target pointer-coarse:py-2 rounded-lg -ml-0.5 pl-0.5"
+            : "gap-3 py-3 border-b border-line hover:bg-panel transition-colors",
+        )}
+      >
+        {open ? (
           <SectionHeading as="span" size={headingSize} className="px-0!">
             {title}
           </SectionHeading>
-        </button>
-      ) : (
-        <button
-          type="button"
-          onClick={toggle}
-          aria-expanded={open}
-          className={cn(
-            "flex items-center gap-3 w-full text-left",
-            "py-3 border-b border-line",
-            "hover:bg-panel",
-            "transition-colors ",
-            "focus:outline-none focus-visible:ring-2 focus-visible:ring-focus/45",
-          )}
-        >
+        ) : (
           <span className="flex-1 min-w-0">
             <span className="text-style-label block text-text leading-tight">
               {title}
@@ -278,11 +272,9 @@ export function CollapsibleSection({
               </span>
             )}
           </span>
-          <span className="text-style-caption text-muted">
-            {messages.actions.expand}
-          </span>
-        </button>
-      )}
+        )}
+        <MorphChevron open={open} className="ml-auto text-subtle" />
+      </button>
 
       {/* CSS grid row transition for smooth collapse */}
       <div

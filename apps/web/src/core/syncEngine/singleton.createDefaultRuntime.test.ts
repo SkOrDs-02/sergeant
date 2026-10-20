@@ -76,6 +76,7 @@ const mockCountByStatus = vi.fn(async (..._a: unknown[]) => ({ pending: 0 }));
 const mockRecoverDeadLetter = vi.fn(async (..._a: unknown[]) => ({
   recovered: 0,
 }));
+const mockListRejected = vi.fn(async (..._a: unknown[]) => []);
 const mockPurgeStale = vi.fn(async (..._a: unknown[]) => 0);
 const mockCountRejected = vi.fn(async (..._a: unknown[]) => 2);
 const mockMarkSuccess = vi.fn(async (..._a: unknown[]) => {});
@@ -95,6 +96,7 @@ vi.mock("@sergeant/db-schema/sqlite", () => ({
   countOutboxByStatus: (...a: unknown[]) => mockCountByStatus(...a),
   countRejectedOutbox: (...a: unknown[]) => mockCountRejected(...a),
   recoverDeadLetter: (...a: unknown[]) => mockRecoverDeadLetter(...a),
+  listRejectedOutbox: (...a: unknown[]) => mockListRejected(...a),
   purgeStaleTerminalOutbox: (...a: unknown[]) => mockPurgeStale(...a),
   SYNC_OP_OUTBOX_STALE_TTL_DAYS: 30,
   SYNC_OP_JITTER_WINDOW_MS: 1000,
@@ -210,6 +212,61 @@ describe("createDefaultRuntime (default boot path)", () => {
     expect(mockCountRejected).toHaveBeenCalledWith(expect.anything(), {
       excludeReasons: ["lww_conflict"],
     });
+  });
+
+  it("filters benign rejects from the list and scopes recovery to the signed-in user", async () => {
+    const runtime = await bootSyncEngineWriter();
+    mockListRejected.mockResolvedValueOnce([{ id: 7 }] as never);
+    expect(await runtime!.listRejected()).toEqual([{ id: 7 }]);
+    expect(mockListRejected).toHaveBeenCalledWith(expect.anything(), {
+      excludeReasons: ["lww_conflict"],
+    });
+
+    mockGetSession.mockResolvedValueOnce({ data: null, error: null } as never);
+    expect(await runtime!.recoverAllDeadLetters()).toEqual({
+      recovered: [],
+      skipped: [],
+    });
+    expect(mockRecoverDeadLetter).not.toHaveBeenCalled();
+
+    mockRecoverDeadLetter.mockResolvedValueOnce({
+      recovered: [7],
+      skipped: [],
+    } as never);
+    expect(await runtime!.recoverAllDeadLetters()).toEqual({
+      recovered: [7],
+      skipped: [],
+    });
+    expect(mockRecoverDeadLetter).toHaveBeenCalledWith(expect.anything(), {
+      all: true,
+      userId: "user-123",
+    });
+  });
+
+  it("reports terminal rejection with operation identity and without row payload", async () => {
+    const factory = vi.spyOn(writerFactory, "createSyncEngineWriterRuntime");
+    const runtime = await bootSyncEngineWriter();
+    await runtime!.flushNow();
+    await factory.mock.calls[0]![0].pushDeps.markRejected!(12, "tombstoned", {
+      table: "finyk_transactions",
+      op: "delete",
+    });
+
+    await vi.waitFor(() => expect(mockCapture).toHaveBeenCalled());
+    const [error, context] = mockCapture.mock.calls.at(-1) ?? [];
+    expect(error).toMatchObject({
+      message:
+        "sync outbox op rejected: tombstoned (finyk_transactions.delete)",
+    });
+    expect(context).toMatchObject({
+      tags: {
+        area: "sync",
+        reject_reason: "tombstoned",
+        sync_table: "finyk_transactions",
+        sync_op: "delete",
+      },
+    });
+    factory.mockRestore();
   });
 
   it("pulls once the last full backlog batch is followed by an empty tick", async () => {

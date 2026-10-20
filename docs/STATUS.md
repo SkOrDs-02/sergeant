@@ -39,11 +39,11 @@
 - [#61](https://bitbucket.org/skords01/sergeant/pull-requests/61) — docs(docs): синк реєстру PR (#41-#64) _(2026-09-26)_
 - [#51](https://bitbucket.org/skords01/sergeant/pull-requests/51) — fix(web): анти-слоп раунд 3: Сержант в інтерфейсі і на сайті, коуч, стенд _(2026-09-26)_
 
-## 🔵 В роботі — 104 відкриті документи
+## 🔵 В роботі — 100 відкритих документів
 
 | Трекер        | Відкрито |
 | ------------- | -------- |
-| Активні спеки | 104      |
+| Активні спеки | 100      |
 
 **Найактивніше (8, за останніми PR):**
 
@@ -53,8 +53,8 @@
 - [`work/specs/tech-debt/mobile.md`](./work/specs/tech-debt/mobile.md) — Mobile Tech Debt — Sergeant Mobile (Expo + Capacitor) — Active _(Активні спеки)_
 - [`work/specs/launch/product-os/ftux-master-tracker.md`](./work/specs/launch/product-os/ftux-master-tracker.md) — FTUX Master Tracker — стан, проблеми, план — Active — **single source of truth** для First-Time User Experience. _(Активні спеки)_
 - [`work/specs/planning/redesign-v3-progress.md`](./work/specs/planning/redesign-v3-progress.md) — Редизайн v3: журнал виконання — Active _(Активні спеки)_
+- [`work/specs/planning/redesign-v3-1-progress.md`](./work/specs/planning/redesign-v3-1-progress.md) — Журнал: редизайн v3.1, мова станів і доведення системи — Active _(Активні спеки)_
 - [`work/specs/audits/2026-10-01-full-app-audit/data-integrity.md`](./work/specs/audits/2026-10-01-full-app-audit/data-integrity.md) — Аудит 2026-10-01 · Цілісність даних і синхронізація — Active. 82 кластерів (129 знахідок) за першопричиною. Загальний план, метод і обмеження — у [README](./work/specs/audits _(Активні спеки)_
-- [`work/specs/audits/2026-10-16-navigation-finance-hierarchy.md`](./work/specs/audits/2026-10-16-navigation-finance-hierarchy.md) — Вихід із Фізрука та ієрархія фінансових сутностей — Active _(Активні спеки)_
 
 ## ⏭️ Наступний крок / заблоковано
 

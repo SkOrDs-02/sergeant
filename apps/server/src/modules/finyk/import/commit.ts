@@ -15,7 +15,10 @@ import { assignImportRowIds } from "./rowKey.js";
 import { findMonoMatchedRows } from "./dedupMono.js";
 import { serializeImportBatch } from "./serialize.js";
 import type { ImportBatchRow } from "./serialize.js";
-import { emitServerSyncOps } from "../../sync/serverOpLog.js";
+import {
+  emitServerSyncOps,
+  lockUserSyncOpLog,
+} from "../../sync/serverOpLog.js";
 import type { ServerSyncOp } from "../../sync/serverOpLog.js";
 import {
   MANUAL_EXPENSES_TABLE,
@@ -208,6 +211,8 @@ export default async function commitImportHandler(
   const client = await pool.connect();
   try {
     await client.query("BEGIN");
+    // data-12: user-lock sync_op_log ПЕРШИМ, до INSERT import_batches.
+    await lockUserSyncOpLog(client, userId);
 
     let created = 0;
     let monoMatched = 0;
