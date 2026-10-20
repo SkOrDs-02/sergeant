@@ -77,7 +77,6 @@ export type {
   ImportBatch,
   ImportBatchStatus,
   ImportColumnMapping,
-  ImportCommitProfile,
   ImportCommitRow,
   ImportDateFormat,
   ImportDirection,

@@ -345,7 +345,6 @@ export {
   type ImportColumnMapping,
   type ImportCommitRequest,
   type ImportCommitResponse,
-  type ImportCommitProfile,
   type ImportCommitRow,
   type ImportDateFormat,
   type ImportDirection,

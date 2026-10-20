@@ -175,49 +175,6 @@ describe("screenshotRowsToBulkReviewRows / statementRowsToBulkReviewRows", () =>
     );
     expect(rows[0]).toMatchObject({ duplicateLikely: true, selected: false });
   });
-
-  it("monoMatchLikely знято з вибору за замовчуванням і не потрапляє в рядок без мітки (data-30)", () => {
-    const rows = statementRowsToBulkReviewRows(
-      [
-        {
-          date: "2026-08-16",
-          amountKopiykas: 9500,
-          direction: "expense",
-          description: "АТБ",
-          monoMatchLikely: true,
-        },
-        {
-          date: "2026-08-18",
-          amountKopiykas: 12000,
-          direction: "expense",
-          description: "Сільпо",
-        },
-      ],
-      rowOptions,
-    );
-    expect(rows[0]).toMatchObject({ monoMatchLikely: true, selected: false });
-    expect(rows[1]?.selected).toBe(true);
-    expect("monoMatchLikely" in rows[1]!).toBe(false);
-    expect(toggleRowSelected(rows, rows[0]!.id)[0]?.selected).toBe(true);
-  });
-
-  it("monoMatchLikely працює і для скрін-рядків", () => {
-    const rows = screenshotRowsToBulkReviewRows(
-      [
-        {
-          date: "2026-08-16",
-          time: "10:00",
-          amountKopiykas: 9500,
-          direction: "expense",
-          description: "АТБ",
-          confidence: 0.9,
-          monoMatchLikely: true,
-        },
-      ],
-      rowOptions,
-    );
-    expect(rows[0]).toMatchObject({ monoMatchLikely: true, selected: false });
-  });
 });
 
 describe("toggleRowSelected / setAllSelected", () => {

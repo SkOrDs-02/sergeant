@@ -11,8 +11,6 @@ import type { ImportSkippedRow, ImportStatementRow } from "@sergeant/shared";
 import { isBlankRow, parseCalendarDateKey } from "@sergeant/tabular-import";
 import { isLikelyOwnTransfer } from "./transferDetect.js";
 import { markDuplicateLikely } from "./duplicateDetect.js";
-import type { DuplicateCheckRow } from "./duplicateDetect.js";
-import { markMonoMatchLikely } from "./monoMatchDetect.js";
 import { withOccurrenceIndices } from "./rowKey.js";
 import { parseSignedAmountKopiykas } from "./csvParser.js";
 import {
@@ -232,20 +230,6 @@ function buildGrid(input: {
 }
 
 /**
- * Дедуп-мітки превʼю: «сітка 2» (`duplicateLikely`) для всіх профілів, мітка
- * «схоже, є в mono» (`monoMatchLikely`) лише коли тір-1 на commit-і НЕ
- * спрацює (`markMono`, тобто профіль не `mono`).
- */
-async function markStatementRows<T extends DuplicateCheckRow>(
-  userId: string,
-  rows: readonly T[],
-  markMono: boolean,
-): Promise<T[]> {
-  const marked = await markDuplicateLikely(pool, userId, rows);
-  return markMono ? markMonoMatchLikely(pool, userId, marked) : marked;
-}
-
-/**
  * POST /api/finyk/import/statement/preview — парсинг банківської виписки
  * БЕЗ запису в БД (commit — окремий `POST /api/finyk/import/commit`).
  *
@@ -312,12 +296,10 @@ export default async function statementPreviewHandler(
         // «Сітка 2» дедуп-превʼю (duplicateDetect.ts): мʼяка мітка
         // «схоже, вже є» за трійкою дата+сума+напрям проти вже збережених
         // витрат — до того, як людина побачить галочки.
-        // Мітка «схоже, є в mono» (monoMatchDetect.ts) лише для НЕ-mono
-        // профілю: для mono рядок і так скіпне тір-1 на commit-і (data-30).
-        rows: await markStatementRows(
+        rows: await markDuplicateLikely(
+          pool,
           userId,
           withOccurrenceIndices(rows),
-          autodetected.profile !== "mono",
         ),
         skipped,
       }),
@@ -344,10 +326,10 @@ export default async function statementPreviewHandler(
         ImportStatementPreviewResponseSchema.parse({
           profile: "custom",
           needsMapping: false,
-          rows: await markStatementRows(
+          rows: await markDuplicateLikely(
+            pool,
             userId,
             withOccurrenceIndices(rows),
-            true,
           ),
           skipped,
         }),

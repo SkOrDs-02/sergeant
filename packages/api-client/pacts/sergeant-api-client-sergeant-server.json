@@ -2117,7 +2117,6 @@
       ],
       "request": {
         "body": {
-          "profile": "mono",
           "rows": [
             {
               "amountKopiykas": 84750,
@@ -2242,7 +2241,6 @@
                 "description": "Кава",
                 "direction": "expense",
                 "duplicateLikely": true,
-                "monoMatchLikely": true,
                 "time": "09:10"
               }
             ]

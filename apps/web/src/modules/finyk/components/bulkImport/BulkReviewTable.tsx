@@ -111,7 +111,6 @@ export function BulkReviewTable({
 
   const hasTransferLikelyRows = rows.some((r) => r.transferLikely);
   const hasDuplicateLikelyRows = rows.some((r) => r.duplicateLikely);
-  const hasMonoMatchLikelyRows = rows.some((r) => r.monoMatchLikely);
 
   const customExpenseCategories = expenseCustomCategories(customCategories);
   const customIncomeCategories = incomeCustomCategories(customCategories);
@@ -208,14 +207,6 @@ export function BulkReviewTable({
         </p>
       )}
 
-      {hasMonoMatchLikelyRows && (
-        <p className="text-style-body text-subtle">
-          Рядки «схоже, є в mono» збігаються датою і сумою з операцією в
-          підключеному mono (наприклад, це скрін із застосунку mono), постав
-          галочку, якщо це справді окрема операція.
-        </p>
-      )}
-
       <ul className="divide-y divide-line rounded-panel border border-line">
         {rows.map((row) => {
           const options = categoryOptionsFor(
@@ -270,11 +261,6 @@ export function BulkReviewTable({
                     {row.duplicateLikely && !row.selected && (
                       <Badge variant="warning" tone="soft" size="xs">
                         схоже, вже є
-                      </Badge>
-                    )}
-                    {row.monoMatchLikely && !row.selected && (
-                      <Badge variant="warning" tone="soft" size="xs">
-                        схоже, є в mono
                       </Badge>
                     )}
                     {row.confidence != null && lowConfidence && (

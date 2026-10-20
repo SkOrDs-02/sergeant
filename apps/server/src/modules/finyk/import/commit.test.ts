@@ -46,14 +46,11 @@ function makeReq(body: unknown, userId = "u1"): Request {
 
 const NOW = "2026-01-15T12:35:00.000Z";
 
-/** `profile` за замовчуванням `mono`: тір-1 дедуп застосовується лише для нього
- * (data-30), а решта сценаріїв цього файлу якраз про mono-матч. */
 function commitBody(
   rows: Array<Record<string, unknown>>,
   source = "bank_statement",
-  profile: string | null = "mono",
 ) {
-  return profile === null ? { source, rows } : { source, profile, rows };
+  return { source, rows };
 }
 
 function row(overrides: Record<string, unknown> = {}) {
@@ -333,53 +330,6 @@ describe("commitImportHandler — mono-дедуп (тір 1)", () => {
         c.sql.includes("INSERT INTO finyk_manual_expenses"),
       ),
     ).toBe(false);
-  });
-
-  it.each(["privat24", "custom", "screenshot"])(
-    "профіль %s: тір-1 НЕ викликається, рядок створюється навіть за збігу суми з mono (data-30)",
-    async (profile) => {
-      mocks.findMonoMatch.mockResolvedValue({ monoTxId: "tx-1" });
-      const client = makeFakeClient();
-      mocks.connect.mockResolvedValue(client);
-
-      const res = makeRes();
-      await commitImportHandler(
-        makeReq(
-          commitBody(
-            [row()],
-            profile === "screenshot" ? "bank_screenshot" : "bank_statement",
-            profile,
-          ),
-        ),
-        res,
-      );
-
-      const body = res.body as {
-        created: number;
-        skipped: { monoMatched: number; duplicate: number };
-        rows: Array<{ status: string }>;
-      };
-      expect(mocks.findMonoMatchedRows).not.toHaveBeenCalled();
-      expect(body.created).toBe(1);
-      expect(body.skipped).toEqual({ monoMatched: 0, duplicate: 0 });
-      expect(body.rows.map((r) => r.status)).toEqual(["created"]);
-    },
-  );
-
-  it("без profile (старий клієнт): тір-1 теж не викликається, рядок не зникає мовчки", async () => {
-    mocks.findMonoMatch.mockResolvedValue({ monoTxId: "tx-1" });
-    const client = makeFakeClient();
-    mocks.connect.mockResolvedValue(client);
-
-    const res = makeRes();
-    await commitImportHandler(
-      makeReq(commitBody([row()], "bank_statement", null)),
-      res,
-    );
-
-    const body = res.body as { created: number };
-    expect(mocks.findMonoMatchedRows).not.toHaveBeenCalled();
-    expect(body.created).toBe(1);
   });
 
   it("mono-matched для expense передає direction='expense' у батч-матчер", async () => {

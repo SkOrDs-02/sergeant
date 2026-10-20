@@ -167,9 +167,9 @@ async function upsertManualExpenseRows(
  * самолікується). Tombstone-рядки (undo/ручне видалення) свідомо НЕ
  * реплікуються — інакше повторний імпорт воскрешав би видалене.
  *
- * Порядок дедупу ЗА рядком — (а) mono (лише для `profile = "mono"`, data-30),
- * потім (б) between-imports (буквально зі спеки): рядок, що matched на mono,
- * НІКОЛИ не доходить до ON CONFLICT-перевірки. AI-DANGER: якщо рядок раніше (в іншому commit)
+ * Порядок дедупу ЗА рядком — (а) mono, потім (б) between-imports
+ * (буквально зі спеки): рядок, що matched на mono, НІКОЛИ не доходить до
+ * ON CONFLICT-перевірки. AI-DANGER: якщо рядок раніше (в іншому commit)
  * уже створив `finyk_manual_expenses`-запис БЕЗ мono-матчу, а тепер (у
  * цьому commit-і) той самий рядок matched-иться на mono, яка зʼявилась
  * пізніше (backfill/webhook-лаг) — стара manual-expense НЕ видаляється
@@ -218,25 +218,15 @@ export default async function commitImportHandler(
      * їх реплікуємо опом (created + живі дублі, § докстрінг handler-а). */
     const replicable: Array<{ id: string; state: UpsertedManualExpense }> = [];
 
-    // Два запити на весь батч незалежно від кількості рядків (для не-mono
-    // профілю mono-запиту немає взагалі): mono-матч читає лише
-    // mono_transaction, тож вставки manual-expense на нього не впливають і
-    // порядок «спершу всі матчі, потім одна вставка» дає той самий результат,
-    // що колишній цикл «матч, вставка» по рядку.
-    //
-    // Тір-1 лише для профілю `mono` (data-30, рішення власника): виписка чи
-    // скрін іншого банку з тією ж сумою й датою в mono-операції не збігається
-    // «з того самого платежу», тож такі рядки НЕ скіпаємо. Відсутній
-    // `profile` (старий клієнт) теж не mono: краще видимий дубль, який знімає
-    // undo батча, ніж рядок, що мовчки зник.
-    const monoMatchedFlags =
-      body.profile === "mono"
-        ? await findMonoMatchedRows(
-            client,
-            userId,
-            rowsWithIds.map(({ row }) => row),
-          )
-        : rowsWithIds.map(() => false);
+    // Два запити на весь батч незалежно від кількості рядків: mono-матч
+    // читає лише mono_transaction, тож вставки manual-expense на нього не
+    // впливають і порядок «спершу всі матчі, потім одна вставка» дає той
+    // самий результат, що колишній цикл «матч, вставка» по рядку.
+    const monoMatchedFlags = await findMonoMatchedRows(
+      client,
+      userId,
+      rowsWithIds.map(({ row }) => row),
+    );
     const upsertedById = await upsertManualExpenseRows(
       client,
       userId,

@@ -622,6 +622,40 @@ describe("BulkImportSheet — commit + undo", () => {
     return helpers;
   }
 
+  it("тіло commit містить лише ключі, які знає чинний .strict() API (вікно «фронт раніше за бекенд»)", async () => {
+    // Старий API відхиляє невідомий ключ верхнього рівня 400-кою (strict), а
+    // превʼю старого сервера повертає `profile`. Тож web не має слати нічого
+    // понад `source` і `rows`, поки бекенд цього не прийняв.
+    commitImportMock.mockResolvedValue({
+      batchId: 9,
+      created: 1,
+      linked: 0,
+      skipped: { monoMatched: 0, duplicate: 0 },
+      rows: [],
+    });
+    getImportBatchMock.mockResolvedValue({
+      batch: {
+        id: 9,
+        source: "bank_statement",
+        status: "completed",
+        rowsTotal: 1,
+        rowsCreated: 1,
+        rowsLinked: 0,
+        rowsSkipped: 0,
+        createdRowIds: ["imp1:aaa"],
+        createdAt: "x",
+        updatedAt: "x",
+      },
+    });
+    await reachBulkReview();
+
+    fireEvent.click(screen.getByRole("button", { name: "Імпортувати" }));
+
+    await waitFor(() => expect(commitImportMock).toHaveBeenCalledTimes(1));
+    const body = commitImportMock.mock.calls[0]?.[0] as Record<string, unknown>;
+    expect(Object.keys(body).sort()).toEqual(["rows", "source"]);
+  });
+
   it("commit shows the created/skipped summary and an undo button", async () => {
     commitImportMock.mockResolvedValue({
       batchId: 9,
@@ -882,106 +916,5 @@ describe("BulkImportSheet — попередження «Куди їде фот�
     await waitFor(() =>
       expect(previewImportStatementMock).toHaveBeenCalledTimes(1),
     );
-  });
-});
-
-describe("BulkImportSheet — профіль у commit (data-30)", () => {
-  const COMMITTED = {
-    batchId: 9,
-    created: 1,
-    linked: 0,
-    skipped: { monoMatched: 0, duplicate: 0 },
-    rows: [],
-  };
-  const ROW = {
-    date: "2026-08-16",
-    amountKopiykas: 9500,
-    direction: "expense",
-    description: "АТБ",
-  };
-
-  async function commitFromStatement(profile: string) {
-    previewImportStatementMock.mockResolvedValue({
-      profile,
-      needsMapping: false,
-      rows: [ROW],
-      skipped: [],
-    });
-    commitImportMock.mockResolvedValue(COMMITTED);
-    getImportBatchMock.mockResolvedValue({ batch: null });
-    renderSheet();
-    await act(async () => {
-      fireEvent.change(fileInputFor(/виписку файлом/i), {
-        target: { files: [new File(["x"], "s.csv", { type: "text/csv" })] },
-      });
-    });
-    await waitFor(() =>
-      expect(screen.getByDisplayValue("АТБ")).toBeInTheDocument(),
-    );
-    fireEvent.click(screen.getByRole("button", { name: "Імпортувати" }));
-    await waitFor(() => expect(commitImportMock).toHaveBeenCalledTimes(1));
-    return commitImportMock.mock.calls[0]?.[0] as Record<string, unknown>;
-  }
-
-  it.each(["mono", "privat24", "custom"])(
-    "виписка з профілем %s шле його в commit",
-    async (profile) => {
-      const body = await commitFromStatement(profile);
-      expect(body["source"]).toBe("bank_statement");
-      expect(body["profile"]).toBe(profile);
-    },
-  );
-
-  it("скрін банкінгу шле profile=screenshot", async () => {
-    analyzeImportScreenshotMock.mockResolvedValue({
-      draft: {
-        docType: "bank_screenshot",
-        bank: "monobank",
-        rows: [{ ...ROW, time: "10:00", confidence: 0.9 }],
-      },
-    });
-    commitImportMock.mockResolvedValue(COMMITTED);
-    getImportBatchMock.mockResolvedValue({ batch: null });
-    renderSheet();
-    await act(async () => {
-      fireEvent.change(fileInputFor(/скрін банкінгу/i), {
-        target: {
-          files: [
-            new File([new Uint8Array(10)], "s.png", { type: "image/png" }),
-          ],
-        },
-      });
-    });
-    await waitFor(() =>
-      expect(screen.getByDisplayValue("АТБ")).toBeInTheDocument(),
-    );
-    fireEvent.click(screen.getByRole("button", { name: "Імпортувати" }));
-    await waitFor(() => expect(commitImportMock).toHaveBeenCalledTimes(1));
-    const body = commitImportMock.mock.calls[0]?.[0] as Record<string, unknown>;
-    expect(body["source"]).toBe("bank_screenshot");
-    expect(body["profile"]).toBe("screenshot");
-  });
-
-  it("старий сервер без profile у відповіді: commit іде без поля", async () => {
-    previewImportStatementMock.mockResolvedValue({
-      needsMapping: false,
-      rows: [ROW],
-      skipped: [],
-    });
-    commitImportMock.mockResolvedValue(COMMITTED);
-    getImportBatchMock.mockResolvedValue({ batch: null });
-    renderSheet();
-    await act(async () => {
-      fireEvent.change(fileInputFor(/виписку файлом/i), {
-        target: { files: [new File(["x"], "s.csv", { type: "text/csv" })] },
-      });
-    });
-    await waitFor(() =>
-      expect(screen.getByDisplayValue("АТБ")).toBeInTheDocument(),
-    );
-    fireEvent.click(screen.getByRole("button", { name: "Імпортувати" }));
-    await waitFor(() => expect(commitImportMock).toHaveBeenCalledTimes(1));
-    const body = commitImportMock.mock.calls[0]?.[0] as Record<string, unknown>;
-    expect("profile" in body).toBe(false);
   });
 });

@@ -293,61 +293,6 @@ describe("ImportCommitRequestSchema", () => {
     rows[0]!["amountKopiykas"] = 0;
     expect(ImportCommitRequestSchema.safeParse(body).success).toBe(false);
   });
-
-  it.each(["mono", "privat24", "custom", "screenshot"])(
-    "приймає профіль %s (data-30)",
-    (profile) => {
-      const r = ImportCommitRequestSchema.safeParse(
-        validCommitBody({ profile }),
-      );
-      expect(r.success).toBe(true);
-      if (r.success) expect(r.data.profile).toBe(profile);
-    },
-  );
-
-  it("profile опційний: старий клієнт без нього проходить", () => {
-    const r = ImportCommitRequestSchema.safeParse(validCommitBody());
-    expect(r.success).toBe(true);
-    if (r.success) expect(r.data.profile).toBeUndefined();
-  });
-
-  it("відхиляє невідомий профіль", () => {
-    expect(
-      ImportCommitRequestSchema.safeParse(validCommitBody({ profile: "pumb" }))
-        .success,
-    ).toBe(false);
-  });
-});
-
-describe("monoMatchLikely (data-30)", () => {
-  it("рядок скріна й рядок виписки несуть опційну мітку; без неї теж валідні", () => {
-    const draft = ImportScreenshotDraftSchema.parse({
-      docType: "bank_screenshot",
-      bank: null,
-      rows: [
-        validScreenshotRow(),
-        validScreenshotRow({ monoMatchLikely: true }),
-      ],
-    });
-    expect(draft.rows[0]!.monoMatchLikely).toBeUndefined();
-    expect(draft.rows[1]!.monoMatchLikely).toBe(true);
-
-    const preview = ImportStatementPreviewResponseSchema.parse({
-      profile: "privat24",
-      needsMapping: false,
-      rows: [
-        {
-          date: "2026-01-15",
-          amountKopiykas: 9500,
-          direction: "expense",
-          description: "АТБ",
-          monoMatchLikely: true,
-        },
-      ],
-      skipped: [],
-    });
-    expect(preview.rows[0]!.monoMatchLikely).toBe(true);
-  });
 });
 
 describe("ImportCommitResponseSchema", () => {
