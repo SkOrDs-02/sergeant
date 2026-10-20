@@ -282,6 +282,10 @@ describe("SilpoIntegrationSection", () => {
     // Explicit wording: splits/pantry survive, only Silpo-owned rows go.
     expect(dialog.textContent).toContain("Підтверджені розбиття категорій");
     expect(dialog.textContent).toContain("НЕ видаляються");
+    // data-47: підключення лишається, тож діалог каже, що буде далі.
+    expect(dialog.textContent).toContain(
+      "Підключення лишається: нові покупки далі додаватимуться, видалені чеки не повернуться.",
+    );
 
     // Wipe must not fire before the user confirms.
     expect(mockedWipe).not.toHaveBeenCalled();

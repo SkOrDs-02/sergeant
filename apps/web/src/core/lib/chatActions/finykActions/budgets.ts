@@ -77,7 +77,7 @@ export function setBudgetLimit(action: SetBudgetLimitAction): ChatActionResult {
       createdAt: new Date().toISOString(),
     });
   }
-  finykChatWrite("finyk_budgets", budgets);
+  void finykChatWrite("finyk_budgets", budgets);
   const cat = resolveExpenseCategoryMeta(categoryId, cache.customCategories);
   const periodLabel =
     period === "week"
@@ -88,7 +88,7 @@ export function setBudgetLimit(action: SetBudgetLimitAction): ChatActionResult {
   const result = `Ліміт ${cat?.label || categoryId} встановлено: ${formatNumberUk(limitN)}\u202F₴ ${periodLabel}`;
   return {
     result,
-    undo: () => finykChatWrite("finyk_budgets", prevBudgets),
+    undo: () => void finykChatWrite("finyk_budgets", prevBudgets),
   };
 }
 
@@ -122,7 +122,7 @@ export function setMonthlyPlan(action: SetMonthlyPlanAction): ChatActionResult {
     if (!check.ok) return check.message;
     next[key] = String(check.value);
   }
-  finykChatWrite("finyk_monthly_plan", next);
+  void finykChatWrite("finyk_monthly_plan", next);
   const fmtField = (v: string | undefined): string => {
     if (v === undefined) return "—";
     const n = Number(v);
@@ -131,7 +131,7 @@ export function setMonthlyPlan(action: SetMonthlyPlanAction): ChatActionResult {
   const result = `План місяця оновлено: дохід ${fmtField(next.income)} / витрати ${fmtField(next.expense)} / заощадження ${fmtField(next.savings)}\u202F₴/міс`;
   return {
     result,
-    undo: () => finykChatWrite("finyk_monthly_plan", prevPlan),
+    undo: () => void finykChatWrite("finyk_monthly_plan", prevPlan),
   };
 }
 
@@ -165,12 +165,12 @@ export function updateBudget(action: UpdateBudgetAction): ChatActionResult {
         limit: limitN,
       });
     }
-    finykChatWrite("finyk_budgets", budgets);
+    void finykChatWrite("finyk_budgets", budgets);
     const cat = resolveExpenseCategoryMeta(categoryId, cache.customCategories);
     const result = `Ліміт ${cat?.label || categoryId} оновлено: ${formatNumberUk(limitN)}\u202F₴`;
     return {
       result,
-      undo: () => finykChatWrite("finyk_budgets", prevBudgets),
+      undo: () => void finykChatWrite("finyk_budgets", prevBudgets),
     };
   }
   if (scope === "goal") {
@@ -208,14 +208,14 @@ export function updateBudget(action: UpdateBudgetAction): ChatActionResult {
         contributions: buildAiContribution(saved),
       });
     }
-    finykChatWrite("finyk_budgets", budgets);
+    void finykChatWrite("finyk_budgets", budgets);
     const result =
       idx >= 0 && !savedProvided
         ? `Ціль "${goalName}" оновлено: ціль ${formatNumberUk(target)}\u202F₴, накопичене не змінено`
         : `Ціль "${goalName}" оновлено: ${formatNumberUk(saved)}/${formatNumberUk(target)}\u202F₴`;
     return {
       result,
-      undo: () => finykChatWrite("finyk_budgets", prevBudgets),
+      undo: () => void finykChatWrite("finyk_budgets", prevBudgets),
     };
   }
   return "Невідомий scope для update_budget (очікую 'limit' або 'goal').";

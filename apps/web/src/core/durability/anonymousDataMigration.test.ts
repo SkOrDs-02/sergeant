@@ -1,7 +1,62 @@
-import { describe, expect, it, vi } from "vitest";
+import { beforeEach, describe, expect, it, vi } from "vitest";
 import type { SqliteMigrationClient } from "@sergeant/db-schema/migrate/sqlite";
 
 import { __anonymousMigrationInternals } from "./anonymousDataMigration.js";
+
+const { sqliteClient } = vi.hoisted(() => ({
+  sqliteClient: { all: vi.fn(), run: vi.fn(), exec: vi.fn() },
+}));
+const migration = vi.hoisted(() => ({
+  currentUser: null as string | null,
+  source: { all: vi.fn(), run: vi.fn(), exec: vi.fn() },
+  target: { all: vi.fn(), run: vi.fn(), exec: vi.fn() },
+  applyPullOp: vi.fn(),
+  enqueue: vi.fn(),
+  reader: { pullOnce: vi.fn() },
+  writer: { flushNow: vi.fn() },
+}));
+vi.mock("../db/sqlite.js", () => ({
+  switchSqliteUser: vi.fn((userId: string | null) => {
+    migration.currentUser = userId;
+  }),
+  getSqliteDb: vi.fn(() => ({
+    migrationClient: () =>
+      migration.currentUser === null ? migration.source : migration.target,
+  })),
+  readActiveSqliteVfs: vi.fn(() => "test-vfs"),
+  readSqliteStorageDiagnostics: vi.fn(() => undefined),
+}));
+vi.mock("../../modules/routine/lib/clientMigrate.js", () => ({
+  migrateRoutine: vi.fn(),
+}));
+vi.mock("../../modules/fizruk/lib/clientMigrate.js", () => ({
+  migrateFizruk: vi.fn(),
+}));
+vi.mock("../../modules/nutrition/lib/clientMigrate.js", () => ({
+  migrateNutrition: vi.fn(),
+}));
+vi.mock("../../modules/finyk/lib/clientMigrate.js", () => ({
+  migrateFinyk: vi.fn(),
+}));
+vi.mock("../syncEngine/applyPullOp.js", () => ({
+  CLIENT_PULL_SUPPORTED_TABLES: new Set(["finyk_expenses"]),
+  applyPullOp: (...args: unknown[]) => migration.applyPullOp(...args),
+}));
+vi.mock("../syncEngine/enqueueOutboxUpsert.js", () => ({
+  enqueueOutboxUpsert: (...args: unknown[]) => migration.enqueue(...args),
+}));
+vi.mock("../syncEngine/syncableUserId.js", async () =>
+  vi.importActual("../syncEngine/syncableUserId.js"),
+);
+vi.mock("../syncEngine/outboxNudge.js", () => ({
+  notifyOutboxEnqueued: vi.fn(),
+}));
+vi.mock("../syncEngine/singleton.js", () => ({
+  bootSyncEngineReader: vi.fn(async () => migration.reader),
+  bootSyncEngineWriter: vi.fn(async () => migration.writer),
+}));
+
+import { migrateAnonymousDataToProfile } from "./anonymousDataMigration.js";
 
 const item = {
   table: "finyk_prefs",
@@ -15,6 +70,111 @@ const item = {
 };
 
 describe("anonymous data migration invariants", () => {
+  beforeEach(() => {
+    sqliteClient.all.mockReset().mockResolvedValue([]);
+    sqliteClient.run.mockReset().mockResolvedValue(undefined);
+    sqliteClient.exec.mockReset().mockResolvedValue(undefined);
+    migration.currentUser = null;
+    for (const client of [migration.source, migration.target]) {
+      client.all.mockReset().mockResolvedValue([]);
+      client.run.mockReset().mockResolvedValue(undefined);
+      client.exec.mockReset().mockResolvedValue(undefined);
+    }
+    migration.applyPullOp.mockReset().mockResolvedValue("applied");
+    migration.enqueue.mockReset().mockResolvedValue(undefined);
+    migration.reader.pullOnce.mockReset().mockResolvedValue(undefined);
+    migration.writer.flushNow.mockReset().mockResolvedValue(undefined);
+  });
+
+  it("rejects a missing target with a step-aware error", async () => {
+    await expect(migrateAnonymousDataToProfile("")).rejects.toMatchObject({
+      name: "AnonymousMigrationStepError",
+      step: "start",
+      detail: "Target user id is required",
+    });
+  });
+
+  it("switches to an empty profile without starting a transfer", async () => {
+    const onTransferStart = vi.fn();
+    await expect(
+      migrateAnonymousDataToProfile("user-a", { onTransferStart }),
+    ).resolves.toEqual({ migratedRows: 0 });
+    expect(onTransferStart).not.toHaveBeenCalled();
+  });
+
+  it("moves a row only after the target sync engine acknowledges it", async () => {
+    migration.source.all.mockImplementation(
+      async (sql: string, params: unknown[] = []) => {
+        if (sql.includes("sqlite_master")) {
+          return params[0] === "finyk_expenses"
+            ? [{ name: "finyk_expenses" }]
+            : [];
+        }
+        if (sql.includes("pragma_table_info")) return [{ name: "id", pk: 1 }];
+        if (sql.includes("SELECT * FROM finyk_expenses")) {
+          return [
+            {
+              id: "expense-1",
+              user_id: "local-anon",
+              amount: 90,
+              updated_at: "2026-10-01T00:00:00.000Z",
+            },
+          ];
+        }
+        return [];
+      },
+    );
+    let outboxReads = 0;
+    migration.target.all.mockImplementation(async (sql: string) => {
+      if (sql.includes("idempotency_key IN")) {
+        outboxReads += 1;
+        return outboxReads === 1
+          ? [
+              {
+                id: 11,
+                status: "pending",
+                reject_reason: null,
+                table_name: "finyk_expenses",
+                op: "insert",
+                attempts: 0,
+                next_retry_at: null,
+                last_error: null,
+              },
+            ]
+          : [];
+      }
+      if (sql.includes("count(*) AS count")) return [{ count: 1 }];
+      return [];
+    });
+
+    const onTransferStart = vi.fn();
+    await expect(
+      migrateAnonymousDataToProfile("user-a", { onTransferStart }),
+    ).resolves.toEqual({ migratedRows: 1 });
+    expect(onTransferStart).toHaveBeenCalledOnce();
+    expect(migration.applyPullOp).toHaveBeenCalledWith(
+      migration.target,
+      expect.objectContaining({
+        table: "finyk_expenses",
+        op: "insert",
+        row: expect.objectContaining({ id: "expense-1", user_id: "user-a" }),
+      }),
+      "user-a",
+      "anonymous-profile-migration",
+    );
+    expect(migration.enqueue).toHaveBeenCalledOnce();
+    expect(migration.reader.pullOnce).toHaveBeenCalledTimes(2);
+    expect(migration.writer.flushNow).toHaveBeenCalledOnce();
+    expect(migration.source.run).toHaveBeenCalledWith(
+      expect.stringContaining("DELETE FROM finyk_expenses"),
+      expect.any(Array),
+    );
+    expect(migration.source.run).toHaveBeenCalledWith(
+      expect.stringContaining("status = 'completed'"),
+      expect.any(Array),
+    );
+  });
+
   it("builds a stable, server-safe idempotency key and decodes JSON columns", async () => {
     const first = await __anonymousMigrationInternals.idempotencyKey(
       "batch-1",
@@ -34,6 +194,32 @@ describe("anonymous data migration invariants", () => {
       ...item.row,
       prefs_json: { currency: "UAH" },
     });
+  });
+
+  it("uses the first valid client timestamp and falls back to the conservative epoch", () => {
+    const resolve = __anonymousMigrationInternals.resolveClientTs;
+    expect(
+      resolve({
+        updated_at: "invalid",
+        occurred_at: "2026-01-02T03:04:05.000Z",
+        created_at: "2020-01-01",
+      }),
+    ).toBe("2026-01-02T03:04:05.000Z");
+    expect(
+      resolve({ updated_at: 42, occurred_at: null, created_at: "bad-date" }),
+    ).toBe("1970-01-01T00:00:00.000Z");
+    expect(resolve({ last_completed_at: "2025-04-03T10:00:00.000Z" })).toBe(
+      "2025-04-03T10:00:00.000Z",
+    );
+  });
+
+  it("preserves malformed JSON strings rather than erasing legacy data", () => {
+    expect(
+      __anonymousMigrationInternals.decodeJsonColumns({
+        prefs_json: "{broken",
+        ordinary_text: "not JSON",
+      }),
+    ).toEqual({ prefs_json: "{broken", ordinary_text: "not JSON" });
   });
 
   it("does not accept a pending outbox row as server-confirmed", async () => {

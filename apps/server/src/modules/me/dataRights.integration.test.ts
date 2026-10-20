@@ -318,13 +318,92 @@ describe("GET /api/me/export — GDPR data export", () => {
     // Межа файлу названа в самому файлі.
     expect(
       res.body.data.excluded.map((e: { group: string }) => e.group),
-    ).toEqual(["syncLog", "nutritionBackups", "aiMemories", "aiUsage"]);
+    ).toEqual([
+      "syncLog",
+      "nutritionBackups",
+      "aiMemories",
+      "aiUsage",
+      "coachMemory",
+      "nudgeCache",
+      "authSessions",
+      "billingProviderIds",
+      "integrationSecrets",
+      "serviceQueues",
+    ]);
     expect(res.body.data.ai).toBeUndefined();
 
     const mono = res.body.data.mono;
     expect(mono.connection).toBeNull();
     expect(Array.isArray(mono.accounts)).toBe(true);
     expect(Array.isArray(mono.transactions)).toBe(true);
+  });
+
+  it("priv-12: профіль, чеки й підключення потрапляють у файл, шифротекст ні", async (ctx) => {
+    if (!dockerAvailable || !app || !pool) return ctx.skip();
+
+    // Проти РЕАЛЬНОЇ схеми: кожен явний запит `exportBuilder.ts` мусить
+    // збігатися з колонками міграцій, інакше роут віддав би 500.
+    await pool.query(
+      `INSERT INTO user_profile (user_id, payload)
+       VALUES ($1, '{"biometrics":{"heightCm":181}}'::jsonb)
+       ON CONFLICT (user_id) DO NOTHING`,
+      [TEST_USER_ID],
+    );
+    const receipt = await pool.query<{ id: string }>(
+      `INSERT INTO receipts (user_id, source, fiscal_num, store_name,
+                             purchased_at, total_kopiykas, raw_payload)
+       VALUES ($1, 'dps', 'PRIV12-FN', 'PRIV12_STORE', NOW(), 12550, '{}'::jsonb)
+       RETURNING id`,
+      [TEST_USER_ID],
+    );
+    await pool.query(
+      `INSERT INTO receipt_items (receipt_id, position, name, qty,
+                                  price_kopiykas, sum_kopiykas)
+       VALUES ($1, 1, 'PRIV12_ITEM', 1.5, 2000, 3000)`,
+      [receipt.rows[0]!.id],
+    );
+    await pool.query(
+      `INSERT INTO privat_connection (user_id, merchant_id, token_ciphertext,
+                                      token_iv, token_tag, token_fingerprint)
+       VALUES ($1, 'M-1', 'PRIV12_PRIVAT_CT'::bytea, 'PRIV12_PRIVAT_IV'::bytea,
+               'PRIV12_PRIVAT_TAG'::bytea, 'fp-privat')
+       ON CONFLICT (user_id) DO NOTHING`,
+      [TEST_USER_ID],
+    );
+    await pool.query(
+      `INSERT INTO silpo_connection (user_id, access_token_ciphertext,
+                                     access_token_iv, access_token_tag,
+                                     refresh_token_ciphertext,
+                                     refresh_token_iv, refresh_token_tag)
+       VALUES ($1, 'PRIV12_SILPO_ACT'::bytea, 'PRIV12_SILPO_AIV'::bytea,
+               'PRIV12_SILPO_ATAG'::bytea, 'PRIV12_SILPO_RCT'::bytea,
+               'PRIV12_SILPO_RIV'::bytea, 'PRIV12_SILPO_RTAG'::bytea)
+       ON CONFLICT (user_id) DO NOTHING`,
+      [TEST_USER_ID],
+    );
+
+    const res = await request(app)
+      .get("/api/me/export")
+      .set("Authorization", "Bearer test-bearer");
+
+    expect(res.status).toBe(200);
+    expect(res.body.data.profile.payload).toEqual({
+      biometrics: { heightCm: 181 },
+    });
+    const receipts = res.body.data.finyk.receipts;
+    expect(receipts[0]).toMatchObject({
+      store_name: "PRIV12_STORE",
+      total_kopiykas: 12550,
+    });
+    expect(res.body.data.finyk.receipt_items[0]).toMatchObject({
+      name: "PRIV12_ITEM",
+      qty: 1.5,
+      sum_kopiykas: 3000,
+    });
+    expect(res.body.data.privat.connection.token_fingerprint).toBe("fp-privat");
+    expect(res.body.data.silpo.connection.status).toBe("connected");
+    // Ні шифротекст, ні токени у файл не потрапляють.
+    expect(JSON.stringify(res.body)).not.toMatch(/PRIV12_(PRIVAT|SILPO)_/);
   });
 
   it("другий одночасний експорт відхиляється, послідовний проходить", async (ctx) => {

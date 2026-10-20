@@ -12,10 +12,21 @@
  * детерміновано.
  */
 
-import { addDays, dateKeyFromDate, isoWeekdayFromDateKey } from "./dateKeys.js";
+import {
+  addDays,
+  dateKeyFromDate,
+  enumerateDateKeys,
+  isoWeekdayFromDateKey,
+} from "./dateKeys.js";
 import { habitCountsTowardMetrics, habitScheduledOnDate } from "./schedule.js";
+import { flexibleCompletionForDays } from "./streaks.js";
 import type { Habit, HabitSkip } from "./types.js";
-import { isFlexibleHabit, weekDoneCountExcludingDate } from "./weeklyTarget.js";
+import {
+  isFlexibleHabit,
+  weekDoneCountExcludingDate,
+  weekEndKeyForDateKey,
+  weeklyTargetForDate,
+} from "./weeklyTarget.js";
 
 /**
  * Стан однієї клітинки рядка.
@@ -126,20 +137,35 @@ export function buildHabitRangeRows(
     let scheduled = 0;
     let skipped = 0;
 
+    const flexible = isFlexibleHabit(habit);
+
     for (const dateKey of dateKeys) {
       let state: HabitRangeCellState = "unscheduled";
-      // Гнучка звичка («N разів на тиждень») перестає бути в розкладі,
-      // щойно тижневу ціль добрано — без `weekDoneCount` предикат вважає
-      // її запланованою щодня (`schedule.ts`), тож рядок малював би
-      // клітинки «Пропущено» на дні понад норму (клас Б спеки
-      // `routine-flexible-weekly-frequency.md`, той самий розрив, що вже
-      // закрито в `grid.ts`/`calendarEvents.ts`).
-      const weekDoneCount = isFlexibleHabit(habit)
-        ? weekDoneCountExcludingDate(completions?.[habit.id], dateKey)
-        : undefined;
-      if (
-        habitScheduledOnDate(habit, dateKey, { ...scheduleOpts, weekDoneCount })
-      ) {
+      if (flexible) {
+        // Гнучка звичка («N разів на тиждень») — клас Б спеки
+        // `routine-flexible-weekly-frequency.md`: денного «заплановано /ні»
+        // для неї не існує, тож предикат з `weekDoneCount` тут не питаємо.
+        // Клітинка лише ілюструє: виконано / «не зміг» / «не виконано» —
+        // останнє тільки там, де тижнева ціль уже провалена або недосяжна.
+        // Числа рядка (`completed`/`scheduled`) беремо з цільової арифметики
+        // тижня нижче, не з підрахунку клітинок (logic-11).
+        const candidate = habitScheduledOnDate(habit, dateKey, {
+          ...scheduleOpts,
+          weekDoneCount: 0,
+        });
+        if (candidate) {
+          if (done.has(dateKey)) {
+            state = "done";
+          } else if (habitSkips?.[dateKey]) {
+            state = "skipped";
+            skipped += 1;
+          } else if (
+            flexibleDayMissed(habit, completions?.[habit.id], dateKey, todayKey)
+          ) {
+            state = "missed";
+          }
+        }
+      } else if (habitScheduledOnDate(habit, dateKey, scheduleOpts)) {
         scheduled += 1;
         if (done.has(dateKey)) {
           state = "done";
@@ -159,6 +185,19 @@ export function buildHabitRangeRows(
       });
     }
 
+    if (flexible) {
+      // Без `skips`: рядок навмисно не виключає «не зміг» зі знаменника, щоб
+      // сума рядків сходилась зі «Зведенням» (AI-CONTEXT у `scheduled` вище).
+      const agg = flexibleCompletionForDays(
+        habit,
+        done,
+        dateKeys,
+        scheduleOpts,
+      );
+      completed = agg.completed;
+      scheduled = agg.scheduled;
+    }
+
     if (scheduled === 0) continue;
 
     rows.push({
@@ -172,4 +211,30 @@ export function buildHabitRangeRows(
   }
 
   return rows;
+}
+
+/**
+ * Чи малювати невідмічений день гнучкої звички як «не виконано».
+ *
+ * Закритий тиждень (його неділя вже минула) без добраної цілі — так. Тиждень,
+ * що триває, — лише коли ціль уже недосяжна: не вистачає днів, які ще
+ * лишились (сьогодні, якщо не відмічено, і всі після нього). Поки ціль
+ * досяжна, день не пропуск — інакше людина, що йде за планом, бачила б
+ * червоні клітинки у вівторок (клас Б спеки, аудит logic-11).
+ */
+function flexibleDayMissed(
+  habit: Habit,
+  doneList: readonly string[] | undefined,
+  dateKey: string,
+  todayKey: string,
+): boolean {
+  const weekEnd = weekEndKeyForDateKey(dateKey);
+  const target = weeklyTargetForDate(habit, weekEnd);
+  // `dateKey` сам невідмічений, тож лічильник «без цього дня» = усе за тиждень.
+  const weekDone = weekDoneCountExcludingDate(doneList, dateKey);
+  if (weekDone >= target) return false;
+  if (weekEnd < todayKey) return true;
+  const daysAfterToday = enumerateDateKeys(todayKey, weekEnd).length - 1;
+  const todayOpen = doneList?.includes(todayKey) ? 0 : 1;
+  return weekDone + daysAfterToday + todayOpen < target;
 }

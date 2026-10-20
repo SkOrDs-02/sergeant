@@ -109,6 +109,8 @@ function wireTxClient(): void {
     query: vi.fn(async (sql: string, params?: unknown[]) => {
       clientSql.push(sql.trim());
       if (/^(BEGIN|COMMIT|ROLLBACK)/.test(sql.trim())) return { rows: [] };
+      // data-12: user-lock sync_op_log одразу після BEGIN.
+      if (sql.includes("pg_advisory_xact_lock")) return { rows: [] };
       if (sql.includes("INSERT INTO sync_op_log")) {
         return { rows: [], rowCount: 1 };
       }
@@ -209,6 +211,7 @@ describe("finyk routes — POST /manual-expenses happy path", () => {
       true,
     );
     expect(clientSql[0]).toBe("BEGIN");
+    expect(clientSql[1]).toContain("pg_advisory_xact_lock");
     expect(clientSql.at(-1)).toBe("COMMIT");
   });
 

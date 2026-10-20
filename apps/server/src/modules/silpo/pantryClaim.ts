@@ -53,7 +53,9 @@ export async function setPantryAutoImport(
  * `POST /api/silpo/receipts/:id/pantry-claim` - бронює позиції ПЕРЕД
  * записом у комору. `mode: "auto"` бронює лише позиції, які ще НІХТО не
  * заброньував (`pantry_claimed_at IS NULL`), у чеку без
- * `pantry_auto_declined_at` і не старішому за `pantry_auto_import_since` -
+ * `pantry_auto_declined_at`, не старішому за `pantry_auto_import_since` і
+ * купленому ПІСЛЯ `receipts_wiped_at` (страховка від чеків, що перетнули
+ * wipe, - аудит 2026-10-01 data-47) -
  * так другий пристрій, що прийшов пізніше з тим самим чеком, отримує
  * порожню відповідь. `mode: "manual"` бронює повторно (ручний потік завжди
  * дозволяє «додати ще раз», спека § Рішення дизайну - «Ручний потік теж
@@ -73,7 +75,8 @@ export async function claimPantryItems(
     mode === "auto"
       ? ` AND i.pantry_claimed_at IS NULL
           AND r.pantry_auto_declined_at IS NULL
-          AND r.purchased_at >= COALESCE(c.pantry_auto_import_since, 'infinity'::timestamptz)`
+          AND r.purchased_at >= COALESCE(c.pantry_auto_import_since, 'infinity'::timestamptz)
+          AND r.purchased_at > COALESCE(c.receipts_wiped_at, '-infinity'::timestamptz)`
       : "";
   const { rows } = await queryFn<{ id: unknown }>(
     `UPDATE silpo_receipt_items i

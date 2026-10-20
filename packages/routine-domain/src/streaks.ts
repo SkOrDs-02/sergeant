@@ -271,7 +271,17 @@ export function habitCompletionRate(
   };
 }
 
-function flexibleCompletionForDays(
+/**
+ * Цільова арифметика тижня для гнучкої звички («N разів на тиждень») на
+ * довільному наборі днів: `scheduled` — `min(днів тижня у наборі, ціль)`,
+ * `completed` — `min(виконано, ціль)` (рішення №5 спеки
+ * `routine-flexible-weekly-frequency.md`).
+ *
+ * Експортується для `habitRangeRows.ts`, щоб рядок «Активність по звичках»
+ * рахувався тією самою формулою, що й «Зведення» (`completionRateForRange`).
+ * Це внутрішній примітив пакета, а не публічне API для поверхонь.
+ */
+export function flexibleCompletionForDays(
   habit: Habit,
   doneSet: ReadonlySet<string>,
   days: readonly string[],

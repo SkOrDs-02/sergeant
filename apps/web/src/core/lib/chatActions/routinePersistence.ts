@@ -17,6 +17,11 @@
  * різницю «передано ≠ збережено» вже описує `saveRoutineStateDurable()` для
  * FTUX-плитки — тут той самий контракт для tool-шляху.
  */
+import {
+  captureChatWrites,
+  isCapturingChatWrites,
+  trackChatWrite,
+} from "./chatWrites";
 import { isDualWriteOutcomeClean } from "../../durability/dualWriteJournal.js";
 import {
   loadRoutineState,
@@ -27,14 +32,6 @@ import {
   isRoutineDualWriteRegistered,
 } from "../../../modules/routine/lib/sqliteWriter";
 import type { RoutineState } from "../../../modules/routine/lib/types";
-
-/**
- * Активний збирач write-підтверджень.
- *
- * `null` означає «викликано поза чат-батчем» — тобто з юніт-тесту або
- * undo-замикання.
- */
-let sink: Array<Promise<boolean>> | null = null;
 
 /**
  * Записати стан рутини і повернути ПІДТВЕРДЖЕННЯ довговічності.
@@ -51,7 +48,7 @@ let sink: Array<Promise<boolean>> | null = null;
  */
 export function persistRoutineState(next: RoutineState): Promise<boolean> {
   const prev = loadRoutineState();
-  const inBatch = sink !== null;
+  const inBatch = isCapturingChatWrites();
   const settled = saveRoutineStateDurable(next).then(async (applied) => {
     if (applied || !inBatch) return applied;
     // Контекст міг зареєструватись, поки відпрацьовувала перша спроба
@@ -61,26 +58,12 @@ export function persistRoutineState(next: RoutineState): Promise<boolean> {
     const outcome = await dualWriteRoutineState(prev, next);
     return isDualWriteOutcomeClean(outcome);
   });
-  if (sink) sink.push(settled);
+  trackChatWrite(settled);
   return settled;
 }
 
 /**
- * Виконати `run()` і зібрати всі write-підтвердження, які він породив.
- *
- * `run` синхронний навмисно: dispatch чат-тулів синхронний, тож усе, що
- * потрапило в збирач за час виклику, належить саме цій дії.
+ * Збирач спільний з Фініком (`chatWrites.ts`); стара назва лишається для
+ * наявних викликачів і тестів.
  */
-export function captureRoutineWrites<T>(run: () => T): {
-  value: T;
-  writes: Array<Promise<boolean>>;
-} {
-  const previousSink = sink;
-  const collected: Array<Promise<boolean>> = [];
-  sink = collected;
-  try {
-    return { value: run(), writes: collected };
-  } finally {
-    sink = previousSink;
-  }
-}
+export const captureRoutineWrites = captureChatWrites;

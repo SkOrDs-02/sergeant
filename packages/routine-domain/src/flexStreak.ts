@@ -361,7 +361,19 @@ export function flexibleStreakForHabit(
     .days;
 }
 
-/** Гнучкий аналог `maxActiveStreak` по всіх неархівних звичках. */
+/**
+ * Гнучкий аналог `maxActiveStreak` по всіх неархівних звичках.
+ *
+ * AI-CONTEXT: звички «N разів на тиждень» (`isFlexibleHabit`) у цей ДЕННИЙ
+ * агрегат не входять (рішення власника 2026-10-19, аудит 2026-10-01 logic-11,
+ * варіант A; спека `routine-flexible-weekly-frequency.md`, PR-3.5: гнучкі
+ * звички виключаються з денної моделі). Їхня серія міряється ТИЖНЯМИ
+ * (`weeklyGoalStreakWeeks`), а `flexibleStreakBreakdown` для них дає кількість
+ * виконаних ДНІВ: «6 днів» за шість понеділків і обнулення в середу, поки
+ * тиждень ще триває. Це число живить хаб, героя, тост віхи й картку рекорду,
+ * тож змішувати одиниці тут не можна. Наслідок: людина лише з гнучкими
+ * звичками має тут 0, а свою тижневу серію бачить у картці звички.
+ */
 export function flexibleMaxActiveStreak(
   habits: Habit[],
   completions: Record<string, string[]>,
@@ -371,6 +383,7 @@ export function flexibleMaxActiveStreak(
   let m = 0;
   for (const h of habits) {
     if (h.archived) continue;
+    if (isFlexibleHabit(h)) continue;
     m = Math.max(
       m,
       flexibleStreakForHabit(h, completions[h.id] || [], todayKey, {
@@ -410,7 +423,13 @@ export function flexibleMaxStreakAllTime(
   return best;
 }
 
-/** Гнучкий аналог `maxStreakAllTime` по всіх неархівних звичках. */
+/**
+ * Гнучкий аналог `maxStreakAllTime` по всіх неархівних звичках.
+ *
+ * Гнучкі звички («N разів на тиждень») виключені з денного агрегату, як і в
+ * `flexibleMaxActiveStreak`: інакше «Макс. серія» і «Серія сьогодні» знову
+ * мали б різні одиниці (logic-11).
+ */
 export function flexibleMaxStreakAllTimeAcrossHabits(
   habits: Habit[],
   completions: Record<string, string[]>,
@@ -419,6 +438,7 @@ export function flexibleMaxStreakAllTimeAcrossHabits(
   let m = 0;
   for (const h of habits) {
     if (h.archived) continue;
+    if (isFlexibleHabit(h)) continue;
     m = Math.max(
       m,
       flexibleMaxStreakAllTime(h, completions[h.id] || [], {

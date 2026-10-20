@@ -8,8 +8,8 @@ afterEach(cleanup);
 describe("Label", () => {
   /**
    * Дефолт перевернуто 2026-08-06 (рішення власника): підпис поля — це
-   * питання до людини, а не службовий напис на приладі. Капс лишився
-   * опцією `caps` для рідкісних випадків.
+   * питання до людини, а не службовий напис на приладі. Опцію `caps` знято
+   * у v3.1: капс-ярлик лише на тинті hero.
    */
   it("renders normal-case by default", () => {
     render(<Label>Сума</Label>);
@@ -18,30 +18,7 @@ describe("Label", () => {
     expect(label.className).not.toContain("uppercase");
   });
 
-  it("caps switches to the uppercase eyebrow", () => {
-    render(<Label caps>Назва</Label>);
-    const label = screen.getByText("Назва");
-    expect(label.className).toContain("uppercase");
-    expect(label.className).not.toContain("text-style-label");
-  });
-
-  /**
-   * `FormField` пробрасывает проп своїм шляхом (`capsLabel` → `caps`),
-   * і цей шлях окремий від прямого `<Label>`. Знахідка ревʼю: тести
-   * покривали лише другий.
-   */
-  it("FormField пробрасує capsLabel у мітку", () => {
-    render(
-      <FormField label="Валюта" capsLabel>
-        <input />
-      </FormField>,
-    );
-    const label = screen.getByText("Валюта");
-    expect(label.className).toContain("uppercase");
-    expect(label.className).not.toContain("text-style-label");
-  });
-
-  it("без capsLabel мітка FormField — звичайного регістру", () => {
+  it("мітка FormField: звичайний регістр, другий сірий (v3.1)", () => {
     render(
       <FormField label="Назва активу">
         <input />
@@ -49,6 +26,7 @@ describe("Label", () => {
     );
     const label = screen.getByText("Назва активу");
     expect(label.className).toContain("normal-case");
+    expect(label.className).toContain("text-muted");
     expect(label.className).not.toContain("uppercase");
   });
 

@@ -32,6 +32,8 @@ function Shell() {
         onSetupDone={appLock.finishSetup}
         onSetupCancel={appLock.finishSetup}
         onChangeCancel={appLock.finishSetup}
+        onSignOut={appLock.signOut}
+        retryAt={appLock.retryAt}
       />
       <main data-testid="app-data">app data</main>
     </>

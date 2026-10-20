@@ -1,6 +1,7 @@
 import { forwardRef, type ReactNode, type SelectHTMLAttributes } from "react";
 import { cn } from "../../lib/ui/cn";
 import type { FormVariant, SmallMediumLarge } from "./types";
+import { fieldFocus } from "./Input";
 
 /**
  * Sergeant Design System — Select
@@ -15,57 +16,23 @@ import type { FormVariant, SmallMediumLarge } from "./types";
 
 export type SelectSize = SmallMediumLarge;
 export type SelectVariant = FormVariant;
-export type SelectAccent =
-  "brand" | "finyk" | "fizruk" | "nutrition" | "routine";
 
 const sizes: Record<SelectSize, string> = {
   sm: "h-9 pl-3 pr-9 text-style-body rounded-lg",
-  md: "h-11 pl-4 pr-10 text-style-body rounded-lg",
+  md: "h-12 pl-4 pr-10 text-style-body rounded-lg",
   lg: "h-12 pl-5 pr-10 text-style-body rounded-lg",
 };
 
+/**
+ * Мова H (v3.1): ті самі межа, фокус чорнилом і помилка, що в `Input`.
+ * Модульного тону фокуса більше немає: hue модуля в контролах знято
+ * рішенням власника 2026-10-18, тож проп `accent` прибрано.
+ */
 const variants: Record<SelectVariant, string> = {
   default: "bg-panelHi border border-control",
-  filled: "bg-panelHi border-transparent focus-visible:bg-panel",
+  filled: "bg-panelHi border border-transparent focus-visible:bg-panel",
   ghost:
-    "bg-transparent border-transparent hover:bg-panelHi focus-visible:bg-panelHi",
-};
-
-/**
- * Focus treatment — mirrors `Input` and `Button`: keyboard focus shows a
- * `focus-visible:ring-2 ring-focus/45` ring, pointer clicks don't.
- *
- * До 2026-09-15 цей докстрінг СУПЕРЕЧИВ САМ СОБІ: він заявляв дзеркалення
- * `Input` і `Button`, але називав `/30`, тоді як обидва згадані стоять на
- * `/45` (`Button.tsx:400`, докстрінг `Input.tsx`). Число тут — не «м'якше
- * кільце для поля»: та роль належить утиліті `.input-focus`, у якої інший
- * механізм (кільце БЕЗ офсету, `utilities.css`), і вона свідомо лишається
- * на `/30`. `Select` же бере форму з офсетом, тобто кнопкову.
- */
-const brandFocus: Record<SelectVariant, string> = {
-  default:
-    "focus-visible:border-brand-400 focus-visible:ring-2 focus-visible:ring-focus/45",
-  filled:
-    "focus-visible:border-brand-400 focus-visible:ring-2 focus-visible:ring-focus/45",
-  ghost: "focus-visible:ring-2 focus-visible:ring-focus/45",
-};
-
-/**
- * AI-CONTEXT: `accent` існує через правило module-accent containment
- * (дизайн-конвенція, ex-Rule #12): усередині піддерева модуля фокус-ринг
- * має бути модульного тону, а не бренд-фіолетовим — саме тому 11 з 15
- * raw `<select>` у модулях історично обходили цей компонент через
- * `input-focus-<module>` / `routine-touch-select` з utilities.css.
- * Для не-brand акценту застосовуємо готову утиліту `input-focus-<module>`
- * (вона несе і focus-border, і ring) ЗАМІСТЬ бренд-фокусних класів —
- * інакше ringʼи стакаються, бо tailwind-merge не бачить всередину
- * `@utility`. `error` має пріоритет над акцентом: danger-ринг один на всіх.
- */
-const accentFocus: Record<Exclude<SelectAccent, "brand">, string> = {
-  finyk: "input-focus-finyk",
-  fizruk: "input-focus-fizruk",
-  nutrition: "input-focus-nutrition",
-  routine: "input-focus-routine",
+    "bg-transparent border border-transparent hover:bg-panelHi focus-visible:bg-panelHi",
 };
 
 export interface SelectProps extends Omit<
@@ -74,34 +41,15 @@ export interface SelectProps extends Omit<
 > {
   size?: SelectSize;
   variant?: SelectVariant;
-  /** Модульний тон focus-ring; за замовчуванням — бренд (як в `Input`). */
-  accent?: SelectAccent;
   error?: boolean;
   children?: ReactNode;
 }
 
 export const Select = forwardRef<HTMLSelectElement, SelectProps>(
   function Select(
-    {
-      className,
-      size = "md",
-      variant = "default",
-      accent = "brand",
-      error,
-      children,
-      ...props
-    },
+    { className, size = "md", variant = "default", error, children, ...props },
     ref,
   ) {
-    const stateClass = error
-      ? "border-danger/70 focus-visible:border-danger focus-visible:ring-danger/25"
-      : "";
-    // При error лишаємо бренд-фокусний набір: stateClass перекриває його
-    // через tailwind-merge (last-wins) до danger-тону, тож error виглядає
-    // однаково для всіх акцентів і ринг рівно один.
-    const focusClass =
-      accent === "brand" || error ? brandFocus[variant] : accentFocus[accent];
-
     return (
       <div className="relative">
         <select
@@ -113,8 +61,7 @@ export const Select = forwardRef<HTMLSelectElement, SelectProps>(
             "disabled:opacity-50 disabled:cursor-not-allowed",
             sizes[size],
             variants[variant],
-            focusClass,
-            stateClass,
+            fieldFocus(error),
             className,
           )}
           {...props}
@@ -124,7 +71,7 @@ export const Select = forwardRef<HTMLSelectElement, SelectProps>(
         <svg
           aria-hidden
           viewBox="0 0 20 20"
-          className="pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted"
+          className="pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 h-4 w-4 text-subtle"
         >
           <path
             d="M5 7l5 6 5-6"
