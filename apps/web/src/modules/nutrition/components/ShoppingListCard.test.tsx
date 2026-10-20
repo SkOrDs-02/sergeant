@@ -386,7 +386,7 @@ describe("ShoppingListCard — вибір рецептів (збережені +
       screen.getByRole("group", { name: "Згенеровані" }),
     ).toBeInTheDocument();
     expect(screen.getAllByRole("checkbox")).toHaveLength(3);
-    expect(screen.getByText("Обрано 0 з 3")).toBeInTheDocument();
+    expect(screen.getByText("Позначено 0 з 3")).toBeInTheDocument();
     // Підпис на кнопці джерела рахує обидві групи, з правильною формою слова.
     expect(screen.getByText("3 рецепти")).toBeInTheDocument();
     expect(screen.queryByText("немає рецептів")).not.toBeInTheDocument();
@@ -430,7 +430,7 @@ describe("ShoppingListCard — вибір рецептів (збережені +
     // Позначаємо не по порядку: згенерований першим, збережений другим.
     fireEvent.click(screen.getByRole("checkbox", { name: /Омлет/ }));
     fireEvent.click(screen.getByRole("checkbox", { name: /Борщ/ }));
-    expect(screen.getByText("Обрано 2 з 3")).toBeInTheDocument();
+    expect(screen.getByText("Позначено 2 з 3")).toBeInTheDocument();
     fireEvent.click(screen.getByText("Згенерувати список покупок"));
     expect(onGenerate).toHaveBeenCalledWith("recipes", [s1, g1]);
   });
@@ -476,7 +476,7 @@ describe("ShoppingListCard — вибір рецептів (збережені +
       />,
     );
     fireEvent.click(screen.getByRole("button", { name: "Обрати всі" }));
-    expect(screen.getByText("Обрано 2 з 2")).toBeInTheDocument();
+    expect(screen.getByText("Позначено 2 з 2")).toBeInTheDocument();
     // Усе позначено: «Обрати всі» зникає, лишається «Зняти вибір».
     expect(
       screen.queryByRole("button", { name: "Обрати всі" }),
@@ -485,7 +485,7 @@ describe("ShoppingListCard — вибір рецептів (збережені +
     expect(onGenerate).toHaveBeenCalledWith("recipes", [s1, g1]);
 
     fireEvent.click(screen.getByRole("button", { name: "Зняти вибір" }));
-    expect(screen.getByText("Обрано 0 з 2")).toBeInTheDocument();
+    expect(screen.getByText("Позначено 0 з 2")).toBeInTheDocument();
   });
 
   it("стеля запиту 20 рецептів: зайві не вибираються, підказка видима", () => {
@@ -497,7 +497,7 @@ describe("ShoppingListCard — вибір рецептів (збережені +
       <ShoppingListCard {...baseProps({ savedRecipes: many, onGenerate })} />,
     );
     fireEvent.click(screen.getByRole("button", { name: "Обрати всі" }));
-    expect(screen.getByText("Обрано 20 з 22")).toBeInTheDocument();
+    expect(screen.getByText("Позначено 20 з 22")).toBeInTheDocument();
     expect(
       screen.getByText("Максимум 20 рецептів за раз."),
     ).toBeInTheDocument();
@@ -529,16 +529,15 @@ describe("ShoppingListCard — вибір рецептів (збережені +
     ).not.toBeInTheDocument();
   });
 
-  it("рядок вибору - нативний чекбокс у label з touch-target (≥44px)", () => {
+  it("рядок вибору - checkbox ChoiceGroup з зоною дотику ≥44px", () => {
     render(
       <ShoppingListCard
         {...baseProps({ savedRecipes: [saved("s1", "Борщ")] })}
       />,
     );
-    const label = screen
-      .getByRole("checkbox", { name: /Борщ/ })
-      .closest("label");
-    expect(label).toHaveClass("touch-target");
+    const box = screen.getByRole("checkbox", { name: /Борщ/ });
+    expect(box.tagName).toBe("BUTTON");
+    expect(box).toHaveClass("min-h-[44px]");
   });
 
   it("на вкладці «Тижневий план» вибору рецептів немає", () => {
