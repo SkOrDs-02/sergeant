@@ -216,13 +216,21 @@ export function classifyRecall(
   const warnThreshold = opts?.warnThreshold ?? DEFAULT_WARN_THRESHOLD;
   const killThreshold = opts?.killThreshold ?? DEFAULT_KILL_THRESHOLD;
 
+  for (const [name, value] of Object.entries({
+    mean,
+    warnThreshold,
+    killThreshold,
+  })) {
+    if (!Number.isFinite(value) || value < 0 || value > 1) {
+      throw new Error(
+        `classifyRecall: ${name} must be finite and in [0,1], got ${value}`,
+      );
+    }
+  }
   if (killThreshold > warnThreshold) {
     throw new Error(
       `classifyRecall: killThreshold (${killThreshold}) must be <= warnThreshold (${warnThreshold})`,
     );
-  }
-  if (!Number.isFinite(mean)) {
-    throw new Error(`classifyRecall: mean must be finite, got ${mean}`);
   }
 
   let status: RecallStatus;

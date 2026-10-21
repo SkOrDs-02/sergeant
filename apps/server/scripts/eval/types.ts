@@ -89,6 +89,8 @@ export interface Pipeline {
 }
 
 export interface RunResult {
+  /** Stub перевіряє стенд, а не якість/вартість оголошеної моделі. */
+  executionMode?: "dry-run";
   pipeline: string;
   caseName: string;
   trap: string;

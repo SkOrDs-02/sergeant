@@ -11,9 +11,10 @@
  *    базовою моделлю (спека § Евристичний суддя не ухвалює рішення).
  */
 
-import type { z } from "zod";
+import { z } from "zod";
 import { WeeklyDigestReportSchema } from "@sergeant/shared";
 import {
+  CATEGORIES,
   parseCategory,
   type Category,
 } from "../../src/routes/internal/categorize.js";
@@ -195,9 +196,28 @@ export const mentions =
  * знає» ззовні виглядають однаково — саме тому суддя дивиться і на
  * категорію, і на впевненість.
  */
+const CategoryAnswerSchema = z.object({
+  category: z.enum(CATEGORIES),
+  confidence: z.number().min(0).max(1),
+});
+
 export const categoryIs =
   (expected: Category[], opts: { maxConfidence?: number } = {}) =>
   (text: string): boolean => {
+    // Той самий JSON-фрагмент, який читає прод-парсер. Його fail-soft
+    // {other, 0} не доводить, що модель справді відповіла валідним JSON.
+    const json = text
+      .replace(/```(?:json)?\s*/g, "")
+      .replace(/```/g, "")
+      .trim()
+      .match(/\{[\s\S]*\}/)?.[0];
+    if (!json) return false;
+    try {
+      if (!CategoryAnswerSchema.safeParse(JSON.parse(json)).success)
+        return false;
+    } catch {
+      return false;
+    }
     const parsed = parseCategory(text);
     if (!expected.includes(parsed.category)) return false;
     if (opts.maxConfidence != null && parsed.confidence > opts.maxConfidence) {

@@ -34,6 +34,7 @@ import { fileURLToPath } from "node:url";
 import { SYSTEM_PREFIX, TOOLS } from "../tools.js";
 import { DATA_BLOCK } from "./dataBlock.js";
 import type { EvalBlock } from "./scoring.js";
+import { validateCassette } from "./cassetteValidation.js";
 
 export interface RecordedTurn {
   /** Блоки відповіді моделі на цьому ході, як їх віддав API. */
@@ -131,10 +132,13 @@ export function manifestMismatches(manifest: CassetteManifest): string[] {
 export function loadCassette(model: string, variant?: string): Cassette | null {
   const path = cassettePath(model, variant);
   if (!existsSync(path)) return null;
-  return JSON.parse(readFileSync(path, "utf8")) as Cassette;
+  const raw: unknown = JSON.parse(readFileSync(path, "utf8"));
+  validateCassette(raw, model);
+  return raw;
 }
 
 export function saveCassette(cassette: Cassette, variant?: string): void {
+  validateCassette(cassette);
   mkdirSync(CASSETTE_DIR, { recursive: true });
   writeFileSync(
     cassettePath(cassette.manifest.model, variant),
