@@ -18,9 +18,11 @@ const {
   mockPool,
   queryMock,
   getSessionUserMock,
+  savedStripe,
   savedNutritionProvider,
   savedQuotaDisabled,
 } = vi.hoisted(() => {
+  const savedStripe = process.env["STRIPE_ENABLED"];
   const savedNutritionProvider = process.env["LLM_NUTRITION_PROVIDER"];
   const savedQuotaDisabled = process.env["AI_QUOTA_DISABLED"];
   process.env["STRIPE_ENABLED"] = "true";
@@ -40,6 +42,7 @@ const {
     mockPool,
     queryMock,
     getSessionUserMock,
+    savedStripe,
     savedNutritionProvider,
     savedQuotaDisabled,
   };
@@ -59,8 +62,6 @@ vi.mock("./../auth.js", () => ({
 }));
 
 import { createApp } from "./../app.js";
-
-const SAVED_STRIPE = process.env["STRIPE_ENABLED"];
 
 /** Synthetic free-plan: no active subscription row → getUserPlan → "free". */
 function freePlanRows() {
@@ -91,8 +92,8 @@ beforeEach(() => {
 });
 
 afterAll(() => {
-  if (SAVED_STRIPE === undefined) delete process.env["STRIPE_ENABLED"];
-  else process.env["STRIPE_ENABLED"] = SAVED_STRIPE;
+  if (savedStripe === undefined) delete process.env["STRIPE_ENABLED"];
+  else process.env["STRIPE_ENABLED"] = savedStripe;
   if (savedNutritionProvider === undefined)
     delete process.env["LLM_NUTRITION_PROVIDER"];
   else process.env["LLM_NUTRITION_PROVIDER"] = savedNutritionProvider;
