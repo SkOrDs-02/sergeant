@@ -223,6 +223,11 @@ pnpm eval:rag -- --baseline=prev-summary.json
 | 2    | `kill`  | recall@4 mean < 0.4 — рекомендація вимкнути RAG (`AI_MEMORY_ENABLED=false` у Coolify, redeploy); автоматичного гасіння немає — див. «Двошаровість» |
 | 3    | `error` | CLI configuration error (invalid --mode, threshold paradox)                                                                                        |
 
+TypeScript-хелпер `classifyRecall` додатково відхиляє нечислові/нескінченні
+значення та числа поза [0,1] для mean і обох порогів. NaN не може стати
+`pass` через хибні порівняння. Незмінні межі 0,5 / 0,4 перевіряються окремими
+boundary-тестами; `.mjs` CLI вже мав таку валідацію аргументів.
+
 ### Output schema (v2.0)
 
 ```jsonc

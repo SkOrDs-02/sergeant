@@ -448,6 +448,7 @@ export async function runVisionOne(
       }));
 
   const base = {
+    ...(dryRun ? { executionMode: "dry-run" as const } : {}),
     pipeline: pipeline.key,
     caseName: goldenCase.name,
     trap: goldenCase.trap,

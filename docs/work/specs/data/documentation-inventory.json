@@ -844,6 +844,13 @@
       "canonical_owner": "docs/engineering/testing/2026-10-20-test-coverage-review.md"
     },
     {
+      "old_path": "docs/engineering/testing/2026-10-21-ai-eval-review.md",
+      "new_path": "docs/engineering/testing/2026-10-21-ai-eval-review.md",
+      "action": "keep",
+      "genre": "reference",
+      "canonical_owner": "docs/engineering/testing/2026-10-21-ai-eval-review.md"
+    },
+    {
       "old_path": "docs/engineering/testing/pact-drift-runbook.md",
       "new_path": "docs/engineering/testing/pact-drift-runbook.md",
       "action": "keep",

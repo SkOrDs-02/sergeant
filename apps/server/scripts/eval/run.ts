@@ -75,6 +75,7 @@ export async function runOne(
   const latencyMs = Date.now() - t0;
 
   const base = {
+    ...(dryRun ? { executionMode: "dry-run" as const } : {}),
     pipeline: pipeline.key,
     caseName: goldenCase.name,
     trap: goldenCase.trap,

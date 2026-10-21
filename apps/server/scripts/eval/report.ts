@@ -339,6 +339,34 @@ export function toMarkdown(
   generatedAt: string,
   skipped: Candidate[] = [],
 ): string {
+  const dry = results.filter((row) => row.executionMode === "dry-run");
+  if (dry.length > 0) {
+    if (dry.length !== results.length) {
+      throw new Error(
+        "Cannot mix dry-run and live model results in one benchmark",
+      );
+    }
+    return [
+      "<!-- AUTO-GENERATED FILE. Generator: apps/server/scripts/eval/report.ts. -->",
+      "# Перевірка стенду моделей",
+      "",
+      "**DRY RUN — моделі не викликались.**",
+      "",
+      `Згенеровано: ${generatedAt}`,
+      "",
+      "Це перевірка підготовки викликів через StubProvider. Якість, затримка й",
+      "вартість кандидатів тут не вимірюються; порівнювати їх за цим звітом не можна.",
+      "",
+      "| Пайплайн | Кейс | Оголошений кандидат |",
+      "| --- | --- | --- |",
+      ...dry.map(
+        (row) =>
+          `| ${row.pipeline} | ${row.caseName} | \`${row.candidate.model}\` |`,
+      ),
+      ...promptSection(pipelines),
+      "",
+    ].join("\n");
+  }
   return [
     "<!-- AUTO-GENERATED FILE. Do not edit by hand. Generator: `pnpm --filter @sergeant/server eval:models` / `eval:vision` (apps/server/scripts/eval/report.ts). -->",
     "",

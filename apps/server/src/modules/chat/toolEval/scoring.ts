@@ -60,8 +60,11 @@ export const WRITE_ID_FIELDS = new Map<string, string[]>(
 /** Імена інструментів, викликаних у цій відповіді, з серіалізованими аргументами. */
 export function pickedFrom(blocks: EvalBlock[]): string[] {
   return blocks
-    .filter((b) => b.type === "tool_use" && b.name)
-    .map((b) => `${b.name}(${JSON.stringify(b.input ?? {})})`);
+    .filter((b) => b.type === "tool_use")
+    .map(
+      (b) =>
+        `${b.name?.trim() ? b.name : "<unnamed>"}(${JSON.stringify(b.input ?? {})})`,
+    );
 }
 
 /** Чи названий інструмент `name` серед викликаних. */
@@ -116,7 +119,6 @@ export function hallucinatedIds(
   blocks: EvalBlock[],
   context: string,
 ): string[] {
-  const haystack = context.toLowerCase();
   const found: string[] = [];
   for (const block of blocks) {
     if (block.type !== "tool_use" || !block.name) continue;
@@ -128,11 +130,30 @@ export function hallucinatedIds(
       if (raw == null) continue;
       for (const value of Array.isArray(raw) ? raw : [raw]) {
         const asText = String(value).trim();
-        if (asText && !haystack.includes(asText.toLowerCase())) {
+        if (asText && !containsExactId(context, asText)) {
           found.push(`${block.name}.${field}=${asText}`);
         }
       }
     }
   }
   return found;
+}
+
+/** Opaque ID чутливий до регістру; його префікс не є окремим ID. */
+function containsExactId(context: string, id: string): boolean {
+  const tokenChar = /[\p{L}\p{N}_-]/u;
+  let from = 0;
+  while (from <= context.length) {
+    const index = context.indexOf(id, from);
+    if (index < 0) return false;
+    const before = context.slice(0, index).at(-1);
+    const after = context[index + id.length];
+    if (
+      (!before || !tokenChar.test(before)) &&
+      (!after || !tokenChar.test(after))
+    )
+      return true;
+    from = index + 1;
+  }
+  return false;
 }
