@@ -12,19 +12,19 @@
 
 ## Мапа контурів
 
-| Контур                                                                              | Джерело / команда                                                         | Що доводить                                                             |
-| ----------------------------------------------------------------------------------- | ------------------------------------------------------------------------- | ----------------------------------------------------------------------- |
-| Text: `analysis`, `chat`, `classify`, `coach-insight`, `digest`, `mono`             | `scripts/eval/pipelines.finance.ts`, `eval:models`                        | Прод-промпти, категоризація, синтез, структура, голос і оцінка вартості |
-| Text: `day-plan`, `week-plan`, `shopping-list`, `parse-pantry`, `recommend-recipes` | `scripts/eval/pipelines.nutrition.ts`, `eval:models`                      | Структура nutrition-відповідей і пастки предметної області              |
-| Vision: `analyze-photo`, `refine-photo`                                             | `scripts/eval/vision.ts`, `eval:vision`                                   | Реальний image-вхід та прод-парсери; dry-run не викликає модель         |
-| Вибір tools і багатоходові сценарії                                                 | `src/modules/chat/toolEval/`, `test:tool-eval`                            | Оцінювання записаних викликів, аргументи, ID, ланцюжки                  |
-| Інʼєкції                                                                            | `src/modules/chat/toolEval/injections.test.ts`, `eval:tools --injections` | Доставка payload окремо від послуху моделі; канарки та заборонені tools |
-| Перевірка чисел                                                                     | `src/modules/chat/numberVerify/`                                          | Верифікація тверджень відносно доступних моделі даних                   |
-| RAG                                                                                 | `src/lib/ragEval/`, `test:rag-eval`                                       | Retrieval на pgvector/HNSW із кешованими embeddings; recall@K, P@1, MRR |
-| Живий retrieval                                                                     | `rag-eval:live`                                                           | Окремо вимірює поточного Voyage; у цій хвилі не запускався              |
-| Streaming                                                                           | `eval:stream`, тести LLM/stream                                           | Інший транспорт chat; не замінюється text/vision benchmark              |
+| Контур                                                                              | Джерело / команда                                                                     | Що доводить                                                             |
+| ----------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------- | ----------------------------------------------------------------------- |
+| Text: `analysis`, `chat`, `classify`, `coach-insight`, `digest`, `mono`             | `apps/server/scripts/eval/pipelines.finance.ts`, `eval:models`                        | Прод-промпти, категоризація, синтез, структура, голос і оцінка вартості |
+| Text: `day-plan`, `week-plan`, `shopping-list`, `parse-pantry`, `recommend-recipes` | `apps/server/scripts/eval/pipelines.nutrition.ts`, `eval:models`                      | Структура nutrition-відповідей і пастки предметної області              |
+| Vision: `analyze-photo`, `refine-photo`                                             | `apps/server/scripts/eval/vision.ts`, `eval:vision`                                   | Реальний image-вхід та прод-парсери; dry-run не викликає модель         |
+| Вибір tools і багатоходові сценарії                                                 | `apps/server/src/modules/chat/toolEval/`, `test:tool-eval`                            | Оцінювання записаних викликів, аргументи, ID, ланцюжки                  |
+| Інʼєкції                                                                            | `apps/server/src/modules/chat/toolEval/injections.test.ts`, `eval:tools --injections` | Доставка payload окремо від послуху моделі; канарки та заборонені tools |
+| Перевірка чисел                                                                     | `apps/server/src/modules/chat/numberVerify/`                                          | Верифікація тверджень відносно доступних моделі даних                   |
+| RAG                                                                                 | `apps/server/src/lib/ragEval/`, `test:rag-eval`                                       | Retrieval на pgvector/HNSW із кешованими embeddings; recall@K, P@1, MRR |
+| Живий retrieval                                                                     | `rag-eval:live`                                                                       | Окремо вимірює поточного Voyage; у цій хвилі не запускався              |
+| Streaming                                                                           | `eval:stream`, тести LLM/stream                                                       | Інший транспорт chat; не замінюється text/vision benchmark              |
 
-Шляхи в таблиці відносні до `apps/server`. `evalPromptParity.test.ts` перевіряє
+Шляхи в таблиці наведено від кореня репозиторію. `evalPromptParity.test.ts` перевіряє
 паритет промптів із продом. `test:tool-eval` та кешований RAG мають окремі CI
 джоби; це не підстава плутати replay із вимірюванням поточної моделі.
 
