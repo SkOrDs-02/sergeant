@@ -21,13 +21,20 @@ const {
   savedStripe,
   savedNutritionProvider,
   savedQuotaDisabled,
+  savedAnthropicKey,
+  savedVisionGateway,
+  anthropicMessagesMock,
 } = vi.hoisted(() => {
   const savedStripe = process.env["STRIPE_ENABLED"];
   const savedNutritionProvider = process.env["LLM_NUTRITION_PROVIDER"];
   const savedQuotaDisabled = process.env["AI_QUOTA_DISABLED"];
+  const savedAnthropicKey = process.env["ANTHROPIC_API_KEY"];
+  const savedVisionGateway = process.env["VISION_VIA_OPENROUTER"];
   process.env["STRIPE_ENABLED"] = "true";
   process.env["LLM_NUTRITION_PROVIDER"] = "stub";
   process.env["AI_QUOTA_DISABLED"] = "1";
+  process.env["ANTHROPIC_API_KEY"] = "test-key";
+  process.env["VISION_VIA_OPENROUTER"] = "false";
   const queryMock = vi.fn().mockResolvedValue({ rows: [] });
   const mockPool = {
     query: queryMock,
@@ -38,6 +45,7 @@ const {
     waitingCount: 0,
   };
   const getSessionUserMock = vi.fn().mockResolvedValue(null);
+  const anthropicMessagesMock = vi.fn();
   return {
     mockPool,
     queryMock,
@@ -45,6 +53,9 @@ const {
     savedStripe,
     savedNutritionProvider,
     savedQuotaDisabled,
+    savedAnthropicKey,
+    savedVisionGateway,
+    anthropicMessagesMock,
   };
 });
 
@@ -59,6 +70,20 @@ vi.mock("./../auth.js", () => ({
   auth: { handler: async () => new Response(null, { status: 404 }) },
   getSessionUser: getSessionUserMock,
   getSessionUserSoft: vi.fn().mockResolvedValue(null),
+}));
+
+vi.mock("./../lib/anthropic.js", () => ({
+  anthropicMessages: anthropicMessagesMock,
+  anthropicMessagesStream: vi.fn(),
+  extractAnthropicText: (data: {
+    content?: Array<{ type: string; text?: string }>;
+  }) =>
+    (data.content ?? [])
+      .filter((block) => block.type === "text")
+      .map((block) => block.text ?? "")
+      .join("\n")
+      .trim(),
+  recordAnthropicUsage: vi.fn(),
 }));
 
 import { createApp } from "./../app.js";
@@ -88,6 +113,7 @@ beforeEach(() => {
   queryMock.mockResolvedValue({ rows: [] });
   getSessionUserMock.mockReset();
   getSessionUserMock.mockResolvedValue({ id: "u1" });
+  anthropicMessagesMock.mockReset();
   process.env["STRIPE_ENABLED"] = "true";
 });
 
@@ -99,6 +125,11 @@ afterAll(() => {
   else process.env["LLM_NUTRITION_PROVIDER"] = savedNutritionProvider;
   if (savedQuotaDisabled === undefined) delete process.env["AI_QUOTA_DISABLED"];
   else process.env["AI_QUOTA_DISABLED"] = savedQuotaDisabled;
+  if (savedAnthropicKey === undefined) delete process.env["ANTHROPIC_API_KEY"];
+  else process.env["ANTHROPIC_API_KEY"] = savedAnthropicKey;
+  if (savedVisionGateway === undefined)
+    delete process.env["VISION_VIA_OPENROUTER"];
+  else process.env["VISION_VIA_OPENROUTER"] = savedVisionGateway;
 });
 
 function post(path: string) {
@@ -205,4 +236,148 @@ describe("nutrition parse-pantry HTTP contract", () => {
     expect(res.body).toMatchObject({ code: "VALIDATION" });
     expect(res.body.details).toEqual(expect.any(Array));
   });
+});
+
+describe("remaining nutrition text AI HTTP contracts", () => {
+  const cases = [
+    {
+      path: "/api/nutrition/recommend-recipes",
+      valid: {
+        pantry: ["яблука"],
+        preferences: { pantryMode: "only" },
+        locale: "uk-UA",
+      },
+      invalid: { pantry: "яблука", locale: "uk-UA" },
+      expected: { recipes: [], rawText: '{"ok":true,"stub":true}' },
+    },
+    {
+      path: "/api/nutrition/day-plan",
+      valid: { pantry: [], targets: { kcal: 1800 }, locale: "uk-UA" },
+      invalid: { targets: { kcal: -1 }, locale: "uk-UA" },
+      expected: { plan: { meals: [] }, rawText: '{"ok":true,"stub":true}' },
+    },
+    {
+      path: "/api/nutrition/week-plan",
+      valid: { pantry: [], preferences: { goal: "balanced" }, locale: "uk-UA" },
+      invalid: { pantryMode: "unknown", locale: "uk-UA" },
+      expected: {
+        plan: { days: [], shoppingList: [] },
+        rawText: '{"ok":true,"stub":true}',
+      },
+      pro: true,
+    },
+  ] as const;
+
+  for (const { path, valid, invalid, expected, pro } of cases.map((entry) => ({
+    ...entry,
+    pro: "pro" in entry && entry.pro,
+  }))) {
+    it(`${path} returns the handler response for valid input`, async () => {
+      if (pro) proPlanRows();
+      if (path.endsWith("/day-plan")) {
+        queryMock.mockImplementation(async (sql: string) =>
+          sql.includes("health_data_consent")
+            ? { rows: [{ health_data_consent: true }] }
+            : { rows: [] },
+        );
+      }
+      const res = await request(createApp())
+        .post(path)
+        .set("X-Requested-With", "XMLHttpRequest")
+        .send(valid);
+
+      expect(res.status, JSON.stringify(res.body)).toBe(200);
+      expect(res.body).toMatchObject(expected);
+    });
+
+    it(`${path} returns validation details for invalid input`, async () => {
+      if (pro) proPlanRows();
+      if (path.endsWith("/day-plan")) {
+        queryMock.mockImplementation(async (sql: string) =>
+          sql.includes("health_data_consent")
+            ? { rows: [{ health_data_consent: true }] }
+            : { rows: [] },
+        );
+      }
+      const res = await request(createApp())
+        .post(path)
+        .set("X-Requested-With", "XMLHttpRequest")
+        .send(invalid);
+
+      expect(res.status).toBe(400);
+      expect(res.body).toMatchObject({ code: "VALIDATION" });
+      expect(res.body.details).toEqual(expect.any(Array));
+    });
+  }
+});
+
+describe("nutrition photo AI HTTP contracts", () => {
+  // Magic-byte validation requires at least 200 decoded bytes. The model is
+  // mocked, so this synthetic image never leaves the process.
+  const pngHeader = Buffer.from([
+    0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a, 0x00, 0x00, 0x00, 0x0d,
+  ]);
+  const image = Buffer.concat([
+    pngHeader,
+    Buffer.alloc(200 - pngHeader.length),
+  ]).toString("base64");
+  const photo = {
+    image_base64: image,
+    mime_type: "image/png",
+    locale: "uk-UA",
+  };
+  const modelText = JSON.stringify({
+    isFood: true,
+    dishName: "Борщ",
+    confidence: 0.8,
+    macros: { kcal: 180, protein_g: 6, fat_g: 7, carbs_g: 22 },
+    ingredients: [],
+    questions: [],
+  });
+
+  beforeEach(() => {
+    queryMock.mockImplementation(async (sql: string) =>
+      sql.includes("health_data_consent")
+        ? { rows: [{ health_data_consent: true }] }
+        : { rows: [] },
+    );
+  });
+
+  for (const { path, valid } of [
+    { path: "/api/nutrition/analyze-photo", valid: photo },
+    {
+      path: "/api/nutrition/refine-photo",
+      valid: { ...photo, prior_result: { dishName: "Борщ" } },
+    },
+  ]) {
+    it(`${path} returns normalized photo output`, async () => {
+      anthropicMessagesMock.mockResolvedValueOnce({
+        response: { ok: true, status: 200 },
+        data: { content: [{ type: "text", text: modelText }] },
+      });
+      const res = await request(createApp())
+        .post(path)
+        .set("X-Requested-With", "XMLHttpRequest")
+        .send(valid);
+
+      expect(res.status, JSON.stringify(res.body)).toBe(200);
+      expect(res.body).toMatchObject({
+        result: { isFood: true, dishName: "Борщ" },
+        rawText: modelText,
+      });
+      expect(anthropicMessagesMock).toHaveBeenCalledTimes(1);
+    });
+
+    it(`${path} rejects an invalid image body before calling Anthropic`, async () => {
+      const res = await request(createApp())
+        .post(path)
+        .set("X-Requested-With", "XMLHttpRequest")
+        .send({ ...valid, image_base64: "" });
+
+      expect(res.status).toBe(400);
+      expect(res.body).toMatchObject({ code: "VALIDATION" });
+      expect(res.body.details).toEqual(expect.any(Array));
+      expect(anthropicMessagesMock).not.toHaveBeenCalled();
+    });
+  }
 });
