@@ -36,6 +36,7 @@ import {
   ROUTINE_CLIENT_MIGRATIONS,
   ROUTINE_MIGRATIONS_TABLE,
 } from "@sergeant/db-schema/sqlite";
+import { ApiError, runSyncEnginePushOnce } from "@sergeant/api-client";
 import type { SyncV2PushOp, SyncV2PushResponse } from "@sergeant/api-client";
 
 import { enqueueOutboxUpsert } from "./enqueueOutboxUpsert.js";
@@ -201,6 +202,48 @@ describe("sync v2: ланцюг «локальний запис → HTTP-push»"
     expect(pushCalls[0]).toHaveLength(1);
     expect(pushCalls[0]![0]!.table).toBe("finyk_budgets");
     expect((await countOutboxByStatus(client)).pending).toBe(0);
+  });
+
+  it("поганий рядок у батчі не відхиляє сусідні записи в SQLite", async () => {
+    for (const key of ["good-before", "bad-middle", "good-after"]) {
+      await enqueueFinykOp(AUTHED_USER_ID, key);
+    }
+    const result = await runSyncEnginePushOnce(
+      {
+        drain: (options) =>
+          drainSyncOpOutbox(client, { ...options, userId: AUTHED_USER_ID }),
+        push: async (ops) => {
+          if (ops.some((op) => op.idempotency_key === "bad-middle")) {
+            throw new ApiError({
+              kind: "http",
+              status: 400,
+              message: "bad row",
+              url: "/api/v2/sync/push",
+            });
+          }
+          return applyAll(ops);
+        },
+        markSuccess: (id) => markOutboxSuccess(client, id),
+        markRetry: (id, plan) => markOutboxRetry(client, id, plan),
+        markRejected: (id, reason) => markOutboxRejected(client, id, reason),
+        planRetry,
+        now: () => new Date("2026-07-25T10:00:00.000Z"),
+      },
+      { limit: 100 },
+    );
+    expect(result).toEqual({ drained: 3, pushed: 2, retried: 0, rejected: 1 });
+    expect(await countOutboxByStatus(client)).toMatchObject({
+      pending: 0,
+      rejected: 1,
+    });
+    expect(rowCount()).toBe(1);
+    const survivor = db
+      .prepare("SELECT idempotency_key, reject_reason FROM sync_op_outbox")
+      .get();
+    expect(survivor).toEqual({
+      idempotency_key: "bad-middle",
+      reject_reason: "http_400",
+    });
   });
 
   it("операція під синтетичним анонімним id взагалі не потрапляє в чергу", async () => {

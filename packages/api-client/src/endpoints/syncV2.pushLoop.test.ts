@@ -647,7 +647,7 @@ describe("runSyncEnginePushOnce — terminal HTTP classes (413 / 400 / 422)", ()
   }
 
   it.each([413, 400, 422])(
-    "HTTP %i — markRejected на КОЖЕН рядок батча, жодного markRetry",
+    "HTTP %i — ізолює обидва погані рядки перед markRejected",
     async (status) => {
       const {
         deps,
@@ -668,7 +668,7 @@ describe("runSyncEnginePushOnce — terminal HTTP classes (413 / 400 / 422)", ()
           op: "insert" as SyncV2OpKind,
         }),
       ]);
-      push.mockRejectedValueOnce(httpError(status));
+      push.mockRejectedValue(httpError(status));
 
       const result = await runSyncEnginePushOnce(deps, { limit: 100 });
 
@@ -681,6 +681,7 @@ describe("runSyncEnginePushOnce — terminal HTTP classes (413 / 400 / 422)", ()
       expect(markRetry).not.toHaveBeenCalled();
       expect(planRetry).not.toHaveBeenCalled();
       expect(markSuccess).not.toHaveBeenCalled();
+      expect(push).toHaveBeenCalledTimes(3);
       expect(markRejected).toHaveBeenCalledTimes(2);
       // Причина — той самий стабільний лейбл, що й у `last_error`, тож
       // кардинальність лишається обмеженою, а в Sentry видно предмет.
