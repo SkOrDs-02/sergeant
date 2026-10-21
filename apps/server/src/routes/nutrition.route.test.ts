@@ -179,3 +179,29 @@ describe("nutrition shopping-list HTTP contract", () => {
     expect(res.body.details).toEqual(expect.any(Array));
   });
 });
+
+describe("nutrition parse-pantry HTTP contract", () => {
+  it("returns the handler response for valid pantry text", async () => {
+    const res = await request(createApp())
+      .post("/api/nutrition/parse-pantry")
+      .set("X-Requested-With", "XMLHttpRequest")
+      .send({ text: "яблука", locale: "uk-UA" });
+
+    expect(res.status).toBe(200);
+    expect(res.body).toEqual({
+      items: [],
+      rawText: '{"ok":true,"stub":true}',
+    });
+  });
+
+  it("returns validation details for empty pantry text", async () => {
+    const res = await request(createApp())
+      .post("/api/nutrition/parse-pantry")
+      .set("X-Requested-With", "XMLHttpRequest")
+      .send({ text: "", locale: "uk-UA" });
+
+    expect(res.status).toBe(400);
+    expect(res.body).toMatchObject({ code: "VALIDATION" });
+    expect(res.body.details).toEqual(expect.any(Array));
+  });
+});
