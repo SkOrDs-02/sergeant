@@ -14,8 +14,18 @@ import request from "supertest";
  * Bypass при `STRIPE_ENABLED=false` — unit-покриття у `requirePlan.test.ts`;
  * тут env жорстко `true` на весь файл (env.ts парситься раз при імпорті).
  */
-const { mockPool, queryMock, getSessionUserMock } = vi.hoisted(() => {
+const {
+  mockPool,
+  queryMock,
+  getSessionUserMock,
+  savedNutritionProvider,
+  savedQuotaDisabled,
+} = vi.hoisted(() => {
+  const savedNutritionProvider = process.env["LLM_NUTRITION_PROVIDER"];
+  const savedQuotaDisabled = process.env["AI_QUOTA_DISABLED"];
   process.env["STRIPE_ENABLED"] = "true";
+  process.env["LLM_NUTRITION_PROVIDER"] = "stub";
+  process.env["AI_QUOTA_DISABLED"] = "1";
   const queryMock = vi.fn().mockResolvedValue({ rows: [] });
   const mockPool = {
     query: queryMock,
@@ -26,7 +36,13 @@ const { mockPool, queryMock, getSessionUserMock } = vi.hoisted(() => {
     waitingCount: 0,
   };
   const getSessionUserMock = vi.fn().mockResolvedValue(null);
-  return { mockPool, queryMock, getSessionUserMock };
+  return {
+    mockPool,
+    queryMock,
+    getSessionUserMock,
+    savedNutritionProvider,
+    savedQuotaDisabled,
+  };
 });
 
 vi.mock("./../db.js", () => ({
@@ -77,6 +93,11 @@ beforeEach(() => {
 afterAll(() => {
   if (SAVED_STRIPE === undefined) delete process.env["STRIPE_ENABLED"];
   else process.env["STRIPE_ENABLED"] = SAVED_STRIPE;
+  if (savedNutritionProvider === undefined)
+    delete process.env["LLM_NUTRITION_PROVIDER"];
+  else process.env["LLM_NUTRITION_PROVIDER"] = savedNutritionProvider;
+  if (savedQuotaDisabled === undefined) delete process.env["AI_QUOTA_DISABLED"];
+  else process.env["AI_QUOTA_DISABLED"] = savedQuotaDisabled;
 });
 
 function post(path: string) {
@@ -118,4 +139,43 @@ describe("nutrition endpoints без Premium-гейта (Free)", () => {
       expect(res.status).not.toBe(402);
     });
   }
+});
+
+describe("nutrition shopping-list HTTP contract", () => {
+  it("rejects a request without a session before invoking the handler", async () => {
+    getSessionUserMock.mockResolvedValue(null);
+    const res = await request(createApp())
+      .post("/api/nutrition/shopping-list")
+      .set("X-Requested-With", "XMLHttpRequest")
+      .send({ recipes: [{ title: "Омлет", ingredients: ["яйця"] }] });
+
+    expect(res.status).toBe(401);
+  });
+
+  it("returns the handler response for a valid recipe request", async () => {
+    const res = await request(createApp())
+      .post("/api/nutrition/shopping-list")
+      .set("X-Requested-With", "XMLHttpRequest")
+      .send({
+        recipes: [{ title: "Омлет", ingredients: ["яйця"] }],
+        locale: "uk-UA",
+      });
+
+    expect(res.status).toBe(200);
+    expect(res.body).toEqual({
+      categories: [],
+      rawText: '{"ok":true,"stub":true}',
+    });
+  });
+
+  it("returns validation details for an invalid recipe body", async () => {
+    const res = await request(createApp())
+      .post("/api/nutrition/shopping-list")
+      .set("X-Requested-With", "XMLHttpRequest")
+      .send({ recipes: "not-an-array", locale: "uk-UA" });
+
+    expect(res.status).toBe(400);
+    expect(res.body).toMatchObject({ code: "VALIDATION" });
+    expect(res.body.details).toEqual(expect.any(Array));
+  });
 });
