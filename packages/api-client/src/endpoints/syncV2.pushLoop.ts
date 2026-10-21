@@ -87,23 +87,18 @@ import type {
  *   `http_503`, …) so `last_error` keeps a bounded label space
  *   (analytics rollup cardinality budget — see Stage 5 reject-reason
  *   hygiene rule). The label then decides the lifecycle:
- *   * Статус із {@link TERMINAL_PUSH_HTTP_STATUSES} (400 / 413 / 422)
- *     — ТЕРМІНАЛЬНЕ відхилення всього батча через
- *     {@link MarkOutboxRejectedFn}. Ретрай його не полагодить за
- *     визначенням: батч дренеться детерміновано (`ORDER BY id ASC`),
- *     тож кожна спроба збирає ті самі рядки й дає ту саму відповідь.
- *     Доти такий батч мовчки згорав: `SYNC_OP_MAX_ATTEMPTS = 10`
- *     спроб — і всі рядки в `dead_letter` без жодного сигналу, тобто
- *     тиха втрата офлайн-записів. Тепер вони одразу `rejected` із
- *     причиною `http_<status>`, а це вже видно і в Sentry
- *     (`reportTerminalRejection`), і в екрані стану синку.
+ *   * 400 / 413 / 422 → розділити батч до одиночного рядка. Лише рядок,
+ *     що сам отримав цю помилку, стає `rejected`; сусідні отримують власні
+ *     receipts. За тик не більше 8 запитів, решта чекає наступного.
  *   * 429 / 503 ({@link isThrottledPushFailure}) — «почекай», а не збій:
- *     увесь батч іде в {@link MarkOutboxRetryFn} з НЕзмінним `attempts`
- *     і `next_retry_at = now + Retry-After` ({@link planThrottledRetry}).
+ *     поточний сегмент і невідправлені сусіди йдуть у
+ *     {@link MarkOutboxRetryFn} з НЕзмінним `attempts` і
+ *     `next_retry_at = now + Retry-After` ({@link planThrottledRetry}).
  *     Без цього хвилинний ліміт `api:v2:sync` за ~10 тактів переводив
  *     чергу в `dead_letter` (rel-08).
- *   * Усе інше — транзієнт: увесь батч іде в
- *     {@link MarkOutboxRetryFn}. `ApiError.kind === 'http'` зі
+ *   * Усе інше — транзієнт: поточний сегмент отримує звичайний retry,
+ *     а невідправлені сусіди чекають зі старим `attempts`.
+ *     `ApiError.kind === 'http'` зі
  *     `status === 401 | 403` теж лишається транзієнтом — рушій не
  *     вміє сам випустити нові креденшали; re-auth стається поза ним,
  *     після чого наступний тик перепушить.
@@ -350,7 +345,7 @@ export interface SyncEnginePushResult {
   readonly retried: number;
   /** Rows the server terminally rejected — UPDATEd to `status='rejected'`. */
   readonly rejected: number;
-  /** The byte budget left a suffix pending; a successful tick can continue. */
+  /** The byte or 255-row budget left a suffix pending; a later tick can continue. */
   readonly hasMore?: boolean;
 }
 
@@ -382,7 +377,12 @@ export async function runSyncEnginePushOnce(
   }
 
   const mapped = available.map(mapDrainedRowToSyncV2PushOp);
-  const count = fittingPushPrefixLength(mapped, options.maxBodyBytes);
+  // With eight requests, a split tree of at most 255 rows always reaches
+  // a singleton, even if every ancestor fails validation.
+  const count = Math.min(
+    fittingPushPrefixLength(mapped, options.maxBodyBytes),
+    255,
+  );
   const drained = available.slice(0, count);
   const ops = mapped.slice(0, count);
   const continuation =
@@ -392,124 +392,133 @@ export async function runSyncEnginePushOnce(
       ? { originDeviceId: options.originDeviceId }
       : undefined;
 
-  let response: SyncV2PushResponse;
-  try {
-    response = await deps.push(ops, pushOptions);
-  } catch (err) {
-    const lastError = describePushError(err);
-
-    // Статус, який ретрай не полагодить, — термінальне відхилення батча,
-    // а не транзієнт. Див. {@link TERMINAL_PUSH_HTTP_STATUSES}.
-    if (isTerminalPushFailure(err)) {
-      for (const row of drained) {
-        await deps.markRejected(row.id, lastError, {
-          table: row.table,
-          op: row.op,
-        });
-      }
-      return {
-        drained: drained.length,
-        pushed: 0,
-        retried: 0,
-        rejected: drained.length,
-        ...continuation,
-      };
-    }
-
-    // 429 / 503 — сервер просить почекати, а не відкидає рядки. Спроба НЕ
-    // рахується (інакше черга за хвилину ліміту йде в `dead_letter`), а
-    // наступна спроба стоїть не раніше `Retry-After`.
-    if (isThrottledPushFailure(err)) {
-      for (const row of drained) {
-        const plan = planThrottledRetry(
-          deps,
-          row.attempts,
-          now,
-          lastError,
-          err.retryAfterMs,
-        );
-        await deps.markRetry(row.id, plan);
-      }
-      return {
-        drained: drained.length,
-        pushed: 0,
-        retried: drained.length,
-        rejected: 0,
-        ...continuation,
-      };
-    }
-
-    // Transport / HTTP failure: every row in the batch goes to retry.
-    for (const row of drained) {
-      const plan = callPlanRetry(deps, row.attempts, now, lastError);
-      await deps.markRetry(row.id, plan);
-    }
-    return {
-      drained: drained.length,
-      pushed: 0,
-      retried: drained.length,
-      rejected: 0,
-      ...continuation,
-    };
-  }
-
-  // HTTP success: dispatch each row by its result.
-  const resultByKey = new Map<string, SyncV2OpResult>();
-  for (const result of response.results) {
-    resultByKey.set(result.idempotency_key, result);
-  }
-
+  type Segment = {
+    rows: readonly DrainedOutboxRowShape[];
+    ops: readonly SyncV2PushOp[];
+  };
+  const pending: Segment[] = [{ rows: drained, ops }];
+  const maxRequestsPerTick = 8;
+  let requests = 0;
   let pushed = 0;
   let retried = 0;
   let rejected = 0;
   const acknowledgedIds: number[] = [];
-
-  for (const row of drained) {
-    const result = resultByKey.get(row.idempotencyKey);
-
-    if (result === undefined) {
-      // Server returned 2xx but no matching result for this op.
-      // Treat as transient: bump attempts, leave the row pending.
-      const plan = callPlanRetry(deps, row.attempts, now, "missing_result");
-      await deps.markRetry(row.id, plan);
-      retried += 1;
-      continue;
+  while (pending.length > 0) {
+    const segment = pending.shift()!;
+    if (requests === maxRequestsPerTick) {
+      // This segment has not had its own request. Keep its attempt count
+      // and a bounded retry delay until the next tick.
+      for (const row of [
+        ...segment.rows,
+        ...pending.flatMap((part) => part.rows),
+      ]) {
+        await deps.markRetry(
+          row.id,
+          planThrottledRetry(
+            deps,
+            row.attempts,
+            now,
+            "batch_isolation",
+            undefined,
+          ),
+        );
+        retried += 1;
+      }
+      break;
+    }
+    requests += 1;
+    let response: SyncV2PushResponse;
+    try {
+      response = await deps.push([...segment.ops], pushOptions);
+    } catch (err) {
+      const lastError = describePushError(err);
+      if (isTerminalPushFailure(err)) {
+        if (segment.rows.length > 1) {
+          const middle = Math.floor(segment.rows.length / 2);
+          pending.unshift(
+            {
+              rows: segment.rows.slice(0, middle),
+              ops: segment.ops.slice(0, middle),
+            },
+            {
+              rows: segment.rows.slice(middle),
+              ops: segment.ops.slice(middle),
+            },
+          );
+        } else {
+          const row = segment.rows[0]!;
+          await deps.markRejected(row.id, lastError, {
+            table: row.table,
+            op: row.op,
+          });
+          rejected += 1;
+        }
+        continue;
+      }
+      for (const row of segment.rows) {
+        const plan = isThrottledPushFailure(err)
+          ? planThrottledRetry(
+              deps,
+              row.attempts,
+              now,
+              lastError,
+              err.retryAfterMs,
+            )
+          : callPlanRetry(deps, row.attempts, now, lastError);
+        await deps.markRetry(row.id, plan);
+        retried += 1;
+      }
+      // A later transport error or rate limit also stops the split. Unsent
+      // siblings retain their attempts and wait until the next normal tick.
+      for (const row of pending.flatMap((part) => part.rows)) {
+        await deps.markRetry(
+          row.id,
+          planThrottledRetry(
+            deps,
+            row.attempts,
+            now,
+            lastError,
+            isThrottledPushFailure(err) ? err.retryAfterMs : undefined,
+          ),
+        );
+        retried += 1;
+      }
+      break;
     }
 
-    if (result.status === "applied" || result.status === "duplicate") {
-      if (deps.markSuccessBatch) {
-        deps.onBatchedSuccess?.();
-        acknowledgedIds.push(row.id);
-      } else await deps.markSuccess(row.id);
-      pushed += 1;
-      continue;
+    const resultByKey = new Map<string, SyncV2OpResult>();
+    for (const result of response.results)
+      resultByKey.set(result.idempotency_key, result);
+    for (const row of segment.rows) {
+      const result = resultByKey.get(row.idempotencyKey);
+      if (result?.status === "applied" || result?.status === "duplicate") {
+        if (deps.markSuccessBatch) {
+          deps.onBatchedSuccess?.();
+          acknowledgedIds.push(row.id);
+        } else await deps.markSuccess(row.id);
+        pushed += 1;
+      } else if (result?.status === "rejected") {
+        const reason =
+          typeof result.reason === "string" && result.reason.length > 0
+            ? result.reason
+            : "unspecified";
+        await deps.markRejected(row.id, reason, {
+          table: row.table,
+          op: row.op,
+        });
+        rejected += 1;
+      } else {
+        const lastError =
+          result === undefined
+            ? "missing_result"
+            : `unknown_status:${(result as { status: string }).status}`;
+        await deps.markRetry(
+          row.id,
+          callPlanRetry(deps, row.attempts, now, lastError),
+        );
+        retried += 1;
+      }
     }
-
-    if (result.status === "rejected") {
-      const reason =
-        typeof result.reason === "string" && result.reason.length > 0
-          ? result.reason
-          : "unspecified";
-      await deps.markRejected(row.id, reason, {
-        table: row.table,
-        op: row.op,
-      });
-      rejected += 1;
-      continue;
-    }
-
-    // Forward-compat: unknown future status. Don't drop the row;
-    // mark for retry with a labelled error. The label keeps
-    // `last_error` cardinality bounded.
-    const unknownStatus = (result as { status: string }).status;
-    const plan = callPlanRetry(
-      deps,
-      row.attempts,
-      now,
-      `unknown_status:${unknownStatus}`,
-    );
-    await deps.markRetry(row.id, plan);
-    retried += 1;
   }
 
   if (acknowledgedIds.length > 0) {
@@ -528,23 +537,15 @@ export async function runSyncEnginePushOnce(
 /**
  * HTTP-статуси, на яких повтор ТОГО САМОГО батча завідомо безглуздий.
  *
- * - **413** — тіло завелике. Батч дренеться детерміновано (`ORDER BY id
- *   ASC`, той самий `limit`), тож наступна спроба збере ті самі рядки й
- *   отримає ту саму відповідь. Саме цей цикл і з'їдав усі
- *   `SYNC_OP_MAX_ATTEMPTS` спроб, після чого рядки ставали `dead_letter`
- *   мовчки.
- * - **400 / 422** — сервер не зміг розібрати конверт (zod на
- *   `SyncV2PushSchema`). Це розлад контракту клієнт↔сервер, а не
- *   миттєвий збій: він не «розсмокчеться» через 512 секунд.
+ * - **413** — тіло завелике; поділ батча залишає придатні рядки.
+ * - **400 / 422** — невалідний конверт; поділ ізолює рядок, який ламає
+ *   серверну валідацію.
  *
  * Чого тут НЕМА і не має бути: **401 / 403**. Креденшали оновлюються поза
  * рушієм, тож після re-auth той самий батч пройде — це класичний
  * транзієнт. **5xx** — тим паче.
  *
- * Свідома ціна: відхиляється ВЕСЬ батч, включно з рядками, які самі по
- * собі пройшли б (на 413 «завеликим» міг бути один сусід). Це гірше за
- * розумний спліт, але значно краще за попереднє — там ті самі рядки
- * втрачались так само, тільки на десять спроб пізніше й без сліду.
+ * Лише одиночний рядок, що знову отримав 4xx, стає `rejected`.
  * Причина `http_<status>` не входить у benign-список
  * (`reportTerminalRejection` у вебі), тож кожен такий випадок видно.
  */

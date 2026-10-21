@@ -19,6 +19,7 @@ import pg from "pg";
 import { GenericContainer, Wait } from "testcontainers";
 import type { StartedTestContainer } from "testcontainers";
 import type { Request, Response } from "express";
+import { emitServerSyncOps, lockUserSyncOpLog } from "./serverOpLog.js";
 
 // Динамічний імпорт: `db.js` читає DATABASE_URL при першому load.
 let syncV2Push: typeof import("./syncV2.js").syncV2Push;
@@ -286,6 +287,111 @@ describe("syncV2Push · data-17 (apply і журнал атомарні)", () =>
         ["u-roll"],
       );
       expect(log.rows).toHaveLength(0);
+    },
+    TIMEOUT_MS,
+  );
+});
+
+describe("syncV2Push · відповідь втрачено після COMMIT", () => {
+  it(
+    "повтор із тим самим ключем не застосовує доменний запис удруге",
+    async (ctx) => {
+      if (!dockerAvailable) return ctx.skip();
+      const userId = "u-lost-response";
+      await ensureUser(userId);
+      const ts = new Date(Date.now() - 60_000).toISOString();
+      const req = makeReq({
+        userId,
+        body: { ops: [entryOp(userId, "lost-response-1", "saved", ts)] },
+      });
+      const disconnected = makeRes();
+      disconnected.json = () => {
+        throw new Error("client disconnected after commit");
+      };
+
+      await expect(syncV2Push(req, disconnected)).rejects.toThrow(
+        "client disconnected after commit",
+      );
+      expect(await entryRows()).toEqual([{ name: "saved" }]);
+
+      const replay = makeRes();
+      await syncV2Push(req, replay);
+      expect((replay.body as PushBody).results).toEqual([
+        { idempotency_key: "lost-response-1", status: "applied" },
+      ]);
+      const counts = await testPool!.query<{ rows: string; ops: string }>(
+        `SELECT (SELECT COUNT(*)::text FROM routine_entries WHERE user_id = $1) AS rows,
+                (SELECT COUNT(*)::text FROM sync_op_log WHERE user_id = $1) AS ops`,
+        [userId],
+      );
+      expect(counts.rows[0]).toEqual({ rows: "1", ops: "1" });
+    },
+    TIMEOUT_MS,
+  );
+});
+
+describe("серверний записувач sync_op_log", () => {
+  it(
+    "відкочує доменний рядок і оп разом та допускає повтор ключа",
+    async (ctx) => {
+      if (!dockerAvailable) return ctx.skip();
+      const userId = "u-server-writer";
+      await ensureUser(userId);
+      const client = await testPool!.connect();
+      const ts = new Date(Date.now() - 60_000);
+      const row = { id: ENTRY_ID, user_id: userId, name: "from server" };
+      const write = async () => {
+        await lockUserSyncOpLog(client, userId);
+        await client.query(
+          `INSERT INTO routine_entries (id, user_id, name, updated_at)
+         VALUES ($1, $2, $3, $4)`,
+          [row.id, row.user_id, row.name, ts],
+        );
+        return emitServerSyncOps(client, userId, "routine_entries", [
+          {
+            idempotencyKey: "server-writer-1",
+            op: "insert",
+            row,
+            clientTs: ts,
+          },
+        ]);
+      };
+      try {
+        await client.query("BEGIN");
+        expect(await write()).toBe(1);
+        await client.query("ROLLBACK");
+        expect(await entryRows()).toHaveLength(0);
+        const empty = await testPool!.query(
+          "SELECT 1 FROM sync_op_log WHERE user_id = $1",
+          [userId],
+        );
+        expect(empty.rows).toHaveLength(0);
+
+        await client.query("BEGIN");
+        expect(await write()).toBe(1);
+        expect(
+          await emitServerSyncOps(client, userId, "routine_entries", [
+            {
+              idempotencyKey: "server-writer-1",
+              op: "insert",
+              row,
+              clientTs: ts,
+            },
+          ]),
+        ).toBe(0);
+        await client.query("COMMIT");
+        expect(await entryRows()).toEqual([{ name: "from server" }]);
+        const committed = await testPool!.query(
+          "SELECT origin_device_id, status FROM sync_op_log WHERE user_id = $1",
+          [userId],
+        );
+        expect(committed.rows).toEqual([
+          { origin_device_id: null, status: "applied" },
+        ]);
+      } finally {
+        await client.query("ROLLBACK").catch(() => {});
+        client.release();
+      }
     },
     TIMEOUT_MS,
   );
