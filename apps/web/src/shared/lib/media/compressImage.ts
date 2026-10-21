@@ -1,5 +1,5 @@
 /**
- * Last validated: 2026-08-18
+ * Last validated: 2026-10-21
  * Status: Active
  *
  * Клієнтське стиснення фото перед AI-аналізом (чек-скан finyk і КБЖВ-фото
@@ -92,31 +92,33 @@ async function decodeImage(file: File): Promise<Decoded | null> {
     }
   }
   return await new Promise<Decoded | null>((resolve) => {
-    try {
-      const url = URL.createObjectURL(file);
-      let done = false;
-      const settle = (value: Decoded | null) => {
-        if (done) return;
-        done = true;
-        clearTimeout(timer);
+    let url: string | undefined;
+    let timer: ReturnType<typeof setTimeout> | undefined;
+    let done = false;
+    const settle = (value: Decoded | null) => {
+      if (done) return;
+      done = true;
+      if (timer !== undefined) clearTimeout(timer);
+      if (url !== undefined) {
         try {
           URL.revokeObjectURL(url);
         } catch {
           /* ignore */
         }
-        resolve(value);
-      };
-      // Страховка від середовищ, де <img> не стріляє НІ load, НІ error
-      // (залиплий декодер на битому файлі): без таймауту промис завис би
-      // вічно і фото ніколи б не відправилось. `settle` виконується лише
-      // асинхронно — на момент будь-якого виклику `timer` уже існує.
-      const timer = setTimeout(() => settle(null), DECODE_TIMEOUT_MS);
+      }
+      resolve(value);
+    };
+    try {
+      url = URL.createObjectURL(file);
+      // One terminal path also releases resources when Image construction
+      // throws before load/error handlers can be installed.
+      timer = setTimeout(() => settle(null), DECODE_TIMEOUT_MS);
       const img = new Image();
       img.onload = () => settle(img);
       img.onerror = () => settle(null);
       img.src = url;
     } catch {
-      resolve(null);
+      settle(null);
     }
   });
 }
@@ -167,6 +169,9 @@ export async function compressImageFile(file: File): Promise<File | null> {
 
     const base = file.name ? file.name.replace(/\.[^.]+$/, "") : "photo";
     return new File([blob], `${base}.jpg`, { type: "image/jpeg" });
+  } catch {
+    // Drawing/allocation can fail too; preserve the original-file fallback.
+    return null;
   } finally {
     if ("close" in decoded) {
       try {
