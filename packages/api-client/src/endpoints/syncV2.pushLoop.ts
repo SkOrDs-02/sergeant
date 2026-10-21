@@ -522,7 +522,12 @@ export async function runSyncEnginePushOnce(
   }
 
   if (acknowledgedIds.length > 0) {
-    await deps.markSuccessBatch?.(acknowledgedIds);
+    // The SQLite lifecycle helper accepts at most 200 ids per DELETE.
+    for (let offset = 0; offset < acknowledgedIds.length; offset += 200) {
+      await deps.markSuccessBatch?.(
+        acknowledgedIds.slice(offset, offset + 200),
+      );
+    }
   }
 
   return {

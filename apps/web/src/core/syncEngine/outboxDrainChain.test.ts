@@ -32,6 +32,7 @@ import {
   markOutboxRejected,
   markOutboxRetry,
   markOutboxSuccess,
+  markOutboxSuccessBatch,
   planRetry,
   ROUTINE_CLIENT_MIGRATIONS,
   ROUTINE_MIGRATIONS_TABLE,
@@ -244,6 +245,90 @@ describe("sync v2: ланцюг «локальний запис → HTTP-push»"
       idempotency_key: "bad-middle",
       reject_reason: "http_400",
     });
+  });
+
+  it("довга черга підтверджується пакетами в межах ліміту SQLite", async () => {
+    for (let index = 0; index < 256; index += 1) {
+      await enqueueFinykOp(AUTHED_USER_ID, `long-queue-${index}`);
+    }
+    const batches: number[] = [];
+    const deps = {
+      drain: (options: { limit: number; now: Date }) =>
+        drainSyncOpOutbox(client, { ...options, userId: AUTHED_USER_ID }),
+      push: async (ops: SyncV2PushOp[]) => applyAll(ops),
+      markSuccess: (id: number) => markOutboxSuccess(client, id),
+      markSuccessBatch: async (ids: readonly number[]) => {
+        batches.push(ids.length);
+        await markOutboxSuccessBatch(client, ids);
+      },
+      markRetry: (id: number, retry: ReturnType<typeof planRetry>) =>
+        markOutboxRetry(client, id, retry),
+      markRejected: (id: number, reason: string) =>
+        markOutboxRejected(client, id, reason),
+      planRetry,
+      now: () => new Date("2026-07-25T10:00:00.000Z"),
+    };
+
+    const first = await runSyncEnginePushOnce(deps, { limit: 256 });
+    const second = await runSyncEnginePushOnce(deps, { limit: 256 });
+
+    expect(first).toMatchObject({ drained: 255, pushed: 255, hasMore: true });
+    expect(second).toEqual({ drained: 1, pushed: 1, retried: 0, rejected: 0 });
+    expect(batches).toEqual([200, 55, 1]);
+    expect((await countOutboxByStatus(client)).pending).toBe(0);
+    expect(rowCount()).toBe(0);
+  });
+
+  it("втрачена після server apply відповідь повторюється з тим самим ключем", async () => {
+    await enqueueFinykOp(AUTHED_USER_ID, "lost-response");
+    let now = new Date("2026-07-25T10:00:00.000Z");
+    const accepted = new Set<string>();
+    const sent: string[] = [];
+    const deps = {
+      drain: (options: { limit: number; now: Date }) =>
+        drainSyncOpOutbox(client, { ...options, userId: AUTHED_USER_ID }),
+      push: async (ops: SyncV2PushOp[]) => {
+        const key = ops[0]!.idempotency_key;
+        sent.push(key);
+        if (!accepted.has(key)) {
+          accepted.add(key);
+          throw new ApiError({
+            kind: "network",
+            message: "response lost after apply",
+            url: "/api/v2/sync/push",
+          });
+        }
+        return {
+          accepted: 0,
+          last_op_id: 1,
+          results: [{ idempotency_key: key, status: "duplicate" as const }],
+        };
+      },
+      markSuccess: (id: number) => markOutboxSuccess(client, id),
+      markRetry: (id: number, retry: ReturnType<typeof planRetry>) =>
+        markOutboxRetry(client, id, retry),
+      markRejected: (id: number, reason: string) =>
+        markOutboxRejected(client, id, reason),
+      planRetry,
+      now: () => now,
+    };
+
+    expect(await runSyncEnginePushOnce(deps, { limit: 100 })).toMatchObject({
+      retried: 1,
+      pushed: 0,
+    });
+    expect((await countOutboxByStatus(client)).pending).toBe(1);
+    expect(await runSyncEnginePushOnce(deps, { limit: 100 })).toMatchObject({
+      drained: 0,
+    });
+    now = new Date(now.getTime() + 1_000);
+    expect(await runSyncEnginePushOnce(deps, { limit: 100 })).toMatchObject({
+      pushed: 1,
+      retried: 0,
+    });
+    expect(sent).toEqual(["lost-response", "lost-response"]);
+    expect(accepted.size).toBe(1);
+    expect(rowCount()).toBe(0);
   });
 
   it("операція під синтетичним анонімним id взагалі не потрапляє в чергу", async () => {
