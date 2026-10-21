@@ -28,6 +28,7 @@
 
 Останні 10 PR, що торкнулися canonical-доків. Повна історія → [`pr-ledger/index.json`](./governance/pr-ledger/index.json).
 
+- [#1571](https://github.com/SkOrDs-02/sergeant/pull/1571) — fix(server): unblock GDPR redaction and cover OAuth storage boundaries _(2026-10-20)_
 - [#1283](https://github.com/SkOrDs-02/sergeant/pull/1283) — ci(web): deploy web and landing from main only, no per-PR Vercel builds _(2026-10-01)_
 - [#1233](https://github.com/SkOrDs-02/sergeant/pull/1233) — ci(ci): GitHub Actions CI and backend autodeploy after green CI _(2026-10-01)_
 - [#101](https://bitbucket.org/skords01/sergeant/pull-requests/101) — fix(root): червоні кроки pnpm lint на main і три Windows-баги в гейтах _(2026-09-29)_
@@ -37,7 +38,6 @@
 - [#81](https://bitbucket.org/skords01/sergeant/pull-requests/81) — fix(web): рішення власника за аудитом копі сайту _(2026-09-26)_
 - [#78](https://bitbucket.org/skords01/sergeant/pull-requests/78) — fix(web): копі сайту за аудитом: глосарій, жаргон, факт у Політиці приватності _(2026-09-26)_
 - [#61](https://bitbucket.org/skords01/sergeant/pull-requests/61) — docs(docs): синк реєстру PR (#41-#64) _(2026-09-26)_
-- [#51](https://bitbucket.org/skords01/sergeant/pull-requests/51) — fix(web): анти-слоп раунд 3: Сержант в інтерфейсі і на сайті, коуч, стенд _(2026-09-26)_
 
 ## 🔵 В роботі — 100 відкритих документів
 

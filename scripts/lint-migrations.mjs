@@ -74,10 +74,19 @@ export const MIN_DEPRECATION_DAYS = 14;
  * violation, і контрибʼютору доводиться перенумерувати замість тихого
  * проходження. Список НЕ поповнювати для нових колізій — їх ловить
  * кросбранчева перевірка й вирішує ребейз із перенумеруванням.
+ *
+ * 2026-10-20: #1571 і #1572 змерджені з різницею 13 секунд; обидва
+ * опублікували номер 160. Це вже історія `main`, тому зберігаємо ІМЕНА
+ * за Rule 4 (§ «Що робити при колізії номерів на ребейзі»). Раннер
+ * застосовує незалежні GDPR-redaction та avatar DDL у стабільному
+ * лексикографічному порядку. Виняток лише для цих двох назв: третій
+ * 160-файл і далі помилка; нова міграція має взяти наступний номер.
  */
 export const APPLIED_DUPLICATE_FILENAMES = new Set([
   "091_privat_connection.sql",
   "091_telegram_beta_survey.sql",
+  "160_gdpr_cleanup_email_redaction.sql",
+  "160_user_avatars.sql",
 ]);
 
 /**
@@ -704,7 +713,7 @@ export function run({
   // Historically-allowed duplicates are filename-based (see
   // `APPLIED_DUPLICATE_FILENAMES` above), not number-based: a duplicate
   // number N is excused ONLY when every file sharing N is one of the
-  // exact, already-applied-to-prod filenames. A brand-new file that reuses
+  // exact, already-published-on-main filenames. A brand-new file that reuses
   // an excused number (e.g. a fresh `091_*.sql`) is NOT covered — it still
   // trips `newDuplicates`, because it is not itself in the whitelist.
   const filenamesByNumber = new Map();
