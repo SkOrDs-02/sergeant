@@ -8,6 +8,7 @@ import {
   vi,
 } from "vitest";
 import request from "supertest";
+import { ToolCallsRawBlockSchema } from "@sergeant/shared";
 
 // Cold dynamic imports of the full Express app are slow on Windows when this
 // route-wiring file runs inside a large parallel batch; keep assertions strict.
@@ -24,10 +25,10 @@ vi.setConfig({ testTimeout: 60_000 });
  *   1. Key guard: missing `ANTHROPIC_API_KEY` → 503 `ANTHROPIC_KEY_MISSING`.
  *   2. Non-stream tool_use: a first-turn request where Anthropic returns a
  *      `tool_use` block surfaces as `{ tool_calls, tool_calls_raw }`.
- *   3. SSE + tool_use end-to-end: a second-turn request (`stream: true` with
- *      `tool_results` + `tool_calls_raw`) opens the SSE response and forwards
- *      Anthropic text-deltas as `data: {"t":"…"}` events, terminated by
- *      `[DONE]`.
+ *   3. SSE + tool_use end-to-end: the first HTTP request obtains a model
+ *      `tool_use` with a text preamble, then the second request replays its
+ *      allowed blocks with `tool_results`. The server forwards Anthropic
+ *      text-deltas as `data: {"t":"…"}` events, terminated by `[DONE]`.
  *
  * AI-CONTEXT: env single-source migration.  `requireAnthropicKey` reads
  * `env.ANTHROPIC_API_KEY` (validated Zod env captured at first load of
@@ -283,8 +284,21 @@ describe("chat route — non-stream tool_use", () => {
 });
 
 describe("chat route — SSE + tool_use end-to-end", () => {
-  it("stream:true з tool_results форвардить text-дельти і завершує [DONE]", async () => {
+  it("проходить від model tool_use до SSE-відповіді на його результат", async () => {
     vi.stubEnv("ANTHROPIC_API_KEY", "test-key");
+    const toolCall = {
+      type: "tool_use",
+      id: "toolu_01ABC",
+      name: "delete_transaction",
+      input: { tx_id: "m_abc123" },
+    };
+    anthropicMessagesMock.mockResolvedValueOnce({
+      response: { ok: true, status: 200 } as Response,
+      data: {
+        content: [{ type: "text", text: "Видаляю…" }, toolCall],
+        stop_reason: "tool_use",
+      },
+    });
     anthropicMessagesStreamMock.mockResolvedValue({
       response: makeUpstreamSse([
         {
@@ -302,21 +316,40 @@ describe("chat route — SSE + tool_use end-to-end", () => {
 
     const createApp = await loadCreateApp();
     const app = createApp();
+    const firstTurn = await request(app)
+      .post("/api/chat")
+      .set("X-Requested-With", "XMLHttpRequest")
+      .send({
+        messages: [{ role: "user", content: "Видали транзакцію m_abc123" }],
+      });
+
+    expect(firstTurn.status).toBe(200);
+    expect(firstTurn.body.tool_calls).toEqual([
+      {
+        id: toolCall.id,
+        name: toolCall.name,
+        input: toolCall.input,
+      },
+    ]);
+    expect(firstTurn.body.tool_calls_raw).toEqual([
+      { type: "text", text: "Видаляю…" },
+      toolCall,
+    ]);
+    // Web strips non-replayable preamble blocks before the second request.
+    const replayableBlocks = (
+      firstTurn.body.tool_calls_raw as unknown[]
+    ).filter((block) => ToolCallsRawBlockSchema.safeParse(block).success);
+    expect(replayableBlocks).toEqual([toolCall]);
+
     const res = await request(app)
       .post("/api/chat")
       .set("X-Requested-With", "XMLHttpRequest")
       .send({
         stream: true,
         messages: [{ role: "user", content: "Видали транзакцію m_abc123" }],
-        tool_calls_raw: [
-          {
-            type: "tool_use",
-            id: "toolu_01ABC",
-            name: "delete_transaction",
-            input: { tx_id: "m_abc123" },
-          },
-        ],
-        tool_results: [{ tool_use_id: "toolu_01ABC", content: "ok" }],
+        tool_calls_raw: replayableBlocks,
+        tool_results: [{ tool_use_id: toolCall.id, content: "ok" }],
+        round_trip_ticket: firstTurn.body.round_trip_ticket,
       });
 
     expect(res.status).toBe(200);
@@ -327,6 +360,19 @@ describe("chat route — SSE + tool_use end-to-end", () => {
       `data: ${JSON.stringify({ t: "транзакцію видалено." })}`,
     );
     expect(res.text).toContain("data: [DONE]");
+    expect(anthropicMessagesMock).toHaveBeenCalledTimes(1);
     expect(anthropicMessagesStreamMock).toHaveBeenCalledTimes(1);
+    const [, synthesis] = anthropicMessagesStreamMock.mock.calls[0] as [
+      string,
+      { messages: Array<{ role: string; content: unknown }> },
+    ];
+    expect(synthesis.messages[1]).toMatchObject({
+      role: "assistant",
+      content: replayableBlocks,
+    });
+    expect(synthesis.messages[2]).toMatchObject({
+      role: "user",
+      content: [expect.objectContaining({ tool_use_id: toolCall.id })],
+    });
   });
 });
