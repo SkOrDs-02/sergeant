@@ -1,4 +1,4 @@
-import { describe, it, expect, beforeEach, vi } from "vitest";
+import { describe, it, expect, beforeEach, afterEach, vi } from "vitest";
 import type { Mock } from "vitest";
 import type { Pool } from "pg";
 
@@ -28,6 +28,10 @@ vi.mock("../../obs/metrics.js", () => ({
   monoMccBufferDepth: { set: vi.fn() },
 }));
 
+vi.mock("../../http/requireAnthropicKey.js", () => ({
+  providerUpstreamReady: vi.fn(),
+}));
+
 import { categorizeTransaction as _categorize } from "../../routes/internal/categorize.js";
 import {
   monoEnrichmentProcessedTotal as _processed,
@@ -36,8 +40,11 @@ import {
 import {
   runEnrichmentTick,
   sampleEnrichmentQueueDepth,
+  getMonoEnrichmentWorkerStatus,
   startMonoEnrichmentWorker,
 } from "./enrichmentWorker.js";
+import { providerUpstreamReady as _providerUpstreamReady } from "../../http/requireAnthropicKey.js";
+import { logger } from "../../obs/logger.js";
 import {
   __resetForTests as resetUnknownQueue,
   currentBufferSize,
@@ -53,6 +60,7 @@ const categorize = _categorize as unknown as Mock;
 const processedInc = (_processed as unknown as { inc: Mock }).inc;
 const depthSet = (_depth as unknown as { set: Mock }).set;
 const depthReset = (_depth as unknown as { reset: Mock }).reset;
+const providerUpstreamReady = _providerUpstreamReady as unknown as Mock;
 
 // ── Helpers ──────────────────────────────────────────────────
 
@@ -440,6 +448,92 @@ describe("sampleEnrichmentQueueDepth", () => {
     await expect(
       sampleEnrichmentQueueDepth(pool as unknown as Pool),
     ).resolves.toBeUndefined();
+  });
+});
+
+describe("getMonoEnrichmentWorkerStatus", () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+    providerUpstreamReady.mockReturnValue(true);
+  });
+
+  afterEach(() => {
+    vi.unstubAllEnvs();
+  });
+
+  it("counts every queue state and exposes the live worker flag", async () => {
+    vi.stubEnv("MONO_ENRICHMENT_WORKER_ENABLED", "TrUe");
+    const pool = makePool() as unknown as MockPool;
+    pool.query.mockResolvedValueOnce({
+      rows: [
+        { status: "pending", count: "12" },
+        { status: "processing", count: "3" },
+        { status: "done", count: "8" },
+        { status: "failed", count: "2" },
+        { status: "dead_letter", count: "1" },
+      ],
+    });
+
+    const status = await getMonoEnrichmentWorkerStatus(pool as unknown as Pool);
+
+    expect(status).toEqual({
+      enabled: true,
+      intervalMs: _env.MONO_ENRICHMENT_INTERVAL_MS,
+      queueDepth: {
+        pending: 12,
+        processing: 3,
+        done: 8,
+        failed: 2,
+        dead_letter: 1,
+        total: 26,
+      },
+    });
+    expect(providerUpstreamReady).toHaveBeenCalledWith("readonly");
+    expect(pool.query).toHaveBeenCalledWith(
+      expect.stringContaining("FROM mono_ai_enrichment_queue"),
+    );
+  });
+
+  it("keeps the worker disabled when the provider is unavailable", async () => {
+    vi.stubEnv("MONO_ENRICHMENT_WORKER_ENABLED", "1");
+    providerUpstreamReady.mockReturnValue(false);
+    const pool = makePool() as unknown as MockPool;
+    pool.query.mockResolvedValueOnce({ rows: [] });
+
+    const status = await getMonoEnrichmentWorkerStatus(pool as unknown as Pool);
+
+    expect(status.enabled).toBe(false);
+    expect(status.queueDepth).toEqual({
+      pending: 0,
+      processing: 0,
+      done: 0,
+      failed: 0,
+      dead_letter: 0,
+      total: 0,
+    });
+  });
+
+  it("returns a public error code while retaining DB details only in logs", async () => {
+    vi.stubEnv("MONO_ENRICHMENT_WORKER_ENABLED", "false");
+    const pool = makePool() as unknown as MockPool;
+    const error = Object.assign(new Error("private-db.example:5432"), {
+      code: "ECONNREFUSED",
+    });
+    pool.query.mockRejectedValueOnce(error);
+
+    const status = await getMonoEnrichmentWorkerStatus(pool as unknown as Pool);
+
+    expect(status).toEqual({
+      enabled: false,
+      intervalMs: _env.MONO_ENRICHMENT_INTERVAL_MS,
+      queueDepth: null,
+      errorCode: "ECONNREFUSED",
+    });
+    expect(JSON.stringify(status)).not.toContain("private-db.example");
+    expect(logger.error).toHaveBeenCalledWith({
+      msg: "mono_enrichment_queue_depth_failed",
+      err: { message: "private-db.example:5432" },
+    });
   });
 });
 
