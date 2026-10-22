@@ -9,10 +9,12 @@ import {
 } from "react";
 import { cn } from "@shared/lib/ui/cn";
 import { motionScrollBehavior } from "@shared/lib/ui/motion";
-import { RoutineChoiceList } from "./RoutineChoiceList";
 import { messages } from "@shared/i18n/uk";
+import { Button } from "@shared/components/ui/Button";
+import { ChoiceGroup } from "@shared/components/ui/Choice";
+import { MorphChevron } from "@shared/components/ui/MorphChevron";
 import { DateField } from "@shared/components/ui/DateField";
-import { Input } from "@shared/components/ui/Input";
+import { FIELD_LABEL, Input } from "@shared/components/ui/Input";
 import { Label } from "@shared/components/ui/FormField";
 import { VoiceMicButton } from "@shared/components/ui/VoiceMicButton";
 import { NAME_MAX_LEN } from "@shared/lib/text/limits";
@@ -91,6 +93,7 @@ export function HabitForm({
   const nameId = `${fieldIds}-name`;
   const weekdaysErrId = `${fieldIds}-weekdays-err`;
   const tagsLabelId = `${fieldIds}-tags`;
+  const recurrenceLabelId = `${fieldIds}-recurrence`;
   const sectionRef = useRef<HTMLElement | null>(null);
   const nameRef = useRef<HTMLInputElement | null>(null);
   const weekdaysRef = useRef<HTMLDivElement | null>(null);
@@ -155,11 +158,6 @@ export function HabitForm({
       <div>
         <Label htmlFor={nameId}>Назва звички</Label>
         <div className="flex gap-2 items-center">
-          <HabitGlyphPicker
-            value={habitDraft.emoji}
-            onChange={(glyph) => setHabitDraft((d) => ({ ...d, emoji: glyph }))}
-            label="Обрати іконку звички"
-          />
           <Input
             id={nameId}
             ref={nameRef}
@@ -200,20 +198,15 @@ export function HabitForm({
         )}
       </div>
 
-      {/* Segmented chips — a native <select> sits right on top of the
-          keyboard on mobile and collapses long labels into a single line.
-          Chip row puts every regularity option one tap away with no
-          picker sheet, and the selected state is visible without opening
-          anything. `once` is rare enough to live behind the advanced
-          disclosure (it also swaps the UI semantics from repeat to
-          single date), so we only surface the 4 repeating patterns
-          here. */}
       <div>
-        <div className="text-style-label text-subtle mb-1">Регулярність</div>
-        <RoutineChoiceList
-          label="Регулярність"
+        <div id={recurrenceLabelId} className={`${FIELD_LABEL} mb-1`}>
+          Регулярність
+        </div>
+        <ChoiceGroup
+          ariaLabelledBy={recurrenceLabelId}
+          className="grid grid-cols-3"
           value={habitDraft.recurrence || "daily"}
-          options={RECURRENCE_OPTIONS.map((o) => ({
+          items={RECURRENCE_OPTIONS.map((o) => ({
             value: o.value,
             label: o.shortLabel ?? o.label,
           }))}
@@ -263,17 +256,18 @@ export function HabitForm({
           відмітка в моделі одна на день. */}
       {habitDraft.recurrence === "flexible" && (
         <div>
-          <RoutineChoiceList
-            label="Скільки разів на тиждень"
-            value={habitDraft.weeklyTarget}
-            options={WEEKLY_TARGET_CHOICES.map((n) => ({
-              value: n,
+          <ChoiceGroup
+            variant="rows"
+            ariaLabel="Скільки разів на тиждень"
+            value={String(habitDraft.weeklyTarget)}
+            items={WEEKLY_TARGET_CHOICES.map((n) => ({
+              value: String(n),
               label: messages.routine.weeklyTarget
                 .replace("{n}", String(n))
                 .replace("{times}", pluralTimes(n)),
             }))}
-            onChange={(weeklyTarget) =>
-              setHabitDraft((d) => ({ ...d, weeklyTarget }))
+            onChange={(n) =>
+              setHabitDraft((d) => ({ ...d, weeklyTarget: Number(n) }))
             }
           />
           <p className="text-style-body text-muted mt-2">
@@ -290,18 +284,29 @@ export function HabitForm({
           chips. */}
       <ReminderPresets habitDraft={habitDraft} setHabitDraft={setHabitDraft} />
 
-      <button
-        type="button"
+      <Button
+        variant="text"
+        className="gap-2"
         onClick={() => setShowAdvanced((v) => !v)}
         aria-expanded={showAdvanced}
         aria-controls={advancedId}
-        className="flex items-center gap-1 text-style-label text-muted hover:text-text transition-colors"
       >
-        <span>{showAdvanced ? "Менше опцій" : "Більше опцій"}</span>
-      </button>
+        Більше опцій
+        <MorphChevron open={showAdvanced} className="text-subtle" />
+      </Button>
 
       {showAdvanced && (
         <div id={advancedId} className="space-y-3">
+          <div>
+            <div className={`${FIELD_LABEL} mb-1`}>Іконка</div>
+            <HabitGlyphPicker
+              value={habitDraft.emoji}
+              onChange={(glyph) =>
+                setHabitDraft((d) => ({ ...d, emoji: glyph }))
+              }
+              label="Обрати іконку звички"
+            />
+          </div>
           <div className="grid min-w-0 grid-cols-1 gap-3 sm:grid-cols-2">
             <DateField
               id={startId}

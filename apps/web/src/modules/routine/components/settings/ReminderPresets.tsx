@@ -1,4 +1,4 @@
-import { useState, type Dispatch, type SetStateAction } from "react";
+import { useId, useState, type Dispatch, type SetStateAction } from "react";
 import { IconButton } from "@shared/components/ui/IconButton";
 import { Icon } from "@shared/components/ui/Icon";
 import { TimeField } from "@shared/components/ui/TimeField";
@@ -8,7 +8,8 @@ import {
   readNotificationPermission,
   useRoutineRemindersToggle,
 } from "../../hooks/useRoutineRemindersToggle";
-import { RoutineChoiceList } from "./RoutineChoiceList";
+import { ChoiceGroup } from "@shared/components/ui/Choice";
+import { FIELD_LABEL } from "@shared/components/ui/Input";
 import { messages } from "@shared/i18n/uk";
 import {
   REMINDER_PRESETS,
@@ -26,6 +27,7 @@ export function ReminderPresets({
   setHabitDraft,
 }: ReminderPresetsProps) {
   const times = habitDraft.reminderTimes || [];
+  const labelId = useId();
   // Чипи нижче лише складають розклад. Доставку вмикає глобальний тумблер
   // `routineRemindersEnabled` (дефолт false, канон §9) плюс дозвіл браузера —
   // без підказки людина обирає «Ранок» і чекає сповіщення, яке не прийде.
@@ -45,13 +47,14 @@ export function ReminderPresets({
   const activePresetId = matchReminderPreset(times)?.id ?? null;
   return (
     <div className="space-y-2">
-      <div className="text-style-label text-subtle">
+      <div id={labelId} className={FIELD_LABEL}>
         Нагадування (необовʼязково)
       </div>
-      <RoutineChoiceList
-        label="Нагадування"
+      <ChoiceGroup
+        ariaLabelledBy={labelId}
+        className="grid grid-cols-2"
         value={times.length === 0 ? "none" : activePresetId}
-        options={[
+        items={[
           ...REMINDER_PRESETS.map((p) => ({ value: p.id, label: p.label })),
           { value: "none", label: messages.routine.noReminder },
         ]}
@@ -135,9 +138,8 @@ export function ReminderPresets({
         </div>
       )}
       {times.length < 5 && times.length > 0 && (
-        <button
-          type="button"
-          className="text-style-label text-text font-semibold hover:underline"
+        <Button
+          variant="text"
           onClick={() =>
             setHabitDraft((d) => ({
               ...d,
@@ -146,7 +148,7 @@ export function ReminderPresets({
           }
         >
           {messages.routine.addTime}
-        </button>
+        </Button>
       )}
     </div>
   );
