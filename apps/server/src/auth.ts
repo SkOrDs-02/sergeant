@@ -27,6 +27,10 @@ import {
   stripSessionTokenAfter,
 } from "./auth/sessionHardeningHooks.js";
 import { detectFingerprintDrift, ipPrefix } from "./auth/sessionFingerprint.js";
+import {
+  revokePushSubscriptionsForSession,
+  setRequestSessionId,
+} from "./auth/pushSessionBinding.js";
 import { queueAuthTransactionalEmail } from "./email/authTransactionalMail.js";
 import {
   changeEmailConfirmationMail,
@@ -628,6 +632,10 @@ export const auth = betterAuth({
           return undefined;
         },
       },
+      // priv-04: завершена сесія знімає свої web-push підписки.
+      delete: {
+        after: (session) => revokePushSubscriptionsForSession(pool, session.id),
+      },
     },
   },
   /**
@@ -833,6 +841,7 @@ export async function getSessionUser(
         userAgent?: string | null;
       } | null;
       if (stored) {
+        setRequestSessionId(req, stored.id);
         const drift = detectFingerprintDrift({
           storedUserAgent: stored.userAgent ?? null,
           storedIp: stored.ipAddress ?? null,

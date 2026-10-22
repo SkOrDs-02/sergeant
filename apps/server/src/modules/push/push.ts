@@ -15,6 +15,7 @@ import {
   PushUnregisterSchema,
 } from "../../http/schemas.js";
 import { logPushSend } from "./audit.js";
+import { getRequestSessionId } from "../../auth/pushSessionBinding.js";
 
 type WithSessionUser = Request & { user?: { id: string } };
 
@@ -46,11 +47,15 @@ type WithSessionUser = Request & { user?: { id: string } };
  *
  * `rowCount === 0` означає «endpoint зайнятий іншим акаунтом і ключі не
  * збіглись» → 409, а не тиха підміна.
+ *
+ * `session_id` ($5, priv-04, міграція 161) пишеться і в INSERT, і в DO UPDATE:
+ * підписка належить ОСТАННІЙ сесії, що її зареєструвала, і знімається, коли
+ * ця сесія завершується (`auth/pushSessionBinding.ts`).
  */
-const OWNERSHIP_SAFE_WEB_UPSERT = `INSERT INTO push_subscriptions (user_id, endpoint, p256dh, auth)
-     VALUES ($1, $2, $3, $4)
+const OWNERSHIP_SAFE_WEB_UPSERT = `INSERT INTO push_subscriptions (user_id, endpoint, p256dh, auth, session_id)
+     VALUES ($1, $2, $3, $4, $5)
      ON CONFLICT (endpoint) DO UPDATE
-       SET p256dh = $3, auth = $4, user_id = $1, deleted_at = NULL
+       SET p256dh = $3, auth = $4, user_id = $1, session_id = $5, deleted_at = NULL
        WHERE push_subscriptions.user_id = $1
           OR push_subscriptions.deleted_at IS NOT NULL
           OR (push_subscriptions.p256dh = $3 AND push_subscriptions.auth = $4)`;
@@ -132,6 +137,7 @@ export async function register(req: Request, res: Response): Promise<void> {
       data.token,
       data.keys.p256dh,
       data.keys.auth,
+      getRequestSessionId(req),
     ]);
     if (upsert.rowCount === 0) {
       throw new AppError(
