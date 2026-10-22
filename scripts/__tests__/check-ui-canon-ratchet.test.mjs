@@ -34,6 +34,8 @@ import {
   STATE_LABEL_KEYS,
   STATE_LABEL_WORDS,
   tagEnd,
+  ZERO_ONLY_METRICS,
+  zeroOnlyViolations,
 } from "../check-ui-canon-ratchet.mjs";
 
 const F = "apps/web/src/example.tsx";
@@ -540,4 +542,36 @@ test("capsFormLabel: звичайний підпис, капс на <span> і с
     <LabelList className="uppercase" />
     <labelled className="uppercase" />`;
   assert.deepEqual(onlyTsx(src, "capsFormLabel"), []);
+});
+
+test("ZERO_ONLY_METRICS: ненульовий бюджет для заборони ловиться", () => {
+  assert.deepEqual(
+    zeroOnlyViolations({
+      nativeChoice: 1,
+      textStateLabel: 0,
+      capsFormLabel: 0,
+    }),
+    ["nativeChoice"],
+  );
+  assert.deepEqual(
+    zeroOnlyViolations({ nativeChoice: 0, capsFormLabel: 0 }),
+    ["textStateLabel"],
+    "відсутній ключ - теж не нуль",
+  );
+});
+
+test("ZERO_ONLY_METRICS: чинний бюджет тримає всі три заборони в нулі", () => {
+  const here = dirname(fileURLToPath(import.meta.url));
+  const budget = JSON.parse(
+    readFileSync(
+      resolve(here, "../../.tech-debt/ui-canon-budget.json"),
+      "utf8",
+    ),
+  );
+  assert.deepEqual(zeroOnlyViolations(budget.budgets), []);
+  assert.deepEqual(ZERO_ONLY_METRICS, [
+    "nativeChoice",
+    "textStateLabel",
+    "capsFormLabel",
+  ]);
 });
