@@ -55,7 +55,7 @@ import { useEffect, useId, useMemo, useRef, useState } from "react";
 import { Button } from "@shared/components/ui/Button";
 import { DateField } from "@shared/components/ui/DateField";
 import { Input } from "@shared/components/ui/Input";
-import { FizrukChoiceList } from "../FizrukChoiceList";
+import { ChoiceGroup } from "@shared/components/ui/Choice";
 import { Select } from "@shared/components/ui/Select";
 import { Sheet } from "@shared/components/ui/Sheet";
 import { TimeField } from "@shared/components/ui/TimeField";
@@ -369,7 +369,8 @@ export function LogPastWorkoutSheet({
           <span className="text-style-label text-text leading-snug block">
             {t.modeLabel}
           </span>
-          <FizrukChoiceList
+          <ChoiceGroup
+            className="grid grid-cols-3"
             ariaLabel={t.modeLabel}
             items={modeItems}
             value={mode}
@@ -486,7 +487,8 @@ export function LogPastWorkoutSheet({
                   <span className="text-style-label text-text leading-snug block">
                     {t.newActivityEffort}
                   </span>
-                  <FizrukChoiceList
+                  <ChoiceGroup
+                    className="grid grid-cols-3"
                     ariaLabel={t.newActivityEffort}
                     items={EFFORT_ITEMS}
                     value={newEffort}
@@ -551,14 +553,17 @@ export function LogPastWorkoutSheet({
                   >
                     {t.duration}
                   </label>
-                  <FizrukChoiceList
+                  <ChoiceGroup
+                    className="grid grid-cols-4"
                     ariaLabel={t.duration}
                     items={DURATION_PRESETS.map((value) => ({
                       value,
                       label: `${value} ${t.durationUnit}`,
                     }))}
                     value={
-                      DURATION_PRESETS.includes(durationMin) ? durationMin : ""
+                      DURATION_PRESETS.includes(durationMin)
+                        ? durationMin
+                        : null
                     }
                     onChange={setDurationMin}
                   />
@@ -578,7 +583,8 @@ export function LogPastWorkoutSheet({
                   <span className="text-style-label text-text leading-snug block">
                     {t.zone}
                   </span>
-                  <FizrukChoiceList
+                  <ChoiceGroup
+                    className="grid grid-cols-3"
                     ariaLabel={t.zone}
                     items={ZONE_ITEMS}
                     value={zone}
@@ -590,7 +596,8 @@ export function LogPastWorkoutSheet({
                   <span className="text-style-label text-text leading-snug block">
                     {t.intensity}
                   </span>
-                  <FizrukChoiceList
+                  <ChoiceGroup
+                    className="grid grid-cols-3"
                     ariaLabel={t.intensity}
                     items={INTENSITY_ITEMS}
                     value={intensity}

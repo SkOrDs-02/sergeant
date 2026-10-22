@@ -8,7 +8,7 @@ import { feedbackApi } from "@shared/api";
 import { Button } from "@shared/components/ui/Button";
 import { Textarea } from "@shared/components/ui/Input";
 import { Modal } from "@shared/components/ui/Modal";
-import { RoutineChoiceList } from "../../modules/routine/components/settings/RoutineChoiceList";
+import { ChoiceGroup } from "@shared/components/ui/Choice";
 import { useToast } from "@shared/hooks/useToast";
 import { messages } from "@shared/i18n/uk";
 import { trackEvent } from "../observability/analytics";
@@ -154,11 +154,12 @@ export function FeedbackDialog({ open, onClose }: FeedbackDialogProps) {
       }
     >
       <div className="space-y-4">
-        <RoutineChoiceList<FeedbackCategory>
-          label={messages.feedback.categoryLabel}
+        <ChoiceGroup<FeedbackCategory>
+          className="grid grid-cols-3"
+          ariaLabel={messages.feedback.categoryLabel}
           value={category}
           onChange={setCategory}
-          options={[
+          items={[
             { value: "idea", label: messages.feedback.categoryIdea },
             { value: "bug", label: messages.feedback.categoryBug },
             { value: "other", label: messages.feedback.categoryOther },
