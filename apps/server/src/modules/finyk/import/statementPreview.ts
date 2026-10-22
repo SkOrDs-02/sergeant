@@ -14,7 +14,10 @@ import { markDuplicateLikely } from "./duplicateDetect.js";
 import type { DuplicateCheckRow } from "./duplicateDetect.js";
 import { markMonoMatchLikely } from "./monoMatchDetect.js";
 import { withOccurrenceIndices } from "./rowKey.js";
-import { parseSignedAmountKopiykas } from "./csvParser.js";
+import {
+  inferDecimalSeparator,
+  parseSignedAmountKopiykas,
+} from "./csvParser.js";
 import {
   detectCsvProfile,
   isUahCurrencyValue,
@@ -52,6 +55,24 @@ function classifyRows(
 ): ClassifiedRows {
   const rows: ImportStatementRow[] = [];
   const skipped: ImportSkippedRow[] = [];
+
+  // Десятковий роздільник суми — ПО КОЛОНЦІ (усі значення колонок дебету й
+  // кредиту разом, одного банку), а не по клітинці й не з жорсткої підказки
+  // формату (data-31). Підказка `decimalComma` лише розв'язує неоднозначне
+  // «1,234», коли колонка сама відповіді не дає.
+  const amountColumnValues = dataRows.flatMap((row) => [
+    row[mapping.amountColIndex] ?? "",
+    ...(mapping.creditColIndex !== null
+      ? [row[mapping.creditColIndex] ?? ""]
+      : []),
+  ]);
+  const inferred = inferDecimalSeparator(amountColumnValues);
+  const decimalComma =
+    inferred === "mixed"
+      ? undefined
+      : inferred === undefined
+        ? mapping.decimalComma
+        : inferred === ",";
 
   dataRows.forEach((row, idx) => {
     // 1-based номер у ФАЙЛІ, а не в зрізі даних: заголовок таблиці не
@@ -109,7 +130,7 @@ function classifyRows(
       }
     }
 
-    const amountOpts = { decimalComma: mapping.decimalComma };
+    const amountOpts = { decimalComma };
     let signed: number | null;
     if (mapping.creditColIndex === null) {
       signed = parseSignedAmountKopiykas(amountRaw, amountOpts);
