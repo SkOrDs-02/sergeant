@@ -167,7 +167,8 @@ describe("metrics registry — v2 sync op-log RED metrics (PR #048)", () => {
     // Аудит 2026-10-01 (rel-01): +3 (`invalid_recurrence`,
     // `invalid_start_date`, `invalid_end_date`) — розклад звички в
     // `applyRoutineHabits`.
-    expect(APPLY_REJECT_REASONS.length).toBe(78);
+    // Аудит 2026-10-01 (data-04): +1 `invalid_prefs_patch`.
+    expect(APPLY_REJECT_REASONS.length).toBe(79);
     // data-17: +1 engine-level `invalid_text_encoding` — `U+0000` / одинокий
     // сурогат у `row` відсікається ДО apply.
     expect(ENGINE_REJECT_REASONS.length).toBe(7);

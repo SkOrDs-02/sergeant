@@ -43,6 +43,8 @@ export {
 
 export {
   createSyncV2Endpoints,
+  NUTRITION_PREFS_MERGE_FIELD,
+  type NutritionPrefsSyncRow,
   type SyncV2Endpoints,
   type SyncV2OpKind,
   type SyncV2OpResult,

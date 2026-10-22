@@ -161,6 +161,10 @@ export const APPLY_REJECT_REASONS = [
   "invalid_recurrence",
   "invalid_start_date",
   "invalid_end_date",
+  // Аудит 2026-10-01 (data-04): `nutrition_prefs` із `prefs_merge: true`
+  // мусить нести `prefs_json` як JSON-обʼєкт (патч верхніх ключів). Масив,
+  // скаляр чи нерозбірний рядок злити нема з чим.
+  "invalid_prefs_patch",
 ] as const;
 
 export type ApplyRejectReason = (typeof APPLY_REJECT_REASONS)[number];

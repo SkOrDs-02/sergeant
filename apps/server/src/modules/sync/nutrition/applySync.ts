@@ -13,6 +13,10 @@ import {
 import type { AppliedStatus } from "../syncV2-types.js";
 import { applyIfNewer } from "../applySync-helpers.js";
 
+// data-04: applier prefs винесено в окремий файл (ліміт 600 рядків), реекспорт
+// лишає імпорти `./applySync.js` робочими.
+export { applyNutritionPrefs } from "./applyPrefs.js";
+
 /**
  * Стеля для `nutrition_pantry_items.sources` — JSON-масиву варіантів
  * покупок (міграція 130). Клієнт тримає щонайбільше 10 записів, кожен із
@@ -422,62 +426,6 @@ export async function applyNutritionPantryItems(
         id,
         userId,
       ],
-    );
-  }
-  return { status: "applied" };
-}
-
-export async function applyNutritionPrefs(
-  client: PoolClient,
-  op: SyncV2Op,
-  userId: string,
-  clientTs: Date,
-): Promise<AppliedStatus> {
-  if (op.op === "delete") {
-    return { status: "rejected", reason: "delete_not_supported" };
-  }
-
-  const row = op.row;
-
-  if (row["user_id"] == null) {
-    return { status: "rejected", reason: "missing_user_id" };
-  }
-  if (row["user_id"] !== userId) {
-    return { status: "rejected", reason: "user_id_mismatch" };
-  }
-
-  const existing = await client.query<{ user_id: string; updated_at: Date }>(
-    `SELECT user_id, updated_at FROM nutrition_prefs WHERE user_id = $1`,
-    [userId],
-  );
-  if (existing.rows.length > 0) {
-    if (existing!.rows[0]!.updated_at.getTime() >= clientTs.getTime()) {
-      return { status: "rejected", reason: "lww_conflict" };
-    }
-  }
-
-  const prefsJson = toJsonbParam(row["prefs_json"]) ?? "{}";
-  const activePantryId =
-    typeof row["active_pantry_id"] === "string"
-      ? row["active_pantry_id"]
-      : null;
-
-  if (existing.rows.length === 0) {
-    await client.query(
-      `INSERT INTO nutrition_prefs
-         (user_id, prefs_json, active_pantry_id, created_at, updated_at)
-       VALUES ($1, $2::jsonb, $3, $4, $5)`,
-      [userId, prefsJson, activePantryId, clientTs, clientTs],
-    );
-  } else {
-    return applyIfNewer(
-      client,
-      `UPDATE nutrition_prefs
-         SET prefs_json       = $1::jsonb,
-             active_pantry_id = $2,
-             updated_at       = $3
-       WHERE user_id = $4 AND updated_at < $3`,
-      [prefsJson, activePantryId, clientTs, userId],
     );
   }
   return { status: "applied" };
