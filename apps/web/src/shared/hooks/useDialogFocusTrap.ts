@@ -17,6 +17,14 @@ export interface DialogFocusTrapOptions {
    * modal dialogs. See the background-inert manager below.
    */
   inertBackground?: boolean | undefined;
+  /**
+   * Запасна ціль повернення фокуса: викликається в момент закриття, лише
+   * якщо ні ранній, ні пізній знімок тригера вже не підключений до DOM
+   * (тригер розмонтовано, діалог відкрився сам без жесту). Без неї фокус
+   * падає на `<body>` (аудит 2026-10-01, ux-08). Цілі позначає викликач
+   * через `focusFallbackProps` з `@shared/lib/ui/focusFallback`.
+   */
+  returnFocusFallback?: (() => HTMLElement | null) | undefined;
 }
 
 /**
@@ -89,8 +97,12 @@ export function useDialogFocusTrap(
   containerRef: RefObject<HTMLElement | null>,
   options: DialogFocusTrapOptions = {},
 ): void {
-  const { onEscape, inertBackground } = options;
+  const { onEscape, inertBackground, returnFocusFallback } = options;
   const onEscapeRef = useRef(onEscape);
+  const fallbackRef = useRef(returnFocusFallback);
+  useEffect(() => {
+    fallbackRef.current = returnFocusFallback;
+  }, [returnFocusFallback]);
 
   // Keep the latest onEscape callable without re-running the trap effect.
   useEffect(() => {
@@ -258,7 +270,11 @@ export function useDialogFocusTrap(
       // (e.g. tapping a card button that is re-rendered into a new
       // position). Guard against focusing an orphaned node: ранній знімок
       // відпадає на користь пізнього, якщо вже не підключений.
-      const el = early?.isConnected ? early : late?.isConnected ? late : null;
+      let el = early?.isConnected ? early : late?.isConnected ? late : null;
+      if (!el) {
+        const fallback = fallbackRef.current?.() ?? null;
+        el = fallback?.isConnected ? fallback : null;
+      }
       if (!el) return;
       try {
         el.focus({ preventScroll: true });

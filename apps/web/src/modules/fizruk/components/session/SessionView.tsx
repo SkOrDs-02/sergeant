@@ -2,6 +2,8 @@
  * Last validated: 2026-09-11
  * Status: Active
  */
+import { focusFallbackProps } from "@shared/lib/ui/focusFallback";
+import { SESSION_FOCUS_FALLBACK } from "./focusFallback";
 import { useCallback, useMemo, useState } from "react";
 import type {
   ChecklistItem,
@@ -416,6 +418,7 @@ export function SessionView({
               tone="neutral"
               className="h-11 flex-1"
               onClick={onAddExercise}
+              {...focusFallbackProps(SESSION_FOCUS_FALLBACK)}
               aria-label={ss.addExerciseAria}
             >
               {ss.addExercise}

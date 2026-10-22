@@ -45,6 +45,11 @@ export interface HabitQuickCreateDialogProps {
    * reopens the dialog after closing it.
    */
   focusTick?: number;
+  /**
+   * Куди повернути фокус після закриття, якщо тригер зник (кнопка порожнього
+   * стану після створення першої звички). Без цього фокус падає на `<body>`.
+   */
+  returnFocusFallback?: (() => HTMLElement | null) | undefined;
 }
 
 function habitToDraft(habit: Habit): HabitDraft {
@@ -86,6 +91,7 @@ export function HabitQuickCreateDialog({
   onClose,
   editingId,
   focusTick,
+  returnFocusFallback,
 }: HabitQuickCreateDialogProps) {
   const toast = useToast();
   const [draft, setDraft] = useState<HabitDraft>(() => emptyHabitDraft());
@@ -223,6 +229,7 @@ export function HabitQuickCreateDialog({
       zIndex={200}
       panelClassName="max-w-md"
       footer={footer}
+      returnFocusFallback={returnFocusFallback}
     >
       <HabitForm
         routine={routine}

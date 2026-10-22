@@ -45,6 +45,7 @@ import { WorkoutStatTile } from "./WorkoutStatTile";
 import { fmtLoose } from "../../lib/numberFmt";
 import { WorkoutMomentLine } from "./WorkoutMomentLine";
 import { isSetDone } from "./WorkoutSetRow";
+import { WorkoutSummaryTimeEditor } from "./WorkoutSummaryTimeEditor";
 
 export interface WorkoutSummaryViewProps {
   workout: Workout;
@@ -58,6 +59,11 @@ export interface WorkoutSummaryViewProps {
    * назад до списку; тут лише кнопка.
    */
   onDelete: () => void;
+  /**
+   * data-37 — правка початку й кінця завершеного тренування. Без пропа
+   * редактор не показується.
+   */
+  onUpdateTimes?: (patch: { startedAt: string; endedAt: string }) => void;
 }
 
 /** One-line "what happened" caption for a single exercise entry. */
@@ -92,6 +98,7 @@ export function WorkoutSummaryView({
   onRepeat,
   onClose,
   onDelete,
+  onUpdateTimes,
 }: WorkoutSummaryViewProps) {
   const copy = messages.fizruk.workoutSummary;
   const summary = summarizeWorkoutForFinish(workout);
@@ -133,6 +140,13 @@ export function WorkoutSummaryView({
             ) : null}
           </div>
           <WorkoutMomentLine workoutId={workout.id} />
+          {onUpdateTimes ? (
+            <WorkoutSummaryTimeEditor
+              key={`${workout.startedAt}|${workout.endedAt}`}
+              workout={workout}
+              onUpdateTimes={onUpdateTimes}
+            />
+          ) : null}
         </div>
       </div>
 
