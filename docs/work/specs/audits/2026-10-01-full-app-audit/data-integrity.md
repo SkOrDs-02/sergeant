@@ -3101,7 +3101,7 @@ v8-kcal.mjs / v8b-loop.mjs (пул-юзер vfy-smf-fiz1, «Біг, легкий
 
 ### `data-37` [medium] Ретро-тренування «Вправи по підходах»: введений кінець живе лише в sessionStorage, і після перезапуску вкладки чи PWA «Завершити» робить тренування на 60-111 годин
 
-- **Стан:** частково виправлено в [#1485](https://github.com/SkOrDs-02/sergeant/pull/1485) (змерджено 2026-10-09) (слот кінця durable у localStorage; лишилось: перевірка implausiblyLong на «Завершити», редактор часу на WorkoutSummaryView, fizrukClosed за startedAt)
+- **Стан:** виправлено в [#1485](https://github.com/SkOrDs-02/sergeant/pull/1485) (змерджено 2026-10-09; слот кінця durable у localStorage) і цей PR (попередження про задовгу сесію на «Завершити», редактор часу на WorkoutSummaryView, fizrukClosed за startedAt)
 - **Перевірка:** підтверджено · **Зусилля:** S · **Швидкий виграш** · **Область:** web: Фізрук (pendingRetroEnd, useWorkouts)
 - **Де:** apps/web/src/modules/fizruk/lib/pendingRetroEnd.ts:1-81; apps/web/src/modules/fizruk/hooks/useWorkouts.ts:187-206; apps/web/src/modules/fizruk/hooks/useWorkoutsOrchestrator.ts:524-533; apps/web/src/modules/fizruk/components/workouts/WorkoutJournalSection.tsx:160-162; apps/web/src/core/hub/now/closedToday.ts (fizrukClosed)
 - **Першопричина:** Кінець ретро-сесії зберігається лише в sessionStorage, а endWorkout бере takePendingRetroEnd(id) ?? now без перевірки неправдоподібної тривалості. Завершене тренування відкривається read-only без WorkoutTimeEditor, всупереч коментарю в коді, що мітки лишаються редагованими.
