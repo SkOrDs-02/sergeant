@@ -641,6 +641,7 @@ export {
   aiMemoryIngestQueueDepth,
   aiMemoryRecallTopScore,
   aiMemoryRecallResultsTotal,
+  reminderSweepRunsTotal,
 } from "./metrics/jobs.js";
 
 export {
