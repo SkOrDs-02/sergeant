@@ -17,6 +17,10 @@ export const pushSubscriptions = sqliteTable(
     endpoint: text().notNull().unique(),
     p256dh: text().notNull(),
     auth: text().notNull(),
+    // Дзеркало PG-колонки з міграції 161 (priv-04) лише для паритету схем
+    // (`check-schema-drift.mjs`). Клієнтська SQLite цю таблицю не створює:
+    // підписки живуть тільки на сервері, тож клієнтської міграції немає.
+    sessionId: text("session_id"),
     createdAt: text("created_at")
       .notNull()
       .default(sql`(datetime('now'))`),

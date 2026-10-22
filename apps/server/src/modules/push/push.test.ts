@@ -379,6 +379,8 @@ describe("push handlers", () => {
       "https://push.example/sub",
       "p256",
       "auth",
+      // Запит без резолвленої сесії (unit-виклик) → session_id = NULL.
+      null,
     ]);
     expect(mocks.db.query.mock.calls[1]?.[1]).toEqual([
       "u1",
@@ -555,5 +557,42 @@ describe("push handlers", () => {
     expect(upsert).toMatch(
       /push_subscriptions\.p256dh = \$3 AND push_subscriptions\.auth = \$4/,
     );
+  });
+
+  // priv-04: підписка належить сесії, що її зареєструвала, і знімається,
+  // коли ця сесія завершується. Тому session_id має потрапити і в INSERT
+  // (новий рядок), і в DO UPDATE (той самий браузер, новий логін).
+  it("register: пише session_id поточної сесії і в INSERT, і в DO UPDATE", async () => {
+    const mocks = await loadHandlerMocks();
+    mocks.db.query.mockResolvedValue({ rows: [], rowCount: 1 });
+    const { register } = await import("./push.js");
+
+    const body = {
+      platform: "web" as const,
+      token: "https://push.example/own",
+      keys: { p256dh: "p256", auth: "auth" },
+    };
+
+    await register(
+      { user: { id: "u1" }, sessionId: "sess-1", body } as never,
+      makeRes() as never,
+    );
+
+    const call = mocks.db.query.mock.calls.find((c) =>
+      String(c[0]).includes("INSERT INTO push_subscriptions"),
+    );
+    expect(call).toBeDefined();
+    const sql = String(call![0]);
+    expect(sql).toMatch(
+      /\(user_id, endpoint, p256dh, auth, session_id\)\s+VALUES \(\$1, \$2, \$3, \$4, \$5\)/,
+    );
+    expect(sql).toMatch(/DO UPDATE\s+SET[^;]*session_id = \$5/);
+    expect(call![1]).toEqual([
+      "u1",
+      "https://push.example/own",
+      "p256",
+      "auth",
+      "sess-1",
+    ]);
   });
 });
