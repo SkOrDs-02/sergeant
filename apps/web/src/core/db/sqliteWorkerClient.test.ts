@@ -83,6 +83,13 @@ function happyResponder(rows: unknown[] = []): Responder {
           kind: "diagnostics",
           result: { capacity: 24, fileCount: 3 },
         };
+      case "prune":
+        return {
+          id: request.id,
+          ok: true,
+          kind: "prune",
+          result: { removed: [], kept: [] },
+        };
       default:
         return { id: request.id, ok: true, kind: request.kind };
     }
