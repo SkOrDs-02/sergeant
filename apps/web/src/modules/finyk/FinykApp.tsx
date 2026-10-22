@@ -19,7 +19,7 @@ import { FinykManualExpenseConflictBanner } from "./components/FinykManualExpens
 import { SectionErrorBoundary } from "@shared/components/ui/SectionErrorBoundary";
 import { useToast } from "@shared/hooks/useToast";
 import { ConfirmDialog } from "@shared/components/ui/ConfirmDialog";
-import { formatMoney } from "@sergeant/shared";
+import { formatMoney, generatePrefixedId } from "@sergeant/shared";
 import type { TxSplit } from "@sergeant/finyk-domain/domain/types";
 import { manualLinkKey } from "@sergeant/finyk-domain/domain/debtLinkKeys";
 import { showUndoToast } from "@shared/lib/ui/undoToast";
@@ -385,6 +385,7 @@ export default function App({
     id?: string;
     category?: string;
     kind?: "expense" | "income";
+    tags?: readonly string[];
   }) => {
     const isIncome = expense?.kind === "income";
     if (expense?.id) {
@@ -392,7 +393,14 @@ export default function App({
       toast.success(isIncome ? "Надходження оновлено." : "Витрату оновлено.");
       return "updated";
     }
-    storage.addManualExpense(expense ?? {});
+    // Новий запис без id: генеруємо його тут, щоб прикріпити теги до тієї ж операції.
+    const newId = expense?.tags?.length ? generatePrefixedId("mx") : undefined;
+    storage.addManualExpense(
+      newId ? { ...expense, id: newId } : (expense ?? {}),
+    );
+    if (newId && expense?.tags) {
+      storage.setTxTags(manualLinkKey(newId), expense.tags);
+    }
     toast.success(isIncome ? "Надходження додано." : "Витрату додано.");
     return "added";
   };
