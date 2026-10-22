@@ -55,7 +55,13 @@ describe("pg/routineEntries schema snapshot", () => {
     // `apply_failed` на КОЖНОМУ push-і Рутини, тож 094 послабила тип до TEXT.
     expect(columnMap["id"]!.dataType).toBe("string");
     expect(columnMap["id"]!.columnType).toBe("PgText");
-    expect(columnMap["id"]!.primary).toBe(true);
+    expect(columnMap["id"]!.primary).toBe(false);
+    expect(columnMap["id"]!.notNull).toBe(true);
+    // data-01, міграція 162: PK складений `(user_id, id)`, `id` лишається NOT NULL.
+    expect(config.primaryKeys[0]!.columns.map((c) => c.name)).toEqual([
+      "user_id",
+      "id",
+    ]);
     expect(columnMap["id"]!.notNull).toBe(true);
     expect(columnMap["id"]!.hasDefault).toBe(true);
 
@@ -346,7 +352,13 @@ describe("pg/routineCompletionEvents schema snapshot", () => {
   it("keys on a TEXT id — deliberately NOT uuid (see migration 085 rationale)", () => {
     const id = config.columns.find((c) => c.name === "id");
     expect(id).toBeDefined();
-    expect(id!.primary).toBe(true);
+    expect(id!.primary).toBe(false);
+    expect(id!.notNull).toBe(true);
+    // data-01, міграція 162: PK складений `(user_id, id)`, `id` лишається NOT NULL.
+    expect(config.primaryKeys[0]!.columns.map((c) => c.name)).toEqual([
+      "user_id",
+      "id",
+    ]);
     expect(id!.columnType).toBe("PgText");
   });
 

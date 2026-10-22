@@ -469,6 +469,10 @@ describe("039_finyk_tables migration", () => {
       // 108_finyk_networth_history_double.sql так само сидить поверх 039
       // (networth REAL → DOUBLE PRECISION), тож розмотується першим і
       // накочується останнім.
+      // 162 переводить PK цих таблиць на `(user_id, id)` і складає FK
+      // fizruk items/sets; 096.down без нього не зніме PK `(id)`. Розмотується
+      // першим, накочується останнім.
+      await execSqlFile(pool, "162_sync_pk_per_user.down.sql");
       await execSqlFile(pool, "108_finyk_networth_history_double.down.sql");
       await execSqlFile(pool, "096_finyk_fizruk_pk_text.down.sql");
       await execSqlFile(pool, "053_finyk_prefs_excluded_dismissed.down.sql");
@@ -488,6 +492,7 @@ describe("039_finyk_tables migration", () => {
       // накочується після відтворення 039; файл на `ADD COLUMN IF NOT
       // EXISTS`, тож повторний прогін — no-op.
       await execSqlFile(pool, "156_finyk_soft_delete_tombstones.sql");
+      await execSqlFile(pool, "162_sync_pk_per_user.sql");
 
       const after = {
         tables: await listTables(pool),

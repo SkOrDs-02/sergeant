@@ -19,12 +19,11 @@ interface RecordedQuery {
 class FakeClient {
   readonly queries: RecordedQuery[] = [];
   /**
-   * `rowCount` INSERT-а керує owner-guard-ом: `0` означає, що спрацював
-   * `ON CONFLICT DO NOTHING`, і апплаєр іде дочитувати власника рядка.
-   * За замовчуванням — успішна вставка.
+   * `rowCount` INSERT-а: `0` означає, що спрацював `ON CONFLICT DO NOTHING`
+   * (повтор власного рядка). За замовчуванням — успішна вставка.
    */
   insertRowCount = 1;
-  /** Що віддасть owner-guard-івський SELECT. */
+  /** Що віддасть SELECT (у цьому апплаєрі його бути не має). */
   ownerRows: Array<{ user_id: string }> = [];
 
   async query<T = Record<string, unknown>>(
@@ -80,7 +79,7 @@ function validRow(overrides: Record<string, unknown> = {}) {
 }
 
 describe("applyRoutineCompletionEvents", () => {
-  it("вставляє подію через ON CONFLICT (id) DO NOTHING", async () => {
+  it("вставляє подію через ON CONFLICT (user_id, id) DO NOTHING", async () => {
     const fake = new FakeClient();
     const result = await applyRoutineCompletionEvents(
       asClient(fake),
@@ -93,7 +92,7 @@ describe("applyRoutineCompletionEvents", () => {
     expect(fake.queries).toHaveLength(1);
     const q = fake.queries[0]!;
     expect(q.sql).toMatch(/INSERT INTO routine_completion_events/);
-    expect(q.sql).toMatch(/ON CONFLICT \(id\) DO NOTHING/);
+    expect(q.sql).toMatch(/ON CONFLICT \(user_id, id\) DO NOTHING/);
     // Ніяких UPDATE / DELETE / SELECT-guard-ів — append-only.
     expect(q.sql).not.toMatch(/DO UPDATE/);
     expect(q.params[0]).toBe(
@@ -246,58 +245,50 @@ describe("applyRoutineCompletionEvents", () => {
     }
   });
 
-  it("на конфлікті id звіряє власника: чужий рядок → fk_violation", async () => {
-    // `ON CONFLICT (id) DO NOTHING` без звірки власника мовчки no-op-ив подію
-    // з підібраним чужим `id` і рапортував `applied` — тобто відмітка не
-    // доїжджала, а виглядало це як успіх.
+  // data-01: PK `(user_id, id)` (міграція 162). Конфлікт можливий лише з
+  // ВЛАСНИМ рядком, тож `rowCount === 0` — ідемпотентний повтор, а не чужий
+  // рядок: дочитувати власника більше нічого.
+  it("на конфлікті (user_id, id) — ідемпотентний applied без дочитування власника", async () => {
     const fake = new FakeClient();
     fake.insertRowCount = 0;
-    fake.ownerRows = [{ user_id: "someone-else" }];
 
-    const result = await applyRoutineCompletionEvents(
+    const res = await applyRoutineCompletionEvents(
       asClient(fake),
       op(validRow()),
       USER,
       CLIENT_TS,
     );
 
-    expect(result).toEqual({ status: "rejected", reason: "fk_violation" });
-    expect(fake.queries).toHaveLength(2);
-    expect(fake.queries[1]!.sql).toMatch(
-      /SELECT user_id FROM routine_completion_events/,
+    expect(res).toEqual({ status: "applied" });
+    expect(fake.queries).toHaveLength(1);
+    expect(fake.queries[0]!.sql).toContain(
+      "ON CONFLICT (user_id, id) DO NOTHING",
     );
   });
 
-  it("на конфлікті id зі СВОЇМ рядком лишається ідемпотентним applied", async () => {
+  it("той самий id у двох користувачів: кожен пише власний рядок", async () => {
     const fake = new FakeClient();
-    fake.insertRowCount = 0;
-    fake.ownerRows = [{ user_id: USER }];
+    const row = validRow();
 
-    expect(
-      await applyRoutineCompletionEvents(
-        asClient(fake),
-        op(validRow()),
-        USER,
-        CLIENT_TS,
-      ),
-    ).toEqual({ status: "applied" });
-  });
+    const mine = await applyRoutineCompletionEvents(
+      asClient(fake),
+      op(row),
+      USER,
+      CLIENT_TS,
+    );
+    const theirs = await applyRoutineCompletionEvents(
+      asClient(fake),
+      op({ ...row, user_id: "user-2" }),
+      "user-2",
+      CLIENT_TS,
+    );
 
-  it("на конфлікті id без рядка в таблиці — fk_violation, не мовчазний applied", async () => {
-    // Append-only-таблиця рядків не втрачає, тож «конфлікт був, а рядка нема»
-    // означає стан, якого не має бути; ковтати його як успіх не можна.
-    const fake = new FakeClient();
-    fake.insertRowCount = 0;
-    fake.ownerRows = [];
-
-    expect(
-      await applyRoutineCompletionEvents(
-        asClient(fake),
-        op(validRow()),
-        USER,
-        CLIENT_TS,
-      ),
-    ).toEqual({ status: "rejected", reason: "fk_violation" });
+    expect(mine).toEqual({ status: "applied" });
+    expect(theirs).toEqual({ status: "applied" });
+    expect(fake.queries.map((q) => [q.params[0], q.params[1]])).toEqual([
+      [row.id, USER],
+      [row.id, "user-2"],
+    ]);
   });
 
   it("падає назад на clientTs, коли занадто короткий payload без таймстемпів", async () => {

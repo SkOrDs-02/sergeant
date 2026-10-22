@@ -52,7 +52,9 @@ const GOAL_WATER_ML_MAX = 10_000;
  *   - **hard-delete немає.** `op='delete'` ставить ЛИШЕ tombstone
  *     (`deleted_at`) — ретракція помилково записаного періоду.
  *
- * Ідемпотентність: `INSERT … ON CONFLICT (id) DO NOTHING`. Клієнт генерує
+ * Ідемпотентність: `INSERT … ON CONFLICT (user_id, id) DO NOTHING`. PK
+ * `(user_id, id)` (міграція 162) робить конфлікт можливим лише з власним
+ * рядком: чужий період із тим самим `id` не блокує вставку. Клієнт генерує
  * `id` ДЕТЕРМІНОВАНО з (`effective_from`, значення, device), тож повторна
  * доставка того самого push-а — тихий no-op. Це не оптимізація: випадковий
  * `id` дав би на кожному ретраї другу сходинку з тими самими числами, і
@@ -106,15 +108,12 @@ export async function applyNutritionGoalPeriods(
     // розрізняємо окремим SELECT-ом, щоб повтор доставки не застряг у
     // черзі назавжди.
     if (res.rowCount === 0) {
-      const existing = await client.query<{ user_id: string }>(
-        `SELECT user_id FROM nutrition_goal_periods WHERE id = $1`,
-        [id],
+      const existing = await client.query(
+        `SELECT user_id FROM nutrition_goal_periods WHERE id = $1 AND user_id = $2`,
+        [id, userId],
       );
       if (existing.rows.length === 0) {
         return { status: "rejected", reason: "not_found" };
-      }
-      if (existing.rows[0]!.user_id !== userId) {
-        return { status: "rejected", reason: "fk_violation" };
       }
     }
     return { status: "applied" };
@@ -198,12 +197,12 @@ export async function applyNutritionGoalPeriods(
     return { status: "rejected", reason: "invalid_tz_offset_min" };
   }
 
-  const res = await client.query(
+  await client.query(
     `INSERT INTO nutrition_goal_periods
        (id, user_id, effective_from, kcal, protein_g, fat_g, carbs_g,
         water_ml, origin, tz_offset_min, created_at, updated_at, deleted_at)
      VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13)
-     ON CONFLICT (id) DO NOTHING`,
+     ON CONFLICT (user_id, id) DO NOTHING`,
     [
       id,
       userId,
@@ -221,23 +220,7 @@ export async function applyNutritionGoalPeriods(
     ],
   );
 
-  // `DO NOTHING` мовчазний за визначенням і сам по собі не розрізняє «мій
-  // повтор» від «чужий рядок із таким самим id». Перевірка `row.user_id`
-  // вище цього не закриває: вона звіряє payload із сесією, а не з тим, ХТО
-  // вже володіє рядком у таблиці. `id` тут TEXT і будується клієнтом
-  // детерміновано, тобто вгадуваний — тож підібраний id давав no-op і
-  // чесний `applied`: нова ціль КБЖВ мовчки не доїжджала, а виглядало це
-  // як успіх. Той самий guard, що в `routine/applyCompletionEvents.ts`.
-  if (res.rowCount === 0) {
-    const existing = await client.query<{ user_id: string }>(
-      `SELECT user_id FROM nutrition_goal_periods WHERE id = $1`,
-      [id],
-    );
-    // Рядок зник між INSERT-ом і SELECT-ом — таблиця append-only, тож
-    // штатно це неможливо; трактуємо як не-наш рядок, а не як успіх.
-    if (existing.rows.length === 0 || existing.rows[0]!.user_id !== userId) {
-      return { status: "rejected", reason: "fk_violation" };
-    }
-  }
+  // `rowCount === 0` — лише повтор власного рядка (PK `(user_id, id)`):
+  // ідемпотентний no-op. Чужий `id` не конфліктує.
   return { status: "applied" };
 }

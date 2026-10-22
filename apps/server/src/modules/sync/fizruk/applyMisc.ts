@@ -22,7 +22,7 @@ import { applyIfNewer } from "../applySync-helpers.js";
 const JSON_BLOB_SQL = {
   fizruk_custom_exercises: {
     select:
-      "SELECT user_id, updated_at, deleted_at FROM fizruk_custom_exercises WHERE id = $1",
+      "SELECT user_id, updated_at, deleted_at FROM fizruk_custom_exercises WHERE id = $1 AND user_id = $2",
     softDelete:
       "UPDATE fizruk_custom_exercises SET deleted_at = $1, updated_at = $1 WHERE id = $2 AND user_id = $3 AND updated_at < $1",
     insert:
@@ -32,7 +32,7 @@ const JSON_BLOB_SQL = {
   },
   fizruk_custom_activities: {
     select:
-      "SELECT user_id, updated_at, deleted_at FROM fizruk_custom_activities WHERE id = $1",
+      "SELECT user_id, updated_at, deleted_at FROM fizruk_custom_activities WHERE id = $1 AND user_id = $2",
     softDelete:
       "UPDATE fizruk_custom_activities SET deleted_at = $1, updated_at = $1 WHERE id = $2 AND user_id = $3 AND updated_at < $1",
     insert:
@@ -70,11 +70,8 @@ async function applyFizrukJsonBlobRow(
     user_id: string;
     updated_at: Date;
     deleted_at: Date | null;
-  }>(sql.select, [id]);
+  }>(sql.select, [id, userId]);
   if (existing.rows.length > 0) {
-    if (existing!.rows[0]!.user_id !== userId) {
-      return { status: "rejected", reason: "fk_violation" };
-    }
     if (existing!.rows[0]!.updated_at.getTime() >= clientTs.getTime()) {
       return { status: "rejected", reason: "lww_conflict" };
     }
@@ -220,13 +217,10 @@ export async function applyFizrukMeasurements(
     updated_at: Date;
     deleted_at: Date | null;
   }>(
-    `SELECT user_id, updated_at, deleted_at FROM fizruk_measurements WHERE id = $1`,
-    [id],
+    `SELECT user_id, updated_at, deleted_at FROM fizruk_measurements WHERE id = $1 AND user_id = $2`,
+    [id, userId],
   );
   if (existing.rows.length > 0) {
-    if (existing!.rows[0]!.user_id !== userId) {
-      return { status: "rejected", reason: "fk_violation" };
-    }
     if (existing!.rows[0]!.updated_at.getTime() >= clientTs.getTime()) {
       return { status: "rejected", reason: "lww_conflict" };
     }

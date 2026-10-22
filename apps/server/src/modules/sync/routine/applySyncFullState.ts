@@ -69,10 +69,10 @@ export async function applyRoutineHabits(
 
   const existing = await queryOne<ExistingUuidRow>(
     client,
-    `SELECT user_id, updated_at, deleted_at FROM routine_habits WHERE id = $1`,
-    [id],
+    `SELECT user_id, updated_at, deleted_at FROM routine_habits WHERE id = $1 AND user_id = $2`,
+    [id, userId],
   );
-  const guard = guardUuidPkApply(existing, userId, clientTs);
+  const guard = guardUuidPkApply(existing, clientTs);
   if (guard) return guard;
 
   if (op.op === "delete") {
@@ -215,10 +215,13 @@ export async function applyUuidNameScopeTable(
 
   const selectSql =
     table === "routine_tags"
-      ? `SELECT user_id, updated_at, deleted_at FROM routine_tags WHERE id = $1`
-      : `SELECT user_id, updated_at, deleted_at FROM routine_categories WHERE id = $1`;
-  const existing = await queryOne<ExistingUuidRow>(client, selectSql, [id]);
-  const guard = guardUuidPkApply(existing, userId, clientTs);
+      ? `SELECT user_id, updated_at, deleted_at FROM routine_tags WHERE id = $1 AND user_id = $2`
+      : `SELECT user_id, updated_at, deleted_at FROM routine_categories WHERE id = $1 AND user_id = $2`;
+  const existing = await queryOne<ExistingUuidRow>(client, selectSql, [
+    id,
+    userId,
+  ]);
+  const guard = guardUuidPkApply(existing, clientTs);
   if (guard) return guard;
 
   if (op.op === "delete") {

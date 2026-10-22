@@ -52,19 +52,7 @@ describe("assertRowUserId", () => {
 
 describe("guardUuidPkApply", () => {
   it("allows through when there is no existing row", () => {
-    expect(guardUuidPkApply(undefined, USER_ID, CLIENT_TS)).toBeNull();
-  });
-
-  it("rejects on fk_violation when the existing row belongs to another user", () => {
-    const existing: ExistingUuidRow = {
-      user_id: "other-user",
-      updated_at: new Date("2026-07-10T11:00:00.000Z"),
-      deleted_at: null,
-    };
-    expect(guardUuidPkApply(existing, USER_ID, CLIENT_TS)).toEqual({
-      status: "rejected",
-      reason: "fk_violation",
-    });
+    expect(guardUuidPkApply(undefined, CLIENT_TS)).toBeNull();
   });
 
   it("rejects on lww_conflict when the existing row is newer or equal", () => {
@@ -73,7 +61,7 @@ describe("guardUuidPkApply", () => {
       updated_at: new Date("2026-07-10T13:00:00.000Z"),
       deleted_at: null,
     };
-    expect(guardUuidPkApply(existing, USER_ID, CLIENT_TS)).toEqual({
+    expect(guardUuidPkApply(existing, CLIENT_TS)).toEqual({
       status: "rejected",
       reason: "lww_conflict",
     });
@@ -88,7 +76,7 @@ describe("guardUuidPkApply", () => {
       updated_at: new Date("2026-07-10T11:00:00.000Z"),
       deleted_at: new Date("2026-07-09T00:00:00.000Z"),
     };
-    expect(guardUuidPkApply(existing, USER_ID, CLIENT_TS)).toBeNull();
+    expect(guardUuidPkApply(existing, CLIENT_TS)).toBeNull();
   });
 
   // Захист не послаблено: старіший за видалення запис усе одно програє —
@@ -99,7 +87,7 @@ describe("guardUuidPkApply", () => {
       updated_at: new Date("2026-07-10T13:00:00.000Z"),
       deleted_at: new Date("2026-07-10T13:00:00.000Z"),
     };
-    expect(guardUuidPkApply(existing, USER_ID, CLIENT_TS)).toEqual({
+    expect(guardUuidPkApply(existing, CLIENT_TS)).toEqual({
       status: "rejected",
       reason: "lww_conflict",
     });
@@ -111,7 +99,7 @@ describe("guardUuidPkApply", () => {
       updated_at: new Date("2026-07-10T11:00:00.000Z"),
       deleted_at: new Date("2026-07-09T00:00:00.000Z"),
     };
-    expect(guardUuidPkApply(existing, USER_ID, CLIENT_TS)).toBeNull();
+    expect(guardUuidPkApply(existing, CLIENT_TS)).toBeNull();
   });
 
   it("allows a fresh update through when the row is not tombstoned", () => {
@@ -120,7 +108,7 @@ describe("guardUuidPkApply", () => {
       updated_at: new Date("2026-07-10T11:00:00.000Z"),
       deleted_at: null,
     };
-    expect(guardUuidPkApply(existing, USER_ID, CLIENT_TS)).toBeNull();
+    expect(guardUuidPkApply(existing, CLIENT_TS)).toBeNull();
   });
 });
 

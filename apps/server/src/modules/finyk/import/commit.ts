@@ -66,7 +66,7 @@ interface UpsertedManualExpense {
 }
 
 /**
- * INSERT ... ON CONFLICT (id) DO NOTHING — детермінований `id`
+ * INSERT ... ON CONFLICT (user_id, id) DO NOTHING — детермінований `id`
  * (rowKey.ts) робить повторний commit того самого рядка (той самий
  * файл/період завантажено вдруге) no-op замість дубля (0022 § Відкриті
  * рішення №2). Один statement на всі не-mono рядки батчу (масиви через
@@ -117,7 +117,7 @@ async function upsertManualExpenseRows(
        SELECT i.id, $2, i.blob::jsonb
          FROM unnest($1::text[], $3::text[]) WITH ORDINALITY AS i(id, blob, ord)
         ORDER BY i.ord
-       ON CONFLICT (id) DO NOTHING
+       ON CONFLICT (user_id, id) DO NOTHING
        RETURNING id, data_json, created_at, updated_at, deleted_at
      )
      SELECT id, data_json, created_at, updated_at, deleted_at, TRUE AS inserted
@@ -198,7 +198,7 @@ export default async function commitImportHandler(
   const rowsWithIds = body.rows.map((row, idx) => {
     const id = ids[idx];
     // Fail loud (ревʼю PR #818): порожній id тихо пішов би в
-    // ON CONFLICT (id) DO NOTHING і кожен наступний такий рядок батчу
+    // ON CONFLICT (user_id, id) DO NOTHING і кожен наступний такий рядок батчу
     // рахувався б «дублем» — мовчазна втрата даних замість помилки.
     if (!id) {
       throw new Error(
