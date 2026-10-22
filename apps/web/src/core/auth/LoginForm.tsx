@@ -98,23 +98,18 @@ export function LoginForm({ onForgotPassword, showForgot }: LoginFormProps) {
         <FieldError id="auth-email-error" message={errors.email?.message} />
       </div>
 
-      <div>
-        <div className="flex items-center justify-between mb-1.5">
-          <label
-            htmlFor="auth-password"
-            className="block text-style-caption text-muted"
-          >
-            Пароль
-          </label>
-          <button
-            type="button"
-            onClick={() => onForgotPassword(emailValue)}
-            className="text-style-caption text-brand-strong dark:text-brand-400 hover:underline focus:outline-none focus-visible:ring-2 focus-visible:ring-focus/45 rounded px-1"
-          >
-            Забули пароль?
-          </button>
-        </div>
-        <div className="relative">
+      {/* «Забули пароль?» стоїть у DOM ПІСЛЯ поля пароля (email -> пароль ->
+          показати пароль -> забули -> увійти), а візуально лишається в рядку
+          підпису праворуч: сітка ставить його в клітинку 2/1 попри порядок
+          у розмітці (аудит 2026-10-01, ux-08). */}
+      <div className="grid grid-cols-[1fr_auto] items-center gap-x-2">
+        <label
+          htmlFor="auth-password"
+          className="col-start-1 row-start-1 mb-1.5 block text-style-caption text-muted"
+        >
+          Пароль
+        </label>
+        <div className="relative col-span-2 row-start-2">
           <Input
             id="auth-password"
             type={showPassword ? "text" : "password"}
@@ -138,7 +133,16 @@ export function LoginForm({ onForgotPassword, showForgot }: LoginFormProps) {
             onToggle={() => setShowPassword((v) => !v)}
           />
         </div>
-        <FieldError id="auth-pw-error" message={errors.password?.message} />
+        <div className="col-span-2 row-start-3">
+          <FieldError id="auth-pw-error" message={errors.password?.message} />
+        </div>
+        <button
+          type="button"
+          onClick={() => onForgotPassword(emailValue)}
+          className="col-start-2 row-start-1 mb-1.5 text-style-caption text-brand-strong dark:text-brand-400 hover:underline focus:outline-none focus-visible:ring-2 focus-visible:ring-focus/45 rounded px-1"
+        >
+          Забули пароль?
+        </button>
       </div>
 
       {/* `authError` тримає локалізоване повідомлення з Better Auth

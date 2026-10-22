@@ -88,7 +88,7 @@ const CSV_SLOW_HINT = "Ще працюю. Велика виписка читає
 const SKIP_REASON_LABEL: Record<string, string> = {
   not_uah: "не гривня",
   unparsed_date: "нерозпізнана дата",
-  unparsed_amount: "нерозпізнана сума",
+  unparsed_amount: "нерозпізнана або неоднозначна сума",
   empty: "порожній рядок",
 };
 

@@ -75,6 +75,7 @@ import { useSavePickedFood } from "./meal-sheet/useSavePickedFood";
 import { PortionUnitHint } from "./meal-sheet/PortionUnitHint";
 import { PantryPortionField } from "./meal-sheet/PantryPortionField";
 import type { SourceTabId } from "./meal-sheet/SourceTabs";
+import { useStepFocusKeeper } from "./meal-sheet/useStepFocusKeeper";
 import { SourceStep } from "./meal-sheet/SourceStep";
 import { RememberForRepeat } from "./meal-sheet/RememberForRepeat";
 import { AddMealSheetTitle } from "./meal-sheet/AddMealSheetTitle";
@@ -176,6 +177,7 @@ export function AddMealSheet({
   // потім форма запису. Панелі зберігають чернетки до закриття аркуша.
   // Редагування наявного запису одразу відкриває форму.
   const [step, setStep] = useState<"source" | "fill">("source");
+  const stepAnchorRef = useRef<HTMLDivElement>(null);
   // Set on the photo → fill transition; drives `source`/`macroSource` and
   // the meal-thumbnail save. Cleared on backtrack so a user who returns
   // to "source" and picks another source doesn't keep photoAI semantics.
@@ -559,6 +561,8 @@ export function AddMealSheet({
     setStep("source");
   }
 
+  useStepFocusKeeper(open, step, stepAnchorRef);
+
   const canBacktrack = step !== "source" && !initialMeal?.id;
   function handleBacktrack() {
     if (step === "fill" && !pickedFood && !fromPantryItem && !appliedPhoto)
@@ -612,7 +616,7 @@ export function AddMealSheet({
         panelClassName="nutrition-sheet"
         zIndex={120}
       >
-        <div hidden={step !== "source"}>
+        <div ref={stepAnchorRef} hidden={step !== "source"}>
           {(!initialMeal?.id || sourceReplaced) && (
             <SourceStep
               singleMealOnly={Boolean(initialMeal?.id)}

@@ -46,6 +46,7 @@ pnpm --filter @sergeant/web test:coverage    # Vitest з покриттям
 pnpm --filter @sergeant/web test:a11y        # Playwright + axe (a11y)
 pnpm --filter @sergeant/web test:visual      # Playwright visual-regression (`playwright.visual.config.ts`)
 pnpm --filter @sergeant/web e2e:auth         # Playwright smoke `@auth`
+pnpm --filter @sergeant/web e2e:storage      # Playwright smoke `@storage` (CDP-квота, OPFS після виходу; Chromium, потребує бекенду)
 pnpm --filter @sergeant/web e2e              # Playwright smoke `@critical`
 pnpm --filter @sergeant/web e2e:mobile       # Playwright mobile-аудит (44px touch targets, overflow) — блокуючий PR-гейт
 pnpm --filter @sergeant/web e2e:ledger       # Playwright ledger-сценарії (`playwright.ledger.config.ts`)

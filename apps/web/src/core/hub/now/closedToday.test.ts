@@ -197,6 +197,17 @@ describe("computeClosedToday", () => {
       ]);
     });
 
+    it("ретро-сесія, розпочата давно й закрита сьогодні, — не сьогоднішня (за startedAt)", () => {
+      seedFizruk([
+        {
+          id: "w-retro",
+          startedAt: "2026-09-14T07:00:00+03:00",
+          endedAt: "2026-09-17T07:52:00+03:00",
+        },
+      ]);
+      expect(compute()).toEqual([]);
+    });
+
     it("вчорашнє або незавершене — не закрито", () => {
       seedFizruk([
         {

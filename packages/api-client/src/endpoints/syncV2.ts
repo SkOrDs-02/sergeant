@@ -41,7 +41,15 @@ export interface SyncV2PushOp {
   idempotency_key: string;
 }
 
-export type SyncV2OpResultStatus = "applied" | "duplicate" | "rejected";
+/**
+ * `retry` (data-18) - сервер не зміг застосувати оп через транзієнтну помилку
+ * Postgres (`reason`: `deadlock_detected` | `lock_not_available` |
+ * `query_canceled`) і НЕ записав його в журнал: той самий `idempotency_key`
+ * можна повторити. Клієнти до цього статусу трактують його як невідомий
+ * (`unknown_status:retry`) і теж повторюють.
+ */
+export type SyncV2OpResultStatus =
+  "applied" | "duplicate" | "rejected" | "retry";
 
 export interface SyncV2OpResult {
   idempotency_key: string;

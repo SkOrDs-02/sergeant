@@ -876,7 +876,7 @@
         },
         "responses": {
           "200": {
-            "description": "Результат по кожному op-у (`applied` / `duplicate` / `rejected` + `reason`). `last_op_id` — number; `server_now` — годинник сервера для виміру clock skew.",
+            "description": "Результат по кожному op-у (`applied` / `duplicate` / `rejected` / `retry` + `reason`; `retry` - транзієнтна помилка БД, оп не в журналі, повтори його). `last_op_id` — number; `server_now` — годинник сервера для виміру clock skew.",
             "content": {
               "application/json": {
                 "schema": {
@@ -902,7 +902,12 @@
                           },
                           "status": {
                             "type": "string",
-                            "enum": ["applied", "duplicate", "rejected"]
+                            "enum": [
+                              "applied",
+                              "duplicate",
+                              "rejected",
+                              "retry"
+                            ]
                           },
                           "reason": {
                             "type": "string"

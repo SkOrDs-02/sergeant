@@ -726,6 +726,31 @@ describe("requestAccountDeletion — позначає, а не видаляє", 
     expect(killed![0]).not.toContain("user_id");
   });
 
+  it("знімає всі активні web-push і native підписки в тій самій транзакції", async () => {
+    const { pool, client } = mockPoolMarking(new Date());
+
+    await requestAccountDeletion(pool, "user-1");
+
+    const sql = sqlCalls(client);
+    const sessionIdx = sql.findIndex((q) => q.includes("DELETE FROM session"));
+    const web = sql.findIndex((q) => q.includes("UPDATE push_subscriptions"));
+    const native = sql.findIndex((q) => q.includes("UPDATE push_devices"));
+    const commit = sql.findIndex((q) => q === "COMMIT");
+    expect(web).toBeGreaterThan(sessionIdx);
+    expect(native).toBeGreaterThan(sessionIdx);
+    expect(commit).toBeGreaterThan(Math.max(web, native));
+    for (const i of [web, native]) {
+      expect(sql[i]).toContain("deleted_at = NOW()");
+      expect(sql[i]).toContain("user_id = $1 AND deleted_at IS NULL");
+    }
+    const call = client.query.mock.calls.find(
+      (c: unknown[]) =>
+        typeof c[0] === "string" &&
+        (c[0] as string).includes("UPDATE push_subscriptions"),
+    );
+    expect(call![1]).toEqual(["user-1"]);
+  });
+
   it("не наповнює чергу очищення зовнішніх сервісів (це робота добивача)", async () => {
     const { pool, client } = mockPoolMarking(new Date());
 

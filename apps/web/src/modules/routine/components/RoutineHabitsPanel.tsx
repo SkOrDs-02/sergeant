@@ -28,6 +28,8 @@ import {
 } from "../lib/routineStorage";
 import type { PendingHabitDeletion, RoutineState } from "../lib/types";
 import { ActiveHabitsSection } from "./habits/ActiveHabitsSection";
+import { HABITS_FOCUS_FALLBACK } from "./habits/focusFallback";
+import { focusFallbackTarget } from "@shared/lib/ui/focusFallback";
 import { ArchivedHabitsSection } from "./habits/ArchivedHabitsSection";
 import { HabitDetailSheet } from "./HabitDetailSheet";
 import { HabitQuickCreateDialog } from "./HabitQuickCreateDialog";
@@ -40,6 +42,8 @@ export interface RoutineHabitsPanelProps {
   setRoutine: Dispatch<SetStateAction<RoutineState>>;
   hidden?: boolean;
 }
+
+const habitsFocusFallback = focusFallbackTarget(HABITS_FOCUS_FALLBACK);
 
 export function RoutineHabitsPanel({
   routine,
@@ -107,6 +111,7 @@ export function RoutineHabitsPanel({
         onClose={closeHabitDialog}
         editingId={editingId}
         focusTick={editDialogFocusTick}
+        returnFocusFallback={habitsFocusFallback}
       />
 
       <ConfirmDialog
@@ -143,6 +148,7 @@ export function RoutineHabitsPanel({
           setDeleteHabitPending(null);
         }}
         onCancel={() => setDeleteHabitPending(null)}
+        returnFocusFallback={habitsFocusFallback}
       />
 
       {detailHabitId && (

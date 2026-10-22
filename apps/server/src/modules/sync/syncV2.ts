@@ -31,6 +31,8 @@ import {
 } from "./syncV2-types.js";
 import {
   applyWithUniqueViolationRetry,
+  retryableSqlStateReason,
+  settleRetryableApply,
   hasUnstorableText,
   readOriginDeviceId,
   recordSyncV2,
@@ -305,7 +307,7 @@ export async function syncV2Push(req: Request, res: Response): Promise<void> {
 
   type OpResult = {
     idempotency_key: string;
-    status: "applied" | "duplicate" | "rejected";
+    status: "applied" | "duplicate" | "rejected" | "retry";
     reason?: string;
   };
   const results: OpResult[] = [];
@@ -439,6 +441,12 @@ export async function syncV2Push(req: Request, res: Response): Promise<void> {
             await client.query("ROLLBACK TO SAVEPOINT op_apply");
           } catch {
             /* primary rollback below will catch transactional poison */
+          }
+          // data-18: транзієнтна помилка БД: `retry`, без запису в журнал.
+          const retryReason = retryableSqlStateReason(err);
+          if (retryReason !== null) {
+            results.push(await settleRetryableApply(client, op, retryReason));
+            continue;
           }
           logger.warn({
             msg: "sync_v2_apply_failed",

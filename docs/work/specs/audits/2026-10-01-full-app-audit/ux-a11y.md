@@ -526,7 +526,7 @@ Live API (v8-v9-api.mjs). Preview of f3-mono-2000.csv returns 200, profile=mono,
 
 ### `ux-08` [medium] Фокус падає на &lt;body&gt; після закриття діалогів і дій: глобальний пошук, створення першої звички, readiness-аркуш, крок аркуша їжі, видалення запису, невдалий вхід
 
-- **Стан:** частково виправлено в [#1492](https://github.com/SkOrDs-02/sergeant/pull/1492) (змерджено 2026-10-09) (лишилось: запасні цілі фокуса для розмонтованих тригерів у HabitQuickCreate, ReadinessSheet, кроці AddMealSheet і видаленні запису; перенесення «Забули пароль?» у DOM)
+- **Стан:** виправлено в [#1492](https://github.com/SkOrDs-02/sergeant/pull/1492) (змерджено 2026-10-09) і в цьому PR (запасні цілі фокуса `returnFocusFallback` для HabitQuickCreate, ReadinessSheet, кроку AddMealSheet і видалення запису; «Забули пароль?» перенесено в DOM після поля пароля)
 - **Перевірка:** підтверджено · **Зусилля:** M · **Область:** web: a11y / керування фокусом
 - **Де:** apps/web/src/shared/hooks/useDialogFocusTrap.ts:89-91,195-205; apps/web/src/core/hub/search/HubSearch.tsx:55-58; apps/web/src/core/hub/search/useSearchEngine.ts:85-87; apps/web/src/core/auth/LoginForm.tsx:58-111; apps/web/src/modules/fizruk/pages/Workouts.tsx:472; routine HabitQuickCreate
 - **Першопричина:** useDialogFocusTrap запамʼятовує «попередній фокус» в ефекті, який виконується після власних автофокусів компонента. У HubSearch ефект useSearchEngine фокусує інпут раніше, тож пастка запамʼятовує сам інпут, який потім розмонтовується. Якщо тригер розмонтовано (порожній стан звичок, видалений запис), запасної цілі для фокуса немає. LoginForm на час сабміту робить сфокусовані поля disabled, тож після помилки фокус губиться.
@@ -947,7 +947,7 @@ v3-paywall.mjs with mocked usage {plan:free, remaining:0}, 1280x900. Trace: keyd
 
 ### `ux-16` [medium] Стрілки на вкладках одразу їх активують: рейок модулів переводить в інший модуль, а вкладка «Скан» відкриває камеру
 
-- **Стан:** частково виправлено в [#1492](https://github.com/SkOrDs-02/sergeant/pull/1492) (змерджено 2026-10-09) (лишилось: перевід рейки з tablist на nav з aria-current; автовідкриття сканера в AddMealSheet при sourceTab===scan)
+- **Стан:** виправлено в [#1492](https://github.com/SkOrDs-02/sergeant/pull/1492) (змерджено 2026-10-09) і подальшими змінами; залишок не відтворюється на `f226d8cb3` (перевірено 2026-10-22): `ModuleRail` і `useTablistArrowKeys` більше не існують, вибір способу в `SourceTabs` це `<nav>` зі звичайними кнопками, а автовідкриття сканера при `sourceTab==="scan"` одноразове (ref) і покрите тестом
 - **Перевірка:** підтверджено · **Зусилля:** S · **Швидкий виграш** · **Область:** web: a11y / вкладки
 - **Де:** apps/web/src/shared/hooks/useTablistArrowKeys.ts:102; apps/web/src/shared/components/layout/ModuleRail.tsx:183-215; apps/web/src/modules/nutrition/components/AddMealSheet.tsx:323-332; apps/web/src/modules/nutrition/components/meal-sheet/SourceTabs.tsx:41-60
 - **Першопричина:** useTablistArrowKeys викликає target.click() на кожну стрілку, тобто вкладки активуються автоматично. Активація вкладки в ModuleRail означає навігацію (openHubModule), а вкладка scan в AddMealSheet сама відкриває модальний сканер. До того ж рейок оголошено як tablist без tabpanel і aria-controls.
