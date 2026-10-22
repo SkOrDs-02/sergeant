@@ -51,10 +51,14 @@ const M = messages.routine.statsRange;
  *
  * `skipped` навмисно сірий, а не проміжний рожевий щабель: «не зміг» —
  * не часткове виконання (канон §5).
+ *
+ * У темній `chart-routine` дає rose-400, і десятки клітинок поспіль
+ * горіли насиченим рожевим (інвентар v3.1, Д2); там виконане бере
+ * приглушений щабель `routine-tint-label`.
  */
 type DayState = HabitRangeCellState | "pause";
 const CELL_BG: Record<DayState, string> = {
-  done: "bg-chart-routine",
+  done: "bg-chart-routine dark:bg-routine-tint-label",
   skipped: "border-2 border-muted bg-transparent",
   pause: "border border-dashed border-muted bg-panel",
   missed: "bg-line/55",

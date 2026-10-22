@@ -483,6 +483,25 @@ describe("Toast — трей над футером відкритого арку
     expect(root.style.getPropertyValue("--sgt-sheet-footer-inset")).toBe("");
   });
 
+  it("публікує --sgt-toast-inset лише поки в треї є тост (запас під page-tabbar-pad)", () => {
+    vi.useFakeTimers();
+    const root = document.documentElement;
+    const { api } = renderHarness();
+    expect(root.style.getPropertyValue("--sgt-toast-inset")).toBe("");
+    act(() => {
+      api.info("30 днів поспіль.");
+    });
+    expect(root.style.getPropertyValue("--sgt-toast-inset")).toMatch(/^\d+px$/);
+    act(() => {
+      api.dismiss(Number(getToastRoot().dataset["toastId"]));
+    });
+    act(() => {
+      vi.runAllTimers();
+    });
+    expect(root.style.getPropertyValue("--sgt-toast-inset")).toBe("");
+    vi.useRealTimers();
+  });
+
   it("стоїть на токен-тірі z-toast, а не поза шкалою", () => {
     render(<Harness open={false} />);
     const tray = screen.getByTestId("toast-tray");

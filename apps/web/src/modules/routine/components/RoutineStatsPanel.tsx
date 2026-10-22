@@ -104,12 +104,10 @@ export function RoutineStatsPanel({
         onChange={setRangeId}
       />
 
-      <Card
-        as="section"
-        prominence={summary.rate.scheduled > 0 ? "hero" : "panel"}
-        tone={summary.rate.scheduled > 0 ? "routine" : undefined}
-        aria-label="Зведена статистика"
-      >
+      {/* Тинт модуля лишається за hero Огляду. Тут підсумок на панелі: у
+          темній темі rose-тинт на весь блок читався бордовим (інвентар v3.1,
+          Д2), а екран аналітики не має власного hero. */}
+      <Card as="section" prominence="panel" aria-label="Зведена статистика">
         <SectionHeading as="p" size="lg" className="mb-3">
           Виконання · {range.hint}
         </SectionHeading>
