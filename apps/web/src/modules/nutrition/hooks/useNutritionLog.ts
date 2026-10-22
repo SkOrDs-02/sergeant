@@ -3,6 +3,7 @@
  * Status: Active
  */
 import { useSqliteTickOverlay } from "@shared/hooks/useSqliteTickOverlay";
+import { FORM_DRAFT_IDS, peekFormDraft } from "@shared/lib/storage/formDrafts";
 import {
   useCallback,
   useEffect,
@@ -116,7 +117,11 @@ export function useNutritionLog() {
     () => pickedDate ?? todayISODate(),
     [pickedDate],
   );
-  const [addMealSheetOpen, setAddMealSheetOpen] = useState(false);
+  // Відкритий аркуш із недописаним прийомом переживає замок застосунку
+  // (sec-13): чернетку лишив `useMealLockDraft`, аркуш його відновить.
+  const [addMealSheetOpen, setAddMealSheetOpen] = useState(
+    () => peekFormDraft(FORM_DRAFT_IDS.nutritionMeal) !== null,
+  );
   const [storageErr, setStorageErr] = useState("");
   const pendingThumbDeletesRef = useRef<
     Map<string, ReturnType<typeof setTimeout>>

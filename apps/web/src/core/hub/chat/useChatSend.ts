@@ -5,6 +5,7 @@ import { useToast } from "@shared/hooks/useToast";
 import { showUndoToast } from "@shared/lib/ui/undoToast";
 import { useOnlineStatus } from "@shared/hooks/useOnlineStatus";
 import { useRegisterDirtyState } from "@shared/hooks/useRegisterDirtyState";
+import { initialChatInput, useChatInputDraft } from "./chatInputDraft";
 import { billingKeys, chatKeys, hubKeys } from "@shared/lib/api/queryKeys";
 import { perfMark, perfEnd } from "@shared/lib/ui/perf";
 import { safeReadLS } from "@shared/lib/storage/storage";
@@ -192,7 +193,8 @@ export function useChatSend({
     retry: false,
   });
 
-  const [input, setInput] = useState("");
+  const [input, setInput] = useState(initialChatInput);
+  useChatInputDraft(input);
   // Непорожній композер — незбережений ввід: тихий idle-reload сервіс-воркера
   // його не знищує (data-45, `core/app/autoUpdate.ts`).
   useRegisterDirtyState(input.trim() !== "");

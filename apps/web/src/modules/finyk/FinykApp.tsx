@@ -39,6 +39,7 @@ import {
 } from "./pages/lazyPages";
 
 import { ManualExpenseSheet } from "./components/ManualExpenseSheet";
+import { FORM_DRAFT_IDS, peekFormDraft } from "@shared/lib/storage/formDrafts";
 import { FinykLoginScreen } from "./components/FinykLoginScreen";
 import { FinykScanEntryPoints } from "./components/FinykScanEntryPoints";
 import { NAV_ICONS, NAV_IDS, NAV_ITEMS } from "./components/finykNav";
@@ -134,7 +135,11 @@ export default function App({
     toKey: string;
   } | null>(null);
   const showBalance = storage.showBalance;
-  const [showExpenseSheet, setShowExpenseSheet] = useState(false);
+  // Недописана витрата переживає замок застосунку (sec-13): чернетку лишила
+  // `useManualExpenseLockDraft`, аркуш відкривається з нею й відновлює поля.
+  const [showExpenseSheet, setShowExpenseSheet] = useState(
+    () => peekFormDraft(FORM_DRAFT_IDS.finykManualExpense) !== null,
+  );
   // Аркуш масового імпорту живе тут, а не в `FinykScanEntryPoints`: його
   // відкривають два входи — FAB і плашка нагадування в Огляді.
   const [showBulkImport, setShowBulkImport] = useState(false);
@@ -534,6 +539,7 @@ export default function App({
         )}
 
         <ManualExpenseSheet
+          keepDraftUnderLock
           open={showExpenseSheet}
           storageLoading={storageWarming}
           onClose={() => {
