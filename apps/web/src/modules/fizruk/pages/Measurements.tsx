@@ -401,7 +401,11 @@ export function Measurements() {
                       type="button"
                       className="focus-ring touch-target ml-1 -my-2 px-1 rounded-lg inline-flex items-center gap-1 text-text font-semibold hover:underline"
                       aria-expanded={isRowExpanded}
-                      aria-label={`${messages.fizruk.measurements.showAllFieldsAriaSuffix} ${dateLabel}`}
+                      aria-label={
+                        isRowExpanded
+                          ? `${messages.fizruk.measurements.showAllFieldsAriaSuffix} ${dateLabel}`
+                          : `+${hiddenCount} ${messages.fizruk.measurements.moreFieldsSuffix}: ${messages.fizruk.measurements.showAllFieldsAriaSuffix} ${dateLabel}`
+                      }
                       onClick={() => toggleHistoryRow(e.id)}
                     >
                       {isRowExpanded
