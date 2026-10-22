@@ -8,6 +8,11 @@ import { Button } from "@shared/components/ui/Button";
 import { Icon } from "@shared/components/ui/Icon";
 import { Measure } from "@shared/components/ui/Measure";
 import { type Meal } from "@sergeant/nutrition-domain";
+import {
+  focusNeighborRow,
+  focusRowProps,
+  focusRowTargetProps,
+} from "@shared/lib/ui/focusFallback";
 import { getMealThumbnailBlob } from "../lib/mealPhotoStorage";
 
 function MealThumb({ mealId }: { mealId: string }) {
@@ -73,12 +78,13 @@ export function MealRow({ meal, onRemove, onEdit }: MealRowProps) {
     sourceLabel || null,
   ].filter(Boolean);
   return (
-    <div className="flex items-center gap-3 py-2.5 group">
+    <div className="flex items-center gap-3 py-2.5 group" {...focusRowProps}>
       <MealThumb mealId={meal.id} />
       <button
         type="button"
         onClick={onEdit}
         disabled={!onEdit}
+        {...focusRowTargetProps}
         className={cn(
           "flex flex-1 min-w-0 items-baseline gap-3 rounded-lg text-left focus-ring",
           onEdit ? "cursor-pointer" : "cursor-default",
@@ -128,7 +134,12 @@ export function MealRow({ meal, onRemove, onEdit }: MealRowProps) {
         variant="ghost"
         size="xs"
         iconOnly
-        onClick={onRemove}
+        onClick={(e) => {
+          // Кнопка зникне разом із рядком; фокус переносимо на сусіда ДО
+          // видалення, інакше він падає на <body> (аудит ux-08).
+          focusNeighborRow(e.currentTarget);
+          onRemove?.();
+        }}
         aria-label="Видалити запис"
         className="text-muted hover:text-danger-strong sm:opacity-0 sm:group-hover:opacity-100 sm:focus-visible:opacity-100 focus-visible:ring-2 focus-visible:ring-focus/45"
       >

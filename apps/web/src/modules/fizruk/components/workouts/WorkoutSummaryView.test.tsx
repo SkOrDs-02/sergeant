@@ -4,7 +4,7 @@
  * Status: Active
  */
 import { describe, it, expect, vi } from "vitest";
-import { render, screen } from "@testing-library/react";
+import { render, screen, fireEvent } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import type { Workout } from "@sergeant/fizruk-domain/domain";
 import { flatMatch } from "@shared/testing/numberText";
@@ -274,5 +274,50 @@ describe("WorkoutSummaryView", () => {
 
     await user.keyboard("{Enter}");
     expect(onDelete).toHaveBeenCalledTimes(1);
+  });
+
+  it("data-37: редактор часу зберігає виправлені початок і кінець", async () => {
+    const onUpdateTimes = vi.fn();
+    render(
+      <WorkoutSummaryView
+        workout={makeWorkout()}
+        onRepeat={vi.fn()}
+        onClose={vi.fn()}
+        onDelete={vi.fn()}
+        onUpdateTimes={onUpdateTimes}
+      />,
+    );
+    await userEvent.click(screen.getByText("Змінити час"));
+    fireEvent.change(screen.getByLabelText("Початок"), {
+      target: { value: "2025-03-10T10:00" },
+    });
+    fireEvent.change(screen.getByLabelText("Завершення"), {
+      target: { value: "2025-03-10T10:45" },
+    });
+    await userEvent.click(screen.getByText("Зберегти час"));
+    expect(onUpdateTimes).toHaveBeenCalledTimes(1);
+    const patch = onUpdateTimes.mock.calls[0]![0];
+    expect(Date.parse(patch.endedAt) - Date.parse(patch.startedAt)).toBe(
+      45 * 60_000,
+    );
+  });
+
+  it("data-37: кінець раніше за початок не зберігається", async () => {
+    const onUpdateTimes = vi.fn();
+    render(
+      <WorkoutSummaryView
+        workout={makeWorkout()}
+        onRepeat={vi.fn()}
+        onClose={vi.fn()}
+        onDelete={vi.fn()}
+        onUpdateTimes={onUpdateTimes}
+      />,
+    );
+    await userEvent.click(screen.getByText("Змінити час"));
+    fireEvent.change(screen.getByLabelText("Завершення"), {
+      target: { value: "2025-03-09T10:00" },
+    });
+    expect(screen.getByText("Зберегти час").closest("button")).toBeDisabled();
+    expect(onUpdateTimes).not.toHaveBeenCalled();
   });
 });

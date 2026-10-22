@@ -75,7 +75,7 @@ function itemWithSets(
 function baseProps(overrides: Record<string, unknown> = {}) {
   const active: Workout = {
     id: "w-active",
-    startedAt: new Date("2025-01-01T10:00:00Z").toISOString(),
+    startedAt: new Date(Date.now() - 3600_000).toISOString(),
     endedAt: null,
     items: [],
     groups: [],

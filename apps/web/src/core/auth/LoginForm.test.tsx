@@ -202,4 +202,14 @@ describe("LoginForm", () => {
     expect(password.getAttribute("aria-invalid")).toBe("false");
     expect(password.getAttribute("aria-describedby")).toBeNull();
   });
+
+  it("«Забули пароль?» стоїть у DOM після поля пароля (email -> пароль -> забули)", () => {
+    render(<LoginForm onForgotPassword={vi.fn()} showForgot={false} />);
+    const email = screen.getByLabelText("Email");
+    const password = screen.getByLabelText("Пароль");
+    const forgot = screen.getByRole("button", { name: "Забули пароль?" });
+    const FOLLOWING = Node.DOCUMENT_POSITION_FOLLOWING;
+    expect(email.compareDocumentPosition(password) & FOLLOWING).toBeTruthy();
+    expect(password.compareDocumentPosition(forgot) & FOLLOWING).toBeTruthy();
+  });
 });

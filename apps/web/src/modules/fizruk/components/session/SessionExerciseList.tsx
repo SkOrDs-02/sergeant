@@ -2,6 +2,8 @@
  * Last validated: 2026-09-11
  * Status: Active
  */
+import { focusFallbackProps } from "@shared/lib/ui/focusFallback";
+import { SESSION_FOCUS_FALLBACK } from "./focusFallback";
 import type { WorkoutGroup, WorkoutItem } from "@sergeant/fizruk-domain";
 import { Button } from "@shared/components/ui/Button";
 import { cn } from "@shared/lib/ui/cn";
@@ -120,6 +122,7 @@ export function SessionExerciseList({
 
               className="h-11 w-full"
               onClick={onAddExercise}
+              {...focusFallbackProps(SESSION_FOCUS_FALLBACK)}
               aria-label={ss.addExerciseAria}
             >
               {ss.addExercise}
