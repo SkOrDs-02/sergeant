@@ -109,6 +109,8 @@ interface ManualExpenseSheetProps {
     kind: ManualExpenseKind;
     /** Рахунок запису; ключ присутній, лише коли форма показує поле. */
     account?: ManualAccount;
+    /** Теги нового запису; лише у створенні (в редагуванні йдуть через `onTagsChange`). */
+    tags?: readonly string[];
   }) => void;
   /**
    * Delete the expense currently being edited. Only wired in edit mode
@@ -165,7 +167,7 @@ interface ManualExpenseSheetProps {
    * наявну ручну.
    */
   txSplits?: TxSplitsMap | undefined;
-  /** Теги збереженого запису (Р6.2): лише в режимі редагування. */
+  /** Теги збереженого запису (Р6.2); у створенні поле є, коли передано `knownTags`. */
   tags?: readonly string[] | undefined;
   knownTags?: readonly TagSummary[] | undefined;
   onTagsChange?: ((tags: readonly string[]) => void) | undefined;
@@ -309,7 +311,9 @@ export function ManualExpenseSheet({
               : toExpenseInstant(values.date || toKyivISODate()),
           kind,
           ...(showAccount ? { account } : {}),
+          ...(!isEditing && draftTags.length > 0 ? { tags: draftTags } : {}),
         });
+        setDraftTags([]);
 
         // UX-15: "Додати ще" keeps the sheet open for rapid batch entry.
         // We reset only the per-item fields (description + amount) and keep
@@ -393,6 +397,7 @@ export function ManualExpenseSheet({
     ],
   );
   const [prevOpenInitKey, setPrevOpenInitKey] = useState("");
+  const [draftTags, setDraftTags] = useState<readonly string[]>([]);
 
   useEffect(() => {
     if (!open) {
@@ -415,6 +420,7 @@ export function ManualExpenseSheet({
       });
       void Promise.resolve().then(() => {
         setPrevOpenInitKey("");
+        setDraftTags([]);
       });
       return;
     }
@@ -747,6 +753,13 @@ export function ManualExpenseSheet({
             tags={tags ?? []}
             known={knownTags ?? []}
             onChange={onTagsChange}
+          />
+        )}
+        {!isEditing && knownTags && (
+          <TxTagsField
+            tags={draftTags}
+            known={knownTags}
+            onChange={setDraftTags}
           />
         )}
 
