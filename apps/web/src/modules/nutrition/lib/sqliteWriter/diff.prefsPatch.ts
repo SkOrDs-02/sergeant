@@ -35,6 +35,33 @@ function parseObject(json: string): Record<string, unknown> | null {
 }
 
 /**
+ * Семантична рівність JSON-значень: ключі обʼєктів у будь-якому порядку,
+ * масиви строго за порядком. `JSON.stringify` тут не годиться: той самий
+ * вкладений обʼєкт з іншим порядком ключів дав би зайвий ключ у патчі й
+ * перезапис на сервері.
+ */
+function jsonEqual(a: unknown, b: unknown): boolean {
+  if (a === b) return true;
+  if (
+    typeof a !== "object" ||
+    typeof b !== "object" ||
+    a === null ||
+    b === null
+  )
+    return false;
+  if (Array.isArray(a) || Array.isArray(b)) {
+    if (!Array.isArray(a) || !Array.isArray(b) || a.length !== b.length)
+      return false;
+    return a.every((v, i) => jsonEqual(v, b[i]));
+  }
+  const ao = a as Record<string, unknown>;
+  const bo = b as Record<string, unknown>;
+  const ak = Object.keys(ao);
+  if (ak.length !== Object.keys(bo).length) return false;
+  return ak.every((k) => k in bo && jsonEqual(ao[k], bo[k]));
+}
+
+/**
  * Обчислює патч `prev → next` по верхніх ключах.
  *
  * Повертає `undefined` (= повна заміна, як раніше), коли патч не можна
@@ -57,7 +84,7 @@ export function computePrefsPatch(
   }
   const keys: Record<string, unknown> = {};
   for (const [k, v] of Object.entries(n)) {
-    if (!(k in p) || JSON.stringify(p[k]) !== JSON.stringify(v)) keys[k] = v;
+    if (!(k in p) || !jsonEqual(p[k], v)) keys[k] = v;
   }
   return {
     keys,

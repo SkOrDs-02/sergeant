@@ -87,6 +87,39 @@ describe("computePrefsPatch (data-04)", () => {
     const patch = computePrefsPatch(base, reordered);
     expect(patch && isEmptyPrefsPatch(patch)).toBe(true);
   });
+
+  it("вкладений обʼєкт з іншим порядком ключів не дає зайвого ключа", () => {
+    const prev = {
+      ...base,
+      prefsJson: JSON.stringify({
+        tpl: { a: 1, b: [1, 2] },
+        waterGoalMl: 2000,
+      }),
+    };
+    const sameShuffled = {
+      ...base,
+      prefsJson: JSON.stringify({
+        tpl: { b: [1, 2], a: 1 },
+        waterGoalMl: 2000,
+      }),
+    };
+    const patch = computePrefsPatch(prev, sameShuffled);
+    expect(patch && isEmptyPrefsPatch(patch)).toBe(true);
+  });
+
+  it("порядок елементів масиву важливий: перестановка = зміна", () => {
+    const prev = {
+      ...base,
+      prefsJson: JSON.stringify({ tpl: { b: [1, 2] }, waterGoalMl: 2000 }),
+    };
+    const swapped = {
+      ...base,
+      prefsJson: JSON.stringify({ tpl: { b: [2, 1] }, waterGoalMl: 2000 }),
+    };
+    expect(computePrefsPatch(prev, swapped)?.keys).toEqual({
+      tpl: { b: [2, 1] },
+    });
+  });
 });
 
 describe("buildPrefsOutboxRow", () => {
