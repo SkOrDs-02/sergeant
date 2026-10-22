@@ -152,23 +152,24 @@ interface TableSpec {
 // потрібна; порівняння робиться на боці БД (`$1::bigint`).
 // `fizruk_injuries` має PK `(user_id, id)` (міграція 162): той самий `id` живе в
 // кількох користувачів, тож курсор і UPDATE ідентифікують рядок ПАРОЮ. Пара
-// кодується одним текстовим ключем `user_id<US>id` (US = U+001F), щоб
+// кодується одним текстовим ключем, JSON-масивом `["user_id","id"]`, щоб
 // `sweepTable` лишався generic: SELECT віддає його як `id`, а UPDATE
-// розбирає назад через `split_part`.
+// розбирає назад через `->>`. Роздільник-символ тут не годиться: `id` приходить
+// від клієнта довільним текстом, і `split_part` обрізав би такий `id`, після
+// чого UPDATE не знайшов би рядок, а курсор зациклився б на ньому.
 const INJURIES_SPEC: TableSpec = {
-  select: `SELECT user_id || E'\x1f' || id AS id, note AS value
+  select: `SELECT jsonb_build_array(user_id, id)::text AS id, note AS value
            FROM fizruk_injuries
            WHERE note <> ''
              AND note NOT LIKE 'enc:v1:%'
              AND note NOT LIKE 'enc:v2:%'
              AND ($1::text IS NULL
-                  OR (user_id, id) > (split_part($1::text, E'\x1f', 1),
-                                      split_part($1::text, E'\x1f', 2)))
+                  OR (user_id, id) > ($1::jsonb ->> 0, $1::jsonb ->> 1))
            ORDER BY user_id, id
            LIMIT $2`,
   update: `UPDATE fizruk_injuries SET note = $2
-           WHERE user_id = split_part($1::text, E'\x1f', 1)
-             AND id = split_part($1::text, E'\x1f', 2)
+           WHERE user_id = $1::jsonb ->> 0
+             AND id = $1::jsonb ->> 1
              AND note = $3`,
 };
 
