@@ -16,17 +16,12 @@ export interface MealLockDraft {
   step: "source" | "fill";
 }
 
-interface Options {
-  /** Аркуш відкритий і це НОВИЙ запис (редагування чернеткою не пишемо). */
-  active: boolean;
-  draft: MealLockDraft;
-  setters: {
-    setForm: Dispatch<SetStateAction<MealFormState>>;
-    setPickedFood: (v: PickedFood | null) => void;
-    setPickedGrams: (v: string) => void;
-    setStep: (v: "source" | "fill") => void;
-    setManualMacros: (v: boolean) => void;
-  };
+interface MealDraftSetters {
+  setForm: Dispatch<SetStateAction<MealFormState>>;
+  setPickedFood: (v: PickedFood | null) => void;
+  setPickedGrams: (v: string) => void;
+  setStep: (v: "source" | "fill") => void;
+  setManualMacros: (v: boolean) => void;
 }
 
 export function isMealDraftDirty(d: MealLockDraft): boolean {
@@ -41,7 +36,12 @@ export function isMealDraftDirty(d: MealLockDraft): boolean {
   );
 }
 
-export function useMealLockDraft({ active, draft, setters }: Options): void {
+/** `active`: аркуш відкритий і це НОВИЙ запис (редагування чернеткою не пишемо). */
+export function useMealLockDraft(
+  active: boolean,
+  draft: MealLockDraft,
+  setters: MealDraftSetters,
+): void {
   const { form, pickedFood, pickedGrams, step } = draft;
   const snapshot = useMemo(() => {
     const d = { form, pickedFood, pickedGrams, step };
