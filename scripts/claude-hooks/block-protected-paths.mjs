@@ -16,7 +16,9 @@
 // Reads JSON from stdin per Claude Code hooks API.
 // Exit 2 + stderr → block tool call and surface message to Claude.
 
-import { readFileSync } from "node:fs";
+import { execFileSync } from "node:child_process";
+import { existsSync, readFileSync } from "node:fs";
+import { dirname, relative, resolve } from "node:path";
 
 const PROTECTED = [
   /(^|\/)\.env(\.|$)/i,
@@ -26,12 +28,43 @@ const PROTECTED = [
   /(^|\/)pnpm-lock\.yaml$/i,
   /(^|\/)package-lock\.json$/i,
   /(^|\/)yarn\.lock$/i,
-  /apps\/server\/src\/migrations\/.+\.sql$/i,
   /docs\/governance\/governance\/freshness-dashboard\.html$/i,
   /\.agents\/skills-lock\.json$/i,
   /\.generated\.(ts|js|json|yaml|yml)$/i,
   /openapi\.(generated|gen)\.(ts|js|json|yaml|yml)$/i,
 ];
+
+// Міграції захищені лише після потрапляння в `origin/main`: застосовану
+// міграцію раннер трекає за іменем файлу, тож її правка в проді не
+// виконається, а зламає `down`-дрил і перевірку. Нову, ще не злиту міграцію
+// писати можна — інакше агент не може створити жодної (рішення власника
+// 2026-10-22). Якщо git не відповідає, вважаємо файл застосованим.
+const MIGRATION_SQL = /apps\/server\/src\/migrations\/.+\.sql$/i;
+
+function git(cwd, args) {
+  return execFileSync("git", ["-C", cwd, ...args], {
+    encoding: "utf8",
+    stdio: ["ignore", "pipe", "ignore"],
+  }).trim();
+}
+
+function isOnMain(filePath) {
+  try {
+    let dir = dirname(resolve(filePath));
+    while (!existsSync(dir)) dir = dirname(dir);
+    const top = git(dir, ["rev-parse", "--show-toplevel"]);
+    git(top, ["rev-parse", "--verify", "--quiet", "origin/main"]);
+    const rel = relative(top, resolve(filePath)).replaceAll("\\", "/");
+    try {
+      git(top, ["cat-file", "-e", `origin/main:${rel}`]);
+      return true;
+    } catch {
+      return false;
+    }
+  } catch {
+    return true;
+  }
+}
 
 let raw = "";
 try {
@@ -55,6 +88,16 @@ const filePath =
 if (!filePath) process.exit(0);
 
 const normalized = filePath.replaceAll("\\", "/");
+
+if (MIGRATION_SQL.test(normalized) && isOnMain(filePath)) {
+  process.stderr.write(
+    `BLOCKED: ${filePath} is a migration already on origin/main.\n` +
+      `Applied migrations are tracked by filename; write a new migration instead.\n` +
+      `If you genuinely need to edit, ask the user first or set SERGEANT_HOOK_OVERRIDE=1.\n`,
+  );
+  if (process.env.SERGEANT_HOOK_OVERRIDE !== "1") process.exit(2);
+  process.stderr.write("Override active — allowing.\n");
+}
 
 for (const pattern of PROTECTED) {
   if (pattern.test(normalized)) {
