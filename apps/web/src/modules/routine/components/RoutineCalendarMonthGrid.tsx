@@ -149,7 +149,7 @@ export function RoutineCalendarMonthGrid({
           })}
         </div>
         <p className="text-style-caption text-subtle mt-3 pt-3 border-t border-line">
-          Обрано: {formatUaWeekdayDate(parseDateKey(selectedDay))}
+          {formatUaWeekdayDate(parseDateKey(selectedDay))}
         </p>
         {showFizrukShortcut && (
           <Button

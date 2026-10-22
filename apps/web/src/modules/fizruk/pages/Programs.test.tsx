@@ -165,7 +165,9 @@ describe("Programs page", () => {
 
     fireEvent.click(screen.getAllByRole("button", { name: "Деталі" })[0]!);
 
-    expect(screen.getByText("Згорнути")).toBeInTheDocument();
+    expect(
+      screen.getAllByRole("button", { name: "Деталі" })[0],
+    ).toHaveAttribute("aria-expanded", "true");
     expect(screen.getByText("Розклад та вправи")).toBeInTheDocument();
     expect(
       screen.getAllByText(
