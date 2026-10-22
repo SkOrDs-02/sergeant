@@ -17,7 +17,6 @@ import {
   clearFinykSqliteCache,
 } from "@finyk/lib/sqliteReader";
 import { useBudgetOverrunInsight } from "@finyk/hooks/useBudgetOverrunInsight";
-import { formatNumberUk } from "@sergeant/shared";
 import { calculateLimitUsage } from "@sergeant/finyk-domain/domain/budget";
 import { withManualExpenses } from "@sergeant/finyk-domain/domain/transactions";
 import type { Budget } from "@sergeant/finyk-domain/domain/types";
