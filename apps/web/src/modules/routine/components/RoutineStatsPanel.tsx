@@ -122,7 +122,7 @@ export function RoutineStatsPanel({
             2026-08-17) — боксів нема, нема й проблеми. */}
         {/* Відсотка від нуля не буває: коли в зрізі нічого не заплановано,
             «0%» при «0/0» читався б як провал. */}
-        <p className="text-style-overline text-muted">
+        <p className="text-style-label text-muted">
           {messages.routine.completionHeading}
         </p>
         <p className="mt-2 text-style-display text-text tabular-nums">
