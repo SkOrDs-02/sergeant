@@ -1,6 +1,6 @@
 # 04. Launch readiness: legal, ops, edge cases, метрики, чеклист
 
-> **Last touched:** 2026-09-17 by @claude (§1.1: обіцянка 30-денного grace у Privacy Policy ще не реалізована в коді). **Next review:** 2026-12-16.
+> **Last touched:** 2026-10-22 by @claude (§1.1: 30-денний grace реалізований, retention-чекбокс закрито). **Next review:** 2026-12-16.
 > **Status:** Active
 
 > **Update 2026-07-10:** billing UI (`PaywallModal`, `PricingPage`, `PlanSection`, `usePlan()`) і server routes (`/api/billing/*`, `stripeWebhook.ts`) shipped. Edge-case таблиця §2 оновлена: «scaffold shipped» vs «prod rollout pending». Pre-launch checklist §7 розділяє code shipped / prod config.
@@ -39,7 +39,7 @@
 
 **Що вже покрито в текстах** (перевірено проти чекліста нижче): категорії даних, правові підстави, спеціальні категорії (health), перелік субпроцесорів із регіонами, права суб'єкта даних, міжнародні трансфери через SCC, retention-періоди (30 днів grace → hard-delete, бекапи 90 днів, білінг 5 років, логи 12 міс), breach-повідомлення за 72 години, вікове обмеження 18+, посилання між документами.
 
-> **Звірка 2026-09-17:** обіцянка «30 днів grace → hard-delete» у Privacy Policy **ще не реалізована в коді** — `DELETE /api/me` видаляє акаунт негайно; спека [`user-deletion-grace-window.md`](../../user-deletion-grace-window.md) має статус `Scaffolded`. До public launch або реалізувати вікно, або привести текст політики до фактичної поведінки.
+> **Звірка 2026-10-22:** обіцянка «30 днів grace → hard-delete» реалізована: `ACCOUNT_DELETION_GRACE_DAYS`, міграція 145, `deletionPoller`, [ADR-0098](../../../governance/adr/0098-account-deletion-grace-window.md), спека [`user-deletion-grace-window.md`](../../user-deletion-grace-window.md) має статус `Implemented`. Лишається відкритим cleanup у сторонніх сервісах (Art. 17, нижче).
 
 > **Розбіжність, яку варто знати.** Юридичний пак називає платіжним провайдером **LiqPay (АТ КБ «ПриватБанк»)** і хостинг-провайдером **Hetzner (ЄС, Німеччина)**. Решта цього документа (§2, §4.3) писалась під Stripe і Railway. У коді реалізовані **три** білінг-провайдери — `stripe.ts`, `liqpay.ts`, `plata.ts` (`apps/server/src/modules/billing/`). Перед public launch треба зафіксувати, який із них є користувацьким за замовчуванням, і привести §2 у відповідність — зараз джерелом істини для юзера є текст оферти, тобто LiqPay.
 
@@ -125,7 +125,7 @@ Better Auth вже має `deleteUser: enabled: true`
 - [ ] **Right to erasure (Art. 17)** — `DELETE /api/me` → cascade delete з БД + cleanup у зовнішніх сервісах. — _Ref:_ GDPR [Art. 17](https://gdpr-info.eu/art-17-gdpr/). _Owner:_ Dev + Founder (ключі). _⚠️ ЧАСТКОВО: БД-каскад працює (route mounted), але cleanup у третіх сторонах **не реалізований** — аудит 2026-07-25 показав, що `deleteUserData` чистить лише billing-провайдерів (`stripe`, `liqpay`, `plata`), а Sentry / PostHog / Resend лишаються. Потрібні окремі admin-токени з delete-скоупом — реєстр і відкриті питання у [`secret-ownership-register.md` § Pending secrets](../../../../governance/security/secret-ownership-register.md#pending-secrets--third-party-erasurepurge-tokens-gdpr-art-17). Галочку знято з `[x]` навмисно: раніше вона стояла попри незакритий cleanup._
 - [x] **Right to portability (Art. 20)** — `GET /api/me/export` повертає машиночитний JSON. — _Ref:_ GDPR [Art. 20](https://gdpr-info.eu/art-20-gdpr/). _Owner:_ Dev. _✅ той самий export-endpoint._
 - [x] **Consent management** — `GET /api/me/preferences` → поточні consent-и; `PATCH /api/me/preferences` → оновлення. — _Ref:_ GDPR [Art. 7](https://gdpr-info.eu/art-7-gdpr/). _Owner:_ Dev. _✅ shipped: migration 076 `user_preferences` + dataRights endpoints (2026-06-06)._
-- [ ] **Data retention policy** — скільки зберігаються дані після видалення акаунту? Рекомендація: 30 днів (grace для undo), потім hard delete. — _Ref:_ GDPR [Art. 5(1)(e)](https://gdpr-info.eu/art-5-gdpr/). _Owner:_ Founder + Dev.
+- [x] **Data retention policy** — 30 днів (grace для undo), потім hard delete. _✅ shipped: `ACCOUNT_DELETION_GRACE_DAYS`, ADR-0098, міграція 145._ — _Ref:_ GDPR [Art. 5(1)(e)](https://gdpr-info.eu/art-5-gdpr/). _Owner:_ Founder + Dev.
 
 **API endpoints що треба реалізувати:**
 
