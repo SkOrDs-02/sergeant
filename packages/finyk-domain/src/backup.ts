@@ -149,8 +149,14 @@ export function normalizeFinykBackup(parsed: unknown): FinykBackup {
     throw new Error("Порожній обʼєкт у файлі");
   }
 
-  const version = typeof obj["version"] === "number" ? obj["version"] : 1;
-  if (!Number.isInteger(version) || version < 1) {
+  // За замовчуванням 1 лише для ВІДСУТНЬОГО поля: `"4"` чи `null` у файлі -
+  // невідома версія, а не мовчазне читання за схемою v1.
+  const version = obj["version"] === undefined ? 1 : obj["version"];
+  if (
+    typeof version !== "number" ||
+    !Number.isInteger(version) ||
+    version < 1
+  ) {
     throw new Error("Невідома версія бекапу");
   }
   // Файл новішої версії читати «по-старому» не можна: невідомі поля мовчки

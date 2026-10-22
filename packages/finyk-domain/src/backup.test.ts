@@ -63,6 +63,12 @@ describe("normalizeFinykBackup", () => {
     expect(() => normalizeFinykBackup({ version: 1.5, budgets: [] })).toThrow(
       /Невідома версія бекапу/,
     );
+    expect(() => normalizeFinykBackup({ version: "4", budgets: [] })).toThrow(
+      /Невідома версія бекапу/,
+    );
+    expect(() => normalizeFinykBackup({ version: null, budgets: [] })).toThrow(
+      /Невідома версія бекапу/,
+    );
   });
 
   it("rejects a newer version than supported, up to 999 included", () => {

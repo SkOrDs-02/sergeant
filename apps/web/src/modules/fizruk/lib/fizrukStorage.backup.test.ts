@@ -166,6 +166,19 @@ describe("validateFizrukFullBackupPayload — вкладені записи тр
     ).toThrow(/Пошкоджений файл/);
   });
 
+  it("відхиляє присутній зріз, який не рядок; null лишається відсутнім", () => {
+    expect(() =>
+      validateFizrukFullBackupPayload({
+        data: { fizruk_measurements_v1: [{ id: "m1" }] },
+      }),
+    ).toThrow(/Пошкоджений файл/);
+    expect(() =>
+      validateFizrukFullBackupPayload({
+        data: { fizruk_measurements_v1: null },
+      }),
+    ).not.toThrow();
+  });
+
   it("приймає масив обʼєктів і порожній масив у зрізі", () => {
     expect(() =>
       validateFizrukFullBackupPayload({

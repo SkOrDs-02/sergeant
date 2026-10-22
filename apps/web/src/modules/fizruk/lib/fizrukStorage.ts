@@ -306,7 +306,8 @@ function isPlainObject(v: unknown): v is Record<string, unknown> {
  * Зріз-рядок, який не парситься в очікувану форму (масив або обʼєкт), це
  * помилка імпорту, а не `[]`: інакше в режимі `replace` обрізаний файл мовчки
  * стирав би заміри, щоденник, травми й шаблони. Зріз, якого файл не везе (ключа
- * немає, `null` або не рядок), лишається як є, це не помилка. `kind` і
+ * немає або `null`), лишається як є, це не помилка. Присутній зріз не-рядок
+ * (масив, число) - помилка: імпорт його мовчки пропустив би. `kind` і
  * `schemaVersion` перевіряються, коли поля є: файл новішої версії відхиляється.
  */
 export function validateFizrukFullBackupPayload(
@@ -334,7 +335,12 @@ export function validateFizrukFullBackupPayload(
   }
   for (const { key, label, shape } of FIZRUK_SLICE_CHECKS) {
     const raw = sliceRaw(d, key);
-    if (raw === undefined) continue;
+    if (raw === undefined) {
+      if (d[key] !== undefined && d[key] !== null) {
+        throw corruptSliceError(label);
+      }
+      continue;
+    }
     let value: unknown;
     try {
       value = JSON.parse(raw);
