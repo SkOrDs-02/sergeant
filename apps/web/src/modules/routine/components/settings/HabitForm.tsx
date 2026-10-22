@@ -361,8 +361,10 @@ export function HabitForm({
             під одним чипом. Чипи-тумблери знімають обмеження, не чіпаючи схему.
           */}
           {routine.tags.length > 0 && (
-            <div className="block text-style-label text-subtle">
-              <span id={tagsLabelId}>Теги</span>
+            <div>
+              <span id={tagsLabelId} className={`${FIELD_LABEL} block`}>
+                Теги
+              </span>
               <ChoiceGroup
                 multiple
                 variant="rows"
@@ -386,7 +388,7 @@ export function HabitForm({
           )}
 
           {routine.categories.length > 0 && (
-            <label className="block text-style-label text-subtle">
+            <label className={`${FIELD_LABEL} block`}>
               Категорія
               <select
                 className="routine-touch-select mt-1"
