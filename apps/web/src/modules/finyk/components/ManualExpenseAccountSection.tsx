@@ -11,7 +11,10 @@ import { ChoiceGroup } from "@shared/components/ui/Choice";
 import { FIELD_LABEL } from "@shared/components/ui/Input";
 import { cn } from "@shared/lib/ui/cn";
 import { messages } from "@shared/i18n/uk";
+import type { CashOnHandState } from "@sergeant/finyk-domain/domain/cashOnHand";
+import { isAtOrAfterCashAnchor } from "@sergeant/finyk-domain/domain/cashOnHand";
 import { CashAmountForm } from "./CashAmountForm";
+import { toExpenseInstant } from "./manualExpenseForm";
 
 const t = messages.finyk.cashOnHand;
 
@@ -23,12 +26,17 @@ export function ManualExpenseAccountSection({
   cashExists,
   onCreateCash,
   isSubmitting,
+  date,
+  cashCreatedAt,
 }: {
   account: ManualAccount;
   onAccountChange: (account: ManualAccount) => void;
   cashExists: boolean;
   onCreateCash: (amountMinor: number) => void;
   isSubmitting: boolean;
+  /** День запису `YYYY-MM-DD` і мить створення рахунку для підказки про межу. */
+  date?: string | undefined;
+  cashCreatedAt?: number | undefined;
 }) {
   const [settingUp, setSettingUp] = useState(false);
   const legendId = useId();
@@ -41,6 +49,15 @@ export function ManualExpenseAccountSection({
     setSettingUp(false);
     onAccountChange(next);
   };
+
+  const backdated =
+    account === "cash" &&
+    cashExists &&
+    !!date &&
+    cashCreatedAt != null &&
+    !isAtOrAfterCashAnchor(Date.parse(toExpenseInstant(date)), {
+      createdAt: cashCreatedAt,
+    } as CashOnHandState);
 
   return (
     <div>
@@ -58,6 +75,14 @@ export function ManualExpenseAccountSection({
         disabled={isSubmitting}
         className="grid grid-cols-2"
       />
+      {backdated && (
+        <p
+          className="mt-2 text-style-caption text-fg-muted"
+          data-testid="finyk-manual-cash-backdated-hint"
+        >
+          {t.backdatedHint}
+        </p>
+      )}
       {settingUp && !cashExists && (
         <div className="mt-3" data-testid="finyk-manual-cash-setup">
           <CashAmountForm

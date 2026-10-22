@@ -186,6 +186,8 @@ interface ManualExpenseSheetProps {
    * поверхні, що лише створюють запис із чека, його не показують.
    */
   cashOnHandExists?: boolean | undefined;
+  /** Мить створення рахунку готівки, мс: від неї рахується баланс. */
+  cashOnHandCreatedAt?: number | undefined;
   /** Останній обраний рахунок для нового запису (Р3.2). */
   defaultAccount?: ManualAccount | undefined;
   onCreateCashOnHand?: ((amountMinor: number) => void) | undefined;
@@ -215,6 +217,7 @@ export function ManualExpenseSheet({
   setManualDebts,
   setLinkedTxRole,
   cashOnHandExists = false,
+  cashOnHandCreatedAt,
   defaultAccount = null,
   onCreateCashOnHand,
 }: ManualExpenseSheetProps) {
@@ -794,6 +797,8 @@ export function ManualExpenseSheet({
             account={account}
             onAccountChange={setAccount}
             cashExists={cashOnHandExists}
+            date={kind === "income" ? undefined : date}
+            cashCreatedAt={cashOnHandCreatedAt}
             onCreateCash={onCreateCashOnHand}
             isSubmitting={isSubmitting}
           />

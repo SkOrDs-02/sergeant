@@ -562,6 +562,7 @@ export default function App({
           frequentMerchants={frequentMerchants}
           customCategories={storage.customCategories}
           cashOnHandExists={storage.cashOnHand != null}
+          cashOnHandCreatedAt={storage.cashOnHand?.createdAt}
           defaultAccount={storage.cashOnHand?.preferForManual ? "cash" : null}
           onCreateCashOnHand={storage.createCashOnHand}
           onSave={(expense) => {
