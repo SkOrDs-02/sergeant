@@ -1,7 +1,8 @@
 /**
  * Панель модулів хаба (мова H, redesign v3): чотири рядки 44 px у панелі -
- * свотч 10 px у hue модуля, назва, бар 5 px і значення дня табличними
- * цифрами. Заміна рейка пігулок під шапкою; тап по рядку відкриває модуль.
+ * свотч 10 px у hue модуля, назва, бар 5 px (лише коли значення не нуль) і
+ * значення дня табличними цифрами. Заміна рейка пігулок під шапкою; тап по
+ * рядку відкриває модуль.
  *
  * Неактивний модуль лишається рядком (форма панелі стала), але веде в
  * налаштування дашборда, як і раніше рейок.
@@ -87,16 +88,23 @@ export function ModulePanel({ activeModules, storageBump }: ModulePanelProps) {
                 >
                   {label}
                 </span>
+                {/* Порожня доріжка при нулі читалась як «немає даних» у всіх
+                    чотирьох рядках (redesign v3.1, Д3), тож бар зʼявляється
+                    лише з першим ненульовим значенням. */}
                 <span
                   aria-hidden
-                  className="h-[5px] flex-1 overflow-hidden rounded-sm bg-track"
+                  data-testid={progress ? "module-panel-bar" : undefined}
+                  className={cn(
+                    "h-[5px] flex-1 overflow-hidden rounded-sm",
+                    progress && "bg-track",
+                  )}
                 >
-                  {progress !== null && (
+                  {progress ? (
                     <span
                       className={cn("block h-full", MODULE_HUE[id])}
                       style={{ width: `${progress}%` }}
                     />
-                  )}
+                  ) : null}
                 </span>
                 <span className="w-20 shrink-0 text-right text-style-body font-medium tnum text-text">
                   {readModuleFact(id, preview, balanceHidden) ?? "–"}

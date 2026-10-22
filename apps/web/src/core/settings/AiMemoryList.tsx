@@ -37,6 +37,7 @@ import { cn } from "@shared/lib/ui/cn";
 import { isApiError, type AiMemoryListItem } from "@sergeant/api-client";
 import { ConfirmDialog } from "@shared/components/ui/ConfirmDialog";
 import { Icon } from "@shared/components/ui/Icon";
+import { MorphChevron } from "@shared/components/ui/MorphChevron";
 import { KYIV_TIME_ZONE, formatDayMonth } from "@shared/lib/time/formatDate";
 
 const m = messages.privacy.aiMemory;
@@ -187,7 +188,7 @@ function MemoryFact({
               "focus:outline-none focus-visible:ring-2 focus-visible:ring-focus/45 rounded-lg",
             )}
           >
-            {expanded ? m.collapseFact : m.expandFact}
+            {expanded ? m.showLessFact : m.expandFact}
           </button>
         )}
         {/* Джерело більше не дублюється на кожному рядку — його несе
@@ -294,10 +295,8 @@ function MemoryGroupSection({
           <span className="inline-flex items-center justify-center min-w-[20px] h-5 px-1.5 rounded-lg bg-panelHi text-style-caption font-bold text-muted">
             {group.items.length}
           </span>
-          <span className="text-style-caption text-muted">
-            {open ? messages.actions.collapse : messages.actions.expand}
-          </span>
         </span>
+        <MorphChevron open={open} className="text-subtle" />
       </button>
 
       {open && hint && (

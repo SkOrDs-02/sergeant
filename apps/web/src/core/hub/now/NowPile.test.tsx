@@ -141,8 +141,9 @@ describe("NowPile", () => {
 
     fireEvent.click(toggle);
     expect(screen.getAllByTestId("now-row")).toHaveLength(5);
-    const collapse = screen.getByRole("button", { name: "Згорнути" });
+    const collapse = screen.getByRole("button", { name: "ще 2" });
     expect(collapse).toBe(toggle);
+    expect(screen.queryByText("Згорнути")).toBeNull();
     expect(collapse).toHaveAttribute("aria-expanded", "true");
 
     fireEvent.click(collapse);
@@ -225,7 +226,7 @@ describe("NowPile", () => {
       }),
     ]);
     const button = screen.getByRole("button", { name: /Відкрити звіт тижня/ });
-    expect(button.className).toContain("touch-target");
+    expect(button.className).toContain("min-h-[44px]");
     fireEvent.click(button);
     expect(mocks.emitHubBus).toHaveBeenCalledWith("openWeekReport", undefined);
     expect(onOpenTarget).not.toHaveBeenCalled();

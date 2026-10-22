@@ -2,6 +2,7 @@ import { finykRedesignEn } from "./en.finykRedesign";
 import type { messages as ukMessages, MessageGroupShape } from "./uk";
 import { pricingEn } from "./en.pricing";
 import { nutritionTdeeEn } from "./en.nutritionTdee";
+import { nowPileEn } from "./en.hubNow";
 
 /**
  * Full English catalog. Top-level keys present here REPLACE the same
@@ -312,15 +313,7 @@ export const messagesEn: Partial<{
       cancel: "Cancel",
     },
     otherTips: "More tips",
-    nowPile: {
-      heading: "Now",
-      empty: "Everything is closed for today, nothing needs your attention.",
-      more: "more",
-      doIt: "Do it",
-      open: "Open",
-      openWeekReport: "Open the week report",
-      check: "Close for today",
-    },
+    nowPile: nowPileEn,
     closedPile: {
       heading: "Closed",
       uncheck: "Back to Now",
@@ -547,7 +540,7 @@ export const messagesEn: Partial<{
       clearConfirmButton: "Clear forever",
       /** `{count}` — how many facts from this group are loaded so far. */
       profileGroupCount: "Facts: {count}",
-      collapseFact: "Collapse",
+      showLessFact: "Show less",
       technicalGroupHints: {
         product:
           "App service markers: registration, onboarding, first action in a module, subscription. The assistant reads them as an action history, not as a fact about you.",
