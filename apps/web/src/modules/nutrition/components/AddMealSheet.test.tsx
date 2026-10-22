@@ -16,6 +16,12 @@ import {
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { AddMealSheet } from "./AddMealSheet";
 import { upsertFood } from "../lib/foodDb/foodDb";
+import {
+  commitStashedFormDrafts,
+  discardAllFormDrafts,
+  setFormDraftUser,
+} from "@shared/lib/storage/formDrafts";
+import { safeListSSKeys } from "@shared/lib/storage/storage";
 
 // ─── Mock heavy sub-components ───────────────────────────────────────────────
 
@@ -1670,5 +1676,51 @@ describe("AddMealSheet — manual-прийом із foodId не повертає
       foodId: "food-gone",
       macroSource: "manual",
     });
+  });
+});
+
+describe("AddMealSheet — чернетка під замком застосунку (sec-13)", () => {
+  const draftKeys = () =>
+    safeListSSKeys().filter((k) => k.includes("formDraft"));
+
+  beforeEach(() => {
+    window.sessionStorage.clear();
+    discardAllFormDrafts();
+    setFormDraftUser("u1");
+  });
+
+  it("замок розмонтовує аркуш, після розблокування форма відновлена один раз, сабміт зберігає запис", async () => {
+    const first = renderManualSheet({ mealTemplates: [] });
+    fireEvent.change(screen.getByTestId("name-input"), {
+      target: { value: "Сирна запіканка" },
+    });
+    fireEvent.change(screen.getByTestId("kcal-input"), {
+      target: { value: "350" },
+    });
+
+    first.unmount(); // замок
+    commitStashedFormDrafts("u1");
+    expect(screen.queryByDisplayValue("Сирна запіканка")).toBeNull();
+    expect(draftKeys()).toHaveLength(1);
+
+    const onSave = vi.fn();
+    renderSheet({ mealTemplates: [], onSave }, false); // розблокування
+    expect(await screen.findByDisplayValue("Сирна запіканка")).toBeVisible();
+    expect(draftKeys()).toHaveLength(0);
+
+    fireEvent.click(screen.getByRole("button", { name: "Додати прийом" }));
+    await waitFor(() => expect(onSave).toHaveBeenCalledTimes(1));
+    expect(onSave.mock.calls[0]![0]).toMatchObject({
+      name: "Сирна запіканка",
+      macros: { kcal: 350 },
+    });
+    expect(draftKeys()).toHaveLength(0);
+  });
+
+  it("порожній аркуш чернетки не лишає", () => {
+    const view = renderSheet({ mealTemplates: [] });
+    view.unmount();
+    commitStashedFormDrafts("u1");
+    expect(draftKeys()).toHaveLength(0);
   });
 });

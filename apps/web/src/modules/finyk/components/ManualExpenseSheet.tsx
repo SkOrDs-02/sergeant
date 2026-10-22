@@ -52,9 +52,7 @@ import {
 } from "./manualExpenseCategories";
 import {
   INCOME_CATEGORY_SLUGS,
-  incomeCustomCategories,
   incomeCategoryDisplay,
-  expenseCustomCategories,
   upgradeIncomeCategory,
 } from "./manualIncomeCategories";
 import {
@@ -84,6 +82,8 @@ import { DebtTxLinkSection } from "./DebtTxLinkSection";
 import { TxTagsField } from "./TxTagsField";
 import type { TagSummary } from "@sergeant/finyk-domain/domain/tags";
 import { decideManualDebtLink } from "./manualDebtLink";
+import { useManualCustomCategories } from "./useManualCustomCategories";
+import { useManualExpenseLockDraft } from "./useManualExpenseLockDraft";
 
 // Re-exported for backward-compat with existing importers / tests.
 export {
@@ -95,6 +95,11 @@ export {
 interface ManualExpenseSheetProps {
   open: boolean;
   onClose: () => void;
+  /**
+   * Зберігати недописану витрату під замком застосунку й відновлювати її після
+   * розблокування (sec-13). Вмикає хост, що сам відкриває аркуш на маунті.
+   */
+  keepDraftUnderLock?: boolean;
   /**
    * Сховище Фініка ще прогрівається (холодний старт): збереження заблоковане
    * зі спінером, поки кеш не готовий (аудит 2026-10-01, data-13).
@@ -198,6 +203,7 @@ interface ManualExpenseSheetProps {
 export function ManualExpenseSheet({
   open,
   onClose,
+  keepDraftUnderLock = false,
   storageLoading = false,
   onSave,
   onDelete,
@@ -237,22 +243,12 @@ export function ManualExpenseSheet({
 
   // Власні категорії — лише витратні (див. проп). Тримаємо їх окремим
   // мемо, щоб `customIds` був стабільним для нормалізації нижче.
-  const customExpenseCategories = useMemo(
-    () => expenseCustomCategories(customCategories),
-    [customCategories],
-  );
-  const customIds = useMemo(
-    () => new Set(customExpenseCategories.map((c) => c.id)),
-    [customExpenseCategories],
-  );
-  const customIncomeCategories = useMemo(
-    () => incomeCustomCategories(customCategories),
-    [customCategories],
-  );
-  const customIncomeIds = useMemo(
-    () => new Set(customIncomeCategories.map((c) => c.id)),
-    [customIncomeCategories],
-  );
+  const {
+    customExpenseCategories,
+    customIds,
+    customIncomeCategories,
+    customIncomeIds,
+  } = useManualCustomCategories(customCategories);
 
   // UX-15 batch entry. `keepOpenRef` is read inside `onSubmit` to decide
   // whether to close or reset-and-stay. `batchFocusRef` lets the amount
@@ -505,6 +501,19 @@ export function ManualExpenseSheet({
     cashOnHandExists,
     defaultAccount,
   ]);
+
+  useManualExpenseLockDraft(keepDraftUnderLock, open, isEditing, {
+    values: {
+      description,
+      amount,
+      category,
+      date,
+      kind,
+      account,
+      tags: draftTags,
+    },
+    restore: { reset, setKind, setAccount, setDraftTags },
+  });
 
   const sortedCategories = useMemo(
     () => sortCategoriesByFrequency(frequentCategories),
