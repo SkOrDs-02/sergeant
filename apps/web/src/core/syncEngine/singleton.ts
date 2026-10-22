@@ -34,6 +34,7 @@ import {
   type SyncEngineReaderRuntime,
 } from "./syncEngineReader";
 import { recordOutboxPurgeNotice } from "./outboxPurgeNotice";
+import { requeueFkViolationRejected } from "./requeueFkViolationRejected";
 import { observeSyncSession } from "./syncSessionSignal";
 
 type RuntimeFactory = () => Promise<SyncEngineWriterRuntime>;
@@ -470,6 +471,20 @@ async function createSyncSharedContext(): Promise<SyncSharedContext> {
         ),
     });
     recordOutboxPurgeNotice(purgedCount);
+
+    // data-01: оп-и, відхилені старим сервером як `fk_violation` за «чужим
+    // рядком» (до PK `(user_id, id)`), ставимо в чергу ще раз. Best-effort.
+    try {
+      await requeueFkViolationRejected(client);
+    } catch (err) {
+      sentry.addSentryBreadcrumb({
+        category: "storage",
+        level: "warning",
+        message: `sync_op_outbox fk_violation requeue failed: ${
+          err instanceof Error ? err.message : String(err)
+        }`,
+      });
+    }
 
     return client;
   };
