@@ -160,7 +160,7 @@ export function BulkReviewTable({
             size="sm"
             decorative
           />
-          Обрано {selectedCount} з {rows.length}
+          Позначено {selectedCount} з {rows.length}
         </button>
         <div className="ml-auto flex items-center gap-1.5">
           <Select

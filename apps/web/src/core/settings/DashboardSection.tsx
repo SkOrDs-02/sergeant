@@ -59,6 +59,7 @@ export function DashboardSection() {
   return (
     <SettingsGroup
       title={settingsSectionTitle("dashboard")}
+      value={`${activeModules.length} з ${ALL_MODULES.length} модулів`}
       anchorId="settings-dashboard"
     >
       <SettingsSubGroup variant="bounded" title="Вигляд">

@@ -130,7 +130,7 @@ function ActionCard({ card }: { card: ChatActionCard }) {
                 onClick={() => setExpanded((v) => !v)}
                 className="text-style-caption text-text hover:underline mt-0.5 transition-colors"
               >
-                {expanded ? "Згорнути" : "Показати все"}
+                {expanded ? "Показати менше" : "Показати все"}
               </button>
             )}
           </>

@@ -50,7 +50,7 @@ describe("BulkReviewTable", () => {
         onEditRow={vi.fn()}
       />,
     );
-    expect(screen.getByText("Обрано 1 з 2")).toBeInTheDocument();
+    expect(screen.getByText("Позначено 1 з 2")).toBeInTheDocument();
     expect(screen.getByText("витрата")).toBeInTheDocument();
     expect(screen.getByText("надходження")).toBeInTheDocument();
   });
@@ -439,7 +439,7 @@ describe("BulkReviewTable", () => {
         onEditRow={vi.fn()}
       />,
     );
-    fireEvent.click(screen.getByText(/Обрано 1 з 2/));
+    fireEvent.click(screen.getByText(/Позначено 1 з 2/));
     expect(onToggleAll).toHaveBeenCalledWith(true); // not all selected yet → select all
   });
 });

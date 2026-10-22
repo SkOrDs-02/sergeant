@@ -11,11 +11,17 @@ import { cn } from "@shared/lib/ui/cn";
 import { Switch } from "@shared/components/ui/Switch";
 import { SkeletonText } from "@shared/components/ui/Skeleton";
 import { ContentGroup } from "@shared/components/ui/ContentGroup";
+import { MorphChevron } from "@shared/components/ui/MorphChevron";
 import { useInertWhileCollapsed } from "@shared/hooks/useInertWhileCollapsed";
 import { messages } from "@shared/i18n/uk";
 
 export interface SettingsGroupProps {
   title: string;
+  /**
+   * Поточний стан групи праворуч від назви, другим сірим (redesign v3.1,
+   * В4): «4 з 4 модулів», «Free». Опис кнопки, а не частина її імені.
+   */
+  value?: ReactNode;
   children: ReactNode;
   defaultOpen?: boolean;
   /**
@@ -108,10 +114,13 @@ export const SettingsGroupDefaultOpenContext =
  */
 export function SettingsGroup({
   title,
+  value,
   children,
   defaultOpen = false,
   anchorId,
 }: SettingsGroupProps) {
+  const valueId = useId();
+  const hasValue = value !== undefined && value !== null && value !== "";
   const { defaultOpen: contextDefaultOpen, onUserToggle } = useContext(
     SettingsGroupDefaultOpenContext,
   );
@@ -151,7 +160,9 @@ export function SettingsGroup({
   const contentRef = useInertWhileCollapsed(open);
 
   // Мова H (redesign v3, H-settings): секція це рядок на hairline, без
-  // картки, тіні, іконки й шеврона; стан розкриття несе `aria-expanded`.
+  // картки, тіні й іконки. Мова станів v3.1: праворуч поточний стан групи
+  // другим сірим і шеврон 16 px, що повертається при розкритті; стан для
+  // скрінрідера несе `aria-expanded`.
 
   return (
     <section className="-mt-px border-y border-line first:mt-0">
@@ -199,9 +210,24 @@ export function SettingsGroup({
             onUserToggle?.(next);
           }}
           aria-expanded={open}
-          className="flex min-h-[52px] w-full items-center text-left focus-ring"
+          aria-describedby={hasValue ? valueId : undefined}
+          className="flex min-h-[52px] w-full items-center gap-3 text-left focus-ring"
         >
-          <span className="text-style-body font-medium text-text">{title}</span>
+          <span className="min-w-0 flex-1 text-style-body font-medium text-text">
+            {title}
+          </span>
+          {hasValue && (
+            // Імʼя кнопки лишається назвою групи, значення читається як
+            // опис через `aria-describedby`.
+            <span
+              id={valueId}
+              aria-hidden
+              className="shrink-0 text-style-label text-muted tnum"
+            >
+              {value}
+            </span>
+          )}
+          <MorphChevron open={open} className="text-subtle" />
         </button>
       </h2>
       <div

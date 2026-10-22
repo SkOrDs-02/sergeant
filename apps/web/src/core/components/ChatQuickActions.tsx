@@ -142,7 +142,7 @@ export function ChatQuickActions({
               hubLike: true,
             })}
           >
-            {expanded ? "Згорнути" : "Ще"}
+            {expanded ? "Менше" : "Ще"}
           </button>
         )}
       </div>

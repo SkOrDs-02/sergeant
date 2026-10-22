@@ -635,11 +635,11 @@ describe("BulkImportSheet — CSV path", () => {
       expect(screen.getByDisplayValue("АТБ")).toBeInTheDocument(),
     );
 
-    fireEvent.click(screen.getByRole("button", { name: "Обрано 1 з 1" }));
+    fireEvent.click(screen.getByRole("button", { name: "Позначено 1 з 1" }));
     expect(
-      screen.getByRole("button", { name: "Обрано 0 з 1" }),
+      screen.getByRole("button", { name: "Позначено 0 з 1" }),
     ).toBeInTheDocument();
-    fireEvent.click(screen.getByRole("button", { name: "Обрано 0 з 1" }));
+    fireEvent.click(screen.getByRole("button", { name: "Позначено 0 з 1" }));
     fireEvent.change(screen.getByLabelText("Категорія для вибраних витрат"), {
       target: { value: "food" },
     });

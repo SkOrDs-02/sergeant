@@ -152,7 +152,11 @@ export function PlanSection() {
   }
 
   return (
-    <SettingsGroup title="Підписка та план" anchorId="settings-plan">
+    <SettingsGroup
+      title="Підписка та план"
+      value={isLoading ? undefined : planLabel}
+      anchorId="settings-plan"
+    >
       <ContentGroup variant="bounded" className="flex flex-col gap-4">
         <div
           className="flex items-center gap-3"
