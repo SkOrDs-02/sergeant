@@ -1363,7 +1363,7 @@ x5_food.mjs: /api/food-search?q=apple 200 126ms `public, max-age=300, stale-whil
 
 ### `rel-22` [medium] Пошук їжі для підключених до Сільпо: гілка Сільпо без дедлайну і з 12-18 HTTP-запитами на кожне натискання
 
-- **Стан:** частково виправлено в [#1445](https://github.com/SkOrDs-02/sergeant/pull/1445) (змерджено 2026-10-08) (лишилось: кеш initialize-сесії, серверний кеш per user+query, мінімальна довжина запиту, 429 у breaker і Retry-After, ліміт розміру тіла MCP-відповіді)
+- **Стан:** виправлено: дедлайн у [#1445](https://github.com/SkOrDs-02/sergeant/pull/1445) (змерджено 2026-10-08), решта (кеш initialize-сесії, кеш per user+query на 60 с, мінімальна довжина запиту 3, 429 у breaker і Retry-After, стеля тіла MCP-відповіді 4 МіБ) у цьому PR
 - **Перевірка:** підтверджено · **Зусилля:** M · **Область:** server: Сільпо MCP / food-search
 - **Де:** apps/server/src/modules/nutrition/food-search.ts:146,214-234; apps/server/src/modules/silpo/foodSource.ts:464-518; apps/server/src/modules/silpo/mcpClient.ts:96-98,178-211,255-330,408-436
 - **Першопричина:** AbortSignal.timeout(8000) передається лише в OFF і USDA, а searchSilpoProducts стоїть у тому самому Promise.all без сигналу. Кожен callMcpTool робить initialize, notifications/initialized і tools/call з власними ретраями по 15 с, і етапи йдуть послідовно. 429 не відкриває breaker, Retry-After ігнорується, розмір відповіді не обмежено.

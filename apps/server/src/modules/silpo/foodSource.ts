@@ -523,6 +523,32 @@ function makeFetchSilpoSearch(
 // ────────────────────────────────── Orchestration ────────────────────────────
 
 /**
+ * Мінімальна довжина запиту до Сільпо (rel-22): два символи - це «хл» на
+ * шляху до «хліб», а кожне натискання коштує 3-5 запитів до спільного
+ * client_id. OFF і власні джерела від цього не страждають.
+ */
+export const SILPO_SEARCH_MIN_QUERY_LENGTH = 3;
+
+/**
+ * Серверний кеш пошуку (rel-22), ключ - користувач + нормалізований запит.
+ * Ключ ОБОВʼЯЗКОВО містить userId: видача залежить від філії/адреси
+ * підключеного акаунта, тож чужий запис іншій людині віддавати не можна.
+ * TTL 60 с консервативний: ціни й наявність у Сільпо змінюються, а виграш
+ * кешу - саме повтори того самого запиту (backspace, повторне натискання).
+ * Кешуємо лише успішні відповіді; збої не кешуються.
+ */
+const SEARCH_CACHE_TTL_MS = 60_000;
+const SEARCH_CACHE_MAX = 500;
+const searchCache = new Map<
+  string,
+  { products: SilpoSearchProduct[]; expiresAt: number }
+>();
+
+function searchCacheKey(userId: string, query: string): string {
+  return `${userId}\u0000${query.trim().toLowerCase().replace(/\s+/g, " ")}`;
+}
+
+/**
  * `GET /api/food-search` — Silpo as the last cascade source, ONLY for a
  * connected `userId`. Never throws: any guard/MCP failure logs a
  * `logger.warn` and resolves to `[]`, exactly like the existing
@@ -536,7 +562,15 @@ export async function searchSilpoProducts(
 ): Promise<SilpoSearchProduct[]> {
   try {
     if (!userId) return [];
+    if ([...query.trim()].length < SILPO_SEARCH_MIN_QUERY_LENGTH) return [];
     if (!(await isSilpoConnectedUser(userId, deps))) return [];
+
+    // Перевірка підключення стоїть ПЕРЕД кешем: відключений акаунт не
+    // отримує закешованої видачі.
+    const cacheKey = searchCacheKey(userId, query);
+    const cached = searchCache.get(cacheKey);
+    if (cached && cached.expiresAt > Date.now()) return cached.products;
+    if (cached) searchCache.delete(cacheKey);
 
     const call = await callWithFreshAccessToken(
       userId,
@@ -549,6 +583,19 @@ export async function searchSilpoProducts(
         kind: call.error.kind,
       });
       return [];
+    }
+    // Порожню видачу і видачу після спрацьованого дедлайну не кешуємо: фаза
+    // details ковтає збої, тож порожньо чи неповно може бути через збій, а не
+    // через відсутність товару.
+    if (call.data.length > 0 && !deps.signal?.aborted) {
+      if (searchCache.size >= SEARCH_CACHE_MAX) {
+        const oldest = searchCache.keys().next().value;
+        if (oldest !== undefined) searchCache.delete(oldest);
+      }
+      searchCache.set(cacheKey, {
+        products: call.data,
+        expiresAt: Date.now() + SEARCH_CACHE_TTL_MS,
+      });
     }
     return call.data;
   } catch (err) {
@@ -579,6 +626,7 @@ export async function lookupSilpoBarcode(
 
 // Re-exported for tests exercising internals without a live MCP call.
 export const __test__ = {
+  clearSearchCache: (): void => searchCache.clear(),
   toServingGrams,
   normalizeRawProduct,
   toSearchProduct,
