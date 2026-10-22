@@ -526,7 +526,7 @@ Live API (v8-v9-api.mjs). Preview of f3-mono-2000.csv returns 200, profile=mono,
 
 ### `ux-08` [medium] Фокус падає на &lt;body&gt; після закриття діалогів і дій: глобальний пошук, створення першої звички, readiness-аркуш, крок аркуша їжі, видалення запису, невдалий вхід
 
-- **Стан:** частково виправлено в [#1492](https://github.com/SkOrDs-02/sergeant/pull/1492) (змерджено 2026-10-09) (лишилось: запасні цілі фокуса для розмонтованих тригерів у HabitQuickCreate, ReadinessSheet, кроці AddMealSheet і видаленні запису; перенесення «Забули пароль?» у DOM)
+- **Стан:** виправлено в [#1492](https://github.com/SkOrDs-02/sergeant/pull/1492) (змерджено 2026-10-09) і в цьому PR (запасні цілі фокуса `returnFocusFallback` для HabitQuickCreate, ReadinessSheet, кроку AddMealSheet і видалення запису; «Забули пароль?» перенесено в DOM після поля пароля)
 - **Перевірка:** підтверджено · **Зусилля:** M · **Область:** web: a11y / керування фокусом
 - **Де:** apps/web/src/shared/hooks/useDialogFocusTrap.ts:89-91,195-205; apps/web/src/core/hub/search/HubSearch.tsx:55-58; apps/web/src/core/hub/search/useSearchEngine.ts:85-87; apps/web/src/core/auth/LoginForm.tsx:58-111; apps/web/src/modules/fizruk/pages/Workouts.tsx:472; routine HabitQuickCreate
 - **Першопричина:** useDialogFocusTrap запамʼятовує «попередній фокус» в ефекті, який виконується після власних автофокусів компонента. У HubSearch ефект useSearchEngine фокусує інпут раніше, тож пастка запамʼятовує сам інпут, який потім розмонтовується. Якщо тригер розмонтовано (порожній стан звичок, видалений запис), запасної цілі для фокуса немає. LoginForm на час сабміту робить сфокусовані поля disabled, тож після помилки фокус губиться.

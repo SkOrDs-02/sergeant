@@ -8,6 +8,7 @@ import { Button } from "@shared/components/ui/Button";
 import { Card } from "@shared/components/ui/Card";
 import { Input } from "@shared/components/ui/Input";
 import { searchFieldProps } from "@shared/lib/ui/searchFieldProps";
+import { focusFallbackProps } from "@shared/lib/ui/focusFallback";
 import { EmptyState, ModuleEmptyState } from "@shared/components/ui/EmptyState";
 import { messages } from "@shared/i18n/uk";
 import { sortHabitsByOrder } from "../../lib/habitOrder";
@@ -16,6 +17,7 @@ import {
   setHabitArchived,
   setHabitOrder,
 } from "../../lib/routineStorage";
+import { HABITS_FOCUS_FALLBACK } from "./focusFallback";
 import { HabitListItem } from "./HabitListItem";
 import type {
   Habit,
@@ -63,7 +65,13 @@ export function ActiveHabitsSection({
 
   return (
     <Card as="section" padding="md" className="space-y-3">
-      <SectionHeading as="h2" size="lg">
+      <SectionHeading
+        as="h2"
+        size="lg"
+        tabIndex={-1}
+        className="rounded-md outline-none focus-visible:ring-2 focus-visible:ring-focus/45 focus-visible:ring-offset-2 focus-visible:ring-offset-bg"
+        {...focusFallbackProps(HABITS_FOCUS_FALLBACK)}
+      >
         Активні звички
       </SectionHeading>
       {hasActive && (

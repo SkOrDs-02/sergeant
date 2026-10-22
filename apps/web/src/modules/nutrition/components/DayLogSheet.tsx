@@ -2,6 +2,7 @@
  * Last validated: 2026-08-07
  * Status: Active
  */
+import { focusFallbackProps } from "@shared/lib/ui/focusFallback";
 import type { Meal, MealTypeId } from "@sergeant/nutrition-domain";
 import { DayStrip } from "./DayStrip";
 import { VirtualMealList } from "./VirtualMealList";
@@ -55,7 +56,9 @@ export function DayLogSheet({
   return (
     <section
       aria-label={`Записи за ${selectedDate}`}
-      className="flex flex-col gap-4"
+      className="flex flex-col gap-4 rounded-xl outline-none focus-visible:ring-2 focus-visible:ring-focus/45 focus-visible:ring-offset-2 focus-visible:ring-offset-panel"
+      tabIndex={-1}
+      {...focusFallbackProps("nutrition-day-log")}
     >
       {/*
           Смуга стоїть НАД журналом, а не замість нього (анти-слоп П1,
