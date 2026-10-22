@@ -62,6 +62,12 @@ describe("ReadinessSheet", () => {
     expect(scaleButton.className).toContain("min-h-[44px]");
   });
 
+  it("підписи країв шкали описують radiogroup", () => {
+    render(<ReadinessSheet open onSubmit={vi.fn()} onSkip={vi.fn()} />);
+    const group = screen.getByRole("radiogroup", { name: "Сон" });
+    expect(group).toHaveAccessibleDescription(/погано.*добре/);
+  });
+
   it("початковий фокус на вмісті, не на «Закрити»", () => {
     render(<ReadinessSheet open onSubmit={vi.fn()} onSkip={vi.fn()} />);
     expect(document.activeElement).toHaveAttribute("data-autofocus");

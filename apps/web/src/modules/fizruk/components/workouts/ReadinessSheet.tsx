@@ -57,6 +57,7 @@ function ScaleRow({
         size="sm"
         className="grid grid-cols-5"
         ariaLabelledBy={labelId}
+        ariaDescribedBy={`${labelId}-edges`}
         value={value == null ? null : String(value)}
         onChange={(n) => onPick(Number(n))}
         items={SCALE.map((n) => ({
@@ -65,7 +66,10 @@ function ScaleRow({
           ariaLabel: `${label} ${n}`,
         }))}
       />
-      <div className="mt-1 flex justify-between text-style-caption text-subtle">
+      <div
+        id={`${labelId}-edges`}
+        className="mt-1 flex justify-between text-style-caption text-subtle"
+      >
         <span>{t.scaleLow}</span>
         <span>{t.scaleHigh}</span>
       </div>
