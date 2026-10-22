@@ -61,7 +61,13 @@ describe("pg/fizrukWorkouts schema snapshot", () => {
     // routine and 095 did for nutrition.
     expect(columnMap["id"]!.dataType).toBe("string");
     expect(columnMap["id"]!.columnType).toBe("PgText");
-    expect(columnMap["id"]!.primary).toBe(true);
+    expect(columnMap["id"]!.primary).toBe(false);
+    expect(columnMap["id"]!.notNull).toBe(true);
+    // data-01, міграція 162: PK складений `(user_id, id)`, `id` лишається NOT NULL.
+    expect(config.primaryKeys[0]!.columns.map((c) => c.name)).toEqual([
+      "user_id",
+      "id",
+    ]);
     expect(columnMap["id"]!.hasDefault).toBe(true);
 
     expect(columnMap["user_id"]!.dataType).toBe("string");
@@ -286,7 +292,13 @@ describe("pg/fizrukDailyLog schema snapshot", () => {
     // daily-log ids use `dl_${Date.now().toString(36)}_${crypto.randomUUID()}`
     // (see AI-DANGER comment on useDailyLog.ts's uid()), never a bare UUID.
     expect(columnMap["id"]!.columnType).toBe("PgText");
-    expect(columnMap["id"]!.primary).toBe(true);
+    expect(columnMap["id"]!.primary).toBe(false);
+    expect(columnMap["id"]!.notNull).toBe(true);
+    // data-01, міграція 162: PK складений `(user_id, id)`, `id` лишається NOT NULL.
+    expect(config.primaryKeys[0]!.columns.map((c) => c.name)).toEqual([
+      "user_id",
+      "id",
+    ]);
     expect(columnMap["id"]!.hasDefault).toBe(true);
 
     expect(columnMap["user_id"]!.dataType).toBe("string");
@@ -472,7 +484,13 @@ describe("pg/fizrukWorkoutTemplates schema snapshot", () => {
     );
 
     expect(columnMap["id"]!.columnType).toBe("PgText");
-    expect(columnMap["id"]!.primary).toBe(true);
+    expect(columnMap["id"]!.primary).toBe(false);
+    expect(columnMap["id"]!.notNull).toBe(true);
+    // data-01, міграція 162: PK складений `(user_id, id)`, `id` лишається NOT NULL.
+    expect(config.primaryKeys[0]!.columns.map((c) => c.name)).toEqual([
+      "user_id",
+      "id",
+    ]);
     expect(columnMap["id"]!.hasDefault).toBe(true);
 
     expect(columnMap["name"]!.notNull).toBe(true);

@@ -29,7 +29,9 @@ export function assertRowUserId(
 }
 
 /**
- * Канонічний guard для UUID-PK таблиць: чужий рядок, LWW, і все.
+ * Канонічний guard для таблиць із PK `(user_id, id)`: LWW, і все. Рядок, який
+ * знайшов SELECT, ЗАВЖДИ власний — запити звужені по `user_id` (міграція 162),
+ * тож гілки «чужий рядок -> fk_violation» тут немає.
  *
  * AI-DANGER: тут НЕМАЄ і не має бути перевірки
  * `deleted_at !== null && op.op !== "delete" → tombstoned`. Вона тут була і
@@ -60,13 +62,9 @@ export function assertRowUserId(
  */
 export function guardUuidPkApply(
   existing: ExistingUuidRow | undefined,
-  userId: string,
   clientTs: Date,
 ): AppliedStatus | null {
   if (!existing) return null;
-  if (existing.user_id !== userId) {
-    return { status: "rejected", reason: "fk_violation" };
-  }
   if (existing.updated_at.getTime() >= clientTs.getTime()) {
     return { status: "rejected", reason: "lww_conflict" };
   }
@@ -82,8 +80,8 @@ const OWNED_PARENT_SQL = {
  * Guard батьківського рядка для дочірніх sync-таблиць з ОДНОКОЛОНКОВИМ FK
  * (`fizruk_workout_items.workout_id`, `fizruk_workout_sets.workout_item_id`).
  *
- * Чому він потрібен. PK батьківських таблиць глобальний (`id` без `user_id`),
- * а FK `child.parent_id -> parent(id)` не знає про власника. Без цієї перевірки
+ * Чому він з'явився (до міграції 162). PK батьківських таблиць був глобальний
+ * (`id` без `user_id`), а FK `child.parent_id -> parent(id)` не знав про власника. Без цієї перевірки
  * користувач B міг записати власний item/set під ЧУЖЕ тренування A (досить
  * знати id): рядок несе `user_id = B`, тож apply його приймав, а каскад
  * `ON DELETE CASCADE` пізніше стирав дані B разом із батьком A, і підходи B
@@ -96,9 +94,11 @@ const OWNED_PARENT_SQL = {
  * `deleted_at` батька НЕ перевіряємо: soft-deleted батько лишається ВЛАСНИМ
  * рядком, а дитина, що доїхала після видалення батька, — звичайний LWW.
  *
- * Це тимчасовий шар: коли PK таблиць стане складеним `(user_id, id)` разом із
- * складеним FK (крок 2 `data-01`, двофазна міграція), перевірка стане
- * надлишковою, але нічого не ламатиме.
+ * Після міграції 162 PK батьківських таблиць складений `(user_id, id)`, а FK
+ * дитини теж складений (`(user_id, workout_id) -> fizruk_workouts(user_id, id)`),
+ * тож БД сама не пустить дитину під чужого батька. Guard лишається, бо дає
+ * чисту відповідь `fk_violation` замість `23503` -> `apply_failed`, і ловить
+ * гонку «дитина раніше за батька» тією ж відповіддю, що й раніше.
  */
 export async function guardParentOwned(
   client: PoolClient,

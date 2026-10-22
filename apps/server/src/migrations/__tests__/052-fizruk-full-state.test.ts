@@ -221,7 +221,11 @@ describe("052_fizruk_full_state migration", () => {
       expect(byName["note"]!.nullable).toBe("NO");
       expect(byName["deleted_at"]!.type).toBe("timestamp with time zone");
 
-      expect(await listPrimaryKey(pool, "fizruk_daily_log")).toEqual(["id"]);
+      // Міграція 162 (data-01): PK per-user, а не глобальний.
+      expect(await listPrimaryKey(pool, "fizruk_daily_log")).toEqual([
+        "id",
+        "user_id",
+      ]);
     },
     TIMEOUT_MS,
   );
@@ -574,10 +578,14 @@ describe("052_fizruk_full_state migration", () => {
       // and re-applied after 052's up.sql recreates them fresh as uuid
       // — else `after` would still be uuid while `before` (captured
       // post-097) is text.
+      // 162 (PK `(user_id, id)` + складені FK fizruk) сидить поверх 096:
+      // розмотується першим, накочується останнім.
+      await execSqlFile(pool, "162_sync_pk_per_user.down.sql");
       await execSqlFile(pool, "096_finyk_fizruk_pk_text.down.sql");
       await execSqlFile(pool, "052_fizruk_full_state.down.sql");
       await execSqlFile(pool, "052_fizruk_full_state.sql");
       await execSqlFile(pool, "096_finyk_fizruk_pk_text.sql");
+      await execSqlFile(pool, "162_sync_pk_per_user.sql");
 
       const after = {
         tables: await listFullStateTables(pool),

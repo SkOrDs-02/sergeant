@@ -476,7 +476,7 @@ export function isUniqueViolation(err: unknown): boolean {
  * Перед повтором відкочуємось до savepoint-а `op_apply` (його відкрив
  * викликач і він лишається відкритим до запису в журнал). Під READ COMMITTED
  * повторний SELECT уже бачить закомічений рядок переможця, тож далі працює
- * штатна гілка: `applied`, `lww_conflict` або `fk_violation`. Друга `23505` чи
+ * штатна гілка: `applied` або `lww_conflict`. Друга `23505` чи
  * будь-яка інша помилка летить до викликача й стає `apply_failed`, як і раніше.
  */
 export async function applyWithUniqueViolationRetry<T>(

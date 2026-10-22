@@ -141,25 +141,35 @@ export function planNote(value: unknown, ring: KeyRing): string | null {
 }
 
 interface TableSpec {
-  /** SELECT keyset-батча: $1 = останній id (або NULL), $2 = ліміт. */
+  /** SELECT keyset-батча: $1 = останній ключ (або NULL), $2 = ліміт. */
   select: string;
-  /** UPDATE: $1 = id, $2 = нове значення, $3 = старе значення. */
+  /** UPDATE: $1 = ключ рядка, $2 = нове значення, $3 = старе значення. */
   update: string;
 }
 
 // Hard Rule #1: `sync_op_log.id` — BIGSERIAL, pg віддає рядок. Скрипт лише
 // передає його назад як курсор і нічого не віддає в API, тож коерсія не
 // потрібна; порівняння робиться на боці БД (`$1::bigint`).
+// `fizruk_injuries` має PK `(user_id, id)` (міграція 162): той самий `id` живе в
+// кількох користувачів, тож курсор і UPDATE ідентифікують рядок ПАРОЮ. Пара
+// кодується одним текстовим ключем `user_id<US>id` (US = U+001F), щоб
+// `sweepTable` лишався generic: SELECT віддає його як `id`, а UPDATE
+// розбирає назад через `split_part`.
 const INJURIES_SPEC: TableSpec = {
-  select: `SELECT id, note AS value
+  select: `SELECT user_id || E'\x1f' || id AS id, note AS value
            FROM fizruk_injuries
            WHERE note <> ''
              AND note NOT LIKE 'enc:v1:%'
              AND note NOT LIKE 'enc:v2:%'
-             AND ($1::text IS NULL OR id > $1::text)
-           ORDER BY id
+             AND ($1::text IS NULL
+                  OR (user_id, id) > (split_part($1::text, E'\x1f', 1),
+                                      split_part($1::text, E'\x1f', 2)))
+           ORDER BY user_id, id
            LIMIT $2`,
-  update: `UPDATE fizruk_injuries SET note = $2 WHERE id = $1 AND note = $3`,
+  update: `UPDATE fizruk_injuries SET note = $2
+           WHERE user_id = split_part($1::text, E'\x1f', 1)
+             AND id = split_part($1::text, E'\x1f', 2)
+             AND note = $3`,
 };
 
 const OP_LOG_SPEC: TableSpec = {

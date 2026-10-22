@@ -90,7 +90,7 @@ function validRow(overrides: Record<string, unknown> = {}) {
 }
 
 describe("applyNutritionPantryEvents — вставка", () => {
-  it("вставляє подію через ON CONFLICT (id) DO NOTHING", async () => {
+  it("вставляє подію через ON CONFLICT (user_id, id) DO NOTHING", async () => {
     const fake = new FakeClient();
     const res = await applyNutritionPantryEvents(
       asClient(fake),
@@ -104,7 +104,9 @@ describe("applyNutritionPantryEvents — вставка", () => {
     expect(fake.queries[0]!.sql).toContain(
       "INSERT INTO nutrition_pantry_events",
     );
-    expect(fake.queries[0]!.sql).toContain("ON CONFLICT (id) DO NOTHING");
+    expect(fake.queries[0]!.sql).toContain(
+      "ON CONFLICT (user_id, id) DO NOTHING",
+    );
     // Ніякого SELECT-у «чи є вже рядок» і ніякого LWW-порівняння.
     expect(fake.queries[0]!.sql).not.toContain("SELECT");
     expect(fake.queries[0]!.sql).not.toContain("updated_at >=");
@@ -288,17 +290,19 @@ describe("applyNutritionPantryEvents — append-only інваріант", () => 
     expect(res).toEqual({ status: "rejected", reason: "not_found" });
   });
 
-  it("ретракція чужої події → fk_violation", async () => {
+  it("ретракція чужого події — not_found: lookup звужений по user_id", async () => {
     const fake = new FakeClient()
       .enqueue({ rows: [], rowCount: 0 })
-      .enqueue({ rows: [{ user_id: "someone-else" }] });
+      .enqueue({ rows: [] });
     const res = await applyNutritionPantryEvents(
       asClient(fake),
       op(validRow(), "delete"),
       USER,
       CLIENT_TS,
     );
-    expect(res).toEqual({ status: "rejected", reason: "fk_violation" });
+    expect(res).toEqual({ status: "rejected", reason: "not_found" });
+    expect(fake.queries[1]!.sql).toMatch(/WHERE id = \$1 AND user_id = \$2/);
+    expect(fake.queries[1]!.params).toEqual([validRow().id, USER]);
   });
 });
 
@@ -461,7 +465,7 @@ describe("applyNutritionPantryEvents — E-7 (конкурентні прист�
     expect(fake.queries).toHaveLength(2);
     for (const q of fake.queries) {
       expect(q.sql).not.toContain("lww");
-      expect(q.sql).toContain("ON CONFLICT (id) DO NOTHING");
+      expect(q.sql).toContain("ON CONFLICT (user_id, id) DO NOTHING");
     }
     // Обидві події лягли в журнал під власними id — жодна не перезаписала іншу.
     expect(fake.queries.map((q) => q.params[0])).toEqual([
@@ -491,34 +495,17 @@ describe("applyNutritionPantryEvents — E-7 (конкурентні прист�
     expect(retry).toEqual({ status: "applied" });
     // Дедуплікацію робить БД через ON CONFLICT — обидва запити однакові.
     expect(fake.queries[0]!.params[0]).toBe(fake.queries[1]!.params[0]);
-    expect(fake.queries[1]!.sql).toContain("ON CONFLICT (id) DO NOTHING");
+    expect(fake.queries[1]!.sql).toContain(
+      "ON CONFLICT (user_id, id) DO NOTHING",
+    );
   });
 
-  // `id` тут будується клієнтом детерміновано з pantry/item/kind/часу
-  // (див. `validRow`), тобто вгадуваний. До owner-guard-а конфлікт по
-  // такому id давав no-op і чесний `applied` — подія мовчки не доїжджала,
-  // а виглядало це як успіх.
-  it("на конфлікті id звіряє власника: чужий рядок → fk_violation", async () => {
+  // data-01: PK `(user_id, id)` (міграція 162). Конфлікт можливий лише з
+  // ВЛАСНИМ рядком, тож `rowCount === 0` — ідемпотентний повтор, а не чужий
+  // рядок: дочитувати власника більше нічого.
+  it("на конфлікті (user_id, id) — ідемпотентний applied без дочитування власника", async () => {
     const fake = new FakeClient();
     fake.enqueue({ rows: [], rowCount: 0 }); // ON CONFLICT DO NOTHING
-    fake.enqueue({ rows: [{ user_id: "someone-else" }] }); // owner-guard
-
-    const res = await applyNutritionPantryEvents(
-      asClient(fake),
-      op(validRow()),
-      USER,
-      CLIENT_TS,
-    );
-
-    expect(res).toEqual({ status: "rejected", reason: "fk_violation" });
-    expect(fake.queries).toHaveLength(2);
-    expect(fake.queries[1]!.sql).toContain("SELECT user_id");
-  });
-
-  it("на конфлікті id зі СВОЇМ рядком лишається ідемпотентним applied", async () => {
-    const fake = new FakeClient();
-    fake.enqueue({ rows: [], rowCount: 0 });
-    fake.enqueue({ rows: [{ user_id: USER }] });
 
     const res = await applyNutritionPantryEvents(
       asClient(fake),
@@ -528,20 +515,34 @@ describe("applyNutritionPantryEvents — E-7 (конкурентні прист�
     );
 
     expect(res).toEqual({ status: "applied" });
+    expect(fake.queries).toHaveLength(1);
+    expect(fake.queries[0]!.sql).toContain(
+      "ON CONFLICT (user_id, id) DO NOTHING",
+    );
   });
 
-  it("конфлікт без рядка (append-only таблиця) не вважається успіхом", async () => {
+  it("той самий id у двох користувачів: кожен пише власний рядок", async () => {
     const fake = new FakeClient();
-    fake.enqueue({ rows: [], rowCount: 0 });
-    fake.enqueue({ rows: [] });
+    const row = validRow();
 
-    const res = await applyNutritionPantryEvents(
+    const mine = await applyNutritionPantryEvents(
       asClient(fake),
-      op(validRow()),
+      op(row),
       USER,
       CLIENT_TS,
     );
+    const theirs = await applyNutritionPantryEvents(
+      asClient(fake),
+      op({ ...row, user_id: "user-2" }),
+      "user-2",
+      CLIENT_TS,
+    );
 
-    expect(res).toEqual({ status: "rejected", reason: "fk_violation" });
+    expect(mine).toEqual({ status: "applied" });
+    expect(theirs).toEqual({ status: "applied" });
+    expect(fake.queries.map((q) => [q.params[0], q.params[1]])).toEqual([
+      [row.id, USER],
+      [row.id, "user-2"],
+    ]);
   });
 });
