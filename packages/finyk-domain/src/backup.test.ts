@@ -3,6 +3,7 @@ import { describe, expect, it } from "vitest";
 import {
   DEFAULT_FINYK_MONTHLY_PLAN,
   FINYK_BACKUP_VERSION,
+  FINYK_BACKUP_NEWER_VERSION_MESSAGE,
   FINYK_FIELD_TO_STORAGE_KEY,
   normalizeFinykBackup,
 } from "./backup.js";
@@ -59,9 +60,41 @@ describe("normalizeFinykBackup", () => {
     expect(() => normalizeFinykBackup({ version: 0, budgets: [] })).toThrow(
       /Невідома версія бекапу/,
     );
-    expect(() => normalizeFinykBackup({ version: 1000, budgets: [] })).toThrow(
+    expect(() => normalizeFinykBackup({ version: 1.5, budgets: [] })).toThrow(
       /Невідома версія бекапу/,
     );
+  });
+
+  it("rejects a newer version than supported, up to 999 included", () => {
+    for (const version of [FINYK_BACKUP_VERSION + 1, 4, 999, 1000]) {
+      expect(() => normalizeFinykBackup({ version, budgets: [] })).toThrow(
+        FINYK_BACKUP_NEWER_VERSION_MESSAGE,
+      );
+    }
+    expect(
+      normalizeFinykBackup({ version: FINYK_BACKUP_VERSION, budgets: [] }),
+    ).toEqual({ budgets: [] });
+  });
+
+  it("rejects malformed array items before anything is written", () => {
+    const cases: Record<string, unknown[]> = {
+      budgets: [null],
+      subscriptions: ["x"],
+      manualExpenses: [{ amount: 1 }],
+      manualAssets: [[]],
+      manualDebts: [{ id: 5 }],
+      receivables: [{ id: "" }],
+      hiddenAccounts: [{ id: "a" }],
+      hiddenTxIds: [1],
+      excludedStatTxIds: [""],
+      merchantRules: [null],
+    };
+    for (const [field, items] of Object.entries(cases)) {
+      expect(
+        () => normalizeFinykBackup({ version: 3, [field]: items }),
+        field,
+      ).toThrow(new RegExp(`Некоректний запис у «${field}»`));
+    }
   });
 
   it("keeps arrays and drops undefined fields", () => {

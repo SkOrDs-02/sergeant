@@ -349,6 +349,16 @@ export function validateFizrukFullBackupPayload(
         Array.isArray(value) ||
         (isPlainObject(value) && Array.isArray(value[shape.wrapper]));
     if (!ok) throw corruptSliceError(label);
+    // Елементи зрізу-списку: екстрактори мовчки відкидають усе, що не обʼєкт,
+    // тож `[1, "x"]` «імпортувався» б як порожній зріз (аудит data-34).
+    if (shape !== "object") {
+      const list = Array.isArray(value)
+        ? value
+        : (value as Record<string, unknown[]>)[
+            (shape as { wrapper: string }).wrapper
+          ];
+      if (!(list ?? []).every(isPlainObject)) throw corruptSliceError(label);
+    }
     if (key === FIZRUK_BACKUP_SLICES.workouts && !workoutsNestedOk(value)) {
       throw corruptSliceError(label);
     }

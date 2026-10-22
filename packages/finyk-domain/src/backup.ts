@@ -16,6 +16,10 @@ import { FINYK_BACKUP_STORAGE_KEYS } from "./storageKeys.js";
 /** Версія формату експорту JSON (бекап). */
 export const FINYK_BACKUP_VERSION = 3;
 
+/** Текст відмови для файлу з версією, новішою за {@link FINYK_BACKUP_VERSION}. */
+export const FINYK_BACKUP_NEWER_VERSION_MESSAGE =
+  "Файл з новішої версії застосунку, онови сторінку";
+
 /**
  * Default monthly-plan payload used when a backup doesn't carry one.
  * Mirrors the web default used across FinykApp / Budgets.
@@ -93,6 +97,45 @@ function needObj(
   return v as Record<string, unknown>;
 }
 
+/** Поля-масиви, де кожен елемент це рядок-id. */
+const STRING_ITEM_FIELDS: ReadonlySet<string> = new Set([
+  "hiddenAccounts",
+  "hiddenTxIds",
+  "excludedStatTxIds",
+]);
+
+/**
+ * Типи елементів масивів до запису (аудит 2026-10-01, data-34). Нижче за
+ * течією `blobsFromArray` / `idsFromArray` мовчки відкидають усе, що не
+ * схоже на рядок із рядковим `id`, тож без цієї перевірки зіпсований елемент
+ * зникав би з відновлених даних без жодної помилки.
+ */
+function checkArrayItems(field: string, items: unknown[]): void {
+  const bad = new Error(`Некоректний запис у «${field}»`);
+  if (STRING_ITEM_FIELDS.has(field)) {
+    if (items.some((t) => typeof t !== "string" || t.length === 0)) throw bad;
+    return;
+  }
+  if (field === "merchantRules") {
+    // Правила мерчантів чистить власний санітайзер; тут лише форма елемента.
+    if (items.some((r) => !r || typeof r !== "object" || Array.isArray(r))) {
+      throw bad;
+    }
+    return;
+  }
+  for (const row of items) {
+    if (
+      !row ||
+      typeof row !== "object" ||
+      Array.isArray(row) ||
+      typeof (row as { id?: unknown }).id !== "string" ||
+      (row as { id: string }).id.length === 0
+    ) {
+      throw bad;
+    }
+  }
+}
+
 /**
  * Перевіряє та нормалізує обʼєкт бекапу для застосування в сховище.
  * Підтримує version 1 (без категорій/сплітів) і 2 (повний набір).
@@ -107,8 +150,13 @@ export function normalizeFinykBackup(parsed: unknown): FinykBackup {
   }
 
   const version = typeof obj["version"] === "number" ? obj["version"] : 1;
-  if (version < 1 || version > 999) {
+  if (!Number.isInteger(version) || version < 1) {
     throw new Error("Невідома версія бекапу");
+  }
+  // Файл новішої версії читати «по-старому» не можна: невідомі поля мовчки
+  // втратяться (аудит 2026-10-01, data-34). Відхиляємо до будь-якого запису.
+  if (version > FINYK_BACKUP_VERSION) {
+    throw new Error(FINYK_BACKUP_NEWER_VERSION_MESSAGE);
   }
 
   const out: FinykBackup = {};
@@ -127,7 +175,10 @@ export function normalizeFinykBackup(parsed: unknown): FinykBackup {
   ] as const;
   for (const field of ARRAY_FIELDS) {
     const v = needArr(obj[field], field);
-    if (v) out[field] = v;
+    if (v) {
+      checkArrayItems(field, v);
+      out[field] = v;
+    }
   }
 
   const cash = obj["cashOnHand"];
