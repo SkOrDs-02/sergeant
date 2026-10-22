@@ -15,6 +15,7 @@
  * `fizruk_workouts_mode=log`) — the same surface the resume-CTA uses.
  */
 
+import { Button } from "@shared/components/ui/Button";
 import { Card } from "@shared/components/ui/Card";
 import { SectionHeading } from "@shared/components/ui/SectionHeading";
 import { formatDayKeyUk } from "@shared/lib/time/dayKeyLabel";
@@ -78,18 +79,14 @@ export function RecentWorkoutsSection({
             Останні тренування
           </SectionHeading>
           {recent.length > 0 ? (
-            <button
-              type="button"
+            <Button
+              variant="text"
+              size="sm"
               onClick={onSeeAll}
-              className="inline-flex items-center gap-0.5 text-style-caption text-text hover:underline active:opacity-70 rounded-lg focus:outline-none focus-visible:ring-2 focus-visible:ring-focus/45 focus-visible:ring-offset-2 focus-visible:ring-offset-bg"
               aria-label="Усі тренування"
             >
-              {/* Без гліфа «→»: типографічна стрілка бралася з системного
-                  шрифта — власна метрика й базова лінія на кожній ОС, повз
-                  розмірний токен. Той самий прохід, що зняв 30 гліфів зі
-                  слотів іконок. */}
               Усі
-            </button>
+            </Button>
           ) : null}
         </div>
 

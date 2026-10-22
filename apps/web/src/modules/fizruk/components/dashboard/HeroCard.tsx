@@ -117,8 +117,6 @@ export interface HeroCardProps {
   readonly recoverByDate: Readonly<Record<string, string | null>>;
   /** Тап по рядку групи → відкрити атлас, сфокусований на цій групі (рішення 4). */
   readonly onOpenAtlas: (atlasId: string) => void;
-  /** Invoked for the primary CTA on the `active` state. */
-  readonly onResume: () => void;
   /** Invoked for the primary CTA on the `today` state. */
   readonly onStartToday: () => void;
   /** Invoked for the primary CTA on the `upcoming` state. */
@@ -163,12 +161,7 @@ export function HeroCard(props: HeroCardProps) {
   switch (state.kind) {
     case "active":
       return (
-        <ActiveState
-          state={state}
-          kicker={kicker}
-          onResume={props.onResume}
-          cornerSlot={cornerSlot}
-        />
+        <ActiveState state={state} kicker={kicker} cornerSlot={cornerSlot} />
       );
     case "today":
       return (

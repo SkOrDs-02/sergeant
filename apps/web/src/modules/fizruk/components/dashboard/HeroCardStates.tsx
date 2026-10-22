@@ -177,15 +177,18 @@ function HeroStateLabel({ children }: { readonly children: ReactNode }) {
   );
 }
 
+/**
+ * Без власної кнопки «Продовжити»: під час активного тренування ту саму дію
+ * вже несе кнопка в куті модуля, а дві однакові дії на екрані сперечались
+ * за головну (інвентар v3.1, Б3).
+ */
 export function ActiveState({
   state,
   kicker,
-  onResume,
   cornerSlot,
 }: {
   readonly state: Extract<HeroCardState, { kind: "active" }>;
   readonly kicker: HeroKickerInfo;
-  readonly onResume: () => void;
   readonly cornerSlot?: ReactNode;
 }) {
   const elapsedSec = useElapsedSec(state.startedAtIso);
@@ -214,14 +217,6 @@ export function ActiveState({
           ? `${state.itemsCount} ${pluralExercises(state.itemsCount)} у сесії`
           : messages.fizruk.hero.openSession}
       </p>
-      <Button
-        variant="outline"
-        tone="neutral"
-        onClick={onResume}
-        aria-label="Повернутись до активного тренування"
-      >
-        {messages.fizruk.resumeWorkoutFab}
-      </Button>
     </HeroShell>
   );
 }
