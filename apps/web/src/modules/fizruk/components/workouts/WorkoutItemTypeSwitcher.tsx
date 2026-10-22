@@ -4,7 +4,7 @@
  */
 
 import { SectionHeading } from "@shared/components/ui/SectionHeading";
-import { FizrukChoiceList } from "../FizrukChoiceList";
+import { ChoiceGroup } from "@shared/components/ui/Choice";
 import { messages } from "@shared/i18n/uk";
 import type { WorkoutItem } from "@sergeant/fizruk-domain";
 
@@ -81,7 +81,8 @@ export function WorkoutItemTypeSwitcher({
       <SectionHeading as="div" size="xs" variant="fizruk" className="pt-2">
         {ts.heading}
       </SectionHeading>
-      <FizrukChoiceList
+      <ChoiceGroup
+        className="grid grid-cols-3 pb-3 pt-2"
         disabled={isReadOnly}
         ariaLabel={ts.ariaLabel}
         value={item.type || "strength"}
@@ -89,19 +90,16 @@ export function WorkoutItemTypeSwitcher({
           {
             value: "strength",
             label: ts.strengthLabel,
-            title: ts.strengthTitle,
             ariaLabel: ts.strengthAriaLabel,
           },
           {
             value: "time",
             label: ts.timeLabel,
-            title: ts.timeTitle,
             ariaLabel: ts.timeAriaLabel,
           },
           {
             value: "distance",
             label: ts.distanceLabel,
-            title: ts.distanceTitle,
             ariaLabel: ts.distanceAriaLabel,
           },
         ]}

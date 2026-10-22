@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { cn } from "@shared/lib/ui/cn";
 import { Button } from "@shared/components/ui/Button";
-import { RoutineChoiceList } from "../../modules/routine/components/settings/RoutineChoiceList";
+import { ChoiceGroup } from "@shared/components/ui/Choice";
 import { TimeField } from "@shared/components/ui/TimeField";
 import { useToast } from "@shared/hooks/useToast";
 import { requestNotificationPermission } from "@shared/hooks/useModuleReminder";
@@ -203,9 +203,11 @@ export function NotificationsSection() {
               ? "Нагадування вимкнені: ні звички, ні тренування, ні Сержант не надсилатимуть сповіщень."
               : "Якщо приводів більше, обʼєдную їх в одне сповіщення. Жоден не загубиться."}
           </p>
-          <RoutineChoiceList
-            label="Нагадувань на день, не більше"
-            options={CAP_OPTIONS}
+          <ChoiceGroup
+            size="sm"
+            className="mt-2"
+            ariaLabel="Нагадувань на день, не більше"
+            items={CAP_OPTIONS}
             value={String(pushDailyCap.value)}
             onChange={(next) => void pushDailyCap.set(Number(next))}
           />

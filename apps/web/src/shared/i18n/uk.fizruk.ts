@@ -327,13 +327,10 @@ export const fizrukPageMessages = {
     heading: "Тип",
     ariaLabel: "Тип вправи",
     strengthLabel: "Силова",
-    strengthTitle: "Силова (кг × повтори × підходи)",
     strengthAriaLabel: "Силова: кг × повтори × підходи",
     timeLabel: "Час",
-    timeTitle: "Час (секунди)",
     timeAriaLabel: "Час: секунди",
     distanceLabel: "Дист",
-    distanceTitle: "Дистанція (метри) + час",
     distanceAriaLabel: "Дистанція: метри та час",
   },
   // Голосовий ввід підходу. Раніше невдалий розбір виходив мовчки: ні

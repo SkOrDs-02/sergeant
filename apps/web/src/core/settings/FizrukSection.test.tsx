@@ -60,11 +60,11 @@ describe("FizrukSection", () => {
     });
     const pressed = within(group)
       .getAllByRole("radio")
-      .filter((b) => (b as HTMLInputElement).checked);
+      .filter((b) => b.getAttribute("aria-checked") === "true");
 
     expect(pressed).toHaveLength(1);
     expect(pressed[0]).toBeChecked();
-    expect(pressed[0]).toHaveAttribute("value", "120");
+    expect(pressed[0]).toHaveTextContent("120с");
   });
 
   // Другий бік того самого: без назви групи ряд «30с 60с 90с 120с 180с»
