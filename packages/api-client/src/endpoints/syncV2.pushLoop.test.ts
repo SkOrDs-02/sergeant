@@ -863,6 +863,37 @@ describe("runSyncEnginePushOnce — mixed batch", () => {
   });
 });
 
+describe("runSyncEnginePushOnce — server retry status (data-18)", () => {
+  it("status=retry піднімає звичайний retry без rejected, з причиною в last_error", async () => {
+    const { deps, drain, push, planRetry, markRetry, markRejected } =
+      makeDeps();
+    drain.mockResolvedValueOnce([makeRow({ id: 1, idempotencyKey: IDEM_A })]);
+    push.mockResolvedValueOnce({
+      accepted: 0,
+      last_op_id: 0,
+      results: [
+        {
+          idempotency_key: IDEM_A,
+          status: "retry",
+          reason: "deadlock_detected",
+        },
+      ],
+    });
+
+    const out = await runSyncEnginePushOnce(deps, { limit: 100 });
+
+    expect(planRetry).toHaveBeenCalledWith(
+      0,
+      NOW,
+      "server_retry:deadlock_detected",
+    );
+    expect(markRetry).toHaveBeenCalledTimes(1);
+    expect(markRejected).not.toHaveBeenCalled();
+    expect(out.retried).toBe(1);
+    expect(out.rejected).toBe(0);
+  });
+});
+
 describe("runSyncEnginePushOnce — clock invariants", () => {
   it("samples `now` exactly once per tick and threads it everywhere", async () => {
     const { deps, drain, push, planRetry, now } = makeDeps();

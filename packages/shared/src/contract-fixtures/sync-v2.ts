@@ -43,7 +43,7 @@
  *  `packages/api-client/src/endpoints/syncV2.ts`. */
 interface SyncV2OpResult {
   idempotency_key: string;
-  status: "applied" | "duplicate" | "rejected";
+  status: "applied" | "duplicate" | "rejected" | "retry";
   reason?: string;
 }
 interface SyncV2PushResponseShape {
