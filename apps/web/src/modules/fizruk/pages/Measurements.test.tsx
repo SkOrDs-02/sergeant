@@ -275,13 +275,24 @@ describe("Measurements page", () => {
       render(<Measurements />);
       fireEvent.click(screen.getByText("+1 ще"));
       expect(screen.getByText(/Талія: 85/)).toBeInTheDocument();
-      expect(screen.getByText("Згорнути")).toBeInTheDocument();
+      expect(screen.queryByText("+1 ще")).not.toBeInTheDocument();
+      expect(
+        screen.getByRole("button", {
+          expanded: true,
+          name: /показники запису/,
+        }),
+      ).toBeInTheDocument();
     });
 
-    it("collapses back to the 4-field summary when Згорнути is clicked", () => {
+    it("collapses back to the 4-field summary when the chevron is clicked", () => {
       render(<Measurements />);
       fireEvent.click(screen.getByText("+1 ще"));
-      fireEvent.click(screen.getByText("Згорнути"));
+      fireEvent.click(
+        screen.getByRole("button", {
+          expanded: true,
+          name: /показники запису/,
+        }),
+      );
       expect(screen.getByText("+1 ще")).toBeInTheDocument();
       expect(screen.queryByText(/Талія: 85/)).not.toBeInTheDocument();
     });

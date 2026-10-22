@@ -26,6 +26,7 @@ import {
   type MeasurementEntry,
   type MeasurementFieldId,
 } from "../../hooks/useMeasurements";
+import { FIELD_LABEL } from "@shared/components/ui/Input";
 import { Card } from "@shared/components/ui/Card";
 
 // F3: runtime range gate — mirrors <input min max> attributes so a
@@ -46,12 +47,7 @@ const measurementSchema = z.object(
 const inp =
   "input-focus-fizruk w-full h-11 rounded-lg border border-line bg-panelHi px-4 text-text";
 
-// Field-caption styling for the measurements grid. This is a genuine form
-// <label> (htmlFor/id bound below), not a narrative eyebrow, so the
-// uppercase + tracking combo is intentional here.
-const lbl =
-  // eslint-disable-next-line sergeant-design/no-raw-type-size -- перенесено дослівно з `Measurements.tsx` разом із формою; це справжній form-label (htmlFor/id), і його типографіку не змінюємо в PR, який про прогресивне розкриття полів.
-  "px-1 block text-xs uppercase tracking-wider font-bold text-text";
+const lbl = `${FIELD_LABEL} block px-1`;
 
 // V-9: the 3 most-checked metrics stay visible without an extra tap; the
 // remaining 11 (limb girths etc.) collapse behind "Більше полів". Order

@@ -5,6 +5,7 @@
 import { useState } from "react";
 import { SectionHeading } from "@shared/components/ui/SectionHeading";
 import { Button } from "@shared/components/ui/Button";
+import { MorphChevron } from "@shared/components/ui/MorphChevron";
 import { messages } from "@shared/i18n/uk";
 import { cn } from "@shared/lib/ui/cn";
 import { captureException } from "../../../core/observability/sentry";
@@ -223,19 +224,18 @@ export function Programs({
                         </button>
                       </>
                     )}
-                    <button
-                      type="button"
-                      className="focus-ring py-2.5 px-4 rounded-lg border border-line text-subtle text-style-label hover:text-text hover:bg-panelHi transition-colors"
+                    <Button
+                      variant="text"
+                      className="gap-2"
                       onClick={() =>
                         setExpandedProgram(isExpanded ? null : prog.id)
                       }
                       aria-expanded={isExpanded}
                       aria-controls={detailsId}
                     >
-                      {isExpanded
-                        ? messages.fizruk.programs.collapseDetails
-                        : messages.fizruk.programs.details}
-                    </button>
+                      {messages.fizruk.programs.details}
+                      <MorphChevron open={isExpanded} className="text-subtle" />
+                    </Button>
                   </div>
                 </div>
 

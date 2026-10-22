@@ -243,7 +243,7 @@ export function QuickStartSheet({
       title="Підібрати вправи"
       description={
         selectedCount > 0
-          ? `Обрано: ${selectedCount} · натисни «Почати», щоб запустити таймер.`
+          ? `Позначено: ${selectedCount} · натисни «Почати», щоб запустити таймер.`
           : "Познач хоча б одну вправу, таймер запуститься після старту."
       }
       closeLabel="Закрити підбір"

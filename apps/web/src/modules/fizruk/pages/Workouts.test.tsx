@@ -594,8 +594,8 @@ describe("Workouts page — log view", () => {
       }) as unknown as ReturnType<typeof useWorkoutsOrchestrator>,
     );
     renderWorkouts();
-    fireEvent.click(screen.getByRole("button", { name: "Сон 4" }));
-    fireEvent.click(screen.getByRole("button", { name: "Мʼязи 2" }));
+    fireEvent.click(screen.getByRole("radio", { name: "Сон 4" }));
+    fireEvent.click(screen.getByRole("radio", { name: "Мʼязи 2" }));
     fireEvent.click(screen.getByRole("button", { name: "Готово" }));
 
     expect(updateWorkout).toHaveBeenCalledWith("w1", {
