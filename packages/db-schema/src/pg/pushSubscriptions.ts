@@ -12,6 +12,11 @@ export const pushSubscriptions = pgTable(
     endpoint: text().notNull().unique(),
     p256dh: text().notNull(),
     auth: text().notNull(),
+    // Міграція 161 (priv-04): id сесії Better Auth, з якої зареєстровано
+    // підписку. Завершення сесії soft-delete-ить її підписки. NULL - рядки,
+    // зареєстровані до міграції. Без FK: рядок сесії видаляється, підписка
+    // лишається soft-deleted.
+    sessionId: text("session_id"),
     createdAt: timestamp("created_at", { withTimezone: true })
       .notNull()
       .defaultNow(),
