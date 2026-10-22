@@ -50,6 +50,7 @@ describe("HabitForm focus stability", () => {
 
   it("closes the icon picker on Escape (keyboard parity with click-outside)", () => {
     render(<Harness />);
+    fireEvent.click(screen.getByRole("button", { name: /Більше опцій/ }));
 
     const toggle = screen.getByRole("button", { name: "Обрати іконку звички" });
     fireEvent.click(toggle);

@@ -105,15 +105,15 @@ describe("HabitForm – advanced options disclosure", () => {
     expect(screen.getByLabelText(/Початок/)).toBeInTheDocument();
   });
 
-  it("keeps advanced section open while editing even after 'Менше опцій'", () => {
+  it("opens advanced section while editing and lets the user collapse it", () => {
     render(<Harness editingId="h1" />);
-    expect(
-      screen.getByRole("button", { name: /Менше опцій/ }),
-    ).toBeInTheDocument();
-    fireEvent.click(screen.getByRole("button", { name: /Менше опцій/ }));
+    const toggle = screen.getByRole("button", { name: /Більше опцій/ });
+    expect(toggle).toHaveAttribute("aria-expanded", "true");
+    fireEvent.click(toggle);
     // Collapsing is allowed; user can re-expand without losing the draft.
+    expect(toggle).toHaveAttribute("aria-expanded", "false");
     expect(screen.queryByLabelText(/Початок/)).toBeNull();
-    fireEvent.click(screen.getByRole("button", { name: /Більше опцій/ }));
+    fireEvent.click(toggle);
     expect(screen.getByLabelText(/Початок/)).toBeInTheDocument();
   });
 
@@ -250,8 +250,19 @@ describe("HabitForm – name input interaction", () => {
 });
 
 describe("HabitForm – emoji picker interaction", () => {
-  it("opens the icon picker when the toggle button is clicked", () => {
+  it("keeps the icon picker behind «Більше опцій», not next to the name", () => {
     render(<Harness />);
+    expect(
+      screen.queryByRole("button", { name: "Обрати іконку звички" }),
+    ).toBeNull();
+    fireEvent.click(screen.getByRole("button", { name: /Більше опцій/ }));
+    expect(
+      screen.getByRole("button", { name: "Обрати іконку звички" }),
+    ).toBeInTheDocument();
+  });
+
+  it("opens the icon picker when the toggle button is clicked", () => {
+    render(<Harness editingId="h1" />);
     fireEvent.click(
       screen.getByRole("button", { name: "Обрати іконку звички" }),
     );
@@ -261,7 +272,7 @@ describe("HabitForm – emoji picker interaction", () => {
   });
 
   it("selects an icon and closes the picker", () => {
-    render(<Harness />);
+    render(<Harness editingId="h1" />);
     fireEvent.click(
       screen.getByRole("button", { name: "Обрати іконку звички" }),
     );
