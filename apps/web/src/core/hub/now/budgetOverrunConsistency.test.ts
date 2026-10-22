@@ -11,6 +11,7 @@
  */
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { renderHook } from "@testing-library/react";
+import { formatNumberUk } from "@sergeant/shared";
 import {
   __setFinykSqliteStateCacheForTests,
   clearFinykSqliteCache,
@@ -77,8 +78,10 @@ describe("стан ліміту: хаб-картка, рекомендація �
 
     const recs = generateRecommendations();
     const over = recs.find((r) => r.id === "budget_over_food");
+    // Рекомендація показує суму з копійками (`maximumFractionDigits: 2`),
+    // тож 807,5 − 500 = «307,5 ₴», а не округлені 308.
     expect(over?.title).toContain(
-      `перевищено на ${Math.round(expected.exceededBy)} ₴`,
+      `перевищено на ${formatNumberUk(expected.exceededBy, { maximumFractionDigits: 2 })} ₴`,
     );
 
     const { result } = renderHook(() =>
