@@ -27,7 +27,7 @@ export function FizrukSection() {
               </h4>
               <ChoiceGroup
                 size="sm"
-                className="mt-2 grid grid-cols-5"
+                className="mt-2"
                 ariaLabel={label}
                 value={String(typedSettings[cat])}
                 items={[30, 60, 90, 120, 180].map((sec) => ({
