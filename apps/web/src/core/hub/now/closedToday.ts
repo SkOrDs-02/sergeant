@@ -153,9 +153,13 @@ function fizrukClosed(todayKey: string): ClosedTodayItem | null {
   if (fizruk.refreshedAt === null) return null;
   const today = fizruk.workouts.filter((w) => {
     if (!w.endedAt) return false;
-    const ended = new Date(w.endedAt);
+    // День тренування — за ПОЧАТКОМ (як у Звітах), а не за часом закриття:
+    // ретро-сесію чи забуте тренування, закрите «сьогодні», не можна
+    // видавати за сьогоднішнє (аудит 2026-10-01, data-37).
+    const started = new Date(w.startedAt);
     return (
-      Number.isFinite(ended.getTime()) && dateKeyFromDate(ended) === todayKey
+      Number.isFinite(started.getTime()) &&
+      dateKeyFromDate(started) === todayKey
     );
   });
   if (today.length === 0) return null;

@@ -10,6 +10,7 @@ import type {
 import { matchesExerciseLocation } from "@sergeant/fizruk-domain/data";
 import { deviceDayKey, pluralUa } from "@sergeant/shared";
 import type { LastExerciseItem } from "./Workouts.types";
+import { MAX_PLAUSIBLE_SESSION_MS } from "../lib/sessionDuration";
 
 /**
  * Render order for primary muscle groups in the catalog browser.
@@ -270,7 +271,7 @@ export interface PastWorkoutTimes {
  * довше, — не тренування через північ, а описка в одному з полів, і форма
  * має сказати саме це.
  */
-const MAX_ROLLOVER_SESSION_MS = 12 * 60 * 60 * 1000;
+const MAX_ROLLOVER_SESSION_MS = MAX_PLAUSIBLE_SESSION_MS;
 
 /** `YYYY-MM-DD` + `HH:MM` → локальний `datetime-local`-рядок. */
 function joinLocal(dateKey: string, time: string): string {
