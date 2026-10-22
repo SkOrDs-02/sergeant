@@ -33,7 +33,7 @@ import {
   WorkoutSetRow,
 } from "./WorkoutSetRow";
 import { buildTypeSwitchPatch } from "./WorkoutItemTypeSwitcher";
-import { FizrukChoiceList } from "../FizrukChoiceList";
+import { ChoiceGroup } from "@shared/components/ui/Choice";
 import { messages } from "@shared/i18n/uk";
 
 export type WorkoutItemCardProps = {
@@ -179,26 +179,24 @@ export function WorkoutItemCard({
 
       {showTypeSwitcher && (
         <div className="mt-2">
-          <FizrukChoiceList
+          <ChoiceGroup
+            className="grid grid-cols-3"
             ariaLabel={`${messages.fizruk.typeSwitcher.ariaLabel}: ${it.nameUk}`}
             value={it.type || "strength"}
             items={[
               {
                 value: "strength",
                 label: messages.fizruk.typeSwitcher.strengthLabel,
-                title: messages.fizruk.typeSwitcher.strengthTitle,
                 ariaLabel: messages.fizruk.typeSwitcher.strengthAriaLabel,
               },
               {
                 value: "time",
                 label: messages.fizruk.typeSwitcher.timeLabel,
-                title: messages.fizruk.typeSwitcher.timeTitle,
                 ariaLabel: messages.fizruk.typeSwitcher.timeAriaLabel,
               },
               {
                 value: "distance",
                 label: messages.fizruk.typeSwitcher.distanceLabel,
-                title: messages.fizruk.typeSwitcher.distanceTitle,
                 ariaLabel: messages.fizruk.typeSwitcher.distanceAriaLabel,
               },
             ]}

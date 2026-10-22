@@ -17,6 +17,8 @@ import {
 import {
   BOTTOM_NAV_INSET_VAR,
   SHEET_FOOTER_INSET_VAR,
+  TOAST_INSET_VAR,
+  useBottomInsetVar,
   WORKOUT_BANNER_INSET_VAR,
 } from "@shared/hooks/useBottomInsetVar";
 import { cn } from "@shared/lib/ui/cn";
@@ -384,9 +386,12 @@ export function ToastContainer() {
   // 200 мс ставав чотирирядковим, а потім знову трирядковим — четвертий
   // тост блимав.
   const visible = toasts.slice(0, MAX_VISIBLE_TOASTS);
+  const trayRef = useRef<HTMLDivElement | null>(null);
+  useBottomInsetVar(trayRef, TOAST_INSET_VAR, visible.length > 0);
 
   const tray = (
     <div
+      ref={trayRef}
       // Bottom-anchored above the bottom-nav, the optional
       // `ActiveWorkoutBanner`, the footer of an open `Sheet` and the iOS
       // home-indicator safe-area.

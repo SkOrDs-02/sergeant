@@ -109,7 +109,6 @@ vi.mock("../components/dashboard/HeroCard", () => ({
     streakWeeks,
     weeklyWorkoutsCount,
     onOpenAtlas,
-    onResume,
     onStartToday,
     onOpenPlan,
     onOpenTemplates,
@@ -121,7 +120,6 @@ vi.mock("../components/dashboard/HeroCard", () => ({
     streakWeeks: number;
     weeklyWorkoutsCount: number;
     onOpenAtlas: (atlasId: string) => void;
-    onResume: () => void;
     onStartToday: () => void;
     onOpenPlan: () => void;
     onOpenTemplates: () => void;
@@ -132,9 +130,6 @@ vi.mock("../components/dashboard/HeroCard", () => ({
       <span data-testid="hero-today">{today}</span>
       <span data-testid="hero-streak-weeks">{streakWeeks}</span>
       <span data-testid="hero-weekly-workouts">{weeklyWorkoutsCount}</span>
-      <button type="button" data-testid="hero-resume" onClick={onResume}>
-        Resume
-      </button>
       <button
         type="button"
         data-testid="hero-start-today"
@@ -597,18 +592,6 @@ describe("Dashboard extended coverage", () => {
 });
 
 describe("Dashboard — navigation callbacks", () => {
-  // The old three-tile streak/week strip below the hero is gone (спека
-  // `fizruk-hero-recovery-bars.md` рішення 3); its "Тренування" chip's
-  // target — `onNavigate("workouts")` with no active workout — is now
-  // exercised through the hero's own resume CTA, which used to hit only the
-  // active-workout branch (see "deep-links to the active workout route"
-  // below).
-  it("calls onNavigate('workouts') via HeroCard resume button when there is no active workout", () => {
-    render(<Dashboard {...defaultProps} />);
-    fireEvent.click(screen.getByTestId("hero-resume"));
-    expect(mockNavigate).toHaveBeenCalledWith("workouts");
-  });
-
   // `openBody`/`onOpenProgress` were call sites owned only by that old
   // strip; the readiness row's navigation target became `onOpenAtlas`
   // (рішення 4) — hero rows now open the atlas focused on the tapped group
@@ -618,31 +601,6 @@ describe("Dashboard — navigation callbacks", () => {
     render(<Dashboard {...defaultProps} />);
     fireEvent.click(screen.getByTestId("hero-open-atlas"));
     expect(mockNavigate).toHaveBeenCalledWith("atlas/chest");
-  });
-
-  it("deep-links to the active workout route via HeroCard resume button", () => {
-    vi.mocked(useActiveFizrukWorkout).mockReturnValueOnce("w-active");
-    vi.mocked(useWorkouts).mockReturnValueOnce({
-      workouts: [
-        {
-          id: "w-active",
-          startedAt: "2026-06-04T08:00:00Z",
-          endedAt: null,
-          items: [{ id: "i1" }],
-          groups: [],
-          warmup: null,
-          cooldown: null,
-          note: "",
-        },
-      ],
-      loaded: true,
-      createWorkout: vi.fn(),
-      addItem: vi.fn(),
-    } as unknown as ReturnType<typeof useWorkouts>);
-
-    render(<Dashboard {...defaultProps} />);
-    fireEvent.click(screen.getByTestId("hero-resume"));
-    expect(mockNavigate).toHaveBeenCalledWith("workout/w-active");
   });
 
   it("calls onNavigate('workouts') via HeroCard open-plan button", () => {

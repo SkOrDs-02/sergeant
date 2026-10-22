@@ -48,6 +48,8 @@ interface ChoiceGroupBaseProps<V extends string> {
   size?: ChoiceSize | undefined;
   ariaLabel?: string | undefined;
   ariaLabelledBy?: string | undefined;
+  /** Підказка до всієї групи, напр. підписи країв шкали. */
+  ariaDescribedBy?: string | undefined;
   disabled?: boolean | undefined;
   className?: string | undefined;
 }
@@ -172,6 +174,7 @@ export function ChoiceGroup<V extends string = string>(
     size = "md",
     ariaLabel,
     ariaLabelledBy,
+    ariaDescribedBy,
     disabled = false,
     className,
   } = props;
@@ -196,6 +199,7 @@ export function ChoiceGroup<V extends string = string>(
         role="group"
         aria-label={ariaLabel}
         aria-labelledby={ariaLabelledBy}
+        aria-describedby={ariaDescribedBy}
         aria-disabled={disabled || undefined}
         className={groupClass}
       >
@@ -267,6 +271,7 @@ export function ChoiceGroup<V extends string = string>(
       role="radiogroup"
       aria-label={ariaLabel}
       aria-labelledby={ariaLabelledBy}
+      aria-describedby={ariaDescribedBy}
       aria-disabled={disabled || undefined}
       className={groupClass}
     >

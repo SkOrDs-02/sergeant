@@ -1,4 +1,4 @@
-import { FizrukChoiceList } from "./FizrukChoiceList";
+import { ChoiceGroup } from "@shared/components/ui/Choice";
 
 /** Режим і бік атласу: взаємовиключний вибір без пігулок. */
 export function BodyAtlasSegGroup<T extends string>({
@@ -13,8 +13,9 @@ export function BodyAtlasSegGroup<T extends string>({
   ariaLabel: string;
 }) {
   return (
-    <FizrukChoiceList<T>
+    <ChoiceGroup<T>
       ariaLabel={ariaLabel}
+      className="grid auto-cols-fr grid-flow-col"
       items={options.map((option) => ({
         value: option.id,
         label: option.label,

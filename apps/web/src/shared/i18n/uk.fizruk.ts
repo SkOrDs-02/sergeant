@@ -327,13 +327,10 @@ export const fizrukPageMessages = {
     heading: "Тип",
     ariaLabel: "Тип вправи",
     strengthLabel: "Силова",
-    strengthTitle: "Силова (кг × повтори × підходи)",
     strengthAriaLabel: "Силова: кг × повтори × підходи",
     timeLabel: "Час",
-    timeTitle: "Час (секунди)",
     timeAriaLabel: "Час: секунди",
     distanceLabel: "Дист",
-    distanceTitle: "Дистанція (метри) + час",
     distanceAriaLabel: "Дистанція: метри та час",
   },
   // Голосовий ввід підходу. Раніше невдалий розбір виходив мовчки: ні
@@ -450,7 +447,6 @@ export const fizrukPageMessages = {
       "Вправи з програми відсутні в каталозі, додай вправи з відповідними ID вручну.",
     // Details toggle (`aria-expanded` button in the program card footer).
     details: "Деталі",
-    collapseDetails: "Згорнути",
     // Day-strip screen-reader summary — see `role="img"` aria-label in
     // Programs.tsx. Split into prefix/suffix around the interpolated
     // program name + day-label list (catalog strings stay plain, no
@@ -500,13 +496,12 @@ export const fizrukPageMessages = {
     emptyTitle: "Поки замірів немає",
     emptyDescription: "Додай перший запис, щоб бачити динаміку показників.",
     // Історія показує лише перші 4 з 14 можливих полів на рядок — суфікс
-    // під кнопкою розкриття решти (`+3 ще`) і підпис для згортання назад.
+    // під кнопкою розкриття решти (`+3 ще`); розкритий стан несе шеврон.
     moreFieldsSuffix: "ще",
-    collapseFieldsLabel: "Згорнути",
     showAllFieldsAriaSuffix: "показники запису від",
     // V-9: форма «Додати замір» показує одразу лише 3 найчастіші поля
     // (вага, % жиру, талія); решта 11 — за цим тоглом. Окремі ключі від
-    // `moreFieldsSuffix`/`collapseFieldsLabel` вище навмисно — та пара
+    // `moreFieldsSuffix` вище навмисно — той суфікс
     // ховає ЗБЕРЕЖЕНІ поля рядка історії, ця — порожні поля форми ДОДАВАННЯ.
     addFormMoreFields: "Більше полів",
     addFormFewerFields: "Менше полів",

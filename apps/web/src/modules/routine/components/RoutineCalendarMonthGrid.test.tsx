@@ -286,6 +286,7 @@ describe("RoutineCalendarMonthGrid", () => {
         {...baseProps({ selectedDay: "2026-06-01" })}
       />,
     );
-    expect(screen.getByText(/Обрано:/)).toBeInTheDocument();
+    expect(screen.queryByText(/Обрано/)).toBeNull();
+    expect(screen.getByText(/1 червня/)).toBeInTheDocument();
   });
 });

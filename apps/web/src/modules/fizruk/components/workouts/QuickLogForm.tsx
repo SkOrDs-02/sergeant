@@ -29,7 +29,7 @@ import { useId, useMemo, useState } from "react";
 
 import { Button } from "@shared/components/ui/Button";
 import { Input } from "@shared/components/ui/Input";
-import { FizrukChoiceList } from "../FizrukChoiceList";
+import { ChoiceGroup } from "@shared/components/ui/Choice";
 import { messages } from "@shared/i18n/uk";
 import { computeKcalBurned, FizrukData } from "@sergeant/fizruk-domain";
 
@@ -156,7 +156,8 @@ export function QuickLogFields({ state, onSubmit }: QuickLogFieldsProps) {
     >
       <div className="space-y-2">
         <span className="text-style-label text-text block">{t.exercise}</span>
-        <FizrukChoiceList
+        <ChoiceGroup
+          className="grid grid-cols-2"
           ariaLabel={t.exercise}
           items={items}
           value={state.exerciseId}

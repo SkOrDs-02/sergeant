@@ -2,7 +2,7 @@ import {
   useRestSettings,
   REST_CATEGORY_LABELS,
 } from "../../modules/fizruk/hooks/useRestSettings";
-import { FizrukChoiceList } from "../../modules/fizruk/components/FizrukChoiceList";
+import { ChoiceGroup } from "@shared/components/ui/Choice";
 import { messages } from "@shared/i18n/uk";
 import { SettingsGroup, SettingsSubGroup } from "./SettingsPrimitives";
 
@@ -25,7 +25,9 @@ export function FizrukSection() {
               <h4 className="text-style-label font-semibold text-text">
                 {label}
               </h4>
-              <FizrukChoiceList
+              <ChoiceGroup
+                size="sm"
+                className="mt-2"
                 ariaLabel={label}
                 value={String(typedSettings[cat])}
                 items={[30, 60, 90, 120, 180].map((sec) => ({

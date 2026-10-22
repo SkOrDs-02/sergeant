@@ -105,15 +105,15 @@ describe("HabitForm – advanced options disclosure", () => {
     expect(screen.getByLabelText(/Початок/)).toBeInTheDocument();
   });
 
-  it("keeps advanced section open while editing even after 'Менше опцій'", () => {
+  it("opens advanced section while editing and lets the user collapse it", () => {
     render(<Harness editingId="h1" />);
-    expect(
-      screen.getByRole("button", { name: /Менше опцій/ }),
-    ).toBeInTheDocument();
-    fireEvent.click(screen.getByRole("button", { name: /Менше опцій/ }));
+    const toggle = screen.getByRole("button", { name: /Більше опцій/ });
+    expect(toggle).toHaveAttribute("aria-expanded", "true");
+    fireEvent.click(toggle);
     // Collapsing is allowed; user can re-expand without losing the draft.
+    expect(toggle).toHaveAttribute("aria-expanded", "false");
     expect(screen.queryByLabelText(/Початок/)).toBeNull();
-    fireEvent.click(screen.getByRole("button", { name: /Більше опцій/ }));
+    fireEvent.click(toggle);
     expect(screen.getByLabelText(/Початок/)).toBeInTheDocument();
   });
 
@@ -132,27 +132,27 @@ describe("HabitForm – advanced options disclosure", () => {
     const group = screen.getByRole("group", { name: "Теги" });
     expect(group).toBeInTheDocument();
     expect(
-      within(group).getByRole("button", { name: "Ранок" }),
+      within(group).getByRole("checkbox", { name: "Ранок" }),
     ).toBeInTheDocument();
   });
 
   it("toggles several tags on at once (tagIds is a real array)", () => {
     render(<Harness editingId="h1" routine={routineWithTagsAndCategories()} />);
     const group = screen.getByRole("group", { name: "Теги" });
-    const chips = within(group).getAllByRole("button");
+    const chips = within(group).getAllByRole("checkbox");
 
     fireEvent.click(chips[0]!);
-    expect(chips[0]).toHaveAttribute("aria-pressed", "true");
+    expect(chips[0]).toHaveAttribute("aria-checked", "true");
 
     if (chips[1]) {
       fireEvent.click(chips[1]);
-      expect(chips[0]).toHaveAttribute("aria-pressed", "true");
-      expect(chips[1]).toHaveAttribute("aria-pressed", "true");
+      expect(chips[0]).toHaveAttribute("aria-checked", "true");
+      expect(chips[1]).toHaveAttribute("aria-checked", "true");
     }
 
     // Second tap on the same chip clears it again.
     fireEvent.click(chips[0]!);
-    expect(chips[0]).toHaveAttribute("aria-pressed", "false");
+    expect(chips[0]).toHaveAttribute("aria-checked", "false");
   });
 
   it("renders the category select when routine has categories (in advanced section)", () => {
@@ -170,7 +170,7 @@ describe("HabitForm – advanced options disclosure", () => {
     const start = screen.getByLabelText(/Початок/) as HTMLInputElement;
     const end = screen.getByLabelText(/Кінець/) as HTMLInputElement;
     const tagGroup = screen.getByRole("group", { name: "Теги" });
-    const tagChip = within(tagGroup).getByRole("button", { name: "Ранок" });
+    const tagChip = within(tagGroup).getByRole("checkbox", { name: "Ранок" });
     const category = screen.getByRole("combobox", { name: /Категорія/ });
 
     fireEvent.change(start, { target: { value: "2026-06-01" } });
@@ -180,7 +180,7 @@ describe("HabitForm – advanced options disclosure", () => {
 
     expect(start).toHaveValue("2026-06-01");
     expect(end).toHaveValue("2026-06-30");
-    expect(tagChip).toHaveAttribute("aria-pressed", "true");
+    expect(tagChip).toHaveAttribute("aria-checked", "true");
     expect(category).toHaveValue("c1");
   });
 
@@ -250,8 +250,19 @@ describe("HabitForm – name input interaction", () => {
 });
 
 describe("HabitForm – emoji picker interaction", () => {
-  it("opens the icon picker when the toggle button is clicked", () => {
+  it("keeps the icon picker behind «Більше опцій», not next to the name", () => {
     render(<Harness />);
+    expect(
+      screen.queryByRole("button", { name: "Обрати іконку звички" }),
+    ).toBeNull();
+    fireEvent.click(screen.getByRole("button", { name: /Більше опцій/ }));
+    expect(
+      screen.getByRole("button", { name: "Обрати іконку звички" }),
+    ).toBeInTheDocument();
+  });
+
+  it("opens the icon picker when the toggle button is clicked", () => {
+    render(<Harness editingId="h1" />);
     fireEvent.click(
       screen.getByRole("button", { name: "Обрати іконку звички" }),
     );
@@ -261,7 +272,7 @@ describe("HabitForm – emoji picker interaction", () => {
   });
 
   it("selects an icon and closes the picker", () => {
-    render(<Harness />);
+    render(<Harness editingId="h1" />);
     fireEvent.click(
       screen.getByRole("button", { name: "Обрати іконку звички" }),
     );

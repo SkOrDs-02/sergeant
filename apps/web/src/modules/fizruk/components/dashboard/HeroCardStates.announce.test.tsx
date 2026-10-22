@@ -32,7 +32,6 @@ describe("ActiveState — одноразове оголошення старту
         streakWeeks: 0,
         weeklyWorkoutsCount: 0,
       },
-      onResume: vi.fn(),
     };
     const { rerender } = render(<ActiveState {...props} />);
     expect(announce).toHaveBeenCalledTimes(1);

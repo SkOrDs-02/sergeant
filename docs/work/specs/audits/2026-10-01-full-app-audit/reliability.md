@@ -23,7 +23,7 @@
 
 ### `rel-01` [high] Одна звичка з невалідним start_date зупиняє серверні push-нагадування всім користувачам
 
-- **Стан:** виправлено в #1333 (змерджено 2026-10-03) і в окремому PR (метрика `reminder_sweep_runs_total{outcome}` у `scheduler.ts` + алерт `ReminderSweepFailed` у `alert_rules.yml` + секція в `runbook.md`; PR буде вказано після відкриття). Алерт треба залити в Mimir вручну (`mimirtool rules sync`).
+- **Стан:** виправлено в #1333 (змерджено 2026-10-03) і в [#1575](https://github.com/SkOrDs-02/sergeant/pull/1575) (змерджено 2026-10-22: метрика `reminder_sweep_runs_total{outcome}` у `scheduler.ts` + алерт `ReminderSweepFailed` у `alert_rules.yml` + секція в `runbook.md`), плюс follow-up CodeRabbit [#1587](https://github.com/SkOrDs-02/sergeant/pull/1587) (змерджено 2026-10-22, метрика і runbook). Алерт треба залити в Mimir вручну (`mimirtool rules sync`).
 - **Перевірка:** підтверджено · **Зусилля:** S · **Швидкий виграш** · **Область:** server: reminders / sync routine
 - **Де:** apps/server/src/modules/sync/routine/applySyncFullState.ts:108-111,140-142; apps/server/src/lib/reminders/sweep.ts:136-153,548-566; packages/routine-domain/src/schedule.ts:119-120; packages/routine-domain/src/dateKeys.ts:27-31; apps/server/src/lib/reminders/scheduler.ts:77-81
 - **Першопричина:** applyRoutineHabits пише recurrence, start_date і end_date з sync-пушу як довільні рядки (колонка TEXT без CHECK). Щохвилинний sweep для monthly-звички викликає parseDateKey, а той кидає виняток. reasonsOfDay обходить усіх користувачів одним flatMap без per-user try/catch, тож падає весь прохід.

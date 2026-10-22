@@ -118,6 +118,14 @@ export const SHEET_FOOTER_INSET_VAR = "--sgt-sheet-footer-inset";
 export const FAB_INSET_VAR = "--sgt-fab-inset";
 
 /**
+ * Трей тостів, доки в ньому є хоч один тост. `page-tabbar-pad` бере його
+ * так само, як кнопку в куті: тост віхи серії на Огляді Рутини лягав на
+ * фільтри стрічки в кінці сторінки, і докрутити їх над тостом було нікуди
+ * (інвентар v3.1, Е4).
+ */
+export const TOAST_INSET_VAR = "--sgt-toast-inset";
+
+/**
  * Банер згоди на аналітику (`AnalyticsConsentBanner`). Публікує сам банер,
  * доки змонтований; `CornerAction` піднімається над ним, щоб кнопка
  * «Ні, дякую» не опинялась під кнопкою дії.

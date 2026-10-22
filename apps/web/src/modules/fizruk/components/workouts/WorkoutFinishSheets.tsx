@@ -2,6 +2,8 @@ import { useRef, useState, type Dispatch, type SetStateAction } from "react";
 import { SectionHeading } from "@shared/components/ui/SectionHeading";
 import { Button } from "@shared/components/ui/Button";
 import { Card } from "@shared/components/ui/Card";
+import { ChoiceGroup } from "@shared/components/ui/Choice";
+import { FIELD_LABEL } from "@shared/components/ui/Input";
 import { Icon } from "@shared/components/ui/Icon";
 import { cn } from "@shared/lib/ui/cn";
 import { useDialogFocusTrap } from "@shared/hooks/useDialogFocusTrap";
@@ -64,6 +66,11 @@ function InjuryChip({
     </button>
   );
 }
+
+const WELLBEING_SCALE = ["1", "2", "3", "4", "5"].map((n) => ({
+  value: n,
+  label: n,
+}));
 
 interface WorkoutFinishSheetsProps {
   finishFlash: FinishFlashState | null;
@@ -139,78 +146,50 @@ export function WorkoutFinishSheets({
             >
               Самопочуття
             </div>
-            <p className="text-style-caption text-subtle leading-relaxed">
+            <p
+              id="fizruk-wellbeing-hint"
+              className="text-style-caption text-subtle leading-relaxed"
+            >
               Оціни по шкалі 1–5 (можна пропустити).
             </p>
             <div>
-              <SectionHeading
-                as="div"
-                size="xs"
-                variant="fizruk"
-                className="mb-2"
+              <div
                 id="fizruk-wellbeing-energy"
+                className={`${FIELD_LABEL} mb-2`}
               >
                 Енергія
-              </SectionHeading>
-              <div
-                role="group"
-                aria-labelledby="fizruk-wellbeing-energy"
-                className="grid grid-cols-5 gap-2"
-              >
-                {[1, 2, 3, 4, 5].map((n) => (
-                  <button
-                    key={`e${n}`}
-                    type="button"
-                    className={cn(
-                      "min-w-[44px] min-h-[44px] rounded-lg border text-style-label transition-colors",
-                      finishFlash.energy === n
-                        ? "bg-text text-bg border-text"
-                        : "border-line bg-bg text-muted hover:border-muted",
-                    )}
-                    onClick={() =>
-                      setFinishFlash((f) => f && { ...f, energy: n })
-                    }
-                    aria-pressed={finishFlash.energy === n}
-                  >
-                    {n}
-                  </button>
-                ))}
               </div>
+              <ChoiceGroup
+                size="sm"
+                className="grid grid-cols-5"
+                ariaLabelledBy="fizruk-wellbeing-energy"
+                ariaDescribedBy="fizruk-wellbeing-hint"
+                value={
+                  finishFlash.energy == null ? null : String(finishFlash.energy)
+                }
+                onChange={(n) =>
+                  setFinishFlash((f) => f && { ...f, energy: Number(n) })
+                }
+                items={WELLBEING_SCALE}
+              />
             </div>
             <div>
-              <SectionHeading
-                as="div"
-                size="xs"
-                variant="fizruk"
-                className="mb-2"
-                id="fizruk-wellbeing-mood"
-              >
+              <div id="fizruk-wellbeing-mood" className={`${FIELD_LABEL} mb-2`}>
                 Настрій
-              </SectionHeading>
-              <div
-                role="group"
-                aria-labelledby="fizruk-wellbeing-mood"
-                className="grid grid-cols-5 gap-2"
-              >
-                {[1, 2, 3, 4, 5].map((n) => (
-                  <button
-                    key={`m${n}`}
-                    type="button"
-                    className={cn(
-                      "min-w-[44px] min-h-[44px] rounded-lg border text-style-label transition-colors",
-                      finishFlash.mood === n
-                        ? "bg-text text-bg border-text"
-                        : "border-line bg-bg text-muted hover:border-muted",
-                    )}
-                    onClick={() =>
-                      setFinishFlash((f) => f && { ...f, mood: n })
-                    }
-                    aria-pressed={finishFlash.mood === n}
-                  >
-                    {n}
-                  </button>
-                ))}
               </div>
+              <ChoiceGroup
+                size="sm"
+                className="grid grid-cols-5"
+                ariaLabelledBy="fizruk-wellbeing-mood"
+                ariaDescribedBy="fizruk-wellbeing-hint"
+                value={
+                  finishFlash.mood == null ? null : String(finishFlash.mood)
+                }
+                onChange={(n) =>
+                  setFinishFlash((f) => f && { ...f, mood: Number(n) })
+                }
+                items={WELLBEING_SCALE}
+              />
             </div>
             <div className="flex gap-2">
               <Button
@@ -513,7 +492,7 @@ export function WorkoutFinishSheets({
                     setFinishFlash((f) => f && { ...f, collapsed: true })
                   }
                 >
-                  Згорнути
+                  Сховати
                 </Button>
                 <button
                   type="button"

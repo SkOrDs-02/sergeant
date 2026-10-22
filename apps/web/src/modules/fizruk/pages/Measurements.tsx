@@ -12,6 +12,7 @@ import {
 } from "../hooks/useMeasurements";
 import { Card } from "@shared/components/ui/Card";
 import { Button } from "@shared/components/ui/Button";
+import { MorphChevron } from "@shared/components/ui/MorphChevron";
 import { Sheet } from "@shared/components/ui/Sheet";
 import { useToast } from "@shared/hooks/useToast";
 import { showUndoToast } from "@shared/lib/ui/undoToast";
@@ -398,18 +399,22 @@ export function Measurements() {
                   {hasOverflow && (
                     <button
                       type="button"
-                      className="focus-ring touch-target ml-1 -my-2 px-1 rounded-lg inline-flex items-center text-text font-semibold hover:underline"
+                      className="focus-ring touch-target ml-1 -my-2 px-1 rounded-lg inline-flex items-center gap-1 text-text font-semibold hover:underline"
                       aria-expanded={isRowExpanded}
                       aria-label={
                         isRowExpanded
-                          ? `${messages.fizruk.measurements.collapseFieldsLabel}: ${messages.fizruk.measurements.showAllFieldsAriaSuffix} ${dateLabel}`
+                          ? `${messages.fizruk.measurements.showAllFieldsAriaSuffix} ${dateLabel}`
                           : `+${hiddenCount} ${messages.fizruk.measurements.moreFieldsSuffix}: ${messages.fizruk.measurements.showAllFieldsAriaSuffix} ${dateLabel}`
                       }
                       onClick={() => toggleHistoryRow(e.id)}
                     >
                       {isRowExpanded
-                        ? messages.fizruk.measurements.collapseFieldsLabel
+                        ? null
                         : `+${hiddenCount} ${messages.fizruk.measurements.moreFieldsSuffix}`}
+                      <MorphChevron
+                        open={isRowExpanded}
+                        className="text-subtle"
+                      />
                     </button>
                   )}
                 </div>
