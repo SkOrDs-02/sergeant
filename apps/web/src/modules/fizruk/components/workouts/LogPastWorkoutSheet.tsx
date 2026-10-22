@@ -370,7 +370,9 @@ export function LogPastWorkoutSheet({
             {t.modeLabel}
           </span>
           <ChoiceGroup
-            className="grid grid-cols-3"
+            className={
+              modeItems.length === 3 ? "grid grid-cols-3" : "grid grid-cols-2"
+            }
             ariaLabel={t.modeLabel}
             items={modeItems}
             value={mode}
@@ -488,7 +490,7 @@ export function LogPastWorkoutSheet({
                     {t.newActivityEffort}
                   </span>
                   <ChoiceGroup
-                    className="grid grid-cols-3"
+                    variant="rows"
                     ariaLabel={t.newActivityEffort}
                     items={EFFORT_ITEMS}
                     value={newEffort}

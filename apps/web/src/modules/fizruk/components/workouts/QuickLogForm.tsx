@@ -157,7 +157,7 @@ export function QuickLogFields({ state, onSubmit }: QuickLogFieldsProps) {
       <div className="space-y-2">
         <span className="text-style-label text-text block">{t.exercise}</span>
         <ChoiceGroup
-          className="grid grid-cols-3"
+          className="grid grid-cols-2"
           ariaLabel={t.exercise}
           items={items}
           value={state.exerciseId}
