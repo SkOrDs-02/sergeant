@@ -355,7 +355,7 @@ function DigestContent({
               <button
                 type="button"
                 onClick={() => setExpandedTracked(true)}
-                className="w-full h-9 min-h-[44px] rounded-lg border border-line text-style-label text-muted hover:text-text hover:bg-panelHi transition-colors"
+                className="w-full h-9 min-h-[44px] rounded-lg border border-line text-style-label text-muted hover:text-text hover:bg-panelHi transition-colors focus-ring"
               >
                 Переглянути звіт
               </button>
@@ -366,7 +366,7 @@ function DigestContent({
               <button
                 type="button"
                 onClick={() => setExpandedTracked(false)}
-                className="w-full h-9 min-h-[44px] rounded-lg border border-line text-style-label text-muted hover:text-text hover:bg-panelHi transition-colors"
+                className="w-full h-9 min-h-[44px] rounded-lg border border-line text-style-label text-muted hover:text-text hover:bg-panelHi transition-colors focus-ring"
               >
                 Сховати звіт
               </button>

@@ -22,7 +22,8 @@ export interface ChecklistNowProps {
 
 /**
  * Незроблені кроки онбордингу як рядки «Зараз» (мова H): чекбокс 22 px,
- * назва 16 / 600, праворуч тиха дія з назвою-результатом (redesign v3.1).
+ * назва 16 / 600, праворуч тиха дія «Відкрити» (redesign v3.1). Підпис кроку
+ * сам уже дія («Обрати програму»), тож кнопка його не повторює.
  * Тап лише навігація (F3): крок закривають дані, не кнопка. Віддає `<li>`,
  * список дає викликач, щоб кроки й пункти купи стояли в одному списку на
  * hairline.
@@ -32,9 +33,7 @@ export function ChecklistNowRows({ moduleId, steps }: ChecklistNowProps) {
     <>
       {steps.map((step) => {
         const action = step.action;
-        const label = action
-          ? coreMessages.hub.nowPile.checklistCta[action]
-          : null;
+        const label = coreMessages.hub.nowPile.open;
         return (
           <li
             key={step.id}
@@ -48,7 +47,7 @@ export function ChecklistNowRows({ moduleId, steps }: ChecklistNowProps) {
             <span className="min-w-0 flex-1 text-style-body font-semibold text-text">
               {step.label}
             </span>
-            {action && label && (
+            {action && (
               <Button
                 variant="text"
                 onClick={() =>

@@ -191,7 +191,6 @@ export const STATE_LABEL_KEYS = [
   "selected",
   "collapseCta",
   "collapseDetails",
-  "collapseFact",
   "collapseFieldsLabel",
   "selectedLabel",
 ];

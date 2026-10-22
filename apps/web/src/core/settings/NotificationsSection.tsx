@@ -158,7 +158,13 @@ export function NotificationsSection() {
     // ("Сповіщення" тут vs "Нагадування" у пошуку) без жодної перевірки.
     <SettingsGroup
       title={settingsSectionTitle("notifications")}
-      value={pushSubscribed ? "Push увімкнено" : "Push вимкнено"}
+      value={
+        permStatus === "unsupported" || permStatus === "denied"
+          ? "Недоступно"
+          : pushSubscribed
+            ? "Push увімкнено"
+            : "Push вимкнено"
+      }
     >
       {/* Два рядки поспіль мали один підпис «Push-сповіщення» (браузерний
           дозвіл і власне підписка) і читались як дубль (огляд 2026-09-04).

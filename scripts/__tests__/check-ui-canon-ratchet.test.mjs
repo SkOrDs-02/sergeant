@@ -478,7 +478,7 @@ test("textStateLabel: ключі каталогу й літерали ловля
   const src = `
     <span>{messages.actions.collapse}</span>
     <span>{open ? coreMessages.actions.collapse : messages.finykRedesign.expand}</span>
-    <span>{m.collapseFact}</span>
+    <span>{m.collapseDetails}</span>
     <span>{messages.finykRedesign.selected}</span>
     <button>{open ? "Згорнути" : "Розгорнути"}</button>
     <span>Обрано {n}</span>`;

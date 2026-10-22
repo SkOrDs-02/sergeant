@@ -219,9 +219,9 @@ export function WaitlistForm({
         </div>
 
         <div>
-          <p id={tierLabelId} className="mb-2 text-style-label text-muted">
+          <Label id={tierLabelId} className="mb-2">
             Цікавий план
-          </p>
+          </Label>
           <ChoiceGroup<WaitlistTier>
             variant="rows"
             ariaLabelledBy={tierLabelId}

@@ -128,7 +128,8 @@ function ActionCard({ card }: { card: ChatActionCard }) {
               <button
                 type="button"
                 onClick={() => setExpanded((v) => !v)}
-                className="text-style-caption text-text hover:underline mt-0.5 transition-colors"
+                aria-expanded={expanded}
+                className="mt-0.5 inline-flex min-h-[44px] items-center rounded-lg text-style-caption text-text hover:underline transition-colors focus-ring"
               >
                 {expanded ? "Показати менше" : "Показати все"}
               </button>

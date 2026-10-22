@@ -485,3 +485,29 @@ describe("PlanSection (audit P1-6 — Settings plan + manage subscription)", () 
     ).not.toBeInTheDocument();
   });
 });
+
+describe("PlanSection: значення праворуч у рядку (redesign v3.1, В4)", () => {
+  const trigger = () =>
+    screen.getByRole("button", { name: /Підписка та план/i });
+
+  it("показує план лише після відповіді сервера", async () => {
+    statusMock.mockResolvedValue(FREE_RESPONSE);
+    renderSection();
+    await waitFor(() => expect(trigger()).toHaveAccessibleDescription("Free"));
+  });
+
+  it("поки статус вантажиться, значення немає", async () => {
+    statusMock.mockImplementation(() => new Promise(() => {}));
+    renderSection();
+    expect(trigger()).not.toHaveAttribute("aria-describedby");
+  });
+
+  it("коли запит упав, дефолтного «Free» праворуч немає", async () => {
+    statusMock.mockRejectedValue(new Error("network"));
+    renderSection();
+    await waitFor(() => expect(statusMock).toHaveBeenCalled());
+    await new Promise((r) => setTimeout(r, 0));
+    expect(trigger()).not.toHaveAttribute("aria-describedby");
+    expect(trigger()).not.toHaveTextContent("Free");
+  });
+});

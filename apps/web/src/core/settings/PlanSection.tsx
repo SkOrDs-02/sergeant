@@ -77,7 +77,7 @@ function manualGrantText(
 export function PlanSection() {
   const navigate = useNavigate();
   const queryClient = useQueryClient();
-  const { isPro, isLoading, subscription } = usePlan();
+  const { isPro, isLoading, subscription, access } = usePlan();
   const [redirecting, setRedirecting] = useState(false);
   const [portalError, setPortalError] = useState("");
   // Власне скасування (LiqPay/Plata без Customer Portal): двокрокове
@@ -154,7 +154,9 @@ export function PlanSection() {
   return (
     <SettingsGroup
       title="Підписка та план"
-      value={isLoading ? undefined : planLabel}
+      // Без відповіді сервера (запит у польоті, помилка, гість) план
+      // невідомий, і дефолтне «Free» було б неправдою.
+      value={access ? planLabel : undefined}
       anchorId="settings-plan"
     >
       <ContentGroup variant="bounded" className="flex flex-col gap-4">
