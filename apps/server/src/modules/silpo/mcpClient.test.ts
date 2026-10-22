@@ -705,6 +705,64 @@ describe("rel-22: кеш сесії, Retry-After, стеля тіла", () => {
     expect(mock).toHaveBeenCalledTimes(6);
   });
 
+  it("429 на tools/call не скидає кеш сесії", async () => {
+    const mock = fetchMock();
+    mock
+      .mockResolvedValueOnce(jsonResponse(INIT_RESULT))
+      .mockResolvedValueOnce(new Response(null, { status: 202 }))
+      .mockResolvedValueOnce(
+        new Response("x", { status: 429, headers: { "retry-after": "120" } }),
+      )
+      .mockResolvedValueOnce(jsonResponse(toolOk));
+    const a = await callMcpTool({
+      accessToken: "t1",
+      toolName: "x",
+      schema: Schema,
+    });
+    expect(a.ok).toBe(false);
+    __silpoMcpTestHooks().resetBreaker();
+    const b = await callMcpTool({
+      accessToken: "t1",
+      toolName: "x",
+      schema: Schema,
+    });
+    expect(b.ok).toBe(true);
+    expect(mock).toHaveBeenCalledTimes(4); // без повторного initialize
+  });
+
+  it("успіх паралельного запиту не знімає паузу Retry-After", async () => {
+    const mock = fetchMock();
+    mock
+      .mockResolvedValueOnce(jsonResponse(INIT_RESULT))
+      .mockResolvedValueOnce(new Response(null, { status: 202 }))
+      .mockResolvedValueOnce(jsonResponse(toolOk));
+    await callMcpTool({ accessToken: "t1", toolName: "x", schema: Schema });
+
+    let release: ((r: Response) => void) | undefined;
+    mock.mockImplementationOnce(
+      () => new Promise<Response>((resolve) => (release = resolve)),
+    );
+    const inFlight = callMcpTool({
+      accessToken: "t1",
+      toolName: "x",
+      schema: Schema,
+    });
+    // Запит уже висить у fetch, лише тоді Сільпо відповідає іншому 429.
+    await vi.waitFor(() => expect(release).toBeDefined());
+    mock.mockResolvedValueOnce(
+      new Response("x", { status: 429, headers: { "retry-after": "120" } }),
+    );
+    const limited = await mcpInitialize("t2");
+    expect(limited.ok).toBe(false);
+    release!(jsonResponse(toolOk));
+    expect((await inFlight).ok).toBe(true);
+
+    const callsBefore = mock.mock.calls.length;
+    const next = await mcpInitialize("t3");
+    expect(next.ok).toBe(false);
+    expect(mock.mock.calls.length).toBe(callsBefore); // пауза Сільпо в силі
+  });
+
   it("довгий Retry-After: без ретраїв, rate_limited, breaker відкритий для всіх", async () => {
     const mock = fetchMock();
     mock.mockResolvedValueOnce(

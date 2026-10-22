@@ -425,7 +425,7 @@ async function fetchProductDetails(
   ctx: SilpoBranchContext,
   slug: string,
   signal?: AbortSignal,
-): Promise<NormalizedSilpoProduct | null> {
+): Promise<NormalizedSilpoProduct | null | "failed"> {
   const result = await callMcpTool({
     accessToken,
     toolName: "silpo_get_product_details",
@@ -444,7 +444,8 @@ async function fetchProductDetails(
       msg: "silpo_food_search_details_skipped",
       kind: result.error.kind,
     });
-    return null;
+    // Збій виклику, а не відсутність даних: така видача неповна і не кешується.
+    return "failed";
   }
   const parsed = RawProductDetailsSchema.safeParse(result.data.product);
   if (!parsed.success) {
@@ -464,7 +465,9 @@ function makeFetchSilpoSearch(
   userId: string,
   query: string,
   signal?: AbortSignal,
-): (accessToken: string) => Promise<McpResult<SilpoSearchProduct[]>> {
+): (
+  accessToken: string,
+) => Promise<McpResult<{ products: SilpoSearchProduct[]; complete: boolean }>> {
   return async (accessToken) => {
     const ctx = await resolveBranchContext(userId, accessToken, signal);
     if (!ctx.ok) return ctx;
@@ -512,11 +515,14 @@ function makeFetchSilpoSearch(
     );
 
     const products = detailed
-      .filter((p): p is NormalizedSilpoProduct => p !== null)
+      .filter((p): p is NormalizedSilpoProduct => p !== null && p !== "failed")
       .map(toSearchProduct)
       .filter((p): p is SilpoSearchProduct => p !== null);
 
-    return { ok: true, data: products };
+    return {
+      ok: true,
+      data: { products, complete: !detailed.includes("failed") },
+    };
   };
 }
 
@@ -535,7 +541,8 @@ export const SILPO_SEARCH_MIN_QUERY_LENGTH = 3;
  * підключеного акаунта, тож чужий запис іншій людині віддавати не можна.
  * TTL 60 с консервативний: ціни й наявність у Сільпо змінюються, а виграш
  * кешу - саме повтори того самого запиту (backspace, повторне натискання).
- * Кешуємо лише успішні відповіді; збої не кешуються.
+ * Кешуємо лише повні успішні відповіді: збої, зокрема збій хоч одного
+ * details-запиту, не кешуються.
  */
 const SEARCH_CACHE_TTL_MS = 60_000;
 const SEARCH_CACHE_MAX = 500;
@@ -584,20 +591,21 @@ export async function searchSilpoProducts(
       });
       return [];
     }
-    // Порожню видачу і видачу після спрацьованого дедлайну не кешуємо: фаза
-    // details ковтає збої, тож порожньо чи неповно може бути через збій, а не
-    // через відсутність товару.
-    if (call.data.length > 0 && !deps.signal?.aborted) {
+    // Порожню, неповну (збій details) і видачу після спрацьованого дедлайну
+    // не кешуємо: порожньо чи неповно може бути через збій, а не через
+    // відсутність товару.
+    const { products, complete } = call.data;
+    if (products.length > 0 && complete && !deps.signal?.aborted) {
       if (searchCache.size >= SEARCH_CACHE_MAX) {
         const oldest = searchCache.keys().next().value;
         if (oldest !== undefined) searchCache.delete(oldest);
       }
       searchCache.set(cacheKey, {
-        products: call.data,
+        products,
         expiresAt: Date.now() + SEARCH_CACHE_TTL_MS,
       });
     }
-    return call.data;
+    return products;
   } catch (err) {
     logger.warn({
       msg: "silpo_food_search_source_failed",

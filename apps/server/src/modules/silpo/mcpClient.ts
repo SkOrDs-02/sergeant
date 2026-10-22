@@ -127,12 +127,19 @@ const RETRY_AFTER_MAX_BREAKER_MS = 60_000;
 interface BreakerState {
   failures: number;
   openUntil: number;
+  /**
+   * Пауза, заявлена Сільпо через `Retry-After`. Окремо від `openUntil`:
+   * успіх паралельного запиту чи власний таймер breaker-а не мають права
+   * скоротити паузу, яку назвав сам upstream.
+   */
+  retryAfterUntil: number;
 }
 const BREAKER_FAIL_THRESHOLD = 5;
 const BREAKER_OPEN_MS = 30_000;
-const breaker: BreakerState = { failures: 0, openUntil: 0 };
+const breaker: BreakerState = { failures: 0, openUntil: 0, retryAfterUntil: 0 };
 
 function isBreakerOpen(): boolean {
+  if (Date.now() < breaker.retryAfterUntil) return true;
   if (!breaker.openUntil) return false;
   if (Date.now() < breaker.openUntil) return true;
   breaker.openUntil = 0; // half-open — allow one probe
@@ -144,8 +151,8 @@ function onBreakerSuccess(): void {
 }
 /** `Retry-After` від Сільпо відкриває breaker для всіх (спільний client_id). */
 function openBreakerFor(ms: number): void {
-  breaker.openUntil = Math.max(
-    breaker.openUntil,
+  breaker.retryAfterUntil = Math.max(
+    breaker.retryAfterUntil,
     Date.now() + Math.min(ms, RETRY_AFTER_MAX_BREAKER_MS),
   );
 }
@@ -166,6 +173,7 @@ export function __silpoMcpTestHooks(): {
     resetBreaker(): void {
       breaker.failures = 0;
       breaker.openUntil = 0;
+      breaker.retryAfterUntil = 0;
     },
     resetSessionCache(): void {
       sessionCache.clear();
@@ -569,8 +577,13 @@ export async function callMcpTool<T>(opts: {
     params: { name: opts.toolName, arguments: opts.args ?? {} },
   });
   if (!callResult.ok) {
-    // Збій міг бути через протухлу сесію: наступний виклик ініціалізується заново.
-    sessionCache.delete(sessionKey(opts.accessToken));
+    // Збій міг бути через протухлу сесію: наступний виклик ініціалізується
+    // заново. Тротлінг і недоступність upstream про сесію нічого не кажуть, а
+    // зайвий initialize лише додав би навантаження на спільний client_id.
+    const kind = callResult.error.kind;
+    if (kind !== "rate_limited" && kind !== "upstream_unavailable") {
+      sessionCache.delete(sessionKey(opts.accessToken));
+    }
     return errResult(callResult.error);
   }
 

@@ -525,6 +525,37 @@ describe("searchSilpoProducts - кеш і мінімальна довжина (r
     expect(await searchSilpoProducts("user-1", "молоко")).toEqual([]);
   });
 
+  it("видача зі збоєм хоч одного details-запиту не кешується", async () => {
+    connectedRow();
+    passThroughAccessToken();
+    mockTwoPhaseSearch();
+    const twoPhase = mocks.callMcpTool.getMockImplementation()!;
+    mocks.callMcpTool.mockImplementation(
+      async (opts: { toolName: string; args: { slug?: string } }) => {
+        if (opts.toolName === "silpo_find_products_batch") {
+          const res = await twoPhase(opts);
+          const hit = res.data.queries[0].products[0];
+          res.data.queries[0].products.push({ ...hit, slug: "other-222222" });
+          return res;
+        }
+        if (opts.args.slug === "other-222222") {
+          return {
+            ok: false,
+            error: { kind: "upstream_unavailable", message: "x" },
+          };
+        }
+        return twoPhase(opts);
+      },
+    );
+    const first = await searchSilpoProducts("user-1", "молоко");
+    expect(first.length).toBe(1);
+    const callsAfterFirst = mocks.callMcpTool.mock.calls.length;
+    await searchSilpoProducts("user-1", "молоко");
+    expect(mocks.callMcpTool.mock.calls.length).toBeGreaterThan(
+      callsAfterFirst,
+    );
+  });
+
   it("збій джерела не кешується", async () => {
     connectedRow();
     mocks.callWithFreshAccessToken.mockResolvedValue({
