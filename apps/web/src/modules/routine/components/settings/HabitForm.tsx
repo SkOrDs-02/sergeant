@@ -363,37 +363,18 @@ export function HabitForm({
           {routine.tags.length > 0 && (
             <div className="block text-style-label text-subtle">
               <span id={tagsLabelId}>Теги</span>
-              <div
-                role="group"
-                aria-labelledby={tagsLabelId}
-                className="mt-1 divide-y divide-line"
-              >
-                {routine.tags.map((t) => {
-                  const active = habitDraft.tagIds.includes(t.id);
-                  return (
-                    <button
-                      key={t.id}
-                      type="button"
-                      aria-pressed={active}
-                      className={cn(
-                        "flex min-h-11 w-full items-center justify-between gap-3 py-2 text-left text-style-label-lg focus-ring",
-                        active ? "font-semibold text-text" : "text-muted",
-                      )}
-                      onClick={() =>
-                        setHabitDraft((d) => ({
-                          ...d,
-                          tagIds: d.tagIds.includes(t.id)
-                            ? d.tagIds.filter((id) => id !== t.id)
-                            : [...d.tagIds, t.id],
-                        }))
-                      }
-                    >
-                      <span>{t.name}</span>
-                      <span aria-hidden>{active ? "✓" : ""}</span>
-                    </button>
-                  );
-                })}
-              </div>
+              <ChoiceGroup
+                multiple
+                variant="rows"
+                ariaLabelledBy={tagsLabelId}
+                className="mt-1"
+                value={habitDraft.tagIds}
+                items={routine.tags.map((t) => ({
+                  value: t.id,
+                  label: t.name,
+                }))}
+                onChange={(tagIds) => setHabitDraft((d) => ({ ...d, tagIds }))}
+              />
               {/* AI-NOTE: caption навмисний — підказка під контролом,
                   названий виняток `no-sentence-in-caption`
                   (docs/design/design/density-hierarchy-spec.md §4). */}
