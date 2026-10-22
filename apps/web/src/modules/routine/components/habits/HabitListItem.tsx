@@ -107,14 +107,7 @@ export const HabitListItem = memo(function HabitListItem({
           </p>
         </div>
         <div className="flex flex-wrap gap-1.5 justify-end shrink-0 max-w-[min(100%,12rem)] sm:max-w-none">
-          <Button
-            tone="neutral"
-            type="button"
-            variant="outline"
-            size="sm"
-            className="h-9! px-3! text-style-label"
-            onClick={onStartEdit}
-          >
+          <Button variant="text" size="sm" onClick={onStartEdit}>
             Змінити
           </Button>
           <DropdownMenu

@@ -218,12 +218,7 @@ export function RoutineCalendarPanel({
       <section className="space-y-3 pb-2">
         {canBulkMark && (
           <div className="flex justify-end">
-            <Button
-              type="button"
-              variant="ghost"
-              size="sm"
-              onClick={onBulkMarkDay}
-            >
+            <Button variant="text" size="sm" onClick={onBulkMarkDay}>
               Відмітити всі звички на цей день
             </Button>
           </div>
