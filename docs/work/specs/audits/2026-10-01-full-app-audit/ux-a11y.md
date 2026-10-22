@@ -947,7 +947,7 @@ v3-paywall.mjs with mocked usage {plan:free, remaining:0}, 1280x900. Trace: keyd
 
 ### `ux-16` [medium] Стрілки на вкладках одразу їх активують: рейок модулів переводить в інший модуль, а вкладка «Скан» відкриває камеру
 
-- **Стан:** виправлено в [#1492](https://github.com/SkOrDs-02/sergeant/pull/1492) (змерджено 2026-10-09) і подальшими змінами; залишок закрито в цей PR: `ModuleRail` і `useTablistArrowKeys` більше не існують, вибір способу в `SourceTabs` це `<nav>` зі звичайними кнопками, а автовідкриття сканера при `sourceTab==="scan"` одноразове (ref) і покрите тестом
+- **Стан:** виправлено в [#1492](https://github.com/SkOrDs-02/sergeant/pull/1492) (змерджено 2026-10-09) і подальшими змінами; залишок не відтворюється на `f226d8cb3` (перевірено 2026-10-22): `ModuleRail` і `useTablistArrowKeys` більше не існують, вибір способу в `SourceTabs` це `<nav>` зі звичайними кнопками, а автовідкриття сканера при `sourceTab==="scan"` одноразове (ref) і покрите тестом
 - **Перевірка:** підтверджено · **Зусилля:** S · **Швидкий виграш** · **Область:** web: a11y / вкладки
 - **Де:** apps/web/src/shared/hooks/useTablistArrowKeys.ts:102; apps/web/src/shared/components/layout/ModuleRail.tsx:183-215; apps/web/src/modules/nutrition/components/AddMealSheet.tsx:323-332; apps/web/src/modules/nutrition/components/meal-sheet/SourceTabs.tsx:41-60
 - **Першопричина:** useTablistArrowKeys викликає target.click() на кожну стрілку, тобто вкладки активуються автоматично. Активація вкладки в ModuleRail означає навігацію (openHubModule), а вкладка scan в AddMealSheet сама відкриває модальний сканер. До того ж рейок оголошено як tablist без tabpanel і aria-controls.
