@@ -157,9 +157,15 @@
      є тим, на скільки FAB нависає над скрол-контейнером. Без FAB обидві
      змінні відсутні, і доданок дорівнює нулю.
      ═══════════════════════════════════════════════════════════════════════ */
+  /* Третя робота: так само запас під трей тостів (`--sgt-toast-inset`),
+     щоб кінець сторінки можна було докрутити над тостом. */
   padding-bottom: calc(
     env(safe-area-inset-bottom, 0px) +
-      max(0px, var(--sgt-fab-inset, 0px) - var(--sgt-bottom-nav-inset, 0px))
+      max(
+        0px,
+        max(var(--sgt-fab-inset, 0px), var(--sgt-toast-inset, 0px)) -
+          var(--sgt-bottom-nav-inset, 0px)
+      )
   );
 }
 
