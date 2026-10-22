@@ -24,6 +24,7 @@
     "e2e:ledger": "playwright test --config playwright.ledger.config.ts",
     "e2e:profiles": "playwright test --config playwright.profiles.config.ts",
     "e2e:seed-rich": "playwright test --config playwright.profiles.config.ts --grep @seed",
+    "shots": "playwright test --config playwright.shots.config.ts",
     "size": "size-limit",
     "mutation:time": "cross-env TZ=Europe/Kyiv stryker run stryker.time.conf.json",
     "storybook": "storybook dev -p 6006",
