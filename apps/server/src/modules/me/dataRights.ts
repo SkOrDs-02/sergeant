@@ -427,6 +427,25 @@ export async function requestAccountDeletion(
     // міграцію 003), а НЕ `user_id`, як у решті наших таблиць.
     await client.query(`DELETE FROM session WHERE "userId" = $1`, [userId]);
 
+    // Сирий DELETE повз Better Auth не запускає `session.delete.after`
+    // (`auth/pushSessionBinding.ts`), а рядок `user` живе до hard-delete, тож
+    // без цього пуші (суми, мерчанти з Monobank) ішли б увесь grace-період.
+    // Знімаємо ВСІ активні підписки, включно з легасі `session_id = NULL`.
+    // Відновлення їх не повертає: людина знову вмикає тумблер (register
+    // очищає `deleted_at`).
+    await client.query(
+      `UPDATE push_subscriptions
+          SET deleted_at = NOW()
+        WHERE user_id = $1 AND deleted_at IS NULL`,
+      [userId],
+    );
+    await client.query(
+      `UPDATE push_devices
+          SET deleted_at = NOW(), updated_at = NOW()
+        WHERE user_id = $1 AND deleted_at IS NULL`,
+      [userId],
+    );
+
     await client.query(
       `UPDATE subscriptions
           SET status = 'canceled',
