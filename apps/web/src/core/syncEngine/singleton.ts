@@ -35,6 +35,8 @@ import {
 } from "./syncEngineReader";
 import { recordOutboxPurgeNotice } from "./outboxPurgeNotice";
 import { requeueFkViolationRejected } from "./requeueFkViolationRejected";
+import { createSyncStreamConsumer } from "./syncStreamConsumer";
+import { readPullSinceCursor } from "./syncOpCursor";
 import { observeSyncSession } from "./syncSessionSignal";
 
 type RuntimeFactory = () => Promise<SyncEngineWriterRuntime>;
@@ -247,7 +249,7 @@ async function createDefaultReaderRuntime(): Promise<SyncEngineReaderRuntime> {
   const shared = await createSyncSharedContext();
   const pullIntervalMs = randomizeIntervalMs(60_000, 0.2);
 
-  return createSyncEngineReaderRuntime({
+  const reader = createSyncEngineReaderRuntime({
     pull: (since, opts) =>
       shared.apiClient.syncV2.pullV2(since, {
         limit: opts.limit,
@@ -284,6 +286,47 @@ async function createDefaultReaderRuntime(): Promise<SyncEngineReaderRuntime> {
     limit: SYNC_V2_PULL_MAX_LIMIT,
     captureException: shared.captureException,
   });
+
+  // Стрім - швидкий шлях перед польовим pull: сигнал «на сервері є нове».
+  // Прапорець на сервері (`SYNC_V2_STREAM_ENABLED`) вимкнений - споживач
+  // отримує 404 і мовчить до наступної довгої спроби.
+  const stream = createSyncStreamConsumer({
+    url: syncStreamUrl(),
+    originDeviceId: shared.originDeviceId,
+    getSince: async () => {
+      const userId = await shared.resolveUserId();
+      if (!userId) return null;
+      return readPullSinceCursor(await shared.resolveClient(), userId);
+    },
+    onSignal: () => {
+      void reader.pullOnce().catch(() => {
+        /* reader already reported this; its next tick retries */
+      });
+    },
+    captureException: shared.captureException,
+  });
+
+  return {
+    start: () => {
+      reader.start();
+      stream.start();
+    },
+    stop: () => {
+      stream.stop();
+      reader.stop();
+    },
+    pullOnce: () => reader.pullOnce(),
+  };
+}
+
+/**
+ * Не `apiUrl()`: той версіонує `/api/*` у `/api/v1/*`, а стрім живе на
+ * `/api/v2/sync/stream` (як і `/pull` в api-client).
+ */
+function syncStreamUrl(): string {
+  const raw = import.meta.env["VITE_API_BASE_URL"];
+  const base = typeof raw === "string" ? raw.trim().replace(/\/$/, "") : "";
+  return `${base}/api/v2/sync/stream`;
 }
 
 interface SyncSharedContext {
