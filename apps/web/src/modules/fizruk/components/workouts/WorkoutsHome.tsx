@@ -129,13 +129,9 @@ export function WorkoutsHome({
           {/* Ретро лишається доступним і під час живої сесії, хоч тепер воно
               теж займає слот: ховати кнопку означало б мовчки вирішити за
               людину. Показуємо — і на кліку дає той самий діалог конфлікту,
-              де вибір її: завершити поточне чи викинути. */}
-          <Button
-            variant="outline"
-            className="mt-3 w-full h-11"
-            onClick={onLogPast}
-          >
-            {" "}
+              де вибір її: завершити поточне чи викинути. Тихою кнопкою, бо
+              головна дія блоку одна: «Відкрити» (інвентар v3.1, Б4). */}
+          <Button variant="text" className="mt-2 -ml-2" onClick={onLogPast}>
             {messages.fizruk.logPast.cta}
           </Button>
         </div>
@@ -183,13 +179,9 @@ export function WorkoutsHome({
         <div className="flex items-center justify-between mb-3">
           <h2 className="text-style-label text-text">Останні тренування</h2>
           {recentWorkouts.length > 0 ? (
-            <button
-              type="button"
-              className="text-style-caption text-text hover:underline active:opacity-70 rounded-lg focus:outline-none focus-visible:ring-2 focus-visible:ring-focus/45 focus-visible:ring-offset-2 focus-visible:ring-offset-bg"
-              onClick={onOpenJournal}
-            >
-              Всі
-            </button>
+            <Button variant="text" size="sm" onClick={onOpenJournal}>
+              Усі
+            </Button>
           ) : null}
         </div>
         {recentWorkouts.length > 0 ? (

@@ -173,7 +173,7 @@ describe("WorkoutsHome", () => {
     );
 
     expect(screen.getByText(/тут зʼявляться останні/)).toBeInTheDocument();
-    expect(screen.queryByText("Всі")).not.toBeInTheDocument();
+    expect(screen.queryByText("Усі")).not.toBeInTheDocument();
   });
 
   it("renders the recent-workouts list and the 'Всі' link, wiring both to onOpenJournal", () => {
@@ -190,13 +190,9 @@ describe("WorkoutsHome", () => {
       />,
     );
 
-    const allLink = screen.getByText("Всі");
+    const allLink = screen.getByRole("button", { name: "Усі" });
     fireEvent.click(allLink);
     expect(handlers.onOpenJournal).toHaveBeenCalledTimes(1);
-    // Raw `<button>` — must carry the canonical focus-visible ring, not
-    // rely on the browser default outline.
-    expect(allLink).toHaveClass("focus-visible:ring-2");
-    expect(allLink).toHaveClass("focus-visible:ring-focus/45");
 
     const listButtons = screen.getAllByRole("listitem");
     expect(listButtons).toHaveLength(2);
@@ -232,7 +228,7 @@ describe("WorkoutsHome", () => {
     expect(handlers.onOpenJournal).not.toHaveBeenCalled();
 
     // «Всі →» лишається загальним журналом — це інша дія, не та сама.
-    fireEvent.click(screen.getByText("Всі"));
+    fireEvent.click(screen.getByRole("button", { name: "Усі" }));
     expect(handlers.onOpenJournal).toHaveBeenCalledTimes(1);
   });
 

@@ -19,7 +19,6 @@ import type { HeroRecoveryRow } from "@sergeant/fizruk-domain";
  */
 function makeCallbacks() {
   return {
-    onResume: vi.fn(),
     onStartToday: vi.fn(),
     onOpenPlan: vi.fn(),
     onOpenTemplates: vi.fn(),
@@ -70,8 +69,8 @@ describe("HeroCard · active state", () => {
     vi.setSystemTime(new Date("2026-04-23T12:15:30Z"));
   });
 
-  it("renders the localized kicker, live elapsed timer and 'Продовжити' CTA", () => {
-    const { onResume } = renderHero({
+  it("renders the localized kicker and live elapsed timer without a resume CTA", () => {
+    renderHero({
       kind: "active",
       // 65 seconds before the frozen 'now' → expect "1:05".
       startedAtIso: "2026-04-23T12:14:25Z",
@@ -83,11 +82,8 @@ describe("HeroCard · active state", () => {
     expect(screen.getByText(/Тренування триває/i)).toBeInTheDocument();
     expect(screen.getByText(/3 вправи у сесії/i)).toBeInTheDocument();
 
-    const resumeBtn = screen.getByLabelText(
-      /Повернутись до активного тренування/i,
-    );
-    fireEvent.click(resumeBtn);
-    expect(onResume).toHaveBeenCalledTimes(1);
+    // Продовжити веде кнопка в куті модуля, у hero дубля немає (Б3).
+    expect(screen.queryByRole("button")).toBeNull();
   });
 
   it("formats the elapsed timer as H:MM:SS past the hour mark", () => {

@@ -485,7 +485,6 @@ export function Dashboard({
           recoveryRows={heroRecoveryRows}
           recoverByDate={heroRecoverByDate}
           onOpenAtlas={openAtlas}
-          onResume={openWorkoutsTab}
           onStartToday={handleStartPrimary}
           onOpenPlan={openPlan}
           onOpenTemplates={openTemplates}
