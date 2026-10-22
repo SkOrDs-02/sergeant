@@ -146,7 +146,10 @@ export function WorkoutFinishSheets({
             >
               Самопочуття
             </div>
-            <p className="text-style-caption text-subtle leading-relaxed">
+            <p
+              id="fizruk-wellbeing-hint"
+              className="text-style-caption text-subtle leading-relaxed"
+            >
               Оціни по шкалі 1–5 (можна пропустити).
             </p>
             <div>
@@ -160,6 +163,7 @@ export function WorkoutFinishSheets({
                 size="sm"
                 className="grid grid-cols-5"
                 ariaLabelledBy="fizruk-wellbeing-energy"
+                ariaDescribedBy="fizruk-wellbeing-hint"
                 value={
                   finishFlash.energy == null ? null : String(finishFlash.energy)
                 }
@@ -177,6 +181,7 @@ export function WorkoutFinishSheets({
                 size="sm"
                 className="grid grid-cols-5"
                 ariaLabelledBy="fizruk-wellbeing-mood"
+                ariaDescribedBy="fizruk-wellbeing-hint"
                 value={
                   finishFlash.mood == null ? null : String(finishFlash.mood)
                 }
