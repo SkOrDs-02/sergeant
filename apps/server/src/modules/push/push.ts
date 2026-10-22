@@ -16,8 +16,24 @@ import {
 } from "../../http/schemas.js";
 import { logPushSend } from "./audit.js";
 import { getRequestSessionId } from "../../auth/pushSessionBinding.js";
+import { getAccountDeletionStatus } from "../me/dataRights.js";
+import { ACCOUNT_PENDING_DELETION_CODE } from "@sergeant/shared";
 
 type WithSessionUser = Request & { user?: { id: string } };
+
+/**
+ * priv-04: реєстрація не має воскресити підписку акаунта, для якого вже
+ * попросили видалення. `requireSession` перевіряє мітку ДО хендлера, тож
+ * запит, що пройшов перевірку, міг дописати upsert уже після коміту
+ * `requestAccountDeletion` (вона знімає всі підписки в тій самій
+ * транзакції). `FOR SHARE` на рядку `user` серіалізує upsert з її
+ * `UPDATE "user" SET deletion_requested_at`: якщо видалення вже тримає рядок,
+ * upsert чекає коміту й перечитує мітку; якщо upsert був першим, видалення
+ * чекає його коміту й потім знімає щойно записану підписку.
+ */
+const NOT_PENDING_DELETION_GATE = `SELECT 1 FROM "user"
+      WHERE id = $1 AND deletion_requested_at IS NULL
+      FOR SHARE`;
 
 /**
  * Upsert web-push підписки, що НЕ дозволяє мовчки забрати чужий рядок.
@@ -52,13 +68,22 @@ type WithSessionUser = Request & { user?: { id: string } };
  * підписка належить ОСТАННІЙ сесії, що її зареєструвала, і знімається, коли
  * ця сесія завершується (`auth/pushSessionBinding.ts`).
  */
-const OWNERSHIP_SAFE_WEB_UPSERT = `INSERT INTO push_subscriptions (user_id, endpoint, p256dh, auth, session_id)
-     VALUES ($1, $2, $3, $4, $5)
+const OWNERSHIP_SAFE_WEB_UPSERT = `WITH gate AS (${NOT_PENDING_DELETION_GATE})
+   INSERT INTO push_subscriptions (user_id, endpoint, p256dh, auth, session_id)
+     SELECT $1, $2, $3, $4, $5 FROM gate
      ON CONFLICT (endpoint) DO UPDATE
        SET p256dh = $3, auth = $4, user_id = $1, session_id = $5, deleted_at = NULL
        WHERE push_subscriptions.user_id = $1
           OR push_subscriptions.deleted_at IS NOT NULL
           OR (push_subscriptions.p256dh = $3 AND push_subscriptions.auth = $4)`;
+
+/** Native-аналог `OWNERSHIP_SAFE_WEB_UPSERT` за тим самим гейтом видалення. */
+const OWNERSHIP_SAFE_DEVICE_UPSERT = `WITH gate AS (${NOT_PENDING_DELETION_GATE})
+   INSERT INTO push_devices (user_id, platform, token)
+     SELECT $1, $2, $3 FROM gate
+     ON CONFLICT (platform, token) DO UPDATE
+       SET user_id = $1, updated_at = NOW(), deleted_at = NULL
+     WHERE push_devices.user_id = $1 OR push_devices.deleted_at IS NOT NULL`;
 
 // VAPID config read once at module-load via the zod-validated `env`
 // singleton (P2-1 з 2026-05-13-backend-performance-roast). Раніше це були
@@ -110,6 +135,21 @@ export async function vapidPublic(_req: Request, res: Response): Promise<void> {
 }
 
 /**
+ * Порожній upsert означає або чужий пристрій, або гейт видалення
+ * (`NOT_PENDING_DELETION_GATE`). Другий випадок віддаємо тим самим 403, що й
+ * `requireSession`, щоб клієнт показав екран-блокер, а не «чужий пристрій».
+ */
+async function throwIfPendingDeletion(userId: string): Promise<void> {
+  const status = await getAccountDeletionStatus(pool, userId);
+  if (status.pending) {
+    throw new AppError("Акаунт у процесі видалення", {
+      status: 403,
+      code: ACCOUNT_PENDING_DELETION_CODE,
+    });
+  }
+}
+
+/**
  * POST /api/v1/push/register — уніфікована реєстрація push-пристрою.
  *
  * Доступний і на `/api/push/register` (той самий handler, через
@@ -140,6 +180,7 @@ export async function register(req: Request, res: Response): Promise<void> {
       getRequestSessionId(req),
     ]);
     if (upsert.rowCount === 0) {
+      await throwIfPendingDeletion(user.id);
       throw new AppError(
         "Цей пристрій уже зареєстровано на інший акаунт. Вийди з того акаунта на цьому пристрої й увімкни сповіщення знову.",
         {
@@ -159,15 +200,13 @@ export async function register(req: Request, res: Response): Promise<void> {
   // його звільнив (`unregister` → soft-delete). Без цього guard-а знання
   // чужого токена = перехоплення чужих сповіщень: `DO UPDATE SET user_id`
   // мовчки перепризначав пристрій на того, хто останнім викликав register.
-  const upsert = await pool.query(
-    `INSERT INTO push_devices (user_id, platform, token)
-       VALUES ($1, $2, $3)
-       ON CONFLICT (platform, token) DO UPDATE
-         SET user_id = $1, updated_at = NOW(), deleted_at = NULL
-       WHERE push_devices.user_id = $1 OR push_devices.deleted_at IS NOT NULL`,
-    [user.id, data.platform, data.token],
-  );
+  const upsert = await pool.query(OWNERSHIP_SAFE_DEVICE_UPSERT, [
+    user.id,
+    data.platform,
+    data.token,
+  ]);
   if (upsert.rowCount === 0) {
+    await throwIfPendingDeletion(user.id);
     throw new AppError(
       "Цей пристрій уже зареєстровано на інший акаунт. Вийди з того акаунта на цьому пристрої й увімкни сповіщення знову.",
       {
