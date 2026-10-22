@@ -308,17 +308,11 @@ export function AddMealSheet({
     setPrevOpen(false);
   }
 
-  useMealLockDraft({
-    active: open && !initialMeal?.id,
-    draft: { form, pickedFood, pickedGrams, step },
-    setters: {
-      setForm,
-      setPickedFood,
-      setPickedGrams,
-      setStep,
-      setManualMacros,
-    },
-  });
+  useMealLockDraft(
+    open && !initialMeal?.id,
+    { form, pickedFood, pickedGrams, step },
+    { setForm, setPickedFood, setPickedGrams, setStep, setManualMacros },
+  );
 
   // Продукт для аркуша редагування — чому без нього порцію змінити було
   // неможливо, у `useEditedFoodRehydration`.
