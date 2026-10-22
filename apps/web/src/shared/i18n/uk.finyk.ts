@@ -8,7 +8,6 @@ export const finykPageMessages = {
     import: { label: "Документи", hint: "Скріншоти банку й виписки" },
   },
   reportHeading: "Витрати",
-  budgetOverLimit: "перевищено",
   budgetOverSixtyPercent: "· понад 60% ліміту",
   transactionsFilterLabel: "Фільтр операцій",
   /**

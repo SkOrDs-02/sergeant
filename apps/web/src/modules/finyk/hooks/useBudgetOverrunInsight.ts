@@ -25,6 +25,7 @@ import {
   calcLimitUsages,
   getCurrentMonthContext,
   formatLimitBudgetLabel,
+  formatLimitUsedLabel,
   type LimitUsageEntry,
 } from "@sergeant/finyk-domain/domain/budget";
 import { resolveExpenseCategoryMeta } from "@sergeant/finyk-domain/domain/categories";
@@ -84,7 +85,7 @@ export function useBudgetOverrunInsight({
     return {
       id: `finyk-budget-overrun-${budget.categoryId}`,
       module: "finyk",
-      title: `${catLabel}: використано ${pct}% ліміту`,
+      title: `${catLabel}: ${formatLimitUsedLabel(pctRaw)}`,
       subtitle: `+${formatNumberUk(overage)}\u202F₴. Залишилось ${daysLeft} ${pluralDays(daysLeft)}.`,
       askAiPrompt: `У Фініку категорія "${catLabel}" вже ${formatNumberUk(Math.round(spent))}\u202F₴ із бюджету ${formatNumberUk(Math.round(limit))}\u202F₴ (+${pct - 100}%). Це разовий сплеск чи тренд? Що підрізати?`,
       action: {

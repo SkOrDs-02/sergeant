@@ -67,7 +67,7 @@ describe("BudgetAlertsList", () => {
         onOpenLimit={onOpenLimit}
       />,
     );
-    expect(screen.getByText(/перевищено/)).toBeInTheDocument();
+    expect(screen.getByText(/150% використано/)).toBeInTheDocument();
     expect(container.textContent).toContain("150");
     fireEvent.click(
       screen.getByRole("button", { name: /Відкрити ліміт у плануванні/ }),

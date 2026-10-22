@@ -112,7 +112,7 @@ describe("useBudgetOverrunInsight", () => {
         txSplits: {},
       }),
     );
-    expect(result.current!.title).toContain("використано 100% ліміту");
+    expect(result.current!.title).toContain("100% використано");
   });
 
   it("fires an insight when spend exceeds the overrun threshold", () => {
@@ -130,7 +130,7 @@ describe("useBudgetOverrunInsight", () => {
     expect(result.current!.id).toBe("finyk-budget-overrun-food");
     expect(result.current!.module).toBe("finyk");
     // Percent-of-limit, the same base the Overview plashka renders.
-    expect(result.current!.title).toContain("використано 120% ліміту");
+    expect(result.current!.title).toContain("120% використано");
     expect(result.current!.action).toMatchObject({
       type: "navigate",
       path: expect.stringContaining("food"),
@@ -195,6 +195,6 @@ describe("useBudgetOverrunInsight", () => {
     );
     // Only June's 1 200 UAH counts → 120% of the limit, not 620%.
     expect(result.current).not.toBeNull();
-    expect(result.current!.title).toContain("використано 120% ліміту");
+    expect(result.current!.title).toContain("120% використано");
   });
 });

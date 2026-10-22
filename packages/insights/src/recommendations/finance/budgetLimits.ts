@@ -48,7 +48,7 @@ export const budgetLimitsRule: Rule<FinanceContext> = {
           priority: 90,
           severity: "danger" as const,
           icon: "flag",
-          title: `Бюджет «${catLabel}» перевищено на ${Math.round(usage.pctRaw - 100)}%`,
+          title: `Бюджет «${catLabel}» перевищено на ${formatNumberUk(usage.spent - usage.limit, { maximumFractionDigits: 2 })} ₴`,
           body: `Витрачено ${formatNumberUk(Math.round(usage.spent))} ₴ з ${formatNumberUk(Math.round(usage.limit))} ₴`,
           action: "finyk",
           actionHash,
