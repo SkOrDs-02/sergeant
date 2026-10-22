@@ -65,6 +65,16 @@ describe("usePantryFirstPullPending", () => {
     expect(result.current).toBe(false);
   });
 
+  it("перехід в офлайн посеред очікування знімає його одразу", () => {
+    const { result } = renderHook(() => usePantryFirstPullPending());
+    expect(result.current).toBe(true);
+    act(() => {
+      setOnline(false);
+      window.dispatchEvent(new Event("offline"));
+    });
+    expect(result.current).toBe(false);
+  });
+
   it("не крутиться вічно: після таймаута повертає порожній стан", () => {
     const { result } = renderHook(() => usePantryFirstPullPending());
     expect(result.current).toBe(true);

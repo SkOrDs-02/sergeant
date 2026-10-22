@@ -28,6 +28,16 @@ function isOffline(): boolean {
   return typeof navigator !== "undefined" && navigator.onLine === false;
 }
 
+/** Перерендер на `online`/`offline`: перехід в офлайн одразу знімає очікування. */
+function subscribeConnectivity(onChange: () => void): () => void {
+  window.addEventListener("online", onChange);
+  window.addEventListener("offline", onChange);
+  return () => {
+    window.removeEventListener("online", onChange);
+    window.removeEventListener("offline", onChange);
+  };
+}
+
 /**
  * `true`, поки порожню комору слід показувати як «синхронізую». Викликач
  * сам перевіряє, що комора порожня: непорожня комора ніколи не ховається.
@@ -38,6 +48,11 @@ export function usePantryFirstPullPending(): boolean {
     getInitialPullVersion,
     getInitialPullVersion,
   );
+  const offline = useSyncExternalStore(
+    subscribeConnectivity,
+    isOffline,
+    () => false,
+  );
   const [timedOut, setTimedOut] = useState(false);
   const settled = isInitialSyncSettled();
 
@@ -47,5 +62,5 @@ export function usePantryFirstPullPending(): boolean {
     return () => clearTimeout(id);
   }, [settled]);
 
-  return !settled && !timedOut && !isOffline();
+  return !settled && !timedOut && !offline;
 }
