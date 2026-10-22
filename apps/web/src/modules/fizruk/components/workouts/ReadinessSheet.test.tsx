@@ -33,8 +33,8 @@ describe("ReadinessSheet", () => {
   it("віддає обидві оцінки", () => {
     const onSubmit = vi.fn();
     render(<ReadinessSheet open onSubmit={onSubmit} onSkip={vi.fn()} />);
-    fireEvent.click(screen.getByRole("button", { name: "Сон 2" }));
-    fireEvent.click(screen.getByRole("button", { name: "Мʼязи 5" }));
+    fireEvent.click(screen.getByRole("radio", { name: "Сон 2" }));
+    fireEvent.click(screen.getByRole("radio", { name: "Мʼязи 5" }));
     fireEvent.click(screen.getByRole("button", { name: "Готово" }));
     expect(onSubmit).toHaveBeenCalledWith({ sleep: 2, soreness: 5 });
   });
@@ -51,15 +51,20 @@ describe("ReadinessSheet", () => {
   it("часткова відповідь віддається як є", () => {
     const onSubmit = vi.fn();
     render(<ReadinessSheet open onSubmit={onSubmit} onSkip={vi.fn()} />);
-    fireEvent.click(screen.getByRole("button", { name: "Сон 1" }));
+    fireEvent.click(screen.getByRole("radio", { name: "Сон 1" }));
     fireEvent.click(screen.getByRole("button", { name: "Готово" }));
     expect(onSubmit).toHaveBeenCalledWith({ sleep: 1, soreness: null });
   });
 
   it("кнопки шкали тримають 44px floor", () => {
     render(<ReadinessSheet open onSubmit={vi.fn()} onSkip={vi.fn()} />);
-    const scaleButton = screen.getByRole("button", { name: "Сон 3" });
-    expect(scaleButton.className).toContain("min-w-[44px]");
+    const scaleButton = screen.getByRole("radio", { name: "Сон 3" });
     expect(scaleButton.className).toContain("min-h-[44px]");
+  });
+
+  it("початковий фокус на вмісті, не на «Закрити»", () => {
+    render(<ReadinessSheet open onSubmit={vi.fn()} onSkip={vi.fn()} />);
+    expect(document.activeElement).toHaveAttribute("data-autofocus");
+    expect(document.activeElement).not.toHaveAttribute("aria-label", "Закрити");
   });
 });

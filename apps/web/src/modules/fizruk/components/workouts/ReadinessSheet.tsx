@@ -19,13 +19,13 @@
  * safe-area, тож футер із «Готово» не ховається під навбар (звіт 2026-09-03:
  * власний fixed-оверлей цього не робив, і кнопку не можна було натиснути).
  */
-import { useState } from "react";
+import { useId, useState } from "react";
 
 import { Button } from "@shared/components/ui/Button";
-import { SectionHeading } from "@shared/components/ui/SectionHeading";
+import { ChoiceGroup } from "@shared/components/ui/Choice";
+import { FIELD_LABEL } from "@shared/components/ui/Input";
 import { Sheet } from "@shared/components/ui/Sheet";
 import { messages } from "@shared/i18n/uk";
-import { cn } from "@shared/lib/ui/cn";
 
 export interface ReadinessSheetProps {
   open: boolean;
@@ -34,45 +34,37 @@ export interface ReadinessSheetProps {
   onSkip: () => void;
 }
 
-const SCALE = [1, 2, 3, 4, 5] as const;
+const SCALE = ["1", "2", "3", "4", "5"] as const;
 
 /** Один рядок шкали 1-5. Винесено, бо той самий блок малюється двічі. */
 function ScaleRow({
-  idPrefix,
   label,
   value,
   onPick,
 }: {
-  idPrefix: string;
   label: string;
   value: number | null;
   onPick: (n: number) => void;
 }) {
   const t = messages.fizruk.readiness;
+  const labelId = useId();
   return (
     <div>
-      <SectionHeading as="div" size="xs" variant="fizruk" className="mb-2">
+      <div id={labelId} className={`${FIELD_LABEL} mb-2`}>
         {label}
-      </SectionHeading>
-      <div className="flex flex-wrap items-center gap-2">
-        {SCALE.map((n) => (
-          <button
-            key={`${idPrefix}${n}`}
-            type="button"
-            className={cn(
-              "min-w-[44px] min-h-[44px] rounded-lg border text-style-label transition-colors",
-              value === n
-                ? "bg-text text-bg border-text"
-                : "border-line bg-bg text-muted hover:border-muted",
-            )}
-            onClick={() => onPick(n)}
-            aria-pressed={value === n}
-            aria-label={`${label} ${n}`}
-          >
-            {n}
-          </button>
-        ))}
       </div>
+      <ChoiceGroup
+        size="sm"
+        className="grid grid-cols-5"
+        ariaLabelledBy={labelId}
+        value={value == null ? null : String(value)}
+        onChange={(n) => onPick(Number(n))}
+        items={SCALE.map((n) => ({
+          value: n,
+          label: n,
+          ariaLabel: `${label} ${n}`,
+        }))}
+      />
       <div className="mt-1 flex justify-between text-style-caption text-subtle">
         <span>{t.scaleLow}</span>
         <span>{t.scaleHigh}</span>
@@ -122,15 +114,16 @@ export function ReadinessSheet({
         </div>
       }
     >
-      <div className="space-y-4">
+      {/* Аркуш відкривається сам, без дії людини, тож початковий фокус
+          стоїть на вмісті, а не на «Закрити»: інакше рамка фокуса горить на
+          хрестику ще до першого дотику. */}
+      <div
+        className="space-y-4 focus:outline-none"
+        tabIndex={-1}
+        data-autofocus
+      >
+        <ScaleRow label={t.sleepLabel} value={sleep} onPick={setSleep} />
         <ScaleRow
-          idPrefix="sleep"
-          label={t.sleepLabel}
-          value={sleep}
-          onPick={setSleep}
-        />
-        <ScaleRow
-          idPrefix="soreness"
           label={t.sorenessLabel}
           value={soreness}
           onPick={setSoreness}
