@@ -264,6 +264,10 @@ describe("Measurements page", () => {
     it("shows a +N indicator instead of silently dropping fields past the limit", () => {
       render(<Measurements />);
       expect(screen.getByText("+1 ще")).toBeInTheDocument();
+      // WCAG 2.5.3: видимий текст входить у доступне імʼя.
+      expect(
+        screen.getByRole("button", { name: /^\+1 ще: показники запису/ }),
+      ).toBeInTheDocument();
       // The 5th field (Талія) is hidden until expanded. Match the exact
       // history-row fragment ("Талія: 85 см") — "Талія" alone also appears
       // in the always-rendered form field label and, with this fixture, in
