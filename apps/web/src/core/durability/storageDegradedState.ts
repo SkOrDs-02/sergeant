@@ -19,9 +19,19 @@ export interface StorageDegradedSnapshot {
   readonly active: boolean;
   /** Росте з кожним новим збоєм: банер, який закрили, зʼявляється знову. */
   readonly seq: number;
+  /**
+   * `seq` збою, який людина закрила. Живе тут, а не в `useState` банера:
+   * `ModuleShell` розмонтовується при переході між модулями, і локальний стан
+   * повертав закритий банер без нового збою.
+   */
+  readonly dismissedSeq: number;
 }
 
-let snapshot: StorageDegradedSnapshot = { active: false, seq: 0 };
+let snapshot: StorageDegradedSnapshot = {
+  active: false,
+  seq: 0,
+  dismissedSeq: 0,
+};
 const listeners = new Set<() => void>();
 
 function publish(next: StorageDegradedSnapshot): void {
@@ -41,7 +51,7 @@ export function readStorageDegraded(): StorageDegradedSnapshot {
 
 /** SQL відхилив `errored` опів пачки. Кожен збій піднімає `seq`. */
 export function noteStorageWriteFailed(): void {
-  publish({ active: true, seq: snapshot.seq + 1 });
+  publish({ ...snapshot, active: true, seq: snapshot.seq + 1 });
 }
 
 /**
@@ -50,11 +60,20 @@ export function noteStorageWriteFailed(): void {
  */
 export function noteStorageWriteRecovered(): void {
   if (!snapshot.active) return;
-  publish({ active: false, seq: snapshot.seq });
+  publish({ ...snapshot, active: false });
+}
+
+/**
+ * Людина закрила банер саме для збою `seq`. Наступний збій (більший `seq`)
+ * покаже його знову; `dismissedSeq` лише росте.
+ */
+export function dismissStorageDegraded(seq: number): void {
+  if (seq <= snapshot.dismissedSeq) return;
+  publish({ ...snapshot, dismissedSeq: seq });
 }
 
 /** Лише для тестів. */
 export function __resetStorageDegradedForTests(): void {
-  snapshot = { active: false, seq: 0 };
+  snapshot = { active: false, seq: 0, dismissedSeq: 0 };
   listeners.clear();
 }

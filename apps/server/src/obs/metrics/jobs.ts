@@ -189,3 +189,10 @@ export const reminderSweepRunsTotal = new client.Counter({
   labelNames: ["outcome"],
   registers: [register],
 });
+
+// Без ініціалізації серія `failed` зʼявляється в /metrics лише після першого
+// збою, тож `increase(...{outcome="failed"}[10m])` в алерті `ReminderSweepFailed`
+// не бачить переходу «немає серії -> 1» і першого збою не ловить. `inc(0)`
+// експортує обидві серії зі старту процесу.
+reminderSweepRunsTotal.inc({ outcome: "ok" }, 0);
+reminderSweepRunsTotal.inc({ outcome: "failed" }, 0);

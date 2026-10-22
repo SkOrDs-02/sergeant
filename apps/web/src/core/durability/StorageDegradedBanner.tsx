@@ -7,26 +7,27 @@
  * Постійний банер, не тост: нестача місця сама не минеться, а 7 с тосту
  * людина проґавить. Тосту успіху тут немає навмисно (див. `storageDegradedState`).
  */
-import { useState, useSyncExternalStore } from "react";
+import { useSyncExternalStore } from "react";
 
 import { Notice } from "@shared/components/ui/Notice";
-import { messages } from "@shared/i18n/uk";
+import { useLocale } from "@shared/i18n/useLocale";
 
 import {
+  dismissStorageDegraded,
   readStorageDegraded,
   subscribeStorageDegraded,
 } from "./storageDegradedState";
 
-const m = messages.durability.storageDegraded;
-
 export function StorageDegradedBanner() {
-  const { active, seq } = useSyncExternalStore(
+  const { messages } = useLocale();
+  const m = messages.durability.storageDegraded;
+  // Закрито саме цей збій; наступний (більший `seq`) покаже банер знову.
+  // `dismissedSeq` у сторі, тож переживає розмонтування `ModuleShell`.
+  const { active, seq, dismissedSeq } = useSyncExternalStore(
     subscribeStorageDegraded,
     readStorageDegraded,
     readStorageDegraded,
   );
-  // Закрито саме цей збій; наступний (більший `seq`) покаже банер знову.
-  const [dismissedSeq, setDismissedSeq] = useState(0);
   if (!active || seq <= dismissedSeq) return null;
 
   return (
@@ -41,7 +42,7 @@ export function StorageDegradedBanner() {
       </div>
       <button
         type="button"
-        onClick={() => setDismissedSeq(seq)}
+        onClick={() => dismissStorageDegraded(seq)}
         className="shrink-0 text-style-caption font-semibold text-danger-strong dark:text-danger hover:text-danger-strong dark:hover:text-danger pointer-coarse:min-h-[44px] pointer-coarse:min-w-[44px]"
         aria-label={m.dismissLabel}
       >
