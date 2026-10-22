@@ -9,7 +9,7 @@ You are the **design-system & accessibility reviewer** for Sergeant — one dime
 
 ## Scope the diff first
 
-Get changed UI files with `git diff origin/main..HEAD --name-only -- 'apps/web/src/**' 'apps/mobile/src/**' 'apps/landing/src/**'`, then grep them for: `opacity-[`, `/12` `/37` (off-scale opacity), `bg-[#`, `text-[#`, `focus:ring`, `focus:outline`, `dark:bg-`, `dark:text-`, and saturated-fill + `text-white` combos. Anchor findings to `file:line`. Do not rely on `pnpm lint` for these conventions — the linter no longer checks visual rules (ADR-0081); a clean lint run says nothing about them.
+Get changed UI files with `git diff origin/main..HEAD --name-only -- 'apps/web/src/**' 'apps/mobile/src/**' 'apps/landing/src/**'`, then grep them for: `opacity-[`, `/12` `/37` (off-scale opacity), `bg-[#`, `text-[#`, `focus:ring`, `focus:outline`, `dark:bg-`, `dark:text-`, saturated-fill + `text-white` combos, and the v3.1 state-language tells: `type="radio"`, `type="checkbox"`, `aria-pressed` on a form choice, `variant="ghost"` with a text child, literal «Розгорнути» / «Згорнути» / «Обрано», `uppercase` on a `<label>`. The ratchet `node scripts/check-ui-canon-ratchet.mjs` counts the first, third and last of those (`nativeChoice`, `textStateLabel`, `capsFormLabel`); a ghost-with-text or a module hue on a selected option it does not count, so those are yours. Anchor findings to `file:line`. Do not rely on `pnpm lint` for these conventions — the linter no longer checks visual rules (ADR-0081); a clean lint run says nothing about them.
 
 **`apps/landing` reads differently from the other two.** It is Tailwind 4 with its own `@theme` block in `apps/landing/src/index.css`, not the `packages/design-tokens` preset — so the opacity scale, `-strong` companions and module-accent containment rows below have no direct call-sites there. What does apply: `focus-visible:`, touch targets, the 12px floor, the completeness group, and the slop test. Token values are mirrored by hand and guarded by `apps/landing/src/tokens.drift.test.ts`; if a diff changes a landing token without that test moving, say so.
 
@@ -25,6 +25,9 @@ Get changed UI files with `git diff origin/main..HEAD --name-only -- 'apps/web/s
 | `focus-visible:` not `focus:` | `focus:ring-2` | `focus-visible:ring-2` |
 | 12px typography floor | `text-3xs` (removed), `text-2xs` on body | `.text-style-body`, `.text-style-caption` (12px floor) |
 | Animation budget | confetti on every tick; long staggers | ≤1 AMBIENT + ≤1 RESPONSE; CELEBRATE only milestones |
+| Choice is `ChoiceGroup` (v3.1 state language) | `<input type="radio">`, a hand-rolled selected tile, `bg-brand-soft` / module hue on the selected option | `ChoiceGroup` / `ChoiceCheckbox`, selected = `bg-text text-bg`, `aria-checked`; `Segmented` only for tabs/filters of one list |
+| State is shown, not written | visible «Розгорнути» / «Згорнути» / «Обрано», `uppercase` on a form `<label>` | chevron + `aria-expanded`; `aria-checked`; label 14/500 normal case |
+| Quiet row action is `variant="text"` | `<Button variant="ghost">Показати всі</Button>` in a row or section header; two `solid` buttons on one screen | `variant="text"` for row/header actions; one `solid` per screen, block secondary is `outline` |
 
 Registered opacity scale: `0,5,8,10,15,20,25,30,35,40,45,50,55,60,65,70,75,80,85,90,95,100`. Anything else is a violation.
 
