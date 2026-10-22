@@ -48,7 +48,6 @@ export function WorkoutSummaryTimeEditor({
     return (
       <Button
         variant="ghost"
-        tone="neutral"
         className="mt-2"
         type="button"
         onClick={() => setOpen(true)}

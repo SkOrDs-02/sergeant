@@ -67,7 +67,7 @@ export function LongSessionDialog({
             {copy.confirm}
           </Button>
           <Button
-            variant="soft"
+            variant="outline"
             tone="neutral"
             className="w-full h-12"
             onClick={onKeepAsIs}
