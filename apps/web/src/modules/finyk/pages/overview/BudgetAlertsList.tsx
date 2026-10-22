@@ -7,6 +7,7 @@ import { stripLeadingEmoji } from "../../components/txRowHelpers";
 import { resolveExpenseCategoryMeta } from "../../utils";
 import {
   formatLimitBudgetLabel,
+  formatLimitUsedLabel,
   type LimitUsageEntry,
 } from "@sergeant/finyk-domain/domain/budget";
 import type { CustomCategoryInput } from "@sergeant/finyk-domain/constants";
@@ -72,11 +73,12 @@ const BudgetAlertsListImpl = function BudgetAlertsList({
                   : "text-warning-strong dark:text-warning",
               )}
             >
-              {pct}%{" "}
               {over ? (
-                <>{messages.finyk.budgetOverLimit}</>
+                formatLimitUsedLabel(usage.pctRaw)
               ) : (
-                messages.finyk.budgetOverSixtyPercent
+                <>
+                  {pct}% {messages.finyk.budgetOverSixtyPercent}
+                </>
               )}
             </span>
           </button>

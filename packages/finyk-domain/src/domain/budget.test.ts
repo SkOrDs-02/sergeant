@@ -31,6 +31,7 @@ import {
   isSameLimitCategorySet,
   limitBudgetCategoryIds,
   limitBudgetCategoryKey,
+  formatLimitUsedLabel,
 } from "./budget";
 
 describe("budget: split helpers", () => {
@@ -145,7 +146,7 @@ describe("budget: limit usage", () => {
     expect(over.overLimit).toBe(true);
     expect(over.warnLimit).toBe(false);
     expect(over.exceededBy).toBe(50);
-    expect(over.pctRounded).toBe(100);
+    expect(over.pctRounded).toBe(Math.round(over.pctRaw));
   });
 
   it("calculateSafeToSpendPerDay returns 0 when no days left", () => {
@@ -688,5 +689,13 @@ describe("budget: multi-category limits", () => {
     expect(validateLimitBudgetForm({ categoryIds: [], limit: 100 }).error).toBe(
       "Оберіть категорію",
     );
+  });
+});
+
+describe("budget: limit percent wording", () => {
+  it("не обрізає відсоток на 100: 1107,50 з 500 = 222% використано", () => {
+    const u = calculateLimitUsage({ limit: 500 }, 1107.5);
+    expect(u.pctRounded).toBe(222);
+    expect(formatLimitUsedLabel(u.pctRaw)).toBe("222% використано");
   });
 });

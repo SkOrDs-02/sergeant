@@ -78,7 +78,7 @@ describe("стан ліміту: хаб-картка, рекомендація �
     const recs = generateRecommendations();
     const over = recs.find((r) => r.id === "budget_over_food");
     expect(over?.title).toContain(
-      `перевищено на ${Math.round(expected.pctRaw - 100)}%`,
+      `перевищено на ${Math.round(expected.exceededBy)} ₴`,
     );
 
     const { result } = renderHook(() =>
@@ -90,7 +90,7 @@ describe("стан ліміту: хаб-картка, рекомендація �
       }),
     );
     expect(result.current?.title).toBe(
-      `Продукти: використано ${Math.round(expected.pctRaw)}% ліміту`,
+      `Продукти: ${Math.round(expected.pctRaw)}% використано`,
     );
 
     // Сьогоднішні витрати є, тож без активного перевищення рядок був би:

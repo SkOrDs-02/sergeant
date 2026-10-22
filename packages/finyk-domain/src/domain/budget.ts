@@ -238,6 +238,12 @@ export function calculateSafeToSpendPerDay(
   return Math.max(0, Math.floor(remaining / daysLeft));
 }
 
+// Єдиний підпис відсотка ліміту для всіх поверхонь (Планування, Огляд, хаб):
+// без стелі на 100 %, «222% використано» лишається чесним числом.
+export function formatLimitUsedLabel(pctRaw: number): string {
+  return `${Math.round(pctRaw)}% використано`;
+}
+
 // Повний набір метрик для картки ліміт-бюджету. UI рендерить саме ці поля
 // без додаткових обчислень (pctRaw → прогрес-бар, pctRounded → лейбл,
 // overLimit/warnLimit → кольорова градація).
@@ -247,7 +253,7 @@ export function calculateLimitUsage(
 ) {
   const limit = Number(budget?.limit) || 0;
   const pctRaw = rawPct(spent, limit);
-  const pctRounded = Math.min(100, Math.round(pctRaw));
+  const pctRounded = Math.round(pctRaw);
   const overLimit = limit > 0 && pctRaw >= 100;
   const warnLimit = !overLimit && pctRaw >= BUDGET_WARN_THRESHOLD * 100;
   return {
