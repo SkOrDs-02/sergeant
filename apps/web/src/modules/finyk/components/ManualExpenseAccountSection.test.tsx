@@ -44,3 +44,39 @@ describe("ManualExpenseAccountSection", () => {
     expect(onAccountChange).toHaveBeenCalledWith(null);
   });
 });
+
+describe("ManualExpenseAccountSection: підказка про дату до створення готівки", () => {
+  const anchor = Date.parse("2026-10-20T12:00:00Z");
+  const base = {
+    account: "cash" as const,
+    onAccountChange: vi.fn(),
+    cashExists: true,
+    onCreateCash: vi.fn(),
+    isSubmitting: false,
+    cashCreatedAt: anchor,
+  };
+
+  it("показує підказку для дати раніше за створення рахунку", () => {
+    render(<ManualExpenseAccountSection {...base} date="2026-10-19" />);
+    expect(
+      screen.getByText(
+        "Ця витрата раніше за момент, від якого рахується готівка, баланс не зміниться.",
+      ),
+    ).toBeInTheDocument();
+  });
+
+  it("ховає підказку для дати після створення, без готівки чи без рахунку", () => {
+    const { rerender } = render(
+      <ManualExpenseAccountSection {...base} date="2026-10-21" />,
+    );
+    expect(screen.queryByTestId("finyk-manual-cash-backdated-hint")).toBeNull();
+    rerender(
+      <ManualExpenseAccountSection
+        {...base}
+        account={null}
+        date="2026-10-19"
+      />,
+    );
+    expect(screen.queryByTestId("finyk-manual-cash-backdated-hint")).toBeNull();
+  });
+});
