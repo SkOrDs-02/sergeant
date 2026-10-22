@@ -21,6 +21,7 @@ vi.mock("../auth/useLocalUserId", () => ({
   useLocalUserId: useLocalUserIdMock,
 }));
 
+import { messagesEn } from "@shared/i18n/en";
 import { LocalOnlyDataBanner } from "./LocalOnlyDataBanner";
 import { NON_SYNCABLE_USER_IDS } from "../syncEngine/syncableUserId";
 
@@ -43,6 +44,16 @@ describe("LocalOnlyDataBanner", () => {
       expect(screen.getByText(/Дані лише на цьому пристрої/)).toBeTruthy();
     },
   );
+
+  it("показує англійські рядки в EN-локалі", () => {
+    localStorage.setItem("sergeant:locale", "en");
+    useLocalUserIdMock.mockReturnValue([...NON_SYNCABLE_USER_IDS][0]);
+    render(<LocalOnlyDataBanner onSignIn={vi.fn()} />);
+    const enM = messagesEn.durability?.localOnly;
+    expect(enM).toBeTruthy();
+    expect(screen.getByText(enM!.title)).toBeTruthy();
+    expect(screen.queryByText(/Дані лише на цьому пристрої/)).toBeNull();
+  });
 
   it("НЕ показується залогіненому — для нього твердження просто неправдиве", () => {
     useLocalUserIdMock.mockReturnValue("usr_abc123");
