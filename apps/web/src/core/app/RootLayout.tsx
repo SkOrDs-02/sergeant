@@ -27,6 +27,7 @@ import { AnalyticsConsentGate } from "../observability/AnalyticsConsentGate";
 import { AppLock } from "../security/AppLock";
 import { usePendingDeletion } from "../profile/usePendingDeletion";
 import { useAppLockContext } from "../security/AppLockContext";
+import { isPrivateContentHidden } from "../security/useAppLock";
 import { setFlag, useFlag } from "../lib/featureFlags";
 import { useDemoCommands } from "./useDemoCommands";
 import { HubChatOverlay } from "../hub/HubChatOverlay";
@@ -159,6 +160,17 @@ const AuthUnavailableScreen = lazy(() =>
 
 function AppShell({ children }: { children: React.ReactNode }) {
   const appLock = useAppLockContext();
+  // sec-13/priv-15: під замком дерево маршруту, чат і пошук НЕ рендеряться
+  // (а не лише накриті оверлеєм), тож приватних даних немає в DOM для
+  // інспектора чи скрінрідера. Boot-кластери, sync і dual-write живуть поза
+  // цим гейтом: вони не залежать від видимого UI.
+  const privateHidden = isPrivateContentHidden(appLock.state);
+  const { closeChat } = useHubChatOverlay();
+  useEffect(() => {
+    // Закритий чат не повернеться сам після розблокування (і не відправить
+    // заготовлений prefill); історія чату підтягнеться з useChatSessions.
+    if (privateHidden) closeChat();
+  }, [privateHidden, closeChat]);
   // Вікно на скасування видалення (рішення 3 спеки
   // docs/work/specs/user-deletion-grace-window.md). Стоїть ПЕРЕД
   // boot-кластерами і контентом: позначений акаунт не має ані писати
@@ -275,10 +287,10 @@ function AppShell({ children }: { children: React.ReactNode }) {
       <BootGate>
         <RoutineBootCluster />
       </BootGate>
-      <NpsSurveyGate />
+      {!privateHidden && <NpsSurveyGate />}
       <AnalyticsConsentGate />
-      {children}
-      <HubChatOverlay />
+      {!privateHidden && children}
+      {!privateHidden && <HubChatOverlay />}
     </>
   );
 }

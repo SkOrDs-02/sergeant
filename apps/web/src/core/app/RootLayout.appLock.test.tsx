@@ -125,8 +125,10 @@ describe("RootLayout × App Lock: гарячі клавіші (sec-13, priv-15)"
     fireEvent.keyDown(digit, { key: "/", ctrlKey: true });
 
     expect(ctrlK.defaultPrevented).toBe(false);
-    expect(screen.getByTestId("search-open")).toHaveTextContent("false");
-    expect(screen.getByTestId("shortcuts-open")).toHaveTextContent("false");
+    // Дерево під замком не рендериться, тож ні пошуку, ні діалогів нема.
+    expect(screen.queryByTestId("search-open")).not.toBeInTheDocument();
+    expect(screen.queryByTestId("shortcuts-open")).not.toBeInTheDocument();
+    expect(screen.queryByRole("dialog", { name: /пошук/i })).toBeNull();
     // Замок на місці.
     expect(screen.getByText("Введи PIN")).toBeInTheDocument();
   });
