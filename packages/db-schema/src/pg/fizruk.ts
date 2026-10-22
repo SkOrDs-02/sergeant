@@ -22,7 +22,7 @@ export const fizrukWorkouts = pgTable(
   "fizruk_workouts",
   {
     id: text()
-      .primaryKey()
+      .notNull()
       .default(sql`gen_random_uuid()::text`),
     userId: text("user_id").notNull(),
     startedAt: timestamp("started_at", { withTimezone: true }).notNull(),
@@ -46,6 +46,7 @@ export const fizrukWorkouts = pgTable(
     deletedAt: timestamp("deleted_at", { withTimezone: true }),
   },
   (table) => [
+    primaryKey({ columns: [table.userId, table.id] }),
     index("fizruk_workouts_user_started_idx").on(
       table.userId,
       sql`${table.startedAt} DESC`,
@@ -67,7 +68,7 @@ export const fizrukWorkoutItems = pgTable(
   "fizruk_workout_items",
   {
     id: text()
-      .primaryKey()
+      .notNull()
       .default(sql`gen_random_uuid()::text`),
     workoutId: text("workout_id").notNull(),
     userId: text("user_id").notNull(),
@@ -96,6 +97,7 @@ export const fizrukWorkoutItems = pgTable(
     deletedAt: timestamp("deleted_at", { withTimezone: true }),
   },
   (table) => [
+    primaryKey({ columns: [table.userId, table.id] }),
     index("fizruk_workout_items_workout_idx").on(
       table.workoutId,
       table.sortOrder,
@@ -114,7 +116,7 @@ export const fizrukWorkoutSets = pgTable(
   "fizruk_workout_sets",
   {
     id: text()
-      .primaryKey()
+      .notNull()
       .default(sql`gen_random_uuid()::text`),
     workoutItemId: text("workout_item_id").notNull(),
     userId: text("user_id").notNull(),
@@ -131,6 +133,7 @@ export const fizrukWorkoutSets = pgTable(
     deletedAt: timestamp("deleted_at", { withTimezone: true }),
   },
   (table) => [
+    primaryKey({ columns: [table.userId, table.id] }),
     index("fizruk_workout_sets_item_idx").on(
       table.workoutItemId,
       table.sortOrder,
@@ -148,7 +151,7 @@ export const fizrukCustomExercises = pgTable(
   "fizruk_custom_exercises",
   {
     id: text()
-      .primaryKey()
+      .notNull()
       .default(sql`gen_random_uuid()::text`),
     userId: text("user_id").notNull(),
     dataJson: jsonb("data_json").notNull().default({}),
@@ -161,6 +164,7 @@ export const fizrukCustomExercises = pgTable(
     deletedAt: timestamp("deleted_at", { withTimezone: true }),
   },
   (table) => [
+    primaryKey({ columns: [table.userId, table.id] }),
     index("fizruk_custom_exercises_user_idx")
       .on(table.userId)
       .where(sql`${table.deletedAt} IS NULL`),
@@ -179,7 +183,7 @@ export const fizrukCustomActivities = pgTable(
   "fizruk_custom_activities",
   {
     id: text()
-      .primaryKey()
+      .notNull()
       .default(sql`gen_random_uuid()::text`),
     userId: text("user_id").notNull(),
     dataJson: jsonb("data_json").notNull().default({}),
@@ -192,6 +196,7 @@ export const fizrukCustomActivities = pgTable(
     deletedAt: timestamp("deleted_at", { withTimezone: true }),
   },
   (table) => [
+    primaryKey({ columns: [table.userId, table.id] }),
     index("fizruk_custom_activities_user_idx")
       .on(table.userId)
       .where(sql`${table.deletedAt} IS NULL`),
@@ -211,7 +216,7 @@ export const fizrukMeasurements = pgTable(
   "fizruk_measurements",
   {
     id: text()
-      .primaryKey()
+      .notNull()
       .default(sql`gen_random_uuid()::text`),
     userId: text("user_id").notNull(),
     measuredAt: timestamp("measured_at", { withTimezone: true }).notNull(),
@@ -242,6 +247,7 @@ export const fizrukMeasurements = pgTable(
     deletedAt: timestamp("deleted_at", { withTimezone: true }),
   },
   (table) => [
+    primaryKey({ columns: [table.userId, table.id] }),
     index("fizruk_measurements_user_date_idx").on(
       table.userId,
       sql`${table.measuredAt} DESC`,
@@ -264,7 +270,7 @@ export const fizrukDailyLog = pgTable(
   "fizruk_daily_log",
   {
     id: text()
-      .primaryKey()
+      .notNull()
       .default(sql`gen_random_uuid()::text`),
     userId: text("user_id").notNull(),
     entryAt: timestamp("entry_at", { withTimezone: true }).notNull(),
@@ -282,6 +288,7 @@ export const fizrukDailyLog = pgTable(
     deletedAt: timestamp("deleted_at", { withTimezone: true }),
   },
   (table) => [
+    primaryKey({ columns: [table.userId, table.id] }),
     index("fizruk_daily_log_user_entry_idx").on(
       table.userId,
       sql`${table.entryAt} DESC`,
@@ -384,7 +391,7 @@ export const fizrukWorkoutTemplates = pgTable(
   "fizruk_workout_templates",
   {
     id: text()
-      .primaryKey()
+      .notNull()
       .default(sql`gen_random_uuid()::text`),
     userId: text("user_id").notNull(),
     name: text().notNull(),
@@ -400,6 +407,7 @@ export const fizrukWorkoutTemplates = pgTable(
     deletedAt: timestamp("deleted_at", { withTimezone: true }),
   },
   (table) => [
+    primaryKey({ columns: [table.userId, table.id] }),
     index("fizruk_workout_templates_user_idx")
       .on(table.userId, sql`${table.updatedAt} DESC`)
       .where(sql`${table.deletedAt} IS NULL`),
@@ -424,7 +432,7 @@ export const fizrukInjuries = pgTable(
   {
     // TEXT, not uuid — the client mints `inj_<uuid>`. A uuid column would
     // fail every push with 22P02, the exact bug migrations 094/095 fixed.
-    id: text().primaryKey(),
+    id: text().notNull(),
     userId: text("user_id").notNull(),
     site: text().notNull(),
     startedAt: timestamp("started_at", { withTimezone: true }).notNull(),
@@ -440,6 +448,7 @@ export const fizrukInjuries = pgTable(
     deletedAt: timestamp("deleted_at", { withTimezone: true }),
   },
   (table) => [
+    primaryKey({ columns: [table.userId, table.id] }),
     index("fizruk_injuries_user_active_idx")
       .on(table.userId, table.site)
       .where(sql`${table.deletedAt} IS NULL AND ${table.clearedAt} IS NULL`),

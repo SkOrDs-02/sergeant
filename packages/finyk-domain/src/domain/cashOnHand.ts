@@ -128,7 +128,7 @@ function isBankCashWithdrawal(
   if (tx.manual || tx.amount >= 0) return false;
   if (!CASH_WITHDRAWAL_MCCS.has(Number(tx.mcc))) return false;
   const ms = txTimeMs(tx.time);
-  return Number.isFinite(ms) && ms >= cash.createdAt;
+  return isAtOrAfterCashAnchor(ms, cash);
 }
 
 /**
@@ -161,6 +161,14 @@ export function isCashWithdrawalCandidate(
 function looksLikeCashWithdrawal(description: string | undefined): boolean {
   const normalized = (description ?? "").toLocaleLowerCase("uk-UA");
   return CASH_WITHDRAWAL_FRAGMENTS.some((f) => normalized.includes(f));
+}
+
+/** Чи рух із такою міткою (мс) датований від створення рахунку (forward-only). */
+export function isAtOrAfterCashAnchor(
+  ms: number,
+  cash: CashOnHandState,
+): boolean {
+  return Number.isFinite(ms) && ms >= cash.createdAt;
 }
 
 function entryTimeMs(entry: ManualExpenseEntry): number {
@@ -201,7 +209,7 @@ export function computeCashBalanceMinor(
   for (const entry of input.manualExpenses ?? []) {
     if (!entry) continue;
     const ms = entryTimeMs(entry);
-    if (!Number.isFinite(ms) || ms < cash.createdAt) continue;
+    if (!isAtOrAfterCashAnchor(ms, cash)) continue;
     const isIncome = resolveManualExpenseKind(entry) === "income";
     if (entry.account === "cash") {
       balance += isIncome ? entryMinor(entry) : -entryMinor(entry);

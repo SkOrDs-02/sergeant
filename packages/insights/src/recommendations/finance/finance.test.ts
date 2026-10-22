@@ -93,18 +93,18 @@ describe("budgetLimitsRule", () => {
     });
     const recs = budgetLimitsRule.evaluate(ctx);
     expect(recs[0]?.id).toBe("budget_over_smoking");
-    // 590/500 = 1.18 → перевищено на 18%
-    expect(recs[0]?.title).toContain("18%");
+    // 590 з 500: сума перевищення, як на картці ліміту
+    expect(recs[0]?.title).toContain("перевищено на 90 ₴");
   });
 
-  it("не округлює факт до відсотка: 807,50 з 500 → перевищено на 62%", () => {
+  it("не округлює факт до відсотка: 807,50 з 500 → перевищено на 307,5 ₴", () => {
     // Сліпий замір 2026-09-24: та сама сума, що й на картці «Перевищено на
     // 307,50 ₴», без проміжного округлення до 808.
     const ctx = baseCtx({
       limitUsage: [usage({ id: "b", categoryId: "food", limit: 500 }, 807.5)],
     });
     const rec = budgetLimitsRule.evaluate(ctx)[0];
-    expect(rec?.title).toContain("62%");
+    expect(rec?.title).toContain("перевищено на 307,5 ₴");
     expect(rec?.body).toContain("808 ₴ з 500 ₴");
   });
 

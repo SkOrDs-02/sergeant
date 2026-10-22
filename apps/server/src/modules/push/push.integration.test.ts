@@ -341,4 +341,73 @@ describe("push — integration (real Postgres)", () => {
     },
     INTEGRATION_TIMEOUT_MS,
   );
+
+  // priv-04: завершення сесії знімає ЛИШЕ її підписки. Друга сесія того
+  // самого користувача і підписки іншого користувача лишаються активними;
+  // на спільному браузері B перебирає рядок і стає новим власником сесії.
+  it(
+    "session delete → soft-delete лише підписок цієї сесії, чужі не чіпає",
+    async (ctx) => {
+      if (!dockerAvailable) return ctx.skip();
+      const { revokePushSubscriptionsForSession } =
+        await import("../../auth/pushSessionBinding.js");
+      const ENDPOINT_A2 = "https://push.example/sub-a2";
+      const sub = (token: string, p: string) => ({
+        platform: "web",
+        token,
+        keys: { p256dh: p, auth: p },
+      });
+      const withSession = (req: Request, sessionId: string) =>
+        Object.assign(req, { sessionId }) as Request;
+
+      await registerFn(
+        withSession(makeReq(USER_A, sub(ENDPOINT_A, "k_a")), "sess_a1"),
+        makeRes(),
+      );
+      await registerFn(
+        withSession(makeReq(USER_A, sub(ENDPOINT_A2, "k_a2")), "sess_a2"),
+        makeRes(),
+      );
+      await registerFn(
+        withSession(makeReq(USER_B, sub(ENDPOINT_B, "k_b")), "sess_b1"),
+        makeRes(),
+      );
+
+      await revokePushSubscriptionsForSession(harness.pool, "sess_a1");
+
+      const active = async () =>
+        (
+          await harness.pool.query<{ endpoint: string; session_id: string }>(
+            `SELECT endpoint, session_id FROM push_subscriptions
+              WHERE deleted_at IS NULL ORDER BY endpoint`,
+          )
+        ).rows;
+      expect(await active()).toEqual([
+        { endpoint: ENDPOINT_A2, session_id: "sess_a2" },
+        { endpoint: ENDPOINT_B, session_id: "sess_b1" },
+      ]);
+
+      // Спільний браузер: B логіниться в тому самому браузері, де A вийшов,
+      // і реєструє ту саму підписку → рядок переходить до B і його сесії.
+      await registerFn(
+        withSession(makeReq(USER_B, sub(ENDPOINT_A, "k_a")), "sess_b2"),
+        makeRes(),
+      );
+      // Повторний (запізнілий) revoke старої сесії A рядок B не чіпає.
+      await revokePushSubscriptionsForSession(harness.pool, "sess_a1");
+      const { rows } = await harness.pool.query<{
+        user_id: string;
+        session_id: string;
+        deleted_at: Date | null;
+      }>(
+        `SELECT user_id, session_id, deleted_at FROM push_subscriptions
+          WHERE endpoint = $1`,
+        [ENDPOINT_A],
+      );
+      expect(rows).toEqual([
+        { user_id: USER_B, session_id: "sess_b2", deleted_at: null },
+      ]);
+    },
+    INTEGRATION_TIMEOUT_MS,
+  );
 });

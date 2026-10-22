@@ -45,13 +45,11 @@
  */
 import { Button } from "@shared/components/ui/Button";
 import { Notice } from "@shared/components/ui/Notice";
-import { messages } from "@shared/i18n/uk";
+import { useLocale } from "@shared/i18n/useLocale";
 
 import { useLocalUserId } from "../auth/useLocalUserId";
 import { isSyncableUserId } from "../syncEngine/syncableUserId";
 import { useHubBannerSlot } from "../hub/bannerBudget";
-
-const m = messages.durability.localOnly;
 
 export interface LocalOnlyDataBannerProps {
   /** Відкриває екран входу/реєстрації. */
@@ -64,6 +62,8 @@ export function LocalOnlyDataBanner({
   onSignIn,
   onBackup,
 }: LocalOnlyDataBannerProps) {
+  const { messages } = useLocale();
+  const m = messages.durability.localOnly;
   const userId = useLocalUserId();
   // Бюджет банерів хабу (F3, 2026-09-01): це попередження — пріоритет 0,
   // тож місце в нього є завжди, коли воно хоче показатись.

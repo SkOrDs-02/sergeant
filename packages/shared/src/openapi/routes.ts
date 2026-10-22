@@ -437,7 +437,7 @@ export const paths: ZodOpenApiPathsObject = {
       responses: {
         "200": {
           description:
-            "Результат по кожному op-у (`applied` / `duplicate` / `rejected` + `reason`). `last_op_id` — number; `server_now` — годинник сервера для виміру clock skew.",
+            "Результат по кожному op-у (`applied` / `duplicate` / `rejected` / `retry` + `reason`; `retry` - транзієнтна помилка БД, оп не в журналі, повтори його). `last_op_id` — number; `server_now` — годинник сервера для виміру clock skew.",
           content: {
             "application/json": {
               schema: z.object({
@@ -446,7 +446,12 @@ export const paths: ZodOpenApiPathsObject = {
                 results: z.array(
                   z.object({
                     idempotency_key: z.string(),
-                    status: z.enum(["applied", "duplicate", "rejected"]),
+                    status: z.enum([
+                      "applied",
+                      "duplicate",
+                      "rejected",
+                      "retry",
+                    ]),
                     reason: z.string().optional(),
                   }),
                 ),

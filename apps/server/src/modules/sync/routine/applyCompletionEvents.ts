@@ -22,13 +22,14 @@ import type { AppliedStatus } from "../syncV2-types.js";
  *     редагування старої.
  *   - **tombstone-resurrection guard.** Нема tombstone-ів.
  *
- * Ідемпотентність: `INSERT ... ON CONFLICT (id) DO NOTHING`. Клієнт
- * генерує `id` детерміновано (`buildCompletionEventId`), тож повторна
+ * Ідемпотентність: `INSERT ... ON CONFLICT (user_id, id) DO NOTHING`.
+ * Клієнт генерує `id` детерміновано (`buildCompletionEventId`), тож повторна
  * доставка того самого toggle-а — тихий no-op, а не дубль. Повертаємо
  * `applied` і в цьому разі: для клієнта важливо, що рядок у черзі можна
- * прибрати, а не чи саме цей push його створив — але ЛИШЕ якщо рядок,
- * на який спрацював конфлікт, належить тому самому користувачу (див.
- * owner-guard після INSERT-а).
+ * прибрати, а не чи саме цей push його створив. Конфлікт можливий лише з
+ * рядком ТОГО Ж користувача (PK `(user_id, id)`, міграція 162), тож чужий
+ * рядок із таким самим `id` не блокує вставку і окремого owner-guard-а
+ * після INSERT-а більше немає.
  *
  * AI-CONTEXT: `id` тут — TEXT, а НЕ UUID. Це свідомий обхід пастки
  * `routine_entries.id UUID` (`026_routine_tables.sql`), через яку реальний
@@ -103,12 +104,12 @@ export async function applyRoutineCompletionEvents(
   const deviceId =
     typeof row["device_id"] === "string" ? row["device_id"] : null;
 
-  const res = await client.query(
+  await client.query(
     `INSERT INTO routine_completion_events
        (id, user_id, habit_id, date_key, state, occurred_at,
         tz_offset_min, day_anchor, source, device_id, created_at)
      VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11)
-     ON CONFLICT (id) DO NOTHING`,
+     ON CONFLICT (user_id, id) DO NOTHING`,
     [
       id,
       userId,
@@ -124,24 +125,7 @@ export async function applyRoutineCompletionEvents(
     ],
   );
 
-  // `DO NOTHING` мовчазний за визначенням, і сам по собі він не розрізняє
-  // «мій повтор» від «чужий рядок із таким самим id». Перевірка `row.user_id`
-  // вище цього не закриває: вона звіряє payload із сесією, а не з тим, ХТО
-  // вже володіє рядком у таблиці. Підібраний `id` (він тут TEXT і будується
-  // клієнтом детерміновано, тобто вгадуваний) давав no-op і чесний `applied`
-  // — тобто відмітка мовчки не доїжджала, і виглядало це як успіх. Owner-guard
-  // дзеркалить сусідів (`applyPantryEvents.ts`, `applySyncGoals.ts`), тільки
-  // там він стоїть на ретракції, а тут — на вставці, бо іншої мутації немає.
-  if (res.rowCount === 0) {
-    const existing = await client.query<{ user_id: string }>(
-      `SELECT user_id FROM routine_completion_events WHERE id = $1`,
-      [id],
-    );
-    // Рядок зник між INSERT-ом і SELECT-ом — таблиця append-only, тож це
-    // неможливо штатно; трактуємо як не-наш рядок, а не як успіх.
-    if (existing.rows.length === 0 || existing.rows[0]!.user_id !== userId) {
-      return { status: "rejected", reason: "fk_violation" };
-    }
-  }
+  // `res.rowCount === 0` тут — лише повтор власного рядка (PK `(user_id, id)`):
+  // ідемпотентний no-op, а не чужий рядок. Чужий `id` ніколи не конфліктує.
   return { status: "applied" };
 }

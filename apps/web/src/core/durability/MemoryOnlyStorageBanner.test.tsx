@@ -1,5 +1,5 @@
 /** @vitest-environment jsdom */
-import { afterEach, describe, expect, it } from "vitest";
+import { afterEach, beforeEach, describe, expect, it } from "vitest";
 import { act, cleanup, render, screen } from "@testing-library/react";
 
 import {
@@ -7,13 +7,19 @@ import {
   noteActiveSqliteVfs,
   noteSqliteVfsFallbackReason,
 } from "../db/storageBackendState";
+import { messagesEn } from "@shared/i18n/en";
 import { messages } from "@shared/i18n/uk";
 import { MemoryOnlyStorageBanner } from "./MemoryOnlyStorageBanner";
 
 const m = messages.durability.memoryOnly;
 
+beforeEach(() => {
+  localStorage.clear();
+});
+
 afterEach(() => {
   cleanup();
+  localStorage.clear();
   __resetActiveSqliteVfsForTests();
 });
 
@@ -40,5 +46,17 @@ describe("MemoryOnlyStorageBanner", () => {
     noteActiveSqliteVfs("memory");
     render(<MemoryOnlyStorageBanner />);
     expect(screen.getByText(m.bodyOtherTab)).toBeTruthy();
+  });
+
+  it("показує англійські рядки в EN-локалі", () => {
+    localStorage.setItem("sergeant:locale", "en");
+    noteActiveSqliteVfs("memory");
+    render(<MemoryOnlyStorageBanner />);
+    const enM = messagesEn.durability?.memoryOnly;
+    expect(enM).toBeTruthy();
+    expect(screen.getByText(enM!.title)).toBeTruthy();
+    expect(screen.getByText(enM!.body)).toBeTruthy();
+    expect(screen.getByRole("button", { name: enM!.reload })).toBeTruthy();
+    expect(screen.queryByText(m.title)).toBeNull();
   });
 });

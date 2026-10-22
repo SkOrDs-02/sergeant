@@ -14,7 +14,7 @@ import { useSyncExternalStore } from "react";
 
 import { Button } from "@shared/components/ui/Button";
 import { Notice } from "@shared/components/ui/Notice";
-import { messages } from "@shared/i18n/uk";
+import { useLocale } from "@shared/i18n/useLocale";
 
 import {
   readActiveSqliteVfs,
@@ -22,9 +22,9 @@ import {
   subscribeActiveSqliteVfs,
 } from "../db/storageBackendState";
 
-const m = messages.durability.memoryOnly;
-
 export function MemoryOnlyStorageBanner() {
+  const { messages } = useLocale();
+  const m = messages.durability.memoryOnly;
   const vfs = useSyncExternalStore(
     subscribeActiveSqliteVfs,
     readActiveSqliteVfs,

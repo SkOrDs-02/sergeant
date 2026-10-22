@@ -45,6 +45,11 @@
  */
 import { computePantryDelta } from "./diff.pantryDelta.js";
 import {
+  computePrefsPatch,
+  isEmptyPrefsPatch,
+  type NutritionPrefsPatch,
+} from "./diff.prefsPatch.js";
+import {
   diffGoalPeriodRestoreOps,
   type GoalPeriodRestoreOp,
   type NutritionGoalPeriodRestoreSnapshot,
@@ -202,6 +207,12 @@ export interface PantryDeleteOp {
 export interface PrefsUpsertOp {
   readonly kind: "prefs-upsert";
   readonly prefs: NutritionPrefsSnapshot;
+  /**
+   * data-04: змінені верхні ключі для sync-outbox (`prefs_merge`). Відсутній
+   * → повна заміна (перше створення, нерозбірний blob, видалений ключ).
+   * Локальний SQLite-запис завжди повний.
+   */
+  readonly patch?: NutritionPrefsPatch;
 }
 
 export interface RecipeUpsertOp {
@@ -391,7 +402,16 @@ export function diffNutritionDualWriteOps(
 
   // --- Prefs (singleton) ---
   if (prefsChanged(prev.prefs, next.prefs) && next.prefs) {
-    ops.push({ kind: "prefs-upsert", prefs: next.prefs });
+    const patch = computePrefsPatch(prev.prefs, next.prefs);
+    // Семантично однакові prefs (лише інший порядок/форматування JSON):
+    // слати нічого.
+    if (!patch || !isEmptyPrefsPatch(patch)) {
+      ops.push(
+        patch
+          ? { kind: "prefs-upsert", prefs: next.prefs, patch }
+          : { kind: "prefs-upsert", prefs: next.prefs },
+      );
+    }
   }
 
   // --- Журнал цілей КБЖВ (W1-KBJU-APPEND, стадія 1) ---

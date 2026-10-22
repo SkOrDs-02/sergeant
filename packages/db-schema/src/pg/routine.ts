@@ -22,7 +22,7 @@ export const routineEntries = pgTable(
   "routine_entries",
   {
     id: text()
-      .primaryKey()
+      .notNull()
       .default(sql`gen_random_uuid()::text`),
     userId: text("user_id").notNull(),
     name: text().notNull(),
@@ -36,6 +36,7 @@ export const routineEntries = pgTable(
     deletedAt: timestamp("deleted_at", { withTimezone: true }),
   },
   (table) => [
+    primaryKey({ columns: [table.userId, table.id] }),
     index("routine_entries_user_created_idx").on(
       table.userId,
       sql`${table.createdAt} DESC`,
@@ -69,7 +70,7 @@ export const routineEntries = pgTable(
 export const routineCompletionEvents = pgTable(
   "routine_completion_events",
   {
-    id: text().primaryKey(),
+    id: text().notNull(),
     userId: text("user_id").notNull(),
     habitId: text("habit_id").notNull(),
     /** YYYY-MM-DD як його порахував КЛІЄНТ; трактування залежить від `dayAnchor`. */
@@ -90,6 +91,7 @@ export const routineCompletionEvents = pgTable(
       .defaultNow(),
   },
   (table) => [
+    primaryKey({ columns: [table.userId, table.id] }),
     index("routine_completion_events_user_habit_date_idx").on(
       table.userId,
       table.habitId,
@@ -143,7 +145,7 @@ export const routineHabits = pgTable(
   "routine_habits",
   {
     id: text()
-      .primaryKey()
+      .notNull()
       .default(sql`gen_random_uuid()::text`),
     userId: text("user_id").notNull(),
     name: text().notNull(),
@@ -184,6 +186,7 @@ export const routineHabits = pgTable(
     deletedAt: timestamp("deleted_at", { withTimezone: true }),
   },
   (table) => [
+    primaryKey({ columns: [table.userId, table.id] }),
     index("routine_habits_user_active_idx")
       .on(table.userId)
       .where(sql`${table.deletedAt} IS NULL`),
@@ -197,7 +200,7 @@ export const routineTags = pgTable(
   "routine_tags",
   {
     id: text()
-      .primaryKey()
+      .notNull()
       .default(sql`gen_random_uuid()::text`),
     userId: text("user_id").notNull(),
     name: text().notNull(),
@@ -211,6 +214,7 @@ export const routineTags = pgTable(
     deletedAt: timestamp("deleted_at", { withTimezone: true }),
   },
   (table) => [
+    primaryKey({ columns: [table.userId, table.id] }),
     index("routine_tags_user_active_idx")
       .on(table.userId)
       .where(sql`${table.deletedAt} IS NULL`),
@@ -224,7 +228,7 @@ export const routineCategories = pgTable(
   "routine_categories",
   {
     id: text()
-      .primaryKey()
+      .notNull()
       .default(sql`gen_random_uuid()::text`),
     userId: text("user_id").notNull(),
     name: text().notNull(),
@@ -238,6 +242,7 @@ export const routineCategories = pgTable(
     deletedAt: timestamp("deleted_at", { withTimezone: true }),
   },
   (table) => [
+    primaryKey({ columns: [table.userId, table.id] }),
     index("routine_categories_user_active_idx")
       .on(table.userId)
       .where(sql`${table.deletedAt} IS NULL`),

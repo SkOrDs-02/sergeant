@@ -67,15 +67,12 @@ describe("applyFizrukCustomExercises", () => {
     expect(fake.queries).toHaveLength(0);
   });
 
-  it("rejects fk_violation when the existing row belongs to another user", async () => {
+  // data-01: PK `(user_id, id)` (міграція 162). Lookup звужений по
+  // `user_id`, тож чужий рядок із тим самим id сюди не потрапляє і не дає
+  // `fk_violation`: порожній результат веде на звичайну вставку.
+  it("звужує lookup по user_id: чужий рядок із тим самим id не блокує запис", async () => {
     const fake = new FakeClient();
-    fake.queueRows([
-      {
-        user_id: "someone-else",
-        updated_at: new Date("2026-07-21T07:00:00.000Z"),
-        deleted_at: null,
-      },
-    ]);
+    fake.queueRows([]);
 
     await expect(
       applyFizrukCustomExercises(
@@ -88,9 +85,9 @@ describe("applyFizrukCustomExercises", () => {
         "user-1",
         clientTs,
       ),
-    ).resolves.toEqual({ status: "rejected", reason: "fk_violation" });
-    // Ownership-перевірка мала зупинити хід ще до UPDATE.
-    expect(fake.queries).toHaveLength(1);
+    ).resolves.toEqual({ status: "applied" });
+    expect(fake.queries[0]!.sql).toMatch(/WHERE id = \$1 AND user_id = \$2/);
+    expect(fake.queries[0]!.params).toEqual(["custom-1", "user-1"]);
   });
 
   it("rejects lww_conflict when the existing row is newer or equal to clientTs", async () => {
@@ -669,15 +666,12 @@ describe("applyFizrukMeasurements", () => {
     ]);
   });
 
-  it("rejects fk_violation when the existing row belongs to another user", async () => {
+  // data-01: PK `(user_id, id)` (міграція 162). Lookup звужений по
+  // `user_id`, тож чужий рядок із тим самим id сюди не потрапляє і не дає
+  // `fk_violation`: порожній результат веде на звичайну вставку.
+  it("звужує lookup по user_id: чужий рядок із тим самим id не блокує запис", async () => {
     const fake = new FakeClient();
-    fake.queueRows([
-      {
-        user_id: "someone-else",
-        updated_at: new Date("2026-07-21T07:00:00.000Z"),
-        deleted_at: null,
-      },
-    ]);
+    fake.queueRows([]);
 
     await expect(
       applyFizrukMeasurements(
@@ -686,7 +680,9 @@ describe("applyFizrukMeasurements", () => {
         "user-1",
         clientTs,
       ),
-    ).resolves.toEqual({ status: "rejected", reason: "fk_violation" });
+    ).resolves.toEqual({ status: "applied" });
+    expect(fake.queries[0]!.sql).toMatch(/WHERE id = \$1 AND user_id = \$2/);
+    expect(fake.queries[0]!.params).toEqual([validRow()["id"], "user-1"]);
   });
 
   it("rejects lww_conflict when the existing row is newer or equal to clientTs", async () => {

@@ -29,10 +29,10 @@ export async function applyFizrukDailyLog(
 
   const existing = await queryOne<ExistingUuidRow>(
     client,
-    `SELECT user_id, updated_at, deleted_at FROM fizruk_daily_log WHERE id = $1`,
-    [id],
+    `SELECT user_id, updated_at, deleted_at FROM fizruk_daily_log WHERE id = $1 AND user_id = $2`,
+    [id, userId],
   );
-  const guard = guardUuidPkApply(existing, userId, clientTs);
+  const guard = guardUuidPkApply(existing, clientTs);
   if (guard) return guard;
 
   if (op.op === "delete") {
@@ -302,10 +302,10 @@ export async function applyFizrukWorkoutTemplates(
 
   const existing = await queryOne<ExistingUuidRow>(
     client,
-    `SELECT user_id, updated_at, deleted_at FROM fizruk_workout_templates WHERE id = $1`,
-    [id],
+    `SELECT user_id, updated_at, deleted_at FROM fizruk_workout_templates WHERE id = $1 AND user_id = $2`,
+    [id, userId],
   );
-  const guard = guardUuidPkApply(existing, userId, clientTs);
+  const guard = guardUuidPkApply(existing, clientTs);
   if (guard) return guard;
 
   if (op.op === "delete") {

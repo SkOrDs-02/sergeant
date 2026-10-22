@@ -259,6 +259,8 @@ interface IsolationCase {
   statuses?: number[];
   /** Додаткова перевірка відповіді поверх «немає маркера Б». */
   extra?: (res: request.Response) => void;
+  /** Додаткова перевірка стану БД після запиту (поверх незмінного знімка Б). */
+  verify?: (ctx: Ctx) => Promise<void>;
 }
 
 const asA = (t: request.Test): request.Test => t.set("x-test-user", USER_A);
@@ -760,8 +762,10 @@ const ISOLATION_CASES: IsolationCase[] = [
   },
   {
     route: "POST /api/v2/sync/push",
-    // А штовхає оп у рядок із id Б (з власним user_id у тілі): відхилено,
-    // рядок Б не перезаписується.
+    // А штовхає оп із тим самим id, що й рядок Б (з власним user_id у тілі).
+    // Після міграції 162 PK складений `(user_id, id)` (data-01): чужий id не
+    // блокує запис А і не дає `fk_violation`, а створює ВЛАСНИЙ рядок А.
+    // Рядок Б не перезаписується (знімок нижче), обидва співіснують.
     act: ({ app }) =>
       asA(
         request(app)
@@ -784,7 +788,18 @@ const ISOLATION_CASES: IsolationCase[] = [
           }),
       ),
     extra: (res) =>
-      expect(JSON.stringify(res.body.results)).toContain("rejected"),
+      expect(res.body.results).toEqual([
+        expect.objectContaining({ status: "applied" }),
+      ]),
+    verify: async ({ pool }) => {
+      const { rows } = await pool.query<{ user_id: string }>(
+        `SELECT user_id FROM finyk_manual_expenses WHERE id = $1 ORDER BY user_id`,
+        [B_EXPENSE_ID],
+      );
+      expect(rows.map((r) => r.user_id).sort()).toEqual(
+        [USER_A, USER_B].sort(),
+      );
+    },
   },
 ];
 
@@ -1282,6 +1297,7 @@ describe("crossUserIsolation: А не бачить і не змінює дані
         ).toBe(true);
       }
       c.extra?.(res);
+      await c.verify?.(full);
 
       expect(
         await snapshotB(full.pool),

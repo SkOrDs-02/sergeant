@@ -63,8 +63,9 @@ export interface ResolvedColumnMapping {
    * доказ категорії після власної розмітки банку. */
   mccColIndex: number | null;
   dateFormat: ImportDateFormat | undefined;
-  /** `undefined` — автодетект десяткового роздільника на кожне значення
-   * окремо. Так само, як `dateFormat` вище: жорстка підказка описує
+  /** `undefined` — немає підказки: роздільник визначається ПО КОЛОНЦІ
+   * (`csvParser.ts#inferDecimalSeparator`), підказка лише розв'язує
+   * неоднозначне «1,234». Так само, як `dateFormat` вище: жорстка підказка описує
    * ДРУКОВАНИЙ формат банку і на канонічних числах з типізованих клітинок
    * XLSX (`-1234.56`) дала б протилежний результат, тому
    * `statementPreview.ts` знімає її для сіток `sourceKind: "sheet"`. */

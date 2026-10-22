@@ -310,15 +310,6 @@ describe("finyk applySync", () => {
 
     await expect(
       applyFinykBudgets(
-        makeClient([existing({ user_id: "other-user" })]),
-        op({ id: "budget-1", user_id: USER_ID, data_json: {} }),
-        USER_ID,
-        CLIENT_TS,
-      ),
-    ).resolves.toEqual({ status: "rejected", reason: "fk_violation" });
-
-    await expect(
-      applyFinykBudgets(
         makeClient([]),
         op({ id: "budget-1", user_id: USER_ID }),
         USER_ID,
@@ -735,19 +726,6 @@ describe("nutrition applySync", () => {
         CLIENT_TS,
       ),
     ).resolves.toEqual({ status: "rejected", reason: "user_id_mismatch" });
-
-    await expect(
-      applyNutritionMeals(
-        makeClient([existing({ user_id: "other-user" })]),
-        op({
-          id: "meal-1",
-          user_id: USER_ID,
-          eaten_at: CLIENT_TS.toISOString(),
-        }),
-        USER_ID,
-        CLIENT_TS,
-      ),
-    ).resolves.toEqual({ status: "rejected", reason: "fk_violation" });
 
     await expect(
       applyNutritionMeals(
@@ -1235,15 +1213,6 @@ describe("nutrition applySync", () => {
 
     await expect(
       applyNutritionRecipes(
-        makeClient([existing({ user_id: "other-user" })]),
-        op({ id: "recipe-1", user_id: USER_ID, data_json: {} }),
-        USER_ID,
-        CLIENT_TS,
-      ),
-    ).resolves.toEqual({ status: "rejected", reason: "fk_violation" });
-
-    await expect(
-      applyNutritionRecipes(
         makeClient([existing({ updated_at: NEWER_TS })]),
         op({ id: "recipe-1", user_id: USER_ID, data_json: {} }),
         USER_ID,
@@ -1359,19 +1328,6 @@ describe("fizruk applySync", () => {
         CLIENT_TS,
       ),
     ).resolves.toEqual({ status: "rejected", reason: "user_id_mismatch" });
-
-    await expect(
-      applyFizrukWorkouts(
-        makeClient([existing({ user_id: "other-user" })]),
-        op({
-          id: "workout-1",
-          user_id: USER_ID,
-          started_at: CLIENT_TS.toISOString(),
-        }),
-        USER_ID,
-        CLIENT_TS,
-      ),
-    ).resolves.toEqual({ status: "rejected", reason: "fk_violation" });
 
     await expect(
       applyFizrukWorkouts(
@@ -1504,21 +1460,6 @@ describe("fizruk applySync", () => {
         CLIENT_TS,
       ),
     ).resolves.toEqual({ status: "rejected", reason: "user_id_mismatch" });
-
-    await expect(
-      applyFizrukItems(
-        makeClient([existing({ user_id: "other-user" })]),
-        op({
-          id: "item-1",
-          user_id: USER_ID,
-          workout_id: "workout-1",
-          exercise_id: "exercise-1",
-          name_uk: "Squat",
-        }),
-        USER_ID,
-        CLIENT_TS,
-      ),
-    ).resolves.toEqual({ status: "rejected", reason: "fk_violation" });
 
     await expect(
       applyFizrukItems(
@@ -1701,15 +1642,6 @@ describe("fizruk applySync", () => {
 
     await expect(
       applyFizrukSets(
-        makeClient([existing({ user_id: "other-user" })]),
-        op({ id: "set-1", user_id: USER_ID, workout_item_id: "item-1" }),
-        USER_ID,
-        CLIENT_TS,
-      ),
-    ).resolves.toEqual({ status: "rejected", reason: "fk_violation" });
-
-    await expect(
-      applyFizrukSets(
         makeClient([existing({ updated_at: NEWER_TS })]),
         op({ id: "set-1", user_id: USER_ID, workout_item_id: "item-1" }),
         USER_ID,
@@ -1856,15 +1788,6 @@ describe("fizruk applySync", () => {
 
     await expect(
       applyFizrukCustomExercises(
-        makeClient([existing({ user_id: "other-user" })]),
-        op({ id: "exercise-1", user_id: USER_ID, data_json: {} }),
-        USER_ID,
-        CLIENT_TS,
-      ),
-    ).resolves.toEqual({ status: "rejected", reason: "fk_violation" });
-
-    await expect(
-      applyFizrukCustomExercises(
         makeClient([existing({ updated_at: NEWER_TS })]),
         op({ id: "exercise-1", user_id: USER_ID, data_json: {} }),
         USER_ID,
@@ -1978,19 +1901,6 @@ describe("fizruk applySync", () => {
         CLIENT_TS,
       ),
     ).resolves.toEqual({ status: "rejected", reason: "user_id_mismatch" });
-
-    await expect(
-      applyFizrukMeasurements(
-        makeClient([existing({ user_id: "other-user" })]),
-        op({
-          id: "measure-1",
-          user_id: USER_ID,
-          measured_at: CLIENT_TS.toISOString(),
-        }),
-        USER_ID,
-        CLIENT_TS,
-      ),
-    ).resolves.toEqual({ status: "rejected", reason: "fk_violation" });
 
     await expect(
       applyFizrukMeasurements(
@@ -2211,15 +2121,6 @@ describe("routine applySync", () => {
   });
 
   it("rejects routine entry conflicts and bad dates", async () => {
-    await expect(
-      applyRoutineEntries(
-        makeClient([existing({ user_id: "other-user" })]),
-        op({ id: "entry-1", user_id: USER_ID, name: "Walk" }),
-        USER_ID,
-        CLIENT_TS,
-      ),
-    ).resolves.toEqual({ status: "rejected", reason: "fk_violation" });
-
     await expect(
       applyRoutineEntries(
         makeClient([existing({ updated_at: NEWER_TS })]),

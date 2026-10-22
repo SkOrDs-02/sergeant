@@ -507,6 +507,18 @@ export async function runSyncEnginePushOnce(
           op: row.op,
         });
         rejected += 1;
+      } else if (result?.status === "retry") {
+        // data-18: транзієнтна помилка БД на сервері, оп не в журналі.
+        await deps.markRetry(
+          row.id,
+          callPlanRetry(
+            deps,
+            row.attempts,
+            now,
+            `server_retry:${result.reason ?? "unspecified"}`,
+          ),
+        );
+        retried += 1;
       } else {
         const lastError =
           result === undefined

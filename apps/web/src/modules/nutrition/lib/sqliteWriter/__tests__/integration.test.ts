@@ -524,6 +524,28 @@ describe("nutrition dualWrite — outbox enqueue wiring", () => {
     });
   });
 
+  it("data-04: prefs-upsert з patch шле в outbox лише змінені ключі з prefs_merge", async () => {
+    await applyNutritionDualWriteOps(
+      handle.client,
+      [
+        {
+          kind: "prefs-upsert",
+          prefs: { prefsJson: '{"a":1,"b":2}', activePantryId: "p1" },
+          patch: { keys: { b: 2 }, activePantryChanged: false },
+        },
+      ],
+      { userId: UID, clientTs: TS1 },
+    );
+    await Promise.resolve();
+    await Promise.resolve();
+    const [, input] = enqueueMock.mock.calls[0]!;
+    expect(input.row).toEqual({
+      user_id: UID,
+      prefs_json: '{"b":2}',
+      prefs_merge: true,
+    });
+  });
+
   it("enqueues nutrition_recipes insert on recipe-upsert", async () => {
     await applyNutritionDualWriteOps(
       handle.client,

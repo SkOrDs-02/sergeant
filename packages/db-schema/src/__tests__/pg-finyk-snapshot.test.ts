@@ -203,7 +203,13 @@ describe.each(PER_ROW_JSONB_TABLES)(
     it("uses text() PK with default (097: was uuid until finyk's client-side ids — b_/sub_/a_/cus_/bare Date.now() — started 22P02-ing every push)", () => {
       const cols = Object.fromEntries(table.columns.map((c) => [c.name, c]));
       expect(cols["id"]!.columnType).toBe("PgText");
-      expect(cols["id"]!.primary).toBe(true);
+      expect(cols["id"]!.primary).toBe(false);
+      expect(cols["id"]!.notNull).toBe(true);
+      // data-01, міграція 162: PK складений `(user_id, id)`, `id` лишається NOT NULL.
+      expect(table.primaryKeys[0]!.columns.map((c) => c.name)).toEqual([
+        "user_id",
+        "id",
+      ]);
       expect(cols["id"]!.hasDefault).toBe(true);
       expect(cols["data_json"]!.columnType).toBe("PgJsonb");
       expect(cols["data_json"]!.notNull).toBe(true);

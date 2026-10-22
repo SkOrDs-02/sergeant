@@ -43,10 +43,10 @@ export async function applyFizrukInjuries(
 
   const existing = await queryOne<ExistingUuidRow>(
     client,
-    `SELECT user_id, updated_at, deleted_at FROM fizruk_injuries WHERE id = $1`,
-    [id],
+    `SELECT user_id, updated_at, deleted_at FROM fizruk_injuries WHERE id = $1 AND user_id = $2`,
+    [id, userId],
   );
-  const guard = guardUuidPkApply(existing, userId, clientTs);
+  const guard = guardUuidPkApply(existing, clientTs);
   if (guard) return guard;
 
   if (op.op === "delete") {

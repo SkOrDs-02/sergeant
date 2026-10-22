@@ -15,6 +15,7 @@ import { MoneyInput } from "@shared/components/ui/MoneyInput";
 import { Label } from "@shared/components/ui/FormField";
 import { Tooltip } from "@shared/components/ui/Tooltip";
 import { Select } from "@shared/components/ui/Select";
+import { formatLimitUsedLabel } from "@sergeant/finyk-domain/domain/budget";
 import { MorphChevron } from "@shared/components/ui/MorphChevron";
 import { CategorySwatch } from "../CategorySwatch";
 
@@ -278,7 +279,9 @@ function LimitBudgetCardComponent({
           </div>
           <div className="mt-2 flex flex-wrap items-baseline justify-between gap-x-3 gap-y-1 text-style-caption text-muted">
             {amountNode}
-            <span>{showBalance ? `${pctRounded}% використано` : "••••"}</span>
+            <span>
+              {showBalance ? formatLimitUsedLabel(pctRounded) : "••••"}
+            </span>
           </div>
           {showBalance && forecast != null && forecast > 0 && (
             <div className="text-style-caption text-subtle mt-1">

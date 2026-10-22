@@ -58,7 +58,13 @@ describe("pg/nutritionMeals schema snapshot", () => {
 
     expect(columnMap["id"]!.dataType).toBe("string");
     expect(columnMap["id"]!.columnType).toBe("PgText");
-    expect(columnMap["id"]!.primary).toBe(true);
+    expect(columnMap["id"]!.primary).toBe(false);
+    expect(columnMap["id"]!.notNull).toBe(true);
+    // data-01, міграція 162: PK складений `(user_id, id)`, `id` лишається NOT NULL.
+    expect(config.primaryKeys[0]!.columns.map((c) => c.name)).toEqual([
+      "user_id",
+      "id",
+    ]);
     expect(columnMap["id"]!.hasDefault).toBe(true);
 
     expect(columnMap["user_id"]!.dataType).toBe("string");
@@ -441,7 +447,13 @@ describe("pg/nutritionPantryEvents schema snapshot", () => {
     for (const name of ["id", "pantry_id", "item_id", "item_key", "meal_id"]) {
       expect(columnMap[name]!.columnType).toBe("PgText");
     }
-    expect(columnMap["id"]!.primary).toBe(true);
+    expect(columnMap["id"]!.primary).toBe(false);
+    expect(columnMap["id"]!.notNull).toBe(true);
+    // data-01, міграція 162: PK складений `(user_id, id)`, `id` лишається NOT NULL.
+    expect(config.primaryKeys[0]!.columns.map((c) => c.name)).toEqual([
+      "user_id",
+      "id",
+    ]);
     expect(columnMap["id"]!.hasDefault).toBe(false);
     expect(columnMap["user_id"]!.notNull).toBe(true);
     expect(columnMap["pantry_id"]!.notNull).toBe(true);
@@ -515,7 +527,13 @@ describe("pg/nutritionGoalPeriods schema snapshot", () => {
     // клієнт, і його id детермінований, щоб повторна доставка push-а була
     // no-op, а не другим періодом з тими самими числами.
     expect(columnMap["id"]!.columnType).toBe("PgText");
-    expect(columnMap["id"]!.primary).toBe(true);
+    expect(columnMap["id"]!.primary).toBe(false);
+    expect(columnMap["id"]!.notNull).toBe(true);
+    // data-01, міграція 162: PK складений `(user_id, id)`, `id` лишається NOT NULL.
+    expect(config.primaryKeys[0]!.columns.map((c) => c.name)).toEqual([
+      "user_id",
+      "id",
+    ]);
     expect(columnMap["id"]!.hasDefault).toBe(false);
     expect(columnMap["user_id"]!.notNull).toBe(true);
   });

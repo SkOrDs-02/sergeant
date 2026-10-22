@@ -35,11 +35,14 @@ import type { AppliedStatus } from "../syncV2-types.js";
  *   - **Hard-delete.** `op='delete'` ставить ЛИШЕ tombstone (`deleted_at`)
  *     — ретракція помилково записаної події. Тіло рядка не переписується.
  *
- * Ідемпотентність: `INSERT … ON CONFLICT (id) DO NOTHING`. Клієнт генерує
- * `id` детерміновано, тож повторна доставка тієї самої події — тихий
- * no-op, а не дубль (інакше подвійна доставка «мінус 250 г» списала б
- * 500 г). Повертаємо `applied` і в цьому разі: для клієнта важливо, що
- * рядок у черзі можна прибрати, а не чи саме цей push його створив.
+ * Ідемпотентність: `INSERT … ON CONFLICT (user_id, id) DO NOTHING`. Клієнт
+ * генерує `id` детерміновано (`pe::initial::home::…` однаковий у всіх, хто
+ * має той самий продукт у коморі `home`), тож повторна доставка тієї самої
+ * події — тихий no-op, а не дубль (інакше подвійна доставка «мінус 250 г»
+ * списала б 500 г). Повертаємо `applied` і в цьому разі: для клієнта важливо,
+ * що рядок у черзі можна прибрати, а не чи саме цей push його створив.
+ * PK `(user_id, id)` (міграція 162) робить конфлікт можливим лише з власним
+ * рядком, тож чужий рядок із тим самим `id` не блокує вставку.
  *
  * AI-CONTEXT: `id` / `pantry_id` / `item_id` / `meal_id` тут TEXT, а НЕ
  * UUID — на відміну від `nutrition_pantry_items`. Клієнт генерує НЕ-UUID
@@ -89,15 +92,12 @@ export async function applyNutritionPantryEvents(
     // події взагалі нема. Перше — `applied`, друге — `not_found`; розрізняємо
     // окремим SELECT-ом, щоб повтор доставки не застрягав у черзі назавжди.
     if (res.rowCount === 0) {
-      const existing = await client.query<{ user_id: string }>(
-        `SELECT user_id FROM nutrition_pantry_events WHERE id = $1`,
-        [id],
+      const existing = await client.query(
+        `SELECT user_id FROM nutrition_pantry_events WHERE id = $1 AND user_id = $2`,
+        [id, userId],
       );
       if (existing.rows.length === 0) {
         return { status: "rejected", reason: "not_found" };
-      }
-      if (existing.rows[0]!.user_id !== userId) {
-        return { status: "rejected", reason: "fk_violation" };
       }
     }
     return { status: "applied" };
@@ -186,13 +186,13 @@ export async function applyNutritionPantryEvents(
     return { status: "rejected", reason: "invalid_deleted_at" };
   }
 
-  const res = await client.query(
+  await client.query(
     `INSERT INTO nutrition_pantry_events
        (id, user_id, pantry_id, item_id, item_key, kind, delta_qty, abs_qty,
         unit, source, meal_id, occurred_at, tz_offset_min, created_at,
         updated_at, deleted_at)
      VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16)
-     ON CONFLICT (id) DO NOTHING`,
+     ON CONFLICT (user_id, id) DO NOTHING`,
     [
       id,
       userId,
@@ -213,23 +213,7 @@ export async function applyNutritionPantryEvents(
     ],
   );
 
-  // `DO NOTHING` мовчазний за визначенням і сам по собі не розрізняє «мій
-  // повтор» від «чужий рядок із таким самим id». Перевірка `row.user_id`
-  // вище цього не закриває: вона звіряє payload із сесією, а не з тим, ХТО
-  // вже володіє рядком у таблиці. `id` тут TEXT і будується клієнтом
-  // детерміновано, тобто вгадуваний — тож підібраний id давав no-op і
-  // чесний `applied`: подія комори мовчки не доїжджала, а виглядало це як
-  // успіх. Той самий guard, що в `routine/applyCompletionEvents.ts`.
-  if (res.rowCount === 0) {
-    const existing = await client.query<{ user_id: string }>(
-      `SELECT user_id FROM nutrition_pantry_events WHERE id = $1`,
-      [id],
-    );
-    // Рядок зник між INSERT-ом і SELECT-ом — таблиця append-only, тож
-    // штатно це неможливо; трактуємо як не-наш рядок, а не як успіх.
-    if (existing.rows.length === 0 || existing.rows[0]!.user_id !== userId) {
-      return { status: "rejected", reason: "fk_violation" };
-    }
-  }
+  // `rowCount === 0` — лише повтор власного рядка (PK `(user_id, id)`):
+  // ідемпотентний no-op. Чужий `id` не конфліктує.
   return { status: "applied" };
 }

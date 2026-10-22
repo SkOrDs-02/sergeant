@@ -11,11 +11,13 @@
  */
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { renderHook } from "@testing-library/react";
+import { formatNumberUk } from "@sergeant/shared";
 import {
   __setFinykSqliteStateCacheForTests,
   clearFinykSqliteCache,
 } from "@finyk/lib/sqliteReader";
 import { useBudgetOverrunInsight } from "@finyk/hooks/useBudgetOverrunInsight";
+import { formatNumberUk } from "@sergeant/shared";
 import { calculateLimitUsage } from "@sergeant/finyk-domain/domain/budget";
 import { withManualExpenses } from "@sergeant/finyk-domain/domain/transactions";
 import type { Budget } from "@sergeant/finyk-domain/domain/types";
@@ -77,8 +79,10 @@ describe("стан ліміту: хаб-картка, рекомендація �
 
     const recs = generateRecommendations();
     const over = recs.find((r) => r.id === "budget_over_food");
+    // Рекомендація показує суму з копійками (`maximumFractionDigits: 2`),
+    // тож 807,5 − 500 = «307,5 ₴», а не округлені 308.
     expect(over?.title).toContain(
-      `перевищено на ${Math.round(expected.pctRaw - 100)}%`,
+      `перевищено на ${formatNumberUk(expected.exceededBy, { maximumFractionDigits: 2 })} ₴`,
     );
 
     const { result } = renderHook(() =>
@@ -90,7 +94,7 @@ describe("стан ліміту: хаб-картка, рекомендація �
       }),
     );
     expect(result.current?.title).toBe(
-      `Продукти: використано ${Math.round(expected.pctRaw)}% ліміту`,
+      `Продукти: ${Math.round(expected.pctRaw)}% використано`,
     );
 
     // Сьогоднішні витрати є, тож без активного перевищення рядок був би:

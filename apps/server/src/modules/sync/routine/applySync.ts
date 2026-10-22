@@ -12,10 +12,9 @@ import { applyIfNewer } from "../applySync-helpers.js";
 
 /**
  * Apply-шлях для `routine_entries`. Кожна операція — повний UPSERT за
- * `id` (UUID PK). LWW-guard: existing.updated_at < clientTs. Власник
- * рядка перевіряється явно SELECT-ом до DML-у — якщо PK уже існує і
- * належить іншому юзеру, повертаємо `fk_violation` замість `lww_conflict`,
- * щоб не ховати security-related reject в нормальній conflict-метриці.
+ * `id` (UUID PK). LWW-guard: existing.updated_at < clientTs. SELECT
+ * до DML-у звужений по `user_id` (PK `(user_id, id)`, міграція 162): чужий
+ * рядок із тим самим `id` не видно і він не блокує вставку.
  *
  * Soft-delete: `op === "delete"` → ставимо `deleted_at = clientTs`,
  * `updated_at = clientTs`. Жорстке видалення не використовується для
@@ -71,13 +70,10 @@ export async function applyRoutineEntries(
     updated_at: Date;
     deleted_at: Date | null;
   }>(
-    `SELECT user_id, updated_at, deleted_at FROM routine_entries WHERE id = $1`,
-    [id],
+    `SELECT user_id, updated_at, deleted_at FROM routine_entries WHERE id = $1 AND user_id = $2`,
+    [id, userId],
   );
   if (existing.rows.length > 0) {
-    if (existing!.rows[0]!.user_id !== userId) {
-      return { status: "rejected", reason: "fk_violation" };
-    }
     if (existing!.rows[0]!.updated_at.getTime() >= clientTs.getTime()) {
       return { status: "rejected", reason: "lww_conflict" };
     }

@@ -109,6 +109,8 @@ interface ManualExpenseSheetProps {
     kind: ManualExpenseKind;
     /** Рахунок запису; ключ присутній, лише коли форма показує поле. */
     account?: ManualAccount;
+    /** Теги нового запису; лише у створенні (в редагуванні йдуть через `onTagsChange`). */
+    tags?: readonly string[];
   }) => void;
   /**
    * Delete the expense currently being edited. Only wired in edit mode
@@ -165,7 +167,7 @@ interface ManualExpenseSheetProps {
    * наявну ручну.
    */
   txSplits?: TxSplitsMap | undefined;
-  /** Теги збереженого запису (Р6.2): лише в режимі редагування. */
+  /** Теги збереженого запису (Р6.2); у створенні поле є, коли передано `knownTags`. */
   tags?: readonly string[] | undefined;
   knownTags?: readonly TagSummary[] | undefined;
   onTagsChange?: ((tags: readonly string[]) => void) | undefined;
@@ -186,6 +188,8 @@ interface ManualExpenseSheetProps {
    * поверхні, що лише створюють запис із чека, його не показують.
    */
   cashOnHandExists?: boolean | undefined;
+  /** Мить створення рахунку готівки, мс: від неї рахується баланс. */
+  cashOnHandCreatedAt?: number | undefined;
   /** Останній обраний рахунок для нового запису (Р3.2). */
   defaultAccount?: ManualAccount | undefined;
   onCreateCashOnHand?: ((amountMinor: number) => void) | undefined;
@@ -215,6 +219,7 @@ export function ManualExpenseSheet({
   setManualDebts,
   setLinkedTxRole,
   cashOnHandExists = false,
+  cashOnHandCreatedAt,
   defaultAccount = null,
   onCreateCashOnHand,
 }: ManualExpenseSheetProps) {
@@ -306,7 +311,9 @@ export function ManualExpenseSheet({
               : toExpenseInstant(values.date || toKyivISODate()),
           kind,
           ...(showAccount ? { account } : {}),
+          ...(!isEditing && draftTags.length > 0 ? { tags: draftTags } : {}),
         });
+        setDraftTags([]);
 
         // UX-15: "Додати ще" keeps the sheet open for rapid batch entry.
         // We reset only the per-item fields (description + amount) and keep
@@ -390,6 +397,7 @@ export function ManualExpenseSheet({
     ],
   );
   const [prevOpenInitKey, setPrevOpenInitKey] = useState("");
+  const [draftTags, setDraftTags] = useState<readonly string[]>([]);
 
   useEffect(() => {
     if (!open) {
@@ -412,6 +420,7 @@ export function ManualExpenseSheet({
       });
       void Promise.resolve().then(() => {
         setPrevOpenInitKey("");
+        setDraftTags([]);
       });
       return;
     }
@@ -746,6 +755,13 @@ export function ManualExpenseSheet({
             onChange={onTagsChange}
           />
         )}
+        {!isEditing && knownTags && (
+          <TxTagsField
+            tags={draftTags}
+            known={knownTags}
+            onChange={setDraftTags}
+          />
+        )}
 
         {/* S15: amount is the only «must-fill» field — it used to live
             under the name input, so new users had to scroll past an
@@ -794,6 +810,8 @@ export function ManualExpenseSheet({
             account={account}
             onAccountChange={setAccount}
             cashExists={cashOnHandExists}
+            date={kind === "income" ? undefined : date}
+            cashCreatedAt={cashOnHandCreatedAt}
             onCreateCash={onCreateCashOnHand}
             isSubmitting={isSubmitting}
           />

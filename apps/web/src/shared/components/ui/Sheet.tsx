@@ -99,6 +99,8 @@ export interface SheetProps {
   panelClassName?: string | undefined;
   /** Optional className on the scroll region. */
   bodyClassName?: string | undefined;
+  /** Куди повернути фокус, якщо тригер аркуша розмонтовано (див. `useDialogFocusTrap`). */
+  returnFocusFallback?: (() => HTMLElement | null) | undefined;
 }
 
 export function Sheet({
@@ -117,6 +119,7 @@ export function Sheet({
   closeLabel = "Закрити",
   panelClassName,
   bodyClassName,
+  returnFocusFallback,
 }: SheetProps) {
   const panelRef = useRef<HTMLDivElement>(null);
   const overlayRef = useRef<HTMLDivElement>(null);
@@ -133,6 +136,7 @@ export function Sheet({
   useDialogFocusTrap(open, panelRef, {
     onEscape: onClose,
     inertBackground: true,
+    returnFocusFallback,
   });
 
   // Swipe-to-dismiss — drag the panel down ≥ 80 px to close. Mirrors

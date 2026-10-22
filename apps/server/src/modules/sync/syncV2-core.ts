@@ -4,6 +4,7 @@ import pool from "../../db.js";
 import { logger } from "../../obs/logger.js";
 import {
   syncDurationMs,
+  syncOpLogApplyTotal,
   syncOperationsTotal,
   syncPayloadBytes,
 } from "../../obs/metrics.js";
@@ -454,8 +455,8 @@ export function hasUnstorableText(row: unknown): boolean {
 
 /**
  * SQLSTATE `23505` (`unique_violation`) від apply-функції. `pg` кладе код у
- * `err.code`; інші помилки (deadlock `40P01`, lock timeout `55P03`, ...) сюди
- * не потрапляють навмисно: їх ретрай змінив би контракт пушу (data-18).
+ * `err.code`; транзієнтні помилки (`40P01`, `55P03`, `57014`) сюди не
+ * потрапляють навмисно: їх обробляє `retryableSqlStateReason` (data-18).
  */
 export function isUniqueViolation(err: unknown): boolean {
   return (
@@ -463,6 +464,55 @@ export function isUniqueViolation(err: unknown): boolean {
     err !== null &&
     (err as { code?: unknown }).code === "23505"
   );
+}
+
+/**
+ * Транзієнтні SQLSTATE, після яких повтор ТОГО САМОГО оп-а може пройти
+ * (data-18). Ключ — код, значення — стабільна причина для `reason` у
+ * відповіді пуша (низька кардинальність: це ще й лейбл метрики).
+ */
+const RETRYABLE_SQLSTATE_REASONS: Readonly<Record<string, string>> = {
+  "40P01": "deadlock_detected",
+  "55P03": "lock_not_available",
+  "57014": "query_canceled",
+};
+
+/**
+ * Якщо `err` — транзієнтна помилка Postgres, повертає причину для
+ * `status: "retry"`, інакше `null` (тоді це термінальний `apply_failed`).
+ * Такий оп НЕ пишеться в `sync_op_log`, тож `idempotency_key` не кешує
+ * відмову, і клієнт повторює оп тим самим ключем.
+ */
+export function retryableSqlStateReason(err: unknown): string | null {
+  if (typeof err !== "object" || err === null) return null;
+  const code = (err as { code?: unknown }).code;
+  if (typeof code !== "string") return null;
+  return RETRYABLE_SQLSTATE_REASONS[code] ?? null;
+}
+
+/** `op.table` тут уже з whitelist-а (є applyFn), тож безпечний як лейбл. Звільняє savepoint, логує й рахує `status: "retry"`; повертає результат для відповіді. */
+export async function settleRetryableApply(
+  client: PoolClient,
+  op: { op: string; table: string; idempotency_key: string },
+  reason: string,
+): Promise<{ idempotency_key: string; status: "retry"; reason: string }> {
+  try {
+    await client.query("RELEASE SAVEPOINT op_apply");
+  } catch {
+    /* primary rollback below will catch transactional poison */
+  }
+  logger.warn({
+    msg: "sync_v2_apply_retryable",
+    op: op.op,
+    table: op.table,
+    reason,
+  });
+  try {
+    syncOpLogApplyTotal.inc({ table: op.table, status: "retry", reason });
+  } catch {
+    /* metrics must never break a request */
+  }
+  return { idempotency_key: op.idempotency_key, status: "retry", reason };
 }
 
 /**
@@ -476,7 +526,7 @@ export function isUniqueViolation(err: unknown): boolean {
  * Перед повтором відкочуємось до savepoint-а `op_apply` (його відкрив
  * викликач і він лишається відкритим до запису в журнал). Під READ COMMITTED
  * повторний SELECT уже бачить закомічений рядок переможця, тож далі працює
- * штатна гілка: `applied`, `lww_conflict` або `fk_violation`. Друга `23505` чи
+ * штатна гілка: `applied` або `lww_conflict`. Друга `23505` чи
  * будь-яка інша помилка летить до викликача й стає `apply_failed`, як і раніше.
  */
 export async function applyWithUniqueViolationRetry<T>(

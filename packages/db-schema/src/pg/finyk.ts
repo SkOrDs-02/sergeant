@@ -152,7 +152,7 @@ export const finykBudgets = pgTable(
   "finyk_budgets",
   {
     id: text()
-      .primaryKey()
+      .notNull()
       .default(sql`gen_random_uuid()::text`),
     userId: text("user_id").notNull(),
     dataJson: jsonb("data_json").notNull().default({}),
@@ -165,6 +165,7 @@ export const finykBudgets = pgTable(
     deletedAt: timestamp("deleted_at", { withTimezone: true }),
   },
   (table) => [
+    primaryKey({ columns: [table.userId, table.id] }),
     index("finyk_budgets_user_active_idx")
       .on(table.userId, table.deletedAt)
       .where(sql`${table.deletedAt} IS NULL`),
@@ -176,7 +177,7 @@ export const finykSubscriptions = pgTable(
   "finyk_subscriptions",
   {
     id: text()
-      .primaryKey()
+      .notNull()
       .default(sql`gen_random_uuid()::text`),
     userId: text("user_id").notNull(),
     dataJson: jsonb("data_json").notNull().default({}),
@@ -189,6 +190,7 @@ export const finykSubscriptions = pgTable(
     deletedAt: timestamp("deleted_at", { withTimezone: true }),
   },
   (table) => [
+    primaryKey({ columns: [table.userId, table.id] }),
     index("finyk_subscriptions_user_active_idx")
       .on(table.userId, table.deletedAt)
       .where(sql`${table.deletedAt} IS NULL`),
@@ -200,7 +202,7 @@ export const finykAssets = pgTable(
   "finyk_assets",
   {
     id: text()
-      .primaryKey()
+      .notNull()
       .default(sql`gen_random_uuid()::text`),
     userId: text("user_id").notNull(),
     dataJson: jsonb("data_json").notNull().default({}),
@@ -213,6 +215,7 @@ export const finykAssets = pgTable(
     deletedAt: timestamp("deleted_at", { withTimezone: true }),
   },
   (table) => [
+    primaryKey({ columns: [table.userId, table.id] }),
     index("finyk_assets_user_active_idx")
       .on(table.userId, table.deletedAt)
       .where(sql`${table.deletedAt} IS NULL`),
@@ -224,7 +227,7 @@ export const finykDebts = pgTable(
   "finyk_debts",
   {
     id: text()
-      .primaryKey()
+      .notNull()
       .default(sql`gen_random_uuid()::text`),
     userId: text("user_id").notNull(),
     dataJson: jsonb("data_json").notNull().default({}),
@@ -237,6 +240,7 @@ export const finykDebts = pgTable(
     deletedAt: timestamp("deleted_at", { withTimezone: true }),
   },
   (table) => [
+    primaryKey({ columns: [table.userId, table.id] }),
     index("finyk_debts_user_active_idx")
       .on(table.userId, table.deletedAt)
       .where(sql`${table.deletedAt} IS NULL`),
@@ -248,7 +252,7 @@ export const finykReceivables = pgTable(
   "finyk_receivables",
   {
     id: text()
-      .primaryKey()
+      .notNull()
       .default(sql`gen_random_uuid()::text`),
     userId: text("user_id").notNull(),
     dataJson: jsonb("data_json").notNull().default({}),
@@ -261,6 +265,7 @@ export const finykReceivables = pgTable(
     deletedAt: timestamp("deleted_at", { withTimezone: true }),
   },
   (table) => [
+    primaryKey({ columns: [table.userId, table.id] }),
     index("finyk_receivables_user_active_idx")
       .on(table.userId, table.deletedAt)
       .where(sql`${table.deletedAt} IS NULL`),
@@ -272,7 +277,7 @@ export const finykCustomCategories = pgTable(
   "finyk_custom_categories",
   {
     id: text()
-      .primaryKey()
+      .notNull()
       .default(sql`gen_random_uuid()::text`),
     userId: text("user_id").notNull(),
     dataJson: jsonb("data_json").notNull().default({}),
@@ -285,6 +290,7 @@ export const finykCustomCategories = pgTable(
     deletedAt: timestamp("deleted_at", { withTimezone: true }),
   },
   (table) => [
+    primaryKey({ columns: [table.userId, table.id] }),
     index("finyk_custom_categories_user_active_idx")
       .on(table.userId, table.deletedAt)
       .where(sql`${table.deletedAt} IS NULL`),
@@ -296,7 +302,7 @@ export const finykManualExpenses = pgTable(
   "finyk_manual_expenses",
   {
     id: text()
-      .primaryKey()
+      .notNull()
       .default(sql`gen_random_uuid()::text`),
     userId: text("user_id").notNull(),
     dataJson: jsonb("data_json").notNull().default({}),
@@ -309,6 +315,7 @@ export const finykManualExpenses = pgTable(
     deletedAt: timestamp("deleted_at", { withTimezone: true }),
   },
   (table) => [
+    primaryKey({ columns: [table.userId, table.id] }),
     index("finyk_manual_expenses_user_active_idx")
       .on(table.userId, table.deletedAt)
       .where(sql`${table.deletedAt} IS NULL`),
@@ -320,7 +327,7 @@ export const finykTxFilters = pgTable(
   "finyk_tx_filters",
   {
     id: text()
-      .primaryKey()
+      .notNull()
       .default(sql`gen_random_uuid()::text`),
     userId: text("user_id").notNull(),
     dataJson: jsonb("data_json").notNull().default({}),
@@ -333,6 +340,7 @@ export const finykTxFilters = pgTable(
     deletedAt: timestamp("deleted_at", { withTimezone: true }),
   },
   (table) => [
+    primaryKey({ columns: [table.userId, table.id] }),
     index("finyk_tx_filters_user_active_idx")
       .on(table.userId, table.deletedAt)
       .where(sql`${table.deletedAt} IS NULL`),

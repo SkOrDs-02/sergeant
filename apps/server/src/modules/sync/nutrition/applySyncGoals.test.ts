@@ -100,7 +100,7 @@ describe("applyNutritionGoalPeriods — insert", () => {
     expect(fake.queries[0]!.sql).toMatch(/INSERT INTO nutrition_goal_periods/);
   });
 
-  it("ідемпотентний через ON CONFLICT (id) DO NOTHING", async () => {
+  it("ідемпотентний через ON CONFLICT (user_id, id) DO NOTHING", async () => {
     // Випадковий id дав би на кожному ретраї другу сходинку з тими самими
     // числами — журнал НАМІРУ перестав би бути журналом наміру.
     const fake = new FakeClient();
@@ -110,7 +110,9 @@ describe("applyNutritionGoalPeriods — insert", () => {
       USER,
       CLIENT_TS,
     );
-    expect(fake.queries[0]!.sql).toMatch(/ON CONFLICT \(id\) DO NOTHING/);
+    expect(fake.queries[0]!.sql).toMatch(
+      /ON CONFLICT \(user_id, id\) DO NOTHING/,
+    );
   });
 
   it("НЕ читає існуючий рядок — LWW-guard-а тут немає за задумом", async () => {
@@ -348,17 +350,19 @@ describe("applyNutritionGoalPeriods — append-only інваріант", () => {
     expect(res).toEqual({ status: "rejected", reason: "not_found" });
   });
 
-  it("ретракція чужого періоду — fk_violation", async () => {
+  it("ретракція чужого періоду — not_found: lookup звужений по user_id", async () => {
     const fake = new FakeClient()
       .enqueue({ rows: [], rowCount: 0 })
-      .enqueue({ rows: [{ user_id: "someone-else" }] });
+      .enqueue({ rows: [] });
     const res = await applyNutritionGoalPeriods(
       asClient(fake),
       op(validRow(), "delete"),
       USER,
       CLIENT_TS,
     );
-    expect(res).toEqual({ status: "rejected", reason: "fk_violation" });
+    expect(res).toEqual({ status: "rejected", reason: "not_found" });
+    expect(fake.queries[1]!.sql).toMatch(/WHERE id = \$1 AND user_id = \$2/);
+    expect(fake.queries[1]!.params).toEqual([validRow().id, USER]);
   });
 });
 
@@ -544,29 +548,12 @@ describe("applyNutritionGoalPeriods — валідація", () => {
     ).toEqual({ status: "rejected", reason: "invalid_created_at" });
   });
 
-  // До owner-guard-а конфлікт по вгаданому `id` давав no-op і чесний
-  // `applied` — нова ціль КБЖВ мовчки не доїжджала, а виглядало це як успіх.
-  it("на конфлікті id звіряє власника: чужий рядок → fk_violation", async () => {
+  // data-01: PK `(user_id, id)` (міграція 162). Конфлікт можливий лише з
+  // ВЛАСНИМ рядком, тож `rowCount === 0` — ідемпотентний повтор, а не чужий
+  // рядок: дочитувати власника більше нічого.
+  it("на конфлікті (user_id, id) — ідемпотентний applied без дочитування власника", async () => {
     const fake = new FakeClient();
     fake.enqueue({ rows: [], rowCount: 0 }); // ON CONFLICT DO NOTHING
-    fake.enqueue({ rows: [{ user_id: "someone-else" }] }); // owner-guard
-
-    const res = await applyNutritionGoalPeriods(
-      asClient(fake),
-      op(validRow()),
-      USER,
-      CLIENT_TS,
-    );
-
-    expect(res).toEqual({ status: "rejected", reason: "fk_violation" });
-    expect(fake.queries).toHaveLength(2);
-    expect(fake.queries[1]!.sql).toContain("SELECT user_id");
-  });
-
-  it("на конфлікті id зі СВОЇМ рядком лишається ідемпотентним applied", async () => {
-    const fake = new FakeClient();
-    fake.enqueue({ rows: [], rowCount: 0 });
-    fake.enqueue({ rows: [{ user_id: USER }] });
 
     const res = await applyNutritionGoalPeriods(
       asClient(fake),
@@ -576,20 +563,34 @@ describe("applyNutritionGoalPeriods — валідація", () => {
     );
 
     expect(res).toEqual({ status: "applied" });
+    expect(fake.queries).toHaveLength(1);
+    expect(fake.queries[0]!.sql).toContain(
+      "ON CONFLICT (user_id, id) DO NOTHING",
+    );
   });
 
-  it("конфлікт без рядка (append-only таблиця) не вважається успіхом", async () => {
+  it("той самий id у двох користувачів: кожен пише власний рядок", async () => {
     const fake = new FakeClient();
-    fake.enqueue({ rows: [], rowCount: 0 });
-    fake.enqueue({ rows: [] });
+    const row = validRow();
 
-    const res = await applyNutritionGoalPeriods(
+    const mine = await applyNutritionGoalPeriods(
       asClient(fake),
-      op(validRow()),
+      op(row),
       USER,
       CLIENT_TS,
     );
+    const theirs = await applyNutritionGoalPeriods(
+      asClient(fake),
+      op({ ...row, user_id: "user-2" }),
+      "user-2",
+      CLIENT_TS,
+    );
 
-    expect(res).toEqual({ status: "rejected", reason: "fk_violation" });
+    expect(mine).toEqual({ status: "applied" });
+    expect(theirs).toEqual({ status: "applied" });
+    expect(fake.queries.map((q) => [q.params[0], q.params[1]])).toEqual([
+      [row.id, USER],
+      [row.id, "user-2"],
+    ]);
   });
 });

@@ -145,13 +145,11 @@ export async function applyFinykPerRowBlob(
     user_id: string;
     updated_at: Date;
     deleted_at: Date | null;
-  }>(`SELECT user_id, updated_at, deleted_at FROM ${table} WHERE id = $1`, [
-    id,
-  ]);
+  }>(
+    `SELECT user_id, updated_at, deleted_at FROM ${table} WHERE id = $1 AND user_id = $2`,
+    [id, userId],
+  );
   if (existing.rows.length > 0) {
-    if (existing!.rows[0]!.user_id !== userId) {
-      return { status: "rejected", reason: "fk_violation" };
-    }
     if (existing!.rows[0]!.updated_at.getTime() >= clientTs.getTime()) {
       return { status: "rejected", reason: "lww_conflict" };
     }

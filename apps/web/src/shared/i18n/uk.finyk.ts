@@ -8,7 +8,6 @@ export const finykPageMessages = {
     import: { label: "Документи", hint: "Скріншоти банку й виписки" },
   },
   reportHeading: "Витрати",
-  budgetOverLimit: "перевищено",
   budgetOverSixtyPercent: "· понад 60% ліміту",
   transactionsFilterLabel: "Фільтр операцій",
   /**
@@ -500,6 +499,8 @@ export const finykPageMessages = {
     title: "Готівка на руках",
     noAccount: "Без рахунку",
     accountLegend: "Рахунок",
+    backdatedHint:
+      "Ця витрата раніше за момент, від якого рахується готівка, баланс не зміниться.",
     setupPrompt: "Скільки готівки зараз?",
     setupHint:
       "З цієї суми почнеться облік. Зняття в банкоматі поповнюватимуть готівку і не рахуватимуться витратою.",

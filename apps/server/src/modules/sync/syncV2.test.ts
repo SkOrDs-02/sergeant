@@ -685,11 +685,50 @@ describe("syncV2Push · new-op apply path", () => {
       });
     });
 
-    it("не-23505 помилка (deadlock 40P01) не ретраїться: одна спроба, apply_failed", async () => {
+    it.each([
+      ["40P01", "deadlock_detected"],
+      ["55P03", "lock_not_available"],
+      ["57014", "query_canceled"],
+    ])(
+      "транзієнтний %s не ретраїться в транзакції: status=retry, у журнал не пишеться",
+      async (code, reason) => {
+        applyRoutineEntries
+          .mockReset()
+          .mockRejectedValueOnce(
+            Object.assign(new Error("transient"), { code }),
+          );
+        client.query
+          .mockResolvedValueOnce({ rows: [] }) // BEGIN
+          .mockResolvedValueOnce({ rows: [] }) // user-lock sync_op_log (data-12)
+          .mockResolvedValueOnce({ rows: [] }) // дедуп-SELECT батча
+          .mockResolvedValueOnce({ rows: [] }) // SAVEPOINT op_apply
+          .mockResolvedValueOnce({ rows: [] }) // ROLLBACK TO SAVEPOINT op_apply
+          .mockResolvedValueOnce({ rows: [] }) // RELEASE SAVEPOINT op_apply
+          .mockResolvedValueOnce({ rows: [] }); // COMMIT
+
+        const res = makeRes();
+        await syncV2Push(makeReq({ body: { ops: [op("transient")] } }), res);
+
+        expect(applyRoutineEntries).toHaveBeenCalledTimes(1);
+        expect(res.body).toMatchObject({
+          accepted: 0,
+          results: [{ idempotency_key: "transient", status: "retry", reason }],
+        });
+        const sqls = client.query.mock.calls.map((c) => c[0]);
+        expect(
+          sqls.some(
+            (q) =>
+              typeof q === "string" && q.includes("INSERT INTO sync_op_log"),
+          ),
+        ).toBe(false);
+      },
+    );
+
+    it("нетранзієнтна помилка (42P01) лишається термінальним apply_failed", async () => {
       applyRoutineEntries
         .mockReset()
         .mockRejectedValueOnce(
-          Object.assign(new Error("deadlock detected"), { code: "40P01" }),
+          Object.assign(new Error("relation missing"), { code: "42P01" }),
         );
       client.query
         .mockResolvedValueOnce({ rows: [] }) // BEGIN
