@@ -134,7 +134,7 @@ describe("WorkoutFinishSheets — wellbeing step", () => {
     expect(screen.getByText("Самопочуття")).toBeInTheDocument();
     // 5 energy + 5 mood = 10 numbered buttons
     const numbered = screen
-      .getAllByRole("button")
+      .getAllByRole("radio")
       .filter((b) => ["1", "2", "3", "4", "5"].includes(b.textContent ?? ""));
     expect(numbered.length).toBe(10);
   });
@@ -169,7 +169,7 @@ describe("WorkoutFinishSheets — wellbeing step", () => {
     const setFinishFlash = vi.fn();
     renderSheets(makeFlash({ step: "wellbeing" }), setFinishFlash);
     // The first `3` button is the energy row.
-    const threes = screen.getAllByRole("button", { name: "3" });
+    const threes = screen.getAllByRole("radio", { name: "3" });
     fireEvent.click(threes[0]!);
     expect(setFinishFlash).toHaveBeenCalled();
   });
@@ -178,7 +178,7 @@ describe("WorkoutFinishSheets — wellbeing step", () => {
     const setFinishFlash = vi.fn();
     renderSheets(makeFlash({ step: "wellbeing" }), setFinishFlash);
 
-    const twos = screen.getAllByRole("button", { name: "2" });
+    const twos = screen.getAllByRole("radio", { name: "2" });
     fireEvent.click(twos[1]!);
 
     const updater = setFinishFlash.mock.calls[0]![0] as (
@@ -422,13 +422,13 @@ describe("WorkoutFinishSheets — summary step expanded", () => {
     expect(setFinishFlash).toHaveBeenCalledWith(null);
   });
 
-  it("clicking 'Згорнути' calls setFinishFlash with collapsed true", () => {
+  it("clicking 'Сховати' calls setFinishFlash with collapsed true", () => {
     const setFinishFlash = vi.fn();
     renderSheets(
       makeFlash({ step: "summary", collapsed: false }),
       setFinishFlash,
     );
-    fireEvent.click(screen.getByRole("button", { name: "Згорнути" }));
+    fireEvent.click(screen.getByRole("button", { name: "Сховати" }));
     expect(setFinishFlash).toHaveBeenCalled();
     const updater = setFinishFlash.mock.calls[0]![0] as (
       f: FinishFlashState,
