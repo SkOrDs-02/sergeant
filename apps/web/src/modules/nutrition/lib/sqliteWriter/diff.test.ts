@@ -474,7 +474,13 @@ describe("diffNutritionDualWriteOps — prefs-upsert", () => {
       makeState({ prefs: prev }),
       makeState({ prefs: next }),
     );
-    expect(ops).toEqual([{ kind: "prefs-upsert", prefs: next }]);
+    expect(ops).toEqual([
+      {
+        kind: "prefs-upsert",
+        prefs: next,
+        patch: { keys: { goal: "cut" }, activePantryChanged: false },
+      },
+    ]);
   });
 
   it("емітить prefs-upsert при зміні activePantryId", () => {
@@ -484,7 +490,13 @@ describe("diffNutritionDualWriteOps — prefs-upsert", () => {
       makeState({ prefs: prev }),
       makeState({ prefs: next }),
     );
-    expect(ops).toEqual([{ kind: "prefs-upsert", prefs: next }]);
+    expect(ops).toEqual([
+      {
+        kind: "prefs-upsert",
+        prefs: next,
+        patch: { keys: {}, activePantryChanged: true },
+      },
+    ]);
   });
 
   it("емітить prefs-upsert при activePantryId: string → null", () => {
@@ -494,7 +506,13 @@ describe("diffNutritionDualWriteOps — prefs-upsert", () => {
       makeState({ prefs: prev }),
       makeState({ prefs: next }),
     );
-    expect(ops).toEqual([{ kind: "prefs-upsert", prefs: next }]);
+    expect(ops).toEqual([
+      {
+        kind: "prefs-upsert",
+        prefs: next,
+        patch: { keys: {}, activePantryChanged: true },
+      },
+    ]);
   });
 
   it("НЕ емітить prefs-upsert, коли next.prefs === null (downgrade)", () => {
@@ -874,7 +892,7 @@ describe("diffNutritionDualWriteOps — порядок операцій між �
     expect(ops[0]).toEqual({ kind: "meal-upsert", meal: mealBNext });
     expect(ops[1]).toEqual({ kind: "meal-delete", mealId: "mA" });
     expect(ops[2]).toEqual({ kind: "pantry-delete", pantryId: "pB" });
-    expect(ops[3]).toEqual({ kind: "prefs-upsert", prefs: prefsNext });
+    expect(ops[3]).toMatchObject({ kind: "prefs-upsert", prefs: prefsNext });
     expect(ops[4]).toEqual({ kind: "recipe-upsert", recipe: recipeBNext });
     expect(ops[5]).toEqual({ kind: "recipe-delete", recipeId: "rA" });
     // waterLog — sorted by dateKey asc

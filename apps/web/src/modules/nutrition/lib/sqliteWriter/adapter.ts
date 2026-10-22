@@ -16,6 +16,10 @@ import type { SqliteMigrationClient } from "@sergeant/db-schema/migrate/sqlite";
 import { deviceWallClockToInstant } from "@sergeant/nutrition-domain";
 import { logger as webLogger } from "@shared/lib";
 
+import {
+  buildPrefsOutboxRow,
+  type NutritionPrefsPatch,
+} from "./diff.prefsPatch.js";
 import { insertGoalPeriod, restoreGoalPeriod } from "./adapter.goalPeriods.js";
 import { appendPantryEvent } from "./adapter.pantryEvents.js";
 import {
@@ -82,7 +86,7 @@ const applyOps = createApplyOps<NutritionDualWriteOp>({
       return "applied";
     },
     "prefs-upsert": async (client, op, rt) => {
-      await upsertPrefs(client, op.prefs, rt);
+      await upsertPrefs(client, op.prefs, rt, op.patch);
       return "applied";
     },
     "recipe-upsert": async (client, op, rt) => {
@@ -568,6 +572,7 @@ async function upsertPrefs(
   client: SqliteMigrationClient,
   prefs: NutritionPrefsSnapshot,
   { userId, clientTs }: DualWriteRuntime,
+  patch?: NutritionPrefsPatch,
 ): Promise<void> {
   await client.run(PREFS_UPSERT_SQL, [
     userId,
@@ -580,11 +585,8 @@ async function upsertPrefs(
     userId,
     table: "nutrition_prefs",
     op: "insert",
-    row: {
-      user_id: userId,
-      prefs_json: prefs.prefsJson ?? "{}",
-      active_pantry_id: prefs.activePantryId ?? null,
-    },
+    // data-04: з патчем їдуть лише змінені ключі + `prefs_merge: true`.
+    row: { ...buildPrefsOutboxRow(userId, prefs, patch) },
     clientTs,
     idempotencyKey: crypto.randomUUID(),
   }).catch(() => {});

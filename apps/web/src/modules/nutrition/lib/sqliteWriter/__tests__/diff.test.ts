@@ -175,7 +175,11 @@ describe("diffNutritionDualWriteOps", () => {
       { ...EMPTY, prefs: next },
     );
     expect(ops).toHaveLength(1);
-    expect(ops[0]).toEqual({ kind: "prefs-upsert", prefs: next });
+    expect(ops[0]).toEqual({
+      kind: "prefs-upsert",
+      prefs: next,
+      patch: { keys: {}, activePantryChanged: true },
+    });
   });
 
   it("detects prefs change (prefsJson)", () => {
