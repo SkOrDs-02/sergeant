@@ -26,6 +26,12 @@ import { ChoiceGroup } from "@shared/components/ui/Choice";
 import { FIELD_LABEL } from "@shared/components/ui/Input";
 import { Sheet } from "@shared/components/ui/Sheet";
 import { messages } from "@shared/i18n/uk";
+import { focusFallbackTarget } from "@shared/lib/ui/focusFallback";
+import { SESSION_FOCUS_FALLBACK } from "../session/focusFallback";
+
+// Аркуш відкривається сам, без жесту: живого тригера нема, фокус іде на
+// «+ Вправа» сесії.
+const sessionFocusTarget = focusFallbackTarget(SESSION_FOCUS_FALLBACK);
 
 export interface ReadinessSheetProps {
   open: boolean;
@@ -95,6 +101,7 @@ export function ReadinessSheet({
       title={t.title}
       description={t.subtitle}
       panelClassName="fizruk-sheet"
+      returnFocusFallback={sessionFocusTarget}
       footer={
         <div className="flex gap-2">
           <Button
