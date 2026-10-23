@@ -32,52 +32,28 @@ beforeEach(() => {
 // ─── setGoal ──────────────────────────────────────────────────────────────────
 
 describe("setGoal", () => {
-  it("returns error for empty description", () => {
-    expect(setGoal({ name: "set_goal", input: { description: "" } })).toContain(
-      "Потрібен опис",
-    );
-  });
-
-  it("creates goal with description", () => {
+  it("rel-16: ціль без ккал — чесна відмова, нічого не пишеться", () => {
     const result = setGoal({
       name: "set_goal",
-      input: { description: "Схуднути на 5 кг" },
+      input: { description: "Схуднути на 5 кг", target_weight_kg: 70 },
     });
-    expect(result).toContain("Схуднути на 5 кг");
-    expect(mockLsSet).toHaveBeenCalledWith(
-      "hub_goals_v1",
-      expect.arrayContaining([
-        expect.objectContaining({ description: "Схуднути на 5 кг" }),
-      ]),
-    );
+    expect(result).toMatch(/^Не вдалося/);
+    expect(result).toContain("лише денну норму калорій");
+    expect(mockLsSet).not.toHaveBeenCalled();
+    expect(mockPersistNutrition).not.toHaveBeenCalled();
   });
 
-  it("includes target weight when valid", () => {
+  it("rel-16: невалідні ккал — відмова", () => {
     const result = setGoal({
       name: "set_goal",
-      input: { description: "Ціль", target_weight_kg: 70 },
+      input: { description: "Ціль", daily_kcal: -5 },
     });
-    expect(result).toContain("70 кг");
+    expect(result).toMatch(/^Не вдалося/);
+    expect(mockPersistNutrition).not.toHaveBeenCalled();
   });
 
-  it("includes target date when valid format", () => {
+  it("rel-16: ккал пишуться в сховище Харчування, а не в hub_goals_v1", () => {
     const result = setGoal({
-      name: "set_goal",
-      input: { description: "Ціль", target_date: "2026-12-31" },
-    });
-    expect(result).toContain("2026-12-31");
-  });
-
-  it("ignores invalid date format", () => {
-    const result = setGoal({
-      name: "set_goal",
-      input: { description: "Ціль", target_date: "31.12.2026" },
-    });
-    expect(result).not.toContain("дедлайн:");
-  });
-
-  it("persists kcal target to nutrition store", () => {
-    setGoal({
       name: "set_goal",
       input: { description: "Дієта", daily_kcal: 1800 },
     });
@@ -85,41 +61,36 @@ describe("setGoal", () => {
     expect(mockPersistNutrition).toHaveBeenCalledWith({
       dailyTargetKcal: 1800,
     });
+    expect(mockLsSet).not.toHaveBeenCalled();
+    expect(result).toContain("1\u00A0800 ккал/день");
+    expect(result).not.toMatch(/^Не вдалося/);
   });
 
-  it("data-04: Їжа ще не гідратована — не мовчить про незбережену ціль ккал", () => {
+  it("rel-16: разом із ккал вага/дедлайн/тренування чесно названі незбереженими", () => {
+    const result = setGoal({
+      name: "set_goal",
+      input: {
+        description: "Дієта",
+        daily_kcal: 2000,
+        target_weight_kg: 70,
+        target_date: "2026-12-31",
+        workouts_per_week: 3,
+      },
+    });
+    expect(result).toContain("цільову вагу");
+    expect(result).toContain("дедлайн");
+    expect(result).toContain("кількість тренувань");
+    expect(result).toContain("не збережено");
+  });
+
+  it("data-04: Їжа ще не гідратована — відмова, а не успіх", () => {
     mockPersistNutrition.mockReturnValueOnce(false);
     const result = setGoal({
       name: "set_goal",
       input: { description: "Дієта", daily_kcal: 1800 },
     });
-    expect(result).toContain("не збережено");
+    expect(result).toMatch(/^Не вдалося/);
     expect(result).toContain("ще завантажуються");
-  });
-
-  it("includes workouts per week", () => {
-    const result = setGoal({
-      name: "set_goal",
-      input: { description: "Ціль", workouts_per_week: 4 },
-    });
-    expect(result).toContain("тренувань/тиждень: 4");
-  });
-
-  it("appends to existing goals", () => {
-    mockLs.mockReturnValue([
-      { id: "g1", description: "Old", createdAt: "2026-01-01" },
-    ]);
-    setGoal({ name: "set_goal", input: { description: "New" } });
-    const saved = mockLsSet.mock.calls[0]![1] as unknown[];
-    expect(saved).toHaveLength(2);
-  });
-
-  it("returns string with goal id", () => {
-    const result = setGoal({
-      name: "set_goal",
-      input: { description: "Ціль" },
-    });
-    expect(result).toContain("id:goal_");
   });
 });
 
