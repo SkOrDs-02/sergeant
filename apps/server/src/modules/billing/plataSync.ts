@@ -32,7 +32,10 @@
 import type { Pool } from "pg";
 import { env } from "../../env/env.js";
 import { logger } from "../../obs/logger.js";
-import { billingRecurringChargeTotal } from "../../obs/metrics.js";
+import {
+  billingRecurringChargeTotal,
+  plataSyncLastSuccessTimestampSeconds,
+} from "../../obs/metrics.js";
 import {
   resolveStartupDelayMs,
   scheduleStartupTick,
@@ -61,6 +64,53 @@ const FAST_WINDOW_MS = 60 * 60 * 1000;
 const UNCONFIRMED_LOOKBACK_DAYS = 3;
 const GRACE_DAYS = 3;
 const ACTIVE_STATUSES = new Set(["active"]);
+
+/**
+ * ISO-час останнього успішного тіку ЦЬОГО процесу (module-level, як у
+ * `GdprCleanupPoller`: `/health/workers` читає статус без доступу до
+ * інстансу поллера). `null` після рестарту до першого успіху - очікувано.
+ */
+let lastFastRunAtIso: string | null = null;
+let lastSlowRunAtIso: string | null = null;
+
+/**
+ * Snapshot для `/health/workers` (rel-19). Без нього факт «повільна звірка
+ * не виконувалась тиждень» було не видно ніде, а саме вона продовжує
+ * `current_period_end` і ставить `past_due`, коли вебхук загубився. Без БД:
+ * стан лише в пам'яті процесу, тож `errorCode` тут не буває.
+ */
+export interface PlataSyncWorkerStatus {
+  enabled: boolean;
+  /** Інтервал повільного тіку («кому вже час»). */
+  intervalMs: number;
+  /** ISO-час останнього успішного повільного тіку; null до першого. */
+  lastRunAt: string | null;
+  fastIntervalMs: number;
+  lastFastRunAt: string | null;
+}
+
+export function getPlataSyncWorkerStatus(): PlataSyncWorkerStatus {
+  return {
+    enabled: env.PLATA_ENABLED,
+    intervalMs: SLOW_TICK_MS,
+    lastRunAt: lastSlowRunAtIso,
+    fastIntervalMs: FAST_TICK_MS,
+    lastFastRunAt: lastFastRunAtIso,
+  };
+}
+
+/** Для тестів: скидає module-level мітки останніх тіків. */
+export const __testingResetPlataLastRunAt = (): void => {
+  lastFastRunAtIso = null;
+  lastSlowRunAtIso = null;
+};
+
+function markTickSucceeded(tick: "fast" | "slow"): void {
+  const now = new Date();
+  if (tick === "fast") lastFastRunAtIso = now.toISOString();
+  else lastSlowRunAtIso = now.toISOString();
+  plataSyncLastSuccessTimestampSeconds.set({ tick }, now.getTime() / 1000);
+}
 
 interface SubscriptionStatusResponse {
   subscriptionId?: string;
@@ -425,6 +475,15 @@ export class PlataSyncPoller {
       fastTickMs: this.fastTickMs,
       slowTickMs: this.slowTickMs,
     });
+    // Засів gauge часом старту (див. `plataSyncLastSuccessTimestampSeconds`):
+    // інакше поллер, що падає з першого тіку, не мав би серії й не алертив.
+    const startedAtSec = Date.now() / 1000;
+    if (lastFastRunAtIso === null) {
+      plataSyncLastSuccessTimestampSeconds.set({ tick: "fast" }, startedAtSec);
+    }
+    if (lastSlowRunAtIso === null) {
+      plataSyncLastSuccessTimestampSeconds.set({ tick: "slow" }, startedAtSec);
+    }
     this.fastTimer = setInterval(() => {
       void this.runFast();
     }, this.fastTickMs);
@@ -473,7 +532,9 @@ export class PlataSyncPoller {
     if (this.runningFast || this.stopping) return { processed: 0 };
     this.runningFast = true;
     try {
-      return await runFastTick(this.pool);
+      const result = await runFastTick(this.pool);
+      markTickSucceeded("fast");
+      return result;
     } catch (err) {
       logger.error({
         msg: "plata_sync_fast_tick_failed",
@@ -489,7 +550,9 @@ export class PlataSyncPoller {
     if (this.runningSlow || this.stopping) return { processed: 0 };
     this.runningSlow = true;
     try {
-      return await runSlowTick(this.pool);
+      const result = await runSlowTick(this.pool);
+      markTickSucceeded("slow");
+      return result;
     } catch (err) {
       logger.error({
         msg: "plata_sync_slow_tick_failed",
