@@ -1,6 +1,6 @@
 # ADR-0106: Самовідновлення пристрою після втрати локальних даних через reconcile за хешем стану
 
-- **Status:** Proposed
+- **Status:** Accepted
 - **Date:** 2026-10-23
 - **Last validated:** 2026-10-23
 - **Next review:** 2027-01-23
@@ -13,6 +13,8 @@
   - [`apps/server/src/modules/sync/syncV2.ts`](../../../apps/server/src/modules/sync/syncV2.ts) — pull, що виключає оп-и власного `origin_device_id`
   - [`apps/web/src/core/syncEngine/syncEngineReader.ts`](../../../apps/web/src/core/syncEngine/syncEngineReader.ts) — цикл pull і курсор
   - [`packages/dualwrite-core/src/tableSpec.ts`](../../../packages/dualwrite-core/src/tableSpec.ts) — reconcile дочірніх рядків
+
+> **Рішення власника 2026-10-23 (прийнято):** прострочений курсор відхиляється `410 sync_cursor_expired`; стартові числа беремо як є (сторінка pull 2 MiB, партія retention 5 000 рядків, перевірка хешу стану не частіше одного разу на 24 год) і переглядаємо за метриками `sync_pull_page_bytes` / `sync_pull_truncated_total` після тижня в проді. Перший етап ADR-0105 (байтовий бюджет) реалізує #1646.
 
 ---
 
