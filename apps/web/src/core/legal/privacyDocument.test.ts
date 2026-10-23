@@ -39,6 +39,22 @@ describe("privacyDocument: потоки даних Monobank", () => {
     expect(monoSentence).not.toMatch(/імен|контрагент|фізосіб/i);
   });
 
+  it("не обіцяє маскування імен контрагентів у розділі про AI", () => {
+    // Рішення власника 2026-10-23 (priv-10): автокатегоризація й далі йде без
+    // userId, тож клас Б (імена контрагентів-фізосіб) діє не на всіх шляхах.
+    // Публічна політика цього не обіцяє, опис реалізації лишається в
+    // docs/governance/security/llm-subprocessors.md.
+    const aiSection = privacyDocument.sections.find((section) =>
+      section.title.startsWith("AI: що саме виходить"),
+    );
+    expect(aiSection).toBeDefined();
+    const masking = aiSection?.body.find((line) =>
+      line.startsWith("Перед відправкою ми маскуємо"),
+    );
+    expect(masking).toBeDefined();
+    expect(masking).not.toMatch(/контрагент|фізосіб/i);
+  });
+
   it("називає саме те, що маскує maskPii: пошта, телефон, картка, IBAN, ІПН", () => {
     const monoSentence = lines.find((line) => line.startsWith("Дані Monobank"));
     for (const word of ["пошту", "телефони", "карток", "IBAN", "ІПН"]) {
