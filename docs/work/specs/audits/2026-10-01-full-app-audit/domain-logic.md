@@ -147,7 +147,7 @@ Code path (main @ c7c09607):
 
 ### `logic-03` [medium] Незворотні та перезаписні чат-дії виконуються без підтвердження і без undo
 
-- **Стан:** частково виправлено в [#1398](https://github.com/SkOrDs-02/sergeant/pull/1398) (змерджено 2026-10-08) і в цьому PR (`update_budget(goal)` із `saved_amount` дописує різницю в лог поповнень, а не замінює його; рішення власника 2026-10-23) (лишилось: undo для consume_from_pantry (потребує компенсуючої події журналу комори, ADR-0077); set_goal, edit_habit, set_habit_schedule, pause_habit без undo; тест-інваріант «мутуючий тул або в TOOL_RISK, або з undo»)
+- **Стан:** частково виправлено в [#1398](https://github.com/SkOrDs-02/sergeant/pull/1398) (змерджено 2026-10-08) і в [#1642](https://github.com/SkOrDs-02/sergeant/pull/1642) (змерджено 2026-10-23) (`update_budget(goal)` із `saved_amount` дописує різницю в лог поповнень, а не замінює його; рішення власника 2026-10-23) (лишилось: undo для consume_from_pantry (потребує компенсуючої події журналу комори, ADR-0077); set_goal, edit_habit, set_habit_schedule, pause_habit без undo; тест-інваріант «мутуючий тул або в TOOL_RISK, або з undo»)
 - **Перевірка:** підтверджено · **Зусилля:** M · **Область:** web: HubChat / виконавці дій
 - **Де:** packages/shared/src/lib/toolRisk.ts:54-116; apps/web/src/core/lib/chatActions/finykActions/debts.ts:72-123; .../finykActions/transactions.ts:95-158; .../finykActions/budgets.ts:182-201; .../nutritionActions.ts:261-416; .../crossActions/goalAndUtility.ts:179-189; .../routineActions.ts:397-556
 - **Першопричина:** Політика TOOL_RISK така: незворотне йде через confirm, решта має undo. Але частина мутуючих тулів не входить у TOOL_RISK і повертає звичайний рядок без undo. mark_debt_paid видаляє борг (splice), consume_from_pantry без qty прибирає позицію цілком. set_daily_plan і set_goal вимикають адаптивну ціль, edit_habit, set_habit_schedule і pause_habit (заднім числом) переписують звичку. split_transaction перезаписує спліти, а update_budget(goal) замінює історію поповнень цілі.
@@ -648,7 +648,7 @@ useRestTimerCountdown (useWorkoutsLifecycle.ts:107-130) робить {remaining:
 
 ### `logic-11` [medium] Гнучкі звички («N разів на тиждень») у кількох агрегатах Рутини рахуються поденно
 
-- **Стан:** частково виправлено в [#1553](https://github.com/SkOrDs-02/sergeant/pull/1553) (змерджено 2026-10-20) і в цьому PR (момент серії `moments.ts` рахує гнучку звичку тижнями, `habit_stats` теж); лишилось: мобілка `useCalendarAggregates` (контур на паузі, ADR-0094)
+- **Стан:** частково виправлено в [#1553](https://github.com/SkOrDs-02/sergeant/pull/1553) (змерджено 2026-10-20) і в [#1649](https://github.com/SkOrDs-02/sergeant/pull/1649) (змерджено 2026-10-23) (момент серії `moments.ts` рахує гнучку звичку тижнями, `habit_stats` теж); лишилось: мобілка `useCalendarAggregates` (контур на паузі, ADR-0094)
 - **Перевірка:** підтверджено · **Зусилля:** M · **Область:** routine-domain / web: Рутина
 - **Де:** packages/routine-domain/src/flexStreak.ts:144-269, 365-382; packages/routine-domain/src/habitRangeRows.ts:121-171; packages/routine-domain/src/dayProgress.ts:28-40; packages/routine-domain/src/streaks.ts:196-206; apps/web/src/modules/routine/useRoutineDerivedData.ts:217-226, 272-289
 - **Першопричина:** Спека routine-flexible-weekly-frequency.md вимагає, щоб споживачі «класу Б» не питали денний предикат для гнучкої звички. Проте flexibleStreakBreakdown і flexibleMaxActiveStreak, buildHabitRangeRows і calcRoutineDayProgress (weekDoneCount = 0) вважають кожен невідмічений день незакритого тижня запланованим, тобто пропуском.
@@ -1445,7 +1445,7 @@ Ran <scratch>/agents/verify-browser-surfaces-nutrition-flows/cat.mts. Медал
 
 ### `logic-22` [low] Картка звички рахує «Найдовшу серію» іншим алгоритмом, ніж поточну й /routine/stats: рекорд менший за поточну серію
 
-- **Стан:** частково виправлено в цьому PR (чат-тул `habit_stats` і момент серії гнучких звичок рахують тижнями); лишилось: рекорд картки `HabitStatsSection` (`maxStreakAllTime`) і інсайт `useStreakRecordPendingInsight` для негнучких звичок
+- **Стан:** частково виправлено в [#1649](https://github.com/SkOrDs-02/sergeant/pull/1649) (змерджено 2026-10-23) (чат-тул `habit_stats` і момент серії гнучких звичок рахують тижнями); лишилось: рекорд картки `HabitStatsSection` (`maxStreakAllTime`) і інсайт `useStreakRecordPendingInsight` для негнучких звичок
 - **Перевірка:** підтверджено · **Зусилля:** S · **Швидкий виграш** · **Область:** web: Рутина (картка звички)
 - **Де:** apps/web/src/modules/routine/components/HabitStatsSection.tsx:68-103; apps/web/src/modules/routine/hooks/useStreakRecordPendingInsight.ts:33-52; apps/web/src/modules/routine/components/HabitDetailSheet.tsx; packages/routine-domain/src/streaks.ts (maxStreakAllTime)
 - **Першопричина:** HabitStatsSection бере поточну серію з flexibleStreakBreakdown (з grace, паузами й startDate), а «Найдовшу серію» з жорсткого maxStreakAllTime, який рветься на першому пропуску й ігнорує startDate. Інсайт useStreakRecordPendingInsight порівнює flexibleMaxActiveStreak у днях з maxStreakAllTime, що для гнучких звичок рахує тижні. RoutineStatsPanel уже перейшов на flexibleMaxStreakAllTimeAcrossHabits.
