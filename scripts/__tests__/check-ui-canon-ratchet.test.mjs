@@ -27,6 +27,8 @@ import {
   CANON_RING_OPACITY,
   counts,
   NATIVE_CHOICE_ALLOWLIST,
+  RAW_INPUT_ALLOWLIST,
+  RAW_INPUT_PRIMITIVES_DIR,
   ROUNDED_FULL_ALLOWLIST,
   ICON_SIZE_TOKENS,
   maskedRanges,
@@ -261,7 +263,7 @@ test("allowlist не масивом — голосна помилка, а не �
   assert.throws(() => allowlistHits({ files: [] }), /масивом/);
 });
 
-test("лічильник знає про всі чотирнадцять метрик — інакше baseline-гейт не побачить нову", () => {
+test("лічильник знає про всі пʼятнадцять метрик — інакше baseline-гейт не побачить нову", () => {
   assert.deepEqual(Object.keys(counts([])).sort(), [
     "bigRadius",
     "capsFormLabel",
@@ -276,6 +278,7 @@ test("лічильник знає про всі чотирнадцять мет�
     "nativeChoice",
     "numericIconSize",
     "offCanonRingOpacity",
+    "rawInput",
     "textStateLabel",
   ]);
 });
@@ -464,6 +467,35 @@ test("nativeChoice: файли allowlist не рахуються, комента
     assert.deepEqual(hits, [], file);
   }
   assert.deepEqual(onlyTsx(`// <input type="radio" />`, "nativeChoice"), []);
+});
+
+test("rawInput: голі input, textarea і select ловляться, примітиви й file/hidden ні", () => {
+  const src = `
+    <input type="text" value={v} />
+    <textarea rows={3}></textarea>
+    <select value={s}><option /></select>
+    <input type="file" className="sr-only" />
+    <input type='hidden' name="id" />
+    <Input value={v} />
+    <Select value={s} />
+    <Textarea />
+    <inputGroup />`;
+  const hits = onlyTsx(src, "rawInput");
+  assert.equal(hits.length, 3);
+  assert.match(hits[0].detail, /Input \/ Textarea \/ Select/);
+});
+
+test("rawInput: тека примітивів і allowlist не рахуються, коментар теж", () => {
+  for (const file of [
+    ...RAW_INPUT_ALLOWLIST,
+    `${RAW_INPUT_PRIMITIVES_DIR}Input.tsx`,
+  ]) {
+    const hits = scanSource(file, `<input type="text" />`).filter(
+      (h) => h.metric === "rawInput",
+    );
+    assert.deepEqual(hits, [], file);
+  }
+  assert.deepEqual(onlyTsx(`// <input type="text" />`, "rawInput"), []);
 });
 
 test("nativeChoice: лише TSX, рядок у .ts не є розміткою", () => {

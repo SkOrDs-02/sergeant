@@ -63,6 +63,14 @@
 //      `<label>` чи примітиві `<Label>` з `FormField` (у класах тега або в рядковій константі, яку тег бере
 //      `className={NAME}`). Підпис поля 14 / 500 звичайним регістром, капс
 //      лише на тинті hero, а там `<label>` немає.
+//  15. `rawInput` - голий тег `<input>` / `<textarea>` / `<select>` у TSX.
+//      Канон поля - примітиви `Input` / `Textarea` / `Select`
+//      (`shared/components/ui/Input.tsx`, `Select.tsx`): межа `border-control`
+//      (3:1), фокус межею й `inset-ring` чорнилом, 48 px, підпис 14 / 500. Поза
+//      метрикою: самі примітиви (тека `shared/components/ui/`), теги з
+//      `type="file"` / `type="hidden"` (не поле вводу) і файли з
+//      `RAW_INPUT_ALLOWLIST` (пофайлово, з причиною). Спека
+//      docs/work/specs/planning/raw-input-to-primitive.md.
 //
 // Метрики 12-14 (redesign v3.1 PR2, спека
 // docs/work/specs/planning/redesign-v3-1.md § Гейти) скануються лише в `.tsx`
@@ -178,6 +186,25 @@ export const NATIVE_CHOICE_ALLOWLIST = [
   "apps/web/src/shared/components/ui/Choice.tsx",
   // Перемикач: прихований `sr-only` checkbox під `role="switch"`, не вибір.
   "apps/web/src/shared/components/ui/Switch.tsx",
+];
+
+/** Тека примітивів: сирі теги там і є реалізацією канону. */
+export const RAW_INPUT_PRIMITIVES_DIR = "apps/web/src/shared/components/ui/";
+
+/**
+ * Файли, де сирий `<input>` / `<textarea>` легальний (рішення власника
+ * 2026-10-23). Шляхи від кореня репо. Новий запис - лише з причиною. Межу й
+ * фокус ці поля однаково беруть з примітива (`border-control`, `fieldFocus`).
+ */
+export const RAW_INPUT_ALLOWLIST = [
+  // Поле чату з Сержантом: авторозмір, кнопки голосу й відправки всередині.
+  "apps/web/src/core/components/ChatInput.tsx",
+  // Пошук хаба в шапці: власна форма рядка пошуку з іконкою й очищенням.
+  "apps/web/src/core/hub/search/SearchInput.tsx",
+  // Пошук у каталозі можливостей Сержанта, та сама форма рядка пошуку.
+  "apps/web/src/core/AssistantCataloguePage.tsx",
+  // Прихований `sr-only` інпут, що ловить PIN з цифрової клавіатури екрана.
+  "apps/web/src/core/security/AppLock.tsx",
 ];
 
 /**
@@ -668,6 +695,25 @@ function stateHits(relPath, src) {
     }
     labelRe.lastIndex = end + 1;
   }
+
+  if (
+    !norm.startsWith(RAW_INPUT_PRIMITIVES_DIR) &&
+    !RAW_INPUT_ALLOWLIST.includes(norm)
+  ) {
+    const fieldRe = /<(input|textarea|select)(?![\w-])/g;
+    while ((m = fieldRe.exec(src))) {
+      const end = tagEnd(src, m.index + m[0].length);
+      if (end < 0) continue;
+      const tag = src.slice(m.index, end + 1);
+      fieldRe.lastIndex = end + 1;
+      if (/\stype=["'](?:file|hidden)["']/.test(tag)) continue;
+      push(
+        "rawInput",
+        m.index,
+        `голий <${m[1]}> - канон: Input / Textarea / Select (shared/components/ui)`,
+      );
+    }
+  }
   return hits;
 }
 
@@ -735,6 +781,7 @@ export function counts(hits) {
     nativeChoice: 0,
     textStateLabel: 0,
     capsFormLabel: 0,
+    rawInput: 0,
   };
   for (const h of hits) out[h.metric]++;
   return out;
@@ -805,7 +852,8 @@ function main() {
       `кікерів ${now.kicker} (бюджет ${budget.budgets.kicker}), ` +
       `нативних виборів ${now.nativeChoice} (бюджет ${budget.budgets.nativeChoice}), ` +
       `текстових станів ${now.textStateLabel} (бюджет ${budget.budgets.textStateLabel}), ` +
-      `капс-підписів полів ${now.capsFormLabel} (бюджет ${budget.budgets.capsFormLabel}).`,
+      `капс-підписів полів ${now.capsFormLabel} (бюджет ${budget.budgets.capsFormLabel}), ` +
+      `голих полів ${now.rawInput} (бюджет ${budget.budgets.rawInput}).`,
   );
 
   const over = Object.keys(now).filter((k) => now[k] > budget.budgets[k]);
@@ -837,7 +885,8 @@ function main() {
       "  кнопка — `variant` ∈ solid|soft|outline|ghost + `tone`;\n" +
       "  фокус — утиліта `focus-ring`, не рукописний `focus-visible:ring-2`;\n" +
       "  UA-рядок — у каталог `@shared/i18n`, не в компонент із записом в allowlist;\n" +
-      "  вибір — `ChoiceGroup`, стан — шеврон / заливка + aria, підпис поля без капсу.\n" +
+      "  вибір — `ChoiceGroup`, стан — шеврон / заливка + aria, підпис поля без капсу;\n" +
+      "  поле — `Input` / `Textarea` / `Select`, не голий тег.\n" +
       "Мапа легасі→канон і причини — docs/work/specs/c-section-consistency-migration.md\n",
   );
   return 1;
