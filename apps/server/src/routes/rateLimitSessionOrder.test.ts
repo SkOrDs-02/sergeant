@@ -193,7 +193,7 @@ describe("PR-A3 / рецидив B31 — session guard vs. rate limiters", () =>
         /r\.use\(\s*["']\/api\/v2\/sync["']\s*,\s*setModule\(\s*["']syncV2["']\s*\)\s*\)/,
         /r\.post\(\s*["']\/api\/v2\/sync\/push["']/,
         /requireSession\(\)/,
-        /rateLimitExpress\(\s*\{\s*key:\s*["']api:v2:sync:push["']/,
+        /r\.use\(\s*["']\/api\/v2\/sync\/push["']\s*,\s*rateLimitExpress\(\s*\{\s*key:\s*["']api:v2:sync:push["']\s*,\s*limit:\s*60\b/,
         "/api/v2/sync push",
       );
     });
@@ -203,9 +203,9 @@ describe("PR-A3 / рецидив B31 — session guard vs. rate limiters", () =>
       assertSessionBeforeLimiter(
         code,
         /r\.use\(\s*["']\/api\/v2\/sync["']\s*,\s*setModule\(\s*["']syncV2["']\s*\)\s*\)/,
-        /r\.post\(\s*["']\/api\/v2\/sync\/push["']/,
+        /r\.get\(\s*["']\/api\/v2\/sync\/pull["']/,
         /requireSession\(\)/,
-        /rateLimitExpress\(\s*\{\s*key:\s*["']api:v2:sync:pull["']/,
+        /r\.use\(\s*["']\/api\/v2\/sync\/pull["']\s*,\s*rateLimitExpress\(\s*\{\s*key:\s*["']api:v2:sync:pull["']\s*,\s*limit:\s*60\b/,
         "/api/v2/sync pull",
       );
     });
