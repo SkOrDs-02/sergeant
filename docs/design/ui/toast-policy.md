@@ -1,6 +1,6 @@
 # Toast policy
 
-> **Last touched:** 2026-09-19 by @claude. **Next review:** 2027-03-30.
+> **Last touched:** 2026-10-22 by @test. **Next review:** 2027-05-02.
 > **Status:** Active.
 
 Канонічна довідка для агентів і розробників: коли який toast, скільки
@@ -141,6 +141,12 @@ WCAG 4.1.3 (Status Messages, Level AA) вимагає, що повідомлен
   останнім рядком тіла — тіло змінну не публікує, і тост його нижній край
   накриє. `useModalDialogOpen()` з `useDialogFocusTrap` лишається (його
   тримають тести), але трей його більше не читає.
+- **Трей публікує і свою смугу: `--sgt-toast-inset`** (тим самим
+  `useBottomInsetVar`, поки на екрані є тост), а `page-tabbar-pad` додає її
+  до нижнього відступу сторінки. Тому тост не накриває кінець жодної
+  сторінки: контент під ним докручується (інвентар v3.1 Е4, тост «30 днів
+  поспіль» над фільтрами стрічки Рутини; рішення власника 2026-10-23 про
+  спільне правило, не локальний фікс). Тест у `Toast.test.tsx`.
 - Нижній відступ = `max(safe-area, --sgt-bottom-nav-inset, --sgt-workout-banner-inset, --sgt-sheet-footer-inset) + 0.75rem`.
   **AI-DANGER:** усі три `--sgt-*` змінні ставить хук
   [`useBottomInsetVar`](../../../apps/web/src/shared/hooks/useBottomInsetVar.ts)
