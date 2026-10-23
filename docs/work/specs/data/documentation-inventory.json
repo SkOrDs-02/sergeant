@@ -4687,7 +4687,7 @@
       "canonical_owner": "docs/work/specs/planning/product-knowledge-backlog.md"
     },
     {
-      "old_path": null,
+      "old_path": "docs/work/specs/planning/raw-input-to-primitive.md",
       "new_path": "docs/work/specs/planning/raw-input-to-primitive.md",
       "action": "keep",
       "genre": "active-work",
