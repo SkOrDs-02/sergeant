@@ -76,7 +76,7 @@ export async function claimPantryItems(
       ? ` AND i.pantry_claimed_at IS NULL
           AND r.pantry_auto_declined_at IS NULL
           AND r.purchased_at >= COALESCE(c.pantry_auto_import_since, 'infinity'::timestamptz)
-          AND r.purchased_at > COALESCE(wm.wiped_at, '-infinity'::timestamptz)`
+          AND r.purchased_at > COALESCE(GREATEST(wm.wiped_at, c.receipts_wiped_at), '-infinity'::timestamptz)`
       : "";
   const { rows } = await queryFn<{ id: unknown }>(
     `UPDATE silpo_receipt_items i

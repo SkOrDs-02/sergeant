@@ -159,7 +159,7 @@ describe("claimPantryItems", () => {
     }) as unknown as QueryFn;
     await claimPantryItems("u1", "r1", [1], "auto", queryFn);
     expect(sqls[0]).toContain(
-      "r.purchased_at > COALESCE(wm.wiped_at, '-infinity'::timestamptz)",
+      "r.purchased_at > COALESCE(GREATEST(wm.wiped_at, c.receipts_wiped_at), '-infinity'::timestamptz)",
     );
   });
 

@@ -18,7 +18,10 @@ import { query as defaultQuery } from "../../db.js";
 import type { QueryFn } from "./tokenStore.js";
 
 /**
- * Мілісекунди `receipts_wiped_at` або `null`, якщо wipe не було . `pg` віддає TIMESTAMPTZ як `Date`; рядок приймаємо для
+ * Мілісекунди маркера або `null`, якщо wipe не було. Береться пізніший із
+ * `silpo_wipe_marker.wiped_at` і старої колонки `silpo_connection.receipts_wiped_at`:
+ * у вікні викочування 165 старий інстанс ще пише лише колонку (`GREATEST`
+ * ігнорує NULL). `pg` віддає TIMESTAMPTZ як `Date`; рядок приймаємо для
  * сумісності з моками.
  */
 export async function loadReceiptsWipedAtMs(
@@ -28,7 +31,10 @@ export async function loadReceiptsWipedAtMs(
   const { rows } = await queryFn<{
     receipts_wiped_at: Date | string | null;
   }>(
-    `SELECT wiped_at AS receipts_wiped_at FROM silpo_wipe_marker WHERE user_id = $1`,
+    `SELECT GREATEST(
+              (SELECT wiped_at FROM silpo_wipe_marker WHERE user_id = $1),
+              (SELECT receipts_wiped_at FROM silpo_connection WHERE user_id = $1)
+            ) AS receipts_wiped_at`,
     [userId],
     { op: "silpo_wipe_marker_load" },
   );

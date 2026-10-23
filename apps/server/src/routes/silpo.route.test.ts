@@ -640,7 +640,11 @@ describe("POST /api/silpo/wipe", () => {
     expect(sql).toMatch(
       /INSERT INTO silpo_wipe_marker \(user_id, wiped_at\)\s+VALUES \(\$1, NOW\(\)\)/,
     );
-    expect(sql).not.toContain("UPDATE silpo_connection");
+    // Стару колонку 159 теж пишемо: старий інстанс у вікні викочування і
+    // відкат деплою читають лише її.
+    expect(sql).toMatch(
+      /UPDATE silpo_connection\s+SET receipts_wiped_at = NOW\(\)/,
+    );
   });
 });
 

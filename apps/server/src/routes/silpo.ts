@@ -159,6 +159,12 @@ export async function wipeHandler(req: Request, res: Response): Promise<void> {
        INSERT INTO silpo_wipe_marker (user_id, wiped_at)
        VALUES ($1, NOW())
        ON CONFLICT (user_id) DO UPDATE SET wiped_at = EXCLUDED.wiped_at
+     ), legacy_marker AS (
+       -- Стара колонка 159 теж: якщо деплой відкотять, старий код маркер
+       -- побачить. Прибирається разом із колонкою.
+       UPDATE silpo_connection
+          SET receipts_wiped_at = NOW(), updated_at = NOW()
+        WHERE user_id = $1
      ), wiped AS (
        DELETE FROM silpo_receipts WHERE user_id = $1 RETURNING 1
      )
