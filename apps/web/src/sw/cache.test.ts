@@ -2,6 +2,8 @@ import { describe, it, expect } from "vitest";
 
 import {
   canUseCachePartition,
+  isNoStoreResponse,
+  isPrivateApiPath,
   selectCachesToClear,
   shouldCacheExerciseImage,
   shouldUseRuntimeCache,
@@ -85,10 +87,33 @@ describe("apps/web sw runtime cache predicate", () => {
     expect(shouldCache("/api/v1/sync/pull", "GET")).toBe(false);
   });
 
-  it("does NOT widen the policy: /me and /ai-memory stay cacheable (owner decision)", () => {
-    expect(shouldCache("/api/v1/me", "GET")).toBe(true);
-    expect(shouldCache("/api/v1/ai-memory/list", "GET")).toBe(true);
+  it("excludes /me and /ai-memory subtrees from the runtime cache (priv-08)", () => {
+    for (const p of [
+      "/api/v1/me",
+      "/api/v1/me/profile",
+      "/api/v1/me/preferences",
+      "/api/v1/ai-memory/list",
+      "/api/v1/ai-memory",
+      "/api/me",
+      "/api/ai-memory/recall",
+    ]) {
+      expect(shouldCache(p, "GET")).toBe(false);
+    }
+  });
+
+  it("matches private paths on a segment boundary only", () => {
+    expect(isPrivateApiPath("/api/v1/menu")).toBe(false);
+    expect(isPrivateApiPath("/api/v1/memory")).toBe(false);
+    expect(shouldCache("/api/v1/menu", "GET")).toBe(true);
     expect(shouldCache("/api/v1/finyk/transactions", "GET")).toBe(true);
+  });
+
+  it("respects Cache-Control: no-store (priv-08)", () => {
+    expect(isNoStoreResponse("private, no-store, no-cache")).toBe(true);
+    expect(isNoStoreResponse("No-Store")).toBe(true);
+    expect(isNoStoreResponse("no-cache")).toBe(false);
+    expect(isNoStoreResponse("max-age=60")).toBe(false);
+    expect(isNoStoreResponse(null)).toBe(false);
   });
 });
 
