@@ -142,7 +142,8 @@ describe("Progress page", () => {
     });
     render(<Progress onNavigate={onNavigate} />);
     expect(screen.getByText("79 кг")).toBeInTheDocument();
-    expect(screen.getByText("−2,0 кг")).toBeInTheDocument();
+    // Тренд під значенням одним рядком (v3.2, позиція 09).
+    expect(screen.getByText(/^−2,0 кг від попереднього$/)).toBeInTheDocument();
   });
 
   it("обʼєднує вагу з обох сховищ в один ряд (W1-WEIGHT-SOT)", () => {

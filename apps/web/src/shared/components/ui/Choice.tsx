@@ -90,17 +90,16 @@ const OPTION_BASE = cn(
   "disabled:cursor-not-allowed disabled:opacity-50",
 );
 
-// Плитка живе на картках і в аркушах, тобто на тій самій `panel`, тож
-// необрану тримає межа контролу (3:1), а не заливка. В обраної межа кольору
-// заливки й не видна.
+// Необрану плитку тримає заливка `panel`, рамки немає (redesign v3.2,
+// позиція 04): двадцять рамок на форму витрати читались як двадцять полів
+// вводу. Рамка лишається лише на `Input` / `Select` і позначці
+// `ChoiceCheckbox`.
 function tileClass(checked: boolean, size: ChoiceSize) {
   return cn(
     OPTION_BASE,
-    "inline-flex items-center justify-center border px-3 text-center text-style-label font-semibold",
+    "inline-flex items-center justify-center px-3 text-center text-style-label font-semibold",
     size === "sm" ? "rounded-segment" : "rounded-lg",
-    checked
-      ? "border-text bg-text text-bg"
-      : "border-control bg-panel text-text hover:bg-panelHi",
+    checked ? "bg-text text-bg" : "bg-panel text-text hover:bg-panelHi",
   );
 }
 

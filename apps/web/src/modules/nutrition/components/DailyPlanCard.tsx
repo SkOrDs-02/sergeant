@@ -8,7 +8,7 @@ import { Card } from "@shared/components/ui/Card";
 import { Input } from "@shared/components/ui/Input";
 import { Measure } from "@shared/components/ui/Measure";
 import { SectionHeading } from "@shared/components/ui/SectionHeading";
-import { messages } from "@shared/i18n/uk";
+import { openHubSettingsSection } from "@shared/lib/modules/hubNav";
 import {
   kcalFromMacros,
   type NutritionPrefs,
@@ -111,11 +111,6 @@ export function DailyPlanCard({
       <SectionHeading as="div" size="lg">
         Денний план
       </SectionHeading>
-      <div className="text-style-caption text-muted mt-0.5">
-        {pantryIgnored
-          ? messages.nutrition.dayPlanIntro.pantryIgnored
-          : messages.nutrition.dayPlanIntro.withPantry}
-      </div>
 
       <div className="mt-5 space-y-7">
         <div className="space-y-3">
@@ -217,9 +212,13 @@ export function DailyPlanCard({
           <GoalRangeWarning prefs={prefs} />
 
           {!prefs.adaptiveGoalEnabled && (
-            <p className="text-style-caption text-muted">
-              Автокалібрування вмикається в Налаштуваннях → Їжа.
-            </p>
+            <Button
+              variant="text"
+              className="-ml-2 self-start"
+              onClick={() => openHubSettingsSection("nutrition")}
+            >
+              Автокалібрування
+            </Button>
           )}
 
           {hasTargets && (

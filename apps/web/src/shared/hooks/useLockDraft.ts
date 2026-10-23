@@ -2,6 +2,7 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import {
   clearFormDraft,
   peekFormDraft,
+  registerLiveFormDraft,
   stashFormDraft,
 } from "@shared/lib/storage/formDrafts";
 import { useLatestRef } from "./useLatestRef";
@@ -32,7 +33,10 @@ export function useLockDraft<T>(
 
   useEffect(() => {
     if (!formId) return undefined;
+    // data-45: жива форма віддає знімок, коли вкладка віддає базу іншій.
+    const unregister = registerLiveFormDraft(formId, readSnapshot);
     return () => {
+      unregister();
       const latest = readSnapshot();
       if (latest !== null) stashFormDraft(formId, latest);
     };

@@ -6,10 +6,11 @@ import { SectionHeading } from "./SectionHeading";
 afterEach(cleanup);
 
 describe("SectionHeading (мова H)", () => {
-  it("xs за замовчуванням: <h3>, ярлик caps третім сірим, без риски", () => {
+  it("xs за замовчуванням: <h3>, ярлик без капсу третім сірим, без риски", () => {
     render(<SectionHeading>Огляд</SectionHeading>);
     const el = screen.getByRole("heading", { level: 3 });
-    expect(el.className).toContain("text-style-overline");
+    expect(el.className).toContain("text-style-label");
+    expect(el.className).not.toContain("overline");
     expect(el.className).toContain("text-subtle");
     expect(el.className).not.toContain("before:");
   });
