@@ -84,9 +84,7 @@ describe("ShoppingListCard", () => {
     render(<ShoppingListCard {...baseProps()} />);
     expect(screen.getByText(/Список покупок порожній/)).toBeInTheDocument();
     // Порожньо і в збережених, і в згенерованих: підказка називає обидва шляхи.
-    expect(
-      screen.getByText(/Збережи рецепти або згенеруй/),
-    ).toBeInTheDocument();
+    expect(screen.getByText(/Збережених рецептів немає/)).toBeInTheDocument();
     expect(screen.getByText("Згенерувати список покупок")).toBeDisabled();
   });
 
@@ -400,7 +398,7 @@ describe("ShoppingListCard — вибір рецептів (збережені +
     );
     expect(screen.getByRole("checkbox", { name: /Борщ/ })).toBeInTheDocument();
     expect(
-      screen.queryByText(/Збережи рецепти або згенеруй/),
+      screen.queryByText(/Збережених рецептів немає/),
     ).not.toBeInTheDocument();
     expect(screen.getByText("1 рецепт")).toBeInTheDocument();
   });
@@ -515,7 +513,7 @@ describe("ShoppingListCard — вибір рецептів (збережені +
       screen.getByText("Завантажую збережені рецепти…"),
     ).toBeInTheDocument();
     expect(
-      screen.queryByText(/Збережи рецепти або згенеруй/),
+      screen.queryByText(/Збережених рецептів немає/),
     ).not.toBeInTheDocument();
   });
 
@@ -525,7 +523,7 @@ describe("ShoppingListCard — вибір рецептів (збережені +
       "Не вдалося прочитати збережені рецепти",
     );
     expect(
-      screen.queryByText(/Збережи рецепти або згенеруй/),
+      screen.queryByText(/Збережених рецептів немає/),
     ).not.toBeInTheDocument();
   });
 
