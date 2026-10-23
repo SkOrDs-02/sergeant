@@ -49,10 +49,6 @@ vi.mock("../../modules/routine/hooks/RoutineBootCluster", () => ({
   default: () => null,
 }));
 vi.mock("./useAppEffects", () => ({ useAppEffects: vi.fn() }));
-vi.mock("@shared/lib/adapters/haptic", () => ({
-  hapticSuccess: vi.fn(),
-  hapticTap: vi.fn(),
-}));
 
 import { RootLayout } from "./RootLayout";
 
