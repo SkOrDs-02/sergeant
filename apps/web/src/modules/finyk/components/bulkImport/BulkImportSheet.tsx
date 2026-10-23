@@ -30,6 +30,7 @@ import { Sheet } from "@shared/components/ui/Sheet";
 import { useResetPinchZoomAfterCameraCapture } from "@shared/hooks/useResetPinchZoomOnResume";
 import type {
   ImportScreenshotDraft,
+  ImportCommitProfile,
   ImportSkippedRow,
   ImportSource,
 } from "@sergeant/api-client";
@@ -169,6 +170,10 @@ export function BulkImportSheet({
   const [stage, setStage] = useState<Stage>("choose");
   const [flowError, setFlowError] = useState<string | null>(null);
   const [importSource, setImportSource] = useState<ImportSource | null>(null);
+  // Звідки рядки (mono / privat24 / custom / screenshot): від цього залежить
+  // серверний тір-1 mono-дедуп на commit (data-30).
+  const [commitProfile, setCommitProfile] =
+    useState<ImportCommitProfile | null>(null);
   const [reviewRows, setReviewRows] = useState<BulkReviewRow[]>([]);
   const [skippedNote, setSkippedNote] = useState<string | null>(null);
   const [pendingStatementFile, setPendingStatementFile] =
@@ -221,6 +226,7 @@ export function BulkImportSheet({
       setStage("choose");
       setFlowError(null);
       setImportSource(null);
+      setCommitProfile(null);
       setReviewRows([]);
       setSkippedNote(null);
       setPendingStatementFile(null);
@@ -272,6 +278,7 @@ export function BulkImportSheet({
         return;
       }
       setImportSource("bank_screenshot");
+      setCommitProfile("screenshot");
       setReviewRows(screenshotRowsToBulkReviewRows(draft.rows, rowOptions));
       setSkippedNote(null);
       setProcessing(null);
@@ -312,6 +319,7 @@ export function BulkImportSheet({
       return;
     }
     setImportSource("bank_statement");
+    setCommitProfile(response.profile);
     setReviewRows(statementRowsToBulkReviewRows(response.rows, rowOptions));
     setSkippedNote(summarizeSkipped(response.skipped));
     setStage("bulk-review");
@@ -364,6 +372,7 @@ export function BulkImportSheet({
     try {
       const response = await commit.mutateAsync({
         source: importSource,
+        ...(commitProfile ? { profile: commitProfile } : {}),
         rows: toCommitRows(reviewRows),
       });
       setCommitResult(response);

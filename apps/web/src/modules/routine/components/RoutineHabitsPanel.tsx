@@ -33,6 +33,7 @@ import { focusFallbackTarget } from "@shared/lib/ui/focusFallback";
 import { ArchivedHabitsSection } from "./habits/ArchivedHabitsSection";
 import { HabitDetailSheet } from "./HabitDetailSheet";
 import { HabitQuickCreateDialog } from "./HabitQuickCreateDialog";
+import { FORM_DRAFT_IDS, peekFormDraft } from "@shared/lib/storage/formDrafts";
 
 const COPY = messages.routine.habitsTab;
 
@@ -51,7 +52,11 @@ export function RoutineHabitsPanel({
 }: RoutineHabitsPanelProps) {
   const toast = useToast();
   const [editingId, setEditingId] = useState<string | null>(null);
-  const [creatingHabit, setCreatingHabit] = useState(false);
+  // Недописана нова звичка переживає замок застосунку (sec-13): діалог
+  // відкривається з чернеткою, яку лишив `HabitQuickCreateDialog`.
+  const [creatingHabit, setCreatingHabit] = useState(
+    () => peekFormDraft(FORM_DRAFT_IDS.routineHabit) !== null,
+  );
   const [editDialogFocusTick, setEditDialogFocusTick] = useState(0);
   const [detailHabitId, setDetailHabitId] = useState<string | null>(null);
   const [deleteHabitPending, setDeleteHabitPending] =

@@ -130,7 +130,7 @@ export function loadNutritionPrefs(
  * Поки контекст dual-write ще не зареєстровано (auth резолвиться), id
  * невідомий, тож довіряємо лише факту «якийсь pull уже завершувався».
  */
-function isInitialSyncSettled(): boolean {
+export function isInitialSyncSettled(): boolean {
   const userId = getNutritionDualWriteUserId();
   if (userId === null) return hasCompletedInitialPull();
   if (!isSyncableUserId(userId)) return true;

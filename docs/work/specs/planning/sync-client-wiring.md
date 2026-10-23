@@ -80,7 +80,7 @@
 │       │         └──► POST /api/v2/sync/push ✅                     │
 │       │                                                            │
 │       ├─ GET /api/v2/sync/pull  ✅ syncEngineReader / pullOnce     │
-│       └─ GET /api/v2/sync/stream ❌ NO CONSUMER (Phase 3)          │
+│       └─ GET /api/v2/sync/stream ✅ syncStreamConsumer (за прапорцем)│
 └────────────────────────────────────────────────────────────────────┘
                               │
 ┌──────────── SERVER ────────────────────────────────────────────────┐
@@ -185,7 +185,7 @@ pnpm check
 
 ### Фаза 3 — Realtime + ops
 
-- [ ] Client SSE consumer (`EventSource` → `/api/v2/sync/stream`) as optional fast-path before pull.
+- [x] Client SSE consumer (`syncStreamConsumer.ts`, fetch-стрім замість `EventSource` заради `X-Origin-Device-Id`) as optional fast-path before pull. Сигнал «зроби pull», не курсор; сервер за `SYNC_V2_STREAM_ENABLED` (дефолт off, 404). Ручний E2E з увімкненим прапорцем ще не проганяли.
 - [ ] ADR-0065 implementation: `sync_op_log` retention + PG NOTIFY multi-instance fan-out.
 - [ ] Wire SLO alert `BackendHealthP95High` (design-only today).
 

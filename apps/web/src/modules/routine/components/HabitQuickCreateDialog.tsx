@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import {
   normalizeWeeklyTargetHistory,
   resolveHabitGlyph,
@@ -6,6 +6,8 @@ import {
   weeklyTargetForDate,
 } from "@sergeant/routine-domain";
 import { useToast } from "@shared/hooks/useToast";
+import { useLockDraft } from "@shared/hooks/useLockDraft";
+import { FORM_DRAFT_IDS } from "@shared/lib/storage/formDrafts";
 import { hapticSuccess } from "@shared/lib/adapters/haptic";
 import { cn } from "@shared/lib/ui/cn";
 import { Sheet } from "@shared/components/ui/Sheet";
@@ -137,6 +139,21 @@ export function HabitQuickCreateDialog({
   ) {
     setErrors((e) => ({ ...e, weekdays: undefined }));
   }
+
+  // Нова звичка з введеною назвою переживає замок застосунку (sec-13): аркуш
+  // розмонтовується під замком, чернетку лишає `useLockDraft`.
+  const lockDraft = useLockDraft<HabitDraft>(
+    FORM_DRAFT_IDS.routineHabit,
+    open && !editingId && draft.name.trim() !== "" ? draft : null,
+  );
+  const takeLockDraft = lockDraft.take;
+  useEffect(() => {
+    if (!open || editingId) return;
+    const restored = takeLockDraft();
+    if (!restored) return;
+    // Ініціалізація аркуша йде в рендері; відновлення — мікротаском після неї.
+    void Promise.resolve().then(() => setDraft(restored));
+  }, [open, editingId, takeLockDraft]);
 
   if (!open) return null;
 
