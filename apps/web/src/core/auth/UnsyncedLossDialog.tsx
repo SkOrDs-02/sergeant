@@ -29,14 +29,21 @@ const UNSYNCED_RECORD_FORMS: UaPluralForms = {
 export interface UnsyncedLossDialogProps {
   /** Скільки записів не доїхало на сервер (pending + dead_letter + rejected). */
   readonly pending: number;
+  /**
+   * Скільки з них анонімні рядки незавершеного переносу в профіль (`data-46`):
+   * мережа їх не врятує, тож діалог додає підказку про повтор переносу.
+   */
+  readonly anonymous?: number;
   readonly onResolve: (proceed: boolean) => void;
 }
 
 export default function UnsyncedLossDialog({
   pending,
+  anonymous = 0,
   onResolve,
 }: UnsyncedLossDialogProps) {
   const m = messages.unsyncedLoss;
+  const hint = anonymous > 0 ? ` ${m.anonymousHint}` : "";
   return (
     <ConfirmDialog
       open
@@ -45,7 +52,7 @@ export default function UnsyncedLossDialog({
       // лишається під ним, а `logout()` чекає відповіді вічно.
       elevated
       title={m.title}
-      description={`${pending} ${pluralUa(pending, UNSYNCED_RECORD_FORMS)} ${m.notSavedSuffix} ${m.warning}`}
+      description={`${pending} ${pluralUa(pending, UNSYNCED_RECORD_FORMS)} ${m.notSavedSuffix} ${m.warning}${hint}`}
       confirmLabel={m.confirm}
       cancelLabel={m.cancel}
       onConfirm={() => onResolve(true)}

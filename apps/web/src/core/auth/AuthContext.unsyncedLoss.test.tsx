@@ -13,11 +13,14 @@ import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { useEffect, type ReactNode } from "react";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
-const { flushMock, signOutMock, wipeMock } = vi.hoisted(() => ({
-  flushMock: vi.fn(),
-  signOutMock: vi.fn(async () => undefined),
-  wipeMock: vi.fn(async () => undefined),
-}));
+const { flushMock, signOutMock, wipeMock, inspectMock, discardMock } =
+  vi.hoisted(() => ({
+    flushMock: vi.fn(),
+    inspectMock: vi.fn(),
+    discardMock: vi.fn(async (_leftovers: unknown) => true),
+    signOutMock: vi.fn(async () => undefined),
+    wipeMock: vi.fn(async () => undefined),
+  }));
 
 vi.mock("./authClient.js", () => ({
   signIn: { email: vi.fn(), social: vi.fn() },
@@ -28,6 +31,18 @@ vi.mock("./authClient.js", () => ({
 vi.mock("../syncEngine/flushBeforeLogout", () => ({
   flushPendingSyncOpsBeforeLogout: () => flushMock(),
 }));
+// `data-46`: лічильник `countLogoutLoss` справжній, підмінено лише доступ до
+// анонімної партиції (його покриває `anonymousLeftoversOnLogout.sqlite.test.ts`).
+vi.mock("../durability/anonymousLeftoversOnLogout", async () => {
+  const real = await vi.importActual<
+    typeof import("../durability/anonymousLeftoversOnLogout")
+  >("../durability/anonymousLeftoversOnLogout");
+  return {
+    ...real,
+    inspectAnonymousLeftoversOnLogout: () => inspectMock(),
+    discardAnonymousLeftoversOnLogout: (l: unknown) => discardMock(l),
+  };
+});
 vi.mock("../db/sqlite", async () => {
   const real =
     await vi.importActual<typeof import("../db/sqlite")>("../db/sqlite");
@@ -97,6 +112,9 @@ beforeEach(() => {
   flushMock.mockResolvedValue({ pending: 0, unknown: false });
   signOutMock.mockClear();
   wipeMock.mockClear();
+  inspectMock.mockReset();
+  inspectMock.mockResolvedValue(null);
+  discardMock.mockClear();
 });
 
 describe("logout() — обов'язкове підтвердження втрати незасинхронізованого", () => {
@@ -231,5 +249,83 @@ describe("logout() — обов'язкове підтвердження втра
     await act(async () => {
       await first;
     });
+  });
+});
+
+describe("logout() — анонімні рядки незавершеного переносу (data-46)", () => {
+  const leftovers = { userId: "u-1", rows: 2, queuedCopies: 0 };
+
+  it("рахує їх у тому ж діалозі з підказкою про повтор переносу; «Залишитись» нічого не стирає", async () => {
+    inspectMock.mockResolvedValue(leftovers);
+    mountProvider();
+
+    let pendingLogout!: Promise<boolean>;
+    await act(async () => {
+      pendingLogout = auth.logout();
+    });
+    const dialog = await screen.findByRole("alertdialog", {
+      name: "Є незбережені записи",
+    });
+    expect(dialog).toHaveTextContent(/2 записи ще не збережено на сервері\./);
+    expect(dialog).toHaveTextContent(/повтори перенесення/);
+    fireEvent.click(screen.getByRole("button", { name: "Залишитись" }));
+
+    let done: boolean | undefined;
+    await act(async () => {
+      done = await pendingLogout;
+    });
+    expect(done).toBe(false);
+    expect(wipeMock).not.toHaveBeenCalled();
+    expect(discardMock).not.toHaveBeenCalled();
+  });
+
+  it("«Все одно вийти»: стирає анонімні рядки й claim після партиції A", async () => {
+    inspectMock.mockResolvedValue(leftovers);
+    flushMock.mockResolvedValue({ pending: 1, unknown: false });
+    mountProvider();
+
+    let pendingLogout!: Promise<boolean>;
+    await act(async () => {
+      pendingLogout = auth.logout();
+    });
+    const dialog = await screen.findByRole("alertdialog", {
+      name: "Є незбережені записи",
+    });
+    expect(dialog).toHaveTextContent(/3 записи/);
+    fireEvent.click(screen.getByRole("button", { name: "Все одно вийти" }));
+    await act(async () => {
+      await pendingLogout;
+    });
+
+    expect(discardMock).toHaveBeenCalledWith(leftovers);
+    expect(wipeMock.mock.invocationCallOrder[0]).toBeLessThan(
+      discardMock.mock.invocationCallOrder[0]!,
+    );
+  });
+
+  it("лише claim без рядків: стирає без діалогу", async () => {
+    const claimOnly = { userId: "u-1", rows: 0, queuedCopies: 0 };
+    inspectMock.mockResolvedValue(claimOnly);
+    mountProvider();
+
+    let done: boolean | undefined;
+    await act(async () => {
+      done = await auth.logout();
+    });
+    expect(done).toBe(true);
+    expect(screen.queryByRole("alertdialog")).not.toBeInTheDocument();
+    expect(discardMock).toHaveBeenCalledWith(claimOnly);
+  });
+
+  it("skipUnsyncedLossPrompt: без flush і діалогу, але залишки стирає", async () => {
+    inspectMock.mockResolvedValue(leftovers);
+    mountProvider();
+
+    await act(async () => {
+      await auth.logout({ skipUnsyncedLossPrompt: true });
+    });
+    expect(flushMock).not.toHaveBeenCalled();
+    expect(screen.queryByRole("alertdialog")).not.toBeInTheDocument();
+    expect(discardMock).toHaveBeenCalledWith(leftovers);
   });
 });
