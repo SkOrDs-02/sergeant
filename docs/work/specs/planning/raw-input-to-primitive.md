@@ -55,4 +55,14 @@
 
 ## Журнал
 
-**Де зупинився:** гейт `rawInput` заведено з baseline 36, спека написана. Далі: переведення по модулях. Worktree `D:/Sergeant/.claude/worktrees/pryvit-1eb737`, гілка `claude/raw-input-to-primitive`.
+**Де зупинився:** усе з інвентарю переведено, `rawInput` = 0 і заборона (`ZERO_ONLY_METRICS`), канон `04-components.md § Input`, `DESIGN.md`, `sergeant-web-ui` і `design-reviewer` знають правило. Далі: draft-PR, вердикт CI. Worktree `D:/Sergeant/.claude/worktrees/pryvit-1eb737`, гілка `claude/raw-input-to-primitive`.
+
+**2026-10-23, виконання.** Коміт на модуль, лічильник 36 → 29 (Налаштування, Стратегія) → 26 (Фінік) → 10 (Фізрук) → 0 (Їжа, Рутина). Усі рядки інвентарю вище закриті в цьому PR. Попутно:
+
+- `ReceiptMoneyInput` отримав проп `size` (`sm` у рядку позиції, `md` для суми чека); перебивання шрифту через `!` у формі чека зняті, бо анти-зум тримає `base.css`.
+- Підписи над полями дата-часу Фізрука й над селектами Їжі та Рутини стали `label` примітива або `FIELD_LABEL` з `htmlFor` (раніше caption другим сірим і обгортка-`label` без привʼязки).
+- Невживані після переведення утиліти `input-focus-nutrition`, `input-focus-routine`, `routine-touch-select` видалені з `utilities.css`.
+- Винятки (чат, пошук хаба, пошук каталогу) на `border-control` і `fieldFocus`; `handRolledFocusRing` 138 → 133.
+- Мок `@shared/components/ui/Input` у `DailyPlanCard.extra.test.tsx` доповнено `FIELD_LABEL` і `fieldFocus`: реальний `Select` бере `fieldFocus` з того ж модуля.
+
+**Відхилення від спеки:** немає. Висоти змінились за правилом: поля форм 44 → 48 px (`md`), компактні в рядках 36 px візуально (44 px зона на сенсорі), як вирішив власник.
