@@ -1,6 +1,6 @@
 # Observability-runbook
 
-> **Last touched:** 2026-10-23 by @claude (секція AuthPasswordCheckFailureSeries, sec-10); 2026-10-20 by @claude (секція ReminderSweepFailed, rel-01); 2026-10-03 by @claude (секція Renovate PR → PR Dependabot, ADR-0103). **Next review:** 2026-12-02.
+> **Last touched:** 2026-10-23 by @claude (секції AuthPasswordCheckFailureSeries, sec-10, і PlataSyncSlowTickStale, `plataSync` у `/health/workers`, rel-19); 2026-10-20 by @claude (секція ReminderSweepFailed, rel-01); 2026-10-03 by @claude (секція Renovate PR → PR Dependabot, ADR-0103). **Next review:** 2026-12-02.
 > **Status:** Active
 
 > **Update 2026-07-21:** API/server logs — **Coolify** ([ADR-0074](../../governance/adr/0074-hosting-hetzner-coolify.md)). Посилання на «n8n Railway env» нижче — legacy n8n hosting (migrate TBD). OpenClaw WF-103 env — historical ([ADR-0075](../../governance/adr/0075-openclaw-gateway-decommissioned.md)).
@@ -262,6 +262,14 @@ latency вже достатньо висока, щоб rolling deploy / cold sta
 3. `reminder_claim_failed` і транспортні помилки з `sendToUserQuietly` на `ReminderSweepFailed` не впливають; якщо їх багато, діагностуй БД (`db_pool_waiting`) і push-апстрім (`external_http_*`, `push_sends_total`).
 4. Метрика `reminder_sweep_runs_total{outcome="failed"}` зростає на ~1/хв, поки причина `reminder_sweep_failed` жива (серія експортується з нуля від старту процесу, тож перший збій теж видно); після виправлення приріст зупиняється, алерт гасне сам.
 
+## PlataSyncSlowTickStale
+
+Повільний тік звірки Plata (`apps/server/src/modules/billing/plataSync.ts`, щогодини, модель «кому вже час») не завершився успішно понад 3 години. Це єдиний шлях, що продовжує `current_period_end` і ставить `past_due`, коли вебхук monobank загубився (rel-19), тож поки алерт горить, продовження й дунінг тримаються лише на вебхуках. Серія `plata_sync_last_success_timestamp_seconds{tick="slow"}` засіюється часом старту поллера, тому алерт спрацьовує і тоді, коли тік падає з першого ж запуску; при `PLATA_ENABLED=false` серії немає й алерт мовчить.
+
+1. `GET /health/workers` → `workers.plataSync.lastRunAt`: `null` означає, що в цьому процесі успішного тіку не було жодного; ISO-час показує останній успіх. `lastFastRunAt` поруч про швидкий тік (непідтверджені checkout-и).
+2. У Pino за той самий інтервал шукай `plata_sync_slow_tick_failed` і `plata_sync_startup_tick_failed`, поле `err`. Тік падає лише на збої вибірки (БД: звір `db_pool_waiting`, `db_query_duration_ms`); помилки monobank по окремих підписках (`plata_sync_status_fetch_failed`, `plata_sync_reconcile_error`) тік не валять і на алерт не впливають.
+3. Обмеження: рестарт контейнера засіває gauge наново. За деплоїв частіше ніж раз на 3 години стабільно мертвий тік не алертить, тож у дні активних деплоїв перевіряй `lastRunAt` вручну.
+
 ## DbPoolWaitingSustained
 
 Leading indicator. `db_pool_waiting > 0` 5m → ticket. Пейдж
@@ -422,14 +430,24 @@ curl https://api.sergeant/health/workers | jq
         "pending": 5, "processing": 1, "done": 4242,
         "failed": 0, "dead_letter": 0, "total": 4248
       }
+    },
+    "plataSync": {
+      "enabled": false,          // env: PLATA_ENABLED
+      "intervalMs": 3600000,     // повільний тік «кому вже час»
+      "lastRunAt": null,         // останній успішний повільний тік процесу
+      "fastIntervalMs": 300000,
+      "lastFastRunAt": null
     }
   }
 }
 ```
 
+`plataSync` читається з пам'яті процесу без SQL, `errorCode` у нього не буває і на код відповіді він не впливає: застарілий `lastRunAt` ловить алерт [`PlataSyncSlowTickStale`](#platasyncslowtickstale), а не 503.
+
 > Source of truth для складу `workers` — `createWorkersHealthHandler` у
-> `apps/server/src/http/health.ts`: станом на 2026-08-28 це `aiMemoryIngest`
-> і `monoEnrichment` (паралельна гілка gdpr-поллера додає `gdprCleanup`).
+> `apps/server/src/http/health.ts`: станом на 2026-10-23 це `aiMemoryIngest`,
+> `monoEnrichment`, `gdprCleanup`, `accountDeletion` і `plataSync` (rel-19);
+> у прикладі вище показано лише частину.
 > Блока `backgroundQueue` в payload-і немає і ніколи не було — попередня
 > версія цього прикладу документувала неіснуючий контракт.
 

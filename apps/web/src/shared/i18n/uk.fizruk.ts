@@ -242,6 +242,9 @@ export const fizrukPageMessages = {
     ariaLabel: "Таймер відпочинку",
     restingPrefix: "Відпочинок",
     finished: "Відпочинок завершено",
+    // Локальне сповіщення, коли відпочинок скінчився у прихованій вкладці
+    // (`notifyRestFinishedIfHidden`). Заголовок — `finished`.
+    notificationBody: "Час для наступного підходу",
     endingSoon: "Відпочинок закінчується",
     // Per-item quick-pick row inside `WorkoutItemCard`
     // (`WorkoutItemRestPresets.tsx`).

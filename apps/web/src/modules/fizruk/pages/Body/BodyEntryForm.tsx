@@ -10,10 +10,11 @@
  * нормалізований запис нагору через `onSubmitEntry`. Куди саме той запис
  * лягає (daily_log / measurements / біометрія) — не його справа.
  */
-import { useCallback, useEffect, useRef, useState } from "react";
-import type { KeyboardEvent } from "react";
+import { useEffect, useRef, useState } from "react";
 import { z } from "zod";
 import { Card } from "@shared/components/ui/Card";
+import { ChoiceGroup } from "@shared/components/ui/Choice";
+import { FIELD_LABEL } from "@shared/components/ui/Input";
 import { Label } from "@shared/components/ui/FormField";
 import { SectionHeading } from "@shared/components/ui/SectionHeading";
 import { useApiForm } from "@shared/forms";
@@ -24,9 +25,14 @@ import { cn } from "@shared/lib/ui/cn";
 import {
   ENERGY_LABELS,
   MOOD_LABELS,
-  ScoreButton,
   SelectedLevelLabel,
-} from "./ScoreButton";
+} from "./SelectedLevelLabel";
+
+const SCALE = ["1", "2", "3", "4", "5"] as const;
+type ScaleValue = (typeof SCALE)[number];
+
+const scaleItems = (labels: readonly string[]) =>
+  SCALE.map((v) => ({ value: v, label: v, ariaLabel: labels[Number(v)] }));
 
 /**
  * Form schema — повторює UX-обмеження інпутів (`min`/`max`/`step`),
@@ -111,60 +117,6 @@ export interface BodyEntryDraft {
   note: string;
 }
 
-/**
- * Arrow-key navigation for radiogroup score buttons (WCAG 2.1 §4.1.2 /
- * ARIA authoring practices — roving tabIndex pattern).
- * ArrowRight / ArrowDown → next value (wraps from 5 → 1).
- * ArrowLeft / ArrowUp   → prev value (wraps from 1 → 5).
- * Home → 1, End → 5.
- * Clicking the same selected value deselects it (toggle to null).
- */
-function handleScoreKeyDown(
-  e: KeyboardEvent<HTMLDivElement>,
-  current: number | null,
-  setter: (v: number | null) => void,
-  groupEl: HTMLDivElement | null,
-) {
-  const VALUES = [1, 2, 3, 4, 5] as const;
-  const FIRST = VALUES[0];
-  const LAST = VALUES[VALUES.length - 1] ?? 5;
-  let next: number | null = null;
-  // `current == null` (nothing selected yet) has no position on `VALUES` —
-  // mapping it to a phantom index -1 and wrapping through modulo
-  // arithmetic used to land the FIRST ArrowLeft/Up press on 4 instead of 5
-  // (defect #3: `(−1 − 1 + 5) % 5 === 3`, so the `?? 5` fallback below
-  // never actually ran). Handle "nothing selected" as its own case: the
-  // first press should land on the edge of the scale matching the
-  // direction, not on an arbitrary wrapped value.
-  const idx =
-    current == null ? -1 : VALUES.indexOf(current as (typeof VALUES)[number]);
-  if (e.key === "ArrowRight" || e.key === "ArrowDown") {
-    e.preventDefault();
-    next = idx === -1 ? FIRST : (VALUES[(idx + 1) % VALUES.length] ?? FIRST);
-  } else if (e.key === "ArrowLeft" || e.key === "ArrowUp") {
-    e.preventDefault();
-    next =
-      idx === -1
-        ? LAST
-        : (VALUES[(idx - 1 + VALUES.length) % VALUES.length] ?? LAST);
-  } else if (e.key === "Home") {
-    e.preventDefault();
-    next = FIRST;
-  } else if (e.key === "End") {
-    e.preventDefault();
-    next = LAST;
-  }
-  if (next !== null) {
-    setter(next);
-    const buttons =
-      groupEl?.querySelectorAll<HTMLButtonElement>('[role="radio"]');
-    if (buttons) {
-      const target = buttons[next - 1];
-      target?.focus();
-    }
-  }
-}
-
 interface BodyEntryFormProps {
   /** Викликається лише з валідним, непорожнім записом. */
   onSubmitEntry: (draft: BodyEntryDraft) => void;
@@ -235,32 +187,8 @@ export function BodyEntryForm({ onSubmitEntry }: BodyEntryFormProps) {
   // трекер полів не бачить).
   useRegisterDirtyState(!isEntryEmpty);
 
-  const energyGroupRef = useRef<HTMLDivElement | null>(null);
-  const moodGroupRef = useRef<HTMLDivElement | null>(null);
-
-  const onEnergyKeyDown = useCallback(
-    (e: KeyboardEvent<HTMLDivElement>) => {
-      handleScoreKeyDown(
-        e,
-        energyLevel,
-        (v) => setValue("energyLevel", v, { shouldDirty: true }),
-        energyGroupRef.current,
-      );
-    },
-    [energyLevel, setValue],
-  );
-
-  const onMoodKeyDown = useCallback(
-    (e: KeyboardEvent<HTMLDivElement>) => {
-      handleScoreKeyDown(
-        e,
-        moodScore,
-        (v) => setValue("moodScore", v, { shouldDirty: true }),
-        moodGroupRef.current,
-      );
-    },
-    [moodScore, setValue],
-  );
+  const setScore = (field: "energyLevel" | "moodScore", v: number | null) =>
+    setValue(field, v, { shouldDirty: true });
 
   return (
     <Card as="section" aria-label={messages.fizruk.body.formAriaLabel}>
@@ -327,32 +255,20 @@ export function BodyEntryForm({ onSubmitEntry }: BodyEntryFormProps) {
         </div>
 
         <div>
-          <SectionHeading as="p" size="xs" variant="fizruk" className="mb-2">
+          <div id="body-energy-label" className={`${FIELD_LABEL} mb-2`}>
             {messages.fizruk.body.energyLevel}
-          </SectionHeading>
-          <div
-            ref={energyGroupRef}
-            className="flex gap-1.5"
-            role="radiogroup"
-            tabIndex={-1}
-            aria-label={messages.fizruk.body.energyLevel}
-            onKeyDown={onEnergyKeyDown}
-          >
-            {[1, 2, 3, 4, 5].map((v) => (
-              <ScoreButton
-                key={v}
-                value={v}
-                label={ENERGY_LABELS[v] ?? ""}
-                selected={energyLevel === v}
-                tabbable={energyLevel === v || (energyLevel == null && v === 1)}
-                onClick={(val: number) =>
-                  setValue("energyLevel", energyLevel === val ? null : val, {
-                    shouldDirty: true,
-                  })
-                }
-              />
-            ))}
           </div>
+          <ChoiceGroup
+            size="sm"
+            className="grid grid-cols-5"
+            ariaLabelledBy="body-energy-label"
+            value={
+              energyLevel == null ? null : (String(energyLevel) as ScaleValue)
+            }
+            onChange={(v) => setScore("energyLevel", Number(v))}
+            onDeselect={() => setScore("energyLevel", null)}
+            items={scaleItems(ENERGY_LABELS)}
+          />
           <SelectedLevelLabel
             shortLabel={messages.fizruk.body.energyShort}
             value={energyLevel}
@@ -361,32 +277,18 @@ export function BodyEntryForm({ onSubmitEntry }: BodyEntryFormProps) {
         </div>
 
         <div>
-          <SectionHeading as="p" size="xs" variant="fizruk" className="mb-2">
+          <div id="body-mood-label" className={`${FIELD_LABEL} mb-2`}>
             {messages.fizruk.body.mood}
-          </SectionHeading>
-          <div
-            ref={moodGroupRef}
-            className="flex gap-1.5"
-            role="radiogroup"
-            tabIndex={-1}
-            aria-label={messages.fizruk.body.mood}
-            onKeyDown={onMoodKeyDown}
-          >
-            {[1, 2, 3, 4, 5].map((v) => (
-              <ScoreButton
-                key={v}
-                value={v}
-                label={MOOD_LABELS[v] ?? ""}
-                selected={moodScore === v}
-                tabbable={moodScore === v || (moodScore == null && v === 1)}
-                onClick={(val: number) =>
-                  setValue("moodScore", moodScore === val ? null : val, {
-                    shouldDirty: true,
-                  })
-                }
-              />
-            ))}
           </div>
+          <ChoiceGroup
+            size="sm"
+            className="grid grid-cols-5"
+            ariaLabelledBy="body-mood-label"
+            value={moodScore == null ? null : (String(moodScore) as ScaleValue)}
+            onChange={(v) => setScore("moodScore", Number(v))}
+            onDeselect={() => setScore("moodScore", null)}
+            items={scaleItems(MOOD_LABELS)}
+          />
           <SelectedLevelLabel
             shortLabel={messages.fizruk.body.mood}
             value={moodScore}

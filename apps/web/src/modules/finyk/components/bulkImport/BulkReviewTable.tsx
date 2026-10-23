@@ -4,8 +4,8 @@
  *
  * Спільна bulk-review таблиця для скрін-банкінгу і CSV-виписки (спека §
  * Bulk-review UI): чекбокс, дата, опис (inline-edit), сума (inline-edit),
- * категорія (дропдаун per row) + масова категорія для вибраних, бейджі
- * напряму/vision-confidence. Без dedup-статусу (tier1/2) — жодного
+ * категорія (дропдаун per row) + масова категорія для вибраних, перемикач
+ * напряму рядка (logic-06, `setRowDirection`) і бейдж vision-confidence. Без dedup-статусу (tier1/2) — жодного
  * pre-commit ендпоінта для нього немає, див. `bulkImportRows.ts`
  * докстрінг.
  *
@@ -21,6 +21,7 @@ import { useState } from "react";
 import { AnimatedCheckbox } from "@shared/components/ui/AnimatedCheckbox";
 import { Badge } from "@shared/components/ui/Badge";
 import { Button } from "@shared/components/ui/Button";
+import { Icon } from "@shared/components/ui/Icon";
 import { Input } from "@shared/components/ui/Input";
 import { Select } from "@shared/components/ui/Select";
 import type { CustomCategoryInput } from "@sergeant/finyk-domain";
@@ -34,6 +35,7 @@ import {
 } from "../manualIncomeCategories";
 import { ReceiptMoneyInput } from "../receiptScan/receiptMoneyInput";
 import { selectedRowCount, type BulkReviewRow } from "./bulkImportRows";
+import type { ImportDirection } from "@sergeant/api-client";
 
 const CONFIDENCE_WARN_THRESHOLD = 0.7;
 
@@ -70,8 +72,20 @@ export interface BulkReviewTableProps {
       Pick<BulkReviewRow, "description" | "amountKopiykas" | "category">
     >,
   ) => void;
+  /** Перемикач напряму рядка (logic-06). Без нього напрям лише бейдж. */
+  onSetDirection?:
+    ((id: string, direction: ImportDirection) => void) | undefined;
   customCategories?: readonly CustomCategoryInput[] | undefined;
   disabled?: boolean | undefined;
+}
+
+const DIRECTION_LABEL: Record<ImportDirection, string> = {
+  expense: "витрата",
+  income: "надходження",
+};
+
+function oppositeDirection(direction: ImportDirection): ImportDirection {
+  return direction === "income" ? "expense" : "income";
 }
 
 type CategoryOptions = {
@@ -93,6 +107,7 @@ export function BulkReviewTable({
   onToggleAll,
   onBulkCategory,
   onEditRow,
+  onSetDirection,
   customCategories = [],
   disabled = false,
 }: BulkReviewTableProps) {
@@ -250,15 +265,45 @@ export function BulkReviewTable({
                     <span className="text-style-caption text-subtle tabular-nums">
                       {row.date}
                     </span>
-                    <Badge
-                      variant={
-                        row.direction === "income" ? "success" : "neutral"
-                      }
-                      tone="soft"
-                      size="xs"
-                    >
-                      {row.direction === "income" ? "надходження" : "витрата"}
-                    </Badge>
+                    {/* Напрям тапається: виписка без окремих колонок дебету й
+                        кредиту або хибний знак дають рядки не того напряму
+                        (logic-06). Перемикання скидає категорію на дефолт
+                        нового напряму (`setRowDirection`). */}
+                    {onSetDirection ? (
+                      <button
+                        type="button"
+                        onClick={() =>
+                          onSetDirection(
+                            row.id,
+                            oppositeDirection(row.direction),
+                          )
+                        }
+                        disabled={disabled}
+                        aria-label={`Напрям: ${DIRECTION_LABEL[row.direction]}. Змінити на «${DIRECTION_LABEL[oppositeDirection(row.direction)]}»`}
+                        className="touch-target focus-ring inline-flex items-center rounded-lg"
+                      >
+                        <Badge
+                          variant={
+                            row.direction === "income" ? "success" : "neutral"
+                          }
+                          tone="soft"
+                          size="xs"
+                        >
+                          {DIRECTION_LABEL[row.direction]}
+                          <Icon name="repeat" size="xs" aria-hidden />
+                        </Badge>
+                      </button>
+                    ) : (
+                      <Badge
+                        variant={
+                          row.direction === "income" ? "success" : "neutral"
+                        }
+                        tone="soft"
+                        size="xs"
+                      >
+                        {DIRECTION_LABEL[row.direction]}
+                      </Badge>
+                    )}
                     {/* Бейджі — підозра, а не вирок: щойно людина сама
                         поставила галочку «імпортувати», підозра знята, і
                         бейдж ховається (бета-фідбек №2, 2026-08-18). */}

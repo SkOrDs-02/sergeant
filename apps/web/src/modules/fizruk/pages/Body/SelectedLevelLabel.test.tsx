@@ -1,46 +1,7 @@
 // @vitest-environment jsdom
-import { describe, it, expect, vi, afterEach } from "vitest";
-import { render, screen, fireEvent, cleanup } from "@testing-library/react";
-import { ScoreButton, SelectedLevelLabel, ENERGY_LABELS } from "./ScoreButton";
-
-describe("ScoreButton", () => {
-  afterEach(cleanup);
-
-  it("renders value and label with selected styling", () => {
-    render(
-      <ScoreButton
-        value={3}
-        selected={true}
-        onClick={vi.fn()}
-        label="Нормально"
-        tabbable={true}
-      />,
-    );
-
-    const btn = screen.getByRole("radio", { name: "Нормально" });
-    expect(btn).toHaveAttribute("aria-checked", "true");
-    expect(btn).toHaveAttribute("tabIndex", "0");
-    expect(btn).toHaveTextContent("3");
-  });
-
-  it("calls onClick with value and skips tab stop when not tabbable", () => {
-    const onClick = vi.fn();
-    render(
-      <ScoreButton
-        value={5}
-        selected={false}
-        onClick={onClick}
-        label="Відмінно"
-        tabbable={false}
-      />,
-    );
-
-    const btn = screen.getByRole("radio", { name: "Відмінно" });
-    expect(btn).toHaveAttribute("tabIndex", "-1");
-    fireEvent.click(btn);
-    expect(onClick).toHaveBeenCalledWith(5);
-  });
-});
+import { describe, it, expect, afterEach } from "vitest";
+import { render, screen, cleanup } from "@testing-library/react";
+import { SelectedLevelLabel, ENERGY_LABELS } from "./SelectedLevelLabel";
 
 describe("SelectedLevelLabel — live region (defect #4)", () => {
   afterEach(cleanup);

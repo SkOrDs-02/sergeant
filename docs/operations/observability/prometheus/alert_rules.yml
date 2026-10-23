@@ -427,6 +427,31 @@ groups:
             користувачів. Пропущені хвилини не надолужуються.
           runbook: "docs/operations/observability/runbook.md#remindersweepfailed"
 
+      # rel-19. Повільний тік звірки Plata (`modules/billing/plataSync.ts`,
+      # щогодини, модель «кому вже час») - єдиний шлях, що продовжує
+      # `current_period_end` і ставить `past_due`, коли вебхук загубився.
+      # Gauge засіюється часом старту поллера, тож правило ловить і поллер,
+      # що падає з першого тіку. Три пропущені тіки (3h) + `for: 15m`
+      # відсікають одиничний збій БД. Серії немає при PLATA_ENABLED=false -
+      # правило мовчить, як і має. Обмеження: рестарт контейнера (деплой)
+      # засіває gauge наново, тож за деплоїв частіше ніж раз на 3h стабільно
+      # мертвий тік не алертить; тоді дивись `/health/workers` →
+      # `plataSync.lastRunAt`. Правило треба залити в Mimir вручну
+      # (`mimirtool rules sync`).
+      - alert: PlataSyncSlowTickStale
+        expr: time() - plata_sync_last_success_timestamp_seconds{tick="slow"} > 3 * 3600
+        for: 15m
+        labels:
+          severity: ticket
+        annotations:
+          summary: "Повільна звірка Plata не виконувалась успішно понад 3h"
+          description: |
+            `runSlowTick` не завершився успішно три години поспіль (або
+            жодного разу з моменту старту поллера). Продовження періоду й
+            дунінг тримаються лише на вебхуках monobank. Ключі в логу:
+            `plata_sync_slow_tick_failed`, `plata_sync_startup_tick_failed`.
+          runbook: "docs/operations/observability/runbook.md#platasyncslowtickstale"
+
       - alert: ProgrammerErrorsIncreasing
         expr: increase(app_errors_total{kind="programmer"}[5m]) > 0
         for: 0m

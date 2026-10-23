@@ -106,6 +106,9 @@ describe("anonymous data migration invariants", () => {
     migration.source.all.mockImplementation(
       async (sql: string, params: unknown[] = []) => {
         if (sql.includes("sqlite_master")) {
+          // Без параметра це перелік таблиць для preflight: таблиця модуля
+          // без журналу міграцій = «невідомо», тож іде повна розвідка.
+          if (params.length === 0) return [{ name: "finyk_expenses" }];
           return params[0] === "finyk_expenses"
             ? [{ name: "finyk_expenses" }]
             : [];

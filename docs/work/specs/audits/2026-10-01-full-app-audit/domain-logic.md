@@ -199,7 +199,7 @@ Own live run (debtpaid.mjs, audit_pool97). create_debt VPaidDebt 300 → d_17909
 
 ### `logic-04` [medium] Старіння 1ПМ скидається одним легким підходом: калькулятор навантаження знову рахує від піку за всю історію
 
-- **Стан:** частково виправлено в [#1562](https://github.com/SkOrDs-02/sergeant/pull/1562) (змерджено 2026-10-20) (режим повернення тримається до ≥90% зниженого піка; пік за датою досягнення не старіє, а підказка наступного підходу в активному тренуванні та мобілка далі без сесій)
+- **Стан:** частково виправлено в [#1562](https://github.com/SkOrDs-02/sergeant/pull/1562) (змерджено 2026-10-20) і цьому PR (режим повернення тримається до ≥90% зниженого піка, тепер і в підказці наступного підходу в активному тренуванні — `computeNextSetAging` за всією історією вправи; лишилось: пік за датою досягнення не старіє, мобілка (пауза ADR-0094) далі без сесій)
 - **Перевірка:** підтверджено · **Зусилля:** M · **Область:** fizruk-domain / web: Фізрук
 - **Де:** packages/fizruk-domain/src/domain/workouts/oneRmAging.ts:151-186; packages/fizruk-domain/src/domain/workouts/exerciseDetail.ts:216-290; apps/web/src/modules/fizruk/pages/Exercise.tsx:88-95, 418-426
 - **Першопричина:** computeOneRmAging визначає застарілість лише за давністю останньої силової сесії, а орієнтир бере як peak1rm за всю історію, помножений на коефіцієнт. Будь-який підхід до вправи обнуляє давність (factor = 1, returnMode = false), і орієнтир повертається до повного піку, хоч би якою слабкою була сесія повернення.
@@ -288,7 +288,7 @@ cd /home/user/sergeant && node --import tsx <scratch>/agents/client-static-domai
 
 ### `logic-06` [medium] Виписки з окремими колонками Дебет/Кредит імпортуються навпаки: витрати стають доходом «Зарплата», надходження губляться
 
-- **Стан:** частково виправлено в [#1394](https://github.com/SkOrDs-02/sergeant/pull/1394) (змерджено 2026-10-08) (перемикач напряму рядка в BulkReviewTable відкладено)
+- **Стан:** виправлено: колонки Дебет/Кредит у мапері й на сервері – [#1394](https://github.com/SkOrDs-02/sergeant/pull/1394) (змерджено 2026-10-08); перемикач напряму рядка в BulkReviewTable (бейдж «витрата»/«надходження» тапається, категорія скидається на дефолт нового напряму, `occurrenceIndex` і мітки дубля/mono знімаються, `setRowDirection`) – цей PR
 - **Перевірка:** підтверджено · **Зусилля:** M · **Область:** web+server: Фінік / імпорт виписок
 - **Де:** apps/web/src/modules/finyk/components/bulkImport/ColumnMapper.tsx:100; apps/web/src/modules/finyk/components/bulkImport/bulkImportRows.ts:184-192; apps/server/src/modules/finyk/import/statementPreview.ts:89-102
 - **Першопричина:** ColumnMapper дає обрати лише одну «Колонку суми (витрати)», а ImportColumnMappingSchema не має поля знаку чи напряму. statementPreview.ts читає значення як суму зі знаком (signed &lt; 0 → expense). Тому додатна колонка Дебет стає доходом, а порожні клітинки відкидаються як unparsed_amount. У таблиці перевірки напрям рядка не редагується.
@@ -572,7 +572,7 @@ apps/web/src/modules/fizruk/hooks/useMonthlyPlan.ts:73-90 (saveState → лиш�
 
 ### `logic-10` [medium] Таймер відпочинку рахує тіки setInterval, а не реальний час: на заблокованому телефоні стоїть, після reload зникає
 
-- **Стан:** частково виправлено в [#1486](https://github.com/SkOrDs-02/sergeant/pull/1486) (змерджено 2026-10-09) (лишилось: персист `endsAt` між reload/убитим PWA (sessionStorage/SQLite) і Notification/Web Push у фоні — окремі рішення)
+- **Стан:** частково виправлено в [#1486](https://github.com/SkOrDs-02/sergeant/pull/1486) (змерджено 2026-10-09) і цьому PR (`endsAt` у sessionStorage — таймер переживає reload і повторне монтування; локальне сповіщення про кінець у прихованій вкладці за вже наданого дозволу, рішення власника 2026-10-23; лишилось: убитий ОС PWA губить слот разом із sessionStorage, сигнал на заблокованому iPhone (JS стоїть) — лише Web Push, окреме рішення)
 - **Перевірка:** підтверджено · **Зусилля:** S · **Швидкий виграш** · **Область:** web: Фізрук (тренування)
 - **Де:** apps/web/src/modules/fizruk/hooks/useWorkoutsLifecycle.ts:107-131; apps/web/src/modules/fizruk/context/RestTimerProvider.tsx:24-38; apps/web/src/modules/fizruk/hooks/useFizrukRestSound.ts:64-67
 - **Першопричина:** useRestTimerCountdown на кожен тік робить remaining − 1. Стан містить лише {remaining, total} без моменту закінчення, досинхронізації на visibilitychange немає, і живе він тільки в useState. Сигнал завершення (звук і телеметрія) викликається всередині updater-а setRestTimer, тобто сайд-ефектом у чистій функції.
