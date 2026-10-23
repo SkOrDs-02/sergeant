@@ -442,4 +442,60 @@ describe("BulkReviewTable", () => {
     fireEvent.click(screen.getByText(/Позначено 1 з 2/));
     expect(onToggleAll).toHaveBeenCalledWith(true); // not all selected yet → select all
   });
+
+  it("перемикач напряму (logic-06): тап кличе onSetDirection з протилежним напрямом", () => {
+    const onSetDirection = vi.fn();
+    render(
+      <BulkReviewTable
+        rows={rows()}
+        onToggleRow={vi.fn()}
+        onToggleAll={vi.fn()}
+        onBulkCategory={vi.fn()}
+        onEditRow={vi.fn()}
+        onSetDirection={onSetDirection}
+      />,
+    );
+    fireEvent.click(
+      screen.getByRole("button", {
+        name: "Напрям: витрата. Змінити на «надходження»",
+      }),
+    );
+    expect(onSetDirection).toHaveBeenCalledWith("r1", "income");
+    fireEvent.click(
+      screen.getByRole("button", {
+        name: "Напрям: надходження. Змінити на «витрата»",
+      }),
+    );
+    expect(onSetDirection).toHaveBeenCalledWith("r2", "expense");
+  });
+
+  it("перемикач напряму вимкнений, поки йде commit", () => {
+    render(
+      <BulkReviewTable
+        rows={rows()}
+        onToggleRow={vi.fn()}
+        onToggleAll={vi.fn()}
+        onBulkCategory={vi.fn()}
+        onEditRow={vi.fn()}
+        onSetDirection={vi.fn()}
+        disabled
+      />,
+    );
+    expect(
+      screen.getByRole("button", { name: /Напрям: витрата/ }),
+    ).toBeDisabled();
+  });
+
+  it("без onSetDirection напрям лишається бейджем, не кнопкою", () => {
+    render(
+      <BulkReviewTable
+        rows={rows()}
+        onToggleRow={vi.fn()}
+        onToggleAll={vi.fn()}
+        onBulkCategory={vi.fn()}
+        onEditRow={vi.fn()}
+      />,
+    );
+    expect(screen.queryByRole("button", { name: /Напрям:/ })).toBeNull();
+  });
 });

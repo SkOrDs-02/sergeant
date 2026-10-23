@@ -482,7 +482,7 @@ grep found no EMAIL_VERIFICATION_REQUIRED handling in apps/web/src or packages/a
 
 ### `ux-07` [medium] Виписка на 1000+ рядків проходить прев'ю, але «Імпортувати» падає з «Некоректні дані запиту»
 
-- **Стан:** частково виправлено в [#1470](https://github.com/SkOrDs-02/sergeant/pull/1470) (змерджено 2026-10-18) (кнопка блокується понад 1000 вибраних рядків з поясненням; клієнтська нарізка на кілька commit-ів лишилась follow-up-ом після data-29)
+- **Стан:** виправлено: видимий кап – [#1470](https://github.com/SkOrDs-02/sergeant/pull/1470) (змерджено 2026-10-18); клієнтська нарізка на commit-и по ≤1000 (`IMPORT_COMMIT_MAX_ROWS`) без розрізу групи (дата, сума, напрям), прогрес «Імпортую частину k з n…», при збої частини імпортоване зникає з таблиці і повтор досилає решту, «Скасувати імпорт» скасовує всі батчі – цей PR. Залишок: межа ±1 день mono-дедупу між частинами не врахована
 - **Перевірка:** підтверджено · **Зусилля:** M · **Область:** web+shared: Фінік / імпорт виписок
 - **Де:** packages/shared/src/schemas/import.ts:315; apps/server/src/modules/finyk/import/statementPreview.ts (MAX_PREVIEW_DATA_ROWS); apps/web/src/modules/finyk/components/bulkImport/BulkImportSheet.tsx:330-343
 - **Першопричина:** Прев'ю приймає до MAX_PREVIEW_DATA_ROWS=10 000 рядків, а схема commit обмежує rows значенням IMPORT_COMMIT_MAX_ROWS=1000. Коментар у схемі передбачає кілька commit-ів, але BulkImportSheet.handleCommit шле все одним запитом, а кнопка блокується лише тоді, коли не вибрано жодного рядка.
