@@ -14,9 +14,12 @@
  * сервер просто ігнорує.
  *
  * AI-NOTE: підніми число на 1 у тому ж PR, де в `OP_LOG_TABLE_REGISTRY`
- * (`apps/server/src/modules/sync/syncV2.ts`) з'являється нова sync-таблиця.
- * Без цього фронт із новою таблицею у вікні деплою отримає термінальний
- * `table_not_allowed` замість повтору.
+ * (`apps/server/src/modules/sync/syncV2.ts`) з'являється (або зникає) sync-таблиця.
+ * Це гейт, а не лише коментар: `node scripts/check-sync-protocol-version.mjs`
+ * (ланцюжок `pnpm lint`) порівнює реєстр зі знімком
+ * `scripts/__fixtures__/sync-protocol-tables.json`; після бампу онови знімок
+ * через `--update`. Без бампу фронт із новою таблицею у вікні деплою отримає
+ * термінальний `table_not_allowed` замість повтору.
  */
 export const SYNC_PROTOCOL_VERSION = 1;
 
