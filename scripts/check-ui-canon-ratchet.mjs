@@ -70,7 +70,8 @@
 //      метрикою: самі примітиви (тека `shared/components/ui/`), теги з
 //      `type="file"` / `type="hidden"` (не поле вводу) і файли з
 //      `RAW_INPUT_ALLOWLIST` (пофайлово, з причиною). Спека
-//      docs/work/specs/planning/raw-input-to-primitive.md.
+//      docs/work/specs/planning/raw-input-to-primitive.md. З 2026-10-23
+//      метрика = 0 і стоїть у `ZERO_ONLY_METRICS` (заборона без боргу).
 //
 // Метрики 12-14 (redesign v3.1 PR2, спека
 // docs/work/specs/planning/redesign-v3-1.md § Гейти) скануються лише в `.tsx`
@@ -232,6 +233,7 @@ export const ZERO_ONLY_METRICS = [
   "nativeChoice",
   "textStateLabel",
   "capsFormLabel",
+  "rawInput",
 ];
 
 export function zeroOnlyViolations(budgets) {
@@ -814,7 +816,7 @@ function main() {
   if (notZero.length) {
     console.error(
       `❌ ${notZero.join(", ")} - заборони без baseline-боргу, бюджет мусить бути 0.\n` +
-        `   Вибір - ChoiceGroup, стан - шеврон / заливка + aria, підпис поля без капсу.`,
+        `   Вибір - ChoiceGroup, стан - шеврон / заливка + aria, підпис поля без капсу, поле - Input / Textarea / Select.`,
     );
     return 1;
   }

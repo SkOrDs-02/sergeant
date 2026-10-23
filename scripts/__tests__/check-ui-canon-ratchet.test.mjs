@@ -582,17 +582,18 @@ test("ZERO_ONLY_METRICS: ненульовий бюджет для заборон
       nativeChoice: 1,
       textStateLabel: 0,
       capsFormLabel: 0,
+      rawInput: 0,
     }),
     ["nativeChoice"],
   );
   assert.deepEqual(
-    zeroOnlyViolations({ nativeChoice: 0, capsFormLabel: 0 }),
+    zeroOnlyViolations({ nativeChoice: 0, capsFormLabel: 0, rawInput: 0 }),
     ["textStateLabel"],
     "відсутній ключ - теж не нуль",
   );
 });
 
-test("ZERO_ONLY_METRICS: чинний бюджет тримає всі три заборони в нулі", () => {
+test("ZERO_ONLY_METRICS: чинний бюджет тримає всі чотири заборони в нулі", () => {
   const here = dirname(fileURLToPath(import.meta.url));
   const budget = JSON.parse(
     readFileSync(
@@ -605,5 +606,6 @@ test("ZERO_ONLY_METRICS: чинний бюджет тримає всі три з
     "nativeChoice",
     "textStateLabel",
     "capsFormLabel",
+    "rawInput",
   ]);
 });
