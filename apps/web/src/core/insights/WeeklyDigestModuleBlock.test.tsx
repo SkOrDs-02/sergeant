@@ -30,7 +30,9 @@ describe("WeeklyDigestModuleBlock", () => {
       toggle.getAttribute("aria-controls")!,
     )!;
     expect(within(body).queryByRole("paragraph")).toBeNull();
-    expect(container.querySelector("svg")).toBeNull();
+    // Єдиний гліф рядка - шеврон стану, інших іконок немає.
+    expect(container.querySelectorAll("svg")).toHaveLength(1);
+    expect(toggle.querySelector("svg")).toHaveAttribute("aria-hidden", "true");
     expect(screen.getByText("Два дні записів")).toBeInTheDocument();
     expect(screen.getByText("· залоговано 2/7")).toBeInTheDocument();
     fireEvent.click(toggle);

@@ -8,6 +8,7 @@
  */
 import { useId, useState } from "react";
 import { cn } from "@shared/lib/ui/cn";
+import { MorphChevron } from "@shared/components/ui/MorphChevron";
 
 const MODULE_CONFIG: Record<ModuleKey, { label: string }> = {
   finyk: { label: "Фінанси" },
@@ -100,9 +101,7 @@ export function ModuleBlock({ moduleKey, data, badge }: ModuleBlockProps) {
             </p>
           )}
         </div>
-        <span className="text-style-caption text-muted">
-          {open ? "Згорнути" : "Розгорнути"}
-        </span>
+        <MorphChevron open={open} className="text-subtle" />
       </button>
 
       <div

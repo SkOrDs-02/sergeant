@@ -1,6 +1,7 @@
-import { useEffect, useRef } from "react";
+import { useEffect, useId, useRef } from "react";
 import { z } from "zod";
 import { Button } from "@shared/components/ui/Button";
+import { ChoiceGroup } from "@shared/components/ui/Choice";
 import { Input } from "@shared/components/ui/Input";
 import { Label } from "@shared/components/ui/FormField";
 import { useToast } from "@shared/hooks/useToast";
@@ -106,6 +107,7 @@ export function WaitlistForm({
     submit,
     formState,
     watch,
+    setValue,
     isSubmitting,
     serverError,
     reset,
@@ -174,6 +176,7 @@ export function WaitlistForm({
   }, [defaultTier, reset, watch]);
 
   const tierValue = watch("tier_interest");
+  const tierLabelId = useId();
   const emailErrorMessage = formState.errors.email?.message;
 
   return (
@@ -215,69 +218,23 @@ export function WaitlistForm({
           )}
         </div>
 
-        <fieldset>
-          <legend className="text-style-label text-text mb-2">
+        <div>
+          <Label id={tierLabelId} className="mb-2">
             Цікавий план
-          </legend>
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
-            {TIER_OPTIONS.map((opt) => {
-              const checked = tierValue === opt.value;
-              const inputId = `waitlist-tier-${opt.value}`;
-              return (
-                <label
-                  key={opt.value}
-                  htmlFor={inputId}
-                  aria-label={`${opt.label} · ${opt.hint}`}
-                  className={
-                    // Справжнє радіо нижче — `peer sr-only`, тобто нативне
-                    // кільце фокуса невидиме, а замінника не було: клавіатурний
-                    // фокус по групі не читався взагалі (аудит 2026-09-16,
-                    // WF-24). Peer-кільце на обгортці — той самий патерн, що в
-                    // `Switch.tsx:200`, з канонічною непрозорістю `/45`.
-                    "relative flex min-h-[56px] items-start gap-3 rounded-lg border p-3 cursor-pointer transition-colors " +
-                    "peer-focus-visible:ring-2 peer-focus-visible:ring-focus/45 peer-focus-visible:ring-offset-2 peer-focus-visible:ring-offset-bg " +
-                    (checked
-                      ? "border-brand-500 bg-brand/10 dark:bg-brand/15"
-                      : "border-line bg-panel hover:bg-panelHi")
-                  }
-                >
-                  <input
-                    id={inputId}
-                    type="radio"
-                    value={opt.value}
-                    className="peer sr-only"
-                    disabled={isSubmitting}
-                    {...register("tier_interest")}
-                  />
-                  <span
-                    className={
-                      "mt-0.5 flex h-5 w-5 shrink-0 items-center justify-center rounded-lg border transition-colors " +
-                      (checked
-                        ? "border-brand-500 bg-brand-500"
-                        : "border-muted bg-panel")
-                    }
-                    aria-hidden="true"
-                  >
-                    <span
-                      className={
-                        "h-2 w-2 rounded-mark bg-white transition-opacity " +
-                        (checked ? "opacity-100" : "opacity-0")
-                      }
-                    />
-                  </span>
-                  <span className="flex flex-col">
-                    <span className="text-style-label text-text">
-                      {opt.label}
-                    </span>
-                    <span className="text-style-caption text-muted">
-                      {opt.hint}
-                    </span>
-                  </span>
-                </label>
-              );
-            })}
-          </div>
-        </fieldset>
+          </Label>
+          <ChoiceGroup<WaitlistTier>
+            variant="rows"
+            ariaLabelledBy={tierLabelId}
+            disabled={isSubmitting}
+            items={TIER_OPTIONS.map((opt) => ({
+              value: opt.value,
+              label: opt.label,
+              description: opt.hint,
+            }))}
+            value={tierValue ?? null}
+            onChange={(next) => setValue("tier_interest", next)}
+          />
+        </div>
 
         {serverError && (
           <p

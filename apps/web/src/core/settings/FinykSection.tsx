@@ -152,7 +152,17 @@ export function FinykSection() {
           фарбує бейдж модульним акцентом лише коли задані ОБИДВА — `icon`
           і `module`. Без другого всі чотири модульні секції вкладки
           «Розділи» падали на спільний сірий фолбек. */}
-      <SettingsGroup title="Фінік" anchorId="settings-finyk">
+      <SettingsGroup
+        title="Фінік"
+        value={
+          setShowBalance
+            ? showBalance
+              ? "Суми видно"
+              : "Суми приховано"
+            : undefined
+        }
+        anchorId="settings-finyk"
+      >
         {setShowBalance ? (
           <SettingsSubGroup variant="bounded" title="Показ сум">
             <ToggleRow

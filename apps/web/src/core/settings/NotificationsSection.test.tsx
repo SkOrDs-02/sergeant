@@ -134,6 +134,25 @@ describe("NotificationsSection", () => {
     vi.unstubAllGlobals();
   });
 
+  it("значення рядка: «Недоступно», коли браузер заблокував чи не вміє push", () => {
+    const group = () => screen.getByRole("button", { name: "Сповіщення" });
+    stubNotification("denied");
+    const { unmount } = renderSettingsSection(<NotificationsSection />);
+    expect(group()).toHaveAccessibleDescription("Недоступно");
+    unmount();
+
+    vi.unstubAllGlobals();
+    vi.stubGlobal("Notification", undefined);
+    const second = renderSettingsSection(<NotificationsSection />);
+    expect(group()).toHaveAccessibleDescription("Недоступно");
+    second.unmount();
+
+    stubNotification("granted");
+    pushState.subscribed = true;
+    renderSettingsSection(<NotificationsSection />);
+    expect(group()).toHaveAccessibleDescription("Push увімкнено");
+  });
+
   it("shows the 'allow' button when permission is default", () => {
     stubNotification("default");
     renderSettingsSection(<NotificationsSection />);

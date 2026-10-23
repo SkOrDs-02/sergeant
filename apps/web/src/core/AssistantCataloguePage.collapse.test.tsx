@@ -89,7 +89,11 @@ describe("AssistantCataloguePage — group collapsing", () => {
 
   it("keeps glyphs in the standalone navigation control, not catalogue rows", () => {
     const { container } = render(<AssistantCataloguePage onClose={() => {}} />);
-    expect(container.querySelectorAll("svg")).toHaveLength(1);
+    // Шеврони груп - стан розгортання, а не гліф рядка.
+    const glyphs = Array.from(container.querySelectorAll("svg")).filter(
+      (svg) => !svg.querySelector('polyline[points="9 6 15 12 9 18"]'),
+    );
+    expect(glyphs).toHaveLength(1);
   });
 
   it("groups are expanded by default and a representative row is visible", () => {
@@ -175,7 +179,7 @@ describe("AssistantCataloguePage — group collapsing", () => {
     ).toBe("true");
   });
 
-  it("`Згорнути все` collapses every group, second click re-expands", () => {
+  it("`Сховати всі групи` collapses every group, second click re-expands", () => {
     render(<AssistantCataloguePage onClose={() => {}} />);
     const toggleAll = screen.getByTestId("catalogue-toggle-all");
 
@@ -188,13 +192,13 @@ describe("AssistantCataloguePage — group collapsing", () => {
         .getByTestId("catalogue-module-finyk-toggle")
         .getAttribute("aria-expanded"),
     ).toBe("false");
-    expect(toggleAll.textContent).toMatch(/Розгорнути все/);
+    expect(toggleAll.textContent).toMatch(/Показати всі групи/);
 
     fireEvent.click(toggleAll);
     expect(
       screen.getByTestId("catalogue-capability-create_transaction"),
     ).toBeTruthy();
-    expect(toggleAll.textContent).toMatch(/Згорнути все/);
+    expect(toggleAll.textContent).toMatch(/Сховати всі групи/);
   });
 
   it("collapsed groups expand automatically while searching, persisted state is preserved", () => {

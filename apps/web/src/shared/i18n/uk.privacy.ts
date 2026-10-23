@@ -114,7 +114,7 @@ export const privacyMessages = {
     profileGroupAction: "Відкрити профіль",
     /** `{count}` — скільки фактів цієї групи вже завантажено в список. */
     profileGroupCount: "Фактів: {count}",
-    collapseFact: "Згорнути",
+    showLessFact: "Показати менше",
     loadingMore: "Завантажую…",
     deleteAria: "Видалити факт",
     confirmTitle: "Видалити цей факт?",

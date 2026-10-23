@@ -66,7 +66,10 @@
 //
 // Метрики 12-14 (redesign v3.1 PR2, спека
 // docs/work/specs/planning/redesign-v3-1.md § Гейти) скануються лише в `.tsx`
-// і стартують зі стелі = факт, потім лише вниз, у PR6 нуль і заборона.
+// і стартують зі стелі = факт, потім лише вниз. PR6 (2026-10-22) звів усі три
+// в нуль, і тепер це заборони без baseline-боргу: `ZERO_ONLY_METRICS` валить
+// гейт, якщо в бюджеті для них стоїть щось, крім 0, тож ні `--update`, ні
+// ручна правка JSON не повертають стелю.
 //
 // Нові метрики 7-11 (CSS не скануємо: там ВИЗНАЧЕННЯ утиліт) стартують зі
 // стелі = факт на момент заведення, потім лише вниз. Без запису в
@@ -188,12 +191,25 @@ export const STATE_LABEL_KEYS = [
   "selected",
   "collapseCta",
   "collapseDetails",
-  "collapseFact",
   "collapseFieldsLabel",
   "selectedLabel",
 ];
 const GENERIC_STATE_KEYS = new Set(["expand", "collapse", "selected"]);
 export const STATE_LABEL_WORDS = ["Розгорнути", "Згорнути", "Обрано"];
+
+/**
+ * Метрики-заборони: бюджет мусить бути рівно 0 (redesign v3.1 PR6). Інакше
+ * перевищення дозволяв би один рядок у JSON, а не зміна коду.
+ */
+export const ZERO_ONLY_METRICS = [
+  "nativeChoice",
+  "textStateLabel",
+  "capsFormLabel",
+];
+
+export function zeroOnlyViolations(budgets) {
+  return ZERO_ONLY_METRICS.filter((k) => budgets[k] !== 0);
+}
 
 export const LEGACY_BUTTON_VARIANTS = [
   "primary",
@@ -743,6 +759,15 @@ function main() {
     console.error(
       `❌ У ${BUDGET_PATH} немає baseline для метрик: ${missing.join(", ")}.\n` +
         `   Метрика без baseline не перевіряється — додай число, а не лишай ключ порожнім.`,
+    );
+    return 1;
+  }
+
+  const notZero = zeroOnlyViolations(budget.budgets);
+  if (notZero.length) {
+    console.error(
+      `❌ ${notZero.join(", ")} - заборони без baseline-боргу, бюджет мусить бути 0.\n` +
+        `   Вибір - ChoiceGroup, стан - шеврон / заливка + aria, підпис поля без капсу.`,
     );
     return 1;
   }

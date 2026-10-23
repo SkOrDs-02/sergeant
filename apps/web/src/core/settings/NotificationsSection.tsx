@@ -156,7 +156,16 @@ export function NotificationsSection() {
     // V-7 (2026-08-08): title читається з каталогу, а не хардкодиться тут —
     // раніше цей рядок і ⌘K-індекс (settingsSectionsCatalog.ts) розходились
     // ("Сповіщення" тут vs "Нагадування" у пошуку) без жодної перевірки.
-    <SettingsGroup title={settingsSectionTitle("notifications")}>
+    <SettingsGroup
+      title={settingsSectionTitle("notifications")}
+      value={
+        permStatus === "unsupported" || permStatus === "denied"
+          ? "Недоступно"
+          : pushSubscribed
+            ? "Push увімкнено"
+            : "Push вимкнено"
+      }
+    >
       {/* Два рядки поспіль мали один підпис «Push-сповіщення» (браузерний
           дозвіл і власне підписка) і читались як дубль (огляд 2026-09-04).
           Перший рядок — про дозвіл браузера, і називається так. */}

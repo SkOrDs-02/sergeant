@@ -150,13 +150,10 @@ describe("WaitlistForm — submit flow", () => {
         "",
       );
     });
-    expect(
-      (
-        screen.getByLabelText(/Premium · Сержант без тижневої стелі/, {
-          selector: "label",
-        }) as HTMLLabelElement
-      ).className,
-    ).toContain("border-brand-500");
+    expect(screen.getByRole("radio", { name: /^Premium/ })).toHaveAttribute(
+      "aria-checked",
+      "true",
+    );
   });
 
   it("ідемпотентний path (created: false): toast.info замість success", async () => {
@@ -176,17 +173,30 @@ describe("WaitlistForm — submit flow", () => {
   });
 });
 
-describe("WaitlistForm — tier label layout", () => {
-  it("лейбл тіра має `relative` — інакше sr-only radio-інпут (position: absolute) прив'язується до initial containing block і від'їжджає далеко вниз по документу (Tab виводить фокус за межі екрана)", () => {
+describe("WaitlistForm — вибір плану (ChoiceGroup)", () => {
+  it("радіогрупа «Цікавий план»: обране позначено aria-checked і їде в submit", async () => {
+    submitMock.mockResolvedValue({ ok: true, created: true });
     render(<WaitlistForm source="pricing_page" />);
 
-    const label = screen.getByLabelText(
-      /Premium · Сержант без тижневої стелі/,
-      {
-        selector: "label",
-      },
-    ) as HTMLLabelElement;
-    expect(label.className.split(/\s+/)).toContain("relative");
+    const group = screen.getByRole("radiogroup", { name: "Цікавий план" });
+    expect(group).toBeInTheDocument();
+    expect(screen.getByRole("radio", { name: /^Ще не знаю/ })).toHaveAttribute(
+      "aria-checked",
+      "true",
+    );
+
+    fireEvent.click(screen.getByRole("radio", { name: /^Залишусь на Free/ }));
+    expect(
+      screen.getByRole("radio", { name: /^Залишусь на Free/ }),
+    ).toHaveAttribute("aria-checked", "true");
+
+    fillEmail("free@example.com");
+    fireEvent.click(screen.getByRole("button", { name: /Підписатись/ }));
+    await waitFor(() => {
+      expect(submitMock).toHaveBeenCalledWith(
+        expect.objectContaining({ tier_interest: "free" }),
+      );
+    });
   });
 });
 
@@ -244,21 +254,5 @@ describe("WaitlistForm — server error mapping", () => {
     // top-level банер не повинен зʼявитись (`bound > 0 && topLevel === null`
     // у `applyServerError`).
     expect(screen.queryByTestId("waitlist-server-error")).toBeNull();
-  });
-
-  it("дає sr-only радіо видиме кільце фокуса через peer-обгортку", () => {
-    // Регресія WF-24 (аудит 2026-09-16): справжній `<input type="radio">`
-    // має `peer sr-only`, тобто нативне кільце невидиме, а замінника на
-    // лейблі не було — клавіатурний фокус по групі не читався взагалі.
-    render(<WaitlistForm source="pricing_page" />);
-    const label = screen.getByLabelText(
-      /Premium · Сержант без тижневої стелі/,
-      {
-        selector: "label",
-      },
-    );
-    const classes = label.className.split(/\s+/);
-    expect(classes).toContain("peer-focus-visible:ring-2");
-    expect(classes).toContain("peer-focus-visible:ring-focus/45");
   });
 });
