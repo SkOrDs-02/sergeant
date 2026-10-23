@@ -1,6 +1,5 @@
 import { forwardRef, type ButtonHTMLAttributes, type ReactNode } from "react";
 import type { ModuleAccent } from "@sergeant/design-tokens";
-import { useModuleAccent } from "../layout/ModuleAccentProvider";
 import { cn } from "../../lib/ui/cn";
 
 /**
@@ -362,27 +361,16 @@ export const Button = forwardRef<HTMLButtonElement, ButtonProps>(
     },
     ref,
   ) {
-    // Акцент модуля, у якому стоїть кнопка. Явний проп `module` виграє —
-    // контекст лише закриває випадок «проп забули», який доти давав
-    // генеричний синій усередині брендованого модуля (PR-C1, рішення
-    // власника 2026-09-14; замір: 105 кнопок у модулях + до 117 спільних,
-    // коли ті рендеряться всередині модуля).
-    //
-    // AI-DANGER: жодна кнопка не має змінити ФОРМУ від цього. Тримається
-    // це на тому, що всі беспропні виклики йдуть ЛЕГАСІ-гілкою
-    // `resolveStyleKey`, де `MODULE_LEGACY_OVERRIDE` мапить лише
-    // `primary`/`secondary`, а `ghost`/`danger`/`destructive` проходять
-    // наскрізь. У канонічній гілці клітинок `outline × модуль` і
-    // `ghost × модуль` у `EMPHASIS_TONE_MAP` немає, тож `resolveStyleKey`
-    // скидає тон до нейтрального в межах тієї ж емфази. Пін:
-    // `Button.moduleContext.test.tsx`.
-    const contextAccent = useModuleAccent();
-    const effectiveModule = module ?? contextAccent ?? undefined;
-
+    // Акцент модуля з `ModuleAccentProvider` кнопку НЕ фарбує: hue модуля в
+    // контролах знято (redesign v3.1, «Hue модуля в контролах: ні»; v3.2,
+    // позиція 18). До 2026-10-23 контекст підміняв беспропний `solid` на
+    // заливку модуля, і головна дія кожного модуля виходила лаймовою чи
+    // бірюзовою. Колір модуля на кнопці тепер лише явним `tone` у hero, і
+    // це міряє `hueOnButton` у `check-ui-canon-ratchet.mjs`.
     const isDisabled = disabled || loading;
     const hasProgress = typeof progress === "number" && progress >= 0;
     const needsCoarseMinTarget = iconOnly || size === "xs" || size === "sm";
-    const resolvedVariant = resolveStyleKey(variant, tone, effectiveModule);
+    const resolvedVariant = resolveStyleKey(variant, tone, module);
 
     return (
       <button

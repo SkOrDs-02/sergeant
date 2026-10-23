@@ -390,7 +390,6 @@ export const fizrukPageMessages = {
     emptyDescription: "Додай тренування або заміри, і тут зʼявиться аналітика",
     crossModuleHeading: "Активність з інших модулів",
     weight: "Вага",
-    noComparison: "Немає порівняння",
     // Точка відліку дельти: вага має різні дельти на Тілі, Прогресі й
     // Замірах, і без підпису вони читались як суперечність.
     deltaFromPrevious: "від попереднього",
@@ -402,10 +401,10 @@ export const fizrukPageMessages = {
     bodyFatMetricLabel: "відсоток жиру",
     wellbeing: "Самопочуття",
     muscleVolume: "Обʼєм по мʼязах",
-    // The bars plot `loadPoints`, an internal score — without this line a
-    // raw "0.6" reads as a broken weight value.
-    muscleVolumeUnitsHint:
-      "Умовні одиниці навантаження, не кілограми: тоннаж (кг×повт) ÷ 1000 + кількість підходів × 0,15.",
+    // Стовпчики малюють `loadPoints`, внутрішній бал, а не кілограми. Формулу
+    // з екрана знято (redesign v3.2, позиція 09), одиницю несе підпис біля
+    // числа: без неї «0,6» читалось як зламана вага.
+    muscleVolumeUnit: "у. о.",
     muscleVolumeEmptyDescription: "Немає даних за останні 4 тижні.",
     // Матриця «мʼяз × тиждень». Плейсхолдери підставляються на місці
     // виклику — та сама конвенція, що в гребені Фініка: `MessageCatalog`

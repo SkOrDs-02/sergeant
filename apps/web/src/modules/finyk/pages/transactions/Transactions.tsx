@@ -539,9 +539,7 @@ export function Transactions({
             className="mb-4 space-y-2.5"
           >
             <TransactionsHeader
-              monthLabel={filters.monthLabel}
-              isCurrentMonth={filters.isCurrentMonth}
-              goMonth={filters.goMonth}
+              {...filters.monthNav}
               selectMode={selection.selectMode}
               exitSelectMode={selection.exitSelectMode}
               setSelectMode={selection.setSelectMode}

@@ -1635,6 +1635,20 @@
       "canonical_owner": "docs/governance/adr/0104-goal-period-extended-before-first-step.md"
     },
     {
+      "old_path": "docs/governance/adr/0105-sync-pull-byte-budget-and-applied-retention.md",
+      "new_path": "docs/governance/adr/0105-sync-pull-byte-budget-and-applied-retention.md",
+      "action": "keep",
+      "genre": "adr",
+      "canonical_owner": "docs/governance/adr/0105-sync-pull-byte-budget-and-applied-retention.md"
+    },
+    {
+      "old_path": "docs/governance/adr/0106-sync-state-hash-reconcile.md",
+      "new_path": "docs/governance/adr/0106-sync-state-hash-reconcile.md",
+      "action": "keep",
+      "genre": "adr",
+      "canonical_owner": "docs/governance/adr/0106-sync-state-hash-reconcile.md"
+    },
+    {
       "old_path": "docs/governance/adr/README.md",
       "new_path": "docs/governance/adr/README.md",
       "action": "keep",
@@ -4687,7 +4701,7 @@
       "canonical_owner": "docs/work/specs/planning/product-knowledge-backlog.md"
     },
     {
-      "old_path": "docs/work/specs/planning/raw-input-to-primitive.md",
+      "old_path": null,
       "new_path": "docs/work/specs/planning/raw-input-to-primitive.md",
       "action": "keep",
       "genre": "active-work",

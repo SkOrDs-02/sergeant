@@ -301,7 +301,7 @@ export function WorkoutFinishSheets({
               екран першими показував «Квадрицепс» і «Сідниці».
             */}
             <div>
-              <p className="text-style-overline text-muted mb-2">
+              <p className="text-style-label font-semibold text-muted mb-2">
                 {injuryCopy.groupZones}
               </p>
               <div className="flex flex-wrap gap-2">

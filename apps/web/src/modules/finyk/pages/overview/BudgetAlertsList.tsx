@@ -54,13 +54,9 @@ const BudgetAlertsListImpl = function BudgetAlertsList({
             key={b.id}
             onClick={() => onOpenLimit(b.categoryId)}
             aria-label={`${catLabel}: ${pct}%. Відкрити ліміт у плануванні`}
-            className={cn(
-              "w-full rounded-lg px-4 py-3 flex items-center justify-between border text-left",
-              "transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-focus/45",
-              over
-                ? "bg-panel border-danger/20 hover:bg-line/40"
-                : "bg-panel border-warning/20 hover:bg-line/40",
-            )}
+            // Панель без рамки (redesign v3.2, позиція 06): небезпеку несе
+            // лише текст праворуч, не червоний обвід картки.
+            className="focus-ring w-full rounded-lg bg-panel px-4 py-3 flex items-center justify-between text-left motion-safe:transition-colors hover:bg-panelHi"
           >
             <span className="flex items-center gap-2 min-w-0">
               <span className="text-style-label truncate">{catLabel}</span>

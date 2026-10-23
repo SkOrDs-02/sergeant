@@ -150,7 +150,7 @@ describe("DataExportSection", () => {
 
     const rightsHeading = screen.getByText("Права на дані");
     expect(rightsHeading.tagName).toBe("H3");
-    expect(rightsHeading).toHaveClass("text-style-overline");
+    expect(rightsHeading).toHaveClass("text-style-label-lg");
     expect(rightsHeading).not.toHaveClass("text-style-label");
 
     const levels = Array.from(
