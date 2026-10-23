@@ -22,7 +22,10 @@ import { dirname, join, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 
 import {
+  addActionHits,
   allowlistHits,
+  NATIVE_SELECT_ALLOWLIST,
+  OVERLINE_ALLOWLIST,
   blankComments,
   CANON_RING_OPACITY,
   counts,
@@ -261,8 +264,9 @@ test("allowlist не масивом — голосна помилка, а не �
   assert.throws(() => allowlistHits({ files: [] }), /масивом/);
 });
 
-test("лічильник знає про всі чотирнадцять метрик — інакше baseline-гейт не побачить нову", () => {
+test("лічильник знає про всі вісімнадцять метрик — інакше baseline-гейт не побачить нову", () => {
   assert.deepEqual(Object.keys(counts([])).sort(), [
+    "addActionsPerRoute",
     "bigRadius",
     "capsFormLabel",
     "cyrillicJsxAllowlist",
@@ -271,11 +275,14 @@ test("лічильник знає про всі чотирнадцять мет�
     "handRolledFocusRing",
     "heroInkAlpha",
     "hoverMotion",
+    "hueOnButton",
     "kicker",
     "legacyButton",
     "nativeChoice",
+    "nativeSelect",
     "numericIconSize",
     "offCanonRingOpacity",
+    "overlineOutsideHero",
     "textStateLabel",
   ]);
 });
@@ -550,17 +557,108 @@ test("ZERO_ONLY_METRICS: ненульовий бюджет для заборон
       nativeChoice: 1,
       textStateLabel: 0,
       capsFormLabel: 0,
+      nativeSelect: 0,
+      overlineOutsideHero: 0,
+      hueOnButton: 2,
     }),
-    ["nativeChoice"],
+    ["nativeChoice", "hueOnButton"],
   );
   assert.deepEqual(
-    zeroOnlyViolations({ nativeChoice: 0, capsFormLabel: 0 }),
+    zeroOnlyViolations({
+      nativeChoice: 0,
+      capsFormLabel: 0,
+      nativeSelect: 0,
+      overlineOutsideHero: 0,
+      hueOnButton: 0,
+    }),
     ["textStateLabel"],
     "відсутній ключ - теж не нуль",
   );
 });
 
-test("ZERO_ONLY_METRICS: чинний бюджет тримає всі три заборони в нулі", () => {
+// ── 15-18: redesign v3.2 «один афорданс» ──
+
+test("nativeSelect: сирий <select> ловиться, Select і коментар - ні", () => {
+  const src = `
+    <select value={a}><option /></select>
+    <Select value={a} />
+    // <select> у коментарі
+    <selected />`;
+  const hits = onlyTsx(src, "nativeSelect");
+  assert.equal(hits.length, 1);
+  assert.match(hits[0].detail, /Select/);
+  for (const file of NATIVE_SELECT_ALLOWLIST) {
+    assert.deepEqual(
+      scanSource(file, "<select />").filter((h) => h.metric === "nativeSelect"),
+      [],
+      file,
+    );
+  }
+});
+
+test("overlineOutsideHero: оверлайн поза hero ловиться, у hero-файлі ні", () => {
+  const plain = `<p className="text-style-overline text-subtle">Ярлик</p>`;
+  assert.equal(onlyTsx(plain, "overlineOutsideHero").length, 1);
+  for (const hero of [
+    `<div className="bg-finyk-tint"><p className="text-style-overline">A</p></div>`,
+    `<Card prominence="hero"><p className="text-style-overline">A</p></Card>`,
+    `<p className="text-style-overline text-routine-tint-label">A</p>`,
+  ]) {
+    assert.deepEqual(onlyTsx(hero, "overlineOutsideHero"), [], hero);
+  }
+  assert.deepEqual(
+    scanSource(`${OVERLINE_ALLOWLIST[0]}NutritionSlide.tsx`, plain).filter(
+      (h) => h.metric === "overlineOutsideHero",
+    ),
+    [],
+  );
+  assert.deepEqual(
+    onlyTsx(`// text-style-overline у коментарі`, "overlineOutsideHero"),
+    [],
+  );
+});
+
+test("hueOnButton: tone і заливка модуля на кнопці поза hero ловляться", () => {
+  const src = `
+    <Button variant="solid" tone="nutrition">Згенерувати</Button>
+    <Button variant="soft" tone={"finyk"}>Тег</Button>
+    <button className="bg-fizruk-strong text-white">Почати</button>
+    <button className="bg-routine/15">Тинт-кнопка</button>
+    <Button variant="solid">Зберегти</Button>
+    <Badge tone="finyk">A</Badge>`;
+  const hits = onlyTsx(src, "hueOnButton");
+  assert.equal(hits.length, 3);
+  assert.match(hits[0].detail, /чорнилом/);
+  const hero = `<Card prominence="hero" tone="finyk"><Button variant="solid" tone="finyk">A</Button></Card>`;
+  assert.deepEqual(onlyTsx(hero, "hueOnButton"), []);
+});
+
+test("addActionsPerRoute: кожна кнопка «Додати» понад одну - hit", () => {
+  const hits = addActionHits({
+    "nutrition-log": 2,
+    finyk: 1,
+    hub: 0,
+    assets: 3,
+  });
+  assert.equal(hits.length, 3);
+  assert.ok(hits.every((h) => h.metric === "addActionsPerRoute"));
+  assert.match(hits[0].detail, /nutrition-log/);
+  assert.throws(() => addActionHits([1, 2]), /обʼєктом/);
+});
+
+test("addActionsPerRoute: збережений замір читається і має числа", () => {
+  const here = dirname(fileURLToPath(import.meta.url));
+  const perRoute = JSON.parse(
+    readFileSync(
+      resolve(here, "../../.tech-debt/add-actions-per-route.json"),
+      "utf8",
+    ),
+  );
+  assert.ok(Object.keys(perRoute).length > 0);
+  for (const v of Object.values(perRoute)) assert.equal(typeof v, "number");
+});
+
+test("ZERO_ONLY_METRICS: чинний бюджет тримає всі шість заборон у нулі", () => {
   const here = dirname(fileURLToPath(import.meta.url));
   const budget = JSON.parse(
     readFileSync(
@@ -573,5 +671,8 @@ test("ZERO_ONLY_METRICS: чинний бюджет тримає всі три з
     "nativeChoice",
     "textStateLabel",
     "capsFormLabel",
+    "nativeSelect",
+    "overlineOutsideHero",
+    "hueOnButton",
   ]);
 });

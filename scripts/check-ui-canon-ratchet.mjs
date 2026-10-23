@@ -3,7 +3,7 @@
 //
 // Храповик канонічного UI-API в `apps/web/src`.
 //
-// ЩО МІРЯЄ І ЧОМУ САМЕ ТАК. Чотирнадцять метрик, усі — «скільки місць вживає
+// ЩО МІРЯЄ І ЧОМУ САМЕ ТАК. Вісімнадцять метрик, усі — «скільки місць вживає
 // НЕканонічний спосіб зробити те, що має канонічний»:
 //
 //   1. `legacyButton`  — легасі-варіанти `<Button>` (`primary`, `secondary`,
@@ -64,6 +64,23 @@
 //      `className={NAME}`). Підпис поля 14 / 500 звичайним регістром, капс
 //      лише на тинті hero, а там `<label>` немає.
 //
+//  15. `nativeSelect` - сирий `<select` у TSX поза `NATIVE_SELECT_ALLOWLIST`.
+//      Канон - `Select` або `ChoiceGroup rows`.
+//  16. `overlineOutsideHero` - `text-style-overline` у файлі без hero-контексту
+//      (`HERO_CONTEXT_RE`: тинт модуля, `-tint-label` або hero-картка) і поза
+//      `OVERLINE_ALLOWLIST`. Заголовок секції 20 / 700 звичайним регістром.
+//  17. `hueOnButton` - `<Button tone=` / `variant=` модуля або `<button>` із
+//      заливкою `bg-{модуль}(-strong)` поза hero-контекстом. Головна дія -
+//      `solid` чорнилом.
+//  18. `addActionsPerRoute` - кожна кнопка «Додати» / «+» понад одну на
+//      маршрут. Рахує DOM знімального прогону (`ADD_ACTIONS_OUT`), не скан;
+//      замір лежить у `.tech-debt/add-actions-per-route.json`.
+//
+// Метрики 15-17 (redesign v3.2 PR1, спека
+// docs/work/specs/planning/redesign-v3-2.md § Гейти) народились нулями і
+// стоять у `ZERO_ONLY_METRICS`. Метрика 18 у PR1 має лише baseline, PR2
+// зводить її в 0.
+//
 // Метрики 12-14 (redesign v3.1 PR2, спека
 // docs/work/specs/planning/redesign-v3-1.md § Гейти) скануються лише в `.tsx`
 // і стартують зі стелі = факт, потім лише вниз. PR6 (2026-10-22) звів усі три
@@ -106,6 +123,11 @@ const __dirname = dirname(fileURLToPath(import.meta.url));
 const REPO_ROOT = resolve(__dirname, "..");
 const WEB_SRC = resolve(REPO_ROOT, "apps", "web", "src");
 const BUDGET_PATH = resolve(REPO_ROOT, ".tech-debt", "ui-canon-budget.json");
+export const ADD_ACTIONS_PATH = resolve(
+  REPO_ROOT,
+  ".tech-debt",
+  "add-actions-per-route.json",
+);
 export const I18N_ALLOWLIST_PATH = resolve(
   REPO_ROOT,
   "apps",
@@ -181,6 +203,33 @@ export const NATIVE_CHOICE_ALLOWLIST = [
 ];
 
 /**
+ * Файли, де нативний `<select>` легальний. Шляхи від кореня репо.
+ * Новий запис - лише з причиною.
+ */
+export const NATIVE_SELECT_ALLOWLIST = [
+  // Сам примітив: стилізована обгортка над нативним `<select>`.
+  "apps/web/src/shared/components/ui/Select.tsx",
+];
+
+/**
+ * Hero-контекст модуля: файл, що малює тинт модуля або hero-картку. Лише там
+ * легальні капс-оверлайн і кнопка в hue модуля (redesign v3.2, позиції 09, 18).
+ * Межа пофайлова, як у `ROUNDED_FULL_ALLOWLIST`: компонент hero це і є файл.
+ */
+export const HERO_CONTEXT_RE =
+  /\b(?:bg-(?:finyk|fizruk|routine|nutrition)-tint|text-(?:finyk|fizruk|routine|nutrition)-tint-label)\b|prominence=["']hero["']/;
+
+/**
+ * Файли, де капс-оверлайн легальний поза тинтом. Шляхи від кореня репо
+ * (префікс теки закінчується слешем). Новий запис - лише з причиною.
+ */
+export const OVERLINE_ALLOWLIST = [
+  // Слайди історії тижня: повноекранний суцільний фон модуля, тобто hero.
+  "apps/web/src/core/stories/components/slides/",
+];
+const MODULE_HUE = "finyk|fizruk|routine|nutrition";
+
+/**
  * Ключі каталогу `@shared/i18n`, значення яких «Розгорнути», «Згорнути» або
  * «Обрано». Звірку з каталогом тримає тест храповика: новий такий ключ без
  * запису тут валить його.
@@ -205,6 +254,9 @@ export const ZERO_ONLY_METRICS = [
   "nativeChoice",
   "textStateLabel",
   "capsFormLabel",
+  "nativeSelect",
+  "overlineOutsideHero",
+  "hueOnButton",
 ];
 
 export function zeroOnlyViolations(budgets) {
@@ -590,6 +642,62 @@ export function scanSource(relPath, src) {
   }
 
   if (relPath.endsWith(".tsx")) hits.push(...stateHits(relPath, ringSrc));
+  hits.push(...affordanceHits(relPath, ringSrc));
+  return hits;
+}
+
+/** Метрики 15-17 (redesign v3.2 PR1). `src` - текст із погашеними коментарями. */
+function affordanceHits(relPath, src) {
+  const hits = [];
+  const norm = relPath.replaceAll("\\", "/");
+  const lineOf = (idx) => src.slice(0, idx).split("\n").length;
+  const push = (metric, idx, detail) =>
+    hits.push({ metric, file: relPath, line: lineOf(idx), detail });
+  const hero = HERO_CONTEXT_RE.test(src);
+
+  if (relPath.endsWith(".tsx") && !NATIVE_SELECT_ALLOWLIST.includes(norm)) {
+    for (const x of src.matchAll(/<select(?![\w-])/g)) {
+      push(
+        "nativeSelect",
+        x.index,
+        "сирий <select> - канон: Select (shared/components/ui/Select.tsx) або ChoiceGroup rows",
+      );
+    }
+  }
+
+  if (!hero && !OVERLINE_ALLOWLIST.some((p) => norm.startsWith(p))) {
+    for (const x of src.matchAll(/(?<![\w-])text-style-overline(?![\w-])/g)) {
+      push(
+        "overlineOutsideHero",
+        x.index,
+        "text-style-overline поза hero-тинтом - заголовок секції 20 / 700 звичайним регістром",
+      );
+    }
+  }
+
+  if (hero || !relPath.endsWith(".tsx")) return hits;
+  const toneRe = new RegExp(
+    `\\s(?:tone=\\{?["'](${MODULE_HUE})["']|variant=["'](${MODULE_HUE})(?:-soft)?["'])`,
+  );
+  const fillRe = new RegExp(
+    `(?<![\\w-])bg-(${MODULE_HUE})(?:-strong)?(?![\\w/-])`,
+  );
+  const tagRe = /<(Button|button)(?![\w-])/g;
+  let m;
+  while ((m = tagRe.exec(src))) {
+    const end = tagEnd(src, m.index + m[0].length);
+    if (end < 0) continue;
+    const tag = src.slice(m.index, end + 1);
+    const hit = m[1] === "Button" ? tag.match(toneRe) : tag.match(fillRe);
+    if (hit) {
+      push(
+        "hueOnButton",
+        m.index,
+        `${hit[0].trim()} на <${m[1]}> поза hero - головна дія solid чорнилом`,
+      );
+    }
+    tagRe.lastIndex = end + 1;
+  }
   return hits;
 }
 
@@ -706,6 +814,33 @@ export function allowlistHits(entries) {
   }));
 }
 
+/**
+ * Метрика 18 - `addActionsPerRoute` (redesign v3.2 § Гейти). Кнопки «Додати»
+ * / «+» рахує DOM, а не JSX, тож число приходить зі знімального прогону
+ * (`apps/web/tests/__shots__/shots.spec.ts`, `ADD_ACTIONS_OUT`) у файл
+ * `ADD_ACTIONS_PATH`. Ціль - не більше однієї такої кнопки на маршрут, тож
+ * кожна зайва - один hit. Файл оновлюють разом зі зміною, що чіпає кнопки.
+ */
+export function addActionHits(perRoute) {
+  if (!perRoute || typeof perRoute !== "object" || Array.isArray(perRoute)) {
+    throw new Error(
+      "add-actions-per-route.json має бути обʼєктом маршрут → число",
+    );
+  }
+  const hits = [];
+  for (const [route, count] of Object.entries(perRoute)) {
+    for (let i = 1; i < count; i++) {
+      hits.push({
+        metric: "addActionsPerRoute",
+        file: ".tech-debt/add-actions-per-route.json",
+        line: 0,
+        detail: `маршрут ${route}: ${count} кнопок «Додати» / «+», ціль ≤ 1`,
+      });
+    }
+  }
+  return hits;
+}
+
 function collect() {
   const hits = [];
   for (const file of walk(WEB_SRC)) {
@@ -715,6 +850,9 @@ function collect() {
   }
   hits.push(
     ...allowlistHits(JSON.parse(readFileSync(I18N_ALLOWLIST_PATH, "utf8"))),
+  );
+  hits.push(
+    ...addActionHits(JSON.parse(readFileSync(ADD_ACTIONS_PATH, "utf8"))),
   );
   return hits;
 }
@@ -735,6 +873,10 @@ export function counts(hits) {
     nativeChoice: 0,
     textStateLabel: 0,
     capsFormLabel: 0,
+    nativeSelect: 0,
+    overlineOutsideHero: 0,
+    hueOnButton: 0,
+    addActionsPerRoute: 0,
   };
   for (const h of hits) out[h.metric]++;
   return out;
@@ -767,7 +909,8 @@ function main() {
   if (notZero.length) {
     console.error(
       `❌ ${notZero.join(", ")} - заборони без baseline-боргу, бюджет мусить бути 0.\n` +
-        `   Вибір - ChoiceGroup, стан - шеврон / заливка + aria, підпис поля без капсу.`,
+        `   Вибір - ChoiceGroup, стан - шеврон / заливка + aria, підпис поля без капсу,\n` +
+        `   список - Select, заголовок секції без капсу поза hero, головна дія чорнилом.`,
     );
     return 1;
   }
@@ -805,7 +948,11 @@ function main() {
       `кікерів ${now.kicker} (бюджет ${budget.budgets.kicker}), ` +
       `нативних виборів ${now.nativeChoice} (бюджет ${budget.budgets.nativeChoice}), ` +
       `текстових станів ${now.textStateLabel} (бюджет ${budget.budgets.textStateLabel}), ` +
-      `капс-підписів полів ${now.capsFormLabel} (бюджет ${budget.budgets.capsFormLabel}).`,
+      `капс-підписів полів ${now.capsFormLabel} (бюджет ${budget.budgets.capsFormLabel}), ` +
+      `сирих <select> ${now.nativeSelect} (бюджет ${budget.budgets.nativeSelect}), ` +
+      `оверлайнів поза hero ${now.overlineOutsideHero} (бюджет ${budget.budgets.overlineOutsideHero}), ` +
+      `hue модуля на кнопках ${now.hueOnButton} (бюджет ${budget.budgets.hueOnButton}), ` +
+      `зайвих «Додати» на маршрутах ${now.addActionsPerRoute} (бюджет ${budget.budgets.addActionsPerRoute}).`,
   );
 
   const over = Object.keys(now).filter((k) => now[k] > budget.budgets[k]);
@@ -837,7 +984,9 @@ function main() {
       "  кнопка — `variant` ∈ solid|soft|outline|ghost + `tone`;\n" +
       "  фокус — утиліта `focus-ring`, не рукописний `focus-visible:ring-2`;\n" +
       "  UA-рядок — у каталог `@shared/i18n`, не в компонент із записом в allowlist;\n" +
-      "  вибір — `ChoiceGroup`, стан — шеврон / заливка + aria, підпис поля без капсу.\n" +
+      "  вибір — `ChoiceGroup`, стан — шеврон / заливка + aria, підпис поля без капсу;\n" +
+      "  список — `Select`, капс-оверлайн лише на тинті hero, головна дія — `solid` чорнилом;\n" +
+      "  одна кнопка «Додати» на маршрут (число — зі знімального прогону, ADD_ACTIONS_OUT).\n" +
       "Мапа легасі→канон і причини — docs/work/specs/c-section-consistency-migration.md\n",
   );
   return 1;
