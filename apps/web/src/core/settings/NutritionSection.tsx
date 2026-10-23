@@ -1,7 +1,7 @@
 import { useCallback, useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { cn } from "@shared/lib/ui/cn";
 import { Button } from "@shared/components/ui/Button";
+import { Input } from "@shared/components/ui/Input";
 import {
   defaultNutritionPrefs,
   patchNutritionPrefs,
@@ -60,23 +60,21 @@ function NumberField({
     <label className="flex items-center gap-3 min-h-[44px]">
       <span className="text-style-label text-text flex-1 min-w-0">{label}</span>
       <div className="flex items-center gap-1.5 shrink-0">
-        <input
-          type="number"
-          inputMode="numeric"
-          min={0}
-          step={1}
-          placeholder={placeholder}
-          disabled={disabled}
-          className={cn(
-            "input-focus h-10 w-24 px-2.5 text-right text-style-body",
-            "bg-panelHi border border-line rounded-lg text-text",
-            "placeholder:text-muted",
-            "disabled:opacity-60 disabled:cursor-not-allowed",
-          )}
-          value={draft}
-          onChange={(e) => setDraft(e.target.value)}
-          onBlur={() => onCommit(parseOptionalPositiveInt(draft))}
-        />
+        <span className="w-24 shrink-0">
+          <Input
+            size="sm"
+            type="number"
+            inputMode="numeric"
+            min={0}
+            step={1}
+            placeholder={placeholder}
+            disabled={disabled}
+            className="px-2.5 text-right"
+            value={draft}
+            onChange={(e) => setDraft(e.target.value)}
+            onBlur={() => onCommit(parseOptionalPositiveInt(draft))}
+          />
+        </span>
         <span className="text-style-caption text-muted w-10 text-left">
           {suffix}
         </span>

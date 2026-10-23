@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { cn } from "@shared/lib/ui/cn";
 import { Button } from "@shared/components/ui/Button";
+import { Input } from "@shared/components/ui/Input";
 import { ChoiceGroup } from "@shared/components/ui/Choice";
 import { TimeField } from "@shared/components/ui/TimeField";
 import { useToast } from "@shared/hooks/useToast";
@@ -327,27 +328,33 @@ export function NotificationsSection() {
           onChange={handleNutritionToggle}
         />
         {nutritionPrefs.reminderEnabled && (
-          <label className="flex items-center gap-2 text-style-label">
-            <span className="text-subtle">Година</span>
-            <input
-              type="number"
-              min={0}
-              max={23}
-              className="w-16 h-9 touch-target rounded-lg bg-panel border border-line px-2 text-style-body text-text"
-              value={reminderHourDraft ?? nutritionPrefs.reminderHour ?? 12}
-              disabled={!nutritionHydrated}
-              onBlur={() => setReminderHourDraft(null)}
-              onChange={(e) => {
-                const reminderHour = Math.min(
-                  23,
-                  Math.max(0, Number(e.target.value) || 0),
-                );
-                setReminderHourDraft(reminderHour);
-                patchNutritionPrefs({ reminderHour });
-              }}
-            />
+          <div className="flex items-center gap-2 text-style-label">
+            <label htmlFor="nutrition-reminder-hour" className="text-subtle">
+              Година
+            </label>
+            <span className="w-16 shrink-0">
+              <Input
+                id="nutrition-reminder-hour"
+                size="sm"
+                type="number"
+                min={0}
+                max={23}
+                className="px-2"
+                value={reminderHourDraft ?? nutritionPrefs.reminderHour ?? 12}
+                disabled={!nutritionHydrated}
+                onBlur={() => setReminderHourDraft(null)}
+                onChange={(e) => {
+                  const reminderHour = Math.min(
+                    23,
+                    Math.max(0, Number(e.target.value) || 0),
+                  );
+                  setReminderHourDraft(reminderHour);
+                  patchNutritionPrefs({ reminderHour });
+                }}
+              />
+            </span>
             <span className="text-style-caption text-subtle">год.</span>
-          </label>
+          </div>
         )}
       </SettingsSubGroup>
     </SettingsGroup>

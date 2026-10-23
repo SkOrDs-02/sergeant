@@ -11,7 +11,8 @@
  */
 import type { Dispatch, SetStateAction } from "react";
 import { Card } from "@shared/components/ui/Card";
-import { Input } from "@shared/components/ui/Input";
+import { FIELD_LABEL, Input } from "@shared/components/ui/Input";
+import { Select } from "@shared/components/ui/Select";
 import { Button } from "@shared/components/ui/Button";
 import { SectionHeading } from "@shared/components/ui/SectionHeading";
 import type { NutritionPrefs } from "@sergeant/nutrition-domain";
@@ -73,20 +74,19 @@ export function GeneratorCard({
       <div className="mt-4 grid gap-4">
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
           <div>
-            <div className="text-style-label text-muted mb-1">Ціль</div>
-            <select
+            <div className={`${FIELD_LABEL} mb-1`}>Ціль</div>
+            <Select
               aria-label="Ціль"
               value={prefs.goal}
               onChange={(e) =>
                 setPrefs((p) => ({ ...p, goal: e.target.value }))
               }
-              className="w-full h-11 rounded-lg bg-panel border border-line px-3 text-style-body text-text focus-ring"
               disabled={busy}
             >
               <option value="balanced">Збалансовано</option>
               <option value="high_protein">Більше білка</option>
               <option value="low_cal">Менше калорій</option>
-            </select>
+            </Select>
           </div>
           <div className="grid grid-cols-2 gap-3">
             <div>
@@ -137,11 +137,12 @@ export function GeneratorCard({
         </div>
 
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-          <label className="block">
-            <span className="block text-style-label text-muted mb-1">
+          <div>
+            <label htmlFor="recipe-meal-type" className={`${FIELD_LABEL} mb-1`}>
               Прийом їжі
-            </span>
-            <select
+            </label>
+            <Select
+              id="recipe-meal-type"
               aria-label="Прийом їжі"
               value={prefs.recipeMealType}
               onChange={(e) =>
@@ -151,7 +152,6 @@ export function GeneratorCard({
                     .value as NutritionPrefs["recipeMealType"],
                 }))
               }
-              className="w-full h-11 rounded-lg bg-panel border border-line px-3 text-style-body text-text focus-ring"
               disabled={busy}
             >
               <option value="any">Будь-який</option>
@@ -159,8 +159,8 @@ export function GeneratorCard({
               <option value="lunch">Обід</option>
               <option value="dinner">Вечеря</option>
               <option value="snack">Перекус</option>
-            </select>
-          </label>
+            </Select>
+          </div>
           <PantryModeSelect prefs={prefs} setPrefs={setPrefs} disabled={busy} />
         </div>
 

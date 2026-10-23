@@ -154,13 +154,7 @@ export function ReceiptReviewForm({
             }
             ariaLabel="Сума чека"
             disabled={disabled}
-            // `pointer-coarse:text-style-label-lg!` мусить бути поруч із важливим
-            // `text-style-body!` (≈15px на вузькому екрані), інакше той
-            // бʼє неважливий 16px-floor бази і iOS знову зумить екран на
-            // фокусі саме цього поля (бета-фідбек №2, 2026-08-18 — «клік
-            // по сумі все ще зумить»; той самий патерн, що BulkReviewTable).
-
-            className="h-11! w-full text-style-body! pointer-coarse:text-style-label-lg!"
+            size="md"
           />
         </div>
       </div>

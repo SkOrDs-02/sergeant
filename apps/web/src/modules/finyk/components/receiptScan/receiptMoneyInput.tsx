@@ -20,6 +20,7 @@
  * отримує справжній `0` для порожнього поля — контракт назовні
  * не міняється, лише вхід у хук.
  */
+import { Input, type InputSize } from "@shared/components/ui/Input";
 import { useDecimalDraft } from "@shared/hooks/useDecimalDraft";
 import { MAX_AMOUNT_HRYVNIA } from "@shared/lib/format/amount";
 import { cn } from "@shared/lib/ui/cn";
@@ -34,6 +35,8 @@ export interface ReceiptMoneyInputProps {
    * лейбл (напр. `ReceiptReviewItemRow` покладається лише на `ariaLabel`). */
   id?: string | undefined;
   disabled?: boolean | undefined;
+  /** `sm` у рядку позиції, `md` для суми чека в формі. */
+  size?: InputSize | undefined;
   className?: string | undefined;
 }
 
@@ -43,6 +46,7 @@ export function ReceiptMoneyInput({
   ariaLabel,
   id,
   disabled,
+  size = "sm",
   className,
 }: ReceiptMoneyInputProps) {
   const draft = useDecimalDraft(
@@ -54,8 +58,11 @@ export function ReceiptMoneyInput({
     { group: true },
   );
   return (
-    <input
+    // 16 px на тачі (анти-зум iOS, бета-фідбек 2026-08-18) і 44 px зону
+    // дотику дають глобальне правило `base.css` і флор примітива.
+    <Input
       id={id}
+      size={size}
       type="text"
       inputMode="decimal"
       value={draft.value}
@@ -63,19 +70,7 @@ export function ReceiptMoneyInput({
       disabled={disabled}
       aria-label={ariaLabel}
       placeholder="0"
-      className={cn(
-        // `pointer-coarse:text-style-label-lg` — 16px floor на тачі: менший шрифт у
-        // полі вводу змушує iOS Safari авто-зумити екран при фокусі
-        // (бета-фідбек 2026-08-18 «клік на суму збільшує екран»). На
-        // fine-pointer лишається caption — там зум-поведінки немає.
-        // Семантичні ролі тут не рятують: навіть text-style-body на
-        // вузькому екрані ~15px (<16) і все одно зумить.
-        // `pointer-coarse:min-h-11` — 44px touch-target floor (WCAG 2.5.5)
-        // на тачі; на десктопі лишається компактний h-9.
-
-        "focus-ring h-9 min-w-0 rounded-lg border border-line bg-panel px-2 text-right text-style-caption text-text tabular-nums pointer-coarse:min-h-11 pointer-coarse:text-style-label-lg",
-        className,
-      )}
+      className={cn("px-2 text-right tabular-nums", className)}
     />
   );
 }

@@ -11,6 +11,7 @@
  */
 import { useState } from "react";
 import { Button } from "@shared/components/ui/Button";
+import { Input } from "@shared/components/ui/Input";
 import { messages } from "@shared/i18n/uk";
 import type { Workout } from "@sergeant/fizruk-domain/domain";
 import {
@@ -24,8 +25,9 @@ export interface WorkoutSummaryTimeEditorProps {
   onUpdateTimes: (patch: { startedAt: string; endedAt: string }) => void;
 }
 
-const INPUT_CLASS =
-  "input-focus-fizruk block w-full min-w-0 h-11 rounded-lg border border-line bg-panel px-3 text-style-body text-text";
+// Нативний datetime-local має власну intrinsic-ширину; `min-inline-size: 0`
+// не дає йому розперти колонку.
+const DATETIME_CLASS = "min-w-0 [min-inline-size:0]";
 
 export function WorkoutSummaryTimeEditor({
   workout,
@@ -59,29 +61,19 @@ export function WorkoutSummaryTimeEditor({
 
   return (
     <div className="mt-3 space-y-2 rounded-panel border border-line bg-panelHi p-3">
-      <label
-        className="block text-style-caption text-subtle"
-        htmlFor="summary-start"
-      >
-        {copy.startLabel}
-      </label>
-      <input
+      <Input
         id="summary-start"
+        label={copy.startLabel}
         type="datetime-local"
-        className={INPUT_CLASS}
+        className={DATETIME_CLASS}
         value={start}
         onChange={(e) => setStart(e.target.value)}
       />
-      <label
-        className="block text-style-caption text-subtle"
-        htmlFor="summary-end"
-      >
-        {copy.endLabel}
-      </label>
-      <input
+      <Input
         id="summary-end"
+        label={copy.endLabel}
         type="datetime-local"
-        className={INPUT_CLASS}
+        className={DATETIME_CLASS}
         value={end}
         onChange={(e) => setEnd(e.target.value)}
       />

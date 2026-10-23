@@ -15,6 +15,7 @@
  * робочими, навіть якщо Сільпо зараз недоступне.
  */
 import { useState } from "react";
+import { Select } from "@shared/components/ui/Select";
 import { formatMoneyFromKopecks } from "@sergeant/shared";
 import { Sheet } from "@shared/components/ui/Sheet";
 import { Notice } from "@shared/components/ui/Notice";
@@ -141,13 +142,14 @@ function MatchPicker({
 }) {
   if (matches.length < 2) return null;
   return (
-    <label className="text-style-caption text-subtle flex items-center gap-1.5">
-      <span className="sr-only">{COPY.altPickerLabel}</span>
-      <select
+    <div className="text-style-caption text-subtle flex items-center gap-1.5">
+      <Select
+        size="sm"
         value={selectedLagerId ?? ""}
         disabled={disabled}
         onChange={(e) => onSelect(e.target.value)}
-        className="input-focus-nutrition min-h-[44px] rounded-lg border border-control bg-panelHi px-2 text-style-caption text-text disabled:opacity-50"
+        aria-label={COPY.altPickerLabel}
+        className="text-style-caption"
       >
         {matches.map((m) => (
           <option key={m.lagerId} value={m.lagerId}>
@@ -157,8 +159,8 @@ function MatchPicker({
             })}
           </option>
         ))}
-      </select>
-    </label>
+      </Select>
+    </div>
   );
 }
 

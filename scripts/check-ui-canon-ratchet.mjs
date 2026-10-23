@@ -63,6 +63,15 @@
 //      `<label>` чи примітиві `<Label>` з `FormField` (у класах тега або в рядковій константі, яку тег бере
 //      `className={NAME}`). Підпис поля 14 / 500 звичайним регістром, капс
 //      лише на тинті hero, а там `<label>` немає.
+//  15. `rawInput` - голий тег `<input>` / `<textarea>` / `<select>` у TSX.
+//      Канон поля - примітиви `Input` / `Textarea` / `Select`
+//      (`shared/components/ui/Input.tsx`, `Select.tsx`): межа `border-control`
+//      (3:1), фокус межею й `inset-ring` чорнилом, 48 px, підпис 14 / 500. Поза
+//      метрикою: теги з `type="file"` / `type="hidden"` (не поле вводу),
+//      теги в рядкових літералах і файли з `RAW_INPUT_ALLOWLIST` (пофайлово,
+//      з причиною; самі примітиви там теж). Спека
+//      docs/work/specs/planning/raw-input-to-primitive.md. З 2026-10-23
+//      метрика = 0 і стоїть у `ZERO_ONLY_METRICS` (заборона без боргу).
 //
 // Метрики 12-14 (redesign v3.1 PR2, спека
 // docs/work/specs/planning/redesign-v3-1.md § Гейти) скануються лише в `.tsx`
@@ -181,6 +190,31 @@ export const NATIVE_CHOICE_ALLOWLIST = [
 ];
 
 /**
+ * Файли, де сирий `<input>` / `<textarea>` / `<select>` легальний. Шляхи від
+ * кореня репо, пофайлово: виняток на всю теку `shared/components/ui/` пускав
+ * би голе поле в будь-який новий спільний компонент. Новий запис - лише з
+ * причиною. Поля поза примітивами беруть з них межу й фокус (`border-control`,
+ * `fieldFocus`), рішення власника 2026-10-23.
+ */
+export const RAW_INPUT_ALLOWLIST = [
+  // Самі примітиви поля: нативний тег і є їхньою реалізацією.
+  "apps/web/src/shared/components/ui/Input.tsx",
+  "apps/web/src/shared/components/ui/Select.tsx",
+  // Перемикач: прихований `sr-only` checkbox під `role="switch"`, не поле.
+  "apps/web/src/shared/components/ui/Switch.tsx",
+  // Рядок пошуку палітри команд: без рамки всередині власної панелі.
+  "apps/web/src/shared/components/ui/CommandPaletteUI.tsx",
+  // Поле чату з Сержантом: авторозмір, кнопки голосу й відправки всередині.
+  "apps/web/src/core/components/ChatInput.tsx",
+  // Пошук хаба в шапці: власна форма рядка пошуку з іконкою й очищенням.
+  "apps/web/src/core/hub/search/SearchInput.tsx",
+  // Пошук у каталозі можливостей Сержанта, та сама форма рядка пошуку.
+  "apps/web/src/core/AssistantCataloguePage.tsx",
+  // Прихований `sr-only` інпут, що ловить PIN з цифрової клавіатури екрана.
+  "apps/web/src/core/security/AppLock.tsx",
+];
+
+/**
  * Ключі каталогу `@shared/i18n`, значення яких «Розгорнути», «Згорнути» або
  * «Обрано». Звірку з каталогом тримає тест храповика: новий такий ключ без
  * запису тут валить його.
@@ -205,6 +239,7 @@ export const ZERO_ONLY_METRICS = [
   "nativeChoice",
   "textStateLabel",
   "capsFormLabel",
+  "rawInput",
 ];
 
 export function zeroOnlyViolations(budgets) {
@@ -668,6 +703,31 @@ function stateHits(relPath, src) {
     }
     labelRe.lastIndex = end + 1;
   }
+
+  if (!RAW_INPUT_ALLOWLIST.includes(norm)) {
+    // Тег у рядковому літералі не рендериться. Повний `maskedRanges` тут не
+    // годиться: апостроф у JSX-тексті («м'язи») відкрив би «рядок» до
+    // наступної лапки й сховав справжні поля нижче. Тож лише той самий рядок
+    // коду: непарна кількість однієї з лапок перед тегом = тег у рядку.
+    const inLineString = (idx) => {
+      const pre = src.slice(src.lastIndexOf("\n", idx - 1) + 1, idx);
+      return ['"', "'", "`"].some((q) => pre.split(q).length % 2 === 0);
+    };
+    const fieldRe = /<(input|textarea|select)(?![\w-])/g;
+    while ((m = fieldRe.exec(src))) {
+      if (inLineString(m.index)) continue;
+      const end = tagEnd(src, m.index + m[0].length);
+      if (end < 0) continue;
+      const tag = src.slice(m.index, end + 1);
+      fieldRe.lastIndex = end + 1;
+      if (/\stype=["'](?:file|hidden)["']/.test(tag)) continue;
+      push(
+        "rawInput",
+        m.index,
+        `голий <${m[1]}> - канон: Input / Textarea / Select (shared/components/ui)`,
+      );
+    }
+  }
   return hits;
 }
 
@@ -735,6 +795,7 @@ export function counts(hits) {
     nativeChoice: 0,
     textStateLabel: 0,
     capsFormLabel: 0,
+    rawInput: 0,
   };
   for (const h of hits) out[h.metric]++;
   return out;
@@ -767,7 +828,7 @@ function main() {
   if (notZero.length) {
     console.error(
       `❌ ${notZero.join(", ")} - заборони без baseline-боргу, бюджет мусить бути 0.\n` +
-        `   Вибір - ChoiceGroup, стан - шеврон / заливка + aria, підпис поля без капсу.`,
+        `   Вибір - ChoiceGroup, стан - шеврон / заливка + aria, підпис поля без капсу, поле - Input / Textarea / Select.`,
     );
     return 1;
   }
@@ -805,7 +866,8 @@ function main() {
       `кікерів ${now.kicker} (бюджет ${budget.budgets.kicker}), ` +
       `нативних виборів ${now.nativeChoice} (бюджет ${budget.budgets.nativeChoice}), ` +
       `текстових станів ${now.textStateLabel} (бюджет ${budget.budgets.textStateLabel}), ` +
-      `капс-підписів полів ${now.capsFormLabel} (бюджет ${budget.budgets.capsFormLabel}).`,
+      `капс-підписів полів ${now.capsFormLabel} (бюджет ${budget.budgets.capsFormLabel}), ` +
+      `голих полів ${now.rawInput} (бюджет ${budget.budgets.rawInput}).`,
   );
 
   const over = Object.keys(now).filter((k) => now[k] > budget.budgets[k]);
@@ -837,7 +899,8 @@ function main() {
       "  кнопка — `variant` ∈ solid|soft|outline|ghost + `tone`;\n" +
       "  фокус — утиліта `focus-ring`, не рукописний `focus-visible:ring-2`;\n" +
       "  UA-рядок — у каталог `@shared/i18n`, не в компонент із записом в allowlist;\n" +
-      "  вибір — `ChoiceGroup`, стан — шеврон / заливка + aria, підпис поля без капсу.\n" +
+      "  вибір — `ChoiceGroup`, стан — шеврон / заливка + aria, підпис поля без капсу;\n" +
+      "  поле — `Input` / `Textarea` / `Select`, не голий тег.\n" +
       "Мапа легасі→канон і причини — docs/work/specs/c-section-consistency-migration.md\n",
   );
   return 1;

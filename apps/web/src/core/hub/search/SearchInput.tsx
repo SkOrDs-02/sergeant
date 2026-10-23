@@ -1,4 +1,5 @@
 import { forwardRef } from "react";
+import { fieldFocus } from "@shared/components/ui/Input";
 import { Icon } from "@shared/components/ui/Icon";
 import { messages } from "@shared/i18n/uk";
 import { searchFieldProps } from "@shared/lib/ui/searchFieldProps";
@@ -49,7 +50,7 @@ export const SearchInput = forwardRef<HTMLInputElement, SearchInputProps>(
             aria-controls={listId}
             aria-activedescendant={activeId}
             aria-autocomplete="list"
-            className="w-full h-11 pl-10 pr-4 rounded-lg bg-panelHi border border-line text-text placeholder:text-muted text-style-body focus:outline-none focus-visible:ring-2 focus-visible:ring-focus/45"
+            className={`w-full h-12 pl-10 pr-4 rounded-lg bg-panelHi border border-control text-text placeholder:text-muted text-style-body outline-none ${fieldFocus(false)}`}
           />
         </div>
         <button

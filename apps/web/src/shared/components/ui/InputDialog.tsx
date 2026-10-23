@@ -17,6 +17,7 @@ import { cn } from "@shared/lib/ui/cn";
 import { keyboardOverlayStyles } from "@shared/lib/ui/keyboardOverlay";
 import { useApiForm } from "@shared/forms";
 import { Button } from "./Button";
+import { Input } from "./Input";
 
 export interface InputDialogProps {
   open: boolean;
@@ -177,23 +178,20 @@ export function InputDialog({
             {description}
           </p>
         )}
-        <input
-          {...valueRegister}
-          ref={(el) => {
-            valueRegister.ref(el);
-            inputRef.current = el;
-          }}
-          type={type}
-          placeholder={placeholder}
-          disabled={isSubmitting}
-          className={cn(
-            "w-full h-12 rounded-lg bg-bg border border-line px-4 text-style-body text-text placeholder:text-subtle mb-4",
-            "transition-colors",
-            "focus:outline-none",
-            "focus-visible:outline-none focus-visible:border-brand-400 focus-visible:ring-2 focus-visible:ring-focus/45",
-          )}
-          autoComplete="off"
-        />
+        <div className="mb-4">
+          <Input
+            {...valueRegister}
+            ref={(el) => {
+              valueRegister.ref(el);
+              inputRef.current = el;
+            }}
+            type={type}
+            placeholder={placeholder}
+            disabled={isSubmitting}
+            className="bg-bg"
+            autoComplete="off"
+          />
+        </div>
         <div className="flex flex-col gap-2">
           <Button
             type="submit"

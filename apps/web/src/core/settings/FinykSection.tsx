@@ -6,6 +6,7 @@ import { useState } from "react";
 import { messages } from "@shared/i18n/uk";
 import { Segmented } from "@shared/components/ui/Segmented";
 import { Button } from "@shared/components/ui/Button";
+import { Input } from "@shared/components/ui/Input";
 import { ConfirmDialog } from "@shared/components/ui/ConfirmDialog";
 import { EmptyState } from "@shared/components/ui/EmptyState";
 import { useInView } from "@shared/hooks/useInView";
@@ -165,9 +166,6 @@ export function FinykSection() {
     setNewCategoryLabel("");
   };
 
-  const catInputClass =
-    "input-focus-finyk flex-1 min-w-0 h-11 rounded-lg border border-line bg-panelHi px-3 text-style-body text-text";
-
   return (
     <div ref={sectionRef}>
       {/* V-13 (аудит Профілю/Налаштувань 2026-08-08): `SettingsGroup`
@@ -222,7 +220,7 @@ export function FinykSection() {
                 />
 
                 <div className="flex gap-2">
-                  <input
+                  <Input
                     type="text"
                     value={newCategoryLabel}
                     onChange={(event) =>
@@ -232,7 +230,7 @@ export function FinykSection() {
                     aria-label={messages.collection.categoryNameLabel}
                     disabled={customCategories.length >= 80}
                     maxLength={80}
-                    className={catInputClass}
+                    showCharCount={false}
                     onKeyDown={(event) => {
                       if (event.key === "Enter" && newCategoryLabel.trim()) {
                         addCategory();
@@ -241,7 +239,7 @@ export function FinykSection() {
                   />
                   <Button
                     type="button"
-                    className="shrink-0 h-11 px-4"
+                    className="shrink-0 h-12 px-4"
                     onClick={addCategory}
                     disabled={
                       !newCategoryLabel.trim() || customCategories.length >= 80
