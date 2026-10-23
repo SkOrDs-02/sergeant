@@ -44,6 +44,37 @@ export const VOLATILE_API_PREFIXES: readonly string[] = [
 ] as const;
 
 /**
+ * priv-08 (рішення власника 2026-10-23): приватні маршрути, яких у runtime-кеші
+ * немає взагалі — профіль/тариф/біометрія (`/me`, у т.ч. `/me/profile`,
+ * `/me/preferences`) і AI-памʼять (`/ai-memory/*`). Збіг за межею сегмента
+ * (`/api/v1/me` і `/api/v1/me/...`, але не `/api/v1/menu`).
+ */
+export const PRIVATE_API_PATHS: readonly string[] = [
+  "/api/me",
+  "/api/v1/me",
+  "/api/ai-memory",
+  "/api/v1/ai-memory",
+] as const;
+
+export function isPrivateApiPath(pathname: string): boolean {
+  const path = pathname.split(/[?#]/, 1)[0] ?? pathname;
+  return PRIVATE_API_PATHS.some(
+    (base) => path === base || path.startsWith(`${base}/`),
+  );
+}
+
+/**
+ * priv-08: відповідь з `Cache-Control: no-store` не кладемо в runtime-кеш
+ * (директива, регістронезалежно, серед інших через кому).
+ */
+export function isNoStoreResponse(cacheControl: string | null): boolean {
+  if (!cacheControl) return false;
+  return cacheControl
+    .split(",")
+    .some((d) => d.trim().toLowerCase() === "no-store");
+}
+
+/**
  * Reusable predicate for the `registerRoute` `match` callback. Returns
  * `true` exactly when a request should be served through the
  * NetworkFirst runtime cache:
@@ -51,7 +82,8 @@ export const VOLATILE_API_PREFIXES: readonly string[] = [
  *   - path starts with `/api/`, AND
  *   - path is not `/api/auth/*` (stale session would auth as
  *     logged-out users), AND
- *   - path is not in {@link VOLATILE_API_PREFIXES}, AND
+ *   - path is not in {@link VOLATILE_API_PREFIXES} or
+ *     {@link PRIVATE_API_PATHS}, AND
  *   - method is `GET` (mutations have no business in a runtime cache).
  *
  * Mirrored verbatim by the test suite so the contract is enforced.
@@ -62,6 +94,8 @@ export function shouldUseRuntimeCache(
 ): boolean {
   if (!pathname.startsWith("/api/")) return false;
   if (pathname.startsWith("/api/auth/")) return false;
+  if (isPrivateApiPath(pathname)) return false;
+
   if (VOLATILE_API_PREFIXES.some((prefix) => pathname.startsWith(prefix)))
     return false;
   return method === "GET";

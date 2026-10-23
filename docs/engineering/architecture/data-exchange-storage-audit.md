@@ -128,7 +128,7 @@ DB-level safety:
 - React Query warm-start cache — IndexedDB (`sergeant-db`, store `rq_cache`), TTL 7 днів, build-id buster, sensitive query keys не персистяться (`apps/web/src/shared/lib/api/queryClientPersister.ts`).
 - Service Worker:
   - precache + NetworkFirst navigation cache;
-  - GET `/api/*` cache на 30 хв, але auth/sync/coach/weekly-digest виключені (`apps/web/src/sw.ts`);
+  - GET `/api/*` cache на 30 хв, але auth/sync/coach/weekly-digest і приватні `/me`, `/ai-memory` (з підшляхами) виключені, а відповіді з `Cache-Control: no-store` у кеш не пишуться (priv-08; `apps/web/src/sw/cachePolicy.ts`, `cache.ts`);
   - IndexedDB `sergeant-sw/notified-keys` для dedupe reminder notifications.
 - `cloudSync/` тепер — лише barrel `useSyncStatus` (статус v2 engine cycle). Усі v1 engine файли видалені.
 
