@@ -1,6 +1,6 @@
 # Runbook: запуск приймання платежів (Plata / LiqPay)
 
-> **Last touched:** 2026-10-10 by @claude (§ 4а: скасування й повторний checkout). **Next review:** 2026-12-24.
+> **Last touched:** 2026-10-23 by @claude (§ 4: свіжість звірки, rel-19); 2026-10-10 by @claude (§ 4а: скасування й повторний checkout). **Next review:** 2026-12-24.
 > **Status:** Active
 > **Runtime-specific:** yes
 
@@ -47,6 +47,7 @@
 - Перша реальна оплата: у `subscriptions` зʼявився рядок `provider='plata'`, `status='active'`, `current_period_end` дорівнює `nextChargeDate`.
 - `billing_webhook_total{provider="plata",status="verified"}` росте — вебхуки доходять і підпис сходиться. Нуль тут при успішних оплатах означає, що працює лише полінг (див. `PUBLIC_WEB_BASE_URL` вище).
 - `billing_recurring_charge_total{provider="plata",result="past_due"}` — сигнал невдалих списань.
+- Звірка жива: `GET /health/workers` → `workers.plataSync.lastRunAt` не `null` за ~2 хв після старту (стартовий тік) і далі оновлюється щогодини. Алерт на застарілий тік — `PlataSyncSlowTickStale` в [`alert_rules.yml`](../../operations/observability/prometheus/alert_rules.yml); до вмикання залий його в Mimir (`mimirtool rules sync`), інакше він не діє (rel-19).
 
 ## 4а. Скасування й повторний checkout (аудит data-20, data-21)
 
