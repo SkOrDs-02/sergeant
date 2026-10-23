@@ -74,7 +74,9 @@ const storageMock = vi.hoisted(() => ({
   budgets: [] as unknown[],
   addCustomCategory: vi.fn(),
   removeCustomCategory: vi.fn(),
+  restoreCustomCategory: vi.fn(),
 }));
+const toastShow = vi.hoisted(() => vi.fn());
 vi.mock("@finyk/hooks/useStorage", () => ({
   useStorage: () => storageMock,
 }));
@@ -84,7 +86,7 @@ vi.mock("@finyk/hooks/useStorage", () => ({
 // stub the hook directly rather than adding an unrelated provider.
 vi.mock("@shared/hooks/useToast", () => ({
   useToast: () => ({
-    show: vi.fn(),
+    show: toastShow,
     success: vi.fn(),
     error: vi.fn(),
     info: vi.fn(),
@@ -291,6 +293,28 @@ describe("FinykSection interactions", () => {
     const dialog = await screen.findByRole("alertdialog");
     fireEvent.click(within(dialog).getByRole("button", { name: "Видалити" }));
     expect(storageMock.removeCustomCategory).toHaveBeenCalledWith("c1");
+  });
+
+  it("після видалення категорії показує тост «Скасувати», що відновлює її (data-25)", async () => {
+    storageMock.customCategories = [{ id: "c1", label: "Хобі" }];
+    const removal = { category: { id: "c1", label: "Хобі" } };
+    storageMock.removeCustomCategory.mockReturnValueOnce(removal);
+    mockedSyncState.mockResolvedValue(DISCONNECTED);
+    renderSection();
+    fireEvent.click(
+      screen.getByRole("button", { name: "Керувати: Власні категорії" }),
+    );
+    fireEvent.click(await screen.findByText("Видалити"));
+    const dialog = await screen.findByRole("alertdialog");
+    fireEvent.click(within(dialog).getByRole("button", { name: "Видалити" }));
+
+    expect(toastShow).toHaveBeenCalledTimes(1);
+    const [msg, , , action] = toastShow.mock.calls[0]!;
+    expect(String(msg)).toContain("«Хобі»");
+    expect(String(msg)).toContain("«Інше»");
+    expect(action.label).toBe("Скасувати");
+    action.onClick();
+    expect(storageMock.restoreCustomCategory).toHaveBeenCalledWith(removal);
   });
 
   it("counts only single-category limits of the deleted category in the confirmation", async () => {

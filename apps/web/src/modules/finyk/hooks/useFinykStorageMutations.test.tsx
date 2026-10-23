@@ -68,6 +68,9 @@ function makeSlots(initial: Partial<Record<string, unknown>> = {}) {
     setHiddenAccounts: makeSetter("hiddenAccounts"),
     hiddenTxIds: state["hiddenTxIds"],
     setHiddenTxIds: makeSetter("hiddenTxIds"),
+    txCategories: state["txCategories"],
+    txSplits: state["txSplits"],
+    customCategories: state["customCategories"],
     setTxCategories: makeSetter("txCategories"),
     setTxNotes: makeSetter("txNotes"),
     setTxSplits: makeSetter("txSplits"),
@@ -807,7 +810,7 @@ describe("custom categories", () => {
     expect(cat["color"]).toBeUndefined();
   });
 
-  it("removeCustomCategory cleans up tx maps, splits and budgets", () => {
+  it("removeCustomCategory reassigns tx maps, splits and budgets", () => {
     const { slots, state } = makeSlots({
       customCategories: [{ id: "c1", label: "Gone" }],
       txCategories: { tx1: "c1", tx2: "other" },
@@ -827,9 +830,9 @@ describe("custom categories", () => {
     result.current.removeCustomCategory("c1");
 
     expect(state["customCategories"]).toEqual([]);
-    expect(
-      (state["txCategories"] as Record<string, unknown>)["tx1"],
-    ).toBeUndefined();
+    expect((state["txCategories"] as Record<string, unknown>)["tx1"]).toBe(
+      "other",
+    );
     expect((state["txCategories"] as Record<string, unknown>)["tx2"]).toBe(
       "other",
     );
@@ -892,5 +895,77 @@ describe("custom categories", () => {
       limit: 300,
       categoryId: "transport",
     });
+  });
+
+  it("removeCustomCategory переносить ручні витрати в «Інше» свого напряму (data-25)", () => {
+    const { slots, state } = makeSlots({
+      customCategories: [
+        { id: "c1", label: "Хобі" },
+        { id: "c2", label: "Фріланс", kind: "income" },
+      ],
+      manualExpenses: [
+        { id: "m1", category: "c1", amount: 100 },
+        { id: "m2", category: "food", amount: 50 },
+        { id: "m3", category: "c2", amount: 900, kind: "income" },
+      ],
+    });
+    const { result } = renderMutations(slots);
+
+    result.current.removeCustomCategory("c1");
+    result.current.removeCustomCategory("c2");
+
+    const cats = (
+      state["manualExpenses"] as Array<Record<string, unknown>>
+    ).map((e) => e["category"]);
+    expect(cats).toEqual(["other", "food", "other-income"]);
+  });
+
+  it("restoreCustomCategory повертає категорію, ліміти, мітки, спліти й витрати", () => {
+    const initial = {
+      customCategories: [
+        { id: "a", label: "A" },
+        { id: "c1", label: "Хобі" },
+        { id: "z", label: "Z" },
+      ],
+      txCategories: { tx1: "c1", tx2: "other" },
+      txSplits: {
+        txA: [
+          { categoryId: "c1", amount: 5 },
+          { categoryId: "x", amount: 5 },
+        ],
+      },
+      budgets: [
+        {
+          id: "b1",
+          type: "limit",
+          limit: 1000,
+          categoryId: "c1",
+          categoryIds: ["c1", "food"],
+        },
+        { id: "b3", type: "limit", limit: 500, categoryId: "c1" },
+      ],
+      manualExpenses: [{ id: "m1", category: "c1", amount: 100 }],
+    };
+    const { slots, state } = makeSlots(structuredClone(initial));
+    const { result } = renderMutations(slots);
+
+    const removal = result.current.removeCustomCategory("c1");
+    expect(removal).not.toBeNull();
+    result.current.restoreCustomCategory(removal!);
+
+    expect(state["customCategories"]).toEqual(initial.customCategories);
+    expect(state["txCategories"]).toEqual(initial.txCategories);
+    expect(state["txSplits"]).toEqual(initial.txSplits);
+    expect(state["manualExpenses"]).toEqual(initial.manualExpenses);
+    expect(state["budgets"]).toEqual(initial.budgets);
+  });
+
+  it("removeCustomCategory для невідомого id нічого не чіпає і повертає null", () => {
+    const { slots, state } = makeSlots({
+      customCategories: [{ id: "c1", label: "Хобі" }],
+    });
+    const { result } = renderMutations(slots);
+    expect(result.current.removeCustomCategory("nope")).toBeNull();
+    expect(state["customCategories"]).toHaveLength(1);
   });
 });
