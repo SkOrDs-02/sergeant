@@ -28,7 +28,6 @@ import {
   counts,
   NATIVE_CHOICE_ALLOWLIST,
   RAW_INPUT_ALLOWLIST,
-  RAW_INPUT_PRIMITIVES_DIR,
   ROUNDED_FULL_ALLOWLIST,
   ICON_SIZE_TOKENS,
   maskedRanges,
@@ -485,17 +484,37 @@ test("rawInput: голі input, textarea і select ловляться, прим�
   assert.match(hits[0].detail, /Input \/ Textarea \/ Select/);
 });
 
-test("rawInput: тека примітивів і allowlist не рахуються, коментар теж", () => {
-  for (const file of [
-    ...RAW_INPUT_ALLOWLIST,
-    `${RAW_INPUT_PRIMITIVES_DIR}Input.tsx`,
-  ]) {
+test("rawInput: allowlist (зокрема самі примітиви) не рахується, коментар теж", () => {
+  assert.ok(
+    RAW_INPUT_ALLOWLIST.includes("apps/web/src/shared/components/ui/Input.tsx"),
+  );
+  for (const file of RAW_INPUT_ALLOWLIST) {
     const hits = scanSource(file, `<input type="text" />`).filter(
       (h) => h.metric === "rawInput",
     );
     assert.deepEqual(hits, [], file);
   }
   assert.deepEqual(onlyTsx(`// <input type="text" />`, "rawInput"), []);
+});
+
+test("rawInput: інший файл у теці примітивів рахується", () => {
+  const hits = scanSource(
+    "apps/web/src/shared/components/ui/OtherWidget.tsx",
+    `<input type="text" />`,
+  ).filter((h) => h.metric === "rawInput");
+  assert.equal(hits.length, 1);
+});
+
+test("rawInput: тег у рядковому літералі не рахується, апостроф у JSX-тексті не ховає поле", () => {
+  const quoted = `
+    const a = '<input type="text" />';
+    const b = "<select>";
+    const c = \`<textarea>\`;`;
+  assert.deepEqual(onlyTsx(quoted, "rawInput"), []);
+  const jsx = `
+    <p>М'язи</p>
+    <input type="text" />`;
+  assert.equal(onlyTsx(jsx, "rawInput").length, 1);
 });
 
 test("nativeChoice: лише TSX, рядок у .ts не є розміткою", () => {

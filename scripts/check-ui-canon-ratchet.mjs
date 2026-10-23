@@ -67,9 +67,9 @@
 //      Канон поля - примітиви `Input` / `Textarea` / `Select`
 //      (`shared/components/ui/Input.tsx`, `Select.tsx`): межа `border-control`
 //      (3:1), фокус межею й `inset-ring` чорнилом, 48 px, підпис 14 / 500. Поза
-//      метрикою: самі примітиви (тека `shared/components/ui/`), теги з
-//      `type="file"` / `type="hidden"` (не поле вводу) і файли з
-//      `RAW_INPUT_ALLOWLIST` (пофайлово, з причиною). Спека
+//      метрикою: теги з `type="file"` / `type="hidden"` (не поле вводу),
+//      теги в рядкових літералах і файли з `RAW_INPUT_ALLOWLIST` (пофайлово,
+//      з причиною; самі примітиви там теж). Спека
 //      docs/work/specs/planning/raw-input-to-primitive.md. З 2026-10-23
 //      метрика = 0 і стоїть у `ZERO_ONLY_METRICS` (заборона без боргу).
 //
@@ -189,15 +189,21 @@ export const NATIVE_CHOICE_ALLOWLIST = [
   "apps/web/src/shared/components/ui/Switch.tsx",
 ];
 
-/** Тека примітивів: сирі теги там і є реалізацією канону. */
-export const RAW_INPUT_PRIMITIVES_DIR = "apps/web/src/shared/components/ui/";
-
 /**
- * Файли, де сирий `<input>` / `<textarea>` легальний (рішення власника
- * 2026-10-23). Шляхи від кореня репо. Новий запис - лише з причиною. Межу й
- * фокус ці поля однаково беруть з примітива (`border-control`, `fieldFocus`).
+ * Файли, де сирий `<input>` / `<textarea>` / `<select>` легальний. Шляхи від
+ * кореня репо, пофайлово: виняток на всю теку `shared/components/ui/` пускав
+ * би голе поле в будь-який новий спільний компонент. Новий запис - лише з
+ * причиною. Поля поза примітивами беруть з них межу й фокус (`border-control`,
+ * `fieldFocus`), рішення власника 2026-10-23.
  */
 export const RAW_INPUT_ALLOWLIST = [
+  // Самі примітиви поля: нативний тег і є їхньою реалізацією.
+  "apps/web/src/shared/components/ui/Input.tsx",
+  "apps/web/src/shared/components/ui/Select.tsx",
+  // Перемикач: прихований `sr-only` checkbox під `role="switch"`, не поле.
+  "apps/web/src/shared/components/ui/Switch.tsx",
+  // Рядок пошуку палітри команд: без рамки всередині власної панелі.
+  "apps/web/src/shared/components/ui/CommandPaletteUI.tsx",
   // Поле чату з Сержантом: авторозмір, кнопки голосу й відправки всередині.
   "apps/web/src/core/components/ChatInput.tsx",
   // Пошук хаба в шапці: власна форма рядка пошуку з іконкою й очищенням.
@@ -698,12 +704,18 @@ function stateHits(relPath, src) {
     labelRe.lastIndex = end + 1;
   }
 
-  if (
-    !norm.startsWith(RAW_INPUT_PRIMITIVES_DIR) &&
-    !RAW_INPUT_ALLOWLIST.includes(norm)
-  ) {
+  if (!RAW_INPUT_ALLOWLIST.includes(norm)) {
+    // Тег у рядковому літералі не рендериться. Повний `maskedRanges` тут не
+    // годиться: апостроф у JSX-тексті («м'язи») відкрив би «рядок» до
+    // наступної лапки й сховав справжні поля нижче. Тож лише той самий рядок
+    // коду: непарна кількість однієї з лапок перед тегом = тег у рядку.
+    const inLineString = (idx) => {
+      const pre = src.slice(src.lastIndexOf("\n", idx - 1) + 1, idx);
+      return ['"', "'", "`"].some((q) => pre.split(q).length % 2 === 0);
+    };
     const fieldRe = /<(input|textarea|select)(?![\w-])/g;
     while ((m = fieldRe.exec(src))) {
+      if (inLineString(m.index)) continue;
       const end = tagEnd(src, m.index + m[0].length);
       if (end < 0) continue;
       const tag = src.slice(m.index, end + 1);
