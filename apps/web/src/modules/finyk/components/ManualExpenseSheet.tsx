@@ -84,6 +84,10 @@ import type { TagSummary } from "@sergeant/finyk-domain/domain/tags";
 import { decideManualDebtLink } from "./manualDebtLink";
 import { useManualCustomCategories } from "./useManualCustomCategories";
 import { useManualExpenseLockDraft } from "./useManualExpenseLockDraft";
+import {
+  manualExpenseOpenKey,
+  onlyFrequentCategoriesChanged,
+} from "./manualExpenseOpenKey";
 
 // Re-exported for backward-compat with existing importers / tests.
 export {
@@ -370,27 +374,16 @@ export function ManualExpenseSheet({
   // (перед ефектом), щоб його сеттер був доступний у момент виклику.
   const [descFocused, setDescFocused] = useState(false);
 
-  const openInitKey = useMemo(
-    () =>
-      open
-        ? [
-            initialExpense?.id ?? "new",
-            initialCategory ?? "",
-            initialDescription ?? "",
-            initialAmount ?? "",
-            initialDate ?? "",
-            frequentCategories.map((c) => c.id).join(","),
-          ].join("|")
-        : "",
+  const openInitKey = manualExpenseOpenKey(
+    open,
     [
-      open,
-      initialExpense,
+      initialExpense?.id ?? "new",
       initialCategory,
       initialDescription,
       initialAmount,
       initialDate,
-      frequentCategories,
     ],
+    frequentCategories.map((c) => c.id).join(","),
   );
   const [prevOpenInitKey, setPrevOpenInitKey] = useState("");
   const [draftTags, setDraftTags] = useState<readonly string[]>([]);
@@ -421,6 +414,12 @@ export function ManualExpenseSheet({
       return;
     }
     if (openInitKey === prevOpenInitKey) return;
+    // Пізні часті категорії не скидають уже заповнену форму (і чернетку).
+    const filled = description.trim() !== "" || amount !== "";
+    if (filled && onlyFrequentCategoriesChanged(prevOpenInitKey, openInitKey)) {
+      void Promise.resolve().then(() => setPrevOpenInitKey(openInitKey));
+      return;
+    }
 
     void Promise.resolve().then(() => {
       setPrevOpenInitKey(openInitKey);
@@ -492,6 +491,8 @@ export function ManualExpenseSheet({
     initialAmount,
     initialDate,
     frequentCategories,
+    description,
+    amount,
     // Гвардія `openInitKey === prevOpenInitKey` вище робить цю залежність
     // безкоштовною: зміна набору власних категорій перезапустить ефект,
     // він побачить незмінений ключ і вийде, не чіпаючи чернетку форми.

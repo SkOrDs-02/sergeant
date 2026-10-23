@@ -212,6 +212,36 @@ describe("ManualExpenseSheet — interactive surfaces", () => {
     );
   });
 
+  it("late frequent categories do not reset an already filled form (sec-13)", async () => {
+    const { rerender } = render(
+      <ManualExpenseSheet open onClose={() => {}} onSave={() => {}} />,
+    );
+    await act(async () => {});
+    fireEvent.change(screen.getByPlaceholderText("Назва"), {
+      target: { value: "Кава з собою" },
+    });
+    fireEvent.change(screen.getByLabelText("Сума ₴"), {
+      target: { value: "85" },
+    });
+    rerender(
+      <ManualExpenseSheet
+        open
+        onClose={() => {}}
+        onSave={() => {}}
+        frequentCategories={[
+          {
+            id: "transport",
+            manualLabel: "transport",
+            count: 9,
+          } as unknown as FrequentCategory,
+        ]}
+      />,
+    );
+    await act(async () => {});
+    expect(screen.getByPlaceholderText("Назва")).toHaveValue("Кава з собою");
+    expect(screen.getByLabelText("Сума ₴")).toHaveValue("85");
+  });
+
   it("orders categories by frequency for frequent-category stats", () => {
     const frequentCategories: FrequentCategory[] = [
       {

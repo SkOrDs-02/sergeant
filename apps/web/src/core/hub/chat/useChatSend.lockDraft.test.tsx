@@ -95,6 +95,32 @@ describe("useChatSend: чернетка повідомлення під замк
     expect(draftKeys()).toHaveLength(0);
   });
 
+  it("чернетка має перевагу над initialMessage (?q=)", () => {
+    const first = mountChat();
+    act(() => first.result.current.setInput("моя чернетка"));
+    first.unmount();
+    commitStashedFormDrafts("u1");
+    const second = renderHook(
+      () =>
+        useChatSend({
+          messages: [],
+          setMessages: vi.fn(),
+          initialMessage: "з посилання",
+        }),
+      { wrapper: wrapper() },
+    );
+    expect(second.result.current.input).toBe("моя чернетка");
+  });
+
+  it("зіпсована чернетка (не рядок) не валить чат", () => {
+    window.sessionStorage.setItem(
+      "sergeant.formDraft.v1|u1|hub.chatInput",
+      JSON.stringify({ savedAt: Date.now(), data: 123 }),
+    );
+    const view = mountChat();
+    expect(view.result.current.input).toBe("");
+  });
+
   it("вихід з акаунта стирає чернетку", () => {
     const first = mountChat();
     act(() => first.result.current.setInput("приватне"));

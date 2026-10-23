@@ -845,7 +845,8 @@ export function useChatSend({
     if (autoSendInitial) {
       sendRef.current?.(initialMessage);
     } else {
-      setInput(initialMessage);
+      // Чернетка, відновлена після замка (sec-13), має перевагу над `?q=`.
+      setInput((cur) => (cur.trim() !== "" ? cur : initialMessage));
     }
   }, [initialMessage, autoSendInitial]);
 
