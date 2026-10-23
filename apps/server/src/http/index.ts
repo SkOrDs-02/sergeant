@@ -20,6 +20,8 @@ export {
   authMetricsMiddleware,
 } from "./authMiddleware.js";
 
+export { changeEmailReauth, isChangeEmailPath } from "./changeEmailReauth.js";
+
 export {
   authPasswordCheckRateLimit,
   passwordCheckRateLimit,

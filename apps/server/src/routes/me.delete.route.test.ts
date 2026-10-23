@@ -30,6 +30,7 @@ const {
   getSessionUserMock,
   verifyPasswordMock,
   requestDeletionMock,
+  apiGetSessionMock,
 } = vi.hoisted(() => {
   process.env["AI_MEMORY_ENABLED"] = "true";
   const queryMock = vi.fn();
@@ -45,7 +46,9 @@ const {
   const getSessionUserMock = vi.fn().mockResolvedValue(null);
   const verifyPasswordMock = vi.fn();
   const requestDeletionMock = vi.fn();
+  const apiGetSessionMock = vi.fn();
   return {
+    apiGetSessionMock,
     mockPool,
     queryMock,
     getSessionUserMock,
@@ -62,7 +65,11 @@ vi.mock("./../db.js", () => ({
 }));
 
 vi.mock("./../auth.js", () => ({
-  auth: { handler: async () => new Response(null, { status: 404 }) },
+  auth: {
+    handler: async () => new Response(null, { status: 404 }),
+    // `modules/me/reauth.ts`: createdAt сесії для OAuth-only (sec-10).
+    api: { getSession: apiGetSessionMock },
+  },
   getSessionUser: getSessionUserMock,
   // `requireFreshSession()` (export / DELETE me / bank link) резолвить через
   // fresh-варіант; у цих тестах він поводиться як кешований.
@@ -84,6 +91,12 @@ vi.mock("./../modules/me/dataRights.js", async (importOriginal) => ({
 }));
 
 import { createApp } from "./../app.js";
+import { authPasswordCheckFailuresTotal } from "./../obs/metrics.js";
+
+async function failures(route: string): Promise<number> {
+  const { values } = await authPasswordCheckFailuresTotal.get();
+  return values.find((v) => v.labels["route"] === route)?.value ?? 0;
+}
 
 beforeEach(() => {
   queryMock.mockReset();
@@ -92,11 +105,50 @@ beforeEach(() => {
   getSessionUserMock.mockResolvedValue({ id: "u1" });
   verifyPasswordMock.mockReset();
   verifyPasswordMock.mockResolvedValue({ ok: true });
+  apiGetSessionMock.mockReset();
+  apiGetSessionMock.mockResolvedValue(null);
   requestDeletionMock.mockReset();
   requestDeletionMock.mockResolvedValue({
     ok: true,
     deletedAt: "2026-09-23T10:00:00.000Z",
     scheduledPurgeAt: "2026-10-23T10:00:00.000Z",
+  });
+});
+
+describe("DELETE /api/me — OAuth-only акаунт (sec-10, рішення 2026-10-23)", () => {
+  it("пароля немає, сесія стара → 403 SESSION_NOT_FRESH, відлік не стартує", async () => {
+    verifyPasswordMock.mockResolvedValueOnce({
+      ok: true,
+      method: "no_password",
+    });
+    apiGetSessionMock.mockResolvedValueOnce({
+      session: { createdAt: new Date(Date.now() - 60 * 60 * 1000) },
+    });
+    const res = await request(createApp())
+      .delete("/api/me")
+      .set("X-Requested-With", "XMLHttpRequest")
+      .send({});
+
+    expect(res.status).toBe(403);
+    expect(res.body.code).toBe("SESSION_NOT_FRESH");
+    expect(requestDeletionMock).not.toHaveBeenCalled();
+  });
+
+  it("пароля немає, сесія ≤ 10 хв → 200, мітка поставлена", async () => {
+    verifyPasswordMock.mockResolvedValueOnce({
+      ok: true,
+      method: "no_password",
+    });
+    apiGetSessionMock.mockResolvedValueOnce({
+      session: { createdAt: new Date(Date.now() - 60 * 1000) },
+    });
+    const res = await request(createApp())
+      .delete("/api/me")
+      .set("X-Requested-With", "XMLHttpRequest")
+      .send({});
+
+    expect(res.status).toBe(200);
+    expect(requestDeletionMock).toHaveBeenCalledTimes(1);
   });
 });
 
@@ -114,6 +166,25 @@ describe("DELETE /api/me — гварди живого шляху видален
     expect(res.body.code).toBe("INVALID_PASSWORD");
     // Головне тут — саме це: мітка не поставлена.
     expect(requestDeletionMock).not.toHaveBeenCalled();
+  });
+
+  it("sec-10: невірний пароль рахується в auth_password_check_failures_total", async () => {
+    const before = await failures("account_delete");
+    verifyPasswordMock.mockResolvedValueOnce({ ok: false });
+    const app = createApp();
+
+    await request(app)
+      .delete("/api/me")
+      .set("X-Requested-With", "XMLHttpRequest")
+      .send({ password: "wrong" });
+    expect(await failures("account_delete")).toBe(before + 1);
+
+    // Вірний пароль лічильник не чіпає.
+    await request(app)
+      .delete("/api/me")
+      .set("X-Requested-With", "XMLHttpRequest")
+      .send({ password: "correct-horse" });
+    expect(await failures("account_delete")).toBe(before + 1);
   });
 
   it("вірний пароль → 200 з датами вікна і мітка поставлена один раз", async () => {

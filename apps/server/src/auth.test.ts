@@ -736,12 +736,13 @@ describe("auth config — bearer plugin інтегрований у Better Auth"
       }
     ).options;
     expect(options.user?.changeEmail?.enabled).toBe(true);
-    // Без цього прапорця непідтверджений юзер (переважна більшість бази до
-    // H6-sweep) не може змінити адресу взагалі: гілка `canSendConfirmation`
-    // вимагає `emailVerified === true`, і Better Auth падає у
-    // "Verification email isn't enabled".
+    // sec-06 (рішення власника 2026-10-23): непідтверджений юзер НЕ міняє
+    // адресу миттєво. Better Auth шле верифікацію на нову адресу (остання
+    // гілка `changeEmail`, працює, бо `sendVerificationEmail` налаштований
+    // нижче), і зміна стається лише після кліку. `true` тут повертав би
+    // захоплення акаунта вкраденою сесією без доступу до нової скриньки.
     expect(options.user?.changeEmail?.updateEmailWithoutVerification).toBe(
-      true,
+      false,
     );
     // Підтверджений юзер отримує лист на СТАРУ адресу — без цього колбека
     // Better Auth мовчки пропускає крок підтвердження власника.
