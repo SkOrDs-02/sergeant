@@ -7,7 +7,8 @@ export type ScenarioId =
   | "finyk-month"
   | "routine-streaks"
   | "fizruk-active-session"
-  | "nutrition-day";
+  | "nutrition-day"
+  | "landing-world";
 
 const SCENARIO_IDS: readonly ScenarioId[] = [
   "empty",
@@ -16,6 +17,7 @@ const SCENARIO_IDS: readonly ScenarioId[] = [
   "routine-streaks",
   "fizruk-active-session",
   "nutrition-day",
+  "landing-world",
 ];
 
 export interface ScenarioLocalPantryItem {
