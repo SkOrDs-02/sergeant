@@ -1356,7 +1356,7 @@ silpo.ts:165-197: `const pending = await consumeAuthorizationState(state); ... c
 
 ### `sec-16` [medium] Необмежене name роздуває cookie-кеш сесії до 28-33 КБ: усі запити отримують 431, акаунт блокується без самовідновлення
 
-- **Стан:** частково виправлено в #1366 (змерджено 2026-10-03) (name ≤ 100 символів і лише рядок у databaseHooks; лишилось: очищення наявних довгих імен у БД і виключення user-полів із cookieCache)
+- **Стан:** частково виправлено в #1366 (змерджено 2026-10-03) (name ≤ 100 символів і лише рядок у databaseHooks; лишилось: очищення наявних довгих імен у БД і виключення user-полів із cookieCache) Залишок щодо email закрито в цьому PR: Better Auth 1.6.23 не обмежує довжину email (`z.email()` без max на sign-up і change-email, `/update-user` email відхиляє), тож `guardUserEmail` у `databaseHooks.user.{create,update}.before` відхиляє email довший за 254 символи (400 `INVALID_EMAIL`).
 - **Перевірка:** підтверджено · **Зусилля:** S · **Швидкий виграш** · **Область:** server: auth/профіль
 - **Де:** apps/server/src/auth.ts:427-431,449-540; apps/server/src/auth/sanitizeUserImage.ts; node_modules/better-auth/dist/api/routes/update-user.mjs:12-73; apps/web/src/core/profile/PersonalInfoSection.tsx:27
 - **Першопричина:** Better Auth update-user і sign-up приймають name без maxLength (ще й з коерцією не-рядків у JSON), а databaseHooks чистить лише image (sanitizeUserImage). Увесь user потрапляє в session_data, тож довге ім'я дає Cookie-заголовок понад ліміт Node у 16 КБ.

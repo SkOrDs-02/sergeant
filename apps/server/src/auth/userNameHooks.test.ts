@@ -3,7 +3,7 @@ import { betterAuth } from "better-auth";
 import { bearer } from "better-auth/plugins";
 import { memoryAdapter } from "better-auth/adapters/memory";
 
-import { guardUserName } from "./sanitizeUserName.js";
+import { guardUserEmail, guardUserName } from "./sanitizeUserName.js";
 
 /**
  * Регресія `sec-16` проти СПРАВЖНЬОГО `betterAuth()` (memory-адаптер, без
@@ -40,12 +40,12 @@ function makeAuth(guarded: boolean) {
             user: {
               create: {
                 before: async (data, context) => ({
-                  data: guardUserName(data, context, "create"),
+                  data: guardUserName(guardUserEmail(data), context, "create"),
                 }),
               },
               update: {
                 before: async (data, context) => ({
-                  data: guardUserName(data, context, "update"),
+                  data: guardUserName(guardUserEmail(data), context, "update"),
                 }),
               },
             },
@@ -166,5 +166,29 @@ describe("sec-16: name у справжньому Better Auth", () => {
       body: { name: "Я".repeat(100) },
     });
     expect(res.status).toBe(200);
+  });
+
+  const longEmail = `${"a".repeat(250)}@example.com`;
+
+  it("контроль: Better Auth сам не обмежує довжину email на sign-up", async () => {
+    const a = makeAuth(false);
+    expect((await signUp(a, "U", longEmail)).status).toBe(200);
+  });
+
+  it("sign-up з email довшим за 254 символи: 400 INVALID_EMAIL, куки немає", async () => {
+    const a = makeAuth(true);
+    const res = await signUp(a, "U", longEmail);
+    expect(res.status).toBe(400);
+    expect(((await res.json()) as { code?: string }).code).toBe(
+      "INVALID_EMAIL",
+    );
+    expect(cookieHeader(readCookies(res))).toBe("");
+  });
+
+  it("email рівно 254 символи проходить", async () => {
+    const a = makeAuth(true);
+    const email = `${"a".repeat(254 - "@example.com".length)}@example.com`;
+    expect(email.length).toBe(254);
+    expect((await signUp(a, "U", email)).status).toBe(200);
   });
 });
