@@ -316,6 +316,7 @@ async function createDefaultReaderRuntime(): Promise<SyncEngineReaderRuntime> {
       reader.stop();
     },
     pullOnce: () => reader.pullOnce(),
+    pause: () => reader.pause(),
   };
 }
 

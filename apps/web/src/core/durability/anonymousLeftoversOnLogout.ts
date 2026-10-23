@@ -25,7 +25,10 @@ import type { SqliteMigrationClient } from "@sergeant/db-schema/migrate/sqlite";
 import { logger } from "@shared/lib";
 
 import { LOCAL_ANON_USER_ID } from "../auth/localIdentity.js";
-import { BENIGN_REJECT_REASONS } from "../syncEngine/singleton.js";
+import {
+  BENIGN_REJECT_REASONS,
+  getSyncEngineReader,
+} from "../syncEngine/singleton.js";
 import { isSyncableUserId } from "../syncEngine/syncableUserId.js";
 
 /** Що лишилось від незавершеного переносу акаунта, який виходить. */
@@ -166,15 +169,17 @@ async function countQueuedCopies(
  *
  * AI-DANGER: на час перевірки активна партиція SQLite перемикається на
  * анонімну й назад. Runtime синку резолвить клієнта на кожному тіку, тож
- * pull, що вклинився в це вікно, писав би рядки A в анонімний файл. Вікно
- * коротке (кілька SELECT), і відкривається воно лише в сесії, де перенос для
- * A не завершився (див. {@link trackAnonymousHandoff}); той самий прийом
- * використовує cleanup самого переносу.
+ * pull, що вклинився в це вікно, писав би рядки A в анонімний файл. Тому
+ * перед перемиканням reader ставиться на паузу ({@link pauseSyncReader}):
+ * pull, що вже йде, дописує у партицію A, а нові не стартують, доки
+ * партицію не повернуто. Відкривається вікно лише в сесії, де перенос для A
+ * не завершився (див. {@link trackAnonymousHandoff}).
  */
 export async function inspectAnonymousLeftoversOnLogout(): Promise<AnonymousLeftovers | null> {
   let sqlite: typeof import("../db/sqlite") | null = null;
   let userId: string | null = null;
   let switched = false;
+  let resume: (() => void) | null = null;
   try {
     sqlite = await import("../db/sqlite");
     userId = sqlite.readActiveSqliteUserId();
@@ -184,6 +189,7 @@ export async function inspectAnonymousLeftoversOnLogout(): Promise<AnonymousLeft
     const ownClient = (await sqlite.getSqliteDb()).migrationClient();
     const queuedCopies = await countQueuedCopies(ownClient, userId);
 
+    resume = await pauseSyncReader();
     switched = true;
     await sqlite.switchSqliteUser(null);
     const anonClient = (await sqlite.getSqliteDb()).migrationClient();
@@ -198,7 +204,18 @@ export async function inspectAnonymousLeftoversOnLogout(): Promise<AnonymousLeft
       // сесія продовжується саме в ній. Збій тут уже нічого не змінить.
       await sqlite.switchSqliteUser(userId).catch(() => undefined);
     }
+    // Лише ПІСЛЯ повернення партиції: pull, що чекав, піде вже в партицію A.
+    resume?.();
   }
+}
+
+/**
+ * Пауза reader-а синку на час перемикання партиції. Reader-а може не бути
+ * (вкладка-послідовник, синк ще не піднявся) — тоді й писати нікому.
+ */
+async function pauseSyncReader(): Promise<() => void> {
+  const reader = getSyncEngineReader();
+  return reader ? reader.pause() : () => {};
 }
 
 /**

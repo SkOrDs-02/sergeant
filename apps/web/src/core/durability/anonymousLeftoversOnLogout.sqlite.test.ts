@@ -30,11 +30,13 @@ const boundary = vi.hoisted(() => ({
   switches: [] as (string | null)[],
   client: null as (() => SqliteMigrationClient) | null,
   reader: { pullOnce: vi.fn<() => Promise<void>>() },
+  events: [] as string[],
   writer: { flushNow: vi.fn<() => Promise<void>>() },
 }));
 vi.mock("../db/sqlite.js", () => ({
   switchSqliteUser: async (user: string | null) => {
     boundary.switches.push(user);
+    boundary.events.push(`switch:${user ?? "anon"}`);
     boundary.current = user;
   },
   readActiveSqliteUserId: () => boundary.current,
@@ -45,6 +47,12 @@ vi.mock("../db/sqlite.js", () => ({
 vi.mock("../syncEngine/singleton.js", () => ({
   BENIGN_REJECT_REASONS: new Set(["lww_conflict"]),
   bootSyncEngineReader: async () => boundary.reader,
+  getSyncEngineReader: () => ({
+    pause: async () => {
+      boundary.events.push("pause");
+      return () => boundary.events.push("resume");
+    },
+  }),
   bootSyncEngineWriter: async () => boundary.writer,
 }));
 
@@ -147,10 +155,19 @@ describe("анонімні рядки незавершеного перенос�
     await failMigrationFor(USER, "pull-before");
     expect(rows("SELECT * FROM sync_op_outbox", USER)).toEqual([]);
 
+    boundary.events.length = 0;
     const leftovers = await inspectAnonymousLeftoversOnLogout();
     expect(leftovers).toEqual({ userId: USER, rows: 2, queuedCopies: 0 });
     // Діалог «Залишитись» продовжує сесію в партиції A.
     expect(boundary.current).toBe(USER);
+    // Reader синку стоїть на паузі все вікно, поки активна анонімна партиція:
+    // pull у цьому вікні записав би рядки A в анонімний файл.
+    expect(boundary.events).toEqual([
+      "pause",
+      "switch:anon",
+      `switch:${USER}`,
+      "resume",
+    ]);
     expect(countLogoutLoss(0, leftovers)).toBe(2);
 
     // Вихід: партицію A стерто, активна анонімна.
