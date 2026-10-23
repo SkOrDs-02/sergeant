@@ -11,7 +11,7 @@ import { TODAY, checkToday, daysBefore, habit, state } from "./momentsFixtures";
 describe("момент серії гнучкої звички", () => {
   const flex = habit("f", {
     recurrence: "flexible",
-    weeklyTargetHistory: [{ from: "2026-01-01", target: 1 }],
+    weeklyTargetHistory: [{ from: "2020-01-01", target: 1 }],
   });
   // Понеділки: 17.08 (поточний тиждень) і шість попередніх тижнів.
   const mondays = (n: number) =>
@@ -28,17 +28,27 @@ describe("момент серії гнучкої звички", () => {
     });
   }
 
-  it("сьомий тиждень поспіль дає ступінь 7 у тижнях", () => {
-    expect(momentFor(mondays(6))).toEqual({
+  it.each([4, 12, 26, 52])("%i-й тиждень поспіль дає ступінь у тижнях", (n) => {
+    expect(momentFor(mondays(n - 1))).toEqual({
       kind: "streak",
       target: "f",
-      value: 7,
+      value: n,
       unit: "weeks",
     });
   });
 
-  it("сьомий день без тижневого поступу ступеня не дає", () => {
+  it("сьомий тиждень поспіль ступеня не дає (денна драбина 7 не діє)", () => {
+    expect(momentFor(mondays(6))).not.toMatchObject({ kind: "streak" });
+  });
+
+  it("повтор відмітки в тому ж тижні без тижневого поступу ступеня не дає", () => {
     // Дві відмітки в одному тижні: тижнів лишилось 6, а не 7.
     expect(momentFor(mondays(5))).not.toMatchObject({ kind: "streak" });
+  });
+
+  it("четвертий тиждень уже закрито раніше цього тижня: ступінь не повторюється", () => {
+    expect(momentFor([...mondays(3), daysBefore(1)])).not.toMatchObject({
+      kind: "streak",
+    });
   });
 });
