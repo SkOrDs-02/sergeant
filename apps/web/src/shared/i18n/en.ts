@@ -49,6 +49,10 @@ export const messagesEn: Partial<{
       "Your data on this device is safe. The app opens as soon as the server responds.",
     serverUnavailableRetry: "Retry now",
 
+    sessionExpiredTitle: "Session ended",
+    sessionExpiredBody:
+      "Sign in again. Everything you saved on this device is kept and syncs after you sign in.",
+
     // Round 16 — soft-auth prompt
     createAccount: "Create account",
   },

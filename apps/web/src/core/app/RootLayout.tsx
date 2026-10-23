@@ -47,6 +47,8 @@ import { useHubNavigation } from "../hooks/useHubNavigation";
 import { useHubUIState } from "../hooks/useHubUIState";
 import { usePwaActions } from "../hooks/usePwaActions";
 import { useAppEffects } from "./useAppEffects";
+import { RedirectTo } from "./RedirectTo";
+import { sessionExpiredRedirectTarget } from "./sessionExpiredRedirect";
 import { DbBusyScreen, useDbIsBusyElsewhere } from "./DbBusyScreen";
 import { usePwaInstall } from "./usePwaInstall";
 import { useSWUpdate } from "./useSWUpdate";
@@ -193,9 +195,10 @@ function AppShell({ children }: { children: React.ReactNode }) {
   // локально, ані синхронізуватись, бо сервер для нього однаково закритий
   // гейтом `requireSession` (403 `account_pending_deletion`).
   const pendingDeletion = usePendingDeletion();
-  const { logout, serverUnavailable, refresh, user, isLoading } = useAuth();
+  const { logout, serverUnavailable, refresh, user, isLoading, status } =
+    useAuth();
   useFormDraftLifecycle(user?.id ?? null, privateHidden, isLoading);
-  const { pathname } = useLocation();
+  const { pathname, search } = useLocation();
   // Write-through reconcile for `hub_biometrics_v1` ↔ `/api/me/profile`.
   // Self-gating: власний `useQuery` стоїть `enabled: false`, поки сесії
   // немає, тож хук монтується беззастережно — демо- й анонімним сесіям
@@ -266,6 +269,11 @@ function AppShell({ children }: { children: React.ReactNode }) {
       </Suspense>
     );
   }
+
+  // sec-18: сесія завершилась (401 + reload), а на пристрої був акаунт: веди
+  // на повторний вхід, а не на анонімний хаб. Дані пристрою не чіпаємо.
+  const reloginTarget = sessionExpiredRedirectTarget(status, pathname, search);
+  if (reloginTarget) return <RedirectTo to={reloginTarget} />;
 
   return (
     <>

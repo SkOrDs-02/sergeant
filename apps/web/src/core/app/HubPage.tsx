@@ -9,6 +9,7 @@ import { HubHomeView } from "./HubHomeView";
 import { PageLoader } from "./PageLoader";
 import { RedirectTo } from "./RedirectTo";
 import { SIGN_IN_PATH, WELCOME_PATH } from "./appPaths";
+import { clearSessionExpired } from "../auth/sessionExpiredMarker";
 
 /**
  * Hub page — catch-all child route for hub home + standalone routes.
@@ -44,6 +45,9 @@ export function HubPage() {
 
   // «Поки що пропустити» на /sign-in (same logic as legacy AppInner):
   const leaveAuth = useCallback(() => {
+    // sec-18: людина свідомо обирає анонімний режим – повторний вхід більше
+    // не нав'язуємо (дані пристрою лишаються в її партиції).
+    clearSessionExpired();
     if (shouldShowOnboarding()) {
       navigate(WELCOME_PATH, { replace: true });
       return;
@@ -87,6 +91,7 @@ export function HubPage() {
   // 2. Standalone routes (sign-in, welcome, pricing, legal, etc.)
   const standalone = renderStandaloneRoute({
     pathname: browserLocation.pathname,
+    search: browserLocation.search,
     user: shell.user,
     authLoading: shell.authLoading,
     storageReady,
