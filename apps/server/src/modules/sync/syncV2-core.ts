@@ -58,12 +58,7 @@ export const SYNC_OP_LOG_COMMITTED_WATERMARK_SQL =
  */
 export const INCREMENT_DELTA_MAX_ABS = 1000;
 
-/**
- * Captured truncated header. `X-Origin-Device-Id` — опціональний
- * client-supplied ідентифікатор пристрою; `pull` виключає ops з тим
- * самим device-id, щоб клієнт не реплеїв власні writes. Обмежуємо
- * довжину до 64 char, щоб уникнути smuggle-атак на JSON-fields.
- */
+/** data-48: версія протоколу з query `sync_protocol`; `null`, коли її немає. */
 export function readClientSyncProtocolVersion(req: Request): number | null {
   return parseSyncProtocolVersion(req.query?.[SYNC_PROTOCOL_QUERY_PARAM]);
 }
@@ -106,6 +101,12 @@ export function settleUnknownTableOp(
   return verdict.status === "rejected";
 }
 
+/**
+ * Captured truncated header. `X-Origin-Device-Id` — опціональний
+ * client-supplied ідентифікатор пристрою; `pull` виключає ops з тим
+ * самим device-id, щоб клієнт не реплеїв власні writes. Обмежуємо
+ * довжину до 64 char, щоб уникнути smuggle-атак на JSON-fields.
+ */
 export function readOriginDeviceId(req: Request): string | null {
   const raw = req.headers["x-origin-device-id"];
   if (typeof raw !== "string") return null;
