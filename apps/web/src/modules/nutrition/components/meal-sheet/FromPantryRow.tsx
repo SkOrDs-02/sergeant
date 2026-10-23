@@ -110,10 +110,10 @@ export function FromPantryRow({
                 }}
                 aria-pressed={isActive}
                 className={cn(
-                  "min-h-9 px-2.5 py-1.5 rounded-lg border text-style-label font-semibold focus-ring pointer-coarse:min-h-[44px]",
+                  "min-h-9 px-2.5 py-1.5 rounded-lg text-style-label font-semibold focus-ring pointer-coarse:min-h-[44px]",
                   isActive
-                    ? "border-text bg-text text-bg"
-                    : "border-control bg-panel text-text hover:bg-panelHi",
+                    ? "bg-text text-bg"
+                    : "bg-panel text-text hover:bg-panelHi",
                 )}
               >
                 {item.name}

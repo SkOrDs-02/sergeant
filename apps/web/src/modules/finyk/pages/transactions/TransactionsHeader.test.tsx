@@ -51,6 +51,19 @@ describe("TransactionsHeader", () => {
     expect(goMonth).toHaveBeenCalledWith(1);
   });
 
+  it("тап по назві місяця відкриває вибір місяця (спільний PeriodNav)", () => {
+    const { goMonth } = renderHeader({
+      monthLabel: "Квітень 2026 р.",
+      monthsBack: 2,
+      recentMonths: ["Червень 2026 р.", "Травень 2026 р.", "Квітень 2026 р."],
+    });
+    fireEvent.click(
+      screen.getByRole("button", { name: "Обрати період: Квітень 2026 р." }),
+    );
+    fireEvent.click(screen.getByRole("radio", { name: "Червень 2026 р." }));
+    expect(goMonth).toHaveBeenCalledWith(2);
+  });
+
   it("disables the next-month button on the current month", () => {
     renderHeader({ isCurrentMonth: true });
     expect(

@@ -23,6 +23,7 @@ import { ChoiceCheckbox } from "@shared/components/ui/Choice";
 import { ConfirmDialog } from "@shared/components/ui/ConfirmDialog";
 import { Icon } from "@shared/components/ui/Icon";
 import { Money } from "@shared/components/ui/Money";
+import { Select } from "@shared/components/ui/Select";
 import { messages } from "@shared/i18n/uk";
 import { cn } from "@shared/lib/ui/cn";
 import type { SilpoCartDto, SilpoCartMatchDto } from "@shared/api";
@@ -143,11 +144,10 @@ function MatchPicker({
   return (
     <label className="text-style-caption text-subtle flex items-center gap-1.5">
       <span className="sr-only">{COPY.altPickerLabel}</span>
-      <select
+      <Select
         value={selectedLagerId ?? ""}
         disabled={disabled}
         onChange={(e) => onSelect(e.target.value)}
-        className="input-focus-nutrition min-h-[44px] rounded-lg border border-control bg-panelHi px-2 text-style-caption text-text disabled:opacity-50"
       >
         {matches.map((m) => (
           <option key={m.lagerId} value={m.lagerId}>
@@ -157,7 +157,7 @@ function MatchPicker({
             })}
           </option>
         ))}
-      </select>
+      </Select>
     </label>
   );
 }

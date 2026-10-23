@@ -16,6 +16,7 @@
  * позбулись.
  */
 import { FIELD_LABEL } from "@shared/components/ui/Input";
+import { Select } from "@shared/components/ui/Select";
 import type { Pantry } from "@sergeant/nutrition-domain";
 import { cn } from "@shared/lib/ui/cn";
 import type { useNutritionPantries } from "../hooks/useNutritionPantries";
@@ -45,26 +46,25 @@ export function NutritionPantrySelector({
 
   const controls = (
     <>
-      <select
-        value={placeFilter ?? ALL}
-        onChange={(e) => setPlaceFilter(e.target.value || null)}
-        disabled={busy}
-        aria-label="Місце зберігання"
-        className={cn(
-          "input-focus-nutrition min-h-[44px] min-w-0 rounded-lg border border-control bg-panelHi px-3 text-style-body text-text truncate",
-          compact ? "flex-1" : "max-w-[42%]",
-        )}
-      >
-        {/* Без чисел у підписах. «Усі місця (6)» читалось як «шість
-          місць», хоча шість: це продукти (звіт власника 2026-09-02).
-          Скільки позицій показано, каже заголовок списку. */}
-        <option value={ALL}>Усі місця</option>
-        {pantries.map((p) => (
-          <option key={p.id} value={p.id}>
-            {p.name || "Комора"}
-          </option>
-        ))}
-      </select>
+      <div className={cn("min-w-0", compact ? "flex-1" : "max-w-[42%]")}>
+        <Select
+          value={placeFilter ?? ALL}
+          onChange={(e) => setPlaceFilter(e.target.value || null)}
+          disabled={busy}
+          aria-label="Місце зберігання"
+          className="truncate"
+        >
+          {/* Без чисел у підписах. «Усі місця (6)» читалось як «шість
+            місць», хоча шість: це продукти (звіт власника 2026-09-02).
+            Скільки позицій показано, каже заголовок списку. */}
+          <option value={ALL}>Усі місця</option>
+          {pantries.map((p) => (
+            <option key={p.id} value={p.id}>
+              {p.name || "Комора"}
+            </option>
+          ))}
+        </Select>
+      </div>
       <button
         type="button"
         onClick={() => pantry.setPantryManagerOpen(true)}

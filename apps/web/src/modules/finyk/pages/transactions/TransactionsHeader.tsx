@@ -1,5 +1,10 @@
+import { useState } from "react";
 import { Button } from "@shared/components/ui/Button";
-import { Icon } from "@shared/components/ui/Icon";
+import { messages } from "@shared/i18n";
+import {
+  MonthPickSheet,
+  PeriodNav,
+} from "../../components/analytics/PeriodNav";
 
 export interface TransactionsHeaderProps {
   monthLabel: string;
@@ -23,7 +28,13 @@ export interface TransactionsHeaderProps {
    * шапкою виглядає як поламаний експорт, а не як порожній місяць.
    */
   exportCount?: number;
+  /** Підписи місяців від поточного назад для аркуша вибору. */
+  recentMonths?: readonly string[];
+  /** Скільки місяців тому обраний місяць. */
+  monthsBack?: number;
 }
+
+const copy = messages.finyk.analyticsPage;
 
 /**
  * Top header for the Transactions page: month switcher on the left,
@@ -48,29 +59,35 @@ export function TransactionsHeader({
   selectedCount = 0,
   onExportCsv,
   exportCount = 0,
+  recentMonths = [monthLabel],
+  monthsBack = 0,
 }: TransactionsHeaderProps) {
+  const [picking, setPicking] = useState(false);
   return (
     // На 360 px навігація місяцем і три текст-кнопки («N прих.», «CSV»,
     // «Вибрати») у ряд не вміщаються, тож дії переносяться під місяць.
     <div className="flex flex-wrap items-center justify-between gap-x-2 mb-3">
-      <div className="flex items-center gap-1">
-        <button
-          onClick={() => goMonth(-1)}
-          aria-label="Попередній місяць"
-          className="w-8 h-8 min-h-[44px] min-w-[44px] flex items-center justify-center rounded-lg text-subtle hover:text-text hover:bg-line/40 transition-colors"
-        >
-          <Icon name="chevron-left" size="sm" />
-        </button>
-        <span className="text-style-label text-text px-1">{monthLabel}</span>
-        <button
-          onClick={() => goMonth(1)}
-          disabled={isCurrentMonth}
-          aria-label="Наступний місяць"
-          className="w-8 h-8 min-h-[44px] min-w-[44px] flex items-center justify-center rounded-lg text-subtle hover:text-text hover:bg-line/40 transition-colors disabled:opacity-30"
-        >
-          <Icon name="chevron-right" size="sm" />
-        </button>
-      </div>
+      <PeriodNav
+        label={monthLabel}
+        prevAria={copy.prev.month}
+        nextAria={copy.next.month}
+        pickAria={copy.choosePeriod}
+        onPrev={() => goMonth(-1)}
+        onNext={() => goMonth(1)}
+        onPick={() => setPicking(true)}
+        nextDisabled={isCurrentMonth}
+      />
+      {picking && (
+        <MonthPickSheet
+          months={recentMonths}
+          selectedBack={monthsBack}
+          onClose={() => setPicking(false)}
+          onPick={(back) => {
+            setPicking(false);
+            if (back !== monthsBack) goMonth(monthsBack - back);
+          }}
+        />
+      )}
       {/* Дії над видимим списком тихими текст-кнопками (redesign v3.1,
           Б5): іконки в боксах були єдиними такими в контенті. */}
       <div className="flex items-center gap-1">

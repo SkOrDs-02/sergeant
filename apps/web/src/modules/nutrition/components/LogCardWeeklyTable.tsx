@@ -50,7 +50,7 @@ export function LogCardWeeklyTable({
         <div id={WEEK_TABLE_ID} className="overflow-x-auto pb-2">
           <table className="w-full text-style-label text-left tabular-nums">
             <thead>
-              <tr className="text-style-overline text-subtle">
+              <tr className="text-style-caption font-semibold text-subtle">
                 <th className="py-1 pr-2">Дата</th>
                 <th className="py-1 pr-2">Ккал</th>
                 <th className="py-1 pr-2">Б</th>
