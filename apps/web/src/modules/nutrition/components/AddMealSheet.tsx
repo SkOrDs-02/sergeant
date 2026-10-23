@@ -310,8 +310,9 @@ export function AddMealSheet({
 
   useMealLockDraft(
     open && !initialMeal?.id,
-    { form, pickedFood, pickedGrams, step },
+    { form, pickedFood, pickedGrams, step, fromPantryItem, appliedPhoto },
     { setForm, setPickedFood, setPickedGrams, setStep, setManualMacros },
+    { setFromPantryItem, setAppliedPhoto },
   );
 
   // Продукт для аркуша редагування — чому без нього порцію змінити було

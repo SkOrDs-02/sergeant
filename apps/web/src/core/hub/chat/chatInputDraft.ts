@@ -8,8 +8,10 @@ import { FORM_DRAFT_IDS, peekFormDraft } from "@shared/lib/storage/formDrafts";
  * стирає її після відновлення й зберігає знову, коли текст недописаний при
  * замиканні.
  */
-export const initialChatInput = (): string =>
-  peekFormDraft<string>(FORM_DRAFT_IDS.hubChatInput) ?? "";
+export const initialChatInput = (): string => {
+  const draft = peekFormDraft<unknown>(FORM_DRAFT_IDS.hubChatInput);
+  return typeof draft === "string" ? draft : "";
+};
 
 export function useChatInputDraft(input: string): void {
   const { take } = useLockDraft<string>(
