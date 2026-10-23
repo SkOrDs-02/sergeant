@@ -509,14 +509,21 @@ export async function runSyncEnginePushOnce(
         rejected += 1;
       } else if (result?.status === "retry") {
         // data-18: транзієнтна помилка БД на сервері, оп не в журналі.
+        // data-48: `unknown_table` - сервер ще не знає таблиці (фронт
+        // викотився раніше за бекенд). Це не збій опа: спроби не палимо
+        // (інакше за ~10 хв рядок піде в dead_letter), чекаємо 5 хв.
+        const lastError = `server_retry:${result.reason ?? "unspecified"}`;
         await deps.markRetry(
           row.id,
-          callPlanRetry(
-            deps,
-            row.attempts,
-            now,
-            `server_retry:${result.reason ?? "unspecified"}`,
-          ),
+          result.reason === "unknown_table"
+            ? planThrottledRetry(
+                deps,
+                row.attempts,
+                now,
+                lastError,
+                MAX_THROTTLE_DELAY_MS,
+              )
+            : callPlanRetry(deps, row.attempts, now, lastError),
         );
         retried += 1;
       } else {

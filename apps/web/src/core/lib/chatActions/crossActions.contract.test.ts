@@ -79,42 +79,32 @@ describe("weekly_summary", () => {
 // set_goal
 // ---------------------------------------------------------------------------
 describe("set_goal", () => {
-  it("happy: creates a goal with weight target", () => {
+  it("rel-16: ціль ваги без ккал — відмова, не «створено»", () => {
     const out = call({
       name: "set_goal",
       input: { description: "Скинути вагу", target_weight_kg: 80 },
     });
     expect(typeof out).toBe("string");
-    expect(out).toContain("80");
-    expect(out).toContain("Скинути вагу");
+    expect(out).toMatch(/^Не вдалося/);
+    expect(localStorage.getItem("hub_goals_v1")).toBeNull();
   });
 
-  it("happy: creates a goal with daily kcal", () => {
+  it("daily kcal без гідратованої Їжі — відмова, а не фантомний успіх", () => {
     const out = call({
       name: "set_goal",
       input: { description: "Калорійний план", daily_kcal: 2000 },
     });
     expect(typeof out).toBe("string");
-    expect(out).toContain("2 000");
-    // The kcal target now persists through the canonical nutrition store
-    // (persistNutritionPrefs → SQLite), not the tombstoned `nutrition_prefs_v1`
-    // LS key — assert the dead key is no longer written.
+    expect(out).toMatch(/^Не вдалося/);
+    // Ціль ккал іде через канонічне сховище Харчування, а не мертві LS-ключі.
     expect(localStorage.getItem("nutrition_prefs_v1")).toBeNull();
+    expect(localStorage.getItem("hub_goals_v1")).toBeNull();
   });
 
-  it("error: missing description returns error", () => {
+  it("error: порожній input — відмова", () => {
     const out = call({ name: "set_goal", input: {} });
     expect(typeof out).toBe("string");
-    expect(out).toContain("Потрібен");
-  });
-
-  it("shape: result is a non-empty string", () => {
-    const out = call({
-      name: "set_goal",
-      input: { workouts_per_week: 4, target_date: "2026-06-01" },
-    });
-    expect(typeof out).toBe("string");
-    expect(out.length).toBeGreaterThan(0);
+    expect(out).toMatch(/^Не вдалося/);
   });
 });
 

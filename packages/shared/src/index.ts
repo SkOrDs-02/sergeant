@@ -85,6 +85,7 @@ export * from "./sync/modules";
 // dead-letter buckets. Called once at boot by the web/mobile sync-engine
 // singletons; pairs with `purgeStaleTerminalOutbox` in @sergeant/db-schema.
 export * from "./sync/outboxRetention";
+export * from "./sync/protocolVersion";
 
 // Onboarding "vibe picks" state + FTUX time-to-value helpers.
 export * from "./lib/vibePicks";
