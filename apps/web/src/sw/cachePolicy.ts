@@ -64,17 +64,6 @@ export function isPrivateApiPath(pathname: string): boolean {
 }
 
 /**
- * priv-08: відповідь з `Cache-Control: no-store` не кладемо в runtime-кеш
- * (директива, регістронезалежно, серед інших через кому).
- */
-export function isNoStoreResponse(cacheControl: string | null): boolean {
-  if (!cacheControl) return false;
-  return cacheControl
-    .split(",")
-    .some((d) => d.trim().toLowerCase() === "no-store");
-}
-
-/**
  * Reusable predicate for the `registerRoute` `match` callback. Returns
  * `true` exactly when a request should be served through the
  * NetworkFirst runtime cache:

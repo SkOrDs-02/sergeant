@@ -23,7 +23,6 @@ import { CacheableResponsePlugin } from "workbox-cacheable-response";
 import { CACHE_NAMES } from "./version";
 import {
   canUseCachePartition,
-  isNoStoreResponse,
   selectCachesToClear,
   shouldCacheExerciseImage,
   shouldUseRuntimeCache,
@@ -77,19 +76,6 @@ const userPartitionPlugin = {
       return request;
     }
   },
-};
-
-/**
- * priv-08: відповіді з `Cache-Control: no-store` у runtime-кеш не потрапляють
- * (`CacheableResponsePlugin` перевіряє лише статус).
- */
-const respectNoStorePlugin = {
-  cacheWillUpdate: async ({
-    response,
-  }: {
-    response: Response;
-  }): Promise<Response | null> =>
-    isNoStoreResponse(response.headers.get("Cache-Control")) ? null : response,
 };
 
 /**
@@ -171,7 +157,6 @@ export function setupCacheRoutes(): void {
       networkTimeoutSeconds: 5,
       plugins: [
         new CacheableResponsePlugin({ statuses: [200] }),
-        respectNoStorePlugin,
         apiPartitionGuardPlugin,
         new ExpirationPlugin({
           maxEntries: 60,
