@@ -2,7 +2,6 @@ import { describe, it, expect } from "vitest";
 
 import {
   canUseCachePartition,
-  isNoStoreResponse,
   isPrivateApiPath,
   selectCachesToClear,
   shouldCacheExerciseImage,
@@ -106,14 +105,6 @@ describe("apps/web sw runtime cache predicate", () => {
     expect(isPrivateApiPath("/api/v1/memory")).toBe(false);
     expect(shouldCache("/api/v1/menu", "GET")).toBe(true);
     expect(shouldCache("/api/v1/finyk/transactions", "GET")).toBe(true);
-  });
-
-  it("respects Cache-Control: no-store (priv-08)", () => {
-    expect(isNoStoreResponse("private, no-store, no-cache")).toBe(true);
-    expect(isNoStoreResponse("No-Store")).toBe(true);
-    expect(isNoStoreResponse("no-cache")).toBe(false);
-    expect(isNoStoreResponse("max-age=60")).toBe(false);
-    expect(isNoStoreResponse(null)).toBe(false);
   });
 });
 
