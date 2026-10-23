@@ -754,6 +754,31 @@ describe("habit_stats", () => {
     });
     expect(out).toContain(`Поточна серія: ${expectedStreak} днів`);
   });
+
+  // logic-22: гнучка звичка («1 раз на тиждень») міряється тижнями. Поденний
+  // алгоритм віддавав «Поточна серія: 0 днів», бо кожен день без відмітки
+  // вважав пропуском.
+  it("logic-22: гнучка звичка — серія в тижнях, не в днях", () => {
+    seedHabit("h1", "Басейн", {
+      recurrence: "flexible",
+      weeklyTargetHistory: [{ from: "2026-01-01", target: 1 }],
+    });
+    const seeded = loadRoutineState();
+    saveRoutineState({
+      ...seeded,
+      completions: {
+        ...seeded.completions,
+        h1: ["2026-03-30", "2026-04-06", "2026-04-13", "2026-04-20"],
+      },
+    });
+    const out = call({
+      name: "habit_stats",
+      input: { habit_id: "h1", period_days: 30 },
+    });
+    expect(out).toContain("Поточна серія: 4 тижнів поспіль");
+    expect(out).toContain("Макс. серія: 4 тижнів поспіль");
+    expect(out).not.toContain("Останні пропуски");
+  });
 });
 
 // ---------------------------------------------------------------------------

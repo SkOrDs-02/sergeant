@@ -19,7 +19,10 @@ import {
   flexibleStreakBreakdown,
   habitCompletionRate,
   habitScheduledOnDate,
+  isFlexibleHabit,
+  maxStreakAllTime,
   resolveHabitGlyph,
+  streakForHabit,
   upgradeHabitGlyph,
 } from "@sergeant/routine-domain";
 import type {
@@ -580,17 +583,23 @@ export function handleRoutineAction(
         todayKey,
       );
       const pct = scheduled > 0 ? Math.round((completed / scheduled) * 100) : 0;
-      const currentStreak = flexibleStreakBreakdown(
-        habit,
-        completionsForHabit,
-        todayKey,
-        { skipsForHabit },
-      ).days;
-      const maxStreak = flexibleMaxStreakAllTime(habit, completionsForHabit, {
-        skipsForHabit,
-      });
+      // Гнучка звичка («N разів на тиждень») міряється тижнями (доменне
+      // правило картки звички), решта звичок: поденний гнучкий стрік.
+      const isFlex = isFlexibleHabit(habit);
+      const currentStreak = isFlex
+        ? streakForHabit(habit, completionsForHabit, todayKey)
+        : flexibleStreakBreakdown(habit, completionsForHabit, todayKey, {
+            skipsForHabit,
+          }).days;
+      const maxStreak = isFlex
+        ? maxStreakAllTime(habit, completionsForHabit)
+        : flexibleMaxStreakAllTime(habit, completionsForHabit, {
+            skipsForHabit,
+          });
+      const streakUnit = isFlex ? "тижнів поспіль" : "днів";
       const missedDates: string[] = [];
-      for (let i = 0; i < days && missedDates.length < 5; i++) {
+      // Для гнучкої звички «пропущеного дня» немає: вона не називає днів.
+      for (let i = 0; !isFlex && i < days && missedDates.length < 5; i++) {
         const dk = getKyivDayKey(now - i * DAY_MS);
         if (!habitScheduledOnDate(habit, dk)) continue;
         const done =
@@ -604,8 +613,8 @@ export function handleRoutineAction(
         // тексті чату виглядало б як помилка рендера.
         `Статистика "${habit.name || id}" за ${days} днів:`,
         `Виконано: ${completed}/${scheduled} (${formatNumberUk(pct)}%)`,
-        `Поточна серія: ${currentStreak} днів`,
-        `Макс. серія: ${maxStreak} днів`,
+        `Поточна серія: ${currentStreak} ${streakUnit}`,
+        `Макс. серія: ${maxStreak} ${streakUnit}`,
       ];
       if (missedDates.length > 0) {
         parts.push(`Останні пропуски: ${missedDates.join(", ")}`);
