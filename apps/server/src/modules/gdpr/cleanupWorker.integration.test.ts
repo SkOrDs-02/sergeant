@@ -66,15 +66,36 @@ async function stored(id: string) {
 }
 
 describe("GDPR cleanup — real claim, retry and redaction SQL", () => {
-  it("keeps a pending record's email mandatory after allowing completed-row redaction", async () => {
-    await expect(
-      pool.query(
-        "INSERT INTO gdpr_cleanup_queue (user_id, email, service) VALUES ('missing-email', NULL, 'resend')",
-      ),
-    ).rejects.toMatchObject({
-      code: "23514",
-      constraint: "gdpr_cleanup_queue_pending_email",
+  it("allows a pending record without email (migration 164 dropped the pending_email CHECK)", async () => {
+    const inserted = await pool.query<{ id: string }>(
+      "INSERT INTO gdpr_cleanup_queue (user_id, email, service) VALUES ('no-email', NULL, 'resend') RETURNING id",
+    );
+    expect((await stored(inserted.rows[0]!.id)).email).toBeNull();
+  });
+
+  it("priv-13: стирає email у рядках старших за 30 днів, resend без email закриває, решту лишає pending, свіжі не чіпає", async () => {
+    vi.unstubAllEnvs(); // жоден вендор не налаштований: рядки лишаються pending
+    const oldId = await enqueue("resend");
+    const freshId = await enqueue("sentry");
+    const exhaustedId = await enqueue("sentry", 10);
+    await pool.query(
+      "UPDATE gdpr_cleanup_queue SET created_at = NOW() - INTERVAL '31 days' WHERE id IN ($1, $2)",
+      [oldId, exhaustedId],
+    );
+    await pool.query(
+      "UPDATE gdpr_cleanup_queue SET next_attempt_at = 'infinity' WHERE id = $1",
+      [exhaustedId],
+    );
+    const result = await processBatch(pool, {});
+    expect(result.emailsRedacted).toBe(2);
+    const oldResend = await stored(oldId);
+    expect(oldResend.email).toBeNull();
+    expect(oldResend.completed_at).not.toBeNull();
+    expect(await stored(exhaustedId)).toMatchObject({
+      email: null,
+      completed_at: null,
     });
+    expect((await stored(freshId)).email).toBe("test@example.com");
   });
 
   it("retries a rate limit and erases retained PII only after vendor confirmation", async () => {
@@ -247,6 +268,16 @@ describe("GDPR cleanup — real claim, retry and redaction SQL", () => {
       expect(nullable.rows).toEqual([{ is_nullable: "NO" }]);
     } finally {
       await pool.query(up);
+      // 160 up повертає CHECK pending_email; 164 знімає його знову.
+      await pool.query(
+        await readFile(
+          new URL(
+            "../../migrations/164_gdpr_cleanup_pending_email_nullable.sql",
+            import.meta.url,
+          ),
+          "utf8",
+        ),
+      );
     }
     expect(await stored(id)).toMatchObject({
       email: "",
