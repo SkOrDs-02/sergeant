@@ -3910,6 +3910,13 @@
       "canonical_owner": "docs/work/specs/audits/2026-10-18-design-v3-1-inventory.md"
     },
     {
+      "old_path": "docs/work/specs/audits/2026-10-23-redesign-v3-2-review.md",
+      "new_path": "docs/work/specs/audits/2026-10-23-redesign-v3-2-review.md",
+      "action": "keep",
+      "genre": "active-work",
+      "canonical_owner": "docs/work/specs/audits/2026-10-23-redesign-v3-2-review.md"
+    },
+    {
       "old_path": "docs/work/specs/audits/ai-abuse-2026-08-05.md",
       "new_path": "docs/work/specs/audits/ai-abuse-2026-08-05.md",
       "action": "keep",
@@ -4706,6 +4713,13 @@
       "action": "keep",
       "genre": "active-work",
       "canonical_owner": "docs/work/specs/planning/redesign-v3-1.md"
+    },
+    {
+      "old_path": "docs/work/specs/planning/redesign-v3-2.md",
+      "new_path": "docs/work/specs/planning/redesign-v3-2.md",
+      "action": "keep",
+      "genre": "active-work",
+      "canonical_owner": "docs/work/specs/planning/redesign-v3-2.md"
     },
     {
       "old_path": "docs/work/specs/planning/redesign-v3-progress.md",

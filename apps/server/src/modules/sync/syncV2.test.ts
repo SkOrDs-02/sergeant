@@ -33,6 +33,7 @@ import {
 import { notifySyncV2OpsApplied as _notify } from "./syncV2Stream.js";
 import { SYNC_OP_LOG_COMMITTED_WATERMARK_SQL } from "./syncV2-core.js";
 import { syncConflictsTotal } from "../../obs/metrics.js";
+import { SYNC_PROTOCOL_VERSION } from "@sergeant/shared";
 
 interface PoolStub {
   connect: Mock;
@@ -420,15 +421,11 @@ describe("syncV2Push · new-op apply path", () => {
     ]);
   });
 
-  it("rejects unknown tables before apply", async () => {
-    const serverTs = new Date("2026-01-01T00:00:05.000Z");
+  it("rejects unknown tables before apply and before sync_op_log", async () => {
     client.query
       .mockResolvedValueOnce({ rows: [] }) // BEGIN
       .mockResolvedValueOnce({ rows: [] }) // user-lock sync_op_log (data-12)
       .mockResolvedValueOnce({ rows: [] }) // дедуп-SELECT батча
-      .mockResolvedValueOnce({ rows: [] }) // SAVEPOINT op_log_write
-      .mockResolvedValueOnce({ rows: [{ id: "42", server_ts: serverTs }] })
-      .mockResolvedValueOnce({ rows: [] }) // RELEASE SAVEPOINT op_log_write
       .mockResolvedValueOnce({ rows: [] }); // COMMIT
 
     const req = makeReq({
@@ -445,9 +442,15 @@ describe("syncV2Push · new-op apply path", () => {
     await syncV2Push(req, res);
 
     expect(applyRoutineEntries).not.toHaveBeenCalled();
+    // data-48: жодного INSERT/SAVEPOINT - оп невідомої таблиці в журнал не йде.
+    expect(
+      client.query.mock.calls.some(([sql]) =>
+        /INSERT INTO sync_op_log|SAVEPOINT/.test(String(sql)),
+      ),
+    ).toBe(false);
     expect(res.body).toEqual({
       accepted: 0,
-      last_op_id: 42,
+      last_op_id: 0,
       server_now: expect.any(String),
       results: [
         {
@@ -457,6 +460,45 @@ describe("syncV2Push · new-op apply path", () => {
         },
       ],
     });
+  });
+
+  it("клієнт новіший за сервер: невідома таблиця -> retry/unknown_table, без журналу, решта батча застосовується", async () => {
+    applyRoutineEntries.mockResolvedValueOnce({ status: "applied" });
+    const serverTs = new Date("2026-01-01T00:00:05.000Z");
+    client.query
+      .mockResolvedValueOnce({ rows: [] }) // BEGIN
+      .mockResolvedValueOnce({ rows: [] }) // user-lock
+      .mockResolvedValueOnce({ rows: [] }) // дедуп-SELECT
+      .mockResolvedValueOnce({ rows: [] }) // SAVEPOINT op_apply
+      .mockResolvedValueOnce({ rows: [] }) // SAVEPOINT op_log_write
+      .mockResolvedValueOnce({ rows: [{ id: "7", server_ts: serverTs }] })
+      .mockResolvedValueOnce({ rows: [] }) // RELEASE op_log_write
+      .mockResolvedValueOnce({ rows: [] }) // RELEASE op_apply
+      .mockResolvedValueOnce({ rows: [] }); // COMMIT
+
+    const res = makeRes();
+    await syncV2Push(
+      makeReq({
+        query: { sync_protocol: String(SYNC_PROTOCOL_VERSION + 1) },
+        body: {
+          ops: [op("future", { table: "future_table" }), op("ok")],
+        },
+      }),
+      res,
+    );
+
+    expect(res.body).toMatchObject({
+      accepted: 1,
+      results: [
+        { idempotency_key: "future", status: "retry", reason: "unknown_table" },
+        { idempotency_key: "ok", status: "applied" },
+      ],
+    });
+    const inserts = client.query.mock.calls.filter(([sql]) =>
+      /INSERT INTO sync_op_log/.test(String(sql)),
+    );
+    expect(inserts).toHaveLength(1);
+    expect((inserts[0]![1] as unknown[])[2]).toBe("routine_entries");
   });
 
   it("rejects unsupported increment ops without calling the table apply function", async () => {
@@ -1559,25 +1601,6 @@ describe("syncV2Push · data-17 / data-48", () => {
     expect(params[4]).toBe("{}");
     expect(params[7]).toBe("rejected");
     expect(params[8]).toBe("lww_conflict");
-  });
-
-  it("відхилений за невідомою таблицею оп не зберігає row", async () => {
-    mockRejectedNoApplyPath("221");
-
-    await syncV2Push(
-      makeReq({
-        body: {
-          ops: [
-            op("junk", { junk: "y".repeat(5000) }, { table: "zz_not_a_table" }),
-          ],
-        },
-      }),
-      makeRes(),
-    );
-
-    const params = insertParams();
-    expect(params[4]).toBe("{}");
-    expect(params[8]).toBe("table_not_allowed");
   });
 
   it("застосований оп зберігає повний row (його читає pull)", async () => {
