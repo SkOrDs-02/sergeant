@@ -1,6 +1,6 @@
 # Flow — Sync v2 push/pull
 
-> **Last touched:** 2026-10-20 by @claude. **Next review:** 2027-02-03.
+> **Last touched:** 2026-10-23 by @claude. **Next review:** 2027-02-06.
 > **Status:** Active
 
 Sync v2: UI пише у локальний SQLite-WASM, `SyncEnginePushScheduler` батчить операції з `sync_op_outbox` та пушить на сервер; pull тягне зміни інших пристроїв. CloudSync v1 (`POST /api/sync`) знятий (ADR-0047); sunset-middleware прибрано після 90-денного вікна, тож роут відповідає звичайним `404`.
@@ -54,7 +54,7 @@ sequenceDiagram
 ## Тригери push
 
 - `notifyEnqueued()` — кожен domain write автоматично повідомляє engine.
-- Trailing debounce (1,5 с після останнього `notifyEnqueued()`, але не довше 5 с від першого в серії) → один batch декількох ops (rel-08: раніше кожен запис давав окремий push і вичерпував ліміт `api:v2:sync` 60/хв).
+- Trailing debounce (1,5 с після останнього `notifyEnqueued()`, але не довше 5 с від першого в серії) → один batch декількох ops (rel-08: раніше кожен запис давав окремий push і вичерпував спільний ліміт `api:v2:sync` 60/хв; з 2026-10-23 push і pull мають окремі бакети `api:v2:sync:push` і `api:v2:sync:pull`, по 60/хв на користувача).
 - Manual: `SyncEngineWriterRuntime.flushNow()` — для тестів і ручного тригера (наприклад, перед logout).
 - `SyncEngineFlushOnReconnect` — автоматичний flush при `window.addEventListener('online')`.
 

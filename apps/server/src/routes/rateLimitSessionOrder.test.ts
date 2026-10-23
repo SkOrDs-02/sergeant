@@ -193,8 +193,20 @@ describe("PR-A3 / рецидив B31 — session guard vs. rate limiters", () =>
         /r\.use\(\s*["']\/api\/v2\/sync["']\s*,\s*setModule\(\s*["']syncV2["']\s*\)\s*\)/,
         /r\.post\(\s*["']\/api\/v2\/sync\/push["']/,
         /requireSession\(\)/,
-        /rateLimitExpress\(\s*\{\s*key:\s*["']api:v2:sync["']/,
-        "/api/v2/sync",
+        /rateLimitExpress\(\s*\{\s*key:\s*["']api:v2:sync:push["']/,
+        "/api/v2/sync push",
+      );
+    });
+
+    it("sync.ts: /api/v2/sync pull-бакет (rel-08, окремий від push)", () => {
+      const code = stripComments(readRouteSource("sync.ts"));
+      assertSessionBeforeLimiter(
+        code,
+        /r\.use\(\s*["']\/api\/v2\/sync["']\s*,\s*setModule\(\s*["']syncV2["']\s*\)\s*\)/,
+        /r\.post\(\s*["']\/api\/v2\/sync\/push["']/,
+        /requireSession\(\)/,
+        /rateLimitExpress\(\s*\{\s*key:\s*["']api:v2:sync:pull["']/,
+        "/api/v2/sync pull",
       );
     });
 
