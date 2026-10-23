@@ -9,6 +9,9 @@ import { Button } from "@shared/components/ui/Button";
 import { ConfirmDialog } from "@shared/components/ui/ConfirmDialog";
 import { EmptyState } from "@shared/components/ui/EmptyState";
 import { useInView } from "@shared/hooks/useInView";
+import { useToast } from "@shared/hooks/useToast";
+import { showUndoToast } from "@shared/lib/ui/undoToast";
+import type { CustomCategoryRemoval } from "@finyk/hooks/customCategoryRemoval";
 import { useStorage as useFinykStorage } from "@finyk/hooks/useStorage";
 import { limitBudgetCategoryIds } from "@sergeant/finyk-domain/domain/budget";
 import type { Budget } from "@sergeant/finyk-domain/domain/types";
@@ -62,7 +65,11 @@ interface FinykStorageShape {
     label: string,
     options?: { kind?: "expense" | "income" },
   ) => void;
-  removeCustomCategory: (id: string) => void;
+  removeCustomCategory: (id: string) => CustomCategoryRemoval | null | void;
+  // Відкат видалення категорії (тост «Скасувати»); необовʼязковий з тієї ж
+  // причини, що й решта «вужчого вигляду» (мок у тестах).
+  restoreCustomCategory?:
+    ((removal: CustomCategoryRemoval) => void) | undefined;
   // Потрібні лише для підрахунку лімітів у тексті підтвердження; необовʼязкові,
   // бо «вужчий вигляд» хука терпить їх відсутність (мок у тестах).
   budgets?: readonly Budget[] | undefined;
@@ -99,6 +106,7 @@ export function FinykSection() {
     customCategories,
     addCustomCategory,
     removeCustomCategory,
+    restoreCustomCategory,
     budgets,
     addManualExpense,
     merchantRules,
@@ -114,6 +122,7 @@ export function FinykSection() {
     merchantRuleIndex,
     manualExpenses,
   } = useFinykStorage({}) as FinykStorageShape;
+  const toast = useToast();
   const [newCategoryLabel, setNewCategoryLabel] = useState("");
   const [newCategoryKind, setNewCategoryKind] = useState<"expense" | "income">(
     "expense",
@@ -132,6 +141,19 @@ export function FinykSection() {
           limitBudgetCategoryIds(b)[0] === pendingDelete.id,
       ).length
     : 0;
+
+  const confirmDelete = (category: CustomCategory) => {
+    const removal = removeCustomCategory(category.id);
+    if (!removal || !restoreCustomCategory) return;
+    showUndoToast(toast, {
+      msg: messages.collection.categoryRemoved.replace(
+        "{name}",
+        category.label,
+      ),
+      undoLabel: messages.collection.categoryRemovedUndo,
+      onUndo: () => restoreCustomCategory(removal),
+    });
+  };
 
   const addCategory = () => {
     if (customCategories.length >= 80) return;
@@ -285,18 +307,19 @@ export function FinykSection() {
                   title="Видалити категорію?"
                   description={
                     <>
-                      Категорію «{pendingDelete?.label}» буде видалено. Ліміти
-                      лише з цією категорією буде видалено
+                      Категорію «{pendingDelete?.label}» буде видалено, а
+                      операції з нею перейдуть в «Інше». Ліміти лише з цією
+                      категорією буде видалено
                       {soleLimitsCount > 0
                         ? ` (зараз їх: ${soleLimitsCount})`
                         : ""}
-                      ; в комбінованих лімітах вона просто зникне зі списку. Дію
-                      не можна скасувати.
+                      ; в комбінованих лімітах вона просто зникне зі списку. Це
+                      можна скасувати одразу після видалення.
                     </>
                   }
                   confirmLabel="Видалити"
                   onConfirm={() => {
-                    if (pendingDelete) removeCustomCategory(pendingDelete.id);
+                    if (pendingDelete) confirmDelete(pendingDelete);
                     setPendingDelete(null);
                   }}
                   onCancel={() => setPendingDelete(null)}
