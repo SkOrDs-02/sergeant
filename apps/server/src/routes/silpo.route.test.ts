@@ -643,7 +643,11 @@ describe("POST /api/silpo/wipe", () => {
     // Стару колонку 159 теж пишемо: старий інстанс у вікні викочування і
     // відкат деплою читають лише її.
     expect(sql).toMatch(
-      /UPDATE silpo_connection\s+SET receipts_wiped_at = NOW\(\)/,
+      /UPDATE silpo_connection\s+SET receipts_wiped_at = GREATEST\(receipts_wiped_at, NOW\(\)\)/,
+    );
+    // Маркер не відкочується назад, якщо два wipe перетнулись.
+    expect(sql).toContain(
+      "GREATEST(silpo_wipe_marker.wiped_at, EXCLUDED.wiped_at)",
     );
   });
 });
