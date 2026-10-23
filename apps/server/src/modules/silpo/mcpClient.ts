@@ -558,6 +558,9 @@ async function cachedInitialize(
   return init;
 }
 
+/** Скільки символів тексту відмови Сільпо потрапляє в лог. */
+export const SILPO_REFUSAL_LOG_MAX_CHARS = 200;
+
 export async function callMcpTool<T>(opts: {
   accessToken: string;
   toolName: string;
@@ -589,10 +592,15 @@ export async function callMcpTool<T>(opts: {
 
   const refusal = toolRefusal(callResult.result);
   if (refusal !== null) {
+    // Текст відмови пише Сільпо, і він може зачепити поля покупки (Hard
+    // Rule #21). Для діагностики вистачає початку, тож у лог іде не більше
+    // `SILPO_REFUSAL_LOG_MAX_CHARS` символів і повна довжина (рішення
+    // власника 2026-10-23). Повний текст лишається лише в `message` помилки.
     logger.warn({
       msg: "silpo_mcp_tool_error",
       tool: opts.toolName,
-      detail: refusal,
+      detail: refusal.slice(0, SILPO_REFUSAL_LOG_MAX_CHARS),
+      detailLength: refusal.length,
     });
     // Відмова через протухлу авторизацію мусить піти тим самим шляхом, що й
     // HTTP 401, інакше `callWithFreshAccessToken` не зробить refresh і людина

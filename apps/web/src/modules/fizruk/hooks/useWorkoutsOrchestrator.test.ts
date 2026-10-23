@@ -192,6 +192,8 @@ const mockRecoveryConflicts = vi.fn<
 
 vi.mock("@sergeant/fizruk-domain", () => ({
   ACTIVE_WORKOUT_KEY: "fizruk_active_workout",
+  // `collectLastByExerciseId` збирає сесії для підказки (logic-04).
+  collectStrengthSessionPoints: () => [],
   summarizeWorkoutForFinish: vi.fn((w: unknown) => w),
   recoveryConflictsForExercise: (ex: unknown, by: unknown) =>
     mockRecoveryConflicts(ex, by),

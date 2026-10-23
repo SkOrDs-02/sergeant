@@ -25,6 +25,7 @@ import {
   mcpInitialize,
   probeMcpTool,
   SILPO_MCP_MAX_BODY_BYTES,
+  SILPO_REFUSAL_LOG_MAX_CHARS,
   __silpoMcpTestHooks,
 } from "./mcpClient.js";
 
@@ -210,11 +211,45 @@ describe("callMcpTool", () => {
       expect.objectContaining({
         msg: "silpo_mcp_tool_error",
         detail: "Rate limit exceeded",
+        detailLength: "Rate limit exceeded".length,
       }),
     );
     // Помилка виконання ≠ дрейф контракту: алерт про дрейф не має дзвонити.
     expect(mocks.loggerWarn).not.toHaveBeenCalledWith(
       expect.objectContaining({ msg: "silpo_mcp_schema_drift" }),
+    );
+  });
+
+  it("a long refusal is cut in the log, the error keeps the full text", async () => {
+    const long = "x".repeat(SILPO_REFUSAL_LOG_MAX_CHARS + 50);
+    const mock = fetchMock();
+    mock
+      .mockResolvedValueOnce(jsonResponse(INIT_RESULT))
+      .mockResolvedValueOnce(new Response(null, { status: 202 }))
+      .mockResolvedValueOnce(
+        jsonResponse({
+          jsonrpc: "2.0",
+          id: 2,
+          result: { isError: true, content: [{ type: "text", text: long }] },
+        }),
+      );
+
+    const result = await callMcpTool({
+      accessToken: "token-abc",
+      toolName: "silpo_get_my_online_orders",
+      schema,
+    });
+
+    expect(result).toEqual({
+      ok: false,
+      error: { kind: "tool_error", message: long },
+    });
+    expect(mocks.loggerWarn).toHaveBeenCalledWith(
+      expect.objectContaining({
+        msg: "silpo_mcp_tool_error",
+        detail: long.slice(0, SILPO_REFUSAL_LOG_MAX_CHARS),
+        detailLength: long.length,
+      }),
     );
   });
 

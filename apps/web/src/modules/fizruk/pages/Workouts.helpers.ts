@@ -2,7 +2,8 @@
  * Last validated: 2026-06-05
  * Status: Active
  */
-import type { Workout } from "@sergeant/fizruk-domain";
+import type { ExerciseHistoryEntry, Workout } from "@sergeant/fizruk-domain";
+import { collectStrengthSessionPoints } from "@sergeant/fizruk-domain";
 import type {
   ExerciseLocation,
   RawExerciseDef,
@@ -90,11 +91,13 @@ export function collectLastByExerciseId(
   activeWorkoutId: string | null,
 ): Record<string, LastExerciseItem> {
   const out: Record<string, LastExerciseItem> = {};
+  const historyByEx: Record<string, ExerciseHistoryEntry[]> = {};
   for (const w of workouts || []) {
     if (w.id === activeWorkoutId) continue;
     for (const it of w.items || []) {
       const exId = it.exerciseId;
       if (!exId) continue;
+      (historyByEx[exId] ??= []).push({ workout: w, item: it });
       const existing = out[exId];
       if (
         !existing ||
@@ -103,6 +106,11 @@ export function collectLastByExerciseId(
         out[exId] = { ...it, _startedAt: w.startedAt };
       }
     }
+  }
+  // Сесії для режиму повернення в підказці наступного підходу (`logic-04`):
+  // та сама збірка, що й на сторінці вправи (`collectStrengthSessionPoints`).
+  for (const [exId, entry] of Object.entries(out)) {
+    entry._sessions = collectStrengthSessionPoints(historyByEx[exId] ?? []);
   }
   return out;
 }

@@ -62,6 +62,32 @@ describe("WorkoutItemNextSetHint", () => {
     expect(weight).toBeLessThan(80);
   });
 
+  it("keeps the comeback mode after one light session following a layoff (logic-04)", () => {
+    // Пік 120×5 (e1RM 140) 125 днів тому, вчора — легке повернення 60×8.
+    const at = (d: number) =>
+      new Date(Date.now() - d * 86_400_000).toISOString();
+    const last = {
+      ...lastStrength(1, [{ weightKg: 60, reps: 8 }]),
+      _sessions: [
+        { at: at(125), best1rm: 120 * (1 + 5 / 30) },
+        { at: at(1), best1rm: 60 * (1 + 8 / 30) },
+      ],
+    } as LastByExerciseEntry;
+    const onApply = vi.fn();
+    render(
+      <WorkoutItemNextSetHint
+        last={last}
+        exerciseId="bench_press_barbell"
+        isReadOnly={false}
+        onApply={onApply}
+      />,
+    );
+    // Без історії стеля 8 повторень дала б +2.5 кг; у режимі повернення — ні.
+    expect(screen.getByText(/легше після паузи/)).toBeInTheDocument();
+    fireEvent.click(screen.getByRole("button", { name: /Наступний/ }));
+    expect(onApply).toHaveBeenCalledWith(60, 5, "planned");
+  });
+
   it("stays silent without history, on cardio items, and when read-only", () => {
     const { container, rerender } = render(
       <WorkoutItemNextSetHint

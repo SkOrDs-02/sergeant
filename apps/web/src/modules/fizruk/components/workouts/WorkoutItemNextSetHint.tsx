@@ -1,9 +1,9 @@
 /**
- * Last validated: 2026-08-31
+ * Last validated: 2026-10-23
  * Status: Active
  */
 import {
-  computeOneRmAging,
+  computeNextSetAging,
   epley1rm,
   suggestNextSet,
 } from "@sergeant/fizruk-domain";
@@ -50,11 +50,11 @@ function bestSetOf(sets: WorkoutSet[]): WorkoutSet | null {
 
 /**
  * Причини МʼЯКОГО РЕЖИМУ, і лише вони. Готовність сюди навмисно не додана:
- * `returnReason` віддає `computeOneRmAging` з історії вправи (затухання 1ПМ,
+ * `returnReason` віддає `computeNextSetAging` з історії вправи (затухання 1ПМ,
  * вікно після травми), а готовність — це самозвіт про сьогодні. Змішати їх в
  * одному переліку означало б, що `ReturnProtocolNotice` (компонент про
  * старіння 1ПМ) мусив би знати про сон, а `aging.returnReason` міг би
- * набути значення, якого `computeOneRmAging` не вміє видавати.
+ * набути значення, якого `computeNextSetAging` не вміє видавати.
  */
 const RETURN_REASON_TEXT: Record<string, string> = {
   layoff: messages.fizruk.nextSetHint.softLayoff,
@@ -85,9 +85,13 @@ export function WorkoutItemNextSetHint({
   const best = bestSetOf(filterNonEmptyStrengthSets(last.sets));
   if (!best) return null;
 
-  const aging = computeOneRmAging({
-    peak1rm: epley1rm(best.weightKg, best.reps),
+  // Режим повернення дивиться на ВСЮ історію вправи, а не лише на останню
+  // сесію (аудит `logic-04`): одне легке заняття після паузи його не знімає,
+  // як і на сторінці вправи.
+  const aging = computeNextSetAging({
+    lastBest1rm: epley1rm(best.weightKg, best.reps),
     lastSessionAt: last._startedAt ?? null,
+    sessions: last._sessions,
   });
   const suggestion = suggestNextSet(best, {
     exercise: exerciseId ? findExerciseById(exerciseId) : null,
