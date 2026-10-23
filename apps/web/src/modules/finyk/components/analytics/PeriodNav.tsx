@@ -1,6 +1,7 @@
 import { memo, useId, useState } from "react";
 import { Icon } from "@shared/components/ui/Icon";
 import { Button } from "@shared/components/ui/Button";
+import { ChoiceGroup } from "@shared/components/ui/Choice";
 import { DateField } from "@shared/components/ui/DateField";
 import { Segmented } from "@shared/components/ui/Segmented";
 import { Sheet } from "@shared/components/ui/Sheet";
@@ -17,58 +18,125 @@ import { formatAnalyticsPeriod } from "../../lib/analyticsPeriodLabel";
 
 const copy = messages.finyk.analyticsPage;
 
-interface PeriodNavProps {
-  period: AnalyticsPeriod;
-  todayKey: string;
-  onChange: (period: AnalyticsPeriod) => void;
+const ARROW =
+  "focus-ring flex min-h-[44px] min-w-[44px] items-center justify-center rounded-lg text-text hover:bg-panel motion-safe:transition-colors disabled:opacity-30";
+
+export interface PeriodNavProps {
+  label: string;
+  prevAria: string;
+  nextAria: string;
+  pickAria: string;
+  onPrev: () => void;
+  onNext: () => void;
+  onPick: () => void;
+  nextDisabled?: boolean | undefined;
 }
 
-const NAV_BUTTON =
-  "min-w-[44px] min-h-[44px] rounded-lg border border-line flex items-center justify-center text-muted hover:text-text hover:bg-line/40 transition-colors";
-
 /**
- * Перемикач періоду Аналітики (Р5.7): стрілки гортають обраний період, тап
- * по підпису відкриває аркуш «Тиждень · Місяць · Рік · Діапазон».
+ * Один перемикач періоду для Операцій і Аналізу (redesign v3.2, позиція 08):
+ * голі стрілки, назва 15 / 600 без шеврона, тап по назві відкриває вибір.
  */
 export const PeriodNav = memo(function PeriodNav({
-  period,
-  todayKey,
-  onChange,
+  label,
+  prevAria,
+  nextAria,
+  pickAria,
+  onPrev,
+  onNext,
+  onPick,
+  nextDisabled,
 }: PeriodNavProps) {
-  const [open, setOpen] = useState(false);
-  const atLatest = isLatestPeriod(period, todayKey);
-
   return (
-    <div className="flex items-center justify-between gap-2">
+    <div className="flex items-center gap-1">
       <button
         type="button"
-        onClick={() => onChange(shiftPeriod(period, -1))}
-        className={NAV_BUTTON}
-        aria-label={copy.prev[period.kind]}
+        onClick={onPrev}
+        className={ARROW}
+        aria-label={prevAria}
       >
         <Icon name="chevron-left" size="sm" />
       </button>
       <button
         type="button"
-        onClick={() => setOpen(true)}
-        className="min-h-[44px] min-w-0 px-3 rounded-lg flex items-center gap-1 text-style-label text-text hover:bg-line/40 transition-colors"
+        onClick={onPick}
+        className="focus-ring min-h-[44px] min-w-0 truncate rounded-lg px-1 text-style-body font-semibold text-text"
         aria-haspopup="dialog"
-        aria-label={`${copy.choosePeriod}: ${formatAnalyticsPeriod(period, todayKey)}`}
+        aria-label={`${pickAria}: ${label}`}
       >
-        <span className="truncate">
-          {formatAnalyticsPeriod(period, todayKey)}
-        </span>
-        <Icon name="chevron-down" size="sm" className="text-muted" />
+        {label}
       </button>
       <button
         type="button"
-        onClick={() => onChange(shiftPeriod(period, 1))}
-        disabled={atLatest}
-        className={`${NAV_BUTTON} disabled:opacity-30`}
-        aria-label={copy.next[period.kind]}
+        onClick={onNext}
+        disabled={nextDisabled}
+        className={ARROW}
+        aria-label={nextAria}
       >
         <Icon name="chevron-right" size="sm" />
       </button>
+    </div>
+  );
+});
+
+interface MonthPickSheetProps {
+  /** Підписи місяців від поточного назад: `[0]` поточний. */
+  months: readonly string[];
+  /** Скільки місяців тому обраний. */
+  selectedBack: number;
+  onPick: (monthsBack: number) => void;
+  onClose: () => void;
+}
+
+/** Вибір місяця для Операцій: рядки від поточного назад. */
+export function MonthPickSheet({
+  months,
+  selectedBack,
+  onPick,
+  onClose,
+}: MonthPickSheetProps) {
+  return (
+    <Sheet open onClose={onClose} title={copy.kinds.month}>
+      <div className="p-4">
+        <ChoiceGroup
+          variant="rows"
+          ariaLabel={copy.kinds.month}
+          items={months.map((label, i) => ({ value: String(i), label }))}
+          value={String(selectedBack)}
+          onChange={(v) => onPick(Number(v))}
+        />
+      </div>
+    </Sheet>
+  );
+}
+
+interface AnalyticsPeriodNavProps {
+  period: AnalyticsPeriod;
+  todayKey: string;
+  onChange: (period: AnalyticsPeriod) => void;
+}
+
+/**
+ * Перемикач періоду Аналітики (Р5.7): стрілки гортають обраний період, тап
+ * по підпису відкриває аркуш «Тиждень · Місяць · Рік · Діапазон».
+ */
+export function AnalyticsPeriodNav({
+  period,
+  todayKey,
+  onChange,
+}: AnalyticsPeriodNavProps) {
+  const [open, setOpen] = useState(false);
+  return (
+    <>
+      <PeriodNav
+        label={formatAnalyticsPeriod(period, todayKey)}
+        prevAria={copy.prev[period.kind]}
+        nextAria={copy.next[period.kind]}
+        pickAria={copy.choosePeriod}
+        onPrev={() => onChange(shiftPeriod(period, -1))}
+        onNext={() => onChange(shiftPeriod(period, 1))}
+        onPick={() => setOpen(true)}
+        nextDisabled={isLatestPeriod(period, todayKey)}
+      />
       {open && (
         <PeriodSheet
           period={period}
@@ -80,16 +148,16 @@ export const PeriodNav = memo(function PeriodNav({
           }}
         />
       )}
-    </div>
+    </>
   );
-});
+}
 
 function PeriodSheet({
   period,
   todayKey,
   onClose,
   onChange,
-}: PeriodNavProps & { onClose: () => void }) {
+}: AnalyticsPeriodNavProps & { onClose: () => void }) {
   const fromId = useId();
   const toId = useId();
   const [kind, setKind] = useState<AnalyticsPeriodKind>(period.kind);

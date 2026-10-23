@@ -153,6 +153,7 @@ export const EXPORT_EXPLICIT_TABLES: readonly string[] = [
   "silpo_tx_receipt_links",
   "silpo_tx_receipt_link_rejections",
   "user_profile",
+  "user_avatars",
   "feedback_entries",
   "email_unsubscribes",
   "waitlist_entries",
@@ -207,12 +208,6 @@ export const EXPORT_EXCLUSIONS: ReadonlyArray<{
     tables: ["sergeant_nudge_cache"],
     reason:
       "Кеш останньої поради Сержанта: текст згенеровано з твоїх даних і переписується щодня, тож це не твій запис.",
-  },
-  {
-    group: "avatar",
-    tables: ["user_avatars"],
-    reason:
-      "Твоє фото профілю: двійковий файл, який JSON не несе. Воно лишається в профілі, а прибрати його можна там же («Видалити аватар»); посилання на нього є в user.image.",
   },
   {
     group: "authSessions",
@@ -330,6 +325,9 @@ const EXTRA_SQL = {
   profile: `SELECT payload, updated_at
               FROM user_profile
              WHERE user_id = $1`,
+  avatar: `SELECT content_type, data, updated_at
+             FROM user_avatars
+            WHERE user_id = $1`,
   feedback: `SELECT id, category, message, page, viewport, user_agent,
                     app_env, created_at
                FROM feedback_entries
@@ -400,8 +398,35 @@ const EXTRA_SQL = {
                      ORDER BY transaction_id, receipt_id`,
 } as const;
 
+export interface ExportAvatar {
+  mimeType: string;
+  /** Байти файлу (`bytea`), закодовані в base64 без префікса `data:`. */
+  dataBase64: string;
+  updatedAt: string;
+}
+
+/**
+ * `user_avatars.data` — `bytea`, `pg` віддає його `Buffer`-ом, який у JSON
+ * став би `{type:"Buffer",data:[...]}`. Файл ≤ 50 КБ (`modules/avatar`), тож
+ * base64 у JSON експорт не роздуває (рішення власника 2026-10-23, ux-14).
+ */
+export function serializeAvatar(row: Row | undefined): ExportAvatar | null {
+  if (!row) return null;
+  const data = row["data"];
+  if (!Buffer.isBuffer(data) && !(data instanceof Uint8Array)) return null;
+  const updatedAt = row["updated_at"];
+  return {
+    mimeType: String(row["content_type"]),
+    dataBase64: Buffer.from(data).toString("base64"),
+    updatedAt:
+      updatedAt instanceof Date ? updatedAt.toISOString() : String(updatedAt),
+  };
+}
+
 export interface ExtraExportSections {
   profile: Row | null;
+  /** Фото профілю (ux-14): байти як base64, `null`, коли аватара немає. */
+  avatar: ExportAvatar | null;
   feedback: Row[];
   emailUnsubscribes: Row[];
   waitlist: Row[];
@@ -430,6 +455,7 @@ export async function fetchExtraExportSections(
     (await db.query<Row>(sql, [userId])).rows;
   const [
     profile,
+    avatar,
     feedback,
     emailUnsubscribes,
     waitlist,
@@ -445,6 +471,7 @@ export async function fetchExtraExportSections(
     silpoRejections,
   ] = await Promise.all([
     q(EXTRA_SQL.profile),
+    q(EXTRA_SQL.avatar),
     q(EXTRA_SQL.feedback),
     q(EXTRA_SQL.emailUnsubscribes),
     q(EXTRA_SQL.waitlist),
@@ -462,6 +489,7 @@ export async function fetchExtraExportSections(
 
   return {
     profile: profile[0] ? { ...profile[0] } : null,
+    avatar: serializeAvatar(avatar[0]),
     feedback: coerceNumberColumns(feedback, ["id"]),
     emailUnsubscribes: coerceNumberColumns(emailUnsubscribes, ["id"]),
     waitlist: coerceNumberColumns(waitlist, ["id"]),

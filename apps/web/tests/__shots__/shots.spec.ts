@@ -10,6 +10,7 @@
  *
  * Status: Scaffolded
  */
+import { existsSync, readFileSync, writeFileSync } from "node:fs";
 import { test, type Page } from "@playwright/test";
 import { applyScenario } from "../utils/scenario";
 import { seedFTUX } from "../utils/seedFTUX";
@@ -105,6 +106,35 @@ const ROUTES: Array<[string, World, string, Step?]> = [
   ["empty-nutrition", "empty", "/nutrition/log"],
 ];
 
+/**
+ * Лічильник `addActionsPerRoute` (redesign v3.2 § Гейти): видимі кнопки з
+ * текстом, що починається з «Додати» або «+», на маршрут. Статично по JSX
+ * це не порахувати, тож число бере знімальний прогін і пише у файл, який
+ * читає `scripts/check-ui-canon-ratchet.mjs`. Лише світла тема: розмітка
+ * обох тем однакова. Воркер один (`playwright.shots.config.ts`), тож
+ * читати-дописувати файл між тестами безпечно.
+ */
+const ADD_OUT = process.env["ADD_ACTIONS_OUT"];
+async function recordAddActions(page: Page, name: string) {
+  if (!ADD_OUT) return;
+  const count = await page.evaluate(
+    () =>
+      Array.from(document.querySelectorAll("button")).filter((b) => {
+        const r = b.getBoundingClientRect();
+        const text = (b.innerText || "").trim();
+        return r.width > 0 && r.height > 0 && /^(Додати|\+)/.test(text);
+      }).length,
+  );
+  const prev = existsSync(ADD_OUT)
+    ? (JSON.parse(readFileSync(ADD_OUT, "utf8")) as Record<string, number>)
+    : {};
+  prev[name] = count;
+  const sorted = Object.fromEntries(
+    Object.entries(prev).sort(([a], [b]) => a.localeCompare(b)),
+  );
+  writeFileSync(ADD_OUT, JSON.stringify(sorted, null, 2) + "\n");
+}
+
 const only = process.env["SHOTS_ONLY"];
 for (const scheme of ["light", "dark"] as const) {
   for (const [name, world, path, step] of ROUTES) {
@@ -118,6 +148,7 @@ for (const scheme of ["light", "dark"] as const) {
       await page.waitForTimeout(1500);
       if (step) await step(page);
       await page.screenshot({ path: `${OUT}/${name}-${scheme}.png` });
+      if (scheme === "light") await recordAddActions(page, name);
     });
   }
 }

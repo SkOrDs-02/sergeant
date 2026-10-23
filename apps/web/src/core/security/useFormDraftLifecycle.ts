@@ -1,9 +1,11 @@
+import { onBeforeYield } from "../db/dbOwnership";
 import { useEffect, useRef } from "react";
 import {
   UNCLAIMED_SWEEP_MS,
   commitStashedFormDrafts,
   discardAllFormDrafts,
   discardFormDraftsExcept,
+  flushLiveFormDrafts,
   setFormDraftUser,
 } from "@shared/lib/storage/formDrafts";
 
@@ -16,6 +18,7 @@ import {
  *   щойно розмонтувались, у sessionStorage. Passive-cleanup видалених дітей
  *   спрацьовує ПЕРЕД passive-ефектами батька того ж коміту, тож до цього
  *   ефекту знімки вже в памʼяті;
+ * - перед віддачею бази іншій вкладці (data-45) зберігає чернетки живих форм;
  * - через `UNCLAIMED_SWEEP_MS` після розблокування стирає незатребувані.
  */
 export function useFormDraftLifecycle(
@@ -29,6 +32,16 @@ export function useFormDraftLifecycle(
     if (authLoading) return;
     setFormDraftUser(userId);
     discardFormDraftsExcept(userId);
+  }, [userId, authLoading]);
+
+  // data-45: вкладка віддає базу іншій («Працювати тут») - чернетки живих
+  // форм потрапляють у sessionStorage ДО віддачі бази і лока; відновлюються
+  // тим самим механізмом (`peekFormDraft` на маунті) після перезавантаження.
+  useEffect(() => {
+    if (authLoading) return undefined;
+    return onBeforeYield(() => {
+      flushLiveFormDrafts(userId);
+    });
   }, [userId, authLoading]);
 
   const wasHiddenRef = useRef(false);

@@ -32,6 +32,11 @@ import {
  *    стирає `purgeAppOwnedSessionStorage` (ключі з префіксом `sergeant.`).
  *    Ключ містить id користувача, а `discardFormDraftsExcept` прибирає чужі.
  *
+ * Перехоплення бази іншою вкладкою (data-45): форма там не розмонтована до
+ * кінця, тож живі форми реєструються (`registerLiveFormDraft`), а оболонка
+ * перед віддачею бази викликає `flushLiveFormDrafts` - знімки йдуть прямо в
+ * sessionStorage, і відновлення після перезавантаження - те саме `peekFormDraft`.
+ *
  * AI-CONTEXT: sessionStorage читається інспектором, як і весь клієнтський
  * стан; замок закриває DOM, а не сховище. Чернетка живе лише між замиканням і
  * розблокуванням однієї вкладки.
@@ -104,6 +109,54 @@ export function commitStashedFormDrafts(userId: string | null): number {
     if (safeWriteSS(keyFor(userKey, formId), raw)) written += 1;
   }
   stash.clear();
+  return written;
+}
+
+const live = new Map<string, () => unknown>();
+
+/**
+ * Зареєструвати живу форму: читач її поточного знімка (або `null`). Потрібно
+ * для випадку, коли форму не розмонтовано, а вкладка мусить віддати базу
+ * (`flushLiveFormDrafts`). Повертає функцію зняття реєстрації.
+ */
+export function registerLiveFormDraft(
+  formId: string,
+  read: () => unknown,
+): () => void {
+  live.set(formId, read);
+  return () => {
+    if (live.get(formId) === read) live.delete(formId);
+  };
+}
+
+/**
+ * Синхронно записати в sessionStorage знімки всіх ЖИВИХ форм (data-45:
+ * перехоплення бази іншою вкладкою). Викликається ДО віддачі бази і лока:
+ * sessionStorage-запис синхронний і дешевий, тож окремого дедлайну не треба,
+ * а інша вкладка не чекає довше, ніж триває `setItem`. Повертає кількість
+ * записаних чернеток.
+ */
+export function flushLiveFormDrafts(userId: string | null): number {
+  const now = Date.now();
+  const userKey = userKeyOf(userId);
+  let written = 0;
+  for (const [formId, read] of live) {
+    let data: unknown;
+    try {
+      data = read();
+    } catch {
+      continue;
+    }
+    if (data === null || data === undefined) continue;
+    try {
+      const envelope: Envelope = { savedAt: now, data };
+      if (safeWriteSS(keyFor(userKey, formId), JSON.stringify(envelope))) {
+        written += 1;
+      }
+    } catch {
+      continue;
+    }
+  }
   return written;
 }
 

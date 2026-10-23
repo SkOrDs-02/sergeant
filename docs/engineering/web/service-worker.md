@@ -54,7 +54,7 @@ Waiting-SW тоді лишається, а користувач бачить man
 
 **Де гарантія збереження вводу діє, а де ні.** Відмова від reload зберігає форму лише там, де її піддерево лишається змонтованим: глобальні слухачі `installChunkLoadRecover` (`vite:preloadError`, `unhandledrejection`, `error`), вузький `ChunkErrorBoundary` (підміняє тільки власний `Suspense` з чанком), `lazyImport` і `sqlite.ts`. Решта boundary самі розмонтовують дерево з формою в `getDerivedStateFromError` / `errorElement`: `ModuleErrorBoundary` (весь модуль), кореневий `ErrorBoundary` і `RouteErrorElement` (маршрут). Там форма зникає незалежно від гейта, тож відмова нічого б не вберегла і лишила б людину з тостом, що обіцяє неіснуюче збереження. Вони викликають `reloadOnceForChunkError(undefined, { guardUnsavedInput: false })` і відновлюються авто-reload-ом, як до data-45: **введене в такому модулі при stale-чанку втрачається** (це виняток, а не гарантія). Закрити його можна лише тим, щоб chunk-помилка не піднімалась до цих boundary: кожен `lazy`-чанк усередині модуля загортається у `ChunkErrorBoundary`.
 
-Не входить у цей шар: перехоплення бази іншою вкладкою (`dbOwnership`/`yieldOwnership`, «Працювати тут») — задумана multi-tab специфікація; захист введеного там потребує окремого UX-рішення.
+Перехоплення бази іншою вкладкою (`dbOwnership`/`yieldOwnership`, «Працювати тут») — задумана multi-tab специфікація; введене там захищено тим самим механізмом `formDrafts`, що й замок застосунку: перед закриттям бази й віддачею лока `useFormDraftLifecycle` через `onBeforeYield` синхронно записує знімки живих форм (без файлів фото) у sessionStorage, а після перезавантаження форма відновлює чернетку на маунті.
 
 ### Шар 4 — build-id hard-floor
 

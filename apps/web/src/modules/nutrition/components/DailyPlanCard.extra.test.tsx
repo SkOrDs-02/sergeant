@@ -132,9 +132,15 @@ describe("DailyPlanCard — basic render", () => {
     expect(screen.getByText("Денний план")).toBeInTheDocument();
   });
 
-  it("renders the description text", () => {
+  it("без пояснювального абзацу; автокалібрування - тиха кнопка в Налаштування", () => {
+    const onOpen = vi.fn();
+    window.addEventListener("hub:open-settings", onOpen);
     render(<DailyPlanCard prefs={EMPTY_PREFS} {...defaultHandlers} />);
-    expect(screen.getByText(/Складу план прийомів їжі/i)).toBeInTheDocument();
+    expect(screen.queryByText(/Складу план прийомів їжі/i)).toBeNull();
+    expect(screen.queryByText(/вмикається в Налаштуваннях/)).toBeNull();
+    fireEvent.click(screen.getByRole("button", { name: "Автокалібрування" }));
+    window.removeEventListener("hub:open-settings", onOpen);
+    expect(onOpen).toHaveBeenCalledTimes(1);
   });
 
   it("renders the 'Згенерувати денний план' button and calls fetchDayPlan on click", () => {
@@ -187,7 +193,10 @@ describe("DailyPlanCard — basic render", () => {
         pantryItems={[]}
       />,
     );
-    expect(screen.getByText(/Комору зараз не враховую/i)).toBeInTheDocument();
+    // Режим комори показує сам пікер; підзаголовок-обіцянку знято (v3.2, 10).
+    expect(
+      screen.getByRole("combobox", { name: "Використання комори" }),
+    ).toHaveValue("ignore");
     expect(screen.queryByText(/Додай продукти в комору/i)).toBeNull();
   });
 });
