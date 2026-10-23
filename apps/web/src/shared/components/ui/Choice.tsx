@@ -26,6 +26,11 @@ import { Icon } from "./Icon";
  * чорнилом заливається позначка, а не весь рядок: у списках на кшталт
  * кошика позначено все одразу.
  *
+ * `onDeselect` (рішення власника 2026-10-23): повторний тап по обраній
+ * опції знімає вибір. Для шкал, де оцінку можна прибрати
+ * (енергія й настрій на сторінці «Тіло» Фізрука); семантика лишається
+ * `radiogroup`, стрілки так само переводять вибір.
+ *
  * Вкладки й фільтри одного списку лишаються за `Segmented`.
  */
 
@@ -61,6 +66,8 @@ export interface ChoiceGroupSingleProps<
   /** `null`, поки нічого не обрано: тоді Tab веде на першу доступну опцію. */
   value: V | null;
   onChange: (value: V) => void;
+  /** Є - повторний тап по обраній опції знімає вибір і викликає його. */
+  onDeselect?: (() => void) | undefined;
 }
 
 export interface ChoiceGroupMultipleProps<
@@ -290,6 +297,7 @@ export function ChoiceGroup<V extends string = string>(
             onKeyDown={handleKeyDown}
             onClick={() => {
               if (!checked) onChange(item.value);
+              else props.onDeselect?.();
             }}
             className={
               rows

@@ -1,7 +1,9 @@
 import { describe, expect, it } from "vitest";
 import {
   adjustRestTimerState,
+  readPersistedRestTimer,
   restRemainingSeconds,
+  serializeRestTimer,
   startRestTimerState,
 } from "./restTimer";
 
@@ -46,5 +48,23 @@ describe("restTimer", () => {
       total: 5,
       endsAt: NOW + 1000,
     });
+  });
+
+  it("readPersistedRestTimer resumes from endsAt and recomputes remaining", () => {
+    const raw = serializeRestTimer(startRestTimerState(90, NOW));
+    expect(readPersistedRestTimer(raw, NOW + 20_000)).toEqual({
+      remaining: 70,
+      total: 90,
+      endsAt: NOW + 90_000,
+    });
+  });
+
+  it("readPersistedRestTimer drops expired, missing and broken slots", () => {
+    const raw = serializeRestTimer(startRestTimerState(30, NOW));
+    expect(readPersistedRestTimer(raw, NOW + 30_000)).toBeNull();
+    expect(readPersistedRestTimer(null, NOW)).toBeNull();
+    expect(readPersistedRestTimer("not json", NOW)).toBeNull();
+    expect(readPersistedRestTimer('{"endsAt":"x","total":30}', NOW)).toBeNull();
+    expect(readPersistedRestTimer('{"endsAt":1,"total":0}', NOW)).toBeNull();
   });
 });

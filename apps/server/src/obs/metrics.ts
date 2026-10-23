@@ -649,4 +649,5 @@ export {
   billingWebhookTotal,
   billingRecurringChargeTotal,
   billingSupersedeCancelTotal,
+  plataSyncLastSuccessTimestampSeconds,
 } from "./metrics/billing.js";

@@ -149,6 +149,11 @@ describe("collectLastByExerciseId", () => {
     expect(result["bench"]).toBeDefined();
     // The newer workout has weightKg 90
     expect(result["bench"]?.sets?.[0]?.weightKg).toBe(90);
+    // Усі силові сесії вправи — для режиму повернення в підказці (logic-04).
+    expect(result["bench"]?._sessions).toEqual([
+      { at: "2026-01-01T10:00:00Z", best1rm: 80 * (1 + 5 / 30) },
+      { at: "2026-01-08T10:00:00Z", best1rm: 90 * (1 + 5 / 30) },
+    ]);
   });
 
   it("skips the active workout", () => {
