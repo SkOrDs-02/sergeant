@@ -337,9 +337,12 @@ h2 налаштування модуля → h3 функція → h4 підти
 (`nativeChoice`, allowlist: сам `Choice.tsx` і `Switch.tsx`).
 
 - **Обране** = заливка чорнилом (`bg-text text-bg`; у темній токени
-  перевертаються самі), **необране** = панель із текстом чорнилом і межею
-  `border-control`. Без тіні, без hue модуля в обох темах (рішення власника
-  2026-10-18). Текст «Обрано» не пишеться, стан несе `aria-checked`.
+  перевертаються самі), **необране** = панель `bg-panel` із текстом
+  чорнилом, без рамки (redesign v3.2, позиція 04: рамка лише на полях
+  вводу й позначці `ChoiceCheckbox`). Те саме для плиток поза
+  `ChoiceGroup`: дні `DateScrubber`, категорії `CategoryPickerField`. Без
+  тіні, без hue модуля в обох темах (рішення власника 2026-10-18). Текст
+  «Обрано» не пишеться, стан несе `aria-checked`.
 - **`tiles`** — плитки в ряд або сітку (сітку задає `className` групи,
   `grid grid-cols-3`), коли опцій до 6 і підписи короткі; радіус 8,
   `size="sm"` (швидкі суми, шкали 1-5) радіус 6. **`rows`** — рядки на
@@ -428,8 +431,13 @@ Home/End, `role="tablist"`.
 
 ### SectionHeading
 
-Єдиний стиль для eyebrow-лейблів («ПРОГРЕС», «ВИТРАТИ»). Замінює
-розкидані `text-2xs font-bold text-subtle uppercase tracking-widest`.
+Єдиний стиль для заголовків і ярликів секцій. Замінює розкидані
+`text-2xs font-bold text-subtle uppercase tracking-widest`.
+
+> **Redesign v3.2 (позиція 09):** `xs` = `text-style-label` 14 / 600
+> третім сірим, без капсу. Капс-оверлайн (`text-style-overline`) лише на
+> тинті hero; поза ним гейт `overlineOutsideHero`. Таблиця нижче — історія
+> v2, модульні варіанти рендерять нейтральний сірий.
 
 ```tsx
 <SectionHeading size="xs" action={<Button size="xs">Всі</Button>}>
@@ -612,11 +620,10 @@ import { Popover, PopoverItem, PopoverDivider } from "@shared/components/ui";
 
 **Слоти** (всі необов'язкові, окрім `title`):
 
-- `illustration` — куратований SVG із `apps/web/src/assets/illustrations/`
-  (всі використовують `currentColor` + design-token utilities; жодного
-  inline hex — дизайн-конвенція). Якщо `illustration` не задано — fallback
-  на `icon` у бордерованому box-і з tone-фоном.
-- `eyebrow` — короткий caps-чип над title-ом ("404", "OFFLINE", "ERROR").
+- Іконки й ілюстрації немає: порожній стан = факт і одна дія (redesign
+  v3.2, позиція 17; проп `illustration` видалено разом із
+  `EmptyStateIllustrations.tsx`).
+- `eyebrow` — короткий ярлик над title-ом ("404"), 14 / 600 без капсу.
 - `title` — короткий заголовок (масштабується розміром).
 - `description` — повний абзац підтримки.
 - `primaryAction` / `secondaryAction` — два слоти для CTA-кнопок
@@ -680,7 +687,6 @@ import { Popover, PopoverItem, PopoverDivider } from "@shared/components/ui";
   size="lg"
   variant="danger"
   eyebrow="500"
-  illustration={<ServerErrorIllustration size={200} />}
   title="Щось пішло не так"
   description="Сервер тимчасово не зміг обробити запит."
   primaryAction={
