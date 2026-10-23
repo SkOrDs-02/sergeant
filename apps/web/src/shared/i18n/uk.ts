@@ -44,6 +44,9 @@ export const messages = {
     categoryKindLabel: "Тип категорій",
     categoryNameLabel: "Назва нової категорії",
     categoryDeleteLabel: "Видалити категорію: {name}",
+    categoryRemoved:
+      "Категорію «{name}» видалено, операції з нею тепер в «Інше»",
+    categoryRemovedUndo: "Скасувати",
     categoryEmptySearch: "Категорій не знайдено",
     routineTagsDescription: "Теги допомагають знаходити звички за темою.",
     routineCategoriesDescription:

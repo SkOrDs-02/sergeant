@@ -33,8 +33,9 @@ import { requireSyncV2StreamEnabled } from "../modules/sync/syncV2StreamGuard.js
  * v1 push/pull endpoint-и та їх sunset/survey middleware остаточно
  * видалено (Initiative 0003 Phase 7) — старі клієнти тепер отримують
  * голий 404 замість 410 Gone, що прийнятно після 90-денного deprecation
- * window. Власний rate-limit-budget v2 (`api:v2:sync`, 60/min — щедріший,
- * бо op-log push може бути частим) і `module=syncV2` для логів/метрик.
+ * window. Власні rate-limit-бакети v2 (`api:v2:sync:push` і
+ * `api:v2:sync:pull`, по 60/min на користувача кожен — щедріші, бо op-log
+ * push може бути частим) і `module=syncV2` для логів/метрик.
  */
 export function createSyncRouter(): Router {
   const r = Router();
@@ -84,9 +85,18 @@ export function createSyncRouter(): Router {
     }),
   );
   r.use("/api/v2/sync", requireSession());
+  // rel-08 (рішення власника 2026-10-23): push і pull мають ОКРЕМІ per-user
+  // бакети по 60/хв (раніше спільний `api:v2:sync` 60/хв: серія push-ів
+  // з'їдала pull і навпаки). Обидва після requireSession() — ключ `u:<id>`.
+  // `/stream` має власний `api:v2:sync:stream` нижче і спільного бакета
+  // більше не ділить.
   r.use(
-    "/api/v2/sync",
-    rateLimitExpress({ key: "api:v2:sync", limit: 60, windowMs: 60_000 }),
+    "/api/v2/sync/push",
+    rateLimitExpress({ key: "api:v2:sync:push", limit: 60, windowMs: 60_000 }),
+  );
+  r.use(
+    "/api/v2/sync/pull",
+    rateLimitExpress({ key: "api:v2:sync:pull", limit: 60, windowMs: 60_000 }),
   );
   r.post("/api/v2/sync/push", syncV2Push);
   r.get("/api/v2/sync/pull", syncV2Pull);

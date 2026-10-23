@@ -181,6 +181,10 @@ describe("PersonalInfoSection — email change", () => {
     fireEvent.click(screen.getByRole("button", { name: "Змінити" }));
     const emailInput = screen.getByLabelText("Email");
     fireEvent.change(emailInput, { target: { value: "new@example.com" } });
+    // sec-06: сервер вимагає поточний пароль; поле йде в тіло запиту.
+    fireEvent.change(screen.getByLabelText("Поточний пароль"), {
+      target: { value: "current-pass" },
+    });
 
     // The email editor's own "Зберегти" (second submit on screen).
     const saves = screen.getAllByRole("button", { name: "Зберегти" });
@@ -189,6 +193,7 @@ describe("PersonalInfoSection — email change", () => {
     await waitFor(() => {
       expect(changeEmailMock).toHaveBeenCalledWith({
         newEmail: "new@example.com",
+        password: "current-pass",
       });
     });
     // Verified account → Better Auth sends a confirmation to the CURRENT
@@ -204,12 +209,14 @@ describe("PersonalInfoSection — email change", () => {
   });
 
   /**
-   * The other Better Auth branch: with an unverified current address,
-   * `updateEmailWithoutVerification` swaps it immediately and mails the
-   * verification to the NEW inbox. Same `{ status: true }` on the wire, so the
-   * component branches on `emailVerified` — pin both arms.
+   * The other Better Auth branch: with an unverified current address the
+   * verification goes to the NEW inbox, and since sec-06 (owner decision
+   * 2026-10-23, `updateEmailWithoutVerification: false`) the address changes
+   * only after that click. Same `{ status: true }` on the wire, so the
+   * component branches on `emailVerified` — pin both arms. Без пароля (акаунт
+   * лише з Google) поле `password` у тіло не йде.
    */
-  it("unverified account gets the immediate-swap copy instead", async () => {
+  it("unverified account gets the new-inbox copy; no password → no field", async () => {
     changeEmailMock.mockResolvedValue({ data: { ok: true }, error: null });
     const { onRefresh } = renderSection({ emailVerified: false });
 
@@ -222,12 +229,12 @@ describe("PersonalInfoSection — email change", () => {
 
     await waitFor(() => {
       expect(toastSuccessMock).toHaveBeenCalledWith(
-        "Адресу змінено, перевір нову скриньку",
+        "Лист підтвердження надіслано на нову адресу",
       );
     });
-    // This branch is the only one where the address really changed on the
-    // server, so the refetch is load-bearing: without it the field keeps
-    // rendering the old address and the toast reads as a lie.
+    expect(changeEmailMock).toHaveBeenCalledWith({
+      newEmail: "new@example.com",
+    });
     await waitFor(() => {
       expect(onRefresh).toHaveBeenCalled();
     });

@@ -91,3 +91,18 @@ export const PASSWORD_CHECK_USER_RATE_LIMIT: RateLimitOptions = {
   windowMs: 15 * 60 * 1000,
   failMode: "closed",
 };
+
+/**
+ * Зміна email: не більше 3 запитів на добу на користувача (sec-06, рішення
+ * власника 2026-10-23). Рахуються лише запити, що пройшли повторну
+ * автентифікацію (`http/changeEmailReauth.ts`): невірний пароль цей бюджет не
+ * з'їдає, його стримують `PASSWORD_CHECK_*` вище (change-email ділить їх із
+ * DELETE /api/me і change-password). Кожен такий запит шле лист, тож стеля
+ * заодно не дає вкраденій сесії засипати чужі скриньки.
+ */
+export const CHANGE_EMAIL_USER_RATE_LIMIT: RateLimitOptions = {
+  key: "api:change-email:user",
+  limit: 3,
+  windowMs: 24 * 60 * 60 * 1000,
+  failMode: "closed",
+};

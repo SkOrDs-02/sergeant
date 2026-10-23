@@ -493,7 +493,7 @@ node --import tsx <scratch>/agents/verify-server-static-privacy-logging/v2/hooks
 
 ### `priv-08` [medium] Service Worker кешує приватні відповіді /api/v1/\* з no-store, а партиція користувача скидається в спільне anon: у сесії B SW може віддати /me користувача A
 
-- **Стан:** частково виправлено в [#1396](https://github.com/SkOrDs-02/sergeant/pull/1396) (змерджено 2026-10-08) (лишилось рішення власника: повага до no-store і чи лишати /me та /ai-memory у runtime-кеші; партиція, anon-guard, v1-префікси та SW_SET_USER на controllerchange зроблені)
+- **Стан:** виправлено: [#1396](https://github.com/SkOrDs-02/sergeant/pull/1396) (партиція, anon-guard, v1-префікси, SW_SET_USER на controllerchange) і цей PR (рішення власника 2026-10-23: `/api/me` та `/api/ai-memory` з підшляхами, включно з `/api/v1/*`, прибрано з runtime-кешу SW; загальну повагу до `no-store` свідомо не вмикаємо, бо сервер ставить `no-store` на весь `/api` і це вимкнуло б офлайн-кеш API цілком)
 - **Перевірка:** підтверджено · **Зусилля:** M · **Область:** web: service worker
 - **Де:** apps/web/src/sw/cache.ts:22, 52-118, 151-175; apps/web/src/sw/messages.ts:97-107; apps/web/src/sw/cachePolicy.ts; apps/web/src/core/app/swControl.ts:97-99, 146-160; apps/web/src/core/auth/AuthContext.tsx:382-402, 728-733
 - **Першопричина:** activeUserKey живе в пам'яті SW і після idle-kill (близько 30 с) повертається в anon. SW_SET_USER надсилається лише при зміні user.id за життя сторінки. Тому boot-запити всіх користувачів пишуться в спільну партицію, а /me нового користувача може лягти під ключ попереднього. CacheableResponsePlugin кешує будь-яку 200, ігноруючи Cache-Control: no-store, а identity-wipe не викликає swClearCaches.
@@ -859,7 +859,7 @@ Script v3-export.mjs, output in v3-out.txt, run as idorA, who owns receipts 23 (
 
 ### `priv-13` [medium] Черга GDPR-очищення безстроково зберігає email видалених користувачів: рядок stripe без customer_id ніколи не завершується
 
-- **Стан:** частково виправлено в [#1402](https://github.com/SkOrDs-02/sergeant/pull/1402) (змерджено 2026-10-08) (рядок stripe без customer_id тепер завершується з email = NULL; лишилось рішення власника за ADR-0016 п.5: стеля waitingOnConfig і редагування email в exhausted-рядках; sentry/resend без токенів досі чекають конфіг)
+- **Стан:** виправлено: [#1402](https://github.com/SkOrDs-02/sergeant/pull/1402) (змерджено 2026-10-08) (рядок stripe без customer_id тепер завершується з email = NULL; рішення власника 2026-10-23 виконано в цьому PR: через 30 днів від `created_at` воркер стирає email у всіх рядках черги, і в pending (вендор без токена), і в exhausted, міграція 164 знімає CHECK `pending_email`; sentry без токена чекає конфіг уже без email, а resend без email закривається `completed_at` з warn, бо контакт за email видалити вже нічим)
 - **Перевірка:** підтверджено · **Зусилля:** S · **Швидкий виграш** · **Область:** server: GDPR cleanup worker
 - **Де:** apps/server/src/modules/gdpr/externalDelete.ts:113-120; apps/server/src/modules/gdpr/cleanupWorker.ts:178-181, 220-231, 279-318; apps/server/src/modules/gdpr/cleanupQueue.ts
 - **Першопричина:** deleteStripeCustomer повертає 'skipped' в обох випадках: коли немає ключа і коли немає stripe_customer_id. cleanupWorker трактує 'skipped' для всіх сервісів, крім posthog, як «чекаємо конфіг» і переносить рядок на годину вперед. Email обнуляється лише при завершенні, тож для більшості користувачів (без Stripe) рядок з email живе вічно. Exhausted-рядки email теж зберігають.
