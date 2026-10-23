@@ -391,7 +391,72 @@ describe("updateBudget", () => {
     });
   });
 
-  it("updates an existing goal case-insensitively by name, writing a single AI contribution", () => {
+  it("logic-03: saved_amount дописує запис і не стирає наявний лог", () => {
+    const contributions = [
+      { id: "c1", amountUah: 3000, date: "2026-09-01", note: "вручну" },
+      { id: "c2", amountUah: 2000, date: "2026-09-15" },
+    ];
+    seedCache({
+      budgets: [
+        {
+          id: "g1",
+          type: "goal",
+          name: "Авто",
+          targetAmount: 50000,
+          savedAmount: 0,
+          contributions,
+        },
+      ],
+    });
+    const out = updateBudget(
+      ub({
+        scope: "goal",
+        name: "Авто",
+        target_amount: 50000,
+        saved_amount: 7000,
+      }),
+    );
+    assertUndoable(out);
+    const saved = writes.get("finyk_budgets") as Array<{
+      contributions: Array<{ amountUah: number }>;
+    }>;
+    expect(saved[0]!.contributions.slice(0, 2)).toEqual(contributions);
+    expect(saved[0]!.contributions).toHaveLength(3);
+    expect(saved[0]!.contributions[2]!.amountUah).toBe(2000);
+    expect(out.result).toContain("7 000/50 000");
+  });
+
+  it("logic-03: saved_amount менший за накопичене не видаляє записів і чесно про це каже", () => {
+    const contributions = [{ id: "c1", amountUah: 5000, date: "2026-09-01" }];
+    seedCache({
+      budgets: [
+        {
+          id: "g1",
+          type: "goal",
+          name: "Авто",
+          targetAmount: 50000,
+          savedAmount: 0,
+          contributions,
+        },
+      ],
+    });
+    const out = updateBudget(
+      ub({
+        scope: "goal",
+        name: "Авто",
+        target_amount: 50000,
+        saved_amount: 1000,
+      }),
+    );
+    assertUndoable(out);
+    const saved = writes.get("finyk_budgets") as Array<{
+      contributions: unknown[];
+    }>;
+    expect(saved[0]!.contributions).toEqual(contributions);
+    expect(out.result).toContain("не видаляв");
+  });
+
+  it("updates an existing goal case-insensitively, appending the delta to the log (legacy savedAmount migrated)", () => {
     seedCache({
       budgets: [
         {
@@ -419,11 +484,11 @@ describe("updateBudget", () => {
     }>;
     expect(saved).toHaveLength(1);
     expect(saved[0]!.targetAmount).toBe(80000);
-    // Прогрес більше не пишеться в `savedAmount` — AI-екшн замінює лог
-    // поповнень одним записом на всю задану суму (goal-progress-auto-sync).
-    expect(saved[0]!.contributions).toHaveLength(1);
-    expect(saved[0]!.contributions[0]).toMatchObject({
-      amountUah: 20000,
+    // Легасі 10000 став першим записом, різниця 10000 дописана новим.
+    expect(saved[0]!.contributions.map((c) => c.amountUah)).toEqual([
+      10000, 10000,
+    ]);
+    expect(saved[0]!.contributions[1]).toMatchObject({
       note: "Через Сержанта",
     });
   });

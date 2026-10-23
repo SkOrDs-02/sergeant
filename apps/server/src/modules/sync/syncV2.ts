@@ -36,6 +36,7 @@ import {
   hasUnstorableText,
   readOriginDeviceId,
   recordSyncV2,
+  settleUnknownTableOp,
 } from "./syncV2-core.js";
 import {
   applyRoutineEntries,
@@ -386,12 +387,19 @@ export async function syncV2Push(req: Request, res: Response): Promise<void> {
         continue;
       }
 
+      // data-48: невідома таблиця відсікається ДО будь-якого запису в
+      // `sync_op_log` (payload не зберігаємо ні в якому вигляді). Відповідь
+      // per-op, решта батча їде далі; повтор ключа знову дає той самий вердикт.
+      const applyFn = lookupApplyFn(op.table);
+      if (!applyFn) {
+        if (settleUnknownTableOp(req, op, results)) rejectedCount++;
+        continue;
+      }
+
       const clientTs = new Date(op.client_ts);
       let status: "applied" | "rejected" = "applied";
       let reason: RejectReason | null = null;
-
-      const skewMs = clientTs.getTime() - Date.now();
-      if (skewMs > CLOCK_SKEW_FORWARD_MS) {
+      if (clientTs.getTime() - Date.now() > CLOCK_SKEW_FORWARD_MS) {
         status = "rejected";
         reason = "clock_skew";
       }
@@ -412,17 +420,11 @@ export async function syncV2Push(req: Request, res: Response): Promise<void> {
         reason = "invalid_text_encoding";
       }
 
-      const applyFn = lookupApplyFn(op.table);
-      if (status === "applied" && !applyFn) {
-        status = "rejected";
-        reason = "table_not_allowed";
-      }
-
       // `op_apply` лишається відкритим до запису в журнал: якщо ON CONFLICT
       // покаже, що цей ключ уже записав паралельний пуш, або сам запис у
       // журнал упаде, apply відкочується (apply і журнал атомарні).
       let applySavepointOpen = false;
-      if (status === "applied" && applyFn) {
+      if (status === "applied") {
         await client.query("SAVEPOINT op_apply");
         applySavepointOpen = true;
         try {

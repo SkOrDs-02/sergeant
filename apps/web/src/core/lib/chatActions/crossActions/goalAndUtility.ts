@@ -1,73 +1,34 @@
-import { ls, lsSet } from "../../hubChatUtils";
 import { patchNutritionPrefs } from "@nutrition/lib/nutritionStorage";
 import type { ConvertUnitsAction, SetGoalAction } from "../types";
 import { formatNumberUk } from "@sergeant/shared";
 
+// rel-16 (рішення власника 2026-10-19/23): `set_goal` звужено до денної норми
+// калорій. Раніше тул писав у `hub_goals_v1`, який ніхто не читає, і
+// рапортував «створено»; тепер цей ключ не пишеться, а все, крім ккал, —
+// чесна відмова (серверну схему тулу не чіпаємо: касети tool-eval незмінні).
 export function setGoal(action: SetGoalAction): string {
-  const {
-    description,
-    target_weight_kg,
-    target_date,
-    daily_kcal,
-    workouts_per_week,
-  } = (action as SetGoalAction).input;
-  const desc = (description || "").trim();
-  if (!desc) return "Потрібен опис цілі.";
-  const goals = ls<
-    Array<{
-      id: string;
-      description: string;
-      targetWeightKg?: number;
-      targetDate?: string;
-      dailyKcal?: number;
-      workoutsPerWeek?: number;
-      createdAt: string;
-    }>
-  >("hub_goals_v1", []);
-  const goal: (typeof goals)[0] = {
-    id: `goal_${Date.now().toString(36)}_${crypto.randomUUID()}`,
-    description: desc,
-    createdAt: new Date().toISOString(),
-  };
-  const parts: string[] = [`Ціль "${desc}" створено`];
-  if (target_weight_kg != null) {
-    const tw = Number(target_weight_kg);
-    if (Number.isFinite(tw) && tw > 0) {
-      goal.targetWeightKg = tw;
-      parts.push(`цільова вага: ${formatNumberUk(tw)} кг`);
-    }
+  const { target_weight_kg, target_date, daily_kcal, workouts_per_week } = (
+    action as SetGoalAction
+  ).input;
+  const dk = daily_kcal == null ? NaN : Number(daily_kcal);
+  if (!Number.isFinite(dk) || dk <= 0) {
+    return "Не вдалося зберегти ціль: поки що я зберігаю лише денну норму калорій (ккал/день). Цілі ваги, дедлайну чи тренувань не записую, бо їх ніде не буде видно.";
   }
-  if (target_date && /^\d{4}-\d{2}-\d{2}$/.test(target_date)) {
-    goal.targetDate = target_date;
-    parts.push(`дедлайн: ${target_date}`);
+  // Лише поле цілі, поверх актуального кешу, і не до гідратації (data-04):
+  // інакше застарілий/дефолтний blob стер би шаблони страв і нагадування.
+  // Канонічне сховище Харчування (dual-write у SQLite); застарілий LS-ключ
+  // `nutrition_prefs_v1` tombstoned.
+  if (!patchNutritionPrefs({ dailyTargetKcal: dk })) {
+    return "Не вдалося зберегти ціль ккал у Їжі: дані Їжі ще завантажуються, спробуй за кілька секунд";
   }
-  if (daily_kcal != null) {
-    const dk = Number(daily_kcal);
-    if (Number.isFinite(dk) && dk > 0) {
-      goal.dailyKcal = dk;
-      parts.push(`калорії: ${formatNumberUk(dk)} ккал/день`);
-      // Persist the kcal target through the canonical nutrition store
-      // (dual-writes to SQLite). The legacy `nutrition_prefs_v1` LS key is
-      // tombstoned — writing it raw never reached the module UI.
-      // Лише поле цілі, поверх актуального кешу, і не до гідратації (data-04):
-      // інакше застарілий/дефолтний blob стер би шаблони страв і нагадування.
-      if (!patchNutritionPrefs({ dailyTargetKcal: dk })) {
-        parts.push(
-          "ціль ккал у Їжі не збережено: дані Їжі ще завантажуються, спробуй за кілька секунд",
-        );
-      }
-    }
-  }
-  if (workouts_per_week != null) {
-    const wpw = Number(workouts_per_week);
-    if (Number.isFinite(wpw) && wpw > 0) {
-      goal.workoutsPerWeek = wpw;
-      parts.push(`тренувань/тиждень: ${wpw}`);
-    }
-  }
-  goals.push(goal);
-  lsSet("hub_goals_v1", goals);
-  return parts.join(", ") + ` (id:${goal.id})`;
+  const dropped: string[] = [];
+  if (target_weight_kg != null) dropped.push("цільову вагу");
+  if (target_date) dropped.push("дедлайн");
+  if (workouts_per_week != null) dropped.push("кількість тренувань");
+  const note = dropped.length
+    ? `. ${dropped.join(", ")} не збережено: поки зберігаю лише калорії`
+    : "";
+  return `Ціль збережено: ${formatNumberUk(dk)} ккал/день${note}`;
 }
 
 export function convertUnits(action: ConvertUnitsAction): string {
