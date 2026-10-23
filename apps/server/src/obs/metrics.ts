@@ -650,3 +650,5 @@ export {
   billingRecurringChargeTotal,
   billingSupersedeCancelTotal,
 } from "./metrics/billing.js";
+
+export { authPasswordCheckFailuresTotal } from "./metrics/auth.js";

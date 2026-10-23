@@ -204,6 +204,24 @@ groups:
             and correlate with IPs via access logs.
           runbook: "docs/operations/observability/runbook.md#authratelimitspike"
 
+      # sec-10 (аудит 2026-10-01): серія невірних паролів на перевірках для
+      # уже автентифікованої сесії (DELETE /api/me, change-password). Власник
+      # свій пароль знає, тож 10+ відмов за 15 хв — підбір з украденої сесії.
+      # Per-IP ліміт 5/15 хв, тож поріг досяжний лише з 2+ адрес або від
+      # кількох сесій одразу; одна людина, що помилилась 3-4 рази, не будить.
+      - alert: AuthPasswordCheckFailureSeries
+        expr: sum(increase(auth_password_check_failures_total[15m])) >= 10
+        for: 0m
+        labels:
+          severity: ticket
+        annotations:
+          summary: "Серія INVALID_PASSWORD на перевірках пароля сесії (≥10 за 15 хв)"
+          description: |
+            {{ $value }} невірних поточних паролів за 15 хв на DELETE /api/me
+            і /api/auth/change-password. Розбивка: `sum by (route) (increase(auth_password_check_failures_total[15m]))`;
+            сесію шукай за `userIdHash` у лозі `auth.password_check.failed`.
+          runbook: "docs/operations/observability/runbook.md#authpasswordcheckfailureseries"
+
   # ──────────────────────────── AI (SLO 97.0%) ──────────────────
   - name: slo_ai
     rules:

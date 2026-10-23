@@ -1,6 +1,6 @@
 # Observability-runbook
 
-> **Last touched:** 2026-10-20 by @claude (секція ReminderSweepFailed, rel-01); 2026-10-03 by @claude (секція Renovate PR → PR Dependabot, ADR-0103). **Next review:** 2026-12-02.
+> **Last touched:** 2026-10-23 by @claude (секція AuthPasswordCheckFailureSeries, sec-10); 2026-10-20 by @claude (секція ReminderSweepFailed, rel-01); 2026-10-03 by @claude (секція Renovate PR → PR Dependabot, ADR-0103). **Next review:** 2026-12-02.
 > **Status:** Active
 
 > **Update 2026-07-21:** API/server logs — **Coolify** ([ADR-0074](../../governance/adr/0074-hosting-hetzner-coolify.md)). Посилання на «n8n Railway env» нижче — legacy n8n hosting (migrate TBD). OpenClaw WF-103 env — historical ([ADR-0075](../../governance/adr/0075-openclaw-gateway-decommissioned.md)).
@@ -195,6 +195,15 @@ latency вже достатньо висока, щоб rolling deploy / cold sta
    для IP-бану в сервері немає (`RATE_LIMIT_BAN_IPS` ніколи не існував у
    `apps/server/src`); limiter-и — лише per-key ліміти в [`http/rateLimit.ts`](../../../apps/server/src/http/rateLimit.ts).
 3. Якщо це клієнт-реагує на 401 ретраями без backoff — зафіксуй issue.
+
+## AuthPasswordCheckFailureSeries
+
+> ≥10 невірних поточних паролів за 15 хв на `DELETE /api/me` і `POST /api/auth/change-password` (sec-10). Це перевірки для вже залогіненої сесії, тож серія означає підбір пароля з украденої сесії.
+
+1. `sum by (route) (increase(auth_password_check_failures_total[15m]))` — котрий роут.
+2. У логах `msg="auth.password_check.failed"` згрупуй за `userIdHash`: одна сесія чи багато.
+3. Одна сесія → відклич сесії користувача (`DELETE FROM session WHERE "userId" = …` у терміналі Postgres у Coolify) і повідом власника акаунта. Ліміти `api:password-check:{ip,user}` (`rate_limit_hits_total`) показують, чи підбір уже впирається в 429.
+4. Правило діє в Mimir лише після `mimirtool rules sync` цього файлу — синк ручний.
 
 ## AiErrorBudgetBurn
 

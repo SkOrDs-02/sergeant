@@ -84,6 +84,12 @@ vi.mock("./../modules/me/dataRights.js", async (importOriginal) => ({
 }));
 
 import { createApp } from "./../app.js";
+import { authPasswordCheckFailuresTotal } from "./../obs/metrics.js";
+
+async function failures(route: string): Promise<number> {
+  const { values } = await authPasswordCheckFailuresTotal.get();
+  return values.find((v) => v.labels["route"] === route)?.value ?? 0;
+}
 
 beforeEach(() => {
   queryMock.mockReset();
@@ -114,6 +120,25 @@ describe("DELETE /api/me — гварди живого шляху видален
     expect(res.body.code).toBe("INVALID_PASSWORD");
     // Головне тут — саме це: мітка не поставлена.
     expect(requestDeletionMock).not.toHaveBeenCalled();
+  });
+
+  it("sec-10: невірний пароль рахується в auth_password_check_failures_total", async () => {
+    const before = await failures("account_delete");
+    verifyPasswordMock.mockResolvedValueOnce({ ok: false });
+    const app = createApp();
+
+    await request(app)
+      .delete("/api/me")
+      .set("X-Requested-With", "XMLHttpRequest")
+      .send({ password: "wrong" });
+    expect(await failures("account_delete")).toBe(before + 1);
+
+    // Вірний пароль лічильник не чіпає.
+    await request(app)
+      .delete("/api/me")
+      .set("X-Requested-With", "XMLHttpRequest")
+      .send({ password: "correct-horse" });
+    expect(await failures("account_delete")).toBe(before + 1);
   });
 
   it("вірний пароль → 200 з датами вікна і мітка поставлена один раз", async () => {

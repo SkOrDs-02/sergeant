@@ -18,6 +18,7 @@ import pool from "./db.js";
 import { grantReverseTrial } from "./modules/billing/reverseTrial.js";
 import { sanitizeUserImage } from "./auth/sanitizeUserImage.js";
 import { guardUserName } from "./auth/sanitizeUserName.js";
+import { countChangePasswordFailureAfter } from "./auth/passwordCheckFailures.js";
 import {
   guardChangeEmailUserUpdate,
   notifyOldEmailAfterUserUpdate,
@@ -666,6 +667,8 @@ export const auth = betterAuth({
     // sec-05: сирий session token не віддаємо в get-session / list-sessions.
     after: createAuthMiddleware(async (ctx) => {
       stripSessionTokenAfter(ctx);
+      // sec-10: невірний поточний пароль → метрика й алерт на серію.
+      countChangePasswordFailureAfter(ctx);
     }),
   },
   trustedOrigins: getTrustedOrigins(),

@@ -34,6 +34,7 @@ import {
 } from "../modules/me/dataRights.js";
 import { getUserProfile, upsertUserProfile } from "../modules/me/profile.js";
 import { verifyAccountPassword } from "../modules/me/verifyAccountPassword.js";
+import { recordPasswordCheckFailure } from "../auth/passwordCheckFailures.js";
 import { mirrorProfileMemoryEntries } from "../modules/ai-memory/profileMirror.js";
 
 type AuthedUser = {
@@ -290,6 +291,7 @@ export function createMeRouter(): Router {
       const body = MeDeleteBodySchema.parse(req.body ?? {});
       const check = await verifyAccountPassword(user.id, body.password);
       if (!check.ok) {
+        recordPasswordCheckFailure("account_delete", user.id);
         throw new AppError("Неправильний пароль", {
           status: 400,
           code: "INVALID_PASSWORD",
