@@ -46,6 +46,63 @@ afterEach(cleanup);
 
 const radio = (name: string) => screen.getByRole("radio", { name });
 
+const SCALE: ChoiceItem<"1" | "2" | "3">[] = [
+  { value: "1", label: "1" },
+  { value: "2", label: "2" },
+  { value: "3", label: "3" },
+];
+
+function Deselectable({ onChange }: { onChange: (v: string | null) => void }) {
+  const [value, setValue] = useState<"1" | "2" | "3" | null>("2");
+  return (
+    <ChoiceGroup
+      items={SCALE}
+      value={value}
+      ariaLabel="Енергія"
+      onChange={(v) => {
+        setValue(v);
+        onChange(v);
+      }}
+      onDeselect={() => {
+        setValue(null);
+        onChange(null);
+      }}
+    />
+  );
+}
+
+describe("ChoiceGroup onDeselect", () => {
+  it("повторний тап по обраній опції знімає вибір", () => {
+    const onChange = vi.fn();
+    render(<Deselectable onChange={onChange} />);
+    fireEvent.click(radio("2"));
+    expect(onChange).toHaveBeenCalledWith(null);
+    expect(radio("2")).toHaveAttribute("aria-checked", "false");
+    expect(
+      screen.getAllByRole("radio").filter((r) => r.tabIndex === 0),
+    ).toHaveLength(1);
+  });
+
+  it("Space на обраній опції знімає вибір, стрілка вибирає сусідню", async () => {
+    const user = userEvent.setup();
+    const onChange = vi.fn();
+    render(<Deselectable onChange={onChange} />);
+    radio("2").focus();
+    await user.keyboard(" ");
+    expect(onChange).toHaveBeenLastCalledWith(null);
+    await user.keyboard("{ArrowRight}");
+    expect(onChange).toHaveBeenLastCalledWith("3");
+  });
+
+  it("без пропа повторний тап нічого не робить", () => {
+    const onChange = vi.fn();
+    render(<Controlled onChange={onChange} />);
+    fireEvent.click(radio("Витрата"));
+    expect(onChange).not.toHaveBeenCalled();
+    expect(radio("Витрата")).toHaveAttribute("aria-checked", "true");
+  });
+});
+
 describe("ChoiceGroup", () => {
   it.each<ChoiceVariant>(["tiles", "rows"])(
     "%s: radiogroup з aria-checked і заливкою чорнилом лише на обраному",
