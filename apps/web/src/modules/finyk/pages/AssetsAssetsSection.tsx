@@ -1,5 +1,6 @@
 import { Button } from "@shared/components/ui/Button";
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
+import { motionScrollBehavior } from "@shared/lib/ui/motion";
 import { DebtCard } from "../components/DebtCard";
 import { Icon } from "@shared/components/ui/Icon";
 import { AssetsGroupCard } from "./AssetsGroupCard";
@@ -20,11 +21,11 @@ import type { useAssetsState } from "./useAssetsState";
 
 type State = ReturnType<typeof useAssetsState>;
 
-// Єдиний вхід у форми — quick-action «+ Актив» угорі сторінки (пікер
-// «актив / мені винні»); власних кнопок «+ Додати…» у групах більше немає
-// (дублі, звіт власника 2026-09-03). Тому група мусить розгортатись сама,
-// коли форма показана: інакше тап по «+ Актив» відкривав би форму в
-// згорнутій групі, і на екрані не змінилось би нічого.
+// Єдиний вхід у форми - рядок «Актив» кутової кнопки, а «Своє / Мені винні»
+// обирається вже у формі (redesign v3.2); власних кнопок «+ Додати…» у
+// групах немає (дублі, звіт власника 2026-09-03). Тому група мусить
+// розгортатись сама, коли форма показана, інакше вибір відкривав би форму
+// в згорнутій групі.
 
 export function AssetsAssetsSection({ state }: { state: State }) {
   const toast = useToast();
@@ -61,7 +62,22 @@ export function AssetsAssetsSection({ state }: { state: State }) {
     cashBalanceMinor,
     createCashOnHand,
     setCashActualAmount,
+    switchAssetKind,
   } = state;
+
+  // Форма «Мені винні» стоїть у групі вище за «Інші активи»: після
+  // перемикання типу її треба показати, інакше вона зʼявиться поза екраном.
+  const recvFormRef = useRef<HTMLDivElement | null>(null);
+  useEffect(() => {
+    if (!showRecvForm) return;
+    const frame = requestAnimationFrame(() =>
+      recvFormRef.current?.scrollIntoView?.({
+        behavior: motionScrollBehavior(),
+        block: "start",
+      }),
+    );
+    return () => cancelAnimationFrame(frame);
+  }, [showRecvForm]);
 
   // Похідний стан, а не ефект із setState: поки форма показана, група
   // відкрита незалежно від того, що людина згорнула раніше.
@@ -149,31 +165,34 @@ export function AssetsAssetsSection({ state }: { state: State }) {
           </Button>
         )}
         {showRecvForm && (
-          <ReceivableForm
-            newRecv={newRecv}
-            setNewRecv={setNewRecv}
-            setReceivables={setReceivables}
-            setShowRecvForm={(next) => {
-              setShowRecvForm(next);
-              if (!next) setEditingRecvId(null);
-            }}
-            editingId={editingRecvId}
-            onUpdate={(id, value) => {
-              setReceivables((rs) =>
-                rs.map((item) =>
-                  item.id === id
-                    ? {
-                        ...item,
-                        ...value,
-                        id,
-                        linkedTxIds: item.linkedTxIds ?? [],
-                      }
-                    : item,
-                ),
-              );
-              setEditingRecvId(null);
-            }}
-          />
+          <div ref={recvFormRef}>
+            <ReceivableForm
+              onKindChange={switchAssetKind}
+              newRecv={newRecv}
+              setNewRecv={setNewRecv}
+              setReceivables={setReceivables}
+              setShowRecvForm={(next) => {
+                setShowRecvForm(next);
+                if (!next) setEditingRecvId(null);
+              }}
+              editingId={editingRecvId}
+              onUpdate={(id, value) => {
+                setReceivables((rs) =>
+                  rs.map((item) =>
+                    item.id === id
+                      ? {
+                          ...item,
+                          ...value,
+                          id,
+                          linkedTxIds: item.linkedTxIds ?? [],
+                        }
+                      : item,
+                  ),
+                );
+                setEditingRecvId(null);
+              }}
+            />
+          </div>
         )}
       </AssetsGroupCard>
 
@@ -206,6 +225,7 @@ export function AssetsAssetsSection({ state }: { state: State }) {
         )}
         {showAssetForm && (
           <AssetForm
+            onKindChange={switchAssetKind}
             newAsset={newAsset}
             setNewAsset={setNewAsset}
             setManualAssets={setManualAssets}

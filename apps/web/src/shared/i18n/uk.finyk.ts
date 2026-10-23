@@ -7,6 +7,13 @@ export const finykPageMessages = {
     receipt: { label: "Чек", hint: "Фото чека з магазину" },
     import: { label: "Документи", hint: "Скріншоти банку й виписки" },
   },
+  // Тип нового активу у формі на «Активах» (redesign v3.2): «Мені винні» -
+  // актив, тож це вибір у формі, а не окремий рядок аркуша «Додати».
+  assetKind: {
+    label: "Тип активу",
+    own: "Своє",
+    receivable: "Мені винні",
+  },
   reportHeading: "Витрати",
   budgetOverSixtyPercent: "· понад 60% ліміту",
   transactionsFilterLabel: "Фільтр операцій",
