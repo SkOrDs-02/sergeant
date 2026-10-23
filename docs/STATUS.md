@@ -53,8 +53,8 @@
 - [`work/specs/tech-debt/mobile.md`](./work/specs/tech-debt/mobile.md) — Mobile Tech Debt — Sergeant Mobile (Expo + Capacitor) — Active _(Активні спеки)_
 - [`work/specs/launch/product-os/ftux-master-tracker.md`](./work/specs/launch/product-os/ftux-master-tracker.md) — FTUX Master Tracker — стан, проблеми, план — Active — **single source of truth** для First-Time User Experience. _(Активні спеки)_
 - [`work/specs/planning/redesign-v3-2.md`](./work/specs/planning/redesign-v3-2.md) — SPEC: Редизайн v3.2, «один афорданс» — зняття залишкового слопу компонування `apps/web` — Active - PR1 (#1636) і PR4 (#1643) змерджено; PR2 (#1650) відкрито (draft), PR3 у роботі. _(Активні спеки)_
-- [`work/specs/audits/2026-10-01-full-app-audit/domain-logic.md`](./work/specs/audits/2026-10-01-full-app-audit/domain-logic.md) — Аудит 2026-10-01 · Логіка доменів — Active. 66 кластерів (89 знахідок) за першопричиною. Загальний план, метод і обмеження — у [README](./work/specs/audits/ _(Активні спеки)_
-- [`work/specs/audits/2026-10-01-full-app-audit/security.md`](./work/specs/audits/2026-10-01-full-app-audit/security.md) — Аудит 2026-10-01 · Безпека та доступ — Active. 62 кластерів (96 знахідок) за першопричиною. Загальний план, метод і обмеження — у [README](./work/specs/audits/ _(Активні спеки)_
+- [`work/specs/audits/2026-10-01-full-app-audit/domain-logic.md`](./work/specs/audits/2026-10-01-full-app-audit/domain-logic.md) — Аудит 2026-10-01 · Логіка доменів — Active. 66 кластерів (89 знахідок) за першопричиною. Загальний план, метод і обмеження — у _(Активні спеки)_
+- [`work/specs/audits/2026-10-01-full-app-audit/security.md`](./work/specs/audits/2026-10-01-full-app-audit/security.md) — Аудит 2026-10-01 · Безпека та доступ — Active. 62 кластерів (96 знахідок) за першопричиною. Загальний план, метод і обмеження — у _(Активні спеки)_
 
 ## ⏭️ Наступний крок / заблоковано
 
