@@ -52,6 +52,11 @@ vi.mock("./PantrySourceTabs", () => ({
   ),
 }));
 
+const pullPending = vi.hoisted(() => ({ value: false }));
+vi.mock("../hooks/usePantryFirstPullPending", () => ({
+  usePantryFirstPullPending: () => pullPending.value,
+}));
+
 import { PantryCard } from "./PantryCard";
 
 const Card = PantryCard as unknown as (
@@ -75,7 +80,39 @@ function baseProps(overrides: Record<string, unknown> = {}) {
   };
 }
 
-afterEach(() => vi.clearAllMocks());
+afterEach(() => {
+  vi.clearAllMocks();
+  pullPending.value = false;
+});
+
+describe("PantryCard перший pull (rel-10)", () => {
+  it("порожня комора до першого pull: «синхронізую» замість форми й порожнього стану", () => {
+    pullPending.value = true;
+    render(<Card {...baseProps()} />);
+    expect(screen.getByText("Синхронізую комору")).toBeTruthy();
+    expect(screen.queryByPlaceholderText("Продукт")).toBeNull();
+    expect(screen.queryByText("Продуктів удома ще немає")).toBeNull();
+  });
+
+  it("непорожню комору не ховає, навіть поки pull іде", () => {
+    pullPending.value = true;
+    render(
+      <Card
+        {...baseProps({
+          pantryItemsLength: 1,
+          effectiveItems: [{ name: "Рис", qty: 1, unit: "кг" }],
+        })}
+      />,
+    );
+    expect(screen.queryByText("Синхронізую комору")).toBeNull();
+  });
+
+  it("після завершення pull порожня комора показує форму додавання", () => {
+    render(<Card {...baseProps()} />);
+    expect(screen.queryByText("Синхронізую комору")).toBeNull();
+    expect(screen.getByPlaceholderText("Продукт")).toBeTruthy();
+  });
+});
 
 describe("PantryCard add modes", () => {
   it("adds a single item on button click", () => {

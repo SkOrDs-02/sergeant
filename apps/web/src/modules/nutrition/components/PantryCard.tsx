@@ -12,6 +12,7 @@ import { SectionHeading } from "@shared/components/ui/SectionHeading";
 import { Sheet } from "@shared/components/ui/Sheet";
 import { messages } from "@shared/i18n/uk";
 import { NAME_MAX_LEN, NOTE_MAX_LEN } from "@shared/lib/text/limits";
+import { usePantryFirstPullPending } from "../hooks/usePantryFirstPullPending";
 import { formatPantryQty } from "../lib/formatPantryQty";
 import { PantryListGuide, PantryParsePreview } from "./PantryParsePanel";
 import { PantryAmbiguousQtyPrompt } from "./PantryAmbiguousQtyPrompt";
@@ -419,6 +420,10 @@ export function PantryCard({
   // списку зʼявлявся фантом із назвою цієї літери (аудит 2026-10-01, ux-12).
   // Чернетка живе лише у формі: превʼю розбору — `PantryParsePreview`.
   const empty = pantryItemsLength === 0;
+  // rel-10: порожня локальна комора до завершення першого pull ще не означає
+  // «порожньо на акаунті»; форму додавання не показуємо, щоб не плодити дублі.
+  const firstPullPending = usePantryFirstPullPending();
+  const syncing = firstPullPending && empty;
   const inventoryItems = empty ? NO_ITEMS : effectiveItems;
   // Питання про одиницю чи превʼю розбору, що лишились після закриття
   // аркуша, повертають форму інлайн: інакше вони ховались би за кнопкою,
@@ -536,6 +541,18 @@ export function PantryCard({
       )}
     </>
   );
+
+  if (syncing) {
+    return (
+      <Card className="p-4">
+        <EmptyState
+          compact
+          title={messages.nutrition.pantrySyncing.title}
+          description={messages.nutrition.pantrySyncing.description}
+        />
+      </Card>
+    );
+  }
 
   return (
     <>
