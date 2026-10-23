@@ -17,7 +17,7 @@ import { db } from "./drizzle.js";
 import pool from "./db.js";
 import { grantReverseTrial } from "./modules/billing/reverseTrial.js";
 import { sanitizeUserImage } from "./auth/sanitizeUserImage.js";
-import { guardUserName } from "./auth/sanitizeUserName.js";
+import { guardUserEmail, guardUserName } from "./auth/sanitizeUserName.js";
 import { countChangePasswordFailureAfter } from "./auth/passwordCheckFailures.js";
 import {
   guardChangeEmailUserUpdate,
@@ -505,7 +505,7 @@ export const auth = betterAuth({
           // sec-16: `name` без межі роздуває session_data-куку до 431 на
           // кожному запиті; режими reject/truncate — в `sanitizeUserName.ts`.
           const result = sanitizeUserImage(
-            guardUserName(data, context, "create"),
+            guardUserName(guardUserEmail(data), context, "create"),
           );
           if (result.imageStripped) {
             logger.warn(
@@ -575,7 +575,7 @@ export const auth = betterAuth({
           guardChangeEmailUserUpdate(data, context);
           // sec-16: див. коментар в `create.before`.
           const result = sanitizeUserImage(
-            guardUserName(data, context, "update"),
+            guardUserName(guardUserEmail(data), context, "update"),
           );
           if (result.imageStripped) {
             logger.warn(

@@ -4687,6 +4687,13 @@
       "canonical_owner": "docs/work/specs/planning/product-knowledge-backlog.md"
     },
     {
+      "old_path": null,
+      "new_path": "docs/work/specs/planning/raw-input-to-primitive.md",
+      "action": "keep",
+      "genre": "active-work",
+      "canonical_owner": "docs/work/specs/planning/raw-input-to-primitive.md"
+    },
+    {
       "old_path": "docs/work/specs/planning/README.md",
       "new_path": "docs/work/specs/planning/README.md",
       "action": "keep",

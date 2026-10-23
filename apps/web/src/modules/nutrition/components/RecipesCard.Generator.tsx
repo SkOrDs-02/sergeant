@@ -11,7 +11,7 @@
  */
 import type { Dispatch, SetStateAction } from "react";
 import { Card } from "@shared/components/ui/Card";
-import { Input } from "@shared/components/ui/Input";
+import { FIELD_LABEL, Input } from "@shared/components/ui/Input";
 import { Select } from "@shared/components/ui/Select";
 import { Button } from "@shared/components/ui/Button";
 import { SectionHeading } from "@shared/components/ui/SectionHeading";
@@ -74,7 +74,7 @@ export function GeneratorCard({
       <div className="mt-4 grid gap-4">
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
           <div>
-            <div className="text-style-label text-muted mb-1">Ціль</div>
+            <div className={`${FIELD_LABEL} mb-1`}>Ціль</div>
             <Select
               aria-label="Ціль"
               value={prefs.goal}
@@ -138,8 +138,11 @@ export function GeneratorCard({
 
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
           <div>
-            <div className="text-style-label text-muted mb-1">Прийом їжі</div>
+            <label htmlFor="recipe-meal-type" className={`${FIELD_LABEL} mb-1`}>
+              Прийом їжі
+            </label>
             <Select
+              id="recipe-meal-type"
               aria-label="Прийом їжі"
               value={prefs.recipeMealType}
               onChange={(e) =>

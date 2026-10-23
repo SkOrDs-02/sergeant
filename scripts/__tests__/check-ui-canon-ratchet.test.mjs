@@ -30,6 +30,7 @@ import {
   CANON_RING_OPACITY,
   counts,
   NATIVE_CHOICE_ALLOWLIST,
+  RAW_INPUT_ALLOWLIST,
   ROUNDED_FULL_ALLOWLIST,
   ICON_SIZE_TOKENS,
   maskedRanges,
@@ -264,7 +265,7 @@ test("allowlist не масивом — голосна помилка, а не �
   assert.throws(() => allowlistHits({ files: [] }), /масивом/);
 });
 
-test("лічильник знає про всі вісімнадцять метрик — інакше baseline-гейт не побачить нову", () => {
+test("лічильник знає про всі девʼятнадцять метрик — інакше baseline-гейт не побачить нову", () => {
   assert.deepEqual(Object.keys(counts([])).sort(), [
     "addActionsPerRoute",
     "bigRadius",
@@ -283,6 +284,7 @@ test("лічильник знає про всі вісімнадцять мет�
     "numericIconSize",
     "offCanonRingOpacity",
     "overlineOutsideHero",
+    "rawInput",
     "textStateLabel",
   ]);
 });
@@ -473,6 +475,55 @@ test("nativeChoice: файли allowlist не рахуються, комента
   assert.deepEqual(onlyTsx(`// <input type="radio" />`, "nativeChoice"), []);
 });
 
+test("rawInput: голі input, textarea і select ловляться, примітиви й file/hidden ні", () => {
+  const src = `
+    <input type="text" value={v} />
+    <textarea rows={3}></textarea>
+    <select value={s}><option /></select>
+    <input type="file" className="sr-only" />
+    <input type='hidden' name="id" />
+    <Input value={v} />
+    <Select value={s} />
+    <Textarea />
+    <inputGroup />`;
+  const hits = onlyTsx(src, "rawInput");
+  assert.equal(hits.length, 3);
+  assert.match(hits[0].detail, /Input \/ Textarea \/ Select/);
+});
+
+test("rawInput: allowlist (зокрема самі примітиви) не рахується, коментар теж", () => {
+  assert.ok(
+    RAW_INPUT_ALLOWLIST.includes("apps/web/src/shared/components/ui/Input.tsx"),
+  );
+  for (const file of RAW_INPUT_ALLOWLIST) {
+    const hits = scanSource(file, `<input type="text" />`).filter(
+      (h) => h.metric === "rawInput",
+    );
+    assert.deepEqual(hits, [], file);
+  }
+  assert.deepEqual(onlyTsx(`// <input type="text" />`, "rawInput"), []);
+});
+
+test("rawInput: інший файл у теці примітивів рахується", () => {
+  const hits = scanSource(
+    "apps/web/src/shared/components/ui/OtherWidget.tsx",
+    `<input type="text" />`,
+  ).filter((h) => h.metric === "rawInput");
+  assert.equal(hits.length, 1);
+});
+
+test("rawInput: тег у рядковому літералі не рахується, апостроф у JSX-тексті не ховає поле", () => {
+  const quoted = `
+    const a = '<input type="text" />';
+    const b = "<select>";
+    const c = \`<textarea>\`;`;
+  assert.deepEqual(onlyTsx(quoted, "rawInput"), []);
+  const jsx = `
+    <p>М'язи</p>
+    <input type="text" />`;
+  assert.equal(onlyTsx(jsx, "rawInput").length, 1);
+});
+
 test("nativeChoice: лише TSX, рядок у .ts не є розміткою", () => {
   const hits = scanSource(
     "apps/web/src/example.ts",
@@ -560,6 +611,7 @@ test("ZERO_ONLY_METRICS: ненульовий бюджет для заборон
       nativeSelect: 0,
       overlineOutsideHero: 0,
       hueOnButton: 2,
+      rawInput: 0,
     }),
     ["nativeChoice", "hueOnButton"],
   );
@@ -570,6 +622,7 @@ test("ZERO_ONLY_METRICS: ненульовий бюджет для заборон
       nativeSelect: 0,
       overlineOutsideHero: 0,
       hueOnButton: 0,
+      rawInput: 0,
     }),
     ["textStateLabel"],
     "відсутній ключ - теж не нуль",
@@ -658,7 +711,7 @@ test("addActionsPerRoute: збережений замір читається і 
   for (const v of Object.values(perRoute)) assert.equal(typeof v, "number");
 });
 
-test("ZERO_ONLY_METRICS: чинний бюджет тримає всі шість заборон у нулі", () => {
+test("ZERO_ONLY_METRICS: чинний бюджет тримає всі сім заборон у нулі", () => {
   const here = dirname(fileURLToPath(import.meta.url));
   const budget = JSON.parse(
     readFileSync(
@@ -674,5 +727,6 @@ test("ZERO_ONLY_METRICS: чинний бюджет тримає всі шіст�
     "nativeSelect",
     "overlineOutsideHero",
     "hueOnButton",
+    "rawInput",
   ]);
 });

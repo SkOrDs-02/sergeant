@@ -389,9 +389,15 @@ export function HabitForm({
           )}
 
           {routine.categories.length > 0 && (
-            <label className={`${FIELD_LABEL} block`}>
-              Категорія
+            <div>
+              <label
+                htmlFor="habit-category-select"
+                className={`${FIELD_LABEL} block`}
+              >
+                Категорія
+              </label>
               <Select
+                id="habit-category-select"
                 className="mt-1"
                 value={habitDraft.categoryId || ""}
                 onChange={(e) => {
@@ -409,7 +415,7 @@ export function HabitForm({
                   </option>
                 ))}
               </Select>
-            </label>
+            </div>
           )}
         </div>
       )}

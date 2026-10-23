@@ -15,6 +15,7 @@
  * робочими, навіть якщо Сільпо зараз недоступне.
  */
 import { useState } from "react";
+import { Select } from "@shared/components/ui/Select";
 import { formatMoneyFromKopecks } from "@sergeant/shared";
 import { Sheet } from "@shared/components/ui/Sheet";
 import { Notice } from "@shared/components/ui/Notice";
@@ -23,7 +24,6 @@ import { ChoiceCheckbox } from "@shared/components/ui/Choice";
 import { ConfirmDialog } from "@shared/components/ui/ConfirmDialog";
 import { Icon } from "@shared/components/ui/Icon";
 import { Money } from "@shared/components/ui/Money";
-import { Select } from "@shared/components/ui/Select";
 import { messages } from "@shared/i18n/uk";
 import { cn } from "@shared/lib/ui/cn";
 import type { SilpoCartDto, SilpoCartMatchDto } from "@shared/api";
@@ -142,12 +142,14 @@ function MatchPicker({
 }) {
   if (matches.length < 2) return null;
   return (
-    <label className="text-style-caption text-subtle flex items-center gap-1.5">
-      <span className="sr-only">{COPY.altPickerLabel}</span>
+    <div className="text-style-caption text-subtle flex items-center gap-1.5">
       <Select
+        size="sm"
         value={selectedLagerId ?? ""}
         disabled={disabled}
         onChange={(e) => onSelect(e.target.value)}
+        aria-label={COPY.altPickerLabel}
+        className="text-style-caption"
       >
         {matches.map((m) => (
           <option key={m.lagerId} value={m.lagerId}>
@@ -158,7 +160,7 @@ function MatchPicker({
           </option>
         ))}
       </Select>
-    </label>
+    </div>
   );
 }
 

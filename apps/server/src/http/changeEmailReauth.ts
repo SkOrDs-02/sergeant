@@ -4,6 +4,7 @@ import { auth } from "../auth.js";
 import { recordPasswordCheckFailure } from "../auth/passwordCheckFailures.js";
 import { CHANGE_EMAIL_USER_RATE_LIMIT } from "../config/rateLimit.js";
 import { env } from "../env.js";
+import { MAX_USER_EMAIL_LENGTH } from "../auth/sanitizeUserName.js";
 import { reauthenticate } from "../modules/me/reauth.js";
 import { AppError, ValidationError } from "../obs/errors.js";
 import { rateLimitExpress } from "./rateLimit.js";
@@ -54,6 +55,22 @@ export async function changeEmailReauth(
 ): Promise<void> {
   if (req.method !== "POST" || !isChangeEmailPath(req.originalUrl || "")) {
     next();
+    return;
+  }
+  // sec-16: задовгий `newEmail` відсікаємо ДО Better Auth. Інакше він
+  // надсилає лист підтвердження й відповідає успіхом, а `guardUserEmail` у
+  // `databaseHooks` відхиляє вже сам запис, тож обіцяну зміну не завершити.
+  const newEmail = (req.body as { newEmail?: unknown } | undefined)?.newEmail;
+  if (typeof newEmail === "string" && newEmail.length > MAX_USER_EMAIL_LENGTH) {
+    next(
+      new AppError(
+        `Email задовгий: максимум ${MAX_USER_EMAIL_LENGTH} символів.`,
+        {
+          status: 400,
+          code: "INVALID_EMAIL",
+        },
+      ),
+    );
     return;
   }
   try {

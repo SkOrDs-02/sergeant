@@ -10,6 +10,7 @@ import { Icon } from "@shared/components/ui/Icon";
 import { MorphChevron } from "@shared/components/ui/MorphChevron";
 import { useLocalStorageState } from "@shared/hooks";
 import { cn } from "@shared/lib/ui/cn";
+import { fieldFocus } from "@shared/components/ui/Input";
 import { searchFieldProps } from "@shared/lib/ui/searchFieldProps";
 import { messages } from "@shared/i18n/uk";
 import { pluralUa } from "@sergeant/shared";
@@ -184,7 +185,10 @@ export function AssistantCataloguePage({
             value={query}
             onChange={(e) => setQuery(e.target.value)}
             placeholder="Пошук"
-            className="w-full bg-panel border border-line rounded-lg px-3 py-3 text-style-body text-text placeholder:text-subtle focus:outline-none focus-visible:border-brand-500/50 focus-visible:ring-2 focus-visible:ring-focus/45 shadow-card"
+            className={cn(
+              "w-full h-12 bg-panel border border-control rounded-lg px-3 text-style-body text-text placeholder:text-subtle outline-none",
+              fieldFocus(false),
+            )}
             aria-label="Пошук можливостей"
           />
         </div>

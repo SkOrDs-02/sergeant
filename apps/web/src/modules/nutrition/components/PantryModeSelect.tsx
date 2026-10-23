@@ -13,9 +13,10 @@
  * між двома копіпастами.
  */
 import type { Dispatch, SetStateAction } from "react";
+import { FIELD_LABEL } from "@shared/components/ui/Input";
+import { Select } from "@shared/components/ui/Select";
 import type { NutritionPrefs } from "@sergeant/nutrition-domain";
 import { messages } from "@shared/i18n/uk";
-import { Select } from "@shared/components/ui/Select";
 
 const copy = messages.nutrition.pantryMode;
 
@@ -31,11 +32,12 @@ export function PantryModeSelect({
   disabled,
 }: PantryModeSelectProps) {
   return (
-    <label className="block">
-      <span className="block text-style-caption text-muted mb-1">
+    <div>
+      <label htmlFor="pantry-mode-select" className={`${FIELD_LABEL} mb-1`}>
         {copy.label}
-      </span>
+      </label>
       <Select
+        id="pantry-mode-select"
         aria-label={copy.ariaLabel}
         value={prefs.recipePantryMode}
         onChange={(e) =>
@@ -54,6 +56,6 @@ export function PantryModeSelect({
       <span className="block text-style-caption text-muted mt-1">
         {copy.scopeHint}
       </span>
-    </label>
+    </div>
   );
 }

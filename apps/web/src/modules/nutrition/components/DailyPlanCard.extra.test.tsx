@@ -31,7 +31,7 @@ import type { NutritionPrefs } from "@sergeant/nutrition-domain";
 // мережі/сторедж-побічних ефектів, жоден тест тут не читає її testid.
 
 vi.mock("@shared/components/ui/Input", () => ({
-  // `Select` (через `PantryModeSelect`) бере фокус-класи поля з `Input`.
+  FIELD_LABEL: "",
   fieldFocus: () => "",
   Input: ({
     "aria-label": ariaLabel,
@@ -194,7 +194,9 @@ describe("DailyPlanCard — basic render", () => {
       />,
     );
     // Режим комори показує сам пікер; підзаголовок-обіцянку знято (v3.2, 10).
-    expect(screen.getByLabelText(/комор/i)).toHaveValue("ignore");
+    expect(
+      screen.getByRole("combobox", { name: "Використання комори" }),
+    ).toHaveValue("ignore");
     expect(screen.queryByText(/Додай продукти в комору/i)).toBeNull();
   });
 });

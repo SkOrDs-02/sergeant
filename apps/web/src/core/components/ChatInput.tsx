@@ -1,4 +1,5 @@
 import { cn } from "@shared/lib/ui/cn";
+import { fieldFocus } from "@shared/components/ui/Input";
 import { Tooltip } from "@shared/components/ui/Tooltip";
 import { isVoiceInputEnabled } from "@shared/components/ui/voice/resolveVoiceProvider";
 import { stopSpeaking, unlockTTS } from "../lib/hubChatSpeech";
@@ -121,7 +122,10 @@ export function ChatInput({
       </Tooltip>
       <input
         ref={inputRef}
-        className="input-focus-finyk flex-1 bg-panel border border-line rounded-lg px-4 py-3 text-style-body text-text placeholder:text-subtle disabled:opacity-50"
+        className={cn(
+          "flex-1 bg-panel border border-control rounded-lg px-4 py-3 text-style-body text-text placeholder:text-subtle outline-none disabled:opacity-50",
+          fieldFocus(false),
+        )}
         placeholder={
           online ? "Напиши Сержанту" : "Немає зʼєднання, Сержант офлайн"
         }

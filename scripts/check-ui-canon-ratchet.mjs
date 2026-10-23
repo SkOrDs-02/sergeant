@@ -3,7 +3,7 @@
 //
 // Храповик канонічного UI-API в `apps/web/src`.
 //
-// ЩО МІРЯЄ І ЧОМУ САМЕ ТАК. Вісімнадцять метрик, усі — «скільки місць вживає
+// ЩО МІРЯЄ І ЧОМУ САМЕ ТАК. Дев'ятнадцять метрик, усі — «скільки місць вживає
 // НЕканонічний спосіб зробити те, що має канонічний»:
 //
 //   1. `legacyButton`  — легасі-варіанти `<Button>` (`primary`, `secondary`,
@@ -63,22 +63,32 @@
 //      `<label>` чи примітиві `<Label>` з `FormField` (у класах тега або в рядковій константі, яку тег бере
 //      `className={NAME}`). Підпис поля 14 / 500 звичайним регістром, капс
 //      лише на тинті hero, а там `<label>` немає.
+//  15. `rawInput` - голий тег `<input>` / `<textarea>` / `<select>` у TSX.
+//      Канон поля - примітиви `Input` / `Textarea` / `Select`
+//      (`shared/components/ui/Input.tsx`, `Select.tsx`): межа `border-control`
+//      (3:1), фокус межею й `inset-ring` чорнилом, 48 px, підпис 14 / 500. Поза
+//      метрикою: теги з `type="file"` / `type="hidden"` (не поле вводу),
+//      теги в рядкових літералах і файли з `RAW_INPUT_ALLOWLIST` (пофайлово,
+//      з причиною; самі примітиви там теж). Спека
+//      docs/work/specs/planning/raw-input-to-primitive.md. З 2026-10-23
+//      метрика = 0 і стоїть у `ZERO_ONLY_METRICS` (заборона без боргу).
 //
-//  15. `nativeSelect` - сирий `<select` у TSX поза `NATIVE_SELECT_ALLOWLIST`.
-//      Канон - `Select` або `ChoiceGroup rows`.
-//  16. `overlineOutsideHero` - `text-style-overline` у файлі без hero-контексту
+//  16. `nativeSelect` - сирий `<select` у TSX поза `NATIVE_SELECT_ALLOWLIST`.
+//      Канон - `Select` або `ChoiceGroup rows`. Перетинається з `rawInput`:
+//      та міряє всі голі поля, ця - лише вибір, за спекою v3.2.
+//  17. `overlineOutsideHero` - `text-style-overline` у файлі без hero-контексту
 //      (`HERO_CONTEXT_RE`: тинт модуля, `-tint-label` або hero-картка) і поза
 //      `OVERLINE_ALLOWLIST`. Заголовок секції 20 / 700 звичайним регістром.
-//  17. `hueOnButton` - `<Button tone=` / `variant=` модуля або `<button>` із
+//  18. `hueOnButton` - `<Button tone=` / `variant=` модуля або `<button>` із
 //      заливкою `bg-{модуль}(-strong)` поза hero-контекстом. Головна дія -
 //      `solid` чорнилом.
-//  18. `addActionsPerRoute` - кожна кнопка «Додати» / «+» понад одну на
+//  19. `addActionsPerRoute` - кожна кнопка «Додати» / «+» понад одну на
 //      маршрут. Рахує DOM знімального прогону (`ADD_ACTIONS_OUT`), не скан;
 //      замір лежить у `.tech-debt/add-actions-per-route.json`.
 //
-// Метрики 15-17 (redesign v3.2 PR1, спека
+// Метрики 16-18 (redesign v3.2 PR1, спека
 // docs/work/specs/planning/redesign-v3-2.md § Гейти) народились нулями і
-// стоять у `ZERO_ONLY_METRICS`. Метрика 18 у PR1 має лише baseline, PR2
+// стоять у `ZERO_ONLY_METRICS`. Метрика 19 у PR1 має лише baseline, PR2
 // зводить її в 0.
 //
 // Метрики 12-14 (redesign v3.1 PR2, спека
@@ -230,6 +240,31 @@ export const OVERLINE_ALLOWLIST = [
 const MODULE_HUE = "finyk|fizruk|routine|nutrition";
 
 /**
+ * Файли, де сирий `<input>` / `<textarea>` / `<select>` легальний. Шляхи від
+ * кореня репо, пофайлово: виняток на всю теку `shared/components/ui/` пускав
+ * би голе поле в будь-який новий спільний компонент. Новий запис - лише з
+ * причиною. Поля поза примітивами беруть з них межу й фокус (`border-control`,
+ * `fieldFocus`), рішення власника 2026-10-23.
+ */
+export const RAW_INPUT_ALLOWLIST = [
+  // Самі примітиви поля: нативний тег і є їхньою реалізацією.
+  "apps/web/src/shared/components/ui/Input.tsx",
+  "apps/web/src/shared/components/ui/Select.tsx",
+  // Перемикач: прихований `sr-only` checkbox під `role="switch"`, не поле.
+  "apps/web/src/shared/components/ui/Switch.tsx",
+  // Рядок пошуку палітри команд: без рамки всередині власної панелі.
+  "apps/web/src/shared/components/ui/CommandPaletteUI.tsx",
+  // Поле чату з Сержантом: авторозмір, кнопки голосу й відправки всередині.
+  "apps/web/src/core/components/ChatInput.tsx",
+  // Пошук хаба в шапці: власна форма рядка пошуку з іконкою й очищенням.
+  "apps/web/src/core/hub/search/SearchInput.tsx",
+  // Пошук у каталозі можливостей Сержанта, та сама форма рядка пошуку.
+  "apps/web/src/core/AssistantCataloguePage.tsx",
+  // Прихований `sr-only` інпут, що ловить PIN з цифрової клавіатури екрана.
+  "apps/web/src/core/security/AppLock.tsx",
+];
+
+/**
  * Ключі каталогу `@shared/i18n`, значення яких «Розгорнути», «Згорнути» або
  * «Обрано». Звірку з каталогом тримає тест храповика: новий такий ключ без
  * запису тут валить його.
@@ -257,6 +292,7 @@ export const ZERO_ONLY_METRICS = [
   "nativeSelect",
   "overlineOutsideHero",
   "hueOnButton",
+  "rawInput",
 ];
 
 export function zeroOnlyViolations(budgets) {
@@ -776,6 +812,31 @@ function stateHits(relPath, src) {
     }
     labelRe.lastIndex = end + 1;
   }
+
+  if (!RAW_INPUT_ALLOWLIST.includes(norm)) {
+    // Тег у рядковому літералі не рендериться. Повний `maskedRanges` тут не
+    // годиться: апостроф у JSX-тексті («м'язи») відкрив би «рядок» до
+    // наступної лапки й сховав справжні поля нижче. Тож лише той самий рядок
+    // коду: непарна кількість однієї з лапок перед тегом = тег у рядку.
+    const inLineString = (idx) => {
+      const pre = src.slice(src.lastIndexOf("\n", idx - 1) + 1, idx);
+      return ['"', "'", "`"].some((q) => pre.split(q).length % 2 === 0);
+    };
+    const fieldRe = /<(input|textarea|select)(?![\w-])/g;
+    while ((m = fieldRe.exec(src))) {
+      if (inLineString(m.index)) continue;
+      const end = tagEnd(src, m.index + m[0].length);
+      if (end < 0) continue;
+      const tag = src.slice(m.index, end + 1);
+      fieldRe.lastIndex = end + 1;
+      if (/\stype=["'](?:file|hidden)["']/.test(tag)) continue;
+      push(
+        "rawInput",
+        m.index,
+        `голий <${m[1]}> - канон: Input / Textarea / Select (shared/components/ui)`,
+      );
+    }
+  }
   return hits;
 }
 
@@ -877,6 +938,7 @@ export function counts(hits) {
     overlineOutsideHero: 0,
     hueOnButton: 0,
     addActionsPerRoute: 0,
+    rawInput: 0,
   };
   for (const h of hits) out[h.metric]++;
   return out;
@@ -910,7 +972,7 @@ function main() {
     console.error(
       `❌ ${notZero.join(", ")} - заборони без baseline-боргу, бюджет мусить бути 0.\n` +
         `   Вибір - ChoiceGroup, стан - шеврон / заливка + aria, підпис поля без капсу,\n` +
-        `   список - Select, заголовок секції без капсу поза hero, головна дія чорнилом.`,
+        `   поле - Input / Textarea / Select, заголовок секції без капсу поза hero, головна дія чорнилом.`,
     );
     return 1;
   }
@@ -952,7 +1014,8 @@ function main() {
       `сирих <select> ${now.nativeSelect} (бюджет ${budget.budgets.nativeSelect}), ` +
       `оверлайнів поза hero ${now.overlineOutsideHero} (бюджет ${budget.budgets.overlineOutsideHero}), ` +
       `hue модуля на кнопках ${now.hueOnButton} (бюджет ${budget.budgets.hueOnButton}), ` +
-      `зайвих «Додати» на маршрутах ${now.addActionsPerRoute} (бюджет ${budget.budgets.addActionsPerRoute}).`,
+      `зайвих «Додати» на маршрутах ${now.addActionsPerRoute} (бюджет ${budget.budgets.addActionsPerRoute}), ` +
+      `голих полів ${now.rawInput} (бюджет ${budget.budgets.rawInput}).`,
   );
 
   const over = Object.keys(now).filter((k) => now[k] > budget.budgets[k]);
@@ -986,7 +1049,8 @@ function main() {
       "  UA-рядок — у каталог `@shared/i18n`, не в компонент із записом в allowlist;\n" +
       "  вибір — `ChoiceGroup`, стан — шеврон / заливка + aria, підпис поля без капсу;\n" +
       "  список — `Select`, капс-оверлайн лише на тинті hero, головна дія — `solid` чорнилом;\n" +
-      "  одна кнопка «Додати» на маршрут (число — зі знімального прогону, ADD_ACTIONS_OUT).\n" +
+      "  одна кнопка «Додати» на маршрут (число — зі знімального прогону, ADD_ACTIONS_OUT);\n" +
+      "  поле — `Input` / `Textarea` / `Select`, не голий тег.\n" +
       "Мапа легасі→канон і причини — docs/work/specs/c-section-consistency-migration.md\n",
   );
   return 1;
