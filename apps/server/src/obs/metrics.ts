@@ -651,3 +651,5 @@ export {
   billingSupersedeCancelTotal,
   plataSyncLastSuccessTimestampSeconds,
 } from "./metrics/billing.js";
+
+export { authPasswordCheckFailuresTotal } from "./metrics/auth.js";

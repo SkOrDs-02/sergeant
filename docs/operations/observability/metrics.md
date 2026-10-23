@@ -1,6 +1,6 @@
 # Довідник Prometheus-метрик
 
-> **Last touched:** 2026-10-20 by @claude (sync: +1 apply-reason `invalid_prefs_patch`, data-04); 2026-10-03 by @claude (sync: +1 engine-reason `invalid_text_encoding`, §4; раніше: джерело істини → реєстр `obs/metrics/`; alert-routing без n8n; зняті хардкоди лічильників). **Next review:** 2026-12-16.
+> **Last touched:** 2026-10-23 by @claude (auth: +`auth_password_check_failures_total`, sec-10); 2026-10-20 by @claude (sync: +1 apply-reason `invalid_prefs_patch`, data-04); 2026-10-03 by @claude (sync: +1 engine-reason `invalid_text_encoding`, §4; раніше: джерело істини → реєстр `obs/metrics/`; alert-routing без n8n; зняті хардкоди лічильників). **Next review:** 2026-12-16.
 > **Status:** Active — **каталог неповний**, див. врізку одразу нижче
 
 > **⚠️ Каталог відстав від коду — і відстає далі.**
@@ -141,10 +141,13 @@ max(db_pool_waiting)                                                            
 
 ## 3. Auth
 
-| Metric                            | Type      | Labels           | Emitter                                                                                                                             |
-| --------------------------------- | --------- | ---------------- | ----------------------------------------------------------------------------------------------------------------------------------- |
-| `auth_attempts_total`             | Counter   | `op` · `outcome` | [authMiddleware.ts:106](../../../apps/server/src/http/authMiddleware.ts#L106), [auth.ts:192](../../../apps/server/src/auth.ts#L192) |
-| `auth_session_lookup_duration_ms` | Histogram | `outcome`        | [auth.ts:191](../../../apps/server/src/auth.ts#L191)                                                                                |
+| Metric                               | Type      | Labels           | Emitter                                                                                                                             |
+| ------------------------------------ | --------- | ---------------- | ----------------------------------------------------------------------------------------------------------------------------------- |
+| `auth_attempts_total`                | Counter   | `op` · `outcome` | [authMiddleware.ts:106](../../../apps/server/src/http/authMiddleware.ts#L106), [auth.ts:192](../../../apps/server/src/auth.ts#L192) |
+| `auth_session_lookup_duration_ms`    | Histogram | `outcome`        | [auth.ts:191](../../../apps/server/src/auth.ts#L191)                                                                                |
+| `auth_password_check_failures_total` | Counter   | `route`          | [passwordCheckFailures.ts](../../../apps/server/src/auth/passwordCheckFailures.ts) (sec-10)                                         |
+
+`auth_password_check_failures_total` — невірний поточний пароль для вже автентифікованої сесії; `route`: `account_delete` (`DELETE /api/me`) · `change_password` · `change_email` (sec-06). Алерт `AuthPasswordCheckFailureSeries` (≥10 за 15 хв).
 
 `op`: `sign_in` · `sign_up` · `forget_password` · `reset_password` · `signout` · `session_check`. `outcome`: `ok` · `bad_credentials` · `rate_limited` · `invalid` · `error` · `hit` · `miss`. Buckets: `1, 5, 10, 25, 50, 100, 250, 500, 1000` ms.
 
@@ -156,7 +159,7 @@ histogram_quantile(0.95, sum by (le) (rate(auth_session_lookup_duration_ms_bucke
 sum(rate(auth_attempts_total{outcome="error"}[5m])) / sum(rate(auth_attempts_total[5m]))    # SLI 99%
 ```
 
-**SLO/alerts**: [SLO.md §4](./SLO.md#4-auth-slo-990-) · `AuthErrorBudgetBurn{Fast,Slow}` · `AuthSessionLookupSlow` · `AuthRateLimitSpike`.
+**SLO/alerts**: [SLO.md §4](./SLO.md#4-auth-slo-990-) · `AuthErrorBudgetBurn{Fast,Slow}` · `AuthSessionLookupSlow` · `AuthRateLimitSpike` · `AuthPasswordCheckFailureSeries`.
 
 ---
 

@@ -42,6 +42,9 @@ const emailSchema = z.object({
     .min(1, "Введи email")
     .email("Некоректний email")
     .max(254, "Email задовгий"),
+  // Не обовʼязкове на клієнті: акаунт лише з Google пароля не має, і сервер
+  // для нього вимагає свіжий вхід замість пароля (sec-06).
+  password: z.string().optional(),
 });
 type EmailValues = z.infer<typeof emailSchema>;
 
@@ -98,9 +101,12 @@ export function PersonalInfoSection({
   // ── Email form ────────────────────────────────────────────────────────────
   const emailForm = useApiForm<EmailValues>({
     schema: emailSchema,
-    defaultValues: { email: user.email ?? "" },
+    defaultValues: { email: user.email ?? "", password: "" },
     onSubmit: async (values) => {
-      const res = await changeEmail({ newEmail: values.email });
+      const res = await changeEmail({
+        newEmail: values.email,
+        ...(values.password ? { password: values.password } : {}),
+      });
       if (res.error) {
         throw new Error(
           mapApiErrorToUserCopy(res.error, "Не вдалося змінити email"),
@@ -109,17 +115,16 @@ export function PersonalInfoSection({
     },
     onSuccess: async () => {
       // Better Auth має дві гілки зміни email, і користувачу треба сказати
-      // рівно те, що станеться далі:
-      //   - поточна адреса НЕ підтверджена → сервер міняє її одразу
-      //     (`updateEmailWithoutVerification`) і шле верифікацію на нову;
-      //   - поточна підтверджена → спершу лист-підтвердження на СТАРУ адресу,
-      //     і лише після кліку в ньому адреса зміниться.
+      // рівно те, що станеться далі (в обох адреса міняється лише після
+      //   кліку в листі, sec-06):
+      //   - поточна адреса НЕ підтверджена → лист-верифікація на НОВУ адресу;
+      //   - поточна підтверджена → спершу лист-підтвердження на СТАРУ адресу.
       // Обидві гілки віддають `{ status: true }`, тож розрізняємо їх за тим
       // самим прапорцем, який бачив сервер.
       toast.success(
         user.emailVerified
           ? "Лист підтвердження надіслано на поточну адресу"
-          : "Адресу змінено, перевір нову скриньку",
+          : "Лист підтвердження надіслано на нову адресу",
       );
       setEditingEmail(false);
       await onRefresh();
@@ -423,7 +428,7 @@ export function PersonalInfoSection({
                 size="xs"
                 disabled={!online}
                 onClick={() => {
-                  emailForm.reset({ email: user.email ?? "" });
+                  emailForm.reset({ email: user.email ?? "", password: "" });
                   setEditingEmail(true);
                 }}
               >
@@ -463,12 +468,21 @@ export function PersonalInfoSection({
                   type="button"
                   onClick={() => {
                     setEditingEmail(false);
-                    emailForm.reset({ email: user.email ?? "" });
+                    emailForm.reset({ email: user.email ?? "", password: "" });
                   }}
                 >
                   Скасувати
                 </Button>
               </div>
+              <Input
+                id="profile-email-password"
+                type="password"
+                placeholder="Поточний пароль"
+                aria-label="Поточний пароль"
+                autoComplete="current-password"
+                disabled={emailForm.isSubmitting || !online}
+                {...emailForm.register("password")}
+              />
               {emailForm.formState.errors.email && (
                 <p
                   className="text-style-caption text-danger-strong"
@@ -485,8 +499,11 @@ export function PersonalInfoSection({
                   {emailForm.serverError}
                 </p>
               )}
+              {/* AI-NOTE: підказка під полями форми email (sec-06), тож caption-кегль свідомий. */}
               <p className="text-style-caption text-muted">
-                На новий email надійде лист для підтвердження.
+                Введи поточний пароль. Якщо входиш лише через Google, пароль не
+                потрібен, але вхід має бути не давніше 10 хвилин. Адреса
+                зміниться після підтвердження з листа.
               </p>
             </div>
           )}

@@ -12,10 +12,11 @@ import request from "supertest";
  * `(rl_key, subject)`), решта — справжній `rateLimitExpress`.
  */
 
-const { buckets, queryMock, getSessionMock } = vi.hoisted(() => ({
+const { buckets, queryMock, getSessionMock, verifyMock } = vi.hoisted(() => ({
   buckets: new Map<string, number>(),
   queryMock: vi.fn(),
   getSessionMock: vi.fn(),
+  verifyMock: vi.fn(),
 }));
 
 vi.mock("../db.js", () => ({
@@ -30,8 +31,14 @@ vi.mock("../auth.js", () => ({
   },
 }));
 
+// sec-06: change-email у справжньому роутері звіряє пароль через цей модуль.
+vi.mock("../modules/me/verifyAccountPassword.js", () => ({
+  verifyAccountPassword: verifyMock,
+}));
+
 import { authPasswordCheckRateLimit } from "./passwordCheckRateLimit.js";
 import { createAuthRouter } from "../routes/auth.js";
+import { errorHandler } from "./errorHandler.js";
 
 function makeApp() {
   const app = express();
@@ -67,6 +74,8 @@ beforeEach(() => {
   });
   getSessionMock.mockReset();
   getSessionMock.mockResolvedValue({ user: { id: "u1" } });
+  verifyMock.mockReset();
+  verifyMock.mockResolvedValue({ ok: true, method: "password" });
 });
 
 describe("authPasswordCheckRateLimit", () => {
@@ -166,5 +175,40 @@ describe("проводка в createAuthRouter", () => {
       .get("/api/auth/get-session")
       .set("X-Forwarded-For", "203.0.113.1");
     expect(gs.status).toBe(200);
+  });
+});
+
+describe("проводка change-email в createAuthRouter (sec-06)", () => {
+  const changeEmail = (app: express.Express) =>
+    request(app)
+      .post("/api/auth/change-email")
+      .set("X-Forwarded-For", "203.0.113.9")
+      .set("Authorization", "Bearer t1")
+      .send({ newEmail: "new@example.com" });
+
+  it("невірний пароль → 400 INVALID_PASSWORD до Better Auth, у бюджеті спроб", async () => {
+    const app = express();
+    app.set("trust proxy", 1);
+    app.use(createAuthRouter());
+    app.use(errorHandler);
+    verifyMock.mockResolvedValue({ ok: false, reason: "invalid_password" });
+
+    const res = await changeEmail(app);
+    expect(res.status).toBe(400);
+    expect(res.body.code).toBe("INVALID_PASSWORD");
+    expect(buckets.get("api:password-check:ip|ip:203.0.113.9")).toBe(1);
+    expect(buckets.has("api:change-email:user|u:u1")).toBe(false);
+  });
+
+  it("4-та зміна email за добу → 429, перші три доходять до Better Auth", async () => {
+    const app = express();
+    app.set("trust proxy", 1);
+    app.use(createAuthRouter());
+
+    for (let i = 0; i < 3; i += 1) {
+      expect((await changeEmail(app)).status).toBe(200);
+    }
+    expect((await changeEmail(app)).status).toBe(429);
+    expect(buckets.get("api:change-email:user|u:u1")).toBe(4);
   });
 });
