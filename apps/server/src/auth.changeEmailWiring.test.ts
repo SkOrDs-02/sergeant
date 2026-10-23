@@ -9,14 +9,16 @@ import { describe, it, expect, vi } from "vitest";
  * прибрати виклик з `auth.ts`, і юніт-тести самого модуля лишаться зеленими,
  * хоча в проді дірка повернулась.
  */
-const { guardMock, notifyMock } = vi.hoisted(() => ({
+const { guardMock, notifyMock, notifyVerifyMock } = vi.hoisted(() => ({
   guardMock: vi.fn((_data: unknown, _ctx: unknown) => {}),
   notifyMock: vi.fn((_updated: unknown, _ctx: unknown) => {}),
+  notifyVerifyMock: vi.fn((_updated: unknown, _ctx: unknown) => {}),
 }));
 
 vi.mock("./auth/changeEmailGuard.js", () => ({
   guardChangeEmailUserUpdate: guardMock,
   notifyOldEmailAfterUserUpdate: notifyMock,
+  notifyOldEmailAfterVerifyEmailChange: notifyVerifyMock,
 }));
 
 vi.mock("./db.js", () => {
@@ -68,5 +70,15 @@ describe("sec-06: auth.ts підключає охоронця change-email", () 
     const ctx = { path: "/change-email" };
     await userUpdate.after(updated, ctx);
     expect(notifyMock).toHaveBeenCalledWith(updated, ctx);
+  });
+
+  // sec-06, 2026-10-23: без `updateEmailWithoutVerification` адреса міняється
+  // на `/verify-email`, і сповіщення старої адреси живе саме там.
+  it("databaseHooks.user.update.after викликає notifyOldEmailAfterVerifyEmailChange", async () => {
+    notifyVerifyMock.mockClear();
+    const updated = { email: "n@example.com" };
+    const ctx = { path: "/verify-email", query: { token: "t" } };
+    await userUpdate.after(updated, ctx);
+    expect(notifyVerifyMock).toHaveBeenCalledWith(updated, ctx);
   });
 });

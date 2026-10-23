@@ -33,7 +33,7 @@ import {
   upsertUserPreferences,
 } from "../modules/me/dataRights.js";
 import { getUserProfile, upsertUserProfile } from "../modules/me/profile.js";
-import { verifyAccountPassword } from "../modules/me/verifyAccountPassword.js";
+import { reauthenticate, sessionCreatedAtOf } from "../modules/me/reauth.js";
 import { recordPasswordCheckFailure } from "../auth/passwordCheckFailures.js";
 import { mirrorProfileMemoryEntries } from "../modules/ai-memory/profileMirror.js";
 
@@ -288,14 +288,27 @@ export function createMeRouter(): Router {
       // `POST /api/auth/delete-user` (див. `user.deleteUser` в `auth.ts`).
       // Без цього кроку планка впала б зі «знає пароль» до «має живу
       // сесію», і вкрадена сесія могла б запустити 30-денний відлік.
+      // OAuth-only акаунт пароля не має: йому потрібна сесія ≤ 10 хв
+      // (sec-10, рішення власника 2026-10-23; `modules/me/reauth.ts`).
       const body = MeDeleteBodySchema.parse(req.body ?? {});
-      const check = await verifyAccountPassword(user.id, body.password);
-      if (!check.ok) {
+      const reauth = await reauthenticate(user.id, body.password, () =>
+        sessionCreatedAtOf(req.headers),
+      );
+      if (!reauth.ok && reauth.code === "INVALID_PASSWORD") {
         recordPasswordCheckFailure("account_delete", user.id);
         throw new AppError("Неправильний пароль", {
           status: 400,
           code: "INVALID_PASSWORD",
         });
+      }
+      if (!reauth.ok) {
+        throw new AppError(
+          "Для цієї дії потрібен свіжий вхід. Увійди ще раз.",
+          {
+            status: 403,
+            code: "SESSION_NOT_FRESH",
+          },
+        );
       }
 
       const payload = MeDeleteResponseSchema.parse(

@@ -218,7 +218,7 @@ groups:
           summary: "Серія INVALID_PASSWORD на перевірках пароля сесії (≥10 за 15 хв)"
           description: |
             {{ $value }} невірних поточних паролів за 15 хв на DELETE /api/me
-            і /api/auth/change-password. Розбивка: `sum by (route) (increase(auth_password_check_failures_total[15m]))`;
+            і /api/auth/change-{password,email}. Розбивка: `sum by (route) (increase(auth_password_check_failures_total[15m]))`;
             сесію шукай за `userIdHash` у лозі `auth.password_check.failed`.
           runbook: "docs/operations/observability/runbook.md#authpasswordcheckfailureseries"
 

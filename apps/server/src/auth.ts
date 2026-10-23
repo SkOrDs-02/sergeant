@@ -22,6 +22,7 @@ import { countChangePasswordFailureAfter } from "./auth/passwordCheckFailures.js
 import {
   guardChangeEmailUserUpdate,
   notifyOldEmailAfterUserUpdate,
+  notifyOldEmailAfterVerifyEmailChange,
 } from "./auth/changeEmailGuard.js";
 import {
   hardenSessionBefore,
@@ -352,13 +353,11 @@ export const auth = betterAuth({
      *
      * Дві гілки (обидві всередині Better Auth, `update-user.ts`):
      *
-     *   - Поточний email НЕ підтверджений → `updateEmailWithoutVerification`
-     *     дозволяє оновити адресу одразу, після чого на НОВУ адресу летить
-     *     звичайний верифікаційний лист. Підтверджувати старий ящик немає
-     *     сенсу: власність над ним ніколи не була доведена. Без підтвердження
-     *     це дірка для вкраденої сесії (sec-06), тому хук `hooks.before`
-     *     вимагає сесію молодше 10 хв (`SESSION_NOT_FRESH`), а `hooks.after`
-     *     шле лист-сповіщення на СТАРУ адресу (auth/changeEmailGuard.ts).
+     *   - Поточний email НЕ підтверджений → на НОВУ адресу летить
+     *     лист-верифікація, адреса міняється лише після кліку
+     *     (`updateEmailWithoutVerification: false`, рішення власника
+     *     2026-10-23, sec-06). Після кліку на СТАРУ адресу йде
+     *     лист-сповіщення (`notifyOldEmailAfterVerifyEmailChange`).
      *   - Поточний email підтверджений → лист-підтвердження йде на СТАРУ
      *     адресу; лише після кліку летить верифікація на нову. Це захист
      *     від тихого перепривʼязування вкраденої сесії — саме той вектор,
@@ -366,11 +365,13 @@ export const auth = betterAuth({
      *     H6-email-verification.md`).
      *
      * Обидва листи йдуть у ту саму durable-чергу `auth-mail`, що й
-     * verify/reset (Resend + 5 ретраїв).
+     * verify/reset (Resend + 5 ретраїв). Перед ендпоінтом стоїть
+     * `http/changeEmailReauth.ts`: поточний пароль (OAuth-only — сесія
+     * ≤ 10 хв) і не більше 3 запитів на добу.
      */
     changeEmail: {
       enabled: true,
-      updateEmailWithoutVerification: true,
+      updateEmailWithoutVerification: false,
       sendChangeEmailConfirmation: async ({ user, newEmail, url }) => {
         const mail = changeEmailConfirmationMail(newEmail, url);
         queueAuthTransactionalEmail({
@@ -591,6 +592,7 @@ export const auth = betterAuth({
         // sec-06: лист-сповіщення на СТАРУ адресу після справжньої зміни.
         after: async (updated, context) => {
           notifyOldEmailAfterUserUpdate(updated, context);
+          notifyOldEmailAfterVerifyEmailChange(updated, context);
         },
       },
     },

@@ -198,7 +198,7 @@ latency вже достатньо висока, щоб rolling deploy / cold sta
 
 ## AuthPasswordCheckFailureSeries
 
-> ≥10 невірних поточних паролів за 15 хв на `DELETE /api/me` і `POST /api/auth/change-password` (sec-10). Це перевірки для вже залогіненої сесії, тож серія означає підбір пароля з украденої сесії.
+> ≥10 невірних поточних паролів за 15 хв на `DELETE /api/me`, `POST /api/auth/change-password` і `change-email` (sec-10, sec-06). Це перевірки для вже залогіненої сесії, тож серія означає підбір пароля з украденої сесії.
 
 1. `sum by (route) (increase(auth_password_check_failures_total[15m]))` — котрий роут.
 2. У логах `msg="auth.password_check.failed"` згрупуй за `userIdHash`: одна сесія чи багато.

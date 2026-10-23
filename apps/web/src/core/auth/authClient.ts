@@ -112,6 +112,12 @@ interface BetterAuthProxyExtensions {
   }) => Promise<AuthResult>;
   changeEmail: (args: {
     newEmail: string;
+    /**
+     * Поточний пароль (sec-06): сервер вимагає його перед Better Auth
+     * (`apps/server/src/http/changeEmailReauth.ts`). Акаунт без пароля
+     * (лише Google) його не передає — йому потрібен свіжий вхід ≤ 10 хв.
+     */
+    password?: string;
     callbackURL?: string;
   }) => Promise<AuthResult>;
 }

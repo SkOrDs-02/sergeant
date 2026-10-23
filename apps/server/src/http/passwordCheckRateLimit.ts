@@ -100,7 +100,12 @@ export const authPasswordCheckRateLimit: RequestHandler = async (
   next,
 ) => {
   const path = (req.originalUrl || "").split("?")[0] ?? "";
-  if (req.method !== "POST" || !path.includes("/change-password")) {
+  // sec-06: `change-email` теж звіряє поточний пароль (scrypt) і ділить той
+  // самий бюджет спроб (`http/changeEmailReauth.ts`).
+  if (
+    req.method !== "POST" ||
+    (!path.includes("/change-password") && !path.includes("/change-email"))
+  ) {
     next();
     return;
   }

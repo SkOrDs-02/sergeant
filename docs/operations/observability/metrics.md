@@ -147,7 +147,7 @@ max(db_pool_waiting)                                                            
 | `auth_session_lookup_duration_ms`    | Histogram | `outcome`        | [auth.ts:191](../../../apps/server/src/auth.ts#L191)                                                                                |
 | `auth_password_check_failures_total` | Counter   | `route`          | [passwordCheckFailures.ts](../../../apps/server/src/auth/passwordCheckFailures.ts) (sec-10)                                         |
 
-`auth_password_check_failures_total` — невірний поточний пароль для вже автентифікованої сесії; `route`: `account_delete` (`DELETE /api/me`) · `change_password`. Алерт `AuthPasswordCheckFailureSeries` (≥10 за 15 хв).
+`auth_password_check_failures_total` — невірний поточний пароль для вже автентифікованої сесії; `route`: `account_delete` (`DELETE /api/me`) · `change_password` · `change_email` (sec-06). Алерт `AuthPasswordCheckFailureSeries` (≥10 за 15 хв).
 
 `op`: `sign_in` · `sign_up` · `forget_password` · `reset_password` · `signout` · `session_check`. `outcome`: `ok` · `bad_credentials` · `rate_limited` · `invalid` · `error` · `hit` · `miss`. Buckets: `1, 5, 10, 25, 50, 100, 250, 500, 1000` ms.
 

@@ -2,8 +2,10 @@
  * sec-10 (аудит 2026-10-01): облік невірного поточного пароля на перевірках
  * для вже автентифікованої сесії.
  *
- * Два джерела, одна метрика `auth_password_check_failures_total{route}`:
+ * Три джерела, одна метрика `auth_password_check_failures_total{route}`:
  *   - `DELETE /api/me` — наш роут, звіряє пароль сам (`routes/me.ts`);
+ *   - `POST /api/auth/change-email` — наш middleware перед Better Auth
+ *     (`http/changeEmailReauth.ts`, sec-06);
  *   - `POST /api/auth/change-password` — Better Auth, кидає
  *     `APIError` з `code: "INVALID_PASSWORD"`; ловимо в `hooks.after`, бо
  *     after-хуки Better Auth виконуються й на помилці (`ctx.context.returned`
@@ -21,7 +23,8 @@ import { hashUserId } from "../lib/userIdHash.js";
 import { logger } from "../obs/logger.js";
 import { authPasswordCheckFailuresTotal } from "../obs/metrics.js";
 
-export type PasswordCheckRoute = "account_delete" | "change_password";
+export type PasswordCheckRoute =
+  "account_delete" | "change_password" | "change_email";
 
 export function recordPasswordCheckFailure(
   route: PasswordCheckRoute,
