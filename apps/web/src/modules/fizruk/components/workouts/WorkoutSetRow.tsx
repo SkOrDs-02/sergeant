@@ -4,6 +4,7 @@
  */
 import { useRef } from "react";
 import { Icon } from "@shared/components/ui/Icon";
+import { Input } from "@shared/components/ui/Input";
 import { cn } from "@shared/lib/ui/cn";
 import { clampNumericInput } from "@shared/lib/format/numberInput";
 import { useDecimalDraft } from "@shared/hooks/useDecimalDraft";
@@ -68,7 +69,7 @@ export function isSetDone(s: WorkoutSet | null | undefined): boolean {
 }
 
 const INPUT_CLASS =
-  "input-focus-fizruk h-11 min-w-0 flex-1 rounded-lg border border-line px-3 text-base font-semibold text-text tabular-nums placeholder:font-normal placeholder:text-subtle read-only:opacity-70 read-only:cursor-not-allowed";
+  "bg-bg px-3 font-semibold tabular-nums placeholder:font-normal read-only:opacity-70 read-only:cursor-not-allowed";
 
 /**
  * One editable set row inside the exercise card: `№ · кг · повт · ✓`
@@ -154,36 +155,42 @@ export function WorkoutSetRow({
       >
         {setNumber}
       </span>
-      <input
-        className={cn(INPUT_CLASS, "bg-bg")}
-        type="text"
-        inputMode="decimal"
-        // Плейсхолдер несе ТІЛЬКИ значення з минулого разу. Підпис колонки
-        // вже стоїть рядком вище (`WorkoutSetColumnHeader`), тож «кг» у
-        // порожньому полі дублював його (браузерний прохід 2026-09-11).
-        placeholder={ghostSet ? fmtLoose(ghostSet.weightKg ?? 0) : ""}
-        aria-label={sr.weightAriaLabel}
-        value={weightDraft.value}
-        readOnly={isReadOnly}
-        onFocus={(e) => e.target.select()}
-        onChange={weightDraft.onChange}
-      />
-      <input
-        ref={repsRef}
-        className={cn(INPUT_CLASS, "bg-bg")}
-        type="number"
-        inputMode="numeric"
-        placeholder={ghostSet ? String(ghostSet.reps ?? 0) : ""}
-        min={0}
-        max={MAX_REPS}
-        aria-label={sr.repsAriaLabel}
-        value={set.reps || ""}
-        readOnly={isReadOnly}
-        onFocus={(e) => e.target.select()}
-        onChange={(e) =>
-          onChangeReps(clampNumericInput(e.target.value, MAX_REPS))
-        }
-      />
+      <div className="min-w-0 flex-1">
+        <Input
+          size="sm"
+          className={INPUT_CLASS}
+          type="text"
+          inputMode="decimal"
+          // Плейсхолдер несе ТІЛЬКИ значення з минулого разу. Підпис колонки
+          // вже стоїть рядком вище (`WorkoutSetColumnHeader`), тож «кг» у
+          // порожньому полі дублював його (браузерний прохід 2026-09-11).
+          placeholder={ghostSet ? fmtLoose(ghostSet.weightKg ?? 0) : ""}
+          aria-label={sr.weightAriaLabel}
+          value={weightDraft.value}
+          readOnly={isReadOnly}
+          onFocus={(e) => e.target.select()}
+          onChange={weightDraft.onChange}
+        />
+      </div>
+      <div className="min-w-0 flex-1">
+        <Input
+          ref={repsRef}
+          size="sm"
+          className={INPUT_CLASS}
+          type="number"
+          inputMode="numeric"
+          placeholder={ghostSet ? String(ghostSet.reps ?? 0) : ""}
+          min={0}
+          max={MAX_REPS}
+          aria-label={sr.repsAriaLabel}
+          value={set.reps || ""}
+          readOnly={isReadOnly}
+          onFocus={(e) => e.target.select()}
+          onChange={(e) =>
+            onChangeReps(clampNumericInput(e.target.value, MAX_REPS))
+          }
+        />
+      </div>
       {onChangeRpe && (
         <WorkoutSetRpeMenu
           setNumber={setNumber}
