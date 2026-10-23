@@ -33,6 +33,7 @@ import {
 } from "../app/appPaths";
 import { useAuth } from "../auth/AuthContext";
 import { migrateAnonymousDataToProfile } from "./anonymousDataMigration.js";
+import { trackAnonymousHandoff } from "./anonymousLeftoversOnLogout";
 
 interface MigrationGateValue {
   readonly isReady: boolean;
@@ -217,6 +218,9 @@ function runSingleFlight(
     inFlightByUser.delete(userId);
   });
   inFlightByUser.set(userId, run);
+  // `data-46`: вихід не чіпає анонімну партицію посеред прогону, а після
+  // успішного прогону й не дивиться в неї (див. `anonymousLeftoversOnLogout`).
+  trackAnonymousHandoff(userId, run.promise);
   return run.promise;
 }
 

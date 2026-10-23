@@ -24,6 +24,7 @@ const emptyBatchResult: ProcessGdprCleanupQueueResult = {
   failed: 0,
   exhausted: 0,
   purged: 0,
+  emailsRedacted: 0,
   deadlineExceeded: false,
 };
 

@@ -105,6 +105,27 @@ describe("changeEmailReauth", () => {
     expect(limiterCalls).toHaveLength(1);
   });
 
+  it("sec-16: newEmail довший за 254 → 400 INVALID_EMAIL ще до сесії й листа", async () => {
+    const next = await run({
+      newEmail: `${"a".repeat(249)}@b.com`,
+      password: "pw",
+    });
+    expect(errorOf(next)).toEqual({ status: 400, code: "INVALID_EMAIL" });
+    expect(getSessionMock).not.toHaveBeenCalled();
+    expect(limiterCalls).toHaveLength(0);
+  });
+
+  it("sec-16: newEmail рівно 254 символи проходить далі", async () => {
+    getSessionMock.mockResolvedValue({
+      user: { id: "u1" },
+      session: { createdAt: FRESH() },
+    });
+    verifyMock.mockResolvedValue("no_password");
+    const next = await run({ newEmail: `${"a".repeat(248)}@b.com` });
+    expect(errorOf(next)?.code).not.toBe("INVALID_EMAIL");
+    expect(getSessionMock).toHaveBeenCalled();
+  });
+
   it("password не рядок → 400 без звірки", async () => {
     const next = await run({ newEmail: "new@example.com", password: ["a"] });
     expect(errorOf(next)?.status).toBe(400);
