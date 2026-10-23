@@ -351,6 +351,7 @@ export async function buildMeExport(
       privat: extra.privat,
       silpo: extra.silpo,
       profile: extra.profile,
+      avatar: extra.avatar,
       feedback: extra.feedback,
       emailUnsubscribes: extra.emailUnsubscribes,
       waitlist: extra.waitlist,
