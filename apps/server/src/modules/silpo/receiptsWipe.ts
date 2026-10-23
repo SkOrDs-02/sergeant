@@ -2,13 +2,14 @@
  * Last validated: 2026-10-19
  * Status: Active
  *
- * Маркер «чеки стерто» (`silpo_connection.receipts_wiped_at`, міграція 159,
- * аудит 2026-10-01 data-47).
+ * Маркер «чеки стерто» (`silpo_wipe_marker.wiped_at`, міграція 165,
+ * аудит 2026-10-01 data-47; до 165 жив на `silpo_connection`, і disconnect
+ * його стирав).
  *
  * `POST /api/silpo/wipe` лишає підключення живим, тож без маркера найближчий
  * синк (полер раз на ≤8 год або «Оновити чеки») тягнув би ті самі замовлення
  * назад. Маркер = момент останнього wipe: синк НЕ вставляє замовлення з
- * `purchased_at <= receipts_wiped_at`. Покупки після wipe приходять як
+ * `purchased_at <= wiped_at`. Покупки після wipe приходять як
  * звичайно.
  *
  * Окремий модуль, бо `receipts.ts` уже далеко за `max-lines` (Hard Rule #18).
@@ -17,8 +18,7 @@ import { query as defaultQuery } from "../../db.js";
 import type { QueryFn } from "./tokenStore.js";
 
 /**
- * Мілісекунди `receipts_wiped_at` або `null`, якщо wipe не було (або рядка
- * підключення немає). `pg` віддає TIMESTAMPTZ як `Date`; рядок приймаємо для
+ * Мілісекунди `receipts_wiped_at` або `null`, якщо wipe не було . `pg` віддає TIMESTAMPTZ як `Date`; рядок приймаємо для
  * сумісності з моками.
  */
 export async function loadReceiptsWipedAtMs(
@@ -28,9 +28,9 @@ export async function loadReceiptsWipedAtMs(
   const { rows } = await queryFn<{
     receipts_wiped_at: Date | string | null;
   }>(
-    `SELECT receipts_wiped_at FROM silpo_connection WHERE user_id = $1`,
+    `SELECT wiped_at AS receipts_wiped_at FROM silpo_wipe_marker WHERE user_id = $1`,
     [userId],
-    { op: "silpo_connection_receipts_wiped_at" },
+    { op: "silpo_wipe_marker_load" },
   );
   const raw = rows[0]?.receipts_wiped_at;
   if (raw == null) return null;

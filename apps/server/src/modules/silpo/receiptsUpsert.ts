@@ -17,6 +17,7 @@
 import type { PoolClient } from "pg";
 import { pool } from "../../db.js";
 import { logger } from "../../obs/logger.js";
+import { loadReceiptsWipedAtMs } from "./receiptsWipe.js";
 import type { QueryFn } from "./tokenStore.js";
 
 /** Позиція чека, уже нормалізована з сирої відповіді Сільпо. */
@@ -111,6 +112,13 @@ export async function upsertReceipt(
   withTransaction: SilpoTransactionRunner,
 ): Promise<{ inserted: boolean; itemsInserted: number }> {
   return withTransaction(async (queryFn) => {
+    // Маркер wipe перечитуємо ТУТ, у транзакції запису: синк, що почався до
+    // `POST /api/silpo/wipe`, читав маркер раз на старті і дописував чеки
+    // вже після стирання (аудит 2026-10-01, data-47).
+    const wipedAtMs = await loadReceiptsWipedAtMs(userId, queryFn);
+    if (wipedAtMs !== null && receipt.purchasedAtMs <= wipedAtMs) {
+      return { inserted: false, itemsInserted: 0 };
+    }
     const res = await queryFn(
       `INSERT INTO silpo_receipts
          (user_id, receipt_id, purchased_at, store_id, channel, payment_hint, total_kop, raw)

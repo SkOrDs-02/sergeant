@@ -25,7 +25,7 @@ function makeFakeDb(opts: {
   purchasedAt: string;
   autoDeclinedAt: string | null;
   autoImportSince: string | null;
-  /** `silpo_connection.receipts_wiped_at` (міграція 159). */
+  /** `silpo_wipe_marker.wiped_at` (міграція 165). */
   receiptsWipedAt?: string | null;
 }) {
   const items = new Map(opts.items.map((i) => [i.id, { ...i }]));
@@ -46,9 +46,9 @@ function makeFakeDb(opts: {
           if (opts.autoImportSince && opts.purchasedAt < opts.autoImportSince)
             continue;
           // Фейк застосовує умову лише якщо вона є в тексті SQL, тож без
-          // `receipts_wiped_at` у запиті тест нижче падає.
+          // `wm.wiped_at` у запиті тест нижче падає.
           if (
-            sql.includes("receipts_wiped_at") &&
+            sql.includes("wm.wiped_at") &&
             opts.receiptsWipedAt &&
             opts.purchasedAt <= opts.receiptsWipedAt
           )
@@ -116,7 +116,7 @@ describe("claimPantryItems", () => {
     expect(claimed).toEqual([]);
   });
 
-  it("auto не бронює позиції чека, купленого до receipts_wiped_at (wipe)", async () => {
+  it("auto не бронює позиції чека, купленого до маркера wipe (wipe)", async () => {
     const { queryFn } = makeFakeDb({
       items: [{ id: 1, claimedAt: null }],
       purchasedAt: "2026-09-25T10:00:00.000Z",
@@ -128,7 +128,7 @@ describe("claimPantryItems", () => {
     expect(claimed).toEqual([]);
   });
 
-  it("auto бронює чек, купленого ПІСЛЯ receipts_wiped_at", async () => {
+  it("auto бронює чек, купленого ПІСЛЯ маркера wipe", async () => {
     const { queryFn } = makeFakeDb({
       items: [{ id: 1, claimedAt: null }],
       purchasedAt: "2026-09-27T10:00:00.000Z",
@@ -140,7 +140,7 @@ describe("claimPantryItems", () => {
     expect(claimed).toEqual([1]);
   });
 
-  it("manual ігнорує receipts_wiped_at (ручний потік не обмежується)", async () => {
+  it("manual ігнорує маркер wipe (ручний потік не обмежується)", async () => {
     const sqls: string[] = [];
     const queryFn = (async (sql: string) => {
       sqls.push(sql);
@@ -148,10 +148,10 @@ describe("claimPantryItems", () => {
     }) as unknown as QueryFn;
     const claimed = await claimPantryItems("u1", "r1", [1], "manual", queryFn);
     expect(claimed).toEqual([1]);
-    expect(sqls[0]).not.toContain("receipts_wiped_at");
+    expect(sqls[0]).not.toContain("wm.wiped_at");
   });
 
-  it("SQL auto-режиму містить умову receipts_wiped_at з NULL-безпечним COALESCE", async () => {
+  it("SQL auto-режиму містить умову маркера wipe з NULL-безпечним COALESCE", async () => {
     const sqls: string[] = [];
     const queryFn = (async (sql: string) => {
       sqls.push(sql);
@@ -159,7 +159,7 @@ describe("claimPantryItems", () => {
     }) as unknown as QueryFn;
     await claimPantryItems("u1", "r1", [1], "auto", queryFn);
     expect(sqls[0]).toContain(
-      "r.purchased_at > COALESCE(c.receipts_wiped_at, '-infinity'::timestamptz)",
+      "r.purchased_at > COALESCE(wm.wiped_at, '-infinity'::timestamptz)",
     );
   });
 
