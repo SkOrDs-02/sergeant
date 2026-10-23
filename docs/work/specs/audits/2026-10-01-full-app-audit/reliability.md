@@ -708,7 +708,7 @@ psql по user dIm64MnZQlIhT5MHzwEsDHftBLz8sUwJ: client_ts 04:47:21.085 n=18 (w4
 
 ### `rel-10` [medium] Кожна зміна комори перезаписує всі позиції місця: O(n²) sync-оп і порожня комора на новому пристрої
 
-- **Стан:** частково виправлено в [#1473](https://github.com/SkOrDs-02/sergeant/pull/1473) (змерджено 2026-10-08) (квадратичний обсяг оп-ів: у outbox ідуть лише нові/змінені позиції; стабільні id позицій і поелементні операції зроблено в [#1527](https://github.com/SkOrDs-02/sergeant/pull/1527) (змерджено 2026-10-19) (data-40); стан «синхронізую» замість порожньої комори на першому pull (до завершення `initialPullState`, з виходами для анонімного режиму, офлайну й таймаута 10 с): цей PR; `Retry-After` у push уже шанується (`planThrottledRetry`, rel-08), окремої роботи не лишилось)
+- **Стан:** виправлено в [#1473](https://github.com/SkOrDs-02/sergeant/pull/1473) (змерджено 2026-10-08) (квадратичний обсяг оп-ів: у outbox ідуть лише нові/змінені позиції; стабільні id позицій і поелементні операції зроблено в [#1527](https://github.com/SkOrDs-02/sergeant/pull/1527) (змерджено 2026-10-19) (data-40); стан «синхронізую» замість порожньої комори на першому pull (до завершення `initialPullState`, з виходами для анонімного режиму, офлайну й таймаута 10 с): [#1610](https://github.com/SkOrDs-02/sergeant/pull/1610) (змерджено 2026-10-23); `Retry-After` у push уже шанується (`planThrottledRetry`, rel-08), окремої роботи не лишилось)
 - **Перевірка:** підтверджено · **Зусилля:** M · **Область:** web: Харчування (комора) dual-write
 - **Та сама першопричина, що й** [`data-40`](./data-integrity.md#data-40): Обидва випливають з моделі комори «переписати весь список місця» з позиційними id: rel-10 дає O(n²) оп-ів і 429, data-40 тихі втрати при паралельних правках. Стабільні UUID позицій і поелементні операції закривають обидва (і полегшують data-10).
 - **Де:** apps/web/src/modules/nutrition/lib/sqliteWriter/diff.ts:560-566; apps/web/src/modules/nutrition/lib/sqliteWriter/adapter.ts; apps/web/src/core/syncEngine/syncEngineReader.ts:195-206
@@ -1363,7 +1363,7 @@ x5_food.mjs: /api/food-search?q=apple 200 126ms `public, max-age=300, stale-whil
 
 ### `rel-22` [medium] Пошук їжі для підключених до Сільпо: гілка Сільпо без дедлайну і з 12-18 HTTP-запитами на кожне натискання
 
-- **Стан:** виправлено: дедлайн у [#1445](https://github.com/SkOrDs-02/sergeant/pull/1445) (змерджено 2026-10-08), решта (кеш initialize-сесії, кеш per user+query на 60 с, мінімальна довжина запиту 3, 429 у breaker і Retry-After, стеля тіла MCP-відповіді 4 МіБ) у цьому PR
+- **Стан:** виправлено: дедлайн у [#1445](https://github.com/SkOrDs-02/sergeant/pull/1445) (змерджено 2026-10-08), решта (кеш initialize-сесії, кеш per user+query на 60 с, мінімальна довжина запиту 3, 429 у breaker і Retry-After, стеля тіла MCP-відповіді 4 МіБ) у [#1608](https://github.com/SkOrDs-02/sergeant/pull/1608) (змерджено 2026-10-23)
 - **Перевірка:** підтверджено · **Зусилля:** M · **Область:** server: Сільпо MCP / food-search
 - **Де:** apps/server/src/modules/nutrition/food-search.ts:146,214-234; apps/server/src/modules/silpo/foodSource.ts:464-518; apps/server/src/modules/silpo/mcpClient.ts:96-98,178-211,255-330,408-436
 - **Першопричина:** AbortSignal.timeout(8000) передається лише в OFF і USDA, а searchSilpoProducts стоїть у тому самому Promise.all без сигналу. Кожен callMcpTool робить initialize, notifications/initialized і tools/call з власними ретраями по 15 с, і етапи йдуть послідовно. 429 не відкриває breaker, Retry-After ігнорується, розмір відповіді не обмежено.
