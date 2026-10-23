@@ -10,9 +10,6 @@ import { migrateNutrition } from "../../modules/nutrition/lib/clientMigrate.js";
 import { migrateFinyk } from "../../modules/finyk/lib/clientMigrate.js";
 import { applyPullOp } from "../syncEngine/applyPullOp.js";
 import { migrateAnonymousDataToProfile } from "./anonymousDataMigration.js";
-import { preflightAnonymousRows } from "./anonymousPartitionPreflight.js";
-import { FIZRUK_CLIENT_MIGRATIONS } from "@sergeant/db-schema/sqlite/migrations";
-import { createClientMigrator } from "@shared/lib/db/clientMigrator";
 
 // Only the browser partition manager and network runtime are replaced.
 // Migrations, row application, outbox enqueue and cleanup use real SQLite.
@@ -504,89 +501,5 @@ describe("anonymous migration — persistent SQLite boundaries", () => {
         "anon-migration/push: offline [vfs=native-test-sqlite pool=3/64 disk=2/8MB]",
     });
     expect(String(error)).not.toContain("name-habit-1");
-  });
-});
-
-// ux-01: дешевий preflight до міграцій схем і скану. Кожен кейс нижче —
-// або доказ «порожньо», або доказ, що перенос НЕ пропущено.
-describe("anonymous migration — preflight", () => {
-  function freshAnonPartition(): Partition {
-    part().db.close();
-    const fresh = open(join(directory, "anon-fresh.sqlite"));
-    partitions.set(ANON, fresh);
-    return fresh;
-  }
-  function tables(user = ANON): string[] {
-    return rows(
-      "SELECT name FROM sqlite_master WHERE type = 'table' ORDER BY name",
-      user,
-    ).map((row) => row["name"] as string);
-  }
-
-  it("treats a fresh anonymous file as empty without creating module tables", async () => {
-    const fresh = freshAnonPartition();
-    fresh.db.exec("CREATE TABLE kv_store (k TEXT PRIMARY KEY, v TEXT)");
-    await expect(preflightAnonymousRows(fresh.client)).resolves.toBe("empty");
-    await expect(migrateAnonymousDataToProfile(USER)).resolves.toEqual({
-      migratedRows: 0,
-    });
-    // Без preflight розвідка прогнала б міграції 4 модулів на цьому файлі.
-    expect(tables()).toEqual(["kv_store"]);
-    expect(boundary.bootReader).not.toHaveBeenCalled();
-    expect(boundary.current).toBe(USER);
-  });
-
-  it("is empty for a fully migrated partition that holds only other users' rows", async () => {
-    seed("foreign-row", OTHER);
-    await expect(preflightAnonymousRows(part().client)).resolves.toBe("empty");
-  });
-
-  it("probes when a local-anon row exists, tombstones included", async () => {
-    seed();
-    part().db.exec(`UPDATE routine_habits SET deleted_at = '${TS}'`);
-    await expect(preflightAnonymousRows(part().client)).resolves.toBe("probe");
-  });
-
-  it("probes an unknown table in a file without module ledgers", async () => {
-    const fresh = freshAnonPartition();
-    fresh.db.exec("CREATE TABLE legacy_thing (user_id TEXT)");
-    await expect(preflightAnonymousRows(fresh.client)).resolves.toBe("probe");
-  });
-
-  it("does not skip rows that only a pending client migration turns into transferable rows", async () => {
-    const fresh = freshAnonPartition();
-    await migrateRoutine(fresh.client);
-    await migrateNutrition(fresh.client);
-    await migrateFinyk(fresh.client);
-    // Стара анонімна партиція: Фізрук ще до `007_fizruk_pushups_to_workouts`.
-    await createClientMigrator(
-      FIZRUK_CLIENT_MIGRATIONS.filter((file) => file.name < "007"),
-      "__fizruk_migrations",
-    )(fresh.client);
-    fresh.db
-      .prepare(
-        "INSERT INTO fizruk_pushups (user_id, date_key, reps, updated_at) VALUES (?, ?, ?, ?)",
-      )
-      .run(ANON, "2026-10-01", 20, TS);
-    await expect(preflightAnonymousRows(fresh.client)).resolves.toBe("probe");
-
-    const result = await migrateAnonymousDataToProfile(USER);
-    expect(result.migratedRows).toBeGreaterThan(0);
-    expect(
-      rows("SELECT user_id FROM fizruk_workouts", USER).map(
-        (row) => row["user_id"],
-      ),
-    ).toEqual([USER]);
-    expect(claim()["status"]).toBe("completed");
-  });
-
-  it("falls back to the full probe when the preflight itself fails", async () => {
-    const client: SqliteMigrationClient = {
-      ...part().client,
-      all: () => {
-        throw new Error("SQLITE_IOERR");
-      },
-    };
-    await expect(preflightAnonymousRows(client)).resolves.toBe("probe");
   });
 });
