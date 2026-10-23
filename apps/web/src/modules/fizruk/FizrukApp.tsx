@@ -185,10 +185,10 @@ export default function FizrukApp({
   // «Почати» дублював таб «Тренування» в нижній навігації та hero-картку
   // Дашборда, тож прибраний. Коли є активна сесія — один тап з будь-якої
   // сторінки модуля веде прямо в її лог (canonical selector, той самий,
-  // що й Dashboard hero-картка). Hidden on the two pages that already
-  // manage workouts themselves.
-  const showFab =
-    Boolean(activeWorkoutId) && page !== "workouts" && page !== "workout";
+  // що й Dashboard hero-картка). Лише на Огляді (redesign v3.2, позиція
+  // 15): на інших вкладках кнопка дублювала «Відкрити» в панелі
+  // тренування й накривала контент.
+  const showFab = Boolean(activeWorkoutId) && page === "dashboard";
 
   // Contextual back-button targets for the three sub-pages that show
   // a `← <label>` arrow instead of the module's "back to hub" arrow.

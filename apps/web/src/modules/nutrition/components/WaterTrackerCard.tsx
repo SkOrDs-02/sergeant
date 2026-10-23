@@ -5,10 +5,12 @@
 import { useEffect, useRef, useState } from "react";
 import { Icon } from "@shared/components/ui/Icon";
 import { cn } from "@shared/lib/ui/cn";
-import { useWaterTracker } from "../hooks/useWaterTracker";
+import { useWaterTracker, WATER_ADD_EVENT } from "../hooks/useWaterTracker";
 import { Card } from "@shared/components/ui/Card";
 import { SectionHeading } from "@shared/components/ui/SectionHeading";
 import { Input } from "@shared/components/ui/Input";
+import { Button } from "@shared/components/ui/Button";
+import { Sheet } from "@shared/components/ui/Sheet";
 import { WaterHistorySheet } from "./WaterHistorySheet";
 import { messages } from "@shared/i18n/uk";
 import { formatNumberUk } from "@sergeant/shared";
@@ -44,6 +46,13 @@ export function WaterTrackerCard({ goalMl = 2000 }: WaterTrackerCardProps) {
   const [customMl, setCustomMl] = useState("");
   const [lastAction, setLastAction] = useState<LastAction>(null);
   const [historyOpen, setHistoryOpen] = useState(false);
+  const [addOpen, setAddOpen] = useState(false);
+
+  useEffect(() => {
+    const open = () => setAddOpen(true);
+    window.addEventListener(WATER_ADD_EVENT, open);
+    return () => window.removeEventListener(WATER_ADD_EVENT, open);
+  }, []);
 
   const handleAdd = (ml: number) => {
     const n = Number(ml);
@@ -64,6 +73,7 @@ export function WaterTrackerCard({ goalMl = 2000 }: WaterTrackerCardProps) {
     if (!Number.isFinite(n) || n <= 0) return;
     handleAdd(n);
     setCustomMl("");
+    setAddOpen(false);
   };
 
   const pct = goalMl > 0 ? Math.min(100, (todayMl / goalMl) * 100) : 0;
@@ -141,15 +151,22 @@ export function WaterTrackerCard({ goalMl = 2000 }: WaterTrackerCardProps) {
         ))}
       </div>
 
-      {/* Custom amount + undo. `flex-wrap` — if the row (input + 3 possible
-          buttons) genuinely can't fit at 320px, it wraps to a second line
-          instead of clipping (round-2 UI audit M5). */}
-      <div className="mt-2 flex flex-wrap items-center gap-1.5">
-        {/* `Input`'s `className` prop lands on the inner `<input>`, not its
-            own wrapping div — that wrapper is the actual flex item in this
-            row, so it needs its own `flex-1 min-w-0` to be the thing that
-            shrinks (round-2 UI audit M5). */}
-        <div className="flex-1 min-w-0">
+      <Sheet
+        open={addOpen}
+        onClose={() => setAddOpen(false)}
+        title={messages.nutrition.addSources.water.label}
+        footer={
+          <Button
+            variant="solid"
+            className="h-12 w-full"
+            onClick={handleCustomAdd}
+            disabled={!customMl || Number(customMl) <= 0}
+          >
+            {messages.nutrition.waterAdd.submit}
+          </Button>
+        }
+      >
+        <div className="p-4">
           <Input
             value={customMl}
             onChange={(e) => setCustomMl(e.target.value.replace(/\D/g, ""))}
@@ -161,18 +178,15 @@ export function WaterTrackerCard({ goalMl = 2000 }: WaterTrackerCardProps) {
             }}
             placeholder="мл"
             inputMode="numeric"
-            className="h-11 w-full"
             aria-label="Свій обʼєм у мл"
           />
         </div>
-        <button
-          type="button"
-          onClick={handleCustomAdd}
-          disabled={!customMl || Number(customMl) <= 0}
-          className="h-11 px-3 rounded-lg border border-border-strong text-style-label font-semibold text-text shrink-0 whitespace-nowrap hover:bg-line/40 disabled:opacity-50 focus-ring"
-        >
-          Додати
-        </button>
+      </Sheet>
+
+      {/* Свій обʼєм живе в аркуші «Вода» (кут «Додати»), тут лишаються
+          швидкі суми, «Відмінити» і скидання. `flex-wrap` - щоб ряд не
+          обрізався на 320 px (round-2 UI audit M5). */}
+      <div className="mt-2 flex flex-wrap items-center gap-1.5">
         {lastAction && (
           <button
             type="button"

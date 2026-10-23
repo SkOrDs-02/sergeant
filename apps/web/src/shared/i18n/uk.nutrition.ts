@@ -20,6 +20,11 @@ export const nutritionPageMessages = {
     scan: { label: "Штрихкод", hint: "Штрихкод на упаковці" },
     photo: { label: "Фото страви", hint: "AI оцінить страву на фото" },
     manual: { label: "Ввести вручну", hint: "На 100 г або за всю порцію" },
+    // Лише на Огляді, де живе картка води (redesign v3.2, позиція 01).
+    water: { label: "Вода", hint: "Свій обʼєм у мл" },
+  },
+  waterAdd: {
+    submit: "Записати",
   },
   // Крок «Звідки страва?» і чекбокс повтору в `AddMealSheet`.
   addMeal: {

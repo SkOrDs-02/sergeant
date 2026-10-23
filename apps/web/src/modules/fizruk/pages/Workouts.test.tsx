@@ -82,6 +82,7 @@ vi.mock("../components/workouts/WorkoutsHome", () => ({
     onRequestStart,
     onOpenSchedule,
     onOpenWorkout,
+    onOpenReadiness,
   }: {
     onOpenSession: () => void;
     onOpenCatalog: () => void;
@@ -90,8 +91,12 @@ vi.mock("../components/workouts/WorkoutsHome", () => ({
     onRequestStart: () => void;
     onOpenSchedule?: () => void;
     onOpenWorkout: (id: string) => void;
+    onOpenReadiness?: () => void;
   }) => (
     <div data-testid="workouts-home">
+      <button type="button" onClick={onOpenReadiness}>
+        Самопочуття
+      </button>
       <button type="button" onClick={onOpenSession} data-testid="open-session">
         Журнал
       </button>
@@ -585,15 +590,17 @@ describe("Workouts page — log view", () => {
     ).toBe(true);
   });
 
-  it("stores readiness scores before the session proceeds", () => {
+  it("аркуш самопочуття не відкривається сам, лише з кнопки (v3.2, 15)", () => {
     const updateWorkout = vi.fn();
     mockedOrchestrator.mockReturnValue(
-      makeOrchestrator("log", {
+      makeOrchestrator("home", {
         activeWorkout: { id: "w1", endedAt: null },
         updateWorkout,
       }) as unknown as ReturnType<typeof useWorkoutsOrchestrator>,
     );
     renderWorkouts();
+    expect(screen.queryByRole("radio", { name: "Сон 4" })).toBeNull();
+    fireEvent.click(screen.getByRole("button", { name: "Самопочуття" }));
     fireEvent.click(screen.getByRole("radio", { name: "Сон 4" }));
     fireEvent.click(screen.getByRole("radio", { name: "Мʼязи 2" }));
     fireEvent.click(screen.getByRole("button", { name: "Готово" }));

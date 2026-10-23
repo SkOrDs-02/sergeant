@@ -3,7 +3,6 @@ import { test, expect, type Page } from "@playwright/test";
 import { seedFTUX } from "../utils/seedFTUX";
 import {
   collectPageErrors,
-  settleToasts,
   startWorkoutWithFirstExercise,
   waitForInitialSqliteRefresh,
 } from "./smokeHelpers";
@@ -83,17 +82,10 @@ test("@critical fizruk: start → set → refresh → resume → finish", async 
   await startWorkoutWithFirstExercise(page);
   await expect(page).toHaveURL(/\/fizruk\/workout\/[^/]+$/);
 
-  // Аркуш готовності (спека `fizruk-readiness-check`) зʼявляється один раз на
-  // тренування і перекриває сторінку — це навмисно, він і має спитати ДО
-  // роботи. Тут його свідомо ПРОПУСКАЄМО: цей тест про потік
-  // «старт → підхід → перезавантаження → фініш», а без відповіді підказка
-  // поводиться рівно так, як до появи фічі.
+  // Аркуш самопочуття на вхід більше не відкривається (redesign v3.2,
+  // позиція 15): його відкриває лише тиха кнопка «Самопочуття» в панелі
+  // активного тренування. Без оцінки підказка ваги поводиться як до фічі.
   const readiness = page.getByRole("dialog", { name: "Самопочуття" });
-  await expect(readiness).toBeVisible();
-  // «Пропустити» — у футері аркуша, рівно там, де стоїть трей тостів; див.
-  // `settleToasts` про те, чому тост під курсором не зникає сам.
-  await settleToasts(page);
-  await readiness.getByRole("button", { name: "Пропустити" }).click();
   await expect(readiness).toBeHidden();
 
   // Сесійний режим (спека `fizruk-active-session.md`): каталог більше не
@@ -164,10 +156,7 @@ test("@critical fizruk: start → set → refresh → resume → finish", async 
   // F5 повертає той самий екран вправи: id вправи живе в URL.
   await page.reload({ waitUntil: "domcontentloaded" });
   await waitForInitialSqliteRefresh(page, "fizruk");
-  // Пропуск теж пишеться (`sleep: null, soreness: null`), тож після
-  // перезавантаження аркуш НЕ повертається. Це не косметика: без запису
-  // ознаки «вже питали» він вигулькував би на кожному оновленні сторінки
-  // посеред тренування.
+  // Після перезавантаження аркуш теж не вигулькує сам.
   await expect(readiness).toBeHidden();
   await expect(
     page.getByRole("textbox", { name: "Вага в кілограмах" }),

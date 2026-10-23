@@ -1,14 +1,10 @@
 // @vitest-environment jsdom
 /**
- * Branch coverage for AssetsBars — stacked bar, quick actions, section headers.
+ * Branch coverage for AssetsBars — stacked bar, section headers.
  */
 import { describe, it, expect, vi, afterEach } from "vitest";
 import { render, screen, fireEvent, cleanup } from "@testing-library/react";
-import {
-  AssetsLiabilitiesBar,
-  QuickActionButton,
-  SectionBar,
-} from "./AssetsBars";
+import { AssetsLiabilitiesBar, SectionBar } from "./AssetsBars";
 
 afterEach(() => cleanup());
 
@@ -32,24 +28,6 @@ describe("AssetsBars (branches)", () => {
       expect(
         screen.getByText(/Співвідношення активів і пасивів/),
       ).toBeInTheDocument();
-    });
-  });
-
-  describe("QuickActionButton", () => {
-    it("invokes onClick when pressed", () => {
-      const onClick = vi.fn();
-      render(
-        <QuickActionButton label="Борг" onClick={onClick} tone="danger" />,
-      );
-      fireEvent.click(screen.getByRole("button", { name: /\+ Борг/ }));
-      expect(onClick).toHaveBeenCalledTimes(1);
-    });
-
-    it("uses a neutral outlined action", () => {
-      render(<QuickActionButton label="Актив" onClick={vi.fn()} />);
-      expect(screen.getByRole("button", { name: /\+ Актив/ })).toHaveClass(
-        "border-border-strong",
-      );
     });
   });
 

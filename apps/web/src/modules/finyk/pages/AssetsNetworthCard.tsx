@@ -89,7 +89,9 @@ export function AssetsNetworthCard({
         ) : (
           <p className="text-style-caption text-text mt-3">Суми приховано</p>
         )}
-        {showBalance && totalAssets + totalDebt > 0 && (
+        {/* Бар лише коли обидві частини ненульові: «100 % / 0 %» нічого не
+            каже (redesign v3.2, позиція 02). */}
+        {showBalance && totalAssets > 0 && totalDebt > 0 && (
           <AssetsLiabilitiesBar assets={totalAssets} liabilities={totalDebt} />
         )}
       </div>

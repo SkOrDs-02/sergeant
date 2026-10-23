@@ -29,8 +29,8 @@ import { messages } from "@shared/i18n/uk";
 import { focusFallbackTarget } from "@shared/lib/ui/focusFallback";
 import { SESSION_FOCUS_FALLBACK } from "../session/focusFallback";
 
-// Аркуш відкривається сам, без жесту: живого тригера нема, фокус іде на
-// «+ Вправа» сесії.
+// Відкриває тиха кнопка «Самопочуття» (redesign v3.2, позиція 15); якщо
+// тригер уже зник з DOM, фокус іде на «+ Вправа» сесії.
 const sessionFocusTarget = focusFallbackTarget(SESSION_FOCUS_FALLBACK);
 
 export interface ReadinessSheetProps {
@@ -125,9 +125,8 @@ export function ReadinessSheet({
         </div>
       }
     >
-      {/* Аркуш відкривається сам, без дії людини, тож початковий фокус
-          стоїть на вмісті, а не на «Закрити»: інакше рамка фокуса горить на
-          хрестику ще до першого дотику. */}
+      {/* Початковий фокус на вмісті, а не на «Закрити»: людина відкрила
+          аркуш, щоб оцінити, тож перша зупинка - шкала. */}
       <div
         className="space-y-4 focus:outline-none"
         tabIndex={-1}

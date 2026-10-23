@@ -270,6 +270,9 @@ export const fizrukPageMessages = {
   // (`WorkoutItemNextSetHint.tsx`): подвійна прогресія і м'який режим.
   nextSetHint: {
     prefix: "Наступний:",
+    // Аркуш самопочуття більше не відкривається сам (redesign v3.2, позиція
+    // 15), тож підказка чесно каже, що стан не врахований.
+    noReadiness: "Без оцінки самопочуття.",
     kgUnit: "кг",
     targetPrefix: "ціль",
     targetSuffix: "повторень",
