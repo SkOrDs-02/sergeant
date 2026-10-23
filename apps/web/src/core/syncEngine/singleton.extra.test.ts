@@ -31,6 +31,7 @@ function makeReaderRuntime(): SyncEngineReaderRuntime {
     start: vi.fn(),
     stop: vi.fn(),
     pullOnce: vi.fn(),
+    pause: vi.fn(async () => () => {}),
   };
 }
 

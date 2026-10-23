@@ -195,6 +195,9 @@ export function __resetSyncEngineWriterForTests(): void {
   readerRuntime?.stop();
   readerRuntime = null;
   readerInFlight = null;
+  readerPauses = 0;
+  readerPauseRelease = null;
+  readerPauseReady = Promise.resolve();
 }
 
 export interface BootSyncEngineReaderOptions {
@@ -210,6 +213,42 @@ let readerInFlight: Promise<SyncEngineReaderRuntime | null> | null = null;
 
 export function getSyncEngineReader(): SyncEngineReaderRuntime | null {
   return readerRuntime;
+}
+
+/**
+ * Пауза reader-а на рівні singleton (`data-46`, рев'ю #1631): на час
+ * перемикання активної SQLite-партиції. На відміну від
+ * `getSyncEngineReader()?.pause()`, діє і на reader, що саме бутиться або
+ * буде створений під час паузи: `bootSyncEngineReader` ставить його на
+ * паузу ДО `start()`, тож перший тік нічого не запише. Паузи вкладаються,
+ * повернута функція знімає лише свою.
+ */
+let readerPauses = 0;
+let readerPauseRelease: (() => void) | null = null;
+let readerPauseReady: Promise<void> = Promise.resolve();
+
+function pauseRuntime(runtime: SyncEngineReaderRuntime): void {
+  const ready = runtime.pause().then((release) => {
+    if (readerPauses > 0) readerPauseRelease = release;
+    else release();
+  });
+  readerPauseReady = ready.catch(() => undefined);
+}
+
+export async function pauseSyncEngineReader(): Promise<() => void> {
+  readerPauses += 1;
+  if (readerPauses === 1 && readerRuntime) pauseRuntime(readerRuntime);
+  await readerPauseReady;
+  let released = false;
+  return () => {
+    if (released) return;
+    released = true;
+    readerPauses -= 1;
+    if (readerPauses === 0) {
+      readerPauseRelease?.();
+      readerPauseRelease = null;
+    }
+  };
 }
 
 export function bootSyncEngineReader(
@@ -230,6 +269,8 @@ export function bootSyncEngineReader(
     .then((created) => {
       if (!created) return null;
       readerRuntime = created;
+      // Пауза, взята, поки reader бутився, має діяти і на нього — до start().
+      if (readerPauses > 0) pauseRuntime(created);
       readerRuntime.start();
       stopReaderWhenFollower(created);
       return readerRuntime;
@@ -316,6 +357,7 @@ async function createDefaultReaderRuntime(): Promise<SyncEngineReaderRuntime> {
       reader.stop();
     },
     pullOnce: () => reader.pullOnce(),
+    pause: () => reader.pause(),
   };
 }
 
