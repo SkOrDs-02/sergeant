@@ -5,6 +5,7 @@
 import { useState } from "react";
 import { Button } from "@shared/components/ui/Button";
 import { Icon } from "@shared/components/ui/Icon";
+import { Input } from "@shared/components/ui/Input";
 import { messages } from "@shared/i18n/uk";
 
 /**
@@ -62,13 +63,13 @@ export function MonoTokenInlineForm({
         <p className="text-style-caption text-subtle leading-snug">{help}</p>
       )}
       <div className="relative">
-        <input
+        <Input
           type={showToken ? "text" : "password"}
           value={value}
           onChange={(event) => onChange(event.target.value)}
           placeholder={COPY.tokenPlaceholder}
           autoComplete="off"
-          className="input-focus-finyk w-full h-11 rounded-lg border border-line bg-panelHi px-3 pr-10 text-style-body text-text"
+          className="pr-12"
           onKeyDown={(event) => event.key === "Enter" && onSubmit()}
         />
         <button
@@ -80,7 +81,7 @@ export function MonoTokenInlineForm({
           <Icon name={showToken ? "eye-off" : "eye"} size="md" aria-hidden />
         </button>
       </div>
-      <Button className="w-full h-11" onClick={onSubmit} disabled={submitting}>
+      <Button className="w-full h-12" onClick={onSubmit} disabled={submitting}>
         {submitting ? messages.loadingActions.connecting : submitLabel}
       </Button>
     </div>
