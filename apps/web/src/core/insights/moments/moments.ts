@@ -19,7 +19,10 @@ import {
   type RoutineState,
 } from "@sergeant/routine-domain";
 
-import { STREAK_MILESTONES } from "../../../modules/routine/hooks/useStreakFlame";
+import {
+  STREAK_MILESTONES,
+  WEEKLY_STREAK_MILESTONES,
+} from "../../../modules/routine/hooks/useStreakFlame";
 import {
   bestHabitMonthInsight,
   habitInsightProgress,
@@ -214,7 +217,7 @@ export function detectRoutineMoment({
       next.completions[habitId],
       todayKey,
     );
-    const weekMilestone = STREAK_MILESTONES.find(
+    const weekMilestone = WEEKLY_STREAK_MILESTONES.find(
       (m) => weeksBefore < m && weeksAfter >= m,
     );
     if (weekMilestone !== undefined) {
