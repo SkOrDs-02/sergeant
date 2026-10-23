@@ -1315,8 +1315,8 @@ describe("syncV2Pull · happy-path", () => {
       server_ts: ts,
       origin_device_id: null,
       row_bytes: 1000,
-      // pg віддає COUNT(*) bigint-ом як string
-      window_rows: "5",
+      // LEAD(id) — bigint, pg віддає string; null — кандидатів далі немає
+      next_id: null as string | null,
     });
 
     it("запит несе бюджет 2 MiB 5-м параметром і міряє розмір у Postgres", async () => {
@@ -1326,6 +1326,9 @@ describe("syncV2Pull · happy-path", () => {
       expect((call[1] as unknown[])[4]).toBe(2_097_152);
       expect(call[0]).toContain("octet_length(row::text)");
       expect(call[0]).toContain("bytes_before < $5");
+      // Без COUNT(*) OVER (): він буферизував би всю сторінку з payload-ами.
+      expect(call[0]).not.toContain("COUNT(*) OVER");
+      expect(call[0]).toContain("LEAD(id) OVER (ORDER BY id)");
     });
 
     it("env SYNC_V2_PULL_MAX_BYTES підміняє бюджет", async () => {
@@ -1340,8 +1343,13 @@ describe("syncV2Pull · happy-path", () => {
       }
     });
 
-    it("обрізана бюджетом сторінка (2 з 5 у вікні, limit 100) → next_cursor = id останнього", async () => {
-      pool.query.mockResolvedValueOnce({ rows: [mkRow("7"), mkRow("8")] });
+    it("обрізана бюджетом сторінка (за останнім збереженим є кандидат, limit 100) → next_cursor = id останнього", async () => {
+      pool.query.mockResolvedValueOnce({
+        rows: [
+          { ...mkRow("7"), next_id: "8" },
+          { ...mkRow("8"), next_id: "9" },
+        ],
+      });
       const res = makeRes();
       const before = (await syncPullTruncatedTotal.get()).values[0]?.value ?? 0;
       await syncV2Pull(makeReq({ query: { limit: "100" } }), res);
@@ -1354,7 +1362,7 @@ describe("syncV2Pull · happy-path", () => {
 
     it("один оп понад бюджет віддається єдиним на сторінці з next_cursor", async () => {
       pool.query.mockResolvedValueOnce({
-        rows: [{ ...mkRow("42"), row_bytes: 10_000_000 }],
+        rows: [{ ...mkRow("42"), row_bytes: 10_000_000, next_id: "43" }],
       });
       const res = makeRes();
       await syncV2Pull(makeReq({ query: { limit: "100" } }), res);
@@ -1366,8 +1374,8 @@ describe("syncV2Pull · happy-path", () => {
     it("сторінка під бюджетом і під limit → next_cursor = null (кінець журналу)", async () => {
       pool.query.mockResolvedValueOnce({
         rows: [
-          { ...mkRow("1"), window_rows: "2" },
-          { ...mkRow("2"), window_rows: "2" },
+          { ...mkRow("1"), next_id: "2" },
+          { ...mkRow("2"), next_id: null },
         ],
       });
       const res = makeRes();

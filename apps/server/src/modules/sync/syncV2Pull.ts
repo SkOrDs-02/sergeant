@@ -25,8 +25,11 @@ interface PullRow {
   origin_device_id: string | null;
   /** `octet_length(row::text)` (int4). */
   row_bytes: number;
-  /** `COUNT(*) OVER ()` - bigint, `pg` віддає string (Hard Rule #1). */
-  window_rows: string;
+  /**
+   * `LEAD(id) OVER (ORDER BY id)` - id наступного кандидата сторінки або
+   * `null`; bigint, `pg` віддає string (Hard Rule #1).
+   */
+  next_id: string | null;
 }
 
 /** Бюджет сторінки pull у байтах (ADR-0105): env або дефолт 2 MiB. */
@@ -76,11 +79,11 @@ export async function syncV2Pull(req: Request, res: Response): Promise<void> {
                 COALESCE(SUM(row_bytes) OVER (
                   ORDER BY id ROWS BETWEEN UNBOUNDED PRECEDING AND 1 PRECEDING
                 ), 0) AS bytes_before,
-                COUNT(*) OVER () AS window_rows
+                LEAD(id) OVER (ORDER BY id) AS next_id
            FROM page
        )
        SELECT id, table_name, op, row, client_ts, server_ts, origin_device_id,
-              row_bytes, window_rows
+              row_bytes, next_id
          FROM sized
         WHERE bytes_before < $5
         ORDER BY id ASC`,
@@ -98,11 +101,12 @@ export async function syncV2Pull(req: Request, res: Response): Promise<void> {
       origin_device_id: r.origin_device_id,
     }));
 
-    // `window_rows` (COUNT, bigint -> string) - скільки рядків було у вікні до
-    // обрізання бюджетом (Hard Rule #1: Number()).
-    const windowRows =
-      result.rows.length > 0 ? Number(result.rows[0]!.window_rows) : 0;
-    const truncatedByBudget = windowRows > opsOut.length;
+    // Обрізано бюджетом, коли за останнім збереженим рядком у вікні сторінки
+    // ще був кандидат. `LEAD` дивиться на один рядок уперед і не змушує
+    // Postgres буферизувати всю сторінку разом із payload-ами, як
+    // `COUNT(*) OVER ()` (рев'ю #1646).
+    const lastRow = result.rows[result.rows.length - 1];
+    const truncatedByBudget = lastRow != null && lastRow.next_id != null;
     // Не лише `length === limit`: обрізана бюджетом сторінка коротша за limit,
     // але за курсором ще є оп-и.
     const nextCursor =
