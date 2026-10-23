@@ -109,9 +109,7 @@ describe("WorkoutHistoryList – empty state", () => {
     const onStartWorkout = vi.fn();
     renderWithToast(<WorkoutHistoryList {...baseProps({ onStartWorkout })} />);
     expect(screen.getByText(/поки немає тренувань/i)).toBeTruthy();
-    expect(
-      screen.getByText("Завершене тренування зʼявиться тут."),
-    ).toBeVisible();
+    expect(screen.getByText("Завершених тренувань ще немає.")).toBeVisible();
     fireEvent.click(screen.getByRole("button", { name: "Почати тренування" }));
     expect(onStartWorkout).toHaveBeenCalledTimes(1);
   });

@@ -29,7 +29,7 @@ vi.mock("../lib/nutritionStorage", async () => {
 });
 
 import { estimateLogBytes } from "../lib/nutritionStorage";
-import { LogCard } from "./LogCard";
+import { HISTORY_FROM_DAYS, LogCard } from "./LogCard";
 import { addDaysISODate, todayISODate } from "@sergeant/nutrition-domain";
 
 // ADR-0078: LogCard's "Сьогодні" is the device-local day key.
@@ -50,16 +50,32 @@ function renderLog(overrides: Record<string, unknown> = {}) {
 
 afterEach(() => vi.clearAllMocks());
 
+/** Рівно `HISTORY_FROM_DAYS` днів із записами, останній сьогодні. */
+function weekOfMeals() {
+  return Object.fromEntries(
+    Array.from({ length: HISTORY_FROM_DAYS }, (_, i) => [
+      addDaysISODate(today, -i),
+      { meals: [{ id: `m${i}`, name: "Обід", mealType: "lunch" }] },
+    ]),
+  ) as never;
+}
+
 describe("LogCard", () => {
   it("renders 'Сьогодні' and the empty state with no meals", () => {
     renderLog();
     expect(screen.getByText("Сьогодні")).toBeInTheDocument();
     expect(screen.getByText("Поки немає записів")).toBeInTheDocument();
-    expect(
-      screen.getByText(
-        "Додай перший прийом їжі. Калорії та КБЖВ порахуються тут.",
-      ),
-    ).toBeVisible();
+    expect(screen.getByText("Сьогодні 0 записів")).toBeVisible();
+  });
+
+  it("ховає пошук і тренди, поки днів із записами менше тижня", () => {
+    renderLog({
+      log: {
+        [today]: { meals: [{ id: "m1", name: "Обід", mealType: "lunch" }] },
+      } as never,
+    });
+    expect(screen.queryByTestId("log-search")).toBeNull();
+    expect(screen.queryByTestId("log-analytics")).toBeNull();
   });
 
   it("shifts the selected date back and forward", () => {
@@ -79,11 +95,7 @@ describe("LogCard", () => {
   });
 
   it("ставить записи дня перед пошуком, тижнем і трендами", () => {
-    renderLog({
-      log: {
-        [today]: { meals: [{ id: "m1", name: "Обід", mealType: "lunch" }] },
-      } as never,
-    });
+    renderLog({ log: weekOfMeals() });
     const meals = screen.getByTestId("virtual-meals");
     for (const id of ["log-search", "log-weekly", "log-analytics"]) {
       expect(

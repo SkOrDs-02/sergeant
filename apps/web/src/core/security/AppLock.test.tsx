@@ -47,7 +47,6 @@ describe("AppLock", () => {
   it("shows the unlock screen when locked", () => {
     renderLock({ state: "locked" });
     expect(screen.getByText("Введи PIN")).toBeInTheDocument();
-    expect(screen.getByText("Введи PIN, щоб розблокувати")).toBeInTheDocument();
   });
 
   it("auto-submits the unlock when 6 digits are entered", async () => {

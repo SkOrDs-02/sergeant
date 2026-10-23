@@ -472,8 +472,8 @@ export function useTransactionFilters({
   }, [groupedByDate, excludedTxIds, txSplits]);
 
   // Day collapse/expand state. Persisted as a sparse override map:
-  // absence → default rule (only "today" is expanded). Explicit boolean
-  // overrides the default and survives across sessions.
+  // absence → collapsed, «Сьогодні» теж (inbox-style, `isDayExpanded`).
+  // Explicit boolean overrides the default and survives across sessions.
   const [todayDayKey] = useState(() =>
     dayKeyFromTx(Math.floor(Date.now() / 1000)),
   );

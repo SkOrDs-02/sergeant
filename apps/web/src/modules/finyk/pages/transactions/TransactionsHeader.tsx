@@ -64,7 +64,7 @@ export function TransactionsHeader({
 }: TransactionsHeaderProps) {
   const [picking, setPicking] = useState(false);
   return (
-    // На 360 px навігація місяцем і три текст-кнопки («N прих.», «CSV»,
+    // На 360 px навігація місяцем і три текст-кнопки («N прих.», «Експорт»,
     // «Вибрати») у ряд не вміщаються, тож дії переносяться під місяць.
     <div className="flex flex-wrap items-center justify-between gap-x-2 mb-3">
       <PeriodNav
@@ -118,9 +118,9 @@ export function TransactionsHeader({
                 variant="text"
                 onClick={onExportCsv}
                 title={`Вивантажити ${exportCount} у CSV`}
-                aria-label={`Вивантажити операції у CSV: ${exportCount}`}
+                aria-label={`Експорт операцій у CSV: ${exportCount}`}
               >
-                CSV
+                Експорт
               </Button>
             )}
             <Button variant="text" onClick={() => setSelectMode(true)}>

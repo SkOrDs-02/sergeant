@@ -3,7 +3,7 @@
 > **Last touched:** 2026-10-22 by @claude. **Next review:** 2027-04-22.
 > **Status:** Scaffolded
 
-Кадри 31 маршруту й аркуша Sergeant web (390 × 844, світла й темна, 62 кадри) для порівняння «до / після» редизайну. Цим сценарієм знято інвентар [`2026-10-18-design-v3-1-inventory.md`](../../../../docs/work/specs/audits/2026-10-18-design-v3-1-inventory.md) і фінал спеки [`redesign-v3-1.md`](../../../../docs/work/specs/planning/redesign-v3-1.md). Це не тест і не гейт: асертів немає, golden-кадрів у репо немає, кадри лягають поза git.
+Кадри 30 маршрутів і аркуша Sergeant web (390 × 844, світла й темна, 60 кадрів; `/fizruk/plan` прибрано у v3.2, бо такої сторінки немає і адреса рендерила Огляд) для порівняння «до / після» редизайну. Цим сценарієм знято інвентар [`2026-10-18-design-v3-1-inventory.md`](../../../../docs/work/specs/audits/2026-10-18-design-v3-1-inventory.md) і фінал спеки [`redesign-v3-1.md`](../../../../docs/work/specs/planning/redesign-v3-1.md). Це не тест і не гейт: асертів немає, golden-кадрів у репо немає, кадри лягають поза git.
 
 ## Запуск
 

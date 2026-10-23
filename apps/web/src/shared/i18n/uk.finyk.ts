@@ -87,8 +87,6 @@ export const finykPageMessages = {
     currencyInfoAria: "Про валюту в підрахунках",
     incomePrefix: "дохід",
     forecastPrefix: "прогноз ~",
-    forecastCapped:
-      "Прогноз обмежений залишком коштів: витратити більше нема з чого.",
     recurringPrefix: "Враховано планових:",
     recurringSuffixNoSum: "без суми",
   },
@@ -124,10 +122,6 @@ export const finykPageMessages = {
     hiddenAmount: "сума прихована",
     spentPrefix: "витрачено",
     ofJoiner: "із",
-    hintWithPlan:
-      "Стовпчик це день: висота показує витрати проти денної норми.",
-    hintNoPlan: "Стовпчик це день: висота показує витрати проти найдорожчого.",
-    hintDismiss: "Зрозуміло",
   },
   todayFilter: {
     label: "Лише сьогодні",
@@ -210,7 +204,7 @@ export const finykPageMessages = {
       empty: {
         title: "Правил поки немає",
         description:
-          "Зміни категорію операції й закріпи її за магазином, тут зʼявиться правило.",
+          "Правил ще немає. Закріпи категорію операції за магазином у її деталях.",
       },
       kindExpense: "Витрата",
       kindIncome: "Надходження",
@@ -301,7 +295,7 @@ export const finykPageMessages = {
     overwriteWarning:
       "У операції вже є ручне розбиття, підтвердження замінить його.",
     connectPromptTitle: "Це схоже на покупку в Сільпо",
-    connectPromptHint: "Звʼяжи Сільпо, щоб бачити позиції чека тут.",
+    connectPromptHint: "Позиції чека показуються після звʼязку з Сільпо.",
     connectPromptCta: "Звʼязати Сільпо",
     unlinkCta: "Це не той чек",
     unlinkPending: "Відвʼязую…",
@@ -553,7 +547,7 @@ export const finykPageMessages = {
     confirmDescription:
       "Тег «{tag}» зникне з усіх операцій ({count}). Самі операції лишаться.",
     emptyTitle: "Поки немає тегів",
-    emptyDescription: "Додай тег у деталях операції, і він зʼявиться тут.",
+    emptyDescription: "Тег додається в деталях операції.",
   },
   // Налаштування → Фінік → «Експорт».
   exportAll: {

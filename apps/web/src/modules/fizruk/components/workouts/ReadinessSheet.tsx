@@ -99,7 +99,6 @@ export function ReadinessSheet({
       open={open}
       onClose={onSkip}
       title={t.title}
-      description={t.subtitle}
       panelClassName="fizruk-sheet"
       returnFocusFallback={sessionFocusTarget}
       footer={

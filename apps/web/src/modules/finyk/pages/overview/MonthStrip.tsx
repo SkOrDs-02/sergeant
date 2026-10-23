@@ -7,8 +7,6 @@ import {
 import { formatMoney } from "@sergeant/shared";
 import { cn } from "@shared/lib/ui/cn";
 import { messages } from "@shared/i18n/uk";
-import { Button } from "@shared/components/ui/Button";
-import { safeReadLS, safeWriteLS } from "@shared/lib/storage/storage";
 import { formatDayMonth } from "@shared/lib/time/formatDate";
 
 export interface MonthStripDay {
@@ -245,46 +243,3 @@ const MonthStripImpl = function MonthStrip({
 };
 
 export const MonthStrip = memo(MonthStripImpl);
-
-const STRIP_HINT_DISMISSED_SLOT = "finyk_month_strip_hint_dismissed_v1";
-
-/**
- * Одноразова підказка під стрічкою: що таке стовпчики і як їх читати.
- * Показується, доки людина її не закриє; після цього стрічка вже знайома,
- * і постійна легенда стала б шумом у hero.
- */
-export function MonthStripHint({
-  hasPlan,
-  suppressed = false,
-}: {
-  hasPlan: boolean;
-  /** N-3 (аудит 2026-09-16): одна навчальна картка на екран - заглушується, поки видимий `FirstInsightBanner`. */
-  suppressed?: boolean;
-}) {
-  const [dismissed, setDismissed] = useState<boolean>(
-    () => safeReadLS<boolean>(STRIP_HINT_DISMISSED_SLOT, false) ?? false,
-  );
-  if (dismissed || suppressed) return null;
-  const m = messages.finyk.monthStrip;
-  return (
-    <div
-      role="note"
-      className="mt-2 flex items-center gap-2 text-style-caption text-text"
-    >
-      <span className="min-w-0 flex-1 leading-snug">
-        {hasPlan ? m.hintWithPlan : m.hintNoPlan}
-      </span>
-      {/* Тиха дія замість «×» у hero (redesign v3.1, Г4). */}
-      <Button
-        variant="text"
-        className="-mr-2 shrink-0"
-        onClick={() => {
-          safeWriteLS(STRIP_HINT_DISMISSED_SLOT, true);
-          setDismissed(true);
-        }}
-      >
-        {m.hintDismiss}
-      </Button>
-    </div>
-  );
-}

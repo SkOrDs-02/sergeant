@@ -65,10 +65,12 @@ export function HubHeader({
       <div className="flex items-start justify-between gap-3">
         <div className="min-w-0">
           {/* `<p>`, не `<h1>`: семантичний h1 кожної вкладки вже стоїть у
-              контенті (sr-only), другий інвертував би структуру заголовків. */}
+              контенті (sr-only), другий інвертував би структуру заголовків.
+              26 px, як заголовок екрана модуля: на 30 px «Пʼятниця, 23
+              жовтня» не вміщалась в один рядок на 390 px (v3.2, дрібне). */}
           <p
             data-testid="hub-header-title"
-            className="text-style-headline-lg text-text"
+            className="text-style-headline text-text"
           >
             {tabTitle ?? dateStr}
           </p>

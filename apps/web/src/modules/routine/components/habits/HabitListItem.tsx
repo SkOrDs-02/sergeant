@@ -7,7 +7,6 @@ import { dateKeyInPauseInterval } from "@sergeant/routine-domain";
 import { anchoredTodayKey } from "../../lib/dayAnchor";
 import { messages } from "@shared/i18n/uk";
 import { cn } from "@shared/lib/ui/cn";
-import { Button } from "@shared/components/ui/Button";
 import { IconButton } from "@shared/components/ui/IconButton";
 import { Icon } from "@shared/components/ui/Icon";
 import { DropdownMenu } from "@shared/components/ui/DropdownMenu";
@@ -45,10 +44,9 @@ export interface HabitListItemProps {
 }
 
 /**
- * Єдиний рядок у списку активних звичок: на виду лише «Змінити» і меню «⋯»,
- * щоб на телефоні рядок не загортався в кілька поверхів. «Деталі», «Вище»,
- * «Нижче», «В архів» і «Видалити» живуть у меню «⋯», щоб деструктивна дія не займала цілий вертикальний ряд на
- * екрані з десятком звичок. Мемоізовано, щоб редагування іншої звички не
+ * Єдиний рядок у списку активних звичок: тап по рядку відкриває редагування,
+ * а «Змінити», «Деталі», «Вище», «Нижче», «В архів» і «Видалити» живуть в
+ * одному меню «⋯» (П6 анти-слоп стратегії: один афорданс на рядок). Мемоізовано, щоб редагування іншої звички не
  * спричиняло re-render усіх рядків.
  */
 export const HabitListItem = memo(function HabitListItem({
@@ -88,7 +86,14 @@ export const HabitListItem = memo(function HabitListItem({
       onDrop={onDrop}
     >
       <div className="flex items-start justify-between gap-2">
-        <div className="min-w-0">
+        {/* Тап по рядку = редагування; решта дій в одному «···»
+            (redesign v3.2, 12, П6). */}
+        <button
+          type="button"
+          onClick={onStartEdit}
+          className="min-w-0 flex-1 text-left rounded-lg focus-ring"
+          aria-label={`Змінити звичку ${h.name}`}
+        >
           <span className="text-style-label-lg font-semibold flex items-center gap-1.5">
             {paused && (
               <span
@@ -105,11 +110,8 @@ export const HabitListItem = memo(function HabitListItem({
             {h.startDate ? ` · з ${dayKeyShort(h.startDate)}` : ""}
             {h.endDate ? ` до ${dayKeyShort(h.endDate)}` : ""}
           </p>
-        </div>
-        <div className="flex flex-wrap gap-1.5 justify-end shrink-0 max-w-[min(100%,12rem)] sm:max-w-none">
-          <Button variant="text" size="sm" onClick={onStartEdit}>
-            Змінити
-          </Button>
+        </button>
+        <div className="shrink-0">
           <DropdownMenu
             ariaLabel={`Ще дії зі звичкою ${h.name}`}
             placement="bottom-end"
@@ -124,6 +126,12 @@ export const HabitListItem = memo(function HabitListItem({
               </IconButton>
             }
             items={[
+              {
+                type: "item",
+                id: "edit",
+                label: "Змінити",
+                onSelect: onStartEdit,
+              },
               {
                 type: "item",
                 id: "details",

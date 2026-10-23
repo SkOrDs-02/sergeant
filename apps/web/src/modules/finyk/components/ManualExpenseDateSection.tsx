@@ -81,7 +81,11 @@ export function ManualExpenseDateSection({
   return (
     <div>
       <Label htmlFor={dateId}>{copy.dateLabel}</Label>
+      {/* Стрічка виходить на край аркуша з відступом на бічне поле:
+          інакше прокручена до «Сьогодні» перша плитка різалась по краю
+          контенту (redesign v3.2, дрібне). */}
       <DateScrubber
+        className="-mx-5 px-5 scroll-px-5"
         aria-label={copy.dateScrubberLabel}
         value={value}
         onChange={onDateChange}

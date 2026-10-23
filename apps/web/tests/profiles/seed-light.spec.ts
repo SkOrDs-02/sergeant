@@ -103,7 +103,7 @@ test.describe.serial("@seed-light акаунти Q1/Q2/Q4/Q5/Q8", () => {
         // застосувалась (кнопка зникає, коли все відмічено).
         await goto(page, "/routine");
         const bulk = page.getByRole("button", {
-          name: /Відмітити всі звички на цей день/,
+          name: /^Відмітити всі$/,
         });
         if (await bulk.isVisible().catch(() => false)) {
           await bulk.click();
