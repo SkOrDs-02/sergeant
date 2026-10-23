@@ -1,9 +1,8 @@
 import { Card } from "@shared/components/ui/Card";
-import { DropdownMenu } from "@shared/components/ui/DropdownMenu";
-
+import { AddAction } from "@shared/components/ui/CornerAction";
 import { Money } from "@shared/components/ui/Money";
 import { FinykStatsStrip } from "../components/FinykStatsStrip";
-import { QuickActionButton, SectionBar } from "./AssetsBars";
+import { SectionBar } from "./AssetsBars";
 import { AssetsNetworthCard } from "./AssetsNetworthCard";
 import { AssetsAssetsSection } from "./AssetsAssetsSection";
 import { AssetsLiabilitiesSection } from "./AssetsLiabilitiesSection";
@@ -57,34 +56,31 @@ export function AssetsTable({ state }: { state: State }) {
       />
 
       {/* Підписки й підказки про регулярні витрати переїхали в Планування
-          (2026-09-03): «Активи» — це баланс, майбутнє живе поруч із планом. */}
-      <div className="grid grid-cols-2 gap-2 mb-3">
-        {/* «+ Актив» — пікер, а не пряма кнопка: у секції дві різні
-            сутності («Інші активи» й «Мені винні»), і після зняття кнопок
-            усередині груп це єдине місце, де людина обирає між ними. */}
-        <DropdownMenu
-          ariaLabel="Що додати в активи"
-          placement="bottom-start"
-          items={[
-            {
-              type: "item",
-              id: "asset",
-              label: "Актив",
-              description: "Готівка, депозит, інвестиції, авто",
-              onSelect: openAssetForm,
-            },
-            {
-              type: "item",
-              id: "receivable",
-              label: "Мені винні",
-              description: "Борг, який мають повернути тобі",
-              onSelect: openReceivableForm,
-            },
-          ]}
-          trigger={<QuickActionButton label="Актив" tone="finyk" />}
-        />
-        <QuickActionButton label="Пасив" tone="danger" onClick={openDebtForm} />
-      </div>
+          (2026-09-03): «Активи» — це баланс, майбутнє живе поруч із планом.
+          Додавання - лише кутова кнопка з аркушем джерел (redesign v3.2,
+          позиція 02), без «+ Актив» / «+ Пасив» над списком. */}
+      <AddAction
+        sources={[
+          {
+            id: "asset",
+            label: "Актив",
+            hint: "Готівка, депозит, інвестиції, авто",
+            onSelect: openAssetForm,
+          },
+          {
+            id: "receivable",
+            label: "Мені винні",
+            hint: "Борг, який мають повернути тобі",
+            onSelect: openReceivableForm,
+          },
+          {
+            id: "debt",
+            label: "Пасив",
+            hint: "Кредит, борг, розстрочка",
+            onSelect: openDebtForm,
+          },
+        ]}
+      />
 
       {/* Assets section */}
       <Card padding="none" className="mb-7 overflow-hidden">

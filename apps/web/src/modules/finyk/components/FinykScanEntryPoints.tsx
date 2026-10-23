@@ -70,6 +70,12 @@ export interface FinykScanEntryPointsProps {
    * робочою, але нічого не відкривала.
    */
   onOpenAuth: () => void;
+  /**
+   * Кутова «Додати» з джерелами витрати. На Активах кут свій (аркуш
+   * «Актив / Мені винні / Пасив», redesign v3.2 позиція 02), тож тут її
+   * немає: одна кутова кнопка на екран.
+   */
+  showCorner?: boolean | undefined;
 }
 
 export function FinykScanEntryPoints({
@@ -80,6 +86,7 @@ export function FinykScanEntryPoints({
   bulkImportOpen,
   onBulkImportOpenChange,
   onOpenAuth,
+  showCorner = true,
 }: FinykScanEntryPointsProps) {
   const toast = useToast();
   const auth = useAuthOptional();
@@ -98,21 +105,24 @@ export function FinykScanEntryPoints({
 
   return (
     <>
-      <AddAction
-        sources={[
-          { id: "manual", ...src.manual, onSelect: onAddExpense },
-          {
-            id: "receipt",
-            ...src.receipt,
-            onSelect: () => requireAccount(() => setShowReceiptScan(true)),
-          },
-          {
-            id: "import",
-            ...src.import,
-            onSelect: () => requireAccount(() => onBulkImportOpenChange(true)),
-          },
-        ]}
-      />
+      {showCorner && (
+        <AddAction
+          sources={[
+            { id: "manual", ...src.manual, onSelect: onAddExpense },
+            {
+              id: "receipt",
+              ...src.receipt,
+              onSelect: () => requireAccount(() => setShowReceiptScan(true)),
+            },
+            {
+              id: "import",
+              ...src.import,
+              onSelect: () =>
+                requireAccount(() => onBulkImportOpenChange(true)),
+            },
+          ]}
+        />
+      )}
 
       {showReceiptScan && (
         <SectionErrorBoundary title="Не вдалось відкрити сканер чеків">

@@ -41,7 +41,6 @@ function renderLog(overrides: Record<string, unknown> = {}) {
     log: {} as never,
     selectedDate: today,
     setSelectedDate,
-    onAddMeal: vi.fn(),
     ...overrides,
   };
   const Comp = LogCard as (p: typeof props) => ReactElement;
@@ -132,11 +131,9 @@ describe("LogCard", () => {
     expect(screen.getByTestId("virtual-meals")).toBeInTheDocument();
   });
 
-  it("invokes onAddMeal", () => {
-    const onAddMeal = vi.fn();
-    renderLog({ onAddMeal });
-    fireEvent.click(screen.getByText("Додати прийом їжі"));
-    expect(onAddMeal).toHaveBeenCalled();
+  it("не дублює кутову дію кнопкою «Додати прийом їжі» (v3.2, позиція 01)", () => {
+    renderLog();
+    expect(screen.queryByText("Додати прийом їжі")).toBeNull();
   });
 
   it("shows and confirms the duplicate-yesterday flow", () => {

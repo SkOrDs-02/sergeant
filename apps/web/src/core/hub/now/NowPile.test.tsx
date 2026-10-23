@@ -232,3 +232,30 @@ describe("NowPile", () => {
     expect(onOpenTarget).not.toHaveBeenCalled();
   });
 });
+
+describe("ChecklistNowRows", () => {
+  it("рядок кроку без декоративного чекбокса (v3.2, позиція 16)", () => {
+    render(
+      <MemoryRouter>
+        <NowPile
+          now={{ items: [], check: mocks.check, checked: [], uncheck: vi.fn() }}
+          onOpenTarget={vi.fn()}
+          checklist={{
+            moduleId: "finyk",
+            steps: [
+              {
+                id: "view_analytics",
+                label: "Переглянути аналітику",
+                done: false,
+              } as never,
+            ],
+          }}
+        />
+      </MemoryRouter>,
+    );
+    const row = screen.getByTestId("checklist-now-row");
+    expect(within(row).getByText("Переглянути аналітику")).toBeTruthy();
+    expect(row.querySelector('[class*="border-2"]')).toBeNull();
+    expect(within(row).queryByRole("checkbox")).toBeNull();
+  });
+});

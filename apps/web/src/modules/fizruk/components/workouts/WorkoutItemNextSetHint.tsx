@@ -157,6 +157,11 @@ export function WorkoutItemNextSetHint({
         </button>
       )}
       <span className="text-style-caption text-subtle">{note}</span>
+      {readiness?.sleep == null && readiness?.soreness == null && (
+        <span className="w-full text-style-caption text-subtle">
+          {t.noReadiness}
+        </span>
+      )}
     </div>
   );
 }

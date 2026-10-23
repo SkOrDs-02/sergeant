@@ -1544,7 +1544,7 @@ Verifier probe (verify-client-static-landing-shell-mobile/hdrs.mjs): app.sergean
 
 ### `sec-18` [medium] Коли сесія спливає посеред роботи, застосунок мовчить: записи тихо стають у чергу, а після reload модулі порожні
 
-- **Стан:** частково виправлено в [#1391](https://github.com/SkOrDs-02/sergeant/pull/1391) (змерджено 2026-10-08) (лишилось: екран повторного входу замість анонімного хабу після 401 при reload, `next` на /sign-in поки не споживається екраном входу)
+- **Стан:** виправлено в [#1391](https://github.com/SkOrDs-02/sergeant/pull/1391) (змерджено 2026-10-08) і в цьому PR (після 401 і reload оболонка веде на `/sign-in?next=<шлях>` з поясненням «Сесія завершилась», а не на анонімний хаб; екран входу споживає `next` лише як відносний внутрішній шлях)
 - **Перевірка:** підтверджено · **Зусилля:** M · **Область:** web: auth / sync
 - **Де:** apps/web/src/core/auth/AuthContext.tsx:318-401; apps/web/src/core/app/SyncStatusSheet.tsx:175-179; apps/web/src/core/syncEngine/singleton.ts:490-493
 - **Першопричина:** Коли get-session повертає null, resolveUserId віддає null і drain черги мовчки повертає [], сигналу в UI немає; /me у вкладці не перезапитується (refetchOnWindowFocus false, staleTime 60 с). Після reload 401 на /api/v1/me запускає identity wipe і анонімний режим без пояснення.

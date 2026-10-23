@@ -612,6 +612,7 @@ test("ZERO_ONLY_METRICS: ненульовий бюджет для заборон
       overlineOutsideHero: 0,
       hueOnButton: 2,
       rawInput: 0,
+      addActionsPerRoute: 0,
     }),
     ["nativeChoice", "hueOnButton"],
   );
@@ -623,6 +624,7 @@ test("ZERO_ONLY_METRICS: ненульовий бюджет для заборон
       overlineOutsideHero: 0,
       hueOnButton: 0,
       rawInput: 0,
+      addActionsPerRoute: 0,
     }),
     ["textStateLabel"],
     "відсутній ключ - теж не нуль",
@@ -711,7 +713,7 @@ test("addActionsPerRoute: збережений замір читається і 
   for (const v of Object.values(perRoute)) assert.equal(typeof v, "number");
 });
 
-test("ZERO_ONLY_METRICS: чинний бюджет тримає всі сім заборон у нулі", () => {
+test("ZERO_ONLY_METRICS: чинний бюджет тримає всі вісім заборон у нулі", () => {
   const here = dirname(fileURLToPath(import.meta.url));
   const budget = JSON.parse(
     readFileSync(
@@ -728,5 +730,6 @@ test("ZERO_ONLY_METRICS: чинний бюджет тримає всі сім з
     "overlineOutsideHero",
     "hueOnButton",
     "rawInput",
+    "addActionsPerRoute",
   ]);
 });

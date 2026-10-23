@@ -648,7 +648,7 @@ useRestTimerCountdown (useWorkoutsLifecycle.ts:107-130) робить {remaining:
 
 ### `logic-11` [medium] Гнучкі звички («N разів на тиждень») у кількох агрегатах Рутини рахуються поденно
 
-- **Стан:** частково виправлено в [#1553](https://github.com/SkOrDs-02/sergeant/pull/1553) (змерджено 2026-10-20) (лишилось: поденний `flexibleStreakBreakdown` по одній гнучкій звичці в моменті серії `moments.ts` і чат-тулі `habit_stats` — logic-22; мобілка `useCalendarAggregates` не чіпалась)
+- **Стан:** частково виправлено в [#1553](https://github.com/SkOrDs-02/sergeant/pull/1553) (змерджено 2026-10-20) і в цьому PR (момент серії `moments.ts` рахує гнучку звичку тижнями, `habit_stats` теж); лишилось: мобілка `useCalendarAggregates` (контур на паузі, ADR-0094)
 - **Перевірка:** підтверджено · **Зусилля:** M · **Область:** routine-domain / web: Рутина
 - **Де:** packages/routine-domain/src/flexStreak.ts:144-269, 365-382; packages/routine-domain/src/habitRangeRows.ts:121-171; packages/routine-domain/src/dayProgress.ts:28-40; packages/routine-domain/src/streaks.ts:196-206; apps/web/src/modules/routine/useRoutineDerivedData.ts:217-226, 272-289
 - **Першопричина:** Спека routine-flexible-weekly-frequency.md вимагає, щоб споживачі «класу Б» не питали денний предикат для гнучкої звички. Проте flexibleStreakBreakdown і flexibleMaxActiveStreak, buildHabitRangeRows і calcRoutineDayProgress (weekDoneCount = 0) вважають кожен невідмічений день незакритого тижня запланованим, тобто пропуском.
@@ -1445,7 +1445,7 @@ Ran <scratch>/agents/verify-browser-surfaces-nutrition-flows/cat.mts. Медал
 
 ### `logic-22` [low] Картка звички рахує «Найдовшу серію» іншим алгоритмом, ніж поточну й /routine/stats: рекорд менший за поточну серію
 
-- **Стан:** відкрито
+- **Стан:** частково виправлено в цьому PR (чат-тул `habit_stats` і момент серії гнучких звичок рахують тижнями); лишилось: рекорд картки `HabitStatsSection` (`maxStreakAllTime`) і інсайт `useStreakRecordPendingInsight` для негнучких звичок
 - **Перевірка:** підтверджено · **Зусилля:** S · **Швидкий виграш** · **Область:** web: Рутина (картка звички)
 - **Де:** apps/web/src/modules/routine/components/HabitStatsSection.tsx:68-103; apps/web/src/modules/routine/hooks/useStreakRecordPendingInsight.ts:33-52; apps/web/src/modules/routine/components/HabitDetailSheet.tsx; packages/routine-domain/src/streaks.ts (maxStreakAllTime)
 - **Першопричина:** HabitStatsSection бере поточну серію з flexibleStreakBreakdown (з grace, паузами й startDate), а «Найдовшу серію» з жорсткого maxStreakAllTime, який рветься на першому пропуску й ігнорує startDate. Інсайт useStreakRecordPendingInsight порівнює flexibleMaxActiveStreak у днях з maxStreakAllTime, що для гнучких звичок рахує тижні. RoutineStatsPanel уже перейшов на flexibleMaxStreakAllTimeAcrossHabits.

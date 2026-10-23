@@ -371,10 +371,14 @@ describe("FinykApp (extra) — corner add button opens expense sheet", () => {
     "budgets",
     "analytics",
     "assets",
-  ] as const)("keeps the corner add button available on %s", (page) => {
+  ] as const)("module corner add button on %s", (page) => {
+    // На Плані й Активах кут свій (redesign v3.2, позиція 03, його тестують
+    // Budgets.test і AssetsTable.test), тож модульний кут там ховається.
     vi.mocked(useFinykRoute).mockReturnValueOnce([page, navigateMock]);
     render(<FinykApp onOpenAuth={NOOP_AUTH} />);
-    expect(screen.getByTestId("corner-action")).toBeInTheDocument();
+    const corner = screen.queryByTestId("corner-action");
+    if (page === "budgets" || page === "assets") expect(corner).toBeNull();
+    else expect(corner).toBeInTheDocument();
   });
 
   it("closing ManualExpenseSheet hides it", () => {

@@ -13,10 +13,18 @@ const reset = vi.fn();
 let todayMl = 0;
 let log: Record<string, number> = {};
 vi.mock("../hooks/useWaterTracker", () => ({
+  WATER_ADD_EVENT: "nutrition:water-add",
   useWaterTracker: () => ({ todayMl, log, add, subtract, reset }),
 }));
 
 import { WaterTrackerCard } from "./WaterTrackerCard";
+
+/** Свій обʼєм - в аркуші «Вода», який відкриває кут «Додати» (v3.2, 01). */
+function openWaterSheet() {
+  act(() => {
+    window.dispatchEvent(new Event("nutrition:water-add"));
+  });
+}
 
 beforeEach(() => {
   todayMl = 0;
@@ -46,6 +54,12 @@ describe("WaterTrackerCard", () => {
     expect(screen.getByText(/1,25 л \/ 2,35 л/)).toBeInTheDocument();
   });
 
+  it("на картці немає поля свого обʼєму і кнопки «Додати»", () => {
+    render(<WaterTrackerCard goalMl={2000} />);
+    expect(screen.queryByLabelText("Свій обʼєм у мл")).toBeNull();
+    expect(screen.queryByRole("button", { name: "Додати" })).toBeNull();
+  });
+
   it("adds water on a quick-add tap", () => {
     render(<WaterTrackerCard goalMl={2000} />);
     fireEvent.click(screen.getByText("+200"));
@@ -54,9 +68,10 @@ describe("WaterTrackerCard", () => {
 
   it("adds a custom amount and shows undo", () => {
     render(<WaterTrackerCard goalMl={2000} />);
+    openWaterSheet();
     const input = screen.getByLabelText("Свій обʼєм у мл");
     fireEvent.change(input, { target: { value: "350" } });
-    fireEvent.click(screen.getByRole("button", { name: "Додати" }));
+    fireEvent.click(screen.getByRole("button", { name: "Записати" }));
     expect(add).toHaveBeenCalledWith(350);
     // After a custom add, the undo button surfaces with the last amount.
     expect(
@@ -66,6 +81,7 @@ describe("WaterTrackerCard", () => {
 
   it("adds a custom amount on Enter", () => {
     render(<WaterTrackerCard goalMl={2000} />);
+    openWaterSheet();
     const input = screen.getByLabelText("Свій обʼєм у мл");
     fireEvent.change(input, { target: { value: "250" } });
     fireEvent.keyDown(input, { key: "Enter" });
@@ -81,21 +97,23 @@ describe("WaterTrackerCard", () => {
 
   it("ignores a non-positive custom amount", () => {
     render(<WaterTrackerCard goalMl={2000} />);
+    openWaterSheet();
     const input = screen.getByLabelText("Свій обʼєм у мл");
     fireEvent.change(input, { target: { value: "0" } });
     // Button disabled → click does nothing.
-    fireEvent.click(screen.getByRole("button", { name: "Додати" }));
+    fireEvent.click(screen.getByRole("button", { name: "Записати" }));
     expect(add).not.toHaveBeenCalled();
   });
 
   it("keeps only digits in the custom amount", () => {
     render(<WaterTrackerCard goalMl={2000} />);
+    openWaterSheet();
     const input = screen.getByLabelText<HTMLInputElement>("Свій обʼєм у мл");
     fireEvent.change(input, { target: { value: "2,5л" } });
     expect(input.value).toBe("25");
     fireEvent.change(input, { target: { value: "абв" } });
     expect(input.value).toBe("");
-    expect(screen.getByRole("button", { name: "Додати" })).toBeDisabled();
+    expect(screen.getByRole("button", { name: "Записати" })).toBeDisabled();
   });
 
   it("requires a two-tap confirm to reset", () => {

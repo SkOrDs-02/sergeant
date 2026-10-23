@@ -6,7 +6,6 @@
 // and a Toast API into <LogCard>.  We mock the child at the module level so
 // the tests stay focused on:
 //   • the page renders without crashing
-//   • onAddMeal opens the add-meal sheet (sets state on the controller)
 //   • onRemoveMeal calls handleRemoveMeal AND fires an undo toast
 //   • onEditMeal sets the editing-meal state with the correct shape
 import { describe, expect, it, vi, afterEach } from "vitest";
@@ -27,13 +26,11 @@ import { NutritionLogPage } from "./NutritionLogPage";
 vi.mock("../components/LogCard", () => ({
   LogCard: ({
     log,
-    onAddMeal,
     onAddMealFromSearch,
     onRemoveMeal,
     onEditMeal,
   }: {
     log: NutritionLog;
-    onAddMeal?: () => void;
     onAddMealFromSearch?: (meal: Meal) => void;
     onRemoveMeal?: (date: string, meal: Meal) => void;
     onEditMeal?: (date: string, meal: Meal) => void;
@@ -55,7 +52,6 @@ vi.mock("../components/LogCard", () => ({
     return (
       <div>
         <div data-testid="meal-count">{meals.length}</div>
-        <button onClick={onAddMeal}>Додати прийом їжі</button>
         <button onClick={() => onAddMealFromSearch?.(meal)}>
           Додати з пошуку
         </button>
@@ -120,41 +116,9 @@ describe("NutritionLogPage", () => {
     const log = makeLog();
     const toast = makeToast();
     render(
-      <NutritionLogPage
-        log={log}
-        toast={toast}
-        setEditingMeal={vi.fn()}
-        onOpenAddMeal={vi.fn()}
-      />,
+      <NutritionLogPage log={log} toast={toast} setEditingMeal={vi.fn()} />,
     );
-    // The stub renders the add button
-    expect(
-      screen.getByRole("button", { name: /Додати прийом їжі/ }),
-    ).toBeTruthy();
-  });
-
-  it("clicking 'Додати прийом їжі' delegates to onOpenAddMeal (host resets the sheet step)", async () => {
-    // Хост (NutritionApp) відкриває sheet сам і скидає його initialStep на
-    // "source" — пряме setAddMealSheetOpen тут відкривало б sheet на
-    // залишковому кроці фото після фото-CTA.
-    const onOpenAddMeal = vi.fn();
-    const log = makeLog();
-    const toast = makeToast();
-
-    render(
-      <NutritionLogPage
-        log={log}
-        toast={toast}
-        setEditingMeal={vi.fn()}
-        onOpenAddMeal={onOpenAddMeal}
-      />,
-    );
-
-    await userEvent.click(
-      screen.getByRole("button", { name: /Додати прийом їжі/ }),
-    );
-
-    expect(onOpenAddMeal).toHaveBeenCalledTimes(1);
+    expect(screen.getByTestId("meal-count")).toBeTruthy();
   });
 
   it("clicking 'Видалити meal' calls handleRemoveMeal and fires a success toast (undo pattern)", async () => {
@@ -164,12 +128,7 @@ describe("NutritionLogPage", () => {
     const toast = makeToast();
 
     render(
-      <NutritionLogPage
-        log={log}
-        toast={toast}
-        setEditingMeal={vi.fn()}
-        onOpenAddMeal={vi.fn()}
-      />,
+      <NutritionLogPage log={log} toast={toast} setEditingMeal={vi.fn()} />,
     );
 
     await userEvent.click(
@@ -200,12 +159,7 @@ describe("NutritionLogPage", () => {
     );
 
     render(
-      <NutritionLogPage
-        log={log}
-        toast={toast}
-        setEditingMeal={vi.fn()}
-        onOpenAddMeal={vi.fn()}
-      />,
+      <NutritionLogPage log={log} toast={toast} setEditingMeal={vi.fn()} />,
     );
 
     await userEvent.click(
@@ -238,12 +192,7 @@ describe("NutritionLogPage", () => {
     );
 
     render(
-      <NutritionLogPage
-        log={log}
-        toast={toast}
-        setEditingMeal={vi.fn()}
-        onOpenAddMeal={vi.fn()}
-      />,
+      <NutritionLogPage log={log} toast={toast} setEditingMeal={vi.fn()} />,
     );
 
     await userEvent.click(
@@ -272,7 +221,6 @@ describe("NutritionLogPage", () => {
         log={log}
         toast={toast}
         setEditingMeal={setEditingMeal}
-        onOpenAddMeal={vi.fn()}
       />,
     );
 
@@ -298,12 +246,7 @@ describe("NutritionLogPage", () => {
     const toast = makeToast();
 
     render(
-      <NutritionLogPage
-        log={log}
-        toast={toast}
-        setEditingMeal={vi.fn()}
-        onOpenAddMeal={vi.fn()}
-      />,
+      <NutritionLogPage log={log} toast={toast} setEditingMeal={vi.fn()} />,
     );
 
     const removeBtn = screen.getByRole("button", { name: /Видалити meal/ });

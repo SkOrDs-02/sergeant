@@ -50,6 +50,10 @@ import { clearHubQuickStatsSnapshots } from "./hubQuickStatsSnapshots";
 import { useCrossTabSessionEnd } from "./useCrossTabSessionEnd";
 import { releasePushSubscriptionOnLogout } from "./releasePushOnLogout";
 import * as pendingSignOut from "./pendingSignOut";
+import {
+  clearSessionExpired,
+  markSessionExpired,
+} from "./sessionExpiredMarker";
 import { usePendingSignOutRetry } from "./usePendingSignOutRetry";
 import { useResetSyncSessionOnSignIn } from "./useResetSyncSessionOnSignIn";
 // AI-DANGER: саме `uk.core`. Цей файл — eager-поверхня, і повний каталог
@@ -620,12 +624,23 @@ export function AuthProvider({ children }: AuthProviderProps) {
         );
       })
       .finally(() => {
+        // sec-18: user → anon — це втрата сесії, а не вибір людини. Маркер
+        // ПІСЛЯ teardown (він би його не зачепив, але порядок чесніший) і ДО
+        // reload: після нього оболонка веде на повторний вхід, а не на
+        // анонімний хаб. user → user (інший акаунт) маркера не потребує.
+        if (!user?.id) markSessionExpired();
         // priv-02: решта вкладок цього браузера теж не мусять далі показувати
         // дані попередньої сесії.
         broadcastSessionEnded();
         window.location.reload();
       });
   }, [status, user?.id, queryClient]);
+
+  // sec-18: живий вхід знімає маркер «сесія завершилась»: повторний вхід
+  // відбувся (email, соцвхід після редиректу, відновлена сесія).
+  useEffect(() => {
+    if (status === "authenticated") clearSessionExpired();
+  }, [status]);
 
   // priv-02: сесію завершила ІНША вкладка — див. `useCrossTabSessionEnd`.
   useCrossTabSessionEnd(Boolean(user), queryClient, setSignedOut);
@@ -817,6 +832,9 @@ export function AuthProvider({ children }: AuthProviderProps) {
       // потрібний wipe (SW-кеші, SQLite-партиція, LS-слайси, RQ clear)
       // logout виконує сам нижче.
       reconcileChatOwnerOnAuthChange(null);
+      // sec-18: свідомий вихід — не «сесія завершилась»; після нього
+      // анонімний режим, як і раніше.
+      clearSessionExpired();
       // Той пре-стамп вище споживає зміну identity, тож reconcile-ефект
       // побачить `changed: false` і НЕ прибере hub-снапшоти сам — logout
       // мусить зробити це власноруч. Інакше вони переживають вихід, а
