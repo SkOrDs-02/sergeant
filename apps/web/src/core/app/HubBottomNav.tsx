@@ -370,7 +370,9 @@ export function HubBottomNav({
           onClick: onShowAuth,
           iconName: "user",
           prefetchPage: "auth",
-          label: "Увійти",
+          // Вкладка це місце, «Увійти» - дія всередині неї (redesign v3.2,
+          // позиція 16): назва та сама, що в залогіненого.
+          label: "Профіль",
           action: true,
         }
       : null;

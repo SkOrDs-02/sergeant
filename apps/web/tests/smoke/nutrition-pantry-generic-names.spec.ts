@@ -320,16 +320,15 @@ test("@critical pantry: списання з позиції на два варі�
   // reload стирає комору, яку ми щойно наповнили (та сама пастка, що
   // описана в `demo-mode-smoke.spec.ts`).
   await page.getByRole("button", { name: "Журнал" }).click();
+  // Кнопки «Додати прийом їжі» під журналом більше немає (redesign v3.2,
+  // позиція 01): додає кутова кнопка. Комора належить пошуку.
   await page
-    .getByRole("button", { name: "Додати прийом їжі" })
-    .first()
+    .getByTestId("corner-action")
+    .getByRole("button", { name: "Додати" })
     .click({ timeout: 60_000 });
-
-  // Загальний вхід спершу питає спосіб (погоджений food-flow #1512).
-  // Комора належить пошуку; обираємо його перед перевіркою списання.
   await page
-    .getByRole("navigation", { name: "Спосіб додавання їжі" })
-    .getByRole("button", { name: "Пошук продукту", exact: true })
+    .getByTestId("add-sources")
+    .getByRole("button", { name: /^Пошук продукту/ })
     .click();
 
   // Regression 2026-09-07: «пікер комори зник». Комора в add-meal flow

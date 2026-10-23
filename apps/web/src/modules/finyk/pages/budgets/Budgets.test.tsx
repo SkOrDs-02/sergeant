@@ -13,7 +13,7 @@
  * Money is integer kopiykas (number); time pinned to Europe/Kyiv mid-June.
  */
 import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
-import { render, screen, fireEvent, act } from "@testing-library/react";
+import { render, screen, fireEvent, act, within } from "@testing-library/react";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import type { ReactNode } from "react";
 
@@ -82,6 +82,24 @@ function renderBudgets(props: Partial<Parameters<typeof Budgets>[0]> = {}) {
   );
 }
 
+/** Кут «Додати» → рядок аркуша джерел (redesign v3.2, позиції 02-03). */
+function openAdd(row: RegExp) {
+  act(() => {
+    fireEvent.click(
+      within(screen.getByTestId("corner-action")).getByRole("button", {
+        name: "Додати",
+      }),
+    );
+  });
+  act(() => {
+    fireEvent.click(
+      within(screen.getByTestId("add-sources")).getByRole("button", {
+        name: row,
+      }),
+    );
+  });
+}
+
 describe("Budgets page", () => {
   beforeEach(() => {
     vi.useFakeTimers({ shouldAdvanceTime: true });
@@ -105,21 +123,17 @@ describe("Budgets page", () => {
     expect(container.querySelector('[aria-busy="true"]')).toBeInTheDocument();
   });
 
-  it("renders the loaded page with the combined «Запланувати» picker", () => {
+  it("renders the loaded page with «Запланувати» on the corner, no second trigger", () => {
     renderBudgets();
-    // Founder-UX audit round 2 (F2): one combined trigger replaces the old
-    // standalone "Додати ліміт або ціль" CTA.
-    const trigger = screen.getByRole("button", { name: /Запланувати/ });
-    expect(trigger).toBeInTheDocument();
-    expect(trigger).toHaveAttribute("aria-haspopup", "menu");
+    // redesign v3.2, позиція 03: кут відкриває «Підписка / Ліміт / Ціль»,
+    // «+ Запланувати» внизу знято.
+    expect(screen.queryByRole("button", { name: /Запланувати/ })).toBeNull();
+    expect(screen.getByTestId("corner-action")).toBeInTheDocument();
   });
 
   it("opens the add-budget form on «Ліміт» pick", () => {
     renderBudgets();
-    fireEvent.click(screen.getByRole("button", { name: /Запланувати/ }));
-    act(() => {
-      fireEvent.click(screen.getByRole("menuitem", { name: /^Ліміт/ }));
-    });
+    openAdd(/^Ліміт/);
     // form select for category appears
     expect(screen.getByDisplayValue("Обери категорію")).toBeInTheDocument();
   });
@@ -127,10 +141,7 @@ describe("Budgets page", () => {
   it("delegates the «Підписка» pick to onAddSubscription", () => {
     const onAddSubscription = vi.fn();
     renderBudgets({ onAddSubscription });
-    fireEvent.click(screen.getByRole("button", { name: /Запланувати/ }));
-    act(() => {
-      fireEvent.click(screen.getByRole("menuitem", { name: /Підписка/ }));
-    });
+    openAdd(/Підписка/);
     expect(onAddSubscription).toHaveBeenCalledTimes(1);
     // Picking «Підписка» must NOT also open the limit/goal form.
     expect(
@@ -155,10 +166,7 @@ describe("Budgets page", () => {
   it("adds a limit budget via the form submit", async () => {
     const setBudgets = vi.fn();
     renderBudgets({ storage: buildStorage({ setBudgets }) });
-    fireEvent.click(screen.getByRole("button", { name: /Запланувати/ }));
-    act(() => {
-      fireEvent.click(screen.getByRole("menuitem", { name: /^Ліміт/ }));
-    });
+    openAdd(/^Ліміт/);
     // pick category
     fireEvent.change(screen.getByDisplayValue("Обери категорію"), {
       target: { value: "food" },

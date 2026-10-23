@@ -85,15 +85,19 @@ export function TxTagsField({
               <option key={tag.key} value={tag.label} />
             ))}
           </datalist>
-          <Button
-            type="button"
-            variant="outline"
-            className="shrink-0 h-11"
-            disabled={draft.trim() === ""}
-            onClick={submit}
-          >
-            {t.add}
-          </Button>
+          {/* Лише коли є що додати: вимкнена «Додати» на порожній формі
+              була другою кнопкою «Додати» поруч із головною дією аркуша
+              (redesign v3.2, PR2). */}
+          {draft.trim() !== "" && (
+            <Button
+              type="button"
+              variant="outline"
+              className="shrink-0 h-11"
+              onClick={submit}
+            >
+              {t.add}
+            </Button>
+          )}
         </div>
       )}
     </section>

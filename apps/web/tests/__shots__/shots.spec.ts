@@ -117,14 +117,30 @@ const ROUTES: Array<[string, World, string, Step?]> = [
 const ADD_OUT = process.env["ADD_ACTIONS_OUT"];
 async function recordAddActions(page: Page, name: string) {
   if (!ADD_OUT) return;
-  const count = await page.evaluate(
-    () =>
-      Array.from(document.querySelectorAll("button")).filter((b) => {
+  // «+ Актив» - дія, «+250» / «+ 250 мл» - сума швидкого вводу, не дія
+  // «Додати»: після «+» має йти слово (redesign v3.2, PR2).
+  // Під відкритим модальним аркушем фон інертний: рахуємо лише в ньому.
+  const texts = await page.evaluate(() =>
+    Array.from(
+      (
+        Array.from(
+          document.querySelectorAll<HTMLElement>(
+            '[role="dialog"][aria-modal="true"]',
+          ),
+        ).at(-1) ?? document
+      ).querySelectorAll("button"),
+    )
+      .filter((b) => {
         const r = b.getBoundingClientRect();
         const text = (b.innerText || "").trim();
-        return r.width > 0 && r.height > 0 && /^(Додати|\+)/.test(text);
-      }).length,
+        return (
+          r.width > 0 && r.height > 0 && /^(Додати|\+\s*\p{L})/u.test(text)
+        );
+      })
+      .map((b) => (b.innerText || "").trim().replace(/\s+/g, " ")),
   );
+  if (texts.length > 1) console.log(`addActions ${name}: ${texts.join(" | ")}`);
+  const count = texts.length;
   const prev = existsSync(ADD_OUT)
     ? (JSON.parse(readFileSync(ADD_OUT, "utf8")) as Record<string, number>)
     : {};

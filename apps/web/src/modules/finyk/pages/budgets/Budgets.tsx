@@ -65,8 +65,7 @@ import type {
 } from "@sergeant/finyk-domain/domain/types";
 import type { MonoJarDto } from "@shared/api";
 import { messages } from "@shared/i18n/uk";
-import { QuickActionButton } from "../AssetsBars";
-import { DropdownMenu } from "@shared/components/ui/DropdownMenu";
+import { AddAction } from "@shared/components/ui/CornerAction";
 
 // Mirrors `useStorage`'s MonthlyPlan shape (required income/expense/
 // savings, each a raw input value). Replicated inline here to avoid
@@ -598,7 +597,7 @@ export function Budgets({
               jars={jars}
             />
 
-            {showForm ? (
+            {showForm && (
               <AddBudgetForm
                 existingBudgets={budgets}
                 expenseCategoryList={expenseCategoryList}
@@ -607,48 +606,32 @@ export function Budgets({
                 onSubmit={handleAddBudget}
                 onCancel={handleCancelForm}
               />
-            ) : (
-              // Комбінований пікер «Запланувати» (founder-UX audit round 2,
-              // F2) — замінює три розкидані афоданси («+ Підписка» вище
-              // секцій, ця кнопка внизу, дубль у RecurringSuggestions) на
-              // один тригер + `DropdownMenu`, за зразком `AssetsTable.tsx`
-              // («+ Актив» → «Актив» / «Мені винні»). Дубль у
-              // `RecurringSuggestions` лишається навмисно — це data-driven
-              // підказка на конкретний виявлений кандидат, не CTA-бар.
-              <DropdownMenu
-                ariaLabel={messages.finyk.planning.scheduleAria}
-                placement="bottom-start"
-                items={[
+            )}
+            {/* «Запланувати» - кутова кнопка з аркушем «Підписка / Ліміт /
+                Ціль» (redesign v3.2, позиція 03): одна дія на екран, без
+                другого тригера внизу списку. */}
+            {!showForm && (
+              <AddAction
+                sources={[
                   {
-                    type: "item",
                     id: "subscription",
                     label: messages.finyk.planning.addSubscription,
-                    description:
-                      messages.finyk.planning.addSubscriptionDescription,
+                    hint: messages.finyk.planning.addSubscriptionDescription,
                     onSelect: () => onAddSubscription?.(),
                   },
                   {
-                    type: "item",
                     id: "limit",
                     label: messages.finyk.planning.addLimitLabel,
-                    description: messages.finyk.planning.addLimitDescription,
+                    hint: messages.finyk.planning.addLimitDescription,
                     onSelect: () => openBudgetForm("limit"),
                   },
                   {
-                    type: "item",
                     id: "goal",
                     label: messages.finyk.planning.addGoalLabel,
-                    description: messages.finyk.planning.addGoalDescription,
+                    hint: messages.finyk.planning.addGoalDescription,
                     onSelect: () => openBudgetForm("goal"),
                   },
                 ]}
-                trigger={
-                  <QuickActionButton
-                    label={messages.finyk.planning.schedule}
-                    tone="finyk"
-                    className="rounded-lg"
-                  />
-                }
               />
             )}
           </div>

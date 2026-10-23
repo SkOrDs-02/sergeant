@@ -29,7 +29,6 @@ interface LogCardProps {
   log: NutritionLog;
   selectedDate: string;
   setSelectedDate: Dispatch<SetStateAction<string>>;
-  onAddMeal?: () => void;
   onAddMealFromSearch?: (meal: Meal, date?: string) => void;
   onRemoveMeal?: (date: string, meal: Meal) => void;
   onEditMeal?: (date: string, meal: Meal) => void;
@@ -67,7 +66,6 @@ export function LogCard({
   log,
   selectedDate,
   setSelectedDate,
-  onAddMeal,
   onAddMealFromSearch,
   onRemoveMeal,
   onEditMeal,
@@ -149,7 +147,7 @@ export function LogCard({
           П3 «край і зріз»: аркуш дня — це `DayLogSheet`, і все, що стоїть
           у цьому `flex-col` навколо нього, аркушем НЕ є. Перемикач дати,
           пошук, «скопіювати з попереднього дня», попередження про розмір
-          журналу й «+ Додати прийом їжі» — органи керування записом;
+          журналу — органи керування записом;
           обвести їх перфорацією означало б повторити помилку, за яку край
           зняли з hero Рутини. Розбір — в `DayLogSheet.tsx`.
 
@@ -175,14 +173,6 @@ export function LogCard({
         )}
 
         <MealMomentLine date={selectedDate} />
-
-        <button
-          type="button"
-          onClick={onAddMeal}
-          className="w-full h-11 rounded-lg border border-border-strong text-style-label font-semibold text-text hover:bg-line/40 focus-ring"
-        >
-          Додати прийом їжі
-        </button>
 
         <LogCardSearch
           log={log}

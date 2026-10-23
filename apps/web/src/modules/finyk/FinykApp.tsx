@@ -526,6 +526,7 @@ export default function App({
             bulkImportOpen={showBulkImport}
             onBulkImportOpenChange={setShowBulkImport}
             onOpenAuth={onOpenAuth}
+            showCorner={page !== "assets" && page !== "budgets"}
           />
         )}
 

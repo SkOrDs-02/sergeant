@@ -50,8 +50,8 @@ export function CornerAction({
         className,
       )}
     >
-      {/* Свій `<button>`, а не `Button`: той бере акцент модуля з контексту
-          і фарбує solid у hue модуля, а канон тут чорнило в обох темах. */}
+      {/* Свій `<button>`, а не `Button`: плаваюча кнопка має тінь і 16 / 600
+          підпис, яких шкала `Button` не дає. */}
       <button
         type="button"
         className="pointer-events-auto inline-flex h-11 items-center gap-1.5 rounded-lg bg-text px-4 text-style-body font-semibold text-bg shadow-[0_2px_8px_rgba(0,0,0,0.18)] hover:bg-text/90 active:bg-text/80 focus-ring motion-safe:transition-colors"
