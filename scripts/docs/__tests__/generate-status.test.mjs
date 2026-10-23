@@ -14,6 +14,7 @@ import {
   formatPriorityTag,
   loadShipped,
   summariseInFlight,
+  trimStatus,
 } from "../generate-status.mjs";
 
 describe("formatPriorityTag", () => {
@@ -195,5 +196,29 @@ describe("summariseInFlight", () => {
     const a = summariseInFlight(report).recent.map((e) => e.linkPath);
     const b = summariseInFlight(report).recent.map((e) => e.linkPath);
     assert.deepEqual(a, b);
+  });
+});
+
+describe("trimStatus", () => {
+  it("keeps short statuses whole", () => {
+    assert.equal(trimStatus("  Active  draft "), "Active draft");
+  });
+
+  it("does not cut a markdown link in half", () => {
+    const raw = `${"x".repeat(100)} у [README](./work/specs/audits/2026-10-01-full-app-audit/README.md).`;
+    const out = trimStatus(raw, 120);
+    assert.ok(!out.includes("["), out);
+    assert.ok(out.length <= 120);
+  });
+
+  it("keeps a link that closes before the limit", () => {
+    const raw = `див. [README](./r.md) ${"y".repeat(200)}`;
+    assert.ok(trimStatus(raw, 120).startsWith("див. [README](./r.md)"));
+  });
+
+  it("does not leave an unclosed inline code span", () => {
+    const raw = `${"z".repeat(110)} \`some_long_identifier\``;
+    const out = trimStatus(raw, 120);
+    assert.equal((out.match(/`/g) ?? []).length % 2, 0);
   });
 });
