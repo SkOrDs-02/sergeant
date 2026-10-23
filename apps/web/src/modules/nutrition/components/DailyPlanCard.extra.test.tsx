@@ -31,6 +31,8 @@ import type { NutritionPrefs } from "@sergeant/nutrition-domain";
 // мережі/сторедж-побічних ефектів, жоден тест тут не читає її testid.
 
 vi.mock("@shared/components/ui/Input", () => ({
+  FIELD_LABEL: "",
+  fieldFocus: () => "",
   Input: ({
     "aria-label": ariaLabel,
     value,
