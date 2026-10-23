@@ -827,13 +827,13 @@ single-значення та range (дві тумби), тіки, валю-toolt
 
 ## 6. Focus, disabled, loading — єдиний контракт
 
-| Стан             | Поведінка                                                                                                               |
-| ---------------- | ----------------------------------------------------------------------------------------------------------------------- |
-| `:focus-visible` | `ring-2 ring-focus/45 ring-offset-2 ring-offset-bg` на кнопках; примітив `Input` — той самий `ring-focus/45` без offset |
-| `:disabled`      | `opacity-50`, `cursor-not-allowed`, `pointer-events-none`                                                               |
-| `loading`        | Показує `Spinner`, встановлює `aria-busy="true"`, disables pointer events                                               |
-| `:active`        | `active:scale-[0.98]` для прес-feedback                                                                                 |
-| `:hover`         | Тільки там, де `hover:` реально працює (не-touch); на `interactive` картках — `translate-y-[-2px] shadow-float`         |
+| Стан             | Поведінка                                                                                                                                                                                                                  |
+| ---------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `:focus-visible` | `ring-2 ring-focus/45 ring-offset-2 ring-offset-bg` на кнопках; примітиви `Input` / `Textarea` / `Select` — межа `border-text` + `inset-ring-text` без зовнішнього кільця, при помилці `inset-ring-danger` (§ Input, v3.1) |
+| `:disabled`      | `opacity-50`, `cursor-not-allowed`, `pointer-events-none`                                                                                                                                                                  |
+| `loading`        | Показує `Spinner`, встановлює `aria-busy="true"`, disables pointer events                                                                                                                                                  |
+| `:active`        | `active:scale-[0.98]` для прес-feedback                                                                                                                                                                                    |
+| `:hover`         | Тільки там, де `hover:` реально працює (не-touch); на `interactive` картках — `translate-y-[-2px] shadow-float`                                                                                                            |
 
 ### 6.1 Semantic A11y / states tokens (Wave 2, 2026-05-13)
 
@@ -865,8 +865,9 @@ high-traffic shell (Hub headers, search, onboarding, auth) від raw
 className =
   "focus:outline-none focus-visible:ring-2 focus-visible:ring-focus/45 focus-visible:ring-offset-2 focus-visible:ring-offset-bg";
 
-// Інпут (без offset — краще всередині заповнення). Примітив `Input` уже
-// несе це сам; для сирого <input> поза примітивом — утиліта `.input-focus`
+// Інпут. Примітив `Input` несе фокус сам і з v3.1 інакше: межа
+// `focus-visible:border-text` + `inset-ring-text`, без кільця (§ Input).
+// Для сирого <input> поза примітивом — утиліта `.input-focus`
 // (utilities.css), єдине законне місце з `/30`: кільце БЕЗ офсету — інша
 // роль, тому храповик `offCanonRingOpacity` CSS не сканує.
 className = "input-focus caret-brand";
