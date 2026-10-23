@@ -189,7 +189,6 @@ function Harness({
   showBalance = true,
   openSubscriptionForm = vi.fn(),
   openAssetForm = vi.fn(),
-  openReceivableForm = vi.fn(),
   openDebtForm = vi.fn(),
   addSubscriptionFromRecurring = vi.fn(),
   dismissRecurring = vi.fn(),
@@ -199,7 +198,6 @@ function Harness({
   showBalance?: boolean;
   openSubscriptionForm?: () => void;
   openAssetForm?: () => void;
-  openReceivableForm?: () => void;
   openDebtForm?: () => void;
   addSubscriptionFromRecurring?: (candidate: unknown) => void;
   dismissRecurring?: (key: string) => void;
@@ -228,7 +226,6 @@ function Harness({
     dismissRecurring,
     openSubscriptionForm,
     openAssetForm,
-    openReceivableForm,
     openDebtForm,
   } as unknown as TableState;
   return <AssetsTable state={state} />;
@@ -265,27 +262,38 @@ describe("AssetsTable", () => {
     expect(screen.getByTestId("liabilities-section")).toBeInTheDocument();
   });
 
-  it("corner «Додати» opens Актив / Мені винні / Пасив, no + buttons above the list", () => {
+  it("corner «Додати» opens Актив / Пасив, no + buttons above the list", () => {
     const openAssetForm = vi.fn();
-    const openReceivableForm = vi.fn();
     const openDebtForm = vi.fn();
     render(
-      <Harness
-        openAssetForm={openAssetForm}
-        openReceivableForm={openReceivableForm}
-        openDebtForm={openDebtForm}
-      />,
+      <Harness openAssetForm={openAssetForm} openDebtForm={openDebtForm} />,
     );
     // redesign v3.2, позиція 02: один вхід замість трьох.
     expect(screen.queryByText("+ Актив")).toBeNull();
     expect(screen.queryByText("+ Пасив")).toBeNull();
     expect(screen.queryByText("+ Підписка")).toBeNull();
-    openAdd(/^Мені винні/);
-    expect(openReceivableForm).toHaveBeenCalledTimes(1);
     openAdd(/^Актив/);
     expect(openAssetForm).toHaveBeenCalledTimes(1);
     openAdd(/^Пасив/);
     expect(openDebtForm).toHaveBeenCalledTimes(1);
+    // «Мені винні» - тип у формі активу, а не окремий рядок аркуша.
+    act(() => {
+      fireEvent.click(
+        within(screen.getByTestId("corner-action")).getByRole("button", {
+          name: "Додати",
+        }),
+      );
+    });
+    expect(
+      within(screen.getByTestId("add-sources")).getAllByRole("button", {
+        name: /^(Актив|Пасив)/,
+      }),
+    ).toHaveLength(2);
+    expect(
+      within(screen.getByTestId("add-sources")).queryByRole("button", {
+        name: /Мені винні/,
+      }),
+    ).toBeNull();
   });
 
   it("shows masked totals in section summaries when showBalance is false", () => {

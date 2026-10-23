@@ -30,7 +30,6 @@ export function AssetsTable({ state }: { state: State }) {
     open,
     setOpen,
     openAssetForm,
-    openReceivableForm,
     openDebtForm,
   } = state;
 
@@ -64,14 +63,8 @@ export function AssetsTable({ state }: { state: State }) {
           {
             id: "asset",
             label: "Актив",
-            hint: "Готівка, депозит, інвестиції, авто",
+            hint: "Готівка, депозит, авто або борг тобі",
             onSelect: openAssetForm,
-          },
-          {
-            id: "receivable",
-            label: "Мені винні",
-            hint: "Борг, який мають повернути тобі",
-            onSelect: openReceivableForm,
           },
           {
             id: "debt",
