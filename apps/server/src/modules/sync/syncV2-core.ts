@@ -9,7 +9,13 @@ import {
   syncPayloadBytes,
 } from "../../obs/metrics.js";
 import type { SyncV2Outcome } from "./syncV2-types.js";
-import { NAME_MAX_LEN, NOTE_MAX_LEN } from "@sergeant/shared";
+import {
+  NAME_MAX_LEN,
+  NOTE_MAX_LEN,
+  SYNC_PROTOCOL_QUERY_PARAM,
+  SYNC_PROTOCOL_VERSION,
+  parseSyncProtocolVersion,
+} from "@sergeant/shared";
 
 /** Re-exported so per-table `applySync*.ts` files import bounds from one place. */
 export { NAME_MAX_LEN, NOTE_MAX_LEN };
@@ -51,6 +57,49 @@ export const SYNC_OP_LOG_COMMITTED_WATERMARK_SQL =
  * `invalid_delta` reject before DML.
  */
 export const INCREMENT_DELTA_MAX_ABS = 1000;
+
+/** data-48: версія протоколу з query `sync_protocol`; `null`, коли її немає. */
+export function readClientSyncProtocolVersion(req: Request): number | null {
+  return parseSyncProtocolVersion(req.query?.[SYNC_PROTOCOL_QUERY_PARAM]);
+}
+
+/**
+ * data-48: вердикт для опа з невідомою таблицею. Ні в якому разі не пишеться
+ * в `sync_op_log` (payload невідомої таблиці в журнал не йде), відповідь
+ * per-op, решта батча їде далі.
+ *  - клієнт НОВІШИЙ за сервер (вікно деплою: фронт викочується раніше) ->
+ *    `retry` / `unknown_table`: оп лишається в черзі клієнта до оновлення
+ *    бекенду, дані не губляться;
+ *  - клієнт з тією ж/меншою версією або без параметра -> `rejected` /
+ *    `table_not_allowed` (термінально).
+ */
+export function unknownTableVerdict(clientVersion: number | null): {
+  status: "retry" | "rejected";
+  reason: "unknown_table" | "table_not_allowed";
+} {
+  return clientVersion !== null && clientVersion > SYNC_PROTOCOL_VERSION
+    ? { status: "retry", reason: "unknown_table" }
+    : { status: "rejected", reason: "table_not_allowed" };
+}
+
+/**
+ * Кладе вердикт у `results` і повертає `true`, якщо оп термінально відхилено
+ * (його треба додати до `rejectedCount` батча).
+ */
+export function settleUnknownTableOp(
+  req: Request,
+  op: { idempotency_key: string },
+  results: Array<{ idempotency_key: string; status: string; reason?: string }>,
+): boolean {
+  const verdict = unknownTableVerdict(readClientSyncProtocolVersion(req));
+  try {
+    syncOpLogApplyTotal.inc({ table: "__unknown__", ...verdict });
+  } catch {
+    /* metrics must never break a request */
+  }
+  results.push({ idempotency_key: op.idempotency_key, ...verdict });
+  return verdict.status === "rejected";
+}
 
 /**
  * Captured truncated header. `X-Origin-Device-Id` — опціональний
