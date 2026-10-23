@@ -16,7 +16,7 @@ import {
 export const privacyDocument: LegalDocument = {
   eyebrow: "Privacy Policy",
   title: "Політика приватності",
-  lastUpdated: "1 жовтня 2026",
+  lastUpdated: "23 жовтня 2026",
   intro: `Пояснюємо, які дані Sergeant обробляє, навіщо, як довго і як ти можеш керувати своїми правами. Діє з ${EFFECTIVE_DATE}.`,
   sections: [
     {
