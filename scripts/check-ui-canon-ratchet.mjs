@@ -88,8 +88,8 @@
 //
 // Метрики 16-18 (redesign v3.2 PR1, спека
 // docs/work/specs/planning/redesign-v3-2.md § Гейти) народились нулями і
-// стоять у `ZERO_ONLY_METRICS`. Метрика 19 у PR1 має лише baseline, PR2
-// зводить її в 0.
+// стоять у `ZERO_ONLY_METRICS`. Метрика 19 у PR1 мала лише baseline (24),
+// PR2 звів її в 0, і вона теж заборона.
 //
 // Метрики 12-14 (redesign v3.1 PR2, спека
 // docs/work/specs/planning/redesign-v3-1.md § Гейти) скануються лише в `.tsx`
@@ -293,6 +293,7 @@ export const ZERO_ONLY_METRICS = [
   "overlineOutsideHero",
   "hueOnButton",
   "rawInput",
+  "addActionsPerRoute",
 ];
 
 export function zeroOnlyViolations(budgets) {
