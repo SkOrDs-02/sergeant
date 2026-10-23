@@ -23,6 +23,17 @@ import {
 export type LockState =
   "checking" | "idle" | "locked" | "lockedOut" | "setup" | "change";
 
+/**
+ * Стани, у яких приватний контент не має бути в DOM (sec-13, priv-15):
+ * екран PIN або вичерпаний ліміт. `checking` сюди не входить: його вже
+ * закриває непрозора завіса, а гейт на ньому відклав би перший кадр усім
+ * користувачам без PIN. `setup`/`change` теж ні: людина вже в застосунку й
+ * сама налаштовує PIN з екрана налаштувань, який не можна зносити під нею.
+ */
+export function isPrivateContentHidden(state: LockState): boolean {
+  return state === "locked" || state === "lockedOut";
+}
+
 function lockedStateOf(status: LockStatus): LockState {
   return status.lockedOut ? "lockedOut" : "locked";
 }

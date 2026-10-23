@@ -425,7 +425,7 @@ async function fetchProductDetails(
   ctx: SilpoBranchContext,
   slug: string,
   signal?: AbortSignal,
-): Promise<NormalizedSilpoProduct | null> {
+): Promise<NormalizedSilpoProduct | null | "failed"> {
   const result = await callMcpTool({
     accessToken,
     toolName: "silpo_get_product_details",
@@ -444,7 +444,8 @@ async function fetchProductDetails(
       msg: "silpo_food_search_details_skipped",
       kind: result.error.kind,
     });
-    return null;
+    // Збій виклику, а не відсутність даних: така видача неповна і не кешується.
+    return "failed";
   }
   const parsed = RawProductDetailsSchema.safeParse(result.data.product);
   if (!parsed.success) {
@@ -464,7 +465,9 @@ function makeFetchSilpoSearch(
   userId: string,
   query: string,
   signal?: AbortSignal,
-): (accessToken: string) => Promise<McpResult<SilpoSearchProduct[]>> {
+): (
+  accessToken: string,
+) => Promise<McpResult<{ products: SilpoSearchProduct[]; complete: boolean }>> {
   return async (accessToken) => {
     const ctx = await resolveBranchContext(userId, accessToken, signal);
     if (!ctx.ok) return ctx;
@@ -512,15 +515,45 @@ function makeFetchSilpoSearch(
     );
 
     const products = detailed
-      .filter((p): p is NormalizedSilpoProduct => p !== null)
+      .filter((p): p is NormalizedSilpoProduct => p !== null && p !== "failed")
       .map(toSearchProduct)
       .filter((p): p is SilpoSearchProduct => p !== null);
 
-    return { ok: true, data: products };
+    return {
+      ok: true,
+      data: { products, complete: !detailed.includes("failed") },
+    };
   };
 }
 
 // ────────────────────────────────── Orchestration ────────────────────────────
+
+/**
+ * Мінімальна довжина запиту до Сільпо (rel-22): два символи - це «хл» на
+ * шляху до «хліб», а кожне натискання коштує 3-5 запитів до спільного
+ * client_id. OFF і власні джерела від цього не страждають.
+ */
+export const SILPO_SEARCH_MIN_QUERY_LENGTH = 3;
+
+/**
+ * Серверний кеш пошуку (rel-22), ключ - користувач + нормалізований запит.
+ * Ключ ОБОВʼЯЗКОВО містить userId: видача залежить від філії/адреси
+ * підключеного акаунта, тож чужий запис іншій людині віддавати не можна.
+ * TTL 60 с консервативний: ціни й наявність у Сільпо змінюються, а виграш
+ * кешу - саме повтори того самого запиту (backspace, повторне натискання).
+ * Кешуємо лише повні успішні відповіді: збої, зокрема збій хоч одного
+ * details-запиту, не кешуються.
+ */
+const SEARCH_CACHE_TTL_MS = 60_000;
+const SEARCH_CACHE_MAX = 500;
+const searchCache = new Map<
+  string,
+  { products: SilpoSearchProduct[]; expiresAt: number }
+>();
+
+function searchCacheKey(userId: string, query: string): string {
+  return `${userId}\u0000${query.trim().toLowerCase().replace(/\s+/g, " ")}`;
+}
 
 /**
  * `GET /api/food-search` — Silpo as the last cascade source, ONLY for a
@@ -536,7 +569,15 @@ export async function searchSilpoProducts(
 ): Promise<SilpoSearchProduct[]> {
   try {
     if (!userId) return [];
+    if ([...query.trim()].length < SILPO_SEARCH_MIN_QUERY_LENGTH) return [];
     if (!(await isSilpoConnectedUser(userId, deps))) return [];
+
+    // Перевірка підключення стоїть ПЕРЕД кешем: відключений акаунт не
+    // отримує закешованої видачі.
+    const cacheKey = searchCacheKey(userId, query);
+    const cached = searchCache.get(cacheKey);
+    if (cached && cached.expiresAt > Date.now()) return cached.products;
+    if (cached) searchCache.delete(cacheKey);
 
     const call = await callWithFreshAccessToken(
       userId,
@@ -550,7 +591,21 @@ export async function searchSilpoProducts(
       });
       return [];
     }
-    return call.data;
+    // Порожню, неповну (збій details) і видачу після спрацьованого дедлайну
+    // не кешуємо: порожньо чи неповно може бути через збій, а не через
+    // відсутність товару.
+    const { products, complete } = call.data;
+    if (products.length > 0 && complete && !deps.signal?.aborted) {
+      if (searchCache.size >= SEARCH_CACHE_MAX) {
+        const oldest = searchCache.keys().next().value;
+        if (oldest !== undefined) searchCache.delete(oldest);
+      }
+      searchCache.set(cacheKey, {
+        products,
+        expiresAt: Date.now() + SEARCH_CACHE_TTL_MS,
+      });
+    }
+    return products;
   } catch (err) {
     logger.warn({
       msg: "silpo_food_search_source_failed",
@@ -579,6 +634,7 @@ export async function lookupSilpoBarcode(
 
 // Re-exported for tests exercising internals without a live MCP call.
 export const __test__ = {
+  clearSearchCache: (): void => searchCache.clear(),
   toServingGrams,
   normalizeRawProduct,
   toSearchProduct,

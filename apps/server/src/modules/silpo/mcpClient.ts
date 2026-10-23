@@ -3,6 +3,18 @@ import { env } from "../../env/env.js";
 import { logger } from "../../obs/logger.js";
 import { recordExternalHttp } from "../../lib/externalHttp.js";
 import { elapsedMs, isAbortError, sleep } from "../../lib/timing.js";
+import {
+  BodyTooLargeError,
+  SILPO_MCP_MAX_BODY_BYTES,
+  parseRetryAfter,
+  readBodyCapped,
+  sessionCache,
+  sessionCacheGet,
+  sessionCacheSet,
+  sessionKey,
+} from "./mcpTransport.js";
+
+export { SILPO_MCP_MAX_BODY_BYTES };
 
 /**
  * Minimal JSON-RPC 2.0 client over MCP "streamable HTTP" — see spec
@@ -98,6 +110,15 @@ export const SILPO_MCP_TIMEOUT_MS = 15_000;
 let retryDelaysMs = [0, 300, 900];
 
 /**
+ * Скільки максимум чекаємо за `Retry-After` усередині одного виклику. Довший
+ * `Retry-After` не відсиджуємо в запиті користувача: віддаємо `rate_limited`
+ * і відкриваємо breaker на цей час (з потолком нижче).
+ */
+const RETRY_AFTER_MAX_INLINE_WAIT_MS = 2_000;
+/** Потолок паузи breaker-а за `Retry-After`: чужий заголовок не гасить синк на годину. */
+const RETRY_AFTER_MAX_BREAKER_MS = 60_000;
+
+/**
  * Global (not per-user) circuit breaker. Spec § Рішення дизайну: "Спільний
  * DCR client_id = спільна доля" — one client_id serves every user, so a
  * Silpo-side throttle/ban after N failures should stop hammering the
@@ -106,12 +127,19 @@ let retryDelaysMs = [0, 300, 900];
 interface BreakerState {
   failures: number;
   openUntil: number;
+  /**
+   * Пауза, заявлена Сільпо через `Retry-After`. Окремо від `openUntil`:
+   * успіх паралельного запиту чи власний таймер breaker-а не мають права
+   * скоротити паузу, яку назвав сам upstream.
+   */
+  retryAfterUntil: number;
 }
 const BREAKER_FAIL_THRESHOLD = 5;
 const BREAKER_OPEN_MS = 30_000;
-const breaker: BreakerState = { failures: 0, openUntil: 0 };
+const breaker: BreakerState = { failures: 0, openUntil: 0, retryAfterUntil: 0 };
 
 function isBreakerOpen(): boolean {
+  if (Date.now() < breaker.retryAfterUntil) return true;
   if (!breaker.openUntil) return false;
   if (Date.now() < breaker.openUntil) return true;
   breaker.openUntil = 0; // half-open — allow one probe
@@ -120,6 +148,13 @@ function isBreakerOpen(): boolean {
 function onBreakerSuccess(): void {
   breaker.failures = 0;
   breaker.openUntil = 0;
+}
+/** `Retry-After` від Сільпо відкриває breaker для всіх (спільний client_id). */
+function openBreakerFor(ms: number): void {
+  breaker.retryAfterUntil = Math.max(
+    breaker.retryAfterUntil,
+    Date.now() + Math.min(ms, RETRY_AFTER_MAX_BREAKER_MS),
+  );
 }
 function onBreakerFailure(): void {
   breaker.failures += 1;
@@ -131,12 +166,17 @@ function onBreakerFailure(): void {
 /** Test-only: reset module-level breaker/retry state between unit tests. */
 export function __silpoMcpTestHooks(): {
   resetBreaker(): void;
+  resetSessionCache(): void;
   setRetryDelaysMs(delays: number[]): void;
 } {
   return {
     resetBreaker(): void {
       breaker.failures = 0;
       breaker.openUntil = 0;
+      breaker.retryAfterUntil = 0;
+    },
+    resetSessionCache(): void {
+      sessionCache.clear();
     },
     setRetryDelaysMs(delays: number[]): void {
       retryDelaysMs = delays;
@@ -153,6 +193,8 @@ interface RawResponse {
   sessionId: string | null;
   bodyText: string;
   contentType: string | null;
+  /** Розібраний `Retry-After` у мс; `null`, якщо заголовка немає чи він сміттєвий. */
+  retryAfterMs: number | null;
 }
 
 /**
@@ -203,12 +245,13 @@ async function postJsonRpc(opts: {
       body: JSON.stringify(opts.body),
       signal,
     });
-    const bodyText = await response.text();
+    const bodyText = await readBodyCapped(response, SILPO_MCP_MAX_BODY_BYTES);
     return {
       status: response.status,
       sessionId: response.headers.get("mcp-session-id"),
       bodyText,
       contentType: response.headers.get("content-type"),
+      retryAfterMs: parseRetryAfter(response.headers.get("retry-after")),
     };
   } finally {
     clearTimeout(t);
@@ -265,9 +308,11 @@ async function mcpRpcCall(opts: {
 
   const start = process.hrtime.bigint();
   let lastNetworkError: unknown;
+  let retryAfterWaitMs = 0;
 
   for (let attempt = 0; attempt < retryDelaysMs.length; attempt++) {
-    const delay = retryDelaysMs[attempt] ?? 0;
+    const delay = Math.max(retryDelaysMs[attempt] ?? 0, retryAfterWaitMs);
+    retryAfterWaitMs = 0;
     if (delay > 0) await sleep(delay);
     // Дедлайн викликача сплив між спробами: жодних ретраїв.
     if (opts.signal?.aborted) return abortedByCaller();
@@ -283,6 +328,16 @@ async function mcpRpcCall(opts: {
       });
     } catch (e) {
       lastNetworkError = e;
+      if (e instanceof BodyTooLargeError) {
+        // Не проблема доступності й не retryable: повтор дасть ту саму
+        // відповідь. Ні тіла, ні заголовків не логуємо (Hard Rule #21).
+        recordExternalHttp("silpo", "error", elapsedMs(start));
+        logger.warn({ msg: "silpo_mcp_body_too_large", method: opts.method });
+        return rpcErr({
+          kind: "protocol_error",
+          message: "Silpo MCP response is too large",
+        });
+      }
       // Аборт ЗОВНІШНЬОГО сигналу — рішення викликача (дедлайн typeahead), а
       // не доказ, що Сільпо лежить: без ретраїв і без `onBreakerFailure`,
       // інакше повільний день відкриє breaker для синку чеків усіх людей.
@@ -318,11 +373,17 @@ async function mcpRpcCall(opts: {
     }
 
     if (raw.status === 429) {
-      if (attempt < retryDelaysMs.length - 1) {
-        recordExternalHttp("silpo", "rate_limited", ms);
+      recordExternalHttp("silpo", "rate_limited", ms);
+      const ra = raw.retryAfterMs;
+      const waitable = ra === null || ra <= RETRY_AFTER_MAX_INLINE_WAIT_MS;
+      if (attempt < retryDelaysMs.length - 1 && waitable) {
+        retryAfterWaitMs = ra ?? 0;
         continue;
       }
-      recordExternalHttp("silpo", "rate_limited", ms);
+      // Тротлінг спільного client_id - спільна доля: рахуємо в breaker, а
+      // заявлену Сільпо паузу поважаємо для всіх, не лише для цього виклику.
+      onBreakerFailure();
+      if (ra !== null) openBreakerFor(ra);
       return rpcErr({
         kind: "rate_limited",
         message: "Silpo MCP rate limit",
@@ -484,6 +545,19 @@ export async function mcpInitialize(
  * «Сільпо змінили формат відповіді» й дзвонила в Sentry дрейфом схеми. Сам
  * текст відмови при цьому не логувався ніде, тож діагностувати було нічим.
  */
+/** initialize із кешем сесії; кеш заповнюється лише успішним handshake. */
+async function cachedInitialize(
+  accessToken: string,
+  signal?: AbortSignal,
+): Promise<McpResult<{ sessionId: string | null }>> {
+  const key = sessionKey(accessToken);
+  const hit = sessionCacheGet(key);
+  if (hit) return { ok: true, data: hit };
+  const init = await mcpInitialize(accessToken, signal);
+  if (init.ok) sessionCacheSet(key, init.data.sessionId);
+  return init;
+}
+
 export async function callMcpTool<T>(opts: {
   accessToken: string;
   toolName: string;
@@ -492,7 +566,7 @@ export async function callMcpTool<T>(opts: {
   /** Дедлайн викликача (наприклад, 8 с typeahead): абортує всі HTTP-кроки. */
   signal?: AbortSignal | undefined;
 }): Promise<McpResult<T>> {
-  const init = await mcpInitialize(opts.accessToken, opts.signal);
+  const init = await cachedInitialize(opts.accessToken, opts.signal);
   if (!init.ok) return errResult(init.error);
 
   const callResult = await mcpRpcCall({
@@ -502,7 +576,16 @@ export async function callMcpTool<T>(opts: {
     method: "tools/call",
     params: { name: opts.toolName, arguments: opts.args ?? {} },
   });
-  if (!callResult.ok) return errResult(callResult.error);
+  if (!callResult.ok) {
+    // Збій міг бути через протухлу сесію: наступний виклик ініціалізується
+    // заново. Тротлінг і недоступність upstream про сесію нічого не кажуть, а
+    // зайвий initialize лише додав би навантаження на спільний client_id.
+    const kind = callResult.error.kind;
+    if (kind !== "rate_limited" && kind !== "upstream_unavailable") {
+      sessionCache.delete(sessionKey(opts.accessToken));
+    }
+    return errResult(callResult.error);
+  }
 
   const refusal = toolRefusal(callResult.result);
   if (refusal !== null) {

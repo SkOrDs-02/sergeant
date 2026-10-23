@@ -69,7 +69,7 @@ export function ActiveHabitsSection({
         as="h2"
         size="lg"
         tabIndex={-1}
-        className="rounded-md focus-ring"
+        className="focus-ring rounded-md"
         {...focusFallbackProps(HABITS_FOCUS_FALLBACK)}
       >
         Активні звички

@@ -56,7 +56,7 @@ export function DayLogSheet({
   return (
     <section
       aria-label={`Записи за ${selectedDate}`}
-      className="flex flex-col gap-4 rounded-panel focus-ring"
+      className="focus-ring flex flex-col gap-4 rounded-lg"
       tabIndex={-1}
       {...focusFallbackProps("nutrition-day-log")}
     >

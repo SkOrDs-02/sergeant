@@ -269,6 +269,20 @@ describe("BulkImportSheet — screenshot path", () => {
     expect(
       screen.getByRole("button", { name: "Імпортувати" }),
     ).toBeInTheDocument();
+
+    commitImportMock.mockResolvedValue({
+      batchId: 9,
+      created: 1,
+      linked: 0,
+      skipped: { monoMatched: 0, duplicate: 0 },
+      rows: [],
+    });
+    getImportBatchMock.mockResolvedValue({ batch: null });
+    fireEvent.click(screen.getByRole("button", { name: "Імпортувати" }));
+    await waitFor(() => expect(commitImportMock).toHaveBeenCalledTimes(1));
+    const body = commitImportMock.mock.calls[0]?.[0] as Record<string, unknown>;
+    expect(body["profile"]).toBe("screenshot");
+    expect(body["source"]).toBe("bank_screenshot");
   });
 
   it("preserves a known custom income category in bulk-review", async () => {
@@ -800,9 +814,9 @@ describe("BulkImportSheet — CSV path", () => {
 });
 
 describe("BulkImportSheet — commit + undo", () => {
-  async function reachBulkReview() {
+  async function reachBulkReview(profile: "mono" | "privat24" = "mono") {
     previewImportStatementMock.mockResolvedValue({
-      profile: "mono",
+      profile,
       needsMapping: false,
       rows: [
         {
@@ -826,10 +840,7 @@ describe("BulkImportSheet — commit + undo", () => {
     return helpers;
   }
 
-  it("тіло commit містить лише ключі, які знає чинний .strict() API (вікно «фронт раніше за бекенд»)", async () => {
-    // Старий API відхиляє невідомий ключ верхнього рівня 400-кою (strict), а
-    // превʼю старого сервера повертає `profile`. Тож web не має слати нічого
-    // понад `source` і `rows`, поки бекенд цього не прийняв.
+  async function commitAndGetBody(): Promise<Record<string, unknown>> {
     commitImportMock.mockResolvedValue({
       batchId: 9,
       created: 1,
@@ -851,13 +862,22 @@ describe("BulkImportSheet — commit + undo", () => {
         updatedAt: "x",
       },
     });
-    await reachBulkReview();
-
     fireEvent.click(screen.getByRole("button", { name: "Імпортувати" }));
-
     await waitFor(() => expect(commitImportMock).toHaveBeenCalledTimes(1));
-    const body = commitImportMock.mock.calls[0]?.[0] as Record<string, unknown>;
-    expect(Object.keys(body).sort()).toEqual(["rows", "source"]);
+    return commitImportMock.mock.calls[0]?.[0] as Record<string, unknown>;
+  }
+
+  it("commit передає profile з превʼю виписки (mono), щоб сервер діяв тір-1 дедуп (data-30)", async () => {
+    await reachBulkReview("mono");
+    const body = await commitAndGetBody();
+    expect(body["profile"]).toBe("mono");
+    expect(Object.keys(body).sort()).toEqual(["profile", "rows", "source"]);
+  });
+
+  it("commit передає profile privat24, щоб сервер НЕ скіпав рядки як mono (data-30)", async () => {
+    await reachBulkReview("privat24");
+    const body = await commitAndGetBody();
+    expect(body["profile"]).toBe("privat24");
   });
 
   it("commit shows the created/skipped summary and an undo button", async () => {

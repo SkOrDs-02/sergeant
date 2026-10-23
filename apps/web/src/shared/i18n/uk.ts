@@ -489,6 +489,10 @@ export const messages = {
       confirm: "Додати",
       dismiss: "Скасувати",
     },
+    pantrySyncing: {
+      title: "Синхронізую комору",
+      description: "Підтягую продукти з акаунта, це кілька секунд.",
+    },
     pantryEmpty: {
       // Не «Комора порожня» — цей рядок уже показує NutritionPantrySelector
       // над карткою, і дослівний повтор читався як збій рендеру.
