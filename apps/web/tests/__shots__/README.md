@@ -25,3 +25,15 @@ SHOTS_OUT=/шлях/до/кадрів pnpm --filter @sergeant/web shots
 - Конфіг [`playwright.shots.config.ts`](../../playwright.shots.config.ts) має власний `testDir`; інші Playwright-конфіги дивляться в `tests/a11y`, `tests/smoke`, `tests/mobile` тощо, Vitest - лише в `src/**`, тож сюди не заходить жоден лейн.
 - Світи (`finyk-month`, `nutrition-day`, `routine-streaks`, `fizruk-active-session`, `empty`) беруться з `tests/fixtures/worlds` через `tests/utils/scenario.ts`.
 - Паузи в сценарії навмисні: знімальний прогін не має асерту, на який можна чекати.
+
+## Сценарій «зараз / пропоную» (v3.2)
+
+[`proposals.spec.ts`](./proposals.spec.ts) знімає для позицій 01-18 інвентарю [`2026-10-23-redesign-v3-2-review.md`](../../../../docs/work/specs/audits/2026-10-23-redesign-v3-2-review.md) пару кадрів: `*-before.png` (живий екран) і `*-after.png` (той самий екран після DOM-правок, що імітують погоджену пропозицію зі спеки [`redesign-v3-2.md`](../../../../docs/work/specs/planning/redesign-v3-2.md)). Запуск той самий, що вище, крок 3:
+
+```bash
+PROP_OUT=test-results/proposals pnpm --filter @sergeant/web exec playwright test --config playwright.shots.config.ts proposals.spec.ts
+```
+
+- `PROP_ONLY=04-choice-borders,16-hub-now` - лише названі позиції.
+- `PROP_FAST=1` - коротша пауза після сіду, щоб зловити тост віхи серії (позиція 14).
+- Коли позицію закрито в коді, її `mutate` стає no-op, і кадри «до / після» збігаються: так сценарій служить приймальним.
