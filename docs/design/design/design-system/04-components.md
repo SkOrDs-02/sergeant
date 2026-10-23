@@ -1,6 +1,6 @@
 # Design System — Примітиви UI, Focus, A11y та Gestures
 
-> **Last touched:** 2026-10-17 by @codex (цільові підрозділи Профілю та чесний підсумок фото). **Next review:** 2027-04-12.
+> **Last touched:** 2026-10-23 by @claude (`ChoiceGroup` / `ChoiceCheckbox`, межа «вибір / вкладка / тумблер», `Input` на мові H; рішення власника за v3.1); 2026-10-17 by @codex (цільові підрозділи Профілю та чесний підсумок фото). **Next review:** 2027-04-12.
 > **Status:** Active
 
 Цей документ охоплює UI-примітиви, focus/disabled/loading контракт, правила кодування, міграційні патерни, нові компоненти та хуки, gestures/a11y, та keyboard-first overlays (DropdownMenu, CommandPalette).
@@ -308,11 +308,70 @@ h2 налаштування модуля → h3 функція → h4 підти
 
 ### Input / Textarea / Select
 
-- **Sizes**: `sm` (h-9) · `md` (h-11) · `lg` (h-12).
+Мова H з v3.1 (PR2, 2026-10-19):
+
+- **Sizes**: `sm` (h-9) · `md` (h-12, 48 px) · `lg` (h-12); радіус 8
+  (`rounded-lg`).
 - **Variants**: `default` · `filled` · `ghost`.
 - **States**: `error` (з `aria-invalid`), `success`, `disabled`.
-- Focus — `focus-visible:ring-brand-500/30`, а не `focus:`, аби
-  pointer-клік не блимав кільцем.
+- Межа 1 px `border-control`, не `border-strong`: `border-strong` дає
+  ~1,6:1 проти панелі, а межа поля за WCAG 1.4.11 мусить мати 3:1 (рішення
+  власника 2026-10-23, гейт `theme.controlFocus.test.ts`).
+- Фокус обводом 2 px чорнилом без зовнішнього кільця:
+  `focus-visible:border-text` + `inset-ring-text`; при `error` один набір
+  (`inset-ring-danger`), `fieldFocus(error)` у `Input.tsx` обирає його сам,
+  бо tailwind-merge не знає групи `inset-ring-*`. `focus-visible:`, а не
+  `focus:`, аби pointer-клік не блимав.
+- Підпис поля 14 / 500 другим сірим звичайним регістром (`Label` у
+  `FormField` бере той самий клас); капс-ярлик лишається лише на тинті hero.
+  Гейт `capsFormLabel` = 0, заборона.
+- Плейсхолдер третім сірим, помилка 13 px текстом небезпеки під полем.
+
+### ChoiceGroup / ChoiceCheckbox — мова станів «обрано»
+
+`apps/web/src/shared/components/ui/Choice.tsx`, v3.1 PR2 (2026-10-19),
+мультивибір PR4 (2026-10-20). Один прийом для «обрано» в усіх виборах форм;
+вісім локальних копій стилю (`choiceClasses`, `RadioList`,
+`FizrukChoiceList`, `RoutineChoiceList`, …) видалено в PR3-PR5. Нативні
+`type="radio"` / `type="checkbox"` у TSX заборонені храповиком
+(`nativeChoice`, allowlist: сам `Choice.tsx` і `Switch.tsx`).
+
+- **Обране** = заливка чорнилом (`bg-text text-bg`; у темній токени
+  перевертаються самі), **необране** = панель із текстом чорнилом і межею
+  `border-control`. Без тіні, без hue модуля в обох темах (рішення власника
+  2026-10-18). Текст «Обрано» не пишеться, стан несе `aria-checked`.
+- **`tiles`** — плитки в ряд або сітку (сітку задає `className` групи,
+  `grid grid-cols-3`), коли опцій до 6 і підписи короткі; радіус 8,
+  `size="sm"` (швидкі суми, шкали 1-5) радіус 6. **`rows`** — рядки на
+  hairline, обраний рядок заливається на всю ширину з радіусом 8, коли
+  опцій більше або підписи довгі (7 опцій «N разів на тиждень» — рядки).
+  Довгі слова в плитках: менше колонок, не менший кегль.
+- **Одиничний вибір**: `radiogroup` + `radio`, одна зупинка Tab, стрілки по
+  колу з пропуском вимкнених, Home / End. **`multiple`**: `group` +
+  `checkbox`, кожна опція своя зупинка Tab, Space перемикає; плитка
+  заливається чорнилом, а **рядок мультивибору заливає позначку 20 px
+  (`ChoiceCheckbox`), не весь рядок**: позначено зазвичай усе, і рядок несе
+  кількість чи заміну (рішення власника 2026-10-23). `ChoiceCheckbox` стоїть у
+  названій групі (`role="group"` з `aria-label` / `aria-labelledby`), імʼя
+  бере з підпису, підказку через `aria-describedby`; hover `bg-panelHi`, бо на
+  панелі `bg-panel` зливається.
+- `ariaDescribedBy` на групі описує шкалу («погано / добре»).
+- **Зняття вибору**: проп `allowDeselect` (повторний тап дає `value: null`)
+  для шкал, де оцінку можна прибрати; рішення власника 2026-10-23, код після
+  PR6, разом із видаленням `ScoreButton`.
+
+**Що є вибором, а що ні** (рішення власника 2026-10-23, за значенням форми):
+
+| Контрол        | Коли                                                                                                                             | Стан                     |
+| -------------- | -------------------------------------------------------------------------------------------------------------------------------- | ------------------------ |
+| `ChoiceGroup`  | Результат тапу стає значенням запису чи налаштування: тип операції, темп норми, шкала самопочуття, теги звички, рахунок, одиниця | `aria-checked`, чорнило  |
+| `Segmented`    | Вкладки й фільтри одного списку: період, джерело, підвкладки                                                                     | `aria-selected`, чорнило |
+| `aria-pressed` | Дія-тумблер на одному обʼєкті: «куплено» в списку покупок, день у тижневому графіку, «Нове місце»                                | `aria-pressed`, чорнило  |
+| `Switch`       | Увімкнено / вимкнено для налаштування                                                                                            | `role="switch"`          |
+
+Показ стану в усіх чотирьох один: чорнило. Міграції `aria-pressed` на
+`ChoiceGroup` не планується; новий код обирає контрол за рядком вище, а не
+за найближчим сусідом.
 
 ### Badge
 
@@ -768,13 +827,13 @@ single-значення та range (дві тумби), тіки, валю-toolt
 
 ## 6. Focus, disabled, loading — єдиний контракт
 
-| Стан             | Поведінка                                                                                                               |
-| ---------------- | ----------------------------------------------------------------------------------------------------------------------- |
-| `:focus-visible` | `ring-2 ring-focus/45 ring-offset-2 ring-offset-bg` на кнопках; примітив `Input` — той самий `ring-focus/45` без offset |
-| `:disabled`      | `opacity-50`, `cursor-not-allowed`, `pointer-events-none`                                                               |
-| `loading`        | Показує `Spinner`, встановлює `aria-busy="true"`, disables pointer events                                               |
-| `:active`        | `active:scale-[0.98]` для прес-feedback                                                                                 |
-| `:hover`         | Тільки там, де `hover:` реально працює (не-touch); на `interactive` картках — `translate-y-[-2px] shadow-float`         |
+| Стан             | Поведінка                                                                                                                                                                                                                  |
+| ---------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `:focus-visible` | `ring-2 ring-focus/45 ring-offset-2 ring-offset-bg` на кнопках; примітиви `Input` / `Textarea` / `Select` — межа `border-text` + `inset-ring-text` без зовнішнього кільця, при помилці `inset-ring-danger` (§ Input, v3.1) |
+| `:disabled`      | `opacity-50`, `cursor-not-allowed`, `pointer-events-none`                                                                                                                                                                  |
+| `loading`        | Показує `Spinner`, встановлює `aria-busy="true"`, disables pointer events                                                                                                                                                  |
+| `:active`        | `active:scale-[0.98]` для прес-feedback                                                                                                                                                                                    |
+| `:hover`         | Тільки там, де `hover:` реально працює (не-touch); на `interactive` картках — `translate-y-[-2px] shadow-float`                                                                                                            |
 
 ### 6.1 Semantic A11y / states tokens (Wave 2, 2026-05-13)
 
@@ -806,8 +865,9 @@ high-traffic shell (Hub headers, search, onboarding, auth) від raw
 className =
   "focus:outline-none focus-visible:ring-2 focus-visible:ring-focus/45 focus-visible:ring-offset-2 focus-visible:ring-offset-bg";
 
-// Інпут (без offset — краще всередині заповнення). Примітив `Input` уже
-// несе це сам; для сирого <input> поза примітивом — утиліта `.input-focus`
+// Інпут. Примітив `Input` несе фокус сам і з v3.1 інакше: межа
+// `focus-visible:border-text` + `inset-ring-text`, без кільця (§ Input).
+// Для сирого <input> поза примітивом — утиліта `.input-focus`
 // (utilities.css), єдине законне місце з `/30`: кільце БЕЗ офсету — інша
 // роль, тому храповик `offCanonRingOpacity` CSS не сканує.
 className = "input-focus caret-brand";
