@@ -5,6 +5,7 @@
 import { cn } from "@shared/lib/ui/cn";
 import type { Dispatch, SetStateAction } from "react";
 import { Input, FIELD_LABEL } from "@shared/components/ui/Input";
+import { Select } from "@shared/components/ui/Select";
 import { Button } from "@shared/components/ui/Button";
 import { Sheet } from "@shared/components/ui/Sheet";
 import { normalizeUnit } from "../lib/pantryTextParser";
@@ -115,20 +116,19 @@ export function ItemEditSheet({
       {itemEdit.pantryId && places.length > 1 && (
         <div className="mt-3">
           <div className={cn(FIELD_LABEL, "mb-1")}>Місце</div>
-          <select
+          <Select
             value={itemEdit.pantryId}
             onChange={(e) =>
               setItemEdit((st) => ({ ...st, pantryId: e.target.value }))
             }
             aria-label="Місце зберігання позиції"
-            className="w-full min-h-[44px] rounded-lg bg-panel border border-line px-3 text-style-label text-text focus-ring"
           >
             {places.map((p) => (
               <option key={p.id} value={p.id}>
                 {p.name || "Комора"}
               </option>
             ))}
-          </select>
+          </Select>
         </div>
       )}
 

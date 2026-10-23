@@ -5,7 +5,7 @@
 import { MorphChevron } from "@shared/components/ui/MorphChevron";
 import { useEffect, useMemo, useRef, useState, type ReactNode } from "react";
 import { Card } from "@shared/components/ui/Card";
-import { Input } from "@shared/components/ui/Input";
+import { Input, Textarea } from "@shared/components/ui/Input";
 import { Button } from "@shared/components/ui/Button";
 import { EmptyState } from "@shared/components/ui/EmptyState";
 import { SectionHeading } from "@shared/components/ui/SectionHeading";
@@ -485,22 +485,24 @@ export function PantryCard({
         </div>
       ) : (
         <div className="flex gap-2 items-start">
-          <textarea
-            value={pantryText}
-            onChange={(e) => setPantryText(e.target.value)}
-            // Назва з тієї ж причини, що й у `Input` режиму «По одному»
-            // вище: видимої мітки в блоці немає, а плейсхолдер зникає з
-            // першим символом (аудит 2026-09-16, WF-15). Формулювання
-            // навмисно не містить слів «Додати»/«Прибрати»/«Редагувати»:
-            // сусідні тести шукають саме їх підрядком через `getByLabelText`.
-            aria-label="Список продуктів"
-            // eslint-disable-next-line jsx-a11y/no-autofocus -- фокус лише в аркуші, відкритому тапом «Додати»
-            autoFocus={!formInline}
-            placeholder="Список продуктів"
-            className="input-focus-nutrition flex-1 min-h-[96px] rounded-lg bg-panelHi border border-control px-3 py-2.5 text-style-body text-text placeholder:text-subtle"
-            maxLength={NOTE_MAX_LEN}
-            disabled={busy}
-          />
+          <div className="min-w-0 flex-1">
+            <Textarea
+              value={pantryText}
+              onChange={(e) => setPantryText(e.target.value)}
+              // Назва з тієї ж причини, що й у `Input` режиму «По одному»
+              // вище: видимої мітки в блоці немає, а плейсхолдер зникає з
+              // першим символом (аудит 2026-09-16, WF-15). Формулювання
+              // навмисно не містить слів «Додати»/«Прибрати»/«Редагувати»:
+              // сусідні тести шукають саме їх підрядком через `getByLabelText`.
+              aria-label="Список продуктів"
+              // eslint-disable-next-line jsx-a11y/no-autofocus -- фокус лише в аркуші, відкритому тапом «Додати»
+              autoFocus={!formInline}
+              placeholder="Список продуктів"
+              className="min-h-[96px] px-3 py-2.5"
+              maxLength={NOTE_MAX_LEN}
+              disabled={busy}
+            />
+          </div>
           <Button
             type="button"
             variant="solid"

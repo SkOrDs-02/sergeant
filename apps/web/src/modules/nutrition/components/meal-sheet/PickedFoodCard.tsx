@@ -18,6 +18,7 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { stepButtonClass } from "./choiceClasses";
 import type { Dispatch, SetStateAction } from "react";
+import { Input } from "@shared/components/ui/Input";
 import { ChoiceGroup } from "@shared/components/ui/Choice";
 import { Icon } from "@shared/components/ui/Icon";
 import { Measure } from "@shared/components/ui/Measure";
@@ -262,14 +263,15 @@ export function PickedFoodCard({
                 >
                   −
                 </button>
-                <div className="relative">
-                  <input
+                <div className="relative w-[76px]">
+                  <Input
+                    size="sm"
                     type="text"
                     inputMode="decimal"
                     value={gramsDraft.value}
                     onChange={gramsDraft.onChange}
                     aria-label="Грами"
-                    className="input-focus-nutrition w-[76px] text-center bg-panel border border-line rounded-lg px-2 py-2 tabular-nums text-style-label text-text [appearance:textfield] [&::-webkit-inner-spin-button]:appearance-none [&::-webkit-outer-spin-button]:appearance-none"
+                    className="bg-panel px-2 pr-6 text-center tabular-nums"
                   />
                   {/* AI-NOTE: «г» лишається сирим `text-xs`, і це не
                   недогляд проходу типографіки. Це одиниця, приліплена

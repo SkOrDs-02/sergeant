@@ -35,6 +35,7 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { strategicKeys } from "@shared/lib/api/queryKeys";
 import { Select } from "@shared/components/ui/Select";
+import { Textarea } from "@shared/components/ui/Input";
 import { messages } from "../../shared/i18n/uk";
 import { internalFetch } from "@shared/lib/api/internalFetch";
 import { getKyivWeekStartKey } from "@shared/lib/time/kyivTime";
@@ -261,19 +262,20 @@ export function StrategyPage({ founderUserId }: StrategyPageProps) {
               <span className="text-style-label">
                 {messages.strategy.goalTextLabel}
               </span>
-              <textarea
-                ref={goalTextRef}
-                value={goalText}
-                onChange={(e) => setGoalText(e.target.value)}
-                rows={3}
-                maxLength={2048}
-                className="mt-1 block w-full rounded-md border px-3 py-2"
-                placeholder={messages.strategy.goalTextPlaceholder}
-                aria-describedby={
-                  submitError !== null ? "goal-text-error" : undefined
-                }
-                aria-invalid={submitError !== null ? true : undefined}
-              />
+              <div className="mt-1">
+                <Textarea
+                  ref={goalTextRef}
+                  value={goalText}
+                  onChange={(e) => setGoalText(e.target.value)}
+                  rows={3}
+                  maxLength={2048}
+                  placeholder={messages.strategy.goalTextPlaceholder}
+                  error={submitError !== null}
+                  aria-describedby={
+                    submitError !== null ? "goal-text-error" : undefined
+                  }
+                />
+              </div>
             </label>
           </fieldset>
           {submitError !== null && (

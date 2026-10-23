@@ -14,7 +14,7 @@ import { useEffect, useRef, useState } from "react";
 import { z } from "zod";
 import { Card } from "@shared/components/ui/Card";
 import { ChoiceGroup } from "@shared/components/ui/Choice";
-import { FIELD_LABEL } from "@shared/components/ui/Input";
+import { FIELD_LABEL, Input } from "@shared/components/ui/Input";
 import { Label } from "@shared/components/ui/FormField";
 import { SectionHeading } from "@shared/components/ui/SectionHeading";
 import { useApiForm } from "@shared/forms";
@@ -201,7 +201,7 @@ export function BodyEntryForm({ onSubmitEntry }: BodyEntryFormProps) {
             <Label htmlFor="body-weight">
               {messages.fizruk.body.weightLabel}
             </Label>
-            <input
+            <Input
               id="body-weight"
               // `type="text"`, а не `number`: під `number` браузер віддає
               // порожній рядок, щойно вміст перестає бути валідним числом,
@@ -209,8 +209,8 @@ export function BodyEntryForm({ onSubmitEntry }: BodyEntryFormProps) {
               // не зберігалась. `inputMode` лишає цифрову клавіатуру.
               type="text"
               inputMode="decimal"
-              className="input-focus-fizruk w-full h-11 rounded-lg border border-line bg-panelHi px-3 text-sm text-text"
               placeholder="70,5"
+              error={Boolean(weightError)}
               disabled={isSubmitting}
               aria-invalid={weightError ? true : undefined}
               aria-describedby={weightError ? "body-weight-error" : undefined}
@@ -230,13 +230,13 @@ export function BodyEntryForm({ onSubmitEntry }: BodyEntryFormProps) {
             <Label htmlFor="body-sleep">
               {messages.fizruk.body.sleepLabel}
             </Label>
-            <input
+            <Input
               id="body-sleep"
               // Той самий привід, що й у полі ваги вище.
               type="text"
               inputMode="decimal"
-              className="input-focus-fizruk w-full h-11 rounded-lg border border-line bg-panelHi px-3 text-sm text-text"
               placeholder="8,0"
+              error={Boolean(sleepError)}
               disabled={isSubmitting}
               aria-invalid={sleepError ? true : undefined}
               aria-describedby={sleepError ? "body-sleep-error" : undefined}
@@ -300,11 +300,12 @@ export function BodyEntryForm({ onSubmitEntry }: BodyEntryFormProps) {
           <Label htmlFor="body-note" optional>
             {messages.fizruk.body.note}
           </Label>
-          <input
+          <Input
             id="body-note"
+            showCharCount={false}
             type="text"
-            className="input-focus-fizruk w-full h-11 rounded-lg border border-line bg-panelHi px-3 text-sm text-text"
             placeholder={messages.fizruk.body.notePlaceholder}
+            error={Boolean(noteError)}
             maxLength={200}
             disabled={isSubmitting}
             aria-invalid={noteError ? true : undefined}

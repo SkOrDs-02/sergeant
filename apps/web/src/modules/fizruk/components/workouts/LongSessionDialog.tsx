@@ -9,6 +9,7 @@
 import { useState } from "react";
 import { Modal } from "@shared/components/ui/Modal";
 import { Button } from "@shared/components/ui/Button";
+import { Input } from "@shared/components/ui/Input";
 import { messages } from "@shared/i18n/uk";
 import {
   datetimeLocalValueToIso,
@@ -77,16 +78,11 @@ export function LongSessionDialog({
         </div>
       }
     >
-      <label
-        className="block text-style-caption text-subtle"
-        htmlFor="long-session-end"
-      >
-        {copy.endLabel}
-      </label>
-      <input
+      <Input
         id="long-session-end"
+        label={copy.endLabel}
         type="datetime-local"
-        className="input-focus-fizruk mt-1 block w-full min-w-0 h-11 rounded-lg border border-line bg-panel px-3 text-style-body text-text"
+        className="min-w-0 [min-inline-size:0]"
         value={value}
         onChange={(e) => setValue(e.target.value)}
       />
