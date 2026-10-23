@@ -32,7 +32,11 @@ import {
 } from "./syncV2.js";
 import { notifySyncV2OpsApplied as _notify } from "./syncV2Stream.js";
 import { SYNC_OP_LOG_COMMITTED_WATERMARK_SQL } from "./syncV2-core.js";
-import { syncConflictsTotal } from "../../obs/metrics.js";
+import {
+  syncConflictsTotal,
+  syncPullTruncatedTotal,
+} from "../../obs/metrics.js";
+import { env } from "../../env/env.js";
 
 interface PoolStub {
   connect: Mock;
@@ -1256,6 +1260,80 @@ describe("syncV2Pull · happy-path", () => {
     await syncV2Pull(req, res);
     const body = res.body as { next_cursor: number | null };
     expect(body.next_cursor).toBe(101);
+  });
+
+  describe("байтовий бюджет сторінки (ADR-0105, rel-06)", () => {
+    const ts = new Date("2026-01-01T00:00:00.000Z");
+    const mkRow = (id: string) => ({
+      id,
+      table_name: "t",
+      op: "insert",
+      row: {},
+      client_ts: ts,
+      server_ts: ts,
+      origin_device_id: null,
+      row_bytes: 1000,
+      // pg віддає COUNT(*) bigint-ом як string
+      window_rows: "5",
+    });
+
+    it("запит несе бюджет 2 MiB 5-м параметром і міряє розмір у Postgres", async () => {
+      pool.query.mockResolvedValueOnce({ rows: [] });
+      await syncV2Pull(makeReq(), makeRes());
+      const call = pool.query.mock.calls[0]!;
+      expect((call[1] as unknown[])[4]).toBe(2_097_152);
+      expect(call[0]).toContain("octet_length(row::text)");
+      expect(call[0]).toContain("bytes_before < $5");
+    });
+
+    it("env SYNC_V2_PULL_MAX_BYTES підміняє бюджет", async () => {
+      const prev = env.SYNC_V2_PULL_MAX_BYTES;
+      env.SYNC_V2_PULL_MAX_BYTES = 4096;
+      try {
+        pool.query.mockResolvedValueOnce({ rows: [] });
+        await syncV2Pull(makeReq(), makeRes());
+        expect((pool.query.mock.calls[0]![1] as unknown[])[4]).toBe(4096);
+      } finally {
+        env.SYNC_V2_PULL_MAX_BYTES = prev;
+      }
+    });
+
+    it("обрізана бюджетом сторінка (2 з 5 у вікні, limit 100) → next_cursor = id останнього", async () => {
+      pool.query.mockResolvedValueOnce({ rows: [mkRow("7"), mkRow("8")] });
+      const res = makeRes();
+      const before = (await syncPullTruncatedTotal.get()).values[0]?.value ?? 0;
+      await syncV2Pull(makeReq({ query: { limit: "100" } }), res);
+      const body = res.body as { ops: unknown[]; next_cursor: number | null };
+      expect(body.ops).toHaveLength(2);
+      expect(body.next_cursor).toBe(8);
+      const after = (await syncPullTruncatedTotal.get()).values[0]!.value;
+      expect(after).toBe(before + 1);
+    });
+
+    it("один оп понад бюджет віддається єдиним на сторінці з next_cursor", async () => {
+      pool.query.mockResolvedValueOnce({
+        rows: [{ ...mkRow("42"), row_bytes: 10_000_000 }],
+      });
+      const res = makeRes();
+      await syncV2Pull(makeReq({ query: { limit: "100" } }), res);
+      const body = res.body as { ops: unknown[]; next_cursor: number | null };
+      expect(body.ops).toHaveLength(1);
+      expect(body.next_cursor).toBe(42);
+    });
+
+    it("сторінка під бюджетом і під limit → next_cursor = null (кінець журналу)", async () => {
+      pool.query.mockResolvedValueOnce({
+        rows: [
+          { ...mkRow("1"), window_rows: "2" },
+          { ...mkRow("2"), window_rows: "2" },
+        ],
+      });
+      const res = makeRes();
+      await syncV2Pull(makeReq({ query: { limit: "100" } }), res);
+      expect(
+        (res.body as { next_cursor: number | null }).next_cursor,
+      ).toBeNull();
+    });
   });
 
   it("DB-помилка → throw (request errorhandler-у віддасть 500)", async () => {

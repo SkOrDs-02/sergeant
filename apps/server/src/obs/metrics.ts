@@ -623,6 +623,8 @@ export {
   syncOpLogNullOriginDeviceIdTotal,
   syncOpLogPullLagMs,
   syncOpLogPullQueueDepth,
+  syncPullPageBytes,
+  syncPullTruncatedTotal,
 } from "./metrics/sync.js";
 
 export {

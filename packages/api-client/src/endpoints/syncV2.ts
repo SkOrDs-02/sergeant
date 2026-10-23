@@ -96,7 +96,12 @@ export interface SyncV2PullOp {
 
 export interface SyncV2PullResponse {
   ops: SyncV2PullOp[];
-  /** `null` коли більше нічого пулити; інакше — `id` останнього запису сторінки. */
+  /**
+   * `null` коли більше нічого пулити; інакше - `id` останнього запису
+   * сторінки. Ненульовий і для сторінки, обрізаної серверним байтовим
+   * бюджетом (`ops.length < limit`, ADR-0105): «менше за limit» НЕ означає
+   * кінець, зупинятись можна лише на `null`.
+   */
   next_cursor: number | null;
 }
 

@@ -142,3 +142,28 @@ export const syncOpLogPullQueueDepth = new client.Histogram({
   buckets: [0, 1, 5, 10, 25, 50, 100, 200, 500, 1000],
   registers: [register],
 });
+
+/**
+ * Фактичний розмір сторінки pull у байтах (`sum(octet_length(row::text))`
+ * повернутих оп-ів, ADR-0105 §1, `rel-06`). Бюджет `SYNC_V2_PULL_MAX_BYTES`
+ * (2 MiB) переглядається за цією метрикою, а не за здогадом.
+ */
+export const syncPullPageBytes = new client.Histogram({
+  name: "sync_pull_page_bytes",
+  help: "v2 sync pull page size in bytes: sum of octet_length(row::text) of returned ops (ADR-0105)",
+  buckets: [
+    1024, 8192, 65_536, 262_144, 524_288, 1_048_576, 2_097_152, 4_194_304,
+  ],
+  registers: [register],
+});
+
+/**
+ * Сторінки pull, обрізані байтовим бюджетом (повернуто менше оп-ів, ніж у
+ * вікні `limit`). Стійко високий рівень = бюджет замалий або акаунти з
+ * великими рядками (ADR-0105 §1).
+ */
+export const syncPullTruncatedTotal = new client.Counter({
+  name: "sync_pull_truncated_total",
+  help: "v2 sync pull pages truncated by the byte budget SYNC_V2_PULL_MAX_BYTES (ADR-0105)",
+  registers: [register],
+});

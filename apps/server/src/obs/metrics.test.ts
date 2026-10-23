@@ -24,6 +24,8 @@ import {
   syncOpLogApplyTotal,
   syncOpLogPullLagMs,
   syncOpLogPullQueueDepth,
+  syncPullPageBytes,
+  syncPullTruncatedTotal,
 } from "./metrics.js";
 import {
   APPLY_REJECT_REASONS,
@@ -104,6 +106,13 @@ describe("metrics registry — v2 sync op-log RED metrics (PR #048)", () => {
 
     const depth = register.getSingleMetric("sync_op_log_pull_queue_depth");
     expect(depth).toBe(syncOpLogPullQueueDepth);
+
+    expect(register.getSingleMetric("sync_pull_page_bytes")).toBe(
+      syncPullPageBytes,
+    );
+    expect(register.getSingleMetric("sync_pull_truncated_total")).toBe(
+      syncPullTruncatedTotal,
+    );
   });
 
   it("апдейтиться через .inc({table,status,reason}) і експортується з повним label-set-ом", async () => {
