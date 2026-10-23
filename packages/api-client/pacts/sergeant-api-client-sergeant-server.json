@@ -3507,7 +3507,12 @@
           "content-type": "application/json"
         },
         "method": "POST",
-        "path": "/api/v2/sync/push"
+        "path": "/api/v2/sync/push",
+        "query": {
+          "sync_protocol": [
+            "1"
+          ]
+        }
       },
       "response": {
         "body": {
@@ -3567,7 +3572,12 @@
           "content-type": "application/json"
         },
         "method": "POST",
-        "path": "/api/v2/sync/push"
+        "path": "/api/v2/sync/push",
+        "query": {
+          "sync_protocol": [
+            "1"
+          ]
+        }
       },
       "response": {
         "body": {
@@ -3634,7 +3644,12 @@
           "content-type": "application/json"
         },
         "method": "POST",
-        "path": "/api/v2/sync/push"
+        "path": "/api/v2/sync/push",
+        "query": {
+          "sync_protocol": [
+            "1"
+          ]
+        }
       },
       "response": {
         "body": {

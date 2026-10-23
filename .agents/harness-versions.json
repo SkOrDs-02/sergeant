@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "current": "8.5.0",
+  "current": "8.6.0",
   "versions": {
     "0.1.0": {
       "releasedAt": "2026-06-29",
@@ -802,6 +802,22 @@
       "releasedAt": "2026-10-23",
       "changes": [
         "sergeant-web-ui і design-reviewer: поле вводу лише Input / Textarea / Select, метрика храповика rawInput = 0 і заборона (спека raw-input-to-primitive.md)."
+      ],
+      "agentsTestedWith": [],
+      "passRateBaseline": null
+    },
+    "8.5.1": {
+      "releasedAt": "2026-10-23",
+      "changes": [
+        "bump from 8.5.0 -> 8.5.1: typo / link / freshness-only change"
+      ],
+      "agentsTestedWith": [],
+      "passRateBaseline": null
+    },
+    "8.6.0": {
+      "releasedAt": "2026-10-23",
+      "changes": [
+        "bump from 8.5.1 -> 8.6.0: skill file added/modified"
       ],
       "agentsTestedWith": [],
       "passRateBaseline": null

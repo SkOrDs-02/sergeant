@@ -221,7 +221,9 @@ test("@critical anonymous: reload після перерваного push від�
   });
   let interrupted = false;
   let resuming = false;
-  await page.route("**/api/v2/sync/push", async (route) => {
+  // Push несе `?sync_protocol=` (data-48), тож glob без query його не ловить.
+  const isPush = (url: URL) => url.pathname === "/api/v2/sync/push";
+  await page.route(isPush, async (route) => {
     if (!resuming && matchingPushOps(route.request(), title).length > 0) {
       interrupted = true;
       await route.abort("connectionfailed");

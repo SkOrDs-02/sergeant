@@ -38,6 +38,10 @@ import { reconcileChatOwnerOnAuthChange } from "../hub/hubChatSessions";
 import * as purgeLocalData from "../../shared/lib/storage/purgeLocalData";
 import * as swControl from "../app/swControl";
 import * as sqlite from "../db/sqlite";
+import {
+  hasSessionExpiredMarker,
+  markSessionExpired,
+} from "./sessionExpiredMarker";
 
 // Шпигуни замість `vi.mock` (cap 5): справжні модулі, лише підміна викликів.
 const purgeMock = vi.spyOn(purgeLocalData, "purgeAppOwnedLocalData");
@@ -154,6 +158,45 @@ describe("AuthContext: teardown після втрати сесії (priv-02)", (
     expect(swSetActiveUserMock.mock.invocationCallOrder[0]).toBeLessThan(
       reloadMock.mock.invocationCallOrder[0] ?? Infinity,
     );
+  });
+
+  it("sec-18: 401 після сесії користувача ставить маркер «сесія завершилась» ДО reload", async () => {
+    reconcileChatOwnerOnAuthChange(USER_X.id);
+    let markerAtReload: boolean | null = null;
+    reloadMock.mockImplementation(() => {
+      markerAtReload = hasSessionExpiredMarker();
+    });
+    failed(http(401, { error: "Unauthorized" }));
+    renderHook(() => useAuth(), { wrapper: wrapper() });
+
+    await waitFor(() => expect(reloadMock).toHaveBeenCalledTimes(1));
+    expect(markerAtReload).toBe(true);
+  });
+
+  it("sec-18: user→user (інший акаунт) маркера не ставить", async () => {
+    reconcileChatOwnerOnAuthChange(USER_X.id);
+    signedIn(USER_Y);
+    renderHook(() => useAuth(), { wrapper: wrapper() });
+
+    await waitFor(() => expect(reloadMock).toHaveBeenCalledTimes(1));
+    expect(hasSessionExpiredMarker()).toBe(false);
+  });
+
+  it("sec-18: анонімний пристрій без акаунта (401) маркера не ставить", async () => {
+    failed(http(401, { error: "Unauthorized" }));
+    const { result } = renderHook(() => useAuth(), { wrapper: wrapper() });
+    expect(result.current.status).toBe("unauthenticated");
+    await new Promise((r) => setTimeout(r, 20));
+    expect(reloadMock).not.toHaveBeenCalled();
+    expect(hasSessionExpiredMarker()).toBe(false);
+  });
+
+  it("sec-18: успішний вхід знімає маркер", async () => {
+    markSessionExpired();
+    reconcileChatOwnerOnAuthChange(USER_X.id);
+    signedIn(USER_X);
+    renderHook(() => useAuth(), { wrapper: wrapper() });
+    await waitFor(() => expect(hasSessionExpiredMarker()).toBe(false));
   });
 
   it("user→user (інший акаунт на тому ж пристрої): той самий teardown до reload", async () => {

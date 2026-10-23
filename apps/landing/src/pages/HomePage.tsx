@@ -1,4 +1,3 @@
-import { useState } from "react";
 import SiteLayout from "../components/SiteLayout";
 import TelegramCta from "../components/TelegramCta";
 import {
@@ -9,131 +8,61 @@ import {
   ClosingCta,
 } from "../components/HomeSections";
 import { ROUTE_META, usePageMeta } from "../lib/pageMeta";
-import { ANALYTICS_EVENTS, LANDING_LOCALE, track } from "../lib/analytics";
 import { CONFIDENCE } from "../content/confidenceLevels";
 import { THREADS_URL, TELEGRAM_BOT_URL } from "../lib/links";
 import { ORGANIZATION_ID } from "../lib/jsonLd";
 
 /**
- * Сценарії «живого звʼязку» в hero: скільки тренувань – стільки доставки.
- * Дані ілюстративні (підпис у нотатці про це каже) – сенс віджета в тому,
- * щоб показати спостереження, а не причинний вплив. Рівень впевненості
- * один на всі три стани: це та сама закономірність, а не три різні, і
- * підпис береться з канонічної шкали (`CONFIDENCE`), а не вигадується.
+ * Hero-колаж: два справжні кадри застосунку (Огляд Фініка й Огляд Рутини) у
+ * рамках телефонів і нотатка-інсайт, яку Sergeant ніби лишив поверх них.
+ * Кадри знімає `apps/web/tests/__shots__/landing.spec.ts` зі світу
+ * `landing-world`, тож hero не малює UI, якого в продукті немає. Дані в
+ * нотатці ілюстративні (підпис каже про це); рівень впевненості береться з
+ * канонічної шкали (`CONFIDENCE`). До lg – два кадри в ряд і нотатка під
+ * ними, на lg – absolute-розкладка з легкими нахилами.
  */
-const HERO_SCENARIOS = {
-  1: {
-    spend: "2 260",
-    pct: 90,
-    note: "У тижні з одним тренуванням витрати на доставку найвищі",
-  },
-  3: {
-    spend: "1 840",
-    pct: 74,
-    note: "У тижні з трьома тренуваннями витрати на доставку нижчі",
-  },
-  5: {
-    spend: "1 320",
-    pct: 53,
-    note: "У тижні з пʼятьма тренуваннями витрати на доставку найнижчі",
-  },
-} as const;
-
+const HERO_NOTE = "У тижні з трьома тренуваннями витрати на доставку нижчі";
 const HERO_META = `${CONFIDENCE.stable} · 6 тижнів даних`;
 
-type HeroTrainings = keyof typeof HERO_SCENARIOS;
-
-/**
- * Hero-колаж: картки даних, «розкидані на столі», і нотатка-інсайт, яку
- * Sergeant ніби лишив поверх них. Картка тренувань – живий перемикач:
- * 1/3/5 тренувань перераховують бар доставки і саму нотатку, показуючи
- * спостереження з різних тижнів. До lg – звичайна колонка
- * з легкими нахилами, на lg – absolute-розкладка з пунктирними звʼязками.
- */
-function HeroCollage() {
-  const [trainings, setTrainings] = useState<HeroTrainings>(3);
-  const scenario = HERO_SCENARIOS[trainings];
-
+function PhoneFrame({
+  src,
+  alt,
+  className,
+}: {
+  src: string;
+  alt: string;
+  className: string;
+}) {
   return (
-    <div className="relative mx-auto mt-4 flex w-full max-w-md flex-col gap-5 lg:mt-0 lg:h-[430px] lg:w-[480px] lg:max-w-none lg:shrink-0">
-      <svg
-        width="480"
-        height="430"
-        viewBox="0 0 480 430"
-        fill="none"
-        aria-hidden="true"
-        className="absolute left-0 top-0 hidden lg:block"
-      >
-        <path
-          d="M190,150 C 180,210 175,240 185,280"
-          className="stroke-cardline-strong"
-          strokeWidth="1.6"
-          strokeDasharray="5 6"
-        />
-        <path
-          d="M390,205 C 400,240 380,270 340,290"
-          className="stroke-cardline-strong"
-          strokeWidth="1.6"
-          strokeDasharray="5 6"
-        />
-      </svg>
+    <img
+      src={src}
+      alt={alt}
+      width={390}
+      height={844}
+      className={`paper-shadow block rounded-[28px] border-[5px] border-ink bg-ink ${className}`}
+    />
+  );
+}
 
-      <div className="paper-shadow flex -rotate-3 flex-col gap-2.5 rounded-[var(--radius-card)] bg-card p-5 lg:absolute lg:left-10 lg:top-4 lg:w-[290px]">
-        <div className="flex justify-between text-[13px]">
-          <span className="font-bold text-foreground">Кафе і доставка</span>
-          <span className="tabular-nums text-muted">
-            {scenario.spend}&nbsp;/ 2&nbsp;500&#8239;₴
-          </span>
-        </div>
-        <div className="h-1.5 bg-finyk-soft">
-          <div
-            className="h-1.5 bg-finyk transition-[width] duration-300 motion-reduce:transition-none"
-            style={{ width: `${scenario.pct}%` }}
-          />
-        </div>
-        <p className="text-xs text-subtle">Фінік · синхронізація з Monobank</p>
+function HeroCollage() {
+  return (
+    <div className="relative mx-auto mt-4 flex w-full max-w-md flex-col gap-5 lg:mt-0 lg:h-[600px] lg:w-[480px] lg:max-w-none lg:shrink-0">
+      <div className="flex items-start justify-center gap-4 lg:contents">
+        <PhoneFrame
+          src="/screens/hero-finyk.webp"
+          alt="Огляд Фініка: скільки ще можна витратити сьогодні, план місяця і останні витрати"
+          className="w-[46%] -rotate-2 lg:absolute lg:left-0 lg:top-0 lg:w-[226px]"
+        />
+        <PhoneFrame
+          src="/screens/hero-routine.webp"
+          alt="Огляд Рутини: сьогоднішні звички, усі пʼять виконано, найкраща серія 30 днів"
+          className="mt-6 w-[46%] rotate-2 lg:absolute lg:right-0 lg:top-12 lg:mt-0 lg:w-[226px]"
+        />
       </div>
 
-      <div
-        role="group"
-        aria-label="Тренувань цього тижня"
-        className="paper-shadow flex rotate-2 flex-col gap-2 rounded-[var(--radius-card)] bg-card p-4.5 lg:absolute lg:right-0 lg:top-[104px] lg:w-[210px]"
-      >
-        <span className="text-[13px] font-bold text-foreground">
-          Тренування
-        </span>
-        <div className="flex gap-2">
-          {([1, 3, 5] as const).map((n) => (
-            <button
-              key={n}
-              type="button"
-              aria-pressed={n === trainings}
-              onClick={() => {
-                setTrainings(n);
-                track(ANALYTICS_EVENTS.LANDING_WIDGET_CHANGED, {
-                  trainings: n,
-                  locale: LANDING_LOCALE,
-                });
-              }}
-              className={`flex h-11 w-11 items-center justify-center border-2 border-foreground-strong font-display text-[13px] font-bold transition focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ink ${
-                n === trainings
-                  ? "bg-foreground-strong text-background"
-                  : "bg-background text-foreground-strong hover:bg-cardline"
-              }`}
-            >
-              {n}
-            </button>
-          ))}
-        </div>
-        <span className="text-xs text-muted">цього тижня · натисни цифру</span>
-      </div>
-
-      <figure
-        aria-live="polite"
-        className="paper-shadow-lg flex rotate-[1.5deg] flex-col gap-2.5 rounded-[var(--radius-card)] bg-note px-7 py-6 lg:absolute lg:left-3 lg:top-[268px] lg:min-h-[120px] lg:w-[400px]"
-      >
+      <figure className="paper-shadow-lg relative z-10 flex rotate-[1.5deg] flex-col gap-2.5 rounded-[var(--radius-card)] bg-note px-7 py-6 lg:absolute lg:bottom-0 lg:left-3 lg:min-h-[120px] lg:w-[400px]">
         <blockquote className="text-lg font-medium leading-normal text-foreground sm:text-xl">
-          «{scenario.note}»
+          «{HERO_NOTE}»
         </blockquote>
         <figcaption className="text-xs text-subtle">
           ілюстративний приклад · записав Сержант · {HERO_META}

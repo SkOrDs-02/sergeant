@@ -399,7 +399,7 @@ describe("серверний записувач sync_op_log", () => {
 
 describe("syncV2Push · data-48 (відхилений оп без payload)", () => {
   it(
-    "невідома таблиця з великим row: у журналі {} , pull віддає лише applied",
+    "невідома таблиця з великим row: у журнал не потрапляє, pull віддає лише applied",
     async (ctx) => {
       if (!dockerAvailable) return ctx.skip();
       await ensureUser("u-junk");
@@ -431,6 +431,8 @@ describe("syncV2Push · data-48 (відхилений оп без payload)", () 
         "applied",
       ]);
 
+      // data-48: невідома таблиця в журнал не потрапляє зовсім; в журналі
+      // лише застосований оп.
       const log = await testPool!.query<{
         idempotency_key: string;
         status: string;
@@ -440,16 +442,11 @@ describe("syncV2Push · data-48 (відхилений оп без payload)", () 
            FROM sync_op_log WHERE user_id = $1 ORDER BY id`,
         ["u-junk"],
       );
-      expect(log.rows[0]).toMatchObject({
-        idempotency_key: "junk-1",
-        status: "rejected",
-        row_len: 2, // '{}'
-      });
-      expect(log.rows[1]!.status).toBe("applied");
-      expect(log.rows[1]!.row_len).toBeGreaterThan(20);
+      expect(log.rows).toHaveLength(1);
+      expect(log.rows[0]!.status).toBe("applied");
+      expect(log.rows[0]!.row_len).toBeGreaterThan(20);
 
-      // Анти-реплей працює: повтор того самого ключа не застосовується
-      // заново, а віддає збережену відмову.
+      // Повтор того самого ключа знову дає відмову без запису в журнал.
       const replay = makeRes();
       await syncV2Push(
         makeReq({
@@ -472,6 +469,11 @@ describe("syncV2Push · data-48 (відхилений оп без payload)", () 
         status: "rejected",
         reason: "table_not_allowed",
       });
+      const after = await testPool!.query(
+        `SELECT 1 FROM sync_op_log WHERE user_id = $1`,
+        ["u-junk"],
+      );
+      expect(after.rowCount).toBe(1);
 
       // Pull з іншого пристрою бачить тільки applied.
       const pull = makeRes();

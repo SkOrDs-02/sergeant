@@ -13,10 +13,16 @@
 import {
   calcRoutineDayProgress,
   flexibleStreakBreakdown,
+  type Habit,
+  isFlexibleHabit,
+  streakForHabit,
   type RoutineState,
 } from "@sergeant/routine-domain";
 
-import { STREAK_MILESTONES } from "../../../modules/routine/hooks/useStreakFlame";
+import {
+  STREAK_MILESTONES,
+  WEEKLY_STREAK_MILESTONES,
+} from "../../../modules/routine/hooks/useStreakFlame";
 import {
   bestHabitMonthInsight,
   habitInsightProgress,
@@ -62,6 +68,11 @@ export interface Moment {
    * перевірки якої лишилось кілька днів. Лише для тексту рядка.
    */
   detail?: string;
+  /**
+   * Одиниця ступеня серії (`streak`). Відсутня = дні; `"weeks"` для гнучкої
+   * звички («N разів на тиждень»), чия серія міряється тижнями поспіль.
+   */
+  unit?: "weeks";
 }
 
 /** Один запис дає рівно один рядок: найрідкісніший із кандидатів. */
@@ -112,6 +123,50 @@ function dayClosed(state: RoutineSlice, todayKey: string): boolean {
 /** Дні, які не є ні відміткою, ні пропуском: пауза, вихідний, «не зміг». */
 const NEUTRAL_KINDS = new Set(["off", "pause", "skip"]);
 
+function pushDailyStreakMoments(
+  candidates: Moment[],
+  prev: RoutineSlice,
+  next: RoutineSlice,
+  habit: Habit,
+  habitId: string,
+  todayKey: string,
+): void {
+  const opts = { skipsForHabit: next.skips?.[habitId] };
+  const before = flexibleStreakBreakdown(
+    habit,
+    prev.completions[habitId],
+    todayKey,
+    { skipsForHabit: prev.skips?.[habitId] },
+  );
+  const after = flexibleStreakBreakdown(
+    habit,
+    next.completions[habitId],
+    todayKey,
+    opts,
+  );
+  const milestone = STREAK_MILESTONES.find(
+    (m) => before.days < m && after.days >= m,
+  );
+  if (milestone !== undefined) {
+    candidates.push({ kind: "streak", target: habitId, value: milestone });
+  }
+
+  // Заморозка спрацювала: сьогоднішня відмітка продовжила серію, а
+  // останній запланований день перед сьогодні був мовчазним пропуском.
+  // `"miss"` усередині вікна серії за визначенням прощений бюджетом
+  // (`FlexibleStreakBreakdown.window`), тож серія його пережила.
+  const lastBeforeToday = [...after.window]
+    .reverse()
+    .find((c) => c.key < todayKey && !NEUTRAL_KINDS.has(c.kind));
+  if (lastBeforeToday?.kind === "miss") {
+    candidates.push({
+      kind: "freeze",
+      target: habitId,
+      value: after.graceRemaining,
+    });
+  }
+}
+
 export interface RoutineMomentInput {
   prev: RoutineSlice;
   next: RoutineSlice;
@@ -147,39 +202,34 @@ export function detectRoutineMoment({
     candidates.push({ kind: "dayClosed", target: DAY_TARGET });
   }
 
-  const opts = { skipsForHabit: next.skips?.[habitId] };
-  const before = flexibleStreakBreakdown(
-    habit,
-    prev.completions[habitId],
-    todayKey,
-    { skipsForHabit: prev.skips?.[habitId] },
-  );
-  const after = flexibleStreakBreakdown(
-    habit,
-    next.completions[habitId],
-    todayKey,
-    opts,
-  );
-  const milestone = STREAK_MILESTONES.find(
-    (m) => before.days < m && after.days >= m,
-  );
-  if (milestone !== undefined) {
-    candidates.push({ kind: "streak", target: habitId, value: milestone });
-  }
-
-  // Заморозка спрацювала: сьогоднішня відмітка продовжила серію, а
-  // останній запланований день перед сьогодні був мовчазним пропуском.
-  // `"miss"` усередині вікна серії за визначенням прощений бюджетом
-  // (`FlexibleStreakBreakdown.window`), тож серія його пережила.
-  const lastBeforeToday = [...after.window]
-    .reverse()
-    .find((c) => c.key < todayKey && !NEUTRAL_KINDS.has(c.kind));
-  if (lastBeforeToday?.kind === "miss") {
-    candidates.push({
-      kind: "freeze",
-      target: habitId,
-      value: after.graceRemaining,
-    });
+  // Гнучка звичка («N разів на тиждень») міряється тижнями за тим самим
+  // доменним правилом, що картка звички (`streakForHabit` -> тижнева ціль).
+  // Поденний `flexibleStreakBreakdown` вважав би пропуском кожен невідмічений
+  // день, а заморозки (grace) до неї не застосовні.
+  if (isFlexibleHabit(habit)) {
+    const weeksBefore = streakForHabit(
+      habit,
+      prev.completions[habitId],
+      todayKey,
+    );
+    const weeksAfter = streakForHabit(
+      habit,
+      next.completions[habitId],
+      todayKey,
+    );
+    const weekMilestone = WEEKLY_STREAK_MILESTONES.find(
+      (m) => weeksBefore < m && weeksAfter >= m,
+    );
+    if (weekMilestone !== undefined) {
+      candidates.push({
+        kind: "streak",
+        target: habitId,
+        value: weekMilestone,
+        unit: "weeks",
+      });
+    }
+  } else {
+    pushDailyStreakMoments(candidates, prev, next, habit, habitId, todayKey);
   }
 
   if (!bestHabitMonthInsight(prev) && bestHabitMonthInsight(next)) {

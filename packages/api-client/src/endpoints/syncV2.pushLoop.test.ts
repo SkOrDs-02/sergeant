@@ -894,6 +894,37 @@ describe("runSyncEnginePushOnce — server retry status (data-18)", () => {
   });
 });
 
+describe("runSyncEnginePushOnce — retry/unknown_table (data-48)", () => {
+  it("не палить спроби: attempts лишається, чекає 5 хв, не dead_letter", async () => {
+    const { deps, drain, push, markRetry } = makeDeps();
+    drain.mockResolvedValueOnce([
+      makeRow({ id: 1, idempotencyKey: IDEM_A, attempts: 9 }),
+    ]);
+    push.mockResolvedValueOnce({
+      accepted: 0,
+      last_op_id: 0,
+      results: [
+        {
+          idempotency_key: IDEM_A,
+          status: "retry",
+          reason: "unknown_table",
+        },
+      ],
+    });
+
+    const out = await runSyncEnginePushOnce(deps, { limit: 100 });
+
+    expect(out.retried).toBe(1);
+    expect(markRetry).toHaveBeenCalledTimes(1);
+    expect(markRetry.mock.calls[0]![1]).toMatchObject({
+      attempts: 9,
+      status: "pending",
+      lastError: "server_retry:unknown_table",
+      nextRetryAt: new Date(NOW.getTime() + 5 * 60 * 1000).toISOString(),
+    });
+  });
+});
+
 describe("runSyncEnginePushOnce — clock invariants", () => {
   it("samples `now` exactly once per tick and threads it everywhere", async () => {
     const { deps, drain, push, planRetry, now } = makeDeps();

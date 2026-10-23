@@ -37,3 +37,14 @@ PROP_OUT=test-results/proposals pnpm --filter @sergeant/web exec playwright test
 - `PROP_ONLY=04-choice-borders,16-hub-now` - лише названі позиції.
 - `PROP_FAST=1` - коротша пауза після сіду, щоб зловити тост віхи серії (позиція 14).
 - Коли позицію закрито в коді, її `mutate` стає no-op, і кадри «до / після» збігаються: так сценарій служить приймальним.
+
+## Кадри hero лендінгу (v3.2)
+
+[`landing.spec.ts`](./landing.spec.ts) знімає Огляд Фініка (із заданим планом місяця) й Огляд Рутини зі світу [`landing-world`](../fixtures/worlds/landing-world.json) і пише їх як webp у `apps/landing/public/screens/hero-finyk.webp` та `hero-routine.webp`. Файли комітяться: лендінг збирається без Playwright. Коли змінюється вигляд Огляду Фініка чи Рутини, кадри перезнімають тим самим білдом і запуском, що вище (кроки 1 і 2), далі:
+
+```bash
+pnpm --filter @sergeant/web exec playwright test --config playwright.shots.config.ts landing.spec.ts
+```
+
+- `LANDING_OUT` - тека запису, за замовчуванням `../landing/public/screens`.
+- Світ анонімний, тож сценарій прибирає з кадру банер «Дані лише на цьому пристрої»; решта екрана без правок.
