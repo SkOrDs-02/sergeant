@@ -27,7 +27,7 @@ import { logger } from "@shared/lib";
 import { LOCAL_ANON_USER_ID } from "../auth/localIdentity.js";
 import {
   BENIGN_REJECT_REASONS,
-  getSyncEngineReader,
+  pauseSyncEngineReader,
 } from "../syncEngine/singleton.js";
 import { isSyncableUserId } from "../syncEngine/syncableUserId.js";
 
@@ -210,12 +210,11 @@ export async function inspectAnonymousLeftoversOnLogout(): Promise<AnonymousLeft
 }
 
 /**
- * Пауза reader-а синку на час перемикання партиції. Reader-а може не бути
- * (вкладка-послідовник, синк ще не піднявся) — тоді й писати нікому.
+ * Пауза reader-а синку на час перемикання партиції. Рівень singleton, а не
+ * поточного runtime: reader, що саме бутиться, теж стартує вже на паузі.
  */
 async function pauseSyncReader(): Promise<() => void> {
-  const reader = getSyncEngineReader();
-  return reader ? reader.pause() : () => {};
+  return pauseSyncEngineReader();
 }
 
 /**

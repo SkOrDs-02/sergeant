@@ -47,12 +47,10 @@ vi.mock("../db/sqlite.js", () => ({
 vi.mock("../syncEngine/singleton.js", () => ({
   BENIGN_REJECT_REASONS: new Set(["lww_conflict"]),
   bootSyncEngineReader: async () => boundary.reader,
-  getSyncEngineReader: () => ({
-    pause: async () => {
-      boundary.events.push("pause");
-      return () => boundary.events.push("resume");
-    },
-  }),
+  pauseSyncEngineReader: async () => {
+    boundary.events.push("pause");
+    return () => boundary.events.push("resume");
+  },
   bootSyncEngineWriter: async () => boundary.writer,
 }));
 
