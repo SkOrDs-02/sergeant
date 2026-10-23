@@ -117,7 +117,7 @@ describe("EmptyState — a11y", () => {
 });
 
 describe("ModuleEmptyState — dismiss button a11y", () => {
-  it("показує стриману ілюстрацію та видимий наступний крок", () => {
+  it("показує факт і видимий наступний крок без іконки (v3.2, позиція 17)", () => {
     const { container } = render(
       <ModuleEmptyState
         module="routine"
@@ -129,7 +129,7 @@ describe("ModuleEmptyState — dismiss button a11y", () => {
     expect(
       screen.getByText("Створи одну звичку, щоб почати серію."),
     ).toBeVisible();
-    expect(container.querySelector('[role="status"] svg')).not.toBeNull();
+    expect(container.querySelector('[role="status"] svg')).toBeNull();
   });
 
   it("dismiss-кнопка має aria-label і focus-visible:ring (Hard Rule #14)", () => {

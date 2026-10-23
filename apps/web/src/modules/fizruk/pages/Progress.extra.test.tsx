@@ -215,10 +215,9 @@ describe("Progress page — muscle volume & PR board", () => {
     expect(screen.getByText("Спина")).toBeInTheDocument();
   });
 
-  // П3 — the bars plot an internal `loadPoints` score (тоннаж ÷ 1000 +
-  // сети × 0.15), not kilograms; a raw "0.6" gives the reader no chance to
-  // understand what it means. A legend under the section heading names the
-  // unit explicitly.
+  // П3 — the bars plot an internal `loadPoints` score, not kilograms. The
+  // formula paragraph is gone (redesign v3.2, item 09); the unit «у. о.»
+  // sits next to every number instead.
   it("labels the muscle-volume numbers as load-score units, not kilograms (П3)", () => {
     const at = new Date(NOW - 1 * DAY).toISOString();
     setHooks({
@@ -242,9 +241,8 @@ describe("Progress page — muscle volume & PR board", () => {
       ],
     });
     render(<Progress onNavigate={onNavigate} />);
-    expect(
-      screen.getByText(/Умовні одиниці навантаження, не кілограми/),
-    ).toBeInTheDocument();
+    expect(screen.queryByText(/Умовні одиниці навантаження/)).toBeNull();
+    expect(screen.getAllByText(/у\. о\./).length).toBeGreaterThan(0);
   });
 
   it("filters the PR board by muscle group and resets via «Всі»", () => {

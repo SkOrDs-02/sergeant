@@ -47,8 +47,7 @@ export function TxTagsField({
             <li key={tag}>
               <Button
                 type="button"
-                variant="soft"
-                tone="finyk"
+                variant="outline"
                 size="sm"
                 aria-label={t.removeAria.replace("{tag}", tag)}
                 onClick={() => onChange(tags.filter((x) => x !== tag))}

@@ -84,8 +84,7 @@ export function SilpoUnmatchedReceipts({
                 </p>
               </div>
               <Button
-                variant="soft"
-                tone="finyk"
+                variant="outline"
 
                 size="xs"
                 className="shrink-0"

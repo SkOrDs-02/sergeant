@@ -63,7 +63,6 @@ export function FinykTagsSection({
                       <Button
                         type="button"
                         variant="solid"
-                        tone="finyk"
                         className="shrink-0 h-11"
                         disabled={!draft.trim()}
                         onClick={() => saveRename(tag.key)}

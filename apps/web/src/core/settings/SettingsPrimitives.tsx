@@ -277,7 +277,7 @@ export function SettingsSubGroup({
       aria-labelledby={variant === "bounded" ? titleId : undefined}
       className="space-y-3"
     >
-      <h3 id={titleId} className="text-style-overline text-text">
+      <h3 id={titleId} className="text-style-label-lg font-semibold text-text">
         {title}
       </h3>
       {/* Сусідні рядки (`data-row`, див. `ToggleRow`) стоять впритул на
