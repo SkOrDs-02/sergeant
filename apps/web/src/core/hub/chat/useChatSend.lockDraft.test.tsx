@@ -4,70 +4,18 @@ import type { ReactNode } from "react";
 import { act, renderHook } from "@testing-library/react";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 
-// ─── Collaborator mocks ───────────────────────────────────────────────────────
-// useChatSend orchestrates the send pipeline: chat API → tool-call firewall →
-// executeActions → SSE follow-up. We mock the network + the executor so the
-// test exercises the hook's own branching (plain reply vs validated tool call
-// vs rejected tool call) without a real server or LocalStorage mutation.
-
-const { sendMock, streamMock, executeActionsMock, consumeSseMock } = vi.hoisted(
-  () => ({
-    sendMock: vi.fn(),
-    streamMock: vi.fn(),
-    executeActionsMock: vi.fn(),
-    consumeSseMock: vi.fn(),
-  }),
-);
-
-vi.mock("../../lib/hubChatUtils", async () => {
-  const actual = await vi.importActual<typeof import("../../lib/hubChatUtils")>(
-    "../../lib/hubChatUtils",
-  );
-  return {
-    ...actual,
-    // Default to the real consumer; individual tests override per-case.
-    consumeHubChatSse: consumeSseMock,
-  };
-});
-
-vi.mock("@shared/api", async () => {
-  const actual =
-    await vi.importActual<typeof import("@shared/api")>("@shared/api");
-  return {
-    ...actual,
-    chatApi: { send: sendMock, stream: streamMock },
-  };
-});
-
-vi.mock("../useFinykHubPreview", () => ({
-  useFinykHubPreview: () => ({
-    data: { hasMonoData: false },
-    dataUpdatedAt: 0,
-  }),
+// Мокаються лише план, виконавець tool-ів і тост; мережа - шпигуном на
+// методах `chatApi` (як у `useChatSend.sessionBinding.test.tsx`).
+const { executeActionsMock } = vi.hoisted(() => ({
+  executeActionsMock: vi.fn(),
 }));
 
 vi.mock("../../billing/usePlan", () => ({
   usePlan: () => ({ isPro: true, plan: "pro", isLoading: false }),
 }));
-
-vi.mock("../../lib/hubChatContext", () => ({
-  buildContextMeasured: () => "ctx",
-}));
-
 vi.mock("../../lib/hubChatActions", () => ({
   executeActions: executeActionsMock,
 }));
-
-vi.mock("../../lib/hubChatSpeech", () => ({
-  VOICE_KEYWORDS: /голосом|вголос|скажи|озвуч|прочитай/i,
-  speak: vi.fn(),
-  stopSpeaking: vi.fn(),
-}));
-
-vi.mock("@shared/hooks/useOnlineStatus", () => ({
-  useOnlineStatus: () => true,
-}));
-
 vi.mock("@shared/hooks/useToast", () => ({
   useToast: () => ({
     show: vi.fn(),
@@ -79,6 +27,7 @@ vi.mock("@shared/hooks/useToast", () => ({
   }),
 }));
 
+import { chatApi } from "@shared/api";
 import { useChatSend } from "./useChatSend";
 import {
   commitStashedFormDrafts,
@@ -103,6 +52,7 @@ const mountChat = () =>
   renderHook(() => useChatSend({ messages: [], setMessages: vi.fn() }), {
     wrapper: wrapper(),
   });
+const sendMock = vi.fn();
 const draftKeys = () => safeListSSKeys().filter((k) => k.includes("formDraft"));
 
 beforeEach(() => {
@@ -110,6 +60,8 @@ beforeEach(() => {
   discardAllFormDrafts();
   setFormDraftUser("u1");
   sendMock.mockReset();
+  vi.spyOn(chatApi, "send").mockImplementation(sendMock);
+  vi.spyOn(chatApi, "stream").mockImplementation(vi.fn());
 });
 afterEach(() => vi.restoreAllMocks());
 
