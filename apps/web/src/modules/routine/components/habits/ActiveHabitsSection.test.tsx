@@ -11,7 +11,7 @@ import {
 } from "@testing-library/react";
 import { defaultRoutineState } from "@sergeant/routine-domain";
 import type { Habit, RoutineState } from "../../lib/types";
-import { ActiveHabitsSection } from "./ActiveHabitsSection";
+import { ActiveHabitsSection, SEARCH_FROM_HABITS } from "./ActiveHabitsSection";
 
 // HabitListItem renders "<emoji> <name>" in one span, so the emoji prefix
 // splits the name across text nodes — match on a substring.
@@ -52,6 +52,17 @@ function makeRoutine(habits: Habit[]): RoutineState {
     habits,
     habitOrder: habits.map((h) => h.id),
   };
+}
+
+/** Вода, Біг і вісім інших: рівно поріг пошуку. */
+function manyHabits(): Habit[] {
+  return [
+    makeHabit("h1", "Вода", 0),
+    makeHabit("h2", "Біг", 1),
+    ...Array.from({ length: SEARCH_FROM_HABITS - 2 }, (_, i) =>
+      makeHabit(`x${i}`, `Звичка ${i}`, i + 2),
+    ),
+  ];
 }
 
 interface HarnessProps {
@@ -98,9 +109,16 @@ afterEach(() => {
 });
 
 describe("ActiveHabitsSection", () => {
-  it("renders the section heading and the search input", () => {
+  it("renders the section heading without a search below the threshold", () => {
     render(<Harness initial={makeRoutine([makeHabit("h1", "Вода", 0)])} />);
     expect(screen.getByText("Активні звички")).toBeInTheDocument();
+    expect(
+      screen.queryByLabelText("Пошук звичок у списку"),
+    ).not.toBeInTheDocument();
+  });
+
+  it("shows the search from SEARCH_FROM_HABITS habits", () => {
+    render(<Harness initial={makeRoutine(manyHabits())} />);
     expect(screen.getByLabelText("Пошук звичок у списку")).toBeInTheDocument();
   });
 
@@ -108,7 +126,7 @@ describe("ActiveHabitsSection", () => {
     render(<Harness initial={defaultRoutineState()} />);
     expect(screen.getByText("Звичок ще немає")).toBeInTheDocument();
     expect(
-      screen.getByText("Створи одну звичку, щоб почати серію."),
+      screen.getByText("Серія починається з першої відмітки."),
     ).toBeVisible();
     expect(
       screen.queryByLabelText("Пошук звичок у списку"),
@@ -129,10 +147,7 @@ describe("ActiveHabitsSection", () => {
   });
 
   it("lists active habits and filters them by the search query", () => {
-    const routine = makeRoutine([
-      makeHabit("h1", "Вода", 0),
-      makeHabit("h2", "Біг", 1),
-    ]);
+    const routine = makeRoutine(manyHabits());
     render(<Harness initial={routine} />);
     expect(screen.getByText(hasText("Вода"))).toBeInTheDocument();
     expect(screen.getByText(hasText("Біг"))).toBeInTheDocument();
@@ -150,10 +165,7 @@ describe("ActiveHabitsSection", () => {
   // виходу. Тому тут перевіряються обидві половини: і що стан зʼявився, і
   // що кнопка справді повертає список.
   it("shows a no-results state when the query matches nothing, and its CTA restores the list", () => {
-    const routine = makeRoutine([
-      makeHabit("h1", "Вода", 0),
-      makeHabit("h2", "Біг", 1),
-    ]);
+    const routine = makeRoutine(manyHabits());
     render(<Harness initial={routine} />);
 
     fireEvent.change(screen.getByLabelText("Пошук звичок у списку"), {
@@ -189,11 +201,14 @@ describe("ActiveHabitsSection", () => {
     expect(onOpenDetails).toHaveBeenCalledWith("h1");
   });
 
-  it("wires the Змінити button to onEdit with the habit", () => {
+  it("opens editing on a tap on the row", () => {
     const onEdit = vi.fn();
     const habit = makeHabit("h1", "Вода", 0);
     render(<Harness initial={makeRoutine([habit])} onEdit={onEdit} />);
-    fireEvent.click(screen.getByRole("button", { name: "Змінити" }));
+    expect(screen.queryByRole("button", { name: "Змінити" })).toBeNull();
+    fireEvent.click(
+      screen.getByRole("button", { name: "Змінити звичку Вода" }),
+    );
     expect(onEdit).toHaveBeenCalledTimes(1);
     expect(onEdit.mock.calls[0]![0]).toMatchObject({ id: "h1" });
   });

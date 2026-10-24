@@ -25,6 +25,9 @@ import type {
   RoutineState,
 } from "../../lib/types";
 
+/** Поріг рецензента, погоджений власником (spec v3.2, Р: 10 звичок). */
+export const SEARCH_FROM_HABITS = 10;
+
 export interface ActiveHabitsSectionProps {
   routine: RoutineState;
   setRoutine: Dispatch<SetStateAction<RoutineState>>;
@@ -61,7 +64,8 @@ export function ActiveHabitsSection({
     );
   }, [routine.habits, routine.habitOrder, q]);
 
-  const hasActive = routine.habits.some((h) => !h.archived);
+  const activeCount = routine.habits.filter((h) => !h.archived).length;
+  const hasActive = activeCount > 0;
 
   return (
     <Card as="section" padding="md" className="space-y-3">
@@ -74,11 +78,11 @@ export function ActiveHabitsSection({
       >
         Активні звички
       </SectionHeading>
-      {hasActive && (
+      {/* Пошук лише від 10 звичок (redesign v3.2, 12): на чотирьох рядках
+          він нічого не шукає. Запит лишається видимим, щоб його можна було
+          стерти. */}
+      {(activeCount >= SEARCH_FROM_HABITS || habitListQuery !== "") && (
         <>
-          <p className="text-style-body text-subtle leading-snug">
-            {messages.routine.reorderHint}
-          </p>
           <Input
             className="routine-touch-field w-full max-w-md"
             {...searchFieldProps("habit-list-search")}

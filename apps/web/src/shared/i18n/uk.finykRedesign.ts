@@ -21,7 +21,6 @@ export const finykRedesign = {
   cards: "На картках",
   debts: "Борги",
   noDayPlan: "Денний бюджет не задано",
-  dayPlanHint: "Він рахується з місячного плану витрат, підписок і боргів.",
   setPlan: "Задати план",
   spentToday: "Витрачено сьогодні",
   dayPlan: "План дня",

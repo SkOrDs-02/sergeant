@@ -3,7 +3,7 @@
  * Status: Active
  */
 import { useMemo, useState } from "react";
-import type { Dispatch, SetStateAction } from "react";
+import type { Dispatch, ReactNode, SetStateAction } from "react";
 import { Button } from "@shared/components/ui/Button";
 import { SectionHeading } from "@shared/components/ui/SectionHeading";
 import { Sheet } from "@shared/components/ui/Sheet";
@@ -48,6 +48,8 @@ export interface HabitDetailSheetProps {
    * renders read-only (callers that only show stats can omit it).
    */
   setRoutine?: Dispatch<SetStateAction<RoutineState>>;
+  /** Поле нотатки до відмітки дня, з якого відкрито аркуш (тап по рядку). */
+  dayNote?: ReactNode;
 }
 
 interface NoteEntry {
@@ -60,6 +62,7 @@ export function HabitDetailSheet({
   routine,
   onClose,
   setRoutine,
+  dayNote,
 }: HabitDetailSheetProps) {
   const toast = useToast();
   const [editOpen, setEditOpen] = useState(false);
@@ -231,6 +234,7 @@ export function HabitDetailSheet({
         panelClassName="routine-sheet max-w-4xl"
         zIndex={200}
       >
+        {dayNote && <div className="mb-5">{dayNote}</div>}
         <div className="text-style-label text-muted space-y-1 mb-7">
           <p>
             {recLabel}

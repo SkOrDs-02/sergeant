@@ -38,11 +38,14 @@ vi.mock("./HabitDetailSheet", () => ({
   HabitDetailSheet: ({
     habitId,
     onClose,
+    dayNote,
   }: {
     habitId: string;
     onClose: () => void;
+    dayNote?: ReactNode;
   }) => (
     <div data-testid="habit-detail-sheet" data-habit={habitId}>
+      {dayNote}
       <button type="button" onClick={onClose}>
         close habit detail
       </button>
@@ -115,6 +118,7 @@ let eveningInsight: { id: string; title: string; subtitle: string } | null =
 
 import { FIZRUK_GROUP_LABEL } from "@sergeant/routine-domain";
 import { RoutineCalendarPanel } from "./RoutineCalendarPanel";
+import { FILTER_FROM_HABITS } from "./RoutineFeedControls";
 
 const onToggleHabit = vi.fn();
 const applyTimeMode = vi.fn();
@@ -140,6 +144,22 @@ function makeEvent(over: Partial<HubCalendarEvent> = {}): HubCalendarEvent {
     ...over,
   };
 }
+
+/** Рутина з `n` активними звичками: від 10 стрічка показує «Фільтр». */
+function routineWithHabits(n = FILTER_FROM_HABITS) {
+  const base = defaultRoutineState();
+  return {
+    ...base,
+    habits: Array.from({ length: n }, (_, i) => ({
+      id: `hab${i}`,
+      name: `Звичка ${i}`,
+      archived: false,
+    })),
+  } as RoutineCalendarData["routine"];
+}
+
+const openFilter = () =>
+  fireEvent.click(screen.getByRole("button", { name: /^Фільтр/ }));
 
 function baseData(
   over: Partial<RoutineCalendarData> = {},
@@ -222,10 +242,19 @@ afterEach(() => {
 });
 
 describe("RoutineCalendarPanel", () => {
-  it("renders the calendar tabpanel with the week strip and search", () => {
+  it("renders the calendar tabpanel without the filter below 10 habits", () => {
     render(<RoutineCalendarPanel />);
     const panel = document.getElementById("routine-panel-calendar");
     expect(panel).toHaveAttribute("role", "tabpanel");
+    expect(screen.queryByRole("button", { name: /^Фільтр/ })).toBeNull();
+    expect(screen.queryByLabelText("Пошук подій")).toBeNull();
+  });
+
+  it("puts search and tags into the «Фільтр» sheet from 10 habits", () => {
+    dataFixture.mockReturnValue(baseData({ routine: routineWithHabits() }));
+    render(<RoutineCalendarPanel />);
+    expect(screen.queryByLabelText("Пошук подій")).toBeNull();
+    openFilter();
     expect(screen.getByLabelText("Пошук подій")).toBeInTheDocument();
   });
 
@@ -387,7 +416,7 @@ describe("RoutineCalendarPanel", () => {
     render(<RoutineCalendarPanel />);
     fireEvent.click(
       screen.getByRole("button", {
-        name: "Відмітити всі звички на цей день",
+        name: "Відмітити всі",
       }),
     );
     expect(onBulkMarkDay).toHaveBeenCalledTimes(1);
@@ -426,7 +455,7 @@ describe("RoutineCalendarPanel", () => {
       dataFixture.mockReturnValue(withHabits());
       render(<RoutineCalendarPanel />);
       const bulk = screen.getByRole("button", {
-        name: "Відмітити всі звички на цей день",
+        name: "Відмітити всі",
       });
       expect(before(bulk, screen.getByText("Пити воду"))).toBe(true);
       expect(bulk.className).not.toMatch(/w-full/);
@@ -516,8 +545,11 @@ describe("RoutineCalendarPanel", () => {
   });
 
   it("renders tag chips and toggles a tag filter", () => {
-    dataFixture.mockReturnValue(baseData({ tagChips: ["ранок"] }));
+    dataFixture.mockReturnValue(
+      baseData({ tagChips: ["ранок"], routine: routineWithHabits() }),
+    );
     render(<RoutineCalendarPanel />);
+    openFilter();
     const chip = screen.getByRole("button", { name: "ранок" });
     fireEvent.click(chip);
     expect(setTagFilter).toHaveBeenCalledTimes(1);
@@ -526,6 +558,7 @@ describe("RoutineCalendarPanel", () => {
   it("selecting 'Усі' tag clears the filter", () => {
     dataFixture.mockReturnValue(baseData({ tagFilter: "ранок" }));
     render(<RoutineCalendarPanel />);
+    openFilter();
     fireEvent.click(screen.getByRole("button", { name: "Усі" }));
     expect(setTagFilter).toHaveBeenCalledWith(null);
   });
@@ -553,24 +586,46 @@ describe("RoutineCalendarPanel", () => {
     );
   });
 
-  it("renders a completion-note affordance for a completed habit row", () => {
+  it("opens the completion note from a tap on the row, not a «Нотатка» button", () => {
     const event = makeEvent({ completed: true });
     dataFixture.mockReturnValue(
       baseData({
         listIsEmpty: false,
         hasNoHabits: false,
         grouped: [["Звички дня", [event]]],
+        routine: {
+          ...defaultRoutineState(),
+          completions: { h1: ["2026-06-23"] },
+        },
       }),
     );
     render(<RoutineCalendarPanel />);
-    const row = screen.getByText("Пити воду").closest("div")!;
-    void row;
-    // Completed habits expose a "Нотатка" collapsed trigger.
-    expect(screen.getByText("Нотатка")).toBeInTheDocument();
-    fireEvent.click(screen.getByText("Нотатка"));
+    expect(screen.queryByText("Нотатка")).toBeNull();
+    expect(screen.queryByPlaceholderText("Нотатка до відмітки")).toBeNull();
+    fireEvent.click(screen.getByRole("button", { name: "Деталі: Пити воду" }));
     expect(
       screen.getByPlaceholderText("Нотатка до відмітки"),
     ).toBeInTheDocument();
+  });
+
+  it("shows a saved note in the row and drops the «Звичка» label", () => {
+    dataFixture.mockReturnValue(
+      baseData({
+        listIsEmpty: false,
+        hasNoHabits: false,
+        grouped: [
+          ["Звички дня", [makeEvent({ completed: true, subtitle: "Звичка" })]],
+        ],
+        routine: {
+          ...defaultRoutineState(),
+          completions: { h1: ["2026-06-23"] },
+          completionNotes: { "h1__2026-06-23": "пів літра" },
+        },
+      }),
+    );
+    render(<RoutineCalendarPanel />);
+    expect(screen.getByText("пів літра")).toBeInTheDocument();
+    expect(screen.queryByText(/· Звичка/)).toBeNull();
   });
 
   it("shows the 'empty period' state when list is empty, no filter active and habits exist", () => {
@@ -606,22 +661,29 @@ describe("RoutineCalendarPanel", () => {
 
   it("renders the Fizruk filter chip when showFizrukInCalendar pref is default (true)", () => {
     // defaultRoutineState has showFizrukInCalendar undefined (≠ false), so the chip renders.
+    dataFixture.mockReturnValue(baseData({ routine: routineWithHabits() }));
     render(<RoutineCalendarPanel />);
+    openFilter();
     expect(
       screen.getByRole("button", { name: FIZRUK_GROUP_LABEL }),
     ).toBeInTheDocument();
   });
 
   it("renders the Finyk subscriptions filter chip by default", () => {
+    dataFixture.mockReturnValue(baseData({ routine: routineWithHabits() }));
     render(<RoutineCalendarPanel />);
+    openFilter();
     expect(
       screen.getByRole("button", { name: "Підписки Фініка" }),
     ).toBeInTheDocument();
   });
 
   it("toggles the Fizruk filter chip on click", () => {
-    dataFixture.mockReturnValue(baseData({ tagFilter: null }));
+    dataFixture.mockReturnValue(
+      baseData({ tagFilter: null, routine: routineWithHabits() }),
+    );
     render(<RoutineCalendarPanel />);
+    openFilter();
     const fizrukChip = screen.getByRole("button", {
       name: FIZRUK_GROUP_LABEL,
     });
@@ -630,8 +692,11 @@ describe("RoutineCalendarPanel", () => {
   });
 
   it("toggles the Finyk subscriptions filter chip on click", () => {
-    dataFixture.mockReturnValue(baseData({ tagFilter: null }));
+    dataFixture.mockReturnValue(
+      baseData({ tagFilter: null, routine: routineWithHabits() }),
+    );
     render(<RoutineCalendarPanel />);
+    openFilter();
     fireEvent.click(screen.getByRole("button", { name: "Підписки Фініка" }));
     expect(setTagFilter).toHaveBeenCalledTimes(1);
   });
@@ -909,7 +974,9 @@ describe("RoutineCalendarPanel", () => {
   });
 
   it("updates the search draft from the input", () => {
+    dataFixture.mockReturnValue(baseData({ routine: routineWithHabits() }));
     render(<RoutineCalendarPanel />);
+    openFilter();
     const input = screen.getByLabelText("Пошук подій");
     fireEvent.change(input, { target: { value: "вода" } });
     expect(input).toHaveValue("вода");
@@ -920,6 +987,7 @@ describe("RoutineCalendarPanel", () => {
       baseData({ tagFilter: "__fizruk", tagChips: ["ранок"] }),
     );
     render(<RoutineCalendarPanel />);
+    openFilter();
 
     fireEvent.click(screen.getByRole("button", { name: FIZRUK_GROUP_LABEL }));
     fireEvent.click(screen.getByRole("button", { name: "Підписки Фініка" }));
@@ -968,23 +1036,6 @@ describe("RoutineCalendarPanel", () => {
 
     expect(onToggleHabit).toHaveBeenCalledWith("h1", "2026-06-23");
     expect(onToggleHabit).toHaveBeenCalledWith("h2", "2026-06-23");
-  });
-
-  it("collapses an empty completion note on blur", () => {
-    dataFixture.mockReturnValue(
-      baseData({
-        listIsEmpty: false,
-        hasNoHabits: false,
-        grouped: [["Звички", [makeEvent({ completed: true })]]],
-      }),
-    );
-
-    render(<RoutineCalendarPanel />);
-    fireEvent.click(screen.getByText("Нотатка"));
-    const input = screen.getByPlaceholderText("Нотатка до відмітки");
-    fireEvent.blur(input);
-
-    expect(screen.getByText("Нотатка")).toBeInTheDocument();
   });
 
   it("closes opened detail sheets via their close callbacks", () => {

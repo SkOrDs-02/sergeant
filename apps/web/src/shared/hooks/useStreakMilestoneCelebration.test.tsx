@@ -1,6 +1,6 @@
 // @vitest-environment jsdom
 import { describe, expect, it, vi, beforeEach, afterEach } from "vitest";
-import { render, cleanup } from "@testing-library/react";
+import { render, cleanup, waitFor } from "@testing-library/react";
 
 // Мок саме `useToast`, а не рендер `ToastProvider`: провайдер кладе плашку в
 // стан через власну чергу коалесингу, тож перевірка по DOM ганялася б за його
@@ -57,6 +57,19 @@ describe("useStreakMilestoneCelebration", () => {
     renderProbe(45);
     expect(toastSuccess).toHaveBeenCalledTimes(1);
     expect(toastSuccess).toHaveBeenCalledWith("30 днів", 4000);
+  });
+
+  it("не показує плашку поверх відкритого аркуша, а чекає його закриття", async () => {
+    renderProbe(0).unmount();
+    const dialog = document.createElement("div");
+    dialog.setAttribute("role", "dialog");
+    dialog.setAttribute("aria-modal", "true");
+    document.body.appendChild(dialog);
+    renderProbe(7);
+    expect(toastSuccess).not.toHaveBeenCalled();
+    dialog.remove();
+    await waitFor(() => expect(toastSuccess).toHaveBeenCalledTimes(1));
+    expect(toastSuccess).toHaveBeenCalledWith("7 днів", 4000);
   });
 
   it("`null` пропускається — це «ще не порахували», а не нуль", () => {

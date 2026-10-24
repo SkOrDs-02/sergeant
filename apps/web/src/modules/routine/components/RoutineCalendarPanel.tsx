@@ -42,6 +42,12 @@ import type { HubCalendarEvent } from "../lib/types";
 import { HabitStateButton } from "./HabitStateButton";
 import { formatUaWeekdayDate } from "@shared/lib/time/uaWeekdayDate";
 
+/** Підпис рядка без службового «Звичка»: рядок і так звичка (v3.2, 11). */
+function rowSubtitle(subtitle: string): string {
+  const rest = subtitle.replace(/^Звичка(?: · )?/, "");
+  return rest ? ` · ${rest}` : "";
+}
+
 type GroupedListItem =
   { kind: "header"; label: string } | { kind: "event"; e: HubCalendarEvent };
 
@@ -110,7 +116,10 @@ export function RoutineCalendarPanel({
     return () => clearTimeout(id);
   }, [listQueryDraft, setListQuery]);
   const [dayReportOpen, setDayReportOpen] = useState(false);
-  const [detailHabitId, setDetailHabitId] = useState<string | null>(null);
+  const [detail, setDetail] = useState<{
+    habitId: string;
+    date: string;
+  } | null>(null);
   const [fizrukPlanDateKey, setFizrukPlanDateKey] = useState<string | null>(
     null,
   );
@@ -119,13 +128,8 @@ export function RoutineCalendarPanel({
   // lives in `hooks/useCompletionNoteDrafts.ts` so this panel stays under
   // the `max-lines:600` Hard Rule. See the hook for the WHY (keystroke
   // localStorage thrash) and unmount-flush invariant.
-  const {
-    noteDrafts,
-    noteExpanded,
-    setNoteExpanded,
-    scheduleNoteFlush,
-    flushNoteDraft,
-  } = useCompletionNoteDrafts(setRoutine);
+  const { noteDrafts, scheduleNoteFlush, flushNoteDraft } =
+    useCompletionNoteDrafts(setRoutine);
 
   const flatGroupedItems = useMemo<GroupedListItem[]>(() => {
     const items: GroupedListItem[] = [];
@@ -219,7 +223,7 @@ export function RoutineCalendarPanel({
         {canBulkMark && (
           <div className="flex justify-end">
             <Button variant="text" size="sm" onClick={onBulkMarkDay}>
-              Відмітити всі звички на цей день
+              {messages.routine.bulkMarkAll}
             </Button>
           </div>
         )}
@@ -317,7 +321,8 @@ export function RoutineCalendarPanel({
                           role={e.habitId || e.fizruk ? "button" : undefined}
                           tabIndex={e.habitId || e.fizruk ? 0 : undefined}
                           onClick={() => {
-                            if (e.habitId) setDetailHabitId(e.habitId);
+                            if (e.habitId)
+                              setDetail({ habitId: e.habitId, date: e.date });
                             else if (e.fizruk) setFizrukPlanDateKey(e.date);
                           }}
                           onKeyDown={(ev) => {
@@ -326,7 +331,8 @@ export function RoutineCalendarPanel({
                               (ev.key === "Enter" || ev.key === " ")
                             ) {
                               ev.preventDefault();
-                              if (e.habitId) setDetailHabitId(e.habitId);
+                              if (e.habitId)
+                                setDetail({ habitId: e.habitId, date: e.date });
                               else if (e.fizruk) setFizrukPlanDateKey(e.date);
                             }
                           }}
@@ -346,36 +352,11 @@ export function RoutineCalendarPanel({
                               weekday: "short",
                               day: "numeric",
                               month: "short",
-                            })}{" "}
-                            · {e.subtitle}
+                            })}
+                            {rowSubtitle(e.subtitle)}
                           </p>
                         </div>
                         <div className="flex items-start gap-2 shrink-0">
-                          {habitId &&
-                            e.completed &&
-                            !(
-                              noteExpanded[
-                                completionNoteKey(habitId, e.date)
-                              ] ??
-                              (
-                                routine.completionNotes?.[
-                                  completionNoteKey(habitId, e.date)
-                                ] || ""
-                              ).length > 0
-                            ) && (
-                              <button
-                                type="button"
-                                className="text-style-label text-muted min-h-11 min-w-11 px-1 focus-ring"
-                                onClick={() =>
-                                  setNoteExpanded((p) => ({
-                                    ...p,
-                                    [completionNoteKey(habitId, e.date)]: true,
-                                  }))
-                                }
-                              >
-                                {messages.routine.noteAction}
-                              </button>
-                            )}
                           {e.fizruk && (
                             <Button
                               tone="neutral"
@@ -416,48 +397,21 @@ export function RoutineCalendarPanel({
                       {habitId && (
                         <RoutineMomentLine target={habitId} onDate={e.date} />
                       )}
+                      {/* Нотатка відкривається тапом по рядку (аркуш
+                          деталей); у рядку лише вона сама, коли вже є. */}
                       {habitId &&
                         e.completed &&
-                        (() => {
-                          const noteKey = completionNoteKey(habitId, e.date);
-                          const draft = noteDrafts[noteKey];
-                          const savedValue =
-                            routine.completionNotes?.[noteKey] || "";
-                          const value =
-                            draft !== undefined ? draft.value : savedValue;
-                          // Auto-expand if the row already has a note value so
-                          // existing text is never hidden behind the trigger.
-                          const isExpanded =
-                            noteExpanded[noteKey] ?? savedValue.length > 0;
-                          if (isExpanded) {
-                            return (
-                              <Input
-                                className="routine-touch-field w-full min-w-0"
-                                placeholder="Нотатка до відмітки"
-                                value={value}
-                                onChange={(ev) =>
-                                  scheduleNoteFlush(
-                                    habitId,
-                                    e.date,
-                                    ev.target.value,
-                                  )
-                                }
-                                onBlur={() => {
-                                  flushNoteDraft(habitId, e.date);
-                                  // Collapse if the user cleared the note.
-                                  if (value.trim().length === 0) {
-                                    setNoteExpanded((p) => {
-                                      const next = { ...p };
-                                      delete next[noteKey];
-                                      return next;
-                                    });
-                                  }
-                                }}
-                              />
-                            );
-                          }
-                          return null;
-                        })()}
+                        routine.completionNotes?.[
+                          completionNoteKey(habitId, e.date)
+                        ] && (
+                          <p className="truncate text-style-label text-muted">
+                            {
+                              routine.completionNotes[
+                                completionNoteKey(habitId, e.date)
+                              ]
+                            }
+                          </p>
+                        )}
                     </div>
                   </SwipeToAction>
                 </div>
@@ -519,6 +473,7 @@ export function RoutineCalendarPanel({
           showFinykSubs={
             routine.prefs.showFinykSubscriptionsInCalendar !== false
           }
+          habitsCount={routine.habits.filter((h) => !h.archived).length}
         />
       )}
 
@@ -539,12 +494,42 @@ export function RoutineCalendarPanel({
         />
       )}
 
-      {detailHabitId && (
+      {detail && (
         <HabitDetailSheet
-          habitId={detailHabitId}
+          habitId={detail.habitId}
           routine={routine}
           setRoutine={setRoutine}
-          onClose={() => setDetailHabitId(null)}
+          onClose={() => {
+            flushNoteDraft(detail.habitId, detail.date);
+            setDetail(null);
+          }}
+          dayNote={
+            (routine.completions[detail.habitId] || []).includes(
+              detail.date,
+            ) ? (
+              <Input
+                className="routine-touch-field w-full min-w-0"
+                placeholder="Нотатка до відмітки"
+                aria-label="Нотатка до відмітки"
+                value={
+                  noteDrafts[completionNoteKey(detail.habitId, detail.date)]
+                    ?.value ??
+                  routine.completionNotes?.[
+                    completionNoteKey(detail.habitId, detail.date)
+                  ] ??
+                  ""
+                }
+                onChange={(ev) =>
+                  scheduleNoteFlush(
+                    detail.habitId,
+                    detail.date,
+                    ev.target.value,
+                  )
+                }
+                onBlur={() => flushNoteDraft(detail.habitId, detail.date)}
+              />
+            ) : undefined
+          }
         />
       )}
       <FizrukDayPlanSheet

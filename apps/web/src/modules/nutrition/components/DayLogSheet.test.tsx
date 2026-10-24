@@ -29,8 +29,8 @@ vi.mock("./LogCardAnalytics", () => ({
   LogCardAnalytics: () => <div data-testid="log-analytics" />,
 }));
 
-import { LogCard } from "./LogCard";
-import { todayISODate } from "@sergeant/nutrition-domain";
+import { HISTORY_FROM_DAYS, LogCard } from "./LogCard";
+import { addDaysISODate, todayISODate } from "@sergeant/nutrition-domain";
 
 const today = todayISODate();
 
@@ -50,7 +50,16 @@ function renderLog(log: Record<string, unknown>) {
 }
 
 function renderWithMeals() {
-  renderLog({ [today]: { meals: MEALS } });
+  // Тиждень днів із записами: пошук журналу показується від
+  // `HISTORY_FROM_DAYS` (redesign v3.2, 17).
+  renderLog(
+    Object.fromEntries(
+      Array.from({ length: HISTORY_FROM_DAYS }, (_, i) => [
+        addDaysISODate(today, -i),
+        { meals: MEALS },
+      ]),
+    ),
+  );
   return screen.getByRole("region", { name: `Записи за ${today}` });
 }
 

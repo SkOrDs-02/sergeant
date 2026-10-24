@@ -75,8 +75,6 @@ export function RoutineHabitsPanel({
       hidden={hidden}
       className="space-y-7"
     >
-      <p className="text-style-body text-subtle leading-snug">{COPY.intro}</p>
-
       <ActiveHabitsSection
         routine={routine}
         setRoutine={setRoutine}

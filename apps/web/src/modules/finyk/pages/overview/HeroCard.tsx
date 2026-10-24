@@ -3,7 +3,7 @@ import { Card } from "@shared/components/ui/Card";
 import { Button } from "@shared/components/ui/Button";
 import { Money } from "@shared/components/ui/Money";
 import { messages } from "@shared/i18n";
-import { MonthStrip, MonthStripHint, type MonthStripDay } from "./MonthStrip";
+import { MonthStrip, type MonthStripDay } from "./MonthStrip";
 interface HeroCardProps {
   networth: number;
   monoTotal: number;
@@ -40,8 +40,6 @@ interface HeroCardProps {
   onSetPlan?: (() => void) | undefined;
   /** Тап по клітинці стрічки → `/finyk/transactions?date=YYYY-MM-DD`. */
   onOpenDay?: ((dayKey: string) => void) | undefined;
-  /** N-3 (аудит 2026-09-16): один слот навчання на екран - ховає підказку стрічки, поки видимий `FirstInsightBanner`. */
-  suppressMonthStripHint?: boolean;
 }
 
 const copy = messages.finykRedesign;
@@ -63,92 +61,90 @@ const HeroCardImpl = function HeroCard({
   showBalance = true,
   onSetPlan,
   onOpenDay,
-  suppressMonthStripHint = false,
 }: HeroCardProps) {
+  // Hero несе ярлик, число, одну дію, стрічку і один рядок-підсумок
+  // (redesign v3.2, позиція 05); капітал живе окремою панеллю під ним.
   return (
-    <Card prominence="hero" tone="finyk" padding="lg" className="text-text">
-      <p className="text-style-overline text-finyk-tint-label">
-        {todayRemaining === null
-          ? copy.dayPlan
-          : todayRemaining < 0
-            ? copy.todayDeficit
-            : copy.todayAvailable}
-      </p>
-      {todayRemaining === null ? (
-        <div className="mt-2">
-          <p className="text-style-headline text-text">{copy.noDayPlan}</p>
-          <p className="mt-1 text-style-label text-text">{copy.dayPlanHint}</p>
-          {onSetPlan && (
-            <Button variant="outline" className="mt-3" onClick={onSetPlan}>
-              {copy.setPlan}
-            </Button>
-          )}
-        </div>
-      ) : (
-        <>
-          <div className="mt-2 text-style-display text-text">
-            {showBalance ? (
-              <Money amount={todayRemaining} animate tone="inherit" />
-            ) : (
-              "••••"
+    <>
+      <Card prominence="hero" tone="finyk" padding="lg" className="text-text">
+        <p className="text-style-overline text-finyk-tint-label">
+          {todayRemaining === null
+            ? copy.dayPlan
+            : todayRemaining < 0
+              ? copy.todayDeficit
+              : copy.todayAvailable}
+        </p>
+        {todayRemaining === null ? (
+          <div className="mt-2">
+            <p className="text-style-headline text-text">{copy.noDayPlan}</p>
+            {onSetPlan && (
+              <Button variant="outline" className="mt-3" onClick={onSetPlan}>
+                {copy.setPlan}
+              </Button>
             )}
           </div>
-          <p
-            data-testid="hero-today-subline"
-            className="mt-2 text-style-label text-text"
-          >
-            {copy.spentToday}{" "}
-            {showBalance ? (
-              <Money amount={todaySpent} tone="inherit" />
-            ) : (
-              "••••"
-            )}{" "}
-            · {copy.dayPlan}{" "}
-            {showBalance ? (
-              <Money amount={dayBudget ?? 0} tone="inherit" />
-            ) : (
-              "••••"
-            )}
-          </p>
-        </>
-      )}
-      {dailySpend.length > 0 && (
-        <div className="mt-5">
-          <MonthStrip
-            days={dailySpend}
-            todayKey={todayKey}
-            dayBudget={dayBudget}
-            showBalance={showBalance}
-            onOpenDay={(key) => onOpenDay?.(key)}
-          />
-          <MonthStripHint
-            hasPlan={dayBudget !== null}
-            suppressed={suppressMonthStripHint}
-          />
-        </div>
-      )}
-      <p
-        data-testid="hero-strip-footer"
-        className="mt-3 text-style-caption text-text tabular-nums"
-      >
-        {copy.monthSpent}{" "}
-        {showBalance ? <Money amount={spent} tone="inherit" /> : "••••"}
-        {hasExpensePlan && (
+        ) : (
           <>
-            {" "}
-            · {copy.monthPlan}{" "}
-            {showBalance ? (
-              <Money amount={planExpense} tone="inherit" />
-            ) : (
-              "••••"
-            )}{" "}
-            · {showBalance ? `${Math.round(spendPlanRatio * 100)}%` : "••••"} ·{" "}
-            {spendPlanRatio > 1 ? copy.overPlan : copy.withinPlan}
+            <div className="mt-2 text-style-display text-text">
+              {showBalance ? (
+                <Money amount={todayRemaining} animate tone="inherit" />
+              ) : (
+                "••••"
+              )}
+            </div>
+            <p
+              data-testid="hero-today-subline"
+              className="mt-2 text-style-label text-text"
+            >
+              {copy.spentToday}{" "}
+              {showBalance ? (
+                <Money amount={todaySpent} tone="inherit" />
+              ) : (
+                "••••"
+              )}{" "}
+              · {copy.dayPlan}{" "}
+              {showBalance ? (
+                <Money amount={dayBudget ?? 0} tone="inherit" />
+              ) : (
+                "••••"
+              )}
+            </p>
           </>
-        )}{" "}
-        · {daysPassed}/{daysInMonth}
-      </p>
-      <div className="mt-4 border-t border-line pt-3 text-style-label text-text">
+        )}
+        {dailySpend.length > 0 && (
+          <div className="mt-5">
+            <MonthStrip
+              days={dailySpend}
+              todayKey={todayKey}
+              dayBudget={dayBudget}
+              showBalance={showBalance}
+              onOpenDay={(key) => onOpenDay?.(key)}
+            />
+          </div>
+        )}
+        <p
+          data-testid="hero-strip-footer"
+          className="mt-3 text-style-caption text-text tabular-nums"
+        >
+          {copy.monthSpent}{" "}
+          {showBalance ? <Money amount={spent} tone="inherit" /> : "••••"}
+          {hasExpensePlan && (
+            <>
+              {" "}
+              · {copy.monthPlan}{" "}
+              {showBalance ? (
+                <Money amount={planExpense} tone="inherit" />
+              ) : (
+                "••••"
+              )}{" "}
+              · {showBalance ? `${Math.round(spendPlanRatio * 100)}%` : "••••"}{" "}
+              · {spendPlanRatio > 1 ? copy.overPlan : copy.withinPlan}
+            </>
+          )}{" "}
+          · {daysPassed}/{daysInMonth}
+        </p>
+      </Card>
+      <Card padding="lg" className="text-style-label text-text">
         <p>
           {copy.capital}{" "}
           {showBalance ? <Money amount={networth} tone="inherit" /> : "••••"}
@@ -159,8 +155,8 @@ const HeroCardImpl = function HeroCard({
           {copy.debts}{" "}
           {showBalance ? <Money amount={-totalDebt} tone="inherit" /> : "••••"}
         </p>
-      </div>
-    </Card>
+      </Card>
+    </>
   );
 };
 export const HeroCard = memo(HeroCardImpl);
