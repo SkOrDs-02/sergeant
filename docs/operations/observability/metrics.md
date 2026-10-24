@@ -165,15 +165,17 @@ sum(rate(auth_attempts_total{outcome="error"}[5m])) / sum(rate(auth_attempts_tot
 
 ## 4. Sync
 
-| Metric                         | Type      | Labels                        | Emitter                                                                |
-| ------------------------------ | --------- | ----------------------------- | ---------------------------------------------------------------------- |
-| `sync_operations_total`        | Counter   | `op` · `module` · `outcome`   | [syncV2.ts](../../../apps/server/src/modules/sync/syncV2.ts)           |
-| `sync_duration_ms`             | Histogram | `op` · `module`               | [syncV2.ts](../../../apps/server/src/modules/sync/syncV2.ts)           |
-| `sync_payload_bytes`           | Histogram | `op` · `module`               | [syncV2.ts](../../../apps/server/src/modules/sync/syncV2.ts)           |
-| `sync_conflicts_total`         | Counter   | `module`                      | [syncV2.ts](../../../apps/server/src/modules/sync/syncV2.ts)           |
-| `sync_op_log_apply_total`      | Counter   | `table` · `status` · `reason` | [syncV2.ts](../../../apps/server/src/modules/sync/syncV2.ts) (PR #048) |
-| `sync_op_log_pull_lag_ms`      | Histogram | —                             | [syncV2.ts](../../../apps/server/src/modules/sync/syncV2.ts) (PR #048) |
-| `sync_op_log_pull_queue_depth` | Histogram | —                             | [syncV2.ts](../../../apps/server/src/modules/sync/syncV2.ts) (PR #048) |
+| Metric                         | Type      | Labels                        | Emitter                                                                         |
+| ------------------------------ | --------- | ----------------------------- | ------------------------------------------------------------------------------- |
+| `sync_operations_total`        | Counter   | `op` · `module` · `outcome`   | [syncV2.ts](../../../apps/server/src/modules/sync/syncV2.ts)                    |
+| `sync_duration_ms`             | Histogram | `op` · `module`               | [syncV2.ts](../../../apps/server/src/modules/sync/syncV2.ts)                    |
+| `sync_payload_bytes`           | Histogram | `op` · `module`               | [syncV2.ts](../../../apps/server/src/modules/sync/syncV2.ts)                    |
+| `sync_conflicts_total`         | Counter   | `module`                      | [syncV2.ts](../../../apps/server/src/modules/sync/syncV2.ts)                    |
+| `sync_op_log_apply_total`      | Counter   | `table` · `status` · `reason` | [syncV2.ts](../../../apps/server/src/modules/sync/syncV2.ts) (PR #048)          |
+| `sync_op_log_pull_lag_ms`      | Histogram | —                             | [syncV2.ts](../../../apps/server/src/modules/sync/syncV2.ts) (PR #048)          |
+| `sync_op_log_pull_queue_depth` | Histogram | —                             | [syncV2.ts](../../../apps/server/src/modules/sync/syncV2.ts) (PR #048)          |
+| `sync_pull_page_bytes`         | Histogram | —                             | [syncV2Pull.ts](../../../apps/server/src/modules/sync/syncV2Pull.ts) (ADR-0105) |
+| `sync_pull_truncated_total`    | Counter   | —                             | [syncV2Pull.ts](../../../apps/server/src/modules/sync/syncV2Pull.ts) (ADR-0105) |
 
 `op`: `push` · `pull` · `push_all` · `pull_all` · `v2_push` · `v2_pull`. `module`: `finyk` · `fizruk` · `routine` · `nutrition` · `profile` · `syncV2`. `outcome`: `ok` · `empty` · `conflict` · `invalid` · `too_large` · `unauthorized` · `error` · `partial`. Buckets duration: `10…10000` ms; bytes: `1024…5242880` (MAX_BLOB_SIZE = 5 MB).
 
@@ -182,6 +184,8 @@ sum(rate(auth_attempts_total{outcome="error"}[5m])) / sum(rate(auth_attempts_tot
 **`sync_conflicts_total`**: оголошений у [`obs/metrics/domain.ts`](../../../apps/server/src/obs/metrics/domain.ts), інкрементиться в [`syncV2.ts`](../../../apps/server/src/modules/sync/syncV2.ts) — в тому самому per-op циклі `syncV2Push`, одразу після `.inc()` на `sync_op_log_apply_total`, коли свіжообчислений (не duplicate-replay) `reason === "lww_conflict"`. Це єдиний choke-point: усі apply-функції (`finyk/applySync.ts`, `routine/applySync.ts`, `fizruk/applySync.ts`, `nutrition/applySync.ts`, спільні guard-и в `applySync-helpers.ts` тощо) повертають `{status, reason}` через `ApplyFn`, і саме тут той результат перетворюється на HTTP-відповідь — тому інструментувати треба було рівно одне місце, а не кожен apply-хендлер окремо. `module` — перший underscore-сегмент `table` (`routine_entries` → `routine`), бо всі таблиці реєстру іменовані `<module>_<rest>`. До W4 (2026-09-16) лічильник був оголошений, але жоден код його не інкрементив — `sum by (module) (rate(sync_conflicts_total[1h]))` з runbook-у (`SyncConflictSpike`) завжди повертав порожній результат.
 
 **v2 pull lag/queue (`sync_op_log_pull_lag_ms`, `sync_op_log_pull_queue_depth`)**: гістограми без лейблів, спостерігаються по одній observation на `GET /v2/sync/pull` із непорожньою відповіддю. Buckets pull lag: `50…3_600_000` ms (SSE happy-path → offline-replay). Buckets queue depth: `0…1000` ops/pull.
+
+**Байтовий бюджет pull (`sync_pull_page_bytes`, `sync_pull_truncated_total`, ADR-0105 §1, `rel-06`)**: `sync_pull_page_bytes` - гістограма фактичного розміру сторінки (`sum(octet_length(row::text))` повернутих оп-ів; buckets `1024…4_194_304`), одна observation на кожен `GET /v2/sync/pull`. `sync_pull_truncated_total` - лічильник сторінок, обрізаних бюджетом `SYNC_V2_PULL_MAX_BYTES` (дефолт 2 MiB). Бюджет переглядається за цими метриками після тижня в проді: `histogram_quantile(0.99, sum by (le) (rate(sync_pull_page_bytes_bucket[1h])))` близько до бюджету й помітний `rate(sync_pull_truncated_total[1h])` = бюджет замалий або є акаунти з великими рядками.
 
 **Кардинальність v1 sync**: 4 × 5 × 7 ≈ **140** (counter); histograms ~180 кожна.
 
