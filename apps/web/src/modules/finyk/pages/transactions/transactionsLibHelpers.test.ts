@@ -51,8 +51,8 @@ describe("dayKeyFromTx", () => {
 });
 
 describe("isDayExpanded", () => {
-  it("returns false for a key not in overrides", () => {
-    expect(isDayExpanded({}, "2026-05-01", "2026-05-01")).toBe(false);
+  it("returns false for a past day not in overrides", () => {
+    expect(isDayExpanded({}, "2026-05-01", "2026-05-02")).toBe(false);
   });
 
   it("returns true when override is explicitly true", () => {
@@ -67,17 +67,14 @@ describe("isDayExpanded", () => {
     ).toBe(false);
   });
 
-  it("does not treat today differently — respects overrides only", () => {
-    // Today key matches the key but override is absent → still false
-    expect(isDayExpanded({}, "2026-05-10", "2026-05-10")).toBe(false);
+  it("expands today by default", () => {
+    expect(isDayExpanded({}, "2026-05-10", "2026-05-10")).toBe(true);
   });
 
   it("checks the correct key in overrides (not the todayKey)", () => {
     const overrides = { "2026-05-09": true };
-    // key = "2026-05-09" with today = "2026-05-10" → should be true
     expect(isDayExpanded(overrides, "2026-05-09", "2026-05-10")).toBe(true);
-    // key = "2026-05-10" (today) with no override → false
-    expect(isDayExpanded(overrides, "2026-05-10", "2026-05-10")).toBe(false);
+    expect(isDayExpanded(overrides, "2026-05-08", "2026-05-10")).toBe(false);
   });
 });
 
