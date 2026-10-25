@@ -83,8 +83,21 @@ export async function cleanupOrphanSqliteFiles(
   const pending = readPendingSqliteWipes();
   const keep = [activeDbName, ANON_DB_NAME];
   const force = pending.filter((name) => !keep.includes(name));
+  // AI-DANGER: підмітати можна лише з партиції акаунта. Бут завжди відкриває
+  // спершу `sergeant-anon.db` (сесія ще невідома), і з keep = [anon] файл
+  // залогіненої людини виглядав «осиротілим»: з порожньою чергою його
+  // видаляли на КОЖНОМУ старті, і дані їхали з сервера заново (офлайн-старт
+  // показував порожній застосунок). Це ховав гейт переносу, поки розвідка
+  // анонімної партиції тривала секунди; preflight ux-01 зробив його миттєвим,
+  // і модулі почали малювати порожню базу (відкат #1628). З анонімної
+  // партиції лишається тільки доведення стирання з маркера.
+  const sweep = activeDbName !== ANON_DB_NAME;
+  if (!sweep && force.length === 0) {
+    for (const name of pending) clearPendingSqliteWipe(name);
+    return;
+  }
   try {
-    const { removed, kept } = await conn.prune(keep, force);
+    const { removed, kept } = await conn.prune(keep, force, sweep);
     // Імена в маркері знято: або видалені, або їх уже немає, або це активна
     // партиція (людина встигла увійти знову, файл знову законно потрібен).
     for (const name of pending) clearPendingSqliteWipe(name);
