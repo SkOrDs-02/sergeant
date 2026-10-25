@@ -337,8 +337,9 @@ function buildNutritionRecs(): Rec[] {
       module: "nutrition",
       priority: 75,
       icon: "leaf",
-      title: "Сьогодні ще немає записів про їжу",
-      body: "Зафіксуй свій прийом їжі, щоб стежити за КБЖВ.",
+      // Факт і дія (redesign v3.2, 16): дію «Додати прийом їжі» дає рядок.
+      title: "Їжа: сьогодні 0 записів",
+      body: "",
       action: "nutrition",
       pwaAction: "add_meal",
     });

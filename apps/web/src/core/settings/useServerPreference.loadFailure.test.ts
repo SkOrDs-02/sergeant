@@ -35,7 +35,7 @@ const { PREFERENCE_LOAD_FAILURE_COPY } =
 
 const COPY = {
   saveError: "Не вдалося зберегти налаштування. Спробуй ще раз.",
-  authRequired: "Увійди в акаунт, щоб Сержант знав, кому і коли писати.",
+  authRequired: "Нагадування Сержанта працюють після входу в акаунт.",
 };
 
 const mount = () =>

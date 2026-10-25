@@ -1,7 +1,7 @@
 // @vitest-environment jsdom
 import { describe, it, expect, vi } from "vitest";
 import { fireEvent, render, screen } from "@testing-library/react";
-import { MonthStrip, MonthStripHint, type MonthStripDay } from "./MonthStrip";
+import { MonthStrip, type MonthStripDay } from "./MonthStrip";
 
 function buildDays(daysInMonth: number, todayKey: string): MonthStripDay[] {
   const days: MonthStripDay[] = [];
@@ -220,27 +220,5 @@ describe("MonthStrip", () => {
     expect(buttons[4]!.getAttribute("aria-label")).toBe(
       "5 червня, витрачено 250 ₴. Відкрити операції",
     );
-  });
-});
-
-describe("MonthStripHint", () => {
-  it("renders when not suppressed and not dismissed", () => {
-    render(<MonthStripHint hasPlan />);
-    expect(screen.getByRole("note")).toBeInTheDocument();
-  });
-
-  it("persists dismissal and stays hidden for the rest of the session", () => {
-    const { rerender } = render(<MonthStripHint hasPlan={false} />);
-    fireEvent.click(screen.getByRole("button", { name: "Зрозуміло" }));
-    expect(screen.queryByRole("note")).not.toBeInTheDocument();
-    rerender(<MonthStripHint hasPlan={false} />);
-    expect(screen.queryByRole("note")).not.toBeInTheDocument();
-  });
-
-  // N-3 (аудит 2026-09-16): один слот навчання на екран - коли `FirstInsightBanner`
-  // видимий, ця підказка мовчить, а не змагається з нею за увагу.
-  it("renders nothing while suppressed, regardless of dismissed state", () => {
-    render(<MonthStripHint hasPlan suppressed />);
-    expect(screen.queryByRole("note")).not.toBeInTheDocument();
   });
 });

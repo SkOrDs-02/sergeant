@@ -173,7 +173,7 @@ export const ModuleFizruk: Story = {
     <ModuleEmptyState
       module="fizruk"
       variant="compact"
-      description="Завершене тренування зʼявиться тут."
+      description="Завершених тренувань ще немає."
       onAction={() => undefined}
       actionLabel="Почати тренування"
     />

@@ -77,8 +77,7 @@ export const fizrukPageMessages = {
     zone: "Що навантажив",
     intensity: "Інтенсивність",
     weight: "Твоя вага, кг",
-    weightHint:
-      "Вага потрібна, щоб порахувати витрати. Запис збережеться і без неї.",
+    weightHint: "Без ваги витрати не порахувати. Запис зберігається і без неї.",
     kcalPreview: "Приблизно",
     kcalUnit: "ккал",
     /** Підпис зʼявляється лише коли кінець переповз за північ. */
@@ -159,7 +158,7 @@ export const fizrukPageMessages = {
     exercisesFew: "вправи",
     exercisesMany: "вправ",
     emptyTitle: "Поки без вправ",
-    emptyBody: "Додай першу, і сесія почне рахувати підходи.",
+    emptyBody: "Додай першу вправу.",
     exerciseOf: "вправа",
     of: "з",
     // Форми для `pluralUa`: «1 підхід», «3 підходи», «5 підходів».
@@ -289,7 +288,6 @@ export const fizrukPageMessages = {
   // (спека docs/work/specs/fizruk-readiness-check.md).
   readiness: {
     title: "Самопочуття",
-    subtitle: "Дві оцінки, і підказка ваги врахує твій стан.",
     sleepLabel: "Сон",
     sorenessLabel: "Мʼязи",
     scaleLow: "погано",
@@ -357,7 +355,7 @@ export const fizrukPageMessages = {
     stopLabel: "Стоп",
     startAlt: "початкове положення",
     endAlt: "кінцеве положення",
-    hint: "Тапни фото, щоб побачити наступний кадр, або натисни «Рух» для автоматичного чергування.",
+    hint: "Тап по фото показує наступний кадр, «Рух» вмикає автоматичне чергування.",
     singleFrame: "Для цієї вправи є лише один кадр.",
   },
   // Compact recovery-warning chip next to the exercise title
@@ -374,8 +372,7 @@ export const fizrukPageMessages = {
     removeTemplate: "Зняти",
     exercises: "Вправи",
     emptyTitle: "Тренування не призначено",
-    emptyDescription:
-      "Обери шаблон нижче, щоб запланувати тренування на цей день.",
+    emptyDescription: "Тренувань на цей день немає. Обери шаблон нижче.",
     changeTemplate: "Змінити шаблон",
     chooseTemplate: "Обрати шаблон",
     noTemplates: "Шаблонів поки немає. Створи їх у Фізруку → Тренування.",
@@ -390,7 +387,7 @@ export const fizrukPageMessages = {
     measurementFew: "заміри",
     measurementMany: "замірів",
     emptyTitle: "Даних ще немає",
-    emptyDescription: "Додай тренування або заміри, і тут зʼявиться аналітика",
+    emptyDescription: "Тренувань і замірів ще немає.",
     crossModuleHeading: "Активність з інших модулів",
     weight: "Вага",
     // Точка відліку дельти: вага має різні дельти на Тілі, Прогресі й
@@ -425,8 +422,7 @@ export const fizrukPageMessages = {
     filterAll: "Всі",
     noPrTitle: "Поки немає силових PR",
     noPrGroupTitle: "Немає PR для цієї групи мʼязів",
-    noPrDescription:
-      "Заверши підходи з вагою, рекорди зʼявляться тут автоматично.",
+    noPrDescription: "Рекорди рахуються з підходів із вагою.",
     noPrGroupDescription: "Спробуй іншу групу або скинь фільтр.",
   },
 
@@ -499,7 +495,7 @@ export const fizrukPageMessages = {
     history: "Історія",
     deleteAria: "Видалити замір",
     emptyTitle: "Поки замірів немає",
-    emptyDescription: "Додай перший запис, щоб бачити динаміку показників.",
+    emptyDescription: "Додай перший запис.",
     // Історія показує лише перші 4 з 14 можливих полів на рядок — суфікс
     // під кнопкою розкриття решти (`+3 ще`); розкритий стан несе шеврон.
     moreFieldsSuffix: "ще",
@@ -522,7 +518,7 @@ export const fizrukPageMessages = {
     hoursUnit: "год",
     formAriaLabel: "Записати показники",
     formHeading: "Записати сьогодні",
-    entryEmpty: "Заповни хоч одне поле, щоб зберегти запис",
+    entryEmpty: "Запис порожній. Заповни хоч одне поле.",
     weightLabel: "Вага (кг)",
     sleepLabel: "Сон (год)",
     energyLevel: "Рівень енергії",
@@ -546,7 +542,7 @@ export const fizrukPageMessages = {
     // an `aria-hidden` decorative group and was never a real click target —
     // only the muscle group on the silhouette itself is.
     emptyDescription:
-      "Торкнись потрібної групи мʼязів на силуеті, вона підсвітиться, і зʼявляться стан і вправи.",
+      "Стан і вправи групи мʼязів відкриваються тапом по силуету.",
     // Prefix for the `useAnnounce()` call fired on muscle selection
     // (`role="button"` on the silhouette has no native selected-state
     // announcement, so this carries it to screen readers explicitly).
@@ -764,7 +760,7 @@ export const fizrukPageMessages = {
     // `/fizruk/history` тепер один і належить шапці модуля, тож рядок
     // лишався б підписом до кнопки, якої немає.
     emptyTitle: "Поки немає тренувань",
-    emptyDescription: "Завершене тренування зʼявиться тут.",
+    emptyDescription: "Завершених тренувань ще немає.",
     startCta: "Почати тренування",
     endedBadge: "Завершене",
     activeBadge: "Активне",

@@ -253,7 +253,7 @@ describe("Transactions page shell", () => {
     expect(fetchMonth).toHaveBeenCalledWith(2026, 4);
     // Лишився рівно один рядок (категорія «food»), а не всі два за травень.
     expect(
-      screen.getByRole("button", { name: "Вивантажити операції у CSV: 1" }),
+      screen.getByRole("button", { name: "Експорт операцій у CSV: 1" }),
     ).toBeInTheDocument();
   });
 
@@ -316,7 +316,7 @@ describe("Transactions page shell", () => {
       renderTransactions({ mono: { realTx: [SAMPLE_TX] } });
       await act(async () => {
         fireEvent.click(
-          screen.getByRole("button", { name: /Вивантажити операції у CSV/ }),
+          screen.getByRole("button", { name: /Експорт операцій у CSV/ }),
         );
       });
     };
@@ -382,18 +382,18 @@ describe("Transactions page shell", () => {
     ).toBeInTheDocument();
   });
 
-  it("renders the sync pill when sync status is non-idle", () => {
+  it("renders the sync pill when sync is not ok", () => {
     renderTransactions({
       mono: buildMono({
         syncState: {
-          status: "success",
+          status: "error",
           source: "network",
-          accountsOk: 2,
+          accountsOk: 1,
           accountsTotal: 2,
         },
       }),
     });
-    expect(screen.getByText("синхронізовано")).toBeInTheDocument();
+    expect(screen.getByText("не синхронізовано")).toBeInTheDocument();
   });
 
   it("renders the transaction filter toolbar", () => {
@@ -810,7 +810,7 @@ describe("Transactions page shell", () => {
         storage={buildStorage()}
       />,
     );
-    expect(screen.getByText(/оновлено ·/)).toBeInTheDocument();
+    expect(screen.queryByText(/оновлено ·/)).not.toBeInTheDocument();
     expect(screen.queryByText("синхронізовано")).not.toBeInTheDocument();
   });
 });

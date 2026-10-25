@@ -357,7 +357,6 @@ function UnlockScreen({
 
   return (
     <div className="flex flex-col items-center gap-2 w-full">
-      <p className="text-style-body text-muted">{m.unlockSubtitle}</p>
       <PinPad
         value={pin}
         onChange={handlePinChange}

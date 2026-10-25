@@ -231,3 +231,64 @@ describe("плейсхолдер без переліку прикладів", ()
     expect(hits).toEqual([]);
   }, 180_000);
 });
+
+/**
+ * Суфлер (redesign v3.2, PR3; style-guide §7): порожній стан, підказка, надж
+ * чи підзаголовок обіцяє результат замість факту («…і Фінік почне рахувати»,
+ * «…порахуються тут», «…решта підтягнеться», «…щоб стежити за КБЖВ»).
+ * Ловимо кириличний рядок у локалях, якщо в шляху ключа є `empty`, `hint`,
+ * `nudge` чи `subtitle`, а в рядку дієслово-обіцянка майбутнього часу або
+ * сполучник мети «щоб». Шлях, а не лише останній ключ: `journalEmpty.
+ * description` це той самий порожній стан, що й `emptyDescription`.
+ */
+const PROMPTER_KEY = /empty|hint|nudge|subtitle/i;
+const PROMPTER_WORD =
+  /(?<![а-яіїєґʼ'])(щоб|почне|почнуть|порахує|порахують|порахується|порахуються|підтягне|підтягнеться|підтягнуться|врахує|врахують|покаже|покажуть|зʼявиться|з'явиться|зʼявляться)(?![а-яіїєґʼ'])/iu;
+
+/** Шлях ключа → чому обіцянка тут доречна. */
+const PROMPTER_ALLOW: Record<string, string> = {};
+
+function prompterHits(node: unknown, pathParts: string[] = []): string[] {
+  if (typeof node === "string") {
+    const p = pathParts.join(".");
+    return CYRILLIC.test(node) &&
+      pathParts.some((k) => PROMPTER_KEY.test(k)) &&
+      PROMPTER_WORD.test(node) &&
+      !(p in PROMPTER_ALLOW)
+      ? [`${p}: «${node}»`]
+      : [];
+  }
+  if (node && typeof node === "object")
+    return Object.entries(node).flatMap(([k, v]) =>
+      prompterHits(v, [...pathParts, k]),
+    );
+  return [];
+}
+
+describe("копія без суфлера", () => {
+  it("ловить обіцянку в порожньому стані і пропускає факт", () => {
+    expect(
+      prompterHits({
+        journalEmpty: { description: "Калорії та КБЖВ порахуються тут." },
+        moduleEmpty: { routine: { hint: "Створи одну, щоб почати серію." } },
+        empty: { description: "Сьогодні 0 записів" },
+        title: "Додай, і Фінік почне рахувати",
+      }),
+    ).toEqual([
+      "journalEmpty.description: «Калорії та КБЖВ порахуються тут.»",
+      "moduleEmpty.routine.hint: «Створи одну, щоб почати серію.»",
+    ]);
+  });
+
+  it("у локалях немає суфлера поза allowlist", async () => {
+    const mods = import.meta.glob<Record<string, unknown>>("./uk*.ts", {
+      eager: true,
+    });
+    const hits = Object.entries(mods)
+      .filter(([file]) => !file.includes(".test."))
+      .flatMap(([file, mod]) =>
+        prompterHits(mod).map((h) => `${file.slice(2)}: ${h}`),
+      );
+    expect([...new Set(hits)]).toEqual([]);
+  });
+});

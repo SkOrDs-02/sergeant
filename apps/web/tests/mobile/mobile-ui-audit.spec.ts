@@ -113,7 +113,7 @@ test.describe("mobile coarse-pointer UI audit", () => {
   test("FINYK_MONTH /finyk", async ({ page }) => {
     await seedFTUX(page, "post-ftux");
     await applyScenario(page, "finyk-month", "/finyk");
-    await expect(page.getByText("Синхронізовано").first()).toBeVisible({
+    await expect(page.getByTestId("hero-strip-footer")).toBeVisible({
       timeout: 15_000,
     });
     await auditPage(page, "FINYK_MONTH");

@@ -1,5 +1,5 @@
 /**
- * Знімальний сценарій інвентарю редизайну v3.1: 31 маршрут і аркуш, 390 × 844,
+ * Знімальний сценарій інвентарю редизайну v3.1: 30 маршрутів і аркуш, 390 × 844,
  * світла й темна. Не тест і не гейт: асертів немає, лише кадри для порівняння
  * «до / після» (спека docs/work/specs/planning/redesign-v3-1.md § Верифікація).
  * Як запускати: README.md поруч.
@@ -101,7 +101,6 @@ const ROUTES: Array<[string, World, string, Step?]> = [
   ["fizruk-workouts", "fizruk-active-session", "/fizruk/workouts"],
   ["fizruk-progress", "fizruk-active-session", "/fizruk/progress"],
   ["fizruk-body", "fizruk-active-session", "/fizruk/body"],
-  ["fizruk-plan", "fizruk-active-session", "/fizruk/plan"],
   ["empty-finyk", "empty", "/finyk"],
   ["empty-nutrition", "empty", "/nutrition/log"],
 ];
