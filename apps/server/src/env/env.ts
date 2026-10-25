@@ -612,6 +612,14 @@ const envSchema = z.object({
    */
   SYNC_V2_STREAM_ENABLED: boolFromEnv(false),
 
+  /**
+   * Байтовий бюджет однієї сторінки `GET /api/v2/sync/pull` (ADR-0105 §1,
+   * аудит `rel-06`). Сторінка обрізається, щойно сума `octet_length(row::text)`
+   * попередніх оп-ів досягає бюджету; перший оп сторінки віддається завжди.
+   * Дефолт 2 MiB. Значення < 1 ігнорується (береться дефолт у `syncV2.ts`).
+   */
+  SYNC_V2_PULL_MAX_BYTES: intFromEnv(2_097_152),
+
   VOYAGE_API_KEY: stringWithDefault(""),
 
   VOYAGE_EMBEDDING_MODEL: stringWithDefault("voyage-3.5-lite"),
