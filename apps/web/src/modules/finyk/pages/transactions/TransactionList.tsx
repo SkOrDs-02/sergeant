@@ -259,6 +259,13 @@ export function TransactionList({
     return rows;
   }, [groupedByDate, groupCounts, flatItems]);
 
+  // Два ОСТАННІ рядки віртуального списку (заголовок дня або операція)
+  // отримують правий відступ під кутову кнопку (v3.2, п. 01): список
+  // віртуалізований, тож CSS `:nth-last-child` тут не бачить кінця.
+  const isFabRow = (row: RenderRow) =>
+    row === renderRows[renderRows.length - 1] ||
+    row === renderRows[renderRows.length - 2];
+
   // DataState contract:
   //   - `data === undefined` triggers the skeleton slot. We mark the
   //     query as still-loading only on the very first paint, when the
@@ -419,6 +426,7 @@ export function TransactionList({
                         summary={summary}
                         showTotal={hasTotal}
                         masked={!showBalance}
+                        clearFab={isFabRow(row)}
                         onToggle={toggleDay}
                       />
                     </DayCardShell>
@@ -439,6 +447,7 @@ export function TransactionList({
                     <TxListItem
                       tx={rowTx}
                       rowIndex={row.flatIndex}
+                      clearFab={isFabRow(row)}
                       selectMode={selectMode}
                       selected={selectMode && selectedIds.has(t.id)}
                       hidden={hiddenTxIdSet.has(t.id)}
