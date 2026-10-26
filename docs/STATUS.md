@@ -52,9 +52,9 @@
 - [`work/specs/tech-debt/backend.md`](./work/specs/tech-debt/backend.md) — Backend Tech Debt Inventory — Active _(Активні спеки)_
 - [`work/specs/tech-debt/mobile.md`](./work/specs/tech-debt/mobile.md) — Mobile Tech Debt — Sergeant Mobile (Expo + Capacitor) — Active _(Активні спеки)_
 - [`work/specs/launch/product-os/ftux-master-tracker.md`](./work/specs/launch/product-os/ftux-master-tracker.md) — FTUX Master Tracker — стан, проблеми, план — Active — **single source of truth** для First-Time User Experience. _(Активні спеки)_
-- [`work/specs/audits/2026-10-01-full-app-audit/data-integrity.md`](./work/specs/audits/2026-10-01-full-app-audit/data-integrity.md) — Аудит 2026-10-01 · Цілісність даних і синхронізація — Active. 82 кластерів (129 знахідок) за першопричиною. Загальний план, метод і обмеження — у _(Активні спеки)_
-- [`work/specs/audits/2026-10-01-full-app-audit/domain-logic.md`](./work/specs/audits/2026-10-01-full-app-audit/domain-logic.md) — Аудит 2026-10-01 · Логіка доменів — Active. 66 кластерів (89 знахідок) за першопричиною. Загальний план, метод і обмеження — у _(Активні спеки)_
-- [`work/specs/audits/2026-10-01-full-app-audit/security.md`](./work/specs/audits/2026-10-01-full-app-audit/security.md) — Аудит 2026-10-01 · Безпека та доступ — Active. 62 кластерів (96 знахідок) за першопричиною. Загальний план, метод і обмеження — у _(Активні спеки)_
+- [`work/specs/audits/2026-10-01-full-app-audit/privacy.md`](./work/specs/audits/2026-10-01-full-app-audit/privacy.md) — Аудит 2026-10-01 · Приватність і відповідність — Active. 38 кластерів (48 знахідок) за першопричиною. Загальний план, метод і обмеження — у _(Активні спеки)_
+- [`work/specs/audits/2026-10-01-full-app-audit/ux-a11y.md`](./work/specs/audits/2026-10-01-full-app-audit/ux-a11y.md) — Аудит 2026-10-01 · UX і доступність — Active. 86 кластерів (121 знахідка) за першопричиною. Загальний план, метод і обмеження — у _(Активні спеки)_
+- [`work/specs/audits/2026-10-01-full-app-audit/data-integrity.md`](./work/specs/audits/2026-10-01-full-app-audit/data-integrity.md) — Аудит 2026-10-01 · Цілісність даних і синхронізація — Active. 82 кластери (129 знахідок) за першопричиною. Загальний план, метод і обмеження — у _(Активні спеки)_
 
 ## ⏭️ Наступний крок / заблоковано
 
