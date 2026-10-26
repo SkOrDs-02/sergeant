@@ -318,7 +318,9 @@ describe("Pact provider replay — consumer=sergeant-api-client, provider=sergea
     // 89, не 87: +2 інтеракції billing на ВЖЕ покритому `POST /billing/checkout`
     // (data-21): 409 `ALREADY_SUBSCRIBED` і 409 `CHECKOUT_PENDING`.
     // `expectedRoutes` не росте.
-    expect(pact.interactions).toHaveLength(89);
+    // 90, не 89: +1 інтеракція на НОВОМУ маршруті `GET /api/v2/sync/state-hash`
+    // (ADR-0106, крок 1), тож росте і `expectedRoutes`.
+    expect(pact.interactions).toHaveLength(90);
     const expectedRoutes = new Set([
       // PR-42 baseline (5)
       "GET /api/v1/me",
@@ -403,6 +405,8 @@ describe("Pact provider replay — consumer=sergeant-api-client, provider=sergea
       "PUT /api/v1/silpo/settings",
       "POST /api/v1/silpo/receipts/rcpt-pact-0001/pantry-claim",
       "POST /api/v1/silpo/receipts/rcpt-pact-0001/pantry-release",
+      // хеш стану sync (ADR-0106, крок 1): 1 інтеракція / 1 маршрут
+      "GET /api/v2/sync/state-hash",
     ]);
     const actualRoutes = new Set(
       pact.interactions.map((i) => `${i.request.method} ${i.request.path}`),
@@ -1025,6 +1029,13 @@ describe("Pact provider replay — consumer=sergeant-api-client, provider=sergea
   // and leave a `todo` marker so future maintenance knows where to
   // extend coverage. See `docs/engineering/architecture/api-contracts.md
   // § Extending coverage`.
+  // `GET /api/v2/sync/state-hash` (ADR-0106): handler за прапорцем і з
+  // REPEATABLE READ-транзакцією; форма відповіді перевірена проти справжнього
+  // Postgres у `modules/sync/syncV2StateHash.integration.test.ts` і мок-тестом
+  // `syncV2StateHash.test.ts`, як і решта sync v2 маршрутів.
+  it.todo(
+    "GET /api/v2/sync/state-hash — replay against real handler (requires sync table fixtures + SYNC_STATE_HASH_ENABLED)",
+  );
   it.todo(
     "POST /api/v1/chat — replay against real chat handler (requires streaming Anthropic stub)",
   );

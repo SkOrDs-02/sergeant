@@ -1163,6 +1163,128 @@
         }
       }
     },
+    "/api/v2/sync/state-hash": {
+      "get": {
+        "summary": "Хеш стану sync-таблиці користувача (ADR-0106)",
+        "description": "Хеш `(pk, updated_at_ms, deleted_at_ms)` рядків однієї таблиці Фізрука/Рутини поточного користувача, порахований спільним канонізатором `computeStateHash` (`@sergeant/shared`), плюс 16 кошиків за першим півбайтом SHA-256 від `pk`. `as_of_op_id` (max id застосованого оп-у) знято в тій самій REPEATABLE READ транзакції. Маршрут закритий прапорцем `SYNC_STATE_HASH_ENABLED` (дефолт вимкнено → 404, віддається і без сесії); rate-limit 6/хв на користувача.",
+        "tags": ["sync"],
+        "security": [
+          {
+            "cookieAuth": []
+          },
+          {
+            "bearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "in": "query",
+            "name": "table",
+            "schema": {
+              "type": "string",
+              "description": "Таблиця з allowlist `SYNC_STATE_HASH_TABLE_PKS`."
+            },
+            "required": true,
+            "description": "Таблиця з allowlist `SYNC_STATE_HASH_TABLE_PKS`."
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Хеш стану таблиці; `as_of_op_id` — number (0, якщо оп-ів немає); `buckets` — рівно 16, за зростанням `bucket`.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "table": {
+                      "type": "string"
+                    },
+                    "as_of_op_id": {
+                      "type": "integer",
+                      "minimum": -9007199254740991,
+                      "maximum": 9007199254740991
+                    },
+                    "total": {
+                      "type": "object",
+                      "properties": {
+                        "hash": {
+                          "type": "string"
+                        },
+                        "count": {
+                          "type": "integer",
+                          "minimum": -9007199254740991,
+                          "maximum": 9007199254740991
+                        }
+                      },
+                      "required": ["hash", "count"],
+                      "additionalProperties": false
+                    },
+                    "buckets": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "bucket": {
+                            "type": "integer",
+                            "minimum": -9007199254740991,
+                            "maximum": 9007199254740991
+                          },
+                          "hash": {
+                            "type": "string"
+                          },
+                          "count": {
+                            "type": "integer",
+                            "minimum": -9007199254740991,
+                            "maximum": 9007199254740991
+                          }
+                        },
+                        "required": ["bucket", "hash", "count"],
+                        "additionalProperties": false
+                      }
+                    }
+                  },
+                  "required": ["table", "as_of_op_id", "total", "buckets"],
+                  "additionalProperties": false
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Таблиця поза allowlist (`code: STATE_HASH_TABLE_NOT_ALLOWED`).",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized — потрібна активна сесія.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Ендпоінт вимкнено (`SYNC_STATE_HASH_ENABLED=false`, дефолт); віддається і без сесії."
+          },
+          "429": {
+            "description": "Перевищено ліміт 6 запитів на хвилину на користувача.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/api/chat": {
       "post": {
         "summary": "Anthropic-чат: streaming SSE або JSON",

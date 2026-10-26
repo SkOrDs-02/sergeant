@@ -119,6 +119,13 @@ export {
 } from "./endpoints/syncV2.flushOnReconnect";
 
 export {
+  createSyncV2StateHashEndpoints,
+  type SyncV2StateHashBucket,
+  type SyncV2StateHashEndpoints,
+  type SyncV2StateHashResponse,
+} from "./endpoints/syncV2.stateHash";
+
+export {
   createCoachEndpoints,
   type CoachEndpoints,
   type CoachInsightPayload,
