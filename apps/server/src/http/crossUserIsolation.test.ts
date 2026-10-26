@@ -761,6 +761,34 @@ const ISOLATION_CASES: IsolationCase[] = [
     expectsOwn: true,
   },
   {
+    route: "GET /api/v2/sync/state-hash",
+    // ADR-0106: відповідь несе лише хеші й лічильники, маркера в ній нема.
+    // Тож доказ ізоляції - лічильник: по одному тренуванню в А і Б, хеш А
+    // мусить порахувати рівно один рядок.
+    setup: async ({ pool }) => {
+      // Маршрут за прапорцем (дефолт 404); guard читає `process.env` на
+      // кожному запиті, тож вмикаємо лише для цього кейсу.
+      process.env["SYNC_STATE_HASH_ENABLED"] = "true";
+      await pool.query(
+        `INSERT INTO fizruk_workouts (user_id, started_at)
+         VALUES ($1, NOW()), ($2, NOW())`,
+        [USER_A, USER_B],
+      );
+    },
+    act: ({ app }) =>
+      asA(
+        request(app)
+          .get("/api/v2/sync/state-hash")
+          .query({ table: "fizruk_workouts" }),
+      ),
+    extra: (res) => {
+      expect(res.body.total.count).toBe(1);
+    },
+    verify: async () => {
+      delete process.env["SYNC_STATE_HASH_ENABLED"];
+    },
+  },
+  {
     route: "POST /api/v2/sync/push",
     // А штовхає оп із тим самим id, що й рядок Б (з власним user_id у тілі).
     // Після міграції 162 PK складений `(user_id, id)` (data-01): чужий id не
