@@ -1,6 +1,6 @@
 # Хаб: свіжість банківських витрат без входу у Фінік
 
-> **Last touched:** 2026-10-26 by @claude (тріаж документації: Active → Implemented, PR-номер). **Next review:** 2027-11-01.
+> **Last touched:** 2026-10-26 by @claude (тріаж документації: Active → Implemented, PR-номер, рев'ю: посилання на фінальний package gate). **Next review:** 2027-11-01.
 > **Status:** Implemented - [#1515](https://github.com/SkOrDs-02/sergeant/pull/1515) (змерджено 2026-10-15); гейт `apps/web/src/modules/finyk/hooks/FinykBootCluster.freshness.test.tsx`. Свідома межа: живого push банку у вкладку немає. Залишків немає.
 
 ## Симптом і причина
@@ -29,7 +29,7 @@ Quick-stats уже перераховувався від SQLite/mirror ticks і 
 
 ## Докази на остаточному коді
 
-Production freeze1a3093e47, гілка `claude/fix-hub-finyk-freshness`. `regression-main-final.log`:4failed/3passed, exit1 на основній причині100₴ замість500₴; фікс відновлено без ослаблення assertions. `acceptance-final.log`:7/7passed, exit0. Цільовий звʼязаний пакет перед останнім loadJarsfalse:9suites/130passed, exit0. Повний пакет на freeze ще завершується; логи `web-complete.log/.exit`, checksum source `full-suite-source.sha256`.
+Production freeze1a3093e47, гілка `claude/fix-hub-finyk-freshness`. `regression-main-final.log`:4failed/3passed, exit1 на основній причині100₴ замість500₴; фікс відновлено без ослаблення assertions. `acceptance-final.log`:7/7passed, exit0. Цільовий звʼязаний пакет перед останнім loadJarsfalse:9suites/130passed, exit0. Повний пакет на freeze на момент цього запису ще добігав; фінальний результат (exit 0) - у § «Підсумковий package gate» нижче; логи `web-complete.log/.exit`, checksum source `full-suite-source.sha256`.
 
 `pnpm --filter @sergeant/web typecheck`, `pnpm lint`, `pnpm --filter @sergeant/web build`, `pnpm --filter @sergeant/web exec size-limit`, `node scripts/ci/check-eager-bundle.mjs`, `pnpm format:check`: exit0 кожна. JS1.51MB≤1.51MB, CSS32.59KB≤40KB, eager258.1KB≤268KB; бюджети не змінені. Штатний web-коміт1a3093e47: hooks/typecheck/gitleaks exit0.
 

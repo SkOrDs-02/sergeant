@@ -1,7 +1,7 @@
 # 01. Монетизація і ціноутворення
 
-> **Last touched:** 2026-10-26 by @claude (тріаж документації: Status → Reference, блок «Стан виконання»). **Next review:** 2027-10-11.
-> **Status:** Reference - історичний контекст рішень; чинні ціни, trial і квоти живуть в ADR-0068 і ADR-0085, відкрита launch-робота в [`04-launch-readiness.md` § 7](./04-launch-readiness.md#7-pre-launch-чеклист).
+> **Last touched:** 2026-10-26 by @claude (тріаж документації: Status → Reference, блок «Стан виконання», рев'ю: джерела квот і trial). **Next review:** 2027-10-11.
+> **Status:** Reference - історичний контекст рішень; чинні ціни живуть в [ADR-0068](../../../../governance/adr/0068-pricing-v4-uah-reverse-trial.md), квоти Free/Premium в [ADR-0100](../../../../governance/adr/0100-free-premium-weekly-quotas-registry.md) (заміняє ADR-0085); reverse trial за ADR-0100 це цільова політика лише для нових акаунтів і вмикається прапорцем `BILLING_REVERSE_TRIAL_ENABLED` (дефолт `false`, `apps/server/src/modules/billing/reverseTrial.ts`); відкрита launch-робота в [`04-launch-readiness.md` § 7](./04-launch-readiness.md#7-pre-launch-чеклист).
 >
 > **Update 2026-06-27:** pricing v4 зафіксовано в [ADR-0068](../../../../governance/adr/0068-pricing-v4-uah-reverse-trial.md). **Активна модель: Free + Pro ₴199/міс / ₴1490/рік**, reverse trial 7 днів (автоматичний Pro → downgrade), Free AI **5 повідомлень/день** ([ADR-0085](../../../../governance/adr/0085-free-ai-quota-five-per-day.md), 2026-08-06 — уточнює рядок «15» з ADR-0068) + cloud-sync 2 пристрої. **Анонім AI не отримує взагалі** ([ADR-0086](../../../../governance/adr/0086-no-anonymous-ai-sign-in-required.md), 2026-08-24 — знімає рядок «анонім — 1/день» з ADR-0085): асистент за `requireSession()`, гість бачить 401 і запрошення увійти. USD-ціни ($7/міс / $49/рік) із ADR-0051 — **Superseded by ADR-0068**. Класичний trial «7 днів без картки» із ADR-0051 — **Superseded by ADR-0068** (замінено на reverse trial).
 >

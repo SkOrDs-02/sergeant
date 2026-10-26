@@ -1,7 +1,7 @@
 # 03. Сервіси та тулстек
 
-> **Last touched:** 2026-10-26 by @claude (тріаж документації: Status → Reference, Termly/CookieYes більше не legal blocker, блок «Стан виконання»). **Next review:** 2026-12-16.
-> **Status:** Reference - реєстр сервісів станом на 2026-09; відкриті пункти (Resend-домен, billing-листи, Search Console, EAS) трекаються в [`04-launch-readiness.md` § 7](./04-launch-readiness.md#7-pre-launch-чеклист).
+> **Last touched:** 2026-10-26 by @claude (тріаж документації: Status → Reference, Termly/CookieYes більше не legal blocker, блок «Стан виконання», рев'ю: легенда `[-]`, EAS на паузі). **Next review:** 2026-12-16.
+> **Status:** Reference - реєстр сервісів станом на 2026-09; відкриті пункти (Resend-домен, billing-листи, Search Console) трекаються в [`04-launch-readiness.md` § 7](./04-launch-readiness.md#7-pre-launch-чеклист); EAS Build не трекається: мобільний контур на паузі ([ADR-0094](../../../../governance/adr/0094-mobile-web-first-freeze.md)).
 >
 > **Звірка 2026-09-17:** три сервіси нижче виведені з експлуатації і лишаються в таблицях лише як історія — **OpenClaw** ([ADR-0075](../../../../governance/adr/0075-openclaw-gateway-decommissioned.md)), **n8n** (репо-шар декомісовано, `ops/n8n-workflows/` у дереві немає — [ADR-0090](../../../../governance/adr/0090-n8n-decommissioned.md); періодична робота живе на серверних субстратах ADR-0089), **Railway** ([ADR-0074](../../../../governance/adr/0074-hosting-hetzner-coolify.md)). Платіжний провайдер: **LiqPay / Plata — live UA-провайдери**, Stripe — dormant за флагом (`apps/server/src/modules/billing/provider.ts`); рядки «Stripe … prod config pending» нижче описують стан на 2026-05.
 
@@ -278,7 +278,7 @@
 
 ## 3. Що додати (action items)
 
-> **Status legend:** `[ ]` — pending, `[x]` — done, `[~]` — partial / in progress.
+> **Status legend:** `[ ]` — pending, `[x]` — done, `[~]` — partial / in progress, `[-]` — не потрібно / знято.
 >
 > Підсумок (станом на 2026-06-15): **3 з 10 завершено** (PostHog, BullMQ, Telegram бот), **2 partial** (Grafana Cloud — local-config готова, cloud-стек активний; **Stripe** — код + міграція в репо, лишилось production env/legal/tax), **5 залишилось** (React Email, Loops, Termly+CookieYes, Search Console, EAS Build, Crisp). **Stripe** — головний P0 блокер монетизації (тепер integrated, prod config pending).
 

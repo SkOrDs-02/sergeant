@@ -1,7 +1,7 @@
 # C2 — Frontend SPA не має Content-Security-Policy
 
-> **Last touched:** 2026-10-26 by @claude (тріаж документації: закрито як Implemented, Phase 3 винесено). **Next review:** 2027-01-01.
-> **Status:** Implemented - Phase 1-2: enforced `Content-Security-Policy` в `apps/web/vercel.json` (Report-Only знято 2026-10-03), sink `/api/csp-report`; опційний Phase 3 (nonce/hash) винесено, див. § Стан виконання.
+> **Last touched:** 2026-10-26 by @claude (тріаж документації: закрито, Phase 3 винесено, рев'ю: статус Closed за словником README). **Next review:** 2027-01-01.
+> **Status:** Closed (2026-10-26) - Phase 1-2: enforced `Content-Security-Policy` в `apps/web/vercel.json` (Report-Only знято 2026-10-03), sink `/api/csp-report`; опційний Phase 3 (nonce/hash) винесено, див. § Стан виконання.
 
 | Field              | Value                                                                                                                                                     |
 | ------------------ | --------------------------------------------------------------------------------------------------------------------------------------------------------- |

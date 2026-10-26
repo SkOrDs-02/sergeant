@@ -1,7 +1,7 @@
 # SPEC: Редизайн v3.1, мова станів і доведення системи `apps/web`
 
-> **Last touched:** 2026-10-26 by @claude (тріаж документації: шапка: PR6 злито #1615). **Next review:** 2026-11-18.
-> **Status:** Implemented - PR1-PR5 змерджено ([#1538](https://github.com/SkOrDs-02/sergeant/pull/1538), [#1545](https://github.com/SkOrDs-02/sergeant/pull/1545), [#1567](https://github.com/SkOrDs-02/sergeant/pull/1567), [#1579](https://github.com/SkOrDs-02/sergeant/pull/1579), [#1588](https://github.com/SkOrDs-02/sergeant/pull/1588)), PR6 злито [#1615](https://github.com/SkOrDs-02/sergeant/pull/1615) (`8e7ac78`). Підсумок приймання і відхилення: журнал [`redesign-v3-1-progress.md`](./redesign-v3-1-progress.md) § Закриття v3.1.
+> **Last touched:** 2026-10-26 by @claude (тріаж документації: шапка: PR6 злито #1615, рев'ю: стеля JS). **Next review:** 2026-11-18.
+> **Status:** Implemented - PR1-PR5 змерджено ([#1538](https://github.com/SkOrDs-02/sergeant/pull/1538), [#1545](https://github.com/SkOrDs-02/sergeant/pull/1545), [#1567](https://github.com/SkOrDs-02/sergeant/pull/1567), [#1579](https://github.com/SkOrDs-02/sergeant/pull/1579), [#1588](https://github.com/SkOrDs-02/sergeant/pull/1588)), PR6 злито [#1615](https://github.com/SkOrDs-02/sergeant/pull/1615) (`8e7ac78`). Підсумок приймання і відхилення: журнал [`redesign-v3-1-progress.md`](./redesign-v3-1-progress.md) § Закриття v3.1. Ціль «JS 1,51 MB» у тілі історична: стелю JS згодом піднято до 1,55 MB (`AGENTS.md` § Performance budgets).
 
 Самодостатня спека: виконавець зі свіжої сесії реалізує її, читаючи лише цей документ, лінковані файли репо й кадри інвентарю. Рішення нижче прийняті власником 2026-10-18, крім позначених іншою датою (2026-10-20, 2026-10-23); відкинуті альтернативи не переглядаються.
 

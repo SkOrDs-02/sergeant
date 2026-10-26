@@ -1,7 +1,7 @@
 # SPEC: повторювані стани застосунку для E2E-лейнів
 
-> **Last touched:** 2026-10-26 by @claude (тріаж документації: закрито як Implemented, залишки винесено). **Next review:** 2026-12-24.
-> **Status:** Implemented - `apps/web/src/e2e/{installScenarioBridge,world,writers}.ts`, `apps/web/tests/fixtures/worlds/*.json`, коміт `e0da9341`; `pnpm check` і critical-flow тепер ганяє CI (ADR-0102), червоний `chat` в a11y-лейні винесено, див. § Стан виконання.
+> **Last touched:** 2026-10-26 by @claude (тріаж документації: закрито як Implemented, залишки винесено, рев'ю: `check:ci` ≠ `check`). **Next review:** 2026-12-24.
+> **Status:** Implemented - `apps/web/src/e2e/{installScenarioBridge,world,writers}.ts`, `apps/web/tests/fixtures/worlds/*.json`, коміт `e0da9341`; `pnpm check:ci` і critical-flow тепер ганяє CI (ADR-0102), повний `pnpm check` з `check-e2e-seed-boundary.mjs` у CI не біжить, червоний `chat` в a11y-лейні винесено, див. § Стан виконання.
 
 ## Проблема
 
@@ -94,4 +94,4 @@
 
 **Не зроблено.** `pnpm check` цілком, ledger- і smoke-лейни не запускались.
 
-**Залишки після тріажу 2026-10-26.** `pnpm check` і critical-flow тепер ганяє CI на кожному PR (ADR-0102), тож пункт «`pnpm check` не запускався» закритий процесом. Червоний `chat` в a11y-лейні (`scrollable-region-focusable`, червоний і на `main`) не належить цій спеці: одним рядком у [`tech-debt/frontend.md`](./tech-debt/frontend.md).
+**Залишки після тріажу 2026-10-26.** CI на кожному PR ганяє `pnpm check:ci` і critical-flow (ADR-0102), але не повний `pnpm check`: крок `node scripts/ci/check-e2e-seed-boundary.mjs` (перевірка, що міст не потрапив у прод-білд) є лише в `pnpm check` (`package.json`), у `ci.yml` його немає. Тож пункт «`pnpm check` не запускався» закритий лише частково: межу сідів на білді гілки треба проганяти локально, доки крок не додано в CI. Червоний `chat` в a11y-лейні (`scrollable-region-focusable`, червоний і на `main`) не належить цій спеці: одним рядком у [`tech-debt/frontend.md`](./tech-debt/frontend.md).

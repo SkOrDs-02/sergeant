@@ -1,7 +1,7 @@
 # Продуктовий аудит 2026-09: підсумок і хвилі фіксів (Ф6)
 
-> **Last touched:** 2026-10-26 by @claude (тріаж документації: шапка звірена: findings/progress/accounts/checklists тепер Reference). **Next review:** 2026-12-16.
-> **Status:** Active - Наступна дія: отримати рішення founder-а з §4 (AI-3, AI-5, AI-6, TXT-5, UX-4, CALC-3) або перенести відкриті пункти §6 (CI-8, AI-2, AI-6, VIS-2) у [`2026-09-13-product-full-review.md`](../2026-09-13-product-full-review.md) і закрити цей файл як Reference. [`findings.md`](./findings.md) і [`progress.md`](./progress.md) з 2026-10-26 - Reference-знімки.
+> **Last touched:** 2026-10-26 by @claude (тріаж документації: шапка звірена: findings/progress/accounts/checklists тепер Reference, рев'ю: AI-6 знято зі списків - закрито рішенням founder-а 2026-09-01, `findings.md`). **Next review:** 2026-12-16.
+> **Status:** Active - Наступна дія: отримати рішення founder-а з §4 (AI-3, AI-5, TXT-5, UX-4, CALC-3) або перенести відкриті пункти §6 (CI-8, AI-2, VIS-2) у [`2026-09-13-product-full-review.md`](../2026-09-13-product-full-review.md) і закрити цей файл як Reference. [`findings.md`](./findings.md) і [`progress.md`](./progress.md) з 2026-10-26 - Reference-знімки.
 
 Це не ще один список багів — це відповідь на три питання founder-а: **що
 ламає продукт зараз**, **у якому порядку лікувати** і **які рішення тільки
