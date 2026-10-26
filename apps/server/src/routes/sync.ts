@@ -4,6 +4,10 @@ import { listSyncAudit } from "../modules/sync/audit.js";
 import { syncV2Pull, syncV2Push } from "../modules/sync/syncV2.js";
 import { syncV2Stream } from "../modules/sync/syncV2Stream.js";
 import { requireSyncV2StreamEnabled } from "../modules/sync/syncV2StreamGuard.js";
+import {
+  requireSyncSnapshotEnabled,
+  syncV2Snapshot,
+} from "../modules/sync/syncV2Snapshot.js";
 
 /**
  * `/api/sync/*` — read-only audit log лишається за авторизованою сесією.
@@ -73,6 +77,10 @@ export function createSyncRouter(): Router {
   // вимкнений маршрут не відрізнявся для анонімного і залогіненого клієнта
   // (без 401 від `requireSession()` перед 404).
   r.use("/api/v2/sync/stream", requireSyncV2StreamEnabled());
+  // ADR-0105 §3.3: знімок закритий прапорцем `SYNC_SNAPSHOT_ENABLED` (дефолт
+  // off -> 404), доки клієнт не вміє bootstrap. Той самий аргумент, що для
+  // стріму: стоїть першим, щоб 401/404 не вказували, чи існує поверхня.
+  r.use("/api/v2/sync/snapshot", requireSyncSnapshotEnabled());
   r.use("/api/v2/sync", setModule("syncV2"));
   // Той самий трирівневий порядок (pre-auth IP → сесія → per-user), той
   // самий аргумент — див. коментарі вище. Ліміт 300/хв = 5× per-user 60/хв.
@@ -98,8 +106,19 @@ export function createSyncRouter(): Router {
     "/api/v2/sync/pull",
     rateLimitExpress({ key: "api:v2:sync:pull", limit: 60, windowMs: 60_000 }),
   );
+  // Окремий бакет знімка: bootstrap ходить сторінками поспіль і не має
+  // з'їдати pull-бюджет (і навпаки).
+  r.use(
+    "/api/v2/sync/snapshot",
+    rateLimitExpress({
+      key: "api:v2:sync:snapshot",
+      limit: 60,
+      windowMs: 60_000,
+    }),
+  );
   r.post("/api/v2/sync/push", syncV2Push);
   r.get("/api/v2/sync/pull", syncV2Pull);
+  r.get("/api/v2/sync/snapshot", syncV2Snapshot);
   // Stage 5 / PR #041: SSE long-polling. Окрема rate-limit-категорія,
   // бо connection-handshake — це 1 hit; ми не хочемо, щоб stream-
   // reconnect-loop при flapping-мережі зʼїдав push-budget.

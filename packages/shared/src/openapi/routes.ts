@@ -474,7 +474,7 @@ export const paths: ZodOpenApiPathsObject = {
       responses: {
         "200": {
           description:
-            "Op-и з `id > since`; `next_cursor` = null, коли сторінка неповна.",
+            "Op-и з `id > since`; `next_cursor` = null лише коли більше нічого немає (сторінку, обрізану байтовим бюджетом, теж продовжуй).",
           content: {
             "application/json": {
               schema: z.object({
@@ -496,6 +496,52 @@ export const paths: ZodOpenApiPathsObject = {
         },
         "400": validationError,
         "401": unauthorized,
+        "410": {
+          description:
+            "Курсор `since` нижчий за нижню межу журналу (`code: sync_cursor_expired`, `details: [{ floor_id }]`, ADR-0105): оп-и до межі видалено retention-ом, візьми `GET /api/v2/sync/snapshot` і продовж pull з `as_of_op_id`.",
+          content: { "application/json": { schema: namedSchemas.ApiError } },
+        },
+      },
+    },
+  },
+  "/api/v2/sync/snapshot": {
+    get: {
+      summary: "Знімок поточного стану sync-таблиць (bootstrap після 410)",
+      description:
+        "Поточні рядки користувача з модульних sync-таблиць як pull-оп-и `op: insert` (`row` у формі колонок, tombstone-и з `deleted_at` включно), сторінками за байтовим бюджетом pull (`SYNC_V2_PULL_MAX_BYTES`) і `limit`. `as_of_op_id` знімається на першій сторінці в REPEATABLE READ транзакції разом із рядками і повертається на кожній; після останньої сторінки (`next_cursor: null`) клієнт ставить курсор pull на `as_of_op_id`. Маршрут закритий прапорцем `SYNC_SNAPSHOT_ENABLED` (дефолт вимкнено → 404). ADR-0105 §3.",
+      tags: ["sync"],
+      security: cookieOrBearer,
+      requestParams: { query: namedSchemas.SyncV2SnapshotQuery },
+      responses: {
+        "200": {
+          description:
+            "Сторінка знімка; `next_cursor` - непрозорий рядок або null (кінець).",
+          content: {
+            "application/json": {
+              schema: z.object({
+                ops: z.array(
+                  z.object({
+                    id: z.number().int(),
+                    table: z.string(),
+                    op: z.literal("insert"),
+                    row: z.record(z.string(), z.unknown()),
+                    client_ts: z.string(),
+                    server_ts: z.string(),
+                    origin_device_id: z.null(),
+                  }),
+                ),
+                as_of_op_id: z.number().int(),
+                next_cursor: z.string().nullable(),
+              }),
+            },
+          },
+        },
+        "400": validationError,
+        "401": unauthorized,
+        "404": {
+          description:
+            "Знімок вимкнено (`SYNC_SNAPSHOT_ENABLED=false`, дефолт); віддається і без сесії.",
+        },
       },
     },
   },
