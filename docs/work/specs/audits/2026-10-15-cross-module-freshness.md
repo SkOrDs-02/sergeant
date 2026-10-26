@@ -1,7 +1,7 @@
 # Свіжість даних між web-модулями
 
-> **Last touched:** 2026-10-18 by @claude. **Next review:** 2028-01-26.
-> **Status:** Active
+> **Last touched:** 2026-10-26 by @claude (тріаж документації: Active → Implemented, PR-номер). **Next review:** 2028-01-26.
+> **Status:** Implemented - [#1516](https://github.com/SkOrDs-02/sergeant/pull/1516) (змерджено 2026-10-16, FRESH-01..08); day-clock хуки в `apps/web/src/modules/routine/hooks/useRoutineQuickStatsBoot.ts`. «Draft #1516» і «OPEN draft» у тексті нижче - стан на момент публікації. Залишків немає.
 
 ## Запит і межа
 

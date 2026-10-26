@@ -1,7 +1,7 @@
 # Вихід із Фізрука та ієрархія фінансових сутностей
 
-> **Last touched:** 2026-10-18 by @claude. **Next review:** 2027-11-29.
-> **Status:** Active
+> **Last touched:** 2026-10-26 by @claude (тріаж документації: Active → Implemented, PR-номер). **Next review:** 2027-11-29.
+> **Status:** Implemented - [#1517](https://github.com/SkOrDs-02/sergeant/pull/1517) (змерджено 2026-10-16): `ModuleHeaderHubButton`, `apps/web/src/modules/finyk/components/FinanceItemHeading.tsx`. Залишків немає.
 
 ## Запит і база
 

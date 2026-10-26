@@ -1,7 +1,7 @@
 # Журнал: редизайн v3.1, мова станів і доведення системи
 
-> **Last touched:** 2026-10-23 by @claude (PR6 злито, В4 прийнято, `onDeselect` і видалення `ScoreButton`, § Закриття v3.1); 2026-10-23 by @claude (рішення власника за відхиленнями PR1-PR5). **Next review:** 2028-01-22.
-> **Status:** Active
+> **Last touched:** 2026-10-26 by @claude (тріаж документації: Status → Implemented). **Next review:** 2028-01-22.
+> **Status:** Implemented - PR1-PR6 злито (PR6 = [#1615](https://github.com/SkOrDs-02/sergeant/pull/1615), `8e7ac78`); рішення власника за відхиленнями 2026-10-23, див. § Закриття v3.1.
 
 Журнал виконання спеки [`redesign-v3-1.md`](./redesign-v3-1.md). Інвентар і критерії приймання: [`2026-10-18-design-v3-1-inventory.md`](../audits/2026-10-18-design-v3-1-inventory.md).
 

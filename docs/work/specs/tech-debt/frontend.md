@@ -1,6 +1,6 @@
 # Frontend Tech Debt — Sergeant Web
 
-> **Last touched:** 2026-10-12 by @claude (redesign v3 PR7). **Last validated:** 2026-10-08 by @claude (§5 exhaustive-deps: web 15 → 1; решта реєстру звірена 2026-09-17). **Next review:** 2026-12-16.
+> **Last touched:** 2026-10-26 by @claude (тріаж документації: п. 11 і 12 «Recommended next steps» прийняли залишки закритих спек і аудитів). **Last validated:** 2026-10-08 by @claude (§5 exhaustive-deps: web 15 → 1; решта реєстру звірена 2026-09-17). **Next review:** 2026-12-16.
 > **Status:** Active
 
 > **Оновлено 2026-09-17 (звірка реєстру з HEAD).** Переміряно кожне число, яке цей файл наводить. Головне: **жоден лічильник із записаних не збігся з фактом**, і половина розійшлась у бік зростання, тобто реєстр систематично відстає.
@@ -2324,3 +2324,13 @@ test-file glob-ів — правило `sergeant-design/no-strict-bypass` теп
 8. ~~**Catalog-sync** `apps-web-exhaustive-deps.md`~~ — **Done**, але «web=0» більше не так: після хвилі 4 з'явилось 5 нових свідомих винятків, каталог їх фіксує. 2026-08-07 закрито хвіст: 4 з 5 директив не несли inline-WHY (каталог стверджував протилежне) — інваріанти перенесені в код поруч із директивою.
 9. ~~**Міграція `no-raw-local-storage`**~~ — **Done** (production allowlist = 0).
 10. ~~**`import/extensions: never`**~~ — **Done** ([PR #1411](https://github.com/Skords-01/Sergeant/pull/1411)).
+11. **Production `eslint-disable` burndown (P3, opportunistic)** — перенесено 2026-10-26 з [`tech-debt-assessment-2026-07-01.md`](./tech-debt-assessment-2026-07-01.md) (тепер Reference). Лічильник `grep eslint-disable` по `apps/web/src`, `apps/server/src`, `apps/mobile`, `packages` без тестів/stories: 158 (2026-08-07) → ~208 (2026-10-26). Ціль «<100» нереалістична, більшість by-design; окремої кампанії не треба, але ріст варто переглядати на квартальній звірці.
+12. **Залишки закритих спек і аудитів (тріаж 2026-10-26)** — пункти, що лишились після переведення джерел у `Implemented` / `Reference`. Кожен P3, opportunistic, якщо не сказано інше:
+    - a11y-лейн: поверхня `chat` червона на `scrollable-region-focusable` і на `main` (з [`e2e-repeatable-states.md`](../e2e-repeatable-states.md)).
+    - CSP Phase 3 (опційно): nonce/hash і прибрати `style-src 'unsafe-inline'` (з [`C2-frontend-csp.md`](../security-hardening/C2-frontend-csp.md)).
+    - Межі quota/eviction сховища і сценарій A→B в одному профілі браузера (з [`anonymous-local-first-persistence.md`](../anonymous-local-first-persistence.md)).
+    - Лендінг: спільна типографічна шкала замість 19 копій і тест «твердження сайту ↔ код» (числа корпусу `genericFoods.ts` ↔ `/yizha`) (з [`2026-09-14-site-code-drift.md`](../audits/2026-09-14-site-code-drift.md)).
+    - Лендінг, перф і SEO: F3 (бандл по маршрутах), F7 (мобільний Lighthouse як warn), F5/F9 (підмножини шрифтів), F11/F13/F14, текст T19/T41/T44/V17, правило слагів S10 (з [`2026-10-08-site-audit.md`](../audits/2026-10-08-site-audit.md) §5). F3 і F7 чекають рішення власника, див. [`owner-decisions.md`](../../owner-decisions.md).
+    - Дрібниці `apps/web`, у коді не перевірені: кома в бейджі рекорду Фізрука, «0 дн. тому» у списку рекордів, хаб-нудж «PR близько» після записаного тренування (з того ж аудиту, §5а).
+    - Контраст, low: примітка-попередження на `/legal/privacy` (потрібна межа `border-warning`), смуги 1.09 проти порога 1.10, `Button soft finyk` у шторці операції (з [`2026-10-01-contrast-and-surfaces-audit.md`](../audits/2026-10-01-contrast-and-surfaces-audit.md)).
+    - Анти-слоп P3: `animate-bounce` в `EmptyStateIllustrations`, `LogoMark` проти `BrandLogo` (з [`2026-09-01-anti-slop-audit.md`](../audits/2026-09-01-anti-slop-audit.md)).

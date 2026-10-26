@@ -1,7 +1,7 @@
 # SPEC: Голосовий ввід — залишок після виправлення парсерів
 
-> **Last touched:** 2026-09-13 by @claude. **Next review:** 2026-12-13.
-> **Status:** Active
+> **Last touched:** 2026-10-26 by @claude (тріаж документації: шапка: наступна дія). **Next review:** 2026-12-13.
+> **Status:** Active - залишки лише поза репо. Наступна дія: власник виставляє `VITE_ENABLE_VOICE_INPUT=1` у Vercel і звіряє `GROQ_API_KEY` у Coolify, далі живий прогін фраз і замір Groq vs OpenRouter.
 
 ## Проблема
 

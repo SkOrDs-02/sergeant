@@ -1,7 +1,7 @@
 # Аудит користувацьких шляхів, ієрархії та правдивості текстів
 
-> **Last touched:** 2026-10-17 by @codex (приймання шляхів і збереження даних). **Next review:** 2027-01-14.
-> **Status:** Active
+> **Last touched:** 2026-10-26 by @claude (тріаж документації: Active → Implemented, PR-номери). **Next review:** 2027-01-14.
+> **Status:** Implemented - [#1518](https://github.com/SkOrDs-02/sergeant/pull/1518) (змерджено 2026-10-17) і follow-up [#1519](https://github.com/SkOrDs-02/sergeant/pull/1519) (2026-10-18): HUB-01, PRIV-01, NAV-01, COPY-01, FIN-01..02, ROU-01..03, FIZ-01, NUT-01..06. Залишків немає.
 
 ## Запит і база
 

@@ -1,7 +1,7 @@
 # 03. Сервіси та тулстек
 
-> **Last touched:** 2026-09-17 by @claude (OpenClaw/n8n/Railway позначено retired, Stripe → dormant, LiqPay/Plata → live). **Next review:** 2026-12-16.
-> **Status:** Active
+> **Last touched:** 2026-10-26 by @claude (тріаж документації: Status → Reference, Termly/CookieYes більше не legal blocker, блок «Стан виконання»). **Next review:** 2026-12-16.
+> **Status:** Reference - реєстр сервісів станом на 2026-09; відкриті пункти (Resend-домен, billing-листи, Search Console, EAS) трекаються в [`04-launch-readiness.md` § 7](./04-launch-readiness.md#7-pre-launch-чеклист).
 >
 > **Звірка 2026-09-17:** три сервіси нижче виведені з експлуатації і лишаються в таблицях лише як історія — **OpenClaw** ([ADR-0075](../../../../governance/adr/0075-openclaw-gateway-decommissioned.md)), **n8n** (репо-шар декомісовано, `ops/n8n-workflows/` у дереві немає — [ADR-0090](../../../../governance/adr/0090-n8n-decommissioned.md); періодична робота живе на серверних субстратах ADR-0089), **Railway** ([ADR-0074](../../../../governance/adr/0074-hosting-hetzner-coolify.md)). Платіжний провайдер: **LiqPay / Plata — live UA-провайдери**, Stripe — dormant за флагом (`apps/server/src/modules/billing/provider.ts`); рядки «Stripe … prod config pending» нижче описують стан на 2026-05.
 
@@ -290,7 +290,7 @@
 | 4   | **React Email** (templates)        | P1 — billing emails               | `[ ]` | Welcome, payment confirmation, failed, canceled, weekly digest. Розширити `authTransactionalMail.ts` або створити `billingMail.ts`. Чекає на Stripe.                                                                                                                                                          | —                                                                                  |
 | 5   | **Grafana Cloud** (dashboards)     | P2 — production visibility        | `[~]` | Local-конфіг готовий: `ops/grafana/dashboards/n8n-overview.json` + `ops/grafana-alloy/` Prometheus scraper. Cloud-стек налаштовано (`grafana` секрет). Залишилось — провалідувати dashboards активні.                                                                                                         | [05 -> product zone](./05-operations-and-automation.md#зона-1--product)            |
 | 6   | **Loops** (email marketing)        | P2 — onboarding drip              | `[ ]` | Onboarding sequence, re-engagement, winback. Free до 1K contacts.                                                                                                                                                                                                                                             | —                                                                                  |
-| 7   | **Termly** + **CookieYes**         | P1 — legal blocker                | `[ ]` | Privacy Policy, Terms, Cookie banner. Вимоги: Google Play, Stripe, GDPR.                                                                                                                                                                                                                                      | [04 -> legal](./04-launch-readiness.md#11-обовязкові-документи)                    |
+| 7   | **Termly** + **CookieYes**         | не блокер (2026-10-26)            | `[-]` | Юр. пак написано in-house ([04 § 1.1](./04-launch-readiness.md#11-обовязкові-документи)); cookie-банер трекається в 04. Історично: Privacy Policy, Terms, Cookie banner. Вимоги: Google Play, Stripe, GDPR.                                                                                                   | [04 -> legal](./04-launch-readiness.md#11-обовязкові-документи)                    |
 | 8   | **Google Search Console**          | P2 — SEO baseline                 | `[ ]` | Підключити домен. Безкоштовно.                                                                                                                                                                                                                                                                                | —                                                                                  |
 | 9   | **EAS Build**                      | P1 — mobile launch                | `[ ]` | Free: 15+15 builds/mo. Для CI/CD мобілки.                                                                                                                                                                                                                                                                     | —                                                                                  |
 | 10  | **Telegram бот** (waitlist/alerts) | P2 — acquisition + ops            | `[x]` | Waitlist бот працює через `apps/server`; alert routing — n8n WF-03 (Sentry → topic). **Crisp** (in-app support chat) — окремо, ще `[ ]`.                                                                                                                                                                      | [05 -> support zone](./05-operations-and-automation.md#зона-5--support)            |
@@ -576,3 +576,11 @@ TOTAL EST.       ~$17-69/mo  (infra fixed; AI usage-based)
 - Legal, GDPR, billing edge cases, метрики, чеклист -> [04-launch-readiness.md](./04-launch-readiness.md)
 - Коли мігрувати між managed / self-host (фази 1-4, тригери) -> [architecture/hosting-evolution.md](../../../../engineering/architecture/hosting-evolution.md)
 - Операційні зони, алерти, n8n/OpenClaw автоматизація -> [05-operations-and-automation.md](./05-operations-and-automation.md)
+
+## Стан виконання
+
+> Тріаж 2026-10-26: документ переведено в Reference.
+
+- Termly/CookieYes більше не legal blocker: юр. документи написано in-house ([04 § 1.1](./04-launch-readiness.md#11-обовязкові-документи)).
+- Resend-домен і billing-листи - рядок 32 у [`04` § 7](./04-launch-readiness.md#7-pre-launch-чеклист).
+- OpenClaw, n8n, Railway - retired (див. звірку 2026-09-17 у шапці).

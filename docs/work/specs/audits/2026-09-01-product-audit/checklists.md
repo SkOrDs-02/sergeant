@@ -1,7 +1,7 @@
 # Продуктовий аудит 2026-09: чек-листи по вимірах
 
-> **Last touched:** 2026-09-11 by @claude. **Next review:** 2028-01-08.
-> **Status:** Active
+> **Last touched:** 2026-10-26 by @claude (тріаж документації: переведено в Reference). **Next review:** 2028-01-08.
+> **Status:** Reference - чек-листи методики прогону 2026-09-01; повторні перевірки ведуться за [`docs/engineering/testing/verification/`](../../../../engineering/testing/verification/README.md).
 
 Критерії «пройдено / знахідка» для кожного виміру з [`README.md` § 3](./README.md#3-виміри).
 Пункт вважається пройденим, лише якщо перевірений **на призначеному акаунті**

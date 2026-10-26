@@ -1,7 +1,7 @@
 # Продуктовий аудит 2026-09: тестові акаунти і наповнення
 
-> **Last touched:** 2026-09-11 by @claude. **Next review:** 2027-11-19.
-> **Status:** Active
+> **Last touched:** 2026-10-26 by @claude (тріаж документації: переведено в Reference). **Next review:** 2027-11-19.
+> **Status:** Reference - матриця тестових акаунтів прогону 2026-09-01; повторні прогони ведуться в [`docs/engineering/testing/verification/`](../../../../engineering/testing/verification/README.md).
 
 Матриця тимчасових акаунтів для прогону за [`README.md`](./README.md). Кожен
 акаунт відповідає на **своє** питання, яке інші не покривають; різниця в

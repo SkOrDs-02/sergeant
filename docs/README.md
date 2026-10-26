@@ -14,9 +14,9 @@ Main documentation index for Sergeant.
 
 <!-- TRUST-BADGE:START -->
 
-> 🟡 **Docs trust: WARNING** — _оновлено 2026-10-19 via `pnpm docs:gen-trust-badge`_
+> 🟢 **Docs trust: HEALTHY** — _оновлено 2026-10-26 via `pnpm docs:gen-trust-badge`_
 >
-> 1 stale, 0 WIP soft-violation — варто прибрати найближчим тижнем. Деталі → [`today.md`](./today.md).
+> 0 stale docs · 0 WIP violations — система здорова, працюй спокійно. Деталі → [`today.md`](./today.md).
 
 <!-- TRUST-BADGE:END -->
 
@@ -95,6 +95,8 @@ rules are in
 | Section                                                            | Purpose                                                                                                    |
 | ------------------------------------------------------------------ | ---------------------------------------------------------------------------------------------------------- |
 | [`open-work.md`](./open-work.md)                                   | **Автогенерований дашборд** активних документів з `docs/work/specs/` (Rule #10 sweep)                      |
+| [`work/roadmap.md`](./work/roadmap.md)                             | Що робимо першим: «Зараз / Далі / Колись» з наступною дією і блокером (ведеться руками)                    |
+| [`work/owner-decisions.md`](./work/owner-decisions.md)             | Відкриті й ухвалені рішення власника в одному місці                                                        |
 | [`audits/`](./work/specs/audits/README.md)                         | Індекс аудитів; завершена історія доступна через Git history/permalinks                                    |
 | [`initiatives/`](./work/specs/initiatives/README.md)               | Numbered multi-PR initiatives (living — див. індекс; завершені/withdrawn — GitHub permalinks per ADR-0081) |
 | [`launch/`](./work/specs/launch/README.md)                         | Go-to-market, monetization, ops, FTUX master tracker + phases                                              |

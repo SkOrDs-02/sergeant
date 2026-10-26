@@ -1,7 +1,7 @@
 # SPEC: Free і Premium: пакетування, єдиний реєстр доступу, reverse trial
 
-> **Last touched:** 2026-10-10 by @claude (скасування й checkout підписок: 502 для Plata, 409 ALREADY_SUBSCRIBED/CHECKOUT_PENDING, аудит data-20/data-21); раніше 2026-10-03 (refine фото: механіка «того самого знімка», sec-14). **Next review:** 2027-04-04.
-> **Status:** Active - реалізовано в коді: `packages/shared/src/billing/entitlements.ts`, міграція `149_ai_usage_daily_week_buckets`, `apps/server/src/modules/chat/aiQuotaWeekly.ts`, `billing/reverseTrial.ts`, `billing/accessSnapshot.ts`, `apps/web/src/core/billing/TrialBanner.tsx` (`effectiveLimits.ts` і `premiumFeatures.ts` видалені); лишився click-through з § Верифікація п. 5 на живому стенді.
+> **Last touched:** 2026-10-26 by @claude (тріаж документації: закрито як Implemented, залишок винесено). **Next review:** 2027-04-04.
+> **Status:** Implemented - `packages/shared/src/billing/entitlements.ts`, міграції `149`/`153`/`154`, `apps/server/src/modules/billing/{reverseTrial,accessSnapshot,checkoutGuard}.ts`, `apps/server/src/modules/chat/aiQuotaWeekly.ts`, [ADR-0100](../../governance/adr/0100-free-premium-weekly-quotas-registry.md); ручний click-through § Верифікація п. 5 винесено, див. § Стан виконання.
 
 <!-- Інтервʼю провела сесія «Спека free/premium доступу» (4 раунди, 2026-09-27); 5-й раунд (vision Фініка, плани харчування, tool-квоти, функції без AI) додано того ж дня після інвентаризації всіх AI-маршрутів. -->
 
@@ -156,3 +156,9 @@
 - **Асиметрія до запуску.** Поки `isBillingEnforced()` = false, Premium-гейти не діють, а квоти діють. Free тоді бачить пейвол на фото (квота) і на PDF (web-гейт), але голос і recall працюють. Це вже так сьогодні, спека цього не міняє.
 - **`D3` на `/pricing` («без trial-таймера»)** суперечить reverse trial. Новий ADR має явно зняти D3 для trial-акаунтів, а копія `/pricing` не повинна обіцяти «без trial».
 - **Better Auth hook** ще не використовувався в репо. Треба перевірити, що помилка вставки trial-рядка не валить реєстрацію: логувати (pino, Hard Rule #21) і йти далі.
+
+## Стан виконання
+
+Тріаж 2026-10-26: спеку закрито, залишки розведено так.
+
+- Ручний click-through § Верифікація п. 5 на живому стенді не робить спеку відкритою: переходить одним рядком у чекліст запуску білінгу (ціна і checkout і так окреме рішення власника).

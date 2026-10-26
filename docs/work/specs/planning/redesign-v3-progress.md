@@ -1,29 +1,29 @@
 # Редизайн v3: журнал виконання
 
-> **Last touched:** 2026-10-19 by @codex ([#1536](https://github.com/SkOrDs-02/sergeant/pull/1536) merged; dead-doc baseline follow-up опубліковано як draft [#1541](https://github.com/SkOrDs-02/sergeant/pull/1541); native заморожений власником). **Next review:** 2026-11-09.
-> **Status:** Active
+> **Last touched:** 2026-10-26 by @claude (тріаж документації: Status → Implemented, #1541 змерджено 2026-10-19). **Next review:** 2026-11-09.
+> **Status:** Implemented - спека [`redesign-v3.md`](./redesign-v3.md) закрита 2026-10-18 (§ Закриття спеки); follow-up [#1536](https://github.com/SkOrDs-02/sergeant/pull/1536) і [#1541](https://github.com/SkOrDs-02/sergeant/pull/1541) змерджено (#1541 - 2026-10-19).
 
 Журнал виконання спеки [`redesign-v3.md`](./redesign-v3.md), PR за PR. Сесія, що бере наступний PR, читає цей файл першим: усе, чого немає в спеці, але треба знати далі, записано тут.
 
 **Поточний зріз:** спеку закрито 2026-10-18 (§ [Закриття спеки](#закриття-спеки--2026-10-18)), нових PR у межах спеки немає. [#1522](https://github.com/SkOrDs-02/sergeant/pull/1522) і cleanup [#1536](https://github.com/SkOrDs-02/sergeant/pull/1536) змерджено. Післямержевий CI #1536 знайшов протухлий dead-doc baseline; draft [#1541](https://github.com/SkOrDs-02/sergeant/pull/1541) знижує ratchet до факту. Native не чіпати.
 
-| PR                | Гілка                                | GitHub PR                                                | Стан   | Позиції каталогу § 2                                               |
-| ----------------- | ------------------------------------ | -------------------------------------------------------- | ------ | ------------------------------------------------------------------ |
-| PR0               | `claude/redesign-v3-pr0`             | #1494                                                    | merged | 18, 19, 20, 21, 22, 23, 35, 36 (копі), 37                          |
-| PR1               | `claude/redesign-v3-pr1`             | #1495                                                    | merged | 1, 2, 4-7, 10, 12, 17, 30; частково 9, 13, 24-27, 31-34, 36        |
-| PR2               | `claude/redesign-v3-pr2`             | #1497                                                    | merged | 3, 11, 15, 16; частково 26-29                                      |
-| PR3               | `claude/redesign-v3-pr3`             | #1498                                                    | merged | 8 частково, 9, 13, 24-29 по Фініку                                 |
-| PR3 · фікси       | `codex/redesign-v3-pr3-review-fixes` | #1501                                                    | merged | Виправлення регресій ревʼю PR3                                     |
-| PR4               | `claude/redesign-v3-pr4`             | #1503                                                    | merged | 9, 24-29, 31 по Їжі; частково 8                                    |
-| PR4b              | `claude/redesign-v3-pr4b`            | #1504                                                    | merged | 7 (форма швидкої дії, поправка 2026-10-10)                         |
-| PR5               | `claude/redesign-v3-pr5`             | [#1505](https://github.com/SkOrDs-02/sergeant/pull/1505) | merged | 14, 31; 8, 9, 24–29 по Рутині                                      |
-| PR6               | `claude/redesign-v3-pr6`             | [#1506](https://github.com/SkOrDs-02/sergeant/pull/1506) | merged | 8, 9, 24–29 по Фізруку                                             |
-| PR7               | `claude/redesign-v3-pr7`             | [#1508](https://github.com/SkOrDs-02/sergeant/pull/1508) | merged | 24, 25, 32, 33; пʼять v3 baseline = 0                              |
-| Review fix        | `claude/redesign-v3-review-fixes`    | [#1510](https://github.com/SkOrDs-02/sergeant/pull/1510) | merged | Повторне приймання 1–37; регресії п. 7, 9, 18–29, 34–37            |
-| Content hierarchy | `claude/redesign-v3-content-groups`  | [#1511](https://github.com/SkOrDs-02/sergeant/pull/1511) | merged | Погоджене доповнення 02+03 до 18–22 і спільних web-примітивів      |
-| Empty states      | `claude/empty-states-refresh`        | [#1522](https://github.com/SkOrDs-02/sergeant/pull/1522) | merged | Погоджений post-spec канон first-run станів у чотирьох web-модулях |
-| Cleanup           | `claude/redesign-v3-cleanup`         | [#1536](https://github.com/SkOrDs-02/sergeant/pull/1536) | merged | Підтверджені post-spec знахідки застарілого web-коду               |
-| Cleanup CI        | `claude/redesign-v3-cleanup-ci`      | [#1541](https://github.com/SkOrDs-02/sergeant/pull/1541) | active | Зниження dead-doc baseline після #1536                             |
+| PR                | Гілка                                | GitHub PR                                                | Стан              | Позиції каталогу § 2                                               |
+| ----------------- | ------------------------------------ | -------------------------------------------------------- | ----------------- | ------------------------------------------------------------------ |
+| PR0               | `claude/redesign-v3-pr0`             | #1494                                                    | merged            | 18, 19, 20, 21, 22, 23, 35, 36 (копі), 37                          |
+| PR1               | `claude/redesign-v3-pr1`             | #1495                                                    | merged            | 1, 2, 4-7, 10, 12, 17, 30; частково 9, 13, 24-27, 31-34, 36        |
+| PR2               | `claude/redesign-v3-pr2`             | #1497                                                    | merged            | 3, 11, 15, 16; частково 26-29                                      |
+| PR3               | `claude/redesign-v3-pr3`             | #1498                                                    | merged            | 8 частково, 9, 13, 24-29 по Фініку                                 |
+| PR3 · фікси       | `codex/redesign-v3-pr3-review-fixes` | #1501                                                    | merged            | Виправлення регресій ревʼю PR3                                     |
+| PR4               | `claude/redesign-v3-pr4`             | #1503                                                    | merged            | 9, 24-29, 31 по Їжі; частково 8                                    |
+| PR4b              | `claude/redesign-v3-pr4b`            | #1504                                                    | merged            | 7 (форма швидкої дії, поправка 2026-10-10)                         |
+| PR5               | `claude/redesign-v3-pr5`             | [#1505](https://github.com/SkOrDs-02/sergeant/pull/1505) | merged            | 14, 31; 8, 9, 24–29 по Рутині                                      |
+| PR6               | `claude/redesign-v3-pr6`             | [#1506](https://github.com/SkOrDs-02/sergeant/pull/1506) | merged            | 8, 9, 24–29 по Фізруку                                             |
+| PR7               | `claude/redesign-v3-pr7`             | [#1508](https://github.com/SkOrDs-02/sergeant/pull/1508) | merged            | 24, 25, 32, 33; пʼять v3 baseline = 0                              |
+| Review fix        | `claude/redesign-v3-review-fixes`    | [#1510](https://github.com/SkOrDs-02/sergeant/pull/1510) | merged            | Повторне приймання 1–37; регресії п. 7, 9, 18–29, 34–37            |
+| Content hierarchy | `claude/redesign-v3-content-groups`  | [#1511](https://github.com/SkOrDs-02/sergeant/pull/1511) | merged            | Погоджене доповнення 02+03 до 18–22 і спільних web-примітивів      |
+| Empty states      | `claude/empty-states-refresh`        | [#1522](https://github.com/SkOrDs-02/sergeant/pull/1522) | merged            | Погоджений post-spec канон first-run станів у чотирьох web-модулях |
+| Cleanup           | `claude/redesign-v3-cleanup`         | [#1536](https://github.com/SkOrDs-02/sergeant/pull/1536) | merged            | Підтверджені post-spec знахідки застарілого web-коду               |
+| Cleanup CI        | `claude/redesign-v3-cleanup-ci`      | [#1541](https://github.com/SkOrDs-02/sergeant/pull/1541) | merged 2026-10-19 | Зниження dead-doc baseline після #1536                             |
 
 ## Поправка власника 2026-10-10: швидка дія (PR4b, після мержу PR4, перед PR5)
 
@@ -1341,3 +1341,11 @@ Types-final, root-lint-final, format-final, build-final, size-final, eager-final
 **CI follow-up.** CI run `39187140355` на змердженому head `5b57dd682` упав лише в `Script unit tests`: cleanup прибрав останні три згадки одного мертвого docs-шляху, а ratchet лишився на 104 шляхах / 232 згадках проти фактичних 103 / 229. Штатний `node scripts/check-dead-doc-links.mjs --update` знизив baseline до 103 / 229, без нових винятків і без послаблення правила. Повтор сканера: 103 шляхи, 229 згадок, `appeared=[]`, exit 0. Точний CI glob `node --test "scripts/__tests__/*.test.mjs"`: 722 passed / 0 failed, exit 0. Інші виконані job першого run, включно з Critical-flow E2E, migration drills, commitlint і gitleaks, зелені. Fix опубліковано як draft [#1541](https://github.com/SkOrDs-02/sergeant/pull/1541) із `origin/main` `1dac4008b`, бо #1536 уже merged.
 
 **Наступній сесії:** якщо Cleanup CI PR OPEN, перевірити лише actual-head CI й виправити червоне. Після його мержу cleanup завершений; нову роботу брати лише за окремим дорученням власника.
+
+## Стан виконання
+
+> Тріаж 2026-10-26: журнал закрито разом зі спекою.
+
+- Cleanup CI [#1541](https://github.com/SkOrDs-02/sergeant/pull/1541) (зниження dead-doc baseline) змерджено 2026-10-19; cleanup завершено.
+- «JS-бюджет на межі, 287 B запасу» на момент закриття - передано в `tech-debt/bundle-budget-ratchet-log.md` (через лідову передачу).
+- Native заморожено власником (ADR-0094), нова робота лише за окремим дорученням.

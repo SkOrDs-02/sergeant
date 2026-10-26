@@ -1,7 +1,7 @@
 # SPEC: `PR body validator` червоніє на PR, створених через API
 
-> **Last touched:** 2026-09-13 by @claude. **Next review:** 2026-12-13.
-> **Status:** Active
+> **Last touched:** 2026-10-26 by @claude (тріаж документації: закрито як Withdrawn). **Next review:** 2026-12-13.
+> **Status:** Withdrawn - гонки більше немає: `docs-automation.yml` з ADR-0102 біжить лише за cron і `workflow_dispatch`, а джоба `pr-body-validator` має умову `pull_request`, тож на PR гейт не запускається; якщо гейт повернуть на PR, спеку відкрити заново.
 
 ## Проблема
 

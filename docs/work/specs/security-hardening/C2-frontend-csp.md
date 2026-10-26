@@ -1,7 +1,7 @@
 # C2 — Frontend SPA не має Content-Security-Policy
 
-> **Last touched:** 2026-10-03 by @claude (знято `Content-Security-Policy-Report-Only` з `apps/web/vercel.json`; віддається лише enforced-політика). **Next review:** 2027-01-01.
-> **Status:** In progress — Phase 2 завершено 2026-10-03: Report-Only знято, `apps/web/vercel.json` віддає лише enforced `Content-Security-Policy` (з тими самими `report-uri` / `report-to` на `/api/csp-report`). Phase 1 (Report-Only canary + sink + meta fallback) shipped 2026-05-04; side-by-side enforce rolled out 2026-05-24. **Чому зняття безпечне без нової вибірки метрик:** Report-Only була строго м'якшою за enforced (додатково `'unsafe-inline'` у `script-src` і `http://localhost:3000 http://127.0.0.1:3000 wss: ws:` у `connect-src`, решта директив ідентична), тож усе, що порушує Report-Only, порушує й enforced, а enforced звітує в той самий sink. Лишається опційний Phase 3 (nonce/hash-based CSP, `style-src 'unsafe-inline'`); закриття картки (Closed + переїзд в Git-архів) - рішення власника.
+> **Last touched:** 2026-10-26 by @claude (тріаж документації: закрито як Implemented, Phase 3 винесено). **Next review:** 2027-01-01.
+> **Status:** Implemented - Phase 1-2: enforced `Content-Security-Policy` в `apps/web/vercel.json` (Report-Only знято 2026-10-03), sink `/api/csp-report`; опційний Phase 3 (nonce/hash) винесено, див. § Стан виконання.
 
 | Field              | Value                                                                                                                                                     |
 | ------------------ | --------------------------------------------------------------------------------------------------------------------------------------------------------- |
@@ -306,3 +306,9 @@ Sentry (див. [`feature-flags.md`](../../../engineering/architecture/feature-f
 - [docs/work/specs/security-hardening/C1-mono-webhook-secret-in-url.md](https://github.com/Skords-01/Sergeant/blob/d1a37e0bed4e403477376eae9ee9a078e4179da8/docs/04-governance/security/hardening/archive/C1-mono-webhook-secret-in-url.md) — обидві Critical.
 - [MDN: CSP](https://developer.mozilla.org/en-US/docs/Web/HTTP/CSP) — reference policy syntax.
 - [OWASP Cheat Sheet: Content Security Policy](https://cheatsheetseries.owasp.org/cheatsheets/Content_Security_Policy_Cheat_Sheet.html).
+
+## Стан виконання
+
+Тріаж 2026-10-26: спеку закрито, залишки розведено так.
+
+- Phase 3 (nonce/hash-based CSP, прибрати `style-src 'unsafe-inline'`) опційна: одним рядком у [`tech-debt/frontend.md`](../tech-debt/frontend.md); окремої картки не відкриваємо.

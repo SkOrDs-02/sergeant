@@ -1,7 +1,7 @@
 # Хаб: свіжість банківських витрат без входу у Фінік
 
-> **Last touched:** 2026-10-18 by @claude. **Next review:** 2027-11-01.
-> **Status:** Active
+> **Last touched:** 2026-10-26 by @claude (тріаж документації: Active → Implemented, PR-номер). **Next review:** 2027-11-01.
+> **Status:** Implemented - [#1515](https://github.com/SkOrDs-02/sergeant/pull/1515) (змерджено 2026-10-15); гейт `apps/web/src/modules/finyk/hooks/FinykBootCluster.freshness.test.tsx`. Свідома межа: живого push банку у вкладку немає. Залишків немає.
 
 ## Симптом і причина
 

@@ -1,6 +1,7 @@
 # Передача прогону durability-2026-10-08
 
-> **Status:** Active
+> **Status:** Reference - прогін закрито `incomplete`; фікси LOGOUT-1/SIGNUP-1 у коді (`apps/web/src/core/syncEngine/flushBeforeLogout.ts`, `outboxSchema.ts`). Живі залишки ведуть [`verification/README.md`](../../README.md) і `findings.json`.
+> **Last touched:** 2026-10-26 by @claude (тріаж документації: Active → Reference).
 
 - **Виконано.** Живий харнес `apps/web/tests/verification-live/data-durability.spec.ts` (P1–P9) двічі: на `main` до фіксу (прогін `q554x`) і на гілці фіксу (прогін `shdpa`). До фіксу 83 pass / 3 fail, P9 не стартував каскадом. Після фіксу 9/9 фаз, 96 pass / 0 fail. Плюс ізольовані проби для двох багів, з тимчасовою `console.info`-діагностикою в прод-білді (не закомічена).
 - **Знайдено й виправлено (PR):**
@@ -20,3 +21,8 @@
   - `SYNC-offline-conflict-isolation` добрати окремо: IDOR, 401 на протухлій сесії, інвентар OPFS.
   - Розібрати B1: він найчастіше валить живі прогони.
 - **Поза скоупом, помічено:** на `main` червоні `BarcodeScanner.test.tsx` (native permission toast) і `DailyPlanCard.extra.test.tsx` (FirstRunHintBanner). Eager-бюджет на локальному `VERCEL=1`-білді 277.6 kB при ліміті 268 kB уже на `main`; фікс набір preload-чанків не змінює.
+
+## Стан виконання
+
+- `DURABILITY-20261008-LOGOUT-1` і `-SIGNUP-1`: `fixed-pending-verification` у `findings.json`; закриваються лише повтором `data-durability` на свіжому `main`.
+- `DURABILITY-20261008-BOOT-1` (білий екран на буті) і `-OFFLINE-1`: `open` у `findings.json`; наступна дія (перепрогін) - у [`verification/README.md`](../../README.md).

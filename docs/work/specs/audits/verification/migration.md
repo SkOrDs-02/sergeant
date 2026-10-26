@@ -1,7 +1,7 @@
 # Перенесення відкритих знахідок
 
-> **Last validated:** 2026-09-05 by Codex. **Next review:** 2026-12-05.
-> **Status:** Active
+> **Last touched:** 2026-10-26 by @claude (тріаж документації: Active → Reference). **Next review:** 2026-12-05.
+> **Status:** Reference - журнал разового імпорту 239 записів; канон статусів - [findings.json](./findings.json). Залишків немає.
 
 Канон поточних статусів — [findings.json](./findings.json). Імпорт за [спекою](../../repeatable-verification.md) переносить історичні твердження; жодного нового live-результату не створено. Дата imported означає перенесення, а не дату виявлення.
 

@@ -1,7 +1,7 @@
 # SPEC: шифрування вільного тексту про здоровʼя
 
-> **Last touched:** 2026-10-01 by @claude (скрипт-бекфіл старих рядків). **Next review:** 2026-12-20.
-> **Status:** Active
+> **Last touched:** 2026-10-26 by @claude (тріаж документації: шапка: наступна дія). **Next review:** 2026-12-20.
+> **Status:** Active - код і бекфіл готові (`healthTextCrypto.ts`, `healthTextBackfill.ts`, прогін на тестовій БД 2026-10-01). Наступна дія: власник запускає бекфіл у проді (dry-run, потім `--execute`) за § Запуск бекфілу, після чого Implemented; `ai_memories.content` поза скоупом.
 
 <!-- Заповнено через spec-інтервʼю (`.agents/skills/sergeant-spec/SKILL.md`) 2026-09-20.
 Джерело знахідки: docs/work/specs/audits/2026-09-20-rada-skeptykiv.md § G-1. -->

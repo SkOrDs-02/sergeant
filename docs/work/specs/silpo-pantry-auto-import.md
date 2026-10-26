@@ -1,7 +1,7 @@
 # SPEC: Автоімпорт чеків Сільпо в комору і позначка «вже в коморі»
 
-> **Last touched:** 2026-09-29 by @claude (spec-інтервʼю з власником). **Next review:** 2026-12-29.
-> **Status:** Active - реалізовано і змерджено в `main` (міграція `151_silpo_pantry_import`, `apps/web/src/modules/nutrition/hooks/useSilpoPantryAutoImport.ts`); click-through із живим акаунтом Сільпо ще не пройдено.
+> **Last touched:** 2026-10-26 by @claude (тріаж документації: закрито як Implemented, залишок винесено). **Next review:** 2026-12-29.
+> **Status:** Implemented - міграція `151_silpo_pantry_import`, `apps/web/src/modules/nutrition/hooks/useSilpoPantryAutoImport.ts`, `silpoReplenish.ts`, роут `pantry-claim` у `routes/silpo.ts`; click-through із живим акаунтом винесено, див. § Стан виконання.
 
 ## Проблема
 
@@ -104,3 +104,9 @@ Owner-скіли: `sergeant-module-nutrition` + `sergeant-module-integrations` (
 - **Два екземпляри стану комори.** Автоімпорт монтується в `NutritionApp`, де вже живе `useNutritionPantries`. Хук автоімпорту має отримати `upsertItem` / `revertReplenish` звідти ж, а не створювати другий екземпляр `useNutritionPantries`, інакше стани розійдуться.
 - **Бронювання без запису.** Якщо вкладку закрили між бронюванням і записом, позиції лишаються позначеними, але в комору не потрапили. У v1 це прийнятно: у ручному аркуші їх видно «вже в коморі», і галочку можна поставити руками.
 - **Тексти** («Додавати продукти з чеків у комору автоматично», «вже в коморі», тост) погоджуються за `docs/product/copy/style-guide.uk.md` під час реалізації.
+
+## Стан виконання
+
+Тріаж 2026-10-26: спеку закрито, залишки розведено так.
+
+- Click-through із живим акаунтом Сільпо: одноразова ручна перевірка власника в загальному списку операторських дій, не окремий трекер.

@@ -1,7 +1,7 @@
 # 00 — Launch readiness audit: 5 застосунків Sergeant
 
-> **Last touched:** 2026-10-03 by @claude (§3.1 Security: CSP enforced, Report-Only знято; раніше — таблиці §2/§5 приведені до TL;DR). **Next review:** 2027-01-01.
-> **Status:** Active
+> **Last touched:** 2026-10-26 by @claude (тріаж документації: Status → Reference). **Next review:** 2027-01-01.
+> **Status:** Reference - read-only зріз-baseline для фаз; єдина 🟥 (real-user testing) трекається в [`01-web-launch-with-users.md`](./01-web-launch-with-users.md) і [`04-launch-readiness.md`](../business/04-launch-readiness.md).
 
 > **Канон 2026-07-29:** billing scaffold, in-app landing і standalone `apps/landing` shipped у коді. Для marketing surface `sergeant.com.ua` живий (станом на 2026-09-29, див. [agent-readiness § 6](../../audits/2026-09-21-agent-readiness.md)); з репо не підтверджено, що apex `sergeant.com.ua` маршрутизується саме на `apps/landing` і що Vercel production справді обслуговує landing (DNS-делегація сама по собі не є відкритим питанням). Public launch блокується legal publish, live payment env/store readiness — не створенням ще одного лендінгу.
 
