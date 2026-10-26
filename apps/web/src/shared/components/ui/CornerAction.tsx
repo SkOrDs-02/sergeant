@@ -1,9 +1,10 @@
-import { useCallback, useRef, useState } from "react";
+import { useCallback, useLayoutEffect, useRef, useState } from "react";
 import { useVisualKeyboardInset } from "@sergeant/shared";
 import { cn } from "../../lib/ui/cn";
 import { hapticTap } from "../../lib/adapters/haptic";
 import {
   FAB_INSET_VAR,
+  FAB_WIDTH_VAR,
   SHEET_FOOTER_INSET_VAR,
   useBottomInsetVar,
 } from "@shared/hooks/useBottomInsetVar";
@@ -18,7 +19,9 @@ import { Sheet } from "./Sheet";
  *
  * Тінь дозволена, бо кнопка плаває над контентом, як аркуш. Смугу, яку
  * займає, публікує в `--sgt-fab-inset`, тож `page-tabbar-pad` дає
- * контенту запас і останній рядок не ховається під кнопкою. Під відкритою
+ * контенту запас і останній рядок не ховається під кнопкою. Ширину
+ * публікує в `--sgt-fab-width`: утиліта `fab-clear-row` дає останнім двом
+ * рядкам списку в кінці сторінки правий відступ на неї. Під відкритою
  * клавіатурою кнопка зникає, як і нав.
  */
 export interface CornerActionProps {
@@ -29,6 +32,11 @@ export interface CornerActionProps {
   className?: string;
 }
 
+/** Бічне поле колонки кнопки: збігається з `px-4` контейнера нижче. */
+const FAB_EDGE_GAP_PX = 16;
+/** Зазор між правою межею тексту рядка й кнопкою (довільний, оптичний). */
+const FAB_ROW_GAP_PX = 12;
+
 export function CornerAction({
   label,
   onClick,
@@ -37,7 +45,32 @@ export function CornerAction({
 }: CornerActionProps) {
   const ref = useRef<HTMLDivElement>(null);
   const kbOpen = useVisualKeyboardInset(true) > 0;
+  const buttonRef = useRef<HTMLButtonElement>(null);
   useBottomInsetVar(ref, FAB_INSET_VAR, !kbOpen);
+  // Ширину міряємо, а не рахуємо: підпис змінний («Додати», «Запланувати»).
+  // Під клавіатурою кнопки нема, тож і змінну знімаємо.
+  useLayoutEffect(() => {
+    const el = buttonRef.current;
+    if (kbOpen || !el) return;
+    const root = document.documentElement;
+    const publish = () => {
+      const w =
+        Math.ceil(el.getBoundingClientRect().width) +
+        FAB_EDGE_GAP_PX +
+        FAB_ROW_GAP_PX;
+      root.style.setProperty(FAB_WIDTH_VAR, `${w}px`);
+    };
+    publish();
+    const observer =
+      typeof ResizeObserver === "undefined"
+        ? null
+        : new ResizeObserver(publish);
+    observer?.observe(el);
+    return () => {
+      observer?.disconnect();
+      root.style.removeProperty(FAB_WIDTH_VAR);
+    };
+  }, [kbOpen, label, plus]);
   if (kbOpen) return null;
 
   return (
@@ -53,6 +86,7 @@ export function CornerAction({
       {/* Свій `<button>`, а не `Button`: плаваюча кнопка має тінь і 16 / 600
           підпис, яких шкала `Button` не дає. */}
       <button
+        ref={buttonRef}
         type="button"
         className="pointer-events-auto inline-flex h-11 items-center gap-1.5 rounded-lg bg-text px-4 text-style-body font-semibold text-bg shadow-[0_2px_8px_rgba(0,0,0,0.18)] hover:bg-text/90 active:bg-text/80 focus-ring motion-safe:transition-colors"
         onClick={() => {

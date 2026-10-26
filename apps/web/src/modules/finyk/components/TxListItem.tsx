@@ -34,6 +34,8 @@ interface TxListItemProps {
   onSwipeDeleteManual?: ((tx: TxRowTx) => void) | undefined;
   /** Canonical entry point for both manual and imported transaction details. */
   onOpenDetails?: ((tx: TxRowTx) => void) | undefined;
+  /** Один з двох останніх рядків списку: правий відступ під кутову кнопку. */
+  clearFab?: boolean | undefined;
 }
 
 function TxListItemImpl({
@@ -56,6 +58,7 @@ function TxListItemImpl({
   onSwipeHideTx,
   onSwipeDeleteManual,
   onOpenDetails,
+  clearFab = false,
 }: TxListItemProps) {
   const isManual = !!tx._manual;
   const canSwipeLeft = isManual
@@ -86,7 +89,13 @@ function TxListItemImpl({
           aria-hidden
         ></span>
       )}
-      <div className={cn(selectMode && "pl-8", "relative")}>
+      <div
+        className={cn(
+          selectMode && "pl-8",
+          clearFab && "fab-clear-row",
+          "relative",
+        )}
+      >
         <SwipeToAction
           disabled={selectMode}
           onSwipeLeft={
