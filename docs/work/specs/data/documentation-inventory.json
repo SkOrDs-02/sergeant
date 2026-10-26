@@ -3322,6 +3322,13 @@
       "canonical_owner": "docs/today.md"
     },
     {
+      "old_path": "docs/work/owner-decisions.md",
+      "new_path": "docs/work/owner-decisions.md",
+      "action": "keep",
+      "genre": "reference",
+      "canonical_owner": "docs/work/owner-decisions.md"
+    },
+    {
       "old_path": "docs/work/product-readiness-2026-07-18.md",
       "new_path": "docs/work/product-readiness-2026-07-18.md",
       "action": "keep",
@@ -3453,6 +3460,13 @@
       "action": "keep",
       "genre": "reference",
       "canonical_owner": "docs/work/research/competitor-matrix.md"
+    },
+    {
+      "old_path": "docs/work/roadmap.md",
+      "new_path": "docs/work/roadmap.md",
+      "action": "keep",
+      "genre": "reference",
+      "canonical_owner": "docs/work/roadmap.md"
     },
     {
       "old_path": "docs/work/specs/access-tiers.md",

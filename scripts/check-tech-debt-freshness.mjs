@@ -31,7 +31,8 @@ const DEFAULT_THRESHOLD_DAYS = 60;
 const DEFAULT_FILES = [
   "docs/work/specs/tech-debt/frontend.md",
   "docs/work/specs/tech-debt/backend.md",
-  "docs/work/specs/tech-debt/mobile.md",
+  // tech-debt/mobile.md прибрано 2026-10-26: реєстр Frozen за ADR-0094
+  // (мобільний контур на паузі), тож бамп маркера кожні 60 днів не потрібен.
 ];
 const MS_PER_DAY = 24 * 60 * 60 * 1000;
 

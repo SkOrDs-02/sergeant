@@ -1,7 +1,7 @@
 # SPEC: Beta security readiness
 
-> **Last touched:** 2026-10-03 by @claude (F5: Report-Only знято з `apps/web/vercel.json`). **Next review:** 2027-01-01.
-> **Status:** Active — код F1–F4 реалізовано 2026-07-31; лишились кроки, які не можна виконати з репозиторію (див. § Стан виконання).
+> **Last touched:** 2026-10-26 by @claude (тріаж документації: закрито як Implemented за рішенням власника, F7/F8 винесено). **Next review:** 2027-01-01.
+> **Status:** Implemented - F1-F6: міграція `091_privat_connection.sql`, політика `api:auth:account`, `requireSession()` на `/api/privat`, enforced CSP в `apps/web/vercel.json`, [beta-tester-brief.md](../../governance/security/beta-tester-brief.md); закрита бета завершена (рішення власника 2026-10-26), F7/F8 передано як разові перевірки, див. § Стан виконання.
 
 ## Стан виконання
 
@@ -15,6 +15,8 @@
 | F6  | **Готово**  | [beta-tester-brief.md](../../governance/security/beta-tester-brief.md) — розкриття Permissions-Policy, react-router-адвайзорі та залишкового ризику F2                                                                                                                                                                                                                                |
 | F7  | Не зроблено | Потребує двох живих акаунтів на стенді; статичну частину підтверджено, transcript ще не знято                                                                                                                                                                                                                                                                                         |
 | F8  | Не зроблено | Перевірка `PUSH_INTERNAL_ALLOWED_IPS` і `API_SECRET` — конфіг продакшену, не репозиторій                                                                                                                                                                                                                                                                                              |
+
+**Закриття 2026-10-26.** Закрита бета завершена (рішення власника), спека закрита як Implemented за F1-F6. F7 (IDOR-матриця на двох живих акаунтах з transcript) і F8 (звірка `PUSH_INTERNAL_ALLOWED_IPS` і `API_SECRET` у прод-конфігу) не блокують закриття: вони передані як разові перевірки в чергу security-аудиту (`sergeant-security-audit`), F8 потребує доступу власника до Coolify.
 
 Оновлено `threat-model.md` (нова surface «PrivatBank merchant credentials», нові контролі в Login+sessions і CSP) та OpenAPI-контракт (`/api/privat/{connect,disconnect,status}`).
 

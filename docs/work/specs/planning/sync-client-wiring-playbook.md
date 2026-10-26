@@ -1,7 +1,7 @@
 # Playbook: Sync client wiring — виконання фаз 0–4
 
-> **Status:** Active
-> **Last touched:** 2026-09-17 by @claude (Railway → Coolify у load-test Фази 3, ADR-0074). **Next review:** 2026-12-16.
+> **Status:** Reference - операційна інструкція до [`sync-client-wiring.md`](./sync-client-wiring.md); `[ ]` нижче - шаблони PR-чеклістів, відкрита робота живе лише в `sync-client-wiring.md`.
+> **Last touched:** 2026-10-26 by @claude (тріаж документації: Status → Reference). **Next review:** 2026-12-16.
 > **Trigger:** Потрібно wire-ити client pull + outbox enqueue після SQLite cut-over ([`sync-client-wiring.md`](./sync-client-wiring.md)). Цей playbook — **операційна інструкція** для кожної фази: дизайн роботи, правила, метрики, підтвердження, перепровірки, розподіл між агентами.
 
 **Governing skills:** [`sergeant-feature-delivery`](../../../../.agents/skills/sergeant-feature-delivery/SKILL.md) (координація) + [`sergeant-deliver-squad`](../../../../.agents/skills/sergeant-deliver-squad/SKILL.md) (коли PR торкається ≥2 surfaces з contract deps).

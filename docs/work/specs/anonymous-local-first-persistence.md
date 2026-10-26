@@ -1,7 +1,7 @@
 # Спека: персистентність даних незалогіненого користувача
 
-> **Last touched:** 2026-10-23 by @claude (data-46 варіант «б»: вихід A показує й стирає анонімні рядки незавершеного переносу після підтвердження). **Next review:** 2027-11-11.
-> **Status:** Active — Р1, Р2(а) і durable-write правило для СТАРТ-блоку змерджені (гасимо блок лише після підтвердженого запису; банер локальності піднято в хаб). E2E-приймання «створив анонімно → reload → запис на місці» є з 2026-09-16 — [`anonymous-persistence.spec.ts`](../../../apps/web/tests/smoke/anonymous-persistence.spec.ts) у critical-flow смузі. Юніт-приймання «анонімний запис долітає до durable SQLite» є з 2026-09-19 на всі чотири модулі (§ Definition of done, пункт 2). Виділений E2E-тест «анонімно створив → залогінився → дані на місці» (Р2а) є з 2026-09-19 — [`anonymous-migration-on-login.spec.ts`](../../../apps/web/tests/smoke/anonymous-migration-on-login.spec.ts), у тій самій critical-flow смузі. Живий контрольний прогін 2026-10-20 на локальних Postgres/API та production preview: обидва anonymous E2E-сценарії й auth setup пройшли (3 passed). Розбір історичних 429/503 з виміру 2026-07-22 лишається окремим операторським кроком.
+> **Last touched:** 2026-10-26 by @claude (тріаж документації: закрито як Implemented, залишки винесено). **Next review:** 2027-11-11.
+> **Status:** Implemented - § Definition of done виконано: Р1, Р2(а), юніт-приймання на чотири модулі, `apps/web/tests/smoke/anonymous-{persistence,migration-on-login,migration-recovery}.spec.ts` у critical-flow, живий прогін 2026-10-20, data-46 варіант «б»; залишки див. § Стан виконання.
 > **Agent-ready:** yes — residual має зафіксований контракт і не потребує нового продуктового рішення.
 
 ## Проблема
@@ -403,3 +403,10 @@ claim). Раніше кожен вхід B кидав `claim: pending-for-other-
 `cycle-3-task-for-claude-code.md` §1). Первинне формулювання було «пресет-шит
 не створює запис»; вимір показав ширший клас. Контекст:
 [`2026-07-22-first-60-seconds.md`](https://github.com/Skords-01/Sergeant/blob/d068c73a2f21881d5c1305544fe99f3ea8be81f4/docs/90-work/audits/archive/2026-07-22-first-60-seconds.md) §5.
+
+## Стан виконання
+
+Тріаж 2026-10-26: спеку закрито, залишки розведено так.
+
+- Розбір історичних 429/503 з виміру 2026-07-22: відкинуто, вимір застарів і не відтворюється на поточному коді.
+- Межі quota/eviction сховища і сценарій A→B в одному профілі браузера: одним рядком у [`tech-debt/frontend.md`](./tech-debt/frontend.md).

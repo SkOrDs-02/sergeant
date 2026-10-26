@@ -1,7 +1,7 @@
 # SPEC: повторювані стани застосунку для E2E-лейнів
 
-> **Last touched:** 2026-09-24 by @claude (spec-інтервʼю з власником, два раунди). **Next review:** 2026-12-24.
-> **Status:** Active - реалізовано: коміт [`e0da9341`](https://bitbucket.org/skords01/sergeant/commits/e0da93415), `apps/web/src/e2e/*` (з `AGENTS.md`), `apps/web/tests/fixtures/worlds/*.json`; лишилось `pnpm check` цілком, ledger- і smoke-лейни, повний a11y-лейн `pnpm --filter @sergeant/web test:a11y` (зафіксовано лише 30/32 і `routine-*` 3/3; `chat` червоний і на `main`), див. § Стан виконання.
+> **Last touched:** 2026-10-26 by @claude (тріаж документації: закрито як Implemented, залишки винесено, рев'ю: `check:ci` ≠ `check`). **Next review:** 2026-12-24.
+> **Status:** Implemented - `apps/web/src/e2e/{installScenarioBridge,world,writers}.ts`, `apps/web/tests/fixtures/worlds/*.json`, коміт `e0da9341`; `pnpm check:ci` і critical-flow тепер ганяє CI (ADR-0102), повний `pnpm check` з `check-e2e-seed-boundary.mjs` у CI не біжить, червоний `chat` в a11y-лейні винесено, див. § Стан виконання.
 
 ## Проблема
 
@@ -93,3 +93,5 @@
 **Контрольна перевірка рецензента 2026-09-29.** Скан межі мовчки проходив на відсутній або порожній теці (0 файлів = «passed»), тож перший прохід «зеленів» без білда. Тепер 0 `.js` дає exit 1, додано два тести (`node --test` 4/4). Повторно: `typecheck` 0, `vitest src/e2e` 6/6, `check-imports` 0, `check-vite-flag-registry` 0, прод-білд 0, скан 0 на 398 `.js` у `apps/server/dist/assets`.
 
 **Не зроблено.** `pnpm check` цілком, ledger- і smoke-лейни не запускались.
+
+**Залишки після тріажу 2026-10-26.** CI на кожному PR ганяє `pnpm check:ci` і critical-flow (ADR-0102), але не повний `pnpm check`: крок `node scripts/ci/check-e2e-seed-boundary.mjs` (перевірка, що міст не потрапив у прод-білд) є лише в `pnpm check` (`package.json`), у `ci.yml` його немає. Тож пункт «`pnpm check` не запускався» закритий лише частково: межу сідів на білді гілки треба проганяти локально, доки крок не додано в CI. Червоний `chat` в a11y-лейні (`scrollable-region-focusable`, червоний і на `main`) не належить цій спеці: одним рядком у [`tech-debt/frontend.md`](./tech-debt/frontend.md).

@@ -2,8 +2,8 @@
 
 > **Поточні статуси перенесених знахідок:** [єдиний реєстр верифікації](verification/findings.json). Цей документ зберігає історичні результати; нові спроби та виправлення ведуться в реєстрі.
 
-> **Last touched:** 2026-09-17 by @claude (F1: врізка про закриття 2026-09-03 біля застарілого «лишаються відкритими»). **Next review:** 2026-12-16.
-> **Status:** Active — рішення власника ухвалено 2026-09-01 (§4а); Q3/F6 закрито для всіх трьох модулів: Їжа — PR #1014, Фізрук — PR #1021 (F1 частково — стрічка тайлів `StatusStrip`), Фінік — **PR #1025** (F1 частково — `TodaySummaryCard`/`MonthPulseCard`). Усі три рішення Q3 закриті; F1 закрито повністю 2026-09-03 (`BentoCard`, `LogCardAnalytics`, `RoutineStatsPanel` — hero-число плюс текстові рядки без боксів); відкритим лишається F7 (mobile) як окремий PR.
+> **Last touched:** 2026-10-26 by @claude (тріаж документації: переведено в Reference, залишки F7 і P3 розписано). **Next review:** 2026-12-16.
+> **Status:** Reference - рішення §4а виконано (Q1-Q5, F1-F11 крім F7; PR #1014, #1021, #1025, F1 повністю 2026-09-03); F7 (mobile) заморожено [ADR-0094](../../../governance/adr/0094-mobile-web-first-freeze.md), P3 - див. «Стан виконання».
 
 - **Дата:** 01.09.2026, один цикл: зовнішнє дослідження → код-аудит → живий прохід → звіт.
 - **База:** `claude/canvas-claude-design-tmmuma` від `b16956d` (main після [#1000](https://github.com/SkOrDs-02/sergeant/pull/1000)).
@@ -248,3 +248,11 @@ Demo-режим (`/?demo=1`), 393×852, light і dark. Артефакт dev-зб
 - «AI Design Slop: Why Every AI-Built Interface Looks the Same» — Mohit Phogat, Medium, 2026-08 — «2026 tell: warm cream + serif + sage green». Без лінка навмисно: Medium віддає 403 чекеру (той самий клас, що `medium.muz.li` в allowlist), а повний текст за пейволом — тезу взято з превʼю пошуку.
 
 Внутрішні: [`anti-slop-strategy.md`](../../../design/design/anti-slop-strategy.md) · [`DESIGN.md`](../../../../DESIGN.md) · [`2026-07-21-design-audit.md`](./2026-07-21-design-audit.md) · [`design-audit-sergeant-web.md`](https://github.com/SkOrDs-02/sergeant/blob/fcb8e9a94a89833905350ba33f8d9ab7b90b03ba/docs/90-work/planning/prompts/design-audit-sergeant-web.md) · [`style-guide.uk.md`](../../../product/copy/style-guide.uk.md) · [`product-overview.md`](../../../product/model/product-overview.md) · [`hub-coach.md`](../../../product/modules/hub-coach.md).
+
+## Стан виконання
+
+Станом на 2026-10-26 (тріаж документації):
+
+- Q1-Q5 і F1-F11, крім F7, на вебі закрито (§4а; PR #1014, #1021, #1025).
+- F7 (mobile: емодзі, сирий hex, `lucide-react-native`) заморожено разом із мобільним контуром ([ADR-0094](../../../governance/adr/0094-mobile-web-first-freeze.md)); перша хвиля 2026-09-03 зроблена, решта - при знятті паузи.
+- P3 (§4 «P3 · полірування»: `animate-bounce`, `LogoMark`) окремою роботою не ведеться: передано лідові тріажу на рішення «відкинути або в design-беклог».

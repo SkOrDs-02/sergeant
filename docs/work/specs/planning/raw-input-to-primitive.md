@@ -1,7 +1,7 @@
 # SPEC: Голі поля вводу на примітиви `Input` / `Textarea` / `Select`
 
-> **Last touched:** 2026-10-23 by @claude (спека з інвентарем і рішеннями власника). **Next review:** 2027-01-23.
-> **Status:** Active
+> **Last touched:** 2026-10-26 by @claude (тріаж документації: Status → Implemented, #1634). **Next review:** 2027-01-23.
+> **Status:** Implemented - злито [#1634](https://github.com/SkOrDs-02/sergeant/pull/1634) (`cdf602a`); `rawInput` у `ZERO_ONLY_METRICS` (`scripts/check-ui-canon-ratchet.mjs`), бюджет 0.
 
 Продовження редизайну v3.1 ([`redesign-v3-1.md`](./redesign-v3-1.md), Implemented). Рішення власника 2026-10-23 у § Рішення нижче, альтернативи не переглядаються.
 
@@ -66,3 +66,7 @@
 - Мок `@shared/components/ui/Input` у `DailyPlanCard.extra.test.tsx` доповнено `FIELD_LABEL` і `fieldFocus`: реальний `Select` бере `fieldFocus` з того ж модуля.
 
 **Відхилення від спеки:** немає. Висоти змінились за правилом: поля форм 44 → 48 px (`md`), компактні в рядках 36 px візуально (44 px зона на сенсорі), як вирішив власник.
+
+## Стан виконання
+
+> Тріаж 2026-10-26: «Далі: draft-PR» у журналі вище - історія; PR злито [#1634](https://github.com/SkOrDs-02/sergeant/pull/1634). Залишків немає, повернення сирих полів ловить ratchet `rawInput` = 0.

@@ -1,7 +1,7 @@
 # SPEC: вісь дії для хабу (A1 «дві купи»)
 
-> **Last touched:** 2026-10-01 by @claude («Закрито сьогодні»: Фінік не закритий при попередженні про темп, f5); 2026-09-30 by @claude (PR 3 виконано: прапорець і стара сітка зняті); 2026-09-20 by @claude (статус зведено з кодом: PR 1 і PR 2 в `main`). **Next review:** 2027-04-26.
-> **Status:** Active. PR 1, PR 2 і PR 3 з § Нарізки виконано. PR 3 (2026-09-30, гілка `claude/hub-action-axis-cleanup`) знято за рішенням власника без очікування двотижневого циклу kill-switch і без даних вимірювання: прапорець `hub_action_axis_v1`, `HubModulesGrid`, `BentoCard`/`BentoCardPeek`, `adaptiveSort`, `nativeSortable`, режим редагування, `HubInsightsPanel`, `calmMode`, `density`, `showTodayFocus`/`adaptiveBento` у Налаштуваннях і міграція `density` прибрані. Вісь дії — єдина головна. Лишилось поза скоупом (ADR-0094): мобільний хаб, `STORAGE_KEYS.DASHBOARD_ORDER`, `normalizeDashboardOrder`, `DashboardDensity` у `@sergeant/shared`.
+> **Last touched:** 2026-10-26 by @claude (тріаж документації: закрито як Implemented). **Next review:** 2027-04-26.
+> **Status:** Implemented - PR 1-3 з § Нарізки в `main`: `apps/web/src/core/hub/now/{NowPile,ClosedTodayPile,closedToday}.tsx`, прапорець `hub_action_axis_v1` знято, `HubModulesGrid`/`BentoCard` прибрані; мобільний хаб поза скоупом (ADR-0094).
 
 <!-- Спека несе ПРОДУКТОВІ рішення, ухвалені власником в інтерв'ю 2026-09-17
 (три раунди по чотири питання, кожне — вибір з наслідком), поверх рішень

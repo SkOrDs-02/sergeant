@@ -1,7 +1,7 @@
 # 03. Сервіси та тулстек
 
-> **Last touched:** 2026-09-17 by @claude (OpenClaw/n8n/Railway позначено retired, Stripe → dormant, LiqPay/Plata → live). **Next review:** 2026-12-16.
-> **Status:** Active
+> **Last touched:** 2026-10-26 by @claude (тріаж документації: Status → Reference, Termly/CookieYes більше не legal blocker, блок «Стан виконання», рев'ю: легенда `[-]`, EAS на паузі). **Next review:** 2026-12-16.
+> **Status:** Reference - реєстр сервісів станом на 2026-09; відкриті пункти (Resend-домен, billing-листи, Search Console) трекаються в [`04-launch-readiness.md` § 7](./04-launch-readiness.md#7-pre-launch-чеклист); EAS Build не трекається: мобільний контур на паузі ([ADR-0094](../../../../governance/adr/0094-mobile-web-first-freeze.md)).
 >
 > **Звірка 2026-09-17:** три сервіси нижче виведені з експлуатації і лишаються в таблицях лише як історія — **OpenClaw** ([ADR-0075](../../../../governance/adr/0075-openclaw-gateway-decommissioned.md)), **n8n** (репо-шар декомісовано, `ops/n8n-workflows/` у дереві немає — [ADR-0090](../../../../governance/adr/0090-n8n-decommissioned.md); періодична робота живе на серверних субстратах ADR-0089), **Railway** ([ADR-0074](../../../../governance/adr/0074-hosting-hetzner-coolify.md)). Платіжний провайдер: **LiqPay / Plata — live UA-провайдери**, Stripe — dormant за флагом (`apps/server/src/modules/billing/provider.ts`); рядки «Stripe … prod config pending» нижче описують стан на 2026-05.
 
@@ -105,7 +105,7 @@
 | Crisp                              | _немає в коді_                                                                                                            | to add                      |
 | Tally                              | _немає в коді_                                                                                                            | to add                      |
 | UptimeRobot                        | _не налаштовано_ (згадано в ops-доках)                                                                                    | to add                      |
-| Termly / CookieYes                 | _не використовується_                                                                                                     | to add                      |
+| Termly / CookieYes                 | _не використовується_                                                                                                     | не потрібен (2026-10-26)    |
 | Cloudflare R2                      | _немає в коді_                                                                                                            | evaluated                   |
 
 ---
@@ -114,13 +114,13 @@
 
 ### 2.1 Хостинг і деплой
 
-| Сервіс                | Сайт                                                                  | Free tier                                                                       | Paid tier                                                                | Date checked | Why this / Why not                                                                                                                                                                                  | Status    |
-| --------------------- | --------------------------------------------------------------------- | ------------------------------------------------------------------------------- | ------------------------------------------------------------------------ | ------------ | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | --------- |
-| **Vercel**            | [vercel.com](https://vercel.com)                                      | Hobby: 100 GB bandwidth, 1M invocations, 6 000 build-min/mo, 1 concurrent build | Pro: $20/user/mo + usage; 1 TB bandwidth, 12 concurrent builds           | 2026-04      | CDN + preview deploys + immutable caching; ідеально для SPA/PWA. Для одного розробника Hobby вистачає.                                                                                              | in use    |
-| **Hetzner + Coolify** | [hetzner.com](https://www.hetzner.com/cloud)                          | —                                                                               | CX23: ~$7/міс фіксовано (2 vCPU / 4 GB / 40 GB)                          | 2026-07      | Backend + Postgres(pgvector) + Redis на одному VPS під self-hosted Coolify; auto-deploy з ghcr.io. Фікс-ціна замість usage. [ADR-0074](../../../../governance/adr/0074-hosting-hetzner-coolify.md). | in use    |
-| ~~**Railway**~~       | [railway.app](https://railway.app)                                    | Trial: $5 credit                                                                | Hobby: $5/mo + usage; Pro: $20/mo + usage                                | 2026-04      | **Виведено 2026-07** — usage-білінг $20-50/міс при нульовому трафіку невиправданий → Hetzner/Coolify (ADR-0074).                                                                                    | retired   |
-| **EAS Build**         | [expo.dev/eas](https://expo.dev/eas)                                  | Free: 15 Android + 15 iOS builds/mo, low-priority queue, 45-min timeout         | Starter: $19/mo ($45 credit); Production: $199/mo ($225 credit), 50K MAU | 2026-04      | Потрібен для нативних білдів Expo 52. Free tier достатній для розробки; Production — для CI/CD.                                                                                                     | to add    |
-| **Cloudflare R2**     | [developers.cloudflare.com/r2](https://developers.cloudflare.com/r2/) | 10 GB storage, 1M Class A ops, 10M Class B ops/mo, $0 egress                    | $0.015/GB-mo storage, $4.50/1M Class A, $0.36/1M Class B                 | 2026-04      | S3-compatible + нуль egress fees. Для фото їжі, PDF-експорту. Не MVP — Phase 2+.                                                                                                                    | evaluated |
+| Сервіс                | Сайт                                                                  | Free tier                                                                       | Paid tier                                                                | Date checked | Why this / Why not                                                                                                                                                                                                     | Status              |
+| --------------------- | --------------------------------------------------------------------- | ------------------------------------------------------------------------------- | ------------------------------------------------------------------------ | ------------ | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------- |
+| **Vercel**            | [vercel.com](https://vercel.com)                                      | Hobby: 100 GB bandwidth, 1M invocations, 6 000 build-min/mo, 1 concurrent build | Pro: $20/user/mo + usage; 1 TB bandwidth, 12 concurrent builds           | 2026-04      | CDN + preview deploys + immutable caching; ідеально для SPA/PWA. Для одного розробника Hobby вистачає.                                                                                                                 | in use              |
+| **Hetzner + Coolify** | [hetzner.com](https://www.hetzner.com/cloud)                          | —                                                                               | CX23: ~$7/міс фіксовано (2 vCPU / 4 GB / 40 GB)                          | 2026-07      | Backend + Postgres(pgvector) + Redis на одному VPS під self-hosted Coolify; auto-deploy з ghcr.io. Фікс-ціна замість usage. [ADR-0074](../../../../governance/adr/0074-hosting-hetzner-coolify.md).                    | in use              |
+| ~~**Railway**~~       | [railway.app](https://railway.app)                                    | Trial: $5 credit                                                                | Hobby: $5/mo + usage; Pro: $20/mo + usage                                | 2026-04      | **Виведено 2026-07** — usage-білінг $20-50/міс при нульовому трафіку невиправданий → Hetzner/Coolify (ADR-0074).                                                                                                       | retired             |
+| **EAS Build**         | [expo.dev/eas](https://expo.dev/eas)                                  | Free: 15 Android + 15 iOS builds/mo, low-priority queue, 45-min timeout         | Starter: $19/mo ($45 credit); Production: $199/mo ($225 credit), 50K MAU | 2026-04      | **Не трекається: мобільний контур на паузі ([ADR-0094](../../../../governance/adr/0094-mobile-web-first-freeze.md)).** Потрібен для нативних білдів Expo 52. Free tier достатній для розробки; Production — для CI/CD. | на паузі (ADR-0094) |
+| **Cloudflare R2**     | [developers.cloudflare.com/r2](https://developers.cloudflare.com/r2/) | 10 GB storage, 1M Class A ops, 10M Class B ops/mo, $0 egress                    | $0.015/GB-mo storage, $4.50/1M Class A, $0.36/1M Class B                 | 2026-04      | S3-compatible + нуль egress fees. Для фото їжі, PDF-експорту. Не MVP — Phase 2+.                                                                                                                                       | evaluated           |
 
 ### 2.2 CI / CD
 
@@ -278,9 +278,11 @@
 
 ## 3. Що додати (action items)
 
-> **Status legend:** `[ ]` — pending, `[x]` — done, `[~]` — partial / in progress.
+> **Status legend:** `[ ]` — pending, `[x]` — done, `[~]` — partial / in progress, `[-]` — не потрібно / знято.
 >
 > Підсумок (станом на 2026-06-15): **3 з 10 завершено** (PostHog, BullMQ, Telegram бот), **2 partial** (Grafana Cloud — local-config готова, cloud-стек активний; **Stripe** — код + міграція в репо, лишилось production env/legal/tax), **5 залишилось** (React Email, Loops, Termly+CookieYes, Search Console, EAS Build, Crisp). **Stripe** — головний P0 блокер монетизації (тепер integrated, prod config pending).
+>
+> Оновлення 2026-10-26: Termly/CookieYes і EAS Build знято (`[-]`), Search Console трекається в [04 § 7](./04-launch-readiness.md); підсумок вище — історичний.
 
 | #   | Сервіс                             | Пріоритет                         | Done? | Owner-нотатка                                                                                                                                                                                                                                                                                                 | Cross-link                                                                         |
 | --- | ---------------------------------- | --------------------------------- | ----- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------- |
@@ -290,9 +292,9 @@
 | 4   | **React Email** (templates)        | P1 — billing emails               | `[ ]` | Welcome, payment confirmation, failed, canceled, weekly digest. Розширити `authTransactionalMail.ts` або створити `billingMail.ts`. Чекає на Stripe.                                                                                                                                                          | —                                                                                  |
 | 5   | **Grafana Cloud** (dashboards)     | P2 — production visibility        | `[~]` | Local-конфіг готовий: `ops/grafana/dashboards/n8n-overview.json` + `ops/grafana-alloy/` Prometheus scraper. Cloud-стек налаштовано (`grafana` секрет). Залишилось — провалідувати dashboards активні.                                                                                                         | [05 -> product zone](./05-operations-and-automation.md#зона-1--product)            |
 | 6   | **Loops** (email marketing)        | P2 — onboarding drip              | `[ ]` | Onboarding sequence, re-engagement, winback. Free до 1K contacts.                                                                                                                                                                                                                                             | —                                                                                  |
-| 7   | **Termly** + **CookieYes**         | P1 — legal blocker                | `[ ]` | Privacy Policy, Terms, Cookie banner. Вимоги: Google Play, Stripe, GDPR.                                                                                                                                                                                                                                      | [04 -> legal](./04-launch-readiness.md#11-обовязкові-документи)                    |
-| 8   | **Google Search Console**          | P2 — SEO baseline                 | `[ ]` | Підключити домен. Безкоштовно.                                                                                                                                                                                                                                                                                | —                                                                                  |
-| 9   | **EAS Build**                      | P1 — mobile launch                | `[ ]` | Free: 15+15 builds/mo. Для CI/CD мобілки.                                                                                                                                                                                                                                                                     | —                                                                                  |
+| 7   | **Termly** + **CookieYes**         | не блокер (2026-10-26)            | `[-]` | Юр. пак написано in-house ([04 § 1.1](./04-launch-readiness.md#11-обовязкові-документи)); cookie-банер трекається в 04. Історично: Privacy Policy, Terms, Cookie banner. Вимоги: Google Play, Stripe, GDPR.                                                                                                   | [04 -> legal](./04-launch-readiness.md#11-обовязкові-документи)                    |
+| 8   | **Google Search Console**          | P2 — SEO baseline                 | `[-]` | Трекається в [04 § 7](./04-launch-readiness.md) №37.                                                                                                                                                                                                                                                          | —                                                                                  |
+| 9   | **EAS Build**                      | P1 — mobile launch                | `[-]` | Мобільний контур на паузі ([ADR-0094](../../../../governance/adr/0094-mobile-web-first-freeze.md)).                                                                                                                                                                                                           | —                                                                                  |
 | 10  | **Telegram бот** (waitlist/alerts) | P2 — acquisition + ops            | `[x]` | Waitlist бот працює через `apps/server`; alert routing — n8n WF-03 (Sentry → topic). **Crisp** (in-app support chat) — окремо, ще `[ ]`.                                                                                                                                                                      | [05 -> support zone](./05-operations-and-automation.md#зона-5--support)            |
 
 ---
@@ -557,9 +559,9 @@ QA               Storybook + Argos        $0             in use
                  + Detox E2E              $0             in use
 Workflow auto    n8n (ADR-0090)           $0 (self-host) retired
                  + BullMQ                 $0 (self-host) in use
-Legal            Termly free              $0             to add
+Legal            Termly free              $0             не потрібен
 Feedback         Tally + PostHog replay   $0             to add
-SEO              Google Search Console    $0             to add
+SEO              Google Search Console    $0             → 04 §7
 --------------------------------------------------------------
 TOTAL EST.       ~$17-69/mo  (infra fixed; AI usage-based)
                  + Stripe % from transactions
@@ -576,3 +578,11 @@ TOTAL EST.       ~$17-69/mo  (infra fixed; AI usage-based)
 - Legal, GDPR, billing edge cases, метрики, чеклист -> [04-launch-readiness.md](./04-launch-readiness.md)
 - Коли мігрувати між managed / self-host (фази 1-4, тригери) -> [architecture/hosting-evolution.md](../../../../engineering/architecture/hosting-evolution.md)
 - Операційні зони, алерти, n8n/OpenClaw автоматизація -> [05-operations-and-automation.md](./05-operations-and-automation.md)
+
+## Стан виконання
+
+> Тріаж 2026-10-26: документ переведено в Reference.
+
+- Termly/CookieYes більше не legal blocker: юр. документи написано in-house ([04 § 1.1](./04-launch-readiness.md#11-обовязкові-документи)).
+- Resend-домен і billing-листи - рядок 32 у [`04` § 7](./04-launch-readiness.md#7-pre-launch-чеклист).
+- OpenClaw, n8n, Railway - retired (див. звірку 2026-09-17 у шапці).

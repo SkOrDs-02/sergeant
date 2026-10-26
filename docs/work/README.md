@@ -1,6 +1,6 @@
 # Work — активні спеки та докази
 
-> **Last touched:** 2026-09-17 by @claude (точка входу для оцінки обсягу → `open-work.md` + продуктовий аудит 2026-09). **Next review:** 2026-12-16.
+> **Last touched:** 2026-10-26 by @claude (точки входу трекінгу: `roadmap.md` і `owner-decisions.md` поруч з `open-work.md`). **Next review:** 2026-12-16.
 > **Status:** Active
 
 > **Update 2026-07-10:** pricing canon — [ADR-0068](../governance/adr/0068-pricing-v4-uah-reverse-trial.md). Billing scaffold shipped; `tools/openclaw` removed (ADR-0055 external gateway). Product/governance doc passes: #220, #221.
@@ -10,8 +10,16 @@
 **work** (`Active → Closed`), а завершена історія живе в Git або ADR. Зведений
 дашборд усього відкритого — [`open-work.md`](../open-work.md).
 
-Починай оцінку обсягу й готовності з [`open-work.md`](../open-work.md)
-(усе відкрите одним списком) і синтезу продуктового аудиту
+Трекінг прогресу тримається на трьох файлах:
+
+- [`roadmap.md`](./roadmap.md) — що робимо першим: «Зараз / Далі / Колись», один рядок на роботу з наступною дією і блокером. Ведеться руками.
+- [`owner-decisions.md`](./owner-decisions.md) — усі відкриті рішення власника в одному місці (раніше губились у тілах аудитів).
+- [`open-work.md`](../open-work.md) — автоматичний список усього, що має відкритий статус.
+
+Аудит після виконаних хвиль одразу стає `Reference`, залишки йдуть в один живий документ.
+
+Починай оцінку обсягу й готовності з [`roadmap.md`](./roadmap.md) і [`open-work.md`](../open-work.md)
+(усе відкрите одним списком), а для історії продуктових рішень — із синтезу продуктового аудиту
 [`audits/2026-09-01-product-audit/report.md`](./specs/audits/2026-09-01-product-audit/report.md)
 (блокери, хвилі фіксів, рішення власника).
 [`product-readiness-2026-07-18.md`](./product-readiness-2026-07-18.md) — Reference-зріз
