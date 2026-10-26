@@ -1,5 +1,5 @@
 /** @vitest-environment jsdom */
-import { StrictMode, type ReactNode } from "react";
+import { StrictMode, useEffect, type ReactNode } from "react";
 import { act, render, screen, waitFor } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { MemoryRouter } from "react-router-dom";
@@ -335,6 +335,41 @@ describe("AnonymousDataMigrationProvider", () => {
     expect(childrenSlot.className).toContain("min-h-0");
     // Друга половина того ж звіту: текст заїжджав під динамічний острів.
     expect(notice.className).toContain("safe-area-inset-top");
+  });
+
+  // E2E `routine-smoke`: після preflight ux-01 відкладений перенос
+  // завершується за ~1 с, і досі це перемонтовувало модуль (діти стояли в
+  // іншій позиції дерева з плашкою і без неї), тож відкритий діалог зникав.
+  it("не перемонтовує дітей, коли відкладений перенос завершується", async () => {
+    localStorage.setItem("hub_anon_migration_deferred_v1:user-1", "1");
+    let finish: (value: { migratedRows: number }) => void = () => {};
+    migrate.mockReturnValue(
+      new Promise((resolve) => {
+        finish = resolve;
+      }),
+    );
+    let mounts = 0;
+    function Child() {
+      useEffect(() => {
+        mounts += 1;
+      }, []);
+      return <div>module content</div>;
+    }
+    renderAt("/", <Child />);
+    await screen.findByText("module content");
+    expect(screen.getByText(/Дані ще не перенесено в профіль/)).toBeVisible();
+    expect(mounts).toBe(1);
+
+    await act(async () => {
+      finish({ migratedRows: 0 });
+    });
+    await waitFor(() =>
+      expect(
+        screen.queryByText(/Дані ще не перенесено в профіль/),
+      ).not.toBeInTheDocument(),
+    );
+    expect(screen.getByText("module content")).toBeInTheDocument();
+    expect(mounts).toBe(1);
   });
 
   // Той самий екран на LTE у метро: браузер сам каже, що мережі немає, і

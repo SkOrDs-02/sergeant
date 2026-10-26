@@ -3322,7 +3322,7 @@
       "canonical_owner": "docs/today.md"
     },
     {
-      "old_path": null,
+      "old_path": "docs/work/owner-decisions.md",
       "new_path": "docs/work/owner-decisions.md",
       "action": "keep",
       "genre": "reference",
@@ -3462,7 +3462,7 @@
       "canonical_owner": "docs/work/research/competitor-matrix.md"
     },
     {
-      "old_path": null,
+      "old_path": "docs/work/roadmap.md",
       "new_path": "docs/work/roadmap.md",
       "action": "keep",
       "genre": "reference",

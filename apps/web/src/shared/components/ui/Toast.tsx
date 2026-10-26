@@ -16,6 +16,7 @@ import {
 } from "@shared/hooks/useToast";
 import {
   BOTTOM_NAV_INSET_VAR,
+  SESSION_DOCK_INSET_VAR,
   SHEET_FOOTER_INSET_VAR,
   TOAST_INSET_VAR,
   useBottomInsetVar,
@@ -420,7 +421,7 @@ export function ToastContainer() {
         "w-[min(92vw,24rem)]",
       )}
       style={{
-        bottom: `calc(max(env(safe-area-inset-bottom, 0px), var(${BOTTOM_NAV_INSET_VAR}, 0px), var(${WORKOUT_BANNER_INSET_VAR}, 0px), var(${SHEET_FOOTER_INSET_VAR}, 0px)) + 0.75rem)`,
+        bottom: `calc(max(env(safe-area-inset-bottom, 0px), var(${BOTTOM_NAV_INSET_VAR}, 0px), var(${WORKOUT_BANNER_INSET_VAR}, 0px), var(${SHEET_FOOTER_INSET_VAR}, 0px), var(${SESSION_DOCK_INSET_VAR}, 0px)) + 0.75rem)`,
       }}
       data-testid="toast-tray"
       data-anchor="bottom"
