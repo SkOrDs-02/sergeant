@@ -167,3 +167,18 @@ export const syncPullTruncatedTotal = new client.Counter({
   help: "v2 sync pull pages truncated by the byte budget SYNC_V2_PULL_MAX_BYTES (ADR-0105)",
   registers: [register],
 });
+
+/**
+ * Тривалість `GET /api/v2/sync/state-hash` (ADR-0106 §3): транзакція
+ * REPEATABLE READ + канонізатор. Оцінку вартості з ADR підтверджуємо цією
+ * метрикою на проді ДО ввімкнення клієнтської перевірки. `table` — лише з
+ * allowlist `SYNC_STATE_HASH_TABLE_PKS` (21 значення), тож кардинальність
+ * обмежена.
+ */
+export const syncStateHashComputeMs = new client.Histogram({
+  name: "sync_state_hash_compute_ms",
+  help: "v2 sync state-hash computation time in ms per table (ADR-0106)",
+  labelNames: ["table"],
+  buckets: [5, 10, 25, 50, 100, 250, 500, 1000, 2500],
+  registers: [register],
+});

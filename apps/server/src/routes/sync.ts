@@ -4,6 +4,10 @@ import { listSyncAudit } from "../modules/sync/audit.js";
 import { syncV2Pull, syncV2Push } from "../modules/sync/syncV2.js";
 import { syncV2Stream } from "../modules/sync/syncV2Stream.js";
 import { requireSyncV2StreamEnabled } from "../modules/sync/syncV2StreamGuard.js";
+import {
+  requireSyncStateHashEnabled,
+  syncV2StateHash,
+} from "../modules/sync/syncV2StateHash.js";
 
 /**
  * `/api/sync/*` — read-only audit log лишається за авторизованою сесією.
@@ -73,6 +77,9 @@ export function createSyncRouter(): Router {
   // вимкнений маршрут не відрізнявся для анонімного і залогіненого клієнта
   // (без 401 від `requireSession()` перед 404).
   r.use("/api/v2/sync/stream", requireSyncV2StreamEnabled());
+  // ADR-0106: хеш стану за прапорцем `SYNC_STATE_HASH_ENABLED` (дефолт off →
+  // 404), той самий порядок, що й у стріму: 404 до будь-якої auth-перевірки.
+  r.use("/api/v2/sync/state-hash", requireSyncStateHashEnabled());
   r.use("/api/v2/sync", setModule("syncV2"));
   // Той самий трирівневий порядок (pre-auth IP → сесія → per-user), той
   // самий аргумент — див. коментарі вище. Ліміт 300/хв = 5× per-user 60/хв.
@@ -98,7 +105,18 @@ export function createSyncRouter(): Router {
     "/api/v2/sync/pull",
     rateLimitExpress({ key: "api:v2:sync:pull", limit: 60, windowMs: 60_000 }),
   );
+  // ADR-0106 §3: власний бакет 6/хв на користувача — обчислення хешу
+  // лінійне за рядками таблиці, клієнт питає раз на добу на таблицю.
+  r.use(
+    "/api/v2/sync/state-hash",
+    rateLimitExpress({
+      key: "api:v2:sync:state-hash",
+      limit: 6,
+      windowMs: 60_000,
+    }),
+  );
   r.post("/api/v2/sync/push", syncV2Push);
+  r.get("/api/v2/sync/state-hash", syncV2StateHash);
   r.get("/api/v2/sync/pull", syncV2Pull);
   // Stage 5 / PR #041: SSE long-polling. Окрема rate-limit-категорія,
   // бо connection-handshake — це 1 hit; ми не хочемо, щоб stream-
