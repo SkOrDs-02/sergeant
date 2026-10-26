@@ -471,6 +471,8 @@ describe("Toast — трей над футером відкритого арку
     expect(tray.getAttribute("data-anchor")).toBe("bottom");
     expect(tray.style.top).toBe("");
     expect(tray.style.bottom).toContain("--sgt-sheet-footer-inset");
+    // Докована панель сесії Фізрука публікує свою смугу окремо.
+    expect(tray.style.bottom).toContain("--sgt-session-dock-inset");
     expect(root.style.getPropertyValue("--sgt-sheet-footer-inset")).toBe("");
 
     rerender(<Harness open />);

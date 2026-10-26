@@ -428,16 +428,18 @@ function AuthenticatedMigrationGate({
     );
   }
 
-  if (!showDeferredNotice) {
-    return (
-      <MigrationGateContext.Provider value={value}>
-        {children}
-      </MigrationGateContext.Provider>
-    );
-  }
-
   return (
     <MigrationGateContext.Provider value={value}>
+      {/*
+        AI-DANGER: діти стоять в ОДНІЙ позиції дерева з плашкою і без неї.
+        Раніше гілка без плашки віддавала голих `children`, а гілка з плашкою
+        ті самі діти у двох обгортках, тож у мить, коли відкладений перенос
+        завершувався, React перемонтовував увесь модуль: відкритий діалог чи
+        недописана форма зникали (E2E `routine-smoke`, «Нова звичка»; після
+        preflight ux-01 перенос завершується за ~1 с, тобто посеред дії). Без
+        плашки обидві обгортки мають `display: contents`, тож верстка та сама,
+        що й у голих дітей.
+      */}
       {/*
         AI-DANGER: плашка мусить жити у flex-колонці, а не просто «перед
         дітьми». `#root` має `height: 100dvh` (у standalone — `100vh`) і
@@ -457,21 +459,31 @@ function AuthenticatedMigrationGate({
         Падінг (а не `top`) тягне фон `bg-warning-soft` у смугу інсету, і
         під островом лишається колір плашки, а не порожнеча.
       */}
-      <div className="flex h-full flex-col overflow-hidden">
-        <div
-          role="status"
-          className="shrink-0 flex flex-wrap items-center justify-center gap-x-3 gap-y-1 bg-warning-soft px-4 pb-2 pt-[calc(env(safe-area-inset-top,0px)+0.5rem)] text-center text-style-body text-warning-soft-fg"
-        >
-          <span>{messages.sync.anonymousMigrationDeferredNotice}</span>
-          <button
-            type="button"
-            onClick={retryNow}
-            className="rounded underline underline-offset-2 hover:no-underline focus:outline-none focus-visible:ring-2 focus-visible:ring-focus/45"
+      <div
+        className={
+          showDeferredNotice
+            ? "flex h-full flex-col overflow-hidden"
+            : "contents"
+        }
+      >
+        {showDeferredNotice && (
+          <div
+            role="status"
+            className="shrink-0 flex flex-wrap items-center justify-center gap-x-3 gap-y-1 bg-warning-soft px-4 pb-2 pt-[calc(env(safe-area-inset-top,0px)+0.5rem)] text-center text-style-body text-warning-soft-fg"
           >
-            {messages.sync.anonymousMigrationDeferredRetry}
-          </button>
+            <span>{messages.sync.anonymousMigrationDeferredNotice}</span>
+            <button
+              type="button"
+              onClick={retryNow}
+              className="rounded underline underline-offset-2 hover:no-underline focus:outline-none focus-visible:ring-2 focus-visible:ring-focus/45"
+            >
+              {messages.sync.anonymousMigrationDeferredRetry}
+            </button>
+          </div>
+        )}
+        <div className={showDeferredNotice ? "min-h-0 flex-1" : "contents"}>
+          {children}
         </div>
-        <div className="min-h-0 flex-1">{children}</div>
       </div>
     </MigrationGateContext.Provider>
   );

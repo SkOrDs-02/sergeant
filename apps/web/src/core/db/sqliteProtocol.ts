@@ -67,6 +67,11 @@ export type SqliteWorkerRequest =
       readonly keep: readonly string[];
       /** Імена, що лишились після невдалого виходу: видаляємо безумовно. */
       readonly force: readonly string[];
+      /**
+       * Чи підмітати решту файлів (не `keep` і не `force`). `false`, коли
+       * активна анонімна партиція: див. `cleanupOrphanSqliteFiles`.
+       */
+      readonly sweep: boolean;
     };
 
 /** Підсумок прибирання осиротілих файлів баз (priv-05). */
