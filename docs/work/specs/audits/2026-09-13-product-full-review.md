@@ -4085,7 +4085,7 @@ mobile-тести, яких ніхто не бачив.
   (нутрієнти), U1 (картинки OFF), V1 (plan-gate на `/api/transcribe`); N5
   (FAB над водою), N4-хвіст (`PantryModeSelect` двічі на Меню); O4 — ролі
   `/assistant` і `/capabilities` розведені, але не перевірені на людях.
-- **product-audit:** AI-2 (перший хід чату не стрімиться),
+- **product-audit:** AI-2 (перший хід чату не стрімиться), VIS-2,
   PILOT-20260905-SYNC-1 (другий пристрій), BROWSER-20260804-F-006 (холодний
   старт лише лоадер), CI-8 (LCP > 3 с), G1 (reconciliation Фініка), G2
   (durability для анонімів), G5 (`exportData`/`importData` без UI), E5 (вісім

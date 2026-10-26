@@ -18,7 +18,6 @@
 | OD-3  | Сторінка `/hroshi`: «чотири входи» витрат лишаємо (скрін банкінгу не окремий вхід)?                                  | так / п'ять                                  | так                        | [`site-code-drift`](./specs/audits/2026-09-14-site-code-drift.md) п. 3                                    |
 | OD-4a | AI-5: Free-квота 5/день, а хід з дією = 2 запити (перший + синтез), тож це 2 дії на день                             | (а) / (б) / (в) — у джерелі                  | —                          | [`product-audit/report.md`](./specs/audits/2026-09-01-product-audit/report.md) §4                         |
 | OD-4b | AI-3: ліміт 6/хв на чат зачіпає Pro на 7-му повідомленні звичайного діалогу                                          | (а) / (б) / (в) — у джерелі                  | —                          | [`product-audit/report.md`](./specs/audits/2026-09-01-product-audit/report.md) §4                         |
-| OD-4c | AI-6: осиротіла картка інструмента після 429 на другому ході — як її позначати                                       | (а) / (б) / (в) — у джерелі                  | —                          | [`product-audit/report.md`](./specs/audits/2026-09-01-product-audit/report.md) §4                         |
 | OD-4d | TXT-5: «ми» у drip-листах — додати виняток для голосу компанії в style guide §2?                                     | (а) / (б) / (в) — у джерелі                  | —                          | [`product-audit/report.md`](./specs/audits/2026-09-01-product-audit/report.md) §4                         |
 | OD-4e | UX-4: Комора, голе число без одиниці при ≥ 100 — штуки чи грами                                                      | (а) / (б) / (в) — у джерелі                  | —                          | [`product-audit/report.md`](./specs/audits/2026-09-01-product-audit/report.md) §4                         |
 | OD-4f | Перший хід чату не стрімиться (5-14 с очікування) — що робимо                                                        | (а) / (б) / (в) — у джерелі                  | —                          | [`product-audit/report.md`](./specs/audits/2026-09-01-product-audit/report.md) §4                         |
@@ -70,6 +69,7 @@
 - `VITE_ENABLE_VOICE_INPUT=1` у Vercel і `GROQ_API_KEY` у Coolify → [`voice-input-followups`](./specs/voice-input-followups.md).
 - Дашборд cost/latency і anomaly alert у PostHog → [`initiatives/0025`](./specs/initiatives/0025-posthog-ai-observability.md).
 - Разові перевірки безпеки після бети: F7 (IDOR-матриця на двох живих акаунтах) і F8 (`PUSH_INTERNAL_ALLOWED_IPS` / `API_SECRET` у прод-конфігу) → [`beta-security-readiness`](./specs/beta-security-readiness.md).
+- Закрити форми бети в Tally (`Settings` → `Close form`) → [`beta-forms`](./specs/beta-forms.md).
 - Click-through на живому стенді: тарифи ([`access-tiers`](./specs/access-tiers.md) § Верифікація п. 5) і Сільпо з живим акаунтом ([`silpo-pantry-auto-import`](./specs/silpo-pantry-auto-import.md)).
 
 ## Ухвалено
