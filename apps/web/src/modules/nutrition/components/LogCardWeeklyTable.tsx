@@ -38,7 +38,7 @@ export function LogCardWeeklyTable({
         // і розкладає `...props` на елемент, тож пропси доходять.
         aria-expanded={weekOpen}
         aria-controls={WEEK_TABLE_ID}
-        className="flex min-h-[44px] w-full items-center justify-between gap-2 rounded-lg text-left focus-ring"
+        className="flex min-h-[44px] w-full items-center justify-between gap-2 rounded-lg text-left fab-clear-row focus-ring"
       >
         <span className="text-style-body font-semibold text-text">
           Журнал за тиждень

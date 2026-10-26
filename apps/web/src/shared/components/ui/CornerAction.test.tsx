@@ -2,7 +2,8 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { cleanup, fireEvent, render, screen } from "@testing-library/react";
 import { SHEET_FOOTER_INSET_VAR } from "../../hooks/useBottomInsetVar";
-import { AddAction } from "./CornerAction";
+import { FAB_WIDTH_VAR } from "../../hooks/useBottomInsetVar";
+import { AddAction, CornerAction } from "./CornerAction";
 
 afterEach(() => {
   cleanup();
@@ -42,5 +43,25 @@ describe("AddAction", () => {
     expect(onSelect).toHaveBeenCalledOnce();
     expect(screen.queryByRole("dialog", { name: "Додати" })).toBeNull();
     expect(root.style.getPropertyValue(SHEET_FOOTER_INSET_VAR)).toBe("");
+  });
+});
+
+describe("CornerAction", () => {
+  it("публікує ширину кнопки з полем і зазором у --sgt-fab-width і знімає при демонтажі", () => {
+    const originalRect = HTMLElement.prototype.getBoundingClientRect;
+    vi.spyOn(HTMLElement.prototype, "getBoundingClientRect").mockImplementation(
+      function (this: HTMLElement) {
+        if (this.tagName === "BUTTON") return new DOMRect(0, 0, 110, 44);
+        return originalRect.call(this);
+      },
+    );
+    const root = document.documentElement;
+    const { unmount } = render(
+      <CornerAction label="Додати" onClick={vi.fn()} />,
+    );
+    // 110 + 16 (поле колонки) + 12 (зазор)
+    expect(root.style.getPropertyValue(FAB_WIDTH_VAR)).toBe("138px");
+    unmount();
+    expect(root.style.getPropertyValue(FAB_WIDTH_VAR)).toBe("");
   });
 });

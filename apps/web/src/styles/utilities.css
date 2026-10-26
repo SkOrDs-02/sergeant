@@ -155,6 +155,14 @@
   );
 }
 
+@utility fab-clear-row {
+  /* Правий відступ рядка на ширину кутової кнопки (`CornerAction` публікує її
+     в `--sgt-fab-width`: кнопка + бічне поле + зазор). Без кнопки змінної
+     немає, відступ нульовий. Парний до `page-tabbar-pad`, який дає нижній:
+     той рятує останній рядок від кнопки по вертикалі, цей по горизонталі. */
+  padding-right: var(--sgt-fab-width, 0px);
+}
+
 @utility routine-main-pad {
   padding-left: max(1.25rem, env(safe-area-inset-left, 0px));
   padding-right: max(1.25rem, env(safe-area-inset-right, 0px));

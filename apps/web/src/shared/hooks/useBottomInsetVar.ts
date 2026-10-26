@@ -127,6 +127,12 @@ export const SESSION_DOCK_INSET_VAR = "--sgt-session-dock-inset";
 export const FAB_INSET_VAR = "--sgt-fab-inset";
 
 /**
+ * Ширина кутової кнопки з боковим полем і зазором: на стільки утиліта
+ * `fab-clear-row` відсуває праву межу рядків.
+ */
+export const FAB_WIDTH_VAR = "--sgt-fab-width";
+
+/**
  * Трей тостів, доки в ньому є хоч один тост. `page-tabbar-pad` бере його
  * так само, як кнопку в куті: тост віхи серії на Огляді Рутини лягав на
  * фільтри стрічки в кінці сторінки, і докрутити їх над тостом було нікуди

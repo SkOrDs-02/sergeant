@@ -1,6 +1,6 @@
 # Sergeant — Панель керування
 
-> **Last touched:** 2026-10-25 by docs:gen-status. **Next review:** 2026-11-01.
+> **Last touched:** 2026-10-26 by docs:gen-status. **Next review:** 2026-11-02.
 > **Status:** Reference
 
 <!-- AUTO-GENERATED, ОКРІМ блоку FOCUS. Редагуй лише між `<!-- FOCUS:START -->` / `<!-- FOCUS:END -->`; решту регенеруй через `pnpm docs:gen-status`. -->
@@ -39,11 +39,11 @@
 - [#78](https://bitbucket.org/skords01/sergeant/pull-requests/78) — fix(web): копі сайту за аудитом: глосарій, жаргон, факт у Політиці приватності _(2026-09-26)_
 - [#61](https://bitbucket.org/skords01/sergeant/pull-requests/61) — docs(docs): синк реєстру PR (#41-#64) _(2026-09-26)_
 
-## 🔵 В роботі — 100 відкритих документів
+## 🔵 В роботі — 99 відкритих документів
 
 | Трекер        | Відкрито |
 | ------------- | -------- |
-| Активні спеки | 100      |
+| Активні спеки | 99       |
 
 **Найактивніше (8, за останніми PR):**
 
@@ -52,9 +52,9 @@
 - [`work/specs/tech-debt/backend.md`](./work/specs/tech-debt/backend.md) — Backend Tech Debt Inventory — Active _(Активні спеки)_
 - [`work/specs/tech-debt/mobile.md`](./work/specs/tech-debt/mobile.md) — Mobile Tech Debt — Sergeant Mobile (Expo + Capacitor) — Active _(Активні спеки)_
 - [`work/specs/launch/product-os/ftux-master-tracker.md`](./work/specs/launch/product-os/ftux-master-tracker.md) — FTUX Master Tracker — стан, проблеми, план — Active — **single source of truth** для First-Time User Experience. _(Активні спеки)_
-- [`work/specs/planning/redesign-v3-2.md`](./work/specs/planning/redesign-v3-2.md) — SPEC: Редизайн v3.2, «один афорданс» — зняття залишкового слопу компонування `apps/web` — Active - PR1 (#1636), PR2 (#1650) і PR4 (#1643) змерджено; PR3 відкрито (draft). _(Активні спеки)_
 - [`work/specs/audits/2026-10-01-full-app-audit/domain-logic.md`](./work/specs/audits/2026-10-01-full-app-audit/domain-logic.md) — Аудит 2026-10-01 · Логіка доменів — Active. 66 кластерів (89 знахідок) за першопричиною. Загальний план, метод і обмеження — у _(Активні спеки)_
 - [`work/specs/audits/2026-10-01-full-app-audit/security.md`](./work/specs/audits/2026-10-01-full-app-audit/security.md) — Аудит 2026-10-01 · Безпека та доступ — Active. 62 кластерів (96 знахідок) за першопричиною. Загальний план, метод і обмеження — у _(Активні спеки)_
+- [`work/specs/audits/2026-10-01-full-app-audit/data-integrity.md`](./work/specs/audits/2026-10-01-full-app-audit/data-integrity.md) — Аудит 2026-10-01 · Цілісність даних і синхронізація — Active. 82 кластерів (129 знахідок) за першопричиною. Загальний план, метод і обмеження — у _(Активні спеки)_
 
 ## ⏭️ Наступний крок / заблоковано
 
