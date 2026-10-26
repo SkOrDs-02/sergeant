@@ -1633,6 +1633,43 @@
       }
     },
     {
+      "description": "a GET /api/v2/sync/pull?since=0 request below the log floor",
+      "providerStates": [
+        {
+          "name": "authenticated user-pact-001 whose sync_op_log_floor.floor_id is 5000"
+        }
+      ],
+      "request": {
+        "headers": {
+          "accept": "application/json"
+        },
+        "method": "GET",
+        "path": "/api/v2/sync/pull",
+        "query": {
+          "since": [
+            "0"
+          ]
+        }
+      },
+      "response": {
+        "body": {
+          "code": "sync_cursor_expired",
+          "details": [
+            {
+              "floor_id": 5000
+            }
+          ],
+          "error": "Курсор синхронізації застарів, потрібен повний знімок",
+          "message": "Курсор синхронізації застарів, потрібен повний знімок"
+        },
+        "headers": {
+          "Content-Type": "application/json",
+          "content-type": "application/json"
+        },
+        "status": 410
+      }
+    },
+    {
       "description": "a GET /api/v2/sync/pull?since=0&limit=2 request (first page, more data)",
       "providerStates": [
         {
@@ -1766,6 +1803,104 @@
         "body": {
           "next_cursor": null,
           "ops": []
+        },
+        "headers": {
+          "Content-Type": "application/json",
+          "content-type": "application/json"
+        },
+        "status": 200
+      }
+    },
+    {
+      "description": "a GET /api/v2/sync/snapshot request with cursor and as_of_op_id (last page)",
+      "providerStates": [
+        {
+          "name": "authenticated user-pact-001 with SYNC_SNAPSHOT_ENABLED and no rows after the snapshot cursor"
+        }
+      ],
+      "request": {
+        "headers": {
+          "accept": "application/json"
+        },
+        "method": "GET",
+        "path": "/api/v2/sync/snapshot",
+        "query": {
+          "as_of_op_id": [
+            "5123"
+          ],
+          "cursor": [
+            "eyJ2IjoxLCJ0Ijoicm91dGluZV9lbnRyaWVzIn0"
+          ]
+        }
+      },
+      "response": {
+        "body": {
+          "as_of_op_id": 5123,
+          "next_cursor": null,
+          "ops": []
+        },
+        "headers": {
+          "Content-Type": "application/json",
+          "content-type": "application/json"
+        },
+        "status": 200
+      }
+    },
+    {
+      "description": "a GET /api/v2/sync/snapshot?limit=2 request (first page)",
+      "providerStates": [
+        {
+          "name": "authenticated user-pact-001 with SYNC_SNAPSHOT_ENABLED, two routine_entries rows (one tombstoned) and max sync_op_log id 5123; page size is 2"
+        }
+      ],
+      "request": {
+        "headers": {
+          "accept": "application/json"
+        },
+        "method": "GET",
+        "path": "/api/v2/sync/snapshot",
+        "query": {
+          "limit": [
+            "2"
+          ]
+        }
+      },
+      "response": {
+        "body": {
+          "as_of_op_id": 5123,
+          "next_cursor": "eyJ2IjoxLCJ0Ijoicm91dGluZV9lbnRyaWVzIn0",
+          "ops": [
+            {
+              "client_ts": "2026-10-01T10:00:00.000Z",
+              "id": 5123,
+              "op": "insert",
+              "origin_device_id": null,
+              "row": {
+                "deleted_at": null,
+                "id": "entry_pact_001",
+                "name": "drink water",
+                "updated_at": "2026-10-01T10:00:00+00:00",
+                "user_id": "user-pact-001"
+              },
+              "server_ts": "2026-10-26T12:00:00.000Z",
+              "table": "routine_entries"
+            },
+            {
+              "client_ts": "2026-10-02T10:00:00.000Z",
+              "id": 5123,
+              "op": "insert",
+              "origin_device_id": null,
+              "row": {
+                "deleted_at": "2026-10-02T10:00:00+00:00",
+                "id": "entry_pact_002",
+                "name": "stretch",
+                "updated_at": "2026-10-02T10:00:00+00:00",
+                "user_id": "user-pact-001"
+              },
+              "server_ts": "2026-10-26T12:00:00.000Z",
+              "table": "routine_entries"
+            }
+          ]
         },
         "headers": {
           "Content-Type": "application/json",
