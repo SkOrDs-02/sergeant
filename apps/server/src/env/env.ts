@@ -21,6 +21,7 @@ import {
   stringWithDefault,
 } from "./envHelpers.js";
 import { pgEnvShape } from "./pgEnv.js";
+import { syncEnvShape } from "./syncEnv.js";
 import { telegramEnvShape } from "./telegramEnv.js";
 
 const envSchema = z.object({
@@ -602,23 +603,7 @@ const envSchema = z.object({
 
   AI_MEMORY_ENABLED: boolFromEnv(false),
 
-  /**
-   * Рубильник `GET /api/v2/sync/stream` (SSE). Дефолт `false` → маршрут
-   * відповідає 404, поки немає клієнта-споживача (Фаза 3,
-   * `sync-client-wiring.md`); аудит 2026-10-01, sec-09. Ран-тайм читає
-   * `process.env` напряму (`modules/sync/syncV2StreamGuard.ts`,
-   * `boolFromProcessEnv`) з тією ж семантикою - це поле лише валідує й
-   * документує значення.
-   */
-  SYNC_V2_STREAM_ENABLED: boolFromEnv(false),
-
-  /**
-   * Байтовий бюджет однієї сторінки `GET /api/v2/sync/pull` (ADR-0105 §1,
-   * аудит `rel-06`). Сторінка обрізається, щойно сума `octet_length(row::text)`
-   * попередніх оп-ів досягає бюджету; перший оп сторінки віддається завжди.
-   * Дефолт 2 MiB. Значення < 1 ігнорується (береться дефолт у `syncV2.ts`).
-   */
-  SYNC_V2_PULL_MAX_BYTES: intFromEnv(2_097_152),
+  ...syncEnvShape,
 
   VOYAGE_API_KEY: stringWithDefault(""),
 

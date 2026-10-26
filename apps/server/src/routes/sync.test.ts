@@ -133,3 +133,23 @@ describe("createSyncRouter — /api/v2/sync/stream feature flag (sec-09)", () =>
     expect(res.status).toBe(401);
   });
 });
+
+// ADR-0105 §3.3: знімок закритий тим самим способом, що й стрім.
+describe("createSyncRouter — /api/v2/sync/snapshot feature flag (ADR-0105)", () => {
+  afterEach(() => {
+    vi.unstubAllEnvs();
+  });
+
+  it("returns 404 by default (flag unset)", async () => {
+    vi.stubEnv("SYNC_SNAPSHOT_ENABLED", "");
+    delete process.env["SYNC_SNAPSHOT_ENABLED"];
+    const res = await request(mkApp()).get("/api/v2/sync/snapshot");
+    expect(res.status).toBe(404);
+  });
+
+  it("passes through to the auth chain when SYNC_SNAPSHOT_ENABLED=true", async () => {
+    vi.stubEnv("SYNC_SNAPSHOT_ENABLED", "true");
+    const res = await request(mkApp()).get("/api/v2/sync/snapshot");
+    expect(res.status).toBe(401);
+  });
+});

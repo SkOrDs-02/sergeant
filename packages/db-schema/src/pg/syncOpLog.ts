@@ -1,5 +1,6 @@
 import { sql } from "drizzle-orm";
 import {
+  bigint,
   bigserial,
   customType,
   index,
@@ -72,3 +73,20 @@ export const syncOpLog = pgTable(
     ),
   ],
 );
+
+/**
+ * Postgres schema for `sync_op_log_floor` (міграція 166, ADR-0105 §3.1).
+ *
+ * Нижня межа журналу per-user: максимальний `id` `sync_op_log`, видалений
+ * retention-ом для цього користувача. Pull із `since < floor_id` віддає
+ * `410 sync_cursor_expired`. Рядка немає = межа 0 (retention нічого не
+ * видаляв).
+ */
+export const syncOpLogFloor = pgTable("sync_op_log_floor", {
+  userId: text("user_id").primaryKey(),
+  /** BIGINT у БД; серіалізатори приводять до `number` (rule #1). */
+  floorId: bigint("floor_id", { mode: "number" }).notNull().default(0),
+  updatedAt: timestamp("updated_at", { withTimezone: true })
+    .notNull()
+    .defaultNow(),
+});
