@@ -133,3 +133,43 @@ describe("createSyncRouter — /api/v2/sync/stream feature flag (sec-09)", () =>
     expect(res.status).toBe(401);
   });
 });
+
+// ADR-0106: `state-hash` закритий прапорцем `SYNC_STATE_HASH_ENABLED`
+// (дефолт off) так само, як стрім: 404 до сесії, 401 від замоканої сесії
+// при ввімкненому прапорці.
+describe("createSyncRouter — /api/v2/sync/state-hash feature flag (ADR-0106)", () => {
+  afterEach(() => {
+    vi.unstubAllEnvs();
+  });
+
+  it("returns 404 by default (flag unset)", async () => {
+    vi.stubEnv("SYNC_STATE_HASH_ENABLED", "");
+    delete process.env["SYNC_STATE_HASH_ENABLED"];
+    const res = await request(mkApp()).get(
+      "/api/v2/sync/state-hash?table=fizruk_workouts",
+    );
+    expect(res.status).toBe(404);
+  });
+
+  it("returns 404 when SYNC_STATE_HASH_ENABLED=false", async () => {
+    vi.stubEnv("SYNC_STATE_HASH_ENABLED", "false");
+    const res = await request(mkApp()).get(
+      "/api/v2/sync/state-hash?table=fizruk_workouts",
+    );
+    expect(res.status).toBe(404);
+  });
+
+  it("passes through to the auth chain when SYNC_STATE_HASH_ENABLED=true", async () => {
+    vi.stubEnv("SYNC_STATE_HASH_ENABLED", "true");
+    const res = await request(mkApp()).get(
+      "/api/v2/sync/state-hash?table=fizruk_workouts",
+    );
+    expect(res.status).toBe(401);
+  });
+
+  it("does not gate pull", async () => {
+    vi.stubEnv("SYNC_STATE_HASH_ENABLED", "false");
+    const res = await request(mkApp()).get("/api/v2/sync/pull");
+    expect(res.status).toBe(401);
+  });
+});

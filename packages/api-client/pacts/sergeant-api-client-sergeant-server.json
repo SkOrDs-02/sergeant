@@ -1775,6 +1775,123 @@
       }
     },
     {
+      "description": "a GET /api/v2/sync/state-hash?table=fizruk_workouts request",
+      "providerStates": [
+        {
+          "name": "authenticated user-pact-001 with SYNC_STATE_HASH_ENABLED=true and two fizruk_workouts rows (one tombstoned)"
+        }
+      ],
+      "request": {
+        "headers": {
+          "accept": "application/json"
+        },
+        "method": "GET",
+        "path": "/api/v2/sync/state-hash",
+        "query": {
+          "table": [
+            "fizruk_workouts"
+          ]
+        }
+      },
+      "response": {
+        "body": {
+          "as_of_op_id": 1042,
+          "buckets": [
+            {
+              "bucket": 0,
+              "count": 1,
+              "hash": "43bf05e00783749aff6083404ff35b46148d6b87998ea867d5bb5b1fda5fc350"
+            },
+            {
+              "bucket": 1,
+              "count": 0,
+              "hash": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+            },
+            {
+              "bucket": 2,
+              "count": 0,
+              "hash": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+            },
+            {
+              "bucket": 3,
+              "count": 0,
+              "hash": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+            },
+            {
+              "bucket": 4,
+              "count": 0,
+              "hash": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+            },
+            {
+              "bucket": 5,
+              "count": 1,
+              "hash": "d0dcc8a3d3ed5ce24c5d09e770d431f69138876459069b64c4ed2ee42bbea3a1"
+            },
+            {
+              "bucket": 6,
+              "count": 0,
+              "hash": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+            },
+            {
+              "bucket": 7,
+              "count": 0,
+              "hash": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+            },
+            {
+              "bucket": 8,
+              "count": 0,
+              "hash": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+            },
+            {
+              "bucket": 9,
+              "count": 0,
+              "hash": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+            },
+            {
+              "bucket": 10,
+              "count": 0,
+              "hash": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+            },
+            {
+              "bucket": 11,
+              "count": 0,
+              "hash": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+            },
+            {
+              "bucket": 12,
+              "count": 0,
+              "hash": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+            },
+            {
+              "bucket": 13,
+              "count": 0,
+              "hash": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+            },
+            {
+              "bucket": 14,
+              "count": 0,
+              "hash": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+            },
+            {
+              "bucket": 15,
+              "count": 0,
+              "hash": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+            }
+          ],
+          "table": "fizruk_workouts",
+          "total": {
+            "count": 2,
+            "hash": "8ac097dbf7f5de27825122df9c32a5bc1a07202b53747e8a21da40a341eaa80d"
+          }
+        },
+        "headers": {
+          "Content-Type": "application/json",
+          "content-type": "application/json"
+        },
+        "status": 200
+      }
+    },
+    {
       "description": "a POST /api/nutrition/parse-pantry request with quantity-free items",
       "providerStates": [
         {

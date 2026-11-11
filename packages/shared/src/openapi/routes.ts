@@ -521,6 +521,61 @@ export const paths: ZodOpenApiPathsObject = {
       },
     },
   },
+  "/api/v2/sync/state-hash": {
+    get: {
+      summary: "Хеш стану sync-таблиці користувача (ADR-0106)",
+      description:
+        "Хеш `(pk, updated_at_ms, deleted_at_ms)` рядків однієї таблиці Фізрука/Рутини поточного користувача, порахований спільним канонізатором `computeStateHash` (`@sergeant/shared`), плюс 16 кошиків за першим півбайтом SHA-256 від `pk`. `as_of_op_id` (max id застосованого оп-у) знято в тій самій REPEATABLE READ транзакції. Маршрут закритий прапорцем `SYNC_STATE_HASH_ENABLED` (дефолт вимкнено → 404, віддається і без сесії); rate-limit 6/хв на користувача.",
+      tags: ["sync"],
+      security: cookieOrBearer,
+      requestParams: {
+        query: z.object({
+          table: z.string().meta({
+            description: "Таблиця з allowlist `SYNC_STATE_HASH_TABLE_PKS`.",
+          }),
+        }),
+      },
+      responses: {
+        "200": {
+          description:
+            "Хеш стану таблиці; `as_of_op_id` — number (0, якщо оп-ів немає); `buckets` — рівно 16, за зростанням `bucket`.",
+          content: {
+            "application/json": {
+              schema: z.object({
+                table: z.string(),
+                as_of_op_id: z.number().int(),
+                total: z.object({
+                  hash: z.string(),
+                  count: z.number().int(),
+                }),
+                buckets: z.array(
+                  z.object({
+                    bucket: z.number().int(),
+                    hash: z.string(),
+                    count: z.number().int(),
+                  }),
+                ),
+              }),
+            },
+          },
+        },
+        "400": {
+          description:
+            "Таблиця поза allowlist (`code: STATE_HASH_TABLE_NOT_ALLOWED`).",
+          content: { "application/json": { schema: namedSchemas.ApiError } },
+        },
+        "401": unauthorized,
+        "404": {
+          description:
+            "Ендпоінт вимкнено (`SYNC_STATE_HASH_ENABLED=false`, дефолт); віддається і без сесії.",
+        },
+        "429": {
+          description: "Перевищено ліміт 6 запитів на хвилину на користувача.",
+          content: { "application/json": { schema: namedSchemas.ApiError } },
+        },
+      },
+    },
+  },
 
   // ────────────────────── /api/chat ──────────────────────
   "/api/chat": {
