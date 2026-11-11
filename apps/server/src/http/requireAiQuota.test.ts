@@ -75,4 +75,30 @@ describe("requireAiQuota", () => {
     expect(res.body).toEqual({ error: "quota store unavailable" });
     expect(nextHandler).not.toHaveBeenCalled();
   });
+
+  it("refunds the charged quota when the handler ends with 5xx or a pre-upstream 413", async () => {
+    const refund = vi.fn(async () => {});
+    mocks.assertAiQuota.mockImplementation(async (req) => {
+      (req as { aiQuotaRefund?: () => Promise<void> }).aiQuotaRefund = refund;
+      return true;
+    });
+    const app = express();
+    app.use(requireAiQuota());
+    app.get("/ok", (_req, res) => {
+      res.status(200).json({ ok: true });
+    });
+    app.get("/upstream", (_req, res) => {
+      res.status(502).json({ code: "AI_PROVIDER" });
+    });
+    app.get("/too-large", (_req, res) => {
+      res.status(413).json({ code: "TOO_LARGE" });
+    });
+
+    await request(app).get("/ok");
+    expect(refund).not.toHaveBeenCalled();
+
+    await request(app).get("/upstream");
+    await request(app).get("/too-large");
+    await vi.waitFor(() => expect(refund).toHaveBeenCalledTimes(2));
+  });
 });
