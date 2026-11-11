@@ -238,6 +238,18 @@ describe("create_reminder", () => {
     expect(out).toContain("HH:MM");
   });
 
+  it.each(["24:00", "25:99", "7:60"])(
+    "error: неможливий час %s не записується",
+    (time) => {
+      seedHabit("h1", "Вода");
+      const out = call({
+        name: "create_reminder",
+        input: { habit_id: "h1", time },
+      });
+      expect(out).toContain("від 00:00 до 23:59");
+    },
+  );
+
   it("error: missing habit_id returns error", () => {
     const out = call({
       name: "create_reminder",
@@ -399,14 +411,17 @@ describe("add_calendar_event", () => {
     expect(out).toContain("назва");
   });
 
-  it("error: invalid date returns error", () => {
-    const out = call({
-      name: "add_calendar_event",
-      input: { name: "X", date: "bad" },
-    });
-    expect(typeof out).toBe("string");
-    expect(out).toContain("YYYY-MM-DD");
-  });
+  it.each(["bad", "2026-02-30"])(
+    "error: invalid date %s returns error",
+    (date) => {
+      const out = call({
+        name: "add_calendar_event",
+        input: { name: "X", date },
+      });
+      expect(typeof out).toBe("string");
+      expect(out).toContain("YYYY-MM-DD");
+    },
+  );
 
   it("shape: result contains event id", () => {
     const out = call({
