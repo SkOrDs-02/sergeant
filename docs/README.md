@@ -14,9 +14,9 @@ Main documentation index for Sergeant.
 
 <!-- TRUST-BADGE:START -->
 
-> 🟢 **Docs trust: HEALTHY** — _оновлено 2026-10-26 via `pnpm docs:gen-trust-badge`_
+> 🔴 **Docs trust: CRITICAL** — _оновлено 2026-11-11 via `pnpm docs:gen-trust-badge`_
 >
-> 0 stale docs · 0 WIP violations — система здорова, працюй спокійно. Деталі → [`today.md`](./today.md).
+> 6 stale, 0 WIP violations — **STOP**, дренуй backlog перш ніж заводити нове. Деталі → [`today.md`](./today.md).
 
 <!-- TRUST-BADGE:END -->
 

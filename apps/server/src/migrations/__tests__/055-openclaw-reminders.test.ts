@@ -95,9 +95,13 @@ afterAll(async () => {
 
 async function readUpMigrations(): Promise<string[]> {
   const files = await fs.readdir(MIGRATIONS_DIR);
-  return files
-    .filter((f) => /^\d{3}_.+\.sql$/.test(f) && !f.endsWith(".down.sql"))
-    .sort();
+  return (
+    files
+      .filter((f) => /^\d{3}_.+\.sql$/.test(f) && !f.endsWith(".down.sql"))
+      // Міграція 166 видаляє openclaw_reminders, тож ланцюжок зупиняється на 055.
+      .filter((f) => f <= "055_~")
+      .sort()
+  );
 }
 
 async function execSqlFile(p: pg.Pool, file: string): Promise<void> {
