@@ -204,7 +204,9 @@ describe("recurringExpense", () => {
     const subId = written[written.length - 1]!.id;
     vi.clearAllMocks();
     __setFinykSqliteStateCacheForTests({
-      subscriptions: [{ id: subId, name: "Gym", amount: 500 }],
+      subscriptions: [
+        { id: subId, name: "Gym", keyword: "", billingDay: 1, currency: "UAH" },
+      ],
     });
     result.undo();
     expect(mockWrite).toHaveBeenCalledWith("finyk_subs", []);

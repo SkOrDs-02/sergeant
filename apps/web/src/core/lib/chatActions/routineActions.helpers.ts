@@ -80,8 +80,10 @@ export function isDateKey(v: unknown): v is string {
  */
 export function normalizeTimeOfDay(v: unknown): string | null {
   const m = /^(\d{1,2}):(\d{2})$/.exec(String(v ?? "").trim());
-  if (!m || Number(m[1]) > 23 || Number(m[2]) > 59) return null;
-  return `${m[1]!.padStart(2, "0")}:${m[2]}`;
+  const hours = Number(m?.[1]);
+  const minutes = Number(m?.[2]);
+  if (!m || hours > 23 || minutes > 59) return null;
+  return `${String(hours).padStart(2, "0")}:${String(minutes).padStart(2, "0")}`;
 }
 
 /**
