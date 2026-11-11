@@ -333,10 +333,32 @@ describe("applyFinykPrefs", () => {
 
       const update = lastQuery(fake);
       expect(update.sql).toContain("UPDATE finyk_prefs");
-      expect(update.sql).toContain("prefs_json           = $1::jsonb");
+      expect(update.sql).toContain("COALESCE($1::jsonb, prefs_json)");
       expect(JSON.parse(update.params[0] as string)).toEqual({
         merchantRules: [],
       });
+    });
+
+    it("рядок без prefs_json (mobile) лишає серверні правила й готівку", async () => {
+      const fake = new FakeClient();
+      fake.queueRows([{ updated_at: new Date("2026-10-01T09:00:00.000Z") }]);
+
+      await expect(
+        applyFinykPrefs(
+          asClient(fake),
+          syncOp("finyk_prefs", "insert", {
+            user_id: "user-1",
+            show_balance: 1,
+            excluded_stat_tx_ids_json: "[]",
+          }),
+          "user-1",
+          new Date("2026-10-01T10:00:00.000Z"),
+        ),
+      ).resolves.toEqual({ status: "applied" });
+
+      const update = lastQuery(fake);
+      expect(update.sql).toContain("COALESCE($1::jsonb, prefs_json)");
+      expect(update.params[0]).toBeNull();
     });
 
     it("старіше за серверне оновлення правило не затирає (LWW)", async () => {

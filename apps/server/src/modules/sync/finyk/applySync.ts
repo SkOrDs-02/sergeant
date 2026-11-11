@@ -237,7 +237,11 @@ export async function applyFinykPrefs(
     }
   }
 
-  const prefsJson = toJsonbParam(row["prefs_json"]) ?? "{}";
+  // Mobile-writer не шле `prefs_json` зовсім. Відсутній ключ лишає серверне
+  // значення (як і pull на клієнті: upsert лише з присутніх колонок), інакше
+  // пуш prefs із мобайла стирав би правила мерчантів і готівку в PG.
+  const prefsJsonPatch = toJsonbParam(row["prefs_json"]);
+  const prefsJson = prefsJsonPatch ?? "{}";
   const monthlyPlanJson = toJsonbParam(row["monthly_plan_json"]) ?? "{}";
   const showBalance =
     row["show_balance"] === false || row["show_balance"] === 0 ? false : true;
@@ -276,7 +280,7 @@ export async function applyFinykPrefs(
     return applyIfNewer(
       client,
       `UPDATE finyk_prefs
-         SET prefs_json           = $1::jsonb,
+         SET prefs_json           = COALESCE($1::jsonb, prefs_json),
              monthly_plan_json    = $2::jsonb,
              show_balance         = $3,
              excluded_stat_tx_ids = $4::jsonb,
@@ -284,7 +288,7 @@ export async function applyFinykPrefs(
              updated_at           = $6
        WHERE user_id = $7 AND updated_at < $6`,
       [
-        prefsJson,
+        prefsJsonPatch,
         monthlyPlanJson,
         showBalance,
         excludedStatTxIds,
