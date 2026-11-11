@@ -30,6 +30,13 @@ export interface UsePlanResult {
   isPro: boolean;
   /** Mirrors `useQuery` loading state — distinct from `plan === "free"`. */
   isLoading: boolean;
+  /**
+   * Запит статусу впав (офлайн, 5xx). `plan` тоді теж дефолтний `"free"`,
+   * тож твердження про план без цього прапорця було б неправдою.
+   */
+  isError: boolean;
+  /** Повторити запит статусу, напр. з кнопки після помилки. */
+  refetch: () => void;
   /** Raw subscription payload (id, status, currentPeriodEnd…) for UI hints. */
   subscription: BillingStatusResponse["subscription"] | null;
   /**
@@ -71,6 +78,8 @@ export function usePlan(): UsePlanResult {
     plan,
     isPro: plan === "pro",
     isLoading: query.isLoading,
+    isError: query.isError,
+    refetch: () => void query.refetch(),
     subscription,
     access: query.data?.access ?? null,
   };

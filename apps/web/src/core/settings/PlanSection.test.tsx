@@ -484,6 +484,24 @@ describe("PlanSection (audit P1-6 — Settings plan + manage subscription)", () 
       screen.queryByText(/Ти на безкоштовному плані/),
     ).not.toBeInTheDocument();
   });
+
+  it("на збої статусу не каже «Free», а пропонує повторити запит", async () => {
+    statusMock.mockRejectedValueOnce(new Error("network"));
+    statusMock.mockResolvedValue(PRO_ACTIVE_RESPONSE);
+    renderSection();
+    await openSection();
+
+    expect(await screen.findByTestId("plan-status-error")).toBeInTheDocument();
+    expect(screen.getByTestId("plan-badge")).not.toHaveTextContent("Free");
+    expect(
+      screen.queryByText(/Ти на безкоштовному плані/),
+    ).not.toBeInTheDocument();
+    expect(screen.queryByTestId("plan-upgrade-button")).not.toBeInTheDocument();
+
+    fireEvent.click(screen.getByTestId("plan-status-retry"));
+    expect(await screen.findByTestId("plan-active-info")).toBeInTheDocument();
+    expect(screen.queryByTestId("plan-status-error")).not.toBeInTheDocument();
+  });
 });
 
 describe("PlanSection: значення праворуч у рядку (redesign v3.1, В4)", () => {
