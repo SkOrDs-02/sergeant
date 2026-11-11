@@ -12,7 +12,16 @@ import {
 } from "@sergeant/shared";
 import { safeReadStringLS } from "@shared/lib/storage/storage";
 import { logger } from "@shared/lib";
-import { addDays, dateKeyFromDate } from "@sergeant/routine-domain";
+import {
+  addDays,
+  calcRoutineDayProgress,
+  completionRateForRange,
+  dateKeyFromDate,
+  flexibleMaxActiveStreak,
+  habitScheduledOnDate,
+  isFlexibleHabit,
+  weekDoneCountExcludingDate,
+} from "@sergeant/routine-domain";
 import { fmt } from "../hubChatUtils";
 import { loadRoutineState } from "../../../modules/routine/lib/routineStorage";
 import { getCachedFizrukSqliteState } from "../../../modules/fizruk/lib/sqliteReader";
@@ -135,50 +144,59 @@ export function appendRoutineLines(lines: string[], now: Date): void {
     const completions = routineState.completions || {};
     if (habits.length === 0) return;
 
+    // Ті самі доменні селектори, що в модулі й хабі: розклад, паузи, разові
+    // й гнучкі звички та пропуски з причиною. Наївне «виконано / усі звички»
+    // давало моделі «2 з 6» там, де людина бачить «2 з 2».
     const todayKey = dateKeyFromDate(now);
-    const todayDone = habits.filter((h) =>
-      (completions[h.id] ?? []).includes(todayKey),
+    const skips = routineState.skips ?? {};
+    const today = calcRoutineDayProgress(
+      habits,
+      completions,
+      todayKey,
+      todayKey,
+      skips,
     );
     lines.push(
-      `[Рутина] ${habits.length} активних звичок, виконано сьогодні: ${todayDone.length} з ${habits.length}`,
+      `[Рутина] ${habits.length} активних звичок, виконано сьогодні: ${today.completed} з ${today.scheduled}`,
     );
 
     const habitDetails = habits
+      .filter((h) =>
+        habitScheduledOnDate(h, todayKey, {
+          pausedFrom: todayKey,
+          weekDoneCount: isFlexibleHabit(h)
+            ? weekDoneCountExcludingDate(completions[h.id], todayKey)
+            : undefined,
+        }),
+      )
       .map((h) => {
         const done = (completions[h.id] ?? []).includes(todayKey);
-        return `${h.name} (id:${h.id}): ${done ? "виконано" : "не виконано"}`;
+        const status = done
+          ? "виконано"
+          : skips[h.id]?.[todayKey]
+            ? "пропущено з причиною"
+            : "не виконано";
+        return `${h.name} (id:${h.id}): ${status}`;
       })
       .join(", ");
-    lines.push(`[Рутина сьогодні] ${habitDetails}`);
+    if (habitDetails) lines.push(`[Рутина сьогодні] ${habitDetails}`);
 
     // eslint-disable-next-line sergeant-design/prefer-kyiv-time -- ADR-0078: тиждень рахується від дня пристрою, бо самі відмітки лежать під device-local ключами; київський weekday зсунув би вікно на добу для всіх поза Києвом.
     const dow = (now.getDay() + 6) % 7;
-    let weekDone = 0;
-    let weekTotal = 0;
-    for (let i = 0; i <= dow; i++) {
-      const dk = deviceDayKeyOffset(now, -dow + i);
-      weekTotal += habits.length;
-      for (const h of habits) {
-        if ((completions[h.id] ?? []).includes(dk)) weekDone++;
-      }
-    }
-    const weekPct =
-      weekTotal > 0 ? Math.round((weekDone / weekTotal) * 100) : 0;
+    const week = completionRateForRange(
+      habits,
+      completions,
+      deviceDayKeyOffset(now, -dow),
+      todayKey,
+      { pausedFrom: todayKey, skips },
+    );
     lines.push(
-      `[Рутина тиждень] ${weekPct}% виконання (${weekDone} з ${weekTotal})`,
+      `[Рутина тиждень] ${Math.round(week.rate * 100)}% виконання (${week.completed} з ${week.scheduled})`,
     );
 
-    let streak = 0;
-    for (let i = 0; i < 365; i++) {
-      const dk = deviceDayKeyOffset(now, -1 - i);
-      if (habits.every((h) => (completions[h.id] ?? []).includes(dk))) {
-        streak++;
-      } else {
-        break;
-      }
-    }
+    const streak = flexibleMaxActiveStreak(habits, completions, todayKey, skips);
     if (streak > 0)
-      lines.push(`[Рутина серія] ${streak} днів поспіль (всі звички)`);
+      lines.push(`[Рутина серія] найкраща поточна серія звички: ${streak} дн.`);
   } catch (err) {
     logger.error("[hubChatContext] секція рутини не сформувалась", err);
     lines.push(`[Рутина] ${DATA_UNAVAILABLE_MARKER}`);

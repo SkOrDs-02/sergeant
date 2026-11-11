@@ -156,6 +156,35 @@ describe("appendRoutineLines", () => {
   });
 });
 
+// Числа AI-контексту мусять збігатися з модулем: розклад, разові події й
+// паузи виходять зі знаменника, а не рахуються «невиконаними».
+describe("appendRoutineLines — розклад звичок", () => {
+  it("субота: будні, разова минулого місяця й пауза не входять у «N з M»", () => {
+    const saturday = new Date(2026, 5, 20, 12);
+    const today = dateKeyFromDate(saturday);
+    __setRoutineSqliteStateCacheForTests({
+      habits: [
+        { id: "h1", name: "Біг", recurrence: "daily", startDate: "2026-06-01" },
+        { id: "h2", name: "Звіт", recurrence: "weekdays", startDate: "2026-06-01" },
+        { id: "h3", name: "Лікар", recurrence: "once", startDate: "2026-05-10" },
+        { id: "h4", name: "Вода", recurrence: "daily", startDate: "2026-06-01", paused: true },
+      ] as never,
+    });
+    __setRoutineSqliteCompletionsCacheForTests({
+      completions: { h1: [today] },
+    });
+    const lines: string[] = [];
+    appendRoutineLines(lines, saturday);
+    const out = lines.join("\n");
+    expect(out).toContain("виконано сьогодні: 1 з 1");
+    expect(out).toContain("[Рутина сьогодні] Біг (id:h1): виконано");
+    expect(out).not.toContain("Звіт (id:h2)");
+    // Пн–Сб: щоденна 6 + будні 5 + пауза від сьогодні лишає Пн–Пт 5.
+    expect(out).toContain("[Рутина тиждень] 6% виконання (1 з 16)");
+    expect(out).toContain("[Рутина серія] найкраща поточна серія звички: 1 дн.");
+  });
+});
+
 describe("appendNutritionLines", () => {
   it("emits nothing when no nutrition data", () => {
     const lines: string[] = [];
