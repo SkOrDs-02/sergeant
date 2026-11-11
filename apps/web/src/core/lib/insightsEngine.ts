@@ -12,7 +12,7 @@
  */
 
 import { txTimeMs } from "@sergeant/finyk-domain/lib/transactions";
-import { formatNumberUk } from "@sergeant/shared";
+import { formatNumberUk, pluralUa } from "@sergeant/shared";
 import {
   getTxStatAmount,
   readFinykStatsContext,
@@ -124,9 +124,16 @@ export function workoutDayInsight(
     iconName: "calendar",
     title: "Найпродуктивніший день для тренувань",
     stat: DOW_UK[maxIdx]!,
-    detail: `${maxCount} з ${workouts.length} тренувань`,
+    detail: `${maxCount} з ${workouts.length} ${pluralUa(workouts.length, WORKOUTS_GEN_FORMS)}`,
   };
 }
+
+/** Родовий після «з»: «з 21 тренування», «з 4 тренувань». */
+const WORKOUTS_GEN_FORMS = {
+  one: "тренування",
+  few: "тренувань",
+  many: "тренувань",
+};
 
 /**
  * Insight 2: Weekly spending in active weeks (≥3 workouts) vs rest weeks.

@@ -278,7 +278,7 @@ describe("summaryFor", () => {
 
   it("reorder_habits", () => {
     expect(summaryFor("reorder_habits", { habit_ids: ["a", "b"] }, "r")).toBe(
-      "2 звичок",
+      "2 звички",
     );
   });
 
@@ -361,7 +361,7 @@ describe("summaryFor", () => {
         { date: "2024-01-01", exercises: [1, 2] },
         "r",
       ),
-    ).toBe("2024-01-01 · о 09:00 · 2 вправ");
+    ).toBe("2024-01-01 · о 09:00 · 2 вправи");
     expect(summaryFor("plan_workout", { time: "18:00" }, "r")).toBe("о 18:00");
   });
 
@@ -451,6 +451,15 @@ describe("summaryFor", () => {
     expect(summaryFor("detect_anomalies", {}, "r")).toBe("Період: 30 днів");
     expect(summaryFor("habit_trend", {}, "r")).toBe("Період: 30 днів");
     expect(summaryFor("category_breakdown", {}, "r")).toBe("Період: 30 днів");
+  });
+
+  it("узгоджує числівник з іменником", () => {
+    expect(summaryFor("spending_trend", { period_days: 21 }, "r")).toBe(
+      "Період: 21 день",
+    );
+    expect(
+      summaryFor("reorder_habits", { habit_ids: ["a", "b", "c"] }, "r"),
+    ).toBe("3 звички");
   });
 
   it("calculate_1rm", () => {
