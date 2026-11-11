@@ -2,7 +2,7 @@
 
 > **Поточні статуси перенесених знахідок:** [єдиний реєстр верифікації](verification/findings.json). Цей документ зберігає історичні результати; нові спроби та виправлення ведуться в реєстрі.
 
-> **Last touched:** 2026-10-22 by @test. **Next review:** 2027-12-09.
+> **Last touched:** 2026-11-11 by @claude. **Next review:** 2027-12-29.
 > **Status:** Active
 >
 > **Звірка 2026-10-22:** `routes/internal/seo.ts`, `marketing.ts` і `growth.ts` з § 3а вже видалені (#1310, #1536); `strategic.ts`, `debug-window.ts`, `email.ts` та неспожиті хуки api-client лишаються.
@@ -500,6 +500,8 @@ Vite + React (не Next), 17 файлів, повністю підключени
 ## Статус закриття § 2 (2026-09-29)
 
 Рішення власника: двофазне видалення 22 осиротілих таблиць (`webhook_events`, `seo_*` ×8, `growth_cohorts`, `revenue_daily`, `feature_adoption_weekly`, `brand_mentions`, `social_mentions`, `social_channels_daily`, `app_store_reviews`, `email_events`, `hard_rules_violations`, `openclaw_{decisions,write_audit,reminders,approval_nonce}`). Фаза 1 — ✅ міграція [`152_orphan_tables_deprecate_phase1.sql`](../../../../apps/server/src/migrations/152_orphan_tables_deprecate_phase1.sql) (deprecation-маркер) + видалено ендпоінт `POST /api/internal/email/event`, єдиний живий писар `email_events`. Роути `seo/growth/marketing/governance` на момент фази 1 у коді вже відсутні. Фаза 2 (DROP) — окремий PR не раніше 2026-10-13. Виключені: `openclaw_mute_state` (читач `modules/alerts/mute-state.ts`), `growth_funnel_daily`/`growth_acquisition_daily` (пишуть WF-60/63).
+
+Фаза 2 (2026-11-11) — міграція [`166_orphan_tables_drop_phase2.sql`](../../../../apps/server/src/migrations/166_orphan_tables_drop_phase2.sql) видаляє всі 22 таблиці (`down.sql` відтворює порожню схему для локального відкату). Повторна перевірка на `main` перед DROP: читачів і писарів у server, workers, scripts, `packages/db-schema`, GDPR-списках, RLS і pact/OpenAPI немає; прибрано 22 записи з `SQL_ONLY_TABLES` у `scripts/check-schema-drift.mjs`, тест міграції 055 обмежено ланцюжком до 055. Застосування на проді: рішення власника після бекапу цих таблиць.
 
 ## Обмеження аудиту
 
