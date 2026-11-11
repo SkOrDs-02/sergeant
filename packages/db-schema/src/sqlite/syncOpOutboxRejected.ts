@@ -46,7 +46,7 @@ export interface ListRejectedOutboxOptions {
    * Лише рядки цього користувача. На kvvfs партиції всіх акаунтів ділять
    * один стор, тож без нього список показав би чужі відхилені записи.
    */
-  readonly userId?: string;
+  readonly userId?: string | undefined;
 }
 
 interface RejectedRowFromDb extends Record<string, unknown> {

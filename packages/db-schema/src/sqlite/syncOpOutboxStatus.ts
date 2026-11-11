@@ -100,7 +100,7 @@ interface CountRowFromDb extends Record<string, unknown> {
  */
 export async function countOutboxByStatus(
   client: SqliteMigrationClient,
-  options: { readonly userId?: string } = {},
+  options: { readonly userId?: string | undefined } = {},
 ): Promise<SyncOpOutboxStatusCounts> {
   // На kvvfs партиції всіх акаунтів ділять один стор: без `userId` лічильник
   // показав би людині чергу іншого акаунта.
