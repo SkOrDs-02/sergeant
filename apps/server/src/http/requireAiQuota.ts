@@ -1,10 +1,10 @@
 import type { RequestHandler, Response } from "express";
 import {
   assertAiQuota,
-  type AssertAiQuotaOptions,
   type WeeklyMeter,
   type WithAiQuotaRefund,
 } from "../modules/chat/aiQuota.js";
+import type { AssertAiQuotaOptions } from "../modules/chat/aiQuotaBudget.js";
 
 /**
  * Відповідь, за яку квоту не платять: провал апстріму чи сервера (5xx) або
