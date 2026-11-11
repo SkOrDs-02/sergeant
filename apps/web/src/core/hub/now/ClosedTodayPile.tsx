@@ -13,6 +13,7 @@
  */
 import { useMemo, type ReactNode } from "react";
 import { SectionHeading } from "@shared/components/ui/SectionHeading";
+import { useAnnounce } from "@shared/components/ui/ScreenReaderAnnouncer";
 import { coreMessages } from "@shared/i18n/uk.core";
 import { computeClosedToday } from "./closedToday";
 import { usePublishHubDayCount } from "./hubDayCounts";
@@ -80,6 +81,7 @@ export function ClosedTodayPile({
   checked = [],
   onUncheck,
 }: ClosedTodayPileProps) {
+  const { announce } = useAnnounce();
   const items = useMemo(() => {
     void storageBump; // storage-write tick — перерахувати після запису
     return computeClosedToday({ activeModules, recs });
@@ -88,6 +90,14 @@ export function ClosedTodayPile({
   const count = items.length + doneSteps.length + checked.length;
   usePublishHubDayCount("closed", count);
   if (count === 0) return null;
+
+  // Рядок розмонтовується разом зі сфокусованим чекбоксом (останній ще й
+  // прибирає всю купу), тож фокус іде в «Зараз», куди повертається пункт.
+  const handleUncheck = (item: NowItem) => {
+    document.getElementById("now-pile-heading")?.focus({ preventScroll: true });
+    onUncheck?.(item);
+    announce(coreMessages.hub.closedPile.unchecked);
+  };
 
   return (
     <section aria-labelledby="closed-pile-heading">
@@ -133,7 +143,7 @@ export function ClosedTodayPile({
               aria-checked
               data-testid="closed-now-row"
               aria-label={`${coreMessages.hub.closedPile.uncheck}: ${item.title}`}
-              onClick={() => onUncheck?.(item)}
+              onClick={() => handleUncheck(item)}
               className={ROW}
             >
               <RowBody name={item.title} />
