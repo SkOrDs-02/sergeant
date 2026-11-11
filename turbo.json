@@ -73,12 +73,30 @@
       ],
       "outputs": []
     },
+    // drift-гейт читає SQL-міграції сервера: нова міграція без оновлення
+    // Drizzle-схеми не має проходити зеленим із кешу.
+    "@sergeant/db-schema#test": {
+      "dependsOn": ["^build"],
+      "inputs": [
+        "$TURBO_DEFAULT$",
+        "$TURBO_ROOT$/apps/server/src/migrations/**",
+        "$TURBO_ROOT$/scripts/check-schema-drift.mjs"
+      ],
+      "outputs": []
+    },
+    // Гейт каталогу вправ перевіряє наявність картинок у web/public.
+    "@sergeant/fizruk-domain#test": {
+      "dependsOn": ["^build"],
+      "inputs": ["$TURBO_DEFAULT$", "$TURBO_ROOT$/apps/web/public/**"],
+      "outputs": []
+    },
     "@sergeant/server#test": {
       "dependsOn": ["^build", "@sergeant/api-client#test"],
       "inputs": [
         "$TURBO_DEFAULT$",
         "$TURBO_ROOT$/scripts/telegram/**",
-        "$TURBO_ROOT$/packages/api-client/pacts/**"
+        "$TURBO_ROOT$/packages/api-client/pacts/**",
+        "$TURBO_ROOT$/docs/work/specs/planning/model-eval-2026-08-25.md"
       ],
       "outputs": []
     },
