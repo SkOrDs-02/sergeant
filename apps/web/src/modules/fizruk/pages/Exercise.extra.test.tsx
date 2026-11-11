@@ -247,6 +247,24 @@ describe("Exercise page — старіння 1RM і повернення (кан
     expect(screen.queryByText(/або/)).toBeNull();
   });
 
+  it("незавершене повернення: зниження рахується від останнього підходу, не від піка (без другого зниження)", () => {
+    useExerciseCatalog.mockReturnValue(CATALOG);
+    useWorkouts.mockReturnValue({
+      loaded: true,
+      workouts: [
+        // Пік e1RM 140 (105×10), потім довга пауза і легка сесія 57×10.
+        strengthWorkout("w2", daysAgoIso(3), [{ weightKg: 57, reps: 10 }]),
+        strengthWorkout("w1", daysAgoIso(60), [{ weightKg: 105, reps: 10 }]),
+      ],
+    });
+    render(<Exercise exerciseId="bench" onNavigate={onNavigate} />);
+    const card = screen.getByText("Наступного разу").parentElement!;
+    // Підказка в тренуванні для тієї ж вправи дає 57 кг; 52,5 було б
+    // зниженням від піка, застосованим до вже легкої ваги вдруге.
+    expect(card.textContent).toMatch(/Наступного разу57,0\s*кг/);
+    expect(card.textContent).not.toContain("52,5");
+  });
+
   it("підходи понад кеп Еплі не гасять підказку «Наступного разу»", () => {
     useExerciseCatalog.mockReturnValue(CATALOG);
     useWorkouts.mockReturnValue({

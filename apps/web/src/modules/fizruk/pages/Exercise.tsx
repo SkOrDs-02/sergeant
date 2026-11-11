@@ -102,10 +102,21 @@ export function Exercise({ exerciseId, onNavigate }: ExerciseProps) {
     [best, history, ex, injuryMarks],
   );
 
-  const suggestedNext = useMemo(
-    () => suggestNextSet(best.lastTop, { exercise: ex, aging }),
-    [best.lastTop, ex, aging],
-  );
+  // `aging.reductionPct` міряється від ПІКА історії, а `suggestNextSet`
+  // застосовує його до ваги ОСТАННЬОГО підходу. Без перерахунку на цей підхід
+  // легка сесія повернення знижувалась би вдруге; так само рахує
+  // `computeNextSetAging` для підказки в тренуванні.
+  const suggestedNext = useMemo(() => {
+    const lastTop1rm = uncappedEpley1rm(best.lastTop);
+    const reductionPct =
+      lastTop1rm > 0
+        ? Math.max(0, Math.round((1 - aging.reference1rm / lastTop1rm) * 100))
+        : 0;
+    return suggestNextSet(best.lastTop, {
+      exercise: ex,
+      aging: { ...aging, reductionPct },
+    });
+  }, [best.lastTop, ex, aging]);
 
   const muscleLabels = useMemo(() => {
     const ids = ex?.muscles?.primary || [];
