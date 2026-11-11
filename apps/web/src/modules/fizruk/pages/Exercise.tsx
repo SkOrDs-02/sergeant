@@ -16,6 +16,7 @@ import {
   formatDurShort,
   latestClearedInjuryAtForExercise,
   suggestNextSet,
+  uncappedEpley1rm,
 } from "@sergeant/fizruk-domain";
 import {
   collectExerciseHistory,
@@ -87,16 +88,23 @@ export function Exercise({ exerciseId, onNavigate }: ExerciseProps) {
    */
   const aging = useMemo(
     () =>
-      computeOneRmAgingForSummary(best, {
-        sessions: collectStrengthSessionPoints(history),
-        injuryClearedAt: latestClearedInjuryAtForExercise(ex, injuryMarks),
-      }),
+      computeOneRmAgingForSummary(
+        // Усі підходи понад кеп Еплі дають best1rm = 0, а з нульовим піком
+        // режим повернення не вмикається взагалі.
+        best.best1rm > 0
+          ? best
+          : { ...best, best1rm: uncappedEpley1rm(best.lastTop) },
+        {
+          sessions: collectStrengthSessionPoints(history),
+          injuryClearedAt: latestClearedInjuryAtForExercise(ex, injuryMarks),
+        },
+      ),
     [best, history, ex, injuryMarks],
   );
 
   const suggestedNext = useMemo(
-    () => suggestNextSet(best.lastTop),
-    [best.lastTop],
+    () => suggestNextSet(best.lastTop, { exercise: ex, aging }),
+    [best.lastTop, ex, aging],
   );
 
   const muscleLabels = useMemo(() => {

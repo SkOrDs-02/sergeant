@@ -234,6 +234,33 @@ describe("Exercise page — старіння 1RM і повернення (кан
     expect(screen.getByText("Рекорд застарів")).toBeInTheDocument();
   });
 
+  it("у режимі повернення «Наступного разу» не пропонує підвищення ваги", () => {
+    useExerciseCatalog.mockReturnValue(CATALOG);
+    useWorkouts.mockReturnValue({
+      loaded: true,
+      workouts: [
+        strengthWorkout("w1", daysAgoIso(42), [{ weightKg: 60, reps: 10 }]),
+      ],
+    });
+    render(<Exercise exerciseId="bench" onNavigate={onNavigate} />);
+    // Без aging картка радила б 60×11 і «або 62,5×8».
+    expect(screen.queryByText(/або/)).toBeNull();
+  });
+
+  it("підходи понад кеп Еплі не гасять підказку «Наступного разу»", () => {
+    useExerciseCatalog.mockReturnValue(CATALOG);
+    useWorkouts.mockReturnValue({
+      loaded: true,
+      workouts: [
+        strengthWorkout("w1", daysAgoIso(3), [{ weightKg: 12.5, reps: 11 }]),
+      ],
+    });
+    render(<Exercise exerciseId="bench" onNavigate={onNavigate} />);
+    expect(
+      screen.queryByText("Заповни підходи, щоб зʼявилась рекомендація"),
+    ).toBeNull();
+  });
+
   it("свіжа вправа режим повернення не вмикає", () => {
     useExerciseCatalog.mockReturnValue(CATALOG);
     useWorkouts.mockReturnValue({
