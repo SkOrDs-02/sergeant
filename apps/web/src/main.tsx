@@ -35,6 +35,7 @@ import {
 import { logger } from "@shared/lib";
 import { initWebVitals } from "./core/observability/webVitals.js";
 import { initPostHog } from "./core/observability/posthog.js";
+import { vercelAnalyticsBeforeSend } from "./core/observability/vercelAnalytics.js";
 import { initLongTaskMonitor } from "./core/lib/longTaskMonitor";
 import { cleanupDemoLeftoversOnce } from "./core/onboarding/demoLeftoverCleanup.js";
 import { isCapacitor, getPlatform } from "@sergeant/shared";
@@ -183,7 +184,9 @@ function mountApp(): void {
         <Suspense fallback={null}>
           <RouterProvider router={router} />
         </Suspense>
-        {shouldRenderVercelAnalytics() ? <Analytics /> : null}
+        {shouldRenderVercelAnalytics() ? (
+          <Analytics beforeSend={vercelAnalyticsBeforeSend} />
+        ) : null}
         {ReactQueryDevtools ? (
           <Suspense fallback={null}>
             <ReactQueryDevtools
