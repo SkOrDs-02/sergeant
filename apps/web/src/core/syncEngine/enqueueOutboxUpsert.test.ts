@@ -516,6 +516,42 @@ describe("enqueueOutboxUpsert — toggle on/off/on on a real SQLite (data-14)", 
       expect(queue().map((r) => r.op)).toEqual(["insert", "delete", "insert"]);
     });
 
+    it("a repeat behind a row already waiting for retry is queued with its own clientTs", async () => {
+      const row = (ts: string) => ({
+        id: "h:2026-10-01",
+        user_id: USER_ID,
+        name: "Drink",
+        completed_at: ts,
+        created_at: ts,
+        deleted_at: null,
+      });
+      const t1 = "2026-10-01T08:00:00.000Z";
+      const t3 = "2026-10-01T09:00:00.000Z";
+      const first = await enqueueOutboxUpsert(client, {
+        userId: USER_ID,
+        table: "routine_entries",
+        op: "insert",
+        row: row(t1),
+        clientTs: t1,
+        idempotencyKey: crypto.randomUUID(),
+      });
+      db.prepare(
+        `UPDATE sync_op_outbox SET attempts = 1, next_retry_at = ? WHERE id = ?`,
+      ).run("2026-10-01T08:05:00.000Z", first.id);
+
+      const second = await enqueueOutboxUpsert(client, {
+        userId: USER_ID,
+        table: "routine_entries",
+        op: "insert",
+        row: row(t3),
+        clientTs: t3,
+        idempotencyKey: crypto.randomUUID(),
+      });
+
+      expect(second.inserted).toBe(true);
+      expect(second.id).not.toBe(first.id);
+    });
+
     it("a plain double-submit (two identical inserts in a row) is still deduplicated", async () => {
       const row = {
         id: "h:2026-10-01",

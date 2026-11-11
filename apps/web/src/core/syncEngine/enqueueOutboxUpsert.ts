@@ -245,8 +245,10 @@ async function findDuplicatePending(
     op: string;
     row: string;
     client_ts: string;
+    attempts: number;
+    next_retry_at: string | null;
   }>(
-    `SELECT id, op, row, client_ts FROM sync_op_outbox
+    `SELECT id, op, row, client_ts, attempts, next_retry_at FROM sync_op_outbox
        WHERE user_id = ? AND table_name = ? AND status = 'pending'
        ORDER BY id DESC
        LIMIT 1`,
@@ -256,6 +258,12 @@ async function findDuplicatePending(
   if (lastPending === undefined) return null;
   // Newest pending row is a different kind of op → not a repeat of it.
   if (lastPending.op !== op) return null;
+  // Рядок, що вже ходив на сервер і чекає ретраю, не дубль: поки він висить,
+  // pull міг застосувати чужу правку, і повтор того самого значення мусить
+  // поїхати з новим `client_ts`, інакше програє LWW старим.
+  if (lastPending.attempts > 0 || lastPending.next_retry_at) {
+    return null;
+  }
 
   let parsedRow: unknown;
   try {
