@@ -195,7 +195,11 @@ export default async function handler(
   const jsonParsed = extractJsonFromText(text);
   const result = normalizePhotoResult(jsonParsed, { fallbackGrams: grams });
 
-  res.status(200).json({ result, rawText: text || null });
+  // Сирий текст моделі не віддаємо: refine того самого кадру квоту не
+  // списує, а `qna` і `prior_result` ідуть у промпт дослівно, тож rawText
+  // перетворював би ендпоінт на безкоштовний LLM-проксі. Клієнти читають
+  // лише нормалізований `result`; поле лишається в контракті як null.
+  res.status(200).json({ result, rawText: null });
 }
 
 function safeJson(v: unknown): string {
