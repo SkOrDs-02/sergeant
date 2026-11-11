@@ -42,6 +42,11 @@ export interface ListRejectedOutboxOptions {
    * last-write-wins, який не є втратою даних.
    */
   readonly excludeReasons?: readonly string[];
+  /**
+   * Лише рядки цього користувача. На kvvfs партиції всіх акаунтів ділять
+   * один стор, тож без нього список показав би чужі відхилені записи.
+   */
+  readonly userId?: string;
 }
 
 interface RejectedRowFromDb extends Record<string, unknown> {
@@ -54,10 +59,20 @@ interface RejectedRowFromDb extends Record<string, unknown> {
 
 const DEFAULT_LIMIT = 50;
 
-function buildExcludeClause(excluded: readonly string[]): string {
-  return excluded.length > 0
-    ? ` AND (reject_reason IS NULL OR reject_reason NOT IN (${excluded.map(() => "?").join(", ")}))`
-    : "";
+function buildFilter(
+  options: Pick<ListRejectedOutboxOptions, "excludeReasons" | "userId">,
+): { clause: string; params: unknown[] } {
+  const excluded = options.excludeReasons ?? [];
+  let clause =
+    excluded.length > 0
+      ? ` AND (reject_reason IS NULL OR reject_reason NOT IN (${excluded.map(() => "?").join(", ")}))`
+      : "";
+  const params: unknown[] = [...excluded];
+  if (options.userId !== undefined) {
+    clause += " AND user_id = ?";
+    params.push(options.userId);
+  }
+  return { clause, params };
 }
 
 /**
@@ -69,14 +84,14 @@ function buildExcludeClause(excluded: readonly string[]): string {
  */
 export async function countRejectedOutbox(
   client: SqliteMigrationClient,
-  options: Pick<ListRejectedOutboxOptions, "excludeReasons"> = {},
+  options: Pick<ListRejectedOutboxOptions, "excludeReasons" | "userId"> = {},
 ): Promise<number> {
-  const excluded = options.excludeReasons ?? [];
+  const filter = buildFilter(options);
   const rows = await client.all<{ count: number | bigint }>(
     `SELECT COUNT(*) AS count
        FROM sync_op_outbox
-      WHERE status = 'rejected'${buildExcludeClause(excluded)}`,
-    [...excluded],
+      WHERE status = 'rejected'${filter.clause}`,
+    filter.params,
   );
   const count = Number(rows[0]?.count ?? 0);
   if (!Number.isSafeInteger(count) || count < 0) {
@@ -97,16 +112,15 @@ export async function listRejectedOutbox(
       `listRejectedOutbox: limit must be a positive integer, got ${JSON.stringify(limit)}`,
     );
   }
-  const excluded = options.excludeReasons ?? [];
-  const excludeClause = buildExcludeClause(excluded);
+  const filter = buildFilter(options);
 
   const rows = await client.all<RejectedRowFromDb>(
     `SELECT id, table_name, op, reject_reason, created_at
        FROM sync_op_outbox
-      WHERE status = 'rejected'${excludeClause}
+      WHERE status = 'rejected'${filter.clause}
       ORDER BY id DESC
       LIMIT ?`,
-    [...excluded, limit],
+    [...filter.params, limit],
   );
 
   return rows.map((row) => {

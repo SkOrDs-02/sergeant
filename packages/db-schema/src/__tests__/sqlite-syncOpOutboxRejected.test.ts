@@ -17,6 +17,7 @@ import {
   countRejectedOutbox,
   listRejectedOutbox,
 } from "../sqlite/syncOpOutboxRejected.js";
+import { countOutboxByStatus } from "../sqlite/syncOpOutboxStatus.js";
 
 function syncClient(db: BetterSqliteDatabase): SqliteMigrationClient {
   return {
@@ -91,6 +92,36 @@ describe("listRejectedOutbox", () => {
     });
     expect(typeof rows[0]!.id).toBe("number");
     expect(typeof rows[0]!.createdAt).toBe("string");
+  });
+
+  it("scopes counters and the list to userId on a store shared by accounts", async () => {
+    const own = await enqueue(client, "k-own");
+    await markOutboxRejected(client, own, "user_id_mismatch");
+    const foreign = await enqueueOutboxIncrement(client, {
+      userId: "u-other",
+      table: "routine_streaks",
+      row: { delta: 1 },
+      clientTs: "2026-05-05T10:00:00.000+00:00",
+      idempotencyKey: "k-foreign",
+    });
+    await markOutboxRejected(client, foreign.id, "user_id_mismatch");
+    await enqueueOutboxIncrement(client, {
+      userId: "u-other",
+      table: "routine_streaks",
+      row: { delta: 2 },
+      clientTs: "2026-05-05T10:00:00.000+00:00",
+      idempotencyKey: "k-foreign-pending",
+    });
+
+    const scope = { userId: "u-test" };
+    expect((await listRejectedOutbox(client, scope)).map((r) => r.id)).toEqual(
+      [own],
+    );
+    expect(await countRejectedOutbox(client, scope)).toBe(1);
+    expect(await countOutboxByStatus(client, scope)).toMatchObject({
+      pending: 0,
+      rejected: 1,
+    });
   });
 
   it("filters excluded reasons in SQL so the limit counts visible rows only", async () => {
