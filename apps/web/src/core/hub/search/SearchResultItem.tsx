@@ -33,6 +33,7 @@ export function SearchResultItem({
       aria-selected={active}
       onClick={() => onActivate(hit)}
       onMouseEnter={() => onHover(index)}
+      onFocus={() => onHover(index)}
       className={cn(
         "w-full min-h-14 border-b border-line flex items-center px-3 py-2.5 transition-colors text-left focus:outline-none focus-visible:ring-2 focus-visible:ring-focus/45",
         active ? "bg-panelHi" : "hover:bg-panelHi active:bg-panelHi",
