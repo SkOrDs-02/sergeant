@@ -106,6 +106,10 @@ beforeEach(() => {
   queryMock.mockReset();
   queryMock.mockResolvedValue({ rows: [] });
   mockPool.connect.mockReset();
+  mockPool.connect.mockImplementation(async () => ({
+    query: queryMock,
+    release: vi.fn(),
+  }));
   getSessionUserMock.mockReset();
   getFreshSessionUserMock.mockReset();
   // Кеш каже «сесія жива», БД — «сесії нема».
@@ -183,6 +187,15 @@ describe("свіжа сесія підтверджена БД → чутливі
     expect(res.body.data).toMatchObject({
       billing: { subscriptions: [] },
     });
+    // Увесь експорт іде одним зʼєднанням в одній read-only транзакції, а не
+    // кількадесятьма паралельними запитами на спільний пул.
+    expect(mockPool.connect).toHaveBeenCalledTimes(1);
+    const sqls = queryMock.mock.calls.map((c) => String(c[0]));
+    const begin = sqls.indexOf(
+      "BEGIN ISOLATION LEVEL REPEATABLE READ READ ONLY",
+    );
+    expect(begin).toBeGreaterThanOrEqual(0);
+    expect(sqls.at(-1)).toBe("COMMIT");
   });
 
   it("DELETE /api/me → 200: свіжа сесія пропускає до мітки вікна видалення", async () => {
