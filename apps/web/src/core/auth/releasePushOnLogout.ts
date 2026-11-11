@@ -67,7 +67,7 @@ function isWebPushSupported(): boolean {
   );
 }
 
-async function releaseWebPush(): Promise<void> {
+async function releaseWebPush(unregisterOnServer: boolean): Promise<void> {
   const { getCurrentWebPushSubscription } =
     await import("@shared/hooks/usePushNotifications.webpush");
   const sub = await getCurrentWebPushSubscription();
@@ -75,22 +75,24 @@ async function releaseWebPush(): Promise<void> {
   const endpoint = sub.endpoint;
 
   // 1) Серверний рядок — поки сесія жива.
-  try {
-    const { pushApi } = await import("@shared/api");
-    const controller = new AbortController();
-    await withTimeout(
-      pushApi.unregister(
-        { platform: "web", endpoint },
-        { signal: controller.signal },
-      ),
-      PUSH_UNREGISTER_TIMEOUT_MS,
-      "push unregister",
-    ).catch((err: unknown) => {
-      controller.abort();
-      throw err;
-    });
-  } catch (err) {
-    logger.warn("[auth.logout] push unregister failed (best-effort)", err);
+  if (unregisterOnServer) {
+    try {
+      const { pushApi } = await import("@shared/api");
+      const controller = new AbortController();
+      await withTimeout(
+        pushApi.unregister(
+          { platform: "web", endpoint },
+          { signal: controller.signal },
+        ),
+        PUSH_UNREGISTER_TIMEOUT_MS,
+        "push unregister",
+      ).catch((err: unknown) => {
+        controller.abort();
+        throw err;
+      });
+    } catch (err) {
+      logger.warn("[auth.logout] push unregister failed (best-effort)", err);
+    }
   }
 
   // 2) Локальна підписка — навіть якщо сервер не відповів: push-сервіс почне
@@ -106,13 +108,19 @@ async function releaseWebPush(): Promise<void> {
  * Best-effort: ніколи не кидає і не блокує довше за
  * `PUSH_RELEASE_TOTAL_TIMEOUT_MS`. Локальну мітку тумблера скидає завжди, щоб
  * наступний користувач не бачив «увімкнено» для підписки, якої вже немає.
+ *
+ * `unregisterOnServer: false` — для сесії, що вже завершилась (протухла,
+ * відкликана): серверний виклик дав би лише 401, а локальний `unsubscribe`
+ * працює і без сесії.
  */
-export async function releasePushSubscriptionOnLogout(): Promise<void> {
+export async function releasePushSubscriptionOnLogout({
+  unregisterOnServer = true,
+}: { unregisterOnServer?: boolean } = {}): Promise<void> {
   try {
     // Build-time guard: у capacitor-білді web-push гілка мертва (DCE).
     if (import.meta.env.VITE_TARGET !== "capacitor" && isWebPushSupported()) {
       await withTimeout(
-        releaseWebPush(),
+        releaseWebPush(unregisterOnServer),
         PUSH_RELEASE_TOTAL_TIMEOUT_MS,
         "push release",
       );
