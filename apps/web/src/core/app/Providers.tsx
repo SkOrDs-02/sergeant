@@ -54,13 +54,15 @@ export function Providers({ children }: { children: ReactNode }) {
   return (
     <ShortcutRegistryProvider>
       <ToastProvider>
-        <ToastContainer />
         <ShellDeepLinkBridge />
         <HashRedirect />
         <ScrollRestoration />
         <PageviewTracker />
         <RouteChangeTracker />
         <ScreenReaderAnnouncerProvider>
+          {/* Усередині анонсера: polite-тости озвучуються його постійним
+              регіоном. */}
+          <ToastContainer />
           <ApiClientProvider client={apiClient}>
             <AuthProvider>
               <AnonymousDataMigrationProvider>

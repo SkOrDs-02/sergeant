@@ -99,7 +99,7 @@ WCAG 4.1.3 (Status Messages, Level AA) вимагає, що повідомлен
 
 - `type === "error"` → `aria-live=assertive` (interrupting)
 - будь-який `action` → `aria-live=assertive` (interrupting)
-- решта → `aria-live=polite`
+- решта → polite: рядок тоста не є live-регіоном (регіон, що монтується разом з текстом, частина скрінрідерів пропускає), текст озвучує постійний регіон `ScreenReaderAnnouncerProvider`; `ToastContainer` має стояти всередині нього
 
 `assertive` НЕ означає "блимай" — це лише сигнал реколайзингу для AT.
 Анімація / контраст / `duration` живуть окремо.
