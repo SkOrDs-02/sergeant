@@ -137,10 +137,15 @@ export function PWASection() {
                   variant="ghost"
                   size="xs"
                   onClick={() => {
-                    void navigator.clipboard?.writeText(
-                      JSON.stringify(swSnapshot, null, 2),
-                    );
-                    toast.success("Діагностику скопійовано");
+                    navigator.clipboard
+                      ?.writeText(JSON.stringify(swSnapshot, null, 2))
+                      .then(
+                        () => toast.success("Діагностику скопійовано"),
+                        () =>
+                          toast.error(
+                            "Не вдалося скопіювати. Виділи текст вручну",
+                          ),
+                      );
                   }}
                 >
                   Скопіювати
