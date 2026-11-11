@@ -258,8 +258,9 @@ describe("hide_transaction", () => {
     expect(typeof out).toBe("string");
     expect(out).toContain("tx99");
     expect(out).toContain("приховано");
+    // Ручний запис ховається під канонічним `manual_<id>`.
     const hidden = JSON.parse(localStorage.getItem("finyk_hidden_txs")!);
-    expect(hidden).toContain("tx99");
+    expect(hidden).toContain("manual_tx99");
   });
 
   it("error: hiding already hidden is idempotent", () => {
