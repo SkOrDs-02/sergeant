@@ -30,6 +30,7 @@ import { migrateFinyk } from "../lib/clientMigrate";
 import { MonoNotConnectedError } from "../lib/monoBankErrors";
 import { failedCopy } from "@shared/i18n/failedCopy";
 import {
+  deleteMonoTransactionsOfAccounts,
   writeMonoTransactions,
   writeMonoAccounts,
   writeMonoAccountSnapshots,
@@ -146,6 +147,12 @@ export function useMonobankWebhook({
         })),
     [webhookAccounts],
   );
+  const foreignAccountIdsKey = (
+    Array.isArray(webhookAccounts) ? webhookAccounts : []
+  )
+    .filter((a) => a.currencyCode !== CURRENCY.UAH)
+    .map((a) => a.monoAccountId)
+    .join(",");
 
   // ClientInfo-like object for UI compatibility
   const clientInfo = useMemo(() => {
@@ -251,6 +258,35 @@ export function useMonobankWebhook({
       cancelled = true;
     };
   }, [accounts, userId, enabled, writeMirror]);
+
+  useEffect(() => {
+    if (!enabled || !writeMirror || !userId || !foreignAccountIdsKey) return;
+    let cancelled = false;
+    void (async () => {
+      try {
+        const handle = await getSqliteDb();
+        const client = handle.migrationClient();
+        await migrateFinyk(client);
+        if (cancelled) return;
+        await deleteMonoTransactionsOfAccounts(
+          client,
+          userId,
+          foreignAccountIdsKey.split(","),
+        );
+        if (cancelled) return;
+        await refreshFinykMonoMirrorState(client, userId);
+        if (!cancelled) notifyFinykMonoMirrorRefresh();
+      } catch (err) {
+        logger.warn(
+          "[finyk.monoMirror] purge foreign-currency transactions failed",
+          err instanceof Error ? err.message : err,
+        );
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, [foreignAccountIdsKey, userId, enabled, writeMirror]);
 
   // Read overlay — when the network slice is empty (cold start, fetch
   // pending) and the flag is on, return the mirrored transactions so
