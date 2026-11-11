@@ -86,6 +86,32 @@ afterEach(() => {
 });
 
 describe("initPostHog", () => {
+  it("фіксує канали, які інакше вмикає remote config, і маскує URL та атрибути", async () => {
+    const mod = await import("./posthog");
+    await mod.initPostHog();
+
+    const opts = posthogInit.mock.calls[0]![1];
+    expect(opts).toMatchObject({
+      enable_recording_console_log: false,
+      capture_dead_clicks: false,
+      disable_surveys: true,
+      capture_performance: { network_timing: false },
+      mask_personal_data_properties: true,
+      session_recording: {
+        blockSelector: "[aria-label],[title],[alt]",
+        recordBody: false,
+        recordHeaders: false,
+        captureCanvas: { recordCanvas: false },
+      },
+    });
+    expect(opts.custom_personal_data_properties).toContain("token");
+    expect(
+      opts.session_recording.maskCapturedNetworkRequestFn({
+        name: "https://app.example/reset-password?token=abc&q=1",
+      }).name,
+    ).toBe("https://app.example/reset-password?token=[redacted]&q=1");
+  });
+
   it("ініціалізує SDK з EU host і реєструє platform super-property", async () => {
     const mod = await import("./posthog");
     await mod.initPostHog();
@@ -474,6 +500,8 @@ describe("згода на аналітику (opt-out за замовчуван�
 
     expect(posthogInit.mock.calls[0]![1]).toMatchObject({
       opt_out_capturing_by_default: true,
+      // Без згоди SDK не пише `ph_*_posthog` (обіцянка політики cookies).
+      opt_out_persistence_by_default: true,
     });
     expect(posthogOptOut).toHaveBeenCalled();
     expect(posthogOptIn).not.toHaveBeenCalled();
