@@ -111,6 +111,21 @@ describe("AppLockSettings — audit F16 (per-user PIN scoping)", () => {
     expect(appLock.startSetup).not.toHaveBeenCalled();
   });
 
+  it("rolls the toggle back and shows an error when hasPin() rejects on enable", async () => {
+    renderSection();
+    appLock.hasPin = vi.fn().mockRejectedValue(new Error("IDB unavailable"));
+
+    fireEvent.click(
+      screen.getByRole("switch", { name: /Блокування застосунку/i }),
+    );
+
+    expect(await screen.findByRole("alert")).toHaveTextContent(
+      "Не вдалося увімкнути блокування",
+    );
+    expect(mockSetFlag).toHaveBeenLastCalledWith("app-lock-enabled", false);
+    expect(appLock.startSetup).not.toHaveBeenCalled();
+  });
+
   it("disabling the lock clears the user-scoped credential (appLock.disablePin)", async () => {
     // Finding #3 (2026-08-08 adversarial review): `beforeEach` на рівні
     // `describe` резолвить `appLock.hasPin()` у `false`, а це також живить
