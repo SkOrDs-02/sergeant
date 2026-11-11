@@ -305,7 +305,7 @@ describe("buildActionCard", () => {
         input: { week_a: "2026-W17" },
         result: 'Некоректний week_a: "bad". Очікую YYYY-Www.',
       });
-      expect(card?.status).toBe("completed");
+      expect(card?.status).toBe("failed");
       const failed = buildActionCard({
         name: "compare_weeks",
         input: {},
@@ -443,5 +443,32 @@ describe("покриття карток (PR-A5)", () => {
     expect(isFailureResult("Не вдалося зберегти")).toBe(true);
     expect(isFailureResult("Невідома дія: x")).toBe(true);
     expect(isFailureResult("Нотатку збережено")).toBe(false);
+  });
+
+  it("відмова мутатора без префікса «Помилка» дає failed-картку", () => {
+    const refusals: Array<[string, string]> = [
+      ["delete_transaction", "Потрібен tx_id для видалення."],
+      [
+        "delete_transaction",
+        "Дані Фініка ще завантажуються, спробуй за кілька секунд.",
+      ],
+      ["delete_transaction", "Операцію m_1 не знайдено (вже видалена)."],
+      ["mark_debt_paid", "Борг d1 не знайдено."],
+      ["create_reminder", "Час має бути у форматі HH:MM."],
+      ["forget", "Факт з id f1 не знайдено."],
+    ];
+    for (const [name, result] of refusals) {
+      expect(buildActionCard({ name, input: {}, result })?.status).toBe(
+        "failed",
+      );
+    }
+    // Порожня вибірка запиту — не провал.
+    expect(
+      buildActionCard({
+        name: "query_transactions",
+        input: {},
+        result: "Операцій за цими фільтрами не знайдено.",
+      })?.status,
+    ).toBe("completed");
   });
 });
