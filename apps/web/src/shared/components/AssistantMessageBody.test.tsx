@@ -94,7 +94,7 @@ describe("AssistantMessageBody", () => {
     expect(container.textContent).toContain("click");
   });
 
-  it.each(["//evil.example", "/\\evil.example"])(
+  it.each(["//evil.example", "/\\evil.example", "/\t/evil.example/?d=1"])(
     "sandboxes protocol-relative link %s",
     (href) => {
       const { container } = renderBody(`x [go](${href}) y`);

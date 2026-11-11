@@ -56,9 +56,13 @@ export interface AssistantMessageBodyProps {
  */
 function isSafeHref(href: string | undefined): boolean {
   if (!href) return false;
-  if (RELATIVE_HREF_RE.test(href)) return true;
+  // Лише origin після резолву тим самим парсером, що й у браузера: префіксний
+  // регексп обходиться (`/<TAB>/evil.example` парсер чистить від табу й веде
+  // на чужий хост).
   try {
-    return new URL(href).origin === window.location.origin;
+    return (
+      new URL(href, window.location.href).origin === window.location.origin
+    );
   } catch {
     return false;
   }
@@ -66,9 +70,6 @@ function isSafeHref(href: string | undefined): boolean {
 
 const INLINE_TOKEN_RE =
   /(\*\*[^*]+\*\*|\*[^*]+\*|_[^_]+_|`[^`]+`|\[[^\]]+\]\([^)]+\))/g;
-// `\/(?![\/\\])` — відносний шлях, але НЕ protocol-relative (`//evil.example`)
-// і не `/\evil.example` (браузер трактує `\` як `/`).
-const RELATIVE_HREF_RE = /^(\/(?![/\\])|#)/;
 const LINK_TOKEN_RE = /^\[([^\]]+)\]\(([^)]+)\)$/;
 const H4_RE = /^####\s+(.*)$/;
 const H3_RE = /^###\s+(.*)$/;
