@@ -770,6 +770,35 @@ describe("syncV2Push · new-op apply path", () => {
       },
     );
 
+    it("apply повернув retry: оп відкочується, у журнал не пишеться", async () => {
+      applyRoutineEntries.mockReset().mockResolvedValueOnce({
+        status: "retry",
+        reason: "prefs_patch_without_base",
+      });
+      client.query.mockResolvedValue({ rows: [] });
+
+      const res = makeRes();
+      await syncV2Push(makeReq({ body: { ops: [op("no-base")] } }), res);
+
+      expect(res.body).toMatchObject({
+        accepted: 0,
+        results: [
+          {
+            idempotency_key: "no-base",
+            status: "retry",
+            reason: "prefs_patch_without_base",
+          },
+        ],
+      });
+      const sqls = client.query.mock.calls.map((c) => c[0]);
+      expect(sqls).toContain("ROLLBACK TO SAVEPOINT op_apply");
+      expect(
+        sqls.some(
+          (q) => typeof q === "string" && q.includes("INSERT INTO sync_op_log"),
+        ),
+      ).toBe(false);
+    });
+
     it("нетранзієнтна помилка (42P01) лишається термінальним apply_failed", async () => {
       applyRoutineEntries
         .mockReset()
