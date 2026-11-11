@@ -616,6 +616,7 @@ export const finykPageMessages = {
     noComparison: "Немає з чим порівняти",
     noComparisonSince: "Немає з чим порівняти: дані лише з {date}",
     comparisonLoadFailed: "Не вдалося завантажити період для порівняння",
+    previousPeriodSr: "Минулий період:",
     historyLoading: "Завантажую історію: {done} з {total} місяців",
     emptyPeriod:
       "За цей період витрат ще немає. Додай першу або підключи Monobank.",
