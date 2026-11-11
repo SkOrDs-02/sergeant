@@ -335,6 +335,12 @@ function tryConsumeRoundTripTicket(req: Request, userId: string): boolean {
  */
 export interface AssertAiQuotaOptions {
   allowRoundTripTicket?: boolean;
+  /**
+   * Сценарні preset-відра (інтервʼю профілю) існують лише в чаті: там їх
+   * стримує `OFF_TOPIC_RULE` системного промпту. На coach/nutrition поле
+   * `preset` у тілі ігнорується, інакше воно давало б Free додаткові дії.
+   */
+  allowPresetBudget?: boolean;
 }
 
 /**
@@ -398,7 +404,10 @@ export async function assertAiQuota(
 
   // Сценарний preset витрачає власне тижневе відро замість спільного (див.
   // `resolvePresetBudget`). Усе решта — той самий шлях.
-  const presetBudget = meter === "ai" ? resolvePresetBudget(req) : null;
+  const presetBudget =
+    meter === "ai" && options.allowPresetBudget === true
+      ? resolvePresetBudget(req)
+      : null;
   const isPresetBudget = presetBudget !== null;
   const budget: QuotaBudget = presetBudget ?? {
     bucket: spec.bucket,
