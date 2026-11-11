@@ -125,7 +125,6 @@ export async function syncV2Pull(req: Request, res: Response): Promise<void> {
       row: decryptOpRowForPull(r.table_name, r.row),
       client_ts: r.client_ts.toISOString(),
       server_ts: r.server_ts.toISOString(),
-      // eslint-disable-next-line sergeant-design/no-bigint-string -- origin_device_id is an opaque TEXT device id (migration 027_sync_op_log.sql), not a pg bigint numeric; Hard Rule #1 N/A.
       origin_device_id: r.origin_device_id,
     }));
 
