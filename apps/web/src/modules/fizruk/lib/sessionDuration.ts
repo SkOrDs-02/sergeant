@@ -50,3 +50,17 @@ export function isValidSessionWindow(
   const end = Date.parse(endedAtIso);
   return Number.isFinite(start) && end > start && end <= Date.now();
 }
+
+/**
+ * Початок строго раніше за кінець; без кінця (жива сесія) - не пізніше за
+ * зараз. Редактор часу не приймає інше, бо `endWorkout` записав би
+ * `endedAt < startedAt`, а ця різниця далі клемпиться до нуля хвилин.
+ */
+export function isStartBeforeEnd(
+  startedAtIso: string,
+  endedAtIso: string | null,
+): boolean {
+  const start = Date.parse(startedAtIso);
+  const end = endedAtIso ? Date.parse(endedAtIso) : Date.now();
+  return Number.isFinite(start) && Number.isFinite(end) && start < end;
+}
