@@ -55,7 +55,12 @@ interface Row {
 let db: BetterSqliteDatabase;
 let client: SqliteMigrationClient;
 
-function insert(status: string, reason: string | null, key: string): number {
+function insert(
+  status: string,
+  reason: string | null,
+  key: string,
+  userId = USER,
+): number {
   const info = db
     .prepare(
       `INSERT INTO sync_op_outbox
@@ -63,7 +68,7 @@ function insert(status: string, reason: string | null, key: string): number {
        VALUES (?, 'nutrition_pantry_events', 'insert', '{"id":"pe::initial::home::milk"}',
                '2026-10-01T10:00:00.000Z', ?, ?, ?, 5, 'x')`,
     )
-    .run(USER, key, status, reason);
+    .run(userId, key, status, reason);
   return Number(info.lastInsertRowid);
 }
 
@@ -96,13 +101,30 @@ afterEach(() => {
 });
 
 describe("requeueFkViolationRejected", () => {
+  it("тримає стан і рядки окремо на акаунт", async () => {
+    const accepted = insert("rejected", "fk_violation", "k-a", "user-a");
+    await requeueFkViolationRejected(client, "user-a", T0);
+    db.prepare(`DELETE FROM sync_op_outbox WHERE id = ?`).run(accepted);
+    expect(
+      (await requeueFkViolationRejected(client, "user-a", T0 + H)).outcome,
+    ).toBe("done");
+    const foreign = insert("rejected", "fk_violation", "k-b", "user-b");
+    const own = insert("rejected", "fk_violation", "k-own");
+
+    const res = await requeueFkViolationRejected(client, USER, T0 + 2 * H);
+
+    expect(res).toEqual({ requeued: 1, outcome: "requeued" });
+    expect(get(own)!.status).toBe("pending");
+    expect(get(foreign)!.status).toBe("rejected");
+  });
+
   it("перепоставляє лише rejected/fk_violation: новий ключ, payload і client_ts ті самі", async () => {
     const fk = insert("rejected", "fk_violation", "old-key");
     const other = insert("rejected", "invalid_text_encoding", "k2");
     const quarantined = insert("quarantined", "fk_violation", "k3");
     const dead = insert("dead_letter", null, "k4");
 
-    const res = await requeueFkViolationRejected(client, T0);
+    const res = await requeueFkViolationRejected(client, USER, T0);
 
     expect(res).toEqual({ requeued: 1, outcome: "requeued" });
     const row = get(fk)!;
@@ -119,34 +141,34 @@ describe("requeueFkViolationRejected", () => {
 
   it("порядок деплою: старий сервер знову відхиляє - маркер НЕ ставиться, наступна спроба пізніше", async () => {
     const id = insert("rejected", "fk_violation", "k");
-    await requeueFkViolationRejected(client, T0);
+    await requeueFkViolationRejected(client, USER, T0);
     serverRejectsAgain(id); // бекенд ще старий
 
     // Той самий бут/година: не чіпаємо (немає петлі).
-    expect((await requeueFkViolationRejected(client, T0 + 1000)).outcome).toBe(
+    expect((await requeueFkViolationRejected(client, USER, T0 + 1000)).outcome).toBe(
       "waiting",
     );
     expect(get(id)!.status).toBe("rejected");
 
     // Бекенд викотився, наступна спроба за годину: рядок піде, сервер прийме.
-    const second = await requeueFkViolationRejected(client, T0 + H);
+    const second = await requeueFkViolationRejected(client, USER, T0 + H);
     expect(second.outcome).toBe("requeued");
     db.prepare(`DELETE FROM sync_op_outbox WHERE id = ?`).run(id); // applied
 
-    expect((await requeueFkViolationRejected(client, T0 + 2 * H)).outcome).toBe(
+    expect((await requeueFkViolationRejected(client, USER, T0 + 2 * H)).outcome).toBe(
       "done",
     );
     // Готово остаточно.
     insert("rejected", "fk_violation", "later");
-    expect((await requeueFkViolationRejected(client, T0 + 3 * H)).outcome).toBe(
+    expect((await requeueFkViolationRejected(client, USER, T0 + 3 * H)).outcome).toBe(
       "done",
     );
   });
 
   it("не чіпає рядки в польоті (pending) і чекає", async () => {
     const id = insert("rejected", "fk_violation", "k");
-    await requeueFkViolationRejected(client, T0);
-    const res = await requeueFkViolationRejected(client, T0 + 10 * H);
+    await requeueFkViolationRejected(client, USER, T0);
+    const res = await requeueFkViolationRejected(client, USER, T0 + 10 * H);
     expect(res.outcome).toBe("waiting");
     expect(get(id)!.status).toBe("pending");
   });
@@ -155,34 +177,34 @@ describe("requeueFkViolationRejected", () => {
     const id = insert("rejected", "fk_violation", "k");
     let now = T0;
     for (let i = 0; i < FK_REQUEUE_MAX_RUNS; i++) {
-      expect((await requeueFkViolationRejected(client, now)).outcome).toBe(
+      expect((await requeueFkViolationRejected(client, USER, now)).outcome).toBe(
         "requeued",
       );
       serverRejectsAgain(id);
       now += H;
     }
-    expect((await requeueFkViolationRejected(client, now)).outcome).toBe(
+    expect((await requeueFkViolationRejected(client, USER, now)).outcome).toBe(
       "done",
     );
     expect(get(id)!.status).toBe("rejected");
-    expect((await requeueFkViolationRejected(client, now + H)).outcome).toBe(
+    expect((await requeueFkViolationRejected(client, USER, now + H)).outcome).toBe(
       "done",
     );
   });
 
   it("без відхилених рядків чекає вікно (відмова старого сервера може прийти пізніше), потім згасає", async () => {
-    expect((await requeueFkViolationRejected(client, T0)).outcome).toBe("idle");
+    expect((await requeueFkViolationRejected(client, USER, T0)).outcome).toBe("idle");
     const id = insert("rejected", "fk_violation", "late");
-    expect((await requeueFkViolationRejected(client, T0 + H)).outcome).toBe(
+    expect((await requeueFkViolationRejected(client, USER, T0 + H)).outcome).toBe(
       "requeued",
     );
     expect(get(id)!.status).toBe("pending");
 
-    window.localStorage.removeItem(FK_REQUEUE_STATE_KEY);
+    window.localStorage.removeItem(`${FK_REQUEUE_STATE_KEY}:${USER}`);
     db.prepare(`DELETE FROM sync_op_outbox`).run();
-    await requeueFkViolationRejected(client, T0);
+    await requeueFkViolationRejected(client, USER, T0);
     expect(
-      (await requeueFkViolationRejected(client, T0 + FK_REQUEUE_WINDOW_MS + 1))
+      (await requeueFkViolationRejected(client, USER, T0 + FK_REQUEUE_WINDOW_MS + 1))
         .outcome,
     ).toBe("done");
   });
