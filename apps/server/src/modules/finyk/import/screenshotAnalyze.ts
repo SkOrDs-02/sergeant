@@ -18,6 +18,7 @@ import { ExternalServiceError } from "../../../obs/errors.js";
 import { env } from "../../../env.js";
 import pool from "../../../db.js";
 import { callImportScreenshotVision } from "./visionClient.js";
+import { abortOnClientClose } from "../../../http/clientAbort.js";
 import { isLikelyOwnTransfer } from "./transferDetect.js";
 import { markDuplicateLikely } from "./duplicateDetect.js";
 import { markMonoMatchLikely } from "./monoMatchDetect.js";
@@ -327,6 +328,7 @@ export default async function screenshotAnalyzeHandler(
     base64: b64,
     mediaType: validation.mimeType,
     ...(userId ? { userId } : {}),
+    signal: abortOnClientClose(res),
   });
 
   // Обірвана відповідь не парситься цілком — рятуємо повні рядки з хвоста
