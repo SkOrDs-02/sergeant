@@ -37,6 +37,21 @@ afterEach(() => {
 });
 
 describe("reconcileSubscription — subscription/status is the arbiter", () => {
+  it("запит subscription/status має таймаут, щоб тік не висів 300 с", async () => {
+    const fetchMock = vi
+      .fn()
+      .mockResolvedValue(new Response("{}", { status: 500 }));
+    vi.stubGlobal("fetch", fetchMock);
+    const { pool } = mockPool([]);
+
+    await reconcileSubscription(pool, {
+      user_id: "usr_1",
+      subscription_id: "s2_1",
+    });
+
+    expect(fetchMock.mock.calls[0]?.[1]?.signal).toBeInstanceOf(AbortSignal);
+  });
+
   it("status=active activates the subscription with current_period_end = nextChargeDate", async () => {
     vi.stubGlobal(
       "fetch",

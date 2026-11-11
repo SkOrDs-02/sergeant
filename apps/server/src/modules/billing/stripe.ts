@@ -8,6 +8,7 @@ import type {
 import { env } from "../../env/env.js";
 import { BillingConfigurationError } from "./provider.js";
 import { isoOrNull } from "./stripeShared.js";
+import { STRIPE_TIMEOUT_MS } from "./stripeRemote.js";
 
 // Re-export канонічного класу (тепер живе у provider.ts) — зберігає
 // імпорт-шлях `billing/stripe.js` для routes і тестів.
@@ -166,6 +167,7 @@ async function createStripeCheckoutSession({
       "Content-Type": "application/x-www-form-urlencoded",
     },
     body,
+    signal: AbortSignal.timeout(STRIPE_TIMEOUT_MS),
   });
   const payload = (await response.json()) as Partial<StripeCheckoutSession> & {
     error?: { message?: string };
@@ -218,6 +220,7 @@ async function createStripePortalSession({
       "Content-Type": "application/x-www-form-urlencoded",
     },
     body,
+    signal: AbortSignal.timeout(STRIPE_TIMEOUT_MS),
   });
   const payload = (await response.json()) as Partial<StripePortalSession> & {
     error?: { message?: string };

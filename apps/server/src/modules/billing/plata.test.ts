@@ -229,7 +229,10 @@ describe("ensurePlataPubkey", () => {
 
     expect(fetchMock).toHaveBeenCalledWith(
       "https://api.monobank.ua/api/merchant/pubkey",
-      { headers: { "X-Token": "merchant-token" } },
+      {
+        headers: { "X-Token": "merchant-token" },
+        signal: expect.any(AbortSignal),
+      },
     );
     const body = "{}";
     expect(plataProvider.verifyWebhookSignature(body, signBody(body))).toBe(
