@@ -245,27 +245,38 @@ describe("createTransaction", () => {
 // ─── hideTransaction ────────────────────────────────────────────────────────
 
 describe("hideTransaction", () => {
-  it("adds the tx id to the hidden list", () => {
+  // Ручний запис ховається під `manual_<id>`: сирий id не бачать ні Огляд,
+  // ні Операції, тож приховане з чату лишалось у статистиці.
+  it("ховає ручний запис під канонічним ключем manual_<id>", () => {
     const out = hideTransaction({
       name: "hide_transaction",
       input: { tx_id: "tx1" },
     });
     expect(out).toContain("tx1");
     expect(out).toContain("приховано");
-    expect(mockWrite).toHaveBeenCalledWith("finyk_hidden_txs", ["tx1"]);
+    expect(mockWrite).toHaveBeenCalledWith("finyk_hidden_txs", ["manual_tx1"]);
+  });
+
+  it("банківську операцію ховає за її власним id", () => {
+    seedFinykCache({ manualExpenses: [] });
+    hideTransaction({ name: "hide_transaction", input: { tx_id: "bank1" } });
+    expect(mockWrite).toHaveBeenCalledWith("finyk_hidden_txs", ["bank1"]);
   });
 
   it("mirrors the hidden tx into SQLite", () => {
     hideTransaction({ name: "hide_transaction", input: { tx_id: "tx1" } });
-    expect(mockHiddenMirror).toHaveBeenCalledWith("tx1");
+    expect(mockHiddenMirror).toHaveBeenCalledWith("manual_tx1");
   });
 
   it("is idempotent when the tx is already hidden", () => {
-    seedFinykCache({ hiddenTransactions: ["tx1"] });
+    seedFinykCache({
+      manualExpenses: [{ id: "tx1", amount: 200, date: "2026-04-22" }],
+      hiddenTransactions: ["manual_tx1"],
+    });
     hideTransaction({ name: "hide_transaction", input: { tx_id: "tx1" } });
     expect(mockWrite).not.toHaveBeenCalled();
     // Mirror still fires — safe to re-trigger a soft-delete-style upsert.
-    expect(mockHiddenMirror).toHaveBeenCalledWith("tx1");
+    expect(mockHiddenMirror).toHaveBeenCalledWith("manual_tx1");
   });
 });
 

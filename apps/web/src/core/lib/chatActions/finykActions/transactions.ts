@@ -17,6 +17,7 @@ import {
 } from "../../../../modules/finyk/lib/sqliteWriter";
 import { parseKyivDate } from "@shared/lib/time/kyivTime";
 import { formatNumberUk } from "@sergeant/shared";
+import { manualLinkKey } from "@sergeant/finyk-domain/domain/debtLinkKeys";
 import type {
   CreateTransactionAction,
   DeleteTransactionAction,
@@ -99,14 +100,20 @@ export function hideTransaction(
   const cache = warmFinykCache();
   if (!cache) return FINYK_COLD_CACHE_MESSAGE;
   if (!finykTransactionExists(txId)) return unknownTransactionMessage(txId);
+  // Ручний запис ховаємо під `manual_<id>`: так його шукають Огляд, Операції
+  // і канонічний excluded-set; сирий id там ніхто не звіряє.
+  const isManual = cache.manualExpenses.some(
+    (tx) => String(tx.id ?? "") === txId,
+  );
+  const key = isManual ? manualLinkKey(txId) : txId;
   const hidden = [...cache.hiddenTransactions];
-  if (!hidden.includes(txId)) {
-    hidden.push(txId);
+  if (!hidden.includes(key)) {
+    hidden.push(key);
     void finykChatWrite("finyk_hidden_txs", hidden);
   }
   // Mirror into `finyk_hidden_transactions` — the hidden-tx read
   // (search / analytics / report) overlays from SQLite. Idempotent.
-  triggerHiddenTransactionSqliteMirror(txId);
+  triggerHiddenTransactionSqliteMirror(key);
   return `Операцію ${txId} приховано зі статистики`;
 }
 
