@@ -97,13 +97,14 @@ export function DailyNudge({
             <Popover
               placement="bottom-start"
               trigger={
-                <button
-                  type="button"
-                  className="min-w-[44px] min-h-[44px] flex items-center justify-center rounded-lg text-muted hover:text-text hover:bg-panelHi transition-colors outline-none focus-visible:ring-2 focus-visible:ring-focus/45"
+                // Popover сам обгортає trigger у role="button": вкладена
+                // <button> дає дві зупинки Tab і nested-interactive.
+                <span
+                  className="min-w-[44px] min-h-[44px] flex cursor-pointer items-center justify-center rounded-lg text-muted hover:text-text hover:bg-panelHi transition-colors"
                   aria-label="Інші дії"
                 >
                   <Icon name="more-horizontal" size="md" />
-                </button>
+                </span>
               }
               className="min-w-[200px]"
             >

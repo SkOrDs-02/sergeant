@@ -67,6 +67,13 @@ describe("DailyNudge — single-primary affordance (S6.7 audit-guard)", () => {
     expect(document.body.textContent ?? "").not.toMatch(/Сховати на \d+ днів/);
   });
 
+  it("тригер «Інші дії» не вкладає <button> у role=button обгортку Popover", () => {
+    const { container } = render(
+      <DailyNudge nudge={NUDGE} sessionDays={3} onDismiss={() => {}} />,
+    );
+    expect(container.querySelector('[role="button"] button')).toBeNull();
+  });
+
   it("hides the snooze affordance behind an «Інші дії» overflow menu", () => {
     render(<DailyNudge nudge={NUDGE} sessionDays={3} onDismiss={() => {}} />);
     const trigger = screen.getByLabelText("Інші дії");
