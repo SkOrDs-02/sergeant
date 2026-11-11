@@ -237,6 +237,28 @@ describe("applyFinykPrefs", () => {
     ]);
   });
 
+  it("бере виключення й відхилення з ключів *_json, як їх шле клієнт", async () => {
+    const fake = new FakeClient();
+    const clientTs = new Date("2026-07-21T08:00:00.000Z");
+
+    await expect(
+      applyFinykPrefs(
+        asClient(fake),
+        syncOp("finyk_prefs", "insert", {
+          user_id: "user-1",
+          excluded_stat_tx_ids_json: '["tx1"]',
+          dismissed_recurring_json: '["netflix"]',
+        }),
+        "user-1",
+        clientTs,
+      ),
+    ).resolves.toEqual({ status: "applied" });
+
+    const insert = lastQuery(fake);
+    expect(JSON.parse(insert.params[4] as string)).toEqual(["tx1"]);
+    expect(JSON.parse(insert.params[5] as string)).toEqual(["netflix"]);
+  });
+
   it("rejects stale prefs writes with LWW conflict", async () => {
     const fake = new FakeClient();
     fake.queueRows([{ updated_at: new Date("2026-07-21T08:00:00.000Z") }]);

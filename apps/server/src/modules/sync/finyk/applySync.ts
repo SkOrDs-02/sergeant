@@ -8,7 +8,7 @@ import type { PoolClient } from "pg";
 import type { SyncV2Op } from "../../../http/schemas.js";
 import { parseOptionalDate, toJsonbParam } from "../syncV2-core.js";
 import type { AppliedStatus } from "../syncV2-types.js";
-import { applyIfNewer } from "../applySync-helpers.js";
+import { applyIfNewer, readJsonbField } from "../applySync-helpers.js";
 
 // data-15: soft-delete-таблиці без UUID-PK живуть в окремому модулі
 // (`max-lines`, Hard Rule #18); реекспорт тримає імпорти реєстру незмінними.
@@ -241,8 +241,18 @@ export async function applyFinykPrefs(
   const monthlyPlanJson = toJsonbParam(row["monthly_plan_json"]) ?? "{}";
   const showBalance =
     row["show_balance"] === false || row["show_balance"] === 0 ? false : true;
-  const excludedStatTxIds = toJsonbParam(row["excluded_stat_tx_ids"]) ?? "[]";
-  const dismissedRecurring = toJsonbParam(row["dismissed_recurring"]) ?? "[]";
+  const excludedStatTxIds = readJsonbField(
+    row,
+    "excluded_stat_tx_ids",
+    "excluded_stat_tx_ids_json",
+    "[]",
+  );
+  const dismissedRecurring = readJsonbField(
+    row,
+    "dismissed_recurring",
+    "dismissed_recurring_json",
+    "[]",
+  );
 
   if (existing.rows.length === 0) {
     await client.query(
