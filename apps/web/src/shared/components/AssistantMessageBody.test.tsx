@@ -60,12 +60,21 @@ describe("AssistantMessageBody", () => {
     expect(container.querySelector("em")).toHaveTextContent("emphasised");
   });
 
-  it("renders a safe https link as an anchor with target/rel", () => {
-    renderBody("see [docs](https://example.com)");
+  it("renders a same-origin absolute link as an anchor with target/rel", () => {
+    const href = `${window.location.origin}/finyk`;
+    renderBody(`see [docs](${href})`);
     const a = screen.getByRole("link", { name: "docs" });
-    expect(a).toHaveAttribute("href", "https://example.com");
+    expect(a).toHaveAttribute("href", href);
     expect(a).toHaveAttribute("target", "_blank");
     expect(a).toHaveAttribute("rel", "noopener noreferrer");
+  });
+
+  it("renders an external https link as text, not an anchor", () => {
+    const { container } = renderBody(
+      "see [Деталі](https://evil.example/?d=balance)",
+    );
+    expect(container.querySelector("a")).toBeNull();
+    expect(container.textContent).toContain("Деталі");
   });
 
   it("renders a relative link as a safe anchor", () => {
