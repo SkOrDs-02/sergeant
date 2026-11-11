@@ -86,6 +86,17 @@ describe("pruneForeignPartitionRows", () => {
     expect(execed).toContain("VACUUM");
   });
 
+  it("скидає курсори pull, бо в них немає user_id", async () => {
+    const { conn, executed } = fakeConnection({
+      routine_entries: ["id", "user_id"],
+      sync_op_cursor: ["key", "value_int", "updated_at"],
+    });
+
+    await pruneForeignPartitionRows(conn, "user42");
+
+    expect(executed.map((e) => e.sql)).toContain("DELETE FROM sync_op_cursor");
+  });
+
   it("на анонімній партиції лишає саме синтетичні id", async () => {
     const { conn, executed } = fakeConnection({
       routine_entries: ["id", "user_id"],
