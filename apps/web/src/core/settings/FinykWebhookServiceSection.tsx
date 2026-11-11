@@ -264,7 +264,13 @@ export function FinykWebhookServiceSection({
           className="p-4"
           aria-label={COPY.integrationTitle}
         >
-          {webhookConnected && webhookSyncState ? (
+          {syncStateQuery.isLoading ? (
+            // Без CTA: доки стан невідомий, «Підключити» бреше людині з живим
+            // підключенням.
+            <p className="text-style-body text-subtle" role="status">
+              {COPY.checking}
+            </p>
+          ) : webhookConnected && webhookSyncState ? (
             <div className="space-y-3">
               <ContentGroup>
                 <ContentRow className="flex items-center gap-3">

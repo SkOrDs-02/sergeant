@@ -96,6 +96,16 @@ describe("FinykWebhookServiceSection — L-15 network-error vs disconnected", ()
     ).not.toBeInTheDocument();
   });
 
+  it("не показує форму підключення, поки стан ще завантажується", async () => {
+    syncStateMock.mockReturnValue(new Promise(() => {}));
+    renderSection();
+
+    expect(await screen.findByText("Перевіряю…")).toBeInTheDocument();
+    expect(
+      screen.queryByPlaceholderText("Токен Monobank API"),
+    ).not.toBeInTheDocument();
+  });
+
   it("still shows the connect-token form for a genuine disconnected status (no error)", async () => {
     syncStateMock.mockResolvedValue({
       status: "disconnected",
