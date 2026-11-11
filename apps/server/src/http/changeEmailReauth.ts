@@ -38,10 +38,10 @@ const BA_BASE = "/api/auth";
  * Той самий шлях, що побачить роутер Better Auth: `new URL` згортає `./`
  * і `%2E`-сегменти. Хвостовий `/` теж ловимо, хоча роутер його 404-ить.
  */
-export function isChangeEmailPath(originalUrl: string): boolean {
+export function isChangeEmailPath(url: string): boolean {
   let pathname: string;
   try {
-    pathname = new URL(originalUrl, "http://internal").pathname;
+    pathname = new URL(url, "http://internal").pathname;
   } catch {
     return false;
   }
@@ -53,7 +53,13 @@ export async function changeEmailReauth(
   res: Response,
   next: NextFunction,
 ): Promise<void> {
-  if (req.method !== "POST" || !isChangeEmailPath(req.originalUrl || "")) {
+  // Не `originalUrl`: `/api/v1/auth/change-email` після `apiVersionRewrite`
+  // доходить до Better Auth як `/api/auth/change-email`, а `originalUrl`
+  // зберігає префікс `/api/v1`. `baseUrl + url` і є шлях, який отримає handler.
+  if (
+    req.method !== "POST" ||
+    !isChangeEmailPath(`${req.baseUrl}${req.url}`)
+  ) {
     next();
     return;
   }

@@ -37,10 +37,18 @@ import { changeEmailReauth, isChangeEmailPath } from "./changeEmailReauth.js";
 const FRESH = () => new Date(Date.now() - 60 * 1000);
 const OLD = () => new Date(Date.now() - 60 * 60 * 1000);
 
-function run(body: unknown, url = "/api/auth/change-email") {
+// Як Express віддає запит у `r.use("/api/auth", ...)`: `url` без маунта,
+// `originalUrl` такий, яким прийшов (з `/api/v1`, якщо був).
+function run(
+  body: unknown,
+  url = "/api/auth/change-email",
+  originalUrl = url,
+) {
   const req = {
     method: "POST",
-    originalUrl: url,
+    originalUrl,
+    baseUrl: "/api/auth",
+    url: url.slice("/api/auth".length),
     headers: {},
     body,
   } as unknown as Request;
@@ -137,6 +145,16 @@ describe("changeEmailReauth", () => {
     const next = await run({ newEmail: "new@example.com" });
     expect(next).toHaveBeenCalledWith();
     expect(verifyMock).not.toHaveBeenCalled();
+  });
+
+  it("дзеркало /api/v1 теж вимагає пароль", async () => {
+    verifyMock.mockResolvedValue({ ok: false, reason: "invalid_password" });
+    const next = await run(
+      { newEmail: "new@example.com" },
+      "/api/auth/change-email",
+      "/api/v1/auth/change-email",
+    );
+    expect(errorOf(next)).toEqual({ status: 400, code: "INVALID_PASSWORD" });
   });
 
   it("інші шляхи не чіпає", async () => {
