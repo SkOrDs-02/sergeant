@@ -1,6 +1,6 @@
 # Sergeant — Панель керування
 
-> **Last touched:** 2026-10-26 by docs:gen-status. **Next review:** 2026-11-02.
+> **Last touched:** 2026-11-11 by docs:gen-status. **Next review:** 2026-11-18.
 > **Status:** Reference
 
 <!-- AUTO-GENERATED, ОКРІМ блоку FOCUS. Редагуй лише між `<!-- FOCUS:START -->` / `<!-- FOCUS:END -->`; решту регенеруй через `pnpm docs:gen-status`. -->
@@ -46,10 +46,10 @@
 - [`work/specs/tech-debt/frontend.md`](./work/specs/tech-debt/frontend.md) — Frontend Tech Debt — Sergeant Web — Active _(Активні спеки)_
 - [`work/specs/tech-debt/backend.md`](./work/specs/tech-debt/backend.md) — Backend Tech Debt Inventory — Active _(Активні спеки)_
 - [`work/specs/launch/product-os/ftux-master-tracker.md`](./work/specs/launch/product-os/ftux-master-tracker.md) — FTUX Master Tracker — стан, проблеми, план — Active — **single source of truth** для First-Time User Experience. _(Активні спеки)_
+- [`work/specs/audits/2026-09-13-product-full-review.md`](./work/specs/audits/2026-09-13-product-full-review.md) — Повний огляд продукту: візуал, логіка, маршрути, шум — Active - Наступна дія: хвиля 2 «Тиха втрата даних» з § «Черга робіт», звірити з кодом (за статусами 09-15 живий лише зал _(Активні спеки)_
 - [`work/specs/audits/2026-10-01-full-app-audit/privacy.md`](./work/specs/audits/2026-10-01-full-app-audit/privacy.md) — Аудит 2026-10-01 · Приватність і відповідність — Active. 38 кластерів (48 знахідок) за першопричиною. Загальний план, метод і обмеження — у _(Активні спеки)_
 - [`work/specs/audits/2026-10-01-full-app-audit/ux-a11y.md`](./work/specs/audits/2026-10-01-full-app-audit/ux-a11y.md) — Аудит 2026-10-01 · UX і доступність — Active. 86 кластерів (121 знахідка) за першопричиною. Загальний план, метод і обмеження — у _(Активні спеки)_
 - [`work/specs/audits/2026-10-01-full-app-audit/data-integrity.md`](./work/specs/audits/2026-10-01-full-app-audit/data-integrity.md) — Аудит 2026-10-01 · Цілісність даних і синхронізація — Active. 82 кластери (129 знахідок) за першопричиною. Загальний план, метод і обмеження — у _(Активні спеки)_
-- [`work/specs/audits/2026-10-01-full-app-audit/domain-logic.md`](./work/specs/audits/2026-10-01-full-app-audit/domain-logic.md) — Аудит 2026-10-01 · Логіка доменів — Active. 66 кластерів (89 знахідок) за першопричиною. Загальний план, метод і обмеження — у _(Активні спеки)_
 
 ## ⏭️ Наступний крок / заблоковано
 
