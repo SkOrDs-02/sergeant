@@ -112,7 +112,9 @@ export const UK_TO_EN: Record<string, string> = {
 export function translateFirstToken(query: string): string | null {
   const token = query.trim().toLowerCase().split(/\s+/)[0];
   if (!token || token.length < 2) return null;
-  if (UK_TO_EN[token]) return UK_TO_EN[token];
+  // `hasOwn`: запит `constructor` чи `__proto__` інакше дістав би функцію з
+  // прототипу обʼєкта.
+  if (Object.hasOwn(UK_TO_EN, token)) return UK_TO_EN[token]!;
   if (token.length >= 3) {
     for (const [key, val] of Object.entries(UK_TO_EN)) {
       if (key.startsWith(token)) return val;

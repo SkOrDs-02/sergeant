@@ -637,7 +637,7 @@ describe("food-search handler", () => {
     });
   });
 
-  it("returns 500 when response validation throws a generic error", async () => {
+  it("generic error goes to errorHandler instead of leaking its message", async () => {
     const fetchMock = vi.mocked(global.fetch);
     fetchMock
       .mockResolvedValueOnce(jsonResponse(true, { products: [offPear] }))
@@ -648,10 +648,10 @@ describe("food-search handler", () => {
     });
 
     const res = mockRes();
-    await handler(asReq({ q: "груша", limit: "3" }), res);
-
-    expect(res.statusCode).toBe(500);
-    expect(res.body).toEqual({ error: "schema drift" });
+    await expect(
+      handler(asReq({ q: "груша", limit: "3" }), res),
+    ).rejects.toThrow("schema drift");
+    expect(res.body).toBeUndefined();
   });
 
   it("skips English fallback sources when the query is not translatable", async () => {
