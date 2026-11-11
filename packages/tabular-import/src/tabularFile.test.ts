@@ -198,3 +198,14 @@ describe("gridFromCsvText", () => {
     expect(grid.rows).toHaveLength(2);
   });
 });
+
+describe("gridFromTabularFile — стеля рядків", () => {
+  it("кидає too_many_rows, щойно рядків більше за maxDataRows", () => {
+    const csv = Buffer.from(`date,amount\n${"1,2\n".repeat(200)}`, "utf8");
+    expectTabularCode(
+      () => gridFromTabularFile(csv, HEADER_HINTS, 100),
+      "too_many_rows",
+    );
+    expect(gridFromTabularFile(csv, HEADER_HINTS, 200).rows).toHaveLength(201);
+  });
+});

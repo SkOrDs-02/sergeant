@@ -1,3 +1,4 @@
+import { scanElements } from "./tagScan.js";
 import { decodeXmlEntities } from "./xlsxGrid.js";
 
 /**
@@ -14,9 +15,10 @@ import { decodeXmlEntities } from "./xlsxGrid.js";
  * `locateHeaderRow` у `tabularFile.ts`.
  */
 
-const TR_RE = /<tr\b[^>]*>([\s\S]*?)<\/tr>/gi;
-const CELL_RE = /<t([dh])\b([^>]*)>([\s\S]*?)<\/t\1>/gi;
-const SCRIPT_STYLE_RE = /<(script|style)\b[^>]*>[\s\S]*?<\/\1>/gi;
+const TR_OPEN_RE = /<(tr)\b/gi;
+const CELL_OPEN_RE = /<(t[dh])\b/gi;
+const SCRIPT_STYLE_OPEN_RE = /<(script|style)\b/gi;
+const TAG_RE = /<[^>]*>/g;
 const BR_RE = /<br\s*\/?>/gi;
 
 /** Чи схожий текст на HTML-документ із таблицею (детект іде ДО парсингу —
@@ -53,10 +55,10 @@ export class HtmlFormatError extends Error {}
  * Перевищення стелі — це відмова, а не «віддамо що вийшло»: рядок, який
  * після восьми проходів усе ще містить теги, не є штатною таблицею.
  */
-function stripUntilStable(input: string, pattern: RegExp): string {
-  let current = input.replace(pattern, "");
+function stripUntilStable(input: string, strip: (s: string) => string): string {
+  let current = strip(input);
   for (let pass = 1; ; pass += 1) {
-    const next = current.replace(pattern, "");
+    const next = strip(current);
     if (next === current) return current;
     if (pass >= MAX_SANITIZE_PASSES) {
       throw new HtmlFormatError("HTML: розмітка не піддається чистці");
@@ -65,12 +67,33 @@ function stripUntilStable(input: string, pattern: RegExp): string {
   }
 }
 
+function removeScriptStyle(html: string): string {
+  let out = "";
+  let prev = 0;
+  for (const el of scanElements(html, SCRIPT_STYLE_OPEN_RE, {
+    ignoreCase: true,
+  })) {
+    out += html.slice(prev, el.start);
+    prev = el.end;
+  }
+  return out + html.slice(prev);
+}
+
+/** Теги прибираються лише до останнього `>`: `<` у хвості без жодного `>`
+ * праворуч тегом не стане, а регексп пробував би кожен такий `<` і
+ * дочитував би хвіст до кінця (квадратичний CPU на `<<<<…`). */
+function stripTags(s: string): string {
+  const last = s.lastIndexOf(">");
+  if (last === -1) return s;
+  return s.slice(0, last + 1).replace(TAG_RE, "") + s.slice(last + 1);
+}
+
 function cellToText(html: string): string {
   // Тут нерухома точка настає вже на першому проході (`[^>]*` не
   // переступає через `>`, тож `<`, який пережив заміну, не має жодного
   // `>` праворуч), але цикл лишається спільним — і як гарантія для
   // сканера, і щоб дві чистки не розʼїхались.
-  const withoutTags = stripUntilStable(html.replace(BR_RE, " "), /<[^>]*>/g);
+  const withoutTags = stripUntilStable(html.replace(BR_RE, " "), stripTags);
   return decodeXmlEntities(
     // NBSP з `&nbsp;` вже розгорнутий у пробіл; лишається літеральний
     // U+00A0, яким часто розділяють тисячі.
@@ -86,24 +109,26 @@ function cellToText(html: string): string {
  * зʼїхали б відносно рядків даних.
  *
  * Кидає `HtmlFormatError`, якщо чистка розмітки не сходиться за
- * `MAX_SANITIZE_PASSES` проходів.
+ * `MAX_SANITIZE_PASSES` проходів. `maxRows` обриває розбір, щойно
+ * стільки рядків набрано: решту файлу викликач однаково відкине.
  */
-export function htmlTableToGrid(html: string): string[][] {
+export function htmlTableToGrid(
+  html: string,
+  maxRows = Number.POSITIVE_INFINITY,
+): string[][] {
   // Так само до нерухомої точки: вкладений `<script>` усередині
   // `<script>` пережив би один прохід (див. `stripUntilStable`).
-  const cleaned = stripUntilStable(html, SCRIPT_STYLE_RE);
+  const cleaned = stripUntilStable(html, removeScriptStyle);
   const rows: string[][] = [];
-  let trMatch: RegExpExecArray | null;
-  TR_RE.lastIndex = 0;
 
-  while ((trMatch = TR_RE.exec(cleaned)) !== null) {
-    const body = trMatch[1] ?? "";
+  for (const tr of scanElements(cleaned, TR_OPEN_RE, { ignoreCase: true })) {
+    if (rows.length >= maxRows) break;
     const cells: string[] = [];
-    let cellMatch: RegExpExecArray | null;
-    CELL_RE.lastIndex = 0;
-    while ((cellMatch = CELL_RE.exec(body)) !== null) {
-      const attrs = cellMatch[2] ?? "";
-      cells.push(cellToText(cellMatch[3] ?? ""));
+    for (const cell of scanElements(tr.body ?? "", CELL_OPEN_RE, {
+      ignoreCase: true,
+    })) {
+      const attrs = cell.attrs;
+      cells.push(cellToText(cell.body ?? ""));
       // HTML дозволяє і подвійні, і одинарні лапки, і зовсім без них
       // (`colspan='3'` трапляється в експортах). Без одинарних лапок
       // атрибут не читався, порожні клітинки не додавались — і всі

@@ -350,3 +350,20 @@ describe("isXlsxZip", () => {
     ).toBe(false);
   });
 });
+
+describe("xlsxToGrid — межі розміру", () => {
+  it("клітинка з адресою далеко праворуч не роздуває рядок порожнечею", () => {
+    const grid = xlsxToGrid(
+      makeZip([
+        {
+          name: "xl/worksheets/sheet1.xml",
+          data: Buffer.from(
+            `<worksheet><sheetData><row><c r="A1" t="inlineStr"><is><t>АТБ</t></is></c><c r="ZZZZ1"/></row></sheetData></worksheet>`,
+            "utf8",
+          ),
+        },
+      ]),
+    );
+    expect(grid[0]).toEqual(["АТБ"]);
+  });
+});
