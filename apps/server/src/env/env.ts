@@ -603,6 +603,7 @@ const envSchema = z.object({
 
   AI_MEMORY_ENABLED: boolFromEnv(false),
 
+  // Sync v2 рубильники й бюджети — у `syncEnv.ts` (Hard Rule #18).
   ...syncEnvShape,
 
   VOYAGE_API_KEY: stringWithDefault(""),

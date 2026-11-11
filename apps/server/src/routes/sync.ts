@@ -8,6 +8,10 @@ import {
   requireSyncSnapshotEnabled,
   syncV2Snapshot,
 } from "../modules/sync/syncV2Snapshot.js";
+import {
+  requireSyncStateHashEnabled,
+  syncV2StateHash,
+} from "../modules/sync/syncV2StateHash.js";
 
 /**
  * `/api/sync/*` — read-only audit log лишається за авторизованою сесією.
@@ -81,6 +85,9 @@ export function createSyncRouter(): Router {
   // off -> 404), доки клієнт не вміє bootstrap. Той самий аргумент, що для
   // стріму: стоїть першим, щоб 401/404 не вказували, чи існує поверхня.
   r.use("/api/v2/sync/snapshot", requireSyncSnapshotEnabled());
+  // ADR-0106: хеш стану за прапорцем `SYNC_STATE_HASH_ENABLED` (дефолт off →
+  // 404), той самий порядок, що й у стріму: 404 до будь-якої auth-перевірки.
+  r.use("/api/v2/sync/state-hash", requireSyncStateHashEnabled());
   r.use("/api/v2/sync", setModule("syncV2"));
   // Той самий трирівневий порядок (pre-auth IP → сесія → per-user), той
   // самий аргумент — див. коментарі вище. Ліміт 300/хв = 5× per-user 60/хв.
@@ -116,7 +123,18 @@ export function createSyncRouter(): Router {
       windowMs: 60_000,
     }),
   );
+  // ADR-0106 §3: власний бакет 6/хв на користувача — обчислення хешу
+  // лінійне за рядками таблиці, клієнт питає раз на добу на таблицю.
+  r.use(
+    "/api/v2/sync/state-hash",
+    rateLimitExpress({
+      key: "api:v2:sync:state-hash",
+      limit: 6,
+      windowMs: 60_000,
+    }),
+  );
   r.post("/api/v2/sync/push", syncV2Push);
+  r.get("/api/v2/sync/state-hash", syncV2StateHash);
   r.get("/api/v2/sync/pull", syncV2Pull);
   r.get("/api/v2/sync/snapshot", syncV2Snapshot);
   // Stage 5 / PR #041: SSE long-polling. Окрема rate-limit-категорія,

@@ -625,6 +625,7 @@ export {
   syncOpLogPullQueueDepth,
   syncPullPageBytes,
   syncPullTruncatedTotal,
+  syncStateHashComputeMs,
 } from "./metrics/sync.js";
 
 export {
