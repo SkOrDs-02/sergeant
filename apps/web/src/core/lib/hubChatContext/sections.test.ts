@@ -16,6 +16,10 @@ import {
   __setNutritionSqliteCacheForTests,
   clearNutritionSqliteCache,
 } from "../../../modules/nutrition/lib/sqliteReader";
+import {
+  __setFizrukSqliteCacheForTests,
+  clearFizrukSqliteCache,
+} from "../../../modules/fizruk/lib/sqliteReader";
 import { CATEGORY_META, writeMemoryEntries } from "../../profile/memoryBank";
 import {
   GOAL_MEMORY_CATEGORY,
@@ -32,51 +36,62 @@ beforeEach(() => {
   clearSqliteRoutineStateCache();
   clearSqliteCompletionsCache();
   clearNutritionSqliteCache();
+  clearFizrukSqliteCache();
 });
 afterEach(() => {
   vi.useRealTimers();
 });
 
 describe("appendWorkoutLines", () => {
-  it("emits nothing when no workouts in LS", () => {
+  it("emits nothing when the warm cache has no workouts", () => {
+    __setFizrukSqliteCacheForTests({ workouts: [] });
     const lines: string[] = [];
     appendWorkoutLines(lines);
     expect(lines).toEqual([]);
   });
 
-  it("emits workout summary lines when LS has workouts", () => {
+  it("холодний кеш: маркер недоступності замість тиші", () => {
+    const lines: string[] = [];
+    appendWorkoutLines(lines);
+    expect(lines).toEqual(["[Тренування] дані тимчасово недоступні"]);
+  });
+
+  // Тренування живуть лише в SQLite warm cache; tombstoned LS-ключ
+  // `fizruk_workouts_v1` порожній, і секція з нього завжди мовчала.
+  it("emits workout summary lines from the SQLite cache", () => {
     const now = Date.now();
-    const workouts = [
-      {
-        id: "w1",
-        startedAt: new Date(now - 2 * 86400000).toISOString(),
-        endedAt: new Date(now - 2 * 86400000 + 3600000).toISOString(),
-        items: [{ nameUk: "Присід" }, { name: "Жим" }],
-      },
-    ];
-    localStorage.setItem("fizruk_workouts_v1", JSON.stringify(workouts));
+    __setFizrukSqliteCacheForTests({
+      workouts: [
+        {
+          id: "w1",
+          startedAt: new Date(now - 2 * 86400000).toISOString(),
+          endedAt: new Date(now - 2 * 86400000 + 3600000).toISOString(),
+          items: [{ nameUk: "Присід" }, { nameUk: "Жим" }],
+        },
+      ] as never,
+    });
     const lines: string[] = [];
     appendWorkoutLines(lines);
     const out = lines.join("\n");
-    expect(out).toContain("[Тренування]");
+    expect(out).toContain("[Тренування] завершених всього: 1");
     expect(out).toContain("[Фізрук тиждень]");
     expect(out).toContain("[Фізрук загалом]");
     expect(out).toContain("[Фізрук активне тренування]");
-    expect(out).toContain("[Останнє тренування вправи]");
+    expect(out).toContain("[Останнє тренування вправи] Присід, Жим");
   });
 
   it("reports an active workout when ACTIVE_WORKOUT_KEY is set", () => {
     const now = Date.now();
-    localStorage.setItem(
-      "fizruk_workouts_v1",
-      JSON.stringify([
+    __setFizrukSqliteCacheForTests({
+      workouts: [
         {
           id: "active1",
           startedAt: new Date(now - 3600000).toISOString(),
+          endedAt: null,
           items: [{ nameUk: "Тяга" }],
         },
-      ]),
-    );
+      ] as never,
+    });
     localStorage.setItem("fizruk_active_workout_id_v1", "active1");
     const lines: string[] = [];
     appendWorkoutLines(lines);

@@ -1,6 +1,4 @@
 import {
-  parseWorkoutsFromStorage,
-  WORKOUTS_STORAGE_KEY,
   ACTIVE_WORKOUT_KEY,
   completedWorkoutsCount,
   countCompletedInCurrentWeek,
@@ -17,6 +15,7 @@ import { logger } from "@shared/lib";
 import { addDays, dateKeyFromDate } from "@sergeant/routine-domain";
 import { fmt } from "../hubChatUtils";
 import { loadRoutineState } from "../../../modules/routine/lib/routineStorage";
+import { getCachedFizrukSqliteState } from "../../../modules/fizruk/lib/sqliteReader";
 import {
   loadNutritionGoalPeriods,
   loadNutritionLog,
@@ -59,14 +58,15 @@ function deviceDayKeyOffset(from: Date, offsetDays: number): string {
 
 export function appendWorkoutLines(lines: string[]): void {
   try {
-    const raw = safeReadStringLS(WORKOUTS_STORAGE_KEY);
-    const w = parseWorkoutsFromStorage(raw) as Array<{
-      id?: string;
-      startedAt?: string;
-      endedAt?: string;
-      items?: Array<{ nameUk?: string; name?: string; exercise?: string }>;
-    }>;
-    if (!Array.isArray(w) || w.length === 0) return;
+    // Канонічне джерело — SQLite warm cache, як у Фізрука й чат-тулів:
+    // LS-ключ `fizruk_workouts_v1` tombstoned і ніким не пишеться.
+    const cache = getCachedFizrukSqliteState();
+    if (cache.refreshedAt === null) {
+      lines.push(`[Тренування] ${DATA_UNAVAILABLE_MARKER}`);
+      return;
+    }
+    const w = cache.workouts;
+    if (w.length === 0) return;
 
     const weekAgo = Date.now() - 7 * 24 * 60 * 60 * 1000;
     const withTs = w.map((x) => ({
