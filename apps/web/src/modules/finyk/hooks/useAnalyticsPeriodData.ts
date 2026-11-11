@@ -93,6 +93,12 @@ export function useAnalyticsPeriodData({
 
   const fetchError =
     periodMonths.map((m) => fetchErrors[m]).find(Boolean) ?? null;
+  // Упалий місяць порівняння чи зонда сам не перезапитується, а без нього
+  // `prevLoaded` лишається false і порівняння зникає. Окремий прапорець
+  // дає сторінці показати ретрай і для цього випадку.
+  const comparisonError = comparisonMonths.some((m) =>
+    Boolean(fetchErrors[m]),
+  );
 
   // `fetchMonth` — стабільний `useCallback` усередині `useMonobankWebhook`,
   // на відміну від обгортки `mono`, тож ідентичність `ensureMonth`
@@ -259,6 +265,7 @@ export function useAnalyticsPeriodData({
     comparison,
     loading,
     fetchError,
+    comparisonError,
     retry,
     bankTx,
     allActiveTx,
