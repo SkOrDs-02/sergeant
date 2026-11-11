@@ -11,6 +11,7 @@ import type { Biometrics } from "../../../core/profile/biometrics";
 import {
   ACTIVITY_MULTIPLIERS,
   GOAL_KCAL_DELTA,
+  goalDeltaKcal,
   computeNutritionTargets,
   computeNutritionTargetsFromBiometrics,
   computeTdee,
@@ -152,6 +153,16 @@ describe("computeNutritionTargets", () => {
     expect(GOAL_KCAL_DELTA.cutting).toBe(-500);
     expect(GOAL_KCAL_DELTA.maintenance).toBe(0);
     expect(GOAL_KCAL_DELTA.bulking).toBe(300);
+  });
+});
+
+describe("goalDeltaKcal", () => {
+  it("схуднення йде за темпом, решта цілей фіксовані", () => {
+    expect(goalDeltaKcal("cutting", 0.25)).toBe(-275);
+    expect(goalDeltaKcal("cutting", 0.75)).toBe(-825);
+    expect(goalDeltaKcal("cutting")).toBe(-550);
+    expect(goalDeltaKcal("maintenance", 0.75)).toBe(0);
+    expect(goalDeltaKcal("bulking", 0.25)).toBe(300);
   });
 });
 
