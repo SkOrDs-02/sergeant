@@ -47,6 +47,7 @@ vi.mock("../../lib/webpushSend.js", () => ({ sendWebPush: vi.fn() }));
 // без нього fan-out падає на першому ж виклику — vi.mock замінює модуль
 // цілком, і невказаний експорт стає відсутнім, а не справжнім.
 vi.mock("../../push/send.js", () => ({
+  LOAD_WEB_SUBSCRIPTIONS_SQL: "<shared web-subscriptions query>",
   sendToUser: vi.fn(),
   recordDomainOutcome: vi.fn(),
 }));
@@ -449,6 +450,12 @@ describe("push handlers", () => {
     );
 
     expect(fanoutRes.body).toEqual({ sent: 1, stale: 1 });
+    // Той самий запит, що й у sendToUser: підписки протухлих сесій не
+    // отримують пуші і через внутрішній API.
+    expect(mocks.db.query.mock.calls[1]).toEqual([
+      "<shared web-subscriptions query>",
+      ["u2"],
+    ]);
     expect(mocks.sendWebPush).toHaveBeenCalledTimes(2);
     expect(mocks.db.query.mock.calls[2]?.[1]).toEqual([
       ["https://push.example/stale"],

@@ -105,9 +105,10 @@ async function loadNativeDevices(userId: string): Promise<DeviceRow[]> {
  * `session.delete.after` (priv-04) ловить лише видалення рядка сесії, а
  * протухання (`expiresAt`, 7 днів простою) рядок не видаляє: без цієї умови
  * банківські пуші A далі йшли б у браузер, яким уже користується B. Рядки без
- * `session_id` (до міграції 161) лишаються як були.
+ * `session_id` (до міграції 161) лишаються як були. Спільний для всіх шляхів
+ * web-доставки, включно з внутрішнім `POST /api/push/send`.
  */
-const LOAD_WEB_SUBSCRIPTIONS_SQL = `SELECT ps.endpoint, ps.p256dh, ps.auth
+export const LOAD_WEB_SUBSCRIPTIONS_SQL = `SELECT ps.endpoint, ps.p256dh, ps.auth
        FROM push_subscriptions ps
       WHERE ps.user_id = $1
         AND ps.deleted_at IS NULL
