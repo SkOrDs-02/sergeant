@@ -392,6 +392,17 @@ describe("archive_habit", () => {
 // add_calendar_event
 // ---------------------------------------------------------------------------
 describe("add_calendar_event", () => {
+  it("undo видаляє створену подію", () => {
+    const out = handleRoutineAction({
+      name: "add_calendar_event",
+      input: { name: "Зустріч", date: "2026-05-01" },
+    });
+    if (typeof out !== "object" || out == null) throw new Error("no undo");
+    expect(loadRoutineState().habits).toHaveLength(1);
+    out.undo?.();
+    expect(loadRoutineState().habits).toHaveLength(0);
+  });
+
   it("happy: adds calendar event", () => {
     const out = call({
       name: "add_calendar_event",

@@ -52,6 +52,19 @@ import {
 } from "./routineActions.helpers";
 import { formatNumberUk } from "@sergeant/shared";
 
+// Undo тримає id (а не повний snapshot), щоб не переписувати інші зміни,
+// які могли статися між створенням і undo (інша звичка, completions).
+function removeCreatedHabit(createdId: string): void {
+  const cur = loadRoutineState();
+  const habits = Array.isArray(cur.habits)
+    ? cur.habits.filter((h) => h.id !== createdId)
+    : [];
+  if (habits.length === (cur.habits?.length ?? 0)) return;
+  const completions = { ...cur.completions };
+  delete completions[createdId];
+  saveRoutineState({ ...cur, habits, completions });
+}
+
 export function handleRoutineAction(
   action: ChatAction,
 ): ChatActionResult | undefined {
@@ -187,26 +200,10 @@ export function handleRoutineAction(
       };
       const result = `Звичку "${trimmed}" створено (${recLabelMap[rec] || rec}, id:${createdId || "?"})${recNote}`;
       if (!createdId) return { result, confirm };
-      // Undo тримає id (а не повний snapshot), щоб не переписувати
-      // інші зміни, які можуть статися між створенням і undo
-      // (інша звичка створена, completions додані, etc.).
       return {
         result,
         confirm,
-        undo: () => {
-          const cur = loadRoutineState();
-          const habits = Array.isArray(cur.habits)
-            ? cur.habits.filter((h) => h.id !== createdId)
-            : [];
-          if (habits.length === (cur.habits?.length ?? 0)) return;
-          const curCompletions = { ...cur.completions };
-          delete curCompletions[createdId];
-          saveRoutineState({
-            ...cur,
-            habits,
-            completions: curCompletions,
-          });
-        },
+        undo: () => removeCreatedHabit(createdId),
       };
     }
     case "create_reminder": {
@@ -383,11 +380,10 @@ export function handleRoutineAction(
         timeOfDay: tod,
       });
       const confirm = persistRoutineState(nextState);
-      const created = nextState.habits[nextState.habits.length - 1];
-      return {
-        result: `Подію "${evName}" додано на ${d}${tod ? ` о ${tod}` : ""} (id:${created?.id || "?"})`,
-        confirm,
-      };
+      const createdId = nextState.habits[nextState.habits.length - 1]?.id;
+      const result = `Подію "${evName}" додано на ${d}${tod ? ` о ${tod}` : ""} (id:${createdId || "?"})`;
+      if (!createdId) return { result, confirm };
+      return { result, confirm, undo: () => removeCreatedHabit(createdId) };
     }
     case "edit_habit": {
       const { habit_id, name, emoji, recurrence, weekdays } = (

@@ -8,8 +8,10 @@ import { describe, it, expect, beforeEach, vi } from "vitest";
  */
 const persistFizrukDailyLog = vi.hoisted(() => vi.fn());
 const recordBodyWeight = vi.hoisted(() => vi.fn());
+const deleteFizrukDailyLogEntry = vi.hoisted(() => vi.fn());
 
 vi.mock("./fizrukActions/shared", () => ({
+  deleteFizrukDailyLogEntry,
   persistFizrukDailyLog,
   readFizrukDailyLog: vi.fn(() => []),
 }));
@@ -57,6 +59,17 @@ describe("log_weight · межі ваги", () => {
     expect(logWeight({ weight_kg: 400 })).toContain("Вагу записано");
     expect(persistFizrukDailyLog).toHaveBeenCalledTimes(2);
     expect(recordBodyWeight).toHaveBeenCalledTimes(2);
+  });
+
+  it("undo прибирає щойно записаний запис щоденника", () => {
+    const out = handleNutritionAction({
+      name: "log_weight",
+      input: { weight_kg: 82 },
+    } as unknown as ChatAction);
+    if (typeof out !== "object" || out == null) throw new Error("no undo");
+    out.undo?.();
+    const [[written]] = persistFizrukDailyLog.mock.calls as [[unknown[]]];
+    expect(deleteFizrukDailyLogEntry).toHaveBeenCalledWith(written[0]);
   });
 
   it("недодатна вага — як раніше", () => {
