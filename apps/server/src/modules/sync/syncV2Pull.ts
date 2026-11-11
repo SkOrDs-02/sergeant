@@ -39,6 +39,60 @@ function pullByteBudget(): number {
   return Number.isFinite(v) && v >= 1 ? Math.floor(v) : PULL_MAX_BYTES_DEFAULT;
 }
 
+/**
+ * Сторінка журналу під байтовим бюджетом (ADR-0105). Спільна для `/pull` і
+ * replay у SSE-стрімі: обидва читають той самий журнал, і жоден не має
+ * тягнути в Node більше за бюджет.
+ */
+export async function selectPullPage(
+  userId: string,
+  since: number,
+  originDeviceId: string | null,
+  limit: number,
+): Promise<{ rows: PullRow[]; truncatedByBudget: boolean }> {
+  const budget = pullByteBudget();
+  // ADR-0105 §1: бюджет рахує сам Postgres. `page` бере до `limit` рядків,
+  // `sized` додає суму `octet_length(row::text)` ПОПЕРЕДНІХ рядків вікна;
+  // лишаються рядки, чий префікс ще менший за бюджет (перший завжди).
+  // Рядки понад бюджет у Node не потрапляють.
+  const result = await pool.query<PullRow>(
+    `WITH page AS (
+       SELECT id, table_name, op, row, client_ts, server_ts, origin_device_id,
+              octet_length(row::text) AS row_bytes
+         FROM sync_op_log
+        WHERE user_id = $1
+          AND id > $2
+          AND status = 'applied'
+          AND origin_device_id IS DISTINCT FROM $3
+          AND (tx_id IS NULL OR tx_id < pg_snapshot_xmin(pg_current_snapshot()))
+        ORDER BY id ASC
+        LIMIT $4
+     ), sized AS (
+       SELECT page.*,
+              COALESCE(SUM(row_bytes) OVER (
+                ORDER BY id ROWS BETWEEN UNBOUNDED PRECEDING AND 1 PRECEDING
+              ), 0) AS bytes_before,
+              LEAD(id) OVER (ORDER BY id) AS next_id
+         FROM page
+     )
+     SELECT id, table_name, op, row, client_ts, server_ts, origin_device_id,
+            row_bytes, next_id
+       FROM sized
+      WHERE bytes_before < $5
+      ORDER BY id ASC`,
+    [userId, since, originDeviceId, limit, budget],
+  );
+  // Обрізано бюджетом, коли за останнім збереженим рядком у вікні сторінки
+  // ще був кандидат. `LEAD` дивиться на один рядок уперед і не змушує
+  // Postgres буферизувати всю сторінку разом із payload-ами, як
+  // `COUNT(*) OVER ()` (рев'ю #1646).
+  const lastRow = result.rows[result.rows.length - 1];
+  return {
+    rows: result.rows,
+    truncatedByBudget: lastRow != null && lastRow.next_id != null,
+  };
+}
+
 export async function syncV2Pull(req: Request, res: Response): Promise<void> {
   const start = process.hrtime.bigint();
   const user = (req as WithSessionUser).user!;
@@ -57,40 +111,14 @@ export async function syncV2Pull(req: Request, res: Response): Promise<void> {
   const originDeviceId = readOriginDeviceId(req);
 
   try {
-    const budget = pullByteBudget();
-    // ADR-0105 §1: бюджет рахує сам Postgres. `page` бере до `limit` рядків,
-    // `sized` додає суму `octet_length(row::text)` ПОПЕРЕДНІХ рядків вікна;
-    // лишаються рядки, чий префікс ще менший за бюджет (перший завжди).
-    // Рядки понад бюджет у Node не потрапляють.
-    const result = await pool.query<PullRow>(
-      `WITH page AS (
-         SELECT id, table_name, op, row, client_ts, server_ts, origin_device_id,
-                octet_length(row::text) AS row_bytes
-           FROM sync_op_log
-          WHERE user_id = $1
-            AND id > $2
-            AND status = 'applied'
-            AND origin_device_id IS DISTINCT FROM $3
-            AND (tx_id IS NULL OR tx_id < pg_snapshot_xmin(pg_current_snapshot()))
-          ORDER BY id ASC
-          LIMIT $4
-       ), sized AS (
-         SELECT page.*,
-                COALESCE(SUM(row_bytes) OVER (
-                  ORDER BY id ROWS BETWEEN UNBOUNDED PRECEDING AND 1 PRECEDING
-                ), 0) AS bytes_before,
-                LEAD(id) OVER (ORDER BY id) AS next_id
-           FROM page
-       )
-       SELECT id, table_name, op, row, client_ts, server_ts, origin_device_id,
-              row_bytes, next_id
-         FROM sized
-        WHERE bytes_before < $5
-        ORDER BY id ASC`,
-      [user.id, since, originDeviceId, limit, budget],
+    const { rows, truncatedByBudget } = await selectPullPage(
+      user.id,
+      since,
+      originDeviceId,
+      limit,
     );
 
-    const opsOut = result.rows.map((r) => ({
+    const opsOut = rows.map((r) => ({
       id: Number(r.id),
       table: r.table_name,
       op: r.op,
@@ -101,12 +129,6 @@ export async function syncV2Pull(req: Request, res: Response): Promise<void> {
       origin_device_id: r.origin_device_id,
     }));
 
-    // Обрізано бюджетом, коли за останнім збереженим рядком у вікні сторінки
-    // ще був кандидат. `LEAD` дивиться на один рядок уперед і не змушує
-    // Postgres буферизувати всю сторінку разом із payload-ами, як
-    // `COUNT(*) OVER ()` (рев'ю #1646).
-    const lastRow = result.rows[result.rows.length - 1];
-    const truncatedByBudget = lastRow != null && lastRow.next_id != null;
     // Не лише `length === limit`: обрізана бюджетом сторінка коротша за limit,
     // але за курсором ще є оп-и.
     const nextCursor =
@@ -114,7 +136,7 @@ export async function syncV2Pull(req: Request, res: Response): Promise<void> {
         ? opsOut[opsOut.length - 1]!.id
         : null;
 
-    const pageBytes = result.rows.reduce(
+    const pageBytes = rows.reduce(
       (acc, r) => acc + (Number(r.row_bytes) || 0),
       0,
     );
@@ -127,8 +149,8 @@ export async function syncV2Pull(req: Request, res: Response): Promise<void> {
 
     try {
       syncOpLogPullQueueDepth.observe(opsOut.length);
-      if (result.rows.length > 0) {
-        const newest = result!.rows[result.rows.length - 1]!.server_ts;
+      if (rows.length > 0) {
+        const newest = rows[rows.length - 1]!.server_ts;
         const lagMs = Date.now() - newest.getTime();
         if (lagMs >= 0 && Number.isFinite(lagMs)) {
           syncOpLogPullLagMs.observe(lagMs);
