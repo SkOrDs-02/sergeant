@@ -27,6 +27,7 @@ import type {
   TxSplitsMap,
 } from "./types";
 import { getCatColor } from "./categories";
+import { txSplitsFor } from "./debtLinkKeys";
 import { formatNumberUk } from "@sergeant/shared";
 
 type MonthPredicate = (tx: Transaction | null | undefined) => boolean;
@@ -144,7 +145,7 @@ export function computeCategorySpendIndex(
   for (const tx of list) {
     if (!tx || excluded.has(tx.id) || tx.amount >= 0) continue;
     if (inMonth && !inMonth(tx)) continue;
-    const splits: TxSplit[] | undefined = txSplits[tx.id];
+    const splits: TxSplit[] | undefined = txSplitsFor(txSplits, tx.id);
     if (splits && splits.length > 0) {
       for (const s of splits) {
         if (!s.categoryId || !s.amount) continue;

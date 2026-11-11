@@ -1,5 +1,6 @@
 import { INTERNAL_TRANSFER_ID } from "../constants";
 import { getExpenseCategoryForTransaction } from "./categories.js";
+import { txSplitsFor } from "../domain/debtLinkKeys.js";
 
 /**
  * Мінімальна форма транзакції, достатня для spend-селекторів.
@@ -39,7 +40,7 @@ function readSplits(
   txSplits: TxSplitsLike,
   id: string,
 ): readonly SpendingSplitLike[] {
-  const v = txSplits[id];
+  const v = txSplitsFor(txSplits, id);
   return Array.isArray(v) ? (v as readonly SpendingSplitLike[]) : [];
 }
 
