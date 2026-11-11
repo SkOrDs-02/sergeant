@@ -56,11 +56,15 @@ export function buildTurnCards(
   );
   const cards = builtCards.filter((c): c is ChatActionCard => c !== null);
   const uncardedText = toolResults
-    .filter((_, idx) => builtCards[idx] == null)
     // Помилковий результат не маркуємо «✓» — це б рапортувало успіх.
-    .map((r) =>
-      r.ok === false || isFailureResult(r.result) ? r.result : `✓ ${r.result}`,
-    )
+    .flatMap((r, idx) => {
+      if (builtCards[idx] != null) return [];
+      const name = toolCalls[idx]?.name;
+      const failed =
+        r.ok === false ||
+        isFailureResult(r.result, typeof name === "string" ? name : undefined);
+      return [failed ? r.result : `✓ ${r.result}`];
+    })
     .join("\n");
   return { cards, uncardedText };
 }
