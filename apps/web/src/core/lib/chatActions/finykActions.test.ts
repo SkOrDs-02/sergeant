@@ -626,7 +626,7 @@ describe("split_transaction", () => {
       input: {
         tx_id: "tx1",
         parts: [
-          { category_id: "food", amount: 50 },
+          { category_id: "food", amount: 70 },
           { category_id: "transport", amount: 30 },
         ],
       },

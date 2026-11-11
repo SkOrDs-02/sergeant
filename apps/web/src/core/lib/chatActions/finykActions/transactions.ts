@@ -5,6 +5,7 @@ import { validateTransactionInput } from "./transactionInputValidation";
 import { FINYK_COLD_CACHE_MESSAGE, warmFinykCache } from "./warmCache";
 import {
   finykCategoryExists,
+  finykExpenseAmountUah,
   finykTransactionExists,
   normalizeFinykId,
   unknownCategoryMessage,
@@ -153,11 +154,22 @@ export function splitTransaction(
     string,
     Array<{ categoryId: string; amount: number }>
   > = { ...(cache.txSplits as Record<string, never>) };
+  // Сума частин ЗАМІНЮЄ суму операції в статистиці й лімітах
+  // (`getTxStatAmount`), тож, як і редактор спліту в UI, приймаємо лише
+  // розподіл витрати рівно на її суму.
+  const total = finykExpenseAmountUah(id);
+  if (total === null)
+    return `Операцію ${id} не розділено: розділити можна лише витрату.`;
   const customC = cache.customCategories;
   const newSplits = splitParts.map((p) => ({
     categoryId: normalizeFinykId(p.category_id),
-    amount: Math.abs(Number(p.amount) || 0),
+    amount: Math.abs(Number(p.amount)),
   }));
+  if (newSplits.some((s) => !Number.isFinite(s.amount) || s.amount <= 0))
+    return "Кожна частина має бути сумою в гривнях, більшою за 0.";
+  const partsSum = newSplits.reduce((sum, s) => sum + s.amount, 0);
+  if (Math.round(partsSum * 100) !== Math.round(total * 100))
+    return `Операцію ${id} не розділено: частини дають ${formatNumberUk(partsSum)} грн, а операція на ${formatNumberUk(total)} грн. Сума частин має дорівнювати сумі операції.`;
   const unknownPart = newSplits.find((s) => !finykCategoryExists(s.categoryId));
   if (unknownPart) return unknownCategoryMessage(unknownPart.categoryId);
   // Спліти для tx_id перезаписуються цілком: знімок попередніх потрібен
