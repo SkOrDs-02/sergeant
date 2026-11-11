@@ -320,7 +320,12 @@ function parseSheet(
       // порожні клітинки в файлі просто відсутні, і без цього зсуву
       // колонки «зʼїхали б» уліво (типово для експортів з пропусками).
       const colIdx = ref ? columnRefToIndex(ref) : autoIndex;
-      if (colIdx >= MAX_SHEET_COLUMNS) continue;
+      // Відкинута клітинка все одно посуває лічильник: інакше наступна `<c>`
+      // без `r` сяде в чужу колонку в межах аркуша.
+      if (colIdx >= MAX_SHEET_COLUMNS) {
+        autoIndex = colIdx + 1;
+        continue;
+      }
       if (colIdx >= 0) {
         while (cells.length < colIdx) cells.push("");
         cells[colIdx] = cellText(`<c${tagAttrs}>`, inner, ctx);
