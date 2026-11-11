@@ -147,12 +147,17 @@ export function useMonobankWebhook({
         })),
     [webhookAccounts],
   );
-  const foreignAccountIdsKey = (
-    Array.isArray(webhookAccounts) ? webhookAccounts : []
-  )
-    .filter((a) => a.currencyCode !== CURRENCY.UAH)
-    .map((a) => a.monoAccountId)
-    .join(",");
+  // Jars are included: their operations land in mono_transaction under the
+  // jar id, so a USD/EUR jar's top-up would otherwise stay in the mirror as
+  // hryvnia income.
+  const foreignAccountIdsKey = [
+    ...(Array.isArray(webhookAccounts) ? webhookAccounts : [])
+      .filter((a) => a.currencyCode !== CURRENCY.UAH)
+      .map((a) => a.monoAccountId),
+    ...jars
+      .filter((j) => j.currencyCode !== CURRENCY.UAH)
+      .map((j) => j.monoJarId),
+  ].join(",");
 
   // ClientInfo-like object for UI compatibility
   const clientInfo = useMemo(() => {
@@ -259,8 +264,10 @@ export function useMonobankWebhook({
     };
   }, [accounts, userId, enabled, writeMirror]);
 
+  // Not gated on writeMirror: the boot instance does not load jars, so the
+  // Finyk screen instance has to purge them. The delete is idempotent.
   useEffect(() => {
-    if (!enabled || !writeMirror || !userId || !foreignAccountIdsKey) return;
+    if (!enabled || !userId || !foreignAccountIdsKey) return;
     let cancelled = false;
     void (async () => {
       try {
@@ -286,7 +293,7 @@ export function useMonobankWebhook({
     return () => {
       cancelled = true;
     };
-  }, [foreignAccountIdsKey, userId, enabled, writeMirror]);
+  }, [foreignAccountIdsKey, userId, enabled]);
 
   // Read overlay — when the network slice is empty (cold start, fetch
   // pending) and the flag is on, return the mirrored transactions so
