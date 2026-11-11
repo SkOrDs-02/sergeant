@@ -305,10 +305,14 @@ all three rules to `error` as a follow-up under M11.
 | `clipboard-read`  | `(self)`  | Вставка токена Monobank — `FinykLoginScreen.tsx` `navigator.clipboard.readText()`                        | Self-origin only; читання лише за тапом на кнопку (потрібен user gesture), без фонового доступу.                                            |
 | `clipboard-write` | `(self)`  | Копіювання відгуку, діагностики SW і request id — `FeedbackDialog.tsx`, `PWASection.tsx`, `requestId.ts` | Self-origin only; запис лише за тапом на кнопку.                                                                                            |
 
-Усі були `()`: сканер і голосовий ввід на web ламались (`getUserMedia` →
-`NotAllowedError` незалежно від дозволу в браузері), а Clipboard API у Chromium
-відхиляв `readText`/`writeText` на власному origin. The Capacitor shell is unaffected (native permissions, not this
-header). Owner-approved 2026-06-17.
+`camera` and `microphone` were previously `()`, which broke the scanner and
+voice features on the web build (`getUserMedia` → `NotAllowedError` regardless
+of the user's browser permission). The Capacitor shell is unaffected (native
+permissions, not this header). Owner-approved 2026-06-17.
+
+`clipboard-read` / `clipboard-write`: carve-out з аудиту 1111 (A36), чекає
+схвалення власника. З `()` Clipboard API у Chromium відхиляв
+`readText`/`writeText` на власному origin.
 
 ## `pnpm.overrides` rationale (L1)
 
