@@ -11,6 +11,7 @@ import {
   getExercisePR,
   itemTonnageKg,
   personalRecordsExerciseCount,
+  progressionTopSet,
   suggestNextSet,
   targetRepRange,
   totalCompletedVolumeKg,
@@ -811,5 +812,24 @@ describe("itemTonnageKg — канон тоннажу по вправі", () => 
     expect(workoutTonnageKg(w)).toBe(
       w.items.reduce((s, it) => s + itemTonnageKg(it), 0),
     );
+  });
+});
+
+describe("progressionTopSet", () => {
+  it("бере найбільшу вагу, а при рівній вазі більше повторів, без кепу Еплі", () => {
+    expect(
+      progressionTopSet([
+        { weightKg: 60, reps: 10 },
+        { weightKg: 60, reps: 12 },
+        { weightKg: 50, reps: 15 },
+      ]),
+    ).toEqual({ weightKg: 60, reps: 12 });
+  });
+
+  it("порожні й нульові підходи ігнорує", () => {
+    expect(
+      progressionTopSet([{ weightKg: 0, reps: 5 }, { weightKg: 40 }]),
+    ).toBeNull();
+    expect(progressionTopSet(null)).toBeNull();
   });
 });
