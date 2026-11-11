@@ -1,6 +1,6 @@
 # Sergeant — Панель керування
 
-> **Last touched:** 2026-10-26 by docs:gen-status. **Next review:** 2026-11-02.
+> **Last touched:** 2026-11-11 by docs:gen-status. **Next review:** 2026-11-18.
 > **Status:** Reference
 
 <!-- AUTO-GENERATED, ОКРІМ блоку FOCUS. Редагуй лише між `<!-- FOCUS:START -->` / `<!-- FOCUS:END -->`; решту регенеруй через `pnpm docs:gen-status`. -->
@@ -13,7 +13,6 @@
 
 - **Трекінг перезібрано (2026-10-26).** Що робимо першим — [`work/roadmap.md`](./work/roadmap.md) («Зараз / Далі / Колись» з наступною дією і блокером), рішення власника — [`work/owner-decisions.md`](./work/owner-decisions.md), усе відкрите — [`open-work.md`](./open-work.md). Тріаж звірив 99 «відкритих» документів з кодом: 57 закрито, 42 лишились відкритими, у кожного одна наступна дія.
 - **Редизайн v3.2 завершено** — спека [`redesign-v3-2.md`](./work/specs/planning/redesign-v3-2.md) `Implemented` після фінального перезнімання всіх маршрутів (#1659).
-- **До 2026-10-31: прибирання після закритої бети.** Тека `beta-launch/` і бета-скрипти, інакше червоніє `lint:ai-legacy` — перший рядок «Зараз» у roadmap.
 - **Повний аудит 2026-10-01:** critical/high і medium мають PR, частина кластерів закрита частково — [`README`](./work/specs/audits/2026-10-01-full-app-audit/README.md); low/info веде окрема сесія.
 - **Чекають власника з доступом до проду:** роль `sergeant_app` (RLS, стадія 4) і `healthTextBackfill` — див. § «Операції» в owner-decisions.
 
