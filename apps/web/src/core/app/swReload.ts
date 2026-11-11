@@ -22,11 +22,32 @@
 import { isForcedReloadBlocked } from "./updateGate";
 
 let localUpdateRequested = false;
+let explicitUpdateAt: number | null = null;
 let reloading = false;
+
+/**
+ * Вікно після кліку «Оновити», у якому активація вважається своєчасною.
+ * Нормальна активація займає 1.3-1.6 с; пізніша означає lame-duck старого
+ * воркера (rel-14), і тоді reload гейтиться повністю.
+ */
+export const EXPLICIT_UPDATE_WINDOW_MS = 3_000;
 
 /** Ця вкладка ініціювала оновлення («Оновити» або idle auto-skipWaiting). */
 export function markLocalUpdateRequested(): void {
   localUpdateRequested = true;
+}
+
+/** Людина щойно натиснула «Оновити»: те саме, плюс мітка часу кліку. */
+export function markExplicitUpdateRequested(): void {
+  localUpdateRequested = true;
+  explicitUpdateAt = Date.now();
+}
+
+function isTimelyExplicitUpdate(): boolean {
+  return (
+    explicitUpdateAt !== null &&
+    Date.now() - explicitUpdateAt < EXPLICIT_UPDATE_WINDOW_MS
+  );
 }
 
 export function isLocalUpdateRequested(): boolean {
@@ -73,12 +94,20 @@ export function deferReload(win: Window, reason: ReloadDeferredReason): void {
  * поле, стрім HubChat, мутації в польоті — {@link isForcedReloadBlocked}).
  * Інакше — подія відкладення, тост з ручним «Перезавантажити». Повертає
  * `true`, якщо reload запущено.
+ *
+ * Своєчасна активація після кліку «Оновити» не зважає на трекер інлайн-полів:
+ * клік і є згодою, а трекер рахує і вже збережені поля, тож клік «нічого не
+ * робив». Пізня активація гейтиться повністю, як і раніше.
  */
 export function reloadUnlessBlocked(
   win: Window = window,
   isMutating?: () => boolean,
 ): boolean {
-  if (isForcedReloadBlocked(isMutating)) {
+  if (
+    isForcedReloadBlocked(isMutating, {
+      ignoreTypedInput: isTimelyExplicitUpdate(),
+    })
+  ) {
     deferReload(win, "unsaved-input");
     return false;
   }
@@ -104,5 +133,6 @@ export function handleNeedReload(
 /** Лише для тестів. */
 export function resetSwReloadForTests(): void {
   localUpdateRequested = false;
+  explicitUpdateAt = null;
   reloading = false;
 }
