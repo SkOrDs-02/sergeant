@@ -133,6 +133,11 @@ describe("parseCommand — натискання inline-кнопки", () => {
     expect(parseCommand(cb("week1"))).toEqual({ kind: "ignore" });
   });
 
+  it("ключ прототипу замість id опитування ігноруємо, а не падаємо", () => {
+    expect(parseCommand(cb("s:constructor:1"))).toEqual({ kind: "ignore" });
+    expect(parseCommand(cb("s:__proto__:1"))).toEqual({ kind: "ignore" });
+  });
+
   it("без callback_query.id відповісти нікуди — ігноруємо", () => {
     // Без id не можна викликати answerCallbackQuery, тож кнопка все одно
     // крутила б годинник. Обробляти такий апдейт немає сенсу.
