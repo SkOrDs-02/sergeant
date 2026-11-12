@@ -1,7 +1,7 @@
 # SPEC: офлайн холодний старт залогіненого пристрою
 
-> **Last touched:** 2026-11-12 by @claude (спека за знахідкою A16 аудиту 2026-11-11 і рішенням власника 2026-11-12). **Next review:** 2027-02-10.
-> **Status:** Draft. Ключове рішення («офлайн зі штампа») ухвалене власником 2026-11-12; решта невизначеностей у § Ризики та відкриті питання, кожна з рекомендацією. До відповідей на питання 1-3 спека не agent-ready.
+> **Last touched:** 2026-11-13 by @claude (кроки 0-4 виконано, рішення власника по відкритих питаннях, § Стан виконання). **Next review:** 2027-02-10.
+> **Status:** Implemented. Кроки 0-3 у коді з юнітами, Playwright-сценарій написано; прогін E2E і бут на prod-білді (§ Верифікація п. 2-4) лишаються за CI і власником. Рішення власника 2026-11-13 по питаннях 1-8 і відхилення від тексту спеки: § Стан виконання.
 
 ## Проблема
 
@@ -128,3 +128,19 @@
 6. **API впав при живому інтернеті** теж дає офлайн-режим (рішення 2). Рекомендація: прийняти; якщо ні, додати умову `navigator.onLine === false` (як `ApiError.isOffline`), але вона бреше на iOS (коментар у `featureAccess.ts`).
 7. **Не перевірено в коді:** як `HubHomeView` / `useHubDashboardState` і `useWhatsNew` поводяться з `createdAt === null` для залогіненого користувача; чи `AnonymousDataMigrationProvider` блокує застосунок офлайн, коли в `anon`-партиції є рядки (перенос пише в outbox і видаляє джерело лише після підтвердження сервера, але гейт може чекати); чи `deviceOwnerIsUser()` на першому рендері читає ще LS-фолбек до буту KV, і чи AuthContext перерендериться після буту KV (підписки на `kvStoreBoot` у ньому немає). Рекомендація: закрити юнітами кроку 2 до мержу.
 8. **Тост «працюю офлайн»**, згаданий в описі знахідки A16, у коді не знайдено; узгодити текст з плашкою «Офлайн» під час кроку 3.
+
+## Стан виконання
+
+Рішення власника 2026-11-13 по § Ризики та відкриті питання: усі вісім прийнято за рекомендаціями (окремий PR для кроку 0; вікно 7 діб від останньої успішної `me` у сирому LS з префіксом `auth_`; маркер `auth_pending_deletion_v1` і `PendingDeletionScreen` офлайн; спершу інвентар Pro-гейтів; без прапорця; «API лежить при живому інтернеті» теж вмикає режим, лише `kind === "network"`; п. 7 закрити кодом і юнітами; тосту не вигадувати, вистачає плашки «Офлайн»).
+
+**Крок 0** (гілка `claude/owner-stamp-anon-partition`). Ризик підтвердився: тест `core/db/__tests__/ownerStamp.anonPartition.test.ts` на поточному коді червоний для обох сценаріїв (після виходу і після 401-teardown `anon`-партиція тримала `hub_chat_owner_v1 = <userId>`). Відхилення від пропозиції «перезаписати штамп в `anon`-партиції»: на 401-teardown активна партиція користувача, а відкрити другий SQLite-handle одночасно не можна, тож штамп переїхав із KV у сирий localStorage (`resolveLsStore`), спільний для партицій. Purge виходу і teardown знімають його разом з усіма `hub_`-ключами; копію в KV від старих білдів `reconcileChatOwnerOnAuthChange` видаляє з активної партиції при першій зміні штампа. Побічно це прибирає зайвий identity-wipe з reload на першому буті після свідомого виходу і закриває третю частину п. 7: штамп читається синхронно з першого рендеру, до буту KV. Ціна: на першому холодному старті після оновлення пристрій ще не має штампа в LS, тож офлайн там поводиться як анонімний (штамп запишеться на першій живій `me`).
+
+**Крок 1.** `classifyMeFailure`, мітки і маркер у `apps/web/src/core/auth/offlineIdentity.ts` (без runtime-імпортів `@sergeant/shared`, pin-тест `offlineIdentity.test.ts`). `auth_last_me_ok_at_v1` пише 200, `auth_pending_deletion_v1` пише 403 `account_pending_deletion` (дата або порожній рядок), 401, вихід і teardown знімають обидва.
+
+**Крок 2.** Відхилення: мережеву помилку `me` більше не повторюємо в межах циклу (`retryMe`). Під `networkMode: "offlineFirst"` (`queryClient.ts`) повтор без мережі ставить запит на паузу, і помилка не доходила б до AuthContext, доки мережа не повернеться. Перезапит лишається на `refetchInterval` і `refetchOnReconnect`. Маркер видалення без дати не дає ні офлайн-режиму, ні `pending_deletion`: лишається блокер. `RootLayout` окремої гілки не отримав, `PendingDeletionScreen` уже показується за `pendingDeletion` з контексту.
+
+**Крок 3.** `PersonalInfoSection` і `VerifyEmailPage` при `offlineIdentity` показують рядок `coreMessages.auth.profileOffline`. Інвентар Pro-гейтів (`FEATURES` у `packages/shared/src/billing/entitlements.ts`, `useFeatureGate`): `ai.photo`, `ai.finykVision`, `ai.voice`, `ai.memoryRecall`, `nutrition.weekPlan` мережеві, а `export.pdf` будується на клієнті (`HubReports.tsx`). Тому при `offlineIdentity` без знімка тарифу `useFeatureGate` не закриває фічу пейволом, а `usePlan` віддає `isLoading: true`, і `PlanSection` показує прочерк замість Free.
+
+**П. 7, закрито читанням коду.** `HubHomeView` / `useWhatsNew` з `createdAt === null`: `pickRelease` пропускає гейт віку акаунта і може показати «Що нового», якщо людина його ще не бачила; нешкідливо, не змінювалось. `useHubDashboardState`: вікно чекліста падає на лічильник днів пристрою, на тому самому пристрої він коректний. `AnonymousDataMigrationProvider`: на пристрої без анонімних рядків швидкий шлях локальний, гейт не блокує; якщо анонімні рядки чекають переносу, перенос робить `pullOnce` і офлайн падає в панель «Перенести пізніше» (дані цілі).
+
+**Верифікація.** Юніти: `AuthContext.offlineIdentity.test.tsx`, `AuthContext.identityStates.test.tsx`, `offlineIdentity.test.ts`, `ownerStamp.anonPartition.test.ts`, `RootLayout.appLock.test.tsx` (замок з PIN власника офлайн), `PersonalInfoSection.test.tsx`, `VerifyEmailPage.test.tsx`, `useFeatureGate.test.tsx`, `usePlan.test.tsx`. Playwright: `apps/web/tests/smoke/offline-cold-start.spec.ts` (`@critical`, лише Chromium), локально не запускався. Бут на prod-білді не перевірявся: AuthContext не отримав нових імпортів `@sergeant/shared`, але імпорти змінились (`./offlineIdentity`), тож п. 4 обовʼязковий до мержу.
