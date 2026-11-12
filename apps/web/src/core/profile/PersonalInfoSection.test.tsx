@@ -466,7 +466,7 @@ describe("PersonalInfoSection — email verification", () => {
   });
 });
 
-describe("PersonalInfoSection — офлайн-ідентичність", () => {
+describe("PersonalInfoSection: офлайн-ідентичність", () => {
   it("замість імені, email і статусу показує один рядок без дій", () => {
     render(
       <PersonalInfoSection
