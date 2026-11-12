@@ -145,9 +145,9 @@ describe("requeueFkViolationRejected", () => {
     serverRejectsAgain(id); // бекенд ще старий
 
     // Той самий бут/година: не чіпаємо (немає петлі).
-    expect((await requeueFkViolationRejected(client, USER, T0 + 1000)).outcome).toBe(
-      "waiting",
-    );
+    expect(
+      (await requeueFkViolationRejected(client, USER, T0 + 1000)).outcome,
+    ).toBe("waiting");
     expect(get(id)!.status).toBe("rejected");
 
     // Бекенд викотився, наступна спроба за годину: рядок піде, сервер прийме.
@@ -155,14 +155,14 @@ describe("requeueFkViolationRejected", () => {
     expect(second.outcome).toBe("requeued");
     db.prepare(`DELETE FROM sync_op_outbox WHERE id = ?`).run(id); // applied
 
-    expect((await requeueFkViolationRejected(client, USER, T0 + 2 * H)).outcome).toBe(
-      "done",
-    );
+    expect(
+      (await requeueFkViolationRejected(client, USER, T0 + 2 * H)).outcome,
+    ).toBe("done");
     // Готово остаточно.
     insert("rejected", "fk_violation", "later");
-    expect((await requeueFkViolationRejected(client, USER, T0 + 3 * H)).outcome).toBe(
-      "done",
-    );
+    expect(
+      (await requeueFkViolationRejected(client, USER, T0 + 3 * H)).outcome,
+    ).toBe("done");
   });
 
   it("не чіпає рядки в польоті (pending) і чекає", async () => {
@@ -177,9 +177,9 @@ describe("requeueFkViolationRejected", () => {
     const id = insert("rejected", "fk_violation", "k");
     let now = T0;
     for (let i = 0; i < FK_REQUEUE_MAX_RUNS; i++) {
-      expect((await requeueFkViolationRejected(client, USER, now)).outcome).toBe(
-        "requeued",
-      );
+      expect(
+        (await requeueFkViolationRejected(client, USER, now)).outcome,
+      ).toBe("requeued");
       serverRejectsAgain(id);
       now += H;
     }
@@ -187,25 +187,32 @@ describe("requeueFkViolationRejected", () => {
       "done",
     );
     expect(get(id)!.status).toBe("rejected");
-    expect((await requeueFkViolationRejected(client, USER, now + H)).outcome).toBe(
-      "done",
-    );
+    expect(
+      (await requeueFkViolationRejected(client, USER, now + H)).outcome,
+    ).toBe("done");
   });
 
   it("без відхилених рядків чекає вікно (відмова старого сервера може прийти пізніше), потім згасає", async () => {
-    expect((await requeueFkViolationRejected(client, USER, T0)).outcome).toBe("idle");
-    const id = insert("rejected", "fk_violation", "late");
-    expect((await requeueFkViolationRejected(client, USER, T0 + H)).outcome).toBe(
-      "requeued",
+    expect((await requeueFkViolationRejected(client, USER, T0)).outcome).toBe(
+      "idle",
     );
+    const id = insert("rejected", "fk_violation", "late");
+    expect(
+      (await requeueFkViolationRejected(client, USER, T0 + H)).outcome,
+    ).toBe("requeued");
     expect(get(id)!.status).toBe("pending");
 
     window.localStorage.removeItem(`${FK_REQUEUE_STATE_KEY}:${USER}`);
     db.prepare(`DELETE FROM sync_op_outbox`).run();
     await requeueFkViolationRejected(client, USER, T0);
     expect(
-      (await requeueFkViolationRejected(client, USER, T0 + FK_REQUEUE_WINDOW_MS + 1))
-        .outcome,
+      (
+        await requeueFkViolationRejected(
+          client,
+          USER,
+          T0 + FK_REQUEUE_WINDOW_MS + 1,
+        )
+      ).outcome,
     ).toBe("done");
   });
 });

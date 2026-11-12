@@ -114,9 +114,9 @@ describe("listRejectedOutbox", () => {
     });
 
     const scope = { userId: "u-test" };
-    expect((await listRejectedOutbox(client, scope)).map((r) => r.id)).toEqual(
-      [own],
-    );
+    expect((await listRejectedOutbox(client, scope)).map((r) => r.id)).toEqual([
+      own,
+    ]);
     expect(await countRejectedOutbox(client, scope)).toBe(1);
     expect(await countOutboxByStatus(client, scope)).toMatchObject({
       pending: 0,
