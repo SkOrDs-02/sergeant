@@ -59,6 +59,7 @@ import { useResetSyncSessionOnSignIn } from "./useResetSyncSessionOnSignIn";
 import {
   classifyMeFailure,
   clearOfflineAuthMarkers,
+  holdsOfflineMode,
   isMeOutage,
   makeOfflineUser,
   noteMeOk,
@@ -416,6 +417,8 @@ export function AuthProvider({ children }: AuthProviderProps) {
   const [meFailure, setMeFailure] = useState<{
     error: unknown;
     count: number;
+    /** Збій тримає офлайн-режим, див. `holdsOfflineMode`. */
+    offline: boolean;
   } | null>(null);
   const failure = useMemo(
     () => (meFailure ? classifyMeFailure(meFailure.error) : null),
@@ -464,6 +467,7 @@ export function AuthProvider({ children }: AuthProviderProps) {
     setMeFailure({
       error: meQuery.error,
       count: (meFailure?.count ?? 0) + 1,
+      offline: holdsOfflineMode(meQuery.error, meFailure?.offline),
     });
   } else if (meQuery.data && !meQuery.error && meFailure) {
     // `!error`: після успіху refetch, що впав, має і `data`, і `error`;
@@ -475,8 +479,13 @@ export function AuthProvider({ children }: AuthProviderProps) {
   // упав без відповіді, а пристрій належить користувачу, який вийшов не сам і
   // мав живу `me` не пізніше 7 діб тому. Особистість береться зі штампа, і
   // застосунок відкривається з локальних даних власника.
+  //
+  // Офлайн-режим тримається до вирішальної відповіді (200, 401, 403). Якщо
+  // перезапит посеред нього дає 5xx чи битий JSON (деплой бекенду, captive
+  // portal), блокер «Сервер недоступний» забрав би застосунок з-під людини, а
+  // `useLocalUserId` став би `null` посеред запису.
   const offlineFailure =
-    !signedOut && !meQuery.data && failure?.kind === "offline";
+    !signedOut && !meQuery.data && (meFailure?.offline ?? false);
   const offlineOwnerId = offlineFailure ? resolveOfflineOwnerId() : null;
   const offlineIdentity = offlineOwnerId !== null;
   const offlineUser = useMemo(

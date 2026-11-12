@@ -194,6 +194,10 @@ describe("AuthContext: офлайн холодний старт", () => {
       () => noteMeOk(Date.now() - OFFLINE_IDENTITY_MAX_AGE_MS - 1),
     ],
     [
+      "мітка з майбутнього (годинник перевели назад)",
+      () => noteMeOk(Date.now() + 24 * 60 * 60 * 1000),
+    ],
+    [
       "мітки немає",
       () => window.localStorage.removeItem("auth_last_me_ok_at_v1"),
     ],
@@ -301,6 +305,29 @@ describe("AuthContext: офлайн → мережа повернулась", ()
     expect(clearSpy).toHaveBeenCalled();
     expect(purgeMock).toHaveBeenCalledTimes(1);
     expect(hasSessionExpiredMarker()).toBe(false);
+  });
+
+  it("503 посеред офлайн-режиму: застосунок лишається відкритим", () => {
+    ownerDevice();
+    offline();
+    const { Wrapper, clearSpy } = makeWrapper();
+    const { result, rerender } = renderHook(() => useAuth(), {
+      wrapper: Wrapper,
+    });
+    expect(result.current.offlineIdentity).toBe(true);
+
+    useUserMock.mockReturnValue({
+      data: undefined,
+      isLoading: false,
+      isPending: false,
+      error: http(503),
+    });
+    rerender();
+    expect(result.current.status).toBe("authenticated");
+    expect(result.current.offlineIdentity).toBe(true);
+    expect(result.current.user?.id).toBe(USER.id);
+    expect(result.current.serverUnavailable).toBe(false);
+    expect(clearSpy).not.toHaveBeenCalled();
   });
 
   it("401: teardown, маркер «сесія завершилась», reload", async () => {

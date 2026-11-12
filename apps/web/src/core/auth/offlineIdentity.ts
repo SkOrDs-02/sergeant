@@ -88,6 +88,16 @@ export function isMeOutage(kind: MeFailure["kind"] | undefined): boolean {
 }
 
 /**
+ * Чи збій `me` тримає офлайн-режим: мережева помилка завжди, а «недоступно»
+ * (5xx, 429, битий JSON) лише слідом за нею в тій самій серії збоїв. Режим,
+ * що вже відкрився, живе до вирішальної відповіді (200, 401, 403).
+ */
+export function holdsOfflineMode(err: unknown, heldBefore = false): boolean {
+  const kind = classifyMeFailure(err).kind;
+  return kind === "offline" || (kind === "unavailable" && heldBefore);
+}
+
+/**
  * Повтор `me` усередині одного циклу запиту: лише для «недоступно», до двох
  * разів, з дефолтним експоненційним відступом RQ (1 с, 2 с). 401/403 не
  * ретраїмо: анонімному візитеру спінер не потрібен. `aborted` теж не
@@ -173,6 +183,7 @@ export function clearOfflineAuthMarkers(): void {
  * офлайн-доступ.
  */
 export const OFFLINE_IDENTITY_MAX_AGE_MS = 7 * 24 * 60 * 60 * 1000;
+const CLOCK_SKEW_TOLERANCE_MS = 5 * 60 * 1000;
 
 /**
  * Id власника, якого можна відкрити без мережі, або `null` (тоді нинішня
@@ -185,6 +196,10 @@ export function resolveOfflineOwnerId(now = Date.now()): string | null {
   if (readPendingDeletionMarker() !== null) return null;
   const at = readLastMeOkAt();
   if (at === null || now - at > OFFLINE_IDENTITY_MAX_AGE_MS) return null;
+  // Мітка з майбутнього: годинник пристрою поспішав у момент успішної `me`
+  // або його перевели назад. Без цієї межі вікно розтягувалось би на всю
+  // різницю, і відкликана сесія відкривалась би офлайн довше за 7 діб.
+  if (at - now > CLOCK_SKEW_TOLERANCE_MS) return null;
   return readDeviceOwnerId();
 }
 
