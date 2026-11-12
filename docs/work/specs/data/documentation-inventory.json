@@ -4624,6 +4624,13 @@
       "canonical_owner": "docs/work/specs/nutrition-recipe-builder.md"
     },
     {
+      "old_path": "docs/work/specs/offline-cold-start.md",
+      "new_path": "docs/work/specs/offline-cold-start.md",
+      "action": "keep",
+      "genre": "active-work",
+      "canonical_owner": "docs/work/specs/offline-cold-start.md"
+    },
+    {
       "old_path": "docs/work/specs/pantry-categorization-ai.md",
       "new_path": "docs/work/specs/pantry-categorization-ai.md",
       "action": "keep",
