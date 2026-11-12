@@ -21,16 +21,16 @@
 
 **Тип `User` і споживачі.** `UserSchema` ([`packages/shared/src/schemas/api.ts:24-36`](../../../packages/shared/src/schemas/api.ts)): `id`, `email | null`, `name | null`, `image | null`, `emailVerified: boolean`, `createdAt | null`. Плану в `User` немає: тариф приходить окремим запитом `billingKeys.status` у `usePlan` ([`core/billing/usePlan.ts:57-68`](../../../apps/web/src/core/billing/usePlan.ts)), `retry: false`, без даних це `"free"`; простір `billing` у RQ-снапшот не пишеться (F13, `sensitiveQueryKeys`). Що робить мінімальний `User` з `email/name/image/createdAt = null`, `emailVerified = false`:
 
-| Споживач | Поведінка з мінімальним `User` |
-| --- | --- |
-| `useLocalUserId`, `AnonymousDataMigrationProvider` (`:232-245`), `useAppLock` | потрібен лише `id`, працюють коректно |
-| `useActivationV2Boot.ts:113-115`, `useNpsSurveyTrigger.ts:57-60` | `createdAt === null` → ранній `return`, нічого не ламається |
-| `PersonalInfoSection.tsx` (`:240`, `:301-307`, `:352`) | «Без імені», порожній email, «не підтверджено», кнопка повторного листа ховається лише через `user.email` falsy. Хибна інформація, потребує гілки |
-| `VerifyEmailPage.tsx:102` | `emailVerified === false` → «не підтверджено», хибно |
-| `HubHomeView.tsx:125`, `useHubDashboardState.ts:324` (`accountCreatedAt`) | `null`, вплив на FTUX/insights не перевірено (відкрите питання 7) |
-| `useWhatsNew.ts:30` | `null` трактується як анонімна сесія, вплив не перевірено |
-| ефект identify ([`AuthContext.tsx:992-1025`](../../../apps/web/src/core/auth/AuthContext.tsx)) | викличе `consumePendingOAuthSignup(null)`, `identifyPostHogUser` з порожніми трейтами і `swSetActiveUser(id)` |
-| `usePlan` | `"free"` офлайн (запит падає), Pro-фічі можуть показуватись закритими |
+| Споживач                                                                                       | Поведінка з мінімальним `User`                                                                                                                    |
+| ---------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `useLocalUserId`, `AnonymousDataMigrationProvider` (`:232-245`), `useAppLock`                  | потрібен лише `id`, працюють коректно                                                                                                             |
+| `useActivationV2Boot.ts:113-115`, `useNpsSurveyTrigger.ts:57-60`                               | `createdAt === null` → ранній `return`, нічого не ламається                                                                                       |
+| `PersonalInfoSection.tsx` (`:240`, `:301-307`, `:352`)                                         | «Без імені», порожній email, «не підтверджено», кнопка повторного листа ховається лише через `user.email` falsy. Хибна інформація, потребує гілки |
+| `VerifyEmailPage.tsx:102`                                                                      | `emailVerified === false` → «не підтверджено», хибно                                                                                              |
+| `HubHomeView.tsx:125`, `useHubDashboardState.ts:324` (`accountCreatedAt`)                      | `null`, вплив на FTUX/insights не перевірено (відкрите питання 7)                                                                                 |
+| `useWhatsNew.ts:30`                                                                            | `null` трактується як анонімна сесія, вплив не перевірено                                                                                         |
+| ефект identify ([`AuthContext.tsx:992-1025`](../../../apps/web/src/core/auth/AuthContext.tsx)) | викличе `consumePendingOAuthSignup(null)`, `identifyPostHogUser` з порожніми трейтами і `swSetActiveUser(id)`                                     |
+| `usePlan`                                                                                      | `"free"` офлайн (запит падає), Pro-фічі можуть показуватись закритими                                                                             |
 
 **Штамп власника.** `CHAT_OWNER_KEY = "hub_chat_owner_v1"` ([`core/hub/hubChatSessions.ts:21`](../../../apps/web/src/core/hub/hubChatSessions.ts)) містить сирий `user.id` або `"__anon__"`. Пише його лише `reconcileChatOwnerOnAuthChange` ([`hubChatSessions.ts:266-286`](../../../apps/web/src/core/hub/hubChatSessions.ts)): з ефекту на розвʼязаному `status` ([`AuthContext.tsx:604-637`](../../../apps/web/src/core/auth/AuthContext.tsx), не на `loading` і `pending_deletion`) і з `logout()` перед `setSignedOut` ([`AuthContext.tsx:834`](../../../apps/web/src/core/auth/AuthContext.tsx), значення `"__anon__"`). Читає `deviceOwnerIsUser()` ([`hubChatSessions.ts:260-263`](../../../apps/web/src/core/hub/hubChatSessions.ts)). Пише і читає через `webKVStore`, тобто через warm-cache SQLite-таблиці `kv_store` активної партиції (`safeReadStringLS` → `webKVStore.getString`, [`storage.ts:228-234`](../../../apps/web/src/shared/lib/storage/storage.ts)), а до буту KV-кешу через LS-фолбек.
 
