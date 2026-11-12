@@ -13,8 +13,11 @@
  * ({@link clearOfflineAuthMarkers}). priv-08: тут лише мітка часу і дата
  * видалення, жодного поля профілю.
  */
+import type { User } from "@sergeant/shared";
 import { logger } from "@shared/lib";
 import { resolveLsStore } from "@shared/lib/storage/storage";
+import { readDeviceOwnerId } from "../hub/hubChatSessions";
+import { hasSessionExpiredMarker } from "./sessionExpiredMarker";
 
 /** Мітка часу (мс) останньої успішної відповіді `me`. */
 export const LAST_ME_OK_AT_KEY = "auth_last_me_ok_at_v1";
@@ -84,6 +87,33 @@ export function isMeOutage(kind: MeFailure["kind"] | undefined): boolean {
   return kind === "unavailable" || kind === "offline";
 }
 
+/**
+ * Повтор `me` усередині одного циклу запиту: лише для «недоступно», до двох
+ * разів, з дефолтним експоненційним відступом RQ (1 с, 2 с). 401/403 не
+ * ретраїмо: анонімному візитеру спінер не потрібен. `aborted` теж не
+ * ретраїмо: це не збій сервера.
+ */
+export function retryMe(failureCount: number, err: unknown): boolean {
+  if (failureCount >= 2) return false;
+  if ((err as { kind?: unknown } | null)?.kind === "aborted") return false;
+  // Мережу не повторюємо: під `networkMode: "offlineFirst"` повтор без мережі
+  // ставить запит на паузу, і помилка не доходить до офлайн-режиму, доки
+  // мережа не повернеться. Перезапит іде циклом `refetchInterval` і на
+  // `online`.
+  return classifyMeFailure(err).kind === "unavailable";
+}
+
+/** Пауза між циклами перезапиту `me` під час збою: 5 с, 10 с, … до 30 с. */
+const ME_OUTAGE_POLL_BASE_MS = 5_000;
+const ME_OUTAGE_POLL_MAX_MS = 30_000;
+
+export function meOutagePollMs(failures: number): number {
+  return Math.min(
+    ME_OUTAGE_POLL_MAX_MS,
+    ME_OUTAGE_POLL_BASE_MS * 2 ** Math.max(0, failures - 1),
+  );
+}
+
 function write(key: string, value: string): void {
   try {
     resolveLsStore()?.setString(key, value);
@@ -111,7 +141,7 @@ export function notePendingDeletion(scheduledPurgeAt: string | null): void {
   write(PENDING_DELETION_KEY, scheduledPurgeAt ?? "");
 }
 
-/** `null` — маркера немає; `""` — маркер є, дати 403 не віддав. */
+/** `null`: маркера немає; `""`: маркер є, але 403 не віддав дати. */
 export function readPendingDeletionMarker(): string | null {
   return read(PENDING_DELETION_KEY);
 }
@@ -134,4 +164,41 @@ function clear(key: string): void {
 export function clearOfflineAuthMarkers(): void {
   clear(LAST_ME_OK_AT_KEY);
   clear(PENDING_DELETION_KEY);
+}
+
+/**
+ * Офлайн-вікно від останньої успішної `me`: `expiresIn` серверної сесії
+ * Better Auth (`apps/server/src/auth.ts`). Довше сервер усе одно вважав би
+ * сесію простроченою, а без межі відкликана сесія давала б безстроковий
+ * офлайн-доступ.
+ */
+export const OFFLINE_IDENTITY_MAX_AGE_MS = 7 * 24 * 60 * 60 * 1000;
+
+/**
+ * Id власника, якого можна відкрити без мережі, або `null` (тоді нинішня
+ * поведінка: блокер чи анонімний режим). Викликач сам перевіряє клас `offline`
+ * і відсутність свідомого виходу (`sec-07`). Штамп у сирому LS, тож читається
+ * з першого рендеру, до буту KV.
+ */
+export function resolveOfflineOwnerId(now = Date.now()): string | null {
+  if (hasSessionExpiredMarker()) return null;
+  if (readPendingDeletionMarker() !== null) return null;
+  const at = readLastMeOkAt();
+  if (at === null || now - at > OFFLINE_IDENTITY_MAX_AGE_MS) return null;
+  return readDeviceOwnerId();
+}
+
+/**
+ * Мінімальний `User` офлайн-режиму: профіль не персиститься (priv-08), тож
+ * відомий лише `id`. Споживачі профілю дивляться на `offlineIdentity`.
+ */
+export function makeOfflineUser(id: string): User {
+  return {
+    id,
+    email: null,
+    name: null,
+    image: null,
+    emailVerified: false,
+    createdAt: null,
+  };
 }

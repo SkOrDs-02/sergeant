@@ -60,8 +60,13 @@ import {
   classifyMeFailure,
   clearOfflineAuthMarkers,
   isMeOutage,
+  makeOfflineUser,
   noteMeOk,
   notePendingDeletion,
+  meOutagePollMs,
+  readPendingDeletionMarker,
+  resolveOfflineOwnerId,
+  retryMe,
 } from "./offlineIdentity";
 // AI-DANGER: саме `uk.core`. Цей файл — eager-поверхня, і повний каталог
 // тягне з собою десять модульних файлів плюс en-копію: до цієї правки
@@ -187,29 +192,6 @@ export type AuthStatus =
 export interface PendingDeletionInfo {
   /** ISO-дата остаточного видалення; `null`, якщо тіло її не віддало. */
   scheduledPurgeAt: string | null;
-}
-
-/**
- * Повтор `me` усередині одного циклу запиту: лише для «недоступно», до двох
- * разів, з дефолтним експоненційним відступом RQ (1 с, 2 с). 401/403 не
- * ретраїмо — анонімному візитеру спінер не потрібен. `aborted` теж не
- * ретраїмо: це не збій сервера.
- */
-function retryMe(failureCount: number, err: unknown): boolean {
-  if (failureCount >= 2) return false;
-  if ((err as { kind?: unknown } | null)?.kind === "aborted") return false;
-  return isMeOutage(classifyMeFailure(err).kind);
-}
-
-/** Пауза між циклами перезапиту `me` під час збою: 5 с, 10 с, … до 30 с. */
-const ME_OUTAGE_POLL_BASE_MS = 5_000;
-const ME_OUTAGE_POLL_MAX_MS = 30_000;
-
-function meOutagePollMs(failures: number): number {
-  return Math.min(
-    ME_OUTAGE_POLL_MAX_MS,
-    ME_OUTAGE_POLL_BASE_MS * 2 ** Math.max(0, failures - 1),
-  );
 }
 
 /**
@@ -341,7 +323,8 @@ interface AuthContextValue {
   isLoading: boolean;
   status: AuthStatus;
   /**
-   * `me` не відповів (5xx, 429, мережа, битий JSON), а пристрій належить
+   * `me` не відповів (5xx, 429, битий JSON, таймаут; мережа лише тоді, коли
+   * офлайн-режим недоступний, див. `offlineIdentity`), а пристрій належить
    * залогіненому користувачу: `status` лишається `loading`, нічого не
    * стирається, `me` перезапитується з відступом. Анонімному пристрою тримати
    * нічого, тож там прапорець `false`, а `status` — `unauthenticated`.
@@ -351,6 +334,15 @@ interface AuthContextValue {
    * знаходить PIN власника. `RootLayout` показує `AuthUnavailableScreen`.
    */
   serverUnavailable: boolean;
+  /**
+   * Офлайн холодний старт: `me` упав мережевою помилкою, а особистість узято
+   * зі штампа власника (`offlineIdentity.ts`). `status` тоді `authenticated`,
+   * але `user` мінімальний: відомий лише `id`, `email`/`name`/`image`/
+   * `createdAt` дорівнюють `null`, `emailVerified` дорівнює `false`. Екрани
+   * профілю мусять дивитись на цей прапорець, а не показувати ці поля як
+   * правду. Знімається першою живою відповіддю `me`.
+   */
+  offlineIdentity: boolean;
   /**
    * Акаунт у вікні видалення (403 `account_pending_deletion` на `me`);
    * `null` в усіх інших станах. Живить `usePendingDeletion` і екран
@@ -479,14 +471,33 @@ export function AuthProvider({ children }: AuthProviderProps) {
     setMeFailure(null);
   }
 
-  const user = signedOut ? null : (meQuery.data?.user ?? null);
+  // Офлайн холодний старт (`docs/work/specs/offline-cold-start.md`): `me`
+  // упав без відповіді, а пристрій належить користувачу, який вийшов не сам і
+  // мав живу `me` не пізніше 7 діб тому. Особистість береться зі штампа, і
+  // застосунок відкривається з локальних даних власника.
+  const offlineFailure =
+    !signedOut && !meQuery.data && failure?.kind === "offline";
+  const offlineOwnerId = offlineFailure ? resolveOfflineOwnerId() : null;
+  const offlineIdentity = offlineOwnerId !== null;
+  const offlineUser = useMemo(
+    () => (offlineOwnerId ? makeOfflineUser(offlineOwnerId) : null),
+    [offlineOwnerId],
+  );
+  const user = signedOut ? null : (meQuery.data?.user ?? offlineUser);
 
   // 403 `account_pending_deletion`: сесія є, акаунт у черзі на видалення.
+  // Офлайн про це каже маркер останньої 403 (з датою): записи у вікні сервер
+  // однаково не прийме, тож замість застосунку екран відновлення.
   // Примітив-залежності, щоб обʼєкт не міняв посилання на кожному рендері.
+  const offlinePurgeAt = offlineFailure ? readPendingDeletionMarker() : null;
   const isPendingDeletion =
-    !signedOut && !meQuery.data && failure?.kind === "pending-deletion";
+    !signedOut &&
+    !meQuery.data &&
+    (failure?.kind === "pending-deletion" || Boolean(offlinePurgeAt));
   const pendingPurgeAt =
-    failure?.kind === "pending-deletion" ? failure.scheduledPurgeAt : null;
+    failure?.kind === "pending-deletion"
+      ? failure.scheduledPurgeAt
+      : offlinePurgeAt || null;
   const pendingDeletion = useMemo<PendingDeletionInfo | null>(
     () => (isPendingDeletion ? { scheduledPurgeAt: pendingPurgeAt } : null),
     [isPendingDeletion, pendingPurgeAt],
@@ -506,7 +517,8 @@ export function AuthProvider({ children }: AuthProviderProps) {
 
   // Збій `me` (не 401/403): особистість невідома, а не «вийшов». На пристрої з
   // власником-користувачем тримаємо її відкритою (див. `serverUnavailable`).
-  const outage = !signedOut && !user && isMeOutage(failure?.kind);
+  const outage =
+    !signedOut && !user && !isPendingDeletion && isMeOutage(failure?.kind);
   const serverUnavailable = outage && deviceOwnerIsUser();
 
   // AI-DANGER: саме `isPending`, а не `isLoading`. У React Query v5
@@ -541,7 +553,8 @@ export function AuthProvider({ children }: AuthProviderProps) {
         ? "pending_deletion"
         : "unauthenticated";
   // `sec-18`: «сесії немає» з анонімного періоду не має пережити вхід.
-  useResetSyncSessionOnSignIn(status);
+  // Офлайн-ідентичність не вхід: спостереження «сесії немає» не скидаємо.
+  useResetSyncSessionOnSignIn(offlineIdentity ? "loading" : status);
 
   // F12 privacy: історія HubChat лежить у плоских LS-ключах — при зміні
   // identity на цьому пристрої (logout, інший акаунт, протухла сесія)
@@ -605,8 +618,8 @@ export function AuthProvider({ children }: AuthProviderProps) {
   // sec-18: живий вхід знімає маркер «сесія завершилась»: повторний вхід
   // відбувся (email, соцвхід після редиректу, відновлена сесія).
   useEffect(() => {
-    if (status === "authenticated") clearSessionExpired();
-  }, [status]);
+    if (status === "authenticated" && !offlineIdentity) clearSessionExpired();
+  }, [status, offlineIdentity]);
 
   // priv-02: сесію завершила ІНША вкладка — див. `useCrossTabSessionEnd`.
   useCrossTabSessionEnd(Boolean(user), queryClient, setSignedOut);
@@ -960,7 +973,14 @@ export function AuthProvider({ children }: AuthProviderProps) {
     const currentId = user?.id ?? null;
     const prevId = lastIdentifiedUserIdRef.current;
     const sessionUser = userRef.current;
-    if (currentId && sessionUser && currentId !== prevId) {
+    if (currentId && offlineIdentity) {
+      // Офлайн-ідентичність: без identify і атрибуції OAuth (профілю немає),
+      // їх зробить перша жива `me`. Партиція SW-кешу потрібна вже зараз:
+      // NetworkFirst `/api/*` віддає з неї модульні дані офлайн.
+      void swSetActiveUser(currentId).catch((err) =>
+        logger.warn("[auth.identify] swSetActiveUser failed", err),
+      );
+    } else if (currentId && sessionUser && currentId !== prevId) {
       // WF-60: resolve any pending OAuth signup attribution now that `me`
       // has resolved post-redirect — see `consumePendingOAuthSignup` JSDoc.
       consumePendingOAuthSignup(sessionUser.createdAt ?? null);
@@ -989,7 +1009,7 @@ export function AuthProvider({ children }: AuthProviderProps) {
     // `user`-референс (наприклад, після refetch `/api/v1/me`)
     // спричинив би зайві identify-виклики при тому самому id.
     // `userRef` дає свіжі traits лише на переході id.
-  }, [user?.id]);
+  }, [user?.id, offlineIdentity]);
 
   // priv-08: повтор SW_SET_USER на `controllerchange` (див. хук).
   useSwControllerResync(userRef);
@@ -1030,6 +1050,7 @@ export function AuthProvider({ children }: AuthProviderProps) {
       isLoading,
       status,
       serverUnavailable,
+      offlineIdentity,
       pendingDeletion,
       authError,
       setAuthError,
@@ -1046,6 +1067,7 @@ export function AuthProvider({ children }: AuthProviderProps) {
       isLoading,
       status,
       serverUnavailable,
+      offlineIdentity,
       pendingDeletion,
       authError,
       login,

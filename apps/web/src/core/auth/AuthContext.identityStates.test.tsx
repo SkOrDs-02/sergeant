@@ -139,7 +139,7 @@ describe("AuthContext: стани ідентичності", () => {
     ["503", http(503)],
     ["429", http(429)],
     [
-      "мережа",
+      "мережа без мітки останньої me",
       new ApiError({ kind: "network", message: "offline", url: "/api/v1/me" }),
     ],
     [
@@ -214,12 +214,14 @@ describe("AuthContext: стани ідентичності", () => {
     // Повтор усередині циклу: лише для «недоступно», до двох разів.
     expect(lastOpts().retry(0, http(500))).toBe(true);
     expect(lastOpts().retry(1, http(429))).toBe(true);
+    // Мережу не ретраїмо: під offlineFirst повтор без мережі ставить запит на
+    // паузу (офлайн-старт, крок 2 спеки offline-cold-start).
     expect(
       lastOpts().retry(
         0,
         new ApiError({ kind: "network", message: "x", url: "/" }),
       ),
-    ).toBe(true);
+    ).toBe(false);
     expect(lastOpts().retry(2, http(500))).toBe(false);
     expect(lastOpts().retry(0, http(401))).toBe(false);
     expect(lastOpts().retry(0, http(403))).toBe(false);
