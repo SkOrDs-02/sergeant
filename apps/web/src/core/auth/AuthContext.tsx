@@ -56,6 +56,13 @@ import {
 } from "./sessionExpiredMarker";
 import { usePendingSignOutRetry } from "./usePendingSignOutRetry";
 import { useResetSyncSessionOnSignIn } from "./useResetSyncSessionOnSignIn";
+import {
+  classifyMeFailure,
+  clearOfflineAuthMarkers,
+  isMeOutage,
+  noteMeOk,
+  notePendingDeletion,
+} from "./offlineIdentity";
 // AI-DANGER: саме `uk.core`. Цей файл — eager-поверхня, і повний каталог
 // тягне з собою десять модульних файлів плюс en-копію: до цієї правки
 // саме ВІН лишався останнім eager-ребром до `uk.ts`, уже після того, як
@@ -183,62 +190,6 @@ export interface PendingDeletionInfo {
 }
 
 /**
- * Серверний код 403 для акаунта у вікні видалення.
- *
- * Літерал, а не `ACCOUNT_PENDING_DELETION_CODE` із `@sergeant/shared`: runtime-
- * імпорт звідси перекроює eager-чанки (білий екран на буті, див. AI-DANGER
- * нагорі файлу). Синхрон із реєстром тримає
- * `AuthContext.pendingDeletionCode.test.ts`.
- */
-const ACCOUNT_PENDING_DELETION_CODE = "account_pending_deletion";
-
-type MeFailure =
-  | { kind: "signed-out" }
-  | { kind: "pending-deletion"; scheduledPurgeAt: string | null }
-  | { kind: "unavailable" };
-
-/**
- * Що означає помилка `GET /api/v1/me`.
- *
- * Виходом із акаунта вважається лише ВИРІШАЛЬНА відповідь сервера: 401 (сесії
- * немає) і 403 (не пускають). 5xx, 429, мережа, обірваний запит і битий JSON —
- * це «не знаю», а не «вийшов»: до цього всі вони схлопувались у
- * `unauthenticated`, і identity-wipe нижче стирав кеш та перезавантажував
- * застосунок у анонімну партицію (аудит 2026-10-01, rel-02).
- *
- * Duck-typing замість `isApiError`: тут не можна додавати runtime-імпорти
- * (AI-DANGER нагорі). `kind` є лише в `ApiError`; помилка без нього з числовим
- * `status` — легасі-форма, читаємо її як HTTP.
- */
-function classifyMeFailure(err: unknown): MeFailure {
-  const e = (typeof err === "object" && err !== null ? err : {}) as {
-    kind?: unknown;
-    status?: unknown;
-    body?: unknown;
-  };
-  const isHttp = e.kind === undefined || e.kind === "http";
-  const status = typeof e.status === "number" ? e.status : 0;
-  if (isHttp && status === 401) return { kind: "signed-out" };
-  if (isHttp && status === 403) {
-    const body =
-      typeof e.body === "object" && e.body !== null
-        ? (e.body as { code?: unknown; scheduledPurgeAt?: unknown })
-        : {};
-    if (body.code === ACCOUNT_PENDING_DELETION_CODE) {
-      return {
-        kind: "pending-deletion",
-        scheduledPurgeAt:
-          typeof body.scheduledPurgeAt === "string"
-            ? body.scheduledPurgeAt
-            : null,
-      };
-    }
-    return { kind: "signed-out" };
-  }
-  return { kind: "unavailable" };
-}
-
-/**
  * Повтор `me` усередині одного циклу запиту: лише для «недоступно», до двох
  * разів, з дефолтним експоненційним відступом RQ (1 с, 2 с). 401/403 не
  * ретраїмо — анонімному візитеру спінер не потрібен. `aborted` теж не
@@ -247,7 +198,7 @@ function classifyMeFailure(err: unknown): MeFailure {
 function retryMe(failureCount: number, err: unknown): boolean {
   if (failureCount >= 2) return false;
   if ((err as { kind?: unknown } | null)?.kind === "aborted") return false;
-  return classifyMeFailure(err).kind === "unavailable";
+  return isMeOutage(classifyMeFailure(err).kind);
 }
 
 /** Пауза між циклами перезапиту `me` під час збою: 5 с, 10 с, … до 30 с. */
@@ -474,7 +425,10 @@ export function AuthProvider({ children }: AuthProviderProps) {
     error: unknown;
     count: number;
   } | null>(null);
-  const failure = meFailure ? classifyMeFailure(meFailure.error) : null;
+  const failure = useMemo(
+    () => (meFailure ? classifyMeFailure(meFailure.error) : null),
+    [meFailure],
+  );
 
   const meQuery = useUser({
     // 401 від `/api/v1/me` для анонімного візитера — нормальний стан, а не
@@ -484,7 +438,7 @@ export function AuthProvider({ children }: AuthProviderProps) {
     // поки сервер не відповість: див. `classifyMeFailure`.
     retry: retryMe,
     refetchInterval:
-      failure?.kind === "unavailable" && meFailure
+      isMeOutage(failure?.kind) && meFailure
         ? meOutagePollMs(meFailure.count)
         : false,
   });
@@ -538,9 +492,21 @@ export function AuthProvider({ children }: AuthProviderProps) {
     [isPendingDeletion, pendingPurgeAt],
   );
 
+  // Мітки для офлайн холодного старту (`offlineIdentity.ts`): остання
+  // успішна `me` і вікно видалення. 401 знімає обидві.
+  const failureKind = failure?.kind ?? null;
+  const meOkAt = meQuery.data?.user ? meQuery.dataUpdatedAt : 0;
+  useEffect(() => {
+    if (signedOut) return;
+    if (failureKind === "signed-out") clearOfflineAuthMarkers();
+    else if (failureKind === "pending-deletion")
+      notePendingDeletion(pendingPurgeAt);
+    else if (failureKind === null && meOkAt > 0) noteMeOk(meOkAt);
+  }, [signedOut, failureKind, pendingPurgeAt, meOkAt]);
+
   // Збій `me` (не 401/403): особистість невідома, а не «вийшов». На пристрої з
   // власником-користувачем тримаємо її відкритою (див. `serverUnavailable`).
-  const outage = !signedOut && !user && failure?.kind === "unavailable";
+  const outage = !signedOut && !user && isMeOutage(failure?.kind);
   const serverUnavailable = outage && deviceOwnerIsUser();
 
   // AI-DANGER: саме `isPending`, а не `isLoading`. У React Query v5
@@ -835,6 +801,7 @@ export function AuthProvider({ children }: AuthProviderProps) {
       // sec-18: свідомий вихід — не «сесія завершилась»; після нього
       // анонімний режим, як і раніше.
       clearSessionExpired();
+      clearOfflineAuthMarkers();
       // Той пре-стамп вище споживає зміну identity, тож reconcile-ефект
       // побачить `changed: false` і НЕ прибере hub-снапшоти сам — logout
       // мусить зробити це власноруч. Інакше вони переживають вихід, а

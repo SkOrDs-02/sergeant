@@ -1,5 +1,6 @@
 import { swClearCaches, swSetActiveUser } from "../app/swControl";
 import { logger } from "@shared/lib";
+import { clearOfflineAuthMarkers } from "./offlineIdentity";
 
 /**
  * priv-02: клієнтський teardown для сесії, що закінчилась БЕЗ кнопки «Вийти»
@@ -22,6 +23,8 @@ import { logger } from "@shared/lib";
  * робить `reload`, який teardown не має права заблокувати.
  */
 export async function teardownLocalStateAfterSessionLoss(): Promise<void> {
+  // Префікс `auth_` purge не чіпає, а офлайн-вікно належить сесії, якої вже нема.
+  clearOfflineAuthMarkers();
   try {
     const { purgeAppOwnedLocalData } =
       await import("../../shared/lib/storage/purgeLocalData");

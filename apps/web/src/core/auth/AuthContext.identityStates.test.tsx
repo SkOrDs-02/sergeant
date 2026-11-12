@@ -38,6 +38,12 @@ vi.mock("@sergeant/api-client/react", async () => {
 
 import { AuthProvider, useAuth } from "./AuthContext";
 import { reconcileChatOwnerOnAuthChange } from "../hub/hubChatSessions";
+import {
+  noteMeOk,
+  notePendingDeletion,
+  readLastMeOkAt,
+  readPendingDeletionMarker,
+} from "./offlineIdentity";
 
 const USER = {
   id: "u-1",
@@ -233,5 +239,42 @@ describe("AuthContext: стани ідентичності", () => {
     failed(http(401));
     rerender();
     expect(lastOpts().refetchInterval).toBe(false);
+  });
+
+  it("мітки офлайн-старту: 200 пише час, 403 видалення пише дату, 401 знімає обидві", () => {
+    useUserMock.mockReturnValue({
+      data: { user: USER },
+      dataUpdatedAt: 1_000,
+      isLoading: false,
+      isPending: false,
+      error: null,
+    });
+    const { Wrapper } = makeWrapper();
+    const { rerender } = renderHook(() => useAuth(), { wrapper: Wrapper });
+    expect(readLastMeOkAt()).toBe(1_000);
+
+    failed(
+      http(403, {
+        code: "account_pending_deletion",
+        scheduledPurgeAt: "2026-12-01T00:00:00.000Z",
+      }),
+    );
+    rerender();
+    expect(readPendingDeletionMarker()).toBe("2026-12-01T00:00:00.000Z");
+
+    failed(http(401));
+    rerender();
+    expect(readLastMeOkAt()).toBeNull();
+    expect(readPendingDeletionMarker()).toBeNull();
+  });
+
+  it("збій мережі мітки не чіпає", () => {
+    noteMeOk(1_000);
+    notePendingDeletion("2026-12-01T00:00:00.000Z");
+    failed(new ApiError({ kind: "network", message: "x", url: "/" }));
+    const { Wrapper } = makeWrapper();
+    renderHook(() => useAuth(), { wrapper: Wrapper });
+    expect(readLastMeOkAt()).toBe(1_000);
+    expect(readPendingDeletionMarker()).toBe("2026-12-01T00:00:00.000Z");
   });
 });
