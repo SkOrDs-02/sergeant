@@ -39,11 +39,7 @@ const OLD = () => new Date(Date.now() - 60 * 60 * 1000);
 
 // Як Express віддає запит у `r.use("/api/auth", ...)`: `url` без маунта,
 // `originalUrl` такий, яким прийшов (з `/api/v1`, якщо був).
-function run(
-  body: unknown,
-  url = "/api/auth/change-email",
-  originalUrl = url,
-) {
+function run(body: unknown, url = "/api/auth/change-email", originalUrl = url) {
   const req = {
     method: "POST",
     originalUrl,

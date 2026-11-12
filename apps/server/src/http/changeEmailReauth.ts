@@ -56,10 +56,7 @@ export async function changeEmailReauth(
   // Не `originalUrl`: `/api/v1/auth/change-email` після `apiVersionRewrite`
   // доходить до Better Auth як `/api/auth/change-email`, а `originalUrl`
   // зберігає префікс `/api/v1`. `baseUrl + url` і є шлях, який отримає handler.
-  if (
-    req.method !== "POST" ||
-    !isChangeEmailPath(`${req.baseUrl}${req.url}`)
-  ) {
+  if (req.method !== "POST" || !isChangeEmailPath(`${req.baseUrl}${req.url}`)) {
     next();
     return;
   }

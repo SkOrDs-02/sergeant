@@ -678,9 +678,7 @@ export async function runReminderSweep(
     const slots = planSends(
       planned.map((r) => r.at),
       cap,
-    ).filter(
-      (s) => s.sendAt === hm || (s.sendAt > fromHm && s.sendAt < hm),
-    );
+    ).filter((s) => s.sendAt === hm || (s.sendAt > fromHm && s.sendAt < hm));
     if (slots.length === 0) continue;
     const times = slots.flatMap((s) => s.times);
     const reasons = (pendingByUser.get(userId) ?? []).filter((r) =>
