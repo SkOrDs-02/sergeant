@@ -72,9 +72,7 @@ beforeEach(() => {
   // hide/split валідують існування tx через entityLookup (гард проти
   // вигаданих моделлю id, 2ae99a1) — happy-path кейси сідять "tx1" у кеш.
   seedFinykCache({
-    manualExpenses: [
-      TX1,
-    ],
+    manualExpenses: [TX1],
     customCategories: [{ id: "custom_cat", label: "Кастомна" }],
   });
 });

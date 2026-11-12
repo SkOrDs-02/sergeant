@@ -21,9 +21,8 @@ const {
   loggerErrorMock: vi.fn(),
   loggerWarnMock: vi.fn(),
   safeReadStringLSMock: vi.fn<(key: string) => string | null>(() => null),
-  getCachedFizrukSqliteStateMock: vi.fn<
-    () => { refreshedAt: string | null; workouts: unknown[] }
-  >(),
+  getCachedFizrukSqliteStateMock:
+    vi.fn<() => { refreshedAt: string | null; workouts: unknown[] }>(),
 }));
 
 vi.mock("@shared/lib", () => ({
@@ -69,9 +68,7 @@ describe("appendWorkoutLines — секція гасне без сліду пр�
   it("inner catch (активне тренування): маркер замість тихого 'немає'", () => {
     getCachedFizrukSqliteStateMock.mockReturnValue({
       refreshedAt: "2026-06-15T12:00:00Z",
-      workouts: [
-        { id: "w1", startedAt: new Date().toISOString(), items: [] },
-      ],
+      workouts: [{ id: "w1", startedAt: new Date().toISOString(), items: [] }],
     });
     safeReadStringLSMock.mockImplementation((key: string) => {
       if (key === ACTIVE_WORKOUT_KEY) {

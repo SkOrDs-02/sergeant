@@ -194,7 +194,12 @@ export function appendRoutineLines(lines: string[], now: Date): void {
       `[Рутина тиждень] ${Math.round(week.rate * 100)}% виконання (${week.completed} з ${week.scheduled})`,
     );
 
-    const streak = flexibleMaxActiveStreak(habits, completions, todayKey, skips);
+    const streak = flexibleMaxActiveStreak(
+      habits,
+      completions,
+      todayKey,
+      skips,
+    );
     if (streak > 0)
       lines.push(`[Рутина серія] найкраща поточна серія звички: ${streak} дн.`);
   } catch (err) {

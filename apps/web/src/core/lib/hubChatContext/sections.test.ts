@@ -165,9 +165,25 @@ describe("appendRoutineLines — розклад звичок", () => {
     __setRoutineSqliteStateCacheForTests({
       habits: [
         { id: "h1", name: "Біг", recurrence: "daily", startDate: "2026-06-01" },
-        { id: "h2", name: "Звіт", recurrence: "weekdays", startDate: "2026-06-01" },
-        { id: "h3", name: "Лікар", recurrence: "once", startDate: "2026-05-10" },
-        { id: "h4", name: "Вода", recurrence: "daily", startDate: "2026-06-01", paused: true },
+        {
+          id: "h2",
+          name: "Звіт",
+          recurrence: "weekdays",
+          startDate: "2026-06-01",
+        },
+        {
+          id: "h3",
+          name: "Лікар",
+          recurrence: "once",
+          startDate: "2026-05-10",
+        },
+        {
+          id: "h4",
+          name: "Вода",
+          recurrence: "daily",
+          startDate: "2026-06-01",
+          paused: true,
+        },
       ] as never,
     });
     __setRoutineSqliteCompletionsCacheForTests({
@@ -181,7 +197,9 @@ describe("appendRoutineLines — розклад звичок", () => {
     expect(out).not.toContain("Звіт (id:h2)");
     // Пн–Сб: щоденна 6 + будні 5 + пауза від сьогодні лишає Пн–Пт 5.
     expect(out).toContain("[Рутина тиждень] 6% виконання (1 з 16)");
-    expect(out).toContain("[Рутина серія] найкраща поточна серія звички: 1 дн.");
+    expect(out).toContain(
+      "[Рутина серія] найкраща поточна серія звички: 1 дн.",
+    );
   });
 });
 
