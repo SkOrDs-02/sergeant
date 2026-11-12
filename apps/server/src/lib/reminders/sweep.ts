@@ -66,7 +66,12 @@ import {
 } from "./due.js";
 import { runWithBypassContext } from "../../dbContext.js";
 import { nudgeReason, selectNudgeCandidates } from "./nudge.js";
-import { kyivDayKey, kyivDayKeyMinusDays, kyivHm } from "./time.js";
+import {
+  kyivCatchUpFromHm,
+  kyivDayKey,
+  kyivDayKeyMinusDays,
+  kyivHm,
+} from "./time.js";
 
 /** Скільки діб тримаємо журнал відправок. */
 const LOG_RETENTION_DAYS = 45;
@@ -524,9 +529,11 @@ interface ClaimedPush {
 export async function runReminderSweep(
   pool: Pool,
   now: Date = new Date(),
+  lastSweepAt: Date | null = null,
 ): Promise<ReminderSweepResult> {
   const dayKey = kyivDayKey(now);
   const hm = kyivHm(now);
+  const fromHm = kyivCatchUpFromHm(now, lastSweepAt);
 
   const [routineRows, fizrukRows, nutritionRows, nudgeCandidates] =
     await Promise.all([
@@ -664,16 +671,21 @@ export async function runReminderSweep(
     [];
   for (const [userId, planned] of plannedByUser) {
     const cap = caps.get(userId) ?? PUSH_DAILY_CAP_DEFAULT;
-    const slot = planSends(
+    // Слоти поточної хвилини і тих, що пропустив попередній прохід (довгий
+    // fan-out чи збій). Уже надіслане відсіє дедуп; кілька пропущених слотів
+    // ідуть одним сповіщенням. Окремо `=== hm`: після переходу на зимовий
+    // час `fromHm` буває пізніше за `hm`.
+    const slots = planSends(
       planned.map((r) => r.at),
       cap,
-    ).find((s) => s.sendAt === hm);
-    if (!slot) continue;
+    ).filter((s) => s.sendAt === hm || (s.sendAt > fromHm && s.sendAt < hm));
+    if (slots.length === 0) continue;
+    const times = slots.flatMap((s) => s.times);
     const reasons = (pendingByUser.get(userId) ?? []).filter((r) =>
-      slot.times.includes(r.at),
+      times.includes(r.at),
     );
     if (reasons.length > 0) {
-      firing.push({ userId, sendAt: slot.sendAt, reasons });
+      firing.push({ userId, sendAt: slots.at(-1)!.sendAt, reasons });
     }
   }
 

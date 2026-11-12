@@ -108,7 +108,8 @@ describe("normalizeUSDABarcode", () => {
         { nutrientId: 1003, value: 5 },
       ],
     });
-    expect(result!.kcal_100g).toBeNull();
+    // Без енергії ккал рахуються з БЖВ, а не лишаються порожніми.
+    expect(result!.kcal_100g).toBe(20);
     expect(result!.protein_100g).toBe(5);
   });
 

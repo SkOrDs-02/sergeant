@@ -16,8 +16,11 @@ import { BillingConfigurationError } from "./provider.js";
 
 export const MONOPAY_BASE = "https://api.monobank.ua/api/merchant";
 
-/** Верхня межа очікування відповіді monobank на скасування. */
-const CANCEL_TIMEOUT_MS = 15_000;
+/**
+ * Верхня межа очікування відповіді monobank. Без `signal` undici чекає
+ * заголовків до 300 с, і тік звірки чи вебхук висять разом із ним.
+ */
+export const MONOPAY_TIMEOUT_MS = 15_000;
 
 export function getPlataToken(): string {
   const token = env.PLATA_TOKEN;
@@ -36,7 +39,7 @@ async function postMonopay(
     method: "POST",
     headers: { "X-Token": token, "Content-Type": "application/json" },
     body: JSON.stringify(body),
-    signal: AbortSignal.timeout(CANCEL_TIMEOUT_MS),
+    signal: AbortSignal.timeout(MONOPAY_TIMEOUT_MS),
   });
 }
 

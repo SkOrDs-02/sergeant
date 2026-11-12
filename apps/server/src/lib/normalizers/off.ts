@@ -10,6 +10,8 @@
  * info, search returns an id + per-100 g macros + default grams).
  */
 
+import { kcalFromAtwater } from "./usda.js";
+
 // ── Raw upstream types ───────────────────────────────────────────────────────
 
 export interface OFFProduct {
@@ -82,6 +84,8 @@ export interface NormalizedOFFSearch {
 
 // ── Shared helpers ───────────────────────────────────────────────────────────
 
+const KJ_PER_KCAL = 4.184;
+
 function round1(v: unknown): number | null {
   if (v == null) return null;
   const n = Number(v);
@@ -104,12 +108,22 @@ function extractNutriments(
   nutriments: Record<string, unknown> | undefined | null,
 ): ExtractedMacros {
   const n = (nutriments || {}) as Record<string, unknown>;
-  return {
-    kcal: round1(n["energy-kcal_100g"] ?? n["energy-kcal"] ?? null),
+  const macros: ExtractedMacros = {
+    kcal: round1(n["energy-kcal_100g"] ?? null),
     protein: round1(n["proteins_100g"] ?? null),
     fat: round1(n["fat_100g"] ?? null),
     carbs: round1(n["carbohydrates_100g"] ?? null),
   };
+  // Без ккал продукт пройшов би за БЖВ і ліг у журнал як 0 ккал. Беремо кДж
+  // (`energy_100g` у OFF теж кДж), інакше Atwater. Голе `energy-kcal` не
+  // беремо: воно в базисі `nutrition_data_per`, тобто часто на порцію.
+  if (macros.kcal == null) {
+    const kj = n["energy-kj_100g"] ?? n["energy_100g"];
+    macros.kcal =
+      round1(kj == null ? null : Number(kj) / KJ_PER_KCAL) ??
+      kcalFromAtwater(macros);
+  }
+  return macros;
 }
 
 /**

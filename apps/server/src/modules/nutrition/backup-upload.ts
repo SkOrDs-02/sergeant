@@ -8,6 +8,8 @@ import { AppError, UnauthorizedError } from "../../obs/errors.js";
 
 type AuthedRequest = Request & { user?: { id: string } };
 
+const MAX_BACKUPS_PER_USER = 3;
+
 /**
  * POST /api/nutrition/backup-upload — залити шифрований бекап.
  * CORS / token / rate-limit / `requireSession()` виставляє роутер.
@@ -56,13 +58,27 @@ export default async function handler(
 
   const key = safeBackupKeyFromToken(userId, req.headers["x-token"], secret);
 
+  // Ключ залежить від довільного `x-token`, тож кожен новий токен дає новий
+  // рядок до 2,5 МБ. Тримаємо лише MAX_BACKUPS_PER_USER найсвіжіших, інакше
+  // один акаунт у циклі заповнює диск Postgres. DELETE бачить знімок до
+  // INSERT, тому поточний ключ виключено явно.
   await query(
-    `INSERT INTO nutrition_backups (user_id, key, payload, created_at, updated_at)
-     VALUES ($1, $2, $3::jsonb, NOW(), NOW())
-     ON CONFLICT (user_id, key) DO UPDATE SET
-       payload = EXCLUDED.payload,
-       updated_at = NOW()`,
-    [userId, key, raw],
+    `WITH up AS (
+       INSERT INTO nutrition_backups (user_id, key, payload, created_at, updated_at)
+       VALUES ($1, $2, $3::jsonb, NOW(), NOW())
+       ON CONFLICT (user_id, key) DO UPDATE SET
+         payload = EXCLUDED.payload,
+         updated_at = NOW()
+     )
+     DELETE FROM nutrition_backups
+      WHERE user_id = $1 AND key <> $2
+        AND key NOT IN (
+          SELECT key FROM nutrition_backups
+           WHERE user_id = $1 AND key <> $2
+           ORDER BY updated_at DESC
+           LIMIT $4
+        )`,
+    [userId, key, raw, MAX_BACKUPS_PER_USER - 1],
     { op: "nutrition_backup_upsert" },
   );
 
