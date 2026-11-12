@@ -5,6 +5,7 @@ import {
   type PaywallSurface,
   type PaywalledFeatureId,
 } from "@sergeant/shared";
+import { useAuthOptional } from "../auth/AuthContext";
 import { usePlan } from "./usePlan";
 
 /**
@@ -45,12 +46,15 @@ export function useFeatureGate(
   feature: PaywalledFeatureId,
 ): UseFeatureGateResult {
   const { access } = usePlan();
+  const offlineIdentity = useAuthOptional()?.offlineIdentity === true;
   const [paywallOpen, setPaywallOpen] = useState(false);
   const spec = FEATURES[feature];
 
+  // Офлайн холодний старт: тариф невідомий, тож локальну Pro-фічу (PDF-звіт)
+  // не закриваємо пейволом. Мережеві однаково впруться в офлайн.
   const open = access
     ? access.features[feature] === true
-    : hasFeature("free", feature);
+    : offlineIdentity || hasFeature("free", feature);
   const meter =
     access && "meter" in spec ? access.meters[spec.meter] : undefined;
   const exhausted = meter?.limit != null && meter.used >= meter.limit;

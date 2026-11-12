@@ -465,3 +465,22 @@ describe("PersonalInfoSection — email verification", () => {
     });
   });
 });
+
+describe("PersonalInfoSection — офлайн-ідентичність", () => {
+  it("замість імені, email і статусу показує один рядок без дій", () => {
+    render(
+      <PersonalInfoSection
+        user={{ ...BASE_USER, name: null, email: null, emailVerified: false }}
+        online={false}
+        onRefresh={vi.fn(async () => {})}
+        offlineIdentity
+      />,
+    );
+    expect(
+      screen.getByText("Профіль покажу, коли зʼявиться інтернет."),
+    ).toBeInTheDocument();
+    expect(screen.queryByText("Без імені")).toBeNull();
+    expect(screen.queryByText(/не підтверджено/)).toBeNull();
+    expect(screen.queryByRole("button")).toBeNull();
+  });
+});

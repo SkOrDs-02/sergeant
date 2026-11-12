@@ -81,7 +81,7 @@ export function ProfilePage({ scrollContainer }: ProfilePageProps = {}) {
     },
     [scrollContainer],
   );
-  const { user, logout, refresh } = useAuth();
+  const { user, logout, refresh, offlineIdentity } = useAuth();
   const online = useOnlineStatus();
   const toast = useToast();
   const navigate = useNavigate();
@@ -150,7 +150,12 @@ export function ProfilePage({ scrollContainer }: ProfilePageProps = {}) {
         </Notice>
       )}
 
-      <PersonalInfoSection user={user} online={online} onRefresh={refresh} />
+      <PersonalInfoSection
+        user={user}
+        online={online}
+        onRefresh={refresh}
+        offlineIdentity={offlineIdentity}
+      />
 
       <div className="flex justify-end -mt-2">
         <Button

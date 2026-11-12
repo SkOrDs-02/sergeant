@@ -11,6 +11,11 @@ vi.mock("./usePlan", () => ({
   usePlan: () => usePlanMock(),
 }));
 
+let offlineIdentity = false;
+vi.mock("../auth/AuthContext", () => ({
+  useAuthOptional: () => ({ offlineIdentity }),
+}));
+
 import { useFeatureGate } from "./useFeatureGate";
 
 const RESETS = "2026-06-14T21:00:00.000Z";
@@ -41,6 +46,7 @@ function access(
 describe("useFeatureGate", () => {
   beforeEach(() => {
     usePlanMock.mockReset();
+    offlineIdentity = false;
   });
   afterEach(() => {
     vi.restoreAllMocks();
@@ -122,5 +128,22 @@ describe("useFeatureGate", () => {
       result.current.closePaywall();
     });
     expect(result.current.paywallOpen).toBe(false);
+  });
+
+  it("офлайн-ідентичність з невідомим тарифом не закриває Pro-фічу пейволом", () => {
+    usePlanMock.mockReturnValue({ access: null });
+    offlineIdentity = true;
+
+    const { result } = renderHook(() => useFeatureGate("export.pdf"));
+
+    expect(result.current.canAccess).toBe(true);
+  });
+
+  it("онлайн без знімка тарифу Pro-фіча лишається закритою", () => {
+    usePlanMock.mockReturnValue({ access: null });
+
+    const { result } = renderHook(() => useFeatureGate("export.pdf"));
+
+    expect(result.current.canAccess).toBe(false);
   });
 });
