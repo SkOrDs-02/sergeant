@@ -24,7 +24,7 @@ import { teardownLocalStateAfterSessionLoss } from "../../auth/sessionLossTeardo
  * туди (партицію перемикає провайдер переносу пізніше). Тож вихід і втрата
  * сесії мусять лишати в `anon` штамп, що не вказує на користувача, інакше
  * наступний холодний старт вважає пристрій чужим залогіненим
- * (`docs/work/specs/offline-cold-start.md`, крок 0).
+ * (крок 0 спеки офлайн холодного старту).
  */
 vi.mock("../dbOwnership.js", async (importOriginal) => ({
   ...(await importOriginal<typeof import("../dbOwnership.js")>()),
