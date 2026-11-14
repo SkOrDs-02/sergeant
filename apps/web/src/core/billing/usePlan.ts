@@ -30,6 +30,14 @@ export interface UsePlanResult {
   isPro: boolean;
   /** Mirrors `useQuery` loading state — distinct from `plan === "free"`. */
   isLoading: boolean;
+  /**
+   * Запит статусу впав (офлайн, 5xx) і відомого плану немає. `plan` тоді
+   * дефолтний `"free"`, тож твердження про план без цього прапорця було б
+   * неправдою.
+   */
+  isError: boolean;
+  /** Повторити запит статусу, напр. з кнопки після помилки. */
+  refetch: () => void;
   /** Raw subscription payload (id, status, currentPeriodEnd…) for UI hints. */
   subscription: BillingStatusResponse["subscription"] | null;
   /**
@@ -71,6 +79,10 @@ export function usePlan(): UsePlanResult {
     plan,
     isPro: plan === "pro",
     isLoading: query.isLoading,
+    // Невдалий рефетч у RQ v5 лишає `data` останнього успіху: план тоді
+    // відомий, і ховати його за помилкою не можна.
+    isError: query.isError && !query.data,
+    refetch: () => void query.refetch(),
     subscription,
     access: query.data?.access ?? null,
   };

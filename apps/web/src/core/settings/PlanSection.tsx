@@ -39,6 +39,8 @@ import { formatKyivLongDate } from "@shared/lib/time/kyivTime";
 
 const BILLING_PORTAL_UNAVAILABLE =
   "Портал підписки тимчасово недоступний. Спробуй ще раз за хвилину.";
+const BILLING_STATUS_FAILED =
+  "Не вдалося перевірити план. Перевір зʼєднання і спробуй ще раз.";
 const BILLING_CANCEL_FAILED =
   "Не вдалося скасувати. Спробуй ще раз за хвилину.";
 // 409 NO_ACTIVE_SUBSCRIPTION: стан у кеші застарів, активної підписки вже нема.
@@ -77,7 +79,8 @@ function manualGrantText(
 export function PlanSection() {
   const navigate = useNavigate();
   const queryClient = useQueryClient();
-  const { isPro, isLoading, subscription, access } = usePlan();
+  const { isPro, isLoading, isError, refetch, subscription, access } =
+    usePlan();
   const [redirecting, setRedirecting] = useState(false);
   const [portalError, setPortalError] = useState("");
   // Власне скасування (LiqPay/Plata без Customer Portal): двокрокове
@@ -113,7 +116,9 @@ export function PlanSection() {
   // 2026-09-16, WF-19). `isLoading` у цьому файлі вже читався — але лише
   // задля підпису «Завантаження…» поруч; самі твердження його ігнорували.
   // Плейсхолдер замість назви тарифу — бо «ще не знаю» це не «Free».
-  const planLabel = isLoading ? "—" : isPro ? premiumName : "Free";
+  // Те саме після помилки запиту: даних нема, `plan` знову дефолтний.
+  const planUnknown = isLoading || isError;
+  const planLabel = planUnknown ? "—" : isPro ? premiumName : "Free";
 
   async function handleManage() {
     setRedirecting(true);
@@ -247,7 +252,17 @@ export function PlanSection() {
           </p>
         )}
 
-        {!isPro && !isLoading && status !== "canceled" && (
+        {isError && (
+          <p
+            role="alert"
+            data-testid="plan-status-error"
+            className="text-style-body text-danger-strong leading-snug"
+          >
+            {BILLING_STATUS_FAILED}
+          </p>
+        )}
+
+        {!isPro && !planUnknown && status !== "canceled" && (
           <p className="text-style-body text-subtle leading-snug">
             Ти на безкоштовному плані. {premiumName} відкриває безлімітний чат
             із Сержантом, CloudSync між пристроями, авто-Mono sync і експорт
@@ -320,6 +335,15 @@ export function PlanSection() {
                   </Button>
                 ))}
             </>
+          ) : isError ? (
+            <Button
+              variant="outline"
+              size="md"
+              onClick={refetch}
+              data-testid="plan-status-retry"
+            >
+              Спробувати ще раз
+            </Button>
           ) : isLoading ? null : (
             <Button
               variant="solid"

@@ -1,5 +1,8 @@
 import { isHubStreaming } from "../hub/streamingStore";
-import { hasDirtyState } from "@shared/lib/ui/dirtyState";
+import {
+  hasDirtyState,
+  hasRegisteredDirtyState,
+} from "@shared/lib/ui/dirtyState";
 
 /** Returns true when there are any mutations currently running. */
 export function hasMutationsInFlight(
@@ -31,7 +34,16 @@ export function setMutationProbe(probe: (() => boolean) | null): void {
  * бо `QueryClient` живе в `main.tsx`, а не в цьому модулі; без нього береться
  * проба з {@link setMutationProbe}.
  */
-export function isForcedReloadBlocked(isMutating?: () => boolean): boolean {
-  if (isHubStreaming() || hasDirtyState()) return true;
+export function isForcedReloadBlocked(
+  isMutating?: () => boolean,
+  { ignoreTypedInput = false }: { ignoreTypedInput?: boolean } = {},
+): boolean {
+  if (isHubStreaming()) return true;
+  // `ignoreTypedInput`: трекер інлайн-полів рахує і вже збережене, досі
+  // змонтоване поле, тож на щойно натиснуте «Оновити» він давав хибне
+  // відкладення. Відкриті аркуші й композер блокують і тоді.
+  if (ignoreTypedInput ? hasRegisteredDirtyState() : hasDirtyState()) {
+    return true;
+  }
   return Boolean(isMutating ? isMutating() : mutationProbe?.());
 }
