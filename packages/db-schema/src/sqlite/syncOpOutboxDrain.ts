@@ -227,16 +227,30 @@ export async function drainSyncOpOutbox(
   const cap = Math.floor(limit);
   const nowIso = now.toISOString();
 
+  // Рядок, старший за будь-який рядок у бекофі, не віддається: інакше
+  // свіжий дочірній оп (підхід Фізрука) обганяє батька, що чекає ретраю, і
+  // сервер назавжди відхиляє його як `fk_violation`. Виняток - рядки, які
+  // чекають, поки сервер дізнається про нову таблицю (`unknown_table`,
+  // мітка з `syncV2.pushLoop.ts`): вони не бувають батьками відомих таблиць,
+  // а чекати можуть довго, тож чергу за собою не тримають.
   const rows = await client.all<OutboxRowFromDb>(
     `SELECT id, table_name, op, row, client_ts, idempotency_key,
             attempts, next_retry_at, last_error, created_at
-       FROM sync_op_outbox
+       FROM sync_op_outbox AS o
       WHERE status = 'pending'
         AND user_id = ?
         AND (next_retry_at IS NULL OR next_retry_at <= ?)
+        AND NOT EXISTS (
+          SELECT 1 FROM sync_op_outbox AS b
+           WHERE b.status = 'pending'
+             AND b.user_id = o.user_id
+             AND b.id < o.id
+             AND b.next_retry_at > ?
+             AND COALESCE(b.last_error, '') <> 'server_retry:unknown_table'
+        )
       ORDER BY id ASC
       LIMIT ?`,
-    [userId, nowIso, cap],
+    [userId, nowIso, nowIso, cap],
   );
 
   const decoded: DrainedOutboxRow[] = [];

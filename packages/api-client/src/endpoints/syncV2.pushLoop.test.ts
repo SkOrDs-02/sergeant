@@ -894,6 +894,38 @@ describe("runSyncEnginePushOnce — server retry status (data-18)", () => {
   });
 });
 
+describe("runSyncEnginePushOnce — fk_violation behind a held-back row", () => {
+  it("ретраїть дочірній оп, якщо батько в тому ж тіку отримав retry", async () => {
+    const { deps, drain, push, markRetry, markRejected } = makeDeps();
+    drain.mockResolvedValueOnce([
+      makeRow({ id: 1, idempotencyKey: IDEM_A, table: "fizruk_workouts" }),
+      makeRow({ id: 2, idempotencyKey: IDEM_B, table: "fizruk_workout_sets" }),
+    ]);
+    push.mockResolvedValueOnce({
+      accepted: 0,
+      last_op_id: 0,
+      results: [
+        {
+          idempotency_key: IDEM_A,
+          status: "retry",
+          reason: "deadlock_detected",
+        },
+        {
+          idempotency_key: IDEM_B,
+          status: "rejected",
+          reason: "fk_violation",
+        },
+      ],
+    });
+
+    const out = await runSyncEnginePushOnce(deps, { limit: 100 });
+
+    expect(markRejected).not.toHaveBeenCalled();
+    expect(markRetry.mock.calls.map((call) => call[0])).toEqual([1, 2]);
+    expect(out.retried).toBe(2);
+  });
+});
+
 describe("runSyncEnginePushOnce — retry/unknown_table (data-48)", () => {
   it("не палить спроби: attempts лишається, чекає 5 хв, не dead_letter", async () => {
     const { deps, drain, push, markRetry } = makeDeps();
