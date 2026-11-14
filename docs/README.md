@@ -105,7 +105,6 @@ rules are in
 | [`security/hardening/`](./work/specs/security-hardening/README.md) | Living security hardening backlog (жива картка: C2; закрите — immutable Git history)                       |
 | [`superpowers/`](./work/specs/superpowers/README.md)               | Legacy compatibility-вхід; відкритих планів немає, історія — immutable Git history                         |
 | [`tech-debt/`](./work/specs/tech-debt/README.md)                   | Active debt registries (backend/frontend/mobile + assessment)                                              |
-| [`beta-launch/`](./work/specs/beta-launch/README.md)               | Плейбук хвилі закритої бети: гейти, ENV, видача Pro, згортання                                             |
 
 Локальних archive-тек немає (Hard Rule #23, ADR-0081): завершені `work/{audits,initiatives,planning}` не дублюються локально, їхня історія лишається у Git, а чинні документи посилаються на immutable GitHub permalinks.
 
