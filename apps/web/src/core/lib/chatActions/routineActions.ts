@@ -48,8 +48,22 @@ import {
   normalizeDayToken,
   normalizeHabitId,
   isDateKey,
+  normalizeTimeOfDay,
 } from "./routineActions.helpers";
 import { formatNumberUk } from "@sergeant/shared";
+
+// Undo тримає id (а не повний snapshot), щоб не переписувати інші зміни,
+// які могли статися між створенням і undo (інша звичка, completions).
+function removeCreatedHabit(createdId: string): void {
+  const cur = loadRoutineState();
+  const habits = Array.isArray(cur.habits)
+    ? cur.habits.filter((h) => h.id !== createdId)
+    : [];
+  if (habits.length === (cur.habits?.length ?? 0)) return;
+  const completions = { ...cur.completions };
+  delete completions[createdId];
+  saveRoutineState({ ...cur, habits, completions });
+}
 
 export function handleRoutineAction(
   action: ChatAction,
@@ -163,10 +177,7 @@ export function handleRoutineAction(
             .map((d) => Number(d))
             .filter((d) => Number.isInteger(d) && d >= 0 && d <= 6)
         : undefined;
-      const tod =
-        timeOfDay && /^\d{1,2}:\d{2}$/.test(String(timeOfDay).trim())
-          ? String(timeOfDay).trim().padStart(5, "0")
-          : "";
+      const tod = normalizeTimeOfDay(timeOfDay) ?? "";
       const stateBefore = loadRoutineState();
       const nextState = applyCreateHabit(stateBefore, {
         name: trimmed,
@@ -189,35 +200,18 @@ export function handleRoutineAction(
       };
       const result = `Звичку "${trimmed}" створено (${recLabelMap[rec] || rec}, id:${createdId || "?"})${recNote}`;
       if (!createdId) return { result, confirm };
-      // Undo тримає id (а не повний snapshot), щоб не переписувати
-      // інші зміни, які можуть статися між створенням і undo
-      // (інша звичка створена, completions додані, etc.).
       return {
         result,
         confirm,
-        undo: () => {
-          const cur = loadRoutineState();
-          const habits = Array.isArray(cur.habits)
-            ? cur.habits.filter((h) => h.id !== createdId)
-            : [];
-          if (habits.length === (cur.habits?.length ?? 0)) return;
-          const curCompletions = { ...cur.completions };
-          delete curCompletions[createdId];
-          saveRoutineState({
-            ...cur,
-            habits,
-            completions: curCompletions,
-          });
-        },
+        undo: () => removeCreatedHabit(createdId),
       };
     }
     case "create_reminder": {
       const { habit_id, time } = (action as CreateReminderAction).input;
       const id = normalizeHabitId(habit_id);
-      const t = String(time || "").trim();
       if (!id) return "Потрібен habit_id.";
-      if (!/^\d{1,2}:\d{2}$/.test(t)) return "Час має бути у форматі HH:MM.";
-      const normTime = t.padStart(5, "0");
+      const normTime = normalizeTimeOfDay(time);
+      if (!normTime) return "Час має бути у форматі HH:MM, від 00:00 до 23:59.";
       const state = loadRoutineState();
       const habits = state.habits.slice();
       const hIdx = habits.findIndex((h) => h.id === id);
@@ -260,8 +254,7 @@ export function handleRoutineAction(
       const id = normalizeHabitId(habit_id);
       const d = String(date || "").trim();
       if (!id) return "Потрібен habit_id.";
-      if (!/^\d{4}-\d{2}-\d{2}$/.test(d))
-        return "Дата має бути у форматі YYYY-MM-DD.";
+      if (!isDateKey(d)) return "Дата має бути у форматі YYYY-MM-DD.";
       const doComplete = completed !== false;
       const state = loadRoutineState();
       const habit = state.habits.find((h) => h.id === id);
@@ -375,12 +368,8 @@ export function handleRoutineAction(
       const evName = (name || "").trim();
       const d = String(date || "").trim();
       if (!evName) return "Потрібна назва події.";
-      if (!/^\d{4}-\d{2}-\d{2}$/.test(d))
-        return "Дата має бути у форматі YYYY-MM-DD.";
-      const tod =
-        time && /^\d{1,2}:\d{2}$/.test(String(time).trim())
-          ? String(time).trim().padStart(5, "0")
-          : "";
+      if (!isDateKey(d)) return "Дата має бути у форматі YYYY-MM-DD.";
+      const tod = normalizeTimeOfDay(time) ?? "";
       const state = loadRoutineState();
       const nextState = applyCreateHabit(state, {
         name: evName,
@@ -391,11 +380,10 @@ export function handleRoutineAction(
         timeOfDay: tod,
       });
       const confirm = persistRoutineState(nextState);
-      const created = nextState.habits[nextState.habits.length - 1];
-      return {
-        result: `Подію "${evName}" додано на ${d}${tod ? ` о ${tod}` : ""} (id:${created?.id || "?"})`,
-        confirm,
-      };
+      const createdId = nextState.habits[nextState.habits.length - 1]?.id;
+      const result = `Подію "${evName}" додано на ${d}${tod ? ` о ${tod}` : ""} (id:${createdId || "?"})`;
+      if (!createdId) return { result, confirm };
+      return { result, confirm, undo: () => removeCreatedHabit(createdId) };
     }
     case "edit_habit": {
       const { habit_id, name, emoji, recurrence, weekdays } = (

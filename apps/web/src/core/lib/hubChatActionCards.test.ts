@@ -305,7 +305,7 @@ describe("buildActionCard", () => {
         input: { week_a: "2026-W17" },
         result: 'Некоректний week_a: "bad". Очікую YYYY-Www.',
       });
-      expect(card?.status).toBe("completed");
+      expect(card?.status).toBe("failed");
       const failed = buildActionCard({
         name: "compare_weeks",
         input: {},
@@ -443,5 +443,53 @@ describe("покриття карток (PR-A5)", () => {
     expect(isFailureResult("Не вдалося зберегти")).toBe(true);
     expect(isFailureResult("Невідома дія: x")).toBe(true);
     expect(isFailureResult("Нотатку збережено")).toBe(false);
+  });
+
+  it("відмова мутатора без префікса «Помилка» дає failed-картку", () => {
+    const refusals: Array<[string, string]> = [
+      ["delete_transaction", "Потрібен tx_id для видалення."],
+      [
+        "delete_transaction",
+        "Дані Фініка ще завантажуються, спробуй за кілька секунд.",
+      ],
+      ["delete_transaction", "Операцію m_1 не знайдено (вже видалена)."],
+      ["mark_debt_paid", "Борг d1 не знайдено."],
+      ["create_reminder", "Час має бути у форматі HH:MM."],
+      ["forget", "Факт з id f1 не знайдено."],
+      [
+        "mark_habit_done",
+        'Звичку "Біг" не заплановано на 2026-05-02, тому не відмічаю.',
+      ],
+      [
+        "complete_habit_for_date",
+        'Звичку "Біг" не заплановано на 2026-05-02, тому не відмічаю.',
+      ],
+      ["create_habit", "Не можу створити звичку без назви."],
+      ["set_habit_schedule", "Не вдалось розпізнати дні: xx."],
+      ["pause_habit", "Кінець паузи не може бути раніше за початок."],
+      ["log_set", "Забагато повторень у підході (максимум 1000)."],
+      ["log_set", "Вага підходу занадто велика (максимум 1000 кг)."],
+      ["start_workout", "Вже є активне тренування (id:w1)."],
+      ["copy_meal_from_date", "За 2026-05-01 немає записів їжі."],
+      ["copy_meal_from_date", "Індекс 5 поза межами (є 2 записів)."],
+      ["update_budget", "Для scope='limit' потрібен category_id."],
+      ["update_budget", "Для scope='goal' потрібне name."],
+      ["update_budget", "Невідомий scope для update_budget."],
+      ["batch_categorize", "Для batch_categorize потрібен pattern."],
+    ];
+    for (const [name, result] of refusals) {
+      expect(
+        buildActionCard({ name, input: {}, result })?.status,
+        `${name}: ${result}`,
+      ).toBe("failed");
+    }
+    // Порожня вибірка запиту — не провал.
+    expect(
+      buildActionCard({
+        name: "query_transactions",
+        input: {},
+        result: "Операцій за цими фільтрами не знайдено.",
+      })?.status,
+    ).toBe("completed");
   });
 });

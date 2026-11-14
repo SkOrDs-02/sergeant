@@ -9,7 +9,7 @@ import { memo, useMemo, type ReactNode } from "react";
  *   - bullet (`-`, `*`, `+`) and ordered (`1.`) lists (single level)
  *   - blockquotes (`>`)
  *   - inline `**bold**`, `*italic*` / `_italic_`, `` `code` ``,
- *     and `[text](url)` links (links are sandboxed via `isSafeHref`).
+ *     and `[text](url)` links (only same-origin, see `isSafeHref`).
  *
  * Anything outside this grammar renders as plain text.
  *
@@ -48,17 +48,28 @@ export interface AssistantMessageBodyProps {
   text: string;
 }
 
-/** Allow only safe URL schemes — blocks `javascript:`, `data:`, etc. */
+/**
+ * Лише відносні шляхи, якорі й абсолютні URL того самого origin. Зовнішній
+ * хост лишається текстом: посилання з даними користувача в query могла
+ * вставити ін'єкція з опису операції, а клік не потребує жодного
+ * підтвердження.
+ */
 function isSafeHref(href: string | undefined): boolean {
   if (!href) return false;
-  return HREF_SAFE_RE.test(href);
+  // Лише origin після резолву тим самим парсером, що й у браузера: префіксний
+  // регексп обходиться (`/<TAB>/evil.example` парсер чистить від табу й веде
+  // на чужий хост).
+  try {
+    return (
+      new URL(href, window.location.href).origin === window.location.origin
+    );
+  } catch {
+    return false;
+  }
 }
 
 const INLINE_TOKEN_RE =
   /(\*\*[^*]+\*\*|\*[^*]+\*|_[^_]+_|`[^`]+`|\[[^\]]+\]\([^)]+\))/g;
-// `\/(?![\/\\])` — відносний шлях, але НЕ protocol-relative (`//evil.example`)
-// і не `/\evil.example` (браузер трактує `\` як `/`).
-const HREF_SAFE_RE = /^(https?:\/\/|\/(?![/\\])|#)/i;
 const LINK_TOKEN_RE = /^\[([^\]]+)\]\(([^)]+)\)$/;
 const H4_RE = /^####\s+(.*)$/;
 const H3_RE = /^###\s+(.*)$/;

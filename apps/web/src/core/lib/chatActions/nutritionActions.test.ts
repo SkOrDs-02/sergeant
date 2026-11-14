@@ -752,6 +752,24 @@ describe("suggest_meal", () => {
 // copy_meal_from_date
 // ---------------------------------------------------------------------------
 describe("copy_meal_from_date", () => {
+  it("undo прибирає лише скопійовані прийоми", () => {
+    const meal = {
+      id: "m_old",
+      name: "Сніданок",
+      macros: { kcal: 400, protein_g: 30, fat_g: 15, carbs_g: 40 },
+    };
+    mem.log = { "2026-04-20": { meals: [meal, { ...meal, id: "m_old2" }] } };
+    const out = handleNutritionAction({
+      name: "copy_meal_from_date",
+      input: { source_date: "2026-04-20" },
+    });
+    if (typeof out !== "object" || out == null) throw new Error("no undo");
+    expect(dayMeals("2026-04-22")).toHaveLength(2);
+    out.undo?.();
+    expect(mem.log["2026-04-22"]).toBeUndefined();
+    expect(dayMeals("2026-04-20")).toHaveLength(2);
+  });
+
   it("happy: copies meals from source date", () => {
     mem.log = {
       "2026-04-20": {

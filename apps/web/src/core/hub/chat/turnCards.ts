@@ -16,7 +16,8 @@ interface TurnToolCall {
 }
 
 interface TurnToolResult {
-  content: string;
+  result: string;
+  ok: boolean;
 }
 
 /**
@@ -49,14 +50,21 @@ export function buildTurnCards(
     buildActionCard({
       name: tc.name as string,
       input: tc.input as Record<string, unknown>,
-      result: toolResults[idx]?.content || "",
+      result: toolResults[idx]?.result || "",
+      failed: toolResults[idx]?.ok === false,
     }),
   );
   const cards = builtCards.filter((c): c is ChatActionCard => c !== null);
   const uncardedText = toolResults
-    .filter((_, idx) => builtCards[idx] == null)
     // Помилковий результат не маркуємо «✓» — це б рапортувало успіх.
-    .map((r) => (isFailureResult(r.content) ? r.content : `✓ ${r.content}`))
+    .flatMap((r, idx) => {
+      if (builtCards[idx] != null) return [];
+      const name = toolCalls[idx]?.name;
+      const failed =
+        r.ok === false ||
+        isFailureResult(r.result, typeof name === "string" ? name : undefined);
+      return [failed ? r.result : `✓ ${r.result}`];
+    })
     .join("\n");
   return { cards, uncardedText };
 }

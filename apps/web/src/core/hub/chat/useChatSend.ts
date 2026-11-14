@@ -592,7 +592,7 @@ export function useChatSend({
           // Картки для відомих tool-ів + текстовий фолбек для решти.
           const { cards, uncardedText } = buildTurnCards(
             toolCalls,
-            toolResults,
+            handlerResults,
           );
           const prefix = uncardedText ? `${uncardedText}\n\n` : "";
 

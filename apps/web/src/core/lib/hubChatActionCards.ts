@@ -5,7 +5,10 @@
 // поруч і додаються до assistant-message як metadata. Якщо tool
 // невідомий мапперу — повертаємо `null`, і UI лишає текстовий fallback.
 
-import { isRiskyTool as isRiskyToolShared } from "@sergeant/shared";
+import {
+  isRiskyTool as isRiskyToolShared,
+  isStateMutatingTool,
+} from "@sergeant/shared";
 
 import type { ChatAction } from "./chatActions/types";
 import { moduleFor } from "./hubChatActionCardsHelpers";
@@ -155,26 +158,32 @@ interface CardInput {
   input: ChatAction["input"] | Record<string, unknown>;
   /** Текстовий результат `executeAction` — fallback summary. */
   result: string;
-  /**
-   * Ознака помилки: якщо result починається з «Помилка» / «Не вдалося» /
-   * «Невідома дія» — статус failed.
-   */
+  /** Структурна ознака провалу (`ok: false` з `executeActions`). */
   failed?: boolean;
 }
 
-const FAILURE_RE = /^(Помилка|Не вдалося|Невідома дія)/;
+// Виконавці відмовляють рядком, а не винятком, тож `dispatch` бачить відмову
+// як успіх; без розпізнавання тексту картка писала б «Операцію видалено»
+// під «Потрібен tx_id» чи «Дані Фініка ще завантажуються».
+const FAILURE_RE =
+  /^(Помилка|Не вдалося|Не вдалось|Не можу|Невідом|Дію не виконано|Увійди|Потріб(ен|н)|Некоректн|Дані \S+ ще завантажуються|Для \S+ потріб)/;
 
-/** Чи результат виконавця — помилка (для гейта «✓» у `useChatSend`). */
-export function isFailureResult(result: string): boolean {
-  return FAILURE_RE.test(result);
-}
+// Лише для мутаторів: у запиту «не знайдено» чи «Немає …» означає порожню
+// вибірку, а в мутатора це «нічого не змінено».
+const MUTATION_REFUSAL_RE =
+  /не знайдено|не видалено|Не знайшов|Нічого не записано|ма(є|ють) бути|не може бути|^Немає |Забагато|занадто велик|Вже є активне|не відмічаю|поза межами|немає записів/;
 
-function deriveStatus(
-  result: string,
-  explicitFailed?: boolean,
-): ChatActionCardStatus {
-  if (explicitFailed) return "failed";
-  return FAILURE_RE.test(result) ? "failed" : "completed";
+/**
+ * Чи результат виконавця — відмова. Без `toolName` перевіряє лише
+ * загальні префікси (гейт «✓» у `useChatSend`).
+ */
+export function isFailureResult(result: string, toolName?: string): boolean {
+  if (FAILURE_RE.test(result)) return true;
+  return (
+    toolName !== undefined &&
+    isStateMutatingTool(toolName) &&
+    MUTATION_REFUSAL_RE.test(result)
+  );
 }
 
 /**
@@ -184,7 +193,10 @@ function deriveStatus(
 export function buildActionCard(input: CardInput): ChatActionCard | null {
   if (!KNOWN_TOOLS.has(input.name)) return null;
 
-  const status = deriveStatus(input.result, input.failed);
+  const status: ChatActionCardStatus =
+    input.failed || isFailureResult(input.result, input.name)
+      ? "failed"
+      : "completed";
   const inputObj = (input.input || {}) as Record<string, unknown>;
   const title = titleFor(input.name, status);
   const summary = summaryFor(input.name, inputObj, input.result);

@@ -6,8 +6,9 @@ import {
   parseKyivDate,
 } from "@shared/lib/time/kyivTime";
 import { MAX_REPS, MAX_WEIGHT_KG } from "@fizruk/lib/numericBounds";
-import { formatNumberUk } from "@sergeant/shared";
+import { formatNumberUk, pluralExercises } from "@sergeant/shared";
 import {
+  deleteFizrukWorkout,
   readFizrukWorkouts,
   persistFizrukWorkouts,
   persistFizrukCustomExercises,
@@ -337,5 +338,9 @@ export function copyWorkout(action: CopyWorkoutAction): ChatActionResult {
   };
   persistFizrukCustomExercises(resolver.created);
   persistFizrukWorkouts([newW, ...workouts]);
-  return `Тренування скопійовано (${source.items.length} вправ) на ${targetDate} (id:${wid})`;
+  const n = source.items.length;
+  return {
+    result: `Тренування скопійовано (${n} ${pluralExercises(n)}) на ${targetDate} (id:${wid})`,
+    undo: () => deleteFizrukWorkout(newW),
+  };
 }

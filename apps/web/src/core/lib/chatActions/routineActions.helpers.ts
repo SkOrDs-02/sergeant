@@ -8,7 +8,7 @@
  */
 
 import { habitCompletionRate, type Habit } from "@sergeant/routine-domain";
-import { getKyivDayKey } from "@shared/lib/time/kyivTime";
+import { getKyivDayKey, parseKyivDate } from "@shared/lib/time/kyivTime";
 import { formatNumberUk } from "@sergeant/shared";
 
 export const DAY_MS = 86_400_000;
@@ -65,9 +65,25 @@ export function normalizeHabitId(raw: unknown): string {
     .trim();
 }
 
-/** Вузький гейт на `YYYY-MM-DD` — модель інколи шле «завтра» словами. */
+/**
+ * Гейт на `YYYY-MM-DD` — модель інколи шле «завтра» словами. Календарно
+ * неможлива дата (2026-02-30) теж відсіюється: `parseDateKey` перекотив би
+ * її на березень, а once-подія з такою `endDate` не показується ніколи.
+ */
 export function isDateKey(v: unknown): v is string {
-  return typeof v === "string" && /^\d{4}-\d{2}-\d{2}$/.test(v);
+  return typeof v === "string" && parseKyivDate(v) !== null;
+}
+
+/**
+ * `H:MM`/`HH:MM` → `HH:MM`, або `null` на неможливому часі: sweep нагадувань
+ * порівнює рядок із київським `HH:MM`, тож «24:00» не спрацювало б ніколи.
+ */
+export function normalizeTimeOfDay(v: unknown): string | null {
+  const m = /^(\d{1,2}):(\d{2})$/.exec(String(v ?? "").trim());
+  const hours = Number(m?.[1]);
+  const minutes = Number(m?.[2]);
+  if (!m || hours > 23 || minutes > 59) return null;
+  return `${String(hours).padStart(2, "0")}:${String(minutes).padStart(2, "0")}`;
 }
 
 /**

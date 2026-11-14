@@ -17,6 +17,7 @@ vi.mock("@shared/lib/time/kyivTime", async (importOriginal) => ({
   getKyivDateParts: vi.fn(),
 }));
 vi.mock("./shared", () => ({
+  deleteFizrukWorkout: vi.fn(),
   readFizrukWorkouts: vi.fn(),
   persistFizrukWorkouts: vi.fn(),
   persistFizrukCustomExercises: vi.fn(),
@@ -26,6 +27,7 @@ import { safeReadStringLS, safeRemoveLS } from "@shared/lib/storage/storage";
 import { lsSet } from "../../hubChatUtils";
 import { getKyivDateParts, getKyivDayKey } from "@shared/lib/time/kyivTime";
 import {
+  deleteFizrukWorkout,
   persistFizrukCustomExercises,
   persistFizrukWorkouts,
   readFizrukWorkouts,
@@ -591,5 +593,19 @@ describe("exerciseId резолвиться з назви (data-11)", () => {
     });
     const copied = (mockPersist.mock.calls[0]![0] as Workout[])[0]!;
     expect(copied.items[0]?.exerciseId).toBe("deadlift");
+  });
+
+  it("undo видаляє саме створену копію", () => {
+    mockReadWorkouts.mockReturnValue([
+      makeWorkout({ id: "w_src", endedAt: "2026-04-20T10:00:00.000Z" }),
+    ]);
+    const out = copyWorkout({
+      name: "copy_workout",
+      input: { source_workout_id: "w_src" },
+    });
+    if (typeof out === "string") throw new Error("expected undoable result");
+    out.undo?.();
+    const copied = (mockPersist.mock.calls[0]![0] as Workout[])[0]!;
+    expect(deleteFizrukWorkout).toHaveBeenCalledWith(copied);
   });
 });

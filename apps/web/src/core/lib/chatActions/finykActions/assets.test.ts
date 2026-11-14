@@ -147,10 +147,10 @@ describe("recurringExpense", () => {
   });
 
   it("creates subscription and returns confirmation with id", () => {
-    const result = recurringExpense({
+    const { result } = recurringExpense({
       name: "recurring_expense",
       input: { name: "Netflix", amount: 199, day_of_month: 15 },
-    }) as string;
+    }) as { result: string };
     expect(result).toContain("Netflix");
     expect(result).toContain("199");
     expect(result).toContain("15-го");
@@ -193,6 +193,23 @@ describe("recurringExpense", () => {
       input: { name: "Gym", amount: 500 },
     });
     expect(mockWrite).toHaveBeenCalledWith("finyk_subs", expect.any(Array));
+  });
+
+  it("undo removes the created subscription", () => {
+    const result = recurringExpense({
+      name: "recurring_expense",
+      input: { name: "Gym", amount: 500 },
+    }) as { undo: () => void };
+    const written = mockWrite.mock.calls[0]![1] as Array<{ id: string }>;
+    const subId = written[written.length - 1]!.id;
+    vi.clearAllMocks();
+    __setFinykSqliteStateCacheForTests({
+      subscriptions: [
+        { id: subId, name: "Gym", keyword: "", billingDay: 1, currency: "UAH" },
+      ],
+    });
+    result.undo();
+    expect(mockWrite).toHaveBeenCalledWith("finyk_subs", []);
   });
 });
 
