@@ -991,7 +991,7 @@
         ],
         "responses": {
           "200": {
-            "description": "Op-и з `id > since`; `next_cursor` = null, коли сторінка неповна.",
+            "description": "Op-и з `id > since`; `next_cursor` = null лише коли більше нічого немає (сторінку, обрізану байтовим бюджетом, теж продовжуй).",
             "content": {
               "application/json": {
                 "schema": {
@@ -1087,6 +1087,161 @@
                 }
               }
             }
+          },
+          "410": {
+            "description": "Курсор `since` нижчий за нижню межу журналу (`code: sync_cursor_expired`, `details: [{ floor_id }]`, ADR-0105): оп-и до межі видалено retention-ом, візьми `GET /api/v2/sync/snapshot` і продовж pull з `as_of_op_id`.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v2/sync/snapshot": {
+      "get": {
+        "summary": "Знімок поточного стану sync-таблиць (bootstrap після 410)",
+        "description": "Поточні рядки користувача з модульних sync-таблиць як pull-оп-и `op: insert` (`row` у формі колонок, tombstone-и з `deleted_at` включно), сторінками за байтовим бюджетом pull (`SYNC_V2_PULL_MAX_BYTES`) і `limit`. `as_of_op_id` знімається на першій сторінці в REPEATABLE READ транзакції разом із рядками і повертається на кожній; після останньої сторінки (`next_cursor: null`) клієнт ставить курсор pull на `as_of_op_id`. Маршрут закритий прапорцем `SYNC_SNAPSHOT_ENABLED` (дефолт вимкнено → 404). ADR-0105 §3.",
+        "tags": ["sync"],
+        "security": [
+          {
+            "cookieAuth": []
+          },
+          {
+            "bearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "in": "query",
+            "name": "cursor",
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 2048
+            }
+          },
+          {
+            "in": "query",
+            "name": "as_of_op_id",
+            "schema": {
+              "type": "integer",
+              "minimum": 0,
+              "maximum": 9007199254740991
+            }
+          },
+          {
+            "in": "query",
+            "name": "limit",
+            "schema": {
+              "default": 500,
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 500
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Сторінка знімка; `next_cursor` - непрозорий рядок або null (кінець).",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "ops": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "id": {
+                            "type": "integer",
+                            "minimum": -9007199254740991,
+                            "maximum": 9007199254740991
+                          },
+                          "table": {
+                            "type": "string"
+                          },
+                          "op": {
+                            "type": "string",
+                            "const": "insert"
+                          },
+                          "row": {
+                            "type": "object",
+                            "propertyNames": {
+                              "type": "string"
+                            },
+                            "additionalProperties": {}
+                          },
+                          "client_ts": {
+                            "type": "string"
+                          },
+                          "server_ts": {
+                            "type": "string"
+                          },
+                          "origin_device_id": {
+                            "type": "null"
+                          }
+                        },
+                        "required": [
+                          "id",
+                          "table",
+                          "op",
+                          "row",
+                          "client_ts",
+                          "server_ts",
+                          "origin_device_id"
+                        ],
+                        "additionalProperties": false
+                      }
+                    },
+                    "as_of_op_id": {
+                      "type": "integer",
+                      "minimum": -9007199254740991,
+                      "maximum": 9007199254740991
+                    },
+                    "next_cursor": {
+                      "anyOf": [
+                        {
+                          "type": "string"
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ]
+                    }
+                  },
+                  "required": ["ops", "as_of_op_id", "next_cursor"],
+                  "additionalProperties": false
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad request — payload не пройшов zod-валідацію.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized — потрібна активна сесія.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Знімок вимкнено (`SYNC_SNAPSHOT_ENABLED=false`, дефолт); віддається і без сесії."
           }
         }
       }

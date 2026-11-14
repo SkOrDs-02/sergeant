@@ -175,7 +175,7 @@ export const EXPORT_EXCLUSIONS: ReadonlyArray<{
 }> = [
   {
     group: "syncLog",
-    tables: ["sync_op_log", "sync_audit_log"],
+    tables: ["sync_op_log", "sync_audit_log", "sync_op_log_floor"],
     reason:
       "Технічний журнал синхронізації між пристроями, не твої записи: та сама зміна лежить у власній таблиці модуля.",
   },
