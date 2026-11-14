@@ -7,6 +7,7 @@ import { makeAiProviderError } from "../../obs/errors.js";
 import { JSON_TEXT_STYLE_RULE } from "../../lib/prompt-builders.js";
 import { getLLMProvider, invokeLLM } from "../../lib/llm/provider.js";
 import { normalizePantryItems } from "../../lib/nutritionResponse.js";
+import { abortOnClientClose } from "../../http/clientAbort.js";
 
 type WithAnthropicKey = Request & {
   anthropicKey?: string;
@@ -89,6 +90,7 @@ export default async function handler(
     messages: [{ role: "user", content: prompt.user }],
     timeoutMs: 20000,
     endpoint: "parse-pantry",
+    signal: abortOnClientClose(res),
     ...(userId ? { userId } : {}),
   });
   if (!result.ok) {

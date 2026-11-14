@@ -13,7 +13,7 @@ import { getVisibleFinykMonoMirrorState } from "../../../modules/finyk/lib/monoM
 import { getCachedFinykSqliteState } from "../../../modules/finyk/lib/sqliteReader";
 import { buildFinykSpendingUniverse } from "@sergeant/finyk-domain";
 import type { ChatAction, ChatActionResult } from "./types";
-import { formatNumberUk } from "@sergeant/shared";
+import { formatNumberUk, habitCorrelationMetric } from "@sergeant/shared";
 
 /**
  * Read-only "talk to your data" виконавці для Рутини (PR3 talk-to-your-data).
@@ -220,14 +220,6 @@ export function queryHabits(action: QueryHabitsAction): ChatActionResult {
   return lines.join("\n");
 }
 
-function normalizeMetric(value: unknown): CorrelationMetric {
-  const s = normalizeText(value);
-  if (s === "workouts" || s === "тренування" || s === "fizruk") {
-    return "workouts";
-  }
-  return "spending";
-}
-
 /** Per-Kyiv-day expense total (грн) from the Mono mirror cache. */
 function spendingByDay(days: number): Map<string, number> {
   // Всесвіт витрат — банк + РУЧНІ записи, як вимагає канон finyk §5
@@ -283,7 +275,9 @@ export function habitCorrelation(
   action: HabitCorrelationAction,
 ): ChatActionResult {
   const filter = normalizeText(action.input.habit);
-  const metric = normalizeMetric(action.input.against);
+  const metric: CorrelationMetric = habitCorrelationMetric(
+    action.input.against,
+  );
   const days = clampDays(action.input.period_days, 60);
   const { habits, completions } = readRoutine();
 

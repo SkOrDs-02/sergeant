@@ -25,6 +25,7 @@
 
 import {
   HEALTH_CONSENT_REQUIRED_MESSAGE,
+  habitCorrelationMetric,
   isGoalProfileLabel,
   isHealthMemoryEntry,
   isHealthMemoryCategory,
@@ -164,7 +165,9 @@ function classifyToolUse(name: string, rawInput: unknown): ToolVerdict {
         : "pass";
     }
     case "habit_correlation":
-      return input["against"] === "workouts" ? "block" : "pass";
+      return habitCorrelationMetric(input["against"]) === "workouts"
+        ? "block"
+        : "pass";
     case "compare_weeks": {
       const modules = input["modules"];
       // Порожній/відсутній список = «усі 4» на клієнті, тобто з health.

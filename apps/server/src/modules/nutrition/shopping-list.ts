@@ -12,6 +12,7 @@ import {
   pantryPromptSection,
 } from "../../lib/prompt-builders.js";
 import { NUTRITION_AI_TIMEOUTS_MS } from "./timeouts.js";
+import { abortOnClientClose } from "../../http/clientAbort.js";
 
 export type ShoppingListInput = z.infer<typeof ShoppingListSchema>;
 
@@ -180,6 +181,7 @@ export default async function handler(
     messages: [{ role: "user", content: prompt.user }],
     timeoutMs: NUTRITION_AI_TIMEOUTS_MS.shoppingList,
     endpoint: "shopping-list",
+    signal: abortOnClientClose(res),
     ...(userId ? { userId } : {}),
   });
   if (!result.ok) {

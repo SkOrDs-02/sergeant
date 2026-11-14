@@ -33,6 +33,7 @@ import {
   MIN_SIGNAL_MODULES,
 } from "@sergeant/shared";
 import { resolveHealthConsent } from "../../lib/healthConsent.js";
+import { abortOnClientClose } from "../../http/clientAbort.js";
 
 export { buildWeeklyDigestPrompt };
 
@@ -284,6 +285,7 @@ export function createWeeklyDigestHandler(
         system: prompt.system,
         messages: [{ role: "user", content: prompt.user }],
         endpoint: "internal/weekly-digest",
+        signal: abortOnClientClose(res),
         timeoutMs: 45_000,
         userId: (req as WithSessionUser).user?.id,
         // Ініціатива 0025, Фаза 2 — «id прогону». Digest — один Anthropic-виклик

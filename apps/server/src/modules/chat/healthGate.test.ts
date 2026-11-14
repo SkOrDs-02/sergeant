@@ -316,6 +316,29 @@ describe("redactHealthToolResults / redactHealthToolCalls", () => {
     expect(results[0]?.content).toBe("Додано: Борщ 400 ккал");
   });
 
+  it("habit_correlation з синонімом тренувань блокується так само, як 'workouts'", () => {
+    const against = [" Workouts ", "тренування", "Fizruk", "spending"];
+    const aliasCalls = against.map((a, i) => ({
+      type: "tool_use",
+      id: `h${i}`,
+      name: "habit_correlation",
+      input: { against: a },
+    }));
+    const aliasResults = against.map((_, i) => ({
+      tool_use_id: `h${i}`,
+      content: "кореляція",
+    }));
+    const redacted = redactHealthToolResults(aliasResults, aliasCalls).map(
+      (r) => r.content,
+    );
+    expect(redacted).toEqual([
+      HEALTH_CONSENT_REQUIRED_MESSAGE,
+      HEALTH_CONSENT_REQUIRED_MESSAGE,
+      HEALTH_CONSENT_REQUIRED_MESSAGE,
+      "кореляція",
+    ]);
+  });
+
   it("аргументи health tool_use обнуляються у відтвореній історії", () => {
     const redacted = redactHealthToolCalls(calls) as Array<{
       id: string;

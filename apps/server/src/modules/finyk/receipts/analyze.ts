@@ -16,6 +16,7 @@ import { extractJsonFromText } from "../../../http/jsonSafe.js";
 import { ExternalServiceError } from "../../../obs/errors.js";
 import { env } from "../../../env.js";
 import { callReceiptVision } from "./visionClient.js";
+import { abortOnClientClose } from "../../../http/clientAbort.js";
 import { receiptVisionViaOpenRouter } from "./visionTransport.js";
 import { kyivWallClockToUtc } from "./kyivClock.js";
 
@@ -279,6 +280,7 @@ export default async function analyzeReceiptHandler(
     base64: b64,
     mediaType: validation.mimeType,
     ...(userId ? { userId } : {}),
+    signal: abortOnClientClose(res),
   });
 
   const parsed = extractJsonFromText(text);
