@@ -4,6 +4,7 @@ import {
   ZipFormatError,
   type ZipEntries,
 } from "./zipReader.js";
+import { firstElement, scanElements } from "./tagScan.js";
 
 /**
  * XLSX (OOXML SpreadsheetML) -> сітка рядків `string[][]`.
@@ -18,6 +19,27 @@ import {
  */
 
 // ────────────────────────────── XML helpers ──────────────────────────────
+
+// Початки тегів для `scanElements` (тіло до закривного він шукає лінійно).
+// Межа імені як у XML: далі пробіл, `>` або `/>`, тож `<rows>` чи `<cols>`
+// не збігаються з `<row>` і `<c>`.
+const T_OPEN_RE = /<(t)(?=\s|\/?>)/g;
+const SI_OPEN_RE = /<(si)(?=\s|\/?>)/g;
+const V_OPEN_RE = /<(v)(?=\s|>)/g;
+const NUMFMT_OPEN_RE = /<(numFmt)(?=\s)/g;
+const CELLXFS_OPEN_RE = /<(cellXfs)(?=\s|>)/g;
+const XF_OPEN_RE = /<(xf)(?=\s)/g;
+const ROW_OPEN_RE = /<(row)(?=\s|\/?>)/g;
+const C_OPEN_RE = /<(c)(?=\s|\/?>)/g;
+const SHEET_OPEN_RE = /<(sheet)(?=\s)/g;
+const RELATIONSHIP_OPEN_RE = /<(Relationship)(?=\s)/g;
+
+/** Стеля колонок аркуша. Без неї `r="ZZZZZZZ1"` доповнював би рядок
+ * мільярдами порожніх клітинок і валив процес по памʼяті. Виписка має
+ * десятки колонок; клітинки правіше просто не читаються.
+ * ponytail: 256 = межа старого Excel (IV), підняти, якщо реальний
+ * експорт колись упреться. */
+export const MAX_SHEET_COLUMNS = 256;
 
 const ENTITIES: Record<string, string> = {
   amp: "&",
@@ -94,9 +116,9 @@ function attr(tag: string, name: string): string | undefined {
  * виокремлюється. */
 function joinTextNodes(fragment: string): string {
   let out = "";
-  const re = /<t(?:\s[^>]*)?>([\s\S]*?)<\/t>|<t(?:\s[^>]*)?\/>/g;
-  let m: RegExpExecArray | null;
-  while ((m = re.exec(fragment)) !== null) out += decodeXmlEntities(m[1] ?? "");
+  for (const t of scanElements(fragment, T_OPEN_RE, { selfClosing: true })) {
+    out += decodeXmlEntities(t.body ?? "");
+  }
   return out;
 }
 
@@ -107,9 +129,9 @@ function parseSharedStrings(zip: ZipEntries): string[] {
   if (!bytes) return [];
   const xml = bytes.toString("utf8");
   const out: string[] = [];
-  const re = /<si(?:\s[^>]*)?>([\s\S]*?)<\/si>|<si(?:\s[^>]*)?\/>/g;
-  let m: RegExpExecArray | null;
-  while ((m = re.exec(xml)) !== null) out.push(joinTextNodes(m[1] ?? ""));
+  for (const si of scanElements(xml, SI_OPEN_RE, { selfClosing: true })) {
+    out.push(joinTextNodes(si.body ?? ""));
+  }
   return out;
 }
 
@@ -157,20 +179,20 @@ function parseDateStyleFlags(zip: ZipEntries): boolean[] {
   // генератор із другим лишив би `customDateIds` порожнім — і датові
   // клітинки з КАСТОМНИМ форматом приїхали б Excel-серіалом, який
   // `statementPreview` класифікує як `unparsed_date`.
-  const numFmtRe = /<numFmt\s[^>]*?(?:\/>|>[\s\S]*?<\/numFmt>)/g;
-  let m: RegExpExecArray | null;
-  while ((m = numFmtRe.exec(xml)) !== null) {
-    const id = Number(attr(m[0], "numFmtId"));
-    const code = attr(m[0], "formatCode") ?? "";
+  for (const el of scanElements(xml, NUMFMT_OPEN_RE, { selfClosing: true })) {
+    const tag = `<numFmt${el.attrs}>`;
+    const id = Number(attr(tag, "numFmtId"));
+    const code = attr(tag, "formatCode") ?? "";
     if (Number.isFinite(id) && isDateFormatCode(code)) customDateIds.add(id);
   }
 
-  const cellXfs = /<cellXfs(?:\s[^>]*)?>([\s\S]*?)<\/cellXfs>/.exec(xml);
+  const cellXfs = firstElement(xml, CELLXFS_OPEN_RE);
   if (!cellXfs) return [];
   const flags: boolean[] = [];
-  const xfRe = /<xf\s[^>]*?(?:\/>|>[\s\S]*?<\/xf>)/g;
-  while ((m = xfRe.exec(cellXfs[1]!)) !== null) {
-    const id = Number(attr(m[0], "numFmtId") ?? "0");
+  for (const xf of scanElements(cellXfs.body ?? "", XF_OPEN_RE, {
+    selfClosing: true,
+  })) {
+    const id = Number(attr(`<xf${xf.attrs}>`, "numFmtId") ?? "0");
     flags.push(BUILTIN_DATE_FMT_IDS.has(id) || customDateIds.has(id));
   }
   return flags;
@@ -242,8 +264,8 @@ function cellText(
 
   if (type === "inlineStr") return joinTextNodes(inner).trim();
 
-  const vMatch = /<v(?:\s[^>]*)?>([\s\S]*?)<\/v>/.exec(inner);
-  const rawValue = vMatch ? decodeXmlEntities(vMatch[1]!) : "";
+  const v = firstElement(inner, V_OPEN_RE);
+  const rawValue = v ? decodeXmlEntities(v.body ?? "") : "";
   if (!rawValue) return "";
 
   switch (type) {
@@ -273,33 +295,37 @@ function cellText(
   }
 }
 
-function parseSheet(xml: string, ctx: SheetReadContext): string[][] {
+function parseSheet(
+  xml: string,
+  ctx: SheetReadContext,
+  maxRows: number,
+): string[][] {
   const rows: string[][] = [];
-  // САМОЗАКРИВНА альтернатива йде ПЕРШОЮ, і це не косметика: у
-  // `<row r="1"/><row r="2">…</row>` парна альтернатива вміє зʼїсти
-  // `/` через `[^>]*` і проковтнути обидва рядки як один. Регексп
-  // пробує альтернативи зліва направо, тож порядок і є фіксом.
-  const rowRe = /<row(?:\s[^>]*)?\/>|<row(?:\s[^>]*)?>([\s\S]*?)<\/row>/g;
-  let rowMatch: RegExpExecArray | null;
-
-  while ((rowMatch = rowRe.exec(xml)) !== null) {
-    const body = rowMatch[1] ?? "";
+  // Самозакривний тег розпізнається ДО пошуку закривного (`selfClosing`),
+  // і це не косметика: інакше `<row r="1"/><row r="2">…</row>` читався б
+  // як один рядок, а `<c r="A1"/><c r="B1">…</c>` як ОДНА клітинка, і всі
+  // наступні колонки рядка зсувались би вліво (знайдено юніт-тестом).
+  for (const row of scanElements(xml, ROW_OPEN_RE, { selfClosing: true })) {
+    if (rows.length >= maxRows) break;
     const cells: string[] = [];
-    // Той самий порядок альтернатив, що й для `<row>` вище: інакше
-    // `<c r="A1"/><c r="B1">…</c>` читається як ОДНА клітинка, і всі
-    // наступні колонки рядка зсуваються вліво (знайдено юніт-тестом).
-    const cellRe = /<c(\s[^>]*)?\/>|<c(\s[^>]*)?>([\s\S]*?)<\/c>/g;
-    let cellMatch: RegExpExecArray | null;
     let autoIndex = 0;
 
-    while ((cellMatch = cellRe.exec(body)) !== null) {
-      const tagAttrs = cellMatch[1] ?? cellMatch[2] ?? "";
-      const inner = cellMatch[3] ?? "";
+    for (const cell of scanElements(row.body ?? "", C_OPEN_RE, {
+      selfClosing: true,
+    })) {
+      const tagAttrs = cell.attrs;
+      const inner = cell.body ?? "";
       const ref = attr(`<c${tagAttrs}>`, "r");
       // `<c>` без `r` легальний — тоді колонка йде по порядку. З `r`
       // порожні клітинки в файлі просто відсутні, і без цього зсуву
       // колонки «зʼїхали б» уліво (типово для експортів з пропусками).
       const colIdx = ref ? columnRefToIndex(ref) : autoIndex;
+      // Відкинута клітинка все одно посуває лічильник: інакше наступна `<c>`
+      // без `r` сяде в чужу колонку в межах аркуша.
+      if (colIdx >= MAX_SHEET_COLUMNS) {
+        autoIndex = colIdx + 1;
+        continue;
+      }
       if (colIdx >= 0) {
         while (cells.length < colIdx) cells.push("");
         cells[colIdx] = cellText(`<c${tagAttrs}>`, inner, ctx);
@@ -318,18 +344,27 @@ function parseSheet(xml: string, ctx: SheetReadContext): string[][] {
 function firstSheetPath(zip: ZipEntries): string | null {
   const wb = zip.get("xl/workbook.xml");
   if (wb) {
-    const sheetTag = /<sheet\s[^>]*\/>/.exec(wb.toString("utf8"));
+    let sheetTag: string | undefined;
+    for (const el of scanElements(wb.toString("utf8"), SHEET_OPEN_RE, {
+      selfClosing: true,
+    })) {
+      if (el.body !== null) continue;
+      sheetTag = `<sheet${el.attrs}/>`;
+      break;
+    }
     const rid = sheetTag
-      ? (attr(sheetTag[0], "r:id") ?? attr(sheetTag[0], "id"))
+      ? (attr(sheetTag, "r:id") ?? attr(sheetTag, "id"))
       : undefined;
     const relsBytes = zip.get("xl/_rels/workbook.xml.rels");
     if (rid && relsBytes) {
       const relsXml = relsBytes.toString("utf8");
-      const relRe = /<Relationship\s[^>]*\/>/g;
-      let m: RegExpExecArray | null;
-      while ((m = relRe.exec(relsXml)) !== null) {
-        if (attr(m[0], "Id") !== rid) continue;
-        const target = attr(m[0], "Target") ?? "";
+      for (const rel of scanElements(relsXml, RELATIONSHIP_OPEN_RE, {
+        selfClosing: true,
+      })) {
+        if (rel.body !== null) continue;
+        const tag = `<Relationship${rel.attrs}/>`;
+        if (attr(tag, "Id") !== rid) continue;
+        const target = attr(tag, "Target") ?? "";
         const path = target.startsWith("/")
           ? target.slice(1)
           : `xl/${target.replace(/^\.\//, "")}`;
@@ -360,9 +395,13 @@ export function isXlsxZip(zip: ZipEntries): boolean {
 
 /**
  * Читає ПЕРШИЙ аркуш XLSX у сітку. Вибір аркуша користувачем - окрема
- * фіча, не цей шлях.
+ * фіча, не цей шлях. `maxRows` обриває розбір, щойно стільки рядків
+ * набрано: решту файлу викликач однаково відкине.
  */
-export function xlsxToGrid(bytes: Buffer): string[][] {
+export function xlsxToGrid(
+  bytes: Buffer,
+  maxRows = Number.POSITIVE_INFINITY,
+): string[][] {
   if (!looksLikeZip(bytes)) throw new XlsxFormatError("Не ZIP-контейнер");
   let zip: ZipEntries;
   try {
@@ -380,8 +419,12 @@ export function xlsxToGrid(bytes: Buffer): string[][] {
   const sheetBytes = zip.get(sheetPath);
   if (!sheetBytes) throw new XlsxFormatError("Аркуш не читається");
 
-  return parseSheet(sheetBytes.toString("utf8"), {
-    shared: parseSharedStrings(zip),
-    dateStyles: parseDateStyleFlags(zip),
-  });
+  return parseSheet(
+    sheetBytes.toString("utf8"),
+    {
+      shared: parseSharedStrings(zip),
+      dateStyles: parseDateStyleFlags(zip),
+    },
+    maxRows,
+  );
 }
