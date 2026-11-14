@@ -257,18 +257,38 @@ export interface ChatOwnerReconcileResult {
  * пристрою, якому тримати нічого. Лише читає, нічого не пише.
  */
 export function deviceOwnerIsUser(): boolean {
-  const owner = safeReadStringLS(CHAT_OWNER_KEY);
-  return owner !== null && owner !== ANON_OWNER;
+  return readDeviceOwnerId() !== null;
+}
+
+/** Id власника-користувача зі штампа; `null` для аноніма і нештампованого. */
+export function readDeviceOwnerId(): string | null {
+  const owner = readOwnerStamp();
+  return owner === null || owner === ANON_OWNER ? null : owner;
+}
+
+/**
+ * Штамп живе в сирому localStorage, а не в `webKVStore`. KV партиційований:
+ * холодний старт читає `anon`-партицію, а вихід і втрата сесії пишуть
+ * `"__anon__"` у партицію користувача, тож у `anon` назавжди лишався id
+ * користувача, який уже вийшов (крок 0 спеки офлайн холодного старту).
+ * Сирий LS спільний для партицій, і purge виходу та teardown знімає його
+ * разом з усіма `hub_`-ключами.
+ */
+function readOwnerStamp(): string | null {
+  return resolveLsStore()?.getString(CHAT_OWNER_KEY) ?? null;
 }
 
 export function reconcileChatOwnerOnAuthChange(
   userId: string | null,
 ): ChatOwnerReconcileResult {
   const nextOwner = userId ?? ANON_OWNER;
-  const prevOwner = safeReadStringLS(CHAT_OWNER_KEY);
+  const prevOwner = readOwnerStamp();
   if (prevOwner === nextOwner) {
     return { changed: false, prevOwnerWasUser: false };
   }
+  // Копія штампа в KV від старих білдів: у `anon`-партиції вона тримала id
+  // користувача, який вийшов.
+  safeRemoveLS(CHAT_OWNER_KEY);
   const changed = prevOwner !== null;
   if (changed) {
     safeRemoveLS(SESSIONS_STORAGE_KEY);
@@ -279,7 +299,7 @@ export function reconcileChatOwnerOnAuthChange(
     // юзер на тому ж пристрої прочитав би історію попереднього.
     safeRemoveLSDurable(SESSIONS_MIRROR_KEY);
   }
-  safeWriteLS(CHAT_OWNER_KEY, nextOwner);
+  resolveLsStore()?.setString(CHAT_OWNER_KEY, nextOwner);
   return {
     changed,
     prevOwnerWasUser: changed && prevOwner !== ANON_OWNER,

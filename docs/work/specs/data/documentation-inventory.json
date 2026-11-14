@@ -4211,27 +4211,6 @@
       "canonical_owner": "docs/work/specs/beta-forms.md"
     },
     {
-      "old_path": "docs/work/specs/beta-launch/beta-browser-run.md",
-      "new_path": "https://github.com/Skords-01/Sergeant/blob/42021cc5f199a11180a4458d0d5aeddfe898939c/docs/work/specs/beta-launch/beta-browser-run.md",
-      "action": "remove",
-      "genre": "active-work",
-      "canonical_owner": "https://github.com/Skords-01/Sergeant/blob/42021cc5f199a11180a4458d0d5aeddfe898939c/docs/work/specs/beta-launch/beta-browser-run.md"
-    },
-    {
-      "old_path": "docs/work/specs/beta-launch/README.md",
-      "new_path": "https://github.com/Skords-01/Sergeant/blob/43f828b20802033c9f5571e73a59e6790ed1a5c4/docs/work/specs/beta-launch/README.md",
-      "action": "remove",
-      "genre": "active-work",
-      "canonical_owner": "https://github.com/Skords-01/Sergeant/blob/43f828b20802033c9f5571e73a59e6790ed1a5c4/docs/work/specs/beta-launch/README.md"
-    },
-    {
-      "old_path": "docs/work/specs/beta-launch/run-beta-wave.md",
-      "new_path": "https://github.com/Skords-01/Sergeant/blob/42021cc5f199a11180a4458d0d5aeddfe898939c/docs/work/specs/beta-launch/run-beta-wave.md",
-      "action": "remove",
-      "genre": "active-work",
-      "canonical_owner": "https://github.com/Skords-01/Sergeant/blob/42021cc5f199a11180a4458d0d5aeddfe898939c/docs/work/specs/beta-launch/run-beta-wave.md"
-    },
-    {
       "old_path": "docs/work/specs/beta-security-readiness.md",
       "new_path": "docs/work/specs/beta-security-readiness.md",
       "action": "keep",
@@ -4622,6 +4601,13 @@
       "action": "keep",
       "genre": "active-work",
       "canonical_owner": "docs/work/specs/nutrition-recipe-builder.md"
+    },
+    {
+      "old_path": "docs/work/specs/offline-cold-start.md",
+      "new_path": "docs/work/specs/offline-cold-start.md",
+      "action": "keep",
+      "genre": "active-work",
+      "canonical_owner": "docs/work/specs/offline-cold-start.md"
     },
     {
       "old_path": "docs/work/specs/pantry-categorization-ai.md",

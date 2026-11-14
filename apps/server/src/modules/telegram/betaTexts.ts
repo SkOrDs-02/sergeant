@@ -8,7 +8,7 @@
  *
  * Жодне посилання тут НЕ захардкоджене. Усі чотири приходять ззовні у
  * `BetaLinks`, який роутер збирає з env — бета живе на окремому
- * Vercel-проєкті з власним доменом (`docs/work/specs/beta-launch/run-beta-wave.md`
+ * Vercel-проєкті з власним доменом (`https://github.com/SkOrDs-02/sergeant/blob/97e477e90b711b210184ff2b9426b4452c1cd43f/docs/work/specs/beta-launch/run-beta-wave.md`
  * § Фаза 0.3), і зашитий URL зробив би модуль неперевикористовним уже на
  * другій хвилі.
  *

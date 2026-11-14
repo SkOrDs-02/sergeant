@@ -220,6 +220,23 @@ describe("createDefaultRuntime (default boot path)", () => {
     });
   });
 
+  it("getStatus і listRejected не ходять по сесію: офлайн лічильник черги живий", async () => {
+    const runtime = await bootSyncEngineWriter();
+    mockGetSession.mockClear();
+    mockGetSession.mockRejectedValue(new TypeError("Failed to fetch"));
+    try {
+      expect(await runtime!.getStatus()).toEqual({ pending: 0, rejected: 2 });
+      mockListRejected.mockResolvedValueOnce([{ id: 7 }] as never);
+      expect(await runtime!.listRejected()).toEqual([{ id: 7 }]);
+      expect(mockGetSession).not.toHaveBeenCalled();
+    } finally {
+      mockGetSession.mockImplementation(async () => ({
+        data: { user: { id: "user-123" } },
+        error: null,
+      }));
+    }
+  });
+
   it("filters benign rejects from the list and scopes recovery to the signed-in user", async () => {
     const runtime = await bootSyncEngineWriter();
     mockListRejected.mockResolvedValueOnce([{ id: 7 }] as never);

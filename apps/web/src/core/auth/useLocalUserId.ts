@@ -30,6 +30,10 @@
  * return`), оболонка в цьому стані не рендерить застосунок взагалі:
  * `RootLayout` → `AuthUnavailableScreen`. Не знімай той гейт, не підмінивши
  * тут id власника (і тоді ж перевір App Lock, який шукає PIN за `user?.id`).
+ *
+ * Офлайн холодний старт (`offlineIdentity` в AuthContext) саме так і зроблено:
+ * `status` там `authenticated`, а `user.id` узято зі штампа власника, тож тут
+ * повертається id власника і записи лягають у його партицію та outbox.
  */
 
 import { useAnonymousDataMigrationReady } from "../durability/AnonymousDataMigrationProvider";

@@ -123,4 +123,15 @@ describe("useFeatureGate", () => {
     });
     expect(result.current.paywallOpen).toBe(false);
   });
+
+  // Офлайн холодний старт дає саме цей стан: знімка тарифу немає. Рішення
+  // власника 2026-11-14: Pro-фіча тоді закрита, інакше Free відкривав би
+  // PDF-звіт вимкненням мережі.
+  it("без знімка тарифу Pro-фіча закрита", () => {
+    usePlanMock.mockReturnValue({ access: null });
+
+    const { result } = renderHook(() => useFeatureGate("export.pdf"));
+
+    expect(result.current.canAccess).toBe(false);
+  });
 });

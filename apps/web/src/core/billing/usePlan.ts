@@ -67,10 +67,14 @@ export function usePlan(): UsePlanResult {
   const subscription = query.data?.subscription ?? null;
   const plan: Plan = query.data ? selectPlan(query.data) : "free";
 
+  // Офлайн холодний старт: тариф невідомий, а не Free. `isLoading` ховає
+  // Free-плашки так само, як під час першого запиту.
+  const offlineUnknown = Boolean(auth?.offlineIdentity) && !query.data;
+
   return {
     plan,
     isPro: plan === "pro",
-    isLoading: query.isLoading,
+    isLoading: query.isLoading || offlineUnknown,
     subscription,
     access: query.data?.access ?? null,
   };

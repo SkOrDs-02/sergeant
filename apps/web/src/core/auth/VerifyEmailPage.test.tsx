@@ -26,11 +26,13 @@ let authStatus: "loading" | "authenticated" | "unauthenticated" =
 // тож сесія вже несе `emailVerified: true` (див. докстрінг тесту про порядок
 // cookie→me нижче). Гілка `false` моделює візит без справжнього підтвердження.
 let authUser: { emailVerified: boolean } | null = { emailVerified: true };
+let authOffline = false;
 vi.mock("./AuthContext", () => ({
   useAuth: () => ({
     refresh: refreshMock,
     status: authStatus,
     user: authUser,
+    offlineIdentity: authOffline,
   }),
 }));
 
@@ -59,6 +61,7 @@ beforeEach(() => {
   navigateMock.mockClear();
   authStatus = "authenticated";
   authUser = { emailVerified: true };
+  authOffline = false;
 });
 
 afterEach(() => {
@@ -87,6 +90,17 @@ describe("VerifyEmailPage — візит без справжнього підт�
     await vi.advanceTimersByTimeAsync(10_000);
     expect(navigateMock).not.toHaveBeenCalled();
     vi.useRealTimers();
+  });
+
+  it("офлайн-ідентичність не видає emailVerified: false за правду", async () => {
+    authOffline = true;
+    authUser = { emailVerified: false };
+    renderAt("");
+
+    expect(
+      await screen.findByText("Профіль покажу, коли зʼявиться інтернет."),
+    ).toBeTruthy();
+    expect(screen.queryByText("Email ще не підтверджено")).toBeNull();
   });
 
   it("без сесії не стверджує ні успіху, ні провалу", async () => {

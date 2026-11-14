@@ -14,6 +14,7 @@ import { useApiForm } from "@shared/forms";
 import { mapApiErrorToUserCopy } from "@shared/lib/api/mapApiErrorToUserCopy";
 import { cn } from "@shared/lib/ui/cn";
 import { meApi } from "@shared/api";
+import { coreMessages } from "@shared/i18n/uk.core";
 import {
   changeEmail,
   refreshSessionCookieCache,
@@ -52,12 +53,18 @@ interface PersonalInfoSectionProps {
   user: ProfileUser;
   online: boolean;
   onRefresh: () => Promise<void>;
+  /**
+   * Офлайн холодний старт: у `user` відомий лише `id`, решта полів `null`,
+   * тож імʼя, email і статус підтвердження були б неправдою.
+   */
+  offlineIdentity?: boolean;
 }
 
 export function PersonalInfoSection({
   user,
   online,
   onRefresh,
+  offlineIdentity = false,
 }: PersonalInfoSectionProps) {
   const toast = useToast();
   const armPinchZoomReset = useResetPinchZoomAfterCameraCapture();
@@ -236,6 +243,16 @@ export function PersonalInfoSection({
       setSendingVerification(false);
     }
   };
+
+  if (offlineIdentity) {
+    return (
+      <Card>
+        <p className="text-style-body text-muted">
+          {coreMessages.auth.profileOffline}
+        </p>
+      </Card>
+    );
+  }
 
   const initial = (user.name || user.email || "?").charAt(0).toUpperCase();
 
