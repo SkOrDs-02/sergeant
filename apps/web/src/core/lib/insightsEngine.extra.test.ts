@@ -1,5 +1,5 @@
 // @vitest-environment jsdom
-import { describe, it, expect, beforeEach, afterEach } from "vitest";
+import { describe, it, expect, beforeEach, afterEach, vi } from "vitest";
 import {
   __setFinykMonoMirrorCacheForTests,
   clearFinykMonoMirrorCache,
@@ -63,9 +63,18 @@ function recentWorkouts(specs: Array<{ daysAgo: number }>): unknown[] {
 
 describe("generateInsights — cross-module insights", () => {
   beforeEach(() => {
+    // Фіксований годинник. Фікстури рахують дні від «зараз» кроком 24 год, а
+    // тижні рахуються за Києвом: у тижні після переходу на зимовий час запуск
+    // о 21-22 UTC клав дві тестові транзакції в один київський тиждень, і
+    // тест падав залежно від години прогону CI.
+    vi.useFakeTimers({ toFake: ["Date"] });
+    vi.setSystemTime(new Date("2026-06-10T12:00:00Z"));
     clearAll();
   });
-  afterEach(clearAll);
+  afterEach(() => {
+    clearAll();
+    vi.useRealTimers();
+  });
 
   // Mid-week anchor: weeksAgo*7 + 3 days lands inside a single Kyiv week
   // regardless of today's day-of-week, so 3 same-week workouts cluster cleanly.
