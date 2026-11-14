@@ -15,6 +15,7 @@
  * an id the model could legitimately have seen always resolves.
  */
 import { INCOME_CATEGORIES, MCC_CATEGORIES } from "@finyk/constants";
+import { resolveManualExpenseKind } from "@sergeant/finyk-domain/domain/transactions";
 import { getVisibleFinykMonoMirrorState } from "../../../../modules/finyk/lib/monoMirrorReader";
 import { getCachedFinykSqliteState } from "../../../../modules/finyk/lib/sqliteReader";
 
@@ -38,6 +39,27 @@ export function finykTransactionExists(id: string): boolean {
   return getVisibleFinykMonoMirrorState().transactions.some(
     (tx) => String(tx.id ?? "") === id,
   );
+}
+
+/**
+ * Сума витрати `id` у гривнях (без знака) або `null`, якщо це не витрата.
+ * Ручний запис тримає гривні й напрям у `kind`/`type`, банківський рядок —
+ * копійки зі знаком.
+ */
+export function finykExpenseAmountUah(id: string): number | null {
+  const manual = getCachedFinykSqliteState().manualExpenses.find(
+    (tx) => String(tx.id ?? "") === id,
+  );
+  if (manual) {
+    if (resolveManualExpenseKind(manual) !== "expense") return null;
+    const amount = Math.abs(Number(manual.amount));
+    return Number.isFinite(amount) ? amount : null;
+  }
+  const bank = getVisibleFinykMonoMirrorState().transactions.find(
+    (tx) => String(tx.id ?? "") === id,
+  );
+  const amount = Number(bank?.amount);
+  return Number.isFinite(amount) && amount < 0 ? Math.abs(amount) / 100 : null;
 }
 
 /** True when `id` matches a built-in (expense or income) or custom category. */

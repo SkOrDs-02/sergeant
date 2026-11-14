@@ -24,6 +24,7 @@ import { clamp, isoOrUndef, normalizeText, round } from "./queryArgs";
 import { getCachedFinykSqliteState } from "../../../modules/finyk/lib/sqliteReader";
 import { getVisibleFinykMonoMirrorState } from "../../../modules/finyk/lib/monoMirrorReader";
 import {
+  hasFinykTxKey,
   toDisplayAmount,
   toIsoDay,
   txSourceOf,
@@ -140,7 +141,7 @@ function readQueryTransactions(): FinykSearchTx[] {
     (source: "manual" | "bank", dateField: (tx: RawTx) => unknown) =>
     (tx: RawTx): FinykSearchTx | null => {
       const id = String(tx.id || "").trim();
-      if (!id || hidden.has(id)) return null;
+      if (!id || hasFinykTxKey(hidden, id, source)) return null;
       const amount = Number(tx.amount);
       const mcc = Number(tx.mcc);
       return {
@@ -201,7 +202,9 @@ function readStatTransactions(): FinykSearchTx[] {
       ...getVisibleFinykMonoMirrorState().transactions,
     ],
   });
-  return readQueryTransactions().filter((tx) => !excluded.has(tx.id));
+  return readQueryTransactions().filter(
+    (tx) => !hasFinykTxKey(excluded, tx.id, txSourceOf(tx)),
+  );
 }
 
 function readTxSplits(): TxSplitsLike {

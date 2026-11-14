@@ -394,6 +394,29 @@ describe("канонічний excluded-set і спліти (стадія 2b)", 
   });
 });
 
+// Ручний запис список Операцій ховає і виключає під `manual_<id>`, а чат
+// оперує сирим id: без звірки обох форм виключена витрата рахувалась у чаті.
+describe("ручний запис, прихований або виключений у списку Операцій", () => {
+  it("не входить у суму aggregate_spending і не знаходиться пошуком", () => {
+    __setFinykSqliteStateCacheForTests({
+      manualExpenses: [
+        { id: "m_food", date: "2026-04-10", amount: 200, category: "food" },
+        { id: "m_repair", date: "2026-04-11", amount: 5000, category: "food" },
+        { id: "m_secret", date: "2026-04-12", amount: 700, category: "food" },
+      ] as unknown as ManualExpense[],
+      excludedStatTxIds: ["manual_m_repair"],
+      hiddenTransactions: ["manual_m_secret"],
+    });
+    const APRIL = { date_from: "2026-04-01", date_to: "2026-04-30" };
+    expect(call({ name: "aggregate_spending", input: APRIL })).toContain(
+      "200 грн усього (1 операц.)",
+    );
+    expect(
+      call({ name: "query_transactions", input: { query: "m_secret" } }),
+    ).toBe("Операцій за цими фільтрами не знайдено.");
+  });
+});
+
 // ---------------------------------------------------------------------------
 // CALC-1 (2026-09-01 product audit) — manual `internal_transfer` must not
 // count as an expense in `aggregate_spending` / `compare_periods`. Before
