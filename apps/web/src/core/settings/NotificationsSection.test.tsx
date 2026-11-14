@@ -225,6 +225,19 @@ describe("NotificationsSection", () => {
     expect(monthlyPlanState.setReminder).toHaveBeenCalledWith(10, 15);
   });
 
+  it("не скидає час плану на 00:00, коли пікер очищено", () => {
+    stubNotification("granted");
+    monthlyPlanState.reminderEnabled = true;
+    renderSettingsSection(<NotificationsSection />);
+    const timeInput = document.querySelector(
+      'input[type="time"]',
+    ) as HTMLInputElement;
+    fireEvent.change(timeInput, { target: { value: "10:15" } });
+    monthlyPlanState.setReminder.mockClear();
+    fireEvent.change(timeInput, { target: { value: "" } });
+    expect(monthlyPlanState.setReminder).not.toHaveBeenCalled();
+  });
+
   // Пін на контракт ширини нативного контрола. `[min-inline-size:0]` дає
   // лише спільний примітив (`TimeField`); сирий `<input type="time">` у
   // flex-рядку його НЕ мав, і нативний intrinsic inline-size розпирав
@@ -261,6 +274,20 @@ describe("NotificationsSection", () => {
     fireEvent.click(toggle);
     await Promise.resolve();
     expect(patchNutritionPrefsMock).not.toHaveBeenCalled();
+  });
+
+  it("округлює дробову годину нагадування про їжу вниз", () => {
+    stubNotification("granted");
+    loadNutritionPrefsMock.mockReturnValue({
+      reminderEnabled: true,
+      reminderHour: 12,
+    });
+    renderSettingsSection(<NotificationsSection />);
+    const hourInput = document.querySelector(
+      'input[type="number"]',
+    ) as HTMLInputElement;
+    fireEvent.change(hourInput, { target: { value: "8.5" } });
+    expect(patchNutritionPrefsMock).toHaveBeenCalledWith({ reminderHour: 8 });
   });
 
   it("data-04: година нагадування до гідратації заблокована", () => {

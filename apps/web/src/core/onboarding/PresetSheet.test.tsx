@@ -97,6 +97,26 @@ describe("PresetSheet", () => {
     expect(onClose).toHaveBeenCalled();
   });
 
+  it("ignores a second tap while the routine preset is still being written", async () => {
+    let resolveWrite: (ok: boolean) => void = () => {};
+    applyPreset.mockReturnValue(
+      new Promise<boolean>((resolve) => {
+        resolveWrite = resolve;
+      }),
+    );
+    render(
+      <PresetSheet open moduleId="routine" onClose={onClose} onPick={onPick} />,
+    );
+    fireEvent.click(screen.getByText("Випити воду"));
+    fireEvent.click(screen.getByText("Випити воду"));
+    fireEvent.click(screen.getByText("Прочитати 10 сторінок"));
+    expect(applyPreset).toHaveBeenCalledTimes(1);
+
+    resolveWrite(true);
+    await waitFor(() => expect(onPick).toHaveBeenCalledTimes(1));
+    expect(onClose).toHaveBeenCalledTimes(1);
+  });
+
   it("keeps the sheet open and surfaces an error when the write is not durable", async () => {
     // Спека `anonymous-local-first-persistence.md` («Похідне правило»):
     // СТАРТ-блок витрачається лише після підтвердженого durable write.

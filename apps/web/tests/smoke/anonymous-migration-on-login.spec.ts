@@ -153,9 +153,10 @@ test("@critical anonymous: запис, створений без входу, з�
   // `migrateAnonymousDataToProfile` резолвиться з `migratedRows > 0`.
   // Підписка стоїть ДО кліку: у свіжозареєстрованого акаунта міграція може
   // відпрацювати швидше, ніж встигне навіситись очікування «після».
-  const migrationSuccessToast = page.getByText(SUCCESS_TOAST_TEXT, {
-    exact: true,
-  });
+  // Усередині трею: той самий текст дублюється в sr-only регіоні анонсера.
+  const migrationSuccessToast = page
+    .getByTestId("toast-tray")
+    .getByText(SUCCESS_TOAST_TEXT, { exact: true });
   await Promise.all([
     migrationSuccessToast.waitFor({ state: "visible", timeout: 60_000 }),
     page.getByRole("button", { name: "Зареєструватися", exact: true }).click(),

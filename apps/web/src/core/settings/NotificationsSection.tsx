@@ -308,6 +308,8 @@ export function NotificationsSection() {
                 aria-label="Час"
                 value={`${String(monthlyPlan.reminderHour).padStart(2, "0")}:${String(monthlyPlan.reminderMinute).padStart(2, "0")}`}
                 onChange={(e) => {
+                  // Порожнє значення (очищення пікера) не є 00:00.
+                  if (!e.target.value) return;
                   const [h, m] = e.target.value.split(":").map(Number);
                   monthlyPlan.setReminder(h || 0, m || 0);
                 }}
@@ -339,6 +341,7 @@ export function NotificationsSection() {
                 type="number"
                 min={0}
                 max={23}
+                step={1}
                 className="px-2"
                 value={reminderHourDraft ?? nutritionPrefs.reminderHour ?? 12}
                 disabled={!nutritionHydrated}
@@ -346,7 +349,7 @@ export function NotificationsSection() {
                 onChange={(e) => {
                   const reminderHour = Math.min(
                     23,
-                    Math.max(0, Number(e.target.value) || 0),
+                    Math.max(0, Math.trunc(Number(e.target.value)) || 0),
                   );
                   setReminderHourDraft(reminderHour);
                   patchNutritionPrefs({ reminderHour });

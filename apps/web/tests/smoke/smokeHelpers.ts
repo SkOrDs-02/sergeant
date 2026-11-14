@@ -115,6 +115,6 @@ export async function startWorkoutWithFirstExercise(page: Page): Promise<void> {
 export async function settleToasts(page: Page): Promise<void> {
   await page.mouse.move(1, 1);
   await expect(
-    page.getByTestId("toast-tray").locator('[role="status"], [role="alert"]'),
+    page.getByTestId("toast-tray").locator("[data-toast-id]"),
   ).toHaveCount(0, { timeout: 10_000 });
 }

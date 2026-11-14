@@ -115,4 +115,37 @@ describe("ClosedTodayPile", () => {
     fireEvent.click(row);
     expect(onUncheck).toHaveBeenCalledWith(item);
   });
+
+  it("повернення пункту переносить фокус у «Зараз» до розмонтування рядка", () => {
+    mocks.compute.mockReturnValue([]);
+    const item = {
+      id: "fizruk_long_break",
+      module: "fizruk" as const,
+      priority: 80,
+      title: "Тренування не відмічене",
+      action: { kind: "open_module" as const, module: "fizruk" },
+    };
+    render(
+      <>
+        <h2 id="now-pile-heading" tabIndex={-1}>
+          Зараз
+        </h2>
+        <ClosedTodayPile
+          activeModules={["fizruk"]}
+          recs={[]}
+          onOpenModule={vi.fn()}
+          checked={[item]}
+          onUncheck={vi.fn()}
+        />
+      </>,
+    );
+    const row = screen.getByRole("checkbox", {
+      name: /Тренування не відмічене/,
+    });
+    row.focus();
+    fireEvent.click(row);
+    expect(document.activeElement).toBe(
+      screen.getByRole("heading", { name: "Зараз" }),
+    );
+  });
 });
