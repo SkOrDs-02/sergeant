@@ -492,7 +492,7 @@ export const auth = betterAuth({
       create: {
         before: async (data, context) => {
           // AI-LEGACY: expires 2026-11-30 — рубильник закритого доступу;
-          // прибирання — docs/work/specs/beta-launch/README.md § Що прибрати.
+          // прибирання — https://github.com/SkOrDs-02/sergeant/blob/97e477e90b711b210184ff2b9426b4452c1cd43f/docs/work/specs/beta-launch/README.md § Що прибрати.
           // Стоїть саме тут, а не на формі реєстрації: `user.create`
           // спрацьовує однаково для email+пароля, Google і Apple, тож
           // соцвхід не обходить гейт створенням користувача в колбеку.
@@ -616,7 +616,7 @@ export const auth = betterAuth({
       create: {
         before: async (data) => {
           // AI-LEGACY: expires 2026-11-30 — друга половина рубильника;
-          // прибирання — docs/work/specs/beta-launch/README.md § Що прибрати.
+          // прибирання — https://github.com/SkOrDs-02/sergeant/blob/97e477e90b711b210184ff2b9426b4452c1cd43f/docs/work/specs/beta-launch/README.md § Що прибрати.
           // Блокування `user.create` зупиняє лише НОВИХ; сесію ж отримує
           // і той, хто зареєструвався під час бети. Перевірка тут ловить
           // кожен логін незалежно від провайдера. Уже видані сесії живуть

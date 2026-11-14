@@ -549,7 +549,7 @@ const RX_TRACKER_REF = /docs\/[\w.-]+(?:\/[\w.-]+)*(?:\.md)?/i;
  * дата спливе, нікому не прилетить. Приклади:
  *
  *     // AI-LEGACY: expires 2026-09-01 #1234 migrate to new SDK
- *     // AI-LEGACY: expires 2026-10-31 — див. docs/work/specs/beta-launch/README.md
+ *     // AI-LEGACY: expires 2026-10-31 — див. docs/work/specs/README.md
  */
 export function extractIssueRef(note) {
   if (!note) return null;
