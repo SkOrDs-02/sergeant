@@ -72,6 +72,39 @@ describe("useCalendarAggregates", () => {
     expect(result.current.dayProgress.completed).toBe(0);
   });
 
+  it("«не зміг» виходить зі знаменника прогресу дня, як у web", () => {
+    const today = todayDate();
+    const todayKey = dateKeyFromDate(today);
+    const routine = seededRoutine({
+      habits: [
+        dailyHabit(),
+        dailyHabit({ id: "h-walk", name: "Прогулянка", emoji: "🚶" }),
+      ],
+      habitOrder: ["h-water", "h-walk"],
+      completions: { "h-water": [todayKey] },
+      skips: {
+        "h-walk": {
+          [todayKey]: { reason: "sick", at: today.toISOString() },
+        },
+      },
+    });
+
+    const { result } = renderHook(() =>
+      useCalendarAggregates({
+        routine,
+        timeMode: "today",
+        selectedDay: todayKey,
+        monthCursor: { y: today.getFullYear(), m: today.getMonth() },
+        todayKey,
+      }),
+    );
+
+    expect(result.current.dayProgress).toMatchObject({
+      completed: 1,
+      scheduled: 1,
+    });
+  });
+
   it("flips `canBulkMark` off once the only scheduled habit is completed (edge case)", () => {
     const today = todayDate();
     const todayKey = dateKeyFromDate(today);

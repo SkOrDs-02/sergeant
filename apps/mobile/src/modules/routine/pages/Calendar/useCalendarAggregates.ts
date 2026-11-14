@@ -23,12 +23,13 @@ import { useMemo } from "react";
 import {
   addDays,
   buildHubCalendarEvents,
+  calcRoutineDayProgress,
   completionRateForRange,
   countEventsByDate,
   dateKeyFromDate,
+  flexibleMaxActiveStreak,
   groupEventsForList,
   habitScheduledOnDate,
-  maxActiveStreak,
   monthBounds,
   parseDateKey,
   startOfIsoWeek,
@@ -105,8 +106,14 @@ export function useCalendarAggregates({
   const dayCounts = useMemo(() => countEventsByDate(events), [events]);
 
   const streak = useMemo(
-    () => maxActiveStreak(routine.habits, routine.completions, todayKey),
-    [routine.habits, routine.completions, todayKey],
+    () =>
+      flexibleMaxActiveStreak(
+        routine.habits,
+        routine.completions,
+        todayKey,
+        routine.skips ?? {},
+      ),
+    [routine.habits, routine.completions, routine.skips, todayKey],
   );
 
   const completionRate = useMemo(
@@ -116,19 +123,28 @@ export function useCalendarAggregates({
         routine.completions,
         range.startKey,
         range.endKey,
+        { pausedFrom: todayKey, skips: routine.skips ?? {} },
       ),
-    [routine.habits, routine.completions, range.startKey, range.endKey],
+    [
+      routine.habits,
+      routine.completions,
+      routine.skips,
+      range.startKey,
+      range.endKey,
+      todayKey,
+    ],
   );
 
   const dayProgress = useMemo(
     () =>
-      completionRateForRange(
+      calcRoutineDayProgress(
         routine.habits,
         routine.completions,
         todayKey,
         todayKey,
+        routine.skips ?? {},
       ),
-    [routine.habits, routine.completions, todayKey],
+    [routine.habits, routine.completions, routine.skips, todayKey],
   );
 
   const focusedDay = timeMode === "today" ? todayKey : selectedDay;

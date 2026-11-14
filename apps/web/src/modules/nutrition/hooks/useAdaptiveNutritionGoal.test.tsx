@@ -484,6 +484,26 @@ describe("useAdaptiveNutritionGoal · тижневий перерахунок", 
     expect(written!.dailyTargetKcal!).toBeGreaterThanOrEqual(2000 * 0.9);
   });
 
+  // A14: дельту схуднення задає обраний темп, а не фіксовані -500, інакше
+  // через тиждень норма сповзає з 0,25 кг/тиж до того самого дефіциту.
+  it("схуднення бере дефіцит з обраного темпу", () => {
+    const run = (weeklyRateKg: number) => {
+      persisted.adaptive = [];
+      __resetAdaptiveGoalScheduleForTests();
+      const prefs = {
+        ...prefsWithGoal(2000, 8),
+        adaptiveGoalIntent: "cutting",
+        weeklyRateKg,
+      } as unknown as NutritionPrefs;
+      const { unmount } = render(
+        <ProbeWithLog log={armSufficientData(2000)} prefs={prefs} />,
+      );
+      unmount();
+      return lastAdaptiveWrite()!.dailyTargetKcal!;
+    };
+    expect(run(0.25)).toBeGreaterThan(run(0.75));
+  });
+
   it("вимкнене автокалібрування не пише нічого", () => {
     const log = armSufficientData();
     const prefs = {

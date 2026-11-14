@@ -1,6 +1,6 @@
 // @vitest-environment jsdom
 import { describe, it, expect, beforeEach, afterEach, vi } from "vitest";
-import type { Habit } from "@sergeant/routine-domain";
+import type { Habit, HabitSkip } from "@sergeant/routine-domain";
 import type { Workout } from "@sergeant/fizruk-domain";
 import {
   __setRoutineSqliteStateCacheForTests,
@@ -50,10 +50,15 @@ function habit(id: string, over: Partial<Habit> = {}): Habit {
   return { id, name: id, recurrence: "daily", ...over } as Habit;
 }
 
-function seedRoutine(habits: Habit[], completions: Record<string, string[]>) {
+function seedRoutine(
+  habits: Habit[],
+  completions: Record<string, string[]>,
+  skips: Record<string, Record<string, HabitSkip>> = {},
+) {
   __setRoutineSqliteStateCacheForTests({
     habits,
     habitOrder: habits.map((h) => h.id),
+    skips,
   });
   __setRoutineSqliteCompletionsCacheForTests({ completions });
 }
@@ -136,6 +141,15 @@ describe("computeClosedToday", () => {
     it("одна з двох — не закрито: слово «закрито» не бреше", () => {
       seedRoutine([habit("a"), habit("b")], { a: [TODAY] });
       expect(compute()).toEqual([]);
+    });
+
+    it("«не зміг» виходить зі знаменника, як у кільці модуля", () => {
+      seedRoutine(
+        [habit("a"), habit("b")],
+        { a: [TODAY] },
+        { b: { [TODAY]: { reason: "sick", at: NOW.toISOString() } } },
+      );
+      expect(compute()[0]?.value).toBe("1/1");
     });
 
     it("архівна звичка не рахується ні в чисельник, ні в знаменник", () => {

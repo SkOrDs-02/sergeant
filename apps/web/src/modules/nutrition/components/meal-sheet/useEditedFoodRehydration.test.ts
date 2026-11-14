@@ -45,6 +45,38 @@ describe("useEditedFoodRehydration", () => {
     );
   });
 
+  // Аудит A72: продукт виправили з 330 на 350 ккал уже після запису. Зміна
+  // ваги 200→150 г мала б дати 495 ккал від етикетки запису, а давала 525.
+  it("бере per100 зі знімка запису, а не з виправленого пізніше продукту", async () => {
+    getFoodById.mockResolvedValue({
+      ...FOOD,
+      per100: { kcal: 350, protein_g: 10, fat_g: 5, carbs_g: 60 },
+    });
+    const setPickedFood = vi.fn();
+    const { result } = renderHook(() =>
+      useEditedFoodRehydration({
+        open: true,
+        meal: {
+          id: "m1",
+          foodId: "f1",
+          macroSource: "productDb",
+          amount_g: 200,
+          macros: { kcal: 660, protein_g: 20, fat_g: 10, carbs_g: 120 },
+        },
+        setPickedFood,
+      }),
+    );
+
+    await waitFor(() => expect(result.current.rehydrated).toBe(true));
+    expect(setPickedFood).toHaveBeenCalledWith(
+      expect.objectContaining({
+        id: "f1",
+        name: "Курка",
+        per100: { kcal: 330, protein_g: 10, fat_g: 5, carbs_g: 60 },
+      }),
+    );
+  });
+
   it("нічого не читає при створенні нового прийому", () => {
     renderHook(() =>
       useEditedFoodRehydration({

@@ -28,6 +28,7 @@ function state(overrides: Partial<ItemEditState> = {}): ItemEditState {
     unit: "л",
     err: "",
     pantryId: "fridge",
+    itemId: "",
     ...overrides,
   };
 }

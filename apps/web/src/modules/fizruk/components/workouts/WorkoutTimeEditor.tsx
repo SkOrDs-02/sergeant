@@ -10,6 +10,7 @@ import {
   isoToDatetimeLocalValue,
   datetimeLocalValueToIso,
 } from "./activeWorkoutLib";
+import { isStartBeforeEnd } from "../../lib/sessionDuration";
 
 /**
  * Collapsible `<details>` editor for the workout's `startedAt` / `endedAt`
@@ -124,7 +125,9 @@ export function WorkoutTimeEditor({
           value={isoToDatetimeLocalValue(activeWorkout.startedAt)}
           onChange={(e) => {
             const iso = datetimeLocalValueToIso(e.target.value);
-            if (iso) updateWorkout(activeWorkout.id, { startedAt: iso });
+            if (iso && isStartBeforeEnd(iso, shownEnd)) {
+              updateWorkout(activeWorkout.id, { startedAt: iso });
+            }
           }}
         />
         {endedAt ? (
@@ -137,6 +140,8 @@ export function WorkoutTimeEditor({
               value={isoToDatetimeLocalValue(endedAt)}
               onChange={(e) => {
                 const iso = datetimeLocalValueToIso(e.target.value);
+                if (iso && !isStartBeforeEnd(activeWorkout.startedAt, iso))
+                  return;
                 updateWorkout(activeWorkout.id, { endedAt: iso || null });
               }}
             />
@@ -154,7 +159,9 @@ export function WorkoutTimeEditor({
                 // мітку в «нічого» нема куди — `endWorkout` тоді просто візьме
                 // поточний час, і людина мовчки отримає не те, що бачила.
                 const iso = datetimeLocalValueToIso(e.target.value);
-                if (iso) onPendingEndChange?.(iso);
+                if (iso && isStartBeforeEnd(activeWorkout.startedAt, iso)) {
+                  onPendingEndChange?.(iso);
+                }
               }}
             />
           </>

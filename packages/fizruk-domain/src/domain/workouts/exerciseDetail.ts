@@ -25,6 +25,7 @@ import { compareIsoDesc } from "../../lib/workoutStats.js";
 
 import {
   epley1rm,
+  progressionTopSet,
   suggestNextSet as suggestNextSetJs,
 } from "../../lib/workoutStats.js";
 import type {
@@ -222,8 +223,8 @@ export function computeExerciseBest(
 ): ExerciseBestSummary {
   let best1rm = 0;
   let bestSet: ExerciseBestSet | null = null;
-  let lastTopSet: ExerciseBestSet | null = null;
-  let lastTopEst = 0;
+  const latestSets: WorkoutSet[] = [];
+  let latestAt: string | null = null;
   let lastWorkoutBest1rm = 0;
   let priorBest1rm = 0;
   let lastStrengthAt: string | null = null;
@@ -260,19 +261,22 @@ export function computeExerciseBest(
       }
       if (isLatest) {
         if (est > lastWorkoutBest1rm) lastWorkoutBest1rm = est;
-        if (est > lastTopEst) {
-          lastTopEst = est;
-          lastTopSet = {
-            weightKg: toNum(s.weightKg),
-            reps: toNum(s.reps),
-            at: workout?.startedAt ?? null,
-          };
-        }
+        latestSets.push(s);
+        latestAt = workout?.startedAt ?? null;
       } else if (est > priorBest1rm) {
         priorBest1rm = est;
       }
     }
   }
+
+  const lastTopRaw = progressionTopSet(latestSets);
+  const lastTopSet: ExerciseBestSet | null = lastTopRaw
+    ? {
+        weightKg: toNum(lastTopRaw.weightKg),
+        reps: toNum(lastTopRaw.reps),
+        at: latestAt,
+      }
+    : null;
 
   const isNewPR = lastWorkoutBest1rm > 0 && lastWorkoutBest1rm > priorBest1rm;
   const deltaVsPeakPct =
