@@ -231,4 +231,22 @@ describe("PWASection", () => {
     expect(screen.queryByText("Скинути кеш PWA?")).not.toBeInTheDocument();
     expect(swMocks.swClearCaches).not.toHaveBeenCalled();
   });
+
+  it("не показує успіх копіювання діагностики, якщо буфер відхилив запис", async () => {
+    swMocks.swSetDebug.mockResolvedValue(undefined);
+    swMocks.swGetDebugSnapshot.mockResolvedValue({ caches: [] });
+    const writeText = vi.fn().mockRejectedValue(new Error("NotAllowedError"));
+    Object.defineProperty(navigator, "clipboard", {
+      configurable: true,
+      value: { writeText },
+    });
+    render(<PWASection />);
+    fireEvent.click(screen.getByText("Технічна діагностика"));
+    fireEvent.click(await screen.findByText("Скопіювати"));
+
+    await waitFor(() => expect(toastMocks.error).toHaveBeenCalled());
+    expect(toastMocks.success).not.toHaveBeenCalledWith(
+      "Діагностику скопійовано",
+    );
+  });
 });

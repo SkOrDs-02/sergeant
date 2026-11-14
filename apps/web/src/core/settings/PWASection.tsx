@@ -47,6 +47,17 @@ export function PWASection() {
     }
   };
 
+  const copySnapshot = () => {
+    navigator.clipboard?.writeText(JSON.stringify(swSnapshot, null, 2)).then(
+      () => toast.success("Діагностику скопійовано"),
+      () =>
+        toast.error("Не вдалося скопіювати", undefined, {
+          label: "Повторити",
+          onClick: copySnapshot,
+        }),
+    );
+  };
+
   const runSwDiagnostics = async () => {
     setSwBusy(true);
     try {
@@ -136,12 +147,7 @@ export function PWASection() {
                   type="button"
                   variant="ghost"
                   size="xs"
-                  onClick={() => {
-                    void navigator.clipboard?.writeText(
-                      JSON.stringify(swSnapshot, null, 2),
-                    );
-                    toast.success("Діагностику скопійовано");
-                  }}
+                  onClick={copySnapshot}
                 >
                   Скопіювати
                 </Button>

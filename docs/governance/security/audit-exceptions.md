@@ -298,15 +298,21 @@ all three rules to `error` as a follow-up under M11.
 > `apps/web/vercel.json` disables every powerful API with `name=()` except the
 > carve-outs below, scoped to the app's own origin (`name=(self)`), never `*`.
 
-| Directive    | Allowlist | Consumer (shipped feature)                                                                      | Reason / mitigation                                                                                                                         |
-| ------------ | --------- | ----------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------- |
-| `camera`     | `(self)`  | Barcode scanner — `useBarcodeScanner.ts` `getUserMedia({video})` + `BarcodeScanner.tsx`         | Self-origin only; no cross-origin iframe can borrow the grant. Stream used transiently for on-device barcode decode, not recorded/uploaded. |
-| `microphone` | `(self)`  | Voice input — `useGroqVoiceInput.ts` `getUserMedia({audio})` + `useSpeech.ts` SpeechRecognition | Self-origin only. Audio captured on explicit user tap (mic button), streamed to STT, not persisted.                                         |
+| Directive         | Allowlist | Consumer (shipped feature)                                                                               | Reason / mitigation                                                                                                                         |
+| ----------------- | --------- | -------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------- |
+| `camera`          | `(self)`  | Barcode scanner — `useBarcodeScanner.ts` `getUserMedia({video})` + `BarcodeScanner.tsx`                  | Self-origin only; no cross-origin iframe can borrow the grant. Stream used transiently for on-device barcode decode, not recorded/uploaded. |
+| `microphone`      | `(self)`  | Voice input — `useGroqVoiceInput.ts` `getUserMedia({audio})` + `useSpeech.ts` SpeechRecognition          | Self-origin only. Audio captured on explicit user tap (mic button), streamed to STT, not persisted.                                         |
+| `clipboard-read`  | `(self)`  | Вставка токена Monobank — `FinykLoginScreen.tsx` `navigator.clipboard.readText()`                        | Self-origin only; читання лише за тапом на кнопку (потрібен user gesture), без фонового доступу.                                            |
+| `clipboard-write` | `(self)`  | Копіювання відгуку, діагностики SW і request id — `FeedbackDialog.tsx`, `PWASection.tsx`, `requestId.ts` | Self-origin only; запис лише за тапом на кнопку.                                                                                            |
 
-Both were previously `()`, which broke the scanner and voice features on the
-web build (`getUserMedia` → `NotAllowedError` regardless of the user's browser
-permission). The Capacitor shell is unaffected (native permissions, not this
-header). Owner-approved 2026-06-17.
+`camera` and `microphone` were previously `()`, which broke the scanner and
+voice features on the web build (`getUserMedia` → `NotAllowedError` regardless
+of the user's browser permission). The Capacitor shell is unaffected (native
+permissions, not this header). Owner-approved 2026-06-17.
+
+`clipboard-read` / `clipboard-write`: carve-out з аудиту 1111 (A36), чекає
+схвалення власника. З `()` Clipboard API у Chromium відхиляв
+`readText`/`writeText` на власному origin.
 
 ## `pnpm.overrides` rationale (L1)
 
