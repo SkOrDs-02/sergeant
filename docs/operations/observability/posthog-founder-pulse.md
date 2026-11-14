@@ -72,7 +72,7 @@ funnel breakdown, D1/D7/D30 retention, activation rate, new-MRR і
 
 - `platform: "web" | "ios" | "android"`
 - `is_capacitor: boolean`
-- `environment: string` — з `VITE_APP_ENV`, дефолт `"production"`. **Той самий перемикач, що й Sentry** (`sentry.ts` читає ту саму змінну як fallback). Змінна **задана** на Vercel-проєкті бети (Production + Preview, додано 2026-07-30) — але чек-лист [`run-beta-wave.md` § Змінні для бета-проєкту](../../work/specs/beta-launch/run-beta-wave.md#змінні-для-бета-проєкту) її історично не документував (виправлено в тому ж PR, що й ця секція). Значення в UI приховане (`Sensitive`), тож саме `"beta"` воно чи щось інше — не перевірено з коду; §3.8 нижче — канарка саме на це: 0 рядків `beta` при активних тестерах означає або порожню, або хибну змінну.
+- `environment: string` — з `VITE_APP_ENV`, дефолт `"production"`. **Той самий перемикач, що й Sentry** (`sentry.ts` читає ту саму змінну як fallback). Змінна **задана** на Vercel-проєкті бети (Production + Preview, додано 2026-07-30) — але чек-лист `run-beta-wave.md` § Змінні для бета-проєкту її історично не документував (виправлено в тому ж PR, що й ця секція). Значення в UI приховане (`Sensitive`), тож саме `"beta"` воно чи щось інше — не перевірено з коду; §3.8 нижче — канарка саме на це: 0 рядків `beta` при активних тестерах означає або порожню, або хибну змінну.
 
 **Person-properties** (`identifyPostHogUser`, [`apps/web/src/core/observability/identifyTraits.ts`](../../../apps/web/src/core/observability/identifyTraits.ts)):
 

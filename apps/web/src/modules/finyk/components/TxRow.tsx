@@ -11,6 +11,7 @@ import { CURRENCY, CURRENCY_SYMBOL } from "../constants";
 import type { CustomCategoryInput } from "@sergeant/finyk-domain/constants";
 import type { MonoAccount } from "@sergeant/finyk-domain/lib/accounts";
 import type { TxSplitsMap } from "@sergeant/finyk-domain/domain/types";
+import { txSplitsFor } from "@sergeant/finyk-domain/domain/debtLinkKeys";
 import { cn } from "@shared/lib/ui/cn";
 import { getAccountShortName, type TxRowTx } from "./txRowHelpers";
 import { TxRowMetaChips } from "./TxRowMetaChips";
@@ -118,7 +119,7 @@ function TxRowImpl({
   // useMemo — стабілізуємо масив сплітів, щоб `openSplitEditor` (useCallback
   // нижче) не перестворювався, коли `txSplits` — той самий обʼєкт.
   const existingSplits = useMemo(
-    () => txSplits?.[tx.id] ?? [],
+    () => txSplitsFor(txSplits, tx.id) ?? [],
     [txSplits, tx.id],
   );
   const mainRowInner = (

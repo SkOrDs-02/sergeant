@@ -5,6 +5,7 @@ import * as receiptSchemas from "../schemas/receipts";
 import * as importSchemas from "../schemas/import";
 import * as silpoSchemas from "../schemas/silpo";
 import * as finykSchemas from "../schemas/finyk";
+import * as syncSnapshotSchemas from "../schemas/syncSnapshot";
 
 /**
  * Builds OpenAPI 3.1 document from zod-схем у `@sergeant/shared/schemas/api`.
@@ -92,6 +93,11 @@ const SyncV2PullQuery = schemas.SyncV2PullSchema.meta({
   id: "SyncV2PullQuery",
   description:
     "Query для GET /api/v2/sync/pull і /stream: `since` (курсор по id) та `limit`.",
+});
+const SyncV2SnapshotQuery = syncSnapshotSchemas.SyncV2SnapshotQuerySchema.meta({
+  id: "SyncV2SnapshotQuery",
+  description:
+    "Query для GET /api/v2/sync/snapshot: перша сторінка без параметрів; далі `cursor` і `as_of_op_id` з попередньої відповіді, `limit` до 500.",
 });
 const CspReportBody = schemas.CspReportBodySchema.meta({
   id: "CspReportBody",
@@ -572,6 +578,7 @@ export const namedSchemas = {
   MeExportResponse,
   SyncV2PushRequest,
   SyncV2PullQuery,
+  SyncV2SnapshotQuery,
   CspReportBody,
   ManualExpenseCreate,
   ManualExpenseCreateResponse,

@@ -3,6 +3,11 @@ import {
   SYNC_PROTOCOL_VERSION,
 } from "@sergeant/shared";
 import type { HttpClient } from "../httpClient";
+import {
+  createSyncV2SnapshotEndpoint,
+  type SyncV2SnapshotOptions,
+  type SyncV2SnapshotResponse,
+} from "./syncV2.snapshot";
 
 /**
  * Типи мають дзеркалити серверну response-форму один-в-один (Hard Rule
@@ -133,6 +138,8 @@ export interface SyncV2Endpoints {
     since?: number,
     opts?: SyncV2PullOptions,
   ) => Promise<SyncV2PullResponse>;
+  /** ADR-0105 §3.3: знімок стану після `410 sync_cursor_expired` на pull. */
+  snapshotV2: (opts?: SyncV2SnapshotOptions) => Promise<SyncV2SnapshotResponse>;
 }
 
 /**
@@ -168,5 +175,6 @@ export function createSyncV2Endpoints(http: HttpClient): SyncV2Endpoints {
           ? { headers: { "X-Origin-Device-Id": opts.originDeviceId } }
           : {}),
       }),
+    snapshotV2: createSyncV2SnapshotEndpoint(http),
   };
 }

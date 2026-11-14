@@ -35,4 +35,13 @@ export const syncEnvShape = {
    * Дефолт 2 MiB. Значення < 1 ігнорується (береться дефолт у `syncV2.ts`).
    */
   SYNC_V2_PULL_MAX_BYTES: intFromEnv(2_097_152),
+
+  /**
+   * Рубильник `GET /api/v2/sync/snapshot` (ADR-0105 §3.3): дефолт вимкнено
+   * (404), доки клієнт не вміє snapshot-bootstrap на `410
+   * sync_cursor_expired`. Ран-тайм читає `process.env` напряму
+   * (`modules/sync/syncV2Snapshot.ts`, `boolFromProcessEnv`) з тією ж
+   * семантикою - це поле лише валідує й документує значення.
+   */
+  SYNC_SNAPSHOT_ENABLED: boolFromEnv(false),
 };

@@ -22,6 +22,7 @@ import { manualCategoryToCanonicalId } from "@sergeant/finyk-domain/domain/perso
 import { resolveManualExpenseKind } from "@sergeant/finyk-domain/domain/transactions";
 import { INTERNAL_TRANSFER_ID } from "@finyk/constants";
 import { shiftDayKey } from "@sergeant/finyk-domain/domain/weekSlices";
+import { txSplitsFor } from "@sergeant/finyk-domain/domain/debtLinkKeys";
 import { Recommendations } from "@sergeant/insights";
 import { kyivDayStartMs, toKyivISODate } from "@sergeant/shared";
 import { getVisibleFinykMonoMirrorState } from "../../../modules/finyk/lib/monoMirrorReader";
@@ -70,7 +71,7 @@ interface TxSplit {
 }
 
 function readSplits(txSplits: TxSplitsLike, id: string): readonly TxSplit[] {
-  const v = txSplits[id];
+  const v = txSplitsFor(txSplits, id);
   return Array.isArray(v) ? (v as readonly TxSplit[]) : [];
 }
 

@@ -61,3 +61,12 @@ describe("looksLikeHtmlTable", () => {
     );
   });
 });
+
+describe("htmlTableToGrid — незакриті теги", () => {
+  it("тисячі `<tr>` без `</tr>` розбираються за лінійний час", () => {
+    const html = `<table>${"<tr><td>x".repeat(30_000)}`;
+    const started = performance.now();
+    expect(htmlTableToGrid(html)).toEqual([]);
+    expect(performance.now() - started).toBeLessThan(500);
+  });
+});

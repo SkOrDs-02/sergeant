@@ -7,6 +7,7 @@ import {
   isCapacitor,
   redactSensitiveQueryParams,
   scrubPIIString,
+  SENSITIVE_QUERY_PARAM_NAMES,
 } from "@sergeant/shared";
 import { resolveDeployEnvironment } from "./deployEnvironment.js";
 import {
@@ -143,6 +144,16 @@ export function applyPostHogBeforeSend<T extends PostHogBeforeSendEvent | null>(
   return captureResult;
 }
 
+/**
+ * Replay пише URL мережевих записів і навігацій (Meta, `$url_changed`) у
+ * поле `name`; SDK пропускає його через цю функцію перед записом.
+ */
+export function maskReplayNetworkRequest<T extends { name: string }>(
+  request: T,
+): T {
+  return { ...request, name: redactSensitiveQueryParams(request.name) };
+}
+
 let posthogModule: PostHogLib | null = null;
 let initPromise: Promise<void> | null = null;
 let initFailed = false;
@@ -247,6 +258,25 @@ export function initPostHog(): Promise<void> {
         // запамʼятовує сам, а `applyConsent` нижче вирівнює його з
         // `analyticsConsent.ts` при кожному старті.
         opt_out_capturing_by_default: true,
+        // Без цього SDK пише `ph_<token>_posthog` з distinct_id ще до згоди:
+        // opt-out вище гасить лише відправку. Політика cookies обіцяє, що
+        // ідентифікатора немає, доки відповіді немає або вона «Ні».
+        opt_out_persistence_by_default: true,
+        // URL сторінки SDK кладе не лише у верхньорівневий `$current_url`
+        // (його чистить `before_send`), а й у ключі `$heatmap_data`,
+        // `$web_vitals_*_event.$current_url` і href у replay. Маскування
+        // SDK покриває всі ці шляхи; список чутливих параметрів спільний
+        // із Sentry.
+        mask_personal_data_properties: true,
+        custom_personal_data_properties: [...SENSITIVE_QUERY_PARAM_NAMES],
+        // Канали нижче інакше вмикає тумблер проєкту в PostHog (remote
+        // config) без жодного коміту: console-логи в replay, `$dead_click`
+        // з текстом елемента, опитування, network timing з URL кожного
+        // запиту (`/api/food-search?q=…`).
+        enable_recording_console_log: false,
+        capture_dead_clicks: false,
+        disable_surveys: true,
+        capture_performance: { web_vitals: true, network_timing: false },
         // Explicit events only — не дублюємо з автокаптуром/пейджвʼю,
         // бо `trackEvent` вже покриває все, що нас цікавить, а payload
         // контролюється централізовано (без PII).
@@ -296,19 +326,31 @@ export function initPostHog(): Promise<void> {
         //
         //   - `maskAllInputs: true` — жодне значення поля вводу не пишеться
         //     (суми, ваги, назви страв, паролі).
-        //   - `maskTextSelector: "*"` — увесь текст на сторінці замінюється
-        //     заглушками. У записі лишається геометрія: розкладка, кліки,
-        //     скрол, переходи між екранами, час на екрані.
+        //   - `maskTextSelector: "*"` — увесь текстовий вміст сторінки
+        //     замінюється заглушками. Атрибутів це НЕ стосується: rrweb
+        //     копіює `aria-label`, `title`, `alt` як є, а там суми, імена
+        //     боржників, назви активів і продуктів.
+        //   - `blockSelector` — тому вузли з цими атрибутами пишуться
+        //     плейсхолдером розміру елемента, без вмісту й атрибутів.
         //
-        // Тобто відповідь на «де людина застрягла» лишається, а «що саме
-        // в неї написано» — ні. Це рівно те, що потрібно для дірки
-        // «176 зайшли → 34 почали онбординг».
+        // У записі лишається геометрія: розкладка, кліки, скрол, переходи
+        // між екранами, час на екрані. Тобто відповідь на «де людина
+        // застрягла» лишається, а «що саме в неї написано» — ні. Це рівно
+        // те, що потрібно для дірки «176 зайшли → 34 почали онбординг».
         //
         // `blockClass` лишається дефолтним `ph-no-capture`: навісь його на
         // будь-який вузол, який не має потрапляти в запис навіть замаскованим.
+        //
+        // Тіла й заголовки запитів і canvas прибиті явно: без значення
+        // клієнта їх вмикає remote config.
         session_recording: {
           maskAllInputs: true,
           maskTextSelector: "*",
+          blockSelector: "[aria-label],[title],[alt]",
+          recordBody: false,
+          recordHeaders: false,
+          captureCanvas: { recordCanvas: false },
+          maskCapturedNetworkRequestFn: maskReplayNetworkRequest,
         },
         // PII-скраб — див. `applyPostHogBeforeSend` вище. Раніше тут
         // стояв `sanitize_properties`; posthog-js вважає його

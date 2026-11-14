@@ -88,7 +88,7 @@ Telegram і Monobank не достукаються до `localhost`. Тунел�
 cloudflared tunnel --url http://localhost:3000
 ```
 
-Дає `https://xxx.trycloudflare.com`; далі [`scripts/telegram/setup-webhook.mjs`](../../../scripts/telegram/setup-webhook.mjs) приймає його як `API_BASE_URL`. URL змінюється при кожному запуску, тож вебхук доведеться перевстановлювати. Деталі — [`env-vars.md`](../../engineering/integrations/env-vars.md).
+Дає `https://xxx.trycloudflare.com`; далі `scripts/telegram/setup-webhook.mjs` приймає його як `API_BASE_URL`. URL змінюється при кожному запуску, тож вебхук доведеться перевстановлювати. Деталі — [`env-vars.md`](../../engineering/integrations/env-vars.md).
 
 ## Verification
 

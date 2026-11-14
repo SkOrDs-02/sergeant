@@ -5,7 +5,11 @@ import { env } from "../../env/env.js";
 import { sendWebPush } from "../../lib/webpushSend.js";
 import { AppError } from "../../obs/errors.js";
 import { logger } from "../../obs/logger.js";
-import { recordDomainOutcome, sendToUser } from "../../push/send.js";
+import {
+  LOAD_WEB_SUBSCRIPTIONS_SQL,
+  recordDomainOutcome,
+  sendToUser,
+} from "../../push/send.js";
 import { parseBody } from "../../http/validate.js";
 import { getIp, getPerTargetRateLimit } from "../../http/rateLimit.js";
 import {
@@ -330,15 +334,8 @@ export async function sendPush(req: Request, res: Response): Promise<void> {
     return;
   }
 
-  // EXPLAIN ANALYZE (типовий plan після міграції 005):
-  //   Index Scan using idx_push_subs_user_active on push_subscriptions
-  //     Index Cond: (user_id = $1)
-  //     (фільтр deleted_at IS NULL уже вбудований у partial-index,
-  //      тому Rows Removed by Filter = 0)
   const { rows } = await pool.query<PushSubscriptionRow>(
-    `SELECT endpoint, p256dh, auth
-       FROM push_subscriptions
-      WHERE user_id = $1 AND deleted_at IS NULL`,
+    LOAD_WEB_SUBSCRIPTIONS_SQL,
     [userId],
   );
   const callerIp = getIp(req);

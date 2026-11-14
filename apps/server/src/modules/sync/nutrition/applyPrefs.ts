@@ -82,6 +82,12 @@ export async function applyNutritionPrefs(
     if (existing!.rows[0]!.updated_at.getTime() >= clientTs.getTime()) {
       return { status: "rejected", reason: "lww_conflict" };
     }
+  } else if (patch) {
+    // Патчу нема на що лягти: повний знімок цього ж пристрою ще в бекофі або
+    // відхилений. INSERT із самим патчем пішов би в журнал як повний знімок,
+    // і pull обрізав би prefs на всіх пристроях. Клієнт повторить патч, коли
+    // базовий рядок з'явиться.
+    return { status: "retry", reason: "prefs_patch_without_base" };
   }
 
   const prefsJson = patch
@@ -99,7 +105,6 @@ export async function applyNutritionPrefs(
        VALUES ($1, $2::jsonb, $3, $4, $5)`,
       [userId, prefsJson, activePantryId, clientTs, clientTs],
     );
-    if (patch) rewriteRowAsFullSnapshot(row, prefsJson);
     return { status: "applied" };
   }
 

@@ -193,7 +193,10 @@ export function VerifyEmailPage() {
             }
           >
             {outcome === "failed"
-              ? (errorCode && ERROR_COPY[errorCode]) || FALLBACK_ERROR_COPY
+              ? (errorCode &&
+                  Object.prototype.hasOwnProperty.call(ERROR_COPY, errorCode) &&
+                  ERROR_COPY[errorCode]) ||
+                FALLBACK_ERROR_COPY
               : BODY_COPY[outcome]}
           </p>
 

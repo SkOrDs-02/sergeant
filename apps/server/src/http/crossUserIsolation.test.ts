@@ -761,6 +761,27 @@ const ISOLATION_CASES: IsolationCase[] = [
     expectsOwn: true,
   },
   {
+    route: "GET /api/v2/sync/snapshot",
+    // ADR-0105 §3.3: знімок читає модульні таблиці напряму, тож тут
+    // позитивний контроль - власний рядок А поруч із чужим рядком Б з тим
+    // самим PK-простором (`finyk_manual_expenses`).
+    setup: async ({ pool }) => {
+      // Маршрут за прапорцем (дефолт 404); guard читає `process.env` на
+      // кожному запиті, тож вмикаємо лише для цього кейсу.
+      process.env["SYNC_SNAPSHOT_ENABLED"] = "true";
+      await pool.query(
+        `INSERT INTO finyk_manual_expenses (id, user_id, data_json)
+         VALUES ('iso-a-expense', $1, $2::jsonb)`,
+        [USER_A, JSON.stringify({ description: A_OWN })],
+      );
+    },
+    act: ({ app }) => asA(request(app).get("/api/v2/sync/snapshot")),
+    expectsOwn: true,
+    verify: async () => {
+      delete process.env["SYNC_SNAPSHOT_ENABLED"];
+    },
+  },
+  {
     route: "GET /api/v2/sync/state-hash",
     // ADR-0106: відповідь несе лише хеші й лічильники, маркера в ній нема.
     // Тож доказ ізоляції - лічильник: по одному тренуванню в А і Б, хеш А

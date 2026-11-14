@@ -191,6 +191,39 @@ describe("drainSyncOpOutbox", () => {
       expect(drained.map((r) => r.id)).toEqual([fresh.id, due.id]);
     });
 
+    it("holds back rows newer than a row still in backoff, except behind unknown_table", async () => {
+      const now = new Date("2026-05-05T12:00:00.000Z");
+      const enqueue = (key: string) =>
+        enqueueOutboxIncrement(client, {
+          userId: "u-test",
+          table: "routine_streaks",
+          row: { delta: 1 },
+          clientTs: "2026-05-05T11:00:00.000+00:00",
+          idempotencyKey: key,
+        });
+      const before = await enqueue("idem-before");
+      const waitingTable = await enqueue("idem-unknown-table");
+      const free = await enqueue("idem-free");
+      const parent = await enqueue("idem-parent");
+      await enqueue("idem-child");
+      const backoff = db.prepare(
+        `UPDATE sync_op_outbox SET attempts = 1, next_retry_at = ?, last_error = ? WHERE id = ?`,
+      );
+      backoff.run(
+        "2026-05-05T12:05:00.000Z",
+        "server_retry:unknown_table",
+        waitingTable.id,
+      );
+      backoff.run("2026-05-05T12:00:30.000Z", "http_503", parent.id);
+
+      const drained = await drainSyncOpOutbox(client, {
+        userId: "u-test",
+        limit: 100,
+        now,
+      });
+      expect(drained.map((r) => r.id)).toEqual([before.id, free.id]);
+    });
+
     it("returns a row whose next_retry_at equals exactly now (boundary inclusive)", async () => {
       const now = new Date("2026-05-05T12:00:00.000Z");
       const exact = await enqueueOutboxIncrement(client, {

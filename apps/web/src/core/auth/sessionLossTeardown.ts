@@ -1,6 +1,7 @@
 import { swClearCaches, swSetActiveUser } from "../app/swControl";
 import { logger } from "@shared/lib";
 import { clearOfflineAuthMarkers } from "./offlineIdentity";
+import { releasePushSubscriptionOnLogout } from "./releasePushOnLogout";
 
 /**
  * priv-02: клієнтський teardown для сесії, що закінчилась БЕЗ кнопки «Вийти»
@@ -42,4 +43,9 @@ export async function teardownLocalStateAfterSessionLoss(): Promise<void> {
   } catch (err) {
     logger.warn("[auth.sessionLoss] swSetActiveUser(null) failed", err);
   }
+  // Web-push підписка належить браузеру: без цього банківські пуші
+  // попереднього користувача далі показуються на спільному пристрої.
+  // Серверний хук на видалення сесії не спрацьовує, коли cookie просто
+  // протух, тож знімаємо локально; рядок сервер прибере на 410.
+  await releasePushSubscriptionOnLogout({ unregisterOnServer: false });
 }
