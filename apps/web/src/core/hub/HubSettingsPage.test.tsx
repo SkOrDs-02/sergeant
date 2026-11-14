@@ -539,6 +539,21 @@ describe("HubSettingsPage", () => {
     expect(screen.queryByText(/some_new_server_code/)).not.toBeInTheDocument();
   });
 
+  it("reads ?silpo=error&reason=__proto__: does not read the prototype, shows the generic message", async () => {
+    window.history.replaceState(
+      null,
+      "",
+      "/?tab=settings&silpo=error&reason=__proto__",
+    );
+    const queryClient = createTestQueryClient();
+
+    renderWithBrowserToast(<HubSettingsPage />, queryClient);
+
+    expect(
+      await screen.findByText("Не вдалося звʼязати Сільпо."),
+    ).toBeInTheDocument();
+  });
+
   // Audit finding #13 (2026-08-08): `SETTINGS_GROUP_PANEL_ID` used to be a
   // hardcoded module constant shared by every mounted instance — two on
   // screen at once would collide on `id`, making the tabs' `aria-controls`
