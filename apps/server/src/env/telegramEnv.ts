@@ -18,7 +18,7 @@ export const telegramEnvShape = {
   TELEGRAM_BETA_INVITE_LINK: stringWithDefault(""),
   /**
    * Адреса застосунку бети. Окремий Vercel-проєкт із власним доменом
-   * (`docs/work/specs/beta-launch/run-beta-wave.md` § Фаза 0.3), тому НЕ
+   * (`https://github.com/SkOrDs-02/sergeant/blob/97e477e90b711b210184ff2b9426b4452c1cd43f/docs/work/specs/beta-launch/run-beta-wave.md` § Фаза 0.3), тому НЕ
    * виводиться з `BETTER_AUTH_URL` — це різні хости.
    *
    * **Дефолт порожній — і це навмисно (рішення власника 2026-09-17).**
