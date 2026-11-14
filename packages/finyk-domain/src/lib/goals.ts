@@ -1,3 +1,5 @@
+import { toKyivISODate } from "@sergeant/shared";
+
 /**
  * Розраховує скільки потрібно відкладати щомісяця для досягнення цілі.
  * @returns {{ monthlyNeeded: number|null, monthsLeft: number, isAchieved: boolean, isOverdue: boolean }}
@@ -6,6 +8,7 @@ export function calcMonthlyNeeded(
   targetAmount: number | string | null | undefined,
   savedAmount: number | string | null | undefined,
   targetDate: string | Date | null | undefined,
+  now: Date = new Date(),
 ): {
   monthlyNeeded: number | null;
   monthsLeft: number | null;
@@ -33,10 +36,13 @@ export function calcMonthlyNeeded(
     };
   }
 
-  const now = new Date();
-  const y1 = now.getUTCFullYear();
-  const m1 = now.getUTCMonth();
-  const d1 = now.getUTCDate();
+  // Дедлайн цілі - фінансова дата, тож «сьогодні» київське, а не UTC.
+  const [y1, mm1, d1] = toKyivISODate(now).split("-").map(Number) as [
+    number,
+    number,
+    number,
+  ];
+  const m1 = mm1 - 1;
 
   const target = (() => {
     const s = String(targetDate || "");
@@ -62,7 +68,8 @@ export function calcMonthlyNeeded(
   })();
 
   const nowMiddayUtc = new Date(Date.UTC(y1, m1, d1, 12, 0, 0, 0));
-  if (target <= nowMiddayUtc) {
+  // День дедлайну ще триває: прострочено лише з наступного дня.
+  if (target < nowMiddayUtc) {
     return {
       monthlyNeeded: null,
       monthsLeft: 0,

@@ -27,6 +27,7 @@ vi.mock("@shared/api", async () => {
     monoWebhookApi: {
       syncState: vi.fn(),
       accounts: vi.fn(),
+      jars: vi.fn(),
       transactions: vi.fn(),
       connect: vi.fn(),
       disconnect: vi.fn(),
@@ -69,7 +70,10 @@ vi.mock("../lib/clientMigrate", () => ({
 const writeMonoTransactions = vi.fn();
 const writeMonoAccounts = vi.fn();
 const writeMonoAccountSnapshots = vi.fn();
+const deleteMonoTransactionsOfAccounts = vi.fn();
 vi.mock("../lib/monoMirror", () => ({
+  deleteMonoTransactionsOfAccounts: (...args: unknown[]) =>
+    deleteMonoTransactionsOfAccounts(...args),
   writeMonoTransactions: (...args: unknown[]) => writeMonoTransactions(...args),
   writeMonoAccounts: (...args: unknown[]) => writeMonoAccounts(...args),
   writeMonoAccountSnapshots: (...args: unknown[]) =>
@@ -93,6 +97,7 @@ const mockedSyncState = monoWebhookApi.syncState as unknown as ReturnType<
 const mockedAccounts = monoWebhookApi.accounts as unknown as ReturnType<
   typeof vi.fn
 >;
+const mockedJars = monoWebhookApi.jars as unknown as ReturnType<typeof vi.fn>;
 
 const ACTIVE_STATE = {
   status: "active",
@@ -149,6 +154,8 @@ beforeEach(() => {
 
   fetchAllMonoTransactions.mockResolvedValue([]);
   mockedAccounts.mockResolvedValue([]);
+  mockedJars.mockResolvedValue([]);
+  deleteMonoTransactionsOfAccounts.mockResolvedValue(undefined);
 
   // Default: SQLite succeeds
   const migrationClient = makeMigrationClient();
@@ -247,6 +254,33 @@ describe("useMonobankWebhook — mirror tx effect (mirrorEnabled=true, userId se
     expect(result.current.syncState.status).toBe("success");
     // writeMonoTransactions was attempted
     expect(writeMonoTransactions).toHaveBeenCalled();
+  });
+});
+
+describe("useMonobankWebhook — foreign-currency purge", () => {
+  it("purges foreign-currency accounts and jars even without writeMirror", async () => {
+    const { Wrapper } = makeWrapper(true);
+    mockedSyncState.mockResolvedValue(ACTIVE_STATE);
+    mockedAccounts.mockResolvedValue([
+      { monoAccountId: "uah-card", currencyCode: 980, maskedPan: [] },
+      { monoAccountId: "usd-card", currencyCode: 840, maskedPan: [] },
+    ]);
+    mockedJars.mockResolvedValue([
+      { monoJarId: "uah-jar", currencyCode: 980 },
+      { monoJarId: "usd-jar", currencyCode: 840 },
+    ]);
+
+    renderHook(() => useMonobankWebhook({ writeMirror: false }), {
+      wrapper: Wrapper,
+    });
+
+    await waitFor(() => {
+      expect(deleteMonoTransactionsOfAccounts).toHaveBeenLastCalledWith(
+        expect.anything(),
+        TEST_USER_ID,
+        ["usd-card", "usd-jar"],
+      );
+    });
   });
 });
 

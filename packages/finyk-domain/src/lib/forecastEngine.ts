@@ -1,6 +1,7 @@
 import { getExpenseCategoryForTransaction } from "../utils";
 import { toKyivISODate } from "@sergeant/shared";
 import { INTERNAL_TRANSFER_ID } from "../constants";
+import { txSplitsFor } from "../domain/debtLinkKeys";
 import { getCurrentMonthContext, projectMonthEndSpend } from "../domain/budget";
 import type { Category, TxCategoriesMap, TxSplitsMap } from "../domain/types";
 
@@ -61,7 +62,7 @@ function buildDailySpending(
     const dayKey = toKyivISODate(txDate);
     if (!dayMap[dayKey]) dayMap[dayKey] = {};
 
-    const splits = txSplits[tx.id];
+    const splits = txSplitsFor(txSplits, tx.id);
     if (splits && splits.length > 0) {
       for (const s of splits) {
         if (!s.categoryId || s.categoryId === INTERNAL_TRANSFER_ID) continue;

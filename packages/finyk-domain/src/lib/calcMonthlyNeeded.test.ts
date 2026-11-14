@@ -111,6 +111,27 @@ describe("calcMonthlyNeeded", () => {
     expect(r.monthsLeft).toBe(2);
   });
 
+  it("день дедлайну за Києвом ще не прострочений; переданий now має пріоритет", () => {
+    setNow("2020-01-01T00:00:00.000Z");
+    // 31.12 10:00 за Києвом = 08:00 UTC.
+    const deadlineDay = calcMonthlyNeeded(
+      1200,
+      0,
+      "2026-12-31",
+      new Date("2026-12-31T08:00:00.000Z"),
+    );
+    expect(deadlineDay.isOverdue).toBe(false);
+    expect(deadlineDay.monthlyNeeded).toBe(1200);
+    // 01:30 за Києвом 01.01 - у UTC ще 31.12, але київський день уже наступний.
+    const nextKyivDay = calcMonthlyNeeded(
+      1200,
+      0,
+      "2026-12-31",
+      new Date("2026-12-31T23:30:00.000Z"),
+    );
+    expect(nextKyivDay.isOverdue).toBe(true);
+  });
+
   it("target date is today → still has at least 1 month window", () => {
     // Same-day target: not overdue (today > now is false if time is midnight),
     // but depending on parse, may be overdue. Min monthsLeft = 1 guards UX.

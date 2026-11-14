@@ -65,3 +65,20 @@ export function expandLinkedKeys(
   }
   return out;
 }
+
+/**
+ * Спліт операції з мапи `txSplits`. Розбивку ручного запису (за чеком
+ * Сільпо) аркуш пише під СИРИМ id, а агрегати бачать запис як `manual_<id>`,
+ * тож для ручного ключа пробуємо й сиру форму.
+ */
+export function txSplitsFor<T>(
+  txSplits: Readonly<Record<string, T>> | null | undefined,
+  txId: string,
+): T | undefined {
+  if (!txSplits) return undefined;
+  const direct = txSplits[txId];
+  if (direct !== undefined || !txId.startsWith(MANUAL_TX_KEY_PREFIX)) {
+    return direct;
+  }
+  return txSplits[rawManualId(txId)];
+}

@@ -124,6 +124,7 @@ export function Analytics({
     comparison: comparisonWindow,
     loading,
     fetchError,
+    comparisonError,
     retry: retryCurrentMonth,
     bankTx,
     allActiveTx,
@@ -282,9 +283,13 @@ export function Analytics({
           </p>
         )}
 
-        {fetchError && bankTx.length === 0 && (
+        {((fetchError && bankTx.length === 0) || comparisonError) && (
           <div className="flex items-center justify-between gap-3 px-4 py-3 rounded-lg bg-panel border border-danger/20 text-style-label text-danger-strong dark:text-danger">
-            <span>{fetchError}</span>
+            <span>
+              {fetchError && bankTx.length === 0
+                ? fetchError
+                : copy.comparisonLoadFailed}
+            </span>
             <button
               type="button"
               onClick={retryCurrentMonth}

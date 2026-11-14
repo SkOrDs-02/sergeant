@@ -255,12 +255,29 @@ export function BankTransactionDetailsSheet({
     setShowSplitEditor(true);
   };
 
+  const validDraftSplits = draftSplits.filter(
+    (split) => split.categoryId && (Number(split.amount) || 0) > 0,
+  );
+
   const saveSplits = () => {
-    const validSplits = draftSplits.filter(
-      (split) => split.categoryId && (Number(split.amount) || 0) > 0,
+    onSplitChange(
+      transaction.id,
+      validDraftSplits.length >= 2 ? validDraftSplits : null,
     );
-    onSplitChange(transaction.id, validSplits.length >= 2 ? validSplits : null);
     setShowSplitEditor(false);
+  };
+
+  // Категорія й нотатка тут зберігаються одразу, тож «Готово» читається як
+  // «зберегти все»: зведений розподіл не має зникати мовчки.
+  const handleDone = () => {
+    if (
+      showSplitEditor &&
+      Math.abs(remaining) < 0.01 &&
+      validDraftSplits.length >= 2
+    ) {
+      saveSplits();
+    }
+    onClose();
   };
 
   return (
@@ -275,7 +292,7 @@ export function BankTransactionDetailsSheet({
         <Button
           variant="solid"
 
-          onClick={onClose}
+          onClick={handleDone}
           className="w-full"
           tone="ink"
         >

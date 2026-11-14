@@ -34,6 +34,7 @@ import {
   canonicalManualCategoryId,
 } from "./manualTaxonomy.js";
 import { getExpenseCategoryForTransaction } from "./categories.js";
+import { txSplitsFor } from "../domain/debtLinkKeys.js";
 import {
   getTxStatAmount,
   type SpendingTxLike,
@@ -72,7 +73,7 @@ function toCategoryIdList(category: LimitCategoryInput): string[] {
 }
 
 function readSplits(txSplits: TxSplitsLike, id: string): readonly SplitLike[] {
-  const value = txSplits[id];
+  const value = txSplitsFor(txSplits, id);
   return Array.isArray(value) ? (value as readonly SplitLike[]) : [];
 }
 

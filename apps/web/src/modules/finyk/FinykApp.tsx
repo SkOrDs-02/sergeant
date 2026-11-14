@@ -46,6 +46,7 @@ import { NAV_ICONS, NAV_IDS, NAV_ITEMS } from "./components/finykNav";
 import { useFinykRoute, useFinykQueryParam } from "./hooks/useFinykRoute";
 import { useStorageWarmGate } from "./hooks/useStorageWarmGate";
 import { useUnifiedFinanceData } from "./hooks/useUnifiedFinanceData";
+import { useCashHistoryBackfill } from "./hooks/useCashHistoryBackfill";
 import { useFinykQuickStatsWriter } from "./hooks/useFinykQuickStatsWriter";
 import { useFinykPersonalization } from "./hooks/useFinykPersonalization";
 import { useFinykReceiptLinks } from "./hooks/useFinykReceiptLinks";
@@ -100,6 +101,7 @@ export default function App({
   useMonoTokenMigration(true);
   const toast = useToast();
   const storage = useStorage({ toast });
+  useCashHistoryBackfill(storage.cashOnHand?.createdAt, mono.fetchRange);
   // Холодний старт: до прогріву SQLite-кешу форма запису не надсилається
   // (data-13), щоб тост «додано» не з'являвся над ще не прогрітим сховищем.
   const storageWarming = useStorageWarmGate(storage.storageReady);
