@@ -97,6 +97,16 @@ describe("nutrition backup-upload handler", () => {
     expect(JSON.parse(params[2] as string)).toEqual(blob);
   });
 
+  it("тим самим запитом лишає не більше 3 бекапів на користувача", async () => {
+    await handler(makeReq("user_99", { blob: { v: 1 } }, "tok-1"), makeRes());
+
+    expect(queryMock).toHaveBeenCalledTimes(1);
+    const [sql, params] = queryMock.mock.calls[0]!;
+    expect(sql).toMatch(/DELETE FROM nutrition_backups/);
+    expect(sql).toMatch(/ORDER BY updated_at DESC\s+LIMIT \$4/);
+    expect(params[3]).toBe(2);
+  });
+
   it("кидає UnauthorizedError коли user відсутній у запиті", async () => {
     await expect(
       handler(makeReq(undefined, { blob: { v: 1 } }), makeRes()),

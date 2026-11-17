@@ -47,3 +47,22 @@ export function kyivDayKeyMinusDays(at: Date, days: number): string {
   const [y = 1970, m = 1, d = 1] = key.split("-").map(Number);
   return kyivDayKey(new Date(Date.UTC(y, m - 1, d - days, 12, 0, 0)));
 }
+
+/** Скільки хвилин назад прохід дошукує пропущені слоти. */
+const CATCH_UP_MINUTES = 10;
+
+/**
+ * Нижня межа (не включно) хвилин, які прохід о `now` має обробити, щоб
+ * наздогнати хвилини, пропущені довгим або впалим попереднім проходом.
+ * Без `lastSweepAt` (перший прохід процесу) вікно лише поточна хвилина.
+ * Інша доба повертає "", тобто з початку доби: "" менше за будь-який HH:MM.
+ */
+export function kyivCatchUpFromHm(now: Date, lastSweepAt: Date | null): string {
+  const from = new Date(
+    Math.max(
+      lastSweepAt?.getTime() ?? now.getTime() - 60_000,
+      now.getTime() - CATCH_UP_MINUTES * 60_000,
+    ),
+  );
+  return kyivDayKey(from) === kyivDayKey(now) ? kyivHm(from) : "";
+}

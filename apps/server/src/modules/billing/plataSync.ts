@@ -40,7 +40,11 @@ import {
   resolveStartupDelayMs,
   scheduleStartupTick,
 } from "../../lib/pollerStartupTick.js";
-import { MONOPAY_BASE, getPlataToken as getToken } from "./plataRemote.js";
+import {
+  MONOPAY_BASE,
+  MONOPAY_TIMEOUT_MS,
+  getPlataToken as getToken,
+} from "./plataRemote.js";
 import {
   findSupersededRecurrence,
   recordSupersededRecurrence,
@@ -134,7 +138,10 @@ async function fetchSubscriptionStatus(
 ): Promise<SubscriptionStatusResponse | null> {
   const token = getToken();
   const url = `${MONOPAY_BASE}/subscription/status?subscriptionId=${encodeURIComponent(subscriptionId)}`;
-  const response = await fetch(url, { headers: { "X-Token": token } });
+  const response = await fetch(url, {
+    headers: { "X-Token": token },
+    signal: AbortSignal.timeout(MONOPAY_TIMEOUT_MS),
+  });
   if (!response.ok) {
     logger.warn({
       msg: "plata_sync_status_fetch_failed",

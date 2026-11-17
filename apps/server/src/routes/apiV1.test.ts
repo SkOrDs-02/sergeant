@@ -416,6 +416,11 @@ describe("/api/v1/me data rights", () => {
   it("GET /api/v1/me/export не вибирає raw secrets/tokens", async () => {
     getSessionUserMock.mockResolvedValueOnce(user);
     queryMock.mockResolvedValue({ rows: [] });
+    // Експорт іде одним зʼєднанням пулу: клієнт ділить той самий queryMock.
+    mockPool.connect.mockResolvedValueOnce({
+      query: queryMock,
+      release: vi.fn(),
+    });
     const app = createApp();
     const res = await request(app)
       .get("/api/v1/me/export")

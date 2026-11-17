@@ -9,7 +9,8 @@ import { env } from "../../env/env.js";
 import { ProviderSubscriptionGoneError } from "./provider.js";
 
 const STRIPE_SUBSCRIPTIONS_URL = "https://api.stripe.com/v1/subscriptions";
-const CANCEL_TIMEOUT_MS = 15_000;
+/** Верхня межа очікування відповіді Stripe (undici без `signal` чекає 300 с). */
+export const STRIPE_TIMEOUT_MS = 15_000;
 
 /**
  * `cancel_at_period_end=true` - доступ до кінця оплаченого періоду (паритет
@@ -32,7 +33,7 @@ export async function cancelStripeRemoteSubscription(
         "Content-Type": "application/x-www-form-urlencoded",
       },
       body: new URLSearchParams({ cancel_at_period_end: "true" }),
-      signal: AbortSignal.timeout(CANCEL_TIMEOUT_MS),
+      signal: AbortSignal.timeout(STRIPE_TIMEOUT_MS),
     },
   );
   if (response.status === 404) {

@@ -1,6 +1,6 @@
 # Toast policy
 
-> **Last touched:** 2026-10-26 by @claude. **Next review:** 2027-05-06.
+> **Last touched:** 2026-11-17 by @claude. **Next review:** 2027-05-28.
 > **Status:** Active.
 
 Канонічна довідка для агентів і розробників: коли який toast, скільки

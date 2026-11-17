@@ -1,6 +1,6 @@
 # Playbook: Підняти застосунок локально після мержу
 
-> **Last touched:** 2026-09-11 by @claude. **Next review:** 2026-12-11.
+> **Last touched:** 2026-11-17 by @claude. **Next review:** 2027-02-16.
 > **Status:** Active
 > **Runtime-specific:** no
 

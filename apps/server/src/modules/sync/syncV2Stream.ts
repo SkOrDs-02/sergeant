@@ -1,6 +1,5 @@
 import EventEmitter from "node:events";
 import type { Request, Response } from "express";
-import pool from "../../db.js";
 import { parseQuery } from "../../http/validate.js";
 import { SyncV2PullSchema } from "../../http/schemas.js";
 import { logger } from "../../obs/logger.js";
@@ -11,6 +10,7 @@ import {
 } from "../../obs/metrics.js";
 import { elapsedMs } from "../../lib/timing.js";
 import { decryptOpRowForPull } from "../../lib/healthTextCrypto.js";
+import { selectPullPage } from "./syncV2Pull.js";
 
 /**
  * Stage 5 / PR #041 із `https://github.com/Skords-01/Sergeant/blob/d068c73a2f21881d5c1305544fe99f3ea8be81f4/docs/90-work/planning/archive/storage-roadmap.md` — real-time pull
@@ -395,17 +395,13 @@ export async function syncV2Stream(req: Request, res: Response): Promise<void> {
   //    якщо backlog > limit, клієнт reconnect-иться з оновленим since.
   let lastReplayedId = since;
   try {
-    const result = await pool.query<PullRow>(
-      `SELECT id, table_name, op, row, client_ts, server_ts, origin_device_id
-         FROM sync_op_log
-        WHERE user_id = $1
-          AND id > $2
-          AND status = 'applied'
-          AND origin_device_id IS DISTINCT FROM $3
-          AND (tx_id IS NULL OR tx_id < pg_snapshot_xmin(pg_current_snapshot()))
-        ORDER BY id ASC
-        LIMIT $4`,
-      [user.id, since, originDeviceId, SYNC_V2_STREAM_REPLAY_LIMIT],
+    // Той самий байтовий бюджет, що в `/pull` (ADR-0105): лише LIMIT давав
+    // до 500 рядків по 256 КБ на зʼєднання в памʼяті процесу.
+    const { rows, truncatedByBudget } = await selectPullPage(
+      user.id,
+      since,
+      originDeviceId,
+      SYNC_V2_STREAM_REPLAY_LIMIT,
     );
     // Витіснено під час replay: даних не пишемо, закриваємо нижче.
     if (closing.reason === null) {
@@ -415,7 +411,7 @@ export async function syncV2Stream(req: Request, res: Response): Promise<void> {
           replay_limit: SYNC_V2_STREAM_REPLAY_LIMIT,
         }),
       );
-      for (const row of result.rows) {
+      for (const row of rows) {
         const op = rowToStreamOp(row);
         lastReplayedId = op.id;
         res.write(formatSseFrame("op", op, op.id));
@@ -423,7 +419,8 @@ export async function syncV2Stream(req: Request, res: Response): Promise<void> {
       res.write(
         formatSseFrame("caught_up", {
           last_id: lastReplayedId,
-          truncated: result.rows.length === SYNC_V2_STREAM_REPLAY_LIMIT,
+          truncated:
+            rows.length === SYNC_V2_STREAM_REPLAY_LIMIT || truncatedByBudget,
         }),
       );
     }
