@@ -1,7 +1,28 @@
 # Frontend Tech Debt — Sergeant Web
 
-> **Last touched:** 2026-10-26 by @claude (тріаж документації: п. 11 і 12 «Recommended next steps» прийняли залишки закритих спек і аудитів). **Last validated:** 2026-10-08 by @claude (§5 exhaustive-deps: web 15 → 1; решта реєстру звірена 2026-09-17). **Next review:** 2026-12-16.
+> **Last touched:** 2026-11-17 by @claude (звірка реєстру з HEAD: лічильники таблиці 2026-09-17 переміряно, §5 web 1 → 3, §14 — до `@removeBy 2026-12-01` два тижні). **Last validated:** 2026-11-17 by @claude (вибіркова звірка, перелік неперевіреного — у маркері нижче). **Next review:** 2026-12-16.
 > **Status:** Active
+
+> **Оновлено 2026-11-17 (звірка реєстру з HEAD `b0e61055c`).** Вибірковий прохід: переміряно кожен рядок таблиці 2026-09-17 нижче і пункти з 🔴/🟡, повного аудиту не було. Методика лічби та сама, що в таблиці (команди в тілі відповідних пунктів).
+>
+> | Пункт                                                   | 2026-09-17                                     | Факт 2026-11-17                                                                                                                                                                                                                                                                                                                                                                                           |
+> | ------------------------------------------------------- | ---------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+> | production sources / test-файли (`apps/web/src`)        | 1387 / 1220                                    | **1576 / 1453**; coverage floor у `coverage-thresholds.json` і далі **89**                                                                                                                                                                                                                                                                                                                                |
+> | `eslint-disable react-hooks/exhaustive-deps` (§5)       | web 15 (2026-10-08: 1), mobile 10              | **web 3, mobile 10** (production; +1 web у тесті). Нові два сайти — `useManualExpenseLockDraft.ts:88` і `useMealLockDraft.ts:111` (2026-10-23, чернетки форм), обидва з WHY «відновлення рівно раз на відкриття»; у каталозі `apps-web-exhaustive-deps.md` їх **немає**                                                                                                                                   |
+> | `@ts-expect-error` (§10)                                | 11 рядків у 8 файлах                           | **11 у 8**, і далі лише тести ✅                                                                                                                                                                                                                                                                                                                                                                          |
+> | `console.*` у production (§7)                           | 3                                              | **3** ✅; `analytics.ts` тепер рядок 159 (не 157)                                                                                                                                                                                                                                                                                                                                                         |
+> | сира типографіка (п.9)                                  | 89 + 85 проти 2485                             | **56 `text-xs` + 57 `text-sm` проти 2421 `text-style-*`** — хвіст далі тане                                                                                                                                                                                                                                                                                                                               |
+> | розподіл ролей (§ Типографіка тексту)                   | caption 1378, label 555, title 94, headline 54 | **caption 1191, label 601, title 68, headline 61** — перекіс у дрібні ролі той самий                                                                                                                                                                                                                                                                                                                      |
+> | hand-roll `role="dialog"` без `useBodyScrollLock` (п.4) | 14 файлів                                      | **14**, але склад інший: відпали `BentoCardPeek.tsx` і `OnboardingWizard.tsx`, додались `core/app/NotificationBell.tsx` (поповер) і `core/profile/PendingDeletionScreen.tsx` (full-page takeover). Грубий grep дає 29 файлів, із них 5 лише шукають `[role="dialog"]` селектором (`CornerAction`, `focusFallback`, `useStepFocusKeeper`, `useStreakMilestoneCelebration`, тест-хелпер `expectDialogA11y`) |
+> | DesignShowcase (п.6)                                    | 5 `text-2xs`, 71 `.tsx`                        | **5 / 0 `text-[9-10px]` / 0 `#fdf9f3` / 71** — без змін                                                                                                                                                                                                                                                                                                                                                   |
+> | tombstone-ключі `@removeBy 2026-12-01` (§14)            | 30                                             | **30** у `storageKeys.ts` + 3 поза ним (`Button.tsx:75,233`, `fizruk-domain/constants.ts:26`). **Дата настає 2026-12-01, за два тижні**, а умова зняття (рішення власника про legacy LS-дані) не записана як прийнята                                                                                                                                                                                     |
+> | `MONTHLY_PLAN_STORAGE_KEY` (§14)                        | 31                                             | **31**                                                                                                                                                                                                                                                                                                                                                                                                    |
+> | mobile 12px-floor (п.8)                                 | 154 (17 + 137)                                 | **154 (17 + 137)**, `.text-style-*` **0** — мобілка на паузі (ADR-0094), очікувано                                                                                                                                                                                                                                                                                                                        |
+> | allowlist `no-cyrillic-jsx-literal` (S10-R2)            | стеля 300                                      | **296 файлів, бюджет 296** (`node scripts/check-ui-canon-ratchet.mjs`); заразом ратчет просить опустити `handRolledFocusRing` 131 → 130                                                                                                                                                                                                                                                                   |
+>
+> **Підтверджено відкритими:** 🔴 Privat24 — `normalizeAccount` і далі читає `r.balance`/`r.creditLimit` (тепер `usePrivatbank.ts:164-176`), конверт `StatementsResponse` — рядок 221; `reportPrivatShape` на місці, тобто борг чекає на подію в Sentry, у коді нічого не рушило. S10-R1: `router.tsx:51` — і далі `/`. `SubTabs` і далі в `modules/nutrition`. OPFS-хвіст (🟡): `OPEN_TIMEOUT_MS = 30_000` і `workerOpenRetry.ts` на місці, корінь зависання не знайдено (повтору на планшеті в репо не зафіксовано). Прострочених живих `@removeBy` немає (єдиний `2026-09-01` — історичний коментар у `db-schema/.../migrations/index.ts:24`).
+>
+> **Не перевірено цим проходом:** Hard Rule #18 лінтом по web (сирих `>600` у `apps/web/src` — **107** файлів разом із тестами, `wc -l`, тобто без `skipBlankLines`/`skipComments`), лічба call-site-ів `ButtonVariantLegacy` (грубий grep `variant="<легасі-назва>"` дає ~348 збігів у 115 файлах, але туди потрапляють і не-`Button` компоненти), § 11.1 strict-TS, § Типографіка (кікери), ілюстрації Фізрука (§13), «Recently completed», рядки mobile-тем (п.8) поза 12px-floor, жоден рядок не звірено з живим застосунком.
 
 > **Оновлено 2026-09-17 (звірка реєстру з HEAD).** Переміряно кожне число, яке цей файл наводить. Головне: **жоден лічильник із записаних не збігся з фактом**, і половина розійшлась у бік зростання, тобто реєстр систематично відстає.
 >
@@ -1535,9 +1556,17 @@ raw-файлів не перетинає **effective** 600 — інакше ESLi
 ---
 
 <details>
-<summary>5. `eslint-disable react-hooks/exhaustive-deps` — web 1 / mobile 10 (розгорнути)</summary>
+<summary>5. `eslint-disable react-hooks/exhaustive-deps` — web 3 / mobile 10 (розгорнути)</summary>
 
-### 5. `eslint-disable react-hooks/exhaustive-deps` — майже закрито (переміряно 2026-10-08: web 1, mobile 10)
+### 5. `eslint-disable react-hooks/exhaustive-deps` — майже закрито (переміряно 2026-11-17: web 3, mobile 10)
+
+**Переміряно 2026-11-17: web 1 → 3.** Після вигорання додались два сайти з
+тієї самої хвилі чернеток форм (2026-10-23): `modules/finyk/components/useManualExpenseLockDraft.ts:88`
+і `modules/nutrition/components/meal-sheet/useMealLockDraft.ts:111`. Обидва
+несуть WHY («відновлення рівно раз на відкриття; сеттери стабільні»), але
+в каталог [`apps-web-exhaustive-deps.md`](../../../engineering/architecture/apps-web-exhaustive-deps.md)
+не потрапили — actionable-залишок: рядки в каталозі або зняття через
+`useLatestRef`, як у хвилі 6.
 
 **Вигорання 2026-10-08: web 15 → 1.** Хвиля 5 (15 → 6): девʼять сайтів знято
 без зміни поведінки — `HUB_TAB_ORDER` і геометрію `NetworthChart` винесено на
@@ -1588,13 +1617,14 @@ production-сайтів на 2026-09-17 (маркер 2026-08-07 фіксува�
 
 ---
 
-### 6. Тестове покриття — 1220 test-файлів на 1387 source; lines floor **89**
+### 6. Тестове покриття — 1453 test-файли на 1576 source; lines floor **89**
 
 Coverage floor (`coverage-thresholds.json` → `apps/web`): **89** lines
 (+ branches 75 / functions 82 / statements 87 у `vitest.config.js`).
 Кількість test-файлів виросла органічно (re-audit 2026-07-20: 875 vs 999 source;
 **переміряно 2026-09-17: 1220 тестів на 1387 production-файлів** — `find apps/web/src`
-з виключенням `*.test.*` / `*.spec.*` / `__tests__` / `*.stories.*`). Floor у
+з виключенням `*.test.*` / `*.spec.*` / `__tests__` / `*.stories.*`; **переміряно
+2026-11-17 тим самим способом: 1453 / 1576**). Floor у
 `coverage-thresholds.json` за той самий час не рухався — лишається **89**.
 Критичні модулі без тестів / з тонким покриттям (історичний backlog — більшість закрита):
 
@@ -2213,9 +2243,16 @@ legacy-проп `danger` у `apps/mobile` `ConfirmDialog` (2 call-site-и → `v
 
 | Маркер                                                                                  | Чому не знято 2026-09-03                                                                                                                                                                       | Що розблокує                                |
 | --------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------- |
-| 5 tombstone-ключів у `packages/shared/src/lib/storageKeys.ts`                           | tombstone тримає residual-import drain у SQLite на boot; зняти — значить вирішити, що застарілі localStorage-дані бета-тестерів вже нікому не треба підбирати                                  | рішення власника про долю legacy LS-даних   |
+| 30 tombstone-ключів у `packages/shared/src/lib/storageKeys.ts`                          | tombstone тримає residual-import drain у SQLite на boot; зняти — значить вирішити, що застарілі localStorage-дані бета-тестерів вже нікому не треба підбирати                                  | рішення власника про долю legacy LS-даних   |
 | `MONTHLY_PLAN_STORAGE_KEY` (`packages/fizruk-domain/src/constants.ts`)                  | той самий клас tombstone-ів, **31** жива згадка (переміряно 2026-09-17; було ~29) — drain + backup-ключі + тести                                                                               | те саме рішення                             |
 | `ButtonVariantLegacy` + проп `Button.module` (`shared/components/ui/Button.tsx:76,249`) | плоскі варіанти і `module` замінені парою `variant` × `tone`; `@removeBy 2026-12-01` стояв у коді, але трекер його не згадував (знайдено аудитом 2026-10-08, кількість call-site-ів не міряли) | міграція call-site-ів на `variant` × `tone` |
+
+**Звірено 2026-11-17: до дати два тижні, і жодна умова зняття не виконана.**
+Маркерів `@removeBy 2026-12-01` у коді **33**: 30 у `storageKeys.ts`, два в
+`Button.tsx` (рядки 75 і 233) і `MONTHLY_PLAN_STORAGE_KEY` (31 згадка).
+Рішення власника про legacy LS-дані в репо не записане, міграцію
+`ButtonVariantLegacy` не почато. Тобто 2026-12-01 повторить сценарій
+2026-09-01, якщо до того не вирішити: зняти, або перенести з новою умовою.
 
 Урок для наступного разу той самий, що й у `_runner-report.md` (червень): маркер
 із датою без власника перетворюється на «September crunch». Перенесені дати тут
