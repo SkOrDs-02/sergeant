@@ -30,6 +30,18 @@ describe("CategoryBars (мова H)", () => {
       />,
     );
     expect(screen.getAllByTestId("category-bar-ghost")).toHaveLength(1);
+    expect(screen.getByText(/Минулий період:/)).toBeTruthy();
+  });
+
+  it("з прихованими сумами минулий період не озвучується", () => {
+    render(
+      <CategoryBars
+        data={DATA}
+        previous={[{ categoryId: "cafe", prevMinor: 50000 }]}
+        showBalance={false}
+      />,
+    );
+    expect(screen.queryByText(/Минулий період:/)).toBeNull();
   });
 
   it("тап по рядку веде в операції категорії", () => {

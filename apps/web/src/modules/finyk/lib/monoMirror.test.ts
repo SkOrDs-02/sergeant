@@ -10,6 +10,7 @@
 import { describe, it, expect, beforeEach, afterEach } from "vitest";
 
 import {
+  deleteMonoTransactionsOfAccounts,
   writeMonoTransactions,
   writeMonoAccounts,
   writeMonoAccountSnapshots,
@@ -112,6 +113,19 @@ describe("writeMonoTransactions", () => {
       tx({ id: "ok" }),
     ]);
     expect(written).toBe(1);
+  });
+});
+
+describe("deleteMonoTransactionsOfAccounts", () => {
+  it("прибирає операції лише переданих рахунків", async () => {
+    await writeMonoTransactions(handle.client, UID, [
+      tx({ id: "uah", accountId: "acc-uah" }),
+      tx({ id: "usd", accountId: "acc-usd" }),
+    ]);
+    await deleteMonoTransactionsOfAccounts(handle.client, UID, ["acc-usd"]);
+
+    const cache = await refreshFinykMonoMirrorState(handle.client, UID);
+    expect(cache.transactions.map((t) => t.id)).toEqual(["uah"]);
   });
 });
 

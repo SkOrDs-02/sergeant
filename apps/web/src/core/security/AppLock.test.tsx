@@ -222,6 +222,25 @@ describe("AppLock", () => {
     await waitFor(() => expect(onSetupDone).toHaveBeenCalled());
   });
 
+  it("keeps setup open with an error when saving the PIN fails", async () => {
+    const onSavePin = vi.fn(async () => {
+      throw new Error("IDB unavailable");
+    });
+    const onSetupDone = vi.fn(noop);
+    renderLock({ state: "setup", onSavePin, onSetupDone });
+    "1234".split("").forEach(pressDigit);
+    fireEvent.click(screen.getByRole("button", { name: "Далі" }));
+    await screen.findByText("Введи PIN ще раз для підтвердження");
+    "1234".split("").forEach(pressDigit);
+    fireEvent.click(screen.getByRole("button", { name: "Підтвердити" }));
+    await waitFor(() =>
+      expect(screen.getByRole("alert")).toHaveTextContent(
+        "Не вдалося зберегти PIN",
+      ),
+    );
+    expect(onSetupDone).not.toHaveBeenCalled();
+  });
+
   it("shows a mismatch error when the confirm PIN differs", async () => {
     renderLock({ state: "setup" });
     "1234".split("").forEach(pressDigit);

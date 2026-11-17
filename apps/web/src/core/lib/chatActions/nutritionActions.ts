@@ -13,6 +13,7 @@ import {
 import { saveRecipeToBook } from "../../../modules/nutrition/lib/recipeBook";
 import { recordBodyWeight } from "../../profile/recordBodyWeight";
 import {
+  deleteFizrukDailyLogEntry,
   persistFizrukDailyLog,
   readFizrukDailyLog,
 } from "./fizrukActions/shared";
@@ -479,7 +480,12 @@ export function handleNutritionAction(
       // W1-WEIGHT-SOT стадія 2: дзеркалення — через спільний funnel.
       persistFizrukDailyLog([entry, ...readFizrukDailyLog()]);
       recordBodyWeight({ weightKg: n, at: entry.at });
-      return `Вагу записано: ${formatNumberUk(n)} кг`;
+      // Як `log_wellbeing`: відкат прибирає запис щоденника, профільну вагу
+      // не чіпає.
+      return {
+        result: `Вагу записано: ${formatNumberUk(n)} кг`,
+        undo: () => deleteFizrukDailyLogEntry(entry),
+      };
     }
     // ── Фізрук v2 ──────────────────────────────────────────────
     case "suggest_meal": {
@@ -538,15 +544,25 @@ export function handleNutritionAction(
         copied = sourceDay.meals;
       }
       let nextLog = nutritionLog;
+      const createdIds: string[] = [];
       for (const m of copied) {
-        nextLog = addLogEntry(nextLog, todayKey, {
-          ...m,
-          id: `m_${Date.now()}_${crypto.randomUUID()}`,
-        });
+        const id = `m_${Date.now()}_${crypto.randomUUID()}`;
+        createdIds.push(id);
+        nextLog = addLogEntry(nextLog, todayKey, { ...m, id });
       }
       persistNutritionLog(nextLog);
       const totalKcal = copied.reduce((s, m) => s + (m?.macros?.kcal ?? 0), 0);
-      return `Скопійовано ${copied.length} ${pluralUa(copied.length, { one: "прийом", few: "прийоми", many: "прийомів" })} з ${source_date} (${formatNumberUk(Math.round(totalKcal))} ккал)`;
+      return {
+        result: `Скопійовано ${copied.length} ${pluralUa(copied.length, { one: "прийом", few: "прийоми", many: "прийомів" })} з ${source_date} (${formatNumberUk(Math.round(totalKcal))} ккал)`,
+        undo: () => {
+          persistNutritionLog(
+            createdIds.reduce(
+              (log, id) => removeLogEntry(log, todayKey, id),
+              loadNutritionLog(),
+            ),
+          );
+        },
+      };
     }
     case "plan_meals_for_day": {
       const { target_kcal, meals_count, preferences } =

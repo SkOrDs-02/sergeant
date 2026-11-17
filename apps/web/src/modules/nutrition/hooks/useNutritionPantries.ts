@@ -38,7 +38,9 @@ import {
   movePantryItem,
   newPantryItemId,
   DEFAULT_PLACE_ID,
+  type Pantry,
   type PantryItemSource,
+  type PlacedPantryItem,
 } from "@sergeant/nutrition-domain";
 import { usePantryPlaces } from "./usePantryPlaces";
 import { resolvePlaceOfWithFilter } from "../lib/resolvePlaceOfWithFilter";
@@ -50,6 +52,21 @@ import {
   usePantryReplenishWrite,
   normalizeIncomingItems,
 } from "./usePantryReplenishWrite";
+
+/**
+ * Де позиція лежить у свіжому стані. За стабільним id (data-40), а не за
+ * індексом зі старого рендера: pull з іншого пристрою міг зсунути список, і
+ * індекс тоді вказує на сусідню позицію. Легасі-позиція без id лишається на
+ * індексі. `-1`, коли позиції вже немає.
+ */
+function localIndexOf(
+  pantries: readonly Pantry[],
+  ref: PlacedPantryItem,
+): number {
+  if (!ref.id) return ref.localIdx;
+  const items = pantries.find((p) => p.id === ref.pantryId)?.items ?? [];
+  return items.findIndex((x) => x?.id === ref.id);
+}
 
 export type { PantryReplenishLine } from "./usePantryReplenishWrite";
 
@@ -151,6 +168,7 @@ export function useNutritionPantries({
     unit: "",
     err: "",
     pantryId: "",
+    itemId: "",
   }));
 
   const [pantryStorageErr, setPantryStorageErr] = useState("");
@@ -303,6 +321,9 @@ export function useNutritionPantries({
       unit: cur.unit != null ? String(cur.unit) : "",
       err: "",
       pantryId: pantryItems[idx]?.pantryId ?? "",
+      // Індекс редактор тримає від відкриття, а pull може зсунути позиції:
+      // адресою для збереження править id.
+      itemId: pantryItems[idx]?.id ?? "",
     });
   };
 
@@ -315,12 +336,12 @@ export function useNutritionPantries({
     // `ensureStructuredItems`.
     const target = pantryItems[idx];
     const pantryId = target?.pantryId ?? draftPantry?.id ?? DEFAULT_PLACE_ID;
-    const localIdx = target?.localIdx ?? idx;
     const removedName = target?.name ?? effectiveItems[idx]?.name;
     setPantries((curPantries) =>
       updatePantry(curPantries, pantryId, (p) => {
         const items = Array.isArray(p.items) ? [...p.items] : [];
-        items.splice(localIdx, 1);
+        const at = target ? localIndexOf(curPantries, target) : idx;
+        if (at >= 0) items.splice(at, 1);
         return { ...p, items };
       }),
     );
@@ -365,14 +386,21 @@ export function useNutritionPantries({
     // `setPantries`-updater виконується синхронно (React зве його одразу,
     // щоб порахувати наступний стан) — той самий патерн, що вже несе
     // `consumePantryItem` нижче для передачі значень поза замикання.
-    const target = pantryItems[idx];
+    const target = itemEdit.itemId
+      ? pantryItems.find((x) => x.id === itemEdit.itemId)
+      : pantryItems[idx];
+    if (itemEdit.itemId && !target) {
+      // Позицію вже прибрав інший пристрій: правити нікого.
+      setItemEdit((s) => ({ ...s, open: false }));
+      return;
+    }
     const pantryId = target?.pantryId ?? draftPantry?.id ?? DEFAULT_PLACE_ID;
-    const localIdx = target?.localIdx ?? idx;
     let editedName: string | null = null;
     let editedQty: number | null = null;
     setPantries((curPantries) =>
       updatePantry(curPantries, pantryId, (p) => {
         const items = Array.isArray(p.items) ? [...p.items] : [];
+        const localIdx = target ? localIndexOf(curPantries, target) : idx;
         const item = items[localIdx];
         if (!item) return p;
         const qtyNum = qty == null || qty === "" ? null : Number(qty);
@@ -395,7 +423,7 @@ export function useNutritionPantries({
     setItemEdit((s) => ({ ...s, open: false }));
     // Переїзд — після збереження правок і тільки якщо місце справді інше.
     if (nextPantryId && target && nextPantryId !== target.pantryId) {
-      moveItemTo(idx, nextPantryId);
+      movePlacedItem(target, nextPantryId);
     }
     // W1-PANTRY-APPEND стадія 2 — ручне редагування qty = чекпойнт 'adjust',
     // це буквально "тепер знаю, що насправді X". Пропускаємо, коли юзер
@@ -629,13 +657,14 @@ export function useNutritionPantries({
    * у новому — рівно тим, що приїхало. Мовчазний перенос зробив би
    * залишок місця неправдою, а комора — це журнал (ADR-0077).
    */
-  const moveItemTo = (idx: number, targetId: string) => {
-    const src = pantryItems[idx];
-    if (!src || src.pantryId === targetId) return;
+  const movePlacedItem = (src: PlacedPantryItem, targetId: string) => {
+    if (src.pantryId === targetId) return;
     setPantries((cur) => {
+      const localIdx = localIndexOf(cur, src);
+      if (localIdx < 0) return cur;
       const res = movePantryItem(
         cur,
-        { pantryId: src.pantryId, localIdx: src.localIdx },
+        { pantryId: src.pantryId, localIdx },
         targetId,
       );
       return res.moved ? res.pantries : cur;
@@ -669,6 +698,11 @@ export function useNutritionPantries({
         mealId: null,
       });
     }
+  };
+
+  const moveItemTo = (idx: number, targetId: string) => {
+    const src = pantryItems[idx];
+    if (src) movePlacedItem(src, targetId);
   };
 
   return {

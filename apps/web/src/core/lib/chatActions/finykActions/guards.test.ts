@@ -132,7 +132,9 @@ describe("hide_transaction guards", () => {
 
   it("stays idempotent for an already-hidden real transaction", () => {
     seedRealTransaction();
-    localStorage.setItem("finyk_hidden_txs", JSON.stringify([REAL_TX]));
+    // Ручний запис ховається під канонічним `manual_<id>`.
+    const key = `manual_${REAL_TX}`;
+    localStorage.setItem("finyk_hidden_txs", JSON.stringify([key]));
     const out = asString(
       hideTransaction({ name: "hide_transaction", input: { tx_id: REAL_TX } }),
     );
@@ -140,7 +142,7 @@ describe("hide_transaction guards", () => {
     const hidden = JSON.parse(
       localStorage.getItem("finyk_hidden_txs") ?? "[]",
     ) as string[];
-    expect(hidden.filter((x) => x === REAL_TX)).toHaveLength(1);
+    expect(hidden.filter((x) => x === key)).toHaveLength(1);
   });
 });
 

@@ -14,6 +14,14 @@ import { ValidationError } from "../../../obs/errors.js";
 export type StatementGrid = TabularGrid;
 
 export const STATEMENT_MAX_FILE_BYTES = TABULAR_MAX_FILE_BYTES;
+
+/**
+ * Кап на кількість data-рядків preview (ревʼю PR #818): байтовий ліміт
+ * входу не обмежує кількість рядків, а відповідь несе обʼєкт на кожен.
+ * Річна виписка — тисячі рядків; 10k — межа з запасом, далі просимо
+ * розбити файл.
+ */
+export const STATEMENT_MAX_DATA_ROWS = 10_000;
 export const decodeStatementText = decodeTabularText;
 export { detectDelimiterByStructure };
 
@@ -46,6 +54,7 @@ export const HEADER_HINTS = [
 const TABULAR_ERROR_MESSAGES = {
   empty_file: "Порожній файл.",
   too_large: "Файл завеликий (максимум 5 МБ).",
+  too_many_rows: `Виписка завелика: понад ${STATEMENT_MAX_DATA_ROWS} рядків. Розбий файл на менші періоди.`,
   pdf_not_supported:
     "PDF-виписки поки не читаю. Візьми в банку той самий період у форматі XLSX або CSV.",
   legacy_xls:
@@ -68,7 +77,7 @@ export function locateHeaderRow(rows: string[][]): number {
 
 export function gridFromStatementFile(bytes: Buffer): StatementGrid {
   try {
-    return gridFromTabularFile(bytes, HEADER_HINTS);
+    return gridFromTabularFile(bytes, HEADER_HINTS, STATEMENT_MAX_DATA_ROWS);
   } catch (err) {
     if (err instanceof TabularImportError) {
       throw toValidationError(err);

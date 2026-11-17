@@ -23,9 +23,9 @@ import {
 } from "../lib/nutritionStorage";
 import { useNutritionPrefsHydrated } from "./useNutritionPrefsHydration";
 import {
-  GOAL_KCAL_DELTA,
   computeMacrosForKcal,
   computeNutritionTargetsFromBiometrics,
+  goalDeltaKcal,
   mifflinStJeorBmr,
 } from "../lib/tdee";
 
@@ -236,12 +236,14 @@ export function useAdaptiveNutritionGoal(
         undefined,
         analysis.latestWeightKg,
         analysis.workoutKcalPerDay,
+        prefs.weeklyRateKg,
       ),
     [
       analysis.latestWeightKg,
       analysis.workoutKcalPerDay,
       biometrics,
       prefs.adaptiveGoalIntent,
+      prefs.weeklyRateKg,
     ],
   );
 
@@ -265,6 +267,7 @@ export function useAdaptiveNutritionGoal(
       analysis.latestWeightKg ?? "no-weight",
       Math.round(analysis.workoutKcalPerDay),
       prefs.adaptiveGoalIntent,
+      prefs.weeklyRateKg,
     ].join(":");
     if (lastScheduledSignature === signature) return;
 
@@ -303,7 +306,8 @@ export function useAdaptiveNutritionGoal(
       sex: biometrics.sex,
     });
     const proposed =
-      analysis.measured.tdeeKcal + GOAL_KCAL_DELTA[prefs.adaptiveGoalIntent];
+      analysis.measured.tdeeKcal +
+      goalDeltaKcal(prefs.adaptiveGoalIntent, prefs.weeklyRateKg);
     const kcal = clampGoalDelta(proposed, prefs.dailyTargetKcal, bmr);
     const targets = computeMacrosForKcal(
       kcal,

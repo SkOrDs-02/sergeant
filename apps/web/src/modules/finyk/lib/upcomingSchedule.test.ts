@@ -153,6 +153,17 @@ describe("getSubscriptionDueDate", () => {
     const d = getSubscriptionDueDate(20, today, sec(new Date(2026, 8, 22, 9)));
     expect([d.getMonth(), d.getDate()]).toEqual([9, 20]);
   });
+
+  it("на пристрої східніше Києва оплачений цикл теж переходить на наступний", () => {
+    vi.stubEnv("TZ", "Asia/Tokyo");
+    try {
+      const now = new Date(2026, 8, 26, 10);
+      const d = getSubscriptionDueDate(26, now, sec(new Date(2026, 8, 26, 9)));
+      expect([d.getMonth(), d.getDate()]).toEqual([9, 26]);
+    } finally {
+      vi.unstubAllEnvs();
+    }
+  });
 });
 
 describe("formatShortDate", () => {

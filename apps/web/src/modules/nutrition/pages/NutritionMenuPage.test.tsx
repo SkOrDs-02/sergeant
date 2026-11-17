@@ -65,6 +65,7 @@ function makePantry(): ReturnType<typeof useNutritionPantries> {
       unit: "",
       err: "",
       pantryId: "",
+      itemId: "",
     },
     setItemEdit: vi.fn(),
     upsertItem: vi.fn(),

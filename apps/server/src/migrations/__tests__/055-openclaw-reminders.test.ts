@@ -98,7 +98,7 @@ async function readUpMigrations(): Promise<string[]> {
   return (
     files
       .filter((f) => /^\d{3}_.+\.sql$/.test(f) && !f.endsWith(".down.sql"))
-      // Міграція 166 видаляє openclaw_reminders, тож ланцюжок зупиняється на 055.
+      // Міграція 167 видаляє openclaw_reminders, тож ланцюжок зупиняється на 055.
       .filter((f) => f <= "055_~")
       .sort()
   );

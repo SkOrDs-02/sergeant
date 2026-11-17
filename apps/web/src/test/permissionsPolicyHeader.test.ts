@@ -15,7 +15,7 @@ import { resolve } from "node:path";
  * for the production SPA. Most powerful device / sensor / clipboard / XR
  * APIs are not needed, so the header disables them with the `name=()`
  * allowlist (empty allowlist = no origin can use the feature). The two
- * exceptions are `camera` and `microphone`, enabled for the app's OWN
+ * exceptions are `camera`, `microphone` and the clipboard pair, enabled for the app's OWN
  * origin (`name=(self)`) because shipped features depend on them
  * (barcode scanner + voice input — see `ENABLED_SELF_DIRECTIVES`).
  *
@@ -84,8 +84,6 @@ const REQUIRED_DISABLED_DIRECTIVES = [
   "browsing-topics",
   // L2 expansion — surfaces that a future XSS could reach without an
   // explicit denial.
-  "clipboard-read",
-  "clipboard-write",
   "screen-wake-lock",
   "xr-spatial-tracking",
   "bluetooth",
@@ -100,8 +98,16 @@ const REQUIRED_DISABLED_DIRECTIVES = [
 // iframe borrow the grant). `camera` — barcode scanner (`useBarcodeScanner`
 // getUserMedia({video}) + `BarcodeScanner.tsx`); `microphone` — voice input
 // (`useGroqVoiceInput` getUserMedia({audio}) + `useSpeech` SpeechRecognition).
+// `clipboard-read` / `clipboard-write` — вставка токена Monobank
+// (`FinykLoginScreen`) і копіювання відгуку/діагностики: порожній allowlist
+// блокує Clipboard API навіть для власного origin у Chromium.
 // Carve-out documented in docs/governance/security/audit-exceptions.md.
-const ENABLED_SELF_DIRECTIVES = ["camera", "microphone"];
+const ENABLED_SELF_DIRECTIVES = [
+  "camera",
+  "microphone",
+  "clipboard-read",
+  "clipboard-write",
+];
 
 describe("L2: Permissions-Policy header (apps/web/vercel.json)", () => {
   const policy = parsePermissionsPolicy(readVercelPermissionsPolicy());

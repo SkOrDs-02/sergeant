@@ -142,6 +142,18 @@ describe("debtEngine — дебіторка (мені винні)", () => {
     expect(calcReceivableRemaining(rec, transactions)).toBe(800);
   });
 
+  it("calcReceivableRemaining: часткові повернення без float-хвоста", () => {
+    const rec = {
+      amount: 0.8,
+      linkedTxIds: ["a", "b"],
+      txLinks: {
+        a: { role: "payment", amount: 0.1 },
+        b: { role: "payment", amount: 0.7 },
+      },
+    } as never;
+    expect(calcReceivableRemaining(rec, [])).toBe(0);
+  });
+
   it("calcReceivableRemaining: не менше нуля", () => {
     const rec = {
       amount: 100,

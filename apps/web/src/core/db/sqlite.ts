@@ -950,7 +950,10 @@ async function wipeKvvfsUserRows(
   conn: SqliteConnection,
   userId: string,
 ): Promise<void> {
-  for (const table of CLIENT_PULL_SUPPORTED_TABLES) {
+  // `sync_op_outbox` іде разом із рядками: людина вже погодилась на втрату
+  // незасинхронізованого, а лишена черга висіла б у лічильнику наступного
+  // акаунта і поїхала б на сервер при наступному вході.
+  for (const table of [...CLIENT_PULL_SUPPORTED_TABLES, "sync_op_outbox"]) {
     try {
       await conn.run(`DELETE FROM ${table} WHERE user_id = ?`, [userId]);
     } catch (err) {
@@ -959,6 +962,17 @@ async function wipeKvvfsUserRows(
       // partial cleanup beats none.
       logger.debug(`[sqlite] kvvfs row-wipe skipped for ${table}`, err);
     }
+  }
+  // Курсори (`pull_since:<id>`, `backfill_*:<id>`) без колонки `user_id`, id
+  // стоїть суфіксом ключа. Лишений курсор після стирання рядків означав би
+  // pull «з кінця» при повторному вході, і дані з сервера вже не повернуться.
+  try {
+    await conn.run(
+      `DELETE FROM sync_op_cursor WHERE substr(key, -length(?) - 1) = ':' || ?`,
+      [userId, userId],
+    );
+  } catch (err) {
+    logger.debug("[sqlite] kvvfs cursor-wipe skipped", err);
   }
 }
 

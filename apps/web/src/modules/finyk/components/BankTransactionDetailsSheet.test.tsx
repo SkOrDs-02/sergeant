@@ -182,6 +182,25 @@ describe("BankTransactionDetailsSheet", () => {
     );
   });
 
+  it("«Готово» зберігає зведений розподіл, а не викидає його", () => {
+    const handlers = renderSheet();
+
+    fireEvent.click(screen.getByRole("button", { name: /Розділити/ }));
+    const amounts = screen.getAllByLabelText("Сума частки");
+    fireEvent.change(amounts[0]!, { target: { value: "150" } });
+    fireEvent.change(amounts[1]!, { target: { value: "100" } });
+    fireEvent.click(screen.getByRole("button", { name: "Готово" }));
+
+    expect(handlers.onSplitChange).toHaveBeenCalledWith(
+      "bank-1",
+      expect.arrayContaining([
+        expect.objectContaining({ amount: 150 }),
+        expect.objectContaining({ amount: 100 }),
+      ]),
+    );
+    expect(handlers.onClose).toHaveBeenCalledTimes(1);
+  });
+
   it("closes from the explicit footer action", () => {
     const handlers = renderSheet();
     fireEvent.click(screen.getByRole("button", { name: "Готово" }));

@@ -184,8 +184,10 @@ function appendMonthlyTotals(lines: string[], d: AllData, now: Date): void {
             d.customCategories,
           );
     const date = t.time ? formatDateTimeShort(new Date(t.time * 1000)) : "";
+    // Ручна операція у всесвіті має id `manual_<id>`, а чат-тули (delete,
+    // hide, change_category, split) шукають її за сирим id запису.
     lines.push(
-      `  id:${t.id} | ${date} | ${t.description || "—"} | ${fmt(t.amount / 100)} грн | ${cat.label}`,
+      `  id:${t.manualId ?? t.id} | ${date} | ${t.description || "—"} | ${fmt(t.amount / 100)} грн | ${cat.label}`,
     );
   });
 }

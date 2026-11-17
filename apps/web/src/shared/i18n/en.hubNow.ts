@@ -11,4 +11,5 @@ export const nowPileEn: MessageGroupShape<
   open: "Open",
   openWeekReport: "Open the week report",
   check: "Close for today",
+  checked: "Moved to Closed",
 };

@@ -42,7 +42,10 @@ let client = makeClient();
 // schema-prep runs exactly once per boot (mirrors the real singleton DB).
 let dbHandle = { migrationClient: () => client };
 const mockGetSqliteDb = vi.fn(async () => dbHandle);
-vi.mock("../db/sqlite", () => ({ getSqliteDb: () => mockGetSqliteDb() }));
+vi.mock("../db/sqlite", () => ({
+  getSqliteDb: () => mockGetSqliteDb(),
+  readActiveSqliteUserId: () => "user-123",
+}));
 
 // ── api-client ───────────────────────────────────────────────────────────────
 const mockPushV2 = vi.fn(async (..._a: unknown[]) => ({ pushed: 0 }));
@@ -208,9 +211,12 @@ describe("createDefaultRuntime (default boot path)", () => {
     // `rejected` перекривається відфільтрованим лічильником (без
     // `lww_conflict`), щоб пілюля і `SyncRejectedList` рахували одну множину.
     expect(status).toEqual({ pending: 0, rejected: 2 });
-    expect(mockCountByStatus).toHaveBeenCalled();
+    expect(mockCountByStatus).toHaveBeenCalledWith(expect.anything(), {
+      userId: "user-123",
+    });
     expect(mockCountRejected).toHaveBeenCalledWith(expect.anything(), {
       excludeReasons: ["lww_conflict"],
+      userId: "user-123",
     });
   });
 
@@ -220,6 +226,7 @@ describe("createDefaultRuntime (default boot path)", () => {
     expect(await runtime!.listRejected()).toEqual([{ id: 7 }]);
     expect(mockListRejected).toHaveBeenCalledWith(expect.anything(), {
       excludeReasons: ["lww_conflict"],
+      userId: "user-123",
     });
 
     mockGetSession.mockResolvedValueOnce({ data: null, error: null } as never);

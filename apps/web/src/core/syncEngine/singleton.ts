@@ -399,7 +399,7 @@ async function createSyncSharedContext(): Promise<SyncSharedContext> {
   }
 
   const [
-    { getSqliteDb },
+    { getSqliteDb, readActiveSqliteUserId },
     { apiClient },
     sentry,
     dbSchema,
@@ -559,8 +559,12 @@ async function createSyncSharedContext(): Promise<SyncSharedContext> {
 
     // data-01: оп-и, відхилені старим сервером як `fk_violation` за «чужим
     // рядком» (до PK `(user_id, id)`), ставимо в чергу ще раз. Best-effort.
+    // Скоуп - власник партиції, а не сесія: стан і рядки належать файлу.
+    const partitionUserId = readActiveSqliteUserId();
     try {
-      await requeueFkViolationRejected(client);
+      if (partitionUserId !== null) {
+        await requeueFkViolationRejected(client, partitionUserId);
+      }
     } catch (err) {
       sentry.addSentryBreadcrumb({
         category: "storage",
@@ -773,18 +777,27 @@ async function createDefaultRuntime(): Promise<SyncEngineWriterRuntime> {
     // виключено з обох тим самим списком, що й у `reportTerminalRejection`
     // (це не втрата даних, людині його показувати нема за що). Інакше пілюля
     // казала б «2 записи не прийнято» над порожнім `SyncRejectedList`.
+    // Скоуп власника, як у `recoverDeadLetter` нижче: на kvvfs партиції
+    // акаунтів ділять один стор, і без нього людина бачила б чужу чергу.
     getStatus: async () => {
+      const userId = (await shared.resolveUserId()) ?? undefined;
       const client = await shared.resolveClient();
-      const counts = await shared.dbSchema.countOutboxByStatus(client);
+      const counts = await shared.dbSchema.countOutboxByStatus(client, {
+        userId,
+      });
       const rejected = await shared.dbSchema.countRejectedOutbox(client, {
         excludeReasons: [...BENIGN_REJECT_REASONS],
+        userId,
       });
       return { ...counts, rejected };
     },
-    listRejected: async () =>
-      shared.dbSchema.listRejectedOutbox(await shared.resolveClient(), {
+    listRejected: async () => {
+      const userId = (await shared.resolveUserId()) ?? undefined;
+      return shared.dbSchema.listRejectedOutbox(await shared.resolveClient(), {
         excludeReasons: [...BENIGN_REJECT_REASONS],
-      }),
+        userId,
+      });
+    },
     // Скоуп власника домішуємо тут, бо тільки цей шар знає сесію. Без
     // нього `{ all: true }` оживляв dead-letter-рядки ВСІХ локальних
     // акаунтів: на kvvfs-фолбеку партиції ділять один фізичний файл.

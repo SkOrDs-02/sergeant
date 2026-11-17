@@ -28,7 +28,7 @@ function PinDisplay({ length, filled }: { length: number; filled: number }) {
         <div
           key={i}
           className={`w-3 h-3 rounded-mark border-2 transition-colors ${
-            i < filled ? "bg-text border-text" : "bg-transparent border-line"
+            i < filled ? "bg-text border-text" : "bg-transparent border-control"
           }`}
         />
       ))}
@@ -127,6 +127,8 @@ function PinSetupFlow({ onDone, onCancel, onSave }: PinSetupFlowProps) {
   const [first, setFirst] = useState("");
   const [second, setSecond] = useState("");
   const [error, setError] = useState("");
+  const [saving, setSaving] = useState(false);
+  const savingRef = useRef(false);
 
   const handleFirstNext = () => {
     if (first.length < PIN_MIN) {
@@ -143,7 +145,20 @@ function PinSetupFlow({ onDone, onCancel, onSave }: PinSetupFlowProps) {
       setSecond("");
       return;
     }
-    await onSave(first);
+    if (savingRef.current) return;
+    savingRef.current = true;
+    setSaving(true);
+    try {
+      await onSave(first);
+    } catch {
+      // IndexedDB недоступний або переповнений: PIN не записано, тож setup
+      // не завершуємо, інакше людина вважала б захист увімкненим.
+      setError(m.saveFailed);
+      return;
+    } finally {
+      savingRef.current = false;
+      setSaving(false);
+    }
     onDone();
   };
 
@@ -188,7 +203,7 @@ function PinSetupFlow({ onDone, onCancel, onSave }: PinSetupFlowProps) {
         variant="solid"
         size="md"
         className="w-full mt-2"
-        disabled={second.length < PIN_MIN}
+        disabled={second.length < PIN_MIN || saving}
         onClick={handleConfirm}
       >
         {messages.actions.confirm}

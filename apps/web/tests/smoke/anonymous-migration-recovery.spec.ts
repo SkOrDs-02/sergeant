@@ -136,7 +136,10 @@ async function openRegistration(page: Page) {
 async function registerAndMigrate(page: Page) {
   await openRegistration(page);
   await Promise.all([
-    page.getByText(SUCCESS, { exact: true }).waitFor({ timeout: 60_000 }),
+    page
+      .getByTestId("toast-tray")
+      .getByText(SUCCESS, { exact: true })
+      .waitFor({ timeout: 60_000 }),
     page.getByRole("button", { name: "Зареєструватися", exact: true }).click(),
   ]);
 }
@@ -248,7 +251,10 @@ test("@critical anonymous: reload після перерваного push від�
   });
   // The pending claim/outbox must survive a real document/worker restart.
   await restart(page);
-  await page.getByText(SUCCESS, { exact: true }).waitFor({ timeout: 60_000 });
+  await page
+    .getByTestId("toast-tray")
+    .getByText(SUCCESS, { exact: true })
+    .waitFor({ timeout: 60_000 });
   expect(keys.length).toBeGreaterThanOrEqual(2);
   expect(new Set(keys).size).toBe(1);
   await expect

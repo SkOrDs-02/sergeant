@@ -14,11 +14,11 @@ export function PasswordStrengthBar({ password }: { password: string }) {
   // не виправдано для трьох коротких токенів.
   const { level } = estimatePasswordStrength(password);
   const widths = ["w-1/3", "w-2/3", "w-full"];
-  const colors = ["bg-danger", "bg-amber-400", "bg-brand-500"];
+  const colors = ["bg-danger", "bg-warning", "bg-brand-500"];
   const labels = ["Слабкий", "Середній", "Надійний"];
   const labelColors = [
     "text-danger-strong dark:text-danger",
-    "text-amber-500",
+    "text-warning-strong dark:text-warning",
     "text-brand-strong",
   ];
 

@@ -410,8 +410,13 @@ async function loadNutritionCandidates(
       // Тут дефолт протилежний до Фізрука і теж дзеркалить клієнт
       // (`loadNutritionPrefs` не вмикає нагадування без явної згоди).
       reminderEnabled: prefs.reminderEnabled === true,
+      // Дзеркалить `normalizeNutritionPrefs`: уже збережене «8.5» інакше
+      // дає «8.5:00» у `due.ts` і push не приходить ніколи.
       reminderHour:
-        typeof prefs.reminderHour === "number" ? prefs.reminderHour : 12,
+        typeof prefs.reminderHour === "number" &&
+        Number.isFinite(prefs.reminderHour)
+          ? Math.min(23, Math.max(0, Math.floor(prefs.reminderHour)))
+          : 12,
     };
   });
 }

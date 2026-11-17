@@ -13,6 +13,7 @@ import {
 import { normalizePhotoResult } from "../../lib/nutritionResponse.js";
 import { validateImageBase64 } from "../../lib/imageMagic.js";
 import { nutritionPhotoRejectedTotal } from "../../obs/metrics.js";
+import { abortOnClientClose } from "../../http/clientAbort.js";
 
 type AnthropicErrorPayload = { error?: { message?: string } };
 type WithAnthropicKey = Request & {
@@ -176,6 +177,7 @@ export default async function handler(
   const { response, data } = await anthropicMessages(apiKey, payload, {
     timeoutMs: 20000,
     endpoint: "refine-photo",
+    signal: abortOnClientClose(res),
     allowOpenRouter: visionViaOpenRouter(),
     // Ініціатива 0025, Фаза 2 – «id обробки фото».
     traceId: als.getStore()?.traceId ?? undefined,
@@ -193,7 +195,11 @@ export default async function handler(
   const jsonParsed = extractJsonFromText(text);
   const result = normalizePhotoResult(jsonParsed, { fallbackGrams: grams });
 
-  res.status(200).json({ result, rawText: text || null });
+  // Сирий текст моделі не віддаємо: refine того самого кадру квоту не
+  // списує, а `qna` і `prior_result` ідуть у промпт дослівно, тож rawText
+  // перетворював би ендпоінт на безкоштовний LLM-проксі. Клієнти читають
+  // лише нормалізований `result`; поле лишається в контракті як null.
+  res.status(200).json({ result, rawText: null });
 }
 
 function safeJson(v: unknown): string {

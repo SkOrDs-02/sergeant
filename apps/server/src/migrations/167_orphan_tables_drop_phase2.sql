@@ -1,4 +1,4 @@
--- 166: фаза 2 two-phase видалення осиротілих таблиць (Hard Rule #4).
+-- 167: фаза 2 two-phase видалення осиротілих таблиць (Hard Rule #4).
 --
 -- Джерело: docs/work/specs/audits/2026-08-05-orphaned-code-audit.md § 2, § 12.
 -- Фаза 1: міграція 152 (deprecation-маркер COMMENT ON TABLE) + видалено

@@ -255,7 +255,7 @@ export function HubDashboard() {
   // order. `firstActionVisible` tracks the FTUX flag; `showSoftAuth`
   // gates on the post-FTUX window (real entry exists, not dismissed,
   // user not signed in); everything else falls back to the focus
-  // card (which itself renders an empty state when no rec is live).
+  // card, which renders nothing when no rec is live.
   //
   // Порядок тут навмисний: обидва прапорці рахуються ДО `useCoachInsight`
   // нижче, бо саме вони вирішують, чи порада взагалі потрапить на екран.
@@ -272,13 +272,19 @@ export function HubDashboard() {
    * `showSoftAuth` людина платила квотою за текст, якого не бачила
    * (знахідка PR-A1 огляду 2026-09-13).
    *
-   * AI-DANGER: змінюєш умову рендеру третьої гілки — зміни й цю. На вебі
-   * той самий інваріант винесено в іменований `shouldFetchCoachInsight`
-   * (`apps/web/.../useHubDashboardState.ts:143-149`) з таким самим
-   * застереженням; тут він лишається інлайновим, бо мобільні прапорці
-   * рахуються синхронно з MMKV просто вище.
+   * `focus` теж частина умови: без живої рекомендації `TodayFocusCard`
+   * повертає `null`, і поради нікуди рендерити. Поки мобільний
+   * `generateRecommendations` лишається заглушкою з `[]`, саме цей терм не дає
+   * кожному залогіненому палити квоту щодня за невидимий текст.
+   *
+   * AI-DANGER: змінюєш умову рендеру третьої гілки чи самої картки,
+   * зміни й цю. На вебі той самий інваріант винесено в іменований
+   * `shouldFetchCoachInsight` (`apps/web/.../useHubDashboardState.ts`) з
+   * таким самим застереженням; тут він лишається інлайновим, бо мобільні
+   * прапорці рахуються синхронно з MMKV просто вище.
    */
-  const coachInsightVisible = signedIn && !firstActionVisible && !showSoftAuth;
+  const coachInsightVisible =
+    signedIn && !firstActionVisible && !showSoftAuth && focus != null;
   const { insight: coachInsightText } = useCoachInsight({
     enabled: coachInsightVisible,
   });

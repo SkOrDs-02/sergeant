@@ -35,7 +35,12 @@ export function registerDirtyState(): () => void {
  * людина вже вводила і яке досі не порожнє (див. {@link installTypedInputTracker}).
  */
 export function hasDirtyState(): boolean {
-  return active.size > 0 || hasTypedInput();
+  return hasRegisteredDirtyState() || hasTypedInput();
+}
+
+/** Лише явні реєстрації (аркуш, діалог, композер), без трекера інлайн-полів. */
+export function hasRegisteredDirtyState(): boolean {
+  return active.size > 0;
 }
 
 // --- Трекер вводу в інлайн-поля -------------------------------------------
