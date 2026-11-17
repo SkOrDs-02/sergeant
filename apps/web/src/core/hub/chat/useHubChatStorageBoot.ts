@@ -16,11 +16,14 @@
  *    mean a co-mounted module shell that already warmed them is a
  *    no-op; no teardown).
  *  - finyk dual-write registration — installed once and **persisted**
- *    for the app session. We deliberately do NOT return the teardown:
- *    it clears the shared `registeredContext` singleton, which would
- *    silently disable the finyk module's own dual-write if HubChat
- *    unmounts after registering. App-wide single registration is the
- *    intended shape.
+ *    for the app session. We deliberately do NOT call the teardown on
+ *    unmount. The registry is a stack (`liveContexts` in
+ *    `modules/finyk/lib/sqliteWriter/index.ts`, PR-R1): a teardown removes
+ *    only its own context and the previous live one takes over again, so
+ *    calling it would be safe for other registrants. We still keep the
+ *    context alive: chat-action executors run off-React and may mirror a
+ *    write at any moment, and the `registered` ref makes this one
+ *    registration per app session.
  *  - routine dual-write registration — те саме, але id береться з
  *    `useLocalUserId` (як у `useRoutineDualWriteBoot`), тож анонімні
  *    відвідувачі теж реєструються. Без цього HubChat-тул, що створює або
@@ -59,7 +62,7 @@ export function useHubChatStorageBoot(): void {
   useEffect(() => {
     if (registered.current || !userId) return;
     registered.current = true;
-    // Persist for the session — see file header on the teardown hazard.
+    // Persist for the session — see file header (why no teardown).
     bootFinykDualWrite({ getUserId: () => userIdRef.current });
   }, [userId]);
 

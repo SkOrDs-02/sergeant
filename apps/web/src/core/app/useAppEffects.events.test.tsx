@@ -2,13 +2,19 @@
 import { act, renderHook } from "@testing-library/react";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
-const { openChatMock, onHubBusMock, prefetchHubMock, prefetchModulesMock } =
-  vi.hoisted(() => ({
-    openChatMock: vi.fn(),
-    onHubBusMock: vi.fn((_event: string) => () => {}),
-    prefetchHubMock: vi.fn(),
-    prefetchModulesMock: vi.fn(),
-  }));
+const {
+  openChatMock,
+  onHubBusMock,
+  prefetchHubMock,
+  prefetchModulesMock,
+  bootReaderMock,
+} = vi.hoisted(() => ({
+  openChatMock: vi.fn(),
+  onHubBusMock: vi.fn((_event: string) => () => {}),
+  prefetchHubMock: vi.fn(),
+  prefetchModulesMock: vi.fn(),
+  bootReaderMock: vi.fn(),
+}));
 
 vi.mock("../hub/useHubChatOverlay", () => ({
   useHubChatOverlay: () => ({ openChat: openChatMock }),
@@ -19,6 +25,9 @@ vi.mock("@shared/lib/modules/hubBus", async () => {
   >("@shared/lib/modules/hubBus");
   return { ...actual, onHubBus: onHubBusMock };
 });
+vi.mock("../syncEngine/singleton", () => ({
+  bootSyncEngineReader: bootReaderMock,
+}));
 vi.mock("../lib/useRoutePrefetch", () => ({
   prefetchHubNavigationPages: prefetchHubMock,
   prefetchCriticalModules: prefetchModulesMock,
@@ -29,7 +38,36 @@ import {
   HUB_OPEN_MODULE_EVENT,
   HUB_OPEN_SETTINGS_EVENT,
 } from "@shared/lib/modules/hubNav";
-import { REQUEST_PULL_EVENT } from "@shared/lib/modules/cloudPullRequest";
+import {
+  PULL_COMPLETE_EVENT,
+  REQUEST_PULL_EVENT,
+  type CloudPullOutcome,
+} from "@shared/lib/modules/cloudPullRequest";
+
+function deferred<T>() {
+  let resolve!: (value: T) => void;
+  let reject!: (reason: unknown) => void;
+  const promise = new Promise<T>((res, rej) => {
+    resolve = res;
+    reject = rej;
+  });
+  return { promise, resolve, reject };
+}
+
+function captureCompletions(): {
+  outcomes: Array<CloudPullOutcome | null>;
+  stop: () => void;
+} {
+  const outcomes: Array<CloudPullOutcome | null> = [];
+  const listener = (event: Event) => {
+    outcomes.push((event as CustomEvent<CloudPullOutcome | null>).detail);
+  };
+  window.addEventListener(PULL_COMPLETE_EVENT, listener);
+  return {
+    outcomes,
+    stop: () => window.removeEventListener(PULL_COMPLETE_EVENT, listener),
+  };
+}
 
 function makeDeps(over: Partial<AppEffectsDeps> = {}): AppEffectsDeps {
   return {
@@ -174,12 +212,76 @@ describe("useAppEffects — global event bridges", () => {
   });
 
   it("settles the legacy cloud-pull request event without throwing", () => {
+    bootReaderMock.mockResolvedValue(null);
     renderHook(() => useAppEffects(makeDeps()));
     expect(() => {
       act(() => {
         window.dispatchEvent(new Event(REQUEST_PULL_EVENT));
       });
     }).not.toThrow();
+  });
+
+  // PR-H3 pin: the request runs a real reader tick, and completion is
+  // emitted only after `pullOnce()` settles, carrying its outcome.
+  it("runs pullOnce and emits ok:true only after the tick resolves", async () => {
+    const tick = deferred<unknown>();
+    const pullOnce = vi.fn(() => tick.promise);
+    bootReaderMock.mockResolvedValue({ pullOnce });
+    const completions = captureCompletions();
+    try {
+      renderHook(() => useAppEffects(makeDeps()));
+      await act(async () => {
+        window.dispatchEvent(new Event(REQUEST_PULL_EVENT));
+        await Promise.resolve();
+      });
+      expect(bootReaderMock).toHaveBeenCalledTimes(1);
+      expect(pullOnce).toHaveBeenCalledTimes(1);
+      expect(completions.outcomes).toEqual([]);
+
+      await act(async () => {
+        tick.resolve({ pulled: 1 });
+        await tick.promise;
+      });
+      expect(completions.outcomes).toEqual([{ ok: true }]);
+    } finally {
+      completions.stop();
+    }
+  });
+
+  it("emits ok:false when the pull tick fails (offline, 5xx)", async () => {
+    const tick = deferred<unknown>();
+    bootReaderMock.mockResolvedValue({ pullOnce: () => tick.promise });
+    const completions = captureCompletions();
+    try {
+      renderHook(() => useAppEffects(makeDeps()));
+      await act(async () => {
+        window.dispatchEvent(new Event(REQUEST_PULL_EVENT));
+        await Promise.resolve();
+      });
+      expect(completions.outcomes).toEqual([]);
+
+      await act(async () => {
+        tick.reject(new TypeError("Failed to fetch"));
+        await tick.promise.catch(() => undefined);
+      });
+      expect(completions.outcomes).toEqual([{ ok: false }]);
+    } finally {
+      completions.stop();
+    }
+  });
+
+  it("treats a follower tab (no reader) as a successful pull", async () => {
+    bootReaderMock.mockResolvedValue(null);
+    const completions = captureCompletions();
+    try {
+      renderHook(() => useAppEffects(makeDeps()));
+      await act(async () => {
+        window.dispatchEvent(new Event(REQUEST_PULL_EVENT));
+      });
+      expect(completions.outcomes).toEqual([{ ok: true }]);
+    } finally {
+      completions.stop();
+    }
   });
 
   it("opens a module when the service worker posts OPEN_MODULE", () => {

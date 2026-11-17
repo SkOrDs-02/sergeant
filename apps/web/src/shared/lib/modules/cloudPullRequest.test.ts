@@ -8,6 +8,7 @@ import {
   getCloudPullPending,
   subscribeCloudPullPending,
   __resetCloudPullPendingForTests,
+  CloudPullError,
 } from "./cloudPullRequest";
 
 beforeEach(() => {
@@ -65,6 +66,54 @@ describe("cloudPullRequest", () => {
       expect(seen).toBe(true);
     } finally {
       window.removeEventListener(PULL_COMPLETE_EVENT, handler);
+    }
+  });
+});
+
+// PR-H3 tail (2026-11-17): a failed tick must reach `PullToRefresh`
+// `onError` instead of looking like a successful refresh.
+describe("cloudPullRequest — outcome", () => {
+  it("rejects with CloudPullError when the completion reports ok:false", async () => {
+    const pending = requestCloudPull(5000);
+    emitCloudPullComplete({ ok: false });
+    await expect(pending).rejects.toBeInstanceOf(CloudPullError);
+    expect(getCloudPullPending()).toBe(false);
+  });
+
+  it("resolves when the completion reports ok:true", async () => {
+    const pending = requestCloudPull(5000);
+    emitCloudPullComplete({ ok: true });
+    await expect(pending).resolves.toBeUndefined();
+  });
+
+  it("resolves on a bare legacy completion event without detail", async () => {
+    const pending = requestCloudPull(5000);
+    window.dispatchEvent(new Event(PULL_COMPLETE_EVENT));
+    await expect(pending).resolves.toBeUndefined();
+  });
+
+  it("rejects every overlapping requester from one failed completion", async () => {
+    const first = requestCloudPull(5000);
+    const second = requestCloudPull(5000);
+    emitCloudPullComplete({ ok: false });
+    await expect(first).rejects.toBeInstanceOf(CloudPullError);
+    await expect(second).rejects.toBeInstanceOf(CloudPullError);
+    expect(getCloudPullPending()).toBe(false);
+  });
+
+  it("resolves (not rejects) on timeout and ignores a later failure", async () => {
+    vi.useFakeTimers();
+    try {
+      const pending = requestCloudPull(150);
+      vi.advanceTimersByTime(200);
+      await expect(pending).resolves.toBeUndefined();
+      expect(getCloudPullPending()).toBe(false);
+      // A failure that lands after the timeout must not flip the
+      // already-settled promise or the pending counter.
+      emitCloudPullComplete({ ok: false });
+      expect(getCloudPullPending()).toBe(false);
+    } finally {
+      vi.useRealTimers();
     }
   });
 });
