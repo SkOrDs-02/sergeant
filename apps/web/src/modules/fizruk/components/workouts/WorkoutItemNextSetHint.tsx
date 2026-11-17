@@ -4,12 +4,12 @@
  */
 import {
   computeNextSetAging,
-  epley1rm,
+  progressionTopSet,
   suggestNextSet,
+  uncappedEpley1rm,
 } from "@sergeant/fizruk-domain";
 import type {
   ReadinessAnswer,
-  WorkoutSet,
   WorkoutVariantChoice,
 } from "@sergeant/fizruk-domain";
 import { findExerciseById } from "@sergeant/fizruk-domain/data";
@@ -33,19 +33,6 @@ export interface WorkoutItemNextSetHintProps {
     reps: number,
     variant: WorkoutVariantChoice,
   ) => void;
-}
-
-function bestSetOf(sets: WorkoutSet[]): WorkoutSet | null {
-  let best: WorkoutSet | null = null;
-  let bestEst = 0;
-  for (const s of sets) {
-    const est = epley1rm(s.weightKg, s.reps);
-    if (est > bestEst) {
-      bestEst = est;
-      best = s;
-    }
-  }
-  return best;
 }
 
 /**
@@ -82,14 +69,14 @@ export function WorkoutItemNextSetHint({
 }: WorkoutItemNextSetHintProps) {
   if (isReadOnly || last?.type !== "strength") return null;
 
-  const best = bestSetOf(filterNonEmptyStrengthSets(last.sets));
+  const best = progressionTopSet(filterNonEmptyStrengthSets(last.sets));
   if (!best) return null;
 
   // Режим повернення дивиться на ВСЮ історію вправи, а не лише на останню
   // сесію (аудит `logic-04`): одне легке заняття після паузи його не знімає,
   // як і на сторінці вправи.
   const aging = computeNextSetAging({
-    lastBest1rm: epley1rm(best.weightKg, best.reps),
+    lastBest1rm: uncappedEpley1rm(best),
     lastSessionAt: last._startedAt ?? null,
     sessions: last._sessions,
   });

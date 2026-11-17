@@ -117,6 +117,20 @@ export const GOAL_KCAL_DELTA: Record<NutritionGoalId, number> = {
   bulking: 300,
 };
 
+/**
+ * Добова поправка до TDEE для цілі. Схуднення йде за обраним темпом, а не за
+ * фіксованим -500: так само рахує аркуш «Моя норма», тож автокалібрування не
+ * зсуває норму з обраного темпу.
+ */
+export function goalDeltaKcal(
+  goal: NutritionGoalId,
+  weeklyRateKg: WeeklyRateKg | number = DEFAULT_WEEKLY_RATE_KG,
+): number {
+  return goal === "cutting"
+    ? -weeklyRateDeficitKcal(weeklyRateKg)
+    : GOAL_KCAL_DELTA[goal];
+}
+
 interface MacroSplit {
   proteinPerKg: number;
   fatPerKg: number;
@@ -216,10 +230,7 @@ export function explainNutritionTargets(
   const tdee = computeTdee(input);
   const dynamic = Boolean(input.countWorkoutsInGoal);
   const burned = Number(input.workoutKcal);
-  const deltaKcal =
-    normalizedGoal === "cutting"
-      ? -weeklyRateDeficitKcal(weeklyRateKg)
-      : GOAL_KCAL_DELTA[normalizedGoal];
+  const deltaKcal = goalDeltaKcal(normalizedGoal, weeklyRateKg);
   const raw = Math.round((tdee + deltaKcal) / 10) * 10;
   const clampedBy = raw < 1000 ? "floor" : null;
   return {

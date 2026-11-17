@@ -265,6 +265,44 @@ describe("useNutritionPantries CRUD", () => {
     expect(result.current.itemEdit.open).toBe(false);
   });
 
+  it("правка після pull лягає на ту саму позицію, а не на сусідню за індексом", () => {
+    const home = (items: unknown[]) => [
+      { id: "home", name: "Дім", items, text: "" },
+    ];
+    const bread = { id: "i-bread", name: "Хліб", qty: 1, unit: "шт" };
+    const eggs = { id: "i-eggs", name: "Яйця", qty: 10, unit: "шт" };
+    const milk = { id: "i-milk", name: "Молоко", qty: 2, unit: "л" };
+    seed(home([bread, eggs, milk]), "home");
+    const { result } = renderHarness();
+
+    act(() => result.current.editItemAt(2));
+    // Інший пристрій видалив «Хліб»: «Молоко» тепер на індексі 1.
+    act(() => seed(home([eggs, milk]), "home"));
+    act(() => result.current.onSaveItemEdit(2, "Молоко", 0.5, "л"));
+
+    const byName = (n: string) =>
+      result.current.pantryItems.find((x) => x.name.toLowerCase() === n);
+    expect(byName("молоко")?.qty).toBe(0.5);
+    expect(byName("яйця")?.qty).toBe(10);
+  });
+
+  it("правка позиції, яку прибрав інший пристрій, нічого не пише", () => {
+    const milk = { id: "i-milk", name: "Молоко", qty: 2, unit: "л" };
+    const eggs = { id: "i-eggs", name: "Яйця", qty: 10, unit: "шт" };
+    seed([{ id: "home", name: "Дім", items: [eggs, milk], text: "" }], "home");
+    const { result } = renderHarness();
+
+    act(() => result.current.editItemAt(1));
+    act(() =>
+      seed([{ id: "home", name: "Дім", items: [eggs], text: "" }], "home"),
+    );
+    act(() => result.current.onSaveItemEdit(1, "Молоко", 0.5, "л"));
+
+    expect(result.current.pantryItems).toHaveLength(1);
+    expect(result.current.pantryItems[0]?.qty).toBe(10);
+    expect(result.current.itemEdit.open).toBe(false);
+  });
+
   it("removes an item by index", () => {
     seed(
       [

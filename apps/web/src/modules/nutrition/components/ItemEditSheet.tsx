@@ -25,6 +25,8 @@ export interface ItemEditState {
   err: string;
   /** Місце, у якому позиція лежить зараз. Порожньо — легасі-шлях тексту. */
   pantryId: string;
+  /** Стабільний id позиції на момент відкриття; порожньо - легасі без id. */
+  itemId: string;
 }
 
 interface ItemEditSheetProps {

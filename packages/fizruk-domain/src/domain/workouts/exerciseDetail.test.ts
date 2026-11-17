@@ -181,6 +181,22 @@ describe("computeExerciseBest", () => {
     expect(best.lastTop?.weightKg).toBe(110);
   });
 
+  it("lastTop лишається визначеним, коли всі підходи понад кеп Еплі", () => {
+    const history = [
+      {
+        workout: w("w_new", "2026-04-20T10:00:00Z", []),
+        item: strength("it_new", "curl", [
+          { weightKg: 12.5, reps: 11 },
+          { weightKg: 12.5, reps: 13 },
+        ]),
+      },
+    ];
+    expect(computeExerciseBest(history).lastTop).toMatchObject({
+      weightKg: 12.5,
+      reps: 13,
+    });
+  });
+
   it("does NOT flag a PR when the latest workout matches prior max", () => {
     const history = [
       {
