@@ -1,7 +1,21 @@
 # Backend Tech Debt Inventory
 
-> **Last touched:** 2026-10-21 (nutrition AI HTTP-контракти доповнено happy/invalid-body для решти пʼяти маршрутів; chat SSE перевірено повним двокроковим HTTP-циклом); 2026-10-19 by @claude (§ Database & migrations: курсор pull перевідкрито і закрито advisory-локом, аудит data-12; раніше: `.env.example` синхронізовано з `aiQuota.ts`; system-промпт тижневого дайджесту винесено у файл). **Next review:** 2026-12-16.
+> **Last touched:** 2026-11-17 by @claude (звірка реєстру з HEAD: міграції 154 → 169, server raw >600 18 → 25, `@critical` 26 → 31; закрито «шардинг per-route error-rate»; виправлено хибний доказ про `anthropicUsageStore.ts`); 2026-10-21 (nutrition AI HTTP-контракти доповнено happy/invalid-body для решти пʼяти маршрутів; chat SSE перевірено повним двокроковим HTTP-циклом). **Next review:** 2026-12-16.
 > **Status:** Active
+
+> **Оновлено 2026-11-17 (звірка реєстру з HEAD `b0e61055c`).** Вибірковий прохід: переміряно числа й «підтверджено відкритими» з маркера 2026-09-17 нижче, а також § Gaps → PR E. Повного аудиту не було.
+>
+> | Твердження в реєстрі                                                             | Факт 2026-11-17                                                                                                                                                                                                                                                                                                                | Дія                                                                                                                               |
+> | -------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ | --------------------------------------------------------------------------------------------------------------------------------- |
+> | міграцій **154** up, найновіша `153_ai_photo_refine_grants.sql` (§ Міграції)     | **169** up-файлів, найбільший номер **167** (`167_orphan_tables_drop_phase2.sql`): номери `091` і `160` мають по два файли, обидві пари в `APPLIED_DUPLICATE_FILENAMES` (`scripts/lint-migrations.mjs`), лінт зелений                                                                                                          | § Міграції оновлено                                                                                                               |
+> | Server raw >600 LOC — **18** файлів, найбільші `env.ts` 1026, `aiQuota.ts` 946   | **25** не-тестових файлів raw >600 (`wc -l`); найбільші `env/env.ts` **1096**, `modules/chat/chat.ts` **991**, `modules/chat/aiQuota.ts` **973**, `lib/llm/provider.ts` **953**. Ріст на 7 файлів за два місяці                                                                                                                | висновок «не борг» **стоїть**: `npx eslint "apps/server/src/**/*.ts"` (990 файлів) → **0 errors, 1 warning, жодного `max-lines`** |
+> | Playwright happy-path — **26** `@critical`-специ                                 | **31** (`grep -rl "@critical" apps/web/tests`, без `auth.setup.ts`)                                                                                                                                                                                                                                                            | число оновлено                                                                                                                    |
+> | § Pre-beta: «файла `apps/server/src/obs/anthropicUsageStore.ts` більше не існує» | **Доказ хибний, висновок правильний.** Файл живий, лише в іншому каталозі: `apps/server/src/lib/anthropicUsageStore.ts` (сім імпортерів). Розбіжності `'unknown'` проти `'legacy'` у ньому вже немає: рядок 170 пише `'legacy'` з коментарем «узгоджено з backfill-ом». Заразом докстрінг файлу (рядок 10) досі згадує Railway | доказ у § Pre-beta виправлено; Railway-хвіст — дрібниця, не чіпано                                                                |
+> | § Gaps → PR E: «per-route error-rate не має шардингу на `route_pattern`»         | **Закрито по суті.** `http_errors_total` має мітку `path`, і це саме route pattern (`req.baseUrl + req.route.path`, фолбек `unknown`, `http/requestLog.ts:86-90`); дашборд `http-red.json` агрегує `sum by (path, status_class)`. Окремої мітки з назвою `route_pattern` немає і не треба                                      | пункт закрито в § Gaps і в заголовку § F                                                                                          |
+>
+> **Підтверджено відкритими:** `idx_module_data_server_updated_at` і далі не створений (`grep` по `migrations/` → 0). `routine_habits.paused` і далі читає `lib/reminders/sweep.ts` (тепер рядки 122, 151, 214), тож Phase 1 DROP не відбувся. `routine_streaks` rename — без руху (`routine_completion_counter` у міграціях → 0), `Blocked-reason: owner-decision` чинний. Legacy `/api/push/subscribe` у сервері → 0, закриття тримається. CSP `report-uri` шлють обидва `vercel.json`. Railway у `http/security.ts` → 0. `eslint.server-maxlines-allowlist.json` і далі немає. Широких `res.json({ error: e.message })` у `apps/server/src` поза тестами → 0 (P0 №3 тримається).
+>
+> **Не перевірено цим проходом:** § Tests coverage map (живий `test:coverage` не запускався, відсотки там від 2026-08-01), § Per-file findings, § Bank integrations і § AI quota deep-dive, § Push credentials, § `.env.example`-аудит, курсор pull (§ Database, закрито 2026-10-19 — довіряю запису), решта пунктів § Pre-beta, крім `anthropicUsageStore`.
 
 > **Оновлено 2026-09-17 (звірка реєстру з HEAD).** Прохід по всіх відкритих пунктах цього файлу; нижче — лише те, що розійшлося з кодом.
 >
@@ -232,7 +246,7 @@
 
 EXPLAIN-нотатки, CHECK-constraints і канонічний `idx_push_subs_user_active` закриті (див. DB-section нижче). Єдиний відкритий хвіст — `idx_module_data_server_updated_at` (P2): досі не створений і не потрібен, поки нема фічі «recent changes across all modules». Не закривати «для чистоти».
 
-### F. Спостережуваність / логи — ~~потребує PR E~~ **✅ DONE** (PR E 2026-06-01; частково PR #335), крім шардингу per-route error-rate на `route_pattern`: він лишається відкритим як окремий пункт (див. «Gaps → PR E»)
+### F. Спостережуваність / логи — ~~потребує PR E~~ **✅ DONE** (PR E 2026-06-01; частково PR #335), ~~крім шардингу per-route error-rate на `route_pattern`: він лишається відкритим як окремий пункт~~ — шардинг є, закрито звіркою 2026-11-17 (див. «Gaps → PR E»)
 
 `app_build_info`, мітка `endpoint` на AI-метриках, `GIT_SHA` у Sentry release і `.env.example` закриті (див. § Observability, «Gaps → PR E»). Відкритий хвіст один, середньої важливості: шардінг per-route error-rate на `route_pattern` (не перевірено, чи `path` у `http_requests_total` уже нормалізований шаблон).
 
@@ -437,7 +451,7 @@ API-форма не змінилась (та сама `UserProfileResponse`), т
 
 ### Міграції (`apps/server/src/migrations/`)
 
-На 2026-10-08 — **154** up-файли міграцій (lex order, без `.down.sql`-компаньйонів), найновіша `153_ai_photo_refine_grants.sql` (звірено `ls apps/server/src/migrations/*.sql | grep -v '\.down\.sql'`). Попередній маркер «82 / `082_plata_card_token.sql`» від 2026-07-20 відставав на 62 міграції; проміжний маркер «117» від 2026-08-07 — на 27. **Канонічний список — сама директорія `apps/server/src/migrations/`**; повний перелік тут навмисно не дублюємо, бо інлайн-енумерація швидко дрейфує (на 2026-05-13 тут стояло «32», на 2026-05-29 — «73»). Більшість має `.down.sql` companion для local rollback (production runner у `apps/server/migrate.mjs` ніколи не виконує down-міграції).
+На 2026-11-17 — **169** up-файлів міграцій (lex order, без `.down.sql`-компаньйонів), найбільший номер `167_orphan_tables_drop_phase2.sql`; файлів більше, ніж номерів, бо `091` і `160` мають по два файли (обидві пари дозволені `APPLIED_DUPLICATE_FILENAMES` у `scripts/lint-migrations.mjs`). Звірено `ls apps/server/src/migrations/*.sql | grep -v '\.down\.sql'`. Попередній маркер 2026-10-08 — **154**, найновіша `153_ai_photo_refine_grants.sql`. Попередній маркер «82 / `082_plata_card_token.sql`» від 2026-07-20 відставав на 62 міграції; проміжний маркер «117» від 2026-08-07 — на 27. **Канонічний список — сама директорія `apps/server/src/migrations/`**; повний перелік тут навмисно не дублюємо, бо інлайн-енумерація швидко дрейфує (на 2026-05-13 тут стояло «32», на 2026-05-29 — «73»). Більшість має `.down.sql` companion для local rollback (production runner у `apps/server/migrate.mjs` ніколи не виконує down-міграції).
 
 ### Індекси — по реальних query-патернах
 
@@ -667,10 +681,15 @@ two-phase DROP цього класу змін не покриває.
   див. рядок в "Індекси" вище. Sentinel-канон для відсутнього ендпоінта —
   `'legacy'` (backfill). ~~Stage 2 має уніфікувати з живим кодом
   (`anthropicUsageStore.ts:169` досі пише `'unknown'`).~~ **Знято
-  2026-09-17:** файла `apps/server/src/obs/anthropicUsageStore.ts` більше не
-  існує, тож у розбіжності, яку описував пункт, немає предмета. Живий
+  2026-09-17:** ~~файла `apps/server/src/obs/anthropicUsageStore.ts` більше не
+  існує, тож у розбіжності, яку описував пункт, немає предмета.~~ **Доказ
+  виправлено 2026-11-17:** файл існує, але в `apps/server/src/lib/anthropicUsageStore.ts`
+  (не в `obs/`), і пункт закритий тому, що sentinel там уже уніфіковано:
+  рядок 170 пише `'legacy'` з коментарем про узгодження з backfill-ом
+  міграцій 104/106. Живий
   quota-шлях пише фіксовану константу `AI_QUOTA_ENDPOINT = "quota"`
-  (`apps/server/src/modules/chat/aiQuota.ts:842`) і обґрунтовує це в
+  (оголошена в `apps/server/src/modules/chat/aiQuotaWeekly.ts:15`, імпортується
+  в `aiQuota.ts`) і обґрунтовує це в
   докстрінгу над нею — навмисно, щоб не змішувати вісь «скільки
   повідомлень» з віссю «скільки коштував конкретний endpoint» в одній
   колонці.
@@ -766,7 +785,7 @@ two-phase DROP цього класу змін не покриває.
 
 - ~~**Високий** — метрики відсутні на nutrition-handler-ах~~ ✅ звірено 2026-09-23: AI-гістограми мають мітку `endpoint` (`obs/metrics/domain.ts`), і nutrition-хендлери її передають (`day-plan`, `analyze-photo`, `parse-pantry`, `recommend-recipes`, `refine-photo`).
 - ~~**Середній** — немає `app_build_info` gauge~~ ✅ звірено 2026-09-23: gauge є в `obs/metrics/registry.ts` (див. і пункт про `GIT_SHA` нижче).
-- **Середній** — per-route error-rate не має окремого шардингу на `route_pattern` (зараз `module` label — достатньо для топ-рівня).
+- ~~**Середній** — per-route error-rate не має окремого шардингу на `route_pattern` (зараз `module` label — достатньо для топ-рівня).~~ ✅ звірено 2026-11-17: `http_errors_total` несе мітку `path`, і це route pattern, а не сирий URL (`req.baseUrl + req.route.path`, фолбек `unknown` проти cardinality, `http/requestLog.ts:86-90`); дашборд `docs/operations/observability/dashboards/http-red.json` рахує error-rate `sum by (path, status_class)`.
 - **Низький** — ✅ закрито 2026-09-02: Sentry release / `app_build_info` беруть `GIT_SHA`, запечений у образ build-arg-ом із `deploy-api.yml`; `RAILWAY_GIT_COMMIT_SHA` знято з усіх каскадів (ADR-0074).
 
 ---
