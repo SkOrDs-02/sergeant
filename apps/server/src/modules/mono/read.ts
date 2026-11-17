@@ -144,7 +144,19 @@ export async function transactionsHandler(
   // рядки лежать у partial-індексі `mono_transaction_active_idx`, тому
   // умова не додає cost — план одразу йде по активному хвосту без
   // перегляду soft-deleted сторінок.
-  const conditions: string[] = ["t.user_id = $1", "t.deleted_at IS NULL"];
+  // Фінік UAH-only без FX: `t.amount` лежить у валюті РАХУНКУ, тож центи
+  // доларової картки клієнт склав би з гривневими копійками. Відсікаємо
+  // операції не-гривневих рахунків тут, де сходяться всі читачі.
+  const conditions: string[] = [
+    "t.user_id = $1",
+    "t.deleted_at IS NULL",
+    `NOT EXISTS (
+      SELECT 1 FROM mono_account a
+       WHERE a.user_id = t.user_id
+         AND a.mono_account_id = t.mono_account_id
+         AND a.currency_code <> 980
+    )`,
+  ];
   const params: unknown[] = [userId];
   let paramIdx = 2;
 

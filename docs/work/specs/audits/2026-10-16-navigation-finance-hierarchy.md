@@ -1,7 +1,7 @@
 # Вихід із Фізрука та ієрархія фінансових сутностей
 
-> **Last touched:** 2026-10-18 by @claude. **Next review:** 2027-11-29.
-> **Status:** Active
+> **Last touched:** 2026-10-26 by @claude (тріаж документації: Active → Implemented, PR-номер, рев'ю: прибрано «draft» і очікування CI). **Next review:** 2027-11-29.
+> **Status:** Implemented - [#1517](https://github.com/SkOrDs-02/sergeant/pull/1517) (змерджено 2026-10-16): `ModuleHeaderHubButton`, `apps/web/src/modules/finyk/components/FinanceItemHeading.tsx`. Залишків немає.
 
 ## Запит і база
 
@@ -44,4 +44,4 @@
 
 Stage 1: NAV-01/02 та FIN-01/02/03 покриті кодом і сценаріями. Stage 2: повторно використані чинні шапка, кнопки, панелі й typography; новий helper не має стану чи запитів. Одна панель на секцію, вкладені рядки без окремих плиток, головне число залежить від сутності. Перевірені доступні назви та області натискання. API, schema, shared runtime, native і формули не змінені. Відкат — revert web-комітів, міграцій немає.
 
-PR: [draft #1517](https://github.com/SkOrDs-02/sergeant/pull/1517). Локальна верифікація завершена; на момент публікації CI ще працює. Перевіряти actual head перед мержем.
+PR: [#1517](https://github.com/SkOrDs-02/sergeant/pull/1517), змерджено 2026-10-16. Локальна верифікація завершена.

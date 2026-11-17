@@ -21,7 +21,7 @@ import {
   revokeSession,
   type SessionItem,
 } from "../auth/authClient";
-import { flushPendingSyncOpsBeforeLogout } from "../syncEngine/flushBeforeLogout";
+import { checkLogoutLoss } from "../auth/logoutLossCheck";
 import { pluralize } from "../hub/useHubDashboardState";
 
 const COPY = messages.profileSessions;
@@ -74,6 +74,8 @@ export function SessionsSection({ online }: { online: boolean }) {
   // поруч, який це попередження вже мав.
   const [unsyncedPrompt, setUnsyncedPrompt] = useState<{
     pending: number;
+    /** `data-46`: скільки з них анонімні рядки незавершеного переносу. */
+    anonymous: number;
     resolve: (proceed: boolean) => void;
   } | null>(null);
 
@@ -150,11 +152,14 @@ export function SessionsSection({ online }: { online: boolean }) {
         // first, means a cancel leaves the session genuinely alive and
         // the dialog's "Підключися до мережі і зачекай кілька секунд"
         // copy stays true when it's shown.
-        const { pending, unknown } = await flushPendingSyncOpsBeforeLogout();
-        if (!unknown && pending > 0) {
+        // `data-46`: той самий лічильник, що й у `logout()`, тобто черга
+        // синку плюс анонімні рядки незавершеного переносу цього акаунта.
+        const loss = await checkLogoutLoss();
+        if (loss.lost > 0) {
           const proceed = await new Promise<boolean>((resolve) => {
             setUnsyncedPrompt({
-              pending,
+              pending: loss.lost,
+              anonymous: loss.anonymousRows,
               resolve: (p) => {
                 setUnsyncedPrompt(null);
                 resolve(p);
@@ -332,6 +337,8 @@ export function SessionsSection({ online }: { online: boolean }) {
             ще не збережено на сервері. Якщо завершити цю сесію зараз, вони
             зникнуть назавжди. Підключися до мережі й зачекай кілька секунд, або
             завершуй, якщо ці записи не потрібні.
+            {(unsyncedPrompt?.anonymous ?? 0) > 0 &&
+              ` ${messages.unsyncedLoss.anonymousHint}`}
           </>
         }
         confirmLabel="Все одно завершити"

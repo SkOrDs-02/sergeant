@@ -6,7 +6,8 @@ import { cn } from "../../lib/ui/cn";
  *
  * - `lg` - заголовок секції 20 / 700, чорнилом. З `variant="muted"` - 16 / 700
  *   другим сірим: для «Закрито» й «Будь-коли».
- * - `xs` - ярлик 12 / 600 / caps третім сірим (над числом, у шапці блока).
+ * - `xs` - ярлик 14 / 600 третім сірим (над числом, у шапці блока), без
+ *   капсу: капс-оверлайн лише на тинті hero (redesign v3.2, позиція 09).
  *   Кікера з вертикальною рискою більше немає.
  * - `md` - 14 / 600, `xl` - заголовок екрана 26 / 700.
  *
@@ -28,7 +29,7 @@ export type SectionHeadingWeight =
   "normal" | "medium" | "semibold" | "bold" | "extrabold";
 
 const sizeTokens: Record<SectionHeadingSize, string> = {
-  xs: "text-style-overline",
+  xs: "text-style-label",
   md: "text-style-label",
   lg: "text-style-title",
   xl: "text-style-headline",

@@ -692,7 +692,7 @@ describe("PrivacySection — V-12 (SettingsSubGroup primitive)", () => {
 
     const heading = await screen.findByText("Згода та дані");
     expect(heading.tagName).toBe("H3");
-    expect(heading).toHaveClass("text-style-overline");
+    expect(heading).toHaveClass("text-style-label-lg");
     expect(heading).not.toHaveClass("text-style-label");
   });
 

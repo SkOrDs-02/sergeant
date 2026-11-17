@@ -8,6 +8,7 @@
  */
 import { useDecimalDraft } from "@shared/hooks/useDecimalDraft";
 import { ChoiceGroup } from "@shared/components/ui/Choice";
+import { Input } from "@shared/components/ui/Input";
 import { Select } from "@shared/components/ui/Select";
 import { stepButtonClass } from "./choiceClasses";
 import { messages } from "@shared/i18n/uk";
@@ -100,14 +101,17 @@ export function PortionQuantityField({
       >
         −
       </button>
-      <input
-        type="text"
-        inputMode="decimal"
-        value={draft.value}
-        onChange={draft.onChange}
-        aria-label={`Кількість, ${portion.name}`}
-        className="input-focus-nutrition w-[76px] text-center bg-panel border border-line rounded-lg px-2 py-2 text-style-label text-text tabular-nums"
-      />
+      <span className="w-[76px] shrink-0">
+        <Input
+          size="sm"
+          type="text"
+          inputMode="decimal"
+          value={draft.value}
+          onChange={draft.onChange}
+          aria-label={`Кількість, ${portion.name}`}
+          className="bg-panel px-2 text-center tabular-nums"
+        />
+      </span>
       <button
         type="button"
         aria-label={messages.nutrition.portionUnit.increase}

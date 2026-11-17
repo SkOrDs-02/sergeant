@@ -62,7 +62,10 @@ export function ExperimentalSection() {
     // "Експериментальні функції" (КОПІЯ ДЛЯ ЗАТВЕРДЖЕННЯ ВЛАСНИКОМ) — тепер
     // єдине джерело: `settingsSectionsCatalog.ts`, дзеркалиться в
     // `messages.experimentalSection.title` (uk.ts/en.ts) для узгодженості.
-    <SettingsGroup title={settingsSectionTitle("experimental")}>
+    <SettingsGroup
+      title={settingsSectionTitle("experimental")}
+      value={`Увімкнено ${items.filter((f) => flags[f.id]).length} з ${items.length}`}
+    >
       <ContentGroup variant="bounded" className="space-y-3">
         <p className="text-style-body text-subtle leading-snug">{copy.intro}</p>
         <Notice tone="ink" role="note">

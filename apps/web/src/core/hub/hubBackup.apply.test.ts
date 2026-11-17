@@ -291,7 +291,10 @@ describe("applyHubBackupPayload — режими і чесний результ�
     });
     await expect(
       applyHubBackupPayload(validPayload({ finyk: {} })),
-    ).rejects.toThrow(/Не вдалось записати дані Фізрука/);
+      // Рутина пишеться раніше, тож текст називає її відновленою (data-34).
+    ).rejects.toThrow(
+      "Відновлено: Рутина. Не вдалось відновити: Фізрук. Спробуй імпорт ще раз.",
+    );
   });
 
   it("applied з errored > 0 — теж помилка (частину записів SQL не прийняв)", async () => {

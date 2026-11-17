@@ -53,12 +53,10 @@ describe("parseTechDebtFiles", () => {
     assert.deepEqual(parseTechDebtFiles(undefined), [
       "docs/work/specs/tech-debt/frontend.md",
       "docs/work/specs/tech-debt/backend.md",
-      "docs/work/specs/tech-debt/mobile.md",
     ]);
     assert.deepEqual(parseTechDebtFiles(""), [
       "docs/work/specs/tech-debt/frontend.md",
       "docs/work/specs/tech-debt/backend.md",
-      "docs/work/specs/tech-debt/mobile.md",
     ]);
   });
 
@@ -82,7 +80,6 @@ describe("parseTechDebtFiles", () => {
     assert.deepEqual(parseTechDebtFiles(",,,"), [
       "docs/work/specs/tech-debt/frontend.md",
       "docs/work/specs/tech-debt/backend.md",
-      "docs/work/specs/tech-debt/mobile.md",
     ]);
   });
 });

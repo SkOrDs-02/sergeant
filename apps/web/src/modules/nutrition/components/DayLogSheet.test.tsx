@@ -6,7 +6,7 @@
  * Вартовий МЕЖІ аркуша (анти-слоп П3), а не його вигляду.
  *
  * AI-DANGER: помилка тут виглядає як охайність. Наступний агент побачить
- * «+ Додати прийом їжі» поза перфорованою поверхнею й затягне кнопку
+ * перемикач дати чи пошук поза перфорованою поверхнею й затягне їх
  * всередину — сторінка стане «цілішою», а матеріал збрехне: перфорація
  * пообіцяє, що відривається запис, тоді як відірветься форма введення.
  * Рівно за це край зняли з hero Рутини. Тому межа пінеться тестом, а не
@@ -29,8 +29,8 @@ vi.mock("./LogCardAnalytics", () => ({
   LogCardAnalytics: () => <div data-testid="log-analytics" />,
 }));
 
-import { LogCard } from "./LogCard";
-import { todayISODate } from "@sergeant/nutrition-domain";
+import { HISTORY_FROM_DAYS, LogCard } from "./LogCard";
+import { addDaysISODate, todayISODate } from "@sergeant/nutrition-domain";
 
 const today = todayISODate();
 
@@ -44,14 +44,22 @@ function renderLog(log: Record<string, unknown>) {
     log: log as never,
     selectedDate: today,
     setSelectedDate: vi.fn(),
-    onAddMeal: vi.fn(),
   };
   const Comp = LogCard as (p: typeof props) => ReactElement;
   render(<Comp {...props} />);
 }
 
 function renderWithMeals() {
-  renderLog({ [today]: { meals: MEALS } });
+  // Тиждень днів із записами: пошук журналу показується від
+  // `HISTORY_FROM_DAYS` (redesign v3.2, 17).
+  renderLog(
+    Object.fromEntries(
+      Array.from({ length: HISTORY_FROM_DAYS }, (_, i) => [
+        addDaysISODate(today, -i),
+        { meals: MEALS },
+      ]),
+    ),
+  );
   return screen.getByRole("region", { name: `Записи за ${today}` });
 }
 
@@ -63,9 +71,9 @@ describe("DayLogSheet — межа аркуша", () => {
 
   it("керування записом лишається ПОЗА аркушем", () => {
     const sheet = renderWithMeals();
-    // Кнопка додавання, перемикач дати й пошук — органи керування. Вони
-    // існують на екрані, але не всередині перфорованої поверхні.
-    expect(screen.getByText("Додати прийом їжі")).toBeTruthy();
+    // Перемикач дати й пошук — органи керування. Вони існують на екрані,
+    // але не всередині перфорованої поверхні. Кнопки «Додати прийом їжі»
+    // під списком більше немає: додає кутова кнопка (redesign v3.2, 01).
     expect(within(sheet).queryByText("Додати прийом їжі")).toBeNull();
 
     expect(screen.getByLabelText("Попередній день")).toBeTruthy();

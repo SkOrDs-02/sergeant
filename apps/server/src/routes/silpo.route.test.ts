@@ -598,6 +598,8 @@ describe("POST /api/silpo/disconnect", () => {
       ["user-1"],
       expect.anything(),
     );
+    // data-47: маркер wipe переживає disconnect - його не чіпаємо.
+    expect(mocks.queryMock).toHaveBeenCalledTimes(1);
   });
 });
 
@@ -619,9 +621,9 @@ describe("POST /api/silpo/wipe", () => {
     expect(mocks.queryMock.mock.calls[0]?.[1]).toEqual(["user-1"]);
   });
 
-  it("у тому ж запиті ставить receipts_wiped_at на підключення (data-47)", async () => {
-    // Без маркера підключення лишалось connected, і полер за ≤8 год тягнув
-    // стерті чеки назад. DELETE і UPDATE мусять їхати ОДНИМ оператором
+  it("у тому ж запиті ставить маркер у silpo_wipe_marker, а не на підключення (data-47)", async () => {
+    // Маркер на рядку підключення зникав разом із disconnect, і reconnect
+    // повертав історію. DELETE і INSERT мусять їхати ОДНИМ оператором
     // (data-modifying CTE), щоб не розʼїхатись.
     mocks.queryMock.mockResolvedValueOnce({
       rows: [{ deletedReceipts: 0 }],
@@ -636,9 +638,17 @@ describe("POST /api/silpo/wipe", () => {
     expect(mocks.queryMock).toHaveBeenCalledTimes(1);
     const sql = String(mocks.queryMock.mock.calls[0]?.[0]);
     expect(sql).toMatch(
-      /UPDATE silpo_connection\s+SET receipts_wiped_at = NOW\(\)/,
+      /INSERT INTO silpo_wipe_marker \(user_id, wiped_at\)\s+VALUES \(\$1, NOW\(\)\)/,
     );
-    expect(sql).toContain("WHERE user_id = $1");
+    // Стару колонку 159 теж пишемо: старий інстанс у вікні викочування і
+    // відкат деплою читають лише її.
+    expect(sql).toMatch(
+      /UPDATE silpo_connection\s+SET receipts_wiped_at = GREATEST\(receipts_wiped_at, NOW\(\)\)/,
+    );
+    // Маркер не відкочується назад, якщо два wipe перетнулись.
+    expect(sql).toContain(
+      "GREATEST(silpo_wipe_marker.wiped_at, EXCLUDED.wiped_at)",
+    );
   });
 });
 

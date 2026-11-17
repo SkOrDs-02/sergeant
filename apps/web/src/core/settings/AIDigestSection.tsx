@@ -47,7 +47,10 @@ export function AIDigestSection() {
     // V-7 (2026-08-08): title читається з каталогу — раніше цей рядок і
     // ⌘K-індекс (settingsSectionsCatalog.ts) розходились ("AI Звіт тижня"
     // тут vs "AI-дайджести" у пошуку) без жодної перевірки.
-    <SettingsGroup title={settingsSectionTitle("ai")}>
+    <SettingsGroup
+      title={settingsSectionTitle("ai")}
+      value={mondayAuto ? "Звіт щопонеділка" : "Звіт вимкнено"}
+    >
       <ContentGroup variant="bounded" className="space-y-3">
         <p className="text-style-body text-subtle leading-snug">
           Тижневий аналіз прогресу від Сержанта по всіх модулях: фінанси,

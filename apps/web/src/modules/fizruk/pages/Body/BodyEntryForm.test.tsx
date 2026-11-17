@@ -55,6 +55,36 @@ describe("BodyEntryForm — десятковий роздільник", () => {
     expect(onSubmitEntry.mock.calls[0]![0]).toMatchObject({ weightKg: 82.5 });
   });
 
+  it("повторний тап по оцінці енергії знімає її з запису", async () => {
+    const onSubmitEntry = vi.fn();
+    const { container } = render(
+      <BodyEntryForm onSubmitEntry={onSubmitEntry} />,
+    );
+
+    fireEvent.click(screen.getByRole("radio", { name: "Добре" }));
+    expect(screen.getByRole("radio", { name: "Добре" })).toHaveAttribute(
+      "aria-checked",
+      "true",
+    );
+    fireEvent.click(screen.getByRole("radio", { name: "Добре" }));
+    expect(screen.getByRole("radio", { name: "Добре" })).toHaveAttribute(
+      "aria-checked",
+      "false",
+    );
+
+    fireEvent.click(screen.getByRole("radio", { name: "Чудовий" }));
+    fireEvent.change(fieldById(container, "body-weight"), {
+      target: { value: "80" },
+    });
+    fireEvent.click(screen.getByRole("button", { name: "Записати" }));
+
+    await waitFor(() => expect(onSubmitEntry).toHaveBeenCalledTimes(1));
+    expect(onSubmitEntry.mock.calls[0]![0]).toMatchObject({
+      energyLevel: null,
+      moodScore: 5,
+    });
+  });
+
   it("вага поза діапазоном лишається помилкою, а не тихим null", async () => {
     const onSubmitEntry = vi.fn();
     const { container } = render(

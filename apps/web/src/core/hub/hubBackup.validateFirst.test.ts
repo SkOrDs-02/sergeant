@@ -1,5 +1,5 @@
 /**
- * Last validated: 2026-10-05
+ * Last validated: 2026-10-23
  * Status: Active
  *
  * Аудит 2026-10-01, data-34: імпорт бекапу спершу перевіряє ВСІ секції без
@@ -178,6 +178,122 @@ describe("applyHubBackupPayload — validate-all до першого запис�
       applyHubBackupPayload(payload({ schemaVersion: 2 })),
     ).rejects.toThrow("Файл з новішої версії застосунку, онови сторінку");
     expect(persistFinykNormalizedToSqlite).not.toHaveBeenCalled();
+  });
+
+  it.each([4, 999])(
+    "секція Фініка з version:%i відхиляється ДО запису, з поясненням",
+    async (version) => {
+      await expect(
+        applyHubBackupPayload(
+          payload({ finyk: { version, manualExpenses: [{ id: "e1" }] } }),
+        ),
+      ).rejects.toThrow("Файл з новішої версії застосунку, онови сторінку");
+      expect(persistFinykNormalizedToSqlite).not.toHaveBeenCalled();
+    },
+  );
+
+  it("зіпсований елемент масиву Фініка відхиляється ДО запису Фізрука", async () => {
+    await expect(
+      applyHubBackupPayload(
+        payload({
+          finyk: { version: 3, manualExpenses: [null, { id: "e1" }] },
+          fizruk: {
+            kind: "fizruk-full-backup",
+            schemaVersion: 1,
+            data: { [MEASUREMENTS_KEY]: "[]" },
+          },
+        }),
+      ),
+    ).rejects.toThrow(/manualExpenses/);
+    expect(persistFinykNormalizedToSqlite).not.toHaveBeenCalled();
+    expect(dualWriteFizrukState).not.toHaveBeenCalled();
+  });
+
+  it("необʼєктний елемент зрізу Фізрука кидає ДО запису Фініка", async () => {
+    await expect(
+      applyHubBackupPayload(
+        payload({
+          fizruk: {
+            kind: "fizruk-full-backup",
+            schemaVersion: 1,
+            data: { [MEASUREMENTS_KEY]: "[1,2]" },
+          },
+        }),
+        { mode: "replace" },
+      ),
+    ).rejects.toThrow(/Пошкоджений файл: розділ Фізрука «заміри»/);
+    expect(persistFinykNormalizedToSqlite).not.toHaveBeenCalled();
+    expect(dualWriteFizrukState).not.toHaveBeenCalled();
+  });
+
+  it("збій САМОГО запису Фізрука після Фініка називає відновлене і невідновлене", async () => {
+    dualWriteFizrukState.mockResolvedValueOnce({
+      status: "applied" as const,
+      result: { applied: 0, errored: 1, skipped: 0 },
+    });
+    // Відкату свідомо немає (рішення власника 2026-10-23): Фінік лишається
+    // записаним, а текст каже, що саме відновлено, щоб людина повторила імпорт.
+    await expect(
+      applyHubBackupPayload(
+        payload({
+          fizruk: {
+            kind: "fizruk-full-backup",
+            schemaVersion: 1,
+            data: { [MEASUREMENTS_KEY]: JSON.stringify([{ id: "m1" }]) },
+          },
+        }),
+        { mode: "replace" },
+      ),
+    ).rejects.toThrow(
+      "Відновлено: Фінік. Не вдалось відновити: Фізрук. Спробуй імпорт ще раз.",
+    );
+    expect(persistFinykNormalizedToSqlite).toHaveBeenCalledTimes(1);
+  });
+
+  it("перелічує всі вже відновлені модулі, а сирий збій сховища стає людським текстом", async () => {
+    dualWriteFizrukState.mockRejectedValueOnce(
+      new DOMException("QuotaExceededError"),
+    );
+    await expect(
+      applyHubBackupPayload(
+        payload({
+          routine: { kind: "hub-routine-backup", data: { habits: [] } },
+          fizruk: {
+            kind: "fizruk-full-backup",
+            schemaVersion: 1,
+            data: { [MEASUREMENTS_KEY]: JSON.stringify([{ id: "m1" }]) },
+          },
+          nutrition: {
+            kind: "hub-nutrition-backup",
+            schemaVersion: 1,
+            data: {},
+          },
+        }),
+        { mode: "replace" },
+      ),
+    ).rejects.toThrow(
+      "Відновлено: Фінік, Рутина. Не вдалось відновити: Фізрук. Спробуй імпорт ще раз.",
+    );
+  });
+
+  it("збій першого ж запису лишає власний текст модуля", async () => {
+    persistFinykNormalizedToSqlite.mockResolvedValueOnce({
+      status: "applied" as const,
+      result: { applied: 0, errored: 1, skipped: 0 },
+    });
+    const err = await applyHubBackupPayload(
+      payload({
+        fizruk: {
+          kind: "fizruk-full-backup",
+          schemaVersion: 1,
+          data: { [MEASUREMENTS_KEY]: "[]" },
+        },
+      }),
+    ).catch((e: unknown) => e);
+    expect((err as Error).message).toBe(
+      "Частина даних Фініка не записалась. Спробуй ще раз.",
+    );
+    expect(dualWriteFizrukState).not.toHaveBeenCalled();
   });
 
   it("валідний файл і далі застосовується: Фінік і Фізрук пишуться", async () => {

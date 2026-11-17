@@ -41,7 +41,8 @@ function QtyInput({
 }) {
   const draft = useDecimalDraft(qty, ITEM_QTY_MAX, (v) => onCommit(v ?? 0));
   return (
-    <input
+    <Input
+      size="sm"
       type="text"
       inputMode="decimal"
       value={draft.value}
@@ -49,10 +50,7 @@ function QtyInput({
       disabled={disabled}
       aria-label="Кількість"
       placeholder="1"
-      // Той самий анти-зум/тач-floor, що в `receiptMoneyInput.tsx`: 16px
-      // шрифт і ≥44px висота лише під `pointer: coarse` (бета-фідбек №2).
-
-      className="focus-ring h-9 min-w-0 rounded-lg border border-line bg-panel px-2 text-style-caption text-text tabular-nums pointer-coarse:min-h-11 pointer-coarse:text-style-label-lg"
+      className="bg-panel px-2 tabular-nums"
     />
   );
 }

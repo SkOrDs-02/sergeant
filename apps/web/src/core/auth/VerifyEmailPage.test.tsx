@@ -175,6 +175,14 @@ describe("VerifyEmailPage — помилки", () => {
     expect(alert.textContent).not.toContain("SOMETHING_NEW_UPSTREAM");
   });
 
+  it("код з імʼям властивості прототипу показує generic-копію", () => {
+    renderAt("?error=constructor");
+
+    expect(screen.getByRole("alert").textContent).toContain(
+      "Не вдалося підтвердити email",
+    );
+  });
+
   it("на помилці не редиректить автоматично", async () => {
     vi.useFakeTimers({ shouldAdvanceTime: true });
     renderAt("?error=INVALID_TOKEN");

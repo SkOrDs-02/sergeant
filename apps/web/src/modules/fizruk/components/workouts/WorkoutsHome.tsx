@@ -60,6 +60,8 @@ export interface WorkoutsHomeProps {
    * так само займає слот «одне активне» і так само йде через «Завершити».
    */
   onLogPast: () => void;
+  /** Відкриває аркуш «Самопочуття» активного тренування. */
+  onOpenReadiness?: (() => void) | undefined;
   /**
    * Deep-link into the Routine module's calendar so the user can
    * schedule a future training session. Surfaced as a row in
@@ -96,6 +98,7 @@ export function WorkoutsHome({
   activeProgramName,
   onRequestStart,
   onLogPast,
+  onOpenReadiness,
   onOpenSchedule,
 }: WorkoutsHomeProps) {
   const hasActive = !!activeWorkout && !activeWorkout.endedAt;
@@ -131,9 +134,18 @@ export function WorkoutsHome({
               людину. Показуємо — і на кліку дає той самий діалог конфлікту,
               де вибір її: завершити поточне чи викинути. Тихою кнопкою, бо
               головна дія блоку одна: «Відкрити» (інвентар v3.1, Б4). */}
-          <Button variant="text" className="mt-2 -ml-2" onClick={onLogPast}>
-            {messages.fizruk.logPast.cta}
-          </Button>
+          <div className="mt-2 -ml-2 flex flex-wrap gap-x-2">
+            <Button variant="text" onClick={onLogPast}>
+              {messages.fizruk.logPast.cta}
+            </Button>
+            {/* Аркуш самопочуття лише з жесту, не на вхід (redesign v3.2,
+                позиція 15). */}
+            {onOpenReadiness && (
+              <Button variant="text" onClick={onOpenReadiness}>
+                {messages.fizruk.readiness.title}
+              </Button>
+            )}
+          </div>
         </div>
       ) : (
         <div className="rounded-panel border border-border bg-surface p-4 text-center">

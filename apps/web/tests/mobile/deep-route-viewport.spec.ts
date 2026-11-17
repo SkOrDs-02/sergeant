@@ -8,11 +8,11 @@ const ROUTES: ReadonlyArray<{
   visibleText: string | RegExp;
 }> = [
   {
-    // Підписки переїхали в Планування (2026-09-03); на холодних «Активах»
-    // завжди видимий quick-action «+ Актив» з `AssetsTable`.
+    // На холодних «Активах» завжди видима картка капіталу; «+ Актив»
+    // знято (redesign v3.2, позиція 02).
     id: "FINYK_ASSETS",
     path: "/finyk/assets",
-    visibleText: "+ Актив",
+    visibleText: "Загальний капітал",
   },
   {
     id: "FIZRUK_WORKOUTS",

@@ -147,7 +147,7 @@ Code path (main @ c7c09607):
 
 ### `logic-03` [medium] Незворотні та перезаписні чат-дії виконуються без підтвердження і без undo
 
-- **Стан:** частково виправлено в [#1398](https://github.com/SkOrDs-02/sergeant/pull/1398) (змерджено 2026-10-08) (лишилось: undo для consume_from_pantry (потребує компенсуючої події журналу комори, ADR-0077); set_goal, edit_habit, set_habit_schedule, pause_habit без undo; update_budget(goal) із saved_amount досі замінює лог, а не дописує, рішення власника; тест-інваріант «мутуючий тул або в TOOL_RISK, або з undo»)
+- **Стан:** частково виправлено в [#1398](https://github.com/SkOrDs-02/sergeant/pull/1398) (змерджено 2026-10-08) і в [#1642](https://github.com/SkOrDs-02/sergeant/pull/1642) (змерджено 2026-10-23) (`update_budget(goal)` із `saved_amount` дописує різницю в лог поповнень, а не замінює його; рішення власника 2026-10-23) (лишилось: undo для consume_from_pantry (потребує компенсуючої події журналу комори, ADR-0077); set_goal, edit_habit, set_habit_schedule, pause_habit без undo; тест-інваріант «мутуючий тул або в TOOL_RISK, або з undo»)
 - **Перевірка:** підтверджено · **Зусилля:** M · **Область:** web: HubChat / виконавці дій
 - **Де:** packages/shared/src/lib/toolRisk.ts:54-116; apps/web/src/core/lib/chatActions/finykActions/debts.ts:72-123; .../finykActions/transactions.ts:95-158; .../finykActions/budgets.ts:182-201; .../nutritionActions.ts:261-416; .../crossActions/goalAndUtility.ts:179-189; .../routineActions.ts:397-556
 - **Першопричина:** Політика TOOL_RISK така: незворотне йде через confirm, решта має undo. Але частина мутуючих тулів не входить у TOOL_RISK і повертає звичайний рядок без undo. mark_debt_paid видаляє борг (splice), consume_from_pantry без qty прибирає позицію цілком. set_daily_plan і set_goal вимикають адаптивну ціль, edit_habit, set_habit_schedule і pause_habit (заднім числом) переписують звичку. split_transaction перезаписує спліти, а update_budget(goal) замінює історію поповнень цілі.
@@ -199,7 +199,7 @@ Own live run (debtpaid.mjs, audit_pool97). create_debt VPaidDebt 300 → d_17909
 
 ### `logic-04` [medium] Старіння 1ПМ скидається одним легким підходом: калькулятор навантаження знову рахує від піку за всю історію
 
-- **Стан:** частково виправлено в [#1562](https://github.com/SkOrDs-02/sergeant/pull/1562) (змерджено 2026-10-20) (режим повернення тримається до ≥90% зниженого піка; пік за датою досягнення не старіє, а підказка наступного підходу в активному тренуванні та мобілка далі без сесій)
+- **Стан:** частково виправлено в [#1562](https://github.com/SkOrDs-02/sergeant/pull/1562) (змерджено 2026-10-20) і в [#1625](https://github.com/SkOrDs-02/sergeant/pull/1625) (змерджено 2026-10-23) (режим повернення тримається до ≥90% зниженого піка, тепер і в підказці наступного підходу в активному тренуванні — `computeNextSetAging` за всією історією вправи; лишилось: пік за датою досягнення не старіє, мобілка (пауза ADR-0094) далі без сесій)
 - **Перевірка:** підтверджено · **Зусилля:** M · **Область:** fizruk-domain / web: Фізрук
 - **Де:** packages/fizruk-domain/src/domain/workouts/oneRmAging.ts:151-186; packages/fizruk-domain/src/domain/workouts/exerciseDetail.ts:216-290; apps/web/src/modules/fizruk/pages/Exercise.tsx:88-95, 418-426
 - **Першопричина:** computeOneRmAging визначає застарілість лише за давністю останньої силової сесії, а орієнтир бере як peak1rm за всю історію, помножений на коефіцієнт. Будь-який підхід до вправи обнуляє давність (factor = 1, returnMode = false), і орієнтир повертається до повного піку, хоч би якою слабкою була сесія повернення.
@@ -288,7 +288,7 @@ cd /home/user/sergeant && node --import tsx <scratch>/agents/client-static-domai
 
 ### `logic-06` [medium] Виписки з окремими колонками Дебет/Кредит імпортуються навпаки: витрати стають доходом «Зарплата», надходження губляться
 
-- **Стан:** частково виправлено в [#1394](https://github.com/SkOrDs-02/sergeant/pull/1394) (змерджено 2026-10-08) (перемикач напряму рядка в BulkReviewTable відкладено)
+- **Стан:** виправлено: колонки Дебет/Кредит у мапері й на сервері – [#1394](https://github.com/SkOrDs-02/sergeant/pull/1394) (змерджено 2026-10-08); перемикач напряму рядка в BulkReviewTable (бейдж «витрата»/«надходження» тапається, категорія скидається на дефолт нового напряму, `occurrenceIndex` і мітки дубля/mono знімаються, `setRowDirection`) – [#1624](https://github.com/SkOrDs-02/sergeant/pull/1624) (змерджено 2026-10-23)
 - **Перевірка:** підтверджено · **Зусилля:** M · **Область:** web+server: Фінік / імпорт виписок
 - **Де:** apps/web/src/modules/finyk/components/bulkImport/ColumnMapper.tsx:100; apps/web/src/modules/finyk/components/bulkImport/bulkImportRows.ts:184-192; apps/server/src/modules/finyk/import/statementPreview.ts:89-102
 - **Першопричина:** ColumnMapper дає обрати лише одну «Колонку суми (витрати)», а ImportColumnMappingSchema не має поля знаку чи напряму. statementPreview.ts читає значення як суму зі знаком (signed &lt; 0 → expense). Тому додатна колонка Дебет стає доходом, а порожні клітинки відкидаються як unparsed_amount. У таблиці перевірки напрям рядка не редагується.
@@ -572,7 +572,7 @@ apps/web/src/modules/fizruk/hooks/useMonthlyPlan.ts:73-90 (saveState → лиш�
 
 ### `logic-10` [medium] Таймер відпочинку рахує тіки setInterval, а не реальний час: на заблокованому телефоні стоїть, після reload зникає
 
-- **Стан:** частково виправлено в [#1486](https://github.com/SkOrDs-02/sergeant/pull/1486) (змерджено 2026-10-09) (лишилось: персист `endsAt` між reload/убитим PWA (sessionStorage/SQLite) і Notification/Web Push у фоні — окремі рішення)
+- **Стан:** частково виправлено в [#1486](https://github.com/SkOrDs-02/sergeant/pull/1486) (змерджено 2026-10-09) і в [#1625](https://github.com/SkOrDs-02/sergeant/pull/1625) (змерджено 2026-10-23) (`endsAt` у sessionStorage — таймер переживає reload і повторне монтування; локальне сповіщення про кінець у прихованій вкладці за вже наданого дозволу, рішення власника 2026-10-23; лишилось: убитий ОС PWA губить слот разом із sessionStorage, сигнал на заблокованому iPhone (JS стоїть) — лише Web Push, окреме рішення)
 - **Перевірка:** підтверджено · **Зусилля:** S · **Швидкий виграш** · **Область:** web: Фізрук (тренування)
 - **Де:** apps/web/src/modules/fizruk/hooks/useWorkoutsLifecycle.ts:107-131; apps/web/src/modules/fizruk/context/RestTimerProvider.tsx:24-38; apps/web/src/modules/fizruk/hooks/useFizrukRestSound.ts:64-67
 - **Першопричина:** useRestTimerCountdown на кожен тік робить remaining − 1. Стан містить лише {remaining, total} без моменту закінчення, досинхронізації на visibilitychange немає, і живе він тільки в useState. Сигнал завершення (звук і телеметрія) викликається всередині updater-а setRestTimer, тобто сайд-ефектом у чистій функції.
@@ -648,7 +648,7 @@ useRestTimerCountdown (useWorkoutsLifecycle.ts:107-130) робить {remaining:
 
 ### `logic-11` [medium] Гнучкі звички («N разів на тиждень») у кількох агрегатах Рутини рахуються поденно
 
-- **Стан:** частково виправлено в [#1553](https://github.com/SkOrDs-02/sergeant/pull/1553) (змерджено 2026-10-20) (лишилось: поденний `flexibleStreakBreakdown` по одній гнучкій звичці в моменті серії `moments.ts` і чат-тулі `habit_stats` — logic-22; мобілка `useCalendarAggregates` не чіпалась)
+- **Стан:** частково виправлено в [#1553](https://github.com/SkOrDs-02/sergeant/pull/1553) (змерджено 2026-10-20) і в [#1649](https://github.com/SkOrDs-02/sergeant/pull/1649) (змерджено 2026-10-23) (момент серії `moments.ts` рахує гнучку звичку тижнями, `habit_stats` теж); лишилось: мобілка `useCalendarAggregates` (контур на паузі, ADR-0094)
 - **Перевірка:** підтверджено · **Зусилля:** M · **Область:** routine-domain / web: Рутина
 - **Де:** packages/routine-domain/src/flexStreak.ts:144-269, 365-382; packages/routine-domain/src/habitRangeRows.ts:121-171; packages/routine-domain/src/dayProgress.ts:28-40; packages/routine-domain/src/streaks.ts:196-206; apps/web/src/modules/routine/useRoutineDerivedData.ts:217-226, 272-289
 - **Першопричина:** Спека routine-flexible-weekly-frequency.md вимагає, щоб споживачі «класу Б» не питали денний предикат для гнучкої звички. Проте flexibleStreakBreakdown і flexibleMaxActiveStreak, buildHabitRangeRows і calcRoutineDayProgress (weekDoneCount = 0) вважають кожен невідмічений день незакритого тижня запланованим, тобто пропуском.
@@ -1445,7 +1445,7 @@ Ran <scratch>/agents/verify-browser-surfaces-nutrition-flows/cat.mts. Медал
 
 ### `logic-22` [low] Картка звички рахує «Найдовшу серію» іншим алгоритмом, ніж поточну й /routine/stats: рекорд менший за поточну серію
 
-- **Стан:** відкрито
+- **Стан:** частково виправлено в [#1649](https://github.com/SkOrDs-02/sergeant/pull/1649) (змерджено 2026-10-23) (чат-тул `habit_stats` і момент серії гнучких звичок рахують тижнями); лишилось: рекорд картки `HabitStatsSection` (`maxStreakAllTime`) і інсайт `useStreakRecordPendingInsight` для негнучких звичок
 - **Перевірка:** підтверджено · **Зусилля:** S · **Швидкий виграш** · **Область:** web: Рутина (картка звички)
 - **Де:** apps/web/src/modules/routine/components/HabitStatsSection.tsx:68-103; apps/web/src/modules/routine/hooks/useStreakRecordPendingInsight.ts:33-52; apps/web/src/modules/routine/components/HabitDetailSheet.tsx; packages/routine-domain/src/streaks.ts (maxStreakAllTime)
 - **Першопричина:** HabitStatsSection бере поточну серію з flexibleStreakBreakdown (з grace, паузами й startDate), а «Найдовшу серію» з жорсткого maxStreakAllTime, який рветься на першому пропуску й ігнорує startDate. Інсайт useStreakRecordPendingInsight порівнює flexibleMaxActiveStreak у днях з maxStreakAllTime, що для гнучких звичок рахує тижні. RoutineStatsPanel уже перейшов на flexibleMaxStreakAllTimeAcrossHabits.

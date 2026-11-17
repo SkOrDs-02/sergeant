@@ -47,9 +47,13 @@ export function HubHeader({
   activeTab,
 }: HubHeaderProps) {
   const kyivNow = useKyivDayNow();
-  const dateStr = useMemo(() => {
+  const dateParts = useMemo(() => {
     void kyivNow;
-    return formatKyivNominativeDate();
+    const full = formatKyivNominativeDate();
+    const sep = full.indexOf(", ");
+    return sep < 0
+      ? { weekday: "", dayMonth: full }
+      : { weekday: full.slice(0, sep), dayMonth: full.slice(sep + 2) };
   }, [kyivNow]);
   const { modK } = useShortcutGlyph();
   const tabTitle = activeTab ? HUB_TAB_TITLES[activeTab] : undefined;
@@ -65,17 +69,31 @@ export function HubHeader({
       <div className="flex items-start justify-between gap-3">
         <div className="min-w-0">
           {/* `<p>`, не `<h1>`: семантичний h1 кожної вкладки вже стоїть у
-              контенті (sr-only), другий інвертував би структуру заголовків. */}
+              контенті (sr-only), другий інвертував би структуру заголовків.
+              26 px (токен headline) не вміщає «Понеділок, 30 листопада» у
+              ~246 px між краєм і двома іконками на 390 px, тож застосовано
+              альтернативу v3.2: заголовок «30 листопада», день тижня в
+              підзаголовку. */}
           <p
             data-testid="hub-header-title"
-            className="text-style-headline-lg text-text"
+            className="text-style-headline text-text"
           >
-            {tabTitle ?? dateStr}
+            {tabTitle ?? dateParts.dayMonth}
           </p>
-          {!tabTitle && counts.now !== null && (
+          {!tabTitle && (dateParts.weekday || counts.now !== null) && (
             <p className="mt-1 text-style-label tnum text-muted">
-              {coreMessages.hub.daySummary.now} {counts.now} ·{" "}
-              {coreMessages.hub.daySummary.closed} {counts.closed ?? 0}
+              {dateParts.weekday && (
+                <span data-testid="hub-header-weekday">
+                  {dateParts.weekday}
+                </span>
+              )}
+              {dateParts.weekday && counts.now !== null && " · "}
+              {counts.now !== null && (
+                <>
+                  {coreMessages.hub.daySummary.now} {counts.now} ·{" "}
+                  {coreMessages.hub.daySummary.closed} {counts.closed ?? 0}
+                </>
+              )}
             </p>
           )}
         </div>

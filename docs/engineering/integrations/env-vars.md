@@ -1,6 +1,6 @@
 # Environment variables — повний reference
 
-> **Last touched:** 2026-10-10 by @claude (rel-03: `SERGEANT_CLIENT_IP_SECRET`); 2026-10-03 by @claude (sec-08: `AUTH_EXPO_PLUGIN_ENABLED`, нативні схеми в проді порожні); 2026-09-17 (§ `LLM_*` узгоджено з `env/aiRoutingEnv.ts` — OpenRouter живий, дефолти `openrouter`; продюсери ai-memory без ingest/mono). **Next review:** 2026-12-16.
+> **Last touched:** 2026-10-26 by @claude (rel-06: `SYNC_SNAPSHOT_ENABLED`); 2026-10-10 by @claude (rel-03: `SERGEANT_CLIENT_IP_SECRET`); 2026-10-03 by @claude (sec-08: `AUTH_EXPO_PLUGIN_ENABLED`, нативні схеми в проді порожні); 2026-09-17 (§ `LLM_*` узгоджено з `env/aiRoutingEnv.ts` — OpenRouter живий, дефолти `openrouter`; продюсери ai-memory без ingest/mono). **Next review:** 2026-12-16.
 > **Status:** Active
 
 Цей документ — канонічний reference усіх змінних оточення Sergeant. Мінімальний `.env` (12 змінних, потрібних для `pnpm dev:web` + `pnpm dev:server`) лежить у [`/.env.example`](../../../.env.example) у корені репо. Сюди винесено: повний опис, формати, default-и, наслідки незаповненості, перехресні посилання на код / ADR / hardening-ноти.
@@ -412,6 +412,18 @@ Graceful shutdown.
 
 Рубильник `GET /api/v2/sync/stream` (SSE живих sync-ops). **Default `false`** → маршрут відповідає `404` (навіть без сесії), доки немає клієнта-споживача (Фаза 3, `sync-client-wiring.md`). Приймає `true/false/1/0`. Читається з `process.env` на кожному запиті (`modules/sync/syncV2StreamGuard.ts`), тож зміна у Coolify діє після рестарту контейнера, а тест перемикає її без ре-імпорту. Коли ввімкнено: сесія перевіряється в БД на кожному heartbeat (`SYNC_V2_STREAM_HEARTBEAT_MS` = 25 с), зʼєднання живе до 15 хв (`SYNC_V2_STREAM_MAX_AGE_MS`), не більше 3 одночасних стрімів на юзера (`SYNC_V2_STREAM_MAX_PER_USER`, новий витісняє найстаріший), стрім, який не читає (понад 1 МБ у сокеті, `SYNC_V2_STREAM_MAX_WRITABLE_BYTES`, або `write()` без `drain` до наступної події), закривається з reason `backpressure`. Аудит 2026-10-01, sec-09, rel-05. Реєстр прапорців: [`feature-flags.md`](../architecture/feature-flags.md#32-фічі-та-інтеграції).
 
+### `SYNC_STATE_HASH_ENABLED` _(optional, default `false`)_
+
+Рубильник `GET /api/v2/sync/state-hash?table=<t>` (ADR-0106, аудит `data-38`): хеш стану однієї sync-таблиці Фізрука/Рутини користувача (`(pk, updated_at, deleted_at)`, спільний канонізатор `@sergeant/shared` `computeStateHash`) разом з `as_of_op_id`. **Default `false`** → маршрут відповідає `404` (навіть без сесії). Приймає `true/false/1/0`, читається з `process.env` на кожному запиті (`modules/sync/syncV2StateHash.ts`). Rate-limit: власний бакет `api:v2:sync:state-hash` 6/хв на юзера. Метрика: `sync_state_hash_compute_ms{table}`. Реєстр прапорців: [`feature-flags.md`](../architecture/feature-flags.md#32-фічі-та-інтеграції).
+
+### `SYNC_V2_PULL_MAX_BYTES` _(optional, default `2097152`)_
+
+Байтовий бюджет однієї сторінки `GET /api/v2/sync/pull` (ADR-0105 §1, аудит `rel-06`). Сторінка обрізається, щойно сума `octet_length(row::text)` попередніх оп-ів досягає бюджету (рахує Postgres віконною сумою, великі рядки в Node не потрапляють); перший оп сторінки віддається завжди, навіть якщо сам більший. `next_cursor` ненульовий і для обрізаної сторінки. Значення < 1 ігнорується (дефолт 2 MiB). Форма відповіді не змінюється. Метрики: `sync_pull_page_bytes`, `sync_pull_truncated_total`.
+
+### `SYNC_SNAPSHOT_ENABLED` _(optional, default `false`)_
+
+Рубильник `GET /api/v2/sync/snapshot` (ADR-0105 §3.3, аудит `rel-06`): знімок поточного стану модульних sync-таблиць користувача для пристрою, чий курсор pull отримав `410 sync_cursor_expired`. **Default `false`** → маршрут відповідає `404` (навіть без сесії), доки клієнт не вміє snapshot-bootstrap. Приймає `true/false/1/0`, читається з `process.env` на кожному запиті (`modules/sync/syncV2Snapshot.ts`). Сторінки обмежує той самий `SYNC_V2_PULL_MAX_BYTES`. Реєстр прапорців: [`feature-flags.md`](../architecture/feature-flags.md#32-фічі-та-інтеграції).
+
 ### `ALLOWED_ORIGIN_REGEX` _(optional)_
 
 Одинокий regex (без прапорців), який повинен матчити допустимі origin-и. Використовується **на доповнення** до `ALLOWED_ORIGINS` (не замість). Приклад: `^https://pr-\d+\.preview\.example\.com$`.
@@ -514,7 +526,7 @@ Base URL бекенд-API (Coolify), який [`apps/web/middleware.ts`](../../.
 
 Bearer-токен для `/api/internal/*` у [`internalFetch.ts`](../../../apps/web/src/shared/lib/api/internalFetch.ts). **Ніколи не задавати у прод-білді** — `VITE_*` вшивається в бандл літералом і читається в DevTools.
 
-Незаданість тут не помилка, а робочий стан: без ключа `internalFetch` **відмовляється** робити запит замість того, щоб піти неавторизованим. Тобто прод-поведінка — це «немає ключа», і сторінка `/strategy` показує пояснений порожній стан. Ширший розбір ризику — [`run-beta-wave.md`](../../work/specs/beta-launch/run-beta-wave.md).
+Незаданість тут не помилка, а робочий стан: без ключа `internalFetch` **відмовляється** робити запит замість того, щоб піти неавторизованим. Тобто прод-поведінка — це «немає ключа», і сторінка `/strategy` показує пояснений порожній стан. Ширший розбір ризику — `run-beta-wave.md`.
 
 ### `VITE_SENTRY_SAMPLE_PROFILE` _(optional)_
 

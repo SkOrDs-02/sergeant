@@ -55,3 +55,23 @@ export const billingSupersedeCancelTotal = new client.Counter({
   labelNames: ["provider", "result"],
   registers: [register],
 });
+
+/**
+ * Unix-час (с) останнього успішного тіку звірки Plata (`plataSync.ts`).
+ * `tick` = fast (5 хв, непідтверджені checkout-и) | slow (щогодини, «кому
+ * вже час»). Алерт `PlataSyncSlowTickStale` дивиться на `tick="slow"`: це
+ * єдиний шлях, що продовжує період і ставить `past_due`, коли вебхук
+ * загубився (rel-19).
+ *
+ * На `start()` поллера gauge засіюється часом старту: без цього після
+ * рестарту серії не було б зовсім, доки перший тік не вдасться, і поллер,
+ * що падає з першого ж тіку, не алертив би ніколи. Тож значення читається
+ * як «max(старт поллера, останній успіх)», а справжній `lastRunAt` (null до
+ * першого успіху) віддає `/health/workers`.
+ */
+export const plataSyncLastSuccessTimestampSeconds = new client.Gauge({
+  name: "plata_sync_last_success_timestamp_seconds",
+  help: "Unix time of last successful Plata reconciliation tick (seeded with poller start)",
+  labelNames: ["tick"], // fast|slow
+  registers: [register],
+});

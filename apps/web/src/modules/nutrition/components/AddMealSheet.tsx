@@ -27,7 +27,7 @@
  */
 import { cn } from "@shared/lib/ui/cn";
 import { FIELD_LABEL } from "@shared/components/ui/Input";
-import { useEffect, useRef, useState } from "react";
+import { useRef, useState } from "react";
 import type { Dispatch, SetStateAction } from "react";
 import { Button } from "@shared/components/ui/Button";
 import { ConfirmDialog } from "@shared/components/ui/ConfirmDialog";
@@ -68,11 +68,14 @@ import { NameTimeRow } from "./meal-sheet/NameTimeRow";
 import { PhotoMealSummary } from "./meal-sheet/PhotoMealSummary";
 import type { PickedFood } from "./meal-sheet/FoodPickerSection";
 import { useMealSourcePick } from "./meal-sheet/useMealSourcePick";
+import { useMealLockDraft } from "./meal-sheet/useMealLockDraft";
+import { useScanTabAutoOpen } from "./meal-sheet/useScanTabAutoOpen";
 import { PickedFoodCard } from "./meal-sheet/PickedFoodCard";
 import { useSavePickedFood } from "./meal-sheet/useSavePickedFood";
 import { PortionUnitHint } from "./meal-sheet/PortionUnitHint";
 import { PantryPortionField } from "./meal-sheet/PantryPortionField";
 import type { SourceTabId } from "./meal-sheet/SourceTabs";
+import { useStepFocusKeeper } from "./meal-sheet/useStepFocusKeeper";
 import { SourceStep } from "./meal-sheet/SourceStep";
 import { RememberForRepeat } from "./meal-sheet/RememberForRepeat";
 import { AddMealSheetTitle } from "./meal-sheet/AddMealSheetTitle";
@@ -174,6 +177,7 @@ export function AddMealSheet({
   // потім форма запису. Панелі зберігають чернетки до закриття аркуша.
   // Редагування наявного запису одразу відкриває форму.
   const [step, setStep] = useState<"source" | "fill">("source");
+  const stepAnchorRef = useRef<HTMLDivElement>(null);
   // Set on the photo → fill transition; drives `source`/`macroSource` and
   // the meal-thumbnail save. Cleared on backtrack so a user who returns
   // to "source" and picks another source doesn't keep photoAI semantics.
@@ -304,6 +308,13 @@ export function AddMealSheet({
     setPrevOpen(false);
   }
 
+  useMealLockDraft(
+    open && !initialMeal?.id,
+    { form, pickedFood, pickedGrams, step, fromPantryItem, appliedPhoto },
+    { setForm, setPickedFood, setPickedGrams, setStep, setManualMacros },
+    { setFromPantryItem, setAppliedPhoto },
+  );
+
   // Продукт для аркуша редагування — чому без нього порцію змінити було
   // неможливо, у `useEditedFoodRehydration`.
   const editedFood = useEditedFoodRehydration({
@@ -324,26 +335,8 @@ export function AddMealSheet({
     setStep("fill");
   }
 
-  // Вхід у вкладку «Скан» — це вже жест «хочу сканувати», тож сканер
-  // відкривається сам. Той самий принцип, що й у кроці фото, який сам
-  // відкриває піккер: обрана вкладка — це вже намір, і просити ще один
-  // тап означає пропонувати дію, яку людина щойно зробила. Кнопка в
-  // секції лишається, але як «Сканувати ще раз» — повтор після невдалого
-  // кадру, а не основний шлях.
-  //
-  // Ref, а не стан: один запуск на активацію вкладки. Без нього закритий
-  // сканер відкривався б назад на кожному ре-рендері, і вийти з вкладки
-  // стало б неможливо.
-  const scanAutoOpenedRef = useRef(false);
-  useEffect(() => {
-    if (!open || step !== "source" || sourceTab !== "scan") {
-      scanAutoOpenedRef.current = false;
-      return;
-    }
-    if (scanAutoOpenedRef.current) return;
-    scanAutoOpenedRef.current = true;
-    setScannerOpen(true);
-  }, [open, step, sourceTab, setScannerOpen]);
+  // Вхід у вкладку «Скан» сам відкриває сканер (див. хук).
+  useScanTabAutoOpen(open, step, sourceTab, setScannerOpen);
 
   function handleSave() {
     // Fall back to the picked source's name when the user emptied the name
@@ -563,6 +556,8 @@ export function AddMealSheet({
     setStep("source");
   }
 
+  useStepFocusKeeper(open, step, stepAnchorRef);
+
   const canBacktrack = step !== "source" && !initialMeal?.id;
   function handleBacktrack() {
     if (step === "fill" && !pickedFood && !fromPantryItem && !appliedPhoto)
@@ -616,7 +611,7 @@ export function AddMealSheet({
         panelClassName="nutrition-sheet"
         zIndex={120}
       >
-        <div hidden={step !== "source"}>
+        <div ref={stepAnchorRef} hidden={step !== "source"}>
           {(!initialMeal?.id || sourceReplaced) && (
             <SourceStep
               singleMealOnly={Boolean(initialMeal?.id)}

@@ -140,10 +140,10 @@ function MonthlyPlanCardComponent({
   const savingsDelta = factSavings - planSavings;
 
   return (
+    // Панель, не тинт: під навігаційним рядком тинт заборонений H.2
+    // (redesign v3.2, позиція 03).
     <Card
-      prominence={
-        (hasPlan || totalExpenseFact > 0) && !editing ? "hero" : "panel"
-      }
+      prominence="panel"
       tone="finyk"
       padding="none"
       className="overflow-hidden"

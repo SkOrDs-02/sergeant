@@ -136,7 +136,10 @@ async function openRegistration(page: Page) {
 async function registerAndMigrate(page: Page) {
   await openRegistration(page);
   await Promise.all([
-    page.getByText(SUCCESS, { exact: true }).waitFor({ timeout: 60_000 }),
+    page
+      .getByTestId("toast-tray")
+      .getByText(SUCCESS, { exact: true })
+      .waitFor({ timeout: 60_000 }),
     page.getByRole("button", { name: "Зареєструватися", exact: true }).click(),
   ]);
 }
@@ -221,7 +224,9 @@ test("@critical anonymous: reload після перерваного push від�
   });
   let interrupted = false;
   let resuming = false;
-  await page.route("**/api/v2/sync/push", async (route) => {
+  // Push несе `?sync_protocol=` (data-48), тож glob без query його не ловить.
+  const isPush = (url: URL) => url.pathname === "/api/v2/sync/push";
+  await page.route(isPush, async (route) => {
     if (!resuming && matchingPushOps(route.request(), title).length > 0) {
       interrupted = true;
       await route.abort("connectionfailed");
@@ -246,7 +251,10 @@ test("@critical anonymous: reload після перерваного push від�
   });
   // The pending claim/outbox must survive a real document/worker restart.
   await restart(page);
-  await page.getByText(SUCCESS, { exact: true }).waitFor({ timeout: 60_000 });
+  await page
+    .getByTestId("toast-tray")
+    .getByText(SUCCESS, { exact: true })
+    .waitFor({ timeout: 60_000 });
   expect(keys.length).toBeGreaterThanOrEqual(2);
   expect(new Set(keys).size).toBe(1);
   await expect

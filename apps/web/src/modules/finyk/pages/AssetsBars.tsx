@@ -1,5 +1,4 @@
-import { forwardRef, type ButtonHTMLAttributes, type ReactNode } from "react";
-import { Button } from "@shared/components/ui/Button";
+import { type ReactNode } from "react";
 import { MorphChevron } from "@shared/components/ui/MorphChevron";
 import { type IconName } from "@shared/components/ui/Icon";
 import { cn } from "@shared/lib/ui/cn";
@@ -47,55 +46,6 @@ export function AssetsLiabilitiesBar({
     </div>
   );
 }
-
-export type QuickActionTone = "neutral" | "finyk" | "success" | "danger";
-
-export interface QuickActionButtonProps extends Omit<
-  ButtonHTMLAttributes<HTMLButtonElement>,
-  "children"
-> {
-  label: string;
-  tone?: QuickActionTone;
-}
-
-/**
- * CTA used in the quick-action rows above the Assets/Liabilities and
- * Planning sections (row shape varies per page — Assets uses two buttons,
- * Planning uses one combined "Запланувати" trigger; the "3-button row"
- * this comment used to describe was removed 2026-09-03, § founder-UX
- * audit round 2, F2). Each button collapses the "expand → scroll → tap +"
- * flow into a single tap that opens the relevant section *and* reveals
- * its inline form.
- *
- * Це звичайний `Button variant="outline"`, а не картка з іконкою в тонованому
- * квадраті: тайл за формою збігався з картками вмісту поруч, і око не
- * розрізняло «натисни» та «прочитай» (анти-слоп, атрактор icon-in-tinted-
- * square). Іконки немає навмисно: у трьох колонках підпис і є значенням.
- *
- * `forwardRef` + spread решти пропів — щоб кнопка могла бути тригером
- * `DropdownMenu` («+ Актив» відкриває вибір «актив / мені винні»): меню
- * клонує тригер і вішає на нього ref, `aria-haspopup` і власний onClick.
- */
-export const QuickActionButton = forwardRef<
-  HTMLButtonElement,
-  QuickActionButtonProps
->(function QuickActionButton(
-  { label, tone = "neutral", className, ...rest },
-  ref,
-) {
-  return (
-    <Button
-      ref={ref}
-      variant="outline"
-      tone={tone === "neutral" || tone === "finyk" ? "ink" : tone}
-      size="md"
-      className={cn("w-full min-w-0 px-1", className)}
-      {...rest}
-    >
-      <span className="truncate">+ {label}</span>
-    </Button>
-  );
-});
 
 export type SectionBarProps = {
   title: string;

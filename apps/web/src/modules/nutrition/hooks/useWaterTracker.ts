@@ -17,6 +17,13 @@ import {
 import { getCachedNutritionSqliteState } from "../lib/sqliteReader";
 import { useNutritionSqliteReadTick } from "../lib/sqliteReadGate";
 
+/**
+ * Рядок «Вода» в аркуші «Додати» модуля (redesign v3.2, позиція 01)
+ * відкриває аркуш свого обʼєму в `WaterTrackerCard`: стан води тримає
+ * картка, і другий екземпляр цього хука переписав би її запис своїм.
+ */
+export const WATER_ADD_EVENT = "nutrition:water-add";
+
 export interface UseWaterTrackerResult {
   todayMl: number;
   /** Full day→ml log — needed by `WaterHistorySheet` for the 7/14/30-day views. */

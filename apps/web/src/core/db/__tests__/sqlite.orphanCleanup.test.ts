@@ -169,7 +169,7 @@ async function cleanupSettled(): Promise<void> {
 }
 
 describe("priv-05: після виходу файлу немає", () => {
-  it("успішний вихід: файл партиції зник з пулу, маркер знято", async () => {
+  it("успішний вихід: файл партиції зник з пулу, маркер знімає відкриття анонімної партиції", async () => {
     setSqliteUser("dave");
     await getSqliteDb();
     expect(wasm.state.files.has("/sergeant-dave.db")).toBe(true);
@@ -177,6 +177,13 @@ describe("priv-05: після виходу файлу немає", () => {
     await wipeSqliteDb();
 
     expect(wasm.state.files.has("/sergeant-dave.db")).toBe(false);
+    // Маркер лишається до анонімного відкриття: між `wipe` і перемиканням
+    // на анонімну партицію файл ще можна перевідкрити ключем акаунта.
+    expect(readPendingSqliteWipes()).toEqual(["sergeant-dave.db"]);
+
+    setSqliteUser(null);
+    await getSqliteDb();
+    await cleanupSettled();
     expect(window.localStorage.getItem(PENDING_SQLITE_WIPE_KEY)).toBeNull();
   });
 
@@ -240,5 +247,19 @@ describe("priv-05: осиротілі файли пристроїв, де вих
       "/sergeant-busy.db",
       "/sergeant-frank.db",
     ]);
+  });
+  it("бут на анонімній партиції не чіпає файл акаунта з порожньою чергою", async () => {
+    // Бут завжди відкриває `sergeant-anon.db` першим, поки сесія невідома.
+    // Раніше файл залогіненої людини тут видалявся на кожному старті, і дані
+    // їхали з сервера заново (корінь падінь E2E, через які відкотили #1621).
+    wasm.state.files.add("/sergeant-holly.db");
+    wasm.state.outbox.set("/sergeant-holly.db", 0);
+
+    setSqliteUser(null);
+    await getSqliteDb();
+    await cleanupSettled();
+
+    expect(wasm.state.files.has("/sergeant-holly.db")).toBe(true);
+    expect(wasm.state.files.has("/sergeant-anon.db")).toBe(true);
   });
 });

@@ -111,11 +111,11 @@ export function CategoryPickerField({
       aria-label={stripLeadingEmoji(category.label)}
       onClick={() => choose(category.id)}
       className={cn(
-        "w-full touch-target rounded-lg border px-2.5 py-2.5 text-left focus-ring",
+        "w-full touch-target rounded-lg px-2.5 py-2.5 text-left focus-ring",
         "flex items-center gap-2 transition-colors",
         category.id === selectedId
-          ? "border-text bg-text text-bg"
-          : "border-control bg-panel text-text hover:bg-panelHi",
+          ? "bg-text text-bg"
+          : "bg-panel text-text hover:bg-panelHi",
       )}
     >
       <CategorySwatch

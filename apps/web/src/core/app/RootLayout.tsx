@@ -3,6 +3,7 @@ import {
   lazy,
   useCallback,
   useEffect,
+  useRef,
   useState,
   type ReactNode,
 } from "react";
@@ -27,6 +28,10 @@ import { AnalyticsConsentGate } from "../observability/AnalyticsConsentGate";
 import { AppLock } from "../security/AppLock";
 import { usePendingDeletion } from "../profile/usePendingDeletion";
 import { useAppLockContext } from "../security/AppLockContext";
+import { isPrivateContentHidden } from "../security/useAppLock";
+import { useFormDraftLifecycle } from "../security/useFormDraftLifecycle";
+import { FORM_DRAFT_IDS, peekFormDraft } from "@shared/lib/storage/formDrafts";
+import { useLatestRef } from "@shared/hooks/useLatestRef";
 import { setFlag, useFlag } from "../lib/featureFlags";
 import { useDemoCommands } from "./useDemoCommands";
 import { HubChatOverlay } from "../hub/HubChatOverlay";
@@ -42,6 +47,8 @@ import { useHubNavigation } from "../hooks/useHubNavigation";
 import { useHubUIState } from "../hooks/useHubUIState";
 import { usePwaActions } from "../hooks/usePwaActions";
 import { useAppEffects } from "./useAppEffects";
+import { RedirectTo } from "./RedirectTo";
+import { sessionExpiredRedirectTarget } from "./sessionExpiredRedirect";
 import { DbBusyScreen, useDbIsBusyElsewhere } from "./DbBusyScreen";
 import { usePwaInstall } from "./usePwaInstall";
 import { useSWUpdate } from "./useSWUpdate";
@@ -159,14 +166,39 @@ const AuthUnavailableScreen = lazy(() =>
 
 function AppShell({ children }: { children: React.ReactNode }) {
   const appLock = useAppLockContext();
+  // sec-13/priv-15: під замком дерево маршруту, чат і пошук НЕ рендеряться
+  // (а не лише накриті оверлеєм), тож приватних даних немає в DOM для
+  // інспектора чи скрінрідера. Boot-кластери, sync і dual-write живуть поза
+  // цим гейтом: вони не залежать від видимого UI.
+  const privateHidden = isPrivateContentHidden(appLock.state);
+  const { open: chatOpen, openChat, closeChat } = useHubChatOverlay();
+  const chatOpenRef = useLatestRef(chatOpen);
+  const chatWasOpenRef = useRef(false);
+  useEffect(() => {
+    // Закритий чат не повернеться сам після розблокування (і не відправить
+    // заготовлений prefill); історія чату підтягнеться з useChatSessions.
+    if (privateHidden) {
+      chatWasOpenRef.current = chatOpenRef.current;
+      closeChat();
+      return;
+    }
+    // Чат був відкритий з недописаним повідомленням: піднімаємо його назад
+    // порожнім (без prefill), HubChat сам відновить чернетку.
+    if (chatWasOpenRef.current) {
+      chatWasOpenRef.current = false;
+      if (peekFormDraft(FORM_DRAFT_IDS.hubChatInput) !== null) openChat();
+    }
+  }, [privateHidden, closeChat, openChat, chatOpenRef]);
   // Вікно на скасування видалення (рішення 3 спеки
   // docs/work/specs/user-deletion-grace-window.md). Стоїть ПЕРЕД
   // boot-кластерами і контентом: позначений акаунт не має ані писати
   // локально, ані синхронізуватись, бо сервер для нього однаково закритий
   // гейтом `requireSession` (403 `account_pending_deletion`).
   const pendingDeletion = usePendingDeletion();
-  const { logout, serverUnavailable, refresh } = useAuth();
-  const { pathname } = useLocation();
+  const { logout, serverUnavailable, refresh, user, isLoading, status } =
+    useAuth();
+  useFormDraftLifecycle(user?.id ?? null, privateHidden, isLoading);
+  const { pathname, search } = useLocation();
   // Write-through reconcile for `hub_biometrics_v1` ↔ `/api/me/profile`.
   // Self-gating: власний `useQuery` стоїть `enabled: false`, поки сесії
   // немає, тож хук монтується беззастережно — демо- й анонімним сесіям
@@ -238,6 +270,11 @@ function AppShell({ children }: { children: React.ReactNode }) {
     );
   }
 
+  // sec-18: сесія завершилась (401 + reload), а на пристрої був акаунт: веди
+  // на повторний вхід, а не на анонімний хаб. Дані пристрою не чіпаємо.
+  const reloginTarget = sessionExpiredRedirectTarget(status, pathname, search);
+  if (reloginTarget) return <RedirectTo to={reloginTarget} />;
+
   return (
     <>
       {/* Single app-wide skip-link — first focusable on EVERY route
@@ -275,10 +312,10 @@ function AppShell({ children }: { children: React.ReactNode }) {
       <BootGate>
         <RoutineBootCluster />
       </BootGate>
-      <NpsSurveyGate />
+      {!privateHidden && <NpsSurveyGate />}
       <AnalyticsConsentGate />
-      {children}
-      <HubChatOverlay />
+      {!privateHidden && children}
+      {!privateHidden && <HubChatOverlay />}
     </>
   );
 }

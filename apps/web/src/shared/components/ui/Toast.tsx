@@ -1,5 +1,6 @@
 import {
   useCallback,
+  useEffect,
   useRef,
   useState,
   type CSSProperties,
@@ -16,6 +17,7 @@ import {
 } from "@shared/hooks/useToast";
 import {
   BOTTOM_NAV_INSET_VAR,
+  SESSION_DOCK_INSET_VAR,
   SHEET_FOOTER_INSET_VAR,
   TOAST_INSET_VAR,
   useBottomInsetVar,
@@ -23,6 +25,7 @@ import {
 } from "@shared/hooks/useBottomInsetVar";
 import { cn } from "@shared/lib/ui/cn";
 import { Icon } from "./Icon";
+import { useAnnounce } from "./ScreenReaderAnnouncer";
 import { coreMessages as messages } from "@shared/i18n/uk.core";
 
 // Мова H (redesign v3): один рядок факту на плаваючій поверхні. Без
@@ -90,12 +93,24 @@ function ToastRow({ toast, dismiss, pause, resume }: ToastRowProps) {
   const [paused, setPaused] = useState(false);
   const touchStartXRef = useRef<number | null>(null);
   const touchStartTimeRef = useRef(0);
+  const rowRef = useRef<HTMLDivElement | null>(null);
+  const { announce } = useAnnounce();
 
   const hasAction = !!toast.action?.onClick;
   // Error and action-bearing toasts use `assertive` politeness so the
   // screen-reader announces the available choice immediately. Timed undo
   // actions especially cannot wait for the polite queue to drain.
   const assertive = toast.type === "error" || hasAction;
+
+  // Polite-тост не є live-регіоном сам: регіон, що монтується одразу з
+  // текстом, частина скрінрідерів (VoiceOver iOS, NVDA+Firefox) пропускає.
+  // Озвучує постійний регіон ScreenReaderAnnouncer; repeat перезапускає
+  // оголошення, коли той самий тост повторився.
+  useEffect(() => {
+    if (assertive) return;
+    const text = rowRef.current?.textContent;
+    if (text) announce(text);
+  }, [assertive, announce, toast.id, toast.repeat]);
 
   const isLeaving = !!toast.leaving;
 
@@ -229,9 +244,10 @@ function ToastRow({ toast, dismiss, pause, resume }: ToastRowProps) {
         BASE,
         BORDER[toast.type],
       )}
-      role={assertive ? "alert" : "status"}
-      aria-live={assertive ? "assertive" : "polite"}
-      aria-atomic="true"
+      ref={rowRef}
+      role={assertive ? "alert" : "group"}
+      aria-live={assertive ? "assertive" : undefined}
+      aria-atomic={assertive ? "true" : undefined}
       tabIndex={0}
       style={style}
       onMouseEnter={onMouseEnter}
@@ -345,14 +361,12 @@ function ToastRow({ toast, dismiss, pause, resume }: ToastRowProps) {
  *
  * Тримає щонайбільше `MAX_VISIBLE_TOASTS` аркушів; решта чекає у черзі
  * провайдера й піднімається, щойно звільниться слот. Порожній трей
- * лишається змонтованим навмисно — live-region, у яку контент
- * вставляється разом із самим регіоном, частина screen-reader-ів
- * пропускає.
+ * лишається змонтованим навмисно (як і постійний регіон анонсера).
  *
  * Per-toast politeness — error and undo-bearing toasts get
  * `role="alert" aria-live="assertive"` (the 5 s undo-window can't wait
- * for the polite queue to drain); info/success/warning stay
- * `role="status" aria-live="polite"`.
+ * for the polite queue to drain); info/success/warning are announced
+ * politely through the persistent `ScreenReaderAnnouncerProvider` region.
  *
  * Swipe-to-dismiss is touch-only — on desktop the close button is the
  * canonical dismiss affordance (Esc also works when the toast has
@@ -420,7 +434,7 @@ export function ToastContainer() {
         "w-[min(92vw,24rem)]",
       )}
       style={{
-        bottom: `calc(max(env(safe-area-inset-bottom, 0px), var(${BOTTOM_NAV_INSET_VAR}, 0px), var(${WORKOUT_BANNER_INSET_VAR}, 0px), var(${SHEET_FOOTER_INSET_VAR}, 0px)) + 0.75rem)`,
+        bottom: `calc(max(env(safe-area-inset-bottom, 0px), var(${BOTTOM_NAV_INSET_VAR}, 0px), var(${WORKOUT_BANNER_INSET_VAR}, 0px), var(${SHEET_FOOTER_INSET_VAR}, 0px), var(${SESSION_DOCK_INSET_VAR}, 0px)) + 0.75rem)`,
       }}
       data-testid="toast-tray"
       data-anchor="bottom"

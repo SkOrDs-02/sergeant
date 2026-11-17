@@ -145,6 +145,53 @@ describe("validateFizrukFullBackupPayload — вкладені записи тр
     ).toThrow(/Пошкоджений файл/);
   });
 
+  it.each([
+    ["тренування", WORKOUTS_STORAGE_KEY, { schemaVersion: 1, workouts: [1] }],
+    ["тренування: null", WORKOUTS_STORAGE_KEY, [null]],
+    [
+      "власні вправи",
+      CUSTOM_EXERCISES_KEY,
+      { schemaVersion: 1, exercises: ["x"] },
+    ],
+    ["заміри", "fizruk_measurements_v1", [1, 2]],
+    ["щоденник", "fizruk_daily_log_v1", ["a"]],
+    ["шаблони", "fizruk_workout_templates_v1", [[]]],
+    ["травми", "fizruk_injuries_v1", [null]],
+    ["власні активності", "fizruk_custom_activities_v1", [true]],
+  ])("відхиляє необʼєктний елемент зрізу: %s", (_l, key, json) => {
+    expect(() =>
+      validateFizrukFullBackupPayload({
+        data: { [key]: JSON.stringify(json) },
+      }),
+    ).toThrow(/Пошкоджений файл/);
+  });
+
+  it("відхиляє присутній зріз, який не рядок; null лишається відсутнім", () => {
+    expect(() =>
+      validateFizrukFullBackupPayload({
+        data: { fizruk_measurements_v1: [{ id: "m1" }] },
+      }),
+    ).toThrow(/Пошкоджений файл/);
+    expect(() =>
+      validateFizrukFullBackupPayload({
+        data: { fizruk_measurements_v1: null },
+      }),
+    ).not.toThrow();
+  });
+
+  it("приймає масив обʼєктів і порожній масив у зрізі", () => {
+    expect(() =>
+      validateFizrukFullBackupPayload({
+        data: { fizruk_measurements_v1: JSON.stringify([{ id: "m1" }]) },
+      }),
+    ).not.toThrow();
+    expect(() =>
+      validateFizrukFullBackupPayload({
+        data: { fizruk_injuries_v1: "[]" },
+      }),
+    ).not.toThrow();
+  });
+
   it("приймає коректне тренування і відсутні поля", () => {
     expect(() =>
       validateFizrukFullBackupPayload(

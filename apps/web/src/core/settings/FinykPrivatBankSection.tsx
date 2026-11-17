@@ -6,6 +6,7 @@ import { useEffect, useState } from "react";
 import { isApiError, privatApi } from "@shared/api";
 import { Button } from "@shared/components/ui/Button";
 import { Icon } from "@shared/components/ui/Icon";
+import { FIELD_LABEL, Input } from "@shared/components/ui/Input";
 import { messages } from "@shared/i18n/uk";
 import { ConfirmDialog } from "@shared/components/ui/ConfirmDialog";
 import { SettingsSubGroup } from "./SettingsPrimitives";
@@ -160,39 +161,28 @@ export function FinykPrivatBankSection({
           <p className="text-style-caption text-subtle leading-snug">
             {COPY.help}
           </p>
+          <Input
+            id="hub-privat-merchant-id"
+            label={COPY.merchantId}
+            type="text"
+            value={privatIdInput}
+            onChange={(event) => setPrivatIdInput(event.target.value)}
+            placeholder={COPY.merchantIdPlaceholder}
+            autoComplete="off"
+          />
           <div>
-            <label
-              htmlFor="hub-privat-merchant-id"
-              className="text-style-label text-muted mb-1 block"
-            >
-              {COPY.merchantId}
-            </label>
-            <input
-              id="hub-privat-merchant-id"
-              type="text"
-              value={privatIdInput}
-              onChange={(event) => setPrivatIdInput(event.target.value)}
-              placeholder={COPY.merchantIdPlaceholder}
-              autoComplete="off"
-              className="input-focus-finyk w-full h-11 rounded-lg border border-line bg-panelHi px-3 text-style-body text-text"
-            />
-          </div>
-          <div>
-            <label
-              htmlFor="hub-privat-token"
-              className="text-style-label text-muted mb-1 block"
-            >
+            <label htmlFor="hub-privat-token" className={`${FIELD_LABEL} mb-1`}>
               {COPY.tokenLabel}
             </label>
             <div className="relative">
-              <input
+              <Input
                 id="hub-privat-token"
                 type={showPrivatToken ? "text" : "password"}
                 value={privatTokenInput}
                 onChange={(event) => setPrivatTokenInput(event.target.value)}
                 placeholder={COPY.tokenPlaceholder}
                 autoComplete="off"
-                className="input-focus-finyk w-full h-11 rounded-lg border border-line bg-panelHi px-3 pr-10 text-style-body text-text"
+                className="pr-12"
                 onKeyDown={(event) => event.key === "Enter" && connectPrivat()}
               />
               <button

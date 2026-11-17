@@ -97,3 +97,31 @@ export function guardUserName<T extends Record<string, unknown>>(
   }
   return result.data;
 }
+
+/**
+ * Межа довжини `user.email` (RFC 5321 § 4.5.3.1.3: 254 символи в path).
+ * Залишок `sec-16`: Better Auth 1.6.23 валідує email лише `z.email()`
+ * (sign-up, sign-in, change-email), а regex у zod 4.4.3 не має верхньої
+ * межі (`node_modules/zod/v4/core/regexes.js:31`). `/update-user` email
+ * відхиляє (`update-user.mjs:51`), але `/sign-up/email` і `/change-email`
+ * пропускають довільно довгий, а `user` повністю йде в `session_data`-куку.
+ */
+export const MAX_USER_EMAIL_LENGTH = 254;
+
+/**
+ * `databaseHooks.user.{create,update}.before`: email довший за
+ * `MAX_USER_EMAIL_LENGTH` → 400 `INVALID_EMAIL`. На відміну від `name`,
+ * обрізання немає: обрізаний email - це чужа або неіснуюча адреса, а валідної
+ * адреси довшої за 254 бути не може (відмова не блокує справжній вхід).
+ * Відсутній або не-рядковий `email` лишається без змін.
+ */
+export function guardUserEmail<T extends Record<string, unknown>>(data: T): T {
+  const value = data["email"];
+  if (typeof value === "string" && value.length > MAX_USER_EMAIL_LENGTH) {
+    throw new APIError("BAD_REQUEST", {
+      code: "INVALID_EMAIL",
+      message: `Email задовгий: максимум ${MAX_USER_EMAIL_LENGTH} символів.`,
+    });
+  }
+  return data;
+}

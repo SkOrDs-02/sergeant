@@ -172,8 +172,6 @@ describe("Budgets page (branches)", () => {
     expect(
       container.querySelector('[aria-busy="true"]'),
     ).not.toBeInTheDocument();
-    expect(
-      screen.getByRole("button", { name: /Запланувати/ }),
-    ).toBeInTheDocument();
+    expect(screen.getByTestId("corner-action")).toBeInTheDocument();
   });
 });

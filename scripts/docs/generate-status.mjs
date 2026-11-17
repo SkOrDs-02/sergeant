@@ -231,13 +231,31 @@ function pluralOpen(n) {
   return "відкритих документів";
 }
 
+/**
+ * Обрізає статус до `limit` символів, не розриваючи markdown-посилання
+ * й inline-код: зріз посеред `[..](` або з непарною кількістю бектиків
+ * відкочується до початку незакритої конструкції (рев'ю #1655).
+ */
+export function trimStatus(raw, limit = 120) {
+  const full = String(raw ?? "")
+    .replace(/\s+/g, " ")
+    .trim();
+  if (full.length <= limit) return full;
+  let cut = full.slice(0, limit);
+  const openBracket = cut.lastIndexOf("[");
+  if (openBracket !== -1 && !/\]\([^)]*\)/.test(cut.slice(openBracket))) {
+    cut = cut.slice(0, openBracket);
+  }
+  if ((cut.match(/`/g) ?? []).length % 2 === 1) {
+    cut = cut.slice(0, cut.lastIndexOf("`"));
+  }
+  return cut.trimEnd();
+}
+
 function fmtInFlight(item) {
   // First sentence of the status, trimmed — enough to know what's happening
   // without the full open-work prose.
-  const status = String(item.rawStatus ?? "")
-    .replace(/\s+/g, " ")
-    .trim()
-    .slice(0, 120);
+  const status = trimStatus(item.rawStatus);
   return `- [\`${item.linkPath}\`](./${item.linkPath}) — ${item.title} — ${status} _(${item.tracker.title})_`;
 }
 

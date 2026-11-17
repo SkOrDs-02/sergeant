@@ -474,7 +474,7 @@ export const paths: ZodOpenApiPathsObject = {
       responses: {
         "200": {
           description:
-            "Op-и з `id > since`; `next_cursor` = null, коли сторінка неповна.",
+            "Op-и з `id > since`; `next_cursor` = null лише коли більше нічого немає (сторінку, обрізану байтовим бюджетом, теж продовжуй).",
           content: {
             "application/json": {
               schema: z.object({
@@ -496,6 +496,52 @@ export const paths: ZodOpenApiPathsObject = {
         },
         "400": validationError,
         "401": unauthorized,
+        "410": {
+          description:
+            "Курсор `since` нижчий за нижню межу журналу (`code: sync_cursor_expired`, `details: [{ floor_id }]`, ADR-0105): оп-и до межі видалено retention-ом, візьми `GET /api/v2/sync/snapshot` і продовж pull з `as_of_op_id`.",
+          content: { "application/json": { schema: namedSchemas.ApiError } },
+        },
+      },
+    },
+  },
+  "/api/v2/sync/snapshot": {
+    get: {
+      summary: "Знімок поточного стану sync-таблиць (bootstrap після 410)",
+      description:
+        "Поточні рядки користувача з модульних sync-таблиць як pull-оп-и `op: insert` (`row` у формі колонок, tombstone-и з `deleted_at` включно), сторінками за байтовим бюджетом pull (`SYNC_V2_PULL_MAX_BYTES`) і `limit`. `as_of_op_id` знімається на першій сторінці в REPEATABLE READ транзакції разом із рядками і повертається на кожній; після останньої сторінки (`next_cursor: null`) клієнт ставить курсор pull на `as_of_op_id`. Маршрут закритий прапорцем `SYNC_SNAPSHOT_ENABLED` (дефолт вимкнено → 404). ADR-0105 §3.",
+      tags: ["sync"],
+      security: cookieOrBearer,
+      requestParams: { query: namedSchemas.SyncV2SnapshotQuery },
+      responses: {
+        "200": {
+          description:
+            "Сторінка знімка; `next_cursor` - непрозорий рядок або null (кінець).",
+          content: {
+            "application/json": {
+              schema: z.object({
+                ops: z.array(
+                  z.object({
+                    id: z.number().int(),
+                    table: z.string(),
+                    op: z.literal("insert"),
+                    row: z.record(z.string(), z.unknown()),
+                    client_ts: z.string(),
+                    server_ts: z.string(),
+                    origin_device_id: z.null(),
+                  }),
+                ),
+                as_of_op_id: z.number().int(),
+                next_cursor: z.string().nullable(),
+              }),
+            },
+          },
+        },
+        "400": validationError,
+        "401": unauthorized,
+        "404": {
+          description:
+            "Знімок вимкнено (`SYNC_SNAPSHOT_ENABLED=false`, дефолт); віддається і без сесії.",
+        },
       },
     },
   },
@@ -517,6 +563,61 @@ export const paths: ZodOpenApiPathsObject = {
         "404": {
           description:
             "Стрім вимкнено (`SYNC_V2_STREAM_ENABLED=false`, дефолт); віддається і без сесії.",
+        },
+      },
+    },
+  },
+  "/api/v2/sync/state-hash": {
+    get: {
+      summary: "Хеш стану sync-таблиці користувача (ADR-0106)",
+      description:
+        "Хеш `(pk, updated_at_ms, deleted_at_ms)` рядків однієї таблиці Фізрука/Рутини поточного користувача, порахований спільним канонізатором `computeStateHash` (`@sergeant/shared`), плюс 16 кошиків за першим півбайтом SHA-256 від `pk`. `as_of_op_id` (max id застосованого оп-у) знято в тій самій REPEATABLE READ транзакції. Маршрут закритий прапорцем `SYNC_STATE_HASH_ENABLED` (дефолт вимкнено → 404, віддається і без сесії); rate-limit 6/хв на користувача.",
+      tags: ["sync"],
+      security: cookieOrBearer,
+      requestParams: {
+        query: z.object({
+          table: z.string().meta({
+            description: "Таблиця з allowlist `SYNC_STATE_HASH_TABLE_PKS`.",
+          }),
+        }),
+      },
+      responses: {
+        "200": {
+          description:
+            "Хеш стану таблиці; `as_of_op_id` — number (0, якщо оп-ів немає); `buckets` — рівно 16, за зростанням `bucket`.",
+          content: {
+            "application/json": {
+              schema: z.object({
+                table: z.string(),
+                as_of_op_id: z.number().int(),
+                total: z.object({
+                  hash: z.string(),
+                  count: z.number().int(),
+                }),
+                buckets: z.array(
+                  z.object({
+                    bucket: z.number().int(),
+                    hash: z.string(),
+                    count: z.number().int(),
+                  }),
+                ),
+              }),
+            },
+          },
+        },
+        "400": {
+          description:
+            "Таблиця поза allowlist (`code: STATE_HASH_TABLE_NOT_ALLOWED`).",
+          content: { "application/json": { schema: namedSchemas.ApiError } },
+        },
+        "401": unauthorized,
+        "404": {
+          description:
+            "Ендпоінт вимкнено (`SYNC_STATE_HASH_ENABLED=false`, дефолт); віддається і без сесії.",
+        },
+        "429": {
+          description: "Перевищено ліміт 6 запитів на хвилину на користувача.",
+          content: { "application/json": { schema: namedSchemas.ApiError } },
         },
       },
     },

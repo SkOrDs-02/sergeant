@@ -2,7 +2,8 @@
  * Last validated: 2026-06-05
  * Status: Active
  */
-import type { Workout } from "@sergeant/fizruk-domain";
+import type { ExerciseHistoryEntry, Workout } from "@sergeant/fizruk-domain";
+import { collectStrengthSessionPoints } from "@sergeant/fizruk-domain";
 import type {
   ExerciseLocation,
   RawExerciseDef,
@@ -10,6 +11,7 @@ import type {
 import { matchesExerciseLocation } from "@sergeant/fizruk-domain/data";
 import { deviceDayKey, pluralUa } from "@sergeant/shared";
 import type { LastExerciseItem } from "./Workouts.types";
+import { MAX_PLAUSIBLE_SESSION_MS } from "../lib/sessionDuration";
 
 /**
  * Render order for primary muscle groups in the catalog browser.
@@ -89,11 +91,13 @@ export function collectLastByExerciseId(
   activeWorkoutId: string | null,
 ): Record<string, LastExerciseItem> {
   const out: Record<string, LastExerciseItem> = {};
+  const historyByEx: Record<string, ExerciseHistoryEntry[]> = {};
   for (const w of workouts || []) {
     if (w.id === activeWorkoutId) continue;
     for (const it of w.items || []) {
       const exId = it.exerciseId;
       if (!exId) continue;
+      (historyByEx[exId] ??= []).push({ workout: w, item: it });
       const existing = out[exId];
       if (
         !existing ||
@@ -102,6 +106,11 @@ export function collectLastByExerciseId(
         out[exId] = { ...it, _startedAt: w.startedAt };
       }
     }
+  }
+  // Сесії для режиму повернення в підказці наступного підходу (`logic-04`):
+  // та сама збірка, що й на сторінці вправи (`collectStrengthSessionPoints`).
+  for (const [exId, entry] of Object.entries(out)) {
+    entry._sessions = collectStrengthSessionPoints(historyByEx[exId] ?? []);
   }
   return out;
 }
@@ -270,7 +279,7 @@ export interface PastWorkoutTimes {
  * довше, — не тренування через північ, а описка в одному з полів, і форма
  * має сказати саме це.
  */
-const MAX_ROLLOVER_SESSION_MS = 12 * 60 * 60 * 1000;
+const MAX_ROLLOVER_SESSION_MS = MAX_PLAUSIBLE_SESSION_MS;
 
 /** `YYYY-MM-DD` + `HH:MM` → локальний `datetime-local`-рядок. */
 function joinLocal(dateKey: string, time: string): string {

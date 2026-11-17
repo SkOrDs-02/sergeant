@@ -339,6 +339,11 @@ describe("createMeEndpoints", () => {
           payload: { biometrics: { heightCm: 181 } },
           updated_at: "2026-06-01T10:00:00.000Z",
         },
+        avatar: {
+          mimeType: "image/png",
+          dataBase64: "iVBORw0KGgo=",
+          updatedAt: "2026-06-01T10:00:00.000Z",
+        },
         feedback: [{ id: 7, category: "idea", message: "Привіт" }],
         emailUnsubscribes: [],
         waitlist: [],
@@ -416,6 +421,7 @@ describe("createMeEndpoints", () => {
 
     const result = await me.exportData();
     expect(result.data.profile).toBeNull();
+    expect(result.data.avatar).toBeNull();
     expect(result.data.feedback).toEqual([]);
     expect(result.data.mono.jars).toEqual([]);
     expect(result.data.privat).toEqual({ connection: null });

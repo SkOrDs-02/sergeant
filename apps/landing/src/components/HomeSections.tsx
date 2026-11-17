@@ -23,8 +23,8 @@ function PairArrow() {
 }
 
 /**
- * Модулі – чотири кольорові блоки на повну ширину: акцент модуля тут
- * не декор, а сама поверхня (module-accent containment: колір живе лише
+ * Модулі – чотири тонові блоки (тинт продукту, чорнило, кікер у hue модуля): акцент модуля тут
+ * не заливка, а лише кікер і тінт (module-accent containment: колір живе лише
  * всередині свого блока). Кожен блок несе живий фрагмент даних різної
  * форми, а не сітку однакових карток (анти-слоп: accent-swap ≠ ідентичність).
  *
@@ -57,56 +57,50 @@ export function ModulesSection() {
       <div className="mx-auto grid w-full max-w-6xl sm:grid-cols-2 sm:px-8 lg:grid-cols-4">
         <a
           href="/hroshi"
-          className="group flex flex-col gap-1 bg-finyk px-6 py-7 text-ink-text focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ink"
+          className="group flex flex-col gap-1 bg-finyk-tint px-6 py-7 text-tint-ink focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ink"
         >
-          <p className={label}>модуль Фінік</p>
+          <p className={`${label} text-finyk`}>модуль Фінік</p>
           <h3 className={`${title} group-hover:underline`}>Гроші</h3>
-          <p className={`${body} text-ink-text`}>
+          <p className={body}>
             Витрати з банку, фото чека, виписки або вручну.
           </p>
-          <p className="mt-3 text-xs leading-relaxed text-ink-text">
+          <p className="mt-3 text-xs leading-relaxed">
             У звʼязках: тренування і витрати на доставку
           </p>
         </a>
 
         <a
           href="/trenuvannia"
-          className="group flex flex-col gap-1 bg-fizruk px-6 py-7 text-ink-text focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ink"
+          className="group flex flex-col gap-1 bg-fizruk-tint px-6 py-7 text-tint-ink focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ink"
         >
-          <p className={label}>модуль Фізрук</p>
+          <p className={`${label} text-fizruk`}>модуль Фізрук</p>
           <h3 className={`${title} group-hover:underline`}>Тренування</h3>
-          <p className={`${body} text-ink-text`}>
-            Щоденник тренувань і порада, коли відпочити.
-          </p>
-          <p className="mt-3 text-xs leading-relaxed text-ink-text">
+          <p className={body}>Щоденник тренувань і порада, коли відпочити.</p>
+          <p className="mt-3 text-xs leading-relaxed">
             У звʼязках: тренування і виконання звичок
           </p>
         </a>
 
         <a
           href="/zvychky"
-          className="group flex flex-col gap-1 bg-routine px-6 py-7 text-ink focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ink"
+          className="group flex flex-col gap-1 bg-routine-tint px-6 py-7 text-tint-ink focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ink"
         >
-          <p className={label}>модуль Рутина</p>
+          <p className={`${label} text-routine-kicker`}>модуль Рутина</p>
           <h3 className={`${title} group-hover:underline`}>Звички</h3>
-          <p className={`${body} text-ink/90`}>
-            Пропуск із причиною не обнуляє серію.
-          </p>
-          <p className="mt-3 text-xs leading-relaxed text-ink">
+          <p className={body}>Пропуск із причиною не обнуляє серію.</p>
+          <p className="mt-3 text-xs leading-relaxed">
             У звʼязках: звички, їжа і витрати
           </p>
         </a>
 
         <a
           href="/yizha"
-          className="group flex flex-col gap-1 bg-nutrition-glow px-6 py-7 text-ink focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ink"
+          className="group flex flex-col gap-1 bg-nutrition-tint px-6 py-7 text-tint-ink focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ink"
         >
-          <p className={label}>модуль Харчування</p>
+          <p className={`${label} text-nutrition`}>модуль Харчування</p>
           <h3 className={`${title} group-hover:underline`}>Їжа</h3>
-          <p className={`${body} text-ink/90`}>
-            КБЖВ, коли половини продуктів немає в базах.
-          </p>
-          <p className="mt-3 text-xs leading-relaxed text-ink">
+          <p className={body}>КБЖВ, коли половини продуктів немає в базах.</p>
+          <p className="mt-3 text-xs leading-relaxed">
             У звʼязках: їжа і виконання звичок
           </p>
         </a>

@@ -1,7 +1,7 @@
 # Аудит документації та governance: правила, ієрархія, рішення, enforcement
 
-> **Status:** Active - більшість знахідок закрито (розділ 11); розділ 9 чекає рішень власника (DG-32 закрито 2026-09-29).
-> **Last touched:** 2026-09-29 by @claude (рішення власника про GitHub, [ADR-0101](../../../governance/adr/0101-github-primary-host-ci-returns.md)). Перший прогін 2026-09-23. **Next review:** 2026-12-23.
+> **Status:** Active - Наступна дія: власник відповідає на відкриті рішення §11 (DG-4, DG-13, DG-14, DG-17, DG-23, DG-26, DG-30, ADR-0003/0044/0072, secondary reviewer), після відповідей документ стає Reference. §9 пп. 1-3 вирішено [ADR-0101](../../../governance/adr/0101-github-primary-host-ci-returns.md), п. 6 (архівний пуш) веде [dead-github-remotes](./2026-09-23-dead-github-remotes.md).
+> **Last touched:** 2026-10-26 by @claude (тріаж документації: шапка звужена до відкритих рішень власника, рев'ю: DG-6 знято зі списку «Чекає рішень власника»). Перший прогін 2026-09-23. **Next review:** 2026-12-23.
 > **Spec-lint:** skip - реєстр знахідок аудиту, не специфікація реалізації.
 
 ## 1. Що перевірено і як
@@ -325,7 +325,7 @@
 
 **Свідомо не додано:** `eslint-print-config-diff` у ланцюжок `pnpm lint` (2 хв 41 с на прогін), `docs:check-freshness-coverage` і `dead-code:files` (не заміряні).
 
-**Чекає рішень власника:** DG-4, DG-6 (закрито 2026-09-29: [ADR-0101](../../../governance/adr/0101-github-primary-host-ci-returns.md)), DG-13, DG-14, DG-17, DG-23, DG-26, DG-30, ADR-0003/0044/0072, secondary reviewer.
+**Чекає рішень власника:** DG-4, DG-13, DG-14, DG-17, DG-23, DG-26, DG-30, ADR-0003/0044/0072, secondary reviewer. DG-6 закрито 2026-09-29 ([ADR-0101](../../../governance/adr/0101-github-primary-host-ci-returns.md)), у цьому списку його більше немає.
 
 **Повний `pnpm lint` на гілці** зупиняється на кроках, які червоні на `main` і без цих змін (файли, що їх валять, у гілці не змінювались). Першим прогоном аудиту їх не зловлено, бо вони поза docs/governance-набором:
 

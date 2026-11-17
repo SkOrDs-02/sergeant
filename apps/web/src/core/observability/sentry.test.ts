@@ -169,6 +169,21 @@ describe("initSentry", () => {
     expect(event.request.headers["Authorization"]).toBe("[redacted]");
     expect(event.extra["token"]).toBe("[redacted]");
   });
+
+  it("beforeSendTransaction скрабить request.url pageload-транзакції", async () => {
+    const { initSentry } = await import("./sentry");
+    await initSentry();
+    const cfg = sentryInit.mock.calls[0]?.[0];
+
+    const event = {
+      type: "transaction",
+      request: { url: "https://app.example/reset-password?token=abc" },
+    };
+    expect(cfg.beforeSendTransaction(event, {})).toBe(event);
+    expect(event.request.url).toBe(
+      "https://app.example/reset-password?token=[redacted]",
+    );
+  });
 });
 
 describe("setSentryTag", () => {
@@ -357,6 +372,40 @@ describe("applyWebBeforeSend (PII scrub)", () => {
     expect(event.breadcrumbs[0]!.message).toBe(
       "HTTP 401 from /api/me Bearer [redacted] for [email redacted]@x.com",
     );
+  });
+
+  it("скрабить query в url/from/to breadcrumb-ів навігації й fetch", async () => {
+    const { applyWebBeforeSend } = await import("./sentry");
+    const nav = { from: "/reset-password?token=abc", to: "/sign-in" };
+    const fetchData = { url: "/api/x?code=c1&q=1", method: "GET" };
+    applyWebBeforeSend({
+      breadcrumbs: [
+        { category: "navigation", data: nav },
+        { category: "fetch", data: fetchData },
+      ],
+    });
+    expect(nav.from).toBe("/reset-password?token=[redacted]");
+    expect(nav.to).toBe("/sign-in");
+    expect(fetchData.url).toBe("/api/x?code=[redacted]&q=1");
+  });
+
+  it("прибирає значення aria-label/title із селектора ui.click", async () => {
+    const { applyWebBeforeSend } = await import("./sentry");
+    const event = {
+      breadcrumbs: [
+        {
+          category: "ui.click",
+          message:
+            'div.card > button.text-subtle[type="button"][aria-label="Видалити поповнення 1 500,00 ₴"][title="Олена"]',
+        },
+        { category: "console", message: '[aria-label="лишається"]' },
+      ],
+    };
+    applyWebBeforeSend(event);
+    expect(event.breadcrumbs[0]!.message).toBe(
+      'div.card > button.text-subtle[type="button"][aria-label][title]',
+    );
+    expect(event.breadcrumbs[1]!.message).toBe('[aria-label="лишається"]');
   });
 });
 

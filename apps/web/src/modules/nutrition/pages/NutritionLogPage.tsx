@@ -24,19 +24,12 @@ interface NutritionLogPageProps {
   log: LogController;
   toast: Toast;
   setEditingMeal: Dispatch<SetStateAction<EditingMealState | null>>;
-  /**
-   * Create-флоу відкривається через хост (NutritionApp), а не напряму
-   * `setAddMealSheetOpen`: хост скидає крок sheet-а на "source", інакше
-   * після фото-CTA наступне «Додати» відкрилось би на кроці фото.
-   */
-  onOpenAddMeal: () => void;
 }
 
 export function NutritionLogPage({
   log,
   toast,
   setEditingMeal,
-  onOpenAddMeal,
 }: NutritionLogPageProps) {
   return (
     <SectionErrorBoundary key="page-log" title="Не вдалось показати «Щоденник»">
@@ -45,7 +38,6 @@ export function NutritionLogPage({
         log={log.nutritionLog}
         selectedDate={log.selectedDate}
         setSelectedDate={log.setSelectedDate}
-        onAddMeal={onOpenAddMeal}
         onAddMealFromSearch={(meal) => {
           const id = newMealId();
           // День запису віддає сам `handleAddMeal`: `log.selectedDate` цього

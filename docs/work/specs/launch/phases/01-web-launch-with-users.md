@@ -1,7 +1,7 @@
 # Phase 1 — Web launch with users
 
-> **Last touched:** 2026-09-17 by @claude (handoff на Phase 2 переформульовано: Devin retired). **Next review:** 2026-12-16.
-> **Status:** Active — roadmap for first user-facing launch фази.
+> **Last touched:** 2026-10-26 by @claude (тріаж документації: шапка з наступною дією; рядки про Lighthouse CI на PR і Vercel preview-per-PR приведено до факту). **Next review:** 2026-12-16.
+> **Status:** Active — roadmap for first user-facing launch фази. Наступна дія: після закриття бети прогнати § 3 по датах і викреслити/перенести пункти; блокує рішення власника про дату публічного старту.
 
 > Цей документ описує **першу з трьох послідовних фаз запуску** Sergeant з реальними юзерами. Phase 1 покриває web-only (PWA на Vercel), 15 тижнів від `W-4` до `W10`. Phase 2 (Capacitor) і Phase 3 (Native RN) описані в окремих файлах цього піддерева.
 >
@@ -62,7 +62,7 @@ Phase 1 — це **15-тижнева кампанія від "web-PWA шипит
 - [x] **Auth working end-to-end:** Better Auth cookie-сесії, sign-up, sign-in, password reset на `/reset-password` (`apps/web/src/core/auth/`).
 - [x] **FTUX funnel працює:** 8 канонічних подій у PostHog (`onboarding_started → … → celebration_shown`); див. [`posthog-ftux-dashboards.md` §2](../../../../operations/observability/posthog-ftux-dashboards.md).
 - [x] **Sentry alerts активні** для error-rate, unhandled exceptions.
-- [x] **Vercel preview-per-PR + production-on-merge-to-main** живий, CI зеленіє з `pnpm check` matrix.
+- [x] **Vercel production-on-merge-to-main** живий, CI зеленіє з `pnpm check` matrix. Прев'ю на PR вимкнено (`git.deploymentEnabled`, AGENTS.md § Deployment).
 - [x] **Marketing-лендінг існує** як окремий workspace `apps/landing` (Vite + React 18 + Tailwind 4) з hero, module-showcase, cross-module-секцією і Telegram-CTA. Див. [§2](#2-лендінг--стан-і-що-лишилось).
 - [x] **Юридичний пак опубліковано** — `apps/web/src/core/legal/LegalPage.tsx` містить 4 документи (Privacy Policy, Terms, Cookie Policy, Публічна оферта), чинні з 12.07.2026. **Лишається:** підставити реквізити ФОП (зараз `CONTROLLER_PLACEHOLDER` + IBAN — плейсхолдери). Деталі — [`04-launch-readiness.md` §1.1](../business/04-launch-readiness.md#1-юридичне-та-compliance).
 - [x] **Telegram-вейтліст живий** — бот `@serg_qa_bot`, webhook `POST /api/v1/telegram/webhook` (`apps/server/src/modules/telegram/waitlistBot.ts`), таблиця `telegram_waitlist` (міграція 089), ручна розсилка `scripts/telegram/broadcast-waitlist.mjs`.
@@ -655,7 +655,7 @@ Sergeant: фінанси + тренування + звички + харчува�
 - [x] **`/welcome` FTUX splash з populated-hub peek** (PR-02 + PR-05 landed).
 - [x] **Demo mode як first-class CTA** (`/welcome?demo=1`, PR-05).
 - [x] **Sentry alerts активні** (error-rate, unhandled exceptions).
-- [x] **Vercel preview-per-PR + production deploy-on-merge** працює.
+- [x] **Vercel production deploy-on-merge** працює (прев'ю на PR вимкнено, AGENTS.md § Deployment).
 - [x] **Coolify/Hetzner backend + Postgres** з instant rollback опцією (ADR-0074).
 - [x] **DB backup verification** — раз перевірити що backup відновлюється.
 - [x] **Юридичний пак** — 4 документи в `apps/web/src/core/legal/LegalPage.tsx` (`/legal/privacy`, `/legal/terms`, `/legal/cookies`, `/legal/offer`), чинні з 12.07.2026.
@@ -677,7 +677,7 @@ Sergeant: фінанси + тренування + звички + харчува�
 - [ ] **Cookie consent banner** — Better Auth використовує cookies; перевірити, що банер збігається зі списком у Політиці cookies (`sergeant.consent.v1`, `sergeant.analytics.opt-in`, `ph_<posthog>`).
 - [ ] **All `4xx`/`5xx` error pages мають retry-CTA** — `apps/web/src/core/errors/NotFoundPage.tsx` базовий є; додати «Спробувати ще раз», «Повернутись на головну».
 - [ ] **Performance budget зелений** — `pnpm --filter @sergeant/web size` + `lighthouse` локально passing.
-- [x] **Lighthouse CI gate live** — `.github/workflows/lighthouse-ci.yml`, status check `Lighthouse CI` на кожен PR до `main`; LCP `error`-gated на 3000 ms.
+- [x] **Lighthouse CI gate live** — `.github/workflows/lighthouse-ci.yml`, LCP `error`-gated на 3000 ms. З 2026-09-30 біжить щопонеділка і вручну, на PR не запускається і не є required-чеком (AGENTS.md § Verification before PR).
 - [ ] **A11y baseline** — Playwright + axe lane (`pnpm --filter @sergeant/web test:a11y`) зелений.
 - [ ] **PostHog dashboards public** — public read-only mirror для transparency.
 - [ ] **Email-домен верифіковано в Resend** — блокер для будь-якої розсилки, включно з «welcome» і weekly digest. Транзакційні шаблони вже в коді (`authTransactionalMail.ts`), окремої marketing-платформи не заводимо.

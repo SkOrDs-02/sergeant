@@ -3,6 +3,7 @@
  * Status: Active
  */
 import type { Workout, WorkoutItem } from "@sergeant/fizruk-domain";
+import { Input } from "@shared/components/ui/Input";
 import { clampNumericInput } from "@shared/lib/format/numberInput";
 import { messages } from "@shared/i18n/uk";
 import { MAX_DISTANCE_M, MAX_DURATION_SEC } from "../../lib/numericBounds";
@@ -20,7 +21,7 @@ export interface WorkoutItemCardioFieldsProps {
 }
 
 const INPUT_CLASS =
-  "input-focus-fizruk h-11 rounded-lg border border-line bg-panelHi px-3 text-style-body text-text tabular-nums read-only:opacity-70 read-only:cursor-not-allowed";
+  "tabular-nums read-only:opacity-70 read-only:cursor-not-allowed";
 
 /**
  * Time / distance inputs of a non-strength item. Split out of
@@ -40,7 +41,7 @@ export function WorkoutItemCardioFields({
       : null;
 
   const durationInput = (
-    <input
+    <Input
       className={INPUT_CLASS}
       type="number"
       inputMode="numeric"
@@ -62,7 +63,7 @@ export function WorkoutItemCardioFields({
       <div className="mt-2 space-y-1.5">
         <div className="grid grid-cols-2 gap-2">
           {durationInput}
-          <div className="h-11" aria-hidden />
+          <div className="h-12" aria-hidden />
         </div>
         <div className="text-style-caption text-subtle">
           {ss.cardioTimeHint}
@@ -74,7 +75,7 @@ export function WorkoutItemCardioFields({
   return (
     <div className="mt-2 space-y-2">
       <div className="grid grid-cols-2 gap-2">
-        <input
+        <Input
           className={INPUT_CLASS}
           type="number"
           inputMode="numeric"

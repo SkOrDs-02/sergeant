@@ -1,5 +1,5 @@
 /**
- * Last validated: 2026-09-22
+ * Last validated: 2026-10-23
  * Status: Active
  *
  * Замкнене коло бекапу Фізрука: внести тренування, замір, щоденник і
@@ -451,7 +451,11 @@ describe("Hub backup — коло експорт → очистка → імпо
 
     await expect(
       applyHubBackupPayload(JSON.parse(JSON.stringify(payload))),
-    ).rejects.toThrow(/Частина даних Фізрука не записалась/);
+    ).rejects.toThrow(
+      // Експорт завжди несе секцію Рутини, і вона пишеться раніше за Фізрук,
+      // тож текст називає її відновленою (аудит 2026-10-01, data-34).
+      "Відновлено: Рутина. Не вдалось відновити: Фізрук. Спробуй імпорт ще раз.",
+    );
 
     const journal = JSON.parse(
       localStorage.getItem(DUAL_WRITE_JOURNAL_KEY) ?? "[]",

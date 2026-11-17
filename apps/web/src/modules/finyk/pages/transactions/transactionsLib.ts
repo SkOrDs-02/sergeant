@@ -84,17 +84,16 @@ export function writeDayCollapse(v: DayCollapseOverrides): void {
 }
 
 /**
- * Days are collapsed by default; the user explicitly toggles them
- * open via the sticky day-header. The third arg `_todayKey` is kept
- * in the signature on purpose: a feature-toggle could re-introduce
- * "today is always expanded" behaviour without changing call-sites.
+ * Минулі дні згорнуті за замовчуванням, «Сьогодні» розгорнуте (рішення
+ * власника 2026-10-24, redesign v3.2 PR3). Явний тап по шапці дня
+ * перемагає обидва дефолти.
  */
 export function isDayExpanded(
   overrides: DayCollapseOverrides,
   key: string,
-  _todayKey: string,
+  todayKey: string,
 ): boolean {
-  return !!overrides[key];
+  return overrides[key] ?? key === todayKey;
 }
 
 /**

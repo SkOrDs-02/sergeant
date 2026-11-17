@@ -74,6 +74,25 @@ export async function writeMonoTransactions(
 }
 
 /**
+ * Прибирає з дзеркала операції рахунків, яких Фінік не враховує (валютні:
+ * UAH-only без FX). Сервер їх більше не віддає, але раніше записані рядки
+ * лишались би в дзеркалі назавжди і далі складали центи з копійками.
+ */
+export async function deleteMonoTransactionsOfAccounts(
+  client: SqliteMigrationClient,
+  userId: string,
+  accountIds: ReadonlyArray<string>,
+): Promise<void> {
+  if (accountIds.length === 0 || !userId) return;
+  await client.run(
+    `DELETE FROM finyk_mono_transactions
+      WHERE user_id = ?
+        AND account_id IN (${accountIds.map(() => "?").join(", ")})`,
+    [userId, ...accountIds],
+  );
+}
+
+/**
  * Upsert the user's Mono account list. Each account is keyed by
  * `(user_id, account_id)` and `data_json` carries the full DTO so
  * surfaces that need cashback type / IBAN / sendId can read them

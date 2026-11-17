@@ -5,7 +5,7 @@
  * Split editor body for TxRow's modal Sheet. Extracted for Hard Rule #18
  * max-lines; keeping the body separate lets the row stay virtualized.
  */
-import type { Dispatch, SetStateAction } from "react";
+import type { Dispatch, KeyboardEvent, SetStateAction } from "react";
 import { formatMoney } from "@sergeant/shared";
 import type { TxSplit } from "@sergeant/finyk-domain/domain/types";
 import { cn } from "@shared/lib/ui/cn";
@@ -13,6 +13,7 @@ import { MAX_AMOUNT_HRYVNIA } from "@shared/lib/format/amount";
 import { useDecimalDraft } from "@shared/hooks/useDecimalDraft";
 import { Button } from "@shared/components/ui/Button";
 import { Icon } from "@shared/components/ui/Icon";
+import { Input } from "@shared/components/ui/Input";
 import { SPLIT_INPUT_CLASS, stripLeadingEmoji } from "./txRowHelpers";
 
 interface SplitCategoryOption {
@@ -43,15 +44,18 @@ function SplitAmountInput({
     { group: true },
   );
   return (
-    <input
-      type="text"
-      inputMode="decimal"
-      value={draft.value}
-      onChange={draft.onChange}
-      className="focus-ring w-24 text-style-caption h-9 rounded-lg border border-line bg-panel px-2 text-right text-text"
-      placeholder="₴"
-      aria-label="Сума частки"
-    />
+    <span className="w-24 shrink-0">
+      <Input
+        size="sm"
+        type="text"
+        inputMode="decimal"
+        value={draft.value}
+        onChange={draft.onChange}
+        className="bg-panel px-2 text-right"
+        placeholder="₴"
+        aria-label="Сума частки"
+      />
+    </span>
   );
 }
 
@@ -82,6 +86,13 @@ export function TxRowSplitEditor({
   onDelete,
   onClose,
 }: TxRowSplitEditorProps) {
+  // Escape закриває лише відкритий список, а не весь аркуш, чия пастка
+  // фокуса слухає `document`.
+  const closePickerOnEscape = (e: KeyboardEvent) => {
+    if (e.key !== "Escape" || splitCategoryPicker === null) return;
+    e.stopPropagation();
+    setSplitCategoryPicker(null);
+  };
   return (
     <div className="pb-3 px-2 space-y-2">
       <div className="text-style-caption text-subtle">
@@ -93,6 +104,7 @@ export function TxRowSplitEditor({
             type="button"
             aria-haspopup="listbox"
             aria-expanded={splitCategoryPicker === i}
+            onKeyDown={closePickerOnEscape}
             onClick={() =>
               setSplitCategoryPicker((current) => (current === i ? null : i))
             }
@@ -120,6 +132,7 @@ export function TxRowSplitEditor({
                   type="button"
                   role="option"
                   aria-selected={category.id === sp.categoryId}
+                  onKeyDown={closePickerOnEscape}
                   onClick={() => {
                     setDraftSplits((prev) =>
                       prev.map((part, index) =>

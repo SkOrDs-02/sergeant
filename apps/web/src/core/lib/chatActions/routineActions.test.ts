@@ -238,6 +238,18 @@ describe("create_reminder", () => {
     expect(out).toContain("HH:MM");
   });
 
+  it.each(["24:00", "25:99", "7:60"])(
+    "error: неможливий час %s не записується",
+    (time) => {
+      seedHabit("h1", "Вода");
+      const out = call({
+        name: "create_reminder",
+        input: { habit_id: "h1", time },
+      });
+      expect(out).toContain("від 00:00 до 23:59");
+    },
+  );
+
   it("error: missing habit_id returns error", () => {
     const out = call({
       name: "create_reminder",
@@ -380,6 +392,17 @@ describe("archive_habit", () => {
 // add_calendar_event
 // ---------------------------------------------------------------------------
 describe("add_calendar_event", () => {
+  it("undo видаляє створену подію", () => {
+    const out = handleRoutineAction({
+      name: "add_calendar_event",
+      input: { name: "Зустріч", date: "2026-05-01" },
+    });
+    if (typeof out !== "object" || out == null) throw new Error("no undo");
+    expect(loadRoutineState().habits).toHaveLength(1);
+    out.undo?.();
+    expect(loadRoutineState().habits).toHaveLength(0);
+  });
+
   it("happy: adds calendar event", () => {
     const out = call({
       name: "add_calendar_event",
@@ -399,14 +422,17 @@ describe("add_calendar_event", () => {
     expect(out).toContain("назва");
   });
 
-  it("error: invalid date returns error", () => {
-    const out = call({
-      name: "add_calendar_event",
-      input: { name: "X", date: "bad" },
-    });
-    expect(typeof out).toBe("string");
-    expect(out).toContain("YYYY-MM-DD");
-  });
+  it.each(["bad", "2026-02-30"])(
+    "error: invalid date %s returns error",
+    (date) => {
+      const out = call({
+        name: "add_calendar_event",
+        input: { name: "X", date },
+      });
+      expect(typeof out).toBe("string");
+      expect(out).toContain("YYYY-MM-DD");
+    },
+  );
 
   it("shape: result contains event id", () => {
     const out = call({
@@ -753,6 +779,31 @@ describe("habit_stats", () => {
       input: { habit_id: "h1", period_days: 7 },
     });
     expect(out).toContain(`Поточна серія: ${expectedStreak} днів`);
+  });
+
+  // logic-22: гнучка звичка («1 раз на тиждень») міряється тижнями. Поденний
+  // алгоритм віддавав «Поточна серія: 0 днів», бо кожен день без відмітки
+  // вважав пропуском.
+  it("logic-22: гнучка звичка — серія в тижнях, не в днях", () => {
+    seedHabit("h1", "Басейн", {
+      recurrence: "flexible",
+      weeklyTargetHistory: [{ from: "2026-01-01", target: 1 }],
+    });
+    const seeded = loadRoutineState();
+    saveRoutineState({
+      ...seeded,
+      completions: {
+        ...seeded.completions,
+        h1: ["2026-03-30", "2026-04-06", "2026-04-13", "2026-04-20"],
+      },
+    });
+    const out = call({
+      name: "habit_stats",
+      input: { habit_id: "h1", period_days: 30 },
+    });
+    expect(out).toContain("Поточна серія: 4 тижнів поспіль");
+    expect(out).toContain("Макс. серія: 4 тижнів поспіль");
+    expect(out).not.toContain("Останні пропуски");
   });
 });
 

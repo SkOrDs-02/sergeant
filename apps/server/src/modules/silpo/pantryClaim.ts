@@ -54,7 +54,7 @@ export async function setPantryAutoImport(
  * записом у комору. `mode: "auto"` бронює лише позиції, які ще НІХТО не
  * заброньував (`pantry_claimed_at IS NULL`), у чеку без
  * `pantry_auto_declined_at`, не старішому за `pantry_auto_import_since` і
- * купленому ПІСЛЯ `receipts_wiped_at` (страховка від чеків, що перетнули
+ * купленому ПІСЛЯ `silpo_wipe_marker.wiped_at` (страховка від чеків, що перетнули
  * wipe, - аудит 2026-10-01 data-47) -
  * так другий пристрій, що прийшов пізніше з тим самим чеком, отримує
  * порожню відповідь. `mode: "manual"` бронює повторно (ручний потік завжди
@@ -76,13 +76,14 @@ export async function claimPantryItems(
       ? ` AND i.pantry_claimed_at IS NULL
           AND r.pantry_auto_declined_at IS NULL
           AND r.purchased_at >= COALESCE(c.pantry_auto_import_since, 'infinity'::timestamptz)
-          AND r.purchased_at > COALESCE(c.receipts_wiped_at, '-infinity'::timestamptz)`
+          AND r.purchased_at > COALESCE(GREATEST(wm.wiped_at, c.receipts_wiped_at), '-infinity'::timestamptz)`
       : "";
   const { rows } = await queryFn<{ id: unknown }>(
     `UPDATE silpo_receipt_items i
         SET pantry_claimed_at = NOW()
        FROM silpo_receipts r
        LEFT JOIN silpo_connection c ON c.user_id = r.user_id
+       LEFT JOIN silpo_wipe_marker wm ON wm.user_id = r.user_id
       WHERE i.user_id = $1 AND i.receipt_id = $2 AND i.id = ANY($3::bigint[])
         AND r.user_id = i.user_id AND r.receipt_id = i.receipt_id
         ${autoConditions}

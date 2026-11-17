@@ -32,7 +32,7 @@ export function CollectionManager({
       aria-labelledby={titleId}
       className="space-y-3"
     >
-      <h3 id={titleId} className="text-style-overline text-text">
+      <h3 id={titleId} className="text-style-label-lg font-semibold text-text">
         {title}
       </h3>
       <p className="text-style-body text-muted leading-snug">{description}</p>

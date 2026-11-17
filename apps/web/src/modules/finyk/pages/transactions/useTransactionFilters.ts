@@ -294,6 +294,20 @@ export function useTransactionFilters({
     { capitalize: true },
   );
 
+  // Аркуш вибору місяця: рік назад від поточного (Київ), або глибше, якщо
+  // обраний місяць старший.
+  const monthsBack =
+    (kyivNowY - selMonth.year) * 12 + (kyivNowM - selMonth.month);
+  const recentMonths = useMemo(
+    () =>
+      Array.from({ length: Math.max(12, monthsBack + 1) }, (_, i) =>
+        formatMonthYear(new Date(kyivNowY, kyivNowM - i, 1), {
+          capitalize: true,
+        }),
+      ),
+    [kyivNowY, kyivNowM, monthsBack],
+  );
+
   const creditAccIds = useMemo(() => {
     const ids = new Set<string>();
     for (const a of accounts || []) {
@@ -458,8 +472,8 @@ export function useTransactionFilters({
   }, [groupedByDate, excludedTxIds, txSplits]);
 
   // Day collapse/expand state. Persisted as a sparse override map:
-  // absence → default rule (only "today" is expanded). Explicit boolean
-  // overrides the default and survives across sessions.
+  // absence → collapsed, крім «Сьогодні» (`isDayExpanded`).
+  // Explicit boolean overrides the default and survives across sessions.
   const [todayDayKey] = useState(() =>
     dayKeyFromTx(Math.floor(Date.now() / 1000)),
   );
@@ -566,6 +580,8 @@ export function useTransactionFilters({
     isCurrentMonth,
     goMonth,
     monthLabel,
+    // Пропи перемикача місяця в `TransactionsHeader` одним обʼєктом.
+    monthNav: { monthLabel, isCurrentMonth, goMonth, monthsBack, recentMonths },
     rangeFilter,
     clearRangeFilter: () => setRangeFilter(null),
     // derived

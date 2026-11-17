@@ -555,8 +555,13 @@ export function HubSettingsPage({ scrollContainer }: HubSettingsPageProps) {
     } else {
       const reason = params.get("reason");
       toast.error(
-        (reason && SILPO_ERROR_REASON_MESSAGES[reason]) ??
-          "Не вдалося звʼязати Сільпо.",
+        (reason &&
+        Object.prototype.hasOwnProperty.call(
+          SILPO_ERROR_REASON_MESSAGES,
+          reason,
+        )
+          ? SILPO_ERROR_REASON_MESSAGES[reason]
+          : undefined) ?? "Не вдалося звʼязати Сільпо.",
         undefined,
         {
           label: "Спробувати ще раз",

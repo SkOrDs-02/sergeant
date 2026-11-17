@@ -12,6 +12,8 @@
  *  7. Cross-route survival: Workouts page unmounts mid-rest; overlay stays
  *     visible at provider level; end-cue still fires when time expires.
  *  8. useRestTimer throws when used outside provider.
+ *  9. Reload / remount resumes the same `endsAt` from sessionStorage
+ *     (logic-10); an expired slot is dropped without an end-cue.
  */
 import {
   describe,
@@ -33,7 +35,7 @@ import { useEffect, type ReactNode } from "react";
 import { RestTimerProvider } from "./RestTimerProvider";
 import { useRestTimer } from "./RestTimerContext";
 import { RestTimerOverlay } from "../components/workouts/RestTimerOverlay";
-import { startRestTimerState } from "../lib/restTimer";
+import { REST_TIMER_SESSION_KEY, startRestTimerState } from "../lib/restTimer";
 
 // ---------------------------------------------------------------------------
 // Helpers
@@ -104,6 +106,7 @@ describe("RestTimerProvider", () => {
 
   beforeEach(() => {
     vi.useFakeTimers();
+    sessionStorage.clear();
 
     // Stub AudioContext so JSDOM doesn't throw and we can detect beep calls.
     const MockAudioContext = vi
@@ -357,6 +360,97 @@ describe("RestTimerProvider", () => {
     });
     expect(result.current.restTimer).toBeNull();
     expect(audioCtxSpy).toHaveBeenCalledTimes(1);
+  });
+
+  // -------------------------------------------------------------------------
+  it("reload resumes the rest timer from sessionStorage (logic-10)", () => {
+    const first = renderHook(() => useRestTimer(), { wrapper });
+    act(() => {
+      first.result.current.setRestTimer(startRestTimerState(90));
+    });
+    const endsAt = first.result.current.restTimer?.endsAt;
+    expect(sessionStorage.getItem(REST_TIMER_SESSION_KEY)).not.toBeNull();
+
+    // Reload: провайдер розмонтовано, минуло 20 с, провайдер змонтовано знову.
+    first.unmount();
+    vi.setSystemTime(Date.now() + 20_000);
+    const second = renderHook(() => useRestTimer(), { wrapper });
+
+    expect(second.result.current.restTimer).toEqual({
+      remaining: 70,
+      total: 90,
+      endsAt,
+    });
+    // Відлік іде далі, і сигнал кінця звучить уже з нового монтування.
+    act(() => {
+      vi.advanceTimersByTime(70_000);
+    });
+    expect(second.result.current.restTimer).toBeNull();
+    expect(audioCtxSpy).toHaveBeenCalledTimes(1);
+    expect(sessionStorage.getItem(REST_TIMER_SESSION_KEY)).toBeNull();
+  });
+
+  // -------------------------------------------------------------------------
+  it("drops a slot that expired while the page was gone, without an end-cue", () => {
+    const first = renderHook(() => useRestTimer(), { wrapper });
+    act(() => {
+      first.result.current.setRestTimer(startRestTimerState(30));
+    });
+    first.unmount();
+    vi.setSystemTime(Date.now() + 60_000);
+
+    const second = renderHook(() => useRestTimer(), { wrapper });
+    expect(second.result.current.restTimer).toBeNull();
+    expect(audioCtxSpy).not.toHaveBeenCalled();
+    expect(sessionStorage.getItem(REST_TIMER_SESSION_KEY)).toBeNull();
+  });
+
+  // -------------------------------------------------------------------------
+  it("cancelling clears the slot, so a reload does not bring the timer back", () => {
+    const first = renderHook(() => useRestTimer(), { wrapper });
+    act(() => {
+      first.result.current.setRestTimer(startRestTimerState(60));
+    });
+    act(() => {
+      first.result.current.setRestTimer(null);
+    });
+    expect(sessionStorage.getItem(REST_TIMER_SESSION_KEY)).toBeNull();
+    first.unmount();
+
+    const second = renderHook(() => useRestTimer(), { wrapper });
+    expect(second.result.current.restTimer).toBeNull();
+  });
+
+  // -------------------------------------------------------------------------
+  it("rest ending in a hidden tab with granted permission shows a local notification", async () => {
+    const NotificationCtor = Object.assign(vi.fn(), {
+      permission: "granted" as NotificationPermission,
+    });
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    (globalThis as any).Notification = NotificationCtor;
+    Object.defineProperty(document, "visibilityState", {
+      configurable: true,
+      get: () => "hidden",
+    });
+    try {
+      const { result } = renderHook(() => useRestTimer(), { wrapper });
+      act(() => {
+        result.current.setRestTimer(startRestTimerState(3));
+      });
+      await act(async () => {
+        vi.advanceTimersByTime(3000);
+      });
+      expect(result.current.restTimer).toBeNull();
+      expect(NotificationCtor).toHaveBeenCalledTimes(1);
+      expect(NotificationCtor.mock.calls[0]?.[0]).toBe("Відпочинок завершено");
+    } finally {
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      delete (globalThis as any).Notification;
+      Object.defineProperty(document, "visibilityState", {
+        configurable: true,
+        get: () => "visible",
+      });
+    }
   });
 
   // -------------------------------------------------------------------------

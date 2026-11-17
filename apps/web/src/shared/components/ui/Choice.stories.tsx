@@ -53,6 +53,26 @@ export const SmallTiles: Story = {
   ),
 };
 
+function DeselectableScale() {
+  const [value, setValue] = useState<string | null>("3");
+  return (
+    <ChoiceGroup
+      ariaLabel="Енергія"
+      size="sm"
+      className="grid grid-cols-5"
+      value={value}
+      onChange={setValue}
+      onDeselect={() => setValue(null)}
+      items={["1", "2", "3", "4", "5"].map((v) => ({ value: v, label: v }))}
+    />
+  );
+}
+
+/** Повторний тап по обраній оцінці знімає її (`onDeselect`). */
+export const Deselectable: Story = {
+  render: () => <DeselectableScale />,
+};
+
 export const Rows: Story = {
   render: () => (
     <Stateful

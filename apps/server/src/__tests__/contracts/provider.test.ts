@@ -44,9 +44,9 @@
 //   - POST /api/v1/push/register             (fizruk persona, ios sibling)
 //   - POST /api/v1/nutrition/day-plan        (nutrition persona, Anthropic-stubbed)
 //
-// The remaining 7 pre-existing routes (`/api/v1/chat`, `/api/v1/chat/usage`,
+// The remaining 8 routes (`/api/v1/chat`, `/api/v1/chat/usage`,
 // `/api/v1/nutrition/analyze-photo`, `/api/v1/food-search`, `/api/v2/sync/pull`,
-// `/api/v2/sync/push`, `/api/v1/nutrition/parse-pantry`) are covered by the consumer pact but
+// `/api/v2/sync/push`, `/api/v2/sync/snapshot`, `/api/v1/nutrition/parse-pantry`) are covered by the consumer pact but
 // skipped on the provider side here because their handler chains require
 // streaming or vision Anthropic stubs, full v2 sync log fixtures, or
 // upstream/timeout simulation that are already covered by dedicated
@@ -318,7 +318,15 @@ describe("Pact provider replay — consumer=sergeant-api-client, provider=sergea
     // 89, не 87: +2 інтеракції billing на ВЖЕ покритому `POST /billing/checkout`
     // (data-21): 409 `ALREADY_SUBSCRIBED` і 409 `CHECKOUT_PENDING`.
     // `expectedRoutes` не росте.
-    expect(pact.interactions).toHaveLength(89);
+    // 90, не 89: +1 інтеракція на НОВОМУ маршруті `GET /api/v2/sync/state-hash`
+    // (ADR-0106, крок 1), тож росте і `expectedRoutes`.
+    // 93, не 90: +3 інтеракції ADR-0105 §3 - `410 sync_cursor_expired` на
+    // вже покритому `GET /api/v2/sync/pull` і дві сторінки НОВОГО маршруту
+    // `GET /api/v2/sync/snapshot` (росте й `expectedRoutes`). Обидва sync-
+    // маршрути на провайдері не реплеяться (див. шапку файлу): поведінку
+    // тримають `modules/sync/syncOpLogFloor.test.ts` і
+    // `syncV2Snapshot.integration.test.ts`.
+    expect(pact.interactions).toHaveLength(93);
     const expectedRoutes = new Set([
       // PR-42 baseline (5)
       "GET /api/v1/me",
@@ -338,6 +346,8 @@ describe("Pact provider replay — consumer=sergeant-api-client, provider=sergea
       "GET /api/v1/food-search",
       "GET /api/v2/sync/pull",
       "POST /api/v2/sync/push",
+      // ADR-0105 §3.3: знімок стану (1 маршрут, 2 інтеракції).
+      "GET /api/v2/sync/snapshot",
       "POST /api/v1/nutrition/parse-pantry",
       // billing + privat + finyk consumer expansion (10)
       "GET /api/v1/billing/providers",
@@ -403,6 +413,8 @@ describe("Pact provider replay — consumer=sergeant-api-client, provider=sergea
       "PUT /api/v1/silpo/settings",
       "POST /api/v1/silpo/receipts/rcpt-pact-0001/pantry-claim",
       "POST /api/v1/silpo/receipts/rcpt-pact-0001/pantry-release",
+      // хеш стану sync (ADR-0106, крок 1): 1 інтеракція / 1 маршрут
+      "GET /api/v2/sync/state-hash",
     ]);
     const actualRoutes = new Set(
       pact.interactions.map((i) => `${i.request.method} ${i.request.path}`),
@@ -1025,6 +1037,13 @@ describe("Pact provider replay — consumer=sergeant-api-client, provider=sergea
   // and leave a `todo` marker so future maintenance knows where to
   // extend coverage. See `docs/engineering/architecture/api-contracts.md
   // § Extending coverage`.
+  // `GET /api/v2/sync/state-hash` (ADR-0106): handler за прапорцем і з
+  // REPEATABLE READ-транзакцією; форма відповіді перевірена проти справжнього
+  // Postgres у `modules/sync/syncV2StateHash.integration.test.ts` і мок-тестом
+  // `syncV2StateHash.test.ts`, як і решта sync v2 маршрутів.
+  it.todo(
+    "GET /api/v2/sync/state-hash — replay against real handler (requires sync table fixtures + SYNC_STATE_HASH_ENABLED)",
+  );
   it.todo(
     "POST /api/v1/chat — replay against real chat handler (requires streaming Anthropic stub)",
   );

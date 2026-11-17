@@ -30,6 +30,7 @@ import { Sheet } from "@shared/components/ui/Sheet";
 import { useResetPinchZoomAfterCameraCapture } from "@shared/hooks/useResetPinchZoomOnResume";
 import type {
   ImportScreenshotDraft,
+  ImportCommitProfile,
   ImportSkippedRow,
   ImportSource,
 } from "@sergeant/api-client";
@@ -54,20 +55,16 @@ import {
   type StatementFilePayload,
 } from "../../lib/importStatementFile";
 import {
-  useImportBatchUndo,
-  useImportCommit,
   useImportScreenshotAnalyze,
   useImportStatementPreview,
-  type ImportCommitResult,
 } from "../../hooks/useBulkImport";
+import { useChunkedImportCommit } from "../../hooks/useChunkedImportCommit";
 import type { ManualExpenseWriteThroughStorage } from "../../hooks/manualExpenseWriteThrough";
 import {
-  commitCapMessage,
-  exceedsCommitCap,
   screenshotRowsToBulkReviewRows,
   selectedRowCount,
+  setRowDirection,
   statementRowsToBulkReviewRows,
-  toCommitRows,
   toggleRowSelected,
   setAllSelected,
   applyBulkCategory,
@@ -75,6 +72,11 @@ import {
   type BulkReviewRow,
 } from "./bulkImportRows";
 import { ScanStatus, type ScanStatusState } from "../ScanStatus";
+import {
+  chunkedCommitHint,
+  chunkProgressLabel,
+  partialCommitMessage,
+} from "./commitChunks";
 import { ColumnMapper } from "./ColumnMapper";
 import { BulkReviewTable } from "./BulkReviewTable";
 
@@ -169,15 +171,16 @@ export function BulkImportSheet({
   const [stage, setStage] = useState<Stage>("choose");
   const [flowError, setFlowError] = useState<string | null>(null);
   const [importSource, setImportSource] = useState<ImportSource | null>(null);
+  // Звідки рядки (mono / privat24 / custom / screenshot): від цього залежить
+  // серверний тір-1 mono-дедуп на commit (data-30).
+  const [commitProfile, setCommitProfile] =
+    useState<ImportCommitProfile | null>(null);
   const [reviewRows, setReviewRows] = useState<BulkReviewRow[]>([]);
   const [skippedNote, setSkippedNote] = useState<string | null>(null);
   const [pendingStatementFile, setPendingStatementFile] =
     useState<StatementFilePayload | null>(null);
   const [mapperHeaders, setMapperHeaders] = useState<string[]>([]);
   const [mapperSampleRows, setMapperSampleRows] = useState<string[][]>([]);
-  const [commitResult, setCommitResult] = useState<ImportCommitResult | null>(
-    null,
-  );
   const [processing, setProcessing] = useState<ScanStatusState | null>(null);
   // Попередження «Куди їде фото» (рішення власника 2026-07-26): доки його
   // не підтверджено, скрін нікуди не їде, а чекає тапу в нотісі. Див.
@@ -209,8 +212,9 @@ export function BulkImportSheet({
   const screenshotAnalyze = useImportScreenshotAnalyze();
   const visionPaywall = useFinykVisionPaywall();
   const statementPreview = useImportStatementPreview();
-  const commit = useImportCommit({ storage });
-  const batchUndo = useImportBatchUndo({ storage });
+  const commit = useChunkedImportCommit({ storage });
+  const commitResult = commit.totals;
+  const resetCommit = commit.reset;
 
   useEffect(() => {
     if (open) return;
@@ -221,16 +225,17 @@ export function BulkImportSheet({
       setStage("choose");
       setFlowError(null);
       setImportSource(null);
+      setCommitProfile(null);
       setReviewRows([]);
       setSkippedNote(null);
       setPendingStatementFile(null);
       setMapperHeaders([]);
       setMapperSampleRows([]);
-      setCommitResult(null);
+      resetCommit();
       setProcessing(null);
       setPendingScreenshot(null);
     });
-  }, [open]);
+  }, [open, resetCommit]);
 
   /** Повертає з `processing` на вибір файлу з поясненням, що пішло не так.
    * Будь-який вихід із розпізнавання проходить через неї — інакше аркуш
@@ -272,6 +277,7 @@ export function BulkImportSheet({
         return;
       }
       setImportSource("bank_screenshot");
+      setCommitProfile("screenshot");
       setReviewRows(screenshotRowsToBulkReviewRows(draft.rows, rowOptions));
       setSkippedNote(null);
       setProcessing(null);
@@ -312,6 +318,7 @@ export function BulkImportSheet({
       return;
     }
     setImportSource("bank_statement");
+    setCommitProfile(response.profile);
     setReviewRows(statementRowsToBulkReviewRows(response.rows, rowOptions));
     setSkippedNote(summarizeSkipped(response.skipped));
     setStage("bulk-review");
@@ -356,35 +363,50 @@ export function BulkImportSheet({
     }
   };
 
-  const overCommitCap = exceedsCommitCap(reviewRows);
-
   const handleCommit = async () => {
-    if (!importSource || overCommitCap) return;
+    if (!importSource) return;
     setFlowError(null);
-    try {
-      const response = await commit.mutateAsync({
-        source: importSource,
-        rows: toCommitRows(reviewRows),
-      });
-      setCommitResult(response);
-      setStage("commit-summary");
-    } catch (err) {
-      setFlowError(formatReceiptError(err, "Не вдалось імпортувати."));
+    const outcome = await commit.run({
+      source: importSource,
+      profile: commitProfile,
+      rows: reviewRows,
+    });
+    const done = outcome.committedRowIds;
+    if (done.size > 0)
+      setReviewRows((r) => r.filter((row) => !done.has(row.id)));
+    if (outcome.failure) {
+      const reason = formatReceiptError(
+        outcome.failure.error,
+        "Не вдалось імпортувати.",
+      );
+      setFlowError(
+        done.size > 0
+          ? partialCommitMessage(
+              outcome.failure.committedRows,
+              outcome.failure.totalRows,
+              reason,
+            )
+          : reason,
+      );
+      return;
     }
+    setStage("commit-summary");
   };
 
   const handleUndo = async () => {
-    if (!commitResult) return;
     try {
-      await batchUndo.mutateAsync({
-        batchId: commitResult.batchId,
-        localIds: commitResult.locallyWrittenIds,
-      });
+      await commit.undoAll();
       onClose();
     } catch (err) {
       setFlowError(formatReceiptError(err, "Не вдалось скасувати імпорт."));
     }
   };
+
+  const selectedCount = selectedRowCount(reviewRows);
+  const commitHint =
+    commit.progress && commit.progress.total > 1
+      ? chunkProgressLabel(commit.progress.current, commit.progress.total)
+      : chunkedCommitHint(selectedCount);
 
   const stageTitle: Record<Stage, string> = {
     choose: "Додати документи",
@@ -407,30 +429,24 @@ export function BulkImportSheet({
       footer={
         stage === "bulk-review" ? (
           <div className="space-y-2">
-            {/* Live-регіон змонтований завжди: вимкнена кнопка не фокусується,
-                тож aria-describedby сам перетин ліміту не озвучить. */}
+            {/* Live-регіон змонтований завжди: прогрес частин має
+                озвучуватись, а кнопка в цей час зайнята. */}
             <p
               id="bulk-import-cap-hint"
               aria-live="polite"
               className={
-                overCommitCap
-                  ? "text-style-caption text-danger-strong dark:text-danger"
-                  : "sr-only"
+                commitHint ? "text-style-caption text-muted" : "sr-only"
               }
             >
-              {overCommitCap
-                ? commitCapMessage(selectedRowCount(reviewRows))
-                : ""}
+              {commitHint ?? ""}
             </p>
             <Button
               variant="solid"
               tone="ink"
               className="w-full"
               loading={commit.isPending}
-              disabled={overCommitCap || reviewRows.every((r) => !r.selected)}
-              aria-describedby={
-                overCommitCap ? "bulk-import-cap-hint" : undefined
-              }
+              disabled={selectedCount === 0}
+              aria-describedby={commitHint ? "bulk-import-cap-hint" : undefined}
               onClick={() => void handleCommit()}
             >
               Імпортувати
@@ -443,7 +459,7 @@ export function BulkImportSheet({
             variant="soft"
             tone="danger"
             className="w-full"
-            loading={batchUndo.isPending}
+            loading={commit.isUndoing}
             onClick={() => void handleUndo()}
           >
             Скасувати імпорт
@@ -553,6 +569,11 @@ export function BulkImportSheet({
             }
             onEditRow={(id, patch) =>
               setReviewRows((r) => updateRowField(r, id, patch))
+            }
+            onSetDirection={(id, direction) =>
+              setReviewRows((r) =>
+                setRowDirection(r, id, direction, defaultCategoryFor),
+              )
             }
             customCategories={customCategories}
             disabled={commit.isPending}

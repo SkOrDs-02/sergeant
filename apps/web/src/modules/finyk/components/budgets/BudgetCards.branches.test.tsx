@@ -68,7 +68,7 @@ describe("LimitBudgetCard", () => {
       screen.queryByText("Зменши каву на цьому тижні."),
     ).not.toBeInTheDocument();
 
-    fireEvent.click(screen.getByRole("button", { name: "Зрозуміло" }));
+    fireEvent.click(screen.getByRole("button", { name: "Прибрати" }));
     expect(onDismissAdvice).toHaveBeenCalledTimes(1);
 
     fireEvent.click(screen.getByRole("button", { name: "Редагувати ліміт" }));

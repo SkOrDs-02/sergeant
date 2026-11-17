@@ -54,12 +54,14 @@ function hasUndeliveredRows(pool: PrunePool, file: string): boolean {
 /**
  * Прибирає файли баз, що пережили вихід (стирання впало або вийшли ще до
  * фіксу). `keep` не чіпаємо; `force` видаляємо безумовно (вихід уже спитав
- * людину про недоставлене); решту осиротілих - лише з порожньою чергою.
+ * людину про недоставлене); решту осиротілих - лише з порожньою чергою і
+ * лише за `sweep`.
  */
 export function pruneOrphanPartitions(
   pool: PrunePool,
   keep: readonly string[],
   force: readonly string[],
+  sweep: boolean,
 ): SqliteWorkerPruneResult {
   const norm = (name: string) => (name.startsWith("/") ? name : `/${name}`);
   const keepSet = new Set(keep.map(norm));
@@ -69,7 +71,9 @@ export function pruneOrphanPartitions(
   const names = pool.getFileNames();
   for (const file of names) {
     if (!PARTITION_FILE.test(file) || keepSet.has(file)) continue;
-    if (!forceSet.has(file) && hasUndeliveredRows(pool, file)) {
+    const forced = forceSet.has(file);
+    if (!forced && !sweep) continue;
+    if (!forced && hasUndeliveredRows(pool, file)) {
       kept.push(file);
       continue;
     }

@@ -1,23 +1,14 @@
 import type { Request, Response } from "express";
 import type { PoolClient } from "pg";
 import pool from "../../db.js";
-import { parseBody, parseQuery } from "../../http/validate.js";
-import {
-  SyncV2PullSchema,
-  SyncV2PushSchema,
-  type SyncV2Op,
-} from "../../http/schemas.js";
+import { parseBody } from "../../http/validate.js";
+import { SyncV2PushSchema, type SyncV2Op } from "../../http/schemas.js";
 import { logger } from "../../obs/logger.js";
-import {
-  decryptOpRowForPull,
-  encryptOpRowForStorage,
-} from "../../lib/healthTextCrypto.js";
+import { encryptOpRowForStorage } from "../../lib/healthTextCrypto.js";
 import {
   syncConflictsTotal,
   syncOpLogApplyTotal,
   syncOpLogNullOriginDeviceIdTotal,
-  syncOpLogPullLagMs,
-  syncOpLogPullQueueDepth,
 } from "../../obs/metrics.js";
 import { notifySyncV2OpsApplied, type SyncV2StreamOp } from "./syncV2Stream.js";
 import { lockUserSyncOpLog } from "./serverOpLog.js";
@@ -26,6 +17,7 @@ import {
   APPLY_REJECT_REASONS,
   ENGINE_REJECT_REASONS,
   type ApplyRejectReason,
+  type AppliedStatus,
   type EngineRejectReason,
   type RejectReason,
 } from "./syncV2-types.js";
@@ -36,6 +28,7 @@ import {
   hasUnstorableText,
   readOriginDeviceId,
   recordSyncV2,
+  settleUnknownTableOp,
 } from "./syncV2-core.js";
 import {
   applyRoutineEntries,
@@ -107,9 +100,6 @@ type SyncV2Outcome =
   | "unauthorized"
   | "error";
 
-type AppliedStatus =
-  { status: "applied" } | { status: "rejected"; reason: ApplyRejectReason };
-
 type ApplyFn = (
   client: PoolClient,
   op: SyncV2Op,
@@ -126,16 +116,6 @@ interface SyncOpLogDuplicateRow {
   id: string;
   status: "applied" | "duplicate" | "rejected";
   reject_reason: string | null;
-}
-
-interface PullRow {
-  id: string;
-  table_name: string;
-  op: "insert" | "update" | "delete";
-  row: unknown;
-  client_ts: Date;
-  server_ts: Date;
-  origin_device_id: string | null;
 }
 
 const CLOCK_SKEW_FORWARD_MS = 60 * 60 * 1000;
@@ -386,12 +366,19 @@ export async function syncV2Push(req: Request, res: Response): Promise<void> {
         continue;
       }
 
+      // data-48: невідома таблиця відсікається ДО будь-якого запису в
+      // `sync_op_log` (payload не зберігаємо ні в якому вигляді). Відповідь
+      // per-op, решта батча їде далі; повтор ключа знову дає той самий вердикт.
+      const applyFn = lookupApplyFn(op.table);
+      if (!applyFn) {
+        if (settleUnknownTableOp(req, op, results)) rejectedCount++;
+        continue;
+      }
+
       const clientTs = new Date(op.client_ts);
       let status: "applied" | "rejected" = "applied";
       let reason: RejectReason | null = null;
-
-      const skewMs = clientTs.getTime() - Date.now();
-      if (skewMs > CLOCK_SKEW_FORWARD_MS) {
+      if (clientTs.getTime() - Date.now() > CLOCK_SKEW_FORWARD_MS) {
         status = "rejected";
         reason = "clock_skew";
       }
@@ -412,17 +399,11 @@ export async function syncV2Push(req: Request, res: Response): Promise<void> {
         reason = "invalid_text_encoding";
       }
 
-      const applyFn = lookupApplyFn(op.table);
-      if (status === "applied" && !applyFn) {
-        status = "rejected";
-        reason = "table_not_allowed";
-      }
-
       // `op_apply` лишається відкритим до запису в журнал: якщо ON CONFLICT
       // покаже, що цей ключ уже записав паралельний пуш, або сам запис у
       // журнал упаде, apply відкочується (apply і журнал атомарні).
       let applySavepointOpen = false;
-      if (status === "applied" && applyFn) {
+      if (status === "applied") {
         await client.query("SAVEPOINT op_apply");
         applySavepointOpen = true;
         try {
@@ -430,6 +411,13 @@ export async function syncV2Push(req: Request, res: Response): Promise<void> {
           const applied = await applyWithUniqueViolationRetry(client, () =>
             applyFn(client, op, user.id, clientTs),
           );
+          if (applied.status === "retry") {
+            await client.query("ROLLBACK TO SAVEPOINT op_apply");
+            results.push(
+              await settleRetryableApply(client, op, applied.reason),
+            );
+            continue;
+          }
           if (applied.status === "rejected") {
             status = "rejected";
             reason = applied.reason;
@@ -681,88 +669,4 @@ export async function syncV2Push(req: Request, res: Response): Promise<void> {
   });
 }
 
-export async function syncV2Pull(req: Request, res: Response): Promise<void> {
-  const start = process.hrtime.bigint();
-  const user = (req as WithSessionUser).user!;
-
-  let since: number;
-  let limit: number;
-  try {
-    ({ since, limit } = parseQuery(SyncV2PullSchema, req));
-  } catch (err) {
-    recordSyncV2("v2_pull", "invalid", {
-      ms: elapsedMs(start),
-      userId: user.id,
-    });
-    throw err;
-  }
-  const originDeviceId = readOriginDeviceId(req);
-
-  try {
-    const result = await pool.query<PullRow>(
-      `SELECT id, table_name, op, row, client_ts, server_ts, origin_device_id
-         FROM sync_op_log
-        WHERE user_id = $1
-          AND id > $2
-          AND status = 'applied'
-          AND origin_device_id IS DISTINCT FROM $3
-          AND (tx_id IS NULL OR tx_id < pg_snapshot_xmin(pg_current_snapshot()))
-        ORDER BY id ASC
-        LIMIT $4`,
-      [user.id, since, originDeviceId, limit],
-    );
-
-    const opsOut = result.rows.map((r) => ({
-      id: Number(r.id),
-      table: r.table_name,
-      op: r.op,
-      row: decryptOpRowForPull(r.table_name, r.row),
-      client_ts: r.client_ts.toISOString(),
-      server_ts: r.server_ts.toISOString(),
-      // eslint-disable-next-line sergeant-design/no-bigint-string -- origin_device_id is an opaque TEXT device id (migration 027_sync_op_log.sql), not a pg bigint numeric; Hard Rule #1 N/A.
-      origin_device_id: r.origin_device_id,
-    }));
-
-    const nextCursor =
-      opsOut.length === limit ? opsOut[opsOut.length - 1]!.id : null;
-
-    const bytes = result.rows.reduce((acc, r) => {
-      try {
-        return acc + JSON.stringify(r.row).length;
-      } catch {
-        return acc;
-      }
-    }, 0);
-
-    try {
-      syncOpLogPullQueueDepth.observe(opsOut.length);
-      if (result.rows.length > 0) {
-        const newest = result!.rows[result.rows.length - 1]!.server_ts;
-        const lagMs = Date.now() - newest.getTime();
-        if (lagMs >= 0 && Number.isFinite(lagMs)) {
-          syncOpLogPullLagMs.observe(lagMs);
-        }
-      }
-    } catch {
-      /* metrics must never break a request */
-    }
-
-    recordSyncV2("v2_pull", opsOut.length === 0 ? "empty" : "ok", {
-      ms: elapsedMs(start),
-      bytes,
-      userId: user.id,
-      extra: { since, limit, returned: opsOut.length },
-    });
-
-    res.json({
-      ops: opsOut,
-      next_cursor: nextCursor,
-    });
-  } catch (err) {
-    recordSyncV2("v2_pull", "error", {
-      ms: elapsedMs(start),
-      userId: user.id,
-    });
-    throw err;
-  }
-}
+export { syncV2Pull } from "./syncV2Pull.js";

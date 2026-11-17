@@ -2,12 +2,20 @@
  * Last validated: 2026-08-08
  * Status: Active
  */
-import type { WorkoutItem, WorkoutSet } from "@sergeant/fizruk-domain";
+import type {
+  OneRmSessionPoint,
+  WorkoutItem,
+  WorkoutSet,
+} from "@sergeant/fizruk-domain";
 import { messages } from "@shared/i18n/uk";
 import { formatDateShort } from "@shared/lib/time/formatDate";
 import { calcCardioMetrics } from "./activeWorkoutLib";
 
-export type LastByExerciseEntry = WorkoutItem & { _startedAt?: string };
+export type LastByExerciseEntry = WorkoutItem & {
+  _startedAt?: string;
+  /** Силові сесії вправи (`collectLastByExerciseId`), див. `LastExerciseItem`. */
+  _sessions?: OneRmSessionPoint[];
+};
 
 export interface WorkoutItemLastTimeHintProps {
   last: LastByExerciseEntry | undefined;

@@ -52,6 +52,7 @@ describe("contract @ POST /api/v2/sync/push", CONTRACT_SUITE_OPTIONS, () => {
       // untouched, so the wire path matches the server's v2 mount
       // directly. Pact sees the wire path the client actually sends.
       .withRequest("POST", "/api/v2/sync/push", (req) => {
+        req.query({ sync_protocol: "1" });
         req.headers({
           accept: "application/json",
           "content-type": "application/json",
@@ -156,6 +157,7 @@ describe("contract @ POST /api/v2/sync/push", CONTRACT_SUITE_OPTIONS, () => {
         "a POST /api/v2/sync/push where one op is table_not_allowed",
       )
       .withRequest("POST", "/api/v2/sync/push", (req) => {
+        req.query({ sync_protocol: "1" });
         req.headers({
           accept: "application/json",
           "content-type": "application/json",
@@ -245,6 +247,7 @@ describe("contract @ POST /api/v2/sync/push", CONTRACT_SUITE_OPTIONS, () => {
         "a POST /api/v2/sync/push replaying an already-applied idempotency_key",
       )
       .withRequest("POST", "/api/v2/sync/push", (req) => {
+        req.query({ sync_protocol: "1" });
         req.headers({
           accept: "application/json",
           "content-type": "application/json",

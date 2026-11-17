@@ -569,15 +569,16 @@ describe("useTransactionFilters", () => {
     });
 
     it("розгортає день самої операції, а не сьогоднішній", () => {
-      // Сьогодні (fake timers) — 2025-06-04; запис датований 2-м червня
-      // через «Не сьогодні? Змінити дату».
-      const today = mkTx("bank-today", -100, {
-        time: Math.floor(new Date("2025-06-04T07:00:00Z").getTime() / 1000),
+      // Сьогодні (fake timers) - 2025-06-04 і розгорнуте за замовчуванням;
+      // запис датований 2-м червня через «Не сьогодні? Змінити дату», а
+      // поруч згорнутий день 3-го червня.
+      const yesterday = mkTx("bank-yesterday", -100, {
+        time: Math.floor(new Date("2025-06-03T07:00:00Z").getTime() / 1000),
       });
       const { result, rerender } = renderHook(
         (props: { manualExpenses: ManualExpense[] }) =>
           useTransactionFilters(
-            buildDefaultParams({ ...props, realTx: [today] }),
+            buildDefaultParams({ ...props, realTx: [yesterday] }),
           ),
         { initialProps: { manualExpenses: [] as ManualExpense[] } },
       );
@@ -587,15 +588,15 @@ describe("useTransactionFilters", () => {
       });
 
       expect(result.current.collapsedKeys.has("2025-06-02")).toBe(false);
-      expect(result.current.collapsedKeys.has("2025-06-04")).toBe(true);
+      expect(result.current.collapsedKeys.has("2025-06-03")).toBe(true);
       expect(result.current.flatItems.map((t) => t.id)).toEqual(["manual_m1"]);
     });
 
     it("не розгортає нічого для списку, з яким екран змонтувався", () => {
       const { result } = renderWithManual([
-        mkManual("m1", 249, "2025-06-04T12:00:00.000Z"),
+        mkManual("m1", 249, "2025-06-03T12:00:00.000Z"),
       ]);
-      expect(result.current.collapsedKeys.has("2025-06-04")).toBe(true);
+      expect(result.current.collapsedKeys.has("2025-06-03")).toBe(true);
       expect(result.current.flatItems).toHaveLength(0);
     });
 
@@ -603,12 +604,12 @@ describe("useTransactionFilters", () => {
       const { result, rerender } = renderWithManual();
       rerender({
         manualExpenses: [
-          mkManual("m1", 10, "2025-06-04T12:00:00.000Z"),
-          mkManual("m2", 20, "2025-06-03T12:00:00.000Z"),
+          mkManual("m1", 10, "2025-06-03T12:00:00.000Z"),
+          mkManual("m2", 20, "2025-06-02T12:00:00.000Z"),
         ],
       });
-      expect(result.current.collapsedKeys.has("2025-06-04")).toBe(true);
       expect(result.current.collapsedKeys.has("2025-06-03")).toBe(true);
+      expect(result.current.collapsedKeys.has("2025-06-02")).toBe(true);
     });
 
     it("ручне згортання після авто-розгортання лишається за користувачем", () => {

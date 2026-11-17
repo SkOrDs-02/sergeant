@@ -2,6 +2,7 @@
  * Last validated: 2026-05-14
  * Status: Active
  */
+import { useEffect, useState } from "react";
 import { cn } from "@shared/lib/ui/cn";
 import { useRelativeTime } from "@shared/hooks/useRelativeTime";
 
@@ -17,7 +18,15 @@ export interface TransactionSyncPillProps {
   lastUpdated: Date | null | undefined;
 }
 
-/** Sync state and last update are plain facts in the controls row. */
+/** Скільки рядок «синхронізовано» лишається після ручного оновлення. */
+export const SYNC_FLASH_MS = 2500;
+
+/**
+ * Стан синку показується лише тоді, коли він не «ок»: оновлення, частково,
+ * помилка. Успіх видно 2,5 с після оновлення (переходу `loading → success`)
+ * і більше ніде (redesign v3.2, позиція 07): постійне «синхронізовано ·
+ * мережа · 1/1» було службовим шумом над списком.
+ */
 export function TransactionSyncPill({
   syncState,
   lastUpdated,
@@ -26,8 +35,21 @@ export function TransactionSyncPill({
   // an absolute "21:57" (mobile-audit A6). Called before the early return to
   // keep the hook order stable.
   const lastUpdatedLabel = useRelativeTime(lastUpdated ?? null);
-  const showSyncRow = syncState?.status !== "idle" || lastUpdated;
-  if (!showSyncRow) return null;
+  const status = syncState?.status ?? "idle";
+  const [flash, setFlash] = useState(false);
+  const [prevStatus, setPrevStatus] = useState(status);
+  if (status !== prevStatus) {
+    setPrevStatus(status);
+    setFlash(prevStatus === "loading" && status === "success");
+  }
+  useEffect(() => {
+    if (!flash) return;
+    const id = setTimeout(() => setFlash(false), SYNC_FLASH_MS);
+    return () => clearTimeout(id);
+  }, [flash]);
+  const notOk =
+    status === "loading" || status === "partial" || status === "error";
+  if (!notOk && !flash) return null;
 
   const tone =
     syncState?.status === "error"

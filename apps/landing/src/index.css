@@ -105,6 +105,20 @@
   --color-routine-glow: #f68da4;
   --color-nutrition-glow: #b0e636;
 
+  /*
+    Тинти модулів для секції «Чотири модулі»: те, що бачить користувач у
+    продукті (мова H, `--c-*-tint` у apps/web theme.css), а не повноколірна
+    заливка. Текст на тинті – чорнило продукту `#1c1c1e`, кікер – hue модуля
+    (`-kicker`: teal-700, cyan-700, rose-800, lime-800). Значення лендінг
+    тримає сам, синхронність – `tokens.drift.test.ts`.
+  */
+  --color-tint-ink: #1c1c1e;
+  --color-finyk-tint: #e8f3f1;
+  --color-fizruk-tint: #e6f3f6;
+  --color-routine-tint: #f7e8ec;
+  --color-nutrition-tint: #f0f6e2;
+  --color-routine-kicker: #8d4256;
+
   /* Гострі кути – частина напряму: 6px лише для «паперових» карток. */
   --radius-card: 6px;
 }

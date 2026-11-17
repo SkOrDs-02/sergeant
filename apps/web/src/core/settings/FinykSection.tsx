@@ -6,9 +6,13 @@ import { useState } from "react";
 import { messages } from "@shared/i18n/uk";
 import { Segmented } from "@shared/components/ui/Segmented";
 import { Button } from "@shared/components/ui/Button";
+import { Input } from "@shared/components/ui/Input";
 import { ConfirmDialog } from "@shared/components/ui/ConfirmDialog";
 import { EmptyState } from "@shared/components/ui/EmptyState";
 import { useInView } from "@shared/hooks/useInView";
+import { useToast } from "@shared/hooks/useToast";
+import { showUndoToast } from "@shared/lib/ui/undoToast";
+import type { CustomCategoryRemoval } from "@finyk/hooks/customCategoryRemoval";
 import { useStorage as useFinykStorage } from "@finyk/hooks/useStorage";
 import { limitBudgetCategoryIds } from "@sergeant/finyk-domain/domain/budget";
 import type { Budget } from "@sergeant/finyk-domain/domain/types";
@@ -62,7 +66,11 @@ interface FinykStorageShape {
     label: string,
     options?: { kind?: "expense" | "income" },
   ) => void;
-  removeCustomCategory: (id: string) => void;
+  removeCustomCategory: (id: string) => CustomCategoryRemoval | null | void;
+  // Відкат видалення категорії (тост «Скасувати»); необовʼязковий з тієї ж
+  // причини, що й решта «вужчого вигляду» (мок у тестах).
+  restoreCustomCategory?:
+    ((removal: CustomCategoryRemoval) => void) | undefined;
   // Потрібні лише для підрахунку лімітів у тексті підтвердження; необовʼязкові,
   // бо «вужчий вигляд» хука терпить їх відсутність (мок у тестах).
   budgets?: readonly Budget[] | undefined;
@@ -99,6 +107,7 @@ export function FinykSection() {
     customCategories,
     addCustomCategory,
     removeCustomCategory,
+    restoreCustomCategory,
     budgets,
     addManualExpense,
     merchantRules,
@@ -114,6 +123,7 @@ export function FinykSection() {
     merchantRuleIndex,
     manualExpenses,
   } = useFinykStorage({}) as FinykStorageShape;
+  const toast = useToast();
   const [newCategoryLabel, setNewCategoryLabel] = useState("");
   const [newCategoryKind, setNewCategoryKind] = useState<"expense" | "income">(
     "expense",
@@ -133,6 +143,19 @@ export function FinykSection() {
       ).length
     : 0;
 
+  const confirmDelete = (category: CustomCategory) => {
+    const removal = removeCustomCategory(category.id);
+    if (!removal || !restoreCustomCategory) return;
+    showUndoToast(toast, {
+      msg: messages.collection.categoryRemoved.replace(
+        "{name}",
+        category.label,
+      ),
+      undoLabel: messages.collection.categoryRemovedUndo,
+      onUndo: () => restoreCustomCategory(removal),
+    });
+  };
+
   const addCategory = () => {
     if (customCategories.length >= 80) return;
     if (newCategoryKind === "income") {
@@ -143,16 +166,23 @@ export function FinykSection() {
     setNewCategoryLabel("");
   };
 
-  const catInputClass =
-    "input-focus-finyk flex-1 min-w-0 h-11 rounded-lg border border-line bg-panelHi px-3 text-style-body text-text";
-
   return (
     <div ref={sectionRef}>
       {/* V-13 (аудит Профілю/Налаштувань 2026-08-08): `SettingsGroup`
           фарбує бейдж модульним акцентом лише коли задані ОБИДВА — `icon`
           і `module`. Без другого всі чотири модульні секції вкладки
           «Розділи» падали на спільний сірий фолбек. */}
-      <SettingsGroup title="Фінік" anchorId="settings-finyk">
+      <SettingsGroup
+        title="Фінік"
+        value={
+          setShowBalance
+            ? showBalance
+              ? "Суми видно"
+              : "Суми приховано"
+            : undefined
+        }
+        anchorId="settings-finyk"
+      >
         {setShowBalance ? (
           <SettingsSubGroup variant="bounded" title="Показ сум">
             <ToggleRow
@@ -190,7 +220,7 @@ export function FinykSection() {
                 />
 
                 <div className="flex gap-2">
-                  <input
+                  <Input
                     type="text"
                     value={newCategoryLabel}
                     onChange={(event) =>
@@ -200,7 +230,7 @@ export function FinykSection() {
                     aria-label={messages.collection.categoryNameLabel}
                     disabled={customCategories.length >= 80}
                     maxLength={80}
-                    className={catInputClass}
+                    showCharCount={false}
                     onKeyDown={(event) => {
                       if (event.key === "Enter" && newCategoryLabel.trim()) {
                         addCategory();
@@ -209,7 +239,7 @@ export function FinykSection() {
                   />
                   <Button
                     type="button"
-                    className="shrink-0 h-11 px-4"
+                    className="shrink-0 h-12 px-4"
                     onClick={addCategory}
                     disabled={
                       !newCategoryLabel.trim() || customCategories.length >= 80
@@ -275,18 +305,19 @@ export function FinykSection() {
                   title="Видалити категорію?"
                   description={
                     <>
-                      Категорію «{pendingDelete?.label}» буде видалено. Ліміти
-                      лише з цією категорією буде видалено
+                      Категорію «{pendingDelete?.label}» буде видалено, а
+                      операції з нею перейдуть в «Інше». Ліміти лише з цією
+                      категорією буде видалено
                       {soleLimitsCount > 0
                         ? ` (зараз їх: ${soleLimitsCount})`
                         : ""}
-                      ; в комбінованих лімітах вона просто зникне зі списку. Дію
-                      не можна скасувати.
+                      ; в комбінованих лімітах вона просто зникне зі списку. Це
+                      можна скасувати одразу після видалення.
                     </>
                   }
                   confirmLabel="Видалити"
                   onConfirm={() => {
-                    if (pendingDelete) removeCustomCategory(pendingDelete.id);
+                    if (pendingDelete) confirmDelete(pendingDelete);
                     setPendingDelete(null);
                   }}
                   onCancel={() => setPendingDelete(null)}

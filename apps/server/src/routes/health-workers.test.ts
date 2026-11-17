@@ -22,6 +22,9 @@ import request from "supertest";
  *       aiMemoryIngest: { enabled, started, fallbackMode, concurrency,
  *                         attempts, jobCounts, error? },
  *       monoEnrichment: { enabled, intervalMs, queueDepth, error? },
+ *       gdprCleanup, accountDeletion: { enabled, intervalMs, lastRunAt, … },
+ *       plataSync: { enabled, intervalMs, lastRunAt, fastIntervalMs,
+ *                    lastFastRunAt } (rel-19, лише пам'ять процесу),
  *     },
  *   }
  *
@@ -114,6 +117,14 @@ describe("GET /health/workers — happy path (no Redis, mono queue empty)", () =
             dead_letter: 0,
             total: 0,
           },
+        },
+        // rel-19: свіжість звірки Plata. Без БД, тож тут без errorCode.
+        plataSync: {
+          enabled: expect.any(Boolean),
+          intervalMs: 60 * 60 * 1000,
+          lastRunAt: null,
+          fastIntervalMs: 5 * 60 * 1000,
+          lastFastRunAt: null,
         },
       },
     });

@@ -278,37 +278,37 @@ describe("HubBottomNav", () => {
 
   // ─── onShowAuth — «Увійти» action tab ───────────────────────────────────────
 
-  describe("onShowAuth action tab (guest «Увійти»)", () => {
-    it("рендерить «Увійти» коли onShowAuth надано і showProfile=false", () => {
+  describe("onShowAuth action tab (guest «Профіль» → вхід)", () => {
+    it("рендерить «Профіль» (вхід) коли onShowAuth надано і showProfile=false", () => {
       const onShowAuth = vi.fn();
       renderNav({ onShowAuth });
-      const signIn = screen.getByRole("button", { name: /Увійти/ });
+      const signIn = screen.getByRole("button", { name: /Профіль/ });
       expect(signIn).toBeInTheDocument();
     });
 
-    it("«Увійти» — action tab: не має role=tab і aria-selected", () => {
+    it("«Профіль» гостя — action tab: не має role=tab і aria-selected", () => {
       const onShowAuth = vi.fn();
       renderNav({ onShowAuth });
-      const signIn = screen.getByRole("button", { name: /Увійти/ });
+      const signIn = screen.getByRole("button", { name: /Профіль/ });
       expect(signIn).not.toHaveAttribute("role", "tab");
       expect(signIn).not.toHaveAttribute("aria-selected");
     });
 
-    it("«Увійти» відсутній коли showProfile=true (залогінений)", () => {
+    it("вхід «Профіль» гостя відсутній коли showProfile=true (залогінений)", () => {
       const onShowAuth = vi.fn();
       renderNav({ onShowAuth, showProfile: true });
-      expect(screen.queryByRole("button", { name: /Увійти/ })).toBeNull();
+      expect(screen.queryByRole("button", { name: /Профіль/ })).toBeNull();
     });
 
-    it("«Увійти» відсутній коли onShowAuth не надано", () => {
+    it("вхід «Профіль» гостя відсутній коли onShowAuth не надано", () => {
       renderNav({});
-      expect(screen.queryByRole("button", { name: /Увійти/ })).toBeNull();
+      expect(screen.queryByRole("button", { name: /Профіль/ })).toBeNull();
     });
 
     it("клік на «Увійти» викликає onShowAuth", () => {
       const onShowAuth = vi.fn();
       renderNav({ onShowAuth });
-      fireEvent.click(screen.getByRole("button", { name: /Увійти/ }));
+      fireEvent.click(screen.getByRole("button", { name: /Профіль/ }));
       expect(onShowAuth).toHaveBeenCalledOnce();
     });
 
@@ -316,7 +316,7 @@ describe("HubBottomNav", () => {
       const onChange = vi.fn();
       const onShowAuth = vi.fn();
       renderNav({ onChange, onShowAuth });
-      fireEvent.click(screen.getByRole("button", { name: /Увійти/ }));
+      fireEvent.click(screen.getByRole("button", { name: /Профіль/ }));
       expect(onChange).not.toHaveBeenCalled();
     });
   });
@@ -461,10 +461,10 @@ describe("HubBottomNav", () => {
       });
     });
 
-    it("action tab (Увійти) does not receive keyboard navigation handler", () => {
+    it("action tab (Профіль гостя) does not receive keyboard navigation handler", () => {
       const onShowAuth = vi.fn();
       renderNav({ onShowAuth });
-      const signIn = screen.getByRole("button", { name: /Увійти/ });
+      const signIn = screen.getByRole("button", { name: /Профіль/ });
       // Firing a keyboard event on the action tab should not throw and
       // should NOT call onShowAuth (keyboard handler is not attached to action tabs).
       expect(() =>

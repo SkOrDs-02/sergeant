@@ -34,6 +34,8 @@ export interface ReceiptVisionInput {
   base64: string;
   mediaType: string;
   userId?: string | undefined;
+  /** Обрив зʼєднання клієнтом скасовує vision-виклик. */
+  signal?: AbortSignal | undefined;
 }
 
 /**
@@ -94,6 +96,7 @@ export async function callReceiptVision(
     // не вигадуємо новий.
     traceId: als.getStore()?.traceId ?? undefined,
     ...(input.userId ? { userId: input.userId } : {}),
+    signal: input.signal,
   });
   if (!response || !response.ok) {
     throw makeAiProviderError({

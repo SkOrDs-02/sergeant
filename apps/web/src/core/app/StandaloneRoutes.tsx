@@ -28,6 +28,7 @@ import {
   isPathBasedModulePath,
 } from "./appPaths";
 import type { useAuth } from "../auth/AuthContext";
+import { readNextParam } from "../auth/safeNextPath";
 
 type AuthUser = ReturnType<typeof useAuth>["user"];
 
@@ -88,6 +89,8 @@ const ServerErrorPage = lazyImport(
 
 export interface StandaloneRouteArgs {
   pathname: string;
+  /** `location.search` (з `?`); потрібен `/sign-in` для параметра `next`. */
+  search?: string;
   user: AuthUser;
   authLoading: boolean;
   /**
@@ -176,7 +179,7 @@ const STANDALONE_ROUTES: ReadonlyArray<StandaloneRoute> = [
   // the form before `user` hydrates.
   defineStandaloneRoute({
     paths: [SIGN_IN_PATH],
-    render: ({ user, authLoading, onLeaveAuth }) => {
+    render: ({ user, authLoading, onLeaveAuth, search }) => {
       if (!authLoading && user) {
         // PR-H7 (design-audit 2026-09-13): closes the local onboarding
         // gate exactly here — once a session is CONFIRMED (fresh sign-in
@@ -189,7 +192,9 @@ const STANDALONE_ROUTES: ReadonlyArray<StandaloneRoute> = [
         // Idempotent write; harmless if this render fires more than once
         // before `<RedirectTo>`'s effect navigates away.
         markOnboardingDone();
-        return <RedirectTo to="/" />;
+        // sec-18: `next` (відносний внутрішній шлях, `sanitizeNextPath`) —
+        // куди повернути людину після входу; без нього чи з чужим – хаб.
+        return <RedirectTo to={readNextParam(search ?? "") ?? "/"} />;
       }
       return (
         <Suspense fallback={<PageLoader />}>

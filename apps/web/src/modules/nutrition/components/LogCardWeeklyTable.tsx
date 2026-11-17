@@ -38,7 +38,7 @@ export function LogCardWeeklyTable({
         // і розкладає `...props` на елемент, тож пропси доходять.
         aria-expanded={weekOpen}
         aria-controls={WEEK_TABLE_ID}
-        className="flex min-h-[44px] w-full items-center justify-between gap-2 rounded-lg text-left focus-ring"
+        className="flex min-h-[44px] w-full items-center justify-between gap-2 rounded-lg text-left fab-clear-row focus-ring"
       >
         <span className="text-style-body font-semibold text-text">
           Журнал за тиждень
@@ -50,7 +50,7 @@ export function LogCardWeeklyTable({
         <div id={WEEK_TABLE_ID} className="overflow-x-auto pb-2">
           <table className="w-full text-style-label text-left tabular-nums">
             <thead>
-              <tr className="text-style-overline text-subtle">
+              <tr className="text-style-caption font-semibold text-subtle">
                 <th className="py-1 pr-2">Дата</th>
                 <th className="py-1 pr-2">Ккал</th>
                 <th className="py-1 pr-2">Б</th>

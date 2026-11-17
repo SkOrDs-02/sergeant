@@ -423,3 +423,31 @@ describe("SectionSkeleton — Suspense fallback (0017 Sprint 1.1)", () => {
     expect(status.getAttribute("aria-label")).toBe("Завантажую розділ Finyk");
   });
 });
+
+describe("SettingsGroup value (redesign v3.1, В4)", () => {
+  it("значення праворуч описує кнопку, а імʼя лишається назвою групи", () => {
+    render(
+      <SettingsGroup title="Головна" value="4 з 4 модулів">
+        <p>Вміст</p>
+      </SettingsGroup>,
+    );
+    const toggle = screen.getByRole("button", { name: "Головна" });
+    expect(toggle).toHaveAccessibleDescription("4 з 4 модулів");
+    expect(screen.getByText("4 з 4 модулів")).toHaveClass("text-muted");
+  });
+
+  it("без значення опису немає, стан несуть шеврон і aria-expanded", () => {
+    render(
+      <SettingsGroup title="Фідбек">
+        <p>Вміст</p>
+      </SettingsGroup>,
+    );
+    const toggle = screen.getByRole("button", { name: "Фідбек" });
+    expect(toggle).not.toHaveAttribute("aria-describedby");
+    expect(toggle.querySelector("svg")).not.toBeNull();
+    expect(toggle).toHaveAttribute("aria-expanded", "false");
+    fireEvent.click(toggle);
+    expect(toggle).toHaveAttribute("aria-expanded", "true");
+    expect(toggle.textContent).toBe("Фідбек");
+  });
+});

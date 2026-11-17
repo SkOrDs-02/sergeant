@@ -82,6 +82,18 @@ export function onYieldRequested(handler: () => Promise<void>): void {
   yieldHandler = handler;
 }
 
+const beforeYieldHandlers = new Set<() => void>();
+
+/**
+ * Синхронний хук ПЕРЕД віддачею бази (data-45): оболонка зберігає тут
+ * чернетки живих форм, бо після віддачі дерево розмонтується, а лок піде до
+ * сусідки. Повертає функцію зняття.
+ */
+export function onBeforeYield(handler: () => void): () => void {
+  beforeYieldHandlers.add(handler);
+  return () => beforeYieldHandlers.delete(handler);
+}
+
 /** Поточний стан. Для `useSyncExternalStore`. */
 export function readDbOwnership(): DbOwnership {
   return ownership;
@@ -179,6 +191,13 @@ function installChannelListener(): void {
 
 /** Закрити базу й віддати лок. Після цього вкладка - послідовник. */
 async function yieldOwnership(): Promise<void> {
+  for (const handler of beforeYieldHandlers) {
+    try {
+      handler();
+    } catch (err) {
+      logger.warn("[db-ownership] before-yield hook failed", err);
+    }
+  }
   try {
     await yieldHandler?.();
   } catch (err) {
@@ -252,6 +271,7 @@ export function __resetDbOwnershipForTests(): void {
   waiting = false;
   claimPromise = null;
   yieldHandler = null;
+  beforeYieldHandlers.clear();
   channel?.close();
   channel = null;
   listeners.clear();

@@ -24,6 +24,7 @@ import {
 import { wrapAndScanUserContext } from "./toolOutputWrapping.js";
 import type { ProTier } from "./aiQuotaTierModels.js";
 import { replaceLongDash } from "../../lib/modelText.js";
+import { abortOnClientClose } from "../../http/clientAbort.js";
 
 type WithSessionUser = Request & { user?: { id: string } };
 type WithAnthropicKey = Request & { anthropicKey?: string };
@@ -620,6 +621,7 @@ export async function coachInsight(req: Request, res: Response): Promise<void> {
       messages: [{ role: "user", content: prompt.user }],
       timeoutMs: 20_000,
       endpoint: "coach-insight",
+      signal: abortOnClientClose(res),
       userId: (req as WithSessionUser).user?.id,
     });
   } catch (e) {

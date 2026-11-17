@@ -204,6 +204,26 @@ function assertRestoreWritten(
   );
 }
 
+/** Модуль → назва в називному відмінку для звіту про часткове відновлення. */
+const RESTORE_MODULE_NAMES: Record<HubRestoreModule, string> = {
+  finyk: "Фінік",
+  fizruk: "Фізрук",
+  routine: "Рутина",
+  nutrition: "Їжа",
+};
+
+/**
+ * Текст збою запису, коли раніші модулі вже записані (аудит 2026-10-01,
+ * data-34). Відкату немає, тож людина має бачити, що вже відновлено і що ні.
+ */
+export function partialRestoreMessage(
+  restored: readonly HubRestoreModule[],
+  failed: HubRestoreModule,
+): string {
+  const names = restored.map((m) => RESTORE_MODULE_NAMES[m]).join(", ");
+  return `Відновлено: ${names}. Не вдалось відновити: ${RESTORE_MODULE_NAMES[failed]}. Спробуй імпорт ще раз.`;
+}
+
 function assertModuleReady(module: HubRestoreModule): void {
   const block = getHubRestoreModuleBlock(module);
   if (block === null) return;
@@ -249,8 +269,10 @@ export interface ApplyHubBackupOptions {
  * Два етапи (аудит 2026-10-01, data-34): спершу всі присутні секції
  * перевіряються й нормалізуються без запису, і готовність усіх модулів, лише
  * потім ідуть записи. Битий пізніший модуль більше не лишає Фінік записаним.
- * Міжмодульного відкату немає: збій самого запису (квота сховища) пізнішого
- * модуля все ще лишає раніші записаними.
+ * Міжмодульного відкату свідомо немає (рішення власника 2026-10-23): збій
+ * самого запису (квота сховища) пізнішого модуля лишає раніші записаними, і
+ * тоді помилка називає, які модулі відновлено, а який ні (`partialRestoreMessage`),
+ * щоб людина могла повторити імпорт.
  */
 export async function applyHubBackupPayload(
   parsed: unknown,
@@ -272,34 +294,61 @@ export async function applyHubBackupPayload(
   if (parsed.fizruk) assertModuleReady("fizruk");
   if (parsed.nutrition) assertModuleReady("nutrition");
 
-  // Фаза 2: записи в тому самому порядку, що й раніше.
+  // Фаза 2: записи в тому самому порядку, що й раніше. Кожен модуль, що
+  // записався, стає в `restored`: збій пізнішого модуля тоді називає і його,
+  // і вже відновлені (відкату свідомо немає, data-34).
+  const restored: HubRestoreModule[] = [];
+  const write = async (
+    module: HubRestoreModule,
+    run: () => Promise<void>,
+  ): Promise<void> => {
+    try {
+      await run();
+    } catch (err) {
+      // Нічого ще не записано: лишається власний текст модуля.
+      if (restored.length === 0) throw err;
+      throw new Error(partialRestoreMessage(restored, module), { cause: err });
+    }
+    restored.push(module);
+  };
   if (finykNormalized) {
-    // LS-ключі Фініка читає лише холодний кеш, а імпорт вимагає теплого, тож
-    // у `merge` їх не чіпаємо: писати туди файл як є означало б затерти
-    // поточне, а не додати відсутнє.
-    if (mode === "replace") persistFinykNormalizedToStorage(finykNormalized);
-    assertRestoreWritten(
-      "finyk",
-      await persistFinykNormalizedToSqlite(finykNormalized, mode),
-    );
+    await write("finyk", async () => {
+      // LS-ключі Фініка читає лише холодний кеш, а імпорт вимагає теплого,
+      // тож у `merge` їх не чіпаємо: писати туди файл як є означало б
+      // затерти поточне, а не додати відсутнє.
+      if (mode === "replace") persistFinykNormalizedToStorage(finykNormalized);
+      assertRestoreWritten(
+        "finyk",
+        await persistFinykNormalizedToSqlite(finykNormalized, mode),
+      );
+    });
   }
-  if (parsed.routine) {
-    // Рутина й Їжа пишуть у SQLite fire-and-forget, а виклик цієї
-    // функції закінчується `window.location.reload()` — без drain-у
-    // перезавантаження обриває запис до першого SQL.
-    applyRoutineBackupPayload(parsed.routine, mode);
-    await routineDualWriteIdle();
+  const routine = parsed.routine;
+  if (routine) {
+    await write("routine", async () => {
+      // Рутина й Їжа пишуть у SQLite fire-and-forget, а виклик цієї
+      // функції закінчується `window.location.reload()` — без drain-у
+      // перезавантаження обриває запис до першого SQL.
+      applyRoutineBackupPayload(routine, mode);
+      await routineDualWriteIdle();
+    });
   }
-  if (parsed.fizruk) {
-    assertRestoreWritten(
-      "fizruk",
-      await applyFizrukFullBackupPayload(parsed.fizruk, mode),
-    );
+  const fizruk = parsed.fizruk;
+  if (fizruk) {
+    await write("fizruk", async () => {
+      assertRestoreWritten(
+        "fizruk",
+        await applyFizrukFullBackupPayload(fizruk, mode),
+      );
+    });
   }
-  if (parsed.nutrition) {
-    await applyNutritionBackupPayload(parsed.nutrition, mode);
-    await applyNutritionBackupFoods(parsed.nutrition);
-    await nutritionDualWriteIdle();
+  const nutrition = parsed.nutrition;
+  if (nutrition) {
+    await write("nutrition", async () => {
+      await applyNutritionBackupPayload(nutrition, mode);
+      await applyNutritionBackupFoods(nutrition);
+      await nutritionDualWriteIdle();
+    });
   }
   if (parsed.hub && typeof parsed.hub === "object") {
     const h = parsed.hub;

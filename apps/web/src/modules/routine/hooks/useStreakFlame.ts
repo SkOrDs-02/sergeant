@@ -43,6 +43,14 @@ export interface UseStreakFlameResult {
  */
 export const STREAK_MILESTONES = [7, 30, 100] as const;
 
+/**
+ * Ступені тижневої серії гнучкої звички («N разів на тиждень»): 4 / 12 / 26 /
+ * 52 тижні (рішення власника 2026-10-23). Окрема драбина від денної: 7 тижнів
+ * це майже два місяці, а не «перший тиждень», тож денні 7/30/100 тут не
+ * підходять. Денні `STREAK_MILESTONES` не змінюються.
+ */
+export const WEEKLY_STREAK_MILESTONES = [4, 12, 26, 52] as const;
+
 function resolveIntensity(streakDays: number): StreakFlameIntensity {
   const [medium, strong, max] = STREAK_MILESTONES;
   if (streakDays >= max) return "max";

@@ -1,7 +1,7 @@
 # Аналітика конкурентів руками: замір D5 і шортліст для Фініка (2026-09-24)
 
-> **Last touched:** 2026-09-29 by @Skords-01. **Next review:** 2027-12-17.
-> **Status:** Active - заміряно на планшеті за рубрикою D5 v2 (20 апок, 3 мілкі за стіною акаунта), кабінетно для Emma, Revolut, Copilot Money і PocketSmith (зі слів, не заміряно). Замінює [`finyk-analytics-research.md`](./finyk-analytics-research.md) (Deprecated, джерело гіпотез).
+> **Last touched:** 2026-10-26 by @claude (тріаж документації: Active → Reference). **Next review:** 2027-12-17.
+> **Status:** Reference - дослідження-шортліст; планову частину виконано в [`finyk-analytics-v2.md`](../planning/finyk-analytics-v2.md) (Reference, фази 0-5). Пункти 5, 9-12 лишились ідеями (див. «Стан виконання»). Замінює [`finyk-analytics-research.md`](./finyk-analytics-research.md) (Deprecated, джерело гіпотез).
 
 Джерело правди - приватний репо `D:\competitor-research`: `verdicts/*.yaml` (вердикт і доказ у кожній клітинці), `dimensions/reports.md` (крос-апковий розбір D5 за шістьма полями), `desk/d5-analytics.md` (чотири апки поза планшетом, зі слів), `SYNTHESIS.md` (загальна картина), `SHORTLIST-2026-09-24.md` (цей шортліст). Матриця вердиктів - [`competitor-matrix.md`](../../research/competitor-matrix.md). Шляхи до доказів нижче вказують у приватний репо: скріншоти чужих апок у публічний не переносяться.
 
@@ -335,6 +335,12 @@
    пріоритет «перша за вагою» - моя оцінка наслідків, не частота.
 
 Джерело: `verdicts/*.yaml` на коміті a3be976.
+
+## Стан виконання
+
+- Пункти 1-4, 6-8 (аналітика): виконано в [`finyk-analytics-v2.md`](../planning/finyk-analytics-v2.md); окремої звірки кожного пункту з кодом тріаж не робив.
+- П. 9 (переказ між своїми рахунками): частково в [`finyk-analytics-v3.md`](../planning/finyk-analytics-v3.md) (Implemented, рахунок готівки, переказ картка → готівка не витрата).
+- П. 5 (прогноз балансу з регулярних платежів) і п. 12 (попередження до перевищення ліміту): v3 явно лишила поза скоупом; п. 10 (чужа валюта) заблоковано каноном до FX (`finyk.md` § 13); п. 11 (повний експорт) без трекера. Передано в roadmap як ідеї «Колись» (тріаж 2026-10-26), спеки лише за рішенням власника.
 
 <!-- AUTO-GENERATED: PR-BACKLINKS-START -->
 

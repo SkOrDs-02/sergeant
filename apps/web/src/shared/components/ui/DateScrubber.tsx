@@ -134,12 +134,12 @@ export function DateScrubber({
             className={cn(
               "snap-end shrink-0 flex flex-col items-center justify-center gap-0.5",
               "min-w-[3rem] min-h-[3.25rem] rounded-lg px-2 py-1.5",
-              "border transition-colors focus-ring",
-              // Обране чорнилом, як у `ChoiceGroup` (redesign v3.1, Д1):
-              // без hue модуля й teal-плитки в темній.
+              "transition-colors focus-ring",
+              // Обране чорнилом, як у `ChoiceGroup` (redesign v3.1, Д1);
+              // необране панеллю без рамки (v3.2, позиція 04).
               selected
-                ? "bg-text text-bg border-text font-semibold"
-                : "bg-panel text-text border-control hover:bg-panelHi",
+                ? "bg-text text-bg font-semibold"
+                : "bg-panel text-text hover:bg-panelHi",
             )}
           >
             <span

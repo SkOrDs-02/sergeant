@@ -13,6 +13,7 @@ import {
 } from "./entityLookup";
 import { resolveExpenseCategoryMeta } from "../../../../modules/finyk/utils";
 import { formatNumberUk } from "@sergeant/shared";
+import { manualLinkKey } from "@sergeant/finyk-domain/domain/debtLinkKeys";
 import { getCachedFinykSqliteState } from "../../../../modules/finyk/lib/sqliteReader";
 import { getVisibleFinykMonoMirrorState } from "../../../../modules/finyk/lib/monoMirrorReader";
 import type {
@@ -50,6 +51,21 @@ export type FinykSearchTx = {
 export function txSourceOf(tx: FinykSearchTx): "manual" | "bank" {
   if (tx.source) return tx.source;
   return tx.type === "income" || tx.type === "expense" ? "manual" : "bank";
+}
+
+/**
+ * Чи лежить операція в наборі hidden/excluded id.
+ *
+ * Ручний запис має дві форми id: чат-тули показують сирий, а список Операцій
+ * (масове приховування, «Не враховувати») і канонічний всесвіт пишуть
+ * `manual_<id>`. Старі чат-записи могли лягти під сирим, тож звіряємо обидві.
+ */
+export function hasFinykTxKey(
+  keys: ReadonlySet<string>,
+  id: string,
+  source: "manual" | "bank",
+): boolean {
+  return keys.has(id) || (source === "manual" && keys.has(manualLinkKey(id)));
 }
 
 export function toIsoDay(value: unknown): string {
@@ -115,7 +131,7 @@ function readSearchTransactions(): FinykSearchTx[] {
 
   const manualTxs = manual.map((tx): FinykSearchTx | null => {
     const id = String(tx.id || "").trim();
-    if (!id || hidden.has(id)) return null;
+    if (!id || hasFinykTxKey(hidden, id, "manual")) return null;
     const amount = Number(tx.amount);
     return {
       id,

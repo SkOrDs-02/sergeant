@@ -76,6 +76,49 @@ describe("WorkoutTimeEditor", () => {
     expect(updateWorkout).not.toHaveBeenCalled();
   });
 
+  it("не приймає початок пізніше за відкладений кінець або за зараз", () => {
+    const updateWorkout = vi.fn();
+    const { rerender } = render(
+      <WorkoutTimeEditor
+        activeWorkout={baseWorkout()}
+        updateWorkout={updateWorkout}
+        pendingEndedAt="2026-07-01T11:00:00.000Z"
+        onPendingEndChange={vi.fn()}
+      />,
+    );
+    fireEvent.change(screen.getByLabelText("Початок"), {
+      target: { value: "2026-07-01T19:30" },
+    });
+    expect(updateWorkout).not.toHaveBeenCalled();
+
+    rerender(
+      <WorkoutTimeEditor
+        activeWorkout={baseWorkout()}
+        updateWorkout={updateWorkout}
+      />,
+    );
+    fireEvent.change(screen.getByLabelText("Початок"), {
+      target: { value: "2999-01-01T10:00" },
+    });
+    expect(updateWorkout).not.toHaveBeenCalled();
+  });
+
+  it("не приймає відкладений кінець не пізніше за початок", () => {
+    const onPendingEndChange = vi.fn();
+    render(
+      <WorkoutTimeEditor
+        activeWorkout={baseWorkout()}
+        updateWorkout={vi.fn()}
+        pendingEndedAt="2026-07-01T11:00:00.000Z"
+        onPendingEndChange={onPendingEndChange}
+      />,
+    );
+    fireEvent.change(screen.getByLabelText(/Завершення/), {
+      target: { value: "2026-07-01T09:00" },
+    });
+    expect(onPendingEndChange).not.toHaveBeenCalled();
+  });
+
   it("calls updateWorkout with a new endedAt ISO string on a valid end-time change", () => {
     const updateWorkout = vi.fn();
     render(

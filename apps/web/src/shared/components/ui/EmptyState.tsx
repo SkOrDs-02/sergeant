@@ -13,8 +13,8 @@
  * naked-string placeholders that used to drift in copy, focus styling,
  * and a11y wiring.
  *
- * Компактний стан показує факт і дію. Модульний first-run додає стриману
- * лінійну ілюстрацію та видимий наступний крок.
+ * Порожній стан показує факт і одну дію, без іконки й ілюстрації (redesign
+ * v3.2, позиція 17). Модульний first-run додає лише видимий опис.
  *
  * Sizes (`size: sm | md | lg`):
  * - `sm` (compact): in-card / inline empty placeholder
@@ -39,7 +39,6 @@ import { Icon } from "./Icon";
 import { Button, type ButtonProps } from "./Button";
 import { formatNumberUk, NARROW_NBSP } from "@sergeant/shared";
 import { coreMessages } from "@shared/i18n/uk.core";
-import { ModuleEmptyIllustration } from "./EmptyStateIllustrations";
 
 export type EmptyStateSize = "sm" | "md" | "lg";
 
@@ -61,8 +60,6 @@ export interface EmptyStateProps {
    * замовчуванням лишається доступним лише скрінрідеру.
    */
   showDescription?: boolean | undefined;
-  /** Декоративна графіка для featured empty-state; завжди aria-hidden. */
-  illustration?: ReactNode | undefined;
   /**
    * Primary CTA. `action` is the original (pre-Track-8) name and stays
    * supported; `primaryAction` is the explicit alias new code should
@@ -108,8 +105,7 @@ const PADDING: Record<EmptyStateSize, string> = {
 };
 
 /**
- * Мова H (redesign v3): компактний стан лишається фактом і дією. Featured
- * стан може додати одну лінійну ілюстрацію та короткий видимий опис.
+ * Мова H (redesign v3): стан лишається фактом і дією.
  */
 export function EmptyState({
   eyebrow,
@@ -118,7 +114,6 @@ export function EmptyState({
   titleAs: TitleTag = "p",
   description,
   showDescription = false,
-  illustration,
   action,
   primaryAction,
   secondaryAction,
@@ -147,21 +142,12 @@ export function EmptyState({
       aria-live={ariaLive}
       aria-atomic="true"
       aria-describedby={describedBy}
-      className={cn(
-        "flex flex-col gap-1",
-        illustration && "items-center text-center",
-        PADDING[resolvedSize],
-        className,
-      )}
+      className={cn("flex flex-col gap-1", PADDING[resolvedSize], className)}
     >
-      {illustration && <div aria-hidden="true">{illustration}</div>}
-      {eyebrow && <p className="text-style-overline text-subtle">{eyebrow}</p>}
-      <TitleTag
-        className={cn(
-          "font-semibold text-text text-pretty",
-          illustration ? "mt-2 text-style-title" : "text-style-body",
-        )}
-      >
+      {eyebrow && (
+        <p className="text-style-label font-semibold text-subtle">{eyebrow}</p>
+      )}
+      <TitleTag className="font-semibold text-text text-pretty text-style-body">
         {title}
       </TitleTag>
       {description &&
@@ -339,9 +325,6 @@ export function ModuleEmptyState({
         title={title ?? config.title}
         description={resolvedDescription}
         showDescription
-        illustration={
-          <ModuleEmptyIllustration module={module} size={compact ? 56 : 64} />
-        }
         size={compact ? "sm" : "md"}
         className={className}
         action={

@@ -4,11 +4,13 @@
  */
 import { useId } from "react";
 import type { Workout } from "@sergeant/fizruk-domain";
+import { Input } from "@shared/components/ui/Input";
 import { formatDateTimeShort, formatTimeHm } from "@shared/lib/time/formatDate";
 import {
   isoToDatetimeLocalValue,
   datetimeLocalValueToIso,
 } from "./activeWorkoutLib";
+import { isStartBeforeEnd } from "../../lib/sessionDuration";
 
 /**
  * Collapsible `<details>` editor for the workout's `startedAt` / `endedAt`
@@ -41,8 +43,9 @@ export interface WorkoutTimeEditorProps {
   onPendingEndChange?: ((iso: string) => void) | undefined;
 }
 
-const INPUT_CLASS =
-  "input-focus-fizruk block w-full min-w-0 max-w-full h-11 rounded-lg border border-line bg-panel px-3 text-sm text-text [min-inline-size:0] [inline-size:100%]";
+// Нативний datetime-local має власну intrinsic-ширину від локалі; без
+// `min-inline-size: 0` він розпирає вузьку колонку.
+const DATETIME_CLASS = "min-w-0 [min-inline-size:0]";
 
 /** `17:30`. */
 function formatTime(iso: string): string {
@@ -114,60 +117,51 @@ export function WorkoutTimeEditor({
         </span>
       </summary>
       <div className="mt-2 space-y-2">
-        <label
-          className="block text-style-caption text-subtle"
-          htmlFor={startId}
-        >
-          Початок
-        </label>
-        <input
+        <Input
           id={startId}
+          label="Початок"
           type="datetime-local"
-          className={INPUT_CLASS}
+          className={DATETIME_CLASS}
           value={isoToDatetimeLocalValue(activeWorkout.startedAt)}
           onChange={(e) => {
             const iso = datetimeLocalValueToIso(e.target.value);
-            if (iso) updateWorkout(activeWorkout.id, { startedAt: iso });
+            if (iso && isStartBeforeEnd(iso, shownEnd)) {
+              updateWorkout(activeWorkout.id, { startedAt: iso });
+            }
           }}
         />
         {endedAt ? (
           <>
-            <label
-              className="block text-style-caption text-subtle"
-              htmlFor={endId}
-            >
-              Завершення (можна виправити після занесення)
-            </label>
-            <input
+            <Input
               id={endId}
+              label="Завершення (можна виправити після занесення)"
               type="datetime-local"
-              className={INPUT_CLASS}
+              className={DATETIME_CLASS}
               value={isoToDatetimeLocalValue(endedAt)}
               onChange={(e) => {
                 const iso = datetimeLocalValueToIso(e.target.value);
+                if (iso && !isStartBeforeEnd(activeWorkout.startedAt, iso))
+                  return;
                 updateWorkout(activeWorkout.id, { endedAt: iso || null });
               }}
             />
           </>
         ) : pendingEnd ? (
           <>
-            <label
-              className="block text-style-caption text-subtle"
-              htmlFor={endId}
-            >
-              Завершення (запишеться, коли натиснеш «Завершити»)
-            </label>
-            <input
+            <Input
               id={endId}
+              label="Завершення (запишеться, коли натиснеш «Завершити»)"
               type="datetime-local"
-              className={INPUT_CLASS}
+              className={DATETIME_CLASS}
               value={isoToDatetimeLocalValue(pendingEnd)}
               onChange={(e) => {
                 // Порожнє/нерозбірне значення ігноруємо: скинути відкладену
                 // мітку в «нічого» нема куди — `endWorkout` тоді просто візьме
                 // поточний час, і людина мовчки отримає не те, що бачила.
                 const iso = datetimeLocalValueToIso(e.target.value);
-                if (iso) onPendingEndChange?.(iso);
+                if (iso && isStartBeforeEnd(activeWorkout.startedAt, iso)) {
+                  onPendingEndChange?.(iso);
+                }
               }}
             />
           </>

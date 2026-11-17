@@ -66,20 +66,6 @@
            focus-visible:ring-2 focus-visible:ring-focus/25;
 }
 
-/* Мова H (редизайн v3 PR4): hue Їжі лише в даних, тож фокус поля
-   нейтральний, як базовий `input-focus`. */
-@utility input-focus-nutrition {
-  @apply outline-hidden transition-colors
-           focus-visible:border-brand-500/60
-           focus-visible:ring-2 focus-visible:ring-focus/30;
-}
-
-@utility input-focus-routine {
-  @apply outline-hidden transition-colors
-           focus-visible:border-routine/60
-           focus-visible:ring-2 focus-visible:ring-routine/25;
-}
-
 /* ── Legacy типографічна шкала — ВИДАЛЕНА (D8-sweep, цикл 5) ──────────────
    Тут жила друга шкала (`text-display` / `text-h1…h3` / `text-body*` /
    `text-caption` / `text-eyebrow` / `text-meta` / `text-micro` /
@@ -169,6 +155,14 @@
   );
 }
 
+@utility fab-clear-row {
+  /* Правий відступ рядка на ширину кутової кнопки (`CornerAction` публікує її
+     в `--sgt-fab-width`: кнопка + бічне поле + зазор). Без кнопки змінної
+     немає, відступ нульовий. Парний до `page-tabbar-pad`, який дає нижній:
+     той рятує останній рядок від кнопки по вертикалі, цей по горизонталі. */
+  padding-right: var(--sgt-fab-width, 0px);
+}
+
 @utility routine-main-pad {
   padding-left: max(1.25rem, env(safe-area-inset-left, 0px));
   padding-right: max(1.25rem, env(safe-area-inset-right, 0px));
@@ -219,13 +213,6 @@
      TOUCH INPUTS — iOS zoom prevention (min 16px)
      ═══════════════════════════════════════════════════════════════════════ */
   @apply min-h-[44px] text-base leading-normal md:text-sm;
-}
-
-@utility routine-touch-select {
-  @apply min-h-[44px] w-full rounded-2xl border border-line bg-panelHi px-3 outline-hidden
-           text-base leading-normal md:text-sm
-           transition-colors duration-150
-           focus-visible:border-routine/60 focus-visible:ring-2 focus-visible:ring-routine/20;
 }
 
 @utility fizruk-sheet {

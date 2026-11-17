@@ -1,4 +1,9 @@
-import { pluralDays, pluralUa, type UaPluralForms } from "@sergeant/shared";
+import {
+  pluralDays,
+  pluralUa,
+  pluralWeeks,
+  type UaPluralForms,
+} from "@sergeant/shared";
 import { messages } from "@shared/i18n/uk";
 import { cn } from "@shared/lib/ui/cn";
 
@@ -18,7 +23,12 @@ export function momentText(m: Moment): string {
     case "dayClosed":
       return T.dayClosed;
     case "streak":
-      return T.streak.replace("{n}", `${n} ${pluralDays(n)}`);
+      return T.streak.replace(
+        "{n}",
+        m.unit === "weeks"
+          ? `${n} ${pluralWeeks(n)} поспіль`
+          : `${n} ${pluralDays(n)}`,
+      );
     case "freeze":
       return n > 0 ? T.freeze.replace("{left}", String(n)) : T.freezeLast;
     case "threshold":

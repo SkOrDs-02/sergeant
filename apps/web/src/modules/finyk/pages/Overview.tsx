@@ -160,8 +160,10 @@ export function Overview({
         {() => (
           <div className="flex-1 overflow-y-auto overscroll-contain">
             <div className="px-5 pt-4 page-tabbar-pad space-y-7 max-w-4xl mx-auto">
-              {(d.clientInfo ||
-                d.syncState?.status === "error" ||
+              {/* Статус синку лише в не-«ок» станах (redesign v3.2, 07):
+                  «Синхронізовано · 14:22» над hero нічого не повідомляло. */}
+              {(d.syncState?.status === "error" ||
+                d.syncState?.status === "partial" ||
                 d.syncState?.status === "loading" ||
                 d.monoError) && (
                 <SyncStatusBadge
@@ -243,7 +245,6 @@ export function Overview({
                     income={d.income}
                     showMonthForecast={d.showMonthForecast && showBalance}
                     projectedSpend={d.projectedSpend}
-                    projectedSpendCapped={d.projectedSpendCapped}
                     hasExpensePlan={d.hasExpensePlan}
                     recurringOutThisMonth={d.recurringOutThisMonth}
                     recurringInThisMonth={d.recurringInThisMonth}

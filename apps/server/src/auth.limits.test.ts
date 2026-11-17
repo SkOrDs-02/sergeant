@@ -126,4 +126,37 @@ describe("auth config: sec-16, name обмежений у databaseHooks", () => 
     );
     expect(res.data["name"]).toBe("N".repeat(100));
   });
+
+  it("sign-up з email довшим за 254: 400 INVALID_EMAIL", async () => {
+    await expect(
+      hooks().create.before(
+        { name: "N", email: `${"a".repeat(249)}@b.com` },
+        { path: "/sign-up/email" },
+      ),
+    ).rejects.toMatchObject({
+      statusCode: 400,
+      body: { code: "INVALID_EMAIL" },
+    });
+  });
+
+  it("update-user з email довшим за 254: 400 INVALID_EMAIL", async () => {
+    await expect(
+      hooks().update.before(
+        { email: `${"a".repeat(249)}@b.com` },
+        { path: "/update-user" },
+      ),
+    ).rejects.toMatchObject({
+      statusCode: 400,
+      body: { code: "INVALID_EMAIL" },
+    });
+  });
+
+  it("email рівно 254 символи проходить без змін", async () => {
+    const email = `${"a".repeat(248)}@b.com`;
+    const res = await hooks().create.before(
+      { name: "N", email },
+      { path: "/sign-up/email" },
+    );
+    expect(res.data["email"]).toBe(email);
+  });
 });

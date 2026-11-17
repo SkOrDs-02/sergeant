@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "current": "8.4.0",
+  "current": "8.8.0",
   "versions": {
     "0.1.0": {
       "releasedAt": "2026-06-29",
@@ -778,6 +778,62 @@
       "releasedAt": "2026-10-08",
       "changes": [
         "bump from 8.3.2 -> 8.4.0 (minor): писач реєстру PR (Hard Rule #26) знову читає GitHub REST API (Bitbucket - архівний --host bitbucket, бекфіл --since); у rules/26 і hard-rules.json змінено лише опис механізму, саме правило й скоуп не змінились, тож не major (скрипт пропонував 9.0.0)"
+      ],
+      "agentsTestedWith": [],
+      "passRateBaseline": null
+    },
+    "8.4.1": {
+      "releasedAt": "2026-10-23",
+      "changes": [
+        "sergeant-web-ui: правило мови станів v3.1 (ChoiceGroup замість нативних radio/checkbox, variant=text для дій у рядках, шеврон замість тексту стану, підпис 14/500); design-reviewer: три рядки конвенцій і grep-підказки на ті самі ознаки. Рішення власника 2026-10-23 за відхиленнями v3.1 PR1-PR5 записані в redesign-v3-1-progress.md, 04-components.md і DESIGN.md."
+      ],
+      "agentsTestedWith": [],
+      "passRateBaseline": null
+    },
+    "8.4.2": {
+      "releasedAt": "2026-10-23",
+      "changes": [
+        "bump from 8.4.1 -> 8.4.2: typo / link / freshness-only change"
+      ],
+      "agentsTestedWith": [],
+      "passRateBaseline": null
+    },
+    "8.5.0": {
+      "releasedAt": "2026-10-23",
+      "changes": [
+        "sergeant-web-ui і design-reviewer: поле вводу лише Input / Textarea / Select, метрика храповика rawInput = 0 і заборона (спека raw-input-to-primitive.md)."
+      ],
+      "agentsTestedWith": [],
+      "passRateBaseline": null
+    },
+    "8.5.1": {
+      "releasedAt": "2026-10-23",
+      "changes": [
+        "bump from 8.5.0 -> 8.5.1: typo / link / freshness-only change"
+      ],
+      "agentsTestedWith": [],
+      "passRateBaseline": null
+    },
+    "8.6.0": {
+      "releasedAt": "2026-10-23",
+      "changes": [
+        "bump from 8.5.1 -> 8.6.0: skill file added/modified"
+      ],
+      "agentsTestedWith": [],
+      "passRateBaseline": null
+    },
+    "8.7.0": {
+      "releasedAt": "2026-10-23",
+      "changes": [
+        "bump from 8.6.0 -> 8.7.0: skill file added/modified"
+      ],
+      "agentsTestedWith": [],
+      "passRateBaseline": null
+    },
+    "8.8.0": {
+      "releasedAt": "2026-10-26",
+      "changes": [
+        "bump from 8.7.0 -> 8.8.0: skill file added/modified"
       ],
       "agentsTestedWith": [],
       "passRateBaseline": null

@@ -492,12 +492,8 @@ describe("HubBackupPanel", () => {
     expect(dialog.textContent).toContain("Нічого не видаляю");
     expect(dialog.textContent).not.toContain("видалиться");
     expect(
-      (
-        screen.getByRole("radio", {
-          name: /Додати відсутнє/,
-        }) as HTMLInputElement
-      ).checked,
-    ).toBe(true);
+      screen.getByRole("radio", { name: /Додати відсутнє/ }),
+    ).toHaveAttribute("aria-checked", "true");
 
     fireEvent.click(screen.getByRole("button", { name: "Додати відсутнє" }));
     await waitFor(() => expect(applyPayloadMock).toHaveBeenCalledTimes(1));
@@ -587,12 +583,8 @@ describe("HubBackupPanel", () => {
 
     await selectValidBackupFile();
     expect(
-      (
-        screen.getByRole("radio", {
-          name: /Додати відсутнє/,
-        }) as HTMLInputElement
-      ).checked,
-    ).toBe(true);
+      screen.getByRole("radio", { name: /Додати відсутнє/ }),
+    ).toHaveAttribute("aria-checked", "true");
   });
 
   // ─── data-07: reload не має обривати чергу outbox ───────────────────────────

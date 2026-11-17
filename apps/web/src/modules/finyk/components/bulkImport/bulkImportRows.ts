@@ -15,7 +15,7 @@
  * недетерміновано). Мітка поводиться як `transferLikely`: бейдж + знята
  * галочка, рішення за людиною.
  */
-import { formatNumberUk, IMPORT_COMMIT_MAX_ROWS } from "@sergeant/shared";
+import { INTERNAL_TRANSFER_ID } from "@sergeant/finyk-domain/constants";
 import type {
   ImportCommitRow,
   ImportDirection,
@@ -260,27 +260,52 @@ export function updateRowField(
   });
 }
 
+/**
+ * Перемикач напряму рядка (аудит 2026-10-01, logic-06). Виписка без окремих
+ * колонок дебету й кредиту або хибно розпізнаний знак дає рядки не того
+ * напряму, і до цього кроку виправити їх у перевірці було нічим.
+ *
+ * Що скидається разом із напрямом:
+ * - категорія: витрати й надходження мають різні каталоги, тож витратний
+ *   слаг у рядку надходження дав би порожній чип. Лишається лише
+ *   «Внутрішній переказ», бо він є в обох пікерах;
+ * - `occurrenceIndex`: група однакових рядків рахується за (дата, сума,
+ *   напрям, опис), і після зміни напряму рядок у чужій групі (як після
+ *   правки суми в `updateRowField`);
+ * - `duplicateLikely` і `monoMatchLikely`: сервер звіряв рядок з УЖЕ
+ *   збереженими записами з урахуванням напряму (знаку), тож для нового
+ *   напряму ці мітки нічого не кажуть. `transferLikely` лишається: сервер
+ *   ставить його за описом.
+ *
+ * Вибір рядка не змінюється: галочку людина ставить сама.
+ */
+export function setRowDirection(
+  rows: readonly BulkReviewRow[],
+  id: string,
+  direction: ImportDirection,
+  defaultCategoryFor: (direction: ImportDirection) => string,
+): BulkReviewRow[] {
+  return rows.map((r) => {
+    if (r.id !== id || r.direction === direction) return r;
+    const {
+      occurrenceIndex: _droppedIndex,
+      monoMatchLikely: _droppedMonoMatch,
+      ...rest
+    } = r;
+    return {
+      ...rest,
+      direction,
+      category:
+        r.category === INTERNAL_TRANSFER_ID
+          ? r.category
+          : defaultCategoryFor(direction),
+      duplicateLikely: false,
+    };
+  });
+}
+
 export function selectedRowCount(rows: readonly BulkReviewRow[]): number {
   return rows.reduce((n, r) => n + (r.selected ? 1 : 0), 0);
-}
-
-/**
- * Чи вибрано більше рядків, ніж приймає один commit. Сервер відхиляє
- * `rows.length > IMPORT_COMMIT_MAX_ROWS` як VALIDATION («Некоректні дані
- * запиту»), а превʼю пропускає до 10 000 рядків, тож без цієї перевірки
- * велика виписка доходила до кнопки «Імпортувати» і падала без підказки
- * (аудит 2026-10-01, ux-07). Клієнтської нарізки на кілька commit-ів тут
- * свідомо немає: кожен commit має свій batchId для undo. Розріз групи однакових рядків
- * між запитами більше не ламає нумерацію повторів: індекс іде з превʼю
- * (`BulkReviewRow.occurrenceIndex`, data-29).
- */
-export function exceedsCommitCap(rows: readonly BulkReviewRow[]): boolean {
-  return selectedRowCount(rows) > IMPORT_COMMIT_MAX_ROWS;
-}
-
-/** Пояснення під кнопкою «Імпортувати», коли вибрано забагато рядків. */
-export function commitCapMessage(selectedCount: number): string {
-  return `За раз можна імпортувати до ${formatNumberUk(IMPORT_COMMIT_MAX_ROWS)} рядків, а вибрано ${formatNumberUk(selectedCount)}. Зніми частину галочок або розбий виписку на коротші періоди.`;
 }
 
 /** Вибрані рядки → `ImportCommitRow[]` (спека § API-контракт Фази 2). */

@@ -256,6 +256,18 @@ export const MeExportResponseSchema = z.object({
      * потрапляють: явні списки колонок у `modules/me/exportBuilder.ts`.
      */
     profile: ExportRecordSchema.nullable().default(null),
+    /**
+     * Фото профілю (ux-14): `bytea` як base64 у JSON. `null`, коли аватара
+     * немає або відповідь прийшла від старого сервера.
+     */
+    avatar: z
+      .object({
+        mimeType: z.string(),
+        dataBase64: z.string(),
+        updatedAt: z.string().datetime({ offset: true }),
+      })
+      .nullable()
+      .default(null),
     feedback: z.array(ExportRecordSchema).default([]),
     emailUnsubscribes: z.array(ExportRecordSchema).default([]),
     waitlist: z.array(ExportRecordSchema).default([]),

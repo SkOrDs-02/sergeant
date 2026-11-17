@@ -35,6 +35,8 @@ import {
 } from "./syncEngineReader";
 import { recordOutboxPurgeNotice } from "./outboxPurgeNotice";
 import { requeueFkViolationRejected } from "./requeueFkViolationRejected";
+import { createSyncStreamConsumer } from "./syncStreamConsumer";
+import { readPullSinceCursor } from "./syncOpCursor";
 import { observeSyncSession } from "./syncSessionSignal";
 
 type RuntimeFactory = () => Promise<SyncEngineWriterRuntime>;
@@ -193,6 +195,9 @@ export function __resetSyncEngineWriterForTests(): void {
   readerRuntime?.stop();
   readerRuntime = null;
   readerInFlight = null;
+  readerPauses = 0;
+  readerPauseRelease = null;
+  readerPauseReady = Promise.resolve();
 }
 
 export interface BootSyncEngineReaderOptions {
@@ -208,6 +213,42 @@ let readerInFlight: Promise<SyncEngineReaderRuntime | null> | null = null;
 
 export function getSyncEngineReader(): SyncEngineReaderRuntime | null {
   return readerRuntime;
+}
+
+/**
+ * Пауза reader-а на рівні singleton (`data-46`, рев'ю #1631): на час
+ * перемикання активної SQLite-партиції. На відміну від
+ * `getSyncEngineReader()?.pause()`, діє і на reader, що саме бутиться або
+ * буде створений під час паузи: `bootSyncEngineReader` ставить його на
+ * паузу ДО `start()`, тож перший тік нічого не запише. Паузи вкладаються,
+ * повернута функція знімає лише свою.
+ */
+let readerPauses = 0;
+let readerPauseRelease: (() => void) | null = null;
+let readerPauseReady: Promise<void> = Promise.resolve();
+
+function pauseRuntime(runtime: SyncEngineReaderRuntime): void {
+  const ready = runtime.pause().then((release) => {
+    if (readerPauses > 0) readerPauseRelease = release;
+    else release();
+  });
+  readerPauseReady = ready.catch(() => undefined);
+}
+
+export async function pauseSyncEngineReader(): Promise<() => void> {
+  readerPauses += 1;
+  if (readerPauses === 1 && readerRuntime) pauseRuntime(readerRuntime);
+  await readerPauseReady;
+  let released = false;
+  return () => {
+    if (released) return;
+    released = true;
+    readerPauses -= 1;
+    if (readerPauses === 0) {
+      readerPauseRelease?.();
+      readerPauseRelease = null;
+    }
+  };
 }
 
 export function bootSyncEngineReader(
@@ -228,6 +269,8 @@ export function bootSyncEngineReader(
     .then((created) => {
       if (!created) return null;
       readerRuntime = created;
+      // Пауза, взята, поки reader бутився, має діяти і на нього — до start().
+      if (readerPauses > 0) pauseRuntime(created);
       readerRuntime.start();
       stopReaderWhenFollower(created);
       return readerRuntime;
@@ -247,7 +290,7 @@ async function createDefaultReaderRuntime(): Promise<SyncEngineReaderRuntime> {
   const shared = await createSyncSharedContext();
   const pullIntervalMs = randomizeIntervalMs(60_000, 0.2);
 
-  return createSyncEngineReaderRuntime({
+  const reader = createSyncEngineReaderRuntime({
     pull: (since, opts) =>
       shared.apiClient.syncV2.pullV2(since, {
         limit: opts.limit,
@@ -284,6 +327,48 @@ async function createDefaultReaderRuntime(): Promise<SyncEngineReaderRuntime> {
     limit: SYNC_V2_PULL_MAX_LIMIT,
     captureException: shared.captureException,
   });
+
+  // Стрім - швидкий шлях перед польовим pull: сигнал «на сервері є нове».
+  // Прапорець на сервері (`SYNC_V2_STREAM_ENABLED`) вимкнений - споживач
+  // отримує 404 і мовчить до наступної довгої спроби.
+  const stream = createSyncStreamConsumer({
+    url: syncStreamUrl(),
+    originDeviceId: shared.originDeviceId,
+    getSince: async () => {
+      const userId = await shared.resolveUserId();
+      if (!userId) return null;
+      return readPullSinceCursor(await shared.resolveClient(), userId);
+    },
+    onSignal: () => {
+      void reader.pullOnce().catch(() => {
+        /* reader already reported this; its next tick retries */
+      });
+    },
+    captureException: shared.captureException,
+  });
+
+  return {
+    start: () => {
+      reader.start();
+      stream.start();
+    },
+    stop: () => {
+      stream.stop();
+      reader.stop();
+    },
+    pullOnce: () => reader.pullOnce(),
+    pause: () => reader.pause(),
+  };
+}
+
+/**
+ * Не `apiUrl()`: той версіонує `/api/*` у `/api/v1/*`, а стрім живе на
+ * `/api/v2/sync/stream` (як і `/pull` в api-client).
+ */
+function syncStreamUrl(): string {
+  const raw = import.meta.env["VITE_API_BASE_URL"];
+  const base = typeof raw === "string" ? raw.trim().replace(/\/$/, "") : "";
+  return `${base}/api/v2/sync/stream`;
 }
 
 interface SyncSharedContext {
@@ -314,7 +399,7 @@ async function createSyncSharedContext(): Promise<SyncSharedContext> {
   }
 
   const [
-    { getSqliteDb },
+    { getSqliteDb, readActiveSqliteUserId },
     { apiClient },
     sentry,
     dbSchema,
@@ -474,8 +559,12 @@ async function createSyncSharedContext(): Promise<SyncSharedContext> {
 
     // data-01: оп-и, відхилені старим сервером як `fk_violation` за «чужим
     // рядком» (до PK `(user_id, id)`), ставимо в чергу ще раз. Best-effort.
+    // Скоуп - власник партиції, а не сесія: стан і рядки належать файлу.
+    const partitionUserId = readActiveSqliteUserId();
     try {
-      await requeueFkViolationRejected(client);
+      if (partitionUserId !== null) {
+        await requeueFkViolationRejected(client, partitionUserId);
+      }
     } catch (err) {
       sentry.addSentryBreadcrumb({
         category: "storage",
@@ -688,18 +777,27 @@ async function createDefaultRuntime(): Promise<SyncEngineWriterRuntime> {
     // виключено з обох тим самим списком, що й у `reportTerminalRejection`
     // (це не втрата даних, людині його показувати нема за що). Інакше пілюля
     // казала б «2 записи не прийнято» над порожнім `SyncRejectedList`.
+    // Скоуп власника, як у `recoverDeadLetter` нижче: на kvvfs партиції
+    // акаунтів ділять один стор, і без нього людина бачила б чужу чергу.
     getStatus: async () => {
+      const userId = (await shared.resolveUserId()) ?? undefined;
       const client = await shared.resolveClient();
-      const counts = await shared.dbSchema.countOutboxByStatus(client);
+      const counts = await shared.dbSchema.countOutboxByStatus(client, {
+        userId,
+      });
       const rejected = await shared.dbSchema.countRejectedOutbox(client, {
         excludeReasons: [...BENIGN_REJECT_REASONS],
+        userId,
       });
       return { ...counts, rejected };
     },
-    listRejected: async () =>
-      shared.dbSchema.listRejectedOutbox(await shared.resolveClient(), {
+    listRejected: async () => {
+      const userId = (await shared.resolveUserId()) ?? undefined;
+      return shared.dbSchema.listRejectedOutbox(await shared.resolveClient(), {
         excludeReasons: [...BENIGN_REJECT_REASONS],
-      }),
+        userId,
+      });
+    },
     // Скоуп власника домішуємо тут, бо тільки цей шар знає сесію. Без
     // нього `{ all: true }` оживляв dead-letter-рядки ВСІХ локальних
     // акаунтів: на kvvfs-фолбеку партиції ділять один фізичний файл.

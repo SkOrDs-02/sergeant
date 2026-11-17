@@ -32,7 +32,7 @@ export function LegalDocumentView({ document }: LegalDocumentViewProps) {
             <BrandLogo size="lg" />
           </Link>
           <div className="space-y-3">
-            <p className="text-style-overline text-brand-strong">
+            <p className="text-style-label font-semibold text-brand-strong">
               {document.eyebrow}
             </p>
             <h1 className="text-style-display text-text">{document.title}</h1>

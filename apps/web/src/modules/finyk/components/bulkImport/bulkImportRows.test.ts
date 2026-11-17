@@ -3,14 +3,13 @@ import type {
   ImportScreenshotRow,
   ImportStatementRow,
 } from "@sergeant/api-client";
-import { IMPORT_COMMIT_MAX_ROWS } from "@sergeant/shared";
+import { INTERNAL_TRANSFER_ID } from "@sergeant/finyk-domain/constants";
 import {
   applyBulkCategory,
-  commitCapMessage,
-  exceedsCommitCap,
   screenshotRowsToBulkReviewRows,
   selectedRowCount,
   setAllSelected,
+  setRowDirection,
   statementRowsToBulkReviewRows,
   toCommitRows,
   toggleRowSelected,
@@ -455,34 +454,114 @@ describe("categoryHint — підказка категорії від серве
   });
 });
 
-describe("exceedsCommitCap", () => {
-  const makeRows = (count: number) =>
-    statementRowsToBulkReviewRows(
-      Array.from({ length: count }, (_, i) => ({
-        date: "2026-08-01",
-        amountKopiykas: 100 + i,
-        direction: "expense" as const,
-        description: `рядок ${i}`,
-      })),
+describe("setRowDirection (logic-06)", () => {
+  const debitAsIncome = (
+    overrides: Partial<ImportStatementRow> = {},
+  ): ImportStatementRow => ({
+    date: "2026-09-21",
+    amountKopiykas: 35000,
+    direction: "income",
+    description: "ДК-1 Сільпо",
+    occurrenceIndex: 0,
+    ...overrides,
+  });
+
+  it("перемикає напрям лише цільового рядка", () => {
+    const rows = statementRowsToBulkReviewRows(
+      [debitAsIncome(), debitAsIncome({ description: "ДК-3 Аптека" })],
       rowOptions,
     );
-
-  it("вибрано рівно кап → false, на один більше → true", () => {
-    expect(IMPORT_COMMIT_MAX_ROWS).toBe(1000);
-    expect(exceedsCommitCap(makeRows(1000))).toBe(false);
-    expect(exceedsCommitCap(makeRows(1001))).toBe(true);
+    const next = setRowDirection(
+      rows,
+      "statement-0",
+      "expense",
+      defaultCategoryFor,
+    );
+    expect(next[0]!.direction).toBe("expense");
+    expect(next[1]!.direction).toBe("income");
+    expect(next[1]).toBe(rows[1]);
   });
 
-  it("рахує вибрані, а не всі: 1001 рядок із знятою галочкою = у капі", () => {
-    const rows = toggleRowSelected(makeRows(1001), "statement-0");
-    expect(exceedsCommitCap(rows)).toBe(false);
+  it("скидає категорію на дефолт нового напряму: витратного слага в надходженні не буває", () => {
+    const rows = statementRowsToBulkReviewRows([debitAsIncome()], rowOptions);
+    expect(rows[0]!.category).toBe("salary");
+    const next = setRowDirection(
+      rows,
+      "statement-0",
+      "expense",
+      defaultCategoryFor,
+    );
+    expect(next[0]!.category).toBe("other");
+    expect(toCommitRows(setAllSelected(next, true))[0]).toMatchObject({
+      direction: "expense",
+      category: "other",
+    });
   });
 
-  it("повідомлення називає ліміт і кількість вибраних та каже, що робити", () => {
-    const message = commitCapMessage(2000).replace(/\u00A0/g, " ");
-    expect(message).toContain("до 1 000 рядків");
-    expect(message).toContain("вибрано 2 000");
-    expect(message).toContain("Зніми частину галочок");
+  it("«Внутрішній переказ» лишається: він є в обох пікерах", () => {
+    const rows = updateRowField(
+      statementRowsToBulkReviewRows([debitAsIncome()], rowOptions),
+      "statement-0",
+      { category: INTERNAL_TRANSFER_ID },
+    );
+    const next = setRowDirection(
+      rows,
+      "statement-0",
+      "expense",
+      defaultCategoryFor,
+    );
+    expect(next[0]!.category).toBe(INTERNAL_TRANSFER_ID);
+  });
+
+  it("скидає occurrenceIndex і мітки, звірені з урахуванням напряму", () => {
+    const rows = statementRowsToBulkReviewRows(
+      [
+        debitAsIncome({
+          occurrenceIndex: 2,
+          duplicateLikely: true,
+          monoMatchLikely: true,
+          transferLikely: true,
+        }),
+      ],
+      rowOptions,
+    );
+    const next = setRowDirection(
+      rows,
+      "statement-0",
+      "expense",
+      defaultCategoryFor,
+    );
+    expect(next[0]).not.toHaveProperty("occurrenceIndex");
+    expect(next[0]).not.toHaveProperty("monoMatchLikely");
+    expect(next[0]!.duplicateLikely).toBe(false);
+    // Переказ сервер бачить за описом, тож мітка лишається.
+    expect(next[0]!.transferLikely).toBe(true);
+    expect(toCommitRows(setAllSelected(next, true))[0]).not.toHaveProperty(
+      "occurrenceIndex",
+    );
+  });
+
+  it("вибір рядка не змінює: галочку ставить людина", () => {
+    const rows = statementRowsToBulkReviewRows([debitAsIncome()], rowOptions);
+    expect(rows[0]!.selected).toBe(false);
+    const next = setRowDirection(
+      rows,
+      "statement-0",
+      "expense",
+      defaultCategoryFor,
+    );
+    expect(next[0]!.selected).toBe(false);
+  });
+
+  it("той самий напрям – рядок без змін", () => {
+    const rows = statementRowsToBulkReviewRows([debitAsIncome()], rowOptions);
+    const next = setRowDirection(
+      rows,
+      "statement-0",
+      "income",
+      defaultCategoryFor,
+    );
+    expect(next[0]).toBe(rows[0]);
   });
 });
 

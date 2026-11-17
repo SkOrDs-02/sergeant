@@ -1,6 +1,5 @@
 import { Suspense, memo } from "react";
 import { Card } from "@shared/components/ui/Card";
-import { EmptyState } from "@shared/components/ui/EmptyState";
 import { NetworthChart } from "../../components/charts/lazy";
 import { ChartFallback } from "../../components/charts/ChartFallback";
 
@@ -9,10 +8,8 @@ interface NetworthSectionProps {
 }
 
 /**
- * Секція графіка нетворсу. Показує графік якщо історія містить ≥2 точки,
- * інакше — compact `EmptyState` (tier 2) з module-tuned-акцентом замість
- * сирого `<p>` у dashed-картці (доки даних мало, surface усе ще треба
- * представити як «card-section без items», `docs/design/design/empty-states.md`).
+ * Секція графіка нетворсу. Показує графік, коли історія має ≥2 точки,
+ * інакше нічого.
  */
 const NetworthSectionImpl = function NetworthSection({
   networthHistory,
@@ -35,16 +32,8 @@ const NetworthSectionImpl = function NetworthSection({
     );
   }
 
-  return (
-    <Card padding="none" className="border-dashed">
-      <EmptyState
-        compact
-
-        title="Поки що мало записів балансу"
-        description="Графік капіталу зʼявиться після кількох змін балансу."
-      />
-    </Card>
-  );
+  // Порожня панель без дії не каже нічого (redesign v3.2, 17).
+  return null;
 };
 
 export const NetworthSection = memo(NetworthSectionImpl);

@@ -64,7 +64,7 @@ function LatestWeekBars({ matrix }: MuscleVolumeBlockProps) {
               {row.label}
             </div>
             <div className="text-style-caption text-subtle tabular-nums">
-              {fmt(row.latest, 1)}
+              {fmt(row.latest, 1)} {messages.fizruk.progress.muscleVolumeUnit}
             </div>
           </div>
           <div className="h-2 overflow-hidden rounded-lg border border-line bg-bg">
@@ -102,7 +102,7 @@ function WeekMatrix({ matrix }: MuscleVolumeBlockProps) {
                 {row.label}
               </div>
               <div className="text-style-caption text-subtle tabular-nums">
-                {fmt(row.latest, 1)}
+                {fmt(row.latest, 1)} {copy.muscleVolumeUnit}
               </div>
             </div>
             {/* Стовпчики сховані від скрінрідера — замість них іде речення

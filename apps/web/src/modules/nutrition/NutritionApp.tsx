@@ -18,6 +18,7 @@ import { NutritionLogPage } from "./pages/NutritionLogPage";
 import { NutritionMenuPage } from "./pages/NutritionMenuPage";
 import { Notice } from "@shared/components/ui/Notice";
 import { AddAction } from "@shared/components/ui/CornerAction";
+import { WATER_ADD_EVENT } from "./hooks/useWaterTracker";
 import { messages } from "@shared/i18n/uk";
 import type { SourceTabId } from "./components/meal-sheet/SourceTabs";
 import {
@@ -605,7 +606,6 @@ export default function NutritionApp({
                     log={log}
                     toast={toast}
                     setEditingMeal={setEditingMeal}
-                    onOpenAddMeal={handleOpenAddMeal}
                   />
                 )}
 
@@ -676,6 +676,16 @@ export default function NutritionApp({
                 ...src.manual,
                 onSelect: () => openAddMealAt("manual"),
               },
+              ...(activePage === "start"
+                ? [
+                    {
+                      id: "water",
+                      ...src.water,
+                      onSelect: () =>
+                        window.dispatchEvent(new Event(WATER_ADD_EVENT)),
+                    },
+                  ]
+                : []),
             ]}
           />
         )}

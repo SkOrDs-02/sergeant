@@ -1,7 +1,7 @@
 # Mobile Tech Debt — Sergeant Mobile (Expo + Capacitor)
 
-> **Last touched:** 2026-09-17 by @claude (звірка всіх відкритих пунктів реєстру з HEAD; раніше того ж дня — згадку `packages/openclaw-plugin` знято, пакета немає, ADR-0075). **Next review:** 2026-12-16.
-> **Status:** Active
+> **Last touched:** 2026-10-26 by @claude (тріаж документації: Status → Frozen за ADR-0094, файл знято з freshness-гейту). **Next review:** 2026-12-16.
+> **Status:** Frozen - мобільний контур на паузі з 2026-08-25 ([ADR-0094](../../../governance/adr/0094-mobile-web-first-freeze.md)); typecheck і Jest лишаються в `pnpm check`, реєстр знято з freshness-гейту `check-tech-debt-freshness.mjs`.
 
 > **Оновлено 2026-09-17 (звірка реєстру з HEAD).** Переміряно кожне число цього файлу. Заморозка з 2026-08-25 нижче лишається чинним рішенням — звірка її не скасовує, а лише оновлює лічильники.
 >
@@ -376,3 +376,11 @@ Monorepo на TS 6.x (Hard Rule #19). Historical `tools/openclaw` workspace і `
 - **2026-06-15:** `diff.ts` декомпозовано у `lib/dualWrite/diff/` → лічильник **0**.
 - **2026-07-20:** Full reconcile — summary/type-bypass/TODO/tests/Capacitor
   цифри синхронізовано з HEAD; raw>600 monitor-лист оновлено (sqliteWriter + HubDashboard).
+
+## Стан виконання
+
+> Тріаж 2026-10-26: реєстр Frozen за ADR-0094.
+
+- Відкриті M7/M9/Phase 8/HubReports/expo-print - 🚫 blocked (external/dep/owner), чекають розморозки.
+- Mobile coverage floor і 12px-floor з [`tech-debt-assessment-2026-07-01.md`](./tech-debt-assessment-2026-07-01.md) живуть тут і заморожені разом із реєстром.
+- Файл прибрано з `DEFAULT_FILES` у `scripts/check-tech-debt-freshness.mjs`; при розморозці повернути.

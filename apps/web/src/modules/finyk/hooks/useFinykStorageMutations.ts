@@ -34,6 +34,12 @@ import type {
 } from "@sergeant/finyk-domain/domain/debtEngine";
 import { linkKeyAliases } from "@sergeant/finyk-domain/domain/debtLinkKeys";
 import {
+  planCustomCategoryRemoval,
+  restoreBudgetList,
+  restoreCategoryList,
+  type CustomCategoryRemoval,
+} from "./customCategoryRemoval";
+import {
   collectManualExpenseLinks,
   restoreManualExpenseLinks,
   stripManualExpenseLinks,
@@ -65,6 +71,10 @@ export function useFinykStorageMutations(slots: FinykStorageSlots) {
     setMonoDebtLinkedTxIds,
     setCustomCategories,
     manualExpenses,
+    budgets,
+    txCategories,
+    txSplits,
+    customCategories,
     manualDebts,
     receivables,
     setManualExpenses,
@@ -500,22 +510,41 @@ export function useFinykStorageMutations(slots: FinykStorageSlots) {
     );
   };
 
-  const removeCustomCategory = (id: string) => {
+  /**
+   * Видалити власну категорію; витрати з нею переходять в «Інше» свого напряму
+   * (рішення власника 2026-10-23). Повертає знімок для `restoreCustomCategory`
+   * (undo в тості) або `null`, якщо такої категорії немає.
+   */
+  const removeCustomCategory = (id: string): CustomCategoryRemoval | null => {
+    const removal = planCustomCategoryRemoval({
+      id,
+      categories: customCategories,
+      budgets,
+      txCategories,
+      txSplits,
+      manualExpenses,
+    });
+    if (!removal) return null;
+    const target = removal.reassignedTo;
     setCustomCategories((prev) => prev.filter((c) => c.id !== id));
     setTxCategories((prev: TxCategoriesMap) => {
       const next = { ...prev };
       for (const k of Object.keys(next)) {
-        if (next[k] === id) delete next[k];
+        if (next[k] === id) next[k] = target;
       }
       return next;
     });
+    setManualExpenses((prev) =>
+      prev.map((e) => (e.category === id ? { ...e, category: target } : e)),
+    );
+    if (removal.manualExpenseIds.length > 0) invalidateFinykPreview();
     setTxSplits((prev: TxSplitsMap) => {
       const out: TxSplitsMap = { ...prev };
       for (const txId of Object.keys(out)) {
         const splits = out[txId];
         if (!Array.isArray(splits)) continue;
         const nextSplits: TxSplit[] = splits.map((s) =>
-          s.categoryId === id ? { ...s, categoryId: "other" } : s,
+          s.categoryId === id ? { ...s, categoryId: target } : s,
         );
         const multi = nextSplits.filter(
           (s) => s.categoryId && (Number(s.amount) || 0) > 0,
@@ -540,6 +569,28 @@ export function useFinykStorageMutations(slots: FinykStorageSlots) {
         return [{ ...normalizeLimitBudget({ ...b, categoryIds: ids }) }];
       }),
     );
+    return removal;
+  };
+
+  /** Відкат `removeCustomCategory`: категорія, ліміти, мітки, спліти й витрати. */
+  const restoreCustomCategory = (r: CustomCategoryRemoval) => {
+    const id = r.category.id;
+    const target = r.reassignedTo;
+    setCustomCategories((prev) => restoreCategoryList(prev, r));
+    setBudgets((prev) => restoreBudgetList(prev, r));
+    setTxCategories((prev: TxCategoriesMap) => {
+      const next = { ...prev };
+      for (const k of r.txCategoryIds) if (next[k] === target) next[k] = id;
+      return next;
+    });
+    setTxSplits((prev: TxSplitsMap) => ({ ...prev, ...r.splits }));
+    const ids = new Set(r.manualExpenseIds);
+    setManualExpenses((prev) =>
+      prev.map((e) =>
+        ids.has(e.id) && e.category === target ? { ...e, category: id } : e,
+      ),
+    );
+    if (ids.size > 0) invalidateFinykPreview();
   };
 
   return {
@@ -562,5 +613,6 @@ export function useFinykStorageMutations(slots: FinykStorageSlots) {
     addCustomCategory,
     editCustomCategory,
     removeCustomCategory,
+    restoreCustomCategory,
   };
 }

@@ -23,6 +23,7 @@ const HEADER_SCAN_ROWS = 30;
 export type TabularImportErrorCode =
   | "empty_file"
   | "too_large"
+  | "too_many_rows"
   | "pdf_not_supported"
   | "legacy_xls"
   | "unreadable_workbook"
@@ -83,6 +84,13 @@ export function detectDelimiterByStructure(text: string): CsvDelimiter {
   return best;
 }
 
+/** `^[-+\s]*[\d\s.,]+$`, але знак захоплюється атомарно (lookahead +
+ * зворотне посилання): обидва класи містять `\s`, і звичайний варіант на
+ * клітинці `"-" + 5 МБ пробілів + "x"` перебирав би кожну точку поділу
+ * пробілів між ними, тобто квадратичний час. На обрізаному рядку
+ * результат той самий. */
+const NUMERIC_CELL_RE = /^(?=([-+\s]*))\1[\d\s.,]+$/;
+
 function headerScore(row: string[], hints: readonly string[]): number {
   const filled = row.filter((c) => c.trim() !== "").length;
   if (filled < 2) return 0;
@@ -91,7 +99,7 @@ function headerScore(row: string[], hints: readonly string[]): number {
   for (const hint of hints) if (joined.includes(hint)) hits += 1;
   if (hits === 0) return 0;
   const numericCells = row.filter(
-    (c) => /^[-+\s]*[\d\s.,]+$/.test(c.trim()) && c.trim() !== "",
+    (c) => NUMERIC_CELL_RE.test(c.trim()) && c.trim() !== "",
   ).length;
   return hits * 10 + filled - numericCells * 3;
 }
@@ -129,9 +137,32 @@ function isPdf(bytes: Buffer): boolean {
   return bytes.length >= 4 && bytes.toString("latin1", 0, 4) === "%PDF";
 }
 
+/**
+ * Скільки рядків сітки розбирати, щоб перевищення `maxDataRows` було
+ * видно без розбору решти файлу: шапка стоїть не нижче
+ * `HEADER_SCAN_ROWS`, тож сітка з такою кількістю рядків уже має
+ * понад `maxDataRows` рядків даних.
+ */
+function gridRowLimit(maxDataRows: number | undefined): number {
+  return maxDataRows === undefined
+    ? Number.POSITIVE_INFINITY
+    : maxDataRows + HEADER_SCAN_ROWS + 1;
+}
+
+function withinRowLimit(rows: string[][], limit: number): string[][] {
+  if (rows.length >= limit) throw new TabularImportError("too_many_rows");
+  return rows;
+}
+
+/**
+ * `maxDataRows` - стеля рядків даних. Без неї 5 МБ переносів рядка чи
+ * `<row/>` будують мільйони масивів до того, як викликач порахує рядки;
+ * з нею розбір зупиняється одразу за межею і кидає `too_many_rows`.
+ */
 export function gridFromTabularFile(
   bytes: Buffer,
   hints: readonly string[],
+  maxDataRows?: number,
 ): TabularGrid {
   if (bytes.byteLength === 0) {
     throw new TabularImportError("empty_file");
@@ -145,21 +176,24 @@ export function gridFromTabularFile(
   if (isLegacyXls(bytes)) {
     throw new TabularImportError("legacy_xls");
   }
+  const limit = gridRowLimit(maxDataRows);
 
   if (looksLikeZip(bytes)) {
+    let rows: string[][];
     try {
-      const rows = xlsxToGrid(bytes);
-      return {
-        rows,
-        sourceKind: "sheet",
-        headerRowIndex: locateHeaderRow(rows, hints),
-      };
+      rows = xlsxToGrid(bytes, limit);
     } catch (err) {
       if (err instanceof XlsxFormatError) {
         throw new TabularImportError("unreadable_workbook");
       }
       throw new TabularImportError("unreadable_table");
     }
+    withinRowLimit(rows, limit);
+    return {
+      rows,
+      sourceKind: "sheet",
+      headerRowIndex: locateHeaderRow(rows, hints),
+    };
   }
 
   const text = decodeTabularText(bytes);
@@ -168,7 +202,7 @@ export function gridFromTabularFile(
   if (looksLikeHtmlTable(text)) {
     let rows: string[][];
     try {
-      rows = htmlTableToGrid(text);
+      rows = htmlTableToGrid(text, limit);
     } catch (err) {
       if (err instanceof HtmlFormatError) {
         throw new TabularImportError("unreadable_table");
@@ -178,6 +212,7 @@ export function gridFromTabularFile(
     if (rows.length === 0) {
       throw new TabularImportError("no_table");
     }
+    withinRowLimit(rows, limit);
     return {
       rows,
       sourceKind: "csv",
@@ -185,14 +220,19 @@ export function gridFromTabularFile(
     };
   }
 
-  return gridFromCsvText(text, hints);
+  return gridFromCsvText(text, hints, maxDataRows);
 }
 
 export function gridFromCsvText(
   text: string,
   hints: readonly string[],
+  maxDataRows?: number,
 ): TabularGrid {
-  const rows = tokenizeCsv(text, detectDelimiterByStructure(text));
+  const limit = gridRowLimit(maxDataRows);
+  const rows = withinRowLimit(
+    tokenizeCsv(text, detectDelimiterByStructure(text), limit),
+    limit,
+  );
   return {
     rows,
     sourceKind: "csv",

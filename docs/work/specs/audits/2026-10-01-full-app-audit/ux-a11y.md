@@ -1,6 +1,6 @@
 # Аудит 2026-10-01 · UX і доступність
 
-> **Status:** Active. 86 кластерів (121 знахідок) за першопричиною. Загальний план, метод і обмеження — у [README](./README.md).
+> **Status:** Active. 86 кластерів (121 знахідка) за першопричиною. Загальний план, метод і обмеження — у [README](./README.md).
 > **Last validated:** 2026-10-02
 > **Next review:** 2026-11-02
 > **Spec-lint:** skip. Реєстр знахідок аудиту, не специфікація реалізації.
@@ -23,7 +23,7 @@ UX і доступність — найбільша за кількістю зн
 
 ### `ux-01` [medium] «Переношу дані в профіль…» блокує застосунок на кожному старті й reload, навіть коли переносити нічого
 
-- **Стан:** частково виправлено в [#1409](https://github.com/SkOrDs-02/sergeant/pull/1409) (змерджено 2026-10-08) (текст панелі нейтральний, поки не почався справжній перенос; кеш «партиція порожня» і preflight-запит лишились окремою задачею через ризик пропуску переносу)
+- **Стан:** виправлено в [#1409](https://github.com/SkOrDs-02/sergeant/pull/1409) (змерджено 2026-10-08) (текст панелі нейтральний, поки не почався справжній перенос) і в [#1658](https://github.com/SkOrDs-02/sergeant/pull/1658) (змерджено 2026-10-26) (preflight анонімної партиції перед міграціями схем, повернутий після відкату [#1628](https://github.com/SkOrDs-02/sergeant/pull/1628); причина відкату не в preflight: прибирання осиротілих файлів priv-05 на кожному старті видаляло файл бази залогіненої людини, бо бут першою відкриває анонімну партицію, і дані щоразу їхали з сервера заново, а багатосекундний гейт розвідки це ховав; підмітання тепер лише з партиції акаунта, див. priv-05; кеш CLEAN/DIRTY за рішенням власника 2026-10-23 не робимо)
 - **Перевірка:** підтверджено · **Зусилля:** M · **Область:** web: durability / старт сесії
 - **Де:** apps/web/src/core/durability/AnonymousDataMigrationProvider.tsx:59-75,277-369; apps/web/src/core/durability/anonymousDataMigration.ts:815-832; apps/web/src/shared/i18n/uk.core.ts:162
 - **Першопричина:** AuthenticatedMigrationGate монтується на кожному авторизованому старті й щоразу проганяє повну розвідку анонімної партиції: перемикає партицію SQLite, проганяє міграції схем 4 модулів і сканує таблиці. Розвідка триває довше за PROBE_GRACE_MS=500, і тоді показується панель із текстом про перенос (showProgressPanel = transferring || failed || probeGraceElapsed), хоча snapshot порожній і runMigration виходить раннім return.
@@ -482,7 +482,7 @@ grep found no EMAIL_VERIFICATION_REQUIRED handling in apps/web/src or packages/a
 
 ### `ux-07` [medium] Виписка на 1000+ рядків проходить прев'ю, але «Імпортувати» падає з «Некоректні дані запиту»
 
-- **Стан:** частково виправлено в [#1470](https://github.com/SkOrDs-02/sergeant/pull/1470) (змерджено 2026-10-18) (кнопка блокується понад 1000 вибраних рядків з поясненням; клієнтська нарізка на кілька commit-ів лишилась follow-up-ом після data-29)
+- **Стан:** виправлено: видимий кап – [#1470](https://github.com/SkOrDs-02/sergeant/pull/1470) (змерджено 2026-10-18); клієнтська нарізка на commit-и по ≤1000 (`IMPORT_COMMIT_MAX_ROWS`) без розрізу групи (дата, сума, напрям), прогрес «Імпортую частину k з n…», при збої частини імпортоване зникає з таблиці і повтор досилає решту, «Скасувати імпорт» скасовує всі батчі – [#1624](https://github.com/SkOrDs-02/sergeant/pull/1624) (змерджено 2026-10-23). Залишок: межа ±1 день mono-дедупу між частинами не врахована
 - **Перевірка:** підтверджено · **Зусилля:** M · **Область:** web+shared: Фінік / імпорт виписок
 - **Де:** packages/shared/src/schemas/import.ts:315; apps/server/src/modules/finyk/import/statementPreview.ts (MAX_PREVIEW_DATA_ROWS); apps/web/src/modules/finyk/components/bulkImport/BulkImportSheet.tsx:330-343
 - **Першопричина:** Прев'ю приймає до MAX_PREVIEW_DATA_ROWS=10 000 рядків, а схема commit обмежує rows значенням IMPORT_COMMIT_MAX_ROWS=1000. Коментар у схемі передбачає кілька commit-ів, але BulkImportSheet.handleCommit шле все одним запитом, а кнопка блокується лише тоді, коли не вибрано жодного рядка.
@@ -526,7 +526,7 @@ Live API (v8-v9-api.mjs). Preview of f3-mono-2000.csv returns 200, profile=mono,
 
 ### `ux-08` [medium] Фокус падає на &lt;body&gt; після закриття діалогів і дій: глобальний пошук, створення першої звички, readiness-аркуш, крок аркуша їжі, видалення запису, невдалий вхід
 
-- **Стан:** частково виправлено в [#1492](https://github.com/SkOrDs-02/sergeant/pull/1492) (змерджено 2026-10-09) (лишилось: запасні цілі фокуса для розмонтованих тригерів у HabitQuickCreate, ReadinessSheet, кроці AddMealSheet і видаленні запису; перенесення «Забули пароль?» у DOM)
+- **Стан:** виправлено в [#1492](https://github.com/SkOrDs-02/sergeant/pull/1492) (змерджено 2026-10-09) і в [#1604](https://github.com/SkOrDs-02/sergeant/pull/1604) (змерджено 2026-10-22) (запасні цілі фокуса `returnFocusFallback` для HabitQuickCreate, ReadinessSheet, кроку AddMealSheet і видалення запису; «Забули пароль?» перенесено в DOM після поля пароля)
 - **Перевірка:** підтверджено · **Зусилля:** M · **Область:** web: a11y / керування фокусом
 - **Де:** apps/web/src/shared/hooks/useDialogFocusTrap.ts:89-91,195-205; apps/web/src/core/hub/search/HubSearch.tsx:55-58; apps/web/src/core/hub/search/useSearchEngine.ts:85-87; apps/web/src/core/auth/LoginForm.tsx:58-111; apps/web/src/modules/fizruk/pages/Workouts.tsx:472; routine HabitQuickCreate
 - **Першопричина:** useDialogFocusTrap запамʼятовує «попередній фокус» в ефекті, який виконується після власних автофокусів компонента. У HubSearch ефект useSearchEngine фокусує інпут раніше, тож пастка запамʼятовує сам інпут, який потім розмонтовується. Якщо тригер розмонтовано (порожній стан звичок, видалений запис), запасної цілі для фокуса немає. LoginForm на час сабміту робить сфокусовані поля disabled, тож після помилки фокус губиться.
@@ -856,7 +856,7 @@ vb/08-edit-device.mjs, новий користувач. Контекст 1, «Я
 
 ### `ux-14` [medium] Завантажений аватар ніколи не зберігається, хоча UI показує «Аватар оновлено»
 
-- **Стан:** частково виправлено в [#1572](https://github.com/SkOrDs-02/sergeant/pull/1572) (змерджено 2026-10-20; рішення власника: байти аватара в Postgres `bytea`, без S3/R2/CDN, UI не ховаємо). Міграція 160 `user_avatars`; `PUT/GET/DELETE /api/avatar` (сирі webp/png/jpeg до 50 КБ, перевірка magic bytes, 413/415, GET лише власнику за сесією); `user.image` = короткий `/api/avatar/<userId>?v=<epoch>`, який проходить `sanitizeUserImage` (`data:` і далі обнуляється); веб шле Blob замість `data:` URL, `toast.success` лише після підтвердженої відповіді сервера, помилки 413/415/429/мережі показуються чесно. Лишилось: аватар не входить до експорту даних (`/api/me/export`): таблиця `user_avatars` у виключеннях `EXPORT_EXCLUSIONS` (двійковий файл, який JSON не несе; посилання є в `user.image`); у Capacitor-shell (bearer-сесія) `<img>` не передає токен, тож аватар там не завантажиться, поки мобільний контур на паузі (ADR-0094)
+- **Стан:** частково виправлено в [#1572](https://github.com/SkOrDs-02/sergeant/pull/1572) (змерджено 2026-10-20) і в [#1638](https://github.com/SkOrDs-02/sergeant/pull/1638) (змерджено 2026-10-23; рішення власника: байти аватара в Postgres `bytea`, без S3/R2/CDN, UI не ховаємо). Міграція 160 `user_avatars`; `PUT/GET/DELETE /api/avatar` (сирі webp/png/jpeg до 50 КБ, перевірка magic bytes, 413/415, GET лише власнику за сесією); `user.image` = короткий `/api/avatar/<userId>?v=<epoch>`, який проходить `sanitizeUserImage` (`data:` і далі обнуляється); веб шле Blob замість `data:` URL, `toast.success` лише після підтвердженої відповіді сервера, помилки 413/415/429/мережі показуються чесно. У [#1638](https://github.com/SkOrDs-02/sergeant/pull/1638): аватар їде в `/api/me/export` як `data.avatar` = `{ mimeType, dataBase64, updatedAt }` (base64 у JSON, `null` без аватара), `user_avatars` знято з `EXPORT_EXCLUSIONS` (рішення власника 2026-10-23). Лишилось: у Capacitor-shell (bearer-сесія) `<img>` не передає токен, тож аватар там не завантажиться, поки мобільний контур на паузі (ADR-0094)
 - **Перевірка:** підтверджено · **Зусилля:** S · **Швидкий виграш** · **Область:** web+server: профіль / аватар
 - **Де:** apps/web/src/core/profile/PersonalInfoSection.tsx:134-147; apps/web/src/core/profile/avatar.ts:34; apps/server/src/auth/sanitizeUserImage.ts:106-111; apps/server/src/auth.ts:432-447
 - **Першопричина:** Клієнт шле canvas.toDataURL('image/webp') у updateUser({image}), а серверний databaseHooks.user.update.before → sanitizeUserImage навмисно обнуляє будь-який data: URL (після інциденту з 504). Better Auth відповідає {status:true}, і PersonalInfoSection показує toast.success, не перевіривши user.image.
@@ -947,7 +947,7 @@ v3-paywall.mjs with mocked usage {plan:free, remaining:0}, 1280x900. Trace: keyd
 
 ### `ux-16` [medium] Стрілки на вкладках одразу їх активують: рейок модулів переводить в інший модуль, а вкладка «Скан» відкриває камеру
 
-- **Стан:** виправлено в [#1492](https://github.com/SkOrDs-02/sergeant/pull/1492) (змерджено 2026-10-09) і подальшими змінами; залишок закрито в цей PR: `ModuleRail` і `useTablistArrowKeys` більше не існують, вибір способу в `SourceTabs` це `<nav>` зі звичайними кнопками, а автовідкриття сканера при `sourceTab==="scan"` одноразове (ref) і покрите тестом
+- **Стан:** виправлено в [#1492](https://github.com/SkOrDs-02/sergeant/pull/1492) (змерджено 2026-10-09) і подальшими змінами; залишок не відтворюється на `f226d8cb3` (перевірено 2026-10-22): `ModuleRail` і `useTablistArrowKeys` більше не існують, вибір способу в `SourceTabs` це `<nav>` зі звичайними кнопками, а автовідкриття сканера при `sourceTab==="scan"` одноразове (ref) і покрите тестом
 - **Перевірка:** підтверджено · **Зусилля:** S · **Швидкий виграш** · **Область:** web: a11y / вкладки
 - **Де:** apps/web/src/shared/hooks/useTablistArrowKeys.ts:102; apps/web/src/shared/components/layout/ModuleRail.tsx:183-215; apps/web/src/modules/nutrition/components/AddMealSheet.tsx:323-332; apps/web/src/modules/nutrition/components/meal-sheet/SourceTabs.tsx:41-60
 - **Першопричина:** useTablistArrowKeys викликає target.click() на кожну стрілку, тобто вкладки активуються автоматично. Активація вкладки в ModuleRail означає навігацію (openHubModule), а вкладка scan в AddMealSheet сама відкриває модальний сканер. До того ж рейок оголошено як tablist без tabpanel і aria-controls.

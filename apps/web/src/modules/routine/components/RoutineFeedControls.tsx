@@ -2,10 +2,11 @@
  * Last validated: 2026-09-17
  * Status: Active
  */
-import type { ChangeEvent } from "react";
+import { useState, type ChangeEvent } from "react";
 import { SectionHeading } from "@shared/components/ui/SectionHeading";
 import { Input } from "@shared/components/ui/Input";
 import { Segmented } from "@shared/components/ui/Segmented";
+import { Sheet } from "@shared/components/ui/Sheet";
 import { searchFieldProps } from "@shared/lib/ui/searchFieldProps";
 import { WeekDayStrip, WeekShiftControls } from "./WeekDayStrip";
 import { RoutineFilterChips } from "./RoutineFilterChips";
@@ -40,7 +41,12 @@ export interface RoutineFeedControlsProps {
   tagChips: RoutineCalendarData["tagChips"];
   showFizruk: boolean;
   showFinykSubs: boolean;
+  /** Активні звички: від `FILTER_FROM_HABITS` стрічка отримує «Фільтр». */
+  habitsCount: number;
 }
+
+/** Поріг рецензента, погоджений власником (spec v3.2, Р: 10 звичок). */
+export const FILTER_FROM_HABITS = 10;
 
 /**
  * Пульт фільтрації стрічки Рутини: діапазон, тижневий пікер, пошук і чипи
@@ -90,7 +96,15 @@ export function RoutineFeedControls({
   tagChips,
   showFizruk,
   showFinykSubs,
+  habitsCount,
 }: RoutineFeedControlsProps) {
+  const [filterOpen, setFilterOpen] = useState(false);
+  const filterActive = tagFilter !== null || listQueryDraft.trim() !== "";
+  // Пошук і теги живуть в одному аркуші «Фільтр» і показуються від 10
+  // звичок (redesign v3.2, позиція 13); на чотирьох звичках вони були
+  // контролами без предмета. Активний фільтр тримає рядок видимим, щоб його
+  // можна було зняти.
+  const showFilter = habitsCount >= FILTER_FROM_HABITS || filterActive;
   return (
     <>
       <div className="flex flex-col gap-1.5">
@@ -162,25 +176,49 @@ export function RoutineFeedControls({
         )}
       </section>
 
-      <Input
-        className="routine-touch-field w-full max-w-md"
-        {...searchFieldProps("routine-feed-search")}
-        placeholder={M.searchPlaceholder}
-        value={listQueryDraft}
-        onChange={(e: ChangeEvent<HTMLInputElement>) =>
-          setListQueryDraft(e.target.value)
-        }
-        aria-label={M.searchAriaLabel}
-      />
-
-      <RoutineFilterChips
-        tagFilter={tagFilter}
-        setTagFilter={setTagFilter}
-        onClearFilter={() => setTagFilter(null)}
-        tagChips={tagChips}
-        showFizruk={showFizruk}
-        showFinykSubs={showFinykSubs}
-      />
+      {showFilter && (
+        <>
+          <button
+            type="button"
+            aria-haspopup="dialog"
+            className="flex min-h-14 w-full items-center justify-between gap-3 border-y border-line text-left text-style-body font-semibold text-text focus-ring"
+            onClick={() => setFilterOpen(true)}
+          >
+            <span>{M.filter}</span>
+            {filterActive && (
+              <span className="text-style-label font-normal text-muted">
+                {M.filterOn}
+              </span>
+            )}
+          </button>
+          <Sheet
+            open={filterOpen}
+            onClose={() => setFilterOpen(false)}
+            title={M.filter}
+          >
+            <div className="space-y-4">
+              <Input
+                className="routine-touch-field w-full"
+                {...searchFieldProps("routine-feed-search")}
+                placeholder={M.searchPlaceholder}
+                value={listQueryDraft}
+                onChange={(e: ChangeEvent<HTMLInputElement>) =>
+                  setListQueryDraft(e.target.value)
+                }
+                aria-label={M.searchAriaLabel}
+              />
+              <RoutineFilterChips
+                tagFilter={tagFilter}
+                setTagFilter={setTagFilter}
+                onClearFilter={() => setTagFilter(null)}
+                tagChips={tagChips}
+                showFizruk={showFizruk}
+                showFinykSubs={showFinykSubs}
+              />
+            </div>
+          </Sheet>
+        </>
+      )}
     </>
   );
 }

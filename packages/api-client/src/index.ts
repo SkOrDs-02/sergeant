@@ -56,6 +56,13 @@ export {
   type SyncV2PushOptions,
   type SyncV2PushResponse,
 } from "./endpoints/syncV2";
+export {
+  SYNC_CURSOR_EXPIRED_CODE,
+  isSyncCursorExpiredError,
+  type SyncCursorExpiredErrorBody,
+  type SyncV2SnapshotOptions,
+  type SyncV2SnapshotResponse,
+} from "./endpoints/syncV2.snapshot";
 
 export {
   buildSyncV2IncrementOp,
@@ -117,6 +124,13 @@ export {
   type SyncEngineFlushOnReconnectOptions,
   type SyncEngineFlushTriggerKind,
 } from "./endpoints/syncV2.flushOnReconnect";
+
+export {
+  createSyncV2StateHashEndpoints,
+  type SyncV2StateHashBucket,
+  type SyncV2StateHashEndpoints,
+  type SyncV2StateHashResponse,
+} from "./endpoints/syncV2.stateHash";
 
 export {
   createCoachEndpoints,

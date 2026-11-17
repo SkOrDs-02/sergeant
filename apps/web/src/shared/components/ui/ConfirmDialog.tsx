@@ -42,6 +42,8 @@ export interface ConfirmDialogProps {
   elevated?: boolean;
   onConfirm?: () => void;
   onCancel?: () => void;
+  /** Куди повернути фокус, якщо тригер (кнопка видалення) розмонтовано. */
+  returnFocusFallback?: (() => HTMLElement | null) | undefined;
 }
 
 /**
@@ -65,11 +67,16 @@ export const ConfirmDialog = memo(function ConfirmDialog({
   elevated = false,
   onConfirm,
   onCancel,
+  returnFocusFallback,
 }: ConfirmDialogProps) {
   const ref = useRef<HTMLDivElement>(null);
   const titleId = useId();
   const descId = useId();
-  useDialogFocusTrap(open, ref, { onEscape: onCancel, inertBackground: true });
+  useDialogFocusTrap(open, ref, {
+    onEscape: onCancel,
+    inertBackground: true,
+    returnFocusFallback,
+  });
 
   // Pulling the sheet down to dismiss is the same gesture users already
   // know from <Sheet>. We treat dismiss as "cancel" — destructive

@@ -1,6 +1,6 @@
 // @vitest-environment jsdom
 /**
- * Branch coverage for NetworthSection — chart vs empty-state branches.
+ * Branch coverage for NetworthSection — chart vs nothing.
  */
 import { describe, it, expect, vi, afterEach } from "vitest";
 import { render, screen, cleanup } from "@testing-library/react";
@@ -15,23 +15,18 @@ vi.mock("../../components/charts/lazy", () => ({
 afterEach(() => cleanup());
 
 describe("NetworthSection (branches)", () => {
-  it("renders empty state when fewer than two history points", () => {
-    render(
+  it("renders nothing when fewer than two history points", () => {
+    const { container } = render(
       <NetworthSection
         networthHistory={[{ month: "2026-01", networth: 100 }]}
       />,
     );
-    expect(
-      screen.getByText("Поки що мало записів балансу"),
-    ).toBeInTheDocument();
-    expect(screen.queryByTestId("networth-chart")).toBeNull();
+    expect(container).toBeEmptyDOMElement();
   });
 
-  it("renders empty state for zero history", () => {
-    render(<NetworthSection networthHistory={[]} />);
-    expect(
-      screen.getByText("Поки що мало записів балансу"),
-    ).toBeInTheDocument();
+  it("renders nothing for zero history", () => {
+    const { container } = render(<NetworthSection networthHistory={[]} />);
+    expect(container).toBeEmptyDOMElement();
   });
 
   it("renders chart card when history has two or more points", () => {

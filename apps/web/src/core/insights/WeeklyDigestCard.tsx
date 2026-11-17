@@ -179,7 +179,7 @@ function DigestContent({
   }, [adviceId, sectionOpen, expanded, loading, digest, surface]);
 
   // Розгортання/згортання тіла звіту — наявні афорданси «Переглянути звіт» /
-  // «Згорнути». Нових кнопок не додаємо.
+  // «Сховати звіт». Нових кнопок не додаємо.
   const setExpandedTracked = (next: boolean) => {
     setExpanded(next);
     if (next) onOpened?.();
@@ -355,7 +355,7 @@ function DigestContent({
               <button
                 type="button"
                 onClick={() => setExpandedTracked(true)}
-                className="w-full h-9 min-h-[44px] rounded-lg border border-line text-style-label text-muted hover:text-text hover:bg-panelHi transition-colors"
+                className="w-full h-9 min-h-[44px] rounded-lg border border-line text-style-label text-muted hover:text-text hover:bg-panelHi transition-colors focus-ring"
               >
                 Переглянути звіт
               </button>
@@ -366,9 +366,9 @@ function DigestContent({
               <button
                 type="button"
                 onClick={() => setExpandedTracked(false)}
-                className="w-full h-9 min-h-[44px] rounded-lg border border-line text-style-label text-muted hover:text-text hover:bg-panelHi transition-colors"
+                className="w-full h-9 min-h-[44px] rounded-lg border border-line text-style-label text-muted hover:text-text hover:bg-panelHi transition-colors focus-ring"
               >
-                Згорнути
+                Сховати звіт
               </button>
             </div>
           )}
@@ -541,14 +541,14 @@ export function WeeklyDigestCard({
               </button>
             )}
             {onCollapse && (
-              <Tooltip content="Згорнути" placement="top-center">
+              <Tooltip content="Сховати звіт" placement="top-center">
                 <button
                   type="button"
                   onClick={() => {
                     trackAdviceReaction(adviceId, "collapse");
                     onCollapse();
                   }}
-                  aria-label="Згорнути звіт тижня"
+                  aria-label="Сховати звіт тижня"
                   className="w-7 h-7 min-h-[44px] min-w-[44px] flex items-center justify-center rounded-lg text-muted hover:text-text hover:bg-panelHi transition-colors"
                 >
                   <Icon name="chevron-up" size={15} strokeWidth={2.5} />

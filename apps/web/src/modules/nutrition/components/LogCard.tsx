@@ -29,7 +29,6 @@ interface LogCardProps {
   log: NutritionLog;
   selectedDate: string;
   setSelectedDate: Dispatch<SetStateAction<string>>;
-  onAddMeal?: () => void;
   onAddMealFromSearch?: (meal: Meal, date?: string) => void;
   onRemoveMeal?: (date: string, meal: Meal) => void;
   onEditMeal?: (date: string, meal: Meal) => void;
@@ -37,6 +36,9 @@ interface LogCardProps {
   onDuplicateYesterday?: () => void;
   onTrimLog?: (keepDays: number) => void;
 }
+
+/** Поріг рецензента, погоджений власником (spec v3.2, Р: 7 днів). */
+export const HISTORY_FROM_DAYS = 7;
 
 function formatDate(isoDate: string): string {
   // ADR-0078: "Сьогодні"/"Вчора"/"Завтра" мусять збігатись із ключем, під
@@ -67,7 +69,6 @@ export function LogCard({
   log,
   selectedDate,
   setSelectedDate,
-  onAddMeal,
   onAddMealFromSearch,
   onRemoveMeal,
   onEditMeal,
@@ -84,6 +85,13 @@ export function LogCard({
   const groups = groupByMealType(meals);
 
   const logBytes = useMemo(() => estimateLogBytes(log), [log]);
+  const daysWithMeals = useMemo(
+    () => Object.values(log).filter((d) => (d?.meals?.length ?? 0) > 0).length,
+    [log],
+  );
+  // Пошук і тренди без записів були контролами без предмета (redesign
+  // v3.2, 17): показуються від тижня днів із записами.
+  const hasHistory = daysWithMeals >= HISTORY_FROM_DAYS;
   const logSizeWarn = logBytes > 350_000;
 
   function shiftDate(delta: number) {
@@ -149,7 +157,7 @@ export function LogCard({
           П3 «край і зріз»: аркуш дня — це `DayLogSheet`, і все, що стоїть
           у цьому `flex-col` навколо нього, аркушем НЕ є. Перемикач дати,
           пошук, «скопіювати з попереднього дня», попередження про розмір
-          журналу й «+ Додати прийом їжі» — органи керування записом;
+          журналу — органи керування записом;
           обвести їх перфорацією означало б повторити помилку, за яку край
           зняли з hero Рутини. Розбір — в `DayLogSheet.tsx`.
 
@@ -161,7 +169,9 @@ export function LogCard({
             module="nutrition"
             variant="compact"
             title={messages.nutrition.journalEmpty.title}
-            description={messages.nutrition.journalEmpty.description}
+            {...(selectedDate === todayISODate() && {
+              description: messages.nutrition.journalEmpty.description,
+            })}
           />
         ) : (
           <DayLogSheet
@@ -176,19 +186,13 @@ export function LogCard({
 
         <MealMomentLine date={selectedDate} />
 
-        <button
-          type="button"
-          onClick={onAddMeal}
-          className="w-full h-11 rounded-lg border border-border-strong text-style-label font-semibold text-text hover:bg-line/40 focus-ring"
-        >
-          Додати прийом їжі
-        </button>
-
-        <LogCardSearch
-          log={log}
-          setSelectedDate={setSelectedDate}
-          onAddMealFromSearch={onAddMealFromSearch}
-        />
+        {hasHistory && (
+          <LogCardSearch
+            log={log}
+            setSelectedDate={setSelectedDate}
+            onAddMealFromSearch={onAddMealFromSearch}
+          />
+        )}
 
         {logSizeWarn && (
           <div className="border-y border-line py-2 text-style-label text-text">
@@ -205,7 +209,9 @@ export function LogCard({
 
         <LogCardWeeklyTable log={log} selectedDate={selectedDate} />
 
-        <LogCardAnalytics log={log} selectedDate={selectedDate} />
+        {hasHistory && (
+          <LogCardAnalytics log={log} selectedDate={selectedDate} />
+        )}
       </div>
 
       <CopyMealSheet

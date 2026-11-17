@@ -136,19 +136,21 @@ describe("fizrukStorage – defensive parsing/import", () => {
       clearFizrukSqliteCache();
     });
 
-    it("не падає на не-рядкових значеннях усередині data", async () => {
+    it("null у зрізі - відсутній зріз, не-рядок - пошкоджений файл", async () => {
       __setFizrukSqliteCacheForTests({});
       await expect(
         applyFizrukFullBackupPayload(
-          {
-            data: {
-              [WORKOUTS_STORAGE_KEY]: 123,
-              [CUSTOM_EXERCISES_KEY]: null,
-            },
-          },
+          { data: { [CUSTOM_EXERCISES_KEY]: null } },
           "merge",
         ),
       ).resolves.toEqual({ status: "skipped", reason: "context-unset" });
+      // Присутній зріз не-рядок імпорт мовчки пропустив би (data-34).
+      await expect(
+        applyFizrukFullBackupPayload(
+          { data: { [WORKOUTS_STORAGE_KEY]: 123 } },
+          "merge",
+        ),
+      ).rejects.toThrow(/Пошкоджений файл/);
       clearFizrukSqliteCache();
     });
   });

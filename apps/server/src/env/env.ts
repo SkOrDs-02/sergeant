@@ -21,6 +21,7 @@ import {
   stringWithDefault,
 } from "./envHelpers.js";
 import { pgEnvShape } from "./pgEnv.js";
+import { syncEnvShape } from "./syncEnv.js";
 import { telegramEnvShape } from "./telegramEnv.js";
 
 const envSchema = z.object({
@@ -231,7 +232,7 @@ const envSchema = z.object({
   AI_QUOTA_FOUNDER_IDS: founderIdsFromEnv("AI_QUOTA_FOUNDER_IDS"),
 
   // AI-LEGACY: expires 2026-11-30 — рубильник закритого доступу після бети;
-  // прибирання — docs/work/specs/beta-launch/README.md § Що прибрати.
+  // прибирання — https://github.com/SkOrDs-02/sergeant/blob/97e477e90b711b210184ff2b9426b4452c1cd43f/docs/work/specs/beta-launch/README.md § Що прибрати.
   // Кома-розділений список `userId`, яким дозволено входити; порожнє
   // значення лишає продукт відкритим. Логіка — `auth/accessGate.ts`.
   ACCESS_ALLOWLIST_USER_IDS: z.string().optional(),
@@ -602,15 +603,8 @@ const envSchema = z.object({
 
   AI_MEMORY_ENABLED: boolFromEnv(false),
 
-  /**
-   * Рубильник `GET /api/v2/sync/stream` (SSE). Дефолт `false` → маршрут
-   * відповідає 404, поки немає клієнта-споживача (Фаза 3,
-   * `sync-client-wiring.md`); аудит 2026-10-01, sec-09. Ран-тайм читає
-   * `process.env` напряму (`modules/sync/syncV2StreamGuard.ts`,
-   * `boolFromProcessEnv`) з тією ж семантикою - це поле лише валідує й
-   * документує значення.
-   */
-  SYNC_V2_STREAM_ENABLED: boolFromEnv(false),
+  // Sync v2 рубильники й бюджети — у `syncEnv.ts` (Hard Rule #18).
+  ...syncEnvShape,
 
   VOYAGE_API_KEY: stringWithDefault(""),
 

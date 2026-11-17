@@ -200,7 +200,7 @@ test.describe.serial("@seed Q3 — автосідер насиченого ак�
           await overviewTab.click();
         }
         const bulk = page.getByRole("button", {
-          name: /Відмітити всі звички на цей день/,
+          name: /^Відмітити всі$/,
         });
         await expect(bulk).toBeVisible({ timeout: 15_000 });
         await bulk.click();

@@ -450,6 +450,19 @@ describe("calcCategorySpent", () => {
     expect(calcCategorySpent(txs, "food", {}, splits)).toBe(300);
     expect(calcCategorySpent(txs, "restaurant", {}, splits)).toBe(300);
   });
+  it("спліт ручного запису під сирим id читається для manual_<id>", () => {
+    const manual = [
+      { id: "manual_mx_1", amount: -100000, mcc: 5411, description: "Сільпо" },
+    ];
+    const splits = {
+      mx_1: [
+        { amount: 700, categoryId: "food" },
+        { amount: 300, categoryId: "household" },
+      ],
+    };
+    expect(calcCategorySpent(manual, "food", {}, splits)).toBe(700);
+    expect(calcCategorySpent(manual, "household", {}, splits)).toBe(300);
+  });
 });
 
 describe("calcFinykSpendingTotal", () => {

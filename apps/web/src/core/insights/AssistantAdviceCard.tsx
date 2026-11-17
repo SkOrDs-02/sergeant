@@ -1,6 +1,7 @@
 import { useEffect, useId, useState } from "react";
 import { cn } from "@shared/lib/ui/cn";
 import { Icon } from "@shared/components/ui/Icon";
+import { MorphChevron } from "@shared/components/ui/MorphChevron";
 import { SectionHeading } from "@shared/components/ui/SectionHeading";
 import { SkeletonText } from "@shared/components/ui/Skeleton";
 import { Badge } from "@shared/components/ui/Badge";
@@ -159,9 +160,7 @@ export function AssistantAdviceCard({
               </Badge>
             )}
           </div>
-          <span className="text-style-caption text-muted">
-            {collapsed ? "Розгорнути" : "Згорнути"}
-          </span>
+          <MorphChevron open={!collapsed} className="text-subtle" />
         </button>
 
         {!collapsed && (

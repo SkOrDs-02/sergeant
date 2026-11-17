@@ -8,6 +8,7 @@ import {
 import type { FizrukData } from "@sergeant/fizruk-domain";
 import { SectionHeading } from "@shared/components/ui/SectionHeading";
 import { Input } from "@shared/components/ui/Input";
+import { Select } from "@shared/components/ui/Select";
 import { Label } from "@shared/components/ui/FormField";
 import { Button } from "@shared/components/ui/Button";
 import { Sheet } from "@shared/components/ui/Sheet";
@@ -131,8 +132,7 @@ export function AddExerciseSheet({
           >
             Основна група
           </SectionHeading>
-          <select
-            className="input-focus-fizruk w-full min-h-[44px] rounded-lg border border-line bg-panelHi px-3 py-2 text-sm text-text"
+          <Select
             value={form.primaryGroup}
             onChange={(e) =>
               setForm((f) => ({
@@ -149,7 +149,7 @@ export function AddExerciseSheet({
                 {primaryGroupsUk[id]}
               </option>
             ))}
-          </select>
+          </Select>
         </label>
 
         <div className="rounded-panel border border-line bg-panelHi px-3 py-2">

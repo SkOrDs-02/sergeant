@@ -1,7 +1,7 @@
 # Функціональна ієрархія web і великі колекції
 
-> **Last touched:** 2026-10-18 by @claude. **Next review:** 2028-01-18.
-> **Status:** Active
+> **Last touched:** 2026-10-26 by @claude (тріаж документації: Active → Implemented, PR-номер). **Next review:** 2028-01-18.
+> **Status:** Implemented - [#1514](https://github.com/SkOrDs-02/sergeant/pull/1514) (змерджено 2026-10-15): `apps/web/src/core/settings/FinykMerchantRulesSection.tsx`, `ContentGroup`, менеджери тегів і категорій Рутини (`apps/web/src/modules/routine/components/settings/TagsSection.tsx`). Залишків немає.
 
 ## Контекст і межа
 

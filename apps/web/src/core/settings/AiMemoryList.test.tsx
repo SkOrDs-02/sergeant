@@ -248,7 +248,7 @@ describe("AiMemoryList", () => {
     expect(screen.getByText(long).className).toContain("line-clamp-3");
     fireEvent.click(toggle);
     expect(screen.getByText(long).className).not.toContain("line-clamp-3");
-    expect(screen.getByRole("button", { name: "Згорнути" })).toBeTruthy();
+    expect(screen.getByRole("button", { name: "Показати менше" })).toBeTruthy();
     // Короткий факт не отримує зайвого важеля.
     expect(
       screen.queryAllByRole("button", { name: "Показати повністю" }),

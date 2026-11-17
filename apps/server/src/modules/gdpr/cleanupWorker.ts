@@ -113,6 +113,8 @@ export interface ProcessGdprCleanupQueueResult {
   exhausted: number;
   /** Completed rows hard-deleted this run for exceeding the 30-day PII retention window. */
   purged: number;
+  /** Рядків, у яких email стерто за 30-денною стелею (priv-13), хоч vendor-cleanup не завершився. */
+  emailsRedacted: number;
   /** `true` when the loop stopped early because `deadlineMs` elapsed — some claimed rows were left untouched for the next invocation. */
   deadlineExceeded: boolean;
 }
@@ -153,6 +155,9 @@ const UNCONFIGURED_RETRY_HOURS = 1;
  * keep a bare `(id, service, completed_at)` audit row around indefinitely.
  */
 const COMPLETED_RETENTION_DAYS = 30;
+
+/** priv-13: вік рядка черги, після якого email = NULL (див. `redactStaleEmails`). */
+const EMAIL_RETENTION_DAYS = 30;
 
 async function dispatch(
   row: GdprCleanupQueueRow,
@@ -232,6 +237,52 @@ async function purgeExpiredCompletedRows(
   } catch (err) {
     logger.warn({
       msg: "gdpr_cleanup_purge_failed",
+      err: err instanceof Error ? err.message : String(err),
+    });
+    return 0;
+  }
+}
+
+/**
+ * priv-13 (рішення власника 2026-10-23): стеля на зберігання email. Через
+ * `EMAIL_RETENTION_DAYS` від `created_at` email стирається в УСІХ рядках, що
+ * його ще тримають, - і в pending (токен вендора так і не налаштовано), і в
+ * exhausted (`next_attempt_at = 'infinity'`). Рядок лишається (аудит «чистку
+ * заплановано»), але без PII. Збої глушимо, як у purge.
+ *
+ * `resend` без email виконати вже неможливо (контакт видаляється саме за
+ * email), тож такий незавершений рядок закриваємо `completed_at = NOW()`
+ * (рішення власника 2026-10-23) і пишемо warn: контакт у Resend міг лишитись.
+ * Без цього рядок перепланувався б щогодини назавжди. Далі його, як і будь-який
+ * completed, прибере `purgeExpiredCompletedRows`.
+ */
+async function redactStaleEmails(pool: Pick<Pool, "query">): Promise<number> {
+  try {
+    const result = await pool.query(
+      `UPDATE gdpr_cleanup_queue
+          SET email = NULL,
+              completed_at = CASE
+                WHEN service = 'resend' AND completed_at IS NULL THEN NOW()
+                ELSE completed_at
+              END
+        WHERE email IS NOT NULL
+          AND created_at < NOW() - ($1 || ' days')::interval
+    RETURNING service, (service = 'resend' AND completed_at = NOW()) AS closed`,
+      [String(EMAIL_RETENTION_DAYS)],
+    );
+    const closedResend = (
+      result.rows as Array<{ closed?: boolean }> | undefined
+    )?.filter((row) => row.closed === true).length;
+    if (closedResend) {
+      logger.warn({
+        msg: "gdpr_cleanup_resend_closed_without_email",
+        count: closedResend,
+      });
+    }
+    return result.rowCount ?? 0;
+  } catch (err) {
+    logger.warn({
+      msg: "gdpr_cleanup_email_redact_failed",
       err: err instanceof Error ? err.message : String(err),
     });
     return 0;
@@ -386,6 +437,7 @@ export async function processGdprCleanupQueueBatch(
   }
 
   const purged = await purgeExpiredCompletedRows(pool);
+  const emailsRedacted = await redactStaleEmails(pool);
 
   return {
     processed,
@@ -394,6 +446,7 @@ export async function processGdprCleanupQueueBatch(
     failed,
     exhausted,
     purged,
+    emailsRedacted,
     deadlineExceeded,
   };
 }

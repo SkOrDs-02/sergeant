@@ -86,6 +86,36 @@ describe("wipeSqliteDb — kvvfs row-level scope", () => {
     expect(rows).toEqual(["local-anon", "user-b"]);
   });
 
+  it("drops the signed-out user's outbox and pull cursors, keeping other accounts'", async () => {
+    setSqliteUser("user-a");
+    const client = (await getSqliteDb()).migrationClient();
+    client.exec(
+      `CREATE TABLE IF NOT EXISTS sync_op_outbox (id INTEGER PRIMARY KEY, user_id TEXT NOT NULL);
+       CREATE TABLE IF NOT EXISTS sync_op_cursor (key TEXT PRIMARY KEY, value_int INTEGER NOT NULL);`,
+    );
+    await client.run(`INSERT INTO sync_op_outbox (user_id) VALUES (?), (?)`, [
+      "user-a",
+      "user-b",
+    ]);
+    await client.run(
+      `INSERT INTO sync_op_cursor (key, value_int) VALUES (?, 5000), (?, 1), (?, 7000)`,
+      ["pull_since:user-a", "backfill_done:t:v1:user-a", "pull_since:user-b"],
+    );
+
+    await wipeSqliteDb();
+    setSqliteUser(null);
+
+    const reopened = (await getSqliteDb()).migrationClient();
+    expect(
+      await reopened.all<{ user_id: string }>(
+        `SELECT user_id FROM sync_op_outbox`,
+      ),
+    ).toEqual([{ user_id: "user-b" }]);
+    expect(
+      await reopened.all<{ key: string }>(`SELECT key FROM sync_op_cursor`),
+    ).toEqual([{ key: "pull_since:user-b" }]);
+  });
+
   it("does not touch the shared store when there is no real userId to scope by (defensive — this call site never fires today)", async () => {
     setSqliteUser("local-anon");
     const handle = await getSqliteDb();

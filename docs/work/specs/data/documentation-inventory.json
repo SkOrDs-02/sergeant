@@ -1635,6 +1635,20 @@
       "canonical_owner": "docs/governance/adr/0104-goal-period-extended-before-first-step.md"
     },
     {
+      "old_path": "docs/governance/adr/0105-sync-pull-byte-budget-and-applied-retention.md",
+      "new_path": "docs/governance/adr/0105-sync-pull-byte-budget-and-applied-retention.md",
+      "action": "keep",
+      "genre": "adr",
+      "canonical_owner": "docs/governance/adr/0105-sync-pull-byte-budget-and-applied-retention.md"
+    },
+    {
+      "old_path": "docs/governance/adr/0106-sync-state-hash-reconcile.md",
+      "new_path": "docs/governance/adr/0106-sync-state-hash-reconcile.md",
+      "action": "keep",
+      "genre": "adr",
+      "canonical_owner": "docs/governance/adr/0106-sync-state-hash-reconcile.md"
+    },
+    {
       "old_path": "docs/governance/adr/README.md",
       "new_path": "docs/governance/adr/README.md",
       "action": "keep",
@@ -3308,6 +3322,13 @@
       "canonical_owner": "docs/today.md"
     },
     {
+      "old_path": "docs/work/owner-decisions.md",
+      "new_path": "docs/work/owner-decisions.md",
+      "action": "keep",
+      "genre": "reference",
+      "canonical_owner": "docs/work/owner-decisions.md"
+    },
+    {
       "old_path": "docs/work/product-readiness-2026-07-18.md",
       "new_path": "docs/work/product-readiness-2026-07-18.md",
       "action": "keep",
@@ -3439,6 +3460,13 @@
       "action": "keep",
       "genre": "reference",
       "canonical_owner": "docs/work/research/competitor-matrix.md"
+    },
+    {
+      "old_path": "docs/work/roadmap.md",
+      "new_path": "docs/work/roadmap.md",
+      "action": "keep",
+      "genre": "reference",
+      "canonical_owner": "docs/work/roadmap.md"
     },
     {
       "old_path": "docs/work/specs/access-tiers.md",
@@ -3910,6 +3938,13 @@
       "canonical_owner": "docs/work/specs/audits/2026-10-18-design-v3-1-inventory.md"
     },
     {
+      "old_path": "docs/work/specs/audits/2026-10-23-redesign-v3-2-review.md",
+      "new_path": "docs/work/specs/audits/2026-10-23-redesign-v3-2-review.md",
+      "action": "keep",
+      "genre": "active-work",
+      "canonical_owner": "docs/work/specs/audits/2026-10-23-redesign-v3-2-review.md"
+    },
+    {
       "old_path": "docs/work/specs/audits/ai-abuse-2026-08-05.md",
       "new_path": "docs/work/specs/audits/ai-abuse-2026-08-05.md",
       "action": "keep",
@@ -4174,27 +4209,6 @@
       "action": "keep",
       "genre": "active-work",
       "canonical_owner": "docs/work/specs/beta-forms.md"
-    },
-    {
-      "old_path": "docs/work/specs/beta-launch/beta-browser-run.md",
-      "new_path": "docs/work/specs/beta-launch/beta-browser-run.md",
-      "action": "keep",
-      "genre": "active-work",
-      "canonical_owner": "docs/work/specs/beta-launch/beta-browser-run.md"
-    },
-    {
-      "old_path": "docs/work/specs/beta-launch/README.md",
-      "new_path": "docs/work/specs/beta-launch/README.md",
-      "action": "keep",
-      "genre": "active-work",
-      "canonical_owner": "docs/work/specs/beta-launch/README.md"
-    },
-    {
-      "old_path": "docs/work/specs/beta-launch/run-beta-wave.md",
-      "new_path": "docs/work/specs/beta-launch/run-beta-wave.md",
-      "action": "keep",
-      "genre": "active-work",
-      "canonical_owner": "docs/work/specs/beta-launch/run-beta-wave.md"
     },
     {
       "old_path": "docs/work/specs/beta-security-readiness.md",
@@ -4680,6 +4694,13 @@
       "canonical_owner": "docs/work/specs/planning/product-knowledge-backlog.md"
     },
     {
+      "old_path": "docs/work/specs/planning/raw-input-to-primitive.md",
+      "new_path": "docs/work/specs/planning/raw-input-to-primitive.md",
+      "action": "keep",
+      "genre": "active-work",
+      "canonical_owner": "docs/work/specs/planning/raw-input-to-primitive.md"
+    },
+    {
       "old_path": "docs/work/specs/planning/README.md",
       "new_path": "docs/work/specs/planning/README.md",
       "action": "keep",
@@ -4699,6 +4720,13 @@
       "action": "keep",
       "genre": "active-work",
       "canonical_owner": "docs/work/specs/planning/redesign-v3-1.md"
+    },
+    {
+      "old_path": "docs/work/specs/planning/redesign-v3-2.md",
+      "new_path": "docs/work/specs/planning/redesign-v3-2.md",
+      "action": "keep",
+      "genre": "active-work",
+      "canonical_owner": "docs/work/specs/planning/redesign-v3-2.md"
     },
     {
       "old_path": "docs/work/specs/planning/redesign-v3-progress.md",

@@ -124,7 +124,22 @@ export function getSubscriptionDueDate(
   );
   const midpoint = (prevDue.getTime() + due.getTime()) / 2;
   if (lastChargeSec * 1000 < midpoint) return due;
-  return getNextBillingDate(billingDay, new Date(due.getTime() + 86400000));
+  // Наступний день календарно, полудень UTC: +24 год від опівночі пристрою
+  // у день переходу з літнього часу чи на пристрої східніше Києва лишались
+  // у тому самому київському дні, і цикл не перемикався.
+  return getNextBillingDate(
+    billingDay,
+    new Date(
+      Date.UTC(
+        /* eslint-disable sergeant-design/prefer-kyiv-time -- `due` несе київський день у локальних полях (getNextBillingDate будує new Date(y, m, d)) */
+        due.getFullYear(),
+        due.getMonth(),
+        due.getDate() + 1,
+        /* eslint-enable sergeant-design/prefer-kyiv-time */
+        12,
+      ),
+    ),
+  );
 }
 
 export function formatShortDate(d: Date): string {

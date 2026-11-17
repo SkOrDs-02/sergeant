@@ -7,8 +7,10 @@ import { Button } from "@shared/components/ui/Button";
 import { Card } from "@shared/components/ui/Card";
 import { ContentGroup } from "@shared/components/ui/ContentGroup";
 import { Icon } from "@shared/components/ui/Icon";
+import { MorphChevron } from "@shared/components/ui/MorphChevron";
 import { useLocalStorageState } from "@shared/hooks";
 import { cn } from "@shared/lib/ui/cn";
+import { fieldFocus } from "@shared/components/ui/Input";
 import { searchFieldProps } from "@shared/lib/ui/searchFieldProps";
 import { messages } from "@shared/i18n/uk";
 import { pluralUa } from "@sergeant/shared";
@@ -183,25 +185,23 @@ export function AssistantCataloguePage({
             value={query}
             onChange={(e) => setQuery(e.target.value)}
             placeholder="Пошук"
-            className="w-full bg-panel border border-line rounded-lg px-3 py-3 text-style-body text-text placeholder:text-subtle focus:outline-none focus-visible:border-brand-500/50 focus-visible:ring-2 focus-visible:ring-focus/45 shadow-card"
+            className={cn(
+              "w-full h-12 bg-panel border border-control rounded-lg px-3 text-style-body text-text placeholder:text-subtle outline-none",
+              fieldFocus(false),
+            )}
             aria-label="Пошук можливостей"
           />
         </div>
 
         {!isSearching && groups.length > 0 && (
           <div className="flex justify-end -mt-1">
-            <button
-              type="button"
+            <Button
+              variant="text"
               onClick={toggleAll}
               data-testid="catalogue-toggle-all"
-              className={cn(
-                "inline-flex items-center gap-1.5 text-style-label font-semibold text-muted",
-                "rounded-lg px-2.5 py-1 hover:bg-panel hover:text-text transition-colors",
-                "focus:outline-none focus-visible:ring-2 focus-visible:ring-focus/45",
-              )}
             >
-              {allCollapsed ? "Розгорнути все" : "Згорнути все"}
-            </button>
+              {allCollapsed ? "Показати всі групи" : "Сховати всі групи"}
+            </Button>
           </div>
         )}
 
@@ -289,9 +289,7 @@ function ModuleGroup({
             ])}
           </span>
         </span>
-        <span className="text-style-caption text-muted">
-          {collapsed ? messages.actions.expand : messages.actions.collapse}
-        </span>
+        <MorphChevron open={!collapsed} className="text-subtle" />
       </button>
       {!collapsed && (
         <ul id={listId} className="border-t border-line divide-y divide-line">

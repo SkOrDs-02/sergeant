@@ -8,7 +8,6 @@ import { Button } from "@shared/components/ui/Button";
 import { EmptyState } from "@shared/components/ui/EmptyState";
 import { Skeleton } from "@shared/components/ui/Skeleton";
 import { messages } from "@shared/i18n/uk";
-import { cn } from "@shared/lib/ui/cn";
 import { useDailyLog } from "../hooks/useDailyLog";
 import { useExerciseCatalog } from "../hooks/useExerciseCatalog";
 import { useMeasurements } from "../hooks/useMeasurements";
@@ -31,7 +30,6 @@ import { pluralize } from "../../../core/hub/useHubDashboardState";
 import { chartStatusSeries } from "@shared/charts";
 import { Card } from "@shared/components/ui/Card";
 import { SectionHeading } from "@shared/components/ui/SectionHeading";
-import { Stat } from "@shared/components/ui/Stat";
 import { PrBoard } from "./Progress/PrBoard";
 import { MuscleVolumeBlock } from "../components/MuscleWeekMatrix";
 import { buildMuscleWeekMatrix } from "../lib/muscleWeekMatrix";
@@ -335,9 +333,8 @@ export function Progress({ onNavigate }: ProgressProps) {
             <button
               type="button"
               onClick={() => onNavigate("measurements")}
-              className="focus-ring touch-target w-full flex items-center gap-3 rounded-lg border border-line bg-panelHi hover:bg-panel transition-[background-color,transform] px-4 py-3 text-left"
+              className="focus-ring touch-target w-full flex items-center gap-3 rounded-panel bg-panel hover:bg-panelHi motion-safe:transition-colors px-5 py-3 text-left"
             >
-              <div className="shrink-0 w-9 h-9 rounded-lg bg-panelHi text-text flex items-center justify-center"></div>
               <div className="flex-1 min-w-0">
                 <div className="text-style-label text-text">
                   {messages.fizruk.progress.measurementsTitle}
@@ -404,68 +401,39 @@ export function Progress({ onNavigate }: ProgressProps) {
                   </Card>
                 )}
 
-                {/* Weight + fat cards */}
-                {(() => {
-                  const weightDelta = weightStat.delta;
-                  const fatDelta = meas.delta("bodyFatPct");
-                  return (
-                    <div className="grid grid-cols-2 gap-3">
-                      <Card>
-                        <Stat
-                          label={messages.fizruk.progress.weight}
-                          value={
-                            weightStat.latest != null
-                              ? `${fmtLoose(weightStat.latest)} ${messages.fizruk.kgUnit}`
-                              : "—"
-                          }
-                          sublabel={
-                            weightDelta == null ? (
-                              messages.fizruk.progress.noComparison
-                            ) : (
-                              // Без оцінки напрямку: цілі ваги за замовчуванням
-                              // модуль не має (набір може бути метою), і
-                              // «Тіло» вже показує ту саму дельту нейтрально
-                              // (`CollapsibleTrendCard`, deltaDirection="neutral").
-                              <span className="font-semibold text-text">
-                                {weightDelta > 0 ? "+" : ""}
-                                {fmt(weightDelta, 1)} {messages.fizruk.kgUnit}
-                                <span className="font-normal text-subtle">
-                                  {" "}
-                                  {messages.fizruk.progress.deltaFromPrevious}
-                                </span>
-                              </span>
-                            )
-                          }
-                        />
-                      </Card>
-                      <Card>
-                        <Stat
-                          label={messages.fizruk.progress.bodyFat}
-                          value={
-                            meas.latest?.["bodyFatPct"] != null
-                              ? `${fmtLoose(Number(meas.latest["bodyFatPct"]))}%`
-                              : "—"
-                          }
-                          sublabel={
-                            fatDelta == null ? (
-                              "—"
-                            ) : (
-                              <span
-                                className={cn(
-                                  "font-semibold",
-                                  fatDelta > 0 ? "text-text" : "text-text",
-                                )}
-                              >
-                                {fatDelta > 0 ? "+" : ""}
-                                {fmt(fatDelta, 1)}%
-                              </span>
-                            )
-                          }
-                        />
-                      </Card>
-                    </div>
-                  );
-                })()}
+                {/* Вага і % жиру: два рядки на hairline в одній панелі
+                    (redesign v3.2, позиція 09), не стат-тайли 2×1. Тренд
+                    дельти без оцінки напрямку: цілі ваги модуль не має, і
+                    «Тіло» показує ту саму дельту нейтрально. */}
+                <Card padding="none" className="divide-y divide-line px-5">
+                  <BodyStatRow
+                    label={messages.fizruk.progress.weight}
+                    value={
+                      weightStat.latest != null
+                        ? `${fmtLoose(weightStat.latest)} ${messages.fizruk.kgUnit}`
+                        : "—"
+                    }
+                    trend={
+                      weightStat.delta == null
+                        ? null
+                        : `${weightStat.delta > 0 ? "+" : ""}${fmt(weightStat.delta, 1)} ${messages.fizruk.kgUnit} ${messages.fizruk.progress.deltaFromPrevious}`
+                    }
+                  />
+                  <BodyStatRow
+                    label={messages.fizruk.progress.bodyFat}
+                    value={
+                      meas.latest?.["bodyFatPct"] != null
+                        ? `${fmtLoose(Number(meas.latest["bodyFatPct"]))}%`
+                        : "—"
+                    }
+                    trend={(() => {
+                      const d = meas.delta("bodyFatPct");
+                      return d == null
+                        ? null
+                        : `${d > 0 ? "+" : ""}${fmt(d, 1)}%`;
+                    })()}
+                  />
+                </Card>
 
                 {/* Weight trend chart */}
                 {weightTrend.filter((d) => d.value != null).length >= 2 && (
@@ -509,22 +477,9 @@ export function Progress({ onNavigate }: ProgressProps) {
 
                 {/* Muscle volume bars */}
                 <Card padding="lg">
-                  <SectionHeading size="xs" className="mb-1" variant="fizruk">
+                  <SectionHeading size="lg" className="mb-3">
                     {messages.fizruk.progress.muscleVolume}
                   </SectionHeading>
-                  {/*
-                    П3 — the bars below plot `loadPoints`, an internal score
-                    (тоннаж ÷ 1000 + сети × 0.15), not kilograms. Without
-                    this line the raw "0.6" read as a broken weight. Full
-                    unit rename (or switching the metric itself to кг×повт,
-                    like the weekly-volume chart above) touches
-                    `components/MuscleWeekMatrix.tsx` + `lib/muscleWeekMatrix.ts`,
-                    both outside this change's file scope — tracked as a
-                    follow-up.
-                  */}
-                  <p className="text-style-body text-subtle mb-3">
-                    {messages.fizruk.progress.muscleVolumeUnitsHint}
-                  </p>
                   {muscleMatrix.rows.length === 0 ? (
                     <EmptyState
                       compact
@@ -550,6 +505,32 @@ export function Progress({ onNavigate }: ProgressProps) {
           </>
         )}
       </div>
+    </div>
+  );
+}
+
+function BodyStatRow({
+  label,
+  value,
+  trend,
+}: {
+  label: string;
+  value: string;
+  trend: string | null;
+}) {
+  return (
+    <div className="flex min-h-[52px] items-center justify-between gap-3 py-2">
+      <span className="text-style-label font-semibold text-text">{label}</span>
+      <span className="text-right">
+        <span className="block text-style-label text-text tabular-nums">
+          {value}
+        </span>
+        {trend && (
+          <span className="block text-style-caption text-subtle tabular-nums">
+            {trend}
+          </span>
+        )}
+      </span>
     </div>
   );
 }

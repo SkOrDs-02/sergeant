@@ -311,7 +311,7 @@ export function MemoryBankSection() {
               };
               return (
                 <div key={cat}>
-                  <div className="text-style-overline text-muted mb-2 flex items-center gap-1.5">
+                  <div className="text-style-label font-semibold text-muted mb-2 flex items-center gap-1.5">
                     {meta.label}
                   </div>
                   <div className="max-h-80 space-y-1 overflow-y-auto pr-1">

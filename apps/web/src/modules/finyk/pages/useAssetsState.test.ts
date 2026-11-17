@@ -178,20 +178,36 @@ describe("useAssetsState", () => {
     expect(result.current.showAssetForm).toBe(true);
   });
 
-  it("openReceivableForm opens assets section, shows the receivable form and resets edit state", () => {
+  it("switchAssetKind swaps the asset form for «Мені винні» and back, carrying name and amount", () => {
     const { result } = renderHook(() =>
       useAssetsState({
         mono: makeMono(),
         storage: makeStorage(),
       }),
     );
+    act(() => result.current.openAssetForm());
+    act(() =>
+      result.current.setNewAsset((a) => ({
+        ...a,
+        name: "Олег",
+        amount: "500",
+      })),
+    );
     act(() => result.current.setEditingRecvId("recv-1"));
-    act(() => result.current.openReceivableForm());
+    act(() => result.current.switchAssetKind("receivable"));
 
-    expect(result.current.open.assets).toBe(true);
+    expect(result.current.showAssetForm).toBe(false);
     expect(result.current.showRecvForm).toBe(true);
     expect(result.current.editingRecvId).toBeNull();
-    expect(result.current.newRecv.name).toBe("");
+    expect(result.current.newRecv.name).toBe("Олег");
+    expect(result.current.newRecv.amount).toBe("500");
+
+    act(() => result.current.switchAssetKind("asset"));
+
+    expect(result.current.showRecvForm).toBe(false);
+    expect(result.current.showAssetForm).toBe(true);
+    expect(result.current.newAsset.name).toBe("Олег");
+    expect(result.current.newAsset.amount).toBe("500");
   });
 
   it("openDebtForm opens liabilities section and shows form", () => {

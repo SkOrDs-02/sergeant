@@ -402,6 +402,9 @@ export async function runSyncEnginePushOnce(
   let pushed = 0;
   let retried = 0;
   let rejected = 0;
+  // Старший рядок цього тіку лишився в черзі: `fk_violation` молодшого
+  // означає «батько ще не доїхав», а не «батька немає».
+  let olderRowHeldBack = false;
   const acknowledgedIds: number[] = [];
   while (pending.length > 0) {
     const segment = pending.shift()!;
@@ -502,6 +505,14 @@ export async function runSyncEnginePushOnce(
           typeof result.reason === "string" && result.reason.length > 0
             ? result.reason
             : "unspecified";
+        if (reason === "fk_violation" && olderRowHeldBack) {
+          await deps.markRetry(
+            row.id,
+            callPlanRetry(deps, row.attempts, now, "server_retry:fk_violation"),
+          );
+          retried += 1;
+          continue;
+        }
         await deps.markRejected(row.id, reason, {
           table: row.table,
           op: row.op,
@@ -509,14 +520,22 @@ export async function runSyncEnginePushOnce(
         rejected += 1;
       } else if (result?.status === "retry") {
         // data-18: транзієнтна помилка БД на сервері, оп не в журналі.
+        // data-48: `unknown_table` - сервер ще не знає таблиці (фронт
+        // викотився раніше за бекенд). Це не збій опа: спроби не палимо
+        // (інакше за ~10 хв рядок піде в dead_letter), чекаємо 5 хв.
+        const lastError = `server_retry:${result.reason ?? "unspecified"}`;
+        if (result.reason !== "unknown_table") olderRowHeldBack = true;
         await deps.markRetry(
           row.id,
-          callPlanRetry(
-            deps,
-            row.attempts,
-            now,
-            `server_retry:${result.reason ?? "unspecified"}`,
-          ),
+          result.reason === "unknown_table"
+            ? planThrottledRetry(
+                deps,
+                row.attempts,
+                now,
+                lastError,
+                MAX_THROTTLE_DELAY_MS,
+              )
+            : callPlanRetry(deps, row.attempts, now, lastError),
         );
         retried += 1;
       } else {
@@ -524,6 +543,7 @@ export async function runSyncEnginePushOnce(
           result === undefined
             ? "missing_result"
             : `unknown_status:${(result as { status: string }).status}`;
+        olderRowHeldBack = true;
         await deps.markRetry(
           row.id,
           callPlanRetry(deps, row.attempts, now, lastError),

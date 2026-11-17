@@ -67,6 +67,8 @@ export interface ImportScreenshotVisionInput {
   base64: string;
   mediaType: string;
   userId?: string | undefined;
+  /** Обрив зʼєднання клієнтом скасовує vision-виклик. */
+  signal?: AbortSignal | undefined;
 }
 
 /**
@@ -137,6 +139,7 @@ export async function callImportScreenshotVision(
     // vision-клас). Переюзаємо наявний per-request W3C trace id.
     traceId: als.getStore()?.traceId ?? undefined,
     ...(input.userId ? { userId: input.userId } : {}),
+    signal: input.signal,
   });
   if (!response || !response.ok) {
     throw makeAiProviderError({

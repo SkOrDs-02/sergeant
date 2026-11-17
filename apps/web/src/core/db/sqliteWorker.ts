@@ -166,6 +166,7 @@ async function handle(
         pool satisfies PrunePool,
         request.keep,
         request.force,
+        request.sweep,
       );
       return { id, ok: true, kind: "prune", result };
     }

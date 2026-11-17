@@ -15,7 +15,6 @@ export interface OverviewTextRowsProps {
    */
   showMonthForecast: boolean;
   projectedSpend: number;
-  projectedSpendCapped?: boolean;
   hasExpensePlan: boolean;
   recurringOutThisMonth: number;
   recurringInThisMonth: number;
@@ -30,7 +29,6 @@ const OverviewTextRowsImpl = function OverviewTextRows({
   income,
   showMonthForecast,
   projectedSpend,
-  projectedSpendCapped = false,
   hasExpensePlan,
   recurringOutThisMonth,
   recurringInThisMonth,
@@ -84,11 +82,6 @@ const OverviewTextRowsImpl = function OverviewTextRows({
             "••••"
           )}
         </p>
-        {showForecastNumber && projectedSpendCapped && showBalance && (
-          <p className="text-style-caption text-muted mt-0.5 leading-snug">
-            {messages.finyk.monthRow.forecastCapped}
-          </p>
-        )}
         {(recurringOutThisMonth > 0 || recurringInThisMonth > 0) &&
           showBalance && (
             <p className="text-style-caption text-muted mt-0.5 leading-relaxed">

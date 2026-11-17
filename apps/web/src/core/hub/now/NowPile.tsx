@@ -2,7 +2,8 @@
  * Купа «Зараз» — перша з двох куп осі дії (A1, спека `hub-action-axis.md`),
  * у формі мови H (redesign v3): кожен пункт це рядок 56 px на hairline —
  * чекбокс 22 px, назва 16 / 600, підзаголовок 14 другим сірим, праворуч
- * дрібна дія 36 px із назвою-результатом. Без смужки, чипа «Сержант» і «×».
+ * тиха дія (`Button variant="text"`, redesign v3.1) із назвою-результатом.
+ * Без смужки, чипа «Сержант» і «×».
  *
  * Cap за рішенням власника 2026-09-17: **3 розгорнуто + «ще N»**; рядок із
  * `severity: "danger"` завжди пробивається в трійку. Чекбокс закриває пункт
@@ -16,7 +17,10 @@
  */
 import { useCallback, useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
+import { Button } from "@shared/components/ui/Button";
+import { MorphChevron } from "@shared/components/ui/MorphChevron";
 import { SectionHeading } from "@shared/components/ui/SectionHeading";
+import { useAnnounce } from "@shared/components/ui/ScreenReaderAnnouncer";
 import { emitHubBus } from "@shared/lib/modules/hubBus";
 import {
   openHubModuleWithAction,
@@ -55,7 +59,7 @@ export function actionLabel(item: NowItem): string {
     return (
       getModulePrimaryAction(a.module)?.label ??
       MODULE_OPEN_CTA[a.module] ??
-      coreMessages.hub.nowPile.doIt
+      coreMessages.hub.nowPile.open
     );
   }
   if (a.kind === "open_module") {
@@ -152,16 +156,16 @@ function NowRow({ item, onRun, onCheck }: NowRowProps) {
           </span>
         )}
       </span>
-      <button
-        type="button"
+      <Button
+        variant="text"
         onClick={() => onRun(item)}
         // Кілька рядків можуть мати однакову дію («Відкрити Фінік»), і в
         // списку кнопок скрінрідера їх не можна було б розрізнити.
         aria-label={`${label}: ${item.title}`}
-        className="h-9 max-w-[45%] shrink-0 truncate rounded-[7px] border border-border-strong px-3 text-style-label font-semibold text-text hover:bg-panel focus-ring touch-target"
+        className="-mr-2 max-w-[45%] shrink-0 text-right"
       >
         {label}
-      </button>
+      </Button>
     </li>
   );
 }
@@ -178,6 +182,7 @@ export interface NowPileProps {
 export function NowPile({ now, onOpenTarget, checklist }: NowPileProps) {
   const { items, check } = now;
   const runAction = useRunAction(onOpenTarget);
+  const { announce } = useAnnounce();
   const [tailOpen, setTailOpen] = useState(false);
   const total = items.length + (checklist?.steps.length ?? 0);
   usePublishHubDayCount("now", total);
@@ -209,12 +214,32 @@ export function NowPile({ now, onOpenTarget, checklist }: NowPileProps) {
     [runAction, visible],
   );
 
+  // Рядок зникає разом зі сфокусованим чекбоксом, тож фокус переносимо на
+  // заголовок купи до розмонтування, інакше він падає на <body>.
+  const onCheck = useCallback(
+    (item: NowItem) => {
+      document
+        .getElementById("now-pile-heading")
+        ?.focus({ preventScroll: true });
+      check(item);
+      announce(coreMessages.hub.nowPile.checked);
+    },
+    [check, announce],
+  );
+
   const hasChecklist = Boolean(checklist && checklist.steps.length > 0);
   const rows = tailOpen ? [...visible, ...tail] : visible;
 
   return (
     <section aria-labelledby="now-pile-heading">
-      <SectionHeading as="h2" size="lg" id="now-pile-heading" meta={total}>
+      <SectionHeading
+        as="h2"
+        size="lg"
+        id="now-pile-heading"
+        tabIndex={-1}
+        className="focus:outline-none"
+        meta={total}
+      >
         {coreMessages.hub.nowPile.heading}
       </SectionHeading>
 
@@ -226,24 +251,24 @@ export function NowPile({ now, onOpenTarget, checklist }: NowPileProps) {
         <ul className="mt-2 divide-y divide-line border-y border-line">
           {hasChecklist && checklist && <ChecklistNowRows {...checklist} />}
           {rows.map((item) => (
-            <NowRow key={item.id} item={item} onRun={run} onCheck={check} />
+            <NowRow key={item.id} item={item} onRun={run} onCheck={onCheck} />
           ))}
         </ul>
       )}
 
       {/* Один перемикач на обидва стани: той самий DOM-вузол, тож фокус
-          клавіатури не губиться при перемиканні. */}
+          клавіатури не губиться при перемиканні. Стан несуть шеврон і
+          `aria-expanded`, назва «ще N» лишається (redesign v3.1). */}
       {tail.length > 0 && (
-        <button
-          type="button"
+        <Button
+          variant="text"
           onClick={() => setTailOpen((open) => !open)}
           aria-expanded={tailOpen}
-          className="mt-1 min-h-11 text-style-label font-semibold text-muted hover:text-text focus-ring"
+          className="-ml-2 mt-1"
         >
-          {tailOpen
-            ? coreMessages.actions.collapse
-            : `${coreMessages.hub.nowPile.more} ${tail.length}`}
-        </button>
+          {`${coreMessages.hub.nowPile.more} ${tail.length}`}
+          <MorphChevron open={tailOpen} className="text-subtle" />
+        </Button>
       )}
     </section>
   );

@@ -47,7 +47,6 @@ describe("AppLock", () => {
   it("shows the unlock screen when locked", () => {
     renderLock({ state: "locked" });
     expect(screen.getByText("Введи PIN")).toBeInTheDocument();
-    expect(screen.getByText("Введи PIN, щоб розблокувати")).toBeInTheDocument();
   });
 
   it("auto-submits the unlock when 6 digits are entered", async () => {
@@ -221,6 +220,25 @@ describe("AppLock", () => {
     fireEvent.click(screen.getByRole("button", { name: "Підтвердити" }));
     await waitFor(() => expect(onSavePin).toHaveBeenCalledWith("1234"));
     await waitFor(() => expect(onSetupDone).toHaveBeenCalled());
+  });
+
+  it("keeps setup open with an error when saving the PIN fails", async () => {
+    const onSavePin = vi.fn(async () => {
+      throw new Error("IDB unavailable");
+    });
+    const onSetupDone = vi.fn(noop);
+    renderLock({ state: "setup", onSavePin, onSetupDone });
+    "1234".split("").forEach(pressDigit);
+    fireEvent.click(screen.getByRole("button", { name: "Далі" }));
+    await screen.findByText("Введи PIN ще раз для підтвердження");
+    "1234".split("").forEach(pressDigit);
+    fireEvent.click(screen.getByRole("button", { name: "Підтвердити" }));
+    await waitFor(() =>
+      expect(screen.getByRole("alert")).toHaveTextContent(
+        "Не вдалося зберегти PIN",
+      ),
+    );
+    expect(onSetupDone).not.toHaveBeenCalled();
   });
 
   it("shows a mismatch error when the confirm PIN differs", async () => {

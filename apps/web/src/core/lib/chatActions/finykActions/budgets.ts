@@ -9,6 +9,7 @@ import {
   unknownCategoryMessage,
 } from "./entityLookup";
 import { validatePositiveAmount } from "./amountValidation";
+import { sumGoalContributions } from "@sergeant/finyk-domain/domain/budget";
 import {
   formatNumberUk,
   generatePrefixedId,
@@ -27,10 +28,10 @@ import type {
 } from "../types";
 
 // Ціль накопичення більше не має редагованого числа «Відкладено» —
-// AI-екшн `update_budget(scope: "goal")` й далі приймає `saved_amount` як
-// абсолютну суму (той самий контракт, що й раніше), але тепер записує її
-// як єдиний запис логу поповнень замість прямого поля (goal-progress-
-// auto-sync). Порожній `saved_amount` (0) → порожній лог, як і раніше.
+// AI-екшн `update_budget(scope: "goal")` приймає `saved_amount` як абсолютну
+// суму «вже накопичено» (контракт тулу не змінено). Для НОВОЇ цілі це один
+// запис логу; для наявної лог ДОПИСУЄТЬСЯ різницею (logic-03, рішення
+// власника 2026-10-23), як ручний внесок в UI, а не замінюється.
 function buildAiContribution(saved: number): GoalContribution[] {
   if (saved <= 0) return [];
   return [
@@ -185,19 +186,37 @@ export function updateBudget(action: UpdateBudgetAction): ChatActionResult {
     const savedProvided =
       input.saved_amount != null && Number.isFinite(Number(input.saved_amount));
     const saved = savedProvided ? Number(input.saved_amount) : 0;
+    let savedTotal = saved;
     const idx = budgets.findIndex(
       (b) =>
         b.type === "goal" &&
         (b as BudgetGoal).name.trim().toLowerCase() === goalName.toLowerCase(),
     );
     if (idx >= 0) {
+      // Як UI-внесок: легасі `savedAmount` спершу стає першим записом логу
+      // (так само, як `migrateGoalSavedAmountToContribution` у домені).
       const g = budgets[idx] as BudgetGoal;
+      const legacy = g.savedAmount ?? 0;
+      if (!g.contributions?.length && legacy > 0) {
+        g.contributions = [
+          {
+            id: `mig_${g.id}`,
+            amountUah: legacy,
+            date: toKyivISODate(new Date()),
+            note: "Початковий залишок",
+          },
+        ];
+      }
       g.targetAmount = target;
       g.name = goalName;
-      // Без saved_amount лог поповнень цілі лишається як є (logic-03):
-      // раніше `buildAiContribution(0)` стирав його в []. Семантика
-      // «абсолютна сума при переданому saved_amount» не змінена.
-      if (savedProvided) g.contributions = buildAiContribution(saved);
+      const current = sumGoalContributions(g.contributions);
+      if (savedProvided && saved > current) {
+        g.contributions = [
+          ...(g.contributions ?? []),
+          ...buildAiContribution(saved - current),
+        ];
+      }
+      savedTotal = sumGoalContributions(g.contributions);
     } else {
       budgets.push({
         id: generatePrefixedId("b"),
@@ -212,7 +231,9 @@ export function updateBudget(action: UpdateBudgetAction): ChatActionResult {
     const result =
       idx >= 0 && !savedProvided
         ? `Ціль "${goalName}" оновлено: ціль ${formatNumberUk(target)}\u202F₴, накопичене не змінено`
-        : `Ціль "${goalName}" оновлено: ${formatNumberUk(saved)}/${formatNumberUk(target)}\u202F₴`;
+        : idx >= 0 && saved < savedTotal
+          ? `Ціль "${goalName}" оновлено: ціль ${formatNumberUk(target)}\u202F₴. Накопичено ${formatNumberUk(savedTotal)}\u202F₴, це більше за вказані ${formatNumberUk(saved)}\u202F₴: записи історії не видаляв, прибрати зайве можна у Фініку`
+          : `Ціль "${goalName}" оновлено: ${formatNumberUk(savedTotal)}/${formatNumberUk(target)}\u202F₴`;
     return {
       result,
       undo: () => void finykChatWrite("finyk_budgets", prevBudgets),

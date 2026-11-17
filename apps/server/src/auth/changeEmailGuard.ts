@@ -1,4 +1,5 @@
 import { APIError } from "better-auth/api";
+import { Buffer } from "node:buffer";
 
 import { queueAuthTransactionalEmail } from "../email/authTransactionalMail.js";
 import { emailChangedNoticeMail } from "./verificationMail.js";
@@ -17,7 +18,16 @@ import { emailChangedNoticeMail } from "./verificationMail.js";
  * сесія ставала постійним захопленням: атакер міняє email на свій, просить
  * скидання пароля, а `revokeSessionsOnPasswordReset` вибиває власника.
  *
- * Рішення власника (a): свіжа сесія + сповіщення на стару адресу.
+ * ОНОВЛЕННЯ 2026-10-23 (рішення власника): `updateEmailWithoutVerification`
+ * вимкнено, тож `/change-email` більше НЕ пише адресу одразу: на нову адресу
+ * летить лист-верифікація, і зміна стається лише після кліку (`/verify-email`,
+ * `requestType: "change-email-verification"`). Пароль (або свіжу сесію для
+ * OAuth-only) і ліміт 3 зміни на добу тримає `http/changeEmailReauth.ts`.
+ * Два хуки нижче лишаються запобіжником на випадок, якщо прапорець колись
+ * повернуть, а сповіщення старої адреси переїхало на `/verify-email`
+ * (`notifyOldEmailAfterVerifyEmailChange`).
+ *
+ * Рішення власника (a), 2026-10-20: свіжа сесія + сповіщення на стару адресу.
  *   1. `guardChangeEmailUserUpdate`: сесія старша за
  *      `CHANGE_EMAIL_FRESH_MAX_AGE_MS` → `403 SESSION_NOT_FRESH` ДО запису в
  *      БД. Код і текст ті самі, що в нативного `freshSessionMiddleware` Better
@@ -110,6 +120,55 @@ export function notifyOldEmailAfterUserUpdate(
   const session = unverifiedChangeEmailSession(ctx);
   const oldEmail = session?.user?.email;
   if (!oldEmail || typeof updated?.email !== "string") return;
+  if (updated.email.toLowerCase() === oldEmail.toLowerCase()) return;
+  queueAuthTransactionalEmail({
+    kind: "email_change_notice",
+    to: oldEmail,
+    ...emailChangedNoticeMail(updated.email),
+  });
+}
+
+/**
+ * Payload токена `/verify-email` без перевірки підпису: хук виконується
+ * всередині ендпоінта, який уже звірив підпис (`jwtVerify`) і лише ПІСЛЯ цього
+ * пише `user`. Нам потрібні тільки `email` (стара адреса) і `requestType`.
+ */
+function verifyEmailTokenPayload(
+  ctx: { query?: { token?: unknown } } | null,
+): { email?: unknown; updateTo?: unknown; requestType?: unknown } | null {
+  const token = ctx?.query?.token;
+  if (typeof token !== "string") return null;
+  const part = token.split(".")[1];
+  if (!part) return null;
+  try {
+    const json: unknown = JSON.parse(
+      Buffer.from(part, "base64url").toString("utf8"),
+    );
+    return json && typeof json === "object"
+      ? (json as Record<string, unknown>)
+      : null;
+  } catch {
+    return null;
+  }
+}
+
+/**
+ * `databaseHooks.user.update.after` для `/verify-email`: адресу справді
+ * перепривʼязано за листом (`change-email-verification`) → на СТАРУ адресу
+ * летить те саме сповіщення, що й раніше в гілці `/change-email`. Без цього
+ * власник, чий ящик ніколи не був підтверджений, не дізнався б про зміну.
+ */
+export function notifyOldEmailAfterVerifyEmailChange(
+  updated: { email?: unknown } | null,
+  ctx: { path?: string; query?: { token?: unknown } } | null,
+): void {
+  if (ctx?.path !== "/verify-email") return;
+  const payload = verifyEmailTokenPayload(ctx);
+  if (payload?.requestType !== "change-email-verification") return;
+  const oldEmail = payload.email;
+  if (typeof oldEmail !== "string" || typeof updated?.email !== "string") {
+    return;
+  }
   if (updated.email.toLowerCase() === oldEmail.toLowerCase()) return;
   queueAuthTransactionalEmail({
     kind: "email_change_notice",

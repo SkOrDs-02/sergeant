@@ -60,10 +60,13 @@ describe("HubHeader", () => {
 
   afterEach(() => cleanup());
 
-  it("мова H: H1 головної - сьогоднішня дата, без привітання", () => {
+  it("мова H: H1 головної - число й місяць, день тижня в підзаголовку, без привітання", () => {
     render(<HubHeader {...baseProps()} />);
     expect(screen.getByTestId("hub-header-title")).toHaveTextContent(
-      "Середа, 24 червня",
+      /^24 червня$/,
+    );
+    expect(screen.getByTestId("hub-header-weekday")).toHaveTextContent(
+      /^Середа$/,
     );
     expect(screen.queryByText(/Доброго|Доброї|Іван/)).toBeNull();
   });

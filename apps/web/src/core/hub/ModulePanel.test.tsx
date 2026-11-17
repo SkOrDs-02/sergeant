@@ -55,3 +55,26 @@ describe("ModulePanel money privacy", () => {
     expect(within(finance).queryByText("••••")).not.toBeInTheDocument();
   });
 });
+
+describe("ModulePanel bars", () => {
+  const routineRow = () =>
+    screen.getByRole("button", { name: "Перейти до модуля Рутина" });
+
+  it("малює бар, коли значення дня не нуль", () => {
+    render(<ModulePanel activeModules={["routine"]} />);
+    expect(
+      within(routineRow()).getByTestId("module-panel-bar"),
+    ).toBeInTheDocument();
+  });
+
+  it("при нулі бару й доріжки немає", () => {
+    vi.mocked(safeReadStringLS).mockReturnValue(
+      JSON.stringify({ todayDone: 0, todayTotal: 4 }),
+    );
+    render(<ModulePanel activeModules={["routine"]} />);
+    expect(
+      within(routineRow()).queryByTestId("module-panel-bar"),
+    ).not.toBeInTheDocument();
+    expect(routineRow().querySelector(".bg-track")).toBeNull();
+  });
+});

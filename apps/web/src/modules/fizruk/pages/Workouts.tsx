@@ -140,6 +140,7 @@ export function Workouts({
   // Каталог у сесії — аркуш із «+ Вправа», а не хвіст сторінки (спека
   // `fizruk-active-session.md`, рішення 4).
   const [catalogSheetOpen, setCatalogSheetOpen] = useState(false);
+  const [readinessOpen, setReadinessOpen] = useState(false);
   const sessionCopy = messages.fizruk.session;
 
   /**
@@ -222,6 +223,7 @@ export function Workouts({
             onOpenStrongImport={() => setStrongImportOpen(true)}
             onRequestStart={() => setQuickStartOpen(true)}
             onLogPast={() => o.setLogPastOpen(true)}
+            onOpenReadiness={() => setReadinessOpen(true)}
             onOpenSchedule={onOpenRoutine}
           />
         ) : null}
@@ -462,23 +464,15 @@ export function Workouts({
         />
 
         {/*
-          Питаємо ОДИН раз на тренування. Ознака «вже питали» — наявність
-          ключів `sleep`/`soreness` у `wellbeing`, навіть зі значенням `null`:
-          пропуск теж пишеться, інакше аркуш вигулькував би після кожного
-          перезавантаження. `null` домен читає як «нема даних», а не як
-          «погано».
+          Аркуш відкриває лише тиха кнопка «Самопочуття» в панелі активного
+          тренування (redesign v3.2, позиція 15): на вхід він більше не
+          вигулькує. Без оцінки підказка ваги стан не враховує і каже про це
+          сама (`WorkoutItemNextSetHint`).
         */}
         <ReadinessSheet
-          open={
-            !!o.activeWorkout &&
-            !o.activeWorkout.endedAt &&
-            !(
-              o.activeWorkout.wellbeing &&
-              ("sleep" in o.activeWorkout.wellbeing ||
-                "soreness" in o.activeWorkout.wellbeing)
-            )
-          }
+          open={readinessOpen && !!o.activeWorkout && !o.activeWorkout.endedAt}
           onSubmit={(answer) => {
+            setReadinessOpen(false);
             const w = o.activeWorkout;
             if (!w) return;
             o.updateWorkout(w.id, {
@@ -486,6 +480,7 @@ export function Workouts({
             });
           }}
           onSkip={() => {
+            setReadinessOpen(false);
             const w = o.activeWorkout;
             if (!w) return;
             o.updateWorkout(w.id, {

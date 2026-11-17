@@ -78,6 +78,34 @@ describe("токени лендінга не розходяться з @sergeant
     );
   });
 
+  it.each([
+    ["finyk-tint", "#e8f3f1"],
+    ["fizruk-tint", "#e6f3f6"],
+    ["routine-tint", "#f7e8ec"],
+    ["nutrition-tint", "#f0f6e2"],
+  ])("тинт модуля %s у секції «Чотири модулі» = %s", (name, hex) => {
+    // Значення з редизайну v3.2: тинт продукту замість повноколірної смуги.
+    expect(tokenHex(name)).toBe(hex);
+  });
+
+  it("текст на тинтах – чорнило продукту, кікери – hue модуля", () => {
+    // `#1c1c1e` – чорнило мови H (DESIGN.md § Палітра), не `ink` лендінга.
+    expect(tokenHex("tint-ink")).toBe("#1c1c1e");
+    // rose-800: `moduleAccentRgb.routine.strong`; rose-400 як текст не тримає.
+    expect(tokenHex("routine-kicker")).toBe(
+      canonical(brandColors.rose[800], "rose.800"),
+    );
+    expect(tokenHex("finyk")).toBe(
+      canonical(brandColors.teal[700], "teal.700"),
+    );
+    expect(tokenHex("fizruk")).toBe(
+      canonical(brandColors.cyan[700], "cyan.700"),
+    );
+    expect(tokenHex("nutrition")).toBe(
+      canonical(brandColors.lime[800], "lime.800"),
+    );
+  });
+
   it("«Чорнило» дзеркалить inkTheme, а не власну темну палітру", () => {
     // Темна секція звʼязків – це канонічний напрям продукту, а не вигаданий
     // для лендінга градієнт. Якщо inkTheme зрушить, тест впаде.

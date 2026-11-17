@@ -170,6 +170,28 @@ describe("AssetForm", () => {
     expect(screen.getByRole("button", { name: "Додати" })).toBeDisabled();
   });
 
+  it("offers «Своє / Мені винні» for a new asset only", () => {
+    const onKindChange = vi.fn();
+    const props = {
+      newAsset: { name: "", amount: "", currency: "UAH", emoji: "" },
+      setNewAsset: vi.fn(),
+      setManualAssets: vi.fn(),
+      setShowAssetForm: vi.fn(),
+      assetFormRef: createRef<HTMLElement>(),
+      assetNameInputRef: createRef<HTMLInputElement>(),
+      onKindChange,
+    };
+    const { rerender } = render(withQueryClient(<AssetForm {...props} />));
+    const kind = screen.getByRole("radiogroup", { name: "Тип активу" });
+    fireEvent.click(within(kind).getByRole("radio", { name: "Своє" }));
+    expect(onKindChange).not.toHaveBeenCalled();
+    fireEvent.click(within(kind).getByRole("radio", { name: "Мені винні" }));
+    expect(onKindChange).toHaveBeenCalledWith("receivable");
+
+    rerender(withQueryClient(<AssetForm {...props} editingId="a-1" />));
+    expect(screen.queryByRole("radiogroup", { name: "Тип активу" })).toBeNull();
+  });
+
   it("calls setShowAssetForm(false) on cancel", () => {
     const setShowAssetForm = vi.fn();
     const { container } = render(

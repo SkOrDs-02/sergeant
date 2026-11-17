@@ -1,6 +1,6 @@
 # Toast policy
 
-> **Last touched:** 2026-09-19 by @claude. **Next review:** 2027-03-30.
+> **Last touched:** 2026-10-26 by @claude. **Next review:** 2027-05-06.
 > **Status:** Active.
 
 Канонічна довідка для агентів і розробників: коли який toast, скільки
@@ -99,7 +99,7 @@ WCAG 4.1.3 (Status Messages, Level AA) вимагає, що повідомлен
 
 - `type === "error"` → `aria-live=assertive` (interrupting)
 - будь-який `action` → `aria-live=assertive` (interrupting)
-- решта → `aria-live=polite`
+- решта → polite: рядок тоста не є live-регіоном (регіон, що монтується разом з текстом, частина скрінрідерів пропускає), текст озвучує постійний регіон `ScreenReaderAnnouncerProvider`; `ToastContainer` має стояти всередині нього. Текст polite-тоста через це дублюється в регіоні анонсера, тож E2E-локатори тостів беруть усередині `getByTestId("toast-tray")`, інакше `getByText` дає strict mode violation
 
 `assertive` НЕ означає "блимай" — це лише сигнал реколайзингу для AT.
 Анімація / контраст / `duration` живуть окремо.
@@ -141,8 +141,21 @@ WCAG 4.1.3 (Status Messages, Level AA) вимагає, що повідомлен
   останнім рядком тіла — тіло змінну не публікує, і тост його нижній край
   накриє. `useModalDialogOpen()` з `useDialogFocusTrap` лишається (його
   тримають тести), але трей його більше не читає.
-- Нижній відступ = `max(safe-area, --sgt-bottom-nav-inset, --sgt-workout-banner-inset, --sgt-sheet-footer-inset) + 0.75rem`.
-  **AI-DANGER:** усі три `--sgt-*` змінні ставить хук
+- **Трей публікує і свою смугу: `--sgt-toast-inset`** (тим самим
+  `useBottomInsetVar`, поки на екрані є тост), а `page-tabbar-pad` додає її
+  до нижнього відступу сторінки. Тому тост не накриває кінець жодної
+  сторінки: контент під ним докручується (інвентар v3.1 Е4, тост «30 днів
+  поспіль» над фільтрами стрічки Рутини; рішення власника 2026-10-23 про
+  спільне правило, не локальний фікс). Тест у `Toast.test.tsx`.
+- **Над докованою панеллю сесії Фізрука теж: `--sgt-session-dock-inset`.**
+  `SessionDock` у сесії стоїть замість таб-бару модуля і публікує свою смугу
+  сам, поки на екрані (під клавіатурою знімає). Без цього тост «готовий до
+  роботи офлайн» лягав рівно на «+ Вправа», а наведення курсора ставило його
+  на паузу назавжди (E2E `fizruk-active-workout`, 2026-10-25). Правило для
+  нових fixed-смуг з CTA внизу екрана: публікуй висоту власною змінною і
+  додай її в `max()` трею.
+- Нижній відступ = `max(safe-area, --sgt-bottom-nav-inset, --sgt-workout-banner-inset, --sgt-sheet-footer-inset, --sgt-session-dock-inset) + 0.75rem`.
+  **AI-DANGER:** усі `--sgt-*` змінні ставить хук
   [`useBottomInsetVar`](../../../apps/web/src/shared/hooks/useBottomInsetVar.ts)
   на `<html>`. Локальна `--bottom-nav-height` (утиліта
   `bottom-nav-height-var`) сюди **не доходить**: вона живе на корені

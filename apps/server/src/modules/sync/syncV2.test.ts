@@ -32,7 +32,12 @@ import {
 } from "./syncV2.js";
 import { notifySyncV2OpsApplied as _notify } from "./syncV2Stream.js";
 import { SYNC_OP_LOG_COMMITTED_WATERMARK_SQL } from "./syncV2-core.js";
-import { syncConflictsTotal } from "../../obs/metrics.js";
+import {
+  syncConflictsTotal,
+  syncPullTruncatedTotal,
+} from "../../obs/metrics.js";
+import { env } from "../../env/env.js";
+import { SYNC_PROTOCOL_VERSION } from "@sergeant/shared";
 
 interface PoolStub {
   connect: Mock;
@@ -420,15 +425,11 @@ describe("syncV2Push · new-op apply path", () => {
     ]);
   });
 
-  it("rejects unknown tables before apply", async () => {
-    const serverTs = new Date("2026-01-01T00:00:05.000Z");
+  it("rejects unknown tables before apply and before sync_op_log", async () => {
     client.query
       .mockResolvedValueOnce({ rows: [] }) // BEGIN
       .mockResolvedValueOnce({ rows: [] }) // user-lock sync_op_log (data-12)
       .mockResolvedValueOnce({ rows: [] }) // дедуп-SELECT батча
-      .mockResolvedValueOnce({ rows: [] }) // SAVEPOINT op_log_write
-      .mockResolvedValueOnce({ rows: [{ id: "42", server_ts: serverTs }] })
-      .mockResolvedValueOnce({ rows: [] }) // RELEASE SAVEPOINT op_log_write
       .mockResolvedValueOnce({ rows: [] }); // COMMIT
 
     const req = makeReq({
@@ -445,9 +446,15 @@ describe("syncV2Push · new-op apply path", () => {
     await syncV2Push(req, res);
 
     expect(applyRoutineEntries).not.toHaveBeenCalled();
+    // data-48: жодного INSERT/SAVEPOINT - оп невідомої таблиці в журнал не йде.
+    expect(
+      client.query.mock.calls.some(([sql]) =>
+        /INSERT INTO sync_op_log|SAVEPOINT/.test(String(sql)),
+      ),
+    ).toBe(false);
     expect(res.body).toEqual({
       accepted: 0,
-      last_op_id: 42,
+      last_op_id: 0,
       server_now: expect.any(String),
       results: [
         {
@@ -457,6 +464,45 @@ describe("syncV2Push · new-op apply path", () => {
         },
       ],
     });
+  });
+
+  it("клієнт новіший за сервер: невідома таблиця -> retry/unknown_table, без журналу, решта батча застосовується", async () => {
+    applyRoutineEntries.mockResolvedValueOnce({ status: "applied" });
+    const serverTs = new Date("2026-01-01T00:00:05.000Z");
+    client.query
+      .mockResolvedValueOnce({ rows: [] }) // BEGIN
+      .mockResolvedValueOnce({ rows: [] }) // user-lock
+      .mockResolvedValueOnce({ rows: [] }) // дедуп-SELECT
+      .mockResolvedValueOnce({ rows: [] }) // SAVEPOINT op_apply
+      .mockResolvedValueOnce({ rows: [] }) // SAVEPOINT op_log_write
+      .mockResolvedValueOnce({ rows: [{ id: "7", server_ts: serverTs }] })
+      .mockResolvedValueOnce({ rows: [] }) // RELEASE op_log_write
+      .mockResolvedValueOnce({ rows: [] }) // RELEASE op_apply
+      .mockResolvedValueOnce({ rows: [] }); // COMMIT
+
+    const res = makeRes();
+    await syncV2Push(
+      makeReq({
+        query: { sync_protocol: String(SYNC_PROTOCOL_VERSION + 1) },
+        body: {
+          ops: [op("future", { table: "future_table" }), op("ok")],
+        },
+      }),
+      res,
+    );
+
+    expect(res.body).toMatchObject({
+      accepted: 1,
+      results: [
+        { idempotency_key: "future", status: "retry", reason: "unknown_table" },
+        { idempotency_key: "ok", status: "applied" },
+      ],
+    });
+    const inserts = client.query.mock.calls.filter(([sql]) =>
+      /INSERT INTO sync_op_log/.test(String(sql)),
+    );
+    expect(inserts).toHaveLength(1);
+    expect((inserts[0]![1] as unknown[])[2]).toBe("routine_entries");
   });
 
   it("rejects unsupported increment ops without calling the table apply function", async () => {
@@ -723,6 +769,35 @@ describe("syncV2Push · new-op apply path", () => {
         ).toBe(false);
       },
     );
+
+    it("apply повернув retry: оп відкочується, у журнал не пишеться", async () => {
+      applyRoutineEntries.mockReset().mockResolvedValueOnce({
+        status: "retry",
+        reason: "prefs_patch_without_base",
+      });
+      client.query.mockResolvedValue({ rows: [] });
+
+      const res = makeRes();
+      await syncV2Push(makeReq({ body: { ops: [op("no-base")] } }), res);
+
+      expect(res.body).toMatchObject({
+        accepted: 0,
+        results: [
+          {
+            idempotency_key: "no-base",
+            status: "retry",
+            reason: "prefs_patch_without_base",
+          },
+        ],
+      });
+      const sqls = client.query.mock.calls.map((c) => c[0]);
+      expect(sqls).toContain("ROLLBACK TO SAVEPOINT op_apply");
+      expect(
+        sqls.some(
+          (q) => typeof q === "string" && q.includes("INSERT INTO sync_op_log"),
+        ),
+      ).toBe(false);
+    });
 
     it("нетранзієнтна помилка (42P01) лишається термінальним apply_failed", async () => {
       applyRoutineEntries
@@ -1258,6 +1333,88 @@ describe("syncV2Pull · happy-path", () => {
     expect(body.next_cursor).toBe(101);
   });
 
+  describe("байтовий бюджет сторінки (ADR-0105, rel-06)", () => {
+    const ts = new Date("2026-01-01T00:00:00.000Z");
+    const mkRow = (id: string) => ({
+      id,
+      table_name: "t",
+      op: "insert",
+      row: {},
+      client_ts: ts,
+      server_ts: ts,
+      origin_device_id: null,
+      row_bytes: 1000,
+      // LEAD(id) — bigint, pg віддає string; null — кандидатів далі немає
+      next_id: null as string | null,
+    });
+
+    it("запит несе бюджет 2 MiB 5-м параметром і міряє розмір у Postgres", async () => {
+      pool.query.mockResolvedValueOnce({ rows: [] });
+      await syncV2Pull(makeReq(), makeRes());
+      const call = pool.query.mock.calls[0]!;
+      expect((call[1] as unknown[])[4]).toBe(2_097_152);
+      expect(call[0]).toContain("octet_length(row::text)");
+      expect(call[0]).toContain("bytes_before < $5");
+      // Без COUNT(*) OVER (): він буферизував би всю сторінку з payload-ами.
+      expect(call[0]).not.toContain("COUNT(*) OVER");
+      expect(call[0]).toContain("LEAD(id) OVER (ORDER BY id)");
+    });
+
+    it("env SYNC_V2_PULL_MAX_BYTES підміняє бюджет", async () => {
+      const prev = env.SYNC_V2_PULL_MAX_BYTES;
+      env.SYNC_V2_PULL_MAX_BYTES = 4096;
+      try {
+        pool.query.mockResolvedValueOnce({ rows: [] });
+        await syncV2Pull(makeReq(), makeRes());
+        expect((pool.query.mock.calls[0]![1] as unknown[])[4]).toBe(4096);
+      } finally {
+        env.SYNC_V2_PULL_MAX_BYTES = prev;
+      }
+    });
+
+    it("обрізана бюджетом сторінка (за останнім збереженим є кандидат, limit 100) → next_cursor = id останнього", async () => {
+      pool.query.mockResolvedValueOnce({
+        rows: [
+          { ...mkRow("7"), next_id: "8" },
+          { ...mkRow("8"), next_id: "9" },
+        ],
+      });
+      const res = makeRes();
+      const before = (await syncPullTruncatedTotal.get()).values[0]?.value ?? 0;
+      await syncV2Pull(makeReq({ query: { limit: "100" } }), res);
+      const body = res.body as { ops: unknown[]; next_cursor: number | null };
+      expect(body.ops).toHaveLength(2);
+      expect(body.next_cursor).toBe(8);
+      const after = (await syncPullTruncatedTotal.get()).values[0]!.value;
+      expect(after).toBe(before + 1);
+    });
+
+    it("один оп понад бюджет віддається єдиним на сторінці з next_cursor", async () => {
+      pool.query.mockResolvedValueOnce({
+        rows: [{ ...mkRow("42"), row_bytes: 10_000_000, next_id: "43" }],
+      });
+      const res = makeRes();
+      await syncV2Pull(makeReq({ query: { limit: "100" } }), res);
+      const body = res.body as { ops: unknown[]; next_cursor: number | null };
+      expect(body.ops).toHaveLength(1);
+      expect(body.next_cursor).toBe(42);
+    });
+
+    it("сторінка під бюджетом і під limit → next_cursor = null (кінець журналу)", async () => {
+      pool.query.mockResolvedValueOnce({
+        rows: [
+          { ...mkRow("1"), next_id: "2" },
+          { ...mkRow("2"), next_id: null },
+        ],
+      });
+      const res = makeRes();
+      await syncV2Pull(makeReq({ query: { limit: "100" } }), res);
+      expect(
+        (res.body as { next_cursor: number | null }).next_cursor,
+      ).toBeNull();
+    });
+  });
+
   it("DB-помилка → throw (request errorhandler-у віддасть 500)", async () => {
     pool.query.mockRejectedValueOnce(new Error("PG down"));
     const req = makeReq();
@@ -1559,25 +1716,6 @@ describe("syncV2Push · data-17 / data-48", () => {
     expect(params[4]).toBe("{}");
     expect(params[7]).toBe("rejected");
     expect(params[8]).toBe("lww_conflict");
-  });
-
-  it("відхилений за невідомою таблицею оп не зберігає row", async () => {
-    mockRejectedNoApplyPath("221");
-
-    await syncV2Push(
-      makeReq({
-        body: {
-          ops: [
-            op("junk", { junk: "y".repeat(5000) }, { table: "zz_not_a_table" }),
-          ],
-        },
-      }),
-      makeRes(),
-    );
-
-    const params = insertParams();
-    expect(params[4]).toBe("{}");
-    expect(params[8]).toBe("table_not_allowed");
   });
 
   it("застосований оп зберігає повний row (його читає pull)", async () => {

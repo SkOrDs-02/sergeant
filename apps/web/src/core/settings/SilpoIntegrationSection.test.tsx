@@ -96,6 +96,15 @@ describe("SilpoIntegrationSection", () => {
     expect(screen.queryByText("Звʼязати Сільпо")).not.toBeInTheDocument();
   });
 
+  it("не показує «Звʼязати Сільпо», поки стан підключення завантажується", async () => {
+    mockedSyncState.mockReturnValue(new Promise(() => {}));
+
+    renderSection();
+
+    expect(await screen.findByText("Перевіряю…")).toBeInTheDocument();
+    expect(screen.queryByText("Звʼязати Сільпо")).not.toBeInTheDocument();
+  });
+
   it("shows the connect CTA when disconnected", async () => {
     mockedSyncState.mockResolvedValue({
       status: "disconnected",

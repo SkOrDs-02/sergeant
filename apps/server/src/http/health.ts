@@ -12,6 +12,7 @@ import { getMemoryIngestWorkerStats } from "../modules/ai-memory/ingestQueue.js"
 import { getMonoEnrichmentWorkerStatus } from "../modules/mono/enrichmentWorker.js";
 import { getGdprCleanupWorkerStatus } from "../modules/gdpr/cleanupPoller.js";
 import { getAccountDeletionWorkerStatus } from "../modules/me/deletionPoller.js";
+import { getPlataSyncWorkerStatus } from "../modules/billing/plataSync.js";
 import {
   driftBlocksReadiness,
   getLastSchemaDriftReport,
@@ -202,7 +203,10 @@ export function createHealthzHandler(pool: DbPool): RequestHandler {
  *      processing/failed/dead_letter для mono-enrichment).
  *
  * Контракт відповіді: `{status, timestamp, workers:{aiMemoryIngest,
- * monoEnrichment, gdprCleanup}}`. Не включає `version`/`commit`/`sha`
+ * monoEnrichment, gdprCleanup, accountDeletion, plataSync}}`. `plataSync`
+ * читається з пам'яті процесу (без SQL) і на код відповіді не впливає:
+ * застарілий `lastRunAt` ловить алерт `PlataSyncSlowTickStale`, а не 503
+ * (rel-19). Не включає `version`/`commit`/`sha`
  * (L7 audit `docs/security/hardening/L7-health-endpoint-info-leak.md` —
  * ті самі invariants, що й для `/healthz`), і **не включає текст помилки
  * воркера**: на фейлі sample-функції поле зветься `errorCode` і несе лише
@@ -251,6 +255,7 @@ export function createWorkersHealthHandler(pool: Pool): RequestHandler {
         monoEnrichment,
         gdprCleanup,
         accountDeletion,
+        plataSync: getPlataSyncWorkerStatus(),
       },
     });
   };

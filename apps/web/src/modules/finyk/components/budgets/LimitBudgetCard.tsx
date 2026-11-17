@@ -343,7 +343,7 @@ function LimitBudgetCardComponent({
                           placement="top-center"
                         >
                           <Button variant="text" onClick={onDismissAdvice}>
-                            Зрозуміло
+                            Прибрати
                           </Button>
                         </Tooltip>
                       )}

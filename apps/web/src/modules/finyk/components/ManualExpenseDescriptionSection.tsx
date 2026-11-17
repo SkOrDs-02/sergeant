@@ -93,7 +93,7 @@ export function ManualExpenseDescriptionSection({
               // уже виключає), тож це необрана плитка ChoiceGroup sm. Сам
               // примітив не підходить: йому бракує onMouseDown, який
               // тримає фокус поля, поки підказки видно.
-              className="inline-flex min-h-[44px] items-center rounded-segment border border-control bg-panel px-3 text-style-label font-semibold text-text hover:bg-panelHi focus-ring motion-safe:transition-colors motion-safe:duration-fast"
+              className="inline-flex min-h-[44px] items-center rounded-segment bg-panel px-3 text-style-label font-semibold text-text hover:bg-panelHi focus-ring motion-safe:transition-colors motion-safe:duration-fast"
               title={`${m.count} ${pluralTimes(m.count)} · ${formatMoney(m.total)}`}
             >
               {m.name}

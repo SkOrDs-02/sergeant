@@ -26,6 +26,12 @@ import { ChoiceGroup } from "@shared/components/ui/Choice";
 import { FIELD_LABEL } from "@shared/components/ui/Input";
 import { Sheet } from "@shared/components/ui/Sheet";
 import { messages } from "@shared/i18n/uk";
+import { focusFallbackTarget } from "@shared/lib/ui/focusFallback";
+import { SESSION_FOCUS_FALLBACK } from "../session/focusFallback";
+
+// Відкриває тиха кнопка «Самопочуття» (redesign v3.2, позиція 15); якщо
+// тригер уже зник з DOM, фокус іде на «+ Вправа» сесії.
+const sessionFocusTarget = focusFallbackTarget(SESSION_FOCUS_FALLBACK);
 
 export interface ReadinessSheetProps {
   open: boolean;
@@ -93,8 +99,8 @@ export function ReadinessSheet({
       open={open}
       onClose={onSkip}
       title={t.title}
-      description={t.subtitle}
       panelClassName="fizruk-sheet"
+      returnFocusFallback={sessionFocusTarget}
       footer={
         <div className="flex gap-2">
           <Button
@@ -118,9 +124,8 @@ export function ReadinessSheet({
         </div>
       }
     >
-      {/* Аркуш відкривається сам, без дії людини, тож початковий фокус
-          стоїть на вмісті, а не на «Закрити»: інакше рамка фокуса горить на
-          хрестику ще до першого дотику. */}
+      {/* Початковий фокус на вмісті, а не на «Закрити»: людина відкрила
+          аркуш, щоб оцінити, тож перша зупинка - шкала. */}
       <div
         className="space-y-4 focus:outline-none"
         tabIndex={-1}

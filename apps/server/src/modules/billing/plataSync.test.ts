@@ -1,11 +1,14 @@
-import { afterEach, describe, expect, it, vi } from "vitest";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 vi.mock("../../env/env.js", () => ({
   env: { PLATA_TOKEN: "test-merchant-token", PLATA_ENABLED: true },
 }));
 
+import { plataSyncLastSuccessTimestampSeconds } from "../../obs/metrics.js";
 import {
   PlataSyncPoller,
+  __testingResetPlataLastRunAt,
+  getPlataSyncWorkerStatus,
   reconcileBySubscriptionId,
   reconcileSubscription,
   runFastTick,
@@ -681,5 +684,104 @@ describe("applyPastDue — юзер із кількома plata-рядками",
     )) {
       expect(c.sql).toContain("status IN ('active', 'trialing', 'past_due')");
     }
+  });
+});
+
+/**
+ * rel-19: lastRunAt Plata у `/health/workers` і gauge для алерту
+ * `PlataSyncSlowTickStale`. Без них «повільна звірка не виконувалась
+ * тиждень» не було видно ніде.
+ */
+describe("PlataSyncPoller - lastRunAt і gauge свіжості (rel-19)", () => {
+  // Попередні describe-и ганяють тіки й лишають module-level мітки.
+  beforeEach(() => {
+    __testingResetPlataLastRunAt();
+    plataSyncLastSuccessTimestampSeconds.reset();
+  });
+  afterEach(() => {
+    vi.useRealTimers();
+    __testingResetPlataLastRunAt();
+    plataSyncLastSuccessTimestampSeconds.reset();
+  });
+
+  const gaugeValue = async (tick: "fast" | "slow") => {
+    const { values } = await plataSyncLastSuccessTimestampSeconds.get();
+    return values.find((v) => v.labels.tick === tick)?.value;
+  };
+
+  it("до першого тіку lastRunAt = null, після успішного slow тіку - ISO-час", async () => {
+    vi.useFakeTimers();
+    vi.setSystemTime(new Date("2026-10-23T10:00:00.000Z"));
+    __testingResetPlataLastRunAt();
+    const { pool } = mockPool([]);
+    const poller = new PlataSyncPoller({ pool, enabled: true });
+
+    expect(getPlataSyncWorkerStatus()).toEqual({
+      enabled: true,
+      intervalMs: 60 * 60 * 1000,
+      lastRunAt: null,
+      fastIntervalMs: 5 * 60 * 1000,
+      lastFastRunAt: null,
+    });
+
+    await poller.runSlow();
+    expect(getPlataSyncWorkerStatus().lastRunAt).toBe(
+      "2026-10-23T10:00:00.000Z",
+    );
+    expect(getPlataSyncWorkerStatus().lastFastRunAt).toBeNull();
+    expect(await gaugeValue("slow")).toBe(
+      Date.parse("2026-10-23T10:00:00.000Z") / 1000,
+    );
+
+    await poller.runFast();
+    expect(getPlataSyncWorkerStatus().lastFastRunAt).toBe(
+      "2026-10-23T10:00:00.000Z",
+    );
+  });
+
+  it("тік, що впав (БД недоступна), lastRunAt і gauge не рухає", async () => {
+    __testingResetPlataLastRunAt();
+    const query = vi.fn().mockRejectedValue(new Error("ECONNREFUSED"));
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const pool = { query, connect: vi.fn() } as any;
+    const poller = new PlataSyncPoller({ pool, enabled: true });
+
+    await poller.runSlow();
+    await poller.runFast();
+    expect(getPlataSyncWorkerStatus().lastRunAt).toBeNull();
+    expect(getPlataSyncWorkerStatus().lastFastRunAt).toBeNull();
+    expect(await gaugeValue("slow")).toBeUndefined();
+  });
+
+  it("start() засіює gauge часом старту, щоб поллер без жодного успіху теж алертив", async () => {
+    vi.useFakeTimers();
+    vi.setSystemTime(new Date("2026-10-23T12:00:00.000Z"));
+    const query = vi.fn().mockRejectedValue(new Error("ECONNREFUSED"));
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const pool = { query, connect: vi.fn() } as any;
+    const poller = new PlataSyncPoller({
+      pool,
+      enabled: true,
+      startDelayMs: 0,
+    });
+
+    poller.start();
+    const startedAt = Date.parse("2026-10-23T12:00:00.000Z") / 1000;
+    expect(await gaugeValue("slow")).toBe(startedAt);
+    expect(await gaugeValue("fast")).toBe(startedAt);
+
+    // Три години падаючих тіків: gauge стоїть на часі старту, тобто
+    // `time() - gauge` росте і правило спрацює.
+    await vi.advanceTimersByTimeAsync(3 * 3_600_000);
+    expect(await gaugeValue("slow")).toBe(startedAt);
+    expect(getPlataSyncWorkerStatus().lastRunAt).toBeNull();
+
+    await poller.stop();
+  });
+
+  it("вимкнений поллер gauge не засіює (немає серії - немає хибного алерту)", async () => {
+    const { pool } = mockPool([]);
+    new PlataSyncPoller({ pool, enabled: false }).start();
+    expect(await gaugeValue("slow")).toBeUndefined();
   });
 });

@@ -15,13 +15,17 @@ afterEach(() => {
 it("refreshes the home date after a new Kyiv day without remounting", () => {
   render(<HubHeader activeTab="dashboard" onOpenSearch={() => {}} />);
   expect(screen.getByTestId("hub-header-title")).toHaveTextContent(
-    "Неділя, 18 жовтня",
+    /^18 жовтня$/,
   );
+  expect(screen.getByTestId("hub-header-weekday")).toHaveTextContent("Неділя");
   act(() => {
     vi.setSystemTime(new Date("2026-10-19T06:00:00Z"));
     window.dispatchEvent(new Event("focus"));
   });
   expect(screen.getByTestId("hub-header-title")).toHaveTextContent(
-    "Понеділок, 19 жовтня",
+    /^19 жовтня$/,
+  );
+  expect(screen.getByTestId("hub-header-weekday")).toHaveTextContent(
+    "Понеділок",
   );
 });

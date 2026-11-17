@@ -1,7 +1,7 @@
 # Tech-debt assessment 2026-07-01 — групи, інструкції до фіксу, burndown-план
 
-> **Last touched:** 2026-09-17 by @claude (звірка відкритих пунктів із HEAD). **Next review:** 2026-12-16.
-> **Status:** Active
+> **Last touched:** 2026-10-26 by @claude (тріаж документації: Status → Reference, залишки перенесено в frontend.md і mobile.md). **Next review:** 2026-12-16.
+> **Status:** Reference - burndown-знімок 2026-07-01; групи 1-2 закрито, 4 перекласифіковано, залишки перенесено: eslint-disable burndown → [`frontend.md`](./frontend.md) § Recommended next steps, mobile-пункти → [`mobile.md`](./mobile.md) (Frozen).
 
 > **Методологія (оригінал 2026-07-01):** повний прогін механічних гейтів + воркфло з підагентів. **Re-audit 2026-07-20:** повторне вимірювання на `main` — потім **agent waves** закрили actionable P1 (див. нижче). Цей файл = живий burndown після хвиль.
 
@@ -140,3 +140,10 @@
 - Coverage floors: web **89**, mobile **30**, api-client 73, routine-domain 74.
 - Production-`any` web = **2** by-design; Express **5.2**; TS **6.0.3** усі apps.
 - Історичний assessment 2026-06-05 (md+json) — через immutable Git links у [каталозі](./README.md).
+
+## Стан виконання
+
+> Тріаж 2026-10-26: документ переведено в Reference.
+
+- Production eslint-disable burndown (P3, opportunistic; на 2026-10-26 ~208 рядків, ціль «<100» нереалістична) → [`frontend.md`](./frontend.md) § Recommended next steps.
+- Mobile coverage floor і mobile 12px-floor → [`mobile.md`](./mobile.md), Frozen за ADR-0094.

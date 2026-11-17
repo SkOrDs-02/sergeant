@@ -131,6 +131,16 @@ describe("NowPile", () => {
     expect(mocks.check).toHaveBeenCalledWith(items[0]);
   });
 
+  it("після чекбокса фокус іде на заголовок купи, а не губиться на <body>", () => {
+    renderPile([item({ id: "a" })]);
+    const box = screen.getByRole("checkbox", { name: /title a/ });
+    box.focus();
+    fireEvent.click(box);
+    expect(document.activeElement).toBe(
+      screen.getByRole("heading", { name: "Зараз" }),
+    );
+  });
+
   it("три рядки + «ще N»; хвіст розгортається й згортається тим самим вузлом", () => {
     renderPile(
       [1, 2, 3, 4, 5].map((n) => item({ id: `i${n}`, priority: 100 - n })),
@@ -141,8 +151,9 @@ describe("NowPile", () => {
 
     fireEvent.click(toggle);
     expect(screen.getAllByTestId("now-row")).toHaveLength(5);
-    const collapse = screen.getByRole("button", { name: "Згорнути" });
+    const collapse = screen.getByRole("button", { name: "ще 2" });
     expect(collapse).toBe(toggle);
+    expect(screen.queryByText("Згорнути")).toBeNull();
     expect(collapse).toHaveAttribute("aria-expanded", "true");
 
     fireEvent.click(collapse);
@@ -225,9 +236,36 @@ describe("NowPile", () => {
       }),
     ]);
     const button = screen.getByRole("button", { name: /Відкрити звіт тижня/ });
-    expect(button.className).toContain("touch-target");
+    expect(button.className).toContain("min-h-[44px]");
     fireEvent.click(button);
     expect(mocks.emitHubBus).toHaveBeenCalledWith("openWeekReport", undefined);
     expect(onOpenTarget).not.toHaveBeenCalled();
+  });
+});
+
+describe("ChecklistNowRows", () => {
+  it("рядок кроку без декоративного чекбокса (v3.2, позиція 16)", () => {
+    render(
+      <MemoryRouter>
+        <NowPile
+          now={{ items: [], check: mocks.check, checked: [], uncheck: vi.fn() }}
+          onOpenTarget={vi.fn()}
+          checklist={{
+            moduleId: "finyk",
+            steps: [
+              {
+                id: "view_analytics",
+                label: "Переглянути аналітику",
+                done: false,
+              } as never,
+            ],
+          }}
+        />
+      </MemoryRouter>,
+    );
+    const row = screen.getByTestId("checklist-now-row");
+    expect(within(row).getByText("Переглянути аналітику")).toBeTruthy();
+    expect(row.querySelector('[class*="border-2"]')).toBeNull();
+    expect(within(row).queryByRole("checkbox")).toBeNull();
   });
 });

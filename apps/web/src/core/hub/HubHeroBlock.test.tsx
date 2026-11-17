@@ -184,7 +184,7 @@ describe("HubHeroBlock", () => {
         ],
       },
     });
-    fireEvent.click(screen.getByRole("button", { name: "Зробити: Крок" }));
+    fireEvent.click(screen.getByRole("button", { name: "Відкрити: Крок" }));
     expect(openActionMock).toHaveBeenCalledWith("routine", "log_meal");
     expect(hasViewedFinykAnalytics()).toBe(false);
     fireEvent.click(screen.getByText("cross preview"));
@@ -207,7 +207,9 @@ describe("HubHeroBlock", () => {
         ],
       },
     });
-    fireEvent.click(screen.getByRole("button", { name: "Зробити: Аналітика" }));
+    fireEvent.click(
+      screen.getByRole("button", { name: "Відкрити: Аналітика" }),
+    );
     expect(hasViewedFinykAnalytics()).toBe(false);
     expect(openActionMock).toHaveBeenCalledWith("finyk", "view_analytics");
   });

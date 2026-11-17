@@ -17,18 +17,18 @@ export const routinePageMessages = {
     heading: "Показувати у стрічці",
     rangeAriaLabel: "Діапазон стрічки",
     weekHeading: "Тиждень",
-    singleDayHint:
-      "Обрано один день, натисни «Сьогодні» або «Тиждень», щоб повернути зріз",
+    singleDayHint: "Обрано один день. «Сьогодні» або «Тиждень» повертає зріз.",
     searchPlaceholder: "Пошук у стрічці",
     searchAriaLabel: "Пошук подій",
+    filter: "Фільтр",
+    filterOn: "увімкнено",
   },
   newHabit: "Нова звичка",
   emptyHabits: "Звичок ще немає",
-  emptyHabitsDescription: "Створи одну звичку, щоб почати серію.",
+  emptyHabitsDescription: "Серія починається з першої відмітки.",
   createHabit: "Створити звичку",
   emptyCategories: "Категорій ще немає",
-  noteAction: "Нотатка",
-  reorderHint: "Перетягни звичку або обери «Вище» чи «Нижче» в її меню.",
+  bulkMarkAll: "Відмітити всі",
   progressAria: "Прогрес дня: {done} з {total}. Тапни для денного звіту",
   progressOf: "з {total}",
   weeklyTarget: "{n} {times} на тиждень",
@@ -78,7 +78,6 @@ export const routinePageMessages = {
   // Налаштувань 2026-08-03 (`components/RoutineHabitsPanel.tsx`).
   habitsTab: {
     label: "Звички",
-    intro: "Тут можна створювати, впорядковувати й архівувати звички.",
     // `{name}` підставляється на місці виклику через `fillName()` —
     // каталог лишається plain-string (обмеження `MessageCatalog`).
     deleteArchivedTitle: "Видалити «{name}» назавжди?",

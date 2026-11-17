@@ -4,6 +4,7 @@
  */
 import { useId, useState } from "react";
 import type { ChecklistItem, Workout } from "@sergeant/fizruk-domain";
+import { Textarea } from "@shared/components/ui/Input";
 import { cn } from "@shared/lib/ui/cn";
 import { messages } from "@shared/i18n/uk";
 import { NOTE_MAX_LEN } from "@shared/lib/text/limits";
@@ -124,16 +125,18 @@ export function SessionExtrasRow({
           >
             {ss.noteTitle} · {ss.noteHint}
           </label>
-          <textarea
-            id={noteId}
-            className="input-focus-fizruk mt-2 w-full min-h-[72px] rounded-lg border border-line bg-bg px-3 py-2.5 text-style-body text-text placeholder:text-subtle resize-none"
-            placeholder={ss.notePlaceholder}
-            value={activeWorkout.note || ""}
-            maxLength={NOTE_MAX_LEN}
-            onChange={(e) =>
-              updateWorkout(activeWorkout.id, { note: e.target.value })
-            }
-          />
+          <div className="mt-2">
+            <Textarea
+              id={noteId}
+              className="min-h-[72px] bg-bg px-3 py-2.5"
+              placeholder={ss.notePlaceholder}
+              value={activeWorkout.note || ""}
+              maxLength={NOTE_MAX_LEN}
+              onChange={(e) =>
+                updateWorkout(activeWorkout.id, { note: e.target.value })
+              }
+            />
+          </div>
         </div>
       )}
       {open === "time" && (

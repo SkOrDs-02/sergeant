@@ -109,6 +109,15 @@ export const WORKOUT_BANNER_INSET_VAR = "--sgt-workout-banner-inset";
 export const SHEET_FOOTER_INSET_VAR = "--sgt-sheet-footer-inset";
 
 /**
+ * Докована панель активного тренування Фізрука (`SessionDock`), яка в сесії
+ * стоїть замість таб-бару модуля. Публікує сама панель, доки вона на екрані;
+ * трей тостів через цю змінну стає НАД нею, а не на «+ Вправа»: тост під
+ * курсором ставить авто-закриття на паузу, тож дія панелі лишалась
+ * недосяжною (E2E `fizruk-active-workout`, тост «готовий до роботи офлайн»).
+ */
+export const SESSION_DOCK_INSET_VAR = "--sgt-session-dock-inset";
+
+/**
  * Кнопка дії в куті (`CornerAction`). Публікує сама кнопка, доки
  * видима; `page-tabbar-pad` додає різницю між нею і нижньою навігацією до
  * відступу скрол-контейнера, щоб останній рядок контенту не лягав під неї
@@ -116,6 +125,12 @@ export const SHEET_FOOTER_INSET_VAR = "--sgt-sheet-footer-inset";
  * трендів Журналу).
  */
 export const FAB_INSET_VAR = "--sgt-fab-inset";
+
+/**
+ * Ширина кутової кнопки з боковим полем і зазором: на стільки утиліта
+ * `fab-clear-row` відсуває праву межу рядків.
+ */
+export const FAB_WIDTH_VAR = "--sgt-fab-width";
 
 /**
  * Трей тостів, доки в ньому є хоч один тост. `page-tabbar-pad` бере його

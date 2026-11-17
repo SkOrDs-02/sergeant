@@ -6,12 +6,10 @@ import { ToastProvider } from "@shared/hooks/useToast";
 import { ToastContainer } from "@shared/components/ui/Toast";
 import { ScreenReaderAnnouncerProvider } from "@shared/components/ui/ScreenReaderAnnouncer";
 import { ShortcutRegistryProvider } from "@shared/components/ui/KeyboardShortcutsModal";
-import {
-  CommandPalette,
-  CommandPaletteProvider,
-} from "@shared/components/ui/CommandPalette";
+import { CommandPaletteProvider } from "@shared/components/ui/CommandPalette";
 
 import { AuthProvider } from "../auth/AuthContext";
+import { LockGatedCommandPalette } from "./LockGatedCommandPalette";
 import { AppLockProvider } from "../security/AppLockContext";
 import { HashRedirect } from "./HashRedirect";
 import { PageviewTracker } from "../observability/PageviewTracker";
@@ -56,13 +54,15 @@ export function Providers({ children }: { children: ReactNode }) {
   return (
     <ShortcutRegistryProvider>
       <ToastProvider>
-        <ToastContainer />
         <ShellDeepLinkBridge />
         <HashRedirect />
         <ScrollRestoration />
         <PageviewTracker />
         <RouteChangeTracker />
         <ScreenReaderAnnouncerProvider>
+          {/* Усередині анонсера: polite-тости озвучуються його постійним
+              регіоном. */}
+          <ToastContainer />
           <ApiClientProvider client={apiClient}>
             <AuthProvider>
               <AnonymousDataMigrationProvider>
@@ -72,7 +72,7 @@ export function Providers({ children }: { children: ReactNode }) {
                       lives next to the provider so any module that calls
                       `useRegisterCommand` can also see the rendered
                       surface without an additional mount point. */}
-                    <CommandPalette />
+                    <LockGatedCommandPalette />
                     {children}
                   </CommandPaletteProvider>
                 </AppLockProvider>

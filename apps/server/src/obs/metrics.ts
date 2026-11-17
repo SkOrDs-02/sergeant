@@ -623,6 +623,9 @@ export {
   syncOpLogNullOriginDeviceIdTotal,
   syncOpLogPullLagMs,
   syncOpLogPullQueueDepth,
+  syncPullPageBytes,
+  syncPullTruncatedTotal,
+  syncStateHashComputeMs,
 } from "./metrics/sync.js";
 
 export {
@@ -649,4 +652,7 @@ export {
   billingWebhookTotal,
   billingRecurringChargeTotal,
   billingSupersedeCancelTotal,
+  plataSyncLastSuccessTimestampSeconds,
 } from "./metrics/billing.js";
+
+export { authPasswordCheckFailuresTotal } from "./metrics/auth.js";

@@ -482,7 +482,6 @@ export default defineConfig(({ mode }) => {
       host: true,
       port: 3000,
       strictPort: true,
-      allowedHosts: true,
       // Паритет із `preview.headers` (браузерна верифікація 2026-08-06):
       // без COOP/COEP dev-сервер щодня працює на kvvfs-fallback замість
       // OPFS — інша персистентність, ніж прод/preview, і клас «фантомних»

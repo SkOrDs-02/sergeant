@@ -2,6 +2,7 @@ import { finykRedesignEn } from "./en.finykRedesign";
 import type { messages as ukMessages, MessageGroupShape } from "./uk";
 import { pricingEn } from "./en.pricing";
 import { nutritionTdeeEn } from "./en.nutritionTdee";
+import { nowPileEn } from "./en.hubNow";
 
 /**
  * Full English catalog. Top-level keys present here REPLACE the same
@@ -47,6 +48,10 @@ export const messagesEn: Partial<{
     serverUnavailableBody:
       "Your data on this device is safe. The app opens as soon as the server responds.",
     serverUnavailableRetry: "Retry now",
+
+    sessionExpiredTitle: "Session ended",
+    sessionExpiredBody:
+      "Sign in again. Everything you saved on this device is kept and syncs after you sign in.",
 
     // Round 16 — soft-auth prompt
     createAccount: "Create account",
@@ -312,18 +317,11 @@ export const messagesEn: Partial<{
       cancel: "Cancel",
     },
     otherTips: "More tips",
-    nowPile: {
-      heading: "Now",
-      empty: "Everything is closed for today, nothing needs your attention.",
-      more: "more",
-      doIt: "Do it",
-      open: "Open",
-      openWeekReport: "Open the week report",
-      check: "Close for today",
-    },
+    nowPile: nowPileEn,
     closedPile: {
       heading: "Closed",
       uncheck: "Back to Now",
+      unchecked: "Moved back to Now",
     },
     spendHero: {
       label: "Spent today",
@@ -477,7 +475,6 @@ export const messagesEn: Partial<{
       confirmSubtitle: "Enter your PIN again to confirm",
       checking: "Checking app lock…",
       unlockTitle: "Enter PIN",
-      unlockSubtitle: "Enter your PIN to unlock",
       pinMismatch: "PINs don't match. Try again.",
       pinWrong: "Wrong PIN. Try again.",
       pinTooShort: "PIN must be 4 to 6 digits.",
@@ -499,6 +496,8 @@ export const messagesEn: Partial<{
         "Too many wrong attempts, so the PIN is no longer accepted. Reset the data on this device and start over.",
       signingOut: "Signing out…",
       signOutFailed: "Couldn't sign out. Try again.",
+      saveFailed: "Couldn't save the PIN. Try again.",
+      enableFailed: "Couldn't turn on the lock. Try again.",
       next: "Next",
       back: "Back",
       open: "Open",
@@ -547,7 +546,7 @@ export const messagesEn: Partial<{
       clearConfirmButton: "Clear forever",
       /** `{count}` — how many facts from this group are loaded so far. */
       profileGroupCount: "Facts: {count}",
-      collapseFact: "Collapse",
+      showLessFact: "Show less",
       technicalGroupHints: {
         product:
           "App service markers: registration, onboarding, first action in a module, subscription. The assistant reads them as an action history, not as a fact about you.",

@@ -17,10 +17,12 @@ import { db } from "./drizzle.js";
 import pool from "./db.js";
 import { grantReverseTrial } from "./modules/billing/reverseTrial.js";
 import { sanitizeUserImage } from "./auth/sanitizeUserImage.js";
-import { guardUserName } from "./auth/sanitizeUserName.js";
+import { guardUserEmail, guardUserName } from "./auth/sanitizeUserName.js";
+import { countChangePasswordFailureAfter } from "./auth/passwordCheckFailures.js";
 import {
   guardChangeEmailUserUpdate,
   notifyOldEmailAfterUserUpdate,
+  notifyOldEmailAfterVerifyEmailChange,
 } from "./auth/changeEmailGuard.js";
 import {
   hardenSessionBefore,
@@ -351,13 +353,11 @@ export const auth = betterAuth({
      *
      * Дві гілки (обидві всередині Better Auth, `update-user.ts`):
      *
-     *   - Поточний email НЕ підтверджений → `updateEmailWithoutVerification`
-     *     дозволяє оновити адресу одразу, після чого на НОВУ адресу летить
-     *     звичайний верифікаційний лист. Підтверджувати старий ящик немає
-     *     сенсу: власність над ним ніколи не була доведена. Без підтвердження
-     *     це дірка для вкраденої сесії (sec-06), тому хук `hooks.before`
-     *     вимагає сесію молодше 10 хв (`SESSION_NOT_FRESH`), а `hooks.after`
-     *     шле лист-сповіщення на СТАРУ адресу (auth/changeEmailGuard.ts).
+     *   - Поточний email НЕ підтверджений → на НОВУ адресу летить
+     *     лист-верифікація, адреса міняється лише після кліку
+     *     (`updateEmailWithoutVerification: false`, рішення власника
+     *     2026-10-23, sec-06). Після кліку на СТАРУ адресу йде
+     *     лист-сповіщення (`notifyOldEmailAfterVerifyEmailChange`).
      *   - Поточний email підтверджений → лист-підтвердження йде на СТАРУ
      *     адресу; лише після кліку летить верифікація на нову. Це захист
      *     від тихого перепривʼязування вкраденої сесії — саме той вектор,
@@ -365,11 +365,13 @@ export const auth = betterAuth({
      *     H6-email-verification.md`).
      *
      * Обидва листи йдуть у ту саму durable-чергу `auth-mail`, що й
-     * verify/reset (Resend + 5 ретраїв).
+     * verify/reset (Resend + 5 ретраїв). Перед ендпоінтом стоїть
+     * `http/changeEmailReauth.ts`: поточний пароль (OAuth-only — сесія
+     * ≤ 10 хв) і не більше 3 запитів на добу.
      */
     changeEmail: {
       enabled: true,
-      updateEmailWithoutVerification: true,
+      updateEmailWithoutVerification: false,
       sendChangeEmailConfirmation: async ({ user, newEmail, url }) => {
         const mail = changeEmailConfirmationMail(newEmail, url);
         queueAuthTransactionalEmail({
@@ -490,7 +492,7 @@ export const auth = betterAuth({
       create: {
         before: async (data, context) => {
           // AI-LEGACY: expires 2026-11-30 — рубильник закритого доступу;
-          // прибирання — docs/work/specs/beta-launch/README.md § Що прибрати.
+          // прибирання — https://github.com/SkOrDs-02/sergeant/blob/97e477e90b711b210184ff2b9426b4452c1cd43f/docs/work/specs/beta-launch/README.md § Що прибрати.
           // Стоїть саме тут, а не на формі реєстрації: `user.create`
           // спрацьовує однаково для email+пароля, Google і Apple, тож
           // соцвхід не обходить гейт створенням користувача в колбеку.
@@ -503,7 +505,7 @@ export const auth = betterAuth({
           // sec-16: `name` без межі роздуває session_data-куку до 431 на
           // кожному запиті; режими reject/truncate — в `sanitizeUserName.ts`.
           const result = sanitizeUserImage(
-            guardUserName(data, context, "create"),
+            guardUserName(guardUserEmail(data), context, "create"),
           );
           if (result.imageStripped) {
             logger.warn(
@@ -573,7 +575,7 @@ export const auth = betterAuth({
           guardChangeEmailUserUpdate(data, context);
           // sec-16: див. коментар в `create.before`.
           const result = sanitizeUserImage(
-            guardUserName(data, context, "update"),
+            guardUserName(guardUserEmail(data), context, "update"),
           );
           if (result.imageStripped) {
             logger.warn(
@@ -590,6 +592,7 @@ export const auth = betterAuth({
         // sec-06: лист-сповіщення на СТАРУ адресу після справжньої зміни.
         after: async (updated, context) => {
           notifyOldEmailAfterUserUpdate(updated, context);
+          notifyOldEmailAfterVerifyEmailChange(updated, context);
         },
       },
     },
@@ -613,7 +616,7 @@ export const auth = betterAuth({
       create: {
         before: async (data) => {
           // AI-LEGACY: expires 2026-11-30 — друга половина рубильника;
-          // прибирання — docs/work/specs/beta-launch/README.md § Що прибрати.
+          // прибирання — https://github.com/SkOrDs-02/sergeant/blob/97e477e90b711b210184ff2b9426b4452c1cd43f/docs/work/specs/beta-launch/README.md § Що прибрати.
           // Блокування `user.create` зупиняє лише НОВИХ; сесію ж отримує
           // і той, хто зареєструвався під час бети. Перевірка тут ловить
           // кожен логін незалежно від провайдера. Уже видані сесії живуть
@@ -666,6 +669,8 @@ export const auth = betterAuth({
     // sec-05: сирий session token не віддаємо в get-session / list-sessions.
     after: createAuthMiddleware(async (ctx) => {
       stripSessionTokenAfter(ctx);
+      // sec-10: невірний поточний пароль → метрика й алерт на серію.
+      countChangePasswordFailureAfter(ctx);
     }),
   },
   trustedOrigins: getTrustedOrigins(),

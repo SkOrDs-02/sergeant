@@ -21,8 +21,6 @@ export const finykRedesignEn = {
   cards: "On cards",
   debts: "Debts",
   noDayPlan: "Daily budget not set",
-  dayPlanHint:
-    "Calculated from your monthly expense plan, subscriptions and debts.",
   setPlan: "Set plan",
   spentToday: "Spent today",
   dayPlan: "Day plan",

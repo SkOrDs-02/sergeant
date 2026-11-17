@@ -67,6 +67,7 @@ export interface SqliteWorkerConnection {
   prune(
     keep: readonly string[],
     force: readonly string[],
+    sweep: boolean,
   ): Promise<SqliteWorkerPruneResult>;
 }
 
@@ -268,8 +269,8 @@ export async function openSqliteInWorker(
         terminate();
       }
     },
-    async prune(keep, force) {
-      const response = await call({ kind: "prune", keep, force });
+    async prune(keep, force, sweep) {
+      const response = await call({ kind: "prune", keep, force, sweep });
       return response.ok && response.kind === "prune"
         ? response.result
         : { removed: [], kept: [] };

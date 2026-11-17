@@ -56,6 +56,7 @@ beforeEach(() => {
   mocks.resolveBranchContext.mockReset();
   mocks.dbQuery.mockReset();
   mocks.loggerWarn.mockReset();
+  __test__.clearSearchCache();
 });
 
 /** Makes `callWithFreshAccessToken` actually invoke the passed `fn` with a fake token — mirrors `receipts.test.ts`'s "per-order parsing via callMcpTool envelope" pattern. */
@@ -481,6 +482,91 @@ function mockTwoPhaseSearch() {
     },
   );
 }
+
+describe("searchSilpoProducts - кеш і мінімальна довжина (rel-22)", () => {
+  it("запит коротший за 3 символи: жодного звернення до БД чи MCP", async () => {
+    connectedRow();
+    passThroughAccessToken();
+    expect(await searchSilpoProducts("user-1", " хл ")).toEqual([]);
+    expect(mocks.dbQuery).not.toHaveBeenCalled();
+    expect(mocks.callMcpTool).not.toHaveBeenCalled();
+  });
+
+  it("повтор того самого запиту того самого користувача береться з кешу", async () => {
+    connectedRow();
+    passThroughAccessToken();
+    mockTwoPhaseSearch();
+    const first = await searchSilpoProducts("user-1", "Молоко");
+    const callsAfterFirst = mocks.callMcpTool.mock.calls.length;
+    const second = await searchSilpoProducts("user-1", "  молоко ");
+    expect(second).toEqual(first);
+    expect(first.length).toBe(1);
+    expect(mocks.callMcpTool.mock.calls.length).toBe(callsAfterFirst);
+  });
+
+  it("кеш не віддає видачу одного користувача іншому", async () => {
+    connectedRow();
+    passThroughAccessToken();
+    mockTwoPhaseSearch();
+    await searchSilpoProducts("user-1", "молоко");
+    const callsAfterFirst = mocks.callMcpTool.mock.calls.length;
+    await searchSilpoProducts("user-2", "молоко");
+    expect(mocks.callMcpTool.mock.calls.length).toBeGreaterThan(
+      callsAfterFirst,
+    );
+  });
+
+  it("відключений користувач не отримує закешованої видачі", async () => {
+    connectedRow();
+    passThroughAccessToken();
+    mockTwoPhaseSearch();
+    await searchSilpoProducts("user-1", "молоко");
+    notConnectedRow();
+    expect(await searchSilpoProducts("user-1", "молоко")).toEqual([]);
+  });
+
+  it("видача зі збоєм хоч одного details-запиту не кешується", async () => {
+    connectedRow();
+    passThroughAccessToken();
+    mockTwoPhaseSearch();
+    const twoPhase = mocks.callMcpTool.getMockImplementation()!;
+    mocks.callMcpTool.mockImplementation(
+      async (opts: { toolName: string; args: { slug?: string } }) => {
+        if (opts.toolName === "silpo_find_products_batch") {
+          const res = await twoPhase(opts);
+          const hit = res.data.queries[0].products[0];
+          res.data.queries[0].products.push({ ...hit, slug: "other-222222" });
+          return res;
+        }
+        if (opts.args.slug === "other-222222") {
+          return {
+            ok: false,
+            error: { kind: "upstream_unavailable", message: "x" },
+          };
+        }
+        return twoPhase(opts);
+      },
+    );
+    const first = await searchSilpoProducts("user-1", "молоко");
+    expect(first.length).toBe(1);
+    const callsAfterFirst = mocks.callMcpTool.mock.calls.length;
+    await searchSilpoProducts("user-1", "молоко");
+    expect(mocks.callMcpTool.mock.calls.length).toBeGreaterThan(
+      callsAfterFirst,
+    );
+  });
+
+  it("збій джерела не кешується", async () => {
+    connectedRow();
+    mocks.callWithFreshAccessToken.mockResolvedValue({
+      ok: false,
+      error: { kind: "upstream_unavailable", message: "x" },
+    });
+    await searchSilpoProducts("user-1", "молоко");
+    await searchSilpoProducts("user-1", "молоко");
+    expect(mocks.callWithFreshAccessToken).toHaveBeenCalledTimes(2);
+  });
+});
 
 describe("searchSilpoProducts", () => {
   it("silently skips (empty array, no MCP call) for a non-connected user — guard #4", async () => {

@@ -36,7 +36,7 @@ describe("WeeklyDigestCard — collapse contract", () => {
   it("does NOT render the collapse control when `onCollapse` is omitted", () => {
     render(<WeeklyDigestCard />);
     expect(
-      screen.queryByRole("button", { name: /згорнути звіт тижня/i }),
+      screen.queryByRole("button", { name: /сховати звіт тижня/i }),
     ).toBeNull();
   });
 
@@ -45,7 +45,7 @@ describe("WeeklyDigestCard — collapse contract", () => {
     render(<WeeklyDigestCard onCollapse={onCollapse} />);
 
     const button = screen.getByRole("button", {
-      name: /згорнути звіт тижня/i,
+      name: /сховати звіт тижня/i,
     });
     expect(button).not.toBeNull();
 

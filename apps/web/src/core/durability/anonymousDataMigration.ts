@@ -17,6 +17,7 @@ import {
 import { enqueueOutboxUpsert } from "../syncEngine/enqueueOutboxUpsert.js";
 import { NON_SYNCABLE_USER_IDS } from "../syncEngine/syncableUserId.js";
 import { notifyOutboxEnqueued } from "../syncEngine/outboxNudge.js";
+import { preflightAnonymousRows } from "./anonymousPartitionPreflight.js";
 
 interface MigrationClaim extends Record<string, unknown> {
   readonly target_user_id: string;
@@ -826,10 +827,15 @@ async function runMigration(
   const sqlite = await import("../db/sqlite.js");
   await sqlite.switchSqliteUser(null);
   const sourceClient = (await sqlite.getSqliteDb()).migrationClient();
-  tracker.step = "migrate-source-schemas";
-  await migrateModuleSchemas(sourceClient);
-  tracker.step = "snapshot";
-  const snapshot = await snapshotAnonymousRows(sourceClient);
+  tracker.step = "preflight";
+  let snapshot: SnapshotRow[] = [];
+  // «empty» лише з доказом; будь-яка невизначеність = повна розвідка.
+  if ((await preflightAnonymousRows(sourceClient)) !== "empty") {
+    tracker.step = "migrate-source-schemas";
+    await migrateModuleSchemas(sourceClient);
+    tracker.step = "snapshot";
+    snapshot = await snapshotAnonymousRows(sourceClient);
+  }
   if (snapshot.length === 0) {
     await sqlite.switchSqliteUser(targetUserId);
     // Переносити нічого, але привиди від спроб ДО стадії 2.4 могли

@@ -28,9 +28,12 @@ import {
 } from "../lib/routineStorage";
 import type { PendingHabitDeletion, RoutineState } from "../lib/types";
 import { ActiveHabitsSection } from "./habits/ActiveHabitsSection";
+import { HABITS_FOCUS_FALLBACK } from "./habits/focusFallback";
+import { focusFallbackTarget } from "@shared/lib/ui/focusFallback";
 import { ArchivedHabitsSection } from "./habits/ArchivedHabitsSection";
 import { HabitDetailSheet } from "./HabitDetailSheet";
 import { HabitQuickCreateDialog } from "./HabitQuickCreateDialog";
+import { FORM_DRAFT_IDS, peekFormDraft } from "@shared/lib/storage/formDrafts";
 
 const COPY = messages.routine.habitsTab;
 
@@ -40,6 +43,8 @@ export interface RoutineHabitsPanelProps {
   hidden?: boolean;
 }
 
+const habitsFocusFallback = focusFallbackTarget(HABITS_FOCUS_FALLBACK);
+
 export function RoutineHabitsPanel({
   routine,
   setRoutine,
@@ -47,7 +52,11 @@ export function RoutineHabitsPanel({
 }: RoutineHabitsPanelProps) {
   const toast = useToast();
   const [editingId, setEditingId] = useState<string | null>(null);
-  const [creatingHabit, setCreatingHabit] = useState(false);
+  // Недописана нова звичка переживає замок застосунку (sec-13): діалог
+  // відкривається з чернеткою, яку лишив `HabitQuickCreateDialog`.
+  const [creatingHabit, setCreatingHabit] = useState(
+    () => peekFormDraft(FORM_DRAFT_IDS.routineHabit) !== null,
+  );
   const [editDialogFocusTick, setEditDialogFocusTick] = useState(0);
   const [detailHabitId, setDetailHabitId] = useState<string | null>(null);
   const [deleteHabitPending, setDeleteHabitPending] =
@@ -66,8 +75,6 @@ export function RoutineHabitsPanel({
       hidden={hidden}
       className="space-y-7"
     >
-      <p className="text-style-body text-subtle leading-snug">{COPY.intro}</p>
-
       <ActiveHabitsSection
         routine={routine}
         setRoutine={setRoutine}
@@ -102,6 +109,7 @@ export function RoutineHabitsPanel({
         onClose={closeHabitDialog}
         editingId={editingId}
         focusTick={editDialogFocusTick}
+        returnFocusFallback={habitsFocusFallback}
       />
 
       <ConfirmDialog
@@ -138,6 +146,7 @@ export function RoutineHabitsPanel({
           setDeleteHabitPending(null);
         }}
         onCancel={() => setDeleteHabitPending(null)}
+        returnFocusFallback={habitsFocusFallback}
       />
 
       {detailHabitId && (

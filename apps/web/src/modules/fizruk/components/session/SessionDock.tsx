@@ -2,9 +2,13 @@
  * Last validated: 2026-09-11
  * Status: Active
  */
-import type { ReactNode } from "react";
+import { useRef, type ReactNode } from "react";
 import { formatRestClock } from "@sergeant/fizruk-domain";
 import { useVisualKeyboardInset } from "@sergeant/shared";
+import {
+  SESSION_DOCK_INSET_VAR,
+  useBottomInsetVar,
+} from "@shared/hooks/useBottomInsetVar";
 import { messages } from "@shared/i18n/uk";
 import { cn } from "@shared/lib/ui/cn";
 import type { RestTimerState } from "../../hooks/useFizrukRestSound";
@@ -39,12 +43,16 @@ export function SessionDock({
 }: SessionDockProps) {
   const rt = messages.fizruk.restTimer;
   const kbInset = useVisualKeyboardInset(true);
+  const dockRef = useRef<HTMLDivElement | null>(null);
+  // Під клавіатурою панель з'їжджає за екран і смуги не займає.
+  useBottomInsetVar(dockRef, SESSION_DOCK_INSET_VAR, kbInset === 0);
   const resting = restTimer != null;
   const pct =
     resting && restTimer.total > 0 ? restTimer.remaining / restTimer.total : 0;
 
   return (
     <div
+      ref={dockRef}
       className={cn(
         "fixed inset-x-0 bottom-0 z-40 border-t bg-panel transition-transform",
         "border-line",

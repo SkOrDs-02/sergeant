@@ -5,12 +5,20 @@ import { Card } from "@shared/components/ui/Card";
 import { SectionHeading } from "@shared/components/ui/SectionHeading";
 import { BodyAtlas } from "./BodyAtlas";
 import { buildAtlasData } from "../lib/atlasData";
+import { heatColor } from "../lib/atlasHeat";
 import { useExerciseCatalog } from "../hooks/useExerciseCatalog";
 import { useRecovery } from "../hooks/useRecovery";
 import { useReplicaFreshness } from "../hooks/useReplicaFreshness";
 import { RecoveryHonestyNotes } from "./RecoveryHonestyNotes";
 import { useAuthOptional } from "../../../core/auth/AuthContext";
 import { isSyncableUserId } from "../../../core/syncEngine/syncableUserId";
+
+/** Підпис і інтенсивність шкали мапи: низ, середина, верх `heatColor`. */
+const LEGEND: ReadonlyArray<readonly [string, number]> = [
+  ["готово", 0.03],
+  ["краще почекати", 0.5],
+  ["рано", 1],
+];
 
 export function RecoveryFocusCard({
   onOpenAtlas,
@@ -127,17 +135,19 @@ export function RecoveryFocusCard({
             <BodyAtlas data={atlasData} compact onOpenFull={onOpenAtlas} />
           </div>
 
+          {/* Крапки тим самим `heatColor`, що й силует: статусні
+              `bg-success/warning/danger` у темній темі розходились із
+              chart-шкалою мапи (redesign v3.2, дрібне). */}
           <div className="flex flex-wrap items-center gap-x-3 gap-y-1 text-style-caption text-subtle mb-3 mt-3">
-            <span className="inline-flex items-center gap-1">
-              <span className="w-2 h-2 rounded-[3px] bg-success" /> готово
-            </span>
-            <span className="inline-flex items-center gap-1">
-              <span className="w-2 h-2 rounded-[3px] bg-warning" /> краще
-              почекати
-            </span>
-            <span className="inline-flex items-center gap-1">
-              <span className="w-2 h-2 rounded-[3px] bg-danger" /> рано
-            </span>
+            {LEGEND.map(([label, value]) => (
+              <span key={label} className="inline-flex items-center gap-1">
+                <span
+                  className="w-2 h-2 rounded-[3px]"
+                  style={{ background: heatColor(value) ?? undefined }}
+                />{" "}
+                {label}
+              </span>
+            ))}
           </div>
 
           {/*

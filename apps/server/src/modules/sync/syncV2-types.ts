@@ -200,8 +200,15 @@ export const ENGINE_REJECT_REASONS = [
 export type EngineRejectReason = (typeof ENGINE_REJECT_REASONS)[number];
 export type RejectReason = ApplyRejectReason | EngineRejectReason;
 
+/**
+ * `retry` — оп застосувати ще не можна, але й відхиляти назавжди не можна:
+ * apply нічого не записав, у журнал оп не йде, клієнт повторить його згодом
+ * (той самий шлях, що й транзієнтні SQLSTATE).
+ */
 export type AppliedStatus =
-  { status: "applied" } | { status: "rejected"; reason: ApplyRejectReason };
+  | { status: "applied" }
+  | { status: "rejected"; reason: ApplyRejectReason }
+  | { status: "retry"; reason: "prefs_patch_without_base" };
 
 // Re-export
 export type { SyncV2Op } from "../../http/schemas.js";

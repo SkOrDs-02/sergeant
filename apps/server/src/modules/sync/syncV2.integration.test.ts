@@ -5988,3 +5988,87 @@ describe("sync_op_log — per-user advisory lock (data-12)", () => {
     TIMEOUT_MS,
   );
 });
+
+// ── Байтовий бюджет сторінки pull (ADR-0105, rel-06) ────────────────────────
+//
+// Бюджет рахує сам Postgres (`octet_length(row::text)` + віконна сума), тож
+// мок пулу цього не покриває: потрібен реальний SQL.
+describe("syncV2Pull — байтовий бюджет сторінки (ADR-0105)", () => {
+  const USER = "u-pull-budget";
+
+  const seed = async (n: number, padBytes: number) => {
+    for (let i = 0; i < n; i++) {
+      await testPool!.query(
+        `INSERT INTO sync_op_log
+           (user_id, idempotency_key, table_name, op, row, client_ts,
+            status, origin_device_id)
+         VALUES ($1, $2, 'routine_entries', 'insert',
+                 jsonb_build_object('pad', repeat('x', $3::int)), NOW(),
+                 'applied', 'server')`,
+        [USER, `budget-${i}`, padBytes],
+      );
+    }
+  };
+
+  const pull = async (since: number) => {
+    const res = makeRes();
+    await syncV2Pull(
+      makeReq({
+        userId: USER,
+        query: { since, limit: 500 },
+        headers: { "x-origin-device-id": "device-reader" },
+      }),
+      res,
+    );
+    expect(res.statusCode).toBe(200);
+    return res.body as {
+      ops: Array<{ id: number }>;
+      next_cursor: number | null;
+    };
+  };
+
+  it(
+    "обрізає за бюджетом, віддає next_cursor, один оп понад бюджет іде єдиним, прохід нічого не губить",
+    async (ctx) => {
+      if (!dockerAvailable || !testPool) return ctx.skip();
+      await ensureUser(USER);
+      const { env } = await import("../../env/env.js");
+      const prev = env.SYNC_V2_PULL_MAX_BYTES;
+      try {
+        // 5 рядків по ~1000 байтів (+ службові ~10); бюджет 2500: префікс
+        // перед третім ~2020 < 2500, перед четвертим ~3030 >= 2500.
+        await seed(5, 1000);
+        env.SYNC_V2_PULL_MAX_BYTES = 2500;
+        const first = await pull(0);
+        expect(first.ops).toHaveLength(3);
+        expect(first.next_cursor).toBe(first.ops[2]!.id);
+
+        const seen: number[] = [];
+        let since = 0;
+        for (let guard = 0; guard < 10; guard++) {
+          const page = await pull(since);
+          seen.push(...page.ops.map((o) => o.id));
+          if (page.next_cursor === null) break;
+          since = page.next_cursor;
+        }
+        expect(seen).toHaveLength(5);
+        expect(new Set(seen).size).toBe(5);
+
+        // Бюджет менший за один рядок: оп усе одно віддається, по одному.
+        env.SYNC_V2_PULL_MAX_BYTES = 10;
+        const tiny = await pull(0);
+        expect(tiny.ops).toHaveLength(1);
+        expect(tiny.next_cursor).toBe(tiny.ops[0]!.id);
+
+        // Без тиску бюджету: під limit і без обрізання - кінець журналу.
+        env.SYNC_V2_PULL_MAX_BYTES = 2_097_152;
+        const all = await pull(0);
+        expect(all.ops).toHaveLength(5);
+        expect(all.next_cursor).toBeNull();
+      } finally {
+        env.SYNC_V2_PULL_MAX_BYTES = prev;
+      }
+    },
+    TIMEOUT_MS,
+  );
+});

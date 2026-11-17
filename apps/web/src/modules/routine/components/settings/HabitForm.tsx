@@ -15,6 +15,7 @@ import { ChoiceGroup } from "@shared/components/ui/Choice";
 import { MorphChevron } from "@shared/components/ui/MorphChevron";
 import { DateField } from "@shared/components/ui/DateField";
 import { FIELD_LABEL, Input } from "@shared/components/ui/Input";
+import { Select } from "@shared/components/ui/Select";
 import { Label } from "@shared/components/ui/FormField";
 import { VoiceMicButton } from "@shared/components/ui/VoiceMicButton";
 import { NAME_MAX_LEN } from "@shared/lib/text/limits";
@@ -388,10 +389,16 @@ export function HabitForm({
           )}
 
           {routine.categories.length > 0 && (
-            <label className={`${FIELD_LABEL} block`}>
-              Категорія
-              <select
-                className="routine-touch-select mt-1"
+            <div>
+              <label
+                htmlFor="habit-category-select"
+                className={`${FIELD_LABEL} block`}
+              >
+                Категорія
+              </label>
+              <Select
+                id="habit-category-select"
+                className="mt-1"
                 value={habitDraft.categoryId || ""}
                 onChange={(e) => {
                   const id = e.target.value;
@@ -407,8 +414,8 @@ export function HabitForm({
                     {c.name}
                   </option>
                 ))}
-              </select>
-            </label>
+              </Select>
+            </div>
           )}
         </div>
       )}

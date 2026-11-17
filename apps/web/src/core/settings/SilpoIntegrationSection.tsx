@@ -160,6 +160,7 @@ export function SilpoIntegrationSection({
     data: syncState,
     status,
     isError: checkFailed,
+    isLoading,
     isFetching,
     refetch,
   } = useSilpoSyncState({ enabled: inView });
@@ -296,7 +297,11 @@ export function SilpoIntegrationSection({
             {COPY.help}
           </p>
 
-          {checkFailed ? (
+          {isLoading ? (
+            <p className="text-style-body text-subtle" role="status">
+              {COPY.checking}
+            </p>
+          ) : checkFailed ? (
             <div className="space-y-3">
               <p
                 className="text-style-body text-danger bg-danger/10 rounded-panel px-3 py-2"

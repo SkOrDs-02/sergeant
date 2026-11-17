@@ -2,8 +2,10 @@
 
 > **Поточні статуси перенесених знахідок:** [єдиний реєстр верифікації](verification/findings.json). Цей документ зберігає історичні результати; нові спроби та виправлення ведуться в реєстрі.
 
-> **Last touched:** 2026-10-19 by @Skords-01. **Next review:** 2027-12-06.
+> **Last touched:** 2026-10-22 by @test. **Next review:** 2027-12-09.
 > **Status:** Active
+>
+> **Звірка 2026-10-22:** `routes/internal/seo.ts`, `marketing.ts` і `growth.ts` з § 3а вже видалені (#1310, #1536); `strategic.ts`, `debug-window.ts`, `email.ts` та неспожиті хуки api-client лишаються.
 
 > **Governing skill:** `sergeant-tech-debt` · **Playbook:** [`cleanup-dead-code.md`](../../../start/instructions/cleanup-dead-code.md).
 > Це read-only аудит: у цьому PR нічого не видаляється. Кожна знахідка отримує клас, докази («чому воно осиротіло») і рекомендацію. Самі видалення — окремими PR-ами за класами боргу (політика skill-у: не змішувати dead-code, lint-cleanup і декомпозицію в одному PR).

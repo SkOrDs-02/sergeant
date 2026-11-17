@@ -201,10 +201,16 @@ describe("Body page — trends + journal", () => {
 });
 
 describe("Body page — radiogroup keyboard roving", () => {
+  // Клавіші ловить радіо-кнопка зі зупинкою Tab (`ChoiceGroup`), а не контейнер.
+  const stop = (group: HTMLElement) =>
+    within(group)
+      .getAllByRole("radio")
+      .find((r) => r.tabIndex === 0)!;
+
   it("ArrowRight selects the next energy value", () => {
     render(<Body />);
     const group = screen.getByRole("radiogroup", { name: "Рівень енергії" });
-    fireEvent.keyDown(group, { key: "ArrowRight" });
+    fireEvent.keyDown(stop(group), { key: "ArrowRight" });
     // First press moves from null(→0 idx) to value 1; selected radio appears.
     const radios = within(group).getAllByRole("radio");
     expect(radios.some((r) => r.getAttribute("aria-checked") === "true")).toBe(
@@ -215,10 +221,10 @@ describe("Body page — radiogroup keyboard roving", () => {
   it("Home selects the first value and End selects the last on mood", () => {
     render(<Body />);
     const group = screen.getByRole("radiogroup", { name: "Настрій" });
-    fireEvent.keyDown(group, { key: "End" });
+    fireEvent.keyDown(stop(group), { key: "End" });
     let radios = within(group).getAllByRole("radio");
     expect(radios[4]!.getAttribute("aria-checked")).toBe("true");
-    fireEvent.keyDown(group, { key: "Home" });
+    fireEvent.keyDown(stop(group), { key: "Home" });
     radios = within(group).getAllByRole("radio");
     expect(radios[0]!.getAttribute("aria-checked")).toBe("true");
   });
@@ -226,8 +232,8 @@ describe("Body page — radiogroup keyboard roving", () => {
   it("ArrowLeft wraps from the first value to the last", () => {
     render(<Body />);
     const group = screen.getByRole("radiogroup", { name: "Рівень енергії" });
-    fireEvent.keyDown(group, { key: "Home" });
-    fireEvent.keyDown(group, { key: "ArrowLeft" });
+    fireEvent.keyDown(stop(group), { key: "Home" });
+    fireEvent.keyDown(stop(group), { key: "ArrowLeft" });
     const radios = within(group).getAllByRole("radio");
     expect(radios[4]!.getAttribute("aria-checked")).toBe("true");
   });
@@ -238,7 +244,7 @@ describe("Body page — radiogroup keyboard roving", () => {
   it("ArrowLeft from an empty selection lands on the last value (5), not 4", () => {
     render(<Body />);
     const group = screen.getByRole("radiogroup", { name: "Настрій" });
-    fireEvent.keyDown(group, { key: "ArrowLeft" });
+    fireEvent.keyDown(stop(group), { key: "ArrowLeft" });
     const radios = within(group).getAllByRole("radio");
     expect(radios[4]!.getAttribute("aria-checked")).toBe("true");
     expect(radios[3]!.getAttribute("aria-checked")).toBe("false");
@@ -248,7 +254,7 @@ describe("Body page — radiogroup keyboard roving", () => {
   it("ArrowUp from an empty selection lands on the last value (5), not 4", () => {
     render(<Body />);
     const group = screen.getByRole("radiogroup", { name: "Рівень енергії" });
-    fireEvent.keyDown(group, { key: "ArrowUp" });
+    fireEvent.keyDown(stop(group), { key: "ArrowUp" });
     const radios = within(group).getAllByRole("radio");
     expect(radios[4]!.getAttribute("aria-checked")).toBe("true");
   });

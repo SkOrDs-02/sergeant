@@ -196,7 +196,7 @@ companions, module-accent containment — свідомо не покриті gre
 
 | Документ                                                   | Опис                                                                      |
 | ---------------------------------------------------------- | ------------------------------------------------------------------------- |
-| [`anti-slop-strategy.md`](./anti-slop-strategy.md)         | Диференціація від «генерованого» вигляду: аудит, 5 принципів, slop-тест   |
+| [`anti-slop-strategy.md`](./anti-slop-strategy.md)         | Диференціація від «генерованого» вигляду: аудит, 6 принципів, slop-тест   |
 | [`cross-module-prompts.md`](./cross-module-prompts.md)     | Cross-module nudges із anti-nag-механікою                                 |
 | [`density-hierarchy-spec.md`](./density-hierarchy-spec.md) | Правила 1–2 типографіки по геро-блоках модулів + межа застосовності П2    |
 | [`empty-states.md`](./empty-states.md)                     | Правила empty / error / zero-data станів (3 tier-и)                       |

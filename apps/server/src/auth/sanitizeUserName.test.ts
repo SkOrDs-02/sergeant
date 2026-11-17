@@ -1,9 +1,27 @@
 import { describe, it, expect } from "vitest";
 import {
   MAX_USER_NAME_LENGTH,
+  MAX_USER_EMAIL_LENGTH,
+  guardUserEmail,
   guardUserName,
   sanitizeUserName,
 } from "./sanitizeUserName.js";
+
+describe("guardUserEmail (sec-16 залишок)", () => {
+  it("межа 254 включна, довше - 400 INVALID_EMAIL", () => {
+    const ok = { email: "a".repeat(MAX_USER_EMAIL_LENGTH) };
+    expect(guardUserEmail(ok)).toBe(ok);
+    expect(() =>
+      guardUserEmail({ email: "a".repeat(MAX_USER_EMAIL_LENGTH + 1) }),
+    ).toThrow(expect.objectContaining({ statusCode: 400 }));
+  });
+
+  it("відсутній або не-рядковий email не чіпає", () => {
+    const a = { name: "x" };
+    expect(guardUserEmail(a)).toBe(a);
+    expect(guardUserEmail({ email: undefined })).toEqual({ email: undefined });
+  });
+});
 
 describe("sanitizeUserName", () => {
   it("name відсутнє або undefined: без змін", () => {

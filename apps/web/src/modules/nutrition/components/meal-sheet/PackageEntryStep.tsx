@@ -108,7 +108,6 @@ export function PackageEntryStep({ onCreated }: PackageEntryStepProps) {
       <Button
         type="button"
         variant="solid"
-        tone="nutrition"
         className="w-full min-h-[44px]"
         onClick={handleSubmit}
       >

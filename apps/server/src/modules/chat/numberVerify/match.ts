@@ -52,10 +52,13 @@ export interface VerifyResult {
 }
 
 function literalHit(token: NumberToken, given: GivenCorpus): boolean {
-  if (given.has(token.value, token.tol)) return true;
-  if (token.alt !== null && given.has(token.alt, token.tol)) return true;
+  const kind = tokenKind(token);
+  if (given.has(token.value, token.tol, kind)) return true;
+  if (token.alt !== null && given.has(token.alt, token.tol, kind)) return true;
   // «1 500 г» у відповіді проти «1,5 кг» у поданому: та сама вага, інша одиниця.
-  return token.unit === "g" && given.has(token.value / 1000, token.tol / 1000);
+  return (
+    token.unit === "g" && given.has(token.value / 1000, token.tol / 1000, kind)
+  );
 }
 
 /**

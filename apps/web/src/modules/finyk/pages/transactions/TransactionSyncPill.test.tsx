@@ -1,7 +1,7 @@
 // @vitest-environment jsdom
-import { describe, it, expect } from "vitest";
-import { render, screen } from "@testing-library/react";
-import { TransactionSyncPill } from "./TransactionSyncPill";
+import { describe, it, expect, vi } from "vitest";
+import { act, render, screen } from "@testing-library/react";
+import { SYNC_FLASH_MS, TransactionSyncPill } from "./TransactionSyncPill";
 
 describe("TransactionSyncPill", () => {
   it("renders nothing when idle with no lastUpdated", () => {
@@ -11,8 +11,30 @@ describe("TransactionSyncPill", () => {
     expect(container.firstChild).toBeNull();
   });
 
-  it("renders the success pill with network source and account counts", () => {
-    render(
+  it("renders nothing for a steady success", () => {
+    const { container } = render(
+      <TransactionSyncPill
+        syncState={{
+          status: "success",
+          source: "network",
+          accountsOk: 6,
+          accountsTotal: 6,
+        }}
+        lastUpdated={new Date()}
+      />,
+    );
+    expect(container.firstChild).toBeNull();
+  });
+
+  it("flashes success after a refresh, then hides", () => {
+    vi.useFakeTimers();
+    const { rerender, container } = render(
+      <TransactionSyncPill
+        syncState={{ status: "loading" }}
+        lastUpdated={null}
+      />,
+    );
+    rerender(
       <TransactionSyncPill
         syncState={{
           status: "success",
@@ -24,8 +46,12 @@ describe("TransactionSyncPill", () => {
       />,
     );
     expect(screen.getByText("синхронізовано")).toBeInTheDocument();
-    expect(screen.getByText("мережа")).toBeInTheDocument();
     expect(screen.getByText("6/6")).toBeInTheDocument();
+    act(() => {
+      vi.advanceTimersByTime(SYNC_FLASH_MS);
+    });
+    expect(container.firstChild).toBeNull();
+    vi.useRealTimers();
   });
 
   it("renders the error pill", () => {
@@ -59,13 +85,13 @@ describe("TransactionSyncPill", () => {
     expect(screen.getByText("оновлення…")).toBeInTheDocument();
   });
 
-  it("renders the last-updated timestamp even when idle", () => {
-    render(
+  it("hides the last-updated timestamp when idle", () => {
+    const { container } = render(
       <TransactionSyncPill
         syncState={{ status: "idle" }}
         lastUpdated={new Date("2026-06-03T10:55:00+03:00")}
       />,
     );
-    expect(screen.getByText(/оновлено ·/)).toBeInTheDocument();
+    expect(container.firstChild).toBeNull();
   });
 });

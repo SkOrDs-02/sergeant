@@ -25,6 +25,7 @@ vi.mock("../../lib/posthog.js", () => ({
   deletePostHogPerson: deletePostHogPersonMock,
 }));
 
+import { logger } from "../../obs/logger.js";
 import { processGdprCleanupQueueBatch } from "./cleanupWorker.js";
 
 interface QueryCall {
@@ -95,6 +96,7 @@ describe("processGdprCleanupQueueBatch — posthog", () => {
       failed: 0,
       exhausted: 0,
       purged: 0,
+      emailsRedacted: 0,
       deadlineExceeded: false,
     });
     const updateCall = pool.calls()[1]!;
@@ -233,6 +235,7 @@ describe("processGdprCleanupQueueBatch — stripe/sentry/resend (unwired vendors
       failed: 0,
       exhausted: 0,
       purged: 0,
+      emailsRedacted: 0,
       deadlineExceeded: false,
     });
     const rescheduleCall = pool.calls()[1]!;
@@ -335,6 +338,61 @@ describe("processGdprCleanupQueueBatch — fix #4 (PII purge)", () => {
   });
 });
 
+describe("processGdprCleanupQueueBatch — priv-13 (30-денна стеля email)", () => {
+  it("стирає email у рядках старших за 30 днів (pending і exhausted) і рахує їх", async () => {
+    const query = vi.fn();
+    query.mockResolvedValueOnce({ rows: [] }); // claim
+    query.mockResolvedValueOnce({ rows: [], rowCount: 0 }); // purge
+    query.mockResolvedValueOnce({ rows: [], rowCount: 4 }); // redact
+
+    const result = await processGdprCleanupQueueBatch({ query } as never);
+    expect(result.emailsRedacted).toBe(4);
+    const call = query.mock.calls[2]!;
+    expect(call[0]).toMatch(/UPDATE gdpr_cleanup_queue\s+SET email = NULL/);
+    expect(call[0]).toMatch(/email IS NOT NULL/);
+    expect(call[0]).toMatch(/created_at < NOW\(\) - /);
+    expect(call[1]).toEqual(["30"]);
+  });
+
+  it("закриває resend без email (completed_at) і пише warn, інші сервіси лишає pending", async () => {
+    const loggerWarn = vi.spyOn(logger, "warn").mockImplementation(() => {});
+    const query = vi.fn();
+    query.mockResolvedValueOnce({ rows: [] }); // claim
+    query.mockResolvedValueOnce({ rows: [], rowCount: 0 }); // purge
+    query.mockResolvedValueOnce({
+      rows: [
+        { service: "resend", closed: true },
+        { service: "sentry", closed: false },
+      ],
+      rowCount: 2,
+    }); // redact
+
+    const result = await processGdprCleanupQueueBatch({ query } as never);
+    expect(result.emailsRedacted).toBe(2);
+    const sql = query.mock.calls[2]![0] as string;
+    expect(sql).toMatch(
+      /completed_at = CASE\s+WHEN service = 'resend' AND completed_at IS NULL THEN NOW\(\)/,
+    );
+    expect(loggerWarn).toHaveBeenCalledWith(
+      expect.objectContaining({
+        msg: "gdpr_cleanup_resend_closed_without_email",
+        count: 1,
+      }),
+    );
+    loggerWarn.mockRestore();
+  });
+
+  it("збій редагування не валить батч", async () => {
+    const query = vi.fn();
+    query.mockResolvedValueOnce({ rows: [] });
+    query.mockResolvedValueOnce({ rows: [], rowCount: 0 });
+    query.mockRejectedValueOnce(new Error("db down"));
+
+    const result = await processGdprCleanupQueueBatch({ query } as never);
+    expect(result.emailsRedacted).toBe(0);
+  });
+});
+
 describe("processGdprCleanupQueueBatch — no candidates", () => {
   it("returns an all-zero result when the queue is empty", async () => {
     const pool = makePoolMock([]);
@@ -346,6 +404,7 @@ describe("processGdprCleanupQueueBatch — no candidates", () => {
       failed: 0,
       exhausted: 0,
       purged: 0,
+      emailsRedacted: 0,
       deadlineExceeded: false,
     });
   });

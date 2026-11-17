@@ -281,8 +281,12 @@ function makeFakeDb(
     rejections?: Array<{ transactionId: string; receiptId: string }>;
     /** Транзакції, що вже мають фіскальний чек finyk (`finyk_tx_receipt_links`). */
     finykLinkedTxIds?: string[];
-    /** `silpo_connection.receipts_wiped_at` (міграція 159) — wipe уже був. */
-    receiptsWipedAt?: Date | null;
+    /**
+     * `silpo_wipe_marker.wiped_at` (міграція 165) — wipe уже був. Масив =
+     * послідовні читання маркера (останнє значення повторюється): так
+     * моделюється wipe, що стався МІЖ стартом синку й записом чека.
+     */
+    receiptsWipedAt?: Date | null | Array<Date | null>;
   } = {},
 ) {
   const receipts = new Map<string, FakeReceiptRow>();
@@ -293,6 +297,7 @@ function makeFakeDb(
   const monoTx = seed.monoTransactions ?? [];
   const manualTx = seed.manualExpenses ?? [];
   const finykLinked = new Set(seed.finykLinkedTxIds ?? []);
+  let markerReads = 0;
 
   const query = (async (text: string, values: unknown[] = []) => {
     if (text.includes("INSERT INTO silpo_receipts")) {
@@ -389,10 +394,14 @@ function makeFakeDb(
       }
       return { rows: [], rowCount: 1 };
     }
-    if (text.includes("SELECT receipts_wiped_at FROM silpo_connection")) {
+    if (text.includes("FROM silpo_wipe_marker")) {
+      const seq = Array.isArray(seed.receiptsWipedAt)
+        ? seed.receiptsWipedAt
+        : [seed.receiptsWipedAt ?? null];
+      const at = seq[Math.min(markerReads++, seq.length - 1)] ?? null;
       return {
-        rows: [{ receipts_wiped_at: seed.receiptsWipedAt ?? null }],
-        rowCount: 1,
+        rows: at ? [{ receipts_wiped_at: at }] : [],
+        rowCount: at ? 1 : 0,
       };
     }
     if (text.includes("UPDATE silpo_connection")) {
@@ -627,6 +636,28 @@ describe("pullAndSyncReceipts", () => {
     expect(db.items).toHaveLength(0);
   });
 
+  it("синк, що почався ДО wipe, не дописує чеки після нього (маркер перечитується при записі)", async () => {
+    // data-47: старт синку бачить «wipe не було» (перше читання = null),
+    // а до моменту запису маркер уже стоїть. Без перечитування в
+    // транзакції запису тут було б receiptsInserted: 1 і 2 позиції.
+    const db = makeFakeDb({
+      receiptsWipedAt: [null, new Date("2026-08-20T00:00:00.000Z")],
+    });
+    mocks.callWithFreshAccessToken.mockResolvedValue({
+      ok: true,
+      data: { offline: [OFFLINE_ORDER], online: [] },
+    });
+
+    const result = await pullAndSyncReceipts("user-1", {
+      query: db.query,
+      withTransaction: db.withTransaction,
+    });
+
+    expect(result).toMatchObject({ receiptsInserted: 0, itemsInserted: 0 });
+    expect(db.receipts.size).toBe(0);
+    expect(db.items).toHaveLength(0);
+  });
+
   it("після wipe приймає лише замовлення, куплене ПІСЛЯ маркера", async () => {
     const db = makeFakeDb({
       // Між OFFLINE_ORDER (2026-08-10 12:00Z) і NEWER_ORDER (2026-08-15).
@@ -855,6 +886,9 @@ describe("upsertReceipt (receipt + items atomicity)", () => {
       query: vi.fn(async (text: string) => {
         calls.push(text);
         if (text === "BEGIN" || text === "COMMIT" || text === "ROLLBACK") {
+          return { rows: [], rowCount: 0 };
+        }
+        if (text.includes("FROM silpo_wipe_marker")) {
           return { rows: [], rowCount: 0 };
         }
         if (text.includes("INSERT INTO silpo_receipts")) {

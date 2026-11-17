@@ -7,6 +7,7 @@ import {
 import { computeFinykSchedule, startOfToday } from "../lib/upcomingSchedule";
 import { useDebtAutoLink } from "../hooks/useDebtAutoLink";
 import { motionScrollBehavior } from "@shared/lib/ui/motion";
+import type { AssetKind } from "./AssetKindChoice";
 import type { MonoAccount } from "@sergeant/finyk-domain/lib/accounts";
 import type { Transaction } from "@sergeant/finyk-domain/domain/types";
 import { withManualExpenses } from "@sergeant/finyk-domain/domain/transactions";
@@ -276,11 +277,32 @@ export function useAssetsState({
     setNewAsset({ name: "", amount: "", currency: "UAH", emoji: "" });
     setShowAssetForm(true);
   };
-  const openReceivableForm = () => {
-    setOpen((v) => ({ ...v, assets: true }));
-    setEditingRecvId(null);
-    setNewRecv({ name: "", emoji: "", amount: "", note: "", dueDate: "" });
-    setShowRecvForm(true);
+  // «Мені винні» - тип нового активу, а не окремий вхід (redesign v3.2):
+  // сутності різні й поля різні, тож перемикач міняє форму, а назву й суму
+  // несе з собою.
+  const switchAssetKind = (kind: AssetKind) => {
+    if (kind === "receivable") {
+      setEditingRecvId(null);
+      setNewRecv({
+        name: newAsset.name,
+        emoji: "",
+        amount: newAsset.amount,
+        note: "",
+        dueDate: "",
+      });
+      setShowAssetForm(false);
+      setShowRecvForm(true);
+    } else {
+      setEditingAssetId(null);
+      setNewAsset({
+        name: newRecv.name,
+        amount: newRecv.amount,
+        currency: "UAH",
+        emoji: "",
+      });
+      setShowRecvForm(false);
+      setShowAssetForm(true);
+    }
   };
   const openDebtForm = () => {
     setOpen((v) => ({ ...v, liabilities: true }));
@@ -420,7 +442,7 @@ export function useAssetsState({
     // Quick-action openers
     openSubscriptionForm,
     openAssetForm,
-    openReceivableForm,
+    switchAssetKind,
     openDebtForm,
   };
 }

@@ -276,6 +276,33 @@ describe("createSyncEngineReaderRuntime", () => {
     expect(refreshCachesAfterPullMock).not.toHaveBeenCalled();
   });
 
+  it("іде за next_cursor, коли сторінка обрізана байтовим бюджетом (менша за limit, ADR-0105)", async () => {
+    applyPullOpMock.mockResolvedValue("skipped");
+    // 1 оп на сторінці при limit 100: сервер обрізав її бюджетом, але
+    // next_cursor ненульовий - це не кінець журналу.
+    const pull = vi
+      .fn()
+      .mockResolvedValueOnce({
+        ops: [{ id: 5, table: "routine_entries", op: "insert", row: {} }],
+        next_cursor: 5,
+      })
+      .mockResolvedValueOnce({
+        ops: [{ id: 6, table: "routine_entries", op: "insert", row: {} }],
+        next_cursor: 6,
+      })
+      .mockResolvedValueOnce({ ops: [], next_cursor: null });
+
+    const runtime = createSyncEngineReaderRuntime(makeDeps({ pull }));
+    const result = await runtime.pullOnce();
+
+    expect(pull).toHaveBeenCalledTimes(3);
+    expect(pull).toHaveBeenNthCalledWith(3, 6, {
+      limit: 100,
+      originDeviceId: "device-a",
+    });
+    expect(result.lastOpId).toBe(6);
+  });
+
   // Гейт відновлення з файлу (data-07): «pull уже був» ставиться лише коли
   // прохід дійшов до кінця, а не на першій сторінці й не на порожньому курсорі.
   describe("мітка завершеного pull (гейт відновлення з файлу)", () => {

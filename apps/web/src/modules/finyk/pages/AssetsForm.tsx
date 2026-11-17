@@ -24,6 +24,7 @@ import {
 import type { ManualAsset, Subscription } from "../hooks/useStorage";
 import { getLastTxForSubscription } from "@sergeant/finyk-domain/domain/subscriptionUtils";
 import { DebtAutoLinkField } from "./DebtAutoLinkField";
+import { AssetKindChoice, type AssetKind } from "./AssetKindChoice";
 import type { TxRowTx } from "../components/TxRow";
 import { parseAmountToMinor } from "@shared/lib/format/amount";
 import { amountStringToHryvnia } from "@shared/lib/format/amountSchema";
@@ -182,7 +183,9 @@ export function ReceivableForm({
   setShowRecvForm,
   editingId,
   onUpdate,
+  onKindChange,
 }: {
+  onKindChange?: (kind: AssetKind) => void;
   newRecv: {
     name: string;
     emoji: string;
@@ -199,8 +202,11 @@ export function ReceivableForm({
   return (
     <Card className="space-y-3">
       <div className="text-style-label text-text">
-        {editingId ? "Редагування запису" : "Новий запис «Мені винні»"}
+        {editingId ? "Редагування запису" : "Новий актив"}
       </div>
+      {!editingId && onKindChange && (
+        <AssetKindChoice value="receivable" onChange={onKindChange} />
+      )}
       <Input
         aria-label="Імʼя або назва боржника"
         placeholder="Імʼя або назва"
@@ -304,7 +310,9 @@ export function AssetForm({
   assetNameInputRef,
   editingId,
   onUpdate,
+  onKindChange,
 }: {
+  onKindChange?: (kind: AssetKind) => void;
   newAsset: { name: string; amount: string; currency: string; emoji: string };
   setNewAsset: React.Dispatch<React.SetStateAction<typeof newAsset>>;
   setManualAssets: React.Dispatch<React.SetStateAction<ManualAsset[]>>;
@@ -326,6 +334,9 @@ export function AssetForm({
             Готівка, брокерський рахунок, крипта тощо.
           </div>
         </div>
+        {!editingId && onKindChange && (
+          <AssetKindChoice value="asset" onChange={onKindChange} />
+        )}
         <Input
           ref={assetNameInputRef as React.Ref<HTMLInputElement>}
           aria-label="Назва активу"

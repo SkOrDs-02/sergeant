@@ -270,6 +270,7 @@ export function useStorage({
     addCustomCategory: mutations.addCustomCategory,
     editCustomCategory: mutations.editCustomCategory,
     removeCustomCategory: mutations.removeCustomCategory,
+    restoreCustomCategory: mutations.restoreCustomCategory,
     overrideCategory: mutations.overrideCategory,
     // Правила «Завжди так для цього магазину» (2026-10-01). Резолвер бере
     // `merchantRuleIndex`; агрегатори — `withMerchantRuleOverrides`.

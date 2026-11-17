@@ -8,6 +8,7 @@ import { Button } from "@shared/components/ui/Button";
 import { Card } from "@shared/components/ui/Card";
 import { Input } from "@shared/components/ui/Input";
 import { searchFieldProps } from "@shared/lib/ui/searchFieldProps";
+import { focusFallbackProps } from "@shared/lib/ui/focusFallback";
 import { EmptyState, ModuleEmptyState } from "@shared/components/ui/EmptyState";
 import { messages } from "@shared/i18n/uk";
 import { sortHabitsByOrder } from "../../lib/habitOrder";
@@ -16,12 +17,16 @@ import {
   setHabitArchived,
   setHabitOrder,
 } from "../../lib/routineStorage";
+import { HABITS_FOCUS_FALLBACK } from "./focusFallback";
 import { HabitListItem } from "./HabitListItem";
 import type {
   Habit,
   PendingHabitDeletion,
   RoutineState,
 } from "../../lib/types";
+
+/** Поріг рецензента, погоджений власником (spec v3.2, Р: 10 звичок). */
+export const SEARCH_FROM_HABITS = 10;
 
 export interface ActiveHabitsSectionProps {
   routine: RoutineState;
@@ -59,18 +64,25 @@ export function ActiveHabitsSection({
     );
   }, [routine.habits, routine.habitOrder, q]);
 
-  const hasActive = routine.habits.some((h) => !h.archived);
+  const activeCount = routine.habits.filter((h) => !h.archived).length;
+  const hasActive = activeCount > 0;
 
   return (
     <Card as="section" padding="md" className="space-y-3">
-      <SectionHeading as="h2" size="lg">
+      <SectionHeading
+        as="h2"
+        size="lg"
+        tabIndex={-1}
+        className="focus-ring rounded-md"
+        {...focusFallbackProps(HABITS_FOCUS_FALLBACK)}
+      >
         Активні звички
       </SectionHeading>
-      {hasActive && (
+      {/* Пошук лише від 10 звичок (redesign v3.2, 12): на чотирьох рядках
+          він нічого не шукає. Запит лишається видимим, щоб його можна було
+          стерти. */}
+      {(activeCount >= SEARCH_FROM_HABITS || habitListQuery !== "") && (
         <>
-          <p className="text-style-body text-subtle leading-snug">
-            {messages.routine.reorderHint}
-          </p>
           <Input
             className="routine-touch-field w-full max-w-md"
             {...searchFieldProps("habit-list-search")}

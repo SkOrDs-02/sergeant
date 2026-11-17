@@ -317,6 +317,41 @@ describe("buildMeExport: первинні записи поза чотирма �
     );
   });
 
+  it("аватар їде в файл як base64, що декодується в ті самі байти (ux-14)", async () => {
+    const bytes = Buffer.from([0xff, 0xd8, 0xff, 0xe0, 0x00, 0x10, 0x4a, 0x46]);
+    const tables = seed();
+    tables["user_avatars"] = [
+      {
+        user_id: "user-A",
+        content_type: "image/jpeg",
+        data: bytes,
+        updated_at: T0,
+      },
+      {
+        user_id: "user-B",
+        content_type: "image/png",
+        data: Buffer.from("other"),
+        updated_at: T0,
+      },
+    ];
+    const result = await build(fakeDb(tables));
+
+    const avatar = result.data.avatar;
+    expect(avatar).not.toBeNull();
+    expect(avatar?.mimeType).toBe("image/jpeg");
+    expect(avatar?.updatedAt).toBe(T0.toISOString());
+    expect(Buffer.from(avatar?.dataBase64 ?? "", "base64")).toEqual(bytes);
+    expect(() => MeExportResponseSchema.parse(result)).not.toThrow();
+    expect(EXPORT_EXCLUSIONS.flatMap((e) => e.tables)).not.toContain(
+      "user_avatars",
+    );
+  });
+
+  it("без аватара поле avatar дорівнює null", async () => {
+    const result = await build(fakeDb(seed()));
+    expect(result.data.avatar).toBeNull();
+  });
+
   it("нічого з даних іншої людини не потрапляє у файл", async () => {
     const json = JSON.stringify(await build(fakeDb(seed())));
     expect(json).not.toContain("Чужа");

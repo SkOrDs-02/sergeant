@@ -39,12 +39,14 @@ import {
 } from "./pages/lazyPages";
 
 import { ManualExpenseSheet } from "./components/ManualExpenseSheet";
+import { FORM_DRAFT_IDS, peekFormDraft } from "@shared/lib/storage/formDrafts";
 import { FinykLoginScreen } from "./components/FinykLoginScreen";
 import { FinykScanEntryPoints } from "./components/FinykScanEntryPoints";
 import { NAV_ICONS, NAV_IDS, NAV_ITEMS } from "./components/finykNav";
 import { useFinykRoute, useFinykQueryParam } from "./hooks/useFinykRoute";
 import { useStorageWarmGate } from "./hooks/useStorageWarmGate";
 import { useUnifiedFinanceData } from "./hooks/useUnifiedFinanceData";
+import { useCashHistoryBackfill } from "./hooks/useCashHistoryBackfill";
 import { useFinykQuickStatsWriter } from "./hooks/useFinykQuickStatsWriter";
 import { useFinykPersonalization } from "./hooks/useFinykPersonalization";
 import { useFinykReceiptLinks } from "./hooks/useFinykReceiptLinks";
@@ -99,6 +101,7 @@ export default function App({
   useMonoTokenMigration(true);
   const toast = useToast();
   const storage = useStorage({ toast });
+  useCashHistoryBackfill(storage.cashOnHand?.createdAt, mono.fetchRange);
   // Холодний старт: до прогріву SQLite-кешу форма запису не надсилається
   // (data-13), щоб тост «додано» не з'являвся над ще не прогрітим сховищем.
   const storageWarming = useStorageWarmGate(storage.storageReady);
@@ -134,7 +137,11 @@ export default function App({
     toKey: string;
   } | null>(null);
   const showBalance = storage.showBalance;
-  const [showExpenseSheet, setShowExpenseSheet] = useState(false);
+  // Недописана витрата переживає замок застосунку (sec-13): чернетку лишила
+  // `useManualExpenseLockDraft`, аркуш відкривається з нею й відновлює поля.
+  const [showExpenseSheet, setShowExpenseSheet] = useState(
+    () => peekFormDraft(FORM_DRAFT_IDS.finykManualExpense) !== null,
+  );
   // Аркуш масового імпорту живе тут, а не в `FinykScanEntryPoints`: його
   // відкривають два входи — FAB і плашка нагадування в Огляді.
   const [showBulkImport, setShowBulkImport] = useState(false);
@@ -521,6 +528,7 @@ export default function App({
             bulkImportOpen={showBulkImport}
             onBulkImportOpenChange={setShowBulkImport}
             onOpenAuth={onOpenAuth}
+            showCorner={page !== "assets" && page !== "budgets"}
           />
         )}
 
@@ -534,6 +542,7 @@ export default function App({
         )}
 
         <ManualExpenseSheet
+          keepDraftUnderLock
           open={showExpenseSheet}
           storageLoading={storageWarming}
           onClose={() => {

@@ -129,7 +129,7 @@ describe("Body page", () => {
     render(<Body />);
     expect(screen.getByRole("button", { name: "Записати" })).toBeDisabled();
     expect(
-      screen.getByText("Заповни хоч одне поле, щоб зберегти запис"),
+      screen.getByText("Запис порожній. Заповни хоч одне поле."),
     ).toBeInTheDocument();
   });
 

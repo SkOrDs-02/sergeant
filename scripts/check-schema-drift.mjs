@@ -798,6 +798,11 @@ const SQL_ONLY_TABLES = [
   // (DELETE /api/silpo/receipts/link/:transactionId і негативний фільтр у
   // matchAndLink), клієнт про таблицю не знає — лише тисне кнопку.
   "silpo_tx_receipt_link_rejections",
+  // silpo_wipe_marker (міграція 165, аудит 2026-10-01 data-47) — момент
+  // останнього POST /api/silpo/wipe, окремо від silpo_connection, щоб
+  // disconnect його не стирав. Читає і пише лише сервер (синк, auto-claim
+  // комори, wipe-хендлер).
+  "silpo_wipe_marker",
   // Integration webhooks / failure journals (n8n + generic) — server-only журнали.
   "n8n_failure_events",
   "n8n_webhook_events",

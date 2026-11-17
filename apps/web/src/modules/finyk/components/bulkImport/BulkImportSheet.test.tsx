@@ -269,6 +269,20 @@ describe("BulkImportSheet — screenshot path", () => {
     expect(
       screen.getByRole("button", { name: "Імпортувати" }),
     ).toBeInTheDocument();
+
+    commitImportMock.mockResolvedValue({
+      batchId: 9,
+      created: 1,
+      linked: 0,
+      skipped: { monoMatched: 0, duplicate: 0 },
+      rows: [],
+    });
+    getImportBatchMock.mockResolvedValue({ batch: null });
+    fireEvent.click(screen.getByRole("button", { name: "Імпортувати" }));
+    await waitFor(() => expect(commitImportMock).toHaveBeenCalledTimes(1));
+    const body = commitImportMock.mock.calls[0]?.[0] as Record<string, unknown>;
+    expect(body["profile"]).toBe("screenshot");
+    expect(body["source"]).toBe("bank_screenshot");
   });
 
   it("preserves a known custom income category in bulk-review", async () => {
@@ -635,11 +649,11 @@ describe("BulkImportSheet — CSV path", () => {
       expect(screen.getByDisplayValue("АТБ")).toBeInTheDocument(),
     );
 
-    fireEvent.click(screen.getByRole("button", { name: "Обрано 1 з 1" }));
+    fireEvent.click(screen.getByRole("button", { name: "Позначено 1 з 1" }));
     expect(
-      screen.getByRole("button", { name: "Обрано 0 з 1" }),
+      screen.getByRole("button", { name: "Позначено 0 з 1" }),
     ).toBeInTheDocument();
-    fireEvent.click(screen.getByRole("button", { name: "Обрано 0 з 1" }));
+    fireEvent.click(screen.getByRole("button", { name: "Позначено 0 з 1" }));
     fireEvent.change(screen.getByLabelText("Категорія для вибраних витрат"), {
       target: { value: "food" },
     });
@@ -800,9 +814,9 @@ describe("BulkImportSheet — CSV path", () => {
 });
 
 describe("BulkImportSheet — commit + undo", () => {
-  async function reachBulkReview() {
+  async function reachBulkReview(profile: "mono" | "privat24" = "mono") {
     previewImportStatementMock.mockResolvedValue({
-      profile: "mono",
+      profile,
       needsMapping: false,
       rows: [
         {
@@ -826,10 +840,7 @@ describe("BulkImportSheet — commit + undo", () => {
     return helpers;
   }
 
-  it("тіло commit містить лише ключі, які знає чинний .strict() API (вікно «фронт раніше за бекенд»)", async () => {
-    // Старий API відхиляє невідомий ключ верхнього рівня 400-кою (strict), а
-    // превʼю старого сервера повертає `profile`. Тож web не має слати нічого
-    // понад `source` і `rows`, поки бекенд цього не прийняв.
+  async function commitAndGetBody(): Promise<Record<string, unknown>> {
     commitImportMock.mockResolvedValue({
       batchId: 9,
       created: 1,
@@ -851,13 +862,22 @@ describe("BulkImportSheet — commit + undo", () => {
         updatedAt: "x",
       },
     });
-    await reachBulkReview();
-
     fireEvent.click(screen.getByRole("button", { name: "Імпортувати" }));
-
     await waitFor(() => expect(commitImportMock).toHaveBeenCalledTimes(1));
-    const body = commitImportMock.mock.calls[0]?.[0] as Record<string, unknown>;
-    expect(Object.keys(body).sort()).toEqual(["rows", "source"]);
+    return commitImportMock.mock.calls[0]?.[0] as Record<string, unknown>;
+  }
+
+  it("commit передає profile з превʼю виписки (mono), щоб сервер діяв тір-1 дедуп (data-30)", async () => {
+    await reachBulkReview("mono");
+    const body = await commitAndGetBody();
+    expect(body["profile"]).toBe("mono");
+    expect(Object.keys(body).sort()).toEqual(["profile", "rows", "source"]);
+  });
+
+  it("commit передає profile privat24, щоб сервер НЕ скіпав рядки як mono (data-30)", async () => {
+    await reachBulkReview("privat24");
+    const body = await commitAndGetBody();
+    expect(body["profile"]).toBe("privat24");
   });
 
   it("commit shows the created/skipped summary and an undo button", async () => {
@@ -1025,63 +1045,6 @@ describe("BulkImportSheet — commit + undo", () => {
       expect(screen.getByText("network down")).toBeInTheDocument(),
     );
     expect(screen.getByText("Створено: 1")).toBeInTheDocument();
-  });
-});
-
-describe("BulkImportSheet — кап commit-у (ux-07)", () => {
-  async function reachReviewWith(count: number) {
-    previewImportStatementMock.mockResolvedValue({
-      profile: "mono",
-      needsMapping: false,
-      rows: Array.from({ length: count }, (_, i) => ({
-        date: "2026-08-01",
-        amountKopiykas: 100 + i,
-        direction: "expense",
-        description: `BIG-${i}`,
-      })),
-      skipped: [],
-    });
-    renderSheet();
-    await act(async () => {
-      fireEvent.change(fileInputFor(/виписку файлом/i), {
-        target: { files: [new File(["x"], "big.csv", { type: "text/csv" })] },
-      });
-    });
-    await waitFor(() =>
-      expect(
-        screen.getByRole("button", { name: "Імпортувати" }),
-      ).toBeInTheDocument(),
-    );
-  }
-
-  it("1001 вибраний рядок: кнопка заблокована, підказка видна, commit не йде", async () => {
-    await reachReviewWith(1001);
-
-    const button = screen.getByRole("button", { name: "Імпортувати" });
-    expect(button).toBeDisabled();
-    expect(screen.getByText(/За раз можна імпортувати до/)).toHaveTextContent(
-      /вибрано 1.001\./,
-    );
-    // Live-регіон, а не лише aria-describedby вимкненої кнопки.
-    expect(document.getElementById("bulk-import-cap-hint")).toHaveAttribute(
-      "aria-live",
-      "polite",
-    );
-    fireEvent.click(button);
-    expect(commitImportMock).not.toHaveBeenCalled();
-  });
-
-  it("рівно 1000 вибраних: кнопка активна, підказки немає", async () => {
-    await reachReviewWith(1000);
-
-    expect(screen.getByRole("button", { name: "Імпортувати" })).toBeEnabled();
-    expect(
-      screen.queryByText(/За раз можна імпортувати до/),
-    ).not.toBeInTheDocument();
-    // Регіон змонтований заздалегідь (порожній), щоб перетин ліміту озвучився.
-    expect(document.getElementById("bulk-import-cap-hint")).toHaveTextContent(
-      "",
-    );
   });
 });
 

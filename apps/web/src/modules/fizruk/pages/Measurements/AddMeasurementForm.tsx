@@ -26,7 +26,7 @@ import {
   type MeasurementEntry,
   type MeasurementFieldId,
 } from "../../hooks/useMeasurements";
-import { FIELD_LABEL } from "@shared/components/ui/Input";
+import { FIELD_LABEL, Input } from "@shared/components/ui/Input";
 import { Card } from "@shared/components/ui/Card";
 
 // F3: runtime range gate — mirrors <input min max> attributes so a
@@ -43,9 +43,6 @@ const measurementSchema = z.object(
     ]),
   ),
 );
-
-const inp =
-  "input-focus-fizruk w-full h-11 rounded-lg border border-line bg-panelHi px-4 text-text";
 
 const lbl = `${FIELD_LABEL} block px-1`;
 
@@ -114,9 +111,9 @@ export function AddMeasurementForm({
       <label htmlFor={`measure-input-${f.id}`} className={lbl}>
         {f.label} · {f.unit}
       </label>
-      <input
+      <Input
         id={`measure-input-${f.id}`}
-        className={inp}
+        error={Boolean(fieldErrors[f.id])}
         // `type="text"` навмисно: `type="number"` мовчки відкидає кому як
         // десятковий роздільник — UA-мобільна клавіатура дає «82,5»,
         // браузер обнуляє `value` ще ДО того, як цей компонент побачить

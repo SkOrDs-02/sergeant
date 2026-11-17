@@ -1,4 +1,3 @@
-import { readFileSync } from "node:fs";
 import { describe, expect, it, vi } from "vitest";
 import {
   buildSurveyKeyboard,
@@ -334,33 +333,6 @@ describe("recordStart", () => {
     expect(query.mock.calls[1]?.[1]).toEqual(["38"]);
     // Номер — той, що повернула БД, а не похідна від id рядка.
     expect(r.position).toBe(7);
-  });
-
-  it("предикат черги збігається з тим, за яким іде розсилка", async () => {
-    // Якби вони розійшлись, бот називав би одне місце, а `broadcast-waitlist`
-    // запрошував за іншим порядком — і номер перестав би щось означати.
-    const { pool, query } = fakePool();
-    await recordStart(pool, {
-      chatId: 4,
-      username: null,
-      firstName: null,
-      languageCode: null,
-      startPayload: null,
-    });
-
-    const botPredicate = String(query.mock.calls[1]?.[0])
-      .replace(/\s+/g, " ")
-      .match(/notified_at IS NULL AND opted_out_at IS NULL/);
-    expect(botPredicate).not.toBeNull();
-
-    const broadcast = readFileSync(
-      new URL(
-        "../../../../../scripts/telegram/broadcast-waitlist.mjs",
-        import.meta.url,
-      ),
-      "utf8",
-    ).replace(/\s+/g, " ");
-    expect(broadcast).toContain("notified_at IS NULL AND opted_out_at IS NULL");
   });
 });
 

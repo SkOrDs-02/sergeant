@@ -1,7 +1,7 @@
 # 02. Go-to-market: запуск, промоутинг, growth
 
-> **Last touched:** 2026-09-11 by @claude. **Next review:** 2027-09-24.
-> **Status:** Active
+> **Last touched:** 2026-10-26 by @claude (тріаж документації: Status → Reference, блок «Стан виконання»). **Next review:** 2027-09-24.
+> **Status:** Reference - стратегічний pre-MVP draft; живі launch-пункти (Telegram-канал, demo video, Product Hunt, DOU) трекаються лише в [`04-launch-readiness.md` § 7](./04-launch-readiness.md#7-pre-launch-чеклист).
 
 > Pre-MVP draft. Цифри traffic/CPA/reach — оцінкові, для брейнштормінгу.
 > Джерело: `sergeant-monetization-plan.md` (ч.2), `sergeant-launch-checklist.md` (§7–§9),
@@ -673,3 +673,10 @@ PWA SEO складніший (SPA = один HTML), але можна:
   [03-services-and-toolstack.md](./03-services-and-toolstack.md) (§5 SMM, §6 SEO, §7 ADS).
 - Метрики успіху, unit economics, ризики, повний pre-launch чеклист →
   [04-launch-readiness.md](./04-launch-readiness.md).
+
+## Стан виконання
+
+> Тріаж 2026-10-26: документ переведено в Reference, друге джерело launch-чекліста не тримаємо.
+
+- Telegram-канал, demo video, Product Hunt, DOU - рядки 15-18 у [`04` § 7](./04-launch-readiness.md#7-pre-launch-чеклист).
+- Таймлайн T-28…T-2 частково протух (домен уже зареєстровано і живий); цифри й оцінки тут - історія.

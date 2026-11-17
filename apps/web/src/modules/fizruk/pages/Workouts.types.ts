@@ -3,6 +3,7 @@
  * Status: Active
  */
 import type {
+  OneRmSessionPoint,
   WorkoutFinishSummary,
   WorkoutItem,
 } from "@sergeant/fizruk-domain";
@@ -30,4 +31,12 @@ export interface FinishFlashState extends WorkoutFinishSummary {
  * a single extra field, so widen the canonical domain item rather than
  * lying via `any`.
  */
-export type LastExerciseItem = WorkoutItem & { _startedAt?: string };
+export type LastExerciseItem = WorkoutItem & {
+  _startedAt?: string;
+  /**
+   * Усі силові сесії цієї вправи поза активним тренуванням — для режиму
+   * повернення в підказці наступного підходу (`computeNextSetAging`, аудит
+   * `logic-04`): без них одна легка сесія після паузи вимикала б режим.
+   */
+  _sessions?: OneRmSessionPoint[];
+};

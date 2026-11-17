@@ -1,6 +1,6 @@
 # Аудит 2026-10-01 · Безпека та доступ
 
-> **Status:** Active. 62 кластерів (96 знахідок) за першопричиною. Загальний план, метод і обмеження — у [README](./README.md).
+> **Status:** Active. 62 кластери (96 знахідок) за першопричиною. Загальний план, метод і обмеження — у [README](./README.md).
 > **Last validated:** 2026-10-02
 > **Next review:** 2026-11-02
 > **Spec-lint:** skip. Реєстр знахідок аудиту, не специфікація реалізації.
@@ -556,7 +556,7 @@ Verifier script <scratch>/agents/verify-api-live-gap-better-auth-catchall-subrou
 
 ### `sec-06` [medium] Непідтверджений акаунт міняє email миттєво без пароля: крадіжка сесії → скидання пароля → захоплення акаунта
 
-- **Стан:** частково виправлено в [#1551](https://github.com/SkOrDs-02/sergeant/pull/1551) (змерджено 2026-10-20) (рішення власника «а»: для непідтвердженого акаунта change-email лише зі свіжою сесією до 10 хв, інакше 403 SESSION_NOT_FRESH, і лист-сповіщення на СТАРУ адресу після зміни; перевірка стоїть у databaseHooks.user.update, тож Bearer-запит її не обходить; лишилось: пароль не вимагається, ліміту змін email на добу немає, `updateEmailWithoutVerification` не вимкнено, REQUIRE_EMAIL_VERIFICATION не вмикали; гілку підтвердженого email не чіпали)
+- **Стан:** частково виправлено в [#1551](https://github.com/SkOrDs-02/sergeant/pull/1551) (змерджено 2026-10-20) (рішення власника «а»: для непідтвердженого акаунта change-email лише зі свіжою сесією до 10 хв, інакше 403 SESSION_NOT_FRESH, і лист-сповіщення на СТАРУ адресу після зміни; перевірка стоїть у databaseHooks.user.update, тож Bearer-запит її не обходить) і в [#1626](https://github.com/SkOrDs-02/sergeant/pull/1626) (змерджено 2026-10-23) (рішення власника 2026-10-23: change-email вимагає поточний пароль, для OAuth-only акаунта замість нього сесію ≤ 10 хв; не більше 3 запитів на добу на користувача; `updateEmailWithoutVerification: false`, тож адреса непідтвердженого акаунта міняється лише після кліку в листі на нову адресу, а сповіщення на стару йде після кліку; перевірка в `http/changeEmailReauth.ts` перед Better Auth, cookie і Bearer однаково; у вебі поле «Поточний пароль» у формі email). Лишилось: REQUIRE_EMAIL_VERIFICATION не вмикали
 - **Перевірка:** підтверджено · **Зусилля:** S · **Швидкий виграш** · **Область:** server: auth/акаунт
 - **Де:** apps/server/src/auth.ts:310-342,368; apps/server/src/env/env.ts:85-88; node_modules/better-auth/dist/api/routes/update-user.mjs:375-450
 - **Першопричина:** changeEmail.updateEmailWithoutVerification: true при REQUIRE_EMAIL_VERIFICATION=false за замовчуванням: для emailVerified=false Better Auth одразу перезаписує адресу, не питаючи пароля чи свіжої сесії і не повідомляючи стару адресу. Рішення задокументоване як навмисне (auth.ts:310-342), але сценарій зловмисника з чужою сесією там не розглянуто.
@@ -977,7 +977,7 @@ node …/agents/api-live-sync-live/t09_stream.mjs (миттєво) і t10_stream
 
 ### `sec-10` [medium] DELETE /api/me і /api/auth/verify-password перевіряють пароль без app-ліміту: оракул пароля і навантаження scrypt
 
-- **Стан:** частково виправлено в #1366 (змерджено 2026-10-03) (DELETE /api/me і change-password під лімітом per-IP 5 і per-user 20 за 15 хв, verify-password вимкнено через disabledPaths; лишилось: алерт на серію INVALID_PASSWORD і повторна автентифікація OAuth-only акаунтів)
+- **Стан:** частково виправлено в #1366 (змерджено 2026-10-03) (DELETE /api/me і change-password під лімітом per-IP 5 і per-user 20 за 15 хв, verify-password вимкнено через disabledPaths) і в [#1626](https://github.com/SkOrDs-02/sergeant/pull/1626) (змерджено 2026-10-23) (лічильник `auth_password_check_failures_total{route}` на DELETE /api/me і change-password, алерт `AuthPasswordCheckFailureSeries` у `prometheus/alert_rules.yml`; діє після ручного `mimirtool rules sync`; повторна автентифікація OAuth-only акаунтів на DELETE /api/me за рішенням власника 2026-10-23: сесія ≤ 10 хв, інакше 403 SESSION_NOT_FRESH). Лишилось: залити правило в Mimir
 - **Перевірка:** підтверджено · **Зусилля:** S · **Швидкий виграш** · **Область:** server: auth/акаунт
 - **Де:** apps/server/src/routes/me.ts:272-297; apps/server/src/modules/me/verifyAccountPassword.ts:38-54; apps/server/src/http/authMiddleware.ts:31-37; node_modules/better-auth/dist/api/routes/password.mjs:166-192
 - **Першопричина:** DELETE /api/me викликає verifyAccountPassword (scrypt ~130 мс) без rateLimitExpress, а authSensitiveRateLimit не покриває /verify-password і /change-password. Better Auth реєструє /verify-password у HTTP-роутері (scope 'server', а не SERVER_ONLY), і на ньому діє лише вбудований in-memory ліміт 100 за 10 с на IP.
@@ -1158,7 +1158,7 @@ FORM correct pw → 200 + session cookies (form-вхід повністю роб
 
 ### `sec-13` [medium] Блокування обходиться клавіатурою: Ctrl/Cmd+K відкриває глобальний пошук поверх замка з даними й діями
 
-- **Стан:** частково виправлено в [#1392](https://github.com/SkOrDs-02/sergeant/pull/1392) (змерджено 2026-10-08) (гарячі клавіші вимкнені, поки замок не idle, оверлей замка на z-300 вище за пошук; лишилось: дерево застосунку й HubChatOverlay усе ще змонтовані під замком, дані лежать у DOM під оверлеєм, окремий PR)
+- **Стан:** виправлено в [#1392](https://github.com/SkOrDs-02/sergeant/pull/1392) (змерджено 2026-10-08) (гарячі клавіші вимкнені, поки замок не idle, оверлей замка на z-300 вище за пошук; решту закрито в [#1616](https://github.com/SkOrDs-02/sergeant/pull/1616) (змерджено 2026-10-23): під locked/lockedOut дерево маршруту, палітра, чат і NPS не монтуються; boot-кластери, sync і dual-write лишаються; чернетки ручної витрати Фініка, прийому їжі, нової звички та повідомлення HubChat зберігаються в sessionStorage при замиканні й одноразово відновлюються після розблокування, стираються при виході та зміні користувача; рішення власника 2026-10-22: розмонтовувати й зберігати чернетки)
 - **Перевірка:** підтверджено · **Зусилля:** M · **Область:** web: блокування застосунку
 - **Де:** apps/web/src/core/hooks/useHubKeyboardShortcuts.ts:57-67,124-150; apps/web/src/core/app/RootLayout.tsx:195-225; apps/web/src/core/hub/search/HubSearch.tsx:65; apps/web/src/core/security/AppLock.tsx:311-327
 - **Першопричина:** AppLock лише накриває застосунок оверлеєм: дерево AppShell рендериться за будь-якого стану замка, а useHubKeyboardShortcuts не перевіряє lock-стан (блокує лише isEditableTarget). Після кліку по цифрі фокус іде з прихованого поля, і Ctrl+K, '?' чи Ctrl+/ відкривають діалоги з вищим z-index.
@@ -1356,7 +1356,7 @@ silpo.ts:165-197: `const pending = await consumeAuthorizationState(state); ... c
 
 ### `sec-16` [medium] Необмежене name роздуває cookie-кеш сесії до 28-33 КБ: усі запити отримують 431, акаунт блокується без самовідновлення
 
-- **Стан:** частково виправлено в #1366 (змерджено 2026-10-03) (name ≤ 100 символів і лише рядок у databaseHooks; лишилось: очищення наявних довгих імен у БД і виключення user-полів із cookieCache)
+- **Стан:** виправлено: #1366 (змерджено 2026-10-03) (name ≤ 100 символів і лише рядок у databaseHooks), [#1626](https://github.com/SkOrDs-02/sergeant/pull/1626) (змерджено 2026-10-23: міграція `163_user_name_truncate_overlong.sql` обрізає вже збережені імена понад 100 символів; заблокований акаунт відновлюється сам, щойно спливе 5-хв cookie-кеш) і [#1626](https://github.com/SkOrDs-02/sergeant/pull/1626) (змерджено 2026-10-23) (Better Auth 1.6.23 не обмежує довжину email: `z.email()` без max на sign-up і change-email, `/update-user` email відхиляє; тож `guardUserEmail` у `databaseHooks.user.{create,update}.before` відхиляє email довший за 254 символи, 400 `INVALID_EMAIL`). cookieCache лишається як є (рішення власника 2026-10-23): окремої опції для core-полів у Better Auth 1.6 немає, а name ≤ 100, image ≤ 2 КБ і email ≤ 254 уже обмежують розмір куки
 - **Перевірка:** підтверджено · **Зусилля:** S · **Швидкий виграш** · **Область:** server: auth/профіль
 - **Де:** apps/server/src/auth.ts:427-431,449-540; apps/server/src/auth/sanitizeUserImage.ts; node_modules/better-auth/dist/api/routes/update-user.mjs:12-73; apps/web/src/core/profile/PersonalInfoSection.tsx:27
 - **Першопричина:** Better Auth update-user і sign-up приймають name без maxLength (ще й з коерцією не-рядків у JSON), а databaseHooks чистить лише image (sanitizeUserImage). Увесь user потрапляє в session_data, тож довге ім'я дає Cookie-заголовок понад ліміт Node у 16 КБ.
@@ -1544,7 +1544,7 @@ Verifier probe (verify-client-static-landing-shell-mobile/hdrs.mjs): app.sergean
 
 ### `sec-18` [medium] Коли сесія спливає посеред роботи, застосунок мовчить: записи тихо стають у чергу, а після reload модулі порожні
 
-- **Стан:** частково виправлено в [#1391](https://github.com/SkOrDs-02/sergeant/pull/1391) (змерджено 2026-10-08) (лишилось: екран повторного входу замість анонімного хабу після 401 при reload, `next` на /sign-in поки не споживається екраном входу)
+- **Стан:** виправлено в [#1391](https://github.com/SkOrDs-02/sergeant/pull/1391) (змерджено 2026-10-08) і в [#1648](https://github.com/SkOrDs-02/sergeant/pull/1648) (змерджено 2026-10-23) (після 401 і reload оболонка веде на `/sign-in?next=<шлях>` з поясненням «Сесія завершилась», а не на анонімний хаб; екран входу споживає `next` лише як відносний внутрішній шлях)
 - **Перевірка:** підтверджено · **Зусилля:** M · **Область:** web: auth / sync
 - **Де:** apps/web/src/core/auth/AuthContext.tsx:318-401; apps/web/src/core/app/SyncStatusSheet.tsx:175-179; apps/web/src/core/syncEngine/singleton.ts:490-493
 - **Першопричина:** Коли get-session повертає null, resolveUserId віддає null і drain черги мовчки повертає [], сигналу в UI немає; /me у вкладці не перезапитується (refetchOnWindowFocus false, staleTime 60 с). Після reload 401 на /api/v1/me запускає identity wipe і анонімний режим без пояснення.

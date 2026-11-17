@@ -1,4 +1,13 @@
+import {
+  SYNC_PROTOCOL_QUERY_PARAM,
+  SYNC_PROTOCOL_VERSION,
+} from "@sergeant/shared";
 import type { HttpClient } from "../httpClient";
+import {
+  createSyncV2SnapshotEndpoint,
+  type SyncV2SnapshotOptions,
+  type SyncV2SnapshotResponse,
+} from "./syncV2.snapshot";
 
 /**
  * Типи мають дзеркалити серверну response-форму один-в-один (Hard Rule
@@ -44,8 +53,9 @@ export interface SyncV2PushOp {
 /**
  * `retry` (data-18) - сервер не зміг застосувати оп через транзієнтну помилку
  * Postgres (`reason`: `deadlock_detected` | `lock_not_available` |
- * `query_canceled`) і НЕ записав його в журнал: той самий `idempotency_key`
- * можна повторити. Клієнти до цього статусу трактують його як невідомий
+ * `query_canceled`) або `reason: "unknown_table"` (data-48: таблиці ще немає
+ * на сервері, а клієнт новіший за нього - вікно деплою) і НЕ записав його в
+ * журнал: той самий `idempotency_key` можна повторити. Клієнти до цього статусу трактують його як невідомий
  * (`unknown_status:retry`) і теж повторюють.
  */
 export type SyncV2OpResultStatus =
@@ -96,7 +106,12 @@ export interface SyncV2PullOp {
 
 export interface SyncV2PullResponse {
   ops: SyncV2PullOp[];
-  /** `null` коли більше нічого пулити; інакше — `id` останнього запису сторінки. */
+  /**
+   * `null` коли більше нічого пулити; інакше - `id` останнього запису
+   * сторінки. Ненульовий і для сторінки, обрізаної серверним байтовим
+   * бюджетом (`ops.length < limit`, ADR-0105): «менше за limit» НЕ означає
+   * кінець, зупинятись можна лише на `null`.
+   */
   next_cursor: number | null;
 }
 
@@ -123,6 +138,8 @@ export interface SyncV2Endpoints {
     since?: number,
     opts?: SyncV2PullOptions,
   ) => Promise<SyncV2PullResponse>;
+  /** ADR-0105 §3.3: знімок стану після `410 sync_cursor_expired` на pull. */
+  snapshotV2: (opts?: SyncV2SnapshotOptions) => Promise<SyncV2SnapshotResponse>;
 }
 
 /**
@@ -137,9 +154,16 @@ export function createSyncV2Endpoints(http: HttpClient): SyncV2Endpoints {
       http.post<SyncV2PushResponse>(
         "/api/v2/sync/push",
         { ops },
-        opts?.originDeviceId
-          ? { headers: { "X-Origin-Device-Id": opts.originDeviceId } }
-          : undefined,
+        {
+          // data-48: версія протоколу відрізняє «фронт новіший за бекенд»
+          // (вікно деплою, оп чекає) від справді невідомої таблиці. Query, не
+          // заголовок: старий бекенд ігнорує query, а невідомий заголовок
+          // завалив би CORS preflight (див. `protocolVersion.ts`).
+          query: { [SYNC_PROTOCOL_QUERY_PARAM]: SYNC_PROTOCOL_VERSION },
+          ...(opts?.originDeviceId
+            ? { headers: { "X-Origin-Device-Id": opts.originDeviceId } }
+            : {}),
+        },
       ),
     pullV2: (since = 0, opts) =>
       http.get<SyncV2PullResponse>("/api/v2/sync/pull", {
@@ -151,5 +175,6 @@ export function createSyncV2Endpoints(http: HttpClient): SyncV2Endpoints {
           ? { headers: { "X-Origin-Device-Id": opts.originDeviceId } }
           : {}),
       }),
+    snapshotV2: createSyncV2SnapshotEndpoint(http),
   };
 }

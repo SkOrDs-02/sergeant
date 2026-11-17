@@ -21,6 +21,7 @@ vi.mock("../workouts/WorkoutSummaryView", () => ({
 import { ToastProvider } from "@shared/hooks/useToast";
 import type { Workout } from "@sergeant/fizruk-domain/domain";
 import { WorkoutJournalSection } from "./WorkoutJournalSection";
+import { peekPendingRetroEnd } from "../../lib/pendingRetroEnd";
 
 // WorkoutJournalSection now calls `useToast()` to surface the
 // "Тренування збережено" confirmation on finish. Tests must render inside a
@@ -34,7 +35,8 @@ function baseProps(
 ) {
   const active: Workout = overrides.activeWorkout ?? {
     id: "w-active",
-    startedAt: new Date("2025-01-01T10:00:00Z").toISOString(),
+    // Година тому: старіша за 12 год сесія тепер дає попередження (data-37).
+    startedAt: new Date(Date.now() - 3600_000).toISOString(),
     endedAt: null,
     items: [],
     groups: [],
@@ -92,6 +94,60 @@ describe("WorkoutJournalSection – Завершити finish flow", () => {
       mood: null,
       injurySites: [],
     });
+  });
+
+  it("data-37: забута сесія (>12 год) не завершується мовчки — показує попередження", () => {
+    const props = baseProps({
+      activeWorkout: {
+        id: "w-forgot",
+        startedAt: new Date(Date.now() - 60 * 3600_000).toISOString(),
+        endedAt: null,
+        items: [],
+        groups: [],
+        warmup: null,
+        cooldown: null,
+        note: "",
+      },
+    });
+    renderWithToast(<WorkoutJournalSection {...props} />);
+
+    fireEvent.click(screen.getByTestId("finish-btn"));
+
+    expect(props.endWorkout).not.toHaveBeenCalled();
+    expect(screen.getByText("Тренування вийшло задовгим")).toBeInTheDocument();
+
+    fireEvent.click(screen.getByText("Лишити як є"));
+    expect(props.endWorkout).toHaveBeenCalledWith("w-forgot");
+  });
+
+  it("data-37: виправлений кінець записується замість «зараз»", () => {
+    const props = baseProps({
+      activeWorkout: {
+        id: "w-forgot2",
+        startedAt: new Date(Date.now() - 60 * 3600_000).toISOString(),
+        endedAt: null,
+        items: [],
+        groups: [],
+        warmup: null,
+        cooldown: null,
+        note: "",
+      },
+    });
+    renderWithToast(<WorkoutJournalSection {...props} />);
+    fireEvent.click(screen.getByTestId("finish-btn"));
+
+    const input = screen.getByLabelText("Завершення") as HTMLInputElement;
+    const fixed = new Date(Date.now() - 58 * 3600_000);
+    const pad = (n: number) => String(n).padStart(2, "0");
+    fireEvent.change(input, {
+      target: {
+        value: `${fixed.getFullYear()}-${pad(fixed.getMonth() + 1)}-${pad(fixed.getDate())}T${pad(fixed.getHours())}:${pad(fixed.getMinutes())}`,
+      },
+    });
+    fireEvent.click(screen.getByText("Завершити з цим часом"));
+
+    expect(props.endWorkout).toHaveBeenCalledWith("w-forgot2");
+    expect(peekPendingRetroEnd("w-forgot2")).not.toBeNull();
   });
 
   it("is idempotent on rapid double-click — finish sheet opens only once", () => {

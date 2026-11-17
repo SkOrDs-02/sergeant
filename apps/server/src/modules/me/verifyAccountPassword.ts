@@ -22,8 +22,12 @@
 import { auth } from "../../auth.js";
 
 export type PasswordCheck =
-  /** Пароль звірено, або його в акаунта немає (лише OAuth-вхід). */
-  | { ok: true }
+  /**
+   * Пароль звірено (`password`), або його в акаунта немає взагалі, лише
+   * OAuth-вхід (`no_password`). Другий випадок НЕ є доказом знання секрету:
+   * виклик мусить вимагати свіжу сесію (`modules/me/reauth.ts`, sec-10).
+   */
+  | { ok: true; method: "password" | "no_password" }
   /** Пароль є, але переданий не збігся (або його не передали зовсім). */
   | { ok: false; reason: "invalid_password" };
 
@@ -32,7 +36,8 @@ export type PasswordCheck =
  * мовчазний пропуск зробив би перевірку декоративною.
  *
  * Акаунт без credential-входу (зайшов через Google) пароля не має взагалі,
- * тож звіряти нічого; такі акаунти захищає вимога свіжої сесії на роуті.
+ * тож звіряти нічого; такі акаунти захищає вимога свіжої сесії ≤ 10 хв
+ * (`reauthenticate` у `reauth.ts`, рішення власника 2026-10-23, sec-10).
  * Це та сама розвилка, яку робить і Better Auth.
  */
 export async function verifyAccountPassword(
@@ -46,9 +51,11 @@ export async function verifyAccountPassword(
   );
   const hash = credential?.password;
 
-  if (!credential || !hash) return { ok: true };
+  if (!credential || !hash) return { ok: true, method: "no_password" };
   if (!password) return { ok: false, reason: "invalid_password" };
 
   const matches = await ctx.password.verify({ hash, password });
-  return matches ? { ok: true } : { ok: false, reason: "invalid_password" };
+  return matches
+    ? { ok: true, method: "password" }
+    : { ok: false, reason: "invalid_password" };
 }

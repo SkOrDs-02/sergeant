@@ -12,6 +12,7 @@ import { AppleSignInButton } from "./AppleSignInButton";
 import { useForgotPassword } from "./useForgotPassword";
 import { ANALYTICS_EVENTS, trackEvent } from "../observability/analytics";
 import { LegalLinks } from "../legal/LegalLinks";
+import { SessionExpiredNotice } from "./SessionExpiredNotice";
 
 interface AuthPageProps {
   onContinueWithoutAccount?: () => void;
@@ -107,6 +108,8 @@ export function AuthPage({ onContinueWithoutAccount }: AuthPageProps) {
           <div className="text-center mb-6">
             <BrandLogo as="h1" size="md" className="justify-center" />
           </div>
+
+          <SessionExpiredNotice />
 
           <Card
             prominence="hero"

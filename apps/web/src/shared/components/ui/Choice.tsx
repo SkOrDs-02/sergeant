@@ -7,7 +7,8 @@ import { Icon } from "./Icon";
  *
  * Один прийом для «обрано» в усіх виборах форм: обране = заливка чорнилом
  * (`bg-text text-bg`, у темній токени перевертаються самі), необране =
- * панель із текстом чорнилом; плитку тримає межа `border-control`. Без
+ * панель із текстом чорнилом; плитка без рамки (її тримає заливка панелі,
+ * межа `border-control` лишилась лише на позначці `ChoiceCheckbox`). Без
  * тіні й hue модуля. Стан передає
  * `aria-checked`, а не текст «Обрано».
  *
@@ -25,6 +26,11 @@ import { Icon } from "./Icon";
  * чорнилом, як і в одиничному; рядок (`rows`) - це `ChoiceCheckbox`, де
  * чорнилом заливається позначка, а не весь рядок: у списках на кшталт
  * кошика позначено все одразу.
+ *
+ * `onDeselect` (рішення власника 2026-10-23): повторний тап по обраній
+ * опції знімає вибір. Для шкал, де оцінку можна прибрати
+ * (енергія й настрій на сторінці «Тіло» Фізрука); семантика лишається
+ * `radiogroup`, стрілки так само переводять вибір.
  *
  * Вкладки й фільтри одного списку лишаються за `Segmented`.
  */
@@ -61,6 +67,8 @@ export interface ChoiceGroupSingleProps<
   /** `null`, поки нічого не обрано: тоді Tab веде на першу доступну опцію. */
   value: V | null;
   onChange: (value: V) => void;
+  /** Є - повторний тап по обраній опції знімає вибір і викликає його. */
+  onDeselect?: (() => void) | undefined;
 }
 
 export interface ChoiceGroupMultipleProps<
@@ -83,17 +91,16 @@ const OPTION_BASE = cn(
   "disabled:cursor-not-allowed disabled:opacity-50",
 );
 
-// Плитка живе на картках і в аркушах, тобто на тій самій `panel`, тож
-// необрану тримає межа контролу (3:1), а не заливка. В обраної межа кольору
-// заливки й не видна.
+// Необрану плитку тримає заливка `panel`, рамки немає (redesign v3.2,
+// позиція 04): двадцять рамок на форму витрати читались як двадцять полів
+// вводу. Рамка лишається лише на `Input` / `Select` і позначці
+// `ChoiceCheckbox`.
 function tileClass(checked: boolean, size: ChoiceSize) {
   return cn(
     OPTION_BASE,
-    "inline-flex items-center justify-center border px-3 text-center text-style-label font-semibold",
+    "inline-flex items-center justify-center px-3 text-center text-style-label font-semibold",
     size === "sm" ? "rounded-segment" : "rounded-lg",
-    checked
-      ? "border-text bg-text text-bg"
-      : "border-control bg-panel text-text hover:bg-panelHi",
+    checked ? "bg-text text-bg" : "bg-panel text-text hover:bg-panelHi",
   );
 }
 
@@ -290,6 +297,7 @@ export function ChoiceGroup<V extends string = string>(
             onKeyDown={handleKeyDown}
             onClick={() => {
               if (!checked) onChange(item.value);
+              else props.onDeselect?.();
             }}
             className={
               rows

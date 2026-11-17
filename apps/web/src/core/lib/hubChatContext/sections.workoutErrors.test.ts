@@ -12,13 +12,18 @@
  */
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
-const { loggerErrorMock, loggerWarnMock, safeReadStringLSMock } = vi.hoisted(
-  () => ({
-    loggerErrorMock: vi.fn(),
-    loggerWarnMock: vi.fn(),
-    safeReadStringLSMock: vi.fn<(key: string) => string | null>(() => null),
-  }),
-);
+const {
+  loggerErrorMock,
+  loggerWarnMock,
+  safeReadStringLSMock,
+  getCachedFizrukSqliteStateMock,
+} = vi.hoisted(() => ({
+  loggerErrorMock: vi.fn(),
+  loggerWarnMock: vi.fn(),
+  safeReadStringLSMock: vi.fn<(key: string) => string | null>(() => null),
+  getCachedFizrukSqliteStateMock:
+    vi.fn<() => { refreshedAt: string | null; workouts: unknown[] }>(),
+}));
 
 vi.mock("@shared/lib", () => ({
   logger: {
@@ -33,21 +38,26 @@ vi.mock("@shared/lib/storage/storage", () => ({
   safeReadStringLS: (key: string) => safeReadStringLSMock(key),
 }));
 
+vi.mock("../../../modules/fizruk/lib/sqliteReader", () => ({
+  getCachedFizrukSqliteState: () => getCachedFizrukSqliteStateMock(),
+}));
+
 import { appendWorkoutLines } from "./sections";
-import {
-  WORKOUTS_STORAGE_KEY,
-  ACTIVE_WORKOUT_KEY,
-} from "@sergeant/fizruk-domain";
+import { ACTIVE_WORKOUT_KEY } from "@sergeant/fizruk-domain";
 
 beforeEach(() => {
   vi.clearAllMocks();
   safeReadStringLSMock.mockReturnValue(null);
+  getCachedFizrukSqliteStateMock.mockReturnValue({
+    refreshedAt: "2026-06-15T12:00:00Z",
+    workouts: [],
+  });
 });
 
 describe("appendWorkoutLines — секція гасне без сліду при кинутому винятку", () => {
   it("outer catch: підставляє маркер і логує, коли читання тренувань кидає", () => {
-    safeReadStringLSMock.mockImplementation(() => {
-      throw new Error("storage boom");
+    getCachedFizrukSqliteStateMock.mockImplementation(() => {
+      throw new Error("cache boom");
     });
     const lines: string[] = [];
     appendWorkoutLines(lines);
@@ -56,12 +66,11 @@ describe("appendWorkoutLines — секція гасне без сліду пр�
   });
 
   it("inner catch (активне тренування): маркер замість тихого 'немає'", () => {
+    getCachedFizrukSqliteStateMock.mockReturnValue({
+      refreshedAt: "2026-06-15T12:00:00Z",
+      workouts: [{ id: "w1", startedAt: new Date().toISOString(), items: [] }],
+    });
     safeReadStringLSMock.mockImplementation((key: string) => {
-      if (key === WORKOUTS_STORAGE_KEY) {
-        return JSON.stringify([
-          { id: "w1", startedAt: new Date().toISOString(), items: [] },
-        ]);
-      }
       if (key === ACTIVE_WORKOUT_KEY) {
         throw new Error("active key boom");
       }

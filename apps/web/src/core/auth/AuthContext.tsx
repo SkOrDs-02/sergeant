@@ -37,13 +37,23 @@ import {
   reconcileChatOwnerOnAuthChange,
 } from "../hub/hubChatSessions";
 import { clearPersistedQueryCache } from "@shared/lib/api/queryClientPersister";
-import { flushPendingSyncOpsBeforeLogout } from "../syncEngine/flushBeforeLogout";
+import { checkLogoutLoss } from "./logoutLossCheck";
+import { useUnsyncedLossPrompt } from "./useUnsyncedLossPrompt";
+import {
+  discardAnonymousLeftoversOnLogout,
+  inspectAnonymousLeftoversOnLogout,
+  type AnonymousLeftovers,
+} from "../durability/anonymousLeftoversOnLogout";
 import { teardownLocalStateAfterSessionLoss } from "./sessionLossTeardown";
 import { broadcastSessionEnded } from "./sessionBroadcast";
 import { clearHubQuickStatsSnapshots } from "./hubQuickStatsSnapshots";
 import { useCrossTabSessionEnd } from "./useCrossTabSessionEnd";
 import { releasePushSubscriptionOnLogout } from "./releasePushOnLogout";
 import * as pendingSignOut from "./pendingSignOut";
+import {
+  clearSessionExpired,
+  markSessionExpired,
+} from "./sessionExpiredMarker";
 import { usePendingSignOutRetry } from "./usePendingSignOutRetry";
 import { useResetSyncSessionOnSignIn } from "./useResetSyncSessionOnSignIn";
 // AI-DANGER: саме `uk.core`. Цей файл — eager-поверхня, і повний каталог
@@ -614,12 +624,23 @@ export function AuthProvider({ children }: AuthProviderProps) {
         );
       })
       .finally(() => {
+        // sec-18: user → anon — це втрата сесії, а не вибір людини. Маркер
+        // ПІСЛЯ teardown (він би його не зачепив, але порядок чесніший) і ДО
+        // reload: після нього оболонка веде на повторний вхід, а не на
+        // анонімний хаб. user → user (інший акаунт) маркера не потребує.
+        if (!user?.id) markSessionExpired();
         // priv-02: решта вкладок цього браузера теж не мусять далі показувати
         // дані попередньої сесії.
         broadcastSessionEnded();
         window.location.reload();
       });
   }, [status, user?.id, queryClient]);
+
+  // sec-18: живий вхід знімає маркер «сесія завершилась»: повторний вхід
+  // відбувся (email, соцвхід після редиректу, відновлена сесія).
+  useEffect(() => {
+    if (status === "authenticated") clearSessionExpired();
+  }, [status]);
 
   // priv-02: сесію завершила ІНША вкладка — див. `useCrossTabSessionEnd`.
   useCrossTabSessionEnd(Boolean(user), queryClient, setSignedOut);
@@ -778,28 +799,9 @@ export function AuthProvider({ children }: AuthProviderProps) {
     [invalidateMe],
   );
 
-  // Діалог «є незбережені записи». Стан живе тут, у провайдері, щоб `logout()`
-  // питав сам, не покладаючись на викликача (`data-19`). Ref відсікає другий
-  // паралельний вихід, поки перший чекає на відповідь людини.
-  const [unsyncedPrompt, setUnsyncedPrompt] = useState<{
-    pending: number;
-    resolve: (proceed: boolean) => void;
-  } | null>(null);
-  const unsyncedPromptOpenRef = useRef(false);
-  const askUnsyncedLoss = useCallback((pending: number): Promise<boolean> => {
-    if (unsyncedPromptOpenRef.current) return Promise.resolve(false);
-    unsyncedPromptOpenRef.current = true;
-    return new Promise<boolean>((resolve) => {
-      setUnsyncedPrompt({
-        pending,
-        resolve: (proceed) => {
-          unsyncedPromptOpenRef.current = false;
-          setUnsyncedPrompt(null);
-          resolve(proceed);
-        },
-      });
-    });
-  }, []);
+  // Діалог «є незбережені записи» живе в провайдері, щоб `logout()` питав сам,
+  // не покладаючись на викликача (`data-19`).
+  const { unsyncedPrompt, askUnsyncedLoss } = useUnsyncedLossPrompt();
 
   const logout = useCallback(
     async (options?: LogoutOptions) => {
@@ -808,12 +810,20 @@ export function AuthProvider({ children }: AuthProviderProps) {
       // видаляє файл локальної БД РАЗОМ із чергою синхронізації; поки
       // запис не доїхав до Postgres, локальна копія — єдина, що існує.
       // Скасувати вихід можна лише тут, поки нічого ще не зруйновано.
-      if (!options?.skipUnsyncedLossPrompt) {
-        const { pending, unknown } = await flushPendingSyncOpsBeforeLogout();
-        if (!unknown && pending > 0) {
-          const proceed = await askUnsyncedLoss(pending);
-          if (!proceed) return false;
-        }
+      //
+      // `data-46`: сюди ж рахуються анонімні рядки незавершеного переносу
+      // цього акаунта; стираються вони (разом із claim) нижче, після wipe,
+      // лише якщо людина погодилась або втрачати нічого. Зі
+      // `skipUnsyncedLossPrompt` викликач уже спитав сам (або свідомо нищить
+      // дані видаленням акаунта), і шукаємо лише, що стерти: без flush, бо
+      // сесію вже вбито і пуш однаково впав би 401.
+      let leftovers: AnonymousLeftovers | null;
+      if (options?.skipUnsyncedLossPrompt) {
+        leftovers = await inspectAnonymousLeftoversOnLogout();
+      } else {
+        const loss = await checkLogoutLoss();
+        if (loss.lost > 0 && !(await askUnsyncedLoss(loss))) return false;
+        leftovers = loss.leftovers;
       }
 
       // Identity-wipe координація: стампимо owner ДО `setSignedOut`,
@@ -822,6 +832,9 @@ export function AuthProvider({ children }: AuthProviderProps) {
       // потрібний wipe (SW-кеші, SQLite-партиція, LS-слайси, RQ clear)
       // logout виконує сам нижче.
       reconcileChatOwnerOnAuthChange(null);
+      // sec-18: свідомий вихід — не «сесія завершилась»; після нього
+      // анонімний режим, як і раніше.
+      clearSessionExpired();
       // Той пре-стамп вище споживає зміну identity, тож reconcile-ефект
       // побачить `changed: false` і НЕ прибере hub-снапшоти сам — logout
       // мусить зробити це власноруч. Інакше вони переживають вихід, а
@@ -916,6 +929,9 @@ export function AuthProvider({ children }: AuthProviderProps) {
       } catch (err) {
         logger.warn("[auth.logout] sqlite wipe/reset failed", err);
       }
+      // `data-46`: анонімні рядки й claim незавершеного переносу цього
+      // акаунта. Не кидає.
+      if (leftovers) await discardAnonymousLeftoversOnLogout(leftovers);
       // Browser-QA 2026-06-15: logout used to leave the previous user's
       // local-first data behind (plaintext `finyk_tx_cache`, `nutrition_water_v1`,
       // the `kvvfs-*` SQLite store, the RQ persister snapshot, and the in-memory
@@ -1082,6 +1098,7 @@ export function AuthProvider({ children }: AuthProviderProps) {
         <Suspense fallback={null}>
           <UnsyncedLossDialog
             pending={unsyncedPrompt.pending}
+            anonymous={unsyncedPrompt.anonymous}
             onResolve={unsyncedPrompt.resolve}
           />
         </Suspense>

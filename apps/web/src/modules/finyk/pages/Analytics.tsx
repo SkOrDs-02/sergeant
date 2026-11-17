@@ -20,7 +20,7 @@ import { ChartFallback } from "../components/charts/ChartFallback";
 import { AnalyticsSection as Section } from "../components/analytics/AnalyticsSection";
 import { AnalyticsSummary } from "../components/analytics/AnalyticsSummary";
 import { ComparisonRow } from "../components/analytics/ComparisonRow";
-import { PeriodNav } from "../components/analytics/PeriodNav";
+import { AnalyticsPeriodNav } from "../components/analytics/PeriodNav";
 import { MerchantList } from "../components/analytics/MerchantList";
 import { MonthlyTrendBars } from "../components/analytics/MonthlyTrendBars";
 import { CategoryDeltaTable } from "../components/analytics/CategoryDeltaTable";
@@ -124,6 +124,7 @@ export function Analytics({
     comparison: comparisonWindow,
     loading,
     fetchError,
+    comparisonError,
     retry: retryCurrentMonth,
     bankTx,
     allActiveTx,
@@ -268,7 +269,11 @@ export function Analytics({
         <h1 className="text-style-headline text-text">
           {messages.finykRedesign.analyticsTitle}
         </h1>
-        <PeriodNav period={period} todayKey={todayKey} onChange={setPeriod} />
+        <AnalyticsPeriodNav
+          period={period}
+          todayKey={todayKey}
+          onChange={setPeriod}
+        />
         {/* Рік тягне до 25 місяців: прогрес замість мовчазно неповних сум. */}
         {pendingMonths > 0 && neededMonths > 3 && (
           <p role="status" className="text-style-caption text-muted">
@@ -278,9 +283,13 @@ export function Analytics({
           </p>
         )}
 
-        {fetchError && bankTx.length === 0 && (
+        {((fetchError && bankTx.length === 0) || comparisonError) && (
           <div className="flex items-center justify-between gap-3 px-4 py-3 rounded-lg bg-panel border border-danger/20 text-style-label text-danger-strong dark:text-danger">
-            <span>{fetchError}</span>
+            <span>
+              {fetchError && bankTx.length === 0
+                ? fetchError
+                : copy.comparisonLoadFailed}
+            </span>
             <button
               type="button"
               onClick={retryCurrentMonth}

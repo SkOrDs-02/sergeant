@@ -67,7 +67,9 @@ export function AiMemorySection() {
   return (
     <div className="space-y-3">
       <div>
-        <h3 className="text-style-overline text-text">{copy.sectionTitle}</h3>
+        <h3 className="text-style-label-lg font-semibold text-text">
+          {copy.sectionTitle}
+        </h3>
         <p className="text-style-body text-subtle leading-relaxed mt-1">
           {copy.sectionScope} {copy.sectionHint}
         </p>

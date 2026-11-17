@@ -178,7 +178,11 @@ export class GdprCleanupPoller {
         limit: this.batchLimit,
       });
       lastRunAtIso = new Date().toISOString();
-      if (result.processed > 0 || result.purged > 0) {
+      if (
+        result.processed > 0 ||
+        result.purged > 0 ||
+        result.emailsRedacted > 0
+      ) {
         logger.info({ msg: "gdpr_cleanup_tick", ...result });
       }
       await sampleGdprCleanupQueueDepth(this.pool);

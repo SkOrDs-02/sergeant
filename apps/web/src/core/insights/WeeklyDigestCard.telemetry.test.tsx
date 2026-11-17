@@ -149,7 +149,7 @@ describe("WeeklyDigestCard — телеметрія AI-поради", () => {
 
     fireEvent.click(screen.getByRole("button", { name: /переглянути звіт/i }));
     fireEvent.click(screen.getByRole("button", { name: /оновити звіт/i }));
-    fireEvent.click(screen.getByRole("button", { name: /^згорнути$/i }));
+    fireEvent.click(screen.getByRole("button", { name: /^сховати звіт$/i }));
 
     expect(reacted().map((p) => p.reaction)).toEqual([
       "expand",
@@ -168,7 +168,7 @@ describe("WeeklyDigestCard — телеметрія AI-поради", () => {
     render(<WeeklyDigestCard onCollapse={onCollapse} />);
 
     fireEvent.click(
-      screen.getByRole("button", { name: /згорнути звіт тижня/i }),
+      screen.getByRole("button", { name: /сховати звіт тижня/i }),
     );
 
     expect(onCollapse).toHaveBeenCalledTimes(1);

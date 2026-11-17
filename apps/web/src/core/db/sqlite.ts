@@ -23,7 +23,6 @@ import { claimDbOwnership, onYieldRequested } from "./dbOwnership.js";
 import { watchOpfsWipe } from "./opfsWipeGuard.js";
 import {
   cleanupOrphanSqliteFiles,
-  clearPendingSqliteWipe,
   markPendingSqliteWipe,
 } from "./sqliteOrphanCleanup.js";
 import { markKvAnonPartition, refreshKvWarmCache } from "./kvStoreBoot.js";
@@ -240,16 +239,23 @@ export async function wipeSqliteDb(): Promise<void> {
   //   - main-thread OPFS-SAH's `unlink` is the opposite: the pool leaves the
   //     result undefined while the file is still open, so it runs AFTER
   //     `close()` releases the sync-access-handle lock.
-  // priv-05: файл на диску стирається ПІСЛЯ маркера «стирання не завершилось»;
-  // маркер знімається лише після успіху, інакше наступний старт довершить
-  // стирання (`cleanupOrphanSqliteFiles`).
+  // priv-05: файл на диску стирається ПІСЛЯ маркера «стирання не завершилось».
+  //
+  // AI-DANGER: маркер НЕ знімається тут навіть після успішного `wipe`. Його
+  // знімає `cleanupOrphanSqliteFiles` на наступному відкритті анонімної
+  // партиції, і саме там файл видаляється примусово ще раз. Між `wipe` і
+  // `setSqliteUser(null)` ще живуть тіки синку й dual-write: `getSqliteDb()`
+  // з ключем вихідного акаунта перевідкриває файл партиції, і сам `wipe`
+  // гарантії не дає (e2e `logout-sqlite-wipe`). Раніше це прибирало
+  // підмітання з анонімної партиції, але воно ж видаляло файл залогіненої
+  // людини на кожному старті, тож тепер воно діє лише з партиції акаунта
+  // (див. `cleanupOrphanSqliteFiles`), а вихід покладається на маркер.
   const pendingFile = open?.vfs === "opfs-sahpool" ? open.dbName : null;
   if (pendingFile) markPendingSqliteWipe(pendingFile);
   const wipeStorage = async (): Promise<void> => {
     if (!open) return;
     try {
       await open.wipe(userIdBeingWiped);
-      if (pendingFile) clearPendingSqliteWipe(pendingFile);
     } catch (err) {
       // Не ковтаємо мовчки: файл із даними користувача лишився на диску.
       // `logger.error` у проді йде в Sentry (breadcrumb + captureException).
@@ -944,7 +950,10 @@ async function wipeKvvfsUserRows(
   conn: SqliteConnection,
   userId: string,
 ): Promise<void> {
-  for (const table of CLIENT_PULL_SUPPORTED_TABLES) {
+  // `sync_op_outbox` іде разом із рядками: людина вже погодилась на втрату
+  // незасинхронізованого, а лишена черга висіла б у лічильнику наступного
+  // акаунта і поїхала б на сервер при наступному вході.
+  for (const table of [...CLIENT_PULL_SUPPORTED_TABLES, "sync_op_outbox"]) {
     try {
       await conn.run(`DELETE FROM ${table} WHERE user_id = ?`, [userId]);
     } catch (err) {
@@ -953,6 +962,17 @@ async function wipeKvvfsUserRows(
       // partial cleanup beats none.
       logger.debug(`[sqlite] kvvfs row-wipe skipped for ${table}`, err);
     }
+  }
+  // Курсори (`pull_since:<id>`, `backfill_*:<id>`) без колонки `user_id`, id
+  // стоїть суфіксом ключа. Лишений курсор після стирання рядків означав би
+  // pull «з кінця» при повторному вході, і дані з сервера вже не повернуться.
+  try {
+    await conn.run(
+      `DELETE FROM sync_op_cursor WHERE substr(key, -length(?) - 1) = ':' || ?`,
+      [userId, userId],
+    );
+  } catch (err) {
+    logger.debug("[sqlite] kvvfs cursor-wipe skipped", err);
   }
 }
 

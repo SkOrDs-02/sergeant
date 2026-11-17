@@ -22,11 +22,15 @@ import { dirname, join, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 
 import {
+  addActionHits,
   allowlistHits,
+  NATIVE_SELECT_ALLOWLIST,
+  OVERLINE_ALLOWLIST,
   blankComments,
   CANON_RING_OPACITY,
   counts,
   NATIVE_CHOICE_ALLOWLIST,
+  RAW_INPUT_ALLOWLIST,
   ROUNDED_FULL_ALLOWLIST,
   ICON_SIZE_TOKENS,
   maskedRanges,
@@ -34,6 +38,8 @@ import {
   STATE_LABEL_KEYS,
   STATE_LABEL_WORDS,
   tagEnd,
+  ZERO_ONLY_METRICS,
+  zeroOnlyViolations,
 } from "../check-ui-canon-ratchet.mjs";
 
 const F = "apps/web/src/example.tsx";
@@ -259,8 +265,9 @@ test("allowlist не масивом — голосна помилка, а не �
   assert.throws(() => allowlistHits({ files: [] }), /масивом/);
 });
 
-test("лічильник знає про всі чотирнадцять метрик — інакше baseline-гейт не побачить нову", () => {
+test("лічильник знає про всі девʼятнадцять метрик — інакше baseline-гейт не побачить нову", () => {
   assert.deepEqual(Object.keys(counts([])).sort(), [
+    "addActionsPerRoute",
     "bigRadius",
     "capsFormLabel",
     "cyrillicJsxAllowlist",
@@ -269,11 +276,15 @@ test("лічильник знає про всі чотирнадцять мет�
     "handRolledFocusRing",
     "heroInkAlpha",
     "hoverMotion",
+    "hueOnButton",
     "kicker",
     "legacyButton",
     "nativeChoice",
+    "nativeSelect",
     "numericIconSize",
     "offCanonRingOpacity",
+    "overlineOutsideHero",
+    "rawInput",
     "textStateLabel",
   ]);
 });
@@ -464,6 +475,55 @@ test("nativeChoice: файли allowlist не рахуються, комента
   assert.deepEqual(onlyTsx(`// <input type="radio" />`, "nativeChoice"), []);
 });
 
+test("rawInput: голі input, textarea і select ловляться, примітиви й file/hidden ні", () => {
+  const src = `
+    <input type="text" value={v} />
+    <textarea rows={3}></textarea>
+    <select value={s}><option /></select>
+    <input type="file" className="sr-only" />
+    <input type='hidden' name="id" />
+    <Input value={v} />
+    <Select value={s} />
+    <Textarea />
+    <inputGroup />`;
+  const hits = onlyTsx(src, "rawInput");
+  assert.equal(hits.length, 3);
+  assert.match(hits[0].detail, /Input \/ Textarea \/ Select/);
+});
+
+test("rawInput: allowlist (зокрема самі примітиви) не рахується, коментар теж", () => {
+  assert.ok(
+    RAW_INPUT_ALLOWLIST.includes("apps/web/src/shared/components/ui/Input.tsx"),
+  );
+  for (const file of RAW_INPUT_ALLOWLIST) {
+    const hits = scanSource(file, `<input type="text" />`).filter(
+      (h) => h.metric === "rawInput",
+    );
+    assert.deepEqual(hits, [], file);
+  }
+  assert.deepEqual(onlyTsx(`// <input type="text" />`, "rawInput"), []);
+});
+
+test("rawInput: інший файл у теці примітивів рахується", () => {
+  const hits = scanSource(
+    "apps/web/src/shared/components/ui/OtherWidget.tsx",
+    `<input type="text" />`,
+  ).filter((h) => h.metric === "rawInput");
+  assert.equal(hits.length, 1);
+});
+
+test("rawInput: тег у рядковому літералі не рахується, апостроф у JSX-тексті не ховає поле", () => {
+  const quoted = `
+    const a = '<input type="text" />';
+    const b = "<select>";
+    const c = \`<textarea>\`;`;
+  assert.deepEqual(onlyTsx(quoted, "rawInput"), []);
+  const jsx = `
+    <p>М'язи</p>
+    <input type="text" />`;
+  assert.equal(onlyTsx(jsx, "rawInput").length, 1);
+});
+
 test("nativeChoice: лише TSX, рядок у .ts не є розміткою", () => {
   const hits = scanSource(
     "apps/web/src/example.ts",
@@ -476,7 +536,7 @@ test("textStateLabel: ключі каталогу й літерали ловля
   const src = `
     <span>{messages.actions.collapse}</span>
     <span>{open ? coreMessages.actions.collapse : messages.finykRedesign.expand}</span>
-    <span>{m.collapseFact}</span>
+    <span>{m.collapseDetails}</span>
     <span>{messages.finykRedesign.selected}</span>
     <button>{open ? "Згорнути" : "Розгорнути"}</button>
     <span>Обрано {n}</span>`;
@@ -540,4 +600,136 @@ test("capsFormLabel: звичайний підпис, капс на <span> і с
     <LabelList className="uppercase" />
     <labelled className="uppercase" />`;
   assert.deepEqual(onlyTsx(src, "capsFormLabel"), []);
+});
+
+test("ZERO_ONLY_METRICS: ненульовий бюджет для заборони ловиться", () => {
+  assert.deepEqual(
+    zeroOnlyViolations({
+      nativeChoice: 1,
+      textStateLabel: 0,
+      capsFormLabel: 0,
+      nativeSelect: 0,
+      overlineOutsideHero: 0,
+      hueOnButton: 2,
+      rawInput: 0,
+      addActionsPerRoute: 0,
+    }),
+    ["nativeChoice", "hueOnButton"],
+  );
+  assert.deepEqual(
+    zeroOnlyViolations({
+      nativeChoice: 0,
+      capsFormLabel: 0,
+      nativeSelect: 0,
+      overlineOutsideHero: 0,
+      hueOnButton: 0,
+      rawInput: 0,
+      addActionsPerRoute: 0,
+    }),
+    ["textStateLabel"],
+    "відсутній ключ - теж не нуль",
+  );
+});
+
+// ── 15-18: redesign v3.2 «один афорданс» ──
+
+test("nativeSelect: сирий <select> ловиться, Select і коментар - ні", () => {
+  const src = `
+    <select value={a}><option /></select>
+    <Select value={a} />
+    // <select> у коментарі
+    <selected />`;
+  const hits = onlyTsx(src, "nativeSelect");
+  assert.equal(hits.length, 1);
+  assert.match(hits[0].detail, /Select/);
+  for (const file of NATIVE_SELECT_ALLOWLIST) {
+    assert.deepEqual(
+      scanSource(file, "<select />").filter((h) => h.metric === "nativeSelect"),
+      [],
+      file,
+    );
+  }
+});
+
+test("overlineOutsideHero: оверлайн поза hero ловиться, у hero-файлі ні", () => {
+  const plain = `<p className="text-style-overline text-subtle">Ярлик</p>`;
+  assert.equal(onlyTsx(plain, "overlineOutsideHero").length, 1);
+  for (const hero of [
+    `<div className="bg-finyk-tint"><p className="text-style-overline">A</p></div>`,
+    `<Card prominence="hero"><p className="text-style-overline">A</p></Card>`,
+    `<p className="text-style-overline text-routine-tint-label">A</p>`,
+  ]) {
+    assert.deepEqual(onlyTsx(hero, "overlineOutsideHero"), [], hero);
+  }
+  assert.deepEqual(
+    scanSource(`${OVERLINE_ALLOWLIST[0]}NutritionSlide.tsx`, plain).filter(
+      (h) => h.metric === "overlineOutsideHero",
+    ),
+    [],
+  );
+  assert.deepEqual(
+    onlyTsx(`// text-style-overline у коментарі`, "overlineOutsideHero"),
+    [],
+  );
+});
+
+test("hueOnButton: tone і заливка модуля на кнопці поза hero ловляться", () => {
+  const src = `
+    <Button variant="solid" tone="nutrition">Згенерувати</Button>
+    <Button variant="soft" tone={"finyk"}>Тег</Button>
+    <button className="bg-fizruk-strong text-white">Почати</button>
+    <button className="bg-routine/15">Тинт-кнопка</button>
+    <Button variant="solid">Зберегти</Button>
+    <Badge tone="finyk">A</Badge>`;
+  const hits = onlyTsx(src, "hueOnButton");
+  assert.equal(hits.length, 3);
+  assert.match(hits[0].detail, /чорнилом/);
+  const hero = `<Card prominence="hero" tone="finyk"><Button variant="solid" tone="finyk">A</Button></Card>`;
+  assert.deepEqual(onlyTsx(hero, "hueOnButton"), []);
+});
+
+test("addActionsPerRoute: кожна кнопка «Додати» понад одну - hit", () => {
+  const hits = addActionHits({
+    "nutrition-log": 2,
+    finyk: 1,
+    hub: 0,
+    assets: 3,
+  });
+  assert.equal(hits.length, 3);
+  assert.ok(hits.every((h) => h.metric === "addActionsPerRoute"));
+  assert.match(hits[0].detail, /nutrition-log/);
+  assert.throws(() => addActionHits([1, 2]), /обʼєктом/);
+});
+
+test("addActionsPerRoute: збережений замір читається і має числа", () => {
+  const here = dirname(fileURLToPath(import.meta.url));
+  const perRoute = JSON.parse(
+    readFileSync(
+      resolve(here, "../../.tech-debt/add-actions-per-route.json"),
+      "utf8",
+    ),
+  );
+  assert.ok(Object.keys(perRoute).length > 0);
+  for (const v of Object.values(perRoute)) assert.equal(typeof v, "number");
+});
+
+test("ZERO_ONLY_METRICS: чинний бюджет тримає всі вісім заборон у нулі", () => {
+  const here = dirname(fileURLToPath(import.meta.url));
+  const budget = JSON.parse(
+    readFileSync(
+      resolve(here, "../../.tech-debt/ui-canon-budget.json"),
+      "utf8",
+    ),
+  );
+  assert.deepEqual(zeroOnlyViolations(budget.budgets), []);
+  assert.deepEqual(ZERO_ONLY_METRICS, [
+    "nativeChoice",
+    "textStateLabel",
+    "capsFormLabel",
+    "nativeSelect",
+    "overlineOutsideHero",
+    "hueOnButton",
+    "rawInput",
+    "addActionsPerRoute",
+  ]);
 });

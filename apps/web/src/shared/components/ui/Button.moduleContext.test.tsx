@@ -1,19 +1,13 @@
 /** @vitest-environment jsdom */
 /**
- * Last validated: 2026-09-14
+ * Last validated: 2026-10-23
  * Status: Active
  *
- * Пін на те, що кнопка бере акцент із `ModuleAccentProvider`, коли проп
- * `module` не вказано (PR-C1, рішення власника 2026-09-14) — і, що
- * важливіше, на межу цього правила.
- *
- * Найцінніші тут НЕ кейси «колір змінився», а кейси «форма НЕ змінилась».
- * Легасі-гілка `resolveStyleKey` тримає форму тим, що `MODULE_LEGACY_OVERRIDE`
- * мапить лише `primary`/`secondary`. Канонічна гілка тримає її фолбеком:
- * клітинок `outline × модуль` і `ghost × модуль` у `EMPHASIS_TONE_MAP` немає,
- * і замість суцільного `primary` вона скидає тон до нейтрального в межах тієї
- * ж емфази. До цього фолбеку неактивні фільтри Операцій Фініка стояли
- * чорними (критика екранів 2026-09-23): саме це й ловлять кейси нижче.
+ * Пін на те, що `ModuleAccentProvider` кнопку НЕ фарбує (redesign v3.2,
+ * позиція 18): головна дія модуля - `solid` чорнилом, як скрізь. До
+ * 2026-10-23 контекст підміняв беспропний `solid` / `primary` заливкою
+ * модуля, і «Згенерувати денний план» у Їжі виходив лаймовим. Hue модуля на
+ * кнопці можливий лише явним `tone` у hero, і це міряє `hueOnButton`.
  */
 import { describe, it, expect } from "vitest";
 import { render, screen } from "@testing-library/react";
@@ -25,72 +19,43 @@ function cls(name: string): string {
 }
 
 describe("Button × ModuleAccentProvider", () => {
-  it("беспропний primary усередині модуля бере акцент модуля", () => {
+  it("беспропний primary усередині модуля лишається чорнилом", () => {
     render(
-      <ModuleAccentProvider module="finyk">
+      <ModuleAccentProvider module="nutrition">
         <Button>Зберегти</Button>
+        <Button variant="solid">Згенерувати денний план</Button>
       </ModuleAccentProvider>,
     );
-    // finyk-варіант фарбує саме бренд-токеном модуля, а не brand-*.
-    expect(cls("Зберегти")).toContain("finyk");
-  });
-
-  it("поза провайдером той самий виклик лишається генеричним", () => {
-    render(<Button>Зберегти</Button>);
-    expect(cls("Зберегти")).not.toContain("finyk");
-  });
-
-  it("явний проп `module` виграє над контекстом", () => {
-    render(
-      <ModuleAccentProvider module="finyk">
-        <Button module="fizruk">Зберегти</Button>
-      </ModuleAccentProvider>,
-    );
-    const c = cls("Зберегти");
-    expect(c).toContain("fizruk");
-    expect(c).not.toContain("finyk");
-  });
-
-  it("ghost усередині модуля лишається ghost — НЕ стає суцільним", () => {
-    // Межа. `ghost` живе в легасі-наборі, який `resolveStyleKey` перевіряє
-    // ПЕРШИМ і повертає без читання таблиці канонічних клітинок. Приберуть
-    // його звідти — і ця кнопка стане суцільною синьою.
-    render(
-      <ModuleAccentProvider module="finyk">
-        <Button variant="ghost">Закрити</Button>
-      </ModuleAccentProvider>,
-    );
-    const c = cls("Закрити");
-    expect(c).not.toContain("finyk");
-    // Ghost прозорий: у нього немає заливки бренд-кольором.
-    expect(c).not.toContain("bg-brand");
-  });
-
-  it("outline усередині модуля лишається outline, а не стає суцільним", () => {
-    // `outline` НЕ в легасі-наборі, тож іде канонічною гілкою, де контекст
-    // модуля підміняє нейтральний тон на модульний. Клітинки
-    // `outline × модуль` немає, і доти фолбек вів у суцільний `primary`:
-    // неактивні фільтри Операцій Фініка стояли чорними, важчими за
-    // активний (критика екранів 2026-09-23). Фолбек мусить лишати
-    // ЕМФАЗУ і скидати лише тон.
-    render(
-      <ModuleAccentProvider module="finyk">
-        <Button variant="outline">Витрати</Button>
-        <Button variant="outline" tone="neutral">
-          Доходи
-        </Button>
-      </ModuleAccentProvider>,
-    );
-    for (const name of ["Витрати", "Доходи"]) {
+    for (const name of ["Зберегти", "Згенерувати денний план"]) {
       const c = cls(name);
-      expect(c).toContain("border-border-strong");
-      expect(c).not.toContain("bg-brand-strong");
+      expect(c).toContain("bg-text");
+      expect(c).not.toContain("nutrition");
     }
   });
 
-  it("danger усередині модуля лишається небезпечним, а не модульним", () => {
-    // Колір небезпеки — семантичний, він НЕ має підмінятись акцентом
-    // модуля: «Видалити» має виглядати однаково скрізь.
+  it("явний tone модуля (hero) лишається модульним", () => {
+    render(
+      <ModuleAccentProvider module="finyk">
+        <Button variant="solid" tone="fizruk">
+          Почати
+        </Button>
+      </ModuleAccentProvider>,
+    );
+    expect(cls("Почати")).toContain("bg-fizruk-strong");
+  });
+
+  it("outline і ghost усередині модуля не стають суцільними", () => {
+    render(
+      <ModuleAccentProvider module="finyk">
+        <Button variant="outline">Витрати</Button>
+        <Button variant="ghost">Закрити</Button>
+      </ModuleAccentProvider>,
+    );
+    expect(cls("Витрати")).toContain("border-border-strong");
+    expect(cls("Закрити")).not.toContain("finyk");
+  });
+
+  it("danger усередині модуля лишається небезпечним", () => {
     render(
       <ModuleAccentProvider module="nutrition">
         <Button variant="danger">Видалити</Button>

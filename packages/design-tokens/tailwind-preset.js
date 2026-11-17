@@ -1240,14 +1240,6 @@ const preset = {
           fontWeight: "700",
           letterSpacing: "-0.03em",
         },
-        // Size-variant `headline`: заголовок екрана хаба (дата) 30 px. Лише
-        // для `HubHeader`, не для сторінкового коду.
-        ".text-style-headline-lg": {
-          fontSize: "1.875rem",
-          lineHeight: "1.15",
-          fontWeight: "700",
-          letterSpacing: "-0.03em",
-        },
         // Back-compat alias — `.text-style-hero` was the prior name for
         // the page-H1 / hero-stat slot. New code should reach for
         // `.text-style-headline`; existing call-sites keep working.

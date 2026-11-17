@@ -42,6 +42,15 @@ export interface SyncEngineReaderRuntime {
   start(): void;
   stop(): void;
   pullOnce(): Promise<SyncEnginePullResult>;
+  /**
+   * Бар'єр для перемикання активної SQLite-партиції (`data-46`): дочікується
+   * pull-а, що вже йде, і до виклику повернутої функції `pullOnce` нічого не
+   * пише. Інакше pull, що стартував у вікні перемикання, взяв би `userId`
+   * сесії, а клієнта вже іншої партиції, і записав би чужі рядки. Паузи
+   * вкладаються; стан початкового pull і таймер не чіпаються, на відміну від
+   * `stop()`.
+   */
+  pause(): Promise<() => void>;
 }
 
 export interface SyncEngineReaderDeps {
@@ -189,7 +198,7 @@ function isConstraintFailure(error: unknown): boolean {
  *
  * AI-CONTEXT: догін порожнього курсора йде сторінками через увесь
  * `sync_op_log` акаунта, і на дорослому акаунті це сотні запитів підряд
- * проти бюджету `api:v2:sync` (60/хв, `apps/server/src/routes/sync.ts`).
+ * проти бюджету `api:v2:sync:pull` (60/хв, окремий від push, `apps/server/src/routes/sync.ts`).
  * Прод 2026-09-21: 107 запитів за 1 хв 33 с, далі 429 — і крок
  * `pull-before` анонімної міграції падав, замикаючи людину на блокуючому
  * екрані. Курсор пишеться після КОЖНОЇ сторінки, тож прогрес не губиться
@@ -234,6 +243,7 @@ export function createSyncEngineReaderRuntime(
   let intervalHandle: unknown = null;
   let inflight: Promise<SyncEnginePullResult> | null = null;
   let started = false;
+  let pauses = 0;
 
   /**
    * Таблиці, опи яких уже застосовано в SQLite, але кеші ще їх не бачили.
@@ -254,6 +264,9 @@ export function createSyncEngineReaderRuntime(
 
   const pullOnce = async (): Promise<SyncEnginePullResult> => {
     if (inflight) return inflight;
+    if (pauses > 0) {
+      return { pulled: 0, applied: 0, skipped: 0, rejected: 0, lastOpId: 0 };
+    }
 
     inflight = (async () => {
       const userId = await deps.resolveUserId();
@@ -470,5 +483,16 @@ export function createSyncEngineReaderRuntime(
       deps.eventTarget.removeEventListener("visibilitychange", onVisibility);
     },
     pullOnce,
+    async pause() {
+      pauses += 1;
+      const running = inflight;
+      if (running) await running.catch(() => undefined);
+      let released = false;
+      return () => {
+        if (released) return;
+        released = true;
+        pauses -= 1;
+      };
+    },
   };
 }

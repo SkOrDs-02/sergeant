@@ -374,7 +374,9 @@ export function calcReceivableRemaining(
 ): number {
   return Math.max(
     0,
-    getReceivableEffectiveTotal(receivable, transactions) -
-      getReceivablePaid(receivable, transactions),
+    roundHryvnia(
+      getReceivableEffectiveTotal(receivable, transactions) -
+        getReceivablePaid(receivable, transactions),
+    ),
   );
 }

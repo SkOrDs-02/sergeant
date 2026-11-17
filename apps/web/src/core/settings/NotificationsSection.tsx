@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { cn } from "@shared/lib/ui/cn";
 import { Button } from "@shared/components/ui/Button";
+import { Input } from "@shared/components/ui/Input";
 import { ChoiceGroup } from "@shared/components/ui/Choice";
 import { TimeField } from "@shared/components/ui/TimeField";
 import { useToast } from "@shared/hooks/useToast";
@@ -156,7 +157,16 @@ export function NotificationsSection() {
     // V-7 (2026-08-08): title читається з каталогу, а не хардкодиться тут —
     // раніше цей рядок і ⌘K-індекс (settingsSectionsCatalog.ts) розходились
     // ("Сповіщення" тут vs "Нагадування" у пошуку) без жодної перевірки.
-    <SettingsGroup title={settingsSectionTitle("notifications")}>
+    <SettingsGroup
+      title={settingsSectionTitle("notifications")}
+      value={
+        permStatus === "unsupported" || permStatus === "denied"
+          ? "Недоступно"
+          : pushSubscribed
+            ? "Push увімкнено"
+            : "Push вимкнено"
+      }
+    >
       {/* Два рядки поспіль мали один підпис «Push-сповіщення» (браузерний
           дозвіл і власне підписка) і читались як дубль (огляд 2026-09-04).
           Перший рядок — про дозвіл браузера, і називається так. */}
@@ -298,6 +308,8 @@ export function NotificationsSection() {
                 aria-label="Час"
                 value={`${String(monthlyPlan.reminderHour).padStart(2, "0")}:${String(monthlyPlan.reminderMinute).padStart(2, "0")}`}
                 onChange={(e) => {
+                  // Порожнє значення (очищення пікера) не є 00:00.
+                  if (!e.target.value) return;
                   const [h, m] = e.target.value.split(":").map(Number);
                   monthlyPlan.setReminder(h || 0, m || 0);
                 }}
@@ -318,27 +330,34 @@ export function NotificationsSection() {
           onChange={handleNutritionToggle}
         />
         {nutritionPrefs.reminderEnabled && (
-          <label className="flex items-center gap-2 text-style-label">
-            <span className="text-subtle">Година</span>
-            <input
-              type="number"
-              min={0}
-              max={23}
-              className="w-16 h-9 touch-target rounded-lg bg-panel border border-line px-2 text-style-body text-text"
-              value={reminderHourDraft ?? nutritionPrefs.reminderHour ?? 12}
-              disabled={!nutritionHydrated}
-              onBlur={() => setReminderHourDraft(null)}
-              onChange={(e) => {
-                const reminderHour = Math.min(
-                  23,
-                  Math.max(0, Number(e.target.value) || 0),
-                );
-                setReminderHourDraft(reminderHour);
-                patchNutritionPrefs({ reminderHour });
-              }}
-            />
+          <div className="flex items-center gap-2 text-style-label">
+            <label htmlFor="nutrition-reminder-hour" className="text-subtle">
+              Година
+            </label>
+            <span className="w-16 shrink-0">
+              <Input
+                id="nutrition-reminder-hour"
+                size="sm"
+                type="number"
+                min={0}
+                max={23}
+                step={1}
+                className="px-2"
+                value={reminderHourDraft ?? nutritionPrefs.reminderHour ?? 12}
+                disabled={!nutritionHydrated}
+                onBlur={() => setReminderHourDraft(null)}
+                onChange={(e) => {
+                  const reminderHour = Math.min(
+                    23,
+                    Math.max(0, Math.trunc(Number(e.target.value)) || 0),
+                  );
+                  setReminderHourDraft(reminderHour);
+                  patchNutritionPrefs({ reminderHour });
+                }}
+              />
+            </span>
             <span className="text-style-caption text-subtle">год.</span>
-          </label>
+          </div>
         )}
       </SettingsSubGroup>
     </SettingsGroup>

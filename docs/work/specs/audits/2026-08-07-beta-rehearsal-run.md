@@ -7,7 +7,7 @@
 
 > **Статуси після 2026-09-05:** новий власник поточного стану відкритих знахідок — [`verification/findings.json`](./verification/findings.json); цей файл лишається історичним джерелом доказів.
 
-Виконання дизайну [`beta-browser-run.md`](../beta-launch/beta-browser-run.md) у режимі **репетиції** (локальний стек, без живого AI). Мета — довести, що лейн `e2e:beta` і матриця персон працюють end-to-end до бойового прогону проти бети, і зняти перші знахідки.
+Виконання дизайну `beta-browser-run.md` у режимі **репетиції** (локальний стек, без живого AI). Мета — довести, що лейн `e2e:beta` і матриця персон працюють end-to-end до бойового прогону проти бети, і зняти перші знахідки.
 
 ## Умови прогону
 
@@ -101,6 +101,6 @@
 
 ## Related
 
-- Дизайн: [`../../beta-launch/beta-browser-run.md`](../beta-launch/beta-browser-run.md)
+- Дизайн: `../../beta-launch/beta-browser-run.md`
 - Методологічний попередник: [`2026-08-05-browser-profile-testing.md`](./2026-08-05-browser-profile-testing.md)
 - Лейн: `apps/web/tests/beta/` (`pnpm --filter @sergeant/web e2e:beta`)

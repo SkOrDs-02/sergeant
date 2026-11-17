@@ -1,15 +1,15 @@
 /**
- * Last validated: 2026-08-31
+ * Last validated: 2026-10-23
  * Status: Active
  */
 import {
-  computeOneRmAging,
-  epley1rm,
+  computeNextSetAging,
+  progressionTopSet,
   suggestNextSet,
+  uncappedEpley1rm,
 } from "@sergeant/fizruk-domain";
 import type {
   ReadinessAnswer,
-  WorkoutSet,
   WorkoutVariantChoice,
 } from "@sergeant/fizruk-domain";
 import { findExerciseById } from "@sergeant/fizruk-domain/data";
@@ -35,26 +35,13 @@ export interface WorkoutItemNextSetHintProps {
   ) => void;
 }
 
-function bestSetOf(sets: WorkoutSet[]): WorkoutSet | null {
-  let best: WorkoutSet | null = null;
-  let bestEst = 0;
-  for (const s of sets) {
-    const est = epley1rm(s.weightKg, s.reps);
-    if (est > bestEst) {
-      bestEst = est;
-      best = s;
-    }
-  }
-  return best;
-}
-
 /**
  * Причини МʼЯКОГО РЕЖИМУ, і лише вони. Готовність сюди навмисно не додана:
- * `returnReason` віддає `computeOneRmAging` з історії вправи (затухання 1ПМ,
+ * `returnReason` віддає `computeNextSetAging` з історії вправи (затухання 1ПМ,
  * вікно після травми), а готовність — це самозвіт про сьогодні. Змішати їх в
  * одному переліку означало б, що `ReturnProtocolNotice` (компонент про
  * старіння 1ПМ) мусив би знати про сон, а `aging.returnReason` міг би
- * набути значення, якого `computeOneRmAging` не вміє видавати.
+ * набути значення, якого `computeNextSetAging` не вміє видавати.
  */
 const RETURN_REASON_TEXT: Record<string, string> = {
   layoff: messages.fizruk.nextSetHint.softLayoff,
@@ -82,12 +69,16 @@ export function WorkoutItemNextSetHint({
 }: WorkoutItemNextSetHintProps) {
   if (isReadOnly || last?.type !== "strength") return null;
 
-  const best = bestSetOf(filterNonEmptyStrengthSets(last.sets));
+  const best = progressionTopSet(filterNonEmptyStrengthSets(last.sets));
   if (!best) return null;
 
-  const aging = computeOneRmAging({
-    peak1rm: epley1rm(best.weightKg, best.reps),
+  // Режим повернення дивиться на ВСЮ історію вправи, а не лише на останню
+  // сесію (аудит `logic-04`): одне легке заняття після паузи його не знімає,
+  // як і на сторінці вправи.
+  const aging = computeNextSetAging({
+    lastBest1rm: uncappedEpley1rm(best),
     lastSessionAt: last._startedAt ?? null,
+    sessions: last._sessions,
   });
   const suggestion = suggestNextSet(best, {
     exercise: exerciseId ? findExerciseById(exerciseId) : null,
@@ -153,6 +144,11 @@ export function WorkoutItemNextSetHint({
         </button>
       )}
       <span className="text-style-caption text-subtle">{note}</span>
+      {readiness?.sleep == null && readiness?.soreness == null && (
+        <span className="w-full text-style-caption text-subtle">
+          {t.noReadiness}
+        </span>
+      )}
     </div>
   );
 }
