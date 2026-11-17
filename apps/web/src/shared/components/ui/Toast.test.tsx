@@ -1,9 +1,16 @@
 /** @vitest-environment jsdom */
 import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
-import { act, fireEvent, render, screen } from "@testing-library/react";
+import {
+  act,
+  fireEvent,
+  render,
+  screen,
+  waitFor,
+} from "@testing-library/react";
 import { ToastProvider, useToast } from "@shared/hooks/useToast";
 import { showUndoToast } from "@shared/lib/ui/undoToast";
 import { ToastContainer } from "./Toast";
+import { ScreenReaderAnnouncerProvider } from "./ScreenReaderAnnouncer";
 import { Sheet } from "./Sheet";
 
 /**
@@ -47,14 +54,30 @@ describe("Toast — a11y", () => {
     navigator.vibrate = vi.fn();
   });
 
-  it("info-toast має role=status + aria-live=polite", () => {
-    const { api } = renderHarness();
+  it("info-toast не є live-регіоном сам: його озвучує постійний регіон анонсера", async () => {
+    const apiRef: { current: ReturnType<typeof useToast> | null } = {
+      current: null,
+    };
+    function ApiBridge() {
+      apiRef.current = useToast();
+      return null;
+    }
+    render(
+      <ToastProvider>
+        <ScreenReaderAnnouncerProvider>
+          <ApiBridge />
+          <ToastContainer />
+        </ScreenReaderAnnouncerProvider>
+      </ToastProvider>,
+    );
     act(() => {
-      api.info("Інфо");
+      apiRef.current!.info("Інфо");
     });
-    const row = getToastRoot();
-    expect(row.getAttribute("role")).toBe("status");
-    expect(row.getAttribute("aria-live")).toBe("polite");
+    expect(getToastRoot().hasAttribute("aria-live")).toBe(false);
+    const region = document.querySelector<HTMLElement>(
+      '[role="status"][aria-live="polite"]',
+    )!;
+    await waitFor(() => expect(region.textContent).toBe("Інфо"));
   });
 
   it("error-toast має role=alert + aria-live=assertive", () => {

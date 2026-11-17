@@ -325,6 +325,26 @@ describe("runReminderSweep", () => {
     expect(result.due).toBe(2);
     expect(claims.map((c) => c.userId).sort()).toEqual(["f1", "n2"]);
   });
+
+  it("дробова година нагадування про їжу округлюється вниз до 08:00", async () => {
+    const { pool, claims } = fakePool({
+      nutrition: [
+        {
+          user_id: "n1",
+          prefs_json: { reminderEnabled: true, reminderHour: 8.5 },
+        },
+      ],
+    });
+
+    // Рівно 08:00 за Києвом (UTC+3 влітку).
+    const result = await runReminderSweep(
+      pool,
+      new Date("2026-08-03T05:00:00Z"),
+    );
+
+    expect(result.due).toBe(1);
+    expect(claims.map((c) => c.userId)).toEqual(["n1"]);
+  });
 });
 
 describe("ізоляція користувачів у sweep-і (аудит 2026-10-01, rel-01)", () => {

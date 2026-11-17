@@ -20,6 +20,7 @@ import { useNavigate } from "react-router-dom";
 import { Button } from "@shared/components/ui/Button";
 import { MorphChevron } from "@shared/components/ui/MorphChevron";
 import { SectionHeading } from "@shared/components/ui/SectionHeading";
+import { useAnnounce } from "@shared/components/ui/ScreenReaderAnnouncer";
 import { emitHubBus } from "@shared/lib/modules/hubBus";
 import {
   openHubModuleWithAction,
@@ -181,6 +182,7 @@ export interface NowPileProps {
 export function NowPile({ now, onOpenTarget, checklist }: NowPileProps) {
   const { items, check } = now;
   const runAction = useRunAction(onOpenTarget);
+  const { announce } = useAnnounce();
   const [tailOpen, setTailOpen] = useState(false);
   const total = items.length + (checklist?.steps.length ?? 0);
   usePublishHubDayCount("now", total);
@@ -212,12 +214,32 @@ export function NowPile({ now, onOpenTarget, checklist }: NowPileProps) {
     [runAction, visible],
   );
 
+  // Рядок зникає разом зі сфокусованим чекбоксом, тож фокус переносимо на
+  // заголовок купи до розмонтування, інакше він падає на <body>.
+  const onCheck = useCallback(
+    (item: NowItem) => {
+      document
+        .getElementById("now-pile-heading")
+        ?.focus({ preventScroll: true });
+      check(item);
+      announce(coreMessages.hub.nowPile.checked);
+    },
+    [check, announce],
+  );
+
   const hasChecklist = Boolean(checklist && checklist.steps.length > 0);
   const rows = tailOpen ? [...visible, ...tail] : visible;
 
   return (
     <section aria-labelledby="now-pile-heading">
-      <SectionHeading as="h2" size="lg" id="now-pile-heading" meta={total}>
+      <SectionHeading
+        as="h2"
+        size="lg"
+        id="now-pile-heading"
+        tabIndex={-1}
+        className="focus:outline-none"
+        meta={total}
+      >
         {coreMessages.hub.nowPile.heading}
       </SectionHeading>
 
@@ -229,7 +251,7 @@ export function NowPile({ now, onOpenTarget, checklist }: NowPileProps) {
         <ul className="mt-2 divide-y divide-line border-y border-line">
           {hasChecklist && checklist && <ChecklistNowRows {...checklist} />}
           {rows.map((item) => (
-            <NowRow key={item.id} item={item} onRun={run} onCheck={check} />
+            <NowRow key={item.id} item={item} onRun={run} onCheck={onCheck} />
           ))}
         </ul>
       )}

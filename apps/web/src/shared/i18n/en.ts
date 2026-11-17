@@ -321,6 +321,7 @@ export const messagesEn: Partial<{
     closedPile: {
       heading: "Closed",
       uncheck: "Back to Now",
+      unchecked: "Moved back to Now",
     },
     spendHero: {
       label: "Spent today",

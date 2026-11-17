@@ -131,6 +131,16 @@ describe("NowPile", () => {
     expect(mocks.check).toHaveBeenCalledWith(items[0]);
   });
 
+  it("після чекбокса фокус іде на заголовок купи, а не губиться на <body>", () => {
+    renderPile([item({ id: "a" })]);
+    const box = screen.getByRole("checkbox", { name: /title a/ });
+    box.focus();
+    fireEvent.click(box);
+    expect(document.activeElement).toBe(
+      screen.getByRole("heading", { name: "Зараз" }),
+    );
+  });
+
   it("три рядки + «ще N»; хвіст розгортається й згортається тим самим вузлом", () => {
     renderPile(
       [1, 2, 3, 4, 5].map((n) => item({ id: `i${n}`, priority: 100 - n })),

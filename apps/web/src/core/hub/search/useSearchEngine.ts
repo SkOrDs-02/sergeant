@@ -324,6 +324,9 @@ export function useSearchEngine({
         return;
       }
       if (e.key === "Enter") {
+        // Фокус на кнопці (результат, «Скасувати», закриття): Enter має
+        // дати їй нативний click, а не відкрити активний запис.
+        if ((e.target as Element | null)?.closest?.("button, a")) return;
         const hit = flat[activeIdx];
         if (hit) {
           e.preventDefault();
