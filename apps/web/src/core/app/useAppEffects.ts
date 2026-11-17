@@ -152,22 +152,29 @@ export function useAppEffects(deps: AppEffectsDeps): void {
   // boots it) and `pullOnce()` is its public "tick now" entry point —
   // the same one `onTickComplete` in `singleton.ts` already calls after
   // a successful push. `emitCloudPullComplete()` fires only once the
-  // tick has settled (success or failure) so the pull-to-refresh
-  // spinner reflects real completion instead of an instant no-op; the
-  // 4s timeout in `requestCloudPull()` remains the ultimate fallback if
-  // the tick hangs.
+  // tick has settled, and carries its outcome: `ok: false` when the tick
+  // threw (offline, 5xx), so `requestCloudPull()` rejects and the
+  // module's `PullToRefresh` `onError` shows the failure toast instead of
+  // a silent "success" (PR-H3 tail, 2026-11-17). A `null` reader
+  // (follower tab: the leader tab pulls) counts as success.
+  //
+  // The requester's own timeout is the fallback if the tick hangs: module
+  // PTRs pass 2500 ms, the default in `cloudPullRequest.ts` is 4000 ms. On
+  // timeout the request RESOLVES (the spinner unwinds, the tick keeps
+  // running); a timeout alone is not reported as a failure.
   useEffect(() => {
     const handler = () => {
       void bootSyncEngineReader()
         .then((reader) => reader?.pullOnce())
-        .catch(() => {
-          // Errors are already classified/reported inside
-          // `syncEngineReader.ts` (`captureException`); the gesture
-          // itself must still settle so the spinner does not hang.
-        })
-        .finally(() => {
-          emitCloudPullComplete();
-        });
+        .then(
+          () => emitCloudPullComplete({ ok: true }),
+          () => {
+            // Errors are already classified/reported inside
+            // `syncEngineReader.ts` (`captureException`); here we only
+            // pass the outcome on to the gesture.
+            emitCloudPullComplete({ ok: false });
+          },
+        );
     };
     window.addEventListener(REQUEST_PULL_EVENT, handler);
     return () => window.removeEventListener(REQUEST_PULL_EVENT, handler);

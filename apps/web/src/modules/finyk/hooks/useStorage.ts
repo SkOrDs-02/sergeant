@@ -70,14 +70,15 @@ export function useStorage({
   // isn't mounted — але той гейт історично вимагав сесію, тож для
   // анонімного відвідувача він рендерив нічого і `useFinykDualWriteSync`
   // stays a permanent no-op (`triggerFinykDualWrite` short-circuits on
-  // an unregistered context). Booting here too is what Routine
-  // (`useRoutineAppState`), Fizruk (`FizrukApp`) and Nutrition
-  // (`NutritionApp`) already do; without it every expense an anonymous
-  // visitor adds lives in the warm cache only and dies on reload —
-  // measured 2026-08-06, see
+  // an unregistered context). Booting here too is what Fizruk
+  // (`FizrukApp`) and Nutrition (`NutritionApp`) already do (Routine
+  // registers only via `RoutineBootCluster`, see `useRoutineAppState`);
+  // without it every expense an anonymous visitor adds lives in the warm
+  // cache only and dies on reload — measured 2026-08-06, see
   // `docs/work/specs/anonymous-local-first-persistence.md`.
-  // Re-registration is idempotent: both call sites build an equivalent
-  // context and teardown only clears its own.
+  // Re-registration is safe: the registry is a stack (`liveContexts` in
+  // `lib/sqliteWriter/index.ts`, PR-R1), both call sites build an
+  // equivalent context and each teardown removes only its own.
   useFinykDualWriteBoot();
   useFinykDualWriteSync(slots);
 
