@@ -27,6 +27,8 @@ import { ToastProvider } from "@shared/hooks/useToast";
 import { CommandPaletteProvider } from "@shared/components/ui/CommandPalette";
 import { server } from "../../test/msw/server";
 import { AuthProvider } from "../auth/AuthContext";
+import { noteMeOk } from "../auth/offlineIdentity";
+import { reconcileChatOwnerOnAuthChange } from "../hub/hubChatSessions";
 import { AppLockProvider } from "../security/AppLockContext";
 import { clearPinHash, savePinHash } from "../security/lockStorage";
 import { useHubShell } from "./HubShellContext";
@@ -141,5 +143,20 @@ describe("RootLayout × App Lock: гарячі клавіші (sec-13, priv-15)"
 
     fireEvent.keyDown(window, { key: "k", ctrlKey: true });
     expect(screen.getByTestId("search-open")).toHaveTextContent("true");
+  });
+
+  it("офлайн-ідентичність з PIN власника показує замок, а не застосунок", async () => {
+    reconcileChatOwnerOnAuthChange("u-owner");
+    noteMeOk(Date.now());
+    await savePinHash("1234", "u-owner");
+    server.use(http.get("*/api/v1/me", () => HttpResponse.error()));
+    try {
+      renderShell();
+      await screen.findByText("Введи PIN");
+      expect(screen.queryByTestId("search-open")).not.toBeInTheDocument();
+      expect(screen.queryByText(/Сервер недоступний/)).toBeNull();
+    } finally {
+      await clearPinHash("u-owner").catch(() => {});
+    }
   });
 });

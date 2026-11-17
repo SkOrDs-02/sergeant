@@ -48,6 +48,7 @@ export const messagesEn: Partial<{
     serverUnavailableBody:
       "Your data on this device is safe. The app opens as soon as the server responds.",
     serverUnavailableRetry: "Retry now",
+    profileOffline: "I'll show your profile once you're back online.",
 
     sessionExpiredTitle: "Session ended",
     sessionExpiredBody:

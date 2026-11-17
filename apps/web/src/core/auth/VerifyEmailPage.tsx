@@ -7,6 +7,7 @@ import { useNavigate, useSearchParams } from "react-router-dom";
 import { Button } from "@shared/components/ui/Button";
 import { Card } from "@shared/components/ui/Card";
 import { MeshBackground } from "@shared/components/layout/MeshBackground";
+import { coreMessages } from "@shared/i18n/uk.core";
 import { POST_SUCCESS_REDIRECT_MS } from "@shared/lib/ui/timeouts";
 import { BrandLogo } from "../app/BrandLogo";
 import { SIGN_IN_PATH } from "../app/appPaths";
@@ -45,6 +46,7 @@ const HEADING_COPY: Readonly<Record<string, string>> = {
   verified: "Email підтверджено",
   notVerified: "Email ще не підтверджено",
   unknown: "Перевір статус у профілі",
+  offline: "Перевір статус у профілі",
 };
 
 const BODY_COPY: Readonly<Record<string, string>> = {
@@ -59,6 +61,8 @@ const BODY_COPY: Readonly<Record<string, string>> = {
   // видно. Не стверджуємо ні успіху, ні провалу.
   unknown:
     "Тут не видно статусу без входу. Увійди, і актуальний стан буде в профілі.",
+  // Офлайн холодний старт: `emailVerified` у мінімальному `user` не правда.
+  offline: coreMessages.auth.profileOffline,
 };
 
 /**
@@ -76,7 +80,7 @@ const BODY_COPY: Readonly<Record<string, string>> = {
 export function VerifyEmailPage() {
   const [searchParams] = useSearchParams();
   const navigate = useNavigate();
-  const { refresh, status, user } = useAuth();
+  const { refresh, status, user, offlineIdentity } = useAuth();
   const errorCode = searchParams.get("error");
 
   // `failed` — похідне від URL, а не стан: сторінка змонтована рівно один раз
@@ -100,16 +104,19 @@ export function VerifyEmailPage() {
   // Тепер джерелом істини є сесія: після `refresh()` ми знаємо фактичний
   // `emailVerified`. Гілок три, і «не знаю» більше не видається за «готово».
   const verifiedNow = user?.emailVerified === true;
-  const outcome: "failed" | "syncing" | "verified" | "notVerified" | "unknown" =
+  const outcome:
+    "failed" | "syncing" | "verified" | "notVerified" | "unknown" | "offline" =
     failed
       ? "failed"
       : !synced
         ? "syncing"
         : status === "unauthenticated"
           ? "unknown"
-          : verifiedNow
-            ? "verified"
-            : "notVerified";
+          : offlineIdentity
+            ? "offline"
+            : verifiedNow
+              ? "verified"
+              : "notVerified";
   const isProblem = outcome === "failed" || outcome === "notVerified";
 
   useEffect(() => {

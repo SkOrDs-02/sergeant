@@ -257,8 +257,13 @@ export interface ChatOwnerReconcileResult {
  * пристрою, якому тримати нічого. Лише читає, нічого не пише.
  */
 export function deviceOwnerIsUser(): boolean {
+  return readDeviceOwnerId() !== null;
+}
+
+/** Id власника-користувача зі штампа; `null` для аноніма і нештампованого. */
+export function readDeviceOwnerId(): string | null {
   const owner = readOwnerStamp();
-  return owner !== null && owner !== ANON_OWNER;
+  return owner === null || owner === ANON_OWNER ? null : owner;
 }
 
 /**
