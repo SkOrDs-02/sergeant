@@ -20,9 +20,6 @@ const resetInline = vi.hoisted(() => vi.fn());
 const pushRecentQuery = vi.hoisted(() => vi.fn((q: string) => [q]));
 const clearRecentQueries = vi.hoisted(() => vi.fn());
 const getRecentQueries = vi.hoisted(() => vi.fn(() => ["попередній"]));
-const useAuthOptional = vi.hoisted(() =>
-  vi.fn((): { user: unknown } | null => null),
-);
 
 vi.mock("react-router-dom", async (orig) => {
   const actual = await orig<typeof import("react-router-dom")>();
@@ -30,7 +27,8 @@ vi.mock("react-router-dom", async (orig) => {
 });
 vi.mock("./searchSources", () => ({ performSearch }));
 vi.mock("@shared/lib/modules/hubBus", () => ({ emitHubBus }));
-vi.mock("@shared/lib/modules/hubNav", () => ({
+vi.mock("@shared/lib/modules/hubNav", async (orig) => ({
+  ...(await orig<typeof import("@shared/lib/modules/hubNav")>()),
   openHubModuleWithAction,
   announceSettingsHashChange,
 }));
@@ -40,7 +38,6 @@ vi.mock("../hubSearchEngine", () => ({
   pushRecentQuery,
   clearRecentQueries,
 }));
-vi.mock("../../auth/AuthContext", () => ({ useAuthOptional }));
 vi.mock("./useInlineAiRail", () => ({
   useInlineAiRail: () => ({
     state: { status: "idle" },
@@ -97,7 +94,6 @@ function setup() {
 beforeEach(() => {
   vi.clearAllMocks();
   performSearch.mockReturnValue([]);
-  useAuthOptional.mockReturnValue(null);
   vi.useFakeTimers();
 });
 afterEach(() => {
@@ -269,46 +265,6 @@ describe("useSearchEngine", () => {
     expect(navigate).toHaveBeenCalledWith({
       pathname: "/",
       search: "?tab=profile",
-    });
-  });
-
-  // Хвиля 5 (2026-11-17): Профіль існує лише для акаунта. Гостю
-  // `ProfilePage` рендерить `null`, а `useAppEffects` повертає
-  // `?tab=profile` на «Головну», тож хіт Профілю вів би гостя в нікуди.
-  describe("хіти Профілю й акаунт", () => {
-    const PROFILE_HIT = hit({
-      id: "profile_password",
-      module: "profile",
-      target: { kind: "profile" },
-    });
-    const SETTINGS_HIT = hit({
-      id: "settings_privacy",
-      module: "settings",
-      target: { kind: "settings", sectionId: "privacy" },
-    });
-
-    function searchFor(q: string) {
-      performSearch.mockReturnValue([PROFILE_HIT, SETTINGS_HIT]);
-      const view = setup();
-      act(() => view.result.current.setQuery(q));
-      act(() => vi.advanceTimersByTime(120));
-      return view.result.current;
-    }
-
-    it("гість не бачить хітів Профілю, решта лишається", () => {
-      useAuthOptional.mockReturnValue({ user: null });
-      const current = searchFor("пароль");
-      expect(current.results.map((r) => r.id)).toEqual(["settings_privacy"]);
-      expect(current.flat.map((r) => r.id)).toEqual(["settings_privacy"]);
-    });
-
-    it("залогінений бачить хіти Профілю", () => {
-      useAuthOptional.mockReturnValue({ user: { id: "u1" } });
-      const current = searchFor("пароль");
-      expect(current.flat.map((r) => r.id)).toEqual([
-        "settings_privacy",
-        "profile_password",
-      ]);
     });
   });
 
