@@ -47,6 +47,12 @@ export interface Capability {
   href: string;
   /** Модульний акцент іконки. Відсутній — нейтральна подача. */
   module?: HubModuleId;
+  /**
+   * Лише для акаунта: ціль живе в Профілі, якого в гостя немає
+   * (`ProfilePage` рендерить `null`, `useAppEffects` повертає `?tab=profile`
+   * на «Головну»). Гостю такий запис не показуємо (`visibleCapabilityGroups`).
+   */
+  accountOnly?: true;
 }
 
 export interface CapabilityGroup {
@@ -182,6 +188,9 @@ export const CAPABILITY_GROUPS: readonly CapabilityGroup[] = [
           "Вхід за PIN-кодом і видалення акаунта живуть у Профілі. Згоди на аналітику й AI-памʼять лишаються в Налаштуваннях.",
         icon: "lock",
         href: "/?tab=profile",
+        // Рішення власника 2026-11-17: PIN лише для акаунта. Гостю картка
+        // вела в Профіль, якого в нього немає, і повертала на «Головну».
+        accountOnly: true,
       },
       {
         id: "export",
@@ -195,6 +204,21 @@ export const CAPABILITY_GROUPS: readonly CapabilityGroup[] = [
     ],
   },
 ];
+
+/**
+ * Групи, які бачить конкретний користувач. Гостю (`hasUser === false`) не
+ * показуємо записів `accountOnly`; група, що лишилась порожньою, зникає
+ * разом із заголовком.
+ */
+export function visibleCapabilityGroups(
+  hasUser: boolean,
+): readonly CapabilityGroup[] {
+  if (hasUser) return CAPABILITY_GROUPS;
+  return CAPABILITY_GROUPS.map((group) => ({
+    ...group,
+    items: group.items.filter((item) => !item.accountOnly),
+  })).filter((group) => group.items.length > 0);
+}
 
 /** Плоский список — зручно для тестів і лічильників. */
 export const ALL_CAPABILITIES: readonly Capability[] =
