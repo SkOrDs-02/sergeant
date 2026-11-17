@@ -47,6 +47,11 @@ describe("capabilityRegistry", () => {
     expect(privacy?.quickAction).toContain("Профілі");
     expect(privacy?.description).toContain("Профілі");
     expect(privacy?.href).not.toContain("settings-privacy");
+    // Перевалідація 2026-11-17: видалення акаунта теж у Профілі
+    // (`DangerZoneSection`), Налаштування несуть лише вказівник на нього.
+    expect(privacy?.description).not.toMatch(
+      /видалення акаунта[^.]*Налаштуваннях/,
+    );
   });
 
   it("id унікальні — вони є React-ключами і testid-ами", () => {

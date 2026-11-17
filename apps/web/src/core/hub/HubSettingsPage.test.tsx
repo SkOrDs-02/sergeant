@@ -1,6 +1,7 @@
 /** @vitest-environment jsdom */
 import type { ReactNode } from "react";
 import {
+  act,
   cleanup,
   fireEvent,
   render,
@@ -68,9 +69,20 @@ function renderWithBrowserToast(
   );
 }
 
-vi.mock("../settings/AIDigestSection", () => ({
-  AIDigestSection: () => <section>AI digest section</section>,
-}));
+// PR-S1 (хвиля 5, перевалідація 2026-11-17): реальний `AIDigestSection`
+// загортає себе в `SettingsGroup` БЕЗ `anchorId`, тобто розкрити його може
+// лише контекстний `defaultOpen`. Саме такі секції (10 з 14) диплінк колись
+// не розкривав, тож мок відтворює рівно цю проводку.
+vi.mock("../settings/AIDigestSection", async () => {
+  const { SettingsGroup } = await vi.importActual<
+    typeof import("../settings/SettingsPrimitives")
+  >("../settings/SettingsPrimitives");
+  return {
+    AIDigestSection: () => (
+      <SettingsGroup title="Сержант">AI digest section</SettingsGroup>
+    ),
+  };
+});
 vi.mock("../settings/CapabilitiesSection", () => ({
   CapabilitiesSection: () => <section>Capabilities section</section>,
 }));
@@ -265,6 +277,41 @@ describe("HubSettingsPage", () => {
       behavior: "smooth",
     });
     expect(plan?.scrollIntoView).not.toHaveBeenCalled();
+  });
+
+  // PR-S1 (аудит 2026-09-13 хвиля 5; перевалідація 2026-11-17): ⌘K веде
+  // в секцію через `navigate` + `announceSettingsHashChange()`
+  // (`useSearchEngine.ts`), коли сторінка вже змонтована на «Загальних».
+  // Примітив піновано в `SettingsPrimitives.test.tsx`; тут ланка
+  // сторінки: `hashchange` → `syncHash` → `hashSectionId` → контекст
+  // секції без `anchorId`.
+  it("розкриває вже змонтовану секцію без anchorId, коли hash змінився після монтування", async () => {
+    window.history.replaceState(null, "", "/?tab=settings");
+    renderWithBrowserToast(<HubSettingsPage />);
+
+    const toggle = await screen.findByRole("button", { name: /Сержант/ });
+    expect(toggle).toHaveAttribute("aria-expanded", "false");
+
+    act(() => {
+      window.history.pushState(null, "", "/?tab=settings#settings-ai");
+      window.dispatchEvent(new Event("hashchange"));
+    });
+
+    await waitFor(() =>
+      expect(screen.getByRole("button", { name: /Сержант/ })).toHaveAttribute(
+        "aria-expanded",
+        "true",
+      ),
+    );
+  });
+
+  // PR-H2 (хвиля 5): сторінка сама несе свій єдиний h1, бо
+  // `HubMainContent` у гілці налаштувань заголовка не ставить.
+  it("несе рівно один h1 «Налаштування»", () => {
+    renderWithBrowserToast(<HubSettingsPage />);
+    expect(
+      screen.getAllByRole("heading", { level: 1 }).map((h) => h.textContent),
+    ).toEqual(["Налаштування"]);
   });
 
   // Рішення власника 2026-09-11: forced-first-of-tab (Варіант A, profile/

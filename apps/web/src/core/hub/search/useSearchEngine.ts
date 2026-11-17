@@ -18,6 +18,7 @@ import {
   getRecentQueries,
   pushRecentQuery,
 } from "../hubSearchEngine";
+import { useAuthOptional } from "../../auth/AuthContext";
 import { performSearch } from "./searchSources";
 import type { Hit } from "./searchTypes";
 import { type UseInlineAiRailResult, useInlineAiRail } from "./useInlineAiRail";
@@ -101,7 +102,21 @@ export function useSearchEngine({
   const [asyncResults, setAsyncResults] = useState<Hit[]>(() =>
     performSearch(""),
   );
-  const results = syncResults ?? asyncResults;
+  // Профіль існує лише для акаунта: гостю `ProfilePage` рендерить `null`,
+  // а `useAppEffects` повертає `?tab=profile` на «Головну». Хіт Профілю
+  // для гостя вів би в нікуди (хвиля 5, 2026-11-17), тож він його не
+  // бачить. Предикат той самий, що в `ProfilePage`: `!user`. Поза
+  // `AuthProvider` (вузькі тести) фільтра немає.
+  const auth = useAuthOptional();
+  const hideProfile = auth !== null && !auth.user;
+  const rawResults = syncResults ?? asyncResults;
+  const results = useMemo(
+    () =>
+      hideProfile
+        ? rawResults.filter((r) => r.module !== "profile")
+        : rawResults,
+    [hideProfile, rawResults],
+  );
 
   const [prevTrimmed, setPrevTrimmed] = useState(trimmed);
   if (trimmed !== prevTrimmed) {

@@ -222,6 +222,29 @@ describe("HubMainContent iOS install banner", () => {
     },
   );
 
+  // PR-H2 (аудит 2026-09-13, хвиля 5; перевалідація 2026-11-17): вкладка
+  // «Профіль» оголошувала скрінрідеру «Головна», бо `h1` дашборда стояв і
+  // на ній. Тепер кожна гілка має рівно один `h1` зі своєю назвою: дашборд і
+  // Звʼязки ставлять його тут, Профіль і Налаштування несуть власний у
+  // сторінці (`ProfilePage.tsx`, `HubSettingsPage.tsx`; тут вони замокані,
+  // тож чужого `h1` у їхніх гілках бути не може).
+  it.each([
+    ["dashboard", "hub-dashboard", ["Головна"]],
+    ["reports", "hub-reports", ["Звʼязки"]],
+    ["profile", "profile-page", []],
+    ["settings", "hub-settings", []],
+  ] as const)(
+    "вкладка %s не несе чужого h1",
+    async (hubView, testId, expected) => {
+      renderWithClient(<HubMainContent {...props({ hubView })} />);
+      await screen.findByTestId(testId);
+      const names = screen
+        .queryAllByRole("heading", { level: 1 })
+        .map((h) => h.textContent);
+      expect(names).toEqual(expected);
+    },
+  );
+
   it("передає Профілю контейнер і не перебиває ціль секції відновленням позиції вкладки", async () => {
     const { rerender } = renderWithClient(
       <HubMainContent {...props()} />,
