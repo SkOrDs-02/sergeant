@@ -20,7 +20,7 @@ export function ReEngagementCard({
 }) {
   // AI-CONTEXT (H1, 2026-09-13): НЕ гейтимо через `useHubBannerSlot`.
   // Ця картка ЗАМІНЮЄ hero (`HubHeroBlock` рендерить її замість
-  // TodayFocus/SoftAuth/FirstAction, не поруч), тож вона не має
+  // TodayFocus/FirstAction, не поруч), тож вона не має
   // конкурувати за бюджет банерів над нею — раніше на пріоритеті 5 вона
   // програвала `localOnlyData` (0) і `privacyLock` (3) при бюджеті 2,
   // і hero-смуга лишалась порожньою для анонімного юзера з блокуванням

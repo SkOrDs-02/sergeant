@@ -16,12 +16,14 @@
  *   • FTUX hero hides as soon as the user dismisses (storage flag
  *     cleared + in-render boolean flipped) so the next priority
  *     winner takes the slot in the same render.
- *   • Soft-auth thresholds: 3 session-days for cold users, 2 session-
- *     days minimum after the first real entry so the celebration
- *     modal is not immediately followed by an auth nag.
  *   • TodayFocus availability is a caller-supplied boolean — the
  *     dashboard already owns `useDashboardFocus()` and we don't want
  *     to re-couple to it here.
+ *
+ * Soft-auth hero на вебі знято (рішення власника 2026-11-17): поза FTUX
+ * кожен анонім бачить `LocalOnlyDataBanner`, який і глушив картку, тож її
+ * текст переїхав у банер. Спільний резолвер кандидата `soft-auth` ще має
+ * (його читає мобайл), веб передає `softAuthEligible: false`.
  */
 
 import { useCallback, useEffect, useState } from "react";
@@ -30,76 +32,20 @@ import {
   resolveOnboardingHero,
   type OnboardingHeroId,
   type OnboardingHeroReason,
-  type User,
 } from "@sergeant/shared";
 
-import {
-  clearFirstActionPending,
-  isFirstActionPending,
-  isSoftAuthDismissed,
-} from "./vibePicks";
-
-/**
- * Days the user must have visited the dashboard before the soft-auth
- * nag fires for a *cold* user (no real entry yet). Mirrors the legacy
- * `SOFT_AUTH_SESSION_DAYS_THRESHOLD` constant from `HubDashboard.tsx`
- * before this refactor — exported so tests can reference it without
- * duplicating the magic number.
- */
-export const SOFT_AUTH_SESSION_DAYS_THRESHOLD = 3;
-
-/**
- * Minimum session-days the *post-first-entry* user must have before
- * the soft-auth nag fires. The lower threshold (vs. cold users) is
- * intentional and now sits at the floor: a visitor who has created a
- * real entry has something to lose, and until they sign in it lives in
- * a single unsynced copy on this device. Waiting a second calendar day
- * to say so only widens the window in which that copy can vanish.
- *
- * A cold visitor keeps the higher bar — nothing of theirs is at risk,
- * so the prompt would be a barrier with no argument behind it.
- *
- * This does NOT collide with the first-entry celebration: the hero slot
- * has a single winner and `first-action` outranks `soft-auth`, so the
- * nag can only take the slot once the FTUX card has stood down.
- */
-export const SOFT_AUTH_AFTER_ENTRY_MIN_SESSION_DAYS = 1;
+import { clearFirstActionPending, isFirstActionPending } from "./vibePicks";
 
 export interface UseOnboardingStateOptions {
-  /** Current user record (or `null`/`undefined` if anonymous). When
-   *  truthy, suppresses the soft-auth nag. */
-  user: User | null | undefined;
-  /** `detectFirstRealEntry()` resolved to `true`. Drives the cold-vs-
-   *  post-first-entry split for the soft-auth threshold. */
+  /** `detectFirstRealEntry()` resolved to `true`. The FTUX hero stands
+   *  down once the first real entry exists. */
   hasRealEntry: boolean;
-  /** Number of distinct calendar-days the user has visited the hub.
-   *  Use the `-1` sentinel during the first render (before
-   *  `recordSessionDay()` resolves) so all FTUX gates stay closed. */
-  sessionDays: number;
   /** `useDashboardFocus()` returned a non-null `focus` rec. The
    *  dashboard already computes this — passing it in keeps the hook
    *  decoupled from the focus implementation. */
   todayFocusAvailable: boolean;
   /** `nudges.ts:shouldShowReengagement(...)` resolved to `true`. */
   reengagementEligible: boolean;
-  /** Optional auth-modal opener. The soft-auth nag is suppressed
-   *  when this is missing — the card is useless without a way to
-   *  open the modal it nags toward. */
-  onShowAuth?: (() => void) | undefined;
-  /**
-   * `true` while `LocalOnlyDataBanner` is visible for this session (PR-H4,
-   * design-audit 2026-09-13). Both cards ask for the exact same thing —
-   * "sign in before this disappears" — and the banner budget
-   * (`hub/bannerBudget.tsx`) only caps banner COUNT, not repeated intent:
-   * with just these two competing, both fit under the budget of two and
-   * both render, so an anonymous user with a real entry sees "Увійти" from
-   * the banner AND from the hero card at once. Suppressing the soft-auth
-   * candidate here (rather than the banner) is deliberate — the banner
-   * carries the durability warning, which is the higher-stakes message.
-   * Caller mirrors this to the banner's own visibility gate; see
-   * `useHubDashboardState.ts`.
-   */
-  localOnlyBannerVisible?: boolean;
 }
 
 export interface UseOnboardingStateResult {
@@ -118,8 +64,6 @@ export interface UseOnboardingStateResult {
    *  ancillary toggles (streak chip suppression, checklist gating)
    *  reference the same source of truth. */
   showFirstAction: boolean;
-  /** True when the soft-auth nag is the slot winner. */
-  showSoftAuth: boolean;
   /** True when the TodayFocus card is the slot winner (default). */
   showTodayFocus: boolean;
   /** True when the re-engagement card is the slot winner — note this
@@ -128,34 +72,8 @@ export interface UseOnboardingStateResult {
   showReengagement: boolean;
   /** Dismiss the FTUX hero. Clears `hub_first_action_pending_v1`
    *  (storage) and flips the in-render flag so the next-priority
-   *  candidate (soft-auth or today-focus) takes the slot in the
-   *  same render. */
+   *  candidate (today-focus) takes the slot in the same render. */
   dismissFirstAction: () => void;
-  /** Dismiss the soft-auth nag. Persists to storage so subsequent
-   *  sessions also skip the card. */
-  dismissSoftAuth: () => void;
-}
-
-/**
- * Compute soft-auth eligibility from the same inputs the legacy
- * `HubDashboard.showSoftAuth` derivation used.
- */
-function computeSoftAuthEligible(
-  user: User | null | undefined,
-  softAuthDismissed: boolean,
-  hasRealEntry: boolean,
-  sessionDays: number,
-  localOnlyBannerVisible: boolean,
-  onShowAuth?: () => void,
-): boolean {
-  return (
-    !user &&
-    !softAuthDismissed &&
-    !localOnlyBannerVisible &&
-    typeof onShowAuth === "function" &&
-    ((hasRealEntry && sessionDays >= SOFT_AUTH_AFTER_ENTRY_MIN_SESSION_DAYS) ||
-      sessionDays >= SOFT_AUTH_SESSION_DAYS_THRESHOLD)
-  );
 }
 
 /**
@@ -165,13 +83,11 @@ function computeSoftAuthEligible(
  */
 export interface OnboardingStateStorage {
   isFirstActionPending: () => boolean;
-  isSoftAuthDismissed: () => boolean;
   clearFirstActionPending: () => void;
 }
 
 const DEFAULT_STORAGE: OnboardingStateStorage = {
   isFirstActionPending,
-  isSoftAuthDismissed,
   clearFirstActionPending,
 };
 
@@ -179,24 +95,13 @@ export function useOnboardingState(
   options: UseOnboardingStateOptions,
   storage: OnboardingStateStorage = DEFAULT_STORAGE,
 ): UseOnboardingStateResult {
-  const {
-    user,
-    hasRealEntry,
-    sessionDays,
-    todayFocusAvailable,
-    reengagementEligible,
-    onShowAuth,
-    localOnlyBannerVisible = false,
-  } = options;
+  const { hasRealEntry, todayFocusAvailable, reengagementEligible } = options;
 
   // Lazy initialisers: storage reads run once on mount, not on every
   // render. The booleans flip only via the explicit `dismiss*`
   // callbacks below.
   const [firstActionVisible, setFirstActionVisible] = useState(() =>
     storage.isFirstActionPending(),
-  );
-  const [softAuthDismissed, setSoftAuthDismissed] = useState(() =>
-    storage.isSoftAuthDismissed(),
   );
   const effectiveFirstActionVisible = firstActionVisible && !hasRealEntry;
 
@@ -205,19 +110,10 @@ export function useOnboardingState(
     storage.clearFirstActionPending();
   }, [firstActionVisible, hasRealEntry, storage]);
 
-  const softAuthEligible = computeSoftAuthEligible(
-    user,
-    softAuthDismissed,
-    hasRealEntry,
-    sessionDays,
-    localOnlyBannerVisible,
-    onShowAuth,
-  );
-
   const resolution = resolveOnboardingHero({
     reengagementEligible,
     firstActionVisible: effectiveFirstActionVisible,
-    softAuthEligible,
+    softAuthEligible: false,
     todayFocusAvailable,
   });
 
@@ -226,19 +122,13 @@ export function useOnboardingState(
     setFirstActionVisible(false);
   }, [storage]);
 
-  const dismissSoftAuth = useCallback(() => {
-    setSoftAuthDismissed(true);
-  }, []);
-
   return {
     hero: resolution.hero,
     reason: resolution.reason,
     candidates: resolution.candidates,
     showFirstAction: resolution.hero === "first-action",
-    showSoftAuth: resolution.hero === "soft-auth",
     showTodayFocus: resolution.hero === "today-focus",
     showReengagement: resolution.hero === "reengagement",
     dismissFirstAction,
-    dismissSoftAuth,
   };
 }

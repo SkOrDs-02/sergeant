@@ -8,16 +8,14 @@
  *   • storage flags read once on mount via lazy initialisers
  *   • dismissals flip the in-render flag and persist via injected
  *     storage adapter
- *   • soft-auth threshold logic matches the legacy `HubDashboard`
- *     derivation byte-for-byte
+ *   • soft-auth hero на вебі не виграє ніколи (рішення власника
+ *     2026-11-17: його текст переїхав у `LocalOnlyDataBanner`)
  */
 
 import { act, renderHook } from "@testing-library/react";
 import { describe, expect, it, vi } from "vitest";
 
 import {
-  SOFT_AUTH_AFTER_ENTRY_MIN_SESSION_DAYS,
-  SOFT_AUTH_SESSION_DAYS_THRESHOLD,
   useOnboardingState,
   type OnboardingStateStorage,
   type UseOnboardingStateOptions,
@@ -28,26 +26,21 @@ function makeStorage(
 ): OnboardingStateStorage {
   return {
     isFirstActionPending: vi.fn(() => false),
-    isSoftAuthDismissed: vi.fn(() => false),
     clearFirstActionPending: vi.fn(),
     ...overrides,
   };
 }
 
 const BASE: UseOnboardingStateOptions = {
-  user: null,
   hasRealEntry: false,
-  sessionDays: 0,
   todayFocusAvailable: false,
   reengagementEligible: false,
-  onShowAuth: () => {},
 };
 
 describe("useOnboardingState", () => {
   it("reads storage flags exactly once on mount", () => {
     const storage = makeStorage({
       isFirstActionPending: vi.fn(() => true),
-      isSoftAuthDismissed: vi.fn(() => false),
     });
 
     const { rerender } = renderHook(
@@ -55,11 +48,10 @@ describe("useOnboardingState", () => {
       { initialProps: BASE },
     );
 
-    rerender({ ...BASE, sessionDays: 5 });
-    rerender({ ...BASE, sessionDays: 7 });
+    rerender({ ...BASE, todayFocusAvailable: true });
+    rerender({ ...BASE, reengagementEligible: true });
 
     expect(storage.isFirstActionPending).toHaveBeenCalledTimes(1);
-    expect(storage.isSoftAuthDismissed).toHaveBeenCalledTimes(1);
   });
 
   it("promotes first-action when FTUX is pending", () => {
@@ -73,7 +65,6 @@ describe("useOnboardingState", () => {
 
     expect(result.current.hero).toBe("first-action");
     expect(result.current.showFirstAction).toBe(true);
-    expect(result.current.showSoftAuth).toBe(false);
     expect(result.current.showTodayFocus).toBe(false);
   });
 
@@ -117,141 +108,19 @@ describe("useOnboardingState", () => {
     expect(result.current.hero).toBe("today-focus");
   });
 
-  it("suppresses soft-auth when user is signed in", () => {
+  // Рішення власника 2026-11-17: текст `SoftAuthPromptCard` переїхав у
+  // `LocalOnlyDataBanner`, картку прибрано. Раніше анонім без записів на
+  // 3-й день FTUX (банер тоді мовчить) отримував картку «Синхронізація
+  // записів» без жодного запису; тепер soft-auth не виграє ніде.
+  it("soft-auth не стає героєм навіть для аноніма за колишніми порогами", () => {
     const { result } = renderHook(() =>
       useOnboardingState(
-        {
-          ...BASE,
-          user: {
-            id: "u1",
-            email: "u@example.com",
-            name: null,
-            image: null,
-            emailVerified: false,
-            createdAt: new Date().toISOString(),
-          },
-          hasRealEntry: true,
-          sessionDays: 5,
-        },
+        { ...BASE, hasRealEntry: true, todayFocusAvailable: true },
         makeStorage(),
       ),
     );
 
-    expect(result.current.showSoftAuth).toBe(false);
-  });
-
-  it("suppresses soft-auth when user has dismissed it", () => {
-    const storage = makeStorage({
-      isSoftAuthDismissed: vi.fn(() => true),
-    });
-
-    const { result } = renderHook(() =>
-      useOnboardingState(
-        {
-          ...BASE,
-          hasRealEntry: true,
-          sessionDays: SOFT_AUTH_SESSION_DAYS_THRESHOLD,
-        },
-        storage,
-      ),
-    );
-
-    expect(result.current.showSoftAuth).toBe(false);
-  });
-
-  it("suppresses soft-auth when onShowAuth is missing", () => {
-    const { result } = renderHook(() =>
-      useOnboardingState(
-        {
-          ...BASE,
-          hasRealEntry: false,
-          sessionDays: SOFT_AUTH_SESSION_DAYS_THRESHOLD,
-          onShowAuth: undefined,
-        },
-        makeStorage(),
-      ),
-    );
-
-    expect(result.current.showSoftAuth).toBe(false);
-  });
-
-  it("fires soft-auth for cold users at the cold threshold", () => {
-    const { result } = renderHook(() =>
-      useOnboardingState(
-        {
-          ...BASE,
-          hasRealEntry: false,
-          sessionDays: SOFT_AUTH_SESSION_DAYS_THRESHOLD,
-        },
-        makeStorage(),
-      ),
-    );
-
-    expect(result.current.showSoftAuth).toBe(true);
-    expect(result.current.reason).toBe("soft-auth-due");
-  });
-
-  it("fires soft-auth earlier for post-first-entry users", () => {
-    const { result } = renderHook(() =>
-      useOnboardingState(
-        {
-          ...BASE,
-          hasRealEntry: true,
-          sessionDays: SOFT_AUTH_AFTER_ENTRY_MIN_SESSION_DAYS,
-        },
-        makeStorage(),
-      ),
-    );
-
-    expect(result.current.showSoftAuth).toBe(true);
-  });
-
-  // PR-H4 (design-audit 2026-09-13): `LocalOnlyDataBanner` (priority 0) and
-  // the soft-auth hero (priority 2) both fit under the hub's 2-banner
-  // budget at once, so an anonymous user with a real entry saw "Увійти"
-  // twice — once in the banner, once in the hero card — plus the header
-  // icon and the bottom-nav tab, four calls to the same action. The banner
-  // carries the durability warning (higher stakes), so soft-auth backs off
-  // instead.
-  it("suppresses soft-auth while the local-only-data banner is visible", () => {
-    const { result } = renderHook(() =>
-      useOnboardingState(
-        {
-          ...BASE,
-          hasRealEntry: true,
-          sessionDays: SOFT_AUTH_AFTER_ENTRY_MIN_SESSION_DAYS,
-          todayFocusAvailable: true,
-          localOnlyBannerVisible: true,
-        },
-        makeStorage(),
-      ),
-    );
-
-    expect(result.current.showSoftAuth).toBe(false);
-    // Falls through to the next candidate instead of leaving a gap.
-    expect(result.current.hero).toBe("today-focus");
-  });
-
-  it("dismissSoftAuth clears the slot in-render", () => {
-    const { result } = renderHook(() =>
-      useOnboardingState(
-        {
-          ...BASE,
-          hasRealEntry: true,
-          sessionDays: SOFT_AUTH_AFTER_ENTRY_MIN_SESSION_DAYS,
-          todayFocusAvailable: true,
-        },
-        makeStorage(),
-      ),
-    );
-
-    expect(result.current.showSoftAuth).toBe(true);
-
-    act(() => {
-      result.current.dismissSoftAuth();
-    });
-
-    expect(result.current.showSoftAuth).toBe(false);
+    expect(result.current.candidates).not.toContain("soft-auth");
     expect(result.current.hero).toBe("today-focus");
   });
 
@@ -266,7 +135,6 @@ describe("useOnboardingState", () => {
           ...BASE,
           reengagementEligible: true,
           hasRealEntry: true,
-          sessionDays: SOFT_AUTH_SESSION_DAYS_THRESHOLD,
           todayFocusAvailable: true,
         },
         storage,
@@ -276,11 +144,7 @@ describe("useOnboardingState", () => {
     expect(result.current.hero).toBe("reengagement");
     expect(result.current.showReengagement).toBe(true);
     // A completed first real entry clears the first-action candidate.
-    expect(result.current.candidates).toEqual([
-      "reengagement",
-      "soft-auth",
-      "today-focus",
-    ]);
+    expect(result.current.candidates).toEqual(["reengagement", "today-focus"]);
   });
 
   it("returns hero=null when no candidate is eligible", () => {

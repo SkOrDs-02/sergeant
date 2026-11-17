@@ -13,7 +13,6 @@ import type { DashboardModuleId, User } from "@sergeant/shared";
 export interface HubDashboardProps {
   onOpenModule: (module: string) => void;
   user: User | null;
-  onShowAuth: () => void;
 }
 
 // ─────────────────────────────────────────────────────────────────────

@@ -159,14 +159,6 @@ vi.mock("./now/useChecklistNow", () => ({
   },
 }));
 
-vi.mock("../onboarding/SoftAuthPromptCard", () => ({
-  SoftAuthPromptCard: ({ onOpenAuth }: { onOpenAuth: () => void }) => (
-    <button type="button" onClick={onOpenAuth}>
-      soft-auth-prompt
-    </button>
-  ),
-}));
-
 vi.mock("../onboarding/useFirstEntryCelebration", () => ({
   useFirstEntryCelebration: () => ({
     open: false,
@@ -204,25 +196,19 @@ import { HubDashboard } from "./HubDashboard";
 
 function renderDashboard({
   onOpenModule = vi.fn(),
-  onShowAuth = vi.fn(),
   user = null,
 }: {
   onOpenModule?: (module: string) => void;
-  onShowAuth?: () => void;
   user?: User | null;
 } = {}) {
   const result = render(
     <MemoryRouter>
       <ToastProvider>
-        <HubDashboard
-          user={user}
-          onOpenModule={onOpenModule}
-          onShowAuth={onShowAuth}
-        />
+        <HubDashboard user={user} onOpenModule={onOpenModule} />
       </ToastProvider>
     </MemoryRouter>,
   );
-  return { ...result, onOpenModule, onShowAuth };
+  return { ...result, onOpenModule };
 }
 
 /** Signed-in user whose account was created `daysAgo` days ago. */
@@ -445,16 +431,21 @@ describe("HubDashboard — вісь дії", () => {
     expect(screen.queryByTestId("now-empty")).toBeNull();
   });
 
-  // PR-H4 (огляд 2026-09-13, перевалідація хвилі 4 2026-11-17): анонім із
-  // реальним записом уже бачить банер «дані лише на цьому пристрої» з
-  // «Увійти», тож soft-auth hero мусить відступити. Предикат покриває
-  // `useOnboardingState.test.ts`, а тут пін ПРОВОДКИ: дашборд мусить
-  // передати хукові видимість банера, інакше глушіння мовчки зникає.
-  it("анонім із записом: soft-auth hero мовчить, поки видно банер локальних даних", () => {
+  // Рішення власника 2026-11-17 (питання хвилі 4): `SoftAuthPromptCard`
+  // знято, її текст несе банер локальних даних. Колись картка діставала
+  // аноніма без жодного запису на 3-й день FTUX, коли банер мовчить
+  // («Синхронізація записів» без записів). Дашборд сам входу не пропонує:
+  // заклик один, у банері (`HubMainContent`).
+  it("анонім у FTUX за колишнім порогом soft-auth: дашборд не кличе увійти", () => {
+    localStorage.removeItem(FIRST_REAL_ENTRY_KEY);
+    localStorage.removeItem("hub_first_real_entry_done_v1");
+    localStorage.setItem("hub_session_days_v1", "5");
     renderDashboard({ user: null });
+    expect(screen.queryByText("Синхронізація записів")).toBeNull();
     expect(
-      screen.queryByRole("button", { name: "soft-auth-prompt" }),
+      screen.queryByRole("button", { name: "Створити акаунт" }),
     ).toBeNull();
+    expect(screen.queryByRole("button", { name: "Увійти" })).toBeNull();
   });
 
   describe("«Закрито» бачить усі активні рекомендації, а не лише показані", () => {

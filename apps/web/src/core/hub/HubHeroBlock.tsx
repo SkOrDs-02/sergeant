@@ -2,11 +2,11 @@
  * Hero block for the Hub Dashboard (T1 decomposition).
  *
  * Single-hero rule: the onboarding resolver picks exactly one winner
- * (FirstAction, SoftAuth, or TodayFocus). Re-engagement overrides all.
+ * (FirstAction or TodayFocus). Re-engagement overrides all. SoftAuth hero
+ * знято 2026-11-17: його текст несе `LocalOnlyDataBanner`.
  */
 
 import type { getOnboardingGoals } from "@sergeant/shared";
-import { SoftAuthPromptCard } from "../onboarding/SoftAuthPromptCard";
 import { FirstActionHeroCard } from "../onboarding/FirstActionSheet";
 import { CrossModulePreview } from "./CrossModulePreview";
 import { ReEngagementCard } from "../onboarding/ReEngagementCard";
@@ -26,10 +26,7 @@ import type { useOnboardingState } from "../onboarding/useOnboardingState";
 
 export interface HubHeroBlockProps {
   onOpenModule: (module: string) => void;
-  onShowAuth: () => void;
   hasRealEntry: boolean;
-  sessionDays: number;
-  entryCount: number;
   onboardingState: ReturnType<typeof useOnboardingState>;
   reengagement: { show: boolean; daysInactive: number };
   dismissReengagement: () => void;
@@ -43,7 +40,7 @@ export interface HubHeroBlockProps {
   hasValueBar: boolean;
   /**
    * Вісь дії (спека `hub-action-axis.md`): hero-слот займає купа «Зараз»
-   * (`NowPile`). FirstAction / SoftAuth / re-engagement перемагають так
+   * (`NowPile`). FirstAction / re-engagement перемагають так
    * само; без них слот займає купа (redesign v3 зняв картку «Зараз»), а
    * `null` — коли новачку купі нема чого показати.
    */
@@ -52,10 +49,7 @@ export interface HubHeroBlockProps {
 
 export function HubHeroBlock({
   onOpenModule,
-  onShowAuth,
   hasRealEntry,
-  sessionDays,
-  entryCount,
   onboardingState,
   reengagement,
   dismissReengagement,
@@ -75,15 +69,6 @@ export function HubHeroBlock({
   if (onboardingState.showFirstAction) {
     hero = (
       <FirstActionHeroCard onDismiss={onboardingState.dismissFirstAction} />
-    );
-  } else if (onboardingState.showSoftAuth) {
-    hero = (
-      <SoftAuthPromptCard
-        onOpenAuth={onShowAuth}
-        onDismiss={onboardingState.dismissSoftAuth}
-        entryCount={entryCount}
-        sessionDays={sessionDays}
-      />
     );
   } else {
     hero = nowPile;
@@ -108,12 +93,10 @@ export function HubHeroBlock({
 
   return (
     <div className="space-y-4">
-      {!onboardingState.showFirstAction && !onboardingState.showSoftAuth && (
-        <StreakIndicator />
-      )}
+      {!onboardingState.showFirstAction && <StreakIndicator />}
       {hero}
       {/* Кроки онбордингу живуть у купі «Зараз». Коли hero-слот зайняв
-          інший герой (FTUX, soft-auth), вони стоять окремою секцією «Зараз». */}
+          інший герой (FTUX), вони стоять окремою секцією «Зараз». */}
       {checklist && (!nowPile || hero !== nowPile) && (
         <section aria-labelledby="checklist-now-heading" className="space-y-2">
           <SectionHeading as="h2" size="lg" id="checklist-now-heading">

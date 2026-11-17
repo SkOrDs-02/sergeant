@@ -26,19 +26,10 @@ function renderWithClient(ui: ReactElement, initialEntry = "/") {
 }
 
 vi.mock("../hub/HubDashboard", () => ({
-  HubDashboard: ({
-    onOpenModule,
-    onShowAuth,
-  }: {
-    onOpenModule: (id: string) => void;
-    onShowAuth: () => void;
-  }) => (
+  HubDashboard: ({ onOpenModule }: { onOpenModule: (id: string) => void }) => (
     <section data-testid="hub-dashboard">
       <button type="button" onClick={() => onOpenModule("finyk")}>
         open module
-      </button>
-      <button type="button" onClick={onShowAuth}>
-        show auth
       </button>
     </section>
   ),
@@ -77,7 +68,13 @@ vi.mock("../profile/ProfilePage", () => ({
 // `core/durability/LocalOnlyDataBanner.test.tsx`; тут перевіряємо лише те,
 // що хаб його монтує і глушить під час FTUX.
 vi.mock("../durability/LocalOnlyDataBanner", () => ({
-  LocalOnlyDataBanner: () => <section data-testid="local-only-banner" />,
+  LocalOnlyDataBanner: ({ onSignIn }: { onSignIn: () => void }) => (
+    <section data-testid="local-only-banner">
+      <button type="button" onClick={onSignIn}>
+        banner sign in
+      </button>
+    </section>
+  ),
 }));
 
 vi.mock("@shared/components/ui/SuspenseWithMinDelay", () => ({
@@ -189,7 +186,9 @@ describe("HubMainContent iOS install banner", () => {
     ).toBeTruthy();
   });
 
-  it("renders dashboard chrome and forwards dashboard actions", () => {
+  // Рішення власника 2026-11-17: soft-auth картку з дашборда знято, її
+  // текст несе банер локальних даних, тож вхід на хабі веде лише він.
+  it("renders dashboard chrome; sign-in goes through the local-only banner", () => {
     const onOpenModule = vi.fn();
     const onShowAuth = vi.fn();
 
@@ -198,7 +197,7 @@ describe("HubMainContent iOS install banner", () => {
     );
 
     fireEvent.click(screen.getByText("open module"));
-    fireEvent.click(screen.getByText("show auth"));
+    fireEvent.click(screen.getByText("banner sign in"));
 
     expect(onOpenModule).toHaveBeenCalledWith("finyk");
     expect(onShowAuth).toHaveBeenCalledTimes(1);
