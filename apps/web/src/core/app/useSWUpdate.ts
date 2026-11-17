@@ -4,8 +4,9 @@ import { useToast } from "@shared/hooks/useToast";
 import { isHubStreaming } from "../hub/streamingStore";
 import { hasMutationsInFlight } from "./updateGate";
 import {
+  EXPLICIT_UPDATE_WINDOW_MS,
   PWA_RELOAD_DEFERRED_EVENT,
-  markLocalUpdateRequested,
+  markExplicitUpdateRequested,
   reloadOnce,
   reloadUnlessBlocked,
   type ReloadDeferredDetail,
@@ -38,7 +39,7 @@ const IDLE_POLL_INTERVAL_MS = 1_000; // 1 second
  * статус-тост. Нормальна активація — 1.3-1.6 с; довше означає, що старий
  * воркер тримають (rel-14: до 5 хв lame-duck).
  */
-const CONTROLLER_CHANGE_TIMEOUT_MS = 3_000;
+const CONTROLLER_CHANGE_TIMEOUT_MS = EXPLICIT_UPDATE_WINDOW_MS;
 
 const DEFERRED_RELOAD_COPY: Record<ReloadDeferredReason, string> = {
   "unsaved-input": "Оновлення готове. Перезавантаж, коли збережеш введене",
@@ -106,7 +107,7 @@ export function useSWUpdate() {
     }
     // Лише вкладка, що ініціювала оновлення, має право на reload
     // (`onNeedReload` у main.tsx читає цей прапорець).
-    markLocalUpdateRequested();
+    markExplicitUpdateRequested();
     void (async () => {
       let hasWaiting = false;
       try {
@@ -131,11 +132,15 @@ export function useSWUpdate() {
       }
       pendingApplyRef.current = true;
       let timerId: ReturnType<typeof setTimeout> | null = null;
+      let statusToastId: number | null = null;
       const onControllerChange = () => {
         sw.removeEventListener("controllerchange", onControllerChange);
         if (timerId !== null) clearTimeout(timerId);
         timerId = null;
         pendingApplyRef.current = false;
+        // Статус «Застосовую…» уже неправдивий: далі або reload, або тост
+        // відкладення, і висіти поруч з ним він не має.
+        if (statusToastId !== null) toastRef.current.dismiss(statusToastId);
         reloadUnlessBlocked(window, () =>
           hasMutationsInFlight(() => queryClientRef.current.getMutationCache()),
         );
@@ -143,7 +148,7 @@ export function useSWUpdate() {
       sw.addEventListener("controllerchange", onControllerChange);
       timerId = setTimeout(() => {
         timerId = null;
-        toastRef.current.info("Застосовую оновлення…", null, {
+        statusToastId = toastRef.current.info("Застосовую оновлення…", null, {
           label: "Перезавантажити",
           onClick: () => reloadOnce(),
           dismissLabel: "Закрити",
