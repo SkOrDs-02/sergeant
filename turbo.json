@@ -29,6 +29,18 @@
       "dependsOn": ["^build"],
       "outputs": ["dist/**", ".turbo/**"]
     },
+    // `vite build` без VERCEL пише в `../server/dist` (поза пакетом web), тож
+    // `dist/**` нічого не знімав, а кеш-хіт лишав порожній `apps/server/dist`
+    // для `lint:pwa-precache` і size-limit. Без кешу web збирається щоразу.
+    "@sergeant/web#build": {
+      "dependsOn": ["^build"],
+      "cache": false
+    },
+    // esbuild пише в `dist-server/`; `dist/**` для server = чужий web-бандл.
+    "@sergeant/server#build": {
+      "dependsOn": ["^build"],
+      "outputs": ["dist-server/**", ".turbo/**"]
+    },
     "typecheck": {
       "dependsOn": ["^build"],
       "outputs": []
@@ -49,8 +61,52 @@
       "dependsOn": ["^build"],
       "outputs": []
     },
+    // Guard-тести нижче читають файли поза власним пакетом, яких немає в його
+    // графі залежностей: без явних `inputs` зламаний інваріант проходить
+    // зеленим із кешу.
+    "@sergeant/api-client#test": {
+      "dependsOn": ["^build"],
+      "inputs": [
+        "$TURBO_DEFAULT$",
+        "$TURBO_ROOT$/apps/web/src/**",
+        "$TURBO_ROOT$/apps/mobile/src/**"
+      ],
+      "outputs": []
+    },
+    // drift-гейт читає SQL-міграції сервера: нова міграція без оновлення
+    // Drizzle-схеми не має проходити зеленим із кешу.
+    "@sergeant/db-schema#test": {
+      "dependsOn": ["^build"],
+      "inputs": [
+        "$TURBO_DEFAULT$",
+        "$TURBO_ROOT$/apps/server/src/migrations/**",
+        "$TURBO_ROOT$/scripts/check-schema-drift.mjs"
+      ],
+      "outputs": []
+    },
+    // Гейт каталогу вправ перевіряє наявність картинок у web/public.
+    "@sergeant/fizruk-domain#test": {
+      "dependsOn": ["^build"],
+      "inputs": ["$TURBO_DEFAULT$", "$TURBO_ROOT$/apps/web/public/**"],
+      "outputs": []
+    },
     "@sergeant/server#test": {
       "dependsOn": ["^build", "@sergeant/api-client#test"],
+      "inputs": [
+        "$TURBO_DEFAULT$",
+        "$TURBO_ROOT$/scripts/telegram/**",
+        "$TURBO_ROOT$/packages/api-client/pacts/**",
+        "$TURBO_ROOT$/docs/work/specs/planning/model-eval-2026-08-25.md"
+      ],
+      "outputs": []
+    },
+    "@sergeant/web#test": {
+      "dependsOn": ["^build"],
+      "inputs": [
+        "$TURBO_DEFAULT$",
+        "$TURBO_ROOT$/docs/product/whats-new/**",
+        "$TURBO_ROOT$/vercel.json"
+      ],
       "outputs": []
     },
     "test:coverage": {
