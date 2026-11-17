@@ -57,10 +57,21 @@ vi.mock("./BarcodeScanner", () => ({
 }));
 
 vi.mock("./AddMealSheet", () => ({
-  AddMealSheet: ({ open, onClose }: { open: boolean; onClose: () => void }) =>
+  AddMealSheet: ({
+    open,
+    onClose,
+    onQuickAddMeal,
+  }: {
+    open: boolean;
+    onClose: () => void;
+    onQuickAddMeal?: (chip: { id: string }) => void;
+  }) =>
     open ? (
       <div data-testid="add-meal-sheet">
         <button onClick={onClose}>close-add-meal</button>
+        <button onClick={() => onQuickAddMeal?.({ id: "recent-1" })}>
+          quick-chip
+        </button>
       </div>
     ) : null,
 }));
@@ -243,6 +254,42 @@ describe("NutritionOverlays", () => {
       />,
     );
     expect(screen.getByTestId("add-meal-sheet")).toBeInTheDocument();
+  });
+
+  // Аркуш, відкритий із сегмента «Вечеря», мусить і чип «Нещодавні»
+  // записати вечерею: раніше тип ішов із годинника, і о 13:00 чип падав в
+  // «Обід».
+  it("передає чипу тип прийому, з яким відкрито аркуш", () => {
+    const onQuickAddMeal = vi.fn();
+    render(
+      <NutritionOverlays
+        {...baseProps({
+          log: makeLog({
+            addMealSheetOpen: true,
+            nutritionLog: {},
+            getActiveDate: () => "2026-11-17",
+          }),
+          addMealInitialMealType: "dinner",
+          onQuickAddMeal,
+        })}
+      />,
+    );
+    fireEvent.click(screen.getByText("quick-chip"));
+    expect(onQuickAddMeal).toHaveBeenCalledWith({ id: "recent-1" }, "dinner");
+  });
+
+  it("без обраного сегмента лишає тип чипу на годинник", () => {
+    const onQuickAddMeal = vi.fn();
+    render(
+      <NutritionOverlays
+        {...baseProps({
+          log: makeLog({ addMealSheetOpen: true }),
+          onQuickAddMeal,
+        })}
+      />,
+    );
+    fireEvent.click(screen.getByText("quick-chip"));
+    expect(onQuickAddMeal).toHaveBeenCalledWith({ id: "recent-1" }, undefined);
   });
 
   it("clears meal-editing state when AddMealSheet closes", () => {

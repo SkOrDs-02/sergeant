@@ -75,7 +75,7 @@ interface NutritionOverlaysProps {
   addMealInitialSourceTab?: SourceTabId | undefined;
   /** Тип прийому, обраний тапом по сегменту hero; `null` — вгадує годинник. */
   addMealInitialMealType?: MealTypeId | null | undefined;
-  onQuickAddMeal?: (chip: QuickChip) => void;
+  onQuickAddMeal?: (chip: QuickChip, mealType?: MealTypeId) => void;
   /** Тип прийому, розгорнутий тапом по сегменту hero; `null` — закрито. */
   openMealTypeSheet?: MealTypeId | null | undefined;
   onCloseMealTypeSheet?: (() => void) | undefined;
@@ -245,7 +245,14 @@ export function NutritionOverlays({
         setPrefs={setPrefs}
         pantryItems={pantry.effectiveItems}
         quickChips={quickChips}
-        onQuickAddMeal={onQuickAddMeal}
+        // Чип «Нещодавні» пише тип прийому, з яким відкрито аркуш (тап по
+        // сегменту «Вечеря»), а не той, що вгадав би годинник у мить тапу.
+        onQuickAddMeal={
+          onQuickAddMeal
+            ? (chip: QuickChip) =>
+                onQuickAddMeal(chip, addMealInitialMealType ?? undefined)
+            : undefined
+        }
         onConsumePantryItem={pantry.consumePantryItem}
       />
 

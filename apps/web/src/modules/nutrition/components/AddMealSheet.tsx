@@ -205,6 +205,7 @@ export function AddMealSheet({
     scannerOpen,
     setScannerOpen,
     handleBarcodeLookup,
+    bindMissedBarcode,
   } = useBarcodeLookup({
     pickedFood,
     setPickedFood,
@@ -423,6 +424,7 @@ export function AddMealSheet({
 
   function finalizeSave(meals: Meal[], template: MealSaveTemplate) {
     savePicked.persist(pickedFood);
+    bindMissedBarcode(pickedFood);
     if (fromPantryItem && onConsumePantryItem) {
       const grams = gramsOrDefault(pickedGrams);
       onConsumePantryItem(fromPantryItem, grams);

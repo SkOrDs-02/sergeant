@@ -29,6 +29,7 @@ import {
   listUserFoods,
   lookupFoodByBarcode,
   makeFoodProduct,
+  searchFoods,
   upsertFood,
 } from "./foodDb";
 
@@ -93,6 +94,32 @@ describe("лінива класифікація origin", () => {
     await putRaw({ ...base, id: "food_b", name: "Мій сир", norm: "мій сир" });
     const own = await listUserFoods();
     expect(own.map((f) => f.id)).toEqual(["food_b"]);
+  });
+
+  // Підпис джерела в пошуку аркуша читає `origin`: без класифікації тут
+  // старий вбудований запис підписувався б «Мій продукт».
+  it("пошук класифікує запис без origin так само, як список власних", async () => {
+    const base = {
+      brand: "",
+      defaultGrams: 100,
+      per100: { kcal: 1, protein_g: 0, fat_g: 0, carbs_g: 0 },
+      updatedAt: 1,
+    };
+    await putRaw({
+      ...base,
+      id: "food_a",
+      name: "Молоко 2.5%",
+      norm: "молоко 2.5%",
+    });
+    await putRaw({
+      ...base,
+      id: "food_b",
+      name: "Молоко мамине",
+      norm: "молоко мамине",
+    });
+    const hits = await searchFoods("молоко");
+    const origin = Object.fromEntries(hits.map((f) => [f.id, f.origin]));
+    expect(origin).toEqual({ food_a: "seed", food_b: "user" });
   });
 });
 

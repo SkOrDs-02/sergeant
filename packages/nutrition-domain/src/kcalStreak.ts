@@ -33,6 +33,10 @@ function isWithinGoal(kcal: number, goal: number): boolean {
   );
 }
 
+function isBelowGoal(kcal: number, goal: number): boolean {
+  return kcal / goal < 2 - WEEK_KCAL_OVER_TOLERANCE;
+}
+
 /**
  * Довжина серії днів у нормі калорій, що закінчується сьогодні або вчора.
  *
@@ -68,9 +72,11 @@ export function countKcalStreakDays(
       continue;
     }
     // Єдиний день, чий промах серію не обриває, — сьогоднішній, і лише поки
-    // він ще не почався (нуль спожитого). День із записами поза нормою —
-    // це вже промах, навіть якщо він сьогодні.
-    if (i === 0 && kcal === 0) continue;
+    // він нижче норми: день ще триває, і недобір після сніданку ще не
+    // промах (аудит 2026-10-01, logic-39 — раніше пропускався лише нуль,
+    // і серія падала в 0 після першого ж прийому). Перебір сьогодні вже
+    // нічим не виправити, тож він обриває серію.
+    if (i === 0 && isBelowGoal(kcal, goal)) continue;
     break;
   }
   return streak;

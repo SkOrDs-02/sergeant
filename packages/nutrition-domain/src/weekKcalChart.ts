@@ -69,11 +69,11 @@ export interface WeekKcalChartModel {
    * серед тижня не мінялась — а це поки завжди, — число те саме, що й було.
    */
   goalKcal: number;
-  /** Сума ккал за тиждень. */
+  /** Сума ккал за тиждень, без днів після `todayKey` (вони план, не факт). */
   totalKcal: number;
   /** Середнє за день. Знаменник — дні з записами (канон §5.2). */
   avgKcal: number;
-  /** Скільки днів тижня мають хоч якісь ккал. */
+  /** Скільки днів тижня до `todayKey` включно мають хоч якісь ккал. */
   daysLogged: number;
 }
 
@@ -96,6 +96,13 @@ function toGoal(value: unknown): number {
 export function computeWeekKcalChart(
   rows: readonly MacrosRow[] | null | undefined,
   goalsByDay: WeekKcalGoals | null | undefined,
+  /**
+   * Сьогоднішній день-ключ (`YYYY-MM-DD`, пристрій). Дні ПІСЛЯ нього
+   * малюються, але в суму й середнє не йдуть: журнал навмисно відкриває
+   * майбутні дні, і запис там — план, а не зʼїдене (аудит 2026-10-01,
+   * logic-43). Без ключа рахуються всі дні, як раніше.
+   */
+  todayKey?: string | null,
 ): WeekKcalChartModel {
   const safeRows = Array.isArray(rows) ? rows : [];
   const safeGoals = Array.isArray(goalsByDay) ? goalsByDay : [];
@@ -136,8 +143,11 @@ export function computeWeekKcalChart(
   // ціль у межах намальованого тижня.
   const lastGoal = [...goals].reverse().find((g) => g > 0) ?? 0;
 
-  const totalKcal = kcals.reduce((sum, k) => sum + k, 0);
-  const daysLogged = kcals.filter((k) => k > 0).length;
+  const factKcals = todayKey
+    ? kcals.filter((_, i) => String(safeRows[i]?.date ?? "") <= todayKey)
+    : kcals;
+  const totalKcal = factKcals.reduce((sum, k) => sum + k, 0);
+  const daysLogged = factKcals.filter((k) => k > 0).length;
 
   return {
     bars,
