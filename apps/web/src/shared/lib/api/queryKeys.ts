@@ -191,6 +191,11 @@ export const syncKeys = {
   status: () => ["sync", "status"] as const,
   /** Список термінально відхилених sync-опів (`SyncRejectedList`). */
   rejected: () => ["sync", "rejected"] as const,
+  /**
+   * PR-T2: прогноз TTL-чистки черги (`SyncPurgeWarning`), скільки
+   * незасинхронених записів зникне з пристрою найближчим часом.
+   */
+  purgeForecast: () => ["sync", "purge-forecast"] as const,
 };
 
 // ─── Billing (Stripe checkout / subscription status) ──────────────────────

@@ -796,6 +796,16 @@ async function createDefaultRuntime(): Promise<SyncEngineWriterRuntime> {
       });
       return { ...counts, rejected };
     },
+    // PR-T2: попередження ДО TTL-чистки. Той самий скоуп і той самий
+    // список безпечних причин, що в `getStatus`, тож прогноз не рахує
+    // рядків, яких людина не бачить у лічильниках.
+    getPurgeForecast: async () => {
+      const userId = shared.readPartitionUserId() ?? undefined;
+      return shared.dbSchema.forecastStaleTerminalOutboxPurge(
+        await shared.resolveClient(),
+        { excludeRejectReasons: [...BENIGN_REJECT_REASONS], userId },
+      );
+    },
     listRejected: async () => {
       const userId = shared.readPartitionUserId() ?? undefined;
       return shared.dbSchema.listRejectedOutbox(await shared.resolveClient(), {
