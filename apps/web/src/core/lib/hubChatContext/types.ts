@@ -19,6 +19,8 @@ export interface Transaction {
   description?: string;
   mcc?: number;
   time?: number;
+  /** Сирий id ручного запису; `id` у всесвіті для нього — `manual_<id>`. */
+  manualId?: string | undefined;
 }
 
 export interface Account {

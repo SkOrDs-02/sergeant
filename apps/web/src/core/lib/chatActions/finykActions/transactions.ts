@@ -5,6 +5,7 @@ import { validateTransactionInput } from "./transactionInputValidation";
 import { FINYK_COLD_CACHE_MESSAGE, warmFinykCache } from "./warmCache";
 import {
   finykCategoryExists,
+  finykExpenseAmountUah,
   finykTransactionExists,
   normalizeFinykId,
   unknownCategoryMessage,
@@ -17,6 +18,7 @@ import {
 } from "../../../../modules/finyk/lib/sqliteWriter";
 import { parseKyivDate } from "@shared/lib/time/kyivTime";
 import { formatNumberUk } from "@sergeant/shared";
+import { manualLinkKey } from "@sergeant/finyk-domain/domain/debtLinkKeys";
 import type {
   CreateTransactionAction,
   DeleteTransactionAction,
@@ -99,14 +101,20 @@ export function hideTransaction(
   const cache = warmFinykCache();
   if (!cache) return FINYK_COLD_CACHE_MESSAGE;
   if (!finykTransactionExists(txId)) return unknownTransactionMessage(txId);
+  // Ручний запис ховаємо під `manual_<id>`: так його шукають Огляд, Операції
+  // і канонічний excluded-set; сирий id там ніхто не звіряє.
+  const isManual = cache.manualExpenses.some(
+    (tx) => String(tx.id ?? "") === txId,
+  );
+  const key = isManual ? manualLinkKey(txId) : txId;
   const hidden = [...cache.hiddenTransactions];
-  if (!hidden.includes(txId)) {
-    hidden.push(txId);
+  if (!hidden.includes(key)) {
+    hidden.push(key);
     void finykChatWrite("finyk_hidden_txs", hidden);
   }
   // Mirror into `finyk_hidden_transactions` — the hidden-tx read
   // (search / analytics / report) overlays from SQLite. Idempotent.
-  triggerHiddenTransactionSqliteMirror(txId);
+  triggerHiddenTransactionSqliteMirror(key);
   return `Операцію ${txId} приховано зі статистики`;
 }
 
@@ -146,11 +154,22 @@ export function splitTransaction(
     string,
     Array<{ categoryId: string; amount: number }>
   > = { ...(cache.txSplits as Record<string, never>) };
+  // Сума частин ЗАМІНЮЄ суму операції в статистиці й лімітах
+  // (`getTxStatAmount`), тож, як і редактор спліту в UI, приймаємо лише
+  // розподіл витрати рівно на її суму.
+  const total = finykExpenseAmountUah(id);
+  if (total === null)
+    return `Операцію ${id} не розділено: розділити можна лише витрату.`;
   const customC = cache.customCategories;
   const newSplits = splitParts.map((p) => ({
     categoryId: normalizeFinykId(p.category_id),
-    amount: Math.abs(Number(p.amount) || 0),
+    amount: Math.abs(Number(p.amount)),
   }));
+  if (newSplits.some((s) => !Number.isFinite(s.amount) || s.amount <= 0))
+    return "Кожна частина має бути сумою в гривнях, більшою за 0.";
+  const partsSum = newSplits.reduce((sum, s) => sum + s.amount, 0);
+  if (Math.round(partsSum * 100) !== Math.round(total * 100))
+    return `Операцію ${id} не розділено: частини дають ${formatNumberUk(partsSum)} грн, а операція на ${formatNumberUk(total)} грн. Сума частин має дорівнювати сумі операції.`;
   const unknownPart = newSplits.find((s) => !finykCategoryExists(s.categoryId));
   if (unknownPart) return unknownCategoryMessage(unknownPart.categoryId);
   // Спліти для tx_id перезаписуються цілком: знімок попередніх потрібен

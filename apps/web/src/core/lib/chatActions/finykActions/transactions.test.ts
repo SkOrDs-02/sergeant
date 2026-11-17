@@ -50,6 +50,15 @@ function isUndoable(
   return typeof out === "object" && out !== null && "undo" in out;
 }
 
+/** Ручна витрата 80 грн: спліти в тестах 50 + 30 дають рівно її суму. */
+const TX1 = {
+  id: "tx1",
+  date: "2026-04-22",
+  description: "АТБ",
+  amount: 80,
+  category: "food",
+};
+
 /** Сід кешу SQLite без повної типізації рядків — тестам досить мінімуму полів. */
 function seedFinykCache(partial: Record<string, unknown>): void {
   __setFinykSqliteStateCacheForTests(partial as never);
@@ -63,15 +72,7 @@ beforeEach(() => {
   // hide/split валідують існування tx через entityLookup (гард проти
   // вигаданих моделлю id, 2ae99a1) — happy-path кейси сідять "tx1" у кеш.
   seedFinykCache({
-    manualExpenses: [
-      {
-        id: "tx1",
-        date: "2026-04-22",
-        description: "АТБ",
-        amount: 200,
-        category: "food",
-      },
-    ],
+    manualExpenses: [TX1],
     customCategories: [{ id: "custom_cat", label: "Кастомна" }],
   });
 });
@@ -245,27 +246,38 @@ describe("createTransaction", () => {
 // ─── hideTransaction ────────────────────────────────────────────────────────
 
 describe("hideTransaction", () => {
-  it("adds the tx id to the hidden list", () => {
+  // Ручний запис ховається під `manual_<id>`: сирий id не бачать ні Огляд,
+  // ні Операції, тож приховане з чату лишалось у статистиці.
+  it("ховає ручний запис під канонічним ключем manual_<id>", () => {
     const out = hideTransaction({
       name: "hide_transaction",
       input: { tx_id: "tx1" },
     });
     expect(out).toContain("tx1");
     expect(out).toContain("приховано");
-    expect(mockWrite).toHaveBeenCalledWith("finyk_hidden_txs", ["tx1"]);
+    expect(mockWrite).toHaveBeenCalledWith("finyk_hidden_txs", ["manual_tx1"]);
+  });
+
+  it("банківську операцію ховає за її власним id", () => {
+    seedFinykCache({ manualExpenses: [] });
+    hideTransaction({ name: "hide_transaction", input: { tx_id: "bank1" } });
+    expect(mockWrite).toHaveBeenCalledWith("finyk_hidden_txs", ["bank1"]);
   });
 
   it("mirrors the hidden tx into SQLite", () => {
     hideTransaction({ name: "hide_transaction", input: { tx_id: "tx1" } });
-    expect(mockHiddenMirror).toHaveBeenCalledWith("tx1");
+    expect(mockHiddenMirror).toHaveBeenCalledWith("manual_tx1");
   });
 
   it("is idempotent when the tx is already hidden", () => {
-    seedFinykCache({ hiddenTransactions: ["tx1"] });
+    seedFinykCache({
+      manualExpenses: [{ id: "tx1", amount: 200, date: "2026-04-22" }],
+      hiddenTransactions: ["manual_tx1"],
+    });
     hideTransaction({ name: "hide_transaction", input: { tx_id: "tx1" } });
     expect(mockWrite).not.toHaveBeenCalled();
     // Mirror still fires — safe to re-trigger a soft-delete-style upsert.
-    expect(mockHiddenMirror).toHaveBeenCalledWith("tx1");
+    expect(mockHiddenMirror).toHaveBeenCalledWith("manual_tx1");
   });
 });
 
@@ -386,17 +398,14 @@ describe("splitTransaction", () => {
     expect(text).toContain("custom_cat: 30 грн");
   });
 
-  it("coerces negative/non-numeric part amounts to absolute numbers", () => {
+  it("бере модуль від'ємної суми частини", () => {
     splitTransaction({
       name: "split_transaction",
       input: {
         tx_id: "tx1",
         parts: [
           { category_id: "food", amount: -50 },
-          {
-            category_id: "transport",
-            amount: "not-a-number" as unknown as number,
-          },
+          { category_id: "transport", amount: 30 },
         ],
       },
     });
@@ -405,11 +414,50 @@ describe("splitTransaction", () => {
       Array<{ amount: number }>
     >;
     expect(written["tx1"]![0]?.amount).toBe(50);
-    expect(written["tx1"]![1]?.amount).toBe(0);
+  });
+
+  // Сума частин замінює суму операції в статистиці й лімітах, тож розподіл
+  // не на суму операції завищував би витрати місяця.
+  it("відмовляє, коли частини не дають суму операції або є нульова частина", () => {
+    const parts = (a: unknown, b: unknown) => ({
+      name: "split_transaction" as const,
+      input: {
+        tx_id: "tx1",
+        parts: [
+          { category_id: "food", amount: a as number },
+          { category_id: "transport", amount: b as number },
+        ],
+      },
+    });
+    expect(splitTransaction(parts(50, 50))).toContain(
+      "частини дають 100 грн, а операція на 80 грн",
+    );
+    expect(splitTransaction(parts(80, 0))).toContain("більшою за 0");
+    expect(splitTransaction(parts(80, "abc"))).toContain("більшою за 0");
+    expect(mockWrite).not.toHaveBeenCalled();
+  });
+
+  it("відмовляє розділяти дохід", () => {
+    seedFinykCache({
+      manualExpenses: [{ ...TX1, type: "income" }],
+    });
+    const out = splitTransaction({
+      name: "split_transaction",
+      input: {
+        tx_id: "tx1",
+        parts: [
+          { category_id: "food", amount: 50 },
+          { category_id: "transport", amount: 30 },
+        ],
+      },
+    });
+    expect(out).toContain("лише витрату");
+    expect(mockWrite).not.toHaveBeenCalled();
   });
 
   it("merges into existing splits for other tx ids", () => {
     seedFinykCache({
+      manualExpenses: [TX1],
       txSplits: { "tx-existing": [{ categoryId: "food", amount: 10 }] },
     });
     splitTransaction({
@@ -435,7 +483,10 @@ describe("splitTransaction", () => {
       { categoryId: "transport", amount: 10 },
     ];
     const other = [{ categoryId: "food", amount: 10 }];
-    seedFinykCache({ txSplits: { tx1: prev, "tx-existing": other } });
+    seedFinykCache({
+      manualExpenses: [TX1],
+      txSplits: { tx1: prev, "tx-existing": other },
+    });
     const out = splitTransaction({
       name: "split_transaction",
       input: {
@@ -463,7 +514,7 @@ describe("splitTransaction", () => {
   });
 
   it("logic-03: undo прибирає ключ, якщо спліту до дії не було", () => {
-    seedFinykCache({ txSplits: { "tx-existing": [] } });
+    seedFinykCache({ manualExpenses: [TX1], txSplits: { "tx-existing": [] } });
     const out = splitTransaction({
       name: "split_transaction",
       input: {
