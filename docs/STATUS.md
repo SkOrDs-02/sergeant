@@ -1,6 +1,6 @@
 # Sergeant — Панель керування
 
-> **Last touched:** 2026-10-26 by docs:gen-status. **Next review:** 2026-11-02.
+> **Last touched:** 2026-11-11 by docs:gen-status. **Next review:** 2026-11-18.
 > **Status:** Reference
 
 <!-- AUTO-GENERATED, ОКРІМ блоку FOCUS. Редагуй лише між `<!-- FOCUS:START -->` / `<!-- FOCUS:END -->`; решту регенеруй через `pnpm docs:gen-status`. -->
@@ -13,7 +13,6 @@
 
 - **Трекінг перезібрано (2026-10-26).** Що робимо першим — [`work/roadmap.md`](./work/roadmap.md) («Зараз / Далі / Колись» з наступною дією і блокером), рішення власника — [`work/owner-decisions.md`](./work/owner-decisions.md), усе відкрите — [`open-work.md`](./open-work.md). Тріаж звірив 99 «відкритих» документів з кодом: 57 закрито, 42 лишились відкритими, у кожного одна наступна дія.
 - **Редизайн v3.2 завершено** — спека [`redesign-v3-2.md`](./work/specs/planning/redesign-v3-2.md) `Implemented` після фінального перезнімання всіх маршрутів (#1659).
-- **До 2026-10-31: прибирання після закритої бети.** Тека `beta-launch/` і бета-скрипти, інакше червоніє `lint:ai-legacy` — перший рядок «Зараз» у roadmap.
 - **Повний аудит 2026-10-01:** critical/high і medium мають PR, частина кластерів закрита частково — [`README`](./work/specs/audits/2026-10-01-full-app-audit/README.md); low/info веде окрема сесія.
 - **Чекають власника з доступом до проду:** роль `sergeant_app` (RLS, стадія 4) і `healthTextBackfill` — див. § «Операції» в owner-decisions.
 
@@ -46,10 +45,10 @@
 - [`work/specs/tech-debt/frontend.md`](./work/specs/tech-debt/frontend.md) — Frontend Tech Debt — Sergeant Web — Active _(Активні спеки)_
 - [`work/specs/tech-debt/backend.md`](./work/specs/tech-debt/backend.md) — Backend Tech Debt Inventory — Active _(Активні спеки)_
 - [`work/specs/launch/product-os/ftux-master-tracker.md`](./work/specs/launch/product-os/ftux-master-tracker.md) — FTUX Master Tracker — стан, проблеми, план — Active — **single source of truth** для First-Time User Experience. _(Активні спеки)_
+- [`work/specs/audits/2026-09-13-product-full-review.md`](./work/specs/audits/2026-09-13-product-full-review.md) — Повний огляд продукту: візуал, логіка, маршрути, шум — Active - Наступна дія: хвиля 2 «Тиха втрата даних» з § «Черга робіт», звірити з кодом (за статусами 09-15 живий лише зал _(Активні спеки)_
 - [`work/specs/audits/2026-10-01-full-app-audit/privacy.md`](./work/specs/audits/2026-10-01-full-app-audit/privacy.md) — Аудит 2026-10-01 · Приватність і відповідність — Active. 38 кластерів (48 знахідок) за першопричиною. Загальний план, метод і обмеження — у _(Активні спеки)_
 - [`work/specs/audits/2026-10-01-full-app-audit/ux-a11y.md`](./work/specs/audits/2026-10-01-full-app-audit/ux-a11y.md) — Аудит 2026-10-01 · UX і доступність — Active. 86 кластерів (121 знахідка) за першопричиною. Загальний план, метод і обмеження — у _(Активні спеки)_
 - [`work/specs/audits/2026-10-01-full-app-audit/data-integrity.md`](./work/specs/audits/2026-10-01-full-app-audit/data-integrity.md) — Аудит 2026-10-01 · Цілісність даних і синхронізація — Active. 82 кластери (129 знахідок) за першопричиною. Загальний план, метод і обмеження — у _(Активні спеки)_
-- [`work/specs/audits/2026-10-01-full-app-audit/domain-logic.md`](./work/specs/audits/2026-10-01-full-app-audit/domain-logic.md) — Аудит 2026-10-01 · Логіка доменів — Active. 66 кластерів (89 знахідок) за першопричиною. Загальний план, метод і обмеження — у _(Активні спеки)_
 
 ## ⏭️ Наступний крок / заблоковано
 

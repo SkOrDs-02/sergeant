@@ -17,6 +17,7 @@ import {
   APPLY_REJECT_REASONS,
   ENGINE_REJECT_REASONS,
   type ApplyRejectReason,
+  type AppliedStatus,
   type EngineRejectReason,
   type RejectReason,
 } from "./syncV2-types.js";
@@ -98,9 +99,6 @@ type SyncV2Outcome =
   | "too_large"
   | "unauthorized"
   | "error";
-
-type AppliedStatus =
-  { status: "applied" } | { status: "rejected"; reason: ApplyRejectReason };
 
 type ApplyFn = (
   client: PoolClient,
@@ -413,6 +411,13 @@ export async function syncV2Push(req: Request, res: Response): Promise<void> {
           const applied = await applyWithUniqueViolationRetry(client, () =>
             applyFn(client, op, user.id, clientTs),
           );
+          if (applied.status === "retry") {
+            await client.query("ROLLBACK TO SAVEPOINT op_apply");
+            results.push(
+              await settleRetryableApply(client, op, applied.reason),
+            );
+            continue;
+          }
           if (applied.status === "rejected") {
             status = "rejected";
             reason = applied.reason;

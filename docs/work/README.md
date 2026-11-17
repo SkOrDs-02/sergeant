@@ -33,7 +33,6 @@
 | [`tech-debt/`](./specs/tech-debt/README.md)                         | Legacy реєстри боргу; нові cleanup-зміни оформлюються як спеки.                                                                                                                                         |
 | [`superpowers/`](./specs/superpowers/README.md)                     | Legacy high-leverage плани; нові матеріали не створюються окремим жанром.                                                                                                                               |
 | [`research/`](./research/2026-06-28-audience-discovery-trackers.md) | Discovery-дослідження аудиторії та джерел даних + kit для інтервʼю; конкурентний зріз по модулях — [`2026-09-01-competitor-research-modules.md`](./research/2026-09-01-competitor-research-modules.md). |
-| [`beta-launch/`](./specs/beta-launch/README.md)                     | Плейбук хвилі закритої бети: гейти, ENV, видача Pro, згортання.                                                                                                                                         |
 
 > **Завершення:** активна спека спершу фіксує Outcome і merge evidence, після чого її прибирають з active checkout. Історія доступна через Git; локальні archive-дерева для audits/initiatives/planning не розширюються (ADR-0081).
 

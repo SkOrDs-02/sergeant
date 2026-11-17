@@ -2,6 +2,7 @@
 import { describe, it, expect } from "vitest";
 import { appendFinanceLines } from "./finance";
 import { INTERNAL_TRANSFER_ID } from "@finyk/constants";
+import { manualExpenseToTransaction } from "@sergeant/finyk-domain/domain/transactions";
 import type { AllData } from "./types";
 
 function joined(d: AllData, now: Date): string {
@@ -99,6 +100,21 @@ describe("appendFinanceLines", () => {
     expect(out).toContain("[Середня витрата/день]");
     expect(out).toContain("[Прогноз витрат до кінця місяця]");
     expect(out).toContain("[Останні операції]");
+  });
+
+  // Чат-тули шукають ручну операцію за сирим id запису, тож id з контексту
+  // мусить бути саме ним, а не `manual_<id>` зі всесвіту.
+  it("ручна операція в [Останні операції] несе сирий id запису", () => {
+    const manual = manualExpenseToTransaction({
+      id: "m_ab12",
+      date: "2026-06-14T10:00:00Z",
+      description: "Кава",
+      amount: 200,
+      category: "restaurant",
+    });
+    const out = joined(baseData({ statTx: [manual] }), NOW);
+    expect(out).toContain("id:m_ab12 |");
+    expect(out).not.toContain("manual_m_ab12");
   });
 
   it("monthly totals are windowed to the current month (стадія 2c)", () => {

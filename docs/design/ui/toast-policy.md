@@ -1,6 +1,6 @@
 # Toast policy
 
-> **Last touched:** 2026-10-26 by @claude. **Next review:** 2027-05-06.
+> **Last touched:** 2026-11-17 by @claude. **Next review:** 2027-05-28.
 > **Status:** Active.
 
 Канонічна довідка для агентів і розробників: коли який toast, скільки
@@ -99,7 +99,7 @@ WCAG 4.1.3 (Status Messages, Level AA) вимагає, що повідомлен
 
 - `type === "error"` → `aria-live=assertive` (interrupting)
 - будь-який `action` → `aria-live=assertive` (interrupting)
-- решта → `aria-live=polite`
+- решта → polite: рядок тоста не є live-регіоном (регіон, що монтується разом з текстом, частина скрінрідерів пропускає), текст озвучує постійний регіон `ScreenReaderAnnouncerProvider`; `ToastContainer` має стояти всередині нього. Текст polite-тоста через це дублюється в регіоні анонсера, тож E2E-локатори тостів беруть усередині `getByTestId("toast-tray")`, інакше `getByText` дає strict mode violation
 
 `assertive` НЕ означає "блимай" — це лише сигнал реколайзингу для AT.
 Анімація / контраст / `duration` живуть окремо.

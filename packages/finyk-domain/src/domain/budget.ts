@@ -523,7 +523,7 @@ export function calculateGoalProgress(
         (new Date(goal.targetDate).getTime() - now.getTime()) / 86400000,
       )
     : null;
-  const monthly = calcMonthlyNeeded(target, saved, goal?.targetDate);
+  const monthly = calcMonthlyNeeded(target, saved, goal?.targetDate, now);
   return { saved, pct, daysLeft, monthly };
 }
 

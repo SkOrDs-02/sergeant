@@ -2,6 +2,7 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import type { ReactNode } from "react";
 import {
+  act,
   cleanup,
   fireEvent,
   render,
@@ -14,6 +15,7 @@ import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 
 import { ApiError } from "@sergeant/api-client";
 import type { BillingStatusResponse } from "@sergeant/shared";
+import { billingKeys } from "@shared/lib/api/queryKeys";
 import { accessFixture } from "../../test/helpers/billingAccess";
 
 const { statusMock, createPortalMock, cancelMock } = vi.hoisted(() => ({
@@ -50,11 +52,14 @@ function renderSection() {
       </QueryClientProvider>
     );
   }
-  return render(
-    <Wrapper>
-      <PlanSection />
-    </Wrapper>,
-  );
+  return {
+    client,
+    ...render(
+      <Wrapper>
+        <PlanSection />
+      </Wrapper>,
+    ),
+  };
 }
 
 async function openSection() {
@@ -483,6 +488,42 @@ describe("PlanSection (audit P1-6 — Settings plan + manage subscription)", () 
     expect(
       screen.queryByText(/Ти на безкоштовному плані/),
     ).not.toBeInTheDocument();
+  });
+
+  it("на збої статусу не каже «Free», а пропонує повторити запит", async () => {
+    statusMock.mockRejectedValueOnce(new Error("network"));
+    statusMock.mockResolvedValue(PRO_ACTIVE_RESPONSE);
+    renderSection();
+    await openSection();
+
+    expect(await screen.findByTestId("plan-status-error")).toBeInTheDocument();
+    expect(screen.getByTestId("plan-badge")).not.toHaveTextContent("Free");
+    expect(
+      screen.queryByText(/Ти на безкоштовному плані/),
+    ).not.toBeInTheDocument();
+    expect(screen.queryByTestId("plan-upgrade-button")).not.toBeInTheDocument();
+
+    fireEvent.click(screen.getByTestId("plan-status-retry"));
+    expect(await screen.findByTestId("plan-active-info")).toBeInTheDocument();
+    expect(screen.queryByTestId("plan-status-error")).not.toBeInTheDocument();
+  });
+
+  it("невдалий рефетч поверх відомого плану лишає Premium", async () => {
+    statusMock.mockResolvedValue(PRO_ACTIVE_RESPONSE);
+    const { client } = renderSection();
+    await openSection();
+    const badge = await screen.findByTestId("plan-badge");
+    await waitFor(() => expect(badge).toHaveTextContent("Premium"));
+
+    statusMock.mockRejectedValue(new Error("network"));
+    await act(() => client.refetchQueries({ queryKey: billingKeys.status }));
+    expect(client.getQueryState(billingKeys.status)?.status).toBe("error");
+    // notifyManager шле зміну спостерігачам через setTimeout(0).
+    await act(() => new Promise((r) => setTimeout(r, 0)));
+
+    expect(badge).toHaveTextContent("Premium");
+    expect(screen.queryByTestId("plan-status-error")).not.toBeInTheDocument();
+    expect(screen.getByTestId("plan-active-info")).toBeInTheDocument();
   });
 });
 

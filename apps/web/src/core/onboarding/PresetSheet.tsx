@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { cn } from "@shared/lib/ui/cn";
 import { type IconName } from "@shared/components/ui/Icon";
 import { Sheet } from "@shared/components/ui/Sheet";
@@ -219,6 +219,9 @@ export function PresetSheet({
     [moduleId],
   );
   const [saveError, setSaveError] = useState(false);
+  const [saving, setSaving] = useState(false);
+  // Ref, а не лише стан: другий тап може прийти до перерендеру.
+  const savingRef = useRef(false);
 
   useEffect(() => {
     if (!open || !config || !moduleId) return;
@@ -231,6 +234,7 @@ export function PresetSheet({
   if (!config || !moduleId) return null;
 
   const handlePick = async (item: PresetItem) => {
+    if (savingRef.current) return;
     setSaveError(false);
     trackEvent(ANALYTICS_EVENTS.FTUX_PRESET_PICKED, {
       module: moduleId,
@@ -251,7 +255,14 @@ export function PresetSheet({
       // якщо dual-write контекст не змонтований (типовий стан у FTUX: шит
       // відкривається з хаба, шел `/routine` ще не бутнувся). Наслідок —
       // hero-картка згасала назавжди, звичка жила до першого reload.
-      persisted = await applyPreset(moduleId, item.data as ModulePreset);
+      savingRef.current = true;
+      setSaving(true);
+      try {
+        persisted = await applyPreset(moduleId, item.data as ModulePreset);
+      } finally {
+        savingRef.current = false;
+        setSaving(false);
+      }
       if (!persisted) {
         // Шит лишається відкритим: єдина дія користувача не має зникати
         // разом із незбереженим записом, а повторний тап тут-таки — це
@@ -302,9 +313,10 @@ export function PresetSheet({
             key={item.id}
             type="button"
             onClick={() => void handlePick(item)}
+            disabled={saving}
             className={cn(
               "w-full text-left py-3 border-b border-line",
-              "hover:bg-panel transition-colors",
+              "hover:bg-panel transition-colors disabled:opacity-60",
               "focus:outline-none focus-visible:ring-2 focus-visible:ring-focus/45",
             )}
           >

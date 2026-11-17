@@ -17,6 +17,7 @@ import {
   FIRST_REAL_ENTRY_KEY,
   FIRST_REAL_ENTRY_SOURCES,
   SOFT_AUTH_DISMISSED_KEY,
+  type Rec,
 } from "@sergeant/shared";
 
 import { HubDashboard } from "./HubDashboard";
@@ -114,6 +115,18 @@ jest.mock("./useCoachInsight", () => ({
     mockUseCoachInsight(options),
 }));
 
+// Мобільний `generateRecommendations` лишається заглушкою з `[]`, тож фокус-картку
+// без підміни генератора не побачити. Решта хука (вибір, dismissals) жива.
+let mockRecs: Rec[] = [];
+jest.mock("./useDashboardFocus", () => {
+  const actual = jest.requireActual("./useDashboardFocus");
+  return {
+    ...actual,
+    useDashboardFocus: () =>
+      actual.useDashboardFocus({ generate: () => mockRecs }),
+  };
+});
+
 jest.mock("../hints/useHints", () => ({
   useHints: jest.fn(),
 }));
@@ -156,6 +169,7 @@ describe("HubDashboard one-hero rule", () => {
     mockUseFizrukSqliteReadBoot.mockReset();
     mockUseNutritionSqliteReadBoot.mockReset();
     mockUseCoachInsight.mockClear();
+    mockRecs = [];
   });
 
   afterEach(() => {
@@ -241,11 +255,35 @@ describe("HubDashboard one-hero rule", () => {
   it("PR-A1: requests the coach insight only where the text can render", () => {
     _getMMKVInstance().set(FIRST_REAL_ENTRY_KEY, "1");
     mockUserData.data = { user: { name: "Test" } };
+    mockRecs = [
+      {
+        id: "r1",
+        module: "routine",
+        priority: 1,
+        icon: "",
+        title: "Звички на сьогодні",
+        body: "",
+        action: "routine",
+      },
+    ];
+
+    const { getByTestId } = renderDashboard();
+
+    expect(getByTestId("today-focus-card-r1")).toBeTruthy();
+    expect(enabledArg()).toBe(true);
+  });
+
+  // `TodayFocusCard` без рекомендації повертає `null`, а мобільний
+  // генератор рекомендацій досі заглушка: без цього терма квоту палив
+  // кожен залогінений щодня.
+  it("PR-A1: does not request the coach insight when no focus card renders", () => {
+    _getMMKVInstance().set(FIRST_REAL_ENTRY_KEY, "1");
+    mockUserData.data = { user: { name: "Test" } };
 
     renderDashboard();
 
     expect(mockUseCoachInsight).toHaveBeenCalled();
-    expect(enabledArg()).toBe(true);
+    expect(enabledArg()).toBe(false);
   });
 
   it("respects a previous soft-auth dismissal", () => {

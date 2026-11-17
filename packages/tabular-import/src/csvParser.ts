@@ -40,9 +40,14 @@ const BOM = String.fromCharCode(0xfeff);
 /**
  * Мінімальний RFC4180-подібний токенізатор: підтримує закавичені поля з
  * embedded-роздільником/переносом рядка та подвоєні лапки (`""` -> `"`).
- * CRLF і LF - обидва як межа рядка.
+ * CRLF і LF - обидва як межа рядка. `maxRows` обриває розбір, щойно
+ * стільки рядків набрано: решту файлу викликач однаково відкине.
  */
-export function tokenizeCsv(text: string, delimiter: string): string[][] {
+export function tokenizeCsv(
+  text: string,
+  delimiter: string,
+  maxRows = Number.POSITIVE_INFINITY,
+): string[][] {
   const src = text.startsWith(BOM) ? text.slice(BOM.length) : text;
   const rows: string[][] = [];
   let field = "";
@@ -86,6 +91,7 @@ export function tokenizeCsv(text: string, delimiter: string): string[][] {
     if (ch === "\n") {
       row.push(field);
       rows.push(row);
+      if (rows.length >= maxRows) return rows;
       field = "";
       row = [];
       i += 1;

@@ -90,7 +90,7 @@ export const INFRA_PROCESSORS: ReadonlyArray<LegalProcessor> = [
   },
   {
     name: "Vercel",
-    role: "Хостинг веб-фронтенду і CDN",
+    role: "Хостинг веб-фронтенду і CDN; статистика переглядів сторінок (Web Analytics) лише за згодою на аналітику",
     region: "Глобальний edge",
   },
   {

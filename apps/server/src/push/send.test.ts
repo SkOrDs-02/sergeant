@@ -561,6 +561,19 @@ describe("sendToUser", () => {
     expect(sendWebPushMock).not.toHaveBeenCalled();
   });
 
+  it("web-підписки вибирає лише з живих сесій (протухлий cookie не видаляє рядок сесії)", async () => {
+    poolMock.query.mockResolvedValueOnce({ rows: [] }); // push_devices
+    poolMock.query.mockResolvedValueOnce({ rows: [] }); // push_subscriptions
+    await sendToUser("u1", { title: "hi" });
+    const webSql = poolMock.query.mock.calls
+      .map((c: unknown[]) => String(c[0]))
+      .find((sql: string) => sql.includes("FROM push_subscriptions"));
+    expect(webSql).toMatch(/ps\.session_id IS NULL OR EXISTS/);
+    expect(webSql).toMatch(
+      /s\.id = ps\.session_id AND s\."expiresAt" > NOW\(\)/,
+    );
+  });
+
   it("fan-outs to ios + android + web", async () => {
     poolMock.query.mockResolvedValueOnce({
       rows: [

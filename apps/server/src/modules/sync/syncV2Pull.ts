@@ -12,10 +12,21 @@ import {
 import { env } from "../../env/env.js";
 import { elapsedMs } from "../../lib/timing.js";
 import { readOriginDeviceId, recordSyncV2 } from "./syncV2-core.js";
+import {
+  SYNC_OP_LOG_FLOOR_SQL,
+  SyncCursorExpiredError,
+  isCursorExpired,
+} from "./syncOpLogFloor.js";
 
 type WithSessionUser = Request & { user?: { id: string } };
 
 interface PullRow {
+  /**
+   * Нижня межа журналу користувача (`sync_op_log_floor`, міграція 166);
+   * bigint -> string. Є в кожному рядку результату, включно з єдиним
+   * «порожнім» рядком (усі поля опа `null`), коли сторінка порожня.
+   */
+  floor_id?: string | number | null;
   id: string;
   table_name: string;
   op: "insert" | "update" | "delete";
@@ -34,7 +45,7 @@ interface PullRow {
 
 /** Бюджет сторінки pull у байтах (ADR-0105): env або дефолт 2 MiB. */
 const PULL_MAX_BYTES_DEFAULT = 2_097_152;
-function pullByteBudget(): number {
+export function pullByteBudget(): number {
   const v = env.SYNC_V2_PULL_MAX_BYTES;
   return Number.isFinite(v) && v >= 1 ? Math.floor(v) : PULL_MAX_BYTES_DEFAULT;
 }
@@ -42,26 +53,37 @@ function pullByteBudget(): number {
 /**
  * Сторінка журналу під байтовим бюджетом (ADR-0105). Спільна для `/pull` і
  * replay у SSE-стрімі: обидва читають той самий журнал, і жоден не має
- * тягнути в Node більше за бюджет.
+ * тягнути в Node більше за бюджет. Повертає й нижню межу журналу (`floorId`):
+ * для простроченого курсора (`since < floorId`) журнал не читається, `rows`
+ * порожні, а рішення про 410 приймає виклик.
  */
 export async function selectPullPage(
   userId: string,
   since: number,
   originDeviceId: string | null,
   limit: number,
-): Promise<{ rows: PullRow[]; truncatedByBudget: boolean }> {
+): Promise<{ rows: PullRow[]; truncatedByBudget: boolean; floorId: number }> {
   const budget = pullByteBudget();
   // ADR-0105 §1: бюджет рахує сам Postgres. `page` бере до `limit` рядків,
   // `sized` додає суму `octet_length(row::text)` ПОПЕРЕДНІХ рядків вікна;
   // лишаються рядки, чий префікс ще менший за бюджет (перший завжди).
   // Рядки понад бюджет у Node не потрапляють.
+  //
+  // ADR-0105 §3: нижня межа журналу (`fl`) читається в тому ж запиті, без
+  // окремого round-trip. `fl LEFT JOIN sized` дає щонайменше один рядок і
+  // для порожньої сторінки, тож межу видно завжди. Прострочений курсор
+  // (`$2 < floor_id`) не читає журнал узагалі (умова в `page`).
+  // eslint-disable-next-line no-restricted-syntax -- інтерполюється лише константа `SYNC_OP_LOG_FLOOR_SQL` з нашого коду; усі значення - $-параметри.
   const result = await pool.query<PullRow>(
-    `WITH page AS (
+    `WITH fl AS (
+       SELECT ${SYNC_OP_LOG_FLOOR_SQL}::bigint AS floor_id
+     ), page AS (
        SELECT id, table_name, op, row, client_ts, server_ts, origin_device_id,
               octet_length(row::text) AS row_bytes
          FROM sync_op_log
         WHERE user_id = $1
           AND id > $2
+          AND $2 >= (SELECT floor_id FROM fl)
           AND status = 'applied'
           AND origin_device_id IS DISTINCT FROM $3
           AND (tx_id IS NULL OR tx_id < pg_snapshot_xmin(pg_current_snapshot()))
@@ -75,21 +97,25 @@ export async function selectPullPage(
               LEAD(id) OVER (ORDER BY id) AS next_id
          FROM page
      )
-     SELECT id, table_name, op, row, client_ts, server_ts, origin_device_id,
-            row_bytes, next_id
-       FROM sized
-      WHERE bytes_before < $5
-      ORDER BY id ASC`,
+     SELECT fl.floor_id, s.id, s.table_name, s.op, s.row, s.client_ts,
+            s.server_ts, s.origin_device_id, s.row_bytes, s.next_id
+       FROM fl
+       LEFT JOIN sized s ON s.bytes_before < $5
+      ORDER BY s.id ASC`,
     [userId, since, originDeviceId, limit, budget],
   );
+  const floorId = Number(result.rows[0]?.floor_id ?? 0) || 0;
+  // Рядок `fl` без опа (порожня сторінка) - лише носій межі.
+  const rows = result.rows.filter((r) => r.id != null);
   // Обрізано бюджетом, коли за останнім збереженим рядком у вікні сторінки
   // ще був кандидат. `LEAD` дивиться на один рядок уперед і не змушує
   // Postgres буферизувати всю сторінку разом із payload-ами, як
   // `COUNT(*) OVER ()` (рев'ю #1646).
-  const lastRow = result.rows[result.rows.length - 1];
+  const lastRow = rows[rows.length - 1];
   return {
-    rows: result.rows,
+    rows,
     truncatedByBudget: lastRow != null && lastRow.next_id != null,
+    floorId,
   };
 }
 
@@ -111,12 +137,20 @@ export async function syncV2Pull(req: Request, res: Response): Promise<void> {
   const originDeviceId = readOriginDeviceId(req);
 
   try {
-    const { rows, truncatedByBudget } = await selectPullPage(
+    const { rows, truncatedByBudget, floorId } = await selectPullPage(
       user.id,
       since,
       originDeviceId,
       limit,
     );
+    if (isCursorExpired(since, floorId)) {
+      recordSyncV2("v2_pull", "invalid", {
+        ms: elapsedMs(start),
+        userId: user.id,
+        extra: { since, floor_id: floorId, reason: "sync_cursor_expired" },
+      });
+      throw new SyncCursorExpiredError(floorId);
+    }
 
     const opsOut = rows.map((r) => ({
       id: Number(r.id),
@@ -171,6 +205,8 @@ export async function syncV2Pull(req: Request, res: Response): Promise<void> {
       next_cursor: nextCursor,
     });
   } catch (err) {
+    // 410 уже записано як `invalid` вище; не дублюємо його як `error`.
+    if (err instanceof SyncCursorExpiredError) throw err;
     recordSyncV2("v2_pull", "error", {
       ms: elapsedMs(start),
       userId: user.id,

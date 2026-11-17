@@ -77,8 +77,15 @@ function ModuleRows({
               data-inactive={enabled ? undefined : "true"}
               onClick={() => {
                 hapticTap();
-                onClose();
-                if (isCurrent) return;
+                if (isCurrent) {
+                  onClose();
+                  return;
+                }
+                // Аркуш НЕ закриваємо перед навігацією: його `useHistoryDismiss`
+                // через 150 мс відкочує свій запис, якщо адреса не змінилась, а
+                // на холодному lazy-чанку модуля push приходить пізніше, і POP
+                // скасовує перехід. Аркуш зникне разом зі шапкою, коли маршрут
+                // зміниться (див. `useCloseAfterNavigation` у пошуку хаба).
                 // Той самий вхід, що й рядок панелі модулів хаба.
                 if (!enabled) openHubSettingsSection("dashboard");
                 else openHubModule(id, undefined, "module_switcher");
@@ -120,10 +127,8 @@ function ModuleRows({
         <li className="mt-2 border-t border-line pt-2">
           <button
             type="button"
-            onClick={() => {
-              onClose();
-              onOpenSettings();
-            }}
+            // Без onClose з тієї ж причини, що й у рядках модулів вище.
+            onClick={onOpenSettings}
             className={cn(
               ROW,
               "text-style-body font-semibold text-text hover:bg-panel",

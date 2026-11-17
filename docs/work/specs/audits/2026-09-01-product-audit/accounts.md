@@ -9,7 +9,7 @@
 
 Попередники, з яких взято осі: `A1–A5` ([2026-08-04](https://github.com/SkOrDs-02/sergeant/blob/77c540d0167180e8a27ca98444be7ed4f576b370/docs/90-work/audits/2026-08-04-global-qa-plan.md)),
 `P1–P4` ([`profileMatrix.ts`](../../../../../apps/web/tests/profiles/profileMatrix.ts)),
-`BT1–BT5` ([`beta-browser-run.md`](../../beta-launch/beta-browser-run.md)).
+`BT1–BT5` (`beta-browser-run.md`).
 Тут вони зведені в одну матрицю з чотирма осями: **стан акаунта × наповнення ×
 тариф × пристрій**.
 

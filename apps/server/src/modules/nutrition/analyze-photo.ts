@@ -14,6 +14,7 @@ import { normalizePhotoResult } from "../../lib/nutritionResponse.js";
 import { validateImageBase64 } from "../../lib/imageMagic.js";
 import { nutritionPhotoRejectedTotal } from "../../obs/metrics.js";
 import { recordPhotoRefineGrant } from "./photoRefineGrant.js";
+import { abortOnClientClose } from "../../http/clientAbort.js";
 
 type AnthropicErrorPayload = { error?: { message?: string } };
 type WithAnthropicKey = Request & {
@@ -185,6 +186,7 @@ export default async function handler(
   const { response, data } = await anthropicMessages(apiKey, payload, {
     timeoutMs: 20000,
     endpoint: "analyze-photo",
+    signal: abortOnClientClose(res),
     allowOpenRouter: visionViaOpenRouter(),
     // Ініціатива 0025, Фаза 2 – «id обробки фото». Переюзаємо наявний
     // per-request W3C trace id, не вигадуємо новий.

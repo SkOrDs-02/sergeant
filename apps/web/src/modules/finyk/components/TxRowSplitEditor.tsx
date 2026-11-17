@@ -5,7 +5,7 @@
  * Split editor body for TxRow's modal Sheet. Extracted for Hard Rule #18
  * max-lines; keeping the body separate lets the row stay virtualized.
  */
-import type { Dispatch, SetStateAction } from "react";
+import type { Dispatch, KeyboardEvent, SetStateAction } from "react";
 import { formatMoney } from "@sergeant/shared";
 import type { TxSplit } from "@sergeant/finyk-domain/domain/types";
 import { cn } from "@shared/lib/ui/cn";
@@ -86,6 +86,13 @@ export function TxRowSplitEditor({
   onDelete,
   onClose,
 }: TxRowSplitEditorProps) {
+  // Escape закриває лише відкритий список, а не весь аркуш, чия пастка
+  // фокуса слухає `document`.
+  const closePickerOnEscape = (e: KeyboardEvent) => {
+    if (e.key !== "Escape" || splitCategoryPicker === null) return;
+    e.stopPropagation();
+    setSplitCategoryPicker(null);
+  };
   return (
     <div className="pb-3 px-2 space-y-2">
       <div className="text-style-caption text-subtle">
@@ -97,6 +104,7 @@ export function TxRowSplitEditor({
             type="button"
             aria-haspopup="listbox"
             aria-expanded={splitCategoryPicker === i}
+            onKeyDown={closePickerOnEscape}
             onClick={() =>
               setSplitCategoryPicker((current) => (current === i ? null : i))
             }
@@ -124,6 +132,7 @@ export function TxRowSplitEditor({
                   type="button"
                   role="option"
                   aria-selected={category.id === sp.categoryId}
+                  onKeyDown={closePickerOnEscape}
                   onClick={() => {
                     setDraftSplits((prev) =>
                       prev.map((part, index) =>

@@ -450,6 +450,19 @@ describe("transactionsHandler", () => {
     expect(sql).toContain("t.mono_account_id =");
   });
 
+  it("відсікає операції не-гривневих рахунків (UAH-only без FX)", async () => {
+    queryMock.mockResolvedValueOnce({ rows: [] });
+
+    const res = makeRes();
+    await transactionsHandler(makeReq({}), res);
+
+    expect(res.statusCode).toBe(200);
+    const sql = (queryMock!.mock.calls[0]![0] as string).replace(/\s+/g, " ");
+    expect(sql).toContain("NOT EXISTS ( SELECT 1 FROM mono_account a");
+    expect(sql).toContain("a.mono_account_id = t.mono_account_id");
+    expect(sql).toContain("a.currency_code <> 980");
+  });
+
   it("applies cursor filter", async () => {
     queryMock.mockResolvedValueOnce({ rows: [] });
 

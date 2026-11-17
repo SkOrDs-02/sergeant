@@ -100,13 +100,27 @@ async function loadNativeDevices(userId: string): Promise<DeviceRow[]> {
   return rows;
 }
 
+/**
+ * Підписка з `session_id` живе не довше за свою сесію. Хук
+ * `session.delete.after` (priv-04) ловить лише видалення рядка сесії, а
+ * протухання (`expiresAt`, 7 днів простою) рядок не видаляє: без цієї умови
+ * банківські пуші A далі йшли б у браузер, яким уже користується B. Рядки без
+ * `session_id` (до міграції 161) лишаються як були. Спільний для всіх шляхів
+ * web-доставки, включно з внутрішнім `POST /api/push/send`.
+ */
+export const LOAD_WEB_SUBSCRIPTIONS_SQL = `SELECT ps.endpoint, ps.p256dh, ps.auth
+       FROM push_subscriptions ps
+      WHERE ps.user_id = $1
+        AND ps.deleted_at IS NULL
+        AND (ps.session_id IS NULL OR EXISTS (
+              SELECT 1 FROM session s
+               WHERE s.id = ps.session_id AND s."expiresAt" > NOW()
+            ))`;
+
 async function loadWebSubscriptions(userId: string): Promise<WebSubRow[]> {
-  const { rows } = await pool.query<WebSubRow>(
-    `SELECT endpoint, p256dh, auth
-       FROM push_subscriptions
-      WHERE user_id = $1 AND deleted_at IS NULL`,
-    [userId],
-  );
+  const { rows } = await pool.query<WebSubRow>(LOAD_WEB_SUBSCRIPTIONS_SQL, [
+    userId,
+  ]);
   return rows;
 }
 

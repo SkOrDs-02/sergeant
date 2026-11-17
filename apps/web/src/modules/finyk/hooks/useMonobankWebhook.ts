@@ -30,6 +30,7 @@ import { migrateFinyk } from "../lib/clientMigrate";
 import { MonoNotConnectedError } from "../lib/monoBankErrors";
 import { failedCopy } from "@shared/i18n/failedCopy";
 import {
+  deleteMonoTransactionsOfAccounts,
   writeMonoTransactions,
   writeMonoAccounts,
   writeMonoAccountSnapshots,
@@ -146,6 +147,17 @@ export function useMonobankWebhook({
         })),
     [webhookAccounts],
   );
+  // Jars are included: their operations land in mono_transaction under the
+  // jar id, so a USD/EUR jar's top-up would otherwise stay in the mirror as
+  // hryvnia income.
+  const foreignAccountIdsKey = [
+    ...(Array.isArray(webhookAccounts) ? webhookAccounts : [])
+      .filter((a) => a.currencyCode !== CURRENCY.UAH)
+      .map((a) => a.monoAccountId),
+    ...jars
+      .filter((j) => j.currencyCode !== CURRENCY.UAH)
+      .map((j) => j.monoJarId),
+  ].join(",");
 
   // ClientInfo-like object for UI compatibility
   const clientInfo = useMemo(() => {
@@ -251,6 +263,37 @@ export function useMonobankWebhook({
       cancelled = true;
     };
   }, [accounts, userId, enabled, writeMirror]);
+
+  // Not gated on writeMirror: the boot instance does not load jars, so the
+  // Finyk screen instance has to purge them. The delete is idempotent.
+  useEffect(() => {
+    if (!enabled || !userId || !foreignAccountIdsKey) return;
+    let cancelled = false;
+    void (async () => {
+      try {
+        const handle = await getSqliteDb();
+        const client = handle.migrationClient();
+        await migrateFinyk(client);
+        if (cancelled) return;
+        await deleteMonoTransactionsOfAccounts(
+          client,
+          userId,
+          foreignAccountIdsKey.split(","),
+        );
+        if (cancelled) return;
+        await refreshFinykMonoMirrorState(client, userId);
+        if (!cancelled) notifyFinykMonoMirrorRefresh();
+      } catch (err) {
+        logger.warn(
+          "[finyk.monoMirror] purge foreign-currency transactions failed",
+          err instanceof Error ? err.message : err,
+        );
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, [foreignAccountIdsKey, userId, enabled]);
 
   // Read overlay — when the network slice is empty (cold start, fetch
   // pending) and the flag is on, return the mirrored transactions so

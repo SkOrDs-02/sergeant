@@ -56,6 +56,13 @@ export {
   type SyncV2PushOptions,
   type SyncV2PushResponse,
 } from "./endpoints/syncV2";
+export {
+  SYNC_CURSOR_EXPIRED_CODE,
+  isSyncCursorExpiredError,
+  type SyncCursorExpiredErrorBody,
+  type SyncV2SnapshotOptions,
+  type SyncV2SnapshotResponse,
+} from "./endpoints/syncV2.snapshot";
 
 export {
   buildSyncV2IncrementOp,

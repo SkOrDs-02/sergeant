@@ -5,6 +5,7 @@ import {
   gridFromCsvText,
   gridFromStatementFile,
   locateHeaderRow,
+  STATEMENT_MAX_DATA_ROWS,
   STATEMENT_MAX_FILE_BYTES,
 } from "./statementFile.js";
 import {
@@ -355,6 +356,13 @@ describe("gridFromStatementFile — межі входу", () => {
     expect(() =>
       gridFromStatementFile(Buffer.alloc(STATEMENT_MAX_FILE_BYTES + 1)),
     ).toThrow(/завеликий/);
+  });
+
+  it("файл з понад 10 000 рядків відкидається під час розбору", () => {
+    const csv = `Дата,Сума\n${"16.08.2026,-1\n".repeat(STATEMENT_MAX_DATA_ROWS + 50)}`;
+    expect(() => gridFromStatementFile(Buffer.from(csv, "utf8"))).toThrow(
+      /понад 10000 рядків/,
+    );
   });
 
   it("файл з самих пробілів — теж порожній", () => {

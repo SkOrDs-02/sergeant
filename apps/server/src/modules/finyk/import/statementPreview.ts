@@ -30,6 +30,7 @@ import { isAmountKopiykasInBounds, truncateImportText } from "./rowLimits.js";
 import {
   gridFromCsvText,
   gridFromStatementFile,
+  STATEMENT_MAX_DATA_ROWS,
   type StatementGrid,
 } from "./statementFile.js";
 
@@ -202,13 +203,7 @@ function classifyRows(
   return { rows, skipped };
 }
 
-/**
- * Кап на кількість data-рядків preview (ревʼю PR #818): байтовий ліміт
- * входу не обмежує кількість рядків, а відповідь несе обʼєкт на кожен.
- * Річна виписка — тисячі рядків; 10k — межа з запасом, далі просимо
- * розбити файл.
- */
-const MAX_PREVIEW_DATA_ROWS = 10_000;
+const MAX_PREVIEW_DATA_ROWS = STATEMENT_MAX_DATA_ROWS;
 
 type WithSessionUser = Request & { user?: { id: string } };
 

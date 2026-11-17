@@ -3,6 +3,7 @@ import { chartHex } from "@sergeant/design-tokens/tokens";
 import { cn } from "@shared/lib/ui/cn";
 import { Money } from "@shared/components/ui/Money";
 import { Button } from "@shared/components/ui/Button";
+import { messages } from "@shared/i18n/uk";
 import { stripLeadingEmoji } from "../txRowHelpers";
 
 /**
@@ -143,6 +144,14 @@ function CategoryBarsComponent({
                     {pct < 1 ? "<1" : pct}%
                   </span>
                 </span>
+                {/* Привид нижче aria-hidden: для рахунків і тегів минулий
+                    період більше ніде текстом не названо. */}
+                {prev > 0 && showBalance && (
+                  <span className="sr-only">
+                    {messages.finyk.analyticsPage.previousPeriodSr}{" "}
+                    <Money amount={prev} />
+                  </span>
+                )}
                 <span
                   aria-hidden
                   className="relative mt-1.5 block h-[11px] rounded-sm"
@@ -150,7 +159,7 @@ function CategoryBarsComponent({
                   {prev > 0 && (
                     <span
                       data-testid="category-bar-ghost"
-                      className="absolute bottom-0 left-0 h-[4px] rounded-sm bg-line"
+                      className="absolute bottom-0 left-0 h-[4px] rounded-sm bg-control"
                       style={{ width: `${(prev / max) * 100}%` }}
                     />
                   )}

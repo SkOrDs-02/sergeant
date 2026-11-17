@@ -1,6 +1,6 @@
 # Playbook: Підняти застосунок локально після мержу
 
-> **Last touched:** 2026-09-11 by @claude. **Next review:** 2026-12-11.
+> **Last touched:** 2026-11-17 by @claude. **Next review:** 2027-02-16.
 > **Status:** Active
 > **Runtime-specific:** no
 
@@ -88,7 +88,7 @@ Telegram і Monobank не достукаються до `localhost`. Тунел�
 cloudflared tunnel --url http://localhost:3000
 ```
 
-Дає `https://xxx.trycloudflare.com`; далі [`scripts/telegram/setup-webhook.mjs`](../../../scripts/telegram/setup-webhook.mjs) приймає його як `API_BASE_URL`. URL змінюється при кожному запуску, тож вебхук доведеться перевстановлювати. Деталі — [`env-vars.md`](../../engineering/integrations/env-vars.md).
+Дає `https://xxx.trycloudflare.com`; далі `scripts/telegram/setup-webhook.mjs` приймає його як `API_BASE_URL`. URL змінюється при кожному запуску, тож вебхук доведеться перевстановлювати. Деталі — [`env-vars.md`](../../engineering/integrations/env-vars.md).
 
 ## Verification
 

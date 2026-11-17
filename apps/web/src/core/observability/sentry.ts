@@ -33,12 +33,21 @@ export interface WebBeforeSendEvent {
   exception?: {
     values?: Array<{ value?: unknown }>;
   };
-  breadcrumbs?: Array<{ data?: unknown; message?: unknown }>;
+  breadcrumbs?: Array<{
+    category?: string;
+    data?: { [key: string]: unknown };
+    message?: unknown;
+  }>;
   user?: {
     id?: string | number;
     ip_address?: string;
   };
 }
+
+const BREADCRUMB_URL_KEYS = ["url", "from", "to"] as const;
+
+/** Атрибути, які `@sentry/core` `htmlTreeAsString` кладе в селектор. */
+const UI_SELECTOR_ATTR_VALUE = /\[(aria-label|title|alt|name)="[^"]*"\]/g;
 
 /**
  * Browser counterpart of `applyBeforeSend` (`apps/server/src/sentry.ts`).
@@ -100,12 +109,28 @@ export function applyWebBeforeSend(
   }
   if (Array.isArray(event.breadcrumbs)) {
     for (const bc of event.breadcrumbs) {
-      if (bc && bc.data) scrubPII(bc.data);
+      if (!bc) continue;
+      if (bc.data) {
+        scrubPII(bc.data);
+        // navigation (`from` / `to`) і fetch/xhr (`url`) несуть повну адресу
+        // з query, тож `/reset-password?token=…` інакше доїде в подію.
+        for (const key of BREADCRUMB_URL_KEYS) {
+          const value = bc.data[key];
+          if (typeof value === "string") {
+            bc.data[key] = redactSensitiveQueryParams(value);
+          }
+        }
+      }
       // Breadcrumb messages from `xhr` / `fetch` auto-instrumentation
       // often look like `"HTTP 401 Bearer abc..."` — pattern-scrub
       // those rather than dropping breadcrumbs wholesale.
-      if (bc && typeof bc.message === "string") {
-        bc.message = scrubPIIString(bc.message);
+      if (typeof bc.message === "string") {
+        const message = scrubPIIString(bc.message);
+        // `ui.click` / `ui.input` селектор SDK дописує `[aria-label="…"]`,
+        // `[title="…"]` клікнутого елемента, а там суми й імена людей.
+        bc.message = bc.category?.startsWith("ui.")
+          ? message.replace(UI_SELECTOR_ATTR_VALUE, "[$1]")
+          : message;
       }
     }
   }
@@ -345,6 +370,12 @@ export async function initSentry() {
     // `WebBeforeSendEvent` is a minimal structural subset of Sentry's
     // `ErrorEvent`, so the SDK's `event` passes through without any cast.
     beforeSend(event) {
+      applyWebBeforeSend(event);
+      return event;
+    },
+    // Транзакції `beforeSend` оминають, а pageload семплується на 100% і
+    // несе `request.url` з query (`/reset-password?token=…`).
+    beforeSendTransaction(event) {
       applyWebBeforeSend(event);
       return event;
     },

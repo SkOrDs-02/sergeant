@@ -142,7 +142,7 @@ describe("applyNutritionPrefs: prefs_merge (data-04)", () => {
     expect(fake.queries).toHaveLength(0);
   });
 
-  it("першого рядка немає: патч вставляється як є, журнал отримує знімок", async () => {
+  it("першого рядка немає: патч не вставляється, клієнт повторить його пізніше", async () => {
     const fake = new FakeClient(null);
     const o = op({
       user_id: "u1",
@@ -151,11 +151,20 @@ describe("applyNutritionPrefs: prefs_merge (data-04)", () => {
     });
     await expect(
       applyNutritionPrefs(asClient(fake), o, "u1", TS),
+    ).resolves.toEqual({ status: "retry", reason: "prefs_patch_without_base" });
+    expect(fake.queries).toHaveLength(1);
+    expect(o.row["prefs_merge"]).toBe(true);
+  });
+
+  it("першого рядка немає: повний знімок вставляється як є", async () => {
+    const fake = new FakeClient(null);
+    const o = op({ user_id: "u1", prefs_json: { waterGoalMl: 2500 } });
+    await expect(
+      applyNutritionPrefs(asClient(fake), o, "u1", TS),
     ).resolves.toEqual({ status: "applied" });
     const ins = fake.queries[fake.queries.length - 1]!;
     expect(ins.sql).toContain("INSERT INTO nutrition_prefs");
     expect(ins.params[1]).toBe('{"waterGoalMl":2500}');
-    expect(o.row).not.toHaveProperty("prefs_merge");
   });
 
   it("чужий user_id відхиляється до будь-якого SQL", async () => {

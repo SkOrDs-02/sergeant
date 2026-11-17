@@ -21,3 +21,20 @@ export const HEALTH_CONSENT_REQUIRED_CODE = "HEALTH_CONSENT_REQUIRED";
  */
 export const HEALTH_CONSENT_REQUIRED_MESSAGE =
   "Для цього потрібна твоя згода на обробку даних про здоровʼя. Увімкни її в Налаштування → Дані та приватність, і я зможу працювати з тренуваннями, вагою, самопочуттям та харчуванням.";
+
+const WORKOUT_METRIC_ALIASES = new Set(["workouts", "тренування", "fizruk"]);
+
+/**
+ * Метрика `habit_correlation.against` так, як її рахує web-екзекутор: після
+ * trim+toLowerCase синоніми тренувань дають `workouts`, решта `spending`.
+ * Гейт згоди на сервері класифікує тим самим правилом, інакше «тренування»
+ * чи «Workouts» проходили б без згоди, а клієнт однаково рахував тренування.
+ */
+export function habitCorrelationMetric(
+  value: unknown,
+): "workouts" | "spending" {
+  const s = String(value ?? "")
+    .trim()
+    .toLowerCase();
+  return WORKOUT_METRIC_ALIASES.has(s) ? "workouts" : "spending";
+}

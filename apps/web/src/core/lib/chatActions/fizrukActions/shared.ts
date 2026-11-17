@@ -60,6 +60,32 @@ export function persistFizrukWorkouts(workouts: DomainWorkout[]): void {
 }
 
 /**
+ * Undo щойно створеного chat-екшеном тренування. `prev` будується як
+ * «кеш + це тренування» з тієї ж причини, що в `deleteFizrukDailyLogEntry`:
+ * кеш у момент undo ще може не знати про запис, і diff не емітив би delete.
+ */
+export function deleteFizrukWorkout(workout: DomainWorkout): void {
+  const cached = peekFizrukDualWriteState() ?? EMPTY_FIZRUK_DUAL_WRITE_STATE;
+  const current = readFizrukWorkouts();
+  const withWorkout = current.some((w) => w.id === workout.id)
+    ? current
+    : [workout, ...current];
+  try {
+    triggerFizrukDualWrite(
+      { ...cached, workouts: extractWorkoutSnapshots(withWorkout) },
+      {
+        ...cached,
+        workouts: extractWorkoutSnapshots(
+          current.filter((w) => w.id !== workout.id),
+        ),
+      },
+    );
+  } catch {
+    /* trigger is fire-and-forget — never propagate */
+  }
+}
+
+/**
  * Записати нові користувацькі вправи тим самим шляхом, що й UI
  * (`useExerciseCatalog.addExercise` → `triggerFizrukDualWrite` зі зрізом
  * `customExercises`). Мусить іти ДО `persistFizrukWorkouts` у тому ж

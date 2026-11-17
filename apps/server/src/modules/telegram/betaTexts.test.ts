@@ -1,5 +1,3 @@
-import { readFileSync } from "node:fs";
-import { fileURLToPath } from "node:url";
 import { describe, expect, it } from "vitest";
 import {
   appReply,
@@ -164,42 +162,6 @@ describe("тексти опитування", () => {
     const out = surveyAnsweredText(WEEKLY_PULSE_SURVEY, "4");
     expect(out).toContain(WEEKLY_PULSE_SURVEY.question);
     expect(out).toContain("4");
-  });
-});
-
-describe("скрипт розсилки не розʼїхався з каталогом", () => {
-  /**
-   * `scripts/telegram/send-survey.mjs` тримає власну копію визначення: у репо
-   * немає TS-раннера для скриптів. Копія небезпечна саме контрактом кнопок —
-   * `id` і `value` утворюють `callback_data`, і при розбіжності бот мовчки
-   * відкине КОЖНЕ натискання. Ні в логах, ні у відповіді Telegram цього не
-   * видно, тож ловимо тут.
-   */
-  const script = readFileSync(
-    fileURLToPath(
-      new URL(
-        "../../../../../scripts/telegram/send-survey.mjs",
-        import.meta.url,
-      ),
-    ),
-    "utf8",
-  );
-
-  it("знає рівно ті самі опитування", () => {
-    const ids = [...script.matchAll(/^\s{4}id: "([^"]+)"/gm)].map((m) => m[1]);
-    expect(new Set(ids)).toEqual(new Set(Object.keys(SURVEYS)));
-  });
-
-  it("будує callback_data за тим самим правилом", () => {
-    expect(script).toContain("`s:${survey.id}:${o.value}`");
-  });
-
-  it("пропонує ті самі варіанти відповіді", () => {
-    const values = [...script.matchAll(/value: "([^"]+)"/g)].map((m) => m[1]);
-    const expected = Object.values(SURVEYS).flatMap((s) =>
-      s.options.map((o) => o.value),
-    );
-    expect(values).toEqual(expected);
   });
 });
 

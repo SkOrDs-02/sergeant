@@ -53,8 +53,14 @@ export interface FkRequeueResult {
   readonly outcome: "done" | "waiting" | "requeued" | "idle";
 }
 
-function readState(): FkRequeueState | null {
-  const raw = safeReadLS<Partial<FkRequeueState>>(FK_REQUEUE_STATE_KEY, null);
+// Стан на акаунт: outbox живе в партиції користувача, і `done` або `ids`
+// одного акаунта нічого не кажуть про чергу іншого на тому ж пристрої.
+function stateKey(userId: string): string {
+  return `${FK_REQUEUE_STATE_KEY}:${userId}`;
+}
+
+function readState(userId: string): FkRequeueState | null {
+  const raw = safeReadLS<Partial<FkRequeueState>>(stateKey(userId), null);
   if (raw === null || typeof raw !== "object") return null;
   if (typeof raw.startedMs !== "number") return null;
   return {
@@ -70,9 +76,10 @@ function readState(): FkRequeueState | null {
 
 export async function requeueFkViolationRejected(
   client: SqliteMigrationClient,
+  userId: string,
   nowMs: number = Date.now(),
 ): Promise<FkRequeueResult> {
-  const state: FkRequeueState = readState() ?? {
+  const state: FkRequeueState = readState(userId) ?? {
     startedMs: nowMs,
     runs: 0,
     lastRunMs: 0,
@@ -81,7 +88,7 @@ export async function requeueFkViolationRejected(
   };
   if (state.done) return { requeued: 0, outcome: "done" };
   const save = (next: Partial<FkRequeueState>): void => {
-    safeWriteLS(FK_REQUEUE_STATE_KEY, { ...state, ...next });
+    safeWriteLS(stateKey(userId), { ...state, ...next });
   };
 
   // Перепоставлені рядки, які ще чекають відправки, не чіпаємо і не рахуємо.
@@ -90,8 +97,8 @@ export async function requeueFkViolationRejected(
     const placeholders = state.ids.map(() => "?").join(", ");
     const rows = await client.all<{ n: number | bigint }>(
       `SELECT COUNT(*) AS n FROM sync_op_outbox
-        WHERE status = 'pending' AND id IN (${placeholders})`,
-      [...state.ids],
+        WHERE status = 'pending' AND user_id = ? AND id IN (${placeholders})`,
+      [userId, ...state.ids],
     );
     inflight = Number(rows[0]?.n ?? 0);
   }
@@ -102,9 +109,9 @@ export async function requeueFkViolationRejected(
 
   const rejected = await client.all<{ id: number | bigint }>(
     `SELECT id FROM sync_op_outbox
-      WHERE status = 'rejected' AND reject_reason = ?
+      WHERE status = 'rejected' AND reject_reason = ? AND user_id = ?
       ORDER BY id`,
-    [FK_REQUEUE_REASON],
+    [FK_REQUEUE_REASON, userId],
   );
 
   if (rejected.length === 0) {

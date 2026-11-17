@@ -74,5 +74,14 @@ export function recurringExpense(
   };
   subs.push(newSub);
   void finykChatWrite("finyk_subs", subs);
-  return `Підписку "${trimmed}" створено: ${formatNumberUk(amt)} грн, ${dayN}-го числа (id:${newSub.id})`;
+  return {
+    result: `Підписку "${trimmed}" створено: ${formatNumberUk(amt)} грн, ${dayN}-го числа (id:${newSub.id})`,
+    undo: () => {
+      const list = warmFinykCache()?.subscriptions ?? [];
+      const next = list.filter((e) => e.id !== newSub.id);
+      if (next.length !== list.length) {
+        void finykChatWrite("finyk_subs", next);
+      }
+    },
+  };
 }

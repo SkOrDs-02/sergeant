@@ -81,6 +81,13 @@ describe("дослівний збіг із поданим", () => {
     expect(r.unexplained.map((u) => u.token.value)).toEqual([4500]);
   });
 
+  it("число іншого виду не пояснює: 2 000 грн проти 2000 ккал", () => {
+    expect(outcome("На кафе 2 000 грн", "ціль 2000 ккал/день")).toBe(
+      "mismatch",
+    );
+    expect(outcome("Ціль 2 000 ккал", "ціль 2000 ккал/день")).toBe("ok");
+  });
+
   it("порожнє подане: будь-яка названа сума вигадана", () => {
     expect(verifyAnswerNumbers("Витрачено 5200 грн", {}).outcome).toBe(
       "mismatch",
