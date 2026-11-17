@@ -507,6 +507,63 @@ describe("гнучка звичка («N разів на тиждень») у sw
     expect(result).toMatchObject({ due: 1, sent: 1 });
     expect(claims).toHaveLength(1);
   });
+
+  // Власна тижнева ціль звички живе в `weekly_target_history`; sweep мусить
+  // передати її домену, інакше діє дефолт 3 (аудит 2026-11-17, §4.4).
+  const doneOn = (...dates: string[]) =>
+    dates.map((date_key) => ({
+      user_id: "u1",
+      habit_id: "hab_1",
+      date_key,
+      state: "done",
+    }));
+
+  it("ціль 5: після 3 відміток тижня все ще нагадує", async () => {
+    const { pool, claims } = fakePool({
+      routineHabits: [
+        habitDbRow({
+          recurrence: "flexible",
+          weekly_target_history: [{ from: "2026-01-01", target: 5 }],
+        }),
+      ],
+      weekCompletions: doneOn("2026-08-03", "2026-08-04", "2026-08-05"),
+    });
+
+    const result = await runReminderSweep(pool, THURSDAY);
+
+    expect(result).toMatchObject({ due: 1, sent: 1 });
+    expect(claims).toHaveLength(1);
+  });
+
+  it("ціль 2: після 2 відміток тижня вже мовчить", async () => {
+    const { pool, claims } = fakePool({
+      routineHabits: [
+        habitDbRow({
+          recurrence: "flexible",
+          weekly_target_history: [{ from: "2026-01-01", target: 2 }],
+        }),
+      ],
+      weekCompletions: doneOn("2026-08-03", "2026-08-04"),
+    });
+
+    const result = await runReminderSweep(pool, THURSDAY);
+
+    expect(result).toMatchObject({ due: 0, sent: 0 });
+    expect(claims).toHaveLength(0);
+  });
+
+  it("отруєна історія цілі не валить прохід: діє дефолт 3", async () => {
+    const { pool } = fakePool({
+      routineHabits: [
+        habitDbRow({ recurrence: "flexible", weekly_target_history: "oops" }),
+      ],
+      weekCompletions: doneOn("2026-08-03", "2026-08-04"),
+    });
+
+    const result = await runReminderSweep(pool, THURSDAY);
+
+    expect(result).toMatchObject({ due: 1, sent: 1 });
+  });
 });
 
 /**

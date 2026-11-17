@@ -40,6 +40,7 @@ import {
   habitSkipKey,
   isFlexibleHabit,
   normalizeReminderTimes,
+  normalizeWeeklyTargetHistory,
   weekEndKeyForDateKey,
   weekStartKeyForDateKey,
   type Habit,
@@ -127,6 +128,7 @@ interface RoutineHabitDbRow {
   time_of_day: string | null;
   reminder_times: unknown;
   weekdays: unknown;
+  weekly_target_history: unknown;
   privacy: string | null;
 }
 
@@ -158,6 +160,11 @@ function toHabit(row: RoutineHabitDbRow): Habit {
     timeOfDay: row.time_of_day ?? undefined,
     reminderTimes: asStringArray(row.reminder_times),
     weekdays: asNumberArray(row.weekdays),
+    // Власна тижнева ціль гнучкої звички; без неї домен бере дефолт 3.
+    // Нормалізація та сама, що на клієнті: не-масив дає [] (дефолт).
+    weeklyTargetHistory: normalizeWeeklyTargetHistory(
+      row.weekly_target_history,
+    ),
   };
 }
 
@@ -214,6 +221,7 @@ async function loadRoutineCandidates(pool: Pool): Promise<RoutineHabitRow[]> {
     `SELECT t.user_id, t.id, t.name, t.emoji, t.archived, t.paused,
             t.pause_intervals, t.recurrence, t.start_date, t.end_date,
             t.time_of_day, t.reminder_times, t.weekdays,
+            t.weekly_target_history,
             p.data->>'routineReminderPrivacy' AS privacy
        FROM routine_habits t
        JOIN routine_prefs p ON p.user_id = t.user_id
