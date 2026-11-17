@@ -389,6 +389,6 @@ describe("compare_weeks — Фізрук diff", () => {
     // W17: 2 workouts; volume = 100*5 + 100*5 + 80*8 = 1640
     // W16: 1 workout; volume = 500
     expect(out).toMatch(/Тренувань:.*2.*1/);
-    expect(out).toContain("Обʼєм: 1\u00A0640 кг·повт vs 500 кг·повт");
+    expect(out).toContain("Обʼєм: 1\u00A0640 кг×повт vs 500 кг×повт");
   });
 });

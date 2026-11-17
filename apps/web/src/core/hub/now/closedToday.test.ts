@@ -70,12 +70,17 @@ function seedFizruk(workouts: Array<Partial<Workout>>) {
   } as Parameters<typeof __setFizrukSqliteCacheForTests>[0]);
 }
 
-function seedNutrition(kcalToday: number[], goalKcal: number | null) {
+function seedNutrition(
+  kcalToday: number[],
+  goalKcal: number | null,
+  mealTypes: Array<string | undefined> = [],
+) {
   __setNutritionSqliteCacheForTests({
     log: {
       [TODAY]: {
         meals: kcalToday.map((kcal, i) => ({
           id: `m${i}`,
+          ...(mealTypes[i] ? { mealType: mealTypes[i] } : {}),
           macros: { kcal, protein_g: 0, fat_g: 0, carbs_g: 0 },
         })),
       },
@@ -189,6 +194,28 @@ describe("computeClosedToday", () => {
           value: "450 ккал",
         },
       ]);
+    });
+
+    // PR-N2 (аудит 2026-09-13, хвиля 6; ревізія 2026-11-17): одне фото пише
+    // N рядків одного прийому, а купа рахувала рядки.
+    it("без цілі: три рядки однієї вечері (одне фото) — це один прийом", () => {
+      seedNutrition([300, 120, 80], null, ["dinner", "dinner", "dinner"]);
+      expect(compute()[0]?.statement).toBe("1 прийом записано");
+    });
+
+    it("без цілі: сніданок і вечеря — два прийоми", () => {
+      seedNutrition([400, 300, 120], null, ["breakfast", "dinner", "dinner"]);
+      expect(compute()[0]?.statement).toBe("2 прийоми записано");
+    });
+
+    it("без цілі: рядок без калорій закриває день, але прийомом не рахується", () => {
+      seedNutrition([0], null, ["lunch"]);
+      expect(compute()[0]).toEqual({
+        module: "nutrition",
+        label: "Їжа",
+        statement: "записано",
+        value: null,
+      });
     });
   });
 

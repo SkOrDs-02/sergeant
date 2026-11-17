@@ -23,9 +23,31 @@ const mockGetCachedFizrukSqliteState = vi.hoisted(() => vi.fn());
 vi.mock("@fizruk/lib/sqliteReader", () => ({
   getCachedFizrukSqliteState: () => mockGetCachedFizrukSqliteState(),
 }));
-vi.mock("@fizruk/lib/sqliteReadGate", () => ({
-  useFizrukSqliteReadTick: () => 0,
-}));
+// Мінімальний pub-sub замість справжнього гейта: тест холодного кешу
+// нижче має «прогріти» кеш після монтування і посигналити тік, як це
+// робить бут фізрука в `RootLayout`.
+const readTick = vi.hoisted(() => {
+  let tick = 0;
+  const listeners = new Set<() => void>();
+  return {
+    subscribe: (cb: () => void) => {
+      listeners.add(cb);
+      return () => listeners.delete(cb);
+    },
+    get: () => tick,
+    notify: () => {
+      tick += 1;
+      for (const cb of listeners) cb();
+    },
+  };
+});
+vi.mock("@fizruk/lib/sqliteReadGate", async () => {
+  const { useSyncExternalStore } = await import("react");
+  return {
+    useFizrukSqliteReadTick: () =>
+      useSyncExternalStore(readTick.subscribe, readTick.get),
+  };
+});
 
 import { ActiveWorkoutBanner } from "./ActiveWorkoutBanner";
 
@@ -124,5 +146,36 @@ describe("ActiveWorkoutBanner", () => {
     render(<ActiveWorkoutBanner />);
 
     expect(screen.getByText("60 хв · Тренування триває")).toBeInTheDocument();
+  });
+
+  // Хвиля 6 (ревізія 2026-11-17): після перезапуску PWA на хабі банер
+  // монтується раніше, ніж бут фізрука в `RootLayout` прогріє кеш, тож
+  // перший рендер іде від запасної точки (мить монтування). Число стає
+  // чесним одразу лише тому, що банер підписаний на тік кешу; без підписки
+  // 50-хвилинне тренування до першого хвилинного інтервалу показувало б
+  // голе «Тренування триває».
+  it("re-reads startedAt when the cold Fizruk cache warms up after mount", () => {
+    vi.useFakeTimers();
+    vi.setSystemTime(new Date("2026-09-13T12:50:00.000Z"));
+    mockUseActive.mockReturnValue("w-1");
+    mockGetCachedFizrukSqliteState.mockReturnValue({
+      workouts: [],
+      refreshedAt: null,
+    });
+
+    render(<ActiveWorkoutBanner />);
+    expect(screen.getByText("Тренування триває")).toBeInTheDocument();
+
+    mockGetCachedFizrukSqliteState.mockReturnValue({
+      workouts: [
+        { id: "w-1", startedAt: "2026-09-13T12:00:00.000Z", endedAt: null },
+      ],
+      refreshedAt: new Date().toISOString(),
+    });
+    act(() => {
+      readTick.notify();
+    });
+
+    expect(screen.getByText("50 хв · Тренування триває")).toBeInTheDocument();
   });
 });

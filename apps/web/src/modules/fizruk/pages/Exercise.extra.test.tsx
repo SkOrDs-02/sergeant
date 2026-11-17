@@ -17,8 +17,8 @@ vi.mock("../../../core/db/kvStoreBoot", () => ({
 }));
 
 vi.mock("../components/ExerciseProgressChart", () => ({
-  ExerciseProgressChart: ({ label }: { label: string }) => (
-    <div data-testid="progress-chart" data-label={label} />
+  ExerciseProgressChart: ({ label, unit }: { label: string; unit: string }) => (
+    <div data-testid="progress-chart" data-label={label} data-unit={unit} />
   ),
 }));
 
@@ -153,6 +153,24 @@ describe("Exercise page — strength history", () => {
     // Set-history rows show the weight×reps summary.
     expect(screen.getByText("Історія підходів")).toBeInTheDocument();
     expect(screen.getByText(/100×5/)).toBeInTheDocument();
+  });
+
+  // PR-Z3 (аудит 2026-09-13, хвиля 6; ревізія 2026-11-17): тижневий обʼєм
+  // вправи це сума вага × повтори, а графік підписував його «кг».
+  it("labels the weekly volume chart in кг×повт, not кг", () => {
+    useExerciseCatalog.mockReturnValue(CATALOG);
+    useWorkouts.mockReturnValue({
+      loaded: true,
+      workouts: [
+        strengthWorkout("w1", daysAgoIso(3), [{ weightKg: 100, reps: 5 }]),
+      ],
+    });
+    render(<Exercise exerciseId="bench" onNavigate={onNavigate} />);
+    const charts = screen.getAllByTestId("progress-chart");
+    const volume = charts.find((el) => el.dataset["label"] === "Обʼєм");
+    expect(volume?.dataset["unit"]).toBe("кг×повт");
+    const oneRm = charts.find((el) => el.dataset["label"] === "1RM");
+    expect(oneRm?.dataset["unit"]).toBe("кг");
   });
 
   it("shows the new-PR banner when the latest workout beats the prior best", () => {

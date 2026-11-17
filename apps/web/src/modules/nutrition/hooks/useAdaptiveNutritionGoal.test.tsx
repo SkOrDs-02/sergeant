@@ -568,3 +568,81 @@ describe("useAdaptiveNutritionGoal · data-04: холодний старт", () 
     }
   });
 });
+
+// PR-N2 (аудит 2026-09-13, хвиля 6; ревізія 2026-11-17): поки цілі немає,
+// повноту дня міряє лічильник прийомів, і це мусить бути лічильник ТИПІВ.
+// Одне фото «суп + хліб + салат» пише три рядки однієї вечері; рахуй хук
+// рядки, такий день пройшов би як повний («3 прийоми»).
+describe("useAdaptiveNutritionGoal · повнота дня без цілі", () => {
+  const savedBiometrics = biometricsMock.value;
+
+  beforeEach(() => {
+    // Полудень: `dayKeyDaysAgo` ріже UTC-рядком, вікно хука — днем
+    // пристрою, і біля опівночі вони б розійшлись.
+    const noon = new Date();
+    noon.setHours(12, 0, 0, 0);
+    vi.useFakeTimers();
+    vi.setSystemTime(noon);
+    persisted.profile = [];
+    persisted.adaptive = [];
+    fizrukMock.workouts = [];
+    fizrukMock.measurements = [];
+    fizrukMock.dailyLog = [];
+    // Без зросту ціль із профілю не рахується, тож seed не пише нічого і
+    // `dailyTargetKcal` лишається `null`: повноту міряє саме лічильник.
+    biometricsMock.value = {
+      ...savedBiometrics,
+      heightCm: null as unknown as number,
+    };
+    localStorage.clear();
+    __resetAdaptiveGoalScheduleForTests();
+  });
+
+  afterEach(() => {
+    biometricsMock.value = savedBiometrics;
+    vi.useRealTimers();
+    vi.clearAllMocks();
+  });
+
+  function dayOfRows(mealTypes: string[]) {
+    return {
+      meals: mealTypes.map((mealType, i) => ({
+        id: `m-${i}`,
+        name: "Страва",
+        time: "19:00",
+        mealType,
+        macros: { kcal: 300, protein_g: 20, fat_g: 10, carbs_g: 30 },
+      })),
+    };
+  }
+
+  function StateProbe({
+    log,
+    onState,
+  }: {
+    log: NutritionLog;
+    onState: (completeDays: number) => void;
+  }) {
+    onState(useAdaptiveNutritionGoal(log, basePrefs()).completeDays);
+    return null;
+  }
+
+  it("три рядки однієї вечері не роблять день повним", () => {
+    let completeDays = -1;
+    const log = {
+      [dayKeyDaysAgo(1)]: dayOfRows(["dinner", "dinner", "dinner"]),
+    } as unknown as NutritionLog;
+    render(<StateProbe log={log} onState={(n) => (completeDays = n)} />);
+    expect(persisted.profile).toHaveLength(0);
+    expect(completeDays).toBe(0);
+  });
+
+  it("сніданок, обід і вечеря роблять день повним", () => {
+    let completeDays = -1;
+    const log = {
+      [dayKeyDaysAgo(1)]: dayOfRows(["breakfast", "lunch", "dinner"]),
+    } as unknown as NutritionLog;
+    render(<StateProbe log={log} onState={(n) => (completeDays = n)} />);
+    expect(completeDays).toBe(1);
+  });
+});
