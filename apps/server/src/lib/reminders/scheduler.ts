@@ -62,6 +62,8 @@ export function startReminderScheduler(pool: Pool): StartedReminderScheduler {
   /** Поточний прохід, якщо він саме виконується. `null` між проходами. */
   let inFlight: Promise<void> | null = null;
   let lastPruneDayKey: string | null = null;
+  /** Старт останнього успішного проходу: з нього наступний наздоганяє. */
+  let lastSweepAt: Date | null = null;
 
   const tick = async (): Promise<void> => {
     if (stopped) return;
@@ -69,7 +71,9 @@ export function startReminderScheduler(pool: Pool): StartedReminderScheduler {
     // добового prune нижче не означає втрачену хвилину нагадувань.
     let sweepCompleted = false;
     try {
-      const result = await runReminderSweep(pool);
+      const startedAt = new Date();
+      const result = await runReminderSweep(pool, startedAt, lastSweepAt);
+      lastSweepAt = startedAt;
       sweepCompleted = true;
       reminderSweepRunsTotal.inc({ outcome: "ok" });
       // Прибирання привʼязане до київської години, а не до інтервалу: так

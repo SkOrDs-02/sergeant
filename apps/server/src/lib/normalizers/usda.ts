@@ -92,10 +92,10 @@ function round1(v: number): number {
 }
 
 /**
- * Енергія з БЖВ за Atwater, коли USDA не віддав жодного id енергії.
+ * Енергія з БЖВ за Atwater, коли джерело не віддало енергії.
  * `null`, якщо макро немає взагалі (нема з чого рахувати).
  */
-function kcalFromAtwater(m: ExtractedMacros): number | null {
+export function kcalFromAtwater(m: ExtractedMacros): number | null {
   if (m.protein == null && m.fat == null && m.carbs == null) return null;
   return round1(
     (m.protein ?? 0) * ATWATER_KCAL_PER_G.protein +
@@ -186,7 +186,7 @@ export function normalizeUSDABarcode(
   return {
     name,
     brand,
-    kcal_100g: macros.kcal,
+    kcal_100g: macros.kcal ?? kcalFromAtwater(macros),
     protein_100g: macros.protein,
     fat_100g: macros.fat,
     carbs_100g: macros.carbs,

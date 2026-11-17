@@ -573,7 +573,8 @@ export default async function handler(
         .json({ error: "Сервіс недоступний (таймаут). Спробуй пізніше." });
       return;
     }
-    const message = e instanceof Error ? e.message : "Server error";
-    res.status(500).json({ error: message });
+    // Решту віддає errorHandler: стабільний 500 з requestId і подією в
+    // Sentry, без внутрішнього тексту помилки (зокрема ZodError).
+    throw e;
   }
 }

@@ -248,6 +248,22 @@ describe("syncV2Stream handler — handshake & replay", () => {
     expect(caughtUpFrame).toContain(`"last_id":${SYNC_V2_STREAM_REPLAY_LIMIT}`);
   });
 
+  it("replay має байтовий бюджет pull і позначає обрізану ним сторінку", async () => {
+    pool.query.mockResolvedValueOnce({
+      rows: [{ ...SAMPLE_DB_ROW, row_bytes: 300_000, next_id: "43" }],
+    });
+    const req = makeReq({ userId: "u1" }) as unknown as FakeReq & Request;
+    const res = makeRes() as unknown as FakeRes & Response;
+
+    await syncV2Stream(req as Request, res as Response);
+
+    const [sql, params] = pool.query.mock.calls[0]!;
+    expect(sql).toContain("octet_length(row::text)");
+    expect(params).toHaveLength(5);
+    const caughtUpFrame = res.writes[res.writes.length - 1];
+    expect(caughtUpFrame).toContain('"truncated":true');
+  });
+
   it("Last-Event-ID overrides ?since= (resume beats bookmark)", async () => {
     pool.query.mockResolvedValueOnce({ rows: [] });
     const req = makeReq({

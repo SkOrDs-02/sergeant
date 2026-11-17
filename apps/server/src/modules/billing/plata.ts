@@ -39,6 +39,7 @@ import type {
 import { reconcileBySubscriptionId } from "./plataSync.js";
 import {
   MONOPAY_BASE,
+  MONOPAY_TIMEOUT_MS,
   cancelPlataRemoteSubscription,
   getPlataToken as getToken,
 } from "./plataRemote.js";
@@ -96,6 +97,7 @@ export async function ensurePlataPubkey(force = false): Promise<void> {
   if (cachedPubkey && now - cachedPubkey.fetchedAt < ttl) return;
   const response = await fetch(`${MONOPAY_BASE}/pubkey`, {
     headers: { "X-Token": getToken() },
+    signal: AbortSignal.timeout(MONOPAY_TIMEOUT_MS),
   });
   if (!response.ok) {
     throw new Error(`monopay pubkey fetch failed: HTTP ${response.status}`);
@@ -278,6 +280,7 @@ export const plataProvider: BillingProvider = {
       method: "POST",
       headers: { "X-Token": token, "Content-Type": "application/json" },
       body: JSON.stringify(body),
+      signal: AbortSignal.timeout(MONOPAY_TIMEOUT_MS),
     });
     const payload = (await response.json()) as {
       subscriptionId?: string;

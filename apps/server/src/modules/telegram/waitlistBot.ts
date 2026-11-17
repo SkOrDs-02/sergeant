@@ -146,7 +146,9 @@ function parseCallback(
     return { kind: "ignore" };
   }
 
-  const survey = SURVEYS[surveyId];
+  // `hasOwn`: підроблена кнопка `s:constructor:1` інакше дістала б `Object`
+  // з прототипу, і `.options.some` кинув би TypeError (500, ретраї Telegram).
+  const survey = Object.hasOwn(SURVEYS, surveyId) ? SURVEYS[surveyId] : null;
   if (!survey) return { kind: "ignore" };
   if (!survey.options.some((o) => o.value === answer))
     return { kind: "ignore" };

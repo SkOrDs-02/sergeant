@@ -222,6 +222,17 @@ describe("runReminderSweep", () => {
     });
   });
 
+  it("наздоганяє слот хвилини, яку пропустив попередній прохід", async () => {
+    const { pool, claims } = fakePool({ routineHabits: [habitDbRow()] });
+    const lastSweepAt = new Date(NOW.getTime() - 60_000);
+    const later = new Date(NOW.getTime() + 2 * 60_000);
+
+    const result = await runReminderSweep(pool, later, lastSweepAt);
+
+    expect(result).toMatchObject({ hm: "08:02", sent: 1 });
+    expect(claims).toHaveLength(1);
+  });
+
   it("stays silent when another replica won the claim", async () => {
     const { pool } = fakePool({ routineHabits: [habitDbRow()] }, () => false);
 

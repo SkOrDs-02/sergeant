@@ -374,6 +374,8 @@ function syncStreamUrl(): string {
 interface SyncSharedContext {
   readonly resolveClient: () => Promise<SqliteMigrationClient>;
   readonly resolveUserId: () => Promise<string | null>;
+  /** Власник активної партиції SQLite; локальне читання, без мережі. */
+  readonly readPartitionUserId: () => string | null;
   readonly originDeviceId: string;
   readonly apiClient: typeof import("@shared/api").apiClient;
   readonly dbSchema: typeof import("@sergeant/db-schema/sqlite");
@@ -673,6 +675,7 @@ async function createSyncSharedContext(): Promise<SyncSharedContext> {
   return {
     resolveClient,
     resolveUserId,
+    readPartitionUserId: readActiveSqliteUserId,
     originDeviceId,
     apiClient,
     dbSchema,
@@ -777,10 +780,12 @@ async function createDefaultRuntime(): Promise<SyncEngineWriterRuntime> {
     // виключено з обох тим самим списком, що й у `reportTerminalRejection`
     // (це не втрата даних, людині його показувати нема за що). Інакше пілюля
     // казала б «2 записи не прийнято» над порожнім `SyncRejectedList`.
-    // Скоуп власника, як у `recoverDeadLetter` нижче: на kvvfs партиції
-    // акаунтів ділять один стор, і без нього людина бачила б чужу чергу.
+    // Скоуп власника: на kvvfs партиції акаунтів ділять один стор, і без
+    // нього людина бачила б чужу чергу. Власник береться з активної партиції,
+    // а не з `getSession`: лічильник показує локальну чергу, і без мережі
+    // (офлайн холодний старт) запит сесії лишав би його порожнім.
     getStatus: async () => {
-      const userId = (await shared.resolveUserId()) ?? undefined;
+      const userId = shared.readPartitionUserId() ?? undefined;
       const client = await shared.resolveClient();
       const counts = await shared.dbSchema.countOutboxByStatus(client, {
         userId,
@@ -792,7 +797,7 @@ async function createDefaultRuntime(): Promise<SyncEngineWriterRuntime> {
       return { ...counts, rejected };
     },
     listRejected: async () => {
-      const userId = (await shared.resolveUserId()) ?? undefined;
+      const userId = shared.readPartitionUserId() ?? undefined;
       return shared.dbSchema.listRejectedOutbox(await shared.resolveClient(), {
         excludeReasons: [...BENIGN_REJECT_REASONS],
         userId,

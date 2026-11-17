@@ -17,6 +17,11 @@ vi.mock("@shared/api", () => ({
   billingApi: { status: statusMock, createCheckout: vi.fn() },
 }));
 
+let authState: { status: string; offlineIdentity: boolean } | null = null;
+vi.mock("../auth/AuthContext", () => ({
+  useAuthOptional: () => authState,
+}));
+
 import { usePlan } from "./usePlan";
 import { accessFixture } from "../../test/helpers/billingAccess";
 
@@ -34,6 +39,7 @@ function makeWrapper() {
 describe("usePlan (web billing skeleton — initiative 0010 Phase 4.1)", () => {
   beforeEach(() => {
     statusMock.mockReset();
+    authState = null;
   });
   afterEach(() => {
     vi.restoreAllMocks();
@@ -118,5 +124,15 @@ describe("usePlan (web billing skeleton — initiative 0010 Phase 4.1)", () => {
     expect(result.current.plan).toBe("pro");
     expect(result.current.subscription?.status).toBe("trialing");
     expect(result.current.access?.state).toBe("trial");
+  });
+
+  it("офлайн-ідентичність: тариф невідомий (isLoading), а не Free", async () => {
+    authState = { status: "authenticated", offlineIdentity: true };
+    statusMock.mockRejectedValue(new Error("Failed to fetch"));
+    const { result } = renderHook(() => usePlan(), { wrapper: makeWrapper() });
+    await waitFor(() => expect(statusMock).toHaveBeenCalled());
+    await new Promise((resolve) => setTimeout(resolve, 0));
+    expect(result.current.isLoading).toBe(true);
+    expect(result.current.access).toBeNull();
   });
 });

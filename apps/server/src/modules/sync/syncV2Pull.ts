@@ -50,6 +50,75 @@ export function pullByteBudget(): number {
   return Number.isFinite(v) && v >= 1 ? Math.floor(v) : PULL_MAX_BYTES_DEFAULT;
 }
 
+/**
+ * Сторінка журналу під байтовим бюджетом (ADR-0105). Спільна для `/pull` і
+ * replay у SSE-стрімі: обидва читають той самий журнал, і жоден не має
+ * тягнути в Node більше за бюджет. Повертає й нижню межу журналу (`floorId`):
+ * для простроченого курсора (`since < floorId`) журнал не читається, `rows`
+ * порожні, а рішення про 410 приймає виклик.
+ */
+export async function selectPullPage(
+  userId: string,
+  since: number,
+  originDeviceId: string | null,
+  limit: number,
+): Promise<{ rows: PullRow[]; truncatedByBudget: boolean; floorId: number }> {
+  const budget = pullByteBudget();
+  // ADR-0105 §1: бюджет рахує сам Postgres. `page` бере до `limit` рядків,
+  // `sized` додає суму `octet_length(row::text)` ПОПЕРЕДНІХ рядків вікна;
+  // лишаються рядки, чий префікс ще менший за бюджет (перший завжди).
+  // Рядки понад бюджет у Node не потрапляють.
+  //
+  // ADR-0105 §3: нижня межа журналу (`fl`) читається в тому ж запиті, без
+  // окремого round-trip. `fl LEFT JOIN sized` дає щонайменше один рядок і
+  // для порожньої сторінки, тож межу видно завжди. Прострочений курсор
+  // (`$2 < floor_id`) не читає журнал узагалі (умова в `page`).
+  // eslint-disable-next-line no-restricted-syntax -- інтерполюється лише константа `SYNC_OP_LOG_FLOOR_SQL` з нашого коду; усі значення - $-параметри.
+  const result = await pool.query<PullRow>(
+    `WITH fl AS (
+       SELECT ${SYNC_OP_LOG_FLOOR_SQL}::bigint AS floor_id
+     ), page AS (
+       SELECT id, table_name, op, row, client_ts, server_ts, origin_device_id,
+              octet_length(row::text) AS row_bytes
+         FROM sync_op_log
+        WHERE user_id = $1
+          AND id > $2
+          AND $2 >= (SELECT floor_id FROM fl)
+          AND status = 'applied'
+          AND origin_device_id IS DISTINCT FROM $3
+          AND (tx_id IS NULL OR tx_id < pg_snapshot_xmin(pg_current_snapshot()))
+        ORDER BY id ASC
+        LIMIT $4
+     ), sized AS (
+       SELECT page.*,
+              COALESCE(SUM(row_bytes) OVER (
+                ORDER BY id ROWS BETWEEN UNBOUNDED PRECEDING AND 1 PRECEDING
+              ), 0) AS bytes_before,
+              LEAD(id) OVER (ORDER BY id) AS next_id
+         FROM page
+     )
+     SELECT fl.floor_id, s.id, s.table_name, s.op, s.row, s.client_ts,
+            s.server_ts, s.origin_device_id, s.row_bytes, s.next_id
+       FROM fl
+       LEFT JOIN sized s ON s.bytes_before < $5
+      ORDER BY s.id ASC`,
+    [userId, since, originDeviceId, limit, budget],
+  );
+  const floorId = Number(result.rows[0]?.floor_id ?? 0) || 0;
+  // Рядок `fl` без опа (порожня сторінка) - лише носій межі.
+  const rows = result.rows.filter((r) => r.id != null);
+  // Обрізано бюджетом, коли за останнім збереженим рядком у вікні сторінки
+  // ще був кандидат. `LEAD` дивиться на один рядок уперед і не змушує
+  // Postgres буферизувати всю сторінку разом із payload-ами, як
+  // `COUNT(*) OVER ()` (рев'ю #1646).
+  const lastRow = rows[rows.length - 1];
+  return {
+    rows,
+    truncatedByBudget: lastRow != null && lastRow.next_id != null,
+    floorId,
+  };
+}
+
 export async function syncV2Pull(req: Request, res: Response): Promise<void> {
   const start = process.hrtime.bigint();
   const user = (req as WithSessionUser).user!;
@@ -68,49 +137,12 @@ export async function syncV2Pull(req: Request, res: Response): Promise<void> {
   const originDeviceId = readOriginDeviceId(req);
 
   try {
-    const budget = pullByteBudget();
-    // ADR-0105 §1: бюджет рахує сам Postgres. `page` бере до `limit` рядків,
-    // `sized` додає суму `octet_length(row::text)` ПОПЕРЕДНІХ рядків вікна;
-    // лишаються рядки, чий префікс ще менший за бюджет (перший завжди).
-    // Рядки понад бюджет у Node не потрапляють.
-    //
-    // ADR-0105 §3: нижня межа журналу (`fl`) читається в тому ж запиті, без
-    // окремого round-trip. `fl LEFT JOIN sized` дає щонайменше один рядок і
-    // для порожньої сторінки, тож межу видно завжди. Прострочений курсор
-    // (`$2 < floor_id`) не читає журнал узагалі (умова в `page`).
-    // eslint-disable-next-line no-restricted-syntax -- інтерполюється лише константа `SYNC_OP_LOG_FLOOR_SQL` з нашого коду; усі значення - $-параметри.
-    const result = await pool.query<PullRow>(
-      `WITH fl AS (
-         SELECT ${SYNC_OP_LOG_FLOOR_SQL}::bigint AS floor_id
-       ), page AS (
-         SELECT id, table_name, op, row, client_ts, server_ts, origin_device_id,
-                octet_length(row::text) AS row_bytes
-           FROM sync_op_log
-          WHERE user_id = $1
-            AND id > $2
-            AND $2 >= (SELECT floor_id FROM fl)
-            AND status = 'applied'
-            AND origin_device_id IS DISTINCT FROM $3
-            AND (tx_id IS NULL OR tx_id < pg_snapshot_xmin(pg_current_snapshot()))
-          ORDER BY id ASC
-          LIMIT $4
-       ), sized AS (
-         SELECT page.*,
-                COALESCE(SUM(row_bytes) OVER (
-                  ORDER BY id ROWS BETWEEN UNBOUNDED PRECEDING AND 1 PRECEDING
-                ), 0) AS bytes_before,
-                LEAD(id) OVER (ORDER BY id) AS next_id
-           FROM page
-       )
-       SELECT fl.floor_id, s.id, s.table_name, s.op, s.row, s.client_ts,
-              s.server_ts, s.origin_device_id, s.row_bytes, s.next_id
-         FROM fl
-         LEFT JOIN sized s ON s.bytes_before < $5
-        ORDER BY s.id ASC`,
-      [user.id, since, originDeviceId, limit, budget],
+    const { rows, truncatedByBudget, floorId } = await selectPullPage(
+      user.id,
+      since,
+      originDeviceId,
+      limit,
     );
-
-    const floorId = Number(result.rows[0]?.floor_id ?? 0) || 0;
     if (isCursorExpired(since, floorId)) {
       recordSyncV2("v2_pull", "invalid", {
         ms: elapsedMs(start),
@@ -119,28 +151,17 @@ export async function syncV2Pull(req: Request, res: Response): Promise<void> {
       });
       throw new SyncCursorExpiredError(floorId);
     }
-    // Рядок `fl` без опа (порожня сторінка) - лише носій межі. Обгортка
-    // `{ rows }` лишає серіалізатор під `sergeant-design/no-bigint-string`
-    // (правило дивиться саме на `.rows.map`).
-    const page = { rows: result.rows.filter((r) => r.id != null) };
 
-    const opsOut = page.rows.map((r) => ({
+    const opsOut = rows.map((r) => ({
       id: Number(r.id),
       table: r.table_name,
       op: r.op,
       row: decryptOpRowForPull(r.table_name, r.row),
       client_ts: r.client_ts.toISOString(),
       server_ts: r.server_ts.toISOString(),
-      // eslint-disable-next-line sergeant-design/no-bigint-string -- origin_device_id is an opaque TEXT device id (migration 027_sync_op_log.sql), not a pg bigint numeric; Hard Rule #1 N/A.
       origin_device_id: r.origin_device_id,
     }));
 
-    // Обрізано бюджетом, коли за останнім збереженим рядком у вікні сторінки
-    // ще був кандидат. `LEAD` дивиться на один рядок уперед і не змушує
-    // Postgres буферизувати всю сторінку разом із payload-ами, як
-    // `COUNT(*) OVER ()` (рев'ю #1646).
-    const lastRow = page.rows[page.rows.length - 1];
-    const truncatedByBudget = lastRow != null && lastRow.next_id != null;
     // Не лише `length === limit`: обрізана бюджетом сторінка коротша за limit,
     // але за курсором ще є оп-и.
     const nextCursor =
@@ -148,7 +169,7 @@ export async function syncV2Pull(req: Request, res: Response): Promise<void> {
         ? opsOut[opsOut.length - 1]!.id
         : null;
 
-    const pageBytes = page.rows.reduce(
+    const pageBytes = rows.reduce(
       (acc, r) => acc + (Number(r.row_bytes) || 0),
       0,
     );
@@ -161,8 +182,8 @@ export async function syncV2Pull(req: Request, res: Response): Promise<void> {
 
     try {
       syncOpLogPullQueueDepth.observe(opsOut.length);
-      if (page.rows.length > 0) {
-        const newest = page.rows[page.rows.length - 1]!.server_ts;
+      if (rows.length > 0) {
+        const newest = rows[rows.length - 1]!.server_ts;
         const lagMs = Date.now() - newest.getTime();
         if (lagMs >= 0 && Number.isFinite(lagMs)) {
           syncOpLogPullLagMs.observe(lagMs);

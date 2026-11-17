@@ -82,6 +82,26 @@ function toIsoOrNull(value: Date | string | undefined): string | null {
  */
 const exportsInFlight = new Set<string>();
 
+/**
+ * Експорт на одному зʼєднанні: кількадесят запитів `buildMeExport` стають у
+ * чергу клієнта, а не займають увесь пул і не валять сусідні запити в
+ * connection timeout. REPEATABLE READ дає всім таблицям один знімок.
+ */
+async function buildMeExportOnOneConnection(user: MeResponse["user"]) {
+  const client = await pool.connect();
+  try {
+    await client.query("BEGIN ISOLATION LEVEL REPEATABLE READ READ ONLY");
+    const data = await buildMeExport(client, user);
+    await client.query("COMMIT");
+    client.release();
+    return data;
+  } catch (err) {
+    // Зʼєднання могло лишитись посеред транзакції: не повертаємо його в пул.
+    client.release(true);
+    throw err;
+  }
+}
+
 export function createMeRouter(): Router {
   const r = Router();
   r.use("/api/me", setModule("me"));
@@ -141,7 +161,7 @@ export function createMeRouter(): Router {
       exportsInFlight.add(user.id);
       try {
         const payload = MeExportResponseSchema.parse(
-          await buildMeExport(pool, user),
+          await buildMeExportOnOneConnection(user),
         );
         res.json(payload);
       } finally {

@@ -225,16 +225,24 @@ describe("normalizeOFFBarcode", () => {
         proteins_100g: 5,
       },
     });
-    expect(result!.kcal_100g).toBeNull();
+    expect(result!.kcal_100g).toBe(20);
     expect(result!.protein_100g).toBe(5);
   });
 
-  it("falls back to energy-kcal when energy-kcal_100g is absent", () => {
-    const result = normalizeOFFBarcode({
+  it("без energy-kcal_100g рахує ккал з кДж, інакше за Atwater, а не 0", () => {
+    const fromKj = normalizeOFFBarcode({
       product_name: "Test",
-      nutriments: { "energy-kcal": 120 },
+      nutriments: { "energy-kj_100g": 1046, carbohydrates_100g: 70 },
     });
-    expect(result!.kcal_100g).toBe(120);
+    expect(fromKj!.kcal_100g).toBe(250);
+    const fromMacros = normalizeOFFSearch(
+      {
+        product_name: "Test",
+        nutriments: { carbohydrates_100g: 70, "energy-kcal": 120 },
+      },
+      () => "id",
+    );
+    expect(fromMacros!.per100.kcal).toBe(280);
   });
 
   it("handles serving_quantity as string", () => {
