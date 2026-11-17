@@ -749,7 +749,6 @@ const SQL_ONLY_TABLES = [
   // 133 її дропнула разом із самописною рекуренткою — рекурентні списання
   // веде monobank, і card-token нам не належить зберігати взагалі.
   "plata_subscription",
-  "revenue_daily",
   "stripe_webhook_events",
   "subscriptions",
   // Mono integration state — токени/акаунти/транзакції та черга AI-збагачення;
@@ -803,17 +802,12 @@ const SQL_ONLY_TABLES = [
   // disconnect його не стирав. Читає і пише лише сервер (синк, auto-claim
   // комори, wipe-хендлер).
   "silpo_wipe_marker",
-  // Integration webhooks / failure journals (n8n + generic) — server-only журнали.
+  // Integration webhooks / failure journals (n8n) — server-only журнали.
   "n8n_failure_events",
   "n8n_webhook_events",
-  "webhook_events",
-  // OpenClaw gateway — рішення/виклики/аудит записів/mute/нагадування/approval-nonce; server-only.
-  "openclaw_approval_nonce",
-  "openclaw_decisions",
+  // OpenClaw gateway — виклики і mute; server-only.
   "openclaw_invocations",
   "openclaw_mute_state",
-  "openclaw_reminders",
-  "openclaw_write_audit",
   // Push delivery — реєстр девайсів і аудит відправок; пише лише сервер.
   "push_devices",
   // Ідемпотентний журнал нагадувань: рядок вставляється ДО відправки, тому
@@ -830,31 +824,13 @@ const SQL_ONLY_TABLES = [
   "telegram_beta_survey_responses",
   // Growth / product analytics — агреговані daily/weekly таблиці, наповнюються
   // серверними job-ами; клієнт не читає їх через Drizzle.
-  "app_store_reviews",
-  "brand_mentions",
-  "feature_adoption_weekly",
   "growth_acquisition_daily",
-  "growth_cohorts",
   "growth_funnel_daily",
-  // SEO analytics — зовнішні дані (GSC / PageSpeed / competitors); server-only.
-  "seo_backlinks",
-  "seo_competitor_snapshots",
-  "seo_competitors",
-  "seo_gsc_daily",
-  "seo_keyword_ranks",
-  "seo_keywords",
-  "seo_pagespeed_daily",
-  "seo_sitemap_health",
-  // Social analytics — канальні метрики та згадки; server-only.
-  "social_channels_daily",
-  "social_mentions",
   // Email / marketing — журнали кампаній/подій + unsubscribe-реєстр; server-only.
   "email_campaigns_log",
-  "email_events",
   "email_unsubscribes",
   // Governance / strategy — журнал порушень hard-rules і стратегічні цілі;
   // server-only (governance-tooling, не клієнтський Drizzle-read).
-  "hard_rules_violations",
   "strategic_goals",
   // Rate limiting — token-bucket стан; читає/пише лише серверний middleware.
   "rate_limit_buckets",
