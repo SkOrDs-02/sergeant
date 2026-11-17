@@ -297,26 +297,6 @@ describe("log_measurement", () => {
 });
 
 // ---------------------------------------------------------------------------
-// add_program_day
-// ---------------------------------------------------------------------------
-describe("add_program_day", () => {
-  it("honest refusal: no 'saved' report and no localStorage write", () => {
-    const out = call({
-      name: "add_program_day",
-      input: {
-        weekday: 1,
-        name: "Push",
-        exercises: [{ name: "Жим лежачи", sets: 3, reps: 8, weight: 80 }],
-      },
-    });
-    expect(typeof out).toBe("string");
-    expect(out).toMatch(/^Не вдалося/);
-    expect(out).not.toContain("збережено:");
-    expect(localStorage.getItem("fizruk_plan_template_v1")).toBeNull();
-  });
-});
-
-// ---------------------------------------------------------------------------
 // log_wellbeing
 // ---------------------------------------------------------------------------
 describe("log_wellbeing", () => {

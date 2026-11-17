@@ -394,16 +394,6 @@ const SUMMARY_REGISTRY: Record<string, SummaryFn> = {
     ]);
   },
 
-  add_program_day: (input) => {
-    const days = ["нд", "пн", "вт", "ср", "чт", "пт", "сб"];
-    const weekday = numberField(input, "weekday");
-    const dayName =
-      weekday !== undefined && weekday >= 0 && weekday <= 6
-        ? (days[weekday] ?? "?")
-        : "?";
-    return joinParts([dayName, stringField(input, "name")]);
-  },
-
   log_wellbeing: (input) => {
     const sleepHours = numberField(input, "sleep_hours");
     return joinParts([

@@ -75,7 +75,6 @@ describe("moduleFor", () => {
       "plan_workout",
       "finish_workout",
       "log_measurement",
-      "add_program_day",
       "log_wellbeing",
       "log_weight",
       "suggest_workout",
@@ -136,7 +135,6 @@ describe("iconFor", () => {
     expect(iconFor("log_set")).toBe("activity");
     expect(iconFor("finish_workout")).toBe("flag");
     expect(iconFor("log_measurement")).toBe("weighing-scale");
-    expect(iconFor("add_program_day")).toBe("calendar-days");
     expect(iconFor("log_wellbeing")).toBe("smile");
     expect(iconFor("suggest_workout")).toBe("zap");
     expect(iconFor("compare_progress")).toBe("trending-up");
@@ -274,7 +272,6 @@ describe("titleFor", () => {
       "plan_workout",
       "finish_workout",
       "log_measurement",
-      "add_program_day",
       "log_wellbeing",
       "log_weight",
       "suggest_workout",

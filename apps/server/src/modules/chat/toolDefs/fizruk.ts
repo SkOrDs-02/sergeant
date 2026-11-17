@@ -128,36 +128,6 @@ export const FIZRUK_TOOLS: AnthropicTool[] = [
     },
   },
   {
-    name: "add_program_day",
-    description:
-      "Додати/оновити день тижневого шаблону програми тренувань (fizruk_plan_template_v1). weekday: 0=неділя..6=субота. Ідемпотентно: перезаписує день за weekday.",
-    input_schema: {
-      type: "object",
-      properties: {
-        weekday: {
-          type: "number",
-          description: "День тижня 0-6 (0=нд, 1=пн, …, 6=сб)",
-        },
-        name: { type: "string", description: "Назва тренування дня" },
-        exercises: {
-          type: "array",
-          description: "Список вправ для дня",
-          items: {
-            type: "object",
-            properties: {
-              name: { type: "string", description: "Назва вправи" },
-              sets: { type: "number", description: "Кількість підходів" },
-              reps: { type: "number", description: "Повторень" },
-              weight: { type: "number", description: "Вага кг" },
-            },
-            required: ["name"],
-          },
-        },
-      },
-      required: ["weekday", "name"],
-    },
-  },
-  {
     name: "log_wellbeing",
     description:
       "Записати самопочуття у щоденний журнал Фізрука: сон, енергія 1-5, настрій 1-5, вага, нотатка. Можна передавати лише частину полів. Поле weight_kg пише в те саме джерело істини ваги тіла, що й log_measurement і log_weight — обирай цей інструмент, коли крім ваги є сон/енергія/настрій.",

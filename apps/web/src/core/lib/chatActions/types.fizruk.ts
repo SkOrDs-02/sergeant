@@ -46,20 +46,6 @@ export interface LogMeasurementAction {
   input: Record<string, number | string | undefined>;
 }
 
-export interface AddProgramDayAction {
-  name: "add_program_day";
-  input: {
-    weekday: number | string;
-    name: string;
-    exercises?: Array<{
-      name: string;
-      sets?: number | string;
-      reps?: number | string;
-      weight?: number | string;
-    }>;
-  };
-}
-
 export interface LogWellbeingAction {
   name: "log_wellbeing";
   input: {

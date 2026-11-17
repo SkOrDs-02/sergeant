@@ -120,7 +120,6 @@ const KNOWN_TOOLS: ReadonlySet<string> = new Set([
   "log_measurement",
   "log_wellbeing",
   "log_weight",
-  "add_program_day",
   "suggest_workout",
   "copy_workout",
   "compare_progress",

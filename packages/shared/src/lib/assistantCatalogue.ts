@@ -500,17 +500,6 @@ export const ASSISTANT_CAPABILITIES: readonly AssistantCapability[] = [
     requiresOnline: true,
   },
   {
-    id: "add_program_day",
-    module: "fizruk",
-    label: "Додати день у програму",
-    icon: "list",
-    description: "Заповнити день тижня в програмі.",
-    examples: ["додай пн: груди + трицепс", "вт: спина і біцепс"],
-    prompt: "Додай день у програму: ",
-    requiresInput: true,
-    requiresOnline: true,
-  },
-  {
     id: "log_measurement",
     module: "fizruk",
     label: "Заміри тіла",

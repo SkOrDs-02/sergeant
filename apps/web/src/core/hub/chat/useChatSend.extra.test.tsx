@@ -344,11 +344,11 @@ describe("useChatSend — TTS in tool-call path", () => {
   it("для інструмента без картки озвучує текстовий рядок", async () => {
     forceNoCard.on = true;
     sendMock.mockResolvedValue({
-      tool_calls: [{ id: "tc1", name: "add_program_day", input: {} }],
+      tool_calls: [{ id: "tc1", name: "log_wellbeing", input: {} }],
       tool_calls_raw: [{ id: "tc1" }],
     });
     executeActionsMock.mockResolvedValue([
-      { name: "add_program_day", result: "День програми додано" },
+      { name: "log_wellbeing", result: "День програми додано" },
     ]);
     streamMock.mockResolvedValue(
       new Response(JSON.stringify({ text: "" }), {
@@ -375,11 +375,11 @@ describe("useChatSend — TTS in tool-call path", () => {
   it("помилковий результат без картки не отримує «✓»", async () => {
     forceNoCard.on = true;
     sendMock.mockResolvedValue({
-      tool_calls: [{ id: "tc1", name: "add_program_day", input: {} }],
+      tool_calls: [{ id: "tc1", name: "log_wellbeing", input: {} }],
       tool_calls_raw: [{ id: "tc1" }],
     });
     executeActionsMock.mockResolvedValue([
-      { name: "add_program_day", result: "Помилка: програму не знайдено" },
+      { name: "log_wellbeing", result: "Помилка: програму не знайдено" },
     ]);
     streamMock.mockResolvedValue(
       new Response(JSON.stringify({ text: "" }), {

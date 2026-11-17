@@ -56,7 +56,6 @@ export function moduleFor(name: string): ChatActionCardModule {
     name === "plan_workout" ||
     name === "finish_workout" ||
     name === "log_measurement" ||
-    name === "add_program_day" ||
     name === "log_wellbeing" ||
     name === "log_weight" ||
     name === "suggest_workout" ||
@@ -151,8 +150,6 @@ export function iconFor(name: string): string | undefined {
     case "log_measurement":
     case "log_weight":
       return "weighing-scale";
-    case "add_program_day":
-      return "calendar-days";
     case "log_wellbeing":
       return "smile";
     case "suggest_workout":
@@ -374,8 +371,6 @@ export function titleFor(name: string, status: "completed" | "failed"): string {
       return `Тренування завершено${failedSuffix}`;
     case "log_measurement":
       return `Заміри записано${failedSuffix}`;
-    case "add_program_day":
-      return `День програми додано${failedSuffix}`;
     case "log_wellbeing":
       return `Самопочуття записано${failedSuffix}`;
     case "log_weight":

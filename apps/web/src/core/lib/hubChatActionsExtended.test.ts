@@ -3,7 +3,7 @@
  * Unit tests for hubChatActions executeAction — extended tools
  * (delete_transaction, update_budget, mark_debt_paid, add_asset,
  *  import_monobank_range, start_workout, finish_workout,
- *  log_measurement, add_program_day, log_wellbeing,
+ *  log_measurement, log_wellbeing,
  *  create_reminder, complete_habit_for_date, archive_habit,
  *  add_calendar_event, add_to_shopping_list, consume_from_pantry,
  *  set_daily_plan, log_weight, add_recipe).
@@ -589,22 +589,6 @@ describe("log_measurement", () => {
       input: { weight_kg: 0, waist_cm: "" as unknown as number },
     });
     expect(msg).toContain("валідного");
-  });
-});
-
-describe("add_program_day", () => {
-  it("чесно відмовляє й не пише план у localStorage", () => {
-    const msg = executeAction({
-      name: "add_program_day",
-      input: {
-        weekday: 1,
-        name: "Груди/трицепс",
-        exercises: [{ name: "Жим лежачи", sets: 4, reps: 8, weight: 80 }],
-      },
-    });
-    expect(msg).toMatch(/^Не вдалося/);
-    expect(msg).not.toContain("збережено:");
-    expect(readLS("fizruk_plan_template_v1", null)).toBeNull();
   });
 });
 

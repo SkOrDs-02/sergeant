@@ -55,8 +55,8 @@ describe("TOOL_OUTCOME_CLASS — AI-6 рішення 3 (single source of truth)"
     expect(getToolOutcomeClass("set_goal")).toBe("state-mutating");
   });
 
-  it("registry size matches the documented 78 canonical tools", () => {
-    expect(ALL_HUBCHAT_TOOL_NAMES.length).toBe(78);
-    expect(Object.keys(TOOL_OUTCOME_CLASS).length).toBe(78);
+  it("registry size matches the documented 77 canonical tools", () => {
+    expect(ALL_HUBCHAT_TOOL_NAMES.length).toBe(77);
+    expect(Object.keys(TOOL_OUTCOME_CLASS).length).toBe(77);
   });
 });

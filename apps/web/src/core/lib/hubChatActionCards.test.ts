@@ -416,7 +416,7 @@ describe("isRiskyTool", () => {
 });
 
 describe("покриття карток (PR-A5)", () => {
-  it.each(["add_program_day", "get_daily_series", "import_monobank_range"])(
+  it.each(["get_daily_series", "import_monobank_range"])(
     "будує картку для %s",
     (name) => {
       const card = buildActionCard({ name, input: {}, result: "ok" });

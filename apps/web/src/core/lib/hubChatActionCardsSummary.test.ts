@@ -378,13 +378,6 @@ describe("summaryFor", () => {
     ).toBe("80 кг · 15% жиру");
   });
 
-  it("add_program_day: weekday mapping and out-of-range", () => {
-    expect(
-      summaryFor("add_program_day", { weekday: 1, name: "Push" }, "r"),
-    ).toBe("пн · Push");
-    expect(summaryFor("add_program_day", { weekday: 99 }, "r")).toBe("?");
-  });
-
   it("log_wellbeing", () => {
     expect(
       summaryFor(
