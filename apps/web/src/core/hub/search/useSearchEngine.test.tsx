@@ -405,4 +405,26 @@ describe("useSearchEngine", () => {
     });
     expect(onOpenModule).toHaveBeenCalledWith("finyk");
   });
+
+  it("keyboard Enter on a focused button does not open the active hit", () => {
+    performSearch.mockReturnValue([
+      hit({
+        id: "e1",
+        module: "finyk",
+        target: { kind: "module", moduleId: "finyk" },
+      }),
+    ]);
+    const { result } = setup();
+    act(() => result.current.setQuery("ка"));
+    act(() => vi.advanceTimersByTime(120));
+    const button = document.createElement("button");
+    document.body.appendChild(button);
+    act(() => {
+      button.dispatchEvent(
+        new KeyboardEvent("keydown", { key: "Enter", bubbles: true }),
+      );
+    });
+    button.remove();
+    expect(onOpenModule).not.toHaveBeenCalled();
+  });
 });

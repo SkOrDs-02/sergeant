@@ -151,7 +151,9 @@ describe("ModuleHeader: перемикач модулів", () => {
       undefined,
       "module_switcher",
     );
-    expect(screen.queryByRole("dialog")).toBeNull();
+    // Аркуш лишається до зміни маршруту: закриття до навігації відкочувало
+    // запис історії й скасовувало перехід на холодному чанку модуля.
+    expect(screen.getByRole("dialog", { name: "Модулі" })).toBeInTheDocument();
   });
 
   it("вимкнений модуль веде в налаштування дашборда, як панель хаба", () => {
@@ -167,7 +169,7 @@ describe("ModuleHeader: перемикач модулів", () => {
 
     expect(openHubSettingsSection).toHaveBeenCalledWith("dashboard");
     expect(openHubModule).not.toHaveBeenCalled();
-    expect(screen.queryByRole("dialog")).toBeNull();
+    expect(screen.getByRole("dialog", { name: "Модулі" })).toBeInTheDocument();
   });
 
   it("неактивні рядки мають hover панеллю, свотч квадратом 3 px", () => {
@@ -202,7 +204,7 @@ describe("ModuleHeader: перемикач модулів", () => {
     fireEvent.click(rows.at(-1)!);
 
     expect(onOpenSettings).toHaveBeenCalledTimes(1);
-    expect(screen.queryByRole("dialog")).toBeNull();
+    expect(screen.getByRole("dialog", { name: "Модулі" })).toBeInTheDocument();
   });
 });
 

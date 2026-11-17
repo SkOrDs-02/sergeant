@@ -38,6 +38,49 @@ export function epley1rm(
   return wg * (1 + r / 30);
 }
 
+type ProgressionSet = {
+  weightKg?: number | null | undefined;
+  reps?: number | null | undefined;
+};
+
+/**
+ * Підхід, від якого рахується наступний: найбільша вага, а при рівній вазі
+ * більше повторів. Кеп Еплі тут не діє: понад `E1RM_REP_CAP` повторів 1ПМ не
+ * оцінюється, але саме там верхівка діапазону для підсобних і ізоляції, і без
+ * цього підказка зникала б на 11-му повторі.
+ */
+export function progressionTopSet<T extends ProgressionSet>(
+  sets: readonly T[] | null | undefined,
+): T | null {
+  let top: T | null = null;
+  let topW = 0;
+  let topR = 0;
+  for (const s of sets ?? []) {
+    const w = Number(s?.weightKg) || 0;
+    const r = Number(s?.reps) || 0;
+    if (w <= 0 || r <= 0) continue;
+    if (w > topW || (w === topW && r > topR)) {
+      top = s;
+      topW = w;
+      topR = r;
+    }
+  }
+  return top;
+}
+
+/**
+ * Оцінка 1ПМ без кепу, лише щоб режим повернення бачив піку там, де
+ * `epley1rm` дає 0 (понад `E1RM_REP_CAP` повторів). Для PR і графіків не
+ * годиться: далеко від 1ПМ формула Еплі завищує.
+ */
+export function uncappedEpley1rm(
+  set: ProgressionSet | null | undefined,
+): number {
+  const w = Number(set?.weightKg) || 0;
+  const r = Number(set?.reps) || 0;
+  return w > 0 && r > 0 ? w * (1 + r / 30) : 0;
+}
+
 function roundToStep(x: number, step: number): number {
   const s = Number(step) || 1;
   return Math.round(x / s) * s;

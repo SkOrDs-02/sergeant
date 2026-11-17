@@ -363,7 +363,7 @@ describe("nutrition photo AI HTTP contracts", () => {
       expect(res.status, JSON.stringify(res.body)).toBe(200);
       expect(res.body).toMatchObject({
         result: { isFood: true, dishName: "Борщ" },
-        rawText: modelText,
+        rawText: path.endsWith("/refine-photo") ? null : modelText,
       });
       expect(anthropicMessagesMock).toHaveBeenCalledTimes(1);
     });

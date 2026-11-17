@@ -154,3 +154,20 @@ export function resolvePresetBudget(req: Request): QuotaBudget | null {
     limit: presetWeeklyLimit(preset),
   };
 }
+
+/**
+ * Опції `assertAiQuota` / `requireAiQuota`. `allowRoundTripTicket` вмикає
+ * погашення round-trip-квитка і за замовчуванням ВИМКНЕНЕ: квиток видає лише
+ * `/api/chat` (`chat.ts`), тож приймати його вправі тільки цей роут. На
+ * `/api/coach/*` і `/api/nutrition/*` поле `round_trip_ticket` просто
+ * ігнорується (схеми не `.strict()`), і запит списується як завжди.
+ */
+export interface AssertAiQuotaOptions {
+  allowRoundTripTicket?: boolean;
+  /**
+   * Сценарні preset-відра (інтервʼю профілю) існують лише в чаті: там їх
+   * стримує `OFF_TOPIC_RULE` системного промпту. На coach/nutrition поле
+   * `preset` у тілі ігнорується, інакше воно давало б Free додаткові дії.
+   */
+  allowPresetBudget?: boolean;
+}

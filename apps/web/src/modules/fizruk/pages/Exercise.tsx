@@ -16,6 +16,7 @@ import {
   formatDurShort,
   latestClearedInjuryAtForExercise,
   suggestNextSet,
+  uncappedEpley1rm,
 } from "@sergeant/fizruk-domain";
 import {
   collectExerciseHistory,
@@ -87,17 +88,35 @@ export function Exercise({ exerciseId, onNavigate }: ExerciseProps) {
    */
   const aging = useMemo(
     () =>
-      computeOneRmAgingForSummary(best, {
-        sessions: collectStrengthSessionPoints(history),
-        injuryClearedAt: latestClearedInjuryAtForExercise(ex, injuryMarks),
-      }),
+      computeOneRmAgingForSummary(
+        // Усі підходи понад кеп Еплі дають best1rm = 0, а з нульовим піком
+        // режим повернення не вмикається взагалі.
+        best.best1rm > 0
+          ? best
+          : { ...best, best1rm: uncappedEpley1rm(best.lastTop) },
+        {
+          sessions: collectStrengthSessionPoints(history),
+          injuryClearedAt: latestClearedInjuryAtForExercise(ex, injuryMarks),
+        },
+      ),
     [best, history, ex, injuryMarks],
   );
 
-  const suggestedNext = useMemo(
-    () => suggestNextSet(best.lastTop),
-    [best.lastTop],
-  );
+  // `aging.reductionPct` міряється від ПІКА історії, а `suggestNextSet`
+  // застосовує його до ваги ОСТАННЬОГО підходу. Без перерахунку на цей підхід
+  // легка сесія повернення знижувалась би вдруге; так само рахує
+  // `computeNextSetAging` для підказки в тренуванні.
+  const suggestedNext = useMemo(() => {
+    const lastTop1rm = uncappedEpley1rm(best.lastTop);
+    const reductionPct =
+      lastTop1rm > 0
+        ? Math.max(0, Math.round((1 - aging.reference1rm / lastTop1rm) * 100))
+        : 0;
+    return suggestNextSet(best.lastTop, {
+      exercise: ex,
+      aging: { ...aging, reductionPct },
+    });
+  }, [best.lastTop, ex, aging]);
 
   const muscleLabels = useMemo(() => {
     const ids = ex?.muscles?.primary || [];

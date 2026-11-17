@@ -15,6 +15,7 @@ import {
 import { NUTRITION_AI_TIMEOUTS_MS } from "./timeouts.js";
 
 import { ADVICE_BOUNDARY_RULE } from "../../lib/adviceBoundary.js";
+import { abortOnClientClose } from "../../http/clientAbort.js";
 
 export type DayPlanInput = z.infer<typeof DayPlanSchema>;
 
@@ -264,6 +265,7 @@ export default async function handler(
     messages: [{ role: "user", content: prompt.user }],
     timeoutMs: NUTRITION_AI_TIMEOUTS_MS.dayPlan,
     endpoint: "day-plan",
+    signal: abortOnClientClose(res),
     ...(userId ? { userId } : {}),
   });
   if (!result.ok) {

@@ -27,6 +27,7 @@ export function AppLockSettings() {
   const { state: lockState, hasPin } = appLock;
   const flagEnabled = useFlag("app-lock-enabled");
   const [disableConfirmOpen, setDisableConfirmOpen] = useState(false);
+  const [enableError, setEnableError] = useState(false);
   // L-11: попередній `appLock.state` — щоб реагувати лише на перехід
   // "locked" -> "idle" (справжнє розблокування або wipe після 10 невдалих
   // спроб), а не на будь-яку зміну. Інакше реконсиляція нижче ганялася б і
@@ -79,11 +80,21 @@ export function AppLockSettings() {
   }, [flagEnabled, lockState, hasPin]);
 
   const handleToggle = async (checked: boolean) => {
+    setEnableError(false);
     if (checked) {
       setFlag("app-lock-enabled", true);
       // Audit F16: перевіряємо PIN-партицію САМЕ поточного користувача, а
       // не `anon`. `appLock.hasPin()` замикається на `user?.id`.
-      const has = await appLock.hasPin();
+      let has: boolean;
+      try {
+        has = await appLock.hasPin();
+      } catch {
+        // IndexedDB недоступний: PIN ні прочитати, ні записати, тож тумблер
+        // відкочуємо, інакше він лишився б «увімкнено» без жодного PIN.
+        setFlag("app-lock-enabled", false);
+        setEnableError(true);
+        return;
+      }
       if (!has) {
         appLock.startSetup();
       }
@@ -107,6 +118,15 @@ export function AppLockSettings() {
         checked={flagEnabled}
         onChange={handleToggle}
       />
+
+      {enableError && (
+        <p
+          role="alert"
+          className="text-style-body text-danger-strong dark:text-danger"
+        >
+          {m.enableFailed}
+        </p>
+      )}
 
       {flagEnabled && (
         <div className="flex flex-wrap gap-2 pt-1">

@@ -27,10 +27,12 @@ vi.mock("../hub/streamingStore", () => ({
 // --- Mock useToast -------------------------------------------------------
 const mockToastInfo = vi.fn();
 const mockToastSuccess = vi.fn();
+const mockToastDismiss = vi.fn();
 vi.mock("@shared/hooks/useToast", () => ({
   useToast: () => ({
     info: mockToastInfo,
     success: mockToastSuccess,
+    dismiss: mockToastDismiss,
     error: vi.fn(),
     warn: vi.fn(),
   }),
@@ -39,6 +41,7 @@ vi.mock("@shared/hooks/useToast", () => ({
 // Import AFTER mocks are registered.
 import { useSWUpdate } from "./useSWUpdate";
 import {
+  installTypedInputTracker,
   registerDirtyState,
   resetDirtyStateForTests,
 } from "@shared/lib/ui/dirtyState";
@@ -133,6 +136,7 @@ describe("useSWUpdate — defer-while-busy", () => {
     mockIsHubStreaming.mockReturnValue(false);
     mockToastInfo.mockReset();
     mockToastSuccess.mockReset();
+    mockToastDismiss.mockReset();
     resetSwReloadForTests();
     resetDirtyStateForTests();
 
@@ -472,6 +476,66 @@ describe("useSWUpdate — defer-while-busy", () => {
     expect(reloadSpy).toHaveBeenCalledTimes(1);
     expect(mockToastInfo).not.toHaveBeenCalled();
 
+    restore();
+    delete window.__pwaUpdateSW;
+  });
+
+  it("своєчасний controllerchange: збережене, але змонтоване поле не відкладає reload", async () => {
+    installTypedInputTracker(document);
+    const input = document.createElement("input");
+    document.body.append(input);
+    input.value = "Олена";
+    input.dispatchEvent(new Event("input", { bubbles: true }));
+    window.__pwaUpdateSW = vi.fn();
+    const { reloadSpy, fireControllerChange, restore } = stubServiceWorker({
+      waiting: true,
+    });
+    const { result } = renderHook(() => useSWUpdate(), {
+      wrapper: makeWrapper(queryClient),
+    });
+
+    await act(async () => {
+      result.current.applyUpdate();
+      await flushMicrotasks();
+    });
+    act(() => {
+      vi.advanceTimersByTime(1_500);
+      fireControllerChange();
+      handleNeedReload();
+    });
+
+    expect(reloadSpy).toHaveBeenCalledTimes(1);
+    expect(mockToastInfo).not.toHaveBeenCalled();
+
+    input.remove();
+    restore();
+    delete window.__pwaUpdateSW;
+  });
+
+  it("пізній controllerchange знімає статус-тост «Застосовую оновлення…»", async () => {
+    mockToastInfo.mockReturnValueOnce(7);
+    window.__pwaUpdateSW = vi.fn();
+    const { fireControllerChange, restore } = stubServiceWorker({
+      waiting: true,
+    });
+    const { result } = renderHook(() => useSWUpdate(), {
+      wrapper: makeWrapper(queryClient),
+    });
+    await act(async () => {
+      result.current.applyUpdate();
+      await flushMicrotasks();
+    });
+    act(() => {
+      vi.advanceTimersByTime(3_000);
+    });
+    const unregister = registerDirtyState();
+    act(() => {
+      fireControllerChange();
+    });
+
+    expect(mockToastDismiss).toHaveBeenCalledWith(7);
+
+    unregister();
     restore();
     delete window.__pwaUpdateSW;
   });

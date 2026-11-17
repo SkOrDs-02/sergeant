@@ -322,6 +322,7 @@ export const messagesEn: Partial<{
     closedPile: {
       heading: "Closed",
       uncheck: "Back to Now",
+      unchecked: "Moved back to Now",
     },
     spendHero: {
       label: "Spent today",
@@ -496,6 +497,8 @@ export const messagesEn: Partial<{
         "Too many wrong attempts, so the PIN is no longer accepted. Reset the data on this device and start over.",
       signingOut: "Signing out…",
       signOutFailed: "Couldn't sign out. Try again.",
+      saveFailed: "Couldn't save the PIN. Try again.",
+      enableFailed: "Couldn't turn on the lock. Try again.",
       next: "Next",
       back: "Back",
       open: "Open",

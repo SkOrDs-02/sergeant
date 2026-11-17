@@ -71,7 +71,7 @@ beforeEach(() => {
 });
 
 describe("nutrition refine-photo handler — Anthropic invocation", () => {
-  it("happy path: normalizes refined model JSON and preserves raw text", async () => {
+  it("happy path: normalizes refined model JSON and hides raw model text", async () => {
     const rawText = JSON.stringify({
       dishName: "Плов з куркою",
       confidence: 0.91,
@@ -87,7 +87,7 @@ describe("nutrition refine-photo handler — Anthropic invocation", () => {
 
     expect(res.statusCode).toBe(200);
     const body = asRecord(res.body);
-    expect(body["rawText"]).toBe(rawText);
+    expect(body["rawText"]).toBeNull();
     expect(body["result"]).toEqual({
       isFood: true,
       notFoodKind: null,

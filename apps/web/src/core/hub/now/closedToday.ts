@@ -28,11 +28,9 @@ import {
 } from "@sergeant/shared";
 import { Recommendations } from "@sergeant/insights";
 import type { DashboardModuleId } from "@sergeant/shared";
-import { dateKeyFromDate } from "@sergeant/routine-domain";
 import {
-  habitScheduledOnDate,
-  isFlexibleHabit,
-  weekDoneCountExcludingDate,
+  calcRoutineDayProgress,
+  dateKeyFromDate,
 } from "@sergeant/routine-domain";
 import { getDayMacros, resolveEffectiveGoal } from "@sergeant/nutrition-domain";
 import { WEEK_KCAL_OVER_TOLERANCE } from "@sergeant/nutrition-domain";
@@ -94,20 +92,15 @@ export const CLOSED_TODAY_LABELS: Record<DashboardModuleId, string> = {
 
 function routineClosed(todayKey: string): ClosedTodayItem | null {
   const state = loadRoutineState();
-  let scheduled = 0;
-  let done = 0;
-  for (const h of state.habits) {
-    if (h.archived) continue;
-    const completions = state.completions[h.id] ?? [];
-    // Гнучка звичка перестає бути запланованою, щойно тижневу ціль добрано
-    // — той самий предикат, що й у `useTodoEveningInsight`.
-    const weekDoneCount = isFlexibleHabit(h)
-      ? weekDoneCountExcludingDate(completions, todayKey)
-      : undefined;
-    if (!habitScheduledOnDate(h, todayKey, { weekDoneCount })) continue;
-    scheduled += 1;
-    if (completions.includes(todayKey)) done += 1;
-  }
+  // Той самий лічильник, що в кільці модуля, плитці й рекомендаціях: «не
+  // зміг» виходить зі знаменника, гнучка звичка рахується тижневою ціллю.
+  const { completed: done, scheduled } = calcRoutineDayProgress(
+    state.habits,
+    state.completions,
+    todayKey,
+    todayKey,
+    state.skips ?? {},
+  );
   // Ціль у Рутині є завжди — це сам список звичок дня. Без запланованих
   // звичок закривати нічого.
   if (scheduled === 0 || done < scheduled) return null;

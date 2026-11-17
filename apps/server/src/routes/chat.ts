@@ -70,7 +70,10 @@ export function createChatRouter(): Router {
     // `OPENROUTER_API_KEY`). Див. докстрінг `requireChatUpstreamKey`.
     requireChatUpstreamKey(),
     // Єдиний роут, що видає і приймає round-trip-квиток (AI-5, sec-03).
-    requireAiQuota("ai", { allowRoundTripTicket: true }),
+    requireAiQuota("ai", {
+      allowRoundTripTicket: true,
+      allowPresetBudget: true,
+    }),
     chatHandler,
   );
   return r;

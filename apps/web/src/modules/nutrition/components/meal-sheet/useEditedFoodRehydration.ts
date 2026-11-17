@@ -38,6 +38,12 @@
  *      бази, макроси = `per100 × вага`, тож ділення дає його етикетку (з
  *      точністю округлення полів).
  *
+ * Етикетка запису має перевагу над етикеткою продукту (рішення власника
+ * 2026-11-12, аудит A72). Коли запис має вагу, `per100` з ланки 3 береться
+ * й тоді, коли продукт знайдено в ланках 1 чи 2: продукт могли виправити
+ * після запису, а запис щоденника є знімком. Продукт тоді дає лише назву,
+ * бренд і порції.
+ *
  * Межа ланки 3: запис не несе етикетки, тому вона не відрізняє прийом з
  * бази від старого рядка, збереженого ДО фіксу ux-13 — тоді ручна правка КБЖВ
  * лишала `productDb`. Для такого рядка на пристрої без локального продукту
@@ -176,6 +182,15 @@ export function useEditedFoodRehydration({
     const generation = ++lookupGeneration.current;
     let cancelled = false;
     const lookup = async (): Promise<PickedFood | null> => {
+      // Запис щоденника є знімком: продукт могли виправити вже після нього, і
+      // зміна ваги не має переписати старий прийом новою етикеткою. Тому
+      // per100 береться з порції запису, а продукт дає назву й порції.
+      const per100 = per100FromMeal(amountG, {
+        kcal,
+        protein_g: proteinG,
+        fat_g: fatG,
+        carbs_g: carbsG,
+      });
       const food = await getFoodById(editedFoodId);
       if (food) {
         return {
@@ -183,20 +198,14 @@ export function useEditedFoodRehydration({
           name: food.name,
           brand: food.brand,
           defaultGrams: food.defaultGrams,
-          per100: food.per100,
+          per100: per100 ?? food.per100,
           portions: food.portions,
         };
       }
       // Збій підвантаження корпусу (офлайн, чанк не прийшов) не має гасити
       // останню ланку: етикетку з порції прийому можна вивести й без нього.
       const generic = await pickGenericFood(editedFoodId).catch(() => null);
-      if (generic) return generic;
-      const per100 = per100FromMeal(amountG, {
-        kcal,
-        protein_g: proteinG,
-        fat_g: fatG,
-        carbs_g: carbsG,
-      });
+      if (generic) return per100 ? { ...generic, per100 } : generic;
       if (!per100) return null;
       return {
         id: editedFoodId,
