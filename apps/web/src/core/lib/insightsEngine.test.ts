@@ -99,6 +99,12 @@ describe("generateInsights", () => {
     expect(typeof ins!.stat).toBe("string");
   });
 
+  it("workoutDayInsight: «з 21 тренування» в родовому однини", () => {
+    seedFizruk(makeWorkouts(21, 1));
+    const ins = generateInsights().find((r) => r.id === "best_workout_day");
+    expect(ins!.detail).toBe("21 з 21 тренування");
+  });
+
   it("workoutDayInsight: бакетує день за київським часом, не UTC", () => {
     // 22:30 UTC у неділю 2025-06-22 = 01:30 понеділка в Києві (літо, UTC+3).
     // На UTC-хості (CI) старий getDay() дав би «Неділя» — Kyiv-anchoring

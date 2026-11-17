@@ -18,7 +18,12 @@ import {
   habitNameFor,
   mealTypeLabelFor,
 } from "./hubChatActionCardsHelpers";
-import { formatNumberUk } from "@sergeant/shared";
+import {
+  formatNumberUk,
+  pluralDays,
+  pluralExercises,
+  pluralHabits,
+} from "@sergeant/shared";
 
 type SummaryInput = Record<string, unknown>;
 
@@ -34,6 +39,11 @@ const numberField = (input: SummaryInput, key: string): number | undefined => {
     return Number(v);
   }
   return undefined;
+};
+
+const periodSummary = (input: SummaryInput): string => {
+  const days = numberField(input, "period_days") ?? 30;
+  return `Період: ${days} ${pluralDays(days)}`;
 };
 
 const joinParts = (
@@ -291,14 +301,16 @@ const SUMMARY_REGISTRY: Record<string, SummaryFn> = {
 
   reorder_habits: (input) => {
     const ids = input["habit_ids"];
-    return Array.isArray(ids) ? `${ids.length} звичок` : undefined;
+    return Array.isArray(ids)
+      ? `${ids.length} ${pluralHabits(ids.length)}`
+      : undefined;
   },
 
   habit_stats: (input) => {
     const rawHabitId = stringField(input, "habit_id");
     const habitId = habitNameFor(rawHabitId) || rawHabitId;
     const periodDays = numberField(input, "period_days") ?? 30;
-    if (habitId) return `${habitId} · ${periodDays} днів`;
+    if (habitId) return `${habitId} · ${periodDays} ${pluralDays(periodDays)}`;
     return undefined;
   },
 
@@ -360,7 +372,9 @@ const SUMMARY_REGISTRY: Record<string, SummaryFn> = {
     return joinParts([
       date,
       `о ${time}`,
-      Array.isArray(exercises) ? `${exercises.length} вправ` : undefined,
+      Array.isArray(exercises)
+        ? `${exercises.length} ${pluralExercises(exercises.length)}`
+        : undefined,
     ]);
   },
 
@@ -430,7 +444,7 @@ const SUMMARY_REGISTRY: Record<string, SummaryFn> = {
     const exercise = stringField(input, "exercise_name");
     const muscle = stringField(input, "muscle_group");
     const period = numberField(input, "period_days") ?? 30;
-    return joinParts([exercise || muscle, `${period} днів`]);
+    return joinParts([exercise || muscle, `${period} ${pluralDays(period)}`]);
   },
 
   set_goal: (input) => {
@@ -444,16 +458,11 @@ const SUMMARY_REGISTRY: Record<string, SummaryFn> = {
     return parts.length ? parts.join(" · ") : "Нова ціль";
   },
 
-  spending_trend: (input) =>
-    `Період: ${numberField(input, "period_days") ?? 30} днів`,
-  weight_chart: (input) =>
-    `Період: ${numberField(input, "period_days") ?? 30} днів`,
-  category_breakdown: (input) =>
-    `Період: ${numberField(input, "period_days") ?? 30} днів`,
-  detect_anomalies: (input) =>
-    `Період: ${numberField(input, "period_days") ?? 30} днів`,
-  habit_trend: (input) =>
-    `Період: ${numberField(input, "period_days") ?? 30} днів`,
+  spending_trend: periodSummary,
+  weight_chart: periodSummary,
+  category_breakdown: periodSummary,
+  detect_anomalies: periodSummary,
+  habit_trend: periodSummary,
 
   calculate_1rm: (input) => {
     const weightKg = numberField(input, "weight_kg");
