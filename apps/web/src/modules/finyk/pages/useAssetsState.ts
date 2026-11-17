@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { isMonoDebt } from "../utils";
+import { isUahAccount } from "@sergeant/finyk-domain/lib/accounts";
 import {
   computeAssetsSummary,
   filterVisibleAccounts,
@@ -244,7 +245,7 @@ export function useAssetsState({
   const monoDebtAccounts = filterVisibleAccounts(
     monoAccounts,
     hiddenAccounts,
-  ).filter((a) => isMonoDebt(a));
+  ).filter((a) => isUahAccount(a) && isMonoDebt(a));
 
   const [todayStart] = useState<Date>(startOfToday);
 
