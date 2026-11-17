@@ -158,7 +158,7 @@ export function HabitQuickCreateDialog({
   if (!open) return null;
 
   const handleSave = () => {
-    const patch = habitDraftToPatch(draft);
+    const patch = habitDraftToPatch(draft, { editing: Boolean(editingId) });
     const nextErrors: HabitFormErrors = {};
     if (!patch.name) {
       nextErrors.name = "Додай назву звички.";

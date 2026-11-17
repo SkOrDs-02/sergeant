@@ -209,6 +209,7 @@ export function RoutineCalendarPanel({
         scheduledHabits={scheduledHabitsForReport}
         onToggleHabit={onToggleHabit}
         dateKey={progressDayKey}
+        todayKey={todayKey}
         skipsForDay={skipsForReportDay}
         onSetSkip={(habitId, reason) =>
           onSetHabitSkip(habitId, progressDayKey, reason)
@@ -296,7 +297,7 @@ export function RoutineCalendarPanel({
                 <div key={key} className="">
                   <SwipeToAction
                     onSwipeRight={
-                      habitId && !e.completed
+                      habitId && !e.completed && e.date <= todayKey
                         ? () => onToggleHabit(habitId, e.date)
                         : undefined
                     }
@@ -386,6 +387,7 @@ export function RoutineCalendarPanel({
                           {habitId && (
                             <HabitStateButton
                               completed={e.completed === true}
+                              futureDay={e.date > todayKey}
                               onClick={() => onToggleHabit(habitId, e.date)}
                               aria-label={
                                 e.completed ? "Скасувати виконання" : "Виконано"
@@ -491,6 +493,7 @@ export function RoutineCalendarPanel({
           onPlanFizruk={setFizrukPlanDateKey}
           flatGroupedItems={flatGroupedItems}
           onToggleHabit={onToggleHabit}
+          todayKey={todayKey}
         />
       )}
 

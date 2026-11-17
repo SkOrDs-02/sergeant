@@ -2,6 +2,7 @@
 import { describe, it, expect, vi, afterEach } from "vitest";
 import { render, screen, fireEvent, cleanup } from "@testing-library/react";
 import { DayReportSheet } from "./DayReportSheet";
+import { FUTURE_DAY_LABEL } from "./HabitStateButton";
 import type { ScheduledHabitForReport } from "./DayReportSheet";
 
 function makeHabit(id: string, completed: boolean): ScheduledHabitForReport {
@@ -60,5 +61,40 @@ describe("DayReportSheet", () => {
       screen.getByRole("button", { name: "Відмітити як виконано" }),
     );
     expect(onToggleHabit).toHaveBeenCalledWith("h2", "2026-07-10");
+  });
+});
+
+describe("DayReportSheet — заголовок і кружки за добою (R4, R5)", () => {
+  afterEach(cleanup);
+  const renderDay = (dateKey: string) =>
+    render(
+      <DayReportSheet
+        open={true}
+        onClose={vi.fn()}
+        dayLabel="день"
+        scheduledHabits={[makeHabit("h2", false)]}
+        onToggleHabit={vi.fn()}
+        dateKey={dateKey}
+        todayKey="2026-07-10"
+      />,
+    );
+
+  it("сьогодні невідмічене не називається «Пропущено»", () => {
+    renderDay("2026-07-10");
+    expect(screen.getByText(/Ще не виконано \(1\)/)).toBeInTheDocument();
+    expect(screen.queryByText(/Пропущено/)).toBeNull();
+  });
+
+  it("минулий день: невідмічене «Пропущено»", () => {
+    renderDay("2026-07-09");
+    expect(screen.getByText(/Пропущено \(1\)/)).toBeInTheDocument();
+  });
+
+  it("майбутній день: кружок заблокований", () => {
+    renderDay("2026-07-11");
+    expect(screen.getByText(/Ще не виконано \(1\)/)).toBeInTheDocument();
+    expect(
+      screen.getByRole("button", { name: FUTURE_DAY_LABEL }),
+    ).toBeDisabled();
   });
 });

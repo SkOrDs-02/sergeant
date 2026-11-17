@@ -163,7 +163,53 @@ export function emptyHabitDraft(): HabitDraft {
   };
 }
 
-export function habitDraftToPatch(draft: HabitDraft): HabitDraftPatch {
+export interface HabitDraftToPatchOptions {
+  /**
+   * Чернетка редагує наявну звичку. Тоді змінена тижнева ціль діє з
+   * сьогодні, а не з `startDate`: інакше інтервал «з початку» переписує
+   * оцінку всіх минулих тижнів (спека routine-flexible-weekly-frequency:
+   * «зміна цілі не переписує минуле»).
+   */
+  editing?: boolean;
+}
+
+/**
+ * Історія тижневої цілі для патча гнучкої звички.
+ * Створення: ціль діє з `startDate`. Редагування: без зміни цілі історію
+ * не чіпаємо, зі зміною — дописуємо інтервал від сьогодні (або від
+ * `startDate`, якщо звичка ще не стартувала).
+ */
+function weeklyTargetHistoryForPatch(
+  draft: HabitDraft,
+  startDate: string,
+  weeklyTarget: number,
+  editing: boolean,
+): HabitDraft["weeklyTargetHistory"] {
+  if (!editing) {
+    return appendWeeklyTargetInterval(
+      draft.weeklyTargetHistory,
+      startDate,
+      weeklyTarget,
+    );
+  }
+  const today = dateKeyFromDate(routineTodayDate());
+  const from = startDate > today ? startDate : today;
+  const effective = weeklyTargetForDate(
+    { weeklyTargetHistory: draft.weeklyTargetHistory },
+    from,
+  );
+  if (effective === weeklyTarget) return draft.weeklyTargetHistory;
+  return appendWeeklyTargetInterval(
+    draft.weeklyTargetHistory,
+    from,
+    weeklyTarget,
+  );
+}
+
+export function habitDraftToPatch(
+  draft: HabitDraft,
+  options: HabitDraftToPatchOptions = {},
+): HabitDraftPatch {
   const tagIds = draft.tagIds || [];
   const reminderTimes = (draft.reminderTimes || [])
     .map((t) =>
@@ -205,10 +251,11 @@ export function habitDraftToPatch(draft: HabitDraft): HabitDraftPatch {
     paused: draft.paused === true,
     weeklyTargetHistory:
       recurrence === "flexible"
-        ? appendWeeklyTargetInterval(
-            draft.weeklyTargetHistory,
+        ? weeklyTargetHistoryForPatch(
+            draft,
             startDate,
             weeklyTarget,
+            options.editing === true,
           )
         : draft.weeklyTargetHistory,
   };
