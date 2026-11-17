@@ -142,6 +142,8 @@ describe("nutrition analyze-photo handler — Anthropic invocation", () => {
       timeoutMs: 20000,
       endpoint: "analyze-photo",
     });
+    // Обрив зʼєднання клієнтом має скасувати vision-виклик.
+    expect(options["signal"]).toBeInstanceOf(AbortSignal);
   });
 
   it("extracts JSON embedded in surrounding model prose", async () => {

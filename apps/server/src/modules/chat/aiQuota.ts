@@ -18,6 +18,7 @@ import {
 import {
   parseLimit,
   resolvePresetBudget,
+  type AssertAiQuotaOptions,
   type QuotaBudget,
 } from "./aiQuotaBudget.js";
 import { consumeRoundTripTicket } from "./chatRoundTripTicket.js";
@@ -327,17 +328,6 @@ function tryConsumeRoundTripTicket(req: Request, userId: string): boolean {
 }
 
 /**
- * Опції `assertAiQuota` / `requireAiQuota`. `allowRoundTripTicket` вмикає
- * погашення round-trip-квитка і за замовчуванням ВИМКНЕНЕ: квиток видає лише
- * `/api/chat` (`chat.ts`), тож приймати його вправі тільки цей роут. На
- * `/api/coach/*` і `/api/nutrition/*` поле `round_trip_ticket` просто
- * ігнорується (схеми не `.strict()`), і запит списується як завжди.
- */
-export interface AssertAiQuotaOptions {
-  allowRoundTripTicket?: boolean;
-}
-
-/**
  * Тижнева quota check одного відра Free (`meter`, за замовчуванням `ai`).
  * Shape збережено (backwards compat): повертає true/false; при вичерпанні
  * сама відправляє 429 у `res`.
@@ -398,7 +388,8 @@ export async function assertAiQuota(
 
   // Сценарний preset витрачає власне тижневе відро замість спільного (див.
   // `resolvePresetBudget`). Усе решта — той самий шлях.
-  const presetBudget = meter === "ai" ? resolvePresetBudget(req) : null;
+  const allowPreset = meter === "ai" && options.allowPresetBudget === true;
+  const presetBudget = allowPreset ? resolvePresetBudget(req) : null;
   const isPresetBudget = presetBudget !== null;
   const budget: QuotaBudget = presetBudget ?? {
     bucket: spec.bucket,

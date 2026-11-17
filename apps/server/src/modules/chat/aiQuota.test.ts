@@ -980,3 +980,36 @@ describe("assertAiQuota: тижневі відра Free (access-tiers)", () => {
     expect(store.get(key("week:photo"))).toBe(1);
   });
 });
+
+describe("assertAiQuota — preset-відро лише там, де роут його дозволив", () => {
+  beforeEach(() => {
+    process.env["DATABASE_URL"] = "postgres://ignored";
+    process.env["AI_QUOTA_DISABLED"] = "0";
+    getSessionUser.mockResolvedValue({ id: "u-1" });
+    pool.query.mockResolvedValue({ rows: [{ request_count: 1 }], rowCount: 1 });
+  });
+
+  const bucketsUsed = () => JSON.stringify(pool.query.mock.calls);
+
+  it("coach/nutrition (дефолтні опції): preset у тілі списує спільне відро", async () => {
+    const ok = await assertAiQuota(
+      makeReq({}, { preset: "profile_interview" }),
+      makeRes(),
+    );
+
+    expect(ok).toBe(true);
+    expect(bucketsUsed()).not.toContain("preset:profile_interview");
+  });
+
+  it("чат (allowPresetBudget): preset списує власне відро", async () => {
+    const ok = await assertAiQuota(
+      makeReq({}, { preset: "profile_interview" }),
+      makeRes(),
+      "ai",
+      { allowPresetBudget: true },
+    );
+
+    expect(ok).toBe(true);
+    expect(bucketsUsed()).toContain("preset:profile_interview");
+  });
+});
