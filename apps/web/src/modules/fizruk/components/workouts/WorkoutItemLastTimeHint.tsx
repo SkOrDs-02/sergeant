@@ -15,6 +15,8 @@ export type LastByExerciseEntry = WorkoutItem & {
   _startedAt?: string;
   /** Силові сесії вправи (`collectLastByExerciseId`), див. `LastExerciseItem`. */
   _sessions?: OneRmSessionPoint[];
+  /** Зняття позначки травми для вправи, див. `LastExerciseItem`. */
+  _injuryClearedAt?: string | null;
 };
 
 export interface WorkoutItemLastTimeHintProps {

@@ -19,6 +19,7 @@ import type { Insight } from "@shared/lib/insights/types";
 import { useExerciseCatalog } from "../hooks/useExerciseCatalog";
 import { useMeasurements } from "../hooks/useMeasurements";
 import { useRecovery } from "../hooks/useRecovery";
+import { useInjuries } from "../hooks/useInjuries";
 import { useWorkoutTemplates } from "../hooks/useWorkoutTemplates";
 import { isFizrukReadBootInFlight } from "../hooks/useFizrukSqliteReadBoot";
 import { useWorkouts } from "../hooks/useWorkouts";
@@ -104,6 +105,7 @@ export function Dashboard({
     return formatKyivNominativeDate();
   }, [kyivNow]);
   const rec = useRecovery();
+  const { all: injuryMarks } = useInjuries();
   const {
     workouts,
     loaded: workoutsLoaded,
@@ -208,8 +210,11 @@ export function Dashboard({
     templateId?: string | null,
   ) => {
     if (!picks?.length) return;
+    // Травма входить у ту саму перевірку (ADR-0083): без `injurySites`
+    // домен вважав, що позначок немає, і план стартував без підтвердження.
     const risky = picks.some(
-      (ex) => recoveryConflictsForExercise(ex, rec.by).hasWarning,
+      (ex) =>
+        recoveryConflictsForExercise(ex, rec.by, rec.injurySites).hasWarning,
     );
     if (risky) {
       setPendingPicks(picks);
@@ -221,6 +226,13 @@ export function Dashboard({
     setPendingTemplateId(null);
     requestWorkoutFromPlan(picks, templateId);
   };
+
+  // Аркуш підтвердження каже, ЩО саме зупинило старт: біль і втома — різні
+  // за вагою застереження, і текст про відновлення мʼязів для травми бреше.
+  const pendingHasInjury = (pendingPicks ?? []).some(
+    (ex) =>
+      recoveryConflictsForExercise(ex, rec.by, rec.injurySites).injury.blocked,
+  );
 
   const primaryAction = useMemo(() => {
     if (activeProgram && todaySession) {
@@ -306,6 +318,7 @@ export function Dashboard({
     workouts,
     loaded: workoutsLoaded,
     activeWorkoutId,
+    injuryMarks,
   });
   // Phase 6.7 — persistent PR summary surfaced on the hero corner.
   // Independent of the proximity-driven `pr-pending` insight: this
@@ -610,7 +623,7 @@ export function Dashboard({
       <Sheet
         open={planConfirmOpen}
         onClose={closePlanConfirm}
-        title="Мʼязи ще відновлюються"
+        title={pendingHasInjury ? "Є позначка болю" : "Мʼязи ще відновлюються"}
         panelClassName="fizruk-sheet max-w-md"
         zIndex={100}
         footer={
@@ -640,8 +653,9 @@ export function Dashboard({
         }
       >
         <p className="text-style-body text-muted leading-relaxed">
-          У цьому шаблоні є вправи на мʼязи, які ще відновлюються. Продовжити
-          старт тренування?
+          {pendingHasInjury
+            ? "У цьому шаблоні є вправа на зону, де ти позначив біль. Навантажувати її не раджу. Почати все одно?"
+            : "У цьому шаблоні є вправи на мʼязи, які ще відновлюються. Продовжити старт тренування?"}
         </p>
       </Sheet>
 

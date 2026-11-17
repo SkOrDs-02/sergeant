@@ -1,21 +1,30 @@
 // @vitest-environment jsdom
-import { beforeEach, describe, expect, it, vi } from "vitest";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { renderHook } from "@testing-library/react";
-import { ACTIVE_WORKOUT_KEY } from "@sergeant/fizruk-domain";
+import { ACTIVE_WORKOUT_KEY, type InjuryMark } from "@sergeant/fizruk-domain";
+import type { InjurySiteId } from "@sergeant/fizruk-domain/data";
 import type { WorkoutItem } from "@sergeant/fizruk-domain/domain";
 import { useFizrukProgramStart } from "./useFizrukProgramStart";
 
 type AddedItem = Partial<WorkoutItem>;
 
-function setup(
-  workouts: Array<{
-    endedAt?: string | null;
-    items?: Array<{
-      exerciseId?: string;
-      sets?: Array<{ weightKg?: number }>;
-    }>;
-  }> = [],
-) {
+type SetupWorkout = {
+  startedAt?: string;
+  endedAt?: string | null;
+  items?: Array<{
+    exerciseId?: string;
+    type?: string;
+    sets?: Array<{ weightKg?: number; reps?: number }>;
+  }>;
+};
+
+interface SetupOptions {
+  recoveryBy?: Record<string, { status: "red" | "yellow" | "green" }>;
+  injurySites?: ReadonlySet<InjurySiteId>;
+  injuryMarks?: InjuryMark[];
+}
+
+function setup(workouts: SetupWorkout[] = [], options: SetupOptions = {}) {
   const added: AddedItem[] = [];
   const navigate = vi.fn();
   const createWorkout = vi.fn(() => ({ id: "w-new" }));
@@ -35,16 +44,29 @@ function setup(
       name: { uk: "Біг" },
       primaryGroup: "cardio",
     },
+    // Справжній id каталогу: зонна половина травма-перевірки читає реєстр
+    // `EXERCISE_INJURY_ZONES` за id (жим — плечовий суглоб).
+    {
+      id: "bench_press_barbell",
+      name: { uk: "Жим лежачи" },
+      primaryGroup: "chest",
+      muscles: { primary: ["pectoralis_major"], secondary: [] },
+    },
   ];
   const onConflict = vi.fn<(start: () => void) => void>();
+  const onRecoveryConflict = vi.fn<(start: () => void) => void>();
   const { result } = renderHook(() =>
     useFizrukProgramStart({
-      workouts,
+      workouts: workouts as never,
       createWorkout,
       addItem,
       exercises,
       navigate,
       onConflict,
+      recoveryBy: options.recoveryBy ?? {},
+      injurySites: options.injurySites ?? new Set<InjurySiteId>(),
+      injuryMarks: options.injuryMarks ?? [],
+      onRecoveryConflict,
     }),
   );
   return {
@@ -54,6 +76,7 @@ function setup(
     createWorkout,
     addItem,
     onConflict,
+    onRecoveryConflict,
   };
 }
 
@@ -121,5 +144,129 @@ describe("useFizrukProgramStart", () => {
     expect(onConflict).toHaveBeenCalledTimes(1);
     onConflict.mock.calls[0]?.[0]();
     expect(createWorkout).toHaveBeenCalledTimes(1);
+  });
+});
+
+/**
+ * Старт програми мусить іти тими самими захистами, що й старт шаблону
+ * (аудит 2026-11-17, §3.4): жорстке застереження відновлення/травми
+ * (ADR-0083) і режим повернення, у якому вага не підвищується (канон §6,
+ * журнал 2026-08-31).
+ */
+describe("useFizrukProgramStart — захисти старту", () => {
+  beforeEach(() => {
+    localStorage.clear();
+    sessionStorage.clear();
+    vi.useFakeTimers();
+    vi.setSystemTime(new Date("2026-11-17T09:00:00.000Z"));
+  });
+  afterEach(() => {
+    vi.useRealTimers();
+  });
+
+  it("травмована зона вправи зупиняє старт до підтвердження", () => {
+    const { start, createWorkout, onRecoveryConflict } = setup([], {
+      injurySites: new Set<InjurySiteId>(["shoulder"]),
+    });
+
+    start({ exerciseIds: ["bench_press_barbell"] });
+
+    expect(createWorkout).not.toHaveBeenCalled();
+    expect(onRecoveryConflict).toHaveBeenCalledTimes(1);
+    onRecoveryConflict.mock.calls[0]?.[0]();
+    expect(createWorkout).toHaveBeenCalledTimes(1);
+  });
+
+  it("червоний статус мʼяза теж просить підтвердження, як у шаблону", () => {
+    const { start, createWorkout, onRecoveryConflict } = setup([], {
+      recoveryBy: { pectoralis_major: { status: "red" } },
+    });
+    start({ exerciseIds: ["bench_press_barbell"] });
+    expect(createWorkout).not.toHaveBeenCalled();
+    expect(onRecoveryConflict).toHaveBeenCalledTimes(1);
+  });
+
+  it("жовтий статус не зупиняє: це порада, не жорстке застереження", () => {
+    const { start, createWorkout, onRecoveryConflict } = setup([], {
+      recoveryBy: { pectoralis_major: { status: "yellow" } },
+    });
+    start({ exerciseIds: ["bench_press_barbell"] });
+    expect(onRecoveryConflict).not.toHaveBeenCalled();
+    expect(createWorkout).toHaveBeenCalledTimes(1);
+  });
+
+  it("після паузи не додає крок програми і знижує вагу", () => {
+    // Остання сесія 100×5 понад 4 місяці тому: режим повернення, а не
+    // «100 + 2.5».
+    const { start, added } = setup([
+      {
+        startedAt: "2026-07-01T10:00:00.000Z",
+        endedAt: "2026-07-01T11:00:00.000Z",
+        items: [
+          {
+            exerciseId: "bench",
+            type: "strength",
+            sets: [{ weightKg: 100, reps: 5 }],
+          },
+        ],
+      },
+    ]);
+    start({ exerciseIds: ["bench"], progressionKg: 2.5 });
+    const w = added.find((i) => i.exerciseId === "bench")?.sets?.[0]?.weightKg;
+    expect(w).toBeLessThan(100);
+  });
+
+  it("свіжо знята позначка травми теж вимикає прогресію", () => {
+    // Сесія три дні тому — паузи немає, але позначку на груди знято вчора:
+    // 21 день мʼякого режиму (ADR-0083 § Наслідки, E-5).
+    const { start, added } = setup(
+      [
+        {
+          startedAt: "2026-11-14T10:00:00.000Z",
+          endedAt: "2026-11-14T11:00:00.000Z",
+          items: [
+            {
+              exerciseId: "bench_press_barbell",
+              type: "strength",
+              sets: [{ weightKg: 100, reps: 5 }],
+            },
+          ],
+        },
+      ],
+      {
+        injuryMarks: [
+          {
+            id: "inj_1",
+            site: "chest",
+            startedAt: "2026-11-01T10:00:00.000Z",
+            clearedAt: "2026-11-16T10:00:00.000Z",
+          },
+        ],
+      },
+    );
+    start({ exerciseIds: ["bench_press_barbell"], progressionKg: 2.5 });
+    const w = added.find((i) => i.exerciseId === "bench_press_barbell")
+      ?.sets?.[0]?.weightKg;
+    expect(w).toBeLessThan(100);
+  });
+
+  it("без режиму повернення прогресія програми діє як раніше", () => {
+    const { start, added } = setup([
+      {
+        startedAt: "2026-11-14T10:00:00.000Z",
+        endedAt: "2026-11-14T11:00:00.000Z",
+        items: [
+          {
+            exerciseId: "bench",
+            type: "strength",
+            sets: [{ weightKg: 100, reps: 5 }],
+          },
+        ],
+      },
+    ]);
+    start({ exerciseIds: ["bench"], progressionKg: 2.5 });
+    expect(
+      added.find((i) => i.exerciseId === "bench")?.sets?.[0]?.weightKg,
+    ).toBe(102.5);
   });
 });

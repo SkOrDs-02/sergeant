@@ -542,13 +542,19 @@ function kyivDayIndexInWeek(t: number, week0: number): number {
 export interface WeeklyVolumeSeries {
   weekStartMs: number;
   volumeKg: number[];
+  /**
+   * Індекс сьогоднішнього дня (0=Пн … 6=Нд). Дні після нього ще не настали:
+   * їхні нулі — «ще не було», а не «нуль обʼєму», і графік їх не малює.
+   */
+  todayIndex: number;
 }
 
 /** 7 значень (Пн…Нд) для поточного календарного тижня (Europe/Kyiv), кг×повторення за день. */
 export function weeklyVolumeSeriesNow(
   workouts: readonly StatsWorkout[] | null | undefined,
 ): WeeklyVolumeSeries {
-  const week0 = kyivMondayStartMs(Date.now());
+  const nowMs = Date.now();
+  const week0 = kyivMondayStartMs(nowMs);
   const vol = [0, 0, 0, 0, 0, 0, 0];
 
   for (const w of workouts || []) {
@@ -562,7 +568,8 @@ export function weeklyVolumeSeriesNow(
     // `?? 0`, щоб уникнути non-null assertion.
     vol[idx] = (vol[idx] ?? 0) + workoutTonnageKg(w);
   }
-  return { weekStartMs: week0, volumeKg: vol };
+  const todayIndex = Math.min(6, Math.max(0, kyivDayIndexInWeek(nowMs, week0)));
+  return { weekStartMs: week0, volumeKg: vol, todayIndex };
 }
 
 export function formatCompactKg(kg: number | null | undefined): string {

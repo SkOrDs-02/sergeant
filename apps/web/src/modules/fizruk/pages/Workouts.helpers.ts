@@ -2,8 +2,15 @@
  * Last validated: 2026-06-05
  * Status: Active
  */
-import type { ExerciseHistoryEntry, Workout } from "@sergeant/fizruk-domain";
-import { collectStrengthSessionPoints } from "@sergeant/fizruk-domain";
+import type {
+  ExerciseHistoryEntry,
+  InjuryMark,
+  Workout,
+} from "@sergeant/fizruk-domain";
+import {
+  collectStrengthSessionPoints,
+  latestClearedInjuryAtForExercise,
+} from "@sergeant/fizruk-domain";
 import type {
   ExerciseLocation,
   RawExerciseDef,
@@ -89,6 +96,7 @@ export function buildGroupedExercises(
 export function collectLastByExerciseId(
   workouts: readonly Workout[],
   activeWorkoutId: string | null,
+  injuryMarks: readonly InjuryMark[],
 ): Record<string, LastExerciseItem> {
   const out: Record<string, LastExerciseItem> = {};
   const historyByEx: Record<string, ExerciseHistoryEntry[]> = {};
@@ -109,8 +117,15 @@ export function collectLastByExerciseId(
   }
   // Сесії для режиму повернення в підказці наступного підходу (`logic-04`):
   // та сама збірка, що й на сторінці вправи (`collectStrengthSessionPoints`).
+  // Зняття позначки травми — другий привід мʼякого режиму (E-5, ADR-0083),
+  // як на сторінці вправи. Перевірка за мʼязами запису і за зоною з реєстру
+  // (через `exerciseId`).
   for (const [exId, entry] of Object.entries(out)) {
     entry._sessions = collectStrengthSessionPoints(historyByEx[exId] ?? []);
+    entry._injuryClearedAt = latestClearedInjuryAtForExercise(
+      entry,
+      injuryMarks,
+    );
   }
   return out;
 }

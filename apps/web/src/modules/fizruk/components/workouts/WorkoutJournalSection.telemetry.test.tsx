@@ -90,6 +90,7 @@ function baseProps(overrides: Record<string, unknown> = {}) {
     onOpenItem: vi.fn(),
     onAddExercise: vi.fn(),
     recBy: {},
+    injurySites: new Set<never>(),
     lastByExerciseId: {},
     setRestTimer: vi.fn(),
     updateWorkout: vi.fn(),

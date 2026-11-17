@@ -56,9 +56,10 @@ const RETURN_REASON_TEXT: Record<string, string> = {
  * режимі повернення вагу не піднімає — обидва рішення живуть у домені
  * (`suggestNextSet`), тут лише виклик і копія.
  *
- * `injuryClearedAt` сюди не доходить: картка знає лише історію самої вправи,
- * тож м'який режим тут вмикає пауза. Позначка болю має власне попередження
- * у `WorkoutItemRecoveryChip` поруч.
+ * Мʼякий режим вмикає і пауза, і свіже зняття позначки травми
+ * (`last._injuryClearedAt`, 21 день, E-5 з ADR-0083) — так само, як на
+ * сторінці вправи. Активна позначка болю має власне попередження у
+ * `WorkoutItemRecoveryChip` поруч.
  */
 export function WorkoutItemNextSetHint({
   last,
@@ -79,6 +80,7 @@ export function WorkoutItemNextSetHint({
     lastBest1rm: uncappedEpley1rm(best),
     lastSessionAt: last._startedAt ?? null,
     sessions: last._sessions,
+    injuryClearedAt: last._injuryClearedAt ?? null,
   });
   const suggestion = suggestNextSet(best, {
     exercise: exerciseId ? findExerciseById(exerciseId) : null,

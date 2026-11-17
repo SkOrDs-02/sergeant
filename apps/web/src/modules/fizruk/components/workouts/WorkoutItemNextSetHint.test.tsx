@@ -62,6 +62,28 @@ describe("WorkoutItemNextSetHint", () => {
     expect(weight).toBeLessThan(80);
   });
 
+  it("не піднімає вагу одразу після зняття позначки травми (E-5)", () => {
+    // Свіжа сесія без паузи, але позначку знято 5 днів тому: 21 день
+    // мʼякого режиму, як на сторінці вправи (аудит 2026-11-17, §3.4).
+    const last = {
+      ...lastStrength(3),
+      _injuryClearedAt: new Date(Date.now() - 5 * 86_400_000).toISOString(),
+    } as LastByExerciseEntry;
+    const onApply = vi.fn();
+    render(
+      <WorkoutItemNextSetHint
+        last={last}
+        exerciseId="bench_press_barbell"
+        isReadOnly={false}
+        onApply={onApply}
+      />,
+    );
+    expect(screen.getByText(/легше після позначки болю/)).toBeInTheDocument();
+    fireEvent.click(screen.getByRole("button", { name: /Наступний/ }));
+    const [weight] = onApply.mock.calls[0] as [number, number];
+    expect(weight).toBeLessThan(80);
+  });
+
   it("keeps the comeback mode after one light session following a layoff (logic-04)", () => {
     // Пік 120×5 (e1RM 140) 125 днів тому, вчора — легке повернення 60×8.
     const at = (d: number) =>

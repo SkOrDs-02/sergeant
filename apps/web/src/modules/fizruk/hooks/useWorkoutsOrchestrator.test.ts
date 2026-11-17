@@ -194,6 +194,10 @@ vi.mock("@sergeant/fizruk-domain", () => ({
   ACTIVE_WORKOUT_KEY: "fizruk_active_workout",
   // `collectLastByExerciseId` збирає сесії для підказки (logic-04).
   collectStrengthSessionPoints: () => [],
+  // Справжній `useInjuries` (не мокнутий) і `collectLastByExerciseId`
+  // читають позначки травми через домен (ADR-0083, E-5).
+  activeInjurySites: () => new Set(),
+  latestClearedInjuryAtForExercise: () => null,
   summarizeWorkoutForFinish: vi.fn((w: unknown) => w),
   recoveryConflictsForExercise: (ex: unknown, by: unknown) =>
     mockRecoveryConflicts(ex, by),

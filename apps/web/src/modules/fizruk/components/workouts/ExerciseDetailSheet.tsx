@@ -13,6 +13,7 @@ import { ExercisePhotoViewer } from "./ExercisePhotoViewer";
 
 type RecExerciseFn = typeof recoveryConflictsForExerciseFn;
 type RecoveryByMap = Parameters<RecExerciseFn>[1];
+type InjurySites = NonNullable<Parameters<RecExerciseFn>[2]>;
 
 type ToastApi = {
   warning?: (msg: string) => void;
@@ -25,7 +26,8 @@ type ExerciseDetailSheetProps = {
   musclesUk: Record<string, string>;
   primaryGroupsUk?: Record<string, string>;
   equipmentUk?: Record<string, string>;
-  rec: { by: RecoveryByMap } | null | undefined;
+  /** `injurySites` — активні позначки травми (ADR-0083), див. каталог. */
+  rec: { by: RecoveryByMap; injurySites: InjurySites } | null | undefined;
   recoveryConflictsForExercise: RecExerciseFn;
   activeWorkoutId: string | null | undefined;
   activeWorkout: Workout | null | undefined;
@@ -76,7 +78,7 @@ export function ExerciseDetailSheet({
       ? (activeWorkout?.items.find((i) => i.exerciseId === selected.id) ?? null)
       : null;
 
-  const cf = recoveryConflictsForExercise(selected, rec?.by);
+  const cf = recoveryConflictsForExercise(selected, rec?.by, rec?.injurySites);
   const isCustom =
     Boolean(selected["_custom"]) ||
     selected["source"] === "manual" ||

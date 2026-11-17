@@ -19,6 +19,7 @@
  * route-owned, single-workout.
  */
 import { useRef, useState } from "react";
+import type { InjurySiteId } from "@sergeant/fizruk-domain/data";
 import { Card } from "@shared/components/ui/Card";
 import { Button } from "@shared/components/ui/Button";
 import { SessionView } from "../session/SessionView";
@@ -85,6 +86,8 @@ interface WorkoutJournalSectionProps {
   pendingRetroEnd?: string | null | undefined;
   onPendingRetroEndChange?: ((iso: string) => void) | undefined;
   recBy: Record<string, unknown>;
+  /** Активні позначки травми (ADR-0083) для чипа відновлення. */
+  injurySites: ReadonlySet<InjurySiteId>;
   lastByExerciseId: Record<string, unknown>;
   setRestTimer: (s: RestTimerState | null) => void;
   updateWorkout: (id: string, patch: Partial<Workout>) => void;
@@ -122,6 +125,7 @@ export function WorkoutJournalSection({
   pendingRetroEnd,
   onPendingRetroEndChange,
   recBy,
+  injurySites,
   lastByExerciseId,
   setRestTimer,
   updateWorkout,
@@ -331,6 +335,7 @@ export function WorkoutJournalSection({
           onPendingRetroEndChange={onPendingRetroEndChange}
           lastByExerciseId={lastByExerciseId}
           recBy={recBy}
+          injurySites={injurySites}
           removeItem={removeItem}
           updateItem={updateItem}
           updateWorkout={updateWorkout}

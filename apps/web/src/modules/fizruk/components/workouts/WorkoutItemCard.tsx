@@ -3,6 +3,7 @@
  * Status: Active
  */
 import { useState } from "react";
+import type { InjurySiteId } from "@sergeant/fizruk-domain/data";
 import { Button } from "@shared/components/ui/Button";
 import type {
   Workout,
@@ -43,6 +44,8 @@ export type WorkoutItemCardProps = {
   isReadOnly: boolean;
   lastByExerciseId: Record<string, unknown>;
   recBy: Record<string, unknown>;
+  /** Активні позначки травми (ADR-0083) для чипа відновлення. */
+  injurySites: ReadonlySet<InjurySiteId>;
   updateItem: (
     workoutId: string,
     itemId: string,
@@ -113,6 +116,7 @@ export function WorkoutItemCard({
   isReadOnly,
   lastByExerciseId,
   recBy,
+  injurySites,
   updateItem,
   setRestTimer,
   getDefaultForGroup,
@@ -174,7 +178,11 @@ export function WorkoutItemCard({
 
   return (
     <div>
-      <WorkoutItemRecoveryChip it={it} recBy={recBy} />
+      <WorkoutItemRecoveryChip
+        it={it}
+        recBy={recBy}
+        injurySites={injurySites}
+      />
       <WorkoutItemLastTimeHint last={last} />
 
       {showTypeSwitcher && (

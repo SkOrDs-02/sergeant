@@ -3,6 +3,7 @@
  * Status: Active
  */
 import { focusFallbackProps } from "@shared/lib/ui/focusFallback";
+import type { InjurySiteId } from "@sergeant/fizruk-domain/data";
 import { SESSION_FOCUS_FALLBACK } from "./focusFallback";
 import { useCallback, useMemo, useState } from "react";
 import type {
@@ -52,6 +53,8 @@ export interface SessionViewProps {
   onPendingRetroEndChange?: ((iso: string) => void) | undefined;
   lastByExerciseId: Record<string, unknown>;
   recBy: Record<string, unknown>;
+  /** Активні позначки травми (ADR-0083) для чипа відновлення. */
+  injurySites: ReadonlySet<InjurySiteId>;
   removeItem: (workoutId: string, itemId: string) => void;
   updateItem: (
     workoutId: string,
@@ -84,6 +87,7 @@ export function SessionView({
   onPendingRetroEndChange,
   lastByExerciseId,
   recBy,
+  injurySites,
   removeItem,
   updateItem,
   updateWorkout,
@@ -298,6 +302,7 @@ export function SessionView({
             isReadOnly={isReadOnly}
             lastByExerciseId={lastByExerciseId}
             recBy={recBy}
+            injurySites={injurySites}
             updateItem={updateItem}
             setRestTimer={setRestTimer}
             getDefaultForGroup={getDefaultForGroup}
@@ -356,6 +361,7 @@ export function SessionView({
               isReadOnly={isReadOnly}
               lastByExerciseId={lastByExerciseId}
               recBy={recBy}
+              injurySites={injurySites}
               onOpenItem={(id) => onOpenItem(id)}
               onAddExercise={onAddExercise}
               selectMode={selectMode}

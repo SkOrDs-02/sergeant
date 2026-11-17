@@ -8,6 +8,7 @@ import type {
   WorkoutItem,
   WorkoutSet,
 } from "@sergeant/fizruk-domain";
+import type { InjurySiteId } from "@sergeant/fizruk-domain/data";
 import { FizrukData } from "@sergeant/fizruk-domain";
 import { Button } from "@shared/components/ui/Button";
 import {
@@ -33,6 +34,8 @@ export interface SessionExerciseFocusProps {
   isReadOnly: boolean;
   lastByExerciseId: Record<string, unknown>;
   recBy: Record<string, unknown>;
+  /** Активні позначки травми (ADR-0083) для чипа відновлення. */
+  injurySites: ReadonlySet<InjurySiteId>;
   updateItem: (
     workoutId: string,
     itemId: string,
@@ -70,6 +73,7 @@ export function SessionExerciseFocus({
   isReadOnly,
   lastByExerciseId,
   recBy,
+  injurySites,
   updateItem,
   setRestTimer,
   getDefaultForGroup,
@@ -199,6 +203,7 @@ export function SessionExerciseFocus({
             isReadOnly={isReadOnly}
             lastByExerciseId={lastByExerciseId}
             recBy={recBy}
+            injurySites={injurySites}
             updateItem={updateItem}
             setRestTimer={setRestTimer}
             getDefaultForGroup={getDefaultForGroup}

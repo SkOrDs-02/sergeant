@@ -389,7 +389,7 @@ function makeOrchestrator(view: string = "home", overrides: object = {}) {
     musclesUk: {},
     primaryGroupsUk: {},
     musclesByPrimaryGroup: {},
-    rec: { by: {} },
+    rec: { by: {}, injurySites: new Set<never>() },
     lastByExerciseId: {},
     deleteExerciseConfirm: false,
     riskyTemplateConfirm: null,

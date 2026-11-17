@@ -99,6 +99,7 @@ function renderView(
           activeDuration="12:34"
           lastByExerciseId={{}}
           recBy={{}}
+          injurySites={new Set<never>()}
           removeItem={removeItem}
           updateItem={updateItem}
           updateWorkout={updateWorkout}
@@ -236,6 +237,7 @@ describe("SessionView — list", () => {
             activeDuration="12:34"
             lastByExerciseId={{}}
             recBy={{}}
+            injurySites={new Set<never>()}
             removeItem={removeItem}
             updateItem={updateItem}
             updateWorkout={updateWorkout}

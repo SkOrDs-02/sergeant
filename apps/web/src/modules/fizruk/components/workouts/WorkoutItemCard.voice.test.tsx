@@ -75,6 +75,7 @@ function renderCard(
         isReadOnly={overrides.isReadOnly ?? false}
         lastByExerciseId={{}}
         recBy={{}}
+        injurySites={new Set<never>()}
         updateItem={updateItem}
         setRestTimer={setRestTimer}
         getDefaultForGroup={() => 90}

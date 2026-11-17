@@ -6,6 +6,7 @@ import { useToast } from "@shared/hooks/useToast";
 import { showUndoToast } from "@shared/lib/ui/undoToast";
 import { useExerciseCatalog } from "./useExerciseCatalog";
 import { useRecovery } from "./useRecovery";
+import { useInjuries } from "./useInjuries";
 import {
   useWorkoutTemplates,
   type WorkoutTemplate,
@@ -144,6 +145,17 @@ export function useWorkoutsOrchestrator(
   // Виклик стоїть ПІСЛЯ `activeWorkoutId` навмисно: поточна сесія
   // виключається з історії відновлення (див. `UseRecoveryOptions`).
   const rec = useRecovery({ excludeWorkoutId: activeWorkoutId });
+  // Травма — жорстке застереження (ADR-0083): без `injurySites` домен
+  // вважав, що позначок немає, і шаблон стартував без підтвердження, а
+  // каталог у сесії не казав про біль (аудит 2026-11-17, §3.4).
+  const conflictsOf = useCallback(
+    (ex: RawExerciseDef) =>
+      recoveryConflictsForExercise(ex, rec.by, rec.injurySites),
+    [rec.by, rec.injurySites],
+  );
+  // Усі позначки, включно зі знятими: зняття вмикає мʼякий режим підказки
+  // наступного підходу (E-5, ADR-0083).
+  const { all: injuryMarks } = useInjuries();
   const [finishFlash, setFinishFlash] = useState<FinishFlashState | null>(null);
   const [deleteExerciseConfirm, setDeleteExerciseConfirm] = useState(false);
   const [riskyTemplateConfirm, setRiskyTemplateConfirm] =
@@ -301,8 +313,7 @@ export function useWorkoutsOrchestrator(
         );
         return;
       }
-      const conflicts = recoveryConflictsForExercise(ex, rec.by);
-      if (conflicts.injury.blocked) {
+      if (conflictsOf(ex).injury.blocked) {
         toast.warning(
           "Ти позначив біль у цій групі. Вправу додав, але навантажувати не раджу.",
         );
@@ -314,7 +325,7 @@ export function useWorkoutsOrchestrator(
       activeWorkoutId,
       activeWorkout?.endedAt,
       addExerciseToActive,
-      rec.by,
+      conflictsOf,
       toast,
     ],
   );
@@ -386,21 +397,19 @@ export function useWorkoutsOrchestrator(
         );
         return;
       }
-      const risky = picks.some(
-        (ex) => recoveryConflictsForExercise(ex, rec.by).hasHardBlock,
-      );
+      const risky = picks.some((ex) => conflictsOf(ex).hasHardBlock);
       if (risky) {
         setRiskyTemplateConfirm(tpl);
         return;
       }
       requestWorkoutStart(() => executeTemplateStart(tpl));
     },
-    [exercises, rec.by, executeTemplateStart, requestWorkoutStart, toast],
+    [exercises, conflictsOf, executeTemplateStart, requestWorkoutStart, toast],
   );
 
   const lastByExerciseId = useMemo(
-    () => collectLastByExerciseId(workouts, activeWorkoutId),
-    [workouts, activeWorkoutId],
+    () => collectLastByExerciseId(workouts, activeWorkoutId, injuryMarks),
+    [workouts, activeWorkoutId, injuryMarks],
   );
 
   const grouped = useMemo(

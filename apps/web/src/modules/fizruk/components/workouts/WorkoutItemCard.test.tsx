@@ -62,6 +62,7 @@ function renderCard(
       isReadOnly={props.isReadOnly ?? false}
       lastByExerciseId={props.lastByExerciseId ?? {}}
       recBy={props.recBy ?? {}}
+      injurySites={new Set<never>()}
       updateItem={updateItem}
       setRestTimer={setRestTimer}
       getDefaultForGroup={getDefaultForGroup}

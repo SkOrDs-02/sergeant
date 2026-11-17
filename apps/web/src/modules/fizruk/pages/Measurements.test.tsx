@@ -13,7 +13,14 @@
  * SQLite/dual-write pipeline.
  */
 import { describe, it, expect, vi, afterEach, beforeEach } from "vitest";
-import { render, screen, cleanup, fireEvent } from "@testing-library/react";
+import {
+  render,
+  screen,
+  cleanup,
+  fireEvent,
+  within,
+} from "@testing-library/react";
+import { messages } from "@shared/i18n/uk";
 
 const addEntry = vi.fn();
 const deleteEntry = vi.fn();
@@ -84,6 +91,25 @@ describe("Measurements page", () => {
     });
     expect(trigger.querySelector('[class*="success"]')).toBeNull();
     expect(trigger.querySelector('[class*="text-text"]')).not.toBeNull();
+  });
+
+  it("підпис «Мануал» і назва гайду стоять окремими рядками", () => {
+    // На 390 px кнопка читалась «МануалЯк правильно робити заміри»: обидва
+    // рядки були `inline-flex`, тож ставали в один рядок без пробілу, а
+    // `mt-0.5` на інлайн-боксі нічого не розділяв (скрин 2026-11-17).
+    // jsdom не верстає, тож перевіряємо саме те, що це спричинило: жоден із
+    // двох рядків не є інлайн-боксом.
+    render(<Measurements />);
+    const trigger = screen.getByRole("button", {
+      name: /Як правильно робити заміри/,
+    });
+    for (const text of [
+      messages.fizruk.measurements.manual,
+      messages.fizruk.measurements.manualLink,
+    ]) {
+      const line = within(trigger).getByText(text);
+      expect(line.className).not.toMatch(/(^|\s)inline(-flex|-block)?(\s|$)/);
+    }
   });
 
   it("opens the internal measurement guide with primary-source links", () => {
