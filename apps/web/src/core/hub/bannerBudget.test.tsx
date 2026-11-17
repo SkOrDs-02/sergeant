@@ -24,35 +24,35 @@ describe("HubBannerBudgetProvider", () => {
       <HubBannerBudgetProvider>
         <Banner id="dailyNudge" />
         <Banner id="localOnlyData" />
+        <Banner id="crossModulePreview" />
         <Banner id="privacyLock" />
-        <Banner id="softAuth" />
       </HubBannerBudgetProvider>,
     );
     expect(screen.getByTestId("banner-localOnlyData")).toBeInTheDocument();
-    expect(screen.getByTestId("banner-softAuth")).toBeInTheDocument();
-    expect(screen.queryByTestId("banner-privacyLock")).toBeNull();
+    expect(screen.getByTestId("banner-privacyLock")).toBeInTheDocument();
     expect(screen.queryByTestId("banner-dailyNudge")).toBeNull();
+    expect(screen.queryByTestId("banner-crossModulePreview")).toBeNull();
   });
 
   it("звільнене місце дістається наступному за пріоритетом", () => {
     const { rerender } = render(
       <HubBannerBudgetProvider>
         <Banner id="localOnlyData" />
-        <Banner id="softAuth" />
         <Banner id="privacyLock" />
+        <Banner id="dailyNudge" />
       </HubBannerBudgetProvider>,
     );
-    expect(screen.queryByTestId("banner-privacyLock")).toBeNull();
+    expect(screen.queryByTestId("banner-dailyNudge")).toBeNull();
 
     rerender(
       <HubBannerBudgetProvider>
         <Banner id="localOnlyData" />
-        <Banner id="softAuth" wants={false} />
-        <Banner id="privacyLock" />
+        <Banner id="privacyLock" wants={false} />
+        <Banner id="dailyNudge" />
       </HubBannerBudgetProvider>,
     );
-    expect(screen.queryByTestId("banner-softAuth")).toBeNull();
-    expect(screen.getByTestId("banner-privacyLock")).toBeInTheDocument();
+    expect(screen.queryByTestId("banner-privacyLock")).toBeNull();
+    expect(screen.getByTestId("banner-dailyNudge")).toBeInTheDocument();
   });
 
   it("банер, який сам не хоче показуватись, місця не займає", () => {
@@ -73,12 +73,12 @@ describe("HubBannerBudgetProvider", () => {
   it("стелю можна змінити через `max`", () => {
     render(
       <HubBannerBudgetProvider max={1}>
-        <Banner id="softAuth" />
+        <Banner id="dailyNudge" />
         <Banner id="localOnlyData" />
       </HubBannerBudgetProvider>,
     );
     expect(screen.getByTestId("banner-localOnlyData")).toBeInTheDocument();
-    expect(screen.queryByTestId("banner-softAuth")).toBeNull();
+    expect(screen.queryByTestId("banner-dailyNudge")).toBeNull();
   });
 
   // PR-H1 (2026-09-13): `reengagement` ЗАМІНЮЄ hero (`HubHeroBlock`), а не
@@ -89,6 +89,13 @@ describe("HubBannerBudgetProvider", () => {
   // `ReEngagementCard.test.tsx`.
   it("PR-H1: `reengagement` більше не бере участі в бюджеті банерів", () => {
     expect(Object.keys(HUB_BANNER_PRIORITY)).not.toContain("reengagement");
+  });
+
+  // Рішення власника 2026-11-17: `SoftAuthPromptCard` знято разом зі слотом;
+  // латентний ризик «soft-auth hero займає слот бюджету» (аудит, хвиля 4)
+  // зник разом із ним.
+  it("`softAuth` більше не має слота в бюджеті банерів", () => {
+    expect(Object.keys(HUB_BANNER_PRIORITY)).not.toContain("softAuth");
   });
 
   it("без провайдера хук не обмежує нічого", () => {

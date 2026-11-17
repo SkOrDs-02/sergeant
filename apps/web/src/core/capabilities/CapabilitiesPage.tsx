@@ -5,7 +5,8 @@ import { IconButton } from "@shared/components/ui/IconButton";
 import { SectionHeading } from "@shared/components/ui/SectionHeading";
 import { cn } from "@shared/lib/ui/cn";
 import { messages } from "@shared/i18n/uk";
-import { CAPABILITY_GROUPS, type Capability } from "./capabilityRegistry";
+import { useAuthOptional } from "../auth/AuthContext";
+import { visibleCapabilityGroups, type Capability } from "./capabilityRegistry";
 
 /**
  * `/capabilities` — «що вміє додаток».
@@ -61,6 +62,12 @@ function CapabilityCard({ item }: { item: Capability }) {
 }
 
 export function CapabilitiesPage({ onClose }: CapabilitiesPageProps) {
+  // Картки лише для акаунта (PIN, рішення власника 2026-11-17) гостю не
+  // показуємо: предикат той самий, що в `ProfilePage` і пошуку
+  // (`useSearchEngine.ts`), `!user`. Поза `AuthProvider` (вузькі тести)
+  // фільтра немає.
+  const auth = useAuthOptional();
+  const groups = visibleCapabilityGroups(auth === null || Boolean(auth.user));
   return (
     // AI-CONTEXT: `#root` — `100dvh; overflow:hidden` (base.css), тож скролу
     // документа немає: повноекранний маршрут мусить володіти власним
@@ -98,7 +105,7 @@ export function CapabilitiesPage({ onClose }: CapabilitiesPageProps) {
           </div>
         </Card>
 
-        {CAPABILITY_GROUPS.map((group) => (
+        {groups.map((group) => (
           <section key={group.id} className="flex flex-col gap-2">
             <SectionHeading as="h2" size="xs" variant="muted">
               {group.title}

@@ -7,9 +7,15 @@
  * скрол-контейнера, і всі записи нижче межі вікна ставали недосяжними.
  * Той самий баг раніше вже ловив `/assistant`.
  */
-import { describe, it, expect } from "vitest";
+import { beforeEach, describe, it, expect, vi } from "vitest";
 import { render, screen } from "@testing-library/react";
 import { MemoryRouter } from "react-router-dom";
+
+const { useAuthOptional } = vi.hoisted(() => ({
+  useAuthOptional: vi.fn((): { user: unknown } | null => null),
+}));
+vi.mock("../auth/AuthContext", () => ({ useAuthOptional }));
+
 import { CapabilitiesPage } from "./CapabilitiesPage";
 import { CAPABILITY_GROUPS } from "./capabilityRegistry";
 
@@ -22,6 +28,24 @@ function renderPage() {
 }
 
 describe("CapabilitiesPage", () => {
+  beforeEach(() => {
+    useAuthOptional.mockReturnValue(null);
+  });
+
+  // Рішення власника 2026-11-17: PIN лише для акаунта. Гостю картка вела в
+  // Профіль, якого в нього немає, і повертала на «Головну».
+  it("гостю не показує картки PIN, акаунту показує", () => {
+    useAuthOptional.mockReturnValue({ user: null });
+    const { unmount } = renderPage();
+    expect(screen.queryByTestId("capability-privacy")).toBeNull();
+    expect(screen.getByTestId("capability-export")).toBeInTheDocument();
+    unmount();
+
+    useAuthOptional.mockReturnValue({ user: { id: "usr_1" } });
+    renderPage();
+    expect(screen.getByTestId("capability-privacy")).toBeInTheDocument();
+  });
+
   it("renders factual capability rows without decorative glyphs", () => {
     const { container } = renderPage();
     expect(container.querySelectorAll("svg")).toHaveLength(0);

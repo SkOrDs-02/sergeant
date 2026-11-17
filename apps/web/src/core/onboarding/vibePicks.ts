@@ -10,7 +10,6 @@
 import {
   type DashboardModuleId,
   ALL_MODULES as SHARED_ALL_MODULES,
-  dismissSoftAuth as sharedDismissSoftAuth,
   clearFirstActionPending as sharedClearFirstActionPending,
   getFirstActionStartedAt as sharedGetFirstActionStartedAt,
   getSessionDays as sharedGetSessionDays,
@@ -18,7 +17,6 @@ import {
   getVibePicks as sharedGetVibePicks,
   isFirstActionPending as sharedIsFirstActionPending,
   isFirstRealEntryDone as sharedIsFirstRealEntryDone,
-  isSoftAuthDismissed as sharedIsSoftAuthDismissed,
   markFirstActionPending as sharedMarkFirstActionPending,
   markFirstActionStartedAt as sharedMarkFirstActionStartedAt,
   markFirstRealEntryDone as sharedMarkFirstRealEntryDone,
@@ -65,14 +63,6 @@ export function markFirstRealEntryDone(): void {
 
 export function isFirstRealEntryDone(): boolean {
   return sharedIsFirstRealEntryDone(webKVStore);
-}
-
-export function isSoftAuthDismissed(): boolean {
-  return sharedIsSoftAuthDismissed(webKVStore);
-}
-
-export function dismissSoftAuth(): void {
-  sharedDismissSoftAuth(webKVStore);
 }
 
 export function markFirstActionStartedAt(): void {

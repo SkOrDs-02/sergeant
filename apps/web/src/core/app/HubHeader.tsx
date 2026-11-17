@@ -34,9 +34,9 @@ interface HubHeaderProps {
   /** System notifications (SW update / PWA install) surfaced in the bell. */
   notifications?: readonly HubNotification[];
   /**
-   * Currently active hub tab. Drives the visible orientation subtitle
-   * (PR-H2) — omit or pass `"dashboard"` on the home tab, where no
-   * subtitle renders.
+   * Активна вкладка хаба. На не-домашніх вкладках її назва стає видимим
+   * заголовком шапки замість дати (PR-H2, мова H). Без пропа або з
+   * `"dashboard"` заголовок - дата.
    */
   activeTab?: HubView;
 }

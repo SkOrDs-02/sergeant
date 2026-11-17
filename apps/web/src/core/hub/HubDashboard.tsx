@@ -14,7 +14,6 @@ import { useHubDashboardState } from "./useHubDashboardState";
 import type { HubDashboardProps } from "./hub.types";
 import { useHubPref } from "../settings/hubPrefs";
 import { safeReadLS } from "@shared/lib/storage/storage";
-import { useAuthOptional } from "../auth/AuthContext";
 import { ModulePanel } from "./ModulePanel";
 import { useChecklistNow } from "./now/useChecklistNow";
 import { useNowItems } from "./now/useNowItems";
@@ -24,17 +23,7 @@ import { ClosedTodayPile } from "./now/ClosedTodayPile";
 
 export const DASHBOARD_MODULE_LABELS = SHARED_DASHBOARD_MODULE_LABELS;
 
-export function HubDashboard({
-  onOpenModule,
-  user,
-  onShowAuth,
-}: HubDashboardProps) {
-  // `useAuthOptional` (не `useAuth`) — поза `AuthProvider` він віддає `null`
-  // замість кидати, тож тести, що монтують цей компонент без провайдера,
-  // поводяться як раніше. Статус потрібен нижче за течією: без нього анонім
-  // у вікні завантаження сесії не бачив НІ банера durability, НІ soft-auth
-  // (ревʼю #1128) — розбір у `localOnlyBannerVisibility.ts`.
-  const auth = useAuthOptional();
+export function HubDashboard({ onOpenModule, user }: HubDashboardProps) {
   // Розгорнутість блоку «Що зараз важливо» живе ТУТ, а не в самому блоці,
   // бо відповідь потрібна двом споживачам одразу: самому блоку (не рахувати
   // показ під згорнутим pill) і `useHubDashboardState` (не палити денну
@@ -65,9 +54,7 @@ export function HubDashboard({
   const s = useHubDashboardState({
     onOpenModule,
     user,
-    onShowAuth,
     insightsOpen,
-    authStatus: auth?.status,
   });
   const [showInsights] = useHubPref<boolean>("showInsights", true);
   const now = useNowItems();
@@ -93,10 +80,7 @@ export function HubDashboard({
 
       <HubHeroBlock
         onOpenModule={onOpenModule}
-        onShowAuth={onShowAuth}
         hasRealEntry={s.hasRealEntry}
-        sessionDays={s.sessionDays}
-        entryCount={s.entryCount}
         onboardingState={s.onboardingState}
         reengagement={s.reengagement}
         dismissReengagement={s.dismissReengagement}

@@ -51,8 +51,8 @@ export function moduleHasRealEntry(moduleId: DashboardModuleId): boolean {
 }
 
 /**
- * Total non-demo entries across all modules — the «У тебе N записів»
- * number on `SoftAuthPromptCard` and the hub streak card.
+ * Total non-demo entries across all modules. Feeds the first-entry
+ * celebration guard (`useFirstEntryCelebration`, LOG-8).
  */
 export function countRealEntries(): number {
   return sharedCountRealEntries(webKVStore, webRealEntryProbe);

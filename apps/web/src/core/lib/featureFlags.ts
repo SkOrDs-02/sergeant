@@ -27,6 +27,11 @@ export interface FlagDefinition {
   defaultValue: boolean;
   /** Якщо true — показується у розділі «Експериментальне» з ярликом beta. */
   experimental?: boolean;
+  /**
+   * Лише для акаунта: керування живе в Профілі, якого в гостя немає. Гостю
+   * такий прапорець не показуємо в жодному списку (`userFacingFlags`).
+   */
+  accountOnly?: true;
 }
 
 // ---------------------------------------------------------------------------
@@ -44,6 +49,9 @@ export const FLAG_REGISTRY: readonly FlagDefinition[] = [
     description:
       "Захищає твої дані PIN-кодом. Після ввімкнення встанови PIN у Профілі → «Безпека» → «Блокування застосунку».",
     defaultValue: false,
+    // Рішення власника 2026-11-17: PIN лише для акаунта (`AppLockSettings`
+    // живе тільки в `ProfilePage`, гостю Профіль не рендериться).
+    accountOnly: true,
   },
   // `finyk_subscriptions_category` прибрано: флаг рендерився тумблером у
   // Settings → Експериментальні, зберігався у сховище — і не мав жодного
@@ -74,6 +82,17 @@ export const FLAG_REGISTRY: readonly FlagDefinition[] = [
 ] as const;
 
 export type FlagId = (typeof FLAG_REGISTRY)[number]["id"];
+
+/**
+ * Прапорці, які користувач бачить тумблерами («Експериментальні функції» в
+ * Налаштуваннях). Гостю (`hasUser === false`) не віддаємо записів
+ * `accountOnly`: їхній опис відсилає в Профіль, якого в гостя немає.
+ */
+export function userFacingFlags(hasUser: boolean): readonly FlagDefinition[] {
+  return FLAG_REGISTRY.filter(
+    (f) => f.experimental && (hasUser || !f.accountOnly),
+  );
+}
 
 // ---------------------------------------------------------------------------
 // Сховище

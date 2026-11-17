@@ -106,34 +106,40 @@ describe("HubHeader", () => {
     ).not.toBeInTheDocument();
   });
 
-  // PR-H2 (аудит 2026-09-13 хвиля 5): привітання — єдиний видимий текст на
-  // всіх чотирьох вкладках, назва вкладки жила лише в sr-only `<h1>`.
-  it("renders no visible subtitle on the dashboard tab", () => {
+  // PR-H2 (аудит 2026-09-13 хвиля 5): привітання було єдиним видимим
+  // текстом на всіх чотирьох вкладках, назва вкладки жила лише в sr-only
+  // `<h1>`. Після redesign v3 (мова H, перевалідація 2026-11-17) обіцянка
+  // така: на «Головній» заголовок шапки - дата, на решті вкладок - назва
+  // вкладки замість дати, без рядка дня тижня.
+  it("на головній заголовок шапки - дата, не назва вкладки", () => {
     render(<HubHeader {...baseProps()} activeTab="dashboard" />);
     expect(screen.queryByText("Налаштування")).not.toBeInTheDocument();
     expect(screen.queryByText("Профіль")).not.toBeInTheDocument();
     expect(screen.queryByText("Звʼязки")).not.toBeInTheDocument();
+    expect(screen.getByTestId("hub-header-weekday")).toBeInTheDocument();
   });
 
-  it("renders no visible subtitle when activeTab is omitted", () => {
+  it("без activeTab шапка поводиться як на головній", () => {
     render(<HubHeader {...baseProps()} />);
     expect(screen.queryByText("Налаштування")).not.toBeInTheDocument();
+    expect(screen.getByTestId("hub-header-weekday")).toBeInTheDocument();
   });
 
-  it("shows a visible «Налаштування» subtitle under the greeting on the settings tab", () => {
-    render(<HubHeader {...baseProps()} activeTab="settings" />);
-    expect(screen.getByText("Налаштування")).toBeVisible();
-  });
-
-  it("shows a visible «Профіль» subtitle on the profile tab", () => {
-    render(<HubHeader {...baseProps()} activeTab="profile" />);
-    expect(screen.getByText("Профіль")).toBeVisible();
-  });
-
-  it("shows a visible «Звʼязки» subtitle on the reports tab", () => {
-    render(<HubHeader {...baseProps()} activeTab="reports" />);
-    expect(screen.getByText("Звʼязки")).toBeVisible();
-  });
+  it.each([
+    ["settings", "Налаштування"],
+    ["profile", "Профіль"],
+    ["reports", "Звʼязки"],
+  ] as const)(
+    "на вкладці %s заголовок шапки - назва вкладки замість дати",
+    (tab, title) => {
+      render(<HubHeader {...baseProps()} activeTab={tab} />);
+      expect(screen.getByTestId("hub-header-title")).toHaveTextContent(title);
+      expect(screen.getByTestId("hub-header-title")).toBeVisible();
+      expect(
+        screen.queryByTestId("hub-header-weekday"),
+      ).not.toBeInTheDocument();
+    },
+  );
 
   it("forwards notifications to the bell", () => {
     render(

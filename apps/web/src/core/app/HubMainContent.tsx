@@ -236,11 +236,7 @@ export const HubMainContent = memo(function HubMainContent({
               {/* Стеля на кількість підказок одночасно — див.
                   `bannerBudget.tsx` (анти-слоп аудит 2026-09-01, F3). */}
               <HubBannerBudgetProvider>
-                <HubDashboard
-                  onOpenModule={onOpenModule}
-                  user={user}
-                  onShowAuth={onShowAuth}
-                />
+                <HubDashboard onOpenModule={onOpenModule} user={user} />
                 {!inFtuxSession && (
                   <LocalOnlyDataBanner onSignIn={onShowAuth} />
                 )}

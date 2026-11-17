@@ -14,13 +14,6 @@ vi.mock("../lib/featureFlags", () => ({ useFlag: flagMock }));
 vi.mock("@shared/lib/modules/hubNav", () => ({
   openHubModuleWithAction: openActionMock,
 }));
-vi.mock("../onboarding/SoftAuthPromptCard", () => ({
-  SoftAuthPromptCard: ({ onOpenAuth }: { onOpenAuth: () => void }) => (
-    <button type="button" onClick={onOpenAuth}>
-      soft auth
-    </button>
-  ),
-}));
 vi.mock("../onboarding/FirstActionSheet", () => ({
   FirstActionHeroCard: ({ onDismiss }: { onDismiss: () => void }) => (
     <button type="button" onClick={onDismiss}>
@@ -70,20 +63,15 @@ const defaultOnboardingState: HubHeroProps["onboardingState"] = {
   reason: "none",
   candidates: [],
   showFirstAction: false,
-  showSoftAuth: false,
   showTodayFocus: false,
   showReengagement: false,
   dismissFirstAction: vi.fn(),
-  dismissSoftAuth: vi.fn(),
 };
 
 function renderHero(overrides: Partial<HubHeroProps> = {}) {
   const props: HubHeroProps = {
     onOpenModule: vi.fn(),
-    onShowAuth: vi.fn(),
     hasRealEntry: false,
-    sessionDays: 2,
-    entryCount: 1,
     onboardingState: defaultOnboardingState,
     reengagement: { show: false, daysInactive: 0 },
     dismissReengagement: vi.fn(),
@@ -129,9 +117,8 @@ describe("HubHeroBlock", () => {
   });
 
   it.each([
-    ["first action", { showFirstAction: true, showSoftAuth: false }],
-    ["soft auth", { showFirstAction: false, showSoftAuth: true }],
-    ["today focus", { showFirstAction: false, showSoftAuth: false }],
+    ["first action", { showFirstAction: true }],
+    ["today focus", { showFirstAction: false }],
   ])("selects the %s hero", (label, state) => {
     renderHero({
       nowPile: <p>today focus</p>,

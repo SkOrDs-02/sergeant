@@ -47,6 +47,12 @@ export interface Capability {
   href: string;
   /** Модульний акцент іконки. Відсутній — нейтральна подача. */
   module?: HubModuleId;
+  /**
+   * Лише для акаунта: ціль живе в Профілі, якого в гостя немає
+   * (`ProfilePage` рендерить `null`, `useAppEffects` повертає `?tab=profile`
+   * на «Головну»). Гостю такий запис не показуємо (`visibleCapabilityGroups`).
+   */
+  accountOnly?: true;
 }
 
 export interface CapabilityGroup {
@@ -174,12 +180,17 @@ export const CAPABILITY_GROUPS: readonly CapabilityGroup[] = [
         // Профіль → «Безпека» 2026-09-04 (`ProfilePage.tsx`, секція
         // «Блокування застосунку»); ця картка досі казала «постав PIN у
         // Налаштуваннях» і вела на `#settings-privacy`, де PIN-контролу
-        // вже немає.
+        // вже немає. Перевалідація 2026-11-17: видалення акаунта теж живе в
+        // Профілі (`DangerZoneSection`), у Налаштуваннях лише вказівник на
+        // нього (`PrivacySection.tsx`), тож опис більше не відсилає туди.
         quickAction: "Постав PIN-код у Профілі за хвилину.",
         description:
-          "Вхід за PIN-кодом живе в Профілі → «Безпека». Керування згодами на аналітику й AI-памʼять, повне видалення акаунта лишаються в Налаштуваннях.",
+          "Вхід за PIN-кодом і видалення акаунта живуть у Профілі. Згоди на аналітику й AI-памʼять лишаються в Налаштуваннях.",
         icon: "lock",
         href: "/?tab=profile",
+        // Рішення власника 2026-11-17: PIN лише для акаунта. Гостю картка
+        // вела в Профіль, якого в нього немає, і повертала на «Головну».
+        accountOnly: true,
       },
       {
         id: "export",
@@ -193,6 +204,21 @@ export const CAPABILITY_GROUPS: readonly CapabilityGroup[] = [
     ],
   },
 ];
+
+/**
+ * Групи, які бачить конкретний користувач. Гостю (`hasUser === false`) не
+ * показуємо записів `accountOnly`; група, що лишилась порожньою, зникає
+ * разом із заголовком.
+ */
+export function visibleCapabilityGroups(
+  hasUser: boolean,
+): readonly CapabilityGroup[] {
+  if (hasUser) return CAPABILITY_GROUPS;
+  return CAPABILITY_GROUPS.map((group) => ({
+    ...group,
+    items: group.items.filter((item) => !item.accountOnly),
+  })).filter((group) => group.items.length > 0);
+}
 
 /** Плоский список — зручно для тестів і лічильників. */
 export const ALL_CAPABILITIES: readonly Capability[] =
