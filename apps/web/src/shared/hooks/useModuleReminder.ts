@@ -18,6 +18,7 @@
 import { useEffect, useState } from "react";
 import { logger } from "@shared/lib";
 import { getKyivDateParts, getKyivDayKey } from "@shared/lib/time/kyivTime";
+import { isIOSBrowserTab } from "@shared/lib/platform/iosStandalone";
 
 // ── Permission tracker ──────────────────────────────────────────────────────
 
@@ -132,9 +133,21 @@ export async function showReminderNotification(
  * (shared across the whole app), so every module reminder toggle routes through
  * this single request rather than keeping a per-module copy.
  */
-export async function requestNotificationPermission(): Promise<
-  NotificationPermission | "unsupported"
-> {
+export type RequestedPermission =
+  | NotificationPermission
+  | "unsupported"
+  /**
+   * iPhone/iPad у вкладці Safari: push неможливий, доки застосунок не
+   * встановлено на початковий екран. Це не відмова й не «браузер не вміє»:
+   * викликач показує `IosInstallPushHint` і не ставить свій прапорець.
+   */
+  | "install-required";
+
+export async function requestNotificationPermission(): Promise<RequestedPermission> {
+  // Перед будь-яким запитом: на iOS-вкладці `Notification` відсутній, тож без
+  // цієї гілки людина отримала б «unsupported» і тост про налаштування
+  // браузера, якого на iOS не існує.
+  if (isIOSBrowserTab()) return "install-required";
   if (typeof Notification === "undefined") return "unsupported";
   if (Notification.permission === "granted") return "granted";
   if (Notification.permission === "denied") return "denied";

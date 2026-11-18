@@ -2,11 +2,13 @@ import { useState } from "react";
 import { cn } from "@shared/lib/ui/cn";
 import { Button } from "@shared/components/ui/Button";
 import { Input } from "@shared/components/ui/Input";
+import { IosInstallPushHint } from "@shared/components/ui/IosInstallPushHint";
 import { ChoiceGroup } from "@shared/components/ui/Choice";
 import { TimeField } from "@shared/components/ui/TimeField";
 import { useToast } from "@shared/hooks/useToast";
 import { requestNotificationPermission } from "@shared/hooks/useModuleReminder";
 import { usePushNotifications } from "@shared/hooks/usePushNotifications";
+import { isIOSBrowserTab } from "@shared/lib/platform/iosStandalone";
 import { settingsSectionTitle } from "../hub/settingsSectionsCatalog";
 import { useRoutineState } from "../../modules/routine/hooks/useRoutineState";
 import { useRoutineRemindersToggle } from "../../modules/routine/hooks/useRoutineRemindersToggle";
@@ -31,6 +33,8 @@ const CAP_OPTIONS = Array.from({ length: PUSH_DAILY_CAP_MAX + 1 }, (_, n) => ({
 }));
 
 type PermStatus = NotificationPermission | "unsupported";
+/** Тумблер, під яким показано підказку встановлення (iOS-вкладка, О-1). */
+type InstallHintSource = "sergeant" | "routine" | "fizruk" | "nutrition";
 
 export function NotificationsSection() {
   const [permStatus, setPermStatus] = useState<PermStatus>(() =>
@@ -39,6 +43,11 @@ export function NotificationsSection() {
       : "unsupported",
   );
   const { warning: toastWarning } = useToast();
+  // iPhone/iPad у вкладці Safari: push неможливий, тож замість тосту
+  // «дозволь у налаштуваннях браузера» показуємо, як встановити застосунок.
+  const [installHint, setInstallHint] = useState<InstallHintSource | null>(
+    null,
+  );
 
   // Три перемикачі нижче обіцяли «навіть коли застосунок закрито» —
   // і це була неправда: нагадування вів локальний таймер, який помирав
@@ -107,12 +116,20 @@ export function NotificationsSection() {
   const setRoutineReminders = useRoutineRemindersToggle(updateRoutinePref);
   const handleRoutineToggle = async (checked: boolean) => {
     const perm = await setRoutineReminders(checked);
+    if (perm === "install-required") {
+      setInstallHint("routine");
+      return;
+    }
     if (perm) setPermStatus(perm);
   };
 
   const handleFizrukToggle = async (checked: boolean) => {
     if (checked && permStatus !== "granted") {
       const perm = await requestNotificationPermission();
+      if (perm === "install-required") {
+        setInstallHint("fizruk");
+        return;
+      }
       setPermStatus(perm);
       if (perm !== "granted") {
         toastWarning(
@@ -127,6 +144,10 @@ export function NotificationsSection() {
   const handleNutritionToggle = async (checked: boolean) => {
     if (checked && permStatus !== "granted") {
       const perm = await requestNotificationPermission();
+      if (perm === "install-required") {
+        setInstallHint("nutrition");
+        return;
+      }
       setPermStatus(perm);
       if (perm !== "granted") {
         toastWarning(
@@ -244,12 +265,17 @@ export function NotificationsSection() {
           onChange={(checked) => {
             // Дозвіл питаємо ДО запису: увімкнений на сервері канал без
             // дозволу браузера — це тиха підписка на нічого.
+            if (checked && isIOSBrowserTab()) {
+              setInstallHint("sergeant");
+              return;
+            }
             if (checked && permStatus !== "granted") {
               void requestPermission();
             }
             void sergeantNudges.set(checked);
           }}
         />
+        {installHint === "sergeant" && <IosInstallPushHint className="mt-2" />}
         {/* Огляд 2026-09-04: до першого завантаження «помилка» — це гість
             («увійди, щоб…»), не збій. Червоним лишається лише збій
             збереження після успішного завантаження. */}
@@ -276,6 +302,7 @@ export function NotificationsSection() {
           checked={routine.prefs?.routineRemindersEnabled === true}
           onChange={handleRoutineToggle}
         />
+        {installHint === "routine" && <IosInstallPushHint className="mt-2" />}
       </SettingsSubGroup>
 
       <SettingsSubGroup variant="bounded" title="Фізрук (тренування)">
@@ -287,6 +314,7 @@ export function NotificationsSection() {
           checked={monthlyPlan.reminderEnabled}
           onChange={handleFizrukToggle}
         />
+        {installHint === "fizruk" && <IosInstallPushHint className="mt-2" />}
         {monthlyPlan.reminderEnabled && (
           // Сирий `<input type="time">` тут стояв у flex-рядку без жодного
           // контракту ширини: нативний контрол має власний intrinsic
@@ -329,6 +357,7 @@ export function NotificationsSection() {
           disabled={!nutritionHydrated}
           onChange={handleNutritionToggle}
         />
+        {installHint === "nutrition" && <IosInstallPushHint className="mt-2" />}
         {nutritionPrefs.reminderEnabled && (
           <div className="flex items-center gap-2 text-style-label">
             <label htmlFor="nutrition-reminder-hour" className="text-subtle">

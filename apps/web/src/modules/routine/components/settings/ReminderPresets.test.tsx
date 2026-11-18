@@ -164,6 +164,26 @@ describe("ReminderPresets", () => {
       expect(screen.queryByRole("status")).toBeNull();
     });
 
+    it("iPhone у вкладці Safari: показує підказку встановлення замість тосту", async () => {
+      vi.stubGlobal("navigator", {
+        ...window.navigator,
+        userAgent: "Mozilla/5.0 (iPhone; CPU iPhone OS 17_0 like Mac OS X)",
+        platform: "iPhone",
+        maxTouchPoints: 5,
+        standalone: false,
+      });
+      vi.stubGlobal("Notification", undefined);
+      render(<Harness initial={{ reminderTimes: ["08:00"] }} />);
+      fireEvent.click(
+        screen.getByRole("button", { name: "Увімкнути нагадування" }),
+      );
+      expect(
+        await screen.findByText("Встанови Sergeant на початковий екран"),
+      ).toBeInTheDocument();
+      expect(routineMock.updatePref).not.toHaveBeenCalled();
+      expect(toastMock.warning).not.toHaveBeenCalled();
+    });
+
     it("показує підказку про дозвіл, коли тумблер увімкнений, а дозволу немає", () => {
       routineMock.prefs = { routineRemindersEnabled: true };
       stubNotification("denied");
