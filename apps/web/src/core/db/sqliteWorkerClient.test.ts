@@ -1,7 +1,11 @@
 // @vitest-environment jsdom
 import { afterEach, describe, expect, it, vi } from "vitest";
 
-import { openSqliteInWorker, SqliteWorkerError } from "./sqliteWorkerClient";
+import {
+  openSqliteInWorker,
+  openSqliteMemoryInWorker,
+  SqliteWorkerError,
+} from "./sqliteWorkerClient";
 import type {
   SqliteWorkerRequest,
   SqliteWorkerResponse,
@@ -74,6 +78,18 @@ function happyResponder(rows: unknown[] = []): Responder {
             imported: false,
           },
         };
+      case "openMemory":
+        return {
+          id: request.id,
+          ok: true,
+          kind: "open",
+          result: {
+            dbName: ":memory:",
+            grewBy: 0,
+            diagnostics: null,
+            imported: false,
+          },
+        };
       case "all":
         return { id: request.id, ok: true, kind: "all", rows };
       case "diagnostics":
@@ -119,6 +135,42 @@ describe("openSqliteInWorker", () => {
       initialCapacity: 24,
       minFreeSlots: 8,
     });
+  });
+
+  it("доносить знімок kvvfs до воркера як є, без SQLite на цьому боці", async () => {
+    installWorker(happyResponder());
+    const snapshot = { size: 4096, journal: null, pages: ["abc"] };
+
+    await openSqliteInWorker("sergeant-anon.db", {
+      ...OPEN_OPTS,
+      importKvvfs: snapshot,
+    });
+
+    expect(live?.seen[0]).toMatchObject({
+      kind: "open",
+      importKvvfs: snapshot,
+    });
+  });
+
+  it("не шле порожнього поля знімка, коли переливати нічого", async () => {
+    installWorker(happyResponder());
+
+    await openSqliteInWorker("sergeant-anon.db", {
+      ...OPEN_OPTS,
+      importKvvfs: null,
+    });
+
+    expect(live?.seen[0]).not.toHaveProperty("importKvvfs");
+  });
+
+  it("памʼятева база теж живе у воркері (PR-T1)", async () => {
+    installWorker(happyResponder([[1]]));
+
+    const conn = await openSqliteMemoryInWorker();
+
+    expect(conn.dbName).toBe(":memory:");
+    expect(live?.seen[0]).toEqual({ id: 1, kind: "openMemory" });
+    await expect(conn.all("SELECT 1", [], "array")).resolves.toEqual([[1]]);
   });
 
   it("кожен виклик отримує СВОЮ відповідь, навіть коли вони перемішані", async () => {

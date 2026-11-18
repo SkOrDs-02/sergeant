@@ -60,6 +60,7 @@ import { SyncStatusSheet } from "./SyncStatusSheet";
 import {
   __resetActiveSqliteVfsForTests,
   noteActiveSqliteVfs,
+  noteSqliteVfsFallbackReason,
 } from "../db/storageBackendState";
 
 describe("SyncStatusSheet", () => {
@@ -76,7 +77,7 @@ describe("SyncStatusSheet", () => {
   // діагностика потрапила НА ЕКРАН і приїхала скріншотом. Тому стан
   // сховища читається тут, а не лише в дашборді.
   it("називає, де фізично лежить локальна база", async () => {
-    noteActiveSqliteVfs("kvvfs");
+    noteActiveSqliteVfs("opfs-sahpool");
     render(
       <SyncStatusSheet
         open
@@ -88,7 +89,27 @@ describe("SyncStatusSheet", () => {
     );
 
     expect(
-      await screen.findByText(/Просте сховище браузера/),
+      await screen.findByText(/Файлове сховище браузера/),
+    ).toBeInTheDocument();
+  });
+
+  // PR-T1 (2026-11-18): без OPFS у воркері база живе в памʼяті, і аркуш
+  // має назвати причину, а не лише наслідок — reload тут не допоможе.
+  it("на браузері без OPFS у воркері називає причину", async () => {
+    noteSqliteVfsFallbackReason("unsupported");
+    noteActiveSqliteVfs("memory");
+    render(
+      <SyncStatusSheet
+        open
+        onClose={vi.fn()}
+        online
+        pending={0}
+        deadLetter={0}
+      />,
+    );
+
+    expect(
+      await screen.findByText(/браузер не підтримує файлове сховище/),
     ).toBeInTheDocument();
   });
 

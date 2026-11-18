@@ -1,5 +1,5 @@
 /**
- * Last validated: 2026-09-14
+ * Last validated: 2026-11-18
  * Status: Active
  *
  * Клієнт бази, що живе у воркері — стадія 1 спеки
@@ -23,6 +23,7 @@
  * не годинник.
  */
 import type {
+  KvvfsSnapshot,
   SqliteWorkerBind,
   SqliteWorkerCall,
   SqliteWorkerDiagnostics,
@@ -76,12 +77,10 @@ export interface SqliteWorkerOpenOptions {
   readonly initialCapacity: number;
   readonly minFreeSlots: number;
   /**
-   * Байти старої бази для перелиття (стадія 2), або `null`.
-   *
-   * AI-DANGER: буфер передається у воркер як transferable і після цього
-   * на головному потоці порожній. Так і задумано — база важить мегабайти.
+   * Знімок старого kvvfs-сховища для перелиття (стадія 2), або `null`.
+   * Байти бази з нього збирає вже воркер — див. `kvvfsConvert.ts`.
    */
-  readonly importBytes?: ArrayBuffer | null;
+  readonly importKvvfs?: KvvfsSnapshot | null;
   /** Перевизначає {@link OPEN_TIMEOUT_MS}; для повторної спроби після таймауту. */
   readonly openTimeoutMs?: number;
 }
@@ -123,9 +122,42 @@ function spawnWorker(): Worker {
  * «воркер начебто стартував». Рішення про фолбек ухвалює виклик у
  * `sqlite.ts`, бо лише там відомо, куди падати.
  */
-export async function openSqliteInWorker(
+export function openSqliteInWorker(
   dbName: string,
   options: SqliteWorkerOpenOptions,
+): Promise<SqliteWorkerConnection> {
+  const importKvvfs = options.importKvvfs ?? undefined;
+  return connect(
+    dbName,
+    {
+      kind: "open",
+      dbName,
+      directory: options.directory,
+      initialCapacity: options.initialCapacity,
+      minFreeSlots: options.minFreeSlots,
+      ...(importKvvfs ? { importKvvfs } : {}),
+    },
+    options.openTimeoutMs ?? OPEN_TIMEOUT_MS,
+  );
+}
+
+/**
+ * Піднімає воркер із базою `:memory:` — без жодного сховища.
+ *
+ * AI-CONTEXT: до 2026-11-18 така база відкривалась на головному потоці
+ * власною копією sqlite-wasm. Від PR-T1 (рішення власника Б) копії там
+ * немає, тож і памʼятева база живе у воркері: пристрій без OPFS у воркері
+ * і друга вкладка (пул тримає перша) отримують ту саму SQL-поверхню, що й
+ * основний шлях. Кидає, якщо воркер не піднявся взагалі.
+ */
+export function openSqliteMemoryInWorker(): Promise<SqliteWorkerConnection> {
+  return connect(":memory:", { kind: "openMemory" }, OPEN_TIMEOUT_MS);
+}
+
+async function connect(
+  dbName: string,
+  openRequest: SqliteWorkerCall,
+  openTimeoutMs: number,
 ): Promise<SqliteWorkerConnection> {
   const worker = spawnWorker();
   const pending = new Map<number, Pending>();
@@ -152,7 +184,6 @@ export async function openSqliteInWorker(
   const send = (
     request: SqliteWorkerCall,
     timeoutMs?: number,
-    transfer?: Transferable[],
     onTimeout?: () => Error,
   ): Promise<SqliteWorkerResponse> => {
     if (dead) return Promise.reject(dead);
@@ -177,20 +208,16 @@ export async function openSqliteInWorker(
           reject(err);
         },
       });
-      const message = { ...request, id } as SqliteWorkerRequest;
-      if (transfer && transfer.length > 0)
-        worker.postMessage(message, transfer);
-      else worker.postMessage(message);
+      worker.postMessage({ ...request, id } as SqliteWorkerRequest);
     });
   };
 
   const call = async (
     request: SqliteWorkerCall,
     timeoutMs?: number,
-    transfer?: Transferable[],
     onTimeout?: () => Error,
   ): Promise<SqliteWorkerResponse> => {
-    const response = await send(request, timeoutMs, transfer, onTimeout);
+    const response = await send(request, timeoutMs, onTimeout);
     if (!response.ok) {
       throw new SqliteWorkerError(
         response.error.name,
@@ -203,18 +230,9 @@ export async function openSqliteInWorker(
 
   let opened: SqliteWorkerResponse;
   try {
-    const importBytes = options.importBytes ?? undefined;
     opened = await call(
-      {
-        kind: "open",
-        dbName,
-        directory: options.directory,
-        initialCapacity: options.initialCapacity,
-        minFreeSlots: options.minFreeSlots,
-        ...(importBytes ? { importBytes } : {}),
-      },
-      options.openTimeoutMs ?? OPEN_TIMEOUT_MS,
-      importBytes ? [importBytes] : undefined,
+      openRequest,
+      openTimeoutMs,
       () => new SqliteWorkerOpenTimeoutError(),
     );
   } catch (err) {

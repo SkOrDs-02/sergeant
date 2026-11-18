@@ -1,6 +1,6 @@
 # Огляд фронтенду (Sergeant-2)
 
-> **Last touched:** 2026-09-17 by @claude (прибрано застарілий лічильник exhaustive-deps). **Next review:** 2026-12-16.
+> **Last touched:** 2026-11-18 by @claude (kvvfs-фолбек прибрано, SQLite лише у воркері, PR-T1; раніше 2026-09-17: прибрано застарілий лічильник exhaustive-deps). **Next review:** 2026-12-16.
 > **Status:** Active
 
 Короткий знімок поточного фронтенду монорепо: веб (Vite PWA), мобільний (Expo), спільні пакети та модулі продукту. Детальніший статус поверхонь — [platforms.md](./platforms.md). Навмисні винятки `react-hooks/exhaustive-deps`: web — [apps-web-exhaustive-deps.md](./apps-web-exhaustive-deps.md); mobile — [apps-mobile-exhaustive-deps.md](./apps-mobile-exhaustive-deps.md) (лічильники — в самих каталогах через `rg`).
@@ -15,16 +15,16 @@
 
 ### 1. Веб — `apps/web`
 
-| Шар     | Технології                                                       |
-| ------- | ---------------------------------------------------------------- |
-| Збірка  | Vite 8, `@vitejs/plugin-react`, `@tailwindcss/vite`              |
-| UI      | React 18, Tailwind CSS 4                                         |
-| Роутинг | react-router-dom v7                                              |
-| Дані    | TanStack React Query, workspace `@sergeant/api-client`           |
-| Auth    | better-auth (клієнт поруч із сервером)                           |
-| PWA     | vite-plugin-pwa + Workbox                                        |
-| Sync    | SQLite-WASM (OPFS/kvvfs) + `syncEngine/` — v2 op-log outbox sync |
-| Інше    | Sentry, dnd-kit, react-virtuoso, ZXing, body-highlighter         |
+| Шар     | Технології                                                                              |
+| ------- | --------------------------------------------------------------------------------------- |
+| Збірка  | Vite 8, `@vitejs/plugin-react`, `@tailwindcss/vite`                                     |
+| UI      | React 18, Tailwind CSS 4                                                                |
+| Роутинг | react-router-dom v7                                                                     |
+| Дані    | TanStack React Query, workspace `@sergeant/api-client`                                  |
+| Auth    | better-auth (клієнт поруч із сервером)                                                  |
+| PWA     | vite-plugin-pwa + Workbox                                                               |
+| Sync    | SQLite-WASM у воркері (OPFS, інакше `:memory:`) + `syncEngine/` — v2 op-log outbox sync |
+| Інше    | Sentry, dnd-kit, react-virtuoso, ZXing, body-highlighter                                |
 
 **Структура за змістом** (entry: `apps/web/src/main.tsx` → `apps/web/src/core/app/RootLayout.tsx`):
 
@@ -33,7 +33,7 @@
 - **Pricing/Waitlist**: `core/PricingPage.tsx`, `core/PricingPage.test.tsx`; waitlist форма — `core/pricing/WaitlistForm.tsx`
 - **Observability**: `core/observability/` — PostHog pageview tracker, analytics, posthog init, sanitizeUrl
 - **Sync engine**: `core/syncEngine/` — `SyncEngineWriterRuntime`, singleton boot; `core/cloudSync/` — тільки `useSyncStatus` (v1 engine знятий, ADR-0047)
-- **DB шар**: `core/db/sqlite.ts` — lazy SQLite-WASM з VFS priority OPFS-SAH → kvvfs → memory
+- **DB шар**: `core/db/sqlite.ts` — lazy клієнт SQLite-WASM, що живе лише у воркері (`sqliteWorker.ts`): OPFS-SAH → `:memory:`. kvvfs і копію sqlite-wasm на головному потоці прибрано 2026-11-18 (PR-T1, [`sqlite-opfs-worker.md` § Стадія 4](../../work/specs/sqlite-opfs-worker.md))
 - **Спільні шари**: `@shared/*` (UI, hooks), `core/` (auth, onboarding)
 - **Chat actions**: `core/lib/chatActions/` — domain handlers (`finykActions`, `fizrukActions`, `routineActions`, `nutritionActions`, `serverActions`, `crossActions`)
 

@@ -5,6 +5,7 @@ import { act, cleanup, render, screen } from "@testing-library/react";
 import {
   __resetActiveSqliteVfsForTests,
   noteActiveSqliteVfs,
+  noteSqliteLegacyStoreKept,
   noteSqliteVfsFallbackReason,
 } from "../db/storageBackendState";
 import { messagesEn } from "@shared/i18n/en";
@@ -46,6 +47,28 @@ describe("MemoryOnlyStorageBanner", () => {
     noteActiveSqliteVfs("memory");
     render(<MemoryOnlyStorageBanner />);
     expect(screen.getByText(m.bodyOtherTab)).toBeTruthy();
+  });
+
+  // PR-T1 (2026-11-18): браузер без OPFS у воркері. Reload нічого не
+  // змінить, тож банер його не пропонує і каже, що робити насправді.
+  it("на браузері без OPFS у воркері не обіцяє, що reload допоможе", () => {
+    noteSqliteVfsFallbackReason("unsupported");
+    noteActiveSqliteVfs("memory");
+    render(<MemoryOnlyStorageBanner />);
+    expect(screen.getByText(m.title)).toBeTruthy();
+    expect(screen.getByText(m.bodyUnsupported)).toBeTruthy();
+    expect(screen.queryByRole("button", { name: m.reload })).toBeNull();
+    expect(screen.queryByText(m.body)).toBeNull();
+  });
+
+  it("каже, що старі записи цілі, лише коли старе сховище справді є", () => {
+    noteSqliteVfsFallbackReason("unsupported");
+    noteSqliteLegacyStoreKept();
+    noteActiveSqliteVfs("memory");
+    render(<MemoryOnlyStorageBanner />);
+    expect(
+      screen.getByText(`${m.bodyUnsupported} ${m.legacyKept}`),
+    ).toBeTruthy();
   });
 
   it("показує англійські рядки в EN-локалі", () => {
