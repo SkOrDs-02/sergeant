@@ -13,7 +13,12 @@
  * `fizrukPageMessages`, тож виклики лишаються `messages.fizruk.<ключ>`.
  * Ключі верхнього рівня не повинні збігатися з ключами `uk.fizruk.ts`.
  */
+import { fizrukMeasureMessages } from "./uk.fizrukMeasure";
+
 export const fizrukSessionMessages = {
+  // Тип виміру вправи (окремий файл каталогу, спека типу виміру): спред
+  // тут, а не в `uk.ts`, бо той упирається в 600 рядків.
+  ...fizrukMeasureMessages,
   duringWorkoutSettings: {
     title: "Під час тренування",
     keepScreenOnLabel: "Не гасити екран",

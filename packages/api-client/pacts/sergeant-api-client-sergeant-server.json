@@ -3896,7 +3896,7 @@
         "path": "/api/v2/sync/push",
         "query": {
           "sync_protocol": [
-            "2"
+            "3"
           ]
         }
       },
@@ -3961,7 +3961,7 @@
         "path": "/api/v2/sync/push",
         "query": {
           "sync_protocol": [
-            "2"
+            "3"
           ]
         }
       },
@@ -4033,7 +4033,7 @@
         "path": "/api/v2/sync/push",
         "query": {
           "sync_protocol": [
-            "2"
+            "3"
           ]
         }
       },

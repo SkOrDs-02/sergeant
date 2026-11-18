@@ -33,8 +33,10 @@ export interface WorkoutItemLastTimeHintProps {
  */
 export function filterNonEmptyStrengthSets(
   sets: WorkoutSet[] | undefined,
+  item?: WorkoutItem,
 ): WorkoutSet[] {
-  return (sets || []).filter((s) => isSetCompleted(s));
+  // З `item` — правило його типу виміру (секунди, метри); без — повторення.
+  return (sets || []).filter((s) => isSetCompleted(s, item));
 }
 
 /**

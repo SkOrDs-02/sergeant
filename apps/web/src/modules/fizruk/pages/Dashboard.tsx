@@ -53,6 +53,7 @@ import { usePrPendingInsight } from "../hooks/usePrPendingInsight";
 import { usePrLatest } from "../hooks/usePrLatest";
 import { messages } from "@shared/i18n/uk";
 import { exerciseItemSeed } from "../lib/exerciseItemSeed";
+import { currentExerciseMeasurePrefs } from "../lib/exerciseMeasurePrefsCache";
 
 interface DashboardTodaySession {
   sessionKey: string;
@@ -185,7 +186,7 @@ export function Dashboard({
         primaryGroup: ex.primaryGroup || "",
         musclesPrimary: ex?.muscles?.primary || [],
         musclesSecondary: ex?.muscles?.secondary || [],
-        ...exerciseItemSeed(ex),
+        ...exerciseItemSeed(ex, currentExerciseMeasurePrefs()),
       });
     }
     if (templateId) markTemplateUsed(templateId);

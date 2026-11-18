@@ -20,6 +20,14 @@ import { startRestTimerState } from "../../lib/restTimer";
 import { VoiceMicButton } from "@shared/components/ui/VoiceMicButton";
 import { parseWorkoutSetSpeech } from "@sergeant/shared";
 import {
+  itemMeasure,
+  itemUsesSetRows,
+  measureCountsBy,
+  programPlanForWorkoutItem,
+  type ExerciseMeasure,
+} from "@sergeant/fizruk-domain/domain";
+import { findExerciseById } from "@sergeant/fizruk-domain/data";
+import {
   filterNonEmptyStrengthSets,
   WorkoutItemLastTimeHint,
   type LastByExerciseEntry,
@@ -33,8 +41,7 @@ import {
   WorkoutSetColumnHeader,
   WorkoutSetRow,
 } from "./WorkoutSetRow";
-import { buildTypeSwitchPatch } from "./WorkoutItemTypeSwitcher";
-import { ChoiceGroup } from "@shared/components/ui/Choice";
+import { MeasureChoice } from "./WorkoutItemTypeSwitcher";
 import { messages } from "@shared/i18n/uk";
 
 export type WorkoutItemCardProps = {
@@ -67,13 +74,23 @@ export type WorkoutItemCardProps = {
     itemId: string,
     snapshot: WorkoutSet[],
   ) => void;
+  /**
+   * Людина обрала тип вправи в перемикачі (зріз 5 спеки типу виміру):
+   * памʼять типу, що їде між пристроями. Без пропа — лише це тренування.
+   */
+  onMeasureChosen?:
+    ((exerciseId: string, measure: ExerciseMeasure) => void) | undefined;
 };
 
 /** Найближчий ВИКОНАНИЙ підхід над рядком `idx`, або `null`. */
-function findDoneSetBefore(sets: WorkoutSet[], idx: number): WorkoutSet | null {
+function findDoneSetBefore(
+  sets: WorkoutSet[],
+  idx: number,
+  item?: WorkoutItem,
+): WorkoutSet | null {
   for (let i = Math.min(idx, sets.length) - 1; i >= 0; i -= 1) {
     const s = sets[i];
-    if (s && isSetDone(s)) return s;
+    if (s && isSetDone(s, item)) return s;
   }
   return null;
 }
@@ -94,8 +111,9 @@ export function placeholderSetFor(
   sets: WorkoutSet[],
   idx: number,
   lastSessionSets: WorkoutSet[],
+  item?: WorkoutItem,
 ): WorkoutSet | null {
-  const ghost = lastSessionSets[idx] ?? findDoneSetBefore(sets, idx);
+  const ghost = lastSessionSets[idx] ?? findDoneSetBefore(sets, idx, item);
   if (!ghost) return null;
   // Вага, що вже стоїть у рядку (план програми або власний ввід), лишається:
   // ✓ бере з «було» лише те, чого рядку бракує. Інакше старт програми сіяв
@@ -150,6 +168,7 @@ export function WorkoutItemCard({
   getDefaultForExercise,
   setDefaultForExercise,
   onDeleteSet,
+  onMeasureChosen,
 }: WorkoutItemCardProps) {
   // Помилка голосу — ЛОКАЛЬНИЙ стан, свідомо не `useToast`. Той хук
   // кидає поза `ToastProvider`, а картка рендериться і в деревах без
@@ -160,11 +179,32 @@ export function WorkoutItemCard({
   const last = it.exerciseId
     ? (lastByExerciseId[it.exerciseId] as LastByExerciseEntry | undefined)
     : undefined;
-  // Per-row "було" ghosts: same-position sets from the last session,
-  // filtered with the domain's non-empty criterion. Index N of this array
-  // suggests values for row N of the current sets list.
+  const usesRows = itemUsesSetRows(it);
+  const measure = itemMeasure(it);
+  const countsBy = measureCountsBy(measure);
+  // Per-row "було" ghosts: same-position sets from the last session of the
+  // SAME measure, filtered with the domain's completion rule. Index N of
+  // this array suggests values for row N of the current sets list.
   const lastFilteredSets =
-    last?.type === "strength" ? filterNonEmptyStrengthSets(last.sets) : [];
+    last && itemUsesSetRows(last) && itemMeasure(last) === measure
+      ? filterNonEmptyStrengthSets(last.sets, last)
+      : [];
+  // Без «було» поле секунд показує діапазон плану програми (спека типу
+  // виміру): лише підказка, ✓ її не підставляє.
+  const plan =
+    countsBy === "time"
+      ? programPlanForWorkoutItem(
+          activeWorkout.programRef,
+          it.exerciseId ? findExerciseById(it.exerciseId) : null,
+          measure,
+        )
+      : null;
+  const timePlaceholder =
+    plan?.kind === "time"
+      ? plan.secMin === plan.secMax
+        ? String(plan.secMin)
+        : `${plan.secMin}–${plan.secMax}`
+      : undefined;
 
   const defSec = it.exerciseId
     ? (getDefaultForExercise?.(it.exerciseId, it.primaryGroup) ??
@@ -192,8 +232,8 @@ export function WorkoutItemCard({
   );
   const sets = it.sets || [];
   const setKeys = sets.map((_s, idx) => setIds[idx] ?? `set-fallback-${idx}`);
-  const currentIdx = sets.findIndex((s) => !isSetDone(s));
-  const anyDone = sets.some(isSetDone);
+  const currentIdx = sets.findIndex((s) => !isSetDone(s, it));
+  const anyDone = sets.some((s) => isSetDone(s, it));
   const restSec = restSecAfterCheck(it, group, defSec);
 
   const startRest = () => {
@@ -201,7 +241,17 @@ export function WorkoutItemCard({
     setRestTimer(startRestTimerState(restSec));
   };
 
-  const showTypeSwitcher = !isReadOnly && !(it.type === "strength" && anyDone);
+  // Тип вирішується до першого підходу: після зарахованого перемикач
+  // зникає (журнал канону 2026-09-11, спека типу виміру).
+  const showTypeSwitcher = !isReadOnly && !(usesRows && anyDone);
+
+  const updateSet = (idx: number, patch: Partial<WorkoutSet>) => {
+    const next = [...(it.sets || [])];
+    const current = next[idx];
+    if (!current) return;
+    next[idx] = { ...current, ...patch };
+    updateItem(activeWorkout.id, it.id, { sets: next });
+  };
 
   return (
     <div>
@@ -210,45 +260,24 @@ export function WorkoutItemCard({
         recBy={recBy}
         injurySites={injurySites}
       />
-      <WorkoutItemLastTimeHint last={last} />
+      {!usesRows && <WorkoutItemLastTimeHint last={last} />}
 
       {showTypeSwitcher && (
         <div className="mt-2">
-          <ChoiceGroup
-            className="grid grid-cols-3"
+          <MeasureChoice
             ariaLabel={`${messages.fizruk.typeSwitcher.ariaLabel}: ${it.nameUk}`}
-            value={it.type || "strength"}
-            items={[
-              {
-                value: "strength",
-                label: messages.fizruk.typeSwitcher.strengthLabel,
-                ariaLabel: messages.fizruk.typeSwitcher.strengthAriaLabel,
-              },
-              {
-                value: "time",
-                label: messages.fizruk.typeSwitcher.timeLabel,
-                ariaLabel: messages.fizruk.typeSwitcher.timeAriaLabel,
-              },
-              {
-                value: "distance",
-                label: messages.fizruk.typeSwitcher.distanceLabel,
-                ariaLabel: messages.fizruk.typeSwitcher.distanceAriaLabel,
-              },
-            ]}
-            onChange={(t) => {
-              const patch = buildTypeSwitchPatch(t, it);
-              // Тримаємо stable-key bookkeeping у локстепі з посівом сетів
-              // при перемиканні на силову.
-              if (t === "strength") {
-                setSetIds((patch.sets || []).map(() => crypto.randomUUID()));
-              }
+            item={it}
+            onChange={(patch, m) => {
+              // Тримаємо stable-key bookkeeping у локстепі з рядками патча.
+              setSetIds((patch.sets || []).map(() => crypto.randomUUID()));
               updateItem(activeWorkout.id, it.id, patch);
+              if (it.exerciseId) onMeasureChosen?.(it.exerciseId, m);
             }}
           />
         </div>
       )}
 
-      {it.type === "strength" && (
+      {usesRows && countsBy === "reps" && (
         <WorkoutItemNextSetHint
           last={last}
           exerciseId={it.exerciseId}
@@ -263,7 +292,7 @@ export function WorkoutItemCard({
             // заповнює перший порожній рядок, а якщо всі вже заповнені —
             // додає новий підхід. Наявні значення не чіпаємо.
             const currentSets = it.sets || [];
-            const emptyIdx = currentSets.findIndex((s) => !isSetDone(s));
+            const emptyIdx = currentSets.findIndex((s) => !isSetDone(s, it));
             if (emptyIdx === -1) {
               setSetIds((prev) => [...prev, crypto.randomUUID()]);
               updateItem(activeWorkout.id, it.id, {
@@ -282,56 +311,47 @@ export function WorkoutItemCard({
         />
       )}
 
-      {it.type === "strength" && (
+      {usesRows && (
         <div className="mt-2 space-y-1">
-          {sets.length > 0 && <WorkoutSetColumnHeader />}
+          {sets.length > 0 && <WorkoutSetColumnHeader measure={measure} />}
           {sets.map((s, idx) => (
             <WorkoutSetRow
               key={setKeys[idx]}
               index={idx}
               set={s}
-              ghost={placeholderSetFor(sets, idx, lastFilteredSets)}
+              ghost={placeholderSetFor(sets, idx, lastFilteredSets, it)}
+              measure={measure}
+              item={it}
+              timePlaceholder={timePlaceholder}
               isReadOnly={isReadOnly}
               isCurrent={idx === currentIdx}
               isLast={idx === sets.length - 1}
-              onChangeWeight={(weightKg) => {
-                const next = [...(it.sets || [])];
-                const current = next[idx];
-                if (!current) return;
-                next[idx] = { ...current, weightKg };
-                updateItem(activeWorkout.id, it.id, { sets: next });
-              }}
-              onChangeReps={(reps) => {
-                const next = [...(it.sets || [])];
-                const current = next[idx];
-                if (!current) return;
-                next[idx] = { ...current, reps };
-                updateItem(activeWorkout.id, it.id, { sets: next });
-              }}
+              onChangeWeight={(weightKg) => updateSet(idx, { weightKg })}
+              onChangeReps={(reps) => updateSet(idx, { reps })}
+              onChangeDuration={(durationSec) =>
+                updateSet(idx, { durationSec })
+              }
+              onChangeDistance={(distanceM) => updateSet(idx, { distanceM })}
               rpe={typeof s["rpe"] === "number" ? (s["rpe"] as number) : null}
-              onChangeRpe={(rpe) => {
-                const next = [...(it.sets || [])];
-                const current = next[idx];
-                if (!current) return;
-                next[idx] = { ...current, rpe };
-                updateItem(activeWorkout.id, it.id, { sets: next });
-              }}
+              onChangeRpe={(rpe) => updateSet(idx, { rpe })}
               onApplyGhost={() => {
                 const ghost = placeholderSetFor(
                   it.sets || [],
                   idx,
                   lastFilteredSets,
+                  it,
                 );
                 if (!ghost) return;
-                const next = [...(it.sets || [])];
-                const current = next[idx];
-                if (!current) return;
-                next[idx] = {
-                  ...current,
+                updateSet(idx, {
                   weightKg: ghost.weightKg ?? 0,
                   reps: ghost.reps ?? 0,
-                };
-                updateItem(activeWorkout.id, it.id, { sets: next });
+                  ...(ghost.durationSec != null
+                    ? { durationSec: ghost.durationSec }
+                    : {}),
+                  ...(ghost.distanceM != null
+                    ? { distanceM: ghost.distanceM }
+                    : {}),
+                });
               }}
               // Explicit start: the rest timer fires from the ✓ tap, never
               // from the reps `onChange` transition — that heuristic is what
@@ -366,48 +386,50 @@ export function WorkoutItemCard({
               >
                 + Підхід
               </Button>
-              <VoiceMicButton
-                module="fizruk"
-                size="md"
-                label="Голосовий ввід підходу"
-                // Domain prompt steers Whisper toward the canonical
-                // weight/reps shape ("80 кг 8 разів").
-                promptHint="Вправа з вагою та повтореннями: жим штанги 80 кг 8 разів, присідання 100 кг 5 повторень."
-                // AI-DANGER: voice (Whisper) set-commit path. The all-null
-                // guard, the optimistic `updateItem` append, and the auto
-                // rest-timer start are tightly coupled. Removing the guard
-                // injects 0×0 sets that the cloud-sync queue silently
-                // persists. Voice entry keeps its auto-start on purpose —
-                // the spoken set is already a complete, explicit action.
-                onError={setVoiceErr}
-                onResult={(transcript) => {
-                  const parsed = parseWorkoutSetSpeech(transcript);
-                  if (
-                    !parsed ||
-                    (parsed.weight == null &&
-                      parsed.reps == null &&
-                      parsed.sets == null)
-                  ) {
-                    // Мовчазний `return` тут коштував дорожче, ніж
-                    // виглядав: людина говорила, бачила чип із
-                    // розпізнаним текстом — і далі не з'являлось ні
-                    // сету, ні помилки. Збій був невидимий, тому й
-                    // польових скарг на голос не було.
-                    setVoiceErr(messages.fizruk.voiceSet.notParsed);
-                    return;
-                  }
-                  const newSet = {
-                    weightKg: parsed.weight ?? 0,
-                    reps: parsed.reps ?? 0,
-                  };
-                  setVoiceErr(null);
-                  setSetIds((prev) => [...prev, crypto.randomUUID()]);
-                  updateItem(activeWorkout.id, it.id, {
-                    sets: [...(it.sets || []), newSet],
-                  });
-                  startRest();
-                }}
-              />
+              {countsBy === "reps" && (
+                <VoiceMicButton
+                  module="fizruk"
+                  size="md"
+                  label="Голосовий ввід підходу"
+                  // Domain prompt steers Whisper toward the canonical
+                  // weight/reps shape ("80 кг 8 разів").
+                  promptHint="Вправа з вагою та повтореннями: жим штанги 80 кг 8 разів, присідання 100 кг 5 повторень."
+                  // AI-DANGER: voice (Whisper) set-commit path. The all-null
+                  // guard, the optimistic `updateItem` append, and the auto
+                  // rest-timer start are tightly coupled. Removing the guard
+                  // injects 0×0 sets that the cloud-sync queue silently
+                  // persists. Voice entry keeps its auto-start on purpose —
+                  // the spoken set is already a complete, explicit action.
+                  onError={setVoiceErr}
+                  onResult={(transcript) => {
+                    const parsed = parseWorkoutSetSpeech(transcript);
+                    if (
+                      !parsed ||
+                      (parsed.weight == null &&
+                        parsed.reps == null &&
+                        parsed.sets == null)
+                    ) {
+                      // Мовчазний `return` тут коштував дорожче, ніж
+                      // виглядав: людина говорила, бачила чип із
+                      // розпізнаним текстом — і далі не з'являлось ні
+                      // сету, ні помилки. Збій був невидимий, тому й
+                      // польових скарг на голос не було.
+                      setVoiceErr(messages.fizruk.voiceSet.notParsed);
+                      return;
+                    }
+                    const newSet = {
+                      weightKg: parsed.weight ?? 0,
+                      reps: parsed.reps ?? 0,
+                    };
+                    setVoiceErr(null);
+                    setSetIds((prev) => [...prev, crypto.randomUUID()]);
+                    updateItem(activeWorkout.id, it.id, {
+                      sets: [...(it.sets || []), newSet],
+                    });
+                    startRest();
+                  }}
+                />
+              )}
               {!activeWorkout.endedAt && (
                 // У групі кнопка несе СПІЛЬНИЙ час кола і без меню
                 // пресетів: там пресет міняв би типовий час однієї
@@ -436,7 +458,7 @@ export function WorkoutItemCard({
         </div>
       )}
 
-      {it.type !== "strength" && (
+      {!usesRows && (
         <WorkoutItemCardioFields
           it={it}
           activeWorkout={activeWorkout}

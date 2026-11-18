@@ -16,6 +16,10 @@ import {
   softDeleteCustomActivity,
   upsertCustomActivity,
 } from "./adapter.customActivities.js";
+import {
+  softDeleteExercisePref,
+  upsertExercisePref,
+} from "./adapter.exercisePrefs.js";
 import { setPrograms } from "./adapter.programs.js";
 import type {
   FizrukCustomExerciseSnapshot,
@@ -104,6 +108,14 @@ const applyOps = createApplyOps<FizrukDualWriteOp>({
     },
     "custom-activity-delete": async (client, op, rt) => {
       await softDeleteCustomActivity(client, op.activityId, rt);
+      return "applied";
+    },
+    "exercise-pref-upsert": async (client, op, rt) => {
+      await upsertExercisePref(client, op.pref, rt);
+      return "applied";
+    },
+    "exercise-pref-delete": async (client, op, rt) => {
+      await softDeleteExercisePref(client, op.exerciseId, rt);
       return "applied";
     },
     "measurement-upsert": async (client, op, rt) => {

@@ -61,6 +61,7 @@ import {
   applyFizrukWorkoutTemplates,
 } from "./fizruk/applySyncFullState.js";
 import { applyFizrukInjuries } from "./fizruk/applyInjuries.js";
+import { applyFizrukExercisePrefs } from "./fizruk/applyExercisePrefs.js";
 import {
   applyNutritionMeals,
   applyNutritionPantries,
@@ -176,6 +177,8 @@ const OP_LOG_TABLE_REGISTRY: Record<string, ApplyFn> = {
   // значення клієнт відкидає в `activeInjurySites`, тобто воно деградує в
   // «нічого не блокує», а не в помилку.
   fizruk_injuries: applyFizrukInjuries,
+  // Міграція 173 (спека типу виміру, Р-2): тип вправи, обраний людиною.
+  fizruk_exercise_prefs: applyFizrukExercisePrefs,
   nutrition_meals: applyNutritionMeals,
   nutrition_pantries: applyNutritionPantries,
   nutrition_pantry_items: applyNutritionPantryItems,

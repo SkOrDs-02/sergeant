@@ -21,3 +21,4 @@ export * from "./setCompletion.js";
 export * from "./plannedSets.js";
 export * from "./measure.js";
 export * from "./measureRecords.js";
+export * from "./measureItem.js";

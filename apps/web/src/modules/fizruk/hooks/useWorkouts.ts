@@ -1,4 +1,5 @@
 import { useCallback, useMemo } from "react";
+import { withMeasureMirror } from "@sergeant/fizruk-domain/domain";
 import { useSqliteTickOverlay } from "@shared/hooks/useSqliteTickOverlay";
 import type {
   ChecklistItem,
@@ -264,7 +265,10 @@ export function useWorkouts() {
           if (w.id !== workoutId) return w;
           return {
             ...w,
-            items: [...(w.items || []), { id: itemId, ...item } as WorkoutItem],
+            items: [
+              ...(w.items || []),
+              withMeasureMirror({ id: itemId, ...item } as WorkoutItem),
+            ],
           };
         }),
       );
@@ -281,7 +285,10 @@ export function useWorkouts() {
           return {
             ...w,
             items: (w.items || []).map((i: WorkoutItem) =>
-              i.id === itemId ? { ...i, ...patch } : i,
+              // Дзеркало типу виміру (`withMeasureMirror`): похідний `type`
+              // і суми секунд / метрів зарахованих підходів на вправі, щоб
+              // старий клієнт і калорії бачили правдиву суму.
+              i.id === itemId ? withMeasureMirror({ ...i, ...patch }) : i,
             ),
           };
         }),

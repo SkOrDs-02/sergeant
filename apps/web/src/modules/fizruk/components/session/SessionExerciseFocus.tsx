@@ -9,6 +9,7 @@ import type {
   WorkoutSet,
 } from "@sergeant/fizruk-domain";
 import type { InjurySiteId } from "@sergeant/fizruk-domain/data";
+import { itemUsesSetRows } from "@sergeant/fizruk-domain/domain";
 import { FizrukData } from "@sergeant/fizruk-domain";
 import { Button } from "@shared/components/ui/Button";
 import {
@@ -19,6 +20,7 @@ import { Icon } from "@shared/components/ui/Icon";
 import { messages } from "@shared/i18n/uk";
 import type { RestTimerState } from "../../hooks/useFizrukRestSound";
 import { WorkoutItemCard } from "../workouts/WorkoutItemCard";
+import { useExerciseMeasurePrefs } from "../../hooks/useExerciseMeasurePrefs";
 import {
   countDoneSets,
   groupMemberPosition,
@@ -87,6 +89,9 @@ export function SessionExerciseFocus({
   onOpenStats,
 }: SessionExerciseFocusProps) {
   const ss = messages.fizruk.session;
+  // Тип, обраний у перемикачі, запамʼятовується і їде між пристроями
+  // (спека типу виміру, Р-2).
+  const { rememberMeasure } = useExerciseMeasurePrefs();
   const idx = items.findIndex((x) => x.id === it.id);
   const { prev, next } = neighbourItems(items, it.id);
   const pos = groupMemberPosition(it, group);
@@ -95,10 +100,9 @@ export function SessionExerciseFocus({
     ? FizrukData.exerciseImagePaths(it.exerciseId)[0]
     : undefined;
 
-  const subline =
-    it.type === "strength"
-      ? `${ss.exerciseOf} ${idx + 1} ${ss.of} ${items.length} · ${setsProgressLabel(countDoneSets(it), sets.length)}`
-      : `${ss.exerciseOf} ${idx + 1} ${ss.of} ${items.length}`;
+  const subline = itemUsesSetRows(it)
+    ? `${ss.exerciseOf} ${idx + 1} ${ss.of} ${items.length} · ${setsProgressLabel(countDoneSets(it), sets.length)}`
+    : `${ss.exerciseOf} ${idx + 1} ${ss.of} ${items.length}`;
 
   const menuItems: DropdownMenuItem[] = [
     ...(onOpenInfo
@@ -210,6 +214,7 @@ export function SessionExerciseFocus({
             getDefaultForExercise={getDefaultForExercise}
             setDefaultForExercise={setDefaultForExercise}
             onDeleteSet={onDeleteSet}
+            onMeasureChosen={rememberMeasure}
           />
         </div>
       </section>

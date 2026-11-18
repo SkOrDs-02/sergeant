@@ -10,6 +10,7 @@
 
 import { compareIsoDesc } from "../../lib/workoutStats.js";
 import { isSetCompleted } from "./setCompletion.js";
+import { itemHasVolume } from "./measureItem.js";
 import type {
   Workout,
   WorkoutForJournal,
@@ -103,7 +104,8 @@ export function computeWorkoutTonnageKg(
   if (!w) return 0;
   let total = 0;
   for (const it of w.items || []) {
-    if (it?.type !== "strength") continue;
+    // Обʼєм лише для вага × повтори (`itemHasVolume`, спека типу виміру).
+    if (!it || !itemHasVolume(it)) continue;
     for (const s of it.sets || []) {
       const wg = Number(s?.weightKg);
       const r = Number(s?.reps);

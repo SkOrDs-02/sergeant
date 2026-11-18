@@ -2,6 +2,7 @@
 
 import { kyivCalendarDaysBetween, kyivMondayStartMs } from "@sergeant/shared";
 import { itemHasMeasureRecord } from "../domain/workouts/measureRecords.js";
+import { itemHasVolume } from "../domain/workouts/measureItem.js";
 
 interface StatsSet {
   weightKg?: number | null | undefined;
@@ -485,12 +486,10 @@ export function compareIsoDesc(
  * приходять із SQLite і з сервера, де числове поле може приїхати рядком.
  */
 export function itemTonnageKg(item: StatsItem | null | undefined): number {
-  if (!item || item.type !== "strength") return 0;
-  // Тип виміру (спека типу виміру): час і дистанція мають тип item-а
-  // `time` / `distance` (дзеркало `measureToItemType`) і відсікаються тут.
-  // «Лише повтори» лишається силовою: вага там 0, тож обʼєм 0 сам собою, а
-  // поки рядок підходу ще показує «кг» (до UI-зрізу), введена вага не
-  // зникає з обʼєму мовчки.
+  // Обʼєм `кг×повт` лише для вага × повтори (спека типу виміру): час і
+  // дистанція відсікаються за типом item-а, «лише повтори» — за `measure`
+  // (рядок цього типу поля ваги не показує, тож вага там — залишок).
+  if (!item || !itemHasVolume(item)) return 0;
   let t = 0;
   for (const s of item.sets || []) {
     t += (Number(s.weightKg) || 0) * (Number(s.reps) || 0);

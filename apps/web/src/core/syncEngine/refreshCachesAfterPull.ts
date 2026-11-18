@@ -54,6 +54,8 @@ const FIZRUK_PULL_TABLES = new Set([
   // сервера позначка травми має негайно перерахувати список вправ, інакше
   // юзер бачить як дозволену вправу, яку модель уже блокує.
   "fizruk_injuries",
+  // Памʼять типу вправи з іншого пристрою: наступний старт вправи бере її.
+  "fizruk_exercise_prefs",
 ]);
 const NUTRITION_PULL_TABLES = new Set([
   "nutrition_meals",

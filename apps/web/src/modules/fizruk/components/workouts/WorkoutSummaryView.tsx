@@ -44,6 +44,7 @@ import {
 import { messages } from "@shared/i18n/uk";
 import { WorkoutStatTile } from "./WorkoutStatTile";
 import { fmtLoose } from "../../lib/numberFmt";
+import { formatMeasureSets } from "../../lib/measureFormat";
 import { WorkoutMomentLine } from "./WorkoutMomentLine";
 import { WorkoutSummaryTimeEditor } from "./WorkoutSummaryTimeEditor";
 
@@ -68,6 +69,10 @@ export interface WorkoutSummaryViewProps {
 
 /** One-line "what happened" caption for a single exercise entry. */
 function formatItemDetail(item: WorkoutItem, rpeLabel: string): string {
+  // Підходи на час, дистанцію чи лише повтори: «3 × 30 с», «3 × 400 м»
+  // (спека типу виміру). Вага × повтори і старі записи — нижче.
+  const measured = formatMeasureSets(item);
+  if (measured !== null) return measured;
   if (item.type === "strength") {
     // Порожній рядок, який сесія створює сама, не результат: без цього
     // фільтра пропущена вправа друкувалась як «0×0», хоча плитка

@@ -13,6 +13,8 @@ import { fmtLoose } from "../../lib/numberFmt";
 import type { LastByExerciseEntry } from "../workouts/WorkoutItemLastTimeHint";
 import { filterNonEmptyStrengthSets } from "../workouts/WorkoutItemLastTimeHint";
 import { isSetDone } from "../workouts/WorkoutSetRow";
+import { itemMeasure, itemUsesSetRows } from "@sergeant/fizruk-domain/domain";
+import { formatMeasureSets } from "../../lib/measureFormat";
 import { summarizeRecoveryChip } from "../workouts/WorkoutItemRecoveryChip";
 import {
   groupMemberPosition,
@@ -52,21 +54,30 @@ function rowSubline(
   const ss = messages.fizruk.session;
   const rec = summarizeRecoveryChip(it, recBy, injurySites);
   if (rec?.tone === "red") return { text: rec.label, danger: true };
-  if (it.type === "strength") {
+  if (itemUsesSetRows(it)) {
     const sets = it.sets || [];
-    const done = sets.filter(isSetDone).length;
+    const doneSets = sets.filter((s) => isSetDone(s, it));
+    const done = doneSets.length;
+    const measure = itemMeasure(it);
     if (done > 0 || state === "done") {
-      const lastDone = [...sets].reverse().find(isSetDone);
-      const tail = lastDone
-        ? ` · ${fmtLoose(lastDone.weightKg ?? 0)} кг × ${lastDone.reps}`
-        : "";
+      // Вага × повтори — останній підхід «80 кг × 8»; інші типи — підсумок
+      // зарахованих («2 × 30 с», спека типу виміру).
+      const lastDone = doneSets[doneSets.length - 1];
+      const tail =
+        measure !== "weight_reps"
+          ? done > 0
+            ? ` · ${formatMeasureSets(it) ?? ""}`
+            : ""
+          : lastDone
+            ? ` · ${fmtLoose(lastDone.weightKg ?? 0)} кг × ${lastDone.reps}`
+            : "";
       return {
         text: `${setsProgressLabel(done, sets.length)}${tail}`,
         danger: false,
       };
     }
     const ghost =
-      last?.type === "strength"
+      measure === "weight_reps" && last?.type === "strength"
         ? filterNonEmptyStrengthSets(last.sets)[0]
         : undefined;
     if (ghost) {

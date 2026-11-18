@@ -9,6 +9,7 @@ import { SectionHeading } from "@shared/components/ui/SectionHeading";
 import { Button } from "@shared/components/ui/Button";
 import { Sheet } from "@shared/components/ui/Sheet";
 import { WorkoutItemTypeSwitcher } from "./WorkoutItemTypeSwitcher";
+import { useExerciseMeasurePrefs } from "../../hooks/useExerciseMeasurePrefs";
 import { ExercisePhotoViewer } from "./ExercisePhotoViewer";
 
 type RecExerciseFn = typeof recoveryConflictsForExerciseFn;
@@ -70,6 +71,7 @@ export function ExerciseDetailSheet({
 }: ExerciseDetailSheetProps) {
   // Вище раннього `return null`: хук не можна викликати умовно.
   const [viewerOpen, setViewerOpen] = useState(false);
+  const { rememberMeasure } = useExerciseMeasurePrefs();
 
   if (!selected) return null;
 
@@ -283,6 +285,11 @@ export function ExerciseDetailSheet({
             onChange={(patch) =>
               updateItem(activeWorkout.id, activeItem.id, patch)
             }
+            onMeasureChosen={(m) => {
+              if (activeItem.exerciseId) {
+                rememberMeasure(activeItem.exerciseId, m);
+              }
+            }}
           />
         </div>
       )}

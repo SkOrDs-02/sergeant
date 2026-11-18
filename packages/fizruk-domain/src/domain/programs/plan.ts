@@ -147,16 +147,20 @@ export function formatProgramExercisePlan(plan: ProgramExercisePlan): string {
     : `${plan.sets}×${formatRange(plan.repsMin, plan.repsMax)}`;
 }
 
-/** План вправи в сесії програми, з якої стартувало тренування (П-10). */
+/**
+ * План вправи в сесії програми, з якої стартувало тренування (П-10).
+ * `measure` — тип вправи в тренуванні (вибір людини сильніший за план).
+ */
 export function programPlanForWorkoutItem(
   ref: WorkoutProgramRef | null | undefined,
   exercise: ProgramPlanExercise | null | undefined,
+  measure?: ExerciseMeasure,
 ): ProgramExercisePlan | null {
   if (!ref) return null;
   const program = findProgramById(ref.programId);
   const entry = program?.schedule[ref.slot];
   const session = entry ? program?.sessions[entry.sessionKey] : undefined;
-  return session ? programExercisePlan(session, exercise) : null;
+  return session ? programExercisePlan(session, exercise, measure) : null;
 }
 
 /**

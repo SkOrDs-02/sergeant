@@ -14,6 +14,12 @@
  * single object-spread on every read.
  */
 
+import type { ExerciseMeasure } from "@sergeant/fizruk-domain/domain";
+import {
+  EXERCISE_PREFS_SELECT_SQL,
+  rowsToExercisePrefs,
+  type ExercisePrefRow,
+} from "./sqliteReader.exercisePrefs";
 import type { SqliteMigrationClient } from "@sergeant/db-schema/migrate/sqlite";
 import type {
   ChecklistItem,
@@ -125,6 +131,8 @@ export interface SqliteFizrukCache {
    * would make "зняти позначку" indistinguishable from "видалити".
    */
   injuries: CachedInjury[];
+  /** Памʼять типу виміру: id вправи → тип, обраний людиною (міграція 173). */
+  exercisePrefs?: Record<string, ExerciseMeasure>;
   /** ISO timestamp of the last successful refresh, or null. */
   refreshedAt: string | null;
 }
@@ -139,6 +147,7 @@ const EMPTY_CACHE: SqliteFizrukCache = {
   programs: null,
   workoutTemplates: [],
   injuries: [],
+  exercisePrefs: {},
   refreshedAt: null,
 };
 
@@ -486,6 +495,7 @@ export async function refreshFizrukSqliteState(
     programsRows,
     workoutTemplateRows,
     injuryRows,
+    exercisePrefRows,
   ] = await Promise.all([
     client.all<WorkoutRow>(
       `SELECT id, started_at, ended_at, note, groups_json,
@@ -558,6 +568,7 @@ export async function refreshFizrukSqliteState(
         ORDER BY started_at DESC, id ASC`,
       [userId],
     ),
+    client.all<ExercisePrefRow>(EXERCISE_PREFS_SELECT_SQL, [userId]),
   ]);
 
   // Build sets-by-item map first.
@@ -602,6 +613,7 @@ export async function refreshFizrukSqliteState(
     programs,
     workoutTemplates,
     injuries,
+    exercisePrefs: rowsToExercisePrefs(exercisePrefRows),
     // eslint-disable-next-line no-restricted-syntax -- cache-freshness stamp: UTC wall-clock instant, not a Kyiv day boundary
     refreshedAt: new Date().toISOString(),
   };

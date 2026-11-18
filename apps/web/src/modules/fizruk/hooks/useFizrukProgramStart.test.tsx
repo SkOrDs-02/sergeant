@@ -5,6 +5,10 @@ import { ACTIVE_WORKOUT_KEY, type InjuryMark } from "@sergeant/fizruk-domain";
 import type { InjurySiteId } from "@sergeant/fizruk-domain/data";
 import type { WorkoutItem } from "@sergeant/fizruk-domain/domain";
 import { useFizrukProgramStart } from "./useFizrukProgramStart";
+import {
+  __setFizrukSqliteCacheForTests,
+  clearFizrukSqliteCache,
+} from "../lib/sqliteReader";
 
 type AddedItem = Partial<WorkoutItem>;
 
@@ -109,12 +113,13 @@ describe("useFizrukProgramStart", () => {
     expect(sessionStorage.getItem("fizruk_workouts_mode")).toBeNull();
   });
 
-  it("marks cardio exercises as distance type without sets", () => {
+  it("кардіо — дистанція × час з одним порожнім рядком підходу", () => {
     const { start, added } = setup();
     start({ exerciseIds: ["run"] });
     const cardio = added.find((i) => i.exerciseId === "run");
     expect(cardio?.type).toBe("distance");
-    expect(cardio?.sets).toBeUndefined();
+    expect(cardio?.measure).toBe("distance_time");
+    expect(cardio?.sets).toEqual([{ weightKg: 0, reps: 0 }]);
   });
 
   it("applies progression to the last-used weight for strength exercises", () => {
@@ -169,13 +174,31 @@ describe("useFizrukProgramStart", () => {
     expect(createWorkout).toHaveBeenCalledWith();
   });
 
-  it("утримання стартує як вправа на час без рядків повторень", () => {
+  it("утримання стартує трьома порожніми рядками секунд (лічильник «0 з 3»)", () => {
     const { start, added } = setup();
     start({ exerciseIds: ["plank"] });
     const plank = added.find((i) => i.exerciseId === "plank");
     expect(plank?.type).toBe("time");
-    expect(plank?.durationSec).toBe(0);
-    expect(plank?.sets).toBeUndefined();
+    expect(plank?.measure).toBe("time");
+    expect(plank?.sets).toEqual([
+      { weightKg: 0, reps: 0 },
+      { weightKg: 0, reps: 0 },
+      { weightKg: 0, reps: 0 },
+    ]);
+  });
+
+  it("памʼять людини сильніша за план: планка, перемкнута на повтори, стартує з повторами", () => {
+    __setFizrukSqliteCacheForTests({ exercisePrefs: { plank: "reps" } });
+    try {
+      const { start, added } = setup();
+      start({ exerciseIds: ["plank"] });
+      const plank = added.find((i) => i.exerciseId === "plank");
+      expect(plank?.measure).toBe("reps");
+      expect(plank?.type).toBe("strength");
+      expect(plank?.sets).toHaveLength(3);
+    } finally {
+      clearFizrukSqliteCache();
+    }
   });
 
   it("власний план сесії (5×5) сіє пʼять рядків", () => {

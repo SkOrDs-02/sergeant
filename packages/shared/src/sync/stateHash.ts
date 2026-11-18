@@ -63,6 +63,7 @@ export const SYNC_STATE_HASH_TABLE_PKS = {
   fizruk_wellbeing: ["date_key"],
   fizruk_workout_templates: ["id"],
   fizruk_injuries: ["id"],
+  fizruk_exercise_prefs: ["id"],
   routine_entries: ["id"],
   routine_habits: ["id"],
   routine_tags: ["id"],

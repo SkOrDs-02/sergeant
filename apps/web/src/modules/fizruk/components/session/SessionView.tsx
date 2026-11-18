@@ -30,6 +30,7 @@ import { trackFizrukRestTimerDone } from "../../lib/workoutTelemetry";
 import { adjustRestTimerState } from "../../lib/restTimer";
 import { uid } from "../workouts/activeWorkoutLib";
 import { isSetDone } from "../workouts/WorkoutSetRow";
+import { itemUsesSetRows } from "@sergeant/fizruk-domain/domain";
 import { SessionTopBar } from "./SessionTopBar";
 import { SessionDock } from "./SessionDock";
 import { SessionExtrasRow } from "./SessionExtrasRow";
@@ -261,9 +262,9 @@ export function SessionView({
   // Підпис під відліком у доку: який підхід далі (на екрані вправи) або
   // яка вправа наступна (у списку).
   const restHint = (() => {
-    if (focused && focused.type === "strength") {
+    if (focused && itemUsesSetRows(focused)) {
       const sets = focused.sets || [];
-      const nextIdx = sets.findIndex((s) => !isSetDone(s));
+      const nextIdx = sets.findIndex((s) => !isSetDone(s, focused));
       if (nextIdx !== -1) return `${ss.restNextSet} ${nextIdx + 1}`;
       const idx = items.findIndex((x) => x.id === focused.id);
       const next = items[idx + 1];

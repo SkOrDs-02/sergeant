@@ -1,4 +1,5 @@
 import { useCallback } from "react";
+import { currentExerciseMeasurePrefs } from "../lib/exerciseMeasurePrefsCache";
 import {
   ACTIVE_WORKOUT_KEY,
   buildPlannedSets,
@@ -165,10 +166,14 @@ export function useFizrukProgramStart({
             : createWorkout();
         for (const ex of picks) {
           const catalogEx = findExerciseById(ex.id) ?? ex;
-          // Тип виміру з каталогу (спека fizruk-exercise-measure-type):
-          // утримання й переноски — на час, кардіо — дистанцією; план
-          // програми підлаштовується під тип, а не навпаки.
-          const measure = resolveExerciseMeasure(catalogEx);
+          // Тип виміру (спека fizruk-exercise-measure-type): памʼять людини →
+          // дефолт каталогу (утримання й переноски на час, кардіо
+          // дистанцією). План програми підлаштовується під тип, а не
+          // навпаки: памʼять сильніша за план (Р-2).
+          const measure = resolveExerciseMeasure(
+            catalogEx,
+            currentExerciseMeasurePrefs(),
+          );
           const type = measureToItemType(measure);
           const isStrength = type === "strength";
           const plan = programExercisePlan(session, catalogEx, measure);
@@ -184,10 +189,14 @@ export function useFizrukProgramStart({
             measure,
             type,
             // План сесії як порожні рядки (П-9, OD-32): лічильник одразу
-            // «0 з N», зарахованим рядок стає лише з повтореннями.
-            ...(isStrength
-              ? { sets: buildPlannedSets(plan.sets, suggestedWeight) }
-              : {}),
+            // «0 з N», зарахованим рядок стає лише з лічильною величиною
+            // (повтори, секунди, метри). Утримання — N рядків секунд
+            // (плейсхолдер — діапазон плану в рядку), кардіо — один рядок
+            // (спека типу виміру, зріз 4).
+            sets: buildPlannedSets(
+              isStrength || plan.kind === "time" ? plan.sets : 1,
+              suggestedWeight,
+            ),
             durationSec: 0,
             ...(type === "distance" ? { distanceM: 0 } : {}),
           });

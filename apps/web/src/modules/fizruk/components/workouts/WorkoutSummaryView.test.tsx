@@ -140,6 +140,39 @@ describe("WorkoutSummaryView", () => {
     expect(screen.getByText("40×8, 45×6")).toBeInTheDocument();
   });
 
+  it("планка з трьох утримань — «3 × 30 с», плитка «Підходів» 3 (тип виміру)", () => {
+    const workout = makeWorkout({
+      items: [
+        {
+          id: "i1",
+          exerciseId: "plank",
+          nameUk: "Планка",
+          primaryGroup: "core",
+          musclesPrimary: [],
+          musclesSecondary: [],
+          type: "time",
+          measure: "time",
+          durationSec: 90,
+          sets: [1, 2, 3].map(() => ({
+            weightKg: 0,
+            reps: 0,
+            durationSec: 30,
+          })),
+        },
+      ],
+    });
+    render(
+      <WorkoutSummaryView
+        workout={workout}
+        onRepeat={vi.fn()}
+        onClose={vi.fn()}
+        onDelete={vi.fn()}
+      />,
+    );
+    expect(screen.getByText("3 × 30 с")).toBeInTheDocument();
+    expect(screen.queryByText(/0×/)).toBeNull();
+  });
+
   // RPE is optional end-to-end (`WorkoutSetRpeMenu`) — a set without it
   // must read as a plain "80×8", never "RPE 0" or any other synthesized
   // value (canon `fizruk.md` §3: "опц. `rpe` (Borg 1..10)").

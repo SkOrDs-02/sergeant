@@ -20,6 +20,8 @@ import {
 import { useRestTimer } from "../context/RestTimerContext";
 import { recoveryConflictsForExercise } from "@sergeant/fizruk-domain";
 import { exerciseItemSeed } from "../lib/exerciseItemSeed";
+import { currentExerciseMeasurePrefs } from "../lib/exerciseMeasurePrefsCache";
+import { itemUsesSetRows } from "@sergeant/fizruk-domain/domain";
 import type {
   ExerciseLocation,
   RawExerciseDef,
@@ -286,7 +288,7 @@ export function useWorkoutsOrchestrator(
         primaryGroup: ex.primaryGroup,
         musclesPrimary: ex?.muscles?.primary || [],
         musclesSecondary: ex?.muscles?.secondary || [],
-        ...exerciseItemSeed(ex),
+        ...exerciseItemSeed(ex, currentExerciseMeasurePrefs()),
       });
     },
     [activeWorkoutId, addItem],
@@ -341,7 +343,7 @@ export function useWorkoutsOrchestrator(
           primaryGroup: ex.primaryGroup,
           musclesPrimary: ex?.muscles?.primary || [],
           musclesSecondary: ex?.muscles?.secondary || [],
-          ...exerciseItemSeed(ex),
+          ...exerciseItemSeed(ex, currentExerciseMeasurePrefs()),
         });
         exIdToItemId[ex.id] = itemId;
       }
@@ -579,7 +581,10 @@ export function useWorkoutsOrchestrator(
             musclesPrimary: item.musclesPrimary,
             musclesSecondary: item.musclesSecondary,
             type: item.type,
-            ...(item.type === "strength"
+            // Тип джерела копіюється (спека типу виміру): вправа з рядками
+            // підходів стартує з одним порожнім рядком.
+            ...(item.measure ? { measure: item.measure } : {}),
+            ...(itemUsesSetRows(item)
               ? { sets: [{ weightKg: 0, reps: 0 }] }
               : {}),
             durationSec: 0,

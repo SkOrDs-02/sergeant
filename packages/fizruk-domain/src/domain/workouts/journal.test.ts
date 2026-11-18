@@ -141,6 +141,26 @@ describe("computeWorkoutTonnageKg / computeWorkoutSetCount", () => {
     expect(computeWorkoutTonnageKg(workout)).toBe(60 * 10 + 60 * 8);
   });
 
+  it("обʼєм лише для вага × повтори: «лише повтори» з вагою не дає кг×повт", () => {
+    const repsOnly = w({
+      items: [
+        {
+          id: "it_r",
+          exerciseId: "pull_up",
+          nameUk: "Підтягування",
+          primaryGroup: "back",
+          musclesPrimary: [],
+          musclesSecondary: [],
+          type: "strength",
+          measure: "reps",
+          sets: [{ weightKg: 10, reps: 8 }],
+        },
+      ],
+    });
+    expect(computeWorkoutTonnageKg(repsOnly)).toBe(0);
+    expect(computeWorkoutSetCount(repsOnly)).toBe(1);
+  });
+
   it("counts non-empty strength sets", () => {
     expect(computeWorkoutSetCount(workout)).toBe(2);
   });

@@ -43,6 +43,40 @@ describe("sessionLib", () => {
     expect(countDoneSets({ ...strength("a", []), type: "time" })).toBe(0);
   });
 
+  it("утримання: лічильник «1 з 3» за секундами, вправа закрита після трьох (тип виміру)", () => {
+    const hold = (secs: number[]): WorkoutItem =>
+      ({
+        ...strength("plank", []),
+        type: "time",
+        measure: "time",
+        sets: secs.map((durationSec) => ({
+          weightKg: 0,
+          reps: 0,
+          durationSec,
+        })),
+      }) as WorkoutItem;
+    const one = hold([30, 0, 0]);
+    expect(countDoneSets(one)).toBe(1);
+    expect(setsProgressLabel(countDoneSets(one), 3)).toMatch(/^1 з 3 /);
+    expect(isItemDone(one)).toBe(false);
+    const all = hold([30, 30, 30]);
+    expect(isItemDone(all)).toBe(true);
+    expect(sessionProgress({ items: [all] } as never).setsDone).toBe(3);
+  });
+
+  it("дистанція: підхід зараховано за метрами", () => {
+    const run = {
+      ...strength("run", []),
+      type: "distance",
+      measure: "distance_time",
+      sets: [
+        { weightKg: 0, reps: 0, distanceM: 400, durationSec: 0 },
+        { weightKg: 0, reps: 0, durationSec: 90 },
+      ],
+    } as WorkoutItem;
+    expect(countDoneSets(run)).toBe(1);
+  });
+
   it("an empty row added by «+ Підхід» keeps the header at «2 з 3» and stays out of set count and volume (logic-18)", () => {
     const item = strength("a", [
       [60, 8],

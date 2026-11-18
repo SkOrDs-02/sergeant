@@ -15,6 +15,10 @@
  * `peekNutritionDualWriteState` (Stage 8 PR #057n-tombstone).
  */
 
+import {
+  isExerciseMeasure,
+  type ExerciseMeasure,
+} from "@sergeant/fizruk-domain/domain";
 import type {
   Workout,
   WorkoutItem,
@@ -28,6 +32,7 @@ import type {
 import { isFizrukDualWriteRegistered } from "./sqliteWriter/index.js";
 import {
   type FizrukCustomActivitySnapshot,
+  type FizrukExercisePrefSnapshot,
   type FizrukCustomExerciseSnapshot,
   type FizrukDailyLogSnapshot,
   type FizrukDualWriteState,
@@ -99,6 +104,7 @@ export const EMPTY_FIZRUK_DUAL_WRITE_STATE: FizrukDualWriteState = {
   injuries: [],
   customActivities: [],
   programs: null,
+  exercisePrefs: [],
 };
 
 /**
@@ -124,6 +130,7 @@ export function peekFizrukDualWriteState(): FizrukDualWriteState | null {
         cache.customActivities ?? [],
       ),
       programs: extractProgramsSnapshot(cache.programs),
+      exercisePrefs: extractExercisePrefSnapshots(cache.exercisePrefs ?? {}),
     };
   } catch {
     return null;
@@ -154,6 +161,18 @@ export function extractCustomExerciseSnapshots(
   for (const e of customExercises) {
     if (!e || typeof e !== "object" || !e.id) continue;
     out.push({ ...e, id: String(e.id) });
+  }
+  return out;
+}
+
+/** Памʼять типу вправи (мапа id → тип) як рядки для дифу, у стабільному порядку. */
+export function extractExercisePrefSnapshots(
+  prefs: Readonly<Record<string, ExerciseMeasure | undefined>>,
+): FizrukExercisePrefSnapshot[] {
+  const out: FizrukExercisePrefSnapshot[] = [];
+  for (const id of Object.keys(prefs).sort()) {
+    const measure = prefs[id];
+    if (id && isExerciseMeasure(measure)) out.push({ id, measure });
   }
   return out;
 }

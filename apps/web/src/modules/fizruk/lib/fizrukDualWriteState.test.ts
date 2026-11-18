@@ -41,6 +41,7 @@ describe("EMPTY_FIZRUK_DUAL_WRITE_STATE", () => {
       injuries: [],
       customActivities: [],
       programs: null,
+      exercisePrefs: [],
     });
   });
 });

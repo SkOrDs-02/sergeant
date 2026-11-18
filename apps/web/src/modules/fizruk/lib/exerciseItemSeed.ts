@@ -10,7 +10,7 @@ import {
 export interface ExerciseItemSeed {
   measure: ExerciseMeasure;
   type: WorkoutItemType;
-  sets?: { weightKg: number; reps: number }[];
+  sets: { weightKg: number; reps: number }[];
   durationSec: number;
   distanceM: number;
 }
@@ -30,7 +30,9 @@ export function exerciseItemSeed(
   return {
     measure,
     type,
-    ...(type === "strength" ? { sets: [{ weightKg: 0, reps: 0 }] } : {}),
+    // Один порожній рядок підходу для будь-якого типу (зріз 4): утримання й
+    // дистанція записуються підходами, а не одним числом на вправу.
+    sets: [{ weightKg: 0, reps: 0 }],
     durationSec: 0,
     distanceM: 0,
   };
