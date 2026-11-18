@@ -413,8 +413,11 @@ export default function App({
     }
     // Новий запис без id: генеруємо його тут, щоб прикріпити теги до тієї ж операції.
     const newId = expense?.tags?.length ? generatePrefixedId("mx") : undefined;
+    // Новий запис із форми — дія людини: відмічає звичку в Рутині.
     storage.addManualExpense(
       newId ? { ...expense, id: newId } : (expense ?? {}),
+      undefined,
+      { userAction: true },
     );
     if (newId && expense?.tags) {
       storage.setTxTags(manualLinkKey(newId), expense.tags);

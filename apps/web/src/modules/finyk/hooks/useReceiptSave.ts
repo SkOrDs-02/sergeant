@@ -122,14 +122,19 @@ export function useReceiptSave({
       if (link.txKind !== "manual") return;
       if (hasLocalManualExpense(storage, link.txRef)) return;
 
-      storage.addManualExpense({
-        id: link.txRef,
-        date: getKyivDayKey(new Date(receipt.purchasedAt)),
-        description: receipt.store,
-        amount: receipt.totalKopiykas / 100,
-        category,
-        kind: "expense",
-      });
+      storage.addManualExpense(
+        {
+          id: link.txRef,
+          date: getKyivDayKey(new Date(receipt.purchasedAt)),
+          description: receipt.store,
+          amount: receipt.totalKopiykas / 100,
+          category,
+          kind: "expense",
+        },
+        // Чек людина відсканувала сама: це записана витрата для Рутини.
+        undefined,
+        { userAction: true },
+      );
     },
   });
 

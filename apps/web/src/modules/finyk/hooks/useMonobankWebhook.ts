@@ -28,6 +28,10 @@ import type { MeResponse } from "@sergeant/api-client";
 import { getSqliteDb } from "../../../core/db/sqlite";
 import { migrateFinyk } from "../lib/clientMigrate";
 import { MonoNotConnectedError } from "../lib/monoBankErrors";
+import {
+  clearMonoFirstConnectedAt,
+  recordMonoFirstConnectedAt,
+} from "../lib/bankHistory";
 import { failedCopy } from "@shared/i18n/failedCopy";
 import {
   deleteMonoTransactionsOfAccounts,
@@ -498,6 +502,8 @@ export function useMonobankWebhook({
           queryKey: hubKeys.preview("finyk"),
         });
 
+        recordMonoFirstConnectedAt();
+
         trackEvent(ANALYTICS_EVENTS.BANK_CONNECT_SUCCESS, {
           bank: "monobank",
           mode: "webhook",
@@ -594,6 +600,7 @@ export function useMonobankWebhook({
     } catch {
       // best-effort
     }
+    clearMonoFirstConnectedAt();
     queryClient.removeQueries({ queryKey: finykKeys.mono });
     queryClient.removeQueries({ queryKey: finykKeys.monoSyncState });
     queryClient.removeQueries({ queryKey: finykKeys.monoWebhookAccounts });
