@@ -47,7 +47,7 @@ export default defineConfig({
     maxWorkers: process.env["CI"] ? 2 : 4,
     // Flaky-test quarantine (item #20): retry once on CI only — mirrors
     // baseVitestConfig in packages/config/vitest.base.js. See
-    // docs/testing/README.md → "Flaky-test quarantine".
+    // docs/engineering/testing/README.md → "Flaky-test quarantine".
     retry: process.env["CI"] ? 1 : 0,
     // Coverage instrumentation, cold route-registry imports, and dynamic
     // `await import("./module.js")` inside tests can blow past the 5s default

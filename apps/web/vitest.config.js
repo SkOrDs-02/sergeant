@@ -49,7 +49,7 @@ export default defineConfig({
     // react-test-renderer suites are the main flake source on throttled
     // runners; a single retry absorbs transient timing flips while genuine
     // failures still go red (both attempts must pass once for a stable test).
-    // See docs/testing/README.md → "Flaky-test quarantine".
+    // See docs/engineering/testing/README.md → "Flaky-test quarantine".
     retry: process.env.CI ? 1 : 0,
     setupFiles: ["src/test/setup.ts"],
     coverage: {

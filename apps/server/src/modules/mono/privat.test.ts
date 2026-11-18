@@ -12,6 +12,7 @@ vi.mock("../../http/validate.js", () => ({
 
 vi.mock("../../obs/logger.js", () => ({
   logger: { warn: vi.fn(), error: vi.fn(), info: vi.fn() },
+  serializeError: vi.fn(() => ({})),
 }));
 
 // Креденшели більше не приходять із заголовків — вони лежать зашифровані
@@ -25,6 +26,7 @@ import { bankProxyFetch as _bankProxyFetch } from "../../lib/bankProxy.js";
 import { parseQuery as _parseQuery } from "../../http/validate.js";
 import { loadPrivatCredentials as _loadPrivatCredentials } from "./privatStore.js";
 import { logger } from "../../obs/logger.js";
+import { errorHandler } from "../../http/errorHandler.js";
 import handler from "./privat.js";
 
 const bankProxyFetch = _bankProxyFetch as unknown as Mock;
@@ -67,12 +69,28 @@ function makeRes(): TestRes & Response {
   return res as TestRes & Response;
 }
 
+/**
+ * Хендлер кидає `AppError`, а тіло відповіді будує центральний
+ * `errorHandler` (Express 5 веде туди reject async-хендлера). Тест іде тим
+ * самим шляхом, тож асерти нижче — про справжнє тіло на дроті, а не про
+ * форму винятку (знахідка PR-T3 аудиту 2026-09-13, хвиля 10).
+ */
+async function run(req: Request, res: Response): Promise<void> {
+  try {
+    await handler(req, res);
+  } catch (err) {
+    errorHandler(err, req, res, () => {});
+  }
+}
+
 /** Автентифікований запит. `user` ставить `requireSession` у роутері. */
 function makeReq(
   query: Record<string, unknown> = {},
   user: { id: string } | null = { id: "user-1" },
 ): Request {
   return {
+    method: "GET",
+    originalUrl: "/api/privat",
     headers: {},
     query,
     ...(user ? { user } : {}),
@@ -91,9 +109,13 @@ beforeEach(() => {
 describe("privat handler — credential & path guards", () => {
   it("401 without a session", async () => {
     const res = makeRes();
-    await handler(makeReq({}, null), res);
+    await run(makeReq({}, null), res);
     expect(res.statusCode).toBe(401);
-    expect(res.body).toEqual({ error: "Потрібна автентифікація" });
+    expect(res.body).toEqual({
+      error: "Потрібна автентифікація",
+      message: "Потрібна автентифікація",
+      code: "UNAUTHORIZED",
+    });
     expect(loadPrivatCredentials).not.toHaveBeenCalled();
     expect(bankProxyFetch).not.toHaveBeenCalled();
   });
@@ -101,7 +123,7 @@ describe("privat handler — credential & path guards", () => {
   it("409 when the user has no stored connection", async () => {
     loadPrivatCredentials.mockResolvedValue(null);
     const res = makeRes();
-    await handler(makeReq(), res);
+    await run(makeReq(), res);
     expect(res.statusCode).toBe(409);
     expect(res.body).toMatchObject({ code: "PRIVAT_NOT_CONNECTED" });
     expect(bankProxyFetch).not.toHaveBeenCalled();
@@ -111,8 +133,9 @@ describe("privat handler — credential & path guards", () => {
     // Fail closed: краще віддати 500, ніж піти в банк із хибним токеном.
     loadPrivatCredentials.mockRejectedValue(new Error("bad key version"));
     const res = makeRes();
-    await handler(makeReq(), res);
+    await run(makeReq(), res);
     expect(res.statusCode).toBe(500);
+    expect(res.body).toMatchObject({ code: "PRIVAT_CREDENTIALS_UNREADABLE" });
     expect(bankProxyFetch).not.toHaveBeenCalled();
   });
 
@@ -123,16 +146,20 @@ describe("privat handler — credential & path guards", () => {
       contentType: "application/json",
     });
     const res = makeRes();
-    await handler(makeReq(), res);
+    await run(makeReq(), res);
     expect(loadPrivatCredentials).toHaveBeenCalledWith("user-1");
   });
 
   it("400 when the requested path is not on the allowlist", async () => {
     parseQuery.mockReturnValue({ path: "/statements/secret-dump" });
     const res = makeRes();
-    await handler(makeReq(), res);
+    await run(makeReq(), res);
     expect(res.statusCode).toBe(400);
-    expect(res.body).toEqual({ error: "Недозволений API шлях" });
+    expect(res.body).toEqual({
+      error: "Недозволений API шлях",
+      message: "Недозволений API шлях",
+      code: "VALIDATION",
+    });
     expect(bankProxyFetch).not.toHaveBeenCalled();
   });
 
@@ -144,7 +171,7 @@ describe("privat handler — credential & path guards", () => {
       contentType: "application/json",
     });
     const res = makeRes();
-    await handler(makeReq(), res);
+    await run(makeReq(), res);
     expect(res.statusCode).toBe(200);
     expect(bankProxyFetch).toHaveBeenCalledTimes(1);
   });
@@ -157,9 +184,13 @@ describe("privat handler — credential & path guards", () => {
       token: "bad\r\nX-Evil: 1",
     });
     const res = makeRes();
-    await handler(makeReq(), res);
+    await run(makeReq(), res);
     expect(res.statusCode).toBe(400);
-    expect(res.body).toEqual({ error: "Недозволені credentials" });
+    expect(res.body).toEqual({
+      error: "Недозволені credentials",
+      message: "Недозволені credentials",
+      code: "VALIDATION",
+    });
     expect(bankProxyFetch).not.toHaveBeenCalled();
   });
 });
@@ -172,7 +203,7 @@ describe("privat handler — upstream delegation", () => {
       contentType: "application/json",
     });
     const res = makeRes();
-    await handler(makeReq({ foo: "bar", path: "ignored" }), res);
+    await run(makeReq({ foo: "bar", path: "ignored" }), res);
 
     expect(res.statusCode).toBe(200);
     expect(res.body).toEqual({ balance: 4200 });
@@ -197,10 +228,11 @@ describe("privat handler — upstream delegation", () => {
       retryAfter: "60",
     });
     const res = makeRes();
-    await handler(makeReq(), res);
+    await run(makeReq(), res);
     expect(res.statusCode).toBe(429);
     expect(res.body).toEqual({
       error: "Занадто багато запитів",
+      message: "Занадто багато запитів",
       code: "RATE_LIMIT",
     });
     expect(res.headers["Retry-After"]).toBe("60");
@@ -223,10 +255,11 @@ describe("privat handler — upstream delegation", () => {
         contentType: "application/json",
       });
       const res = makeRes();
-      await handler(makeReq(), res);
+      await run(makeReq(), res);
       expect(res.statusCode).toBe(status);
       expect(res.body).toEqual({
         error: "Неправильні дані входу PrivatBank",
+        message: "Неправильні дані входу PrivatBank",
         code: "PRIVAT_CREDENTIALS_INVALID",
       });
       expect(JSON.stringify(res.body)).not.toContain("token dump");
@@ -240,10 +273,11 @@ describe("privat handler — upstream delegation", () => {
       contentType: "text/html",
     });
     const res = makeRes();
-    await handler(makeReq(), res);
+    await run(makeReq(), res);
     expect(res.statusCode).toBe(500);
     expect(res.body).toEqual({
       error: "Помилка 500",
+      message: "Помилка 500",
       code: "PRIVAT_UPSTREAM_ERROR",
     });
     expect(JSON.stringify(res.body)).not.toContain("upstream exploded");
@@ -265,9 +299,10 @@ describe("privat handler — upstream delegation", () => {
     const res = makeRes();
     const req = makeReq() as Request & { requestId?: string };
     req.requestId = "req_test_1";
-    await handler(req, res);
+    await run(req, res);
     expect(res.body).toEqual({
       error: "Помилка 502",
+      message: "Помилка 502",
       code: "PRIVAT_UPSTREAM_ERROR",
       requestId: "req_test_1",
     });
@@ -280,9 +315,10 @@ describe("privat handler — upstream delegation", () => {
       contentType: "",
     });
     const res = makeRes();
-    await handler(makeReq(), res);
+    await run(makeReq(), res);
     expect(res.body).toEqual({
       error: "Помилка 503",
+      message: "Помилка 503",
       code: "PRIVAT_UPSTREAM_ERROR",
     });
   });
@@ -295,7 +331,7 @@ describe("privat handler — upstream delegation", () => {
       contentType: "text/plain",
     });
     const res = makeRes();
-    await handler(makeReq(), res);
+    await run(makeReq(), res);
     expect(logger.warn).toHaveBeenCalledWith(
       expect.objectContaining({
         upstreamBody: "x".repeat(200),
@@ -311,7 +347,7 @@ describe("privat handler — upstream delegation", () => {
       contentType: "text/csv; charset=utf-8",
     });
     const res = makeRes();
-    await handler(makeReq(), res);
+    await run(makeReq(), res);
     expect(res.statusCode).toBe(200);
     expect(res.sent).toBe("not-json-at-all");
     expect(res.headers["Content-Type"]).toBe("text/csv; charset=utf-8");

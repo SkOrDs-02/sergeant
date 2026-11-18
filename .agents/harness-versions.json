@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "current": "8.8.0",
+  "current": "8.9.0",
   "versions": {
     "0.1.0": {
       "releasedAt": "2026-06-29",
@@ -834,6 +834,14 @@
       "releasedAt": "2026-10-26",
       "changes": [
         "bump from 8.7.0 -> 8.8.0: skill file added/modified"
+      ],
+      "agentsTestedWith": [],
+      "passRateBaseline": null
+    },
+    "8.9.0": {
+      "releasedAt": "2026-11-18",
+      "changes": [
+        "bump from 8.8.0 -> 8.9.0: eslint-plugin-sergeant-design modified (prefer-kyiv-time warn -> error в eslint.web.js; кількість голих getter-ів у apps/web тримається на нулі) і doctrine docs/governance/governance/rules/kyiv-time-helpers.md («warn назавжди» знято). Minor, не major: kyiv-time-helpers.md не Hard Rule (Hard Rules — нумеровані NN-*.md), скрипт класифікує каталог rules/ цілком як Hard Rule."
       ],
       "agentsTestedWith": [],
       "passRateBaseline": null

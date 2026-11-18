@@ -57,6 +57,7 @@ import { useNutritionQuickStatsWriter } from "./hooks/useNutritionQuickStatsWrit
 import { buildRecipeCacheKey, readRecipeCache } from "./lib/recipeCache";
 import { fileToThumbnailBlob, saveMealThumbnail } from "./lib/mealPhotoStorage";
 import { useToast } from "@shared/hooks/useToast";
+import { usePullRefreshErrorToast } from "@shared/hooks/usePullRefreshErrorToast";
 import { showUndoToast } from "@shared/lib/ui/undoToast";
 import type { AccessDenial } from "@shared/lib/api/accessDenial";
 import { AccessDenialNotice } from "../../core/access/AccessDenialNotice";
@@ -479,22 +480,9 @@ export default function NutritionApp({
     if (cloud.status === "rejected") throw cloud.reason;
   }, [queryClient]);
 
-  const handlePullRefreshError = useCallback(() => {
-    // PTR-fail: provide an actionable retry path per
-    // docs/design/ui/toast-policy.md. The retry callback runs the same dual
-    // refetch (`invalidateQueries` + `requestCloudPull`) the gesture
-    // triggered so the user does not need to repeat the PTR pull; a failed
-    // retry shows the same toast again.
-    const showError = () => {
-      toast.error("Не вдалося оновити дані. Перевір зʼєднання.", undefined, {
-        label: "Повторити",
-        onClick: () => {
-          handlePullRefresh().catch(showError);
-        },
-      });
-    };
-    showError();
-  }, [toast, handlePullRefresh]);
+  // PTR-fail: тост «Повторити» тим самим подвійним оновленням (спільний
+  // хук усіх жестів, PR-X3 хвилі 8).
+  const handlePullRefreshError = usePullRefreshErrorToast(handlePullRefresh);
 
   const cloudPullPending = useCloudPullPending();
 

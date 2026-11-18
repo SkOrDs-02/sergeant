@@ -117,7 +117,9 @@ describe("useOverviewData: період і історія лімітів", () =>
   it("тижневий ліміт: алерт з тижневою сумою, а не місячною", () => {
     vi.setSystemTime(new Date("2026-06-17T09:00:00Z"));
     const realTx = [
-      mkTx("w1", 700, "2026-06-16T10:00:00+03:00"),
+      // 85% тижневого ліміту: вище порогу попередження (80%, PR-F8
+      // 2026-11-18), нижче перевищення; місячна сума дала б 305%.
+      mkTx("w1", 850, "2026-06-16T10:00:00+03:00"),
       mkTx("m1", 2200, "2026-06-03T10:00:00+03:00"),
     ];
     const cats = { w1: "transport", m1: "transport" };
@@ -129,8 +131,8 @@ describe("useOverviewData: період і історія лімітів", () =>
     );
     expect(result.current.budgetAlerts).toHaveLength(1);
     const [usage] = result.current.budgetAlerts;
-    expect(usage?.spent).toBe(700);
-    expect(usage?.pctRaw).toBe(70);
+    expect(usage?.spent).toBe(850);
+    expect(usage?.pctRaw).toBe(85);
     expect(usage?.overLimit).toBe(false);
   });
 

@@ -83,6 +83,13 @@ describe("ShoppingListCard", () => {
   it("renders the empty state and disabled generate when no source data", () => {
     render(<ShoppingListCard {...baseProps()} />);
     expect(screen.getByText(/Список покупок порожній/)).toBeInTheDocument();
+    // Tier 2 канону: `EmptyState` з `role="status"`, а не голий рядок
+    // (PR-C6, пін додано хвилею 8 — заміна на `<p>` лишалась зеленою).
+    expect(
+      screen
+        .getAllByRole("status")
+        .some((el) => /Список покупок порожній/.test(el.textContent ?? "")),
+    ).toBe(true);
     // Порожньо і в збережених, і в згенерованих: підказка називає обидва шляхи.
     expect(screen.getByText(/Збережених рецептів немає/)).toBeInTheDocument();
     expect(screen.getByText("Згенерувати список покупок")).toBeDisabled();

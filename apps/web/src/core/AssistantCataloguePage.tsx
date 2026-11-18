@@ -5,6 +5,7 @@
 import { useCallback, useMemo, useState } from "react";
 import { Button } from "@shared/components/ui/Button";
 import { Card } from "@shared/components/ui/Card";
+import { EmptyState } from "@shared/components/ui/EmptyState";
 import { ContentGroup } from "@shared/components/ui/ContentGroup";
 import { Icon } from "@shared/components/ui/Icon";
 import { MorphChevron } from "@shared/components/ui/MorphChevron";
@@ -206,11 +207,19 @@ export function AssistantCataloguePage({
         )}
 
         {filtered.length === 0 && (
-          <Card padding="xl">
-            <p className="text-center text-subtle text-style-body">
-              Нічого не знайшов за «{query}». Спробуй інший термін.
-            </p>
-          </Card>
+          // Tier 2 канону порожніх станів (PR-C6, хвиля 8): `EmptyState` з
+          // `role="status"` і дією, що усуває причину порожнечі.
+          <EmptyState
+            size="sm"
+            title="Нічого не знайшов"
+            description={`За запитом «${query}» нічого немає. Спробуй інший термін.`}
+            showDescription
+            action={
+              <Button variant="outline" onClick={() => setQuery("")}>
+                Скинути пошук
+              </Button>
+            }
+          />
         )}
 
         <div className="space-y-3">

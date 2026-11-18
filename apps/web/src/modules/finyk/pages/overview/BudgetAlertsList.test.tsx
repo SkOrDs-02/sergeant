@@ -45,17 +45,18 @@ describe("BudgetAlertsList", () => {
     expect(container.firstChild).toBeNull();
   });
 
-  it("renders a warning row when spend is over 60% but under the limit", () => {
-    // -50000 kopiykas → 500 ₴ spent against a 1000 ₴ limit = 50%? Use 700/1000.
-    const tx = makeTx("t1", -70000); // 700 ₴
+  it("renders a warning row when spend is past the warn threshold but under the limit", () => {
+    const tx = makeTx("t1", -85000); // 850 ₴ із 1000 ₴ = 85%
     const { container } = render(
       <BudgetAlertsList
         budgetAlerts={usages([makeBudget(1000)], [tx], { t1: CATEGORY })}
         onOpenLimit={vi.fn()}
       />,
     );
-    expect(screen.getByText(/понад 60% ліміту/)).toBeInTheDocument();
-    expect(container.textContent).toContain("70");
+    expect(screen.getByText(/ліміт майже вичерпано/)).toBeInTheDocument();
+    expect(container.textContent).toContain("85");
+    // Число порогу в підписі протухло б при наступній зміні шкали (PR-F8).
+    expect(container.textContent).not.toMatch(/понад \d+%/);
   });
 
   it("renders an over-limit row marked перевищено when spend exceeds the limit", () => {

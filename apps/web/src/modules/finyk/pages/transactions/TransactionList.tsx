@@ -176,6 +176,8 @@ export interface TransactionListProps {
    * refetching so the spinner unwinds at the right moment.
    */
   onRefresh?: () => Promise<void> | void;
+  /** Провал жесту оновлення (хмарний пул відхилено): тост із «Повторити». */
+  onRefreshError?: ((err: unknown) => void) | undefined;
 }
 
 /**
@@ -222,6 +224,7 @@ export function TransactionList({
   header,
   footer,
   onRefresh,
+  onRefreshError,
 }: TransactionListProps) {
   const [scrollParent, setScrollParent] = useState<HTMLDivElement | null>(null);
   const cloudPullPending = useCloudPullPending();
@@ -483,6 +486,7 @@ export function TransactionList({
       {onRefresh ? (
         <PullToRefresh
           onRefresh={onRefresh}
+          onError={onRefreshError}
           variant="finyk"
           enabled={!cloudPullPending}
           onScrollElement={setScrollParent}

@@ -112,10 +112,13 @@ export function CategoriesSection({
               />
               {editingCatId ? (
                 <>
+                  {/* «Зберегти» — головна дія форми, тож `solid`; пара
+                      «Скасувати» лишається `outline` (04-components.md
+                      § Button, контракт `Button.saveRole.test.ts`). */}
                   <Button
                     tone="neutral"
                     type="button"
-                    variant="outline"
+                    variant="solid"
                     className="min-h-[44px] min-w-0 sm:min-w-28"
                     onClick={() => {
                       // PR-058 (web): пара до reducer-level dedupe в

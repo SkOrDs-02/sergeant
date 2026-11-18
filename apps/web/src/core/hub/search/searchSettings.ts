@@ -46,7 +46,8 @@ const SETTINGS_PRESENTATION: Readonly<
     icon: "bell",
   },
   ai: {
-    description: "Звіт тижня щопонеділка",
+    // PR-S8 (2026-11-18): секція тримає і звіт, і повідомлення.
+    description: "Звіт тижня щопонеділка і повідомлення від Сержанта",
     icon: "sergeant",
   },
   capabilities: {

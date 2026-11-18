@@ -632,9 +632,6 @@ describe("FinykSection interactions", () => {
   });
 
   it("shows lastEventAt timestamp when webhook is connected and event exists", async () => {
-    const formatDate = vi
-      .spyOn(Date.prototype, "toLocaleString")
-      .mockReturnValue("15 бер., 16:30");
     mockedSyncState.mockResolvedValue({
       status: "active",
       webhookActive: true,
@@ -647,11 +644,8 @@ describe("FinykSection interactions", () => {
     const statusSection = screen.getByText(
       "Синхронізація активна",
     ).parentElement;
-    expect(statusSection?.textContent).toContain("·");
-    expect(formatDate).toHaveBeenCalledWith(
-      "uk-UA",
-      expect.objectContaining({ timeZone: "Europe/Kyiv" }),
-    );
-    formatDate.mockRestore();
+    // Іменований формат `formatDateTimeShort` у київській зоні (PR-C3,
+    // хвиля 8): 14:30 UTC = 16:30 за Києвом (до переходу на літній час).
+    expect(statusSection?.textContent).toContain("· 15 бер., 16:30");
   });
 });

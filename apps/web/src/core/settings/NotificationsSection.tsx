@@ -53,16 +53,9 @@ export function NotificationsSection() {
 
   const { routine, updatePref: updateRoutinePref } = useRoutineState();
 
-  // Живе на сервері, а не в localStorage: цей прапорець читає серверний
-  // шедулер тоді, коли жодного клієнта не запущено.
-  const sergeantNudges = useServerPreference(
-    "sergeantNudges",
-    {
-      saveError: sergeantCopy.nudgesSaveError,
-      authRequired: sergeantCopy.nudgesAuthRequired,
-    },
-    false,
-  );
+  // «Повідомлення від Сержанта» переїхали в секцію «Сержант»
+  // (`AIDigestSection.tsx`) рішенням власника 2026-11-18 (PR-S8): тут
+  // лишаються канал доставки (дозвіл, push, стеля) і нагадування модулів.
 
   // Стеля спільна для всіх модулів і Сержанта: сервер згортає приводи
   // понад неї в одне сповіщення (`apps/server/src/lib/reminders/budget.ts`).
@@ -232,37 +225,6 @@ export function NotificationsSection() {
             role={pushDailyCap.loaded ? "alert" : "status"}
           >
             {pushDailyCap.error}
-          </p>
-        )}
-      </SettingsSubGroup>
-
-      <SettingsSubGroup variant="bounded" title={sergeantCopy.name}>
-        <ToggleRow
-          label={sergeantCopy.nudgesToggleLabel}
-          description={sergeantCopy.nudgesToggleDescription}
-          checked={sergeantNudges.value}
-          onChange={(checked) => {
-            // Дозвіл питаємо ДО запису: увімкнений на сервері канал без
-            // дозволу браузера — це тиха підписка на нічого.
-            if (checked && permStatus !== "granted") {
-              void requestPermission();
-            }
-            void sergeantNudges.set(checked);
-          }}
-        />
-        {/* Огляд 2026-09-04: до першого завантаження «помилка» — це гість
-            («увійди, щоб…»), не збій. Червоним лишається лише збій
-            збереження після успішного завантаження. */}
-        {sergeantNudges.error && (
-          <p
-            className={
-              sergeantNudges.loaded
-                ? "text-style-caption text-danger-strong dark:text-danger"
-                : "text-style-caption text-muted"
-            }
-            role={sergeantNudges.loaded ? "alert" : "status"}
-          >
-            {sergeantNudges.error}
           </p>
         )}
       </SettingsSubGroup>

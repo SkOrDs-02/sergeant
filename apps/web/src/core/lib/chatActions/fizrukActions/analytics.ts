@@ -1,3 +1,4 @@
+import { formatDateShort } from "@shared/lib/time/formatDate";
 import { readFizrukDailyLog, readFizrukWorkouts } from "./shared";
 import type { Workout, WorkoutItem } from "@sergeant/fizruk-domain";
 import {
@@ -178,10 +179,7 @@ export function weightChart(action: WeightChartAction): ChatActionResult {
   if (recent.length > 1) {
     parts.push("Останні записи:");
     for (const e of recent) {
-      const d = new Date(e.at ?? "").toLocaleDateString("uk-UA", {
-        day: "numeric",
-        month: "short",
-      });
+      const d = formatDateShort(new Date(e.at ?? ""));
       parts.push(`  ${d}: ${formatNumberUk(Number(e.weightKg))} кг`);
     }
   }

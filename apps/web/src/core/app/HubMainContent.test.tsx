@@ -10,6 +10,12 @@ import {
 } from "@testing-library/react";
 import { MemoryRouter } from "react-router-dom";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
+import { ToastProvider } from "@shared/hooks/useToast";
+import { ToastContainer } from "@shared/components/ui/Toast";
+import {
+  REQUEST_PULL_EVENT,
+  emitCloudPullComplete,
+} from "@shared/lib/modules/cloudPullRequest";
 import { HubMainContent, type HubMainContentProps } from "./HubMainContent";
 
 function renderWithClient(ui: ReactElement, initialEntry = "/") {
@@ -19,7 +25,12 @@ function renderWithClient(ui: ReactElement, initialEntry = "/") {
   return render(ui, {
     wrapper: ({ children }: { children: ReactNode }) => (
       <MemoryRouter initialEntries={[initialEntry]}>
-        <QueryClientProvider client={client}>{children}</QueryClientProvider>
+        <QueryClientProvider client={client}>
+          <ToastProvider>
+            {children}
+            <ToastContainer />
+          </ToastProvider>
+        </QueryClientProvider>
       </MemoryRouter>
     ),
   });
@@ -91,11 +102,13 @@ vi.mock("@shared/components/ui/PullToRefresh", () => ({
   PullToRefresh: ({
     children,
     onRefresh,
+    onError,
     onScrollElement,
     id,
   }: {
     children: ReactNode;
     onRefresh: () => Promise<void>;
+    onError?: (err: unknown) => void;
     onScrollElement: (el: HTMLDivElement | null) => void;
     id?: string;
   }) => (
@@ -109,7 +122,8 @@ vi.mock("@shared/components/ui/PullToRefresh", () => ({
       <button
         type="button"
         onClick={() => {
-          void onRefresh();
+          // Як справжній хук жесту: відмова йде в `onError`.
+          onRefresh().catch((err: unknown) => onError?.(err));
         }}
       >
         refresh
@@ -266,5 +280,30 @@ describe("HubMainContent iOS install banner", () => {
     await waitFor(() =>
       expect(screen.getByTestId("pull-to-refresh")).toBeInTheDocument(),
     );
+  });
+
+  // PR-X3 (хвиля 8): жест на хабі просить хмарний пул, і його провал
+  // (офлайн, 5xx) доходить до тосту з «Повторити», а не тоне мовчки.
+  it("pull-to-refresh просить хмарний пул і показує тост із «Повторити» на провалі", async () => {
+    let pulls = 0;
+    const failPull = () => {
+      pulls += 1;
+      emitCloudPullComplete({ ok: false });
+    };
+    window.addEventListener(REQUEST_PULL_EVENT, failPull);
+    try {
+      renderWithClient(<HubMainContent {...props()} />);
+      fireEvent.click(screen.getByText("refresh"));
+
+      expect(
+        await screen.findByText("Не вдалося оновити дані. Перевір зʼєднання."),
+      ).toBeInTheDocument();
+      expect(pulls).toBe(1);
+
+      fireEvent.click(screen.getByRole("button", { name: "Повторити" }));
+      await waitFor(() => expect(pulls).toBe(2));
+    } finally {
+      window.removeEventListener(REQUEST_PULL_EVENT, failPull);
+    }
   });
 });

@@ -12,6 +12,10 @@
  * quiet "не увімкнена" state, never an error banner — `useSilpoSyncState`
  * already turns that 503 into `status: "disabled"`.
  */
+import {
+  KYIV_TIME_ZONE,
+  formatDateTimeShort,
+} from "@shared/lib/time/formatDate";
 import { useState } from "react";
 import { isApiError, silpoConnectUrl } from "@shared/api";
 import { Notice } from "@shared/components/ui/Notice";
@@ -141,13 +145,7 @@ function autoImportToggleErrorMessage(error: unknown): string {
 }
 
 function formatKyivDateTime(iso: string): string {
-  return new Date(iso).toLocaleString("uk-UA", {
-    hour: "2-digit",
-    minute: "2-digit",
-    day: "numeric",
-    month: "short",
-    timeZone: "Europe/Kyiv",
-  });
+  return formatDateTimeShort(new Date(iso), { timeZone: KYIV_TIME_ZONE });
 }
 
 export function SilpoIntegrationSection({

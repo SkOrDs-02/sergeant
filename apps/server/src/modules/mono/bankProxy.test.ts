@@ -115,9 +115,12 @@ describe("privat proxy path validation", () => {
       user: { id: "user-1" },
       query: { path: "/statements/balance/final-evil" },
     };
-    const res = mockRes();
-    await privatHandler(asReq(req), res);
-    expect(res.statusCode).toBe(400);
+    // Хендлер кидає `ValidationError`; тіло з `code` і `requestId` будує
+    // центральний `errorHandler` (PR-T3 аудиту 2026-09-13, хвиля 10).
+    await expect(privatHandler(asReq(req), mockRes())).rejects.toMatchObject({
+      status: 400,
+      code: "VALIDATION",
+    });
     expect(global.fetch).not.toHaveBeenCalled();
   });
 
@@ -134,9 +137,12 @@ describe("privat proxy path validation", () => {
       user: { id: "user-1" },
       query: { path: "/statements/balance/final" },
     };
-    const res = mockRes();
-    await privatHandler(asReq(req), res);
-    expect(res.statusCode).toBe(400);
+    // Хендлер кидає `ValidationError`; тіло з `code` і `requestId` будує
+    // центральний `errorHandler` (PR-T3 аудиту 2026-09-13, хвиля 10).
+    await expect(privatHandler(asReq(req), mockRes())).rejects.toMatchObject({
+      status: 400,
+      code: "VALIDATION",
+    });
     expect(global.fetch).not.toHaveBeenCalled();
   });
 

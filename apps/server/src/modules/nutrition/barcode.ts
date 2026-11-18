@@ -11,6 +11,7 @@ import { parseQuery } from "../../http/validate.js";
 import { getSessionUser } from "../../auth.js";
 import { barcodeLookupsTotal } from "../../obs/metrics.js";
 import { logger } from "../../obs/logger.js";
+import { AppError, ValidationError } from "../../obs/errors.js";
 import { lookupInCatalog, upsertIntoCatalog } from "./productCatalog.js";
 import {
   normalizeOFFBarcode,
@@ -405,6 +406,19 @@ async function lookupUPCitemdb(
  * source — deferred, not a correctness/security issue (worst case: a
  * connected user occasionally sees "not found" for up to 30 minutes).
  */
+/**
+ * «Продукт не знайдено» — один і той самий 404 для кешованого й свіжого
+ * all-miss. Через `errorHandler` клієнт отримує `code` і `requestId`
+ * (знахідка PR-T3 аудиту 2026-09-13, хвиля 10); вебу досить статусу
+ * (`useBarcodeProduct.ts` читає 404 як «немає в базах»).
+ */
+function productNotFound(): AppError {
+  return new AppError("Продукт не знайдено", {
+    status: 404,
+    code: "BARCODE_NOT_FOUND",
+  });
+}
+
 export default async function handler(
   req: Request,
   res: Response,
@@ -414,10 +428,7 @@ export default async function handler(
     "",
   );
   if (!/^\d{8,14}$/.test(barcode)) {
-    res
-      .status(400)
-      .json({ error: "Неправильний штрихкод: потрібно 8–14 цифр." });
-    return;
+    throw new ValidationError("Неправильний штрихкод: потрібно 8–14 цифр.");
   }
 
   // Cache hit short-circuits the cascade entirely. Miss-sentinel returns the
@@ -433,7 +444,7 @@ export default async function handler(
         .status(200)
         .json(BarcodeLookupSuccessSchema.parse({ product: cached.product }));
     } else {
-      res.status(404).json({ error: "Продукт не знайдено" });
+      throw productNotFound();
     }
     return;
   }
@@ -535,17 +546,15 @@ export default async function handler(
         // роутер ставить публічний `Cache-Control` до хендлера: без нього
         // «спробуй за хвилину» живе в браузері/CDN до 10 хв (rel-21).
         res.setHeader("Cache-Control", "no-store");
-        res.status(503).json({
-          error:
-            "Бази продуктів зараз не відповідають, це не означає, що продукту немає. Спробуй ще раз за хвилину або введи вручну.",
-        });
-        return;
+        throw new AppError(
+          "Бази продуктів зараз не відповідають, це не означає, що продукту немає. Спробуй ще раз за хвилину або введи вручну.",
+          { status: 503, code: "BARCODE_SOURCES_UNAVAILABLE" },
+        );
       }
       // Справжній all-miss: усі джерела відповіли, і в жодного немає такого
       // штрихкоду. Лише це кешуємо як miss-sentinel.
       cacheSet(barcode, null);
-      res.status(404).json({ error: "Продукт не знайдено" });
-      return;
+      throw productNotFound();
     }
 
     if (product.source === "silpo") {
@@ -568,10 +577,10 @@ export default async function handler(
     void upsertIntoCatalog(barcode, product);
   } catch (e: unknown) {
     if (hasErrorName(e, "TimeoutError") || hasErrorName(e, "AbortError")) {
-      res
-        .status(504)
-        .json({ error: "Сервіс недоступний (таймаут). Спробуй пізніше." });
-      return;
+      throw new AppError("Сервіс недоступний (таймаут). Спробуй пізніше.", {
+        status: 504,
+        code: "BARCODE_LOOKUP_TIMEOUT",
+      });
     }
     // Решту віддає errorHandler: стабільний 500 з requestId і подією в
     // Sentry, без внутрішнього тексту помилки (зокрема ZodError).

@@ -27,6 +27,7 @@ import { useDailyLog } from "../hooks/useDailyLog";
 import { useCustomActivities } from "../hooks/useCustomActivities";
 import { useLatestBodyWeightKg } from "../../../core/profile/useLatestBodyWeight";
 import { useCloudPullPending } from "@shared/hooks/useCloudPullPending";
+import { usePullRefreshErrorToast } from "@shared/hooks/usePullRefreshErrorToast";
 import { messages } from "@shared/i18n/uk";
 import {
   countItemsByExerciseId,
@@ -95,6 +96,9 @@ export function Workouts({
       : undefined,
   });
   const cloudPullPending = useCloudPullPending();
+  // Провал хмарного пулу (`requestCloudPull` відхиляється) — тост із
+  // «Повторити», а не тихий «успіх» жесту (PR-X3, хвиля 8).
+  const handlePullRefreshError = usePullRefreshErrorToast(o.handlePullRefresh);
   // Тертя запису проведеного заняття (`entry_compose_finished`, §6
   // контракту). `open` враховує ще й вкладку: шит рендериться лише на
   // `view === "home"`, тож перехід на іншу вкладку з відкритою формою — це
@@ -174,6 +178,7 @@ export function Workouts({
   return (
     <PullToRefresh
       onRefresh={o.handlePullRefresh}
+      onError={handlePullRefreshError}
       variant="fizruk"
       enabled={!cloudPullPending}
     >

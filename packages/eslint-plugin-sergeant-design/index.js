@@ -2041,8 +2041,12 @@ const noConsolePii = {
 //      `apps/web/src/core/observability/adviceTelemetry.ts`. In shared code
 //      prefer `dateKeyFromDate` from `@sergeant/routine-domain`.
 //
-// Severity: stays `warn` permanently. The old ramp to `error` targeted zero
-// host-getters, which after ADR-0078 would penalise correct device-local code.
+// Severity: `error` since 2026-11-18 (product audit 2026-09-13, wave 10,
+// PR-T7). The old ramp targeted zero host-getters, which after ADR-0078 would
+// have penalised correct device-local code; the rule now targets zero BARE
+// getters instead — the documented suppress IS the canonical device path, so
+// `error` costs a correct site one comment, not a rewrite. Under `warn` the
+// count reached 0 and nothing stopped it from regrowing.
 //
 // Allowlist (rule-level skip):
 //   - The helper itself (`kyivTime.ts`)
@@ -2831,7 +2835,6 @@ const noOpacityOnTextToken = {
 // вигляд, і кожне місце потребує ока, а не sed-у. `error` тут зробив
 // би гейт червоним від народження — рівно той стан «червоний завжди =
 // вимкнений», проти якого цей репо вже боровся з бандл-бюджетами.
-// Прецедент рівня — `prefer-kyiv-time: "warn"` у тому ж конфігу.
 const RAW_TYPE_SIZE_MESSAGE =
   "Сирий розмір шрифта в className. Візьми семантичну роль: text-style-{display|headline|title|body|label|caption|overline|code}. Дві паралельні шкали дають ієрархію, за якою не стежить ніхто — анти-слоп §4/П4 правило 5, §3.2 атрактор 8.";
 

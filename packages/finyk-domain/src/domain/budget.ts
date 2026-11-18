@@ -26,11 +26,40 @@ import type {
   TxSplitsMap,
 } from "./types";
 
-// Поріг, з якого картка бюджету позначається як «увага/попередження»
-// (показ проактивних порад у Budgets, alert-бейдж в Overview).
-export const BUDGET_WARN_THRESHOLD = 0.8;
-// Поріг, з якого бюджет потрапляє до блоку `budgetAlerts` на Overview.
-export const BUDGET_ALERT_THRESHOLD = 0.6;
+/**
+ * Одна шкала порогів ліміту на всіх поверхнях: попередження від 80%,
+ * перевищення від 100% (частка витраченого від ліміту).
+ *
+ * AI-CONTEXT: рішення власника 2026-11-18 (PR-F8 аудиту 2026-09-13,
+ * варіант Б). Доти один ліміт мав чотири пороги залежно від екрана:
+ * Огляд від 60% (`BUDGET_ALERT_THRESHOLD`, знято), порада на Плануванні
+ * від 80%, попередження хабу від 90% (`budgetLimits.ts` у
+ * `@sergeant/insights`), перевищення від 100%. Тепер Огляд
+ * (`isBudgetAlert`), картка й порада Планування (`calculateLimitUsage`,
+ * `limitSignal`, `shouldShowProactiveAdvice`) і хаб (`usage.warnLimit`)
+ * читають ці два числа. Пакет спільний із мобайлом: мобільний Огляд
+ * (`isBudgetAlert`) теж піднявся з 60% до 80%.
+ */
+export const LIMIT_THRESHOLDS = { warn: 0.8, over: 1 } as const;
+
+// Поріг попередження: картка ліміту жовтіє, Огляд показує плашку, хаб —
+// «майже вичерпано», Планування — проактивну пораду.
+export const BUDGET_WARN_THRESHOLD = LIMIT_THRESHOLDS.warn;
+// Поріг перевищення: картка червоніє, «Перевищено на», хаб — `budget_over_*`
+// і картка перевищення.
+export const BUDGET_OVER_THRESHOLD = LIMIT_THRESHOLDS.over;
+
+export type LimitSignal = "ok" | "warn" | "over";
+
+/**
+ * Рівень сигналу ліміту за «сирим» відсотком (`pctRaw`, 0..∞). Єдине місце,
+ * де відсоток перетворюється на «спокійно / попередження / перевищення».
+ */
+export function limitSignal(pctRaw: number): LimitSignal {
+  if (pctRaw >= BUDGET_OVER_THRESHOLD * 100) return "over";
+  if (pctRaw >= BUDGET_WARN_THRESHOLD * 100) return "warn";
+  return "ok";
+}
 
 // Лише бюджети типу ліміт / ціль — використовується і в Budgets, і в useBudget.
 // Type-guard predicate-и звужують `Budget` union до конкретної гілки, тож
@@ -254,8 +283,9 @@ export function calculateLimitUsage(
   const limit = Number(budget?.limit) || 0;
   const pctRaw = rawPct(spent, limit);
   const pctRounded = Math.round(pctRaw);
-  const overLimit = limit > 0 && pctRaw >= 100;
-  const warnLimit = !overLimit && pctRaw >= BUDGET_WARN_THRESHOLD * 100;
+  const signal = limit > 0 ? limitSignal(pctRaw) : "ok";
+  const overLimit = signal === "over";
+  const warnLimit = signal === "warn";
   return {
     spent,
     limit,
@@ -391,19 +421,23 @@ export function calcLimitUsages<
 }
 
 // Правило для блоку Overview «бюджети під загрозою» — саме воно визначає,
-// чи показувати alert-картку. Порог винесено в константу, щоб Overview
-// і Budgets не мали магічних чисел.
+// чи показувати alert-картку. З 2026-11-18 (PR-F8) поріг той самий, що
+// попередження на Плануванні й у хабі: 80%, а не окремі 60%.
 export function isBudgetAlert(
   spent: number,
   limit: number,
-  threshold: number = BUDGET_ALERT_THRESHOLD,
+  threshold: number = BUDGET_WARN_THRESHOLD,
 ) {
   const lim = Number(limit);
   return lim > 0 && spent / lim >= threshold;
 }
 
 // Правило показу проактивної поради для ліміт-бюджету: або поточні
-// витрати вже ≥ 80% ліміту, або прогноз перевищить ліміт.
+// витрати вже на порозі попередження (≥ 80% ліміту, `LIMIT_THRESHOLDS`),
+// або прогноз перевищить ліміт. Прогнозна гілка не суперечить єдиній шкалі
+// (PR-F8): шкала каже про ВЖЕ витрачене, а прогноз — про темп, і порада
+// саме для того, щоб встигнути до порогу. Обидва нинішні виклики на вебі
+// передають `forecast = null`, тож видимо порада зараз іде лише за шкалою.
 export function shouldShowProactiveAdvice(
   usage: { pctRaw?: number } | null | undefined,
   forecast: { overLimit?: boolean } | null | undefined,
