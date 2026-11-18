@@ -1,7 +1,7 @@
 # SPEC: Рутина — лічильник, автовідмітка, канонічний відсоток і звички в «Зараз»
 
 > **Last touched:** 2026-11-18 by @claude. **Next review:** 2027-01-12.
-> **Status:** In progress - Р-3 (а) і Р-2 (а) у коді модуля й домену, рядки звичок у «Зараз» на хабі; Р-1 (а) і Р-1 (в) у коді: синк (міграції 170 / клієнтська 012, `SYNC_PROTOCOL_VERSION` 2), форма звички, рядок лічильника, слухач автовідмітки; лишились три емітери подій у Фізруку, Харчуванні й Фініку (§ Поза скоупом).
+> **Status:** In progress - Р-3 (а) і Р-2 (а) у коді модуля й домену, рядки звичок у «Зараз» на хабі; Р-1 (а) і Р-1 (в) у коді: синк (міграції 170 / клієнтська 012, `SYNC_PROTOCOL_VERSION` 2), форма звички, рядок лічильника, слухач автовідмітки і три емітери подій у Фізруку, Харчуванні й Фініку (2026-11-18, § Емітери подій).
 
 <!-- Друга хвиля слабких місць OD-29. Інтервʼю з власником уже відбулось:
 питання П-12…П-18 і відповіді в
@@ -189,19 +189,22 @@ docs/work/research/2026-11-17-modules-teardown-vs-leaders.md § 11.8–11.9.
   - UI: `components/settings/HabitCounterFields.tsx`, `components/HabitCounterControl.tsx`, `RoutineCalendarPanel.tsx`, `HabitQuickCreateDialog.tsx`; дія `onStepHabitCounter`; `lib/routineCounterStorage.ts`, `hooks/useRoutineAutoMark.ts`; шина `shared/lib/modules/hubBus.ts`; ключ `STORAGE_KEYS.ROUTINE_AUTO_MARK_SUPPRESSED`.
 - Owner-скіл: `sergeant-module-routine` + `sergeant-web-ui`; синк — `sergeant-module-sync`.
 
+## Емітери подій автовідмітки (зроблено 2026-11-18)
+
+Рутина слухає шину, подію шле модуль-власник, у тій самій вкладці і лише на
+локальну дію людини. Усі три емітери зроблено того ж дня власниками модулів:
+
+- Фізрук: `modules/fizruk/lib/routineAutoMarkSignal.ts`, виклик після
+  `endWorkout(wid)` у `WorkoutJournalSection.tsx`, лише для повноцінного
+  тренування (`isFullWorkout`), не більше однієї події на тренування;
+- Харчування: `useWaterTracker`, коли сума дня ВПЕРШЕ досягла цілі
+  (`source: "nutrition_water_goal"`);
+- Фінік: `modules/finyk/lib/routineAutoMark.ts`, ручна витрата з форми, скану
+  чека і чат-інструмента `create_transaction` (`source: "finyk_expense"`);
+  імпорт, банк, Сільпо, редагування і надходження події не дають.
+
 ## Поза скоупом v1
 
-- **Три емітери подій автовідмітки (чужі каталоги).** Рутина слухає шину, але
-  слати подію має модуль-власник, у тій самій вкладці, лише на локальну дію:
-  - Фізрук, `modules/fizruk/components/workouts/WorkoutJournalSection.tsx`, після
-    `endWorkout(wid)`: якщо `isFullWorkout(ended)` —
-    `emitHubBus("routineAutoMark", { source: "fizruk_workout", dayKey: <день пристрою endedAt> })`;
-  - Харчування, запис води (`useWaterTracker`): коли сума дня вперше досягла
-    цілі — `source: "nutrition_water_goal"`, `dayKey` дня запису;
-  - Фінік, `useFinykStorageMutations.addManualExpense` (ручний запис, не
-    імпорт і не банк) — `source: "finyk_expense"`, `dayKey` дати витрати.
-    До цього поле у формі є, а відмітка не ставиться: агент передає власникам
-    модулів через головну сесію.
 - Подія з sync-pull чужого пристрою відмітки не ставить навмисно (бриф: «лише
   від події на цьому пристрої»); на тому пристрої її поставить його власний
   слухач, і відмітка доїде синком.
