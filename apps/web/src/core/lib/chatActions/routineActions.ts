@@ -80,7 +80,7 @@ export function handleRoutineAction(
       // `id:`-prefixed value) must not silently write a phantom completion
       // key and then claim success (QA D-005).
       if (!habit) {
-        return `Не знайшов звичку "${habitId || String(rawHabitId ?? "")}", перевір список звичок.`;
+        return `Не знайшов звичку (id:${habitId || String(rawHabitId ?? "")}), перевір список звичок.`;
       }
       // Дефолт беремо з ТІЄЇ САМОЇ межі, якою редюсер відсікає майбутнє,
       // тож неявна ціль не може бути ним відхилена за побудовою. Доти тут
@@ -215,9 +215,9 @@ export function handleRoutineAction(
       const state = loadRoutineState();
       const habits = state.habits.slice();
       const hIdx = habits.findIndex((h) => h.id === id);
-      if (hIdx < 0) return `Звичку ${id} не знайдено.`;
+      if (hIdx < 0) return `Звичку не знайдено (id:${id}).`;
       const habit = habits[hIdx];
-      if (!habit) return `Звичку ${id} не знайдено.`;
+      if (!habit) return `Звичку не знайдено (id:${id}).`;
       const reminders = Array.isArray(habit.reminderTimes)
         ? [...habit.reminderTimes]
         : [];
@@ -258,7 +258,7 @@ export function handleRoutineAction(
       const doComplete = completed !== false;
       const state = loadRoutineState();
       const habit = state.habits.find((h) => h.id === id);
-      if (!habit) return `Звичку ${id} не знайдено.`;
+      if (!habit) return `Звичку не знайдено (id:${id}).`;
       const habitLabel = habit.name || id;
       const prevArr = Array.isArray(state.completions[id])
         ? state.completions[id]
@@ -332,9 +332,9 @@ export function handleRoutineAction(
       const state = loadRoutineState();
       const habits = state.habits.slice();
       const idx = habits.findIndex((h) => h.id === id);
-      if (idx < 0) return `Звичку ${id} не знайдено.`;
+      if (idx < 0) return `Звичку не знайдено (id:${id}).`;
       const habit = habits[idx];
-      if (!habit) return `Звичку ${id} не знайдено.`;
+      if (!habit) return `Звичку не знайдено (id:${id}).`;
       if (!!habit.archived === doArchive) {
         return `Звичку "${habit.name || id}" вже ${doArchive ? "заархівовано" : "активна"}.`;
       }
@@ -394,9 +394,9 @@ export function handleRoutineAction(
       const state = loadRoutineState();
       const habits = state.habits.slice();
       const hIdx = habits.findIndex((h) => h.id === id);
-      if (hIdx < 0) return `Звичку ${id} не знайдено.`;
+      if (hIdx < 0) return `Звичку не знайдено (id:${id}).`;
       const habit = habits[hIdx];
-      if (!habit) return `Звичку ${id} не знайдено.`;
+      if (!habit) return `Звичку не знайдено (id:${id}).`;
       const updated = { ...habit };
       const changes: string[] = [];
       if (name && name.trim()) {
@@ -468,9 +468,9 @@ export function handleRoutineAction(
       const state = loadRoutineState();
       const habits = state.habits.slice();
       const hIdx = habits.findIndex((h) => h.id === id);
-      if (hIdx < 0) return `Звичку ${id} не знайдено.`;
+      if (hIdx < 0) return `Звичку не знайдено (id:${id}).`;
       const habit = habits[hIdx];
-      if (!habit) return `Звичку ${id} не знайдено.`;
+      if (!habit) return `Звичку не знайдено (id:${id}).`;
       habits[hIdx] = {
         ...habit,
         recurrence: "weekly",
@@ -494,7 +494,7 @@ export function handleRoutineAction(
       const target = paused !== false;
       const state = loadRoutineState();
       const habit = state.habits.find((h) => h.id === id);
-      if (!habit) return `Звичку ${id} не знайдено.`;
+      if (!habit) return `Звичку не знайдено (id:${id}).`;
       const habitName = habit.name || id;
       const todayKey = anchoredCompletionBounds().todayKey;
 
@@ -553,7 +553,7 @@ export function handleRoutineAction(
       const days = Number(period_days) || 30;
       const state = loadRoutineState();
       const habit = state.habits.find((h) => h.id === id);
-      if (!habit) return `Звичку ${id} не знайдено.`;
+      if (!habit) return `Звичку не знайдено (id:${id}).`;
       // LOG-1 (`docs/work/specs/audits/2026-09-01-product-audit/findings.md`)
       // — той самий гнучкий стрік і той самий per-habit rate, що рахує UI
       // (`flexStreak.ts`/`streaks.ts`), а не третя жорстка реалізація, яка
@@ -618,7 +618,7 @@ export function handleRoutineAction(
       const habits = habit_id
         ? state.habits.filter((h) => h.id === habit_id)
         : state.habits.filter((h) => !h.archived);
-      if (habits.length === 0) return `Звичку ${habit_id} не знайдено.`;
+      if (habits.length === 0) return `Звичку не знайдено (id:${habit_id}).`;
       return habitTrendText(
         habits,
         state.completions,

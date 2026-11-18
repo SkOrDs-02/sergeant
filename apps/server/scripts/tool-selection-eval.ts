@@ -51,6 +51,8 @@
  *   OPENROUTER_API_KEY=... pnpm eval:tools --record
  *   OPENROUTER_API_KEY=... pnpm eval:tools --models=anthropic/claude-haiku-4.5
  *   OPENROUTER_API_KEY=... pnpm eval:tools --repeat=5 --timeout=45000
+ *   OPENROUTER_API_KEY=... pnpm eval:tools --follow-up --repeat=5
+ *     (лише `FOLLOW_UP_CASES`, «знайди, потім зміни ту»; касету не пише)
  */
 
 import { parseArgs } from "node:util";
@@ -60,6 +62,7 @@ import { CHAT_MODEL_DEFAULTS } from "../src/env/chatModels.js";
 import { SYSTEM_PREFIX, TOOLS } from "../src/modules/chat/tools.js";
 import {
   ALL_CASES as CASE_SET,
+  FOLLOW_UP_CASES,
   IMPLICIT_FACT_CASES,
   type ToolCase,
 } from "../src/modules/chat/toolSelectionCases/index.js";
@@ -206,9 +209,19 @@ async function runChain(
   withData: boolean,
   timeoutMs: number,
 ): Promise<ChainResult> {
-  const system = withData ? `${SYSTEM_PREFIX}${DATA_BLOCK}` : SYSTEM_PREFIX;
+  // `dataExtra` і `history` — лише в кейсах `FOLLOW_UP_CASES`; для решти рядок
+  // і масив ті самі, що були (касета від цього не протухає).
+  const system = withData
+    ? `${SYSTEM_PREFIX}${DATA_BLOCK}${toolCase.dataExtra ?? ""}`
+    : SYSTEM_PREFIX;
   const scenario = toolCase.turns ?? [];
-  const messages: unknown[] = [{ role: "user", content: toolCase.user }];
+  const messages: unknown[] = [
+    ...(toolCase.history ?? []).map((m) => ({
+      role: m.role,
+      content: m.content,
+    })),
+    { role: "user", content: toolCase.user },
+  ];
   const turns: RecordedTurn[] = [];
   let fedResult: string | null = null;
   const t0 = Date.now();
@@ -378,6 +391,7 @@ async function main(): Promise<void> {
       "no-data": { type: "boolean", default: false },
       record: { type: "boolean", default: false },
       injections: { type: "boolean", default: false },
+      "follow-up": { type: "boolean", default: false },
       repeat: { type: "string" },
       timeout: { type: "string" },
     },
@@ -399,6 +413,17 @@ async function main(): Promise<void> {
     process.exitCode = 1;
     return;
   }
+
+  // `--follow-up` — окремий платний замір кейсів «знайди, потім зміни ту»
+  // (С-2, П-19). Касета вимагає ВСІ кейси `ALL_CASES`, тож запис часткового
+  // набору її б зіпсував, а без ДАНІ блоку записів просто нема куди лягти.
+  const followUp = values["follow-up"] === true;
+  if (followUp && (values.record || values["no-data"])) {
+    console.error("--follow-up несумісний з --record і --no-data.");
+    process.exitCode = 1;
+    return;
+  }
+  const cases: ToolCase[] = followUp ? FOLLOW_UP_CASES : ALL_CASES;
 
   // Стеля однієї спроби. Дефолт 30 000 — стеля ЛОГІЧНОГО виклику в проді
   // (`CHAT_TOTAL_TIMEOUT_MS`, chat.ts), а не бюджет спроби: стенд має
@@ -426,9 +451,9 @@ async function main(): Promise<void> {
     .map((m) => m.trim())
     .filter(Boolean);
 
-  const multiTurn = ALL_CASES.filter((c) => (c.turns?.length ?? 0) > 0).length;
+  const multiTurn = cases.filter((c) => (c.turns?.length ?? 0) > 0).length;
   console.log(
-    `Registry: ${TOOLS.length} tools (${WRITE_ID_FIELDS.size} write-tools with id args), system prefix ${SYSTEM_PREFIX.length} chars, ДАНІ: ${values["no-data"] ? "немає" : `${DATA_BLOCK.length} chars`}, кейсів: ${ALL_CASES.length} (неявних фактів: ${IMPLICIT_FACT_CASES.length}, багатоходових: ${multiTurn})${values.record ? ", режим: ЗАПИС КАСЕТИ" : ""}\n`,
+    `Registry: ${TOOLS.length} tools (${WRITE_ID_FIELDS.size} write-tools with id args), system prefix ${SYSTEM_PREFIX.length} chars, ДАНІ: ${values["no-data"] ? "немає" : `${DATA_BLOCK.length} chars`}, кейсів: ${cases.length} (неявних фактів: ${IMPLICIT_FACT_CASES.length}, багатоходових: ${multiTurn})${values.record ? ", режим: ЗАПИС КАСЕТИ" : ""}\n`,
   );
 
   // Повтори множать той самий кейс у звіті; для касети потрібен рівно один
@@ -448,7 +473,7 @@ async function main(): Promise<void> {
     let attempts = 0;
     let timeouts = 0;
 
-    for (const toolCase of ALL_CASES) {
+    for (const toolCase of cases) {
       for (let i = 0; i < repeats; i += 1) {
         const chain = await runChain(
           apiKey,
@@ -482,7 +507,7 @@ async function main(): Promise<void> {
       }
     }
 
-    const summary = summarize(ALL_CASES, replayed);
+    const summary = summarize(cases, replayed);
     const lat = summarizeLatency(latencies, attempts, timeouts);
     console.log(
       "\n| Model | Correct | Invented ids | Errors | Timeouts | p50 (ms) | p95 (ms) | max (ms) |",

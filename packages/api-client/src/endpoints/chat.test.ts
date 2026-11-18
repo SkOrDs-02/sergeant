@@ -132,6 +132,31 @@ describe("createChatEndpoints.stream", () => {
     expect((init as RequestInit).method).toBe("POST");
   });
 
+  // Hard Rule #3 — контрактна трійка для `round_trip_ticket`: тур синтезу
+  // несе квиток першого туру дослівно, разом із tool_results і
+  // tool_calls_raw; лише така форма погашає квиток на сервері
+  // (`aiQuota.ts::tryConsumeRoundTripTicket`, `chat.roundTripTicket.test.ts`).
+  it("надсилає round_trip_ticket у тілі синтезу разом із tool_results", async () => {
+    const fetchMock = vi.fn(
+      async () => new Response("", { status: 200 }),
+    ) as FetchMock;
+    globalThis.fetch = fetchMock as unknown as typeof fetch;
+
+    const http = createHttpClient({ baseUrl: "https://api.example.com" });
+    const chat = createChatEndpoints(http);
+    const body = {
+      ...payload,
+      tool_results: [{ tool_use_id: "tc1", content: "ok" }],
+      tool_calls_raw: [{ type: "tool_use", id: "tc1", name: "x", input: {} }],
+      round_trip_ticket: "4b0c5d2e-1f3a-4c6b-9d8e-7a6b5c4d3e2f",
+      stream: true,
+    };
+    await chat.stream(body);
+
+    const [, init] = firstCall(fetchMock);
+    expect(JSON.parse(String((init as RequestInit).body))).toEqual(body);
+  });
+
   it("passes through an AbortSignal on stream()", async () => {
     const fetchMock = vi.fn(
       async () => new Response("", { status: 200 }),

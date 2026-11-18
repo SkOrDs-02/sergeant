@@ -33,6 +33,12 @@ export interface ChatMessage {
    * репліка, ще й із кнопкою «Озвучити» (browser-QA 2026-09-02).
    */
   error?: boolean;
+  /**
+   * С-2 (а): результати інструментів цього ходу з технічними id, для блоку
+   * ДАНІ наступного повідомлення (`hub/chat/turnRefs.ts`). Людині не
+   * показується.
+   */
+  toolRefs?: string;
   /** Optional extra fields preserved from persisted history. */
   [key: string]: unknown;
 }

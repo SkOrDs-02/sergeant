@@ -132,13 +132,13 @@ export function deleteTransaction(
   const id = String(tx_id || "").trim();
   if (!id) return "Потрібен tx_id для видалення.";
   if (!id.startsWith("m_")) {
-    return `Операцію ${id} не видалено: можна видаляти лише ручні (m_…). Для монобанк-операцій використай hide_transaction.`;
+    return `Операцію${labelPart(id)} не видалено (id:${id}): можна видаляти лише ручні записи. Для операцій Monobank використай hide_transaction.`;
   }
   const cache = warmFinykCache();
   if (!cache) return FINYK_COLD_CACHE_MESSAGE;
   const list = cache.manualExpenses;
   const idx = list.findIndex((t) => t.id === id);
-  if (idx < 0) return `Операцію ${id} не знайдено (вже видалена).`;
+  if (idx < 0) return `Операцію не знайдено, вже видалена (id:${id}).`;
   // Підпис рахуємо до запису: після нього операції в кеші вже немає.
   const label = labelPart(id);
   const next = list.slice();
@@ -168,7 +168,7 @@ export function splitTransaction(
   // розподіл витрати рівно на її суму.
   const total = finykExpenseAmountUah(id);
   if (total === null)
-    return `Операцію ${id} не розділено: розділити можна лише витрату.`;
+    return `Операцію${labelPart(id)} не розділено (id:${id}): розділити можна лише витрату.`;
   const customC = cache.customCategories;
   const newSplits = splitParts.map((p) => ({
     categoryId: normalizeFinykId(p.category_id),
@@ -178,7 +178,7 @@ export function splitTransaction(
     return "Кожна частина має бути сумою в гривнях, більшою за 0.";
   const partsSum = newSplits.reduce((sum, s) => sum + s.amount, 0);
   if (Math.round(partsSum * 100) !== Math.round(total * 100))
-    return `Операцію ${id} не розділено: частини дають ${formatNumberUk(partsSum)} грн, а операція на ${formatNumberUk(total)} грн. Сума частин має дорівнювати сумі операції.`;
+    return `Операцію${labelPart(id)} не розділено (id:${id}): частини дають ${formatNumberUk(partsSum)} грн, а операція на ${formatNumberUk(total)} грн. Сума частин має дорівнювати сумі операції.`;
   const unknownPart = newSplits.find((s) => !finykCategoryExists(s.categoryId));
   if (unknownPart) return unknownCategoryMessage(unknownPart.categoryId);
   // Спліти для tx_id перезаписуються цілком: знімок попередніх потрібен

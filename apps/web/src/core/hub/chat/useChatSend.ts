@@ -40,8 +40,9 @@ import {
   HUB_CHAT_HELP_TEXT,
   isAutoTtsEnabled,
 } from "./chatSendText";
-import { keepReplayableToolBlocks } from "./replayableToolBlocks";
+import { firstTurnEcho } from "./replayableToolBlocks";
 import { buildTurnCards, markCardsAfterFailedSynthesis } from "./turnCards";
+import { historyForServer, turnRefsField, withTurnRefs } from "./turnRefs";
 import { stripTechnicalIds } from "../../lib/chatDisplayText";
 import {
   useDestructiveConfirm,
@@ -390,13 +391,7 @@ export function useChatSend({
         ...(activeModule ? { module: activeModule } : {}),
       });
 
-      const history = next
-        .filter((m) => m.role === "user" || m.role === "assistant")
-        // Порожня відповідь (обірваний або скасований синтез) у history
-        // валить zod-валідацію сервера, і вся розмова ламається до «Нова».
-        .filter((m) => m.text.trim() !== "")
-        .slice(-10)
-        .map((m) => ({ role: m.role, content: m.text }));
+      const history = historyForServer(next);
 
       // Fresh AbortController per send. If a previous one is still
       // alive (shouldn't be — `send` guards on `loading`) we abort it
@@ -419,7 +414,8 @@ export function useChatSend({
         // The idle snapshot can predate a pull, a local write in another
         // module, or midnight. Read canonical data at the user's turn;
         // a Finyk-only preview notification cannot invalidate every input.
-        const context = buildContextMeasured();
+        // С-2 (а): id з останньої відповіді їдуть у блок ДАНІ (`turnRefs.ts`).
+        const context = withTurnRefs(buildContextMeasured(), messages);
         contextRef.current = { text: context, ts: Date.now() };
         setContextState({ status: "ready", ts: contextRef.current.ts });
 
@@ -608,6 +604,7 @@ export function useChatSend({
               role: "assistant",
               text: prefix,
               ...(cards.length > 0 ? { cards } : {}),
+              ...turnRefsField(toolCalls, handlerResults),
             },
           ]);
 
@@ -632,7 +629,9 @@ export function useChatSend({
                 // не власним списком типів, який мовчки розʼїхався б із
                 // серверним при наступній зміні. Преамбула не губиться для
                 // користувача: вона вже дострімлена в UI вище.
-                tool_calls_raw: keepReplayableToolBlocks(data.tool_calls_raw),
+                // Разом із блоками їде квиток першого туру (`firstTurnEcho`):
+                // без нього синтез списує другу одиницю квоти (AI-5).
+                ...firstTurnEcho(data),
                 stream: true,
                 // Той самий preset і на турі синтезу: інструкція має діяти
                 // й після `remember`, і цей запит теж має списатись із

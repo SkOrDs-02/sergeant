@@ -25,6 +25,7 @@ vi.mock("./entityLookup", async (importOriginal) => ({
   finykCategoryExists: vi.fn(() => true),
 }));
 
+import { stripTechnicalIds } from "../../chatDisplayText";
 import { finykChatWrite } from "./dualWriteBridge";
 import { resolveExpenseCategoryMeta } from "../../../../modules/finyk/utils";
 import {
@@ -311,6 +312,9 @@ describe("deleteTransaction", () => {
       input: { tx_id: "bank_123" },
     });
     expect(out).toContain("hide_transaction");
+    // id моделі — у `(id:…)`, звідки його вирізає показ (`chatDisplayText`).
+    expect(out).toContain("не видалено (id:bank_123)");
+    expect(stripTechnicalIds(String(out))).not.toContain("bank_123");
     expect(mockWrite).not.toHaveBeenCalled();
   });
 
@@ -321,6 +325,9 @@ describe("deleteTransaction", () => {
       input: { tx_id: "m_ghost" },
     });
     expect(out).toContain("не знайдено");
+    expect(stripTechnicalIds(String(out))).toBe(
+      "Операцію не знайдено, вже видалена.",
+    );
     expect(mockWrite).not.toHaveBeenCalled();
   });
 

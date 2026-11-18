@@ -274,10 +274,10 @@ export function finishWorkout(action: FinishWorkoutAction): ChatActionResult {
   if (!targetId) return "Немає активного тренування для завершення.";
   const idx = workouts.findIndex((w) => w.id === targetId);
   const target = idx >= 0 ? workouts[idx] : undefined;
-  if (!target) return `Тренування ${targetId} не знайдено.`;
+  if (!target) return `Тренування не знайдено (id:${targetId}).`;
   if (target.endedAt) {
     if (activeId === targetId) safeRemoveLS(ACTIVE_KEY);
-    return `Тренування ${targetId} вже завершено.`;
+    return `Тренування вже завершено (id:${targetId}).`;
   }
   const finished: Workout = { ...target, endedAt: new Date().toISOString() };
   const nextWorkouts = workouts.slice();
@@ -297,7 +297,7 @@ export function copyWorkout(action: CopyWorkoutAction): ChatActionResult {
   let source: Workout | undefined;
   if (source_workout_id) {
     source = workouts.find((w) => w.id === source_workout_id);
-    if (!source) return `Тренування ${source_workout_id} не знайдено.`;
+    if (!source) return `Тренування не знайдено (id:${source_workout_id}).`;
   } else {
     source = workouts
       .filter((w) => w.endedAt)

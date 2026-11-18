@@ -9,7 +9,7 @@
 
 import { describe, expect, it } from "vitest";
 
-import type { ToolCase } from "../toolSelectionCases/index.js";
+import { FOLLOW_UP_CASES, type ToolCase } from "../toolSelectionCases/index.js";
 import type { RecordedCase } from "./cassette.js";
 import { replayCase } from "./replay.js";
 
@@ -115,5 +115,48 @@ describe("оцінювання ланцюжка", () => {
     });
     expect(r.correct).toBe(false);
     expect(r.error).toBe("HTTP 429: rate limited");
+  });
+});
+
+describe("кейси «знайди, потім зміни ту» (С-2)", () => {
+  const [withRefs, control] = FOLLOW_UP_CASES;
+
+  it("id з блоку записів попередньої відповіді не рахується вигаданим", () => {
+    const r = replayCase(withRefs!, {
+      name: withRefs!.name,
+      turns: [
+        {
+          blocks: [
+            toolUse("change_category", {
+              tx_id: "tx_7c40",
+              category_id: "cat_food_out",
+            }),
+          ],
+          fedResult: null,
+        },
+      ],
+    });
+    expect(r.hallucinated).toEqual([]);
+    expect(r.argViolations).toEqual([]);
+    expect(r.correct).toBe(true);
+  });
+
+  it("без блоку записів той самий id — вигаданий", () => {
+    const r = replayCase(control!, {
+      name: control!.name,
+      turns: [
+        {
+          blocks: [
+            toolUse("change_category", {
+              tx_id: "tx_7c40",
+              category_id: "cat_food_out",
+            }),
+          ],
+          fedResult: null,
+        },
+      ],
+    });
+    expect(r.hallucinated).toEqual(["change_category.tx_id=tx_7c40"]);
+    expect(r.correct).toBe(false);
   });
 });

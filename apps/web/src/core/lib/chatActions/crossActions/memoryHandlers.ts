@@ -57,7 +57,7 @@ export function forget(action: ForgetAction): string {
   const id = (fact_id || "").trim();
   if (!id) return "Потрібен id факту для видалення.";
   const result = removeMemoryEntry(readMemoryEntries(), id);
-  if (!result.removed) return `Факт з id ${id} не знайдено.`;
+  if (!result.removed) return `Факт не знайдено (id:${id}).`;
   writeMemoryEntries(result.entries);
   return `Забув: ${result.removed.fact}`;
 }

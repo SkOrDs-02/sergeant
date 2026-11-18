@@ -11,15 +11,31 @@
  * далі.
  *
  * Форми, які пишуть виконавці (`chatActions/**`):
- *   - `… (id:m_1)` / `… (tx:m_1)` — окремі дужки;
- *   - `… (Інше, id:5c47…)` — id останнім у дужках з іншим вмістом.
+ *   - `… (id:m_1)` / `… (tx:m_1)` — окремі дужки (так само й відмови:
+ *     `Звичку не знайдено (id:h1).`);
+ *   - `… (Інше, id:5c47…)` — id останнім у дужках з іншим вмістом;
+ *   - `m_1: 2026-11-17 · 120 грн · …` — елемент списку операцій
+ *     (`find_transaction`, `query_transactions`): id перед датою.
  */
 
 // `(id:…)` / `(tx:…)` цілими дужками разом із пробілом перед ними.
 const STANDALONE_ID_RE = /\s*\((?:id|tx):[^)]*\)/g;
 // `, id:…` усередині дужок, де до нього є людський вміст.
 const TRAILING_ID_RE = /,\s*(?:id|tx):[^,)]*(?=\))/g;
+// `<id>: ` на початку елемента списку операцій. Тримаємось за форму
+// елемента, а не за форму id: id Monobank — довільний рядок (`ZuHW…=`), тож
+// впізнати його можна лише за тим, що далі йде дата (або «без дати») і `·`.
+const TX_LIST_ID_RE =
+  /(^|: |; )[^\s:;()]+: (?=(?:\d{4}-\d{2}-\d{2}|без дати) · )/g;
 
 export function stripTechnicalIds(text: string): string {
-  return text.replace(STANDALONE_ID_RE, "").replace(TRAILING_ID_RE, "");
+  return text
+    .replace(STANDALONE_ID_RE, "")
+    .replace(TRAILING_ID_RE, "")
+    .replace(TX_LIST_ID_RE, "$1");
+}
+
+/** Чи несе результат виконавця технічний id бодай в одній із форм вище. */
+export function hasTechnicalIds(text: string): boolean {
+  return stripTechnicalIds(text) !== text;
 }
