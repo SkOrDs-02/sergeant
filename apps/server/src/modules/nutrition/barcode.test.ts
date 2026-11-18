@@ -70,7 +70,22 @@ vi.mock("./productCatalog.js", () => ({
 }));
 
 const handlerModule = await import("./barcode.js");
-const handler = handlerModule.default;
+const { errorHandler } = await import("../../http/errorHandler.js");
+const rawHandler = handlerModule.default;
+
+/**
+ * Хендлер кидає `AppError`, а тіло помилки будує центральний `errorHandler`
+ * (Express 5 веде туди reject async-хендлера). Тест іде тим самим шляхом,
+ * тож статус і тіло нижче — те, що отримає клієнт (PR-T3, хвиля 10).
+ * Форму самого винятку перевіряють через `rawHandler`.
+ */
+async function handler(req: Request, res: Response): Promise<void> {
+  try {
+    await rawHandler(req, res);
+  } catch (err) {
+    errorHandler(err, req, res, () => {});
+  }
+}
 const { __barcodeTestHooks } = handlerModule;
 
 interface TestRes {
@@ -205,7 +220,7 @@ describe("barcode handler", () => {
   describe("validation", () => {
     it("throws ValidationError коли barcode параметр відсутній", async () => {
       const req = asReq({});
-      await expect(handler(req, mockRes())).rejects.toMatchObject({
+      await expect(rawHandler(req, mockRes())).rejects.toMatchObject({
         name: "ValidationError",
       });
       expect(global.fetch).not.toHaveBeenCalled();
@@ -218,6 +233,7 @@ describe("barcode handler", () => {
       expect(res.statusCode).toBe(400);
       expect(res.body).toMatchObject({
         error: expect.stringMatching(/штрихкод/i),
+        code: "VALIDATION",
       });
       expect(global.fetch).not.toHaveBeenCalled();
     });
@@ -345,12 +361,17 @@ describe("barcode handler", () => {
         .mockResolvedValueOnce(OFF_MISS)
         .mockResolvedValueOnce(USDA_MISS)
         .mockResolvedValueOnce(UPCITEMDB_MISS);
-      const req = asReq({ barcode: "9999999999999" });
+      const req = Object.assign(asReq({ barcode: "9999999999999" }), {
+        requestId: "req_t3",
+      });
       const res = mockRes();
       await handler(req, res);
       expect(res.statusCode).toBe(404);
+      // PR-T3: контракт помилки центрального хендлера, а не голий `error`.
       expect(res.body).toMatchObject({
         error: expect.stringMatching(/не знайдено/i),
+        code: "BARCODE_NOT_FOUND",
+        requestId: "req_t3",
       });
       expect(global.fetch).toHaveBeenCalledTimes(3);
     });
@@ -382,6 +403,7 @@ describe("barcode handler", () => {
       const res = mockRes();
       await handler(req, res);
       expect(res.statusCode).toBe(503);
+      expect(res.body).toMatchObject({ code: "BARCODE_SOURCES_UNAVAILABLE" });
       expect(global.fetch).toHaveBeenCalledTimes(3);
       // rel-21: роутер ставить публічний кеш ДО хендлера, тож «спробуй за
       // хвилину» не повинен жити в браузері/CDN — 503 перекриває його сам.

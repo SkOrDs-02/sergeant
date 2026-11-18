@@ -106,9 +106,19 @@ export const BarcodeLookupSuccessSchema = z.object({
 });
 export type BarcodeLookupSuccess = z.infer<typeof BarcodeLookupSuccessSchema>;
 
-/** Error envelope for `/api/barcode` (HTTP 400 / 404 / 500 / 504). */
+/**
+ * Error envelope for `/api/barcode` (HTTP 400 / 404 / 500 / 503 / 504).
+ *
+ * З хвилі 10 аудиту 2026-09-13 (PR-T3) усі помилки хендлера йдуть через
+ * центральний `errorHandler`, тож тіло — `{ error, message, code, requestId }`.
+ * `error` лишається обовʼязковим (сканер показує його дослівно), решта
+ * опційні: старі фікстури й клієнти без них лишаються валідними.
+ */
 export const BarcodeLookupErrorSchema = z.object({
   error: z.string().min(1),
+  message: z.string().optional(),
+  code: z.string().optional(),
+  requestId: z.string().optional(),
 });
 export type BarcodeLookupError = z.infer<typeof BarcodeLookupErrorSchema>;
 

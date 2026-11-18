@@ -97,9 +97,10 @@ describe("transcribeHandler", () => {
   it("503 коли GROQ_API_KEY відсутній", async () => {
     const req = makeReq({ groqKey: null });
     const res = makeRes();
-    await transcribeHandler(req, res);
-    expect(res.statusCode).toBe(503);
-    expect(res.body?.code).toBe("GROQ_KEY_MISSING");
+    await expect(transcribeHandler(req, res)).rejects.toMatchObject({
+      status: 503,
+      code: "GROQ_KEY_MISSING",
+    });
   });
 
   it("415 на неаудіо Content-Type", async () => {
@@ -108,9 +109,10 @@ describe("transcribeHandler", () => {
       body: Buffer.from("x"),
     });
     const res = makeRes();
-    await transcribeHandler(req, res);
-    expect(res.statusCode).toBe(415);
-    expect(res.body?.code).toBe("UNSUPPORTED_MEDIA_TYPE");
+    await expect(transcribeHandler(req, res)).rejects.toMatchObject({
+      status: 415,
+      code: "UNSUPPORTED_MEDIA_TYPE",
+    });
   });
 
   it("415 на неподтримуваний audio MIME", async () => {
@@ -119,32 +121,36 @@ describe("transcribeHandler", () => {
       body: Buffer.from("x"),
     });
     const res = makeRes();
-    await transcribeHandler(req, res);
-    expect(res.statusCode).toBe(415);
+    await expect(transcribeHandler(req, res)).rejects.toMatchObject({
+      status: 415,
+    });
   });
 
   it("400 на порожнє тіло", async () => {
     const req = makeReq({ body: Buffer.alloc(0) });
     const res = makeRes();
-    await transcribeHandler(req, res);
-    expect(res.statusCode).toBe(400);
-    expect(res.body?.code).toBe("EMPTY_BODY");
+    await expect(transcribeHandler(req, res)).rejects.toMatchObject({
+      status: 400,
+      code: "EMPTY_BODY",
+    });
   });
 
   it("400 коли тіло не Buffer (raw парсер не спрацював)", async () => {
     const req = makeReq({ body: { foo: "bar" } });
     const res = makeRes();
-    await transcribeHandler(req, res);
-    expect(res.statusCode).toBe(400);
+    await expect(transcribeHandler(req, res)).rejects.toMatchObject({
+      status: 400,
+    });
   });
 
   it("413 на тіло понад 10MB", async () => {
     const big = Buffer.alloc(10 * 1024 * 1024 + 1, 0);
     const req = makeReq({ body: big });
     const res = makeRes();
-    await transcribeHandler(req, res);
-    expect(res.statusCode).toBe(413);
-    expect(res.body?.code).toBe("PAYLOAD_TOO_LARGE");
+    await expect(transcribeHandler(req, res)).rejects.toMatchObject({
+      status: 413,
+      code: "PAYLOAD_TOO_LARGE",
+    });
   });
 
   it("ValidationError на занадто довгий prompt", async () => {
@@ -188,6 +194,22 @@ describe("transcribeHandler", () => {
     await transcribeHandler(req, res);
     expect(res.statusCode).toBe(429);
     expect(res.body?.code).toBe("TRANSCRIBE_UPSTREAM_FAILED");
+  });
+
+  it("помилка апстріму несе requestId, хоч і віддається інлайн (PR-T3)", async () => {
+    transcribeAudio.mockRejectedValueOnce(
+      new GroqTranscribeError("upstream 502", 502, "error"),
+    );
+    const req = Object.assign(makeReq({ body: Buffer.from("x") }), {
+      requestId: "req_t3",
+    });
+    const res = makeRes();
+    await transcribeHandler(req, res);
+    expect(res.statusCode).toBe(502);
+    expect(res.body).toMatchObject({
+      code: "TRANSCRIBE_UPSTREAM_FAILED",
+      requestId: "req_t3",
+    });
   });
 
   it("re-throw на не-Groq помилку (попадає в errorHandler)", async () => {

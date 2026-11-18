@@ -3,6 +3,7 @@ import { TranscribeQuerySchema } from "@sergeant/shared";
 import { parseQuery } from "../../http/validate.js";
 import { transcribeAudio, GroqTranscribeError } from "../../lib/groq.js";
 import { logger } from "../../obs/logger.js";
+import { AppError } from "../../obs/errors.js";
 import {
   assertTranscribeUsdCap,
   recordTranscribeUsdSpend,
@@ -94,38 +95,33 @@ export default async function transcribeHandler(
     // requireGroqKey() мав уже відсіяти, але double-check для безпеки.
     // Не світимо назву env-змінної клієнту: вона потрапляє у formatApiError
     // і показується юзеру дослівно. Дискримінатор для frontend — `code`.
-    res.status(503).json({
-      error: "Голосове введення тимчасово недоступне. Спробуй пізніше.",
-      code: "GROQ_KEY_MISSING",
-    });
-    return;
+    throw new AppError(
+      "Голосове введення тимчасово недоступне. Спробуй пізніше.",
+      { status: 503, code: "GROQ_KEY_MISSING" },
+    );
   }
 
   const mimeType = pickMimeType(req);
   if (!mimeType) {
-    res.status(415).json({
-      error:
-        "Непідтримуваний Content-Type, очікую audio/webm, audio/mp4, audio/ogg тощо",
-      code: "UNSUPPORTED_MEDIA_TYPE",
-    });
-    return;
+    throw new AppError(
+      "Непідтримуваний Content-Type, очікую audio/webm, audio/mp4, audio/ogg тощо",
+      { status: 415, code: "UNSUPPORTED_MEDIA_TYPE" },
+    );
   }
 
   // Тіло — Buffer, бо роутер змонтований після `express.raw({ type: "audio/*" })`.
   const body = req.body as unknown;
   if (!Buffer.isBuffer(body) || body.length === 0) {
-    res.status(400).json({
-      error: "Порожнє тіло запиту, очікую аудіо-блоб",
+    throw new AppError("Порожнє тіло запиту, очікую аудіо-блоб", {
+      status: 400,
       code: "EMPTY_BODY",
     });
-    return;
   }
   if (body.length > MAX_AUDIO_BYTES) {
-    res.status(413).json({
-      error: `Аудіо завелике (${body.length} байт), максимум ${MAX_AUDIO_BYTES}`,
-      code: "PAYLOAD_TOO_LARGE",
-    });
-    return;
+    throw new AppError(
+      `Аудіо завелике (${body.length} байт), максимум ${MAX_AUDIO_BYTES}`,
+      { status: 413, code: "PAYLOAD_TOO_LARGE" },
+    );
   }
 
   const { language, prompt } = parseQuery(TranscribeQuerySchema, req);
@@ -185,10 +181,14 @@ export default async function transcribeHandler(
         bytes: body.length,
         mimeType,
       });
+      // Інлайн, а не `throw`: тіло несе `outcome`, якого центральний
+      // `errorHandler` не віддає. `requestId` проставлено вручну, щоб
+      // контракт помилки лишився тим самим (знахідка PR-T3, хвиля 10).
       res.status(err.status).json({
         error: err.message,
         code: "TRANSCRIBE_UPSTREAM_FAILED",
         outcome: err.outcome,
+        requestId: (req as Request & { requestId?: string }).requestId,
       });
       return;
     }
