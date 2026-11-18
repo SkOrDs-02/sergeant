@@ -24,19 +24,23 @@ import {
   GRACE_EARN_EVERY_DAYS,
   GRACE_START_BUDGET,
   MAX_GRACE_BUDGET,
-  type FlexibleStreakBreakdown,
   type FlexibleStreakDayCell,
   type HabitSkip,
   type StreakDayKind,
 } from "@sergeant/routine-domain";
 import { useMemo } from "react";
-import { pluralDays, pluralUa } from "@sergeant/shared";
+import { pluralDays } from "@sergeant/shared";
 import { Card } from "@shared/components/ui/Card";
 import { SectionHeading } from "@shared/components/ui/SectionHeading";
 import { cn } from "@shared/lib/ui/cn";
 import { messages } from "@shared/i18n/uk";
 import { formatDateShort } from "@shared/lib/time/formatDate";
 import { flexibleStreakBreakdown } from "../lib/streaks";
+import {
+  fillTemplate as fill,
+  graceSourceLine,
+  graceUsedLabel,
+} from "../lib/graceStockCopy";
 import { SKIP_REASON_LABELS } from "../lib/skipReasons";
 import type { Habit } from "../lib/types";
 
@@ -53,45 +57,6 @@ export interface HabitStreakCanvasProps {
 }
 
 const CELL_BASE = "w-6 h-7 shrink-0 rounded-[3px]";
-
-const GRACE_FORMS = { one: "заморозка", few: "заморозки", many: "заморозок" };
-
-const DONE_FORMS = {
-  one: T.doneFormOne,
-  few: T.doneFormFew,
-  many: T.doneFormMany,
-};
-
-/** Підставляє `{key}`-плейсхолдери шаблону каталогу. */
-function fill(template: string, vars: Record<string, string | number>): string {
-  return template.replace(/\{(\w+)\}/g, (match, key: string) =>
-    key in vars ? String(vars[key]) : match,
-  );
-}
-
-/**
- * Рядок «звідки заморозки»: стартова, зароблені виконаннями і коли наступна.
- * Числа беремо з розбору серії, а не з констант, бо стеля обрізає зароблене.
- */
-function graceSourceLine(b: FlexibleStreakBreakdown): string {
-  const source =
-    b.graceFromDays > 0
-      ? fill(T.graceSourceStartAndDays, {
-          start: b.graceFromStart,
-          earned: b.graceFromDays,
-          days: b.days,
-          doneForm: pluralUa(b.days, DONE_FORMS),
-        })
-      : fill(T.graceSourceStart, { start: b.graceFromStart });
-  const tail =
-    b.daysToNextGrace === null
-      ? T.graceAtCap
-      : fill(T.graceNext, {
-          days: b.daysToNextGrace,
-          doneForm: pluralUa(b.daysToNextGrace, DONE_FORMS),
-        });
-  return `${source} ${tail}`;
-}
 
 function formatCellDate(key: string): string {
   // Парсимо готовий day-key на візуальну мітку — не читаємо годинник
@@ -281,10 +246,7 @@ export function HabitStreakCanvas({
   );
   const { window: cells, days, graceUsed } = breakdown;
 
-  const graceLine =
-    graceUsed > 0
-      ? ` · ${graceUsed} ${pluralUa(graceUsed, GRACE_FORMS)} ${T.graceUsedSuffix}`
-      : "";
+  const graceLine = graceUsed > 0 ? ` · ${graceUsedLabel(graceUsed)}` : "";
 
   return (
     <Card className={className}>
@@ -311,7 +273,7 @@ export function HabitStreakCanvas({
       ) : null}
 
       {cells.length === 0 ? (
-        <p className="text-style-body text-subtle">{T.emptyHistory}</p>
+        <p className="text-style-body text-subtle mb-4">{T.emptyHistory}</p>
       ) : (
         <ul
           aria-label={`${T.canvasLabelPrefix} «${habit.name}»`}

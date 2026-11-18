@@ -190,7 +190,7 @@ describe("HabitStreakCanvas", () => {
         todayKey={TODAY}
       />,
     );
-    expect(screen.getByText(/1 заморозка витрачено/)).toBeInTheDocument();
+    expect(screen.getByText(/1 заморозку витрачено/)).toBeInTheDocument();
   });
 
   it("показує дружній empty-state, коли в історії ще немає жодної відмітки", () => {
@@ -202,7 +202,8 @@ describe("HabitStreakCanvas", () => {
       />,
     );
     expect(screen.getByText(/Серія ще не почалась/)).toBeInTheDocument();
-    expect(screen.getByText(/Відміток ще немає/)).toBeInTheDocument();
+    // Відступ до легенди такий самий, як після полотна (`mb-4`).
+    expect(screen.getByText(/Відміток ще немає/).className).toContain("mb-4");
   });
 });
 
@@ -274,7 +275,7 @@ describe("HabitStreakCanvas: заморозки в запасі", () => {
     );
     expect(screen.getByText("Заморозок у запасі: 0 з 4")).toBeInTheDocument();
     expect(
-      screen.getByText("1 стартова. Наступна через 1 виконання."),
+      screen.getByText("Стартову витрачено. Наступна через 1 виконання."),
     ).toBeInTheDocument();
     expect(screen.getByText(/6 днів поспіль/)).toBeInTheDocument();
   });

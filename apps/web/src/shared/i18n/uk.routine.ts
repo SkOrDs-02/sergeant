@@ -115,6 +115,11 @@ export const routinePageMessages = {
     notStarted: "Серія ще не почалась.",
     daysSuffix: "поспіль",
     graceUsedSuffix: "витрачено",
+    // Знахідний відмінок після безособового «витрачено»: «1 заморозку»,
+    // «2 заморозки», «5 заморозок».
+    graceUsedFormOne: "заморозку",
+    graceUsedFormFew: "заморозки",
+    graceUsedFormMany: "заморозок",
     emptyHistory: "Відміток ще немає.",
     canvasLabelPrefix: "Полотно серії",
     noReason: "без причини",
@@ -143,6 +148,9 @@ export const routinePageMessages = {
       "{start} стартова і {earned} за {days} {doneForm}.",
     graceNext: "Наступна через {days} {doneForm}.",
     graceAtCap: "Більше не накопичується.",
+    // Коли запас нуль: пояснення каже, що витрачено, а не з чого складався.
+    graceSpentStart: "Стартову витрачено.",
+    graceSpentAll: "Запас вичерпано.",
     // Форми слова «виконання» після числа: 1/2–4 — «виконання», 5+ — «виконань».
     doneFormOne: "виконання",
     doneFormFew: "виконання",
