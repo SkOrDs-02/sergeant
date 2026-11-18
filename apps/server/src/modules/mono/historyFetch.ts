@@ -159,12 +159,26 @@ async function upsertTransactions(
   return inserted;
 }
 
+/**
+ * Одна сторінка виписки. Гортання рахується за СИРОЮ сторінкою Monobank
+ * (`rawTimes`: по елементу на кожен рядок відповіді, `NaN` там, де `time`
+ * не число), а не за рядками, що пройшли схему: інакше один відкинутий
+ * рядок на повній сторінці робив її «неповною» і мовчки обривав решту вікна
+ * (аудит 2026-10-01, `data-65`).
+ */
+export interface StatementPage {
+  items: BackfillItem[];
+  rawTimes: number[];
+  /** Скільки рядків сторінки не пройшли `BackfillItemSchema`. */
+  dropped: number;
+}
+
 export async function fetchAccountStatement(
   token: string,
   monoAccountId: string,
   fromTs: number,
   toTs: number,
-): Promise<BackfillItem[]> {
+): Promise<StatementPage> {
   const url = `https://api.monobank.ua/personal/statement/${monoAccountId}/${fromTs}/${toTs}`;
   const res = await fetch(url, {
     headers: { "X-Token": token },
@@ -175,11 +189,19 @@ export async function fetchAccountStatement(
     throw new Error(`Monobank statement ${res.status}: ${body.slice(0, 200)}`);
   }
   const raw: unknown = await res.json();
-  if (!Array.isArray(raw)) return [];
-  return raw.flatMap((item) => {
-    const parsed = BackfillItemSchema.safeParse(item);
-    return parsed.success ? [parsed.data] : [];
-  });
+  if (!Array.isArray(raw)) return { items: [], rawTimes: [], dropped: 0 };
+  const items: BackfillItem[] = [];
+  const rawTimes: number[] = [];
+  for (const row of raw as unknown[]) {
+    const time =
+      row !== null && typeof row === "object"
+        ? (row as { time?: unknown }).time
+        : undefined;
+    rawTimes.push(typeof time === "number" ? time : Number.NaN);
+    const parsed = BackfillItemSchema.safeParse(row);
+    if (parsed.success) items.push(parsed.data);
+  }
+  return { items, rawTimes, dropped: raw.length - items.length };
 }
 
 interface BackfillAccount {
@@ -210,6 +232,7 @@ export async function runMonoHistoryBackfill(
   for (const account of accounts) {
     let fetched = 0;
     let inserted = 0;
+    let dropped = 0;
     try {
       // Вікна й сторінки від нових до старих; помилка зупиняє лише цей
       // рахунок, тож його покриття лишається суцільним від «зараз» назад.
@@ -220,19 +243,25 @@ export async function runMonoHistoryBackfill(
         const seen = new Set<string>();
         for (let page = 0; page < MAX_PAGES; page++) {
           await paced();
-          const items = await fetchAccountStatement(
+          const statement = await fetchAccountStatement(
             token,
             account.id,
             window.from,
             pageTo,
           );
-          const fresh = items.filter((it) => !seen.has(it.id));
+          const fresh = statement.items.filter((it) => !seen.has(it.id));
           for (const it of fresh) seen.add(it.id);
           fetched += fresh.length;
+          // Рядок на включній межі сторінки приходить двічі, тож відкинутий
+          // там рахується двічі: лічильник це сигнал «щось відкидаємо», а не
+          // точний облік унікальних операцій.
+          dropped += statement.dropped;
           inserted += await upsertTransactions(userId, account.id, fresh);
-          if (items.length < MONO_STATEMENT_PAGE_SIZE) break;
+          // Повнота сторінки і межа наступної за СИРИМИ рядками (`data-65`):
+          // відкинутий схемою рядок не обриває гортання.
+          if (statement.rawTimes.length < MONO_STATEMENT_PAGE_SIZE) break;
           const nextTo = nextStatementPageTo(
-            items.map((it) => it.time),
+            statement.rawTimes,
             pageTo,
             window.from,
           );
@@ -246,6 +275,7 @@ export async function runMonoHistoryBackfill(
         monoAccountId: account.id,
         fetched,
         inserted,
+        dropped,
       });
     } catch (err) {
       logger.warn({
@@ -253,6 +283,17 @@ export async function runMonoHistoryBackfill(
         userId,
         monoAccountId: account.id,
         err: err instanceof Error ? err.message : String(err),
+      });
+    }
+    if (dropped > 0) {
+      // Hard Rule #21: лише лічильник. Вміст рядків (суми, описи,
+      // контрагенти) у лог не йде; userId і monoAccountId вже пише
+      // `mono_backfill_account_done` поруч.
+      logger.warn({
+        msg: "mono_backfill_rows_dropped",
+        userId,
+        monoAccountId: account.id,
+        dropped,
       });
     }
     totalInserted += inserted;

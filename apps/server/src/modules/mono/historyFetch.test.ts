@@ -192,8 +192,11 @@ describe("fetchAccountStatement", () => {
     vi.stubGlobal("fetch", fetchMock);
 
     const out = await fetchAccountStatement("token", "acc1", 0, TS);
-    expect(out).toHaveLength(1);
-    expect(out[0]!.id).toBe("ok");
+    expect(out.items).toHaveLength(1);
+    expect(out.items[0]!.id).toBe("ok");
+    // Сирі рядки для гортання лишаються всі, відкинуті пораховано.
+    expect(out.rawTimes).toEqual([TS, TS]);
+    expect(out.dropped).toBe(1);
 
     const url = (fetchMock as Mock).mock.calls[0]![0] as string;
     expect(url).toContain("/personal/statement/acc1/0/");
@@ -219,7 +222,7 @@ describe("fetchAccountStatement", () => {
       vi.fn().mockResolvedValue({ ok: true, json: async () => ({}) }),
     );
     const out = await fetchAccountStatement("token", "acc1", 0, TS);
-    expect(out).toEqual([]);
+    expect(out).toEqual({ items: [], rawTimes: [], dropped: 0 });
   });
 });
 
@@ -460,6 +463,143 @@ describe("runMonoHistoryBackfill", () => {
         msg: "mono_backfill_account_error",
         monoAccountId: "acc1",
       }),
+    );
+  });
+
+  // data-65: відкинутий схемою рядок не має обривати гортання. Повна сторінка
+  // визначається за СИРОЮ кількістю рядків Monobank, межа наступної сторінки
+  // за сирим `time`, інакше один «кривий» рядок губив решту вікна мовчки.
+  it("повна сторінка з одним невалідним рядком гортається далі, решта на місці", async () => {
+    const client = makeClient();
+    harness.pool.connect.mockResolvedValue(client);
+    const nowSec = Math.floor(Date.now() / 1000);
+    const fullPage: Record<string, unknown>[] = Array.from(
+      { length: 500 },
+      (_, i) => ({
+        id: `tx_${i}`,
+        time: nowSec - 100 - i,
+        amount: -100,
+        operationAmount: -100,
+        currencyCode: 980,
+      }),
+    );
+    // Найстаріший рядок сторінки ламає схему (дробові копійки) і несе
+    // текст, якого в логах бути не може.
+    fullPage[499] = {
+      ...fullPage[499],
+      amount: 1.5,
+      description: "SECRET-SHOP",
+    };
+    const nextPage = [
+      {
+        id: "tx_older",
+        time: nowSec - 100 - 600,
+        amount: -100,
+        operationAmount: -100,
+        currencyCode: 980,
+      },
+    ];
+    vi.stubGlobal(
+      "fetch",
+      vi
+        .fn()
+        .mockResolvedValueOnce({ ok: true, json: async () => fullPage })
+        .mockResolvedValueOnce({ ok: true, json: async () => nextPage })
+        .mockResolvedValue({ ok: true, json: async () => [] }),
+    );
+
+    await runMonoHistoryBackfill(
+      "user_1",
+      [{ id: "acc1" }],
+      { token_ciphertext: "c", token_iv: "i", token_tag: "t" } as never,
+      {} as never,
+    );
+
+    const urls = vi.mocked(global.fetch).mock.calls.map((c) => String(c[0]));
+    // Дві сторінки першого вікна + по одній на два старші.
+    expect(urls).toHaveLength(4);
+    // Межа другої сторінки взята з сирого `time` відкинутого рядка.
+    expect(Number(urls[1]!.split("/").at(-1))).toBe(nowSec - 100 - 499);
+    const insertedIds = client.query.mock.calls
+      .filter((c) => String(c[0]).includes("INSERT INTO mono_transaction"))
+      .map((c) => (c[1] as unknown[])[2]);
+    expect(insertedIds).toHaveLength(500);
+    expect(insertedIds).toContain("tx_older");
+    expect(insertedIds).not.toContain("tx_499");
+
+    expect(harness.logger.warn).toHaveBeenCalledWith(
+      expect.objectContaining({
+        msg: "mono_backfill_rows_dropped",
+        monoAccountId: "acc1",
+        dropped: 1,
+      }),
+    );
+    expect(JSON.stringify(harness.logger.warn.mock.calls)).not.toContain(
+      "SECRET-SHOP",
+    );
+    expect(harness.logger.info).toHaveBeenCalledWith(
+      expect.objectContaining({
+        msg: "mono_backfill_account_done",
+        dropped: 1,
+      }),
+    );
+  });
+
+  it("сторінка лише з невалідних рядків не зациклюється: стоп за сирим time, що не просунувся", async () => {
+    const client = makeClient();
+    harness.pool.connect.mockResolvedValue(client);
+    const nowSec = 1_800_000_000;
+    vi.useFakeTimers({ toFake: ["Date"] });
+    vi.setSystemTime(nowSec * 1000);
+    // 500 рядків без id, усі в секунду `to` першого вікна.
+    const stuckPage = Array.from({ length: 500 }, () => ({
+      time: nowSec,
+      amount: -100,
+      operationAmount: -100,
+      currencyCode: 980,
+    }));
+    vi.stubGlobal(
+      "fetch",
+      vi.fn().mockResolvedValue({ ok: true, json: async () => stuckPage }),
+    );
+
+    await runMonoHistoryBackfill(
+      "user_1",
+      [{ id: "acc1" }],
+      { token_ciphertext: "c", token_iv: "i", token_tag: "t" } as never,
+      {} as never,
+    );
+
+    // По одному запиту на вікно: межа не просунулась, гортати нікуди.
+    expect(global.fetch).toHaveBeenCalledTimes(3);
+    expect(client.query).not.toHaveBeenCalledWith(
+      expect.stringContaining("INSERT INTO mono_transaction"),
+      expect.anything(),
+    );
+    expect(harness.logger.warn).toHaveBeenCalledWith(
+      expect.objectContaining({
+        msg: "mono_backfill_rows_dropped",
+        dropped: 1500,
+      }),
+    );
+  });
+
+  it("без відкинутих рядків попередження немає", async () => {
+    harness.pool.connect.mockResolvedValue(makeClient());
+    vi.stubGlobal(
+      "fetch",
+      vi.fn().mockResolvedValue({ ok: true, json: async () => [] }),
+    );
+
+    await runMonoHistoryBackfill(
+      "user_1",
+      [{ id: "acc1" }],
+      { token_ciphertext: "c", token_iv: "i", token_tag: "t" } as never,
+      {} as never,
+    );
+
+    expect(harness.logger.warn).not.toHaveBeenCalledWith(
+      expect.objectContaining({ msg: "mono_backfill_rows_dropped" }),
     );
   });
 

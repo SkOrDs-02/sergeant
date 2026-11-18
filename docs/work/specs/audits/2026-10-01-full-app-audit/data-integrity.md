@@ -4893,7 +4893,7 @@ Script: <scratch>/agents/verify-server-static-gap-finyk-import-receipts-correctn
 
 ### `data-65` [low] Бекфіл при підключенні Monobank не пагінує понад 500 операцій і мовчки відкидає транзакції, що не пройшли схему
 
-- **Стан:** відкрито
+- **Стан:** виправлено (2026-11-18, гілка `claude/awesome-goodall-8s5uky`, ще не змерджено). Пагінацію шляху підключення і включну межу сторінки (`to = oldest`, дедуп за id) закрила Ф-3 (а) (`statementWindows.ts`, спека `finyk-history-three-months-and-upcoming-charges.md`). Залишок, мовчазне відкидання рядків поза схемою, закрито так: повнота сторінки й межа наступної рахуються за сирими рядками Monobank, тож відкинутий рядок не обриває гортання, а про відкидання є `logger.warn` `mono_backfill_rows_dropped` з лічильником без вмісту (`historyFetch.ts`, тести в `historyFetch.test.ts`). Пункт рекомендації «обрізати поля, а не викидати» не зроблено: рядок поза схемою далі не записується, лише рахується (див. § Журнал рішень `finyk.md`, 2026-11-18).
 - **Перевірка:** підтверджено · **Зусилля:** S · **Швидкий виграш** · **Область:** server: mono (historyFetch, backfill)
 - **Де:** apps/server/src/modules/mono/historyFetch.ts:144-203; apps/server/src/modules/mono/connection.ts:277; apps/server/src/modules/mono/backfill.ts:265-292
 - **Першопричина:** runMonoHistoryBackfill робить один виклик statement на рахунок за 30 днів (Monobank віддає максимум 500), а flatMap(safeParse) без логування викидає транзакції з довшими описами; ручний backfill.ts цикл має, але nextTo = oldest - 1 губить операції тієї самої секунди.
