@@ -25,7 +25,7 @@
  * без зміни кількості/типу items). Майбутні зміни — додавати новий
  * запис, як писано вище.
  *
- * See `docs/whats-new/README.md` для шаблону + how-to.
+ * See `docs/product/whats-new/README.md` для шаблону + how-to.
  */
 
 import { getKyivDayKey } from "@shared/lib/time/kyivTime";
