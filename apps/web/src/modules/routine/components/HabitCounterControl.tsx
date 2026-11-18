@@ -36,7 +36,7 @@ export function HabitCounterControl({
 }: HabitCounterControlProps) {
   const progress = counterProgressLabel(count, target);
   const btn =
-    "focus-ring flex h-11 w-11 shrink-0 items-center justify-center rounded-full text-style-label-lg font-semibold disabled:cursor-not-allowed disabled:opacity-50";
+    "focus-ring flex h-11 w-11 shrink-0 items-center justify-center rounded-lg text-style-label-lg font-semibold disabled:cursor-not-allowed disabled:opacity-50";
   return (
     <div
       className="flex items-center"
