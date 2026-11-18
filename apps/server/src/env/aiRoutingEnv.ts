@@ -23,6 +23,28 @@ const stringWithDefault = (defaultValue: string) =>
 const llmProviderEnum = (d: "anthropic" | "openrouter" | "stub") =>
   z.enum(["anthropic", "openrouter", "stub"]).default(d);
 
+/**
+ * Допустима глибина міркувань першого ходу чату.
+ *
+ * Це `REASONING_EFFORTS` з `lib/llm/provider.ts` БЕЗ `minimal`. Перший хід
+ * ходить на Anthropic-сумісний `/api/v1/messages` шлюзу, а там глибину задають
+ * `output_config.effort` (`low | medium | high | xhigh | max`) і
+ * `thinking: { type: "disabled" }` для `none`; значення `minimal` цей
+ * ендпоінт не приймає взагалі. Перелік тут, а не імпортом із `provider.ts`:
+ * той модуль читає `env`, і імпорт звідси дав би цикл. Розходження двох
+ * переліків стереже `chatReasoning.test.ts`.
+ */
+export const CHAT_FIRST_TURN_REASONING_EFFORTS = [
+  "none",
+  "low",
+  "medium",
+  "high",
+  "xhigh",
+] as const;
+
+export type ChatFirstTurnReasoningEffort =
+  (typeof CHAT_FIRST_TURN_REASONING_EFFORTS)[number];
+
 export const aiRoutingEnvShape = {
   OPENROUTER_API_KEY: stringWithDefault(""),
 
@@ -72,6 +94,19 @@ export const aiRoutingEnvShape = {
    * дали 7/10: не читають обʼєм з етикетки й недораховують порцію.
    */
   OPENROUTER_VISION_MODEL: stringWithDefault("google/gemini-2.5-flash-lite"),
+
+  /**
+   * Глибина міркувань ПЕРШОГО ходу `/api/chat` (JSON і стрім), лише через
+   * шлюз OpenRouter. Незадана або порожня — поле в запит не йде, глибину
+   * вирішує шлюз (так було завжди). Регістр і пробіли не важливі; будь-що
+   * поза переліком валить старт. Тур синтезу, коуч і дайджест її не читають.
+   * Як значення стає полем запиту — `modules/chat/chatReasoning.ts`.
+   * Умова зняття — `docs/engineering/architecture/feature-flags.md` § 2.
+   */
+  CHAT_FIRST_TURN_REASONING_EFFORT: z.preprocess(
+    (v) => (typeof v === "string" ? v.trim().toLowerCase() || undefined : v),
+    z.enum(CHAT_FIRST_TURN_REASONING_EFFORTS).optional(),
+  ),
 
   LLM_PROVIDER: llmProviderEnum("anthropic"),
   LLM_READONLY_PROVIDER: llmProviderEnum("openrouter"),

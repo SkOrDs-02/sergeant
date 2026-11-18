@@ -12,6 +12,7 @@ import {
 } from "./chatShared.js";
 import { streamAnthropicToSse } from "./chatStream.js";
 import { callAnthropicWithContinuation } from "./chatUpstream.js";
+import { firstTurnReasoningPayload } from "./chatReasoning.js";
 import {
   type FirstTurnSse,
   replayFirstTurnFromCache,
@@ -730,6 +731,9 @@ export default async function handler(
     // 3-й cache breakpoint: кешуємо префікс історії діалогу, щоб наступний
     // тур читав попередні повідомлення з кешу замість повного re-білінгу.
     messages: applyMessagesCacheBreakpoint(cleaned),
+    // Глибина міркувань (`CHAT_FIRST_TURN_REASONING_EFFORT`): незадана — полів
+    // немає. Один payload на JSON і стрім, тож обидва шляхи шлють те саме.
+    ...firstTurnReasoningPayload(),
   };
 
   let content: AnthropicContentBlock[];

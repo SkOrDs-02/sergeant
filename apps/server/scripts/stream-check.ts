@@ -27,11 +27,22 @@
  * Usage: OPENROUTER_API_KEY=... pnpm eval:stream [--models=a,b]
  *        OPENROUTER_API_KEY=... pnpm eval:stream --first-turn \
  *          --models=google/gemini-3.7-flash --repeat=5
+ *        OPENROUTER_API_KEY=... pnpm eval:stream --first-turn --reasoning=low \
+ *          --models=google/gemini-3.7-flash --repeat=5
+ *
+ * `--reasoning` (лише з `--first-turn`) додає глибину міркувань у тій самій
+ * формі, що прод із заданою `CHAT_FIRST_TURN_REASONING_EFFORT`
+ * (`chatReasoning.ts`). Без прапорця поля в запиті немає, як у проді зараз.
  */
 
 import { parseArgs } from "node:util";
 import process from "node:process";
 
+import {
+  CHAT_FIRST_TURN_REASONING_EFFORTS,
+  type ChatFirstTurnReasoningEffort,
+} from "../src/env/aiRoutingEnv.js";
+import { firstTurnReasoningFields } from "../src/modules/chat/chatReasoning.js";
 import { SYSTEM_PREFIX, TOOLS } from "../src/modules/chat/tools.js";
 import {
   buildSystem,
@@ -93,6 +104,8 @@ const SCENARIOS: Scenario[] = [
 interface StreamReport {
   model: string;
   scenario: string;
+  /** Глибина міркувань прогону; `шлюз` — поля в запиті не було. */
+  reasoning: string;
   ok: boolean;
   events: Set<string>;
   deltaTypes: Set<string>;
@@ -123,11 +136,13 @@ async function checkStream(
   apiKey: string,
   model: string,
   scenario: Scenario,
+  reasoning: ChatFirstTurnReasoningEffort | undefined,
 ): Promise<StreamReport> {
   const t0 = Date.now();
   const report: StreamReport = {
     model,
     scenario: scenario.name,
+    reasoning: reasoning ?? "шлюз",
     ok: false,
     events: new Set(),
     deltaTypes: new Set(),
@@ -161,6 +176,7 @@ async function checkStream(
               system: buildSystem(FIRST_TURN_CONTEXT, undefined, true),
               tools: buildToolsPayload(model, null, true),
               messages: [{ role: "user", content: scenario.user }],
+              ...firstTurnReasoningFields(reasoning),
             }
           : {
               model,
@@ -254,9 +270,29 @@ async function main(): Promise<void> {
       models: { type: "string" },
       "first-turn": { type: "boolean" },
       repeat: { type: "string" },
+      reasoning: { type: "string" },
     },
   });
   const firstTurn = values["first-turn"] === true;
+  let reasoning: ChatFirstTurnReasoningEffort | undefined;
+  if (values.reasoning !== undefined) {
+    const effort = values.reasoning.trim().toLowerCase();
+    if (!firstTurn) {
+      console.error("--reasoning діє лише з --first-turn.");
+      process.exitCode = 1;
+      return;
+    }
+    if (
+      !(CHAT_FIRST_TURN_REASONING_EFFORTS as readonly string[]).includes(effort)
+    ) {
+      console.error(
+        `--reasoning=${values.reasoning}: допустимо ${CHAT_FIRST_TURN_REASONING_EFFORTS.join(", ")}.`,
+      );
+      process.exitCode = 1;
+      return;
+    }
+    reasoning = effort as ChatFirstTurnReasoningEffort;
+  }
   const repeat = Math.max(1, Number.parseInt(values.repeat ?? "1", 10) || 1);
   const apiKey = process.env["OPENROUTER_API_KEY"] ?? "";
   if (!apiKey) {
@@ -277,7 +313,7 @@ async function main(): Promise<void> {
   for (const model of models) {
     for (const scenario of firstTurn ? FIRST_TURN_SCENARIOS : SCENARIOS) {
       for (let run = 0; run < repeat; run++) {
-        const r = await checkStream(apiKey, model, scenario);
+        const r = await checkStream(apiKey, model, scenario, reasoning);
         reports.push(r);
         const mark = r.error ? "ERR " : r.ok ? " ok " : "FAIL";
         console.log(
@@ -316,9 +352,9 @@ function median(xs: number[]): number | null {
  */
 function printFirstTurnSummary(reports: StreamReport[]): void {
   console.log(
-    "\n| Модель | Сценарій | n | помилок | перший кадр, медіана / макс | ранній підпис (tool), медіана | повна відповідь, медіана / макс |",
+    "\n| Модель | Глибина | Сценарій | n | помилок | перший кадр, медіана / макс | ранній підпис (tool), медіана | повна відповідь, медіана / макс |",
   );
-  console.log("| --- | --- | --- | --- | --- | --- | --- |");
+  console.log("| --- | --- | --- | --- | --- | --- | --- | --- |");
   const groups = new Map<string, StreamReport[]>();
   for (const r of reports) {
     const key = `${r.model}\u0000${r.scenario}`;
@@ -331,7 +367,7 @@ function printFirstTurnSummary(reports: StreamReport[]): void {
     const total = ok.map((r) => r.totalMs);
     const fmt = (v: number | null): string => (v === null ? "—" : `${v} мс`);
     console.log(
-      `| \`${rs[0]!.model}\` | ${rs[0]!.scenario} | ${rs.length} | ${rs.length - ok.length} | ${fmt(median(block))} / ${fmt(block.length ? Math.max(...block) : null)} | ${fmt(median(tool))} | ${fmt(median(total))} / ${fmt(total.length ? Math.max(...total) : null)} |`,
+      `| \`${rs[0]!.model}\` | ${rs[0]!.reasoning} | ${rs[0]!.scenario} | ${rs.length} | ${rs.length - ok.length} | ${fmt(median(block))} / ${fmt(block.length ? Math.max(...block) : null)} | ${fmt(median(tool))} | ${fmt(median(total))} / ${fmt(total.length ? Math.max(...total) : null)} |`,
     );
   }
 }

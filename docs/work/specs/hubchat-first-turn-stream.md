@@ -1,6 +1,6 @@
 # SPEC: Стрім першого ходу чату (С-1 (а))
 
-> **Last touched:** 2026-11-18 by @claude (створено: спека й реалізація за рішенням founder-а § 11.9). **Next review:** 2027-02-18.
+> **Last touched:** 2026-11-18 by @claude (§ Замір 2026-11-18: стрім не скорочує, план заміру глибини міркувань); раніше 2026-11-18 by @claude (створено: спека й реалізація за рішенням founder-а § 11.9). **Next review:** 2027-02-18.
 > **Status:** Active
 
 ## Проблема
@@ -164,6 +164,67 @@
    «як мені менше витрачати на продукти» — текст зʼявляється шматками;
    вимкнути мережу посеред відповіді — текст лишається, «Відповідь
    обірвалась. Ще раз».
+
+## Замір 2026-11-18
+
+Платний замір п. 2 «Верифікації»: `google/gemini-3.7-flash` через OpenRouter,
+`pnpm --filter @sergeant/server eval:stream --first-turn --repeat=5`, 3 сценарії
+× 5 = 15 викликів. Медіани:
+
+| Сценарій                    | Перший видимий знак | Повна відповідь |
+| --------------------------- | ------------------- | --------------- |
+| пошук (`find_transaction`)  | ранній підпис 3,6 с | 3,8 с           |
+| запис (витрата 250 грн)     | ранній підпис 3,0 с | 3,0 с           |
+| текст (порада про продукти) | перший токен 5,3 с  | 5,8 с           |
+
+Висновок: модель 3–5 с міркує до першого токена (`thinking_delta`), а
+інструмент чи текст видає в самому кінці. Стрім майже нічого не скорочує;
+важіль — глибина міркувань на першому ході. Чат її досі не задавав (вирішує
+шлюз; для цієї моделі дефолт `medium`).
+
+**Рішення founder-а: «спершу заміряти».** Глибину знижуємо лише якщо
+правильність вибору інструмента не впала і вигаданих id нуль; інакше цифри
+йдуть founder-у. Поведінка проду цим кроком не змінюється.
+
+Що для цього зроблено:
+
+- Змінна `CHAT_FIRST_TURN_REASONING_EFFORT` (`env/aiRoutingEnv.ts`, реєстр —
+  `feature-flags.md` § 3.1): `none | low | medium | high | xhigh`. Не задана —
+  поля в запиті немає, як сьогодні. Діє лише на першому ході (JSON і стрім
+  мають один `firstTurnPayload` у `chat.ts`) і лише через шлюз.
+- Форма поля. Перший хід ходить на Anthropic-сумісний `/api/v1/messages`, а
+  не на chat-completions, тож поля `reasoning`, яким користується
+  `OpenRouterProvider`, там немає. Шлюз приймає `output_config.effort`
+  (`low | medium | high | xhigh | max`) і `thinking: {type: "disabled"}` та
+  сам перекладає їх у уніфікований `reasoning` для будь-якої моделі
+  (документація OpenRouter, «Reasoning with the Anthropic Messages API»).
+  `minimal` цей ендпоінт не приймає, тому його немає й у переліку змінної.
+  Переклад — `chat/chatReasoning.ts::firstTurnReasoningFields`.
+- Можливості моделі за `GET /api/v1/models` на 2026-11-18:
+  `google/gemini-3.7-flash` — `mandatory: true`, рівні `high | medium | low`,
+  дефолт `medium`. Отже нижчий доступний рівень — `low`; вимкнути міркування
+  (`none`) для цієї моделі не можна.
+- Стенди: `eval:tools --reasoning=<рівень>` (усі `ALL_CASES`, і з
+  `--follow-up`) та `eval:stream --first-turn --reasoning=<рівень>` шлють ту
+  саму форму тією самою функцією; у підсумкових таблицях стовпець глибини
+  (`шлюз` = поля не було). `--reasoning` разом із `--record` відмовляє:
+  касета пінить прод-форму.
+
+План заміру (робить головна сесія, ключ — заглушка):
+
+1. `OPENROUTER_API_KEY=proxy-injected pnpm --filter @sergeant/server eval:tools`
+   — контроль без глибини: 82 кейси, до 87 викликів (багатоходові кейси
+   додають ходи).
+2. `OPENROUTER_API_KEY=proxy-injected pnpm --filter @sergeant/server eval:tools --reasoning=low`
+   — те саме з `low`, до 87 викликів.
+3. `OPENROUTER_API_KEY=proxy-injected pnpm --filter @sergeant/server eval:tools --follow-up --repeat=5`
+   і те саме з `--reasoning=low` — по 15 викликів.
+4. `OPENROUTER_API_KEY=proxy-injected pnpm --filter @sergeant/server eval:stream --first-turn --models=google/gemini-3.7-flash --repeat=5 --reasoning=low`
+   — 15 викликів; контроль — таблиця вище.
+
+Критерій: `low` у п. 2 дає `Correct` не нижче за п. 1 і `Invented ids` = 0, і
+те саме для п. 3. Тоді — пропозиція founder-у задати `low` і ратифікувати ціль
+першого видимого знаку за п. 4. Інакше обидві таблиці йдуть founder-у як є.
 
 ## Ризики та відкриті питання
 

@@ -53,12 +53,20 @@
  *   OPENROUTER_API_KEY=... pnpm eval:tools --repeat=5 --timeout=45000
  *   OPENROUTER_API_KEY=... pnpm eval:tools --follow-up --repeat=5
  *     (лише `FOLLOW_UP_CASES`, «знайди, потім зміни ту»; касету не пише)
+ *   OPENROUTER_API_KEY=... pnpm eval:tools --reasoning=low
+ *     (глибина міркувань у тій самій формі, що прод із заданою
+ *     `CHAT_FIRST_TURN_REASONING_EFFORT`; касету не пише)
  */
 
 import { parseArgs } from "node:util";
 import process from "node:process";
 
+import {
+  CHAT_FIRST_TURN_REASONING_EFFORTS,
+  type ChatFirstTurnReasoningEffort,
+} from "../src/env/aiRoutingEnv.js";
 import { CHAT_MODEL_DEFAULTS } from "../src/env/chatModels.js";
+import { firstTurnReasoningFields } from "../src/modules/chat/chatReasoning.js";
 import { SYSTEM_PREFIX, TOOLS } from "../src/modules/chat/tools.js";
 import {
   ALL_CASES as CASE_SET,
@@ -113,6 +121,12 @@ const IMPLICIT_NAMES = new Set(IMPLICIT_FACT_CASES.map((c) => c.name));
  * булевого значення.
  */
 const injectionHits = new Set<string>();
+
+/**
+ * Глибина міркувань прогону (`--reasoning`). Ставиться один раз у `main()`;
+ * `undefined` — поля в запит не йдуть, як у проді без змінної.
+ */
+let reasoningEffort: ChatFirstTurnReasoningEffort | undefined;
 
 interface SkinResponse {
   content?: EvalBlock[];
@@ -174,6 +188,9 @@ async function callSkin(
         system,
         tools: TOOLS,
         messages,
+        // Та сама функція, що будує поля в `chat.ts`: форма запиту стенду і
+        // проду з заданою `CHAT_FIRST_TURN_REASONING_EFFORT` не розійдеться.
+        ...firstTurnReasoningFields(reasoningEffort),
       }),
     });
   } catch (e: unknown) {
@@ -394,8 +411,34 @@ async function main(): Promise<void> {
       "follow-up": { type: "boolean", default: false },
       repeat: { type: "string" },
       timeout: { type: "string" },
+      reasoning: { type: "string" },
     },
   });
+
+  // `--reasoning` — замір глибини міркувань першого ходу. Касета пінить
+  // поведінку проду, а прод цю змінну не задає, тож запис із нею підмінив би
+  // еталон іншим режимом моделі.
+  if (values.reasoning !== undefined) {
+    const effort = values.reasoning.trim().toLowerCase();
+    if (
+      !(CHAT_FIRST_TURN_REASONING_EFFORTS as readonly string[]).includes(effort)
+    ) {
+      console.error(
+        `--reasoning=${values.reasoning}: допустимо ${CHAT_FIRST_TURN_REASONING_EFFORTS.join(", ")}.`,
+      );
+      process.exitCode = 1;
+      return;
+    }
+    if (values.record) {
+      console.error(
+        "--reasoning несумісний з --record: касета пінить прод-форму без глибини.",
+      );
+      process.exitCode = 1;
+      return;
+    }
+    reasoningEffort = effort as ChatFirstTurnReasoningEffort;
+  }
+  const reasoningLabel = reasoningEffort ?? "шлюз";
 
   const apiKey = process.env["OPENROUTER_API_KEY"] ?? "";
   if (!apiKey) {
@@ -453,7 +496,7 @@ async function main(): Promise<void> {
 
   const multiTurn = cases.filter((c) => (c.turns?.length ?? 0) > 0).length;
   console.log(
-    `Registry: ${TOOLS.length} tools (${WRITE_ID_FIELDS.size} write-tools with id args), system prefix ${SYSTEM_PREFIX.length} chars, ДАНІ: ${values["no-data"] ? "немає" : `${DATA_BLOCK.length} chars`}, кейсів: ${cases.length} (неявних фактів: ${IMPLICIT_FACT_CASES.length}, багатоходових: ${multiTurn})${values.record ? ", режим: ЗАПИС КАСЕТИ" : ""}\n`,
+    `Registry: ${TOOLS.length} tools (${WRITE_ID_FIELDS.size} write-tools with id args), system prefix ${SYSTEM_PREFIX.length} chars, ДАНІ: ${values["no-data"] ? "немає" : `${DATA_BLOCK.length} chars`}, кейсів: ${cases.length} (неявних фактів: ${IMPLICIT_FACT_CASES.length}, багатоходових: ${multiTurn}), глибина: ${reasoningLabel}${values.record ? ", режим: ЗАПИС КАСЕТИ" : ""}\n`,
   );
 
   // Повтори множать той самий кейс у звіті; для касети потрібен рівно один
@@ -510,11 +553,11 @@ async function main(): Promise<void> {
     const summary = summarize(cases, replayed);
     const lat = summarizeLatency(latencies, attempts, timeouts);
     console.log(
-      "\n| Model | Correct | Invented ids | Errors | Timeouts | p50 (ms) | p95 (ms) | max (ms) |",
+      "\n| Model | Reasoning | Correct | Invented ids | Errors | Timeouts | p50 (ms) | p95 (ms) | max (ms) |",
     );
-    console.log("| --- | --- | --- | --- | --- | --- | --- | --- |");
+    console.log("| --- | --- | --- | --- | --- | --- | --- | --- | --- |");
     console.log(
-      `| \`${model}\` | ${summary.correct}/${summary.total} | ${summary.invented}/${summary.total} | ${summary.errors} | ${lat.timeouts}/${lat.attempts} | ${lat.p50} | ${lat.p95} | ${lat.max} |`,
+      `| \`${model}\` | ${reasoningLabel} | ${summary.correct}/${summary.total} | ${summary.invented}/${summary.total} | ${summary.errors} | ${lat.timeouts}/${lat.attempts} | ${lat.p50} | ${lat.p95} | ${lat.max} |`,
     );
     if (timeouts > 0) {
       // Медіана хвоста не бачить, а саме хвіст і ламається — тож число
