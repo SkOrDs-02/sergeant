@@ -12,6 +12,7 @@ import {
   fizrukPrograms,
   fizrukWellbeing,
   fizrukWorkoutTemplates,
+  fizrukExercisePrefs,
 } from "../sqlite/fizruk.js";
 import {
   FIZRUK_CLIENT_MIGRATIONS,
@@ -133,6 +134,8 @@ describe("sqlite/fizrukWorkoutItems schema snapshot", () => {
       "distance_m",
       // Міграція 134 (pg) / 006 (клієнт): обраний варіант підказки.
       "chosen_variant",
+      // Серверна 172 / клієнтська 010: тип виміру вправи в тренуванні.
+      "measure",
       "sort_order",
       "created_at",
       "updated_at",
@@ -192,6 +195,9 @@ describe("sqlite/fizrukWorkoutSets schema snapshot", () => {
       "weight_kg",
       "reps",
       "rpe",
+      // Серверна 172 / клієнтська 010: секунди й метри на підхід.
+      "duration_sec",
+      "distance_m",
       "sort_order",
       "created_at",
       "updated_at",
@@ -219,6 +225,11 @@ describe("sqlite/fizrukWorkoutSets schema snapshot", () => {
     expect(columnMap["reps"]!.hasDefault).toBe(true);
 
     expect(columnMap["rpe"]!.notNull).toBe(false);
+
+    expect(columnMap["duration_sec"]!.dataType).toBe("number");
+    expect(columnMap["duration_sec"]!.notNull).toBe(false);
+    expect(columnMap["distance_m"]!.dataType).toBe("number");
+    expect(columnMap["distance_m"]!.notNull).toBe(false);
   });
 
   it("declares the item index", () => {
@@ -590,8 +601,8 @@ describe("sqlite/fizrukWorkoutTemplates schema snapshot", () => {
 });
 
 describe("sqlite/fizruk migrations exports", () => {
-  it("exports the 001 baseline + 002 full-state + 003 injuries + 004 pushups + 005 kcal/activities + 006 chosen-variant + 007 pushups→workouts + 008 measurement-fields migration", () => {
-    expect(FIZRUK_CLIENT_MIGRATIONS).toHaveLength(9);
+  it("exports the 001 baseline + 002 full-state + 003 injuries + 004 pushups + 005 kcal/activities + 006 chosen-variant + 007 pushups→workouts + 008 measurement-fields + 009 program-ref + 010 set-measure + 011 exercise-prefs migration", () => {
+    expect(FIZRUK_CLIENT_MIGRATIONS).toHaveLength(11);
     expect(FIZRUK_CLIENT_MIGRATIONS[0]!.name).toBe("001_fizruk_tables.sql");
     expect(FIZRUK_CLIENT_MIGRATIONS[0]!.sql).toMatch(
       /CREATE TABLE IF NOT EXISTS fizruk_workouts/,
@@ -702,6 +713,29 @@ describe("sqlite/fizruk migrations exports", () => {
       /ALTER TABLE fizruk_workouts ADD COLUMN program_slot INTEGER;/,
     );
 
+    // 010 дзеркалить серверну 172: секунди й метри підходу, тип виміру.
+    expect(FIZRUK_CLIENT_MIGRATIONS[9]!.name).toBe(
+      "010_fizruk_set_measure.sql",
+    );
+    for (const stmt of [
+      /ALTER TABLE fizruk_workout_sets ADD COLUMN duration_sec INTEGER;/,
+      /ALTER TABLE fizruk_workout_sets ADD COLUMN distance_m INTEGER;/,
+      /ALTER TABLE fizruk_workout_items ADD COLUMN measure TEXT;/,
+    ]) {
+      expect(FIZRUK_CLIENT_MIGRATIONS[9]!.sql).toMatch(stmt);
+    }
+
+    // 011 дзеркалить серверну 173: памʼять типу виміру вправи.
+    expect(FIZRUK_CLIENT_MIGRATIONS[10]!.name).toBe(
+      "011_fizruk_exercise_prefs.sql",
+    );
+    expect(FIZRUK_CLIENT_MIGRATIONS[10]!.sql).toMatch(
+      /CREATE TABLE IF NOT EXISTS fizruk_exercise_prefs/,
+    );
+    expect(FIZRUK_CLIENT_MIGRATIONS[10]!.sql).toMatch(
+      /PRIMARY KEY \(user_id, id\)/,
+    );
+
     expect(FIZRUK_CLIENT_MIGRATIONS[7]!.name).toBe(
       "008_fizruk_measurement_fields.sql",
     );
@@ -729,5 +763,38 @@ describe("sqlite/fizruk migrations exports", () => {
 
   it("uses a separate `__fizruk_migrations` ledger table", () => {
     expect(FIZRUK_MIGRATIONS_TABLE).toBe("__fizruk_migrations");
+  });
+});
+
+describe("sqlite/fizrukExercisePrefs schema snapshot", () => {
+  const config = getTableConfig(fizrukExercisePrefs);
+
+  it("has the canonical table name", () => {
+    expect(config.name).toBe("fizruk_exercise_prefs");
+  });
+
+  it("declares all expected columns (серверна 173, клієнтська 011)", () => {
+    expect(config.columns.map((c) => c.name)).toEqual([
+      "id",
+      "user_id",
+      "measure",
+      "created_at",
+      "updated_at",
+      "deleted_at",
+    ]);
+  });
+
+  it("keys on (user_id, id), measure NOT NULL, deleted_at nullable", () => {
+    const columnMap = Object.fromEntries(
+      config.columns.map((c) => [c.name, c]),
+    );
+    expect(config.primaryKeys).toHaveLength(1);
+    expect(config.primaryKeys[0]!.columns.map((c) => c.name)).toEqual([
+      "user_id",
+      "id",
+    ]);
+    expect(columnMap["measure"]!.notNull).toBe(true);
+    expect(columnMap["deleted_at"]!.notNull).toBe(false);
+    expect(config.indexes).toHaveLength(0);
   });
 });

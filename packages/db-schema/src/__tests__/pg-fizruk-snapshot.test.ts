@@ -12,6 +12,7 @@ import {
   fizrukPrograms,
   fizrukWellbeing,
   fizrukWorkoutTemplates,
+  fizrukExercisePrefs,
 } from "../pg/fizruk.js";
 
 /**
@@ -118,6 +119,8 @@ describe("pg/fizrukWorkoutItems schema snapshot", () => {
       "distance_m",
       // Міграція 134 (pg) / 006 (клієнт): обраний варіант підказки.
       "chosen_variant",
+      // Міграція 172 (pg) / 010 (клієнт): тип виміру вправи в тренуванні.
+      "measure",
       "sort_order",
       "created_at",
       "updated_at",
@@ -155,6 +158,9 @@ describe("pg/fizrukWorkoutSets schema snapshot", () => {
       "weight_kg",
       "reps",
       "rpe",
+      // Міграція 172 (pg) / 010 (клієнт): секунди й метри на підхід.
+      "duration_sec",
+      "distance_m",
       "sort_order",
       "created_at",
       "updated_at",
@@ -174,6 +180,10 @@ describe("pg/fizrukWorkoutSets schema snapshot", () => {
     expect(columnMap["weight_kg"]!.columnType).toBe("PgReal");
     expect(columnMap["reps"]!.dataType).toBe("number");
     expect(columnMap["rpe"]!.notNull).toBe(false);
+    expect(columnMap["duration_sec"]!.dataType).toBe("number");
+    expect(columnMap["duration_sec"]!.notNull).toBe(false);
+    expect(columnMap["distance_m"]!.dataType).toBe("number");
+    expect(columnMap["distance_m"]!.notNull).toBe(false);
   });
 });
 
@@ -512,5 +522,40 @@ describe("pg/fizrukWorkoutTemplates schema snapshot", () => {
   it("declares the partial user index", () => {
     const indexNames = config.indexes.map((i) => i.config.name);
     expect(indexNames).toContain("fizruk_workout_templates_user_idx");
+  });
+});
+
+describe("pg/fizrukExercisePrefs schema snapshot", () => {
+  const config = getTableConfig(fizrukExercisePrefs);
+
+  it("has the canonical table name", () => {
+    expect(config.name).toBe("fizruk_exercise_prefs");
+  });
+
+  it("declares all expected columns (міграція 173)", () => {
+    expect(config.columns.map((c) => c.name)).toEqual([
+      "id",
+      "user_id",
+      "measure",
+      "created_at",
+      "updated_at",
+      "deleted_at",
+    ]);
+  });
+
+  it("keys on (user_id, id), measure NOT NULL, deleted_at nullable, без індексів", () => {
+    const columnMap = Object.fromEntries(
+      config.columns.map((c) => [c.name, c]),
+    );
+    expect(config.primaryKeys).toHaveLength(1);
+    expect(config.primaryKeys[0]!.columns.map((c) => c.name)).toEqual([
+      "user_id",
+      "id",
+    ]);
+    expect(columnMap["measure"]!.columnType).toBe("PgText");
+    expect(columnMap["measure"]!.notNull).toBe(true);
+    expect(columnMap["updated_at"]!.notNull).toBe(true);
+    expect(columnMap["deleted_at"]!.notNull).toBe(false);
+    expect(config.indexes).toHaveLength(0);
   });
 });

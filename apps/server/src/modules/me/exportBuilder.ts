@@ -86,6 +86,7 @@ export const MODULE_EXPORT_TABLES = {
     "fizruk_custom_activities",
     "fizruk_custom_exercises",
     "fizruk_daily_log",
+    "fizruk_exercise_prefs",
     "fizruk_injuries",
     "fizruk_measurements",
     "fizruk_monthly_plan",

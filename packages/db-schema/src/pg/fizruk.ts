@@ -97,6 +97,13 @@ export const fizrukWorkoutItems = pgTable(
      * CHECK на значення живе в міграції 134.
      */
     chosenVariant: text("chosen_variant"),
+    /**
+     * Тип виміру вправи в цьому тренуванні (міграція 172, спека
+     * fizruk-exercise-measure-type). NULL = запис до фічі, тип виводиться зі
+     * старого `type`. CHECK на форму ідентифікатора живе в SQL, перелік
+     * перевіряє sync-хендлер.
+     */
+    measure: text(),
     sortOrder: integer("sort_order").notNull().default(0),
     createdAt: timestamp("created_at", { withTimezone: true })
       .notNull()
@@ -133,6 +140,13 @@ export const fizrukWorkoutSets = pgTable(
     weightKg: real("weight_kg").notNull().default(0),
     reps: integer().notNull().default(0),
     rpe: real(),
+    /**
+     * Секунди одного підходу (міграція 172). NULL = підхід без часу.
+     * CHECK `>= 0` живе в SQL, верхню межу тримає хендлер.
+     */
+    durationSec: integer("duration_sec"),
+    /** Метри одного підходу (міграція 172). NULL = підхід без дистанції. */
+    distanceM: integer("distance_m"),
     sortOrder: integer("sort_order").notNull().default(0),
     createdAt: timestamp("created_at", { withTimezone: true })
       .notNull()
@@ -357,6 +371,32 @@ export const fizrukPrograms = pgTable("fizruk_programs", {
     .notNull()
     .defaultNow(),
 });
+
+/**
+ * Postgres schema for `fizruk_exercise_prefs`.
+ * Mirrors migration `173_fizruk_exercise_prefs.sql`.
+ *
+ * Памʼять людини про тип виміру вправи (спека fizruk-exercise-measure-type,
+ * міграція Б): рядок на вправу, `id` = id вправи каталогу чи власної.
+ * PK `(user_id, id)`, LWW по `updated_at`, soft-delete = «повернути дефолт
+ * каталогу». CHECK на форму `measure` живе в SQL.
+ */
+export const fizrukExercisePrefs = pgTable(
+  "fizruk_exercise_prefs",
+  {
+    id: text().notNull(),
+    userId: text("user_id").notNull(),
+    measure: text().notNull(),
+    createdAt: timestamp("created_at", { withTimezone: true })
+      .notNull()
+      .defaultNow(),
+    updatedAt: timestamp("updated_at", { withTimezone: true })
+      .notNull()
+      .defaultNow(),
+    deletedAt: timestamp("deleted_at", { withTimezone: true }),
+  },
+  (table) => [primaryKey({ columns: [table.userId, table.id] })],
+);
 
 /**
  * Postgres schema for `fizruk_wellbeing`.

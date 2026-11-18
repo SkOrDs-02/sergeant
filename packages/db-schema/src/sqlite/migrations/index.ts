@@ -1191,6 +1191,40 @@ ALTER TABLE fizruk_workouts ADD COLUMN program_id TEXT;
 ALTER TABLE fizruk_workouts ADD COLUMN program_slot INTEGER;
 `;
 
+/**
+ * 010 — секунди й метри на кожен підхід і тип виміру вправи в тренуванні
+ * (дзеркало серверної 172, міграція А спеки fizruk-exercise-measure-type).
+ *
+ * `fizruk_workout_sets.duration_sec` / `distance_m`: величини одного
+ * підходу, NULL = підхід без них. `fizruk_workout_items.measure`: тип
+ * виміру, NULL = запис до фічі. CHECK і індексів немає, як у `006` і
+ * `009`: валідацію тримає сервер. Леджер `__fizruk_migrations` не дає
+ * `ADD COLUMN` виконатись двічі.
+ */
+const FIZRUK_010_SET_MEASURE_SQL = `
+ALTER TABLE fizruk_workout_sets ADD COLUMN duration_sec INTEGER;
+ALTER TABLE fizruk_workout_sets ADD COLUMN distance_m INTEGER;
+ALTER TABLE fizruk_workout_items ADD COLUMN measure TEXT;
+`;
+
+/**
+ * 011 — памʼять людини про тип виміру вправи (дзеркало серверної 173,
+ * міграція Б спеки fizruk-exercise-measure-type). Рядок на вправу,
+ * PK `(user_id, id)`, LWW по `updated_at`, soft-delete = «повернути
+ * дефолт каталогу». CHECK на форму `measure` лише на сервері.
+ */
+const FIZRUK_011_EXERCISE_PREFS_SQL = `
+CREATE TABLE IF NOT EXISTS fizruk_exercise_prefs (
+  id          TEXT NOT NULL,
+  user_id     TEXT NOT NULL,
+  measure     TEXT NOT NULL,
+  created_at  TEXT NOT NULL DEFAULT (datetime('now')),
+  updated_at  TEXT NOT NULL DEFAULT (datetime('now')),
+  deleted_at  TEXT,
+  PRIMARY KEY (user_id, id)
+);
+`;
+
 export const FIZRUK_CLIENT_MIGRATIONS: readonly MigrationFile[] = [
   { name: "001_fizruk_tables.sql", sql: FIZRUK_001_SQL },
   {
@@ -1224,6 +1258,14 @@ export const FIZRUK_CLIENT_MIGRATIONS: readonly MigrationFile[] = [
   {
     name: "009_fizruk_workout_program_ref.sql",
     sql: FIZRUK_009_WORKOUT_PROGRAM_REF_SQL,
+  },
+  {
+    name: "010_fizruk_set_measure.sql",
+    sql: FIZRUK_010_SET_MEASURE_SQL,
+  },
+  {
+    name: "011_fizruk_exercise_prefs.sql",
+    sql: FIZRUK_011_EXERCISE_PREFS_SQL,
   },
 ] as const;
 
