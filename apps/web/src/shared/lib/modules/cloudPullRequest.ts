@@ -1,14 +1,21 @@
 /**
- * Cross-module bridge for historical "user requested a fresh pull" events.
+ * Cross-module bridge for "user requested a fresh pull" events.
  *
- * The CloudSync v1 pull engine is gone, but older module pull-to-refresh
- * surfaces still dispatch this window event. App-level compatibility code
- * immediately emits `PULL_COMPLETE_EVENT` so those requesters can resolve
- * their promises and unwind spinners without hitting legacy endpoints.
+ * Module pull-to-refresh surfaces dispatch `REQUEST_PULL_EVENT`; the
+ * App-level listener in `core/app/useAppEffects.ts` runs a real sync v2
+ * reader tick (`bootSyncEngineReader().pullOnce()`) and then emits
+ * `PULL_COMPLETE_EVENT` with an outcome (`detail.ok`).
  *
- * The flow is intentionally fire-and-forget with a short timeout so the
- * pull-to-refresh spinner never sticks. If the App-level listener is not
- * mounted, the promise resolves after the timeout and the UI carries on.
+ * Outcome semantics (PR-H3 tail, 2026-11-17):
+ * - `ok: true` (or a bare event without detail) → the promise resolves.
+ * - `ok: false` (the tick threw: offline, 5xx, …) → the promise rejects
+ *   with `CloudPullError`, so `PullToRefresh` `onError` handlers show
+ *   their failure toast instead of a silent "success".
+ * - No completion before `timeoutMs` → the promise RESOLVES. A timeout is
+ *   not proof of failure: the listener may be unmounted (tests, isolated
+ *   routes) or the tick is just slow and keeps running in the background.
+ *   Its job is only to unwind the spinner; a real failure still arrives as
+ *   `ok: false` for any requester that is still waiting.
  *
  * In addition to dispatching events, this module maintains an in-process
  * pending counter so UI surfaces (e.g. `<PullToRefresh>`) can subscribe
@@ -22,6 +29,19 @@ export const REQUEST_PULL_EVENT = "sergeant:request-pull";
 export const PULL_COMPLETE_EVENT = "sergeant:pull-complete";
 
 const DEFAULT_TIMEOUT_MS = 4000;
+
+/** Payload of `PULL_COMPLETE_EVENT`. */
+export interface CloudPullOutcome {
+  ok: boolean;
+}
+
+/** Rejection reason of `requestCloudPull()` when the pull tick failed. */
+export class CloudPullError extends Error {
+  constructor() {
+    super("Cloud pull failed");
+    this.name = "CloudPullError";
+  }
+}
 
 let pendingCount = 0;
 const pendingListeners = new Set<() => void>();
@@ -58,8 +78,9 @@ export function getCloudPullPending(): boolean {
 }
 
 /**
- * Ask the App-level compatibility listener to settle a historical pull
- * request. Resolves on `PULL_COMPLETE_EVENT` or after `timeoutMs`.
+ * Ask the App-level listener to run a pull tick. Resolves on a successful
+ * `PULL_COMPLETE_EVENT` or after `timeoutMs`; rejects with
+ * `CloudPullError` when the completion event reports `ok: false`.
  */
 export function requestCloudPull(
   timeoutMs = DEFAULT_TIMEOUT_MS,
@@ -69,28 +90,40 @@ export function requestCloudPull(
   pendingCount += 1;
   notifyPendingListeners();
 
-  return new Promise((resolve) => {
+  return new Promise((resolve, reject) => {
     let settled = false;
-    const finish = () => {
+    let timer: number | undefined;
+    const finish = (failed: boolean) => {
       if (settled) return;
       settled = true;
-      window.removeEventListener(PULL_COMPLETE_EVENT, finish);
+      window.removeEventListener(PULL_COMPLETE_EVENT, onComplete);
+      if (timer !== undefined) window.clearTimeout(timer);
       pendingCount = Math.max(0, pendingCount - 1);
       notifyPendingListeners();
-      resolve();
+      if (failed) reject(new CloudPullError());
+      else resolve();
     };
-    window.addEventListener(PULL_COMPLETE_EVENT, finish, { once: true });
+    const onComplete = (event: Event) => {
+      const detail = (event as CustomEvent<CloudPullOutcome | null>).detail;
+      finish(detail?.ok === false);
+    };
+    window.addEventListener(PULL_COMPLETE_EVENT, onComplete, { once: true });
     window.dispatchEvent(new Event(REQUEST_PULL_EVENT));
-    window.setTimeout(finish, timeoutMs);
+    if (!settled) timer = window.setTimeout(() => finish(false), timeoutMs);
   });
 }
 
 /**
- * Notify pending requesters that the compatibility pull request settled.
+ * Notify pending requesters that the pull tick settled. `ok: false`
+ * rejects every waiting `requestCloudPull()` promise.
  */
-export function emitCloudPullComplete(): void {
+export function emitCloudPullComplete(
+  outcome: CloudPullOutcome = { ok: true },
+): void {
   if (typeof window === "undefined") return;
-  window.dispatchEvent(new Event(PULL_COMPLETE_EVENT));
+  window.dispatchEvent(
+    new CustomEvent<CloudPullOutcome>(PULL_COMPLETE_EVENT, { detail: outcome }),
+  );
 }
 
 /** Test-only: reset internal pending counter + listener set. */

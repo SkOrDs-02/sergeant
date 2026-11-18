@@ -28,8 +28,6 @@
 
 export const coreMessages = {
   onboardingPrompts: {
-    syncTitle: "Синхронізація записів",
-    syncReason: "Акаунт синхронізує записи між пристроями.",
     returnTitle: "Повернення",
     absence: "Тебе не було",
     continue: "Продовжити",
@@ -456,8 +454,5 @@ export const coreMessages = {
     sessionExpiredTitle: "Сесія завершилась",
     sessionExpiredBody:
       "Увійди ще раз. Усе, що ти записав на цьому пристрої, збережено і синхронізується після входу.",
-
-    // Round 16 — soft-auth prompt
-    createAccount: "Створити акаунт",
   },
 } as const;

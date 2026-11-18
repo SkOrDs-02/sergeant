@@ -53,9 +53,6 @@ export const messagesEn: Partial<{
     sessionExpiredTitle: "Session ended",
     sessionExpiredBody:
       "Sign in again. Everything you saved on this device is kept and syncs after you sign in.",
-
-    // Round 16 — soft-auth prompt
-    createAccount: "Create account",
   },
 
   sync: {
@@ -249,6 +246,7 @@ export const messagesEn: Partial<{
   durability: {
     localOnly: {
       title: "Data lives on this device only",
+      body: "An account syncs your entries across devices.",
       signIn: "Sign in",
       backup: "Download a copy",
     },

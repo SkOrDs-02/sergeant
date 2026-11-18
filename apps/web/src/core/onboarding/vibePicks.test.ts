@@ -4,14 +4,12 @@ import { beforeEach, describe, expect, it } from "vitest";
 import {
   ALL_MODULES,
   clearFirstActionPending,
-  dismissSoftAuth,
   getFirstActionStartedAt,
   getSessionDays,
   getTimeToValueMs,
   getVibePicks,
   isFirstActionPending,
   isFirstRealEntryDone,
-  isSoftAuthDismissed,
   markFirstActionPending,
   markFirstActionStartedAt,
   markFirstRealEntryDone,
@@ -50,12 +48,6 @@ describe("vibePicks web adapter", () => {
     expect(isFirstRealEntryDone()).toBe(false);
     markFirstRealEntryDone();
     expect(isFirstRealEntryDone()).toBe(true);
-  });
-
-  it("tracks the soft-auth dismissed flag", () => {
-    expect(isSoftAuthDismissed()).toBe(false);
-    dismissSoftAuth();
-    expect(isSoftAuthDismissed()).toBe(true);
   });
 
   it("records and reads the first-action start timestamp", () => {

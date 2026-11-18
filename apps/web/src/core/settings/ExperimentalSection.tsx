@@ -4,7 +4,8 @@ import { messages } from "@shared/i18n/uk";
 import { ChoiceCheckbox } from "@shared/components/ui/Choice";
 import { Notice } from "@shared/components/ui/Notice";
 import { createTypedStore } from "../../shared/lib/storage/typedStore";
-import { FLAG_REGISTRY, setFlag, useAllFlags } from "../lib/featureFlags";
+import { setFlag, useAllFlags, userFacingFlags } from "../lib/featureFlags";
+import { useAuthOptional } from "../auth/AuthContext";
 import { settingsSectionTitle } from "../hub/settingsSectionsCatalog";
 import { ContentGroup } from "@shared/components/ui/ContentGroup";
 import { SettingsGroup, ToggleRow } from "./SettingsPrimitives";
@@ -48,7 +49,11 @@ function setExperimentalAcknowledged(next: boolean): void {
 export function ExperimentalSection() {
   const flags = useAllFlags();
   const acknowledged = useExperimentalAcknowledged();
-  const items = FLAG_REGISTRY.filter((f) => f.experimental);
+  // Прапорці лише для акаунта (PIN, рішення власника 2026-11-17) гостю не
+  // показуємо; предикат той самий, що в `ProfilePage`: `!user`. Поза
+  // `AuthProvider` (вузькі тести) фільтра немає.
+  const auth = useAuthOptional();
+  const items = userFacingFlags(auth === null || Boolean(auth.user));
   if (items.length === 0) return null;
 
   const copy = messages.experimentalSection;

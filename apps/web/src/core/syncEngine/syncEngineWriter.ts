@@ -13,6 +13,7 @@ import type {
   RecoverDeadLetterResult,
   RecoverDeadLetterTarget,
   RejectedOutboxRow,
+  StaleTerminalOutboxPurgeForecast,
   SyncOpOutboxStatusCounts,
 } from "@sergeant/db-schema/sqlite";
 import { classifyTickError, readOnlineStatus } from "./tickErrorReport.js";
@@ -37,6 +38,11 @@ export interface SyncEngineWriterRuntime {
    * Порожній список, якщо рантайм зібрано без `listRejected`-залежності.
    */
   listRejected(): Promise<readonly RejectedOutboxRow[]>;
+  /**
+   * PR-T2: скільки незасинхронених рядків TTL-чистка забере найближчим
+   * часом. Порожній прогноз, якщо рантайм зібрано без залежності.
+   */
+  getPurgeForecast(): Promise<StaleTerminalOutboxPurgeForecast>;
 }
 
 export interface SyncEngineWriterDeps {
@@ -46,6 +52,7 @@ export interface SyncEngineWriterDeps {
   readonly eventTarget: SyncEngineEventTarget;
   readonly getStatus: () => Promise<SyncOpOutboxStatusCounts>;
   readonly listRejected?: () => Promise<readonly RejectedOutboxRow[]>;
+  readonly getPurgeForecast?: () => Promise<StaleTerminalOutboxPurgeForecast>;
   /**
    * Скоуп власника цей шар НЕ передає — він оперує чергою, а не сесією.
    * `userId` домішує адаптер у `singleton.ts`, де є `resolveUserId`; саме
@@ -264,6 +271,11 @@ export function createSyncEngineWriterRuntime(
     },
     async listRejected(): Promise<readonly RejectedOutboxRow[]> {
       return deps.listRejected ? deps.listRejected() : [];
+    },
+    async getPurgeForecast(): Promise<StaleTerminalOutboxPurgeForecast> {
+      return deps.getPurgeForecast
+        ? deps.getPurgeForecast()
+        : { count: 0, earliestPurgeAtIso: null };
     },
     async recoverAllDeadLetters(): Promise<RecoverDeadLetterResult> {
       const result = await deps.recoverDeadLetter({ all: true });

@@ -36,7 +36,6 @@ import {
 } from "../onboarding/vibePicks";
 import { useOnboardingState } from "../onboarding/useOnboardingState";
 import { useFirstEntryCelebration } from "../onboarding/useFirstEntryCelebration";
-import { isLocalOnlyBannerVisible } from "./localOnlyBannerVisibility";
 import { hasAnyValueBar } from "./ValueProgressBar";
 import { webKVStore } from "@shared/lib/storage/storage";
 import { useHubStorageBump } from "./useHubStorageBump";
@@ -91,7 +90,6 @@ export interface HubDashboardState {
   // Onboarding / FTUX
   hasRealEntry: boolean;
   sessionDays: number;
-  entryCount: number;
   celebration: ReturnType<typeof useFirstEntryCelebration>;
   onboardingState: ReturnType<typeof useOnboardingState>;
 
@@ -148,14 +146,6 @@ export function useHubDashboardState(props: {
   onOpenModule: (module: string) => void;
   user: User | null;
   /**
-   * `status` з `AuthContext`, прокинутий згори (`HubDashboard.tsx`).
-   * Свідомо проп, а не `useAuthOptional()` тут: два юніт-тести цього модуля
-   * (`*.pluralize`, `*.coachInsightEnabled`) навмисно живуть без DOM, і
-   * імпорт `AuthContext` роняє їх на `window is not defined`. Навіщо статус
-   * потрібен — див. `localOnlyBannerVisibility.ts`.
-   */
-  authStatus?: string | undefined;
-  /**
    * Чи РОЗГОРНУТИЙ блок «Що зараз важливо» прямо зараз.
    *
    * Стан живе в `HubDashboard`, а не тут, бо його джерело —
@@ -164,9 +154,8 @@ export function useHubDashboardState(props: {
    * Free-плану заради поради під закритим акордеоном (аудит PR-A1).
    */
   insightsOpen: boolean;
-  onShowAuth: () => void;
 }): HubDashboardState {
-  const { onOpenModule, user, onShowAuth, authStatus, insightsOpen } = props;
+  const { onOpenModule, user, insightsOpen } = props;
 
   useMondayAutoDigest();
 
@@ -183,20 +172,7 @@ export function useHubDashboardState(props: {
   // first non-demo entry — must run alongside detectFirstRealEntry on the render
   // path, else the event never emits and the activation funnel stays at 0%.
   detectFirstActionCompletedPerModule();
-  // Hoisted above its original call-site (near `insightsDefaultOpen` below)
-  // so `useOnboardingState` can read it too — see `localOnlyBannerVisible`.
   const inFtuxSession = !hasRealEntry && !isFirstRealEntryDone();
-  // Предикат винесено в `localOnlyBannerVisibility.ts` — там і повне
-  // пояснення, чому він мусить збігатися з гейтом самого банера, і чому
-  // `authStatus` обовʼязковий (виправлення ревʼю #1128). Потрібен тут
-  // (PR-H4, design-audit 2026-09-13), щоб soft-auth hero відступав, поки
-  // банер уже ставить те саме питання «увійди» — див.
-  // `computeSoftAuthEligible` в `useOnboardingState.ts`.
-  const localOnlyBannerVisible = isLocalOnlyBannerVisible({
-    inFtuxSession,
-    hasUser: Boolean(user),
-    authStatus,
-  });
   const entryCount = useMemo(() => {
     // `storageBump` — тік запису в сховище: тіло його не читає, але без нього
     // лічильник не перечитався б після запису.
@@ -218,13 +194,9 @@ export function useHubDashboardState(props: {
 
   const focusProbe = useDashboardFocus();
   const onboardingState = useOnboardingState({
-    user,
     hasRealEntry,
-    sessionDays,
     todayFocusAvailable: focusProbe.focus !== null,
     reengagementEligible: reengagement.show,
-    onShowAuth,
-    localOnlyBannerVisible,
   });
 
   const [crossModulePreviewSource, setCrossModulePreviewSource] =
@@ -328,8 +300,7 @@ export function useHubDashboardState(props: {
   // Smart-expand: open insights on first render when the user has at least
   // one actionable rec, is past FTUX, and is on a viewport wide enough to
   // benefit from seeing expanded content (>= 390px). `inFtuxSession` is
-  // computed above (near `hasRealEntry`) so `localOnlyBannerVisible` can
-  // read it too.
+  // computed above, near `hasRealEntry`.
   const hasActionableInsight = rest.length > 0;
   const insightsDefaultOpen =
     sessionDays >= 7 ||
@@ -353,7 +324,6 @@ export function useHubDashboardState(props: {
   return {
     hasRealEntry,
     sessionDays,
-    entryCount,
     celebration,
     onboardingState,
     reengagement,

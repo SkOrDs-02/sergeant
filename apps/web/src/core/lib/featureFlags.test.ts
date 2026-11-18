@@ -36,6 +36,21 @@ describe("featureFlags", () => {
     expect(flag?.description).not.toContain("Конфіденційність");
   });
 
+  // Рішення власника 2026-11-17: PIN лише для акаунта. Опис прапорця
+  // відсилає в Профіль, якого в гостя немає, тож гостю його не показуємо.
+  it("прапорець PIN лише для акаунта: гостю не віддається в списку тумблерів", async () => {
+    const { FLAG_REGISTRY, userFacingFlags } = await loadFresh();
+    const flag = FLAG_REGISTRY.find((f) => f.id === "app-lock-enabled");
+    expect(flag?.accountOnly).toBe(true);
+    const guestIds = userFacingFlags(false).map((f) => f.id);
+    expect(guestIds).not.toContain("app-lock-enabled");
+    // Експериментальні прапорці без `accountOnly` гість і далі бачить.
+    expect(guestIds).toContain("hub_command_palette");
+    for (const f of userFacingFlags(false))
+      expect(f.accountOnly).toBeUndefined();
+    for (const f of userFacingFlags(true)) expect(f.experimental).toBe(true);
+  });
+
   it("повертає defaultValue з реєстру, якщо флаг не встановлено", async () => {
     const { getFlag, FLAG_REGISTRY } = await loadFresh();
     const sub = FLAG_REGISTRY.find((f) => f.id === "hub_command_palette");

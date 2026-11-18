@@ -12,6 +12,7 @@ import { pluralUa } from "@sergeant/shared";
 import { Sheet } from "@shared/components/ui/Sheet";
 import { cn } from "@shared/lib/ui/cn";
 import { SyncRejectedList } from "./SyncRejectedList";
+import { SyncPurgeWarning } from "./SyncPurgeWarning";
 import {
   dismissOutboxPurgeNotice,
   useOutboxPurgeNotice,
@@ -269,6 +270,9 @@ export function SyncStatusSheet({
         ))}
       </div>
       {rejected > 0 && <SyncRejectedList />}
+      {deadLetter + rejected > 0 && (
+        <SyncPurgeWarning canRetry={deadLetter > 0} />
+      )}
       {deadLetter > 0 && onRetry && (
         <button
           type="button"

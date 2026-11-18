@@ -38,6 +38,12 @@ vi.mock("../syncEngine/outboxPurgeNotice", () => ({
   dismissOutboxPurgeNotice: vi.fn(),
 }));
 
+// Прогноз TTL-чистки ходить у SQLite через React Query; банер тестується
+// без провайдера, а сам блок покрито `SyncPurgeWarning.test.tsx`.
+vi.mock("./SyncPurgeWarning", () => ({
+  SyncPurgeWarning: () => null,
+}));
+
 import { OfflineBanner } from "./OfflineBanner";
 
 beforeEach(() => {

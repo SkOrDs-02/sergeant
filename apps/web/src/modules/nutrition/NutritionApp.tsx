@@ -466,26 +466,34 @@ export default function NutritionApp({
   // PTR refresh both invalidates nutrition RQ keys (so meal log / OFF
   // cache refetch on next read) and asks the App-level cloud-sync engine
   // for a pull. Both are awaited with `Promise.allSettled` so a slow
-  // cloud-pull doesn't keep the spinner pinned past the refetch.
+  // cloud-pull doesn't keep the spinner pinned past the refetch. A failed
+  // cloud pull (`requestCloudPull` rejects with `ok: false`, e.g. offline)
+  // is re-thrown so `PullToRefresh` calls `onError` instead of showing a
+  // silent "success" (PR-H3 tail).
   const queryClient = useQueryClient();
   const handlePullRefresh = useCallback(async () => {
-    await Promise.allSettled([
+    const [, cloud] = await Promise.allSettled([
       queryClient.invalidateQueries({ queryKey: nutritionKeys.all }),
       requestCloudPull(2500),
     ]);
+    if (cloud.status === "rejected") throw cloud.reason;
   }, [queryClient]);
 
   const handlePullRefreshError = useCallback(() => {
     // PTR-fail: provide an actionable retry path per
     // docs/design/ui/toast-policy.md. The retry callback runs the same dual
     // refetch (`invalidateQueries` + `requestCloudPull`) the gesture
-    // triggered so the user does not need to repeat the PTR pull.
-    toast.error("Не вдалося оновити дані. Перевір зʼєднання.", undefined, {
-      label: "Повторити",
-      onClick: () => {
-        void handlePullRefresh();
-      },
-    });
+    // triggered so the user does not need to repeat the PTR pull; a failed
+    // retry shows the same toast again.
+    const showError = () => {
+      toast.error("Не вдалося оновити дані. Перевір зʼєднання.", undefined, {
+        label: "Повторити",
+        onClick: () => {
+          handlePullRefresh().catch(showError);
+        },
+      });
+    };
+    showError();
   }, [toast, handlePullRefresh]);
 
   const cloudPullPending = useCloudPullPending();

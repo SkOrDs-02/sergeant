@@ -27,7 +27,6 @@ vi.mock("react-router-dom", async () => {
 const mockShouldShowOnboarding = vi.fn<() => boolean>(() => false);
 vi.mock("../onboarding/onboardingGate", () => ({
   shouldShowOnboarding: () => mockShouldShowOnboarding(),
-  isDemoActive: () => false,
 }));
 
 const { mockRenderStandaloneRoute } = vi.hoisted(() => ({
@@ -84,6 +83,14 @@ function assistantClose(): () => void {
     onAssistantClose: () => void;
   };
   return args.onAssistantClose;
+}
+
+/** `onLeaveAuth` («Поки що пропустити» на `/sign-in`). */
+function leaveAuth(): () => void {
+  const args = mockRenderStandaloneRoute.mock.calls.at(-1)?.[0] as {
+    onLeaveAuth: () => void;
+  };
+  return args.onLeaveAuth;
 }
 
 function renderHubAtRoot() {
@@ -197,6 +204,34 @@ describe("<HubPage /> — onboarding-redirect cold-boot gate", () => {
       expect.objectContaining({ pathname: "/pricing" }),
     );
     expect(mockShouldShowOnboarding).not.toHaveBeenCalled();
+  });
+
+  // PR-H7 (огляд 2026-09-13, перевалідація хвилі 4 2026-11-17): помилковий
+  // тап «У мене вже є акаунт» більше не закриває гейт онбордингу, але
+  // обіцянка знахідки виконується лише тут: «Поки що пропустити» мусить
+  // повернути новачка на `/welcome`, а не на порожній хаб без FTUX.
+  describe("onLeaveAuth — пропуск входу повертає на сплеш, поки онбординг не пройдено", () => {
+    it("гейт відкритий: веде на /welcome, а не назад і не на хаб", () => {
+      mockShouldShowOnboarding.mockReturnValue(true);
+      renderHubWithHistory(["/welcome", "/sign-in"]);
+
+      act(() => leaveAuth()());
+
+      expect(mockNavigate).toHaveBeenCalledWith("/welcome", { replace: true });
+      expect(mockNavigate).not.toHaveBeenCalledWith(-1);
+    });
+
+    it("гейт закритий: крок назад по історії, як і раніше", () => {
+      mockShouldShowOnboarding.mockReturnValue(false);
+      renderHubWithHistory(["/", "/sign-in"]);
+
+      act(() => leaveAuth()());
+
+      expect(mockNavigate).toHaveBeenCalledWith(-1);
+      expect(mockNavigate).not.toHaveBeenCalledWith("/welcome", {
+        replace: true,
+      });
+    });
   });
 
   // Звіт власника 2026-09-15: стрілка «Назад» у каталозі вела на хаб

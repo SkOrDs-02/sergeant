@@ -14,18 +14,20 @@
  * (sqlite read boot, Finyk preview, reminders, deep-link handling and
  * the PWA `add_habit` action).
  *
- * AI-DANGER: does NOT call `useRoutineDualWriteBoot()` — that hook is
+ * AI-NOTE: does NOT call `useRoutineDualWriteBoot()` — that hook is
  * owned by `RoutineBootCluster` (mounted for every session via
- * `RootLayout`, independent of whether this module is open) and MUST
- * stay singular. `registerRoutineDualWriteContext` (`sqliteWriter/index.ts`)
- * keeps a single-slot registry with a teardown that nulls the slot on
- * unmount; a second registrant here would overwrite the cluster's
- * context while mounted and then null the slot on module unmount even
- * though the cluster is still alive — silently degrading dual-write to
- * a no-op for the rest of the session (product-full-review audit
- * 2026-09-13, finding PR-R1). `useSqliteReadBoot()` has no such
- * teardown — it's an idempotent one-shot boot — so calling it again
- * here alongside the global cluster is harmless.
+ * `RootLayout`, independent of whether this module is open), so the
+ * dual-write context is already registered while this module is mounted.
+ * A second registrant here would be harmless but redundant:
+ * `registerRoutineDualWriteContext` (`sqliteWriter/index.ts`) keeps a
+ * STACK of live contexts (`liveContexts`), the newest one wins, and each
+ * teardown removes only its own entry (`lastIndexOf` + `splice`), so a
+ * module unmount can no longer null the cluster's context. That
+ * single-slot bug was finding PR-R1 of the product-full-review audit
+ * 2026-09-13, closed on web and pinned by
+ * `modules/dualWriteRegistry.contract.test.ts`. `useSqliteReadBoot()` has
+ * no teardown at all — it's an idempotent one-shot boot — so calling it
+ * again here alongside the global cluster is harmless.
  */
 
 import {
@@ -459,13 +461,18 @@ export function useRoutineAppState({
     // PTR-fail: surface the canonical recovery path (retry the pull) so
     // the error toast is actionable per docs/design/ui/toast-policy.md. The
     // retry callback fires the same `requestCloudPull` the PTR gesture
-    // used, so the user does not need to remember the gesture.
-    toast.error("Не вдалося оновити дані. Перевір зʼєднання.", undefined, {
-      label: "Повторити",
-      onClick: () => {
-        void requestCloudPull(2500);
-      },
-    });
+    // used, so the user does not need to remember the gesture. The pull
+    // rejects when the sync tick fails (offline, 5xx — PR-H3 tail), so a
+    // failed retry shows the same toast again instead of passing silently.
+    const showError = () => {
+      toast.error("Не вдалося оновити дані. Перевір зʼєднання.", undefined, {
+        label: "Повторити",
+        onClick: () => {
+          requestCloudPull(2500).catch(showError);
+        },
+      });
+    };
+    showError();
   }, [toast]);
 
   const calendarData = useMemo<RoutineCalendarData>(

@@ -2,7 +2,11 @@ import { describe, expect, it } from "vitest";
 
 import { isPathBasedModulePath } from "../app/appPaths";
 import { STANDALONE_ROUTE_PATHS } from "../app/StandaloneRoutes";
-import { ALL_CAPABILITIES, CAPABILITY_GROUPS } from "./capabilityRegistry";
+import {
+  ALL_CAPABILITIES,
+  CAPABILITY_GROUPS,
+  visibleCapabilityGroups,
+} from "./capabilityRegistry";
 
 /**
  * Каталог можливостей — рекламна вітрина застосунку. Найгірший його стан не
@@ -47,6 +51,31 @@ describe("capabilityRegistry", () => {
     expect(privacy?.quickAction).toContain("Профілі");
     expect(privacy?.description).toContain("Профілі");
     expect(privacy?.href).not.toContain("settings-privacy");
+    // Перевалідація 2026-11-17: видалення акаунта теж у Профілі
+    // (`DangerZoneSection`), Налаштування несуть лише вказівник на нього.
+    expect(privacy?.description).not.toMatch(
+      /видалення акаунта[^.]*Налаштуваннях/,
+    );
+  });
+
+  // Рішення власника 2026-11-17: PIN лише для акаунта. Картка вела гостя в
+  // Профіль, якого в нього немає (`ProfilePage` рендерить `null`).
+  it("гість не бачить картки PIN, акаунт бачить", () => {
+    const ids = (hasUser: boolean) =>
+      visibleCapabilityGroups(hasUser).flatMap((g) => g.items.map((i) => i.id));
+    expect(ids(false)).not.toContain("privacy");
+    expect(ids(true)).toContain("privacy");
+    expect(ids(true)).toHaveLength(ALL_CAPABILITIES.length);
+    // Решта карток гостю лишається: фільтр не ширший за рішення.
+    expect(ids(false)).toHaveLength(ALL_CAPABILITIES.length - 1);
+  });
+
+  it("усі картки, що ведуть у Профіль, позначені лише для акаунта", () => {
+    for (const item of ALL_CAPABILITIES) {
+      if (item.href.includes("tab=profile")) {
+        expect(item.accountOnly, `«${item.title}»`).toBe(true);
+      }
+    }
   });
 
   it("id унікальні — вони є React-ключами і testid-ами", () => {

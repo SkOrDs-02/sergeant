@@ -32,6 +32,12 @@ vi.mock("./SyncRejectedList", () => ({
   SyncRejectedList: () => <div data-testid="sync-rejected-list" />,
 }));
 
+vi.mock("./SyncPurgeWarning", () => ({
+  SyncPurgeWarning: ({ canRetry }: { canRetry: boolean }) => (
+    <div data-testid="sync-purge-warning" data-can-retry={String(canRetry)} />
+  ),
+}));
+
 const opfsProbeRef: { value: Promise<unknown> } = {
   value: Promise.resolve({ kind: "ok" }),
 };
@@ -171,6 +177,49 @@ describe("SyncStatusSheet", () => {
     expect(onRetry).toHaveBeenCalledTimes(1);
     expect(onClose).toHaveBeenCalledTimes(1);
     expect(screen.queryByTestId("sync-rejected-list")).not.toBeInTheDocument();
+  });
+
+  // PR-T2: попередження ДО TTL-чистки має сенс лише там, де є що чистити.
+  it("монтує попередження про чистку лише за наявності помилок або відхилених", () => {
+    const { rerender } = render(
+      <SyncStatusSheet
+        open
+        onClose={vi.fn()}
+        online
+        pending={2}
+        deadLetter={0}
+      />,
+    );
+    expect(screen.queryByTestId("sync-purge-warning")).not.toBeInTheDocument();
+
+    rerender(
+      <SyncStatusSheet
+        open
+        onClose={vi.fn()}
+        online
+        pending={0}
+        deadLetter={0}
+        rejected={1}
+      />,
+    );
+    expect(screen.getByTestId("sync-purge-warning")).toHaveAttribute(
+      "data-can-retry",
+      "false",
+    );
+
+    rerender(
+      <SyncStatusSheet
+        open
+        onClose={vi.fn()}
+        online
+        pending={0}
+        deadLetter={1}
+      />,
+    );
+    expect(screen.getByTestId("sync-purge-warning")).toHaveAttribute(
+      "data-can-retry",
+      "true",
+    );
   });
 
   it("surfaces server-rejected rows with their list when there are any", () => {

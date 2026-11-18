@@ -445,7 +445,8 @@ vi.mock("@shared/components/layout", () => ({
   ),
 }));
 
-// PullToRefresh exposes onRefresh and onError
+// PullToRefresh exposes onRefresh and onError; like the real hook, a
+// rejected onRefresh is routed into onError.
 vi.mock("@shared/components/ui/PullToRefresh", () => ({
   PullToRefresh: ({
     children,
@@ -462,7 +463,9 @@ vi.mock("@shared/components/ui/PullToRefresh", () => ({
       <button
         type="button"
         data-testid="ptr-refresh"
-        onClick={() => void onRefresh()}
+        onClick={() => {
+          onRefresh().catch(onError);
+        }}
       >
         Refresh
       </button>
@@ -609,6 +612,22 @@ describe("NutritionApp — handlePullRefresh / handlePullRefreshError", () => {
     });
     expect(mockInvalidateQueries).toHaveBeenCalled();
     expect(requestCloudPull).toHaveBeenCalledWith(2500);
+  });
+
+  // PR-H3 tail: a failed cloud pull (offline) must surface as an error,
+  // not as a silent successful refresh.
+  it("routes a rejected cloud pull into onError (failure toast)", async () => {
+    vi.mocked(requestCloudPull).mockRejectedValueOnce(new Error("offline"));
+    render(<NutritionApp />, { wrapper: QueryWrapper });
+    await act(async () => {
+      fireEvent.click(screen.getByTestId("ptr-refresh"));
+    });
+    expect(mockInvalidateQueries).toHaveBeenCalled();
+    expect(mockToast.error).toHaveBeenCalledWith(
+      expect.stringContaining("Не вдалося оновити"),
+      undefined,
+      expect.objectContaining({ label: "Повторити" }),
+    );
   });
 
   it("handlePullRefreshError calls toast.error with a retry action", () => {

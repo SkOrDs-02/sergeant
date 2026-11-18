@@ -83,6 +83,12 @@ export {
   type PurgeStaleTerminalOutboxResult,
 } from "./syncOpOutboxPurgeStale.js";
 export {
+  forecastStaleTerminalOutboxPurge,
+  SYNC_OP_OUTBOX_PURGE_WARNING_DAYS,
+  type ForecastStaleTerminalOutboxPurgeOptions,
+  type StaleTerminalOutboxPurgeForecast,
+} from "./syncOpOutboxPurgeForecast.js";
+export {
   ROUTINE_CLIENT_MIGRATIONS,
   ROUTINE_MIGRATIONS_TABLE,
   FIZRUK_CLIENT_MIGRATIONS,

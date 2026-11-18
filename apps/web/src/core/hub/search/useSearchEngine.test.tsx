@@ -27,7 +27,8 @@ vi.mock("react-router-dom", async (orig) => {
 });
 vi.mock("./searchSources", () => ({ performSearch }));
 vi.mock("@shared/lib/modules/hubBus", () => ({ emitHubBus }));
-vi.mock("@shared/lib/modules/hubNav", () => ({
+vi.mock("@shared/lib/modules/hubNav", async (orig) => ({
+  ...(await orig<typeof import("@shared/lib/modules/hubNav")>()),
   openHubModuleWithAction,
   announceSettingsHashChange,
 }));

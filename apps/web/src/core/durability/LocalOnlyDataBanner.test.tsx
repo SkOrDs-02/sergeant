@@ -52,6 +52,7 @@ describe("LocalOnlyDataBanner", () => {
     const enM = messagesEn.durability?.localOnly;
     expect(enM).toBeTruthy();
     expect(screen.getByText(enM!.title)).toBeTruthy();
+    expect(screen.getByText(enM!.body)).toBeTruthy();
     expect(screen.queryByText(/Дані лише на цьому пристрої/)).toBeNull();
   });
 
@@ -70,11 +71,31 @@ describe("LocalOnlyDataBanner", () => {
     expect(container.firstChild).toBeNull();
   });
 
-  it("банер - один рядок факту без абзацу пояснення (redesign v3.1, Е2)", () => {
+  it("банер - рядок факту без абзацу пояснення (redesign v3.1, Е2)", () => {
     useLocalUserIdMock.mockReturnValue("local-anon");
     render(<LocalOnlyDataBanner onSignIn={vi.fn()} />);
     expect(screen.getByText("Дані лише на цьому пристрої")).toBeTruthy();
     expect(screen.queryByText(/Витрати готівкою/)).toBeNull();
+  });
+
+  // Рішення власника 2026-11-17: текст колишньої `SoftAuthPromptCard`
+  // переїхав у банер, бо поза FTUX банер бачить кожен анонім, а картку він
+  // глушив. Банер тепер єдине місце хаба, що пояснює, навіщо входити.
+  it("несе причину входу з колишньої soft-auth картки, і «Увійти» веде у вхід", () => {
+    useLocalUserIdMock.mockReturnValue("local-anon");
+    const onSignIn = vi.fn();
+    render(<LocalOnlyDataBanner onSignIn={onSignIn} />);
+    const status = screen.getByRole("status");
+    expect(status.textContent).toContain(
+      "Акаунт синхронізує записи між пристроями.",
+    );
+    // Факт першим, причина після нього.
+    expect(status.textContent!.indexOf("Дані лише на цьому пристрої")).toBe(0);
+    // Причина не кличе «Увійди» текстом: дія одна, кнопкою (A1, 2026-09-11).
+    expect(status.textContent).not.toContain("Увійди");
+    expect(screen.getAllByRole("button")).toHaveLength(1);
+    fireEvent.click(screen.getByRole("button", { name: "Увійти" }));
+    expect(onSignIn).toHaveBeenCalledTimes(1);
   });
 
   it("кнопка входу викликає onSignIn", () => {
