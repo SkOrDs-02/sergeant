@@ -189,6 +189,37 @@ describe("бекенд бази у воркері", () => {
     expect(readSqliteLegacyStoreKept()).toBe(false);
   });
 
+  // CodeRabbit на #1692: відмови середовища з `getDirectory()` чи
+  // встановлення пулу приходять не тільки текстом «Missing required OPFS
+  // APIs». Заборонене сховище повтором не лікується.
+  it.each(["SecurityError", "NotSupportedError"])(
+    "%s з воркера = «не підтримується», без поради перезавантажити",
+    async (name) => {
+      const denied = new Error("The operation is insecure.");
+      denied.name = name;
+      vi.mocked(openSqliteInWorker).mockRejectedValue(denied);
+
+      const handle = await getSqliteDb();
+
+      expect(handle.vfs).toBe("memory");
+      expect(readSqliteVfsFallbackReason()).toBe("unsupported");
+      expect(openSqliteInWorker).toHaveBeenCalledTimes(1);
+    },
+  );
+
+  it("старе сховище лишається «збереженим» і тоді, коли причина не «не підтримується»", async () => {
+    vi.mocked(isHandoffDone).mockReturnValue(false);
+    vi.mocked(hasKvvfsData).mockReturnValue(true);
+    vi.mocked(openSqliteInWorker).mockRejectedValue(
+      new Error("kvvfs-handoff: quick_check failed: corrupt"),
+    );
+
+    await getSqliteDb();
+
+    expect(readSqliteVfsFallbackReason()).toBeNull();
+    expect(readSqliteLegacyStoreKept()).toBe(true);
+  });
+
   it("таймаут — не «браузер не підтримує»: банер лишає пораду перезавантажити", async () => {
     const hung = new Error("sqlite-worker: timed out");
     hung.name = "SqliteWorkerOpenTimeoutError";
