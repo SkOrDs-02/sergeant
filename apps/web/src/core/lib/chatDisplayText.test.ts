@@ -52,6 +52,14 @@ describe("stripTechnicalIds", () => {
     expect(hasTechnicalIds("Витрати за тиждень: 1 200 грн")).toBe(false);
   });
 
+  it("прибирає підказку моделі з відмови: людина не бачить назви інструмента", () => {
+    expect(
+      stripTechnicalIds(
+        "Не знайшов операцію (id:tx_9). (для моделі: знайди її через find_transaction і візьми id звідти)",
+      ),
+    ).toBe("Не знайшов операцію.");
+  });
+
   it("не чіпає текст без технічних id", () => {
     const text = "Додано 250 мл води (разом за 2026-11-18: 1 000 мл)";
     expect(stripTechnicalIds(text)).toBe(text);

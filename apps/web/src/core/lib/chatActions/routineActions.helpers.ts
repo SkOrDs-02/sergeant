@@ -7,7 +7,12 @@
  * дат) і константи тижня.
  */
 
-import { habitCompletionRate, type Habit } from "@sergeant/routine-domain";
+import {
+  calcRoutinePeriodCompletion,
+  habitCompletionRate,
+  type Habit,
+  type HabitSkip,
+} from "@sergeant/routine-domain";
 import { getKyivDayKey, parseKyivDate } from "@shared/lib/time/kyivTime";
 import { formatNumberUk } from "@sergeant/shared";
 
@@ -97,21 +102,34 @@ export function habitTrendText(
   completions: Readonly<Record<string, string[] | undefined>>,
   days: number,
   now: number,
+  skips?: Record<string, Record<string, HabitSkip>>,
 ): string {
+  // П-18 (А), 2026-11-18: тиждень рахується тим самим знаменником, що
+  // модуль (`calcRoutinePeriodCompletion`): заплановані дні без днів «не
+  // зміг». Раніше тут стояло плоске «звички × дні».
+  const todayKey = getKyivDayKey(now);
+  const safeCompletions: Record<string, string[]> = {};
+  for (const [id, list] of Object.entries(completions)) {
+    if (list) safeCompletions[id] = list;
+  }
   const weeklyData: number[] = [];
   for (let w = 0; w < Math.ceil(days / 7); w++) {
-    let done = 0;
-    let possible = 0;
+    const weekKeys: string[] = [];
     for (let d = 0; d < 7; d++) {
       const dayOffset = w * 7 + d;
       if (dayOffset >= days) break;
-      const dk = getKyivDayKey(now - dayOffset * DAY_MS);
-      for (const h of habits) {
-        possible++;
-        if (completions[h.id]?.includes(dk)) done++;
-      }
+      weekKeys.push(getKyivDayKey(now - dayOffset * DAY_MS));
     }
-    weeklyData.push(possible > 0 ? Math.round((done / possible) * 100) : 0);
+    const week = calcRoutinePeriodCompletion(
+      habits,
+      safeCompletions,
+      weekKeys,
+      {
+        pausedFrom: todayKey,
+        skips,
+      },
+    );
+    weeklyData.push(week.pct);
   }
   weeklyData.reverse();
   const parts = [
@@ -134,7 +152,6 @@ export function habitTrendText(
     );
   }
   if (habits.length > 1) {
-    const todayKey = getKyivDayKey(now);
     const startKey = getKyivDayKey(now - (days - 1) * DAY_MS);
     parts.push("По звичках:");
     for (const h of habits) {
@@ -143,6 +160,7 @@ export function habitTrendText(
         completions[h.id],
         startKey,
         todayKey,
+        { skips: skips?.[h.id], pausedFrom: todayKey },
       );
       const pct = scheduled > 0 ? Math.round((completed / scheduled) * 100) : 0;
       parts.push(

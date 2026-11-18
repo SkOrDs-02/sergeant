@@ -232,7 +232,10 @@ export function detectRoutineMoment({
     pushDailyStreakMoments(candidates, prev, next, habit, habitId, todayKey);
   }
 
-  if (!bestHabitMonthInsight(prev) && bestHabitMonthInsight(next)) {
+  if (
+    !bestHabitMonthInsight(prev, todayKey) &&
+    bestHabitMonthInsight(next, todayKey)
+  ) {
     candidates.push({ kind: "threshold", target: habitId });
   } else {
     // Наближення показуємо, лише коли бракує тільки відміток: інакше

@@ -15,9 +15,13 @@
  *     `Звичку не знайдено (id:h1).`);
  *   - `… (Інше, id:5c47…)` — id останнім у дужках з іншим вмістом;
  *   - `m_1: 2026-11-17 · 120 грн · …` — елемент списку операцій
- *     (`find_transaction`, `query_transactions`): id перед датою.
+ *     (`find_transaction`, `query_transactions`): id перед датою;
+ *   - `(для моделі: …)` — інструкція моделі у відмові (назва інструмента,
+ *     звідки брати id), людині вона ні до чого.
  */
 
+// `(для моделі: …)` цілими дужками разом із пробілом перед ними.
+const MODEL_HINT_RE = /\s*\(для моделі:[^)]*\)/g;
 // `(id:…)` / `(tx:…)` цілими дужками разом із пробілом перед ними.
 const STANDALONE_ID_RE = /\s*\((?:id|tx):[^)]*\)/g;
 // `, id:…` усередині дужок, де до нього є людський вміст.
@@ -30,6 +34,7 @@ const TX_LIST_ID_RE =
 
 export function stripTechnicalIds(text: string): string {
   return text
+    .replace(MODEL_HINT_RE, "")
     .replace(STANDALONE_ID_RE, "")
     .replace(TRAILING_ID_RE, "")
     .replace(TX_LIST_ID_RE, "$1");

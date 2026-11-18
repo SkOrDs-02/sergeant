@@ -119,7 +119,7 @@ describe("оцінювання ланцюжка", () => {
 });
 
 describe("кейси «знайди, потім зміни ту» (С-2)", () => {
-  const [withRefs, control] = FOLLOW_UP_CASES;
+  const [withRefs, control, workout] = FOLLOW_UP_CASES;
 
   it("id з блоку записів попередньої відповіді не рахується вигаданим", () => {
     const r = replayCase(withRefs!, {
@@ -158,5 +158,25 @@ describe("кейси «знайди, потім зміни ту» (С-2)", () =>
     });
     expect(r.hallucinated).toEqual(["change_category.tx_id=tx_7c40"]);
     expect(r.correct).toBe(false);
+  });
+
+  it("тренування: id з блоку записів не вигаданий, чужий — вигаданий", () => {
+    const run = (workout_id: string) =>
+      replayCase(workout!, {
+        name: workout!.name,
+        turns: [
+          {
+            blocks: [toolUse("finish_workout", { workout_id })],
+            fedResult: null,
+          },
+        ],
+      });
+    const ok = run("w_mf3k51");
+    expect(ok.hallucinated).toEqual([]);
+    expect(ok.argViolations).toEqual([]);
+    expect(ok.correct).toBe(true);
+    expect(run("w_other").hallucinated).toEqual([
+      "finish_workout.workout_id=w_other",
+    ]);
   });
 });

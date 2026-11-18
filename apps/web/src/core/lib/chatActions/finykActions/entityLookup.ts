@@ -105,10 +105,13 @@ export function finykCategoryExists(id: string): boolean {
   return getCachedFinykSqliteState().customCategories.some((c) => c.id === id);
 }
 
+// Відмова пишеться двома частинами: людська фраза і підказка моделі в
+// дужках `(для моделі: …)`, яку показ вирізає (`chatDisplayText.ts`). Так
+// людина не бачить назви інструмента, а модель знає, що робити далі.
 export function unknownTransactionMessage(id: string): string {
-  return `Не знайшов операцію (id:${id}), знайди її через find_transaction і візьми id звідти.`;
+  return `Не знайшов операцію (id:${id}). (для моделі: знайди її через find_transaction і візьми id звідти)`;
 }
 
 export function unknownCategoryMessage(id: string): string {
-  return `Не знайшов категорію (id:${id}), перевір список категорій і візьми id звідти.`;
+  return `Не знайшов категорію (id:${id}). (для моделі: перевір список категорій і візьми id звідти)`;
 }

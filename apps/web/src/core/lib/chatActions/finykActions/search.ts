@@ -318,11 +318,17 @@ export function batchCategorize(
     return `Не знайшов операцій за pattern "${pattern}".`;
   }
   const preview = formatTxList(matches);
+  // Людина бачить назву категорії; сирий id лишається моделі в `(id:…)`,
+  // який показ вирізає (`chatDisplayText.ts`).
+  const catLabel =
+    resolveExpenseCategoryMeta(categoryId, cache.customCategories)?.label ||
+    categoryId;
+  const target = `«${catLabel}» (id:${categoryId})`;
   if (input.dry_run !== false) {
-    return `Dry-run: ${matches.length} операц. буде перенесено в ${categoryId}: ${preview}`;
+    return `Dry-run: ${matches.length} операц. буде перенесено в ${target}: ${preview}`;
   }
   const cats = { ...cache.txCategories } as Record<string, string>;
   for (const tx of matches) cats[tx.id] = categoryId;
   void finykChatWrite("finyk_tx_cats", cats);
-  return `Категорію ${matches.length} операц. змінено на ${categoryId}: ${preview}`;
+  return `Категорію ${matches.length} операц. змінено на ${target}: ${preview}`;
 }

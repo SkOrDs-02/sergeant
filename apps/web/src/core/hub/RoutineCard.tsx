@@ -136,6 +136,8 @@ export default function RoutineCard({ period, offset }: RoutineCardProps) {
     const routineState = {
       habits: routine.habits,
       completions: routine.completions,
+      // П-18 (А): день «не зміг» поза знаменником, як у модулі.
+      skips: routine.skips,
     };
     const w = reportWindows(period, offset);
     // Заморозка минулого (ADR-0079 §2): картка показує й попередній період,

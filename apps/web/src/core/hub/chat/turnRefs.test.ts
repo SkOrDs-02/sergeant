@@ -39,17 +39,35 @@ describe("collectTurnRefs (С-2 а)", () => {
     ).toBeUndefined();
   });
 
-  it("не бере модулів здоровʼя й памʼяті, навіть з id", () => {
+  // Рішення founder-а 2026-11-18 (§ 11.9): ланцюжок для всіх модулів; без
+  // згоди на дані про здоровʼя ці рядки вирізає сервер (`healthGate.ts`).
+  it("бере записи Фізрука, Харчування й памʼяті з id", () => {
     expect(
       collectTurnRefs(
-        [{ name: "start_workout" }, { name: "remember" }],
+        [{ name: "start_workout" }, { name: "log_meal" }, { name: "remember" }],
         [
           { result: "Тренування розпочато о 10:00 (id:w1)", ok: true },
+          { result: "Записано: Обід 640 ккал (id:m_2)", ok: true },
           {
             result: "Запамʼятав: алергія на горіхи (Здоровʼя, id:f1)",
             ok: true,
           },
         ],
+      ),
+    ).toBe(
+      [
+        "- start_workout: Тренування розпочато о 10:00 (id:w1)",
+        "- log_meal: Записано: Обід 640 ккал (id:m_2)",
+        "- remember: Запамʼятав: алергія на горіхи (Здоровʼя, id:f1)",
+      ].join("\n"),
+    );
+  });
+
+  it("крос-модульні й службові інструменти в блок не йдуть", () => {
+    expect(
+      collectTurnRefs(
+        [{ name: "get_daily_series" }],
+        [{ result: "2026-11-17 витрати 300 (id:d1)", ok: true }],
       ),
     ).toBeUndefined();
   });

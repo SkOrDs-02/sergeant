@@ -322,6 +322,31 @@ describe("buildDailySeries — структурні нулі", () => {
     expect(s.raw["habit_rate"]).toEqual([undefined, 100, 0, 100, 0]);
   });
 
+  // П-18 (А), 2026-11-18: «% звичок за день» на тому самому знаменнику, що
+  // модуль (`calcRoutinePeriodCompletion.daily`): день «не зміг» не тягне
+  // відсоток дня вниз. Плоске «відмічено / усі активні» дало б 20-го 50%.
+  it("habit_rate: день «не зміг» поза знаменником дня (П-18)", async () => {
+    await seedDailyHabit(["2026-04-19", "2026-04-20", "2026-04-21"]);
+    const { loadRoutineState, saveRoutineState } =
+      await import("../../../../modules/routine/lib/routineStorage");
+    const state = loadRoutineState();
+    const h1 = state.habits[0]!;
+    saveRoutineState({
+      ...state,
+      habits: [h1, { ...h1, id: "h2", name: "Біг" }],
+      habitOrder: ["h1", "h2"],
+      completions: { ...state.completions, h2: ["2026-04-19"] },
+      skips: {
+        h2: { "2026-04-20": { reason: "sick", at: "2026-04-20T08:00:00Z" } },
+      },
+    });
+    const s = buildDailySeries(["habit_rate"], {
+      from: "2026-04-19",
+      to: "2026-04-21",
+    });
+    expect(s.raw["habit_rate"]).toEqual([100, 100, 50]);
+  });
+
   it("weight: пропуск лишається пропуском — це не «важив 0 кг»", () => {
     __setFizrukSqliteCacheForTests({
       dailyLog: seedJournal([

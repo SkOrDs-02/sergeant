@@ -3,7 +3,7 @@
  * спека `docs/work/specs/hubchat-find-then-change.md`).
  *
  * AI-CONTEXT: свідомо НЕ в `ALL_CASES`. Касета `cassette.test.ts` вимагає
- * запису для кожного кейса з `ALL_CASES`, а ці два міряються окремим платним
+ * запису для кожного кейса з `ALL_CASES`, а ці кейси міряються окремим платним
  * прогоном (`pnpm eval:tools --follow-up`), без перезапису касети. Коли касету
  * перезаписуватимуть з іншої причини, ці кейси можна перенести в
  * `ALL_CASES` тим самим кроком.
@@ -16,6 +16,7 @@
  * взяти лише з блоку записів.
  */
 
+import { TURN_REFS_HEADING } from "@sergeant/shared";
 import type { HistoryMessage, ToolCase } from "./types.js";
 
 const HISTORY: HistoryMessage[] = [
@@ -32,10 +33,31 @@ const HISTORY: HistoryMessage[] = [
  * (`formatTxList`). Розійдеться формат у вебі — онови і тут.
  */
 const REFS_BLOCK =
-  "\n\n[Записи з попередньої відповіді]\n" +
+  `\n\n${TURN_REFS_HEADING}\n` +
   "- find_transaction: Знайдено 1 операц.: tx_7c40: 2026-07-29 · 412 грн · Сільпо · Продукти";
 
 const USER = "Перенеси її в їжу поза домом";
+
+/**
+ * Той самий ланцюжок для Фізрука (рішення founder-а 2026-11-18: «усі модулі
+ * зі згодою»). Тренування з id дає лише результат запису: `query_workouts`
+ * показує завершені тренування без id, тож «знайдене» тут — план, який
+ * асистент щойно створив (`plan_workout`, формат `fizrukActions/workouts.ts`).
+ * id `w_mf3k51` навмисно відсутній у `DATA_BLOCK`.
+ */
+const WORKOUT_HISTORY: HistoryMessage[] = [
+  { role: "user", content: "Заплануй на суботу присідання і жим" },
+  {
+    role: "assistant",
+    content: "Запланував на суботу, 1 серпня, о 09:00: дві вправи.",
+  },
+];
+
+const WORKOUT_REFS_BLOCK =
+  `\n\n${TURN_REFS_HEADING}\n` +
+  "- plan_workout: Тренування заплановано на 2026-08-01 о 09:00: 2 вправи (id:w_mf3k51)";
+
+const WORKOUT_USER = "Я його вже зробив, заверши його";
 
 export const FOLLOW_UP_CASES: ToolCase[] = [
   {
@@ -53,5 +75,13 @@ export const FOLLOW_UP_CASES: ToolCase[] = [
     history: HISTORY,
     user: USER,
     accept: ["find_transaction", "query_transactions"],
+  },
+  {
+    name: "знайди-потім-зміни: тренування з попередньої відповіді",
+    history: WORKOUT_HISTORY,
+    dataExtra: WORKOUT_REFS_BLOCK,
+    user: WORKOUT_USER,
+    accept: ["finish_workout"],
+    expectArgs: { finish_workout: { workout_id: "w_mf3k51" } },
   },
 ];

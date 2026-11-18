@@ -1,5 +1,5 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
-import type { Workout } from "@sergeant/fizruk-domain";
+import { computeWorkoutSetCount, type Workout } from "@sergeant/fizruk-domain";
 
 vi.mock("@shared/lib/storage/storage", () => ({
   safeReadStringLS: vi.fn(),
@@ -430,10 +430,75 @@ describe("planWorkout", () => {
 
   it("falls back to today and 09:00 when date/time absent", () => {
     mockReadWorkouts.mockReturnValue([]);
-    mockDayKey.mockReturnValue("2026-04-20");
-    planWorkout({ name: "plan_workout", input: { exercises: [] } });
+    vi.useFakeTimers();
+    vi.setSystemTime(new Date("2026-04-20T12:00:00"));
+    try {
+      planWorkout({ name: "plan_workout", input: { exercises: [] } });
+    } finally {
+      vi.useRealTimers();
+    }
     const persisted = mockPersist.mock.calls[0]![0] as Workout[];
-    expect(persisted[0]?.startedAt).toContain("2026-04-20");
+    expect(persisted[0]?.startedAt).toBe(
+      new Date("2026-04-20T09:00:00").toISOString(),
+    );
+  });
+
+  // logic-18: заплановані рядки не зараховані. Повтори з запиту моделі
+  // в тренування не пишуться: рядок із повторами вже «виконаний підхід»
+  // (`isSetCompleted`), а чесного поля плану у `WorkoutItem` немає.
+  it("logic-18: план сіє незараховані рядки з вагою плану", () => {
+    mockReadWorkouts.mockReturnValue([]);
+    planWorkout({
+      name: "plan_workout",
+      input: { exercises: [{ name: "Squat", sets: 3, reps: 10, weight: 60 }] },
+    });
+    const w = (mockPersist.mock.calls[0]![0] as Workout[])[0]!;
+    expect(w.items[0]?.sets).toEqual([
+      { weightKg: 60, reps: 0 },
+      { weightKg: 60, reps: 0 },
+      { weightKg: 60, reps: 0 },
+    ]);
+    expect(computeWorkoutSetCount(w)).toBe(0);
+    const out = planWorkout({
+      name: "plan_workout",
+      input: { exercises: [{ name: "Squat", sets: 3, reps: 10 }] },
+    });
+    expect(out).toContain("Повтори в план не записуються");
+  });
+
+  // ADR-0078: тренування — особиста сутність, день і година за годинником
+  // ПРИСТРОЮ, як у формі тренування модуля. О 23:30 UTC у Києві вже завтра:
+  // київський годинник поклав би план на інший день і на іншу годину.
+  it("ADR-0078: день і година плану — за годинником пристрою", () => {
+    mockReadWorkouts.mockReturnValue([]);
+    vi.useFakeTimers();
+    vi.setSystemTime(new Date("2026-04-20T23:30:00"));
+    try {
+      planWorkout({ name: "plan_workout", input: { time: "07:00" } });
+      planWorkout({
+        name: "plan_workout",
+        input: { date: "2026-05-01", time: "18:30" },
+      });
+    } finally {
+      vi.useRealTimers();
+    }
+    const first = (mockPersist.mock.calls[0]![0] as Workout[])[0]!;
+    const second = (mockPersist.mock.calls[1]![0] as Workout[])[0]!;
+    expect(first.startedAt).toBe(new Date("2026-04-20T07:00:00").toISOString());
+    expect(second.startedAt).toBe(
+      new Date("2026-05-01T18:30:00").toISOString(),
+    );
+  });
+
+  it("неможлива дата чи година — відмова, без запису", () => {
+    mockReadWorkouts.mockReturnValue([]);
+    expect(
+      planWorkout({ name: "plan_workout", input: { date: "2026-02-30" } }),
+    ).toBe("Некоректна дата або час.");
+    expect(
+      planWorkout({ name: "plan_workout", input: { time: "24:00" } }),
+    ).toBe("Некоректна дата або час.");
+    expect(mockPersist).not.toHaveBeenCalled();
   });
 });
 

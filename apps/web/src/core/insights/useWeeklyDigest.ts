@@ -381,8 +381,10 @@ export function aggregateRoutine(weekKey: string): RoutineAggregate | null {
   // конфігурацією».
   // Host-local, як і `weekDays` вище; київська межа доби — окремий борг
   // реєстру метрик (стадія 5г).
+  // П-18 (А), `METRICS_VERSION` 22: день «не зміг» поза знаменником.
   const period = calcRoutinePeriodCompletion(habits, completions, weekDays, {
     pausedFrom: localDateKey(new Date()),
+    skips: state.skips,
   });
 
   const habitStats: HabitStat[] = period.perHabit.map((h) => ({

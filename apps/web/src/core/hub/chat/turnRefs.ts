@@ -1,4 +1,4 @@
-import { getToolModule } from "@sergeant/shared";
+import { TURN_REFS_HEADING, getToolModule } from "@sergeant/shared";
 import { isFailureResult } from "../../lib/hubChatActionCards";
 import { hasTechnicalIds } from "../../lib/chatDisplayText";
 
@@ -20,8 +20,11 @@ import { hasTechnicalIds } from "../../lib/chatDisplayText";
  * ланцюжок, і модель іде шукати знову.
  */
 
-/** Заголовок блоку в ДАНІ; той самий рядок стоїть у кейсі tool-eval. */
-export const TURN_REFS_HEADING = "[Записи з попередньої відповіді]";
+/**
+ * Заголовок блоку в ДАНІ. Живе в `@sergeant/shared`: той самий рядок читає
+ * серверний гейт здоровʼя і кейс tool-eval.
+ */
+export { TURN_REFS_HEADING };
 
 /**
  * Стеля блоку. Число — стеля одного `tool_result` у контракті чату
@@ -31,13 +34,21 @@ export const TURN_REFS_HEADING = "[Записи з попередньої від
 export const TURN_REFS_MAX_CHARS = 8000;
 
 /**
- * Модулі, чиї результати можна повторно класти в контекст. Фізрук, Харчування
- * й памʼять сюди не входять: серверний гейт здоровʼя (`healthGate.ts`)
- * розпізнає health лише за відомими рядками знімка, а не за довільним блоком,
- * тож без згоди такі дані проскочили б до моделі (рішення 2026-09-29,
- * `hub-coach.md` § Журнал рішень). Розширення — відкрите питання спеки.
+ * Модулі, чиї результати можна повторно класти в контекст. Усі модулі зі
+ * згодою (рішення founder-а 2026-11-18, § 11.9 розбору): без згоди на дані про
+ * здоровʼя записи Фізрука, Харчування й памʼяті вирізає сервер
+ * (`healthGate.ts::stripHealthContext`, гілка блоку записів), бо клієнтський
+ * прапорець згоди нічого не вирішує. Крос-модульні, аналітичні й службові
+ * інструменти сюди не входять: сервер без згоди вирізає їх цілком, бо їхній
+ * вердикт залежить від входу, якого в блоці немає.
  */
-const REF_MODULES: ReadonlySet<string> = new Set(["finyk", "routine"]);
+const REF_MODULES: ReadonlySet<string> = new Set([
+  "finyk",
+  "routine",
+  "fizruk",
+  "nutrition",
+  "memory",
+]);
 
 interface TurnCall {
   name: unknown;

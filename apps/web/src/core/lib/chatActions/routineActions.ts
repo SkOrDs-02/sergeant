@@ -564,11 +564,13 @@ export function handleRoutineAction(
       const now = Date.now();
       const todayKey = getKyivDayKey(now);
       const startKey = getKyivDayKey(now - (days - 1) * DAY_MS);
+      // П-18 (А): день «не зміг» поза знаменником, як у картці звички.
       const { completed, scheduled } = habitCompletionRate(
         habit,
         completionsForHabit,
         startKey,
         todayKey,
+        { skips: skipsForHabit, pausedFrom: todayKey },
       );
       const pct = scheduled > 0 ? Math.round((completed / scheduled) * 100) : 0;
       // Гнучка звичка («N разів на тиждень») міряється тижнями (доменне
@@ -624,6 +626,7 @@ export function handleRoutineAction(
         state.completions,
         Number(period_days) || 30,
         Date.now(),
+        state.skips,
       );
     }
     // ── Утиліти ────────────────────────────────────────────────

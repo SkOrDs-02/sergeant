@@ -24,6 +24,7 @@ import {
 } from "../../modules/finyk/lib/monoMirrorReader";
 import type { ManualExpense } from "../../modules/finyk/hooks/useStorage.types";
 import { executeAction } from "./hubChatActions";
+import { stripTechnicalIds } from "./chatDisplayText";
 import { triggerFizrukDualWrite } from "../../modules/fizruk/lib/sqliteWriter/index";
 import type { Workout as FizrukWorkout } from "@sergeant/fizruk-domain";
 
@@ -233,6 +234,9 @@ describe("batch_categorize", () => {
     });
     expect(msg).toContain("Dry-run");
     expect(msg).toContain("m_silpo_1");
+    // Людина бачить назву категорії, а не сирий id (модель свій id має в (id:…)).
+    expect(stripTechnicalIds(msg as string)).toContain("в «Продукти»");
+    expect(stripTechnicalIds(msg as string)).not.toMatch(/\bfood\b/);
     expect(readLS<Record<string, string>>("finyk_tx_cats", {})).toEqual({});
   });
 
@@ -247,7 +251,8 @@ describe("batch_categorize", () => {
       name: "batch_categorize",
       input: { pattern: "сільпо", category_id: "food", dry_run: false },
     });
-    expect(msg).toContain("змінено на food");
+    expect(msg).toContain("змінено на «Продукти» (id:food)");
+    expect(stripTechnicalIds(msg as string)).not.toMatch(/\bfood\b/);
     expect(readLS<Record<string, string>>("finyk_tx_cats", {})).toEqual({
       m_silpo_1: "food",
     });

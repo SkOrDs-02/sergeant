@@ -6,7 +6,11 @@ import {
   parseKyivDate,
 } from "@shared/lib/time/kyivTime";
 import { MAX_REPS, MAX_WEIGHT_KG } from "@fizruk/lib/numericBounds";
-import { formatNumberUk, pluralExercises } from "@sergeant/shared";
+import {
+  deviceDayKey,
+  formatNumberUk,
+  pluralExercises,
+} from "@sergeant/shared";
 import {
   deleteFizrukWorkout,
   readFizrukWorkouts,
@@ -17,7 +21,12 @@ import {
   buildWorkoutItemFromExercise,
   createChatExerciseResolver,
 } from "./exerciseResolve";
-import type { Workout, WorkoutItem, WorkoutSet } from "@sergeant/fizruk-domain";
+import {
+  buildPlannedSets,
+  type Workout,
+  type WorkoutItem,
+  type WorkoutSet,
+} from "@sergeant/fizruk-domain";
 import type {
   PlanWorkoutAction,
   LogSetAction,
@@ -59,15 +68,43 @@ function kyivWallClockTs(dayKey: string, hhmm: string): number {
   return midnight.getTime() + (hours * 60 + minutes) * 60_000;
 }
 
+/**
+ * Мітка часу для стінного годинника ПРИСТРОЮ: день-ключ + `HH:MM`.
+ *
+ * AI-CONTEXT: заплановане тренування — особиста сутність (ADR-0078): день
+ * і година належать годиннику пристрою, як у формі тренування модуля
+ * (`Workouts.helpers.ts`, рішення власника 2026-09-29) і як у чат-виконавці
+ * Рутини. До 2026-11-18 `plan_workout` брав київський годинник: на пристрої
+ * поза Києвом план «на 07:00» лягав на іншу годину, а після київської
+ * півночі ще й на інший день. `start_workout` і `copy_workout` поки на
+ * київському годиннику (`kyivWallClockTs`): вони читають годину з рядка
+ * контексту «[Зараз] … за Києвом», і перевести їх можна лише разом із ним.
+ *
+ * `NaN` на неможливій даті (2026-02-30) чи годині (24:00): викликач віддає
+ * «Некоректна дата або час», а не мовчки пише сміття.
+ */
+function deviceWallClockTs(dayKey: string, hhmm: string): number {
+  const [y = NaN, mo = NaN, d = NaN] = dayKey.split("-").map(Number);
+  const [rawH, rawM] = hhmm.split(":");
+  const hours = Number(rawH);
+  const minutes = Number(rawM);
+  if (![y, mo, d, hours, minutes].every((n) => Number.isFinite(n))) return NaN;
+  if (hours > 23 || minutes > 59) return NaN;
+  const at = new Date(y, mo - 1, d, hours, minutes, 0, 0);
+  // Календарно неможлива дата перекотилась би на наступний місяць.
+  if (deviceDayKey(at) !== dayKey) return NaN;
+  return at.getTime();
+}
+
 export function planWorkout(action: PlanWorkoutAction): ChatActionResult {
   const { date, time, note, exercises } = action.input || {};
-  const today = getKyivDayKey();
+  const today = deviceDayKey();
   const targetDate = date && /^\d{4}-\d{2}-\d{2}$/.test(date) ? date : today;
   const timeStr =
     time && /^\d{1,2}:\d{2}$/.test(String(time).trim())
       ? String(time).trim().padStart(5, "0")
       : "09:00";
-  const startedAtTs = kyivWallClockTs(targetDate, timeStr);
+  const startedAtTs = deviceWallClockTs(targetDate, timeStr);
   if (!Number.isFinite(startedAtTs)) {
     return "Некоректна дата або час.";
   }
@@ -81,18 +118,15 @@ export function planWorkout(action: PlanWorkoutAction): ChatActionResult {
         .filter((ex) => ex && ex.name)
         .map((ex, i) => {
           const setsN = Math.max(1, Math.min(20, Number(ex.sets) || 3));
-          const reps =
-            ex.reps != null && Number.isFinite(Number(ex.reps))
-              ? Number(ex.reps)
-              : 0;
           const weightKg =
             ex.weight != null && Number.isFinite(Number(ex.weight))
               ? Number(ex.weight)
               : 0;
-          const sets: WorkoutSet[] = Array.from({ length: setsN }, () => ({
-            weightKg,
-            reps,
-          }));
+          // logic-18: план сіє НЕзараховані рядки (`reps: 0`), як старт
+          // програми. Повтори з запиту в рядок не пишуться: рядок із ними вже
+          // «виконаний підхід» (`isSetCompleted`), а поля плану у
+          // `WorkoutItem` немає (`ProgramSessionDef.plan` — каталог програми).
+          const sets = buildPlannedSets(setsN, weightKg);
           return buildWorkoutItemFromExercise(
             resolver.resolve(String(ex.name).trim()),
             `i_${Date.now().toString(36)}_${i}_${crypto.randomUUID()}`,
@@ -115,7 +149,13 @@ export function planWorkout(action: PlanWorkoutAction): ChatActionResult {
   persistFizrukCustomExercises(resolver.created);
   persistFizrukWorkouts([newW, ...readFizrukWorkouts()]);
   const exCount = items.length;
-  return `Тренування заплановано на ${targetDate} о ${timeStr}${note ? ` ("${note}")` : ""}: ${exCount} вправ${exCount === 1 ? "а" : exCount >= 2 && exCount <= 4 ? "и" : ""} (id:${wid})`;
+  // Модель не має переказати «3×10 записано»: повтори з запиту не зберігаються.
+  const repsAsked =
+    Array.isArray(exercises) && exercises.some((ex) => ex?.reps != null);
+  const repsNote = repsAsked
+    ? ". Повтори в план не записуються: підхід зараховується, коли його зроблять"
+    : "";
+  return `Тренування заплановано на ${targetDate} о ${timeStr}${note ? ` ("${note}")` : ""}: ${exCount} вправ${exCount === 1 ? "а" : exCount >= 2 && exCount <= 4 ? "и" : ""} (id:${wid})${repsNote}`;
 }
 
 export function logSet(action: LogSetAction): ChatActionResult {

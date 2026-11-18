@@ -153,7 +153,8 @@ export function buildWeeklyHabitPctText(monPrev: Date, now: Date): string {
     habits,
     state.completions,
     weekDays,
-    { pausedFrom: dateKeyFromDate(now) },
+    // П-18 (А): день «не зміг» поза знаменником, як у Звітах і дайджесті.
+    { pausedFrom: dateKeyFromDate(now), skips: state.skips },
   );
   return period.scheduled > 0 ? `звички ${period.pct}%` : "";
 }

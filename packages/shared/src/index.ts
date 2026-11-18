@@ -58,6 +58,7 @@ export * from "./hubchat/toolNames";
 // — state-mutating vs advice/read-only-з-синтезом класифікація tool-ів,
 // одне джерело істини поруч із реєстром імен вище.
 export * from "./hubchat/toolOutcomeClass";
+export * from "./hubchat/turnRefs";
 
 // Канонічні межі числових полів заміру тіла (Фізрук) — єдине джерело
 // правди для доменного реєстру полів і серверного sync-апплаєра.
