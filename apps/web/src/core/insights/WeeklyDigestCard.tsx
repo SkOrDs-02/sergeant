@@ -18,6 +18,7 @@ import { safeReadStringLS, safeWriteLS } from "@shared/lib/storage/storage";
 import {
   useWeeklyDigest,
   useDigestHistory,
+  useAutoDigestPending,
   getWeekKey,
   aggregateNutrition,
 } from "./useWeeklyDigest";
@@ -130,6 +131,12 @@ interface DigestContentProps {
   isCurrentWeek: boolean;
   /** Поточний АБО щойно завершений тиждень: для них дозволена (пере)генерація. */
   canGenerate: boolean;
+  /**
+   * Автогенерація чи читання серверної копії звіту за МИНУЛИЙ тиждень у
+   * польоті (`useAutoDigestPending`). Порожній стан поточного тижня тоді
+   * каже, що звіт збирається, а не мовчить.
+   */
+  autoDigestPending?: boolean | undefined;
   onGenerate: () => void;
   onUpdate: () => void;
   onPlayStories: () => void;
@@ -152,6 +159,7 @@ function DigestContent({
   insufficientData,
   isCurrentWeek,
   canGenerate,
+  autoDigestPending = false,
   onGenerate,
   onUpdate,
   onPlayStories,
@@ -257,13 +265,25 @@ function DigestContent({
   // тиждень (звіт ще прийде) від давнішого (не збережено — і вже не буде).
   const emptySlot = (
     <div className="px-4 pb-4">
-      <p className="text-style-body text-muted text-center py-2 leading-relaxed">
-        {!canGenerate
-          ? "Звіт за цей тиждень не збережено"
-          : isCurrentWeek
-            ? "Звіт зʼявиться сам, коли тиждень завершиться і ти вперше відкриєш головну."
-            : "Звіт за цей тиждень ще не зібрано."}
-      </p>
+      {isCurrentWeek && autoDigestPending ? (
+        // С-3 (а): звіт за минулий тиждень саме збирається (рішення
+        // власника 2026-11-18). Після успіху картка сама перейде на нього
+        // (історія реактивна), після відмови повернеться чесний порожній стан.
+        <p
+          role="status"
+          className="text-style-body text-muted text-center py-2 leading-relaxed"
+        >
+          Збираю звіт за минулий тиждень…
+        </p>
+      ) : (
+        <p className="text-style-body text-muted text-center py-2 leading-relaxed">
+          {!canGenerate
+            ? "Звіт за цей тиждень не збережено"
+            : isCurrentWeek
+              ? "Звіт зʼявиться сам, коли тиждень завершиться і ти вперше відкриєш головну."
+              : "Звіт за цей тиждень ще не зібрано."}
+        </p>
+      )}
     </div>
   );
 
@@ -419,6 +439,7 @@ export function WeeklyDigestCard({
     new Date(new Date(currentWeekKey + "T12:00:00").getTime() - 7 * 86_400_000),
   );
   const hasDigestFor = (wk: string) => history.some((h) => h.weekKey === wk);
+  const autoDigestPending = useAutoDigestPending(previousWeekKey);
   const [pickedWeekKey, setSelectedWeekKey] = useState<string | null>(null);
   const selectedWeekKey =
     pickedWeekKey ??
@@ -611,6 +632,7 @@ export function WeeklyDigestCard({
           insufficientData={insufficientData}
           isCurrentWeek={isCurrentWeek}
           canGenerate={canGenerate}
+          autoDigestPending={autoDigestPending}
           onGenerate={handleGenerate}
           onUpdate={handleGenerate}
           onPlayStories={() => setStoriesOpen(true)}

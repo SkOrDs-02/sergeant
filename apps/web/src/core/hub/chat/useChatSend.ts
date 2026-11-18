@@ -34,7 +34,7 @@ import {
 } from "@sergeant/shared";
 import { trackEvent } from "../../observability/analytics";
 import { parseToolCalls } from "./toolCallSchema";
-import { describeToolStep } from "./chatProgress";
+import { SYNTHESIS_STEP_LABEL, describeToolStep } from "./chatProgress";
 import {
   CANCELLED_BY_USER_TEXT,
   HUB_CHAT_HELP_TEXT,
@@ -544,7 +544,8 @@ export function useChatSend({
           const handlerResults = await executeActions(
             toolCalls as Parameters<typeof executeActions>[0],
           );
-          setStep(null);
+          // Друга фаза: інструменти відпрацювали, далі модель пише відповідь.
+          setStep(SYNTHESIS_STEP_LABEL);
 
           // `hubchat_tool_invoked` — подія стояла в каталозі
           // (`ANALYTICS_EVENTS`) із квітня, закріплена тестом, і НІХТО її не

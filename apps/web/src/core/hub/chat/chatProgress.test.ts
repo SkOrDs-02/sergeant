@@ -1,5 +1,9 @@
 import { describe, expect, it } from "vitest";
-import { MULTI_TOOL_STEP_LABEL, describeToolStep } from "./chatProgress";
+import {
+  MULTI_TOOL_STEP_LABEL,
+  SYNTHESIS_STEP_LABEL,
+  describeToolStep,
+} from "./chatProgress";
 
 describe("describeToolStep", () => {
   it("один інструмент дає його підпис з каталогу", () => {
@@ -19,5 +23,11 @@ describe("describeToolStep", () => {
   it("порожній батч або невідомий інструмент дають null (нейтральний підпис)", () => {
     expect(describeToolStep([])).toBeNull();
     expect(describeToolStep(["no_such_tool"])).toBeNull();
+  });
+});
+
+describe("SYNTHESIS_STEP_LABEL", () => {
+  it("нейтральний підпис другої фази: 1-ша особа, з трикрапкою, як «Думаю…»", () => {
+    expect(SYNTHESIS_STEP_LABEL).toBe("Пишу відповідь…");
   });
 });

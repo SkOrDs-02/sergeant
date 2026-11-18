@@ -39,6 +39,7 @@ vi.mock("@shared/hooks/useToast", () => ({
 }));
 
 import { useChatSend } from "./useChatSend";
+import { SYNTHESIS_STEP_LABEL } from "./chatProgress";
 
 let client: QueryClient;
 function wrapper({ children }: { children: ReactNode }) {
@@ -81,7 +82,7 @@ afterEach(() => {
 });
 
 describe("useChatSend — крок у бульбашці очікування", () => {
-  it("перший хід: step null; виконання інструмента: його підпис; синтез: знову null", async () => {
+  it("перший хід: step null; виконання інструмента: його підпис; синтез: «Пишу відповідь…»; кінець: null", async () => {
     const first = deferred<unknown>();
     const exec = deferred<unknown>();
     const synth = deferred<Response>();
@@ -118,7 +119,8 @@ describe("useChatSend — крок у бульбашці очікування", 
       ]);
     });
     await waitFor(() => expect(streamMock).toHaveBeenCalled());
-    expect(result.current.step).toBeNull();
+    // Друга фаза (рішення 2026-11-18): інструменти відпрацювали, модель пише.
+    expect(result.current.step).toBe(SYNTHESIS_STEP_LABEL);
     expect(result.current.loading).toBe(true);
 
     await act(async () => {
@@ -129,7 +131,45 @@ describe("useChatSend — крок у бульбашці очікування", 
     expect(result.current.step).toBeNull();
   });
 
-  it("текстова відповідь без інструментів не показує жодного кроку", async () => {
+  it("хід із синхронним інструментом: «Думаю…» → «Пишу відповідь…» → кінець, без вигаданих кроків", async () => {
+    sendMock.mockResolvedValue({
+      tool_calls: [
+        { id: "tc1", name: "category_breakdown", input: { days: 30 } },
+      ],
+      tool_calls_raw: [{ id: "tc1" }],
+    });
+    // Синхронний виконавець: результат уже готовий.
+    executeActionsMock.mockResolvedValue([
+      { name: "category_breakdown", result: "Продукти 4 792 ₴", ok: true },
+    ]);
+    const synth = deferred<Response>();
+    streamMock.mockReturnValue(synth.promise);
+    const seen: Array<string | null> = [];
+    const { result } = renderHook(
+      () => {
+        const r = useChatSend({ messages: [], setMessages: vi.fn() });
+        if (seen[seen.length - 1] !== r.step) seen.push(r.step);
+        return r;
+      },
+      { wrapper },
+    );
+    let sending!: Promise<void>;
+    act(() => {
+      sending = result.current.send("розбий витрати");
+    });
+    await waitFor(() => expect(streamMock).toHaveBeenCalled());
+    expect(result.current.step).toBe(SYNTHESIS_STEP_LABEL);
+    await act(async () => {
+      synth.resolve(jsonResponse({ text: "Найбільше на продукти." }));
+      await sending;
+    });
+    // Підпис інструмента може не встигнути намалюватись (синхронний), тож
+    // його не вимагаємо; решта послідовності точна.
+    const phases = seen.filter((s) => s !== "Рахую витрати за категоріями");
+    expect(phases).toEqual([null, SYNTHESIS_STEP_LABEL, null]);
+  });
+
+  it("текстова відповідь без інструментів не показує жодного кроку (другої фази немає)", async () => {
     sendMock.mockResolvedValue({ text: "Привіт" });
     const seen: Array<string | null> = [];
     const { result } = renderHook(

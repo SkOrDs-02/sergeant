@@ -4,10 +4,15 @@ import { cleanup, render, screen } from "@testing-library/react";
 
 // `vi.mock` is hoisted above any plain `const`, so we use `vi.hoisted` to
 // share fresh `vi.fn()` instances between the mock factory and the tests.
-const { useWeeklyDigestMock, useDigestHistoryMock } = vi.hoisted(() => ({
-  useWeeklyDigestMock: vi.fn(),
-  useDigestHistoryMock: vi.fn(),
-}));
+const { useWeeklyDigestMock, useDigestHistoryMock, autoPendingMock } =
+  vi.hoisted(() => ({
+    useWeeklyDigestMock: vi.fn(),
+    useDigestHistoryMock: vi.fn(),
+    autoPendingMock: vi.fn((weekKey: string) => {
+      void weekKey;
+      return false;
+    }),
+  }));
 
 // Stub the digest-history overlay (irrelevant to the 4-state contract).
 vi.mock("./WeeklyDigestStories", () => ({
@@ -17,6 +22,7 @@ vi.mock("./WeeklyDigestStories", () => ({
 vi.mock("./useWeeklyDigest", () => ({
   useWeeklyDigest: (...args: unknown[]) => useWeeklyDigestMock(...args),
   useDigestHistory: (...args: unknown[]) => useDigestHistoryMock(...args),
+  useAutoDigestPending: (weekKey: string) => autoPendingMock(weekKey),
   // Без аргументу — поточний тиждень, з датою — минулий (картка рахує його
   // як «поточний мінус 7 днів»).
   getWeekKey: (d?: Date) => (d ? "2025-11-03" : "2025-11-10"),
@@ -37,6 +43,7 @@ describe("WeeklyDigestCard — DataState routing", () => {
   beforeEach(() => {
     vi.clearAllMocks();
     useDigestHistoryMock.mockReturnValue({ data: [] });
+    autoPendingMock.mockReturnValue(false);
   });
 
   // The shared apps/web vitest setup (src/test/setup.ts) does not register
@@ -93,6 +100,52 @@ describe("WeeklyDigestCard — DataState routing", () => {
     ).toBeInTheDocument();
     expect(screen.queryByText(/у понеділок/i)).toBeNull();
     expect(screen.queryByLabelText(/генерую звіт тижня/i)).toBeNull();
+  });
+
+  // С-3 (а), рішення власника 2026-11-18: автогенерація чи читання серверної
+  // копії звіту за минулий тиждень у польоті — картка каже, що звіт
+  // збирається, а не показує порожній стан, ніби нічого не відбувається.
+  it("while last week's auto report is in flight, the card says it is being prepared", () => {
+    autoPendingMock.mockReturnValue(true);
+    useWeeklyDigestMock.mockReturnValue({
+      digest: null,
+      loading: false,
+      error: null,
+      weekRange: "10 — 16 листоп.",
+      generate: vi.fn(),
+      isCurrentWeek: true,
+      canGenerate: true,
+    });
+
+    render(<WeeklyDigestCard />);
+
+    expect(autoPendingMock).toHaveBeenCalledWith("2025-11-03");
+    expect(screen.getByRole("status")).toHaveTextContent(
+      "Збираю звіт за минулий тиждень…",
+    );
+    expect(screen.queryByText(/коли тиждень завершиться/i)).toBeNull();
+  });
+
+  it("after the auto report settles without a report (insufficient data or error), the honest empty state returns", () => {
+    autoPendingMock.mockReturnValue(false);
+    useWeeklyDigestMock.mockReturnValue({
+      digest: null,
+      loading: false,
+      error: null,
+      weekRange: "10 — 16 листоп.",
+      generate: vi.fn(),
+      isCurrentWeek: true,
+      canGenerate: true,
+    });
+
+    render(<WeeklyDigestCard />);
+
+    expect(
+      screen.getByText(
+        "Звіт зʼявиться сам, коли тиждень завершиться і ти вперше відкриєш головну.",
+      ),
+    ).toBeInTheDocument();
+    expect(screen.queryByText(/Збираю звіт/)).toBeNull();
   });
 
   it("empty slot for the finished week does not promise a Monday that already passed", () => {

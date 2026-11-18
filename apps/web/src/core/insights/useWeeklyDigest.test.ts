@@ -123,10 +123,12 @@ vi.mock("@shared/lib/storage/weeklyDigestStorage", () => ({
 vi.mock("@shared/lib/api/queryKeys", () => ({
   coachKeys: {
     all: ["coach"],
+    memory: ["coach", "memory"],
   },
   digestKeys: {
     byWeek: (wk: string) => ["digest", "week", wk],
     history: ["digest", "history"],
+    generate: (wk: string) => ["digest", "generate", wk],
   },
 }));
 

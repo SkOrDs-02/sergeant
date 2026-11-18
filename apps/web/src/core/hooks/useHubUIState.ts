@@ -43,20 +43,56 @@ export interface HubUIState {
   /** Відкрити пошук із готовим запитом (порожній — як `setSearchOpen(true)`). */
   openSearch: (query?: string) => void;
   closeSearch: () => void;
+  /**
+   * Пошук ініціює навігацію: закрити його, щойно `location.key` зміниться.
+   * Кличе `useCloseAfterNavigation` перед `navigate`.
+   */
+  closeSearchAfterNavigation: () => void;
 }
 
 export function useHubUIState(): HubUIState {
-  const [searchOpen, setSearchOpenRaw] = useState(false);
+  const [searchOpenRaw, setSearchOpenRaw] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
+  const routerLocation = useLocation();
+  // `location.key`, з якого пошук ініціював навігацію (тап по хіту), або
+  // `null`. Щойно ключ інший, пошук закритий у тому самому рендері.
+  //
+  // AI-CONTEXT: закриття ПІСЛЯ навігації (`useCloseAfterNavigation`, захист
+  // від відкату історії на холодному чанку) раніше жило лише всередині
+  // пошуку. Але зміна адреси розмонтовує головну разом із пошуком у тому ж
+  // коміті, тож його ефект не встигав викликати `onClose`, і `ModuleShell`
+  // малював власний порожній пошук поверх щойно відкритого модуля (кадри
+  // Фініка 2026-11-18, і холодний, і теплий чанк). Тепер намір «закрити
+  // після навігації» тримає цей хук у `RootLayout`, який не розмонтовується.
+  // Відкриття пошуку з модуля через `goToHub` + `openSearch` наміру не
+  // ставить, тож перехід на хаб пошук не закриває.
+  const [closeAfterKey, setCloseAfterKey] = useState<string | null>(null);
+  // Рендер-час (як `getDerivedStateFromProps`), а не ефект: модуль, що
+  // монтується на новому маршруті, не встигає намалювати пошук навіть на кадр.
+  useSyncedFromKey(routerLocation.key, () => {
+    if (closeAfterKey === null) return;
+    setSearchOpenRaw(false);
+    setSearchQuery("");
+    setCloseAfterKey(null);
+  });
+  const searchOpen =
+    searchOpenRaw &&
+    (closeAfterKey === null || closeAfterKey === routerLocation.key);
   const setSearchOpen = useCallback((value: boolean) => {
     if (!value) setSearchQuery("");
+    setCloseAfterKey(null);
     setSearchOpenRaw(value);
   }, []);
   const openSearch = useCallback((query: string = "") => {
     setSearchQuery(query);
+    setCloseAfterKey(null);
     setSearchOpenRaw(true);
   }, []);
-  const routerLocation = useLocation();
+  const routerKey = routerLocation.key;
+  const closeSearchAfterNavigation = useCallback(
+    () => setCloseAfterKey(routerKey),
+    [routerKey],
+  );
   const location = useBrowserLocation(routerLocation);
   const navigate = useNavigate();
   const [hubView, setHubViewRaw] = useState<HubView>(() =>
@@ -136,5 +172,6 @@ export function useHubUIState(): HubUIState {
     setSearchOpen,
     openSearch,
     closeSearch,
+    closeSearchAfterNavigation,
   };
 }

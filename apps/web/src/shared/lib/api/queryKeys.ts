@@ -30,6 +30,9 @@ export const digestKeys = {
   all: ["weekly-digest"] as const,
   history: ["weekly-digest", "history"] as const,
   byWeek: (weekKey: string) => ["weekly-digest", weekKey] as const,
+  /** Ключ МУТАЦІЇ генерації звіту тижня (стан «звіт збирається», С-3 (а)). */
+  generate: (weekKey: string) =>
+    ["weekly-digest", "generate", weekKey] as const,
 };
 
 // ─── Nutrition ────────────────────────────────────────────────────────────

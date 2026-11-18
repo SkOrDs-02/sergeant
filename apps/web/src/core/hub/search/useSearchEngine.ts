@@ -26,6 +26,8 @@ import { useCloseAfterNavigation } from "./useCloseAfterNavigation";
 
 export interface UseSearchEngineOptions {
   onClose: () => void;
+  /** Див. `useCloseAfterNavigation(…, onNavigationStart)`. */
+  onCloseAfterNavigation?: (() => void) | undefined;
   onOpenModule: (moduleId: string) => void;
   /** Запит, з яким пошук відкрили ззовні; читається лише на маунті. */
   initialQuery?: string | undefined;
@@ -76,6 +78,7 @@ export interface UseSearchEngineResult {
  */
 export function useSearchEngine({
   onClose,
+  onCloseAfterNavigation,
   onOpenModule,
   initialQuery = "",
 }: UseSearchEngineOptions): UseSearchEngineResult {
@@ -88,7 +91,10 @@ export function useSearchEngine({
   const inlineAi = useInlineAiRail();
   const inlineAsk = inlineAi.ask;
   const inlineReset = inlineAi.reset;
-  const { navigating, closeAfterNavigation } = useCloseAfterNavigation(onClose);
+  const { navigating, closeAfterNavigation } = useCloseAfterNavigation(
+    onClose,
+    onCloseAfterNavigation,
+  );
 
   useEffect(() => {
     inputRef.current?.focus();

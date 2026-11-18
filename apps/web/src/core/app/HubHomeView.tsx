@@ -212,6 +212,7 @@ export function HubHomeView(props: HubHomeViewProps) {
         searchOpen={ui.searchOpen}
         searchQuery={ui.searchQuery}
         onCloseSearch={ui.closeSearch}
+        onCloseSearchAfterNavigation={ui.closeSearchAfterNavigation}
         onOpenModule={openFromSearch}
       />
       {shortcutsOpen && (

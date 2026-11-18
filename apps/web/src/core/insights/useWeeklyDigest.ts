@@ -1,5 +1,7 @@
 import { useCallback } from "react";
 import {
+  useIsFetching,
+  useIsMutating,
   useMutation,
   useQuery,
   useQueryClient,
@@ -479,6 +481,20 @@ function isInsufficientDataError(err: unknown): boolean {
   return code === "INSUFFICIENT_DATA";
 }
 
+/**
+ * Чи звіт за `weekKey` зараз збирається: генерація цього тижня в польоті
+ * (ключ мутації `digestKeys.generate`) або автохук читає серверну копію
+ * (`coachKeys.memory`, `digestServerCopy.ts`). Джерело правди — сам React
+ * Query, окремого прапорця немає (С-3 (а), рішення власника 2026-11-18).
+ */
+export function useAutoDigestPending(weekKey: string): boolean {
+  const generating = useIsMutating({
+    mutationKey: digestKeys.generate(weekKey),
+  });
+  const readingServerCopy = useIsFetching({ queryKey: coachKeys.memory });
+  return generating + readingServerCopy > 0;
+}
+
 export function useDigestHistory() {
   return useQuery({
     queryKey: weeklyDigestHistoryQueryKey,
@@ -517,6 +533,7 @@ export function useWeeklyDigest(selectedWeekKey?: string) {
   });
 
   const mutation = useMutation({
+    mutationKey: digestKeys.generate(weekKey),
     mutationFn: generateWeeklyDigest,
     onSuccess: ({ report, generatedAt, weekKey: wk, weekRange: wr }) => {
       const newDigest = {
