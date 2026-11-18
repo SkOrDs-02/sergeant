@@ -187,7 +187,10 @@ import { brotliCompressSync, constants } from "node:zlib";
  *
  * Актуальний розбір і напрямки — `docs/work/specs/tech-debt/frontend.md`.
  */
-const DEFAULT_LIMIT_BYTES = 268_000;
+// Ратчет 2026-11-18 угору 268 → 274 kB (рішення власника): security-бампи
+// zod 4.4 → 4.6 і better-auth 1.7 (critical-advisory) дали +7.2 kB eager.
+// Деталі й план повернення — bundle-budget-ratchet-log.md § 2026-11-18.
+const DEFAULT_LIMIT_BYTES = 274_000;
 
 const DEFAULT_DIST = "apps/server/dist";
 
