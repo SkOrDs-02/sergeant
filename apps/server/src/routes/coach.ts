@@ -34,10 +34,18 @@ import {
 export function createCoachRouter(): Router {
   const r = Router();
   r.use("/api/coach", setModule("coach"));
-  // Pre-auth IP-бакет читання стоїть ПЕРЕД `requireSession()` (як у
-  // `routes/ai-memory.ts`): та на невдачі шле 401 без `next()`, тож
-  // безсесійний флуд інакше не діставався б до жодного бакета.
-  r.get("/api/coach/memory", rateLimitExpress(AI_MEMORY_BROWSE_IP_RATE_LIMIT));
+  // Читання памʼяті реєструється ОДНИМ роутом і ПЕРЕД роутерним
+  // `requireSession()` нижче: pre-auth IP-бакет мусить стояти до сесії (та
+  // на невдачі шле 401 без `next()`, тож безсесійний флуд інакше не
+  // діставався б до жодного бакета), а per-user бакет після неї. Два окремі
+  // `r.get` на той самий шлях давали дубль у знімку `registerRoutes`.
+  r.get(
+    "/api/coach/memory",
+    rateLimitExpress(AI_MEMORY_BROWSE_IP_RATE_LIMIT),
+    requireSession(),
+    rateLimitExpress(AI_MEMORY_BROWSE_RATE_LIMIT),
+    coachMemoryGet,
+  );
   // Усі coach-роути потребують сесії, тож вона стоїть на рівні роутера і
   // ПЕРЕД per-user лімітерами (B31 у `chat.ts`; тут — SEC-1 продуктового
   // аудиту 2026-09): `rateLimitSubject` бакетить по `req.user.id`, а без
@@ -49,11 +57,6 @@ export function createCoachRouter(): Router {
     limit: 20,
     windowMs: 60 * 60_000,
   });
-  r.get(
-    "/api/coach/memory",
-    rateLimitExpress(AI_MEMORY_BROWSE_RATE_LIMIT),
-    coachMemoryGet,
-  );
   r.post("/api/coach/memory", coachRateLimit, coachMemoryPost);
   r.post(
     "/api/coach/insight",
