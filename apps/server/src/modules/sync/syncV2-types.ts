@@ -178,6 +178,10 @@ export const APPLY_REJECT_REASONS = [
   // Міграція 171 (Фізрук, П-10): `program_id` / `program_slot` тренування —
   // обидва NULL або рядок + ціле ≥ 0 (хендлер `fizruk/applySync.ts`).
   "invalid_program_ref",
+  // Міграція 172 (Фізрук, тип виміру): `measure` вправи поза
+  // `EXERCISE_MEASURES` (`fizruk/setMeasureFields.ts`). Секунди й метри
+  // підходу йдуть наявними `invalid_duration_sec` / `invalid_distance_m`.
+  "invalid_measure",
 ] as const;
 
 export type ApplyRejectReason = (typeof APPLY_REJECT_REASONS)[number];

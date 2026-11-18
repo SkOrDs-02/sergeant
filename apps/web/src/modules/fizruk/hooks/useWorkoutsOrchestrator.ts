@@ -19,6 +19,7 @@ import {
 } from "./useWorkoutsLifecycle";
 import { useRestTimer } from "../context/RestTimerContext";
 import { recoveryConflictsForExercise } from "@sergeant/fizruk-domain";
+import { exerciseItemSeed } from "../lib/exerciseItemSeed";
 import type {
   ExerciseLocation,
   RawExerciseDef,
@@ -279,17 +280,13 @@ export function useWorkoutsOrchestrator(
   const addExerciseToActive = useCallback(
     (ex: RawExerciseDef) => {
       if (!activeWorkoutId) return;
-      const isCardio = ex.primaryGroup === "cardio";
       addItem(activeWorkoutId, {
         exerciseId: ex.id,
         nameUk: ex?.name?.uk || ex?.name?.en || ex.id,
         primaryGroup: ex.primaryGroup,
         musclesPrimary: ex?.muscles?.primary || [],
         musclesSecondary: ex?.muscles?.secondary || [],
-        type: isCardio ? "distance" : "strength",
-        ...(isCardio ? {} : { sets: [{ weightKg: 0, reps: 0 }] }),
-        durationSec: 0,
-        distanceM: 0,
+        ...exerciseItemSeed(ex),
       });
     },
     [activeWorkoutId, addItem],
@@ -338,17 +335,13 @@ export function useWorkoutsOrchestrator(
       const w = createWorkout();
       const exIdToItemId: Record<string, string> = {};
       for (const ex of picks) {
-        const isCardio = ex.primaryGroup === "cardio";
         const itemId = addItem(w.id, {
           exerciseId: ex.id,
           nameUk: ex?.name?.uk || ex?.name?.en || ex.id,
           primaryGroup: ex.primaryGroup,
           musclesPrimary: ex?.muscles?.primary || [],
           musclesSecondary: ex?.muscles?.secondary || [],
-          type: isCardio ? "distance" : "strength",
-          ...(isCardio ? {} : { sets: [{ weightKg: 0, reps: 0 }] }),
-          durationSec: 0,
-          distanceM: 0,
+          ...exerciseItemSeed(ex),
         });
         exIdToItemId[ex.id] = itemId;
       }

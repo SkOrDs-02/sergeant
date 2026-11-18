@@ -19,3 +19,5 @@ export * from "./activityWeight.js";
 export * from "./nextSetAging.js";
 export * from "./setCompletion.js";
 export * from "./plannedSets.js";
+export * from "./measure.js";
+export * from "./measureRecords.js";

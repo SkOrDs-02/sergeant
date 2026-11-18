@@ -150,6 +150,34 @@ describe("вправи на час у програмах (доручення fou
     }
   });
 
+  it("тип виміру веде план: вибір людини сильніший, утримання поза мапою бере діапазон утримань", () => {
+    // Людина перемкнула планку на «вага × повтори» (Р-2) — план повторів.
+    expect(
+      programExercisePlan(
+        session("home_push"),
+        findExerciseById("plank"),
+        "weight_reps",
+      ).kind,
+    ).toBe("reps");
+    // Повтори на вправі, що за каталогом на час, — секунди за класом типу.
+    expect(
+      programExercisePlan(
+        session("home_push"),
+        findExerciseById("pushup"),
+        "time",
+      ),
+    ).toEqual({
+      kind: "time",
+      sets: 3,
+      secMin: PROGRAM_TIMED_SEC_RANGES.hold.min,
+      secMax: PROGRAM_TIMED_SEC_RANGES.hold.max,
+    });
+    expect(
+      programExercisePlan(session("home_push"), findExerciseById("side_plank"))
+        .kind,
+    ).toBe("time");
+  });
+
   it("план вправи з привʼязки тренування", () => {
     expect(
       programPlanForWorkoutItem(

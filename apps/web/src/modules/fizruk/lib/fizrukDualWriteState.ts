@@ -357,6 +357,7 @@ function toItemSnapshot(item: WorkoutItem): FizrukItemSnapshot {
     durationSec?: number;
     distanceM?: number;
     chosenVariant?: string;
+    measure?: string;
   } = {
     id: String(item.id),
     exerciseId: String(item.exerciseId ?? ""),
@@ -375,6 +376,12 @@ function toItemSnapshot(item: WorkoutItem): FizrukItemSnapshot {
       weightKg: typeof s.weightKg === "number" ? s.weightKg : 0,
       reps: typeof s.reps === "number" ? s.reps : 0,
       ...(typeof s["rpe"] === "number" ? { rpe: s["rpe"] } : {}),
+      // Тип виміру (спека fizruk-exercise-measure-type): секунди й метри
+      // ОДНОГО підходу — той самий білий список, що `chosenVariant`.
+      ...(typeof s.durationSec === "number"
+        ? { durationSec: s.durationSec }
+        : {}),
+      ...(typeof s.distanceM === "number" ? { distanceM: s.distanceM } : {}),
     }));
   }
   if (typeof item.durationSec === "number") out.durationSec = item.durationSec;
@@ -383,6 +390,7 @@ function toItemSnapshot(item: WorkoutItem): FizrukItemSnapshot {
   // вибір варіанта не переживе перезавантаження, а лічильник трьох
   // полегшень поспіль ніколи не спрацює.
   if (item.chosenVariant !== undefined) out.chosenVariant = item.chosenVariant;
+  if (typeof item.measure === "string") out.measure = item.measure;
   return out as FizrukItemSnapshot;
 }
 

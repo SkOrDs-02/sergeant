@@ -23,7 +23,8 @@ describe("syncV2 wire reason/type registries", () => {
     // із prefs_merge мусить нести JSON-обʼєкт).
     // Міграція 170 (Рутина): +5 причин лічильника й автовідмітки звички.
     // Міграція 171 (Фізрук): +1 `invalid_program_ref`.
-    expect(APPLY_REJECT_REASONS).toHaveLength(85);
+    // Міграція 172 (Фізрук, тип виміру): +1 `invalid_measure`.
+    expect(APPLY_REJECT_REASONS).toHaveLength(86);
     expect(new Set(APPLY_REJECT_REASONS).size).toBe(
       APPLY_REJECT_REASONS.length,
     );

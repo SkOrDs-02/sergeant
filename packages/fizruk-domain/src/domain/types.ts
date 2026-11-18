@@ -38,10 +38,17 @@ export interface ChecklistItem {
   label: string;
 }
 
-/** A single exercise set (weight × reps). */
+/**
+ * A single exercise set. Поля за типом виміру вправи (`measure.ts`):
+ * вага × повтори — `weightKg`/`reps`; час і дистанція — секунди й метри
+ * ОДНОГО підходу (`durationSec`/`distanceM`, спека типу виміру). Старі
+ * записи часу на підході не мають.
+ */
 export interface WorkoutSet {
   weightKg: number;
   reps: number;
+  durationSec?: number | undefined;
+  distanceM?: number | undefined;
   // Persisted payloads carry extra ad-hoc fields (e.g. `_at` annotations
   // attached when computing PR/last-top sets). Mirrors the loose shape of
   // `WorkoutItem`/`Workout` so consumers can structurally narrow without
@@ -65,6 +72,12 @@ export interface WorkoutItem {
   musclesPrimary: string[];
   musclesSecondary: string[];
   type: WorkoutItemType;
+  /**
+   * Тип виміру (`ExerciseMeasure`, `measure.ts`). Відсутнє = запис до фічі,
+   * тип виводиться з `type` (`itemMeasure`). `type` пишеться поруч як
+   * дзеркало для старих читачів (`measureToItemType`).
+   */
+  measure?: string | undefined;
   sets?: WorkoutSet[] | undefined;
   durationSec?: number | undefined;
   distanceM?: number | undefined;

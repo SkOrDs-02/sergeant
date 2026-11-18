@@ -129,6 +129,44 @@ describe("extractWorkoutSnapshots", () => {
     expect(snap!.items[0]!["chosenVariant"]).toBe("easier");
   });
 
+  it("проводить тип виміру й секунди/метри підходу крізь БІЛИЙ СПИСОК", () => {
+    // Спека fizruk-exercise-measure-type: без цього утримання після
+    // перезавантаження ставали «0 кг × 0», а тип — силовим.
+    const [snap] = extractWorkoutSnapshots([
+      {
+        id: "w4",
+        startedAt: "2026-11-18T10:00:00Z",
+        endedAt: null,
+        items: [
+          {
+            id: "i1",
+            exerciseId: "plank",
+            nameUk: "Планка",
+            primaryGroup: "core",
+            musclesPrimary: [],
+            musclesSecondary: [],
+            type: "time",
+            measure: "time",
+            sets: [
+              { weightKg: 0, reps: 0, durationSec: 30 },
+              { weightKg: 0, reps: 0, distanceM: 400 },
+            ],
+          },
+        ],
+        groups: [],
+        warmup: null,
+        cooldown: null,
+        note: "",
+      } as never,
+    ]);
+    const item = snap!.items[0]!;
+    expect(item["measure"]).toBe("time");
+    expect(item.sets).toEqual([
+      { weightKg: 0, reps: 0, durationSec: 30 },
+      { weightKg: 0, reps: 0, distanceM: 400 },
+    ]);
+  });
+
   it("defaults missing fields safely", () => {
     const [snap] = extractWorkoutSnapshots([
       { id: "w2", items: [{ id: "i", exerciseId: "" }] } as never,

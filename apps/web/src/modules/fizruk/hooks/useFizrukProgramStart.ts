@@ -7,6 +7,8 @@ import {
   latestClearedInjuryAtForExercise,
   normalizeWorkoutProgramRef,
   programExercisePlan,
+  measureToItemType,
+  resolveExerciseMeasure,
   progressionTopSet,
   recoveryConflictsForExercise,
   suggestNextSet,
@@ -162,33 +164,32 @@ export function useFizrukProgramStart({
             ? createWorkout({ programRef: ref })
             : createWorkout();
         for (const ex of picks) {
-          const isCardio = ex.primaryGroup === "cardio";
-          const plan = programExercisePlan(
-            session,
-            findExerciseById(ex.id) ?? ex,
-          );
-          // Утримання й переноска міряються часом: item типу `time` з однією
-          // сумарною тривалістю, без рядків повторень (доручення founder-а
-          // 2026-11-18). Секунд на підхід модель поки не має.
-          const isTimed = !isCardio && plan.kind === "time";
-          const suggestedWeight =
-            isCardio || isTimed
-              ? 0
-              : programStartWeightKg(ex, workouts, progressionKg, injuryMarks);
+          const catalogEx = findExerciseById(ex.id) ?? ex;
+          // Тип виміру з каталогу (спека fizruk-exercise-measure-type):
+          // утримання й переноски — на час, кардіо — дистанцією; план
+          // програми підлаштовується під тип, а не навпаки.
+          const measure = resolveExerciseMeasure(catalogEx);
+          const type = measureToItemType(measure);
+          const isStrength = type === "strength";
+          const plan = programExercisePlan(session, catalogEx, measure);
+          const suggestedWeight = isStrength
+            ? programStartWeightKg(ex, workouts, progressionKg, injuryMarks)
+            : 0;
           addItem(w.id, {
             exerciseId: ex.id,
             nameUk: ex?.name?.uk || ex?.name?.en || ex.id,
             primaryGroup: ex.primaryGroup || "",
             musclesPrimary: ex?.muscles?.primary || [],
             musclesSecondary: ex?.muscles?.secondary || [],
-            type: isCardio ? "distance" : isTimed ? "time" : "strength",
+            measure,
+            type,
             // План сесії як порожні рядки (П-9, OD-32): лічильник одразу
             // «0 з N», зарахованим рядок стає лише з повтореннями.
-            ...(isCardio || isTimed
-              ? {}
-              : { sets: buildPlannedSets(plan.sets, suggestedWeight) }),
+            ...(isStrength
+              ? { sets: buildPlannedSets(plan.sets, suggestedWeight) }
+              : {}),
             durationSec: 0,
-            ...(isCardio ? { distanceM: 0 } : {}),
+            ...(type === "distance" ? { distanceM: 0 } : {}),
           });
         }
         safeWriteLS(ACTIVE_WORKOUT_KEY, w.id);

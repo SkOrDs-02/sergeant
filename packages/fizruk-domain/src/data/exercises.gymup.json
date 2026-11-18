@@ -111,6 +111,7 @@
       },
       "primaryGroup": "chest",
       "met": 6,
+      "measure": "weight_reps",
       "muscles": {
         "primary": ["pectoralis_major"],
         "secondary": ["front_deltoid", "triceps", "serratus_anterior"]
@@ -127,6 +128,7 @@
       },
       "primaryGroup": "chest",
       "met": 5.5,
+      "measure": "weight_reps",
       "muscles": {
         "primary": ["pectoralis_major"],
         "secondary": ["front_deltoid", "triceps"]
@@ -143,6 +145,7 @@
       },
       "primaryGroup": "chest",
       "met": 6,
+      "measure": "weight_reps",
       "muscles": {
         "primary": ["pectoralis_major", "front_deltoid"],
         "secondary": ["triceps", "serratus_anterior"]
@@ -159,6 +162,7 @@
       },
       "primaryGroup": "chest",
       "met": 5.5,
+      "measure": "weight_reps",
       "muscles": {
         "primary": ["pectoralis_major", "front_deltoid"],
         "secondary": ["triceps"]
@@ -175,6 +179,7 @@
       },
       "primaryGroup": "chest",
       "met": 6,
+      "measure": "weight_reps",
       "muscles": {
         "primary": ["pectoralis_major", "pectoralis_minor"],
         "secondary": ["triceps", "front_deltoid"]
@@ -191,6 +196,7 @@
       },
       "primaryGroup": "chest",
       "met": 5.5,
+      "measure": "weight_reps",
       "muscles": {
         "primary": ["pectoralis_major", "pectoralis_minor"],
         "secondary": ["front_deltoid", "serratus_anterior"]
@@ -207,6 +213,7 @@
       },
       "primaryGroup": "chest",
       "met": 5.5,
+      "measure": "weight_reps",
       "muscles": {
         "primary": ["pectoralis_major"],
         "secondary": ["front_deltoid", "serratus_anterior"]
@@ -223,6 +230,7 @@
       },
       "primaryGroup": "chest",
       "met": 5,
+      "measure": "reps",
       "muscles": {
         "primary": ["pectoralis_major", "triceps"],
         "secondary": ["serratus_anterior", "front_deltoid"]
@@ -239,6 +247,7 @@
       },
       "primaryGroup": "chest",
       "met": 5,
+      "measure": "reps",
       "muscles": {
         "primary": ["pectoralis_major"],
         "secondary": ["triceps", "front_deltoid", "serratus_anterior"]
@@ -255,6 +264,7 @@
       },
       "primaryGroup": "chest",
       "met": 5,
+      "measure": "reps",
       "muscles": {
         "primary": ["pectoralis_major", "triceps"],
         "secondary": ["front_deltoid"]
@@ -271,6 +281,7 @@
       },
       "primaryGroup": "chest",
       "met": 5,
+      "measure": "reps",
       "muscles": {
         "primary": ["pectoralis_major", "pectoralis_minor"],
         "secondary": ["triceps", "front_deltoid"]
@@ -287,6 +298,7 @@
       },
       "primaryGroup": "chest",
       "met": 5.3,
+      "measure": "weight_reps",
       "muscles": {
         "primary": ["pectoralis_major", "pectoralis_minor"],
         "secondary": ["front_deltoid", "serratus_anterior"]
@@ -303,6 +315,7 @@
       },
       "primaryGroup": "chest",
       "met": 5.5,
+      "measure": "weight_reps",
       "muscles": {
         "primary": ["pectoralis_major"],
         "secondary": ["triceps", "front_deltoid"]
@@ -319,6 +332,7 @@
       },
       "primaryGroup": "chest",
       "met": 5.5,
+      "measure": "weight_reps",
       "muscles": {
         "primary": ["pectoralis_major", "pectoralis_minor"],
         "secondary": ["front_deltoid"]
@@ -335,6 +349,7 @@
       },
       "primaryGroup": "back",
       "met": 5,
+      "measure": "reps",
       "muscles": {
         "primary": ["latissimus_dorsi"],
         "secondary": ["biceps", "rear_deltoid", "rhomboids", "upper_back"]
@@ -351,6 +366,7 @@
       },
       "primaryGroup": "back",
       "met": 5,
+      "measure": "reps",
       "muscles": {
         "primary": ["latissimus_dorsi", "biceps"],
         "secondary": ["rear_deltoid", "rhomboids"]
@@ -367,6 +383,7 @@
       },
       "primaryGroup": "back",
       "met": 5,
+      "measure": "reps",
       "muscles": {
         "primary": ["latissimus_dorsi", "biceps"],
         "secondary": ["rear_deltoid", "upper_back", "forearms"]
@@ -383,6 +400,7 @@
       },
       "primaryGroup": "back",
       "met": 6,
+      "measure": "weight_reps",
       "muscles": {
         "primary": ["latissimus_dorsi", "rhomboids", "upper_back"],
         "secondary": ["biceps", "rear_deltoid", "erector_spinae", "forearms"]
@@ -399,6 +417,7 @@
       },
       "primaryGroup": "back",
       "met": 5.5,
+      "measure": "weight_reps",
       "muscles": {
         "primary": ["latissimus_dorsi", "rhomboids"],
         "secondary": ["biceps", "rear_deltoid", "forearms"]
@@ -415,6 +434,7 @@
       },
       "primaryGroup": "back",
       "met": 5.5,
+      "measure": "weight_reps",
       "muscles": {
         "primary": ["latissimus_dorsi"],
         "secondary": ["biceps", "rear_deltoid", "rhomboids"]
@@ -431,6 +451,7 @@
       },
       "primaryGroup": "back",
       "met": 5.5,
+      "measure": "weight_reps",
       "muscles": {
         "primary": ["latissimus_dorsi", "biceps"],
         "secondary": ["rhomboids", "rear_deltoid"]
@@ -447,6 +468,7 @@
       },
       "primaryGroup": "back",
       "met": 5.5,
+      "measure": "weight_reps",
       "muscles": {
         "primary": ["latissimus_dorsi", "rhomboids", "upper_back"],
         "secondary": ["biceps", "rear_deltoid", "forearms"]
@@ -463,6 +485,7 @@
       },
       "primaryGroup": "back",
       "met": 6,
+      "measure": "weight_reps",
       "muscles": {
         "primary": ["latissimus_dorsi", "rhomboids"],
         "secondary": ["biceps", "rear_deltoid", "trapezius"]
@@ -479,6 +502,7 @@
       },
       "primaryGroup": "back",
       "met": 5.5,
+      "measure": "weight_reps",
       "muscles": {
         "primary": ["erector_spinae"],
         "secondary": ["gluteus_maximus", "hamstrings"]
@@ -495,6 +519,7 @@
       },
       "primaryGroup": "back",
       "met": 5,
+      "measure": "reps",
       "muscles": {
         "primary": ["latissimus_dorsi", "rhomboids", "upper_back"],
         "secondary": ["biceps", "rear_deltoid"]
@@ -511,6 +536,7 @@
       },
       "primaryGroup": "back",
       "met": 5.3,
+      "measure": "weight_reps",
       "muscles": {
         "primary": ["latissimus_dorsi"],
         "secondary": ["rear_deltoid", "triceps"]
@@ -527,6 +553,7 @@
       },
       "primaryGroup": "back",
       "met": 5.5,
+      "measure": "weight_reps",
       "muscles": {
         "primary": ["latissimus_dorsi", "rhomboids"],
         "secondary": ["biceps", "rear_deltoid"]
@@ -543,6 +570,7 @@
       },
       "primaryGroup": "shoulders",
       "met": 5.5,
+      "measure": "weight_reps",
       "muscles": {
         "primary": ["front_deltoid", "lateral_deltoid"],
         "secondary": ["triceps", "trapezius", "serratus_anterior"]
@@ -559,6 +587,7 @@
       },
       "primaryGroup": "shoulders",
       "met": 5,
+      "measure": "weight_reps",
       "muscles": {
         "primary": ["front_deltoid", "lateral_deltoid"],
         "secondary": ["triceps", "trapezius"]
@@ -575,6 +604,7 @@
       },
       "primaryGroup": "shoulders",
       "met": 5,
+      "measure": "weight_reps",
       "muscles": {
         "primary": ["front_deltoid", "lateral_deltoid"],
         "secondary": ["triceps", "trapezius"]
@@ -591,6 +621,7 @@
       },
       "primaryGroup": "shoulders",
       "met": 5,
+      "measure": "weight_reps",
       "muscles": {
         "primary": ["front_deltoid", "lateral_deltoid", "rear_deltoid"],
         "secondary": ["triceps", "trapezius"]
@@ -607,6 +638,7 @@
       },
       "primaryGroup": "shoulders",
       "met": 5,
+      "measure": "weight_reps",
       "muscles": {
         "primary": ["lateral_deltoid"],
         "secondary": ["front_deltoid", "trapezius"]
@@ -623,6 +655,7 @@
       },
       "primaryGroup": "shoulders",
       "met": 4.8,
+      "measure": "weight_reps",
       "muscles": {
         "primary": ["lateral_deltoid"],
         "secondary": ["front_deltoid", "trapezius"]
@@ -639,6 +672,7 @@
       },
       "primaryGroup": "shoulders",
       "met": 5,
+      "measure": "weight_reps",
       "muscles": {
         "primary": ["front_deltoid"],
         "secondary": ["lateral_deltoid", "pectoralis_major"]
@@ -655,6 +689,7 @@
       },
       "primaryGroup": "shoulders",
       "met": 5,
+      "measure": "weight_reps",
       "muscles": {
         "primary": ["rear_deltoid"],
         "secondary": ["rhomboids", "trapezius", "upper_back"]
@@ -671,6 +706,7 @@
       },
       "primaryGroup": "shoulders",
       "met": 5.5,
+      "measure": "weight_reps",
       "muscles": {
         "primary": ["lateral_deltoid", "trapezius"],
         "secondary": ["front_deltoid", "biceps", "forearms"]
@@ -687,6 +723,7 @@
       },
       "primaryGroup": "shoulders",
       "met": 5,
+      "measure": "weight_reps",
       "muscles": {
         "primary": ["rear_deltoid"],
         "secondary": ["rhomboids", "trapezius", "upper_back"]
@@ -703,6 +740,7 @@
       },
       "primaryGroup": "shoulders",
       "met": 5.5,
+      "measure": "weight_reps",
       "muscles": {
         "primary": ["trapezius"],
         "secondary": ["neck", "forearms"]
@@ -719,6 +757,7 @@
       },
       "primaryGroup": "shoulders",
       "met": 5,
+      "measure": "weight_reps",
       "muscles": {
         "primary": ["front_deltoid", "lateral_deltoid"],
         "secondary": ["triceps"]
@@ -735,6 +774,7 @@
       },
       "primaryGroup": "shoulders",
       "met": 4,
+      "measure": "weight_reps",
       "muscles": {
         "primary": ["rear_deltoid"],
         "secondary": ["rhomboids", "upper_back"]
@@ -751,6 +791,7 @@
       },
       "primaryGroup": "biceps",
       "met": 4.5,
+      "measure": "weight_reps",
       "muscles": {
         "primary": ["biceps"],
         "secondary": ["forearms", "brachialis"]
@@ -767,6 +808,7 @@
       },
       "primaryGroup": "biceps",
       "met": 4,
+      "measure": "weight_reps",
       "muscles": {
         "primary": ["biceps"],
         "secondary": ["forearms"]
@@ -783,6 +825,7 @@
       },
       "primaryGroup": "biceps",
       "met": 4,
+      "measure": "weight_reps",
       "muscles": {
         "primary": ["biceps", "brachialis"],
         "secondary": ["forearms"]
@@ -799,6 +842,7 @@
       },
       "primaryGroup": "biceps",
       "met": 4,
+      "measure": "weight_reps",
       "muscles": {
         "primary": ["biceps"],
         "secondary": ["forearms"]
@@ -815,6 +859,7 @@
       },
       "primaryGroup": "biceps",
       "met": 4.5,
+      "measure": "weight_reps",
       "muscles": {
         "primary": ["biceps", "brachialis"],
         "secondary": ["forearms"]
@@ -831,6 +876,7 @@
       },
       "primaryGroup": "biceps",
       "met": 3.8,
+      "measure": "weight_reps",
       "muscles": {
         "primary": ["biceps"],
         "secondary": ["forearms"]
@@ -847,6 +893,7 @@
       },
       "primaryGroup": "biceps",
       "met": 4,
+      "measure": "weight_reps",
       "muscles": {
         "primary": ["biceps"],
         "secondary": ["forearms"]
@@ -863,6 +910,7 @@
       },
       "primaryGroup": "biceps",
       "met": 4.5,
+      "measure": "weight_reps",
       "muscles": {
         "primary": ["biceps"],
         "secondary": ["brachialis"]
@@ -879,6 +927,7 @@
       },
       "primaryGroup": "biceps",
       "met": 4.5,
+      "measure": "weight_reps",
       "muscles": {
         "primary": ["biceps", "brachialis"],
         "secondary": ["forearms"]
@@ -895,6 +944,7 @@
       },
       "primaryGroup": "biceps",
       "met": 3,
+      "measure": "weight_reps",
       "muscles": {
         "primary": ["biceps"],
         "secondary": ["forearms"]
@@ -911,6 +961,7 @@
       },
       "primaryGroup": "triceps",
       "met": 4,
+      "measure": "weight_reps",
       "muscles": {
         "primary": ["triceps"],
         "secondary": []
@@ -927,6 +978,7 @@
       },
       "primaryGroup": "triceps",
       "met": 4.5,
+      "measure": "weight_reps",
       "muscles": {
         "primary": ["triceps"],
         "secondary": []
@@ -943,6 +995,7 @@
       },
       "primaryGroup": "triceps",
       "met": 3.5,
+      "measure": "reps",
       "muscles": {
         "primary": ["triceps"],
         "secondary": ["pectoralis_major", "front_deltoid"]
@@ -959,6 +1012,7 @@
       },
       "primaryGroup": "triceps",
       "met": 4,
+      "measure": "weight_reps",
       "muscles": {
         "primary": ["triceps"],
         "secondary": []
@@ -975,6 +1029,7 @@
       },
       "primaryGroup": "triceps",
       "met": 4.5,
+      "measure": "weight_reps",
       "muscles": {
         "primary": ["triceps"],
         "secondary": ["pectoralis_major", "front_deltoid"]
@@ -991,6 +1046,7 @@
       },
       "primaryGroup": "triceps",
       "met": 4,
+      "measure": "weight_reps",
       "muscles": {
         "primary": ["triceps"],
         "secondary": []
@@ -1007,6 +1063,7 @@
       },
       "primaryGroup": "triceps",
       "met": 3.8,
+      "measure": "weight_reps",
       "muscles": {
         "primary": ["triceps"],
         "secondary": []
@@ -1023,6 +1080,7 @@
       },
       "primaryGroup": "triceps",
       "met": 3.5,
+      "measure": "weight_reps",
       "muscles": {
         "primary": ["triceps"],
         "secondary": ["front_deltoid", "pectoralis_major"]
@@ -1039,6 +1097,7 @@
       },
       "primaryGroup": "triceps",
       "met": 3,
+      "measure": "weight_reps",
       "muscles": {
         "primary": ["triceps"],
         "secondary": []
@@ -1055,6 +1114,7 @@
       },
       "primaryGroup": "forearms",
       "met": 4,
+      "measure": "weight_reps",
       "muscles": {
         "primary": ["forearms"],
         "secondary": []
@@ -1071,6 +1131,7 @@
       },
       "primaryGroup": "forearms",
       "met": 4,
+      "measure": "weight_reps",
       "muscles": {
         "primary": ["forearms"],
         "secondary": []
@@ -1087,6 +1148,7 @@
       },
       "primaryGroup": "forearms",
       "met": 4,
+      "measure": "weight_reps",
       "muscles": {
         "primary": ["forearms", "brachialis"],
         "secondary": ["biceps"]
@@ -1103,6 +1165,7 @@
       },
       "primaryGroup": "core",
       "met": 3.8,
+      "measure": "reps",
       "muscles": {
         "primary": ["rectus_abdominis"],
         "secondary": ["obliques"]
@@ -1119,6 +1182,7 @@
       },
       "primaryGroup": "core",
       "met": 3.8,
+      "measure": "time",
       "muscles": {
         "primary": ["rectus_abdominis"],
         "secondary": ["obliques", "erector_spinae", "front_deltoid"]
@@ -1135,6 +1199,7 @@
       },
       "primaryGroup": "core",
       "met": 3.8,
+      "measure": "reps",
       "muscles": {
         "primary": ["rectus_abdominis"],
         "secondary": ["obliques", "quadriceps"]
@@ -1151,6 +1216,7 @@
       },
       "primaryGroup": "core",
       "met": 3.8,
+      "measure": "reps",
       "muscles": {
         "primary": ["rectus_abdominis", "obliques"],
         "secondary": []
@@ -1167,6 +1233,7 @@
       },
       "primaryGroup": "core",
       "met": 4.3,
+      "measure": "weight_reps",
       "muscles": {
         "primary": ["obliques"],
         "secondary": ["rectus_abdominis"]
@@ -1183,6 +1250,7 @@
       },
       "primaryGroup": "core",
       "met": 3.8,
+      "measure": "reps",
       "muscles": {
         "primary": ["rectus_abdominis"],
         "secondary": ["obliques", "forearms"]
@@ -1199,6 +1267,7 @@
       },
       "primaryGroup": "core",
       "met": 3.8,
+      "measure": "time",
       "muscles": {
         "primary": ["obliques"],
         "secondary": ["rectus_abdominis", "gluteus_medius"]
@@ -1215,6 +1284,7 @@
       },
       "primaryGroup": "core",
       "met": 3.8,
+      "measure": "weight_reps",
       "muscles": {
         "primary": ["rectus_abdominis"],
         "secondary": ["obliques", "erector_spinae", "latissimus_dorsi"]
@@ -1231,6 +1301,7 @@
       },
       "primaryGroup": "core",
       "met": 4.1,
+      "measure": "weight_reps",
       "muscles": {
         "primary": ["obliques"],
         "secondary": ["rectus_abdominis"]
@@ -1247,6 +1318,7 @@
       },
       "primaryGroup": "quadriceps",
       "met": 6,
+      "measure": "weight_reps",
       "muscles": {
         "primary": ["quadriceps", "gluteus_maximus"],
         "secondary": ["hamstrings", "erector_spinae", "adductors", "calves"]
@@ -1263,6 +1335,7 @@
       },
       "primaryGroup": "quadriceps",
       "met": 6,
+      "measure": "weight_reps",
       "muscles": {
         "primary": ["quadriceps"],
         "secondary": ["gluteus_maximus", "erector_spinae"]
@@ -1279,6 +1352,7 @@
       },
       "primaryGroup": "quadriceps",
       "met": 6,
+      "measure": "weight_reps",
       "muscles": {
         "primary": ["quadriceps", "gluteus_maximus"],
         "secondary": ["hamstrings", "adductors", "erector_spinae"]
@@ -1295,6 +1369,7 @@
       },
       "primaryGroup": "quadriceps",
       "met": 5,
+      "measure": "reps",
       "muscles": {
         "primary": ["quadriceps", "gluteus_maximus"],
         "secondary": ["hamstrings", "calves"]
@@ -1311,6 +1386,7 @@
       },
       "primaryGroup": "quadriceps",
       "met": 5.5,
+      "measure": "weight_reps",
       "muscles": {
         "primary": ["quadriceps", "gluteus_maximus"],
         "secondary": ["hamstrings", "calves"]
@@ -1327,6 +1403,7 @@
       },
       "primaryGroup": "quadriceps",
       "met": 5.5,
+      "measure": "weight_reps",
       "muscles": {
         "primary": ["quadriceps"],
         "secondary": []
@@ -1343,6 +1420,7 @@
       },
       "primaryGroup": "quadriceps",
       "met": 5.5,
+      "measure": "weight_reps",
       "muscles": {
         "primary": ["quadriceps", "gluteus_maximus"],
         "secondary": ["hamstrings", "calves", "adductors"]
@@ -1359,6 +1437,7 @@
       },
       "primaryGroup": "quadriceps",
       "met": 5.5,
+      "measure": "weight_reps",
       "muscles": {
         "primary": ["gluteus_maximus", "quadriceps"],
         "secondary": ["hamstrings", "calves"]
@@ -1375,6 +1454,7 @@
       },
       "primaryGroup": "quadriceps",
       "met": 5.5,
+      "measure": "weight_reps",
       "muscles": {
         "primary": ["quadriceps", "gluteus_maximus"],
         "secondary": ["hamstrings", "calves"]
@@ -1391,6 +1471,7 @@
       },
       "primaryGroup": "quadriceps",
       "met": 5.5,
+      "measure": "weight_reps",
       "muscles": {
         "primary": ["quadriceps", "gluteus_maximus"],
         "secondary": ["hamstrings", "adductors"]
@@ -1407,6 +1488,7 @@
       },
       "primaryGroup": "quadriceps",
       "met": 5.5,
+      "measure": "weight_reps",
       "muscles": {
         "primary": ["quadriceps"],
         "secondary": ["gluteus_maximus", "calves"]
@@ -1423,6 +1505,7 @@
       },
       "primaryGroup": "quadriceps",
       "met": 5,
+      "measure": "reps",
       "muscles": {
         "primary": ["quadriceps"],
         "secondary": []
@@ -1439,6 +1522,7 @@
       },
       "primaryGroup": "quadriceps",
       "met": 5.5,
+      "measure": "weight_reps",
       "muscles": {
         "primary": ["quadriceps", "gluteus_maximus"],
         "secondary": ["hamstrings", "calves"]
@@ -1455,6 +1539,7 @@
       },
       "primaryGroup": "hamstrings",
       "met": 5.5,
+      "measure": "weight_reps",
       "muscles": {
         "primary": ["hamstrings"],
         "secondary": ["calves"]
@@ -1471,6 +1556,7 @@
       },
       "primaryGroup": "hamstrings",
       "met": 6,
+      "measure": "weight_reps",
       "muscles": {
         "primary": ["hamstrings", "gluteus_maximus"],
         "secondary": ["erector_spinae", "calves"]
@@ -1487,6 +1573,7 @@
       },
       "primaryGroup": "hamstrings",
       "met": 6,
+      "measure": "weight_reps",
       "muscles": {
         "primary": ["hamstrings", "erector_spinae"],
         "secondary": ["gluteus_maximus"]
@@ -1503,6 +1590,7 @@
       },
       "primaryGroup": "hamstrings",
       "met": 6,
+      "measure": "weight_reps",
       "muscles": {
         "primary": ["hamstrings", "erector_spinae"],
         "secondary": ["gluteus_maximus"]
@@ -1519,6 +1607,7 @@
       },
       "primaryGroup": "hamstrings",
       "met": 5,
+      "measure": "reps",
       "muscles": {
         "primary": ["hamstrings"],
         "secondary": ["calves"]
@@ -1535,6 +1624,7 @@
       },
       "primaryGroup": "hamstrings",
       "met": 6,
+      "measure": "weight_reps",
       "muscles": {
         "primary": ["hamstrings", "gluteus_maximus"],
         "secondary": ["erector_spinae"]
@@ -1551,6 +1641,7 @@
       },
       "primaryGroup": "hamstrings",
       "met": 6,
+      "measure": "weight_reps",
       "muscles": {
         "primary": ["hamstrings", "gluteus_maximus"],
         "secondary": ["erector_spinae", "quadriceps"]
@@ -1567,6 +1658,7 @@
       },
       "primaryGroup": "hamstrings",
       "met": 4.5,
+      "measure": "weight_reps",
       "muscles": {
         "primary": ["hamstrings"],
         "secondary": ["calves"]
@@ -1583,6 +1675,7 @@
       },
       "primaryGroup": "calves",
       "met": 3.8,
+      "measure": "weight_reps",
       "muscles": {
         "primary": ["calves"],
         "secondary": []
@@ -1599,6 +1692,7 @@
       },
       "primaryGroup": "calves",
       "met": 3.8,
+      "measure": "weight_reps",
       "muscles": {
         "primary": ["calves"],
         "secondary": []
@@ -1615,6 +1709,7 @@
       },
       "primaryGroup": "calves",
       "met": 3.8,
+      "measure": "weight_reps",
       "muscles": {
         "primary": ["calves"],
         "secondary": []
@@ -1631,6 +1726,7 @@
       },
       "primaryGroup": "calves",
       "met": 3.8,
+      "measure": "weight_reps",
       "muscles": {
         "primary": ["calves"],
         "secondary": []
@@ -1647,6 +1743,7 @@
       },
       "primaryGroup": "glutes",
       "met": 6,
+      "measure": "weight_reps",
       "muscles": {
         "primary": ["gluteus_maximus"],
         "secondary": ["hamstrings", "erector_spinae"]
@@ -1663,6 +1760,7 @@
       },
       "primaryGroup": "glutes",
       "met": 5,
+      "measure": "reps",
       "muscles": {
         "primary": ["gluteus_maximus"],
         "secondary": ["hamstrings"]
@@ -1679,6 +1777,7 @@
       },
       "primaryGroup": "glutes",
       "met": 5.5,
+      "measure": "weight_reps",
       "muscles": {
         "primary": ["gluteus_maximus"],
         "secondary": ["hamstrings"]
@@ -1695,6 +1794,7 @@
       },
       "primaryGroup": "glutes",
       "met": 6,
+      "measure": "weight_reps",
       "muscles": {
         "primary": ["gluteus_maximus", "adductors"],
         "secondary": ["hamstrings", "quadriceps", "erector_spinae"]
@@ -1711,6 +1811,7 @@
       },
       "primaryGroup": "glutes",
       "met": 5.5,
+      "measure": "weight_reps",
       "muscles": {
         "primary": ["gluteus_medius", "abductors"],
         "secondary": []
@@ -1727,6 +1828,7 @@
       },
       "primaryGroup": "glutes",
       "met": 5.5,
+      "measure": "weight_reps",
       "muscles": {
         "primary": ["adductors"],
         "secondary": ["gluteus_medius"]
@@ -1743,6 +1845,7 @@
       },
       "primaryGroup": "glutes",
       "met": 4.5,
+      "measure": "weight_reps",
       "muscles": {
         "primary": ["gluteus_medius"],
         "secondary": ["gluteus_maximus"]
@@ -1759,6 +1862,7 @@
       },
       "primaryGroup": "glutes",
       "met": 5,
+      "measure": "weight_reps",
       "muscles": {
         "primary": ["gluteus_maximus"],
         "secondary": ["hamstrings"]
@@ -1775,6 +1879,7 @@
       },
       "primaryGroup": "cardio",
       "met": 8,
+      "measure": "distance_time",
       "muscles": {
         "primary": ["quadriceps", "hamstrings", "calves"],
         "secondary": ["gluteus_maximus"]
@@ -1791,6 +1896,7 @@
       },
       "primaryGroup": "cardio",
       "met": 8.5,
+      "measure": "distance_time",
       "muscles": {
         "primary": ["quadriceps", "hamstrings"],
         "secondary": ["calves", "gluteus_maximus"]
@@ -1807,6 +1913,7 @@
       },
       "primaryGroup": "cardio",
       "met": 8,
+      "measure": "time",
       "muscles": {
         "primary": ["calves"],
         "secondary": ["quadriceps", "hamstrings"]
@@ -1823,6 +1930,7 @@
       },
       "primaryGroup": "cardio",
       "met": 8,
+      "measure": "reps",
       "muscles": {
         "primary": ["quadriceps", "pectoralis_major"],
         "secondary": [
@@ -1844,6 +1952,7 @@
       },
       "primaryGroup": "cardio",
       "met": 8,
+      "measure": "reps",
       "muscles": {
         "primary": ["quadriceps", "gluteus_maximus"],
         "secondary": ["hamstrings", "calves"]
@@ -1860,6 +1969,7 @@
       },
       "primaryGroup": "cardio",
       "met": 8.5,
+      "measure": "distance_time",
       "muscles": {
         "primary": ["latissimus_dorsi", "quadriceps"],
         "secondary": ["biceps", "hamstrings", "erector_spinae"]
@@ -1876,6 +1986,7 @@
       },
       "primaryGroup": "cardio",
       "met": 8.5,
+      "measure": "time",
       "muscles": {
         "primary": ["quadriceps", "gluteus_maximus"],
         "secondary": ["calves", "hamstrings"]
@@ -1892,6 +2003,7 @@
       },
       "primaryGroup": "cardio",
       "met": 8,
+      "measure": "time",
       "muscles": {
         "primary": ["front_deltoid", "forearms"],
         "secondary": ["rectus_abdominis", "quadriceps"]
@@ -1908,6 +2020,7 @@
       },
       "primaryGroup": "full_body",
       "met": 7,
+      "measure": "weight_reps",
       "muscles": {
         "primary": ["hamstrings", "gluteus_maximus", "erector_spinae"],
         "secondary": ["quadriceps", "latissimus_dorsi", "trapezius", "forearms"]
@@ -1924,6 +2037,7 @@
       },
       "primaryGroup": "full_body",
       "met": 7,
+      "measure": "weight_reps",
       "muscles": {
         "primary": ["quadriceps", "gluteus_maximus", "front_deltoid"],
         "secondary": ["hamstrings", "trapezius", "triceps", "erector_spinae"]
@@ -1940,6 +2054,7 @@
       },
       "primaryGroup": "full_body",
       "met": 7,
+      "measure": "weight_reps",
       "muscles": {
         "primary": ["gluteus_maximus", "quadriceps", "rectus_abdominis"],
         "secondary": ["front_deltoid", "obliques", "triceps"]
@@ -1956,6 +2071,7 @@
       },
       "primaryGroup": "full_body",
       "met": 7,
+      "measure": "weight_time",
       "muscles": {
         "primary": ["forearms", "trapezius"],
         "secondary": [
@@ -1977,6 +2093,7 @@
       },
       "primaryGroup": "full_body",
       "met": 7,
+      "measure": "weight_reps",
       "muscles": {
         "primary": ["quadriceps", "gluteus_maximus", "front_deltoid"],
         "secondary": ["triceps", "erector_spinae", "rectus_abdominis"]
@@ -1993,6 +2110,7 @@
       },
       "primaryGroup": "full_body",
       "met": 7,
+      "measure": "weight_reps",
       "muscles": {
         "primary": [
           "quadriceps",
@@ -2014,6 +2132,7 @@
       },
       "primaryGroup": "full_body",
       "met": 6.5,
+      "measure": "weight_reps",
       "muscles": {
         "primary": [
           "pectoralis_major",
@@ -2040,6 +2159,7 @@
       },
       "primaryGroup": "chest",
       "met": 5.5,
+      "measure": "weight_reps",
       "muscles": {
         "primary": ["pectoralis_major"],
         "secondary": ["front_deltoid", "triceps"]
@@ -2056,6 +2176,7 @@
       },
       "primaryGroup": "chest",
       "met": 5,
+      "measure": "reps",
       "muscles": {
         "primary": ["pectoralis_major"],
         "secondary": ["front_deltoid", "triceps"]
@@ -2072,6 +2193,7 @@
       },
       "primaryGroup": "chest",
       "met": 5,
+      "measure": "reps",
       "muscles": {
         "primary": ["pectoralis_major"],
         "secondary": ["front_deltoid", "triceps", "serratus_anterior"]
@@ -2088,6 +2210,7 @@
       },
       "primaryGroup": "chest",
       "met": 5.5,
+      "measure": "weight_reps",
       "muscles": {
         "primary": ["pectoralis_major", "latissimus_dorsi"],
         "secondary": ["triceps", "serratus_anterior"]
@@ -2104,6 +2227,7 @@
       },
       "primaryGroup": "chest",
       "met": 4.5,
+      "measure": "weight_reps",
       "muscles": {
         "primary": ["pectoralis_major"],
         "secondary": ["front_deltoid", "triceps"]
@@ -2120,6 +2244,7 @@
       },
       "primaryGroup": "chest",
       "met": 5,
+      "measure": "reps",
       "muscles": {
         "primary": ["pectoralis_major"],
         "secondary": ["front_deltoid", "triceps"]
@@ -2136,6 +2261,7 @@
       },
       "primaryGroup": "back",
       "met": 6,
+      "measure": "weight_reps",
       "muscles": {
         "primary": ["latissimus_dorsi", "rhomboids"],
         "secondary": ["trapezius", "biceps", "erector_spinae"]
@@ -2152,6 +2278,7 @@
       },
       "primaryGroup": "back",
       "met": 6,
+      "measure": "weight_reps",
       "muscles": {
         "primary": ["erector_spinae", "trapezius"],
         "secondary": ["latissimus_dorsi", "gluteus_maximus", "forearms"]
@@ -2168,6 +2295,7 @@
       },
       "primaryGroup": "back",
       "met": 6,
+      "measure": "weight_reps",
       "muscles": {
         "primary": ["latissimus_dorsi"],
         "secondary": ["biceps", "rhomboids", "erector_spinae"]
@@ -2184,6 +2312,7 @@
       },
       "primaryGroup": "back",
       "met": 5.5,
+      "measure": "weight_reps",
       "muscles": {
         "primary": ["rhomboids", "latissimus_dorsi"],
         "secondary": ["rear_deltoid", "biceps", "trapezius"]
@@ -2200,6 +2329,7 @@
       },
       "primaryGroup": "back",
       "met": 5.5,
+      "measure": "weight_reps",
       "muscles": {
         "primary": ["latissimus_dorsi"],
         "secondary": ["biceps", "rear_deltoid"]
@@ -2216,6 +2346,7 @@
       },
       "primaryGroup": "back",
       "met": 4.5,
+      "measure": "weight_reps",
       "muscles": {
         "primary": ["rhomboids", "latissimus_dorsi"],
         "secondary": ["biceps", "rear_deltoid"]
@@ -2232,6 +2363,7 @@
       },
       "primaryGroup": "back",
       "met": 4.5,
+      "measure": "weight_reps",
       "muscles": {
         "primary": ["latissimus_dorsi"],
         "secondary": ["biceps", "rear_deltoid", "trapezius"]
@@ -2248,6 +2380,7 @@
       },
       "primaryGroup": "back",
       "met": 5,
+      "measure": "reps",
       "muscles": {
         "primary": ["latissimus_dorsi"],
         "secondary": ["biceps", "forearms", "rhomboids"]
@@ -2264,6 +2397,7 @@
       },
       "primaryGroup": "back",
       "met": 5,
+      "measure": "reps",
       "muscles": {
         "primary": ["erector_spinae"],
         "secondary": ["gluteus_maximus", "trapezius"]
@@ -2280,6 +2414,7 @@
       },
       "primaryGroup": "shoulders",
       "met": 5.5,
+      "measure": "weight_reps",
       "muscles": {
         "primary": ["front_deltoid"],
         "secondary": ["triceps", "pectoralis_major", "rectus_abdominis"]
@@ -2296,6 +2431,7 @@
       },
       "primaryGroup": "shoulders",
       "met": 4.5,
+      "measure": "reps",
       "muscles": {
         "primary": ["front_deltoid"],
         "secondary": ["triceps", "trapezius"]
@@ -2312,6 +2448,7 @@
       },
       "primaryGroup": "shoulders",
       "met": 4,
+      "measure": "weight_reps",
       "muscles": {
         "primary": ["lateral_deltoid"],
         "secondary": ["trapezius"]
@@ -2328,6 +2465,7 @@
       },
       "primaryGroup": "shoulders",
       "met": 4.5,
+      "measure": "weight_reps",
       "muscles": {
         "primary": ["front_deltoid"],
         "secondary": ["trapezius", "rectus_abdominis"]
@@ -2344,6 +2482,7 @@
       },
       "primaryGroup": "shoulders",
       "met": 4.5,
+      "measure": "reps",
       "muscles": {
         "primary": ["front_deltoid"],
         "secondary": ["triceps", "trapezius"]
@@ -2360,6 +2499,7 @@
       },
       "primaryGroup": "shoulders",
       "met": 5,
+      "measure": "weight_reps",
       "muscles": {
         "primary": ["rear_deltoid"],
         "secondary": ["rhomboids", "trapezius"]
@@ -2376,6 +2516,7 @@
       },
       "primaryGroup": "biceps",
       "met": 4,
+      "measure": "weight_reps",
       "muscles": {
         "primary": ["biceps", "brachialis"],
         "secondary": ["forearms"]
@@ -2392,6 +2533,7 @@
       },
       "primaryGroup": "biceps",
       "met": 3.8,
+      "measure": "weight_reps",
       "muscles": {
         "primary": ["brachialis", "biceps"],
         "secondary": ["forearms"]
@@ -2408,6 +2550,7 @@
       },
       "primaryGroup": "biceps",
       "met": 4,
+      "measure": "weight_reps",
       "muscles": {
         "primary": ["biceps"],
         "secondary": ["brachialis", "forearms"]
@@ -2424,6 +2567,7 @@
       },
       "primaryGroup": "biceps",
       "met": 4.5,
+      "measure": "weight_reps",
       "muscles": {
         "primary": ["biceps"],
         "secondary": ["brachialis", "forearms"]
@@ -2440,6 +2584,7 @@
       },
       "primaryGroup": "triceps",
       "met": 3.8,
+      "measure": "weight_reps",
       "muscles": {
         "primary": ["triceps"],
         "secondary": ["forearms"]
@@ -2456,6 +2601,7 @@
       },
       "primaryGroup": "triceps",
       "met": 4.5,
+      "measure": "weight_reps",
       "muscles": {
         "primary": ["triceps"],
         "secondary": ["front_deltoid"]
@@ -2472,6 +2618,7 @@
       },
       "primaryGroup": "triceps",
       "met": 4,
+      "measure": "weight_reps",
       "muscles": {
         "primary": ["triceps"],
         "secondary": []
@@ -2488,6 +2635,7 @@
       },
       "primaryGroup": "triceps",
       "met": 3,
+      "measure": "weight_reps",
       "muscles": {
         "primary": ["triceps"],
         "secondary": ["front_deltoid"]
@@ -2504,6 +2652,7 @@
       },
       "primaryGroup": "forearms",
       "met": 4,
+      "measure": "weight_time",
       "muscles": {
         "primary": ["forearms"],
         "secondary": ["trapezius"]
@@ -2520,6 +2669,7 @@
       },
       "primaryGroup": "forearms",
       "met": 3,
+      "measure": "weight_reps",
       "muscles": {
         "primary": ["forearms"],
         "secondary": []
@@ -2536,6 +2686,7 @@
       },
       "primaryGroup": "forearms",
       "met": 3,
+      "measure": "time",
       "muscles": {
         "primary": ["forearms"],
         "secondary": ["latissimus_dorsi", "trapezius"]
@@ -2552,6 +2703,7 @@
       },
       "primaryGroup": "forearms",
       "met": 3,
+      "measure": "weight_reps",
       "muscles": {
         "primary": ["forearms"],
         "secondary": ["front_deltoid"]
@@ -2568,6 +2720,7 @@
       },
       "primaryGroup": "forearms",
       "met": 4,
+      "measure": "weight_reps",
       "muscles": {
         "primary": ["forearms"],
         "secondary": []
@@ -2584,6 +2737,7 @@
       },
       "primaryGroup": "forearms",
       "met": 2.5,
+      "measure": "weight_reps",
       "muscles": {
         "primary": ["forearms"],
         "secondary": []
@@ -2600,6 +2754,7 @@
       },
       "primaryGroup": "forearms",
       "met": 3,
+      "measure": "time",
       "muscles": {
         "primary": ["forearms"],
         "secondary": ["latissimus_dorsi", "biceps"]
@@ -2616,6 +2771,7 @@
       },
       "primaryGroup": "core",
       "met": 3.8,
+      "measure": "time",
       "muscles": {
         "primary": ["rectus_abdominis"],
         "secondary": ["obliques"]
@@ -2632,6 +2788,7 @@
       },
       "primaryGroup": "core",
       "met": 3.8,
+      "measure": "reps",
       "muscles": {
         "primary": ["rectus_abdominis"],
         "secondary": ["obliques", "front_deltoid", "quadriceps"]
@@ -2648,6 +2805,7 @@
       },
       "primaryGroup": "core",
       "met": 3.8,
+      "measure": "reps",
       "muscles": {
         "primary": ["rectus_abdominis"],
         "secondary": ["obliques"]
@@ -2664,6 +2822,7 @@
       },
       "primaryGroup": "core",
       "met": 3.8,
+      "measure": "reps",
       "muscles": {
         "primary": ["erector_spinae", "rectus_abdominis"],
         "secondary": ["gluteus_maximus", "rear_deltoid"]
@@ -2680,6 +2839,7 @@
       },
       "primaryGroup": "core",
       "met": 3.8,
+      "measure": "reps",
       "muscles": {
         "primary": ["rectus_abdominis"],
         "secondary": ["obliques"]
@@ -2696,6 +2856,7 @@
       },
       "primaryGroup": "core",
       "met": 4.1,
+      "measure": "weight_reps",
       "muscles": {
         "primary": ["rectus_abdominis"],
         "secondary": ["obliques"]
@@ -2712,6 +2873,7 @@
       },
       "primaryGroup": "core",
       "met": 4.1,
+      "measure": "weight_reps",
       "muscles": {
         "primary": ["obliques"],
         "secondary": ["rectus_abdominis"]
@@ -2728,6 +2890,7 @@
       },
       "primaryGroup": "core",
       "met": 3.8,
+      "measure": "reps",
       "muscles": {
         "primary": ["rectus_abdominis"],
         "secondary": ["obliques", "quadriceps"]
@@ -2744,6 +2907,7 @@
       },
       "primaryGroup": "quadriceps",
       "met": 6,
+      "measure": "weight_reps",
       "muscles": {
         "primary": ["quadriceps", "gluteus_maximus"],
         "secondary": ["hamstrings", "erector_spinae"]
@@ -2760,6 +2924,7 @@
       },
       "primaryGroup": "quadriceps",
       "met": 5,
+      "measure": "time",
       "muscles": {
         "primary": ["quadriceps"],
         "secondary": ["gluteus_maximus", "calves"]
@@ -2776,6 +2941,7 @@
       },
       "primaryGroup": "quadriceps",
       "met": 5,
+      "measure": "reps",
       "muscles": {
         "primary": ["quadriceps", "gluteus_maximus"],
         "secondary": ["calves", "hamstrings"]
@@ -2792,6 +2958,7 @@
       },
       "primaryGroup": "quadriceps",
       "met": 5.5,
+      "measure": "weight_reps",
       "muscles": {
         "primary": ["quadriceps", "gluteus_maximus"],
         "secondary": ["hamstrings", "calves"]
@@ -2808,6 +2975,7 @@
       },
       "primaryGroup": "quadriceps",
       "met": 5,
+      "measure": "reps",
       "muscles": {
         "primary": ["quadriceps", "gluteus_maximus"],
         "secondary": ["hamstrings", "calves"]
@@ -2824,6 +2992,7 @@
       },
       "primaryGroup": "quadriceps",
       "met": 5.5,
+      "measure": "weight_reps",
       "muscles": {
         "primary": ["quadriceps", "gluteus_maximus"],
         "secondary": ["hamstrings"]
@@ -2840,6 +3009,7 @@
       },
       "primaryGroup": "hamstrings",
       "met": 5.5,
+      "measure": "weight_reps",
       "muscles": {
         "primary": ["hamstrings"],
         "secondary": ["gluteus_maximus", "erector_spinae"]
@@ -2856,6 +3026,7 @@
       },
       "primaryGroup": "hamstrings",
       "met": 5.5,
+      "measure": "weight_reps",
       "muscles": {
         "primary": ["hamstrings"],
         "secondary": ["calves"]
@@ -2872,6 +3043,7 @@
       },
       "primaryGroup": "hamstrings",
       "met": 5.3,
+      "measure": "weight_reps",
       "muscles": {
         "primary": ["hamstrings", "gluteus_maximus"],
         "secondary": ["erector_spinae"]
@@ -2888,6 +3060,7 @@
       },
       "primaryGroup": "hamstrings",
       "met": 6,
+      "measure": "weight_reps",
       "muscles": {
         "primary": ["hamstrings", "gluteus_maximus"],
         "secondary": ["erector_spinae", "forearms"]
@@ -2904,6 +3077,7 @@
       },
       "primaryGroup": "hamstrings",
       "met": 5,
+      "measure": "reps",
       "muscles": {
         "primary": ["hamstrings"],
         "secondary": ["gluteus_maximus", "rectus_abdominis"]
@@ -2920,6 +3094,7 @@
       },
       "primaryGroup": "hamstrings",
       "met": 4.5,
+      "measure": "weight_reps",
       "muscles": {
         "primary": ["hamstrings", "erector_spinae"],
         "secondary": ["gluteus_maximus"]
@@ -2936,6 +3111,7 @@
       },
       "primaryGroup": "hamstrings",
       "met": 5.5,
+      "measure": "weight_reps",
       "muscles": {
         "primary": ["hamstrings", "gluteus_maximus"],
         "secondary": ["erector_spinae"]
@@ -2952,6 +3128,7 @@
       },
       "primaryGroup": "calves",
       "met": 3.8,
+      "measure": "weight_reps",
       "muscles": {
         "primary": ["calves"],
         "secondary": []
@@ -2968,6 +3145,7 @@
       },
       "primaryGroup": "calves",
       "met": 3.8,
+      "measure": "weight_reps",
       "muscles": {
         "primary": ["calves"],
         "secondary": ["forearms"]
@@ -2984,6 +3162,7 @@
       },
       "primaryGroup": "calves",
       "met": 3.3,
+      "measure": "reps",
       "muscles": {
         "primary": ["calves"],
         "secondary": []
@@ -3000,6 +3179,7 @@
       },
       "primaryGroup": "calves",
       "met": 3.3,
+      "measure": "reps",
       "muscles": {
         "primary": ["calves"],
         "secondary": []
@@ -3016,6 +3196,7 @@
       },
       "primaryGroup": "calves",
       "met": 2.8,
+      "measure": "weight_reps",
       "muscles": {
         "primary": ["calves"],
         "secondary": []
@@ -3032,6 +3213,7 @@
       },
       "primaryGroup": "calves",
       "met": 3.3,
+      "measure": "reps",
       "muscles": {
         "primary": ["calves"],
         "secondary": ["quadriceps"]
@@ -3048,6 +3230,7 @@
       },
       "primaryGroup": "glutes",
       "met": 4.5,
+      "measure": "weight_reps",
       "muscles": {
         "primary": ["gluteus_maximus"],
         "secondary": ["hamstrings"]
@@ -3064,6 +3247,7 @@
       },
       "primaryGroup": "glutes",
       "met": 5,
+      "measure": "weight_reps",
       "muscles": {
         "primary": ["gluteus_medius"],
         "secondary": ["gluteus_maximus"]
@@ -3080,6 +3264,7 @@
       },
       "primaryGroup": "glutes",
       "met": 5.5,
+      "measure": "weight_reps",
       "muscles": {
         "primary": ["gluteus_maximus", "gluteus_medius"],
         "secondary": ["quadriceps", "hamstrings"]
@@ -3096,6 +3281,7 @@
       },
       "primaryGroup": "glutes",
       "met": 6,
+      "measure": "weight_reps",
       "muscles": {
         "primary": ["gluteus_maximus", "adductors"],
         "secondary": ["quadriceps", "hamstrings"]
@@ -3112,6 +3298,7 @@
       },
       "primaryGroup": "glutes",
       "met": 5,
+      "measure": "reps",
       "muscles": {
         "primary": ["gluteus_maximus"],
         "secondary": ["hamstrings"]
@@ -3128,6 +3315,7 @@
       },
       "primaryGroup": "glutes",
       "met": 5.5,
+      "measure": "weight_reps",
       "muscles": {
         "primary": ["gluteus_maximus"],
         "secondary": ["hamstrings", "quadriceps"]
@@ -3144,6 +3332,7 @@
       },
       "primaryGroup": "glutes",
       "met": 4.5,
+      "measure": "weight_reps",
       "muscles": {
         "primary": ["gluteus_medius"],
         "secondary": ["gluteus_maximus", "quadriceps"]
@@ -3160,6 +3349,7 @@
       },
       "primaryGroup": "cardio",
       "met": 8,
+      "measure": "distance_time",
       "muscles": {
         "primary": ["quadriceps", "calves"],
         "secondary": ["gluteus_maximus", "hamstrings"]
@@ -3176,6 +3366,7 @@
       },
       "primaryGroup": "cardio",
       "met": 8.5,
+      "measure": "distance_time",
       "muscles": {
         "primary": ["gluteus_maximus", "calves"],
         "secondary": ["quadriceps", "hamstrings"]
@@ -3192,6 +3383,7 @@
       },
       "primaryGroup": "cardio",
       "met": 8,
+      "measure": "distance_time",
       "muscles": {
         "primary": ["latissimus_dorsi", "front_deltoid"],
         "secondary": ["quadriceps", "rectus_abdominis"]
@@ -3208,6 +3400,7 @@
       },
       "primaryGroup": "cardio",
       "met": 8.5,
+      "measure": "distance_time",
       "muscles": {
         "primary": ["quadriceps", "gluteus_maximus"],
         "secondary": ["hamstrings", "calves"]
@@ -3224,6 +3417,7 @@
       },
       "primaryGroup": "cardio",
       "met": 8,
+      "measure": "distance_time",
       "muscles": {
         "primary": ["hamstrings", "quadriceps"],
         "secondary": ["gluteus_maximus", "calves"]
@@ -3240,6 +3434,7 @@
       },
       "primaryGroup": "full_body",
       "met": 6,
+      "measure": "weight_reps",
       "muscles": {
         "primary": ["quadriceps", "gluteus_maximus"],
         "secondary": ["hamstrings", "erector_spinae", "trapezius", "forearms"]
@@ -3256,6 +3451,7 @@
       },
       "primaryGroup": "full_body",
       "met": 7,
+      "measure": "weight_reps",
       "muscles": {
         "primary": ["gluteus_maximus", "hamstrings"],
         "secondary": ["trapezius", "front_deltoid", "forearms"]
@@ -3272,6 +3468,7 @@
       },
       "primaryGroup": "full_body",
       "met": 6,
+      "measure": "weight_reps",
       "muscles": {
         "primary": ["quadriceps", "front_deltoid"],
         "secondary": ["gluteus_maximus", "triceps", "rectus_abdominis"]
@@ -3288,6 +3485,7 @@
       },
       "primaryGroup": "full_body",
       "met": 6,
+      "measure": "weight_distance",
       "muscles": {
         "primary": ["quadriceps", "gluteus_maximus"],
         "secondary": ["calves", "front_deltoid", "erector_spinae"]
@@ -3304,6 +3502,7 @@
       },
       "primaryGroup": "full_body",
       "met": 6,
+      "measure": "reps",
       "muscles": {
         "primary": ["rectus_abdominis", "front_deltoid"],
         "secondary": ["quadriceps", "triceps", "obliques"]

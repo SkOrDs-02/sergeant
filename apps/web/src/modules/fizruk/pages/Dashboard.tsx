@@ -52,6 +52,7 @@ import { useRestDayOverdueInsight } from "../hooks/useRestDayOverdueInsight";
 import { usePrPendingInsight } from "../hooks/usePrPendingInsight";
 import { usePrLatest } from "../hooks/usePrLatest";
 import { messages } from "@shared/i18n/uk";
+import { exerciseItemSeed } from "../lib/exerciseItemSeed";
 
 interface DashboardTodaySession {
   sessionKey: string;
@@ -178,17 +179,13 @@ export function Dashboard({
   ) => {
     const w = createWorkout();
     for (const ex of picks) {
-      const isCardio = ex.primaryGroup === "cardio";
       addItem(w.id, {
         exerciseId: ex.id,
         nameUk: ex?.name?.uk || ex?.name?.en || ex.id,
         primaryGroup: ex.primaryGroup || "",
         musclesPrimary: ex?.muscles?.primary || [],
         musclesSecondary: ex?.muscles?.secondary || [],
-        type: isCardio ? "distance" : "strength",
-        ...(isCardio ? {} : { sets: [{ weightKg: 0, reps: 0 }] }),
-        durationSec: 0,
-        distanceM: 0,
+        ...exerciseItemSeed(ex),
       });
     }
     if (templateId) markTemplateUsed(templateId);

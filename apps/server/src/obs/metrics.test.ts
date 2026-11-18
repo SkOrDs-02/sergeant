@@ -180,8 +180,9 @@ describe("metrics registry — v2 sync op-log RED metrics (PR #048)", () => {
     // Міграція 170 (Рутина Р-1): +5 (`invalid_count_target`,
     // `invalid_count_unit`, `invalid_auto_mark_source`, `invalid_count`,
     // `invalid_count_key`). Міграція 171 (Фізрук, П-10): +1
-    // `invalid_program_ref`.
-    expect(APPLY_REJECT_REASONS.length).toBe(85);
+    // `invalid_program_ref`. Міграція 172 (Фізрук, тип виміру): +1
+    // `invalid_measure`.
+    expect(APPLY_REJECT_REASONS.length).toBe(86);
     // data-17: +1 engine-level `invalid_text_encoding` — `U+0000` / одинокий
     // сурогат у `row` відсікається ДО apply.
     expect(ENGINE_REJECT_REASONS.length).toBe(7);

@@ -116,8 +116,8 @@ export function computeWorkoutTonnageKg(
 }
 
 /**
- * Total logged sets across strength items (non-zero reps OR weight
- * counted). Used by the journal row pill "N підходів".
+ * Зараховані підходи всіх вправ (`isSetCompleted`, за типом виміру). Плитка
+ * «Підходів», журнал, поріг повноцінного тренування.
  */
 export function computeWorkoutSetCount(
   w: WorkoutSummaryInput | null | undefined,
@@ -125,10 +125,12 @@ export function computeWorkoutSetCount(
   if (!w) return 0;
   let n = 0;
   for (const it of w.items || []) {
-    if (it?.type !== "strength") continue;
+    // Підходи будь-якого типу виміру (спека типу виміру, Р-3 і Б-2 founder-а
+    // 2026-11-18): на час і на дистанцію теж ідуть у поріг повноцінного.
     // Єдине визначення зарахованого підходу (`setCompletion.ts`): рядок
-    // лише з вагою — не підхід.
-    for (const s of it.sets || []) {
+    // лише з вагою — не підхід; старі item-и часу й дистанції без підходів
+    // нічого не дають.
+    for (const s of it?.sets || []) {
       if (isSetCompleted(s, it)) n += 1;
     }
   }

@@ -15,6 +15,7 @@ import {
   type TargetRepRange,
 } from "../../lib/workoutStats.js";
 import type { WorkoutProgramRef } from "../types.js";
+import { catalogMeasure, type ExerciseMeasure } from "../workouts/measure.js";
 import { findProgramById } from "./selectors.js";
 import type { ProgramSessionDef } from "./types.js";
 
@@ -46,9 +47,9 @@ export const PROGRAM_TIMED_SEC_RANGES = {
 } as const satisfies Record<ProgramTimedClass, SecondsRange>;
 
 /**
- * Вправи каталогу програм, що міряються часом. Лише ті, що стоять у
- * `PROGRAM_CATALOGUE`: загальний тип виміру вправи — окрема спека
- * (`fizruk-exercise-measure-type.md`).
+ * Клас діапазону секунд для вправ каталогу програм. Тип виміру (чи вправа
+ * взагалі на час) бере `catalogMeasure` / `resolveExerciseMeasure`; ця мапа
+ * лише каже, утримання це чи переноска (спека типу виміру).
  */
 export const PROGRAM_TIMED_EXERCISES: Readonly<
   Record<string, ProgramTimedClass>
@@ -62,8 +63,6 @@ export const PROGRAM_TIMED_EXERCISES: Readonly<
 
 /**
  * План вправи сесії. `reps` — підходи × повтори; `time` — підходи × секунди.
- * Вправа на час у сесії — item типу `time` з однією сумарною тривалістю:
- * секунд на підхід модель даних не має (спека типу виміру).
  */
 export type ProgramExercisePlan =
   | {
@@ -81,13 +80,36 @@ export type ProgramExercisePlan =
 
 export type ProgramPlanExercise = ExerciseProgressionHint & {
   readonly id?: string | null | undefined;
+  readonly measure?: unknown;
 };
 
+/**
+ * Клас діапазону секунд: явна мапа програм, інакше за типом виміру
+ * (утримання без ваги — `hold`, з вагою — `carry`). Не часовий тип — `null`.
+ */
+function timedClassFor(
+  exercise: ProgramPlanExercise | null | undefined,
+  measure: ExerciseMeasure,
+): ProgramTimedClass | null {
+  if (measure !== "time" && measure !== "weight_time") return null;
+  const mapped = exercise?.id
+    ? PROGRAM_TIMED_EXERCISES[exercise.id]
+    : undefined;
+  return mapped ?? (measure === "weight_time" ? "carry" : "hold");
+}
+
+/**
+ * План вправи. `measure` — тип, з яким вправа стартує (памʼять людини чи
+ * дефолт каталогу, `resolveExerciseMeasure`); без нього — дефолт каталогу.
+ * Вибір людини сильніший за план: планка, перемкнута на повтори, отримує
+ * план повторів (рішення Р-2 спеки типу виміру).
+ */
 export function programExercisePlan(
   session: Pick<ProgramSessionDef, "plan">,
   exercise: ProgramPlanExercise | null | undefined,
+  measure?: ExerciseMeasure,
 ): ProgramExercisePlan {
-  const timed = exercise?.id ? PROGRAM_TIMED_EXERCISES[exercise.id] : undefined;
+  const timed = timedClassFor(exercise, measure ?? catalogMeasure(exercise));
   if (timed) {
     const range = PROGRAM_TIMED_SEC_RANGES[timed];
     return {

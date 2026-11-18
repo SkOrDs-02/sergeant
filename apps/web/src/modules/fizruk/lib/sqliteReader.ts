@@ -23,7 +23,15 @@ import type {
   WorkoutWellbeing,
 } from "@sergeant/fizruk-domain/domain";
 import type { FizrukData } from "@sergeant/fizruk-domain";
-import { normalizeWorkoutProgramRef } from "@sergeant/fizruk-domain/domain";
+import {
+  isExerciseMeasure,
+  normalizeWorkoutProgramRef,
+} from "@sergeant/fizruk-domain/domain";
+import {
+  rowToWorkoutSet,
+  WORKOUT_SETS_SELECT_SQL,
+  type WorkoutSetRow,
+} from "./sqliteReader.sets";
 import type { MeasurementEntry } from "../hooks/useMeasurements";
 
 type RawExerciseDef = FizrukData.RawExerciseDef;
@@ -176,16 +184,7 @@ interface WorkoutItemRow {
   duration_sec: number | null;
   distance_m: number | null;
   chosen_variant: string | null;
-  sort_order: number | null;
-  [key: string]: unknown;
-}
-
-interface WorkoutSetRow {
-  id: string;
-  workout_item_id: string;
-  weight_kg: number | null;
-  reps: number | null;
-  rpe: number | null;
+  measure?: string | null;
   sort_order: number | null;
   [key: string]: unknown;
 }
@@ -294,6 +293,7 @@ function rowToWorkoutItem(
   if (sets && sets.length > 0) item.sets = sets;
   if (row.duration_sec != null) item.durationSec = row.duration_sec;
   if (row.distance_m != null) item.distanceM = row.distance_m;
+  if (isExerciseMeasure(row.measure)) item.measure = row.measure;
   // AI-DANGER: без цього рядка колонка читалась би у SELECT і не доїжджала
   // в `Workout` — рівно той сценарій, який нижче описаний для
   // `wellbeing_json`. Лічильник трьох полегшень тоді завжди дорівнює нулю,
@@ -499,19 +499,13 @@ export async function refreshFizrukSqliteState(
     client.all<WorkoutItemRow>(
       `SELECT id, workout_id, exercise_id, name_uk, primary_group,
               muscles_primary, muscles_secondary, type,
-              duration_sec, distance_m, chosen_variant, sort_order
+              duration_sec, distance_m, chosen_variant, measure, sort_order
          FROM fizruk_workout_items
         WHERE user_id = ? AND deleted_at IS NULL
         ORDER BY workout_id ASC, sort_order ASC, id ASC`,
       [userId],
     ),
-    client.all<WorkoutSetRow>(
-      `SELECT id, workout_item_id, weight_kg, reps, rpe, sort_order
-         FROM fizruk_workout_sets
-        WHERE user_id = ? AND deleted_at IS NULL
-        ORDER BY workout_item_id ASC, sort_order ASC, id ASC`,
-      [userId],
-    ),
+    client.all<WorkoutSetRow>(WORKOUT_SETS_SELECT_SQL, [userId]),
     client.all<CustomExerciseRow>(
       `SELECT id, data_json
          FROM fizruk_custom_exercises
@@ -570,11 +564,7 @@ export async function refreshFizrukSqliteState(
   const setsByItem = new Map<string, WorkoutItem["sets"]>();
   for (const row of setRows) {
     const arr = setsByItem.get(row.workout_item_id) ?? [];
-    arr.push({
-      weightKg: row.weight_kg ?? 0,
-      reps: row.reps ?? 0,
-      ...(row.rpe != null ? { rpe: row.rpe } : {}),
-    });
+    arr.push(rowToWorkoutSet(row));
     setsByItem.set(row.workout_item_id, arr);
   }
 

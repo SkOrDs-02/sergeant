@@ -1,9 +1,9 @@
 /**
  * Built-in Fizruk training programs.
  *
- * Strictly-typed canonical source — `lib/trainingPrograms.ts` re-exports
- * these symbols for backwards compatibility with the web module while
- * the mobile port consumes the strict types directly.
+ * Strictly-typed canonical source for web and mobile (the legacy
+ * `lib/trainingPrograms.ts` shim with `getTodaySession` was removed
+ * 2026-11-18: the program cursor replaced the weekday lookup).
  *
  * Exercise IDs correspond to entries in `data/exercises.gymup.json`.
  * `progressionKg` — kg to add per session for compound lifts.

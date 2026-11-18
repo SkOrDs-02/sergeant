@@ -40,9 +40,9 @@ import {
   WORKOUT_DELETE_SQL,
   WORKOUT_ITEMS_CASCADE_SQL,
   WORKOUT_ITEM_UPSERT_SQL,
-  WORKOUT_SET_UPSERT_SQL,
   WORKOUT_UPSERT_SQL,
 } from "./adapter.sql.js";
+import { itemMeasureColumn, upsertWorkoutSet } from "./adapter.sets.js";
 
 /**
  * Async SQLite-side adapter for the Fizruk dual-write layer.
@@ -364,6 +364,7 @@ async function upsertWorkoutItem(
     sortOrder,
     clientTs,
     clientTs,
+    itemMeasureColumn(item),
   ]);
 
   await enqueueOutboxUpsert(client, {
@@ -383,6 +384,9 @@ async function upsertWorkoutItem(
       duration_sec: item.durationSec ?? null,
       distance_m: item.distanceM ?? null,
       chosen_variant: (item["chosenVariant"] as string | undefined) ?? null,
+      // Тип виміру (міграції 172 / 010). Ключ є завжди: старий сервер його
+      // ігнорує, а op-log зберігає повний рядок (спека, § Сумісність).
+      measure: itemMeasureColumn(item),
       sort_order: sortOrder,
       created_at: clientTs,
       deleted_at: null,
@@ -407,47 +411,6 @@ async function upsertWorkoutItem(
     clientTs,
     setIds,
   );
-}
-
-async function upsertWorkoutSet(
-  client: SqliteMigrationClient,
-  setId: string,
-  workoutItemId: string,
-  userId: string,
-  clientTs: string,
-  set: WorkoutSet,
-  sortOrder: number,
-): Promise<void> {
-  await client.run(WORKOUT_SET_UPSERT_SQL, [
-    setId,
-    workoutItemId,
-    userId,
-    set.weightKg ?? 0,
-    set.reps ?? 0,
-    set.rpe ?? null,
-    sortOrder,
-    clientTs,
-    clientTs,
-  ]);
-
-  await enqueueOutboxUpsert(client, {
-    userId,
-    table: "fizruk_workout_sets",
-    op: "insert",
-    row: {
-      id: setId,
-      user_id: userId,
-      workout_item_id: workoutItemId,
-      weight_kg: set.weightKg ?? 0,
-      reps: set.reps ?? 0,
-      rpe: set.rpe ?? null,
-      sort_order: sortOrder,
-      created_at: clientTs,
-      deleted_at: null,
-    },
-    clientTs,
-    idempotencyKey: crypto.randomUUID(),
-  }).catch(() => {});
 }
 
 async function softDeleteWorkout(

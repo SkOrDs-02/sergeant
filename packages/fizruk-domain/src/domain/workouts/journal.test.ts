@@ -263,3 +263,30 @@ describe("formatWorkoutDateLabel", () => {
     expect(formatWorkoutDateLabel("nope")).toBe("nope");
   });
 });
+
+describe("computeWorkoutSetCount — підходи на час і дистанцію (Р-3, Б-2)", () => {
+  it("рахує зараховані підходи всіх типів, legacy item часу без підходів — 0", () => {
+    const workout = {
+      startedAt: "2026-11-18T08:00:00.000Z",
+      endedAt: "2026-11-18T08:20:00.000Z",
+      items: [
+        {
+          type: "time",
+          measure: "time",
+          sets: [
+            { weightKg: 0, reps: 0, durationSec: 30 },
+            { weightKg: 0, reps: 0, durationSec: 0 },
+          ],
+        },
+        {
+          type: "distance",
+          measure: "weight_distance",
+          sets: [{ weightKg: 40, reps: 0, distanceM: 20 }],
+        },
+        { type: "time", durationSec: 90 },
+        { type: "strength", sets: [{ weightKg: 60, reps: 8 }] },
+      ],
+    };
+    expect(computeWorkoutSetCount(workout)).toBe(3);
+  });
+});

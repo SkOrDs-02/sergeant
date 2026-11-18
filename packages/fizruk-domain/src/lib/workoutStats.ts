@@ -1,6 +1,7 @@
 /** Pure helpers for dashboard / analytics (kg, Kyiv-anchored week Mon–Sun). */
 
 import { kyivCalendarDaysBetween, kyivMondayStartMs } from "@sergeant/shared";
+import { itemHasMeasureRecord } from "../domain/workouts/measureRecords.js";
 
 interface StatsSet {
   weightKg?: number | null | undefined;
@@ -485,6 +486,11 @@ export function compareIsoDesc(
  */
 export function itemTonnageKg(item: StatsItem | null | undefined): number {
   if (!item || item.type !== "strength") return 0;
+  // Тип виміру (спека типу виміру): час і дистанція мають тип item-а
+  // `time` / `distance` (дзеркало `measureToItemType`) і відсікаються тут.
+  // «Лише повтори» лишається силовою: вага там 0, тож обʼєм 0 сам собою, а
+  // поки рядок підходу ще показує «кг» (до UI-зрізу), введена вага не
+  // зникає з обʼєму мовчки.
   let t = 0;
   for (const s of item.sets || []) {
     t += (Number(s.weightKg) || 0) * (Number(s.reps) || 0);
@@ -516,7 +522,11 @@ export function workoutDurationSec(
   return Math.max(0, Math.floor((end - start) / 1000));
 }
 
-/** Кількість вправ, де є хоча б один зафіксований «рекорд» за оцінкою Еплі. */
+/**
+ * Кількість вправ, де є хоча б один зафіксований «рекорд»: оцінка Еплі для
+ * ваги × повтори, найдовший підхід для вправ на час і дистанцію (спека типу
+ * виміру; рухає видиме число — частина бампу `METRICS_VERSION`).
+ */
 export function personalRecordsExerciseCount(
   workouts: readonly StatsWorkout[] | null | undefined,
 ): number {
@@ -524,7 +534,12 @@ export function personalRecordsExerciseCount(
   for (const w of workouts || []) {
     for (const it of w.items || []) {
       const exId = it.exerciseId;
-      if (!exId || it.type !== "strength") continue;
+      if (!exId) continue;
+      if (itemHasMeasureRecord(it)) {
+        by[exId] = by[exId] || 1;
+        continue;
+      }
+      if (it.type !== "strength") continue;
       for (const s of it.sets || []) {
         const est = epley1rm(s.weightKg, s.reps);
         if (!est) continue;

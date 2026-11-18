@@ -14,6 +14,7 @@ import {
 } from "../syncV2-core.js";
 import type { AppliedStatus } from "../syncV2-types.js";
 import { applyIfNewer, guardParentOwned } from "../applySync-helpers.js";
+import { parseItemMeasure, parseSetMeasureFields } from "./setMeasureFields.js";
 
 /**
  * Привʼязка тренування до слоту програми (міграція 171, П-10). Пара
@@ -282,6 +283,10 @@ export async function applyFizrukItems(
   if (chosenVariant === "invalid") {
     return { status: "rejected", reason: "invalid_chosen_variant" };
   }
+  const measure = parseItemMeasure(row);
+  if (measure === "invalid") {
+    return { status: "rejected", reason: "invalid_measure" };
+  }
   const createdAt = parseOptionalDate(row["created_at"]);
   if (createdAt === "invalid") {
     return { status: "rejected", reason: "invalid_created_at" };
@@ -307,11 +312,11 @@ export async function applyFizrukItems(
          (id, workout_id, user_id, exercise_id, name_uk, primary_group,
           muscles_primary, muscles_secondary, type,
           duration_sec, distance_m, chosen_variant, sort_order,
-          created_at, updated_at, deleted_at)
+          created_at, updated_at, deleted_at, measure)
        VALUES ($1, $2, $3, $4, $5, $6,
                COALESCE($7::jsonb, '[]'::jsonb),
                COALESCE($8::jsonb, '[]'::jsonb),
-               $9, $10, $11, $12, $13, $14, $15, $16)`,
+               $9, $10, $11, $12, $13, $14, $15, $16, $17)`,
       [
         id,
         workoutId,
@@ -329,6 +334,7 @@ export async function applyFizrukItems(
         createdAt ?? clientTs,
         clientTs,
         deletedAt ?? null,
+        measure.value,
       ],
     );
   } else {
@@ -347,7 +353,8 @@ export async function applyFizrukItems(
              chosen_variant    = $10,
              sort_order        = $11,
              updated_at        = $12,
-             deleted_at        = $13
+             deleted_at        = $13,
+             measure           = CASE WHEN $16::boolean THEN $17::text ELSE measure END
        WHERE id = $14 AND user_id = $15 AND updated_at < $12`,
       [
         workoutId,
@@ -365,6 +372,8 @@ export async function applyFizrukItems(
         deletedAt ?? null,
         id,
         userId,
+        measure.present,
+        measure.value,
       ],
     );
   }
@@ -437,6 +446,11 @@ export async function applyFizrukSets(
   if (rpe === "invalid") {
     return { status: "rejected", reason: "invalid_rpe" };
   }
+  const measureFields = parseSetMeasureFields(row);
+  if ("reject" in measureFields) {
+    return { status: "rejected", reason: measureFields.reject };
+  }
+  const { durationSec, distanceM } = measureFields;
   const sortOrder = toNonNegativeInt(row["sort_order"]) ?? 0;
   const createdAt = parseOptionalDate(row["created_at"]);
   if (createdAt === "invalid") {
@@ -461,8 +475,9 @@ export async function applyFizrukSets(
     await client.query(
       `INSERT INTO fizruk_workout_sets
          (id, workout_item_id, user_id, weight_kg, reps, rpe,
-          sort_order, created_at, updated_at, deleted_at)
-       VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)`,
+          sort_order, created_at, updated_at, deleted_at,
+          duration_sec, distance_m)
+       VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12)`,
       [
         id,
         workoutItemId,
@@ -474,6 +489,8 @@ export async function applyFizrukSets(
         createdAt ?? clientTs,
         clientTs,
         deletedAt ?? null,
+        durationSec.value,
+        distanceM.value,
       ],
     );
   } else {
@@ -486,7 +503,9 @@ export async function applyFizrukSets(
              rpe             = $4,
              sort_order      = $5,
              updated_at      = $6,
-             deleted_at      = $7
+             deleted_at      = $7,
+             duration_sec    = CASE WHEN $10::boolean THEN $11::integer ELSE duration_sec END,
+             distance_m      = CASE WHEN $12::boolean THEN $13::integer ELSE distance_m END
        WHERE id = $8 AND user_id = $9 AND updated_at < $6`,
       [
         workoutItemId,
@@ -498,6 +517,10 @@ export async function applyFizrukSets(
         deletedAt ?? null,
         id,
         userId,
+        durationSec.present,
+        durationSec.value,
+        distanceM.present,
+        distanceM.value,
       ],
     );
   }
