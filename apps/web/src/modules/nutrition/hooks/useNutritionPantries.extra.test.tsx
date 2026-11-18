@@ -214,7 +214,9 @@ describe("useNutritionPantries — item + pantry helper branches", () => {
     );
     const { result } = renderHarness();
     act(() => result.current.removeItem("   "));
-    act(() => result.current.consumePantryItem("", 50));
+    act(() => {
+      result.current.consumePantryItem("", 50);
+    });
     expect(result.current.pantryItems).toHaveLength(1);
   });
 
@@ -303,8 +305,12 @@ describe("useNutritionPantries — item + pantry helper branches", () => {
       "home",
     );
     const { result } = renderHarness();
-    act(() => result.current.consumePantryItem("Спеції", 10));
-    act(() => result.current.consumePantryItem("Сіль", 10));
+    act(() => {
+      result.current.consumePantryItem("Спеції", 10);
+    });
+    act(() => {
+      result.current.consumePantryItem("Сіль", 10);
+    });
     expect(result.current.pantryItems).toHaveLength(2);
   });
 });
