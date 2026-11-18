@@ -36,21 +36,26 @@ function appendOverviewLines(lines: string[], d: AllData, now: Date): void {
   // відмінок), тобто юніт-тести помилку не ловлять у принципі. Тут вона не
   // потрапляла на екран, але їхала в контекст моделі — і модель бачила
   // граматично зіпсований рядок замість дати (PR-C3, аудит 2026-09-13).
-  lines.push(
-    `[Сьогодні] ${formatUaWeekdayDate(now, {
-      timeZone: "Europe/Kyiv",
-      withYear: true,
-    })}`,
-  );
+  //
+  // ADR-0078 (2026-11-18): «[Сьогодні]» і «[Зараз]» — годинник ПРИСТРОЮ,
+  // той самий, яким виконавці тренувань і звичок рахують «сьогодні» й
+  // «зараз» (`chatActions/fizrukActions/workouts.ts`, `routineActions.ts`).
+  // Доти тут був київський годинник, і на пристрої поза Києвом модель
+  // підставляла в `start_workout`/`plan_workout` київську дату й годину.
+  // «[День місяця]» нижче лишається київським: це фінансовий період.
+  lines.push(`[Сьогодні] ${formatUaWeekdayDate(now, { withYear: true })}`);
   // AI-CONTEXT (2026-08-07): годинник тут не косметика. До цього контекст
   // ніс лише дату, тож на «почни тренування на сьогодні» о 02:48 модель
   // підставляла у `start_workout.time` правдоподібну ранкову годину —
   // 09:00, — бо знала день і не знала часу. Схема `time` опційна, але
   // порожнє поле треба ще й лишити порожнім свідомо. Кеш контексту живе
   // 15 с (`CONTEXT_TTL_MS`), тож до HH:MM він протухнути не встигає.
-  const { hour, minute } = getKyivDateParts(now);
+  // eslint-disable-next-line sergeant-design/prefer-kyiv-time -- ADR-0078: година пристрою, див. вище
+  const hour = now.getHours();
+  // eslint-disable-next-line sergeant-design/prefer-kyiv-time -- те саме
+  const minute = now.getMinutes();
   lines.push(
-    `[Зараз] ${String(hour).padStart(2, "0")}:${String(minute).padStart(2, "0")} за Києвом`,
+    `[Зараз] ${String(hour).padStart(2, "0")}:${String(minute).padStart(2, "0")} (час пристрою)`,
   );
   lines.push(
     `[День місяця] ${dayOfMonth} з ${daysInMonth} (залишилось ${daysLeft} днів)`,

@@ -8,14 +8,6 @@ vi.mock("@shared/lib/storage/storage", () => ({
 vi.mock("../../hubChatUtils", () => ({
   lsSet: vi.fn(),
 }));
-// `parseKyivDate` лишається справжнім: воно чисте, DST-safe і саме воно
-// перетворює київський стінний годинник на інстант. Підмінити його стабом —
-// значить перевіряти стаб, а не той перерахунок, заради якого тест існує.
-vi.mock("@shared/lib/time/kyivTime", async (importOriginal) => ({
-  ...(await importOriginal<typeof import("@shared/lib/time/kyivTime")>()),
-  getKyivDayKey: vi.fn(),
-  getKyivDateParts: vi.fn(),
-}));
 vi.mock("./shared", () => ({
   deleteFizrukWorkout: vi.fn(),
   readFizrukWorkouts: vi.fn(),
@@ -25,7 +17,6 @@ vi.mock("./shared", () => ({
 
 import { safeReadStringLS, safeRemoveLS } from "@shared/lib/storage/storage";
 import { lsSet } from "../../hubChatUtils";
-import { getKyivDateParts, getKyivDayKey } from "@shared/lib/time/kyivTime";
 import {
   deleteFizrukWorkout,
   persistFizrukCustomExercises,
@@ -48,8 +39,6 @@ const mockPersistCustom = persistFizrukCustomExercises as ReturnType<
 const mockReadLS = safeReadStringLS as ReturnType<typeof vi.fn>;
 const mockLsSet = lsSet as ReturnType<typeof vi.fn>;
 const mockRemoveLS = safeRemoveLS as ReturnType<typeof vi.fn>;
-const mockDayKey = getKyivDayKey as ReturnType<typeof vi.fn>;
-const mockDateParts = getKyivDateParts as ReturnType<typeof vi.fn>;
 
 function makeWorkout(overrides: Partial<Workout> = {}): Workout {
   return {
@@ -70,8 +59,6 @@ beforeEach(() => {
   vi.clearAllMocks();
   mockReadWorkouts.mockReturnValue([]);
   mockReadLS.mockReturnValue(null);
-  mockDayKey.mockReturnValue("2026-04-20");
-  mockDateParts.mockReturnValue({ hour: 9, minute: 0 });
 });
 
 // ─── logSet ──────────────────────────────────────────────────────────────────

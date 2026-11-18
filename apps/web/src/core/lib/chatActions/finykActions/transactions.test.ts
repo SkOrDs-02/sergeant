@@ -5,7 +5,11 @@ import {
   getCachedFinykSqliteState,
 } from "../../../../modules/finyk/lib/sqliteReader";
 
-vi.mock("./dualWriteBridge", () => ({ finykChatWrite: vi.fn() }));
+// Справжній міст завжди повертає `Promise<boolean>`; на ньому `createTransaction`
+// чекає запис перед подією для Рутини.
+vi.mock("./dualWriteBridge", () => ({
+  finykChatWrite: vi.fn(() => Promise.resolve(true)),
+}));
 vi.mock("../../../../modules/finyk/utils", () => ({
   resolveExpenseCategoryMeta: vi.fn(() => null),
 }));
@@ -67,6 +71,7 @@ function seedFinykCache(partial: Record<string, unknown>): void {
 
 beforeEach(() => {
   vi.clearAllMocks();
+  mockWrite.mockResolvedValue(true);
   // data-08: стан читається з прогрітого кешу SQLite (не з kv) — тести
   // перезасівають його через `__setFinykSqliteStateCacheForTests`.
   mockResolveMeta.mockReturnValue(null);

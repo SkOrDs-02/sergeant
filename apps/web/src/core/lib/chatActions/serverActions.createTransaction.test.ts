@@ -6,6 +6,7 @@ import {
   clearFinykSqliteCache,
 } from "../../../modules/finyk/lib/sqliteReader";
 import type { ChatAction } from "./types";
+import { onHubBus, type HubBusEvents } from "@shared/lib/modules/hubBus";
 
 /**
  * data-23: `create_transaction` не має ховати відмову сервера (4xx) за
@@ -30,6 +31,8 @@ import { handleAsyncChatAction } from "./serverActions";
 import { finykChatWrite } from "./finykActions/dualWriteBridge";
 
 const mockWrite = vi.mocked(finykChatWrite);
+let autoMarks: Array<HubBusEvents["routineAutoMark"]> = [];
+let offAutoMark: () => void = () => {};
 
 function httpError(status: number, error?: string): ApiError {
   return new ApiError({
@@ -64,10 +67,53 @@ beforeEach(() => {
   __setFinykSqliteStateCacheForTests({} as never);
   createManualExpense.mockReset();
   mockWrite.mockClear();
+  mockWrite.mockResolvedValue(true);
+  autoMarks = [];
+  offAutoMark = onHubBus("routineAutoMark", (d) => autoMarks.push(d));
 });
 afterEach(() => {
+  offAutoMark();
   localStorage.clear();
   clearFinykSqliteCache();
+});
+
+/** Дати мікрозадачам `.then` після запису відпрацювати. */
+const flush = () => new Promise((r) => setTimeout(r, 0));
+
+describe("create_transaction · автовідмітка Рутини", () => {
+  it("витрата записана на сервері → одна подія finyk_expense", async () => {
+    createManualExpense.mockResolvedValueOnce({
+      expense: { id: "e1", date: "2026-11-18" },
+    });
+    const out = await run({ amount: 120, date: "2026-11-18" });
+    await flush();
+    expect(out).toContain("записано на сервері");
+    expect(autoMarks).toEqual([
+      { source: "finyk_expense", dayKey: "2026-11-18" },
+    ]);
+  });
+
+  it("сервер недоступний, записано локально → одна подія", async () => {
+    createManualExpense.mockRejectedValueOnce(networkError());
+    await run({ amount: 120, date: "2026-11-18" });
+    await flush();
+    expect(autoMarks).toEqual([
+      { source: "finyk_expense", dayKey: "2026-11-18" },
+    ]);
+  });
+
+  it("відмова сервера 4xx → без події", async () => {
+    createManualExpense.mockRejectedValueOnce(httpError(400));
+    await run({ amount: 120 });
+    await flush();
+    expect(autoMarks).toEqual([]);
+  });
+
+  it("дохід → без події", async () => {
+    await run({ type: "income", amount: 5000 });
+    await flush();
+    expect(autoMarks).toEqual([]);
+  });
 });
 
 describe("create_transaction · відмова сервера 4xx", () => {

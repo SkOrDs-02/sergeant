@@ -1,5 +1,5 @@
 /**
- * Last validated: 2026-09-01
+ * Last validated: 2026-11-18
  * Status: Active
  *
  * Хелпери `routineActions.ts`, винесені за Hard Rule #18 (600 рядків):
@@ -9,14 +9,13 @@
 
 import {
   calcRoutinePeriodCompletion,
+  dateKeyMinusDays,
   habitCompletionRate,
   type Habit,
   type HabitSkip,
 } from "@sergeant/routine-domain";
-import { getKyivDayKey, parseKyivDate } from "@shared/lib/time/kyivTime";
-import { formatNumberUk } from "@sergeant/shared";
-
-export const DAY_MS = 86_400_000;
+import { parseKyivDate } from "@shared/lib/time/kyivTime";
+import { deviceDayKey, formatNumberUk } from "@sergeant/shared";
 
 // Mon-first 0..6 — matches `@sergeant/routine-domain` `isoWeekdayFromDateKey`
 // and `WEEKDAY_LABELS`. Both English short names and Ukrainian short names
@@ -107,7 +106,10 @@ export function habitTrendText(
   // П-18 (А), 2026-11-18: тиждень рахується тим самим знаменником, що
   // модуль (`calcRoutinePeriodCompletion`): заплановані дні без днів «не
   // зміг». Раніше тут стояло плоске «звички × дні».
-  const todayKey = getKyivDayKey(now);
+  // ADR-0078 (2026-11-18): тижні рахуються від дня ПРИСТРОЮ, бо відмітки
+  // лежать під його ключами; київський день після київської півночі вже
+  // завтрашній, і сьогоднішня відмітка випадала з вікна.
+  const todayKey = deviceDayKey(now);
   const safeCompletions: Record<string, string[]> = {};
   for (const [id, list] of Object.entries(completions)) {
     if (list) safeCompletions[id] = list;
@@ -118,7 +120,7 @@ export function habitTrendText(
     for (let d = 0; d < 7; d++) {
       const dayOffset = w * 7 + d;
       if (dayOffset >= days) break;
-      weekKeys.push(getKyivDayKey(now - dayOffset * DAY_MS));
+      weekKeys.push(dateKeyMinusDays(todayKey, dayOffset));
     }
     const week = calcRoutinePeriodCompletion(
       habits,
@@ -152,7 +154,7 @@ export function habitTrendText(
     );
   }
   if (habits.length > 1) {
-    const startKey = getKyivDayKey(now - (days - 1) * DAY_MS);
+    const startKey = dateKeyMinusDays(todayKey, days - 1);
     parts.push("По звичках:");
     for (const h of habits) {
       const { completed, scheduled } = habitCompletionRate(

@@ -2,19 +2,20 @@ import {
   loadRoutineState,
   saveRoutineState,
 } from "../../../modules/routine/lib/routineStorage";
-// ADR-0078: межа доби відмітки — годинник ПРИСТРОЮ. У цьому ж файлі поруч
-// живе `getKyivDayKey` (він доречний для звітних періодів), тож підставити
-// його сюди було б природно і хибно — для користувача на захід від Києва
-// «завтра» настало б на добу раніше, ніж у нього на екрані.
+// ADR-0078: межа доби відмітки — годинник ПРИСТРОЮ. `getKyivDayKey`
+// доречний для звітних періодів, тож підставити його сюди було б природно і
+// хибно — для користувача на захід від Києва «завтра» настало б на добу
+// раніше, ніж у нього на екрані. Те саме з 2026-11-18 для вікон
+// `habit_stats` / `habit_trend`: відмітки лежать під ключами пристрою.
 import { anchoredCompletionBounds } from "../../../modules/routine/lib/dayAnchor";
 import { persistRoutineState } from "./routinePersistence";
-import { getKyivDayKey } from "@shared/lib/time/kyivTime";
 import {
   applyCreateHabit,
   applyPauseHabitBetween,
   applyResumeHabitFrom,
   applySetHabitSkip,
   applyToggleHabitCompletion,
+  dateKeyMinusDays,
   flexibleMaxStreakAllTime,
   flexibleStreakBreakdown,
   habitCompletionRate,
@@ -42,7 +43,6 @@ import type {
   ChatActionResult,
 } from "./types";
 import {
-  DAY_MS,
   habitTrendText,
   WEEKDAY_LABEL_UK,
   normalizeDayToken,
@@ -50,7 +50,7 @@ import {
   isDateKey,
   normalizeTimeOfDay,
 } from "./routineActions.helpers";
-import { formatNumberUk } from "@sergeant/shared";
+import { deviceDayKey, formatNumberUk } from "@sergeant/shared";
 
 // Undo тримає id (а не повний snapshot), щоб не переписувати інші зміни,
 // які могли статися між створенням і undo (інша звичка, completions).
@@ -561,9 +561,9 @@ export function handleRoutineAction(
       // пропуску з причиною чи розкладу «3/тиждень».
       const completionsForHabit = state.completions[id];
       const skipsForHabit = state.skips?.[id];
-      const now = Date.now();
-      const todayKey = getKyivDayKey(now);
-      const startKey = getKyivDayKey(now - (days - 1) * DAY_MS);
+      // ADR-0078: відмітки лежать під ключами пристрою, тож і вікно теж.
+      const todayKey = deviceDayKey();
+      const startKey = dateKeyMinusDays(todayKey, days - 1);
       // П-18 (А): день «не зміг» поза знаменником, як у картці звички.
       const { completed, scheduled } = habitCompletionRate(
         habit,
@@ -590,7 +590,7 @@ export function handleRoutineAction(
       const missedDates: string[] = [];
       // Для гнучкої звички «пропущеного дня» немає: вона не називає днів.
       for (let i = 0; !isFlex && i < days && missedDates.length < 5; i++) {
-        const dk = getKyivDayKey(now - i * DAY_MS);
+        const dk = dateKeyMinusDays(todayKey, i);
         if (!habitScheduledOnDate(habit, dk)) continue;
         const done =
           Array.isArray(completionsForHabit) &&

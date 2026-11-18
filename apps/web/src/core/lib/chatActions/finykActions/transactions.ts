@@ -17,6 +17,7 @@ import {
   triggerHiddenTransactionSqliteMirror,
   triggerManualExpenseDeleteSqliteMirror,
 } from "../../../../modules/finyk/lib/sqliteWriter";
+import { emitFinykExpenseRoutineAutoMark } from "../../../../modules/finyk/lib/routineAutoMark";
 import { parseKyivDate } from "@shared/lib/time/kyivTime";
 import { formatNumberUk } from "@sergeant/shared";
 import { manualLinkKey } from "@sergeant/finyk-domain/domain/debtLinkKeys";
@@ -36,6 +37,19 @@ type ManualExpenseRow = {
   category?: string;
   type?: string;
 };
+
+/**
+ * Подія «записана витрата» для автовідмітки Рутини (рішення founder-а
+ * 2026-11-18): витрата з чату записана самою людиною, як і з форми. Явна дата
+ * `YYYY-MM-DD` уже є день-ключем, без неї день бере годинник пристрою
+ * (ADR-0078), а не київську північ із `isoDate`. Спільна для серверного шляху
+ * і локального фолбеку; дохід, збій запису і відкат її не викликають.
+ */
+export function emitChatExpenseRoutineAutoMark(date: string | undefined): void {
+  emitFinykExpenseRoutineAutoMark(
+    date && /^\d{4}-\d{2}-\d{2}$/.test(date) ? date : new Date(),
+  );
+}
 
 export function createTransaction(
   action: CreateTransactionAction,
@@ -71,7 +85,16 @@ export function createTransaction(
     type: txType,
   };
   manualExpenses.unshift(entry);
-  void finykChatWrite("finyk_manual_expenses_v1", manualExpenses);
+  const write = finykChatWrite("finyk_manual_expenses_v1", manualExpenses);
+  if (txType === "expense") {
+    // Лише коли запис ліг: відмова чи тайм-аут SQLite не відмічає звичку.
+    void write.then(
+      (ok) => {
+        if (ok) emitChatExpenseRoutineAutoMark(date);
+      },
+      () => undefined,
+    );
+  }
   const label = categoryLabel ? ` (${categoryLabel})` : "";
   const human = txType === "income" ? "Дохід" : "Витрату";
   const result = `${human} ${formatNumberUk(amt)} грн${description ? ` "${description.trim()}"` : ""}${label} записано (id:${manualId})`;

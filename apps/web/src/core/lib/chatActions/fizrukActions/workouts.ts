@@ -1,10 +1,5 @@
 import { safeReadStringLS, safeRemoveLS } from "@shared/lib/storage/storage";
 import { lsSet } from "../../hubChatUtils";
-import {
-  getKyivDateParts,
-  getKyivDayKey,
-  parseKyivDate,
-} from "@shared/lib/time/kyivTime";
 import { MAX_REPS, MAX_WEIGHT_KG } from "@fizruk/lib/numericBounds";
 import {
   deviceDayKey,
@@ -45,30 +40,6 @@ import type {
 const ACTIVE_KEY = "fizruk_active_workout_id_v1";
 
 /**
- * Мітка часу для київського стінного годинника: день-ключ + `HH:MM`.
- *
- * AI-DANGER: `Date.parse("2026-08-07T09:00:00")` без суфікса зони читається
- * у поясі ПРИСТРОЮ, тоді як і день-ключ (`getKyivDayKey`), і fallback-година
- * (`getKyivDateParts`) приходять київські. На пристрої поза Києвом обидві
- * половини розходились, і збережений `startedAt` їхав на різницю поясів —
- * тренування о 09:00 у Варшаві лягало на 08:00 київських. `parseKyivDate`
- * віддає київську північ (DST-safe), далі просто додаємо хвилини.
- *
- * `NaN` на неможливій годині зберігає стару поведінку: викликач віддає
- * «Некоректна дата або час», а не мовчки пише сміття в майбутнє.
- */
-function kyivWallClockTs(dayKey: string, hhmm: string): number {
-  const midnight = parseKyivDate(dayKey);
-  if (!midnight) return NaN;
-  const [rawH, rawM] = hhmm.split(":");
-  const hours = Number(rawH);
-  const minutes = Number(rawM);
-  if (!Number.isFinite(hours) || !Number.isFinite(minutes)) return NaN;
-  if (hours > 23 || minutes > 59) return NaN;
-  return midnight.getTime() + (hours * 60 + minutes) * 60_000;
-}
-
-/**
  * Мітка часу для стінного годинника ПРИСТРОЮ: день-ключ + `HH:MM`.
  *
  * AI-CONTEXT: заплановане тренування — особиста сутність (ADR-0078): день
@@ -76,9 +47,10 @@ function kyivWallClockTs(dayKey: string, hhmm: string): number {
  * (`Workouts.helpers.ts`, рішення власника 2026-09-29) і як у чат-виконавці
  * Рутини. До 2026-11-18 `plan_workout` брав київський годинник: на пристрої
  * поза Києвом план «на 07:00» лягав на іншу годину, а після київської
- * півночі ще й на інший день. `start_workout` і `copy_workout` поки на
- * київському годиннику (`kyivWallClockTs`): вони читають годину з рядка
- * контексту «[Зараз] … за Києвом», і перевести їх можна лише разом із ним.
+ * півночі ще й на інший день. З того ж дня на цьому годиннику і
+ * `start_workout` та `copy_workout`, разом із рядками контексту
+ * «[Сьогодні]» / «[Зараз] … (час пристрою)» (`hubChatContext/finance.ts`):
+ * модель і виконавець бачать той самий годинник.
  *
  * `NaN` на неможливій даті (2026-02-30) чи годині (24:00): викликач віддає
  * «Некоректна дата або час», а не мовчки пише сміття.
@@ -94,6 +66,16 @@ function deviceWallClockTs(dayKey: string, hhmm: string): number {
   // Календарно неможлива дата перекотилась би на наступний місяць.
   if (deviceDayKey(at) !== dayKey) return NaN;
   return at.getTime();
+}
+
+/** Поточна година пристрою як `HH:MM` (ADR-0078). */
+function deviceNowHHMM(): string {
+  const now = new Date();
+  // eslint-disable-next-line sergeant-design/prefer-kyiv-time -- ADR-0078: тренування — особиста сутність, година за годинником пристрою, як у формі модуля
+  const h = now.getHours();
+  // eslint-disable-next-line sergeant-design/prefer-kyiv-time -- те саме
+  const m = now.getMinutes();
+  return `${String(h).padStart(2, "0")}:${String(m).padStart(2, "0")}`;
 }
 
 export function planWorkout(action: PlanWorkoutAction): ChatActionResult {
@@ -265,14 +247,13 @@ export function logSet(action: LogSetAction): ChatActionResult {
 
 export function startWorkout(action: StartWorkoutAction): ChatActionResult {
   const { note, date, time } = action.input || {};
-  const today = getKyivDayKey();
+  const today = deviceDayKey();
   const targetDate = date && /^\d{4}-\d{2}-\d{2}$/.test(date) ? date : today;
-  const nowParts = getKyivDateParts();
   const timeStr =
     time && /^\d{1,2}:\d{2}$/.test(String(time).trim())
       ? String(time).trim().padStart(5, "0")
-      : `${String(nowParts.hour).padStart(2, "0")}:${String(nowParts.minute).padStart(2, "0")}`;
-  const startedAtTs = kyivWallClockTs(targetDate, timeStr);
+      : deviceNowHHMM();
+  const startedAtTs = deviceWallClockTs(targetDate, timeStr);
   if (!Number.isFinite(startedAtTs)) {
     return "Некоректна дата або час.";
   }
@@ -347,11 +328,9 @@ export function copyWorkout(action: CopyWorkoutAction): ChatActionResult {
       )[0];
     if (!source) return "Немає завершених тренувань для копіювання.";
   }
-  const today = getKyivDayKey();
+  const today = deviceDayKey();
   const targetDate = date && /^\d{4}-\d{2}-\d{2}$/.test(date) ? date : today;
-  const nowParts = getKyivDateParts();
-  const copyTimeStr = `${String(nowParts.hour).padStart(2, "0")}:${String(nowParts.minute).padStart(2, "0")}`;
-  const copyStartedAtTs = kyivWallClockTs(targetDate, copyTimeStr);
+  const copyStartedAtTs = deviceWallClockTs(targetDate, deviceNowHHMM());
   if (!Number.isFinite(copyStartedAtTs)) {
     return "Некоректна дата.";
   }
