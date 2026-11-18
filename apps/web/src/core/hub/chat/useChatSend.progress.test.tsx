@@ -5,50 +5,26 @@
  * `step` чесний: `null`, поки модель не відповіла на перший хід і поки
  * йде синтез; підпис інструмента лише на час реального виконання.
  */
-import { beforeEach, describe, expect, it, vi } from "vitest";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import type { ReactNode } from "react";
-import { act, renderHook, waitFor } from "@testing-library/react";
+import { act, cleanup, renderHook, waitFor } from "@testing-library/react";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
+import { chatApi } from "@shared/api";
 
-const { sendMock, streamMock, executeActionsMock } = vi.hoisted(() => ({
-  sendMock: vi.fn(),
-  streamMock: vi.fn(),
+// Під vi.mock-храповиком (≤ 5): стабимо лише те, без чого хук не живе в
+// jsdom або що треба керувати вручну. `chatApi` — через `vi.spyOn` на
+// справжньому модулі (як `useChatSend.freshness.test.tsx`); контекст чату,
+// превʼю Фініка, мовлення й статус мережі — справжні.
+const { executeActionsMock } = vi.hoisted(() => ({
   executeActionsMock: vi.fn(),
-}));
-
-vi.mock("@shared/api", async () => {
-  const actual =
-    await vi.importActual<typeof import("@shared/api")>("@shared/api");
-  return { ...actual, chatApi: { send: sendMock, stream: streamMock } };
-});
-
-vi.mock("../useFinykHubPreview", () => ({
-  useFinykHubPreview: () => ({
-    data: { hasMonoData: false },
-    dataUpdatedAt: 0,
-  }),
 }));
 
 vi.mock("../../billing/usePlan", () => ({
   usePlan: () => ({ isPro: true, plan: "pro", isLoading: false }),
 }));
 
-vi.mock("../../lib/hubChatContext", () => ({
-  buildContextMeasured: () => "ctx",
-}));
-
 vi.mock("../../lib/hubChatActions", () => ({
   executeActions: executeActionsMock,
-}));
-
-vi.mock("../../lib/hubChatSpeech", () => ({
-  VOICE_KEYWORDS: /озвуч/i,
-  speak: vi.fn(),
-  stopSpeaking: vi.fn(),
-}));
-
-vi.mock("@shared/hooks/useOnlineStatus", () => ({
-  useOnlineStatus: () => true,
 }));
 
 vi.mock("@shared/hooks/useToast", () => ({
@@ -64,10 +40,8 @@ vi.mock("@shared/hooks/useToast", () => ({
 
 import { useChatSend } from "./useChatSend";
 
+let client: QueryClient;
 function wrapper({ children }: { children: ReactNode }) {
-  const client = new QueryClient({
-    defaultOptions: { queries: { retry: false } },
-  });
   return <QueryClientProvider client={client}>{children}</QueryClientProvider>;
 }
 
@@ -87,11 +61,23 @@ const jsonResponse = (body: unknown) =>
     headers: { "content-type": "application/json" },
   });
 
+let sendMock: ReturnType<typeof vi.spyOn>;
+let streamMock: ReturnType<typeof vi.spyOn>;
+
 beforeEach(() => {
-  sendMock.mockReset();
-  streamMock.mockReset();
   executeActionsMock.mockReset();
   localStorage.clear();
+  client = new QueryClient({
+    defaultOptions: { queries: { retry: false }, mutations: { retry: false } },
+  });
+  sendMock = vi.spyOn(chatApi, "send");
+  streamMock = vi.spyOn(chatApi, "stream");
+});
+
+afterEach(() => {
+  cleanup();
+  client.clear();
+  vi.restoreAllMocks();
 });
 
 describe("useChatSend — крок у бульбашці очікування", () => {

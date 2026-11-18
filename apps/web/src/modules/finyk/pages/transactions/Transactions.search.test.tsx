@@ -2,36 +2,14 @@
 /**
  * Ф-2 (а), OD-26 (2026-11-18): пошук у шапці «Операцій» — опис, нотатка,
  * тег; разом із вкладкою; дні зі збігами розгорнуті; «нічого не знайдено».
+ * Глибоке посилання `?tx=` — окремо, у `Transactions.focusTx.test.tsx`
+ * (vi.mock-храповик: там потрібен стаб API для аркуша деталей).
  */
 import React from "react";
 import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
 import { render, screen, fireEvent, cleanup } from "@testing-library/react";
 import { MemoryRouter } from "react-router-dom";
-import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import type { Transaction } from "@sergeant/finyk-domain/domain/types";
-
-// Аркуш деталей відкриває секцію чека Сільпо: API глушимо, як у
-// `Transactions.test.tsx`.
-vi.mock("@shared/api", async () => {
-  const actual =
-    await vi.importActual<typeof import("@shared/api")>("@shared/api");
-  return {
-    ...actual,
-    silpoApi: {
-      syncState: vi.fn().mockResolvedValue({
-        status: "disconnected",
-        accessTokenExpiresAt: null,
-        lastSyncAt: null,
-        receiptsCount: 0,
-      }),
-      sync: vi.fn(),
-      disconnect: vi.fn(),
-      wipe: vi.fn(),
-      receipts: vi.fn(),
-      receiptDetail: vi.fn(),
-    },
-  };
-});
 
 const { mockRequestCloudPull, mockMonoRefresh, mockToast } = vi.hoisted(() => ({
   mockRequestCloudPull: vi.fn(() => Promise.resolve()),
@@ -196,19 +174,13 @@ function renderTransactions(
   > = {},
 ) {
   const { mono, storage, ...rest } = overrides;
-  // Router: аркуш деталей банківської операції читає навігацію.
-  const client = new QueryClient({
-    defaultOptions: { queries: { retry: false } },
-  });
   return render(
     <MemoryRouter>
-      <QueryClientProvider client={client}>
-        <Transactions
-          mono={buildMono(mono)}
-          storage={buildStorage(storage)}
-          {...rest}
-        />
-      </QueryClientProvider>
+      <Transactions
+        mono={buildMono(mono)}
+        storage={buildStorage(storage)}
+        {...rest}
+      />
     </MemoryRouter>,
   );
 }
@@ -290,55 +262,5 @@ describe("Transactions: пошук (Ф-2 а)", () => {
     fireEvent.change(search(), { target: { value: "сільпо" } });
     fireEvent.click(screen.getByRole("button", { name: "Попередній місяць" }));
     expect(search()).toHaveValue("сільпо");
-  });
-  it("глибоке посилання ?tx= відкриває деталі банківської операції один раз", async () => {
-    const onFocusTxConsumed = vi.fn();
-    renderTransactions({
-      mono: { realTx: [KAVA, SALARY] },
-      focusTxId: "tx-3",
-      onFocusTxConsumed,
-    });
-    expect(
-      await screen.findByRole("dialog", { name: "Деталі операції" }),
-    ).toBeInTheDocument();
-    expect(onFocusTxConsumed).toHaveBeenCalledTimes(1);
-  });
-
-  it("глибоке посилання на ручний запис відкриває його редагування", async () => {
-    const onEditManualExpense = vi.fn();
-    const onFocusTxConsumed = vi.fn();
-    renderTransactions({
-      storage: {
-        manualExpenses: [
-          {
-            id: "m1",
-            description: "Ринок",
-            amount: 150,
-            category: "food",
-            date: "2026-06-05T10:00:00.000Z",
-          },
-        ],
-      },
-      focusTxId: "manual_m1",
-      onEditManualExpense,
-      onFocusTxConsumed,
-    });
-    await vi.waitFor(() =>
-      expect(onEditManualExpense).toHaveBeenCalledWith("m1"),
-    );
-    expect(onFocusTxConsumed).toHaveBeenCalledTimes(1);
-  });
-
-  it("невідомий id не відкриває нічого і не зʼїдає параметр", () => {
-    const onFocusTxConsumed = vi.fn();
-    renderTransactions({
-      mono: { realTx: [KAVA] },
-      focusTxId: "nope",
-      onFocusTxConsumed,
-    });
-    expect(
-      screen.queryByRole("dialog", { name: "Деталі операції" }),
-    ).toBeNull();
-    expect(onFocusTxConsumed).not.toHaveBeenCalled();
   });
 });
