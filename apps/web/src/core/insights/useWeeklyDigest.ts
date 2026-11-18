@@ -399,7 +399,21 @@ export function aggregateRoutine(weekKey: string): RoutineAggregate | null {
   };
 }
 
-async function generateWeeklyDigest(weekKey: string): Promise<{
+/**
+ * Змінні мутації генерації. `ifAbsent` шле лише автогенерація (С-3 (а),
+ * 2026-11-18): якщо звіт тижня вже згенерував інший пристрій, сервер віддає
+ * збережений без виклику моделі. Ручне «Оновити звіт» поля не шле і
+ * генерує заново.
+ */
+interface GenerateVars {
+  weekKey: string;
+  ifAbsent?: boolean;
+}
+
+async function generateWeeklyDigest({
+  weekKey,
+  ifAbsent,
+}: GenerateVars): Promise<{
   report: WeeklyDigestReport;
   generatedAt: string;
   weekKey: string;
@@ -425,6 +439,7 @@ async function generateWeeklyDigest(weekKey: string): Promise<{
     // момент підрахунку. Без цього штампу коуч, який тримає 8 тижнів,
     // прочитає майбутній стрибок визначення як зміну поведінки користувача.
     metricsVersion: METRICS_VERSION,
+    ...(ifAbsent ? { ifAbsent: true } : {}),
     finyk,
     fizruk,
     nutrition,
@@ -594,7 +609,7 @@ export function useWeeklyDigest(selectedWeekKey?: string) {
   const generate = useCallback(async () => {
     if (!canGenerate) return null;
     try {
-      const result = await mutateAsync(weekKey);
+      const result = await mutateAsync({ weekKey });
       return {
         ...result.report,
         generatedAt: result.generatedAt,
@@ -612,7 +627,7 @@ export function useWeeklyDigest(selectedWeekKey?: string) {
   const autoGenerate = useCallback(async (): Promise<AutoGenerateOutcome> => {
     if (!canGenerate) return "skipped";
     try {
-      await mutateAsync(weekKey);
+      await mutateAsync({ weekKey, ifAbsent: true });
       return "ok";
     } catch (err) {
       return isInsufficientDataError(err) ? "insufficient" : "failed";

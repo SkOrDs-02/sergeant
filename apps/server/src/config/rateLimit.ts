@@ -106,3 +106,30 @@ export const CHANGE_EMAIL_USER_RATE_LIMIT: RateLimitOptions = {
   windowMs: 24 * 60 * 60 * 1000,
   failMode: "closed",
 };
+
+/**
+ * Дешеві читання памʼяті AI: SELECT/DELETE без ембеддингу й без виклику
+ * моделі. 200/5хв вистачає, щоб прочистити велику памʼять за один сеанс, і все
+ * ще зупиняє скрипт (рішення 2026-07-25, `routes/ai-memory.ts`). Один бакет
+ * ділять list/delete памʼяті AI і читання памʼяті коуча
+ * (`GET /api/coach/memory`, С-3 (а), 2026-11-18): хаб читає її перед
+ * автогенерацією звіту тижня, і під лімітом коуча 20/год це читання їло б
+ * квоту виклику моделі.
+ */
+export const AI_MEMORY_BROWSE_RATE_LIMIT: RateLimitOptions = {
+  key: "api:ai-memory:browse",
+  limit: 200,
+  windowMs: 5 * 60_000,
+};
+
+/**
+ * Pre-auth IP-бакет для тих самих дешевих читань, 5× від
+ * `AI_MEMORY_BROWSE_RATE_LIMIT`: стоїть ПЕРЕД `requireSession()`, бо та на
+ * невдачі шле 401 без `next()`, і безсесійний флуд інакше не діставався б
+ * до per-user бакета.
+ */
+export const AI_MEMORY_BROWSE_IP_RATE_LIMIT: RateLimitOptions = {
+  key: "api:ai-memory:browse:ip",
+  limit: 1000,
+  windowMs: 5 * 60_000,
+};

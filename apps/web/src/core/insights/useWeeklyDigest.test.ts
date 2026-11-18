@@ -531,6 +531,36 @@ describe("useWeeklyDigest hook", () => {
     );
   });
 
+  it("ifAbsent (С-3 (а)): шле лише autoGenerate, ручний generate — ні", async () => {
+    mockGenerateDigest.mockResolvedValue({
+      report: { summary: "Тиждень", highlights: [] },
+      generatedAt: "2025-04-14T00:00:00Z",
+    });
+
+    // Мок типізований без аргументів, тож тіло запиту читаємо через `unknown`.
+    const sentBody = (i: number) =>
+      (mockGenerateDigest.mock.calls as unknown as unknown[][])[i]?.[0] as {
+        weekKey?: string;
+        ifAbsent?: boolean;
+      };
+
+    const { useWeeklyDigest } = await import("./useWeeklyDigest");
+    const { result } = renderHook(() => useWeeklyDigest("2025-04-07"), {
+      wrapper: makeWrapper(qc),
+    });
+
+    await result.current.generate();
+    await waitFor(() => expect(result.current.loading).toBe(false));
+    const manualBody = sentBody(0);
+    expect(manualBody).not.toHaveProperty("ifAbsent");
+    expect(manualBody.weekKey).toBe("2025-04-07");
+
+    await expect(result.current.autoGenerate()).resolves.toBe("ok");
+    const autoBody = sentBody(1);
+    expect(autoBody.ifAbsent).toBe(true);
+    expect(autoBody.weekKey).toBe("2025-04-07");
+  });
+
   it("error field is populated when generate() API fails", async () => {
     mockGenerateDigest.mockRejectedValue(new Error("server unavailable"));
 

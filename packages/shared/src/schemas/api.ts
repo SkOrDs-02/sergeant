@@ -1120,6 +1120,12 @@ export const WeeklyDigestSchema = z.object({
   // різних версій — інакше стрибок визначення читається як зміна поведінки
   // користувача. Перевірка — `comparableAsTrend` у `@sergeant/shared`.
   metricsVersion: z.number().int().min(0).optional(),
+  // «Згенеруй, лише якщо звіту за `weekKey` ще немає» (С-3 (а), 2026-11-18).
+  // Шле лише автогенерація: сервер спершу читає памʼять коуча і, якщо звіт
+  // тижня там уже є (згенерував інший пристрій), віддає його в тій самій
+  // формі `{ report, generatedAt }` без виклику моделі. Без поля (ручне
+  // «Оновити звіт», старі бандли) звіт генерується заново, як і раніше.
+  ifAbsent: z.boolean().optional(),
   finyk: FinykDigestSchema.nullish(),
   fizruk: FizrukDigestSchema.nullish(),
   nutrition: NutritionDigestSchema.nullish(),
