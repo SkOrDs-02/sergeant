@@ -80,6 +80,11 @@ export interface PickedFood {
    */
   unsaved?: boolean;
   /**
+   * Звідки продукт локальної бази (`FoodProduct.origin`): свій чи
+   * вбудований. Зовнішні хіти поля не мають.
+   */
+  origin?: "user" | "seed" | undefined;
+  /**
    * Нутрієнти понад КБЖВ із відповіді на скан (N9). Транзитні: живуть у
    * вʼюмоделі аркуша й НЕ їдуть у `FoodProduct` — розбір у
    * `ProductNutrientsRow.tsx`. Ключа немає, коли джерело таких даних не

@@ -25,24 +25,12 @@
  *
  * @last-validated 2026-08-13
  */
-import { cn } from "@shared/lib/ui/cn";
-import { FIELD_LABEL } from "@shared/components/ui/Input";
 import { useRef, useState } from "react";
-import type { Dispatch, SetStateAction } from "react";
-import { Button } from "@shared/components/ui/Button";
-import { ConfirmDialog } from "@shared/components/ui/ConfirmDialog";
-import { DateField } from "@shared/components/ui/DateField";
 import { Sheet } from "@shared/components/ui/Sheet";
 import { hapticSuccess } from "@shared/lib/adapters/haptic";
 import { clampText } from "@shared/lib/text/limits";
 import { parseDecimalInput } from "@shared/lib/format/numberInput";
-import type {
-  Meal,
-  MealTemplate,
-  MealTypeId,
-  NutritionPrefs,
-  PantryItem,
-} from "@sergeant/nutrition-domain";
+import type { Meal } from "@sergeant/nutrition-domain";
 import type { NutritionPhotoResult } from "@shared/api";
 import { MEAL_TYPES } from "../lib/mealTypes";
 import { newMealId } from "../lib/mealId";
@@ -84,7 +72,15 @@ import { SaveAsTemplate } from "./meal-sheet/SaveAsTemplate";
 import { useEditedFoodRehydration } from "./meal-sheet/useEditedFoodRehydration";
 import { useFoodSearch } from "./meal-sheet/useFoodSearch";
 import { useBarcodeLookup } from "./meal-sheet/useBarcodeLookup";
-import type { QuickChip } from "../hooks/useNutritionQuickChips";
+import { quickMealType } from "../lib/quickMealType";
+import {
+  EditDateField,
+  EmptyMacrosConfirm,
+  MealSaveButtons,
+} from "./meal-sheet/MealSheetActions";
+import { BarcodeBindRow } from "./meal-sheet/BarcodeBindRow";
+import { buildPhotoQuickMeals } from "./meal-sheet/photoQuickSave";
+import type { AddMealSheetProps } from "./meal-sheet/addMealSheetProps";
 
 /**
  * Фізіологічно правдоподібні стелі для одного прийому їжі. Не медичні
@@ -102,35 +98,6 @@ export { MAX_KCAL_PER_MEAL, MAX_MACRO_GRAMS } from "./meal-sheet/mealFormUtils";
  * потрапляла НЕ та вага без жодного натяку користувачу. Тиха підміна даних
  * гірша за помилку, тому парсинг тут спільний із КБЖВ.
  */
-interface AddMealSheetProps {
-  open: boolean;
-  onClose: () => void;
-  /** `photoFile` — оригінал фото для мініатюри, коли страва прийшла з AI-аналізу. */
-  onSave: (meal: Meal, photoFile?: File | null, newDate?: string) => void;
-  /** День редагованого запису; з ним у формі зʼявляється поле «Дата» (перенос). */
-  initialDate?: string | undefined;
-  /** Записи цього ж прийому за вчора: непорожньо = на кроці джерела є «Як учора». */
-  yesterdayMeals?: readonly Meal[] | undefined;
-  onCopyYesterday?: (() => void) | undefined;
-  /** `"photo"` — відкритись одразу на кроці аналізу фото (шорткати/CTA). */
-  initialStep?: "source" | "photo" | undefined;
-  /** Вкладка кроку джерела на відкритті; без неї «Пошук». */
-  initialSourceTab?: SourceTabId | undefined;
-  /**
-   * Тип прийому для НОВОГО запису. Порожньо — тип вгадує годинник
-   * (`mealTypeByNow`), як для FAB. Заповнено рівно тоді, коли людина
-   * тапнула конкретний сегмент hero-стрічки. На редагування не впливає:
-   * там тип уже є в самому записі.
-   */
-  initialMealType?: MealTypeId | null | undefined;
-  initialMeal?: Partial<Meal> | null | undefined;
-  mealTemplates?: MealTemplate[] | undefined;
-  setPrefs?: Dispatch<SetStateAction<NutritionPrefs>> | undefined;
-  pantryItems?: PantryItem[] | undefined;
-  onConsumePantryItem?: ((itemName: string, grams: number) => void) | undefined;
-  quickChips?: readonly QuickChip[] | undefined;
-  onQuickAddMeal?: ((chip: QuickChip) => void) | undefined;
-}
 
 /**
  * Результат кроку «фото», застосований до форми (photo → fill).
@@ -162,6 +129,8 @@ export function AddMealSheet({
   onConsumePantryItem,
   quickChips = [],
   onQuickAddMeal,
+  getLastFoodPortion,
+  onPhotoSave,
 }: AddMealSheetProps) {
   const [form, setForm] = useState<MealFormState>(() => emptyForm(null));
   const [foodQuery, setFoodQuery] = useState("");
@@ -206,6 +175,8 @@ export function AddMealSheet({
     setScannerOpen,
     handleBarcodeLookup,
     bindMissedBarcode,
+    pendingBarcodeBind,
+    declineBarcodeBind,
   } = useBarcodeLookup({
     pickedFood,
     setPickedFood,
@@ -472,6 +443,14 @@ export function AddMealSheet({
   // applied result for macroSource/thumbnail. A picked food/pantry item
   // from an earlier detour must not survive alongside photoAI macros.
   function handlePhotoApply(result: NutritionPhotoResult, file: File | null) {
+    // Х-2 (а): запис одразу, тип прийому за контекстом. Збій лишає крок фото.
+    const quick = onPhotoSave
+      ? buildPhotoQuickMeals(result, quickMealType(initialMealType), draftId)
+      : null;
+    if (quick && onPhotoSave) {
+      if (onPhotoSave(quick, file)) hapticSuccess();
+      return;
+    }
     setPickedFood(null);
     setFromPantryItem(null);
     setForm((previous) => photoResultToForm(result, previous));
@@ -697,14 +676,7 @@ export function AddMealSheet({
             />
 
             {initialMeal?.id && initialDate && (
-              <div className="mb-4">
-                <div className={cn(FIELD_LABEL, "mb-1")}>Дата</div>
-                <DateField
-                  value={date}
-                  onChange={(e) => setDate(e.target.value)}
-                  aria-label="Дата запису"
-                />
-              </div>
+              <EditDateField value={date} onChange={setDate} />
             )}
 
             {pickedFood ? (
@@ -716,6 +688,11 @@ export function AddMealSheet({
                 onChangeProduct={handleChangeProduct}
                 skipInitialRescale={editedFood.rehydrated}
                 onUnitChange={savePicked.onUnitChange}
+                getLastPortion={
+                  initialMeal?.id || fromPantryItem
+                    ? undefined
+                    : getLastFoodPortion
+                }
               />
             ) : fromPantryItem ? (
               <PantryPortionField
@@ -731,6 +708,13 @@ export function AddMealSheet({
               !initialMeal?.id && (
                 <PortionUnitHint onSwitchToPackage={handleSwitchToPackage} />
               )
+            )}
+
+            {pendingBarcodeBind(pickedFood) && (
+              <BarcodeBindRow
+                code={pendingBarcodeBind(pickedFood) ?? ""}
+                onCancel={() => declineBarcodeBind(pickedFood)}
+              />
             )}
 
             {!hasPhotoItems && (
@@ -774,34 +758,16 @@ export function AddMealSheet({
               )
             )}
 
-            <div className="mt-5 grid grid-cols-1 sm:grid-cols-2 gap-2">
-              <Button
-                type="button"
-                variant="solid"
-                className="h-12 min-h-[44px]"
-                onClick={handleSave}
-              >
-                {initialMeal?.id ? "Зберегти зміни" : "Додати прийом"}
-              </Button>
-              <Button
-                type="button"
-                variant="outline"
-                className="h-12 min-h-[44px]"
-                onClick={onClose}
-              >
-                Скасувати
-              </Button>
-            </div>
+            <MealSaveButtons
+              editing={Boolean(initialMeal?.id)}
+              onSave={handleSave}
+              onCancel={onClose}
+            />
           </>
         )}
       </Sheet>
-      <ConfirmDialog
+      <EmptyMacrosConfirm
         open={pendingMeal != null}
-        title="Зберегти без калорійності?"
-        description="КБЖВ порожні, запис не вплине на денну статистику. Зберегти як є?"
-        confirmLabel="Зберегти"
-        cancelLabel="Повернутись"
-        danger={false}
         onConfirm={handleConfirmEmptyMacrosSave}
         onCancel={() => setPendingMeal(null)}
       />

@@ -14,11 +14,8 @@
  */
 import { useCallback } from "react";
 import type { Meal, MealTypeId } from "@sergeant/nutrition-domain";
-import {
-  MEAL_TYPES,
-  deviceTimeOfDay,
-  mealTypeByHour,
-} from "@sergeant/nutrition-domain";
+import { MEAL_TYPES, deviceTimeOfDay } from "@sergeant/nutrition-domain";
+import { quickMealType } from "../lib/quickMealType";
 import type { ToastApi } from "@shared/hooks/useToast";
 import { newMealId } from "../lib/mealId";
 import type { QuickChip } from "./useNutritionQuickChips";
@@ -44,8 +41,9 @@ export function useQuickAddMealFromChip({
       const now = new Date();
       // Тип, обраний в аркуші (сегмент «Вечеря» в hero), виграє годинник:
       // інакше «Вечеря» о 13:00 + тап по чипу писали «Обід».
-      // eslint-disable-next-line sergeant-design/prefer-kyiv-time -- ADR-0078: тип прийому їжі й час доби належать ОСОБИСТОМУ дню, а він за пристроєм — тим самим годинником, що дав `log.selectedDate`
-      const mealTypeId = mealType ?? mealTypeByHour(now.getHours());
+      // Спільне правило швидкого запису (`quickMealType`): чип, «Як учора»
+      // в аркуші «Додати» і запис фото беруть тип однаково.
+      const mealTypeId = quickMealType(mealType, now);
       const mealLabel =
         MEAL_TYPES.find((m) => m.id === mealTypeId)?.label || "Прийом їжі";
       const id = newMealId();

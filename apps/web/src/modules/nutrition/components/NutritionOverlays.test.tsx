@@ -8,6 +8,7 @@
  * and assert that the orchestration logic (open/close gating, guard conditions
  * for the delete-confirm dialog) works correctly.
  */
+import { todayISODate } from "@sergeant/nutrition-domain";
 import { describe, it, expect, vi, afterEach } from "vitest";
 import { render, screen, fireEvent, cleanup } from "@testing-library/react";
 import type { ReactNode } from "react";
@@ -61,13 +62,35 @@ vi.mock("./AddMealSheet", () => ({
     open,
     onClose,
     onQuickAddMeal,
+    onPhotoSave,
   }: {
     open: boolean;
     onClose: () => void;
     onQuickAddMeal?: (chip: { id: string }) => void;
+    onPhotoSave?: (photo: unknown, file: null) => boolean;
   }) =>
     open ? (
       <div data-testid="add-meal-sheet">
+        <button
+          onClick={() =>
+            onPhotoSave?.(
+              {
+                title: "Борщ",
+                meals: [
+                  {
+                    id: "p1",
+                    name: "Борщ",
+                    mealType: "dinner",
+                    macros: { kcal: 250 },
+                  },
+                ],
+              },
+              null,
+            )
+          }
+        >
+          photo-save
+        </button>
         <button onClick={onClose}>close-add-meal</button>
         <button onClick={() => onQuickAddMeal?.({ id: "recent-1" })}>
           quick-chip
@@ -489,5 +512,37 @@ describe("NutritionOverlays", () => {
       .find((el) => el.getAttribute("data-title") === "Видалити місце?")!;
     fireEvent.click(deleteDialog.querySelector("button")!);
     expect(onConfirmDeletePantry).toHaveBeenCalledTimes(1);
+  });
+
+  it("Х-2: фото-запис пише в журнал, «Змінити» в тості відкриває прийом", () => {
+    const handleAddMeal = vi.fn(() => todayISODate());
+    const success = vi.fn();
+    const onOpenMealTypeSheet = vi.fn();
+    render(
+      <NutritionOverlays
+        {...baseProps({
+          log: makeLog({
+            addMealSheetOpen: true,
+            nutritionLog: {},
+            handleAddMeal,
+            handleRemoveMeal: vi.fn(),
+          }),
+          toast: { show: vi.fn(), success, error: vi.fn() },
+          onOpenMealTypeSheet,
+        })}
+      />,
+    );
+    fireEvent.click(screen.getByText("photo-save"));
+    expect(handleAddMeal).toHaveBeenCalledWith(
+      expect.objectContaining({ id: "p1" }),
+    );
+    const [msg, , action] = success.mock.calls[0] as [
+      string,
+      unknown,
+      { label: string; onClick: () => void },
+    ];
+    expect(msg).toBe("Записав у вечерю: Борщ, 250 ккал.");
+    action.onClick();
+    expect(onOpenMealTypeSheet).toHaveBeenCalledWith("dinner");
   });
 });

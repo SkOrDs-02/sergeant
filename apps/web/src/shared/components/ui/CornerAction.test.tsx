@@ -44,6 +44,29 @@ describe("AddAction", () => {
     expect(screen.queryByRole("dialog", { name: "Додати" })).toBeNull();
     expect(root.style.getPropertyValue(SHEET_FOOTER_INSET_VAR)).toBe("");
   });
+
+  it("малює `lead` над джерелами і дає йому закрити аркуш", () => {
+    render(
+      <AddAction
+        sources={[
+          { id: "photo", label: "Фото", hint: "Аналіз", onSelect() {} },
+        ]}
+        lead={(close) => (
+          <button type="button" onClick={close}>
+            Як учора
+          </button>
+        )}
+      />,
+    );
+    fireEvent.click(screen.getByRole("button", { name: "Додати" }));
+    const lead = screen.getByRole("button", { name: "Як учора" });
+    const source = screen.getByRole("button", { name: /Фото/ });
+    expect(
+      lead.compareDocumentPosition(source) & Node.DOCUMENT_POSITION_FOLLOWING,
+    ).toBeTruthy();
+    fireEvent.click(lead);
+    expect(screen.queryByRole("dialog", { name: "Додати" })).toBeNull();
+  });
 });
 
 describe("CornerAction", () => {

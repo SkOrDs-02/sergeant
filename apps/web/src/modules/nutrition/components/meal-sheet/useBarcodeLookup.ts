@@ -11,6 +11,7 @@ import {
 import { isApiError } from "@shared/api";
 import {
   bindBarcodeToFood,
+  bindBarcodeToFoodIfFree,
   lookupFoodByBarcode,
   type FoodProduct,
 } from "../../lib/foodDb/foodDb";
@@ -54,6 +55,13 @@ export interface UseBarcodeLookupResult {
    * запису.
    */
   bindMissedBarcode: (food: PickedFood | null) => void;
+  /**
+   * Код, що привʼяжеться до цього СВОГО продукту з пошуку під час збереження
+   * (рядок-підтвердження на кроці «fill», OD-27 Х-5); `null` — рядка немає.
+   */
+  pendingBarcodeBind: (food: PickedFood | null) => string | null;
+  /** «Скасувати» в рядку: цей код до цього продукту не привʼязувати. */
+  declineBarcodeBind: (food: PickedFood | null) => void;
 }
 
 /**
@@ -67,6 +75,19 @@ export interface UseBarcodeLookupResult {
 function isCreatedFromLabel(food: PickedFood | null): food is PickedFood {
   if (!food || food.id == null || String(food.id) === "") return false;
   return food.unsaved === true;
+}
+
+/**
+ * Свій продукт із локальної бази, уже збережений (OD-27 Х-5, рішення
+ * власника 2026-11-18): привʼязка лише після рядка-підтвердження зі
+ * «Скасувати». Штрихкод власний тримає лише такий продукт: базовий
+ * (`gen_…`, `origin: "seed"`) не привʼязується ніколи (канон §6), а
+ * зовнішній хіт і картка зі скану в локальній базі не лежать.
+ */
+function isOwnSavedFood(food: PickedFood | null): food is PickedFood {
+  if (!food || food.id == null || food.unsaved === true) return false;
+  const id = String(food.id);
+  return id !== "" && food.origin === "user" && !id.startsWith("gen_");
 }
 
 export function useBarcodeLookup({
@@ -85,6 +106,8 @@ export function useBarcodeLookup({
   // він і є поточний `barcode`: нове відкриття аркуша скидає `barcode` у
   // "", і промах минулого відкриття ні до чого не привʼяжеться.
   const [missedBarcode, setMissedBarcode] = useState<string | null>(null);
+  // `код|продукт`, для якого людина натиснула «Скасувати» в рядку привʼязки.
+  const [declinedBind, setDeclinedBind] = useState<string | null>(null);
   const lookupProduct = useBarcodeProductLookup();
 
   const handleBarcodeLookup = useCallback(
@@ -94,6 +117,7 @@ export function useBarcodeLookup({
       setBarcodeStatus("Шукаю…");
       setBarcodeNotice(null);
       setMissedBarcode(null);
+      setDeclinedBind(null);
 
       const localFound = await lookupFoodByBarcode(code);
       if (localFound) {
@@ -227,16 +251,42 @@ export function useBarcodeLookup({
     [pickedFood],
   );
 
+  const pendingBarcodeBind = useCallback(
+    (food: PickedFood | null) => {
+      if (!missedBarcode || missedBarcode !== barcode) return null;
+      if (!isOwnSavedFood(food)) return null;
+      return declinedBind === `${missedBarcode}|${String(food.id)}`
+        ? null
+        : missedBarcode;
+    },
+    [missedBarcode, barcode, declinedBind],
+  );
+
+  const declineBarcodeBind = useCallback(
+    (food: PickedFood | null) => {
+      if (missedBarcode && food?.id != null)
+        setDeclinedBind(`${missedBarcode}|${String(food.id)}`);
+    },
+    [missedBarcode],
+  );
+
   const bindMissedBarcode = useCallback(
     (food: PickedFood | null) => {
       if (!missedBarcode || missedBarcode !== barcode) return;
-      if (!isCreatedFromLabel(food)) return;
       // Привʼязка лише на цьому пристрої — приватний внесок (модель
       // Cronometer, дослідження 2026-07-25): у спільний каталог не їде.
-      void bindBarcodeToFood(missedBarcode, String(food.id));
+      const id = String(food?.id ?? "");
+      if (isCreatedFromLabel(food)) {
+        void bindBarcodeToFood(missedBarcode, id);
+      } else if (pendingBarcodeBind(food) !== null) {
+        // Свій продукт: код, зайнятий іншим продуктом, не перезаписуємо.
+        void bindBarcodeToFoodIfFree(missedBarcode, id);
+      } else {
+        return;
+      }
       setMissedBarcode(null);
     },
-    [missedBarcode, barcode],
+    [missedBarcode, barcode, pendingBarcodeBind],
   );
 
   return {
@@ -251,5 +301,7 @@ export function useBarcodeLookup({
     handleBarcodeLookup,
     handleBarcodeBind,
     bindMissedBarcode,
+    pendingBarcodeBind,
+    declineBarcodeBind,
   };
 }

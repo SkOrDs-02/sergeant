@@ -1,4 +1,10 @@
-import { useCallback, useLayoutEffect, useRef, useState } from "react";
+import {
+  useCallback,
+  useLayoutEffect,
+  useRef,
+  useState,
+  type ReactNode,
+} from "react";
 import { useVisualKeyboardInset } from "@sergeant/shared";
 import { cn } from "../../lib/ui/cn";
 import { hapticTap } from "../../lib/adapters/haptic";
@@ -113,8 +119,18 @@ export interface AddSource {
  * без іконок: назва 16 / 600 і підпис 14 другим сірим. Аркуш
  * закривається до виклику джерела, щоб наступний аркуш відкривався вже
  * без нього.
+ *
+ * `lead` — необовʼязковий блок над джерелами (Їжа: «Як учора» і
+ * «Нещодавні», OD-27 Х-3). Отримує `close`, бо запис одним тапом теж
+ * закриває аркуш.
  */
-export function AddAction({ sources }: { sources: readonly AddSource[] }) {
+export function AddAction({
+  sources,
+  lead,
+}: {
+  sources: readonly AddSource[];
+  lead?: ((close: () => void) => ReactNode) | undefined;
+}) {
   const [open, setOpen] = useState(false);
   const sourcesDialogRef = useRef<HTMLElement | null>(null);
   const attachSources = useCallback((node: HTMLUListElement | null) => {
@@ -130,6 +146,7 @@ export function AddAction({ sources }: { sources: readonly AddSource[] }) {
     <>
       <CornerAction label={title} plus onClick={() => setOpen(true)} />
       <Sheet open={open} onClose={() => setOpen(false)} title={title}>
+        {lead?.(() => setOpen(false))}
         <ul
           ref={attachSources}
           data-testid="add-sources"

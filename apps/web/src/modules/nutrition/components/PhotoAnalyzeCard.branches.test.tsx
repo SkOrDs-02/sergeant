@@ -102,9 +102,11 @@ describe("PhotoAnalyzeCard", () => {
 
     expect(save.className).toContain("bg-text");
     expect(refine.className).not.toContain("bg-text ");
+    // OD-27 Х-2 (а): кнопка пише одразу, підпис більше не просить «збережи».
     expect(
-      screen.getByText(/Сам аналіз у журнал не потрапляє/),
+      screen.getByText("Запишу у прийом за часом доби, змінити можна з тосту."),
     ).toBeInTheDocument();
+    expect(screen.queryByText(/не потрапляє/)).toBeNull();
   });
 
   it("refuses a non-food result: no macros, no save-to-log, no portion questions", () => {

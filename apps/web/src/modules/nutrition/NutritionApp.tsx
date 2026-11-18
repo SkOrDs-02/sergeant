@@ -17,9 +17,7 @@ import { NutritionPantryPage } from "./pages/NutritionPantryPage";
 import { NutritionLogPage } from "./pages/NutritionLogPage";
 import { NutritionMenuPage } from "./pages/NutritionMenuPage";
 import { Notice } from "@shared/components/ui/Notice";
-import { AddAction } from "@shared/components/ui/CornerAction";
-import { WATER_ADD_EVENT } from "./hooks/useWaterTracker";
-import { messages } from "@shared/i18n/uk";
+import { NutritionAddAction } from "./components/NutritionAddAction";
 import type { SourceTabId } from "./components/meal-sheet/SourceTabs";
 import {
   MeshBackground,
@@ -503,7 +501,6 @@ export default function NutritionApp({
     isLoading: dayPlanBusy,
   };
 
-  const src = messages.nutrition.addSources;
   return (
     // Sergeant v2 redesign (2026-05, PR-6) — Nutrition shell wraps content
     // in MeshBackground. ModuleAccentProvider drops asShellRoot; shell-root
@@ -665,38 +662,15 @@ export default function NutritionApp({
           </PullToRefresh>
         </SwipePages>
 
-        {(activePage === "start" || activePage === "log") && (
-          <AddAction
-            sources={[
-              {
-                id: "search",
-                ...src.search,
-                onSelect: () => openAddMealAt("search"),
-              },
-              {
-                id: "scan",
-                ...src.scan,
-                onSelect: () => openAddMealAt("scan"),
-              },
-              { id: "photo", ...src.photo, onSelect: handleOpenMealPhoto },
-              {
-                id: "manual",
-                ...src.manual,
-                onSelect: () => openAddMealAt("manual"),
-              },
-              ...(activePage === "start"
-                ? [
-                    {
-                      id: "water",
-                      ...src.water,
-                      onSelect: () =>
-                        window.dispatchEvent(new Event(WATER_ADD_EVENT)),
-                    },
-                  ]
-                : []),
-            ]}
-          />
-        )}
+        <NutritionAddAction
+          activePage={activePage}
+          log={log}
+          pantryItems={pantry.effectiveItems}
+          toast={toast}
+          onOpenAt={openAddMealAt}
+          onOpenPhoto={handleOpenMealPhoto}
+          onQuickAdd={handleQuickAddMealFromChip}
+        />
 
         <NutritionBottomNav
           activePage={activePage}
@@ -726,6 +700,7 @@ export default function NutritionApp({
           addMealInitialMealType={addMealInitialMealType}
           onQuickAddMeal={handleQuickAddMealFromChip}
           openMealTypeSheet={openMealTypeSheet}
+          onOpenMealTypeSheet={setOpenMealTypeSheet}
           onCloseMealTypeSheet={() => setOpenMealTypeSheet(null)}
           toast={toast}
         />

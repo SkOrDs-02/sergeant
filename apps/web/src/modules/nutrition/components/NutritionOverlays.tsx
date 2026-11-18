@@ -4,13 +4,18 @@
  */
 import type { Dispatch, SetStateAction } from "react";
 import {
-  addDaysISODate,
   todayISODate,
   type Meal,
   type MealTypeId,
   type NutritionPrefs,
 } from "@sergeant/nutrition-domain";
 import { showUndoToast } from "@shared/lib/ui/undoToast";
+import {
+  useCopyYesterdayMeals,
+  yesterdayMealsOf,
+} from "../hooks/useCopyYesterdayMeals";
+import { usePhotoQuickSave } from "../hooks/usePhotoQuickSave";
+import { lastFoodPortion } from "../lib/lastFoodPortion";
 import type { useToast } from "@shared/hooks/useToast";
 import { mealsByTypeForDay } from "../lib/nutritionStats";
 import { PantryManagerSheet } from "./PantryManagerSheet";
@@ -78,6 +83,8 @@ interface NutritionOverlaysProps {
   onQuickAddMeal?: (chip: QuickChip, mealType?: MealTypeId) => void;
   /** Тип прийому, розгорнутий тапом по сегменту hero; `null` — закрито. */
   openMealTypeSheet?: MealTypeId | null | undefined;
+  /** «Змінити» з тосту фото-запису: аркуш прийому за сьогодні (Х-2 а). */
+  onOpenMealTypeSheet?: ((type: MealTypeId) => void) | undefined;
   onCloseMealTypeSheet?: (() => void) | undefined;
   /** Потрібен аркушу прийому — undo після видалення свайпом. */
   toast: Toast;
@@ -106,6 +113,7 @@ export function NutritionOverlays({
   addMealInitialMealType,
   onQuickAddMeal,
   openMealTypeSheet = null,
+  onOpenMealTypeSheet,
   onCloseMealTypeSheet,
   toast,
 }: NutritionOverlaysProps) {
@@ -144,11 +152,14 @@ export function NutritionOverlays({
   // обраним типом, а не FAB і не редагування.
   const yesterdayMeals =
     log.addMealSheetOpen && addMealInitialMealType && !editingMeal
-      ? mealsByTypeForDay(
-          log.nutritionLog,
-          addDaysISODate(log.getActiveDate(), -1),
-        )[addMealInitialMealType]
+      ? yesterdayMealsOf(log, addMealInitialMealType)
       : [];
+  const copyYesterday = useCopyYesterdayMeals({ log, toast });
+  const photoQuickSave = usePhotoQuickSave({
+    log,
+    toast,
+    onEdit: onOpenMealTypeSheet,
+  });
 
   return (
     <>
@@ -228,18 +239,18 @@ export function NutritionOverlays({
         initialDate={editingMeal?.date}
         yesterdayMeals={yesterdayMeals}
         onCopyYesterday={() => {
-          if (!addMealInitialMealType) return;
-          const activeDate = log.getActiveDate();
-          const ids = log.handleCopyMeals(
-            yesterdayMeals,
-            activeDate,
-            addMealInitialMealType,
-          );
-          showUndoToast(toast, {
-            msg: "Скопійовано з учора",
-            onUndo: () =>
-              ids.forEach((id) => log.handleRemoveMeal(activeDate, id)),
-          });
+          if (addMealInitialMealType)
+            copyYesterday(yesterdayMeals, addMealInitialMealType);
+        }}
+        // Х-1 (б): вага минулого запису продукту — з журналу, без сховища.
+        getLastFoodPortion={(foodId) =>
+          lastFoodPortion(log.nutritionLog, foodId)
+        }
+        onPhotoSave={(photo, file) => {
+          // Позначка лише за успіху: збій лишає аркуш відкритим.
+          const saved = photoQuickSave(photo, file);
+          if (saved) markComposeSaved(NUTRITION_MEAL_COMPOSE_KEY);
+          return saved;
         }}
         mealTemplates={prefs.mealTemplates || []}
         setPrefs={setPrefs}

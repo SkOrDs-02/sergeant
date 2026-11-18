@@ -491,6 +491,42 @@ export async function bindBarcodeToFood(
   }
 }
 
+/**
+ * Привʼязка штрихкоду до свого продукту з підтвердженням людини (OD-27 Х-5).
+ * Код, уже привʼязаний до ІНШОГО продукту, не перезаписується: привʼязка
+ * мовчки забрала б його в того продукту. Штрихкодів у продукту може бути
+ * кілька (сховище «код → продукт»), тож новий код не витісняє наявний.
+ */
+export async function bindBarcodeToFoodIfFree(
+  barcode: string,
+  foodId: string,
+): Promise<boolean> {
+  const bc = String(barcode || "").trim();
+  const id = String(foodId || "").trim();
+  if (!id || !/^\d{8,14}$/.test(bc)) return false;
+  try {
+    await ensureMigrated();
+    const db = await openSergeantDb();
+    if (!db) return false;
+    const tx = db.transaction(STORE_BARCODES, "readwrite");
+    const store = tx.objectStore(STORE_BARCODES);
+    const current = await new Promise<string>((resolve, reject) => {
+      const r = store.get(bc);
+      r.onsuccess = () => resolve(String(r.result || ""));
+      r.onerror = () => reject(r.error);
+    });
+    if (current && current !== id) {
+      await txDone(tx);
+      return false;
+    }
+    if (!current) store.put(id, bc);
+    await txDone(tx);
+    return true;
+  } catch {
+    return false;
+  }
+}
+
 export async function lookupFoodByBarcode(
   barcode: string,
 ): Promise<FoodProduct | null> {
