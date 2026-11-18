@@ -69,15 +69,33 @@ export type WorkoutItemCardProps = {
   ) => void;
 };
 
-/** Last SET in `sets` with both weight AND reps logged (>0), or `null`
- * when none qualify. Used by "+ Підхід" to copy forward the most
- * recently completed set instead of appending a blank `0×0` row. */
-function findLastDoneSet(sets: WorkoutSet[]): WorkoutSet | null {
-  for (let i = sets.length - 1; i >= 0; i -= 1) {
+/** Найближчий ВИКОНАНИЙ підхід над рядком `idx`, або `null`. */
+function findDoneSetBefore(sets: WorkoutSet[], idx: number): WorkoutSet | null {
+  for (let i = Math.min(idx, sets.length) - 1; i >= 0; i -= 1) {
     const s = sets[i];
     if (s && isSetDone(s)) return s;
   }
   return null;
+}
+
+/**
+ * Плейсхолдер порожнього рядка `idx`: «було» з тієї ж позиції минулої сесії,
+ * а коли його немає, найближчий виконаний підхід вище в цій сесії. ✓ на
+ * порожньому рядку приймає саме ці значення, тож «те саме, що минулий»
+ * лишається одним тапом.
+ *
+ * AI-CONTEXT: logic-18 (OD-28, Фз-3). «+ Підхід» колись копіював значення в
+ * сам рядок, а виконаність похідна (`isSetDone` = reps > 0), тож незроблений
+ * підхід одразу йшов у лічильник, обʼєм, рекорди й відновлення. Тепер рядок
+ * народжується `{0, 0}` і стає виконаним лише після ✓ (або власного вводу
+ * повторень). Не повертай копію значень у сам підхід.
+ */
+export function placeholderSetFor(
+  sets: WorkoutSet[],
+  idx: number,
+  lastSessionSets: WorkoutSet[],
+): WorkoutSet | null {
+  return lastSessionSets[idx] ?? findDoneSetBefore(sets, idx);
 }
 
 /**
@@ -262,7 +280,7 @@ export function WorkoutItemCard({
               key={setKeys[idx]}
               index={idx}
               set={s}
-              ghost={lastFilteredSets[idx] ?? null}
+              ghost={placeholderSetFor(sets, idx, lastFilteredSets)}
               isReadOnly={isReadOnly}
               isCurrent={idx === currentIdx}
               isLast={idx === sets.length - 1}
@@ -289,7 +307,11 @@ export function WorkoutItemCard({
                 updateItem(activeWorkout.id, it.id, { sets: next });
               }}
               onApplyGhost={() => {
-                const ghost = lastFilteredSets[idx];
+                const ghost = placeholderSetFor(
+                  it.sets || [],
+                  idx,
+                  lastFilteredSets,
+                );
                 if (!ghost) return;
                 const next = [...(it.sets || [])];
                 const current = next[idx];
@@ -323,24 +345,12 @@ export function WorkoutItemCard({
                 type="button"
                 onClick={() => {
                   const currentSets = it.sets || [];
-                  // Copy the last COMPLETED set forward instead of appending
-                  // a blank `{0,0}` row — a fresh set almost always repeats
-                  // the previous weight/reps. Falls back to the same-position
-                  // "було" ghost when nothing is done yet, and to an empty
-                  // row only when neither exists.
-                  const lastDone = findLastDoneSet(currentSets);
-                  const ghostFallback = lastFilteredSets[currentSets.length];
-                  const seed = lastDone
-                    ? { weightKg: lastDone.weightKg, reps: lastDone.reps }
-                    : ghostFallback
-                      ? {
-                          weightKg: ghostFallback.weightKg ?? 0,
-                          reps: ghostFallback.reps ?? 0,
-                        }
-                      : { weightKg: 0, reps: 0 };
+                  // Порожній рядок: минулі значення лише плейсхолдерами
+                  // (`placeholderSetFor`), виконаним він стає після ✓.
+                  // Див. AI-CONTEXT біля `placeholderSetFor` (logic-18).
                   setSetIds((prev) => [...prev, crypto.randomUUID()]);
                   updateItem(activeWorkout.id, it.id, {
-                    sets: [...currentSets, seed],
+                    sets: [...currentSets, { weightKg: 0, reps: 0 }],
                   });
                 }}
               >

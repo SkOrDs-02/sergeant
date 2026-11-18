@@ -211,15 +211,104 @@ describe("WorkoutItemCard — strength set rows", () => {
     expect(setRestTimer).not.toHaveBeenCalled();
   });
 
-  it("'+ Підхід' copies the last completed set forward", () => {
+  it("'+ Підхід' appends an EMPTY row, not a copy that would count as done (logic-18)", () => {
     renderCard();
     fireEvent.click(screen.getByRole("button", { name: "+ Підхід" }));
     expect(updateItem).toHaveBeenCalledWith("w1", "it-1", {
       sets: [
         { weightKg: 50, reps: 8 },
-        { weightKg: 50, reps: 8 },
+        { weightKg: 0, reps: 0 },
       ],
     });
+  });
+
+  it("an empty row after a done set shows that set as placeholders, is current, and ✓ applies it", () => {
+    const { container } = renderCard({
+      it: makeItem({
+        sets: [
+          { weightKg: 60, reps: 8 },
+          { weightKg: 65, reps: 6 },
+          { weightKg: 0, reps: 0 },
+        ],
+      }),
+    });
+    const weights = screen.getAllByRole("textbox", {
+      name: "Вага в кілограмах",
+    });
+    const reps = screen.getAllByRole("spinbutton", {
+      name: "Кількість повторень",
+    });
+    expect(weights[2]).toHaveAttribute("placeholder", "65");
+    expect(weights[2]).toHaveValue("");
+    expect(reps[2]).toHaveAttribute("placeholder", "6");
+    const current = container.querySelectorAll('[data-current="true"]');
+    expect(current).toHaveLength(1);
+    expect(current[0]?.textContent).toContain("3");
+    fireEvent.click(
+      screen.getByRole("button", { name: /Підхід 3: повторити 65×6/ }),
+    );
+    expect(updateItem).toHaveBeenCalledWith("w1", "it-1", {
+      sets: [
+        { weightKg: 60, reps: 8 },
+        { weightKg: 65, reps: 6 },
+        { weightKg: 65, reps: 6 },
+      ],
+    });
+    expect(setRestTimer).toHaveBeenCalled();
+  });
+
+  it("an untouched program row from last session ({вага, 0}) is not a «було» ghost", () => {
+    renderCard({
+      it: makeItem({ sets: [{ weightKg: 0, reps: 0 }] }),
+      lastByExerciseId: {
+        bench: {
+          id: "prev",
+          exerciseId: "bench",
+          nameUk: "Жим лежачи",
+          type: "strength",
+          primaryGroup: "chest",
+          musclesPrimary: [],
+          musclesSecondary: [],
+          sets: [{ weightKg: 60, reps: 0 }],
+        },
+      },
+    });
+    expect(
+      screen.getByRole("textbox", { name: "Вага в кілограмах" }),
+    ).toHaveAttribute("placeholder", "");
+    expect(
+      screen.getByRole("button", { name: /Підхід 1: ще не заповнено/ }),
+    ).toBeInTheDocument();
+  });
+
+  it("the same-position ghost from the last session wins over the previous set in this session", () => {
+    renderCard({
+      it: makeItem({
+        sets: [
+          { weightKg: 60, reps: 8 },
+          { weightKg: 0, reps: 0 },
+        ],
+      }),
+      lastByExerciseId: {
+        bench: {
+          id: "prev",
+          exerciseId: "bench",
+          nameUk: "Жим лежачи",
+          type: "strength",
+          primaryGroup: "chest",
+          musclesPrimary: [],
+          musclesSecondary: [],
+          sets: [
+            { weightKg: 60, reps: 8 },
+            { weightKg: 70, reps: 5 },
+          ],
+        },
+      },
+    });
+    const weights = screen.getAllByRole("textbox", {
+      name: "Вага в кілограмах",
+    });
+    expect(weights[1]).toHaveAttribute("placeholder", "70");
   });
 
   it("'+ Підхід' seeds an empty row when there is no completed set and no ghost", () => {

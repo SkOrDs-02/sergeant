@@ -37,6 +37,7 @@ import {
 import {
   computeWorkoutSetCount,
   computeWorkoutTonnageKg,
+  isSetCompleted,
   type Workout,
   type WorkoutItem,
 } from "@sergeant/fizruk-domain/domain";
@@ -44,7 +45,6 @@ import { messages } from "@shared/i18n/uk";
 import { WorkoutStatTile } from "./WorkoutStatTile";
 import { fmtLoose } from "../../lib/numberFmt";
 import { WorkoutMomentLine } from "./WorkoutMomentLine";
-import { isSetDone } from "./WorkoutSetRow";
 import { WorkoutSummaryTimeEditor } from "./WorkoutSummaryTimeEditor";
 
 export interface WorkoutSummaryViewProps {
@@ -72,7 +72,8 @@ function formatItemDetail(item: WorkoutItem, rpeLabel: string): string {
     // Порожній рядок, який сесія створює сама, не результат: без цього
     // фільтра пропущена вправа друкувалась як «0×0», хоча плитка
     // «Підходів» його вже не рахує.
-    const sets = (item.sets || []).filter(isSetDone);
+    // Той самий предикат, що й плитка «Підходів» (`computeWorkoutSetCount`).
+    const sets = (item.sets || []).filter((s) => isSetCompleted(s, item));
     if (sets.length === 0) return "—";
     return sets
       .map((s) => {

@@ -20,6 +20,7 @@ import { showUndoToast } from "@shared/lib/ui/undoToast";
 import { messages } from "@shared/i18n/uk";
 import { formatTimeHm } from "@shared/lib/time/formatDate";
 import { useRestSettings } from "../../hooks/useRestSettings";
+import { useScreenWakeLock } from "../../hooks/useScreenWakeLock";
 import { useRestTimer } from "../../context/RestTimerContext";
 import {
   makeDefaultWarmup,
@@ -102,8 +103,12 @@ export function SessionView({
   const ss = messages.fizruk.session;
   const toast = useToast();
   const { restTimer, setRestTimer } = useRestTimer();
-  const { getDefaultForGroup, getDefaultForExercise, setDefaultForExercise } =
-    useRestSettings();
+  const {
+    getDefaultForGroup,
+    getDefaultForExercise,
+    setDefaultForExercise,
+    keepScreenOn,
+  } = useRestSettings();
   const [groupSelectMode, setGroupSelectMode] = useState(false);
   const [groupSelected, setGroupSelected] = useState<Set<string>>(
     () => new Set<string>(),
@@ -130,6 +135,9 @@ export function SessionView({
    * лишитись закритим, а не тихо ожити.
    */
   const isReadOnly = Boolean(activeWorkout.endedAt);
+  // Фз-1: екран не гасне, поки відкрита активна сесія. Вихід зі сесії й
+  // «Завершити» розмонтовують цей екран і відпускають блокування.
+  useScreenWakeLock(keepScreenOn && !isReadOnly);
   const items: WorkoutItem[] = activeWorkout.items || [];
   const groups: WorkoutGroup[] = useMemo(
     () => activeWorkout.groups || [],

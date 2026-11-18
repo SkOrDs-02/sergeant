@@ -9,6 +9,7 @@
  */
 
 import { compareIsoDesc } from "../../lib/workoutStats.js";
+import { isSetCompleted } from "./setCompletion.js";
 import type {
   Workout,
   WorkoutForJournal,
@@ -125,10 +126,10 @@ export function computeWorkoutSetCount(
   let n = 0;
   for (const it of w.items || []) {
     if (it?.type !== "strength") continue;
+    // Єдине визначення зарахованого підходу (`setCompletion.ts`): рядок
+    // лише з вагою — не підхід.
     for (const s of it.sets || []) {
-      const wg = Number(s?.weightKg) || 0;
-      const r = Number(s?.reps) || 0;
-      if (wg > 0 || r > 0) n += 1;
+      if (isSetCompleted(s, it)) n += 1;
     }
   }
   return n;

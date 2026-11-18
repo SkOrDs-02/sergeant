@@ -93,6 +93,8 @@ export interface WorkoutSetLike {
 export interface WorkoutItemLike {
   type?: string | undefined;
   sets?: ReadonlyArray<WorkoutSetLike | null | undefined> | undefined;
+  /** Час на вправі: для силової — ознака утримання (`setCompletion.ts`). */
+  durationSec?: unknown;
 }
 
 export interface WorkoutSummaryInput {

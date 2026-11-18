@@ -3,6 +3,7 @@
  */
 
 import { kyivCalendarDaysBetween } from "@sergeant/shared";
+import { isSetCompleted } from "../domain/workouts/setCompletion.js";
 import type {
   MuscleState,
   RecoveryStatus,
@@ -36,9 +37,8 @@ export function loadPointsForItem(
       (s, x) => s + (Number(x.weightKg) || 0) * (Number(x.reps) || 0),
       0,
     );
-    const setCount = sets.filter(
-      (x) => (Number(x.reps) || 0) > 0 || (Number(x.weightKg) || 0) > 0,
-    ).length;
+    // Той самий предикат, що лічильник сесії й `computeWorkoutSetCount`.
+    const setCount = sets.filter((x) => isSetCompleted(x, item)).length;
     return tonnage / 1000 + setCount * 0.15;
   }
   if (item.type === "time") {

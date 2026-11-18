@@ -149,6 +149,43 @@ describe("computeWorkoutTonnageKg / computeWorkoutSetCount", () => {
     expect(computeWorkoutTonnageKg(null)).toBe(0);
     expect(computeWorkoutSetCount(undefined)).toBe(0);
   });
+  it("рядки лише з вагою (посів старту програми) не є підходами", () => {
+    const programUntouched = w({
+      items: ["ex_a", "ex_b", "ex_c"].map((id) => ({
+        id: `it_${id}`,
+        exerciseId: id,
+        nameUk: id,
+        primaryGroup: "chest",
+        musclesPrimary: [],
+        musclesSecondary: [],
+        type: "strength" as const,
+        sets: [{ weightKg: 60, reps: 0 }],
+      })),
+    });
+    expect(computeWorkoutSetCount(programUntouched)).toBe(0);
+  });
+
+  it("утримання з вагою й часом на вправі (Strong) рахується", () => {
+    const hold = w({
+      items: [
+        {
+          id: "it_hold",
+          exerciseId: "farmer",
+          nameUk: "Прогулянка фермера",
+          primaryGroup: "forearms",
+          musclesPrimary: [],
+          musclesSecondary: [],
+          type: "strength",
+          durationSec: 120,
+          sets: [
+            { weightKg: 32, reps: 0 },
+            { weightKg: 32, reps: 0 },
+          ],
+        },
+      ],
+    });
+    expect(computeWorkoutSetCount(hold)).toBe(2);
+  });
 });
 
 describe("computeWorkoutDurationSec", () => {

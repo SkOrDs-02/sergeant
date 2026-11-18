@@ -10,6 +10,7 @@ import type {
 import { messages } from "@shared/i18n/uk";
 import { formatDateShort } from "@shared/lib/time/formatDate";
 import { calcCardioMetrics } from "./activeWorkoutLib";
+import { isSetCompleted } from "@sergeant/fizruk-domain/domain";
 
 export type LastByExerciseEntry = WorkoutItem & {
   _startedAt?: string;
@@ -24,18 +25,16 @@ export interface WorkoutItemLastTimeHintProps {
 }
 
 /**
- * Non-empty-set criterion shared with the domain's "N підходів" pill
- * (`computeWorkoutSetCount` in
- * `packages/fizruk-domain/src/domain/workouts/journal.ts`): a set only
- * counts when `weightKg > 0 || reps > 0`. Exported so `WorkoutItemCard`
- * can reuse it to compute the per-row "було" ghost values (redesign
- * 2026-08 — the strength half of this hint moved into the set rows,
- * see the early-return below).
+ * Виконані підходи минулої сесії — джерело «було» в рядках підходів.
+ * Критерій єдиний для модуля (`isSetCompleted`, `setCompletion.ts` у
+ * домені): рядок лише з вагою (посів старту програми, якого не зробили) не
+ * стає підказкою «60×0». Exported so `WorkoutItemCard` can reuse it to
+ * compute the per-row "було" ghost values.
  */
 export function filterNonEmptyStrengthSets(
   sets: WorkoutSet[] | undefined,
 ): WorkoutSet[] {
-  return (sets || []).filter((s) => (s.weightKg ?? 0) > 0 || (s.reps ?? 0) > 0);
+  return (sets || []).filter((s) => isSetCompleted(s));
 }
 
 /**

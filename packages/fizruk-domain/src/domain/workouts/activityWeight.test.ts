@@ -28,6 +28,21 @@ function strength(sets: number, endSec = 60) {
 }
 
 describe("classifyWorkoutWeight", () => {
+  it("програмне тренування без жодного виконаного підходу не повноцінне", () => {
+    // Старт програми сіє по рядку {вага, 0} на вправу; завершили, нічого не
+    // зробивши, за 5 хвилин по годиннику.
+    const untouched = {
+      startedAt: START,
+      endedAt: endedAfter(5 * 60),
+      items: [1, 2, 3, 4].map(() => ({
+        type: "strength",
+        sets: [{ weightKg: 60, reps: 0 }],
+      })),
+    };
+    expect(classifyWorkoutWeight(untouched)).toBe("light");
+    expect(isFullWorkout(untouched)).toBe(false);
+  });
+
   it("незавершене тренування ваги не має", () => {
     expect(
       classifyWorkoutWeight({ startedAt: START, endedAt: null, items: [] }),

@@ -17,3 +17,4 @@ export * from "./exerciseDetail.js";
 export * from "./oneRmAging.js";
 export * from "./activityWeight.js";
 export * from "./nextSetAging.js";
+export * from "./setCompletion.js";

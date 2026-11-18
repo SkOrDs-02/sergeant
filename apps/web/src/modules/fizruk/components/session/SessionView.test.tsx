@@ -545,3 +545,39 @@ describe("SessionView — арифметика відпочинку", () => {
     expect(minus(null)).toBeNull();
   });
 });
+
+describe("SessionView — Фз-1 екран не гасне", () => {
+  afterEach(() => {
+    delete (navigator as unknown as Record<string, unknown>)["wakeLock"];
+    localStorage.clear();
+  });
+
+  function mockWakeLock() {
+    const release = vi.fn(async () => {});
+    const request = vi.fn(async () => ({ released: false, release }));
+    Object.defineProperty(navigator, "wakeLock", {
+      configurable: true,
+      value: { request },
+    });
+    return { request, release };
+  }
+
+  it("тримає екран, поки відкрита активна сесія, і відпускає на виході", async () => {
+    const { request, release } = mockWakeLock();
+    renderView();
+    await vi.waitFor(() => expect(request).toHaveBeenCalledWith("screen"));
+    cleanup();
+    await vi.waitFor(() => expect(release).toHaveBeenCalled());
+  });
+
+  it("не тримає екран, коли тумблер вимкнено в налаштуваннях", async () => {
+    const { request } = mockWakeLock();
+    localStorage.setItem(
+      "fizruk_rest_settings_v1",
+      JSON.stringify({ keepScreenOn: false }),
+    );
+    renderView();
+    await Promise.resolve();
+    expect(request).not.toHaveBeenCalled();
+  });
+});

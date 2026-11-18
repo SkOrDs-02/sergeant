@@ -9,6 +9,7 @@ import { cn } from "@shared/lib/ui/cn";
 import { clampNumericInput } from "@shared/lib/format/numberInput";
 import { useDecimalDraft } from "@shared/hooks/useDecimalDraft";
 import type { WorkoutSet } from "@sergeant/fizruk-domain";
+import { isSetCompleted } from "@sergeant/fizruk-domain/domain";
 import { messages } from "@shared/i18n/uk";
 import { MAX_REPS, MAX_WEIGHT_KG } from "../../lib/numericBounds";
 import { fmtLoose } from "../../lib/numberFmt";
@@ -64,8 +65,9 @@ export interface WorkoutSetRowProps {
  * заради того, що виводиться з наявних даних.
  */
 export function isSetDone(s: WorkoutSet | null | undefined): boolean {
-  if (!s) return false;
-  return (s.reps ?? 0) > 0;
+  // Єдине визначення модуля (`isSetCompleted`, домен): той самий предикат
+  // читають `computeWorkoutSetCount`, відновлення і `isFullWorkout`.
+  return isSetCompleted(s);
 }
 
 const INPUT_CLASS =

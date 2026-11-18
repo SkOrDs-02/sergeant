@@ -8,7 +8,13 @@
  * `nameUk` у події не був би вирізаний).
  */
 import { describe, it, expect, vi, beforeEach } from "vitest";
-import { render, screen, fireEvent, cleanup } from "@testing-library/react";
+import {
+  render,
+  screen,
+  fireEvent,
+  cleanup,
+  within,
+} from "@testing-library/react";
 
 const mocks = vi.hoisted(() => ({ trackEvent: vi.fn() }));
 
@@ -34,6 +40,16 @@ import {
   resetSignalAttribution,
 } from "../../../../core/observability/valueSignalAttribution";
 import { WorkoutJournalSection } from "./WorkoutJournalSection";
+
+/** «Завершити» → підтвердження «Завершити зараз?» → «Завершити» (Фз-2). */
+function confirmFinish() {
+  fireEvent.click(screen.getByTestId("finish-btn"));
+  fireEvent.click(
+    within(screen.getByRole("alertdialog")).getByRole("button", {
+      name: "Завершити",
+    }),
+  );
+}
 
 function strengthItem(sets: number): WorkoutItem {
   return {
@@ -145,7 +161,7 @@ describe("WorkoutJournalSection — телеметрія завершення", 
     });
     renderSection(props);
 
-    fireEvent.click(screen.getByTestId("finish-btn"));
+    confirmFinish();
 
     expect(finishCalls()).toHaveLength(1);
     expect(finishPayload()).toEqual({
@@ -163,7 +179,7 @@ describe("WorkoutJournalSection — телеметрія завершення", 
     const props = baseProps();
     renderSection(props);
 
-    fireEvent.click(screen.getByTestId("finish-btn"));
+    confirmFinish();
 
     expect(finishPayload()).toMatchObject({ items: 0, has_sets: false });
   });
@@ -174,9 +190,14 @@ describe("WorkoutJournalSection — телеметрія завершення", 
     });
     renderSection(props);
 
-    const btn = screen.getByTestId("finish-btn");
-    fireEvent.click(btn);
-    fireEvent.click(btn);
+    fireEvent.click(screen.getByTestId("finish-btn"));
+    fireEvent.click(screen.getByTestId("finish-btn"));
+    const confirm = within(screen.getByRole("alertdialog")).getByRole(
+      "button",
+      { name: "Завершити" },
+    );
+    fireEvent.click(confirm);
+    fireEvent.click(confirm);
 
     expect(finishCalls()).toHaveLength(1);
   });
@@ -202,7 +223,7 @@ describe("WorkoutJournalSection — телеметрія завершення", 
     const props = baseProps({ activeWorkout: { items: [strengthItem(1)] } });
     renderSection(props);
 
-    fireEvent.click(screen.getByTestId("finish-btn"));
+    confirmFinish();
 
     expect(finishPayload()).toMatchObject({
       after_signal: true,
@@ -230,7 +251,7 @@ describe("WorkoutJournalSection — телеметрія завершення", 
     });
     renderSection(props);
 
-    fireEvent.click(screen.getByTestId("finish-btn"));
+    confirmFinish();
 
     expect(finishPayload()).toMatchObject({ sets: 2, has_sets: true });
   });
@@ -248,7 +269,7 @@ describe("WorkoutJournalSection — телеметрія завершення", 
     });
     renderSection(props);
 
-    fireEvent.click(screen.getByTestId("finish-btn"));
+    confirmFinish();
 
     expect(finishPayload()).toMatchObject({ sets: 0, has_sets: false });
   });
@@ -259,7 +280,7 @@ describe("WorkoutJournalSection — телеметрія завершення", 
     });
     renderSection(props);
 
-    fireEvent.click(screen.getByTestId("finish-btn"));
+    confirmFinish();
 
     const payload = JSON.stringify(finishPayload());
     expect(payload).not.toContain("Жим");

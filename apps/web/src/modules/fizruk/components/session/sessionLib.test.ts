@@ -1,6 +1,10 @@
 import { describe, expect, it } from "vitest";
 import type { WorkoutItem, WorkoutGroup } from "@sergeant/fizruk-domain";
 import {
+  computeWorkoutSetCount,
+  computeWorkoutTonnageKg,
+} from "@sergeant/fizruk-domain/domain";
+import {
   countDoneSets,
   groupByItemId,
   groupMemberPosition,
@@ -37,6 +41,20 @@ describe("sessionLib", () => {
       ),
     ).toBe(2);
     expect(countDoneSets({ ...strength("a", []), type: "time" })).toBe(0);
+  });
+
+  it("an empty row added by «+ Підхід» keeps the header at «2 з 3» and stays out of set count and volume (logic-18)", () => {
+    const item = strength("a", [
+      [60, 8],
+      [65, 6],
+      [0, 0],
+    ]);
+    expect(
+      setsProgressLabel(countDoneSets(item), item.sets?.length ?? 0),
+    ).toMatch(/^2 з 3 /);
+    const workout = { items: [item] };
+    expect(computeWorkoutSetCount(workout)).toBe(2);
+    expect(computeWorkoutTonnageKg(workout)).toBe(60 * 8 + 65 * 6);
   });
 
   it("an item is done when it has sets and all are done; empty strength is not done", () => {

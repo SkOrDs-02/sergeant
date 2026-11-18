@@ -202,6 +202,21 @@ describe("fizruk/recoveryCompute", () => {
     expect(
       loadPointsForItem({ type: "strength", sets: [{ weightKg: 0, reps: 0 }] }),
     ).toBe(0);
+    // Рядок лише з вагою (посів старту програми) — не підхід: 0 навантаження.
+    expect(
+      loadPointsForItem({
+        type: "strength",
+        sets: [{ weightKg: 60, reps: 0 }],
+      }),
+    ).toBe(0);
+    // Утримання з вагою й часом на вправі (Strong) лишається підходом.
+    expect(
+      loadPointsForItem({
+        type: "strength",
+        durationSec: 60,
+        sets: [{ weightKg: 20, reps: 0 }],
+      }),
+    ).toBeCloseTo(0.15);
     // Bodyweight set (reps only) still counts as a set.
     expect(
       loadPointsForItem({
