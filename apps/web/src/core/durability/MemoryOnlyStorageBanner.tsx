@@ -70,6 +70,7 @@ export function MemoryOnlyStorageBanner() {
       <p>{m.title}</p>
       <p className="mt-0.5 font-normal text-muted">
         {otherTab ? m.bodyOtherTab : m.body}
+        {readSqliteLegacyStoreKept() ? ` ${m.legacyKeptOther}` : null}
       </p>
     </Notice>
   );
