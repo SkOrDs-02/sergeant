@@ -1,25 +1,28 @@
 /** @vitest-environment jsdom */
 /**
- * Сітка рядків підходу (зйомка зібраного застосунку 2026-11-18,
- * `fiz-program-start-2`): рядок із кошиком мав поля вужчі за сусідні.
+ * Сітка рядків підходу.
  *
- * Корінь: на coarse-вказівнику страхувальне правило `styles/mobile.css`
- * піднімає кожну `<button>` до 44 px завширшки, тож кошик (`w-9`) ставав
- * 44 px, а порожня заглушка в інших рядках лишалась 36 px. Різниця в 8 px
- * забиралась із `flex-1` полів. Те саме з колонкою RPE у заголовку. jsdom
- * медіа-запитів не рахує, тож тест фіксує контракт розмітки: кожен
- * хвостовий слот (кошик чи заглушка, RPE у заголовку) несе явну coarse-
- * ширину 44 px, рівну тій, яку правило дасть кнопці.
+ * Історія: на coarse-вказівнику страхувальне правило `styles/mobile.css`
+ * піднімає кожну `<button>` до 44 px, тож кошик в останньому рядку (`w-9`)
+ * ставав ширшим за заглушку в інших і зсував поля (зйомка 2026-11-18,
+ * `fiz-program-start-2`). Рішення founder-а 2026-11-18: кошик виходить із
+ * рядка взагалі (дія «Видалити підхід» під рядками, `WorkoutItemCard`), а
+ * звільнене місце віддано полям. jsdom медіа-запитів не рахує, тож тест
+ * фіксує контракт розмітки: у рядку немає кошика, хвостові слоти (RPE і ✓)
+ * однакові в усіх рядках і в шапці.
  */
 import { describe, expect, it, vi } from "vitest";
 import { render } from "@testing-library/react";
-import type { ExerciseMeasure } from "@sergeant/fizruk-domain/domain";
+import {
+  EXERCISE_MEASURES,
+  type ExerciseMeasure,
+} from "@sergeant/fizruk-domain/domain";
 
 import { WorkoutSetColumnHeader, WorkoutSetRow } from "./WorkoutSetRow";
 
 const COARSE_44 = "pointer-coarse:w-11";
 
-function renderRows(measure: ExerciseMeasure) {
+function renderRows(measure: ExerciseMeasure, isReadOnly = false) {
   return render(
     <div>
       <WorkoutSetColumnHeader measure={measure} />
@@ -30,9 +33,8 @@ function renderRows(measure: ExerciseMeasure) {
           set={{ weightKg: 0, reps: 0 }}
           ghost={null}
           measure={measure}
-          isReadOnly={false}
+          isReadOnly={isReadOnly}
           isCurrent={i === 0}
-          isLast={i === 2}
           onChangeWeight={vi.fn()}
           onChangeReps={vi.fn()}
           onChangeDuration={vi.fn()}
@@ -41,45 +43,62 @@ function renderRows(measure: ExerciseMeasure) {
           onChangeRpe={vi.fn()}
           onApplyGhost={vi.fn()}
           onCheckTap={vi.fn()}
-          onDelete={vi.fn()}
         />
       ))}
     </div>,
   );
 }
 
+function widthOf(el: Element): string {
+  return el.className
+    .split(/\s+/)
+    .filter((c) => /^(pointer-coarse:)?(min-)?w-/.test(c))
+    .sort()
+    .join(" ");
+}
+
 describe("WorkoutSetRow · сітка колонок", () => {
-  it.each<ExerciseMeasure>(["weight_reps", "time", "distance_time"])(
-    "%s: слот кошика однаковий у кожному рядку і в заголовку, з кошиком чи без",
-    (measure) => {
-      const { container } = renderRows(measure);
-      const trash = container.querySelectorAll('[data-set-slot="trash"]');
-      // Заголовок + три рядки; кнопка видалення лише в останньому.
-      expect(trash).toHaveLength(4);
+  it.each(
+    EXERCISE_MEASURES.flatMap((m) => [
+      [m, false],
+      [m, true],
+    ]) as Array<[ExerciseMeasure, boolean]>,
+  )(
+    "%s (лише читання: %s): кошика в рядку немає, хвостові слоти однакові",
+    (measure, ro) => {
+      const { container } = renderRows(measure, ro);
+      expect(container.querySelector('[data-set-slot="trash"]')).toBeNull();
       expect(
-        Array.from(trash).filter((el) => el.tagName === "BUTTON"),
-      ).toHaveLength(1);
-      const widths = new Set(
-        Array.from(trash).map((el) =>
-          el.className
-            .split(/\s+/)
-            .filter((c) => /^(pointer-coarse:)?w-/.test(c))
-            .join(" "),
-        ),
-      );
-      expect(widths.size).toBe(1);
-      expect([...widths][0]).toContain(COARSE_44);
+        container.querySelector('button[aria-label^="Видалити підхід"]'),
+      ).toBeNull();
+      const rows = Array.from(container.querySelectorAll("[data-set-row]"));
+      const header = container.querySelector("[data-set-header]");
+      expect(rows).toHaveLength(3);
+      for (const slot of ["rpe", "check"]) {
+        const els = [header, ...rows].map((r) =>
+          r?.querySelector(`[data-set-slot="${slot}"]`),
+        );
+        els.forEach((el) => expect(el).not.toBeNull());
+        const widths = new Set(els.map((el) => widthOf(el!)));
+        expect(widths.size).toBe(1);
+        expect([...widths][0]).toContain(slot === "rpe" ? COARSE_44 : "w-11");
+      }
+      // Кількість колонок поля однакова в шапці й рядках.
+      const grow = (el: Element | null) =>
+        Array.from(el!.children).filter((c) =>
+          c.className.split(/\s+/).includes("flex-1"),
+        ).length;
+      rows.forEach((r) => expect(grow(r)).toBe(grow(header)));
     },
   );
 
   it.each<ExerciseMeasure>(["time", "reps"])(
-    "%s: єдине поле бере всю ширину полів, без порожньої заглушки (зйомка 2026-11-18, «20–4(»)",
+    "%s: єдине поле бере всю ширину полів, без порожньої заглушки",
     (measure) => {
       const { container } = renderRows(measure);
       const row = container.querySelector("[data-set-row]");
       const header = container.querySelector("[data-set-header]");
       for (const el of [row, header]) {
-        expect(el).not.toBeNull();
         const grow = Array.from(el!.children).filter((c) =>
           c.className.split(/\s+/).includes("flex-1"),
         );
@@ -87,10 +106,4 @@ describe("WorkoutSetRow · сітка колонок", () => {
       }
     },
   );
-
-  it("колонка RPE у заголовку на coarse така сама, як тригер у рядку", () => {
-    const { container } = renderRows("weight_reps");
-    const headerRpe = container.querySelector('[data-set-slot="rpe"]');
-    expect(headerRpe?.className).toContain(COARSE_44);
-  });
 });

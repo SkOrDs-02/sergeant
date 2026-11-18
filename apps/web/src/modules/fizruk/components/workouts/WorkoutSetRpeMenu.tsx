@@ -66,6 +66,7 @@ export function WorkoutSetRpeMenu({
       <span
         aria-label={triggerAria}
         data-testid={testID}
+        data-set-slot="rpe"
         className="flex h-11 w-9 shrink-0 items-center justify-center rounded-lg border border-line bg-panelHi text-style-caption tabular-nums text-subtle pointer-coarse:w-11"
       >
         {rpe ?? "–"}
@@ -89,9 +90,12 @@ export function WorkoutSetRpeMenu({
           aria-label={triggerAria}
           title={sr.rpeTriggerTitle}
           data-testid={testID}
+          data-set-slot="rpe"
           className={cn(
             "flex h-11 w-9 shrink-0 cursor-pointer select-none items-center justify-center rounded-lg border text-style-caption font-semibold tabular-nums transition-colors",
-            "pointer-coarse:min-h-[44px] pointer-coarse:min-w-[44px]",
+            // Та сама coarse-ширина, що й колонка RPE у шапці
+            // (`WorkoutSetColumnHeader`), щоб сітка не пливла.
+            "pointer-coarse:min-h-[44px] pointer-coarse:w-11",
             rpe != null
               ? "border-line bg-panelHi text-text"
               : "border-line bg-panelHi text-subtle hover:text-text",

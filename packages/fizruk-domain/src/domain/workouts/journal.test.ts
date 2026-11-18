@@ -4,6 +4,7 @@ import type { Workout } from "../types.js";
 import {
   buildWorkoutJournalSections,
   compareWorkoutsByStartedAtDesc,
+  computeWorkoutDoneItemCount,
   computeWorkoutDurationSec,
   computeWorkoutSetCount,
   computeWorkoutSummary,
@@ -308,5 +309,56 @@ describe("computeWorkoutSetCount — підходи на час і дистан�
       ],
     };
     expect(computeWorkoutSetCount(workout)).toBe(3);
+  });
+});
+
+describe("computeWorkoutDoneItemCount (рішення founder-а 2026-11-18: «Вправ N з M»)", () => {
+  const base = {
+    exerciseId: "ex",
+    primaryGroup: "chest",
+    musclesPrimary: [] as string[],
+    musclesSecondary: [] as string[],
+  };
+  it("вправа зроблена, коли є хоч один зарахований підхід", () => {
+    const workout = w({
+      items: [
+        // Один із трьох підходів — уже зроблена.
+        {
+          ...base,
+          id: "a",
+          nameUk: "Жим",
+          type: "strength",
+          sets: [
+            { weightKg: 60, reps: 8 },
+            { weightKg: 60, reps: 0 },
+          ],
+        },
+        // Рядок лише з вагою плану — не підхід (`isSetCompleted`).
+        {
+          ...base,
+          id: "b",
+          nameUk: "Тяга",
+          type: "strength",
+          sets: [{ weightKg: 80, reps: 0 }],
+        },
+        // Без рядків узагалі.
+        { ...base, id: "c", nameUk: "Присід", type: "strength", sets: [] },
+        // Старий item часу без підходів: робота записана на вправі.
+        {
+          ...base,
+          id: "d",
+          nameUk: "Біг",
+          type: "distance",
+          distanceM: 3000,
+          durationSec: 900,
+        },
+      ],
+    });
+    expect(computeWorkoutDoneItemCount(workout)).toBe(2);
+  });
+
+  it("порожнє чи відсутнє тренування — нуль", () => {
+    expect(computeWorkoutDoneItemCount(w())).toBe(0);
+    expect(computeWorkoutDoneItemCount(null)).toBe(0);
   });
 });

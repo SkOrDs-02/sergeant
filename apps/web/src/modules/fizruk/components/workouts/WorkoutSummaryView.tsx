@@ -35,6 +35,7 @@ import {
   summarizeWorkoutForFinish,
 } from "@sergeant/fizruk-domain";
 import {
+  computeWorkoutDoneItemCount,
   computeWorkoutSetCount,
   computeWorkoutTonnageKg,
   isSetCompleted,
@@ -111,6 +112,7 @@ export function WorkoutSummaryView({
   const setCount = computeWorkoutSetCount(workout);
   const tonnageKg = computeWorkoutTonnageKg(workout);
   const items = workout.items || [];
+  const doneItems = computeWorkoutDoneItemCount(workout);
   const wellbeing = workout.wellbeing;
   const hasWellbeing = Boolean(
     wellbeing && (wellbeing.energy != null || wellbeing.mood != null),
@@ -157,7 +159,15 @@ export function WorkoutSummaryView({
       <div className="grid grid-cols-3 gap-2 mt-3">
         <WorkoutStatTile
           label={copy.itemsLabel}
-          value={items.length}
+          value={
+            // «Вправ 1 з 6», коли зроблено не всі; одне число, коли всі
+            // (рішення founder-а 2026-11-18). Лише підпис підсумку.
+            doneItems < items.length
+              ? copy.itemsDoneOf
+                  .replace("{done}", String(doneItems))
+                  .replace("{total}", String(items.length))
+              : items.length
+          }
           size="lg"
         />
         <WorkoutStatTile label={copy.setsLabel} value={setCount} size="lg" />

@@ -40,12 +40,6 @@ export interface WorkoutSetRowProps {
    * прапорець замість нового стану в домені: підсвітка й жирний номер.
    */
   isCurrent: boolean;
-  /**
-   * Останній рядок картки — єдиний, що несе кошик. Видалення підходу —
-   * рідкісна дія, і майже завжди це «зайвий + Підхід» у кінці; кошик у
-   * кожному рядку коштував 38 px ширини полів (аудит 09-03, B4).
-   */
-  isLast: boolean;
   onChangeWeight: (weightKg: number) => void;
   onChangeReps: (reps: number) => void;
   /**
@@ -74,7 +68,6 @@ export interface WorkoutSetRowProps {
   /** Tap on the ✓ control once the row is "done" (see {@link isSetDone});
    * the caller decides whether this also starts the rest timer. */
   onCheckTap: () => void;
-  onDelete: () => void;
 }
 
 /**
@@ -100,12 +93,12 @@ export function isSetDone(
 }
 
 /**
- * Ширина хвостових слотів (кошик і RPE). На coarse-вказівнику страхувальне
- * правило `styles/mobile.css` піднімає кожну `<button>` і `role="button"` до
- * 44 px завширшки, тож кошик `w-9` ставав 44 px, а порожня заглушка в
- * інших рядках лишалась 36 px — поля рядка з кошиком були вужчі й зсунуті
- * (зйомка 2026-11-18). Заглушка й колонки заголовка беруть ту саму
- * coarse-ширину, і сітка не пливе.
+ * Ширина колонки RPE. На coarse-вказівнику страхувальне правило
+ * `styles/mobile.css` піднімає `role="button"` тригера до 44 px, тож шапка
+ * бере ту саму coarse-ширину, і сітка не пливе (зйомка 2026-11-18).
+ * Кошика в рядку більше немає (рішення founder-а 2026-11-18): «Видалити
+ * підхід» стоїть дією під рядками (`WorkoutItemCard`), а його 44 px +
+ * проміжок віддано полям.
  */
 const TRAILING_SLOT_W = "w-9 pointer-coarse:w-11";
 
@@ -151,7 +144,7 @@ function ghostText(ghost: WorkoutSet, fields: FieldKey[]): string {
 
 /**
  * One editable set row inside the exercise card: `№ · поле · поле · ✓`
- * (+ кошик лише на останньому рядку). Поля — за типом виміру вправи:
+ * Поля — за типом виміру вправи:
  * кг і повт, лише повт, кг і с, с, кг і м, м і с (`rowFields`).
  *
  * Редизайн 2026-09 (спека `fizruk-active-session.md`, рішення 5) — чотири
@@ -169,7 +162,6 @@ export function WorkoutSetRow({
   ghost,
   isReadOnly,
   isCurrent,
-  isLast,
   onChangeWeight,
   onChangeReps,
   measure = "weight_reps",
@@ -181,7 +173,6 @@ export function WorkoutSetRow({
   onChangeRpe,
   onApplyGhost,
   onCheckTap,
-  onDelete,
 }: WorkoutSetRowProps) {
   const sr = messages.fizruk.setRow;
   const ss = messages.fizruk.session;
@@ -362,6 +353,7 @@ export function WorkoutSetRow({
           type="button"
           disabled={isReadOnly}
           aria-label={checkAria}
+          data-set-slot="check"
           className={cn(
             "flex h-11 w-11 shrink-0 items-center justify-center rounded-lg border transition-colors",
             "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-focus/45 focus-visible:ring-offset-2 focus-visible:ring-offset-bg",
@@ -376,26 +368,6 @@ export function WorkoutSetRow({
         >
           <Icon name="check" size={18} aria-hidden />
         </button>
-        {isLast && !isReadOnly ? (
-          <button
-            type="button"
-            data-set-slot="trash"
-            className={cn(
-              "flex h-11 shrink-0 items-center justify-center rounded-lg pointer-coarse:min-h-[44px] text-subtle hover:text-danger transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-focus/45 focus-visible:ring-offset-2 focus-visible:ring-offset-bg",
-              TRAILING_SLOT_W,
-            )}
-            onClick={onDelete}
-            aria-label={`${sr.deleteAriaPrefix} ${setNumber}`}
-          >
-            <Icon name="trash" size={15} aria-hidden />
-          </button>
-        ) : (
-          <span
-            data-set-slot="trash"
-            className={cn("shrink-0", TRAILING_SLOT_W)}
-            aria-hidden
-          />
-        )}
       </div>
       {overflowText && (
         <p
@@ -439,11 +411,9 @@ export function WorkoutSetColumnHeader({
           {caption(k)}
         </span>
       ))}
-      {/* RPE column — icon-only trigger in the row below, no caption here
-          (mirrors the check/trash slots, which also caption nothing). */}
+      {/* RPE і ✓ — без підписів; ширини ті самі, що в рядку. */}
       <span data-set-slot="rpe" className={cn("shrink-0", TRAILING_SLOT_W)} />
-      <span className="w-11 shrink-0" />
-      <span data-set-slot="trash" className={cn("shrink-0", TRAILING_SLOT_W)} />
+      <span data-set-slot="check" className="w-11 shrink-0" />
     </div>
   );
 }

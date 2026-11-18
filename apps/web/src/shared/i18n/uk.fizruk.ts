@@ -324,7 +324,11 @@ export const fizrukPageMessages = {
     ghostAriaSuffix: "з минулого разу",
     doneAriaLabel: "зроблено, почати відпочинок",
     notDoneAriaLabel: "ще не заповнено",
-    deleteAriaPrefix: "Видалити підхід",
+    /**
+     * Дія під рядками вправи (рішення founder-а 2026-11-18): кошик вийшов із
+     * рядка. Видаляє останній підхід; aria-label додає «: назва вправи».
+     */
+    deleteLast: "Видалити підхід {n}",
     weightPlaceholder: "кг",
     repsPlaceholder: "повт.",
     weightAriaLabel: "Вага в кілограмах",
@@ -704,6 +708,11 @@ export const fizrukPageMessages = {
       approach: "До висновку про найкращий день для тренувань лишилось {n}.",
     },
     itemsLabel: "Вправ",
+    /**
+     * Зроблені з усіх, коли зроблено не всі (рішення founder-а 2026-11-18).
+     * «з» не відмінюється, тож форма одна для будь-яких чисел.
+     */
+    itemsDoneOf: "{done} з {total}",
     setsLabel: "Підходів",
     volumeLabel: "Обʼєм",
     // Per-set effort rating, shown inline next to "80×8" ONLY when the set

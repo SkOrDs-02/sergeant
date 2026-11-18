@@ -340,7 +340,9 @@ describe("SessionView — exercise screen", () => {
 
   it("shows an undo toast after deleting a set and restores the snapshot", () => {
     renderView({ focusItemId: "a" });
-    fireEvent.click(screen.getByRole("button", { name: "Видалити підхід 1" }));
+    fireEvent.click(
+      screen.getByRole("button", { name: "Видалити підхід 1: Жим лежачи" }),
+    );
     expect(undoMocks.last?.msg).toBe("Підхід видалено");
     undoMocks.last?.onUndo();
     expect(updateItem).toHaveBeenLastCalledWith("w1", "a", {

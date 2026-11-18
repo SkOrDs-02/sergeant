@@ -97,13 +97,14 @@ describe("WorkoutItemCard — strength set rows", () => {
     expect(
       screen.getByRole("button", { name: /Підхід 1: зроблено/ }),
     ).toBeInTheDocument();
-    // Кошик лише на останньому рядку.
+    // Одна дія під рядками й лише для останнього підходу (рішення
+    // founder-а 2026-11-18): у самих рядках кошика немає.
     expect(
-      screen.queryByRole("button", { name: "Видалити підхід 1" }),
+      screen.queryByRole("button", { name: /^Видалити підхід 1/ }),
     ).toBeNull();
-    expect(
-      screen.getByRole("button", { name: "Видалити підхід 2" }),
-    ).toBeInTheDocument();
+    const del = screen.getByRole("button", { name: /^Видалити підхід 2: / });
+    expect(del).toHaveTextContent("Видалити підхід 2");
+    expect(del.closest("[data-set-row]")).toBeNull();
   });
 
   it("marks the first undone row as the current one", () => {
@@ -348,7 +349,9 @@ describe("WorkoutItemCard — strength set rows", () => {
 
   it("deleting the last set snapshots and calls onDeleteSet", () => {
     renderCard();
-    fireEvent.click(screen.getByRole("button", { name: "Видалити підхід 1" }));
+    fireEvent.click(
+      screen.getByRole("button", { name: /^Видалити підхід 1: / }),
+    );
     expect(updateItem).toHaveBeenCalledWith("w1", "it-1", { sets: [] });
     expect(onDeleteSet).toHaveBeenCalledWith("w1", "it-1", [
       { weightKg: 50, reps: 8 },
@@ -569,7 +572,7 @@ describe("WorkoutItemCard — recovery chip and read-only", () => {
     ).toHaveAttribute("readonly");
     expect(screen.queryByRole("button", { name: "+ Підхід" })).toBeNull();
     expect(
-      screen.queryByRole("button", { name: "Видалити підхід 1" }),
+      screen.queryByRole("button", { name: /^Видалити підхід/ }),
     ).toBeNull();
   });
 });

@@ -82,6 +82,39 @@ describe("WorkoutSummaryView", () => {
     expect(screen.getByText(flatMatch("1 000 кг×повт"))).toBeInTheDocument();
   });
 
+  it("«Вправ N з M», коли зроблено не всі; одне число, коли всі (рішення founder-а 2026-11-18)", () => {
+    const ex = (id: string, reps: number) => ({
+      id,
+      exerciseId: id,
+      nameUk: id,
+      primaryGroup: "back",
+      musclesPrimary: [],
+      musclesSecondary: [],
+      type: "strength" as const,
+      sets: [{ weightKg: 0, reps }],
+    });
+    const { rerender } = render(
+      <WorkoutSummaryView
+        workout={makeWorkout({ items: [ex("a", 8), ex("b", 0), ex("c", 0)] })}
+        onRepeat={vi.fn()}
+        onClose={vi.fn()}
+        onDelete={vi.fn()}
+      />,
+    );
+    expect(screen.getByText("1 з 3")).toBeInTheDocument();
+    rerender(
+      <WorkoutSummaryView
+        workout={makeWorkout({ items: [ex("a", 8), ex("b", 5)] })}
+        onRepeat={vi.fn()}
+        onClose={vi.fn()}
+        onDelete={vi.fn()}
+      />,
+    );
+    const tile = screen.getByText("Вправ").parentElement;
+    expect(tile?.textContent).toContain("2");
+    expect(tile?.textContent).not.toMatch(/ з /);
+  });
+
   it("shows a skipped exercise as «—», not the empty auto-row «0×0»", () => {
     const workout = makeWorkout({
       items: [

@@ -140,6 +140,29 @@ export function computeWorkoutSetCount(
 }
 
 /**
+ * Зроблені вправи для підсумку «Вправ N з M» (рішення founder-а 2026-11-18):
+ * вправа з хоча б одним зарахованим підходом (`isSetCompleted`, той самий
+ * предикат, що й `computeWorkoutSetCount`). Старий item часу чи дистанції
+ * без рядків підходів зроблений, коли секунди чи метри записано на ньому
+ * самому. Лише підпис підсумку: журнал, історія й метрики число не беруть.
+ */
+export function computeWorkoutDoneItemCount(
+  w: WorkoutSummaryInput | null | undefined,
+): number {
+  if (!w) return 0;
+  let n = 0;
+  for (const it of w.items || []) {
+    if (!it) continue;
+    const counted = (it.sets || []).some((s) => isSetCompleted(s, it));
+    const legacy =
+      (it.sets?.length ?? 0) === 0 &&
+      (Number(it.durationSec) > 0 || Number(it.distanceM) > 0);
+    if (counted || legacy) n += 1;
+  }
+  return n;
+}
+
+/**
  * Duration in whole seconds between `startedAt` and `endedAt` (or
  * `null` if the workout is still in progress). Returns `0` when the
  * timestamps are malformed so UI formatters never emit `NaN`.

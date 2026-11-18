@@ -5,6 +5,7 @@
 import { useState } from "react";
 import type { InjurySiteId } from "@sergeant/fizruk-domain/data";
 import { Button } from "@shared/components/ui/Button";
+import { Icon } from "@shared/components/ui/Icon";
 import type {
   Workout,
   WorkoutGroup,
@@ -170,6 +171,7 @@ export function WorkoutItemCard({
   onDeleteSet,
   onMeasureChosen,
 }: WorkoutItemCardProps) {
+  const sr = messages.fizruk.setRow;
   // Помилка голосу — ЛОКАЛЬНИЙ стан, свідомо не `useToast`. Той хук
   // кидає поза `ToastProvider`, а картка рендериться і в деревах без
   // нього (саме на цьому падали наявні тести) — тобто замість
@@ -325,7 +327,6 @@ export function WorkoutItemCard({
               timePlaceholder={timePlaceholder}
               isReadOnly={isReadOnly}
               isCurrent={idx === currentIdx}
-              isLast={idx === sets.length - 1}
               onChangeWeight={(weightKg) => updateSet(idx, { weightKg })}
               onChangeReps={(reps) => updateSet(idx, { reps })}
               onChangeDuration={(durationSec) =>
@@ -357,16 +358,32 @@ export function WorkoutItemCard({
               // from the reps `onChange` transition — that heuristic is what
               // produced stray 0×0 sets (redesign 2026-08, item 2).
               onCheckTap={startRest}
-              onDelete={() => {
+            />
+          ))}
+          {/* Видалення останнього підходу — тиха дія під рядками, а не
+              кошик у рядку (рішення founder-а 2026-11-18): 44 px кошика
+              віддано полям. Відкат той самий: знімок до видалення йде в
+              `onDeleteSet`, що показує тост із поверненням. */}
+          {!isReadOnly && sets.length > 0 && (
+            <Button
+              variant="text"
+              className="-ml-2"
+              aria-label={`${sr.deleteLast.replace("{n}", String(sets.length))}: ${it.nameUk}`}
+              onClick={() => {
                 const currentSets = it.sets || [];
+                const idx = currentSets.length - 1;
+                if (idx < 0) return;
                 const snapshot = [...currentSets];
-                const next = currentSets.filter((_, i) => i !== idx);
+                const next = currentSets.slice(0, idx);
                 setSetIds((prev) => prev.filter((_id, i) => i !== idx));
                 updateItem(activeWorkout.id, it.id, { sets: next });
                 onDeleteSet(activeWorkout.id, it.id, snapshot);
               }}
-            />
-          ))}
+            >
+              <Icon name="trash" size="md" aria-hidden />
+              {sr.deleteLast.replace("{n}", String(sets.length))}
+            </Button>
+          )}
           {!isReadOnly && (
             <div className="flex gap-2 pt-1">
               <Button
