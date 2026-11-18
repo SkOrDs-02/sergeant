@@ -43,6 +43,7 @@ import {
 } from "../modules/billing/manualAccess.js";
 import { createTelegramApiClient } from "../modules/alerts/telegramShipper.js";
 import { emitSecurityEvent } from "../obs/securityEvents.js";
+import { env } from "../env/env.js";
 import { logger } from "../obs/logger.js";
 import { billingCheckoutTotal, billingWebhookTotal } from "../obs/metrics.js";
 import {
@@ -201,7 +202,7 @@ export function createBillingRouter({ pool }: { pool: Pool }): Router {
           page: parsed.page ?? null,
           viewport: parsed.viewport ?? null,
           userAgent,
-          appEnv: process.env["APP_ENV"] ?? process.env["NODE_ENV"] ?? null,
+          appEnv: env.APP_ENV ?? env.NODE_ENV ?? null,
         },
         createTelegramApiClient(cfg.botToken),
         cfg,
