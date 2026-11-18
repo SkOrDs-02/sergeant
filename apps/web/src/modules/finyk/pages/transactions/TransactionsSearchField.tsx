@@ -50,6 +50,10 @@ export function TransactionsSearchField({
         placeholder={copy.placeholder}
         value={query}
         onChange={(event) => onQueryChange(event.target.value)}
+        // Нативний хрестик `type="search"` дублював би власну кнопку
+        // очищення нижче (зйомка 2026-11-18). Ховаємо лише тут: в інших
+        // полях пошуку нативний хрестик може бути єдиним способом очистити.
+        className="[&::-webkit-search-cancel-button]:appearance-none"
         onKeyDown={(event) => {
           if (event.key === "Escape" && active) {
             event.preventDefault();
@@ -72,7 +76,9 @@ export function TransactionsSearchField({
           ) : undefined
         }
       />
-      {active ? (
+      {/* При нулі збігів говорить порожній стан списку («Нічого не
+          знайдено»), тож другого `role=status` поруч не ставимо. */}
+      {active && resultCount > 0 ? (
         <p
           className="px-1 text-style-caption text-subtle"
           role="status"
@@ -98,7 +104,9 @@ export function TransactionsSearchEmpty({
   onClear: () => void;
 }) {
   return (
-    <div className="rounded-panel border border-dashed border-line bg-panel">
+    // `px-5`: у `EmptyState` немає бічного поля, без нього текст впритул
+    // до рамки (зйомка 2026-11-18).
+    <div className="rounded-panel border border-dashed border-line bg-panel px-5">
       <EmptyState
         title={copy.emptyTitle}
         description={copy.emptyDescription.replace("{query}", query.trim())}

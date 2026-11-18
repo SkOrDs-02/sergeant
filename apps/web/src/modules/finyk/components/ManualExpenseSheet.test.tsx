@@ -374,8 +374,13 @@ describe("ManualExpenseSheet — kind segment switch", () => {
     render(<ManualExpenseSheet open onClose={() => {}} onSave={vi.fn()} />);
     await act(async () => {});
 
-    // Switching kind blanks the category → warning paints immediately.
+    // Switching kind blanks the category. Since 2026-11-18 the warning waits
+    // for a save attempt (no red field on the switch itself), so trigger one.
     fireEvent.click(screen.getByRole("radio", { name: "Надходження" }));
+    fireEvent.change(screen.getByLabelText("Сума ₴"), {
+      target: { value: "42" },
+    });
+    fireEvent.click(screen.getByRole("button", { name: "Додати надходження" }));
     await waitFor(() => {
       expect(screen.getByRole("alert")).toHaveTextContent("Обери категорію");
     });

@@ -265,12 +265,12 @@ export function TransactionList({
     return rows;
   }, [groupedByDate, groupCounts, flatItems]);
 
-  // Два ОСТАННІ рядки віртуального списку (заголовок дня або операція)
-  // отримують правий відступ під кутову кнопку (v3.2, п. 01): список
-  // віртуалізований, тож CSS `:nth-last-child` тут не бачить кінця.
-  const isFabRow = (row: RenderRow) =>
-    row === renderRows[renderRows.length - 1] ||
-    row === renderRows[renderRows.length - 2];
+  // Запас під кутову «Додати» дає лише нижній відступ контенту
+  // (`page-tabbar-pad` нижче, разом зі смугою кнопки `--sgt-fab-inset`):
+  // у кінці прокрутки останній рядок стоїть над кнопкою, а короткий список
+  // до неї не дістає. Правий відступ двох останніх рядків (v3.2, п. 01)
+  // знято 2026-11-18: він стискав рядки й угорі екрана, далеко від кнопки
+  // (короткий список під пошуком: «неділя, 1 ли…», сума посеред рядка).
 
   // DataState contract:
   //   - `data === undefined` triggers the skeleton slot. We mark the
@@ -434,7 +434,6 @@ export function TransactionList({
                         summary={summary}
                         showTotal={hasTotal}
                         masked={!showBalance}
-                        clearFab={isFabRow(row)}
                         onToggle={toggleDay}
                       />
                     </DayCardShell>
@@ -455,7 +454,6 @@ export function TransactionList({
                     <TxListItem
                       tx={rowTx}
                       rowIndex={row.flatIndex}
-                      clearFab={isFabRow(row)}
                       selectMode={selectMode}
                       selected={selectMode && selectedIds.has(t.id)}
                       hidden={hiddenTxIdSet.has(t.id)}

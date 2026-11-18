@@ -72,6 +72,9 @@ export function ManualExpenseMoreSection({
 
   return (
     <details
+      // Рядок ділиться з «Інша дата» (`ManualExpenseDateSection.after`):
+      // розкритий займає весь рядок і переносить вміст під обидва.
+      className="min-w-0 open:basis-full"
       open={open}
       onToggle={(event) => setOpenOverride(event.currentTarget.open)}
     >
@@ -147,6 +150,7 @@ export function ManualExpenseMoreFields(props: ManualExpenseMoreFieldsProps) {
           tags={props.tags ?? []}
           known={knownTags ?? []}
           onChange={props.onTagsChange}
+          flush
         />
       )}
       {!isEditing && knownTags && (
@@ -154,6 +158,7 @@ export function ManualExpenseMoreFields(props: ManualExpenseMoreFieldsProps) {
           tags={props.draftTags}
           known={knownTags}
           onChange={props.onDraftTagsChange}
+          flush
         />
       )}
       {onCreateCash && (

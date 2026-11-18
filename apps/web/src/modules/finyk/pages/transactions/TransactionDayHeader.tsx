@@ -22,8 +22,6 @@ export interface TransactionDayHeaderProps {
    * MaskedAmount variant to avoid nesting buttons.
    */
   masked?: boolean;
-  /** Один з двох останніх рядків списку: правий відступ під кутову кнопку. */
-  clearFab?: boolean;
   onToggle: (key: string) => void;
 }
 
@@ -41,7 +39,6 @@ export function TransactionDayHeader({
   summary,
   showTotal,
   masked = false,
-  clearFab = false,
   onToggle,
 }: TransactionDayHeaderProps) {
   const label = formatStickyDayLabel(dayKey);
@@ -49,12 +46,6 @@ export function TransactionDayHeader({
     <button
       type="button"
       onClick={() => onToggle(dayKey)}
-      // px-3 (12 px) + ширина кнопки; inline, бо клас `px-3` перебив би утиліту.
-      style={
-        clearFab
-          ? { paddingRight: "calc(0.75rem + var(--sgt-fab-width, 0px))" }
-          : undefined
-      }
       aria-expanded={!collapsed}
       aria-label={`${collapsed ? messages.actions.expand : messages.actions.collapse} ${label}`}
       className={cn(

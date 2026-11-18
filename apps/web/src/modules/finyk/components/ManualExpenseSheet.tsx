@@ -648,11 +648,18 @@ export function ManualExpenseSheet({
   };
 
   // A kind change invalidates the old taxonomy category. The required empty
-  // value makes the user explicitly choose from the new taxonomy before save.
+  // value makes the user explicitly choose from the new taxonomy before save;
+  // the error shows on the save attempt, not on the switch itself.
   const handleKindChange = (nextKind: ManualExpenseKind) => {
     if (nextKind === kind) return;
     setKind(nextKind);
-    setValue("category", "", { shouldDirty: true, shouldValidate: true });
+    // Валідуємо лише після спроби зберегти: інакше саме перемикання
+    // «Витрата / Надходження» фарбувало поле червоним «Обери категорію»
+    // ще до будь-якої дії людини (зйомка 2026-11-18).
+    setValue("category", "", {
+      shouldDirty: true,
+      shouldValidate: formState.isSubmitted,
+    });
     setAiAppliedCategory(null);
   };
 
@@ -760,23 +767,24 @@ export function ManualExpenseSheet({
             setValue("date", iso, { shouldDirty: true, shouldValidate: false })
           }
           register={register}
-        />
-
-        <ManualExpenseMoreFields
-          isEditing={isEditing}
-          tags={tags}
-          onTagsChange={onTagsChange}
-          draftTags={draftTags}
-          onDraftTagsChange={setDraftTags}
-          knownTags={knownTags}
-          onCreateCash={onCreateCashOnHand}
-          account={account}
-          onAccountChange={setAccount}
-          cashExists={cashOnHandExists}
-          cashCreatedAt={cashOnHandCreatedAt}
-          defaultAccount={defaultAccount}
-          date={kind === "income" ? undefined : date}
-          isSubmitting={isSubmitting}
+          after={
+            <ManualExpenseMoreFields
+              isEditing={isEditing}
+              tags={tags}
+              onTagsChange={onTagsChange}
+              draftTags={draftTags}
+              onDraftTagsChange={setDraftTags}
+              knownTags={knownTags}
+              onCreateCash={onCreateCashOnHand}
+              account={account}
+              onAccountChange={setAccount}
+              cashExists={cashOnHandExists}
+              cashCreatedAt={cashOnHandCreatedAt}
+              defaultAccount={defaultAccount}
+              date={kind === "income" ? undefined : date}
+              isSubmitting={isSubmitting}
+            />
+          }
         />
 
         {isEditing && receiptId != null && (

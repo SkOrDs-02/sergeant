@@ -248,6 +248,11 @@ describe("Transactions: пошук (Ф-2 а)", () => {
     fireEvent.click(screen.getByRole("button", { name: "Надходження" }));
 
     expect(screen.getByText("Нічого не знайдено")).toBeInTheDocument();
+    // Одне повідомлення про порожній результат: без «Знайдено 0 операцій».
+    const statuses = screen.getAllByRole("status");
+    expect(statuses).toHaveLength(1);
+    expect(statuses[0]).toHaveTextContent("Нічого не знайдено");
+    expect(screen.queryByText(/Знайдено 0/)).toBeNull();
     fireEvent.click(
       screen.getAllByRole("button", { name: "Очистити пошук" }).at(-1)!,
     );

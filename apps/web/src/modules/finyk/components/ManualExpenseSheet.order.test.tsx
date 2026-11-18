@@ -7,6 +7,7 @@
  */
 import { describe, it, expect, vi, afterEach, beforeAll } from "vitest";
 import {
+  act,
   render,
   screen,
   fireEvent,
@@ -156,5 +157,68 @@ describe("ManualExpenseSheet: порядок полів (Ф-1 а)", () => {
     fireEvent.click(screen.getByRole("button", { name: "Додати надходження" }));
     await waitFor(() => expect(onSave).toHaveBeenCalledTimes(1));
     expect(onSave.mock.calls[0]![0].kind).toBe("income");
+  });
+  it("«Більше» стоїть в одному рядку з «Інша дата», щоб бути видним без прокрутки", () => {
+    render(
+      <ManualExpenseSheet
+        open
+        onClose={() => {}}
+        knownTags={[]}
+        {...cashProps}
+      />,
+    );
+    const otherDate = screen.getByText("Інша дата").closest("details");
+    expect(otherDate).not.toBeNull();
+    // Спільний рядок-обгортка: згорнуті розкривачі стоять поруч, розкритий
+    // займає весь рядок (`open:basis-full`).
+    expect(moreDisclosure().parentElement).toBe(otherDate!.parentElement);
+    expect(moreDisclosure()).toHaveClass("open:basis-full");
+    expect(otherDate).toHaveClass("open:basis-full");
+  });
+
+  it("підпис «Теги» в «Більше» вирівняний з «Рахунок», без бічного відступу", () => {
+    render(
+      <ManualExpenseSheet
+        open
+        onClose={() => {}}
+        knownTags={[]}
+        {...cashProps}
+      />,
+    );
+    const tagsHeading = screen.getByRole("heading", { name: "Теги" });
+    const accountLabel = screen.getByText("Рахунок");
+    expect(tagsHeading).not.toHaveClass("px-2");
+    expect(tagsHeading.className).toBe(accountLabel.className);
+  });
+
+  it("перемикання на «Надходження» не фарбує категорію помилкою до спроби зберегти", async () => {
+    const onSave = vi.fn();
+    render(
+      <ManualExpenseSheet
+        open
+        onClose={() => {}}
+        onSave={onSave}
+        knownTags={[]}
+      />,
+    );
+    // Аркуш заповнює форму в мікротаску після монтування.
+    await act(async () => {});
+    fireEvent.click(screen.getByRole("radio", { name: "Надходження" }));
+    // Дати React відпрацювати ефекти перемикання.
+    await waitFor(() =>
+      expect(
+        screen.getByRole("button", { name: "Додати надходження" }),
+      ).toBeInTheDocument(),
+    );
+    expect(screen.queryByRole("alert")).toBeNull();
+
+    fireEvent.change(screen.getByLabelText("Сума ₴"), {
+      target: { value: "1000" },
+    });
+    fireEvent.click(screen.getByRole("button", { name: "Додати надходження" }));
+    await waitFor(() =>
+      expect(screen.getByRole("alert")).toHaveTextContent("Обери категорію"),
+    );
+    expect(onSave).not.toHaveBeenCalled();
   });
 });
