@@ -15,6 +15,44 @@ import {
 import type { AppliedStatus } from "../syncV2-types.js";
 import { applyIfNewer, guardParentOwned } from "../applySync-helpers.js";
 
+/**
+ * Привʼязка тренування до слоту програми (міграція 171, П-10). Пара
+ * `program_id` / `program_slot`: обидва задані (непорожній id, ціле ≥0) або
+ * обидва null. Половина пари чи невалідне значення — відмова з причиною.
+ *
+ * AI-CONTEXT: відсутні ОБИДВА ключі = рядок від клієнта, що ще не знає цих
+ * колонок (PWA зі старим бандлом). Такий UPDATE не чіпає наявну привʼязку,
+ * інакше старий клієнт, дописуючи нотатку, стирав би курсор програми.
+ * Явні null знімають привʼязку. Той самий контракт у клієнтському домені:
+ * `normalizeWorkoutProgramRef` (`@sergeant/fizruk-domain`).
+ */
+type ProgramRefInput =
+  | { readonly present: false }
+  | {
+      readonly present: true;
+      readonly programId: string | null;
+      readonly slot: number | null;
+    }
+  | "invalid";
+
+function parseProgramRef(row: Record<string, unknown>): ProgramRefInput {
+  const hasId = Object.prototype.hasOwnProperty.call(row, "program_id");
+  const hasSlot = Object.prototype.hasOwnProperty.call(row, "program_slot");
+  if (!hasId && !hasSlot) return { present: false };
+  const programId = row["program_id"];
+  const slot = row["program_slot"];
+  if (programId == null && slot == null) {
+    return { present: true, programId: null, slot: null };
+  }
+  if (typeof programId !== "string" || programId.trim() === "") {
+    return "invalid";
+  }
+  if (typeof slot !== "number" || !Number.isInteger(slot) || slot < 0) {
+    return "invalid";
+  }
+  return { present: true, programId, slot };
+}
+
 export async function applyFizrukWorkouts(
   client: PoolClient,
   op: SyncV2Op,
@@ -85,15 +123,23 @@ export async function applyFizrukWorkouts(
       ? null
       : Math.round(rawKcal);
 
+  const programRef = parseProgramRef(row);
+  if (programRef === "invalid") {
+    return { status: "rejected", reason: "invalid_program_ref" };
+  }
+  const programId = programRef.present ? programRef.programId : null;
+  const programSlot = programRef.present ? programRef.slot : null;
+
   if (existing.rows.length === 0) {
     await client.query(
       `INSERT INTO fizruk_workouts
          (id, user_id, started_at, ended_at, note,
           groups_json, warmup_json, cooldown_json, wellbeing_json,
-          kcal_burned, created_at, updated_at, deleted_at)
+          kcal_burned, created_at, updated_at, deleted_at,
+          program_id, program_slot)
        VALUES ($1, $2, $3, $4, $5,
                COALESCE($6::jsonb, '[]'::jsonb), $7, $8, $9,
-               $10, $11, $12, $13)`,
+               $10, $11, $12, $13, $14, $15)`,
       [
         id,
         userId,
@@ -108,6 +154,8 @@ export async function applyFizrukWorkouts(
         createdAt ?? clientTs,
         clientTs,
         deletedAt ?? null,
+        programId,
+        programSlot,
       ],
     );
   } else {
@@ -123,7 +171,9 @@ export async function applyFizrukWorkouts(
              wellbeing_json  = $7,
              kcal_burned     = $8,
              updated_at      = $9,
-             deleted_at      = $10
+             deleted_at      = $10,
+             program_id      = CASE WHEN $13::boolean THEN $14::text ELSE program_id END,
+             program_slot    = CASE WHEN $13::boolean THEN $15::integer ELSE program_slot END
        WHERE id = $11 AND user_id = $12 AND updated_at < $9`,
       [
         startedAt,
@@ -138,6 +188,9 @@ export async function applyFizrukWorkouts(
         deletedAt ?? null,
         id,
         userId,
+        programRef.present,
+        programId,
+        programSlot,
       ],
     );
   }

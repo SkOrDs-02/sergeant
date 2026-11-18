@@ -233,6 +233,11 @@ export interface SuggestNextSetOptions {
   aging?: ReturnModeHint | null | undefined;
   /** Відсутня чи нейтральна готовність лишає результат таким, як був. */
   readiness?: ReadinessAnswer | null | undefined;
+  /**
+   * Діапазон повторів із плану сесії програми (5×5 → 5–5), сильніший за
+   * діапазон каталогу. Без нього — `targetRepRange(exercise)`.
+   */
+  targetReps?: TargetRepRange | null | undefined;
 }
 
 /**
@@ -308,7 +313,7 @@ export function suggestNextSet(
   const r = Number(lastBestSet?.reps) || 0;
   if (w <= 0 || r <= 0) return null;
 
-  const targetReps = targetRepRange(options.exercise);
+  const targetReps = options.targetReps ?? targetRepRange(options.exercise);
   const step = weightStepKg(options.exercise);
   const aging = options.aging;
   const readiness = classifyReadiness(options.readiness);

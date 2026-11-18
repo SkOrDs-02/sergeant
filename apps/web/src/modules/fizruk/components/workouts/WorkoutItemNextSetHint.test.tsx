@@ -46,6 +46,23 @@ describe("WorkoutItemNextSetHint", () => {
     expect(onApply).toHaveBeenCalledWith(82.5, 5, "planned");
   });
 
+  it("тренування з програми 5×5 веде прогресію за планом сесії, а не діапазоном каталогу", () => {
+    const onApply = vi.fn();
+    render(
+      <WorkoutItemNextSetHint
+        last={lastStrength(3, [{ weightKg: 80, reps: 5 }])}
+        exerciseId="bench_press_barbell"
+        isReadOnly={false}
+        programRef={{ programId: "strength_5x5", slot: 0 }}
+        onApply={onApply}
+      />,
+    );
+    // План 5×5: 5 повторень — стеля, отже +2.5 кг і знову 5.
+    expect(screen.getByText(/ціль 5-5 повторень/)).toBeInTheDocument();
+    fireEvent.click(screen.getByRole("button", { name: /Наступний/ }));
+    expect(onApply).toHaveBeenCalledWith(82.5, 5, "planned");
+  });
+
   it("does not raise the weight after a long layoff", () => {
     const onApply = vi.fn();
     render(

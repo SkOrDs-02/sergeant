@@ -94,15 +94,18 @@ export default function FizrukApp({
   useFizrukSqliteReadBoot();
 
   const monthlyPlan = useMonthlyPlan();
+  const { workouts, createWorkout, addItem, endWorkout, deleteWorkout } =
+    useWorkouts();
+  // Журнал веде курсор програми (П-10): сьогоднішня сесія — слот після
+  // останнього повноцінного тренування програми, а не день тижня.
   const {
     activeProgramId,
     activeProgram,
     todaySession,
+    restSession,
     activateProgram,
     deactivateProgram,
-  } = useTrainingProgram();
-  const { workouts, createWorkout, addItem, endWorkout, deleteWorkout } =
-    useWorkouts();
+  } = useTrainingProgram(workouts);
   const { exercises } = useExerciseCatalog();
   // Keep the Hub fizruk bento card's quick-stats snapshot in sync with real
   // workouts, not just the onboarding demo seed.
@@ -289,10 +292,14 @@ export default function FizrukApp({
               activateProgram={activateProgram}
               deactivateProgram={deactivateProgram}
               todaySession={todaySession}
+              restSession={restSession}
               quickStartRequest={quickStartRequest}
               onNavigate={(target) => navigate(target)}
-              onStartProgramWorkout={(session) =>
-                handleStartProgramWorkout(session)
+              onStartProgramWorkout={(session, program, slot) =>
+                handleStartProgramWorkout(session, {
+                  programId: program.id,
+                  slot,
+                })
               }
               onQuickStart={handleQuickStart}
               onOpenModule={onOpenModule}

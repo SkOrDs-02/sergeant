@@ -102,6 +102,8 @@ export type HeroCardState =
       readonly daysFromNow: number;
       /** Вправ у тій сесії. */
       readonly exerciseCount: number;
+      /** Тренувальний день, але сесію програми сьогодні вже закрито (П-10). */
+      readonly doneToday?: boolean | undefined;
     }
   | {
       readonly kind: "empty";

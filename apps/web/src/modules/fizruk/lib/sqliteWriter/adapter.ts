@@ -269,6 +269,9 @@ async function upsertWorkout(
   const cooldownJson = w.cooldown ? JSON.stringify(w.cooldown) : null;
   const wellbeingJson = w.wellbeing ? JSON.stringify(w.wellbeing) : null;
   const kcalBurned = toIntOrNull(w.kcalBurned);
+  // Пара або обидва null (контракт sync-хендлера, міграція 171).
+  const programId = w.programRef?.programId ?? null;
+  const programSlot = w.programRef ? w.programRef.slot : null;
 
   await client.run(WORKOUT_UPSERT_SQL, [
     w.id,
@@ -281,6 +284,8 @@ async function upsertWorkout(
     cooldownJson,
     wellbeingJson,
     kcalBurned,
+    programId,
+    programSlot,
     clientTs,
     clientTs,
   ]);
@@ -300,6 +305,11 @@ async function upsertWorkout(
       cooldown_json: cooldownJson,
       wellbeing_json: wellbeingJson,
       kcal_burned: kcalBurned,
+      // AI-CONTEXT: старий сервер (до 171) невідомі поля рядка ігнорує, тож
+      // тренування доходить, а привʼязка доїде наступним upsert-ом після
+      // його оновлення. Новий сервер читає явні null як «поза програмою».
+      program_id: programId,
+      program_slot: programSlot,
       created_at: clientTs,
       deleted_at: null,
     },

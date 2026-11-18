@@ -487,6 +487,25 @@ describe("WorkoutItemCard — type switcher", () => {
 });
 
 describe("WorkoutItemCard — time / distance", () => {
+  it("утримання з програми показує план підходів × секунд і що вписати", () => {
+    renderCard({
+      it: makeItem({
+        exerciseId: "plank",
+        type: "time",
+        sets: [],
+        durationSec: 0,
+      }),
+      activeWorkout: makeWorkout({
+        programRef: { programId: "home_bodyweight", slot: 0 },
+      }),
+    });
+    expect(
+      screen.getByText(
+        "План програми: 3×20–40 с, у поле впиши сумарний час усіх підходів",
+      ),
+    ).toBeInTheDocument();
+  });
+
   it("renders a single duration input for a time item and writes durationSec", () => {
     renderCard({ it: makeItem({ type: "time", durationSec: 30 }) });
     const input = screen.getByRole("spinbutton", {

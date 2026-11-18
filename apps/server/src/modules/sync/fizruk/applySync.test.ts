@@ -62,6 +62,106 @@ describe("applyFizrukWorkouts", () => {
   });
 });
 
+// П-10 (міграція 171): привʼязка тренування до слоту програми.
+describe("applyFizrukWorkouts — program_id / program_slot", () => {
+  const clientTs = new Date("2026-11-18T08:00:00.000Z");
+  const base = {
+    id: "workout-1",
+    user_id: "user-1",
+    started_at: "2026-11-18T07:00:00.000Z",
+  };
+
+  it("пише пару, коли обидва поля задані й валідні", async () => {
+    const fake = new FakeClient();
+    await expect(
+      applyFizrukWorkouts(
+        asClient(fake),
+        syncOp("fizruk_workouts", "insert", {
+          ...base,
+          program_id: "starting_strength",
+          program_slot: 2,
+        }),
+        "user-1",
+        clientTs,
+      ),
+    ).resolves.toEqual({ status: "applied" });
+    const insert = lastQuery(fake);
+    expect(insert.sql).toContain("program_id, program_slot");
+    expect(insert.params).toContain("starting_strength");
+    expect(insert.params).toContain(2);
+  });
+
+  it("без полів (старий клієнт) вставляє NULL-и", async () => {
+    const fake = new FakeClient();
+    await applyFizrukWorkouts(
+      asClient(fake),
+      syncOp("fizruk_workouts", "insert", base),
+      "user-1",
+      clientTs,
+    );
+    const insert = lastQuery(fake);
+    expect(insert.sql).toContain("program_id, program_slot");
+    expect(insert.params.slice(-2)).toEqual([null, null]);
+  });
+
+  it.each([
+    ["лише id", { program_id: "ppl" }],
+    ["лише слот", { program_slot: 0 }],
+    ["id задано, слот null", { program_id: "ppl", program_slot: null }],
+    ["порожній id", { program_id: "", program_slot: 0 }],
+    ["відʼємний слот", { program_id: "ppl", program_slot: -1 }],
+    ["дробовий слот", { program_id: "ppl", program_slot: 1.5 }],
+    ["слот рядком", { program_id: "ppl", program_slot: "1" }],
+  ])("відхиляє половину пари чи невалідне значення: %s", async (_l, ref) => {
+    const fake = new FakeClient();
+    await expect(
+      applyFizrukWorkouts(
+        asClient(fake),
+        syncOp("fizruk_workouts", "insert", { ...base, ...ref }),
+        "user-1",
+        clientTs,
+      ),
+    ).resolves.toEqual({ status: "rejected", reason: "invalid_program_ref" });
+    expect(fake.queries).toHaveLength(1);
+  });
+
+  it("UPDATE від старого клієнта без полів не стирає наявну привʼязку", async () => {
+    const fake = new FakeClient();
+    fake.queueRows([
+      { user_id: "user-1", updated_at: new Date("2026-11-18T07:30:00.000Z") },
+    ]);
+    await applyFizrukWorkouts(
+      asClient(fake),
+      syncOp("fizruk_workouts", "update", base),
+      "user-1",
+      clientTs,
+    );
+    const update = lastQuery(fake);
+    expect(update.sql).toMatch(
+      /program_id\s*=\s*CASE WHEN \$\d+::boolean THEN \$\d+::text ELSE program_id END/,
+    );
+    expect(update.params).toContain(false);
+  });
+
+  it("UPDATE з явними null знімає привʼязку", async () => {
+    const fake = new FakeClient();
+    fake.queueRows([
+      { user_id: "user-1", updated_at: new Date("2026-11-18T07:30:00.000Z") },
+    ]);
+    await applyFizrukWorkouts(
+      asClient(fake),
+      syncOp("fizruk_workouts", "update", {
+        ...base,
+        program_id: null,
+        program_slot: null,
+      }),
+      "user-1",
+      clientTs,
+    );
+    expect(lastQuery(fake).params).toContain(true);
+  });
+});
+
 // data-11: контракт для рядків, які шле веб-асистент (log_set / plan_workout).
 // Клієнт тепер завжди резолвить назву в каталожний або `custom_*` id, тож
 // item приймається; порожній `exercise_id` лишається термінальною відмовою

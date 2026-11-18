@@ -5,6 +5,7 @@ import {
   collectStrengthSessionPoints,
   computeNextSetAging,
   latestClearedInjuryAtForExercise,
+  normalizeWorkoutProgramRef,
   programExercisePlan,
   progressionTopSet,
   recoveryConflictsForExercise,
@@ -12,6 +13,7 @@ import {
   uncappedEpley1rm,
   type InjuryMark,
   type ProgramSessionPlan,
+  type WorkoutProgramRef,
 } from "@sergeant/fizruk-domain";
 import {
   collectExerciseHistory,
@@ -42,7 +44,9 @@ type RecoveryBy = Parameters<typeof recoveryConflictsForExercise>[1];
 
 interface WorkoutsApi {
   workouts: readonly Workout[];
-  createWorkout: () => { id: string };
+  createWorkout: (init?: { programRef?: WorkoutProgramRef }) => {
+    id: string;
+  };
   addItem: (workoutId: string, item: Partial<WorkoutItem>) => string;
 }
 
@@ -134,7 +138,10 @@ export function useFizrukProgramStart({
   onRecoveryConflict: (start: () => void) => void;
 }) {
   return useCallback(
-    (session: Session | undefined | null) => {
+    (
+      session: Session | undefined | null,
+      programRef?: WorkoutProgramRef | null,
+    ) => {
       if (!session) return;
       const exIds = session.exerciseIds || [];
       const picks = exIds
@@ -143,30 +150,43 @@ export function useFizrukProgramStart({
       if (picks.length === 0) return;
       const start = () => {
         const progressionKg = session.progressionKg ?? 0;
-        const w = createWorkout();
+        // Слот програми — у тренування (П-10): курсор рухає лише повноцінне
+        // тренування з цією привʼязкою.
+        // Невалідна пара (слот <0) не пишеться: сервер відхилив би рядок
+        // тренування цілком (`invalid_program_ref`).
+        const ref = programRef
+          ? normalizeWorkoutProgramRef(programRef.programId, programRef.slot)
+          : null;
+        const w =
+          ref && ref !== "invalid"
+            ? createWorkout({ programRef: ref })
+            : createWorkout();
         for (const ex of picks) {
           const isCardio = ex.primaryGroup === "cardio";
-          const suggestedWeight = isCardio
-            ? 0
-            : programStartWeightKg(ex, workouts, progressionKg, injuryMarks);
+          const plan = programExercisePlan(
+            session,
+            findExerciseById(ex.id) ?? ex,
+          );
+          // Утримання й переноска міряються часом: item типу `time` з однією
+          // сумарною тривалістю, без рядків повторень (доручення founder-а
+          // 2026-11-18). Секунд на підхід модель поки не має.
+          const isTimed = !isCardio && plan.kind === "time";
+          const suggestedWeight =
+            isCardio || isTimed
+              ? 0
+              : programStartWeightKg(ex, workouts, progressionKg, injuryMarks);
           addItem(w.id, {
             exerciseId: ex.id,
             nameUk: ex?.name?.uk || ex?.name?.en || ex.id,
             primaryGroup: ex.primaryGroup || "",
             musclesPrimary: ex?.muscles?.primary || [],
             musclesSecondary: ex?.muscles?.secondary || [],
-            type: isCardio ? "distance" : "strength",
+            type: isCardio ? "distance" : isTimed ? "time" : "strength",
             // План сесії як порожні рядки (П-9, OD-32): лічильник одразу
             // «0 з N», зарахованим рядок стає лише з повтореннями.
-            ...(isCardio
+            ...(isCardio || isTimed
               ? {}
-              : {
-                  sets: buildPlannedSets(
-                    programExercisePlan(session, findExerciseById(ex.id) ?? ex)
-                      .sets,
-                    suggestedWeight,
-                  ),
-                }),
+              : { sets: buildPlannedSets(plan.sets, suggestedWeight) }),
             durationSec: 0,
             ...(isCardio ? { distanceM: 0 } : {}),
           });

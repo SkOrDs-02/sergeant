@@ -4,12 +4,14 @@
  */
 import {
   computeNextSetAging,
+  programPlanTargetReps,
   progressionTopSet,
   suggestNextSet,
   uncappedEpley1rm,
 } from "@sergeant/fizruk-domain";
 import type {
   ReadinessAnswer,
+  WorkoutProgramRef,
   WorkoutVariantChoice,
 } from "@sergeant/fizruk-domain";
 import { findExerciseById } from "@sergeant/fizruk-domain/data";
@@ -28,6 +30,8 @@ export interface WorkoutItemNextSetHintProps {
    * Немає або нейтральна — картка виглядає рівно як до цієї фічі.
    */
   readiness?: ReadinessAnswer | null | undefined;
+  /** Привʼязка тренування до сесії програми (П-10) — звідти план повторів. */
+  programRef?: WorkoutProgramRef | null | undefined;
   onApply: (
     weightKg: number,
     reps: number,
@@ -66,6 +70,7 @@ export function WorkoutItemNextSetHint({
   exerciseId,
   isReadOnly,
   readiness,
+  programRef,
   onApply,
 }: WorkoutItemNextSetHintProps) {
   if (isReadOnly || last?.type !== "strength") return null;
@@ -86,6 +91,8 @@ export function WorkoutItemNextSetHint({
     exercise: exerciseId ? findExerciseById(exerciseId) : null,
     aging,
     ...(readiness ? { readiness } : {}),
+    // План сесії програми (5×5) сильніший за діапазон каталогу.
+    targetReps: programPlanTargetReps(programRef),
   });
   if (!suggestion) return null;
 

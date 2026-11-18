@@ -30,6 +30,8 @@ export const fizrukPageMessages = {
     programs: "До програм",
     /** День без сесії активної програми (П-11, рішення власника 2026-11-18). */
     restToday: "Сьогодні відпочинок",
+    /** Сесію програми сьогодні вже закрито повноцінним тренуванням (П-10). */
+    programDoneToday: "Сесію програми сьогодні закрито",
     nextPrefix: "Наступна:",
     startNow: "Почати зараз",
   },
@@ -220,6 +222,9 @@ export const fizrukPageMessages = {
     cardioDurationAria: "Тривалість у секундах",
     cardioDistanceAria: "Дистанція в метрах",
     cardioTimeHint: "Напр: планка, ізометрія",
+    /** Утримання з програми: план підходів × секунд і що вписати в поле. */
+    timedPlanPrefix: "План програми:",
+    timedPlanTotalHint: "у поле впиши сумарний час усіх підходів",
     cardioPace: "Темп",
     cardioSpeed: "Швидкість",
     durationAria: "Тривалість тренування",

@@ -333,10 +333,11 @@ export function RestState({
     metaParts.push(
       `${state.exerciseCount} ${pluralExercises(state.exerciseCount)}`,
     );
+  const heading = state.doneToday ? hero.programDoneToday : hero.restToday;
   return (
-    <HeroShell ariaLabel={hero.restToday} cornerSlot={cornerSlot}>
+    <HeroShell ariaLabel={heading} cornerSlot={cornerSlot}>
       <HeroKicker {...kicker} />
-      <h2 className="text-style-title font-bold text-text">{hero.restToday}</h2>
+      <h2 className="text-style-title font-bold text-text">{heading}</h2>
       <HeroRecoveryBars
         rows={body.recoveryRows}
         recoverByDate={body.recoverByDate}

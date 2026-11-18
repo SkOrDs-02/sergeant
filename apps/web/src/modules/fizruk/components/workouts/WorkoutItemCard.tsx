@@ -254,6 +254,7 @@ export function WorkoutItemCard({
           exerciseId={it.exerciseId}
           isReadOnly={isReadOnly}
           readiness={activeWorkout.wellbeing ?? null}
+          programRef={activeWorkout.programRef ?? null}
           onApply={(weightKg, reps, variant) => {
             // Вибір записуємо ЗАВЖДИ, навіть коли він плановий: інакше
             // історія не відрізнить «взяв за планом» від «нічого не обирав».

@@ -335,6 +335,12 @@ function toWorkoutSnapshot(workout: Workout): FizrukWorkoutSnapshot {
       Number.isFinite(workout.kcalBurned)
         ? workout.kcalBurned
         : null,
+    programRef: workout.programRef
+      ? {
+          programId: workout.programRef.programId,
+          slot: workout.programRef.slot,
+        }
+      : null,
   };
 }
 

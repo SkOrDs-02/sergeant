@@ -155,4 +155,31 @@ describe("useTrainingProgram", () => {
     const { result } = renderHook(() => useTrainingProgram());
     expect(result.current.activeProgramId).toBeNull();
   });
+
+  it("сьогоднішня сесія — курсор журналу, а не день тижня (П-10)", () => {
+    vi.useFakeTimers({ toFake: ["Date"] });
+    // Пт 2026-04-24: за днем тижня це слот 2, але останнє повноцінне
+    // тренування програми закрило слот 0, тож сьогодні слот 1.
+    vi.setSystemTime(new Date("2026-04-24T12:00:00"));
+    try {
+      const workouts = [
+        {
+          startedAt: "2026-04-20T10:00:00",
+          endedAt: "2026-04-20T10:40:00",
+          items: [],
+          programRef: { programId: "starting_strength", slot: 0 },
+        },
+      ];
+      const { result } = renderHook(() => useTrainingProgram(workouts));
+      act(() => result.current.activateProgram("starting_strength"));
+      expect(result.current.todaySession).toEqual({
+        sessionKey: "ss_b",
+        name: "Workout B",
+        slot: 1,
+      });
+      expect(result.current.restSession).toBeNull();
+    } finally {
+      vi.useRealTimers();
+    }
+  });
 });

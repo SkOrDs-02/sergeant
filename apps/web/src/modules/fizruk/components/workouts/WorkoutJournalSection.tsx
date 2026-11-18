@@ -51,6 +51,7 @@ import {
 import { reopenWorkoutDetached } from "../../lib/reopenWorkoutDetached";
 import { deleteWorkoutWithUndo } from "../../lib/deleteWorkoutWithUndo";
 import { restoreWorkoutDetached } from "../../lib/restoreWorkoutDetached";
+import { signalFinishedWorkoutForRoutine } from "../../lib/routineAutoMarkSignal";
 import {
   clearPendingRetroEnd,
   peekPendingRetroEnd,
@@ -308,6 +309,8 @@ export function WorkoutJournalSection({
     recordWorkoutMoment(wid, activeWorkout.startedAt);
     const ended = endWorkout(wid);
     const endedIso = ended?.endedAt ?? plannedEnd;
+    // Автовідмітка Рутини (Р-1 (в)): лише повноцінне, раз на тренування.
+    signalFinishedWorkoutForRoutine(ended ?? activeWorkout, endedIso);
     // Confirm the action visually + with haptic so the user does
     // not have to read the modal to know the session was saved.
     hapticSuccess();

@@ -260,6 +260,14 @@ describe("Dashboard — активна програма в день без ро�
     renderDashboard({
       activeProgram: ss,
       todaySession: null,
+      // Курсор (`useTrainingProgram`): наступна сесія — слот 0, завтра.
+      restSession: {
+        sessionKey: "ss_a",
+        name: "Workout A",
+        slot: 0,
+        daysFromNow: 1,
+        doneToday: false,
+      },
       onStartProgramWorkout,
     });
     expect(
@@ -271,13 +279,39 @@ describe("Dashboard — активна програма в день без ро�
     await user.click(
       screen.getByRole("button", { name: "Почати зараз: Workout A" }),
     );
-    expect(onStartProgramWorkout).toHaveBeenCalledWith(ss.sessions["ss_a"], ss);
+    expect(onStartProgramWorkout).toHaveBeenCalledWith(
+      ss.sessions["ss_a"],
+      ss,
+      0,
+    );
+  });
+
+  it("закритий сьогодні день програми каже про це, а не «відпочинок» (П-10)", async () => {
+    renderDashboard({
+      activeProgram: ss,
+      todaySession: null,
+      restSession: {
+        sessionKey: "ss_b",
+        name: "Workout B",
+        slot: 1,
+        daysFromNow: 2,
+        doneToday: true,
+      },
+    });
+    expect(
+      await screen.findByRole("heading", {
+        name: "Сесію програми сьогодні закрито",
+      }),
+    ).toBeInTheDocument();
+    expect(
+      screen.getByText("Наступна: Workout B · За 2 дні · 3 вправи"),
+    ).toBeInTheDocument();
   });
 
   it("у день тренування за розкладом лишається звичайний старт", async () => {
     renderDashboard({
       activeProgram: ss,
-      todaySession: { sessionKey: "ss_b", name: "Workout B" },
+      todaySession: { sessionKey: "ss_b", name: "Workout B", slot: 1 },
     });
     expect(
       await screen.findByRole("button", {

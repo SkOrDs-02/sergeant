@@ -44,6 +44,7 @@ function setup(workouts: SetupWorkout[] = [], options: SetupOptions = {}) {
       name: { uk: "Біг" },
       primaryGroup: "cardio",
     },
+    { id: "plank", name: { uk: "Планка" }, primaryGroup: "core" },
     // Справжній id каталогу: зонна половина травма-перевірки читає реєстр
     // `EXERCISE_INJURY_ZONES` за id (жим — плечовий суглоб).
     {
@@ -149,6 +150,32 @@ describe("useFizrukProgramStart", () => {
       { weightKg: 52.5, reps: 0 },
       { weightKg: 52.5, reps: 0 },
     ]);
+  });
+
+  it("старт із програми пише привʼязку до слоту (П-10)", () => {
+    const { start, createWorkout } = setup();
+    start(
+      { exerciseIds: ["bench"] },
+      { programId: "starting_strength", slot: 2 },
+    );
+    expect(createWorkout).toHaveBeenCalledWith({
+      programRef: { programId: "starting_strength", slot: 2 },
+    });
+  });
+
+  it("невалідний слот не пишеться, тренування стартує поза програмою", () => {
+    const { start, createWorkout } = setup();
+    start({ exerciseIds: ["bench"] }, { programId: "ppl", slot: -1 });
+    expect(createWorkout).toHaveBeenCalledWith();
+  });
+
+  it("утримання стартує як вправа на час без рядків повторень", () => {
+    const { start, added } = setup();
+    start({ exerciseIds: ["plank"] });
+    const plank = added.find((i) => i.exerciseId === "plank");
+    expect(plank?.type).toBe("time");
+    expect(plank?.durationSec).toBe(0);
+    expect(plank?.sets).toBeUndefined();
   });
 
   it("власний план сесії (5×5) сіє пʼять рядків", () => {

@@ -37,7 +37,6 @@ import {
   computeDashboardKpis,
   getNextPlanSession,
   listRecentCompletedWorkouts,
-  resolveNextScheduledSession,
 } from "@sergeant/fizruk-domain/domain";
 import type {
   ProgramSessionDef,
@@ -57,15 +56,25 @@ import { messages } from "@shared/i18n/uk";
 interface DashboardTodaySession {
   sessionKey: string;
   name: string;
+  /** Індекс у `schedule`, пишеться в тренування (П-10). */
+  slot: number;
+}
+
+interface DashboardRestSession extends DashboardTodaySession {
+  daysFromNow: number;
+  doneToday: boolean;
 }
 
 interface DashboardProps {
   onOpenPrograms?: () => void;
   activeProgram: TrainingProgramDef | null;
   todaySession: DashboardTodaySession | null;
+  /** Курсор програми в день відпочинку чи закритий день (`useTrainingProgram`). */
+  restSession?: DashboardRestSession | null | undefined;
   onStartProgramWorkout?: (
     session: ProgramSessionDef,
     program: TrainingProgramDef,
+    slot: number,
   ) => void;
   /**
    * Path-based navigation handler injected by `FizrukRouter`. Each of the
@@ -93,6 +102,7 @@ export function Dashboard({
   onOpenPrograms,
   activeProgram,
   todaySession,
+  restSession,
   onStartProgramWorkout,
   onQuickStart,
   onNavigate,
@@ -237,13 +247,14 @@ export function Dashboard({
 
   // П-11 (Б), рішення власника 2026-11-18: активна програма без сесії
   // сьогодні і без плану місяця на сьогодні — день відпочинку. Hero каже
-  // це і називає наступну сесію, а шаблон-фолбек головною дією не стає.
+  // це і називає наступну сесію курсора (П-10), а шаблон-фолбек головною
+  // дією не стає.
   const restNext = useMemo(() => {
-    void dayKey;
-    if (!activeProgram || todaySession || monthlyPlan.todayTemplateId)
+    if (!activeProgram || !restSession || monthlyPlan.todayTemplateId)
       return null;
-    return resolveNextScheduledSession(activeProgram);
-  }, [activeProgram, todaySession, monthlyPlan.todayTemplateId, dayKey]);
+    const session = activeProgram.sessions?.[restSession.sessionKey];
+    return session ? { ...restSession, session } : null;
+  }, [activeProgram, restSession, monthlyPlan.todayTemplateId]);
 
   const primaryAction = useMemo(() => {
     if (activeProgram && todaySession) {
@@ -255,6 +266,7 @@ export function Dashboard({
           hint: activeProgram.name,
           exerciseCount: (session.exerciseIds || []).length,
           sessionKey: todaySession.sessionKey,
+          slot: todaySession.slot,
         };
       }
     }
@@ -311,7 +323,7 @@ export function Dashboard({
     if (primaryAction.kind === "program") {
       const session = activeProgram?.sessions?.[primaryAction.sessionKey];
       if (session && onStartProgramWorkout) {
-        onStartProgramWorkout(session, activeProgram);
+        onStartProgramWorkout(session, activeProgram, primaryAction.slot);
       }
       return;
     }
@@ -409,9 +421,10 @@ export function Dashboard({
     if (restNext) {
       return {
         kind: "rest",
-        label: restNext.schedule.name,
+        label: restNext.name,
         daysFromNow: restNext.daysFromNow,
         exerciseCount: restNext.session.exerciseIds.length,
+        doneToday: restNext.doneToday,
       };
     }
     if (nextPlanSession && !nextPlanSession.isToday) {
@@ -523,7 +536,12 @@ export function Dashboard({
           onStartToday={handleStartPrimary}
           onStartNext={
             restNext && activeProgram && onStartProgramWorkout
-              ? () => onStartProgramWorkout(restNext.session, activeProgram)
+              ? () =>
+                  onStartProgramWorkout(
+                    restNext.session,
+                    activeProgram,
+                    restNext.slot,
+                  )
               : undefined
           }
           onOpenPlan={openPlan}

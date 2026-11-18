@@ -147,7 +147,19 @@ export interface Workout {
    * перераховується заднім числом при зміні ваги — див. `kcalBurned.ts`.
    */
   kcalBurned?: number | undefined;
+  /**
+   * Сесія програми, з якої стартувало тренування (П-10, міграції 171 /
+   * клієнтська 009). `slot` — індекс запису в `schedule` програми, з 0.
+   * Відсутнє = тренування поза програмою.
+   */
+  programRef?: WorkoutProgramRef | undefined;
   [key: string]: unknown;
+}
+
+/** Привʼязка тренування до слоту розкладу програми. */
+export interface WorkoutProgramRef {
+  programId: string;
+  slot: number;
 }
 
 /** Persisted daily log entry (sleep, energy, weight, mood…). */

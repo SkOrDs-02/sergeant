@@ -37,8 +37,8 @@ const WORKOUT_UPSERT_SPEC: TableSpec = {
   insertClause: `INSERT INTO fizruk_workouts
        (id, user_id, started_at, ended_at, note, groups_json,
         warmup_json, cooldown_json, wellbeing_json, kcal_burned,
-        created_at, updated_at, deleted_at)
-     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, NULL)`,
+        program_id, program_slot, created_at, updated_at, deleted_at)
+     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, NULL)`,
   conflictTarget: ["id"],
   updateColumns: [
     { column: "started_at" },
@@ -49,6 +49,8 @@ const WORKOUT_UPSERT_SPEC: TableSpec = {
     { column: "cooldown_json" },
     { column: "wellbeing_json" },
     { column: "kcal_burned" },
+    { column: "program_id" },
+    { column: "program_slot" },
     { column: "updated_at" },
     { column: "deleted_at", value: "NULL" },
   ],

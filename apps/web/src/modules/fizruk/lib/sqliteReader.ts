@@ -23,6 +23,7 @@ import type {
   WorkoutWellbeing,
 } from "@sergeant/fizruk-domain/domain";
 import type { FizrukData } from "@sergeant/fizruk-domain";
+import { normalizeWorkoutProgramRef } from "@sergeant/fizruk-domain/domain";
 import type { MeasurementEntry } from "../hooks/useMeasurements";
 
 type RawExerciseDef = FizrukData.RawExerciseDef;
@@ -158,6 +159,8 @@ interface WorkoutRow {
   cooldown_json: string | null;
   wellbeing_json: string | null;
   kcal_burned: number | null;
+  program_id: string | null;
+  program_slot: number | null;
   [key: string]: unknown;
 }
 
@@ -260,7 +263,14 @@ function rowToWorkout(
       : null,
     items: itemsByWorkout.get(row.id) ?? [],
     ...(row.kcal_burned != null ? { kcalBurned: row.kcal_burned } : {}),
+    ...programRefFromRow(row),
   };
+}
+
+/** Пара колонок → `programRef`; половина пари чи сміття = поза програмою. */
+function programRefFromRow(row: WorkoutRow): Pick<Workout, "programRef"> {
+  const ref = normalizeWorkoutProgramRef(row.program_id, row.program_slot);
+  return ref && ref !== "invalid" ? { programRef: ref } : {};
 }
 
 function rowToWorkoutItem(
@@ -479,7 +489,8 @@ export async function refreshFizrukSqliteState(
   ] = await Promise.all([
     client.all<WorkoutRow>(
       `SELECT id, started_at, ended_at, note, groups_json,
-              warmup_json, cooldown_json, wellbeing_json, kcal_burned
+              warmup_json, cooldown_json, wellbeing_json, kcal_burned,
+              program_id, program_slot
          FROM fizruk_workouts
         WHERE user_id = ? AND deleted_at IS NULL
         ORDER BY started_at DESC`,

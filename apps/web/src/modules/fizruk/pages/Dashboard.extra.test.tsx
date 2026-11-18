@@ -857,7 +857,7 @@ describe("Dashboard — program primaryAction hero state", () => {
         },
       },
     } as unknown as import("@sergeant/fizruk-domain/domain").TrainingProgramDef;
-    const todaySession = { sessionKey: "day1", name: "День 1" };
+    const todaySession = { sessionKey: "day1", name: "День 1", slot: 0 };
 
     render(
       <Dashboard
@@ -871,6 +871,7 @@ describe("Dashboard — program primaryAction hero state", () => {
     expect(onStartProgramWorkout).toHaveBeenCalledWith(
       expect.objectContaining({ name: "День 1" }),
       activeProgram,
+      0,
     );
   });
 });

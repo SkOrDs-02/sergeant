@@ -5,6 +5,7 @@ import type {
   Workout,
   WorkoutGroup,
   WorkoutItem,
+  WorkoutProgramRef,
 } from "@sergeant/fizruk-domain/domain";
 import { triggerFizrukDualWrite } from "../lib/sqliteWriter/index";
 import { extractWorkoutSnapshots } from "../lib/fizrukDualWriteState";
@@ -140,21 +141,29 @@ export function useWorkouts() {
     [intended, setWorkouts],
   );
 
-  const createWorkout = useCallback((): Workout => {
-    const w: Workout = {
-      id: uid("w"),
-      // eslint-disable-next-line no-restricted-syntax -- UTC-anchored wall-clock instant для startedAt (не Kyiv-межа доби)
-      startedAt: new Date().toISOString(),
-      endedAt: null,
-      items: [],
-      groups: [],
-      warmup: null,
-      cooldown: null,
-      note: "",
-    };
-    persist((prev: Workout[]) => [w, ...prev]);
-    return w;
-  }, [persist]);
+  /**
+   * `init.programRef` — слот програми, з якого стартує тренування (П-10):
+   * пишеться в рядок одразу, тим самим записом, що й нове тренування.
+   */
+  const createWorkout = useCallback(
+    (init?: { programRef?: WorkoutProgramRef }): Workout => {
+      const w: Workout = {
+        id: uid("w"),
+        // eslint-disable-next-line no-restricted-syntax -- UTC-anchored wall-clock instant для startedAt (не Kyiv-межа доби)
+        startedAt: new Date().toISOString(),
+        endedAt: null,
+        items: [],
+        groups: [],
+        warmup: null,
+        cooldown: null,
+        note: "",
+        ...(init?.programRef ? { programRef: init.programRef } : {}),
+      };
+      persist((prev: Workout[]) => [w, ...prev]);
+      return w;
+    },
+    [persist],
+  );
 
   /**
    * `startedAt` із форми — для «внести проведене заняття»: сесія жива, просто

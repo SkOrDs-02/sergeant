@@ -50,6 +50,8 @@ import { ToastProvider } from "@shared/hooks/useToast";
 import { ToastContainer } from "@shared/components/ui/Toast";
 import type { Workout } from "@sergeant/fizruk-domain/domain";
 import { WorkoutJournalSection } from "./WorkoutJournalSection";
+import { onHubBus } from "@shared/lib/modules/hubBus";
+import { __resetRoutineAutoMarkSignalForTests } from "../../lib/routineAutoMarkSignal";
 import {
   peekPendingRetroEnd,
   setPendingRetroEnd,
@@ -278,6 +280,47 @@ describe("WorkoutJournalSection – Завершити finish flow", () => {
       props.activeWorkout,
       expect.any(String),
     );
+  });
+
+  it("Р-1 (в): повноцінне завершення відмічає звичку Рутини рівно раз", () => {
+    __resetRoutineAutoMarkSignalForTests();
+    const events: unknown[] = [];
+    const off = onHubBus("routineAutoMark", (d) => events.push(d));
+    const props = baseProps();
+    renderWithToast(<WorkoutJournalSection {...props} />);
+    confirmFinish();
+    expect(events).toEqual([
+      { source: "fizruk_workout", dayKey: expect.any(String) },
+    ]);
+    // Повернення в сесію подію не відкликає і нову не шле; повторне
+    // завершення того самого id стереже емітер (`routineAutoMarkSignal.test`).
+    fireEvent.click(
+      screen.getByRole("button", { name: /Повернутись у сесію/ }),
+    );
+    off();
+    expect(events).toHaveLength(1);
+  });
+
+  it("Р-1 (в): легке (пʼятихвилинне порожнє) завершення звичку не відмічає", () => {
+    __resetRoutineAutoMarkSignalForTests();
+    const events: unknown[] = [];
+    const off = onHubBus("routineAutoMark", (d) => events.push(d));
+    const short: Workout = {
+      id: "w-short",
+      startedAt: new Date(Date.now() - 5 * 60_000).toISOString(),
+      endedAt: null,
+      items: [],
+      groups: [],
+      warmup: null,
+      cooldown: null,
+      note: "",
+    };
+    renderWithToast(
+      <WorkoutJournalSection {...baseProps({ activeWorkout: short })} />,
+    );
+    confirmFinish();
+    off();
+    expect(events).toEqual([]);
   });
 
   it("clears the rest timer and opens the wellbeing sheet on Завершити", () => {

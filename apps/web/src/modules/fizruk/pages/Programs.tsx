@@ -29,6 +29,7 @@ interface ProgramsProps {
   onStartWorkout?: (
     session: ProgramSessionDef,
     prog: TrainingProgramDef,
+    slot: number,
   ) => void;
   activeProgramId: string | null;
   activeProgram: TrainingProgramDef | null;
@@ -198,7 +199,12 @@ export function Programs({
                                 );
                                 return;
                               }
-                              onStartWorkout(session, prog);
+                              // Слот = запис розкладу, який стартуємо (П-10).
+                              onStartWorkout(
+                                session,
+                                prog,
+                                prog.schedule.indexOf(todaySession),
+                              );
                             }}
                           >
                             {messages.fizruk.programs.startToday}

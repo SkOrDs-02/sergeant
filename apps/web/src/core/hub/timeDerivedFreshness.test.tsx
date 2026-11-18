@@ -166,5 +166,8 @@ it("changes the active program's session when the day changes", () => {
   const sunday = result.current.todaySession;
   resume("2026-10-19T08:00:00Z");
   expect(result.current.todaySession).not.toEqual(sunday);
-  expect(result.current.todaySession?.day).toBe(1);
+  // Без історії курсор програми (П-10) падає на розклад: слот понеділка.
+  expect(result.current.todaySession?.slot).toBe(
+    program!.schedule.findIndex((s) => s.day === 1),
+  );
 });

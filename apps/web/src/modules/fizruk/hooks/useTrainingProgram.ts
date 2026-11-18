@@ -4,7 +4,8 @@ import { useSqliteTickOverlay } from "@shared/hooks/useSqliteTickOverlay";
 import {
   ACTIVE_PROGRAM_KEY,
   BUILTIN_PROGRAMS,
-  getTodaySession,
+  resolveProgramDay,
+  type ProgramCursorWorkout,
 } from "@sergeant/fizruk-domain";
 import {
   safeReadStringLS,
@@ -37,7 +38,28 @@ function loadInitialActiveProgramId(): string | null {
   return safeReadStringLS(ACTIVE_PROGRAM_KEY);
 }
 
-export function useTrainingProgram() {
+/** Сесія програми з її слотом у розкладі (П-10: слот пишеться в тренування). */
+export interface ProgramSessionRef {
+  sessionKey: string;
+  name: string;
+  slot: number;
+}
+
+export interface ProgramRestSession extends ProgramSessionRef {
+  daysFromNow: number;
+  doneToday: boolean;
+}
+
+const NO_WORKOUTS: readonly ProgramCursorWorkout[] = [];
+
+/**
+ * `workouts` — журнал для курсора програми (П-10): сьогоднішня й наступна
+ * сесія беруться за слотом після останнього повноцінного тренування програми,
+ * а не за днем тижня. Без журналу курсор падає на розклад.
+ */
+export function useTrainingProgram(
+  workouts: readonly ProgramCursorWorkout[] = NO_WORKOUTS,
+) {
   const dayKey = useDeviceDayKey();
   const sqliteCacheTick = useFizrukSqliteReadTick();
   const intended = useFizrukIntendedSlice<"programs">(sqliteCacheTick);
@@ -93,16 +115,41 @@ export function useTrainingProgram() {
 
   const deactivateProgram = useCallback(() => persist(null), [persist]);
 
-  const todaySession = useMemo(() => {
+  const programDay = useMemo(() => {
     void dayKey;
-    return getTodaySession(activeProgram);
-  }, [activeProgram, dayKey]);
+    return resolveProgramDay(activeProgram, workouts);
+  }, [activeProgram, workouts, dayKey]);
+
+  const todaySession = useMemo((): ProgramSessionRef | null => {
+    const t = programDay.today;
+    return t
+      ? {
+          sessionKey: t.schedule.sessionKey,
+          name: t.schedule.name,
+          slot: t.slot,
+        }
+      : null;
+  }, [programDay]);
+
+  const restSession = useMemo((): ProgramRestSession | null => {
+    const r = programDay.rest;
+    return r
+      ? {
+          sessionKey: r.schedule.sessionKey,
+          name: r.schedule.name,
+          slot: r.slot,
+          daysFromNow: r.daysFromNow,
+          doneToday: r.doneToday,
+        }
+      : null;
+  }, [programDay]);
 
   return {
     programs: BUILTIN_PROGRAMS,
     activeProgramId,
     activeProgram,
     todaySession,
+    restSession,
     activateProgram,
     deactivateProgram,
   };
