@@ -39,6 +39,7 @@ import { pickInitialUnit, readLastUnit } from "./portionUnits";
 import type { PickedFood } from "./FoodPickerSection";
 import { messages } from "@shared/i18n/uk";
 import { formatDayMonth } from "@shared/lib/time/formatDate";
+import { addDaysISODate, todayISODate } from "@sergeant/nutrition-domain";
 import type { LastFoodPortion } from "../../lib/lastFoodPortion";
 
 const QUICK_GRAMS = ["50", "100", "150", "200"] as const;
@@ -79,8 +80,16 @@ interface PickedFoodCardProps {
   getLastPortion?: ((foodId: string) => LastFoodPortion | null) | undefined;
 }
 
-/** «15 листопада» з день-ключа пристрою (ADR-0078), без зсуву зони. */
+/**
+ * «сьогодні» / «вчора» / «15 листопада» з день-ключа пристрою (ADR-0078).
+ * Не `formatDayKeyUk`: той дає короткий місяць («15 лис»), а погоджений
+ * мокап — повний.
+ */
 function lastPortionDate(date: string): string {
+  const today = todayISODate();
+  if (date === today) return messages.nutrition.repeat.today;
+  if (date === addDaysISODate(today, -1))
+    return messages.nutrition.repeat.yesterdayDay;
   const [y, m, d] = date.split("-").map(Number);
   return formatDayMonth(new Date(y ?? 0, (m ?? 1) - 1, d ?? 1));
 }

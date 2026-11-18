@@ -503,6 +503,8 @@ export const nutritionPageMessages = {
   repeat: {
     // Х-1 (б): звідки на колесі вага — з минулого запису цього продукту.
     lastPortion: "Як минулого разу: {grams} г, {date}",
+    today: "сьогодні",
+    yesterdayDay: "вчора",
     // Х-2 (а): «Зберегти в журнал» після фото пише одразу.
     photoSaveHint: "Запишу у прийом за часом доби, змінити можна з тосту.",
     photoSaved: "Записав {meal}: {name}, {kcal} ккал.",

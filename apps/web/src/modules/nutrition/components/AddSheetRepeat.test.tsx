@@ -49,7 +49,10 @@ describe("AddSheetRepeat", () => {
         onDone={onDone}
       />,
     );
-    expect(screen.getByText("Омлет, Лосось з овочами · 965 ккал")).toBeTruthy();
+    const hint = screen.getByText("Омлет, Лосось з овочами · 965 ккал");
+    // Один рядок з обрізанням: довгий список страв не штовхає джерела
+    // за край аркуша на 390 × 844.
+    expect(hint.className).toContain("truncate");
     fireEvent.click(screen.getByRole("button", { name: /Як учора/ }));
     expect(onCopyYesterday).toHaveBeenCalledOnce();
     expect(onDone).toHaveBeenCalledOnce();

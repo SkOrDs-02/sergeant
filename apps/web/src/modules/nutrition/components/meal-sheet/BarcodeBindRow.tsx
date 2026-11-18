@@ -27,7 +27,9 @@ export function BarcodeBindRow({
         type="button"
         variant="text"
         size="sm"
-        className="mt-1"
+        // `variant="text"` має `px-2`: від'ємне поле ставить підпис у лінію
+        // з текстом рядка, зона дотику 44 px лишається.
+        className="mt-1 -ml-2"
         onClick={onCancel}
         aria-label={copy.bindBarcodeCancelAria}
       >

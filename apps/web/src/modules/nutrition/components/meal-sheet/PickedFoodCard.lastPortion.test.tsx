@@ -6,7 +6,7 @@
  */
 import { fireEvent, render, screen } from "@testing-library/react";
 import { useState } from "react";
-import { beforeEach, describe, expect, it, vi } from "vitest";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 vi.mock("@shared/hooks/useCoarsePointer", () => ({
   useCoarsePointer: () => false,
@@ -60,7 +60,12 @@ function Harness({
   );
 }
 
-beforeEach(() => localStorage.clear());
+beforeEach(() => {
+  localStorage.clear();
+  vi.useFakeTimers({ toFake: ["Date"] });
+  vi.setSystemTime(new Date(2026, 10, 18, 19, 40, 0));
+});
+afterEach(() => vi.useRealTimers());
 
 describe("PickedFoodCard: остання вага продукту", () => {
   it("підставляє вагу минулого запису і каже, звідки число", () => {
@@ -109,5 +114,15 @@ describe("PickedFoodCard: остання вага продукту", () => {
     render(<Harness initialGrams="250" />);
     expect(grams()).toBe("250");
     expect(screen.queryByText(/Як минулого разу/)).toBeNull();
+  });
+
+  it("запис за сьогодні і за вчора підписані словами, старіший — датою", () => {
+    const { unmount } = render(
+      <Harness last={{ grams: 120, date: "2026-11-18" }} />,
+    );
+    expect(screen.getByText("Як минулого разу: 120 г, сьогодні")).toBeTruthy();
+    unmount();
+    render(<Harness last={{ grams: 120, date: "2026-11-17" }} />);
+    expect(screen.getByText("Як минулого разу: 120 г, вчора")).toBeTruthy();
   });
 });

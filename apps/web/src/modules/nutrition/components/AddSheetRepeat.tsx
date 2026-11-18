@@ -56,7 +56,9 @@ export function AddSheetRepeat({
           <span className="text-style-label-lg font-semibold text-text">
             {copy.yesterday}
           </span>
-          <span className="mt-0.5 text-style-label text-muted">
+          {/* Один рядок: довгий список страв не штовхає джерела за край
+              аркуша на 390 × 844. */}
+          <span className="mt-0.5 w-full truncate text-style-label text-muted">
             {copy.yesterdayHint
               .replace("{names}", names)
               .replace("{kcal}", String(kcal))}
