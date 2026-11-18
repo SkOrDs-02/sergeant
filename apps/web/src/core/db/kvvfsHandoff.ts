@@ -112,7 +112,16 @@ export function readKvvfsSnapshot(): KvvfsSnapshot | null {
     const match = KVVFS_PAGE_KEY.exec(key);
     if (match) pageNumbers.push(Number(match[1]));
   }
-  if (pageNumbers.length === 0) return null;
+  // `hasKvvfsData()` уже побачив розмір > 0, а сторінок немає: сховище в
+  // неузгодженому стані, а не відсутнє. `null` тут означав би «нічого
+  // переливати», і позначка перелиття стала б навічно, відрізавши записи,
+  // якщо сторінки потім знайдуться. Кидаємо — шлях збою лишає позначку
+  // незнятою, а сесію на памʼяті (CodeRabbit на #1692).
+  if (pageNumbers.length === 0) {
+    throw new Error(
+      `kvvfs-handoff: size ${String(size)} recorded but no pages found`,
+    );
+  }
   pageNumbers.sort((a, b) => a - b);
   const pages: string[] = [];
   for (let index = 0; index < pageNumbers.length; index += 1) {

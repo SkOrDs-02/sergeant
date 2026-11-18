@@ -73,6 +73,14 @@ describe("readKvvfsSnapshot — головний потік, без SQLite", () 
     expect(readKvvfsSnapshot()).toBeNull();
   });
 
+  it("кидає, коли розмір записано, а сторінок немає: це не «порожнє сховище»", () => {
+    writeLegacyKvvfs(5);
+    for (const key of Object.keys(localStorage)) {
+      if (/^kvvfs-local-\d+$/.test(key)) localStorage.removeItem(key);
+    }
+    expect(() => readKvvfsSnapshot()).toThrow(/no pages found/);
+  });
+
   it("кидає на дірці в нумерації сторінок замість тихо зіпсованої копії", () => {
     writeLegacyKvvfs(5);
     localStorage.removeItem("kvvfs-local-2");
