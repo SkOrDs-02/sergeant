@@ -43,6 +43,13 @@ export const STORAGE_KEYS = {
   NUTRITION_LAST_PORTION_UNIT: "nutrition_last_portion_unit_v1",
   ONBOARDING_DONE: "hub_onboarding_done_v1",
   FTUX_MODULES_HINT_DISMISSED: "sergeant.hub.ftuxModulesHint.dismissed.v1",
+  /**
+   * Рядок про ручний Premium на хабі закрито (спека
+   * `manual-premium-request.md`): `"<currentPeriodEnd>|granted"` або
+   * `"<currentPeriodEnd>|warning"`. Ключ зі строком кінця, тож показ один на
+   * видачу і окремо на попередження; без синку.
+   */
+  MANUAL_PREMIUM_NOTICE_DISMISSED: "hub_manual_premium_notice_dismissed_v1",
   DASHBOARD_ORDER: "hub_dashboard_order_v1",
   HUB_PREFS: "hub_prefs_v1",
   /**
@@ -374,6 +381,12 @@ export const STORAGE_KEYS = {
    * підняв би довіру, якої на цьому пристрої ніхто не перевіряв.
    */
   CROSS_MODULE_LINK_HISTORY: "hub_cross_module_link_history_v1",
+  /**
+   * Картку «Що видно з історії банку» на хабі закрили (С-4 (б), спека
+   * `hub-newcomer-card-and-insights.md`): `"1"`. Одноразова на профіль
+   * браузера, за зразком `hub_cross_module_preview_seen_v1`; без синку.
+   */
+  HUB_BANK_FACTS_SEEN: "hub_bank_facts_seen_v1",
 
   // ─── Mobile: cloud sync metadata ──────────────────────────────────────
   // 6 mobile sync-metadata keys dropped in Stage 13 PR #077.

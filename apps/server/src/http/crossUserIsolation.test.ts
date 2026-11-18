@@ -211,6 +211,9 @@ const TODO_UNCOVERED: readonly string[] = [
   // Billing: усі п'ять б'ють у платіжного провайдера (LiqPay/Plata/Stripe)
   "POST /api/billing/cancel",
   "POST /api/billing/checkout",
+  // Ручний Premium: user_id береться лише із сесії (тіло його не несе),
+  // після вставки йде повідомлення в Telegram founder-у (зовнішній виклик)
+  "POST /api/billing/manual-access",
   "POST /api/billing/plata-charge",
   "POST /api/billing/plata-status",
   "POST /api/billing/portal",

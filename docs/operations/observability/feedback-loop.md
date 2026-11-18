@@ -1,6 +1,6 @@
 # Feedback loop — in-app widget + NPS через PostHog Surveys
 
-> **Last touched:** 2026-09-11 by @claude. **Next review:** 2027-01-06.
+> **Last touched:** 2026-11-18 by @claude (§ 3: категорія `premium_request` і колонка `premium_granted_at`). **Next review:** 2027-01-06.
 > **Status:** Active
 
 Операційна довідка feedback-loop-у з GTM § 3.2
@@ -179,6 +179,23 @@ SELECT id, created_at, category, left(message, 80) AS preview, user_id
 Це і є інбокс бети. PostHog-інсайт нижче лишається зручним переглядом, але
 при розбіжності **правий той, що в БД**: подія в PostHog могла не долетіти,
 рядок у таблиці — вже ні.
+
+**Запити ручного Premium живуть у тій самій таблиці** (міграція 169, спека
+[`manual-premium-request.md`](../../work/specs/manual-premium-request.md)).
+Категорія `premium_request` пишеться лише сервером (`POST
+/api/billing/manual-access`), клієнтська схема фідбеку `idea | bug | other`
+її не має. `message` складає сервер (`Запит Premium з пейволу: <surface>`),
+`user_id` обовʼязковий, один рядок на акаунт за весь час (частковий
+унікальний індекс). Колонка `premium_granted_at` заповнюється, коли founder
+тисне кнопку видачі в Telegram; `NULL` означає «ще не видано». Telegram, що
+не доставив повідомлення, лишає запит лише тут:
+
+```sql
+SELECT id, created_at, user_id, message, premium_granted_at
+  FROM feedback_entries
+ WHERE category = 'premium_request'
+ ORDER BY created_at DESC;
+```
 
 ## See also
 

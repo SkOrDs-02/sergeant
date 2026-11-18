@@ -1,6 +1,13 @@
 /** @vitest-environment jsdom */
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
-import { cleanup, fireEvent, render, screen } from "@testing-library/react";
+import {
+  cleanup,
+  fireEvent,
+  render as rtlRender,
+  screen,
+} from "@testing-library/react";
+import type { ReactElement, ReactNode } from "react";
+import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import type { User } from "@sergeant/shared";
 
 const gates = vi.hoisted(() => ({
@@ -82,7 +89,8 @@ vi.mock("@shared/components/layout/MeshBackground", () => ({
 const hubNav = vi.hoisted(() => ({
   openHubSettingsSection: vi.fn(),
 }));
-vi.mock("@shared/lib/modules/hubNav", () => ({
+vi.mock("@shared/lib/modules/hubNav", async (importOriginal) => ({
+  ...(await importOriginal<typeof import("@shared/lib/modules/hubNav")>()),
   openHubSettingsSection: hubNav.openHubSettingsSection,
 }));
 vi.mock("@shared/components/ui/KeyboardShortcutsModalUI", () => ({
@@ -105,6 +113,20 @@ vi.mock("@shared/components/ui/KeyboardShortcutsModalUI", () => ({
 }));
 
 import { HubHomeView, type HubHomeViewProps } from "./HubHomeView";
+
+// `ManualPremiumNotice` читає знімок доступу через `usePlan` (React Query),
+// тож хабу потрібен QueryClient. Статусу тут немає звідки прийти, і без
+// ручного гранту рядок нічого не рендерить.
+function Providers({ children }: { children: ReactNode }) {
+  const client = new QueryClient({
+    defaultOptions: { queries: { retry: false } },
+  });
+  return <QueryClientProvider client={client}>{children}</QueryClientProvider>;
+}
+
+function render(ui: ReactElement) {
+  return rtlRender(ui, { wrapper: Providers });
+}
 
 function makeUi(overrides: Partial<HubHomeViewProps["ui"]> = {}) {
   return {
