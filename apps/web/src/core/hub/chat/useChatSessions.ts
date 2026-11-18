@@ -205,7 +205,8 @@ export function useChatSessions(): UseChatSessionsResult {
   }, [activeId]);
 
   // "Нова бесіда" — flush the current one and switch to a fresh
-  // session with the standard intro from `normalizeStoredMessages`.
+  // session. It starts with ZERO messages: `normalizeStoredMessages` adds
+  // no intro (PR-A7), the quick-action chips in the composer do that job.
   const handleCreateSession = useCallback(() => {
     stopSpeaking();
     persistCurrentMessages();

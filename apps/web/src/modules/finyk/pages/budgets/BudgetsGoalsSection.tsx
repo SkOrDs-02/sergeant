@@ -15,6 +15,7 @@ import {
 } from "@sergeant/finyk-domain/domain/budget";
 import type { Budget, GoalBudget } from "@sergeant/finyk-domain/domain/types";
 import { GoalBudgetCard } from "../../components/budgets/GoalBudgetCard";
+import { maskAmountsInText } from "../../lib/balanceVisibility";
 import { showUndoToast } from "@shared/lib/ui/undoToast";
 import type { useToast } from "@shared/hooks/useToast";
 
@@ -147,6 +148,14 @@ export function BudgetsGoalsSection({
             targetDate: b.targetDate,
           };
           const progress = calculateGoalProgress(goalInput, now);
+          // PR-F3 (аудит 2026-09-13, хвиля 6; ревізія 2026-11-17): підпис
+          // «Потрібно відкладати: N ₴/міс.» це доменний рядок із сумою, і він
+          // єдиний на картці цілі ішов повз «Приховати суми».
+          const rawMonthlyLabel = getGoalMonthlyLabel(progress);
+          const monthlyLabel =
+            rawMonthlyLabel === null
+              ? null
+              : maskAmountsInText(rawMonthlyLabel, !showBalance);
           const globalIdx = budgets.indexOf(b);
           const isEditing = editIdx === globalIdx;
           return (
@@ -157,7 +166,7 @@ export function BudgetsGoalsSection({
               saved={progress.saved}
               pct={progress.pct}
               daysLeft={progress.daysLeft}
-              monthlyLabel={getGoalMonthlyLabel(progress)}
+              monthlyLabel={monthlyLabel}
               fromJar={jarBalanceUah ?? 0}
               fromContributions={fromContributions}
               contributions={migrated.contributions}

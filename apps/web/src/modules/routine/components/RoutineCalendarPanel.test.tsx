@@ -73,17 +73,28 @@ vi.mock("./DayReportSheet", () => ({
     open,
     scheduledHabits,
     dateKey,
+    onSetSkip,
+    onClearSkip,
   }: {
     open: boolean;
     scheduledHabits: unknown[];
     dateKey: string;
+    onSetSkip?: (habitId: string, reason: string) => void;
+    onClearSkip?: (habitId: string) => void;
   }) =>
     open ? (
       <div
         data-testid="day-report-sheet"
         data-count={scheduledHabits.length}
         data-date={dateKey}
-      />
+      >
+        <button type="button" onClick={() => onSetSkip?.("h-1", "sick")}>
+          report-set-skip
+        </button>
+        <button type="button" onClick={() => onClearSkip?.("h-1")}>
+          report-clear-skip
+        </button>
+      </div>
     ) : null,
 }));
 vi.mock("./RoutineCalendarMonthGrid", () => ({
@@ -971,6 +982,35 @@ describe("RoutineCalendarPanel", () => {
     // `todayKey`.
     expect(sheet).toHaveAttribute("data-count", "1");
     expect(sheet).toHaveAttribute("data-date", "2026-06-24");
+  });
+
+  // PR-R6/R7 (аудит 2026-09-13, хвиля 6; ревізія 2026-11-17): «не зміг» з
+  // аркуша пишеться в той день, про який аркуш, а не в сьогодні. Пін вище
+  // тримав лише `dateKey` аркуша, а не ключ запису пропуску.
+  it("writes and clears the report skip on progressDayKey, not todayKey", () => {
+    const onSetHabitSkip = vi.fn();
+    const onClearHabitSkip = vi.fn();
+    actionsFixture.mockReturnValue(
+      baseActions({ onSetHabitSkip, onClearHabitSkip }),
+    );
+    dataFixture.mockReturnValue(
+      baseData({
+        timeMode: "day",
+        todayKey: "2026-06-23",
+        progressDayKey: "2026-06-21",
+        routine: routineWithHabits(),
+      }),
+    );
+
+    render(<RoutineCalendarPanel />);
+    const heroBtn = screen.queryByRole("button", { name: /звіт/i });
+    if (!heroBtn) throw new Error("expected the day-report CTA to render");
+    fireEvent.click(heroBtn);
+
+    fireEvent.click(screen.getByRole("button", { name: "report-set-skip" }));
+    expect(onSetHabitSkip).toHaveBeenCalledWith("h-1", "2026-06-21", "sick");
+    fireEvent.click(screen.getByRole("button", { name: "report-clear-skip" }));
+    expect(onClearHabitSkip).toHaveBeenCalledWith("h-1", "2026-06-21");
   });
 
   it("updates the search draft from the input", () => {

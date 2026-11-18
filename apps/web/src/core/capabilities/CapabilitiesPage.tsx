@@ -5,6 +5,7 @@ import { IconButton } from "@shared/components/ui/IconButton";
 import { SectionHeading } from "@shared/components/ui/SectionHeading";
 import { cn } from "@shared/lib/ui/cn";
 import { messages } from "@shared/i18n/uk";
+import { emitHubBus } from "@shared/lib/modules/hubBus";
 import { useAuthOptional } from "../auth/AuthContext";
 import { visibleCapabilityGroups, type Capability } from "./capabilityRegistry";
 
@@ -31,7 +32,16 @@ function CapabilityCard({ item }: { item: Capability }) {
   return (
     <button
       type="button"
-      onClick={() => navigate(item.href)}
+      onClick={() => {
+        // PR-A8 (аудит 2026-09-13, хвиля 7): чат відкривається тим самим
+        // аркушем, що й решта in-app входів (шапка, пошук, «Зараз»), а не
+        // повною сторінкою `/chat` (D5, `useHubChatOverlay.ts`).
+        if (item.opensChat) {
+          emitHubBus("openChat", { message: null, autoSend: false });
+          return;
+        }
+        void navigate(item.href);
+      }}
       data-testid={`capability-${item.id}`}
       className={cn(
         "w-full text-left min-h-11 py-4 border-b border-line",

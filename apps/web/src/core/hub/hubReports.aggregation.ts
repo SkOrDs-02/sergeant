@@ -18,7 +18,7 @@ import { calcFinykSpendingByDate } from "@finyk/utils";
 import { calcRoutinePeriodCompletion } from "@sergeant/routine-domain/period-completion";
 import { calcNutritionPeriodAverages } from "@sergeant/nutrition-domain";
 import { addDays, dateKeyFromDate } from "@sergeant/routine-domain";
-import type { Habit } from "@sergeant/routine-domain/types";
+import type { Habit, HabitSkip } from "@sergeant/routine-domain/types";
 import { deviceMondayStart, toKyivISODate } from "@sergeant/shared";
 
 // ── Date helpers ─────────────────────────────────────────────────────────────
@@ -252,6 +252,8 @@ export function aggregateSpending(
 export interface RoutineState {
   habits?: Habit[];
   completions?: Record<string, string[]>;
+  /** «Не зміг» з причиною: `habitId → dateKey → HabitSkip` (канон §5). */
+  skips?: Record<string, Record<string, HabitSkip>> | undefined;
 }
 
 /**
@@ -303,7 +305,13 @@ export function aggregateHabits(
     habits,
     state.completions ?? {},
     dates,
-    opts.pausedFrom === undefined ? {} : { pausedFrom: opts.pausedFrom },
+    {
+      ...(opts.pausedFrom === undefined ? {} : { pausedFrom: opts.pausedFrom }),
+      // «Не зміг» з причиною виходить зі знаменника (канон routine.md §5,
+      // рішення власника 2026-11-18, METRICS_VERSION 20): як у Статистиці
+      // модуля, сітці й календарі.
+      skips: state.skips ?? {},
+    },
   );
   return { pct, daily };
 }

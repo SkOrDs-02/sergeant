@@ -50,6 +50,8 @@
  * випадок». Для нього твердження просто НЕПРАВДИВЕ — його дані їдуть на
  * сервер, — а банер, який бреше, вчить ігнорувати всі банери в продукті.
  */
+import { useEffect } from "react";
+
 import { Button } from "@shared/components/ui/Button";
 import { Notice } from "@shared/components/ui/Notice";
 import { useLocale } from "@shared/i18n/useLocale";
@@ -57,6 +59,26 @@ import { useLocale } from "@shared/i18n/useLocale";
 import { useLocalUserId } from "../auth/useLocalUserId";
 import { isSyncableUserId } from "../syncEngine/syncableUserId";
 import { useHubBannerSlot } from "../hub/bannerBudget";
+import { ANALYTICS_EVENTS, trackEvent } from "../observability/analytics";
+
+/**
+ * Рішення власника 2026-11-17: після зняття `SoftAuthPromptCard` банер став
+ * головним закликом до входу на вебі, тож він шле ті самі події, що картка
+ * (і мобільна картка досі): `auth_prompt_shown` і `auth_after_value`, з
+ * `placement`, щоб воронка Founder Pulse розрізняла місце показу.
+ * `auth_prompt_dismissed` немає: у банера немає кнопки «закрити».
+ */
+export const LOCAL_ONLY_BANNER_PLACEMENT = "local_only_banner";
+
+// Показ рахуємо раз на завантаження застосунку, а не на кожен маунт:
+// банер перемонтовується на кожному поверненні на «Головну», і без цього
+// `auth_prompt_shown` міряв би навігацію, а не охоплення.
+let shownTrackedThisSession = false;
+
+/** Лише для тестів: скидає лічильник показу між кейсами. */
+export function __resetLocalOnlyBannerTrackingForTests(): void {
+  shownTrackedThisSession = false;
+}
 
 export interface LocalOnlyDataBannerProps {
   /** Відкриває екран входу/реєстрації. */
@@ -79,6 +101,22 @@ export function LocalOnlyDataBanner({
     userId !== null && !isSyncableUserId(userId),
   );
 
+  const visible = userId !== null && !isSyncableUserId(userId) && hasSlot;
+  useEffect(() => {
+    if (!visible || shownTrackedThisSession) return;
+    shownTrackedThisSession = true;
+    trackEvent(ANALYTICS_EVENTS.AUTH_PROMPT_SHOWN, {
+      placement: LOCAL_ONLY_BANNER_PLACEMENT,
+    });
+  }, [visible]);
+
+  const handleSignIn = () => {
+    trackEvent(ANALYTICS_EVENTS.AUTH_AFTER_VALUE, {
+      placement: LOCAL_ONLY_BANNER_PLACEMENT,
+    });
+    onSignIn();
+  };
+
   // `null` — сесія ще вантажиться. Мигнути попередженням «дані під загрозою»
   // і прибрати його через 200 мс — гірше, ніж не показати нічого: користувач
   // запамʼятає тривогу, а не факт.
@@ -92,7 +130,7 @@ export function LocalOnlyDataBanner({
       role="status"
       action={
         <div className="flex flex-wrap gap-1">
-          <Button type="button" variant="text" onClick={onSignIn}>
+          <Button type="button" variant="text" onClick={handleSignIn}>
             {m.signIn}
           </Button>
           {onBackup ? (

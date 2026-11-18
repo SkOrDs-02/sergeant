@@ -2,7 +2,7 @@
 
 # Дизайн-контракт: auth (вхід, реєстрація, скидання пароля, verify)
 
-> **Last touched:** 2026-09-19 by @claude. **Next review:** 2027-04-01.
+> **Last touched:** 2026-11-17 by @claude (події заклику до входу переїхали з вебової `SoftAuthPromptCard` у банер локальних даних). **Next review:** 2027-04-01.
 > **Status:** Active — контракт as-built: описує `core/auth/{AuthPage,LoginForm,RegisterForm,ForgotPasswordPanel,ResetPasswordPage,VerifyEmailPage,GoogleSignInButton,AppleSignInButton,authFormPrimitives}.tsx`, `authSchemas.ts`, `useForgotPassword.ts`, `AuthContext.tsx` (`translateAuthError`) і маршрути `/sign-in`, `/reset-password`, `/verify-email` у `core/app/StandaloneRoutes.tsx` станом на 2026-09-17 (пункт «без контракту лишаються auth, profile, HubChat…» у [`README.md`](../README.md); пишеться, бо поверхню беруть у роботу). Розбіжності з кодом, які контракт вимагає закрити, позначені **[борг]** нижче; код у цьому PR не правився.
 
 Поверхня, на якій продукт уперше просить довіру: `/sign-in` (один екран
@@ -151,8 +151,8 @@ magic-link для входу, повторне надсилання verify-ли�
   (`invalidEmailOrPassword`, `invalidToken`, `userAlreadyExists`,
   `invalidEmail`, `invalidPassword`, `passwordTooShort`, `passwordTooLong`,
   `emailNotVerified`, `providerNotFound`, `sessionFailure`), серверні
-  `rateLimited`, `serverDown` і `createAccount` (споживач —
-  `core/onboarding/SoftAuthPromptCard.tsx:111`, не ця поверхня). Саме
+  `rateLimited`, `serverDown` (ключ `createAccount` знято 2026-11-17
+  разом із вебовою `SoftAuthPromptCard`, його єдиним споживачем). Саме
   `uk.core`, а не `uk`: `AuthContext.tsx` — eager-поверхня, і повний
   каталог тягнув би десять модульних файлів (AI-DANGER `AuthContext.tsx:32-42`).
 - **Валідація — `uk.ts` → `validation.*`** (`uk.ts:51-103`): `emailRequired`,
@@ -217,9 +217,12 @@ magic-link для входу, повторне надсилання verify-ли�
 - **Івента для входу (не реєстрації), для скидання пароля і для
   результату `/verify-email` немає.** Новий стан цих сторінок без івента
   не приймається, але й вигадувати ретроактивно тут нічого.
-- `auth_prompt_shown / _dismissed / auth_after_value` — м'який запит на
-  акаунт у хабі (`core/onboarding/SoftAuthPromptCard.tsx:65`); поверхня
-  онбордингу, не ця.
+- `auth_prompt_shown / auth_after_value` — заклик до входу на хабі. На
+  вебі з 2026-11-17 це банер `core/durability/LocalOnlyDataBanner.tsx`
+  (`placement: "local_only_banner"`; вебову `SoftAuthPromptCard` знято),
+  на мобайлі картка `SoftAuthPromptCard` (`placement: "dashboard"`, ще й
+  `auth_prompt_dismissed`). Воронка `auth-prompt-funnel` у Founder Pulse.
+  Поверхня хаба, не ця.
 
 ## Безпека
 

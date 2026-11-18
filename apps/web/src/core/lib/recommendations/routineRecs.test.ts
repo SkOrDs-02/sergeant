@@ -165,6 +165,30 @@ describe("routineRecs (logic-12)", () => {
       expect(card?.body).not.toContain("38%");
     });
 
+    it("«не зміг» виходить зі знаменника (METRICS_VERSION 20): 3 виконано + 4 пропуски → 100%", () => {
+      const now = new Date(2026, 9, 5, 9, 0);
+      vi.setSystemTime(now);
+      seed([DAILY], { daily: completions.daily.slice(0, 3) });
+      __setRoutineSqliteStateCacheForTests({
+        habits: [DAILY as unknown as Habit],
+        habitOrder: ["daily"],
+        skips: Object.fromEntries([
+          [
+            "daily",
+            Object.fromEntries(
+              ["2026-10-01", "2026-10-02", "2026-10-03", "2026-10-04"].map(
+                (d) => [d, { reason: "sick", at: `${d}T10:00:00.000Z` }],
+              ),
+            ),
+          ],
+        ]),
+      });
+
+      expect(buildWeeklyHabitPctText(new Date(2026, 8, 28), now)).toBe(
+        "звички 100%",
+      );
+    });
+
     it("за тиждень нічого не заплановано → без «звички 0%»", () => {
       const now = new Date(2026, 9, 5, 9, 0);
       vi.setSystemTime(now);

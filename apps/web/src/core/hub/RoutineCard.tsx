@@ -136,6 +136,10 @@ export default function RoutineCard({ period, offset }: RoutineCardProps) {
     const routineState = {
       habits: routine.habits,
       completions: routine.completions,
+      // «Не зміг» виходить зі знаменника (канон §5, рішення власника
+      // 2026-11-18, METRICS_VERSION 20). Без цього поля відсоток картки
+      // знову рахує заявлений пропуск провалом.
+      skips: routine.skips,
     };
     const w = reportWindows(period, offset);
     // Заморозка минулого (ADR-0079 §2): картка показує й попередній період,

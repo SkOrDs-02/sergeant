@@ -60,9 +60,10 @@ describe("useChatSessions (audit 03 F22 — debounce/undo)", () => {
     expect(result.current.sessions).toHaveLength(1);
     expect(result.current.activeId).toBe(result.current.sessions[0]!.id);
     // PR-A7 regression guard: a cold-boot session must start with ZERO
-    // messages, not a synthesized intro — otherwise `messages.length === 0`
-    // in `HubChatBody` is unreachable and `<ChatEmpty>` never renders
-    // (audit `2026-09-13-product-full-review.md` § PR-A7).
+    // messages, not a synthesized intro (audit
+    // `2026-09-13-product-full-review.md` § PR-A7). `<ChatEmpty>` is gone
+    // since redesign v3 PR0; the intro would now be the very prose PR0
+    // removed, persisted as a fake assistant message.
     expect(result.current.messages).toHaveLength(0);
   });
 

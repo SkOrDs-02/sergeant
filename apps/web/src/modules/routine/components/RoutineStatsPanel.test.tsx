@@ -34,8 +34,18 @@ vi.mock("./HabitHeatmap", () => ({
   ),
 }));
 vi.mock("./HabitRangeGrid", () => ({
-  HabitRangeGrid: ({ days }: { days: number }) => (
-    <div data-testid="habit-range-grid" data-days={days} />
+  HabitRangeGrid: ({
+    days,
+    skips,
+  }: {
+    days: number;
+    skips?: Record<string, unknown>;
+  }) => (
+    <div
+      data-testid="habit-range-grid"
+      data-days={days}
+      data-skip-keys={Object.keys(skips || {}).join(",")}
+    />
   ),
 }));
 vi.mock("./HabitLeadersBlock", () => ({
@@ -199,6 +209,29 @@ describe("RoutineStatsPanel", () => {
       "data-skip-keys",
       "h1",
     );
+  });
+
+  // PR-R8 (аудит 2026-09-13, хвиля 6; ревізія 2026-11-17): у короткому
+  // зрізі «не зміг» має доїхати і в рядки звичок, і в підсумковий відсоток.
+  // Відсоток рахувався без `skips`, тож клітинка казала «не зміг», а число
+  // над нею рахувало той самий день провалом.
+  it("passes routine.skips to the range grid and to the summary rate", () => {
+    const skips = {
+      h1: { "2026-07-08": { reason: "sick" as const, at: "2026-07-08" } },
+    };
+    render(
+      <RoutineStatsPanel routine={makeRoutine({ skips })} currentStreak={0} />,
+    );
+
+    expect(screen.getByTestId("habit-range-grid")).toHaveAttribute(
+      "data-skip-keys",
+      "h1",
+    );
+    const opts = (completionRateForRange.mock.lastCall as unknown[])[4] as {
+      pausedFrom?: string;
+      skips?: unknown;
+    };
+    expect(opts).toEqual({ pausedFrom: "2026-07-10", skips });
   });
 
   it("mounts child widgets", () => {

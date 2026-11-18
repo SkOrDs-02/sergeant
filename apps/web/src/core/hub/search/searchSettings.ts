@@ -26,6 +26,10 @@ import { type Hit, pushScored } from "./searchTypes";
 // generic gear icon + empty description (see `presentation` below) so a
 // new catalog entry without a matching presentation record stays
 // searchable instead of crashing ⌘K.
+//
+// PR-S10 (аудит 2026-09-13, хвиля 7): опис видимий кожному в ⌘K, тож він
+// людською мовою; технічні токени (`service worker`, `debug`) лишаються в
+// `keywords` каталогу, які в картку не потрапляють.
 const SETTINGS_PRESENTATION: Readonly<
   Record<string, { description: string; icon: string }>
 > = {
@@ -42,7 +46,7 @@ const SETTINGS_PRESENTATION: Readonly<
     icon: "bell",
   },
   ai: {
-    description: "Тижневий тренер, insights",
+    description: "Звіт тижня щопонеділка",
     icon: "sergeant",
   },
   capabilities: {
@@ -79,7 +83,7 @@ const SETTINGS_PRESENTATION: Readonly<
     icon: "lock",
   },
   pwa: {
-    description: "Service worker, кеш, діагностика",
+    description: "Застрягле оновлення, файли застосунку",
     icon: "wifi-off",
   },
   dataExport: {
@@ -87,7 +91,7 @@ const SETTINGS_PRESENTATION: Readonly<
     icon: "download",
   },
   experimental: {
-    description: "Lab, beta, debug",
+    description: "Ранні функції на цьому пристрої",
     icon: "sergeant",
   },
 };

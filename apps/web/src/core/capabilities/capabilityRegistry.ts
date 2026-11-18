@@ -53,6 +53,15 @@ export interface Capability {
    * на «Головну»). Гостю такий запис не показуємо (`visibleCapabilityGroups`).
    */
   accountOnly?: true;
+  /**
+   * Тап відкриває аркуш чату над поточним екраном, а не маршрут `href`.
+   * Рішення D5 (Phase 7, 2026-05-22): чат — аркуш над маршрутом, `/chat`
+   * лишається лише для диплінків, пушів і `?q=`. До хвилі 7 аудиту
+   * 2026-09-13 (PR-A8) картка «Чат із Сержантом» була єдиним in-app входом
+   * у повну сторінку. `href` лишається справжньою адресою чату (тест
+   * маршрутів), але тап іде повз нього.
+   */
+  opensChat?: true;
 }
 
 export interface CapabilityGroup {
@@ -124,6 +133,7 @@ export const CAPABILITY_GROUPS: readonly CapabilityGroup[] = [
           "Питай про свої дані звичайною мовою: Сержант сам підніме потрібні записи й може одразу щось додати чи порахувати.",
         icon: "sergeant",
         href: "/chat",
+        opensChat: true,
       },
       {
         id: "assistant-catalogue",

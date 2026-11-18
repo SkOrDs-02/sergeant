@@ -42,7 +42,22 @@ describe("StreakIndicator — same-tab storage refresh (F10)", () => {
     expect(document.body.textContent).toContain("5");
   });
 
-  // Бейдж підписаний «днів поспіль», а стрік Фізрука рахується в ТИЖНЯХ
+  // PR-R10 (аудит 2026-09-13, хвиля 6; ревізія 2026-11-17): число це
+  // максимум поточних серій по звичках, тож рядок має назвати агрегат, а не
+  // казати «N днів поспіль» (так на хабі підписані дні з усім виконаним).
+  it("names the cross-habit maximum as «найкраща серія», not «днів поспіль»", () => {
+    localStorage.setItem(
+      STORAGE_KEYS.ROUTINE_QUICK_STATS,
+      JSON.stringify({ streak: 5 }),
+    );
+
+    render(<StreakIndicator />);
+
+    expect(document.body.textContent).toBe("Звички · найкраща серія 5 днів");
+    expect(document.body.textContent).not.toContain("поспіль");
+  });
+
+  // Бейдж рахує дні (до 2026-11-17 був підписаний «днів поспіль»), а стрік Фізрука рахується в ТИЖНЯХ
   // (`computeWeeklyStreakWeeks`). Поки він потрапляв у той самий `Math.max`,
   // сім тижнів підряд ставали «7 днів поспіль» і в бейджі, і в
   // `streak_milestone_reached` (аудит L-8, 2026-08-07).

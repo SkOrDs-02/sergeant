@@ -3,7 +3,7 @@
  * Status: Active
  *
  * Відновлює web-push підписку, яку браузер скинув разом зі знятою реєстрацією
- * Service Worker (rel-12, «Скинути кеш PWA» робить `registration.unregister()`;
+ * Service Worker (rel-12, «Скинути файли застосунку» робить `registration.unregister()`;
  * за Push API підписка живе рівно стільки, скільки реєстрація).
  *
  * AI-CONTEXT: джерело істини про намір користувача — локальна мітка

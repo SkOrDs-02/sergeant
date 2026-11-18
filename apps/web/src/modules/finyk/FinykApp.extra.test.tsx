@@ -198,7 +198,14 @@ vi.mock("@shared/lib/modules/hubNav", async (importOriginal) => ({
 
 vi.mock("../../core/lib/lazyImport", () => ({
   lazyImport: (_factory: unknown, name: string) => {
-    const Stub = () => <div data-testid={`lazy-${name}`} />;
+    // `data-show-balance` віддзеркалює проп, щоб тест маршрутизації бачив,
+    // чи «Приховати суми» доїжджає до сторінки (PR-F3).
+    const Stub = (props: { showBalance?: boolean }) => (
+      <div
+        data-testid={`lazy-${name}`}
+        data-show-balance={String(props.showBalance)}
+      />
+    );
     Stub.displayName = name;
     // Mirror the real helper's `PreloadableLazy` shape — FinykApp warms page
     // chunks on pointer-down / swipe / idle (see `PAGE_PRELOADERS`).
@@ -352,6 +359,7 @@ afterEach(() => {
   cleanup();
   vi.clearAllMocks();
   storageMock.manualExpenses = [];
+  storageMock.showBalance = true;
   storageMock.loadFromUrl.mockReturnValue(false);
 });
 
@@ -766,6 +774,25 @@ describe("FinykApp (extra) — page routing", () => {
     vi.mocked(useFinykRoute).mockReturnValue([page, navigateMock]);
     render(<FinykApp onOpenAuth={NOOP_AUTH} />);
     expect(screen.getByTestId(testId)).toBeInTheDocument();
+  });
+
+  // PR-F3 (аудит 2026-09-13, хвиля 6; ревізія 2026-11-17): прапорець
+  // «Приховати суми» мусить доїхати до кожної сторінки з грошима. Маскування
+  // всередині сторінок пінять їхні власні тести; ланку FinykApp → сторінка
+  // доти не пінив ніхто.
+  it.each([
+    ["transactions", "lazy-Transactions"],
+    ["budgets", "lazy-Budgets"],
+    ["analytics", "lazy-Analytics"],
+    ["assets", "lazy-Assets"],
+  ] as const)("passes hidden amounts to the %s page", (page, testId) => {
+    storageMock.showBalance = false;
+    vi.mocked(useFinykRoute).mockReturnValue([page, navigateMock]);
+    render(<FinykApp onOpenAuth={NOOP_AUTH} />);
+    expect(screen.getByTestId(testId)).toHaveAttribute(
+      "data-show-balance",
+      "false",
+    );
   });
 
   it("swipes left from overview to the next nav page", () => {

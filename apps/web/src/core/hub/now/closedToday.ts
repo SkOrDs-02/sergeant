@@ -32,7 +32,11 @@ import {
   calcRoutineDayProgress,
   dateKeyFromDate,
 } from "@sergeant/routine-domain";
-import { getDayMacros, resolveEffectiveGoal } from "@sergeant/nutrition-domain";
+import {
+  getDayMacros,
+  getDaySummary,
+  resolveEffectiveGoal,
+} from "@sergeant/nutrition-domain";
 import { WEEK_KCAL_OVER_TOLERANCE } from "@sergeant/nutrition-domain";
 import { calcFinykPeriodAggregate } from "@sergeant/finyk-domain/lib/spending";
 import { getLimitBudgets } from "@sergeant/finyk-domain/domain/budget";
@@ -133,10 +137,20 @@ function nutritionClosed(todayKey: string): ClosedTodayItem | null {
       value: `${formatNumberUk(Math.round(kcal))} ккал`,
     };
   }
+  // PR-N2 (аудит 2026-09-13, хвиля 6; ревізія 2026-11-17): прийом це тип
+  // (сніданок, обід…), а не рядок журналу. Одне фото «суп + хліб + салат»
+  // пише три рядки однієї вечері, і `meals.length` казав «3 прийоми
+  // записано». Лічильник той самий, що в hero модуля
+  // (`loggedMealTypesCount`). Закриття й далі від будь-якого рядка (рішення
+  // 2026-09-17); рядки без калорій типу не дають, тоді лише «записано».
+  const mealTypes = getDaySummary(log, todayKey).loggedMealTypesCount;
   return {
     module: "nutrition",
     label: CLOSED_TODAY_LABELS.nutrition,
-    statement: `${meals.length} ${pluralUa(meals.length, MEAL_FORMS)} записано`,
+    statement:
+      mealTypes > 0
+        ? `${mealTypes} ${pluralUa(mealTypes, MEAL_FORMS)} записано`
+        : "записано",
     value: kcal > 0 ? `${formatNumberUk(Math.round(kcal))} ккал` : null,
   };
 }

@@ -34,6 +34,17 @@ describe("WeeklyVolumeChart", () => {
     expect(screen.getByText("Нд")).toBeInTheDocument();
   });
 
+  // PR-Z3 (аудит 2026-09-13, хвиля 6; ревізія 2026-11-17): тижневий обʼєм
+  // це сума вага × повтори. Легенда й опис для скрінрідера мусять казати
+  // «кг×повт», а не «кг»: інакше 700 читається як 700 кілограмів.
+  it("labels the volume in кг×повт in the legend and the sr summary", () => {
+    render(<WeeklyVolumeChart volumeKg={[100, 200, 0, 400, 0, 600, 700]} />);
+    expect(screen.getByText("кг×повт")).toBeInTheDocument();
+    const summary = document.getElementById("fizruk-weekly-volume-summary");
+    expect(summary?.textContent).toMatch(/кг×повт/);
+    expect(summary?.textContent).not.toMatch(/\d кг(?!×)/);
+  });
+
   it("formats large y-axis values with a k suffix", () => {
     render(<WeeklyVolumeChart volumeKg={[2000, 0, 0, 0, 0, 0, 0]} />);
     // max = 2000 → верхня поділка українською, не англійське «2.0k»

@@ -6,6 +6,7 @@ import { memo } from "react";
 import { cn } from "@shared/lib/ui/cn";
 import { messages } from "@shared/i18n/uk";
 import { getKyivDateParts } from "@shared/lib/time/kyivTime";
+import { SYNC_STATUS_LABELS } from "../lib/syncStatusLabels";
 
 interface SyncStateLike {
   status?: "idle" | "loading" | "success" | "error" | "partial" | string;
@@ -48,15 +49,17 @@ function SyncStatusBadgeComponent({
   const isLoading = status === "loading" || loading;
   const isSuccess = status === "success";
 
+  // Слова — зі спільного словника (PR-F7), регістр `full`.
+  const labels = SYNC_STATUS_LABELS.full;
   const label = isLoading
-    ? "Синхронізація…"
+    ? labels.loading
     : isError
-      ? "Не вдалося синхронізувати"
+      ? labels.error
       : isPartial
-        ? "Часткова синхронізація"
+        ? labels.partial
         : isSuccess
-          ? "Синхронізовано"
-          : "Очікування";
+          ? labels.success
+          : labels.idle;
 
   const ts = formatTs(lastUpdated);
 

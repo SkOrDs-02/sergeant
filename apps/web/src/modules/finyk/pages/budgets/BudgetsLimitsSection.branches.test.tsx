@@ -399,6 +399,31 @@ describe("BudgetsLimitsSection (branches)", () => {
     );
   });
 
+  // PR-F3 (аудит 2026-09-13, хвиля 6; ревізія 2026-11-17): порада моделі
+  // приходить із сумами з промпту, і під «Приховати суми» вона їх показувала.
+  it("masks amounts inside proactive advice when showBalance=false", () => {
+    const limit = makeLimit("b1", "food");
+    const budgets = [limit] as unknown as Budget[];
+    const advice = "Залишок 1 200 ₴, тримай до 60 ₴ на день.";
+    const props = buildProps({
+      limitsOpen: true,
+      limitBudgets: [limit],
+      budgets,
+      proactiveItems: [makeProactiveItem("food")],
+      proactiveAdvice: { food: advice },
+    });
+    const { unmount } = render(
+      <BudgetsLimitsSection {...props} showBalance={false} />,
+    );
+    expect(screen.getByTestId("proactive-text")).toHaveTextContent(
+      "Залишок ••••, тримай до •••• на день.",
+    );
+    unmount();
+
+    render(<BudgetsLimitsSection {...props} />);
+    expect(screen.getByTestId("proactive-text")).toHaveTextContent(advice);
+  });
+
   it("hides proactive text when advice was dismissed", () => {
     const limit = makeLimit("b1", "food");
     const budgets = [limit] as unknown as Budget[];

@@ -8,7 +8,7 @@ vi.mock("@routine/lib/routineStorage", () => ({
 }));
 
 import RoutineCard from "./RoutineCard";
-import { localDateKey } from "./hubReports.aggregation";
+import { localDateKey, reportWindows } from "./hubReports.aggregation";
 import { messages } from "@shared/i18n/uk";
 
 // A single habit completed today → non-zero pct for the current week.
@@ -37,6 +37,37 @@ describe("RoutineCard", () => {
     fireEvent.click(toggle);
     expect(toggle).toHaveAttribute("aria-expanded", "true");
     expect(screen.getByText(/Минулий/i)).toBeInTheDocument();
+  });
+
+  // Рішення власника 2026-11-18 (METRICS_VERSION 20): «не зміг» виходить зі
+  // знаменника, тож картка Звітів не рахує заявлений пропуск провалом.
+  it("«не зміг» поза знаменником: 2 виконано + 5 пропусків за минулий тиждень = 100%", () => {
+    const days = reportWindows("week", -1).cur;
+    expect(days).toHaveLength(7);
+    loadRoutineState.mockReturnValue({
+      habits: [
+        {
+          id: "h1",
+          name: "Вода",
+          recurrence: "daily",
+          startDate: "2020-01-01",
+        },
+      ],
+      completions: { h1: days.slice(0, 2) },
+      skips: Object.fromEntries([
+        [
+          "h1",
+          Object.fromEntries(
+            days
+              .slice(2)
+              .map((d) => [d, { reason: "sick", at: `${d}T10:00:00.000Z` }]),
+          ),
+        ],
+      ]),
+    });
+    render(<RoutineCard period="week" offset={-1} />);
+    expect(screen.getAllByText(/100\s?%/).length).toBeGreaterThan(0);
+    expect(screen.queryByText(/29\s?%/)).toBeNull();
   });
 
   it("renders the no-data placeholder with no completions", () => {

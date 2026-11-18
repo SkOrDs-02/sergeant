@@ -226,6 +226,30 @@ describe("Transactions page shell", () => {
     vi.useRealTimers();
   });
 
+  // PR-F4 (аудит 2026-09-13, хвиля 6; ревізія 2026-11-17): маркер у рядку
+  // пінили чипи й список, але не те, що сторінка будує набір із
+  // `storage.excludedStatTxIds`. Без цієї ланки пакетна дія знову міняла б
+  // підсумки без сліду в списку.
+  it("marks only the rows the person excluded from stats", () => {
+    const kept = { ...mkJuneTx("tx-kept", -300), description: "Аптека" };
+    const excluded = { ...mkJuneTx("tx-out", -400), description: "Борг Олі" };
+    renderTransactions({
+      mono: { realTx: [kept, excluded] },
+      // Як у живому `useStorage`: явне «не в статистиці» входить і в
+      // загальний набір виключених.
+      storage: {
+        excludedStatTxIds: ["tx-out"],
+        excludedTxIds: new Set(["tx-out"]),
+      },
+    });
+    const day = screen.getByRole("button", { expanded: false });
+    // Сума дня рахує лише рядок, що лишився в статистиці.
+    expect(day).toHaveTextContent(/−3,00/);
+    fireEvent.click(day);
+    expect(screen.getByText("Борг Олі")).toBeInTheDocument();
+    expect(screen.getAllByText("не в статистиці")).toHaveLength(1);
+  });
+
   it("дрил-даун з Аналітики: категорія за минулий місяць відкриває Операції на тому ж місяці", () => {
     const fetchMonth = vi.fn(() => Promise.resolve());
     const mayTime = Math.floor(

@@ -235,7 +235,7 @@ export async function listStaleCaches(): Promise<string[]> {
  * - `"user"` (за замовчуванням; вихід, втрата сесії) — `navigations-v*`,
  *   `api-cache-v*`, `sw-meta`. Precache і ілюстрації вправ лишаються: даних
  *   користувача в них немає, а Workbox сам їх не відновить (rel-12).
- * - `"all"` — ручне «Скинути кеш PWA»: ще й precache, шрифти, ілюстрації.
+ * - `"all"` — ручне «Скинути файли застосунку»: ще й precache, шрифти, ілюстрації.
  *   Після цього викликач зобовʼязаний зняти реєстрацію SW.
  */
 export async function clearAppCaches(

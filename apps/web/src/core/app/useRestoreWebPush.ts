@@ -3,7 +3,7 @@ import { restoreWebPushSubscriptionIfLost } from "@shared/hooks/restoreWebPushSu
 
 /**
  * Після входу перевіряє, чи не загубилась web-push підписка (наприклад,
- * «Скинути кеш PWA» знімає реєстрацію SW, а з нею і підписку), і ставить її
+ * «Скинути файли застосунку» знімає реєстрацію SW, а з нею і підписку), і ставить її
  * заново. Серверний `register` вимагає сесії, тож крутимо лише при `userId`.
  * Деталі — `@shared/hooks/restoreWebPushSubscription`.
  */
