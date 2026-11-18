@@ -1938,6 +1938,51 @@ export const paths: ZodOpenApiPathsObject = {
       },
     },
   },
+  "/api/billing/manual-access": {
+    post: {
+      summary: "Попросити ручний Premium з пейволу (до запуску оплати)",
+      description:
+        "Записує запит у feedback_entries (category = premium_request) і шле founder-у " +
+        "повідомлення в Telegram з кнопкою видачі на 30 днів. Один запит на акаунт " +
+        "за весь час. Працює лише доки оплата вимкнена і бот вейтліста налаштований " +
+        "(`access.manualAccess.available` у `/api/billing/status`).",
+      tags: ["monetization"],
+      security: cookieOrBearer,
+      requestBody: {
+        content: {
+          "application/json": { schema: namedSchemas.ManualAccessRequest },
+        },
+      },
+      responses: {
+        "200": {
+          description:
+            "Запит записано. Помилка доставки в Telegram відповідь не змінює.",
+          content: {
+            "application/json": { schema: namedSchemas.ManualAccessResponse },
+          },
+        },
+        "400": validationError,
+        "401": unauthorized,
+        "409": {
+          description:
+            "`MANUAL_ACCESS_ALREADY_REQUESTED`: акаунт уже просив. " +
+            "`MANUAL_ACCESS_NOT_NEEDED`: стан доступу не free. " +
+            "`MANUAL_ACCESS_CLOSED`: оплату увімкнено або Telegram не налаштовано. " +
+            "Значення `code` описує схема `ManualAccessConflictCode`.",
+          content: {
+            "application/json": { schema: namedSchemas.ApiError },
+          },
+        },
+        "429": {
+          description:
+            "Too many requests — спільний бакет з checkout (10 / IP / годину).",
+          content: {
+            "application/json": { schema: namedSchemas.ApiError },
+          },
+        },
+      },
+    },
+  },
   "/api/billing/stripe-webhook": {
     post: {
       summary: "Stripe webhook delivery endpoint",

@@ -73,13 +73,23 @@ async function flushMicrotasks(): Promise<void> {
   for (let i = 0; i < 5; i++) await Promise.resolve();
 }
 
+// Годинник нагадувань — годинник ПРИСТРОЮ (спека
+// notifications-quiet-hours-and-device-time, ADR-0078), а не Київ. Київські
+// фікстури нижче лишаються чинними для пристрою, що стоїть у Києві: пояс
+// пристрою перемикаємо тут (Node перечитує `process.env.TZ` на льоту),
+// бо `vitest.config.js` пінить `TZ=UTC`.
+const ORIGINAL_TZ = process.env["TZ"];
+
 beforeEach(() => {
+  process.env["TZ"] = "Europe/Kyiv";
   store.clear();
   vi.useFakeTimers();
   vi.setSystemTime(KYIV_NOW);
 });
 
 afterEach(() => {
+  if (ORIGINAL_TZ === undefined) delete process.env["TZ"];
+  else process.env["TZ"] = ORIGINAL_TZ;
   vi.clearAllTimers();
   vi.useRealTimers();
   vi.unstubAllGlobals();

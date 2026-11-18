@@ -16,7 +16,12 @@ import { useMonthlyPlan } from "../../modules/fizruk/hooks/useMonthlyPlan";
 import { patchNutritionPrefs } from "../../modules/nutrition/lib/nutritionStorage";
 import { useNutritionPrefsSnapshot } from "../../modules/nutrition/hooks/useNutritionPrefsHydration";
 import { messages } from "@shared/i18n/uk";
-import { PUSH_DAILY_CAP_DEFAULT, PUSH_DAILY_CAP_MAX } from "@sergeant/shared";
+import {
+  PUSH_DAILY_CAP_DEFAULT,
+  PUSH_DAILY_CAP_MAX,
+  QUIET_HOURS_DEFAULT_END_MIN,
+  QUIET_HOURS_DEFAULT_START_MIN,
+} from "@sergeant/shared";
 import { PushNotificationToggle } from "../components/PushNotificationToggle";
 import {
   SettingsGroup,
@@ -24,6 +29,8 @@ import {
   ToggleRow,
 } from "./SettingsPrimitives";
 import { useServerPreference } from "./useServerPreference";
+import { QuietHoursSettings } from "./QuietHoursSettings";
+import { MonoPushSetting } from "./MonoPushSetting";
 
 const sergeantCopy = messages.sergeant;
 
@@ -82,6 +89,34 @@ export function NotificationsSection() {
       authRequired: sergeantCopy.nudgesAuthRequired,
     },
     PUSH_DAILY_CAP_DEFAULT,
+  );
+
+  // Міграція 168: тихі години і тумблер Monobank. Підгрупи з'являються лише
+  // тоді, коли сервер віддав поле (`supported`): у вікні між деплоєм веба і
+  // бекенду старий сервер відхилив би патч `400`.
+  const serverCopy = {
+    saveError: sergeantCopy.nudgesSaveError,
+    authRequired: sergeantCopy.nudgesAuthRequired,
+  };
+  const quietHoursEnabled = useServerPreference(
+    "quietHoursEnabled",
+    serverCopy,
+    true,
+  );
+  const quietHoursStart = useServerPreference(
+    "quietHoursStartMin",
+    serverCopy,
+    QUIET_HOURS_DEFAULT_START_MIN,
+  );
+  const quietHoursEnd = useServerPreference(
+    "quietHoursEndMin",
+    serverCopy,
+    QUIET_HOURS_DEFAULT_END_MIN,
+  );
+  const pushMonoTransactions = useServerPreference(
+    "pushMonoTransactions",
+    serverCopy,
+    true,
   );
 
   const monthlyPlan = useMonthlyPlan();
@@ -257,6 +292,12 @@ export function NotificationsSection() {
         )}
       </SettingsSubGroup>
 
+      <QuietHoursSettings
+        enabled={quietHoursEnabled}
+        start={quietHoursStart}
+        end={quietHoursEnd}
+      />
+
       <SettingsSubGroup variant="bounded" title={sergeantCopy.name}>
         <ToggleRow
           label={sergeantCopy.nudgesToggleLabel}
@@ -389,6 +430,8 @@ export function NotificationsSection() {
           </div>
         )}
       </SettingsSubGroup>
+
+      <MonoPushSetting pref={pushMonoTransactions} />
     </SettingsGroup>
   );
 }

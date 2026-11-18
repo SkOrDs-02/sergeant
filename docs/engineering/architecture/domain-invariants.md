@@ -1,6 +1,6 @@
 # Domain invariants
 
-> **Last touched:** 2026-10-03 by @claude (§ AI-tool execution path: client-generated ids нових рядків — `crypto.randomUUID()`, аудит data-01 крок 1; раніше того ж дня — чат-екзекутори читають канонічний кеш SQLite, не kv; чат-item мусить мати справжній `exerciseId`); 2026-08-18 by @claude (анти-патерн #7: читання tombstone-нутого LS-ключа після міграції у SQLite). **Next review:** 2026-12-03.
+> **Last touched:** 2026-11-18 by @claude (§ Time and dates: нагадування і тихі години в поясі пристрою, міграція 168); 2026-10-03 by @claude (§ AI-tool execution path: client-generated ids нових рядків — `crypto.randomUUID()`, аудит data-01 крок 1; раніше того ж дня — чат-екзекутори читають канонічний кеш SQLite, не kv; чат-item мусить мати справжній `exerciseId`); 2026-08-18 by @claude (анти-патерн #7: читання tombstone-нутого LS-ключа після міграції у SQLite). **Next review:** 2026-12-03.
 > **Status:** Active
 
 > Things that bite hard if assumed wrong. Compact pointer in [`AGENTS.md § Domain invariants`](../../../AGENTS.md#domain-invariants); deep prose lives here. Treat this file as canonical when web ↔ mobile ↔ server logic disagrees.
@@ -13,6 +13,7 @@
   відображення часу, серверних операційних звітів і фінансових періодів — тобто для всього,
   що НЕ є «особистим днем». Раніше цей рядок вимагав Kyiv скрізь; ADR-0078 звузив вимогу
   після того, як аудит (routine § E-2) показав, що `routine-domain` роками писав device-local.
+- **Нагадування і тихі години — пояс пристрою** ([спека](../../work/specs/notifications-quiet-hours-and-device-time.md), 2026-11-18). Час нагадування, який поставила людина (звичка, тренування, їжа), нудж Сержанта, межі тихих годин і доба відміток, яку читає серверний прохід, рахуються в збереженому поясі пристрою `user_preferences.time_zone` (IANA-імʼя, пише клієнт, LWW); `NULL` або невалідне імʼя читається як Europe/Kyiv. Сервер: `apps/server/src/lib/reminders/userClock.ts`; клієнтський таймер: `useModuleReminder`. Ретеншн журналу `push_reminder_log` лишається на Києві.
 - **Storage:** `timestamptz` in Postgres (UTC at rest), but read with `timezone('Europe/Kyiv', ts)` when bucketing by day in SQL.
 - **Day key format:** `YYYY-MM-DD`. Для особистих сутностей інтерпретується в таймзоні пристрою (ADR-0078); для серверних звітів — у Kyiv. `coachKeys.insight(dayKey)`, `digestKeys.byWeek(weekKey)` і стріки Routine споживають перший варіант — сервер НЕ обчислює «сьогодні» користувача сам, а згортає журнал за `tz_offset_minutes` події.
 - **Week start:** Monday (ISO 8601). `weekKey` = **`YYYY-MM-DD` (дата того понеділка)**, НЕ ISO `YYYY-Www` — див. `getWeekKey()` у [`packages/shared/src/lib/weeklyDigest.ts`](../../../packages/shared/src/lib/weeklyDigest.ts), який повертає `localDateKey(monday)`. (Парсер, що очікує `2026-W29`, зламається.)

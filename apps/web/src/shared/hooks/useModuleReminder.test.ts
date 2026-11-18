@@ -2,11 +2,10 @@
 /**
  * Tests for the shared `useModuleReminder` hook (ADR-0067 step 3).
  *
- * Key invariant under test: `onMinuteTick` receives **Kyiv-local** `dayKey`
- * and `hm`, NOT host-local values. We exercise this with a clock fixed at a
- * UTC instant where host-UTC and Kyiv disagree on the hour (and potentially
- * the day near midnight), which would have caused the old fizruk/nutrition
- * hooks to fire at the wrong time for a traveller abroad.
+ * Key invariant under test: `onMinuteTick` receives **device-local** `dayKey`
+ * and `hm` (спека notifications-quiet-hours-and-device-time, ADR-0078), NOT
+ * Kyiv. The device zone is switched via `process.env.TZ` (Node re-reads it
+ * on the fly); the suite pins `TZ=UTC` in `vitest.config.js`.
  *
  * Also verifies the permission guard: the tick must NOT fire when
  * Notification.permission is not "granted".
@@ -23,18 +22,17 @@ vi.mock("@shared/lib", () => ({
 import { useModuleReminder } from "./useModuleReminder";
 
 // ── Clock fixtures ──────────────────────────────────────────────────────────
-// 2026-06-04T19:30:00Z = 2026-06-04T22:30:00 EEST (Kyiv UTC+3).
-// Host UTC: 19:30 on June 4. Kyiv: 22:30 on June 4.
-// This is the "same day" case — but hour differs (19 vs 22).
+// 2026-06-04T19:30:00Z: Kyiv 22:30 (EEST), New York 15:30 (EDT), UTC 19:30.
 const UTC_NOW = new Date("2026-06-04T19:30:00Z");
-const KYIV_HM = "22:30";
-const KYIV_DAY = "2026-06-04";
 
-// 2026-06-04T21:30:00Z = 2026-06-05T00:30:00 EEST — Kyiv is next day.
-// Host UTC: still June 4 at 21:30. Kyiv: June 5 at 00:30.
+// 2026-06-04T21:30:00Z: Kyiv is already June 5 (00:30), New York is still
+// June 4 (17:30).
 const UTC_MIDNIGHT_BOUNDARY = new Date("2026-06-04T21:30:00Z");
-const KYIV_MIDNIGHT_HM = "00:30";
-const KYIV_MIDNIGHT_DAY = "2026-06-05";
+
+const ORIGINAL_TZ = process.env["TZ"];
+function setDeviceZone(tz: string): void {
+  process.env["TZ"] = tz;
+}
 
 // ── Notification stub helpers ────────────────────────────────────────────────
 function installGrantedNotification(): void {
@@ -72,15 +70,18 @@ beforeEach(() => {
 });
 
 afterEach(() => {
+  if (ORIGINAL_TZ === undefined) delete process.env["TZ"];
+  else process.env["TZ"] = ORIGINAL_TZ;
   vi.clearAllTimers();
   vi.useRealTimers();
   vi.unstubAllGlobals();
   vi.clearAllMocks();
 });
 
-describe("useModuleReminder — Kyiv-time invariant", () => {
-  it("passes Kyiv-local hm to onMinuteTick, not host-UTC hm", () => {
+describe("useModuleReminder — device-time invariant", () => {
+  it("passes device-local hm to onMinuteTick, not Kyiv hm", () => {
     installGrantedNotification();
+    setDeviceZone("America/New_York");
     vi.setSystemTime(UTC_NOW);
 
     const ticks: ModuleReminderTick[] = [];
@@ -93,12 +94,13 @@ describe("useModuleReminder — Kyiv-time invariant", () => {
 
     // Hook fires immediately on mount.
     expect(ticks).toHaveLength(1);
-    expect(ticks[0]?.hm).toBe(KYIV_HM); // Kyiv 22:30, not UTC 19:30
-    expect(ticks[0]?.dayKey).toBe(KYIV_DAY);
+    expect(ticks[0]?.hm).toBe("15:30"); // New York, not Kyiv 22:30
+    expect(ticks[0]?.dayKey).toBe("2026-06-04");
   });
 
-  it("passes Kyiv next-day key near midnight when UTC is still the previous day", () => {
+  it("keeps the device day near Kyiv midnight: Kyiv is already June 5", () => {
     installGrantedNotification();
+    setDeviceZone("America/New_York");
     vi.setSystemTime(UTC_MIDNIGHT_BOUNDARY);
 
     const ticks: ModuleReminderTick[] = [];
@@ -110,8 +112,25 @@ describe("useModuleReminder — Kyiv-time invariant", () => {
     );
 
     expect(ticks).toHaveLength(1);
-    expect(ticks[0]?.hm).toBe(KYIV_MIDNIGHT_HM); // 00:30 Kyiv
-    expect(ticks[0]?.dayKey).toBe(KYIV_MIDNIGHT_DAY); // June 5 Kyiv, not June 4 UTC
+    expect(ticks[0]?.hm).toBe("17:30");
+    expect(ticks[0]?.dayKey).toBe("2026-06-04"); // device day, not Kyiv June 5
+  });
+
+  it("a device in Kyiv gets Kyiv hm and the next day after Kyiv midnight", () => {
+    installGrantedNotification();
+    setDeviceZone("Europe/Kyiv");
+    vi.setSystemTime(UTC_MIDNIGHT_BOUNDARY);
+
+    const ticks: ModuleReminderTick[] = [];
+    renderHook(() =>
+      useModuleReminder({
+        enabled: true,
+        onMinuteTick: (t) => ticks.push(t),
+      }),
+    );
+
+    expect(ticks[0]?.hm).toBe("00:30");
+    expect(ticks[0]?.dayKey).toBe("2026-06-05");
   });
 
   it("does NOT fire onMinuteTick when Notification.permission is not granted", () => {

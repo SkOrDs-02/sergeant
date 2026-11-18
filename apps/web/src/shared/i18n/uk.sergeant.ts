@@ -61,4 +61,16 @@ export const sergeantMessages = {
     "Нагадає повернутись, якщо тебе не було кілька днів. Приходить зранку і не частіше ніж 3 рази на тиждень відсутності. Коли ти в застосунку, не турбує.",
   nudgesSaveError: "Не вдалося зберегти налаштування. Спробуй ще раз.",
   nudgesAuthRequired: "Нагадування Сержанта працюють після входу в акаунт.",
+  // Тихі години і push Monobank (спека notifications-quiet-hours-and-device-time).
+  quietHoursTitle: "Тихі години",
+  quietHoursToggleLabel: "Тихі години",
+  quietHoursToggleDescription:
+    "У цей час не надсилатиму нагадувань, час яких обираю я, і не сповіщатиму про операції Monobank. Нагадування на твій власний час прийдуть як є.",
+  quietHoursStartLabel: "Початок",
+  quietHoursEndLabel: "Кінець",
+  quietHoursSameBoundsError: "Початок і кінець не можуть збігатися.",
+  monoPushGroupTitle: "Фінік",
+  monoPushToggleLabel: "Операції Monobank",
+  monoPushToggleDescription:
+    "Сповіщення про кожну нову операцію з картки. У тихі години не надходить.",
 };

@@ -5,8 +5,9 @@
  *   1. `useNotificationPermission` — Permissions API + visibility/focus fallback.
  *   2. `showReminderNotification` — SW show-with-Notification-ctor fallback.
  *   3. `useModuleReminder` — self-rescheduling per-minute timer that invokes
- *      `onMinuteTick` with **Kyiv-local** `dayKey`/`hm` when permission is
- *      granted and the hook is enabled.
+ *      `onMinuteTick` with **device-local** `dayKey`/`hm` when permission is
+ *      granted and the hook is enabled (спека
+ *      `notifications-quiet-hours-and-device-time.md`, ADR-0078).
  *
  * Each module wrapper keeps its own dedup logic, SW postMessages, and
  * module-specific side effects — this file deliberately knows nothing about
@@ -17,7 +18,7 @@
 
 import { useEffect, useState } from "react";
 import { logger } from "@shared/lib";
-import { getKyivDateParts, getKyivDayKey } from "@shared/lib/time/kyivTime";
+import { deviceDayKey } from "@sergeant/shared";
 import { isIOSBrowserTab } from "@shared/lib/platform/iosStandalone";
 
 // ── Permission tracker ──────────────────────────────────────────────────────
@@ -162,9 +163,9 @@ export async function requestNotificationPermission(): Promise<RequestedPermissi
 // ── Per-minute scheduler ────────────────────────────────────────────────────
 
 export interface ModuleReminderTick {
-  /** Kyiv-local `YYYY-MM-DD` day key — use for dedup and day-boundary checks. */
+  /** Device-local `YYYY-MM-DD` day key — use for dedup and day-boundary checks. */
   dayKey: string;
-  /** Kyiv-local `HH:MM` — compare against the user's configured reminder time. */
+  /** Device-local `HH:MM` — compare against the user's configured reminder time. */
   hm: string;
 }
 
@@ -177,7 +178,7 @@ export interface UseModuleReminderOptions {
   enabled: boolean;
   /**
    * Called once per minute when `enabled && permission === "granted"`.
-   * Receives Kyiv-local `dayKey` and `hm`; do dedup + show inside here.
+   * Receives device-local `dayKey` and `hm`; do dedup + show inside here.
    */
   onMinuteTick: (tick: ModuleReminderTick) => void;
 }
@@ -186,13 +187,17 @@ export interface UseModuleReminderOptions {
  * Self-rescheduling per-minute reminder driver.
  *
  * Fires `onMinuteTick` at the top of each clock minute (±50 ms jitter budget)
- * with Kyiv-local `dayKey` and `hm` so callers never need to read host-local
- * time for day-boundary comparisons (ADR-0067 § Theme 1 fix).
+ * with **device-local** `dayKey` and `hm`. Час нагадування, який людина
+ * поставила (звичка, тренування, їжа), означає годинник її пристрою; сервер
+ * рахує той самий час у збереженому поясі пристрою
+ * (`apps/server/src/lib/reminders/userClock.ts`), тож банер клієнтського
+ * таймера і серверний push із тим самим `tag` приходять в одну хвилину і
+ * склеюються. День-ключ — той самий день пристрою, яким пишуться відмітки
+ * звичок (ADR-0078). Раніше тут був Київ (ADR-0067 § Theme 1): для людини
+ * в іншому поясі звичка «о 07:00» спрацьовувала о 07:00 за Києвом.
  *
- * The sub-minute `getSeconds`/`getMilliseconds` reads ARE host-local — Kyiv's
- * UTC offset is a whole number of hours, so seconds/ms within a minute are
- * timezone-independent. The ESLint disable comments below mirror the routine
- * hook's precedent to document this deliberately.
+ * The sub-minute `getSeconds`/`getMilliseconds` reads are host-local too —
+ * seconds/ms within a minute are timezone-independent.
  */
 export function useModuleReminder({
   enabled,
@@ -211,9 +216,14 @@ export function useModuleReminder({
       if (typeof Notification === "undefined") return;
       if (Notification.permission !== "granted") return;
 
-      const now = Date.now();
-      const { hour, minute } = getKyivDateParts(now);
-      const dayKey = getKyivDayKey(now);
+      // Годинник пристрою, а не Київ: ADR-0078 і спека
+      // notifications-quiet-hours-and-device-time (час нагадувань за пристроєм).
+      const now = new Date();
+      const dayKey = deviceDayKey(now);
+      // eslint-disable-next-line sergeant-design/prefer-kyiv-time -- device-local reminder clock (ADR-0078, notifications-quiet-hours-and-device-time)
+      const hour = now.getHours();
+      // eslint-disable-next-line sergeant-design/prefer-kyiv-time -- device-local reminder clock (ADR-0078, notifications-quiet-hours-and-device-time)
+      const minute = now.getMinutes();
       const hm = `${String(hour).padStart(2, "0")}:${String(minute).padStart(2, "0")}`;
 
       onMinuteTick({ dayKey, hm });
@@ -223,7 +233,7 @@ export function useModuleReminder({
 
     const scheduleNext = () => {
       if (disposed) return;
-      // Sub-minute timer tick: секунди TZ-інваріантні (Kyiv-offset — ціла
+      // Sub-minute timer tick: секунди TZ-інваріантні (зсув поясу — ціла
       // кількість хвилин), тож host-local read тут не day-boundary bug —
       // це справжній wall-clock instant для розрахунку msToNextMinute.
       const now = new Date();

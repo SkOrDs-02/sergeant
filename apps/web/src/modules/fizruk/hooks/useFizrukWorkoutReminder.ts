@@ -15,8 +15,9 @@ function readLastFiredDay(): string | null {
  * Локальне нагадування (через Notification API, якщо дозволено).
  * `enabled` — на сьогодні є запис у календарі плану.
  *
- * Bug fix (ADR-0067): dedup-key та due-check тепер використовують Kyiv-local
- * dayKey + hm з `useModuleReminder`, а не host-local `new Date().getHours()`.
+ * Dedup-key та due-check беруть dayKey + hm з `useModuleReminder` — за
+ * годинником пристрою (спека notifications-quiet-hours-and-device-time,
+ * ADR-0078), так само, як серверний прохід нагадувань.
  */
 export function useFizrukWorkoutReminder({
   enabled,
@@ -48,8 +49,8 @@ export function useFizrukWorkoutReminder({
   // він існував ЛИШЕ щоб віддати воркеру календар плану, а сам хук дивиться
   // на вже обчислений `enabled` (`!!monthlyPlan.todayTemplateId`).
 
-  // `onMinuteTick` receives Kyiv-local dayKey + hm — this is the bug fix:
-  // previously `new Date().getHours()` / `getMinutes()` used the host timezone.
+  // `onMinuteTick` receives device-local dayKey + hm from the shared hook:
+  // час тренування, який людина поставила, означає годинник її пристрою.
   const onMinuteTick = useCallback(
     ({ dayKey, hm }: { dayKey: string; hm: string }) => {
       const { reminderHour: rh, reminderMinute: rm } = configRef.current;

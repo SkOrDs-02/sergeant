@@ -374,6 +374,72 @@
       }
     },
     {
+      "description": "a GET /api/v1/billing/status request (manual access)",
+      "providerStates": [
+        {
+          "name": "user-pact-002 is free and manual access is open"
+        }
+      ],
+      "request": {
+        "headers": {
+          "accept": "application/json"
+        },
+        "method": "GET",
+        "path": "/api/v1/billing/status"
+      },
+      "response": {
+        "body": {
+          "access": {
+            "features": {
+              "ai.actions": true,
+              "ai.photo": true,
+              "bank.monoSync": true,
+              "export.pdf": false,
+              "nutrition.weekPlan": false
+            },
+            "graceEndsAt": null,
+            "manualAccess": {
+              "available": true,
+              "requestedAt": null
+            },
+            "meters": {
+              "aiActions": {
+                "limit": 20,
+                "resetsAt": "2026-06-14T21:00:00.000Z",
+                "used": 3
+              },
+              "aiPhoto": {
+                "limit": 3,
+                "resetsAt": "2026-06-14T21:00:00.000Z",
+                "used": 1
+              },
+              "finykVision": {
+                "limit": 5,
+                "resetsAt": "2026-06-14T21:00:00.000Z",
+                "used": 0
+              }
+            },
+            "state": "free",
+            "trialEndsAt": null
+          },
+          "subscription": {
+            "active": false,
+            "cancelAtPeriodEnd": false,
+            "currentPeriodEnd": null,
+            "id": null,
+            "plan": null,
+            "provider": null,
+            "status": null
+          }
+        },
+        "headers": {
+          "Content-Type": "application/json",
+          "content-type": "application/json"
+        },
+        "status": 200
+      }
+    },
+    {
       "description": "a GET /api/v1/billing/status request (no subscription)",
       "providerStates": [
         {
@@ -789,8 +855,13 @@
           "healthDataConsent": true,
           "hubPrefs": null,
           "pushDailyCap": 3,
+          "pushMonoTransactions": false,
           "pushNotifications": true,
+          "quietHoursEnabled": true,
+          "quietHoursEndMin": 420,
+          "quietHoursStartMin": 1380,
           "sergeantNudges": false,
+          "timeZone": "America/New_York",
           "updatedAt": "2026-08-01T12:00:00.000Z"
         },
         "headers": {
@@ -2289,6 +2360,68 @@
         "body": {
           "code": "CHECKOUT_PENDING",
           "error": "A checkout for this user is still pending"
+        },
+        "headers": {
+          "Content-Type": "application/json",
+          "content-type": "application/json"
+        },
+        "status": 409
+      }
+    },
+    {
+      "description": "a POST /api/v1/billing/manual-access request",
+      "providerStates": [
+        {
+          "name": "user-pact-002 is free and manual access is open"
+        }
+      ],
+      "request": {
+        "body": {
+          "surface": "unlimited_ai_photo"
+        },
+        "headers": {
+          "Content-Type": "application/json",
+          "accept": "application/json",
+          "content-type": "application/json"
+        },
+        "method": "POST",
+        "path": "/api/v1/billing/manual-access"
+      },
+      "response": {
+        "body": {
+          "ok": true,
+          "requestedAt": "2026-11-18T10:00:00.000Z"
+        },
+        "headers": {
+          "Content-Type": "application/json",
+          "content-type": "application/json"
+        },
+        "status": 200
+      }
+    },
+    {
+      "description": "a POST /api/v1/billing/manual-access request (repeat)",
+      "providerStates": [
+        {
+          "name": "user-pact-002 already requested manual access"
+        }
+      ],
+      "request": {
+        "body": {
+          "surface": "week_plan"
+        },
+        "headers": {
+          "Content-Type": "application/json",
+          "accept": "application/json",
+          "content-type": "application/json"
+        },
+        "method": "POST",
+        "path": "/api/v1/billing/manual-access"
+      },
+      "response": {
+        "body": {
+          "code": "MANUAL_ACCESS_ALREADY_REQUESTED",
+          "error": "Manual access was already requested"
         },
         "headers": {
           "Content-Type": "application/json",

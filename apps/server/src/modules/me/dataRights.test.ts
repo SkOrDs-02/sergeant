@@ -66,6 +66,13 @@ describe("getUserPreferences — contract fixture (Hard Rule #3)", () => {
       // би її локальний вибір — дефолт тут частина контракту.
       activeModules: null,
       hubPrefs: null,
+      // Міграція 168: дефолти = поведінка до неї. Новий сервер віддає ці
+      // поля ЗАВЖДИ: їх відсутність веб читає як ознаку старого сервера.
+      timeZone: null,
+      quietHoursEnabled: true,
+      quietHoursStartMin: 1320,
+      quietHoursEndMin: 480,
+      pushMonoTransactions: true,
       updatedAt: null,
     });
   });
@@ -81,6 +88,11 @@ describe("getUserPreferences — contract fixture (Hard Rule #3)", () => {
         health_data_consent: true,
         active_modules: ["nutrition", "finyk"],
         hub_prefs: { calmMode: true },
+        time_zone: "America/New_York",
+        quiet_hours_enabled: false,
+        quiet_hours_start_min: 1380,
+        quiet_hours_end_min: 420,
+        push_mono_transactions: false,
         updated_at: new Date("2026-06-06T10:00:00.000Z"),
       },
     ]);
@@ -97,6 +109,11 @@ describe("getUserPreferences — contract fixture (Hard Rule #3)", () => {
       // в порядку вибору.
       activeModules: ["nutrition", "finyk"],
       hubPrefs: { calmMode: true },
+      timeZone: "America/New_York",
+      quietHoursEnabled: false,
+      quietHoursStartMin: 1380,
+      quietHoursEndMin: 420,
+      pushMonoTransactions: false,
       updatedAt: "2026-06-06T10:00:00.000Z",
     });
   });
@@ -254,6 +271,87 @@ describe("upsertUserPreferences — contract fixture (Hard Rule #3)", () => {
     expect(result.analytics).toBe(false);
     expect(result.aiMemory).toBe(true); // default, not patched
     expect(() => UserPreferencesSchema.parse(result)).not.toThrow();
+  });
+});
+
+describe("upsertUserPreferences — сповіщення, міграція 168", () => {
+  /** SELECT поточних (порожньо) → UPSERT RETURNING луною параметрів. */
+  function echoDb() {
+    const query = vi.fn(async (sql: string, params?: unknown[]) => {
+      if (!sql.includes("INSERT INTO user_preferences")) return { rows: [] };
+      const p = params ?? [];
+      return {
+        rows: [
+          {
+            time_zone: p[9],
+            quiet_hours_enabled: p[10],
+            quiet_hours_start_min: p[11],
+            quiet_hours_end_min: p[12],
+            push_mono_transactions: p[13],
+            updated_at: new Date("2026-11-18T10:00:00.000Z"),
+          },
+        ],
+      };
+    });
+    return { db: { query } as unknown as Pool, query };
+  }
+
+  it("пише пояс, межі й тумблери і повертає їх", async () => {
+    const { db, query } = echoDb();
+    const result = await upsertUserPreferences(db, "user-1", {
+      timeZone: "America/New_York",
+      quietHoursStartMin: 1380,
+      quietHoursEndMin: 420,
+      pushMonoTransactions: false,
+    });
+    expect(result).toMatchObject({
+      timeZone: "America/New_York",
+      quietHoursEnabled: true,
+      quietHoursStartMin: 1380,
+      quietHoursEndMin: 420,
+      pushMonoTransactions: false,
+    });
+    expect(query.mock.calls[1]?.[1]?.slice(9)).toEqual([
+      "America/New_York",
+      true,
+      1380,
+      420,
+      false,
+    ]);
+    expect(() => UserPreferencesSchema.parse(result)).not.toThrow();
+  });
+
+  it("патч без нових полів лишає їхні дефолти, а не скидає в NULL", async () => {
+    const { db, query } = echoDb();
+    await upsertUserPreferences(db, "user-1", { analytics: true });
+    expect(query.mock.calls[1]?.[1]?.slice(9)).toEqual([
+      null,
+      true,
+      1320,
+      480,
+      true,
+    ]);
+  });
+
+  it("невалідний IANA-пояс дає 400 і нічого не пише", async () => {
+    const { db, query } = echoDb();
+    await expect(
+      upsertUserPreferences(db, "user-1", { timeZone: "Mars/Olympus" }),
+    ).rejects.toMatchObject({ status: 400 });
+    expect(
+      query.mock.calls.some(([sql]) => String(sql).includes("INSERT")),
+    ).toBe(false);
+  });
+
+  it("межа, що після злиття збігається з другою, дає 400", async () => {
+    // Поточний кінець 08:00 (дефолт); патч ставить початок теж на 08:00.
+    const { db, query } = echoDb();
+    await expect(
+      upsertUserPreferences(db, "user-1", { quietHoursStartMin: 480 }),
+    ).rejects.toMatchObject({ status: 400 });
+    expect(
+      query.mock.calls.some(([sql]) => String(sql).includes("INSERT")),
+    ).toBe(false);
   });
 });
 

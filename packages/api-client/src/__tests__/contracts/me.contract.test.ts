@@ -115,6 +115,15 @@ describe(
             // міграції 137 серіалізатор ЗАВЖДИ віддає ключ `hubPrefs`,
             // тож пропуск його тут зробив би pact формою pre-137-сервера.
             hubPrefs: null,
+            // Міграція 168: новий сервер віддає ці ключі ЗАВЖДИ, бо веб за
+            // їх відсутністю впізнає старий сервер і не шле патч, який той
+            // відхилив би `400`. Недефолтні значення навмисно, щоб реплей
+            // провайдера довів, що вони їдуть із колонок.
+            timeZone: "America/New_York",
+            quietHoursEnabled: true,
+            quietHoursStartMin: 1380,
+            quietHoursEndMin: 420,
+            pushMonoTransactions: false,
             updatedAt: "2026-08-01T12:00:00.000Z",
           });
         })
@@ -126,6 +135,10 @@ describe(
           expect(typeof out.healthDataConsent).toBe("boolean");
           expect(out.activeModules).toBeNull();
           expect(out.pushDailyCap).toBe(3);
+          expect(out.timeZone).toBe("America/New_York");
+          expect(out.quietHoursStartMin).toBe(1380);
+          expect(out.quietHoursEndMin).toBe(420);
+          expect(out.pushMonoTransactions).toBe(false);
         });
     });
 
@@ -160,6 +173,10 @@ describe(
           expect(out.healthDataConsent).toBe(false);
           // Той самий rolling-deploy захист для стелі (міграція 148).
           expect(out.pushDailyCap).toBe(2);
+          // Поля міграції 168 БЕЗ дефолту: старий сервер = ключа немає.
+          expect(out.timeZone).toBeUndefined();
+          expect(out.quietHoursEnabled).toBeUndefined();
+          expect(out.pushMonoTransactions).toBeUndefined();
         });
     });
 

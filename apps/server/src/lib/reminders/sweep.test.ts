@@ -45,7 +45,13 @@ const DAY = "2026-08-03";
 
 interface FakeRows {
   routineHabits?: Record<string, unknown>[];
-  completions?: { user_id: string; habit_id: string; state: string }[];
+  /** `date_key` необовʼязковий: якщо є, фейк віддає рядок лише на свою добу. */
+  completions?: {
+    user_id: string;
+    habit_id: string;
+    state: string;
+    date_key?: string;
+  }[];
   /** Відповідь батч-запиту тижневих відміток гнучких звичок (`loadWeekCompletions`). */
   weekCompletions?: {
     user_id: string;
@@ -56,8 +62,11 @@ interface FakeRows {
   skips?: { user_id: string; skip_key: string }[];
   fizruk?: { user_id: string; data: unknown }[];
   nutrition?: { user_id: string; prefs_json: unknown }[];
-  /** Рядки `user_preferences` зі стелею (міграція 148). Нема рядка = 2. */
-  caps?: { user_id: string; push_daily_cap: number }[] | undefined;
+  /**
+   * Рядки `user_preferences`: стеля (міграція 148), пояс і тихі години
+   * (міграція 168). Нема рядка = стеля 2, Київ, тихі години 22:00-08:00.
+   */
+  caps?: Record<string, unknown>[] | undefined;
   /** Кандидати нуджа Сержанта (`selectNudgeCandidates`). */
   nudge?: Record<string, unknown>[];
 }
@@ -132,7 +141,13 @@ function fakePool(
       return { rows: rows.weekCompletions ?? [], rowCount: 0 };
     }
     if (sql.includes("FROM routine_completion_events")) {
-      return { rows: rows.completions ?? [], rowCount: 0 };
+      const dayKey = (params ?? [])[1];
+      return {
+        rows: (rows.completions ?? []).filter(
+          (r) => r.date_key === undefined || r.date_key === dayKey,
+        ),
+        rowCount: 0,
+      };
     }
     if (sql.includes("FROM routine_habit_skips")) {
       return { rows: rows.skips ?? [], rowCount: 0 };
@@ -677,6 +692,133 @@ describe("спільний бюджет нагадувань", () => {
       title: "Сержант",
       body: "Заглянь, я подивлюся на твій тиждень\nСьогодні: Зарядка.",
     });
+  });
+});
+
+/**
+ * Спека notifications-quiet-hours-and-device-time: час, який людина
+ * поставила, спрацьовує за годинником її пристрою, а доба відміток - та
+ * сама доба пристрою (ADR-0078).
+ */
+describe("годинник пристрою людини", () => {
+  beforeEach(() => sendToUserQuietly.mockClear());
+
+  const NY = {
+    user_id: "u1",
+    push_daily_cap: 2,
+    time_zone: "America/New_York",
+  };
+  const at7 = (over: Record<string, unknown> = {}) =>
+    habitDbRow({ reminder_times: ["07:00"], ...over });
+
+  it("Нью-Йорк, звичка 07:00: відправка о 12:00Z (зимовий час), не о 05:00Z", async () => {
+    const { pool, claims } = fakePool({ routineHabits: [at7()], caps: [NY] });
+
+    const early = await runReminderSweep(
+      pool,
+      new Date("2026-12-01T05:00:00Z"),
+    );
+    expect(early.sent).toBe(0);
+
+    await runReminderSweep(pool, new Date("2026-12-01T12:00:00Z"));
+    expect(sendToUserQuietly).toHaveBeenCalledTimes(1);
+    expect(claims[0]?.dedupKey).toContain("2026-12-01");
+  });
+
+  it("та сама людина без збереженого поясу отримує 07:00 за Києвом (05:00Z)", async () => {
+    const { pool } = fakePool({
+      routineHabits: [at7()],
+      caps: [{ user_id: "u1", push_daily_cap: 2, time_zone: null }],
+    });
+
+    expect(
+      (await runReminderSweep(pool, new Date("2026-12-01T12:00:00Z"))).sent,
+    ).toBe(0);
+    expect(
+      (await runReminderSweep(pool, new Date("2026-12-01T05:00:00Z"))).sent,
+    ).toBe(1);
+  });
+
+  it("не нагадує про звичку, відмічену за днем пристрою, коли київська доба вже наступна", async () => {
+    // 19:00 у Нью-Йорку 2026-12-01 = 00:00Z 2026-12-02 = 02:00 2 грудня в Києві.
+    const { pool, claims } = fakePool({
+      routineHabits: [habitDbRow({ reminder_times: ["19:00"] })],
+      caps: [NY],
+      completions: [
+        {
+          user_id: "u1",
+          habit_id: "hab_1",
+          state: "done",
+          date_key: "2026-12-01",
+        },
+      ],
+    });
+
+    const result = await runReminderSweep(
+      pool,
+      new Date("2026-12-02T00:00:00Z"),
+    );
+
+    expect(result.sent).toBe(0);
+    expect(claims).toHaveLength(0);
+  });
+
+  it("без відмітки та сама людина о 19:00 за своїм часом нагадування отримує", async () => {
+    const { pool } = fakePool({
+      routineHabits: [habitDbRow({ reminder_times: ["19:00"] })],
+      caps: [NY],
+    });
+    expect(
+      (await runReminderSweep(pool, new Date("2026-12-02T00:00:00Z"))).sent,
+    ).toBe(1);
+  });
+
+  it("тихі години 23:00-07:00 не гейтять власний час людини: звичка 06:30 приходить", async () => {
+    const { pool } = fakePool({
+      routineHabits: [habitDbRow({ reminder_times: ["06:30"] })],
+      caps: [
+        {
+          user_id: "u1",
+          push_daily_cap: 2,
+          time_zone: "Europe/Kyiv",
+          quiet_hours_enabled: true,
+          quiet_hours_start_min: 23 * 60,
+          quiet_hours_end_min: 7 * 60,
+        },
+      ],
+    });
+    // 06:30 за Києвом улітку = 03:30Z.
+    const result = await runReminderSweep(
+      pool,
+      new Date("2026-08-03T03:30:00Z"),
+    );
+    expect(result.sent).toBe(1);
+  });
+
+  it("нудж іде о 09:00 за поясом людини, а тихі години до 10:00 зсувають його на 10:00", async () => {
+    const nudge = [
+      {
+        user_id: "u1",
+        last_seen_at: new Date("2026-11-29T12:00:00Z"),
+        cached_body: null,
+        cached_generated_at: null,
+      },
+    ];
+    const quietTill10 = {
+      ...NY,
+      quiet_hours_enabled: true,
+      quiet_hours_start_min: 22 * 60,
+      quiet_hours_end_min: 10 * 60,
+    };
+    const { pool } = fakePool({ nudge, caps: [quietTill10] });
+    // 09:00 у Нью-Йорку = 14:00Z: у тихих годинах людини - мовчить.
+    expect(
+      (await runReminderSweep(pool, new Date("2026-12-01T14:00:00Z"))).sent,
+    ).toBe(0);
+    // 10:00 у Нью-Йорку = 15:00Z.
+    expect(
+      (await runReminderSweep(pool, new Date("2026-12-01T15:00:00Z"))).sent,
+    ).toBe(1);
   });
 });
 

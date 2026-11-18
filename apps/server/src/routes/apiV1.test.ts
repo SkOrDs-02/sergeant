@@ -273,6 +273,13 @@ describe("/api/v1/me data rights", () => {
       // і це НЕ те саме, що `[]` = «вибір є, і він порожній».
       activeModules: null,
       hubPrefs: null,
+      // Міграція 168: дефолти колонок; ключі присутні завжди, бо веб за
+      // їх відсутністю впізнає старий сервер.
+      timeZone: null,
+      quietHoursEnabled: true,
+      quietHoursStartMin: 1320,
+      quietHoursEndMin: 480,
+      pushMonoTransactions: true,
       updatedAt: null,
     });
   });
@@ -319,6 +326,12 @@ describe("/api/v1/me data rights", () => {
       // серіалізатор мусить дати `null` («серверних налаштувань вигляду
       // ще немає»), а не `{}` і не `undefined`.
       hubPrefs: null,
+      // Міграція 168: мок-рядок колонок не несе - серіалізатор дає дефолти.
+      timeZone: null,
+      quietHoursEnabled: true,
+      quietHoursStartMin: 1320,
+      quietHoursEndMin: 480,
+      pushMonoTransactions: true,
       updatedAt: "2026-06-06T10:05:00.000Z",
     });
     const [sql, params] = queryMock.mock.calls[1]!;
@@ -336,7 +349,36 @@ describe("/api/v1/me data rights", () => {
       null,
       null,
       2,
+      // Міграція 168: поля, яких патч не згадує, переносяться дефолтами.
+      null,
+      true,
+      1320,
+      480,
+      true,
     ]);
+  });
+
+  it("PATCH /api/v1/me/preferences: невалідний пояс і однакові межі тихих годин дають 400", async () => {
+    getSessionUserMock.mockResolvedValue(user);
+    queryMock.mockResolvedValue({ rows: [] });
+    const app = createApp();
+    const patch = (body: object) =>
+      request(app)
+        .patch("/api/v1/me/preferences")
+        .set("X-Requested-With", "XMLHttpRequest")
+        .set("Authorization", "Bearer x")
+        .send(body);
+
+    expect((await patch({ timeZone: "Mars/Olympus" })).status).toBe(400);
+    expect(
+      (await patch({ quietHoursStartMin: 600, quietHoursEndMin: 600 })).status,
+    ).toBe(400);
+    expect((await patch({ quietHoursStartMin: 1440 })).status).toBe(400);
+    expect(
+      queryMock.mock.calls.some(([sql]) =>
+        String(sql).includes("INSERT INTO user_preferences"),
+      ),
+    ).toBe(false);
   });
 
   it("PATCH /api/v1/me/preferences зберігає вибір модулів і дедуплікує його", async () => {

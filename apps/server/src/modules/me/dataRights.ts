@@ -17,6 +17,11 @@ import { logger } from "../../obs/logger.js";
 import { providerRegistry, type ProviderId } from "../billing/index.js";
 import { enqueueGdprCleanup } from "../gdpr/cleanupQueue.js";
 import {
+  NOTIFICATION_PREF_DEFAULTS,
+  mergeNotificationPrefs,
+  serializeNotificationPrefs,
+} from "./notificationPrefs.js";
+import {
   EXPORT_EXCLUSIONS,
   MODULE_EXPORT_TABLES,
   fetchExtraExportSections,
@@ -78,6 +83,8 @@ const DEFAULT_PREFERENCES: Omit<UserPreferences, "updatedAt"> = {
   // «сервер ще не знає». Збігається з nullable-колонкою без DEFAULT
   // (міграція 137).
   hubPrefs: null,
+  // Міграція 168: пояс, тихі години, push Monobank (`./notificationPrefs.ts`).
+  ...NOTIFICATION_PREF_DEFAULTS,
 };
 
 function iso(value: Date | string): string {
@@ -116,6 +123,7 @@ function serializePreferences(
     // «вибору немає», а не впасти на `.filter` нижче.
     activeModules: serializeActiveModules(row["active_modules"]),
     hubPrefs: serializeHubPrefs(row["hub_prefs"]),
+    ...serializeNotificationPrefs(row),
     updatedAt: maybeIso(row["updated_at"] as Date | string | null | undefined),
   };
 }
@@ -175,7 +183,8 @@ export async function getUserPreferences(
   const result = await db.query<Record<string, unknown>>(
     `SELECT analytics, ai_memory, push_notifications, sergeant_nudges,
             push_daily_cap, health_data_consent, active_modules, hub_prefs,
-            updated_at
+            time_zone, quiet_hours_enabled, quiet_hours_start_min,
+            quiet_hours_end_min, push_mono_transactions, updated_at
        FROM user_preferences
       WHERE user_id = $1`,
     [userId],
@@ -214,13 +223,17 @@ export async function upsertUserPreferences(
     // їдуть одним патчем, тож частковий мерж лише створив би стан, якого
     // не бачив жоден пристрій.
     hubPrefs: patch.hubPrefs !== undefined ? patch.hubPrefs : current.hubPrefs,
+    // `400` на невалідний пояс і однакові межі тихих годин - до запису.
+    ...mergeNotificationPrefs(current, patch),
   };
   const result = await db.query<Record<string, unknown>>(
     `INSERT INTO user_preferences
         (user_id, analytics, ai_memory, push_notifications, sergeant_nudges,
          health_data_consent, active_modules, hub_prefs, push_daily_cap,
-         updated_at)
-      VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, NOW())
+         time_zone, quiet_hours_enabled, quiet_hours_start_min,
+         quiet_hours_end_min, push_mono_transactions, updated_at)
+      VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9,
+              $10, $11, $12, $13, $14, NOW())
       ON CONFLICT (user_id) DO UPDATE SET
         analytics = EXCLUDED.analytics,
         ai_memory = EXCLUDED.ai_memory,
@@ -230,10 +243,17 @@ export async function upsertUserPreferences(
         active_modules = EXCLUDED.active_modules,
         hub_prefs = EXCLUDED.hub_prefs,
         push_daily_cap = EXCLUDED.push_daily_cap,
+        time_zone = EXCLUDED.time_zone,
+        quiet_hours_enabled = EXCLUDED.quiet_hours_enabled,
+        quiet_hours_start_min = EXCLUDED.quiet_hours_start_min,
+        quiet_hours_end_min = EXCLUDED.quiet_hours_end_min,
+        push_mono_transactions = EXCLUDED.push_mono_transactions,
         updated_at = NOW()
       RETURNING analytics, ai_memory, push_notifications, sergeant_nudges,
                 push_daily_cap, health_data_consent, active_modules,
-                hub_prefs, updated_at`,
+                hub_prefs, time_zone, quiet_hours_enabled,
+                quiet_hours_start_min, quiet_hours_end_min,
+                push_mono_transactions, updated_at`,
     [
       userId,
       next.analytics,
@@ -244,6 +264,11 @@ export async function upsertUserPreferences(
       next.activeModules,
       next.hubPrefs,
       next.pushDailyCap,
+      next.timeZone,
+      next.quietHoursEnabled,
+      next.quietHoursStartMin,
+      next.quietHoursEndMin,
+      next.pushMonoTransactions,
     ],
   );
   return serializePreferences(result.rows[0]);

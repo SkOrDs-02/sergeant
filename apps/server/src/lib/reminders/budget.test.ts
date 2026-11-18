@@ -3,6 +3,9 @@ import { describe, expect, it } from "vitest";
 import { collapseReminders, compromiseTime, planSends } from "./budget.js";
 import type { DueReminder } from "./due.js";
 
+/** Дефолтні тихі години [22:00, 08:00) (міграція 168). */
+const NIGHT = { startMin: 22 * 60, endMin: 8 * 60 };
+
 function reason(over: Partial<DueReminder> = {}): DueReminder {
   return {
     userId: "u1",
@@ -19,55 +22,73 @@ function reason(over: Partial<DueReminder> = {}): DueReminder {
 
 describe("planSends", () => {
   it("у межах стелі кожен час лишається власною відправкою", () => {
-    expect(planSends(["08:00", "19:00"], 2)).toEqual([
+    expect(planSends(["08:00", "19:00"], 2, NIGHT)).toEqual([
       { sendAt: "08:00", times: ["08:00"] },
       { sendAt: "19:00", times: ["19:00"] },
     ]);
   });
 
   it("стеля 0 не дає жодної відправки", () => {
-    expect(planSends(["08:00", "12:00"], 0)).toEqual([]);
+    expect(planSends(["08:00", "12:00"], 0, NIGHT)).toEqual([]);
   });
 
   it("однакові часи рахуються як один", () => {
-    expect(planSends(["08:00", "08:00"], 1)).toEqual([
+    expect(planSends(["08:00", "08:00"], 1, NIGHT)).toEqual([
       { sendAt: "08:00", times: ["08:00"] },
     ]);
   });
 
   it("понад стелю ріже по найбільшому проміжку: ранок окремо від вечора", () => {
-    expect(planSends(["08:00", "09:00", "19:00", "20:00"], 2)).toEqual([
+    expect(planSends(["08:00", "09:00", "19:00", "20:00"], 2, NIGHT)).toEqual([
       { sendAt: "08:30", times: ["08:00", "09:00"] },
       { sendAt: "19:30", times: ["19:00", "20:00"] },
     ]);
   });
 
   it("стеля 1 згортає весь день в одну відправку посередині", () => {
-    expect(planSends(["08:00", "19:00"], 1)).toEqual([
+    expect(planSends(["08:00", "19:00"], 1, NIGHT)).toEqual([
       { sendAt: "13:30", times: ["08:00", "19:00"] },
     ]);
   });
 
   it("не залежить від порядку вхідних часів", () => {
-    expect(planSends(["19:00", "08:00", "12:00"], 2)).toEqual(
-      planSends(["08:00", "12:00", "19:00"], 2),
+    expect(planSends(["19:00", "08:00", "12:00"], 2, NIGHT)).toEqual(
+      planSends(["08:00", "12:00", "19:00"], 2, NIGHT),
     );
   });
 });
 
 describe("compromiseTime", () => {
   it("бере середину між першим і останнім", () => {
-    expect(compromiseTime(["08:00", "12:00"])).toBe("10:00");
+    expect(compromiseTime(["08:00", "12:00"], NIGHT)).toBe("10:00");
   });
 
   it("не кладе середину, обрану продуктом, у тихі години", () => {
     // Середина 07:00 і 08:30 це 07:45, тобто ще ніч; тоді беремо
     // найближчий власний час людини поза вікном.
-    expect(compromiseTime(["07:00", "08:30"])).toBe("08:30");
+    expect(compromiseTime(["07:00", "08:30"], NIGHT)).toBe("08:30");
   });
 
   it("лишає нічний час, якщо людина сама поставила все в ніч", () => {
-    expect(compromiseTime(["06:00", "07:00"])).toBe("06:00");
+    expect(compromiseTime(["06:00", "07:00"], NIGHT)).toBe("06:00");
+  });
+});
+
+describe("тихі години людини (спека notifications-quiet-hours-and-device-time)", () => {
+  it("вікно 13:00-15:00 з параметра: середина 14:00 зсувається на власний час поза вікном", () => {
+    const lunch = { startMin: 13 * 60, endMin: 15 * 60 };
+    // Середина 12:00 і 16:00 це 14:00, у вікні людини; найближчий
+    // власний час поза вікном рівновіддалений, перемагає перший.
+    expect(compromiseTime(["12:00", "16:00"], lunch)).toBe("12:00");
+    // Поза вікном середина лишається як є, навіть уночі.
+    expect(compromiseTime(["06:00", "07:00"], lunch)).toBe("06:30");
+  });
+
+  it("вимкнені тихі години (null): чиста середина, навіть уночі", () => {
+    expect(compromiseTime(["07:00", "08:30"], null)).toBe("07:45");
+    expect(planSends(["06:00", "07:00"], 1, null)).toEqual([
+      { sendAt: "06:30", times: ["06:00", "07:00"] },
+    ]);
   });
 });
 

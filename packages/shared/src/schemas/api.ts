@@ -1,5 +1,6 @@
 import { z } from "zod";
 
+import type { PaywallSurface } from "../billing/entitlements";
 import { DASHBOARD_MODULE_IDS } from "../lib/dashboard";
 import { SEARCH_QUERY_MAX_LEN } from "./bounds";
 
@@ -78,6 +79,19 @@ const HubPrefsBagSchema = z
  */
 export const PUSH_DAILY_CAP_DEFAULT = 2;
 export const PUSH_DAILY_CAP_MAX = 4;
+
+/**
+ * Тихі години за замовчуванням, хвилина доби в поясі пристрою (міграція 168,
+ * спека `notifications-quiet-hours-and-device-time.md`): [22:00, 08:00).
+ * Числа ті самі, що до міграції стояли константами за Києвом у
+ * `apps/server/src/lib/reminders/nudge.ts`, тож дефолт = сьогоднішня
+ * поведінка. Спільні для сервера (дефолт без рядка `user_preferences`) і
+ * клієнта (значення поля до відповіді сервера).
+ */
+export const QUIET_HOURS_DEFAULT_START_MIN = 22 * 60;
+export const QUIET_HOURS_DEFAULT_END_MIN = 8 * 60;
+/** Остання хвилина доби: межі тихих годин живуть у 0..1439. */
+export const MINUTE_OF_DAY_MAX = 24 * 60 - 1;
 
 export const UserPreferencesSchema = z.object({
   analytics: z.boolean(),
@@ -164,6 +178,24 @@ export const UserPreferencesSchema = z.object({
    * нема» і «серверних налаштувань нема» означають тут рівно те саме.
    */
   hubPrefs: HubPrefsBagSchema.nullable().default(null),
+  /**
+   * Поля сповіщень із міграції 168 (спека
+   * `notifications-quiet-hours-and-device-time.md`). Свідомо `.optional()`
+   * БЕЗ `.default(...)`, на відміну від сусідів: новий сервер віддає їх
+   * завжди, тож відсутність ключа у відповіді читання і є ознакою старого
+   * сервера. `.default` заповнив би пропуск, і веб не відрізнив би старий
+   * сервер від нового, а патч із цим полем старий сервер відхиляє `400`
+   * (`UserPreferencesPatchSchema` має `.strict()`).
+   *
+   * `timeZone` - IANA-імʼя поясу пристрою; `null` = ще невідомо, сервер
+   * читає як `Europe/Kyiv`.
+   */
+  timeZone: z.string().nullable().optional(),
+  quietHoursEnabled: z.boolean().optional(),
+  quietHoursStartMin: z.number().int().min(0).max(MINUTE_OF_DAY_MAX).optional(),
+  quietHoursEndMin: z.number().int().min(0).max(MINUTE_OF_DAY_MAX).optional(),
+  /** Push про нову операцію Monobank (вебхук); дефолт сервера `true`. */
+  pushMonoTransactions: z.boolean().optional(),
   updatedAt: z.string().datetime({ offset: true }).nullable(),
 });
 export type UserPreferences = z.infer<typeof UserPreferencesSchema>;
@@ -202,6 +234,21 @@ export const UserPreferencesPatchSchema = z
      * перемикає на одному екрані.
      */
     hubPrefs: HubPrefsBagSchema.nullable().optional(),
+    /**
+     * Міграція 168. Валідність IANA-імені й «межі тихих годин різні» сервер
+     * перевіряє після злиття патча з поточними значеннями (`400`), бо
+     * список поясів залежить від ICU, а межу можна змінити поодинці.
+     */
+    timeZone: z.string().min(1).max(64).optional(),
+    quietHoursEnabled: z.boolean().optional(),
+    quietHoursStartMin: z
+      .number()
+      .int()
+      .min(0)
+      .max(MINUTE_OF_DAY_MAX)
+      .optional(),
+    quietHoursEndMin: z.number().int().min(0).max(MINUTE_OF_DAY_MAX).optional(),
+    pushMonoTransactions: z.boolean().optional(),
   })
   .strict();
 export type UserPreferencesPatch = z.infer<typeof UserPreferencesPatchSchema>;
@@ -1980,6 +2027,75 @@ export type BillingMeter = z.infer<typeof BillingMeterSchema>;
 // Знімок доступу (`docs/work/specs/access-tiers.md`). Сервер обчислює стан і
 // лічильники сам, web нічого не виводить із `plan`: під час trial і grace два
 // місця обчислення розійшлися б.
+// ── Ручний Premium за запитом із пейволу (спека manual-premium-request.md) ──
+// До запуску оплати людина з пейволу просить Premium, founder видає його
+// кнопкою в Telegram на 30 днів.
+
+/** Пейвол-поверхня; дзеркалить тип `PaywallSurface` з `billing/entitlements`. */
+export const PaywallSurfaceSchema = z.enum([
+  "ai_chat_limit",
+  "csv_export",
+  "unlimited_ai_photo",
+  "week_plan",
+  "finyk_vision",
+]);
+// Компіляційна звірка з `PaywallSurface`: новий пейвол без рядка тут не збереться.
+type _PaywallSurfaceParity = [z.infer<typeof PaywallSurfaceSchema>] extends [
+  PaywallSurface,
+]
+  ? [PaywallSurface] extends [z.infer<typeof PaywallSurfaceSchema>]
+    ? true
+    : never
+  : never;
+const _paywallSurfaceParity: _PaywallSurfaceParity = true;
+void _paywallSurfaceParity;
+
+/**
+ * Стан запиту в знімку доступу. `available` = механізм відкритий (оплата не
+ * увімкнена і Telegram-бот налаштований повністю), `requestedAt` = коли цей
+ * акаунт уже попросив (один запит за весь час, П-26).
+ */
+export const BillingManualAccessSchema = z.object({
+  available: z.boolean(),
+  requestedAt: z.string().nullable(),
+});
+export type BillingManualAccess = z.infer<typeof BillingManualAccessSchema>;
+
+/**
+ * `POST /api/billing/manual-access`. `page`/`viewport` - контекст сторінки з
+ * тими самими межами, що в `FeedbackSubmitSchema`: рядок пишеться в ту саму
+ * таблицю `feedback_entries`.
+ */
+export const ManualAccessRequestSchema = z.object({
+  surface: PaywallSurfaceSchema,
+  page: z.string().trim().max(2048).optional(),
+  viewport: z
+    .string()
+    .trim()
+    .regex(/^\d{1,5}x\d{1,5}$/, "viewport має бути у форматі WxH")
+    .optional(),
+});
+export type ManualAccessRequest = z.infer<typeof ManualAccessRequestSchema>;
+
+export const ManualAccessResponseSchema = z.object({
+  ok: z.literal(true),
+  requestedAt: z.string(),
+});
+export type ManualAccessResponse = z.infer<typeof ManualAccessResponseSchema>;
+
+// Значення `code` у 409 `POST /api/billing/manual-access`:
+//   - `MANUAL_ACCESS_ALREADY_REQUESTED` - цей акаунт уже просив;
+//   - `MANUAL_ACCESS_NOT_NEEDED` - стан доступу не `free`;
+//   - `MANUAL_ACCESS_CLOSED` - оплату увімкнено або Telegram не налаштовано.
+export const ManualAccessConflictCodeSchema = z.enum([
+  "MANUAL_ACCESS_ALREADY_REQUESTED",
+  "MANUAL_ACCESS_NOT_NEEDED",
+  "MANUAL_ACCESS_CLOSED",
+]);
+export type ManualAccessConflictCode = z.infer<
+  typeof ManualAccessConflictCodeSchema
+>;
+
 export const BillingAccessSchema = z.object({
   state: z.enum(["free", "trial", "pro", "grace"]),
   trialEndsAt: z.string().nullable(),
@@ -1990,6 +2106,11 @@ export const BillingAccessSchema = z.object({
     aiPhoto: BillingMeterSchema,
     finykVision: BillingMeterSchema,
   }),
+  /**
+   * `.optional()`: веб (Vercel) їде раніше за бекенд, і старий сервер поля
+   * не віддає. Немає поля = кнопки «Попросити доступ» немає.
+   */
+  manualAccess: BillingManualAccessSchema.optional(),
 });
 export type BillingAccess = z.infer<typeof BillingAccessSchema>;
 
