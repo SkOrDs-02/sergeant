@@ -35,6 +35,7 @@ import type { UseNowItemsResult } from "./useNowItems";
 import { usePublishHubDayCount } from "./hubDayCounts";
 import type { NowItem } from "./nowItems";
 import { ChecklistNowRows, type ChecklistNowProps } from "./ChecklistNowRows";
+import { countNowItems } from "./hubNowRows";
 
 /** Скільки рядків видно без «ще N». */
 export const NOW_PILE_VISIBLE = 3;
@@ -125,21 +126,33 @@ interface NowRowProps {
 
 function NowRow({ item, onRun, onCheck }: NowRowProps) {
   const label = actionLabel(item);
+  const box = item.checkbox;
+  // Чекбокс звички ВІДМІЧАЄ її (П-16 (А) 2026-11-18), решти рядків — ховає
+  // підказку до кінця доби: доступні імена різні. Рядок «ще N звичок»
+  // чекбокса не має, на його місці порожня колонка тієї самої ширини.
+  const checkLabel =
+    box?.kind === "habit"
+      ? `${coreMessages.hub.nowPile.checkHabit}: ${item.title}`
+      : `${coreMessages.hub.nowPile.check}: ${item.title}`;
   return (
     <li data-testid="now-row" className="flex min-h-14 items-center gap-3 py-2">
-      <button
-        type="button"
-        role="checkbox"
-        aria-checked={false}
-        aria-label={`${coreMessages.hub.nowPile.check}: ${item.title}`}
-        onClick={() => onCheck(item)}
-        className="-m-[11px] flex h-11 w-11 shrink-0 items-center justify-center rounded-lg focus-ring"
-      >
-        <span
-          aria-hidden
-          className="h-[22px] w-[22px] rounded-[5px] border-2 border-control"
-        />
-      </button>
+      {box?.kind === "none" ? (
+        <span aria-hidden className="-m-[11px] h-11 w-11 shrink-0" />
+      ) : (
+        <button
+          type="button"
+          role="checkbox"
+          aria-checked={false}
+          aria-label={checkLabel}
+          onClick={() => onCheck(item)}
+          className="-m-[11px] flex h-11 w-11 shrink-0 items-center justify-center rounded-lg focus-ring"
+        >
+          <span
+            aria-hidden
+            className="h-[22px] w-[22px] rounded-[5px] border-2 border-control"
+          />
+        </button>
+      )}
       <span className="min-w-0 flex-1 pl-2">
         <span
           className={
@@ -177,14 +190,24 @@ export interface NowPileProps {
   onOpenTarget: (module: string, hash?: string) => void;
   /** Незроблені кроки онбордингу - рядки над рештою купи. */
   checklist?: ChecklistNowProps | undefined;
+  /**
+   * Відмітка звички з рядка (П-16 (А)): `checkInHabitFromHub` з тостом
+   * «Скасувати» і тією самою винагородою моменту, що в модулі (П-17 (А)).
+   */
+  onCheckHabit?: ((habitId: string) => void) | undefined;
 }
 
-export function NowPile({ now, onOpenTarget, checklist }: NowPileProps) {
+export function NowPile({
+  now,
+  onOpenTarget,
+  checklist,
+  onCheckHabit,
+}: NowPileProps) {
   const { items, check } = now;
   const runAction = useRunAction(onOpenTarget);
   const { announce } = useAnnounce();
   const [tailOpen, setTailOpen] = useState(false);
-  const total = items.length + (checklist?.steps.length ?? 0);
+  const total = countNowItems(items) + (checklist?.steps.length ?? 0);
   usePublishHubDayCount("now", total);
 
   const visible = useMemo(
@@ -221,10 +244,16 @@ export function NowPile({ now, onOpenTarget, checklist }: NowPileProps) {
       document
         .getElementById("now-pile-heading")
         ?.focus({ preventScroll: true });
+      if (item.checkbox?.kind === "habit") {
+        // Звичка не йде в «Закрито»: вона відмічена, рядок зникає сам, а
+        // результат каже тост із «Скасувати».
+        onCheckHabit?.(item.checkbox.habitId);
+        return;
+      }
       check(item);
       announce(coreMessages.hub.nowPile.checked);
     },
-    [check, announce],
+    [check, announce, onCheckHabit],
   );
 
   const hasChecklist = Boolean(checklist && checklist.steps.length > 0);

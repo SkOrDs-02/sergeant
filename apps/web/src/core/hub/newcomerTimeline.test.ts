@@ -1,6 +1,9 @@
 import { describe, expect, it } from "vitest";
 import { CORRELATION_MIN_N } from "@sergeant/shared";
-import { buildNewcomerTimeline } from "./newcomerTimeline";
+import {
+  buildNewcomerTimeline,
+  isNewcomerTimelineVisible,
+} from "./newcomerTimeline";
 
 const ALL = ["finyk", "fizruk", "routine", "nutrition"] as const;
 
@@ -57,5 +60,59 @@ describe("buildNewcomerTimeline", () => {
       sharedDays: -3,
     });
     expect(under[0]?.progress?.value).toBe(0);
+  });
+});
+
+describe("buildNewcomerTimeline: підключений банк і справжній прогрес", () => {
+  it("банк уже підключено: рядка «одразу після підключення» немає", () => {
+    const rows = buildNewcomerTimeline({
+      activeModules: ALL,
+      signedIn: true,
+      bankConnected: true,
+      sharedDays: 4,
+    });
+    expect(rows.map((r) => r.id)).toEqual(["weekReport", "links"]);
+    expect(rows.find((r) => r.id === "links")?.progress).toEqual({
+      value: 4,
+      max: CORRELATION_MIN_N,
+    });
+  });
+});
+
+describe("isNewcomerTimelineVisible (В-1 → (Б))", () => {
+  it("до першого запису видно завжди, як смугу, яку картка замінила", () => {
+    expect(
+      isNewcomerTimelineVisible({
+        hasRealEntry: false,
+        inFirstWeek: false,
+        linkFound: null,
+      }),
+    ).toBe(true);
+  });
+
+  it("після першого запису: перший тиждень і жодного звʼязку", () => {
+    expect(
+      isNewcomerTimelineVisible({
+        hasRealEntry: true,
+        inFirstWeek: true,
+        linkFound: false,
+      }),
+    ).toBe(true);
+  });
+
+  it("знайдено звʼязок, минув тиждень або ще рахується: не видно", () => {
+    for (const [inFirstWeek, linkFound] of [
+      [true, true],
+      [false, false],
+      [true, null],
+    ] as const) {
+      expect(
+        isNewcomerTimelineVisible({
+          hasRealEntry: true,
+          inFirstWeek,
+          linkFound,
+        }),
+      ).toBe(false);
+    }
   });
 });

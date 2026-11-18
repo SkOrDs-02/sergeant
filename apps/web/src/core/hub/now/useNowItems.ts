@@ -40,6 +40,10 @@ import {
 import { generateRecommendations } from "../../lib/recommendationEngine";
 import { HUB_RECS_DISMISSED_KEY } from "../../insights/dashboardFocus";
 import { useHubPref } from "../../settings/hubPrefs";
+import { useHabitsForNow } from "@routine/hooks/useHabitsForNow";
+import { useFinykDueCharges } from "@finyk/hooks/useFinykDueCharges";
+import { isFinykBalanceHidden } from "@finyk/lib/balanceVisibility";
+import { dueChargesNowItem, habitNowItems, withModuleRows } from "./hubNowRows";
 import {
   mergeNowItems,
   withoutWeekReportTarget,
@@ -90,7 +94,15 @@ export function useNowItems(): UseNowItemsResult {
   // «Відкрити» з тижневої картки веде в модуль, а з крос-модульної (понеділковий
   // «Підсумок минулого тижня») — у вкладку «Звіти» (`withoutWeekReportTarget`).
   const [showInsights] = useHubPref<boolean>("showInsights", true);
-  const merged = mergeNowItems(recs, insights);
+  // Рядки з даних модулів (звички дня, «спишеться»): `hubNowRows.ts`.
+  const habits = useHabitsForNow();
+  const dueCharges = useFinykDueCharges();
+  const ranked = mergeNowItems(recs, insights);
+  const merged = withModuleRows(
+    ranked,
+    habitNowItems(habits),
+    dueChargesNowItem(dueCharges, isFinykBalanceHidden()),
+  );
   const all = showInsights ? merged : merged.map(withoutWeekReportTarget);
   // Відкинуто за БУДЬ-ЯКИМ із двох id, але лише СЬОГОДНІ: вчорашнє і запис без
   // мітки часу не ховають нічого.

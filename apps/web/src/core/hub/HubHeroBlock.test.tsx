@@ -161,7 +161,27 @@ describe("HubHeroBlock", () => {
     expect(screen.queryByText(/Модулів увімкнено/)).not.toBeInTheDocument();
   });
 
-  it("shows bank facts only in the first week to a signed-in Finyk user", () => {
+  it("enables bank facts for a signed-in Finyk user regardless of account age (window counts from the Mono connection, В-2)", () => {
+    flagMock.mockReturnValue(false);
+    const late = renderHero({
+      hasRealEntry: true,
+      activeModules: ["finyk"],
+      signedIn: true,
+      inFirstWeek: false,
+    });
+    expect(screen.getByText("bank facts")).toBeInTheDocument();
+    late.unmount();
+
+    renderHero({
+      hasRealEntry: true,
+      activeModules: ["finyk"],
+      signedIn: false,
+      inFirstWeek: true,
+    });
+    expect(screen.queryByText("bank facts")).not.toBeInTheDocument();
+  });
+
+  it("keeps the newcomer card after the first entry during the first week (В-1)", () => {
     flagMock.mockReturnValue(false);
     const first = renderHero({
       hasRealEntry: true,
@@ -169,7 +189,7 @@ describe("HubHeroBlock", () => {
       signedIn: true,
       inFirstWeek: true,
     });
-    expect(screen.getByText("bank facts")).toBeInTheDocument();
+    expect(screen.getByTestId("newcomer-timeline")).toBeInTheDocument();
     first.unmount();
 
     renderHero({
@@ -178,7 +198,7 @@ describe("HubHeroBlock", () => {
       signedIn: true,
       inFirstWeek: false,
     });
-    expect(screen.queryByText("bank facts")).not.toBeInTheDocument();
+    expect(screen.queryByTestId("newcomer-timeline")).not.toBeInTheDocument();
   });
 
   it("forwards checklist actions and renders the cross-module preview", () => {

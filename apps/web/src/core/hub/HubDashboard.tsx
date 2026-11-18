@@ -20,6 +20,8 @@ import { useNowItems } from "./now/useNowItems";
 import { NowPile } from "./now/NowPile";
 import { HubSpendHero } from "./HubSpendHero";
 import { ClosedTodayPile } from "./now/ClosedTodayPile";
+import { useToast } from "@shared/hooks/useToast";
+import { checkInHabitFromHub } from "@routine/lib/habitCheckIn";
 
 export const DASHBOARD_MODULE_LABELS = SHARED_DASHBOARD_MODULE_LABELS;
 
@@ -58,6 +60,7 @@ export function HubDashboard({ onOpenModule, user }: HubDashboardProps) {
   });
   const [showInsights] = useHubPref<boolean>("showInsights", true);
   const now = useNowItems();
+  const toast = useToast();
   const checklistModule =
     s.showChecklist && s.primaryModule ? s.primaryModule : null;
   const checklistSteps = useChecklistNow(checklistModule);
@@ -101,6 +104,9 @@ export function HubDashboard({ onOpenModule, user }: HubDashboardProps) {
               now={now}
               onOpenTarget={s.openInsightTarget}
               checklist={checklistOpen}
+              onCheckHabit={(habitId) => {
+                checkInHabitFromHub(habitId, toast);
+              }}
             />
           ) : null
         }

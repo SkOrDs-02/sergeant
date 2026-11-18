@@ -12,4 +12,13 @@ export const nowPileEn: MessageGroupShape<
   openWeekReport: "Open the week report",
   check: "Close for today",
   checked: "Moved to Closed",
+  checkHabit: "Mark habit done",
+  habitsMore: "{count} more {unit} for today",
+  dueToday: "“{title}” is charged today",
+  dueTomorrow: "“{title}” is charged tomorrow",
+  dueAmountUnknown: "Amount not known yet",
+  dueMore: "{count} more {unit}",
+  paymentOne: "payment",
+  paymentFew: "payments",
+  paymentMany: "payments",
 };

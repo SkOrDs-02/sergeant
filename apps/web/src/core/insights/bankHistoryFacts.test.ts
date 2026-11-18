@@ -4,6 +4,7 @@ import {
   buildBankHistoryFacts,
   hasAnyBankHistoryFact,
   hasWeekdayFactHistory,
+  isWithinBankFactsWindow,
   shiftDayKeyMonths,
 } from "./bankHistoryFacts";
 
@@ -108,5 +109,49 @@ describe("buildBankHistoryFacts", () => {
     );
     expect(facts.recurring?.count).toBe(2);
     expect(facts.recurring?.biggestAmount).toBe(12_000);
+  });
+});
+
+describe("isWithinBankFactsWindow (В-2 → (Б))", () => {
+  const DAY = 86_400_000;
+  it("вікно рахується від першого підключення Monobank, сім днів включно", () => {
+    expect(isWithinBankFactsWindow(NOW - 2 * DAY, NOW)).toBe(true);
+    expect(isWithinBankFactsWindow(NOW - 7 * DAY - 1000, NOW)).toBe(true);
+    expect(isWithinBankFactsWindow(NOW - 8 * DAY, NOW)).toBe(false);
+  });
+
+  it("невідоме підключення: картки немає", () => {
+    expect(isWithinBankFactsWindow(null, NOW)).toBe(false);
+  });
+});
+
+describe("buildBankHistoryFacts: поріг від початку дзеркала банку", () => {
+  const history = [
+    tx("old", -50_000, "2026-07-01"),
+    tx("a", -10_000, "2026-11-16"),
+  ];
+
+  it("Фінік каже, що дзеркало суцільне лише з листопада: разова операція, а не день тижня", () => {
+    const facts = buildBankHistoryFacts(history, {
+      nowMs: NOW,
+      historyStartKey: "2026-11-01",
+    });
+    expect(facts.third?.kind).toBe("largest");
+  });
+
+  it("початок дзеркала три місяці тому: день тижня", () => {
+    const facts = buildBankHistoryFacts(history, {
+      nowMs: NOW,
+      historyStartKey: "2026-08-01",
+    });
+    expect(facts.third?.kind).toBe("weekday");
+  });
+
+  it("початок невідомий (null): разова операція", () => {
+    const facts = buildBankHistoryFacts(history, {
+      nowMs: NOW,
+      historyStartKey: null,
+    });
+    expect(facts.third?.kind).toBe("largest");
   });
 });

@@ -13,9 +13,13 @@
  * - третій факт — «найдорожчий день тижня», коли історії три місяці
  *   (число назвав founder, П-21), до того «найбільша разова операція».
  *
- * AI-NOTE: «три місяці історії» рахуються за найранішою операцією у вході,
- * бо Фінік ще не віддає селектора глибини історії (спека, В-3). Коли він
- * зʼявиться, підстав його в `historyStartKey`.
+ * «Три місяці історії» рахуються від початку покриття дзеркала банку, яке
+ * віддає Фінік (`getFinykBankHistoryStart`, `@finyk/lib/bankHistory`):
+ * хаб передає його в `historyStartKey`. Без опції (тести, старі виклики)
+ * лишається запасна оцінка за найранішою операцією у вході.
+ *
+ * Вікно показу картки — від першого підключення Monobank, а не від
+ * реєстрації (В-2 → (Б)): `isWithinBankFactsWindow`.
  */
 import { getTopCategories } from "@sergeant/finyk-domain/domain/selectors";
 import type {
@@ -25,6 +29,7 @@ import type {
   TxSplitsMap,
 } from "@sergeant/finyk-domain/domain/types";
 import { detectRecurring } from "@sergeant/finyk-domain/lib/recurringDetect";
+import { CHECKLIST_MAX_AGE_DAYS, getAccountAgeDays } from "@sergeant/shared";
 import { getKyivDayKey, getKyivMondayIndex } from "@shared/lib/time/kyivTime";
 
 /** П-21 (А), відповідь founder-а 2026-11-18. */
@@ -75,6 +80,32 @@ export interface BankHistoryFactsOptions {
   customCategories?: Category[] | undefined;
   /** «Зараз», мс. За замовчуванням `Date.now()`. */
   nowMs?: number | undefined;
+  /**
+   * День-ключ, з якого дзеркало банку суцільне (`getFinykBankHistoryStart`).
+   * `null` — Фінік не знає початку історії, тоді «день тижня» не рахується.
+   * Без поля — запасна оцінка за найранішою операцією.
+   */
+  historyStartKey?: string | null | undefined;
+}
+
+/**
+ * Чи триває «перший тиждень» від першого підключення Monobank (В-2 → (Б),
+ * рішення founder-а 2026-11-18): та сама довжина вікна і та сама
+ * арифметика цілих днів, що й перший тиждень акаунта
+ * (`CHECKLIST_MAX_AGE_DAYS`, `getAccountAgeDays`). `null` — підключення не
+ * відоме (давнє, з іншого пристрою): картки немає, щоб «одразу після
+ * підключення» не прийшло через рік.
+ */
+export function isWithinBankFactsWindow(
+  connectedAtMs: number | null,
+  nowMs: number = Date.now(),
+): boolean {
+  if (connectedAtMs === null || !Number.isFinite(connectedAtMs)) return false;
+  const ageDays = getAccountAgeDays(
+    new Date(connectedAtMs).toISOString(),
+    nowMs,
+  );
+  return ageDays !== null && ageDays <= CHECKLIST_MAX_AGE_DAYS;
 }
 
 const DAY_MS = 86_400_000;
@@ -117,6 +148,9 @@ function weekdayFact(
 ): BankThirdFact | null {
   const sums = new Array<number>(7).fill(0);
   for (const tx of expenses) {
+    // Ручний запис, старший за початок дзеркала, лежить поза вікном
+    // знаменника: без цього фільтра він роздув би середнє свого дня.
+    if (getKyivDayKey(tx.time * 1000) < startKey) continue;
     const idx = getKyivMondayIndex(tx.time * 1000);
     sums[idx] = (sums[idx] ?? 0) + Math.abs(tx.amount);
   }
@@ -153,6 +187,18 @@ function largestFact(expenses: readonly Transaction[]): BankThirdFact | null {
     description: String(top.description ?? "").trim(),
     time: top.time,
   };
+}
+
+/**
+ * Запасна оцінка глибини: найраніша операція будь-якого знака (місяць лише
+ * з надходженнями теж є історією банку).
+ */
+function earliestDayKey(transactions: readonly Transaction[]): string {
+  const earliest = transactions.reduce(
+    (min, tx) => (Number.isFinite(tx.time) && tx.time < min ? tx.time : min),
+    Number.POSITIVE_INFINITY,
+  );
+  return getKyivDayKey(earliest * 1000);
 }
 
 export function buildBankHistoryFacts(
@@ -196,16 +242,15 @@ export function buildBankHistoryFacts(
   let third: BankThirdFact | null = null;
   if (expenses.length > 0) {
     const todayKey = getKyivDayKey(nowMs);
-    // Глибина історії — від найранішої операції будь-якого знака: місяць
-    // лише з надходженнями теж є історією банку.
-    const earliest = transactions.reduce(
-      (min, tx) => (Number.isFinite(tx.time) && tx.time < min ? tx.time : min),
-      Number.POSITIVE_INFINITY,
-    );
-    const historyStartKey = getKyivDayKey(earliest * 1000);
-    third = hasWeekdayFactHistory(historyStartKey, todayKey)
-      ? weekdayFact(expenses, historyStartKey, todayKey)
-      : largestFact(expenses);
+    const historyStartKey =
+      options.historyStartKey !== undefined
+        ? options.historyStartKey
+        : earliestDayKey(transactions);
+    third =
+      historyStartKey !== null &&
+      hasWeekdayFactHistory(historyStartKey, todayKey)
+        ? weekdayFact(expenses, historyStartKey, todayKey)
+        : largestFact(expenses);
   }
 
   return { topCategory, recurring, third };

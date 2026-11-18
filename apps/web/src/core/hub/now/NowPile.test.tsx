@@ -42,7 +42,11 @@ function item(over: Partial<NowItem> & { id: string }): NowItem {
   };
 }
 
-function renderPile(items: NowItem[], onOpenTarget = vi.fn()) {
+function renderPile(
+  items: NowItem[],
+  onOpenTarget = vi.fn(),
+  onCheckHabit?: (habitId: string) => void,
+) {
   const now: UseNowItemsResult = {
     items,
     check: mocks.check,
@@ -51,7 +55,11 @@ function renderPile(items: NowItem[], onOpenTarget = vi.fn()) {
   };
   render(
     <MemoryRouter>
-      <NowPile now={now} onOpenTarget={onOpenTarget} />
+      <NowPile
+        now={now}
+        onOpenTarget={onOpenTarget}
+        onCheckHabit={onCheckHabit}
+      />
     </MemoryRouter>,
   );
   return onOpenTarget;
@@ -267,5 +275,64 @@ describe("ChecklistNowRows", () => {
     expect(within(row).getByText("Переглянути аналітику")).toBeTruthy();
     expect(row.querySelector('[class*="border-2"]')).toBeNull();
     expect(within(row).queryByRole("checkbox")).toBeNull();
+  });
+});
+
+describe("рядки звичок (Р-2 (а), П-16 (А))", () => {
+  beforeEach(() => {
+    for (const m of Object.values(mocks)) m.mockClear();
+  });
+
+  it("чекбокс звички відмічає її, а не закриває на сьогодні; доступні імена різні", () => {
+    const onCheckHabit = vi.fn();
+    renderPile(
+      [
+        item({
+          id: "routine_habit_now_h1",
+          title: "Вода",
+          module: "routine",
+          action: { kind: "open_module", module: "routine" },
+          checkbox: { kind: "habit", habitId: "h1" },
+        }),
+        item({ id: "a" }),
+      ],
+      vi.fn(),
+      onCheckHabit,
+    );
+    fireEvent.click(
+      screen.getByRole("checkbox", { name: "Відмітити звичку: Вода" }),
+    );
+    expect(onCheckHabit).toHaveBeenCalledWith("h1");
+    expect(mocks.check).not.toHaveBeenCalled();
+    expect(
+      screen.getByRole("checkbox", { name: "Закрити на сьогодні: title a" }),
+    ).toBeInTheDocument();
+  });
+
+  it("рядок «ще N звичок» без чекбокса, веде в Рутину; лічильник рахує N", () => {
+    const onOpenTarget = vi.fn();
+    renderPile(
+      [
+        item({
+          id: "routine_habits_now_more",
+          title: "Ще 3 звички на сьогодні",
+          module: "routine",
+          action: { kind: "open_module", module: "routine" },
+          checkbox: { kind: "none" },
+          represents: 3,
+        }),
+      ],
+      onOpenTarget,
+    );
+    const row = screen.getByTestId("now-row");
+    expect(within(row).queryByRole("checkbox")).toBeNull();
+    fireEvent.click(
+      within(row).getByRole("button", {
+        name: "Відкрити Рутину: Ще 3 звички на сьогодні",
+      }),
+    );
+    expect(onOpenTarget).toHaveBeenCalledWith("routine", undefined);
+    // Лічильник «зараз N» рахує справи, а не рядки.
+    expect(screen.getByText("3", { selector: "span" })).toBeInTheDocument();
   });
 });

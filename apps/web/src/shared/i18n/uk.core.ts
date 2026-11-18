@@ -228,6 +228,18 @@ export const coreMessages = {
       openWeekReport: "Відкрити звіт тижня",
       check: "Закрити на сьогодні",
       checked: "Перенесено в «Закрито»",
+      // Рядки звичок (Р-2 (а), П-15/П-16 (А)): чекбокс ВІДМІЧАЄ звичку, тож
+      // доступне імʼя відрізняється від «Закрити на сьогодні».
+      checkHabit: "Відмітити звичку",
+      habitsMore: "Ще {count} {unit} на сьогодні",
+      // Рядок «спишеться» (Ф-4 (а), П-4 (Б)): сьогодні й завтра.
+      dueToday: "Сьогодні спишеться «{title}»",
+      dueTomorrow: "Завтра спишеться «{title}»",
+      dueAmountUnknown: "Сума поки невідома",
+      dueMore: "ще {count} {unit}",
+      paymentOne: "платіж",
+      paymentFew: "платежі",
+      paymentMany: "платежів",
     },
     closedPile: {
       heading: "Закрито",

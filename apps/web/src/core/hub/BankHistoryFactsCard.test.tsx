@@ -47,8 +47,26 @@ describe("BankHistoryFactsCard", () => {
     ];
     state.mirror = txs;
     state.stat = txs;
+    // Monobank підключено щойно: вікно першого тижня від підключення (В-2).
+    localStorage.setItem(
+      STORAGE_KEYS.FINYK_MONO_FIRST_CONNECTED_AT,
+      JSON.stringify(Date.now()),
+    );
   });
   afterEach(() => cleanup());
+
+  it("підключення понад тиждень тому або невідоме: картки немає", () => {
+    localStorage.setItem(
+      STORAGE_KEYS.FINYK_MONO_FIRST_CONNECTED_AT,
+      JSON.stringify(Date.now() - 9 * 86_400_000),
+    );
+    const { unmount } = render(<BankHistoryFactsCard enabled />);
+    expect(screen.queryByTestId("bank-history-facts")).toBeNull();
+    unmount();
+    localStorage.removeItem(STORAGE_KEYS.FINYK_MONO_FIRST_CONNECTED_AT);
+    render(<BankHistoryFactsCard enabled />);
+    expect(screen.queryByTestId("bank-history-facts")).toBeNull();
+  });
 
   it("з історією банку показує факти; «Зрозуміло» ховає назавжди", () => {
     const { unmount } = render(<BankHistoryFactsCard enabled />);

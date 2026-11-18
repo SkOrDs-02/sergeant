@@ -3,7 +3,8 @@
  * Status: Active
  *
  * «Що видно з історії банку» — до трьох фактів, порахованих кодом із
- * історії Monobank, у перший тиждень (С-4 (б), спека
+ * історії Monobank, у перший тиждень після першого підключення банку
+ * (С-4 (б), В-2 → (Б) рішення founder-а 2026-11-18; спека
  * `docs/work/specs/hub-newcomer-card-and-insights.md`). Одноразова: «Зрозуміло»
  * або «✕» ховають її назавжди для профілю браузера, як `CrossModulePreview`.
  * Слоту в бюджеті банерів не бере: це дані, а не підказка.
@@ -25,7 +26,12 @@ import {
   useFinykStatTransactions,
 } from "../../modules/finyk/hooks/useFinykStatTransactions";
 import {
+  getFinykBankHistoryStart,
+  getMonoFirstConnectedAt,
+} from "@finyk/lib/bankHistory";
+import {
   buildBankHistoryFacts,
+  isWithinBankFactsWindow,
   type BankHistoryFacts,
 } from "../insights/bankHistoryFacts";
 
@@ -109,8 +115,9 @@ function markBankHistoryFactsSeen(): void {
 }
 
 /**
- * Рядки фактів, коли картку можна показати. `enabled` складає хаб:
- * людина увійшла, Фінік активний, триває перший тиждень.
+ * Рядки фактів, коли картку можна показати. `enabled` складає хаб (людина
+ * увійшла, Фінік активний); вікно першого тижня від підключення Monobank
+ * перевіряє хук сам.
  */
 export function useBankHistoryFactLines(enabled: boolean): string[] {
   const mirror = useFinykMirrorTransactions();
@@ -121,10 +128,12 @@ export function useBankHistoryFactLines(enabled: boolean): string[] {
     // Без дзеркала банку Monobank не підключено: «історії банку» немає,
     // навіть якщо є ручні записи.
     if (!enabled || mirror.length === 0) return [];
+    if (!isWithinBankFactsWindow(getMonoFirstConnectedAt())) return [];
     const facts = buildBankHistoryFacts(statTransactions, {
       txCategories,
       txSplits,
       customCategories,
+      historyStartKey: getFinykBankHistoryStart(),
     });
     return formatBankHistoryFacts(facts, hidden);
   }, [
