@@ -50,14 +50,20 @@ export const MEMORY_TOOLS: AnthropicTool[] = [
   },
   {
     name: "forget",
+    // AI-CONTEXT: виконавець (`crossActions/memoryHandlers.ts`) видаляє лише
+    // за точним id. До 2026-11-18 опис обіцяв «або текст факту для пошуку»,
+    // і модель клала текст у `fact_id` (стенд: 6 із 6 прогонів). У блоці ДАНІ
+    // факти профілю стоять без id, тож id береться лише з `my_profile`.
+    // Видалення за текстом без підтвердження - продуктове рішення, не цей опис.
     description:
-      "Видалити раніше запамʼятований факт. 'Забудь про алергію на глютен'",
+      "Видалити раніше запамʼятований факт за його id. 'Забудь про алергію на глютен': спершу my_profile, знайди факт, потім forget з його id.",
     input_schema: {
       type: "object",
       properties: {
         fact_id: {
           type: "string",
-          description: "ID факту (з my_profile) або текст факту для пошуку",
+          description:
+            "id факту з результату my_profile (після «id:»). Текст факту не є id.",
         },
       },
       required: ["fact_id"],

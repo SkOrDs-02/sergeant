@@ -56,6 +56,7 @@
  *   OPENROUTER_API_KEY=... pnpm eval:tools --reasoning=low
  *     (глибина міркувань у тій самій формі, що прод із заданою
  *     `CHAT_FIRST_TURN_REASONING_EFFORT`; касету не пише)
+ *   OPENROUTER_API_KEY=... pnpm eval:tools --only=архівація,факту --repeat=5
  */
 
 import { parseArgs } from "node:util";
@@ -94,6 +95,11 @@ import {
   summarize,
   type ReplayedCase,
 } from "../src/modules/chat/toolEval/replay.js";
+import {
+  filterCasesByName,
+  mark,
+  textOf,
+} from "../src/modules/chat/toolEval/cliHelpers.js";
 import {
   INJECTION_CASES,
   scoreInjection,
@@ -307,21 +313,6 @@ async function runChain(
   };
 }
 
-function mark(r: ReplayedCase): string {
-  if (r.error) return "ERR";
-  if (r.hallucinated.length) return "FAKE";
-  return r.correct ? "  ok" : "MISS";
-}
-
-function textOf(turn: RecordedTurn | undefined): string {
-  return (turn?.blocks ?? [])
-    .filter((b) => b.type === "text" && b.text)
-    .map((b) => b.text as string)
-    .join(" ")
-    .replace(/\s+/g, " ")
-    .slice(0, 220);
-}
-
 /**
  * Адверсарний прогін: інʼєкція приїжджає в результаті інструмента, тобто тим
  * самим шляхом, яким у проді приходить опис транзакції з Монобанку чи назва
@@ -412,6 +403,7 @@ async function main(): Promise<void> {
       repeat: { type: "string" },
       timeout: { type: "string" },
       reasoning: { type: "string" },
+      only: { type: "string" },
     },
   });
 
@@ -466,7 +458,15 @@ async function main(): Promise<void> {
     process.exitCode = 1;
     return;
   }
-  const cases: ToolCase[] = followUp ? FOLLOW_UP_CASES : ALL_CASES;
+  if (values.only !== undefined && values.record) {
+    console.error("--only несумісний з --record: касета вимагає всі кейси.");
+    process.exitCode = 1;
+    return;
+  }
+  const cases: ToolCase[] = filterCasesByName(
+    followUp ? FOLLOW_UP_CASES : ALL_CASES,
+    values.only,
+  );
 
   // Стеля однієї спроби. Дефолт 30 000 — стеля ЛОГІЧНОГО виклику в проді
   // (`CHAT_TOTAL_TIMEOUT_MS`, chat.ts), а не бюджет спроби: стенд має

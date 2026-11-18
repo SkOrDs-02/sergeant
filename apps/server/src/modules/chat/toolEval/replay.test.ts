@@ -9,7 +9,11 @@
 
 import { describe, expect, it } from "vitest";
 
-import { FOLLOW_UP_CASES, type ToolCase } from "../toolSelectionCases/index.js";
+import {
+  ALL_CASES,
+  FOLLOW_UP_CASES,
+  type ToolCase,
+} from "../toolSelectionCases/index.js";
 import type { RecordedCase } from "./cassette.js";
 import { replayCase } from "./replay.js";
 
@@ -178,5 +182,55 @@ describe("кейси «знайди, потім зміни ту» (С-2)", () =>
     expect(run("w_other").hallucinated).toEqual([
       "finish_workout.workout_id=w_other",
     ]);
+  });
+});
+
+describe("видалення факту памʼяті: id лише з my_profile (2026-11-18)", () => {
+  const FORGET_CASE = ALL_CASES.find(
+    (c) => c.name === "видалення конкретного факту",
+  ) as ToolCase;
+  const run = (turns: RecordedCase["turns"]) =>
+    replayCase(FORGET_CASE, { name: FORGET_CASE.name, turns });
+
+  it("кейс веде через my_profile: id фактів у блоці ДАНІ немає", () => {
+    expect(FORGET_CASE.accept).toContain("my_profile");
+    expect(FORGET_CASE.turns?.[0]?.accept).toEqual(["forget"]);
+  });
+
+  it("текст факту в fact_id лишається вигаданим id (повтор прогонів 2026-11-18)", () => {
+    const r = run([
+      {
+        blocks: [toolUse("forget", { fact_id: "алергія на арахіс" })],
+        fedResult: null,
+      },
+    ]);
+    expect(r.hallucinated).toEqual(["forget.fact_id=алергія на арахіс"]);
+  });
+
+  it("my_profile, потім forget з id із результату: правильно і без вигадок", () => {
+    const fed = FORGET_CASE.turns?.[0]?.result ?? null;
+    const r = run([
+      { blocks: [toolUse("my_profile", {})], fedResult: null },
+      {
+        blocks: [toolUse("forget", { fact_id: "mem_7f3a" })],
+        fedResult: fed,
+      },
+    ]);
+    expect(r.correct).toBe(true);
+    expect(r.hallucinated).toEqual([]);
+    expect(r.argViolations).toEqual([]);
+  });
+
+  it("id чужого факту з того самого профілю ловить перевірка аргументів", () => {
+    const fed = FORGET_CASE.turns?.[0]?.result ?? null;
+    const r = run([
+      { blocks: [toolUse("my_profile", {})], fedResult: null },
+      {
+        blocks: [toolUse("forget", { fact_id: "mem_2c91" })],
+        fedResult: fed,
+      },
+    ]);
+    expect(r.hallucinated).toEqual([]);
+    expect(r.argViolations.length).toBeGreaterThan(0);
   });
 });

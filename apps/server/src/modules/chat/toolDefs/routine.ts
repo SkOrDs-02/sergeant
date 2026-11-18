@@ -1,5 +1,16 @@
 import type { AnthropicTool } from "./types.js";
 
+/**
+ * Опис `habit_id` для інструментів, що беруть звичку не з [Рутина сьогодні].
+ *
+ * AI-CONTEXT: голе «ID звички» стенд 2026-11-18 на `--reasoning=low` ловив
+ * на id, складеному з назви (`hab_running`, `run`, `біг`): звички «Біг» у
+ * блоці ДАНІ немає, і модель пропускала `query_habits`. Підказка стоїть у
+ * самому полі, бо саме там модель вирішує, що підставити.
+ */
+const HABIT_ID_DESCRIPTION =
+  "ID звички дослівно з ДАНІ чи з результату query_habits. Назва звички не є id; звички немає в ДАНІ, спершу query_habits.";
+
 export const ROUTINE_TOOLS: AnthropicTool[] = [
   {
     name: "mark_habit_done",
@@ -61,7 +72,7 @@ export const ROUTINE_TOOLS: AnthropicTool[] = [
     input_schema: {
       type: "object",
       properties: {
-        habit_id: { type: "string", description: "ID звички" },
+        habit_id: { type: "string", description: HABIT_ID_DESCRIPTION },
         time: { type: "string", description: "Час HH:MM (напр. '08:00')" },
       },
       required: ["habit_id", "time"],
@@ -74,7 +85,7 @@ export const ROUTINE_TOOLS: AnthropicTool[] = [
     input_schema: {
       type: "object",
       properties: {
-        habit_id: { type: "string", description: "ID звички" },
+        habit_id: { type: "string", description: HABIT_ID_DESCRIPTION },
         date: { type: "string", description: "Дата YYYY-MM-DD" },
         completed: {
           type: "boolean",
@@ -91,7 +102,7 @@ export const ROUTINE_TOOLS: AnthropicTool[] = [
     input_schema: {
       type: "object",
       properties: {
-        habit_id: { type: "string", description: "ID звички" },
+        habit_id: { type: "string", description: HABIT_ID_DESCRIPTION },
         archived: {
           type: "boolean",
           description: "true=заархівувати (default), false=повернути з архіву",
@@ -126,7 +137,7 @@ export const ROUTINE_TOOLS: AnthropicTool[] = [
     input_schema: {
       type: "object",
       properties: {
-        habit_id: { type: "string", description: "ID звички" },
+        habit_id: { type: "string", description: HABIT_ID_DESCRIPTION },
         name: { type: "string", description: "Нова назва (опційно)" },
         emoji: {
           type: "string",
@@ -171,7 +182,7 @@ export const ROUTINE_TOOLS: AnthropicTool[] = [
     input_schema: {
       type: "object",
       properties: {
-        habit_id: { type: "string", description: "ID звички" },
+        habit_id: { type: "string", description: HABIT_ID_DESCRIPTION },
         period_days: {
           type: "number",
           description: "Період аналізу в днях (default 30)",
@@ -188,7 +199,7 @@ export const ROUTINE_TOOLS: AnthropicTool[] = [
     input_schema: {
       type: "object",
       properties: {
-        habit_id: { type: "string", description: "ID звички" },
+        habit_id: { type: "string", description: HABIT_ID_DESCRIPTION },
         days: {
           type: "array",
           description:
@@ -207,7 +218,7 @@ export const ROUTINE_TOOLS: AnthropicTool[] = [
     input_schema: {
       type: "object",
       properties: {
-        habit_id: { type: "string", description: "ID звички" },
+        habit_id: { type: "string", description: HABIT_ID_DESCRIPTION },
         paused: {
           type: "boolean",
           description:
@@ -215,8 +226,11 @@ export const ROUTINE_TOOLS: AnthropicTool[] = [
         },
         from: {
           type: "string",
+          // ADR-0078: відмітки звичок лежать під днями ПРИСТРОЮ, і виконавець
+          // (`routineActions.ts`, `anchoredCompletionBounds`) рахує паузу так
+          // само. До 2026-11-18 тут стояло «(Europe/Kyiv)».
           description:
-            "Перший день паузи, YYYY-MM-DD (Europe/Kyiv). Для паузи «з сьогодні» передай сьогоднішню дату явно.",
+            "Перший день паузи, YYYY-MM-DD за календарем пристрою людини. Для паузи «з сьогодні» передай сьогоднішню дату явно.",
         },
         to: {
           type: "string",

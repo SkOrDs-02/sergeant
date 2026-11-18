@@ -3,6 +3,7 @@ import { describe, expect, it } from "vitest";
 import { CROSS_MODULE_TOOLS } from "./crossModule.js";
 import { FIZRUK_TOOLS } from "./fizruk.js";
 import { MEMORY_TOOLS } from "./memory.js";
+import { ROUTINE_TOOLS } from "./routine.js";
 import { TOOLS } from "../tools.js";
 
 /**
@@ -53,5 +54,51 @@ describe("чесність опису тулів (аудит 2026-11-17 § 5.4)"
   it("add_program_day: тул прибрано з реєстру (рішення 2026-10-20)", () => {
     expect(FIZRUK_TOOLS.map((t) => t.name)).not.toContain("add_program_day");
     expect(TOOLS.map((t) => t.name)).not.toContain("add_program_day");
+  });
+  it("forget: видаляє лише за id з my_profile, текст факту не обіцяє (2026-11-18)", () => {
+    // Виконавець (`crossActions/memoryHandlers.ts`) шукає факт за точним id.
+    // Опис обіцяв «або текст факту для пошуку», і модель слухняно клала текст
+    // у `fact_id`: усі шість прогонів стенду 2026-11-18, на обох глибинах.
+    const tool = find(MEMORY_TOOLS, "forget");
+    const factId = tool.input_schema.properties["fact_id"]?.description ?? "";
+    expect(factId).not.toMatch(/текст факту для пошуку/);
+    expect(`${tool.description} ${factId}`).toMatch(/my_profile/);
+  });
+
+  it("plan_workout: не обіцяє зберегти повторення (2026-11-18)", () => {
+    // `planWorkout` сіє незараховані рядки (`reps: 0`): у план лягають лише
+    // підходи й вага, повтори з запиту не записуються.
+    const tool = find(FIZRUK_TOOLS, "plan_workout") as unknown as {
+      description: string;
+      input_schema: {
+        properties: {
+          exercises: {
+            description: string;
+            items: { properties: Record<string, { description: string }> };
+          };
+        };
+      };
+    };
+    expect(tool.description).not.toMatch(/повтореннями/);
+    const reps =
+      tool.input_schema.properties.exercises.items.properties["reps"]
+        ?.description ?? "";
+    expect(reps).toMatch(/не записуються/);
+  });
+
+  it("pause_habit: день паузи за календарем пристрою, не Europe/Kyiv (ADR-0078)", () => {
+    const tool = find(ROUTINE_TOOLS, "pause_habit");
+    const text = JSON.stringify(tool);
+    expect(text).not.toMatch(/Europe\/Kyiv/);
+  });
+
+  it("archive_habit та інші: habit_id веде до query_habits, назва не є id (2026-11-18)", () => {
+    for (const name of ["archive_habit", "edit_habit", "pause_habit"]) {
+      const d =
+        find(ROUTINE_TOOLS, name).input_schema.properties["habit_id"]
+          ?.description ?? "";
+      expect(d, name).toMatch(/query_habits/);
+      expect(d, name).toMatch(/не є id/);
+    }
   });
 });

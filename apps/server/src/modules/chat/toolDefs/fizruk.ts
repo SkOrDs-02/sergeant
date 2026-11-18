@@ -4,7 +4,7 @@ export const FIZRUK_TOOLS: AnthropicTool[] = [
   {
     name: "plan_workout",
     description:
-      "Створити (запланувати) тренування у Фізруку на сьогодні або вказану дату/час. Можна додати список вправ із підходами/повтореннями/вагою.",
+      "Створити (запланувати) тренування у Фізруку на сьогодні або вказану дату/час. Можна додати список вправ із кількістю підходів і вагою; повторення в план не записуються, підхід зараховується, коли його зроблять.",
     input_schema: {
       type: "object",
       properties: {
@@ -25,13 +25,21 @@ export const FIZRUK_TOOLS: AnthropicTool[] = [
         exercises: {
           type: "array",
           description:
-            "Список вправ. Кожна вправа: name (обовʼязково), sets, reps, weight (опційно).",
+            "Список вправ. Кожна вправа: name (обовʼязково), sets, weight (опційно).",
           items: {
             type: "object",
             properties: {
               name: { type: "string", description: "Назва вправи" },
               sets: { type: "number", description: "Кількість підходів" },
-              reps: { type: "number", description: "Повторень у підході" },
+              // `reps` лишається в схемі заради сумісності виконавця і
+              // `toolParity`, але `planWorkout` його не зберігає (`reps: 0`
+              // у рядках плану). Опис каже правду, щоб модель не обіцяла
+              // людині «3×10 записано».
+              reps: {
+                type: "number",
+                description:
+                  "Повторень у підході. У план не записуються, лише для розмови",
+              },
               weight: { type: "number", description: "Вага в кг" },
             },
             required: ["name"],
