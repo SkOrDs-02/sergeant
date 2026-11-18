@@ -735,6 +735,42 @@ export const ChatRequestSchema = z.object({
 });
 
 /**
+ * Відповідь ПЕРШОГО ходу `/api/chat`: JSON-тіло без `stream` і вміст кадру
+ * `final` зі `stream: true`. Одна форма на обидва шляхи, щоб клієнт ішов тим
+ * самим кодом після відповіді. `round_trip_ticket` — лише коли є `tool_calls`.
+ */
+export const ChatFirstTurnResponseSchema = z.object({
+  text: z.string().nullable().optional(),
+  tool_calls: z
+    .array(
+      z
+        .object({ id: z.string(), name: z.string(), input: z.unknown() })
+        .loose(),
+    )
+    .optional(),
+  tool_calls_raw: z.array(z.unknown()).optional(),
+  round_trip_ticket: z.string().optional(),
+});
+export type ChatFirstTurnResponse = z.infer<typeof ChatFirstTurnResponseSchema>;
+
+/**
+ * Кадр SSE першого ходу зі `stream: true` (С-1 (а), спека
+ * `docs/work/specs/hubchat-first-turn-stream.md`), рядок `data: <json>`:
+ * - `{ t }` — шматок тексту, поки модель пише;
+ * - `{ tool }` — модель почала виклик інструмента (ранній підпис кроку);
+ * - `{ final }` — зібрана відповідь, дії на пристрої лише після нього;
+ * - `{ err, code? }` — збій (після видимих кадрів написане лишається).
+ * Потік закінчує `data: [DONE]`. Тур синтезу шле лише `{ t }` і `{ err }`.
+ */
+export const ChatStreamFrameSchema = z.union([
+  z.object({ t: z.string() }).strict(),
+  z.object({ tool: z.string().max(64) }).strict(),
+  z.object({ final: ChatFirstTurnResponseSchema }).strict(),
+  z.object({ err: z.string(), code: z.string().optional() }).strict(),
+]);
+export type ChatStreamFrame = z.infer<typeof ChatStreamFrameSchema>;
+
+/**
  * GET /api/chat/usage (PR-42 chat counter). Тижневе відро `ai.actions`
  * реєстру доступу (`billing/entitlements.ts`); `limit`/`remaining` = `null`
  * для Premium (без ліміту).

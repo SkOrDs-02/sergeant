@@ -71,7 +71,7 @@ beforeEach(() => {
   client = new QueryClient({
     defaultOptions: { queries: { retry: false }, mutations: { retry: false } },
   });
-  sendMock = vi.spyOn(chatApi, "send");
+  sendMock = vi.spyOn(chatApi, "firstTurn");
   streamMock = vi.spyOn(chatApi, "stream");
 });
 

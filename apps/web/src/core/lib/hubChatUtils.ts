@@ -39,6 +39,13 @@ export interface ChatMessage {
    * показується.
    */
   toolRefs?: string;
+  /**
+   * С-1 (а): стрім першого ходу обірвався після видимого тексту. Написане
+   * лишається, в історію сервера не йде (`hub/chat/firstTurnStream.ts`).
+   */
+  interrupted?: boolean;
+  /** Питання, яке шле «Ще раз» на обірваній відповіді. */
+  retryText?: string;
   /** Optional extra fields preserved from persisted history. */
   [key: string]: unknown;
 }

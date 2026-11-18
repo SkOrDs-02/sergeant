@@ -13,10 +13,16 @@ import type {
   ChatActionCardModule,
 } from "../lib/hubChatActionCards";
 import { DataResultCard } from "../hub/chat/components/DataResultCard";
+import { hubChatStreamMessages as STREAM_COPY } from "@shared/i18n/uk.hubChatStream";
 
 interface ChatMessageProps {
   message: ChatMessageData;
   onSpeak?: () => void;
+  /**
+   * «Ще раз» на відповіді, що обірвалась посеред стріму (С-1 (а)): шле те
+   * саме питання. Без обробника (хід у польоті) кнопки немає.
+   */
+  onRetry?: (text: string) => void;
 }
 
 /**
@@ -192,8 +198,11 @@ function ConfirmCard({ card }: { card: ChatActionCard }) {
   );
 }
 
-function ChatMessageImpl({ message, onSpeak }: ChatMessageProps) {
+function ChatMessageImpl({ message, onSpeak, onRetry }: ChatMessageProps) {
   const { role, text, cards } = message;
+  const interrupted = message.interrupted === true;
+  const retryText =
+    typeof message.retryText === "string" ? message.retryText : "";
   const isAssistant = role === "assistant";
   // Збій — не відповідь моделі. Своя заливка й `role="alert"`, щоб його не
   // читали як репліку асистента, і без TTS: озвучувати текст помилки нема сенсу.
@@ -238,6 +247,20 @@ function ChatMessageImpl({ message, onSpeak }: ChatMessageProps) {
               <ModuleLink module={c.module} />
             </div>
           ))}
+        {isAssistant && interrupted && (
+          <div className="mt-1.5 flex flex-wrap items-center gap-x-2 text-style-caption text-muted">
+            <span>{STREAM_COPY.interrupted}</span>
+            {onRetry && retryText && (
+              <button
+                type="button"
+                onClick={() => onRetry(retryText)}
+                className="flex min-h-11 items-center font-medium text-text hover:underline focus-ring"
+              >
+                {STREAM_COPY.retry}
+              </button>
+            )}
+          </div>
+        )}
         {isAssistant && !isError && text && text.length > 3 && (
           <button
             type="button"

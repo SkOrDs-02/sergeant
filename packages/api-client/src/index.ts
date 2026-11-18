@@ -140,6 +140,12 @@ export {
 
 export {
   createChatEndpoints,
+  parseChatStreamFrame,
+  ChatStreamError,
+  CHAT_STREAM_INTERRUPTED,
+  type ChatFirstTurnOpts,
+  type ChatFirstTurnResponse,
+  type ChatStreamFrame,
   type ChatCallOpts,
   type ChatEndpoints,
   type ChatMessage,

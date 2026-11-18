@@ -172,6 +172,9 @@ function HubChat({
         step={step}
         onSpeak={() => setSpeaking(true)}
         onCancel={cancelInFlight}
+        onRetry={(text) => {
+          void send(text);
+        }}
       />
 
       {signedOut ? (

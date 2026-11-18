@@ -1,6 +1,12 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { ApiError, chatApi, isApiError } from "@shared/api";
+import {
+  createStreamedReply,
+  requestFirstTurn,
+  toolTurnPrefix,
+  withoutInterrupted,
+} from "./firstTurnStream";
 import { useToast } from "@shared/hooks/useToast";
 import { showUndoToast } from "@shared/lib/ui/undoToast";
 import { useOnlineStatus } from "@shared/hooks/useOnlineStatus";
@@ -391,7 +397,8 @@ export function useChatSend({
         ...(activeModule ? { module: activeModule } : {}),
       });
 
-      const history = historyForServer(next);
+      // С-1 (а): обірвана відповідь лишається на екрані, але не в історії.
+      const history = historyForServer(withoutInterrupted(next));
 
       // Fresh AbortController per send. If a previous one is still
       // alive (shouldn't be — `send` guards on `loading`) we abort it
@@ -409,6 +416,7 @@ export function useChatSend({
         timedOut = true;
         ac.abort();
       }, 90_000);
+      const reply = createStreamedReply(setTurnMessages, () => ac.abort());
 
       try {
         // The idle snapshot can predate a pull, a local write in another
@@ -419,47 +427,24 @@ export function useChatSend({
         contextRef.current = { text: context, ts: Date.now() };
         setContextState({ status: "ready", ts: contextRef.current.ts });
 
-        let data;
-        try {
-          data = await chatApi.send(
-            {
-              context,
-              messages: history,
-              ...(turnPreset ? { preset: turnPreset } : {}),
+        // С-1 (а): перший хід стрімиться. Текст іде в бульбашку, поки модель
+        // пише, крок — щойно вона обрала інструмент; дії лише після `final`.
+        const seenTools: string[] = [];
+        const data = await requestFirstTurn(
+          {
+            context,
+            messages: history,
+            ...(turnPreset ? { preset: turnPreset } : {}),
+          },
+          {
+            signal,
+            onText: reply.onText,
+            onTool: (name) => {
+              seenTools.push(name);
+              setStep(describeToolStep(seenTools));
             },
-            { signal },
-          );
-        } catch (err) {
-          // Rewrite `message` to user-friendly while staying inside
-          // `ApiError` — the outer `friendlyChatError` should see the
-          // same error shape as every other call site.
-          if (isApiError(err) && err.kind === "http") {
-            throw new ApiError({
-              kind: "http",
-              message: friendlyApiError(
-                err.status,
-                err.serverMessage,
-                (err.body as { code?: string } | undefined)?.code,
-              ),
-              status: err.status,
-              body: err.body,
-              bodyText: err.bodyText,
-              url: err.url,
-              cause: err,
-            });
-          }
-          if (isApiError(err) && err.kind === "parse") {
-            throw new ApiError({
-              kind: "parse",
-              message: "Некоректна відповідь сервера",
-              body: err.body,
-              bodyText: err.bodyText,
-              url: err.url,
-              cause: err,
-            });
-          }
-          throw err;
-        }
+          },
+        );
 
         let replyLength = 0;
         const hadTools = Boolean(data.tool_calls && data.tool_calls.length > 0);
@@ -490,7 +475,7 @@ export function useChatSend({
             // зламаний інструмент виглядав би звичайною текстовою відповіддю.
             // Досі це відображалось лише в телеметрії, а бульбашка лишалась
             // невідрізненною — і озвучувалась.
-            setTurnMessages((m) => [...m, makeErrorMsg(fallback)]);
+            reply.put(makeErrorMsg(fallback));
             return;
           }
           const toolCalls = parsed.value;
@@ -594,19 +579,21 @@ export function useChatSend({
             toolCalls,
             handlerResults,
           );
-          const prefix = uncardedText ? `${uncardedText}\n\n` : "";
+          // Вступ моделі перед інструментом (стрім або `text` старого
+          // сервера) стоїть над картками в тій самій бульбашці.
+          const prefix = toolTurnPrefix(
+            reply.text || data.text || "",
+            uncardedText,
+          );
 
-          const assistantId = newMsgId();
-          setTurnMessages((m) => [
-            ...m,
-            {
-              id: assistantId,
-              role: "assistant",
-              text: prefix,
-              ...(cards.length > 0 ? { cards } : {}),
-              ...turnRefsField(toolCalls, handlerResults),
-            },
-          ]);
+          const assistantId = reply.id ?? newMsgId();
+          reply.put({
+            id: assistantId,
+            role: "assistant",
+            text: prefix,
+            ...(cards.length > 0 ? { cards } : {}),
+            ...turnRefsField(toolCalls, handlerResults),
+          });
 
           let followUpText = "";
           // Синтез (другий тур) міг упасти — тоді в бульбашці лежить текст
@@ -628,7 +615,7 @@ export function useChatSend({
                 // Тому фільтруємо тут, ТІЄЮ САМОЮ схемою, що валідує сервер —
                 // не власним списком типів, який мовчки розʼїхався б із
                 // серверним при наступній зміні. Преамбула не губиться для
-                // користувача: вона вже дострімлена в UI вище.
+                // користувача: вона стоїть у бульбашці над картками (С-1 (а)).
                 // Разом із блоками їде квиток першого туру (`firstTurnEcho`):
                 // без нього синтез списує другу одиницю квоти (AI-5).
                 ...firstTurnEcho(data),
@@ -741,10 +728,10 @@ export function useChatSend({
           scheduleContextBuild("after-tools", true);
           replyLength = uncardedText.length + followUpText.length;
         } else {
-          const reply = data.text || "Немає відповіді.";
-          setTurnMessages((m) => [...m, makeAssistantMsg(reply)]);
-          if (shouldSpeak) maybeSpeak(reply);
-          replyLength = reply.length;
+          const answer = data.text || reply.text || "Немає відповіді.";
+          reply.put(makeAssistantMsg(answer));
+          if (shouldSpeak) maybeSpeak(answer);
+          replyLength = answer.length;
         }
 
         // Знаменник «коуч відповів». Один call-site на обидві гілки: сюди
@@ -761,7 +748,11 @@ export function useChatSend({
         const isAbort =
           (isApiError(e) && e.kind === "aborted") ||
           (e as { name?: string } | null)?.name === "AbortError";
-        if (isAbort && timedOut) {
+        if ((!isAbort || timedOut) && reply.interrupt(msg)) {
+          // Обрив після видимого тексту (рішення founder-а): написане лишається
+          // з «Ще раз», окремої бульбашки помилки немає.
+          trackEvent(ANALYTICS_EVENTS.HUBCHAT_ERROR, { kind: "interrupted" });
+        } else if (isAbort && timedOut) {
           setTurnMessages((m) => [
             ...m,
             makeErrorMsg("Час очікування вичерпано. Спробуй ще раз."),

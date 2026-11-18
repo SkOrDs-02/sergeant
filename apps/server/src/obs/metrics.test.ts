@@ -177,7 +177,11 @@ describe("metrics registry — v2 sync op-log RED metrics (PR #048)", () => {
     // `invalid_start_date`, `invalid_end_date`) — розклад звички в
     // `applyRoutineHabits`.
     // Аудит 2026-10-01 (data-04): +1 `invalid_prefs_patch`.
-    expect(APPLY_REJECT_REASONS.length).toBe(79);
+    // Міграція 170 (Рутина Р-1): +5 (`invalid_count_target`,
+    // `invalid_count_unit`, `invalid_auto_mark_source`, `invalid_count`,
+    // `invalid_count_key`). Міграція 171 (Фізрук, П-10): +1
+    // `invalid_program_ref`.
+    expect(APPLY_REJECT_REASONS.length).toBe(85);
     // data-17: +1 engine-level `invalid_text_encoding` — `U+0000` / одинокий
     // сурогат у `row` відсікається ДО apply.
     expect(ENGINE_REJECT_REASONS.length).toBe(7);

@@ -1463,13 +1463,16 @@
         },
         "responses": {
           "200": {
-            "description": "OK",
+            "description": "Без `stream`: перший хід — `ChatFirstTurnResponse`, тур синтезу — `{ text }`. Зі `stream: true`: `text/event-stream`, кожен рядок `data:` несе `ChatStreamFrame` (перший хід: `t` / `tool` / `final` / `err`; синтез: `t` / `err`), кінець — `data: [DONE]`.",
             "content": {
               "application/json": {
                 "schema": {
-                  "type": "object",
-                  "properties": {},
-                  "additionalProperties": {}
+                  "$ref": "#/components/schemas/ChatFirstTurnResponse"
+                }
+              },
+              "text/event-stream": {
+                "schema": {
+                  "$ref": "#/components/schemas/ChatStreamFrame"
                 }
               }
             }
@@ -9319,6 +9322,133 @@
         ],
         "additionalProperties": false,
         "description": "Відповідь GET/PATCH /api/me/preferences — налаштування користувача."
+      },
+      "ChatFirstTurnResponse": {
+        "type": "object",
+        "properties": {
+          "text": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "tool_calls": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "id": {
+                  "type": "string"
+                },
+                "name": {
+                  "type": "string"
+                },
+                "input": {}
+              },
+              "required": ["id", "name", "input"],
+              "additionalProperties": {}
+            }
+          },
+          "tool_calls_raw": {
+            "type": "array",
+            "items": {}
+          },
+          "round_trip_ticket": {
+            "type": "string"
+          }
+        },
+        "additionalProperties": false,
+        "description": "POST /api/chat, перший хід: JSON-тіло без `stream` і вміст кадру `final` зі `stream: true`."
+      },
+      "ChatStreamFrame": {
+        "anyOf": [
+          {
+            "type": "object",
+            "properties": {
+              "t": {
+                "type": "string"
+              }
+            },
+            "required": ["t"],
+            "additionalProperties": false
+          },
+          {
+            "type": "object",
+            "properties": {
+              "tool": {
+                "type": "string",
+                "maxLength": 64
+              }
+            },
+            "required": ["tool"],
+            "additionalProperties": false
+          },
+          {
+            "type": "object",
+            "properties": {
+              "final": {
+                "type": "object",
+                "properties": {
+                  "text": {
+                    "anyOf": [
+                      {
+                        "type": "string"
+                      },
+                      {
+                        "type": "null"
+                      }
+                    ]
+                  },
+                  "tool_calls": {
+                    "type": "array",
+                    "items": {
+                      "type": "object",
+                      "properties": {
+                        "id": {
+                          "type": "string"
+                        },
+                        "name": {
+                          "type": "string"
+                        },
+                        "input": {}
+                      },
+                      "required": ["id", "name", "input"],
+                      "additionalProperties": {}
+                    }
+                  },
+                  "tool_calls_raw": {
+                    "type": "array",
+                    "items": {}
+                  },
+                  "round_trip_ticket": {
+                    "type": "string"
+                  }
+                },
+                "additionalProperties": false
+              }
+            },
+            "required": ["final"],
+            "additionalProperties": false
+          },
+          {
+            "type": "object",
+            "properties": {
+              "err": {
+                "type": "string"
+              },
+              "code": {
+                "type": "string"
+              }
+            },
+            "required": ["err"],
+            "additionalProperties": false
+          }
+        ],
+        "description": "POST /api/chat зі `stream: true`: один кадр SSE (`data: <json>`), потік закінчує `data: [DONE]`."
       },
       "ChatUsageResponse": {
         "type": "object",

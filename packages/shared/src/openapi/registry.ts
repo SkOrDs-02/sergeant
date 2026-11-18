@@ -118,6 +118,16 @@ const ChatRequest = schemas.ChatRequestSchema.meta({
   description:
     "POST /api/chat — Anthropic-чат із tool-results і опційним streaming.",
 });
+const ChatFirstTurnResponse = schemas.ChatFirstTurnResponseSchema.meta({
+  id: "ChatFirstTurnResponse",
+  description:
+    "POST /api/chat, перший хід: JSON-тіло без `stream` і вміст кадру `final` зі `stream: true`.",
+});
+const ChatStreamFrame = schemas.ChatStreamFrameSchema.meta({
+  id: "ChatStreamFrame",
+  description:
+    "POST /api/chat зі `stream: true`: один кадр SSE (`data: <json>`), потік закінчує `data: [DONE]`.",
+});
 const ChatUsageResponse = schemas.ChatUsageResponseSchema.meta({
   id: "ChatUsageResponse",
   description:
@@ -598,6 +608,8 @@ export const namedSchemas = {
   ManualExpenseCreate,
   ManualExpenseCreateResponse,
   ChatRequest,
+  ChatFirstTurnResponse,
+  ChatStreamFrame,
   ChatUsageResponse,
   RecallMemoryRequest,
   RecallMemoryResult,

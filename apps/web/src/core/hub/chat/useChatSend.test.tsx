@@ -35,7 +35,7 @@ vi.mock("@shared/api", async () => {
     await vi.importActual<typeof import("@shared/api")>("@shared/api");
   return {
     ...actual,
-    chatApi: { send: sendMock, stream: streamMock },
+    chatApi: { send: sendMock, firstTurn: sendMock, stream: streamMock },
   };
 });
 

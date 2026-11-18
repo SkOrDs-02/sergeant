@@ -7,7 +7,13 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { createHttpClient } from "../httpClient";
 import { firstCall } from "../__test-utils/firstCall";
-import { createChatEndpoints } from "./chat";
+import { ApiError, isApiError } from "../ApiError";
+import {
+  CHAT_STREAM_INTERRUPTED,
+  ChatStreamError,
+  createChatEndpoints,
+  parseChatStreamFrame,
+} from "./chat";
 
 type FetchMock = ReturnType<typeof vi.fn>;
 
@@ -170,5 +176,118 @@ describe("createChatEndpoints.stream", () => {
 
     const [, init] = firstCall(fetchMock);
     expect((init as RequestInit).signal).toBe(controller.signal);
+  });
+});
+
+describe("parseChatStreamFrame (кадри SSE першого ходу, С-1 (а))", () => {
+  it("розбирає чотири види кадрів", () => {
+    expect(parseChatStreamFrame('{"t":"Привіт"}')).toEqual({ t: "Привіт" });
+    expect(parseChatStreamFrame('{"tool":"find_transaction"}')).toEqual({
+      tool: "find_transaction",
+    });
+    expect(
+      parseChatStreamFrame(
+        JSON.stringify({
+          final: {
+            text: null,
+            tool_calls: [{ id: "t1", name: "find_transaction", input: {} }],
+            tool_calls_raw: [],
+            round_trip_ticket: "x",
+          },
+        }),
+      ),
+    ).toMatchObject({ final: { round_trip_ticket: "x" } });
+    expect(
+      parseChatStreamFrame('{"err":"Збій","code":"MAX_TOOL_ITERATIONS"}'),
+    ).toEqual({ err: "Збій", code: "MAX_TOOL_ITERATIONS" });
+  });
+
+  it("кінець потоку, битий JSON і невідомий кадр дають null", () => {
+    expect(parseChatStreamFrame("[DONE]")).toBeNull();
+    expect(parseChatStreamFrame("{не json")).toBeNull();
+    expect(parseChatStreamFrame('{"новий":"кадр"}')).toBeNull();
+  });
+});
+
+describe("createChatEndpoints.firstTurn (стрім першого ходу, С-1 (а))", () => {
+  const sse = (frames: unknown[], end = true): Response =>
+    new Response(
+      frames.map((f) => `data: ${JSON.stringify(f)}\n\n`).join("") +
+        (end ? "data: [DONE]\n\n" : ""),
+      { status: 200, headers: { "content-type": "text/event-stream" } },
+    );
+  const setup = (res: Response) => {
+    const fetchMock = vi.fn(async () => res) as FetchMock;
+    globalThis.fetch = fetchMock as unknown as typeof fetch;
+    const chat = createChatEndpoints(
+      createHttpClient({ baseUrl: "https://api.example.com" }),
+    );
+    return { chat, fetchMock };
+  };
+
+  it("просить stream: true, віддає кадри колбеками і повертає `final`", async () => {
+    const final = {
+      text: "Зараз знайду.",
+      tool_calls: [{ id: "t1", name: "find_transaction", input: { q: "x" } }],
+      tool_calls_raw: [],
+      round_trip_ticket: "tk",
+    };
+    const { chat, fetchMock } = setup(
+      sse([
+        { t: "Зараз " },
+        { t: "знайду." },
+        { tool: "find_transaction" },
+        { final },
+      ]),
+    );
+    const onText = vi.fn();
+    const onTool = vi.fn();
+    const out = await chat.firstTurn(payload, { onText, onTool });
+
+    expect(out).toEqual(final);
+    expect(onText.mock.calls.map((c) => c[0])).toEqual(["Зараз ", "знайду."]);
+    expect(onTool).toHaveBeenCalledWith("find_transaction");
+    const [, init] = firstCall(fetchMock);
+    expect(JSON.parse(String((init as RequestInit).body))).toEqual({
+      ...payload,
+      stream: true,
+    });
+  });
+
+  it("старий сервер відповідає JSON: той самий результат без колбеків", async () => {
+    const { chat } = setup(jsonResponse({ text: "Привіт" }));
+    const onText = vi.fn();
+    await expect(chat.firstTurn(payload, { onText })).resolves.toEqual({
+      text: "Привіт",
+    });
+    expect(onText).not.toHaveBeenCalled();
+  });
+
+  it("JSON-помилка до потоку — ApiError http, як у send()", async () => {
+    const { chat } = setup(
+      jsonResponse({ error: "Ліміт", code: "AI_QUOTA" }, { status: 429 }),
+    );
+    const err = await chat.firstTurn(payload).catch((e: unknown) => e);
+    expect(isApiError(err)).toBe(true);
+    expect((err as ApiError).status).toBe(429);
+    expect((err as ApiError).serverMessage).toBe("Ліміт");
+  });
+
+  it("кадр err після тексту — ChatStreamError з кодом", async () => {
+    const { chat } = setup(
+      sse([{ t: "Цього " }, { err: "Збій", code: "MAX_TOOL_ITERATIONS" }]),
+    );
+    const onText = vi.fn();
+    const err = await chat.firstTurn(payload, { onText }).catch((e) => e);
+    expect(err).toBeInstanceOf(ChatStreamError);
+    expect((err as ChatStreamError).code).toBe("MAX_TOOL_ITERATIONS");
+    expect(onText).toHaveBeenCalledWith("Цього ");
+  });
+
+  it("потік закрився без `final` — обрив", async () => {
+    const { chat } = setup(sse([{ t: "Цього " }], false));
+    await expect(chat.firstTurn(payload)).rejects.toThrow(
+      CHAT_STREAM_INTERRUPTED,
+    );
   });
 });

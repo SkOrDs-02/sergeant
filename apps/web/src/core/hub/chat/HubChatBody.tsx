@@ -22,6 +22,8 @@ export interface HubChatBodyProps {
   onSpeak: () => void;
   /** Cancel the in-flight chat request — wired to the inline cancel pill. */
   onCancel: () => void;
+  /** «Ще раз» на обірваній відповіді (С-1 (а)); діє лише поза ходом. */
+  onRetry?: (text: string) => void;
 }
 
 /**
@@ -40,6 +42,7 @@ export function HubChatBody({
   step = null,
   onSpeak,
   onCancel,
+  onRetry,
 }: HubChatBodyProps) {
   const chatRef = useRef<HTMLDivElement | null>(null);
   const stickToBottomRef = useRef(true);
@@ -127,7 +130,12 @@ export function HubChatBody({
         {uiCopy.hub.chatEmptyAiDisclosure}
       </p>
       {messages.map((m) => (
-        <ChatMessage key={m.id} message={m} onSpeak={onSpeak} />
+        <ChatMessage
+          key={m.id}
+          message={m}
+          onSpeak={onSpeak}
+          {...(onRetry && !loading ? { onRetry } : {})}
+        />
       ))}
       {loading && (
         <div className="flex items-center gap-2">

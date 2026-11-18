@@ -635,7 +635,18 @@ export const paths: ZodOpenApiPathsObject = {
         },
       },
       responses: {
-        "200": okEmpty,
+        "200": {
+          description:
+            "Без `stream`: перший хід — `ChatFirstTurnResponse`, тур синтезу — `{ text }`. Зі `stream: true`: `text/event-stream`, кожен рядок `data:` несе `ChatStreamFrame` (перший хід: `t` / `tool` / `final` / `err`; синтез: `t` / `err`), кінець — `data: [DONE]`.",
+          content: {
+            "application/json": {
+              schema: namedSchemas.ChatFirstTurnResponse,
+            },
+            "text/event-stream": {
+              schema: namedSchemas.ChatStreamFrame,
+            },
+          },
+        },
         "400": validationError,
         "401": unauthorized,
       },

@@ -309,3 +309,41 @@ describe("TypingIndicator", () => {
     ).toBeInTheDocument();
   });
 });
+
+describe("ChatMessage — обрив стріму першого ходу (С-1 (а))", () => {
+  it("лишає написане, каже про обрив і дає «Ще раз» з тим самим питанням", () => {
+    const onRetry = vi.fn();
+    renderInRouter(
+      <ChatMessage
+        message={makeMessage({
+          role: "assistant",
+          text: "Цього тижня ти витратив ",
+          interrupted: true,
+          retryText: "скільки я витратив",
+        })}
+        onRetry={onRetry}
+      />,
+    );
+    expect(screen.getByTestId("assistant-body")).toHaveTextContent(
+      "Цього тижня ти витратив",
+    );
+    expect(screen.getByText("Відповідь обірвалась.")).toBeInTheDocument();
+    fireEvent.click(screen.getByRole("button", { name: "Ще раз" }));
+    expect(onRetry).toHaveBeenCalledWith("скільки я витратив");
+  });
+
+  it("без обробника (хід у польоті) кнопки «Ще раз» немає", () => {
+    renderInRouter(
+      <ChatMessage
+        message={makeMessage({
+          role: "assistant",
+          text: "Цього тижня",
+          interrupted: true,
+          retryText: "скільки",
+        })}
+      />,
+    );
+    expect(screen.getByText("Відповідь обірвалась.")).toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: "Ще раз" })).toBeNull();
+  });
+});

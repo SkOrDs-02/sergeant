@@ -47,7 +47,10 @@ vi.mock("../../lib/hubChatUtils", async () => {
 vi.mock("@shared/api", async () => {
   const actual =
     await vi.importActual<typeof import("@shared/api")>("@shared/api");
-  return { ...actual, chatApi: { send: sendMock, stream: streamMock } };
+  return {
+    ...actual,
+    chatApi: { send: sendMock, firstTurn: sendMock, stream: streamMock },
+  };
 });
 
 vi.mock("../useFinykHubPreview", () => ({

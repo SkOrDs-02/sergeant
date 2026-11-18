@@ -14,18 +14,29 @@
  *   3. `message_delta` зі `stop_reason` і `usage.output_tokens` — Anthropic
  *      віддає вихідні токени саме тут, не в `message_start`;
  *   4. `input_json_delta` — стрімінг аргументів tool-виклику (перший тур);
- *   5. час до першого текстового дельта — SLO чату < 1.5 с.
+ *   5. час до першого текстового дельта — SLO чату < 1.5 с;
+ *   6. `--first-turn` (С-1 (а), спека `hubchat-first-turn-stream.md`): прод-
+ *      форма першого ходу (`buildSystem` + `buildToolsPayload`, max_tokens
+ *      1500) і час до першого `content_block_start` (саме тоді сервер шле
+ *      людині ранній підпис кроку або перший текст) проти повного часу.
+ *      Ціль для першого видимого знаку ратифікується після цього заміру.
  *
  * Побічно ловимо `cache_read_input_tokens` / `cache_creation_input_tokens`:
  * їхня поява доводить, що prompt-cache через Skin працює для цієї моделі.
  *
  * Usage: OPENROUTER_API_KEY=... pnpm eval:stream [--models=a,b]
+ *        OPENROUTER_API_KEY=... pnpm eval:stream --first-turn \
+ *          --models=google/gemini-3.7-flash --repeat=5
  */
 
 import { parseArgs } from "node:util";
 import process from "node:process";
 
 import { SYSTEM_PREFIX, TOOLS } from "../src/modules/chat/tools.js";
+import {
+  buildSystem,
+  buildToolsPayload,
+} from "../src/modules/chat/promptCache.js";
 
 const SKIN_URL = "https://openrouter.ai/api/v1/messages";
 
@@ -34,7 +45,37 @@ interface Scenario {
   user: string;
   /** Передавати реєстр інструментів (перший тур) чи ні (синтез). */
   withTools: boolean;
+  /** Прод-форма першого ходу: system і tools тими самими функціями, що `chat.ts`. */
+  prodFirstTurn?: boolean;
 }
+
+/**
+ * Перший хід у прод-формі: питання, на які модель відповідає і текстом, і
+ * викликом інструмента. Контекст — короткий синтетичний знімок без
+ * персональних даних.
+ */
+const FIRST_TURN_CONTEXT =
+  "[ДАНІ]\nФінік: витрати цього тижня 3 120 грн, найбільша категорія «продукти».\nРутина: 3 звички на сьогодні.";
+const FIRST_TURN_SCENARIOS: Scenario[] = [
+  {
+    name: "1-й хід: пошук",
+    user: "Знайди мою останню покупку в Сільпо",
+    withTools: true,
+    prodFirstTurn: true,
+  },
+  {
+    name: "1-й хід: запис",
+    user: "Запиши витрату 250 грн на таксі",
+    withTools: true,
+    prodFirstTurn: true,
+  },
+  {
+    name: "1-й хід: текст",
+    user: "Як мені менше витрачати на продукти?",
+    withTools: true,
+    prodFirstTurn: true,
+  },
+];
 
 const SCENARIOS: Scenario[] = [
   {
@@ -56,6 +97,10 @@ interface StreamReport {
   events: Set<string>;
   deltaTypes: Set<string>;
   ttftMs: number | null;
+  /** Перший `content_block_start` будь-якого типу: перший видимий кадр сервера. */
+  firstBlockMs: number | null;
+  /** Перший `content_block_start` типу `tool_use`: ранній підпис кроку. */
+  firstToolMs: number | null;
   totalMs: number;
   textLen: number;
   inputTokens: number | null;
@@ -68,6 +113,7 @@ interface StreamReport {
 
 type SseEvent = {
   type?: string;
+  content_block?: { type?: string };
   delta?: { type?: string; text?: string; stop_reason?: string };
   message?: { usage?: Record<string, number> };
   usage?: Record<string, number>;
@@ -86,6 +132,8 @@ async function checkStream(
     events: new Set(),
     deltaTypes: new Set(),
     ttftMs: null,
+    firstBlockMs: null,
+    firstToolMs: null,
     totalMs: 0,
     textLen: 0,
     inputTokens: null,
@@ -104,14 +152,25 @@ async function checkStream(
         "HTTP-Referer": "https://sergeant.app",
         "X-Title": "Sergeant stream check",
       },
-      body: JSON.stringify({
-        model,
-        max_tokens: 1000,
-        stream: true,
-        system: SYSTEM_PREFIX,
-        messages: [{ role: "user", content: scenario.user }],
-        ...(scenario.withTools ? { tools: TOOLS } : {}),
-      }),
+      body: JSON.stringify(
+        scenario.prodFirstTurn
+          ? {
+              model,
+              max_tokens: 1500,
+              stream: true,
+              system: buildSystem(FIRST_TURN_CONTEXT, undefined, true),
+              tools: buildToolsPayload(model, null, true),
+              messages: [{ role: "user", content: scenario.user }],
+            }
+          : {
+              model,
+              max_tokens: 1000,
+              stream: true,
+              system: SYSTEM_PREFIX,
+              messages: [{ role: "user", content: scenario.user }],
+              ...(scenario.withTools ? { tools: TOOLS } : {}),
+            },
+      ),
     });
 
     if (!response.ok || !response.body) {
@@ -146,6 +205,16 @@ async function checkStream(
         if (event.type) report.events.add(event.type);
         if (event.delta?.type) report.deltaTypes.add(event.delta.type);
 
+        if (event.type === "content_block_start") {
+          const at = Date.now() - t0;
+          if (report.firstBlockMs === null) report.firstBlockMs = at;
+          if (
+            event.content_block?.type === "tool_use" &&
+            report.firstToolMs === null
+          ) {
+            report.firstToolMs = at;
+          }
+        }
         if (event.type === "content_block_delta" && event.delta?.text) {
           if (report.ttftMs === null) report.ttftMs = Date.now() - t0;
           report.textLen += event.delta.text.length;
@@ -180,7 +249,15 @@ async function checkStream(
 }
 
 async function main(): Promise<void> {
-  const { values } = parseArgs({ options: { models: { type: "string" } } });
+  const { values } = parseArgs({
+    options: {
+      models: { type: "string" },
+      "first-turn": { type: "boolean" },
+      repeat: { type: "string" },
+    },
+  });
+  const firstTurn = values["first-turn"] === true;
+  const repeat = Math.max(1, Number.parseInt(values.repeat ?? "1", 10) || 1);
   const apiKey = process.env["OPENROUTER_API_KEY"] ?? "";
   if (!apiKey) {
     console.error("OPENROUTER_API_KEY is not set — nothing to test.");
@@ -198,24 +275,63 @@ async function main(): Promise<void> {
 
   const reports: StreamReport[] = [];
   for (const model of models) {
-    for (const scenario of SCENARIOS) {
-      const r = await checkStream(apiKey, model, scenario);
-      reports.push(r);
-      const mark = r.error ? "ERR " : r.ok ? " ok " : "FAIL";
-      console.log(
-        `[${mark}] ${model.padEnd(30)} ${r.scenario.padEnd(18)} ttft=${String(r.ttftMs ?? "—").padStart(5)}ms total=${String(r.totalMs).padStart(6)}ms text=${String(r.textLen).padStart(4)} in=${r.inputTokens ?? "—"} out=${r.outputTokens ?? "—"} cacheR=${r.cacheRead ?? "—"} stop=${r.stopReason ?? "—"}${r.error ? ` ${r.error}` : ""}`,
-      );
-      console.log(
-        `        події: ${[...r.events].join(", ") || "—"} | delta: ${[...r.deltaTypes].join(", ") || "—"}`,
-      );
+    for (const scenario of firstTurn ? FIRST_TURN_SCENARIOS : SCENARIOS) {
+      for (let run = 0; run < repeat; run++) {
+        const r = await checkStream(apiKey, model, scenario);
+        reports.push(r);
+        const mark = r.error ? "ERR " : r.ok ? " ok " : "FAIL";
+        console.log(
+          `[${mark}] ${model.padEnd(30)} ${r.scenario.padEnd(18)} ttft=${String(r.ttftMs ?? "—").padStart(5)}ms total=${String(r.totalMs).padStart(6)}ms text=${String(r.textLen).padStart(4)} in=${r.inputTokens ?? "—"} out=${r.outputTokens ?? "—"} cacheR=${r.cacheRead ?? "—"} stop=${r.stopReason ?? "—"}${r.error ? ` ${r.error}` : ""}`,
+        );
+        console.log(
+          `        події: ${[...r.events].join(", ") || "—"} | delta: ${[...r.deltaTypes].join(", ") || "—"} | block=${r.firstBlockMs ?? "—"}ms tool=${r.firstToolMs ?? "—"}ms`,
+        );
+      }
     }
   }
+
+  if (firstTurn) printFirstTurnSummary(reports);
 
   console.log("\n| Модель | Сценарій | Парсер | TTFT | Кеш |");
   console.log("| --- | --- | --- | --- | --- |");
   for (const r of reports) {
     console.log(
       `| \`${r.model}\` | ${r.scenario} | ${r.ok ? "✅" : "❌"} | ${r.ttftMs ?? "—"} мс | ${r.cacheRead === null ? "поля немає" : `read=${r.cacheRead}`} |`,
+    );
+  }
+}
+
+function median(xs: number[]): number | null {
+  if (xs.length === 0) return null;
+  const sorted = [...xs].sort((a, b) => a - b);
+  const mid = Math.floor(sorted.length / 2);
+  return sorted.length % 2
+    ? sorted[mid]!
+    : Math.round((sorted[mid - 1]! + sorted[mid]!) / 2);
+}
+
+/**
+ * Зведення для спеки `hubchat-first-turn-stream.md`: перший видимий кадр
+ * (перший `content_block_start`) проти повної відповіді, медіана й максимум.
+ */
+function printFirstTurnSummary(reports: StreamReport[]): void {
+  console.log(
+    "\n| Модель | Сценарій | n | помилок | перший кадр, медіана / макс | ранній підпис (tool), медіана | повна відповідь, медіана / макс |",
+  );
+  console.log("| --- | --- | --- | --- | --- | --- | --- |");
+  const groups = new Map<string, StreamReport[]>();
+  for (const r of reports) {
+    const key = `${r.model}\u0000${r.scenario}`;
+    groups.set(key, [...(groups.get(key) ?? []), r]);
+  }
+  for (const rs of groups.values()) {
+    const ok = rs.filter((r) => !r.error && r.ok);
+    const block = ok.map((r) => r.firstBlockMs).filter((v) => v !== null);
+    const tool = ok.map((r) => r.firstToolMs).filter((v) => v !== null);
+    const total = ok.map((r) => r.totalMs);
+    const fmt = (v: number | null): string => (v === null ? "—" : `${v} мс`);
+    console.log(
+      `| \`${rs[0]!.model}\` | ${rs[0]!.scenario} | ${rs.length} | ${rs.length - ok.length} | ${fmt(median(block))} / ${fmt(block.length ? Math.max(...block) : null)} | ${fmt(median(tool))} | ${fmt(median(total))} / ${fmt(total.length ? Math.max(...total) : null)} |`,
     );
   }
 }

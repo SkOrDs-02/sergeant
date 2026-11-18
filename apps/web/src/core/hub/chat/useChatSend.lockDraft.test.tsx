@@ -60,7 +60,7 @@ beforeEach(() => {
   discardAllFormDrafts();
   setFormDraftUser("u1");
   sendMock.mockReset();
-  vi.spyOn(chatApi, "send").mockImplementation(sendMock);
+  vi.spyOn(chatApi, "firstTurn").mockImplementation(sendMock);
   vi.spyOn(chatApi, "stream").mockImplementation(vi.fn());
 });
 afterEach(() => vi.restoreAllMocks());
