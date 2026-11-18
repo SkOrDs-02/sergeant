@@ -254,6 +254,41 @@ export const coreMessages = {
     chatQuickActions: "Швидкі сценарії",
     valueProgressAria: "Прогрес до твоїх цілей",
     crossModulePreviewAria: "Що Сержант покаже далі",
+    // Власна кнопка очищення поля пошуку хаба (нативний хрестик сховано).
+    searchClear: "Очистити пошук",
+    // Приклад звʼязку на екрані вітання (С-4 (а), спека
+    // `hub-newcomer-card-and-insights.md`). Фраза дослівно з курованої пари
+    // `workout_volume × spending` (`CURATED_PAIR_PHRASES`), тримає тест. Без
+    // числа порогу: перший екран не показує цифр до першого запису
+    // (інваріант `WelcomeScreen.test.tsx`); число несе картка хаба нижче.
+    welcomeLinkExamplePhrase: "у дні тренувань ти витрачаєш менше",
+    welcomeLinkExample:
+      "Приклад звʼязку: «{phrase}». Такі звʼязки Сержант рахує сам, коли у двох модулях набереться достатньо днів із записами.",
+    // Картка порожнього хаба на місці смуги «Модулів увімкнено: N з 4»
+    // (С-4 (а), П-20 (А), спека `hub-newcomer-card-and-insights.md`).
+    newcomerTimeline: {
+      title: "Що зʼявиться і коли",
+      bankFactsWhat: "Три факти з історії банку",
+      bankFactsWhen: "Одразу після підключення Monobank",
+      weekReportWhat: "Звіт тижня",
+      // Те саме формулювання, що в порожньому стані `WeeklyDigestCard`.
+      weekReportWhen: "Коли тиждень завершиться і ти вперше відкриєш головну",
+      linksWhat: "Звʼязки між сферами",
+      linksWhen: "Після {days} {unit} із записами у двох сферах",
+      linksProgress: "{value} з {max} {unit}",
+    },
+    // Три факти з історії банку в перший тиждень (С-4 (б), П-21 (А)).
+    bankFacts: {
+      title: "Що видно з історії банку",
+      topCategory:
+        "Найбільша категорія: {category}, {amount} ({pct} усіх витрат)",
+      recurring: "Регулярних платежів: {count}, найбільший {name}, {amount}",
+      weekday: "Найдорожчий день тижня: {weekday}, у середньому {amount}",
+      largest: "Найбільша разова операція: {amount}, {description}, {date}",
+      largestNoDescription: "Найбільша разова операція: {amount}, {date}",
+      ok: "Зрозуміло",
+      dismiss: "Закрити факти з історії банку",
+    },
     weeklyDigestTitle: "Щотижневий дайджест: сторіс",
     chatOfflineNotice:
       "Сержант недоступний без інтернету. Дані модулів видно офлайн, але відповіді Сержанта потребують підключення.",

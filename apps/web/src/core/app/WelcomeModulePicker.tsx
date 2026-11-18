@@ -31,6 +31,7 @@ import { ALL_MODULES } from "../onboarding/vibePicks";
 import type { DashboardModuleId } from "@sergeant/shared";
 import { MODULE_LABELS } from "@shared/lib/modules/moduleLabels";
 import { messages } from "@shared/i18n/uk";
+import { coreMessages } from "@shared/i18n/uk.core";
 
 export interface WelcomeModulePickerProps {
   /**
@@ -91,6 +92,18 @@ export function WelcomeModulePicker({
         </h2>
         <p className="text-style-body text-muted leading-relaxed max-w-xs mx-auto">
           {copy.subtitle}
+        </p>
+        {/* Один приклад звʼязку між сферами (С-4 (а)): вітання більше не
+            мовчить про те, що продукт бачить згори. Без чисел: перший екран
+            не показує цифр до першого запису. */}
+        <p
+          className="text-style-caption text-muted leading-relaxed max-w-xs mx-auto"
+          data-testid="welcome-link-example"
+        >
+          {coreMessages.hub.welcomeLinkExample.replace(
+            "{phrase}",
+            coreMessages.hub.welcomeLinkExamplePhrase,
+          )}
         </p>
       </div>
 

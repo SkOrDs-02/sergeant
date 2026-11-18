@@ -91,6 +91,8 @@ export function HubDashboard({ onOpenModule, user }: HubDashboardProps) {
         activeModules={s.activeModules}
         goals={s.goals}
         hasValueBar={s.hasValueBar}
+        signedIn={Boolean(user)}
+        inFirstWeek={s.inFirstWeek}
         // Новачок без записів і без пунктів не бачить порожньої купи:
         // «все закрито» було б неправдою про день, якого ще не було.
         nowPile={

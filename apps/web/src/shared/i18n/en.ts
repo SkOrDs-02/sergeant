@@ -3,6 +3,7 @@ import type { messages as ukMessages, MessageGroupShape } from "./uk";
 import { pricingEn } from "./en.pricing";
 import { nutritionTdeeEn } from "./en.nutritionTdee";
 import { nowPileEn } from "./en.hubNow";
+import { hubNewcomerEn } from "./en.hubNewcomer";
 
 /**
  * Full English catalog. Top-level keys present here REPLACE the same
@@ -337,6 +338,7 @@ export const messagesEn: Partial<{
     chatQuickActions: "Quick scenarios",
     valueProgressAria: "Progress toward your goals",
     crossModulePreviewAria: "What Sergeant will show next",
+    ...hubNewcomerEn,
     weeklyDigestTitle: "Weekly digest: stories",
     chatOfflineNotice:
       "The assistant is unavailable without internet. Module data is visible offline, but\n          AI responses require a connection.",

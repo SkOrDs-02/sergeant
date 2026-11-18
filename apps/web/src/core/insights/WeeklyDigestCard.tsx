@@ -625,7 +625,7 @@ export function WeeklyDigestCard({
               className="-ml-2"
             >
               Поточний тиждень
-              <Icon name="chevron-right" size={16} aria-hidden />
+              <Icon name="chevron-right" size="md" aria-hidden />
             </Button>
           </div>
         )}

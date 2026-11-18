@@ -16,10 +16,11 @@ import {
 } from "./now/ChecklistNowRows";
 import { SectionHeading } from "@shared/components/ui/SectionHeading";
 import { coreMessages } from "@shared/i18n/uk.core";
-import { OnboardingProgress } from "../onboarding/OnboardingProgress";
 import { useFlag } from "../lib/featureFlags";
 import { OutcomeCard } from "./OutcomeCard";
 import { ValueProgressBar } from "./ValueProgressBar";
+import { NewcomerTimelineCard } from "./NewcomerTimelineCard";
+import { BankHistoryFactsCard } from "./BankHistoryFactsCard";
 import { StreakIndicator } from "./dashboard/dashboardCards";
 import type { DashboardModuleId } from "./hub.types";
 import type { useOnboardingState } from "../onboarding/useOnboardingState";
@@ -38,6 +39,13 @@ export interface HubHeroBlockProps {
   activeModules: readonly string[];
   goals: ReturnType<typeof getOnboardingGoals>;
   hasValueBar: boolean;
+  /** Людина увійшла (Monobank і звіт тижня — лише з акаунтом). */
+  signedIn: boolean;
+  /**
+   * Триває перший тиждень (`isWithinChecklistWindow`): лише тоді хаб
+   * показує факти з історії банку (С-4 (б)).
+   */
+  inFirstWeek: boolean;
   /**
    * Вісь дії (спека `hub-action-axis.md`): hero-слот займає купа «Зараз»
    * (`NowPile`). FirstAction / re-engagement перемагають так
@@ -60,6 +68,8 @@ export function HubHeroBlock({
   activeModules,
   goals,
   hasValueBar,
+  signedIn,
+  inFirstWeek,
   nowPile,
 }: HubHeroBlockProps) {
   const reengagementIsHero = reengagement.show;
@@ -120,8 +130,17 @@ export function HubHeroBlock({
         ) : hasValueBar ? (
           <ValueProgressBar activeModules={activeModules} goals={goals} />
         ) : (
-          <OnboardingProgress activeModules={activeModules} />
+          // «Що зʼявиться і коли» на місці смуги «Модулів увімкнено: N з 4»
+          // (П-20 (А)). Поки записів немає, спільних днів теж 0.
+          <NewcomerTimelineCard
+            activeModules={activeModules}
+            signedIn={signedIn}
+            sharedDays={0}
+          />
         ))}
+      <BankHistoryFactsCard
+        enabled={signedIn && inFirstWeek && activeModules.includes("finyk")}
+      />
       {hasRealEntry && crossModulePreviewSource && (
         <CrossModulePreview
           sourceModule={crossModulePreviewSource}

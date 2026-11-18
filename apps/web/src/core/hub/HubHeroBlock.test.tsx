@@ -28,8 +28,9 @@ vi.mock("../onboarding/ReEngagementCard", () => ({
     </button>
   ),
 }));
-vi.mock("../onboarding/OnboardingProgress", () => ({
-  OnboardingProgress: () => <div>onboarding progress</div>,
+vi.mock("./BankHistoryFactsCard", () => ({
+  BankHistoryFactsCard: ({ enabled }: { enabled: boolean }) =>
+    enabled ? <div>bank facts</div> : null,
 }));
 vi.mock("./OutcomeCard", () => ({
   OutcomeCard: ({
@@ -87,6 +88,8 @@ function renderHero(overrides: Partial<HubHeroProps> = {}) {
       nutritionGoal: null,
     },
     hasValueBar: false,
+    signedIn: false,
+    inFirstWeek: false,
     ...overrides,
   };
   return { ...render(<HubHeroBlock {...props} />), props };
@@ -143,14 +146,39 @@ describe("HubHeroBlock", () => {
     expect(screen.queryByText("value bar")).not.toBeInTheDocument();
   });
 
-  it("selects the value bar or onboarding progress fallback", () => {
+  it("selects the value bar or the «Що зʼявиться і коли» card", () => {
     flagMock.mockReturnValue(false);
     const valueBar = renderHero({ hasValueBar: true });
     expect(screen.getByText("value bar")).toBeInTheDocument();
     valueBar.unmount();
 
-    renderHero({ hasValueBar: false });
-    expect(screen.getByText("onboarding progress")).toBeInTheDocument();
+    renderHero({
+      hasValueBar: false,
+      activeModules: ["finyk", "fizruk"],
+      signedIn: true,
+    });
+    expect(screen.getByTestId("newcomer-timeline")).toBeInTheDocument();
+    expect(screen.queryByText(/Модулів увімкнено/)).not.toBeInTheDocument();
+  });
+
+  it("shows bank facts only in the first week to a signed-in Finyk user", () => {
+    flagMock.mockReturnValue(false);
+    const first = renderHero({
+      hasRealEntry: true,
+      activeModules: ["finyk"],
+      signedIn: true,
+      inFirstWeek: true,
+    });
+    expect(screen.getByText("bank facts")).toBeInTheDocument();
+    first.unmount();
+
+    renderHero({
+      hasRealEntry: true,
+      activeModules: ["finyk"],
+      signedIn: true,
+      inFirstWeek: false,
+    });
+    expect(screen.queryByText("bank facts")).not.toBeInTheDocument();
   });
 
   it("forwards checklist actions and renders the cross-module preview", () => {

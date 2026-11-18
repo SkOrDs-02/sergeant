@@ -11,6 +11,10 @@ import { Button } from "@shared/components/ui/Button";
 import { EmptyState } from "@shared/components/ui/EmptyState";
 import { Icon } from "@shared/components/ui/Icon";
 import { Input } from "@shared/components/ui/Input";
+import {
+  HIDE_NATIVE_SEARCH_CANCEL,
+  SearchClearButton,
+} from "@shared/components/ui/SearchClearButton";
 import { messages } from "@shared/i18n/uk";
 import { searchFieldProps } from "@shared/lib/ui/searchFieldProps";
 
@@ -53,7 +57,7 @@ export function TransactionsSearchField({
         // Нативний хрестик `type="search"` дублював би власну кнопку
         // очищення нижче (зйомка 2026-11-18). Ховаємо лише тут: в інших
         // полях пошуку нативний хрестик може бути єдиним способом очистити.
-        className="[&::-webkit-search-cancel-button]:appearance-none"
+        className={HIDE_NATIVE_SEARCH_CANCEL}
         onKeyDown={(event) => {
           if (event.key === "Escape" && active) {
             event.preventDefault();
@@ -63,16 +67,11 @@ export function TransactionsSearchField({
         icon={<Icon name="search" size="md" aria-hidden />}
         suffix={
           active ? (
-            <Button
-              variant="ghost"
-              size="sm"
-              iconOnly
-              aria-label={copy.clear}
-              onClick={() => onQueryChange("")}
+            <SearchClearButton
+              label={copy.clear}
+              onClear={() => onQueryChange("")}
               className="-mr-2"
-            >
-              <Icon name="close" size="md" aria-hidden />
-            </Button>
+            />
           ) : undefined
         }
       />
