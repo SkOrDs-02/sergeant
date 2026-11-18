@@ -23,6 +23,7 @@ import { WATER_ADD_EVENT } from "../hooks/useWaterTracker";
 import { quickMealType } from "../lib/quickMealType";
 import type { NutritionPage } from "../lib/nutritionRouter";
 import { AddSheetRepeat } from "./AddSheetRepeat";
+import type { MealPantryOffer } from "../hooks/useMealPantryOffer";
 import type { SourceTabId } from "./meal-sheet/SourceTabs";
 
 interface NutritionAddActionProps {
@@ -33,6 +34,8 @@ interface NutritionAddActionProps {
   onOpenAt: (tab: SourceTabId) => void;
   onOpenPhoto: () => void;
   onQuickAdd: (chip: QuickChip, mealType?: MealTypeId) => void;
+  /** «Списати … із комори?» після «Як учора» (OD-27 Х-4 а). */
+  pantryOffer?: MealPantryOffer | undefined;
 }
 
 export function NutritionAddAction({
@@ -43,9 +46,10 @@ export function NutritionAddAction({
   onOpenAt,
   onOpenPhoto,
   onQuickAdd,
+  pantryOffer,
 }: NutritionAddActionProps) {
   const chips = useNutritionQuickChips(log.nutritionLog, pantryItems);
-  const copyYesterday = useCopyYesterdayMeals({ log, toast });
+  const copyYesterday = useCopyYesterdayMeals({ log, toast, pantryOffer });
   if (activePage !== "start" && activePage !== "log") return null;
   const src = messages.nutrition.addSources;
   return (

@@ -29,6 +29,7 @@ import {
   saveMealThumbnail,
 } from "../lib/mealPhotoStorage";
 import type { PhotoQuickMeals } from "../components/meal-sheet/photoQuickSave";
+import type { MealPantryLink, MealPantryOffer } from "./useMealPantryOffer";
 
 interface PhotoQuickSaveLog {
   handleAddMeal: (meal: Meal) => string;
@@ -45,11 +46,14 @@ export function usePhotoQuickSave({
   log,
   toast,
   onEdit,
+  pantryOffer,
 }: {
   log: PhotoQuickSaveLog;
   toast: ToastApi;
   /** Відкрити аркуш прийому за сьогодні; немає — тост дає «Скасувати». */
   onEdit?: ((mealType: MealTypeId) => void) | undefined;
+  /** «Списати … із комори?» (OD-27 Х-4 а): лише фото з однією позицією. */
+  pantryOffer?: MealPantryOffer | undefined;
 }): (photo: PhotoQuickMeals, file: File | null) => boolean {
   return useCallback(
     function save(photo: PhotoQuickMeals, file: File | null): boolean {
@@ -83,6 +87,7 @@ export function usePhotoQuickSave({
         .replace("{name}", title)
         .replace("{kcal}", String(kcal));
       const today = added.every((a) => a.date === todayISODate());
+      const pending: { link?: MealPantryLink | undefined } = {};
       toast.success(
         msg,
         undefined,
@@ -91,12 +96,16 @@ export function usePhotoQuickSave({
           : {
               label: "Скасувати",
               kind: "undo",
-              onClick: () =>
-                added.forEach(({ date, id }) => log.handleRemoveMeal(date, id)),
+              onClick: () => {
+                added.forEach(({ date, id }) => log.handleRemoveMeal(date, id));
+                pending.link?.undo();
+              },
             },
       );
+      // Фото з кількома позиціями списання не пропонує (П-7 Б).
+      pending.link = pantryOffer?.(meals.length === 1 ? meals : []);
       return true;
     },
-    [log, toast, onEdit],
+    [log, toast, onEdit, pantryOffer],
   );
 }

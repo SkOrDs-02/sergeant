@@ -929,6 +929,7 @@ describe("AddMealSheet — source step (with templates)", () => {
         expect.objectContaining({ id: "m1" }),
         null,
         "2026-05-09",
+        { multiRow: false, pantryTicket: null },
       );
     });
 

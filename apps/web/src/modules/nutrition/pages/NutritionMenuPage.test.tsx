@@ -95,6 +95,7 @@ function makePantry(): ReturnType<typeof useNutritionPantries> {
     consumePantryItem: vi.fn(),
     variantChoice: null,
     resolveVariantChoice: vi.fn(),
+    revertConsume: vi.fn(),
   } as ReturnType<typeof useNutritionPantries>;
 }
 

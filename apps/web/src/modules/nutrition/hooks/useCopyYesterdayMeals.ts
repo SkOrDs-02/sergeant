@@ -17,6 +17,7 @@ import {
 import type { ToastApi } from "@shared/hooks/useToast";
 import { showUndoToast } from "@shared/lib/ui/undoToast";
 import { mealsByTypeForDay } from "../lib/nutritionStats";
+import type { MealPantryLink, MealPantryOffer } from "./useMealPantryOffer";
 
 interface CopyYesterdayLog {
   nutritionLog: NutritionLog;
@@ -43,19 +44,29 @@ export function yesterdayMealsOf(
 export function useCopyYesterdayMeals({
   log,
   toast,
+  pantryOffer,
 }: {
   log: CopyYesterdayLog;
   toast: ToastApi;
+  /** «Списати … із комори?» (OD-27 Х-4 а); лише копія одного рядка. */
+  pantryOffer?: MealPantryOffer | undefined;
 }): (meals: readonly Meal[], mealType: MealTypeId) => void {
   return useCallback(
     (meals: readonly Meal[], mealType: MealTypeId) => {
       const activeDate = log.getActiveDate();
       const ids = log.handleCopyMeals(meals, activeDate, mealType);
+      const pending: { link?: MealPantryLink | undefined } = {};
       showUndoToast(toast, {
         msg: "Скопійовано з учора",
-        onUndo: () => ids.forEach((id) => log.handleRemoveMeal(activeDate, id)),
+        onUndo: () => {
+          ids.forEach((id) => log.handleRemoveMeal(activeDate, id));
+          pending.link?.undo();
+        },
       });
+      // Копія кількох рядків пропозиції не дає, як фото з кількома
+      // позиціями (П-7 Б): відкрите питання в спеці.
+      pending.link = pantryOffer?.(ids.length === 1 ? meals : []);
     },
-    [log, toast],
+    [log, toast, pantryOffer],
   );
 }

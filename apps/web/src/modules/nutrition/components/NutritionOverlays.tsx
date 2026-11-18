@@ -15,6 +15,9 @@ import {
   yesterdayMealsOf,
 } from "../hooks/useCopyYesterdayMeals";
 import { usePhotoQuickSave } from "../hooks/usePhotoQuickSave";
+import { useSavedRecipes } from "../hooks/useSavedRecipes";
+import type { MealPantryOffer } from "../hooks/useMealPantryOffer";
+import type { MealSaveExtras } from "./meal-sheet/addMealSheetProps";
 import { lastFoodPortion } from "../lib/lastFoodPortion";
 import type { useToast } from "@shared/hooks/useToast";
 import { mealsByTypeForDay } from "../lib/nutritionStats";
@@ -63,6 +66,7 @@ interface NutritionOverlaysProps {
     meal: Meal,
     photoFile?: File | null,
     newDate?: string,
+    extras?: MealSaveExtras,
   ) => void | Promise<void>;
   prefs: NutritionPrefs;
   setPrefs: Dispatch<SetStateAction<NutritionPrefs>>;
@@ -88,6 +92,8 @@ interface NutritionOverlaysProps {
   onCloseMealTypeSheet?: (() => void) | undefined;
   /** Потрібен аркушу прийому — undo після видалення свайпом. */
   toast: Toast;
+  /** «Списати … із комори?» після швидких записів (OD-27 Х-4 а). */
+  pantryOffer?: MealPantryOffer | undefined;
 }
 
 export function NutritionOverlays({
@@ -116,6 +122,7 @@ export function NutritionOverlays({
   onOpenMealTypeSheet,
   onCloseMealTypeSheet,
   toast,
+  pantryOffer,
 }: NutritionOverlaysProps) {
   // Тертя запису їжі (`entry_compose_finished`, §6 контракту). Вимір
   // висить на ЄДИНОМУ прапорці відкриття шита, а не на кнопках, які його
@@ -154,12 +161,16 @@ export function NutritionOverlays({
     log.addMealSheetOpen && addMealInitialMealType && !editingMeal
       ? yesterdayMealsOf(log, addMealInitialMealType)
       : [];
-  const copyYesterday = useCopyYesterdayMeals({ log, toast });
+  const copyYesterday = useCopyYesterdayMeals({ log, toast, pantryOffer });
   const photoQuickSave = usePhotoQuickSave({
     log,
     toast,
     onEdit: onOpenMealTypeSheet,
+    pantryOffer,
   });
+  // «Мої рецепти» як джерело форми (OD-27 Х-3 в): книга читається, коли
+  // аркуш відкрито на новий запис, тож щойно збережений рецепт уже є.
+  const recipeBook = useSavedRecipes(log.addMealSheetOpen && !editingMeal);
 
   return (
     <>
@@ -224,13 +235,13 @@ export function NutritionOverlays({
           log.setAddMealSheetOpen(false);
           setEditingMeal(null);
         }}
-        onSave={(meal, photoFile, newDate) => {
+        onSave={(meal, photoFile, newDate, extras) => {
           // Позначка ДО консюмерського шляху: подію емітить закриття шита
           // (перехід `open` → false), і воно прилітає вже після цього
           // виклику. Без позначки збережений запис пішов би в статистику
           // як `abandoned`.
           markComposeSaved(NUTRITION_MEAL_COMPOSE_KEY);
-          return wrappedSaveMeal(meal, photoFile, newDate);
+          return wrappedSaveMeal(meal, photoFile, newDate, extras);
         }}
         initialStep={addMealInitialStep}
         initialSourceTab={addMealInitialSourceTab}
@@ -265,6 +276,7 @@ export function NutritionOverlays({
             : undefined
         }
         onConsumePantryItem={pantry.consumePantryItem}
+        savedRecipes={recipeBook.saved}
       />
 
       {/* Аркуш одного прийому hero-стрічки — див. `mealTypeSheetMeals`. */}

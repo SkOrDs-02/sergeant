@@ -19,6 +19,7 @@ import { quickMealType } from "../lib/quickMealType";
 import type { ToastApi } from "@shared/hooks/useToast";
 import { newMealId } from "../lib/mealId";
 import type { QuickChip } from "./useNutritionQuickChips";
+import type { MealPantryLink, MealPantryOffer } from "./useMealPantryOffer";
 
 /** Мінімальний зріз `useNutritionLog`, потрібний квік-чипу. */
 interface QuickAddMealLog {
@@ -29,9 +30,12 @@ interface QuickAddMealLog {
 export function useQuickAddMealFromChip({
   log,
   toast,
+  pantryOffer,
 }: {
   log: QuickAddMealLog;
   toast: ToastApi;
+  /** «Списати … із комори?» другим тостом (OD-27 Х-4 а). */
+  pantryOffer?: MealPantryOffer | undefined;
 }): (chip: QuickChip, mealType?: MealTypeId) => void {
   return useCallback(
     (chip: QuickChip, mealType?: MealTypeId) => {
@@ -71,6 +75,7 @@ export function useQuickAddMealFromChip({
       };
       // День, під яким запис ЛЯГ: `log.selectedDate` міг відстати від годинника.
       const dateForLog = log.handleAddMeal(meal);
+      const pending: { link?: MealPantryLink | undefined } = {};
       toast.success(
         `${chip.label} додано · ${chip.macros.kcal} ккал`,
         undefined,
@@ -79,10 +84,12 @@ export function useQuickAddMealFromChip({
           kind: "undo",
           onClick: () => {
             log.handleRemoveMeal(dateForLog, id);
+            pending.link?.undo();
           },
         },
       );
+      pending.link = pantryOffer?.([meal]);
     },
-    [log, toast],
+    [log, toast, pantryOffer],
   );
 }

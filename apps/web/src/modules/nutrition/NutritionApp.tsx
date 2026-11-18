@@ -7,6 +7,11 @@ import type { Meal, MealTypeId } from "@sergeant/nutrition-domain";
 import { todayISODate } from "@sergeant/nutrition-domain";
 import { mealsByTypeForDay } from "./lib/nutritionStats";
 import { useQuickAddMealFromChip } from "./hooks/useQuickAddMealFromChip";
+import {
+  useMealPantryOffer,
+  type MealPantryLink,
+} from "./hooks/useMealPantryOffer";
+import type { MealSaveExtras } from "./components/meal-sheet/addMealSheetProps";
 import type { DataStateQueryLike } from "@shared/components/ui/DataState";
 import type { NutritionDayPlan } from "./hooks/useNutritionUiState";
 import { NutritionHeader } from "./components/NutritionHeader";
@@ -405,8 +410,20 @@ export default function NutritionApp({
     [recipeCacheKey],
   );
 
+  // OD-27 Х-4 а: «Списати … із комори?» другим тостом після запису.
+  const pantryOffer = useMealPantryOffer(toast, {
+    items: pantry.pantryItems,
+    consume: pantry.consumePantryItem,
+    revert: pantry.revertConsume,
+  });
+
   const wrappedSaveMeal = useCallback(
-    async (meal: Meal, photoFile?: File | null, newDate?: string) => {
+    async (
+      meal: Meal,
+      photoFile?: File | null,
+      newDate?: string,
+      extras?: MealSaveExtras,
+    ) => {
       const isEdit = !!editingMeal?.id;
       if (isEdit && editingMeal && editingMeal.date) {
         const fromDate = editingMeal.date;
@@ -429,6 +446,7 @@ export default function NutritionApp({
         // День — той, під яким запис ЛЯГ (повертає `handleAddMeal`), а не
         // `log.selectedDate` цього рендеру: він міг відстати від годинника.
         const dateForLog = log.handleAddMeal(meal);
+        const pending: { link?: MealPantryLink | undefined } = {};
         // Додавання миттєве і без підтвердження — тост мусить нести
         // «Скасувати», як quick-chip нижче (бета-фідбек 2026-08-07).
         toast.success("Страву додано.", undefined, {
@@ -436,8 +454,13 @@ export default function NutritionApp({
           kind: "undo",
           onClick: () => {
             log.handleRemoveMeal(dateForLog, meal.id);
+            pending.link?.undo();
           },
         });
+        pending.link = pantryOffer(
+          extras?.multiRow ? [] : [meal],
+          extras?.pantryTicket,
+        );
       }
       // Оригінал фото приходить із AddMealSheet (крок фото демонтується
       // до збереження, тож file input там уже недоступний).
@@ -446,12 +469,16 @@ export default function NutritionApp({
         if (blob) await saveMealThumbnail(meal.id, blob);
       }
     },
-    [editingMeal, log, setEditingMeal, toast],
+    [editingMeal, log, setEditingMeal, toast, pantryOffer],
   );
 
   // Phase 6.6 quick-chip: логіка в `useQuickAddMealFromChip` (винесено
   // 2026-08-07 під стелю Hard Rule #18).
-  const handleQuickAddMealFromChip = useQuickAddMealFromChip({ log, toast });
+  const handleQuickAddMealFromChip = useQuickAddMealFromChip({
+    log,
+    toast,
+    pantryOffer,
+  });
 
   const storageBanner = [
     log.storageErr,
@@ -610,6 +637,7 @@ export default function NutritionApp({
                   <NutritionLogPage
                     log={log}
                     toast={toast}
+                    pantryOffer={pantryOffer}
                     setEditingMeal={setEditingMeal}
                   />
                 )}
@@ -670,6 +698,7 @@ export default function NutritionApp({
           onOpenAt={openAddMealAt}
           onOpenPhoto={handleOpenMealPhoto}
           onQuickAdd={handleQuickAddMealFromChip}
+          pantryOffer={pantryOffer}
         />
 
         <NutritionBottomNav
@@ -703,6 +732,7 @@ export default function NutritionApp({
           onOpenMealTypeSheet={setOpenMealTypeSheet}
           onCloseMealTypeSheet={() => setOpenMealTypeSheet(null)}
           toast={toast}
+          pantryOffer={pantryOffer}
         />
       </MeshBackground>
     </ModuleAccentProvider>

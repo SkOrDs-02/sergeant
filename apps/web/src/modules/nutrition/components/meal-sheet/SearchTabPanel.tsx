@@ -21,10 +21,13 @@
  */
 import type { ComponentProps, Dispatch, SetStateAction } from "react";
 import type {
+  Meal,
   MealTemplate,
+  MealTypeId,
   NutritionPrefs,
   PantryItem,
 } from "@sergeant/nutrition-domain";
+import type { SavedRecipe } from "../../lib/recipeBook";
 import type { QuickChip } from "../../hooks/useNutritionQuickChips";
 import type { MealFormState } from "./mealFormUtils";
 import { useState } from "react";
@@ -38,6 +41,8 @@ import { FromPantryRow } from "./FromPantryRow";
 import type { MealSourcePick } from "./useMealSourcePick";
 import { MealTemplatesRow } from "./MealTemplatesRow";
 import { QuickAddChips } from "../QuickAddChips";
+import { RecipesFromBookRow } from "./RecipesFromBookRow";
+import { RecipeLogSheet } from "./RecipeLogSheet";
 
 interface SearchTabPanelProps {
   mealTemplates: MealTemplate[];
@@ -57,6 +62,12 @@ interface SearchTabPanelProps {
   setFromPantryItem: Dispatch<SetStateAction<string | null>>;
   /** Props пошуку йдуть групою — вони належать одному компоненту. */
   picker: ComponentProps<typeof FoodPickerSection>;
+  /** «Мої рецепти» (OD-27 Х-3 в); порожньо — блоку немає. */
+  savedRecipes?: readonly SavedRecipe[] | undefined;
+  /** Тип прийому, з яким рецепт ляже в журнал (`quickMealType`). */
+  recipeMealType?: MealTypeId | undefined;
+  /** Рецепт записано: аркуш прийому закривається. */
+  onRecipeLogged?: ((meal: Meal) => void) | undefined;
 }
 
 export function SearchTabPanel({
@@ -73,8 +84,12 @@ export function SearchTabPanel({
   fromPantryItem,
   setFromPantryItem,
   picker,
+  savedRecipes = [],
+  recipeMealType = "snack",
+  onRecipeLogged,
 }: SearchTabPanelProps) {
   const [myFoodsOpen, setMyFoodsOpen] = useState(false);
+  const [recipeToLog, setRecipeToLog] = useState<SavedRecipe | null>(null);
   return (
     <>
       <FoodPickerSection {...picker} />
@@ -110,6 +125,10 @@ export function SearchTabPanel({
         </CollapsibleSection>
       )}
 
+      {onRecipeLogged && (
+        <RecipesFromBookRow recipes={savedRecipes} onPick={setRecipeToLog} />
+      )}
+
       {pantryItems.length > 0 && (
         <FromPantryRow
           pantryItems={pantryItems}
@@ -135,6 +154,17 @@ export function SearchTabPanel({
         onClose={() => setMyFoodsOpen(false)}
         zIndex={130}
       />
+      {onRecipeLogged && (
+        <RecipeLogSheet
+          recipe={recipeToLog}
+          mealType={recipeMealType}
+          onClose={() => setRecipeToLog(null)}
+          onLog={(meal) => {
+            setRecipeToLog(null);
+            onRecipeLogged(meal);
+          }}
+        />
+      )}
     </>
   );
 }

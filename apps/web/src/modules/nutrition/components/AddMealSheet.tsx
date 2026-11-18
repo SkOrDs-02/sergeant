@@ -131,6 +131,7 @@ export function AddMealSheet({
   onQuickAddMeal,
   getLastFoodPortion,
   onPhotoSave,
+  savedRecipes = [],
 }: AddMealSheetProps) {
   const [form, setForm] = useState<MealFormState>(() => emptyForm(null));
   const [foodQuery, setFoodQuery] = useState("");
@@ -396,10 +397,13 @@ export function AddMealSheet({
   function finalizeSave(meals: Meal[], template: MealSaveTemplate) {
     savePicked.persist(pickedFood);
     bindMissedBarcode(pickedFood);
-    if (fromPantryItem && onConsumePantryItem) {
-      const grams = gramsOrDefault(pickedGrams);
-      onConsumePantryItem(fromPantryItem, grams);
-    }
+    // Квитанція списання «З комори» їде разом із записом: «Скасувати» в
+    // тості запису поверне списане (OD-27 Х-4 а).
+    const pantryTicket =
+      fromPantryItem && onConsumePantryItem
+        ? (onConsumePantryItem(fromPantryItem, gramsOrDefault(pickedGrams)) ??
+          null)
+        : null;
     if (rememberForRepeat && !initialMeal?.id && setPrefs) {
       setPrefs((prefs) => ({
         ...prefs,
@@ -420,11 +424,13 @@ export function AddMealSheet({
       initialMeal?.id && initialDate && date && date !== initialDate
         ? date
         : undefined;
+    const extras = { multiRow: meals.length > 1, pantryTicket };
     meals.forEach((meal) =>
       onSave(
         initialMeal?.demo ? { ...meal, demo: true } : meal,
         appliedPhoto?.file ?? null,
         movedTo,
+        extras,
       ),
     );
   }
@@ -629,6 +635,14 @@ export function AddMealSheet({
                   searchSettled: search.searchSettled,
                   setPickedFood,
                   setPickedGrams,
+                },
+                // Х-3 (в): рецепт пише крок «скільки зʼїв», не форма.
+                savedRecipes: initialMeal?.id ? [] : savedRecipes,
+                recipeMealType: quickMealType(initialMealType),
+                onRecipeLogged: (meal) => {
+                  hapticSuccess();
+                  onSave(meal, null, undefined);
+                  onClose();
                 },
               }}
               barcode={{

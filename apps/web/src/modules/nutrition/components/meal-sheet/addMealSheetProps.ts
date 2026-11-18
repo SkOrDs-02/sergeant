@@ -13,15 +13,30 @@ import type {
   PantryItem,
 } from "@sergeant/nutrition-domain";
 import type { QuickChip } from "../../hooks/useNutritionQuickChips";
+import type { PantryConsumeTicket } from "../../hooks/usePantryConsumeWrite";
+import type { SavedRecipe } from "../../lib/recipeBook";
 import type { LastFoodPortion } from "../../lib/lastFoodPortion";
 import type { PhotoQuickMeals } from "./photoQuickSave";
 import type { SourceTabId } from "./SourceTabs";
+
+/** Що збереження знає про комору (OD-27 Х-4 а). */
+export interface MealSaveExtras {
+  /** Рядків у збереженні кілька (фото з кількома позиціями): списання не пропонуємо. */
+  multiRow?: boolean | undefined;
+  /** Списання, яке вже зробив рядок «З комори»: «Скасувати» його повертає. */
+  pantryTicket?: PantryConsumeTicket | null | undefined;
+}
 
 export interface AddMealSheetProps {
   open: boolean;
   onClose: () => void;
   /** `photoFile` — оригінал фото для мініатюри, коли страва прийшла з AI-аналізу. */
-  onSave: (meal: Meal, photoFile?: File | null, newDate?: string) => void;
+  onSave: (
+    meal: Meal,
+    photoFile?: File | null,
+    newDate?: string,
+    extras?: MealSaveExtras,
+  ) => void;
   /** День редагованого запису; з ним у формі зʼявляється поле «Дата» (перенос). */
   initialDate?: string | undefined;
   /** Записи цього ж прийому за вчора: непорожньо = на кроці джерела є «Як учора». */
@@ -42,7 +57,11 @@ export interface AddMealSheetProps {
   mealTemplates?: MealTemplate[] | undefined;
   setPrefs?: Dispatch<SetStateAction<NutritionPrefs>> | undefined;
   pantryItems?: PantryItem[] | undefined;
-  onConsumePantryItem?: ((itemName: string, grams: number) => void) | undefined;
+  onConsumePantryItem?:
+    | ((itemName: string, grams: number) => PantryConsumeTicket | void)
+    | undefined;
+  /** Збережені рецепти — джерело у формі (OD-27 Х-3 в); лише «Мої рецепти». */
+  savedRecipes?: readonly SavedRecipe[] | undefined;
   quickChips?: readonly QuickChip[] | undefined;
   onQuickAddMeal?: ((chip: QuickChip) => void) | undefined;
   /** Вага минулого запису продукту (OD-27 Х-1 б). */
