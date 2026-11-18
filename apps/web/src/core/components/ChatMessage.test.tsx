@@ -285,4 +285,27 @@ describe("TypingIndicator", () => {
       screen.getByRole("status", { name: "Сержант набирає відповідь" }),
     ).toBeInTheDocument();
   });
+
+  // С-1 (б), рішення власника 2026-11-18: підпис кроку в тій самій бульбашці.
+  it("без кроку показує нейтральний підпис «Думаю…» поруч із крапками", () => {
+    renderInRouter(<TypingIndicator />);
+    expect(screen.getByTestId("typing-indicator-label")).toHaveTextContent(
+      /^Думаю…$/,
+    );
+  });
+
+  it("з кроком показує його замість нейтрального підпису", () => {
+    renderInRouter(<TypingIndicator label="Шукаю операцію" />);
+    expect(screen.getByTestId("typing-indicator-label")).toHaveTextContent(
+      /^Шукаю операцію$/,
+    );
+    expect(screen.queryByText("Думаю…")).not.toBeInTheDocument();
+  });
+
+  it("назва статусу стала і не міняється з кроком (оголошення — у HubChatBody)", () => {
+    renderInRouter(<TypingIndicator label="Шукаю операцію" />);
+    expect(
+      screen.getByRole("status", { name: "Сержант набирає відповідь" }),
+    ).toBeInTheDocument();
+  });
 });

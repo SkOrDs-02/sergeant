@@ -13,6 +13,11 @@ type ChatMessageEntry = HubChatSession["messages"][number];
 export interface HubChatBodyProps {
   messages: ChatMessageEntry[];
   loading: boolean;
+  /**
+   * Крок, який Сержант виконує зараз (С-1 (б)), або `null` для нейтрального
+   * стану. Див. `useChatSend.step`.
+   */
+  step?: string | null;
   /** Notified when a message bubble starts TTS playback. */
   onSpeak: () => void;
   /** Cancel the in-flight chat request — wired to the inline cancel pill. */
@@ -32,6 +37,7 @@ const STICK_THRESHOLD_PX = 32;
 export function HubChatBody({
   messages,
   loading,
+  step = null,
   onSpeak,
   onCancel,
 }: HubChatBodyProps) {
@@ -103,7 +109,7 @@ export function HubChatBody({
         aria-atomic="true"
         className="sr-only"
       >
-        {loading ? "Сержант відповідає…" : announcedReply}
+        {loading ? (step ?? "Сержант відповідає…") : announcedReply}
       </span>
       {/*
         AI-DANGER: розкриття «це AI» (EU AI Act ст. 50(1), чинна з 2026-08-02)
@@ -125,7 +131,7 @@ export function HubChatBody({
       ))}
       {loading && (
         <div className="flex items-center gap-2">
-          <TypingIndicator />
+          <TypingIndicator label={step} />
           <Tooltip content="Скасувати (Esc)" placement="top-center">
             <button
               type="button"

@@ -157,7 +157,7 @@ export function useHubDashboardState(props: {
 }): HubDashboardState {
   const { onOpenModule, user, insightsOpen } = props;
 
-  useMondayAutoDigest();
+  useMondayAutoDigest({ signedIn: Boolean(user) });
 
   // AI-CONTEXT: `bump` тут не декоративний. Докази «юзер уже не новий»
   // живуть у SQLite warm-caches, які теплішають АСИНХРОННО після

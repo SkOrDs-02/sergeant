@@ -21,6 +21,8 @@ import type { ModuleAccent } from "@sergeant/design-tokens";
 export const coachKeys = {
   all: ["coach"] as const,
   insight: (dayKey: string) => ["coach", "insight", dayKey] as const,
+  /** `GET /api/coach/memory`: серверна копія звітів тижня (С-3 (а)). */
+  memory: ["coach", "memory"] as const,
 };
 
 // ─── Weekly digest ────────────────────────────────────────────────────────

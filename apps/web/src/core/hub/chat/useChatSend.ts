@@ -8,7 +8,6 @@ import { useRegisterDirtyState } from "@shared/hooks/useRegisterDirtyState";
 import { initialChatInput, useChatInputDraft } from "./chatInputDraft";
 import { billingKeys, chatKeys, hubKeys } from "@shared/lib/api/queryKeys";
 import { perfMark, perfEnd } from "@shared/lib/ui/perf";
-import { safeReadLS } from "@shared/lib/storage/storage";
 import {
   CONTEXT_TTL_MS,
   cancelIdle,
@@ -35,6 +34,12 @@ import {
 } from "@sergeant/shared";
 import { trackEvent } from "../../observability/analytics";
 import { parseToolCalls } from "./toolCallSchema";
+import { describeToolStep } from "./chatProgress";
+import {
+  CANCELLED_BY_USER_TEXT,
+  HUB_CHAT_HELP_TEXT,
+  isAutoTtsEnabled,
+} from "./chatSendText";
 import { keepReplayableToolBlocks } from "./replayableToolBlocks";
 import { buildTurnCards, markCardsAfterFailedSynthesis } from "./turnCards";
 import {
@@ -50,15 +55,6 @@ import { usePlan } from "../../billing/usePlan";
 import { requiresConfirmation } from "@sergeant/shared";
 
 type ChatMessage = HubChatSession["messages"][number];
-const CANCELLED_BY_USER_TEXT = "Скасовано, нічого не змінено.";
-const AUTO_TTS_ENABLED_KEY = "sergeant:hub-chat:auto-tts:v1";
-const HUB_CHAT_HELP_TEXT = [
-  "Ось коротка довідка по командам:",
-  "",
-  "• /help: показати цю довідку.",
-  "• Напиши дію звичайними словами: «додай витрату 120 грн на каву», «запиши тренування», «що було цього тижня?»",
-  "• Кнопка з ? біля поля вводу теж відкриває цю довідку.",
-].join("\n");
 
 /**
  * Audit 03 F15 (perf): cap the accumulated assistant text length per stream.
@@ -71,10 +67,6 @@ const HUB_CHAT_HELP_TEXT = [
  * proxy for bytes here — UTF-16 code units, ~256 KB worst case for BMP text.
  */
 const MAX_STREAM_CHARS = 256 * 1024;
-
-function isAutoTtsEnabled(): boolean {
-  return safeReadLS<boolean>(AUTO_TTS_ENABLED_KEY) === true;
-}
 
 /**
  * Скільки ПОСЛІДОВНИХ відправок несуть preset, рахуючи seed-повідомлення.
@@ -122,6 +114,11 @@ export interface UseChatSendResult {
   input: string;
   setInput: React.Dispatch<React.SetStateAction<string>>;
   loading: boolean;
+  /**
+   * Що Сержант робить зараз (С-1 (б)): підпис інструмента лише на час його
+   * виконання клієнтом; `null` — нейтральний стан (перший хід, синтез).
+   */
+  step: string | null;
   speaking: boolean;
   setSpeaking: React.Dispatch<React.SetStateAction<boolean>>;
   online: boolean;
@@ -199,6 +196,7 @@ export function useChatSend({
   // його не знищує (data-45, `core/app/autoUpdate.ts`).
   useRegisterDirtyState(input.trim() !== "");
   const [loading, setLoading] = useState(false);
+  const [step, setStep] = useState<string | null>(null);
   const [speaking, setSpeaking] = useState(false);
   const [paywallOpen, setPaywallOpen] = useState(false);
   const confirmDestructive = useDestructiveConfirm();
@@ -541,9 +539,12 @@ export function useChatSend({
             }
           }
 
+          // С-1 (б): крок показуємо рівно на час виконання, не за таймером.
+          setStep(describeToolStep(toolCalls.map((tc) => tc.name as string)));
           const handlerResults = await executeActions(
             toolCalls as Parameters<typeof executeActions>[0],
           );
+          setStep(null);
 
           // `hubchat_tool_invoked` — подія стояла в каталозі
           // (`ANALYTICS_EVENTS`) із квітня, закріплена тестом, і НІХТО її не
@@ -783,6 +784,7 @@ export function useChatSend({
         clearTimeout(timeoutId);
         if (abortRef.current === ac) abortRef.current = null;
         setLoading(false);
+        setStep(null);
         setHubStreaming(false);
         // Лічильник квоти читався лише на монтуванні, тож пігулка все життя
         // сесії показувала «0/5» навіть поруч із 429 (browser QA
@@ -854,6 +856,7 @@ export function useChatSend({
     input,
     setInput,
     loading,
+    step,
     speaking,
     setSpeaking,
     online,

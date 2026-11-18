@@ -120,6 +120,7 @@ function HubChat({
     input,
     setInput,
     loading,
+    step,
     speaking,
     setSpeaking,
     online,
@@ -168,6 +169,7 @@ function HubChat({
       <HubChatBody
         messages={messages}
         loading={loading}
+        step={step}
         onSpeak={() => setSpeaking(true)}
         onCancel={cancelInFlight}
       />

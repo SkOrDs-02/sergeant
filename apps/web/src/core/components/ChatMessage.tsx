@@ -259,32 +259,49 @@ function ChatMessageImpl({ message, onSpeak }: ChatMessageProps) {
 
 export const ChatMessage = memo(ChatMessageImpl);
 
-export function TypingIndicator() {
+export interface TypingIndicatorProps {
+  /**
+   * Що Сержант робить зараз (С-1 (б), рішення власника 2026-11-18): підпис
+   * інструмента, поки клієнт його виконує. Без нього — нейтральне «Думаю…».
+   */
+  label?: string | null;
+}
+
+/**
+ * Бульбашка очікування: крапки (лише без reduced-motion) і підпис кроку.
+ *
+ * AI-CONTEXT: ширина бульбашки стала (`flex-1` до `max-w-xs`), тож зміна
+ * підпису не зсуває «Скасувати» поруч. Уміст `aria-hidden`, а назва статусу
+ * стала: крок оголошує ОДНА чемна область у `HubChatBody`, інакше читалка
+ * чула б його двічі.
+ */
+export function TypingIndicator({ label }: TypingIndicatorProps = {}) {
   return (
     <div
-      className="flex items-end gap-2"
+      className="flex min-w-0 max-w-xs flex-1 items-end"
       role="status"
       aria-label="Сержант набирає відповідь"
     >
-      {/* Animated dots — hidden when prefers-reduced-motion is active. */}
       <div
         aria-hidden
-        className="motion-safe:flex hidden bg-panel border border-line rounded-panel rounded-bl-sm px-4 py-3 gap-1.5 items-center"
+        className="flex w-full min-w-0 items-center gap-3 bg-panel border border-line rounded-panel rounded-bl-sm px-4 py-3"
       >
-        {[0, 0.15, 0.3].map((d, i) => (
-          <span
-            key={i}
-            className="w-1.5 h-1.5 bg-subtle rounded-mark motion-safe:animate-bounce"
-            style={{ animationDelay: `${d}s` }}
-          />
-        ))}
-      </div>
-      {/* Static label shown only when prefers-reduced-motion is set. */}
-      <div
-        aria-hidden
-        className="motion-reduce:flex motion-safe:hidden bg-panel border border-line rounded-panel rounded-bl-sm px-4 py-3 items-center"
-      >
-        <span className="text-style-body text-muted">Думаю…</span>
+        {/* Animated dots — hidden when prefers-reduced-motion is active. */}
+        <span className="motion-safe:flex hidden shrink-0 gap-1.5 items-center">
+          {[0, 0.15, 0.3].map((d, i) => (
+            <span
+              key={i}
+              className="w-1.5 h-1.5 bg-subtle rounded-mark motion-safe:animate-bounce"
+              style={{ animationDelay: `${d}s` }}
+            />
+          ))}
+        </span>
+        <span
+          data-testid="typing-indicator-label"
+          className="min-w-0 text-style-body text-muted text-pretty"
+        >
+          {label ?? "Думаю…"}
+        </span>
       </div>
     </div>
   );

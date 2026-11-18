@@ -84,8 +84,37 @@ describe("WeeklyDigestCard — DataState routing", () => {
     expect(
       screen.queryByRole("button", { name: /згенерувати звіт/i }),
     ).toBeNull();
-    expect(screen.getByText(/зʼявиться сам у понеділок/i)).toBeInTheDocument();
+    // С-3 (а), рішення власника 2026-11-18: звіт догенеровується при першому
+    // відкритті головної після завершення тижня, а не лише в понеділок.
+    expect(
+      screen.getByText(
+        "Звіт зʼявиться сам, коли тиждень завершиться і ти вперше відкриєш головну.",
+      ),
+    ).toBeInTheDocument();
+    expect(screen.queryByText(/у понеділок/i)).toBeNull();
     expect(screen.queryByLabelText(/генерую звіт тижня/i)).toBeNull();
+  });
+
+  it("empty slot for the finished week does not promise a Monday that already passed", () => {
+    useWeeklyDigestMock.mockReturnValue({
+      digest: null,
+      loading: false,
+      error: null,
+      weekRange: "03 — 09 листоп.",
+      generate: vi.fn(),
+      isCurrentWeek: false,
+      canGenerate: true,
+    });
+
+    render(<WeeklyDigestCard />);
+
+    expect(
+      screen.getByText("Звіт за цей тиждень ще не зібрано."),
+    ).toBeInTheDocument();
+    expect(screen.queryByText(/коли тиждень завершиться/i)).toBeNull();
+    expect(
+      screen.queryByRole("button", { name: /згенерувати звіт/i }),
+    ).toBeNull();
   });
 
   it("opens on last week's digest when the new week has none yet (Monday auto-report)", () => {

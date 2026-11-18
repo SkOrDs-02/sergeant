@@ -9,7 +9,9 @@ vi.mock("../../components/ChatMessage", () => ({
   ChatMessage: ({ message }: { message: { id: string; text: string } }) => (
     <div data-testid={`msg-${message.id}`}>{message.text}</div>
   ),
-  TypingIndicator: () => <div data-testid="typing-indicator" />,
+  TypingIndicator: ({ label }: { label?: string | null }) => (
+    <div data-testid="typing-indicator">{label ?? ""}</div>
+  ),
 }));
 
 vi.mock("@shared/components/ui/Icon", () => ({
@@ -162,6 +164,25 @@ describe("HubChatBody", () => {
     expect(liveRegion).toHaveTextContent("Сержант відповідає…");
     const scrollContainer = container.querySelector('[aria-busy="true"]');
     expect(scrollContainer).not.toHaveAttribute("aria-live");
+  });
+
+  // С-1 (б): крок інструмента оголошується тією самою чемною областю,
+  // а не окремою, щоб не дублювати оголошення.
+  it("passes the current step to the indicator and announces it politely", () => {
+    const { container } = renderBody({ loading: true, step: "Шукаю операцію" });
+    expect(screen.getByTestId("typing-indicator")).toHaveTextContent(
+      "Шукаю операцію",
+    );
+    const live = container.querySelectorAll('[aria-live="polite"]');
+    expect(live).toHaveLength(1);
+    expect(live[0]).toHaveTextContent(/^Шукаю операцію$/);
+  });
+
+  it("falls back to the neutral announcement when there is no step", () => {
+    const { container } = renderBody({ loading: true, step: null });
+    expect(container.querySelector('[aria-live="polite"]')).toHaveTextContent(
+      /^Сержант відповідає…$/,
+    );
   });
 
   it("clears live region text when not loading", () => {
