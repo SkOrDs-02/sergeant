@@ -51,12 +51,25 @@ test("@critical assistant catalogue: search filters and recovers", async ({
   await expect(page.getByTestId("catalogue-toggle-all")).toBeVisible();
 
   const search = page.getByRole("searchbox", { name: "Пошук можливостей" });
+  // Порожній пошук - `EmptyState` (PR-C6, хвиля 8 аудиту продукту): статус
+  // із назвою запиту і дією «Скинути пошук», що усуває причину порожнечі.
   await search.fill("wave3-no-results");
+  const empty = page
+    .getByRole("status")
+    .filter({ hasText: "Нічого не знайшов" });
+  await expect(empty).toBeVisible();
   await expect(
-    page.getByText("Нічого не знайшов за «wave3-no-results»"),
+    empty.getByText("За запитом «wave3-no-results» нічого немає."),
   ).toBeVisible();
   await expect(page.getByTestId("catalogue-toggle-all")).toHaveCount(0);
 
+  await empty.getByRole("button", { name: "Скинути пошук" }).click();
+  await expect(search).toHaveValue("");
+  await expect(page.getByTestId("catalogue-toggle-all")).toBeVisible();
+
+  // Ручне очищення поля теж повертає каталог.
+  await search.fill("wave3-no-results");
+  await expect(empty).toBeVisible();
   await search.fill("");
   await expect(page.getByTestId("catalogue-toggle-all")).toBeVisible();
 
