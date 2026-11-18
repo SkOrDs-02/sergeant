@@ -107,7 +107,11 @@ export class ErrorBoundary extends Component<
       if (typeof Fallback === "function") {
         return <Fallback error={error} resetError={this.resetError} />;
       }
-      if (Fallback) return Fallback;
+      // `!== undefined`, а не truthy: `fallback={null}` означає «нічого не
+      // малюй» (`BootGate` у `RootLayout.tsx`). Truthy-перевірка пропускала
+      // `null` далі, і падіння невидимого boot-кластера показувало
+      // повноекранну картку поверх живого модуля.
+      if (Fallback !== undefined) return Fallback;
       // Default crash-recovery screen — shown when no custom fallback was
       // provided. Gives the user a clear "something went wrong" message
       // with a retry button instead of a blank white screen.
