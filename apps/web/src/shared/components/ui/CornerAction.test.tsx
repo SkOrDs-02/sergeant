@@ -2,7 +2,7 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { cleanup, fireEvent, render, screen } from "@testing-library/react";
 import { SHEET_FOOTER_INSET_VAR } from "../../hooks/useBottomInsetVar";
-import { FAB_WIDTH_VAR } from "../../hooks/useBottomInsetVar";
+import { FAB_INSET_VAR, FAB_WIDTH_VAR } from "../../hooks/useBottomInsetVar";
 import { AddAction, CornerAction } from "./CornerAction";
 
 afterEach(() => {
@@ -86,5 +86,27 @@ describe("CornerAction", () => {
     expect(root.style.getPropertyValue(FAB_WIDTH_VAR)).toBe("138px");
     unmount();
     expect(root.style.getPropertyValue(FAB_WIDTH_VAR)).toBe("");
+  });
+
+  it("публікує виміряну смугу (кнопка + відступ над навом) у --sgt-fab-inset і знімає при демонтажі", () => {
+    // Трей тостів бере цю змінну в `max()` (рішення власника 2026-11-18),
+    // тож значення мусить бути виміряним, а не 56/60/64 з голови.
+    const originalRect = HTMLElement.prototype.getBoundingClientRect;
+    const bandTop = window.innerHeight - 131;
+    vi.spyOn(HTMLElement.prototype, "getBoundingClientRect").mockImplementation(
+      function (this: HTMLElement) {
+        if (this.dataset["testid"] === "corner-action") {
+          return new DOMRect(0, bandTop, 390, 58);
+        }
+        return originalRect.call(this);
+      },
+    );
+    const root = document.documentElement;
+    const { unmount } = render(
+      <CornerAction label="Додати" onClick={vi.fn()} />,
+    );
+    expect(root.style.getPropertyValue(FAB_INSET_VAR)).toBe("131px");
+    unmount();
+    expect(root.style.getPropertyValue(FAB_INSET_VAR)).toBe("");
   });
 });
