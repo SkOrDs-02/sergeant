@@ -1,6 +1,6 @@
 # pnpm Overrides Rationale
 
-> **Last touched:** 2026-10-20 by @claude. **Next review:** 2027-01-23.
+> **Last touched:** 2026-11-18 by @claude (`node-forge` → `^1.4.3`). **Next review:** 2027-01-23.
 > **Status:** Active
 
 Документація кожного запису в `pnpm.overrides` кореневого `package.json`.
@@ -269,6 +269,28 @@ API: `get-uri` викликає лише `access`, `lastMod`, `list`, `downloadT
 `browserslist@^4.28.7` або новіше і `pnpm why browserslist -r` не покаже жодної копії `<4.28.7`.
 
 **Last reviewed:** 2026-09-01
+
+---
+
+## `node-forge` → `^1.4.3`
+
+**Why:** `node-forge@1.4.0` тягнув 24 advisory з `pnpm audit` (9 high), зокрема
+[GHSA-86w9-cpqp-85rv](https://github.com/advisories/GHSA-86w9-cpqp-85rv) (high, підробка
+підпису RSA PKCS#1 v1.5), що до 2026-11-18 стояв винятком у
+[`audit-exceptions.md`](docs/governance/security/audit-exceptions.md) як «патчу не існує».
+2026-10-27..11-04 вийшли `1.4.1`-`1.4.3`; частину advisory (`<=1.4.2`) закриває лише
+`1.4.3`. Шляхи: рантайм сервера `apps/server > @parse/node-apn@8.1.0 > node-forge` і тулінг
+Expo/React Native (`@expo/cli`, `@expo/code-signing-certificates`,
+`@react-native/dev-middleware > selfsigned`), які оголошують `node-forge@^1.x` і самі на
+`1.4.3` не переходили, бо lockfile тримав `1.4.0`. Мажор той самий, тож API не зачеплено.
+Після override `pnpm audit` не повертає жодного advisory `node-forge`.
+
+**Drop when:** `pnpm why node-forge -r` не покаже жодної копії `<1.4.3` без override
+(тобто всі споживачі самі розвʼязуються в `>=1.4.3`).
+
+**Last reviewed:** 2026-11-18
+
+---
 
 ## `fast-uri` → `^3.1.8`
 
