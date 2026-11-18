@@ -376,6 +376,9 @@ export function aggregateRoutine(weekKey: string): RoutineAggregate | null {
   // реєстру метрик (стадія 5г).
   const period = calcRoutinePeriodCompletion(habits, completions, weekDays, {
     pausedFrom: localDateKey(new Date()),
+    // «Не зміг» з причиною виходить зі знаменника (канон routine.md §5,
+    // рішення власника 2026-11-18, METRICS_VERSION 20).
+    skips: state.skips ?? {},
   });
 
   const habitStats: HabitStat[] = period.perHabit.map((h) => ({
