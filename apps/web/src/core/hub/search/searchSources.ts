@@ -1,5 +1,5 @@
 import { FizrukData } from "@sergeant/fizruk-domain";
-import { pluralExercises } from "@sergeant/shared";
+import { deviceDayKey, pluralExercises } from "@sergeant/shared";
 import { loadRoutineState } from "@routine/lib/routineStorage";
 import { getCachedFizrukSqliteState } from "@fizruk/lib/sqliteReader";
 import { loadNutritionLog } from "@nutrition/lib/nutritionStorage";
@@ -8,6 +8,7 @@ import { getCachedFinykSqliteState } from "@finyk/lib/sqliteReader";
 import { tokenize } from "../hubSearchEngine";
 import { searchActions, searchAiHandoff } from "./searchActions";
 import { finykManualSearchSnapshot, searchFinyk } from "./searchFinyk";
+import { habitScheduleLabel } from "./habitScheduleLabel";
 import { scoreLru } from "./searchCache";
 import { searchProfile } from "./searchProfile";
 import { searchAssistantTools, searchSettings } from "./searchSettings";
@@ -140,6 +141,9 @@ function searchRoutine(tokens: string[]): Hit[] {
   const results: Hit[] = [];
   // `hub_routine_v1` is tombstoned — read the canonical SQLite warm cache.
   const habits = loadRoutineState().habits;
+  // Ціль тижня звички — особиста сутність: день за годинником пристрою
+  // (ADR-0078), а не київський `localDateKey`.
+  const todayKey = deviceDayKey();
   for (const h of habits) {
     // AI-CONTEXT (2026-08-21): тут стояло `${h.emoji || ""} ${h.name}`.
     // Після переходу Рутини на icon-slug-и (2026-08-03) поле `emoji`
@@ -155,7 +159,7 @@ function searchRoutine(tokens: string[]): Hit[] {
         module: "routine",
         moduleLabel: "Рутина",
         title,
-        subtitle: h.archived ? "Архівовано" : h.recurrence || "daily",
+        subtitle: h.archived ? "Архівовано" : habitScheduleLabel(h, todayKey),
         icon: "check-circle",
         target: { kind: "module", moduleId: "routine" },
       },

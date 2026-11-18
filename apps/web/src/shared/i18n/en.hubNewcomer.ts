@@ -33,12 +33,14 @@ type HubShape = MessageGroupShape<(typeof ukMessages)["hub"]>;
 export const hubNewcomerEn: Pick<
   HubShape,
   | "searchClear"
+  | "searchHabitWeeklyTarget"
   | "welcomeLinkExamplePhrase"
   | "welcomeLinkExample"
   | "newcomerTimeline"
   | "bankFacts"
 > = {
   searchClear: "Clear search",
+  searchHabitWeeklyTarget: "{count} {unit} a week",
   welcomeLinkExamplePhrase: "on workout days you spend less",
   welcomeLinkExample:
     "Example of a link: “{phrase}”. Sergeant finds links like this by itself once two modules have enough days with entries.",

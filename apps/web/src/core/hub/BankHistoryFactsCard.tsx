@@ -10,6 +10,9 @@
  * Слоту в бюджеті банерів не бере: це дані, а не підказка.
  */
 import { useCallback, useMemo, useState } from "react";
+import { useQuery } from "@tanstack/react-query";
+import type { MonoSyncState } from "@shared/api";
+import { finykKeys } from "@shared/lib/api/queryKeys";
 import { formatNumberUk, NARROW_NBSP, STORAGE_KEYS } from "@sergeant/shared";
 import { Button } from "@shared/components/ui/Button";
 import { Card } from "@shared/components/ui/Card";
@@ -119,7 +122,33 @@ function markBankHistoryFactsSeen(): void {
  * увійшла, Фінік активний); вікно першого тижня від підключення Monobank
  * перевіряє хук сам.
  */
+/**
+ * Момент підключення Monobank для вікна картки. Серверне значення з кешу
+ * стану синку перекриває локальну мітку тими самими правилами, що
+ * `applyMonoServerConnectedAt`: `undefined` — стану ще немає, `null` —
+ * підключення немає, нерозбірний рядок не рахується. Читаємо кеш напряму,
+ * а не лише мітку: ефект, що пише мітку (`useMonobankWebhook`), спрацьовує
+ * вже після рендеру картки, і картка лишалась би на старому значенні.
+ */
+export function resolveMonoConnectedAt(
+  serverConnectedAt: string | null | undefined,
+): number | null {
+  if (serverConnectedAt === null) return null;
+  if (serverConnectedAt !== undefined) {
+    const ms = Date.parse(serverConnectedAt);
+    if (Number.isFinite(ms) && ms > 0) return ms;
+  }
+  return getMonoFirstConnectedAt();
+}
+
 export function useBankHistoryFactLines(enabled: boolean): string[] {
+  // Лише підписка на кеш: запит робить `useMonobankWebhook`, тут без
+  // `queryFn` і з `enabled: false`, щоб не дублювати мережу.
+  const { data: syncState } = useQuery<MonoSyncState>({
+    queryKey: finykKeys.monoSyncState,
+    enabled: false,
+  });
+  const serverConnectedAt = syncState ? syncState.connectedAt : undefined;
   const mirror = useFinykMirrorTransactions();
   const { statTransactions, slots } = useFinykStatTransactions();
   const { txCategories, txSplits, customCategories } = slots;
@@ -128,7 +157,9 @@ export function useBankHistoryFactLines(enabled: boolean): string[] {
     // Без дзеркала банку Monobank не підключено: «історії банку» немає,
     // навіть якщо є ручні записи.
     if (!enabled || mirror.length === 0) return [];
-    if (!isWithinBankFactsWindow(getMonoFirstConnectedAt())) return [];
+    if (!isWithinBankFactsWindow(resolveMonoConnectedAt(serverConnectedAt))) {
+      return [];
+    }
     const facts = buildBankHistoryFacts(statTransactions, {
       txCategories,
       txSplits,
@@ -138,6 +169,7 @@ export function useBankHistoryFactLines(enabled: boolean): string[] {
     return formatBankHistoryFacts(facts, hidden);
   }, [
     enabled,
+    serverConnectedAt,
     mirror.length,
     statTransactions,
     txCategories,

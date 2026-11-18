@@ -14,7 +14,7 @@ import { SkeletonText } from "@shared/components/ui/Skeleton";
 import { Tooltip } from "@shared/components/ui/Tooltip";
 import { Badge } from "@shared/components/ui/Badge";
 import { messages } from "@shared/i18n/uk";
-import { STORAGE_KEYS } from "@sergeant/shared";
+import { deviceDayKey, STORAGE_KEYS } from "@sergeant/shared";
 import { safeReadStringLS, safeWriteLS } from "@shared/lib/storage/storage";
 import {
   useWeeklyDigest,
@@ -31,7 +31,7 @@ import {
   trackAdviceReaction,
   type AdviceSurface,
 } from "../observability/adviceTelemetry";
-import { formatDateShort } from "@shared/lib/time/formatDate";
+import { formatDayKeyUk } from "@shared/lib/time/dayKeyLabel";
 import {
   ModuleBlock,
   coverageBadge,
@@ -507,8 +507,10 @@ export function WeeklyDigestCard({
       <div>
         <div className="px-4 py-3.5 flex items-center gap-3">
           <div className="flex-1 min-w-0">
-            <div className="flex items-center gap-2 min-w-0">
-              <span className="text-style-title font-bold text-text truncate">
+            {/* Заголовок не скорочується: бейджі переносяться під нього
+                (зйомка 2026-11-18: «З…» поруч із «Новий звіт»). */}
+            <div className="flex flex-wrap items-center gap-x-2 gap-y-1 min-w-0">
+              <span className="text-style-title font-bold text-text shrink-0">
                 Звіт тижня
               </span>
               {hasUnreadDigest && (
@@ -533,7 +535,12 @@ export function WeeklyDigestCard({
           <div className="flex items-center gap-1.5 shrink-0">
             {digest?.generatedAt && (
               <span className="text-style-caption text-subtle">
-                {formatDateShort(new Date(digest.generatedAt))}
+                {/* Той самий форматер місяця, що й діапазон тижня
+                    (`getWeekRange` → `formatDayRangeUk`). */}
+                {formatDayKeyUk(deviceDayKey(new Date(digest.generatedAt)), {
+                  relative: false,
+                  todayKey: deviceDayKey(),
+                })}
               </span>
             )}
             {history.length > 1 && (

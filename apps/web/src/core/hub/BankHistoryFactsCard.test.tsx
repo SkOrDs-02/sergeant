@@ -1,5 +1,15 @@
 /** @vitest-environment jsdom */
-import { cleanup, fireEvent, render, screen } from "@testing-library/react";
+import {
+  act,
+  cleanup,
+  fireEvent,
+  render as rtlRender,
+  screen,
+  waitFor,
+} from "@testing-library/react";
+import type { ReactElement } from "react";
+import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
+import { finykKeys } from "@shared/lib/api/queryKeys";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { STORAGE_KEYS } from "@sergeant/shared";
 import type { Transaction } from "@sergeant/finyk-domain/domain/types";
@@ -27,6 +37,15 @@ vi.mock("../../modules/finyk/lib/balanceVisibility", () => ({
   maskAmount: (text: string, hidden: boolean) => (hidden ? "•••" : text),
 }));
 
+let queryClient: QueryClient;
+
+// Картка підписана на кеш стану синку Monobank, тож рендер іде з провайдером.
+function render(ui: ReactElement) {
+  return rtlRender(
+    <QueryClientProvider client={queryClient}>{ui}</QueryClientProvider>,
+  );
+}
+
 function tx(id: string, amount: number, day: string, description: string) {
   return {
     id,
@@ -40,6 +59,7 @@ function tx(id: string, amount: number, day: string, description: string) {
 describe("BankHistoryFactsCard", () => {
   beforeEach(() => {
     localStorage.clear();
+    queryClient = new QueryClient();
     state.hidden = false;
     const txs = [
       tx("a", -12_000, "2026-11-10", "АТБ"),
@@ -83,6 +103,34 @@ describe("BankHistoryFactsCard", () => {
     unmount();
     render(<BankHistoryFactsCard enabled />);
     expect(screen.queryByTestId("bank-history-facts")).toBeNull();
+  });
+
+  it("зʼявляється, щойно в кеш стану синку приходить серверна дата підключення", async () => {
+    localStorage.removeItem(STORAGE_KEYS.FINYK_MONO_FIRST_CONNECTED_AT);
+    render(<BankHistoryFactsCard enabled />);
+    expect(screen.queryByTestId("bank-history-facts")).toBeNull();
+
+    await act(async () => {
+      queryClient.setQueryData(finykKeys.monoSyncState, {
+        status: "active",
+        connectedAt: new Date().toISOString(),
+      });
+    });
+    expect(await screen.findByTestId("bank-history-facts")).toBeTruthy();
+  });
+
+  it("сервер каже «не підключено» (null): локальна мітка не тримає картку", async () => {
+    render(<BankHistoryFactsCard enabled />);
+    expect(screen.getByTestId("bank-history-facts")).toBeTruthy();
+    await act(async () => {
+      queryClient.setQueryData(finykKeys.monoSyncState, {
+        status: "disconnected",
+        connectedAt: null,
+      });
+    });
+    await waitFor(() =>
+      expect(screen.queryByTestId("bank-history-facts")).toBeNull(),
+    );
   });
 
   it("без дзеркала Monobank (лише ручні записи) картки немає", () => {

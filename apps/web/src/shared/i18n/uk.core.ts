@@ -268,6 +268,9 @@ export const coreMessages = {
     crossModulePreviewAria: "Що Сержант покаже далі",
     // Власна кнопка очищення поля пошуку хаба (нативний хрестик сховано).
     searchClear: "Очистити пошук",
+    // Підпис звички «N разів на тиждень» у пошуку хаба (зйомка 2026-11-18:
+    // там стояв сирий ключ розкладу «daily»).
+    searchHabitWeeklyTarget: "{count} {unit} на тиждень",
     // Приклад звʼязку на екрані вітання (С-4 (а), спека
     // `hub-newcomer-card-and-insights.md`). Фраза дослівно з курованої пари
     // `workout_volume × spending` (`CURATED_PAIR_PHRASES`), тримає тест. Без

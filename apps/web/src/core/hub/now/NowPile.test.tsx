@@ -159,13 +159,80 @@ describe("NowPile", () => {
 
     fireEvent.click(toggle);
     expect(screen.getAllByTestId("now-row")).toHaveLength(5);
-    const collapse = screen.getByRole("button", { name: "ще 2" });
+    // Розгорнутий хвіст уже нічого не ховає: «ще N» зникає, доступне імʼя
+    // «Згорнути», видимий стан — шеврон (знахідка зйомки 2026-11-18: «ще 1»
+    // після розгортання; видимий текст стану забороняє UI-канон).
+    const collapse = screen.getByRole("button", { name: "Згорнути" });
     expect(collapse).toBe(toggle);
-    expect(screen.queryByText("Згорнути")).toBeNull();
     expect(collapse).toHaveAttribute("aria-expanded", "true");
+    expect(collapse.textContent).not.toMatch(/ще/);
+    expect(screen.queryByText("Згорнути")).toBeNull();
 
     fireEvent.click(collapse);
     expect(screen.getAllByTestId("now-row")).toHaveLength(3);
+    expect(screen.getByRole("button", { name: "ще 2" })).toBe(toggle);
+  });
+
+  it("рядок «ще N звичок» іде разом зі своїми звичками, лічильник рахує справи", () => {
+    const habit = (id: string, title: string) =>
+      item({
+        id: `routine_habit_now_${id}`,
+        title,
+        module: "routine",
+        priority: 65,
+        action: { kind: "open_module", module: "routine" },
+        checkbox: { kind: "habit", habitId: id },
+      });
+    const more = item({
+      id: "routine_habits_now_more",
+      title: "Ще 2 звички на сьогодні",
+      module: "routine",
+      priority: 65,
+      action: { kind: "open_module", module: "routine" },
+      checkbox: { kind: "none" },
+      represents: 2,
+    });
+    // Кадр `hub-now-habits-0.png`: їжа + дві звички заповнюють трійку.
+    renderPile([
+      item({ id: "food", priority: 70 }),
+      habit("h1", "Вода"),
+      habit("h2", "Прогулянка"),
+      more,
+    ]);
+    const rows = screen.getAllByTestId("now-row");
+    expect(rows.map((r) => r.textContent)).toEqual([
+      expect.stringContaining("title food"),
+      expect.stringContaining("Вода"),
+      expect.stringContaining("Прогулянка"),
+      expect.stringContaining("Ще 2 звички на сьогодні"),
+    ]);
+    // Нічого не сховано — перемикача немає.
+    expect(screen.queryByRole("button", { name: /^ще / })).toBeNull();
+  });
+
+  it("звички поза трійкою ховаються разом із рядком «ще N», і «ще» рахує справи", () => {
+    renderPile([
+      item({ id: "a", priority: 90 }),
+      item({ id: "b", priority: 80 }),
+      item({ id: "c", priority: 70 }),
+      item({
+        id: "routine_habit_now_h1",
+        title: "Вода",
+        priority: 65,
+        checkbox: { kind: "habit", habitId: "h1" },
+      }),
+      item({
+        id: "routine_habits_now_more",
+        title: "Ще 2 звички на сьогодні",
+        priority: 65,
+        checkbox: { kind: "none" },
+        represents: 2,
+      }),
+    ]);
+    expect(screen.getAllByTestId("now-row")).toHaveLength(3);
+    expect(screen.queryByText("Ще 2 звички на сьогодні")).toBeNull();
+    // Сховано звичку «Вода» і ще дві: три справи.
+    expect(screen.getByRole("button", { name: "ще 3" })).toBeInTheDocument();
   });
 
   it("без хвоста перемикача немає", () => {

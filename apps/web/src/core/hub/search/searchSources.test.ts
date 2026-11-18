@@ -49,7 +49,12 @@ function finykHit(results: Hit[]): Hit | undefined {
 // Tombstoned keys (hub_routine_v1 / nutrition_log_v1 / fizruk_*_v1) are read
 // from the SQLite warm caches — seed those directly instead of localStorage.
 function seedRoutine(
-  habits: Array<{ id: string; name?: string; emoji?: string }>,
+  habits: Array<{
+    id: string;
+    name?: string;
+    emoji?: string;
+    recurrence?: string;
+  }>,
 ): void {
   __setRoutineSqliteStateCacheForTests({
     habits: habits as unknown as Habit[],
@@ -203,6 +208,14 @@ describe("searchSources.performSearch (audit 03 F22 — scoring)", () => {
     expect(habit).toBeDefined();
     expect(habit!.title).toContain("Медитація");
     expect(results.some((r) => r.title.includes("Пробіжка"))).toBe(false);
+  });
+
+  it("підпис хіта Рутини — людський розклад, а не сирий ключ «daily»", () => {
+    seedRoutine([{ id: "h1", name: "Прогулянка", recurrence: "daily" }]);
+    const habit = performSearch("прогулянка").find(
+      (r) => r.module === "routine",
+    );
+    expect(habit?.subtitle).toBe("Щодня");
   });
 
   it("matches a Nutrition meal by name", () => {

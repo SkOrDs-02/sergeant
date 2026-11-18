@@ -12,7 +12,7 @@
  * Стан купи приходить пропом `now` з `HubDashboard`: «Закрито» читає той
  * самий стан.
  *
- * Last validated: 2026-10-09
+ * Last validated: 2026-11-18
  * Status: Active
  */
 import { useCallback, useMemo, useState } from "react";
@@ -35,7 +35,11 @@ import type { UseNowItemsResult } from "./useNowItems";
 import { usePublishHubDayCount } from "./hubDayCounts";
 import type { NowItem } from "./nowItems";
 import { ChecklistNowRows, type ChecklistNowProps } from "./ChecklistNowRows";
-import { countNowItems } from "./hubNowRows";
+import {
+  countNowItems,
+  HABIT_ROW_ID_PREFIX,
+  HABITS_MORE_ROW_ID,
+} from "./hubNowRows";
 
 /** Скільки рядків видно без «ще N». */
 export const NOW_PILE_VISIBLE = 3;
@@ -51,6 +55,40 @@ export function promoteDanger(
   const danger = items.filter((i) => i.severity === "danger");
   const rest = items.filter((i) => i.severity !== "danger");
   return [...danger, ...rest].slice(0, cap);
+}
+
+/**
+ * Розкладає купу на видиму трійку і хвіст. Рядок «ще N звичок» — підсумок
+ * звичок, а не окрема справа: місця в трійці він не займає і ходить разом
+ * зі своїми звичками. Усі рядки звичок у трійці — він стоїть одразу за
+ * ними; хоч одна звичка в хвості — він теж у хвості (знахідка зйомки
+ * 2026-11-18: рядок ховався під «ще 1» окремо від звичок).
+ */
+export function splitNowPile(
+  items: readonly NowItem[],
+  cap: number,
+): { visible: NowItem[]; tail: NowItem[] } {
+  const isHabit = (i: NowItem) => i.id.startsWith(HABIT_ROW_ID_PREFIX);
+  // Без жодного рядка звички «ще N» нема до чого чіплятись: звичайний рядок.
+  const moreRow = items.some(isHabit)
+    ? items.find((i) => i.id === HABITS_MORE_ROW_ID)
+    : undefined;
+  const ranked = moreRow ? items.filter((i) => i !== moreRow) : items;
+  const visible = promoteDanger(ranked, cap);
+  if (moreRow) {
+    const lastHabit = visible.reduce(
+      (last, i, idx) => (isHabit(i) ? idx : last),
+      -1,
+    );
+    const allHabitsVisible = ranked
+      .filter(isHabit)
+      .every((h) => visible.includes(h));
+    if (lastHabit >= 0 && allHabitsVisible) {
+      visible.splice(lastHabit + 1, 0, moreRow);
+    }
+  }
+  const tail = items.filter((i) => !visible.includes(i));
+  return { visible, tail };
 }
 
 /** Назва-результат дії рядка: «Додати витрату», «Відкрити Рутину». */
@@ -210,14 +248,13 @@ export function NowPile({
   const total = countNowItems(items) + (checklist?.steps.length ?? 0);
   usePublishHubDayCount("now", total);
 
-  const visible = useMemo(
-    () => promoteDanger(items, NOW_PILE_VISIBLE),
+  const { visible, tail } = useMemo(
+    () => splitNowPile(items, NOW_PILE_VISIBLE),
     [items],
   );
-  const tail = useMemo(
-    () => items.filter((i) => !visible.includes(i)),
-    [items, visible],
-  );
+  // «ще N» рахує сховані справи, як «зараз N» у шапці: рядок «ще 2 звички»
+  // у хвості — це дві справи.
+  const hiddenCount = countNowItems(tail);
 
   // Подія і джерело колишньої картки «Зараз» лишаються на верхньому рядку:
   // дашборди осі дії рахують саме їх (`analyticsEvents.hubAxis.ts`).
@@ -286,16 +323,20 @@ export function NowPile({
       )}
 
       {/* Один перемикач на обидва стани: той самий DOM-вузол, тож фокус
-          клавіатури не губиться при перемиканні. Стан несуть шеврон і
-          `aria-expanded`, назва «ще N» лишається (redesign v3.1). */}
+          клавіатури не губиться при перемиканні. Розгорнутий хвіст нічого
+          не ховає, тож «ще N» зникає (зйомка 2026-11-18: «ще 1» після
+          розгортання). Видимий текст стану заборонений UI-каноном
+          (`textStateLabel`): стан несуть шеврон і `aria-expanded`, а
+          «Згорнути» — лише доступне імʼя. */}
       {tail.length > 0 && (
         <Button
           variant="text"
           onClick={() => setTailOpen((open) => !open)}
           aria-expanded={tailOpen}
+          aria-label={tailOpen ? coreMessages.actions.collapse : undefined}
           className="-ml-2 mt-1"
         >
-          {`${coreMessages.hub.nowPile.more} ${tail.length}`}
+          {!tailOpen && `${coreMessages.hub.nowPile.more} ${hiddenCount}`}
           <MorphChevron open={tailOpen} className="text-subtle" />
         </Button>
       )}
