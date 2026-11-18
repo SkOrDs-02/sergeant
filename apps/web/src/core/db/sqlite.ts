@@ -445,6 +445,7 @@ async function openWorkerBackedDb(userKey: string): Promise<OpenedDb | null> {
       if (busy) noteSqliteVfsFallbackReason("pool-busy");
       const unsupported = !busy && isOpfsUnsupported(err);
       if (unsupported) noteUnsupportedDevice(userKey);
+      else noteLegacyStoreKeptIfStranded(userKey);
       addSentryBreadcrumb({
         category: "storage",
         level: "warning",
@@ -481,6 +482,14 @@ function isOpfsLockContention(err: unknown): boolean {
  */
 function isOpfsUnsupported(err: unknown): boolean {
   if (!(err instanceof Error)) return false;
+  // DOMException-и, які середовище кидає з `navigator.storage.getDirectory()`
+  // чи встановлення пулу, коли сховище заборонене (приватний режим, політика
+  // сайту) або API відсутній: повтор їх не лікує, тож reload не обіцяємо.
+  // Ім'я доїжджає з воркера (`SqliteWorkerError.name`). `InvalidStateError`
+  // сюди навмисно не входить: він буває й тимчасовим.
+  if (err.name === "SecurityError" || err.name === "NotSupportedError") {
+    return true;
+  }
   return /Missing required OPFS APIs|Worker is unavailable/i.test(err.message);
 }
 
@@ -495,6 +504,15 @@ function isOpfsUnsupported(err: unknown): boolean {
  */
 function noteUnsupportedDevice(userKey: string): void {
   noteSqliteVfsFallbackReason("unsupported");
+  noteLegacyStoreKeptIfStranded(userKey);
+}
+
+/**
+ * Старе kvvfs-сховище не перелилось, хоч би чому не відкрився OPFS (не лише
+ * «не підтримується»: таймаут, зіпсований знімок, інша відмова). Воно
+ * лежить недоторканим, і банер має це сказати незалежно від класу помилки.
+ */
+function noteLegacyStoreKeptIfStranded(userKey: string): void {
   if (!isHandoffDone(userKey) && hasKvvfsData()) {
     noteSqliteLegacyStoreKept();
     setSentryTag("sqlite.kvvfs_stranded", "true");

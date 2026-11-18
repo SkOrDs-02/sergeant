@@ -37,7 +37,7 @@ const WORKER_ONLY = new Set(
 
 /** Хто має право імпортувати воркерні модулі (інші воркерні модулі). */
 const WORKER_ONLY_SPECIFIER =
-  /(?:from\s+|import\s*\(\s*)["'][^"']*(?:sqliteWorkerHandler|kvvfsConvert|sqliteWorker|opfsProbe\.worker)(?:\.[jt]s)?["']/;
+  /(?:from\s+|import\s*\(\s*|import\s+)["'][^"']*(?:sqliteWorkerHandler|kvvfsConvert|sqliteWorker|opfsProbe\.worker)(?:\.[jt]s)?["']/;
 
 const SQLITE_WASM_REFERENCE =
   /(?:from\s+|import\s*\(\s*|import\s+)["']@sqlite\.org\/sqlite-wasm(?:\/[^"']*)?["']/;
