@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "current": "8.9.0",
+  "current": "8.10.0",
   "versions": {
     "0.1.0": {
       "releasedAt": "2026-06-29",
@@ -842,6 +842,14 @@
       "releasedAt": "2026-11-18",
       "changes": [
         "bump from 8.8.0 -> 8.9.0: AGENTS.md § Performance budgets: веб стрімить перший хід /api/chat, нова метрика chat_first_turn_first_visible_ms (С-1 (а), спека hubchat-first-turn-stream)"
+      ],
+      "agentsTestedWith": [],
+      "passRateBaseline": null
+    },
+    "8.10.0": {
+      "releasedAt": "2026-11-18",
+      "changes": [
+        "sergeant-module-sync: у журнал рішень додано два записи від 2026-11-18 про бампи SYNC_PROTOCOL_VERSION 1 -> 2 (routine_habit_counts) і 2 -> 3 (fizruk_exercise_prefs, підходи на час і дистанцію) з поведінкою нового клієнта проти старого сервера та залишковим ризиком"
       ],
       "agentsTestedWith": [],
       "passRateBaseline": null
