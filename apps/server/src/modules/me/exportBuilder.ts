@@ -113,6 +113,7 @@ export const MODULE_EXPORT_TABLES = {
     "routine_completion_events",
     "routine_completion_notes",
     "routine_entries",
+    "routine_habit_counts",
     "routine_habit_order",
     "routine_habit_skips",
     "routine_habits",

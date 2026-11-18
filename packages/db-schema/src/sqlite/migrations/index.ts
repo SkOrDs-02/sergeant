@@ -678,6 +678,43 @@ const ROUTINE_011_DROP_PUSHUPS_SQL = `
 DROP TABLE IF EXISTS routine_pushups;
 `;
 
+/**
+ * 012 — лічильник звички і привʼязка автовідмітки (дзеркало серверної 170,
+ * Р-1 (а) і (в), рішення founder-а 2026-11-18).
+ *
+ * - `routine_habits.count_target` / `count_unit`: ціль і одиниця лічильника,
+ *   NULL = звичка «так/ні»;
+ * - `routine_habits.auto_mark_source`: `'fizruk_workout'` |
+ *   `'nutrition_water_goal'` | `'finyk_expense'` | NULL;
+ * - `routine_habit_counts`: кроки за день, форма як `routine_habit_skips`
+ *   плюс явні `habit_id` / `date_key`; `id` = `habitId__dateKey`.
+ *
+ * CHECK-ів немає навмисно (як у fizruk `006`): клієнтський SQLite приймає
+ * лише те, що записав власний адаптер, а валідацію тримає сервер. «Знято
+ * сьогодні» тут теж немає: його памʼятає пристрій поза цією схемою.
+ * `ALTER TABLE ... ADD COLUMN` без `IF NOT EXISTS` безпечний: леджер
+ * `__migrations` не дає файлу виконатись двічі.
+ */
+const ROUTINE_012_HABIT_COUNTER_AND_AUTO_MARK_SQL = `
+ALTER TABLE routine_habits ADD COLUMN count_target INTEGER;
+ALTER TABLE routine_habits ADD COLUMN count_unit TEXT;
+ALTER TABLE routine_habits ADD COLUMN auto_mark_source TEXT;
+
+CREATE TABLE IF NOT EXISTS routine_habit_counts (
+  id          TEXT NOT NULL,
+  user_id     TEXT NOT NULL,
+  habit_id    TEXT NOT NULL,
+  date_key    TEXT NOT NULL,
+  count       INTEGER NOT NULL,
+  updated_at  TEXT NOT NULL DEFAULT (datetime('now')),
+  deleted_at  TEXT,
+  PRIMARY KEY (user_id, id)
+);
+
+CREATE INDEX IF NOT EXISTS routine_habit_counts_user_habit_idx_lite
+  ON routine_habit_counts (user_id, habit_id);
+`;
+
 export const ROUTINE_CLIENT_MIGRATIONS: readonly MigrationFile[] = [
   { name: "001_routine_spike.sql", sql: ROUTINE_SPIKE_SQL },
   { name: "002_sync_op_outbox_retry.sql", sql: SYNC_OP_OUTBOX_RETRY_SQL },
@@ -713,6 +750,10 @@ export const ROUTINE_CLIENT_MIGRATIONS: readonly MigrationFile[] = [
   {
     name: "011_routine_drop_pushups.sql",
     sql: ROUTINE_011_DROP_PUSHUPS_SQL,
+  },
+  {
+    name: "012_routine_habit_counter_and_auto_mark.sql",
+    sql: ROUTINE_012_HABIT_COUNTER_AND_AUTO_MARK_SQL,
   },
 ] as const;
 
@@ -1136,6 +1177,20 @@ ALTER TABLE fizruk_measurements ADD COLUMN calf_l_cm REAL;
 ALTER TABLE fizruk_measurements ADD COLUMN calf_r_cm REAL;
 `;
 
+/**
+ * 009 — привʼязка тренування до слоту програми (дзеркало серверної 171,
+ * П-10, варіант (А) спеки fizruk-program-plan-sets).
+ *
+ * `program_id` + `program_slot` (індекс у `schedule`, з 0), обидва NULL =
+ * тренування поза програмою. CHECK і індексу немає, як у `006`: валідацію
+ * тримає сервер, поля читаються разом із рядком. Леджер
+ * `__fizruk_migrations` не дає `ADD COLUMN` виконатись двічі.
+ */
+const FIZRUK_009_WORKOUT_PROGRAM_REF_SQL = `
+ALTER TABLE fizruk_workouts ADD COLUMN program_id TEXT;
+ALTER TABLE fizruk_workouts ADD COLUMN program_slot INTEGER;
+`;
+
 export const FIZRUK_CLIENT_MIGRATIONS: readonly MigrationFile[] = [
   { name: "001_fizruk_tables.sql", sql: FIZRUK_001_SQL },
   {
@@ -1165,6 +1220,10 @@ export const FIZRUK_CLIENT_MIGRATIONS: readonly MigrationFile[] = [
   {
     name: "008_fizruk_measurement_fields.sql",
     sql: FIZRUK_008_MEASUREMENT_FIELDS_SQL,
+  },
+  {
+    name: "009_fizruk_workout_program_ref.sql",
+    sql: FIZRUK_009_WORKOUT_PROGRAM_REF_SQL,
   },
 ] as const;
 

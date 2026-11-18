@@ -77,6 +77,7 @@ describe("ROUTINE_CLIENT_MIGRATIONS", () => {
       "009_routine_habit_skips.sql",
       "010_routine_weekly_target_history.sql",
       "011_routine_drop_pushups.sql",
+      "012_routine_habit_counter_and_auto_mark.sql",
     ]);
     expect(result.skipped).toEqual([]);
 
@@ -94,6 +95,7 @@ describe("ROUTINE_CLIENT_MIGRATIONS", () => {
       "routine_completion_events",
       "routine_completion_notes",
       "routine_entries",
+      "routine_habit_counts",
       "routine_habit_order",
       "routine_habit_skips",
       "routine_habits",
@@ -154,6 +156,20 @@ describe("ROUTINE_CLIENT_MIGRATIONS", () => {
     expect(habitCols.map((c) => c.name)).toContain(
       "weekly_target_history_json",
     );
+    // 012 (дзеркало серверної 170): лічильник і привʼязка автовідмітки.
+    expect(habitCols.map((c) => c.name)).toEqual(
+      expect.arrayContaining([
+        "count_target",
+        "count_unit",
+        "auto_mark_source",
+      ]),
+    );
+    const hcPk = db
+      .prepare(
+        "SELECT name FROM pragma_table_info('routine_habit_counts') WHERE pk != 0 ORDER BY pk",
+      )
+      .all() as { name: string }[];
+    expect(hcPk.map((r) => r.name)).toEqual(["user_id", "id"]);
 
     const cuPk = db
       .prepare(
@@ -234,6 +250,7 @@ describe("ROUTINE_CLIENT_MIGRATIONS", () => {
       "009_routine_habit_skips.sql",
       "010_routine_weekly_target_history.sql",
       "011_routine_drop_pushups.sql",
+      "012_routine_habit_counter_and_auto_mark.sql",
     ]);
   });
 

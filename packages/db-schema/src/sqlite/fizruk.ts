@@ -40,6 +40,10 @@ export const fizrukWorkouts = sqliteTable(
     wellbeingJson: text("wellbeing_json"),
     /** Оцінка витрачених калорій (міграція 132). Nullable: без ваги оцінювати нічим. */
     kcalBurned: integer("kcal_burned"),
+    /** Програма, сесію якої закрило тренування (серверна 171, клієнтська 009). */
+    programId: text("program_id"),
+    /** Індекс запису в `schedule` програми, з 0. */
+    programSlot: integer("program_slot"),
     createdAt: text("created_at")
       .notNull()
       .default(sql`(datetime('now'))`),

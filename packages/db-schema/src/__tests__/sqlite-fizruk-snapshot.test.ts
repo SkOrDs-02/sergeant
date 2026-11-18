@@ -48,6 +48,8 @@ describe("sqlite/fizrukWorkouts schema snapshot", () => {
       "cooldown_json",
       "wellbeing_json",
       "kcal_burned",
+      "program_id",
+      "program_slot",
       "created_at",
       "updated_at",
       "deleted_at",
@@ -589,7 +591,7 @@ describe("sqlite/fizrukWorkoutTemplates schema snapshot", () => {
 
 describe("sqlite/fizruk migrations exports", () => {
   it("exports the 001 baseline + 002 full-state + 003 injuries + 004 pushups + 005 kcal/activities + 006 chosen-variant + 007 pushups→workouts + 008 measurement-fields migration", () => {
-    expect(FIZRUK_CLIENT_MIGRATIONS).toHaveLength(8);
+    expect(FIZRUK_CLIENT_MIGRATIONS).toHaveLength(9);
     expect(FIZRUK_CLIENT_MIGRATIONS[0]!.name).toBe("001_fizruk_tables.sql");
     expect(FIZRUK_CLIENT_MIGRATIONS[0]!.sql).toMatch(
       /CREATE TABLE IF NOT EXISTS fizruk_workouts/,
@@ -687,6 +689,17 @@ describe("sqlite/fizruk migrations exports", () => {
     // User-scoped id — той самий, що ставить серверна 140.
     expect(sql007).toMatch(
       /'pushups:' \|\| p\.user_id \|\| ':' \|\| p\.date_key/,
+    );
+
+    // 009 дзеркалить серверну 171: привʼязка тренування до слоту програми.
+    expect(FIZRUK_CLIENT_MIGRATIONS[8]!.name).toBe(
+      "009_fizruk_workout_program_ref.sql",
+    );
+    expect(FIZRUK_CLIENT_MIGRATIONS[8]!.sql).toMatch(
+      /ALTER TABLE fizruk_workouts ADD COLUMN program_id TEXT;/,
+    );
+    expect(FIZRUK_CLIENT_MIGRATIONS[8]!.sql).toMatch(
+      /ALTER TABLE fizruk_workouts ADD COLUMN program_slot INTEGER;/,
     );
 
     expect(FIZRUK_CLIENT_MIGRATIONS[7]!.name).toBe(

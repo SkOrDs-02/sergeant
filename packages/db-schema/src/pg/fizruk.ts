@@ -37,6 +37,16 @@ export const fizrukWorkouts = pgTable(
      * в профілі оцінювати нічим, і нуль тут означав би «спалено нічого».
      */
     kcalBurned: integer("kcal_burned"),
+    /**
+     * Програма, сесію якої закрило тренування (міграція 171, П-10).
+     * NULL = поза програмою.
+     */
+    programId: text("program_id"),
+    /**
+     * Індекс запису в `schedule` програми, з 0 (міграція 171). Не
+     * `sessionKey`: він у розкладі повторюється. CHECK `>= 0` живе в SQL.
+     */
+    programSlot: integer("program_slot"),
     createdAt: timestamp("created_at", { withTimezone: true })
       .notNull()
       .defaultNow(),

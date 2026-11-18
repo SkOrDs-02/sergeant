@@ -92,6 +92,7 @@ describe("007_fizruk_pushups_to_workouts", () => {
     expect(result.applied).toEqual([
       "007_fizruk_pushups_to_workouts.sql",
       "008_fizruk_measurement_fields.sql",
+      "009_fizruk_workout_program_ref.sql",
     ]);
 
     const tables = db
