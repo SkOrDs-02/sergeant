@@ -84,6 +84,23 @@ describe("чесність опису тулів (аудит 2026-11-17 § 5.4)"
       tool.input_schema.properties.exercises.items.properties["reps"]
         ?.description ?? "";
     expect(reps).toMatch(/не записуються/);
+    // Секунди плану так само не записуються: рядок із ними вже зарахований.
+    const seconds =
+      tool.input_schema.properties.exercises.items.properties["seconds"]
+        ?.description ?? "";
+    expect(seconds).toMatch(/не записуються/);
+  });
+
+  it("log_set: підхід на повтори, час або дистанцію, reps не обовʼязкове (тип виміру, зріз 7)", () => {
+    const tool = find(FIZRUK_TOOLS, "log_set") as unknown as {
+      input_schema: {
+        properties: Record<string, { type: string }>;
+        required: string[];
+      };
+    };
+    expect(tool.input_schema.required).toEqual(["exercise_name"]);
+    expect(tool.input_schema.properties["duration_sec"]?.type).toBe("number");
+    expect(tool.input_schema.properties["distance_m"]?.type).toBe("number");
   });
 
   it("pause_habit: день паузи за календарем пристрою, не Europe/Kyiv (ADR-0078)", () => {

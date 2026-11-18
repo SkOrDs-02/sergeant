@@ -1,6 +1,8 @@
 import { safeReadStringLS, safeRemoveLS } from "@shared/lib/storage/storage";
 import { lsSet } from "../../hubChatUtils";
-import { MAX_REPS, MAX_WEIGHT_KG } from "@fizruk/lib/numericBounds";
+import { MAX_WEIGHT_KG } from "@fizruk/lib/numericBounds";
+import { currentExerciseMeasurePrefs } from "@fizruk/lib/exerciseMeasurePrefsCache";
+import { formatMeasureSets } from "@fizruk/lib/measureFormat";
 import {
   deviceDayKey,
   formatNumberUk,
@@ -17,11 +19,26 @@ import {
   createChatExerciseResolver,
 } from "./exerciseResolve";
 import {
+  buildChatSets,
+  measureForChatSet,
+  measureForPlan,
+  parseChatSetValues,
+  planExistingItem,
+} from "./setMeasure";
+import {
   buildPlannedSets,
   type Workout,
   type WorkoutItem,
   type WorkoutSet,
 } from "@sergeant/fizruk-domain";
+import {
+  measureCountsBy,
+  measureFields,
+  measureToItemType,
+  resolveExerciseMeasure,
+  withMeasureMirror,
+  type ExerciseMeasure,
+} from "@sergeant/fizruk-domain/domain";
 import type {
   PlanWorkoutAction,
   LogSetAction,
@@ -95,6 +112,7 @@ export function planWorkout(action: PlanWorkoutAction): ChatActionResult {
   // data-11: кожна вправа плану отримує справжній `exerciseId` (каталог або
   // нова custom-вправа) — порожній id сервер відхиляє як missing_exercise_id.
   const resolver = createChatExerciseResolver();
+  const prefs = currentExerciseMeasurePrefs();
   const items: WorkoutItem[] = Array.isArray(exercises)
     ? exercises
         .filter((ex) => ex && ex.name)
@@ -104,15 +122,32 @@ export function planWorkout(action: PlanWorkoutAction): ChatActionResult {
             ex.weight != null && Number.isFinite(Number(ex.weight))
               ? Number(ex.weight)
               : 0;
+          const seconds = Number(ex.seconds);
+          const def = resolver.resolve(String(ex.name).trim());
+          // Тип: памʼять людини → дефолт каталогу; секунди в запиті ставлять
+          // тип «на час» (спека типу виміру, зріз 7). Памʼять не пишеться.
+          const measure = measureForPlan(
+            resolveExerciseMeasure(def, prefs),
+            Number.isFinite(seconds) ? seconds : 0,
+            weightKg,
+          );
           // logic-18: план сіє НЕзараховані рядки (`reps: 0`), як старт
-          // програми. Повтори з запиту в рядок не пишуться: рядок із ними вже
-          // «виконаний підхід» (`isSetCompleted`), а поля плану у
+          // програми. Повтори й секунди з запиту в рядок не пишуться: рядок із
+          // ними вже «виконаний підхід» (`isSetCompleted`), а поля плану у
           // `WorkoutItem` немає (`ProgramSessionDef.plan` — каталог програми).
-          const sets = buildPlannedSets(setsN, weightKg);
-          return buildWorkoutItemFromExercise(
-            resolver.resolve(String(ex.name).trim()),
-            `i_${Date.now().toString(36)}_${i}_${crypto.randomUUID()}`,
-            sets,
+          const sets = buildPlannedSets(
+            setsN,
+            measureFields(measure).weight ? weightKg : 0,
+          );
+          return withMeasureMirror(
+            withMeasure(
+              buildWorkoutItemFromExercise(
+                def,
+                `i_${Date.now().toString(36)}_${i}_${crypto.randomUUID()}`,
+                sets,
+              ),
+              measure,
+            ),
           );
         })
     : [];
@@ -131,36 +166,42 @@ export function planWorkout(action: PlanWorkoutAction): ChatActionResult {
   persistFizrukCustomExercises(resolver.created);
   persistFizrukWorkouts([newW, ...readFizrukWorkouts()]);
   const exCount = items.length;
-  // Модель не має переказати «3×10 записано»: повтори з запиту не зберігаються.
-  const repsAsked =
-    Array.isArray(exercises) && exercises.some((ex) => ex?.reps != null);
-  const repsNote = repsAsked
-    ? ". Повтори в план не записуються: підхід зараховується, коли його зроблять"
+  // Модель не має переказати «3×10 записано»: повтори й секунди з запиту не
+  // зберігаються.
+  const asked = (key: "reps" | "seconds") =>
+    Array.isArray(exercises) && exercises.some((ex) => ex?.[key] != null);
+  const notStored = [
+    asked("reps") ? "Повтори" : "",
+    asked("seconds") ? "секунди" : "",
+  ]
+    .filter(Boolean)
+    .join(" й ");
+  const repsNote = notStored
+    ? `. ${notStored.charAt(0).toUpperCase()}${notStored.slice(1)} в план не записуються: підхід зараховується, коли його зроблять`
     : "";
   return `Тренування заплановано на ${targetDate} о ${timeStr}${note ? ` ("${note}")` : ""}: ${exCount} вправ${exCount === 1 ? "а" : exCount >= 2 && exCount <= 4 ? "и" : ""} (id:${wid})${repsNote}`;
 }
 
+/** Явний тип виміру й похідний старий `type` (дзеркало ставить викликач). */
+function withMeasure(item: WorkoutItem, measure: ExerciseMeasure): WorkoutItem {
+  return { ...item, measure, type: measureToItemType(measure) };
+}
+
 export function logSet(action: LogSetAction): ChatActionResult {
-  const { exercise_name, weight_kg, reps, sets } = action.input;
+  const { exercise_name, weight_kg, sets } = action.input;
   const exName = (exercise_name || "").trim();
   if (!exName) return "Потрібна назва вправи для підходу.";
-  const repsN = Number(reps);
-  if (!Number.isFinite(repsN) || repsN <= 0) {
-    return "Некоректна кількість повторень.";
-  }
-  if (repsN > MAX_REPS) {
-    return `Забагато повторень у підході (максимум ${MAX_REPS}). Перевір число і спробуй ще раз.`;
-  }
   const weightN = Number(weight_kg);
   const weightKg = Number.isFinite(weightN) && weightN >= 0 ? weightN : 0;
   if (weightKg > MAX_WEIGHT_KG) {
     return `Вага підходу занадто велика (максимум ${formatNumberUk(MAX_WEIGHT_KG)} кг). Перевір число і спробуй ще раз.`;
   }
+  // Хоч одне з reps / duration_sec / distance_m (спека типу виміру, зріз 7):
+  // схема цього не виражає, тож перевірка тут, до будь-якого запису.
+  const parsed = parseChatSetValues(action.input, weightKg);
+  if (!parsed.ok) return parsed.error;
+  const values = parsed.values;
   const setsN = Math.max(1, Math.min(20, Number(sets) || 1));
-  const newSets: WorkoutSet[] = Array.from({ length: setsN }, () => ({
-    weightKg,
-    reps: repsN,
-  }));
 
   const workouts = readFizrukWorkouts();
   const activeId = safeReadStringLS(ACTIVE_KEY, null);
@@ -208,20 +249,43 @@ export function logSet(action: LogSetAction): ChatActionResult {
     itemIdx = workout.items.findIndex((it) => it.exerciseId === resolvedId);
   }
   const existingItem = itemIdx >= 0 ? workout.items[itemIdx] : undefined;
+  let measure: ExerciseMeasure;
+  let newSets: WorkoutSet[];
   if (existingItem) {
-    workout.items[itemIdx] = {
-      ...existingItem,
+    const plan = planExistingItem(existingItem, existingItem.nameUk, values);
+    if (!plan.ok) return plan.error;
+    measure = plan.measure;
+    newSets = buildChatSets(measure, values, setsN);
+    const base: WorkoutItem = plan.patch
+      ? { ...existingItem, ...plan.patch }
+      : existingItem;
+    const next: WorkoutItem = {
+      ...base,
       // Item зі старого чат-запису міг мати порожній id — лагодимо тут.
       exerciseId:
         existingItem.exerciseId || (resolved ?? resolver.resolve(exName)).id,
-      sets: [...(existingItem.sets ?? []), ...newSets],
+      sets: [...(base.sets ?? []), ...newSets],
     };
+    workout.items[itemIdx] = withMeasureMirror(next);
   } else {
+    const def = resolved ?? resolver.resolve(exName);
+    // Тип нової вправи: памʼять людини → дефолт каталогу, а якщо дані його
+    // не вміщують — тип із даних. Памʼять чат не пише.
+    measure = measureForChatSet(
+      resolveExerciseMeasure(def, currentExerciseMeasurePrefs()),
+      values,
+    );
+    newSets = buildChatSets(measure, values, setsN);
     workout.items.push(
-      buildWorkoutItemFromExercise(
-        resolved ?? resolver.resolve(exName),
-        `i_${Date.now().toString(36)}_${crypto.randomUUID()}`,
-        newSets,
+      withMeasureMirror(
+        withMeasure(
+          buildWorkoutItemFromExercise(
+            def,
+            `i_${Date.now().toString(36)}_${crypto.randomUUID()}`,
+            newSets,
+          ),
+          measure,
+        ),
       ),
     );
   }
@@ -238,11 +302,22 @@ export function logSet(action: LogSetAction): ChatActionResult {
   persistFizrukCustomExercises(resolver.created);
   persistFizrukWorkouts(nextWorkouts);
 
-  const weightLabel = weightKg > 0 ? `${formatNumberUk(weightKg)} кг × ` : "";
   const setsLabel =
     setsN === 1 ? "1 підхід" : `${setsN} підходи${setsN >= 5 ? "в" : ""}`;
   const prefix = created ? "Нове тренування розпочато. " : "";
-  return `${prefix}Додано ${setsLabel} "${exName}": ${weightLabel}${repsN} повторень`;
+  if (measureCountsBy(measure) !== "reps") {
+    // «3 × 30 с», «400 м», «2 × 40 м · 24 кг» — формат підсумку сесії.
+    const summary = formatMeasureSets({
+      measure,
+      type: measureToItemType(measure),
+      sets: newSets,
+    });
+    return `${prefix}Додано ${setsLabel} "${exName}": ${summary}`;
+  }
+  const shownWeight = measureFields(measure).weight ? values.weightKg : 0;
+  const weightLabel =
+    shownWeight > 0 ? `${formatNumberUk(shownWeight)} кг × ` : "";
+  return `${prefix}Додано ${setsLabel} "${exName}": ${weightLabel}${values.reps} повторень`;
 }
 
 export function startWorkout(action: StartWorkoutAction): ChatActionResult {

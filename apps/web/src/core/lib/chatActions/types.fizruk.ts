@@ -17,6 +17,8 @@ export interface PlanWorkoutAction {
       sets?: number | string;
       reps?: number | string;
       weight?: number | string;
+      /** Секунд у підході плану: ставить тип «на час», у рядки не пишеться. */
+      seconds?: number | string;
     }>;
   };
 }
@@ -26,7 +28,12 @@ export interface LogSetAction {
   input: {
     exercise_name: string;
     weight_kg?: number | string;
-    reps: number | string;
+    /** Хоч одне з `reps` / `duration_sec` / `distance_m` (перевіряє виконавець). */
+    reps?: number | string;
+    /** Секунди одного підходу (утримання, переноска). */
+    duration_sec?: number | string;
+    /** Метри одного підходу (біг, сани). */
+    distance_m?: number | string;
     sets?: number | string;
   };
 }

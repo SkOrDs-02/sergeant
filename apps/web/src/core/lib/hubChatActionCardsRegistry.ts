@@ -25,8 +25,48 @@ import {
   pluralExercises,
   pluralHabits,
 } from "@sergeant/shared";
+import type { WorkoutSet } from "@sergeant/fizruk-domain";
+import {
+  measureToItemType,
+  type ExerciseMeasure,
+} from "@sergeant/fizruk-domain/domain";
+import { formatMeasureSets } from "@fizruk/lib/measureFormat";
 
 type SummaryInput = Record<string, unknown>;
+
+/**
+ * Підсумок `log_set` із секундами чи метрами. Тип — з даних запиту (метри →
+ * дистанція, інакше час), бо картка бачить лише вхід, а не тип вправи.
+ */
+function timedSetSummary(
+  input: SummaryInput,
+  weightKg: number | undefined,
+): string | undefined {
+  const sec = Number(input["duration_sec"]);
+  const meters = Number(input["distance_m"]);
+  const hasSec = Number.isFinite(sec) && sec > 0;
+  const hasMeters = Number.isFinite(meters) && meters > 0;
+  if (!hasSec && !hasMeters) return undefined;
+  const w = weightKg !== undefined && weightKg > 0 ? weightKg : 0;
+  const measure: ExerciseMeasure = hasMeters
+    ? w > 0
+      ? "weight_distance"
+      : "distance_time"
+    : w > 0
+      ? "weight_time"
+      : "time";
+  const count = Math.max(1, Math.min(20, Number(input["sets"]) || 1));
+  const set: WorkoutSet = { weightKg: w, reps: 0 };
+  if (hasSec) set.durationSec = Math.round(sec);
+  if (hasMeters) set.distanceM = Math.round(meters);
+  return (
+    formatMeasureSets({
+      measure,
+      type: measureToItemType(measure),
+      sets: Array.from({ length: count }, () => ({ ...set })),
+    }) ?? undefined
+  );
+}
 
 const stringField = (input: SummaryInput, key: string): string | undefined => {
   const v = input[key];
@@ -98,10 +138,16 @@ const SUMMARY_REGISTRY: Record<string, SummaryFn> = {
     const weightKg =
       numberField(input, "weight_kg") ?? numberField(input, "weight");
     const reps = numberField(input, "reps");
-    return joinParts([
+    const name =
       stringField(input, "exercise_name") ||
-        stringField(input, "name") ||
-        stringField(input, "exercise"),
+      stringField(input, "name") ||
+      stringField(input, "exercise");
+    // Підхід на час чи дистанцію — тим самим підсумком, що в сесії:
+    // «3 × 30 с», «400 м» (спека типу виміру, зріз 7).
+    const timed = timedSetSummary(input, weightKg);
+    if (timed) return joinParts([name, timed]);
+    return joinParts([
+      name,
       weightKg !== undefined ? `${formatNumberUk(weightKg)} кг` : undefined,
       reps !== undefined ? `${reps} повт.` : undefined,
     ]);

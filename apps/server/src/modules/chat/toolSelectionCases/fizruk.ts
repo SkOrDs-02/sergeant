@@ -19,6 +19,19 @@ export const FIZRUK_CASES: ToolCase[] = [
     accept: ["log_set"],
   },
   {
+    // Зріз 7 спеки типу виміру: підхід на час, без повторень.
+    name: "підхід на час (планка)",
+    user: "Простояв у планці 60 секунд",
+    accept: ["log_set"],
+    expectArgs: { log_set: { duration_sec: 60 } },
+  },
+  {
+    name: "підхід на дистанцію (біг)",
+    user: "Пробіг 400 метрів",
+    accept: ["log_set"],
+    expectArgs: { log_set: { distance_m: 400 } },
+  },
+  {
     name: "початок тренування",
     user: "Починаю тренування",
     accept: ["start_workout"],
