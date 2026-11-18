@@ -20,6 +20,7 @@
  */
 
 import { HABIT_TIME_GROUPS, timeOfDayBucket } from "./calendarGrid.js";
+import { habitCountTarget } from "./counterFields.js";
 import { sortHabitsByOrder } from "./habitOrder.js";
 import { habitScheduledOnDate } from "./schedule.js";
 import type { RoutineState } from "./types.js";
@@ -33,6 +34,12 @@ export interface HabitNowItem {
   name: string;
   /** `HH:MM` або порожньо — для підпису секції, якщо рядок захоче його. */
   timeOfDay: string;
+  /**
+   * Звичка з лічильником (Р-1 (а)): ціль, кроки сьогодні й одиниця, щоб
+   * рядок показав «2 з 3», а не голий чекбокс. Чекбокс такого рядка —
+   * один крок «+1» (`checkInHabitFromHub`). Відсутні — звичка «так/ні».
+   */
+  counter?: { target: number; count: number; unit?: string };
 }
 
 export interface HabitsForNow {
@@ -45,7 +52,10 @@ export interface HabitsForNow {
 }
 
 export function selectHabitsForNow(
-  state: Pick<RoutineState, "habits" | "completions" | "skips" | "habitOrder">,
+  state: Pick<
+    RoutineState,
+    "habits" | "completions" | "skips" | "habitOrder" | "counts"
+  >,
   todayKey: string,
   limit: number = HABITS_FOR_NOW_LIMIT,
 ): HabitsForNow {
@@ -67,10 +77,20 @@ export function selectHabitsForNow(
     if (!habitScheduledOnDate(h, todayKey, { weekDoneCount })) continue;
     const timeOfDay = h.timeOfDay ? String(h.timeOfDay).trim() : "";
     const group = groupOrder.indexOf(timeOfDayBucket(timeOfDay));
+    const target = habitCountTarget(h);
     open.push({
       habitId: h.id,
       name: h.name,
       timeOfDay,
+      ...(target !== null
+        ? {
+            counter: {
+              target,
+              count: state.counts?.[h.id]?.[todayKey] ?? 0,
+              ...(h.countUnit ? { unit: h.countUnit } : {}),
+            },
+          }
+        : {}),
       group: group === -1 ? groupOrder.length : group,
       idx,
     });
@@ -79,7 +99,12 @@ export function selectHabitsForNow(
 
   const items = open
     .slice(0, cap)
-    .map(({ habitId, name, timeOfDay }) => ({ habitId, name, timeOfDay }));
+    .map(({ habitId, name, timeOfDay, counter }): HabitNowItem => ({
+      habitId,
+      name,
+      timeOfDay,
+      ...(counter ? { counter } : {}),
+    }));
   return {
     items,
     moreCount: Math.max(0, open.length - items.length),

@@ -5,14 +5,24 @@
  */
 import { describe, expect, it } from "vitest";
 
-import { applyAutoMarkHabit, shouldSuppressAutoMark } from "./autoMark.js";
+import {
+  applyAutoMarkHabit,
+  applyAutoMarkSignal,
+  shouldSuppressAutoMark,
+} from "./autoMark.js";
 import { bestRoutineMonth, routineMonthCompletions } from "./bestMonth.js";
+import {
+  normalizeHabitCounterFields,
+  normalizeHabitCounts,
+} from "./counterFields.js";
 import {
   applyHabitCounterStep,
   counterProgressLabel,
   counterReached,
+  habitDayCount,
 } from "./counterHabit.js";
 import { flexibleStreakBreakdown } from "./flexStreak.js";
+import { applyCreateHabit } from "./reducers.js";
 import { HABITS_FOR_NOW_LIMIT, selectHabitsForNow } from "./habitsForNow.js";
 import { completionRateForRange, habitCompletionRate } from "./streaks.js";
 import type { Habit, HabitSkip, RoutineState } from "./types.js";
@@ -180,6 +190,21 @@ describe("Р-2 (а): звички для «Зараз» (П-15 (А))", () => {
     expect(selectHabitsForNow(s, today).totalOpen).toBe(0);
   });
 
+  it("звичка з лічильником несе ціль і кроки сьогодні", () => {
+    const s = state({
+      habits: [habit("w", { countTarget: 3, countUnit: "склянки" })],
+      counts: { w: { [today]: 2 } },
+    });
+    expect(selectHabitsForNow(s, today).items).toEqual([
+      {
+        habitId: "w",
+        name: "w",
+        timeOfDay: "",
+        counter: { target: 3, count: 2, unit: "склянки" },
+      },
+    ]);
+  });
+
   it("порожній стан: нічого не заплановано", () => {
     expect(selectHabitsForNow(state(), today)).toEqual({
       items: [],
@@ -191,100 +216,63 @@ describe("Р-2 (а): звички для «Зараз» (П-15 (А))", () => {
 
 describe("Р-1 (а): лічильник (П-12 (А), «4 з 3»)", () => {
   const bounds = { todayKey: "2026-01-10" };
-  const spec = { target: 3, unit: "склянок" };
+  const water = (over: Partial<Habit> = {}) =>
+    habit("w", { countTarget: 3, countUnit: "склянок", ...over });
+  const step = (s: RoutineState, dk: string, d: number, b = bounds) =>
+    applyHabitCounterStep(s, "w", dk, d, b);
 
   it("частковий день не виконано, ціль ставить відмітку, далі рахує «4 з 3»", () => {
-    let s = state({ habits: [habit("w")] });
-    let counts = {};
-    let r = applyHabitCounterStep(
-      s,
-      counts,
-      "w",
-      "2026-01-10",
-      1,
-      spec,
-      bounds,
-    );
-    r = applyHabitCounterStep(
-      r.state,
-      r.counts,
-      "w",
-      "2026-01-10",
-      1,
-      spec,
-      bounds,
-    );
+    let r = step(state({ habits: [water()] }), "2026-01-10", 1);
+    r = step(r.state, "2026-01-10", 1);
     expect(r.count).toBe(2);
     expect(r.done).toBe(false);
     expect(r.state.completions["w"] ?? []).toEqual([]);
-    expect(counterProgressLabel(r.count, spec.target)).toBe("2 з 3");
+    expect(habitDayCount(r.state, "w", "2026-01-10")).toBe(2);
+    expect(counterProgressLabel(r.count, 3)).toBe("2 з 3");
 
-    r = applyHabitCounterStep(
-      r.state,
-      r.counts,
-      "w",
-      "2026-01-10",
-      1,
-      spec,
-      bounds,
-    );
+    r = step(r.state, "2026-01-10", 1);
     expect(r.done).toBe(true);
     expect(r.state.completions["w"]).toEqual(["2026-01-10"]);
 
-    r = applyHabitCounterStep(
-      r.state,
-      r.counts,
-      "w",
-      "2026-01-10",
-      1,
-      spec,
-      bounds,
-    );
+    r = step(r.state, "2026-01-10", 1);
     expect(r.count).toBe(4);
     expect(r.done).toBe(true);
-    expect(counterProgressLabel(r.count, spec.target)).toBe("4 з 3");
+    expect(counterProgressLabel(r.count, 3)).toBe("4 з 3");
 
-    // «Скасувати» двічі: 4 → 3 (лишається виконано) → 2 (відмітка знята).
-    s = r.state;
-    counts = r.counts;
-    r = applyHabitCounterStep(s, counts, "w", "2026-01-10", -1, spec, bounds);
+    // «−» двічі: 4 → 3 (лишається виконано) → 2 (відмітка знята).
+    r = step(r.state, "2026-01-10", -1);
     expect(r.done).toBe(true);
-    r = applyHabitCounterStep(
-      r.state,
-      r.counts,
-      "w",
-      "2026-01-10",
-      -1,
-      spec,
-      bounds,
-    );
+    r = step(r.state, "2026-01-10", -1);
     expect(r.count).toBe(2);
     expect(r.done).toBe(false);
     expect(r.state.completions["w"]).toEqual([]);
   });
 
+  it("день, відмічений рукою з лічильником 0, після +1 лишається виконаним (інженерний дефолт)", () => {
+    const s = state({
+      habits: [water()],
+      completions: { w: ["2026-01-10"] },
+    });
+    const r = step(s, "2026-01-10", 1);
+    expect(r.count).toBe(1);
+    expect(r.done).toBe(true);
+    // А крок униз, що не перетинає ціль згори, теж не знімає.
+    const back = step(r.state, "2026-01-10", -1);
+    expect(back.count).toBe(0);
+    expect(back.done).toBe(true);
+  });
+
   it("частковий день серія читає як мовчазний пропуск і бере заморозку", () => {
-    const h = habit("w", { startDate: "2026-01-05" });
-    // 05..08 виконано, 09 частково (2 з 3 → відмітки немає), 10 виконано.
+    const h = water({ startDate: "2026-01-05" });
     const s = state({
       habits: [h],
       completions: {
         w: ["2026-01-05", "2026-01-06", "2026-01-07", "2026-01-08"],
       },
     });
-    let r = applyHabitCounterStep(s, {}, "w", "2026-01-09", 2, spec, {
-      todayKey: "2026-01-09",
-    });
+    let r = step(s, "2026-01-09", 2, { todayKey: "2026-01-09" });
     expect(r.done).toBe(false);
-    r = applyHabitCounterStep(
-      r.state,
-      r.counts,
-      "w",
-      "2026-01-10",
-      3,
-      spec,
-      bounds,
-    );
+    r = step(r.state, "2026-01-10", 3);
     const streak = flexibleStreakBreakdown(
       h,
       r.state.completions["w"],
@@ -294,32 +282,48 @@ describe("Р-1 (а): лічильник (П-12 (А), «4 з 3»)", () => {
     expect(streak.graceUsed).toBe(1);
   });
 
-  it("майбутній день і день поза розкладом — no-op", () => {
-    const s = state({ habits: [habit("w", { recurrence: "weekdays" })] });
-    const future = applyHabitCounterStep(
-      s,
-      {},
-      "w",
-      "2026-01-11",
-      1,
-      spec,
-      bounds,
-    );
+  it("майбутній день, день поза розкладом і звичка без лічильника — no-op", () => {
+    const s = state({ habits: [water({ recurrence: "weekdays" })] });
+    const future = step(s, "2026-01-11", 1);
     expect(future.state).toBe(s);
-    expect(future.count).toBe(0);
+    expect(future.changed).toBe(false);
     // 2026-01-10 — субота, будні звичці не запланована.
-    const off = applyHabitCounterStep(
-      s,
-      {},
-      "w",
-      "2026-01-10",
-      1,
-      spec,
-      bounds,
-    );
-    expect(off.state).toBe(s);
-    expect(off.counts).toEqual({});
+    expect(step(s, "2026-01-10", 1).state).toBe(s);
+    const plain = state({ habits: [habit("w")] });
+    expect(step(plain, "2026-01-10", 1).state).toBe(plain);
     expect(counterReached(5, 0)).toBe(false);
+  });
+
+  it("нова звичка зберігає лічильник і автовідмітку з форми", () => {
+    const s0 = applyCreateHabit(state(), {
+      name: "Вода",
+      countTarget: 8,
+      countUnit: "склянок",
+      autoMarkSource: "nutrition_water_goal",
+    });
+    expect(s0.habits[0]).toMatchObject({
+      countTarget: 8,
+      countUnit: "склянок",
+      autoMarkSource: "nutrition_water_goal",
+    });
+    const plain = applyCreateHabit(state(), { name: "Біг", countTarget: null });
+    expect(plain.habits[0]).not.toHaveProperty("countTarget");
+  });
+
+  it("нормалізація: невалідна ціль знімає лічильник, нулі в counts відкидаються", () => {
+    expect(
+      normalizeHabitCounterFields(
+        habit("x", { countTarget: 0, countUnit: "шт" }),
+      ),
+    ).not.toHaveProperty("countTarget");
+    expect(
+      normalizeHabitCounterFields(
+        habit("x", { autoMarkSource: "nope" as never }),
+      ),
+    ).not.toHaveProperty("autoMarkSource");
+    expect(
+      normalizeHabitCounts({ a: { "2026-01-01": 0, "2026-01-02": 2 }, b: 3 }),
+    ).toEqual({ a: { "2026-01-02": 2 } });
   });
 });
 
@@ -366,5 +370,28 @@ describe("Р-1 (в): автовідмітка (П-13 (А), П-14 (А))", () => {
         suppressedToday: false,
       }),
     ).toBe(skipped);
+  });
+
+  it("подія відмічає всі привʼязані звички, крім заглушених і архівних", () => {
+    const s0 = state({
+      habits: [
+        habit("gym", { autoMarkSource: "fizruk_workout" }),
+        habit("stretch", { autoMarkSource: "fizruk_workout" }),
+        habit("old", { autoMarkSource: "fizruk_workout", archived: true }),
+        habit("water", { autoMarkSource: "nutrition_water_goal" }),
+      ],
+    });
+    const r = applyAutoMarkSignal(s0, "fizruk_workout", todayKey, {
+      todayKey,
+      suppressedHabitIds: new Set(["stretch"]),
+    });
+    expect(r.markedHabitIds).toEqual(["gym"]);
+    expect(r.state.completions["gym"]).toEqual([todayKey]);
+    expect(r.state.completions["water"]).toBeUndefined();
+    const none = applyAutoMarkSignal(s0, "finyk_expense", todayKey, {
+      todayKey,
+      suppressedHabitIds: new Set(),
+    });
+    expect(none.state).toBe(s0);
   });
 });

@@ -21,7 +21,8 @@
  * через `--update`. Без бампу фронт із новою таблицею у вікні деплою отримає
  * термінальний `table_not_allowed` замість повтору.
  */
-export const SYNC_PROTOCOL_VERSION = 1;
+// 2 — `routine_habit_counts` (міграція 170, Рутина Р-1 (а), 2026-11-18).
+export const SYNC_PROTOCOL_VERSION = 2;
 
 export const SYNC_PROTOCOL_QUERY_PARAM = "sync_protocol";
 

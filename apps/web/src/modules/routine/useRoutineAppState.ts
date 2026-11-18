@@ -67,6 +67,7 @@ import { readSignalContext } from "../../core/observability/valueSignalAttributi
 import {
   afterHabitCheckIn,
   applyHabitCheckIn,
+  stepCounterCheckIn,
   type HabitCheckInOutcome,
 } from "./lib/habitCheckIn";
 import { useSqliteReadBoot } from "./hooks/useSqliteReadBoot";
@@ -519,10 +520,24 @@ export function useRoutineAppState({
     [setRoutine],
   );
 
+  // Крок лічильника (Р-1 (а)): той самий шлях винагороди, що й тап
+  // (`stepCounterCheckIn`); запис і телеметрія в обробнику, у transition
+  // лише оновлення стану, як в `onToggleHabit`.
+  const onStepHabitCounter = useCallback(
+    (habitId: string, dateKey: string, delta: number) => {
+      hapticTap();
+      const outcome = stepCounterCheckIn(habitId, dateKey, delta, "ui");
+      if (!outcome.changed) return;
+      startHabitTransition(() => setRoutine(outcome.next));
+    },
+    [setRoutine, startHabitTransition],
+  );
+
   const calendarActions = useMemo<RoutineCalendarActions>(
     () => ({
       applyTimeMode: time.applyTimeMode,
       onToggleHabit,
+      onStepHabitCounter,
       setRoutine,
       setMainTab,
       onOpenModule,
@@ -534,6 +549,7 @@ export function useRoutineAppState({
     [
       time.applyTimeMode,
       onToggleHabit,
+      onStepHabitCounter,
       setRoutine,
       setMainTab,
       onOpenModule,

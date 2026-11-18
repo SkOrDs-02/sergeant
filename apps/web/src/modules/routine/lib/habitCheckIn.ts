@@ -23,7 +23,11 @@
  * людина потім відкриє модуль.
  */
 
-import { flexibleMaxActiveStreak } from "@sergeant/routine-domain";
+import {
+  counterProgressLabel,
+  flexibleMaxActiveStreak,
+  habitCountTarget,
+} from "@sergeant/routine-domain";
 import { celebrateStreakMilestone } from "@shared/hooks/useStreakMilestoneCelebration";
 import type { ToastApi } from "@shared/hooks/useToast";
 import { messages } from "@shared/i18n/uk";
@@ -33,6 +37,10 @@ import {
 } from "../../../core/observability/analytics";
 import { readSignalContext } from "../../../core/observability/valueSignalAttribution";
 import { anchoredTodayKey } from "./dayAnchor";
+import {
+  noteManualCompletionChange,
+  stepHabitCounter,
+} from "./routineCounterStorage";
 import { recordRoutineMoment } from "./routineMoments";
 import { loadRoutineState, toggleHabitCompletion } from "./routineStorage";
 import { readStreakExposure } from "./streakExposure";
@@ -57,12 +65,47 @@ export function applyHabitCheckIn(
 ): HabitCheckInOutcome {
   const prev = loadRoutineState();
   const next = toggleHabitCompletion(prev, habitId, dateKey);
+  // Знята рукою сьогоднішня відмітка глушить автовідмітку до кінця доби
+  // (П-13 (А)); памʼять на пристрої, `routineCounterStorage.ts`.
+  if (next !== prev) noteManualCompletionChange(prev, next, habitId, dateKey);
   return {
     changed: next !== prev,
     done: (next.completions[habitId] ?? []).includes(dateKey),
     prev,
     next,
   };
+}
+
+export interface CounterCheckInOutcome extends HabitCheckInOutcome {
+  /** Кроки за день після кроку. */
+  count: number;
+}
+
+/**
+ * Крок лічильника (Р-1 (а)) тим самим шляхом винагороди, що й тап:
+ * момент і подія `routine_habit_checked` лише тоді, коли змінилась сама
+ * відмітка дня (ціль досягнуто або день знову неповний). Крок без зміни
+ * відмітки — не чекін.
+ */
+export function stepCounterCheckIn(
+  habitId: string,
+  dateKey: string,
+  delta: number,
+  source: HabitCheckInSource,
+): CounterCheckInOutcome {
+  const r = stepHabitCounter(habitId, dateKey, delta);
+  const wasDone = (r.prev.completions[habitId] ?? []).includes(dateKey);
+  const outcome: CounterCheckInOutcome = {
+    changed: r.changed,
+    done: r.done,
+    prev: r.prev,
+    next: r.state,
+    count: r.count,
+  };
+  if (r.changed && wasDone !== r.done) {
+    afterHabitCheckIn(outcome, habitId, dateKey, source);
+  }
+  return outcome;
 }
 
 /** Половина (2): рядок моменту і телеметрія. No-op, якщо нічого не змінилось. */
@@ -131,13 +174,40 @@ export function checkInHabitFromHub(
   if ((current.completions[habitId] ?? []).includes(todayKey)) {
     return { changed: false, done: true, prev: current, next: current };
   }
+  const habit = current.habits.find((h) => h.id === habitId);
+  const target = habitCountTarget(habit);
+  const name = habit?.name || messages.routine.hubCheckIn.unnamed;
+  // Звичка з лічильником (Р-1 (а)): чекбокс — це один крок «+1», а не
+  // відмітка всього дня; «Скасувати» — крок «−1». Віха лише тоді, коли
+  // крок закрив ціль.
+  if (target !== null) {
+    const step = stepCounterCheckIn(habitId, todayKey, 1, "hub");
+    if (!step.changed) return step;
+    const unit = habit?.countUnit ? ` ${habit.countUnit}` : "";
+    toast.success(
+      messages.routine.hubCheckIn.counter
+        .replace("{name}", name)
+        .replace("{progress}", counterProgressLabel(step.count, target))
+        .replace("{unit}", unit),
+      undefined,
+      {
+        label: messages.routine.hubCheckIn.undo,
+        kind: "undo",
+        onClick: () => {
+          stepCounterCheckIn(habitId, todayKey, -1, "hub");
+        },
+      },
+    );
+    if (step.done) {
+      celebrateRoutineStreakMilestone(step.next, todayKey, toast.success);
+    }
+    return step;
+  }
+
   const outcome = applyHabitCheckIn(habitId, todayKey);
   afterHabitCheckIn(outcome, habitId, todayKey, "hub");
   if (!outcome.changed) return outcome;
 
-  const name =
-    outcome.next.habits.find((h) => h.id === habitId)?.name ||
-    messages.routine.hubCheckIn.unnamed;
   const msg = messages.routine.hubCheckIn.done.replace("{name}", name);
   toast.success(msg, undefined, {
     label: messages.routine.hubCheckIn.undo,

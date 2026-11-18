@@ -17,6 +17,7 @@ import { completionNoteKey } from "../lib/completionNoteKey";
 import { useCompletionNoteDrafts } from "../hooks/useCompletionNoteDrafts";
 import { DayReportSheet } from "./DayReportSheet";
 import {
+  habitCountTarget,
   isFlexibleHabit,
   timeOfDayBucket,
   weekDoneCountExcludingDate,
@@ -40,6 +41,7 @@ import { useAskAiQuotaExhausted } from "@shared/lib/insights/useAskAiQuota";
 import { useStreakRecordPendingInsight } from "../hooks/useStreakRecordPendingInsight";
 import type { HubCalendarEvent } from "../lib/types";
 import { HabitStateButton } from "./HabitStateButton";
+import { HabitCounterControl } from "./HabitCounterControl";
 import { formatUaWeekdayDate } from "@shared/lib/time/uaWeekdayDate";
 
 /** Підпис рядка без службового «Звичка»: рядок і так звичка (v3.2, 11). */
@@ -94,6 +96,7 @@ export function RoutineCalendarPanel({
   const {
     applyTimeMode,
     onToggleHabit,
+    onStepHabitCounter,
     setRoutine,
     onOpenModule,
     onBulkMarkDay,
@@ -163,6 +166,11 @@ export function RoutineCalendarPanel({
     }));
 
   // Позначки «не зміг» саме за день звіту, зведені в `habitId → HabitSkip`.
+  const habitById = useMemo(
+    () => new Map(routine.habits.map((h) => [h.id, h] as const)),
+    [routine.habits],
+  );
+
   const skipsForReportDay = useMemo(() => {
     const out: Record<string, HabitSkip> = {};
     for (const [habitId, byDate] of Object.entries(routine.skips || {})) {
@@ -293,6 +301,13 @@ export function RoutineCalendarPanel({
               // Capture as a const so TypeScript narrows it to `string` inside
               // the guarded closures below without a non-null assertion.
               const habitId = e.habitId;
+              // Звичка з лічильником (Р-1 (а)): «−» / «2 з 3» / «+» замість
+              // кружка, якщо модуль дав дію кроку.
+              const counterHabit = habitId ? habitById.get(habitId) : undefined;
+              const counterTarget = onStepHabitCounter
+                ? habitCountTarget(counterHabit)
+                : null;
+              const counterUnit = counterHabit?.countUnit ?? undefined;
               return (
                 <div key={key} className="">
                   <SwipeToAction
@@ -384,7 +399,20 @@ export function RoutineCalendarPanel({
                               Фінік
                             </Button>
                           )}
-                          {habitId && (
+                          {habitId && counterTarget !== null && (
+                            <HabitCounterControl
+                              name={e.title}
+                              count={routine.counts?.[habitId]?.[e.date] ?? 0}
+                              target={counterTarget}
+                              unit={counterUnit}
+                              done={e.completed === true}
+                              futureDay={e.date > todayKey}
+                              onStep={(d) =>
+                                onStepHabitCounter?.(habitId, e.date, d)
+                              }
+                            />
+                          )}
+                          {habitId && counterTarget === null && (
                             <HabitStateButton
                               completed={e.completed === true}
                               futureDay={e.date > todayKey}

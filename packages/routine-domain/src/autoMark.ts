@@ -16,19 +16,18 @@
  * «не зміг» (канон §5) автовідмітка не знімає (інженерний дефолт за духом
  * П-13; винесено у спеку як відкрите питання).
  *
- * AI-DANGER: які саме події яких модулів ставлять відмітку і як людина
- * привʼязує звичку до джерела, не визначено ні в § 11.4 Р-1 (в) розбору
- * teardown, ні у відповідях власника, тож джерел тут немає: викликач сам
- * вирішує, що подія стосується звички. Памʼять «знято сьогодні» теж не
- * персиститься (питання до власника у спеці). Не підключай у продукт, доки
- * обидва питання не закриті.
+ * Джерела й привʼязка (відповіді founder-а 2026-11-18, § 11.9): три
+ * фіксовані події (`AutoMarkSource`), звичку привʼязує поле
+ * `Habit.autoMarkSource` у формі, «знято сьогодні» памʼятає пристрій
+ * (викликач передає множину заглушених звичок). `applyAutoMarkSignal` —
+ * вхід для однієї події: відмічає всі привʼязані до неї звички.
  */
 
 import {
   applyToggleHabitCompletion,
   type CompletionDayBounds,
 } from "./reducers.js";
-import type { RoutineState } from "./types.js";
+import type { AutoMarkSource, RoutineState } from "./types.js";
 
 export interface AutoMarkContext extends CompletionDayBounds {
   /**
@@ -74,4 +73,41 @@ export function shouldSuppressAutoMark(
   const wasDone = (prev.completions[habitId] ?? []).includes(dateKey);
   const isDone = (next.completions[habitId] ?? []).includes(dateKey);
   return wasDone && !isDone;
+}
+
+export interface AutoMarkSignalContext extends CompletionDayBounds {
+  /** Звички, відмітку яких людина сьогодні вже знімала (памʼять пристрою). */
+  suppressedHabitIds: ReadonlySet<string>;
+}
+
+export interface AutoMarkSignalResult {
+  state: RoutineState;
+  /** Звички, яким ця подія справді поставила відмітку. */
+  markedHabitIds: string[];
+}
+
+/**
+ * Подія `source` за день `eventDateKey`: відмітити всі незархівовані звички,
+ * привʼязані до цього джерела, за правилами `applyAutoMarkHabit`.
+ */
+export function applyAutoMarkSignal(
+  state: RoutineState,
+  source: AutoMarkSource,
+  eventDateKey: string,
+  ctx: AutoMarkSignalContext,
+): AutoMarkSignalResult {
+  let next = state;
+  const markedHabitIds: string[] = [];
+  for (const h of state.habits) {
+    if (h.archived || h.autoMarkSource !== source) continue;
+    const after = applyAutoMarkHabit(next, h.id, eventDateKey, {
+      todayKey: ctx.todayKey,
+      suppressedToday: ctx.suppressedHabitIds.has(h.id),
+    });
+    if (after !== next) {
+      markedHabitIds.push(h.id);
+      next = after;
+    }
+  }
+  return { state: next, markedHabitIds };
 }

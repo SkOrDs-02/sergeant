@@ -70,6 +70,20 @@ export interface HabitSkip {
   readonly at: string;
 }
 
+/**
+ * Подія іншого модуля, що сама ставить відмітку звички сьогодні (Р-1 (в),
+ * рішення founder-а 2026-11-18, міграція 170 `routine_habits.auto_mark_source`).
+ */
+export type AutoMarkSource =
+  "fizruk_workout" | "nutrition_water_goal" | "finyk_expense";
+
+/** Закритий список джерел автовідмітки в порядку показу у формі. */
+export const AUTO_MARK_SOURCES: readonly AutoMarkSource[] = [
+  "fizruk_workout",
+  "nutrition_water_goal",
+  "finyk_expense",
+];
+
 export interface Habit {
   id: string;
   name: string;
@@ -93,6 +107,15 @@ export interface Habit {
   reminderTimes?: string[] | undefined;
   weekdays?: number[] | undefined;
   weeklyTargetHistory?: WeeklyTargetInterval[] | undefined;
+  /**
+   * Ціль лічильника за день (Р-1 (а)), ціле ≥ 1. Відсутнє або `null` —
+   * звичка «так/ні». День виконано, коли лічильник ≥ цілі (`counterHabit.ts`).
+   */
+  countTarget?: number | null | undefined;
+  /** Підпис одиниці лічильника («склянки»). */
+  countUnit?: string | null | undefined;
+  /** Джерело автовідмітки (Р-1 (в)); відсутнє або `null` — немає. */
+  autoMarkSource?: AutoMarkSource | null | undefined;
 }
 
 export interface Tag {
@@ -136,6 +159,11 @@ export interface RoutineState {
   skips?: Record<string, Record<string, HabitSkip>> | undefined;
   habitOrder: string[];
   completionNotes: Record<string, string>;
+  /**
+   * Кроки лічильника: `habitId → dateKey → кількість` (Р-1 (а), таблиця
+   * `routine_habit_counts`). Необовʼязкове з тієї ж причини, що й `skips`.
+   */
+  counts?: Record<string, Record<string, number>> | undefined;
 }
 
 // ---------------------------------------------------------------------
@@ -204,6 +232,9 @@ export interface HabitDraftPatch {
   weekdays?: number[] | undefined;
   paused?: boolean | undefined;
   weeklyTargetHistory?: WeeklyTargetInterval[] | undefined;
+  countTarget?: number | null | undefined;
+  countUnit?: string | null | undefined;
+  autoMarkSource?: AutoMarkSource | null | undefined;
 }
 
 /**
@@ -224,6 +255,14 @@ export interface HabitDraft {
   paused: boolean;
   weeklyTarget: number;
   weeklyTargetHistory: WeeklyTargetInterval[];
+  /**
+   * Лічильник (Р-1 (а)): `null` — звичка «так/ні». Необовʼязкові поля, щоб
+   * чернетки мобілки (ADR-0094, поза скоупом) лишились валідними.
+   */
+  countTarget?: number | null;
+  countUnit?: string;
+  /** Автовідмітка (Р-1 (в)): `null` — немає. */
+  autoMarkSource?: AutoMarkSource | null;
 }
 
 export interface ReminderPreset {

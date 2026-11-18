@@ -1,5 +1,5 @@
 {
-  "version": 1,
+  "version": 2,
   "tables": [
     "finyk_assets",
     "finyk_budgets",
@@ -44,6 +44,7 @@
     "routine_completion_events",
     "routine_completion_notes",
     "routine_entries",
+    "routine_habit_counts",
     "routine_habit_order",
     "routine_habit_skips",
     "routine_habits",

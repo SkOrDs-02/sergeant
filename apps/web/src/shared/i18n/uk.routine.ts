@@ -110,8 +110,30 @@ export const routinePageMessages = {
   // одна дія в тості — відкат щойно поставленої відмітки.
   hubCheckIn: {
     done: "Відмічено: {name}",
+    // Звичка з лічильником: «Вода: 2 з 3 склянки» (`{unit}` уже з пробілом).
+    counter: "{name}: {progress}{unit}",
     undo: "Скасувати",
     unnamed: "звичку",
+  },
+  // Лічильник звички (OD-29, Р-1 (а), міграція 170): поле форми й рядок дня.
+  counter: {
+    targetLabel: "Ціль на день",
+    targetHint: "Порожньо, якщо звичка «так/ні».",
+    targetError: "Ціль: ціле число від 1.",
+    unitLabel: "Одиниця",
+    unitPlaceholder: "склянки, сторінки",
+    increment: "Додати: {name}",
+    decrement: "Відняти: {name}",
+    progressAria: "{name}: {progress}",
+  },
+  // Автовідмітка (OD-29, Р-1 (в), рішення founder-а 2026-11-18).
+  autoMark: {
+    label: "Відмічати саму, коли…",
+    none: "Ніколи",
+    fizruk_workout: "завершено повноцінне тренування",
+    nutrition_water_goal: "досягнуто денної цілі води",
+    finyk_expense: "записано витрату вручну",
+    hint: "Лише сьогодні й лише з цього пристрою. Зняту відмітку того дня не ставлю знову.",
   },
   // Полотно серії з типами дня (`components/HabitStreakCanvas.tsx`, канон
   // `routine.md` §4/§5). Раніше єдина поверхня показу серії — «14 🔥» —

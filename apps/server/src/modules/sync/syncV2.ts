@@ -35,6 +35,7 @@ import {
   applyRoutineStreaks,
 } from "./routine/applySync.js";
 import { applyRoutineCompletionEvents } from "./routine/applyCompletionEvents.js";
+import { applyRoutineHabitCounts } from "./routine/applyHabitCounts.js";
 import {
   applyRoutineCompletionNotes,
   applyRoutineHabitSkips,
@@ -152,6 +153,8 @@ const OP_LOG_TABLE_REGISTRY: Record<string, ApplyFn> = {
   routine_completion_notes: applyRoutineCompletionNotes,
   // Хвиля 4 — третій стан дня «не зміг з причиною» (канон §5).
   routine_habit_skips: applyRoutineHabitSkips,
+  // Міграція 170 (Р-1 (а)): кроки лічильника звички за день.
+  routine_habit_counts: applyRoutineHabitCounts,
   // W1-ROUTINE-APPEND стадія 1 — append-only журнал відміток. `op='update'`
   // / `'delete'` відхиляються з `append_only_violation`; читачів у цій
   // стадії нема.

@@ -1,5 +1,5 @@
 /**
- * Звичка з лічильником («2 з 3 склянок»): доменне ядро без персистенції.
+ * Звичка з лічильником («2 з 3 склянок»): доменне ядро.
  *
  * AI-CONTEXT: OD-29, Р-1 (а). Рішення власника 2026-11-18:
  *
@@ -11,31 +11,25 @@
  * - Дефолт § 11.8 (founder не заперечив): тап після досягнення цілі рахує
  *   далі, «4 з 3».
  *
- * Як це тримає всі агрегати незмінними: відмітка виконання дня
- * (`completions`) лишається єдиним входом метрик, а лічильник лише вирішує,
- * чи вона стоїть. Досягнуто ціль — відмітка ставиться тим самим редʼюсером
+ * Відмітка дня (`completions`) лишається єдиним входом метрик, а лічильник
+ * (`RoutineState.counts`, таблиця `routine_habit_counts`, міграція 170) лише
+ * вирішує, чи вона стоїть. Відмітку ставить і знімає той самий редʼюсер
  * `applyToggleHabitCompletion`, що й тап по кружку (розклад, заборона
- * майбутнього, зняття «не зміг»); опустився нижче цілі — знімається ним же.
+ * майбутнього, зняття «не зміг»).
  *
- * AI-DANGER: персистенції ще НЕМАЄ. Ціль і одиниця звички та лічильники
- * днів потребують серверної й клієнтської міграцій (спека
- * `docs/work/specs/routine-counter-automark-percent-and-hub-rows.md`
- * § Поза скоупом), тож тут лише чисті функції над переданими структурами,
- * а `Habit` / `RoutineState` нових полів не мають. Не підключай це в UI,
- * доки лічильник не переживає перезавантаження.
+ * Інженерний дефолт (спека, § Рішення дизайну): **крок угору ніколи не
+ * знімає відмітку**, а крок униз знімає її лише тоді, коли лічильник
+ * перетинає ціль згори (≥ ціль → < ціль). Тож день, відмічений рукою (або
+ * «Відмітити всі», або автовідміткою) з лічильником 0, після «+1» лишається
+ * виконаним із «1 з 3», а не губить відмітку.
  */
 
+import { habitCountTarget } from "./counterFields.js";
 import {
   applyToggleHabitCompletion,
   type CompletionDayBounds,
 } from "./reducers.js";
 import type { RoutineState } from "./types.js";
-
-/** Ціль лічильника звички. `target` — ціле ≥ 1, `unit` — підпис одиниці. */
-export interface HabitCounterSpec {
-  target: number;
-  unit: string;
-}
 
 /** Лічильники днів: `habitId → dateKey → кількість кроків`. */
 export type HabitDayCounts = Record<string, Record<string, number>>;
@@ -51,68 +45,85 @@ export function counterProgressLabel(count: number, target: number): string {
   return `${Math.max(0, Math.floor(count))} з ${target}`;
 }
 
+/** Кроки звички за день (0, якщо не записано). */
+export function habitDayCount(
+  state: Pick<RoutineState, "counts">,
+  habitId: string,
+  dateKey: string,
+): number {
+  return state.counts?.[habitId]?.[dateKey] ?? 0;
+}
+
 export interface CounterStepResult {
   state: RoutineState;
-  counts: HabitDayCounts;
   /** Кількість за день після кроку. */
   count: number;
   /** Чи день зараховано виконаним (відмітка стоїть у `completions`). */
   done: boolean;
+  /** Чи щось змінилось (лічильник або відмітка). */
+  changed: boolean;
 }
 
 /**
- * Додати `delta` кроків (тап = `+1`, «Скасувати» = `-1`) звичці за день.
+ * Додати `delta` кроків (тап = `+1`, «Скасувати» або «−» = `-1`) звичці
+ * з лічильником за день.
  *
- * No-op (ті самі посилання на `state` і `counts`), коли звички немає, день
- * у майбутньому або звичка на цей день не запланована й лічильник порожній,
- * тобто там, де `applyToggleHabitCompletion` відмовив би у відмітці.
+ * No-op (те саме посилання на `state`), коли звички немає, вона без
+ * лічильника, день у майбутньому, або звичка на цей день не запланована й
+ * лічильник порожній, тобто там, де `applyToggleHabitCompletion` відмовив би
+ * у відмітці.
  */
 export function applyHabitCounterStep(
   state: RoutineState,
-  counts: HabitDayCounts,
   habitId: string,
   dateKey: string,
   delta: number,
-  spec: HabitCounterSpec,
   bounds: CompletionDayBounds,
 ): CounterStepResult {
-  const prevCount = counts[habitId]?.[dateKey] ?? 0;
+  const habit = state.habits.find((h) => h.id === habitId);
+  const target = habitCountTarget(habit);
+  const prevCount = habitDayCount(state, habitId, dateKey);
   const wasDone = (state.completions[habitId] ?? []).includes(dateKey);
   const unchanged: CounterStepResult = {
     state,
-    counts,
     count: prevCount,
     done: wasDone,
+    changed: false,
   };
-  if (!state.habits.some((h) => h.id === habitId)) return unchanged;
+  if (!habit || target === null) return unchanged;
   if (!Number.isFinite(delta) || delta === 0) return unchanged;
 
   const nextCount = Math.max(0, Math.floor(prevCount + delta));
-  const wantDone = counterReached(nextCount, spec.target);
+  if (nextCount === prevCount) return unchanged;
 
   let nextState = state;
-  if (wantDone !== wasDone) {
+  if (delta > 0) {
+    // Межа та сама, що й для відмітки: майбутнє і поза розкладом — ні.
+    const probe = wasDone
+      ? state
+      : applyToggleHabitCompletion(state, habitId, dateKey, bounds);
+    if (!wasDone && probe === state) return unchanged;
+    if (!wasDone && counterReached(nextCount, target)) nextState = probe;
+  } else if (
+    wasDone &&
+    counterReached(prevCount, target) &&
+    !counterReached(nextCount, target)
+  ) {
     nextState = applyToggleHabitCompletion(state, habitId, dateKey, bounds);
-    // Редʼюсер відмовив (майбутнє, не за розкладом): лічильник теж не
-    // рухаємо, інакше «3 з 3» стояло б без відмітки.
-    if (nextState === state) return unchanged;
-  } else if (delta > 0 && prevCount === 0) {
-    // Перший крок без досягнення цілі: та сама межа, що й для відмітки.
-    const probe = applyToggleHabitCompletion(state, habitId, dateKey, bounds);
-    if (probe === state) return unchanged;
   }
 
-  const forHabit = { ...(counts[habitId] ?? {}) };
+  const forHabit = { ...(state.counts?.[habitId] ?? {}) };
   if (nextCount === 0) delete forHabit[dateKey];
   else forHabit[dateKey] = nextCount;
-  const nextCounts = { ...counts };
-  if (Object.keys(forHabit).length === 0) delete nextCounts[habitId];
-  else nextCounts[habitId] = forHabit;
+  const counts = { ...(state.counts ?? {}) };
+  if (Object.keys(forHabit).length === 0) delete counts[habitId];
+  else counts[habitId] = forHabit;
 
+  const out: RoutineState = { ...nextState, counts };
   return {
-    state: nextState,
-    counts: nextCounts,
+    state: out,
     count: nextCount,
-    done: (nextState.completions[habitId] ?? []).includes(dateKey),
+    done: (out.completions[habitId] ?? []).includes(dateKey),
+    changed: true,
   };
 }

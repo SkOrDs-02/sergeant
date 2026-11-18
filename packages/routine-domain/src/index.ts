@@ -42,6 +42,7 @@ export * from "./periodCompletion.js";
 export * from "./bestMonth.js";
 export * from "./habitsForNow.js";
 export * from "./counterHabit.js";
+export * from "./counterFields.js";
 export * from "./autoMark.js";
 export * from "./drafts.js";
 export * from "./storage.js";

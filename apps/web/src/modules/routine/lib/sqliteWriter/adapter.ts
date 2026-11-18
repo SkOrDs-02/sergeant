@@ -15,6 +15,7 @@ import { notifyOutboxEnqueued } from "../../../../core/syncEngine/outboxNudge.js
 import { isSyncableUserId } from "../../../../core/syncEngine/syncableUserId.js";
 import { fireSyncOutboxUpsert } from "../../../../core/syncEngine/fireSyncOutboxUpsert.js";
 import { appendCompletionEvent } from "./adapter.completionEvents.js";
+import { deleteHabitCount, upsertHabitCount } from "./adapter.counts.js";
 import { buildCompletionRowId, type RoutineDualWriteOp } from "./diff.js";
 import {
   CATEGORY_SOFT_DELETE_SQL,
@@ -159,6 +160,15 @@ const applyOps = createApplyOps<RoutineDualWriteOp>({
     },
     "habit-skip-delete": async (client, op, rt) => {
       await deleteHabitSkip(client, op.skipKey, rt);
+      return "applied";
+    },
+    // Міграція 170 (Р-1 (а)) — кроки лічильника, `adapter.counts.ts`.
+    "habit-count-upsert": async (client, op, rt) => {
+      await upsertHabitCount(client, op, rt);
+      return "applied";
+    },
+    "habit-count-delete": async (client, op, rt) => {
+      await deleteHabitCount(client, op, rt);
       return "applied";
     },
   },
@@ -352,6 +362,9 @@ async function upsertHabit(
     JSON.stringify(h.weekdays ?? [0, 1, 2, 3, 4, 5, 6]),
     JSON.stringify(h.pauseIntervals ?? []),
     JSON.stringify(h.weeklyTargetHistory ?? []),
+    h.countTarget ?? null,
+    h.countUnit ?? null,
+    h.autoMarkSource ?? null,
     h.createdAt ?? clientTs,
     clientTs,
   ]);
@@ -377,6 +390,11 @@ async function upsertHabit(
       weekdays_json: JSON.stringify(h.weekdays ?? [0, 1, 2, 3, 4, 5, 6]),
       pause_intervals_json: JSON.stringify(h.pauseIntervals ?? []),
       weekly_target_history_json: JSON.stringify(h.weeklyTargetHistory ?? []),
+      // Міграція 170: ключі шлемо завжди (`null` = немає), бо сервер читає
+      // відсутній ключ як «не чіпати» (`habitCounterFields.ts`).
+      count_target: h.countTarget ?? null,
+      count_unit: h.countUnit ?? null,
+      auto_mark_source: h.autoMarkSource ?? null,
       created_at: h.createdAt ?? clientTs,
     },
   });

@@ -10,6 +10,7 @@ const ROUTINE_PULL_TABLES = new Set([
   "routine_habit_order",
   "routine_completion_notes",
   "routine_habit_skips",
+  "routine_habit_counts",
   // W1-ROUTINE-APPEND стадія 1. Писар уже є (append-only journal), читачів
   // ще немає — але без цього рядка перший же pull чужого запису не
   // інвалідує routine-кеш, коли (у стадії 3) журнал стане джерелом правди.

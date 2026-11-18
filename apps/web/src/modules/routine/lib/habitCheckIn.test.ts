@@ -21,6 +21,10 @@ const mocks = vi.hoisted(() => ({
 
 vi.mock("./routineStorage", () => ({
   loadRoutineState: () => mocks.store.current,
+  saveRoutineState: (s: RoutineState) => {
+    mocks.store.current = s;
+    return true;
+  },
   toggleHabitCompletion: (s: RoutineState, id: string, dk: string) => {
     const next = applyToggleHabitCompletion(s, id, dk, { todayKey: TODAY });
     mocks.store.current = next;
@@ -36,7 +40,10 @@ vi.mock("../../../core/observability/analytics", async () => {
 vi.mock("./routineMoments", () => ({
   recordRoutineMoment: mocks.recordRoutineMoment,
 }));
-vi.mock("./dayAnchor", () => ({ anchoredTodayKey: () => TODAY }));
+vi.mock("./dayAnchor", () => ({
+  anchoredTodayKey: () => TODAY,
+  anchoredCompletionBounds: () => ({ todayKey: TODAY }),
+}));
 vi.mock("@shared/hooks/useStreakMilestoneCelebration", () => ({
   celebrateStreakMilestone: mocks.celebrateStreakMilestone,
 }));
@@ -159,6 +166,59 @@ describe("checkInHabitFromHub", () => {
     ];
     call[2].onClick();
     expect(mocks.store.current.completions["water"]).not.toContain(TODAY);
+  });
+});
+
+describe("checkInHabitFromHub: звичка з лічильником (Р-1 (а))", () => {
+  beforeEach(() => {
+    mocks.store.current = seed({
+      habits: [
+        {
+          id: "water",
+          name: "Вода",
+          recurrence: "daily",
+          startDate: "2026-01-01",
+          countTarget: 2,
+          countUnit: "склянки",
+        },
+      ],
+      completions: {},
+    });
+    mocks.trackEvent.mockReset();
+    mocks.recordRoutineMoment.mockReset();
+    mocks.celebrateStreakMilestone.mockReset();
+  });
+
+  it("чекбокс — один крок «+1», тост «Вода: 1 з 2 склянки», відкат «−1»", () => {
+    const toast = toastStub();
+    const first = checkInHabitFromHub("water", toast);
+    expect(first.changed).toBe(true);
+    expect(first.done).toBe(false);
+    expect(mocks.store.current.counts?.["water"]?.[TODAY]).toBe(1);
+    // Відмітка дня не змінилась: це не чекін, моменту й події немає.
+    expect(mocks.trackEvent).not.toHaveBeenCalled();
+    expect(mocks.celebrateStreakMilestone).not.toHaveBeenCalled();
+    const call = toast.success.mock.calls[0] as unknown as [
+      string,
+      undefined,
+      { onClick: () => void },
+    ];
+    expect(call[0]).toBe("Вода: 1 з 2 склянки");
+    call[2].onClick();
+    expect(mocks.store.current.counts?.["water"]?.[TODAY]).toBeUndefined();
+  });
+
+  it("крок, що досягає цілі, ставить відмітку, подію і віху", () => {
+    const toast = toastStub();
+    checkInHabitFromHub("water", toast);
+    const second = checkInHabitFromHub("water", toast);
+    expect(second.done).toBe(true);
+    expect(mocks.store.current.completions["water"]).toEqual([TODAY]);
+    expect(mocks.trackEvent).toHaveBeenCalledWith(
+      "routine_habit_checked",
+      expect.objectContaining({ state: "done", source: "hub" }),
+    );
+    expect(mocks.celebrateStreakMilestone).toHaveBeenCalledTimes(1);
   });
 });
 

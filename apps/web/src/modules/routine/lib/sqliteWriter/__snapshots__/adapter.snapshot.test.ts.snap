@@ -130,6 +130,9 @@ exports[`routine dual-write SQL snapshot (ADR-0073 Крок 0) > emits a byte-st
       "[1,2,3,4,5]",
       "[{"from":"2026-06-10","to":"2026-06-14"}]",
       "[]",
+      null,
+      null,
+      null,
       "2026-06-01T00:00:00.000Z",
       "2026-06-23T00:00:00.000Z",
     ],
@@ -138,8 +141,9 @@ exports[`routine dual-write SQL snapshot (ADR-0073 Крок 0) > emits a byte-st
             archived, paused, recurrence, start_date, end_date,
             time_of_day, reminder_times_json, weekdays_json,
             pause_intervals_json, weekly_target_history_json,
+            count_target, count_unit, auto_mark_source,
             created_at, updated_at, deleted_at)
-         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, NULL)
+         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, NULL)
          ON CONFLICT(id) DO UPDATE SET
            name = excluded.name,
            emoji = excluded.emoji,
@@ -155,6 +159,9 @@ exports[`routine dual-write SQL snapshot (ADR-0073 Крок 0) > emits a byte-st
            weekdays_json = excluded.weekdays_json,
            pause_intervals_json = excluded.pause_intervals_json,
            weekly_target_history_json = excluded.weekly_target_history_json,
+           count_target = excluded.count_target,
+           count_unit = excluded.count_unit,
+           auto_mark_source = excluded.auto_mark_source,
            updated_at = excluded.updated_at,
            deleted_at = NULL
          WHERE excluded.updated_at > routine_habits.updated_at",
@@ -190,6 +197,9 @@ exports[`routine dual-write SQL snapshot (ADR-0073 Крок 0) > emits a byte-st
       "[0,1,2,3,4,5,6]",
       "[]",
       "[]",
+      null,
+      null,
+      null,
       "2026-06-23T00:00:00.000Z",
       "2026-06-23T00:00:00.000Z",
     ],
@@ -198,8 +208,9 @@ exports[`routine dual-write SQL snapshot (ADR-0073 Крок 0) > emits a byte-st
             archived, paused, recurrence, start_date, end_date,
             time_of_day, reminder_times_json, weekdays_json,
             pause_intervals_json, weekly_target_history_json,
+            count_target, count_unit, auto_mark_source,
             created_at, updated_at, deleted_at)
-         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, NULL)
+         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, NULL)
          ON CONFLICT(id) DO UPDATE SET
            name = excluded.name,
            emoji = excluded.emoji,
@@ -215,6 +226,9 @@ exports[`routine dual-write SQL snapshot (ADR-0073 Крок 0) > emits a byte-st
            weekdays_json = excluded.weekdays_json,
            pause_intervals_json = excluded.pause_intervals_json,
            weekly_target_history_json = excluded.weekly_target_history_json,
+           count_target = excluded.count_target,
+           count_unit = excluded.count_unit,
+           auto_mark_source = excluded.auto_mark_source,
            updated_at = excluded.updated_at,
            deleted_at = NULL
          WHERE excluded.updated_at > routine_habits.updated_at",
@@ -433,7 +447,7 @@ exports[`routine dual-write SQL snapshot (ADR-0073 Крок 0) > emits a byte-st
       "u1",
       "routine_habits",
       "insert",
-      "{"id":"h1","user_id":"u1","name":"Пити 2л води","emoji":"💧","tag_ids_json":"[\\"t1\\"]","category_id":"c1","archived":0,"paused":0,"recurrence":"daily","start_date":"2026-06-01","end_date":null,"time_of_day":"morning","reminder_times_json":"[\\"08:00\\"]","weekdays_json":"[1,2,3,4,5]","pause_intervals_json":"[{\\"from\\":\\"2026-06-10\\",\\"to\\":\\"2026-06-14\\"}]","weekly_target_history_json":"[]","created_at":"2026-06-01T00:00:00.000Z"}",
+      "{"id":"h1","user_id":"u1","name":"Пити 2л води","emoji":"💧","tag_ids_json":"[\\"t1\\"]","category_id":"c1","archived":0,"paused":0,"recurrence":"daily","start_date":"2026-06-01","end_date":null,"time_of_day":"morning","reminder_times_json":"[\\"08:00\\"]","weekdays_json":"[1,2,3,4,5]","pause_intervals_json":"[{\\"from\\":\\"2026-06-10\\",\\"to\\":\\"2026-06-14\\"}]","weekly_target_history_json":"[]","count_target":null,"count_unit":null,"auto_mark_source":null,"created_at":"2026-06-01T00:00:00.000Z"}",
       "2026-06-23T00:00:00.000Z",
       "00000000-0000-4000-8000-000000000005",
     ],
@@ -446,7 +460,7 @@ exports[`routine dual-write SQL snapshot (ADR-0073 Крок 0) > emits a byte-st
       "u1",
       "routine_habits",
       "insert",
-      "{"id":"h2","user_id":"u1","name":"Читати","emoji":"","tag_ids_json":"[]","category_id":null,"archived":0,"paused":0,"recurrence":"daily","start_date":null,"end_date":null,"time_of_day":"","reminder_times_json":"[]","weekdays_json":"[0,1,2,3,4,5,6]","pause_intervals_json":"[]","weekly_target_history_json":"[]","created_at":"2026-06-23T00:00:00.000Z"}",
+      "{"id":"h2","user_id":"u1","name":"Читати","emoji":"","tag_ids_json":"[]","category_id":null,"archived":0,"paused":0,"recurrence":"daily","start_date":null,"end_date":null,"time_of_day":"","reminder_times_json":"[]","weekdays_json":"[0,1,2,3,4,5,6]","pause_intervals_json":"[]","weekly_target_history_json":"[]","count_target":null,"count_unit":null,"auto_mark_source":null,"created_at":"2026-06-23T00:00:00.000Z"}",
       "2026-06-23T00:00:00.000Z",
       "00000000-0000-4000-8000-000000000006",
     ],

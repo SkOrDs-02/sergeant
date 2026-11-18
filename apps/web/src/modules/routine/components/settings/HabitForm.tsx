@@ -28,6 +28,7 @@ import {
   WEEKLY_TARGET_CHOICES,
 } from "../../lib/routineConstants";
 import { HabitGlyphPicker } from "../HabitGlyphPicker";
+import { HabitCounterFields } from "./HabitCounterFields";
 import { ReminderPresets } from "./ReminderPresets";
 import { WeekdayPicker } from "./WeekdayPicker";
 import type { HabitDraft, RoutineState } from "../../lib/types";
@@ -35,6 +36,8 @@ import type { HabitDraft, RoutineState } from "../../lib/types";
 export interface HabitFormErrors {
   name?: string | undefined;
   weekdays?: string | undefined;
+  /** Ціль лічильника не ціле ≥ 1 (Р-1 (а)). */
+  countTarget?: string | undefined;
   startDate?: string | undefined;
   endDate?: string | undefined;
 }
@@ -308,6 +311,11 @@ export function HabitForm({
               label="Обрати іконку звички"
             />
           </div>
+          <HabitCounterFields
+            habitDraft={habitDraft}
+            setHabitDraft={setHabitDraft}
+            countTargetError={errors?.countTarget}
+          />
           <div className="grid min-w-0 grid-cols-1 gap-3 sm:grid-cols-2">
             <DateField
               id={startId}
