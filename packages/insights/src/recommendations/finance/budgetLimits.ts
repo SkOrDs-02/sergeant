@@ -10,6 +10,7 @@ import type { Rec, Rule } from "../types.js";
 import type { FinanceContext } from "../financeContext.js";
 import { formatNumberUk } from "@sergeant/shared";
 import { MCC_CATEGORIES } from "@sergeant/finyk-domain/constants";
+import { BUDGET_WARN_THRESHOLD } from "@sergeant/finyk-domain/domain/budget";
 
 function resolveLabel(
   categoryId: string,
@@ -57,7 +58,10 @@ export const budgetLimitsRule: Rule<FinanceContext> = {
           // sheet, щоб дописати їх, поки деталі свіжі в памʼяті.
           pwaAction: "add_expense" as const,
         });
-      } else if (usage.pctRaw >= 90) {
+      } else if (usage.pctRaw >= BUDGET_WARN_THRESHOLD * 100) {
+        // Поріг той самий, що в модулі (картка ліміту, проактивні поради):
+        // 80 %. Власне число 90 тут розводило хаб і Планування (OD-26 Ф-4,
+        // дефолт § 11.8 розбору 2026-11-17, рішення 2026-11-18).
         recs.push({
           id: `budget_warn_${catKey}`,
           module: "finyk" as const,

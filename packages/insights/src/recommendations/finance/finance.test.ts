@@ -79,6 +79,23 @@ describe("budgetLimitsRule", () => {
     expect(recs[0]?.pwaAction).toBeUndefined();
   });
 
+  it("поріг warn = BUDGET_WARN_THRESHOLD модуля (80 %, OD-26 Ф-4 дефолт § 11.8)", () => {
+    const at80 = budgetLimitsRule.evaluate(
+      baseCtx({
+        limitUsage: [usage({ id: "b", categoryId: "cafe", limit: 100 }, 80)],
+      }),
+    );
+    expect(at80[0]?.id).toBe("budget_warn_cafe");
+    expect(at80[0]?.body).toContain("80%");
+
+    const below = budgetLimitsRule.evaluate(
+      baseCtx({
+        limitUsage: [usage({ id: "b", categoryId: "cafe", limit: 100 }, 79)],
+      }),
+    );
+    expect(below).toHaveLength(0);
+  });
+
   it("генерує warn при 90..99%", () => {
     const ctx = baseCtx({
       limitUsage: [usage({ id: "b", categoryId: "cafe", limit: 100 }, 95)],

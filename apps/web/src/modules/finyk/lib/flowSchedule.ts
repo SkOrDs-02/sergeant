@@ -156,3 +156,33 @@ export function getFlowSchedule({
 
   return { subscriptionFlows, debtOutFlows, debtInFlows, plannedFlows };
 }
+
+export type FlowSchedule = ReturnType<typeof getFlowSchedule>;
+
+/** Заплановане списання: підписка або погашення боргу. */
+export type PlannedOutflow = ScheduledFlow & {
+  kind: "subscription" | "debt";
+};
+
+/**
+ * Заплановані списання розкладу: підписки й погашення боргів, строк яких
+ * ще не минув (`daysLeft >= 0`). «Мені винні» сюди не входять: це
+ * надходження.
+ *
+ * AI-CONTEXT: одне джерело правди для двох поверхонь (OD-26 Ф-4, П-4 (Б),
+ * рішення founder-а 2026-11-18). Денна норма «Можна сьогодні»
+ * (`getFinykDayPlan`) віднімає рівно ці потоки в межах місяця, а рядок
+ * «спишеться» на хабі (`selectDueCharges`) показує їх же за сьогодні й
+ * завтра. Не копіюй фільтр поруч: інакше хаб і число дня розійдуться.
+ */
+export function selectPlannedOutflows(
+  schedule: Pick<FlowSchedule, "subscriptionFlows" | "debtOutFlows">,
+): PlannedOutflow[] {
+  return [
+    ...schedule.subscriptionFlows.map((f) => ({
+      ...f,
+      kind: "subscription" as const,
+    })),
+    ...schedule.debtOutFlows.map((f) => ({ ...f, kind: "debt" as const })),
+  ].filter((f) => f.sign === "-" && f.daysLeft >= 0);
+}
