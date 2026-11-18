@@ -279,16 +279,6 @@ export function WorkoutJournalSection({
     setLongSessionEnd(null);
     setConfirmOpen(false);
     finishingRef.current = true;
-    // Detect whether this is a real "Workout Win" — at least one
-    // strength item has recorded sets, meaning the final set of a
-    // substantive session was just saved. Non-strength items
-    // (time/distance) are also counted to cover cardio sessions.
-    const isWorkoutWin = (activeWorkout.items || []).some(
-      (item) =>
-        (item.type === "strength" && (item.sets?.length ?? 0) > 0) ||
-        item.type === "time" ||
-        item.type === "distance",
-    );
     const sum = summarizeWorkoutForFinish({
       ...activeWorkout,
       endedAt: opts?.endIso ?? peekPendingRetroEnd(activeWorkout.id),
@@ -321,7 +311,6 @@ export function WorkoutJournalSection({
     // Confirm the action visually + with haptic so the user does
     // not have to read the modal to know the session was saved.
     hapticSuccess();
-    let savedMsg: string;
     if (sum) {
       // Є що підсумувати → веде аркуш `WorkoutFinishSheets`:
       // «Самопочуття» → «Щось болить?» → підсумок із плитками
@@ -345,14 +334,12 @@ export function WorkoutJournalSection({
         mood: null,
         injurySites: [],
       });
-      savedMsg = "Тренування завершено та збережено.";
-    } else if (isWorkoutWin) {
-      // Рішення власника 2026-09-11 (аудит O1): завершене тренування —
-      // часта подія, тож celebration-модалка знижена до тихого тосту.
-      savedMsg = "Тренування завершено, сесію збережено.";
-    } else {
-      savedMsg = "Тренування збережено.";
     }
+    // Рішення власника 2026-09-11 (аудит O1): завершене тренування — часта
+    // подія, тож celebration знижена до тихого тосту. Один короткий текст на
+    // всі гілки: поруч стоїть довга дія «Повернутись у сесію», і на 390 px
+    // довший рядок переносився на три (зйомка 2026-11-18).
+    const savedMsg = "Тренування збережено.";
     // Фз-2 (OD-28): одне повідомлення про збереження, і воно ж несе
     // «Повернутись у сесію» на 10 с. Тост має `role="status"`, тож окремого
     // `announce()` немає: незряча людина почула б про збереження двічі.
@@ -468,6 +455,9 @@ export function WorkoutJournalSection({
             . {finishUndoHint()}
           </>
         }
+        // Завершення не деструктивне (його можна відкотити 10 с): основна
+        // чорна кнопка, як на погодженому мокапі, а не червона.
+        danger={false}
         confirmLabel={finishCopy.confirm}
         cancelLabel={finishCopy.cancel}
         onConfirm={() => handleFinish({ acknowledged: true })}

@@ -145,6 +145,23 @@ describe("WorkoutJournalSection – Завершити finish flow", () => {
     expect(props.setFinishFlash).not.toHaveBeenCalled();
   });
 
+  it("Фз-2: «Завершити» в підтвердженні — основна, не деструктивна кнопка", () => {
+    renderWithToast(<WorkoutJournalSection {...baseProps()} />);
+    fireEvent.click(screen.getByTestId("finish-btn"));
+    const confirm = within(screen.getByRole("alertdialog")).getByRole(
+      "button",
+      { name: "Завершити" },
+    );
+    expect(confirm.className).not.toMatch(/danger/);
+  });
+
+  it("Фз-2: тост після завершення вміщається в один-два рядки: «Тренування збережено.»", () => {
+    renderWithToast(<WorkoutJournalSection {...baseProps()} />);
+    confirmFinish();
+    expect(screen.getByText("Тренування збережено.")).toBeInTheDocument();
+    expect(screen.queryByText("Тренування завершено та збережено.")).toBeNull();
+  });
+
   it("Фз-2: «Ще тренуюсь» закриває підтвердження, сесія триває", () => {
     const props = baseProps();
     renderWithToast(<WorkoutJournalSection {...props} />);
