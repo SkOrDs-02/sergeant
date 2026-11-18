@@ -39,11 +39,16 @@ export function createCoachRouter(): Router {
   // на невдачі шле 401 без `next()`, тож безсесійний флуд інакше не
   // діставався б до жодного бакета), а per-user бакет після неї. Два окремі
   // `r.get` на той самий шлях давали дубль у знімку `registerRoutes`.
+  // Імена ідентифікаторів важать: гейт `check-auth-before-rate-limit.mjs`
+  // відрізняє pre-auth IP-бакет від per-user лімітера за `preAuthIp` в імені
+  // (або суфіксом `:ip` в інлайновому ключі), як у `routes/ai-memory.ts`.
+  const browsePreAuthIp = rateLimitExpress(AI_MEMORY_BROWSE_IP_RATE_LIMIT);
+  const browseRateLimit = rateLimitExpress(AI_MEMORY_BROWSE_RATE_LIMIT);
   r.get(
     "/api/coach/memory",
-    rateLimitExpress(AI_MEMORY_BROWSE_IP_RATE_LIMIT),
+    browsePreAuthIp,
     requireSession(),
-    rateLimitExpress(AI_MEMORY_BROWSE_RATE_LIMIT),
+    browseRateLimit,
     coachMemoryGet,
   );
   // Усі coach-роути потребують сесії, тож вона стоїть на рівні роутера і
