@@ -7,6 +7,7 @@ import { FINYK_COLD_CACHE_MESSAGE, warmFinykCache } from "./warmCache";
 import {
   finykCategoryExists,
   finykTransactionExists,
+  finykTransactionLabel,
   normalizeFinykId,
   unknownCategoryMessage,
   unknownTransactionMessage,
@@ -229,7 +230,8 @@ export function changeCategory(action: ChangeCategoryAction): ChatActionResult {
   cats[txId] = categoryId;
   void finykChatWrite("finyk_tx_cats", cats);
   const cat = resolveExpenseCategoryMeta(categoryId, cache.customCategories);
-  const result = `Категорію операції ${txId} змінено на ${cat?.label || categoryId}`;
+  const label = finykTransactionLabel(txId);
+  const result = `Категорію операції${label ? ` ${label}` : ""} змінено на ${cat?.label || categoryId} (id:${txId})`;
   return {
     result,
     undo: () => {

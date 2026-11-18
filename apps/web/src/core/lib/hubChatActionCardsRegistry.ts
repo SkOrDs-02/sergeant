@@ -13,6 +13,7 @@
  * switch cases (`summaryFor`/`iconFor`/`titleFor`).
  */
 import type { ChatAction } from "./chatActions/types";
+import { stripTechnicalIds } from "./chatDisplayText";
 import {
   categoryLabelFor,
   habitNameFor,
@@ -108,16 +109,13 @@ const SUMMARY_REGISTRY: Record<string, SummaryFn> = {
 
   // AI-4 (`docs/work/specs/audits/2026-09-01-product-audit/findings.md`) —
   // `habitNameFor` резолвить `hab_<uuid>` у назву звички з локального
-  // стану Рутини; raw id — fallback, коли звички вже немає локально
-  // (видалена / ще не синхронізована), а не типовий шлях.
+  // стану Рутини. Сирий id на екран не йде (перевірка першої хвилі
+  // 2026-11-18): коли звички локально немає, білдер повертає `undefined`
+  // і картка бере результат виконавця, де назва вже є.
   mark_habit_done: (input) =>
-    habitNameFor(stringField(input, "habit_id")) ||
-    stringField(input, "habit_id") ||
-    stringField(input, "name"),
+    habitNameFor(stringField(input, "habit_id")) || stringField(input, "name"),
   create_habit: (input) =>
-    stringField(input, "name") ||
-    habitNameFor(stringField(input, "habit_id")) ||
-    stringField(input, "habit_id"),
+    stringField(input, "name") || habitNameFor(stringField(input, "habit_id")),
 
   set_habit_schedule: (input) => {
     const days = input["days"];
@@ -129,21 +127,20 @@ const SUMMARY_REGISTRY: Record<string, SummaryFn> = {
   },
 
   pause_habit: (input) => {
-    const rawHabitId = stringField(input, "habit_id");
-    const habit = habitNameFor(rawHabitId) || rawHabitId;
-    if (input["paused"] === false) {
-      return habit ? `${habit} · повернення з паузи` : "повернення з паузи";
-    }
+    // Невідома локально звичка: результат виконавця несе і назву, і діапазон.
+    const habit = habitNameFor(stringField(input, "habit_id"));
+    if (!habit) return undefined;
+    if (input["paused"] === false) return `${habit} · повернення з паузи`;
     // Показуємо саме діапазон: без нього картка підтвердження не давала б
     // відповісти на єдине питання, яке тут важить, — «на скільки?».
     const from = stringField(input, "from");
     const to = stringField(input, "to");
     const range = from && to ? `${from} – ${to}` : from ? `з ${from}` : "пауза";
-    return habit ? `${habit} · ${range}` : range;
+    return `${habit} · ${range}`;
   },
 
-  start_workout: (input) =>
-    stringField(input, "program_id") || stringField(input, "name"),
+  // `program_id` — технічний id, не назва: без `name` картка бере результат.
+  start_workout: (input) => stringField(input, "name"),
 
   compare_weeks: (input) => {
     const a = stringField(input, "week_a");
@@ -154,27 +151,10 @@ const SUMMARY_REGISTRY: Record<string, SummaryFn> = {
     return "поточний vs попередній";
   },
 
-  change_category: (input) =>
-    joinParts(
-      [
-        stringField(input, "tx_id")
-          ? `TX: ${stringField(input, "tx_id")}`
-          : undefined,
-        stringField(input, "category_id")
-          ? `→ ${stringField(input, "category_id")}`
-          : undefined,
-      ],
-      " ",
-    ),
-
-  delete_transaction: (input) => {
-    const txId = stringField(input, "tx_id");
-    return txId ? `TX: ${txId}` : undefined;
-  },
-  hide_transaction: (input) => {
-    const txId = stringField(input, "tx_id");
-    return txId ? `TX: ${txId}` : undefined;
-  },
+  // Операції Фініка (change_category, delete/hide/split_transaction,
+  // mark_debt_paid) свого білдера не мають: у вході лише id (`TX: m_…` на
+  // картці — перевірка першої хвилі 2026-11-18), а підпис операції (опис,
+  // сума) виконавець уже кладе в результат. Картка бере його без `(id:…)`.
 
   set_budget_limit: (input) => {
     const limit =
@@ -225,17 +205,6 @@ const SUMMARY_REGISTRY: Record<string, SummaryFn> = {
     ]);
   },
 
-  mark_debt_paid: (input) => {
-    const amount = numberField(input, "amount");
-    return joinParts(
-      [
-        stringField(input, "debt_id"),
-        amount !== undefined ? `${formatNumberUk(amount)} ₴` : undefined,
-      ],
-      " ",
-    );
-  },
-
   add_asset: (input) => {
     const amount = numberField(input, "amount");
     return joinParts([
@@ -244,13 +213,6 @@ const SUMMARY_REGISTRY: Record<string, SummaryFn> = {
         ? `${formatNumberUk(amount)} ${stringField(input, "currency") || "UAH"}`
         : undefined,
     ]);
-  },
-
-  split_transaction: (input) => {
-    const txId = stringField(input, "tx_id");
-    if (!txId) return undefined;
-    const parts = input["parts"];
-    return `TX: ${txId} → ${Array.isArray(parts) ? parts.length : 0} частин`;
   },
 
   recurring_expense: (input) => {
@@ -265,10 +227,9 @@ const SUMMARY_REGISTRY: Record<string, SummaryFn> = {
     `Період: ${stringField(input, "period") || "month"}`,
 
   create_reminder: (input) => {
-    const rawHabitId = stringField(input, "habit_id");
     return joinParts(
       [
-        habitNameFor(rawHabitId) || rawHabitId,
+        habitNameFor(stringField(input, "habit_id")),
         stringField(input, "time")
           ? `о ${stringField(input, "time")}`
           : undefined,
@@ -278,8 +239,7 @@ const SUMMARY_REGISTRY: Record<string, SummaryFn> = {
   },
 
   complete_habit_for_date: (input) => {
-    const rawHabitId = stringField(input, "habit_id");
-    const habitId = habitNameFor(rawHabitId) || rawHabitId;
+    const habitId = habitNameFor(stringField(input, "habit_id"));
     const date = stringField(input, "date");
     const state = input["completed"] === false ? "не виконано" : "виконано";
     if (habitId && date) return `${habitId} · ${date} · ${state}`;
@@ -287,14 +247,8 @@ const SUMMARY_REGISTRY: Record<string, SummaryFn> = {
     return undefined;
   },
 
-  archive_habit: (input) => {
-    const rawHabitId = stringField(input, "habit_id");
-    return habitNameFor(rawHabitId) || rawHabitId;
-  },
-  edit_habit: (input) => {
-    const rawHabitId = stringField(input, "habit_id");
-    return habitNameFor(rawHabitId) || rawHabitId;
-  },
+  archive_habit: (input) => habitNameFor(stringField(input, "habit_id")),
+  edit_habit: (input) => habitNameFor(stringField(input, "habit_id")),
 
   add_calendar_event: (input) =>
     joinParts([stringField(input, "name"), stringField(input, "date")]),
@@ -307,8 +261,7 @@ const SUMMARY_REGISTRY: Record<string, SummaryFn> = {
   },
 
   habit_stats: (input) => {
-    const rawHabitId = stringField(input, "habit_id");
-    const habitId = habitNameFor(rawHabitId) || rawHabitId;
+    const habitId = habitNameFor(stringField(input, "habit_id"));
     const periodDays = numberField(input, "period_days") ?? 30;
     if (habitId) return `${habitId} · ${periodDays} ${pluralDays(periodDays)}`;
     return undefined;
@@ -378,10 +331,8 @@ const SUMMARY_REGISTRY: Record<string, SummaryFn> = {
     ]);
   },
 
-  finish_workout: (input) => {
-    const workoutId = stringField(input, "workout_id");
-    return workoutId ? `ID: ${workoutId}` : "Поточне тренування";
-  },
+  // Свого білдера немає: у вході лише `workout_id`, а результат виконавця
+  // каже, скільки підходів зроблено.
 
   log_measurement: (input) => {
     const weightKg = numberField(input, "weight_kg");
@@ -419,15 +370,10 @@ const SUMMARY_REGISTRY: Record<string, SummaryFn> = {
   suggest_workout: (input) =>
     stringField(input, "focus") || "Загальне тренування",
 
+  // `source_workout_id` — технічний id, тож на картці лише дата.
   copy_workout: (input) => {
-    const srcId = stringField(input, "source_workout_id");
     const date = stringField(input, "date");
-    return (
-      joinParts(
-        [srcId ? `з ${srcId}` : undefined, date ? `на ${date}` : undefined],
-        " ",
-      ) ?? "Останнє тренування"
-    );
+    return date ? `на ${date}` : "Останнє тренування";
   },
 
   compare_progress: (input) => {
@@ -437,15 +383,16 @@ const SUMMARY_REGISTRY: Record<string, SummaryFn> = {
     return joinParts([exercise || muscle, `${period} ${pluralDays(period)}`]);
   },
 
+  // rel-16: `set_goal` зберігає ЛИШЕ денну норму ккал; ціль ваги, дедлайн
+  // і тренування виконавець не пише (і каже про це моделі). Картка
+  // «Ціль встановлено» показувала опис і цільову вагу, тобто те, чого не
+  // збережено (перевірка першої хвилі 2026-11-18). Без ккал виконавець
+  // відмовляє, і картка бере текст відмови.
   set_goal: (input) => {
-    const desc = stringField(input, "description");
-    const targetWeight = numberField(input, "target_weight_kg");
-    const parts: (string | undefined)[] = [];
-    if (desc && desc.length <= 50) parts.push(desc);
-    else if (desc) parts.push(desc.slice(0, 50) + "…");
-    if (targetWeight !== undefined)
-      parts.push(`${formatNumberUk(targetWeight)} кг`);
-    return parts.length ? parts.join(" · ") : "Нова ціль";
+    const kcal = numberField(input, "daily_kcal");
+    return kcal !== undefined && kcal > 0
+      ? `${formatNumberUk(kcal)} ккал/день`
+      : undefined;
   },
 
   spending_trend: periodSummary,
@@ -539,5 +486,5 @@ export function renderSummary(
     if (built !== undefined) return built;
   }
 
-  return truncate(result);
+  return truncate(stripTechnicalIds(result));
 }

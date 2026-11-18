@@ -4,6 +4,7 @@
  */
 import { useEffect, useMemo, useState } from "react";
 import { cn } from "@shared/lib/ui/cn";
+import { Button } from "@shared/components/ui/Button";
 import { Icon } from "@shared/components/ui/Icon";
 import {
   DataState,
@@ -615,13 +616,17 @@ export function WeeklyDigestCard({
 
         {isPast && (
           <div className="px-4 pb-1">
-            <button
-              type="button"
+            {/* Тиха дія рядка (`variant="text"`): вага 600 і шеврон
+                відрізняють її від підпису, `TEXT_SIZE` дає 44 px. Раніше це
+                був голий текст (перевірка першої хвилі 2026-11-18). */}
+            <Button
+              variant="text"
               onClick={() => setSelectedWeekKey(currentWeekKey)}
-              className="inline-flex items-center text-style-label text-text hover:underline"
+              className="-ml-2"
             >
               Поточний тиждень
-            </button>
+              <Icon name="chevron-right" size={16} aria-hidden />
+            </Button>
           </div>
         )}
 

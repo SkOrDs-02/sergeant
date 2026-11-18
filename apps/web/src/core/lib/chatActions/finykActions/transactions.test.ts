@@ -258,6 +258,18 @@ describe("hideTransaction", () => {
     expect(mockWrite).toHaveBeenCalledWith("finyk_hidden_txs", ["manual_tx1"]);
   });
 
+  // Перевірка першої хвилі 2026-11-18: людина бачила лише id. Підпис
+  // операції (опис і сума) тепер у результаті, id лишається моделі в `(id:…)`.
+  it("називає операцію людським підписом, а id тримає лише в (id:…)", () => {
+    const out = hideTransaction({
+      name: "hide_transaction",
+      input: { tx_id: "tx1" },
+    });
+    expect(out).toBe(
+      "Операцію «АТБ» на 80 грн приховано зі статистики (id:tx1)",
+    );
+  });
+
   it("банківську операцію ховає за її власним id", () => {
     seedFinykCache({ manualExpenses: [] });
     hideTransaction({ name: "hide_transaction", input: { tx_id: "bank1" } });
@@ -323,8 +335,7 @@ describe("deleteTransaction", () => {
       name: "delete_transaction",
       input: { tx_id: "m_1" },
     });
-    expect(out).toContain("m_1");
-    expect(out).toContain("видалено");
+    expect(out).toBe("Операцію на 1 грн видалено (id:m_1)");
     expect(mockWrite).toHaveBeenCalledWith("finyk_manual_expenses_v1", [
       { id: "m_2", amount: 2, date: "2026-04-22" },
     ]);

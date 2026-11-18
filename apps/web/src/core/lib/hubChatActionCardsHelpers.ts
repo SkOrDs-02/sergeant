@@ -232,8 +232,9 @@ export function iconFor(name: string): string | undefined {
  * замість людського тексту»: звичка (`hab_<uuid>`), категорія Фініка
  * (`restaurant`), тип прийому їжі (`dinner`). Кожна функція повертає
  * `undefined`, коли резолв не вдався (звичку видалено, категорію
- * не впізнано) — виклики нижче в `hubChatActionCardsRegistry.ts` тоді
- * падають назад на raw id, а не на порожній рядок.
+ * не впізнано). Звичка тоді не падає на raw id: картка бере результат
+ * виконавця (перевірка першої хвилі 2026-11-18); категорія Фініка поки
+ * що показує свій slug.
  */
 
 const MCC_CATEGORY_LABEL_BY_ID: ReadonlyMap<string, string> = new Map(
@@ -254,8 +255,8 @@ function stripIdPrefix(raw: string): string {
 /**
  * Назва звички з локального стану Рутини (`loadRoutineState().habits`) —
  * той самий джерело істини, що читає UI. `undefined`, якщо звичку вже
- * видалено/архівовано локально або id не резолвиться — виклик нижче
- * falls back на сирий id, не ховає інформацію повністю.
+ * видалено/архівовано локально або id не резолвиться — тоді картка бере
+ * результат виконавця, а не сирий id.
  */
 export function habitNameFor(habitId: string | undefined): string | undefined {
   if (!habitId) return undefined;

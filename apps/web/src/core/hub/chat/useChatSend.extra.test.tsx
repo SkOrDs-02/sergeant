@@ -200,6 +200,47 @@ describe("useChatSend — undo toast for tool actions", () => {
     expect(typeof callArgs[1].onUndo).toBe("function");
   });
 
+  // Перевірка першої хвилі 2026-11-18: тост відкату показував результат
+  // виконавця дослівно, тобто з технічним id, який там лише для моделі.
+  it("тост відкату не показує технічний id операції", async () => {
+    sendMock.mockResolvedValue({
+      tool_calls: [
+        {
+          id: "tc1",
+          name: "change_category",
+          input: { tx_id: "m_84920a0a", category_id: "cafe" },
+        },
+      ],
+      tool_calls_raw: [{ id: "tc1" }],
+    });
+    executeActionsMock.mockResolvedValue([
+      {
+        name: "change_category",
+        result:
+          "Категорію операції «Кава» на 120 грн змінено на Кафе (id:m_84920a0a)",
+        undo: vi.fn(),
+      },
+    ]);
+    streamMock.mockResolvedValue(
+      new Response(JSON.stringify({ text: "Готово!" }), {
+        status: 200,
+        headers: { "content-type": "application/json" },
+      }),
+    );
+
+    const { result } = renderHook(
+      () => useChatSend({ messages: [], setMessages: vi.fn() }),
+      { wrapper: makeWrapper() },
+    );
+
+    await act(async () => {
+      await result.current.send("кава це кафе");
+    });
+
+    const msg = showUndoToastMock.mock.calls[0]![1].msg as string;
+    expect(msg).toBe("Категорію операції «Кава» на 120 грн змінено на Кафе");
+  });
+
   it("does NOT call showUndoToast for read-only handlers that have no undo", async () => {
     sendMock.mockResolvedValue({
       tool_calls: [

@@ -4,6 +4,7 @@ import {
   isFailureResult,
   type ChatActionCard,
 } from "../../lib/hubChatActionCards";
+import { stripTechnicalIds } from "../../lib/chatDisplayText";
 
 /**
  * Чисті помічники ходу з tool-call-ами для `useChatSend` (винесено, щоб
@@ -63,7 +64,9 @@ export function buildTurnCards(
       const failed =
         r.ok === false ||
         isFailureResult(r.result, typeof name === "string" ? name : undefined);
-      return [failed ? r.result : `✓ ${r.result}`];
+      // Результат пишеться для моделі й несе `(id:…)`; людині — без.
+      const text = stripTechnicalIds(r.result);
+      return [failed ? text : `✓ ${text}`];
     })
     .join("\n");
   return { cards, uncardedText };

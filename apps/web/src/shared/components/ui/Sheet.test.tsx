@@ -64,6 +64,32 @@ describe("Sheet", () => {
     expect(onClose).toHaveBeenCalledTimes(1);
   });
 
+  // Перевірка першої хвилі 2026-11-18: у чаті (`fullScreen` + власна шапка)
+  // `getByRole('button', { name: 'Закрити чат' })` резолвився у два вузли:
+  // хрестик шапки чату і скрим аркуша. Повноекранна панель скрим закриває
+  // цілком, тож він невидимий і недосяжний пальцем — для AT це лише дубль.
+  it("fullScreen: скрим виходить із дерева доступності", () => {
+    const onClose = vi.fn();
+    const { queryAllByRole } = render(
+      <Sheet
+        open
+        onClose={onClose}
+        title="Чат"
+        hideHeader
+        fullScreen
+        closeLabel="Закрити чат"
+      >
+        <button type="button" onClick={onClose} aria-label="Закрити чат" />
+      </Sheet>,
+    );
+    expect(queryAllByRole("button", { name: "Закрити чат" })).toHaveLength(1);
+    const scrim = document.body.querySelector(
+      "[data-sheet-scrim]",
+    ) as HTMLButtonElement | null;
+    expect(scrim?.getAttribute("aria-hidden")).toBe("true");
+    expect(scrim?.tabIndex).toBe(-1);
+  });
+
   it("renders a drag-handle by default and omits it when hideHandle=true", () => {
     const { rerender } = render(
       <Sheet open onClose={() => {}} title="T">

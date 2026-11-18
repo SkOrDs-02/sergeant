@@ -189,6 +189,29 @@ describe("WeeklyDigestCard — DataState routing", () => {
     expect(useWeeklyDigestMock).toHaveBeenLastCalledWith("2025-11-03");
   });
 
+  // Перевірка першої хвилі 2026-11-18: «Поточний тиждень» був кнопкою, що
+  // виглядала як звичайний підпис, і без зони дотику 44 px на coarse.
+  it("на минулому тижні «Поточний тиждень» — видима дія з шевроном і зоною 44 px", () => {
+    useDigestHistoryMock.mockReturnValue({
+      data: [{ weekKey: "2025-11-03", weekRange: "03 — 09 листоп." }],
+    });
+    useWeeklyDigestMock.mockReturnValue({
+      digest: null,
+      loading: true,
+      error: null,
+      weekRange: "03 — 09 листоп.",
+      generate: vi.fn(),
+      isCurrentWeek: false,
+      canGenerate: true,
+    });
+
+    render(<WeeklyDigestCard />);
+
+    const button = screen.getByRole("button", { name: "Поточний тиждень" });
+    expect(button.querySelector("svg")).not.toBeNull();
+    expect(button.className).toContain("min-h-[44px]");
+  });
+
   it("stays on the current week once it has its own digest", () => {
     useDigestHistoryMock.mockReturnValue({
       data: [

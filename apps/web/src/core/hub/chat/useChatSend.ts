@@ -42,6 +42,7 @@ import {
 } from "./chatSendText";
 import { keepReplayableToolBlocks } from "./replayableToolBlocks";
 import { buildTurnCards, markCardsAfterFailedSynthesis } from "./turnCards";
+import { stripTechnicalIds } from "../../lib/chatDisplayText";
 import {
   useDestructiveConfirm,
   type UseDestructiveConfirmResult,
@@ -585,7 +586,8 @@ export function useChatSend({
             if (hr.undo) {
               const undoFn = hr.undo;
               showUndoToast(toast, {
-                msg: hr.result,
+                // Результат пишеться для моделі й несе `(id:…)`; людині — без.
+                msg: stripTechnicalIds(hr.result),
                 onUndo: undoFn,
               });
             }

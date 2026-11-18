@@ -160,7 +160,8 @@ describe("buildActionCard", () => {
       result: "ok",
     });
     expect(card?.module).toBe("routine");
-    expect(card?.summary).toBe("вода");
+    // Звички «вода» локально немає: сирий id на картку не йде (2026-11-18).
+    expect(card?.summary).toBe("ok");
   });
 
   it("ставить module=nutrition для log_meal", () => {
@@ -229,10 +230,10 @@ describe("buildActionCard", () => {
     expect(card?.module).toBe("routine");
     expect(card?.icon).toBe("pause-circle");
     expect(card?.title).toBe("Стан паузи звички оновлено");
-    expect(card?.summary).toContain("h1");
-    // Хвиля 4: картка показує ДІАПАЗОН, а не просто стан — без нього
-    // підтвердження не відповідає на єдине питання «на скільки?».
-    expect(card?.summary).toContain("пауза");
+    // Звички «h1» локально немає: замість сирого id картка бере результат
+    // виконавця (назва + стан), 2026-11-18.
+    expect(card?.summary).not.toContain("h1");
+    expect(card?.summary).toBe('Звичку "Біг" поставлено на паузу.');
     expect(card?.risky).toBeUndefined();
   });
 
@@ -242,16 +243,10 @@ describe("buildActionCard", () => {
       input: { habit_id: "h1", paused: false },
       result: 'Звичку "Біг" повернуто з паузи від сьогодні.',
     });
-    expect(card?.summary).toContain("повернення з паузи");
-  });
-
-  it("pause_habit із діапазоном показує обидві межі", () => {
-    const card = buildActionCard({
-      name: "pause_habit",
-      input: { habit_id: "h1", from: "2026-08-10", to: "2026-08-17" },
-      result: "ok",
-    });
-    expect(card?.summary).toContain("2026-08-10 – 2026-08-17");
+    // Звички «h1» локально немає: картка бере результат виконавця. Шлях
+    // «назва · повернення з паузи» і діапазон із назвою покриває
+    // `hubChatActionCardsHelpers.test.ts` (там звичку засіяно).
+    expect(card?.summary).toBe('Звичку "Біг" повернуто з паузи від сьогодні.');
   });
 
   it("pause_habit failed — статус failed і суфікс у title", () => {

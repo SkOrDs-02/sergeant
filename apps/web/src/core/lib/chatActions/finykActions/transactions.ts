@@ -7,6 +7,7 @@ import {
   finykCategoryExists,
   finykExpenseAmountUah,
   finykTransactionExists,
+  finykTransactionLabel,
   normalizeFinykId,
   unknownCategoryMessage,
   unknownTransactionMessage,
@@ -94,6 +95,12 @@ export function createTransaction(
   };
 }
 
+/** ` «Кава» на 120 грн` для речення «Операцію… видалено»; порожньо без підпису. */
+function labelPart(id: string): string {
+  const label = finykTransactionLabel(id);
+  return label ? ` ${label}` : "";
+}
+
 export function hideTransaction(
   action: HideTransactionAction,
 ): ChatActionResult {
@@ -115,7 +122,7 @@ export function hideTransaction(
   // Mirror into `finyk_hidden_transactions` — the hidden-tx read
   // (search / analytics / report) overlays from SQLite. Idempotent.
   triggerHiddenTransactionSqliteMirror(key);
-  return `Операцію ${txId} приховано зі статистики`;
+  return `Операцію${labelPart(txId)} приховано зі статистики (id:${txId})`;
 }
 
 export function deleteTransaction(
@@ -132,11 +139,13 @@ export function deleteTransaction(
   const list = cache.manualExpenses;
   const idx = list.findIndex((t) => t.id === id);
   if (idx < 0) return `Операцію ${id} не знайдено (вже видалена).`;
+  // Підпис рахуємо до запису: після нього операції в кеші вже немає.
+  const label = labelPart(id);
   const next = list.slice();
   next.splice(idx, 1);
   void finykChatWrite("finyk_manual_expenses_v1", next);
   triggerManualExpenseDeleteSqliteMirror(id);
-  return `Операцію ${id} видалено`;
+  return `Операцію${label} видалено (id:${id})`;
 }
 
 export function splitTransaction(
@@ -189,7 +198,7 @@ export function splitTransaction(
     })
     .join(", ");
   return {
-    result: `Операцію ${id} розділено на ${newSplits.length} частин: ${desc}`,
+    result: `Операцію${labelPart(id)} розділено на ${newSplits.length} частин: ${desc} (id:${id})`,
     // Читає свіжий кеш і чіпає лише ключ цього tx, щоб не затерти спліти
     // інших операцій, змінені між дією й відкатом.
     undo: () => {
