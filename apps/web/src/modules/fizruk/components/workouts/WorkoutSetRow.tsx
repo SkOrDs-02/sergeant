@@ -99,6 +99,16 @@ export function isSetDone(
   return isSetCompleted(s, item);
 }
 
+/**
+ * Ширина хвостових слотів (кошик і RPE). На coarse-вказівнику страхувальне
+ * правило `styles/mobile.css` піднімає кожну `<button>` і `role="button"` до
+ * 44 px завширшки, тож кошик `w-9` ставав 44 px, а порожня заглушка в
+ * інших рядках лишалась 36 px — поля рядка з кошиком були вужчі й зсунуті
+ * (зйомка 2026-11-18). Заглушка й колонки заголовка беруть ту саму
+ * coarse-ширину, і сітка не пливе.
+ */
+const TRAILING_SLOT_W = "w-9 pointer-coarse:w-11";
+
 const INPUT_CLASS =
   "bg-bg px-3 font-semibold tabular-nums placeholder:font-normal read-only:opacity-70 read-only:cursor-not-allowed";
 
@@ -366,14 +376,22 @@ export function WorkoutSetRow({
         {isLast && !isReadOnly ? (
           <button
             type="button"
-            className="flex h-11 w-9 shrink-0 items-center justify-center rounded-lg pointer-coarse:min-h-[44px] text-subtle hover:text-danger transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-focus/45 focus-visible:ring-offset-2 focus-visible:ring-offset-bg"
+            data-set-slot="trash"
+            className={cn(
+              "flex h-11 shrink-0 items-center justify-center rounded-lg pointer-coarse:min-h-[44px] text-subtle hover:text-danger transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-focus/45 focus-visible:ring-offset-2 focus-visible:ring-offset-bg",
+              TRAILING_SLOT_W,
+            )}
             onClick={onDelete}
             aria-label={`${sr.deleteAriaPrefix} ${setNumber}`}
           >
             <Icon name="trash" size={15} aria-hidden />
           </button>
         ) : (
-          <span className="w-9 shrink-0" aria-hidden />
+          <span
+            data-set-slot="trash"
+            className={cn("shrink-0", TRAILING_SLOT_W)}
+            aria-hidden
+          />
         )}
       </div>
       {overflowText && (
@@ -417,9 +435,9 @@ export function WorkoutSetColumnHeader({
       {fields.length === 1 && <span className="flex-1" />}
       {/* RPE column — icon-only trigger in the row below, no caption here
           (mirrors the check/trash slots, which also caption nothing). */}
-      <span className="w-9 shrink-0" />
+      <span data-set-slot="rpe" className={cn("shrink-0", TRAILING_SLOT_W)} />
       <span className="w-11 shrink-0" />
-      <span className="w-9 shrink-0" />
+      <span data-set-slot="trash" className={cn("shrink-0", TRAILING_SLOT_W)} />
     </div>
   );
 }

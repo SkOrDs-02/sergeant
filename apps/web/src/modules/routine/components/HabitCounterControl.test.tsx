@@ -35,6 +35,36 @@ describe("HabitCounterControl", () => {
     expect(onStep.mock.calls).toEqual([[1], [-1]]);
   });
 
+  it("показує одиницю під числом і не блідить лічильник (зйомка 2026-11-18)", () => {
+    const { rerender } = render(
+      <HabitCounterControl
+        name="Вода"
+        count={1}
+        target={3}
+        unit="склянки"
+        done={false}
+        futureDay={false}
+        onStep={vi.fn()}
+      />,
+    );
+    const progress = screen.getByText("1 з 3");
+    expect(screen.getByText("склянки")).toBeInTheDocument();
+    // Лічильник у тому ж чорнилі, що й назва рядка, а не `text-muted`.
+    expect(progress.className).toContain("text-text");
+    expect(progress.className).not.toContain("text-muted");
+    rerender(
+      <HabitCounterControl
+        name="Вода"
+        count={1}
+        target={3}
+        done={false}
+        futureDay={false}
+        onStep={vi.fn()}
+      />,
+    );
+    expect(screen.queryByText("склянки")).toBeNull();
+  });
+
   it("після цілі рахує далі; «−» неактивний на нулі; майбутній день заблоковано", () => {
     const { rerender } = render(
       <HabitCounterControl

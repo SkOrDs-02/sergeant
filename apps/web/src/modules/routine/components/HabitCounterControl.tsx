@@ -51,17 +51,30 @@ export function HabitCounterControl({
       >
         <span aria-hidden="true">−</span>
       </button>
+      {/* Одиниця під числом дрібнішим кеглем: у рядок «1 з 3 склянки» на
+          320 px не влазить поруч із назвою. Число в чорнилі назви рядка, не
+          `text-muted` (зйомка 2026-11-18): блідий лічильник читався як
+          вимкнений. Виконаний день додає лише вагу. */}
       <span
-        className={cn(
-          "min-w-[3.5rem] text-center tabular-nums text-style-label",
-          done ? "font-semibold text-text" : "text-muted",
-        )}
+        className="flex min-w-[3.5rem] max-w-[5.5rem] flex-col items-center"
         aria-live="polite"
         aria-label={M.progressAria
           .replace("{name}", name)
           .replace("{progress}", unit ? `${progress} ${unit}` : progress)}
       >
-        {progress}
+        <span
+          className={cn(
+            "tabular-nums text-style-label text-text",
+            done && "font-semibold",
+          )}
+        >
+          {progress}
+        </span>
+        {unit ? (
+          <span className="max-w-full truncate text-style-caption text-muted">
+            {unit}
+          </span>
+        ) : null}
       </span>
       <button
         type="button"

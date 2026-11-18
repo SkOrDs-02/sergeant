@@ -66,7 +66,7 @@ export function WorkoutSetRpeMenu({
       <span
         aria-label={triggerAria}
         data-testid={testID}
-        className="flex h-11 w-9 shrink-0 items-center justify-center rounded-lg border border-line bg-panelHi text-style-caption tabular-nums text-subtle"
+        className="flex h-11 w-9 shrink-0 items-center justify-center rounded-lg border border-line bg-panelHi text-style-caption tabular-nums text-subtle pointer-coarse:w-11"
       >
         {rpe ?? "–"}
       </span>

@@ -220,7 +220,7 @@ describe("HeroCard · rest state (П-11, OD-32)", () => {
       screen.getByRole("heading", { name: "Сьогодні відпочинок" }),
     ).toBeInTheDocument();
     expect(
-      screen.getByText("Наступна: Workout B · Завтра · 3 вправи"),
+      screen.getByText("Наступна: Workout B · завтра · 3 вправи"),
     ).toBeInTheDocument();
     const start = screen.getByRole("button", {
       name: "Почати зараз: Workout B",
@@ -237,7 +237,7 @@ describe("HeroCard · rest state (П-11, OD-32)", () => {
       daysFromNow: 3,
       exerciseCount: 6,
     });
-    expect(screen.getByText(/Наступна: Push · За 3 дні/)).toBeInTheDocument();
+    expect(screen.getByText(/Наступна: Push · за 3 дні/)).toBeInTheDocument();
     expect(screen.queryByRole("button", { name: /Почати зараз/ })).toBeNull();
   });
 });
@@ -255,7 +255,7 @@ describe("HeroCard · upcoming state", () => {
     // Тут CTA («Відкрити план») назви не несе, тож вона переїхала в голову
     // мета-рядка — заголовка немає, але з екрана вона не зникла.
     expect(screen.queryByRole("heading", { name: "Push B" })).toBeNull();
-    expect(screen.getByText(/Push B · За 2 дні/i)).toBeInTheDocument();
+    expect(screen.getByText(/Push B · за 2 дні/)).toBeInTheDocument();
 
     fireEvent.click(screen.getByRole("button", { name: /Відкрити план/i }));
     expect(onOpenPlan).toHaveBeenCalledTimes(1);
@@ -269,7 +269,7 @@ describe("HeroCard · upcoming state", () => {
       dateKey: "2026-05-01",
       exerciseCount: null,
     });
-    expect(screen.getByText(/За 5 днів/i)).toBeInTheDocument();
+    expect(screen.getByText(/X · за 5 днів/)).toBeInTheDocument();
     cleanup();
 
     renderHero({
@@ -279,7 +279,7 @@ describe("HeroCard · upcoming state", () => {
       dateKey: "2026-04-24",
       exerciseCount: null,
     });
-    expect(screen.getByText(/Завтра/i)).toBeInTheDocument();
+    expect(screen.getByText(/Y · завтра/)).toBeInTheDocument();
     cleanup();
 
     renderHero({
@@ -289,7 +289,7 @@ describe("HeroCard · upcoming state", () => {
       dateKey: "2026-05-14",
       exerciseCount: null,
     });
-    expect(screen.getByText(/За 21 день/i)).toBeInTheDocument();
+    expect(screen.getByText(/за 21 день/)).toBeInTheDocument();
   });
 
   it("hides exercise count when the catalogue doesn't know the template", () => {

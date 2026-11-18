@@ -115,10 +115,18 @@ function formatDayMonthFromKey(dateKey: string): string {
   return formatDayMonth(d) || dateKey;
 }
 
+/**
+ * Відносний день для мета-рядка. Обидва виклики ставлять його після «·»
+ * (`label · завтра · …`), тож рядок з малої літери: велика лише на початку
+ * рядка (зйомка 2026-11-18, «· За 2 дні» посеред рядка).
+ */
 function formatDaysAway(days: number): string {
-  if (days === 0) return "Сьогодні";
-  if (days === 1) return "Завтра";
-  return `За ${days} ${pluralDays(days)}`;
+  const hero = messages.fizruk.hero;
+  if (days === 0) return hero.daysAwayToday;
+  if (days === 1) return hero.daysAwayTomorrow;
+  return hero.daysAwayIn
+    .replace("{n}", String(days))
+    .replace("{days}", pluralDays(days));
 }
 
 /** Shared kicker inputs — bundled so every state threads one prop, not three. */

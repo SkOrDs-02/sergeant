@@ -286,6 +286,20 @@ describe("SessionView — exercise screen", () => {
     expect(onOpenItem).toHaveBeenCalledWith("a");
   });
 
+  it("сусідні вправи виглядають як дія: шеврон у бік переходу (зйомка 2026-11-18)", () => {
+    renderView({ focusItemId: "b" });
+    const next = screen.getByRole("button", {
+      name: "Наступна вправа: Тяга штанги",
+    });
+    const prev = screen.getByRole("button", {
+      name: "Попередня вправа: Жим лежачи",
+    });
+    // Шеврон останнім у «наступній» і першим у «попередній».
+    expect(next.lastElementChild?.tagName.toLowerCase()).toBe("svg");
+    expect(prev.firstElementChild?.tagName.toLowerCase()).toBe("svg");
+    expect(next).toHaveTextContent("Тяга штанги");
+  });
+
   it("removes the exercise from the ⋯ menu and returns to the list", () => {
     renderView({ focusItemId: "b" });
     fireEvent.click(

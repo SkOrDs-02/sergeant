@@ -223,30 +223,35 @@ export function SessionExerciseFocus({
         aria-label={ss.neighboursAria}
         className="flex items-center justify-between gap-2"
       >
-        {/* Кнопки без сусіда не рендеримо взагалі: вимкнений контрол із
+        {/* Сусіди — тиха дія рядка (`Button variant="text"` із шевроном у
+            бік переходу, як «Поточний тиждень» у `WeeklyDigestCard`): гола
+            назва праворуч не читалась як перехід (зйомка 2026-11-18).
+            Кнопки без сусіда не рендеримо взагалі: вимкнений контрол із
             прочерком читався як зламаний елемент (браузерний прохід
             2026-09-11). Порожній `span` тримає другу кнопку праворуч. */}
         {prev ? (
-          <button
-            type="button"
+          <Button
+            variant="text"
             onClick={() => onOpenItem(prev.id)}
             aria-label={`${ss.prevExercise}: ${prev.nameUk}`}
-            className="focus-ring flex min-h-[44px] min-w-0 items-center gap-1 rounded-lg px-2 text-style-label text-muted hover:text-text"
+            className="-ml-2 justify-start"
           >
+            <Icon name="chevron-left" size="md" aria-hidden />
             <span className="truncate">{prev.nameUk}</span>
-          </button>
+          </Button>
         ) : (
           <span />
         )}
         {next ? (
-          <button
-            type="button"
+          <Button
+            variant="text"
             onClick={() => onOpenItem(next.id)}
             aria-label={`${ss.nextExercise}: ${next.nameUk}`}
-            className="focus-ring flex min-h-[44px] min-w-0 items-center justify-end gap-1 rounded-lg px-2 text-style-label font-semibold text-text hover:bg-panelHi"
+            className="-mr-2 justify-end"
           >
             <span className="truncate">{next.nameUk}</span>
-          </button>
+            <Icon name="chevron-right" size="md" aria-hidden />
+          </Button>
         ) : (
           <span />
         )}

@@ -274,7 +274,7 @@ describe("Dashboard — активна програма в день без ро�
       await screen.findByRole("heading", { name: "Сьогодні відпочинок" }),
     ).toBeInTheDocument();
     expect(
-      screen.getByText("Наступна: Workout A · Завтра · 3 вправи"),
+      screen.getByText("Наступна: Workout A · завтра · 3 вправи"),
     ).toBeInTheDocument();
     await user.click(
       screen.getByRole("button", { name: "Почати зараз: Workout A" }),
@@ -304,7 +304,7 @@ describe("Dashboard — активна програма в день без ро�
       }),
     ).toBeInTheDocument();
     expect(
-      screen.getByText("Наступна: Workout B · За 2 дні · 3 вправи"),
+      screen.getByText("Наступна: Workout B · за 2 дні · 3 вправи"),
     ).toBeInTheDocument();
   });
 

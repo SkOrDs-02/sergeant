@@ -34,6 +34,13 @@ export const fizrukPageMessages = {
     programDoneToday: "Сесію програми сьогодні закрито",
     nextPrefix: "Наступна:",
     startNow: "Почати зараз",
+    /**
+     * Відносний день у мета-рядку героя. Стоїть лише після роздільника «·»,
+     * тож з малої літери: велика тільки на початку рядка (зйомка 2026-11-18).
+     */
+    daysAwayToday: "сьогодні",
+    daysAwayTomorrow: "завтра",
+    daysAwayIn: "за {n} {days}",
   },
   startWorkoutFab: "Почати тренування",
   resumeWorkoutFab: "Продовжити тренування",
