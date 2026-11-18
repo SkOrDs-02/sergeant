@@ -5,10 +5,56 @@ import {
 } from "@sergeant/shared";
 import { webKVStore } from "@shared/lib/storage/storage";
 import { hapticTap } from "@shared/lib/adapters/haptic";
-import { useToast } from "./useToast";
+import { useToast, type ToastApi } from "./useToast";
 
 const modalOpen = () =>
   document.querySelector('[role="dialog"][aria-modal="true"]') !== null;
+
+/**
+ * Зайняти віху і показати тиху плашку — тіло хука нижче, винесене в
+ * звичайну функцію, щоб поверхня без хука (рядок звички в «Зараз» на хабі,
+ * OD-29 П-17 (А) 2026-11-18) давала ту саму винагороду тим самим кодом і з
+ * тим самим сховищем зайнятих віх. Повертає досягнуту віху або `null`.
+ */
+export function celebrateStreakMilestone(
+  scope: string,
+  streak: number,
+  template: string,
+  success: ToastApi["success"],
+): number | null {
+  const reached = claimStreakMilestone(
+    webKVStore,
+    scope,
+    streak,
+    CELEBRATED_STREAK_MILESTONES,
+  );
+  if (reached === null) return null;
+
+  const show = () => {
+    hapticTap();
+    // 4000 мс, а не дефолтні 3500 для `success`: рішення власника називає
+    // саме «тиху плашку на 4 с», і це той самий час, що в
+    // `FirstEntryCelebrationModal`.
+    success(template.replace("{days}", String(reached)), 4000);
+  };
+  // Поверх відкритого аркуша плашка не малюється (redesign v3.2, 14):
+  // віху вже зайнято, показ чекає, доки зникне останній модальний діалог.
+  // Спостерігача навмисно не знімає cleanup ефекту: зміна стріку в
+  // аркуші (відмітка з денного звіту) перезапустила б ефект і загубила б
+  // плашку. `success` належить провайдеру, тож показ після анмаунту
+  // безпечний; спостерігач живе рівно до закриття аркуша.
+  if (!modalOpen()) {
+    show();
+    return reached;
+  }
+  const observer = new MutationObserver(() => {
+    if (modalOpen()) return;
+    observer.disconnect();
+    show();
+  });
+  observer.observe(document.body, { childList: true, subtree: true });
+  return reached;
+}
 
 /**
  * Тиха плашка на віху стріку (7 / 30 / 100 днів).
@@ -52,37 +98,7 @@ export function useStreakMilestoneCelebration(
 
   useEffect(() => {
     if (streak === null) return;
-    const reached = claimStreakMilestone(
-      webKVStore,
-      scope,
-      streak,
-      CELEBRATED_STREAK_MILESTONES,
-    );
-    if (reached === null) return;
-
-    const show = () => {
-      hapticTap();
-      // 4000 мс, а не дефолтні 3500 для `success`: рішення власника називає
-      // саме «тиху плашку на 4 с», і це той самий час, що в
-      // `FirstEntryCelebrationModal`.
-      success(template.replace("{days}", String(reached)), 4000);
-    };
-    // Поверх відкритого аркуша плашка не малюється (redesign v3.2, 14):
-    // віху вже зайнято, показ чекає, доки зникне останній модальний діалог.
-    // Спостерігача навмисно не знімає cleanup ефекту: зміна стріку в
-    // аркуші (відмітка з денного звіту) перезапустила б ефект і загубила б
-    // плашку. `success` належить провайдеру, тож показ після анмаунту
-    // безпечний; спостерігач живе рівно до закриття аркуша.
-    if (!modalOpen()) {
-      show();
-      return;
-    }
-    const observer = new MutationObserver(() => {
-      if (modalOpen()) return;
-      observer.disconnect();
-      show();
-    });
-    observer.observe(document.body, { childList: true, subtree: true });
+    celebrateStreakMilestone(scope, streak, template, success);
 
     // AI-DANGER: цей хук НЕ емітить `streak_milestone_reached` — і це не
     // недогляд. Подію вже емітить детектор у хабі

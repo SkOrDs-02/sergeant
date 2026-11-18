@@ -63,7 +63,7 @@ export const VALUE_LOOP_ANALYTICS_EVENTS = Object.freeze({
   // питання «яке N» перестає бути блокером коду.
   //
   //   ROUTINE_HABIT_CHECKED   { state: "done" | "undone",
-  //                             source: "ui" | "bulk" | "chat",
+  //                             source: "ui" | "hub" | "bulk" | "chat",
   //                             saw_streak_surface: string | null,
   //                             streak_days_at_checkin: number | null,
   //                             ms_since_streak_shown: number | null,
@@ -79,7 +79,9 @@ export const VALUE_LOOP_ANALYTICS_EVENTS = Object.freeze({
   // нібито показаний стрік належить саме відміченій звичці.
   //
   // `source: "bulk" | "chat"` НЕ є мотивованим чекіном — виключається зі
-  // знаменника петлі на боці дашборда, а не на боці коду.
+  // знаменника петлі на боці дашборда, а не на боці коду. `"hub"` (з
+  // 2026-11-18, OD-29 Р-2 (а)) — поодинокий тап по чекбоксу звички в
+  // «Зараз» на хабі: мотивований чекін, як `"ui"`, але з іншої поверхні.
   ROUTINE_HABIT_CHECKED: "routine_habit_checked",
   FIZRUK_WORKOUT_STARTED: "fizruk_workout_started",
   FIZRUK_WORKOUT_FINISHED: "fizruk_workout_finished",

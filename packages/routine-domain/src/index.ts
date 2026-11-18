@@ -36,6 +36,13 @@ export * from "./weeklyGoalStreak.js";
 export * from "./quickStats.js";
 export * from "./dayProgress.js";
 export * from "./periodCompletion.js";
+// OD-29, 2026-11-18: канонічний «найпослідовніший місяць» (Р-3 (а)),
+// звички для «Зараз» на хабі (Р-2 (а)), ядро лічильника (Р-1 (а)) і
+// правила автовідмітки (Р-1 (в)); два останні без персистенції.
+export * from "./bestMonth.js";
+export * from "./habitsForNow.js";
+export * from "./counterHabit.js";
+export * from "./autoMark.js";
 export * from "./drafts.js";
 export * from "./storage.js";
 export * from "./reducers.js";

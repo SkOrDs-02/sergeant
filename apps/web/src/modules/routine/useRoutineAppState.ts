@@ -53,7 +53,6 @@ import { useFinykHubPreview } from "../../core/hub/useFinykHubPreview";
 import { useModuleFirstRun } from "../../core/onboarding/useModuleFirstRun";
 import {
   loadRoutineState,
-  toggleHabitCompletion,
   markAllScheduledHabitsComplete,
   setHabitSkip,
   clearHabitSkip,
@@ -65,8 +64,11 @@ import {
   trackEvent,
 } from "../../core/observability/analytics";
 import { readSignalContext } from "../../core/observability/valueSignalAttribution";
-import { readStreakExposure } from "./lib/streakExposure";
-import { recordRoutineMoment } from "./lib/routineMoments";
+import {
+  afterHabitCheckIn,
+  applyHabitCheckIn,
+  type HabitCheckInOutcome,
+} from "./lib/habitCheckIn";
 import { useSqliteReadBoot } from "./hooks/useSqliteReadBoot";
 import { useRoutineReminders } from "./hooks/useRoutineReminders";
 import { HUB_FINYK_ROUTINE_SYNC_EVENT } from "../finyk/hubRoutineSync";
@@ -374,46 +376,28 @@ export function useRoutineAppState({
       //      емісії `outcome` уже заповнений — зайвого стану не треба;
       //   2) сам `trackEvent` лишається поза transition-скоупом, щоб не
       //      зʼїхати в render-фазу (та сама межа, що описана вище).
-      const outcome: {
-        changed: boolean;
-        done: boolean;
-        prev?: RoutineState;
-        next?: RoutineState;
-      } = { changed: false, done: false };
+      //
+      // Обидві половини тапу живуть у `lib/habitCheckIn.ts`, бо той самий
+      // шлях кличе рядок звички в «Зараз» на хабі (OD-29, П-17 (А)): один
+      // код, а не копія.
+      // Тримач, а не `let`: присвоєння в колбеку TS не бачить і звузив би
+      // змінну до `null`.
+      const holder: { outcome: HabitCheckInOutcome | null } = { outcome: null };
       startHabitTransition(() => {
-        const prev = loadRoutineState();
-        const next = toggleHabitCompletion(prev, habitId, dateKey);
-        if (next !== prev) {
-          outcome.changed = true;
-          outcome.done = (next.completions[habitId] ?? []).includes(dateKey);
-          outcome.prev = prev;
-          outcome.next = next;
-        }
-        setRoutine(next);
+        const result = applyHabitCheckIn(habitId, dateKey);
+        holder.outcome = result;
+        setRoutine(result.next);
       });
       // Тап по звичці, яка не запланована на цей день, — no-op домену
       // (`applyToggleHabitCompletion` віддає той самий state). Подія має
       // означати реальну зміну відмітки, інакше знаменник петлі рахує
-      // натискання, а не чекіни.
-      if (!outcome.changed || !outcome.prev || !outcome.next) return;
-      // Поза transition з тієї ж причини, що й `trackEvent` нижче: запис у
-      // сховище моментів і телеметрія не мають потрапити в render-фазу.
-      recordRoutineMoment(outcome.prev, outcome.next, habitId, dateKey);
-      trackEvent(ANALYTICS_EVENTS.ROUTINE_HABIT_CHECKED, {
-        state: outcome.done ? "done" : "undone",
-        source: "ui",
-        // Той самий ключ, яким домен адресує відмітку — тобто анкер із
-        // `lib/dayAnchor.ts` (`ROUTINE_DAY_ANCHOR`), не UTC. З 2026-09-01 це
-        // device-local «сьогодні» (ADR-0078, LOG-3 cutover) — поле рухається
-        // разом із генератором ключа, тепер уже перемкнутим.
-        day_key: dateKey,
-        // Показаний стрік — `derived.streakMax`, максимум по ВСІХ звичках,
-        // а чекін per-habit. Без цього поля аналіз збрехав би, нібито
-        // стрік належить саме відміченій звичці.
-        scope: "max_across_habits",
-        ...readStreakExposure(),
-        ...readSignalContext("routine"),
-      });
+      // натискання, а не чекіни. Перевірка — усередині `afterHabitCheckIn`.
+      //
+      // Поза transition: запис у сховище моментів і телеметрія не мають
+      // потрапити в render-фазу.
+      if (holder.outcome) {
+        afterHabitCheckIn(holder.outcome, habitId, dateKey, "ui");
+      }
     },
     [setRoutine, startHabitTransition],
   );

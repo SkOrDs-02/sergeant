@@ -11,11 +11,14 @@ import type { Habit, RoutineState } from "../lib/types";
 export interface HabitLeadersBlockProps {
   habits: Habit[];
   completions: RoutineState["completions"];
+  /** «Не зміг» виходить зі знаменника (канон §5, П-18 (А) 2026-11-18). */
+  skips?: RoutineState["skips"];
 }
 
 export function HabitLeadersBlock({
   habits,
   completions,
+  skips,
 }: HabitLeadersBlockProps) {
   const dayKey = useDeviceDayKey();
 
@@ -36,6 +39,7 @@ export function HabitLeadersBlock({
           completions[h.id] || [],
           startKey,
           endKey,
+          { skips: skips?.[h.id], pausedFrom: endKey },
         );
         return { habit: h, ...r };
       })
@@ -51,7 +55,7 @@ export function HabitLeadersBlock({
       return { best, worst: null };
 
     return { best, worst };
-  }, [habits, completions, dayKey]);
+  }, [habits, completions, skips, dayKey]);
 
   if (!best) return null;
 
