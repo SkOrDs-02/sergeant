@@ -1,14 +1,17 @@
 import { useCallback } from "react";
 import {
   ACTIVE_WORKOUT_KEY,
+  buildPlannedSets,
   collectStrengthSessionPoints,
   computeNextSetAging,
   latestClearedInjuryAtForExercise,
+  programExercisePlan,
   progressionTopSet,
   recoveryConflictsForExercise,
   suggestNextSet,
   uncappedEpley1rm,
   type InjuryMark,
+  type ProgramSessionPlan,
 } from "@sergeant/fizruk-domain";
 import {
   collectExerciseHistory,
@@ -32,6 +35,7 @@ interface Exercise {
 interface Session {
   exerciseIds?: readonly string[];
   progressionKg?: number;
+  plan?: ProgramSessionPlan;
 }
 
 type RecoveryBy = Parameters<typeof recoveryConflictsForExercise>[1];
@@ -152,9 +156,17 @@ export function useFizrukProgramStart({
             musclesPrimary: ex?.muscles?.primary || [],
             musclesSecondary: ex?.muscles?.secondary || [],
             type: isCardio ? "distance" : "strength",
+            // План сесії як порожні рядки (П-9, OD-32): лічильник одразу
+            // «0 з N», зарахованим рядок стає лише з повтореннями.
             ...(isCardio
               ? {}
-              : { sets: [{ weightKg: suggestedWeight, reps: 0 }] }),
+              : {
+                  sets: buildPlannedSets(
+                    programExercisePlan(session, findExerciseById(ex.id) ?? ex)
+                      .sets,
+                    suggestedWeight,
+                  ),
+                }),
             durationSec: 0,
             ...(isCardio ? { distanceM: 0 } : {}),
           });

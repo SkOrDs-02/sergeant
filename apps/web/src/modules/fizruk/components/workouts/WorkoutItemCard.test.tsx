@@ -192,6 +192,30 @@ describe("WorkoutItemCard — strength set rows", () => {
     });
   });
 
+  it("✓ on a planned program row keeps the plan weight and takes only reps from «було» (Фз-4, П-9)", () => {
+    renderCard({
+      it: makeItem({ sets: [{ weightKg: 85, reps: 0 }] }),
+      lastByExerciseId: {
+        bench: {
+          id: "prev",
+          exerciseId: "bench",
+          nameUk: "Жим лежачи",
+          type: "strength",
+          primaryGroup: "chest",
+          musclesPrimary: [],
+          musclesSecondary: [],
+          sets: [{ weightKg: 80, reps: 8 }],
+        },
+      },
+    });
+    fireEvent.click(
+      screen.getByRole("button", { name: /Підхід 1: повторити 85×8/ }),
+    );
+    expect(updateItem).toHaveBeenCalledWith("w1", "it-1", {
+      sets: [{ weightKg: 85, reps: 8 }],
+    });
+  });
+
   it("treats a bodyweight set (0 кг × N) as done", () => {
     renderCard({ it: makeItem({ sets: [{ weightKg: 0, reps: 12 }] }) });
     fireEvent.click(screen.getByRole("button", { name: /Підхід 1: зроблено/ }));

@@ -95,7 +95,16 @@ export function placeholderSetFor(
   idx: number,
   lastSessionSets: WorkoutSet[],
 ): WorkoutSet | null {
-  return lastSessionSets[idx] ?? findDoneSetBefore(sets, idx);
+  const ghost = lastSessionSets[idx] ?? findDoneSetBefore(sets, idx);
+  if (!ghost) return null;
+  // Вага, що вже стоїть у рядку (план програми або власний ввід), лишається:
+  // ✓ бере з «було» лише те, чого рядку бракує. Інакше старт програми сіяв
+  // рядок із вагою плану (+крок прогресії), а ✓ повертав минулу вагу
+  // (OD-28 Фз-4, П-9).
+  const ownWeight = Number(sets[idx]?.weightKg);
+  return Number.isFinite(ownWeight) && ownWeight > 0
+    ? { ...ghost, weightKg: ownWeight }
+    : ghost;
 }
 
 /**

@@ -28,6 +28,10 @@ export const fizrukPageMessages = {
     createTemplate: "Створити шаблон",
     quickStart: "Швидкий старт",
     programs: "До програм",
+    /** День без сесії активної програми (П-11, рішення власника 2026-11-18). */
+    restToday: "Сьогодні відпочинок",
+    nextPrefix: "Наступна:",
+    startNow: "Почати зараз",
   },
   startWorkoutFab: "Почати тренування",
   resumeWorkoutFab: "Продовжити тренування",

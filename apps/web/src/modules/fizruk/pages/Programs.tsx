@@ -12,6 +12,8 @@ import { captureException } from "../../../core/observability/sentry";
 import { useExerciseCatalog } from "../hooks/useExerciseCatalog";
 import {
   BUILTIN_PROGRAMS,
+  formatProgramExercisePlan,
+  programExercisePlan,
   weekdayIndex,
   type FizrukData,
   type ProgramScheduleEntry,
@@ -320,6 +322,13 @@ function ProgramDetails({ id, prog, exercises }: ProgramDetailsProps) {
                     className="text-xs px-2 py-0.5 rounded-lg bg-panelHi border border-line text-subtle"
                   >
                     {ex.name?.uk || ex.name?.en || ex.id}
+                    {/* План «підходи × повтори» (П-8, інженерний дефолт). */}
+                    <span className="font-semibold text-text">
+                      {" "}
+                      {formatProgramExercisePlan(
+                        programExercisePlan(session, ex),
+                      )}
+                    </span>
                   </span>
                 ))}
               </div>

@@ -135,6 +135,30 @@ describe("useFizrukProgramStart", () => {
     expect(bench?.sets?.[0]?.weightKg).toBe(0);
   });
 
+  it("сіє порожні рядки за планом: 3 підходи за замовчуванням, жоден не зарахований", () => {
+    const { start, added } = setup([
+      {
+        endedAt: "2026-07-01T10:00:00.000Z",
+        items: [{ exerciseId: "bench", sets: [{ weightKg: 50, reps: 8 }] }],
+      },
+    ]);
+    start({ exerciseIds: ["bench"], progressionKg: 2.5 });
+    const sets = added.find((i) => i.exerciseId === "bench")?.sets;
+    expect(sets).toEqual([
+      { weightKg: 52.5, reps: 0 },
+      { weightKg: 52.5, reps: 0 },
+      { weightKg: 52.5, reps: 0 },
+    ]);
+  });
+
+  it("власний план сесії (5×5) сіє пʼять рядків", () => {
+    const { start, added } = setup();
+    start({ exerciseIds: ["bench"], plan: { sets: 5, reps: 5 } });
+    const sets = added.find((i) => i.exerciseId === "bench")?.sets;
+    expect(sets).toHaveLength(5);
+    expect(sets?.every((s) => s.reps === 0)).toBe(true);
+  });
+
   it("defers creation to the conflict resolver when a workout is unfinished", () => {
     const { start, createWorkout, onConflict } = setup([{ endedAt: null }]);
 

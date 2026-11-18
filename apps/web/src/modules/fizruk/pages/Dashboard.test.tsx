@@ -40,6 +40,7 @@ import { apiClient } from "@shared/api";
 import { AuthProvider } from "../../../core/auth/AuthContext";
 import { server } from "../../../test/msw/server";
 
+import { BUILTIN_PROGRAMS } from "@sergeant/fizruk-domain";
 import { Dashboard } from "./Dashboard";
 import {
   __setFizrukSqliteCacheForTests,
@@ -245,6 +246,46 @@ describe("Dashboard — signed-in visitor before hydration", () => {
     ).toBeInTheDocument();
     expect(
       screen.queryByRole("status", { name: "Завантаження дашборду" }),
+    ).not.toBeInTheDocument();
+  });
+});
+
+describe("Dashboard — активна програма в день без розкладу (П-11, OD-32)", () => {
+  const ss = BUILTIN_PROGRAMS.find((p) => p.id === "starting_strength")!;
+
+  it("hero каже «Сьогодні відпочинок», називає наступну сесію, старт другорядний", async () => {
+    // 2026-06-04 — четвер; «Лінійна прогресія» тренує Пн/Ср/Пт.
+    const user = userEvent.setup();
+    const onStartProgramWorkout = vi.fn();
+    renderDashboard({
+      activeProgram: ss,
+      todaySession: null,
+      onStartProgramWorkout,
+    });
+    expect(
+      await screen.findByRole("heading", { name: "Сьогодні відпочинок" }),
+    ).toBeInTheDocument();
+    expect(
+      screen.getByText("Наступна: Workout A · Завтра · 3 вправи"),
+    ).toBeInTheDocument();
+    await user.click(
+      screen.getByRole("button", { name: "Почати зараз: Workout A" }),
+    );
+    expect(onStartProgramWorkout).toHaveBeenCalledWith(ss.sessions["ss_a"], ss);
+  });
+
+  it("у день тренування за розкладом лишається звичайний старт", async () => {
+    renderDashboard({
+      activeProgram: ss,
+      todaySession: { sessionKey: "ss_b", name: "Workout B" },
+    });
+    expect(
+      await screen.findByRole("button", {
+        name: "Почати тренування: Workout B",
+      }),
+    ).toBeInTheDocument();
+    expect(
+      screen.queryByRole("heading", { name: "Сьогодні відпочинок" }),
     ).not.toBeInTheDocument();
   });
 });

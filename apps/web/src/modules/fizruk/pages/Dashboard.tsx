@@ -37,6 +37,7 @@ import {
   computeDashboardKpis,
   getNextPlanSession,
   listRecentCompletedWorkouts,
+  resolveNextScheduledSession,
 } from "@sergeant/fizruk-domain/domain";
 import type {
   ProgramSessionDef,
@@ -234,6 +235,16 @@ export function Dashboard({
       recoveryConflictsForExercise(ex, rec.by, rec.injurySites).injury.blocked,
   );
 
+  // П-11 (Б), рішення власника 2026-11-18: активна програма без сесії
+  // сьогодні і без плану місяця на сьогодні — день відпочинку. Hero каже
+  // це і називає наступну сесію, а шаблон-фолбек головною дією не стає.
+  const restNext = useMemo(() => {
+    void dayKey;
+    if (!activeProgram || todaySession || monthlyPlan.todayTemplateId)
+      return null;
+    return resolveNextScheduledSession(activeProgram);
+  }, [activeProgram, todaySession, monthlyPlan.todayTemplateId, dayKey]);
+
   const primaryAction = useMemo(() => {
     if (activeProgram && todaySession) {
       const session = activeProgram.sessions?.[todaySession.sessionKey];
@@ -247,6 +258,7 @@ export function Dashboard({
         };
       }
     }
+    if (restNext) return null;
     const fallbackTemplateId =
       monthlyPlan.todayTemplateId ||
       recentlyUsed[0]?.id ||
@@ -280,6 +292,7 @@ export function Dashboard({
   }, [
     activeProgram,
     todaySession,
+    restNext,
     monthlyPlan.todayTemplateId,
     recentlyUsed,
     templates,
@@ -393,6 +406,14 @@ export function Dashboard({
         hint: primaryAction.hint,
       };
     }
+    if (restNext) {
+      return {
+        kind: "rest",
+        label: restNext.schedule.name,
+        daysFromNow: restNext.daysFromNow,
+        exerciseCount: restNext.session.exerciseIds.length,
+      };
+    }
     if (nextPlanSession && !nextPlanSession.isToday) {
       return {
         kind: "upcoming",
@@ -406,6 +427,7 @@ export function Dashboard({
   }, [
     activeWorkout,
     primaryAction,
+    restNext,
     nextPlanSession,
     templates,
     estimatedDurationMin,
@@ -499,6 +521,11 @@ export function Dashboard({
           recoverByDate={heroRecoverByDate}
           onOpenAtlas={openAtlas}
           onStartToday={handleStartPrimary}
+          onStartNext={
+            restNext && activeProgram && onStartProgramWorkout
+              ? () => onStartProgramWorkout(restNext.session, activeProgram)
+              : undefined
+          }
           onOpenPlan={openPlan}
           onOpenTemplates={openTemplates}
           onOpenPrograms={() => onOpenPrograms?.()}

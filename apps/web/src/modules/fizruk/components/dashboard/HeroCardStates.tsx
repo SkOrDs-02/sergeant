@@ -305,6 +305,57 @@ export function UpcomingState({
   );
 }
 
+/**
+ * День без сесії активної програми (П-11 (Б), рішення власника 2026-11-18):
+ * головне повідомлення — відпочинок, наступна сесія названа, а старт її
+ * доступний текстовою кнопкою, тобто другорядний. Пропущене тренування
+ * можна почати будь-коли.
+ */
+export function RestState({
+  state,
+  kicker,
+  body,
+  onStartNext,
+  cornerSlot,
+}: {
+  readonly state: Extract<HeroCardState, { kind: "rest" }>;
+  readonly kicker: HeroKickerInfo;
+  readonly body: HeroBodyInfo;
+  readonly onStartNext?: (() => void) | undefined;
+  readonly cornerSlot?: ReactNode;
+}) {
+  const hero = messages.fizruk.hero;
+  const metaParts = [
+    `${hero.nextPrefix} ${state.label}`,
+    formatDaysAway(state.daysFromNow),
+  ];
+  if (state.exerciseCount > 0)
+    metaParts.push(
+      `${state.exerciseCount} ${pluralExercises(state.exerciseCount)}`,
+    );
+  return (
+    <HeroShell ariaLabel={hero.restToday} cornerSlot={cornerSlot}>
+      <HeroKicker {...kicker} />
+      <h2 className="text-style-title font-bold text-text">{hero.restToday}</h2>
+      <HeroRecoveryBars
+        rows={body.recoveryRows}
+        recoverByDate={body.recoverByDate}
+        onOpenAtlas={body.onOpenAtlas}
+      />
+      <p className="text-style-body text-muted">{metaParts.join(" · ")}</p>
+      {onStartNext && (
+        <Button
+          variant="text"
+          onClick={onStartNext}
+          aria-label={`${hero.startNow}: ${state.label}`}
+        >
+          {hero.startNow}
+        </Button>
+      )}
+    </HeroShell>
+  );
+}
+
 export function EmptyState({
   state,
   kicker,

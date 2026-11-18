@@ -43,6 +43,7 @@ import type { HeroRecoveryRow } from "@sergeant/fizruk-domain";
 import {
   ActiveState,
   EmptyState,
+  RestState,
   TodayState,
   UpcomingState,
   type HeroBodyInfo,
@@ -90,6 +91,19 @@ export type HeroCardState =
       readonly exerciseCount: number | null;
     }
   | {
+      /**
+       * Активна програма не має сесії сьогодні (П-11, рішення власника
+       * 2026-11-18): «Сьогодні відпочинок · наступна: …», старт другорядний.
+       */
+      readonly kind: "rest";
+      /** Назва наступної сесії програми за розкладом. */
+      readonly label: string;
+      /** Днів до неї, `1` = завтра. */
+      readonly daysFromNow: number;
+      /** Вправ у тій сесії. */
+      readonly exerciseCount: number;
+    }
+  | {
       readonly kind: "empty";
       /** When `true`, "Обрати шаблон" opens templates instead of plan. */
       readonly hasTemplates: boolean;
@@ -119,6 +133,11 @@ export interface HeroCardProps {
   readonly onOpenAtlas: (atlasId: string) => void;
   /** Invoked for the primary CTA on the `today` state. */
   readonly onStartToday: () => void;
+  /**
+   * Стан `rest`: стартувати наступну сесію програми просто зараз. Опційний —
+   * без нього стан лише називає наступну сесію.
+   */
+  readonly onStartNext?: (() => void) | undefined;
   /** Invoked for the primary CTA on the `upcoming` state. */
   readonly onOpenPlan: () => void;
   /** Invoked for the empty state's "Обрати шаблон" CTA. */
@@ -180,6 +199,16 @@ export function HeroCard(props: HeroCardProps) {
           kicker={kicker}
           body={body}
           onOpenPlan={props.onOpenPlan}
+          cornerSlot={cornerSlot}
+        />
+      );
+    case "rest":
+      return (
+        <RestState
+          state={state}
+          kicker={kicker}
+          body={body}
+          {...(props.onStartNext ? { onStartNext: props.onStartNext } : {})}
           cornerSlot={cornerSlot}
         />
       );

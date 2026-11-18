@@ -39,6 +39,18 @@ export interface ProgramSessionDef {
   readonly progressionKg: number;
   /** Default rest between sets, in seconds. */
   readonly defaultRestSec: number;
+  /**
+   * Власний план сесії «підходи × повтори», лише коли число назване в описі
+   * програми (5×5, лінійна прогресія 3×5). Без поля план виводиться
+   * `programExercisePlan` (`plan.ts`): інженерний дефолт, ратифікувати окремо.
+   */
+  readonly plan?: ProgramSessionPlan;
+}
+
+/** Фіксований план сесії: однакові підходи й повтори для всіх її вправ. */
+export interface ProgramSessionPlan {
+  readonly sets: number;
+  readonly reps: number;
 }
 
 /**

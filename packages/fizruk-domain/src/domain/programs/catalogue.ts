@@ -9,7 +9,15 @@
  * `progressionKg` — kg to add per session for compound lifts.
  */
 
-import type { TrainingProgramDef } from "./types.js";
+import type { ProgramSessionPlan, TrainingProgramDef } from "./types.js";
+
+/**
+ * Плани з описів самих програм (П-8 (Б), 2026-11-18): «Лінійна прогресія»
+ * 3×5, «Силовий 5×5» — «пʼять підходів по пʼять повторень». Решта сесій
+ * бере інженерний дефолт `programExercisePlan` (`plan.ts`).
+ */
+const SS_PLAN: ProgramSessionPlan = { sets: 3, reps: 5 };
+const FIVE_BY_FIVE_PLAN: ProgramSessionPlan = { sets: 5, reps: 5 };
 
 export const PROGRAM_CATALOGUE: readonly TrainingProgramDef[] = [
   {
@@ -192,12 +200,14 @@ export const PROGRAM_CATALOGUE: readonly TrainingProgramDef[] = [
         exerciseIds: ["squat_barbell", "bench_press_barbell", "deadlift"],
         progressionKg: 2.5,
         defaultRestSec: 180,
+        plan: SS_PLAN,
       },
       ss_b: {
         name: "Workout B",
         exerciseIds: ["squat_barbell", "overhead_press_barbell", "deadlift"],
         progressionKg: 2.5,
         defaultRestSec: 180,
+        plan: SS_PLAN,
       },
     },
   },
@@ -388,12 +398,14 @@ export const PROGRAM_CATALOGUE: readonly TrainingProgramDef[] = [
         exerciseIds: ["squat_barbell", "bench_press_barbell", "barbell_row"],
         progressionKg: 2.5,
         defaultRestSec: 180,
+        plan: FIVE_BY_FIVE_PLAN,
       },
       fivexfive_b: {
         name: "5×5 B",
         exerciseIds: ["squat_barbell", "overhead_press_barbell", "deadlift"],
         progressionKg: 2.5,
         defaultRestSec: 180,
+        plan: FIVE_BY_FIVE_PLAN,
       },
     },
   },

@@ -204,6 +204,44 @@ describe("HeroCard · today state", () => {
   });
 });
 
+describe("HeroCard · rest state (П-11, OD-32)", () => {
+  it("каже «Сьогодні відпочинок», називає наступну сесію і дає другорядний старт", () => {
+    const onStartNext = vi.fn();
+    const { onStartToday } = renderHero(
+      {
+        kind: "rest",
+        label: "Workout B",
+        daysFromNow: 1,
+        exerciseCount: 3,
+      },
+      { onStartNext },
+    );
+    expect(
+      screen.getByRole("heading", { name: "Сьогодні відпочинок" }),
+    ).toBeInTheDocument();
+    expect(
+      screen.getByText("Наступна: Workout B · Завтра · 3 вправи"),
+    ).toBeInTheDocument();
+    const start = screen.getByRole("button", {
+      name: "Почати зараз: Workout B",
+    });
+    fireEvent.click(start);
+    expect(onStartNext).toHaveBeenCalledTimes(1);
+    expect(onStartToday).not.toHaveBeenCalled();
+  });
+
+  it("без обробника старту кнопки немає, рядок наступної сесії лишається", () => {
+    renderHero({
+      kind: "rest",
+      label: "Push",
+      daysFromNow: 3,
+      exerciseCount: 6,
+    });
+    expect(screen.getByText(/Наступна: Push · За 3 дні/)).toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: /Почати зараз/ })).toBeNull();
+  });
+});
+
 describe("HeroCard · upcoming state", () => {
   it("renders days-away + date and wires the 'Відкрити план' CTA", () => {
     const { onOpenPlan } = renderHero({
