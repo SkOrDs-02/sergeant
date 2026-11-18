@@ -27,18 +27,20 @@
  * Usage: OPENROUTER_API_KEY=... pnpm eval:stream [--models=a,b]
  *        OPENROUTER_API_KEY=... pnpm eval:stream --first-turn \
  *          --models=google/gemini-3.7-flash --repeat=5
- *        OPENROUTER_API_KEY=... pnpm eval:stream --first-turn --reasoning=low \
+ *        OPENROUTER_API_KEY=... pnpm eval:stream --first-turn --reasoning=medium \
  *          --models=google/gemini-3.7-flash --repeat=5
  *
  * `--reasoning` (лише з `--first-turn`) додає глибину міркувань у тій самій
  * формі, що прод із заданою `CHAT_FIRST_TURN_REASONING_EFFORT`
- * (`chatReasoning.ts`). Без прапорця поля в запиті немає, як у проді зараз.
+ * (`chatReasoning.ts`). Без прапорця — прод-дефолт `low`; `medium` — стан до
+ * 2026-11-18.
  */
 
 import { parseArgs } from "node:util";
 import process from "node:process";
 
 import {
+  CHAT_FIRST_TURN_REASONING_EFFORT_DEFAULT,
   CHAT_FIRST_TURN_REASONING_EFFORTS,
   type ChatFirstTurnReasoningEffort,
 } from "../src/env/aiRoutingEnv.js";
@@ -104,7 +106,7 @@ const SCENARIOS: Scenario[] = [
 interface StreamReport {
   model: string;
   scenario: string;
-  /** Глибина міркувань прогону; `шлюз` — поля в запиті не було. */
+  /** Глибина міркувань прогону, фактичне значення в запиті (лише `--first-turn`). */
   reasoning: string;
   ok: boolean;
   events: Set<string>;
@@ -136,13 +138,14 @@ async function checkStream(
   apiKey: string,
   model: string,
   scenario: Scenario,
-  reasoning: ChatFirstTurnReasoningEffort | undefined,
+  reasoning: ChatFirstTurnReasoningEffort,
 ): Promise<StreamReport> {
   const t0 = Date.now();
   const report: StreamReport = {
     model,
     scenario: scenario.name,
-    reasoning: reasoning ?? "шлюз",
+    // Глибина йде лише в прод-форму першого ходу; інші сценарії без поля.
+    reasoning: scenario.prodFirstTurn ? reasoning : "—",
     ok: false,
     events: new Set(),
     deltaTypes: new Set(),
@@ -274,7 +277,8 @@ async function main(): Promise<void> {
     },
   });
   const firstTurn = values["first-turn"] === true;
-  let reasoning: ChatFirstTurnReasoningEffort | undefined;
+  let reasoning: ChatFirstTurnReasoningEffort =
+    CHAT_FIRST_TURN_REASONING_EFFORT_DEFAULT;
   if (values.reasoning !== undefined) {
     const effort = values.reasoning.trim().toLowerCase();
     if (!firstTurn) {

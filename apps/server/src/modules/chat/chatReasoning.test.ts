@@ -5,7 +5,10 @@
  */
 import { afterEach, describe, expect, it, vi } from "vitest";
 
-import { CHAT_FIRST_TURN_REASONING_EFFORTS } from "../../env/aiRoutingEnv.js";
+import {
+  CHAT_FIRST_TURN_REASONING_EFFORT_DEFAULT,
+  CHAT_FIRST_TURN_REASONING_EFFORTS,
+} from "../../env/aiRoutingEnv.js";
 import { REASONING_EFFORTS } from "../../lib/llm/provider.js";
 import { firstTurnReasoningFields } from "./chatReasoning.js";
 
@@ -51,10 +54,15 @@ describe("CHAT_FIRST_TURN_REASONING_EFFORT: парсинг змінної ото
       .CHAT_FIRST_TURN_REASONING_EFFORT;
   }
 
-  it("незадана й порожня змінна — значення немає", async () => {
-    expect(await parsed(undefined)).toBeUndefined();
-    expect(await parsed("")).toBeUndefined();
-    expect(await parsed("  ")).toBeUndefined();
+  it("незадана й порожня змінна — дефолт `low` (рішення 2026-11-18)", async () => {
+    expect(CHAT_FIRST_TURN_REASONING_EFFORT_DEFAULT).toBe("low");
+    expect(await parsed(undefined)).toBe("low");
+    expect(await parsed("")).toBe("low");
+    expect(await parsed("  ")).toBe("low");
+  });
+
+  it("`medium` — шлях повернення до дефолту шлюзу", async () => {
+    expect(await parsed("medium")).toBe("medium");
   });
 
   it("приймає перелік; регістр і пробіли не важливі", async () => {

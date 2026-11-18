@@ -45,6 +45,14 @@ export const CHAT_FIRST_TURN_REASONING_EFFORTS = [
 export type ChatFirstTurnReasoningEffort =
   (typeof CHAT_FIRST_TURN_REASONING_EFFORTS)[number];
 
+/**
+ * Глибина першого ходу, коли змінна не задана. Один експорт на прод і стенди
+ * (`tool-selection-eval.ts`, `stream-check.ts`): без `--reasoning` вони міряють
+ * рівно те, що йде в прод.
+ */
+export const CHAT_FIRST_TURN_REASONING_EFFORT_DEFAULT: ChatFirstTurnReasoningEffort =
+  "low";
+
 export const aiRoutingEnvShape = {
   OPENROUTER_API_KEY: stringWithDefault(""),
 
@@ -97,15 +105,27 @@ export const aiRoutingEnvShape = {
 
   /**
    * Глибина міркувань ПЕРШОГО ходу `/api/chat` (JSON і стрім), лише через
-   * шлюз OpenRouter. Незадана або порожня — поле в запит не йде, глибину
-   * вирішує шлюз (так було завжди). Регістр і пробіли не важливі; будь-що
-   * поза переліком валить старт. Тур синтезу, коуч і дайджест її не читають.
+   * шлюз OpenRouter. Незадана або порожня — `low`
+   * (`CHAT_FIRST_TURN_REASONING_EFFORT_DEFAULT`, рішення founder-а 2026-11-18
+   * після заміру: на `gemini-3.7-flash` та сама правильність вибору
+   * інструмента, нуль вигаданих id, медіана ~2,8 с проти ~3,5 с; спека
+   * `hubchat-first-turn-stream.md` § Замір 2026-11-18).
+   *
+   * Повернення без релізу: `CHAT_FIRST_TURN_REASONING_EFFORT=medium` — це
+   * дефолт шлюзу для `google/gemini-3.7-flash` за `GET /api/v1/models`
+   * (2026-11-18), тобто поведінка до цього рішення. Інша модель першого ходу
+   * може мати інший дефолт шлюзу: звір його в тому ж каталозі.
+   *
+   * Регістр і пробіли не важливі; будь-що поза переліком валить старт. Тур
+   * синтезу, коуч і дайджест її не читають; на прямому Anthropic поле не йде.
    * Як значення стає полем запиту — `modules/chat/chatReasoning.ts`.
-   * Умова зняття — `docs/engineering/architecture/feature-flags.md` § 2.
+   * Реєстр і умова зняття — `docs/engineering/architecture/feature-flags.md` § 3.1.
    */
   CHAT_FIRST_TURN_REASONING_EFFORT: z.preprocess(
     (v) => (typeof v === "string" ? v.trim().toLowerCase() || undefined : v),
-    z.enum(CHAT_FIRST_TURN_REASONING_EFFORTS).optional(),
+    z
+      .enum(CHAT_FIRST_TURN_REASONING_EFFORTS)
+      .default(CHAT_FIRST_TURN_REASONING_EFFORT_DEFAULT),
   ),
 
   LLM_PROVIDER: llmProviderEnum("anthropic"),

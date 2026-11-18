@@ -1,8 +1,9 @@
 /**
  * Глибина міркувань першого ходу (`CHAT_FIRST_TURN_REASONING_EFFORT`) у тілі
  * запиту до шлюзу, обидва шляхи: JSON (`callAnthropicWithContinuation`) і
- * стрім (`streamFirstTurnToSse`). Змінна не задана — полів немає зовсім;
- * задана — рівно те значення, що в змінній; тур синтезу її не отримує.
+ * стрім (`streamFirstTurnToSse`). Змінна не задана — на шлюзі дефолт `low`
+ * (рішення founder-а 2026-11-18); задана — рівно її значення (`medium` —
+ * повернення до дефолту шлюзу); прямий Anthropic і тур синтезу без поля.
  * Переклад значень і парсинг змінної — `chatReasoning.test.ts`.
  */
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
@@ -112,12 +113,9 @@ function makeReq(extra: Record<string, unknown> = {}): Request {
   } as unknown as Request;
 }
 
-function setEffort(value: ChatFirstTurnReasoningEffort | undefined): void {
+function setEffort(value: ChatFirstTurnReasoningEffort): void {
   (
-    env as {
-      CHAT_FIRST_TURN_REASONING_EFFORT:
-        ChatFirstTurnReasoningEffort | undefined;
-    }
+    env as { CHAT_FIRST_TURN_REASONING_EFFORT: ChatFirstTurnReasoningEffort }
   ).CHAT_FIRST_TURN_REASONING_EFFORT = value;
 }
 
@@ -144,32 +142,35 @@ afterEach(() => {
 });
 
 describe("перший хід: глибина міркувань у тілі запиту", () => {
-  it("JSON: змінна не задана — ні `output_config`, ні `thinking`", async () => {
-    setEffort(undefined);
-    anthropicMessages.mockResolvedValueOnce(okJson());
-    await handler(makeReq(), makeRes());
-    const payload = sentPayload(anthropicMessages);
-    expect(payload).not.toHaveProperty("output_config");
-    expect(payload).not.toHaveProperty("thinking");
-    expect(payload).not.toHaveProperty("reasoning");
+  it("змінна в тестовому оточенні не задана й розпарсилась у дефолт `low`", () => {
+    expect(process.env["CHAT_FIRST_TURN_REASONING_EFFORT"]).toBeUndefined();
+    expect(original).toBe("low");
   });
 
-  it("стрім: змінна не задана — ні `output_config`, ні `thinking`", async () => {
-    setEffort(undefined);
-    anthropicMessagesStream.mockResolvedValueOnce(upstreamStream());
-    await handler(makeReq({ stream: true }), makeRes());
-    const payload = sentPayload(anthropicMessagesStream);
-    expect(payload).not.toHaveProperty("output_config");
-    expect(payload).not.toHaveProperty("thinking");
-  });
-
-  it("JSON: `low` іде як `output_config.effort` з точним значенням", async () => {
-    setEffort("low");
+  it("JSON: без змінної на шлюзі — `output_config.effort = low`", async () => {
     anthropicMessages.mockResolvedValueOnce(okJson());
     await handler(makeReq(), makeRes());
     const payload = sentPayload(anthropicMessages);
     expect(payload["output_config"]).toEqual({ effort: "low" });
     expect(payload).not.toHaveProperty("thinking");
+    expect(payload).not.toHaveProperty("reasoning");
+  });
+
+  it("стрім: без змінної на шлюзі — `output_config.effort = low`", async () => {
+    anthropicMessagesStream.mockResolvedValueOnce(upstreamStream());
+    await handler(makeReq({ stream: true }), makeRes());
+    const payload = sentPayload(anthropicMessagesStream);
+    expect(payload["output_config"]).toEqual({ effort: "low" });
+    expect(payload).not.toHaveProperty("thinking");
+  });
+
+  it("JSON: `medium` повертає стан до 2026-11-18 (дефолт шлюзу)", async () => {
+    setEffort("medium");
+    anthropicMessages.mockResolvedValueOnce(okJson());
+    await handler(makeReq(), makeRes());
+    expect(sentPayload(anthropicMessages)["output_config"]).toEqual({
+      effort: "medium",
+    });
   });
 
   it("стрім: `medium` іде як `output_config.effort` з точним значенням", async () => {
@@ -190,12 +191,19 @@ describe("перший хід: глибина міркувань у тілі з�
     expect(payload).not.toHaveProperty("output_config");
   });
 
-  it("прямий Anthropic (шлюз вимкнено): поля не йдуть навіть із заданою змінною", async () => {
-    setEffort("low");
+  it("прямий Anthropic (шлюз вимкнено): полів немає ні з дефолтом, ні з заданою змінною", async () => {
     vi.stubEnv("CHAT_VIA_OPENROUTER", "false");
     anthropicMessages.mockResolvedValueOnce(okJson());
     await handler(makeReq(), makeRes());
     expect(sentPayload(anthropicMessages)).not.toHaveProperty("output_config");
+
+    setEffort("medium");
+    anthropicMessages.mockClear();
+    anthropicMessages.mockResolvedValueOnce(okJson());
+    await handler(makeReq(), makeRes());
+    const payload = sentPayload(anthropicMessages);
+    expect(payload).not.toHaveProperty("output_config");
+    expect(payload).not.toHaveProperty("thinking");
   });
 
   it("тур синтезу глибину не отримує", async () => {

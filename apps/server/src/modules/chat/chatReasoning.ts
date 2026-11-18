@@ -36,7 +36,8 @@ export function firstTurnReasoningFields(
  * Поля для `firstTurnPayload` у `chat.ts`. Лише на шлюзі: прямий Anthropic
  * (`CHAT_VIA_OPENROUTER=false`) з `claude-haiku-4-5` не міркує без явного
  * `thinking`, а `output_config.effort` підтримують не всі його моделі, тож
- * поле там дало б 400 замість заміру. Незадана змінна — порожній обʼєкт.
+ * поле там дало б 400. На шлюзі незадана змінна дає дефолт `low`
+ * (`CHAT_FIRST_TURN_REASONING_EFFORT_DEFAULT`, рішення founder-а 2026-11-18).
  */
 export function firstTurnReasoningPayload(): Record<string, unknown> {
   if (!chatViaOpenRouter()) return {};
