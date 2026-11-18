@@ -62,6 +62,31 @@ describe("offerPantryDeduction", () => {
     expect(pantry.consume).toHaveBeenCalledWith("Рис", 150);
   });
 
+  // Зйомка 2026-11-18: після «Списати» тост просто зникав, і людина не
+  // бачила, що списання відбулось.
+  it("після «Списати» коротко підтверджує списання, без дії", () => {
+    const { toast, shown } = fakeToast();
+    offerPantryDeduction(toast, () => port(), [{ name: "Рис", amount_g: 150 }]);
+    shown[0]!.action!.onClick();
+    expect(shown).toHaveLength(2);
+    expect(shown[1]!.msg).toBe("Списав 150\u00a0г із комори");
+    expect(shown[1]!.action).toBeUndefined();
+    expect(toast.success).toHaveBeenCalledTimes(1);
+  });
+
+  it("списання чекає вибору варіанта: підтвердження не показує", () => {
+    const { toast, shown } = fakeToast();
+    const pantry = port({
+      consume: vi.fn((): PantryConsumeTicket => ({
+        receipt: null,
+        cancelled: false,
+      })),
+    });
+    offerPantryDeduction(toast, () => pantry, [{ name: "Рис", amount_g: 150 }]);
+    shown[0]!.action!.onClick();
+    expect(shown).toHaveLength(1);
+  });
+
   it("без збігу з коморою нічого не пропонує", () => {
     const { toast, shown } = fakeToast();
     offerPantryDeduction(toast, () => port(), [

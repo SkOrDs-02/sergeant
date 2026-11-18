@@ -31,7 +31,9 @@ import type { SavedRecipe } from "../../lib/recipeBook";
 import type { QuickChip } from "../../hooks/useNutritionQuickChips";
 import type { MealFormState } from "./mealFormUtils";
 import { useState } from "react";
+import { pluralUa } from "@sergeant/shared";
 import { messages } from "@shared/i18n/uk";
+import { nutritionMealFeedbackMessages as FEEDBACK } from "@shared/i18n/uk.nutritionMealFeedback";
 import { Button } from "@shared/components/ui/Button";
 import { MyFoodsSheet } from "../MyFoodsSheet";
 import { CollapsibleSection } from "@shared/components/ui/CollapsibleSection";
@@ -112,7 +114,10 @@ export function SearchTabPanel({
           // сніданок — найкоротший шлях у цьому аркуші, і згорнути його
           // означало б додати клік саме туди, де їх і так найменше.
           defaultOpen
-          collapsedSubtitle={`${quickChips.length} прийомів`}
+          collapsedSubtitle={pluralUa(
+            quickChips.length,
+            FEEDBACK.recentCount,
+          ).replace("{n}", String(quickChips.length))}
           className="mb-4 min-w-0"
         >
           <QuickAddChips

@@ -11,6 +11,7 @@
  * (`addMealSections.ts`). Перелік обрізано тим самим числом, що й «Мої
  * рецепти» в Меню (`RecipesCard.SavedSection`: перші 8).
  */
+import { pluralUa } from "@sergeant/shared";
 import { CollapsibleSection } from "@shared/components/ui/CollapsibleSection";
 import type { SavedRecipe } from "../../lib/recipeBook";
 import { nutritionRecipeLogMessages as COPY } from "@shared/i18n/uk.nutritionRecipeLog";
@@ -32,7 +33,7 @@ export function RecipesFromBookRow({
       title={COPY.section}
       headingSize="md"
       defaultOpen={false}
-      collapsedSubtitle={COPY.sectionCount.replace(
+      collapsedSubtitle={pluralUa(recipes.length, COPY.sectionCount).replace(
         "{n}",
         String(recipes.length),
       )}

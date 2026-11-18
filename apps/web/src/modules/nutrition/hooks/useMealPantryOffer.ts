@@ -16,10 +16,14 @@
  *   пояснює це тостом «Запис скасовано, 150 г повернув у комору»;
  * - списання чекає вибору варіанта — позначає квитанцію скасованою, і
  *   вибір нічого не спише.
+ *
+ * Після «Списати» з готовою квитанцією — короткий тост «Списав 150 г із
+ * комори» без дії (`success` за `toast-policy.md`).
  */
 import { useCallback, useEffect, useRef } from "react";
 import type { Meal, PantryItem } from "@sergeant/nutrition-domain";
 import type { ToastApi } from "@shared/hooks/useToast";
+import { nutritionMealFeedbackMessages as COPY } from "@shared/i18n/uk.nutritionMealFeedback";
 import {
   pantryDeductionOfferFor,
   pantryOfferMessage,
@@ -72,6 +76,15 @@ export function offerPantryDeduction(
           if (session.cancelled) return;
           session.ticket =
             getPantry().consume(offer.itemName, offer.grams) ?? null;
+          // Тост пропозиції закривається на тап, і без відгуку людина не
+          // бачила, що списання відбулось (зйомка 2026-11-18). Лише коли
+          // квитанція вже є: вибір варіанта показує свій діалог, і він сам
+          // є відгуком. Без дії: відкат живе в «Скасувати» тосту запису.
+          if (session.ticket?.receipt) {
+            toast.success(
+              COPY.pantryConsumed.replace("{grams}", String(offer.grams)),
+            );
+          }
         },
       });
     }

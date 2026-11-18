@@ -34,7 +34,6 @@ import type { Meal } from "@sergeant/nutrition-domain";
 import type { NutritionPhotoResult } from "@shared/api";
 import { MEAL_TYPES } from "../lib/mealTypes";
 import { newMealId } from "../lib/mealId";
-import { ensureSeedFoods } from "../lib/foodDb/foodDb";
 import { BarcodeScanner } from "./BarcodeScanner";
 import {
   buildMealsForSave,
@@ -276,7 +275,6 @@ export function AddMealSheet({
     // form directly; `initialStep="photo"` (shortcuts/CTA) opens the photo
     // step without the "Звідки страва?" detour.
     setStep(initialMeal?.id ? "fill" : "source");
-    void ensureSeedFoods();
   } else if (!open && prevOpen) {
     setPrevOpen(false);
   }

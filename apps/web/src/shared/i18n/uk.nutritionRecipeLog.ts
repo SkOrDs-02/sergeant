@@ -10,7 +10,12 @@
  */
 export const nutritionRecipeLogMessages = {
   section: "Мої рецепти",
-  sectionCount: "{n} рецептів",
+  /** Форми для `pluralUa`: «1 рецепт», «2 рецепти», «5 рецептів». */
+  sectionCount: {
+    one: "{n} рецепт",
+    few: "{n} рецепти",
+    many: "{n} рецептів",
+  },
   perServing: "≈ {kcal} ккал / порція",
   titleFallback: "Рецепт",
   question: "Скільки зʼїв?",
