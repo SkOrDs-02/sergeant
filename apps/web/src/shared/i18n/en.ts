@@ -255,6 +255,8 @@ export const messagesEn: Partial<{
       body: "Browser storage did not open, so new entries live in memory for now. Reload the page to keep them.",
       bodyOtherTab:
         "The database is open in another tab. Close extra Sergeant tabs and reload this one.",
+      bodyUnsupported: "New entries vanish on restart: update the browser.",
+      legacyKept: "Earlier entries are kept and return after the update.",
       reload: "Reload",
     },
     storageDegraded: {

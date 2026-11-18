@@ -1,5 +1,5 @@
 /**
- * Last validated: 2026-09-14
+ * Last validated: 2026-11-18
  * Status: Active
  *
  * Перелиття локальної бази зі старого localStorage-сховища в OPFS —
@@ -12,6 +12,14 @@
  * а питання безпеки: копія по рядках має стільки способів загубити дані,
  * скільки в ній таблиць, і кожен помітний лише постфактум. Побайтова
  * копія або відбулась цілком, або не відбулась.
+ *
+ * **Хто що робить (від 2026-11-18, PR-T1, рішення власника Б).** Головний
+ * потік більше не має власного sqlite-wasm: тут лише читаються сирі рядки
+ * `kvvfs-local-*` з `localStorage` ({@link readKvvfsSnapshot}), а файл бази
+ * з них збирає SQLite воркера (`kvvfsConvert.ts`). Пристрій, де OPFS у
+ * воркері не піднімається, kvvfs більше не відкриває взагалі: старе
+ * сховище лежить недоторканим, доки браузер не оновиться і перелиття не
+ * відбудеться звичайним шляхом.
  *
  * AI-DANGER: старе сховище тут НЕ чіпається. Ні під час перелиття, ні
  * після. У ньому лежить єдина копія недоставлених операцій
@@ -28,6 +36,7 @@
  * ізоляції, яку свого часу заводили окремою знахідкою (page-audit-10 F17).
  */
 import {
+  safeListLSKeys,
   safeReadStringLS,
   safeReadStringLSDurable,
   safeWriteStringLSDurable,
@@ -35,14 +44,15 @@ import {
 
 import { NON_SYNCABLE_USER_IDS } from "../syncEngine/syncableUserId.js";
 import type { SqliteConnection } from "./sqliteConnection.js";
+import type { KvvfsSnapshot } from "./sqliteProtocol.js";
 
 /**
  * Ключ, у якому kvvfs тримає розмір своєї бази.
  *
  * AI-NOTE: `kvvfs-local-` — префікс, який бібліотека будує з імені
  * сховища (`JsStorageDb("local")`), а `sz` — розмір у байтах. Читаємо
- * саме його, щоб не вантажити 700 kB WASM заради відповіді «а чи є там
- * узагалі щось» на свіжому пристрої.
+ * саме його, щоб не перебирати всі ключі `localStorage` заради відповіді
+ * «а чи є там узагалі щось» на свіжому пристрої.
  */
 const KVVFS_SIZE_KEY = "kvvfs-local-sz";
 
@@ -76,30 +86,49 @@ export function hasKvvfsData(): boolean {
   return Number.isFinite(size) && size > 0;
 }
 
+/** Префікс записів kvvfs у `localStorage` (`JsStorageDb("local")`). */
+const KVVFS_KEY_PREFIX = "kvvfs-local-";
+const KVVFS_JOURNAL_KEY = `${KVVFS_KEY_PREFIX}jrnl`;
+const KVVFS_PAGE_KEY = /^kvvfs-local-(\d+)$/;
+
 /**
- * Знімок старої бази одним масивом байтів, або `null`, якщо переливати
- * нічого.
+ * Знімок старої бази як сирі записи `localStorage`, або `null`, якщо
+ * переливати нічого.
  *
- * Це єдине місце стадії 2, яке вантажить sqlite-wasm на головний потік —
- * інакше старої бази не відкрити взагалі. Разова ціна за переїзд; після
- * позначки цей шлях більше не виконується.
+ * Жодного SQLite: рядки сторінок переносяться у воркер як є, а розбирає їх
+ * уже воркер (`kvvfsConvert.ts`). Порядок сторінок будуємо тут за ЧИСЛОМ
+ * номера — бібліотечний `kvvfs.export` сортує їх як рядки (1, 10, 2, …), і
+ * така копія вийшла б тихо зіпсованою.
+ *
+ * Кидає, якщо в нумерації сторінок дірка: таке сховище не відкрилось би й
+ * старим шляхом, а перелити його «як вийде» означало б позначити партицію
+ * перелитою з неповними даними.
  */
-export async function readKvvfsSnapshotBytes(): Promise<ArrayBuffer | null> {
+export function readKvvfsSnapshot(): KvvfsSnapshot | null {
   if (!hasKvvfsData()) return null;
-  const mod = await import("@sqlite.org/sqlite-wasm");
-  const sqlite3 = await mod.default();
-  const db = new sqlite3.oo1.JsStorageDb("local");
-  try {
-    const pointer = db.pointer;
-    if (pointer === undefined) return null;
-    const bytes = sqlite3.capi.sqlite3_js_db_export(pointer);
-    if (bytes.byteLength === 0) return null;
-    // Копія замість `bytes.buffer`: експорт може віддати вікно в більший
-    // буфер, і передати такий буфер у воркер означало б передати зайве.
-    return bytes.slice().buffer;
-  } finally {
-    db.close();
+  const size = Number(safeReadStringLS(KVVFS_SIZE_KEY) ?? "0");
+  const pageNumbers: number[] = [];
+  for (const key of safeListLSKeys()) {
+    const match = KVVFS_PAGE_KEY.exec(key);
+    if (match) pageNumbers.push(Number(match[1]));
   }
+  if (pageNumbers.length === 0) return null;
+  pageNumbers.sort((a, b) => a - b);
+  const pages: string[] = [];
+  for (let index = 0; index < pageNumbers.length; index += 1) {
+    const pageNumber = pageNumbers[index];
+    if (pageNumber !== index + 1) {
+      throw new Error(
+        `kvvfs-handoff: page ${index + 1} is missing (found ${String(pageNumber)})`,
+      );
+    }
+    const page = safeReadStringLS(`${KVVFS_KEY_PREFIX}${pageNumber}`);
+    if (page === null) {
+      throw new Error(`kvvfs-handoff: page ${pageNumber} is unreadable`);
+    }
+    pages.push(page);
+  }
+  return { size, journal: safeReadStringLS(KVVFS_JOURNAL_KEY), pages };
 }
 
 /**

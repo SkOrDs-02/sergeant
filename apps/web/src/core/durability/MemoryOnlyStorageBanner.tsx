@@ -1,5 +1,5 @@
 /**
- * Last validated: 2026-09-29
+ * Last validated: 2026-11-18
  * Status: Active
  *
  * «Записи зараз не зберігаються»: база відкрилась як `:memory:`.
@@ -9,6 +9,11 @@
  * памʼять. Єдиним сигналом був рядок в аркуші «Синхронізація», який ніхто
  * не відкриває, тож вода й прийом зникали на reload непомітно. Джерело
  * стану те саме, що в аркуші (`storageBackendState`), лише з підпискою.
+ *
+ * PR-T1 (2026-11-18): пристрій без OPFS у воркері більше не живе на kvvfs у
+ * `localStorage`, а потрапляє сюди ж. Для нього reload нічого не змінить,
+ * тож кнопки немає, а текст каже, що робити насправді (оновити браузер) і
+ * що старі записи на пристрої цілі, якщо вони там є.
  */
 import { useSyncExternalStore } from "react";
 
@@ -18,6 +23,7 @@ import { useLocale } from "@shared/i18n/useLocale";
 
 import {
   readActiveSqliteVfs,
+  readSqliteLegacyStoreKept,
   readSqliteVfsFallbackReason,
   subscribeActiveSqliteVfs,
 } from "../db/storageBackendState";
@@ -31,7 +37,19 @@ export function MemoryOnlyStorageBanner() {
     readActiveSqliteVfs,
   );
   if (vfs !== "memory") return null;
-  const otherTab = readSqliteVfsFallbackReason() === "pool-busy";
+  const reason = readSqliteVfsFallbackReason();
+  if (reason === "unsupported") {
+    return (
+      <Notice tone="danger" role="alert" className="mx-4 mt-2 shrink-0">
+        <p>{m.title}</p>
+        <p className="mt-0.5 font-normal text-muted">
+          {m.bodyUnsupported}
+          {readSqliteLegacyStoreKept() ? ` ${m.legacyKept}` : null}
+        </p>
+      </Notice>
+    );
+  }
+  const otherTab = reason === "pool-busy";
 
   return (
     <Notice

@@ -1,5 +1,5 @@
 /**
- * Last validated: 2026-09-14
+ * Last validated: 2026-11-18
  * Status: Active
  *
  * Який VFS обслуговує локальну базу — окремим модулем, без жодної ваги.
@@ -14,8 +14,14 @@
  * (`sqlite.ts`) знає про цей модуль, читачі про писаря не знають.
  */
 
-/** Назви VFS, які вміє відкрити `sqlite.ts`. */
-export type SqliteVfsName = "opfs-sahpool" | "kvvfs" | "memory";
+/**
+ * Назви VFS, які вміє відкрити `sqlite.ts`.
+ *
+ * `kvvfs` (localStorage) прибрано 2026-11-18 разом із копією sqlite-wasm на
+ * головному потоці (PR-T1, рішення власника Б): пристрій без OPFS у воркері
+ * тепер отримує `memory`, а не базу на ~5 МБ у `localStorage`.
+ */
+export type SqliteVfsName = "opfs-sahpool" | "memory";
 
 let activeVfs: SqliteVfsName | null = null;
 
@@ -44,8 +50,13 @@ export function noteActiveSqliteVfs(vfs: SqliteVfsName): void {
  * вкладка не дістає жодного слота. Це єдина причина, яку людина може
  * усунути сама, тому вона й доїжджає до аркуша «Синхронізація» окремим
  * рядком замість глухого «Лише памʼять».
+ *
+ * `unsupported` - браузер не дає OPFS у воркері (`Missing required OPFS
+ * APIs`) або не запускає модульний воркер узагалі. Перезавантаження тут не
+ * допоможе, тож банер не має його обіцяти (PR-T1, 2026-11-18: до того такий
+ * пристрій тихо жив на kvvfs у `localStorage`).
  */
-export type SqliteVfsFallbackReason = "pool-busy";
+export type SqliteVfsFallbackReason = "pool-busy" | "unsupported";
 
 let fallbackReason: SqliteVfsFallbackReason | null = null;
 
@@ -54,6 +65,21 @@ export function noteSqliteVfsFallbackReason(
   reason: SqliteVfsFallbackReason,
 ): void {
   fallbackReason = reason;
+}
+
+let legacyStoreKept = false;
+
+/**
+ * Викликає `sqlite.ts`, коли на пристрої без OPFS у воркері знайшлось
+ * неперелите kvvfs-сховище. Воно не стирається, і банер про це каже.
+ */
+export function noteSqliteLegacyStoreKept(): void {
+  legacyStoreKept = true;
+}
+
+/** Чи лежить на пристрої старе kvvfs-сховище, якого ми не відкрили. */
+export function readSqliteLegacyStoreKept(): boolean {
+  return legacyStoreKept;
 }
 
 /** Причина фолбеку, або `null`. */
@@ -70,4 +96,5 @@ export function readActiveSqliteVfs(): SqliteVfsName | null {
 export function __resetActiveSqliteVfsForTests(): void {
   activeVfs = null;
   fallbackReason = null;
+  legacyStoreKept = false;
 }

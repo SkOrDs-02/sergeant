@@ -21,6 +21,11 @@ import { __resetSqliteDbForTests, getSqliteDb } from "../sqlite";
  * production module does — see `tests/sqlite-wasm-fake.ts`.
  */
 
+import {
+  installInProcessSqliteWorker,
+  uninstallInProcessSqliteWorker,
+} from "./inProcessSqliteWorker";
+
 vi.mock("@sqlite.org/sqlite-wasm", () => import("./sqlite-wasm-fake"));
 vi.mock("../../observability/sentry.js", () => ({
   addSentryBreadcrumb: vi.fn(),
@@ -32,6 +37,7 @@ vi.mock("../../observability/sentry.js", () => ({
 describe("getSqliteDb — init", () => {
   beforeEach(() => {
     __resetSqliteDbForTests();
+    installInProcessSqliteWorker();
     // Pretend the host browser supports OPFS-SAH so the primary code
     // path is exercised. The mocked `installOpfsSAHPoolVfs` resolves
     // synchronously below.
@@ -47,6 +53,7 @@ describe("getSqliteDb — init", () => {
 
   afterEach(() => {
     __resetSqliteDbForTests();
+    uninstallInProcessSqliteWorker();
     vi.restoreAllMocks();
   });
 

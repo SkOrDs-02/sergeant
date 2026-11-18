@@ -1,6 +1,6 @@
 # C3 — Sync Engine v2 (web)
 
-> **Last touched:** 2026-09-11 by @claude. **Next review:** 2026-12-30.
+> **Last touched:** 2026-11-18 by @claude (SQLite у воркері, kvvfs прибрано, PR-T1). **Next review:** 2026-12-30.
 > **Status:** Active
 
 Внутрішня структура sync engine v2 у `apps/web`. CloudSync v1 (dirtyMap / offlineQueue / LWW resolver) знятий (ADR-0047). Єдиний sync-шлях — **op-log outbox**: UI пише у локальний SQLite-WASM, `SyncEnginePushScheduler` батчить операції й пушить на сервер через `/api/v2/sync/push`.
@@ -22,7 +22,7 @@ flowchart LR
         Status["useSyncStatus<br/><i>core/cloudSync/hook/</i>"]
     end
 
-    subgraph SQLite["SQLite-WASM (OPFS / kvvfs)"]
+    subgraph SQLite["SQLite-WASM у воркері (OPFS / memory)"]
         DomainTables["domain tables<br/><i>routine_entries,<br/>fizruk_workouts, ...</i>"]
         Outbox["sync_op_outbox<br/><i>pending, in_flight, dead_letter</i>"]
     end
@@ -96,7 +96,7 @@ pending  →  in_flight  →  applied   (normal path)
 | Granularity        | Whole-module blob (LWW на весь module)             | Per-row operation (LWW + soft-delete per row)       |
 | Conflict detection | На рівні blob timestamp                            | `(user_id, idempotency_key)` UNIQUE у `sync_op_log` |
 | Offline queue      | `offlineQueue.ts` у localStorage                   | `sync_op_outbox` у SQLite-WASM (durable OPFS)       |
-| Web local store    | `localStorage` (sync-patched)                      | SQLite-WASM (OPFS/kvvfs) — повний SQL, indexed      |
+| Web local store    | `localStorage` (sync-patched)                      | SQLite-WASM у воркері (OPFS) — повний SQL, indexed  |
 | Server store       | `module_data` JSONB blobs (дропнута міграцією 046) | Per-domain normalized tables + `sync_op_log` audit  |
 
 ## Тестування

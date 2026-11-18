@@ -6,12 +6,13 @@
  *
  * The web app keeps onboarding / first-run / "has existing data" state inside
  * the SQLite-backed `kv_store` warm-cache (see `kvStoreBoot.ts`). That cache is
- * populated by an **async** boot — `bootstrapKvStore()` lazy-loads ~700 KB of
- * sqlite-wasm, opens the persistent VFS (OPFS-SAH / kvvfs) and runs a `SELECT`
- * scan. Until it settles, `webKVStore` reads fall through to the raw
+ * populated by an **async** boot — `bootstrapKvStore()` spins up the SQLite
+ * worker (sqlite-wasm lives only there since PR-T1, 2026-11-18), opens the
+ * OPFS-SAH file (or `:memory:` when the worker has no OPFS) and runs a
+ * `SELECT` scan. Until it settles, `webKVStore` reads fall through to the raw
  * `localStorage` adapter, where the SQLite-backed keys (`hub_onboarding_done_v1`,
  * `sergeant.onboarding.module_first_seen.*`, …) are simply **absent** — they
- * live inside the `kvvfs-local-*` blob, not as plain LS keys.
+ * live inside the SQLite file, not as plain LS keys.
  *
  * The consequence on a full page reload (F5 / deep-link / external nav): a route
  * guard that synchronously asks "is onboarding done? has this module been seen?"

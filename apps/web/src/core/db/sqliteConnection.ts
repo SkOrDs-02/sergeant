@@ -1,5 +1,5 @@
 /**
- * Last validated: 2026-09-14
+ * Last validated: 2026-11-18
  * Status: Active
  *
  * Спільний інтерфейс з'єднання з локальною базою — стадія 1 спеки
@@ -13,16 +13,12 @@
  * ходить через async-колбек `sqlite-proxy`, а `SqliteMigrationClient`
  * оголошений як `void | Promise<void>` саме щоб приймати такі реалізації.
  *
- * Синхронний бекенд нічого не втрачає: обгортка лише повертає готове
- * значення промісом, жодної додаткової черги тут немає.
+ * Від 2026-11-18 (PR-T1, рішення власника Б) бекенд лишився один —
+ * воркер (`sqliteWorkerClient.ts`): головнопотокова обгортка над `oo1.DB`
+ * пішла разом із копією sqlite-wasm на головному потоці. Інтерфейс
+ * лишається окремим, бо його читають `sqlite.ts`, `kvvfsHandoff.ts` і
+ * прибирання осиротілих файлів, і жоден із них не має знати про воркер.
  */
-
-type SqliteWasmModule = typeof import("@sqlite.org/sqlite-wasm");
-type Sqlite3Static = Awaited<ReturnType<SqliteWasmModule["default"]>>;
-type Sqlite3Database = InstanceType<Sqlite3Static["oo1"]["DB"]>;
-type ExecOptionsArg = Parameters<Sqlite3Database["exec"]>[0];
-type ExecOptions = Exclude<ExecOptionsArg, string | readonly string[]>;
-type BindArg = Exclude<ExecOptions["bind"], undefined>;
 
 /** Як повертати рядки: масивами значень чи обʼєктами по іменах колонок. */
 export type SqliteRowMode = "array" | "object";
@@ -39,28 +35,4 @@ export interface SqliteConnection {
     rowMode: SqliteRowMode,
   ): Promise<unknown[]>;
   close(): Promise<void>;
-}
-
-/** Обгортка над синхронним `oo1.DB` головного потоку. */
-export function makeLocalConnection(db: Sqlite3Database): SqliteConnection {
-  return {
-    async exec(sql) {
-      db.exec({ sql });
-    },
-    async run(sql, bind) {
-      db.exec({ sql, bind: bind as BindArg });
-    },
-    async all(sql, bind, rowMode) {
-      const rows = db.exec({
-        sql,
-        bind: bind as BindArg,
-        rowMode,
-        returnValue: "resultRows",
-      });
-      return Array.isArray(rows) ? Array.from(rows as unknown[]) : [];
-    },
-    async close() {
-      db.close();
-    },
-  };
 }

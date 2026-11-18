@@ -1,6 +1,6 @@
 # Data exchange & storage audit
 
-> **Last touched:** 2026-09-17 by @claude (v1 sync → 404, ingest знято, діапазон міграцій → вказівник, OpenClaw-таблиця → legacy). **Next review:** 2026-12-16.
+> **Last touched:** 2026-11-18 by @claude (kvvfs-фолбек прибрано, SQLite лише у воркері, PR-T1; раніше 2026-09-17: v1 sync → 404, ingest знято, діапазон міграцій → вказівник, OpenClaw-таблиця → legacy). **Next review:** 2026-12-16.
 > **Status:** Active
 
 Зріз поточного стану: як у Sergeant рухаються і зберігаються дані, де слабкі місця, і який практичний напрям розвитку варто тримати.
@@ -10,7 +10,7 @@
 Sergeant зараз має **v2-first data-архітектуру**:
 
 - **Server-first для централізованих і чутливих речей:** Better Auth, Monobank, AI usage, push devices, sync audit, AI memory, normalized domain tables (`routine_entries`, `routine_streaks`, `fizruk_workouts` і т.д.), `coach_memory`, `subscriptions` (m056; legacy `billing_subscriptions` m047 dropped in m083), `tg_topic_archive` — зберігаються у PostgreSQL.
-- **Local-first для продуктового стану модулів:** web пише у SQLite-WASM (OPFS / kvvfs), mobile — у MMKV; cloud sync переносить операції через `sync_op_outbox` → `/api/v2/sync/*`.
+- **Local-first для продуктового стану модулів:** web пише у SQLite-WASM у воркері (OPFS; без OPFS у воркері — `:memory:`), mobile — у MMKV; cloud sync переносить операції через `sync_op_outbox` → `/api/v2/sync/*`.
 - **CloudSync v1 повністю знятий (ADR-0047):** старі `/api/sync/*` endpoints віддавали `410 Gone` протягом 90-денного deprecation-вікна; після Initiative 0003 Phase 7 handler-и видалено, тепер це голий `404` (див. коментар у `apps/server/src/routes/sync.ts`). v1 engine (`dirtyMap`, `collectQueued`, `offlineQueue`, `resolver`) видалений з web і mobile кодових баз. `module_data` blob-таблиця дропнута міграцією 046.
 - **v2 op-log sync — єдиний sync-шлях для всіх доменів:** `routine`, `fizruk`, `finyk`, `nutrition`, `profile` — усі через `sync_op_outbox` (web SQLite outbox) → `/api/v2/sync/push` → Postgres per-row tables.
 - **Кеші окремо від source-of-truth:** React Query cache на web персиститься в IndexedDB, mobile — в MMKV; Service Worker кешує навігацію та частину GET `/api/*`, але не sync/auth.
@@ -124,7 +124,7 @@ DB-level safety:
 
 ### 3.2. Web storage
 
-- **Основний local-first module state — SQLite-WASM** (`apps/web/src/core/db/sqlite.ts`). VFS priority: OPFS-SAH → kvvfs/localStorage → memory. `sync_op_outbox` у SQLite — джерело для v2 push scheduler.
+- **Основний local-first module state — SQLite-WASM** (`apps/web/src/core/db/sqlite.ts`). VFS priority: OPFS-SAH у воркері → `:memory:` у воркері (kvvfs/localStorage прибрано 2026-11-18, PR-T1; старе kvvfs-сховище лише переливається в OPFS і не стирається). `sync_op_outbox` у SQLite — джерело для v2 push scheduler.
 - React Query warm-start cache — IndexedDB (`sergeant-db`, store `rq_cache`), TTL 7 днів, build-id buster, sensitive query keys не персистяться (`apps/web/src/shared/lib/api/queryClientPersister.ts`).
 - Service Worker:
   - precache + NetworkFirst navigation cache;

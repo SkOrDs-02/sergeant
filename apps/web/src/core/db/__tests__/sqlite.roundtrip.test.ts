@@ -4,6 +4,15 @@ import { sql } from "drizzle-orm";
 
 import { __resetSqliteDbForTests, getSqliteDb } from "../sqlite";
 import { waitlistEntries } from "@sergeant/db-schema/sqlite";
+import {
+  installInProcessSqliteWorker,
+  uninstallInProcessSqliteWorker,
+} from "./inProcessSqliteWorker";
+
+// PR-T1 (2026-11-18): sqlite-wasm живе лише у воркері, тож справжня база в
+// тестах — через фейковий in-process `Worker` (див. сам хелпер).
+beforeEach(installInProcessSqliteWorker);
+afterEach(uninstallInProcessSqliteWorker);
 
 /**
  * End-to-end smoke for PR #015 acceptance criterion:

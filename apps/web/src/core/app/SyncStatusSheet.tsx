@@ -50,8 +50,8 @@ const COPY = {
   storage: "Сховище",
   storageUnknown: "Ще не відкривали",
   storageOpfs: "Файлове сховище браузера",
-  storageLocalStorage: "Просте сховище браузера, ліміт ~5 МБ",
   storageMemory: "Лише памʼять, до перезапуску",
+  storageUnsupported: "Лише памʼять: браузер не підтримує файлове сховище",
   storageOtherTab:
     "База відкрита в іншій вкладці. Закрий зайві вкладки Sergeant і онови цю.",
   opfsWorker: "Файлове сховище у фоні",
@@ -144,9 +144,11 @@ function describeVfs(vfs: SqliteVfsName | null): {
   if (vfs === "opfs-sahpool") return { value: COPY.storageOpfs, tone: "ok" };
   // Причина йде поперед назви сховища: «Лише памʼять» описує наслідок, а
   // діяти можна лише знаючи причину - і саме цю причину людина усуває сама.
-  if (readSqliteVfsFallbackReason() === "pool-busy")
+  const reason = readSqliteVfsFallbackReason();
+  if (reason === "pool-busy")
     return { value: COPY.storageOtherTab, tone: "err" };
-  if (vfs === "kvvfs") return { value: COPY.storageLocalStorage, tone: "warn" };
+  if (reason === "unsupported" && vfs === "memory")
+    return { value: COPY.storageUnsupported, tone: "err" };
   if (vfs === "memory") return { value: COPY.storageMemory, tone: "err" };
   return { value: COPY.storageUnknown, tone: "ok" };
 }

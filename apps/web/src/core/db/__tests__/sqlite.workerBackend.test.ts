@@ -2,14 +2,13 @@
 /**
  * @status Active
  *
- * Стадія 1 спеки `docs/work/specs/sqlite-opfs-worker.md`: база у воркері
- * за прапорцем.
+ * Спека `docs/work/specs/sqlite-opfs-worker.md`: база у воркері.
  *
- * Тести стережуть саме те, що робить стадію злитною без зміни поведінки:
- * вимкнений прапорець НЕ чіпає воркер узагалі, а будь-яка невдача воркера
- * тихо повертає застосунок на наявний головнопотоковий шлях. Третій випадок
- * — увімкнений прапорець і робочий воркер — перевіряє, що запити справді
- * йдуть туди, а не лишаються на старому з'єднанні.
+ * Від 2026-11-18 (PR-T1, рішення власника Б) головнопотокового шляху немає
+ * зовсім: будь-яка невдача OPFS у воркері веде в базу `:memory:` теж у
+ * воркері, а sqlite-wasm на головному потоці не вантажиться за жодних умов.
+ * Тести стережуть саме це, плюс те, що старе kvvfs-сховище на такому шляху
+ * не відкривається і не позначається перелитим.
  */
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
@@ -24,25 +23,38 @@ vi.mock("../../observability/sentry.js", () => ({
 }));
 vi.mock("../sqliteWorkerClient.js", () => ({
   openSqliteInWorker: vi.fn(),
+  openSqliteMemoryInWorker: vi.fn(),
 }));
 vi.mock("../kvvfsHandoff.js", () => ({
   isHandoffDone: vi.fn(() => true),
+  hasKvvfsData: vi.fn(() => false),
   markHandoffDone: vi.fn(),
-  readKvvfsSnapshotBytes: vi.fn(async () => null),
+  readKvvfsSnapshot: vi.fn(() => null),
   pruneForeignPartitionRows: vi.fn(async () => 0),
 }));
 
-import { openSqliteInWorker } from "../sqliteWorkerClient.js";
 import {
+  openSqliteInWorker,
+  openSqliteMemoryInWorker,
+} from "../sqliteWorkerClient.js";
+import {
+  hasKvvfsData,
   isHandoffDone,
   markHandoffDone,
   pruneForeignPartitionRows,
-  readKvvfsSnapshotBytes,
+  readKvvfsSnapshot,
 } from "../kvvfsHandoff.js";
+import {
+  __resetActiveSqliteVfsForTests,
+  readActiveSqliteVfs,
+  readSqliteLegacyStoreKept,
+  readSqliteVfsFallbackReason,
+} from "../storageBackendState";
+import { setSentryTag } from "../../observability/sentry.js";
 
-function fakeWorkerConnection() {
+function fakeWorkerConnection(dbName = "sergeant-anon.db") {
   return {
-    dbName: "sergeant-anon.db",
+    dbName,
     grewBy: 0,
     imported: false,
     exec: vi.fn(async () => {}),
@@ -58,31 +70,27 @@ function fakeWorkerConnection() {
 beforeEach(() => {
   __resetSqliteDbForTests();
   __resetDbOwnershipForTests();
+  __resetActiveSqliteVfsForTests();
   vi.mocked(openSqliteInWorker).mockReset();
+  vi.mocked(openSqliteMemoryInWorker).mockReset();
+  vi.mocked(openSqliteMemoryInWorker).mockImplementation(async () =>
+    fakeWorkerConnection(":memory:"),
+  );
   vi.mocked(isHandoffDone).mockReturnValue(true);
+  vi.mocked(hasKvvfsData).mockReturnValue(false);
   vi.mocked(markHandoffDone).mockClear();
   vi.mocked(pruneForeignPartitionRows).mockClear();
-  vi.mocked(readKvvfsSnapshotBytes).mockClear();
-  vi.mocked(readKvvfsSnapshotBytes).mockResolvedValue(null);
+  vi.mocked(readKvvfsSnapshot).mockClear();
+  vi.mocked(readKvvfsSnapshot).mockReturnValue(null);
+  vi.mocked(setSentryTag).mockClear();
   sqlite3InitModuleMock.mockClear();
-  // Без OPFS на головному потоці — щоб фолбек був однозначно kvvfs і його
-  // не можна було сплутати з успіхом воркера.
-  Object.defineProperty(globalThis.navigator, "storage", {
-    value: undefined,
-    configurable: true,
-  });
-  Object.defineProperty(globalThis, "localStorage", {
-    value: {
-      getItem: () => null,
-      setItem: () => {},
-      removeItem: () => {},
-    },
-    configurable: true,
-  });
 });
 
 afterEach(() => {
   __resetSqliteDbForTests();
+  // PR-T1: що б не сталось у тесті, sqlite-wasm на головний потік не
+  // потрапляє. Раніше тут жили OPFS-SAH і kvvfs власною копією модуля.
+  expect(sqlite3InitModuleMock).not.toHaveBeenCalled();
 });
 
 describe("бекенд бази у воркері", () => {
@@ -103,8 +111,8 @@ describe("бекенд бази у воркері", () => {
 
   it("переливає стару базу один раз і ставить позначку ОСТАННЬОЮ", async () => {
     vi.mocked(isHandoffDone).mockReturnValue(false);
-    const bytes = new ArrayBuffer(512);
-    vi.mocked(readKvvfsSnapshotBytes).mockResolvedValue(bytes);
+    const snapshot = { size: 4096, journal: null, pages: ["page-1"] };
+    vi.mocked(readKvvfsSnapshot).mockReturnValue(snapshot);
     const conn = fakeWorkerConnection();
     vi.mocked(openSqliteInWorker).mockResolvedValue({
       ...conn,
@@ -114,7 +122,7 @@ describe("бекенд бази у воркері", () => {
     await getSqliteDb();
 
     expect(vi.mocked(openSqliteInWorker).mock.calls[0]?.[1]).toMatchObject({
-      importBytes: bytes,
+      importKvvfs: snapshot,
     });
     expect(pruneForeignPartitionRows).toHaveBeenCalled();
     expect(markHandoffDone).toHaveBeenCalledWith("anon");
@@ -141,21 +149,89 @@ describe("бекенд бази у воркері", () => {
 
     await getSqliteDb();
 
-    // Головне тут — що важкий WASM не вантажиться на головний потік
-    // щоразу заради байтів, які вже перелито.
-    expect(readKvvfsSnapshotBytes).not.toHaveBeenCalled();
+    // Головне тут — що мегабайти рядків `localStorage` не читаються щоразу
+    // заради сховища, яке вже перелито.
+    expect(readKvvfsSnapshot).not.toHaveBeenCalled();
     expect(pruneForeignPartitionRows).not.toHaveBeenCalled();
   });
 
-  it("невдача воркера повертає на kvvfs, поки партиція не перелита", async () => {
+  // PR-T1 (рішення власника Б): пристрій без OPFS у воркері більше не
+  // відкриває kvvfs. Старе сховище не перелите — і НЕ позначається
+  // перелитим, тож після оновлення браузера перелиття відбудеться.
+  it("без OPFS у воркері: памʼять у воркері, kvvfs не відкривається і не позначається", async () => {
     vi.mocked(isHandoffDone).mockReturnValue(false);
+    vi.mocked(hasKvvfsData).mockReturnValue(true);
     vi.mocked(openSqliteInWorker).mockRejectedValue(
       new Error("Missing required OPFS APIs."),
     );
 
     const handle = await getSqliteDb();
 
-    expect(handle.vfs).toBe("kvvfs");
+    expect(handle.vfs).toBe("memory");
+    expect(openSqliteMemoryInWorker).toHaveBeenCalledTimes(1);
+    expect(markHandoffDone).not.toHaveBeenCalled();
+    expect(readActiveSqliteVfs()).toBe("memory");
+    expect(readSqliteVfsFallbackReason()).toBe("unsupported");
+    expect(readSqliteLegacyStoreKept()).toBe(true);
+    expect(setSentryTag).toHaveBeenCalledWith("sqlite.kvvfs_stranded", "true");
+  });
+
+  it("без OPFS і без старого сховища банеру нема чого обіцяти про старі записи", async () => {
+    vi.mocked(isHandoffDone).mockReturnValue(false);
+    vi.mocked(hasKvvfsData).mockReturnValue(false);
+    vi.mocked(openSqliteInWorker).mockRejectedValue(
+      new Error("Missing required OPFS APIs."),
+    );
+
+    await getSqliteDb();
+
+    expect(readSqliteVfsFallbackReason()).toBe("unsupported");
+    expect(readSqliteLegacyStoreKept()).toBe(false);
+  });
+
+  it("таймаут — не «браузер не підтримує»: банер лишає пораду перезавантажити", async () => {
+    const hung = new Error("sqlite-worker: timed out");
+    hung.name = "SqliteWorkerOpenTimeoutError";
+    vi.mocked(openSqliteInWorker).mockRejectedValue(hung);
+
+    const handle = await getSqliteDb();
+
+    expect(handle.vfs).toBe("memory");
+    expect(readSqliteVfsFallbackReason()).toBeNull();
+  });
+
+  // Зіпсований знімок kvvfs кидає у воркері (quick_check), і відкриття
+  // OPFS падає цілком. Позначки немає — наступний запуск спробує знову;
+  // порожнього файлу, який назавжди відрізав би старі дані, теж немає.
+  it("збій перелиття не ставить позначку і не лишає людину без бази", async () => {
+    vi.mocked(isHandoffDone).mockReturnValue(false);
+    vi.mocked(readKvvfsSnapshot).mockReturnValue({
+      size: 4096,
+      journal: null,
+      pages: ["broken"],
+    });
+    vi.mocked(openSqliteInWorker).mockRejectedValue(
+      new Error("kvvfs-handoff: quick_check failed: corrupt"),
+    );
+
+    const handle = await getSqliteDb();
+
+    expect(handle.vfs).toBe("memory");
+    expect(markHandoffDone).not.toHaveBeenCalled();
+  });
+
+  it("якщо не піднявся навіть воркер — getSqliteDb відхиляється, а стан чесно «памʼять»", async () => {
+    vi.mocked(openSqliteInWorker).mockRejectedValue(
+      new Error("sqlite-worker: Worker is unavailable"),
+    );
+    vi.mocked(openSqliteMemoryInWorker).mockRejectedValue(
+      new Error("sqlite-worker: Worker is unavailable"),
+    );
+
+    await expect(getSqliteDb()).rejects.toThrow(/Worker is unavailable/);
+    expect(readActiveSqliteVfs()).toBe("memory");
+    expect(readSqliteVfsFallbackReason()).toBe("unsupported");
+    expect(setSentryTag).toHaveBeenCalledWith("sqlite.vfs", "none");
   });
 
   // Після перелиття старе сховище лишається на пристрої як знімок на момент
@@ -197,13 +273,14 @@ describe("бекенд бази у воркері", () => {
 
     expect(handle.vfs).toBe("memory");
     expect(openSqliteInWorker).not.toHaveBeenCalled();
+    expect(openSqliteMemoryInWorker).toHaveBeenCalledTimes(1);
     Object.defineProperty(globalThis.navigator, "locks", {
       value: undefined,
       configurable: true,
     });
   });
 
-  it("перечікує зайнятий SAH-пул замість того, щоб осісти на kvvfs", async () => {
+  it("перечікує зайнятий SAH-пул замість того, щоб осісти в памʼяті", async () => {
     // Прод 2026-09-21 (Chrome 151, Android): воркер попереднього
     // завантаження ще тримав хендли, перша спроба падала за 70 мс після
     // старту — і сесія лишалась на localStorage зі стелею ~5 МБ.

@@ -460,13 +460,20 @@ export default defineConfig(({ mode }) => {
               // `requestIdleCallback`, тож не повинен тягнутись у main.
               if (id.includes("/node_modules/web-vitals/"))
                 return "vendor-web-vitals";
-              // Ізольований chunk для sqlite-wasm + drizzle-orm —
-              // PR #015 storage roadmap. Пакет важкий (~700 KB brotli
-              // разом із .wasm) і потрібен лише фічам, які явно
-              // звертаються до клієнтської БД через `getSqliteDb()`.
-              // Без цього catch-all нижче загнав би його у головний
-              // `vendor`, який жадібно тягнеться головним bundle-ом
-              // (а sqlite-wasm зростив би його в 2× понад ліміт).
+              // Ізольований chunk для drizzle-orm (і sqlite-wasm, якщо він
+              // колись знову опиниться в головному графі) — PR #015
+              // storage roadmap. Потрібен лише фічам, які явно звертаються
+              // до клієнтської БД через `getSqliteDb()`. Без цього
+              // catch-all нижче загнав би його у головний `vendor`, який
+              // жадібно тягнеться головним bundle-ом.
+              //
+              // AI-CONTEXT: від 2026-11-18 (PR-T1, рішення власника Б)
+              // sqlite-wasm на головному потоці не імпортується взагалі —
+              // лише у воркері (`core/db/sqliteWorker.ts`, окремий білд
+              // нижче в `worker`). Тож тут лишається тільки drizzle; копія
+              // sqlite-wasm (~55 kB brotli) рахувалась у `size-limit`
+              // двічі. Повернення стереже
+              // `core/db/__tests__/sqlite.mainThreadNoWasm.test.ts`.
               if (
                 id.includes("/node_modules/@sqlite.org/sqlite-wasm/") ||
                 id.includes("/node_modules/drizzle-orm/")

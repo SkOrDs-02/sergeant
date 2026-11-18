@@ -31,6 +31,11 @@ import {
   sqlite3InitModuleMock,
 } from "./sqlite-wasm-fake";
 
+import {
+  installInProcessSqliteWorker,
+  uninstallInProcessSqliteWorker,
+} from "./inProcessSqliteWorker";
+
 vi.mock("@sqlite.org/sqlite-wasm", () => import("./sqlite-wasm-fake"));
 vi.mock("../../observability/sentry.js", () => ({
   addSentryBreadcrumb: vi.fn(),
@@ -75,6 +80,7 @@ function disableOpfs() {
 describe("setSqliteUser — no-op and edge cases", () => {
   beforeEach(() => {
     __resetSqliteDbForTests();
+    installInProcessSqliteWorker();
     createdOpfsFilenames.length = 0;
     opfsUnlinkMock.mockClear();
     enableOpfs();
@@ -82,6 +88,7 @@ describe("setSqliteUser — no-op and edge cases", () => {
 
   afterEach(() => {
     __resetSqliteDbForTests();
+    uninstallInProcessSqliteWorker();
     vi.restoreAllMocks();
   });
 
@@ -138,6 +145,7 @@ describe("setSqliteUser — no-op and edge cases", () => {
 describe("wipeSqliteDb — error resilience", () => {
   beforeEach(() => {
     __resetSqliteDbForTests();
+    installInProcessSqliteWorker();
     createdOpfsFilenames.length = 0;
     opfsUnlinkMock.mockClear();
     enableOpfs();
@@ -149,6 +157,7 @@ describe("wipeSqliteDb — error resilience", () => {
 
   afterEach(() => {
     __resetSqliteDbForTests();
+    uninstallInProcessSqliteWorker();
     vi.restoreAllMocks();
   });
 
@@ -201,6 +210,7 @@ describe("wipeSqliteDb — error resilience", () => {
 describe("getSqliteDb — error path and retry", () => {
   beforeEach(() => {
     __resetSqliteDbForTests();
+    installInProcessSqliteWorker();
     createdOpfsFilenames.length = 0;
     installOpfsSAHPoolVfsMock.mockClear();
     enableOpfs();
@@ -208,12 +218,17 @@ describe("getSqliteDb — error path and retry", () => {
 
   afterEach(() => {
     __resetSqliteDbForTests();
+    uninstallInProcessSqliteWorker();
     vi.restoreAllMocks();
   });
 
   it("clears the in-flight promise on init error so the next call can retry", async () => {
-    // Make the first init fail — the module-level init throws.
-    sqlite3InitModuleMock.mockRejectedValueOnce(new Error("WASM load failed"));
+    // Make the first init fail — both the OPFS open and the in-memory
+    // fallback run `sqlite3InitModule()` inside the worker (PR-T1), so a
+    // dead module fails both and `getSqliteDb()` must reject.
+    sqlite3InitModuleMock
+      .mockRejectedValueOnce(new Error("WASM load failed"))
+      .mockRejectedValueOnce(new Error("WASM load failed"));
 
     await expect(getSqliteDb()).rejects.toThrow("WASM load failed");
 
@@ -233,6 +248,7 @@ describe("getSqliteDb — error path and retry", () => {
 describe("getSqliteDb — orphan handle on user switch mid-init", () => {
   beforeEach(() => {
     __resetSqliteDbForTests();
+    installInProcessSqliteWorker();
     createdOpfsFilenames.length = 0;
     // Use in-memory VFS so we avoid relying on OPFS mock state from prior tests.
     disableOpfs();
@@ -248,6 +264,7 @@ describe("getSqliteDb — orphan handle on user switch mid-init", () => {
 
   afterEach(() => {
     __resetSqliteDbForTests();
+    uninstallInProcessSqliteWorker();
     Object.defineProperty(globalThis, "localStorage", {
       value: undefined,
       configurable: true,
@@ -283,6 +300,7 @@ describe("getSqliteDb — orphan handle on user switch mid-init", () => {
 describe("makeProxyDriver — get mode via Drizzle .get()", () => {
   beforeEach(() => {
     __resetSqliteDbForTests();
+    installInProcessSqliteWorker();
     createdOpfsFilenames.length = 0;
     // Use in-memory VFS so we can run real SQL via the roundtrip fake.
     disableOpfs();
@@ -298,6 +316,7 @@ describe("makeProxyDriver — get mode via Drizzle .get()", () => {
 
   afterEach(() => {
     __resetSqliteDbForTests();
+    uninstallInProcessSqliteWorker();
     vi.restoreAllMocks();
     Object.defineProperty(globalThis, "localStorage", {
       value: undefined,
