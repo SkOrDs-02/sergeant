@@ -1,7 +1,7 @@
 import { createHmac } from "node:crypto";
 import express from "express";
 import request from "supertest";
-import { getIp as betterAuthGetIp } from "better-auth/api";
+import { getIP as betterAuthGetIp } from "better-auth/api";
 import { fromNodeHeaders } from "better-auth/node";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
