@@ -117,7 +117,7 @@ export function ReminderPresets({
           </IconButton>
         </div>
       ))}
-      {showDeliveryHint && (
+      {showDeliveryHint && !needsInstall && (
         <div
           role="status"
           className="flex flex-wrap items-center gap-x-3 gap-y-1.5 border-t border-line pt-3"

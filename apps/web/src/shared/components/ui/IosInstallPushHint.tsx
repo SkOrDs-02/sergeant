@@ -22,8 +22,12 @@ export function IosInstallPushHint({ className }: { className?: string }) {
         className,
       )}
     >
-      <p className="text-style-label font-semibold">{copy.title}</p>
-      <p className="text-style-body mt-0.5">{copy.body}</p>
+      <p className="text-style-label">{copy.title}</p>
+      {/* AI-NOTE: caption навмисно — це опис під назвою, як опис рядка-тумблера
+          в «Сповіщеннях» (`ToggleRow`: label + caption). Два короткі речення
+          під заголовком, а не абзац, який читають окремо; body робив тіло
+          більшим за заголовок і блок удвічі вищим за мокап. */}
+      <p className="text-style-caption mt-0.5 leading-relaxed">{copy.body}</p>
     </div>
   );
 }

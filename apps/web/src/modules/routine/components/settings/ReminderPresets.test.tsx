@@ -182,6 +182,14 @@ describe("ReminderPresets", () => {
       ).toBeInTheDocument();
       expect(routineMock.updatePref).not.toHaveBeenCalled();
       expect(toastMock.warning).not.toHaveBeenCalled();
+      // Дія, що нічого не дає, зникає: ні кнопки, ні рядка про «вимкнені
+      // нагадування» — лишається лише підказка встановлення.
+      expect(
+        screen.queryByRole("button", { name: "Увімкнути нагадування" }),
+      ).toBeNull();
+      expect(
+        screen.queryByText("Нагадування вимкнені в налаштуваннях"),
+      ).toBeNull();
     });
 
     it("показує підказку про дозвіл, коли тумблер увімкнений, а дозволу немає", () => {
