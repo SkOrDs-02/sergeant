@@ -205,3 +205,88 @@ describe("HabitStreakCanvas", () => {
     expect(screen.getByText(/Відміток ще немає/)).toBeInTheDocument();
   });
 });
+
+/** Ключі за N днів поспіль, що закінчуються на `endKey` включно. */
+function runOfDays(endKey: string, count: number): string[] {
+  const out: string[] = [];
+  const d = new Date(`${endKey}T12:00:00`);
+  for (let i = 0; i < count; i++) {
+    out.push(d.toISOString().slice(0, 10));
+    d.setDate(d.getDate() - 1);
+  }
+  return out.sort();
+}
+
+// Р-4 (а), рішення власника 2026-11-18: запас заморозок видно під серією.
+describe("HabitStreakCanvas: заморозки в запасі", () => {
+  const DAILY = weekdaysHabit({ recurrence: "daily", startDate: "2026-07-01" });
+
+  it("14 виконань поспіль: 3 з 4, звідки вони і коли наступна", () => {
+    render(
+      <HabitStreakCanvas
+        habit={DAILY}
+        completions={runOfDays(TODAY, 14)}
+        todayKey={TODAY}
+      />,
+    );
+    expect(screen.getByText("Заморозок у запасі: 3 з 4")).toBeInTheDocument();
+    expect(
+      screen.getByText(
+        "1 стартова і 2 за 14 виконань. Наступна через 7 виконань.",
+      ),
+    ).toBeInTheDocument();
+  });
+
+  it("нова звичка без відміток уже має одну заморозку", () => {
+    render(
+      <HabitStreakCanvas habit={DAILY} completions={[]} todayKey={TODAY} />,
+    );
+    expect(screen.getByText("Заморозок у запасі: 1 з 4")).toBeInTheDocument();
+    expect(
+      screen.getByText("1 стартова. Наступна через 7 виконань."),
+    ).toBeInTheDocument();
+  });
+
+  it("на стелі наступної не обіцяє", () => {
+    render(
+      <HabitStreakCanvas
+        habit={weekdaysHabit({ recurrence: "daily", startDate: "2026-06-01" })}
+        completions={runOfDays(TODAY, 30)}
+        todayKey={TODAY}
+      />,
+    );
+    expect(screen.getByText("Заморозок у запасі: 4 з 4")).toBeInTheDocument();
+    expect(
+      screen.getByText(
+        "1 стартова і 3 за 30 виконань. Більше не накопичується.",
+      ),
+    ).toBeInTheDocument();
+  });
+
+  it("використана заморозка зменшує запас", () => {
+    // 5 виконаних, 08-01 без відмітки, сьогодні виконано: стартова витрачена.
+    render(
+      <HabitStreakCanvas
+        habit={weekdaysHabit({ recurrence: "daily", startDate: "2026-07-27" })}
+        completions={[...runOfDays("2026-07-31", 5), TODAY]}
+        todayKey={TODAY}
+      />,
+    );
+    expect(screen.getByText("Заморозок у запасі: 0 з 4")).toBeInTheDocument();
+    expect(
+      screen.getByText("1 стартова. Наступна через 1 виконання."),
+    ).toBeInTheDocument();
+    expect(screen.getByText(/6 днів поспіль/)).toBeInTheDocument();
+  });
+
+  it("легенда описує правило зі стартовою заморозкою", () => {
+    render(
+      <HabitStreakCanvas habit={DAILY} completions={[]} todayKey={TODAY} />,
+    );
+    expect(
+      screen.getByText(
+        "Заморозка зберігає серію: 1 на старті і ще 1 за кожні 7 виконань, до 4. Два дні поспіль не прощаються.",
+      ),
+    ).toBeInTheDocument();
+  });
+});

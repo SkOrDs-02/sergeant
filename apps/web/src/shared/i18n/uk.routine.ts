@@ -132,8 +132,21 @@ export const routinePageMessages = {
     legendSkipTitle: "Не зміг, із причиною",
     legendSkipBody: "Заявлений пропуск виходить зі знаменника серії.",
     legendGraceTitle: "Без відмітки",
+    // Числа підставляються з констант домену (`flexStreak.ts`), щоб текст
+    // не розійшовся з правилом мовчки.
     legendGraceBody:
-      "Без відмітки. Заморозка зберігає серію: 1 за 7 виконань, до 4; два дні поспіль не прощаються.",
+      "Заморозка зберігає серію: {start} на старті і ще 1 за кожні {every} виконань, до {max}. Два дні поспіль не прощаються.",
+    // Запас заморозок під серією (Р-4 (а), рішення власника 2026-11-18).
+    graceStock: "Заморозок у запасі: {remaining} з {max}",
+    graceSourceStart: "{start} стартова.",
+    graceSourceStartAndDays:
+      "{start} стартова і {earned} за {days} {doneForm}.",
+    graceNext: "Наступна через {days} {doneForm}.",
+    graceAtCap: "Більше не накопичується.",
+    // Форми слова «виконання» після числа: 1/2–4 — «виконання», 5+ — «виконань».
+    doneFormOne: "виконання",
+    doneFormFew: "виконання",
+    doneFormMany: "виконань",
     legendPauseTitle: "Планована пауза",
     legendPauseBody: "Заявлена наперед: не ламає й не подовжує серію.",
     legendOffTitle: "Не за розкладом",

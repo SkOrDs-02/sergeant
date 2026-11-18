@@ -20,10 +20,14 @@
  * зникає — тому тут вона є, окремим тихим (пунктирним) виглядом, без
  * власного пункту в легенді.
  */
-import type {
-  FlexibleStreakDayCell,
-  HabitSkip,
-  StreakDayKind,
+import {
+  GRACE_EARN_EVERY_DAYS,
+  GRACE_START_BUDGET,
+  MAX_GRACE_BUDGET,
+  type FlexibleStreakBreakdown,
+  type FlexibleStreakDayCell,
+  type HabitSkip,
+  type StreakDayKind,
 } from "@sergeant/routine-domain";
 import { useMemo } from "react";
 import { pluralDays, pluralUa } from "@sergeant/shared";
@@ -51,6 +55,43 @@ export interface HabitStreakCanvasProps {
 const CELL_BASE = "w-6 h-7 shrink-0 rounded-[3px]";
 
 const GRACE_FORMS = { one: "заморозка", few: "заморозки", many: "заморозок" };
+
+const DONE_FORMS = {
+  one: T.doneFormOne,
+  few: T.doneFormFew,
+  many: T.doneFormMany,
+};
+
+/** Підставляє `{key}`-плейсхолдери шаблону каталогу. */
+function fill(template: string, vars: Record<string, string | number>): string {
+  return template.replace(/\{(\w+)\}/g, (match, key: string) =>
+    key in vars ? String(vars[key]) : match,
+  );
+}
+
+/**
+ * Рядок «звідки заморозки»: стартова, зароблені виконаннями і коли наступна.
+ * Числа беремо з розбору серії, а не з констант, бо стеля обрізає зароблене.
+ */
+function graceSourceLine(b: FlexibleStreakBreakdown): string {
+  const source =
+    b.graceFromDays > 0
+      ? fill(T.graceSourceStartAndDays, {
+          start: b.graceFromStart,
+          earned: b.graceFromDays,
+          days: b.days,
+          doneForm: pluralUa(b.days, DONE_FORMS),
+        })
+      : fill(T.graceSourceStart, { start: b.graceFromStart });
+  const tail =
+    b.daysToNextGrace === null
+      ? T.graceAtCap
+      : fill(T.graceNext, {
+          days: b.daysToNextGrace,
+          doneForm: pluralUa(b.daysToNextGrace, DONE_FORMS),
+        });
+  return `${source} ${tail}`;
+}
 
 function formatCellDate(key: string): string {
   // Парсимо готовий day-key на візуальну мітку — не читаємо годинник
@@ -161,7 +202,15 @@ interface LegendRow {
 const LEGEND: LegendRow[] = [
   { kind: "done", title: T.legendDoneTitle, body: T.legendDoneBody },
   { kind: "skip", title: T.legendSkipTitle, body: T.legendSkipBody },
-  { kind: "miss", title: T.legendGraceTitle, body: T.legendGraceBody },
+  {
+    kind: "miss",
+    title: T.legendGraceTitle,
+    body: fill(T.legendGraceBody, {
+      start: GRACE_START_BUDGET,
+      every: GRACE_EARN_EVERY_DAYS,
+      max: MAX_GRACE_BUDGET,
+    }),
+  },
   { kind: "pause", title: T.legendPauseTitle, body: T.legendPauseBody },
   { kind: "off", title: T.legendOffTitle, body: T.legendOffBody },
 ];
@@ -242,11 +291,24 @@ export function HabitStreakCanvas({
       <SectionHeading as="h3" size="lg" className="mb-2">
         {T.heading}
       </SectionHeading>
-      <p className="text-style-label text-muted mb-3">
+      <p className="text-style-label text-muted mb-2">
         {days > 0
           ? `${days} ${pluralDays(days)} ${T.daysSuffix}${graceLine}`
           : T.notStarted}
       </p>
+      {breakdown.graceMax > 0 ? (
+        <div className="mb-3">
+          <p className="text-style-label text-text font-semibold">
+            {fill(T.graceStock, {
+              remaining: breakdown.graceRemaining,
+              max: breakdown.graceMax,
+            })}
+          </p>
+          <p className="text-style-label text-muted">
+            {graceSourceLine(breakdown)}
+          </p>
+        </div>
+      ) : null}
 
       {cells.length === 0 ? (
         <p className="text-style-body text-subtle">{T.emptyHistory}</p>
