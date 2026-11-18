@@ -231,11 +231,10 @@ const envSchema = z.object({
 
   AI_QUOTA_FOUNDER_IDS: founderIdsFromEnv("AI_QUOTA_FOUNDER_IDS"),
 
-  // AI-LEGACY: expires 2026-11-30 — рубильник закритого доступу після бети;
-  // прибирання — https://github.com/SkOrDs-02/sergeant/blob/97e477e90b711b210184ff2b9426b4452c1cd43f/docs/work/specs/beta-launch/README.md § Що прибрати.
-  // Кома-розділений список `userId`, яким дозволено входити; порожнє
-  // значення лишає продукт відкритим. Логіка — `auth/accessGate.ts`.
-  ACCESS_ALLOWLIST_USER_IDS: z.string().optional(),
+  // `ACCESS_ALLOWLIST_USER_IDS` прибрано 2026-11-18: рубильник закритого
+  // доступу знято разом із бетою (рішення власника, PR-T8 аудиту
+  // 2026-09-13). Схема не `.strict()`, тож змінна, що ще лишилась у
+  // Coolify, просто ігнорується.
 
   AI_TIERED_PRO_ENABLED: boolFromEnv(true),
 
