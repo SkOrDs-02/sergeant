@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "current": "8.10.0",
+  "current": "8.11.0",
   "versions": {
     "0.1.0": {
       "releasedAt": "2026-06-29",
@@ -850,6 +850,14 @@
       "releasedAt": "2026-11-18",
       "changes": [
         "sergeant-module-sync: у журнал рішень додано два записи від 2026-11-18 про бампи SYNC_PROTOCOL_VERSION 1 -> 2 (routine_habit_counts) і 2 -> 3 (fizruk_exercise_prefs, підходи на час і дистанцію) з поведінкою нового клієнта проти старого сервера та залишковим ризиком"
+      ],
+      "agentsTestedWith": [],
+      "passRateBaseline": null
+    },
+    "8.11.0": {
+      "releasedAt": "2026-11-18",
+      "changes": [
+        "AGENTS.md § Performance budgets: стеля JS (size-limit) 1.55 -> 1.61 MB за дві хвилі продуктових фіч гілки claude/awesome-goodall-8s5uky (+32.8 kB brotli, без нових vendor-пакетів); eager 268.7 -> 262.9 kB без руху стелі 268 (useRoutePrefetch з критичного шляху). Заміри й розбір у bundle-budget-ratchet-log.md 2026-11-18"
       ],
       "agentsTestedWith": [],
       "passRateBaseline": null

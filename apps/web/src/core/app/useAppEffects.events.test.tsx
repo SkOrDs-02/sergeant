@@ -1,5 +1,5 @@
 /** @vitest-environment jsdom */
-import { act, renderHook } from "@testing-library/react";
+import { act, renderHook, waitFor } from "@testing-library/react";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 const {
@@ -100,9 +100,19 @@ describe("useAppEffects — global event bridges", () => {
     vi.restoreAllMocks();
   });
 
-  it("kicks off prefetch on mount", () => {
+  it("kicks off prefetch on mount", async () => {
     renderHook(() => useAppEffects(makeDeps()));
-    expect(prefetchHubMock).toHaveBeenCalled();
+    // `useRoutePrefetch` вантажиться через `import()` (eager-бюджет), тож
+    // префетч стартує після мікротаски, а не синхронно на маунті.
+    await waitFor(() => expect(prefetchHubMock).toHaveBeenCalled());
+  });
+
+  it("skips the prefetch when unmounted before the chunk resolves", async () => {
+    const { unmount } = renderHook(() => useAppEffects(makeDeps()));
+    unmount();
+    await import("../lib/useRoutePrefetch");
+    await Promise.resolve();
+    expect(prefetchHubMock).not.toHaveBeenCalled();
   });
 
   it("registers the openChat hub-bus listener", () => {
