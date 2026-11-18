@@ -286,6 +286,23 @@ describe("SessionView — exercise screen", () => {
     expect(onOpenItem).toHaveBeenCalledWith("a");
   });
 
+  it("без ілюстрації в каталозі чи при збої завантаження порожнього слота немає (зйомка 2026-11-18)", () => {
+    renderView({ focusItemId: "b" });
+    // id «b» у каталозі ілюстрацій немає (як «Віс на перекладині»).
+    expect(document.querySelector("[data-exercise-thumb]")).toBeNull();
+    cleanup();
+    renderView({
+      focusItemId: "deadlift",
+      activeWorkout: workout({
+        items: [item("deadlift", "Станова тяга", [[0, 0]])],
+      }),
+    });
+    const thumb = document.querySelector("[data-exercise-thumb]");
+    expect(thumb).not.toBeNull();
+    fireEvent.error(thumb!.querySelector("img")!);
+    expect(document.querySelector("[data-exercise-thumb]")).toBeNull();
+  });
+
   it("сусідні вправи виглядають як дія: шеврон у бік переходу (зйомка 2026-11-18)", () => {
     renderView({ focusItemId: "b" });
     const next = screen.getByRole("button", {

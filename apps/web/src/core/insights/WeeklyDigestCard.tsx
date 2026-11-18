@@ -375,28 +375,27 @@ function DigestContent({
             </div>
           </div>
 
-          {!expanded && (
-            <div className="px-4 pb-3">
-              <button
-                type="button"
-                onClick={() => setExpandedTracked(true)}
-                className="w-full h-9 min-h-[44px] rounded-lg border border-line text-style-label text-muted hover:text-text hover:bg-panelHi transition-colors focus-ring"
-              >
-                Переглянути звіт
-              </button>
-            </div>
-          )}
-          {expanded && (
-            <div className="px-4 pb-3 border-t border-line pt-2">
-              <button
-                type="button"
-                onClick={() => setExpandedTracked(false)}
-                className="w-full h-9 min-h-[44px] rounded-lg border border-line text-style-label text-muted hover:text-text hover:bg-panelHi transition-colors focus-ring"
-              >
-                Сховати звіт
-              </button>
-            </div>
-          )}
+          {/* Тиха дія з шевроном, як «Поточний тиждень»: сіра обведена
+              кнопка читалась вимкненою (зйомка 2026-11-18). */}
+          <div
+            className={cn("px-4 pb-3", expanded && "border-t border-line pt-2")}
+          >
+            <Button
+              variant="text"
+              aria-expanded={expanded}
+              onClick={() => setExpandedTracked(!expanded)}
+              className="-ml-2"
+            >
+              {expanded
+                ? messages.sergeant.weeklyDigestHideReport
+                : messages.sergeant.weeklyDigestViewReport}
+              <Icon
+                name={expanded ? "chevron-up" : "chevron-down"}
+                size="md"
+                aria-hidden
+              />
+            </Button>
+          </div>
         </>
       )}
     </DataState>
@@ -518,31 +517,36 @@ export function WeeklyDigestCard({
                   {messages.sergeant.weeklyDigestUnread}
                 </Badge>
               )}
-              {/* Градація впевненості (Хвиля 4, hub-coach § G2): summary/
-                comment/recommendations — суцільний вільний текст моделі,
-                тож рівень «припущення» проставляється детерміновано на
-                рівні картки (не потребує розбору речень). */}
+            </div>
+            {/* Метадані одним рядком під заголовком: тиждень · дата
+                генерації · «Припущення» (зйомка 2026-11-18: бейдж і дата
+                були розкидані по шапці). */}
+            <div
+              data-digest-meta
+              className="mt-0.5 flex flex-wrap items-center gap-x-2 gap-y-1 text-style-caption text-muted"
+            >
+              <span>
+                {loading ? messages.sergeant.weeklyDigestPreparing : weekRange}
+                {/* Той самий форматер місяця, що й діапазон тижня
+                    (`getWeekRange` → `formatDayRangeUk`). */}
+                {!loading && digest?.generatedAt
+                  ? ` · ${formatDayKeyUk(
+                      deviceDayKey(new Date(digest.generatedAt)),
+                      { relative: false, todayKey: deviceDayKey() },
+                    )}`
+                  : null}
+              </span>
+              {/* Градація впевненості (Хвиля 4, hub-coach § G2): тіло звіту —
+                  суцільний вільний текст моделі, тож рівень «припущення»
+                  стоїть на рівні картки. */}
               {!loading && hasDigestBody(digest) && (
                 <Badge variant="neutral" size="xs">
                   {messages.sergeant.insightAssumptionBadge}
                 </Badge>
               )}
             </div>
-            <div className="text-style-caption text-muted mt-0.5">
-              {loading ? messages.sergeant.weeklyDigestPreparing : weekRange}
-            </div>
           </div>
           <div className="flex items-center gap-1.5 shrink-0">
-            {digest?.generatedAt && (
-              <span className="text-style-caption text-subtle">
-                {/* Той самий форматер місяця, що й діапазон тижня
-                    (`getWeekRange` → `formatDayRangeUk`). */}
-                {formatDayKeyUk(deviceDayKey(new Date(digest.generatedAt)), {
-                  relative: false,
-                  todayKey: deviceDayKey(),
-                })}
-              </span>
-            )}
             {history.length > 1 && (
               <button
                 type="button"

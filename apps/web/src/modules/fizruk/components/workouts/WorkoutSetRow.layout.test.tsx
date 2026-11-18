@@ -72,6 +72,22 @@ describe("WorkoutSetRow · сітка колонок", () => {
     },
   );
 
+  it.each<ExerciseMeasure>(["time", "reps"])(
+    "%s: єдине поле бере всю ширину полів, без порожньої заглушки (зйомка 2026-11-18, «20–4(»)",
+    (measure) => {
+      const { container } = renderRows(measure);
+      const row = container.querySelector("[data-set-row]");
+      const header = container.querySelector("[data-set-header]");
+      for (const el of [row, header]) {
+        expect(el).not.toBeNull();
+        const grow = Array.from(el!.children).filter((c) =>
+          c.className.split(/\s+/).includes("flex-1"),
+        );
+        expect(grow).toHaveLength(1);
+      }
+    },
+  );
+
   it("колонка RPE у заголовку на coarse така сама, як тригер у рядку", () => {
     const { container } = renderRows("weight_reps");
     const headerRpe = container.querySelector('[data-set-slot="rpe"]');

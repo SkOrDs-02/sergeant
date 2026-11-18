@@ -40,6 +40,19 @@ describe("WorkoutSummaryView", () => {
     expect(screen.getByText("Обʼєм")).toBeInTheDocument();
   });
 
+  it("підзаголовок: дата й тривалість через один « · » (зйомка 2026-11-18)", () => {
+    render(
+      <WorkoutSummaryView
+        workout={makeWorkout()}
+        onRepeat={vi.fn()}
+        onClose={vi.fn()}
+        onDelete={vi.fn()}
+      />,
+    );
+    const line = screen.getByText(/60 хв 0 с/).closest("div");
+    expect(line?.textContent).toMatch(/\d{2}:\d{2} · 60 хв 0 с$/);
+  });
+
   // PR-Z3 (аудит 2026-09-13, хвиля 6): "Обʼєм" тут — `вага_кг × повторення`
   // (`computeWorkoutTonnageKg`), не маса. Канонічний підпис "кг×повт",
   // уніфікований з `WorkoutFinishSheets` і `RecentWorkoutsSection`.

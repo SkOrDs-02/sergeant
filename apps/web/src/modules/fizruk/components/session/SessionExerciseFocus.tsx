@@ -2,6 +2,7 @@
  * Last validated: 2026-09-11
  * Status: Active
  */
+import { useState } from "react";
 import type {
   Workout,
   WorkoutGroup,
@@ -99,6 +100,7 @@ export function SessionExerciseFocus({
   const image = it.exerciseId
     ? FizrukData.exerciseImagePaths(it.exerciseId)[0]
     : undefined;
+  const [failedImage, setFailedImage] = useState<string | null>(null);
 
   const subline = itemUsesSetRows(it)
     ? `${ss.exerciseOf} ${idx + 1} ${ss.of} ${items.length} · ${setsProgressLabel(countDoneSets(it), sets.length)}`
@@ -155,16 +157,24 @@ export function SessionExerciseFocus({
         className="rounded-panel bg-panel p-4"
       >
         <div className="flex items-center gap-3">
-          <div className="flex h-12 w-12 shrink-0 items-center justify-center overflow-hidden rounded-lg border border-line bg-panelHi">
-            {image ? (
+          {/* Слот лише з ілюстрацією: для вправи поза каталогом ілюстрацій
+              (`exerciseImagePaths` → []) чи при збої завантаження тут був
+              порожній білий квадрат (зйомка 2026-11-18, «Віс на
+              перекладині»). Так само `ExerciseDetailSheet` ховає фото. */}
+          {image && failedImage !== image ? (
+            <div
+              data-exercise-thumb
+              className="flex h-12 w-12 shrink-0 items-center justify-center overflow-hidden rounded-lg border border-line bg-panelHi"
+            >
               <img
                 src={image}
                 alt=""
                 className="h-full w-full object-cover"
                 loading="lazy"
+                onError={() => setFailedImage(image)}
               />
-            ) : null}
-          </div>
+            </div>
+          ) : null}
           <div className="min-w-0 flex-1">
             <h2
               id={`session-exercise-${it.id}`}

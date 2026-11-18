@@ -48,9 +48,12 @@ export function WorkoutSummaryTimeEditor({
 
   if (!open) {
     return (
+      // Тиха дія рядка (`variant="text"`, `-ml-2`): текст стає на лінію
+      // заголовка й дати, як інші дії в рядку. `ghost` з `px-5` відсував
+      // «Змінити час» на 20 px убік (зйомка 2026-11-18).
       <Button
-        variant="ghost"
-        className="mt-2"
+        variant="text"
+        className="-ml-2 mt-1"
         type="button"
         onClick={() => setOpen(true)}
       >

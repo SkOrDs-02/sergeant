@@ -139,11 +139,9 @@ export function WorkoutSummaryView({
               hour: "2-digit",
               minute: "2-digit",
             })}
-            {summary ? (
-              <span className="ml-2">
-                · {formatDurShort(summary.durationSec)}
-              </span>
-            ) : null}
+            {/* Один « · » без відступу: `ml-2` разом із пробілом давав
+                подвійний проміжок «19:40  · 10 с» (зйомка 2026-11-18). */}
+            {summary ? ` · ${formatDurShort(summary.durationSec)}` : null}
           </div>
           <WorkoutMomentLine workoutId={workout.id} />
           {onUpdateTimes ? (

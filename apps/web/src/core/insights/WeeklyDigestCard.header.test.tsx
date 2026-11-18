@@ -55,8 +55,27 @@ describe("WeeklyDigestCard — шапка", () => {
 
   it("дата генерації тим самим форматом місяця, що й діапазон тижня", () => {
     render(<WeeklyDigestCard />);
-    expect(screen.getByText("9–15 лис 2026")).toBeInTheDocument();
-    expect(screen.getByText("16 лис")).toBeInTheDocument();
+    // Діапазон і дата тепер в одному рядку метаданих (тест нижче).
+    expect(screen.getByText("9–15 лис 2026 · 16 лис")).toBeInTheDocument();
     expect(screen.queryByText(/лист\./)).toBeNull();
+  });
+
+  it("метадані одним рядком під заголовком: тиждень · дата · «Припущення»", () => {
+    render(<WeeklyDigestCard />);
+    const meta = document.querySelector("[data-digest-meta]");
+    expect(meta).not.toBeNull();
+    expect(meta?.textContent).toMatch(/9–15 лис 2026 · 16 лис/);
+    expect(meta).toContainElement(screen.getByText("Припущення"));
+    // У рядку заголовка лишається лише стан «Новий звіт».
+    const titleRow = screen.getByText("Звіт тижня").parentElement;
+    expect(titleRow).not.toContainElement(screen.getByText("Припущення"));
+  });
+
+  it("«Переглянути звіт» виглядає активною дією: шеврон, aria-expanded, не сіра", () => {
+    render(<WeeklyDigestCard />);
+    const view = screen.getByRole("button", { name: "Переглянути звіт" });
+    expect(view).toHaveAttribute("aria-expanded", "false");
+    expect(view.querySelector("svg")).not.toBeNull();
+    expect(view.className).not.toMatch(/\btext-muted\b/);
   });
 });

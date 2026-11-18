@@ -109,8 +109,11 @@ export function isSetDone(
  */
 const TRAILING_SLOT_W = "w-9 pointer-coarse:w-11";
 
+// `px-2`, не `px-3`: поле секунд чи метрів мусить вміщати плейсхолдер
+// діапазону плану («20–40») і чотиризначне число; з `px-3` у двопольному
+// рядку на 390 px він різався до «20–4(» (зйомка 2026-11-18).
 const INPUT_CLASS =
-  "bg-bg px-3 font-semibold tabular-nums placeholder:font-normal read-only:opacity-70 read-only:cursor-not-allowed";
+  "bg-bg px-2 font-semibold tabular-nums placeholder:font-normal read-only:opacity-70 read-only:cursor-not-allowed";
 
 type FieldKey = "weight" | "reps" | "distance" | "time";
 
@@ -314,6 +317,7 @@ export function WorkoutSetRow({
           isCurrent && !isReadOnly && "bg-panelHi",
         )}
         data-current={isCurrent && !isReadOnly ? "true" : undefined}
+        data-set-row
       >
         <span
           className={cn(
@@ -346,7 +350,6 @@ export function WorkoutSetRow({
             intInput(k)
           ),
         )}
-        {fields.length === 1 && <div className="min-w-0 flex-1" aria-hidden />}
         {onChangeRpe && (
           <WorkoutSetRpeMenu
             setNumber={setNumber}
@@ -425,14 +428,17 @@ export function WorkoutSetColumnHeader({
           ? mr.columnSec
           : mr.columnMeters;
   return (
-    <div className="flex items-center gap-2 px-1 -mx-1" aria-hidden>
+    <div
+      className="flex items-center gap-2 px-1 -mx-1"
+      aria-hidden
+      data-set-header
+    >
       <span className="w-6 shrink-0" />
       {fields.map((k) => (
         <span key={k} className="flex-1 px-3 text-style-caption text-subtle">
           {caption(k)}
         </span>
       ))}
-      {fields.length === 1 && <span className="flex-1" />}
       {/* RPE column — icon-only trigger in the row below, no caption here
           (mirrors the check/trash slots, which also caption nothing). */}
       <span data-set-slot="rpe" className={cn("shrink-0", TRAILING_SLOT_W)} />
