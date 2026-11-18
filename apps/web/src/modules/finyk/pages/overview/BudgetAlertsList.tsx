@@ -24,7 +24,8 @@ interface BudgetAlertsListProps {
 }
 
 /**
- * Список плашок-алертів про перевищення 60%/100% ліміту бюджету.
+ * Список плашок-алертів ліміту бюджету за єдиною шкалою: попередження від
+ * 80%, перевищення від 100% (`LIMIT_THRESHOLDS`, PR-F8, 2026-11-18).
  * Overview уже порахував і відфільтрував `budgetAlerts` (одне джерело стану
  * ліміту, як на Плануванні й у хабі); тут лише рендер.
  */
@@ -73,7 +74,7 @@ const BudgetAlertsListImpl = function BudgetAlertsList({
                 formatLimitUsedLabel(usage.pctRaw)
               ) : (
                 <>
-                  {pct}% {messages.finyk.budgetOverSixtyPercent}
+                  {pct}% {messages.finyk.budgetNearLimit}
                 </>
               )}
             </span>

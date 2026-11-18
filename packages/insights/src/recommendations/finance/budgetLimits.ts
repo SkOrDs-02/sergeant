@@ -57,7 +57,11 @@ export const budgetLimitsRule: Rule<FinanceContext> = {
           // sheet, щоб дописати їх, поки деталі свіжі в памʼяті.
           pwaAction: "add_expense" as const,
         });
-      } else if (usage.pctRaw >= 90) {
+      } else if (usage.warnLimit) {
+        // Поріг попередження — спільна шкала ліміту з finyk-domain
+        // (`LIMIT_THRESHOLDS.warn`, 80%), а не власні 90%: рішення власника
+        // 2026-11-18 (PR-F8), щоб хаб, Огляд і Планування починали
+        // попереджати на тому самому відсотку.
         recs.push({
           id: `budget_warn_${catKey}`,
           module: "finyk" as const,

@@ -1,7 +1,9 @@
 import { describe, it, expect } from "vitest";
 import {
-  BUDGET_ALERT_THRESHOLD,
+  BUDGET_OVER_THRESHOLD,
   BUDGET_WARN_THRESHOLD,
+  LIMIT_THRESHOLDS,
+  limitSignal,
   buildAtRiskKey,
   calcLimitPace,
   calcLimitUsages,
@@ -277,11 +279,36 @@ describe("budget: limit usage", () => {
 });
 
 describe("budget: rules", () => {
-  it("isBudgetAlert uses the 60% threshold by default", () => {
-    expect(isBudgetAlert(59, 100)).toBe(false);
-    expect(isBudgetAlert(60, 100)).toBe(true);
+  // PR-F8, рішення власника 2026-11-18 (варіант Б): одна шкала для
+  // одного ліміту на всіх поверхнях — попередження від 80%, перевищення
+  // від 100%. Огляд більше не має окремих 60%.
+  it("одна шкала: попередження від 80%, перевищення від 100%", () => {
+    expect(LIMIT_THRESHOLDS).toEqual({ warn: 0.8, over: 1 });
+    expect(BUDGET_WARN_THRESHOLD).toBe(LIMIT_THRESHOLDS.warn);
+    expect(BUDGET_OVER_THRESHOLD).toBe(LIMIT_THRESHOLDS.over);
+    expect(limitSignal(0)).toBe("ok");
+    expect(limitSignal(79.99)).toBe("ok");
+    expect(limitSignal(80)).toBe("warn");
+    expect(limitSignal(99.99)).toBe("warn");
+    expect(limitSignal(100)).toBe("over");
+    expect(limitSignal(162)).toBe("over");
+  });
+
+  it("isBudgetAlert (Огляд) стартує з порогу попередження, не з 60%", () => {
+    expect(isBudgetAlert(60, 100)).toBe(false);
+    expect(isBudgetAlert(79, 100)).toBe(false);
+    expect(isBudgetAlert(80, 100)).toBe(true);
+    expect(isBudgetAlert(150, 100)).toBe(true);
     expect(isBudgetAlert(10, 0)).toBe(false);
-    expect(BUDGET_ALERT_THRESHOLD).toBeCloseTo(0.6);
+  });
+
+  it("Огляд, картка і порада Планування спрацьовують на тому самому порозі", () => {
+    for (const pct of [59, 60, 79, 80, 90, 99, 100, 140]) {
+      const usage = calculateLimitUsage({ limit: 100 }, pct);
+      const planningSignal = usage.warnLimit || usage.overLimit;
+      expect(isBudgetAlert(pct, 100)).toBe(planningSignal);
+      expect(shouldShowProactiveAdvice(usage, null)).toBe(planningSignal);
+    }
   });
 
   it("shouldShowProactiveAdvice triggers on >=80% or forecast overLimit", () => {

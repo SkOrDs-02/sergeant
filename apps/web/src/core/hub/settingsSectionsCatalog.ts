@@ -54,11 +54,11 @@ export const SETTINGS_SECTIONS_CATALOG: readonly SettingsSectionMeta[] = [
     // lived in keywords, so nothing is lost by dropping it from the title.
     id: "notifications",
     title: "Сповіщення",
-    // PR-S8 (аудит 2026-09-13, хвиля 7): тумблер «Повідомлення від
-    // Сержанта» живе тут, а ⌘K на «сержант» вів лише в секцію `ai`, де
-    // його немає.
-    keywords:
-      "сповіщення нагадування пуш push notifications reminders щоденні сержант повідомлення від сержанта",
+    // PR-S8: тумблер «Повідомлення від Сержанта» переїхав у секцію `ai`
+    // (рішення власника 2026-11-18), тож токени «сержант» і «повідомлення
+    // від сержанта» поїхали за ним — інакше ⌘K вів би туди, де тумблера
+    // вже немає.
+    keywords: "сповіщення нагадування пуш push notifications reminders щоденні",
   },
   {
     // V-7 audit finding (2026-08-08): title used to be "AI-дайджести" —
@@ -70,8 +70,10 @@ export const SETTINGS_SECTIONS_CATALOG: readonly SettingsSectionMeta[] = [
     // 2026-09-01) — секцію теж називає Сержант, а не абревіатура.
     id: "ai",
     title: "Сержант",
+    // PR-S8 (рішення власника 2026-11-18): секція тримає все, що Сержант
+    // робить сам, — звіт тижня і повідомлення, коли тебе не було.
     keywords:
-      "сержант sergeant ai штучний інтелект звіт тижня дайджест дайджести digest тижневий тренер coach insights асистент",
+      "сержант sergeant ai штучний інтелект звіт тижня дайджест дайджести digest тижневий тренер coach insights асистент повідомлення від сержанта нагадування повернутись nudges",
   },
   {
     id: "capabilities",

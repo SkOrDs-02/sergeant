@@ -15,7 +15,10 @@ import { MoneyInput } from "@shared/components/ui/MoneyInput";
 import { Label } from "@shared/components/ui/FormField";
 import { Tooltip } from "@shared/components/ui/Tooltip";
 import { Select } from "@shared/components/ui/Select";
-import { formatLimitUsedLabel } from "@sergeant/finyk-domain/domain/budget";
+import {
+  formatLimitUsedLabel,
+  limitSignal,
+} from "@sergeant/finyk-domain/domain/budget";
 import { MorphChevron } from "@shared/components/ui/MorphChevron";
 import { CategorySwatch } from "../CategorySwatch";
 
@@ -104,11 +107,14 @@ function LimitBudgetCardComponent({
   onSave,
   onDelete,
 }: LimitBudgetCardProps) {
-  const overLimit = pctRaw >= 100;
+  // Шкала порогів одна на всіх поверхнях (`limitSignal`, PR-F8,
+  // 2026-11-18): тут колись стояли власні літерали 80 / 100.
+  const signal = limitSignal(pctRaw);
+  const overLimit = signal === "over";
   const categoryIds = budget.categoryIds ?? [];
   const singleCategoryId =
     categoryIds.length > 1 ? null : (categoryIds[0] ?? budget.categoryId);
-  const warnLimit = pctRaw >= 80 && !overLimit;
+  const warnLimit = signal === "warn";
   const [adviceOpen, setAdviceOpen] = useState(true);
   const fieldId = useId();
   const limitId = `${fieldId}-limit`;

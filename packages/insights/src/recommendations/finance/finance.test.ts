@@ -79,12 +79,23 @@ describe("budgetLimitsRule", () => {
     expect(recs[0]?.pwaAction).toBeUndefined();
   });
 
-  it("генерує warn при 90..99%", () => {
+  // PR-F8, рішення власника 2026-11-18 (варіант Б): хаб попереджає з того
+  // самого порогу, що Огляд і Планування (`LIMIT_THRESHOLDS.warn`, 80%),
+  // а не з власних 90%.
+  it("генерує warn від 80% (єдина шкала ліміту), а не від 90%", () => {
+    for (const spent of [80, 85, 89, 99]) {
+      const ctx = baseCtx({
+        limitUsage: [usage({ id: "b", categoryId: "cafe", limit: 100 }, spent)],
+      });
+      expect(budgetLimitsRule.evaluate(ctx)[0]?.id).toBe("budget_warn_cafe");
+    }
+  });
+
+  it("нижче 80% хаб мовчить", () => {
     const ctx = baseCtx({
-      limitUsage: [usage({ id: "b", categoryId: "cafe", limit: 100 }, 95)],
+      limitUsage: [usage({ id: "b", categoryId: "cafe", limit: 100 }, 79)],
     });
-    const recs = budgetLimitsRule.evaluate(ctx);
-    expect(recs[0]?.id).toBe("budget_warn_cafe");
+    expect(budgetLimitsRule.evaluate(ctx)).toHaveLength(0);
   });
 
   it("бере відсоток з `limitUsage`, того самого, що й картка ліміту", () => {
