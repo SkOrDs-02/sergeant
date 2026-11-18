@@ -102,6 +102,60 @@ describe("searchSources.performSearch (audit 03 F22 — scoring)", () => {
     expect(results.some((r) => r.title === "Оренда квартири")).toBe(false);
   });
 
+  it("Ф-2 (а): знаходить ручний запис Фініка за описом і тегом, веде на операцію", () => {
+    __setFinykSqliteStateCacheForTests({
+      manualExpenses: [
+        {
+          id: "m1",
+          description: "Ринок Житній",
+          amount: 150,
+          category: "food",
+          date: "2026-11-10T10:00:00.000Z",
+        },
+      ],
+      txTags: { manual_m1: ["Відпустка"] },
+    } as never);
+    const byName = performSearch("житній").find(
+      (r) => r.id === "finyk_tx_manual_m1",
+    );
+    expect(byName).toBeDefined();
+    expect(byName!.title).toBe("Ринок Житній");
+    expect(byName!.target).toEqual({
+      kind: "module",
+      moduleId: "finyk",
+      path: "/finyk/transactions?tx=manual_m1",
+    });
+    // Тег шукається, але в підпис рядка не лізе.
+    const byTag = performSearch("відпустка").find(
+      (r) => r.id === "finyk_tx_manual_m1",
+    );
+    expect(byTag).toBeDefined();
+    expect(byTag!.subtitle).not.toContain("Відпустка");
+  });
+
+  it("Ф-2 (а): банківська операція шукається за нотаткою і веде на неї", () => {
+    __setFinykMonoMirrorCacheForTests({
+      transactions: [
+        {
+          id: "tx-gift",
+          amount: -50000,
+          time: 1_700_000_000,
+          description: "Rozetka",
+        },
+      ] as never[],
+    });
+    __setFinykSqliteStateCacheForTests({
+      txNotes: { "tx-gift": "подарунок мамі" },
+    } as never);
+    const hit = performSearch("мамі").find((r) => r.id === "finyk_tx_tx-gift");
+    expect(hit).toBeDefined();
+    expect(hit!.target).toEqual({
+      kind: "module",
+      moduleId: "finyk",
+      path: "/finyk/transactions?tx=tx-gift",
+    });
+  });
+
   it("scores a title-prefix match above a subtitle-only match", () => {
     // Підписки живуть у SQLite-кеші Фініка (LS `finyk_subs` — tombstone).
     __setFinykSqliteStateCacheForTests({

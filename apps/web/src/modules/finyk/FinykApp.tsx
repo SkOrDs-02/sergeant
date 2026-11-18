@@ -44,6 +44,7 @@ import { FinykLoginScreen } from "./components/FinykLoginScreen";
 import { FinykScanEntryPoints } from "./components/FinykScanEntryPoints";
 import { NAV_ICONS, NAV_IDS, NAV_ITEMS } from "./components/finykNav";
 import { useFinykRoute, useFinykQueryParam } from "./hooks/useFinykRoute";
+import { FINYK_FOCUS_TX_PARAM } from "./lib/finykRouter";
 import { useStorageWarmGate } from "./hooks/useStorageWarmGate";
 import { useUnifiedFinanceData } from "./hooks/useUnifiedFinanceData";
 import { useCashHistoryBackfill } from "./hooks/useCashHistoryBackfill";
@@ -113,6 +114,14 @@ export default function App({
   const focusLimitCategoryId = useFinykQueryParam("cat");
   const focusAssetSection = useFinykQueryParam("section");
   const focusTransactionDate = useFinykQueryParam("date");
+  // Ф-2 (а): `?tx=<id>` з хабового пошуку відкриває саму операцію. Після
+  // відкриття параметр прибираємо через `replace`, щоб «Назад» не вертав
+  // на посилання, яке знову відкрило б аркуш.
+  const focusTxId = useFinykQueryParam(FINYK_FOCUS_TX_PARAM);
+  const clearFocusTx = useCallback(
+    () => navigate("transactions", { replace: true }),
+    [navigate],
+  );
 
   // First-run state
   const { firstRun: firstRunFinyk, markSeen: markFinykSeen } =
@@ -303,6 +312,8 @@ export default function App({
               setEditingManualExpenseId(String(id));
               setShowExpenseSheet(true);
             }}
+            focusTxId={focusTxId}
+            onFocusTxConsumed={clearFocusTx}
           />
         </SectionErrorBoundary>
       );

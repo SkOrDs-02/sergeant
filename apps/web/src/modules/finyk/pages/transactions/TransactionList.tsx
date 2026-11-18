@@ -176,6 +176,11 @@ export interface TransactionListProps {
    * refetching so the spinner unwinds at the right moment.
    */
   onRefresh?: () => Promise<void> | void;
+  /**
+   * Порожній стан під активним пошуком (Ф-2 а): «Нічого не знайдено» з дією
+   * очистити запит. Діє лише коли місяць не порожній (`activeTx` є).
+   */
+  searchEmpty?: ReactNode;
 }
 
 /**
@@ -222,6 +227,7 @@ export function TransactionList({
   header,
   footer,
   onRefresh,
+  searchEmpty,
 }: TransactionListProps) {
   const [scrollParent, setScrollParent] = useState<HTMLDivElement | null>(null);
   const cloudPullPending = useCloudPullPending();
@@ -358,6 +364,8 @@ export function TransactionList({
           description={messages.finykRedesign.transactionsEmptyDescription}
         />
       </div>
+    ) : searchEmpty ? (
+      searchEmpty
     ) : (
       <div className="rounded-panel border border-dashed border-line bg-panel">
         <EmptyState

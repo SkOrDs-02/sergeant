@@ -237,7 +237,14 @@ export function useSearchEngine({
       //                    the full /assistant catalogue route.
       switch (hit.target.kind) {
         case "module":
-          openModule(hit.target.moduleId);
+          // Ф-2 (а): хіт із глибоким посиланням (операція Фініка) веде
+          // саме туди; закриття, як і для інших цілей, після зміни адреси.
+          if (hit.target.path) {
+            closeAfterNavigation();
+            navigate(hit.target.path);
+          } else {
+            openModule(hit.target.moduleId);
+          }
           break;
         case "settings": {
           const sectionId = hit.target.sectionId;
