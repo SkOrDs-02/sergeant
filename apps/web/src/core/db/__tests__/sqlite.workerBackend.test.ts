@@ -297,18 +297,25 @@ describe("бекенд бази у воркері", () => {
       },
       configurable: true,
     });
-    vi.mocked(isHandoffDone).mockReturnValue(false);
-    vi.mocked(openSqliteInWorker).mockResolvedValue(fakeWorkerConnection());
+    try {
+      vi.mocked(isHandoffDone).mockReturnValue(false);
+      vi.mocked(hasKvvfsData).mockReturnValue(true);
+      vi.mocked(openSqliteInWorker).mockResolvedValue(fakeWorkerConnection());
 
-    const handle = await getSqliteDb();
+      const handle = await getSqliteDb();
 
-    expect(handle.vfs).toBe("memory");
-    expect(openSqliteInWorker).not.toHaveBeenCalled();
-    expect(openSqliteMemoryInWorker).toHaveBeenCalledTimes(1);
-    Object.defineProperty(globalThis.navigator, "locks", {
-      value: undefined,
-      configurable: true,
-    });
+      expect(handle.vfs).toBe("memory");
+      expect(openSqliteInWorker).not.toHaveBeenCalled();
+      expect(openSqliteMemoryInWorker).toHaveBeenCalledTimes(1);
+      expect(readSqliteVfsFallbackReason()).toBe("pool-busy");
+      // Неперелите старе сховище: банер послідовника каже, що записи цілі.
+      expect(readSqliteLegacyStoreKept()).toBe(true);
+    } finally {
+      Object.defineProperty(globalThis.navigator, "locks", {
+        value: undefined,
+        configurable: true,
+      });
+    }
   });
 
   it("перечікує зайнятий SAH-пул замість того, щоб осісти в памʼяті", async () => {

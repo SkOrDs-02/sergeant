@@ -348,7 +348,13 @@ async function initSqliteDb(
   // і показувала б інший набір даних на тому самому акаунті.
   const owner = await claimDbOwnership();
   const persistent = owner === "leader";
-  if (!persistent) noteSqliteVfsFallbackReason("pool-busy");
+  if (!persistent) {
+    noteSqliteVfsFallbackReason("pool-busy");
+    // Вкладка-послідовник не перелиє kvvfs сама (це робить лідер), тож поки
+    // перелиття не завершене, старі записи лежать недоторканими - банер має
+    // це сказати і тут (CodeRabbit на #1692).
+    noteLegacyStoreKeptIfStranded(userKey);
+  }
   const driver =
     (persistent ? await openWorkerBackedDb(userKey) : null) ??
     (await openMemoryDb());
