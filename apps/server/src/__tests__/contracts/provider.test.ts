@@ -708,7 +708,7 @@ describe("Pact provider replay — consumer=sergeant-api-client, provider=sergea
   // ── GET /api/v1/mono/sync-state ────────────────────────────────────────────
   //
   // Handler runs **two** sequential SQL reads against `pool.query`:
-  //   1) SELECT status, webhook_registered_at, last_event_at, last_backfill_at FROM mono_connection
+  //   1) SELECT status, webhook_registered_at, last_event_at, last_backfill_at, created_at FROM mono_connection
   //   2) SELECT COUNT(*)::text AS count FROM mono_account
   //
   // We canned-respond in order so the handler assembles the exact wire
@@ -722,6 +722,7 @@ describe("Pact provider replay — consumer=sergeant-api-client, provider=sergea
       lastEventAt: string | null;
       lastBackfillAt: string | null;
       accountsCount: number;
+      connectedAt?: string | null;
     };
 
     getSessionUserMock.mockResolvedValue({ id: "user-pact-001" });
@@ -730,6 +731,9 @@ describe("Pact provider replay — consumer=sergeant-api-client, provider=sergea
         rows: [
           {
             status: expected.status,
+            created_at: expected.connectedAt
+              ? new Date(expected.connectedAt)
+              : null,
             // webhookActive=true iff status='active' AND webhook_registered_at != null.
             webhook_registered_at: expected.webhookActive
               ? new Date("2026-05-10T00:00:00.000Z")

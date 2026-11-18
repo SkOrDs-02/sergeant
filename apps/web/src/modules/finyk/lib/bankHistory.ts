@@ -21,20 +21,47 @@ function isValidMs(v: unknown): v is number {
 }
 
 /**
- * Мс першого підключення Monobank на цьому акаунті; `null` = не підключено
+ * Мс поточного підключення Monobank на цьому акаунті; `null` = не підключено
  * або невідомо.
  *
- * Джерело: мітка, яку клієнт пише на успішному `connect`
- * (`recordMonoFirstConnectedAt`, `useMonobankWebhook`). Сервер у
- * `GET /api/mono/sync-state` її не віддає.
+ * Джерела за пріоритетом:
+ *   1. `connectedAt` з `GET /api/mono/sync-state` (`mono_connection.created_at`).
+ *      Коли відповідь приходить, `applyMonoServerConnectedAt` кладе значення
+ *      в ту саму мітку localStorage, тож воно переживає перезавантаження і
+ *      читається синхронно, без мережі.
+ *   2. Локальна мітка з успішного `connect` на цьому пристрої
+ *      (`recordMonoFirstConnectedAt`): запасний шлях, поки сервер, старший за
+ *      2026-11-18, поля не віддає, або поки sync-state ще не відповів.
  *
- * Межа: підключення, зроблені ДО появи цієї мітки (і з іншого пристрою), дають
- * `null`: сурогатів на кшталт «найраніша операція» немає свідомо. Чесна
- * повна відповідь потребує `connectedAt` у `MonoSyncState` на сервері.
+ * Межа: без жодного джерела `null`, сурогатів на кшталт «найраніша операція»
+ * немає свідомо.
  */
 export function getMonoFirstConnectedAt(): number | null {
   const raw = safeReadLS<unknown>(STORAGE_KEYS.FINYK_MONO_FIRST_CONNECTED_AT);
   return isValidMs(raw) ? raw : null;
+}
+
+/**
+ * Приймає `connectedAt` зі стану синку Monobank:
+ *   - `undefined` — сервер поля не знає (старий бекенд) або стан ще не
+ *     прийшов: нічого не міняємо, лишається локальна мітка;
+ *   - `null` — сервер каже, що підключення немає: мітку знімаємо (відключили,
+ *     можливо, з іншого пристрою);
+ *   - ISO-рядок — серверне значення перекриває локальне.
+ * Нерозбірний рядок ігнорується: зіпсована відповідь не має права стерти мітку.
+ */
+export function applyMonoServerConnectedAt(
+  connectedAt: string | null | undefined,
+): void {
+  if (connectedAt === undefined) return;
+  if (connectedAt === null) {
+    clearMonoFirstConnectedAt();
+    return;
+  }
+  const ms = Date.parse(connectedAt);
+  if (!isValidMs(ms)) return;
+  if (getMonoFirstConnectedAt() === ms) return;
+  safeWriteLS(STORAGE_KEYS.FINYK_MONO_FIRST_CONNECTED_AT, ms);
 }
 
 /** Пише мітку першого підключення; повторне підключення її не зсуває. */

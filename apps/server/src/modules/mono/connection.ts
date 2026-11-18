@@ -446,9 +446,11 @@ export async function syncStateHandler(
     webhook_registered_at: Date | string | null;
     last_event_at: Date | string | null;
     last_backfill_at: Date | string | null;
+    created_at?: Date | string | null;
     token_check_due?: boolean | null;
   }>(
     `SELECT status, webhook_registered_at, last_event_at, last_backfill_at,
+            created_at,
             (status = 'active'
               AND webhook_registered_at IS NOT NULL
               AND webhook_registered_at < NOW() - INTERVAL '30 minutes'
@@ -470,6 +472,7 @@ export async function syncStateHandler(
         lastEventAt: null,
         lastBackfillAt: null,
         accountsCount: 0,
+        connectedAt: null,
       }),
     );
     return;
@@ -521,6 +524,13 @@ export async function syncStateHandler(
           ? conn!.last_backfill_at.toISOString()
           : conn!.last_backfill_at,
       accountsCount: Number(countResult.rows[0]?.count ?? 0),
+      // `created_at` = момент поточного підключення: upsert у `connect` його
+      // не чіпає, `disconnect` видаляє рядок. Картка фактів банку на хабі
+      // рахує від нього тиждень на будь-якому пристрої.
+      connectedAt:
+        conn!.created_at instanceof Date
+          ? conn!.created_at.toISOString()
+          : (conn!.created_at ?? null),
     }),
   );
 }

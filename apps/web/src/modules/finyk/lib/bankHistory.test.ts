@@ -3,6 +3,7 @@ import { STORAGE_KEYS } from "@sergeant/shared";
 import type { Transaction } from "@sergeant/finyk-domain/domain/types";
 import { safeWriteLS } from "@shared/lib/storage/storage";
 import {
+  applyMonoServerConnectedAt,
   clearMonoFirstConnectedAt,
   getFinykBankHistoryStart,
   getMonoFirstConnectedAt,
@@ -33,6 +34,46 @@ describe("getMonoFirstConnectedAt", () => {
     recordMonoFirstConnectedAt(1_700_000_000_000);
     clearMonoFirstConnectedAt();
     expect(getMonoFirstConnectedAt()).toBeNull();
+  });
+
+  describe("серверне значення з sync-state", () => {
+    it("старий сервер без поля: лишається локальна мітка", () => {
+      recordMonoFirstConnectedAt(1_700_000_000_000);
+      applyMonoServerConnectedAt(undefined);
+      expect(getMonoFirstConnectedAt()).toBe(1_700_000_000_000);
+    });
+
+    it("обидва джерела є: перемагає серверне", () => {
+      recordMonoFirstConnectedAt(1_800_000_000_000);
+      applyMonoServerConnectedAt("2026-04-20T07:15:00.000Z");
+      expect(getMonoFirstConnectedAt()).toBe(
+        Date.parse("2026-04-20T07:15:00.000Z"),
+      );
+    });
+
+    it("лише серверне (інший пристрій): повертає його", () => {
+      applyMonoServerConnectedAt("2026-04-20T07:15:00.000Z");
+      expect(getMonoFirstConnectedAt()).toBe(
+        Date.parse("2026-04-20T07:15:00.000Z"),
+      );
+    });
+
+    it("сервер каже «не підключено» (null): локальна мітка знімається", () => {
+      recordMonoFirstConnectedAt(1_700_000_000_000);
+      applyMonoServerConnectedAt(null);
+      expect(getMonoFirstConnectedAt()).toBeNull();
+    });
+
+    it("зіпсований рядок від сервера мітку не чіпає", () => {
+      recordMonoFirstConnectedAt(1_700_000_000_000);
+      applyMonoServerConnectedAt("not-a-date");
+      expect(getMonoFirstConnectedAt()).toBe(1_700_000_000_000);
+    });
+
+    it("немає жодного джерела: null", () => {
+      applyMonoServerConnectedAt(undefined);
+      expect(getMonoFirstConnectedAt()).toBeNull();
+    });
   });
 
   it("зіпсований запис читається як null", () => {

@@ -1799,6 +1799,14 @@ export const MonoSyncStateSchema = z.object({
   lastEventAt: z.string().nullable(),
   lastBackfillAt: z.string().nullable(),
   accountsCount: z.number().int().nonnegative(),
+  /**
+   * ISO-момент ПОТОЧНОГО підключення (`mono_connection.created_at`);
+   * `null` = підключення немає. Повторний `connect` без відключення його не
+   * зсуває (upsert не чіпає `created_at`), а `disconnect` видаляє рядок, тож
+   * після відключення й нового підключення це момент нового підключення.
+   * Опційне: сервер до 2026-11-18 поля не віддає (фронт їде раніше).
+   */
+  connectedAt: z.string().nullable().optional(),
 });
 export type MonoSyncState = z.infer<typeof MonoSyncStateSchema>;
 
