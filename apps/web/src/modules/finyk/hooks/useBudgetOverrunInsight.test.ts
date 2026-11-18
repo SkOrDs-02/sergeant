@@ -137,6 +137,23 @@ describe("useBudgetOverrunInsight", () => {
     });
   });
 
+  // PR-F8 (аудит 2026-09-13, хвиля 7): на Огляді Фініка перевищений ліміт
+  // уже показує `BudgetAlertsList`, тож картка перевищення живе лише на хабі.
+  // `FinykInsightsBlock.branches.test.tsx` пінить фільтр блоку на МОКОВАНІЙ
+  // картці; сама позначка `showOn` у хуку не була запінена, і «both»
+  // повертав на Огляд другий сигнал про той самий ліміт без жодного червоного.
+  it("картка перевищення лише для хабу, не другим сигналом на Огляді (PR-F8)", () => {
+    const { result } = renderHook(() =>
+      useBudgetOverrunInsight({
+        budgets: [mkBudget("b1", "food", 1000)],
+        transactions: [mkTx("t1", -120_000)],
+        txCategories: { t1: "food" },
+        txSplits: {},
+      }),
+    );
+    expect(result.current?.showOn).toBe("hub");
+  });
+
   it("selects the worst offender when multiple budgets are overrun", () => {
     // food: 150% overrun; transport: 120% overrun — food should win.
     const txFood = mkTx("t1", -150_000); // 1500 UAH on food (limit 1000)

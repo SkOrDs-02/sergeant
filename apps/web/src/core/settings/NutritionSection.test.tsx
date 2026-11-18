@@ -158,6 +158,25 @@ describe("NutritionSection", () => {
     expect(lastCall).not.toHaveProperty("reminderEnabled");
   });
 
+  // PR-N3 (аудит 2026-09-13, хвиля 7): «активної комори» немає, аркуш
+  // прийому бере продукти з усіх місць. Контрол вибору тут був мертвий
+  // (його значення затирав `useNutritionPantries`), тож блок підстановки
+  // не має жодного поля вибору, а копія каже про всі місця зберігання.
+  it("має лише перехід у менеджер, без вибору активної комори (PR-N3)", () => {
+    renderSection();
+    const block = screen
+      .getByText("Підстановка з комори")
+      .closest("section, div") as HTMLElement;
+    const group = block.parentElement ?? block;
+    expect(within(group).queryByRole("combobox")).toBeNull();
+    expect(within(group).queryByRole("radiogroup")).toBeNull();
+    expect(within(group).queryByRole("radio")).toBeNull();
+    expect(
+      within(group).getByText(/продукти з усіх місць зберігання/),
+    ).toBeInTheDocument();
+    expect(within(group).queryByText(/активн/i)).toBeNull();
+  });
+
   it("navigates to the pantry manager", () => {
     renderSection();
     fireEvent.click(

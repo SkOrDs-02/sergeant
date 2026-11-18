@@ -54,7 +54,11 @@ export const SETTINGS_SECTIONS_CATALOG: readonly SettingsSectionMeta[] = [
     // lived in keywords, so nothing is lost by dropping it from the title.
     id: "notifications",
     title: "Сповіщення",
-    keywords: "сповіщення нагадування пуш push notifications reminders щоденні",
+    // PR-S8 (аудит 2026-09-13, хвиля 7): тумблер «Повідомлення від
+    // Сержанта» живе тут, а ⌘K на «сержант» вів лише в секцію `ai`, де
+    // його немає.
+    keywords:
+      "сповіщення нагадування пуш push notifications reminders щоденні сержант повідомлення від сержанта",
   },
   {
     // V-7 audit finding (2026-08-08): title used to be "AI-дайджести" —
@@ -122,8 +126,11 @@ export const SETTINGS_SECTIONS_CATALOG: readonly SettingsSectionMeta[] = [
     // тут лишились згоди й правові документи — назва каже саме це.
     id: "privacy",
     title: "Дані та приватність",
+    // PR-S4/PR-S8 (аудит 2026-09-13, хвиля 7): сюди переїхали «Куди їдуть
+    // дані для AI» і «Якщо Sergeant колись закриється», а пошукові токени
+    // за ними не поїхали; тут же згода на памʼять Сержанта.
     keywords:
-      "конфіденційність приватність privacy згода consent аналітика здоровʼя дані data правові документи умови",
+      "конфіденційність приватність privacy згода consent аналітика здоровʼя дані data правові документи умови ai субпроцесори закриється закриття sunset памʼять сержант",
   },
   {
     id: "pwa",

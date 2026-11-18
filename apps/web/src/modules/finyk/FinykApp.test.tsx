@@ -349,7 +349,7 @@ describe("FinykApp — connected Monobank state over real MSW transport", () => 
     renderApp();
 
     const syncPill = await screen.findByLabelText(
-      "Стан синхронізації: оновлення",
+      "Стан синхронізації: оновлення…",
     );
     expect(syncPill).toHaveTextContent("оновлення");
 

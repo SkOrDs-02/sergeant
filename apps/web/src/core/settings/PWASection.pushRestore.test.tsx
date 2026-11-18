@@ -1,6 +1,6 @@
 /** @vitest-environment jsdom */
 /**
- * rel-12: «Скинути кеш PWA» знімає реєстрацію SW, а за Push API разом із нею
+ * rel-12: «Скинути файли застосунку» знімає реєстрацію SW, а за Push API разом із нею
  * гине push-підписка. Тест відтворює сценарій на реальних `PWASection` і
  * `restoreWebPushSubscriptionIfLost`; моки лише на межах: `navigator.
  * serviceWorker` (з чесною семантикою «unregister скидає підписку»), мережа
@@ -115,7 +115,7 @@ describe("PWASection: push-підписка після скидання кешу
       value: { ...window.location, reload },
     });
     render(<PWASection />);
-    fireEvent.click(screen.getByText("Скинути кеш PWA"));
+    fireEvent.click(screen.getByText("Скинути файли застосунку"));
     fireEvent.click(screen.getByText("Скинути та перезавантажити"));
     await vi.waitFor(() => {
       expect(swMocks.swClearCaches).toHaveBeenCalledWith("all");

@@ -71,10 +71,12 @@ export function deriveSessionTitle(
 }
 
 // A brand-new session (`createSession()` with no args) gets `msgs: []`
-// from `normalizeStoredMessages(null)` — PR-A7: no synthesized greeting,
-// so `HubChatBody` renders `<ChatEmpty>` instead. Do not special-case an
-// empty result here to re-add one; see the AI-DANGER note in
-// `normalizeStoredMessages`.
+// from `normalizeStoredMessages(null)` — PR-A7: no synthesized greeting.
+// `<ChatEmpty>` itself was removed by redesign v3 PR0 (п. 20, 35, рішення
+// власника), so an empty session is the AI disclosure above an empty feed
+// plus the quick-action chips in the composer. A synthesized greeting would
+// bring back exactly the prose PR0 removed, as a fake persisted message.
+// Do not special-case an empty result here to re-add one.
 function createInitialSession(messages?: ChatMessage[]): HubChatSession {
   const now = Date.now();
   const msgs = normalizeStoredMessages(messages ?? null);

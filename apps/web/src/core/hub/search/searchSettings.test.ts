@@ -110,3 +110,46 @@ describe("SETTINGS_PRESENTATION fallback (audit finding #10)", () => {
     vi.resetModules();
   });
 });
+
+// Хвиля 7 аудиту 2026-09-13 («Шум і дублі»).
+function sectionsFor(query: string): string[] {
+  return searchSettings(tokenize(query))
+    .filter((r) => r.target.kind === "settings")
+    .map((r) =>
+      r.target.kind === "settings" ? (r.target.sectionId ?? "") : "",
+    );
+}
+
+describe("⌘K веде туди, де налаштування живе після переїздів (PR-S4, PR-S8)", () => {
+  // PR-S4: декларації переїхали з «Резервної копії» в «Дані та
+  // приватність», а пошукові токени лишились позаду.
+  it("декларації про дані знаходять «Дані та приватність»", () => {
+    expect(sectionsFor("субпроцесори")).toContain("privacy");
+    expect(sectionsFor("закриється")).toContain("privacy");
+  });
+
+  // PR-S8: Сержантове розкидане за принципом (згоди в приватності,
+  // сповіщення в «Сповіщеннях»), тож пошук «сержант» мусить показати всі
+  // місця, а не лише секцію з одним тумблером звіту.
+  it("«сержант» знаходить і звіт, і повідомлення, і згоду на памʼять", () => {
+    const ids = sectionsFor("сержант");
+    expect(ids).toEqual(
+      expect.arrayContaining(["ai", "notifications", "privacy"]),
+    );
+  });
+});
+
+describe("опис секції в ⌘K без техжаргону (PR-S10)", () => {
+  it("жоден видимий опис не каже service worker, debug, lab, beta, insights", () => {
+    for (const section of SETTINGS_INDEX) {
+      expect(section.description).not.toMatch(
+        /service worker|\bsw\b|debug|\blab\b|beta|insights|pwa/i,
+      );
+    }
+  });
+
+  it("опис «Сержанта» називає звіт тижня, а не тренера", () => {
+    const ai = SETTINGS_INDEX.find((s) => s.id === "ai");
+    expect(ai?.description).toMatch(/звіт тижня/i);
+  });
+});

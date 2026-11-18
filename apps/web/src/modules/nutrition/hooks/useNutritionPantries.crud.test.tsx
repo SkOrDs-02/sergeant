@@ -360,6 +360,35 @@ describe("useNutritionPantries CRUD", () => {
     expect(result.current.pantryText).toBe("молоко, яйця");
   });
 
+  // PR-N3 (аудит 2026-09-13, хвиля 7): аркуш прийому отримує
+  // `effectiveItems`, і там мусять бути продукти з УСІХ місць незалежно від
+  // збереженого `activePantryId` і від екранного фільтра місця. Інакше
+  // Налаштування («продукти з усіх місць зберігання») знову обіцяли б
+  // неправду, а мертвий вибір активної комори ожив би непомітно.
+  it("effectiveItems збирає продукти всіх місць, а не активного чи відфільтрованого", () => {
+    seed(
+      [
+        {
+          id: "fridge",
+          name: "Холодильник",
+          items: [{ name: "Молоко", qty: 1, unit: "л", notes: null }],
+          text: "",
+        },
+        {
+          id: "home",
+          name: "Комора",
+          items: [{ name: "Гречка", qty: 1000, unit: "г", notes: null }],
+          text: "",
+        },
+      ],
+      "fridge",
+    );
+    const { result } = renderHarness();
+    act(() => result.current.setPlaceFilter("home"));
+    const names = result.current.effectiveItems.map((x) => x.name);
+    expect(names).toEqual(expect.arrayContaining(["Молоко", "Гречка"]));
+  });
+
   it("derives effectiveItems from loose text when no structured items", () => {
     seed(
       [{ id: "home", name: "Дім", items: [], text: "молоко\nхліб" }],
