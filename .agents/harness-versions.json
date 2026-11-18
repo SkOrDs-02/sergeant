@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "current": "8.10.0",
+  "current": "8.10.1",
   "versions": {
     "0.1.0": {
       "releasedAt": "2026-06-29",
@@ -850,6 +850,14 @@
       "releasedAt": "2026-11-18",
       "changes": [
         "bump from 8.9.0 -> 8.10.0: AGENTS.md modified"
+      ],
+      "agentsTestedWith": [],
+      "passRateBaseline": null
+    },
+    "8.10.1": {
+      "releasedAt": "2026-11-18",
+      "changes": [
+        "bump from 8.10.0 -> 8.10.1: typo / link / freshness-only change"
       ],
       "agentsTestedWith": [],
       "passRateBaseline": null
