@@ -71,6 +71,23 @@ describe("MemoryOnlyStorageBanner", () => {
     ).toBeTruthy();
   });
 
+  // CodeRabbit на #1692: позначку «старе сховище збережено» ставимо за
+  // будь-якої відмови OPFS, тож банер має казати про неї і поза
+  // «не підтримується» — але без обіцянки «повернуться після оновлення».
+  it.each([null, "pool-busy"] as const)(
+    "причина %s: каже про старі записи нейтрально й лишає reload",
+    (reason) => {
+      if (reason) noteSqliteVfsFallbackReason(reason);
+      noteSqliteLegacyStoreKept();
+      noteActiveSqliteVfs("memory");
+      render(<MemoryOnlyStorageBanner />);
+      const body = reason === "pool-busy" ? m.bodyOtherTab : m.body;
+      expect(screen.getByText(`${body} ${m.legacyKeptOther}`)).toBeTruthy();
+      expect(screen.queryByText(new RegExp(m.legacyKept))).toBeNull();
+      expect(screen.getByRole("button", { name: m.reload })).toBeTruthy();
+    },
+  );
+
   it("показує англійські рядки в EN-локалі", () => {
     localStorage.setItem("sergeant:locale", "en");
     noteActiveSqliteVfs("memory");

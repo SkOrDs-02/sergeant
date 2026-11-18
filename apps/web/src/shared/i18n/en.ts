@@ -253,10 +253,10 @@ export const messagesEn: Partial<{
     memoryOnly: {
       title: "Entries are not being saved",
       body: "Browser storage did not open, so new entries live in memory for now. Reload the page to keep them.",
-      bodyOtherTab:
-        "The database is open in another tab. Close extra Sergeant tabs and reload this one.",
+      bodyOtherTab: "Open in another tab: close the other tabs and reload.",
       bodyUnsupported: "New entries vanish on restart: update the browser.",
       legacyKept: "Earlier entries are kept and return after the update.",
+      legacyKeptOther: "Earlier entries are kept.",
       reload: "Reload",
     },
     storageDegraded: {
