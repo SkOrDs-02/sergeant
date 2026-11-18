@@ -27,6 +27,7 @@ import {
   fetchAccountStatement,
   runMonoHistoryBackfill,
   scheduleHistoryBackfill,
+  __setHistoryFetchSleep,
 } from "./historyFetch.js";
 
 // 2023-11-14T22:13:20Z — fixed epoch so the date slice is deterministic.
@@ -227,6 +228,7 @@ describe("runMonoHistoryBackfill", () => {
     vi.unstubAllGlobals();
     vi.useRealTimers();
     vi.clearAllMocks();
+    __setHistoryFetchSleep(async () => {});
     harness.decryptAndLazyReencrypt.mockResolvedValue("mono-token");
     harness.pool.query.mockResolvedValue({ rows: [] });
   });
@@ -275,7 +277,8 @@ describe("runMonoHistoryBackfill", () => {
     expect(harness.decryptAndLazyReencrypt).toHaveBeenCalledTimes(1);
     expect(client.query).toHaveBeenCalledWith("BEGIN");
     expect(client.query).toHaveBeenCalledWith("COMMIT");
-    expect(client.release).toHaveBeenCalledTimes(1);
+    // Одна транзакція БД на кожен запит виписки: три вікна (OD-26 Ф-3).
+    expect(client.release).toHaveBeenCalledTimes(3);
     expect(harness.pool.query).toHaveBeenCalledWith(
       expect.stringContaining("UPDATE mono_connection"),
       ["user_1"],
@@ -332,7 +335,8 @@ describe("runMonoHistoryBackfill", () => {
     );
   });
 
-  it("waits between multiple accounts to respect Monobank statement pacing", async () => {
+  it("waits before every statement request to respect Monobank pacing", async () => {
+    __setHistoryFetchSleep(null);
     vi.useFakeTimers();
     vi.setSystemTime(new Date("2026-04-01T00:00:00.000Z"));
     harness.pool.query.mockResolvedValue({ rows: [] });
@@ -360,14 +364,103 @@ describe("runMonoHistoryBackfill", () => {
     expect(global.fetch).toHaveBeenCalledTimes(1);
 
     await vi.advanceTimersByTimeAsync(1);
+    expect(global.fetch).toHaveBeenCalledTimes(2);
+
+    // Три вікна на рахунок × два рахунки = шість запитів, між кожними двома
+    // пауза 62 с (OD-26 Ф-3 (а)).
+    await vi.advanceTimersByTimeAsync(62_000 * 4);
     await promise;
 
-    expect(global.fetch).toHaveBeenCalledTimes(2);
+    expect(global.fetch).toHaveBeenCalledTimes(6);
     const urls = vi
       .mocked(global.fetch)
       .mock.calls.map((call) => String(call[0]));
-    expect(urls[0]).toContain("/personal/statement/acc1/");
-    expect(urls[1]).toContain("/personal/statement/acc2/");
+    expect(urls.slice(0, 3).every((u) => u.includes("/acc1/"))).toBe(true);
+    expect(urls.slice(3).every((u) => u.includes("/acc2/"))).toBe(true);
+  });
+
+  it("тягне три суцільні вікна по 31 дню на рахунок, найновіше першим", async () => {
+    harness.pool.connect.mockResolvedValue(makeClient());
+    vi.stubGlobal(
+      "fetch",
+      vi.fn().mockResolvedValue({ ok: true, json: async () => [] }),
+    );
+
+    await runMonoHistoryBackfill(
+      "user_1",
+      [{ id: "acc1" }],
+      { token_ciphertext: "c", token_iv: "i", token_tag: "t" } as never,
+      {} as never,
+    );
+
+    const ranges = vi.mocked(global.fetch).mock.calls.map((call) => {
+      const parts = String(call[0]).split("/");
+      return { from: Number(parts.at(-2)), to: Number(parts.at(-1)) };
+    });
+    expect(ranges).toHaveLength(3);
+    for (const r of ranges) expect(r.to - r.from).toBe(31 * 86_400);
+    expect(ranges[1]!.to).toBe(ranges[0]!.from - 1);
+    expect(ranges[2]!.to).toBe(ranges[1]!.from - 1);
+  });
+
+  it("гортає сторінку, коли Monobank віддав повні 500 рядків", async () => {
+    harness.pool.connect.mockResolvedValue(makeClient());
+    const nowSec = Math.floor(Date.now() / 1000);
+    const fullPage = Array.from({ length: 500 }, (_, i) => ({
+      id: `tx_${i}`,
+      time: nowSec - 100 - i,
+      amount: -100,
+      operationAmount: -100,
+      currencyCode: 980,
+    }));
+    vi.stubGlobal(
+      "fetch",
+      vi
+        .fn()
+        .mockResolvedValueOnce({ ok: true, json: async () => fullPage })
+        .mockResolvedValue({ ok: true, json: async () => [] }),
+    );
+
+    await runMonoHistoryBackfill(
+      "user_1",
+      [{ id: "acc1" }],
+      { token_ciphertext: "c", token_iv: "i", token_tag: "t" } as never,
+      {} as never,
+    );
+
+    const urls = vi.mocked(global.fetch).mock.calls.map((c) => String(c[0]));
+    // Дві сторінки першого вікна + по одній на два старші.
+    expect(urls).toHaveLength(4);
+    expect(Number(urls[1]!.split("/").at(-1))).toBe(nowSec - 100 - 499);
+  });
+
+  it("помилка вікна зупиняє рахунок: старіші вікна не тягнуться, наступний рахунок іде", async () => {
+    harness.pool.connect.mockResolvedValue(makeClient());
+    vi.stubGlobal(
+      "fetch",
+      vi
+        .fn()
+        .mockResolvedValueOnce({ ok: true, json: async () => [] })
+        .mockResolvedValueOnce({ ok: false, status: 429, text: async () => "" })
+        .mockResolvedValue({ ok: true, json: async () => [] }),
+    );
+
+    await runMonoHistoryBackfill(
+      "user_1",
+      [{ id: "acc1" }, { id: "acc2" }],
+      { token_ciphertext: "c", token_iv: "i", token_tag: "t" } as never,
+      {} as never,
+    );
+
+    const urls = vi.mocked(global.fetch).mock.calls.map((c) => String(c[0]));
+    expect(urls.filter((u) => u.includes("/acc1/"))).toHaveLength(2);
+    expect(urls.filter((u) => u.includes("/acc2/"))).toHaveLength(3);
+    expect(harness.logger.warn).toHaveBeenCalledWith(
+      expect.objectContaining({
+        msg: "mono_backfill_account_error",
+        monoAccountId: "acc1",
+      }),
+    );
   });
 
   it("logs and completes when the final last_backfill_at update fails", async () => {
@@ -405,6 +498,7 @@ describe("scheduleHistoryBackfill", () => {
     vi.unstubAllGlobals();
     vi.useRealTimers();
     vi.clearAllMocks();
+    __setHistoryFetchSleep(async () => {});
     harness.pool.query.mockResolvedValue({
       rows: [],
     });
@@ -448,7 +542,7 @@ describe("scheduleHistoryBackfill", () => {
     await new Promise((resolve) => setImmediate(resolve));
     await new Promise((resolve) => setImmediate(resolve));
 
-    expect(fetchMock).toHaveBeenCalledTimes(1);
+    expect(fetchMock).toHaveBeenCalledTimes(3);
     expect(String(fetchMock.mock.calls[0]![0])).toContain(
       "/personal/statement/acc1/",
     );

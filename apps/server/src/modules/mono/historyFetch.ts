@@ -1,13 +1,15 @@
 /**
- * Monobank statement backfill — fetches the last 30 days of transactions for
- * all accounts immediately after a user connects their token.
+ * Monobank statement backfill — fetches the last three months of transactions
+ * (three 31-day windows, `statementWindows.ts`; OD-26 Ф-3 (а)) for all
+ * accounts immediately after a user connects their token.
  *
  * Called fire-and-forget from `connectHandler` so it never delays the HTTP
  * response. Errors are logged but not re-thrown — a failed backfill is
  * non-fatal; future webhooks will fill the gap going forward.
  *
  * Rate limit: Monobank allows 1 statement request per 60 s per token.
- * With multiple accounts we sleep 62 s between each to stay within the limit.
+ * We sleep 62 s before every statement request except the very first one
+ * (windows, pages and accounts alike) — about three minutes per account.
  */
 
 import { z } from "zod";
@@ -17,11 +19,27 @@ import { categorizeMcc } from "./mccCategories.js";
 import type { KeyRing } from "../../lib/keyRing.js";
 import { decryptAndLazyReencrypt, type MonoTokenRow } from "./tokenStore.js";
 import { formatNumberUk, toKyivISODate } from "@sergeant/shared";
+import {
+  MONO_STATEMENT_PAGE_SIZE,
+  monoHistoryWindows,
+  nextStatementPageTo,
+} from "./statementWindows.js";
 
 const MONO_API_TIMEOUT_MS = 15_000;
 /** Monobank personal statement rate limit: 1 req / 60 s per token. */
-const BETWEEN_ACCOUNTS_DELAY_MS = 62_000;
-const HISTORY_DAYS = 30;
+const BETWEEN_REQUESTS_DELAY_MS = 62_000;
+/** Запобіжник від нескінченного гортання одного вікна (як у `backfill.ts`). */
+const MAX_PAGES = 20;
+
+type Sleeper = (ms: number) => Promise<void>;
+const defaultSleep: Sleeper = (ms) =>
+  new Promise((resolve) => setTimeout(resolve, ms));
+let _sleep: Sleeper = defaultSleep;
+
+/** Test-only: підмінити паузу між запитами (`null` повертає справжню). */
+export function __setHistoryFetchSleep(fn: Sleeper | null): void {
+  _sleep = fn ?? defaultSleep;
+}
 
 const CURRENCY_SYMBOL: Record<number, string> = {
   980: "₴",
@@ -180,33 +198,53 @@ export async function runMonoHistoryBackfill(
   // a legacy/stale-version row (best-effort; never throws on the write).
   const token = await decryptAndLazyReencrypt(encryptedToken, userId, ring);
 
-  const toTs = Math.floor(Date.now() / 1000);
-  const fromTs = toTs - HISTORY_DAYS * 24 * 60 * 60;
+  const windows = monoHistoryWindows(Math.floor(Date.now() / 1000));
 
   let totalInserted = 0;
+  let requests = 0;
+  const paced = async () => {
+    if (requests > 0) await _sleep(BETWEEN_REQUESTS_DELAY_MS);
+    requests++;
+  };
 
-  for (let i = 0; i < accounts.length; i++) {
-    const account = accounts[i]!;
-    if (i > 0) {
-      // Respect Monobank rate limit between accounts
-      await new Promise((resolve) =>
-        setTimeout(resolve, BETWEEN_ACCOUNTS_DELAY_MS),
-      );
-    }
+  for (const account of accounts) {
+    let fetched = 0;
+    let inserted = 0;
     try {
-      const items = await fetchAccountStatement(
-        token,
-        account.id,
-        fromTs,
-        toTs,
-      );
-      const inserted = await upsertTransactions(userId, account.id, items);
-      totalInserted += inserted;
+      // Вікна й сторінки від нових до старих; помилка зупиняє лише цей
+      // рахунок, тож його покриття лишається суцільним від «зараз» назад.
+      for (const window of windows) {
+        let pageTo = window.to;
+        // Межа сторінки включна (`nextStatementPageTo`): операції на ній
+        // приходять двічі, рахуємо кожну один раз.
+        const seen = new Set<string>();
+        for (let page = 0; page < MAX_PAGES; page++) {
+          await paced();
+          const items = await fetchAccountStatement(
+            token,
+            account.id,
+            window.from,
+            pageTo,
+          );
+          const fresh = items.filter((it) => !seen.has(it.id));
+          for (const it of fresh) seen.add(it.id);
+          fetched += fresh.length;
+          inserted += await upsertTransactions(userId, account.id, fresh);
+          if (items.length < MONO_STATEMENT_PAGE_SIZE) break;
+          const nextTo = nextStatementPageTo(
+            items.map((it) => it.time),
+            pageTo,
+            window.from,
+          );
+          if (nextTo === null) break;
+          pageTo = nextTo;
+        }
+      }
       logger.info({
         msg: "mono_backfill_account_done",
         userId,
         monoAccountId: account.id,
-        fetched: items.length,
+        fetched,
         inserted,
       });
     } catch (err) {
@@ -217,6 +255,7 @@ export async function runMonoHistoryBackfill(
         err: err instanceof Error ? err.message : String(err),
       });
     }
+    totalInserted += inserted;
   }
 
   await pool

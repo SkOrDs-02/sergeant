@@ -390,7 +390,7 @@ describe("backfillHandler", () => {
         status: 200,
         body: JSON.stringify(firstPage),
       })
-      .mockResolvedValueOnce({
+      .mockResolvedValue({
         status: 200,
         body: JSON.stringify([]),
       });
@@ -401,7 +401,16 @@ describe("backfillHandler", () => {
     expect(res.statusCode).toBe(200);
     await new Promise((r) => setTimeout(r, 100));
 
-    expect(bankProxyFetch).toHaveBeenCalledTimes(2);
+    // Перше вікно: повна сторінка + друга сторінка; далі ще два вікна по
+    // одному запиту (три місяці, OD-26 Ф-3).
+    expect(bankProxyFetch).toHaveBeenCalledTimes(4);
+    const paths = bankProxyFetch.mock.calls.map(
+      (c) => (c[0] as { path: string }).path,
+    );
+    const secondTo = Number(paths[1]!.split("/").pop());
+    // Друга сторінка того самого вікна йде до найстарішої отриманої операції
+    // включно (межа не губить операції тієї самої секунди, `data-65`).
+    expect(secondTo).toBe(now - 100 - 499);
     expect(sleepMock).toHaveBeenCalledWith(60_000);
     expect(
       queryMock.mock.calls.some((call) => {
@@ -501,6 +510,76 @@ describe("backfillHandler", () => {
     expect(snapshot["status"]).toBe("failed");
     expect(typeof snapshot["lastError"]).toBe("string");
     expect(snapshot["lastError"] as string).toMatch(/Monobank API error/);
+  });
+
+  describe("три місяці історії (OD-26 Ф-3 (а), П-3 (А))", () => {
+    function seedOneAccount() {
+      (env as { MONO_TOKEN_ENC_KEY: string | undefined }).MONO_TOKEN_ENC_KEY =
+        "a".repeat(64);
+      decryptToken.mockReturnValue("test-token");
+      queryMock
+        .mockResolvedValueOnce({
+          rows: [
+            {
+              token_ciphertext: Buffer.from("ct"),
+              token_iv: Buffer.from("iv"),
+              token_tag: Buffer.from("tag"),
+            },
+          ],
+        })
+        .mockResolvedValueOnce({ rows: [{ mono_account_id: "acc1" }] })
+        .mockResolvedValue({ rows: [] });
+    }
+
+    const DAY = 86_400;
+
+    it("тягне три суцільні вікна по 31 дню, найновіше першим, з паузою перед кожним запитом, крім першого", async () => {
+      const sleepMock = vi.fn(async () => {});
+      __setBackfillSleep(sleepMock);
+      seedOneAccount();
+      bankProxyFetch.mockResolvedValue({ status: 200, body: "[]" });
+
+      await backfillHandler(makeReq(), makeRes());
+      await new Promise((r) => setTimeout(r, 100));
+
+      expect(bankProxyFetch).toHaveBeenCalledTimes(3);
+      const ranges = bankProxyFetch.mock.calls.map((c) => {
+        const parts = (c[0] as { path: string }).path.split("/");
+        return { from: Number(parts.at(-2)), to: Number(parts.at(-1)) };
+      });
+      for (const r of ranges) expect(r.to - r.from).toBe(31 * DAY);
+      expect(ranges[1]!.to).toBe(ranges[0]!.from - 1);
+      expect(ranges[2]!.to).toBe(ranges[1]!.from - 1);
+      // Ліміт Monobank: один запит виписки на 60 с на токен.
+      expect(sleepMock).toHaveBeenCalledTimes(2);
+      expect(sleepMock).toHaveBeenCalledWith(60_000);
+
+      const progress = makeRes();
+      await backfillProgressHandler(makeReq(), progress);
+      expect((progress.body as { status: string }).status).toBe("completed");
+    });
+
+    it("обрив на другому вікні зупиняє рахунок: старіше вікно не тягнеться, дірки немає, стан «failed»", async () => {
+      seedOneAccount();
+      bankProxyFetch
+        .mockResolvedValueOnce({ status: 200, body: "[]" })
+        .mockResolvedValueOnce({ status: 429, body: "Too many requests" })
+        .mockResolvedValue({ status: 200, body: "[]" });
+
+      await backfillHandler(makeReq(), makeRes());
+      await new Promise((r) => setTimeout(r, 100));
+
+      expect(bankProxyFetch).toHaveBeenCalledTimes(2);
+      const progress = makeRes();
+      await backfillProgressHandler(makeReq(), progress);
+      expect((progress.body as { status: string }).status).toBe("failed");
+      // Мітку завершення не ставимо: робота не дійшла до кінця.
+      expect(
+        queryMock.mock.calls.some(
+          (c) => typeof c[0] === "string" && c[0].includes("last_backfill_at"),
+        ),
+      ).toBe(false);
+    });
   });
 });
 

@@ -278,7 +278,8 @@ export async function connectHandler(
     accountsCount: accounts.length,
   });
 
-  // Fire-and-forget: fetch last 30 days of transactions for each account.
+  // Fire-and-forget: fetch the last three months of transactions for each
+  // account (three 31-day windows, OD-26 Ф-3 (а)).
   // Runs after the response is sent so the connect call is never delayed.
   scheduleHistoryBackfill(
     userId,
