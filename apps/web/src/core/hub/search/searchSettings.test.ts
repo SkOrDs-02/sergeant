@@ -110,3 +110,53 @@ describe("SETTINGS_PRESENTATION fallback (audit finding #10)", () => {
     vi.resetModules();
   });
 });
+
+// Хвиля 7 аудиту 2026-09-13 («Шум і дублі»).
+function sectionsFor(query: string): string[] {
+  return searchSettings(tokenize(query))
+    .filter((r) => r.target.kind === "settings")
+    .map((r) =>
+      r.target.kind === "settings" ? (r.target.sectionId ?? "") : "",
+    );
+}
+
+describe("⌘K веде туди, де налаштування живе після переїздів (PR-S4, PR-S8)", () => {
+  // PR-S4: декларації переїхали з «Резервної копії» в «Дані та
+  // приватність», а пошукові токени лишились позаду.
+  it("декларації про дані знаходять «Дані та приватність»", () => {
+    expect(sectionsFor("субпроцесори")).toContain("privacy");
+    expect(sectionsFor("закриється")).toContain("privacy");
+  });
+
+  // PR-S8: рішення власника 2026-11-18 (варіант Б) — тумблер «Повідомлення
+  // від Сержанта» переїхав у секцію «Сержант», згода на памʼять лишилась у
+  // приватності. Пошук «сержант» веде в обидва місця, але вже не в
+  // «Сповіщення», де тумблера більше немає.
+  it("«сержант» знаходить секцію Сержанта і згоду на памʼять", () => {
+    const ids = sectionsFor("сержант");
+    expect(ids).toEqual(expect.arrayContaining(["ai", "privacy"]));
+    expect(ids).not.toContain("notifications");
+  });
+
+  it("«повідомлення сержанта» веде в секцію «Сержант», не в «Сповіщення»", () => {
+    const ids = sectionsFor("повідомлення сержанта");
+    expect(ids[0]).toBe("ai");
+    expect(ids).not.toContain("notifications");
+  });
+});
+
+describe("опис секції в ⌘K без техжаргону (PR-S10)", () => {
+  it("жоден видимий опис не каже service worker, debug, lab, beta, insights", () => {
+    for (const section of SETTINGS_INDEX) {
+      expect(section.description).not.toMatch(
+        /service worker|\bsw\b|debug|\blab\b|beta|insights|pwa/i,
+      );
+    }
+  });
+
+  it("опис «Сержанта» називає звіт тижня і повідомлення, а не тренера", () => {
+    const ai = SETTINGS_INDEX.find((s) => s.id === "ai");
+    expect(ai?.description).toMatch(/звіт тижня/i);
+    expect(ai?.description).toMatch(/повідомлення/i);
+  });
+});

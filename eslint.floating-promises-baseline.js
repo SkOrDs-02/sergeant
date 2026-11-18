@@ -9,7 +9,7 @@
 // to drop it. The checker fails when an entry no longer needs the allowance,
 // so a fixed file cannot quietly keep the rule disabled.
 //
-// Baseline captured 2026-09-16: 198 findings across 83 files.
+// Baseline captured 2026-11-18: 77 findings across 77 files.
 // 2026-09-29: TrialBanner.tsx fixed and dropped (82 files).
 // 2026-09-30: HubInsightsBlock.tsx no longer floats a promise (81 files).
 // 2026-10-03: useFinykBackupSync.ts fixed (приймач ?sync= з navigate видалено, 80 files).
@@ -41,7 +41,6 @@ export const floatingPromisesBaseline = [
   "apps/web/src/core/app/useDemoCommands.ts",
   "apps/web/src/core/app/usePwaInstall.ts",
   "apps/web/src/core/billing/PaywallModal.tsx",
-  "apps/web/src/core/db/__tests__/sqlite.kvvfsWipe.test.ts",
   "apps/web/src/core/errors/NotFoundPage.tsx",
   "apps/web/src/core/hooks/useHubNavigation.ts",
   "apps/web/src/core/hooks/useHubUIState.test.tsx",

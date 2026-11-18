@@ -397,10 +397,13 @@ export function Exercise({ exerciseId, onNavigate }: ExerciseProps) {
             <SectionHeading as="h2" size="lg" className="mb-3" variant="fizruk">
               Обʼєм тренування (кг × повтори, за тижнями)
             </SectionHeading>
+            {/* PR-Z3 (ревізія 2026-11-17): `volPoints` це сума вага × повтори
+                за тиждень, тож одиниця «кг×повт», як у підсумку тренування.
+                Із «кг» графік казав «Поточне значення: 4 000 кг». */}
             <ExerciseProgressChart
               points={progressData.volPoints}
-              label="Обсяг"
-              unit="кг"
+              label="Обʼєм"
+              unit={messages.fizruk.workoutSummary.kgUnit}
               color={chartSeries.fizruk.primary}
             />
           </Card>

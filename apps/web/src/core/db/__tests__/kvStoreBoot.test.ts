@@ -17,6 +17,15 @@ import type {
   BroadcastChannelLike,
   SqliteKVStoreClient,
 } from "@sergeant/shared";
+import {
+  installInProcessSqliteWorker,
+  uninstallInProcessSqliteWorker,
+} from "./inProcessSqliteWorker";
+
+// PR-T1 (2026-11-18): sqlite-wasm живе лише у воркері, тож справжня база в
+// тестах — через фейковий in-process `Worker` (див. сам хелпер).
+beforeEach(installInProcessSqliteWorker);
+afterEach(uninstallInProcessSqliteWorker);
 
 /**
  * Tests for {@link bootstrapKvStore} (Stage 9 / PR #062–#064 of

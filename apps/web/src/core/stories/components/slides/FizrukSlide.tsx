@@ -1,7 +1,14 @@
+import { messages } from "@shared/i18n/uk";
 import { StoryShell } from "./StoryShell";
 import { StatRow } from "./StatRow";
 import { fmtNum } from "../../formatters";
 import type { FizrukSlideData } from "../../types";
+
+// PR-Z3 (аудит 2026-09-13, хвиля 6; ревізія 2026-11-17): `totalVolume` тут
+// це `workoutTonnageKg`/`itemTonnageKg`, тобто сума вага × повтори, а не
+// кілограми. Слайд дайджесту підписував його «кг» і на загальному обʼємі,
+// і на головних вправах; підпис той самий, що в підсумку тренування.
+const VOLUME_UNIT = messages.fizruk.workoutSummary.kgUnit;
 
 export function FizrukSlide({ slide }: { slide: FizrukSlideData }) {
   const { agg, ai } = slide;
@@ -26,7 +33,7 @@ export function FizrukSlide({ slide }: { slide: FizrukSlideData }) {
         </div>
         <div className="rounded-panel bg-white/15 border border-white/20 px-4 py-3">
           <div className="text-style-caption uppercase tracking-wider text-white/75 font-bold">
-            Обсяг, кг
+            Обʼєм, {VOLUME_UNIT}
           </div>
           <div className="text-style-headline leading-none tabular-nums mt-1">
             {fmtNum(agg?.totalVolume)}
@@ -44,7 +51,7 @@ export function FizrukSlide({ slide }: { slide: FizrukSlideData }) {
               <StatRow
                 key={e.name}
                 label={e.name}
-                value={`${fmtNum(e.totalVolume)} кг`}
+                value={`${fmtNum(e.totalVolume)} ${VOLUME_UNIT}`}
               />
             ))}
           </div>

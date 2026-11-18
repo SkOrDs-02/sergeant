@@ -1,6 +1,6 @@
 # pnpm Overrides Rationale
 
-> **Last touched:** 2026-10-20 by @claude. **Next review:** 2027-01-23.
+> **Last touched:** 2026-11-18 by @claude (аудит-свіп: межі `react-server-dom-webpack`, `shell-quote`, `undici`, `sharp`, `dompurify` підняті над новими advisory; таблицю реєстру звірено з `package.json`). Раніше того ж дня `node-forge` → `^1.4.3`. **Next review:** 2027-01-23.
 > **Status:** Active
 
 Документація кожного запису в `pnpm.overrides` кореневого `package.json`.
@@ -171,7 +171,7 @@ pin на `tmp >=0.2.6`, або advisory буде відкликано.
 
 ---
 
-## Повний реєстр `pnpm.overrides` (згенеровано звірянням з `package.json`, 2026-08-05)
+## Повний реєстр `pnpm.overrides` (звірено з `package.json` 2026-11-18)
 
 Прозові секції вище описують частину записів і подекуди цитують застарілі діапазони —
 канонічні значення завжди в `package.json → pnpm.overrides`. Таблиця нижче — повний
@@ -182,9 +182,10 @@ pin на `tmp >=0.2.6`, або advisory буде відкликано.
 | Override (селектор)               | Форсована версія  | Прозове обґрунтування |
 | --------------------------------- | ----------------- | --------------------- |
 | `ioredis`                         | `^5.11.1`         | — (борг)              |
-| `react-server-dom-webpack`        | `^19.2.8`         | ✅ так                |
+| `react-server-dom-webpack`        | `^19.2.9`         | ✅ так                |
 | `tar`                             | `^7.5.21`         | ✅ так                |
-| `@xmldom/xmldom`                  | `>=0.8.13 <0.9.0` | ✅ так                |
+| `node-forge`                      | `^1.4.3`          | ✅ так                |
+| `@xmldom/xmldom`                  | `>=0.8.15 <0.9.0` | ✅ так                |
 | `serialize-javascript`            | `>=7.0.5`         | ✅ так                |
 | `postcss`                         | `>=8.5.18`        | ✅ так                |
 | `uuid`                            | `^14.0.0`         | ✅ так                |
@@ -195,31 +196,34 @@ pin на `tmp >=0.2.6`, або advisory буде відкликано.
 | `esbuild@<0.28.1`                 | `>=0.28.1`        | ✅ так                |
 | `ajv@>=7.0.0-alpha.0 <8.18.0`     | `>=8.18.0`        | ✅ так                |
 | `tmp@<0.2.6`                      | `>=0.2.6`         | ✅ так                |
-| `shell-quote@<=1.8.4`             | `>=1.9.0`         | — (борг)              |
+| `shell-quote@<1.11.0`             | `^1.11.0`         | ✅ так                |
 | `ws@<=8.20.1`                     | `>=8.21.0`        | — (борг)              |
-| `undici@>=6.0.0 <6.28.0`          | `^6.28.0`         | — (борг)              |
-| `undici@>=7.0.0 <7.29.0`          | `^7.29.0`         | — (борг)              |
-| `undici@>=8.0.0 <8.9.0`           | `^8.9.0`          | — (борг)              |
+| `undici@>=6.0.0 <6.29.1`          | `^6.29.1`         | ✅ так                |
+| `undici@>=7.0.0 <7.30.1`          | `^7.30.1`         | ✅ так                |
+| `undici@>=8.0.0 <8.12.2`          | `^8.12.2`         | ✅ так                |
 | `form-data@<=4.0.5`               | `>=4.0.6`         | — (борг)              |
 | `immutable@<4.3.9`                | `>=4.3.9`         | — (борг)              |
-| `sharp@<0.35.0`                   | `>=0.35.0`        | — (борг)              |
+| `sharp@<0.35.5`                   | `^0.35.5`         | ✅ так                |
+| `smol-toml@<=1.7.0`               | `>=1.7.1`         | — (борг)              |
+| `@argos-ci/core@<=6.2.0`          | `>=6.2.1`         | — (борг)              |
 | `brace-expansion@<1.1.21`         | `1.1.21`          | — (борг)              |
 | `brace-expansion@>=2.0.0 <2.1.7`  | `2.1.7`           | — (борг)              |
 | `brace-expansion@>=3.0.0 <5.0.12` | `5.0.12`          | — (борг)              |
-| `dompurify`                       | `^3.4.16`         | — (борг)              |
-| `js-yaml@>=3.0.0 <3.15.0`         | `3.15.0`          | — (борг)              |
-| `js-yaml@>=4.0.0 <4.3.0`          | `4.3.0`           | — (борг)              |
+| `dompurify`                       | `^3.4.17`         | ✅ так                |
+| `js-yaml@>=3.0.0 <3.15.2`         | `3.15.2`          | — (борг)              |
+| `js-yaml@>=4.0.0 <4.3.2`          | `4.3.2`           | — (борг)              |
 | `qs@>=6.11.1 <6.16.0`             | `6.16.0`          | — (борг)              |
 | `axios@>=1.15.2 <1.20.0`          | `>=1.20.0`        | — (борг)              |
 | `@grpc/grpc-js@>=1.14.0 <1.14.5`  | `>=1.14.5`        | — (борг)              |
 | `fast-uri`                        | `^3.1.8`          | ✅ так                |
 | `ip-address@<10.7.1`              | `^10.7.1`         | — (борг)              |
+| `nanoid@<3.3.17`                  | `^3.3.17`         | — (борг)              |
 | `browserslist@<4.28.7`            | `>=4.28.7`        | ✅ так                |
 | `basic-ftp@<6.2.1`                | `6.2.1`           | ✅ так                |
 | `fflate@<0.4.9`                   | `0.4.9`           | ✅ так                |
 | `moment@>=2.29.2 <2.31.0`         | `2.31.0`          | ✅ так                |
 
-Всього: **37** override-ів. Борг на дописування обґрунтувань трекається політикою
+Всього: **41** override-ів. Борг на дописування обґрунтувань трекається політикою
 [`pnpm-overrides-policy.md`](docs/governance/governance/pnpm-overrides-policy.md) § Правила п.1.
 
 ---
@@ -270,6 +274,28 @@ API: `get-uri` викликає лише `access`, `lastMod`, `list`, `downloadT
 
 **Last reviewed:** 2026-09-01
 
+---
+
+## `node-forge` → `^1.4.3`
+
+**Why:** `node-forge@1.4.0` тягнув 24 advisory з `pnpm audit` (9 high), зокрема
+[GHSA-86w9-cpqp-85rv](https://github.com/advisories/GHSA-86w9-cpqp-85rv) (high, підробка
+підпису RSA PKCS#1 v1.5), що до 2026-11-18 стояв винятком у
+[`audit-exceptions.md`](docs/governance/security/audit-exceptions.md) як «патчу не існує».
+2026-10-27..11-04 вийшли `1.4.1`-`1.4.3`; частину advisory (`<=1.4.2`) закриває лише
+`1.4.3`. Шляхи: рантайм сервера `apps/server > @parse/node-apn@8.1.0 > node-forge` і тулінг
+Expo/React Native (`@expo/cli`, `@expo/code-signing-certificates`,
+`@react-native/dev-middleware > selfsigned`), які оголошують `node-forge@^1.x` і самі на
+`1.4.3` не переходили, бо lockfile тримав `1.4.0`. Мажор той самий, тож API не зачеплено.
+Після override `pnpm audit` не повертає жодного advisory `node-forge`.
+
+**Drop when:** `pnpm why node-forge -r` не покаже жодної копії `<1.4.3` без override
+(тобто всі споживачі самі розвʼязуються в `>=1.4.3`).
+
+**Last reviewed:** 2026-11-18
+
+---
+
 ## `fast-uri` → `^3.1.8`
 
 **Why:** чотири high-адвайзорі проти `fast-uri <3.1.6`, усі патчаться в `3.1.6`:
@@ -302,3 +328,41 @@ API: `get-uri` викликає лише `access`, `lastMod`, `list`, `downloadT
 `<3.1.6`.
 
 **Last reviewed:** 2026-09-02
+
+---
+
+## Аудит-свіп 2026-11-18: `react-server-dom-webpack`, `shell-quote`, `undici`, `sharp`, `dompurify`
+
+Тижневий `Dependency audit (ledger-gated)` був червоним: 37 непокритих advisory у
+повному дереві, з них 10 critical. Пʼять override-ів нижче вже існували, але їхня
+нижня межа стояла під вразливою версією, тож lockfile законно тримав стару копію.
+Урок той самий, що з `fast-uri`: override із `^X.Y.Z` не підтягує патч сам, якщо
+lockfile уже задовольняє діапазон, тож при новому advisory піднімай саме межу.
+
+| Override                                          | Advisory (severity)                                                                                                                                                                                                                                                                                               | Було → стало у lockfile                             |
+| ------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | --------------------------------------------------- |
+| `react-server-dom-webpack` → `^19.2.9`            | [GHSA-xqc2-xf4c-x3h3](https://github.com/advisories/GHSA-xqc2-xf4c-x3h3) (critical, RCE у React Server Components), вразливі `>=19.2.0 <19.2.9`                                                                                                                                                                   | 19.2.8 → 19.2.9                                     |
+| `shell-quote@<1.11.0` → `^1.11.0`                 | [GHSA-pqg4-j6r4-53mv](https://github.com/advisories/GHSA-pqg4-j6r4-53mv) (critical, ін'єкція команди в `quote()`), вразливі `>=1.8.4 <1.11.0`                                                                                                                                                                     | 1.10.0 → 1.12.0                                     |
+| `undici@>=6.0.0 <6.29.1` → `^6.29.1` (і 7.x, 8.x) | [GHSA-qrxm-fqhp-jwvm](https://github.com/advisories/GHSA-qrxm-fqhp-jwvm), [GHSA-2m5v-pch6-74hx](https://github.com/advisories/GHSA-2m5v-pch6-74hx), [GHSA-xjj6-f33q-929c](https://github.com/advisories/GHSA-xjj6-f33q-929c), [GHSA-4w7w-5xrc-9h26](https://github.com/advisories/GHSA-4w7w-5xrc-9h26) (усі high) | 6.29.0 / 7.30.0 / 8.11.2 → 6.29.1 / 7.30.2 / 8.12.4 |
+| `sharp@<0.35.5` → `^0.35.5`                       | [GHSA-wq5f-xc86-pv6w](https://github.com/advisories/GHSA-wq5f-xc86-pv6w) (high, librsvg у вбудованому libvips)                                                                                                                                                                                                    | 0.35.4 → 0.35.5                                     |
+| `dompurify` → `^3.4.17`                           | [GHSA-cg2g-xh64-v4q7](https://github.com/advisories/GHSA-cg2g-xh64-v4q7) (critical), [GHSA-mrv2-3pqr-j5jr](https://github.com/advisories/GHSA-mrv2-3pqr-j5jr) (high)                                                                                                                                              | 3.4.16 → 3.4.18                                     |
+
+**Сумісність API.** Усі пʼять у межах того самого мажору (для `0.x` — тієї самої
+мінорної лінії `0.35`), тож контракт споживачів не змінюється:
+`react-server-dom-webpack` тягне лише `jest-expo` (dev, мобільний);
+`shell-quote` — `detox` (dev, мобільний, оголошує `^1.7.2`); `undici` —
+`@expo/cli` (6.x), `jsdom` (7.x, тести web і mobile-shell), `testcontainers`
+(8.x, інтеграційні тести сервера), першопартійного імпорту `undici` у коді немає;
+`sharp` — `@argos-ci/core` (dev, візуальні тести web); `dompurify` — `posthog-js`
+(лендинг і web). `react-server-dom-webpack@19.2.9` оголошує peer `react@^19.2.9`,
+а `jest-expo` живе з `react@18.3.1`: ця розбіжність peer-ів була і на 19.2.8,
+нова вона не додає.
+
+Селектори `shell-quote`, `undici`, `sharp` переведено з `>=` на `^`, щоб
+override тримав один мажор (`pnpm-overrides-policy.md` § Правила п.2).
+
+**Drop when:** для кожного рядка — коли `pnpm why <pkg> -r` без override не
+покаже жодної копії нижче пропатченої версії (споживачі самі оголосять
+пропатчену межу або lockfile її утримає).
+
+**Last reviewed:** 2026-11-18

@@ -371,6 +371,43 @@ describe("Budgets page", () => {
     expect(screen.getAllByText("••••").length).toBeGreaterThanOrEqual(2);
   });
 
+  // PR-F3 (аудит 2026-09-13, хвиля 6; ревізія 2026-11-17): картка цілі
+  // ховала «зібрано / мета», але підпис «Потрібно відкладати: N ₴/міс.» це
+  // готовий доменний рядок, і він ішов на екран із сумою.
+  it("masks the goal's monthly-need label when showBalance=false", () => {
+    const budgets = [
+      {
+        id: "g1",
+        type: "goal",
+        name: "Відпустка",
+        emoji: "🎯",
+        targetAmount: 12345,
+        savedAmount: 2345,
+        targetDate: "2027-01-01",
+        categoryId: "g1",
+      },
+    ] as unknown as Budget[];
+    const { container, unmount } = renderBudgets({
+      showBalance: false,
+      storage: buildStorage({ budgets }),
+    });
+    fireEvent.click(screen.getByRole("button", { name: /Цілі накопичення/ }));
+    expect(
+      screen.getByText("Потрібно відкладати: ••••/міс."),
+    ).toBeInTheDocument();
+    expect(container.textContent ?? "").not.toMatch(/\d\s?₴/);
+    unmount();
+
+    renderBudgets({ storage: buildStorage({ budgets }) });
+    // Розгорнутість секції памʼятається між монтуваннями.
+    if (!screen.queryByText(/^Потрібно відкладати/)) {
+      fireEvent.click(screen.getByRole("button", { name: /Цілі накопичення/ }));
+    }
+    expect(
+      screen.getByText(/^Потрібно відкладати: \d[\d\s]* ₴\/міс\.$/),
+    ).toBeInTheDocument();
+  });
+
   // Same page with showBalance defaulted to `true` (the pre-fix behaviour)
   // must keep showing real numbers — guards against a mask that always
   // fires regardless of the prop.

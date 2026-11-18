@@ -387,6 +387,29 @@ describe("ToggleRow", () => {
     expect(screen.getByRole("switch", { name: "Сповіщення" })).toBeTruthy();
   });
 
+  // PR-S11 (аудит 2026-09-13, хвиля 7): заблокований рядок не обіцяє дії
+  // ні курсором, ні підсвіткою під мишею. Сам `disabled` на `Switch` пінить
+  // `ExperimentalSection.test.tsx`; ця половина була непінованою.
+  it("заблокований рядок без cursor-pointer і hover-підсвітки (PR-S11)", () => {
+    const { container, rerender } = render(
+      <ToggleRow
+        label="Сповіщення"
+        checked={false}
+        onChange={vi.fn()}
+        disabled
+      />,
+    );
+    const row = container.querySelector("label[data-row]") as HTMLElement;
+    expect(row.className).toContain("cursor-not-allowed");
+    expect(row.className).not.toContain("cursor-pointer");
+    expect(row.className).not.toMatch(/hover:/);
+    rerender(
+      <ToggleRow label="Сповіщення" checked={false} onChange={vi.fn()} />,
+    );
+    expect(row.className).toContain("cursor-pointer");
+    expect(row.className).toMatch(/hover:/);
+  });
+
   it("toggles when the visible label text is clicked", () => {
     const onChange = vi.fn();
     render(

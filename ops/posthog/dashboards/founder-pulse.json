@@ -42,6 +42,21 @@
       "fired_by": "apps/server/src/modules/billing/stripe.ts",
       "idempotency": "uuid = event.id (PostHog dedupe) + stripe_webhook_events.event_id (DB)",
       "introduced_by": "PR-09 (#2525)"
+    },
+    "auth_prompt_shown": {
+      "payload": {
+        "placement": "local_only_banner (web) | dashboard (mobile SoftAuthPromptCard)"
+      },
+      "fired_by": "apps/web/src/core/durability/LocalOnlyDataBanner.tsx (web); apps/mobile/src/core/dashboard/SoftAuthPromptCard.tsx (mobile)",
+      "idempotency": "web: один показ на завантаження застосунку (module-scope прапорець); mobile: на маунт картки",
+      "introduced_by": "рішення власника 2026-11-17 (web: банер локальних даних замість SoftAuthPromptCard)"
+    },
+    "auth_after_value": {
+      "payload": {
+        "placement": "local_only_banner (web) | dashboard (mobile)"
+      },
+      "fired_by": "тап «Увійти» в LocalOnlyDataBanner (web) / SoftAuthPromptCard (mobile)",
+      "introduced_by": "рішення власника 2026-11-17 (web: банер локальних даних замість SoftAuthPromptCard)"
     }
   },
   "super_properties": ["platform", "is_capacitor", "environment"],
@@ -121,6 +136,31 @@
         }
       ],
       "conversion_window": { "hours": 168 }
+    },
+    {
+      "key": "auth-prompt-funnel",
+      "name": "Sign-in prompt funnel — shown → tapped → signup",
+      "name_uk": "Заклик до входу: побачив → тапнув «Увійти» → зареєструвався",
+      "description_uk": "Скільки гостей бачать заклик до входу (на вебі банер «Дані лише на цьому пристрої», на мобайлі картка soft-auth), скільки тапають «Увійти» і скільки за 7 днів створюють акаунт. Розбивка за `placement` розводить веб і мобайл. Даних поки мало, ціль після baseline.",
+      "type": "funnel",
+      "size": "half",
+      "description": "Strict-sequence funnel auth_prompt_shown → auth_after_value → signup_completed, broken down by event property `placement` (local_only_banner = web banner, dashboard = mobile card). Conversion window 7 days, last 28 days.",
+      "rationale": "After the web SoftAuthPromptCard was removed (owner decision 2026-11-17) the local-only-data banner is the only web sign-in prompt, shown to every guest outside FTUX. signup_completed alone does not say where a guest came from, so without this funnel the prompt's effect is invisible.",
+      "targets": {
+        "shown → tapped": "TBD після baseline (2026-12-15)",
+        "tapped → signup": "TBD після baseline (2026-12-15)"
+      },
+      "steps": [
+        { "event": "auth_prompt_shown" },
+        { "event": "auth_after_value" },
+        { "event": "signup_completed" }
+      ],
+      "conversion_window": { "hours": 168 },
+      "breakdown": {
+        "type": "event_property",
+        "key": "placement",
+        "comment": "local_only_banner = web LocalOnlyDataBanner; dashboard = mobile SoftAuthPromptCard."
+      }
     },
     {
       "key": "activation-rate",
@@ -256,9 +296,10 @@
       { "panel": "wf60-funnel-per-module", "row": 3, "width": "full" },
       { "panel": "activation-rate", "row": 4, "width": "half" },
       { "panel": "new-subscriptions", "row": 4, "width": "half" },
-      { "panel": "retention-d1-d7-d30", "row": 5, "width": "full" },
-      { "panel": "funnel-zeroes-canary", "row": 6, "width": "full" },
-      { "panel": "traffic-by-environment", "row": 7, "width": "full" }
+      { "panel": "auth-prompt-funnel", "row": 5, "width": "half" },
+      { "panel": "retention-d1-d7-d30", "row": 6, "width": "full" },
+      { "panel": "funnel-zeroes-canary", "row": 7, "width": "full" },
+      { "panel": "traffic-by-environment", "row": 8, "width": "full" }
     ]
   }
 }

@@ -8,8 +8,9 @@
  * Той самий баг раніше вже ловив `/assistant`.
  */
 import { beforeEach, describe, it, expect, vi } from "vitest";
-import { render, screen } from "@testing-library/react";
-import { MemoryRouter } from "react-router-dom";
+import { fireEvent, render, screen } from "@testing-library/react";
+import { MemoryRouter, Route, Routes, useLocation } from "react-router-dom";
+import { onHubBus } from "@shared/lib/modules/hubBus";
 
 const { useAuthOptional } = vi.hoisted(() => ({
   useAuthOptional: vi.fn((): { user: unknown } | null => null),
@@ -58,6 +59,41 @@ describe("CapabilitiesPage", () => {
     const classes = main!.className;
     expect(classes).toContain("h-dvh");
     expect(classes).toContain("overflow-y-auto");
+  });
+
+  // PR-A8 (аудит 2026-09-13, хвиля 7): рішення D5 — чат є аркушем над
+  // маршрутом, `/chat` лише для диплінків. Картка каталогу була єдиним
+  // in-app входом у повну сторінку; тепер вона, як шапка й пошук, шле
+  // `openChat` на шину, і маршрут лишається тим самим.
+  it("картка «Чат із Сержантом» відкриває аркуш чату, а не сторінку /chat", () => {
+    const events: unknown[] = [];
+    const off = onHubBus("openChat", (detail) => events.push(detail));
+    function Where() {
+      return <span data-testid="where">{useLocation().pathname}</span>;
+    }
+    render(
+      <MemoryRouter initialEntries={["/capabilities"]}>
+        <Routes>
+          <Route
+            path="*"
+            element={
+              <>
+                <CapabilitiesPage />
+                <Where />
+              </>
+            }
+          />
+        </Routes>
+      </MemoryRouter>,
+    );
+    fireEvent.click(screen.getByTestId("capability-chat"));
+    off();
+    expect(events).toEqual([{ message: null, autoSend: false }]);
+    expect(screen.getByTestId("where")).toHaveTextContent("/capabilities");
+
+    // Решта карток і далі ведуть маршрутом.
+    fireEvent.click(screen.getByTestId("capability-routine"));
+    expect(screen.getByTestId("where")).toHaveTextContent("/routine");
   });
 
   it("рендерить усі записи реєстру", () => {

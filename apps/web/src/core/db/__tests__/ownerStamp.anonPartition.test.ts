@@ -17,6 +17,15 @@ import {
 } from "../../hub/hubChatSessions";
 import { purgeAppOwnedLocalData } from "@shared/lib/storage/purgeLocalData";
 import { teardownLocalStateAfterSessionLoss } from "../../auth/sessionLossTeardown";
+import {
+  installInProcessSqliteWorker,
+  uninstallInProcessSqliteWorker,
+} from "./inProcessSqliteWorker";
+
+// PR-T1 (2026-11-18): sqlite-wasm живе лише у воркері, тож справжня база в
+// тестах — через фейковий in-process `Worker` (див. сам хелпер).
+beforeEach(installInProcessSqliteWorker);
+afterEach(uninstallInProcessSqliteWorker);
 
 /**
  * Штамп власника на холодному старті читається з `anon`-партиції: KV бутиться

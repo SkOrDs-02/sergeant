@@ -3,6 +3,10 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 import { __resetSqliteDbForTests, getSqliteDb } from "../sqlite";
 import {
+  installInProcessSqliteWorker,
+  uninstallInProcessSqliteWorker,
+} from "./inProcessSqliteWorker";
+import {
   addCapacityMock,
   installOpfsSAHPoolVfsMock,
   sahPoolState,
@@ -24,6 +28,9 @@ import {
  * Пул не росте сам — `xOpen` віддає `toss("SAH pool is full. Cannot create
  * file")`, і sqlite перетворює це на `SQLITE_IOERR` без натяку на причину.
  * Тому ємність задається явно, а запас вільних слотів доростає на місці.
+ *
+ * Від PR-T1 (2026-11-18) пул ставиться лише у воркері, тож тест ганяє
+ * справжній `sqliteWorkerHandler.ts` через фейковий in-process `Worker`.
  */
 vi.mock("@sqlite.org/sqlite-wasm", () => import("./sqlite-wasm-fake"));
 vi.mock("../../observability/sentry.js", () => ({
@@ -34,6 +41,7 @@ vi.mock("../../observability/sentry.js", () => ({
 describe("OPFS-SAH pool capacity", () => {
   beforeEach(() => {
     __resetSqliteDbForTests();
+    installInProcessSqliteWorker();
     installOpfsSAHPoolVfsMock.mockClear();
     addCapacityMock.mockClear();
     sahPoolState.capacity = 0;
@@ -42,17 +50,11 @@ describe("OPFS-SAH pool capacity", () => {
       value: { getDirectory: () => Promise.resolve({}) },
       configurable: true,
     });
-    // `hasOpfsSupport()` вимагає ОБИДВОХ ознак — кореня OPFS і
-    // sync-access-handle. Без другої гілка SAH-пулу не виконується взагалі,
-    // і тест мовчки міряв би kvvfs-фолбек.
-    Object.defineProperty(globalThis, "FileSystemFileHandle", {
-      value: function FileSystemFileHandle() {},
-      configurable: true,
-    });
   });
 
   afterEach(() => {
     __resetSqliteDbForTests();
+    uninstallInProcessSqliteWorker();
   });
 
   it("не покладається на дефолт бібліотеки (6 слотів)", async () => {
@@ -81,7 +83,7 @@ describe("OPFS-SAH pool capacity", () => {
         exportFile: vi.fn(),
         getCapacity: () => sahPoolState.capacity,
         getFileCount: () => sahPoolState.fileCount,
-        getFileNames: vi.fn(),
+        getFileNames: vi.fn(() => [] as string[]),
         importDb: vi.fn(),
       } as never;
     });
@@ -117,7 +119,7 @@ describe("OPFS-SAH pool capacity", () => {
         exportFile: vi.fn(),
         getCapacity: () => sahPoolState.capacity,
         getFileCount: () => sahPoolState.fileCount,
-        getFileNames: vi.fn(),
+        getFileNames: vi.fn(() => [] as string[]),
         importDb: vi.fn(),
       } as never;
     });

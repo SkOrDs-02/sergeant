@@ -30,12 +30,12 @@ export function PWASection() {
       // зареєструє SW заново і він поставить precache з нуля.
       const registration = await navigator.serviceWorker.getRegistration();
       await registration?.unregister();
-      toast.success("Кеш PWA скинуто. Перезавантажую…", 4000);
+      toast.success("Файли застосунку скинуто. Перезавантажую…", 4000);
       setTimeout(() => window.location.reload(), 300);
     } catch (err) {
       // Скидання кешу ідемпотентне — повторна спроба безпечна і це єдиний
       // вихід із «застряглої версії», заради якої користувач сюди й прийшов.
-      toast.error("Не вдалося скинути кеш PWA", undefined, {
+      toast.error("Не вдалося скинути файли застосунку", undefined, {
         label: "Повторити",
         onClick: () => {
           void performClearCaches();
@@ -65,9 +65,9 @@ export function PWASection() {
       const snap = await swGetDebugSnapshot();
       setSwSnapshot(snap);
       logger.info("[sw] snapshot", snap);
-      toast.success("SW-діагностику підготовлено");
+      toast.success("Діагностику підготовлено");
     } catch (err) {
-      toast.error("Не вдалося отримати діагностику SW", undefined, {
+      toast.error("Не вдалося отримати діагностику", undefined, {
         label: "Повторити",
         onClick: () => {
           void runSwDiagnostics();
@@ -101,7 +101,7 @@ export function PWASection() {
           disabled={swBusy || !("serviceWorker" in navigator)}
           onClick={() => setConfirmOpen(true)}
         >
-          Скинути кеш PWA
+          Скинути файли застосунку
         </Button>
       </SettingsSubGroup>
       {/* V-12 (аудит 2026-08-08, docs/work/specs/audits/2026-08-08-profile-settings-deep-audit.md
@@ -187,7 +187,7 @@ export function PWASection() {
           файли з мережі заново. */}
       <ConfirmDialog
         open={confirmOpen}
-        title="Скинути кеш PWA?"
+        title="Скинути файли застосунку?"
         description="Застосунок видалить свої кеші, і сторінка перезавантажиться. Твої дані й офлайн-черга лишаються на місці, а файли інтерфейсу застосунок дотягне заново, тож роби це при інтернеті."
         confirmLabel="Скинути та перезавантажити"
         cancelLabel="Скасувати"

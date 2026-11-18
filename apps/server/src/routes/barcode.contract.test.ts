@@ -65,7 +65,23 @@ vi.mock("../modules/nutrition/productCatalog.js", () => ({
 // Dynamic import to pick up __barcodeTestHooks for cache reset.
 // ────────────────────────────────────────────────────────────────────────────────
 
-import handler, { __barcodeTestHooks } from "../modules/nutrition/barcode.js";
+import rawHandler, {
+  __barcodeTestHooks,
+} from "../modules/nutrition/barcode.js";
+import { errorHandler } from "../http/errorHandler.js";
+
+/**
+ * Помилки хендлер кидає (`AppError`), а тіло будує центральний
+ * `errorHandler` — так само, як у живому Express 5. Контракт нижче
+ * перевіряє саме тіло на дроті (PR-T3 аудиту 2026-09-13, хвиля 10).
+ */
+async function handler(req: Request, res: Response): Promise<void> {
+  try {
+    await rawHandler(req, res);
+  } catch (err) {
+    errorHandler(err, req, res, () => {});
+  }
+}
 
 // ────────────────────────────────────────────────────────────────────────────────
 // Helpers
@@ -283,6 +299,8 @@ describe("contract: /api/barcode producer — error envelope", () => {
     expect(res.statusCode).toBe(404);
     const parsed = BarcodeLookupErrorSchema.safeParse(res.body);
     expect(parsed.success).toBe(true);
+    // PR-T3: клієнт розрізняє помилку за `code`, а не за текстом.
+    expect(res.body).toMatchObject({ code: "BARCODE_NOT_FOUND" });
   });
 
   it("handler emits 503 (NOT 404) when every upstream aborts — «база лежить» ≠ «не знайдено»", async () => {

@@ -117,7 +117,7 @@ describe("sec-06: change-email без updateEmailWithoutVerification", () => {
     expect(queueMail).not.toHaveBeenCalled();
   });
 
-  it("клік у листі: адреса змінюється, підтверджена, сповіщення на СТАРУ", async () => {
+  it("клік у листі: адреса змінюється, статус верифікації зберігається, сповіщення на СТАРУ", async () => {
     const { auth, db, sent } = makeAuth(false);
     const cookie = await signUp(auth);
     sent.length = 0;
@@ -132,7 +132,13 @@ describe("sec-06: change-email без updateEmailWithoutVerification", () => {
     );
     expect([200, 302]).toContain(click.status);
     expect(db["user"]![0]!["email"]).toBe(NEW_EMAIL);
-    expect(db["user"]![0]!["emailVerified"]).toBe(true);
+    // Better Auth 1.7 (фікс GHSA-965c-763c-88jm): клік по
+    // `change-email-verification` лише переносить адресу і зберігає
+    // попередній `emailVerified` (тут false), без нової сесії. До 1.7 клік
+    // ставив `emailVerified: true` і створював сесію без входу. Нову адресу
+    // підтверджують звичайним листом верифікації.
+    expect(db["user"]![0]!["emailVerified"]).toBe(false);
+    expect(cookiesOf(click)).not.toContain("session_token");
     expect(queueMail).toHaveBeenCalledTimes(1);
     expect(queueMail.mock.calls[0]![0]).toMatchObject({
       kind: "email_change_notice",

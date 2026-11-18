@@ -33,6 +33,7 @@ import { dataExportMessages } from "./uk.dataExport";
 import { nutritionPageMessages } from "./uk.nutrition";
 import { nutritionTdeeMessages } from "./uk.nutritionTdee";
 import { pricingMessages } from "./uk.pricing";
+import { publicStatusMessages } from "./uk.publicStatus";
 import { privacyMessages } from "./uk.privacy";
 import { crossModuleLinkMessages } from "./uk.crossModuleLink";
 import { sergeantMessages } from "./uk.sergeant";
@@ -247,6 +248,17 @@ export const messages = {
       body: "Сховище браузера не відкрилось, тож нові записи поки лише в памʼяті. Перезавантаж сторінку, щоб їх зберегти.",
       bodyOtherTab:
         "База відкрита в іншій вкладці. Закрий зайві вкладки Sergeant і онови цю.",
+      // PR-T1 (2026-11-18): браузер без OPFS у воркері. Перезавантаження тут
+      // не допомагає, тож кнопки немає і текст її не обіцяє.
+      bodyUnsupported:
+        "Цей браузер не відкриває локальне сховище, тож нові записи зникнуть після перезапуску. Онови браузер, щоб записи зберігались на пристрої.",
+      // Лише коли на пристрої лежить старе kvvfs-сховище: воно не стерте й
+      // переллється само, щойно OPFS у воркері з'явиться.
+      legacyKept:
+        "Записи, збережені тут раніше, нікуди не ділись: вони повернуться після оновлення.",
+      // Те саме для інших причин (таймаут, зайнятий пул, збій перелиття):
+      // без обіцянки, що їх поверне саме оновлення браузера.
+      legacyKeptOther: "Записи, збережені тут раніше, нікуди не ділись.",
       reload: "Перезавантажити",
     },
     // База жива, але SQL відхилив запис (IOERR / FULL / BUSY, квота). Журнал
@@ -649,26 +661,7 @@ export const messages = {
   // Public status page (`/status`, PR-41). Анонімна health-сторінка; копія
   // має лишатись нейтральною (без module-accent persona-голосу), бо це
   // public-trust surface.
-  publicStatus: {
-    pageTitle: "Sergeant · Status",
-    pollNote: "Поточний стан компонентів. Оновлюється автоматично кожні",
-    pollNoteSuffix: "с.",
-    loading: "Завантаження стану сервісу…",
-    overallOperational: "Усі сервіси працюють",
-    overallDegraded: "Часткова деградація",
-    overallDown: "Серйозна проблема",
-    pillOperational: "Працює",
-    pillDegraded: "Деградація",
-    pillDown: "Не працює",
-    timestampPrefix: "оновлено",
-    componentsLabel: "Компоненти",
-    lastIncidentNone: "Інцидентів за останні 7 днів не зафіксовано.",
-    lastIncidentPrefix: "Останній інцидент:",
-    errorTitle: "Не вдалося завантажити статус",
-    errorRetry: "Спробувати ще",
-    errorFallback: "Не вдалося завантажити статус сервісу.",
-    errorHttpPrefix: "Сервер відповів HTTP",
-  },
+  publicStatus: publicStatusMessages,
 
   // Legal pages (`/legal/*`, PR-#3465). Публічні юридичні сторінки
   // (privacy / terms / cookies / offer) — UA-only surface. Сам контент

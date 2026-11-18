@@ -87,6 +87,23 @@ describe("AssistantCataloguePage — group collapsing", () => {
     __resetHubBusForTests();
   });
 
+  // PR-C6 (хвиля 8): порожній результат пошуку — Tier 2 канону, тобто
+  // `EmptyState` з `role="status"` і дією, яка повертає каталог.
+  it("empty search result is a status with a reset action that restores the list", () => {
+    render(<AssistantCataloguePage onClose={() => {}} />);
+    const input = screen.getByRole("searchbox", {
+      name: "Пошук можливостей",
+    });
+    fireEvent.change(input, { target: { value: "зззжжжщщщ" } });
+
+    const status = screen.getByRole("status");
+    expect(status).toHaveTextContent("Нічого не знайшов");
+    fireEvent.click(screen.getByRole("button", { name: "Скинути пошук" }));
+
+    expect(input).toHaveValue("");
+    expect(screen.queryByText("Нічого не знайшов")).not.toBeInTheDocument();
+  });
+
   it("keeps glyphs in the standalone navigation control, not catalogue rows", () => {
     const { container } = render(<AssistantCataloguePage onClose={() => {}} />);
     // Шеврони груп - стан розгортання, а не гліф рядка.

@@ -1,6 +1,7 @@
 import { finykRedesignEn } from "./en.finykRedesign";
 import type { messages as ukMessages, MessageGroupShape } from "./uk";
 import { pricingEn } from "./en.pricing";
+import { publicStatusEn } from "./en.publicStatus";
 import { nutritionTdeeEn } from "./en.nutritionTdee";
 import { nowPileEn } from "./en.hubNow";
 import { hubNewcomerEn } from "./en.hubNewcomer";
@@ -254,8 +255,10 @@ export const messagesEn: Partial<{
     memoryOnly: {
       title: "Entries are not being saved",
       body: "Browser storage did not open, so new entries live in memory for now. Reload the page to keep them.",
-      bodyOtherTab:
-        "The database is open in another tab. Close extra Sergeant tabs and reload this one.",
+      bodyOtherTab: "Open in another tab: close the other tabs and reload.",
+      bodyUnsupported: "New entries vanish on restart: update the browser.",
+      legacyKept: "Earlier entries are kept and return after the update.",
+      legacyKeptOther: "Earlier entries are kept.",
       reload: "Reload",
     },
     storageDegraded: {
@@ -615,26 +618,7 @@ export const messagesEn: Partial<{
     carbsTooHigh: "Over 700 g carbs, that's a lot even for athletes.",
   },
 
-  publicStatus: {
-    pageTitle: "Sergeant · Status",
-    pollNote: "Current component status. Updated automatically every",
-    pollNoteSuffix: "s.",
-    loading: "Loading service status…",
-    overallOperational: "All systems operational",
-    overallDegraded: "Partial degradation",
-    overallDown: "Major outage",
-    pillOperational: "Operational",
-    pillDegraded: "Degraded",
-    pillDown: "Down",
-    timestampPrefix: "updated",
-    componentsLabel: "Components",
-    lastIncidentNone: "No incidents in the last 7 days.",
-    lastIncidentPrefix: "Last incident:",
-    errorTitle: "Could not load status",
-    errorRetry: "Try again",
-    errorFallback: "Could not load service status.",
-    errorHttpPrefix: "Server responded with HTTP",
-  },
+  publicStatus: publicStatusEn,
 
   legal: {
     linksNavAria: "Legal documents",

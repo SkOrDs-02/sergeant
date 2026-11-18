@@ -1,7 +1,7 @@
 import type { FinykTxTagsSlice } from "../../hooks/useFinykTxTags";
 import { useCallback, useMemo, useState } from "react";
 import { useToast } from "@shared/hooks/useToast";
-import { requestCloudPull } from "@shared/lib/modules/cloudPullRequest";
+import { useTransactionsPullRefresh } from "./useTransactionsPullRefresh";
 import { getKyivDayKey } from "@shared/lib/time/kyivTime";
 import { failedCopy } from "@shared/i18n/failedCopy";
 import { TransactionsHeader } from "./TransactionsHeader";
@@ -331,17 +331,11 @@ export function Transactions({
     jars,
   });
 
-  // PTR refresh runs the bank-side refetch (Mono + Privat, via the
-  // unified `mergedRefresh`) **and** asks the App-level cloud-sync
-  // engine to pull the latest queue/dirty state from the server. The
-  // cloud-pull is awaited with a short timeout so the spinner never
-  // sticks longer than the longest reasonable network hop.
-  const handlePullRefresh = useCallback(async () => {
-    await Promise.allSettled([
-      typeof monoRefresh === "function" ? monoRefresh() : Promise.resolve(),
-      requestCloudPull(2500),
-    ]);
-  }, [monoRefresh]);
+  // Жест оновлення: банк + хмарний пул, провал пулу дає тост (PR-X3).
+  const {
+    onRefresh: handlePullRefresh,
+    onRefreshError: handlePullRefreshError,
+  } = useTransactionsPullRefresh(monoRefresh);
 
   // CSV-експорт видимого місяця. `monthKey` збирається з `selMonth` (у
   // ньому `month` — індекс 0..11, як у `Date`), щоб імʼя файла називало
@@ -490,6 +484,7 @@ export function Transactions({
             />
           ) : undefined
         }
+        onRefreshError={handlePullRefreshError}
         header={
           <section
             aria-label="Керування операціями"

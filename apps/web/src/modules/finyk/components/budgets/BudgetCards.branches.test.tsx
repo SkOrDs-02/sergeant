@@ -222,6 +222,40 @@ describe("LimitBudgetCard", () => {
   });
 });
 
+// PR-F8, рішення власника 2026-11-18 (варіант Б): картка ліміту на
+// Плануванні фарбує смугу за тією самою шкалою, що Огляд і хаб
+// (`limitSignal`: попередження від 80%, перевищення від 100%).
+describe("LimitBudgetCard: єдина шкала порогів (PR-F8)", () => {
+  function barClass(pctRaw: number): string {
+    const { container, unmount } = render(
+      <LimitBudgetCard
+        budget={baseLimitBudget}
+        categoryLabel="Продукти"
+        spent={(5000 * pctRaw) / 100}
+        pctRaw={pctRaw}
+        pctRounded={Math.round(pctRaw)}
+        remaining={Math.max(0, 5000 - (5000 * pctRaw) / 100)}
+        isEditing={false}
+        showProactiveAdvice={false}
+        onBeginEdit={vi.fn()}
+        onSave={vi.fn()}
+        onDelete={vi.fn()}
+      />,
+    );
+    const bar = container.querySelector("[style*='width']");
+    const cls = bar?.className ?? "";
+    unmount();
+    return cls;
+  }
+
+  it("79% — спокійно, 80% — попередження, 100% — перевищення", () => {
+    expect(barClass(79)).toContain("bg-success");
+    expect(barClass(80)).toContain("bg-warning");
+    expect(barClass(99)).toContain("bg-warning");
+    expect(barClass(100)).toContain("bg-danger");
+  });
+});
+
 describe("MonthlyPlanCard", () => {
   it("opens the plan body, toggles edit mode, and updates each plan input", () => {
     const { onChangeMonthlyPlan } = renderMonthlyPlan();

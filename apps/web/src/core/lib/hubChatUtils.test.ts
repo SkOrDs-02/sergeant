@@ -305,9 +305,11 @@ describe("normalizeStoredMessages", () => {
   // substituting a greeting for an empty/missing input made
   // `messages.length === 0` unreachable everywhere this function is
   // called (`createInitialSession`, `parseSessionsBlob`, cold-boot in
-  // `useChatSessions`), so `<ChatEmpty>` never rendered. Do NOT reinstate
-  // a synthesized message here.
-  it("does not synthesize a greeting for missing input — ChatEmpty must stay reachable", () => {
+  // `useChatSessions`), so `<ChatEmpty>` never rendered. `<ChatEmpty>` was
+  // later removed by redesign v3 PR0 (owner decision, п. 20, 35); the
+  // invariant stays: an empty session is empty, not a fake assistant line.
+  // Do NOT reinstate a synthesized message here.
+  it("does not synthesize a greeting for missing input — an empty session stays empty", () => {
     expect(normalizeStoredMessages(null)).toEqual([]);
     expect(normalizeStoredMessages(undefined)).toEqual([]);
   });

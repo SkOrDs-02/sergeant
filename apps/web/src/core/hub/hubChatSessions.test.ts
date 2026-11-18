@@ -206,8 +206,8 @@ describe("hubChatSessions", () => {
       const s = createSession();
       expect(s.title).toMatch(/^Бесіда \d{2}\.\d{2}/);
       // PR-A7 regression guard: a brand-new session must NOT get a
-      // synthesized assistant intro — that substitution made
-      // `<ChatEmpty>` (suggestion chips) unreachable forever.
+      // synthesized assistant intro (redesign v3 PR0 removed the starter
+      // prose for good; the composer's quick-action chips replace it).
       expect(s.messages).toHaveLength(0);
     });
 

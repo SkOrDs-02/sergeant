@@ -18,6 +18,7 @@ import type {
   LimitBudget,
 } from "@sergeant/finyk-domain/domain/types";
 import { LimitBudgetCard } from "../../components/budgets/LimitBudgetCard";
+import { maskAmountsInText } from "../../lib/balanceVisibility";
 import { stripLeadingEmoji } from "../../components/txRowHelpers";
 import { resolveExpenseCategoryMeta } from "../../utils";
 import { showUndoToast } from "@shared/lib/ui/undoToast";
@@ -220,7 +221,14 @@ export function BudgetsLimitsSection({
                 isEditing={isEditing}
                 showProactiveAdvice={showAdvice}
                 proactiveLoading={proactiveLoading[categoryKey]}
-                proactiveText={isDismissed ? null : adviceText}
+                // PR-F3 (ревізія 2026-11-17): порада моделі отримує суми в
+                // промпті (`fetchProactiveAdvice`) і повертає їх у тексті, тож
+                // під «Приховати суми» маскуємо їх так само, як поради хабу.
+                proactiveText={
+                  isDismissed || !adviceText
+                    ? null
+                    : maskAmountsInText(adviceText, !showBalance)
+                }
                 onDismissAdvice={
                   adviceText
                     ? () => {

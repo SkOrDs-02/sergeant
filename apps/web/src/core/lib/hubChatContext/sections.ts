@@ -1,3 +1,4 @@
+import { formatDateShort } from "@shared/lib/time/formatDate";
 import {
   ACTIVE_WORKOUT_KEY,
   completedWorkoutsCount,
@@ -86,10 +87,7 @@ export function appendWorkoutLines(lines: string[]): void {
     const sorted = [...withTs].sort((a, b) => b._ts - a._ts);
     const last = sorted[0];
     const dt = last?.startedAt
-      ? new Date(last.startedAt).toLocaleDateString("uk-UA", {
-          day: "numeric",
-          month: "short",
-        })
+      ? formatDateShort(new Date(last.startedAt))
       : "—";
     lines.push(
       `[Тренування] завершених всього: ${completedWorkoutsCount(w)}, цього тижня завершено: ${countCompletedInCurrentWeek(w)}, за останні 7 днів сесій: ${cnt}, остання дата: ${dt}`,

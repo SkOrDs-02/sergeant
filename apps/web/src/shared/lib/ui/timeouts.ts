@@ -2,7 +2,7 @@
  * Canonical UI timeout constants for transient feedback, deferred reveals,
  * and auto-clearing status banners. Replaces ~6 inline magic-numbers that
  * accumulated across `core/` and `modules/` (see audit annex 2026-05-15
- * in `docs/tech-debt/frontend.md` § "Web UI timeout magic-numbers").
+ * in `docs/work/specs/tech-debt/frontend.md` § "Web UI timeout magic-numbers").
  *
  * # Three categories
  *

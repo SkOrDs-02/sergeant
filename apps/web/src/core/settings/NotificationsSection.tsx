@@ -8,7 +8,6 @@ import { TimeField } from "@shared/components/ui/TimeField";
 import { useToast } from "@shared/hooks/useToast";
 import { requestNotificationPermission } from "@shared/hooks/useModuleReminder";
 import { usePushNotifications } from "@shared/hooks/usePushNotifications";
-import { isIOSBrowserTab } from "@shared/lib/platform/iosStandalone";
 import { settingsSectionTitle } from "../hub/settingsSectionsCatalog";
 import { useRoutineState } from "../../modules/routine/hooks/useRoutineState";
 import { useRoutineRemindersToggle } from "../../modules/routine/hooks/useRoutineRemindersToggle";
@@ -41,7 +40,7 @@ const CAP_OPTIONS = Array.from({ length: PUSH_DAILY_CAP_MAX + 1 }, (_, n) => ({
 
 type PermStatus = NotificationPermission | "unsupported";
 /** Тумблер, під яким показано підказку встановлення (iOS-вкладка, О-1). */
-type InstallHintSource = "sergeant" | "routine" | "fizruk" | "nutrition";
+type InstallHintSource = "routine" | "fizruk" | "nutrition";
 
 export function NotificationsSection() {
   const [permStatus, setPermStatus] = useState<PermStatus>(() =>
@@ -69,16 +68,9 @@ export function NotificationsSection() {
 
   const { routine, updatePref: updateRoutinePref } = useRoutineState();
 
-  // Живе на сервері, а не в localStorage: цей прапорець читає серверний
-  // шедулер тоді, коли жодного клієнта не запущено.
-  const sergeantNudges = useServerPreference(
-    "sergeantNudges",
-    {
-      saveError: sergeantCopy.nudgesSaveError,
-      authRequired: sergeantCopy.nudgesAuthRequired,
-    },
-    false,
-  );
+  // «Повідомлення від Сержанта» переїхали в секцію «Сержант»
+  // (`AIDigestSection.tsx`) рішенням власника 2026-11-18 (PR-S8): тут
+  // лишаються канал доставки (дозвіл, push, стеля) і нагадування модулів.
 
   // Стеля спільна для всіх модулів і Сержанта: сервер згортає приводи
   // понад неї в одне сповіщення (`apps/server/src/lib/reminders/budget.ts`).
@@ -297,42 +289,6 @@ export function NotificationsSection() {
         start={quietHoursStart}
         end={quietHoursEnd}
       />
-
-      <SettingsSubGroup variant="bounded" title={sergeantCopy.name}>
-        <ToggleRow
-          label={sergeantCopy.nudgesToggleLabel}
-          description={sergeantCopy.nudgesToggleDescription}
-          checked={sergeantNudges.value}
-          onChange={(checked) => {
-            // Дозвіл питаємо ДО запису: увімкнений на сервері канал без
-            // дозволу браузера — це тиха підписка на нічого.
-            if (checked && isIOSBrowserTab()) {
-              setInstallHint("sergeant");
-              return;
-            }
-            if (checked && permStatus !== "granted") {
-              void requestPermission();
-            }
-            void sergeantNudges.set(checked);
-          }}
-        />
-        {installHint === "sergeant" && <IosInstallPushHint className="mt-2" />}
-        {/* Огляд 2026-09-04: до першого завантаження «помилка» — це гість
-            («увійди, щоб…»), не збій. Червоним лишається лише збій
-            збереження після успішного завантаження. */}
-        {sergeantNudges.error && (
-          <p
-            className={
-              sergeantNudges.loaded
-                ? "text-style-caption text-danger-strong dark:text-danger"
-                : "text-style-caption text-muted"
-            }
-            role={sergeantNudges.loaded ? "alert" : "status"}
-          >
-            {sergeantNudges.error}
-          </p>
-        )}
-      </SettingsSubGroup>
 
       <SettingsSubGroup variant="bounded" title="Рутина (звички)">
         <ToggleRow

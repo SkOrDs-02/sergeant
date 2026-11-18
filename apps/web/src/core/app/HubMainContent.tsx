@@ -15,6 +15,9 @@ import {
 import type { OpenModuleOptions } from "../hooks/useHubNavigation";
 import type { HubView } from "../hooks/useHubUIState";
 import { PullToRefresh } from "@shared/components/ui/PullToRefresh";
+import { usePullRefreshErrorToast } from "@shared/hooks/usePullRefreshErrorToast";
+import { useCloudPullPending } from "@shared/hooks/useCloudPullPending";
+import { requestCloudPull } from "@shared/lib/modules/cloudPullRequest";
 import { PageLoader } from "./PageLoader";
 import { coachKeys, digestKeys, hubKeys } from "@shared/lib/api/queryKeys";
 import { messages } from "@shared/i18n/uk";
@@ -192,13 +195,23 @@ export const HubMainContent = memo(function HubMainContent({
     }
   }, [hubView]);
 
+  // Жест на хабі оновлює серверні картки (коуч, дайджест, хаб) І тягне
+  // хмарний пул, як жест у кожному модулі: хаб зводить дані модулів, тож
+  // «чи доїхало з телефона» людина перевіряє саме тут (PR-H3). До
+  // 2026-11-18 хаб пулу не просив, а `invalidateQueries` не відхиляється
+  // ніколи, тож жест завжди виглядав успішним. Провал пулу перекидається
+  // в `onError` — тост із «Повторити» (PR-X3, хвиля 8).
   const handleRefresh = useCallback(async () => {
-    await Promise.all([
+    const [cloud] = await Promise.allSettled([
+      requestCloudPull(2500),
       queryClient.invalidateQueries({ queryKey: coachKeys.all }),
       queryClient.invalidateQueries({ queryKey: digestKeys.all }),
       queryClient.invalidateQueries({ queryKey: hubKeys.all }),
     ]);
+    if (cloud.status === "rejected") throw cloud.reason;
   }, [queryClient]);
+  const handleRefreshError = usePullRefreshErrorToast(handleRefresh);
+  const cloudPullPending = useCloudPullPending();
 
   return (
     <>
@@ -209,6 +222,8 @@ export const HubMainContent = memo(function HubMainContent({
         className="max-w-lg md:max-w-2xl lg:max-w-3xl mx-auto w-full rounded-panel focus-visible:ring-2 focus-visible:ring-focus/45 focus-visible:ring-inset"
         contentClassName="px-5 pb-28"
         onRefresh={handleRefresh}
+        onError={handleRefreshError}
+        enabled={!cloudPullPending}
         onScrollElement={handleScrollElement}
         variant="default"
       >

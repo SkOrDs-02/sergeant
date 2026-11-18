@@ -2,6 +2,10 @@
  * Востаннє перевірено: 2026-07-16
  * Статус: Активний
  */
+import {
+  KYIV_TIME_ZONE,
+  formatDateTimeShort,
+} from "@shared/lib/time/formatDate";
 import { useState } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { isApiError, monoWebhookApi, type MonoSyncState } from "@shared/api";
@@ -297,15 +301,10 @@ export function FinykWebhookServiceSection({
                       {webhookSyncState.lastEventAt && (
                         <>
                           {" · "}
-                          {new Date(
-                            webhookSyncState.lastEventAt,
-                          ).toLocaleString("uk-UA", {
-                            hour: "2-digit",
-                            minute: "2-digit",
-                            day: "numeric",
-                            month: "short",
-                            timeZone: "Europe/Kyiv",
-                          })}
+                          {formatDateTimeShort(
+                            new Date(webhookSyncState.lastEventAt),
+                            { timeZone: KYIV_TIME_ZONE },
+                          )}
                         </>
                       )}
                     </div>

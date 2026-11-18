@@ -19,6 +19,10 @@ import { fileURLToPath } from "node:url";
  * walker would balloon the test runtime and the regex catches every
  * shape of static `import` while ignoring `await import(...)` calls,
  * which is exactly the property we're trying to enforce.
+ *
+ * The sqlite-wasm package itself is no longer loaded on the main thread at
+ * all (PR-T1, 2026-11-18) — that stronger guard lives in
+ * `sqlite.mainThreadNoWasm.test.ts`.
  */
 
 const __filename = fileURLToPath(import.meta.url);
@@ -56,30 +60,5 @@ describe("core/db/sqlite — lazy-import contract", () => {
         `Use \`await import(…)\` from inside a feature instead so the ` +
         `sqlite-wasm chunk stays out of the initial bundle.`,
     ).toEqual([]);
-  });
-
-  it("uses dynamic import() internally to load the sqlite-wasm package", () => {
-    const sqlite = resolve(WEB_SRC, "core/db/sqlite.ts");
-    const src = readSource(sqlite);
-
-    // Sanity check: the heavy `@sqlite.org/sqlite-wasm` import must be
-    // dynamic (i.e., reachable only via `import("@sqlite.org/...")`),
-    // never via a top-level `import ... from "@sqlite.org/..."`.
-    const staticHits = [
-      ...src.matchAll(STATIC_IMPORT_RE),
-      ...src.matchAll(SIDE_EFFECT_IMPORT_RE),
-    ]
-      .map((m) => m[1])
-      .filter((spec) => spec!.startsWith("@sqlite.org/sqlite-wasm")!);
-
-    expect(
-      staticHits,
-      "core/db/sqlite.ts must only reference @sqlite.org/sqlite-wasm via dynamic import()",
-    ).toEqual([]);
-
-    expect(
-      src.includes('import("@sqlite.org/sqlite-wasm")'),
-      'core/db/sqlite.ts must call dynamic `import("@sqlite.org/sqlite-wasm")`',
-    ).toBe(true);
   });
 });

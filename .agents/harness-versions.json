@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "current": "8.11.0",
+  "current": "8.13.0",
   "versions": {
     "0.1.0": {
       "releasedAt": "2026-06-29",
@@ -841,7 +841,7 @@
     "8.9.0": {
       "releasedAt": "2026-11-18",
       "changes": [
-        "bump from 8.8.0 -> 8.9.0: AGENTS.md § Performance budgets: веб стрімить перший хід /api/chat, нова метрика chat_first_turn_first_visible_ms (С-1 (а), спека hubchat-first-turn-stream)"
+        "bump from 8.8.0 -> 8.9.0: eslint-plugin-sergeant-design modified (prefer-kyiv-time warn -> error в eslint.web.js; кількість голих getter-ів у apps/web тримається на нулі) і doctrine docs/governance/governance/rules/kyiv-time-helpers.md («warn назавжди» знято). Minor, не major: kyiv-time-helpers.md не Hard Rule (Hard Rules — нумеровані NN-*.md), скрипт класифікує каталог rules/ цілком як Hard Rule."
       ],
       "agentsTestedWith": [],
       "passRateBaseline": null
@@ -849,7 +849,15 @@
     "8.10.0": {
       "releasedAt": "2026-11-18",
       "changes": [
-        "sergeant-module-sync: у журнал рішень додано два записи від 2026-11-18 про бампи SYNC_PROTOCOL_VERSION 1 -> 2 (routine_habit_counts) і 2 -> 3 (fizruk_exercise_prefs, підходи на час і дистанцію) з поведінкою нового клієнта проти старого сервера та залишковим ризиком"
+        "bump from 8.9.0 -> 8.10.0: AGENTS.md modified"
+      ],
+      "agentsTestedWith": [],
+      "passRateBaseline": null
+    },
+    "8.10.1": {
+      "releasedAt": "2026-11-18",
+      "changes": [
+        "bump from 8.10.0 -> 8.10.1: typo / link / freshness-only change"
       ],
       "agentsTestedWith": [],
       "passRateBaseline": null
@@ -857,7 +865,27 @@
     "8.11.0": {
       "releasedAt": "2026-11-18",
       "changes": [
-        "AGENTS.md § Performance budgets: стеля JS (size-limit) 1.55 -> 1.61 MB за дві хвилі продуктових фіч гілки claude/awesome-goodall-8s5uky (+32.8 kB brotli, без нових vendor-пакетів); eager 268.7 -> 262.9 kB без руху стелі 268 (useRoutePrefetch з критичного шляху). Заміри й розбір у bundle-budget-ratchet-log.md 2026-11-18"
+        "bump from 8.8.0 -> 8.9.0: AGENTS.md § Performance budgets: веб стрімить перший хід /api/chat, нова метрика chat_first_turn_first_visible_ms (С-1 (а), спека hubchat-first-turn-stream)",
+        "у гілці claude/awesome-goodall-8s5uky це був 8.9.0; перенумеровано після вливання main (там 8.9.0..8.10.1 уже зайняті)"
+      ],
+      "agentsTestedWith": [],
+      "passRateBaseline": null
+    },
+    "8.12.0": {
+      "releasedAt": "2026-11-18",
+      "changes": [
+        "sergeant-module-sync: у журнал рішень додано два записи від 2026-11-18 про бампи SYNC_PROTOCOL_VERSION 1 -> 2 (routine_habit_counts) і 2 -> 3 (fizruk_exercise_prefs, підходи на час і дистанцію) з поведінкою нового клієнта проти старого сервера та залишковим ризиком",
+        "у гілці claude/awesome-goodall-8s5uky це був 8.10.0; перенумеровано після вливання main (там 8.9.0..8.10.1 уже зайняті)"
+      ],
+      "agentsTestedWith": [],
+      "passRateBaseline": null
+    },
+    "8.13.0": {
+      "releasedAt": "2026-11-18",
+      "changes": [
+        "AGENTS.md § Performance budgets: стеля JS (size-limit) 1.55 -> 1.61 MB за дві хвилі продуктових фіч гілки claude/awesome-goodall-8s5uky (+32.8 kB brotli, без нових vendor-пакетів); eager 268.7 -> 262.9 kB без руху стелі 268 (useRoutePrefetch з критичного шляху). Заміри й розбір у bundle-budget-ratchet-log.md 2026-11-18",
+        "у гілці claude/awesome-goodall-8s5uky це був 8.11.0; перенумеровано після вливання main (там 8.9.0..8.10.1 уже зайняті)",
+        "після вливання main стелю переміряно на злитому дереві: JS 1 536 482 B, стеля 1.52 -> 1.56 MB (а не 1.61, як було в гілці); eager 270.2 kB при стелі 274 з main (bundle-budget-ratchet-log.md 2026-11-18, запис «після вливання main»)"
       ],
       "agentsTestedWith": [],
       "passRateBaseline": null

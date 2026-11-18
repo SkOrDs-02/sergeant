@@ -6,7 +6,13 @@
  */
 import type { ComponentProps } from "react";
 import { describe, it, expect, vi, afterEach, beforeEach } from "vitest";
-import { render, screen, cleanup, fireEvent } from "@testing-library/react";
+import {
+  render,
+  screen,
+  cleanup,
+  fireEvent,
+  waitFor,
+} from "@testing-library/react";
 
 // ── Stubs ────────────────────────────────────────────────────────────────────
 
@@ -38,11 +44,25 @@ vi.mock("@shared/components/ui/PullToRefresh", () => ({
   PullToRefresh: ({
     children,
     onRefresh,
+    onError,
   }: {
     children: React.ReactNode;
-    onRefresh: () => void;
+    onRefresh: () => Promise<unknown> | void;
+    onError?: (err: unknown) => void;
   }) => (
     <div data-testid="pull-to-refresh" onScroll={onRefresh}>
+      <button
+        type="button"
+        data-testid="trigger-refresh"
+        onClick={() => {
+          // Як справжній хук жесту: відмова йде в `onError`.
+          void Promise.resolve()
+            .then(onRefresh)
+            .catch((err: unknown) => onError?.(err));
+        }}
+      >
+        pull
+      </button>
       {children}
     </div>
   ),
@@ -334,6 +354,7 @@ vi.mock("@shared/components/ui/DataState", () => ({
 
 import { useWorkoutsOrchestrator } from "../hooks/useWorkoutsOrchestrator";
 import { ToastProvider } from "@shared/hooks/useToast";
+import { ToastContainer } from "@shared/components/ui/Toast";
 import { Workouts } from "./Workouts";
 
 // `StrongImportReview` НЕ мокаємо: замість стаба дитини сьют дає сторінці
@@ -344,6 +365,7 @@ function renderWorkouts(props: ComponentProps<typeof Workouts> = {}) {
   return render(
     <ToastProvider>
       <Workouts {...props} />
+      <ToastContainer />
     </ToastProvider>,
   );
 }
@@ -468,6 +490,27 @@ describe("Workouts page — home view", () => {
     expect(
       screen.queryByTestId("workout-catalog-section"),
     ).not.toBeInTheDocument();
+  });
+
+  // PR-X3 (хвиля 8): провал хмарного пулу жесту доходить до тосту з
+  // «Повторити», а повтор тягне той самий пул.
+  it("a rejected pull shows the retry toast and retry pulls again", async () => {
+    const handlePullRefresh = vi
+      .fn()
+      .mockRejectedValueOnce(new Error("offline"))
+      .mockResolvedValue(undefined);
+    mockedOrchestrator.mockReturnValue(
+      makeOrchestrator("home", { handlePullRefresh }) as unknown as ReturnType<
+        typeof useWorkoutsOrchestrator
+      >,
+    );
+    renderWorkouts();
+    fireEvent.click(screen.getByTestId("trigger-refresh"));
+    expect(
+      await screen.findByText("Не вдалося оновити дані. Перевір зʼєднання."),
+    ).toBeInTheDocument();
+    fireEvent.click(screen.getByRole("button", { name: "Повторити" }));
+    await waitFor(() => expect(handlePullRefresh).toHaveBeenCalledTimes(2));
   });
 });
 

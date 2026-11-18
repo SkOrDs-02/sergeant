@@ -107,6 +107,31 @@ describe("story slide components", () => {
     expect(screen.getByText("Відновлення добре")).toBeInTheDocument();
   });
 
+  // PR-Z3 (аудит 2026-09-13, хвиля 6; ревізія 2026-11-17): `totalVolume` це
+  // сума вага × повтори, а слайд підписував її «кг». Підпис має бути той
+  // самий, що в підсумку тренування, і голого «кг» біля обʼєму бути не може.
+  it("labels Fizruk slide volume as кг×повт, not кг", () => {
+    const slide: FizrukSlideData = {
+      ...baseSlide,
+      id: "fizruk",
+      kind: "fizruk",
+      label: "Фізрук",
+      agg: {
+        workoutsCount: 3,
+        totalVolume: 12345,
+        recoveryLabel: "Відновлення",
+        topExercises: [{ name: "Жим", totalVolume: 5000 }],
+      },
+    };
+
+    const { container } = render(<>{renderSlide(slide)}</>);
+
+    expect(screen.getByText("Обʼєм, кг×повт")).toBeInTheDocument();
+    expect(screen.getByText(/^5\s000 кг×повт$/)).toBeInTheDocument();
+    expect(container.textContent).not.toMatch(/\d кг(?!×)/);
+    expect(container.textContent).not.toContain("Обсяг, кг");
+  });
+
   it("renders Nutrition slide capped kcal progress and macro stats", () => {
     const slide: NutritionSlideData = {
       ...baseSlide,

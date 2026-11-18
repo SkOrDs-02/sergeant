@@ -26,14 +26,14 @@ describe("getSyncTone", () => {
 
   it("returns the loading tone for status=loading", () => {
     const tone = getSyncTone({ status: "loading" });
-    expect(tone.text).toBe("оновлення");
+    expect(tone.text).toBe("оновлення…");
     expect(tone.dot).toBe("bg-muted");
     expect(tone.icon).toBe("refresh-cw");
   });
 
   it("returns the ok tone only for status=success", () => {
     const tone = getSyncTone({ status: "success" });
-    expect(tone.text).toBe("ок");
+    expect(tone.text).toBe("синхронізовано");
     expect(tone.dot).toBe("bg-success");
     expect(tone.icon).toBe("check-circle");
   });

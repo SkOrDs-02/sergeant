@@ -18,6 +18,21 @@
  * гілку у воркері.
  */
 
+/**
+ * Знімок старого kvvfs-сховища (`JsStorageDb("local")`) рівно в тому
+ * вигляді, як воно лежить у `localStorage`: закодовані сторінки бази,
+ * розмір і журнал. Формат кодування сторінок — внутрішня справа kvvfs;
+ * головний потік його не розбирає, лише переносить.
+ */
+export interface KvvfsSnapshot {
+  /** Значення `kvvfs-local-sz`: розмір бази в байтах. */
+  readonly size: number;
+  /** Значення `kvvfs-local-jrnl`, якщо є (журнал відкату). */
+  readonly journal: string | null;
+  /** Значення `kvvfs-local-1..N` по порядку номерів сторінок. */
+  readonly pages: readonly string[];
+}
+
 /** Як воркер віддає рядки: масивами значень чи обʼєктами по іменах колонок. */
 export type SqliteWorkerRowMode = "array" | "object";
 
@@ -33,15 +48,26 @@ export type SqliteWorkerRequest =
       readonly initialCapacity: number;
       readonly minFreeSlots: number;
       /**
-       * Байти старої бази для перелиття (стадія 2). Якщо задані і файл
-       * партиції ще не існує, воркер імпортує їх ПЕРЕД відкриттям.
+       * Сирі записи старого kvvfs-сховища для перелиття (стадія 2). Якщо
+       * задані і файл партиції ще не існує, воркер сам збирає з них файл
+       * бази й імпортує його ПЕРЕД відкриттям.
        *
-       * AI-DANGER: буфер передається як transferable — після
-       * `postMessage` він на головному потоці порожній. Це навмисно:
-       * база власника важить мегабайти, і копіювати їх удруге немає
-       * сенсу. Не читай його після відправки.
+       * AI-CONTEXT: до 2026-11-18 головний потік відкривав kvvfs власною
+       * копією sqlite-wasm і слав сюди вже готові байти. Ця копія важила
+       * ~55 kB brotli у `vendor-sqlite` поверх такої самої у воркері
+       * (PR-T1, рішення власника Б), тож тепер головний потік лише читає
+       * рядки з `localStorage`, а SQLite лишається тільки тут.
        */
-      readonly importBytes?: ArrayBuffer;
+      readonly importKvvfs?: KvvfsSnapshot;
+    }
+  | {
+      readonly id: number;
+      /**
+       * База `:memory:` у воркері — коли OPFS недоступний (немає
+       * `FileSystemSyncAccessHandle` у воркері) або пул тримає інша
+       * вкладка. Жодного сховища: дані живуть до кінця сторінки.
+       */
+      readonly kind: "openMemory";
     }
   | { readonly id: number; readonly kind: "exec"; readonly sql: string }
   | {
@@ -93,7 +119,7 @@ export interface SqliteWorkerOpenResult {
   readonly grewBy: number;
   readonly diagnostics: SqliteWorkerDiagnostics | null;
   /**
-   * Чи справді відбувся імпорт старої бази. `false` означає або що байтів
+   * Чи справді відбувся імпорт старої бази. `false` означає або що знімка
    * не передавали, або що файл партиції вже існував — у другому випадку
    * імпорт затер би дані, які вже живуть в OPFS.
    */

@@ -92,7 +92,6 @@ import { NotificationsSection } from "./NotificationsSection";
 // тумблера вгорі секції зсунуло всі три — тести падали не тому, що щось
 // зламалось, а тому, що поруч зʼявився сусід.
 const SWITCH_LABEL = {
-  sergeant: "Повідомлення від Сержанта",
   routine: "Нагадування про звички",
   fizruk: "Нагадування про тренування",
   nutrition: "Нагадування про їжу",
@@ -459,7 +458,7 @@ describe("NotificationsSection", () => {
       expect(screen.getByRole("status")).toBe(hint);
     });
 
-    it("тренування, їжа і Сержант: той самий шлях, нічого не записується", async () => {
+    it("тренування і їжа: той самий шлях, нічого не записується", async () => {
       setEnv({ ua: IPHONE_UA });
       vi.stubGlobal("Notification", undefined);
       renderSettingsSection(<NotificationsSection />);
@@ -473,13 +472,8 @@ describe("NotificationsSection", () => {
         expect(screen.getAllByText(INSTALL_HINT).length).toBeGreaterThan(0),
       );
       expect(patchNutritionPrefsMock).not.toHaveBeenCalled();
-
-      clickSwitch("sergeant");
-      await waitFor(() =>
-        expect(screen.getAllByText(INSTALL_HINT).length).toBeGreaterThan(0),
-      );
-      expect(meApiMock.updatePreferences).not.toHaveBeenCalled();
-      expect(toastWarningMock).not.toHaveBeenCalled();
+      // «Повідомлення від Сержанта» переїхали в секцію «Сержант» (PR-S8):
+      // той самий iOS-шлях пінить `AIDigestSection.test.tsx`.
     });
 
     it("вимкнення не показує підказку", async () => {
@@ -554,8 +548,10 @@ describe("NotificationsSection", () => {
       await waitFor(() =>
         expect(screen.getByRole("radio", { name: "2" })).toBeChecked(),
       );
+      // Пʼять читань: стеля і чотири поля міграції 168 («Повідомлення від
+      // Сержанта» з власним читанням переїхали в секцію «Сержант», PR-S8).
       await waitFor(() =>
-        expect(meApiMock.getPreferences).toHaveBeenCalledTimes(6),
+        expect(meApiMock.getPreferences).toHaveBeenCalledTimes(5),
       );
       expect(screen.queryByRole("switch", { name: "Тихі години" })).toBeNull();
       expect(

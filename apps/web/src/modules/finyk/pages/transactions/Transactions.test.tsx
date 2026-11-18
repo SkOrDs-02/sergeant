@@ -83,15 +83,22 @@ vi.mock("@shared/components/ui/PullToRefresh", () => ({
   PullToRefresh: ({
     children,
     onRefresh,
+    onError,
   }: {
     children: React.ReactNode;
     onRefresh?: () => Promise<void> | void;
+    onError?: (err: unknown) => void;
   }) => (
     <div data-testid="pull-to-refresh">
       <button
         type="button"
         data-testid="trigger-refresh"
-        onClick={() => void onRefresh?.()}
+        onClick={() => {
+          // Як справжній хук жесту: відмова йде в `onError`.
+          void Promise.resolve()
+            .then(onRefresh)
+            .catch((err: unknown) => onError?.(err));
+        }}
       >
         Оновити
       </button>
@@ -224,6 +231,30 @@ describe("Transactions page shell", () => {
   afterEach(() => {
     cleanup();
     vi.useRealTimers();
+  });
+
+  // PR-F4 (аудит 2026-09-13, хвиля 6; ревізія 2026-11-17): маркер у рядку
+  // пінили чипи й список, але не те, що сторінка будує набір із
+  // `storage.excludedStatTxIds`. Без цієї ланки пакетна дія знову міняла б
+  // підсумки без сліду в списку.
+  it("marks only the rows the person excluded from stats", () => {
+    const kept = { ...mkJuneTx("tx-kept", -300), description: "Аптека" };
+    const excluded = { ...mkJuneTx("tx-out", -400), description: "Борг Олі" };
+    renderTransactions({
+      mono: { realTx: [kept, excluded] },
+      // Як у живому `useStorage`: явне «не в статистиці» входить і в
+      // загальний набір виключених.
+      storage: {
+        excludedStatTxIds: ["tx-out"],
+        excludedTxIds: new Set(["tx-out"]),
+      },
+    });
+    const day = screen.getByRole("button", { expanded: false });
+    // Сума дня рахує лише рядок, що лишився в статистиці.
+    expect(day).toHaveTextContent(/−3,00/);
+    fireEvent.click(day);
+    expect(screen.getByText("Борг Олі")).toBeInTheDocument();
+    expect(screen.getAllByText("не в статистиці")).toHaveLength(1);
   });
 
   it("дрил-даун з Аналітики: категорія за минулий місяць відкриває Операції на тому ж місяці", () => {
@@ -785,6 +816,42 @@ describe("Transactions page shell", () => {
       expect(mockMonoRefresh).toHaveBeenCalledTimes(1);
       expect(requestCloudPull).toHaveBeenCalledWith(2500);
     });
+  });
+
+  // PR-X3 (хвиля 8): провал хмарного пулу більше не тоне в
+  // `Promise.allSettled` — жест показує тост із «Повторити».
+  it("a rejected cloud pull shows the retry toast; retry pulls again", async () => {
+    mockRequestCloudPull.mockRejectedValueOnce(new Error("offline"));
+    renderTransactions();
+    fireEvent.click(screen.getByTestId("trigger-refresh"));
+    await vi.waitFor(() => {
+      expect(mockToast.error).toHaveBeenCalledWith(
+        "Не вдалося оновити дані. Перевір зʼєднання.",
+        undefined,
+        expect.objectContaining({ label: "Повторити" }),
+      );
+    });
+    const action = mockToast.error.mock.calls[0]?.[2] as {
+      onClick: () => void;
+    };
+    action.onClick();
+    await vi.waitFor(() => {
+      expect(mockRequestCloudPull).toHaveBeenCalledTimes(2);
+      expect(mockMonoRefresh).toHaveBeenCalledTimes(2);
+    });
+  });
+
+  // Провал банку свій тост не дає: його стан уже показують шапка й рядок
+  // синку, і подвійний сигнал був би шумом.
+  it("a rejected bank refresh with a healthy cloud pull shows no toast", async () => {
+    mockMonoRefresh.mockRejectedValueOnce(new Error("mono 429"));
+    renderTransactions();
+    fireEvent.click(screen.getByTestId("trigger-refresh"));
+    await vi.waitFor(() => {
+      expect(mockRequestCloudPull).toHaveBeenCalledWith(2500);
+    });
+    await Promise.resolve();
+    expect(mockToast.error).not.toHaveBeenCalled();
   });
 
   it("coerces an unknown sync status to idle for the sync pill", () => {

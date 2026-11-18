@@ -18,6 +18,11 @@ import { createdOpfsFilenames, opfsUnlinkMock } from "./sqlite-wasm-fake";
  * the pool is asked to open / unlink.
  */
 
+import {
+  installInProcessSqliteWorker,
+  uninstallInProcessSqliteWorker,
+} from "./inProcessSqliteWorker";
+
 vi.mock("@sqlite.org/sqlite-wasm", () => import("./sqlite-wasm-fake"));
 vi.mock("../../observability/sentry.js", () => ({
   addSentryBreadcrumb: vi.fn(),
@@ -29,6 +34,7 @@ vi.mock("../../observability/sentry.js", () => ({
 describe("getSqliteDb — per-user partitioning", () => {
   beforeEach(() => {
     __resetSqliteDbForTests();
+    installInProcessSqliteWorker();
     createdOpfsFilenames.length = 0;
     opfsUnlinkMock.mockClear();
     Object.defineProperty(globalThis.navigator, "storage", {
@@ -47,6 +53,7 @@ describe("getSqliteDb — per-user partitioning", () => {
 
   afterEach(() => {
     __resetSqliteDbForTests();
+    uninstallInProcessSqliteWorker();
     vi.restoreAllMocks();
   });
 

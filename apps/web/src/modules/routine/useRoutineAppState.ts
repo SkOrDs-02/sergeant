@@ -43,7 +43,7 @@ import {
 import { useLocation, useNavigate } from "react-router-dom";
 import { STORAGE_KEYS } from "@sergeant/shared";
 import { requestCloudPull } from "@shared/lib/modules/cloudPullRequest";
-import { useToast } from "@shared/hooks/useToast";
+import { usePullRefreshErrorToast } from "@shared/hooks/usePullRefreshErrorToast";
 import { hapticTap, hapticSuccess } from "@shared/lib/adapters/haptic";
 import { useLocalStorageState } from "@shared/hooks/useLocalStorageState";
 import { parseKyivDate } from "@shared/lib/time/kyivTime";
@@ -135,7 +135,6 @@ export function useRoutineAppState({
   onOpenModule,
 }: UseRoutineAppStateParams): RoutineAppStateBundle {
   const location = useLocation();
-  const toast = useToast();
   useSqliteReadBoot();
   const [routine, setRoutine] = useRoutineState();
   // Low-priority transition for habit toggles: the checkbox haptic fires
@@ -442,23 +441,9 @@ export function useRoutineAppState({
   // listener (`ROUTINE_EVENT`) re-renders us when the engine writes new
   // state into localStorage.
   const handlePullRefresh = useCallback(() => requestCloudPull(2500), []);
-  const handlePullRefreshError = useCallback(() => {
-    // PTR-fail: surface the canonical recovery path (retry the pull) so
-    // the error toast is actionable per docs/design/ui/toast-policy.md. The
-    // retry callback fires the same `requestCloudPull` the PTR gesture
-    // used, so the user does not need to remember the gesture. The pull
-    // rejects when the sync tick fails (offline, 5xx — PR-H3 tail), so a
-    // failed retry shows the same toast again instead of passing silently.
-    const showError = () => {
-      toast.error("Не вдалося оновити дані. Перевір зʼєднання.", undefined, {
-        label: "Повторити",
-        onClick: () => {
-          requestCloudPull(2500).catch(showError);
-        },
-      });
-    };
-    showError();
-  }, [toast]);
+  // PTR-fail: тост «Повторити» тим самим пулом (PR-H3 tail; один хук на
+  // всі жести з 2026-11-18, PR-X3 хвилі 8).
+  const handlePullRefreshError = usePullRefreshErrorToast(handlePullRefresh);
 
   const calendarData = useMemo<RoutineCalendarData>(
     () => ({

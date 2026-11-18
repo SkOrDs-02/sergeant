@@ -360,6 +360,20 @@ describe("aggregateHabits", () => {
     expect(aggregateHabits(state, dates)).toEqual({ pct: 0, daily: {} });
   });
 
+  // Рішення власника 2026-11-18 (METRICS_VERSION 20): «не зміг» з причиною
+  // виходить зі знаменника (канон routine.md §5), а не рахується провалом.
+  it("«не зміг» виходить зі знаменника: 2 виконано + 1 пропуск = 100%, не 67%", () => {
+    const state = {
+      habits: [habit("h1")],
+      completions: { h1: ["2025-04-07", "2025-04-08"] },
+      skips: {
+        h1: { "2025-04-09": { reason: "sick" as const, at: "2025-04-09" } },
+      },
+    };
+    const res = aggregateHabits(state, dates);
+    expect(res.pct).toBe(100);
+  });
+
   it("100% виконання: 2 звички × 3 дні = всі 6 виконано", () => {
     const state = {
       habits: [habit("h1"), habit("h2")],

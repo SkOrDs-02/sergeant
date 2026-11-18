@@ -275,7 +275,7 @@ export function bestHabitMonthInsight(
   const months = Object.keys(monthDone);
   if (months.length < HABIT_INSIGHT_MIN_MONTHS) return null;
 
-  // П-18 (А), 2026-11-18 (`METRICS_VERSION` 22): той самий знаменник, що
+  // П-18 (А), 2026-11-18 (`METRICS_VERSION` 23): той самий знаменник, що
   // модуль: заплановані дні без днів «не зміг», поточний місяць до сьогодні
   // (`bestRoutineMonth`). Раніше тут стояло плоске «звички × дні місяця».
   const best = bestRoutineMonth(habits, state.completions || {}, {

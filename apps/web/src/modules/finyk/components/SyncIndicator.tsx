@@ -1,4 +1,8 @@
 import type { IconName } from "@shared/components/ui/Icon";
+import { SYNC_STATUS_LABELS } from "../lib/syncStatusLabels";
+
+// Слова стану — зі спільного словника (PR-F7), регістр `short`.
+const LABEL = SYNC_STATUS_LABELS.short;
 
 // Tolerant shape: `useUnifiedFinanceData` merges mono/privat sync
 // states, where `status` is an open string — the tone helper
@@ -60,7 +64,7 @@ export function getSyncTone(
   if (syncState?.status === "error") {
     return {
       dot: "bg-danger",
-      text: "не синхронізовано",
+      text: LABEL.error,
       pill: "text-danger-strong",
       icon: "alert-circle",
       needsAttention: true,
@@ -69,7 +73,7 @@ export function getSyncTone(
   if (syncState?.status === "partial") {
     return {
       dot: "bg-warning",
-      text: "частково",
+      text: LABEL.partial,
       pill: "text-warning-strong dark:text-warning",
       icon: "alert-triangle",
       needsAttention: true,
@@ -78,7 +82,7 @@ export function getSyncTone(
   if (syncState?.status === "loading") {
     return {
       dot: "bg-muted",
-      text: "оновлення",
+      text: LABEL.loading,
       pill: "text-muted",
       icon: "refresh-cw",
       needsAttention: true,
@@ -87,7 +91,7 @@ export function getSyncTone(
   if (syncState?.status === "success") {
     return {
       dot: "bg-success",
-      text: "ок",
+      text: LABEL.success,
       pill: "text-success-strong dark:text-success",
       icon: "check-circle",
       needsAttention: false,
@@ -95,7 +99,7 @@ export function getSyncTone(
   }
   return {
     dot: "bg-subtle/40",
-    text: "очікування",
+    text: LABEL.idle,
     pill: "text-muted",
     icon: "pause-circle",
     needsAttention: true,

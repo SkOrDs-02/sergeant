@@ -8,11 +8,18 @@
  * SQLite warm-cache, тож у localStorage ключа не було.
  *
  * Тут реальні `storage.ts`, `kvStoreBoot.ts` і справжня SQLite-WASM у памʼяті;
- * підмінено лише OPFS/воркер (як у `core/db/__tests__/kvStoreBoot.test.ts`).
+ * підмінено лише OPFS/воркер (як у `core/db/__tests__/kvStoreBoot.test.ts`):
+ * від PR-T1 (2026-11-18) SQLite живе лише у воркері, тож база йде через
+ * фейковий in-process `Worker` на справжньому `sqliteWorkerHandler.ts`.
  * «Перезавантаження» = `vi.resetModules()` + свіжий імпорт; localStorage при
  * цьому лишається, як у браузері.
  */
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
+
+import {
+  installInProcessSqliteWorker,
+  uninstallInProcessSqliteWorker,
+} from "../db/__tests__/inProcessSqliteWorker";
 
 vi.stubGlobal("crossOriginIsolated", true);
 
@@ -42,6 +49,7 @@ async function bootSqliteKv(page: { kv: KvBoot }): Promise<void> {
 }
 
 beforeEach(() => {
+  installInProcessSqliteWorker();
   localStorage.clear();
   // Ховаємо персистентні VFS, щоб `openDb()` упав у памʼять.
   Object.defineProperty(globalThis.navigator, "storage", {
@@ -55,6 +63,7 @@ beforeEach(() => {
 });
 
 afterEach(() => {
+  uninstallInProcessSqliteWorker();
   vi.resetModules();
   localStorage.clear();
 });

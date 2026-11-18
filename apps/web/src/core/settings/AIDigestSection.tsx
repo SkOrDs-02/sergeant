@@ -1,16 +1,45 @@
 /**
- * Last validated: 2026-05-14
+ * Last validated: 2026-11-18
  * Status: Active
  */
+import { useState } from "react";
 import { useHubPref, HUB_PREF_MONDAY_AUTO } from "./hubPrefs";
 import { settingsSectionTitle } from "../hub/settingsSectionsCatalog";
 import { useWeeklyDigest } from "../insights/useWeeklyDigest";
-import { ContentGroup, ContentRow } from "@shared/components/ui/ContentGroup";
-import { SettingsGroup, ToggleRow } from "./SettingsPrimitives";
+import { IosInstallPushHint } from "@shared/components/ui/IosInstallPushHint";
+import { requestNotificationPermission } from "@shared/hooks/useModuleReminder";
+import { usePushNotifications } from "@shared/hooks/usePushNotifications";
+import { useToast } from "@shared/hooks/useToast";
+import { messages } from "@shared/i18n/uk";
+import { isIOSBrowserTab } from "@shared/lib/platform/iosStandalone";
+import {
+  SettingsGroup,
+  SettingsSubGroup,
+  ToggleRow,
+} from "./SettingsPrimitives";
+import { useServerPreference } from "./useServerPreference";
 import { formatDateTimeShort } from "@shared/lib/time/formatDate";
 
+const sergeantCopy = messages.sergeant;
+
+/**
+ * Секція «Сержант»: усе, що Сержант робить сам, без запиту людини, — звіт
+ * тижня і повідомлення, коли тебе не було кілька днів.
+ *
+ * AI-CONTEXT: рішення власника 2026-11-18 (варіант Б, PR-S8 аудиту
+ * 2026-09-13). Доти тут був один тумблер звіту, а «Повідомлення від
+ * Сержанта» жили в «Сповіщеннях». Згода на памʼять лишається в «Дані та
+ * приватність» (це згода, а не дія Сержанта), сама памʼять — у Профілі.
+ * Сховище тумблера не змінювалось: `sergeantNudges` у `/api/me/preferences`.
+ */
 export function AIDigestSection() {
   const { digest, weekRange } = useWeeklyDigest();
+  const { warning: toastWarning } = useToast();
+  const { subscribed: pushSubscribed } = usePushNotifications();
+  // iPhone/iPad у вкладці Safari: push неможливий, тож замість тосту
+  // показуємо, як встановити застосунок (О-1 (б), рішення власника
+  // 2026-11-18); тумблер лишається вимкненим.
+  const [showInstallHint, setShowInstallHint] = useState(false);
   // Default ON з 2026-08-30: дайджест поза AI-квотою, тож автозапуск
   // більше нічого не «зʼїдає». Відсутнє значення = увімкнено; «0» —
   // явний opt-out.
@@ -22,8 +51,45 @@ export function AIDigestSection() {
     true,
   );
 
+  // Живе на сервері, а не в localStorage: цей прапорець читає серверний
+  // шедулер тоді, коли жодного клієнта не запущено.
+  const sergeantNudges = useServerPreference(
+    "sergeantNudges",
+    {
+      saveError: sergeantCopy.nudgesSaveError,
+      authRequired: sergeantCopy.nudgesAuthRequired,
+    },
+    false,
+  );
+
   const handleToggleMondayAuto = (next: boolean) => {
     setMondayAuto(next);
+  };
+
+  const handleToggleNudges = (checked: boolean) => {
+    if (checked && isIOSBrowserTab()) {
+      setShowInstallHint(true);
+      return;
+    }
+    // Дозвіл питаємо поруч із записом: увімкнений на сервері канал без
+    // дозволу браузера — це тиха підписка на нічого. Запис не блокуємо,
+    // як і доти в «Сповіщеннях»: дозвіл можна дати пізніше.
+    if (
+      checked &&
+      typeof Notification !== "undefined" &&
+      Notification.permission !== "granted"
+    ) {
+      void requestNotificationPermission().then((perm) => {
+        if (perm === "install-required") {
+          setShowInstallHint(true);
+          return;
+        }
+        if (perm === "denied" || perm === "default") {
+          toastWarning(sergeantCopy.nudgesPermissionDenied);
+        }
+      });
+    }
+    void sergeantNudges.set(checked);
   };
 
   const generatedAt = digest?.generatedAt
@@ -52,14 +118,14 @@ export function AIDigestSection() {
       title={settingsSectionTitle("ai")}
       value={mondayAuto ? "Звіт щотижня" : "Звіт вимкнено"}
     >
-      <ContentGroup variant="bounded" className="space-y-3">
+      <SettingsSubGroup variant="bounded" title="Звіт тижня">
         <p className="text-style-body text-subtle leading-snug">
           Тижневий аналіз прогресу від Сержанта по всіх модулях: фінанси,
           тренування, харчування та звички. Звіт за тиждень, що минув,
           збирається сам при першому відкритті головної. Він чекає там у блоці
           «Звіт тижня», там же його можна оновити.
         </p>
-        <ContentRow>
+        <div>
           <p className="text-style-label text-text">Поточний тиждень</p>
           <p className="text-style-caption text-muted mt-0.5">{weekRange}</p>
           {generatedAt && (
@@ -67,16 +133,43 @@ export function AIDigestSection() {
               Згенеровано: {generatedAt}
             </p>
           )}
-        </ContentRow>
-        <ContentRow>
-          <ToggleRow
-            label="Автогенерація звіту"
-            description="Перше відкриття головної після завершення тижня само збирає звіт за тиждень, що минув. Звіт не витрачає ліміт дій Сержанта."
-            checked={mondayAuto}
-            onChange={handleToggleMondayAuto}
-          />
-        </ContentRow>
-      </ContentGroup>
+        </div>
+        <ToggleRow
+          label="Автогенерація звіту"
+          description="Перше відкриття головної після завершення тижня само збирає звіт за тиждень, що минув. Звіт не витрачає ліміт дій Сержанта."
+          checked={mondayAuto}
+          onChange={handleToggleMondayAuto}
+        />
+      </SettingsSubGroup>
+
+      <SettingsSubGroup variant="bounded" title="Повідомлення">
+        <ToggleRow
+          label={sergeantCopy.nudgesToggleLabel}
+          description={
+            pushSubscribed
+              ? sergeantCopy.nudgesToggleDescription
+              : `${sergeantCopy.nudgesToggleDescription} ${sergeantCopy.nudgesNeedsPushHint}`
+          }
+          checked={sergeantNudges.value}
+          onChange={handleToggleNudges}
+        />
+        {showInstallHint && <IosInstallPushHint className="mt-2" />}
+        {/* Огляд 2026-09-04: до першого завантаження «помилка» — це гість
+            («увійди, щоб…»), не збій. Червоним лишається лише збій
+            збереження після успішного завантаження. */}
+        {sergeantNudges.error && (
+          <p
+            className={
+              sergeantNudges.loaded
+                ? "text-style-caption text-danger-strong dark:text-danger"
+                : "text-style-caption text-muted"
+            }
+            role={sergeantNudges.loaded ? "alert" : "status"}
+          >
+            {sergeantNudges.error}
+          </p>
+        )}
+      </SettingsSubGroup>
     </SettingsGroup>
   );
 }

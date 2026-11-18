@@ -577,14 +577,15 @@ describe("Analytics page", () => {
     const now = Math.floor(KYIV.getTime() / 1000);
     const mayTs = Math.floor(new Date("2026-05-01T09:00:00Z").getTime() / 1000);
     const fetchMonth = vi.fn().mockResolvedValue([mkTx("prev", -30000, mayTs)]);
+    let container: HTMLElement | null = null;
     await act(async () => {
-      render(
+      ({ container } = render(
         <Analytics
           mono={buildMono({ realTx: [mkTx("cur", -10000, now)], fetchMonth })}
           storage={buildStorage()}
           showBalance={false}
         />,
-      );
+      ));
     });
     await waitFor(() => {
       expect(
@@ -594,6 +595,10 @@ describe("Analytics page", () => {
     // Summary (spent/income/balance) + comparison (2 rows) + merchant list
     // (1 entry) — at least 3 distinct amounts fall back to the mask glyph.
     expect(screen.getAllByText("••••").length).toBeGreaterThanOrEqual(3);
+    // Ревізія 2026-11-17: лічильник масок не помічав, коли одна з поверхонь
+    // (підсумок) знову друкувала суму, бо масок і без неї було три. Сума
+    // з «₴» не має лишитись ніде на сторінці.
+    expect(container!.textContent ?? "").not.toMatch(/\d\s?₴/);
   });
 
   it("shows real Summary/Comparison/Merchant amounts when showBalance=true (default)", async () => {

@@ -5,6 +5,7 @@
 import { useEffect, useState } from "react";
 import { cn } from "@shared/lib/ui/cn";
 import { useRelativeTime } from "@shared/hooks/useRelativeTime";
+import { SYNC_STATUS_LABELS } from "../../lib/syncStatusLabels";
 
 export interface TransactionSyncPillProps {
   syncState:
@@ -57,16 +58,11 @@ export function TransactionSyncPill({
       : syncState?.status === "partial"
         ? "text-warning-strong"
         : "text-muted";
+  // Слова — зі спільного словника (PR-F7), регістр `short`, як у шапці.
   const statusLabel =
-    syncState?.status === "loading"
-      ? "оновлення…"
-      : syncState?.status === "success"
-        ? "синхронізовано"
-        : syncState?.status === "partial"
-          ? "частково"
-          : syncState?.status === "error"
-            ? "не синхронізовано"
-            : "";
+    syncState?.status && syncState.status !== "idle"
+      ? SYNC_STATUS_LABELS.short[syncState.status]
+      : "";
   const sourceLabel =
     syncState?.source === "network"
       ? "мережа"

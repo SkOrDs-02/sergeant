@@ -2,14 +2,18 @@ import { vi } from "vitest";
 
 /**
  * Lightweight stand-in for `@sqlite.org/sqlite-wasm` used in the unit
- * tests under `apps/web/src/core/db/__tests__`. It mirrors the parts of
- * the surface area `core/db/sqlite.ts` actually depends on:
+ * tests under `apps/web/src/core/db/__tests__`. Since PR-T1 (2026-11-18)
+ * the package is only used inside the worker, so the fake mirrors what
+ * `sqliteWorkerHandler.ts` depends on (driven in-process by
+ * `inProcessSqliteWorker.ts`):
  *
  * - `default(opts)` — async init returning a `sqlite3` static object.
- * - `sqlite3.installOpfsSAHPoolVfs(opts)` — returns `{ OpfsSAHPoolDb }`.
- * - `sqlite3.oo1.JsStorageDb`, `sqlite3.oo1.DB` — constructors that
- *   yield a tiny in-memory key-value store with the relevant `exec`
- *   shape (`bind`, `rowMode`, `returnValue`).
+ * - `sqlite3.installOpfsSAHPoolVfs(opts)` — returns `{ OpfsSAHPoolDb }`;
+ *   rejects like the real one when `navigator.storage.getDirectory` is
+ *   missing, so tests can simulate a browser without worker OPFS.
+ * - `sqlite3.oo1.DB` — constructor that yields a tiny in-memory
+ *   key-value store with the relevant `exec` shape (`bind`, `rowMode`,
+ *   `returnValue`).
  *
  * It's intentionally NOT a full SQLite implementation — the round-trip
  * test in `sqlite.roundtrip.test.ts` uses the real package against an
@@ -57,16 +61,6 @@ class FakeRows {
   }
 }
 
-class JsStorageDb extends FakeRows {
-  constructor(_mode?: "local" | "session") {
-    super();
-  }
-
-  // Real `oo1.JsStorageDb` exposes this to drop the kvvfs slot wholesale;
-  // mirror it so `wipeSqliteDb()` on the kvvfs path is exercisable.
-  clearStorage = clearStorageMock;
-}
-
 class DB extends FakeRows {
   constructor(_filename?: string, _flags?: string) {
     super();
@@ -79,8 +73,6 @@ export const createdOpfsFilenames: string[] = [];
 /** `SAHPoolUtil.unlink` spy — lets tests assert wipe-on-logout deletes the
  *  right per-user file. */
 export const opfsUnlinkMock = vi.fn((_name: string) => true);
-/** `JsStorageDb.clearStorage` spy — kvvfs-path wipe assertion. */
-export const clearStorageMock = vi.fn(() => undefined);
 
 class OpfsSAHPoolDb extends FakeRows {
   constructor(filename: string) {
@@ -107,6 +99,13 @@ export const addCapacityMock = vi.fn(async (n: number) => {
 
 const installOpfsSAHPoolVfs = vi.fn(
   async (options?: { initialCapacity?: number }) => {
+    // Справжній пакет перевіряє рівно це (плюс `createSyncAccessHandle`).
+    const storage = (
+      globalThis as { navigator?: { storage?: { getDirectory?: unknown } } }
+    ).navigator?.storage;
+    if (typeof storage?.getDirectory !== "function") {
+      throw new Error("Missing required OPFS APIs.");
+    }
     sahPoolState.capacity = options?.initialCapacity ?? 6;
     return {
       OpfsSAHPoolDb,
@@ -115,7 +114,7 @@ const installOpfsSAHPoolVfs = vi.fn(
       exportFile: vi.fn(),
       getCapacity: () => sahPoolState.capacity,
       getFileCount: () => sahPoolState.fileCount,
-      getFileNames: vi.fn(),
+      getFileNames: vi.fn(() => [] as string[]),
       importDb: vi.fn(),
     };
   },
@@ -124,7 +123,7 @@ const installOpfsSAHPoolVfs = vi.fn(
 export const installOpfsSAHPoolVfsMock = installOpfsSAHPoolVfs;
 
 const sqlite3Static = {
-  oo1: { DB, JsStorageDb, OpfsDb: DB },
+  oo1: { DB, OpfsDb: DB },
   installOpfsSAHPoolVfs,
 };
 

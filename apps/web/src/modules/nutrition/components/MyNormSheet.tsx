@@ -8,6 +8,7 @@
  * патчем у `NutritionPrefs` (origin `preset`, як «Розрахувати з профілю»).
  * Мережа не потрібна, тому гейта `online` тут немає.
  */
+import { formatDateFull } from "@shared/lib/time/formatDate";
 import { useId, useMemo, useState } from "react";
 import { Button } from "@shared/components/ui/Button";
 import { ChoiceGroup, type ChoiceItem } from "@shared/components/ui/Choice";
@@ -293,11 +294,7 @@ function MyNormBody({ onClose }: { onClose: () => void }) {
                 ? COPY.goalWeightRangeError
                 : goalDate
                   ? fill(COPY.goalDate, {
-                      date: goalDate.toLocaleDateString("uk-UA", {
-                        day: "numeric",
-                        month: "long",
-                        year: "numeric",
-                      }),
+                      date: formatDateFull(goalDate),
                     })
                   : undefined
             }

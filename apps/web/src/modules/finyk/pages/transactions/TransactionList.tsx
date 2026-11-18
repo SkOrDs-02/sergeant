@@ -181,6 +181,8 @@ export interface TransactionListProps {
    * очистити запит. Діє лише коли місяць не порожній (`activeTx` є).
    */
   searchEmpty?: ReactNode;
+  /** Провал жесту оновлення (хмарний пул відхилено): тост із «Повторити». */
+  onRefreshError?: ((err: unknown) => void) | undefined;
 }
 
 /**
@@ -228,6 +230,7 @@ export function TransactionList({
   footer,
   onRefresh,
   searchEmpty,
+  onRefreshError,
 }: TransactionListProps) {
   const [scrollParent, setScrollParent] = useState<HTMLDivElement | null>(null);
   const cloudPullPending = useCloudPullPending();
@@ -489,6 +492,7 @@ export function TransactionList({
       {onRefresh ? (
         <PullToRefresh
           onRefresh={onRefresh}
+          onError={onRefreshError}
           variant="finyk"
           enabled={!cloudPullPending}
           onScrollElement={setScrollParent}

@@ -3,6 +3,11 @@ import { bankProxyFetch } from "../../lib/bankProxy.js";
 import { parseQuery } from "../../http/validate.js";
 import { PrivatQuerySchema } from "../../http/schemas.js";
 import { logger } from "../../obs/logger.js";
+import {
+  AppError,
+  UnauthorizedError,
+  ValidationError,
+} from "../../obs/errors.js";
 import { loadPrivatCredentials } from "./privatStore.js";
 
 /**
@@ -18,24 +23,16 @@ import { loadPrivatCredentials } from "./privatStore.js";
  * був видимий у DevTools. Плюс проксі був неавтентифікований: будь-хто міг
  * ганяти власні креденшели через нашу інфраструктуру.
  *
- * Upstream error bodies (HTML/JSON blobs) ніколи не ехояться клієнту —
- * лише стабільний `{ error, code?, requestId? }`. Truncated `upstreamBody`
- * лишається в server logs для дебагу.
+ * Upstream error bodies (HTML/JSON blobs) ніколи не ехояться клієнту.
+ * Кожна помилка тут — `throw` підкласу `AppError`: Express 5 веде reject
+ * async-хендлера в `http/errorHandler.ts`, і той віддає стабільне
+ * `{ error, message, code, requestId }` (знахідка PR-T3 аудиту
+ * 2026-09-13, хвиля 10). Truncated `upstreamBody` лишається в server logs
+ * для дебагу.
  */
 const ALLOWED_PATHS = ["/statements/balance/final", "/statements/transactions"];
 
 const UPSTREAM_BODY_LOG_MAX = 200;
-
-type ReqWithId = Request & { requestId?: string };
-
-function clientErrorPayload(
-  req: Request,
-  error: string,
-  code: string,
-): { error: string; code: string; requestId?: string } {
-  const requestId = (req as ReqWithId).requestId;
-  return requestId ? { error, code, requestId } : { error, code };
-}
 
 export default async function handler(
   req: Request,
@@ -43,8 +40,7 @@ export default async function handler(
 ): Promise<void> {
   const userId = (req as Request & { user?: { id?: string } }).user?.id;
   if (!userId) {
-    res.status(401).json({ error: "Потрібна автентифікація" });
-    return;
+    throw new UnauthorizedError("Потрібна автентифікація");
   }
 
   let creds: Awaited<ReturnType<typeof loadPrivatCredentials>>;
@@ -57,15 +53,16 @@ export default async function handler(
       msg: "privat_credentials_decrypt_failed",
       err: err instanceof Error ? err.message : String(err),
     });
-    res.status(500).json({ error: "Не вдалося прочитати credentials" });
-    return;
+    throw new AppError("Не вдалося прочитати credentials", {
+      status: 500,
+      code: "PRIVAT_CREDENTIALS_UNREADABLE",
+    });
   }
   if (!creds) {
-    res.status(409).json({
-      error: "ПриватБанк не підключено",
+    throw new AppError("ПриватБанк не підключено", {
+      status: 409,
       code: "PRIVAT_NOT_CONNECTED",
     });
-    return;
   }
 
   const parsedQ = parseQuery(PrivatQuerySchema, req);
@@ -75,8 +72,7 @@ export default async function handler(
     (p) => path === p || path.startsWith(p + "/"),
   );
   if (!pathAllowed) {
-    res.status(400).json({ error: "Недозволений API шлях" });
-    return;
+    throw new ValidationError("Недозволений API шлях");
   }
 
   // Відкидаємо небезпечні символи у значеннях заголовків (CRLF-injection захист).
@@ -91,8 +87,7 @@ export default async function handler(
   const safeId = safeHeader(creds.merchantId);
   const safeToken = safeHeader(creds.token);
   if (!safeId || !safeToken) {
-    res.status(400).json({ error: "Недозволені credentials" });
-    return;
+    throw new ValidationError("Недозволені credentials");
   }
 
   const queryParams = new URLSearchParams(req.query as Record<string, string>);
@@ -127,29 +122,21 @@ export default async function handler(
     });
 
     if (status === 429) {
-      res
-        .status(429)
-        .json(clientErrorPayload(req, "Занадто багато запитів", "RATE_LIMIT"));
-      return;
+      throw new AppError("Занадто багато запитів", {
+        status: 429,
+        code: "RATE_LIMIT",
+      });
     }
     if (status === 401 || status === 403) {
-      res
-        .status(status)
-        .json(
-          clientErrorPayload(
-            req,
-            "Неправильні дані входу PrivatBank",
-            "PRIVAT_CREDENTIALS_INVALID",
-          ),
-        );
-      return;
+      throw new AppError("Неправильні дані входу PrivatBank", {
+        status,
+        code: "PRIVAT_CREDENTIALS_INVALID",
+      });
     }
-    res
-      .status(status)
-      .json(
-        clientErrorPayload(req, `Помилка ${status}`, "PRIVAT_UPSTREAM_ERROR"),
-      );
-    return;
+    throw new AppError(`Помилка ${status}`, {
+      status,
+      code: "PRIVAT_UPSTREAM_ERROR",
+    });
   }
 
   let data: unknown;

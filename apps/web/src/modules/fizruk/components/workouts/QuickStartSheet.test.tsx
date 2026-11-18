@@ -145,6 +145,12 @@ describe("QuickStartSheet — pick step", () => {
     expect(
       screen.getByText("Спробуй іншу назву або очисти пошук."),
     ).toBeInTheDocument();
+    // Сам примітив, а не лише текст (PR-C6, пін додано хвилею 8).
+    expect(
+      screen
+        .getAllByRole("status")
+        .some((el) => /Нічого не знайшов/.test(el.textContent ?? "")),
+    ).toBe(true);
   });
 
   it("the confirm button is disabled until at least one exercise is selected", () => {

@@ -26,6 +26,7 @@
  * `!endedAt` — це рухало б header/nav/FAB-логіку для всіх споживачів
  * `page === "workout"` заради однієї гілки.
  */
+import { formatDateTimeShort } from "@shared/lib/time/formatDate";
 import { Card } from "@shared/components/ui/Card";
 import { Button } from "@shared/components/ui/Button";
 import { Icon } from "@shared/components/ui/Icon";
@@ -135,12 +136,7 @@ export function WorkoutSummaryView({
         <div className="flex-1">
           <div className="text-style-label text-text">{copy.title}</div>
           <div className="text-style-caption text-subtle mt-0.5">
-            {new Date(workout.startedAt).toLocaleString("uk-UA", {
-              month: "short",
-              day: "numeric",
-              hour: "2-digit",
-              minute: "2-digit",
-            })}
+            {formatDateTimeShort(new Date(workout.startedAt))}
             {/* Один « · » без відступу: `ml-2` разом із пробілом давав
                 подвійний проміжок «19:40  · 10 с» (зйомка 2026-11-18). */}
             {summary ? ` · ${formatDurShort(summary.durationSec)}` : null}

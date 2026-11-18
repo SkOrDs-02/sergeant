@@ -289,6 +289,44 @@ describe("useOverviewData", () => {
       expect(result.current.budgetAlerts).toHaveLength(0);
     });
 
+    // PR-F8, рішення власника 2026-11-18 (варіант Б): Огляд попереджає з
+    // того ж порогу, що Планування й хаб (80%), а не з окремих 60%.
+    describe("єдина шкала порогів ліміту (PR-F8)", () => {
+      const LIMIT = {
+        id: "b-food",
+        type: "limit",
+        categoryId: "food",
+        limit: 1000,
+      };
+      const alertsFor = (amount: number) =>
+        renderHook(() =>
+          useOverviewData({
+            mono: buildMono({ realTx: [mkTx("t-food", amount)] as never }),
+            storage: buildStorage({
+              budgets: [LIMIT] as never,
+              txCategories: { "t-food": "food" },
+            }),
+          }),
+        ).result.current.budgetAlerts;
+
+      it("70% ліміту ще не плашка на Огляді", () => {
+        expect(alertsFor(-70_000)).toHaveLength(0);
+      });
+
+      it("80% ліміту — плашка-попередження, не перевищення", () => {
+        const alerts = alertsFor(-80_000);
+        expect(alerts).toHaveLength(1);
+        expect(alerts[0]?.warnLimit).toBe(true);
+        expect(alerts[0]?.overLimit).toBe(false);
+      });
+
+      it("100% ліміту — перевищення", () => {
+        const alerts = alertsFor(-100_000);
+        expect(alerts).toHaveLength(1);
+        expect(alerts[0]?.overLimit).toBe(true);
+      });
+    });
+
     describe("правила «Завжди так для цього магазину»", () => {
       // Функція, а не константа: `mkTx` читає `Date.now()`, а фейковий час
       // ставить `beforeEach` — константа на рівні describe взяла б реальну дату.

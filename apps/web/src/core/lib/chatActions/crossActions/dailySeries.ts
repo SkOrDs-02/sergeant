@@ -378,7 +378,7 @@ function readHabitRate(habitId?: string): Map<string, number> {
     return out;
   }
   if (active.length === 0) return out;
-  // П-18 (А), 2026-11-18 (`METRICS_VERSION` 22): відсоток дня на тому самому
+  // П-18 (А), 2026-11-18 (`METRICS_VERSION` 23): відсоток дня на тому самому
   // знаменнику, що модуль: звички, заплановані на цей день, без днів «не
   // зміг» (`calcRoutinePeriodCompletion.daily`). Раніше тут ділилось на всі
   // активні звички. Дні без жодної відмітки як і раніше лишаються поза

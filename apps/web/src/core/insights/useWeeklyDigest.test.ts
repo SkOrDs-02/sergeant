@@ -460,6 +460,56 @@ describe("aggregateRoutine", () => {
   });
 });
 
+describe("aggregateRoutine: «не зміг» (METRICS_VERSION 20)", () => {
+  beforeEach(() => {
+    clearSqliteRoutineStateCache();
+    clearSqliteCompletionsCache();
+  });
+  afterEach(() => {
+    clearSqliteRoutineStateCache();
+    clearSqliteCompletionsCache();
+  });
+
+  it("день із заявленим пропуском виходить зі знаменника, а не рахується провалом", async () => {
+    __setRoutineSqliteStateCacheForTests({
+      habits: [
+        {
+          id: "h1",
+          name: "Медитація",
+          recurrence: "daily",
+          startDate: "2025-01-01",
+        },
+      ] as unknown as Habit[],
+      habitOrder: ["h1"],
+      skips: {
+        h1: {
+          "2025-04-12": { reason: "sick", at: "2025-04-12T10:00:00.000Z" },
+          "2025-04-13": { reason: "sick", at: "2025-04-13T10:00:00.000Z" },
+        },
+      },
+    });
+    __setRoutineSqliteCompletionsCacheForTests({
+      completions: {
+        h1: [
+          "2025-04-07",
+          "2025-04-08",
+          "2025-04-09",
+          "2025-04-10",
+          "2025-04-11",
+        ],
+      },
+    });
+
+    const { aggregateRoutine } = await import("./useWeeklyDigest");
+    const result = aggregateRoutine("2025-04-07");
+
+    // 5 виконано із 5 запланованих (2 пропуски поза знаменником), а не 5/7 = 71%.
+    expect(result!.habits[0]!.total).toBe(5);
+    expect(result!.habits[0]!.completionRate).toBe(100);
+    expect(result!.overallRate).toBe(100);
+  });
+});
+
 describe("getWeekRange", () => {
   it("formats Ukrainian range Пн–Нд", async () => {
     const { getWeekRange } = await import("./useWeeklyDigest");

@@ -13,8 +13,14 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { cleanup, fireEvent, render, screen } from "@testing-library/react";
 
-const { useLocalUserIdMock } = vi.hoisted(() => ({
+const { useLocalUserIdMock, trackEventMock } = vi.hoisted(() => ({
   useLocalUserIdMock: vi.fn(),
+  trackEventMock: vi.fn(),
+}));
+
+vi.mock("../observability/analytics", async (orig) => ({
+  ...(await orig<typeof import("../observability/analytics")>()),
+  trackEvent: trackEventMock,
 }));
 
 vi.mock("../auth/useLocalUserId", () => ({
@@ -22,11 +28,16 @@ vi.mock("../auth/useLocalUserId", () => ({
 }));
 
 import { messagesEn } from "@shared/i18n/en";
-import { LocalOnlyDataBanner } from "./LocalOnlyDataBanner";
+import {
+  LOCAL_ONLY_BANNER_PLACEMENT,
+  LocalOnlyDataBanner,
+  __resetLocalOnlyBannerTrackingForTests,
+} from "./LocalOnlyDataBanner";
 import { NON_SYNCABLE_USER_IDS } from "../syncEngine/syncableUserId";
 
 afterEach(() => {
   cleanup();
+  __resetLocalOnlyBannerTrackingForTests();
   vi.clearAllMocks();
   localStorage.clear();
 });
@@ -125,5 +136,42 @@ describe("LocalOnlyDataBanner", () => {
     rerender(<LocalOnlyDataBanner onSignIn={vi.fn()} onBackup={onBackup} />);
     fireEvent.click(screen.getByRole("button", { name: /Завантажити копію/ }));
     expect(onBackup).toHaveBeenCalledTimes(1);
+  });
+  // Рішення власника 2026-11-17: банер став головним закликом до входу на
+  // вебі, тож він шле події колишньої soft-auth картки з власним
+  // `placement` (воронка `auth-prompt-funnel` у founder-pulse).
+  describe("аналітика заклику до входу", () => {
+    it("показ рахується раз на завантаження, а не на кожен маунт", () => {
+      useLocalUserIdMock.mockReturnValue("local-anon");
+      const first = render(<LocalOnlyDataBanner onSignIn={vi.fn()} />);
+      first.unmount();
+      render(<LocalOnlyDataBanner onSignIn={vi.fn()} />);
+      const shown = trackEventMock.mock.calls.filter(
+        ([name]) => name === "auth_prompt_shown",
+      );
+      expect(shown).toEqual([
+        ["auth_prompt_shown", { placement: LOCAL_ONLY_BANNER_PLACEMENT }],
+      ]);
+    });
+
+    it("тап «Увійти» шле auth_after_value і відкриває вхід", () => {
+      useLocalUserIdMock.mockReturnValue("local-anon");
+      const onSignIn = vi.fn();
+      render(<LocalOnlyDataBanner onSignIn={onSignIn} />);
+      fireEvent.click(screen.getByRole("button", { name: "Увійти" }));
+      expect(trackEventMock).toHaveBeenCalledWith("auth_after_value", {
+        placement: "local_only_banner",
+      });
+      expect(onSignIn).toHaveBeenCalledTimes(1);
+    });
+
+    it("прихований банер не шле показу (залогінений і сесія в польоті)", () => {
+      useLocalUserIdMock.mockReturnValue("usr_abc123");
+      render(<LocalOnlyDataBanner onSignIn={vi.fn()} />);
+      cleanup();
+      useLocalUserIdMock.mockReturnValue(null);
+      render(<LocalOnlyDataBanner onSignIn={vi.fn()} />);
+      expect(trackEventMock).not.toHaveBeenCalled();
+    });
   });
 });

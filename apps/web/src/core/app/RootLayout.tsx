@@ -421,7 +421,7 @@ function RootLayoutInner() {
   const { canInstall, install, dismiss } = usePwaInstall();
   const { updateAvailable, applyUpdate } = useSWUpdate();
   const { user, isLoading: authLoading } = useAuth();
-  // rel-12: «Скинути кеш PWA» знімає реєстрацію SW, а з нею і push-підписку.
+  // rel-12: «Скинути файли застосунку» знімає реєстрацію SW, а з нею і push-підписку.
   useRestoreWebPush(user?.id);
 
   // App-level effects (idle prefetch, SW messages, hub bus, etc.)
