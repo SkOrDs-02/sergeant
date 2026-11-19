@@ -5044,7 +5044,7 @@
       "canonical_owner": "docs/work/specs/superpowers/README.md"
     },
     {
-      "old_path": null,
+      "old_path": "docs/work/specs/sync-snapshot-client-bootstrap.md",
       "new_path": "docs/work/specs/sync-snapshot-client-bootstrap.md",
       "action": "keep",
       "genre": "active-work",

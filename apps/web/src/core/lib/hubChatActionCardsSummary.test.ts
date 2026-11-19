@@ -63,6 +63,12 @@ describe("summaryFor", () => {
     ).toBe("сніданок · Омлет · 350 ккал");
   });
 
+  it("log_meal: схема шле kcal і вагу в грамах (2026-11-19)", () => {
+    expect(
+      summaryFor("log_meal", { name: "Рис", kcal: 195, amount_g: 150 }, "r"),
+    ).toBe("Рис · 150\u00a0г · 195 ккал");
+  });
+
   it("log_water: amount_ml preferred", () => {
     expect(summaryFor("log_water", { amount_ml: 250, amount: 999 }, "r")).toBe(
       "250 мл",
