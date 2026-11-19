@@ -117,6 +117,13 @@ export interface RunResult {
   /** Реально прочитано з кешу провайдера; `null` — провайдер не репортить. */
   cacheReadTokens: number | null;
   costUsd: number | null;
+  /**
+   * Хто з постачальників OpenRouter реально відповів (поле `provider` у
+   * відповіді шлюзу); `null` — не OpenRouter або шлюз не назвав.
+   */
+  servedBy?: string | null;
+  /** Фактично списано шлюзом (`usage.cost`), а не оцінка за прайсом. */
+  gatewayCostUsd?: number | null;
   /** Повний, необрізаний текст — звіт зобовʼязаний уміти його показати. */
   text: string;
   /** `null` — пайплайн не user-facing, голос не міряємо. */

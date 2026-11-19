@@ -115,6 +115,14 @@ export interface LLMGenerateOpts {
    * порожньою. Без поля шлюз вирішує сам, як і досі. Anthropic ігнорує.
    */
   reasoning?: { effort: ReasoningEffort } | undefined;
+  /**
+   * Додаткові поля `provider` для OpenRouter (`quantizations`, `ignore`).
+   * AI-NOTE: лише для стенду `eval:models` (замір fp4-ендпойнтів 2026-11-19).
+   * Прод цього поля не передає, тож тіло прод-запиту не змінюється;
+   * `data_collection` з `withOpenRouterProviderPrefs` однаково перекриває
+   * будь-яке значення звідси. Anthropic і Stub ігнорують.
+   */
+  providerPrefs?: Readonly<Record<string, unknown>> | undefined;
 }
 
 export const REASONING_EFFORTS = [
@@ -503,6 +511,7 @@ export class OpenRouterProvider implements LLMProvider {
     };
     if (opts.temperature !== undefined) body["temperature"] = opts.temperature;
     if (opts.reasoning) body["reasoning"] = opts.reasoning;
+    if (opts.providerPrefs) body["provider"] = { ...opts.providerPrefs };
 
     const controller = new AbortController();
     let timeoutId: ReturnType<typeof setTimeout> | null = null;
