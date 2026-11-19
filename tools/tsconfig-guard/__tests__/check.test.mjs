@@ -1,4 +1,8 @@
-import { describe, it, expect, afterEach } from "vitest";
+// `node:test`, а не Vitest: файл підхоплює лише `pnpm test:scripts`
+// (`node --test "tools/**/*.test.mjs"`), де імпорт із `vitest` падав
+// «failed to find the current suite» (прогін `full-2026-11-19`).
+import { describe, it, afterEach } from "node:test";
+import assert from "node:assert/strict";
 import { mkdirSync, writeFileSync, rmSync, existsSync } from "node:fs";
 import { join } from "node:path";
 import { run } from "../check.mjs";
@@ -65,7 +69,7 @@ describe("tsconfig-guard", () => {
     });
 
     const code = run({ rootDir, guardDir });
-    expect(code).toBe(1);
+    assert.equal(code, 1);
   });
 
   it("passes when app has strict:true matching base", () => {
@@ -77,7 +81,7 @@ describe("tsconfig-guard", () => {
     });
 
     const code = run({ rootDir, guardDir });
-    expect(code).toBe(0);
+    assert.equal(code, 0);
   });
 
   it("passes when app inherits strict from base (no explicit override)", () => {
@@ -89,7 +93,7 @@ describe("tsconfig-guard", () => {
     });
 
     const code = run({ rootDir, guardDir });
-    expect(code).toBe(0);
+    assert.equal(code, 0);
   });
 
   it("passes when app has strict:false with valid allowlist entry", () => {
@@ -114,7 +118,7 @@ describe("tsconfig-guard", () => {
     );
 
     const code = run({ rootDir, guardDir });
-    expect(code).toBe(0);
+    assert.equal(code, 0);
   });
 
   it("fails when allowlist entry has expired", () => {
@@ -139,7 +143,7 @@ describe("tsconfig-guard", () => {
     );
 
     const code = run({ rootDir, guardDir, now: new Date("2025-06-01") });
-    expect(code).toBe(1);
+    assert.equal(code, 1);
   });
 
   it("skips apps that do not extend from packages/config", () => {
@@ -150,7 +154,7 @@ describe("tsconfig-guard", () => {
     });
 
     const code = run({ rootDir, guardDir });
-    expect(code).toBe(0);
+    assert.equal(code, 0);
   });
 
   it("detects noImplicitAny drift", () => {
@@ -162,7 +166,7 @@ describe("tsconfig-guard", () => {
     });
 
     const code = run({ rootDir, guardDir });
-    expect(code).toBe(1);
+    assert.equal(code, 1);
   });
 
   it("detects strictNullChecks drift", () => {
@@ -174,7 +178,7 @@ describe("tsconfig-guard", () => {
     });
 
     const code = run({ rootDir, guardDir });
-    expect(code).toBe(1);
+    assert.equal(code, 1);
   });
 
   it("detects noUncheckedIndexedAccess drift when base sets it true", () => {
@@ -198,7 +202,7 @@ describe("tsconfig-guard", () => {
     );
 
     const code = run({ rootDir, guardDir });
-    expect(code).toBe(1);
+    assert.equal(code, 1);
   });
 
   it("passes noUncheckedIndexedAccess override with valid allowlist entry", () => {
@@ -231,6 +235,6 @@ describe("tsconfig-guard", () => {
     );
 
     const code = run({ rootDir, guardDir });
-    expect(code).toBe(0);
+    assert.equal(code, 0);
   });
 });

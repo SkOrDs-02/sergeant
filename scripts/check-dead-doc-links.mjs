@@ -157,6 +157,12 @@ function walk(dir, out = []) {
   for (const entry of readdirSync(dir)) {
     if (SKIP_DIRS.has(entry)) continue;
     if (SKIP_DIR_PREFIXES.some((p) => entry.startsWith(p))) continue;
+    // `.claude/worktrees/` — gitignored робочі дерева агентів, повні копії
+    // репо зі своїми (часто старими) покажчиками на доки. Без пропуску
+    // локальний `pnpm lint` червонів «новими мертвими посиланнями» з чужих
+    // гілок, яких у джерелах немає; у CI воркдерев немає, тож розбіжність
+    // тиха. Той самий пропуск, що в `check-governance-sync.mjs`.
+    if (entry === "worktrees" && relPosix(dir) === ".claude") continue;
     const full = join(dir, entry);
     let st;
     try {
