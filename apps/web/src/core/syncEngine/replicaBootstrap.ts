@@ -83,7 +83,7 @@ function stateKey(userId: string): string {
 }
 
 /** Чи є в черзі ще не відправлені записи цього користувача. */
-async function hasPendingOutbox(
+export async function hasPendingOutbox(
   client: SqliteMigrationClient,
   userId: string,
 ): Promise<boolean> {

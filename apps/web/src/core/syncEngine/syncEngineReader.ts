@@ -1,4 +1,11 @@
-import type { SyncV2PullOp, SyncV2PullResponse } from "@sergeant/api-client";
+import type {
+  SyncV2PullOp,
+  SyncV2PullResponse,
+  SyncV2SnapshotOptions,
+  SyncV2SnapshotResponse,
+} from "@sergeant/api-client";
+import { isSyncCursorExpiredError } from "@sergeant/api-client";
+import { restoreFromSnapshot } from "./snapshotRestore.js";
 import {
   markReplicaBootstrapDone,
   REPLICA_BOOTSTRAP_ORIGIN,
@@ -79,6 +86,15 @@ export interface SyncEngineReaderDeps {
   };
   readonly intervalMs: number;
   readonly limit: number;
+  /**
+   * Знімок стану сервера (`GET /api/v2/sync/snapshot`). Потрібен, коли pull
+   * відповідає `410 sync_cursor_expired`: журнал обрізано нижче курсора, і
+   * дочитати його вже неможливо (`snapshotRestore.ts`). Без цієї залежності
+   * 410 лишається звичайною помилкою тіка.
+   */
+  readonly snapshot?: (
+    opts: SyncV2SnapshotOptions,
+  ) => Promise<SyncV2SnapshotResponse>;
   /**
    * Канал обсервабіліті тіка. Крім помилок самого тіка сюди їде КОЖНЕ
    * термінальне відхилення опа на застосуванні (`reportPullRejection`) —
@@ -372,8 +388,53 @@ export function createSyncEngineReaderRuntime(
       // догін вичерпав свій.
       rateLimitWaits = 0;
 
+      // Знімок із тим самим повтором на рейт-ліміт, що й сторінки pull.
+      const fetchSnapshot = async (
+        opts: SyncV2SnapshotOptions,
+      ): Promise<SyncV2SnapshotResponse> => {
+        const snapshot = deps.snapshot;
+        if (!snapshot) throw new Error("sync reader: snapshot is not wired");
+        for (;;) {
+          try {
+            return await snapshot(opts);
+          } catch (error) {
+            const waitMs = rateLimitWaitMs(error);
+            if (waitMs === null || rateLimitWaits >= MAX_RATE_LIMIT_WAITS)
+              throw error;
+            rateLimitWaits += 1;
+            await new Promise((resolve) => setTimeout(resolve, waitMs));
+          }
+        }
+      };
+
       for (;;) {
-        const page = await fetchPage(since);
+        let page: SyncV2PullResponse;
+        try {
+          page = await fetchPage(since);
+        } catch (error) {
+          // Журнал обрізано нижче курсора (ADR-0105): дочитати неможливо,
+          // копію відновлює знімок, далі pull від `as_of_op_id`.
+          if (!isSyncCursorExpiredError(error) || !deps.snapshot) throw error;
+          const restored = await restoreFromSnapshot({
+            client,
+            userId,
+            fetchSnapshot,
+            isConstraintFailure,
+            onRejected: (op, cause) => reportPullApplyFailure(deps, op, cause),
+          });
+          // Черга ще не доїхала: знімок перебив би правку. Тік закінчується
+          // без мітки «pull завершено», наступний спробує знову.
+          if (restored.status === "postponed") {
+            return { pulled, applied, skipped, rejected, lastOpId: maxOpId };
+          }
+          applied += restored.applied;
+          rejected += restored.rejected;
+          for (const table of restored.affectedTables)
+            affectedTables.add(table);
+          since = restored.asOfOpId;
+          maxOpId = Math.max(maxOpId, since);
+          continue;
+        }
 
         for (const op of page.ops) {
           pulled += 1;
