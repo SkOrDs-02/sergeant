@@ -23,6 +23,9 @@ const indexMocks = vi.hoisted(() => ({
   startMemoryIngestWorker: vi.fn(),
   logArchiveStart: vi.fn(),
   logArchiveStop: vi.fn(async () => undefined),
+  releaseStartupFatalHandler: vi.fn(),
+  syncOpLogRetentionStart: vi.fn(),
+  syncOpLogRetentionStop: vi.fn(async () => undefined),
   webhookRetentionStart: vi.fn(),
   webhookRetentionStop: vi.fn(async () => undefined),
   loggerInfo: vi.fn(),
@@ -53,6 +56,13 @@ const indexMocks = vi.hoisted(() => ({
   },
 }));
 
+// Обробник фатальної помилки старту (`startupFatal.ts`, свій тест) реєструє
+// `uncaughtException` першим. Справжній модуль тут підсунув би його замість
+// штатного обробника `index.ts`: `find` нижче бере перший зареєстрований, а
+// той виходить лише через 2 с і ставить `process.exitCode = 1` воркеру тестів.
+vi.mock("./startupFatal.js", () => ({
+  releaseStartupFatalHandler: indexMocks.releaseStartupFatalHandler,
+}));
 vi.mock("./obs/tracing.js", () => ({}));
 vi.mock("./sentry.js", () => ({
   Sentry: { flush: indexMocks.sentryFlush },
@@ -149,6 +159,17 @@ vi.mock("./modules/logRetention/archivePoller.js", () => ({
     this.stop = indexMocks.logArchiveStop;
   }),
 }));
+vi.mock("./modules/logRetention/syncOpLogAppliedRetention.js", () => ({
+  SyncOpLogAppliedRetentionPoller: vi.fn(
+    function SyncOpLogAppliedRetentionPoller(this: {
+      start: () => void;
+      stop: () => Promise<void>;
+    }) {
+      this.start = indexMocks.syncOpLogRetentionStart;
+      this.stop = indexMocks.syncOpLogRetentionStop;
+    },
+  ),
+}));
 vi.mock("./modules/webhooks/retentionPoller.js", () => ({
   WebhookEventsRetentionPoller: vi.fn(
     function WebhookEventsRetentionPoller(this: {
@@ -210,6 +231,7 @@ describe("server entrypoint", () => {
     expect(indexMocks.startMemoryIngestWorker).toHaveBeenCalledOnce();
     expect(indexMocks.webhookRetentionStart).toHaveBeenCalledOnce();
     expect(indexMocks.logArchiveStart).toHaveBeenCalledOnce();
+    expect(indexMocks.syncOpLogRetentionStart).toHaveBeenCalledOnce();
     expect(indexMocks.listen).toHaveBeenCalledWith(
       3000,
       "0.0.0.0",
@@ -296,6 +318,7 @@ describe("server entrypoint", () => {
     expect(mccStop).toHaveBeenCalledOnce();
     expect(indexMocks.webhookRetentionStop).toHaveBeenCalledOnce();
     expect(indexMocks.logArchiveStop).toHaveBeenCalledOnce();
+    expect(indexMocks.syncOpLogRetentionStop).toHaveBeenCalledOnce();
     expect(indexMocks.anthropicBudgetGuardStop).toHaveBeenCalledOnce();
     expect(indexMocks.endPoolWithAbortTimeout).toHaveBeenCalledOnce();
     expect(indexMocks.disconnectRedis).toHaveBeenCalledOnce();
@@ -393,5 +416,17 @@ describe("server entrypoint", () => {
       msg: "uncaught_exception",
       err: { message: "Error: crash" },
     });
+    // Обробник старту знято до реєстрації штатного (інакше обидва ловили б
+    // той самий виняток).
+    expect(indexMocks.releaseStartupFatalHandler).toHaveBeenCalledOnce();
+    expect(
+      indexMocks.releaseStartupFatalHandler.mock.invocationCallOrder[0],
+    ).toBeLessThan(
+      indexMocks.processOn.mock.invocationCallOrder[
+        indexMocks.processOn.mock.calls.findIndex(
+          ([event]) => event === "uncaughtException",
+        )
+      ]!,
+    );
   });
 });
