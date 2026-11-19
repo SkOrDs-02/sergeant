@@ -190,7 +190,11 @@ import { brotliCompressSync, constants } from "node:zlib";
 // Ратчет 2026-11-18 угору 268 → 274 kB (рішення власника): security-бампи
 // zod 4.4 → 4.6 і better-auth 1.7 (critical-advisory) дали +7.2 kB eager.
 // Деталі й план повернення — bundle-budget-ratchet-log.md § 2026-11-18.
-const DEFAULT_LIMIT_BYTES = 274_000;
+// Ратчет 2026-11-19 униз 274 → 259 kB (рішення власника): барель
+// `@sergeant/shared` більше не тягне в eager модулі лінивих екранів
+// (`treeshake.moduleSideEffects` у `apps/web/vite.config.js`), факт
+// 254 565 B + 1.7% запасу. Деталі — bundle-budget-ratchet-log.md § 2026-11-19.
+const DEFAULT_LIMIT_BYTES = 259_000;
 
 const DEFAULT_DIST = "apps/server/dist";
 
