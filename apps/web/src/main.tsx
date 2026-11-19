@@ -32,6 +32,7 @@ import {
   captureException,
   initSentry,
 } from "./core/observability/sentry.js";
+import { reportBootWatchdogIfAny } from "./core/observability/bootWatchdogReport";
 import { logger } from "@shared/lib";
 import { initWebVitals } from "./core/observability/webVitals.js";
 import { initPostHog } from "./core/observability/posthog.js";
@@ -206,7 +207,9 @@ function mountApp(): void {
 // invariants (#426 / #418 / #185) stay under observability — same intent as the
 // pre-split ordering. Then mount immediately.
 markStorageBooting();
-void initSentry();
+// DURABILITY-20261008-BOOT-1: звіт inline-сторожа з попереднього буту йде в
+// Sentry, щойно SDK піднято (до того captureException — no-op).
+void initSentry().then(reportBootWatchdogIfAny);
 mountApp();
 
 // Settle the SQLite warm-cache in the background, then run the storage-dependent

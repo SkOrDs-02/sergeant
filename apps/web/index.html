@@ -85,7 +85,7 @@
     -->
     <meta
       http-equiv="Content-Security-Policy"
-      content="default-src 'self'; script-src 'self' 'wasm-unsafe-eval' https://*.posthog.com https://*.sentry-cdn.com https://*.sentry.io https://js.sentry-cdn.com; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob: https:; font-src 'self' data:; connect-src 'self' http://localhost:3000 http://127.0.0.1:3000 https://*.sentry.io https://*.ingest.sentry.io https://*.posthog.com https://api.sergeant.com.ua ws://localhost:* ws://127.0.0.1:*; worker-src 'self' blob:; manifest-src 'self'; base-uri 'self'; form-action 'self'; object-src 'none'"
+      content="default-src 'self'; script-src 'self' 'wasm-unsafe-eval' 'sha256-/Fha0pr46W0sUDHj92uMDOsjb2l01wtbzajcFGo5JEU=' https://*.posthog.com https://*.sentry-cdn.com https://*.sentry.io https://js.sentry-cdn.com; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob: https:; font-src 'self' data:; connect-src 'self' http://localhost:3000 http://127.0.0.1:3000 https://*.sentry.io https://*.ingest.sentry.io https://*.posthog.com https://api.sergeant.com.ua ws://localhost:* ws://127.0.0.1:*; worker-src 'self' blob:; manifest-src 'self'; base-uri 'self'; form-action 'self'; object-src 'none'"
     />
     <title>Sergeant · гроші, тренування, звички і їжа</title>
     <!--
@@ -175,7 +175,29 @@
         </p>
       </div>
     </noscript>
-    <script src="/boot-watchdog.js"></script>
+    <!--
+      Сторож білого екрана (DURABILITY-20261008-BOOT-1). INLINE навмисно: це
+      був зовнішній `/boot-watchdog.js`, але у знайденому збої підресурси
+      нового документа зависають у fetch-диспетчері активного service worker,
+      тож зовнішній скрипт висів разом з усім (і чекав `load`, якого не буде).
+      Інлайн виконується без мережі. Через 10 с (повільна 3G-холодна загрузка
+      монтується за 5-6 с, зависання ж безстрокове, ≥15 с у знімках) перевіряє
+      `#root`; якщо порожній — тягне знімок fetch-буфера SW (`SW_FETCH_DIAG`,
+      1.5 с на відповідь), кладе звіт у sessionStorage (його шле в Sentry
+      наступний бут, `bootWatchdogReport.ts`) і лікує: при контрольованій
+      сторінці, що не вийшла з `loading` або має завислі SW-fetch, знімає
+      реєстрації SW і перезавантажує (обхід SW), інакше простий reload. Мітка
+      `sergeant.boot_watchdog_at` — не частіше раз на хвилину; без sessionStorage
+      лікування не робиться (щоб не зациклитись).
+
+      CSP: хеш цього тіла (`sha256-…`) стоїть у `script-src` і в `<meta>`
+      нижче, і в `vercel.json`. ЗМІНИВ ТЕКСТ СКРИПТА — онови обидва; синхронність
+      тримає `src/core/lib/bootWatchdog.test.ts` (друкує новий хеш).
+    -->
+    <!-- prettier-ignore -->
+    <script>
+(function(){var K="sergeant.boot_watchdog_at",R="sergeant.boot_watchdog_report";setTimeout(function(){var r=document.getElementById("root");if(!r||r.childElementCount>0)return;var c=navigator.serviceWorker&&navigator.serviceWorker.controller,done=0;function fin(s){if(done)return;done=1;var rs=document.readyState,t=Date.now(),a="none",ok=0;try{var l=Number(sessionStorage.getItem(K)||0);if(t-l>=6e4){sessionStorage.setItem(K,String(t));ok=1}}catch(e){}if(ok)a=c&&(rs==="loading"||s&&s.pending>0)?"bypass":"reload";try{sessionStorage.setItem(R,JSON.stringify({at:t,rs:rs,ctl:!!c,act:a,snap:s||null}))}catch(e){}if(a==="none")return;if(a==="reload"){location.reload();return}var g=function(){location.reload()};setTimeout(g,2e3);try{navigator.serviceWorker.getRegistrations().then(function(x){return Promise.all(x.map(function(y){return y.unregister()}))}).then(g,g)}catch(e){g()}}if(!c)return fin();try{var m=new MessageChannel;m.port1.onmessage=function(e){fin(e.data&&e.data.snapshot)};setTimeout(fin,1500);c.postMessage({type:"SW_FETCH_DIAG"},[m.port2])}catch(e){fin()}},1e4)})();
+    </script>
     <script type="module" src="/src/main.tsx"></script>
   </body>
 </html>
