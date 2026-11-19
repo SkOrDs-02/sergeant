@@ -14,6 +14,7 @@ import { SW_VERSION } from "./version";
 import { clearAppCaches, setActiveUserKey } from "./cache";
 import { buildSwSnapshot, setDebugEnabled } from "./debug";
 import { recordNotified } from "./notifiedKeys";
+import { fetchDiag } from "./fetchDiag";
 declare const self: ServiceWorkerGlobalScope;
 
 export function handleSwMessage(event: ExtendableMessageEvent): void {
@@ -63,7 +64,26 @@ export function handleSwMessage(event: ExtendableMessageEvent): void {
     return;
   }
 
+  if (type === "SW_FETCH_DIAG") {
+    // DURABILITY-20261008-BOOT-1: знімок кільцевого буфера для inline-сторожа
+    // (`index.html`). Відповідь через MessageChannel-порт: сторож не має
+    // listener-а на `navigator.serviceWorker`.
+    try {
+      const reply = {
+        type: "SW_FETCH_DIAG_RESULT",
+        snapshot: fetchDiag.snapshot(),
+      };
+      const port = event.ports?.[0];
+      if (port) port.postMessage(reply);
+      else event.source?.postMessage?.(reply);
+    } catch {
+      /* noop */
+    }
+    return;
+  }
+
   if (type === "CLEAR_SW_CACHES") {
+    fetchDiag.mark("clear_caches");
     const requestId =
       (data as { requestId?: string } | undefined)?.requestId || null;
     // rel-12: скоуп за замовчуванням `"user"` — без явного `"all"` precache
@@ -74,6 +94,7 @@ export function handleSwMessage(event: ExtendableMessageEvent): void {
         : "user";
     event.waitUntil(
       clearAppCaches(scope)
+        .finally(() => fetchDiag.mark("clear_caches_done"))
         .then((result) => {
           try {
             event.source?.postMessage?.({
@@ -108,7 +129,10 @@ export function handleSwMessage(event: ExtendableMessageEvent): void {
     // SW alive until the async hash + key update completes.
     const userKey =
       (data as { userKey?: string | null } | undefined)?.userKey ?? null;
-    event.waitUntil(setActiveUserKey(userKey));
+    fetchDiag.mark("set_user");
+    event.waitUntil(
+      setActiveUserKey(userKey).finally(() => fetchDiag.mark("set_user_done")),
+    );
     return;
   }
 

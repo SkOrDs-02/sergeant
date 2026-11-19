@@ -4246,6 +4246,13 @@
       "canonical_owner": "docs/work/specs/c-section-consistency-migration.md"
     },
     {
+      "old_path": "docs/work/specs/chat-first-turn-streaming.md",
+      "new_path": "docs/work/specs/chat-first-turn-streaming.md",
+      "action": "keep",
+      "genre": "active-work",
+      "canonical_owner": "docs/work/specs/chat-first-turn-streaming.md"
+    },
+    {
       "old_path": "docs/work/specs/data/documentation-inventory.json",
       "new_path": "docs/work/specs/data/documentation-inventory.json",
       "action": "keep",

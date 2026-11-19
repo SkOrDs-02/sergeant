@@ -263,7 +263,12 @@ interface IsolationCase {
   verify?: (ctx: Ctx) => Promise<void>;
 }
 
-const asA = (t: request.Test): request.Test => t.set("x-test-user", USER_A);
+// `Authorization` тут не автентифікує (сесію дає мок `getSessionUser` за
+// `x-test-user`), а лише проходить pre-parse гейт B28
+// (`http/preParseAuthGuard.ts`): на роутах із великим тілом він відповідає 401
+// ще до парсера, якщо немає ні Bearer, ні session-cookie.
+const asA = (t: request.Test): request.Test =>
+  t.set("x-test-user", USER_A).set("Authorization", "Bearer iso-test-session");
 const MUTATING = { ...CSRF_HEADERS };
 
 const BACKUP_SECRET = "iso-backup-secret";

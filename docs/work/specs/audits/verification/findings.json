@@ -33,12 +33,22 @@
       "severity": "major",
       "source": "docs/work/specs/audits/verification/runs/pilot-2026-09-05-b/handoff.md",
       "sourceAnchor": "AI-expense-grounding",
-      "status": "open",
+      "status": "fixed-pending-verification",
       "history": [
         {
           "at": "2026-09-05",
           "event": "observed",
           "note": "Live OpenRouter-відповідь правильно назвала опис, але повернула 123 грн для запису 123,45 грн."
+        },
+        {
+          "at": "2026-11-19",
+          "event": "retriaged",
+          "note": "Ревалідація кодом 2026-11-19: корінь підтверджено - суми округлюються до гривні до моделі: fmt = formatNumberUk(Math.round(n)) у контексті останніх операцій (apps/web/src/core/lib/hubChatContext/finance.ts) і roundGrn у query_finyk (apps/web/src/core/lib/chatActions/queryFinykActions.ts)."
+        },
+        {
+          "at": "2026-11-19",
+          "event": "fixed",
+          "note": "Фікс 8b507e050: контекст останніх операцій і query_transactions несуть копійки (fmtExact, «123,45 грн»); агрегати навмисно в гривнях. Юніт-тести є (finance.test.ts, queryFinykActions.test.ts), live-прогону з моделлю немає."
         }
       ]
     },
@@ -81,12 +91,17 @@
       "severity": "major",
       "source": "docs/work/specs/audits/2026-08-09-beta-acceptance-run.md",
       "sourceAnchor": "B3 — задокументована процедура оновлення бети не працює `[major]`",
-      "status": "open",
+      "status": "accepted",
       "history": [
         {
           "at": "2026-09-05",
           "event": "imported",
           "note": "Статус у джерелі: відкрито."
+        },
+        {
+          "at": "2026-11-19",
+          "event": "retriaged",
+          "note": "Застаріло: процедуру run-beta-wave і гілку beta прибрано комітом 8da9a8fe4 (2026-11-11), бета закрита. Відтворювати нічого."
         }
       ]
     },
@@ -97,12 +112,17 @@
       "severity": "major",
       "source": "docs/work/specs/audits/2026-08-09-beta-acceptance-run.md",
       "sourceAnchor": "B4 — гейт ручного деплою не поставлений `[major]`",
-      "status": "open",
+      "status": "fixed-pending-verification",
       "history": [
         {
           "at": "2026-09-05",
           "event": "imported",
           "note": "Статус у джерелі: відкрито."
+        },
+        {
+          "at": "2026-11-19",
+          "event": "fixed",
+          "note": "Вимогу замінено гейтом CI: джоба deploy-api у .github/workflows/ci.yml з needs [check, critical-flow, migration-lint, migration-down-drill] (ADR-0102). Live-прогону під цю знахідку немає."
         }
       ]
     },
@@ -161,12 +181,17 @@
       "severity": "major",
       "source": "docs/work/specs/audits/2026-08-09-beta-acceptance-run.md",
       "sourceAnchor": "B10 — білий екран на `/insights` `[major, needs-repro]`",
-      "status": "open",
+      "status": "duplicate",
       "history": [
         {
           "at": "2026-09-05",
           "event": "imported",
           "note": "39 пізніших спроб без репро у джерелі; потрібен тріаж, не закриття."
+        },
+        {
+          "at": "2026-11-19",
+          "event": "retriaged",
+          "note": "Той самий симптом («#root порожній, reload рятує»), що DURABILITY-20261008-BOOT-1; 0 відтворень із 39. Ведеться там."
         }
       ]
     },
@@ -176,12 +201,17 @@
       "title": "текст платежу від сторонньої людини → запис даних без підтвердження",
       "severity": "unrated",
       "source": "docs/work/specs/audits/ai-pipeline-2026-08-05.md",
-      "status": "open",
+      "status": "fixed-pending-verification",
       "history": [
         {
           "at": "2026-09-05",
           "event": "imported",
           "note": "Актуальність потребує тріажу; імпорт історичного спостереження, без нового відтворення."
+        },
+        {
+          "at": "2026-11-19",
+          "event": "fixed",
+          "note": "Ревалідація кодом: remember/create_transaction/export_module_data позначені destructive (packages/shared/src/lib/toolRisk.ts), підтвердження до executeActions, «Ні» скасовує весь батч (apps/web/src/core/hub/chat/useChatSend.ts). Коміт 5d0ec573f; рішення власника hub-coach.md, журнал 2026-09-29 (бюджети без підтвердження, B39). Live-прогону немає."
         }
       ],
       "sourceAnchor": "B21 — текст платежу від сторонньої людини → запис даних без підтвердження"
@@ -192,12 +222,17 @@
       "title": "«сувора» валідація tool-input перевіряє поля, яких не існує",
       "severity": "unrated",
       "source": "docs/work/specs/audits/ai-pipeline-2026-08-05.md",
-      "status": "open",
+      "status": "fixed-pending-verification",
       "history": [
         {
           "at": "2026-09-05",
           "event": "imported",
           "note": "Актуальність потребує тріажу; імпорт історичного спостереження, без нового відтворення."
+        },
+        {
+          "at": "2026-11-19",
+          "event": "fixed",
+          "note": "Ревалідація кодом: SaveNoteInputSchema {text, tag?} і RememberInputSchema {fact, category?} відповідають реальним полям (apps/web/src/core/hub/chat/toolCallSchema.ts). Live-прогону немає."
         }
       ],
       "sourceAnchor": "B22 — «сувора» валідація tool-input перевіряє поля, яких не існує"
@@ -208,12 +243,17 @@
       "title": "авто-експорт + модельні посилання = ексфільтрація в один клік",
       "severity": "unrated",
       "source": "docs/work/specs/audits/ai-pipeline-2026-08-05.md",
-      "status": "open",
+      "status": "fixed-pending-verification",
       "history": [
         {
           "at": "2026-09-05",
           "event": "imported",
           "note": "Актуальність потребує тріажу; імпорт історичного спостереження, без нового відтворення."
+        },
+        {
+          "at": "2026-11-19",
+          "event": "fixed",
+          "note": "Ревалідація кодом: export_module_data вимагає підтвердження (toolRisk.ts); isSafeHref лінкує лише same-origin, чужі хости текстом (apps/web/src/shared/components/AssistantMessageBody.tsx, коміт 0bd14f7e7). Live-прогону немає."
         }
       ],
       "sourceAnchor": "B23 — авто-експорт + модельні посилання = ексфільтрація в один клік"
@@ -230,6 +270,11 @@
           "at": "2026-09-05",
           "event": "imported",
           "note": "Актуальність потребує тріажу; імпорт історичного спостереження, без нового відтворення."
+        },
+        {
+          "at": "2026-11-19",
+          "event": "retriaged",
+          "note": "Ревалідація кодом 2026-11-19: досі відкрито. Сесії чату і Memory Bank пишуться в localStorage відкритим JSON (apps/web/src/core/hub/hubChatSessions.ts, apps/web/src/core/profile/memoryBank.ts). ADR про прийняття ризику немає (ADR-0011 лише «TBD» про E2E). Потрібне рішення власника: ADR-прийняття або шифрування at rest невивантажуваним WebCrypto-ключем."
         }
       ],
       "sourceAnchor": "B24 — вся AI-історія лежить у localStorage відкритим текстом"
@@ -240,12 +285,17 @@
       "title": "`prior_result` у refine-photo необмежений",
       "severity": "unrated",
       "source": "docs/work/specs/audits/ai-pipeline-2026-08-05.md",
-      "status": "open",
+      "status": "fixed-pending-verification",
       "history": [
         {
           "at": "2026-09-05",
           "event": "imported",
           "note": "Актуальність потребує тріажу; імпорт історичного спостереження, без нового відтворення."
+        },
+        {
+          "at": "2026-11-19",
+          "event": "fixed",
+          "note": "Ревалідація кодом: REFINE_PRIOR_RESULT_MAX_BYTES = 16 KB з байтовою перевіркою (packages/shared/src/schemas/api.ts), refine-photo парсить тіло через RefinePhotoSchema. Live-прогону немає."
         }
       ],
       "sourceAnchor": "B25 — `prior_result` у refine-photo необмежений"
@@ -256,12 +306,17 @@
       "title": "стеля витрат на транскрипцію має TOCTOU-гонку",
       "severity": "unrated",
       "source": "docs/work/specs/audits/ai-pipeline-2026-08-05.md",
-      "status": "open",
+      "status": "fixed-pending-verification",
       "history": [
         {
           "at": "2026-09-05",
           "event": "imported",
           "note": "Актуальність потребує тріажу; імпорт історичного спостереження, без нового відтворення."
+        },
+        {
+          "at": "2026-11-19",
+          "event": "fixed",
+          "note": "Ревалідація кодом: резерв оцінки умовним UPSERT (WHERE usd_micros + EXCLUDED.usd_micros <= cap) і звільнення резерву при збої (apps/server/src/modules/transcribe/usdCap.ts). Live-прогону немає."
         }
       ],
       "sourceAnchor": "B26 — стеля витрат на транскрипцію має TOCTOU-гонку"
@@ -272,12 +327,22 @@
       "title": "`/api/internal/*` тримається на одному статичному секреті",
       "severity": "unrated",
       "source": "docs/work/specs/audits/ai-pipeline-2026-08-05.md",
-      "status": "open",
+      "status": "fixed-pending-verification",
       "history": [
         {
           "at": "2026-09-05",
           "event": "imported",
           "note": "Актуальність потребує тріажу; імпорт історичного спостереження, без нового відтворення."
+        },
+        {
+          "at": "2026-11-19",
+          "event": "retriaged",
+          "note": "Ревалідація кодом 2026-11-19: частково закрито (коміт dbf15caf3: IP-allowlist, 120/хв rate limit, Zod у categorize). Залишок: при порожньому WEBHOOK_HMAC_SECRET HMAC пропускається, на старті лише warning (apps/server/src/env/env.ts). Фікс: падати на старті в проді за WEBHOOK_HMAC_REQUIRED, після переліку викликачів."
+        },
+        {
+          "at": "2026-11-19",
+          "event": "fixed",
+          "note": "Залишок закрито: у production assertStartupEnv кидає помилку, коли INTERNAL_API_KEY задано, WEBHOOK_HMAC_REQUIRED=true, а WEBHOOK_HMAC_SECRET порожній (рішення власника 2026-11-19). Replay-скрипти підписують запити (scripts/lib/sign-internal-request.mjs). Юніт-тести є; live-перевірки на проді немає, секрет у Coolify треба виставити до деплою."
         }
       ],
       "sourceAnchor": "B27 — `/api/internal/*` тримається на одному статичному секреті"
@@ -288,12 +353,22 @@
       "title": "10 МБ тіла парситься до автентифікації, зі стисненням",
       "severity": "unrated",
       "source": "docs/work/specs/audits/ai-pipeline-2026-08-05.md",
-      "status": "open",
+      "status": "fixed-pending-verification",
       "history": [
         {
           "at": "2026-09-05",
           "event": "imported",
           "note": "Актуальність потребує тріажу; імпорт історичного спостереження, без нового відтворення."
+        },
+        {
+          "at": "2026-11-19",
+          "event": "retriaged",
+          "note": "Ревалідація кодом 2026-11-19: стиснення закрито (inflate: false у apps/server/src/http/bodySizePolicy.ts). Головне відкрите: applyBodySizePolicy (app.ts:152) стоїть до registerRoutes (app.ts:174), тож до 10 МБ буферизується до requireSession і rate limit."
+        },
+        {
+          "at": "2026-11-19",
+          "event": "fixed",
+          "note": "Стиснення вимкнено раніше (inflate: false). Тепер pre-parse guard (http/preParseAuthGuard.ts) на 12 session-роутах з лімітом понад 128kb відповідає 401 без читання тіла, якщо немає ні Bearer, ні session-cookie, і ганяє спільний per-IP ліміт api:preparse:ip (600/хв) до парсера. Webhook/HMAC-роути не зачеплені. Покрито unit-тестами з supertest; живого прогону не було."
         }
       ],
       "sourceAnchor": "B28 — 10 МБ тіла парситься до автентифікації, зі стисненням"
@@ -304,12 +379,17 @@
       "title": "weekly-digest кладе рядки користувача в system-промпт сирими",
       "severity": "unrated",
       "source": "docs/work/specs/audits/ai-pipeline-2026-08-05.md",
-      "status": "open",
+      "status": "fixed-pending-verification",
       "history": [
         {
           "at": "2026-09-05",
           "event": "imported",
           "note": "Актуальність потребує тріажу; імпорт історичного спостереження, без нового відтворення."
+        },
+        {
+          "at": "2026-11-19",
+          "event": "fixed",
+          "note": "Ревалідація кодом: блок даних іде через wrapAndScanUserContext з DATA_FENCE_RULE (apps/server/src/modules/digest/weeklyDigestPrompt.ts, коміт 5d218d800). Залишок поза скоупом: згенерований вихід пишеться в AI-памʼять без огорожі. Live-прогону немає."
         }
       ],
       "sourceAnchor": "B29 — weekly-digest кладе рядки користувача в **system**-промпт сирими"
@@ -416,12 +496,17 @@
       "title": "брак AI-ключа тихо підмінюється заглушкою",
       "severity": "unrated",
       "source": "docs/work/specs/audits/ai-pipeline-2026-08-05.md",
-      "status": "open",
+      "status": "fixed-pending-verification",
       "history": [
         {
           "at": "2026-09-05",
           "event": "imported",
           "note": "Актуальність потребує тріажу; імпорт історичного спостереження, без нового відтворення."
+        },
+        {
+          "at": "2026-11-19",
+          "event": "fixed",
+          "note": "Залишок закрито c76107089: /api/internal/categorize без ключа LLM_READONLY_PROVIDER і з невідомим MCC віддає 503 ANTHROPIC_KEY_MISSING; відомий MCC без ключа працює. Решта роутів - 1fb62a5f2. getLLMProvider досі тихо повертає StubProvider як механізм, але всі AI-роути тепер гейтяться перед ним. Live-прогону немає."
         }
       ],
       "sourceAnchor": "B20 — брак AI-ключа тихо підмінюється заглушкою"
@@ -2491,12 +2576,17 @@
       "title": "Інтермітентний фриз рендерера при hard-навігації залогіненого користувача",
       "severity": "blocker",
       "source": "docs/work/specs/audits/2026-08-04-global-qa-findings.md",
-      "status": "open",
+      "status": "fixed-pending-verification",
       "history": [
         {
           "at": "2026-09-05",
           "event": "imported",
           "note": "Актуальність потребує тріажу; імпорт історичного спостереження, без нового відтворення."
+        },
+        {
+          "at": "2026-11-19",
+          "event": "fixed",
+          "note": "Ймовірно закрито комітом a9c2bbb6a (2026-11-18): main-thread kvvfs прибрано, sqlite лише у воркері, гейт sqlite.mainThreadNoWasm.test.ts. Оригінальний фриз корелював з kvStoreBoot. Потрібен повтор циклу logout/login з hard-навігацією на свіжому main."
         }
       ],
       "sourceAnchor": "1. Інтермітентний фриз рендерера при hard-навігації (blocker)"
@@ -2750,6 +2840,11 @@
           "at": "2026-09-05",
           "event": "imported",
           "note": "Стан у зведеній таблиці: частково закрито 2026-09-02: замір фаз (`chat_first_turn_phase_ms`) у коді, SLO розділено на два за рішенням founder-а (варіант «б»). Відкритим лишається стрім першого ходу — тільки він прибирає порожній екран. Історичний імпорт; не свіжий прогін."
+        },
+        {
+          "at": "2026-11-19",
+          "event": "retriaged",
+          "note": "Ревалідація кодом 2026-11-19: досі відкрито. Сервер стрімить лише тур синтезу після tool-result (apps/server/src/modules/chat/chat.ts), перший хід - callAnthropicWithContinuation без стріму; клієнт шле перший хід без stream (apps/web/src/core/hub/chat/useChatSend.ts)."
         }
       ],
       "sourceAnchor": "AI-2 — перший хід чату не стрімиться взагалі [major]"
@@ -2776,12 +2871,17 @@
       "title": "Lighthouse (локально, desktop preset, медіана 3 прогонів): LCP 3 282 / 3 712 / 3 665 мс на `/`→`/welcome`, `/finyk`, `/nutrition/menu` проти `error`-порогу 3 000; FCP 1 600–1 980 мс проти warn 1 500 на всіх 4; TBT у нормі. `/fizruk` 2 900 мс проходить",
       "severity": "major",
       "source": "docs/work/specs/audits/2026-09-01-product-audit/findings.md",
-      "status": "open",
+      "status": "fixed-pending-verification",
       "history": [
         {
           "at": "2026-09-05",
           "event": "imported",
           "note": "Стан у зведеній таблиці: 🆕 повторний замір після CI-5 — без змін (LCP 3,25 / 3,75 / 2,77 / 3,58 с): корінь не в байтах критичного шляху, а в буті (SQLite/дані) — окрема робота. Історичний імпорт; не свіжий прогін."
+        },
+        {
+          "at": "2026-11-19",
+          "event": "fixed",
+          "note": "lighthouse-ci.yml (LCP error 3000 мс, без continue-on-error) зелений 5 тижневих прогонів поспіль 2026-10-19..2026-11-16. Медіани в ratchet log не записані; verified - після фіксації цифр."
         }
       ],
       "sourceAnchor": "CI-8 — LCP понад 3 000 мс на трьох із чотирьох LHCI-маршрутів [major]"
@@ -3880,6 +3980,16 @@
           "at": "2026-10-08",
           "event": "observed",
           "note": "Відтворено на свіжому main (хмарний стенд: Postgres 16 + pgvector 0.8, API, VERCEL=1-білд), data-durability P1+P2 у циклі: ~2-3 з 10 прогонів, лише /profile і /sign-in після зміни користувача (анонім → акаунт). Знімок харнесу (#1460-#1462): readyState=\"loading\" через 15 с, сторінку контролює активний SW, жоден підресурс нового документа не завершився — висять index-*.js, index-*.css, /boot-watchdog.js і всі eager-чанки (старт ~400 мс). SW живий: caches.keys() у ньому за 1-64 мс, прекеш на місці, /boot-watchdog.js у ньому є. До порту застосунку 1 ESTABLISHED + TIME_WAIT, тобто запити не йдуть у мережу і пул зʼєднань не вичерпано. Висновок: підресурси застрягають між сторінкою і fetch-обробником SW. boot-watchdog.js безсилий: він сам серед завислих і чекає load. Без бекенду (45 завантажень) і в гонці з активацією SW (48) не відтворюється. Наступний крок: логування fetch-подій у SW або рішення власника про inline-сторож із CSP-хешем."
+        },
+        {
+          "at": "2026-11-19",
+          "event": "retriaged",
+          "note": "Ревалідація кодом 2026-11-19: корінь не зачеплено. Після 2026-10-08 комітів у precache/fetch-маршрутизацію SW і boot-watchdog немає; storage-фікси (a9c2bbb6a, 48b93f5ae тощо) діють після старту JS, а знімок показує завислі сабресурси до JS. Гіпотеза: диспетчеризація fetch у SW після swSetActiveUser/swClearCaches під час зміни користувача (apps/web/src/core/auth/AuthContext.tsx). Наступний крок: логування fetch-подій у SW і inline-watchdog у index.html."
+        },
+        {
+          "at": "2026-11-19",
+          "event": "instrumented",
+          "note": "Додано діагностику без виправлення кореня. SW (`sw/fetchDiag.ts`): кільцевий буфер 60 fetch-подій (шлях без query, режим, призначення, обробник Workbox, стадія, початок/кінець, результат) і позначки `SW_SET_USER`/`CLEAR_SW_CACHES` (початок і кінець); знімок за повідомленням `SW_FETCH_DIAG`. Зовнішній `boot-watchdog.js` замінено inline-сторожем у `index.html` (CSP-хеш у meta і `vercel.json`, синхронність тримає `bootWatchdog.test.ts`): через 10 с від старту скрипта, якщо `#root` порожній, тягне знімок SW, пише звіт у sessionStorage (у Sentry йде наступним бутом) і не частіше раз на хвилину робить unregister SW + reload (простий reload, якщо SW не винен). Наступний крок: зібрати звіти Sentry `boot_watchdog.*` або відтворити в харнесі (`liveJourneyHelpers` тепер друкує `swFetchDiag` і `watchdogReport`) і за стадією зависання шукати корінь. Статус лишається open: лікується симптом, не причина."
         }
       ]
     },
