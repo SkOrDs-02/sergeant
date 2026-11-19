@@ -13,6 +13,10 @@
  * because the web adapter re-exports these under the historical names.
  */
 
+import {
+  normalizeHabitCounterFields,
+  normalizeHabitCounts,
+} from "./counterFields.js";
 import { dateKeyFromDate } from "./dateKeys.js";
 import { DEFAULT_ROUTINE_GLYPH, upgradeHabitGlyph } from "./glyphs.js";
 import { reconcileHabitOrder } from "./habitOrder.js";
@@ -176,7 +180,7 @@ export function normalizeHabit(h: unknown): Habit {
   const created = src.createdAt
     ? String(src.createdAt).slice(0, 10)
     : dateKeyFromDate(new Date());
-  return {
+  const out: Habit = {
     ...(src as Habit),
     // Гліф: legacy emoji → канонічний slug на кожному читанні. Див.
     // `glyphs.ts` — батч-міграції в БД немає, наступний запис закріплює.
@@ -195,6 +199,7 @@ export function normalizeHabit(h: unknown): Habit {
       src.weeklyTargetHistory as WeeklyTargetInterval[] | undefined,
     ),
   };
+  return normalizeHabitCounterFields(out);
 }
 
 /**
@@ -284,6 +289,7 @@ export function normalizeRoutineState(raw: unknown): RoutineState {
     habits: Array.isArray(p.habits) ? p.habits.map(normalizeHabit) : [],
     completions: normalizeCompletionsMap(p.completions),
     skips: normalizeSkipsMap(p.skips),
+    counts: normalizeHabitCounts(p.counts),
     habitOrder: Array.isArray(p.habitOrder) ? (p.habitOrder as string[]) : [],
     completionNotes:
       typeof p.completionNotes === "object" && p.completionNotes

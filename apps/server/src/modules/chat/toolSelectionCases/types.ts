@@ -27,9 +27,31 @@ export interface ToolTurn {
   accept: string[];
 }
 
+/** Попередня репліка розмови, як її шле клієнт (`messages`, лише текст). */
+export interface HistoryMessage {
+  role: "user" | "assistant";
+  content: string;
+}
+
 export interface ToolCase {
   name: string;
   user: string;
+  /**
+   * Репліки ДО `user`, як вони їдуть у `messages` із клієнта. Порожнє поле —
+   * розмова з першого повідомлення, і таких кейсів більшість.
+   *
+   * AI-CONTEXT: потрібне кейсам «знайди, потім зміни ту» (С-2,
+   * `docs/work/specs/hubchat-find-then-change.md`): друге повідомлення
+   * спирається на відповідь першого, а одноходовий кейс цього не моделює.
+   */
+  history?: HistoryMessage[];
+  /**
+   * Хвіст блоку ДАНІ саме цього кейса, дописується після `DATA_BLOCK`.
+   * Спільний `DATA_BLOCK` не чіпаємо: його sha пінить касета, а кейсу
+   * потрібен блок, якого немає в інших (наприклад, записи попередньої
+   * відповіді, `[Записи з попередньої відповіді]` з `turnRefs.ts` веба).
+   */
+  dataExtra?: string;
   /** Будь-який із цих інструментів зараховується як правильний вибір. */
   accept: string[];
   /**

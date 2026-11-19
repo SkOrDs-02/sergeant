@@ -35,6 +35,8 @@ const DIGEST = {
 };
 
 vi.mock("./useWeeklyDigest", () => ({
+  // С-3 (а): стан «звіт збирається»; тут не в польоті.
+  useAutoDigestPending: () => false,
   useWeeklyDigest: () => ({
     digest: DIGEST,
     loading: false,

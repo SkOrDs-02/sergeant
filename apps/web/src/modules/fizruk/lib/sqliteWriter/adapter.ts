@@ -16,6 +16,10 @@ import {
   softDeleteCustomActivity,
   upsertCustomActivity,
 } from "./adapter.customActivities.js";
+import {
+  softDeleteExercisePref,
+  upsertExercisePref,
+} from "./adapter.exercisePrefs.js";
 import { setPrograms } from "./adapter.programs.js";
 import type {
   FizrukCustomExerciseSnapshot,
@@ -40,9 +44,9 @@ import {
   WORKOUT_DELETE_SQL,
   WORKOUT_ITEMS_CASCADE_SQL,
   WORKOUT_ITEM_UPSERT_SQL,
-  WORKOUT_SET_UPSERT_SQL,
   WORKOUT_UPSERT_SQL,
 } from "./adapter.sql.js";
+import { itemMeasureColumn, upsertWorkoutSet } from "./adapter.sets.js";
 
 /**
  * Async SQLite-side adapter for the Fizruk dual-write layer.
@@ -104,6 +108,14 @@ const applyOps = createApplyOps<FizrukDualWriteOp>({
     },
     "custom-activity-delete": async (client, op, rt) => {
       await softDeleteCustomActivity(client, op.activityId, rt);
+      return "applied";
+    },
+    "exercise-pref-upsert": async (client, op, rt) => {
+      await upsertExercisePref(client, op.pref, rt);
+      return "applied";
+    },
+    "exercise-pref-delete": async (client, op, rt) => {
+      await softDeleteExercisePref(client, op.exerciseId, rt);
       return "applied";
     },
     "measurement-upsert": async (client, op, rt) => {
@@ -269,6 +281,9 @@ async function upsertWorkout(
   const cooldownJson = w.cooldown ? JSON.stringify(w.cooldown) : null;
   const wellbeingJson = w.wellbeing ? JSON.stringify(w.wellbeing) : null;
   const kcalBurned = toIntOrNull(w.kcalBurned);
+  // Пара або обидва null (контракт sync-хендлера, міграція 171).
+  const programId = w.programRef?.programId ?? null;
+  const programSlot = w.programRef ? w.programRef.slot : null;
 
   await client.run(WORKOUT_UPSERT_SQL, [
     w.id,
@@ -281,6 +296,8 @@ async function upsertWorkout(
     cooldownJson,
     wellbeingJson,
     kcalBurned,
+    programId,
+    programSlot,
     clientTs,
     clientTs,
   ]);
@@ -300,6 +317,11 @@ async function upsertWorkout(
       cooldown_json: cooldownJson,
       wellbeing_json: wellbeingJson,
       kcal_burned: kcalBurned,
+      // AI-CONTEXT: старий сервер (до 171) невідомі поля рядка ігнорує, тож
+      // тренування доходить, а привʼязка доїде наступним upsert-ом після
+      // його оновлення. Новий сервер читає явні null як «поза програмою».
+      program_id: programId,
+      program_slot: programSlot,
       created_at: clientTs,
       deleted_at: null,
     },
@@ -354,6 +376,7 @@ async function upsertWorkoutItem(
     sortOrder,
     clientTs,
     clientTs,
+    itemMeasureColumn(item),
   ]);
 
   await enqueueOutboxUpsert(client, {
@@ -373,6 +396,9 @@ async function upsertWorkoutItem(
       duration_sec: item.durationSec ?? null,
       distance_m: item.distanceM ?? null,
       chosen_variant: (item["chosenVariant"] as string | undefined) ?? null,
+      // Тип виміру (міграції 172 / 010). Ключ є завжди: старий сервер його
+      // ігнорує, а op-log зберігає повний рядок (спека, § Сумісність).
+      measure: itemMeasureColumn(item),
       sort_order: sortOrder,
       created_at: clientTs,
       deleted_at: null,
@@ -397,47 +423,6 @@ async function upsertWorkoutItem(
     clientTs,
     setIds,
   );
-}
-
-async function upsertWorkoutSet(
-  client: SqliteMigrationClient,
-  setId: string,
-  workoutItemId: string,
-  userId: string,
-  clientTs: string,
-  set: WorkoutSet,
-  sortOrder: number,
-): Promise<void> {
-  await client.run(WORKOUT_SET_UPSERT_SQL, [
-    setId,
-    workoutItemId,
-    userId,
-    set.weightKg ?? 0,
-    set.reps ?? 0,
-    set.rpe ?? null,
-    sortOrder,
-    clientTs,
-    clientTs,
-  ]);
-
-  await enqueueOutboxUpsert(client, {
-    userId,
-    table: "fizruk_workout_sets",
-    op: "insert",
-    row: {
-      id: setId,
-      user_id: userId,
-      workout_item_id: workoutItemId,
-      weight_kg: set.weightKg ?? 0,
-      reps: set.reps ?? 0,
-      rpe: set.rpe ?? null,
-      sort_order: sortOrder,
-      created_at: clientTs,
-      deleted_at: null,
-    },
-    clientTs,
-    idempotencyKey: crypto.randomUUID(),
-  }).catch(() => {});
 }
 
 async function softDeleteWorkout(

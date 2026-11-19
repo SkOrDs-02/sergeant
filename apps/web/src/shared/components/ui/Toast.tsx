@@ -17,6 +17,7 @@ import {
 } from "@shared/hooks/useToast";
 import {
   BOTTOM_NAV_INSET_VAR,
+  FAB_INSET_VAR,
   SESSION_DOCK_INSET_VAR,
   SHEET_FOOTER_INSET_VAR,
   TOAST_INSET_VAR,
@@ -392,6 +393,11 @@ export function ToastContainer() {
   // `--sgt-sheet-footer-inset` тим самим `useBottomInsetVar`, що й
   // навігація. Аркуш без футера змінну не ставить — CTA має жити у
   // слоті `footer`, це і є контракт аркуша.
+  //
+  // Так само над кутовою кнопкою дії (`CornerAction`, рішення власника
+  // 2026-11-18): тост на кілька секунд накривав «Додати» на Операціях
+  // Фініка й у Харчуванні. Кнопка публікує свою виміряну смугу
+  // (нав + відступ + власна висота) у `--sgt-fab-inset`, поки видима.
 
   // Показуємо лише видиме вікно — решта чекає у черзі в провайдері й
   // навіть не має запущеного таймера (див. `MAX_VISIBLE_TOASTS`).
@@ -407,10 +413,10 @@ export function ToastContainer() {
     <div
       ref={trayRef}
       // Bottom-anchored above the bottom-nav, the optional
-      // `ActiveWorkoutBanner`, the footer of an open `Sheet` and the iOS
-      // home-indicator safe-area.
+      // `ActiveWorkoutBanner`, the footer of an open `Sheet`, the corner
+      // action button and the iOS home-indicator safe-area.
       //
-      // AI-DANGER: усі три змінні ставляться на `<html>` хуком
+      // AI-DANGER: усі `--sgt-*` змінні ставляться на `<html>` хуком
       // `useBottomInsetVar` і НЕ мають локальних аналогів у цій гілці
       // дерева. Попередня версія читала `--bottom-nav-height`, яку
       // виставляє утиліта `bottom-nav-height-var` на корені модуля —
@@ -419,11 +425,13 @@ export function ToastContainer() {
       // спрацьовував fallback `0px`, і тости лягали просто поверх нижньої
       // навігації. Не повертай `var(--bottom-nav-height)` сюди.
       //
-      // Обидва inset-и вже включають safe-area (вона всередині
-      // `padding-bottom` навігації), тому `max()`, а не сума: додавати
-      // `env(safe-area-inset-bottom)` зверху означало б порахувати її
-      // двічі. Fallback-гілка `max()` тримає safe-area для екранів без
-      // навігації (auth, onboarding).
+      // Усі inset-и міряються від низу вʼюпорта і вже включають safe-area
+      // (вона всередині `padding-bottom` навігації), а смуга кутової кнопки
+      // ще й сам нав, бо кнопка стоїть на ньому. Тому `max()`, а не сума:
+      // додавати нав чи `env(safe-area-inset-bottom)` зверху означало б
+      // порахувати їх двічі; над відкритим аркушем із футером виграє
+      // вищий із двох, а не їх сума. Fallback-гілка `max()` тримає
+      // safe-area для екранів без навігації (auth, onboarding).
       //
       // The tray is portalled to <body> below, so this tier is global rather
       // than trapped inside an app-shell stacking context. `z-toast` (300)
@@ -434,7 +442,7 @@ export function ToastContainer() {
         "w-[min(92vw,24rem)]",
       )}
       style={{
-        bottom: `calc(max(env(safe-area-inset-bottom, 0px), var(${BOTTOM_NAV_INSET_VAR}, 0px), var(${WORKOUT_BANNER_INSET_VAR}, 0px), var(${SHEET_FOOTER_INSET_VAR}, 0px), var(${SESSION_DOCK_INSET_VAR}, 0px)) + 0.75rem)`,
+        bottom: `calc(max(env(safe-area-inset-bottom, 0px), var(${BOTTOM_NAV_INSET_VAR}, 0px), var(${WORKOUT_BANNER_INSET_VAR}, 0px), var(${SHEET_FOOTER_INSET_VAR}, 0px), var(${SESSION_DOCK_INSET_VAR}, 0px), var(${FAB_INSET_VAR}, 0px)) + 0.75rem)`,
       }}
       data-testid="toast-tray"
       data-anchor="bottom"

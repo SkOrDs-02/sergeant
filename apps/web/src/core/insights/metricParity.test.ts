@@ -66,6 +66,7 @@ import { readFinykStatsContext } from "@finyk/lib/lsStats";
 import { readAllData } from "../lib/hubChatContext/readAllData";
 import { aggregateSpending as chatAggregateSpending } from "../lib/chatActions/queryFinykActions";
 import { buildDailySeries } from "../lib/chatActions/crossActions/dailySeries";
+import { buildWeeklyHabitPctText } from "../lib/recommendations/routineRecs";
 import { calcFinykSpendingTotal } from "@sergeant/finyk-domain";
 
 // ── Спільний фікстур ─────────────────────────────────────────────────────────
@@ -590,6 +591,53 @@ describe("парність метрики «% виконання звичок»"
       WEEK_DAYS,
     );
     expect(stripped.pct).toBe(43);
+  });
+
+  // П-18 (А), 2026-11-18 (`METRICS_VERSION` 23): «не зміг» виходить зі
+  // знаменника на всіх поверхнях ядра, як уже в модулі. Щоденна звичка:
+  // 5 відміток, 1 день «не зміг», 1 пропуск → 5/6 = 83%, а не 5/7 = 71%.
+  describe("ЗБІГ: день «не зміг» поза знаменником (П-18)", () => {
+    const DAILY = {
+      id: "h2",
+      name: "Вода",
+      createdAt: "2026-01-01T00:00:00.000Z",
+      startDate: "2026-01-01",
+      recurrence: "daily",
+    };
+    const DONE = { h2: WEEK_DAYS.slice(0, 5) };
+    const SKIPS = {
+      h2: { [WEEK_DAYS[5]!]: { reason: "sick", at: "2026-05-09T08:00:00Z" } },
+    };
+
+    beforeEach(() => {
+      __setRoutineSqliteStateCacheForTests({
+        habits: [DAILY] as never,
+        skips: SKIPS as never,
+      });
+      __setRoutineSqliteCompletionsCacheForTests({ completions: DONE });
+    });
+
+    it("дайджест: 5 з 6", () => {
+      const digest = aggregateRoutine(WEEK_KEY);
+      expect(digest!.habits[0]).toMatchObject({ done: 5, total: 6 });
+      expect(digest!.overallRate).toBe(83);
+    });
+
+    it("Hub-Reports: 83%, день «не зміг» сам по собі не провал", () => {
+      const reports = aggregateHabits(
+        { habits: [DAILY] as never, completions: DONE, skips: SKIPS as never },
+        WEEK_DAYS,
+      );
+      expect(reports.pct).toBe(83);
+    });
+
+    it("підсумок минулого тижня в рекомендаціях: «звички 83%»", () => {
+      const text = buildWeeklyHabitPctText(
+        new Date(`${WEEK_KEY}T00:00:00`),
+        new Date("2026-05-12T12:00:00"),
+      );
+      expect(text).toBe("звички 83%");
+    });
   });
 });
 

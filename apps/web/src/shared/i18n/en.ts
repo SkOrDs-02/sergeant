@@ -1,8 +1,10 @@
 import { finykRedesignEn } from "./en.finykRedesign";
 import type { messages as ukMessages, MessageGroupShape } from "./uk";
 import { pricingEn } from "./en.pricing";
+import { publicStatusEn } from "./en.publicStatus";
 import { nutritionTdeeEn } from "./en.nutritionTdee";
 import { nowPileEn } from "./en.hubNow";
+import { hubNewcomerEn } from "./en.hubNewcomer";
 
 /**
  * Full English catalog. Top-level keys present here REPLACE the same
@@ -339,6 +341,7 @@ export const messagesEn: Partial<{
     chatQuickActions: "Quick scenarios",
     valueProgressAria: "Progress toward your goals",
     crossModulePreviewAria: "What Sergeant will show next",
+    ...hubNewcomerEn,
     weeklyDigestTitle: "Weekly digest: stories",
     chatOfflineNotice:
       "The assistant is unavailable without internet. Module data is visible offline, but\n          AI responses require a connection.",
@@ -615,26 +618,7 @@ export const messagesEn: Partial<{
     carbsTooHigh: "Over 700 g carbs, that's a lot even for athletes.",
   },
 
-  publicStatus: {
-    pageTitle: "Sergeant · Status",
-    pollNote: "Current component status. Updated automatically every",
-    pollNoteSuffix: "s.",
-    loading: "Loading service status…",
-    overallOperational: "All systems operational",
-    overallDegraded: "Partial degradation",
-    overallDown: "Major outage",
-    pillOperational: "Operational",
-    pillDegraded: "Degraded",
-    pillDown: "Down",
-    timestampPrefix: "updated",
-    componentsLabel: "Components",
-    lastIncidentNone: "No incidents in the last 7 days.",
-    lastIncidentPrefix: "Last incident:",
-    errorTitle: "Could not load status",
-    errorRetry: "Try again",
-    errorFallback: "Could not load service status.",
-    errorHttpPrefix: "Server responded with HTTP",
-  },
+  publicStatus: publicStatusEn,
 
   legal: {
     linksNavAria: "Legal documents",

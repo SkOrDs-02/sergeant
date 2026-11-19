@@ -78,7 +78,7 @@ const USAGE_KEYS = [
  * значення. Без цього після переїзду на шлюз у `ai_usage_daily` писались би
  * нульові вхідні токени, і `anthropicBudgetGuard` втратив би стелю вартості.
  */
-function mergeStreamUsage(
+export function mergeStreamUsage(
   prev: StreamUsage | null,
   next: StreamUsage,
 ): StreamUsage {
@@ -126,7 +126,7 @@ interface StreamIterationResult {
  * провайдерний рядок назовні не йде ніколи. Тримаємо константою, щоб гілки
  * не розʼїхались формулюваннями (як розʼїхались до B33).
  */
-const SSE_GENERIC_ERROR = "Асистент тимчасово недоступний";
+export const SSE_GENERIC_ERROR = "Асистент тимчасово недоступний";
 
 /**
  * Читає одну upstream-відповідь Anthropic (SSE) і форвардить text-дельти у `res`.

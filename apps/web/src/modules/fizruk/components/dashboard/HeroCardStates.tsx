@@ -115,10 +115,18 @@ function formatDayMonthFromKey(dateKey: string): string {
   return formatDayMonth(d) || dateKey;
 }
 
+/**
+ * Відносний день для мета-рядка. Обидва виклики ставлять його після «·»
+ * (`label · завтра · …`), тож рядок з малої літери: велика лише на початку
+ * рядка (зйомка 2026-11-18, «· За 2 дні» посеред рядка).
+ */
 function formatDaysAway(days: number): string {
-  if (days === 0) return "Сьогодні";
-  if (days === 1) return "Завтра";
-  return `За ${days} ${pluralDays(days)}`;
+  const hero = messages.fizruk.hero;
+  if (days === 0) return hero.daysAwayToday;
+  if (days === 1) return hero.daysAwayTomorrow;
+  return hero.daysAwayIn
+    .replace("{n}", String(days))
+    .replace("{days}", pluralDays(days));
 }
 
 /** Shared kicker inputs — bundled so every state threads one prop, not three. */
@@ -301,6 +309,58 @@ export function UpcomingState({
       >
         {messages.fizruk.hero.openPlan}
       </Button>
+    </HeroShell>
+  );
+}
+
+/**
+ * День без сесії активної програми (П-11 (Б), рішення власника 2026-11-18):
+ * головне повідомлення — відпочинок, наступна сесія названа, а старт її
+ * доступний текстовою кнопкою, тобто другорядний. Пропущене тренування
+ * можна почати будь-коли.
+ */
+export function RestState({
+  state,
+  kicker,
+  body,
+  onStartNext,
+  cornerSlot,
+}: {
+  readonly state: Extract<HeroCardState, { kind: "rest" }>;
+  readonly kicker: HeroKickerInfo;
+  readonly body: HeroBodyInfo;
+  readonly onStartNext?: (() => void) | undefined;
+  readonly cornerSlot?: ReactNode;
+}) {
+  const hero = messages.fizruk.hero;
+  const metaParts = [
+    `${hero.nextPrefix} ${state.label}`,
+    formatDaysAway(state.daysFromNow),
+  ];
+  if (state.exerciseCount > 0)
+    metaParts.push(
+      `${state.exerciseCount} ${pluralExercises(state.exerciseCount)}`,
+    );
+  const heading = state.doneToday ? hero.programDoneToday : hero.restToday;
+  return (
+    <HeroShell ariaLabel={heading} cornerSlot={cornerSlot}>
+      <HeroKicker {...kicker} />
+      <h2 className="text-style-title font-bold text-text">{heading}</h2>
+      <HeroRecoveryBars
+        rows={body.recoveryRows}
+        recoverByDate={body.recoverByDate}
+        onOpenAtlas={body.onOpenAtlas}
+      />
+      <p className="text-style-body text-muted">{metaParts.join(" · ")}</p>
+      {onStartNext && (
+        <Button
+          variant="text"
+          onClick={onStartNext}
+          aria-label={`${hero.startNow}: ${state.label}`}
+        >
+          {hero.startNow}
+        </Button>
+      )}
     </HeroShell>
   );
 }

@@ -28,6 +28,21 @@ function strength(sets: number, endSec = 60) {
 }
 
 describe("classifyWorkoutWeight", () => {
+  it("програмне тренування без жодного виконаного підходу не повноцінне", () => {
+    // Старт програми сіє по рядку {вага, 0} на вправу; завершили, нічого не
+    // зробивши, за 5 хвилин по годиннику.
+    const untouched = {
+      startedAt: START,
+      endedAt: endedAfter(5 * 60),
+      items: [1, 2, 3, 4].map(() => ({
+        type: "strength",
+        sets: [{ weightKg: 60, reps: 0 }],
+      })),
+    };
+    expect(classifyWorkoutWeight(untouched)).toBe("light");
+    expect(isFullWorkout(untouched)).toBe(false);
+  });
+
   it("незавершене тренування ваги не має", () => {
     expect(
       classifyWorkoutWeight({ startedAt: START, endedAt: null, items: [] }),
@@ -89,5 +104,55 @@ describe("classifyWorkoutWeight", () => {
     expect(
       classifyWorkoutWeight({ startedAt: START, endedAt: START, items: [] }),
     ).toBe("light");
+  });
+});
+
+describe("поріг повноцінного — підходи будь-якого типу виміру (Р-3, Б-2)", () => {
+  it("три утримання по 30 с за 5 хвилин — повноцінне", () => {
+    const holds = {
+      startedAt: START,
+      endedAt: endedAfter(5 * 60),
+      items: [
+        {
+          type: "time",
+          measure: "time",
+          sets: [30, 30, 30].map((s) => ({
+            weightKg: 0,
+            reps: 0,
+            durationSec: s,
+          })),
+        },
+      ],
+    };
+    expect(isFullWorkout(holds)).toBe(true);
+  });
+
+  it("три інтервали по 400 м — повноцінне", () => {
+    const intervals = {
+      startedAt: START,
+      endedAt: endedAfter(6 * 60),
+      items: [
+        {
+          type: "distance",
+          measure: "distance_time",
+          sets: [1, 2, 3].map(() => ({
+            weightKg: 0,
+            reps: 0,
+            distanceM: 400,
+            durationSec: 80,
+          })),
+        },
+      ],
+    };
+    expect(isFullWorkout(intervals)).toBe(true);
+  });
+
+  it("запис «Заняття й час» без підходів лишається на порозі годинника", () => {
+    const yoga = {
+      startedAt: START,
+      endedAt: endedAfter(10 * 60),
+      items: [{ type: "time", durationSec: 600 }],
+    };
+    expect(isLightWorkout(yoga)).toBe(true);
   });
 });

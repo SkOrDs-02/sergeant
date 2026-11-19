@@ -1,9 +1,12 @@
 /**
  * SSE end-to-end harness для `streamAnthropicToSse` / `streamOneIterationToSse`.
  *
- * Покриває untested-шлях у `chat.ts`: коли клієнт запитує `stream: true` разом
- * із `tool_results + tool_calls_raw`, сервер відкриває upstream-стрім до
- * Anthropic і форвардить text-дельти у `data: {"t":"…"}\n\n` події. Цей файл
+ * Покриває стрім ТУРУ СИНТЕЗУ: коли клієнт запитує `stream: true` разом із
+ * `tool_results + tool_calls_raw`, сервер відкриває upstream-стрім до
+ * Anthropic і форвардить text-дельти у `data: {"t":"…"}\n\n` події. З
+ * 2026-11-18 (С-1 (а)) стрімиться й ПЕРШИЙ хід, але це інший модуль
+ * (`chatFirstTurnStream.ts`) з іншим протоколом кадрів (`t` / `tool` /
+ * `final`) і тихим повтором; його стереже `chat.firstTurnStream.test.ts`. Цей файл
  * мокає `anthropicMessagesStream` фейковою `Response` із `ReadableStream`-боді,
  * а Express-`Response` — обʼєктом, що збирає все, що пишуть у `res.write()`,
  * щоб можна було асертити саме SSE-протокол (а не лише фінальний текст).

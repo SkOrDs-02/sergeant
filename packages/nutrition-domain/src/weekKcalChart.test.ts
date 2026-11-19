@@ -162,6 +162,22 @@ describe("computeWeekKcalChart", () => {
     expect(model.bars[1]?.goalRatio).toBeNull();
   });
 
+  // logic-43 (аудит 2026-10-01): журнал відкриває майбутні дні навмисно,
+  // але запис «на завтра» — план, а не факт, і у фактичне середнє не йде.
+  it("не рахує дні після сьогодні в сумі й середньому, але малює їх", () => {
+    const rows = [
+      row("2026-08-10", 1000),
+      row("2026-08-11", 1500),
+      row("2026-08-12", 0),
+      row("2026-08-13", 500),
+    ];
+    const model = computeWeekKcalChart(rows, flat(2000, 4), "2026-08-11");
+    expect(model.totalKcal).toBe(2500);
+    expect(model.daysLogged).toBe(2);
+    expect(model.avgKcal).toBe(1250);
+    expect(model.bars[3]?.kcal).toBe(500);
+  });
+
   it("не приймає відʼємні ккал як висоту", () => {
     const model = computeWeekKcalChart([row("2026-08-10", -500)], [2000]);
     expect(model.bars[0]?.kcal).toBe(0);

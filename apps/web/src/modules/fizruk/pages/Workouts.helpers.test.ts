@@ -116,7 +116,7 @@ describe("buildGroupedExercises", () => {
 
 describe("collectLastByExerciseId", () => {
   it("returns empty object for no workouts", () => {
-    expect(collectLastByExerciseId([], null)).toEqual({});
+    expect(collectLastByExerciseId([], null, [])).toEqual({});
   });
 
   it("picks the most recent workout item for each exerciseId", () => {
@@ -145,7 +145,7 @@ describe("collectLastByExerciseId", () => {
       },
     ]);
 
-    const result = collectLastByExerciseId([older, newer], null);
+    const result = collectLastByExerciseId([older, newer], null, []);
     expect(result["bench"]).toBeDefined();
     // The newer workout has weightKg 90
     expect(result["bench"]?.sets?.[0]?.weightKg).toBe(90);
@@ -154,6 +154,36 @@ describe("collectLastByExerciseId", () => {
       { at: "2026-01-01T10:00:00Z", best1rm: 80 * (1 + 5 / 30) },
       { at: "2026-01-08T10:00:00Z", best1rm: 90 * (1 + 5 / 30) },
     ]);
+  });
+
+  it("несе найпізніше зняття позначки травми для вправи (E-5)", () => {
+    // Підказка в тренуванні без цього поля не бачила 21-денного мʼякого
+    // режиму після травми (аудит 2026-11-17, §3.4).
+    const w = makeWorkout("w1", "2026-01-08T10:00:00Z", [
+      {
+        id: "i1",
+        exerciseId: "bench_press_barbell",
+        nameUk: "Жим",
+        primaryGroup: "chest",
+        musclesPrimary: ["pectoralis_major"],
+        musclesSecondary: [],
+        type: "strength",
+        sets: [{ weightKg: 80, reps: 5, id: "s1" }],
+      },
+    ]);
+    const result = collectLastByExerciseId([w], null, [
+      {
+        id: "inj_1",
+        site: "shoulder",
+        startedAt: "2026-01-01T10:00:00Z",
+        clearedAt: "2026-01-09T10:00:00Z",
+      },
+      // Відкрита позначка — не зняття, режим повернення не вмикає.
+      { id: "inj_2", site: "knee", startedAt: "2026-01-01T10:00:00Z" },
+    ]);
+    expect(result["bench_press_barbell"]?._injuryClearedAt).toBe(
+      "2026-01-09T10:00:00Z",
+    );
   });
 
   it("skips the active workout", () => {
@@ -170,7 +200,7 @@ describe("collectLastByExerciseId", () => {
       },
     ]);
 
-    const result = collectLastByExerciseId([active], "active-id");
+    const result = collectLastByExerciseId([active], "active-id", []);
     expect(result["squat"]).toBeUndefined();
   });
 
@@ -187,7 +217,7 @@ describe("collectLastByExerciseId", () => {
         sets: [],
       },
     ]);
-    expect(collectLastByExerciseId([w], null)).toEqual({});
+    expect(collectLastByExerciseId([w], null, [])).toEqual({});
   });
 });
 

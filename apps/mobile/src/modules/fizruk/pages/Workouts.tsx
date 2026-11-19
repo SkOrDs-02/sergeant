@@ -70,6 +70,7 @@ interface SetEditorState {
   setIndex: number | null;
   exerciseName: string;
   initial: WorkoutSet | null;
+  durationSec?: number;
 }
 
 export interface WorkoutsProps {
@@ -255,6 +256,7 @@ export function Workouts({ testID = "fizruk-workouts" }: WorkoutsProps) {
         setIndex: null,
         exerciseName: item.nameUk || "Вправа",
         initial: null,
+        durationSec: item.durationSec,
       });
     },
     [activeWorkoutId],
@@ -270,6 +272,7 @@ export function Workouts({ testID = "fizruk-workouts" }: WorkoutsProps) {
         setIndex,
         exerciseName: item.nameUk || "Вправа",
         initial: seed,
+        durationSec: item.durationSec,
       });
     },
     [activeWorkoutId],
@@ -550,6 +553,7 @@ export function Workouts({ testID = "fizruk-workouts" }: WorkoutsProps) {
             : setEditor.setIndex + 1
         }
         initialSet={setEditor?.initial ?? null}
+        durationSec={setEditor?.durationSec}
         onSubmit={handleSetSubmit}
         testID={`${testID}-set-editor`}
       />

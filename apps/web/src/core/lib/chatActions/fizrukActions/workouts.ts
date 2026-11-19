@@ -1,12 +1,13 @@
 import { safeReadStringLS, safeRemoveLS } from "@shared/lib/storage/storage";
 import { lsSet } from "../../hubChatUtils";
+import { MAX_WEIGHT_KG } from "@fizruk/lib/numericBounds";
+import { currentExerciseMeasurePrefs } from "@fizruk/lib/exerciseMeasurePrefsCache";
+import { formatMeasureSets } from "@fizruk/lib/measureFormat";
 import {
-  getKyivDateParts,
-  getKyivDayKey,
-  parseKyivDate,
-} from "@shared/lib/time/kyivTime";
-import { MAX_REPS, MAX_WEIGHT_KG } from "@fizruk/lib/numericBounds";
-import { formatNumberUk, pluralExercises } from "@sergeant/shared";
+  deviceDayKey,
+  formatNumberUk,
+  pluralExercises,
+} from "@sergeant/shared";
 import {
   deleteFizrukWorkout,
   readFizrukWorkouts,
@@ -17,7 +18,27 @@ import {
   buildWorkoutItemFromExercise,
   createChatExerciseResolver,
 } from "./exerciseResolve";
-import type { Workout, WorkoutItem, WorkoutSet } from "@sergeant/fizruk-domain";
+import {
+  buildChatSets,
+  measureForChatSet,
+  measureForPlan,
+  parseChatSetValues,
+  planExistingItem,
+} from "./setMeasure";
+import {
+  buildPlannedSets,
+  type Workout,
+  type WorkoutItem,
+  type WorkoutSet,
+} from "@sergeant/fizruk-domain";
+import {
+  measureCountsBy,
+  measureFields,
+  measureToItemType,
+  resolveExerciseMeasure,
+  withMeasureMirror,
+  type ExerciseMeasure,
+} from "@sergeant/fizruk-domain/domain";
 import type {
   PlanWorkoutAction,
   LogSetAction,
@@ -36,38 +57,53 @@ import type {
 const ACTIVE_KEY = "fizruk_active_workout_id_v1";
 
 /**
- * Мітка часу для київського стінного годинника: день-ключ + `HH:MM`.
+ * Мітка часу для стінного годинника ПРИСТРОЮ: день-ключ + `HH:MM`.
  *
- * AI-DANGER: `Date.parse("2026-08-07T09:00:00")` без суфікса зони читається
- * у поясі ПРИСТРОЮ, тоді як і день-ключ (`getKyivDayKey`), і fallback-година
- * (`getKyivDateParts`) приходять київські. На пристрої поза Києвом обидві
- * половини розходились, і збережений `startedAt` їхав на різницю поясів —
- * тренування о 09:00 у Варшаві лягало на 08:00 київських. `parseKyivDate`
- * віддає київську північ (DST-safe), далі просто додаємо хвилини.
+ * AI-CONTEXT: заплановане тренування — особиста сутність (ADR-0078): день
+ * і година належать годиннику пристрою, як у формі тренування модуля
+ * (`Workouts.helpers.ts`, рішення власника 2026-09-29) і як у чат-виконавці
+ * Рутини. До 2026-11-18 `plan_workout` брав київський годинник: на пристрої
+ * поза Києвом план «на 07:00» лягав на іншу годину, а після київської
+ * півночі ще й на інший день. З того ж дня на цьому годиннику і
+ * `start_workout` та `copy_workout`, разом із рядками контексту
+ * «[Сьогодні]» / «[Зараз] … (час пристрою)» (`hubChatContext/finance.ts`):
+ * модель і виконавець бачать той самий годинник.
  *
- * `NaN` на неможливій годині зберігає стару поведінку: викликач віддає
- * «Некоректна дата або час», а не мовчки пише сміття в майбутнє.
+ * `NaN` на неможливій даті (2026-02-30) чи годині (24:00): викликач віддає
+ * «Некоректна дата або час», а не мовчки пише сміття.
  */
-function kyivWallClockTs(dayKey: string, hhmm: string): number {
-  const midnight = parseKyivDate(dayKey);
-  if (!midnight) return NaN;
+function deviceWallClockTs(dayKey: string, hhmm: string): number {
+  const [y = NaN, mo = NaN, d = NaN] = dayKey.split("-").map(Number);
   const [rawH, rawM] = hhmm.split(":");
   const hours = Number(rawH);
   const minutes = Number(rawM);
-  if (!Number.isFinite(hours) || !Number.isFinite(minutes)) return NaN;
+  if (![y, mo, d, hours, minutes].every((n) => Number.isFinite(n))) return NaN;
   if (hours > 23 || minutes > 59) return NaN;
-  return midnight.getTime() + (hours * 60 + minutes) * 60_000;
+  const at = new Date(y, mo - 1, d, hours, minutes, 0, 0);
+  // Календарно неможлива дата перекотилась би на наступний місяць.
+  if (deviceDayKey(at) !== dayKey) return NaN;
+  return at.getTime();
+}
+
+/** Поточна година пристрою як `HH:MM` (ADR-0078). */
+function deviceNowHHMM(): string {
+  const now = new Date();
+  // eslint-disable-next-line sergeant-design/prefer-kyiv-time -- ADR-0078: тренування — особиста сутність, година за годинником пристрою, як у формі модуля
+  const h = now.getHours();
+  // eslint-disable-next-line sergeant-design/prefer-kyiv-time -- те саме
+  const m = now.getMinutes();
+  return `${String(h).padStart(2, "0")}:${String(m).padStart(2, "0")}`;
 }
 
 export function planWorkout(action: PlanWorkoutAction): ChatActionResult {
   const { date, time, note, exercises } = action.input || {};
-  const today = getKyivDayKey();
+  const today = deviceDayKey();
   const targetDate = date && /^\d{4}-\d{2}-\d{2}$/.test(date) ? date : today;
   const timeStr =
     time && /^\d{1,2}:\d{2}$/.test(String(time).trim())
       ? String(time).trim().padStart(5, "0")
       : "09:00";
-  const startedAtTs = kyivWallClockTs(targetDate, timeStr);
+  const startedAtTs = deviceWallClockTs(targetDate, timeStr);
   if (!Number.isFinite(startedAtTs)) {
     return "Некоректна дата або час.";
   }
@@ -76,27 +112,42 @@ export function planWorkout(action: PlanWorkoutAction): ChatActionResult {
   // data-11: кожна вправа плану отримує справжній `exerciseId` (каталог або
   // нова custom-вправа) — порожній id сервер відхиляє як missing_exercise_id.
   const resolver = createChatExerciseResolver();
+  const prefs = currentExerciseMeasurePrefs();
   const items: WorkoutItem[] = Array.isArray(exercises)
     ? exercises
         .filter((ex) => ex && ex.name)
         .map((ex, i) => {
           const setsN = Math.max(1, Math.min(20, Number(ex.sets) || 3));
-          const reps =
-            ex.reps != null && Number.isFinite(Number(ex.reps))
-              ? Number(ex.reps)
-              : 0;
           const weightKg =
             ex.weight != null && Number.isFinite(Number(ex.weight))
               ? Number(ex.weight)
               : 0;
-          const sets: WorkoutSet[] = Array.from({ length: setsN }, () => ({
+          const seconds = Number(ex.seconds);
+          const def = resolver.resolve(String(ex.name).trim());
+          // Тип: памʼять людини → дефолт каталогу; секунди в запиті ставлять
+          // тип «на час» (спека типу виміру, зріз 7). Памʼять не пишеться.
+          const measure = measureForPlan(
+            resolveExerciseMeasure(def, prefs),
+            Number.isFinite(seconds) ? seconds : 0,
             weightKg,
-            reps,
-          }));
-          return buildWorkoutItemFromExercise(
-            resolver.resolve(String(ex.name).trim()),
-            `i_${Date.now().toString(36)}_${i}_${crypto.randomUUID()}`,
-            sets,
+          );
+          // logic-18: план сіє НЕзараховані рядки (`reps: 0`), як старт
+          // програми. Повтори й секунди з запиту в рядок не пишуться: рядок із
+          // ними вже «виконаний підхід» (`isSetCompleted`), а поля плану у
+          // `WorkoutItem` немає (`ProgramSessionDef.plan` — каталог програми).
+          const sets = buildPlannedSets(
+            setsN,
+            measureFields(measure).weight ? weightKg : 0,
+          );
+          return withMeasureMirror(
+            withMeasure(
+              buildWorkoutItemFromExercise(
+                def,
+                `i_${Date.now().toString(36)}_${i}_${crypto.randomUUID()}`,
+                sets,
+              ),
+              measure,
+            ),
           );
         })
     : [];
@@ -115,30 +166,42 @@ export function planWorkout(action: PlanWorkoutAction): ChatActionResult {
   persistFizrukCustomExercises(resolver.created);
   persistFizrukWorkouts([newW, ...readFizrukWorkouts()]);
   const exCount = items.length;
-  return `Тренування заплановано на ${targetDate} о ${timeStr}${note ? ` ("${note}")` : ""}: ${exCount} вправ${exCount === 1 ? "а" : exCount >= 2 && exCount <= 4 ? "и" : ""} (id:${wid})`;
+  // Модель не має переказати «3×10 записано»: повтори й секунди з запиту не
+  // зберігаються.
+  const asked = (key: "reps" | "seconds") =>
+    Array.isArray(exercises) && exercises.some((ex) => ex?.[key] != null);
+  const notStored = [
+    asked("reps") ? "Повтори" : "",
+    asked("seconds") ? "секунди" : "",
+  ]
+    .filter(Boolean)
+    .join(" й ");
+  const repsNote = notStored
+    ? `. ${notStored.charAt(0).toUpperCase()}${notStored.slice(1)} в план не записуються: підхід зараховується, коли його зроблять`
+    : "";
+  return `Тренування заплановано на ${targetDate} о ${timeStr}${note ? ` ("${note}")` : ""}: ${exCount} вправ${exCount === 1 ? "а" : exCount >= 2 && exCount <= 4 ? "и" : ""} (id:${wid})${repsNote}`;
+}
+
+/** Явний тип виміру й похідний старий `type` (дзеркало ставить викликач). */
+function withMeasure(item: WorkoutItem, measure: ExerciseMeasure): WorkoutItem {
+  return { ...item, measure, type: measureToItemType(measure) };
 }
 
 export function logSet(action: LogSetAction): ChatActionResult {
-  const { exercise_name, weight_kg, reps, sets } = action.input;
+  const { exercise_name, weight_kg, sets } = action.input;
   const exName = (exercise_name || "").trim();
   if (!exName) return "Потрібна назва вправи для підходу.";
-  const repsN = Number(reps);
-  if (!Number.isFinite(repsN) || repsN <= 0) {
-    return "Некоректна кількість повторень.";
-  }
-  if (repsN > MAX_REPS) {
-    return `Забагато повторень у підході (максимум ${MAX_REPS}). Перевір число і спробуй ще раз.`;
-  }
   const weightN = Number(weight_kg);
   const weightKg = Number.isFinite(weightN) && weightN >= 0 ? weightN : 0;
   if (weightKg > MAX_WEIGHT_KG) {
     return `Вага підходу занадто велика (максимум ${formatNumberUk(MAX_WEIGHT_KG)} кг). Перевір число і спробуй ще раз.`;
   }
+  // Хоч одне з reps / duration_sec / distance_m (спека типу виміру, зріз 7):
+  // схема цього не виражає, тож перевірка тут, до будь-якого запису.
+  const parsed = parseChatSetValues(action.input, weightKg);
+  if (!parsed.ok) return parsed.error;
+  const values = parsed.values;
   const setsN = Math.max(1, Math.min(20, Number(sets) || 1));
-  const newSets: WorkoutSet[] = Array.from({ length: setsN }, () => ({
-    weightKg,
-    reps: repsN,
-  }));
 
   const workouts = readFizrukWorkouts();
   const activeId = safeReadStringLS(ACTIVE_KEY, null);
@@ -186,20 +249,43 @@ export function logSet(action: LogSetAction): ChatActionResult {
     itemIdx = workout.items.findIndex((it) => it.exerciseId === resolvedId);
   }
   const existingItem = itemIdx >= 0 ? workout.items[itemIdx] : undefined;
+  let measure: ExerciseMeasure;
+  let newSets: WorkoutSet[];
   if (existingItem) {
-    workout.items[itemIdx] = {
-      ...existingItem,
+    const plan = planExistingItem(existingItem, existingItem.nameUk, values);
+    if (!plan.ok) return plan.error;
+    measure = plan.measure;
+    newSets = buildChatSets(measure, values, setsN);
+    const base: WorkoutItem = plan.patch
+      ? { ...existingItem, ...plan.patch }
+      : existingItem;
+    const next: WorkoutItem = {
+      ...base,
       // Item зі старого чат-запису міг мати порожній id — лагодимо тут.
       exerciseId:
         existingItem.exerciseId || (resolved ?? resolver.resolve(exName)).id,
-      sets: [...(existingItem.sets ?? []), ...newSets],
+      sets: [...(base.sets ?? []), ...newSets],
     };
+    workout.items[itemIdx] = withMeasureMirror(next);
   } else {
+    const def = resolved ?? resolver.resolve(exName);
+    // Тип нової вправи: памʼять людини → дефолт каталогу, а якщо дані його
+    // не вміщують — тип із даних. Памʼять чат не пише.
+    measure = measureForChatSet(
+      resolveExerciseMeasure(def, currentExerciseMeasurePrefs()),
+      values,
+    );
+    newSets = buildChatSets(measure, values, setsN);
     workout.items.push(
-      buildWorkoutItemFromExercise(
-        resolved ?? resolver.resolve(exName),
-        `i_${Date.now().toString(36)}_${crypto.randomUUID()}`,
-        newSets,
+      withMeasureMirror(
+        withMeasure(
+          buildWorkoutItemFromExercise(
+            def,
+            `i_${Date.now().toString(36)}_${crypto.randomUUID()}`,
+            newSets,
+          ),
+          measure,
+        ),
       ),
     );
   }
@@ -216,23 +302,33 @@ export function logSet(action: LogSetAction): ChatActionResult {
   persistFizrukCustomExercises(resolver.created);
   persistFizrukWorkouts(nextWorkouts);
 
-  const weightLabel = weightKg > 0 ? `${formatNumberUk(weightKg)} кг × ` : "";
   const setsLabel =
     setsN === 1 ? "1 підхід" : `${setsN} підходи${setsN >= 5 ? "в" : ""}`;
   const prefix = created ? "Нове тренування розпочато. " : "";
-  return `${prefix}Додано ${setsLabel} "${exName}": ${weightLabel}${repsN} повторень`;
+  if (measureCountsBy(measure) !== "reps") {
+    // «3 × 30 с», «400 м», «2 × 40 м · 24 кг» — формат підсумку сесії.
+    const summary = formatMeasureSets({
+      measure,
+      type: measureToItemType(measure),
+      sets: newSets,
+    });
+    return `${prefix}Додано ${setsLabel} "${exName}": ${summary}`;
+  }
+  const shownWeight = measureFields(measure).weight ? values.weightKg : 0;
+  const weightLabel =
+    shownWeight > 0 ? `${formatNumberUk(shownWeight)} кг × ` : "";
+  return `${prefix}Додано ${setsLabel} "${exName}": ${weightLabel}${values.reps} повторень`;
 }
 
 export function startWorkout(action: StartWorkoutAction): ChatActionResult {
   const { note, date, time } = action.input || {};
-  const today = getKyivDayKey();
+  const today = deviceDayKey();
   const targetDate = date && /^\d{4}-\d{2}-\d{2}$/.test(date) ? date : today;
-  const nowParts = getKyivDateParts();
   const timeStr =
     time && /^\d{1,2}:\d{2}$/.test(String(time).trim())
       ? String(time).trim().padStart(5, "0")
-      : `${String(nowParts.hour).padStart(2, "0")}:${String(nowParts.minute).padStart(2, "0")}`;
-  const startedAtTs = kyivWallClockTs(targetDate, timeStr);
+      : deviceNowHHMM();
+  const startedAtTs = deviceWallClockTs(targetDate, timeStr);
   if (!Number.isFinite(startedAtTs)) {
     return "Некоректна дата або час.";
   }
@@ -274,10 +370,10 @@ export function finishWorkout(action: FinishWorkoutAction): ChatActionResult {
   if (!targetId) return "Немає активного тренування для завершення.";
   const idx = workouts.findIndex((w) => w.id === targetId);
   const target = idx >= 0 ? workouts[idx] : undefined;
-  if (!target) return `Тренування ${targetId} не знайдено.`;
+  if (!target) return `Тренування не знайдено (id:${targetId}).`;
   if (target.endedAt) {
     if (activeId === targetId) safeRemoveLS(ACTIVE_KEY);
-    return `Тренування ${targetId} вже завершено.`;
+    return `Тренування вже завершено (id:${targetId}).`;
   }
   const finished: Workout = { ...target, endedAt: new Date().toISOString() };
   const nextWorkouts = workouts.slice();
@@ -297,7 +393,7 @@ export function copyWorkout(action: CopyWorkoutAction): ChatActionResult {
   let source: Workout | undefined;
   if (source_workout_id) {
     source = workouts.find((w) => w.id === source_workout_id);
-    if (!source) return `Тренування ${source_workout_id} не знайдено.`;
+    if (!source) return `Тренування не знайдено (id:${source_workout_id}).`;
   } else {
     source = workouts
       .filter((w) => w.endedAt)
@@ -307,11 +403,9 @@ export function copyWorkout(action: CopyWorkoutAction): ChatActionResult {
       )[0];
     if (!source) return "Немає завершених тренувань для копіювання.";
   }
-  const today = getKyivDayKey();
+  const today = deviceDayKey();
   const targetDate = date && /^\d{4}-\d{2}-\d{2}$/.test(date) ? date : today;
-  const nowParts = getKyivDateParts();
-  const copyTimeStr = `${String(nowParts.hour).padStart(2, "0")}:${String(nowParts.minute).padStart(2, "0")}`;
-  const copyStartedAtTs = kyivWallClockTs(targetDate, copyTimeStr);
+  const copyStartedAtTs = deviceWallClockTs(targetDate, deviceNowHHMM());
   if (!Number.isFinite(copyStartedAtTs)) {
     return "Некоректна дата.";
   }

@@ -3,6 +3,8 @@ import { useToast } from "@shared/hooks/useToast";
 import { requestNotificationPermission } from "@shared/hooks/useModuleReminder";
 
 export type RoutinePermission = NotificationPermission | "unsupported";
+/** Результат тумблера: дозвіл або `"install-required"` (iOS-вкладка). */
+export type RoutineToggleResult = RoutinePermission | "install-required";
 
 /**
  * Поточний дозвіл браузера на сповіщення (`"unsupported"`, якщо API немає).
@@ -33,12 +35,15 @@ export function useRoutineRemindersToggle(
   const { warning: toastWarning } = useToast();
 
   return useCallback(
-    async (checked: boolean): Promise<RoutinePermission | null> => {
+    async (checked: boolean): Promise<RoutineToggleResult | null> => {
       if (!checked) {
         updatePref("routineRemindersEnabled", false);
         return null;
       }
       const perm = await requestNotificationPermission();
+      // iPhone у вкладці Safari: замість тосту про «налаштування браузера»
+      // викликач показує підказку встановлення (`IosInstallPushHint`).
+      if (perm === "install-required") return perm;
       if (perm !== "granted") {
         toastWarning(
           "Без дозволу на сповіщення нагадування не надсилатимуться. Дозволь сповіщення у налаштуваннях браузера.",

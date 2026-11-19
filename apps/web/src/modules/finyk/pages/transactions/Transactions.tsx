@@ -12,10 +12,15 @@ import { CategoryTrend } from "./CategoryTrend";
 import { TransactionList } from "./TransactionList";
 import { TransactionSyncPill } from "./TransactionSyncPill";
 import { TransactionsFilterChip } from "./TransactionsFilterChip";
+import {
+  TransactionsSearchEmpty,
+  TransactionsSearchField,
+} from "./TransactionsSearchField";
 import { formatAnalyticsPeriod } from "../../lib/analyticsPeriodLabel";
 import { useTransactionFilters } from "./useTransactionFilters";
 import { formatDayFilterDate, isDayFilterKey } from "./transactionsLib";
 import { useTransactionSelection } from "./useTransactionSelection";
+import { useFocusTransaction } from "./useFocusTransaction";
 import { BankTransactionDetailsSheet } from "../../components/BankTransactionDetailsSheet";
 import { useDebtPaymentSplitSync } from "../../hooks/useDebtPaymentSplitSync";
 import {
@@ -194,6 +199,12 @@ export interface TransactionsProps {
   /** Device-local чек↔транзакція лінки (спека § Розгортка) — optional so
    * existing test call-sites without receipt-scan context keep compiling. */
   receiptLinks?: UseFinykReceiptLinksResult;
+  /**
+   * Глибоке посилання `?tx=<id>` (Ф-2 а): відкрити саму операцію. Після
+   * відкриття викликається `onFocusTxConsumed`, щоб власник прибрав параметр.
+   */
+  focusTxId?: string | null;
+  onFocusTxConsumed?: () => void;
 }
 
 /**
@@ -223,6 +234,8 @@ export function Transactions({
   dayFilter,
   onClearDayFilter,
   receiptLinks,
+  focusTxId,
+  onFocusTxConsumed,
 }: TransactionsProps) {
   const toast = useToast();
   const [editingBankTransaction, setEditingBankTransaction] =
@@ -288,6 +301,8 @@ export function Transactions({
     categoryRange,
     onClearCategoryFilter,
     dayFilter,
+    txNotes,
+    txTags: storage.txTags,
   });
 
   // Чіп дня — той самий візуальний блок для «сьогодні» (Overview, рядок
@@ -388,6 +403,16 @@ export function Transactions({
     toast,
   });
 
+  useFocusTransaction({
+    focusTxId,
+    realTx,
+    historyTx,
+    manualExpenses,
+    openBankTransaction: setEditingBankTransaction,
+    openManualExpense: onEditManualExpense,
+    onConsumed: onFocusTxConsumed,
+  });
+
   // Рівень 3: розподіл операції може змінитись УЖЕ ПІСЛЯ привʼязки платежу,
   // і тоді сума привʼязки застаріває. Обгортка стоїть саме тут, бо це
   // єдина точка, крізь яку проходять усі три шляхи зміни розподілу
@@ -448,6 +473,14 @@ export function Transactions({
           setEditingBankTransaction(transaction);
         }}
         onRefresh={handlePullRefresh}
+        searchEmpty={
+          filters.searchActive ? (
+            <TransactionsSearchEmpty
+              query={filters.searchQuery}
+              onClear={() => filters.setSearchQuery("")}
+            />
+          ) : undefined
+        }
         onRefreshError={handlePullRefreshError}
         header={
           <section
@@ -465,6 +498,18 @@ export function Transactions({
               selectedCount={selection.selectedIds.size}
               onExportCsv={handleExportCsv}
               exportCount={filters.filtered.length}
+            />
+            {/* Ф-2 (а): пошук під місяцем; діє разом із вкладкою нижче. */}
+            <TransactionsSearchField
+              query={filters.searchQuery}
+              onQueryChange={filters.setSearchQuery}
+              resultCount={filters.filtered.length}
+              periodLabel={
+                filters.rangeFilter
+                  ? null
+                  : filters.monthLabel.charAt(0).toLocaleLowerCase("uk") +
+                    filters.monthLabel.slice(1)
+              }
             />
             <TransactionSyncPill
               syncState={{

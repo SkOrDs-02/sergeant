@@ -34,6 +34,13 @@
  *   pnpm eval:models -- --extra=coach-insight:openrouter:anthropic/claude-sonnet-5.5:s55-none:none
  *                                          # 5-те поле — reasoning.effort
  *   pnpm eval:models -- --out=docs/work/specs/planning/model-eval-2026-08-04.md
+ *   pnpm eval:models -- --provider-prefs='{"quantizations":["fp8","unknown"]}'
+ *                                          # додаткові поля `provider` OpenRouter
+ *                                          # (quantizations, ignore); deny лишається
+ *   pnpm eval:models -- --only-model=z-ai/glm-5.2,deepseek/deepseek-v4-flash
+ *                                          # лише кандидати з цими id
+ *   pnpm eval:models -- --json-out=/tmp/run.json
+ *                                          # сирі рядки (з `servedBy`, `gatewayCostUsd`)
  *
  * Код виходу: 0 завжди (це звіт, не гейт), 1 — помилка розбору аргументів.
  */
@@ -69,8 +76,31 @@ async function main(): Promise<void> {
       extra: { type: "string", multiple: true, default: [] },
       "max-tokens": { type: "string" },
       repeat: { type: "string" },
+      "provider-prefs": { type: "string" },
+      "only-model": { type: "string" },
+      "json-out": { type: "string" },
     },
   });
+
+  let providerPrefs: Record<string, unknown> | undefined;
+  if (values["provider-prefs"]) {
+    try {
+      const parsed: unknown = JSON.parse(values["provider-prefs"]);
+      if (!parsed || typeof parsed !== "object" || Array.isArray(parsed)) {
+        throw new Error("not an object");
+      }
+      providerPrefs = parsed as Record<string, unknown>;
+    } catch {
+      console.error(
+        `Invalid --provider-prefs="${values["provider-prefs"]}" (expected JSON object)`,
+      );
+      process.exitCode = 1;
+      return;
+    }
+  }
+  const onlyModels = values["only-model"]
+    ? new Set(values["only-model"].split(",").map((s) => s.trim()))
+    : null;
 
   const maxTokensOverride = values["max-tokens"]
     ? Number(values["max-tokens"])
@@ -110,6 +140,14 @@ async function main(): Promise<void> {
     });
   }
 
+  if (onlyModels) {
+    for (const pipeline of pipelines) {
+      pipeline.candidates = pipeline.candidates.filter((c) =>
+        onlyModels.has(c.model),
+      );
+    }
+  }
+
   const repeats = Math.max(1, Number(values.repeat ?? 1) || 1);
   const dryRun = values["dry-run"] === true;
   const skipUnavailable = values["skip-unavailable"] === true;
@@ -142,13 +180,28 @@ async function main(): Promise<void> {
         // Повтори підряд, а не окремими прогонами: один запуск — одна
         // таблиця, і розкид видно в ній, а не при ручному зведенні звітів.
         for (let i = 0; i < repeats; i += 1) {
-          results.push(await runOne(pipeline, goldenCase, candidate, dryRun));
+          results.push(
+            await runOne(
+              pipeline,
+              goldenCase,
+              candidate,
+              dryRun,
+              providerPrefs,
+            ),
+          );
         }
       }
     }
   }
 
   const generatedAt = new Date().toISOString();
+  if (values["json-out"]) {
+    writeFileSync(
+      resolve(values["json-out"]),
+      JSON.stringify({ generatedAt, providerPrefs, results }, null, 2),
+      "utf-8",
+    );
+  }
   const markdown = toMarkdown(results, pipelines, generatedAt, skipped);
   console.log(markdown);
 

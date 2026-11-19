@@ -1,6 +1,6 @@
 # Куди виходять дані: сторонні обробники AI
 
-> **Last touched:** 2026-10-23 by @claude (клас Б не обіцяється в публічній політиці, priv-10); раніше 2026-10-19 by @claude (TypeSafe/Jev: вимкнений за замовчуванням, priv-10); раніше 2026-10-05 by @claude (фото чека й скріна банку Фініка в реєстрі, нотіс перед першим фото); 2026-09-17 by @claude (додано OpenRouter і Groq — реєстр виходів за периметр розширено 2026-09-16). **Next review:** 2026-12-16.
+> **Last touched:** 2026-11-19 by @claude (`provider.quantizations` від 8 біт на кожному запиті до OpenRouter, рішення власника); раніше 2026-11-19 by @claude (`provider.data_collection=deny` на кожному запиті до OpenRouter, рішення власника); раніше 2026-10-23 by @claude (клас Б не обіцяється в публічній політиці, priv-10); раніше 2026-10-19 by @claude (TypeSafe/Jev: вимкнений за замовчуванням, priv-10); раніше 2026-10-05 by @claude (фото чека й скріна банку Фініка в реєстрі, нотіс перед першим фото); 2026-09-17 by @claude (додано OpenRouter і Groq — реєстр виходів за периметр розширено 2026-09-16). **Next review:** 2026-12-16.
 > **Status:** Active.
 > **Scope:** усі шляхи, якими дані користувача виходять за периметр до
 > сторонніх AI-провайдерів. Логи, Sentry і телеметрія — окремий документ:
@@ -42,10 +42,40 @@
 > перелік моделей на кожен шлях — `apps/server/src/env/chatModels.ts` і
 > `apps/server/src/env/aiRoutingEnv.ts`, не цей документ.
 
+> **Постачальники за шлюзом не зберігають дані (з 2026-11-19).** Рішення
+> власника: кожен запит сервера до OpenRouter несе
+> `provider.data_collection=deny`, тобто шлюз обирає лише тих постачальників
+> моделі, які не збирають дані користувача (без цього поля дефолт шлюзу
+> дозволяв постачальників, що зберігають запити й можуть на них
+> тренуватись). Діє на обох транспортах (`/api/v1/messages` і
+> `/api/v1/chat/completions`), тобто на всіх рядках таблиці з OpenRouter.
+> Одне джерело поля: `apps/server/src/lib/llm/openrouterDataPolicy.ts`;
+> повноту стереже `apps/server/src/lib/openrouterDataPolicyCoverage.test.ts`.
+> Це обмеження збору, а не нульове зберігання: суворіший `zdr: true` не
+> обрано, бо під ним `google/gemini-2.5-flash-lite` (шість пайплайнів) не має
+> жодного ендпойнта. Прямий Anthropic (фолбек), Groq і Voyage цього поля не
+> отримують: це параметр OpenRouter. Аварійний відкат —
+> `OPENROUTER_DATA_COLLECTION=allow`
+> ([`feature-flags.md`](../../engineering/architecture/feature-flags.md) § 3.1).
+>
+> **Постачальники з квантизацією не нижче 8 біт (з 2026-11-19).** Друге
+> рішення власника того ж дня: поряд із `data_collection=deny` кожен запит
+> до OpenRouter несе `provider.quantizations` зі списком `fp8`, `mxfp8`,
+> `fp16`, `bf16`, `fp32`, `unknown`, тобто 4-бітні ендпойнти (`fp4`,
+> `int4` та інші) шлюз не обирає. Це обмеження якості, а не приватності: на
+> `relace/fp4` синтез `deepseek-v4-flash` переходив на російську. Набір
+> постачальників, яким ідуть дані, від цього лише звужується. `unknown`
+> лишено, бо пропрієтарні моделі квантизацію не заявляють і без нього
+> лишаються без ендпойнта. Те саме джерело й ті самі транспорти, що вище;
+> Jev теж отримує поле (його ендпойнт `/api/v1/systemone` на пробі
+> 2026-11-19 поле приймає, але не фільтрує). Аварійний відкат, незалежний
+> від `OPENROUTER_DATA_COLLECTION`: `OPENROUTER_QUANTIZATION_FLOOR=off`.
+
 > **TypeSafe (Jev) за замовчуванням не отримує нічого.** Тіньовий детектор
 > інʼєкцій (`CHAT_INJECTION_JEV_SHADOW`, `chat/injectionShadowJev.ts`) шле
 > кожен рядковий `tool_result` на `typesafe/jev-1.13` через OpenRouter із
-> `provider: { zdr: true, data_collection: "deny" }`. З 2026-10-19 він
+> ZDR і `data_collection=deny` (`openRouterZdrProviderPrefs()`; відкат
+> `OPENROUTER_DATA_COLLECTION=allow` цієї умови не знімає). З 2026-10-19 він
 > вимкнений (аудит `priv-10`): TypeSafe ще не названий у політиці
 > приватності. Перед ввімкненням змінної власник додає TypeSafe в
 > `AI_PROCESSORS` (`apps/web/src/core/legal/legalShared.ts`), у цей перелік

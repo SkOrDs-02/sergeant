@@ -7,7 +7,12 @@
  * щоб покрити iPhone, iPadOS-як-Mac, Safari-вкладку та desktop.
  */
 import { afterEach, describe, expect, it } from "vitest";
-import { isIOS, isStandalonePWA, isIOSStandalonePWA } from "./iosStandalone";
+import {
+  isIOS,
+  isIOSBrowserTab,
+  isStandalonePWA,
+  isIOSStandalonePWA,
+} from "./iosStandalone";
 
 const ORIGINAL_UA = navigator.userAgent;
 const ORIGINAL_PLATFORM = navigator.platform;
@@ -119,6 +124,43 @@ describe("isStandalonePWA", () => {
     setNavigator({ standalone: false });
     setDisplayModeStandalone(false);
     expect(isStandalonePWA()).toBe(false);
+  });
+});
+
+describe("isIOSBrowserTab", () => {
+  it("true на iPhone у Safari-вкладці", () => {
+    setNavigator({
+      ua: "Mozilla/5.0 (iPhone; CPU iPhone OS 17_0)",
+      standalone: false,
+    });
+    setDisplayModeStandalone(false);
+    expect(isIOSBrowserTab()).toBe(true);
+  });
+
+  it("true на iPadOS-як-Mac у вкладці", () => {
+    setNavigator({
+      ua: "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15)",
+      platform: "MacIntel",
+      maxTouchPoints: 5,
+      standalone: false,
+    });
+    setDisplayModeStandalone(false);
+    expect(isIOSBrowserTab()).toBe(true);
+  });
+
+  it("false у встановленому iOS PWA", () => {
+    setNavigator({
+      ua: "Mozilla/5.0 (iPhone; CPU iPhone OS 17_0)",
+      standalone: true,
+    });
+    setDisplayModeStandalone(true);
+    expect(isIOSBrowserTab()).toBe(false);
+  });
+
+  it("false на Android і desktop", () => {
+    setNavigator({ ua: "Mozilla/5.0 (Linux; Android 14)" });
+    setDisplayModeStandalone(false);
+    expect(isIOSBrowserTab()).toBe(false);
   });
 });
 

@@ -1,13 +1,15 @@
 /**
- * Monobank statement backfill — fetches the last 30 days of transactions for
- * all accounts immediately after a user connects their token.
+ * Monobank statement backfill — fetches the last three months of transactions
+ * (three 31-day windows, `statementWindows.ts`; OD-26 Ф-3 (а)) for all
+ * accounts immediately after a user connects their token.
  *
  * Called fire-and-forget from `connectHandler` so it never delays the HTTP
  * response. Errors are logged but not re-thrown — a failed backfill is
  * non-fatal; future webhooks will fill the gap going forward.
  *
  * Rate limit: Monobank allows 1 statement request per 60 s per token.
- * With multiple accounts we sleep 62 s between each to stay within the limit.
+ * We sleep 62 s before every statement request except the very first one
+ * (windows, pages and accounts alike) — about three minutes per account.
  */
 
 import { z } from "zod";
@@ -17,11 +19,27 @@ import { categorizeMcc } from "./mccCategories.js";
 import type { KeyRing } from "../../lib/keyRing.js";
 import { decryptAndLazyReencrypt, type MonoTokenRow } from "./tokenStore.js";
 import { formatNumberUk, toKyivISODate } from "@sergeant/shared";
+import {
+  MONO_STATEMENT_PAGE_SIZE,
+  monoHistoryWindows,
+  nextStatementPageTo,
+} from "./statementWindows.js";
 
 const MONO_API_TIMEOUT_MS = 15_000;
 /** Monobank personal statement rate limit: 1 req / 60 s per token. */
-const BETWEEN_ACCOUNTS_DELAY_MS = 62_000;
-const HISTORY_DAYS = 30;
+const BETWEEN_REQUESTS_DELAY_MS = 62_000;
+/** Запобіжник від нескінченного гортання одного вікна (як у `backfill.ts`). */
+const MAX_PAGES = 20;
+
+type Sleeper = (ms: number) => Promise<void>;
+const defaultSleep: Sleeper = (ms) =>
+  new Promise((resolve) => setTimeout(resolve, ms));
+let _sleep: Sleeper = defaultSleep;
+
+/** Test-only: підмінити паузу між запитами (`null` повертає справжню). */
+export function __setHistoryFetchSleep(fn: Sleeper | null): void {
+  _sleep = fn ?? defaultSleep;
+}
 
 const CURRENCY_SYMBOL: Record<number, string> = {
   980: "₴",
@@ -141,12 +159,26 @@ async function upsertTransactions(
   return inserted;
 }
 
+/**
+ * Одна сторінка виписки. Гортання рахується за СИРОЮ сторінкою Monobank
+ * (`rawTimes`: по елементу на кожен рядок відповіді, `NaN` там, де `time`
+ * не число), а не за рядками, що пройшли схему: інакше один відкинутий
+ * рядок на повній сторінці робив її «неповною» і мовчки обривав решту вікна
+ * (аудит 2026-10-01, `data-65`).
+ */
+export interface StatementPage {
+  items: BackfillItem[];
+  rawTimes: number[];
+  /** Скільки рядків сторінки не пройшли `BackfillItemSchema`. */
+  dropped: number;
+}
+
 export async function fetchAccountStatement(
   token: string,
   monoAccountId: string,
   fromTs: number,
   toTs: number,
-): Promise<BackfillItem[]> {
+): Promise<StatementPage> {
   const url = `https://api.monobank.ua/personal/statement/${monoAccountId}/${fromTs}/${toTs}`;
   const res = await fetch(url, {
     headers: { "X-Token": token },
@@ -157,11 +189,19 @@ export async function fetchAccountStatement(
     throw new Error(`Monobank statement ${res.status}: ${body.slice(0, 200)}`);
   }
   const raw: unknown = await res.json();
-  if (!Array.isArray(raw)) return [];
-  return raw.flatMap((item) => {
-    const parsed = BackfillItemSchema.safeParse(item);
-    return parsed.success ? [parsed.data] : [];
-  });
+  if (!Array.isArray(raw)) return { items: [], rawTimes: [], dropped: 0 };
+  const items: BackfillItem[] = [];
+  const rawTimes: number[] = [];
+  for (const row of raw as unknown[]) {
+    const time =
+      row !== null && typeof row === "object"
+        ? (row as { time?: unknown }).time
+        : undefined;
+    rawTimes.push(typeof time === "number" ? time : Number.NaN);
+    const parsed = BackfillItemSchema.safeParse(row);
+    if (parsed.success) items.push(parsed.data);
+  }
+  return { items, rawTimes, dropped: raw.length - items.length };
 }
 
 interface BackfillAccount {
@@ -180,34 +220,62 @@ export async function runMonoHistoryBackfill(
   // a legacy/stale-version row (best-effort; never throws on the write).
   const token = await decryptAndLazyReencrypt(encryptedToken, userId, ring);
 
-  const toTs = Math.floor(Date.now() / 1000);
-  const fromTs = toTs - HISTORY_DAYS * 24 * 60 * 60;
+  const windows = monoHistoryWindows(Math.floor(Date.now() / 1000));
 
   let totalInserted = 0;
+  let requests = 0;
+  const paced = async () => {
+    if (requests > 0) await _sleep(BETWEEN_REQUESTS_DELAY_MS);
+    requests++;
+  };
 
-  for (let i = 0; i < accounts.length; i++) {
-    const account = accounts[i]!;
-    if (i > 0) {
-      // Respect Monobank rate limit between accounts
-      await new Promise((resolve) =>
-        setTimeout(resolve, BETWEEN_ACCOUNTS_DELAY_MS),
-      );
-    }
+  for (const account of accounts) {
+    let fetched = 0;
+    let inserted = 0;
+    let dropped = 0;
     try {
-      const items = await fetchAccountStatement(
-        token,
-        account.id,
-        fromTs,
-        toTs,
-      );
-      const inserted = await upsertTransactions(userId, account.id, items);
-      totalInserted += inserted;
+      // Вікна й сторінки від нових до старих; помилка зупиняє лише цей
+      // рахунок, тож його покриття лишається суцільним від «зараз» назад.
+      for (const window of windows) {
+        let pageTo = window.to;
+        // Межа сторінки включна (`nextStatementPageTo`): операції на ній
+        // приходять двічі, рахуємо кожну один раз.
+        const seen = new Set<string>();
+        for (let page = 0; page < MAX_PAGES; page++) {
+          await paced();
+          const statement = await fetchAccountStatement(
+            token,
+            account.id,
+            window.from,
+            pageTo,
+          );
+          const fresh = statement.items.filter((it) => !seen.has(it.id));
+          for (const it of fresh) seen.add(it.id);
+          fetched += fresh.length;
+          // Рядок на включній межі сторінки приходить двічі, тож відкинутий
+          // там рахується двічі: лічильник це сигнал «щось відкидаємо», а не
+          // точний облік унікальних операцій.
+          dropped += statement.dropped;
+          inserted += await upsertTransactions(userId, account.id, fresh);
+          // Повнота сторінки і межа наступної за СИРИМИ рядками (`data-65`):
+          // відкинутий схемою рядок не обриває гортання.
+          if (statement.rawTimes.length < MONO_STATEMENT_PAGE_SIZE) break;
+          const nextTo = nextStatementPageTo(
+            statement.rawTimes,
+            pageTo,
+            window.from,
+          );
+          if (nextTo === null) break;
+          pageTo = nextTo;
+        }
+      }
       logger.info({
         msg: "mono_backfill_account_done",
         userId,
         monoAccountId: account.id,
-        fetched: items.length,
+        fetched,
         inserted,
+        dropped,
       });
     } catch (err) {
       logger.warn({
@@ -217,6 +285,18 @@ export async function runMonoHistoryBackfill(
         err: err instanceof Error ? err.message : String(err),
       });
     }
+    if (dropped > 0) {
+      // Hard Rule #21: лише лічильник. Вміст рядків (суми, описи,
+      // контрагенти) у лог не йде; userId і monoAccountId вже пише
+      // `mono_backfill_account_done` поруч.
+      logger.warn({
+        msg: "mono_backfill_rows_dropped",
+        userId,
+        monoAccountId: account.id,
+        dropped,
+      });
+    }
+    totalInserted += inserted;
   }
 
   await pool

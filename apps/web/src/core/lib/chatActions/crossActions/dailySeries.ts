@@ -19,6 +19,7 @@
  * обчислювальний код замість дублювання статистики.
  */
 import { calcCategorySpent } from "@sergeant/finyk-domain";
+import { calcRoutinePeriodCompletion } from "@sergeant/routine-domain/period-completion";
 import {
   CORRELATION_MIN_N,
   deviceDayKey,
@@ -377,15 +378,22 @@ function readHabitRate(habitId?: string): Map<string, number> {
     return out;
   }
   if (active.length === 0) return out;
-  const perDay = new Map<string, number>();
+  // П-18 (А), 2026-11-18 (`METRICS_VERSION` 23): відсоток дня на тому самому
+  // знаменнику, що модуль: звички, заплановані на цей день, без днів «не
+  // зміг» (`calcRoutinePeriodCompletion.daily`). Раніше тут ділилось на всі
+  // активні звички. Дні без жодної відмітки як і раніше лишаються поза
+  // читаннями: їх добудовують структурні нулі (`ABSENCE_MEANS`).
+  const doneDays = new Set<string>();
   for (const h of active) {
-    for (const day of completions[h.id] ?? []) {
-      perDay.set(day, (perDay.get(day) ?? 0) + 1);
-    }
+    for (const day of completions[h.id] ?? []) doneDays.add(day);
   }
-  for (const [day, done] of perDay) {
-    out.set(day, Math.round((done / active.length) * 100));
-  }
+  const { daily } = calcRoutinePeriodCompletion(
+    active,
+    completions,
+    [...doneDays].sort(),
+    { pausedFrom: deviceDayKey(), skips: state.skips },
+  );
+  for (const [day, pct] of Object.entries(daily)) out.set(day, pct);
   return out;
 }
 

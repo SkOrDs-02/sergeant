@@ -181,6 +181,43 @@ describe("useWorkouts – updateWorkout / deleteWorkout / updateItem / removeIte
     expect(w.items.find((i) => i.id === iid)?.durationSec).toBe(60);
   });
 
+  it("updateItem пише дзеркало сум для вправи з типом виміру (старі читачі)", async () => {
+    seedWorkouts([]);
+    const { result } = renderHook(() => useWorkouts());
+    await waitFor(() => expect(result.current.loaded).toBe(true));
+
+    let wid = "";
+    act(() => {
+      wid = result.current.createWorkout().id;
+    });
+    await waitFor(() =>
+      expect(result.current.workouts.map((w) => w.id)).toContain(wid),
+    );
+
+    let iid = "";
+    act(() => {
+      iid = result.current.addItem(wid, {
+        exerciseId: "plank",
+        measure: "time",
+        type: "strength",
+        sets: [{ weightKg: 0, reps: 0 }],
+      } as never);
+    });
+    act(() =>
+      result.current.updateItem(wid, iid, {
+        sets: [
+          { weightKg: 0, reps: 0, durationSec: 30 },
+          { weightKg: 0, reps: 0, durationSec: 40 },
+        ],
+      } as never),
+    );
+    const it = result.current.workouts
+      .find((ww) => ww.id === wid)!
+      .items.find((i) => i.id === iid)!;
+    expect(it.type).toBe("time");
+    expect(it.durationSec).toBe(70);
+  });
+
   it("removeItem with groups cleans up group itemIds and drops groups < 2 items", async () => {
     seedWorkouts([]);
     const { result } = renderHook(() => useWorkouts());

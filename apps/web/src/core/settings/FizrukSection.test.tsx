@@ -67,6 +67,38 @@ describe("FizrukSection", () => {
     expect(pressed[0]).toHaveTextContent("120с");
   });
 
+  describe("Фз-1: група «Під час тренування»", () => {
+    afterEach(() => {
+      delete (navigator as unknown as Record<string, unknown>)["wakeLock"];
+    });
+
+    it("показує тумблер «Не гасити екран», увімкнений за замовчуванням, і зберігає вимкнення", () => {
+      Object.defineProperty(navigator, "wakeLock", {
+        configurable: true,
+        value: { request: () => Promise.resolve({}) },
+      });
+      renderSettingsSection(<FizrukSection />);
+      expect(screen.getByText("Під час тренування")).toBeInTheDocument();
+      const toggle = screen.getByRole("switch", { name: "Не гасити екран" });
+      expect(toggle).toBeChecked();
+      fireEvent.click(toggle);
+      const stored = JSON.parse(
+        localStorage.getItem(REST_KEY) ?? "{}",
+      ) as Record<string, unknown>;
+      expect(stored["keepScreenOn"]).toBe(false);
+    });
+
+    it("де браузер не вміє тримати екран, тумблер вимкнений і чесно це каже", () => {
+      renderSettingsSection(<FizrukSection />);
+      const toggle = screen.getByRole("switch", { name: "Не гасити екран" });
+      expect(toggle).toBeDisabled();
+      expect(toggle).not.toBeChecked();
+      expect(
+        screen.getByText(/Цей браузер не вміє тримати екран увімкненим/),
+      ).toBeInTheDocument();
+    });
+  });
+
   // Другий бік того самого: без назви групи ряд «30с 60с 90с 120с 180с»
   // звучить пʼять разів поспіль і нічим не відрізняється між категоріями.
   it("PR-S14: кожен ряд кнопок має назву своєї категорії", () => {

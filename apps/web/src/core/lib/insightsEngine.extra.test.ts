@@ -8,7 +8,7 @@ import {
   __setFinykSqliteStateCacheForTests,
   clearFinykSqliteCache,
 } from "../../modules/finyk/lib/sqliteReader";
-import { generateInsights } from "./insightsEngine";
+import { bestHabitMonthInsight, generateInsights } from "./insightsEngine";
 import {
   __setFizrukSqliteCacheForTests,
   clearFizrukSqliteCache,
@@ -188,6 +188,41 @@ describe("generateInsights — cross-module insights", () => {
     expect(ins).toBeDefined();
     expect(ins!.iconName).toBe("flame");
     expect(ins!.stat).toContain("%");
+  });
+
+  // П-18 (А), 2026-11-18: «найпослідовніший місяць» рахує той самий
+  // знаменник, що модуль (`bestRoutineMonth`): заплановані дні без днів «не
+  // зміг». Плоске «звички × дні місяця» віддало б січень (20/31 = 65%)
+  // замість лютого (15 відміток, решта днів «не зміг» → 100%).
+  it("bestHabitMonthInsight: день «не зміг» поза знаменником (П-18)", () => {
+    const habit = {
+      id: "h1",
+      name: "Біг",
+      archived: false,
+      recurrence: "daily",
+      startDate: "2025-01-01",
+      createdAt: "2025-01-01T00:00:00.000Z",
+    };
+    const done: string[] = [];
+    for (let d = 1; d <= 20; d++)
+      done.push(`2025-01-${String(d).padStart(2, "0")}`);
+    const skips: Record<string, { reason: string; at: string }> = {};
+    for (let d = 1; d <= 28; d++) {
+      const dk = `2025-02-${String(d).padStart(2, "0")}`;
+      if (d <= 15) done.push(dk);
+      else skips[dk] = { reason: "sick", at: `${dk}T08:00:00Z` };
+    }
+    const ins = bestHabitMonthInsight(
+      {
+        habits: [habit] as never,
+        completions: { h1: done },
+        skips: { h1: skips } as never,
+      },
+      "2025-03-15",
+    );
+    expect(ins).not.toBeNull();
+    expect(ins!.detail).toBe("Лютий 2025");
+    expect(ins!.stat).toBe("100%");
   });
 
   it("workoutKcalInsight: correlates kcal on workout vs rest days", () => {

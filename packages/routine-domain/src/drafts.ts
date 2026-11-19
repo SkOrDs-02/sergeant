@@ -35,6 +35,8 @@ export interface HabitFormErrors {
   name?: string;
   weekdays?: string;
   weeklyTarget?: string;
+  /** Ціль лічильника не ціле ≥ 1 (Р-1 (а)). */
+  countTarget?: string;
 }
 
 export function routineTodayDate(): Date {
@@ -163,7 +165,53 @@ export function emptyHabitDraft(): HabitDraft {
   };
 }
 
-export function habitDraftToPatch(draft: HabitDraft): HabitDraftPatch {
+export interface HabitDraftToPatchOptions {
+  /**
+   * Чернетка редагує наявну звичку. Тоді змінена тижнева ціль діє з
+   * сьогодні, а не з `startDate`: інакше інтервал «з початку» переписує
+   * оцінку всіх минулих тижнів (спека routine-flexible-weekly-frequency:
+   * «зміна цілі не переписує минуле»).
+   */
+  editing?: boolean;
+}
+
+/**
+ * Історія тижневої цілі для патча гнучкої звички.
+ * Створення: ціль діє з `startDate`. Редагування: без зміни цілі історію
+ * не чіпаємо, зі зміною — дописуємо інтервал від сьогодні (або від
+ * `startDate`, якщо звичка ще не стартувала).
+ */
+function weeklyTargetHistoryForPatch(
+  draft: HabitDraft,
+  startDate: string,
+  weeklyTarget: number,
+  editing: boolean,
+): HabitDraft["weeklyTargetHistory"] {
+  if (!editing) {
+    return appendWeeklyTargetInterval(
+      draft.weeklyTargetHistory,
+      startDate,
+      weeklyTarget,
+    );
+  }
+  const today = dateKeyFromDate(routineTodayDate());
+  const from = startDate > today ? startDate : today;
+  const effective = weeklyTargetForDate(
+    { weeklyTargetHistory: draft.weeklyTargetHistory },
+    from,
+  );
+  if (effective === weeklyTarget) return draft.weeklyTargetHistory;
+  return appendWeeklyTargetInterval(
+    draft.weeklyTargetHistory,
+    from,
+    weeklyTarget,
+  );
+}
+
+export function habitDraftToPatch(
+  draft: HabitDraft,
+  options: HabitDraftToPatchOptions = {},
+): HabitDraftPatch {
   const tagIds = draft.tagIds || [];
   const reminderTimes = (draft.reminderTimes || [])
     .map((t) =>
@@ -203,14 +251,37 @@ export function habitDraftToPatch(draft: HabitDraft): HabitDraftPatch {
           ? draft.weekdays
           : [0, 1, 2, 3, 4, 5, 6],
     paused: draft.paused === true,
+    ...counterFieldsForPatch(draft),
     weeklyTargetHistory:
       recurrence === "flexible"
-        ? appendWeeklyTargetInterval(
-            draft.weeklyTargetHistory,
+        ? weeklyTargetHistoryForPatch(
+            draft,
             startDate,
             weeklyTarget,
+            options.editing === true,
           )
         : draft.weeklyTargetHistory,
+  };
+}
+
+/**
+ * Лічильник і автовідмітка з чернетки (Р-1 (а) і (в)). Ціль — ціле ≥ 1,
+ * інакше лічильника немає (`null`); одиниця без цілі не зберігається.
+ * Поле автовідмітки зберігається як є.
+ */
+function counterFieldsForPatch(
+  draft: HabitDraft,
+): Pick<HabitDraftPatch, "countTarget" | "countUnit" | "autoMarkSource"> {
+  const target = draft.countTarget;
+  const countTarget =
+    typeof target === "number" && Number.isInteger(target) && target >= 1
+      ? target
+      : null;
+  const unit = (draft.countUnit ?? "").trim();
+  return {
+    countTarget,
+    countUnit: countTarget !== null && unit ? unit : null,
+    autoMarkSource: draft.autoMarkSource ?? null,
   };
 }
 
@@ -244,6 +315,9 @@ export function habitToDraft(h: Habit): HabitDraft {
     weeklyTargetHistory: Array.isArray(h.weeklyTargetHistory)
       ? [...h.weeklyTargetHistory]
       : [],
+    countTarget: h.countTarget ?? null,
+    countUnit: h.countUnit ?? "",
+    autoMarkSource: h.autoMarkSource ?? null,
   };
 }
 
@@ -275,11 +349,24 @@ export function validateHabitDraft(draft: HabitDraft): HabitFormErrors {
   ) {
     errors.weeklyTarget = "Обери ціль від 1 до 7 разів.";
   }
+  const target = draft.countTarget;
+  if (
+    target !== null &&
+    target !== undefined &&
+    (!Number.isInteger(target) || target < 1)
+  ) {
+    errors.countTarget = "Ціль лічильника — ціле число від 1.";
+  }
   return errors;
 }
 
 /** Convenience: `true` if there are no validation errors. */
 export function isHabitDraftValid(draft: HabitDraft): boolean {
   const errors = validateHabitDraft(draft);
-  return !errors.name && !errors.weekdays && !errors.weeklyTarget;
+  return (
+    !errors.name &&
+    !errors.weekdays &&
+    !errors.weeklyTarget &&
+    !errors.countTarget
+  );
 }

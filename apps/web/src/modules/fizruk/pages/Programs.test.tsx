@@ -225,6 +225,33 @@ describe("Programs page", () => {
     expect(screen.getAllByText("Тестова вправа").length).toBeGreaterThan(0);
   });
 
+  it("показує план «підходи × повтори» біля вправи (П-8: 3 підходи, діапазон з каталогу; 5×5 з опису)", () => {
+    mockExercises.mockReturnValue([
+      {
+        id: "squat_barbell",
+        name: { uk: "Присідання зі штангою", en: "Squat" },
+        primaryGroup: "quadriceps",
+        musclesPrimary: [],
+        musclesSecondary: [],
+        equipment: ["barbell"],
+      },
+    ]);
+    render(<Programs {...baseProps()} />);
+    const strengthIdx = BUILTIN_PROGRAMS.findIndex(
+      (p) => p.id === "strength_5x5",
+    );
+    const pplIdx = BUILTIN_PROGRAMS.findIndex((p) => p.id === "ppl");
+    const toggles = screen.getAllByRole("button", { name: "Деталі" });
+    // Розкрита одна програма за раз.
+    fireEvent.click(toggles[strengthIdx]!);
+    // 5×5 A, 5×5 B, 5×5 A у розкладі — присідання в кожній.
+    expect(screen.getAllByText("5×5")).toHaveLength(3);
+    fireEvent.click(toggles[pplIdx]!);
+    // PPL Legs двічі на тиждень: штанга → 3×5–8.
+    expect(screen.getAllByText("3×5–8")).toHaveLength(2);
+    expect(screen.queryByText("5×5")).toBeNull();
+  });
+
   it("uses the DEVICE day, not Kyiv, near midnight (ADR-0078 regression)", () => {
     // 2026-04-19T22:00:00Z is Sunday on the device clock (UTC in this test
     // env), but Kyiv is already UTC+3 (EEST/DST) at that instant, so a

@@ -28,6 +28,19 @@ export const fizrukPageMessages = {
     createTemplate: "Створити шаблон",
     quickStart: "Швидкий старт",
     programs: "До програм",
+    /** День без сесії активної програми (П-11, рішення власника 2026-11-18). */
+    restToday: "Сьогодні відпочинок",
+    /** Сесію програми сьогодні вже закрито повноцінним тренуванням (П-10). */
+    programDoneToday: "Сесію програми сьогодні закрито",
+    nextPrefix: "Наступна:",
+    startNow: "Почати зараз",
+    /**
+     * Відносний день у мета-рядку героя. Стоїть лише після роздільника «·»,
+     * тож з малої літери: велика тільки на початку рядка (зйомка 2026-11-18).
+     */
+    daysAwayToday: "сьогодні",
+    daysAwayTomorrow: "завтра",
+    daysAwayIn: "за {n} {days}",
   },
   startWorkoutFab: "Почати тренування",
   resumeWorkoutFab: "Продовжити тренування",
@@ -216,6 +229,9 @@ export const fizrukPageMessages = {
     cardioDurationAria: "Тривалість у секундах",
     cardioDistanceAria: "Дистанція в метрах",
     cardioTimeHint: "Напр: планка, ізометрія",
+    /** Утримання з програми: план підходів × секунд і що вписати в поле. */
+    timedPlanPrefix: "План програми:",
+    timedPlanTotalHint: "у поле впиши сумарний час усіх підходів",
     cardioPace: "Темп",
     cardioSpeed: "Швидкість",
     durationAria: "Тривалість тренування",
@@ -308,7 +324,11 @@ export const fizrukPageMessages = {
     ghostAriaSuffix: "з минулого разу",
     doneAriaLabel: "зроблено, почати відпочинок",
     notDoneAriaLabel: "ще не заповнено",
-    deleteAriaPrefix: "Видалити підхід",
+    /**
+     * Дія під рядками вправи (рішення founder-а 2026-11-18): кошик вийшов із
+     * рядка. Видаляє останній підхід; aria-label додає «: назва вправи».
+     */
+    deleteLast: "Видалити підхід {n}",
     weightPlaceholder: "кг",
     repsPlaceholder: "повт.",
     weightAriaLabel: "Вага в кілограмах",
@@ -701,6 +721,11 @@ export const fizrukPageMessages = {
       approach: "До висновку про найкращий день для тренувань лишилось {n}.",
     },
     itemsLabel: "Вправ",
+    /**
+     * Зроблені з усіх, коли зроблено не всі (рішення founder-а 2026-11-18).
+     * «з» не відмінюється, тож форма одна для будь-яких чисел.
+     */
+    itemsDoneOf: "{done} з {total}",
     setsLabel: "Підходів",
     volumeLabel: "Обʼєм",
     // Per-set effort rating, shown inline next to "80×8" ONLY when the set
@@ -822,47 +847,3 @@ export const fizrukPageMessages = {
     savedPrefix: "Імпорт записано:",
   },
 } as const;
-
-/**
- * Reference rows for the measurements guide table (`pages/Measurements.tsx`).
- *
- * Kept OUTSIDE `fizrukPageMessages` on purpose: the shared `MessageCatalog`
- * type is a plain-string tree (`string | MessageCatalog`), so a structured
- * array cannot live in the catalogue. Housing the copy here (rather than
- * inline JSX in the page) keeps it translatable and clears the
- * `no-cyrillic-jsx-literal` rule, while the dedicated type lets `DataTable`
- * infer its row shape.
- */
-export interface MeasurementGuideRow {
-  readonly metric: string;
-  readonly place: string;
-  readonly technique: string;
-}
-
-export const measurementGuideRows: readonly MeasurementGuideRow[] = [
-  {
-    metric: "Талія",
-    place: "Посередині між нижнім ребром і верхом тазової кістки",
-    technique: "Горизонтально, після звичайного видиху, не стягувати шкіру",
-  },
-  {
-    metric: "Стегна",
-    place: "Навколо найширшої частини сідниць",
-    technique: "Горизонтально, ноги разом",
-  },
-  {
-    metric: "Груди",
-    place: "Навколо грудної клітки на рівні сосків",
-    technique: "Горизонтально, руки розслаблені, без глибокого вдиху",
-  },
-  {
-    metric: "Біцепс",
-    place: "Посередині між плечем і ліктем",
-    technique: "Рука розслаблена; щоразу міряти ту саму руку",
-  },
-  {
-    metric: "Стегно",
-    place: "Навколо найширшої частини верхнього стегна",
-    technique: "Стояти рівно, вагу розподілити на обидві ноги",
-  },
-] as const;

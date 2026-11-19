@@ -15,6 +15,7 @@
 import { sumMacrosNullable } from "@sergeant/shared";
 
 import { env } from "../../src/env/env.js";
+import { withOpenRouterProviderPrefs } from "../../src/lib/llm/openrouterDataPolicy.js";
 import { extractJsonFromText } from "../../src/http/jsonSafe.js";
 import {
   anthropicMessages,
@@ -379,26 +380,30 @@ async function callVision(
       "HTTP-Referer": "https://sergeant.app",
       "X-Title": "Sergeant",
     },
-    body: JSON.stringify({
-      model: candidate.model,
-      max_tokens: maxTokens,
-      temperature: 0.2,
-      messages: [
-        { role: "system", content: system },
-        {
-          role: "user",
-          content: [
-            {
-              type: "image_url",
-              image_url: {
-                url: `data:${img.mimeType};base64,${img.base64}`,
+    // Той самий `provider`, що в проді (`OpenRouterProvider`): без нього стенд
+    // міряв би постачальників, яких прод під `data_collection=deny` не бере.
+    body: JSON.stringify(
+      withOpenRouterProviderPrefs({
+        model: candidate.model,
+        max_tokens: maxTokens,
+        temperature: 0.2,
+        messages: [
+          { role: "system", content: system },
+          {
+            role: "user",
+            content: [
+              {
+                type: "image_url",
+                image_url: {
+                  url: `data:${img.mimeType};base64,${img.base64}`,
+                },
               },
-            },
-            { type: "text", text: goldenCase.user },
-          ],
-        },
-      ],
-    }),
+              { type: "text", text: goldenCase.user },
+            ],
+          },
+        ],
+      }),
+    ),
     signal: AbortSignal.timeout(60_000),
   });
   const data = (await response.json().catch(() => ({}))) as {

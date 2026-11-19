@@ -92,7 +92,6 @@ import { NotificationsSection } from "./NotificationsSection";
 // тумблера вгорі секції зсунуло всі три — тести падали не тому, що щось
 // зламалось, а тому, що поруч зʼявився сусід.
 const SWITCH_LABEL = {
-  sergeant: "Повідомлення від Сержанта",
   routine: "Нагадування про звички",
   fizruk: "Нагадування про тренування",
   nutrition: "Нагадування про їжу",
@@ -403,5 +402,239 @@ describe("NotificationsSection", () => {
     expect(
       screen.getAllByText(/навіть коли застосунок закрито/).length,
     ).toBeGreaterThanOrEqual(3);
+  });
+
+  // О-1 (б): на iPhone у вкладці Safari `Notification` немає, push
+  // неможливий. Замість хибного тосту «дозволь у налаштуваннях браузера»
+  // (такого пункту на iOS не існує) людина бачить, як встановити застосунок.
+  describe("iPhone/iPad у вкладці Safari (застосунок не встановлено)", () => {
+    const IPHONE_UA = "Mozilla/5.0 (iPhone; CPU iPhone OS 17_0 like Mac OS X)";
+    const ANDROID_UA = "Mozilla/5.0 (Linux; Android 14; Pixel 8)";
+    const INSTALL_HINT = /Встанови Sergeant на початковий екран/;
+
+    function setEnv(opts: { ua: string; standalone?: boolean }) {
+      vi.stubGlobal("navigator", {
+        ...window.navigator,
+        userAgent: opts.ua,
+        platform: "iPhone",
+        maxTouchPoints: 5,
+        standalone: opts.standalone ?? false,
+      });
+      vi.stubGlobal(
+        "matchMedia",
+        (query: string) =>
+          ({
+            matches: false,
+            media: query,
+            addEventListener: () => {},
+            removeEventListener: () => {},
+          }) as unknown as MediaQueryList,
+      );
+    }
+
+    it("звички: показує підказку встановлення, тумблер лишається вимкненим, тосту немає", async () => {
+      setEnv({ ua: IPHONE_UA });
+      vi.stubGlobal("Notification", undefined);
+      renderSettingsSection(<NotificationsSection />);
+      expect(screen.queryByText(INSTALL_HINT)).toBeNull();
+      clickSwitch("routine");
+      expect(await screen.findByText(INSTALL_HINT)).toBeInTheDocument();
+      expect(updateRoutinePrefMock).not.toHaveBeenCalled();
+      expect(toastWarningMock).not.toHaveBeenCalled();
+      expect(
+        screen.getByRole("switch", { name: SWITCH_LABEL.routine }),
+      ).toHaveAttribute("aria-checked", "false");
+    });
+
+    it("підказка названа за кроками iOS і доступна читалці без автозакриття", async () => {
+      setEnv({ ua: IPHONE_UA });
+      vi.stubGlobal("Notification", undefined);
+      renderSettingsSection(<NotificationsSection />);
+      clickSwitch("routine");
+      const hint = await screen.findByRole("status");
+      expect(hint).toHaveTextContent("«Поділитися»");
+      expect(hint).toHaveTextContent("«На початковий екран»");
+      await new Promise((r) => setTimeout(r, 50));
+      expect(screen.getByRole("status")).toBe(hint);
+    });
+
+    it("тренування і їжа: той самий шлях, нічого не записується", async () => {
+      setEnv({ ua: IPHONE_UA });
+      vi.stubGlobal("Notification", undefined);
+      renderSettingsSection(<NotificationsSection />);
+
+      clickSwitch("fizruk");
+      expect(await screen.findByText(INSTALL_HINT)).toBeInTheDocument();
+      expect(monthlyPlanState.setReminderEnabled).not.toHaveBeenCalled();
+
+      clickSwitch("nutrition");
+      await waitFor(() =>
+        expect(screen.getAllByText(INSTALL_HINT).length).toBeGreaterThan(0),
+      );
+      expect(patchNutritionPrefsMock).not.toHaveBeenCalled();
+      // «Повідомлення від Сержанта» переїхали в секцію «Сержант» (PR-S8):
+      // той самий iOS-шлях пінить `AIDigestSection.test.tsx`.
+    });
+
+    it("вимкнення не показує підказку", async () => {
+      setEnv({ ua: IPHONE_UA });
+      vi.stubGlobal("Notification", undefined);
+      routineState.routine = { prefs: { routineRemindersEnabled: true } };
+      renderSettingsSection(<NotificationsSection />);
+      clickSwitch("routine");
+      await waitFor(() =>
+        expect(updateRoutinePrefMock).toHaveBeenCalledWith(
+          "routineRemindersEnabled",
+          false,
+        ),
+      );
+      expect(screen.queryByText(INSTALL_HINT)).toBeNull();
+    });
+
+    it("встановлений PWA на iOS: старий шлях із запитом дозволу", async () => {
+      setEnv({ ua: IPHONE_UA, standalone: true });
+      stubNotification("granted");
+      renderSettingsSection(<NotificationsSection />);
+      clickSwitch("routine");
+      await waitFor(() =>
+        expect(updateRoutinePrefMock).toHaveBeenCalledWith(
+          "routineRemindersEnabled",
+          true,
+        ),
+      );
+      expect(screen.queryByText(INSTALL_HINT)).toBeNull();
+    });
+
+    it("Android: запит дозволу й тост при відмові, без підказки", async () => {
+      setEnv({ ua: ANDROID_UA });
+      vi.stubGlobal("navigator", {
+        ...window.navigator,
+        userAgent: ANDROID_UA,
+        platform: "Linux armv8l",
+        maxTouchPoints: 5,
+      });
+      const reqFn = stubNotification("default");
+      reqFn.mockResolvedValue("denied");
+      renderSettingsSection(<NotificationsSection />);
+      clickSwitch("routine");
+      await waitFor(() => expect(reqFn).toHaveBeenCalled());
+      expect(updateRoutinePrefMock).not.toHaveBeenCalled();
+      expect(toastWarningMock).toHaveBeenCalled();
+      expect(screen.queryByText(INSTALL_HINT)).toBeNull();
+    });
+  });
+
+  // Спека notifications-quiet-hours-and-device-time, § Викочування: новий
+  // веб проти старого бекенду не показує контролів, які нічого не зберегли б.
+  describe("тихі години і тумблер Monobank (міграція 168)", () => {
+    const NEW_SERVER = {
+      sergeantNudges: false,
+      pushDailyCap: 2,
+      timeZone: null,
+      quietHoursEnabled: true,
+      quietHoursStartMin: 1320,
+      quietHoursEndMin: 480,
+      pushMonoTransactions: true,
+    };
+    afterEach(() => {
+      // `mockReset` повертає початкову реалізацію (відповідь старого сервера).
+      meApiMock.getPreferences.mockReset();
+      meApiMock.updatePreferences.mockReset();
+    });
+
+    it("старий сервер: підгруп «Тихі години» і «Операції Monobank» немає в DOM", async () => {
+      renderSettingsSection(<NotificationsSection />);
+      // Дочекались відповідей читання: стеля вже з сервера.
+      await waitFor(() =>
+        expect(screen.getByRole("radio", { name: "2" })).toBeChecked(),
+      );
+      // Пʼять читань: стеля і чотири поля міграції 168 («Повідомлення від
+      // Сержанта» з власним читанням переїхали в секцію «Сержант», PR-S8).
+      await waitFor(() =>
+        expect(meApiMock.getPreferences).toHaveBeenCalledTimes(5),
+      );
+      expect(screen.queryByRole("switch", { name: "Тихі години" })).toBeNull();
+      expect(
+        screen.queryByRole("switch", { name: "Операції Monobank" }),
+      ).toBeNull();
+      expect(screen.queryByLabelText("Початок")).toBeNull();
+    });
+
+    it("новий сервер: підгрупи є, межі 22:00 і 08:00, обидва тумблери увімкнені", async () => {
+      meApiMock.getPreferences.mockResolvedValue(NEW_SERVER as never);
+      renderSettingsSection(<NotificationsSection />);
+
+      expect(
+        await screen.findByRole("switch", { name: "Тихі години" }),
+      ).toBeChecked();
+      expect(
+        await screen.findByRole("switch", { name: "Операції Monobank" }),
+      ).toBeChecked();
+      expect(screen.getByLabelText("Початок")).toHaveValue("22:00");
+      expect(screen.getByLabelText("Кінець")).toHaveValue("08:00");
+    });
+
+    it("межа, що збігається з другою, не зберігається і показує помилку", async () => {
+      meApiMock.getPreferences.mockResolvedValue(NEW_SERVER as never);
+      renderSettingsSection(<NotificationsSection />);
+      const start = await screen.findByLabelText("Початок");
+
+      fireEvent.change(start, { target: { value: "08:00" } });
+
+      expect(
+        await screen.findByText("Початок і кінець не можуть збігатися."),
+      ).toBeInTheDocument();
+      expect(meApiMock.updatePreferences).not.toHaveBeenCalled();
+      expect(start).toHaveValue("22:00");
+    });
+
+    it("нова межа зберігається на сервері хвилиною доби", async () => {
+      meApiMock.getPreferences.mockResolvedValue(NEW_SERVER as never);
+      meApiMock.updatePreferences.mockResolvedValue({
+        ...NEW_SERVER,
+        quietHoursStartMin: 1380,
+      } as never);
+      renderSettingsSection(<NotificationsSection />);
+      const start = await screen.findByLabelText("Початок");
+
+      fireEvent.change(start, { target: { value: "23:00" } });
+
+      await waitFor(() =>
+        expect(meApiMock.updatePreferences).toHaveBeenCalledWith({
+          quietHoursStartMin: 1380,
+        }),
+      );
+    });
+
+    it("вимкнені тихі години ховають межі", async () => {
+      meApiMock.getPreferences.mockResolvedValue({
+        ...NEW_SERVER,
+        quietHoursEnabled: false,
+      } as never);
+      renderSettingsSection(<NotificationsSection />);
+      expect(
+        await screen.findByRole("switch", { name: "Тихі години" }),
+      ).not.toBeChecked();
+      expect(screen.queryByLabelText("Початок")).toBeNull();
+    });
+
+    it("тумблер Monobank пише на сервер", async () => {
+      meApiMock.getPreferences.mockResolvedValue(NEW_SERVER as never);
+      meApiMock.updatePreferences.mockResolvedValue({
+        ...NEW_SERVER,
+        pushMonoTransactions: false,
+      } as never);
+      renderSettingsSection(<NotificationsSection />);
+
+      fireEvent.click(
+        await screen.findByRole("switch", { name: "Операції Monobank" }),
+      );
+
+      await waitFor(() =>
+        expect(meApiMock.updatePreferences).toHaveBeenCalledWith({
+          pushMonoTransactions: false,
+        }),
+      );
+    });
   });
 });

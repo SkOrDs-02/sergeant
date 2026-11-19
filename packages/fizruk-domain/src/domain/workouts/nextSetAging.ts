@@ -37,6 +37,13 @@ export interface NextSetAgingInput {
    * рівно як раніше: старіння лише від останньої сесії.
    */
   readonly sessions?: readonly OneRmSessionPoint[] | undefined;
+  /**
+   * ISO найпізнішого зняття позначки травми, що накривала цю вправу
+   * (`latestClearedInjuryAtForExercise`). Без нього 21-денний мʼякий режим
+   * після травми (E-5, ADR-0083) діяв лише на сторінці вправи, а підказка в
+   * тренуванні вже наступного дня після зняття піднімала вагу.
+   */
+  readonly injuryClearedAt?: string | null | undefined;
   readonly now?: Date | number | undefined;
   readonly staleAfterDays?: number | undefined;
 }
@@ -55,6 +62,7 @@ export function computeNextSetAging(input: NextSetAgingInput): NextSetAging {
     : 0;
   const shared = {
     lastSessionAt: input.lastSessionAt ?? null,
+    injuryClearedAt: input.injuryClearedAt ?? null,
     now: input.now,
     staleAfterDays: input.staleAfterDays,
   };

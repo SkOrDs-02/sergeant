@@ -136,6 +136,15 @@ describe("diffWorkoutsOps", () => {
     ]);
   });
 
+  it("emits an upsert when only programRef differs (П-10)", () => {
+    const prev = baseWorkout();
+    const next = baseWorkout({ programRef: { programId: "ppl", slot: 3 } });
+    expect(diffWorkoutsOps([prev], [next])).toEqual([
+      { kind: "workout-upsert", workout: next },
+    ]);
+    expect(diffWorkoutsOps([next], [baseWorkout({ ...next })])).toEqual([]);
+  });
+
   it("treats a missing kcalBurned and null as the same value", () => {
     const prev = baseWorkout();
     const next = baseWorkout({ kcalBurned: null });

@@ -18,6 +18,12 @@ const KEY = STORAGE_KEYS.FIZRUK_REST_SETTINGS;
 type MergedSettings = Record<keyof typeof REST_DEFAULTS, number>;
 type PersistedSettings = MergedSettings & {
   byExercise: Record<string, number>;
+  /**
+   * Фз-1 (OD-28): тримати екран увімкненим під час активної сесії. Живе
+   * поруч із пресетами відпочинку, бо це теж налаштування пристрою на час
+   * тренування. За замовчуванням увімкнено: тумблер існує, щоб вимкнути.
+   */
+  keepScreenOn: boolean;
 };
 
 /**
@@ -39,7 +45,11 @@ export function useRestSettings() {
           REST_DEFAULTS[k as keyof typeof REST_DEFAULTS],
       ]),
     ) as MergedSettings;
-    return { ...categories, byExercise: parsed.byExercise ?? {} };
+    return {
+      ...categories,
+      byExercise: parsed.byExercise ?? {},
+      keepScreenOn: parsed.keepScreenOn ?? true,
+    };
   });
 
   const persist = useCallback((next: PersistedSettings) => {
@@ -78,8 +88,17 @@ export function useRestSettings() {
     [persist, settings],
   );
 
+  const setKeepScreenOn = useCallback(
+    (on: boolean) => {
+      persist({ ...settings, keepScreenOn: on });
+    },
+    [persist, settings],
+  );
+
   return {
     settings,
+    keepScreenOn: settings.keepScreenOn,
+    setKeepScreenOn,
     updateSetting,
     getDefaultForGroup,
     getDefaultForExercise,

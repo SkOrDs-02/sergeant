@@ -1,9 +1,9 @@
 // @vitest-environment jsdom
 /**
- * Tests for `WorkoutItemTypeSwitcher` — the "Тип" segmented control
- * moved out of `WorkoutItemCard` into `ExerciseDetailSheet` in the
- * 2026-08 redesign (item 5). Mirrors the pre-redesign coverage that
- * used to live in `WorkoutItemCard.test.tsx` for the in-card Segmented.
+ * Tests for `WorkoutItemTypeSwitcher` — the "Тип" control in
+ * `ExerciseDetailSheet`. Шість типів «за виміром» (спека
+ * `fizruk-exercise-measure-type.md`, зріз 4): перемикач пише `measure` і
+ * похідний `type`, рядки підходів лишаються, сумісні поля зберігаються.
  */
 import { describe, it, expect, vi, afterEach } from "vitest";
 import { render, screen, cleanup, fireEvent } from "@testing-library/react";
@@ -12,58 +12,63 @@ import { WorkoutItemTypeSwitcher } from "./WorkoutItemTypeSwitcher";
 afterEach(cleanup);
 
 describe("WorkoutItemTypeSwitcher", () => {
-  it("switching to 'Час' calls onChange with a duration patch", () => {
-    const onChange = vi.fn();
-    render(
-      <WorkoutItemTypeSwitcher
-        item={{ type: "strength", sets: [{ weightKg: 50, reps: 8 }] }}
-        isReadOnly={false}
-        onChange={onChange}
-      />,
-    );
-    fireEvent.click(screen.getByRole("radio", { name: "Час: секунди" }));
-    expect(onChange).toHaveBeenCalledWith(
-      expect.objectContaining({ type: "time" }),
-    );
-  });
-
-  it("switching away from 'Силова' clears sets so old volume can't survive the merge", () => {
-    const onChange = vi.fn();
-    render(
-      <WorkoutItemTypeSwitcher
-        item={{ type: "strength", sets: [{ weightKg: 80, reps: 10 }] }}
-        isReadOnly={false}
-        onChange={onChange}
-      />,
-    );
-    fireEvent.click(screen.getByRole("radio", { name: "Час: секунди" }));
-    expect(onChange).toHaveBeenCalledWith(
-      expect.objectContaining({ type: "time", sets: undefined }),
-    );
-  });
-
-  it("switching to 'Дист' calls onChange with distanceM + durationSec", () => {
-    const onChange = vi.fn();
+  it("показує шість типів", () => {
     render(
       <WorkoutItemTypeSwitcher
         item={{ type: "strength", sets: [] }}
         isReadOnly={false}
+        onChange={vi.fn()}
+      />,
+    );
+    expect(screen.getAllByRole("radio")).toHaveLength(6);
+    expect(
+      screen.getByRole("radio", { name: "Вага × повтори" }),
+    ).toHaveAttribute("aria-checked", "true");
+  });
+
+  it("«Час» пише measure і type, рядки лишаються, повтори зникають", () => {
+    const onChange = vi.fn();
+    const onMeasureChosen = vi.fn();
+    render(
+      <WorkoutItemTypeSwitcher
+        item={{ type: "strength", sets: [{ weightKg: 50, reps: 0 }] }}
+        isReadOnly={false}
+        onChange={onChange}
+        onMeasureChosen={onMeasureChosen}
+      />,
+    );
+    fireEvent.click(screen.getByRole("radio", { name: "Час: секунди" }));
+    expect(onChange).toHaveBeenCalledWith(
+      expect.objectContaining({
+        measure: "time",
+        type: "time",
+        sets: [{ weightKg: 0, reps: 0 }],
+        durationSec: 0,
+        distanceM: undefined,
+      }),
+    );
+    expect(onMeasureChosen).toHaveBeenCalledWith("time");
+  });
+
+  it("«Вага × час» зберігає вагу, введену до першого підходу", () => {
+    const onChange = vi.fn();
+    render(
+      <WorkoutItemTypeSwitcher
+        item={{ type: "strength", sets: [{ weightKg: 24, reps: 0 }] }}
+        isReadOnly={false}
         onChange={onChange}
       />,
     );
-    fireEvent.click(
-      screen.getByRole("radio", { name: "Дистанція: метри та час" }),
-    );
+    fireEvent.click(screen.getByRole("radio", { name: "Вага × час" }));
     expect(onChange).toHaveBeenCalledWith(
       expect.objectContaining({
-        type: "distance",
-        distanceM: 0,
-        durationSec: 0,
+        measure: "weight_time",
+        sets: [{ weightKg: 24, reps: 0 }],
       }),
     );
   });
 
-  it("switching to 'Силова' seeds an empty set when there were none", () => {
+  it("старий item часу із сумою → один рядок із цими секундами", () => {
     const onChange = vi.fn();
     render(
       <WorkoutItemTypeSwitcher
@@ -72,13 +77,14 @@ describe("WorkoutItemTypeSwitcher", () => {
         onChange={onChange}
       />,
     );
-    fireEvent.click(
-      screen.getByRole("radio", { name: "Силова: кг × повтори × підходи" }),
+    fireEvent.click(screen.getByRole("radio", { name: "Дистанція × час" }));
+    expect(onChange).toHaveBeenCalledWith(
+      expect.objectContaining({
+        measure: "distance_time",
+        type: "distance",
+        sets: [{ weightKg: 0, reps: 0, durationSec: 30 }],
+      }),
     );
-    expect(onChange).toHaveBeenCalledWith({
-      type: "strength",
-      sets: [{ weightKg: 0, reps: 0 }],
-    });
   });
 
   it("blocks the control from both click and keyboard when read-only", () => {
@@ -91,9 +97,7 @@ describe("WorkoutItemTypeSwitcher", () => {
       />,
     );
     const timeTab = screen.getByRole("radio", { name: "Час: секунди" });
-    const activeTab = screen.getByRole("radio", {
-      name: "Силова: кг × повтори × підходи",
-    });
+    const activeTab = screen.getByRole("radio", { name: "Вага × повтори" });
 
     fireEvent.click(timeTab);
     expect(onChange).not.toHaveBeenCalled();
@@ -104,18 +108,5 @@ describe("WorkoutItemTypeSwitcher", () => {
 
     expect(activeTab).toBeDisabled();
     expect(timeTab).toBeDisabled();
-  });
-
-  it("keeps a non-read-only tab in the normal roving-tabindex order", () => {
-    render(
-      <WorkoutItemTypeSwitcher
-        item={{ type: "strength", sets: [] }}
-        isReadOnly={false}
-        onChange={vi.fn()}
-      />,
-    );
-    expect(
-      screen.getByRole("radio", { name: "Силова: кг × повтори × підходи" }),
-    ).toBeEnabled();
   });
 });

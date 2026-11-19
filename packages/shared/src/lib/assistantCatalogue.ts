@@ -39,6 +39,14 @@ export interface AssistantCapability {
   label: string;
   /** Short label for mobile chip-strip. Falls back to `label` if absent. */
   shortLabel?: string;
+  /**
+   * Що Сержант робить, поки клієнт виконує цей інструмент: 1-ша особа,
+   * теперішній час («Шукаю операцію»). Показується в бульбашці очікування
+   * чату лише на час реального виконання (С-1 (б), рішення власника
+   * 2026-11-18). Є в кожного запису з інструментом, немає в prompt-only.
+   * У системний промпт не йде, тож кеш префікса й касети tool-eval не чіпає.
+   */
+  progressLabel?: string;
   /** Icon name from `@shared/components/ui/Icon`. */
   icon: string;
 
@@ -134,6 +142,7 @@ export const ASSISTANT_CAPABILITIES: readonly AssistantCapability[] = [
     id: "create_transaction",
     module: "finyk",
     label: "Записати витрату або дохід",
+    progressLabel: "Записую операцію",
     shortLabel: "Витрата",
     icon: "credit-card",
     description: "Швидкий запис витрати або доходу готівкою / карткою.",
@@ -155,6 +164,7 @@ export const ASSISTANT_CAPABILITIES: readonly AssistantCapability[] = [
     id: "change_category",
     module: "finyk",
     label: "Змінити категорію",
+    progressLabel: "Змінюю категорію",
     icon: "tag",
     description: "Перенести існуючу операцію в іншу категорію.",
     examples: [
@@ -173,6 +183,7 @@ export const ASSISTANT_CAPABILITIES: readonly AssistantCapability[] = [
     id: "find_transaction",
     module: "finyk",
     label: "Знайти операцію",
+    progressLabel: "Шукаю операцію",
     icon: "search",
     description:
       "Пошук операції за описом, мерчантом, сумою або датою. Не змінює дані.",
@@ -190,6 +201,7 @@ export const ASSISTANT_CAPABILITIES: readonly AssistantCapability[] = [
     id: "batch_categorize",
     module: "finyk",
     label: "Категоризувати масово",
+    progressLabel: "Змінюю категорії операцій",
     icon: "tags",
     description:
       "Перенести багато операцій в одну категорію за патерном. Спочатку показує preview (dry_run), застосовує лише після підтвердження.",
@@ -211,6 +223,7 @@ export const ASSISTANT_CAPABILITIES: readonly AssistantCapability[] = [
     id: "hide_transaction",
     module: "finyk",
     label: "Приховати операцію",
+    progressLabel: "Приховую операцію",
     icon: "eye-off",
     description: "Прибрати операцію зі статистики (без видалення).",
     examples: ["сховай операцію m_42 зі звіту"],
@@ -223,6 +236,7 @@ export const ASSISTANT_CAPABILITIES: readonly AssistantCapability[] = [
     id: "delete_transaction",
     module: "finyk",
     label: "Видалити операцію",
+    progressLabel: "Видаляю операцію",
     icon: "trash",
     description: "Видалити ручну операцію (m_*). Авто-операції не видаляються.",
     examples: ["видали останню операцію", "прибери m_42"],
@@ -236,6 +250,7 @@ export const ASSISTANT_CAPABILITIES: readonly AssistantCapability[] = [
     id: "create_debt",
     module: "finyk",
     label: "Створити борг",
+    progressLabel: "Записую борг",
     icon: "arrow-up-right",
     description: "Записати, що ти комусь винен.",
     examples: ["я винен Олегу 500 грн", "створи борг Тарас 1200 до 1 травня"],
@@ -247,6 +262,7 @@ export const ASSISTANT_CAPABILITIES: readonly AssistantCapability[] = [
     id: "create_receivable",
     module: "finyk",
     label: "Записати дебіторку",
+    progressLabel: "Записую дебіторку",
     icon: "arrow-down-left",
     description: "Записати, що тобі хтось винен.",
     examples: ["мені винен Олег 500 грн", "Іра має повернути 800"],
@@ -258,6 +274,7 @@ export const ASSISTANT_CAPABILITIES: readonly AssistantCapability[] = [
     id: "mark_debt_paid",
     module: "finyk",
     label: "Погасити борг",
+    progressLabel: "Записую погашення боргу",
     icon: "check",
     description: "Позначити борг або дебіторку як погашену.",
     examples: ["оплатив борг Олегу", "Іра повернула 800"],
@@ -285,6 +302,7 @@ export const ASSISTANT_CAPABILITIES: readonly AssistantCapability[] = [
     id: "set_budget_limit",
     module: "finyk",
     label: "Встановити ліміт",
+    progressLabel: "Ставлю ліміт",
     icon: "target",
     description: "Створити або змінити місячний ліміт для категорії.",
     examples: ["встанови ліміт на їжу 3000 грн", "ліміт на розваги 1500"],
@@ -300,6 +318,7 @@ export const ASSISTANT_CAPABILITIES: readonly AssistantCapability[] = [
     id: "update_budget",
     module: "finyk",
     label: "Оновити бюджет або ціль",
+    progressLabel: "Оновлюю бюджет",
     icon: "refresh-cw",
     description: "Змінити вже існуючий ліміт або ціль заощаджень.",
     examples: [
@@ -319,6 +338,7 @@ export const ASSISTANT_CAPABILITIES: readonly AssistantCapability[] = [
     id: "set_monthly_plan",
     module: "finyk",
     label: "Фінплан на місяць",
+    progressLabel: "Оновлюю фінплан",
     icon: "clipboard",
     description: "Встановити плановий дохід / витрати / заощадження.",
     examples: [
@@ -337,6 +357,7 @@ export const ASSISTANT_CAPABILITIES: readonly AssistantCapability[] = [
     id: "add_asset",
     module: "finyk",
     label: "Додати актив",
+    progressLabel: "Додаю актив",
     icon: "package",
     description: "Записати актив (депозит, готівка, інвестиція).",
     examples: ["додай актив Депозит 50000", "запиши готівку 10000 USD"],
@@ -348,6 +369,7 @@ export const ASSISTANT_CAPABILITIES: readonly AssistantCapability[] = [
     id: "import_monobank_range",
     module: "finyk",
     label: "Імпорт Monobank",
+    progressLabel: "Імпортую операції Monobank",
     icon: "download",
     description: "Завантажити операції Monobank за діапазон дат.",
     examples: ["завантаж операції за квітень", "імпорт з 1 по 15 травня"],
@@ -360,6 +382,7 @@ export const ASSISTANT_CAPABILITIES: readonly AssistantCapability[] = [
     id: "split_transaction",
     module: "finyk",
     label: "Розділити операцію",
+    progressLabel: "Розділяю операцію",
     icon: "scissors",
     description: "Розбити одну покупку на кілька категорій.",
     examples: ["розділи покупку: 200 їжа, 100 побут"],
@@ -371,6 +394,7 @@ export const ASSISTANT_CAPABILITIES: readonly AssistantCapability[] = [
     id: "recurring_expense",
     module: "finyk",
     label: "Підписка / регулярний платіж",
+    progressLabel: "Записую регулярний платіж",
     icon: "repeat",
     description: "Додати щомісячний автоматичний платіж.",
     examples: ["додай підписку Спортзал 500 грн 1-го числа"],
@@ -382,6 +406,7 @@ export const ASSISTANT_CAPABILITIES: readonly AssistantCapability[] = [
     id: "export_report",
     module: "finyk",
     label: "Звіт по фінансах",
+    progressLabel: "Готую звіт по фінансах",
     icon: "file-text",
     description: "Згенерувати звіт за тиждень / місяць / період.",
     examples: ["зроби звіт за тиждень", "експортуй квітень в PDF"],
@@ -393,6 +418,7 @@ export const ASSISTANT_CAPABILITIES: readonly AssistantCapability[] = [
     id: "query_transactions",
     module: "finyk",
     label: "Запит по операціях",
+    progressLabel: "Шукаю операції",
     shortLabel: "Запит",
     icon: "search",
     description:
@@ -412,6 +438,7 @@ export const ASSISTANT_CAPABILITIES: readonly AssistantCapability[] = [
     id: "aggregate_spending",
     module: "finyk",
     label: "Агрегувати витрати",
+    progressLabel: "Рахую витрати",
     shortLabel: "Агрегація",
     icon: "pie-chart",
     description:
@@ -431,6 +458,7 @@ export const ASSISTANT_CAPABILITIES: readonly AssistantCapability[] = [
     id: "compare_periods",
     module: "finyk",
     label: "Порівняти періоди",
+    progressLabel: "Порівнюю періоди",
     shortLabel: "Періоди",
     icon: "bar-chart",
     description:
@@ -452,6 +480,7 @@ export const ASSISTANT_CAPABILITIES: readonly AssistantCapability[] = [
     id: "start_workout",
     module: "fizruk",
     label: "Почати тренування",
+    progressLabel: "Починаю тренування",
     shortLabel: "Тренування",
     icon: "dumbbell",
     description: "Стартувати сесію за програмою на сьогодні.",
@@ -467,6 +496,7 @@ export const ASSISTANT_CAPABILITIES: readonly AssistantCapability[] = [
     id: "log_set",
     module: "fizruk",
     label: "Додати підхід",
+    progressLabel: "Записую підхід",
     shortLabel: "Підхід",
     icon: "plus",
     description: "Записати вагу і повторення для вправи.",
@@ -481,6 +511,7 @@ export const ASSISTANT_CAPABILITIES: readonly AssistantCapability[] = [
     id: "finish_workout",
     module: "fizruk",
     label: "Завершити тренування",
+    progressLabel: "Завершую тренування",
     icon: "check-circle",
     description: "Завершити поточну тренувальну сесію.",
     examples: ["заверши тренування", "все, я закінчив"],
@@ -492,6 +523,7 @@ export const ASSISTANT_CAPABILITIES: readonly AssistantCapability[] = [
     id: "plan_workout",
     module: "fizruk",
     label: "Запланувати тренування",
+    progressLabel: "Планую тренування",
     icon: "calendar-plus",
     description: "Поставити тренування на майбутню дату.",
     examples: ["заплануй ноги на завтра", "груди в пʼятницю"],
@@ -500,20 +532,10 @@ export const ASSISTANT_CAPABILITIES: readonly AssistantCapability[] = [
     requiresOnline: true,
   },
   {
-    id: "add_program_day",
-    module: "fizruk",
-    label: "Додати день у програму",
-    icon: "list",
-    description: "Заповнити день тижня в програмі.",
-    examples: ["додай пн: груди + трицепс", "вт: спина і біцепс"],
-    prompt: "Додай день у програму: ",
-    requiresInput: true,
-    requiresOnline: true,
-  },
-  {
     id: "log_measurement",
     module: "fizruk",
     label: "Заміри тіла",
+    progressLabel: "Записую заміри",
     icon: "ruler",
     description: "Записати замір (біцепс, талія, груди тощо).",
     examples: ["запиши біцепс 37", "талія 78 см"],
@@ -525,6 +547,7 @@ export const ASSISTANT_CAPABILITIES: readonly AssistantCapability[] = [
     id: "log_weight",
     module: "fizruk",
     label: "Записати вагу",
+    progressLabel: "Записую вагу",
     icon: "scale",
     description: "Зафіксувати поточну вагу тіла.",
     examples: ["запиши вагу 78 кг", "вага 80.5"],
@@ -536,6 +559,7 @@ export const ASSISTANT_CAPABILITIES: readonly AssistantCapability[] = [
     id: "log_wellbeing",
     module: "fizruk",
     label: "Самопочуття",
+    progressLabel: "Записую самопочуття",
     icon: "heart",
     description: "Сон, енергія, настрій: щоденні маркери.",
     examples: ["сон 7 год, енергія 4, настрій 5"],
@@ -547,6 +571,7 @@ export const ASSISTANT_CAPABILITIES: readonly AssistantCapability[] = [
     id: "suggest_workout",
     module: "fizruk",
     label: "Порада про тренування",
+    progressLabel: "Підбираю тренування",
     icon: "lightbulb",
     description: "Запропонувати тренування на сьогодні.",
     examples: ["порадь що тренувати сьогодні"],
@@ -558,6 +583,7 @@ export const ASSISTANT_CAPABILITIES: readonly AssistantCapability[] = [
     id: "copy_workout",
     module: "fizruk",
     label: "Повторити минуле тренування",
+    progressLabel: "Копіюю тренування",
     icon: "copy",
     description: "Скопіювати тренування з попереднього дня.",
     examples: ["повтори вчорашнє тренування"],
@@ -569,6 +595,7 @@ export const ASSISTANT_CAPABILITIES: readonly AssistantCapability[] = [
     id: "compare_progress",
     module: "fizruk",
     label: "Прогрес у вправі",
+    progressLabel: "Порівнюю прогрес у вправі",
     icon: "trending-up",
     description: "Порівняти результат у вправі за період.",
     examples: ["як змінився мій жим за місяць", "прогрес у присіді за 3 міс"],
@@ -580,6 +607,7 @@ export const ASSISTANT_CAPABILITIES: readonly AssistantCapability[] = [
     id: "query_workouts",
     module: "fizruk",
     label: "Запит по тренуваннях",
+    progressLabel: "Шукаю тренування",
     shortLabel: "Тренування",
     icon: "list",
     description:
@@ -599,6 +627,7 @@ export const ASSISTANT_CAPABILITIES: readonly AssistantCapability[] = [
     id: "exercise_progress",
     module: "fizruk",
     label: "Динаміка вправи",
+    progressLabel: "Дивлюсь динаміку вправи",
     shortLabel: "Динаміка",
     icon: "trending-up",
     description:
@@ -618,6 +647,7 @@ export const ASSISTANT_CAPABILITIES: readonly AssistantCapability[] = [
     id: "training_stats",
     module: "fizruk",
     label: "Статистика тренувань",
+    progressLabel: "Рахую статистику тренувань",
     shortLabel: "Статистика",
     icon: "bar-chart-2",
     description:
@@ -639,6 +669,7 @@ export const ASSISTANT_CAPABILITIES: readonly AssistantCapability[] = [
     id: "mark_habit_done",
     module: "routine",
     label: "Позначити звичку",
+    progressLabel: "Відмічаю звичку",
     shortLabel: "Звичка",
     icon: "check",
     description: "Відмітити звичку виконаною на сьогодні.",
@@ -653,6 +684,7 @@ export const ASSISTANT_CAPABILITIES: readonly AssistantCapability[] = [
     id: "complete_habit_for_date",
     module: "routine",
     label: "Звичка за конкретний день",
+    progressLabel: "Відмічаю звичку",
     icon: "calendar-check",
     description: "Поставити галочку звичці на минулий або майбутній день.",
     examples: ["познач воду за вчора", "виконав медитацію 1 травня"],
@@ -664,6 +696,7 @@ export const ASSISTANT_CAPABILITIES: readonly AssistantCapability[] = [
     id: "create_habit",
     module: "routine",
     label: "Створити звичку",
+    progressLabel: "Створюю звичку",
     icon: "plus-circle",
     description: "Додати нову щоденну або періодичну звичку.",
     examples: ["додай звичку пити воду щодня", "створи звичку медитація 10 хв"],
@@ -675,6 +708,7 @@ export const ASSISTANT_CAPABILITIES: readonly AssistantCapability[] = [
     id: "create_reminder",
     module: "routine",
     label: "Поставити нагадування",
+    progressLabel: "Ставлю нагадування",
     icon: "bell",
     description: "Додати push-нагадування о визначеному часі.",
     examples: ["постав нагадування о 8:00", "нагадай випити воду о 14:00"],
@@ -686,6 +720,7 @@ export const ASSISTANT_CAPABILITIES: readonly AssistantCapability[] = [
     id: "edit_habit",
     module: "routine",
     label: "Редагувати звичку",
+    progressLabel: "Змінюю звичку",
     icon: "edit",
     description: "Змінити назву, періодичність або опис звички.",
     examples: ["зміни назву звички 'Вода' на 'Питво'"],
@@ -697,6 +732,7 @@ export const ASSISTANT_CAPABILITIES: readonly AssistantCapability[] = [
     id: "set_habit_schedule",
     module: "routine",
     label: "Дні тижня для звички",
+    progressLabel: "Змінюю розклад звички",
     shortLabel: "Розклад",
     icon: "calendar",
     description:
@@ -716,6 +752,7 @@ export const ASSISTANT_CAPABILITIES: readonly AssistantCapability[] = [
     id: "pause_habit",
     module: "routine",
     label: "Поставити звичку на паузу",
+    progressLabel: "Ставлю звичку на паузу",
     shortLabel: "Пауза",
     icon: "pause-circle",
     description:
@@ -735,6 +772,7 @@ export const ASSISTANT_CAPABILITIES: readonly AssistantCapability[] = [
     id: "archive_habit",
     module: "routine",
     label: "Архівувати звичку",
+    progressLabel: "Архівую звичку",
     icon: "archive",
     description: "Прибрати звичку з активного списку.",
     examples: ["заархівуй звичку 'Вода'"],
@@ -747,6 +785,7 @@ export const ASSISTANT_CAPABILITIES: readonly AssistantCapability[] = [
     id: "reorder_habits",
     module: "routine",
     label: "Порядок звичок",
+    progressLabel: "Змінюю порядок звичок",
     icon: "move",
     description: "Перевпорядкувати звички у списку.",
     examples: ["переміщуй вода вище медитації"],
@@ -758,6 +797,7 @@ export const ASSISTANT_CAPABILITIES: readonly AssistantCapability[] = [
     id: "habit_stats",
     module: "routine",
     label: "Статистика звички",
+    progressLabel: "Рахую статистику звички",
     icon: "bar-chart-2",
     description: "Streak, відсоток виконання, графік за період.",
     examples: ["покажи статистику звички вода", "streak медитації"],
@@ -769,6 +809,7 @@ export const ASSISTANT_CAPABILITIES: readonly AssistantCapability[] = [
     id: "query_habits",
     module: "routine",
     label: "Запит по звичці",
+    progressLabel: "Шукаю відмітки звички",
     shortLabel: "Звичка",
     icon: "bar-chart-2",
     description:
@@ -788,6 +829,7 @@ export const ASSISTANT_CAPABILITIES: readonly AssistantCapability[] = [
     id: "habit_correlation",
     module: "routine",
     label: "Кореляція звички",
+    progressLabel: "Рахую звʼязок звички",
     shortLabel: "Кореляція",
     icon: "activity",
     description:
@@ -823,6 +865,7 @@ export const ASSISTANT_CAPABILITIES: readonly AssistantCapability[] = [
     id: "add_calendar_event",
     module: "routine",
     label: "Додати подію",
+    progressLabel: "Додаю подію",
     icon: "calendar",
     description: "Зафіксувати подію в календарі (ДН, зустріч, дедлайн).",
     examples: [
@@ -839,6 +882,7 @@ export const ASSISTANT_CAPABILITIES: readonly AssistantCapability[] = [
     id: "log_meal",
     module: "nutrition",
     label: "Залогати їжу",
+    progressLabel: "Записую їжу",
     shortLabel: "Їжа",
     icon: "utensils",
     description: "Записати страву з калоріями і макросами.",
@@ -853,6 +897,7 @@ export const ASSISTANT_CAPABILITIES: readonly AssistantCapability[] = [
     id: "log_water",
     module: "nutrition",
     label: "Випив воду",
+    progressLabel: "Записую воду",
     icon: "droplet",
     description: "Записати спожиту воду.",
     examples: ["випив 500 мл води", "0.3 л води"],
@@ -864,6 +909,7 @@ export const ASSISTANT_CAPABILITIES: readonly AssistantCapability[] = [
     id: "set_daily_plan",
     module: "nutrition",
     label: "Денна ціль",
+    progressLabel: "Оновлюю денну ціль",
     icon: "target",
     description: "Встановити цілі по калоріях, білку, жирах, вуглеводах.",
     examples: ["встанови ціль 2000 ккал, 120г білка"],
@@ -875,6 +921,7 @@ export const ASSISTANT_CAPABILITIES: readonly AssistantCapability[] = [
     id: "suggest_meal",
     module: "nutrition",
     label: "Що зʼїсти зараз",
+    progressLabel: "Підбираю, що зʼїсти",
     icon: "lightbulb",
     description: "Порада що приготувати під поточний macro-баланс.",
     examples: ["що зʼїсти щоб добити білок", "поради на вечерю"],
@@ -889,6 +936,7 @@ export const ASSISTANT_CAPABILITIES: readonly AssistantCapability[] = [
     id: "add_recipe",
     module: "nutrition",
     label: "Зберегти рецепт",
+    progressLabel: "Зберігаю рецепт",
     icon: "book-open",
     description: "Зберегти страву як шаблон для повторного використання.",
     examples: ["збережи рецепт омлету з 3 яєць"],
@@ -900,6 +948,7 @@ export const ASSISTANT_CAPABILITIES: readonly AssistantCapability[] = [
     id: "add_to_shopping_list",
     module: "nutrition",
     label: "У список покупок",
+    progressLabel: "Додаю в список покупок",
     icon: "shopping-cart",
     description: "Додати продукт у список покупок.",
     examples: ["додай молоко в список", "купити: яйця, хліб, кава"],
@@ -911,6 +960,7 @@ export const ASSISTANT_CAPABILITIES: readonly AssistantCapability[] = [
     id: "consume_from_pantry",
     module: "nutrition",
     label: "Прибрати з комори",
+    progressLabel: "Оновлюю комору",
     icon: "minus-circle",
     description: "Списати продукт з домашньої комори.",
     examples: ["прибери яйця з комори", "використав 200г сиру"],
@@ -922,6 +972,7 @@ export const ASSISTANT_CAPABILITIES: readonly AssistantCapability[] = [
     id: "clear_pantry",
     module: "nutrition",
     label: "Очистити комору",
+    progressLabel: "Очищаю комору",
     icon: "trash",
     description: "Прибрати всі продукти з активної комори.",
     examples: ["видали все з комори", "очисти комору"],
@@ -934,6 +985,7 @@ export const ASSISTANT_CAPABILITIES: readonly AssistantCapability[] = [
     id: "copy_meal_from_date",
     module: "nutrition",
     label: "Повторити їжу",
+    progressLabel: "Копіюю прийоми їжі",
     icon: "copy",
     description: "Скопіювати прийом їжі з минулого дня.",
     examples: ["запиши те саме що вчора на обід"],
@@ -945,6 +997,7 @@ export const ASSISTANT_CAPABILITIES: readonly AssistantCapability[] = [
     id: "plan_meals_for_day",
     module: "nutrition",
     label: "Меню на день",
+    progressLabel: "Складаю меню на день",
     icon: "clipboard-list",
     description: "Скласти план харчування на день під ціль.",
     examples: ["склади меню на 2000 ккал", "план на сьогодні з 120г білка"],
@@ -956,6 +1009,7 @@ export const ASSISTANT_CAPABILITIES: readonly AssistantCapability[] = [
     id: "query_nutrition",
     module: "nutrition",
     label: "Запит по їжі",
+    progressLabel: "Шукаю записи їжі",
     shortLabel: "Їжа",
     icon: "search",
     description:
@@ -975,6 +1029,7 @@ export const ASSISTANT_CAPABILITIES: readonly AssistantCapability[] = [
     id: "nutrition_averages",
     module: "nutrition",
     label: "Середнє харчування",
+    progressLabel: "Рахую середнє харчування",
     shortLabel: "Середнє",
     icon: "bar-chart",
     description:
@@ -996,6 +1051,7 @@ export const ASSISTANT_CAPABILITIES: readonly AssistantCapability[] = [
     id: "morning_briefing",
     module: "cross",
     label: "Ранковий брифінг",
+    progressLabel: "Збираю брифінг",
     shortLabel: "Брифінг",
     icon: "sun",
     description: "Огляд планів і пріоритетів на сьогодні.",
@@ -1027,6 +1083,7 @@ export const ASSISTANT_CAPABILITIES: readonly AssistantCapability[] = [
     id: "weekly_summary",
     module: "cross",
     label: "Підсумок тижня",
+    progressLabel: "Збираю підсумок тижня",
     icon: "calendar",
     description: "Звіт по всіх 4 модулях за тиждень.",
     examples: ["підсумуй тиждень", "тижневий звіт"],
@@ -1040,6 +1097,7 @@ export const ASSISTANT_CAPABILITIES: readonly AssistantCapability[] = [
     id: "compare_weeks",
     module: "cross",
     label: "Порівняти тижні",
+    progressLabel: "Порівнюю тижні",
     shortLabel: "Тижні",
     icon: "bar-chart",
     description:
@@ -1061,12 +1119,10 @@ export const ASSISTANT_CAPABILITIES: readonly AssistantCapability[] = [
     id: "set_goal",
     module: "cross",
     label: "Поставити ціль",
+    progressLabel: "Зберігаю норму калорій",
     icon: "flag",
-    description: "Зафіксувати велику ціль (схуднути, заробити, почати).",
-    examples: [
-      "хочу схуднути на 5 кг за 2 місяці",
-      "ціль: заощадити 30000 до літа",
-    ],
+    description: "Зберегти денну норму калорій у Харчуванні.",
+    examples: ["ціль: 2200 ккал на день", "став денну норму 1800 ккал"],
     prompt: "Поставити ціль: ",
     requiresInput: true,
     requiresOnline: true,
@@ -1077,6 +1133,7 @@ export const ASSISTANT_CAPABILITIES: readonly AssistantCapability[] = [
     id: "spending_trend",
     module: "analytics",
     label: "Тренд витрат",
+    progressLabel: "Рахую тренд витрат",
     icon: "trending-down",
     description: "Графік сумарних витрат за період.",
     examples: ["який тренд витрат за місяць", "витрати останні 3 міс"],
@@ -1088,6 +1145,7 @@ export const ASSISTANT_CAPABILITIES: readonly AssistantCapability[] = [
     id: "category_breakdown",
     module: "analytics",
     label: "Розбивка по категоріях",
+    progressLabel: "Рахую витрати за категоріями",
     icon: "pie-chart",
     description: "Розкласти витрати на категорії pie-chart-ом.",
     examples: ["розбий витрати по категоріях", "топ категорії квітня"],
@@ -1099,6 +1157,7 @@ export const ASSISTANT_CAPABILITIES: readonly AssistantCapability[] = [
     id: "weight_chart",
     module: "analytics",
     label: "Графік ваги",
+    progressLabel: "Дивлюсь динаміку ваги",
     icon: "trending-up",
     description: "Динаміка ваги тіла за період.",
     examples: ["покажи вагу за 3 місяці", "графік ваги з січня"],
@@ -1110,6 +1169,7 @@ export const ASSISTANT_CAPABILITIES: readonly AssistantCapability[] = [
     id: "habit_trend",
     module: "analytics",
     label: "Тренд звичок",
+    progressLabel: "Рахую тренд звичок",
     icon: "activity",
     description:
       "Скільки звичок виконано за тиждень / місяць; де провалено streak.",
@@ -1123,6 +1183,7 @@ export const ASSISTANT_CAPABILITIES: readonly AssistantCapability[] = [
     id: "detect_anomalies",
     module: "analytics",
     label: "Аномалії",
+    progressLabel: "Шукаю незвичні дні",
     icon: "alert-triangle",
     description: "Знайти нетипові витрати, пропуски, скачки ваги.",
     examples: ["знайди аномалії за місяць", "що дивне в моїх витратах"],
@@ -1134,6 +1195,7 @@ export const ASSISTANT_CAPABILITIES: readonly AssistantCapability[] = [
     id: "get_daily_series",
     module: "analytics",
     label: "Звʼязки між метриками",
+    progressLabel: "Збираю дані по днях",
     shortLabel: "Кореляції",
     icon: "activity",
     description:
@@ -1154,6 +1216,7 @@ export const ASSISTANT_CAPABILITIES: readonly AssistantCapability[] = [
     id: "calculate_1rm",
     module: "utility",
     label: "1RM калькулятор",
+    progressLabel: "Рахую 1RM",
     icon: "calculator",
     description: "Порахувати максимум на 1 повторення з робочого підходу.",
     examples: ["1rm з жиму 80 на 8", "максимум присіду з 100 на 5"],
@@ -1165,6 +1228,7 @@ export const ASSISTANT_CAPABILITIES: readonly AssistantCapability[] = [
     id: "convert_units",
     module: "utility",
     label: "Конвертер одиниць",
+    progressLabel: "Перераховую одиниці",
     icon: "shuffle",
     description: "Перевести грами / кг, кал / кДж, унції / мл.",
     examples: ["скільки 200 г у фунтах", "10 oz у грамах"],
@@ -1176,6 +1240,7 @@ export const ASSISTANT_CAPABILITIES: readonly AssistantCapability[] = [
     id: "save_note",
     module: "utility",
     label: "Зберегти нотатку",
+    progressLabel: "Зберігаю нотатку",
     icon: "bookmark",
     description: "Швидкий нотес поза модулями.",
     examples: ["запиши: лікар у вівторок 10:00"],
@@ -1187,6 +1252,7 @@ export const ASSISTANT_CAPABILITIES: readonly AssistantCapability[] = [
     id: "list_notes",
     module: "utility",
     label: "Мої нотатки",
+    progressLabel: "Дивлюсь нотатки",
     icon: "list",
     description: "Показати всі збережені нотатки.",
     examples: ["мої нотатки", "що я записував"],
@@ -1198,6 +1264,7 @@ export const ASSISTANT_CAPABILITIES: readonly AssistantCapability[] = [
     id: "export_module_data",
     module: "utility",
     label: "Експорт даних",
+    progressLabel: "Готую експорт даних",
     icon: "download",
     description: "Викачати дані модуля у CSV / JSON.",
     examples: ["експортуй дані Фініка в csv", "вивантаж тренування в json"],
@@ -1213,6 +1280,7 @@ export const ASSISTANT_CAPABILITIES: readonly AssistantCapability[] = [
     id: "remember",
     module: "memory",
     label: "Запамʼятати факт",
+    progressLabel: "Запамʼятовую",
     icon: "brain",
     description: "Зафіксувати інформацію про себе (алергії, цілі, обмеження).",
     examples: [
@@ -1230,6 +1298,7 @@ export const ASSISTANT_CAPABILITIES: readonly AssistantCapability[] = [
     id: "forget",
     module: "memory",
     label: "Забути факт",
+    progressLabel: "Видаляю факт з памʼяті",
     icon: "x-circle",
     description: "Прибрати факт з memory bank асистента.",
     examples: ["забудь що в мене алергія на горіхи", "видали факт про каву"],
@@ -1242,6 +1311,7 @@ export const ASSISTANT_CAPABILITIES: readonly AssistantCapability[] = [
     id: "my_profile",
     module: "memory",
     label: "Мій профіль",
+    progressLabel: "Дивлюсь профіль",
     icon: "user",
     description: "Показати все, що асистент про тебе знає.",
     examples: ["що ти про мене знаєш", "покажи мій профіль"],
@@ -1253,14 +1323,15 @@ export const ASSISTANT_CAPABILITIES: readonly AssistantCapability[] = [
     id: "recall_memory",
     module: "memory",
     label: "Пошук у памʼяті",
+    progressLabel: "Шукаю в памʼяті",
     shortLabel: "Згадати",
     icon: "search",
     description:
-      "Семантичний пошук по ai-memory bank-у: чат, харчування, тренування, фінанси, журнал. Знаходить схожі записи, навіть якщо формулювання інше.",
+      "Семантичний пошук по памʼяті асистента: тижневі дайджести і факти про тебе. Знаходить схожі записи, навіть якщо формулювання інше.",
     examples: [
-      "що я їв коли худнув",
-      "знайди мої тренування на витривалість",
-      "коли я скаржився на сон",
+      "що ти знаєш про мої цілі",
+      "нагадай підсумок минулого тижня",
+      "що я розповідав про сон",
     ],
     prompt: "Знайди в памʼяті: ",
     requiresInput: true,
@@ -1327,6 +1398,21 @@ export function getToolModule(toolName: string): CapabilityModule | "unknown" {
     (c) => getCapabilityServerTool(c) === toolName,
   );
   return hit?.module ?? "unknown";
+}
+
+/**
+ * Людський підпис кроку («Шукаю операцію») за іменем серверного інструмента,
+ * для бульбашки очікування чату під час виконання (С-1 (б)). Джерело той
+ * самий каталог, що й {@link getToolModule}, з тієї ж причини: другий
+ * словник «tool → підпис» розійшовся б із реєстром. Невідоме імʼя дає `null`:
+ * краще нейтральний підпис, ніж вигаданий крок.
+ */
+export function getToolProgressLabel(toolName: string): string | null {
+  if (!toolName) return null;
+  const hit = ASSISTANT_CAPABILITIES.find(
+    (c) => getCapabilityServerTool(c) === toolName && c.progressLabel,
+  );
+  return hit?.progressLabel ?? null;
 }
 
 /**

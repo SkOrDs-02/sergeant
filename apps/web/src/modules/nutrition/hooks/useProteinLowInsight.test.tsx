@@ -71,6 +71,8 @@ describe("useProteinLowInsight", () => {
     });
     expect(result.current?.title).toContain("30");
     expect(result.current?.title).toContain("120");
+    // Зйомка 2026-11-18: «з 120г» без пробілу перед одиницею.
+    expect(result.current?.title).toBe("Білку: 30 з 120\u00a0г");
     expect(result.current?.subtitle).toBe("Додати джерело білка");
   });
 

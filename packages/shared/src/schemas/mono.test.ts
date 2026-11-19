@@ -298,6 +298,26 @@ describe("MonoSyncStateSchema", () => {
     expect(parsed.accountsCount).toBe(2);
   });
 
+  it("connectedAt опційний: старий сервер його не віддає", () => {
+    const base = {
+      status: "active" as const,
+      webhookActive: true,
+      lastEventAt: null,
+      lastBackfillAt: null,
+      accountsCount: 1,
+    };
+    expect(MonoSyncStateSchema.parse(base).connectedAt).toBeUndefined();
+    expect(
+      MonoSyncStateSchema.parse({
+        ...base,
+        connectedAt: "2026-04-20T07:15:00.000Z",
+      }).connectedAt,
+    ).toBe("2026-04-20T07:15:00.000Z");
+    expect(
+      MonoSyncStateSchema.parse({ ...base, connectedAt: null }).connectedAt,
+    ).toBeNull();
+  });
+
   it("rejects a negative accountsCount", () => {
     expect(() =>
       MonoSyncStateSchema.parse({

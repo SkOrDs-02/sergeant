@@ -40,6 +40,7 @@ function renderList(
       isReadOnly={props.isReadOnly ?? false}
       lastByExerciseId={props.lastByExerciseId ?? {}}
       recBy={props.recBy ?? {}}
+      injurySites={new Set<never>()}
       onOpenItem={onOpenItem}
       onAddExercise={onAddExercise}
       selectMode={props.selectMode ?? false}

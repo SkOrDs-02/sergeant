@@ -47,7 +47,10 @@ vi.mock("../../lib/hubChatUtils", async () => {
 vi.mock("@shared/api", async () => {
   const actual =
     await vi.importActual<typeof import("@shared/api")>("@shared/api");
-  return { ...actual, chatApi: { send: sendMock, stream: streamMock } };
+  return {
+    ...actual,
+    chatApi: { send: sendMock, firstTurn: sendMock, stream: streamMock },
+  };
 });
 
 vi.mock("../useFinykHubPreview", () => ({
@@ -200,6 +203,47 @@ describe("useChatSend — undo toast for tool actions", () => {
     expect(typeof callArgs[1].onUndo).toBe("function");
   });
 
+  // Перевірка першої хвилі 2026-11-18: тост відкату показував результат
+  // виконавця дослівно, тобто з технічним id, який там лише для моделі.
+  it("тост відкату не показує технічний id операції", async () => {
+    sendMock.mockResolvedValue({
+      tool_calls: [
+        {
+          id: "tc1",
+          name: "change_category",
+          input: { tx_id: "m_84920a0a", category_id: "cafe" },
+        },
+      ],
+      tool_calls_raw: [{ id: "tc1" }],
+    });
+    executeActionsMock.mockResolvedValue([
+      {
+        name: "change_category",
+        result:
+          "Категорію операції «Кава» на 120 грн змінено на Кафе (id:m_84920a0a)",
+        undo: vi.fn(),
+      },
+    ]);
+    streamMock.mockResolvedValue(
+      new Response(JSON.stringify({ text: "Готово!" }), {
+        status: 200,
+        headers: { "content-type": "application/json" },
+      }),
+    );
+
+    const { result } = renderHook(
+      () => useChatSend({ messages: [], setMessages: vi.fn() }),
+      { wrapper: makeWrapper() },
+    );
+
+    await act(async () => {
+      await result.current.send("кава це кафе");
+    });
+
+    const msg = showUndoToastMock.mock.calls[0]![1].msg as string;
+    expect(msg).toBe("Категорію операції «Кава» на 120 грн змінено на Кафе");
+  });
+
   it("does NOT call showUndoToast for read-only handlers that have no undo", async () => {
     sendMock.mockResolvedValue({
       tool_calls: [
@@ -344,11 +388,11 @@ describe("useChatSend — TTS in tool-call path", () => {
   it("для інструмента без картки озвучує текстовий рядок", async () => {
     forceNoCard.on = true;
     sendMock.mockResolvedValue({
-      tool_calls: [{ id: "tc1", name: "add_program_day", input: {} }],
+      tool_calls: [{ id: "tc1", name: "log_wellbeing", input: {} }],
       tool_calls_raw: [{ id: "tc1" }],
     });
     executeActionsMock.mockResolvedValue([
-      { name: "add_program_day", result: "День програми додано" },
+      { name: "log_wellbeing", result: "День програми додано" },
     ]);
     streamMock.mockResolvedValue(
       new Response(JSON.stringify({ text: "" }), {
@@ -375,11 +419,11 @@ describe("useChatSend — TTS in tool-call path", () => {
   it("помилковий результат без картки не отримує «✓»", async () => {
     forceNoCard.on = true;
     sendMock.mockResolvedValue({
-      tool_calls: [{ id: "tc1", name: "add_program_day", input: {} }],
+      tool_calls: [{ id: "tc1", name: "log_wellbeing", input: {} }],
       tool_calls_raw: [{ id: "tc1" }],
     });
     executeActionsMock.mockResolvedValue([
-      { name: "add_program_day", result: "Помилка: програму не знайдено" },
+      { name: "log_wellbeing", result: "Помилка: програму не знайдено" },
     ]);
     streamMock.mockResolvedValue(
       new Response(JSON.stringify({ text: "" }), {

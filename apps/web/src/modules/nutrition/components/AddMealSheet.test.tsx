@@ -265,6 +265,26 @@ vi.mock("./meal-sheet/PhotoStep", () => ({
       >
         Зберегти в журнал (позиції)
       </button>
+      <button
+        type="button"
+        data-testid="apply-photo-empty"
+        onClick={() =>
+          onApply(
+            {
+              dishName: "Щось",
+              macros: {
+                kcal: null,
+                protein_g: null,
+                fat_g: null,
+                carbs_g: null,
+              },
+            },
+            null,
+          )
+        }
+      >
+        Зберегти в журнал (порожні)
+      </button>
     </div>
   ),
 }));
@@ -333,13 +353,18 @@ vi.mock("./meal-sheet/PickedFoodCard", () => ({
     pickedGrams,
     setPickedGrams,
     onChangeProduct,
+    getLastPortion,
   }: {
     pickedGrams: string;
     setPickedGrams: (v: string) => void;
     onChangeProduct: () => void;
+    getLastPortion?: (id: string) => unknown;
   }) => (
     <div data-testid="picked-food-card">
       <span data-testid="picked-grams">{pickedGrams}</span>
+      <span data-testid="last-portion">
+        {getLastPortion ? JSON.stringify(getLastPortion("food-1")) : "none"}
+      </span>
       {/* Справжня картка дає стерти й обнулити вагу (текстове поле на
           fine-pointer). Без цих кнопок мок показував вагу, але не давав
           її змінити — і шлях «нульова вага → збереження» був невидимий
@@ -397,6 +422,9 @@ const { stableFoodSearch, stableBarcodeLookup } = vi.hoisted(() => ({
     setScannerOpen: vi.fn(),
     handleBarcodeLookup: vi.fn(),
     handleBarcodeBind: vi.fn(),
+    bindMissedBarcode: vi.fn(),
+    pendingBarcodeBind: vi.fn((): string | null => null),
+    declineBarcodeBind: vi.fn(),
   },
 }));
 
@@ -901,6 +929,7 @@ describe("AddMealSheet — source step (with templates)", () => {
         expect.objectContaining({ id: "m1" }),
         null,
         "2026-05-09",
+        { multiRow: false, pantryTicket: null },
       );
     });
 
@@ -1722,5 +1751,92 @@ describe("AddMealSheet — чернетка під замком застосун
     view.unmount();
     commitStashedFormDrafts("u1");
     expect(draftKeys()).toHaveLength(0);
+  });
+});
+
+describe("AddMealSheet — хвиля 1 OD-27 (2026-11-18)", () => {
+  it("Х-1: картка продукту отримує вагу минулого запису", () => {
+    const getLastFoodPortion = vi.fn(() => ({
+      grams: 120,
+      date: "2026-11-15",
+    }));
+    renderSheet({ getLastFoodPortion });
+    fireEvent.click(screen.getByTestId("pick-food"));
+    expect(screen.getByTestId("last-portion").textContent).toBe(
+      JSON.stringify({ grams: 120, date: "2026-11-15" }),
+    );
+    expect(getLastFoodPortion).toHaveBeenCalledWith("food-1");
+  });
+
+  it("Х-2: «Зберегти в журнал» пише одразу з типом прийому аркуша", () => {
+    const onSave = vi.fn();
+    const onPhotoSave = vi.fn(() => true);
+    renderSheet({
+      onSave,
+      onPhotoSave,
+      initialStep: "photo",
+      initialMealType: "dinner",
+    });
+    fireEvent.click(screen.getByTestId("apply-photo-multi"));
+    expect(onPhotoSave).toHaveBeenCalledTimes(1);
+    const [photo, file] = onPhotoSave.mock.calls[0] as unknown as [
+      { meals: Array<{ name: string; mealType: string }>; title: string },
+      File | null,
+    ];
+    expect(photo.title).toBe("Борщ зі сметаною");
+    expect(photo.meals.map((m) => [m.name, m.mealType])).toEqual([
+      ["Борщ", "dinner"],
+      ["Сметана", "dinner"],
+    ]);
+    expect(file).toBeInstanceOf(File);
+    expect(onSave).not.toHaveBeenCalled();
+    expect(
+      screen.queryByRole("button", { name: "Додати прийом" }),
+    ).not.toBeInTheDocument();
+  });
+
+  it("Х-2: збій запису лишає аркуш на кроці фото, у журнал нічого", () => {
+    const onSave = vi.fn();
+    const onPhotoSave = vi.fn(() => false);
+    renderSheet({ onSave, onPhotoSave, initialStep: "photo" });
+    fireEvent.click(screen.getByTestId("apply-photo-multi"));
+    expect(onPhotoSave).toHaveBeenCalledTimes(1);
+    expect(onSave).not.toHaveBeenCalled();
+    expect(screen.getByTestId("photo-step")).toBeVisible();
+    expect(
+      screen.queryByRole("button", { name: "Додати прийом" }),
+    ).not.toBeInTheDocument();
+  });
+
+  it("Х-2: порожні КБЖВ ідуть старим шляхом через форму", () => {
+    const onPhotoSave = vi.fn(() => true);
+    renderSheet({ onPhotoSave, initialStep: "photo" });
+    fireEvent.click(screen.getByTestId("apply-photo-empty"));
+    expect(onPhotoSave).not.toHaveBeenCalled();
+    expect(
+      screen.getByRole("button", { name: "Додати прийом" }),
+    ).toBeInTheDocument();
+  });
+
+  it("Х-5: рядок привʼязки штрихкоду до свого продукту і «Скасувати»", () => {
+    stableBarcodeLookup.pendingBarcodeBind.mockReturnValue("4820024700016");
+    renderSheet();
+    fireEvent.click(screen.getByTestId("pick-food"));
+    expect(
+      screen.getByText(
+        "Штрихкод 4820024700016 запамʼятаю для цього продукту: наступний скан знайде його сам.",
+      ),
+    ).toBeInTheDocument();
+    fireEvent.click(
+      screen.getByRole("button", { name: "Скасувати привʼязку штрихкоду" }),
+    );
+    expect(stableBarcodeLookup.declineBarcodeBind).toHaveBeenCalled();
+    stableBarcodeLookup.pendingBarcodeBind.mockReturnValue(null);
+  });
+
+  it("Х-5: без незнайденого коду рядка немає", () => {
+    renderSheet();
+    fireEvent.click(screen.getByTestId("pick-food"));
+    expect(screen.queryByText(/запамʼятаю для цього продукту/)).toBeNull();
   });
 });

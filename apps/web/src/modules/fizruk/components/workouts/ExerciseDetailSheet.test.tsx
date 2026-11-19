@@ -11,7 +11,10 @@
 import { describe, it, expect, vi, afterEach } from "vitest";
 import { render, screen, fireEvent, cleanup } from "@testing-library/react";
 import { ExerciseDetailSheet } from "./ExerciseDetailSheet";
-import type { FizrukData } from "@sergeant/fizruk-domain";
+import {
+  recoveryConflictsForExercise,
+  type FizrukData,
+} from "@sergeant/fizruk-domain";
 
 afterEach(cleanup);
 
@@ -135,7 +138,7 @@ function baseProps(over: Partial<Record<string, unknown>> = {}) {
     },
     primaryGroupsUk: { chest: "Груди" },
     equipmentUk: { barbell: "Штанга" },
-    rec: { by: {} },
+    rec: { by: {}, injurySites: new Set<never>() },
     recoveryConflictsForExercise: noopRecovery as Parameters<
       typeof ExerciseDetailSheet
     >[0]["recoveryConflictsForExercise"],
@@ -335,6 +338,22 @@ describe("ExerciseDetailSheet – recovery warning", () => {
       />,
     );
     expect(screen.getByText(/Краще почекати/)).toBeInTheDocument();
+  });
+
+  it("показує біль, коли активна позначка накриває вправу (ADR-0083)", () => {
+    // Справжня доменна функція: дефект був у тому, що аркуш не передавав
+    // `rec.injurySites`, тож стаб із готовим `injury.blocked` його б не
+    // побачив. Плече — зона жиму лежачи, не мʼяз (E-4).
+    render(
+      <ExerciseDetailSheet
+        {...baseProps({
+          selected: makeExercise({ id: ILLUSTRATED_ID }),
+          recoveryConflictsForExercise,
+          rec: { by: {}, injurySites: new Set(["shoulder"]) },
+        })}
+      />,
+    );
+    expect(screen.getByText(/Ти позначив біль/)).toBeInTheDocument();
   });
 
   it("does not render warning block when hasWarning=false", () => {

@@ -6,7 +6,8 @@ import {
   type TagSummary,
 } from "@sergeant/finyk-domain/domain/tags";
 import { Button } from "@shared/components/ui/Button";
-import { Input } from "@shared/components/ui/Input";
+import { FIELD_LABEL, Input } from "@shared/components/ui/Input";
+import { cn } from "@shared/lib/ui/cn";
 import { messages } from "@shared/i18n/uk";
 
 const t = messages.finyk.tags;
@@ -20,10 +21,17 @@ export function TxTagsField({
   tags,
   known,
   onChange,
+  flush = false,
 }: {
   tags: readonly string[];
   known: readonly TagSummary[];
   onChange: (tags: readonly string[]) => void;
+  /**
+   * Підпис як у звичайного поля форми (`FIELD_LABEL`, без бічного відступу):
+   * у формі ручного запису «Теги» стоять над «Рахунок» і мусять з ним
+   * збігатися. Без прапорця — картковий вигляд аркуша деталей.
+   */
+  flush?: boolean;
 }) {
   const listId = useId();
   const labelId = useId();
@@ -38,7 +46,12 @@ export function TxTagsField({
 
   return (
     <section aria-labelledby={labelId} className="space-y-2">
-      <h3 id={labelId} className="px-2 text-style-label text-text">
+      <h3
+        id={labelId}
+        className={
+          flush ? cn(FIELD_LABEL, "mb-1") : "px-2 text-style-label text-text"
+        }
+      >
         {t.fieldLabel}
       </h3>
       {tags.length > 0 && (

@@ -3,8 +3,10 @@ import { useNavigate } from "react-router-dom";
 import { Button } from "@shared/components/ui/Button";
 import { Modal } from "@shared/components/ui/Modal";
 import { messages } from "@shared/i18n/uk";
+import { paywallManualAccessMessages as REQUEST_COPY } from "@shared/i18n/uk.manualPremium";
 import type { PaywallSurface } from "@sergeant/shared";
 import { ANALYTICS_EVENTS, trackEvent } from "../observability/analytics";
+import { useManualAccessRequest } from "./useManualAccessRequest";
 
 /**
  * Premium-gate modal (initiative 0010 Phase 4.1).
@@ -14,6 +16,11 @@ import { ANALYTICS_EVENTS, trackEvent } from "../observability/analytics";
  * once per open transition (PostHog dashboard
  * `paywall_viewed → checkout_opened → subscription_started` funnel).
  * Navigates to `/pricing?source=paywall` on primary CTA.
+ *
+ * Ручний Premium (спека `docs/work/specs/manual-premium-request.md`): коли
+ * знімок доступу каже `manualAccess.available`, головна дія – «Попросити
+ * доступ», а «Дивитися плани» стає другорядною поруч із «Закрити». Без поля
+ * чи з `available: false` футер такий, як був.
  *
  * Callers own the headline + body copy so the modal stays generic and
  * we can tune messaging per surface without forking the component.
@@ -69,6 +76,7 @@ export function PaywallModal({
 }: PaywallModalProps) {
   const navigate = useNavigate();
   const prevOpen = useRef(false);
+  const manual = useManualAccessRequest(surface);
 
   useEffect(() => {
     // Fire once per open false→true transition. Surface swaps while the
@@ -100,16 +108,52 @@ export function PaywallModal({
       // here. The CTA hover state is the single RESPONSE.
       panelClassName="bg-gradient-to-b from-brand/8 to-surface border-brand/20"
       footer={
-        <div className="flex flex-col-reverse sm:flex-row gap-2 sm:justify-end">
-          <Button variant="ghost" size="md" onClick={onClose}>
-            {dismissLabel}
-          </Button>
-          {/* Початковий фокус — на основній CTA, а не на «Закрити» в шапці:
-              інакше випадковий Enter/Space одразу закриває пейвол. */}
-          <Button variant="solid" size="md" onClick={handleCta} data-autofocus>
-            {ctaLabel}
-          </Button>
-        </div>
+        manual.available ? (
+          <div className="flex flex-col-reverse sm:flex-row gap-2 sm:justify-end">
+            <Button variant="ghost" size="md" onClick={onClose}>
+              {dismissLabel}
+            </Button>
+            {/* Після запиту основна кнопка неактивна, тож фокус переходить
+                на «Дивитися плани»: на disabled-кнопку він не стане. */}
+            <Button
+              variant="ghost"
+              size="md"
+              onClick={handleCta}
+              {...(manual.sent ? { "data-autofocus": true } : {})}
+            >
+              {ctaLabel}
+            </Button>
+            <Button
+              variant="solid"
+              size="md"
+              onClick={manual.request}
+              disabled={manual.sent || manual.busy}
+              {...(manual.sent ? {} : { "data-autofocus": true })}
+            >
+              {manual.sent
+                ? REQUEST_COPY.requestSent
+                : manual.busy
+                  ? REQUEST_COPY.requestBusy
+                  : REQUEST_COPY.requestCta}
+            </Button>
+          </div>
+        ) : (
+          <div className="flex flex-col-reverse sm:flex-row gap-2 sm:justify-end">
+            <Button variant="ghost" size="md" onClick={onClose}>
+              {dismissLabel}
+            </Button>
+            {/* Початковий фокус — на основній CTA, а не на «Закрити» в шапці:
+                інакше випадковий Enter/Space одразу закриває пейвол. */}
+            <Button
+              variant="solid"
+              size="md"
+              onClick={handleCta}
+              data-autofocus
+            >
+              {ctaLabel}
+            </Button>
+          </div>
+        )
       }
     >
       <ul className="space-y-2 text-style-label text-text">
@@ -122,6 +166,11 @@ export function PaywallModal({
           </li>
         ))}
       </ul>
+      {manual.available && manual.failed ? (
+        <p className="mt-3 text-style-label text-danger-strong" role="alert">
+          {REQUEST_COPY.requestFailed}
+        </p>
+      ) : null}
     </Modal>
   );
 }

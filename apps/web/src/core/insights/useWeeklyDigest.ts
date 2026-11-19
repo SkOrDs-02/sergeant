@@ -1,5 +1,12 @@
 import { useCallback } from "react";
-import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import {
+  useIsFetching,
+  useIsMutating,
+  useMutation,
+  useQuery,
+  useQueryClient,
+  type QueryClient,
+} from "@tanstack/react-query";
 import { logger } from "@shared/lib";
 import { coachApi, isApiError, weeklyDigestApi } from "@shared/api";
 import type { WeeklyDigestReport } from "@shared/api";
@@ -377,7 +384,7 @@ export function aggregateRoutine(weekKey: string): RoutineAggregate | null {
   const period = calcRoutinePeriodCompletion(habits, completions, weekDays, {
     pausedFrom: localDateKey(new Date()),
     // «Не зміг» з причиною виходить зі знаменника (канон routine.md §5,
-    // рішення власника 2026-11-18, METRICS_VERSION 20).
+    // рішення власника 2026-11-18, METRICS_VERSION 20; П-18 (А)).
     skips: state.skips ?? {},
   });
 
@@ -395,7 +402,21 @@ export function aggregateRoutine(weekKey: string): RoutineAggregate | null {
   };
 }
 
-async function generateWeeklyDigest(weekKey: string): Promise<{
+/**
+ * Змінні мутації генерації. `ifAbsent` шле лише автогенерація (С-3 (а),
+ * 2026-11-18): якщо звіт тижня вже згенерував інший пристрій, сервер віддає
+ * збережений без виклику моделі. Ручне «Оновити звіт» поля не шле і
+ * генерує заново.
+ */
+interface GenerateVars {
+  weekKey: string;
+  ifAbsent?: boolean;
+}
+
+async function generateWeeklyDigest({
+  weekKey,
+  ifAbsent,
+}: GenerateVars): Promise<{
   report: WeeklyDigestReport;
   generatedAt: string;
   weekKey: string;
@@ -421,6 +442,7 @@ async function generateWeeklyDigest(weekKey: string): Promise<{
     // момент підрахунку. Без цього штампу коуч, який тримає 8 тижнів,
     // прочитає майбутній стрибок визначення як зміну поведінки користувача.
     metricsVersion: METRICS_VERSION,
+    ...(ifAbsent ? { ifAbsent: true } : {}),
     finyk,
     fizruk,
     nutrition,
@@ -446,6 +468,24 @@ const weeklyDigestQueryKey = (weekKey: string) => digestKeys.byWeek(weekKey);
 const weeklyDigestHistoryQueryKey = digestKeys.history;
 
 /**
+ * Єдиний шлях, яким звіт тижня потрапляє на пристрій: сховище, кеш запиту
+ * тижня й історія (з неї `WeeklyDigestCard` обирає тиждень). Ним кладе і
+ * генерація, і серверна копія з іншого пристрою (`digestServerCopy.ts`,
+ * С-3 (а)), тож картка не розрізняє, звідки прийшов звіт.
+ */
+export function persistDigest(
+  queryClient: QueryClient,
+  digest: WeeklyDigest,
+): void {
+  saveDigest(digest.weekKey, digest);
+  queryClient.setQueryData(weeklyDigestQueryKey(digest.weekKey), digest);
+  queryClient.invalidateQueries({ queryKey: weeklyDigestHistoryQueryKey });
+}
+
+/** Результат автогенерації — щоб автохук знав, чи ставити маркер спроби. */
+export type AutoGenerateOutcome = "ok" | "insufficient" | "failed" | "skipped";
+
+/**
  * Поріг публікації для тижневого дайджесту (Хвиля 4, hub-coach § G2 / §6.2)
  * повернув сервер саме цим кодом — `apps/server/src/modules/digest/weekly-digest.ts`
  * → `countDigestSignalModules`. Розрізняємо цю відповідь від справжніх
@@ -457,6 +497,20 @@ function isInsufficientDataError(err: unknown): boolean {
   if (!isApiError(err)) return false;
   const code = (err.body as { code?: unknown } | undefined)?.code;
   return code === "INSUFFICIENT_DATA";
+}
+
+/**
+ * Чи звіт за `weekKey` зараз збирається: генерація цього тижня в польоті
+ * (ключ мутації `digestKeys.generate`) або автохук читає серверну копію
+ * (`coachKeys.memory`, `digestServerCopy.ts`). Джерело правди — сам React
+ * Query, окремого прапорця немає (С-3 (а), рішення власника 2026-11-18).
+ */
+export function useAutoDigestPending(weekKey: string): boolean {
+  const generating = useIsMutating({
+    mutationKey: digestKeys.generate(weekKey),
+  });
+  const readingServerCopy = useIsFetching({ queryKey: coachKeys.memory });
+  return generating + readingServerCopy > 0;
 }
 
 export function useDigestHistory() {
@@ -497,6 +551,7 @@ export function useWeeklyDigest(selectedWeekKey?: string) {
   });
 
   const mutation = useMutation({
+    mutationKey: digestKeys.generate(weekKey),
     mutationFn: generateWeeklyDigest,
     onSuccess: ({ report, generatedAt, weekKey: wk, weekRange: wr }) => {
       const newDigest = {
@@ -505,9 +560,7 @@ export function useWeeklyDigest(selectedWeekKey?: string) {
         weekKey: wk,
         weekRange: wr,
       };
-      saveDigest(wk, newDigest);
-      queryClient.setQueryData(weeklyDigestQueryKey(wk), newDigest);
-      queryClient.invalidateQueries({ queryKey: weeklyDigestHistoryQueryKey });
+      persistDigest(queryClient, newDigest);
       queryClient.invalidateQueries({ queryKey: coachKeys.all });
 
       try {
@@ -559,7 +612,7 @@ export function useWeeklyDigest(selectedWeekKey?: string) {
   const generate = useCallback(async () => {
     if (!canGenerate) return null;
     try {
-      const result = await mutateAsync(weekKey);
+      const result = await mutateAsync({ weekKey });
       return {
         ...result.report,
         generatedAt: result.generatedAt,
@@ -568,6 +621,19 @@ export function useWeeklyDigest(selectedWeekKey?: string) {
       };
     } catch {
       return null;
+    }
+  }, [weekKey, canGenerate, mutateAsync]);
+
+  // Для автогенерації (С-3 (а)): той самий виклик, але з видом результату,
+  // бо `generate` ковтає помилку, а маркер спроби ставиться лише на
+  // `INSUFFICIENT_DATA`, не на збій мережі.
+  const autoGenerate = useCallback(async (): Promise<AutoGenerateOutcome> => {
+    if (!canGenerate) return "skipped";
+    try {
+      await mutateAsync({ weekKey, ifAbsent: true });
+      return "ok";
+    } catch (err) {
+      return isInsufficientDataError(err) ? "insufficient" : "failed";
     }
   }, [weekKey, canGenerate, mutateAsync]);
 
@@ -589,6 +655,7 @@ export function useWeeklyDigest(selectedWeekKey?: string) {
     weekKey,
     weekRange,
     generate,
+    autoGenerate,
     isCurrentWeek,
     canGenerate,
   };

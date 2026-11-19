@@ -103,7 +103,9 @@ describe("useNutritionPantries — варіанти позиції", () => {
     seedPantries([MILK_WITH_TWO]);
     const result = renderHarness();
 
-    act(() => result.current.consumePantryItem("Молоко", 200));
+    act(() => {
+      result.current.consumePantryItem("Молоко", 200);
+    });
 
     expect(result.current.variantChoice?.itemName).toBe("Молоко");
     expect(result.current.variantChoice?.sources).toHaveLength(2);
@@ -114,7 +116,9 @@ describe("useNutritionPantries — варіанти позиції", () => {
     seedPantries([MILK_WITH_TWO]);
     const result = renderHarness();
 
-    act(() => result.current.consumePantryItem("Молоко", 200));
+    act(() => {
+      result.current.consumePantryItem("Молоко", 200);
+    });
     act(() => result.current.resolveVariantChoice("Молоко Галичина 1%"));
 
     const item = result.current.pantryItems[0]!;
@@ -137,7 +141,9 @@ describe("useNutritionPantries — варіанти позиції", () => {
     ]);
     const result = renderHarness();
 
-    act(() => result.current.consumePantryItem("Молоко", 200));
+    act(() => {
+      result.current.consumePantryItem("Молоко", 200);
+    });
 
     expect(result.current.variantChoice).toBeNull();
     expect(result.current.pantryItems[0]?.qty).toBeLessThan(900);

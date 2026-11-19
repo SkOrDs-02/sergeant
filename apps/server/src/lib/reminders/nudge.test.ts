@@ -91,7 +91,7 @@ describe("nudgeReason", () => {
   it("стає приводом о 09:00 зі стабільним tag доби", () => {
     const reason = nudgeReason(
       candidate({ cachedBody: "Порада дня." }),
-      "2026-08-05",
+      { dayKey: "2026-08-05", quiet: { startMin: 22 * 60, endMin: 8 * 60 } },
       NOON_KYIV,
     );
     expect(reason).toMatchObject({
@@ -103,5 +103,34 @@ describe("nudgeReason", () => {
       url: "/",
       at: NUDGE_AT_HM,
     });
+  });
+
+  // Спека notifications-quiet-hours-and-device-time: 09:00 обрав продукт,
+  // тож він не лежить у тихих годинах людини.
+  it("тихі години до 10:00: нудж переходить на кінець тихих годин", () => {
+    const reason = nudgeReason(
+      candidate(),
+      { dayKey: "2026-08-05", quiet: { startMin: 23 * 60, endMin: 10 * 60 } },
+      NOON_KYIV,
+    );
+    expect(reason.at).toBe("10:00");
+  });
+
+  it("тихі години вимкнені: нудж о 09:00", () => {
+    const reason = nudgeReason(
+      candidate(),
+      { dayKey: "2026-08-05", quiet: null },
+      NOON_KYIV,
+    );
+    expect(reason.at).toBe("09:00");
+  });
+
+  it("вікно не накриває 09:00: нудж о 09:00", () => {
+    const reason = nudgeReason(
+      candidate(),
+      { dayKey: "2026-08-05", quiet: { startMin: 13 * 60, endMin: 15 * 60 } },
+      NOON_KYIV,
+    );
+    expect(reason.at).toBe("09:00");
   });
 });

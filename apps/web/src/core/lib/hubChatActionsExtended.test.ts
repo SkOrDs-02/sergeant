@@ -3,7 +3,7 @@
  * Unit tests for hubChatActions executeAction — extended tools
  * (delete_transaction, update_budget, mark_debt_paid, add_asset,
  *  import_monobank_range, start_workout, finish_workout,
- *  log_measurement, add_program_day, log_wellbeing,
+ *  log_measurement, log_wellbeing,
  *  create_reminder, complete_habit_for_date, archive_habit,
  *  add_calendar_event, add_to_shopping_list, consume_from_pantry,
  *  set_daily_plan, log_weight, add_recipe).
@@ -24,6 +24,7 @@ import {
 } from "../../modules/finyk/lib/monoMirrorReader";
 import type { ManualExpense } from "../../modules/finyk/hooks/useStorage.types";
 import { executeAction } from "./hubChatActions";
+import { stripTechnicalIds } from "./chatDisplayText";
 import { triggerFizrukDualWrite } from "../../modules/fizruk/lib/sqliteWriter/index";
 import type { Workout as FizrukWorkout } from "@sergeant/fizruk-domain";
 
@@ -233,6 +234,9 @@ describe("batch_categorize", () => {
     });
     expect(msg).toContain("Dry-run");
     expect(msg).toContain("m_silpo_1");
+    // Людина бачить назву категорії, а не сирий id (модель свій id має в (id:…)).
+    expect(stripTechnicalIds(msg as string)).toContain("в «Продукти»");
+    expect(stripTechnicalIds(msg as string)).not.toMatch(/\bfood\b/);
     expect(readLS<Record<string, string>>("finyk_tx_cats", {})).toEqual({});
   });
 
@@ -247,7 +251,8 @@ describe("batch_categorize", () => {
       name: "batch_categorize",
       input: { pattern: "сільпо", category_id: "food", dry_run: false },
     });
-    expect(msg).toContain("змінено на food");
+    expect(msg).toContain("змінено на «Продукти» (id:food)");
+    expect(stripTechnicalIds(msg as string)).not.toMatch(/\bfood\b/);
     expect(readLS<Record<string, string>>("finyk_tx_cats", {})).toEqual({
       m_silpo_1: "food",
     });
@@ -589,22 +594,6 @@ describe("log_measurement", () => {
       input: { weight_kg: 0, waist_cm: "" as unknown as number },
     });
     expect(msg).toContain("валідного");
-  });
-});
-
-describe("add_program_day", () => {
-  it("чесно відмовляє й не пише план у localStorage", () => {
-    const msg = executeAction({
-      name: "add_program_day",
-      input: {
-        weekday: 1,
-        name: "Груди/трицепс",
-        exercises: [{ name: "Жим лежачи", sets: 4, reps: 8, weight: 80 }],
-      },
-    });
-    expect(msg).toMatch(/^Не вдалося/);
-    expect(msg).not.toContain("збережено:");
-    expect(readLS("fizruk_plan_template_v1", null)).toBeNull();
   });
 });
 

@@ -135,4 +135,28 @@ describe("RecipeBuilderSheet", () => {
     fireEvent.click(screen.getByRole("button", { name: "Прибрати: Олія" }));
     expect(screen.queryByLabelText("Грами: Олія")).toBeNull();
   });
+
+  // Зйомка 2026-11-18: `Input` має обгортку `w-full`, і `className="w-24"`
+  // діставав лише сам <input>. Обгортка забирала весь рядок, назва
+  // стискалась до стовпчика по одній літері. Розмітку тут, бо jsdom не
+  // рахує ширин; геометрію на 390/320px і 200% тексту перевірено в браузері.
+  it("рядок інгредієнта: поле грамів у фіксованій обгортці, назва має власну ширину", () => {
+    setup();
+    fillControl();
+    const grams = screen.getByLabelText("Грами: Гречка варена");
+    const box = grams.closest('[class~="w-24"]');
+    expect(box).not.toBeNull();
+    expect(box!.className).toContain("shrink-0");
+    expect(box!.contains(grams)).toBe(true);
+    expect(grams.className).not.toContain("w-24");
+    const row = grams.closest("li")!;
+    expect(row.className).toContain("flex-wrap");
+    const name = Array.from(row.querySelectorAll("span")).find(
+      (s) => s.textContent === "Гречка варена",
+    );
+    expect(name?.className).toContain("basis-32");
+    // Група «грами · Прибрати» сама переноситься (200% тексту на 320px).
+    expect(box!.parentElement!.className).toContain("flex-wrap");
+    expect(box!.parentElement!.className).toContain("max-w-full");
+  });
 });

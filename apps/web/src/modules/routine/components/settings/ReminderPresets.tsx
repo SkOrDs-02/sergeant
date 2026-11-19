@@ -3,6 +3,7 @@ import { IconButton } from "@shared/components/ui/IconButton";
 import { Icon } from "@shared/components/ui/Icon";
 import { TimeField } from "@shared/components/ui/TimeField";
 import { Button } from "@shared/components/ui/Button";
+import { IosInstallPushHint } from "@shared/components/ui/IosInstallPushHint";
 import { useRoutineState } from "../../hooks/useRoutineState";
 import {
   readNotificationPermission,
@@ -37,6 +38,9 @@ export function ReminderPresets({
   // після відповіді на запит (відмова не змінює prefs, тож інакше не було б
   // жодного ре-рендеру).
   const [, setAskCount] = useState(0);
+  // iPhone у вкладці Safari: push неможливий без встановлення на початковий
+  // екран — замість «браузер не дозволяє» показуємо, що робити.
+  const [needsInstall, setNeedsInstall] = useState(false);
   const prefEnabled = routine.prefs?.routineRemindersEnabled === true;
   const permission = readNotificationPermission();
   const showDeliveryHint =
@@ -113,7 +117,7 @@ export function ReminderPresets({
           </IconButton>
         </div>
       ))}
-      {showDeliveryHint && (
+      {showDeliveryHint && !needsInstall && (
         <div
           role="status"
           className="flex flex-wrap items-center gap-x-3 gap-y-1.5 border-t border-line pt-3"
@@ -129,7 +133,8 @@ export function ReminderPresets({
             tone="neutral"
             size="sm"
             onClick={async () => {
-              await setReminders(true);
+              const result = await setReminders(true);
+              if (result === "install-required") setNeedsInstall(true);
               setAskCount((n) => n + 1);
             }}
           >
@@ -137,6 +142,7 @@ export function ReminderPresets({
           </Button>
         </div>
       )}
+      {needsInstall && <IosInstallPushHint />}
       {times.length < 5 && times.length > 0 && (
         <Button
           variant="text"

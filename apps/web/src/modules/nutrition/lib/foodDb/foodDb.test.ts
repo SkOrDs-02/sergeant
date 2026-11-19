@@ -29,6 +29,7 @@ import {
 } from "../../../../shared/lib/idb/sergeantDb";
 import {
   bindBarcodeToFood,
+  bindBarcodeToFoodIfFree,
   ensureSeedFoods,
   listFoods,
   lookupFoodByBarcode,
@@ -224,6 +225,31 @@ describe("barcode binding + lookup", () => {
 
     expect(await bindBarcodeToFood("4820000000001", "food_1")).toBe(false);
     expect(await lookupFoodByBarcode("4820000000001")).toBeNull();
+  });
+});
+
+describe("bindBarcodeToFoodIfFree (OD-27 Х-5)", () => {
+  it("вільний код привʼязується; другий код продукту не витісняє перший", async () => {
+    const res = await upsertFood({ name: "Йогурт" });
+    const id = res.ok ? res.product.id : "";
+    expect(await bindBarcodeToFood("4820000000001", id)).toBe(true);
+    expect(await bindBarcodeToFoodIfFree("4820000000002", id)).toBe(true);
+    expect((await lookupFoodByBarcode("4820000000001"))?.id).toBe(id);
+    expect((await lookupFoodByBarcode("4820000000002"))?.id).toBe(id);
+  });
+
+  it("код, уже привʼязаний до іншого продукту, не перезаписується", async () => {
+    const a = await upsertFood({ name: "Йогурт" });
+    const b = await upsertFood({ name: "Кефір" });
+    const idA = a.ok ? a.product.id : "";
+    const idB = b.ok ? b.product.id : "";
+    expect(await bindBarcodeToFood("4820000000003", idA)).toBe(true);
+    expect(await bindBarcodeToFoodIfFree("4820000000003", idB)).toBe(false);
+    expect((await lookupFoodByBarcode("4820000000003"))?.id).toBe(idA);
+  });
+
+  it("некоректний код відкидається", async () => {
+    expect(await bindBarcodeToFoodIfFree("abc", "food_1")).toBe(false);
   });
 });
 

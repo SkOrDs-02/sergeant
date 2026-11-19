@@ -30,6 +30,8 @@ export interface RoutineCalendarMonthGridProps {
   onPlanFizruk: (dateKey: string) => void;
   flatGroupedItems: GroupedListItem[];
   onToggleHabit: (habitId: string, dateKey: string) => void;
+  /** Сьогодні за годинником пристрою: пізніші дні відмітити не можна. */
+  todayKey?: string | undefined;
 }
 
 /**
@@ -56,6 +58,7 @@ export function RoutineCalendarMonthGrid({
   onPlanFizruk,
   flatGroupedItems,
   onToggleHabit,
+  todayKey,
 }: RoutineCalendarMonthGridProps) {
   return (
     <>
@@ -213,6 +216,7 @@ export function RoutineCalendarMonthGrid({
                   {e.habitId && (
                     <HabitStateButton
                       completed={e.completed === true}
+                      futureDay={todayKey !== undefined && e.date > todayKey}
                       onClick={() => {
                         if (e.habitId) onToggleHabit(e.habitId, e.date);
                       }}

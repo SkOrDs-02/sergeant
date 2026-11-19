@@ -123,7 +123,7 @@ export function SavedSection({
             <div className="text-style-body text-muted">
               Тут зʼявляться збережені рецепти. Склади страву з продуктів
               кнопкою «Нова страва» або згенеруй рецепти нижче й натисни
-              &quot;Зберегти&quot;.
+              «Зберегти».
             </div>
           ) : (
             <div className="divide-y divide-line border-y border-line">

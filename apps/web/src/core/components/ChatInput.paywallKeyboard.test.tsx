@@ -13,6 +13,7 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { cleanup, fireEvent, render, screen } from "@testing-library/react";
 import { useRef, useState } from "react";
+import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { MemoryRouter } from "react-router-dom";
 import { ChatInput } from "./ChatInput";
 import { PaywallModal } from "../billing/PaywallModal";
@@ -48,27 +49,33 @@ Object.defineProperty(window, "matchMedia", {
 function Harness() {
   const [paywallOpen, setPaywallOpen] = useState(false);
   const sendRef = useRef<((t?: string, v?: boolean) => void) | null>(null);
+  // Пейвол читає знімок доступу (`usePlan`) для кнопки ручного Premium.
+  const [client] = useState(
+    () => new QueryClient({ defaultOptions: { queries: { retry: false } } }),
+  );
   return (
-    <MemoryRouter>
-      <ChatInput
-        input="Привіт"
-        setInput={vi.fn()}
-        loading={false}
-        online
-        speaking={false}
-        setSpeaking={vi.fn()}
-        onSend={() => setPaywallOpen(true)}
-        onHelp={vi.fn()}
-        sendRef={sendRef}
-      />
-      <PaywallModal
-        open={paywallOpen}
-        onClose={() => setPaywallOpen(false)}
-        surface="ai_chat_limit"
-        title="Ліміт вичерпано"
-        description="Free план."
-      />
-    </MemoryRouter>
+    <QueryClientProvider client={client}>
+      <MemoryRouter>
+        <ChatInput
+          input="Привіт"
+          setInput={vi.fn()}
+          loading={false}
+          online
+          speaking={false}
+          setSpeaking={vi.fn()}
+          onSend={() => setPaywallOpen(true)}
+          onHelp={vi.fn()}
+          sendRef={sendRef}
+        />
+        <PaywallModal
+          open={paywallOpen}
+          onClose={() => setPaywallOpen(false)}
+          surface="ai_chat_limit"
+          title="Ліміт вичерпано"
+          description="Free план."
+        />
+      </MemoryRouter>
+    </QueryClientProvider>
   );
 }
 

@@ -63,6 +63,7 @@ export const SYNC_STATE_HASH_TABLE_PKS = {
   fizruk_wellbeing: ["date_key"],
   fizruk_workout_templates: ["id"],
   fizruk_injuries: ["id"],
+  fizruk_exercise_prefs: ["id"],
   routine_entries: ["id"],
   routine_habits: ["id"],
   routine_tags: ["id"],
@@ -71,6 +72,8 @@ export const SYNC_STATE_HASH_TABLE_PKS = {
   routine_habit_order: [],
   routine_completion_notes: ["note_key"],
   routine_habit_skips: ["skip_key"],
+  // Міграція 170 (Рутина Р-1 (а)): кроки лічильника, PK `(user_id, id)`.
+  routine_habit_counts: ["id"],
 } as const satisfies Record<string, readonly string[]>;
 
 export type SyncStateHashTable = keyof typeof SYNC_STATE_HASH_TABLE_PKS;

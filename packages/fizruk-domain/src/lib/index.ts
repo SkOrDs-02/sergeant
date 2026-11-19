@@ -11,6 +11,5 @@ export * from "./kcalBurned.js";
 export * from "./heroRecoveryRows.js";
 export * from "./recoveryForecast.js";
 export * from "./restSettings.js";
-export * from "./trainingPrograms.js";
 export * from "./workoutStats.js";
 export * from "./workoutUi.js";

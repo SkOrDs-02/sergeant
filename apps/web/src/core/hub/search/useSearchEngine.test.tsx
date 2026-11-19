@@ -141,6 +141,26 @@ describe("useSearchEngine", () => {
     expect(onClose).toHaveBeenCalledTimes(1);
   });
 
+  it("openHit: хіт операції Фініка з path веде на саму операцію (Ф-2 а)", () => {
+    const { result } = setup();
+    act(() =>
+      result.current.openHit(
+        hit({
+          id: "finyk_tx_manual_m1",
+          module: "finyk",
+          target: {
+            kind: "module",
+            moduleId: "finyk",
+            path: "/finyk/transactions?tx=manual_m1",
+          },
+        }),
+      ),
+    );
+    expect(navigate).toHaveBeenCalledWith("/finyk/transactions?tx=manual_m1");
+    expect(onOpenModule).not.toHaveBeenCalled();
+    expect(onClose).not.toHaveBeenCalled();
+  });
+
   it("openHit: поки навігація не завершилась, повторний клік її не дублює", () => {
     const { result } = setup();
     const moduleHit = hit({

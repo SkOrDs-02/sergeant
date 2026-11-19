@@ -28,6 +28,11 @@ import {
   type TelegramUpdate,
 } from "../modules/telegram/waitlistBot.js";
 import {
+  handleManualGrantCallback,
+  isAdminGrantCallback,
+  parseManualGrantCallback,
+} from "../modules/telegram/manualGrantCallback.js";
+import {
   appReply,
   helpReply,
   installReply,
@@ -106,6 +111,41 @@ export function createTelegramWebhookRouter({ pool }: { pool: Pool }): Router {
       return;
     }
     const chatId = origin.chatId;
+
+    // Кнопка видачі ручного Premium (спека manual-premium-request.md). До
+    // `parseCommand`, бо це не опитування. Чужий чат, чужий `from` чи група
+    // дають ту саму тишу, що й биті дані: відмова не видає, що кнопка є.
+    const grantCallback = parseManualGrantCallback(update);
+    if (grantCallback !== null) {
+      if (
+        grantCallback === "ignore" ||
+        !isAdminGrantCallback(
+          grantCallback,
+          env.TELEGRAM_WAITLIST_ADMIN_CHAT_ID,
+        )
+      ) {
+        res.json({ ok: true });
+        return;
+      }
+      try {
+        await handleManualGrantCallback(
+          pool,
+          createTelegramApiClient(token),
+          grantCallback,
+        );
+      } catch (err) {
+        // Збій БД: ретрай Telegram потрібен, видача ідемпотентна.
+        logger.error({
+          msg: "telegram_manual_grant_failed",
+          requestId: grantCallback.requestId,
+          err: { message: err instanceof Error ? err.message : String(err) },
+        });
+        res.status(500).json({ ok: false });
+        return;
+      }
+      res.json({ ok: true });
+      return;
+    }
 
     const command = parseCommand(update);
     if (command.kind === "ignore") {

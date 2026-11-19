@@ -20,19 +20,27 @@
  * зникає — тому тут вона є, окремим тихим (пунктирним) виглядом, без
  * власного пункту в легенді.
  */
-import type {
-  FlexibleStreakDayCell,
-  HabitSkip,
-  StreakDayKind,
+import {
+  GRACE_EARN_EVERY_DAYS,
+  GRACE_START_BUDGET,
+  MAX_GRACE_BUDGET,
+  type FlexibleStreakDayCell,
+  type HabitSkip,
+  type StreakDayKind,
 } from "@sergeant/routine-domain";
 import { useMemo } from "react";
-import { pluralDays, pluralUa } from "@sergeant/shared";
+import { pluralDays } from "@sergeant/shared";
 import { Card } from "@shared/components/ui/Card";
 import { SectionHeading } from "@shared/components/ui/SectionHeading";
 import { cn } from "@shared/lib/ui/cn";
 import { messages } from "@shared/i18n/uk";
 import { formatDateShort } from "@shared/lib/time/formatDate";
 import { flexibleStreakBreakdown } from "../lib/streaks";
+import {
+  fillTemplate as fill,
+  graceSourceLine,
+  graceUsedLabel,
+} from "../lib/graceStockCopy";
 import { SKIP_REASON_LABELS } from "../lib/skipReasons";
 import type { Habit } from "../lib/types";
 
@@ -49,8 +57,6 @@ export interface HabitStreakCanvasProps {
 }
 
 const CELL_BASE = "w-6 h-7 shrink-0 rounded-[3px]";
-
-const GRACE_FORMS = { one: "заморозка", few: "заморозки", many: "заморозок" };
 
 function formatCellDate(key: string): string {
   // Парсимо готовий day-key на візуальну мітку — не читаємо годинник
@@ -161,7 +167,15 @@ interface LegendRow {
 const LEGEND: LegendRow[] = [
   { kind: "done", title: T.legendDoneTitle, body: T.legendDoneBody },
   { kind: "skip", title: T.legendSkipTitle, body: T.legendSkipBody },
-  { kind: "miss", title: T.legendGraceTitle, body: T.legendGraceBody },
+  {
+    kind: "miss",
+    title: T.legendGraceTitle,
+    body: fill(T.legendGraceBody, {
+      start: GRACE_START_BUDGET,
+      every: GRACE_EARN_EVERY_DAYS,
+      max: MAX_GRACE_BUDGET,
+    }),
+  },
   { kind: "pause", title: T.legendPauseTitle, body: T.legendPauseBody },
   { kind: "off", title: T.legendOffTitle, body: T.legendOffBody },
 ];
@@ -232,24 +246,34 @@ export function HabitStreakCanvas({
   );
   const { window: cells, days, graceUsed } = breakdown;
 
-  const graceLine =
-    graceUsed > 0
-      ? ` · ${graceUsed} ${pluralUa(graceUsed, GRACE_FORMS)} ${T.graceUsedSuffix}`
-      : "";
+  const graceLine = graceUsed > 0 ? ` · ${graceUsedLabel(graceUsed)}` : "";
 
   return (
     <Card className={className}>
       <SectionHeading as="h3" size="lg" className="mb-2">
         {T.heading}
       </SectionHeading>
-      <p className="text-style-label text-muted mb-3">
+      <p className="text-style-label text-muted mb-2">
         {days > 0
           ? `${days} ${pluralDays(days)} ${T.daysSuffix}${graceLine}`
           : T.notStarted}
       </p>
+      {breakdown.graceMax > 0 ? (
+        <div className="mb-3">
+          <p className="text-style-label text-text font-semibold">
+            {fill(T.graceStock, {
+              remaining: breakdown.graceRemaining,
+              max: breakdown.graceMax,
+            })}
+          </p>
+          <p className="text-style-label text-muted">
+            {graceSourceLine(breakdown)}
+          </p>
+        </div>
+      ) : null}
 
       {cells.length === 0 ? (
-        <p className="text-style-body text-subtle">{T.emptyHistory}</p>
+        <p className="text-style-body text-subtle mb-4">{T.emptyHistory}</p>
       ) : (
         <ul
           aria-label={`${T.canvasLabelPrefix} «${habit.name}»`}

@@ -16,6 +16,7 @@ import {
 } from "../../../../modules/finyk/lib/monoMirrorReader";
 import { setBudgetLimit, updateBudget } from "./budgets";
 import { batchCategorize, changeCategory } from "./search";
+import { stripTechnicalIds } from "../../chatDisplayText";
 import { hideTransaction, splitTransaction } from "./transactions";
 import type { Transaction } from "@sergeant/finyk-domain/domain/types";
 import type { UpdateBudgetAction } from "../types";
@@ -61,6 +62,9 @@ describe("change_category guards", () => {
       }),
     );
     expect(out).toContain("Не знайшов операцію");
+    // Модель отримує інструкцію з назвою інструмента, людина — ні.
+    expect(out).toContain("find_transaction");
+    expect(stripTechnicalIds(out)).toBe("Не знайшов операцію.");
     expect(localStorage.getItem("finyk_tx_cats")).toBeNull();
   });
 

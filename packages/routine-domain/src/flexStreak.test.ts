@@ -2,6 +2,7 @@ import { describe, expect, it } from "vitest";
 
 import {
   GRACE_EARN_EVERY_DAYS,
+  GRACE_START_BUDGET,
   MAX_GRACE_BUDGET,
   flexibleMaxActiveStreak,
   flexibleMaxStreakAllTime,
@@ -136,49 +137,122 @@ describe("пропуск із причиною — нейтральний (ка�
 });
 
 describe("grace-бюджет", () => {
-  it("серія коротша за 7 днів заморозок не має", () => {
-    // 5 виконаних, потім один мовчазний пропуск — бюджет ще не зароблено.
+  // Числа ратифіковані власником 2026-11-18 (OD-29, Р-4 (а)): 1 на старті,
+  // ще 1 за кожні 7 виконаних днів, стеля 4, два пропуски поспіль не
+  // прощаються ніколи.
+  it("ратифіковані числа квоти", () => {
+    expect(GRACE_START_BUDGET).toBe(1);
+    expect(GRACE_EARN_EVERY_DAYS).toBe(7);
+    expect(MAX_GRACE_BUDGET).toBe(4);
+  });
+
+  it("нова звичка без історії має одну заморозку на старті", () => {
+    const b = flexibleStreakBreakdown(daily(), [], TODAY);
+    expect(b.days).toBe(0);
+    expect(b.graceRemaining).toBe(1);
+    expect(b.graceBudget).toBe(1);
+    expect(b.graceFromStart).toBe(1);
+    expect(b.graceFromDays).toBe(0);
+    expect(b.graceMax).toBe(MAX_GRACE_BUDGET);
+    expect(b.daysToNextGrace).toBe(7);
+  });
+
+  it("стартова заморозка рятує серію коротшу за 7 днів", () => {
+    // 5 виконаних, мовчазний пропуск 08-01, відмітка сьогодні. До стартової
+    // одиниці бюджет тут був нуль і серія ріжеться до 1.
+    // Звичка створена 07-27: це перша серія нової звички.
+    const habit = daily({ startDate: "2026-07-27" });
     const done = [...runOfDays("2026-07-31", 5), ...runOfDays(TODAY, 1)];
+    const b = flexibleStreakBreakdown(habit, done, TODAY);
+    expect(b.days).toBe(6);
+    expect(b.graceUsed).toBe(1);
+    expect(b.graceRemaining).toBe(0);
+    expect(b.brokenOn).toBeNull();
+    expect(b.daysToNextGrace).toBe(1);
+  });
+
+  it("стартова одиниця не скасовує правило двох пропусків поспіль", () => {
+    // 5 виконаних, 07-31 і 08-01 порожні, сьогодні відмічено.
+    const done = [...runOfDays("2026-07-30", 5), ...runOfDays(TODAY, 1)];
     const b = flexibleStreakBreakdown(daily(), done, TODAY);
     expect(b.days).toBe(1);
     expect(b.graceUsed).toBe(0);
     expect(b.brokenOn).toBe("2026-08-01");
   });
 
-  it("одна заморозка за кожні 7 виконаних днів", () => {
-    // 10 виконаних до пропуску + 2 після = 12 днів оплачують 1 заморозку.
+  it("1 на старті плюс одна заморозка за кожні 7 виконаних днів", () => {
+    // 10 виконаних до пропуску + 2 після = 12 днів: 1 стартова + 1 зароблена.
     const done = [...runOfDays("2026-07-30", 10), ...runOfDays(TODAY, 2)];
     const b = flexibleStreakBreakdown(daily(), done, TODAY);
     expect(b.days).toBe(12);
     expect(b.graceUsed).toBe(1);
-    expect(b.graceRemaining).toBe(0);
-    expect(GRACE_EARN_EVERY_DAYS).toBe(7);
+    expect(b.graceBudget).toBe(2);
+    expect(b.graceRemaining).toBe(1);
   });
 
-  it("другий пропуск не по кишені — серія ріжеться на найдавнішому", () => {
-    // Історія 2026-07-20…2026-08-02 (14 днів) із двома мовчазними
-    // пропусками — 07-24 і 07-30. Разом це 12 виконаних днів, тобто
-    // бюджету рівно на ОДНУ заморозку, а пропусків два.
+  it("14 виконань поспіль: 3 з 4 у запасі, наступна через 7", () => {
+    const b = flexibleStreakBreakdown(daily(), runOfDays(TODAY, 14), TODAY);
+    expect(b.days).toBe(14);
+    expect(b.graceRemaining).toBe(3);
+    expect(b.graceFromStart).toBe(1);
+    expect(b.graceFromDays).toBe(2);
+    expect(b.daysToNextGrace).toBe(7);
+  });
+
+  it("два пропуски на 12 виконаних прощаються: 1 стартова + 1 зароблена", () => {
     const habit = daily({ startDate: "2026-07-20" });
     const done = runOfDays(TODAY, 14).filter(
       (k) => k !== "2026-07-24" && k !== "2026-07-30",
     );
     const b = flexibleStreakBreakdown(habit, done, TODAY);
+    expect(b.brokenOn).toBeNull();
+    expect(b.days).toBe(12);
+    expect(b.graceUsed).toBe(2);
+    expect(b.graceRemaining).toBe(0);
+  });
 
-    // Ітерація ріже серію на найдавнішому пропуску: свіжіший (07-30)
-    // лишається прощеним, бо його оплачують 8 днів після нього.
-    expect(b.brokenOn).toBe("2026-07-24");
-    expect(b.days).toBe(8);
-    expect(b.graceUsed).toBe(1);
+  it("третій пропуск не по кишені — серія ріжеться на найдавнішому", () => {
+    // 07-20…08-02 із трьома мовчазними пропусками (07-22, 07-26, 07-30):
+    // 11 виконаних = 1 стартова + 1 зароблена, а пропусків три.
+    const habit = daily({ startDate: "2026-07-20" });
+    const done = runOfDays(TODAY, 14).filter(
+      (k) => k !== "2026-07-22" && k !== "2026-07-26" && k !== "2026-07-30",
+    );
+    const b = flexibleStreakBreakdown(habit, done, TODAY);
+    expect(b.brokenOn).toBe("2026-07-22");
+    expect(b.days).toBe(9);
+    expect(b.graceUsed).toBe(2);
     expect(b.graceRemaining).toBe(0);
   });
 
   it("стеля бюджету не дає нескінченно довгій серії прощати все", () => {
-    expect(MAX_GRACE_BUDGET).toBe(4);
     const b = flexibleStreakBreakdown(daily(), runOfDays(TODAY, 400), TODAY, {
       maxGraceBudget: MAX_GRACE_BUDGET,
     });
     expect(b.graceRemaining).toBe(MAX_GRACE_BUDGET);
+    expect(b.graceFromStart).toBe(1);
+    expect(b.graceFromDays).toBe(MAX_GRACE_BUDGET - 1);
+    expect(b.daysToNextGrace).toBeNull();
+  });
+
+  it("стеля досягається вже на 21 виконанні", () => {
+    const b = flexibleStreakBreakdown(daily(), runOfDays(TODAY, 21), TODAY);
+    expect(b.graceBudget).toBe(4);
+    expect(b.daysToNextGrace).toBeNull();
+  });
+
+  it("після обриву нова серія знову стартує з однією заморозкою", () => {
+    const done = [...runOfDays("2026-07-25", 20), ...runOfDays(TODAY, 2)];
+    const b = flexibleStreakBreakdown(daily(), done, TODAY);
+    expect(b.days).toBe(2);
+    expect(b.graceRemaining).toBe(1);
+  });
+
+  it("разова подія заморозок не має", () => {
+    const b = flexibleStreakBreakdown(daily({ recurrence: "once" }), [], TODAY);
+    expect(b.graceRemaining).toBe(0);
+    expect(b.graceBudget).toBe(0);
+    expect(b.daysToNextGrace).toBeNull();
   });
 });
 

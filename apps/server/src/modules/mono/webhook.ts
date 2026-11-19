@@ -10,6 +10,7 @@ import {
 import { sendToUserQuietly } from "../../push/send.js";
 import type { PushPayload } from "../../push/types.js";
 import { categorizeMcc } from "./mccCategories.js";
+import { loadMonoPushVerdict } from "./monoPushGate.js";
 import { webhookSecretHash } from "./crypto.js";
 import { emitSecurityEvent } from "../../obs/securityEvents.js";
 import { elapsedMs } from "../../lib/timing.js";
@@ -464,9 +465,22 @@ export async function webhookHandler(
   // webhook latency window. Skip on duplicate deliveries (`inserted` is
   // false on the UPDATE branch of ON CONFLICT) so Monobank's retries
   // don't spam the user.
-  if (inserted) {
-    void sendToUserQuietly(userId, buildMonoPushPayload(item, monoAccountId), {
-      module: "mono",
+  if (!inserted) return;
+  // Тумблер «Операції Monobank» і тихі години в поясі людини (міграція 168,
+  // спека notifications-quiet-hours-and-device-time): одне читання за PK
+  // після відповіді Monobank. У тиху годину push не йде зовсім, без
+  // зведення (Б-1 (А)); операція вже записана і видна у Фініку.
+  const verdict = await loadMonoPushVerdict(userId, new Date());
+  if (verdict !== "send") {
+    // Без суми й опису операції (Hard Rule #21).
+    logger.info({
+      msg: "mono_push_skipped",
+      reason: verdict,
+      monoTxId: item.id,
     });
+    return;
   }
+  void sendToUserQuietly(userId, buildMonoPushPayload(item, monoAccountId), {
+    module: "mono",
+  });
 }

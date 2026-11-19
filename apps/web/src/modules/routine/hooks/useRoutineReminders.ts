@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useRef } from "react";
 import { logger } from "@shared/lib";
-import { getKyivDateParts, getKyivDayKey } from "@shared/lib/time/kyivTime";
+import { deviceDayKey } from "@sergeant/shared";
 import {
   safeListLSKeys,
   safeReadStringLS,
@@ -26,15 +26,25 @@ import type { RoutineState } from "../lib/types";
 export const ROUTINE_NOTIFY_PREFIX = "routine_notify_";
 
 export function cleanupStaleRoutineNotifyKeys(maxAgeDays = 45): void {
-  // Notify-keys стораться як Kyiv day-keys (`routine_notify_…-YYYY-MM-DD`),
-  // тож cutoff теж рахуємо в Europe/Kyiv — `toISOString().slice(0, 10)` дав би
-  // UTC-дату й біля півночі за київським часом зрізав би не той день
-  // (page-audit-09 F21). Віднімаємо `maxAgeDays` календарних днів від київської
-  // civil-дати (а не фіксовані 24h-мілісекунди) — `Date.UTC` нормалізує
-  // overflow, тож DST-перехід у вікні не зсуває cutoff на день.
-  const { year, month, day } = getKyivDateParts(Date.now());
-  const cutoffKey = getKyivDayKey(
-    new Date(Date.UTC(year, month - 1, day - maxAgeDays, 12, 0, 0)),
+  // Notify-keys стораться з днем пристрою (`routine_notify_…-YYYY-MM-DD`,
+  // `useModuleReminder`, спека notifications-quiet-hours-and-device-time),
+  // тож cutoff теж рахуємо за днем пристрою — `toISOString().slice(0, 10)`
+  // дав би UTC-дату й біля півночі зрізав би не той день (page-audit-09 F21).
+  // Віднімаємо `maxAgeDays` календарних днів від локальної дати (а не
+  // фіксовані 24h-мілісекунди): `Date` нормалізує overflow, а полудень
+  // тримає DST-перехід у вікні від зсуву cutoff на день.
+  // eslint-disable-next-line no-restricted-syntax -- day of the DEVICE, not Kyiv: notify-keys carry the device day (ADR-0078)
+  const now = new Date();
+  const cutoffKey = deviceDayKey(
+    new Date(
+      // eslint-disable-next-line sergeant-design/prefer-kyiv-time -- device-day dedup keys (ADR-0078, notifications-quiet-hours-and-device-time)
+      now.getFullYear(),
+      // eslint-disable-next-line sergeant-design/prefer-kyiv-time -- device-day dedup keys (ADR-0078)
+      now.getMonth(),
+      // eslint-disable-next-line sergeant-design/prefer-kyiv-time -- device-day dedup keys (ADR-0078)
+      now.getDate() - maxAgeDays,
+      12,
+    ),
   );
   for (const k of safeListLSKeys()) {
     if (!k.startsWith(ROUTINE_NOTIFY_PREFIX)) continue;
@@ -66,8 +76,8 @@ export function useRoutineReminders(routine: RoutineState): void {
   // foreground-шляхом для відкритої вкладки; дедуп між ним і сервером
   // тримається на спільному `storageKey` = `Notification.tag`.
 
-  // `onMinuteTick` receives Kyiv-local dayKey + hm from the shared hook —
-  // that is the bug fix: fizruk/nutrition previously read host-local time here.
+  // `onMinuteTick` receives device-local dayKey + hm from the shared hook —
+  // the same device day the habit completions are written with (ADR-0078).
   const onMinuteTick = useCallback(
     ({ dayKey: dk, hm }: { dayKey: string; hm: string }) => {
       const r = routineRef.current;

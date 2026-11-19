@@ -177,6 +177,20 @@ export const routineHabits = pgTable(
      */
     pauseIntervals: jsonb("pause_intervals").notNull().default([]),
     weeklyTargetHistory: jsonb("weekly_target_history").notNull().default([]),
+    /**
+     * Ціль лічильника за день (міграція 170, Р-1 (а)). NULL = звичка
+     * «так/ні». CHECK `>= 1` живе в SQL-міграції.
+     */
+    countTarget: integer("count_target"),
+    /** Підпис одиниці лічильника (міграція 170). */
+    countUnit: text("count_unit"),
+    /**
+     * Подія іншого модуля, що сама ставить відмітку сьогодні (міграція 170,
+     * Р-1 (в)): `'fizruk_workout'` | `'nutrition_water_goal'` |
+     * `'finyk_expense'`; NULL = автовідмітки немає. CHECK живе в SQL.
+     * «Знято сьогодні» памʼятає пристрій, у схемі цього немає.
+     */
+    autoMarkSource: text("auto_mark_source"),
     createdAt: timestamp("created_at", { withTimezone: true })
       .notNull()
       .defaultNow(),
@@ -313,6 +327,37 @@ export const routineHabitSkips = pgTable(
     index("routine_habit_skips_user_active_idx")
       .on(table.userId)
       .where(sql`${table.deletedAt} IS NULL`),
+  ],
+);
+
+/**
+ * Postgres schema for `routine_habit_counts`.
+ * Mirrors migration `170_routine_habit_counter_and_auto_mark.sql`.
+ *
+ * Кроки лічильника звички за день (Р-1 (а)). Форма за зразком
+ * `routine_habit_skips`: PK `(user_id, id)`, LWW по `updated_at`,
+ * soft-delete. `id` = `habitId__dateKey`, `dateKey` — день пристрою
+ * (ADR-0078). CHECK `count >= 0` живе в SQL-міграції.
+ */
+export const routineHabitCounts = pgTable(
+  "routine_habit_counts",
+  {
+    id: text().notNull(),
+    userId: text("user_id").notNull(),
+    habitId: text("habit_id").notNull(),
+    dateKey: text("date_key").notNull(),
+    count: integer().notNull(),
+    updatedAt: timestamp("updated_at", { withTimezone: true })
+      .notNull()
+      .defaultNow(),
+    deletedAt: timestamp("deleted_at", { withTimezone: true }),
+  },
+  (table) => [
+    primaryKey({ columns: [table.userId, table.id] }),
+    index("routine_habit_counts_user_habit_idx").on(
+      table.userId,
+      table.habitId,
+    ),
   ],
 );
 
