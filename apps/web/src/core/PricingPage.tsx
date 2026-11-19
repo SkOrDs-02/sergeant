@@ -411,7 +411,14 @@ export function PricingPage() {
               // хаба: stone-800 у світлій темі, інвертована світла плитка з
               // темним чорнилом у «Чорнилі». Same JSX block serves both
               // tiers, so ink tone must branch on `isPremium`.
-              const inkTone = "text-hero-ink dark:text-brand-900";
+              // Чорнило картки — `text-bg`, як у `Button variant="primary"`
+              // (`bg-text text-bg`): на stone-800 потрібен СВІТЛИЙ тон. До
+              // 2026-11-19 тут стояв `text-hero-ink`, але мова H переписала
+              // `hero-ink` на `--c-text` (темне чорнило під світлий тинт), і
+              // Premium у світлій темі став 1.12:1 (axe `pricing`, прогін
+              // `full-2026-11-19`). У темній картка — світла плитка, тож
+              // гілка `dark:` лишається.
+              const inkTone = "text-bg dark:text-brand-900";
               const headingTone = isPremium ? inkTone : "text-text";
               // Чорнило без альфи (A9, рішення власника 2026-10-01): на
               // Premium-картці приглушені рівні `muted`/`subtle` раніше були
@@ -459,16 +466,15 @@ export function PricingPage() {
                         <Badge
                           data-testid="current-plan-badge"
                           variant={isPremium ? "neutral" : "accent"}
-                          // Hero-картка: outline, а не заливка. Вимірювання
-                          // на світлому кінці градієнта (teal-700): чистий
-                          // `text-hero-ink` дає 5.22:1, а вже 15 % ink-washу
-                          // під ним — 3.93:1, тобто нижче AA для 12px-копії.
+                          // Чорнильна картка: outline, а не заливка — wash
+                          // під 12px-копією з'їдав би контраст. Тон той самий,
+                          // що в `inkTone` (світлий на stone-800).
                           tone={isPremium ? "outline" : "soft"}
                           size="sm"
                           className={cn(
                             "shrink-0",
                             isPremium &&
-                              "text-hero-ink border-hero-ink/40 dark:text-brand-900 dark:border-brand-900/40",
+                              "text-bg border-bg/40 dark:text-brand-900 dark:border-brand-900/40",
                           )}
                         >
                           {t.cta.currentPlan}

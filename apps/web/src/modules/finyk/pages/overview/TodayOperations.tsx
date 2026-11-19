@@ -19,7 +19,11 @@ export function TodayOperations({
 }) {
   return (
     <Card as="section" padding="md">
+      {/* `h2`, не дефолтний `h3`: на Огляді над секцією стоїть лише `h1`
+          сторінки, і стрибок h1 → h3 axe рахує `heading-order`
+          (світ `finyk-month`, прогін `full-2026-11-19`). */}
       <SectionHeading
+        as="h2"
         size="lg"
         variant="text"
         meta={
