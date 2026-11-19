@@ -12,7 +12,9 @@
  * Deliberately NOT built on `ActiveWorkoutPanel` / `WorkoutItemsList` —
  * those own the editable in-flight UI (warm-up checklist, superset
  * controls, per-set inputs) which is the wrong shape for a glance-back
- * summary. This component only ever reads `Workout`, never mutates it.
+ * summary. This component never mutates `Workout` itself: правка часу
+ * (data-37) і підходів (Фз-2 (б), `WorkoutSummaryItemEditor`) іде через
+ * колбеки батька.
  *
  * PR-Z1 (аудит 2026-09-13, хвиля 3 «Тупики й мертві дії»): `FizrukApp`
  * знімає шапку модуля й нижню навігацію на всьому `page === "workout"`
@@ -35,6 +37,7 @@
  * колонці праворуч від стрілки і поля дати виповзали за край), і жест
  * «назад» від лівого краю в standalone-PWA (`useEdgeSwipeBack`).
  */
+import { useState } from "react";
 import { formatDateTimeShort } from "@shared/lib/time/formatDate";
 import { useEdgeSwipeBack } from "@shared/hooks/useEdgeSwipeBack";
 import { Button } from "@shared/components/ui/Button";
@@ -49,8 +52,10 @@ import {
   computeWorkoutSetCount,
   computeWorkoutTonnageKg,
   isSetCompleted,
+  itemUsesSetRows,
   type Workout,
   type WorkoutItem,
+  type WorkoutSet,
 } from "@sergeant/fizruk-domain/domain";
 import { messages } from "@shared/i18n/uk";
 import { WorkoutStatTile } from "./WorkoutStatTile";
@@ -58,6 +63,7 @@ import { fmtLoose } from "../../lib/numberFmt";
 import { formatMeasureSets } from "../../lib/measureFormat";
 import { WorkoutMomentLine } from "./WorkoutMomentLine";
 import { WorkoutSummaryTimeEditor } from "./WorkoutSummaryTimeEditor";
+import { WorkoutSummaryItemEditor } from "./WorkoutSummaryItemEditor";
 
 export interface WorkoutSummaryViewProps {
   workout: Workout;
@@ -76,6 +82,13 @@ export interface WorkoutSummaryViewProps {
    * редактор не показується.
    */
   onUpdateTimes?: (patch: { startedAt: string; endedAt: string }) => void;
+  /**
+   * Фз-2 (б) — правка підходів вправи завершеного тренування. Патч лише
+   * `sets`; `endedAt` не змінюється. Без пропа кнопок «Виправити» немає.
+   */
+  onUpdateItemSets?: (itemId: string, sets: WorkoutSet[]) => void;
+  /** Знімок підходів до видалення — батько показує тост із поверненням. */
+  onDeleteSet?: (itemId: string, snapshot: WorkoutSet[]) => void;
 }
 
 /** One-line "what happened" caption for a single exercise entry. */
@@ -116,8 +129,14 @@ export function WorkoutSummaryView({
   onClose,
   onDelete,
   onUpdateTimes,
+  onUpdateItemSets,
+  onDeleteSet,
 }: WorkoutSummaryViewProps) {
   const copy = messages.fizruk.workoutSummary;
+  const editCopy = messages.fizruk.editFinishedSets;
+  // Одна вправа в правці за раз: підсумок лишається підсумком, а рядки
+  // полів розгортаються лише під тією, яку людина виправляє.
+  const [editingItemId, setEditingItemId] = useState<string | null>(null);
   const summary = summarizeWorkoutForFinish(workout);
   const setCount = computeWorkoutSetCount(workout);
   const tonnageKg = computeWorkoutTonnageKg(workout);
@@ -211,14 +230,62 @@ export function WorkoutSummaryView({
 
         {items.length > 0 && (
           <ul className="mt-3 space-y-2">
-            {items.map((item) => (
-              <li key={item.id} className="rounded-panel bg-panel px-3 py-2.5">
-                <div className="text-style-label text-text">{item.nameUk}</div>
-                <div className="text-style-caption text-subtle mt-0.5">
-                  {formatItemDetail(item, copy.rpeLabel)}
-                </div>
-              </li>
-            ))}
+            {items.map((item) => {
+              // Правка лише для вправ із рядками підходів; старі записи часу
+              // чи дистанції без підходів лишаються як були.
+              const editable =
+                Boolean(onUpdateItemSets) && itemUsesSetRows(item);
+              const editing = editable && editingItemId === item.id;
+              return (
+                <li
+                  key={item.id}
+                  className="rounded-panel bg-panel px-3 py-2.5"
+                >
+                  <div className="flex items-start gap-2">
+                    <div className="min-w-0 flex-1">
+                      <div className="text-style-label text-text">
+                        {item.nameUk}
+                      </div>
+                      <div className="text-style-caption text-subtle mt-0.5">
+                        {formatItemDetail(item, copy.rpeLabel)}
+                      </div>
+                    </div>
+                    {editable ? (
+                      <Button
+                        variant="text"
+                        size="sm"
+                        className="-mr-2 shrink-0"
+                        aria-expanded={editing}
+                        aria-label={
+                          editing
+                            ? editCopy.done
+                            : editCopy.editAria.replace("{name}", item.nameUk)
+                        }
+                        onClick={() =>
+                          setEditingItemId(editing ? null : item.id)
+                        }
+                      >
+                        {editing ? editCopy.done : editCopy.edit}
+                      </Button>
+                    ) : null}
+                  </div>
+                  {editing && onUpdateItemSets ? (
+                    <>
+                      <p className="mt-1 text-style-caption text-subtle">
+                        {editCopy.hint}
+                      </p>
+                      <WorkoutSummaryItemEditor
+                        item={item}
+                        onUpdateSets={(sets) => onUpdateItemSets(item.id, sets)}
+                        onDeleteSet={(snapshot) =>
+                          onDeleteSet?.(item.id, snapshot)
+                        }
+                      />
+                    </>
+                  ) : null}
+                </li>
+              );
+            })}
           </ul>
         )}
 

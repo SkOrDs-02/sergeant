@@ -216,6 +216,19 @@ export function WorkoutJournalSection({
         }}
         onClose={onClose}
         onUpdateTimes={(patch) => updateWorkout(activeWorkout.id, patch)}
+        // Фз-2 (б): правка підходів завершеного тренування — той самий
+        // `updateItem`, що й у сесії (дзеркало типу виміру, dual-write);
+        // `endedAt` не чіпається.
+        onUpdateItemSets={(itemId, sets) =>
+          updateItem(activeWorkout.id, itemId, { sets })
+        }
+        onDeleteSet={(itemId, snapshot) => {
+          const wid = activeWorkout.id;
+          showUndoToast(toast, {
+            msg: messages.fizruk.editFinishedSets.setDeleted,
+            onUndo: () => updateItem(wid, itemId, { sets: snapshot }),
+          });
+        }}
         onDelete={() => {
           // ux-11: той самий шлях, що й свайп в історії, — видалення з
           // undo-тостом; потім назад до списку (сторінки вже нема). Undo НЕ
