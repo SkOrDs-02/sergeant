@@ -96,8 +96,9 @@ export function SavingsAssetForm({
           helperText: t.fxRateHint,
         })}
       <MoneyInput
+        id="savings-asset-invested"
+        label={kind === "ovdp" ? t.investedOvdp : t.invested}
         aria-label={kind === "ovdp" ? t.investedOvdp : t.invested}
-        placeholder={kind === "ovdp" ? t.investedOvdp : t.invested}
         value={draft.invested}
         onValueChange={(next) =>
           set("invested", next == null ? "" : String(next))
@@ -156,8 +157,9 @@ export function SavingsAssetForm({
 
       {kind === "fund" && (
         <MoneyInput
+          id="savings-asset-current-value"
+          label={t.currentValue}
           aria-label={t.currentValue}
-          placeholder={t.currentValue}
           helperText={t.currentValueHint}
           value={draft.currentValue}
           onValueChange={(next) =>
