@@ -1,9 +1,10 @@
 # `/api/internal/*` HMAC signing — rollout playbook
 
-> **Last touched:** 2026-09-19 by @claude. **Next review:** 2027-10-02.
+> **Last touched:** 2026-11-19 by @claude (у production порожній секрет при `WEBHOOK_HMAC_REQUIRED=true` валить старт, B27; replay-скрипти підписують). **Next review:** 2027-10-02.
 > **Status:** Active (enforced by default since 2026-09-16).
 
 > ⚠️ **n8n виведено з репо ([ADR-0090](../adr/0090-n8n-decommissioned.md), 2026-09-02).** Server-side middleware і env-тріо чинні; n8n-side кроки (Function-node template, manifest `hmacSigned`, validator) — історичні, файли — у permalink-снапшоті, а **§ Rollout нижче — історичний n8n-плейбук**, виконувати його нема на чому. **Рішення ухвалене 2026-09-16 (власник): `WEBHOOK_HMAC_REQUIRED` тепер `true` за замовчуванням** (`apps/server/src/env/env.ts`). Grace-режим обґрунтовувався поетапною міграцією 25 n8n-воркфлоу; після ADR-0090 єдині внутрішні caller-и — CI/admin-тулінг, який ми контролюємо, тож вікно лишилось без предмета. **Застереження, важливіше за сам прапорець:** він нічого не вмикає без `WEBHOOK_HMAC_SECRET` — верифікатор виходить із `ok`, коли секрет порожній. Таку конфігурацію тепер видно: `assertStartupEnv` пише при старті `WEBHOOK_HMAC_REQUIRED=true but WEBHOOK_HMAC_SECRET is empty`.
+> **2026-11-19 (AIP-20260805-B27, рішення власника):** у production конфігурація «`INTERNAL_API_KEY` задано, `WEBHOOK_HMAC_REQUIRED=true`, `WEBHOOK_HMAC_SECRET` порожній» більше не warning, а помилка старту (`assertStartupEnv`). Єдині викликачі в репо, `scripts/replay-dlq.mjs` і `scripts/replay-webhook.mjs`, підписують через `scripts/lib/sign-internal-request.mjs`. Свідомий opt-out: `WEBHOOK_HMAC_REQUIRED=false`.
 > **Owner:** ops + server.
 > **Related:** [`better-auth-audit-2026-05.md`](./better-auth-audit-2026-05.md), [`logging-redaction-policy.md`](./logging-redaction-policy.md), [`docs/operations/observability/alert-bot-routing.md`](../../operations/observability/alert-bot-routing.md).
 

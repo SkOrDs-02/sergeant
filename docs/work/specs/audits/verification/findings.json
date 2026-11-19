@@ -327,7 +327,7 @@
       "title": "`/api/internal/*` тримається на одному статичному секреті",
       "severity": "unrated",
       "source": "docs/work/specs/audits/ai-pipeline-2026-08-05.md",
-      "status": "open",
+      "status": "fixed-pending-verification",
       "history": [
         {
           "at": "2026-09-05",
@@ -338,6 +338,11 @@
           "at": "2026-11-19",
           "event": "retriaged",
           "note": "Ревалідація кодом 2026-11-19: частково закрито (коміт dbf15caf3: IP-allowlist, 120/хв rate limit, Zod у categorize). Залишок: при порожньому WEBHOOK_HMAC_SECRET HMAC пропускається, на старті лише warning (apps/server/src/env/env.ts). Фікс: падати на старті в проді за WEBHOOK_HMAC_REQUIRED, після переліку викликачів."
+        },
+        {
+          "at": "2026-11-19",
+          "event": "fixed",
+          "note": "Залишок закрито: у production assertStartupEnv кидає помилку, коли INTERNAL_API_KEY задано, WEBHOOK_HMAC_REQUIRED=true, а WEBHOOK_HMAC_SECRET порожній (рішення власника 2026-11-19). Replay-скрипти підписують запити (scripts/lib/sign-internal-request.mjs). Юніт-тести є; live-перевірки на проді немає, секрет у Coolify треба виставити до деплою."
         }
       ],
       "sourceAnchor": "B27 — `/api/internal/*` тримається на одному статичному секреті"
