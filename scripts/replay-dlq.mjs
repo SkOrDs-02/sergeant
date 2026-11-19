@@ -27,6 +27,8 @@
 // Env:
 //   API_BASE_URL       — default `http://localhost:3000`. Production — Railway URL.
 //   INTERNAL_API_KEY   — bearer-token для `/api/internal/*`. Обов'язковий.
+//   WEBHOOK_HMAC_SECRET — HMAC-секрет сервера. Обовʼязковий для проду: без
+//                        підпису прод відповідає 401 WEBHOOK_HMAC_INVALID.
 //
 // Exit codes:
 //   0  — успішно (dry-run report або всі rows replay-ені).
@@ -34,6 +36,7 @@
 //   2  — HTTP error (API недоступний / 4xx / 5xx).
 //   3  — partial failure (execute mode + ≥1 row-replay не вдався).
 
+import { internalSignatureHeaders } from "./lib/sign-internal-request.mjs";
 import { parseArgs } from "node:util";
 import process from "node:process";
 
@@ -56,6 +59,7 @@ Misc:
 
 Env:
   INTERNAL_API_KEY           Bearer token for /api/internal/*. Required.
+  WEBHOOK_HMAC_SECRET        HMAC secret; required against production.
   API_BASE_URL               Default API base if --api-base not passed.
 
 Examples:
@@ -263,6 +267,7 @@ async function main(argv) {
 async function callApi(apiBase, path, body, apiKey) {
   const url = `${apiBase.replace(/\/+$/, "")}${path}`;
 
+  const bodyText = JSON.stringify(body);
   let response;
   try {
     response = await fetch(url, {
@@ -270,8 +275,9 @@ async function callApi(apiBase, path, body, apiKey) {
       headers: {
         "content-type": "application/json",
         authorization: `Bearer ${apiKey}`,
+        ...internalSignatureHeaders(bodyText, process.env.WEBHOOK_HMAC_SECRET),
       },
-      body: JSON.stringify(body),
+      body: bodyText,
     });
   } catch (err) {
     die(`Network error calling ${url}: ${err?.message ?? err}`, 2);

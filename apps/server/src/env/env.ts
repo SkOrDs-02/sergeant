@@ -23,6 +23,7 @@ import {
 import { pgEnvShape } from "./pgEnv.js";
 import { syncEnvShape } from "./syncEnv.js";
 import { telegramEnvShape } from "./telegramEnv.js";
+import { checkWebhookHmacPosture } from "./webhookHmacStartup.js";
 
 const envSchema = z.object({
   ...aiRoutingEnvShape,
@@ -1065,22 +1066,9 @@ export function assertStartupEnv(): void {
     );
   }
 
-  // Прапорець обіцяє «непідписане відхиляємо», але сам верифікатор — no-op
-  // без секрета (`verifyWebhookRequest` → `if (!opts.secret) return ok`).
-  // Без цього попередження конфігурація `WEBHOOK_HMAC_REQUIRED=true` +
-  // порожній `WEBHOOK_HMAC_SECRET` виглядає захищеною і мовчить — рівно та
-  // форма «гейт, якого насправді немає», через яку в цьому репо вже двічі
-  // тихо ріс борг. Warn, а не throw: `/api/internal/*` і без HMAC лишається
-  // за fail-closed bearer-гейтом, тож валити старт було б непропорційно.
-  if (
-    env.WEBHOOK_HMAC_REQUIRED &&
-    env.INTERNAL_API_KEY &&
-    !env.WEBHOOK_HMAC_SECRET
-  ) {
-    warnings.push(
-      "WEBHOOK_HMAC_REQUIRED=true but WEBHOOK_HMAC_SECRET is empty — signature checking is OFF (the verifier no-ops without a secret). /api/internal/* is protected by the bearer token alone. Set WEBHOOK_HMAC_SECRET to make the flag mean anything.",
-    );
-  }
+  // AIP-20260805-B27: порожній HMAC-секрет при увімкненому прапорці —
+  // throw у проді, warning поза ним. Деталі в webhookHmacStartup.ts.
+  checkWebhookHmacPosture(env, isProduction, warnings);
 
   if (isProduction && !env.SENTRY_DSN) {
     throw new Error(

@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { cn } from "@shared/lib/ui/cn";
 import { messages } from "@shared/i18n/uk";
-import { measurementGuideRows } from "@shared/i18n/uk.fizruk";
+import { measurementGuideRows } from "@shared/i18n/uk.fizrukMeasurementGuide";
 import { SectionHeading } from "@shared/components/ui/SectionHeading";
 import { EmptyState } from "@shared/components/ui/EmptyState";
 import { DataTable } from "@shared/components/ui/DataTable";

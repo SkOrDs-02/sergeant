@@ -211,9 +211,6 @@ const TODO_UNCOVERED: readonly string[] = [
   // Billing: усі п'ять б'ють у платіжного провайдера (LiqPay/Plata/Stripe)
   "POST /api/billing/cancel",
   "POST /api/billing/checkout",
-  // Ручний Premium: user_id береться лише із сесії (тіло його не несе),
-  // після вставки йде повідомлення в Telegram founder-у (зовнішній виклик)
-  "POST /api/billing/manual-access",
   "POST /api/billing/plata-charge",
   "POST /api/billing/plata-status",
   "POST /api/billing/portal",
@@ -266,11 +263,12 @@ interface IsolationCase {
   verify?: (ctx: Ctx) => Promise<void>;
 }
 
-// Pre-parse гейт B28 (`preParseAuthGuard`) відсікає запити з тілом без
-// облікових даних ще до роутера, тож «користувач А» несе і Bearer: сам
-// користувач далі береться з `x-test-user` у моку `getSessionUser`.
+// `Authorization` тут не автентифікує (сесію дає мок `getSessionUser` за
+// `x-test-user`), а лише проходить pre-parse гейт B28
+// (`http/preParseAuthGuard.ts`): на роутах із великим тілом він відповідає 401
+// ще до парсера, якщо немає ні Bearer, ні session-cookie.
 const asA = (t: request.Test): request.Test =>
-  t.set("x-test-user", USER_A).set("Authorization", "Bearer test-session");
+  t.set("x-test-user", USER_A).set("Authorization", "Bearer iso-test-session");
 const MUTATING = { ...CSRF_HEADERS };
 
 const BACKUP_SECRET = "iso-backup-secret";

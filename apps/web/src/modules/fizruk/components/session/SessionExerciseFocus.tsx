@@ -1,5 +1,5 @@
 /**
- * Last validated: 2026-09-11
+ * Last validated: 2026-11-19
  * Status: Active
  */
 import { useState } from "react";
@@ -60,6 +60,8 @@ export interface SessionExerciseFocusProps {
   onUngroup: (() => void) | null;
   onOpenInfo: (() => void) | null;
   onOpenStats: (() => void) | null;
+  /** Ретро-сесія: без ✓ і відпочинку (див. `WorkoutItemCard.isRetro`). */
+  isRetro?: boolean | undefined;
 }
 
 /**
@@ -88,6 +90,7 @@ export function SessionExerciseFocus({
   onUngroup,
   onOpenInfo,
   onOpenStats,
+  isRetro = false,
 }: SessionExerciseFocusProps) {
   const ss = messages.fizruk.session;
   // Тип, обраний у перемикачі, запамʼятовується і їде між пристроями
@@ -225,6 +228,7 @@ export function SessionExerciseFocus({
             setDefaultForExercise={setDefaultForExercise}
             onDeleteSet={onDeleteSet}
             onMeasureChosen={rememberMeasure}
+            isRetro={isRetro}
           />
         </div>
       </section>

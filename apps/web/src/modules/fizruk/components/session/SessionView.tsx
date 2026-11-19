@@ -139,6 +139,9 @@ export function SessionView({
   // Фз-1: екран не гасне, поки відкрита активна сесія. Вихід зі сесії й
   // «Завершити» розмонтовують цей екран і відпускають блокування.
   useScreenWakeLock(keepScreenOn && !isReadOnly);
+  // Ретро-сесія: кінець уже введений у формі «Записати проведене» і чекає
+  // кроку «Завершити». Людина не тренується зараз, тож відпочинку немає.
+  const isRetro = !isReadOnly && Boolean(pendingRetroEnd);
   const items: WorkoutItem[] = activeWorkout.items || [];
   const groups: WorkoutGroup[] = useMemo(
     () => activeWorkout.groups || [],
@@ -337,6 +340,7 @@ export function SessionView({
                 ? () => onOpenExerciseStats(focused.exerciseId as string)
                 : null
             }
+            isRetro={isRetro}
           />
         ) : (
           <>

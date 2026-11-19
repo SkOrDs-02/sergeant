@@ -15,7 +15,7 @@ import {
   resolveExpenseCategoryMeta,
   type MonoAccount,
 } from "../../../modules/finyk/utils";
-import { fmt } from "../hubChatUtils";
+import { fmt, fmtExact } from "../hubChatUtils";
 import { getKyivDateParts } from "@shared/lib/time/kyivTime";
 import { formatUaWeekdayDate } from "@shared/lib/time/uaWeekdayDate";
 import type { AllData, BudgetGoal, BudgetLimit, CategoryDef } from "./types";
@@ -192,7 +192,7 @@ function appendMonthlyTotals(lines: string[], d: AllData, now: Date): void {
     // Ручна операція у всесвіті має id `manual_<id>`, а чат-тули (delete,
     // hide, change_category, split) шукають її за сирим id запису.
     lines.push(
-      `  id:${t.manualId ?? t.id} | ${date} | ${t.description || "—"} | ${fmt(t.amount / 100)} грн | ${cat.label}`,
+      `  id:${t.manualId ?? t.id} | ${date} | ${t.description || "—"} | ${fmtExact(t.amount / 100)} грн | ${cat.label}`,
     );
   });
 }

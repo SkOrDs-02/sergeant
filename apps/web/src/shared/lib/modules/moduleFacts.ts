@@ -4,7 +4,7 @@
  * (`shared/components/layout/ModuleSwitcherSheet`). Живе в shared, щоб
  * шапка не тягнула core і `MODULE_CONFIGS` у свій чанк.
  *
- * Last validated: 2026-10-19
+ * Last validated: 2026-11-19
  * Status: Active
  */
 import {
@@ -42,6 +42,19 @@ export function readModulePreview(id: HubModuleId): ModulePreview {
   return selectModulePreview(id, safeReadStringLS(QUICK_STATS_KEY[id]));
 }
 
+/**
+ * Суфікс тижневого лічильника Фізрука в рядку панелі.
+ *
+ * AI-CONTEXT: решта рядків панелі — значення ДНЯ (витрати сьогодні, звички
+ * сьогодні, ккал сьогодні), а Фізрук показує тренування за ТИЖДЕНЬ
+ * (`weekWorkouts`, тижнева серія — канон fizruk §7). Без позначки «1 трен.»
+ * поруч із денними числами читалось як «сьогодні»: вчорашнє тренування,
+ * внесене заднім числом, виглядало записаним на сьогодні (фідбек власника
+ * 2026-11-19). Тиждень лишається одиницею свідомо: день відпочинку не
+ * мусить показувати «–» у модулі, що хвалить відпочинок.
+ */
+export const FIZRUK_WEEK_SUFFIX = "за тиж.";
+
 /** Значення дня модуля для рядка панелі й аркуша (`null` = даних немає). */
 export function readModuleFact(
   id: HubModuleId,
@@ -49,9 +62,9 @@ export function readModuleFact(
   balanceHidden: boolean = isFinykBalanceHidden(),
 ): string | null {
   if (preview.main === null) return null;
-  return id === "finyk"
-    ? maskAmount(preview.main, balanceHidden)
-    : preview.main;
+  if (id === "finyk") return maskAmount(preview.main, balanceHidden);
+  if (id === "fizruk") return `${preview.main} ${FIZRUK_WEEK_SUFFIX}`;
+  return preview.main;
 }
 
 /** Модулі, увімкнені в налаштуваннях дашборда (те саме джерело, що й хаб). */

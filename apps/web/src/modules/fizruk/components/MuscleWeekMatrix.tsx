@@ -1,5 +1,5 @@
 /**
- * Last validated: 2026-08-07
+ * Last validated: 2026-11-19
  * Status: Active
  *
  * Матриця «мʼяз × тиждень» — signature-view Фізрука (П4). Обчислення й
@@ -18,7 +18,7 @@ import {
   MIN_WEEKS_WITH_DATA,
   type MuscleWeekMatrix,
 } from "../lib/muscleWeekMatrix";
-import { fmt } from "../lib/numberFmt";
+import { fmtLoose } from "../lib/numberFmt";
 
 /**
  * Мінімальна видима висота НЕНУЛЬОВОГО стовпчика.
@@ -64,7 +64,7 @@ function LatestWeekBars({ matrix }: MuscleVolumeBlockProps) {
               {row.label}
             </div>
             <div className="text-style-caption text-subtle tabular-nums">
-              {fmt(row.latest, 1)} {messages.fizruk.progress.muscleVolumeUnit}
+              {fmtLoose(row.latest)} {messages.fizruk.progress.muscleVolumeUnit}
             </div>
           </div>
           <div className="h-2 overflow-hidden rounded-lg border border-line bg-bg">
@@ -77,6 +77,9 @@ function LatestWeekBars({ matrix }: MuscleVolumeBlockProps) {
           </div>
         </div>
       ))}
+      <p className="text-style-caption text-subtle">
+        {messages.fizruk.progress.muscleVolumeHint}
+      </p>
     </div>
   );
 }
@@ -91,9 +94,9 @@ function WeekMatrix({ matrix }: MuscleVolumeBlockProps) {
         const spoken = fillVars(copy.muscleVolumeRowSpoken, {
           label: row.label,
           values: row.weekly
-            .map((v) => (v > 0 ? fmt(v, 1) : copy.muscleVolumeRestWeek))
+            .map((v) => (v > 0 ? fmtLoose(v) : copy.muscleVolumeRestWeek))
             .join(", "),
-          latest: fmt(row.latest, 1),
+          latest: fmtLoose(row.latest),
         });
         return (
           <div key={row.id} className="space-y-1">
@@ -102,7 +105,7 @@ function WeekMatrix({ matrix }: MuscleVolumeBlockProps) {
                 {row.label}
               </div>
               <div className="text-style-caption text-subtle tabular-nums">
-                {fmt(row.latest, 1)} {copy.muscleVolumeUnit}
+                {fmtLoose(row.latest)} {copy.muscleVolumeUnit}
               </div>
             </div>
             {/* Стовпчики сховані від скрінрідера — замість них іде речення
@@ -134,7 +137,7 @@ function WeekMatrix({ matrix }: MuscleVolumeBlockProps) {
         );
       })}
       <p className="text-style-caption text-subtle">
-        {copy.muscleVolumeWindowHint}
+        {copy.muscleVolumeWindowHint}. {copy.muscleVolumeHint}
       </p>
     </div>
   );

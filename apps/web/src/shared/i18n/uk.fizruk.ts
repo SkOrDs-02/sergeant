@@ -341,7 +341,13 @@ export const fizrukPageMessages = {
     rpeNotSetAriaLabel: "не вказано",
     rpeTriggerTitle: "Оцінка зусилля (RPE)",
     rpeMenuHeading: "Зусилля (RPE)",
-    rpeMenuHint: "Шкала Борга, 1–10, необовʼязково",
+    rpeMenuHint: "Наскільки важко дався підхід. Шкала Борга, необовʼязково.",
+    // Підпис порожньої клітинки замість прочерку: прочерк читався як
+    // вимкнений контрол, і поле ніхто не знаходив (фідбек 2026-11-19).
+    rpeEmptyLabel: "RPE",
+    // Краї шкали словами: голі числа 1–10 без опори не кажуть, що таке «7».
+    rpeLowAnchor: "1 · дуже легко",
+    rpeHighAnchor: "10 · межа",
     rpeClear: "Прибрати",
   },
   // "Тип" segmented control, moved out of `WorkoutItemCard` into
@@ -421,11 +427,13 @@ export const fizrukPageMessages = {
     bodyFatMetricLabel: "відсоток жиру",
     wellbeing: "Самопочуття",
     muscleVolume: "Обʼєм по мʼязах",
-    // Стовпчики малюють `loadPoints`, внутрішній бал, а не кілограми. Формулу
-    // з екрана знято (redesign v3.2, позиція 09), одиницю несе підпис біля
-    // числа: без неї «0,6» читалось як зламана вага.
-    muscleVolumeUnit: "у. о.",
-    muscleVolumeEmptyDescription: "Немає даних за останні 4 тижні.",
+    // З 2026-11-19 обʼєм — робочі підходи за тиждень, а не внутрішній бал
+    // «у. о.», з яким людина не мала з чим звірити число (фідбек власника).
+    muscleVolumeUnit: "підх.",
+    // Звідки береться половинка: інакше «2,5 підх.» читалось би як помилка.
+    muscleVolumeHint:
+      "Робочі підходи за тиждень. Мʼяз, що лише допомагає у вправі, отримує пів підходу.",
+    muscleVolumeEmptyDescription: "Немає силових підходів за останні 4 тижні.",
     // Матриця «мʼяз × тиждень». Плейсхолдери підставляються на місці
     // виклику — та сама конвенція, що в гребені Фініка: `MessageCatalog`
     // типізований як `string | MessageCatalog`, тож функції в каталозі
@@ -619,9 +627,13 @@ export const fizrukPageMessages = {
     markedSuffix: "уже позначено",
     today: "сьогодні",
     yesterday: "вчора",
-    finishTitle: "Біль після тренування",
+    // Не «біль після тренування»: так читалась і звичайна крепатура, а
+    // позначка — не оцінка дня, вона виключає зону з порад, доки її не
+    // знімуть вручну. Позначена крепатура тихо вимикала б ноги в порадах
+    // на тижні (фідбек власника 2026-11-19).
+    finishTitle: "Травма чи гострий біль?",
     finishDescription:
-      "Опційно познач одну або кілька зон: мʼяз, суглоб чи відділ хребта. Медичних порад тут немає: позначка лише прибирає позначене з порад з відновлення.",
+      "Крепатуру позначати не треба: звичайну ломоту в мʼязах відновлення вже враховує. Познач зону, якщо болить різко, у суглобі чи не так, як зазвичай. Вона зникне з порад, доки не знімеш позначку в «Моє тіло». Медичних порад тут немає.",
     skip: "Нічого не позначати",
     clearedToast: "Позначку болю знято.",
     clearFailedToast: "Не вдалося зняти позначку. Спробуй ще раз.",
@@ -834,47 +846,3 @@ export const fizrukPageMessages = {
     savedPrefix: "Імпорт записано:",
   },
 } as const;
-
-/**
- * Reference rows for the measurements guide table (`pages/Measurements.tsx`).
- *
- * Kept OUTSIDE `fizrukPageMessages` on purpose: the shared `MessageCatalog`
- * type is a plain-string tree (`string | MessageCatalog`), so a structured
- * array cannot live in the catalogue. Housing the copy here (rather than
- * inline JSX in the page) keeps it translatable and clears the
- * `no-cyrillic-jsx-literal` rule, while the dedicated type lets `DataTable`
- * infer its row shape.
- */
-export interface MeasurementGuideRow {
-  readonly metric: string;
-  readonly place: string;
-  readonly technique: string;
-}
-
-export const measurementGuideRows: readonly MeasurementGuideRow[] = [
-  {
-    metric: "Талія",
-    place: "Посередині між нижнім ребром і верхом тазової кістки",
-    technique: "Горизонтально, після звичайного видиху, не стягувати шкіру",
-  },
-  {
-    metric: "Стегна",
-    place: "Навколо найширшої частини сідниць",
-    technique: "Горизонтально, ноги разом",
-  },
-  {
-    metric: "Груди",
-    place: "Навколо грудної клітки на рівні сосків",
-    technique: "Горизонтально, руки розслаблені, без глибокого вдиху",
-  },
-  {
-    metric: "Біцепс",
-    place: "Посередині між плечем і ліктем",
-    technique: "Рука розслаблена; щоразу міряти ту саму руку",
-  },
-  {
-    metric: "Стегно",
-    place: "Навколо найширшої частини верхнього стегна",
-    technique: "Стояти рівно, вагу розподілити на обидві ноги",
-  },
-] as const;

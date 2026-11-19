@@ -1,5 +1,5 @@
 /**
- * Last validated: 2026-09-11
+ * Last validated: 2026-11-19
  * Status: Active
  */
 import { useRef, useState } from "react";
@@ -24,7 +24,7 @@ import {
   MAX_WEIGHT_KG,
 } from "../../lib/numericBounds";
 import { fmtLoose } from "../../lib/numberFmt";
-import { WorkoutSetRpeMenu } from "./WorkoutSetRpeMenu";
+import { RPE_CELL_CLASS, WorkoutSetRpeMenu } from "./WorkoutSetRpeMenu";
 
 export interface WorkoutSetRowProps {
   /** 0-based position inside `it.sets`. */
@@ -68,6 +68,14 @@ export interface WorkoutSetRowProps {
   /** Tap on the ✓ control once the row is "done" (see {@link isSetDone});
    * the caller decides whether this also starts the rest timer. */
   onCheckTap: () => void;
+  /**
+   * Чи показувати ✓. Запис тренування заднім числом (ретро-сесія з
+   * відкладеним кінцем) ✓ не має: там нема чого «завершувати» й нема
+   * відпочинку, а тап по ✓ запускав таймер посеред вечора, коли людина
+   * вже давно не в залі (фідбек власника 2026-11-19). Підхід із лічильною
+   * величиною і так зарахований (`isSetDone`), а наступний додає «+ Підхід».
+   */
+  showCheck?: boolean | undefined;
 }
 
 /**
@@ -92,15 +100,12 @@ export function isSetDone(
   return isSetCompleted(s, item);
 }
 
-/**
- * Ширина колонки RPE. На coarse-вказівнику страхувальне правило
- * `styles/mobile.css` піднімає `role="button"` тригера до 44 px, тож шапка
- * бере ту саму coarse-ширину, і сітка не пливе (зйомка 2026-11-18).
- * Кошика в рядку більше немає (рішення founder-а 2026-11-18): «Видалити
- * підхід» стоїть дією під рядками (`WorkoutItemCard`), а його 44 px +
- * проміжок віддано полям.
- */
-const TRAILING_SLOT_W = "w-9 pointer-coarse:w-11";
+// Колонка RPE має ширину `RPE_CELL_CLASS` (`w-11` на обох типах
+// вказівника: порожня клітинка несе підпис «RPE», фідбек власника
+// 2026-11-19), і шапка бере той самий клас, тож сітка не пливе.
+// Кошика в рядку більше немає (рішення founder-а 2026-11-18): «Видалити
+// підхід» стоїть дією під рядками (`WorkoutItemCard`), а його 44 px +
+// проміжок віддано полям.
 
 // `px-2`, не `px-3`: поле секунд чи метрів мусить вміщати плейсхолдер
 // діапазону плану («20–40») і чотиризначне число; з `px-3` у двопольному
@@ -173,6 +178,7 @@ export function WorkoutSetRow({
   onChangeRpe,
   onApplyGhost,
   onCheckTap,
+  showCheck = true,
 }: WorkoutSetRowProps) {
   const sr = messages.fizruk.setRow;
   const ss = messages.fizruk.session;
@@ -302,9 +308,12 @@ export function WorkoutSetRow({
 
   return (
     <div>
+      {/* `flex-wrap`: панель RPE (`WorkoutSetRpeMenu`) — `basis-full order-last`
+          дитина цього ж контейнера і переноситься на власну лінію під полями.
+          Поля мають `flex-1` (базис 0), тож самі по собі рядок не переносять. */}
       <div
         className={cn(
-          "flex items-center gap-2 rounded-lg px-1 py-1 -mx-1 transition-colors",
+          "flex flex-wrap items-center gap-2 rounded-lg px-1 py-1 -mx-1 transition-colors",
           isCurrent && !isReadOnly && "bg-panelHi",
         )}
         data-current={isCurrent && !isReadOnly ? "true" : undefined}
@@ -349,25 +358,27 @@ export function WorkoutSetRow({
             onChange={onChangeRpe}
           />
         )}
-        <button
-          type="button"
-          disabled={isReadOnly}
-          aria-label={checkAria}
-          data-set-slot="check"
-          className={cn(
-            "flex h-11 w-11 shrink-0 items-center justify-center rounded-lg border transition-colors",
-            "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-focus/45 focus-visible:ring-offset-2 focus-visible:ring-offset-bg",
-            "disabled:cursor-not-allowed",
-            done
-              ? "border-line bg-panelHi text-text hover:bg-panelHi"
-              : ghostSet
-                ? "border-line bg-panel text-text hover:bg-panelHi"
-                : "border-line bg-panel text-text opacity-70 hover:opacity-100",
-          )}
-          onClick={handleCheck}
-        >
-          <Icon name="check" size={18} aria-hidden />
-        </button>
+        {showCheck ? (
+          <button
+            type="button"
+            disabled={isReadOnly}
+            aria-label={checkAria}
+            data-set-slot="check"
+            className={cn(
+              "flex h-11 w-11 shrink-0 items-center justify-center rounded-lg border transition-colors",
+              "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-focus/45 focus-visible:ring-offset-2 focus-visible:ring-offset-bg",
+              "disabled:cursor-not-allowed",
+              done
+                ? "border-line bg-panelHi text-text hover:bg-panelHi"
+                : ghostSet
+                  ? "border-line bg-panel text-text hover:bg-panelHi"
+                  : "border-line bg-panel text-text opacity-70 hover:opacity-100",
+            )}
+            onClick={handleCheck}
+          >
+            <Icon name="check" size={18} aria-hidden />
+          </button>
+        ) : null}
       </div>
       {overflowText && (
         <p
@@ -382,11 +393,19 @@ export function WorkoutSetRow({
   );
 }
 
-/** Column captions rendered once above the first row of a set list. */
+/**
+ * Column captions rendered once above the first row of a set list.
+ * Слоти праворуч мусять дзеркалити рядок (`WorkoutSetRow`) класами, а не
+ * числами: інакше підписи полів роз'їжджаються з полями під ними.
+ */
 export function WorkoutSetColumnHeader({
   measure = "weight_reps",
+  showRpe = true,
+  showCheck = true,
 }: {
   measure?: ExerciseMeasure | undefined;
+  showRpe?: boolean | undefined;
+  showCheck?: boolean | undefined;
 }) {
   const ss = messages.fizruk.session;
   const mr = messages.fizruk.measureRow;
@@ -411,9 +430,12 @@ export function WorkoutSetColumnHeader({
           {caption(k)}
         </span>
       ))}
-      {/* RPE і ✓ — без підписів; ширини ті самі, що в рядку. */}
-      <span data-set-slot="rpe" className={cn("shrink-0", TRAILING_SLOT_W)} />
-      <span data-set-slot="check" className="w-11 shrink-0" />
+      {/* RPE несе підпис у самій порожній клітинці, ✓ — без підпису;
+          ширини ті самі, що в рядку. */}
+      {showRpe ? <span data-set-slot="rpe" className={RPE_CELL_CLASS} /> : null}
+      {showCheck ? (
+        <span data-set-slot="check" className="w-11 shrink-0" />
+      ) : null}
     </div>
   );
 }

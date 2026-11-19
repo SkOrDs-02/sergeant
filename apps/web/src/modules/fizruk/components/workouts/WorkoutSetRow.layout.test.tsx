@@ -20,8 +20,6 @@ import {
 
 import { WorkoutSetColumnHeader, WorkoutSetRow } from "./WorkoutSetRow";
 
-const COARSE_44 = "pointer-coarse:w-11";
-
 function renderRows(measure: ExerciseMeasure, isReadOnly = false) {
   return render(
     <div>
@@ -81,7 +79,9 @@ describe("WorkoutSetRow · сітка колонок", () => {
         els.forEach((el) => expect(el).not.toBeNull());
         const widths = new Set(els.map((el) => widthOf(el!)));
         expect(widths.size).toBe(1);
-        expect([...widths][0]).toContain(slot === "rpe" ? COARSE_44 : "w-11");
+        // RPE і ✓ — `w-11` на обох типах вказівника: порожня клітинка RPE
+        // несе підпис «RPE» (фідбек власника 2026-11-19, `RPE_CELL_CLASS`).
+        expect([...widths][0]).toBe("w-11");
       }
       // Кількість колонок поля однакова в шапці й рядках.
       const grow = (el: Element | null) =>

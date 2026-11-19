@@ -139,6 +139,15 @@ const HEADING_KEY =
 const CONFIRM_VERB =
   /^(Видалити|Очистити|Вимкнути|Відключити|Відʼєднати|Відвʼязати|Скинути|Замінити|Зберегти|Скопіювати|Відновити|Вийти|Скасувати|Перерахувати|Завершити)\s/u;
 
+/**
+ * Справжні питання, що не є підтвердженням дії: під заголовком стоять
+ * варіанти відповіді, тож питання не риторичне. Запис тут потребує причини.
+ */
+const ANSWERED_QUESTION_HEADINGS: Record<string, string> = {
+  "uk.fizruk.ts: finishTitle: «Травма чи гострий біль?»":
+    "крок травм після тренування: під заголовком частини тіла й «Нічого не позначати» (фідбек власника 2026-11-19, #1701)",
+};
+
 describe("заголовки в локалях без питань", () => {
   it("ключі *title / *heading / summary не закінчуються «?», крім підтверджень", () => {
     const dir = path.join(SRC, "shared/i18n");
@@ -148,7 +157,8 @@ describe("заголовки в локалях без питань", () => {
         const text = readFileSync(path.join(dir, f), "utf8");
         return [...text.matchAll(HEADING_KEY)]
           .filter((m) => !CONFIRM_VERB.test(m[2] ?? ""))
-          .map((m) => `${f}: ${m[1]}: «${m[2]}»`);
+          .map((m) => `${f}: ${m[1]}: «${m[2]}»`)
+          .filter((hit) => !ANSWERED_QUESTION_HEADINGS[hit]);
       });
     expect(hits).toEqual([]);
   });

@@ -372,6 +372,18 @@ export function fmt(n: number): string {
   return formatNumberUk(Math.round(n));
 }
 
+/**
+ * Сума в гривнях зі збереженими копійками (0–2 знаки, кома): «123,45».
+ * Для окремих операцій і точних сум операцій; агрегати (бюджети, прогнози,
+ * середні) лишаються на `fmt` із округленням до гривні (PILOT-20260905-AI-1).
+ */
+export function fmtExact(n: number): string {
+  return formatNumberUk(n, {
+    minimumFractionDigits: 0,
+    maximumFractionDigits: 2,
+  });
+}
+
 // IdleHandle can be either requestIdleCallback id (number) or setTimeout id (ReturnType<typeof setTimeout>)
 // We use a union type to avoid unsafe casts
 export type IdleHandle = number | ReturnType<typeof setTimeout>;
