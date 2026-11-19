@@ -12,7 +12,7 @@
     "preview:lhci": "vite preview --port 4173 --strictPort --host 127.0.0.1",
     "lighthouse": "lhci autorun --config=lighthouserc.json",
     "lint": "node --max-old-space-size=5120 ../../node_modules/eslint/bin/eslint.js --cache .",
-    "typecheck": "tsc -p tsconfig.json --noEmit && tsc -p tsconfig.sw.json --noEmit",
+    "typecheck": "node --max-old-space-size=4096 ../../node_modules/typescript/bin/tsc -p tsconfig.json --noEmit && tsc -p tsconfig.sw.json --noEmit",
     "test": "vitest run",
     "test:watch": "vitest",
     "test:coverage": "vitest run --coverage",
