@@ -303,7 +303,14 @@ describe("AssetsAssetsSection", () => {
     const updater = setManualAssets.mock.calls[0]![0] as (
       assets: State["manualAssets"],
     ) => State["manualAssets"];
-    expect(updater(state.manualAssets)[0]).toEqual({ name: "Оновлений актив" });
+    // Правка зливається з наявним записом: поля, яких форма не знає
+    // (журнал і курс рахунку-активу, `linkedTxIds`), не губляться.
+    expect(updater(state.manualAssets)[0]).toEqual({
+      id: "asset-1",
+      name: "Оновлений актив",
+      amount: 1000,
+      currency: "UAH",
+    });
     expect(state.setEditingAssetId).toHaveBeenCalledWith(null);
   });
 

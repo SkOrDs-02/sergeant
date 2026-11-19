@@ -7,6 +7,8 @@
  * in one place instead of being spread across row-level icon actions.
  */
 import { useMemo, useState } from "react";
+import { AssetLinkSection } from "./AssetLinkSection";
+import type { AssetLinkApi } from "../pages/transactions/useAssetLinks";
 import type {
   Transaction,
   TxSplit,
@@ -105,6 +107,8 @@ export interface BankTransactionDetailsSheetProps {
    */
   cashWithdrawal?:
     { countedAsExpense: boolean; onToggle: () => void } | undefined;
+  /** «Відкладення»: привʼязка до рахунку-активу (спека finyk-savings-assets). */
+  assetLink?: AssetLinkApi | undefined;
   onClose: () => void;
 }
 
@@ -173,6 +177,7 @@ export function BankTransactionDetailsSheet({
   onToggleHidden,
   onToggleExcludedFromStats,
   cashWithdrawal,
+  assetLink,
   onClose,
 }: BankTransactionDetailsSheetProps) {
   const copy = messages.finyk.transactionDetails;
@@ -477,6 +482,10 @@ export function BankTransactionDetailsSheet({
               className="w-full"
             />
           </section>
+        )}
+
+        {assetLink && (
+          <AssetLinkSection transaction={transaction} api={assetLink} />
         )}
 
         <section className="space-y-2 rounded-panel border border-line bg-panel p-3">

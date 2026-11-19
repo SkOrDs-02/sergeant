@@ -93,6 +93,12 @@ export interface FinykExcludedTxIdsInput {
    * банківські операції з `transactions`, тож викликач передає їх сюди.
    */
   cashOnHand?: CashOnHandState | null | undefined;
+  /**
+   * Операції, привʼязані до рахунків-активів як внесок чи повернення
+   * (`assetTransferTxIds` у `domain/assets/savings.ts`): переказ у
+   * відкладення, не витрата й не дохід (спека `finyk-savings-assets.md`).
+   */
+  assetTransferTxIds?: Iterable<string> | null | undefined;
 }
 
 /** Переказ, позначений на самій транзакції (не через мапу оверрайдів). */
@@ -148,6 +154,10 @@ export function buildFinykExcludedTxIds(
   }
 
   for (const id of input.excludedStatTxIds ?? []) {
+    if (id) out.add(String(id));
+  }
+
+  for (const id of input.assetTransferTxIds ?? []) {
     if (id) out.add(String(id));
   }
 

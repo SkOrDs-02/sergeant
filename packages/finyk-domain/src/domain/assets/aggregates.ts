@@ -15,6 +15,12 @@ import { calcDebtRemaining, calcReceivableRemaining } from "../debtEngine.js";
 import { getMonoTotals, filterVisibleAccounts } from "../../lib/accounts.js";
 import { CURRENCY, CURRENCY_SYMBOL } from "../../constants.js";
 import type { Transaction } from "../types.js";
+import {
+  assetValueMinor,
+  isAssetClosed,
+  localTodayKey,
+  toUahMinor,
+} from "./valuation.js";
 import type {
   AssetsDebt,
   AssetsReceivable,
@@ -25,22 +31,35 @@ import type {
 } from "./types.js";
 
 /**
- * Sum UAH-denominated manual assets. Non-UAH entries are ignored —
- * Assets (and Overview) treat the FX portfolio as out-of-scope for
- * networth until a live FX rate is wired up. Non-UAH assets are a paid
- * feature (`multi-currency` gate in `AssetsForm.tsx`), so callers that
- * surface this total to the user must also surface the excluded count —
- * see `nonUahManualAssetCount` in `useOverviewData.ts` and the Overview
- * banner in `Overview.tsx` (web), and the `nonUahManualAssetCount` banner
- * in mobile `AssetsPage.tsx`.
+ * Сума ручних активів у гривнях (основні одиниці). Вартість кожного —
+ * `assetValueMinor` (старий актив без типу — `amount`; депозит, ОВДП, фонд —
+ * розрахунок за спекою `finyk-savings-assets.md`); негривневий входить за
+ * курсом, який ввів користувач, а без курсу — ні (його мусить назвати
+ * `countExcludedManualAssets`: банер на Огляді й картка капіталу в Активах).
+ * Закриті активи не входять.
  */
 export function sumManualAssetsUAH(
   manualAssets: readonly ManualAsset[] | null | undefined,
+  today: string = localTodayKey(),
 ): number {
   if (!manualAssets) return 0;
-  return manualAssets
-    .filter((a) => a.currency === "UAH")
-    .reduce((sum, a) => sum + Number(a.amount || 0), 0);
+  let minor = 0;
+  for (const a of manualAssets) {
+    if (!a || isAssetClosed(a)) continue;
+    const uah = toUahMinor(a, assetValueMinor(a, today));
+    if (uah !== null) minor += uah;
+  }
+  return minor / 100;
+}
+
+/** Активи, що не входять у капітал через валюту без курсу (не закриті). */
+export function countExcludedManualAssets(
+  manualAssets: readonly ManualAsset[] | null | undefined,
+): number {
+  if (!manualAssets) return 0;
+  return manualAssets.filter(
+    (a) => a && !isAssetClosed(a) && toUahMinor(a, 0) === null,
+  ).length;
 }
 
 /**
@@ -138,6 +157,7 @@ export function computeAssetsSummary(input: AssetsSummaryInput): AssetsSummary {
     transactions,
     jars,
     cashOnHandMinor,
+    today,
   } = input;
 
   const { balance: monoBalance, debt: monoDebt } = getMonoTotals(
@@ -145,7 +165,7 @@ export function computeAssetsSummary(input: AssetsSummaryInput): AssetsSummary {
     hiddenAccounts,
   );
 
-  const manualAssetTotal = sumManualAssetsUAH(manualAssets);
+  const manualAssetTotal = sumManualAssetsUAH(manualAssets, today);
   const jarsTotal = sumJarsUAH(jars);
   const manualDebtTotal = sumDebtsRemaining(manualDebts, transactions);
   const receivableTotal = sumReceivablesRemaining(receivables, transactions);

@@ -32,6 +32,8 @@ import type { UseFinykReceiptLinksResult } from "../../hooks/useFinykReceiptLink
 import { ConfirmDialog } from "@shared/components/ui/ConfirmDialog";
 import { TransferSuggestions } from "./TransferSuggestionList";
 import { useTransferSuggestions } from "./useTransferSuggestions";
+import { useAssetLinks } from "./useAssetLinks";
+import { AssetLinkSuggestions } from "./AssetLinkSuggestions";
 import {
   isCashWithdrawalCandidate,
   type CashOnHandState,
@@ -51,6 +53,7 @@ import type {
 } from "@sergeant/finyk-domain/domain/debtEngine";
 import type { ManualExpense } from "@sergeant/finyk-domain/domain/personalization";
 import type { ManualExpenseLinkSnapshot } from "../../hooks/manualExpenseDebtLinks";
+import type { ManualAsset } from "../../hooks/useStorage";
 
 /**
  * Merged-account shape produced by `useUnifiedFinanceData` (Mono + Privat).
@@ -183,6 +186,10 @@ export interface TransactionsStorageSlice extends FinykTxTagsSlice {
     restoredLinks?: readonly ManualExpenseLinkSnapshot[],
   ) => void;
   removeManualExpense: (id: string) => ManualExpenseLinkSnapshot[] | void;
+  /** Рахунки-активи для привʼязки внесків (спека finyk-savings-assets). */
+  manualAssets?: ManualAsset[] | undefined;
+  setManualAssets?:
+    ((updater: (assets: ManualAsset[]) => ManualAsset[]) => void) | undefined;
 }
 
 export interface TransactionsProps {
@@ -325,6 +332,17 @@ export function Transactions({
     hiddenTxIds,
     txCategories,
     jars,
+    overrideCategory,
+  });
+
+  // Внески в рахунки-активи (спека finyk-savings-assets).
+  const assetLinks = useAssetLinks({
+    storageReady,
+    activeTx: filters.activeTx,
+    hiddenTxIds,
+    excludedTxIds,
+    manualAssets: storage.manualAssets,
+    setManualAssets: storage.setManualAssets,
     overrideCategory,
   });
 
@@ -557,6 +575,7 @@ export function Transactions({
               }}
               onSnoozeAll={transfers.snoozeAll}
             />
+            <AssetLinkSuggestions {...assetLinks} />
             <TransactionFilters
               filter={filters.filter}
               onChangeFilter={filters.setFilter}
@@ -654,6 +673,7 @@ export function Transactions({
                 }
               : undefined
           }
+          assetLink={assetLinks.linkFor(editingBankTransaction)}
           onClose={() => setEditingBankTransaction(null)}
         />
       )}
