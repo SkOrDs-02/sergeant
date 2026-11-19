@@ -266,7 +266,11 @@ interface IsolationCase {
   verify?: (ctx: Ctx) => Promise<void>;
 }
 
-const asA = (t: request.Test): request.Test => t.set("x-test-user", USER_A);
+// Pre-parse гейт B28 (`preParseAuthGuard`) відсікає запити з тілом без
+// облікових даних ще до роутера, тож «користувач А» несе і Bearer: сам
+// користувач далі береться з `x-test-user` у моку `getSessionUser`.
+const asA = (t: request.Test): request.Test =>
+  t.set("x-test-user", USER_A).set("Authorization", "Bearer test-session");
 const MUTATING = { ...CSRF_HEADERS };
 
 const BACKUP_SECRET = "iso-backup-secret";
