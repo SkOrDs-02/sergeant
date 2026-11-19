@@ -23,6 +23,8 @@ export {
   aiCostEstimateUsd,
   openRouterNoEndpointsTotal,
   initOpenRouterNoEndpointsSeries,
+  chatSynthesisEmptyRetryTotal,
+  initChatSynthesisEmptyRetrySeries,
   infraMonthlyCostUsd,
   voyageDailyBudgetUsd,
   anthropicPromptCacheHitTotal,

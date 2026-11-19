@@ -1,6 +1,6 @@
 # Довідник Prometheus-метрик
 
-> **Last touched:** 2026-11-19 by @claude (AI: `openrouter_no_endpoints_total` +`reason=ignored`); 2026-11-19 by @claude (AI: +`openrouter_no_endpoints_total` і алерт `OpenRouterNoEndpoints`); 2026-10-23 by @claude (auth: +`auth_password_check_failures_total`, sec-10); 2026-10-20 by @claude (sync: +1 apply-reason `invalid_prefs_patch`, data-04); 2026-10-03 by @claude (sync: +1 engine-reason `invalid_text_encoding`, §4; раніше: джерело істини → реєстр `obs/metrics/`; alert-routing без n8n; зняті хардкоди лічильників). **Next review:** 2026-12-16.
+> **Last touched:** 2026-11-19 by @claude (AI: +`chat_synthesis_empty_retry_total`, страховка-перезапит порожнього синтезу, § 6a); 2026-11-19 by @claude (AI: `openrouter_no_endpoints_total` +`reason=ignored`); 2026-11-19 by @claude (AI: +`openrouter_no_endpoints_total` і алерт `OpenRouterNoEndpoints`); 2026-10-23 by @claude (auth: +`auth_password_check_failures_total`, sec-10); 2026-10-20 by @claude (sync: +1 apply-reason `invalid_prefs_patch`, data-04); 2026-10-03 by @claude (sync: +1 engine-reason `invalid_text_encoding`, §4; раніше: джерело істини → реєстр `obs/metrics/`; alert-routing без n8n; зняті хардкоди лічильників). **Next review:** 2026-12-16.
 > **Status:** Active — **каталог неповний**, див. врізку одразу нижче
 
 > **⚠️ Каталог відстав від коду — і відстає далі.**
@@ -311,6 +311,7 @@ Join-pattern із `app_build_info` (один gauge=1 на інстанс із л
 | `chat_first_turn_phase_ms`           | Histogram | `phase`                           | [chat.ts](../../../apps/server/src/modules/chat/chat.ts) — перший хід, JSON і стрім                         |
 | `chat_first_turn_first_visible_ms`   | Histogram | `kind` · `source`                 | [chatFirstTurnStream.ts](../../../apps/server/src/modules/chat/chatFirstTurnStream.ts) — стрім першого ходу |
 | `chat_first_turn_silent_retry_total` | Counter   | `reason`                          | [chatFirstTurnStream.ts](../../../apps/server/src/modules/chat/chatFirstTurnStream.ts) — стрім першого ходу |
+| `chat_synthesis_empty_retry_total`   | Counter   | `outcome`                         | [chatStreamEmptyRetry.ts](../../../apps/server/src/modules/chat/chatStreamEmptyRetry.ts) — стрім синтезу    |
 
 **Ці метрики міряють різні шляхи, і плутати їх — головна пастка секції.**
 `/api/chat` має два ходи. До 2026-11-18 стрімився лише **другий** — синтез
@@ -352,6 +353,20 @@ Join-pattern із `app_build_info` (один gauge=1 на інстанс із л
 Три фази умовні й порожні в анона: `correlations` і `preferences` потребують
 сесії, `upstream` не пишеться при попаданні в response-cache. Відсутність серії
 тут — відповідь, а не діра.
+
+**Страховка-перезапит порожнього синтезу** (рішення власника 2026-11-19).
+`chat_synthesis_empty_retry_total{outcome="recovered"|"still_empty"|"error"}`
+рахує перезапити туру синтезу без міркувань: стрім через шлюз закрився успішно
+без жодного символу тексту, і сервер раз перепитав той самий payload з
+`thinking: {type: "disabled"}`. `recovered` — людина отримала текст без
+помилки; `still_empty` — знову порожньо, квота повертається, загальна помилка;
+`error` — перезапит не відкрився або обірвався. Три серії заводяться нулем.
+Вимикач `CHAT_SYNTHESIS_EMPTY_RETRY=off`. Перезапит пише власну мітку
+`endpoint="chat-tool-result-retry"` в `ai_requests_total`, `ai_tokens_total` і
+`ai_cost_estimate_usd_total`, тож його вартість видно окремо, а
+`ai_first_token_ms` відновленої відповіді включає невдалу першу спробу. Як
+читати частку — [runbook.md § ChatSynthesisEmptyRetry](./runbook.md#chatsynthesisemptyretry).
+Алерту немає: поріг ратифікують після заміру в проді.
 
 **Кардинальність**: 8 phase × (9 buckets + `_sum` + `_count` + `+Inf`) ≈ **96**
 серій. Бакети навмисно рідші за сусідні гістограми (`5, 25, 100, 250, 500,

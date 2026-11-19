@@ -61,6 +61,33 @@ export function initOpenRouterNoEndpointsSeries(): void {
 initOpenRouterNoEndpointsSeries();
 
 /**
+ * Страховка-перезапит порожнього туру синтезу чату (рішення власника
+ * 2026-11-19, `modules/chat/chatStreamEmptyRetry.ts`): стрім синтезу через
+ * шлюз закрився успішно без жодного символу тексту, і сервер раз перепитав
+ * без міркувань. `outcome`: `recovered` (перезапит дав текст), `still_empty`
+ * (знову порожньо, людина бачить загальну помилку), `error` (перезапит не
+ * відкрився або обірвався). Частку порожніх перших спроб дає ділення суми
+ * на `ai_requests_total{endpoint="chat-tool-result",provider="openrouter"}`.
+ * Модель і текст — лише в лозі `chat_stream_empty_retry` без тексту
+ * відповіді (Hard Rule #21). Три серії заводяться нулем зі старту, щоб
+ * `increase()` бачив перший перезапит.
+ */
+export const chatSynthesisEmptyRetryTotal = new client.Counter({
+  name: "chat_synthesis_empty_retry_total",
+  help: "Retries without reasoning after an empty streamed chat synthesis, by outcome",
+  labelNames: ["outcome"], // recovered|still_empty|error
+  registers: [register],
+});
+
+/** Заводить три серії нулем (після `reset()` у тестах — теж). */
+export function initChatSynthesisEmptyRetrySeries(): void {
+  for (const outcome of ["recovered", "still_empty", "error"]) {
+    chatSynthesisEmptyRetryTotal.inc({ outcome }, 0);
+  }
+}
+initChatSynthesisEmptyRetrySeries();
+
+/**
  * PR-33 — fixed monthly subscription cost для зовнішніх не-AI-провайдерів,
  * чий `usage` runtime-instance не бачить (Railway, Vercel, PostHog, Sentry).
  * Також тримає envelop-budget-и для AI-провайдерів (Anthropic / Voyage),

@@ -108,7 +108,10 @@ export type OpenRouterQuantizationFloor =
  * квантизацією від 8 біт `deepseek/deepseek-v4-flash` (синтез Free/standard)
  * ішов на Baidu 100 %, а Baidu віддавав порожній текст із «салатом» у полі
  * `reasoning` (16 із 42 на стенді, 4 із 5 стрімів синтезу через `/messages`).
- * Без Baidu (`provider.ignore`) запити пішли на Fireworks: 39/42, порожня одна.
+ * Без Baidu (`provider.ignore`) запити пішли на Fireworks: 39/42, порожня одна
+ * (це без стріму). У стрімі той самий Fireworks дав 9 порожніх із 30
+ * (`eval:stream --repeat=30`, 2026-11-19); їх закриває страховка-перезапит
+ * без міркувань (`CHAT_SYNTHESIS_EMPTY_RETRY`).
  * Слаг звірено наживо в `GET /api/v1/models/deepseek/deepseek-v4-flash/endpoints`
  * (`tag: "baidu/fp8"`; базовий слаг `baidu` за документацією шлюзу ловить
  * усі варіанти й регіони постачальника).
@@ -317,6 +320,25 @@ export const aiRoutingEnvShape = {
     z
       .enum(CHAT_SYNTHESIS_PREMIUM_REASONING_EFFORTS)
       .default(CHAT_SYNTHESIS_PREMIUM_REASONING_EFFORT_DEFAULT),
+  ),
+
+  /**
+   * Страховка-перезапит порожнього ТУРУ СИНТЕЗУ `/api/chat` у стрімі, лише
+   * через шлюз (рішення власника 2026-11-19). Незадана або порожня — `on`:
+   * стрім синтезу закрився успішно без жодного символу тексту → сервер рівно
+   * один раз перепитує той самий payload з `thinking: {type: "disabled"}` у
+   * ту саму SSE-відповідь (`modules/chat/chatStreamEmptyRetry.ts`). Будь-яка
+   * модель синтезу на шлюзі, будь-який тир.
+   *
+   * `off` — аварійний відкат без релізу: порожня відповідь знову одразу дає
+   * людині загальну помилку і повертає квоту (поведінка до 2026-11-19).
+   * Регістр і пробіли не важливі; будь-що поза переліком валить старт.
+   * Перший хід, JSON-синтез і прямий Anthropic її не читають. Реєстр і умова
+   * зняття — `docs/engineering/architecture/feature-flags.md` § 3.1.
+   */
+  CHAT_SYNTHESIS_EMPTY_RETRY: z.preprocess(
+    (v) => (typeof v === "string" ? v.trim().toLowerCase() || undefined : v),
+    z.enum(["on", "off"]).default("on"),
   ),
 
   LLM_PROVIDER: llmProviderEnum("anthropic"),

@@ -1,6 +1,6 @@
 # Observability-runbook
 
-> **Last touched:** 2026-11-19 by @claude (OpenRouterNoEndpoints: `reason=ignored`, список обходу `OPENROUTER_IGNORE_PROVIDERS`); 2026-11-19 by @claude (секція OpenRouterNoEndpoints); 2026-10-23 by @claude (секції AuthPasswordCheckFailureSeries, sec-10, і PlataSyncSlowTickStale, `plataSync` у `/health/workers`, rel-19); 2026-10-20 by @claude (секція ReminderSweepFailed, rel-01); 2026-10-03 by @claude (секція Renovate PR → PR Dependabot, ADR-0103). **Next review:** 2026-12-02.
+> **Last touched:** 2026-11-19 by @claude (секція ChatSynthesisEmptyRetry: як читати частку перезапитів порожнього синтезу); 2026-11-19 by @claude (OpenRouterNoEndpoints: `reason=ignored`, список обходу `OPENROUTER_IGNORE_PROVIDERS`); 2026-11-19 by @claude (секція OpenRouterNoEndpoints); 2026-10-23 by @claude (секції AuthPasswordCheckFailureSeries, sec-10, і PlataSyncSlowTickStale, `plataSync` у `/health/workers`, rel-19); 2026-10-20 by @claude (секція ReminderSweepFailed, rel-01); 2026-10-03 by @claude (секція Renovate PR → PR Dependabot, ADR-0103). **Next review:** 2026-12-02.
 > **Status:** Active
 
 > **Update 2026-07-21:** API/server logs — **Coolify** ([ADR-0074](../../governance/adr/0074-hosting-hetzner-coolify.md)). Посилання на «n8n Railway env» нижче — legacy n8n hosting (migrate TBD). OpenClaw WF-103 env — historical ([ADR-0075](../../governance/adr/0075-openclaw-gateway-decommissioned.md)).
@@ -373,6 +373,29 @@ session-check чекає слот.
    заборону зберігання даних — це відступ від рішення власника про
    приватність, тож лише з його згоди. Постійне виправлення — заміна моделі
    слоту (`env/aiRoutingEnv.ts`, `env/chatModels.ts`) із заміром.
+
+## ChatSynthesisEmptyRetry
+
+Алерту немає (поріг ратифікують після заміру в проді); секція пояснює, як
+читати `chat_synthesis_empty_retry_total`. Модель синтезу на шлюзі інколи пише
+відповідь лише в міркування і закриває стрім без тексту; сервер тоді раз
+перепитує без міркувань (`modules/chat/chatStreamEmptyRetry.ts`, рішення
+власника 2026-11-19).
+
+- Частка порожніх перших спроб:
+  `sum(increase(chat_synthesis_empty_retry_total[1d])) / sum(increase(ai_requests_total{endpoint="chat-tool-result",provider="openrouter"}[1d]))`.
+  Офлайн-замір 2026-11-19 (`deepseek-v4-flash`, короткий вхід, Fireworks):
+  9 з 30 і 14 з 30; на вході прод-розміру 0 з 40.
+- Що бачить людина: `outcome="recovered"` — нічого (плюс приблизно 1 с);
+  `still_empty` і `error` — загальну помилку з поверненою квотою. Частка
+  `still_empty + error` від суми і є залишковий збій.
+- Модель — у лозі Pino `msg=chat_stream_empty_retry` (поля `outcome`,
+  `model`, `reason` без тексту відповіді); фінальна порожнеча додатково пише
+  `msg=chat_stream_empty_ok` з полем `retry` (`still_empty` | `error` |
+  `none`, де `none` — перезапиту не було: прямий Anthropic або вимикач).
+- Зростання `still_empty` означає, що модель порожніє і без міркувань: це
+  питання заміни моделі слоту, а не перезапиту. Вимикач без релізу:
+  `CHAT_SYNTHESIS_EMPTY_RETRY=off` (Coolify env, рестарт).
 
 ## ProgrammerErrors
 

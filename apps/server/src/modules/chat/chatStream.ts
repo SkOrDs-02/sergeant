@@ -20,6 +20,12 @@ import {
   MAX_TEXT_CONTINUATIONS,
   refundQuotaOnUpstreamFailure,
 } from "./chatShared.js";
+import {
+  type EmptyRetryOutcome,
+  emptySynthesisRetryEnabled,
+  noteEmptyRetry,
+  withoutReasoning,
+} from "./chatStreamEmptyRetry.js";
 
 interface StreamEvent {
   type: string;
@@ -371,6 +377,14 @@ export async function streamAnthropicToSse(
   let currentElapsedMs = firstStream.elapsedMs as (() => number) | undefined;
   let continuationsLeft = MAX_TEXT_CONTINUATIONS;
   let lastOutcome: string | undefined;
+  // Страховка-перезапит порожнього синтезу (`chatStreamEmptyRetry.ts`): після
+  // нього і payload (без міркувань), і мітка ендпоінта для usage інші, а
+  // continuation, якщо знадобиться, продовжує вже payload перезапиту.
+  let activePayload: Record<string, unknown> = payload;
+  let currentEndpoint = endpoint;
+  let emptyRetryOutcome: EmptyRetryOutcome | null = null;
+  let emptyRetryInFlight = false;
+  const modelLabel = (payload["model"] as string) || "unknown";
 
   try {
     while (true) {
@@ -419,14 +433,9 @@ export async function streamAnthropicToSse(
       // ще до першої події) — лишаємо контракт як був: жодних метрик не
       // інкрементимо, щоб не давати fake-сигналу.
       if (iter.usage) {
-        const iterModel = (payload["model"] as string) || "unknown";
-        const iterEndpoint =
-          continuationsLeft === MAX_TEXT_CONTINUATIONS
-            ? endpoint
-            : `${endpoint}-cont`;
         recordAnthropicUsage(
-          iterModel,
-          iterEndpoint,
+          modelLabel,
+          currentEndpoint,
           iter.usage,
           promptVersion,
           userId,
@@ -439,6 +448,76 @@ export async function streamAnthropicToSse(
             traceId,
           },
         );
+      }
+
+      if (emptyRetryInFlight) {
+        emptyRetryInFlight = false;
+        emptyRetryOutcome = iter.accumulatedText
+          ? "recovered"
+          : iter.outcome === "error"
+            ? "error"
+            : "still_empty";
+        noteEmptyRetry(emptyRetryOutcome, {
+          endpoint,
+          model: modelLabel,
+          ...(iter.streamErrorReason ? { reason: iter.streamErrorReason } : {}),
+        });
+      }
+
+      // Модель закрила стрім успішно, але весь текст лишився в міркуваннях
+      // (deepseek-v4-flash на шлюзі, замір 2026-11-19). Рівно один перезапит
+      // того самого payload без міркувань у ту саму SSE-відповідь: heartbeat
+      // триває, клієнт не бачить ні помилки, ні розриву.
+      if (
+        iter.outcome === "ok" &&
+        !accumulatedAllText &&
+        emptyRetryOutcome === null &&
+        !abortSignal?.aborted &&
+        !res.writableEnded &&
+        emptySynthesisRetryEnabled()
+      ) {
+        activePayload = withoutReasoning(payload);
+        currentEndpoint = `${endpoint}-retry`;
+        try {
+          const retryStream = await anthropicMessagesStream(
+            apiKey,
+            activePayload,
+            {
+              endpoint: currentEndpoint,
+              timeoutMs: 60000,
+              signal: abortSignal,
+              allowOpenRouter: true,
+              userId,
+              traceId,
+            },
+          );
+          if (!retryStream.response.ok) {
+            retryStream.recordStreamEnd("error");
+            await retryStream.response.body?.cancel().catch(() => undefined);
+            emptyRetryOutcome = "error";
+            noteEmptyRetry("error", {
+              endpoint,
+              model: modelLabel,
+              reason: `status_${retryStream.response.status}`,
+            });
+            break;
+          }
+          currentResponse = retryStream.response;
+          currentRecordEnd = retryStream.recordStreamEnd;
+          currentProvider = retryStream.provider as AiProvider | undefined;
+          currentElapsedMs = retryStream.elapsedMs as
+            (() => number) | undefined;
+          emptyRetryInFlight = true;
+          continue;
+        } catch (e) {
+          emptyRetryOutcome = "error";
+          noteEmptyRetry("error", {
+            endpoint,
+            model: modelLabel,
+            reason: e instanceof Error ? e.name : "unknown",
+          });
+          break;
+        }
       }
 
       if (
@@ -462,7 +541,7 @@ export async function streamAnthropicToSse(
       try {
         const nextStream: AnthropicStreamResult = await anthropicMessagesStream(
           apiKey,
-          { ...payload, messages: nextMessages },
+          { ...activePayload, messages: nextMessages },
           {
             endpoint: `${endpoint}-cont`,
             timeoutMs: 60000,
@@ -489,6 +568,7 @@ export async function streamAnthropicToSse(
         currentRecordEnd = nextRecordEnd;
         currentProvider = nextStream.provider as AiProvider | undefined;
         currentElapsedMs = nextStream.elapsedMs as (() => number) | undefined;
+        currentEndpoint = `${endpoint}-cont`;
         continuationsLeft -= 1;
       } catch {
         // Той самий принцип, що й у pre-SSE гілці: сирий провайдерний/мережевий
@@ -537,7 +617,10 @@ export async function streamAnthropicToSse(
     logger.warn({
       msg: "chat_stream_empty_ok",
       endpoint,
-      model: (payload["model"] as string) || "unknown",
+      model: modelLabel,
+      // Розрізняє «порожньо й після перезапиту» від «перезапит упав» і
+      // «перезапиту не було» (прямий Anthropic, вимикач `off`).
+      retry: emptyRetryOutcome ?? "none",
     });
     res.write(`data: ${JSON.stringify({ err: SSE_GENERIC_ERROR })}\n\n`);
   }
