@@ -166,6 +166,12 @@ test("@critical fizruk: start → set → refresh → resume → finish", async 
   ).toHaveValue("8");
 
   await page.getByRole("button", { name: "Завершити" }).click();
+  // Фз-2 (2026-11-18): «Завершити» у шапці спершу питає «Завершити зараз?»,
+  // сесію закриває кнопка в самому підтвердженні (`alertdialog`).
+  await page
+    .getByRole("alertdialog")
+    .getByRole("button", { name: "Завершити" })
+    .click();
   // Крок «Самопочуття» аркуша `WorkoutFinishSheets` — його «Пропустити».
   await page.getByRole("button", { name: "Пропустити" }).click();
   await expect(
