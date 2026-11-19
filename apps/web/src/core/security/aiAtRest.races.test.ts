@@ -16,25 +16,38 @@ function deferred<T>(): Deferred<T> {
 
 const h = vi.hoisted(() => ({
   keyGate: null as null | Promise<unknown>,
+  /** `true` — ключ є в IDB, але зараз не завантажується. */
+  keyFails: false,
   seals: [] as Array<{
     slot: string;
     plain: string;
     resolve: (v: string) => void;
+    reject: (e: unknown) => void;
   }>,
-  opens: [] as Array<{ ct: string; resolve: (v: string) => void }>,
+  opens: [] as Array<{
+    ct: string;
+    resolve: (v: string) => void;
+    reject: (e: unknown) => void;
+  }>,
 }));
 
 vi.mock("./aiAtRestCrypto", () => ({
-  ensureKey: () => (h.keyGate ?? Promise.resolve({})).then(() => ({})),
+  ensureKey: () =>
+    (h.keyGate ?? Promise.resolve({})).then(() => (h.keyFails ? null : {})),
   resetKey: () => undefined,
   seal: (slot: string, plain: string) =>
-    new Promise<string>((resolve) => h.seals.push({ slot, plain, resolve })),
+    new Promise<string>((resolve, reject) =>
+      h.seals.push({ slot, plain, resolve, reject }),
+    ),
   open: (_slot: string, env: { ct: string }) =>
-    new Promise<string>((resolve) => h.opens.push({ ct: env.ct, resolve })),
+    new Promise<string>((resolve, reject) =>
+      h.opens.push({ ct: env.ct, resolve, reject }),
+    ),
 }));
 
 import {
   __resetAtRestKeyForTests,
+  chatLegacyHistorySlot,
   chatSessionsSlot,
   memoryBankSlot,
 } from "./aiAtRest";
@@ -67,11 +80,13 @@ const originalIDB = (globalThis as { indexedDB?: unknown }).indexedDB;
 beforeEach(async () => {
   (globalThis as { indexedDB?: unknown }).indexedDB = {};
   h.keyGate = null;
+  h.keyFails = false;
   h.seals.length = 0;
   h.opens.length = 0;
   await __resetAtRestKeyForTests();
   chatSessionsSlot.remove();
   memoryBankSlot.remove();
+  chatLegacyHistorySlot.remove();
   webKVStore.remove("hub_user_profile_meta_v1");
   await tick();
 });
@@ -173,6 +188,148 @@ describe("aiAtRest: гонки", () => {
     release();
     await chatSessionsSlot.flush();
     expect(safeReadStringLS(KEY)).toBeNull();
+  });
+});
+
+describe("aiAtRest: ключ недоступний vs нечитний шифртекст (#12)", () => {
+  it("ключ не завантажився: слот замкнений, шифртекст цілий, потім відмикається", async () => {
+    webKVStore.setString(KEY, envOf("history"));
+    h.keyFails = true;
+    await chatSessionsSlot.hydrate();
+    expect(chatSessionsSlot.isLocked()).toBe(true);
+    expect(chatSessionsSlot.read()).toBeNull();
+
+    // Споживач, що побачив «порожньо», пише нове — історію це не затирає.
+    expect(await chatSessionsSlot.write("new-only")).toBe(false);
+    await chatSessionsSlot.flush();
+    expect(safeReadStringLS(KEY)).toBe(envOf("history"));
+    expect(h.seals).toHaveLength(0);
+
+    h.keyFails = false;
+    const hydrating = chatSessionsSlot.hydrate();
+    await tick();
+    h.opens[0]!.resolve("history");
+    await hydrating;
+    expect(chatSessionsSlot.isLocked()).toBe(false);
+    expect(chatSessionsSlot.read()).toBe("history");
+  });
+
+  it("ключ є, а шифртекст не відкривається: порожньо, наступний запис замінює", async () => {
+    webKVStore.setString(KEY, envOf("garbage"));
+    const hydrating = chatSessionsSlot.hydrate();
+    await tick();
+    h.opens[0]!.reject(new DOMException("bad tag", "OperationError"));
+    await hydrating;
+    expect(chatSessionsSlot.isLocked()).toBe(false);
+    expect(chatSessionsSlot.read()).toBeNull();
+
+    const p = chatSessionsSlot.write("fresh");
+    await tick();
+    resolveSeal("fresh");
+    expect(await p).toBe(true);
+    expect(safeReadStringLS(KEY)).toBe(envOf("fresh"));
+  });
+
+  it("ключ пропав між гідратацією і записом: запис не пише відкритий текст", async () => {
+    await chatSessionsSlot.hydrate();
+    h.keyFails = true;
+    await __resetAtRestKeyForTests();
+    expect(await chatSessionsSlot.write("secret")).toBe(false);
+    expect(safeReadStringLS(KEY)).toBeNull();
+  });
+});
+
+describe("aiAtRest: барʼєр без вікна (#13) і відкритий фолбек (#14)", () => {
+  it("#13 нове утримання одразу після відпускання теж тримає запис", async () => {
+    const release1 = holdAtRestWrites();
+    void chatSessionsSlot.write("A");
+    await tick();
+    resolveSeal("A");
+    await tick();
+    release1();
+    const release2 = holdAtRestWrites(); // синхронно, як у перевірці на виході
+    await tick();
+    expect(safeReadStringLS(KEY)).toBeNull();
+    release2();
+    await chatSessionsSlot.flush();
+    expect(safeReadStringLS(KEY)).toBe(envOf("A"));
+  });
+
+  it("#14 без WebCrypto/IDB відкритий запис теж чекає барʼєра", async () => {
+    (globalThis as { indexedDB?: unknown }).indexedDB = undefined;
+    await __resetAtRestKeyForTests();
+    const release = holdAtRestWrites();
+    const p = chatSessionsSlot.write("P");
+    expect(safeReadStringLS(KEY)).toBeNull();
+    release();
+    expect(await p).toBe(true);
+    expect(safeReadStringLS(KEY)).toBe("P");
+  });
+
+  it("#14 стирання під час барʼєра скасовує відкритий запис", async () => {
+    (globalThis as { indexedDB?: unknown }).indexedDB = undefined;
+    await __resetAtRestKeyForTests();
+    const release = holdAtRestWrites();
+    const p = chatSessionsSlot.write("P");
+    chatSessionsSlot.remove();
+    release();
+    await p;
+    expect(safeReadStringLS(KEY)).toBeNull();
+  });
+
+  it("#14 без барʼєра відкритий запис синхронний", async () => {
+    (globalThis as { indexedDB?: unknown }).indexedDB = undefined;
+    await __resetAtRestKeyForTests();
+    void chatSessionsSlot.write("P");
+    expect(safeReadStringLS(KEY)).toBe("P");
+  });
+});
+
+describe("aiAtRest: результат запису (#15)", () => {
+  it("відмова шифрування → false", async () => {
+    const p = chatLegacyHistorySlot.write("x");
+    await tick();
+    h.seals[0]!.reject(new Error("boom"));
+    expect(await p).toBe(false);
+  });
+
+  it("перекритий новішим записом → true", async () => {
+    const p1 = chatSessionsSlot.write("1");
+    const p2 = chatSessionsSlot.write("2");
+    await tick();
+    resolveSeal("2");
+    resolveSeal("1");
+    expect(await p1).toBe(true);
+    expect(await p2).toBe(true);
+    expect(safeReadStringLS(KEY)).toBe(envOf("2"));
+  });
+
+  it("memoryBank: відмова запису не рухає мітку і не штовхає на сервер", async () => {
+    const pushed = vi.fn();
+    const off = subscribeLocalMemoryEdit(pushed);
+    writeMemoryEntries([{ id: "m1", fact: "x", category: "other" } as never]);
+    await tick();
+    h.seals[0]!.reject(new Error("quota"));
+    await memoryBankSlot.flush();
+    await tick();
+    expect(readMemoryBankMeta().updatedAt).toBe(MEMORY_BANK_META_EPOCH);
+    expect(pushed).not.toHaveBeenCalled();
+    off();
+  });
+
+  it("memoryBank: замкнений слот (ключ недоступний) — так само", async () => {
+    webKVStore.setString("hub_user_profile_v1", envOf("[]"));
+    h.keyFails = true;
+    await memoryBankSlot.hydrate();
+    expect(memoryBankSlot.isLocked()).toBe(true);
+    const pushed = vi.fn();
+    const off = subscribeLocalMemoryEdit(pushed);
+    writeMemoryEntries([{ id: "m1", fact: "x", category: "other" } as never]);
+    await tick();
+    expect(readMemoryBankMeta().updatedAt).toBe(MEMORY_BANK_META_EPOCH);
+    expect(pushed).not.toHaveBeenCalled();
+    expect(safeReadStringLS("hub_user_profile_v1")).toBe(envOf("[]"));
+    off();
   });
 });
 

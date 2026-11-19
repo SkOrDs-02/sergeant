@@ -45,3 +45,8 @@ export function atRestWritesReleased(): Promise<void> {
   if (holds === 0) return Promise.resolve();
   return new Promise((resolve) => waiters.push(resolve));
 }
+
+/** Синхронно: чи тримається зараз барʼєр. */
+export function atRestWritesHeld(): boolean {
+  return holds > 0;
+}

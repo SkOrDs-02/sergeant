@@ -21,6 +21,7 @@ type TestOutcome =
 const persistFinykNormalizedToSqlite = vi.fn(
   async (_v: unknown, _mode?: unknown): Promise<TestOutcome> => APPLIED,
 );
+import { chatLegacyHistorySlot } from "../security/aiAtRest";
 vi.mock("../../modules/finyk/lib/finykBackup", () => ({
   normalizeFinykBackup: (v: unknown) => normalizeFinykBackup(v),
   readFinykBackupFromStorage: () => readFinykBackupFromStorage(),
@@ -202,6 +203,21 @@ describe("applyHubBackupPayload", () => {
       validPayload({ hub: { chatHistory: '[{"role":"user"}]' } }),
     );
     expect(localStorage.getItem(HUB_CHAT_KEY)).toBe('[{"role":"user"}]');
+  });
+
+  it("B24: шифрований запис історії чату не ліг → відновлення кидає, а не рапортує успіх", async () => {
+    const spy = vi
+      .spyOn(chatLegacyHistorySlot, "write")
+      .mockResolvedValue(false);
+    try {
+      await expect(
+        applyHubBackupPayload(
+          validPayload({ hub: { chatHistory: '[{"role":"user"}]' } }),
+        ),
+      ).rejects.toThrow(/історію чату/);
+    } finally {
+      spy.mockRestore();
+    }
   });
 
   it("hub: у режимі merge не перебиває наявний останній розділ і чат, у replace перебиває", async () => {

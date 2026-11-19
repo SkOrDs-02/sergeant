@@ -8,6 +8,7 @@ import {
   safeReadLSValidatedDurable,
   safeWriteLSDurable,
 } from "@shared/lib/storage/storage";
+import { logger } from "@shared/lib";
 import { memoryBankSlot } from "../security/aiAtRest";
 import { getAtRestWipeEpoch } from "../security/aiAtRestEpoch";
 import type { MemoryEntry } from "./types";
@@ -343,7 +344,7 @@ let memoryWriteGeneration = 0;
 
 /**
  * Пише банк у зашифрований слот (aiAtRest), а мітку часу й сповіщення —
- * лише ПІСЛЯ того, як шифртекст ліг у сховище. Інакше релоад у вікні
+ * лише ПІСЛЯ того, як шифртекст справді ліг у сховище (`stored`). Інакше релоад у вікні
  * шифрування лишав би свіжу мітку при старих записах, і reconcile на буті
  * штовхнув би їх на сервер як «новіші». Записи, перекриті новішим записом
  * або стиранням (вихід), мітку не ставлять: її поставить новіший запис, а
@@ -365,16 +366,27 @@ function commitMemoryBank(
   const epoch = getAtRestWipeEpoch();
   const ownerId = currentMemoryBankOwner;
   const done = memoryBankSlot.write(serialized);
-  const finish = () => {
+  const finish = (stored: boolean) => {
     if (generation !== memoryWriteGeneration) return;
     if (epoch !== getAtRestWipeEpoch()) return;
+    if (!stored) {
+      // Записи лишились тільки в памʼяті (ключ недоступний чи сховище
+      // відмовило): мітку часу не рухаємо і на сервер не штовхаємо, інакше
+      // reconcile вважав би старі записи на диску «новішими». UI бачить
+      // поточний стан із кешу.
+      logger.warn("[memoryBank] encrypted write not stored");
+      notify(listeners, entries);
+      return;
+    }
     writeMemoryBankMeta(updatedAt, ownerId);
     notify(listeners, entries);
     // L-8: write-through push читає мітку з meta, тож лише після неї.
     if (local) notify(localEditListeners, entries);
   };
+  // Синхронно завершитись запис може лише двома шляхами: відкритий запис
+  // (середовище без шифрування, успіх) або замкнений слот (відмова).
   if (memoryBankSlot.hasPendingWrite()) void done.then(finish);
-  else finish();
+  else finish(!memoryBankSlot.isLocked());
 }
 
 export function writeMemoryEntries(entries: MemoryEntry[]): void {

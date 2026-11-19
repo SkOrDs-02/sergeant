@@ -84,11 +84,11 @@ export function ensureKey(): Promise<CryptoKey | null> {
       keyState = "ready";
       return cryptoKey;
     } catch (err) {
-      keyState = "unavailable";
-      logger.warn(
-        "[aiAtRest] шифрування недоступне, історія лишається відкритим текстом",
-        err,
-      );
+      // Не кешуємо відмову: збій IDB чи переповнення може бути тимчасовим,
+      // наступний виклик спробує знову. Без ключа слоти з шифртекстом
+      // замикаються (aiAtRest), а відкритого тексту замість них не пишуть.
+      keyPromise = null;
+      logger.warn("[aiAtRest] key unavailable", err);
       return null;
     }
   })();

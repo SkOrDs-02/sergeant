@@ -363,7 +363,16 @@ export async function applyHubBackupPayload(
       if (mode === "replace" || !chatLegacyHistorySlot.read()) {
         // Чекаємо шифрований запис: HubBackupPanel перезавантажує сторінку
         // одразу після відновлення, і запис у вікні шифрування загубився б.
-        await chatLegacyHistorySlot.write(h.chatHistory);
+        // `false`: шифрований запис не ліг (ключ недоступний чи сховище
+        // відмовило). Кажемо про це, як і про збій модуля, а не «успіх».
+        if (!(await chatLegacyHistorySlot.write(h.chatHistory))) {
+          const done = restored.map((m) => RESTORE_MODULE_NAMES[m]).join(", ");
+          throw new Error(
+            done
+              ? `Відновлено: ${done}. Не вдалось відновити: історію чату. Спробуй імпорт ще раз.`
+              : "Не вдалось відновити історію чату. Спробуй імпорт ще раз.",
+          );
+        }
       }
     }
   }

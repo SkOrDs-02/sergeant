@@ -34,7 +34,11 @@
 // шифртекст нечитний, слот вважається порожнім і лог, чат не падає.
 
 import { logger } from "@shared/lib";
-import { atRestWritesReleased, getAtRestWipeEpoch } from "./aiAtRestEpoch";
+import {
+  atRestWritesHeld,
+  atRestWritesReleased,
+  getAtRestWipeEpoch,
+} from "./aiAtRestEpoch";
 import type { Envelope } from "./aiAtRestCrypto";
 import {
   safeReadStringLS,
@@ -44,7 +48,10 @@ import {
   safeWriteStringLSDurable,
   webKVStore,
 } from "@shared/lib/storage/storage";
-type KeyState = "idle" | "ready" | "unavailable";
+// `unavailable` — середовище без WebCrypto/IDB (постійно, пишемо відкритий
+// текст); `failed` — ключ не завантажився зараз (тимчасово: шифртекст
+// замикаємо, відкритого тексту не пишемо, наступний виклик пробує знову).
+type KeyState = "idle" | "ready" | "unavailable" | "failed";
 let keyState: KeyState = "idle";
 
 /** Синхронна перевірка середовища: без WebCrypto/IDB шифрувати нічим. */
@@ -74,10 +81,10 @@ async function ensureKey(): Promise<boolean> {
   }
   try {
     const key = await (await loadCrypto()).ensureKey();
-    keyState = key ? "ready" : "unavailable";
+    keyState = key ? "ready" : "failed";
     return key !== null;
   } catch (err) {
-    keyState = "unavailable";
+    keyState = "failed";
     logger.warn("[aiAtRest] crypto chunk failed", err);
     return false;
   }
@@ -112,9 +119,12 @@ export async function sealAtRest(
   return (await loadCrypto()).seal(slot, plain);
 }
 
+/** Ключа немає ЗАРАЗ: шифртекст цілий, просто нічим відкрити. */
+class KeyUnavailableError extends Error {}
+
 async function openEnvelope(slot: string, env: Envelope): Promise<string> {
   if (keyState !== "ready" && !(await ensureKey())) {
-    throw new Error("ключ недоступний");
+    throw new KeyUnavailableError("ключ недоступний");
   }
   return (await loadCrypto()).open(slot, env);
 }
@@ -144,10 +154,18 @@ export interface AtRestSlot {
   read(): string | null;
   /**
    * Синхронно оновлює кеш, шифрує і пише асинхронно (останній виграє).
-   * Проміс резолвиться, коли запис ліг у сховище або його перекрив новіший
-   * запис чи стирання; ніколи не відхиляється.
+   * Проміс резолвиться `true`, коли запис ліг у сховище або його перекрив
+   * новіший запис чи стирання, і `false`, коли записати не вдалось
+   * (шифрування чи сховище відмовили, слот замкнений); ніколи не
+   * відхиляється.
    */
-  write(plain: string): Promise<void>;
+  write(plain: string): Promise<boolean>;
+  /**
+   * `true`, коли в сховищі лежить шифртекст, а ключа зараз немає. Читання
+   * дає `null`, записи не персистяться (щоб не затерти історію), наступна
+   * гідратація пробує розшифрувати знову.
+   */
+  isLocked(): boolean;
   /** `true`, поки якийсь запис цього слота ще не дійшов до сховища. */
   hasPendingWrite(): boolean;
   /** Синхронне стирання (приватність: purge не чекає на WebCrypto). */
@@ -172,7 +190,8 @@ function createSlot(name: string, backend: Backend): AtRestSlot {
   // змінились: інакше старий результат перезаписав би новіший стан.
   let seq = 0;
   let epochSeen = getAtRestWipeEpoch();
-  const inflight = new Set<Promise<void>>();
+  let locked = false;
+  const inflight = new Set<Promise<boolean>>();
   const listeners = new Set<() => void>();
 
   const emit = () => {
@@ -195,29 +214,55 @@ function createSlot(name: string, backend: Backend): AtRestSlot {
     epochSeen = e;
     plain = undefined;
     rawSeen = undefined;
+    locked = false;
     seq += 1;
   };
 
-  /** Шифрує й пише; відкритий текст лише якщо шифрування недоступне взагалі. */
-  const persist = (text: string, mySeq: number): Promise<void> => {
+  /** Реєструє запис, що летить, для `flush()`/`hasPendingWrite()`. */
+  const track = (p: Promise<boolean>): Promise<boolean> => {
+    const tracked = p.finally(() => {
+      inflight.delete(tracked);
+    });
+    inflight.add(tracked);
+    return tracked;
+  };
+
+  /**
+   * Фізичний запис після барʼєра. Поки триває утримання (партиція тимчасово
+   * чужа), чекаємо; між останньою перевіркою барʼєра й записом немає жодного
+   * await, тож нове утримання не вклиниться. Перекритий запис — `true`.
+   */
+  const commit = async (
+    out: string,
+    mySeq: number,
+    myEpoch: number,
+  ): Promise<boolean> => {
+    while (atRestWritesHeld()) await atRestWritesReleased();
+    if (!stillCurrent(mySeq, myEpoch)) return true;
+    backend.write(out);
+    rawSeen = out;
+    return true;
+  };
+
+  /** Шифрує й пише. Без ключа нічого не пише: відкритого тексту не буде. */
+  const persist = (text: string, mySeq: number): Promise<boolean> => {
     const myEpoch = getAtRestWipeEpoch();
-    const p = sealAtRest(name, text)
-      .then(async (env) => {
-        // Поки активна SQLite-партиція тимчасово чужа, фізичний запис чекає.
-        await atRestWritesReleased();
-        if (!stillCurrent(mySeq, myEpoch)) return;
-        const out = env ?? text;
-        backend.write(out);
-        rawSeen = out;
-      })
-      .catch((err: unknown) => {
-        logger.warn(`[aiAtRest] write failed: ${name}`, err);
-      })
-      .finally(() => {
-        inflight.delete(p);
-      });
-    inflight.add(p);
-    return p;
+    return track(
+      sealAtRest(name, text)
+        .then((env) => {
+          if (env === null) {
+            logger.warn(
+              `[aiAtRest] key unavailable, write kept in memory: ${name}`,
+            );
+            return false;
+          }
+          return commit(env, mySeq, myEpoch);
+        })
+        .catch((err: unknown) => {
+          logger.warn(`[aiAtRest] write failed: ${name}`, err);
+          return false;
+        }),
+    );
   };
 
   /**
@@ -230,10 +275,12 @@ function createSlot(name: string, backend: Backend): AtRestSlot {
     if (raw === null) {
       plain = null;
       rawSeen = null;
+      locked = false;
       return true;
     }
     const env = parseEnvelope(raw);
     if (!env) {
+      locked = false;
       // Легасі відкритий текст: читаємо як є й перезаписуємо зашифрованим.
       plain = raw;
       rawSeen = raw;
@@ -246,15 +293,24 @@ function createSlot(name: string, backend: Backend): AtRestSlot {
       return true;
     }
     let next: string | null;
+    let nextLocked = false;
     try {
       next = await openEnvelope(name, env);
     } catch (err) {
-      logger.warn(`[aiAtRest] undecryptable, treated as empty: ${name}`, err);
       next = null;
+      if (err instanceof KeyUnavailableError) {
+        // Ключ є, але не завантажився: шифртекст не чіпаємо.
+        nextLocked = true;
+        logger.warn(`[aiAtRest] key unavailable, slot locked: ${name}`, err);
+      } else {
+        // Ключ відкрився, а шифртекст ні (інший ключ, пошкодження).
+        logger.warn(`[aiAtRest] undecryptable, treated as empty: ${name}`, err);
+      }
     }
     if (!stillCurrent(mySeq, myEpoch)) return false;
     plain = next;
     rawSeen = raw;
+    locked = nextLocked;
     return true;
   };
 
@@ -266,6 +322,7 @@ function createSlot(name: string, backend: Backend): AtRestSlot {
       if (raw === null) {
         plain = null;
         rawSeen = null;
+        locked = false;
         return null;
       }
       if (plain !== undefined && raw === rawSeen) return plain;
@@ -274,6 +331,7 @@ function createSlot(name: string, backend: Backend): AtRestSlot {
         // Легасі відкритий текст (або режим без шифрування).
         plain = raw;
         rawSeen = raw;
+        locked = false;
         if (keyState === "ready") void persist(raw, seq);
         return raw;
       }
@@ -289,13 +347,26 @@ function createSlot(name: string, backend: Backend): AtRestSlot {
       checkEpoch();
       plain = text;
       seq += 1;
-      if (keyState === "unavailable" || !envSupportsCrypto()) {
-        // Синхронний відкритий запис: нема чим шифрувати (див. шапку).
-        backend.write(text);
-        rawSeen = text;
-        return Promise.resolve();
+      if (locked) {
+        // Шифртекст у сховищі цілий, просто ключа зараз немає: запис лише в
+        // памʼяті, інакше він затер би всю історію.
+        logger.warn(`[aiAtRest] slot locked, write kept in memory: ${name}`);
+        return Promise.resolve(false);
+      }
+      if (!envSupportsCrypto()) {
+        // Відкритий запис: середовище без WebCrypto/IDB (див. шапку).
+        // Синхронно, якщо барʼєра немає; інакше чекаємо його, як і шифрований.
+        if (!atRestWritesHeld()) {
+          backend.write(text);
+          rawSeen = text;
+          return Promise.resolve(true);
+        }
+        return track(commit(text, seq, getAtRestWipeEpoch()));
       }
       return persist(text, seq);
+    },
+    isLocked() {
+      return locked;
     },
     hasPendingWrite() {
       return inflight.size > 0;
@@ -304,6 +375,7 @@ function createSlot(name: string, backend: Backend): AtRestSlot {
       seq += 1;
       plain = null;
       rawSeen = null;
+      locked = false;
       backend.remove();
     },
     onExternalChange(fn) {
@@ -318,8 +390,9 @@ function createSlot(name: string, backend: Backend): AtRestSlot {
       checkEpoch();
       if (inflight.size > 0) return;
       const before = plain;
+      const wasLocked = locked;
       const applied = await absorb(backend.read());
-      if (applied && plain !== before) emit();
+      if (applied && (plain !== before || locked !== wasLocked)) emit();
     },
     async flush() {
       while (inflight.size > 0) {
