@@ -34,6 +34,7 @@
 // шифртекст нечитний, слот вважається порожнім і лог, чат не падає.
 
 import { logger } from "@shared/lib";
+import { getAtRestWipeEpoch } from "./aiAtRestEpoch";
 import type { Envelope } from "./aiAtRestCrypto";
 import {
   safeReadStringLS,
@@ -147,6 +148,7 @@ function createSlot(name: string, backend: Backend): AtRestSlot {
   let rawSeen: string | null | undefined;
   let seq = 0;
   let pending = 0;
+  let epochSeen = getAtRestWipeEpoch();
   const listeners = new Set<() => void>();
 
   const emit = () => {
@@ -162,9 +164,11 @@ function createSlot(name: string, backend: Backend): AtRestSlot {
   /** Шифрує й пише; відкритий текст лишається, якщо шифрування недоступне. */
   const persist = (text: string, mine: number): Promise<void> => {
     pending += 1;
+    const ep = getAtRestWipeEpoch();
     return sealAtRest(name, text)
       .then((env) => {
-        if (mine !== seq) return; // новіший запис/стирання вже випередив
+        // Новіший запис або масове стирання (hubChatOwner/purge) випередили.
+        if (mine !== seq || ep !== getAtRestWipeEpoch()) return;
         const out = env ?? text;
         backend.write(out);
         rawSeen = out;
@@ -203,8 +207,19 @@ function createSlot(name: string, backend: Backend): AtRestSlot {
     rawSeen = raw;
   };
 
+  /** Масове стирання сирих ключів поза слотом скидає кеш і запис, що летить. */
+  const checkEpoch = () => {
+    const e = getAtRestWipeEpoch();
+    if (e === epochSeen) return;
+    epochSeen = e;
+    plain = undefined;
+    rawSeen = undefined;
+    seq += 1;
+  };
+
   const slot: AtRestSlot = {
     read() {
+      checkEpoch();
       if (pending > 0 && plain !== undefined) return plain;
       const raw = backend.read();
       if (raw === null) {
@@ -228,6 +243,7 @@ function createSlot(name: string, backend: Backend): AtRestSlot {
       return plain ?? null;
     },
     write(text) {
+      checkEpoch();
       plain = text;
       seq += 1;
       if (keyState === "unavailable" || !envSupportsCrypto()) {

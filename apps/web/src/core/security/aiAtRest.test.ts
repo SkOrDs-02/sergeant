@@ -8,6 +8,7 @@ import {
   memoryBankSlot,
   sealAtRest,
 } from "./aiAtRest";
+import { bumpAtRestWipeEpoch } from "./aiAtRestEpoch";
 import { safeReadStringLS, webKVStore } from "@shared/lib/storage/storage";
 
 const KEY = "hub_chat_sessions_v1";
@@ -129,6 +130,16 @@ describe("aiAtRest", () => {
     await hydrateAtRest();
     chatSessionsSlot.write(PLAIN);
     chatSessionsSlot.remove();
+    await flush();
+    expect(chatSessionsSlot.read()).toBeNull();
+    expect(safeReadStringLS(KEY)).toBeNull();
+  });
+
+  it("масове стирання поза слотом (епоха) не дає запису, що летить, воскреснути", async () => {
+    await hydrateAtRest();
+    chatSessionsSlot.write(PLAIN);
+    webKVStore.remove(KEY);
+    bumpAtRestWipeEpoch();
     await flush();
     expect(chatSessionsSlot.read()).toBeNull();
     expect(safeReadStringLS(KEY)).toBeNull();

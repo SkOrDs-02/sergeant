@@ -65,6 +65,7 @@ import { STORAGE_KEYS } from "@sergeant/shared";
 // eslint-disable-next-line sergeant-design/no-flat-shared-lib -- log/ is a real subdir; mirrors storageManager.ts.
 import { logger } from "../log";
 import { SERGEANT_STORE, dbClear, dbDel } from "../idb/sergeantDb";
+import { bumpAtRestWipeEpoch } from "../../../core/security/aiAtRestEpoch";
 import { resolveLsStore, safeListSSKeys, safeRemoveSS } from "./storage";
 import { reloadAllTypedStores } from "./typedStore";
 import { resetKvStoreBoot } from "../../../core/db/kvStoreBoot";
@@ -202,6 +203,8 @@ export async function purgeNutritionIdbStores(): Promise<void> {
  * blocks the others or the logout flow.
  */
 export async function purgeAppOwnedLocalData(): Promise<void> {
+  // Зашифровані AI-слоти (aiAtRest): запис, що летить, не має воскресити стерте.
+  bumpAtRestWipeEpoch();
   try {
     purgeAppOwnedLocalStorage();
   } catch (err) {
