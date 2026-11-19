@@ -1,6 +1,7 @@
 import express from "express";
 import request from "supertest";
 import { beforeEach, describe, expect, it, vi } from "vitest";
+import { errorHandler } from "../../http/errorHandler.js";
 
 const { getLLMProviderMock, invokeLLMMock, envMock } = vi.hoisted(() => ({
   getLLMProviderMock: vi.fn(() => ({ name: "stub" })),
@@ -32,6 +33,7 @@ async function makeApp(): Promise<express.Express> {
   const app = express();
   app.use(express.json());
   app.use(createCategorizeInternalRouter());
+  app.use(errorHandler);
   return app;
 }
 
@@ -73,7 +75,7 @@ describe("createCategorizeInternalRouter", () => {
       .send({ description: "Unknown merchant", amount: 12345 });
 
     expect(res.status).toBe(503);
-    expect(res.body).toEqual({
+    expect(res.body).toMatchObject({
       error: "AI-помічник тимчасово недоступний. Спробуй пізніше.",
       code: "ANTHROPIC_KEY_MISSING",
     });

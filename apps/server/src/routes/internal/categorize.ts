@@ -4,6 +4,7 @@ import { getLLMProvider, invokeLLM } from "../../lib/llm/provider.js";
 import { lookupMccCategory } from "../../lib/mcc/mccMap.js";
 import { maskPii } from "../../lib/pii-mask.js";
 import { monoMccMatchTotal } from "../../obs/metrics.js";
+import { AppError } from "../../obs/errors.js";
 import { env } from "../../env.js";
 import { providerUpstreamReady } from "../../http/requireAnthropicKey.js";
 
@@ -198,16 +199,16 @@ export function createCategorizeInternalRouter(): Router {
     // Без ключа обраного `LLM_READONLY_PROVIDER` `getLLMProvider` мовчки віддає
     // StubProvider → `{other, 0}` з 200 (AIP-20260805-B20). Гейтимо лише шлях,
     // якому справді потрібна модель: відомий MCC резолвиться таблицею і без
-    // ключа. Тіло 503 те саме, що в `requireLlmUpstream` (coach/digest).
+    // ключа. Той самий `code`, що в `requireLlmUpstream` (coach/digest), через
+    // errorHandler, тож відповідь несе й requestId.
     if (
       lookupMccCategory(body.mcc) === null &&
       !providerUpstreamReady("readonly")
     ) {
-      res.status(503).json({
-        error: "AI-помічник тимчасово недоступний. Спробуй пізніше.",
-        code: "ANTHROPIC_KEY_MISSING",
-      });
-      return;
+      throw new AppError(
+        "AI-помічник тимчасово недоступний. Спробуй пізніше.",
+        { status: 503, code: "ANTHROPIC_KEY_MISSING" },
+      );
     }
     try {
       const result = await categorizeTransaction({
