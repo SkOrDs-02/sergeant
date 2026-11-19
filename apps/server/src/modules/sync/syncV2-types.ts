@@ -212,6 +212,13 @@ export const ENGINE_REJECT_REASONS = [
    * (аудит 2026-10-01, `data-17`). Для клієнта це термінальна відмова.
    */
   "invalid_text_encoding",
+  /**
+   * `increment`, старший за вікно журналу `SYNC_OP_LOG_APPLIED_RETENTION_DAYS`
+   * (ADR-0105 §2): його ключ ідемпотентності чистка могла вже видалити, і
+   * повтор подвоїв би лічильник (`staleIncrementGuard.ts`). Діє лише за
+   * увімкненої чистки; для клієнта це термінальна відмова.
+   */
+  "stale_increment",
 ] as const;
 
 export type EngineRejectReason = (typeof ENGINE_REJECT_REASONS)[number];

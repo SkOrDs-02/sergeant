@@ -26,6 +26,8 @@ import {
   syncOpLogPullQueueDepth,
   syncPullPageBytes,
   syncPullTruncatedTotal,
+  syncOpLogAppliedDeletedTotal,
+  syncOpLogRows,
 } from "./metrics.js";
 import {
   APPLY_REJECT_REASONS,
@@ -113,6 +115,10 @@ describe("metrics registry — v2 sync op-log RED metrics (PR #048)", () => {
     expect(register.getSingleMetric("sync_pull_truncated_total")).toBe(
       syncPullTruncatedTotal,
     );
+    expect(register.getSingleMetric("sync_op_log_applied_deleted_total")).toBe(
+      syncOpLogAppliedDeletedTotal,
+    );
+    expect(register.getSingleMetric("sync_op_log_rows")).toBe(syncOpLogRows);
   });
 
   it("апдейтиться через .inc({table,status,reason}) і експортується з повним label-set-ом", async () => {
@@ -185,7 +191,9 @@ describe("metrics registry — v2 sync op-log RED metrics (PR #048)", () => {
     expect(APPLY_REJECT_REASONS.length).toBe(86);
     // data-17: +1 engine-level `invalid_text_encoding` — `U+0000` / одинокий
     // сурогат у `row` відсікається ДО apply.
-    expect(ENGINE_REJECT_REASONS.length).toBe(7);
+    // ADR-0105 §2: +1 `stale_increment` — `increment` старший за вікно
+    // чистки журналу.
+    expect(ENGINE_REJECT_REASONS.length).toBe(8);
 
     // Ключові CRDT-інваріанти, на які привʼязаний sync health alerting,
     // фіксуємо явно — щоб accidental refactor не приховав їх із
@@ -200,6 +208,7 @@ describe("metrics registry — v2 sync op-log RED metrics (PR #048)", () => {
     expect(ENGINE_REJECT_REASONS).toContain("op_not_supported");
     expect(ENGINE_REJECT_REASONS).toContain("oplog_write_failed");
     expect(ENGINE_REJECT_REASONS).toContain("invalid_text_encoding");
+    expect(ENGINE_REJECT_REASONS).toContain("stale_increment");
 
     // Жодних дублікатів — Set.size має дорівнювати довжині масиву.
     const all = [...APPLY_REJECT_REASONS, ...ENGINE_REJECT_REASONS];
