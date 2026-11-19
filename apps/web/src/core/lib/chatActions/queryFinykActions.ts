@@ -321,6 +321,14 @@ function withinRange(
 // Домашня назва для округлення сум у гривнях; реалізація — спільний `round`.
 const roundGrn = round;
 
+/** Точна сума операцій: копійки зберігаються (до 2 знаків, кома). */
+function fmtGrnExact(n: number): string {
+  return formatNumberUk(n, {
+    minimumFractionDigits: 0,
+    maximumFractionDigits: 2,
+  });
+}
+
 function groupKeyFor(
   tx: FinykSearchTx,
   groupBy: GroupBy,
@@ -401,14 +409,14 @@ export function queryTransactions(
     .map((tx) => {
       const cat = ` · ${categoryLabel(tx, customCats)}`;
       const desc = tx.description ? ` · ${tx.description}` : "";
-      return `${tx.id}: ${tx.date || "без дати"} · ${formatNumberUk(roundGrn(txAmountGrn(tx)))} грн${desc}${cat}`;
+      return `${tx.id}: ${tx.date || "без дати"} · ${fmtGrnExact(txAmountGrn(tx))} грн${desc}${cat}`;
     })
     .join("; ");
   const more =
     matched.length > shown.length
       ? ` (показано ${shown.length} з ${matched.length})`
       : "";
-  return `Знайдено ${matched.length} операц. на суму ${formatNumberUk(roundGrn(total))} грн${more}: ${list}`;
+  return `Знайдено ${matched.length} операц. на суму ${fmtGrnExact(total)} грн${more}: ${list}`;
 }
 
 export function aggregateSpending(
