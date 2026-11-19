@@ -23,6 +23,7 @@ import { formatMoney, generatePrefixedId } from "@sergeant/shared";
 import type { TxSplit } from "@sergeant/finyk-domain/domain/types";
 import { manualLinkKey } from "@sergeant/finyk-domain/domain/debtLinkKeys";
 import { showUndoToast } from "@shared/lib/ui/undoToast";
+import { showManualEntryAddedToast } from "./lib/manualEntryAddedToast";
 import { tryShowCrossModulePrompt } from "@shared/lib/modules/crossModulePrompt";
 import { openHubModuleWithAction } from "@shared/lib/modules/hubNav";
 import { Overview } from "./pages/Overview";
@@ -411,18 +412,18 @@ export default function App({
       toast.success(isIncome ? "Надходження оновлено." : "Витрату оновлено.");
       return "updated";
     }
-    // Новий запис без id: генеруємо його тут, щоб прикріпити теги до тієї ж операції.
-    const newId = expense?.tags?.length ? generatePrefixedId("mx") : undefined;
+    // Новий запис без id: генеруємо його тут, щоб прикріпити теги до тієї ж
+    // операції і щоб «Скасувати» в тості прибрало саме її.
+    const newId = generatePrefixedId("mx");
+    const hasTags = Boolean(expense?.tags?.length);
     // Новий запис із форми — дія людини: відмічає звичку в Рутині.
-    storage.addManualExpense(
-      newId ? { ...expense, id: newId } : (expense ?? {}),
-      undefined,
-      { userAction: true },
-    );
-    if (newId && expense?.tags) {
+    storage.addManualExpense({ ...expense, id: newId }, undefined, {
+      userAction: true,
+    });
+    if (hasTags && expense?.tags) {
       storage.setTxTags(manualLinkKey(newId), expense.tags);
     }
-    toast.success(isIncome ? "Надходження додано." : "Витрату додано.");
+    showManualEntryAddedToast(toast, storage, { id: newId, isIncome, hasTags });
     return "added";
   };
 
