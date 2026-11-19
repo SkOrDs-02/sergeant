@@ -288,12 +288,17 @@
       "title": "10 МБ тіла парситься до автентифікації, зі стисненням",
       "severity": "unrated",
       "source": "docs/work/specs/audits/ai-pipeline-2026-08-05.md",
-      "status": "open",
+      "status": "fixed-pending-verification",
       "history": [
         {
           "at": "2026-09-05",
           "event": "imported",
           "note": "Актуальність потребує тріажу; імпорт історичного спостереження, без нового відтворення."
+        },
+        {
+          "at": "2026-11-19",
+          "event": "fixed",
+          "note": "Стиснення вимкнено раніше (inflate: false). Тепер pre-parse guard (http/preParseAuthGuard.ts) на 12 session-роутах з лімітом понад 128kb відповідає 401 без читання тіла, якщо немає ні Bearer, ні session-cookie, і ганяє спільний per-IP ліміт api:preparse:ip (600/хв) до парсера. Webhook/HMAC-роути не зачеплені. Покрито unit-тестами з supertest; живого прогону не було."
         }
       ],
       "sourceAnchor": "B28 — 10 МБ тіла парситься до автентифікації, зі стисненням"
