@@ -44,6 +44,7 @@ import {
   CHAT_FIRST_TURN_REASONING_EFFORTS,
   type ChatFirstTurnReasoningEffort,
 } from "../src/env/aiRoutingEnv.js";
+import { withOpenRouterProviderPrefs } from "../src/lib/llm/openrouterDataPolicy.js";
 import { firstTurnReasoningFields } from "../src/modules/chat/chatReasoning.js";
 import { SYSTEM_PREFIX, TOOLS } from "../src/modules/chat/tools.js";
 import {
@@ -170,25 +171,29 @@ async function checkStream(
         "HTTP-Referer": "https://sergeant.app",
         "X-Title": "Sergeant stream check",
       },
+      // `withOpenRouterProviderPrefs` — той самий `provider`, що додає продовий
+      // транспорт `lib/anthropic.ts`: замір іде тим самим маршрутом шлюзу.
       body: JSON.stringify(
-        scenario.prodFirstTurn
-          ? {
-              model,
-              max_tokens: 1500,
-              stream: true,
-              system: buildSystem(FIRST_TURN_CONTEXT, undefined, true),
-              tools: buildToolsPayload(model, null, true),
-              messages: [{ role: "user", content: scenario.user }],
-              ...firstTurnReasoningFields(reasoning),
-            }
-          : {
-              model,
-              max_tokens: 1000,
-              stream: true,
-              system: SYSTEM_PREFIX,
-              messages: [{ role: "user", content: scenario.user }],
-              ...(scenario.withTools ? { tools: TOOLS } : {}),
-            },
+        withOpenRouterProviderPrefs(
+          scenario.prodFirstTurn
+            ? {
+                model,
+                max_tokens: 1500,
+                stream: true,
+                system: buildSystem(FIRST_TURN_CONTEXT, undefined, true),
+                tools: buildToolsPayload(model, null, true),
+                messages: [{ role: "user", content: scenario.user }],
+                ...firstTurnReasoningFields(reasoning),
+              }
+            : {
+                model,
+                max_tokens: 1000,
+                stream: true,
+                system: SYSTEM_PREFIX,
+                messages: [{ role: "user", content: scenario.user }],
+                ...(scenario.withTools ? { tools: TOOLS } : {}),
+              },
+        ),
       ),
     });
 

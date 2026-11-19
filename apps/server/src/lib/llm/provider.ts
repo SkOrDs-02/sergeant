@@ -31,6 +31,10 @@ import { Sentry } from "../../sentry.js";
 import { anthropicMessages, extractAnthropicText } from "../anthropic.js";
 import { getCounterpartyNames } from "../counterpartyNames.js";
 import { maskMachineText } from "../llmRedaction.js";
+import {
+  noteOpenRouterDataPolicyRejection,
+  withOpenRouterProviderPrefs,
+} from "./openrouterDataPolicy.js";
 
 /**
  * Канонічний дискримінатор provider-у. Розширюємо по мірі додавання
@@ -546,7 +550,9 @@ export class OpenRouterProvider implements LLMProvider {
           "HTTP-Referer": "https://sergeant.app",
           "X-Title": "Sergeant",
         },
-        body: JSON.stringify(body),
+        // `provider.data_collection=deny` — рішення власника 2026-11-19,
+        // див. `openrouterDataPolicy.ts`.
+        body: JSON.stringify(withOpenRouterProviderPrefs(body)),
         signal,
       });
       if (timeoutId) clearTimeout(timeoutId);
@@ -554,6 +560,13 @@ export class OpenRouterProvider implements LLMProvider {
       const data = (await response.json()) as OpenRouterData;
 
       if (!response.ok) {
+        noteOpenRouterDataPolicyRejection({
+          status: response.status,
+          data,
+          model,
+          endpoint: opts.endpoint ?? "unknown",
+          transport: "chat_completions",
+        });
         return {
           ok: false,
           error: data?.error?.message ?? `OpenRouter HTTP ${response.status}`,

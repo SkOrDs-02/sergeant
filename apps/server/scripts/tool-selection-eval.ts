@@ -67,6 +67,7 @@ import {
   type ChatFirstTurnReasoningEffort,
 } from "../src/env/aiRoutingEnv.js";
 import { CHAT_MODEL_DEFAULTS } from "../src/env/chatModels.js";
+import { withOpenRouterProviderPrefs } from "../src/lib/llm/openrouterDataPolicy.js";
 import { firstTurnReasoningFields } from "../src/modules/chat/chatReasoning.js";
 import { SYSTEM_PREFIX, TOOLS } from "../src/modules/chat/tools.js";
 import {
@@ -189,16 +190,20 @@ async function callSkin(
         "HTTP-Referer": "https://sergeant.app",
         "X-Title": "Sergeant tool-selection eval",
       },
-      body: JSON.stringify({
-        model,
-        max_tokens: 1500,
-        system,
-        tools: TOOLS,
-        messages,
-        // Та сама функція, що будує поля в `chat.ts`: форма запиту стенду і
-        // проду з заданою `CHAT_FIRST_TURN_REASONING_EFFORT` не розійдеться.
-        ...firstTurnReasoningFields(reasoningEffort),
-      }),
+      // `withOpenRouterProviderPrefs` — той самий `provider`, що додає продовий
+      // транспорт `lib/anthropic.ts`: стенд іде тим самим маршрутом шлюзу.
+      body: JSON.stringify(
+        withOpenRouterProviderPrefs({
+          model,
+          max_tokens: 1500,
+          system,
+          tools: TOOLS,
+          messages,
+          // Та сама функція, що будує поля в `chat.ts`: форма запиту стенду і
+          // проду з заданою `CHAT_FIRST_TURN_REASONING_EFFORT` не розійдеться.
+          ...firstTurnReasoningFields(reasoningEffort),
+        }),
+      ),
     });
   } catch (e: unknown) {
     // `AbortSignal.timeout` кидає `TimeoutError`; решта — мережа/DNS/TLS.

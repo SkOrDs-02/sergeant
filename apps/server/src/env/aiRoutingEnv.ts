@@ -53,8 +53,41 @@ export type ChatFirstTurnReasoningEffort =
 export const CHAT_FIRST_TURN_REASONING_EFFORT_DEFAULT: ChatFirstTurnReasoningEffort =
   "low";
 
+/**
+ * Чи дозволено шлюзу OpenRouter обирати постачальників, які зберігають
+ * запити (і можуть на них тренуватись). Значення поля
+ * `provider.data_collection` у тілі запиту; як саме воно стає полем —
+ * `lib/llm/openrouterDataPolicy.ts`.
+ */
+export const OPENROUTER_DATA_COLLECTION_MODES = ["deny", "allow"] as const;
+
+export type OpenRouterDataCollection =
+  (typeof OPENROUTER_DATA_COLLECTION_MODES)[number];
+
 export const aiRoutingEnvShape = {
   OPENROUTER_API_KEY: stringWithDefault(""),
+
+  /**
+   * Заборона збереження даних у OpenRouter (рішення власника 2026-11-19: у
+   * запитах фінанси й дані про здоровʼя). Незадана або порожня — `deny`:
+   * кожен запит у шлюз несе `provider.data_collection=deny`, тобто шлюз бере
+   * лише постачальників, які дані не збирають. Обидва транспорти
+   * (`/api/v1/messages` і `/api/v1/chat/completions`) і стенди евалу.
+   *
+   * `allow` — аварійний відкат без релізу: поле `provider` не шлеться
+   * взагалі, шлюз знову обирає серед усіх постачальників моделі (поведінка до
+   * 2026-11-19). Знадобиться, якщо модель лишиться без жодного ендпойнта під
+   * `deny` (шлюз відповідає 404 «No endpoints found matching your data
+   * policy», у лозі `openrouter_data_policy_no_endpoints`).
+   *
+   * Регістр і пробіли не важливі; будь-що поза переліком валить старт.
+   * Прямого Anthropic, Groq і Voyage не стосується. Реєстр і умова зняття —
+   * `docs/engineering/architecture/feature-flags.md` § 3.1.
+   */
+  OPENROUTER_DATA_COLLECTION: z.preprocess(
+    (v) => (typeof v === "string" ? v.trim().toLowerCase() || undefined : v),
+    z.enum(OPENROUTER_DATA_COLLECTION_MODES).default("deny"),
+  ),
 
   /** Глобальний override id; порожній — шлях бере власну змінну нижче. */
   OPENROUTER_MODEL: stringWithDefault(""),
