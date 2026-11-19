@@ -1,6 +1,8 @@
 /** @status Active */
+import { finykSavingsMessages } from "./uk.finykSavings";
 
 export const finykPageMessages = {
+  ...finykSavingsMessages,
   // Аркуш «Додати» з кнопки в куті (redesign v3, PR4b): наявні входи модуля.
   addSources: {
     manual: { label: "Вручну", hint: "Сума, категорія і дата" },

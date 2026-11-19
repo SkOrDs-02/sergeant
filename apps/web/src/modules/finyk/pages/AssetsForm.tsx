@@ -1,4 +1,3 @@
-import { messages } from "@shared/i18n";
 import { Button } from "@shared/components/ui/Button";
 import { Card } from "@shared/components/ui/Card";
 import { Input } from "@shared/components/ui/Input";
@@ -25,6 +24,8 @@ import type { ManualAsset, Subscription } from "../hooks/useStorage";
 import { getLastTxForSubscription } from "@sergeant/finyk-domain/domain/subscriptionUtils";
 import { DebtAutoLinkField } from "./DebtAutoLinkField";
 import { AssetKindChoice, type AssetKind } from "./AssetKindChoice";
+import { SavingsKindSwitch } from "./SavingsKindPicker";
+import { CancelButton } from "./FormCancelButton";
 import type { TxRowTx } from "../components/TxRow";
 import { parseAmountToMinor } from "@shared/lib/format/amount";
 import { amountStringToHryvnia } from "@shared/lib/format/amountSchema";
@@ -337,90 +338,102 @@ export function AssetForm({
         {!editingId && onKindChange && (
           <AssetKindChoice value="asset" onChange={onKindChange} />
         )}
-        <Input
-          ref={assetNameInputRef as React.Ref<HTMLInputElement>}
-          aria-label="Назва активу"
-          placeholder="Назва"
-          maxLength={NAME_MAX_LEN}
-          showCharCount={false}
-          value={newAsset.name}
-          onChange={(e) => setNewAsset((a) => ({ ...a, name: e.target.value }))}
-        />
-        <MoneyInput
-          aria-label="Сума активу"
-          placeholder="Сума"
-          value={newAsset.amount}
-          onValueChange={(next) =>
-            setNewAsset((a) => ({
-              ...a,
-              amount: next == null ? "" : String(next),
-            }))
-          }
-        />
-        <div className="rounded-panel border border-line bg-panel px-4 py-3">
-          <div className="text-style-caption text-muted">Валюта активу</div>
-          <div className="text-style-label text-text">
-            {isLegacyNonUah ? newAsset.currency : "UAH"}
-          </div>
-        </div>
-        {isLegacyNonUah && (
-          <p
-            className="text-style-body text-warning-strong dark:text-warning"
-            role="status"
-          >
-            Це старий запис у {newAsset.currency}. Валюту не змінюю без
-            реального курсу, а суму поки не враховую в загальному капіталі.
-          </p>
-        )}
-        {(!newAsset.name.trim() || !isPositiveFinite(newAsset.amount)) && (
-          <p className="text-style-caption text-subtle" role="status">
-            Заповни назву та вкажи позитивну суму активу.
-          </p>
-        )}
-        <div className="flex gap-2">
-          <Button
-            className="flex-1"
-            size="sm"
-            disabled={
-              !newAsset.name.trim() || !isPositiveFinite(newAsset.amount)
+        {/* Депозит / ОВДП / фонд — спека finyk-savings-assets. */}
+        <SavingsKindSwitch
+          enabled={!editingId}
+          onAdd={(asset) => {
+            setManualAssets((a) => [...a, asset]);
+            setShowAssetForm(false);
+          }}
+          onCancel={() => setShowAssetForm(false)}
+        >
+          <Input
+            ref={assetNameInputRef as React.Ref<HTMLInputElement>}
+            aria-label="Назва активу"
+            placeholder="Назва"
+            maxLength={NAME_MAX_LEN}
+            showCharCount={false}
+            value={newAsset.name}
+            onChange={(e) =>
+              setNewAsset((a) => ({ ...a, name: e.target.value }))
             }
-            onClick={() => {
-              if (!newAsset.name || !newAsset.amount) return;
-              // <input type="number"> accepts negatives + arbitrary precision;
-              // an asset balance must be strictly positive. A negative manual
-              // asset shows up as "−1 000 ₴" inside the assets list, flips the
-              // section header to "Активи +−1 000 ₴" (because the formatter
-              // unconditionally prepends `+`), and pulls Загальний капітал
-              // negative.
-              const parsedAmount = amountStringToHryvnia(
-                String(newAsset.amount),
-              );
-              if (parsedAmount <= 0) return;
-              const next = {
-                ...newAsset,
-                id: crypto.randomUUID(),
-                amount: parsedAmount,
-              } as ManualAsset;
-              if (editingId && onUpdate) {
-                onUpdate(editingId, { ...next, id: editingId });
-              } else {
-                setManualAssets((a) => [...a, next]);
+          />
+          <MoneyInput
+            aria-label="Сума активу"
+            placeholder="Сума"
+            value={newAsset.amount}
+            onValueChange={(next) =>
+              setNewAsset((a) => ({
+                ...a,
+                amount: next == null ? "" : String(next),
+              }))
+            }
+          />
+          <div className="rounded-panel border border-line bg-panel px-4 py-3">
+            <div className="text-style-caption text-muted">Валюта активу</div>
+            <div className="text-style-label text-text">
+              {isLegacyNonUah ? newAsset.currency : "UAH"}
+            </div>
+          </div>
+          {isLegacyNonUah && (
+            <p
+              className="text-style-body text-warning-strong dark:text-warning"
+              role="status"
+            >
+              Це старий запис у {newAsset.currency}. Валюту не змінюю без
+              реального курсу, а суму поки не враховую в загальному капіталі.
+            </p>
+          )}
+          {(!newAsset.name.trim() || !isPositiveFinite(newAsset.amount)) && (
+            <p className="text-style-caption text-subtle" role="status">
+              Заповни назву та вкажи позитивну суму активу.
+            </p>
+          )}
+          <div className="flex gap-2">
+            <Button
+              className="flex-1"
+              size="sm"
+              disabled={
+                !newAsset.name.trim() || !isPositiveFinite(newAsset.amount)
               }
-              setNewAsset({
-                name: "",
-                amount: "",
-                currency: "UAH",
-                emoji: "\u{1F4B0}",
-              });
-              setShowAssetForm(false);
-            }}
-            tone="ink"
-            variant="solid"
-          >
-            {editingId ? "Зберегти" : "Додати"}
-          </Button>
-          <CancelButton onCancel={() => setShowAssetForm(false)} />
-        </div>
+              onClick={() => {
+                if (!newAsset.name || !newAsset.amount) return;
+                // <input type="number"> accepts negatives + arbitrary precision;
+                // an asset balance must be strictly positive. A negative manual
+                // asset shows up as "−1 000 ₴" inside the assets list, flips the
+                // section header to "Активи +−1 000 ₴" (because the formatter
+                // unconditionally prepends `+`), and pulls Загальний капітал
+                // negative.
+                const parsedAmount = amountStringToHryvnia(
+                  String(newAsset.amount),
+                );
+                if (parsedAmount <= 0) return;
+                const next = {
+                  ...newAsset,
+                  id: crypto.randomUUID(),
+                  amount: parsedAmount,
+                } as ManualAsset;
+                if (editingId && onUpdate) {
+                  onUpdate(editingId, { ...next, id: editingId });
+                } else {
+                  setManualAssets((a) => [...a, next]);
+                }
+                setNewAsset({
+                  name: "",
+                  amount: "",
+                  currency: "UAH",
+                  emoji: "\u{1F4B0}",
+                });
+                setShowAssetForm(false);
+              }}
+              tone="ink"
+              variant="solid"
+            >
+              {editingId ? "Зберегти" : "Додати"}
+            </Button>
+            <CancelButton onCancel={() => setShowAssetForm(false)} />
+          </div>
+        </SavingsKindSwitch>
       </Card>
     </>
   );
@@ -619,13 +632,5 @@ export function DebtForm({
         <CancelButton onCancel={() => setShowDebtForm(false)} />
       </div>
     </Card>
-  );
-}
-
-function CancelButton({ onCancel }: { onCancel: () => void }) {
-  return (
-    <Button variant="outline" size="sm" className="flex-1" onClick={onCancel}>
-      {messages.actions.cancel}
-    </Button>
   );
 }

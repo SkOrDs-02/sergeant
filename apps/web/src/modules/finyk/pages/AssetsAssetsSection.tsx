@@ -2,10 +2,7 @@ import { Button } from "@shared/components/ui/Button";
 import { useEffect, useRef, useState } from "react";
 import { motionScrollBehavior } from "@shared/lib/ui/motion";
 import { DebtCard } from "../components/DebtCard";
-import { Icon } from "@shared/components/ui/Icon";
 import { AssetsGroupCard } from "./AssetsGroupCard";
-import { Money } from "@shared/components/ui/Money";
-import { FinanceItemHeading } from "../components/FinanceItemHeading";
 import {
   getRecvPaid,
   calcReceivableRemaining,
@@ -17,6 +14,9 @@ import { AssetsCashOnHand } from "./AssetsCashOnHand";
 import { useToast } from "@shared/hooks/useToast";
 import { showUndoToast } from "@shared/lib/ui/undoToast";
 import { ReceivableForm, AssetForm } from "./AssetsForm";
+import { ManualAssetRow } from "./ManualAssetRow";
+import { localTodayKey } from "@sergeant/finyk-domain/domain/assets";
+import { messages } from "@shared/i18n";
 import type { useAssetsState } from "./useAssetsState";
 
 type State = ReturnType<typeof useAssetsState>;
@@ -83,6 +83,50 @@ export function AssetsAssetsSection({ state }: { state: State }) {
   // відкрита незалежно від того, що людина згорнула раніше.
   const receivablesOpen = receivablesExpanded || showRecvForm;
   const assetsOpen = assetsExpanded || showAssetForm;
+
+  // Закриті рахунки-активи (спека finyk-savings-assets) — окремою
+  // згорнутою групою; видалення й правка йдуть за id, не за індексом.
+  const [closedVisible, setClosedVisible] = useState(false);
+  const today = localTodayKey();
+  const activeAssets = manualAssets.filter((a) => a["status"] !== "closed");
+  const closedAssets = manualAssets.filter((a) => a["status"] === "closed");
+  const renderAssetRow = (a: (typeof manualAssets)[number]) => (
+    <ManualAssetRow
+      key={a.id}
+      asset={a}
+      today={today}
+      showBalance={showBalance}
+      onEdit={() => {
+        setEditingAssetId(a.id);
+        setNewAsset({
+          name: a.name ?? "",
+          amount: String(a.amount ?? ""),
+          currency: a.currency ?? "UAH",
+          emoji: a.emoji ?? "",
+        });
+        setShowAssetForm(true);
+      }}
+      onChange={(next) =>
+        setManualAssets((as) =>
+          as.map((item) => (item.id === a.id ? next : item)),
+        )
+      }
+      onDelete={() => {
+        const removed = a;
+        const removedIdx = manualAssets.findIndex((x) => x.id === a.id);
+        setManualAssets((as) => as.filter((x) => x.id !== a.id));
+        showUndoToast(toast, {
+          msg: `Видалено актив «${removed.name}»`,
+          onUndo: () =>
+            setManualAssets((as) => {
+              const next = [...as];
+              next.splice(Math.max(0, removedIdx), 0, removed);
+              return next;
+            }),
+        });
+      }}
+    />
+  );
 
   return (
     <div className="space-y-0">
@@ -238,85 +282,18 @@ export function AssetsAssetsSection({ state }: { state: State }) {
             editingId={editingAssetId}
             onUpdate={(id, value) => {
               setManualAssets((as) =>
-                as.map((item) => (item.id === id ? value : item)),
+                as.map((item) =>
+                  item.id === id ? { ...item, ...value } : item,
+                ),
               );
               setEditingAssetId(null);
             }}
           />
         )}
-        {manualAssets.slice(0, allAssetsVisible ? undefined : 3).map((a, i) => (
-          <div
-            key={a.id}
-            className="border-t border-line py-4 first:border-t-0 first:pt-0 last:pb-0"
-          >
-            <FinanceItemHeading
-              title={a.name}
-              meta={a.currency}
-              value={
-                showBalance ? (
-                  <Money
-                    amount={Number(a.amount)}
-                    symbol={
-                      a.currency === "UAH"
-                        ? "\u20B4"
-                        : a.currency === "USD"
-                          ? "$"
-                          : (a.currency ?? "\u20B4")
-                    }
-                    tone="inherit"
-                  />
-                ) : (
-                  "\u2022\u2022\u2022\u2022"
-                )
-              }
-              actions={
-                <>
-                  <button
-                    type="button"
-                    onClick={() => {
-                      setEditingAssetId(a.id);
-                      setNewAsset({
-                        name: a.name ?? "",
-                        amount: String(a.amount ?? ""),
-                        currency: a.currency ?? "UAH",
-                        emoji: a.emoji ?? "",
-                      });
-                      setShowAssetForm(true);
-                    }}
-                    className="touch-target focus-ring text-subtle hover:text-text transition-colors"
-                    aria-label={`Редагувати актив ${a.name}`}
-                  >
-                    <Icon name="edit" size="md" aria-hidden />
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => {
-                      const removed = a;
-                      const removedIdx = i;
-                      setManualAssets((as) =>
-                        as.filter((_, j) => j !== removedIdx),
-                      );
-                      showUndoToast(toast, {
-                        msg: `Видалено актив «${removed.name}»`,
-                        onUndo: () =>
-                          setManualAssets((as) => {
-                            const next = [...as];
-                            next.splice(removedIdx, 0, removed);
-                            return next;
-                          }),
-                      });
-                    }}
-                    className="touch-target focus-ring text-subtle hover:text-danger transition-colors"
-                    aria-label={`Видалити актив ${a.name}`}
-                  >
-                    <Icon name="trash" size="md" aria-hidden />
-                  </button>
-                </>
-              }
-            />
-          </div>
-        ))}
-        {manualAssets.length > 3 && (
+        {activeAssets
+          .slice(0, allAssetsVisible ? undefined : 3)
+          .map((a) => renderAssetRow(a))}
+        {activeAssets.length > 3 && (
           <Button
             variant="text"
             onClick={() => setAllAssetsVisible((visible) => !visible)}
@@ -324,9 +301,22 @@ export function AssetsAssetsSection({ state }: { state: State }) {
           >
             {allAssetsVisible
               ? "Показати менше"
-              : `Показати всі (${manualAssets.length})`}
+              : `Показати всі (${activeAssets.length})`}
           </Button>
         )}
+        {closedAssets.length > 0 && (
+          <Button
+            variant="text"
+            onClick={() => setClosedVisible((visible) => !visible)}
+            aria-expanded={closedVisible}
+          >
+            {messages.finyk.savingsAssets.closedGroup.replace(
+              "{n}",
+              String(closedAssets.length),
+            )}
+          </Button>
+        )}
+        {closedVisible && closedAssets.map((a) => renderAssetRow(a))}
       </AssetsGroupCard>
     </div>
   );
