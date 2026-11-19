@@ -8,7 +8,12 @@
  * before `http`/`express` are pulled in — which is the only way Sentry's
  * auto-instrumentation (it uses OTel internally) can monkey-patch them.
  * See `apps/server/src/sentry.ts`.
+ *
+ * Єдиний виняток: `./startupFatal.js` стоїть ще вище. Він тягне лише
+ * `node:fs` і мусить бути першим, щоб throw під час оцінки будь-якого
+ * імпорту нижче потрапив у stdout, а не зник.
  */
+import { releaseStartupFatalHandler } from "./startupFatal.js";
 import "./sentry.js";
 
 import { assertStartupEnv } from "./env/env.js";
@@ -694,6 +699,7 @@ process.on("unhandledRejection", (reason: unknown) => {
   // AI-респонс = рестарт процесу. uncaughtException — інша історія.
 });
 
+releaseStartupFatalHandler();
 process.on("uncaughtException", (err: Error) => {
   try {
     uncaughtExceptionsTotal.inc();
