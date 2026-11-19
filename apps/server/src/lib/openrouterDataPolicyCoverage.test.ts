@@ -117,6 +117,16 @@ describe("заборона збереження даних у OpenRouter: пок
     expect(offenders).toEqual([]);
   });
 
+  it("літерал quantizations: живе лише в хелпері", () => {
+    // Список рівнів від 8 біт (рішення власника 2026-11-19) — одне джерело,
+    // щоб відкат `OPENROUTER_QUANTIZATION_FLOOR=off` діяв усюди однаково.
+    const offenders = sources()
+      .filter(({ path }) => path !== HELPER_FILE)
+      .filter(({ src }) => /\bquantizations\s*:/.test(src))
+      .map(({ path }) => path);
+    expect(offenders).toEqual([]);
+  });
+
   it("обидва транспорти шлюзу підключені до хелпера", () => {
     const byPath = new Map(sources().map((s) => [s.path, s.src]));
     for (const transport of [

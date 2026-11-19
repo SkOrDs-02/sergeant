@@ -54,7 +54,9 @@ export async function jevInjectionVerdict(
         // що провайдер не зберігає й не вчиться на цих рядках. OpenRouter
         // валідує ці поля і без ZDR-маршруту відмовив би, а не пішов в обхід.
         // ZDR тримається і при аварійному `OPENROUTER_DATA_COLLECTION=allow`:
-        // відкат для решти моделей не знімає умову погодження Jev.
+        // відкат для решти моделей не знімає умову погодження Jev. Квантизація
+        // від 8 біт іде за спільним перемикачем; жива проба 2026-11-19: 200, але
+        // `/systemone` поле не фільтрує (список лише з `fp32` теж дає 200).
         provider: openRouterZdrProviderPrefs(),
       }),
       signal: AbortSignal.timeout(TIMEOUT_MS),

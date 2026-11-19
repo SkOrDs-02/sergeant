@@ -3,7 +3,9 @@ import { afterEach, describe, expect, it, vi } from "vitest";
 /**
  * Шов `providerPrefs` для стенду `eval:models` (замір fp4-ендпойнтів
  * 2026-11-19). Прод поле не передає, тож головна властивість — без нього
- * тіло запиту байт-у-байт те саме, що й до шва.
+ * тіло прод-запиту байт-у-байт відоме (deny + квантизація від 8 біт). Явні
+ * `quantizations`/`ignore` стенду перемагають дефолтний список, інакше стенд
+ * не зміг би міряти інші варіанти.
  */
 
 vi.mock("../../obs/metrics.js", () => ({
@@ -51,7 +53,7 @@ afterEach(() => {
 });
 
 describe("OpenRouterProvider — providerPrefs (лише для стенду)", () => {
-  it("без параметра тіло запиту те саме, що було до шва", async () => {
+  it("без параметра тіло прод-запиту рівно таке (deny + квантизація від 8 біт)", async () => {
     const fetchMock = stubGateway();
     await new OpenRouterProvider("k").generate(BASE);
     expect(sentBody(fetchMock)).toBe(
@@ -63,12 +65,15 @@ describe("OpenRouterProvider — providerPrefs (лише для стенду)", 
         ],
         max_tokens: 100,
         usage: { include: true },
-        provider: { data_collection: "deny" },
+        provider: {
+          data_collection: "deny",
+          quantizations: ["fp8", "mxfp8", "fp16", "bf16", "fp32", "unknown"],
+        },
       }),
     );
   });
 
-  it("додає квантизації й ignore, а data_collection лишає deny", async () => {
+  it("квантизації й ignore стенду перемагають дефолтний список, data_collection лишає deny", async () => {
     const fetchMock = stubGateway();
     await new OpenRouterProvider("k").generate({
       ...BASE,
@@ -81,6 +86,19 @@ describe("OpenRouterProvider — providerPrefs (лише для стенду)", 
     const body = JSON.parse(sentBody(fetchMock)) as Record<string, unknown>;
     expect(body["provider"]).toEqual({
       quantizations: ["fp8", "unknown"],
+      ignore: ["relace"],
+      data_collection: "deny",
+    });
+  });
+
+  it("лише ignore від стенду: дефолтний список квантизацій не додається", async () => {
+    const fetchMock = stubGateway();
+    await new OpenRouterProvider("k").generate({
+      ...BASE,
+      providerPrefs: { ignore: ["relace"] },
+    });
+    const body = JSON.parse(sentBody(fetchMock)) as Record<string, unknown>;
+    expect(body["provider"]).toEqual({
       ignore: ["relace"],
       data_collection: "deny",
     });

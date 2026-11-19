@@ -132,10 +132,10 @@ function pickTransport(
 
 /**
  * Тіло для обраного транспорту. На шлюзі OpenRouter додає
- * `provider.data_collection=deny` (рішення власника 2026-11-19,
- * `llm/openrouterDataPolicy.ts`): усі `/messages`-шляхи (чат, зір, чеки,
- * імпорт) отримують поле тут, а не кожен у своєму payload. Прямий Anthropic
- * поля не бачить: це параметр шлюзу.
+ * `provider.data_collection=deny` і `provider.quantizations` від 8 біт
+ * (рішення власника 2026-11-19, `llm/openrouterDataPolicy.ts`): усі
+ * `/messages`-шляхи (чат, зір, чеки, імпорт) отримують поле тут, а не кожен
+ * у своєму payload. Прямий Anthropic поля не бачить: це параметр шлюзу.
  */
 function bodyForTransport(
   payload: Record<string, unknown>,

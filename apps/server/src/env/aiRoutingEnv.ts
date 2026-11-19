@@ -64,6 +64,16 @@ export const OPENROUTER_DATA_COLLECTION_MODES = ["deny", "allow"] as const;
 export type OpenRouterDataCollection =
   (typeof OPENROUTER_DATA_COLLECTION_MODES)[number];
 
+/**
+ * Нижня межа квантизації постачальників у OpenRouter: `fp8` — лише
+ * ендпойнти від 8 біт (поле `provider.quantizations`), `off` — без фільтра.
+ * Як значення стає полем — `lib/llm/openrouterDataPolicy.ts`.
+ */
+export const OPENROUTER_QUANTIZATION_FLOORS = ["fp8", "off"] as const;
+
+export type OpenRouterQuantizationFloor =
+  (typeof OPENROUTER_QUANTIZATION_FLOORS)[number];
+
 export const aiRoutingEnvShape = {
   OPENROUTER_API_KEY: stringWithDefault(""),
 
@@ -87,6 +97,29 @@ export const aiRoutingEnvShape = {
   OPENROUTER_DATA_COLLECTION: z.preprocess(
     (v) => (typeof v === "string" ? v.trim().toLowerCase() || undefined : v),
     z.enum(OPENROUTER_DATA_COLLECTION_MODES).default("deny"),
+  ),
+
+  /**
+   * Квантизація постачальників не нижче 8 біт (рішення власника 2026-11-19:
+   * на `relace/fp4` `deepseek/deepseek-v4-flash` давав російську в 16 з 37
+   * відповідей, без 4-бітних — 0 з 79). Незадана або порожня — `fp8`: кожен
+   * запит у шлюз несе `provider.quantizations` зі списком від 8 біт плюс
+   * `unknown`. Обидва транспорти і стенди евалу.
+   *
+   * `off` — аварійний відкат без релізу: прибирає ЛИШЕ поле `quantizations`;
+   * `data_collection` від нього не залежить (його відкат —
+   * `OPENROUTER_DATA_COLLECTION`). Знадобиться, якщо модель лишиться без
+   * жодного ендпойнта від 8 біт (шлюз відповідає 404 «No endpoints found for
+   * the request with quantization», у лозі
+   * `openrouter_data_policy_no_endpoints` з `reason: "quantization"`).
+   *
+   * Регістр і пробіли не важливі; будь-що поза переліком валить старт.
+   * Прямого Anthropic, Groq і Voyage не стосується. Реєстр і умова зняття —
+   * `docs/engineering/architecture/feature-flags.md` § 3.1.
+   */
+  OPENROUTER_QUANTIZATION_FLOOR: z.preprocess(
+    (v) => (typeof v === "string" ? v.trim().toLowerCase() || undefined : v),
+    z.enum(OPENROUTER_QUANTIZATION_FLOORS).default("fp8"),
   ),
 
   /** Глобальний override id; порожній — шлях бере власну змінну нижче. */

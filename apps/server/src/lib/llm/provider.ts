@@ -118,8 +118,9 @@ export interface LLMGenerateOpts {
   /**
    * Додаткові поля `provider` для OpenRouter (`quantizations`, `ignore`).
    * AI-NOTE: лише для стенду `eval:models` (замір fp4-ендпойнтів 2026-11-19).
-   * Прод цього поля не передає, тож тіло прод-запиту не змінюється;
-   * `data_collection` з `withOpenRouterProviderPrefs` однаково перекриває
+   * Прод цього поля не передає, тож тіло прод-запиту не змінюється. Явні
+   * `quantizations`/`ignore` звідси перемагають дефолтний список від 8 біт,
+   * а `data_collection` з `withOpenRouterProviderPrefs` однаково перекриває
    * будь-яке значення звідси. Anthropic і Stub ігнорують.
    */
   providerPrefs?: Readonly<Record<string, unknown>> | undefined;
@@ -559,8 +560,8 @@ export class OpenRouterProvider implements LLMProvider {
           "HTTP-Referer": "https://sergeant.app",
           "X-Title": "Sergeant",
         },
-        // `provider.data_collection=deny` — рішення власника 2026-11-19,
-        // див. `openrouterDataPolicy.ts`.
+        // `provider.data_collection=deny` і квантизація від 8 біт — рішення
+        // власника 2026-11-19, див. `openrouterDataPolicy.ts`.
         body: JSON.stringify(withOpenRouterProviderPrefs(body)),
         signal,
       });

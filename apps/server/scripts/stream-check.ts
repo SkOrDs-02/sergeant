@@ -24,6 +24,11 @@
  * Побічно ловимо `cache_read_input_tokens` / `cache_creation_input_tokens`:
  * їхня поява доводить, що prompt-cache через Skin працює для цієї моделі.
  *
+ * Ще три побічні поля (2026-11-19, квантизація від 8 біт): постачальник, якого
+ * обрав шлюз (`message_start.message.provider`), списана сума (`usage.cost`,
+ * якщо шлюз її віддав) і `ru=N` — кількість російських маркерів у тексті
+ * відповіді (`countRussianMarkers`): саме так на `relace/fp4` ламався синтез.
+ *
  * Usage: OPENROUTER_API_KEY=... pnpm eval:stream [--models=a,b]
  *        OPENROUTER_API_KEY=... pnpm eval:stream --first-turn \
  *          --models=google/gemini-3.7-flash --repeat=5
@@ -53,6 +58,17 @@ import {
 } from "../src/modules/chat/promptCache.js";
 
 const SKIN_URL = "https://openrouter.ai/api/v1/messages";
+
+/**
+ * Російські літери, яких немає в українській, і кілька частих слів. Груба
+ * перевірка для заміру, не детектор мови: ненуль означає «читай текст».
+ */
+const RUSSIAN_MARKERS =
+  /[ыэёъЫЭЁЪ]|(?<![\p{L}])(?:что|это|его|если|который|только|также|сейчас|нужно|когда)(?![\p{L}])/giu;
+
+function countRussianMarkers(text: string): number {
+  return text.match(RUSSIAN_MARKERS)?.length ?? 0;
+}
 
 interface Scenario {
   name: string;
@@ -124,6 +140,12 @@ interface StreamReport {
   cacheRead: number | null;
   cacheWrite: number | null;
   stopReason: string | null;
+  /** Постачальник, якого обрав шлюз (`message_start.message.provider`). */
+  provider: string | null;
+  /** `usage.cost` зі стріму, якщо шлюз його віддав. */
+  costUsd: number | null;
+  /** Російські маркери в тексті відповіді (`countRussianMarkers`). */
+  russian: number;
   error?: string;
 }
 
@@ -131,7 +153,7 @@ type SseEvent = {
   type?: string;
   content_block?: { type?: string };
   delta?: { type?: string; text?: string; stop_reason?: string };
-  message?: { usage?: Record<string, number> };
+  message?: { usage?: Record<string, number>; provider?: string };
   usage?: Record<string, number>;
 };
 
@@ -160,7 +182,11 @@ async function checkStream(
     cacheRead: null,
     cacheWrite: null,
     stopReason: null,
+    provider: null,
+    costUsd: null,
+    russian: 0,
   };
+  let text = "";
 
   try {
     const response = await fetch(SKIN_URL, {
@@ -198,7 +224,9 @@ async function checkStream(
     });
 
     if (!response.ok || !response.body) {
-      report.error = `HTTP ${response.status}`;
+      // Тіло помилки коротке; перших 200 знаків досить, щоб бачити причину 404.
+      const detail = (await response.text().catch(() => "")).slice(0, 200);
+      report.error = `HTTP ${response.status} ${detail}`;
       report.totalMs = Date.now() - t0;
       return report;
     }
@@ -242,6 +270,7 @@ async function checkStream(
         if (event.type === "content_block_delta" && event.delta?.text) {
           if (report.ttftMs === null) report.ttftMs = Date.now() - t0;
           report.textLen += event.delta.text.length;
+          text += event.delta.text;
         }
         if (event.type === "message_start" && event.message?.usage) {
           const usage = event.message.usage;
@@ -249,14 +278,20 @@ async function checkStream(
           report.cacheRead = usage["cache_read_input_tokens"] ?? null;
           report.cacheWrite = usage["cache_creation_input_tokens"] ?? null;
         }
+        if (event.type === "message_start" && event.message?.provider) {
+          report.provider = event.message.provider;
+        }
         if (event.type === "message_delta") {
           report.stopReason = event.delta?.stop_reason ?? report.stopReason;
           report.outputTokens = event.usage?.["output_tokens"] ?? null;
+          const cost = event.usage?.["cost"];
+          if (typeof cost === "number") report.costUsd = cost;
         }
       }
     }
 
     report.totalMs = Date.now() - t0;
+    report.russian = countRussianMarkers(text);
     // «ok» = парсер `chatStream.ts` дістав би все, на що спирається.
     report.ok =
       report.events.has("message_start") &&
@@ -326,7 +361,7 @@ async function main(): Promise<void> {
         reports.push(r);
         const mark = r.error ? "ERR " : r.ok ? " ok " : "FAIL";
         console.log(
-          `[${mark}] ${model.padEnd(30)} ${r.scenario.padEnd(18)} ttft=${String(r.ttftMs ?? "—").padStart(5)}ms total=${String(r.totalMs).padStart(6)}ms text=${String(r.textLen).padStart(4)} in=${r.inputTokens ?? "—"} out=${r.outputTokens ?? "—"} cacheR=${r.cacheRead ?? "—"} stop=${r.stopReason ?? "—"}${r.error ? ` ${r.error}` : ""}`,
+          `[${mark}] ${model.padEnd(30)} ${r.scenario.padEnd(18)} ttft=${String(r.ttftMs ?? "—").padStart(5)}ms total=${String(r.totalMs).padStart(6)}ms text=${String(r.textLen).padStart(4)} in=${r.inputTokens ?? "—"} out=${r.outputTokens ?? "—"} cacheR=${r.cacheRead ?? "—"} stop=${r.stopReason ?? "—"} provider=${r.provider ?? "—"} ru=${r.russian} cost=${r.costUsd ?? "—"}${r.error ? ` ${r.error}` : ""}`,
         );
         console.log(
           `        події: ${[...r.events].join(", ") || "—"} | delta: ${[...r.deltaTypes].join(", ") || "—"} | block=${r.firstBlockMs ?? "—"}ms tool=${r.firstToolMs ?? "—"}ms`,
@@ -336,6 +371,12 @@ async function main(): Promise<void> {
   }
 
   if (firstTurn) printFirstTurnSummary(reports);
+
+  const spent = reports.reduce((sum, r) => sum + (r.costUsd ?? 0), 0);
+  const ru = reports.filter((r) => r.russian > 0).length;
+  console.log(
+    `\nВідповідей з російськими маркерами: ${ru} з ${reports.length}; usage.cost разом: $${spent.toFixed(6)}`,
+  );
 
   console.log("\n| Модель | Сценарій | Парсер | TTFT | Кеш |");
   console.log("| --- | --- | --- | --- | --- |");

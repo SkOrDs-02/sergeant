@@ -17,6 +17,7 @@ vi.hoisted(() => {
   delete process.env["CHAT_VIA_OPENROUTER"];
   delete process.env["LLM_RECEIPT_PROVIDER"];
   delete process.env["OPENROUTER_DATA_COLLECTION"];
+  delete process.env["OPENROUTER_QUANTIZATION_FLOOR"];
 });
 
 const loggerMock = vi.hoisted(() => ({
@@ -42,7 +43,10 @@ import { OpenRouterProvider } from "./provider.js";
 
 const { Response: NodeResponse, TextEncoder: NodeTextEncoder } = globalThis;
 
-const DENY = { data_collection: "deny" };
+const DENY = {
+  data_collection: "deny",
+  quantizations: ["fp8", "mxfp8", "fp16", "bf16", "fp32", "unknown"],
+};
 const NO_ENDPOINTS = "No endpoints found matching your data policy";
 
 function sseResponse(): globalThis.Response {
@@ -120,11 +124,13 @@ beforeEach(() => {
   loggerMock.warn.mockClear();
   vi.stubGlobal("fetch", fetchMock);
   env.OPENROUTER_DATA_COLLECTION = "deny";
+  env.OPENROUTER_QUANTIZATION_FLOOR = "fp8";
 });
 
 afterEach(() => {
   vi.unstubAllGlobals();
   env.OPENROUTER_DATA_COLLECTION = "deny";
+  env.OPENROUTER_QUANTIZATION_FLOOR = "fp8";
 });
 
 const CHAT_PAYLOAD = {
@@ -133,7 +139,7 @@ const CHAT_PAYLOAD = {
   messages: [{ role: "user", content: "привіт" }],
 };
 
-describe("provider.data_collection=deny на кожному транспорті OpenRouter", () => {
+describe("provider: deny + квантизація від 8 біт на кожному транспорті OpenRouter", () => {
   it("перший хід чату (стрім /api/v1/messages)", async () => {
     fetchMock.mockResolvedValueOnce(sseResponse());
     const result = await streamFirstTurnToSse({
@@ -193,16 +199,40 @@ describe("provider.data_collection=deny на кожному транспорті
   });
 });
 
-describe("відкат OPENROUTER_DATA_COLLECTION=allow", () => {
-  it("/messages: поля provider немає", async () => {
+describe("відкати OPENROUTER_DATA_COLLECTION і OPENROUTER_QUANTIZATION_FLOOR", () => {
+  it("лише allow: лишається тільки quantizations", async () => {
     env.OPENROUTER_DATA_COLLECTION = "allow";
+    fetchMock.mockResolvedValueOnce(jsonResponse(MESSAGES_OK));
+    await callAnthropicWithContinuation("", CHAT_PAYLOAD, { endpoint: "chat" });
+    expect(sentBody()["provider"]).toEqual({
+      quantizations: DENY.quantizations,
+    });
+  });
+
+  it("лише off: лишається тільки data_collection", async () => {
+    env.OPENROUTER_QUANTIZATION_FLOOR = "off";
+    fetchMock.mockResolvedValueOnce(
+      jsonResponse({ choices: [{ message: { content: "ok" } }] }),
+    );
+    await new OpenRouterProvider("sk-or-test").generate({
+      model: "m",
+      messages: [{ role: "user", content: "x" }],
+      maxTokens: 10,
+    });
+    expect(sentBody()["provider"]).toEqual({ data_collection: "deny" });
+  });
+
+  it("/messages, обидва відкати: поля provider немає", async () => {
+    env.OPENROUTER_DATA_COLLECTION = "allow";
+    env.OPENROUTER_QUANTIZATION_FLOOR = "off";
     fetchMock.mockResolvedValueOnce(jsonResponse(MESSAGES_OK));
     await callAnthropicWithContinuation("", CHAT_PAYLOAD, { endpoint: "chat" });
     expect(sentBody()).not.toHaveProperty("provider");
   });
 
-  it("/chat/completions: поля provider немає", async () => {
+  it("/chat/completions, обидва відкати: поля provider немає", async () => {
     env.OPENROUTER_DATA_COLLECTION = "allow";
+    env.OPENROUTER_QUANTIZATION_FLOOR = "off";
     fetchMock.mockResolvedValueOnce(
       jsonResponse({ choices: [{ message: { content: "ok" } }] }),
     );
@@ -297,6 +327,34 @@ describe("404 «No endpoints found matching your data policy»", () => {
     expect(loggerMock.warn).toHaveBeenCalledWith(
       expect.objectContaining({
         msg: "openrouter_data_policy_no_endpoints",
+        transport: "messages",
+      }),
+    );
+  });
+
+  it("404 через квантизацію: той самий рядок у лозі з reason=quantization", async () => {
+    fetchMock.mockResolvedValueOnce(
+      jsonResponse(
+        {
+          type: "error",
+          error: {
+            type: "not_found_error",
+            message:
+              "No endpoints found for the request with quantization: fp32. To learn more about provider routing, visit: https://openrouter.ai/docs",
+          },
+        },
+        404,
+      ),
+    );
+    const { response } = await callAnthropicWithContinuation("", CHAT_PAYLOAD, {
+      endpoint: "chat",
+    });
+    expect(response?.status).toBe(404);
+    expect(fetchMock).toHaveBeenCalledTimes(1);
+    expect(loggerMock.warn).toHaveBeenCalledWith(
+      expect.objectContaining({
+        msg: "openrouter_data_policy_no_endpoints",
+        reason: "quantization",
         transport: "messages",
       }),
     );
