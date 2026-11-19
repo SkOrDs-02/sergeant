@@ -7,6 +7,7 @@ import type { Workout } from "@sergeant/fizruk-domain";
 import { Input } from "@shared/components/ui/Input";
 import { formatDateTimeShort, formatTimeHm } from "@shared/lib/time/formatDate";
 import {
+  DATETIME_CLASS,
   isoToDatetimeLocalValue,
   datetimeLocalValueToIso,
 } from "./activeWorkoutLib";
@@ -42,10 +43,6 @@ export interface WorkoutTimeEditorProps {
   /** Правка відкладеного кінця. Обовʼязкова, коли `pendingEndedAt` заданий. */
   onPendingEndChange?: ((iso: string) => void) | undefined;
 }
-
-// Нативний datetime-local має власну intrinsic-ширину від локалі; без
-// `min-inline-size: 0` він розпирає вузьку колонку.
-const DATETIME_CLASS = "min-w-0 [min-inline-size:0]";
 
 /** `17:30`. */
 function formatTime(iso: string): string {

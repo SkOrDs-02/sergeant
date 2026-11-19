@@ -1,6 +1,6 @@
 // @vitest-environment jsdom
 /**
- * Last validated: 2026-09-15
+ * Last validated: 2026-11-19
  * Status: Active
  *
  * Unit coverage for the RPE (Borg 1..10) tap-to-pick control. Integration
@@ -17,12 +17,42 @@ import { WorkoutSetRpeMenu } from "./WorkoutSetRpeMenu";
 afterEach(cleanup);
 
 describe("WorkoutSetRpeMenu", () => {
-  it("shows a dash and 'не вказано' aria-label when no value is set", () => {
+  it("shows an «RPE» caption and 'не вказано' aria-label when no value is set", () => {
     render(<WorkoutSetRpeMenu setNumber={1} value={null} onChange={vi.fn()} />);
     const trigger = screen.getByRole("button", {
       name: "Підхід 1: оцінка зусилля, не вказано",
     });
-    expect(trigger).toHaveTextContent("–");
+    expect(trigger).toHaveTextContent("RPE");
+  });
+
+  it("opens an inline panel (not a floating popover) with scale anchors and closes after a pick", () => {
+    render(<WorkoutSetRpeMenu setNumber={2} value={null} onChange={vi.fn()} />);
+    const trigger = screen.getByRole("button", {
+      name: "Підхід 2: оцінка зусилля, не вказано",
+    });
+    expect(trigger).toHaveAttribute("aria-expanded", "false");
+    fireEvent.click(trigger);
+    expect(trigger).toHaveAttribute("aria-expanded", "true");
+    const panel = screen.getByRole("group", { name: /Зусилля \(RPE\)/ });
+    expect(trigger.getAttribute("aria-controls")).toBe(panel.id);
+    expect(panel).toHaveTextContent("1 · дуже легко");
+    expect(panel).toHaveTextContent("10 · межа");
+    fireEvent.click(screen.getByRole("button", { name: "RPE 7" }));
+    expect(screen.queryByRole("group", { name: /Зусилля/ })).toBeNull();
+    expect(trigger).toHaveFocus();
+  });
+
+  it("Escape closes the panel without changing the value", () => {
+    const onChange = vi.fn();
+    render(<WorkoutSetRpeMenu setNumber={1} value={4} onChange={onChange} />);
+    fireEvent.click(
+      screen.getByRole("button", { name: "Підхід 1: оцінка зусилля 4" }),
+    );
+    fireEvent.keyDown(screen.getByRole("button", { name: "RPE 5" }), {
+      key: "Escape",
+    });
+    expect(screen.queryByRole("group", { name: /Зусилля/ })).toBeNull();
+    expect(onChange).not.toHaveBeenCalled();
   });
 
   it("shows the numeric value once set", () => {

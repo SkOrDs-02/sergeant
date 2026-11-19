@@ -60,3 +60,14 @@ export function calcCardioMetrics(
     speed: `${fmt(speedKmh, 1)} км/год`,
   };
 }
+
+/**
+ * Нативний datetime-local має власну intrinsic-ширину від локалі
+ * («18 лист. 2026 р., 16:15»), і iOS Safari її НЕ стискає ні `min-width: 0`,
+ * ні `width: 100%`, поки поле має нативний вигляд: поле виповзало за правий
+ * край екрана (скріншот власника 2026-11-19). `appearance-none` віддає
+ * ширину CSS-у; значення після цього iOS центрує, тож вирівнюємо його вліво,
+ * як у решти полів.
+ */
+export const DATETIME_CLASS =
+  "min-w-0 [min-inline-size:0] appearance-none [&::-webkit-date-and-time-value]:text-left";

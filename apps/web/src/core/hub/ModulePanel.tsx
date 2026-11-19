@@ -7,7 +7,7 @@
  * Неактивний модуль лишається рядком (форма панелі стала), але веде в
  * налаштування дашборда, як і раніше рейок.
  *
- * Last validated: 2026-10-09
+ * Last validated: 2026-11-19
  * Status: Active
  */
 import { useMemo } from "react";
@@ -106,7 +106,9 @@ export function ModulePanel({ activeModules, storageBump }: ModulePanelProps) {
                     />
                   ) : null}
                 </span>
-                <span className="w-20 shrink-0 text-right text-style-body font-medium tnum text-text">
+                {/* Мінімум, а не стала ширина: «2 трен. за тиж.» не
+                    влазить у 80 px, а смуга ліворуч гнучка й поступиться. */}
+                <span className="min-w-20 shrink-0 whitespace-nowrap text-right text-style-body font-medium tnum text-text">
                   {readModuleFact(id, preview, balanceHidden) ?? "–"}
                 </span>
               </button>

@@ -1,5 +1,5 @@
 /**
- * Last validated: 2026-09-11
+ * Last validated: 2026-11-19
  * Status: Active
  */
 import { useState } from "react";
@@ -64,6 +64,13 @@ export type WorkoutItemCardProps = {
     itemId: string,
     snapshot: WorkoutSet[],
   ) => void;
+  /**
+   * Тренування вносять заднім числом (ретро-сесія з відкладеним кінцем,
+   * `pendingRetroEnd`). Людина вже не в залі, тож відпочинок не має сенсу:
+   * ✓ у рядках і пресет відпочинку сховані, а голос не стартує таймер.
+   * Головна дія такого екрана — «+ Підхід» (фідбек власника 2026-11-19).
+   */
+  isRetro?: boolean | undefined;
 };
 
 /** Last SET in `sets` with both weight AND reps logged (>0), or `null`
@@ -119,6 +126,7 @@ export function WorkoutItemCard({
   getDefaultForExercise,
   setDefaultForExercise,
   onDeleteSet,
+  isRetro = false,
 }: WorkoutItemCardProps) {
   // Помилка голосу — ЛОКАЛЬНИЙ стан, свідомо не `useToast`. Той хук
   // кидає поза `ToastProvider`, а картка рендериться і в деревах без
@@ -166,9 +174,13 @@ export function WorkoutItemCard({
   const restSec = restSecAfterCheck(it, group, defSec);
 
   const startRest = () => {
-    if (activeWorkout.endedAt || restSec == null) return;
+    if (activeWorkout.endedAt || isRetro || restSec == null) return;
     setRestTimer(startRestTimerState(restSec));
   };
+  // Незаповненого рядка не лишилось — наступний крок «+ Підхід», і кнопка
+  // це каже заливкою. Інакше після ✓ останнього рядка (а в ретро — після
+  // введених повторів) екран не підказував, куди далі.
+  const addSetIsNext = currentIdx === -1;
 
   const showTypeSwitcher = !isReadOnly && !(it.type === "strength" && anyDone);
 
@@ -248,7 +260,7 @@ export function WorkoutItemCard({
 
       {it.type === "strength" && (
         <div className="mt-2 space-y-1">
-          {sets.length > 0 && <WorkoutSetColumnHeader />}
+          {sets.length > 0 && <WorkoutSetColumnHeader showCheck={!isRetro} />}
           {sets.map((s, idx) => (
             <WorkoutSetRow
               key={setKeys[idx]}
@@ -258,6 +270,7 @@ export function WorkoutItemCard({
               isReadOnly={isReadOnly}
               isCurrent={idx === currentIdx}
               isLast={idx === sets.length - 1}
+              showCheck={!isRetro}
               onChangeWeight={(weightKg) => {
                 const next = [...(it.sets || [])];
                 const current = next[idx];
@@ -310,9 +323,11 @@ export function WorkoutItemCard({
           {!isReadOnly && (
             <div className="flex gap-2 pt-1">
               <Button
-                variant="outline"
+                variant={addSetIsNext ? "solid" : "outline"}
+                tone="neutral"
                 className="flex-1 h-11 min-h-[44px]"
                 type="button"
+                data-emphasis={addSetIsNext ? "next" : undefined}
                 onClick={() => {
                   const currentSets = it.sets || [];
                   // Copy the last COMPLETED set forward instead of appending
@@ -380,7 +395,7 @@ export function WorkoutItemCard({
                   startRest();
                 }}
               />
-              {!activeWorkout.endedAt && (
+              {!activeWorkout.endedAt && !isRetro && (
                 // У групі кнопка несе СПІЛЬНИЙ час кола і без меню
                 // пресетів: там пресет міняв би типовий час однієї
                 // вправи, а відпочинок належить групі. Раніше для
