@@ -66,7 +66,7 @@
 ### Negative
 
 - На дату рішення critical-flow червоний (15 із 52), тож автодеплой фактично не спрацює, доки E2E не полагодять. Це ціна безпечного гейта, а не дефект механізму.
-- Реєстр PR (Hard Rule #26) лишився без механізму повноти: писач уміє читати лише Bitbucket API, `pr-backlinks.yml` вимкнено змінною репо `PR_LEDGER_ON_GITHUB`.
+- Реєстр PR (Hard Rule #26) лишився без механізму повноти: писач уміє читати лише Bitbucket API, `pr-backlinks.yml` вимкнено змінною репо `PR_LEDGER_ON_GITHUB`. (Уточнення 2026-11-19: з 2026-10-08 писач `update-pr-backlinks.mjs` знову читає GitHub REST API; workflow лишається вимкненим тією самою змінною, див. [правило 26](../governance/rules/26-pr-ledger-update-on-merge.md).)
 - Хвилини Actions: повний прогін `ci.yml` - близько 15-20 хвилин паралельних джоб. На PR застарілі прогони скасовуються (`cancel-in-progress`), на `main` ні.
 
 ### Neutral

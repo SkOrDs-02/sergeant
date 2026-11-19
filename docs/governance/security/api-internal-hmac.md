@@ -109,8 +109,11 @@ Per-workflow checklist:
 ## Disable / kill-switch
 
 Set `WEBHOOK_HMAC_REQUIRED=false` to revert to grace mode (existing 401s
-stop). Set `WEBHOOK_HMAC_SECRET=""` to fully disable verification (no-op
-middleware). The bearer-token guard remains active in both cases.
+stop). Це і є вимикач у production: з 2026-11-19 (B27) порожній
+`WEBHOOK_HMAC_SECRET` при `WEBHOOK_HMAC_REQUIRED=true` і заданому
+`INTERNAL_API_KEY` валить старт, тож секрет очищай лише після
+`WEBHOOK_HMAC_REQUIRED=false` (тоді middleware стає no-op). The bearer-token
+guard remains active in both cases.
 
 If `WEBHOOK_HMAC_SECRET` is compromised: rotate per [`rotate-secrets.md`](../../start/instructions/rotate-secrets.md) (root path: `docs/start/instructions/rotate-secrets.md`).
 The replay window (5min) means a leaked signature is useless after a
