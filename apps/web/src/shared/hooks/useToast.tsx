@@ -19,7 +19,9 @@ export interface ToastAction {
   dismissLabel?: string;
   /**
    * `"undo"` позначає дію як відкат щойно виконаного (`showUndoToast` і
-   * два ручні «Скасувати» в Харчуванні). Саме такі тости знаходить
+   * ручні «Скасувати»: два в Харчуванні і один у тості Фініка «Витрату
+   * додано.» / «Надходження додано.», `modules/finyk/lib/manualEntryAddedToast.ts`).
+   * Саме такі тости знаходить
    * глобальний `Cmd/Ctrl+Z` (`RootLayout`): вікно undo живе рівно
    * стільки, скільки тост на екрані, і окремого стеку не потрібно.
    * Інші дії (retry, «Оновити», «Перейти») клавіша не чіпає.
@@ -99,6 +101,14 @@ export interface ToastContextValue extends ToastApi {
    * (див. нижче), решта чекає вільного слота.
    */
   toasts: ToastItem[];
+  /**
+   * Виконати `run`, щойно тост `id` зник з екрана (сам, хрестиком, свайпом,
+   * дією, Esc або викинутий із черги). Тосту вже немає — `run` одразу.
+   * Так наступна думка стає в чергу ЗА попередньою, а не стосом поруч із
+   * нею: пропозиція списання з комори після тосту запису (П-6 А, Харчування).
+   * Поза `ToastApi`, щоб рукописні моки `ToastApi` у тестах не ламались.
+   */
+  afterGone: (id: number, run: () => void) => void;
 }
 
 const ToastContext = createContext<ToastContextValue | null>(null);
@@ -202,6 +212,8 @@ export function ToastProvider({ children }: { children: ReactNode }) {
   const exitTimersRef = useRef<Record<number, ReturnType<typeof setTimeout>>>(
     {},
   );
+  /** Хто чекає зникнення тоста (`afterGone`). */
+  const goneWaitersRef = useRef<Record<number, Array<() => void>>>({});
 
   useEffect(() => {
     return () => {
@@ -220,12 +232,20 @@ export function ToastProvider({ children }: { children: ReactNode }) {
       startedAtRef.current = {};
       remainingRef.current = {};
       pausedRef.current = new Set();
+      goneWaitersRef.current = {};
       listRef.current = [];
     };
   }, []);
 
   const commit = useCallback(() => {
     setToasts(listRef.current.slice());
+  }, []);
+
+  const fireGone = useCallback((id: number) => {
+    const waiters = goneWaitersRef.current[id];
+    if (!waiters) return;
+    delete goneWaitersRef.current[id];
+    for (const run of waiters) run();
   }, []);
 
   const clearAutoDismiss = useCallback((id: number) => {
@@ -241,8 +261,9 @@ export function ToastProvider({ children }: { children: ReactNode }) {
       delete remainingRef.current[id];
       pausedRef.current.delete(id);
       commit();
+      fireGone(id);
     },
-    [commit],
+    [commit, fireGone],
   );
 
   const dismiss = useCallback(
@@ -381,18 +402,29 @@ export function ToastProvider({ children }: { children: ReactNode }) {
       // 3. Кеп на глибину черги. Ріжемо найстаріший ЗАЧЕРГОВАНИЙ (перший за
       //    межею видимого вікна) — у нього ще немає ані таймера, ані
       //    бухгалтерії, тож і чистити нічого.
-      if (listRef.current.length > MAX_VISIBLE_TOASTS + MAX_QUEUED_TOASTS) {
-        listRef.current = listRef.current.filter(
-          (_, i) => i !== MAX_VISIBLE_TOASTS,
-        );
+      const dropped =
+        listRef.current.length > MAX_VISIBLE_TOASTS + MAX_QUEUED_TOASTS
+          ? listRef.current[MAX_VISIBLE_TOASTS]
+          : undefined;
+      if (dropped) {
+        listRef.current = listRef.current.filter((t) => t !== dropped);
       }
 
       commit();
       syncTimers();
+      if (dropped) fireGone(dropped.id);
       return id;
     },
-    [clearAutoDismiss, commit, syncTimers],
+    [clearAutoDismiss, commit, syncTimers, fireGone],
   );
+
+  const afterGone = useCallback<ToastContextValue["afterGone"]>((id, run) => {
+    if (!listRef.current.some((t) => t.id === id)) {
+      run();
+      return;
+    }
+    (goneWaitersRef.current[id] ??= []).push(run);
+  }, []);
 
   const success = useCallback<ToastApi["success"]>(
     (msg, duration, action) => show(msg, "success", duration, action),
@@ -417,8 +449,8 @@ export function ToastProvider({ children }: { children: ReactNode }) {
   );
 
   const value = useMemo<ToastContextValue>(
-    () => ({ ...api, toasts }),
-    [api, toasts],
+    () => ({ ...api, toasts, afterGone }),
+    [api, toasts, afterGone],
   );
 
   return (

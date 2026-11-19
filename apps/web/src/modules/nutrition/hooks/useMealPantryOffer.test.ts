@@ -1,9 +1,10 @@
 import { describe, expect, it, vi } from "vitest";
-import type { ToastAction, ToastApi } from "@shared/hooks/useToast";
+import type { ToastAction } from "@shared/hooks/useToast";
 import type { PantryItem } from "@sergeant/nutrition-domain";
 import {
   offerPantryDeduction,
   type PantryOfferPort,
+  type PantryOfferToast,
 } from "./useMealPantryOffer";
 import type {
   PantryConsumeReceipt,
@@ -27,7 +28,8 @@ function fakeToast() {
     dismiss: vi.fn(),
     pause: vi.fn(),
     resume: vi.fn(),
-  } as unknown as ToastApi;
+    afterGone: vi.fn(),
+  } as unknown as PantryOfferToast;
   return { toast, shown };
 }
 
@@ -63,15 +65,53 @@ describe("offerPantryDeduction", () => {
   });
 
   // Зйомка 2026-11-18: після «Списати» тост просто зникав, і людина не
-  // бачила, що списання відбулось.
-  it("після «Списати» коротко підтверджує списання, без дії", () => {
+  // бачила, що списання відбулось. Рішення власника 2026-11-19 (Б): у
+  // підтвердженні одна дія «Повернути», бо тост запису вже зник.
+  it("після «Списати» підтверджує списання з «Повернути»", () => {
     const { toast, shown } = fakeToast();
-    offerPantryDeduction(toast, () => port(), [{ name: "Рис", amount_g: 150 }]);
+    const pantry = port();
+    offerPantryDeduction(toast, () => pantry, [{ name: "Рис", amount_g: 150 }]);
     shown[0]!.action!.onClick();
     expect(shown).toHaveLength(2);
     expect(shown[1]!.msg).toBe("Списав 150\u00a0г із комори");
-    expect(shown[1]!.action).toBeUndefined();
-    expect(toast.success).toHaveBeenCalledTimes(1);
+    expect(shown[1]!.action).toMatchObject({
+      label: "Повернути",
+      kind: "undo",
+    });
+    shown[1]!.action!.onClick();
+    expect(pantry.revert).toHaveBeenCalledWith(receipt);
+    expect(toast.error).not.toHaveBeenCalled();
+  });
+
+  // Рішення власника 2026-11-19 (Б): підтвердження несе «Повернути».
+  it("збій «Повернути» показує помилку, і списання лишається", () => {
+    const { toast, shown } = fakeToast();
+    const pantry = port({ revert: vi.fn(() => false) });
+    offerPantryDeduction(toast, () => pantry, [{ name: "Рис", amount_g: 150 }]);
+    shown[0]!.action!.onClick();
+    const confirm = shown[1]!;
+    expect(confirm.action?.label).toBe("Повернути");
+    confirm.action!.onClick();
+    expect(pantry.revert).toHaveBeenCalledWith(receipt);
+    expect(toast.error).toHaveBeenCalledWith(
+      "Не вдалося повернути в комору. Списане лишилось.",
+    );
+    expect(shown.some((t) => String(t.msg).includes("повернув"))).toBe(false);
+  });
+
+  it("винятковий збій «Повернути» теж показує помилку", () => {
+    const { toast, shown } = fakeToast();
+    const pantry = port({
+      revert: vi.fn(() => {
+        throw new Error("quota");
+      }),
+    });
+    offerPantryDeduction(toast, () => pantry, [{ name: "Рис", amount_g: 150 }]);
+    shown[0]!.action!.onClick();
+    shown[1]!.action!.onClick();
+    expect(toast.error).toHaveBeenCalledWith(
+      "Не вдалося повернути в комору. Списане лишилось.",
+    );
   });
 
   it("списання чекає вибору варіанта: підтвердження не показує", () => {
@@ -130,7 +170,7 @@ describe("offerPantryDeduction", () => {
       toast,
       () => pantry,
       [{ name: "Рис", amount_g: 150 }],
-      ticket,
+      { ticket },
     );
     expect(shown).toHaveLength(0);
     link.undo();
@@ -143,7 +183,7 @@ describe("offerPantryDeduction", () => {
     const { toast, shown } = fakeToast();
     const pantry = port({ revert: vi.fn(() => false) });
     const ticket: PantryConsumeTicket = { receipt, cancelled: false };
-    offerPantryDeduction(toast, () => pantry, [], ticket).undo();
+    offerPantryDeduction(toast, () => pantry, [], { ticket }).undo();
     expect(shown).toHaveLength(0);
   });
 });

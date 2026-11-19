@@ -312,4 +312,24 @@ describe("useToast", () => {
     expect(() => vi.advanceTimersByTime(1000)).not.toThrow();
     expect(vi.getTimerCount()).toBe(0);
   });
+
+  it("afterGone чекає, доки тост зникне, а для відсутнього кличе одразу", () => {
+    vi.useFakeTimers();
+    const { result } = renderHook(() => useToast(), { wrapper });
+    const run = vi.fn();
+    let id = 0;
+    act(() => {
+      id = result.current.success("first", 1000);
+      result.current.afterGone(id, run);
+    });
+    act(() => vi.advanceTimersByTime(1000));
+    // Аркуш ще їде геть (exit-анімація) — наступна думка ще не настала.
+    expect(run).not.toHaveBeenCalled();
+    act(() => vi.advanceTimersByTime(200));
+    expect(run).toHaveBeenCalledTimes(1);
+
+    const late = vi.fn();
+    act(() => result.current.afterGone(id, late));
+    expect(late).toHaveBeenCalledTimes(1);
+  });
 });

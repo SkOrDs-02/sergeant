@@ -15,11 +15,15 @@
  * - позиція має залишок і її одиниця переводиться з грамів. Упаковки
  *   (`уп`) не переводяться (`gramsToUnitQty` → `null`), тож їх не
  *   пропонуємо (дефолт § 11.8).
+ *
+ * `pantryDeductionOfferFor` чиста: без React і без сховища, тож її кличе і
+ * шлях запису поза модулем (чат, `log_meal`). Комора на вході — усі місця
+ * одним списком: `buildPlacedItems(loadPantries())`, як `pantryItems` у
+ * `useNutritionPantries`.
  */
 import {
   gramsToUnitQty,
   matchFoodName,
-  type Meal,
   type PantryItem,
 } from "@sergeant/nutrition-domain";
 import { formatPantryQty } from "./formatPantryQty";
@@ -31,8 +35,15 @@ export interface PantryDeductionOffer {
   grams: number;
 }
 
+/** Записаний рядок журналу; `Meal` підходить як є. */
+export interface PantryOfferMeal {
+  name: string;
+  /** Вага в грамах; невідома (`null` / відсутня) — пропозиції немає. */
+  amount_g?: number | null | undefined;
+}
+
 export function pantryDeductionOfferFor(
-  meals: readonly Pick<Meal, "name" | "amount_g">[],
+  meals: readonly PantryOfferMeal[],
   items: readonly PantryItem[],
 ): PantryDeductionOffer | null {
   if (meals.length !== 1 || !Array.isArray(items)) return null;

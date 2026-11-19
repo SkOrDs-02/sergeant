@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import type { PantryItem } from "@sergeant/nutrition-domain";
+import { buildPlacedItems, type PantryItem } from "@sergeant/nutrition-domain";
 import {
   pantryDeductionOfferFor,
   pantryOfferMessage,
@@ -50,6 +50,42 @@ describe("pantryDeductionOfferFor", () => {
     ).toBeNull();
     expect(
       pantryDeductionOfferFor([{ name: "Печиво", amount_g: 40 }], [pack]),
+    ).toBeNull();
+  });
+});
+
+// Виклик поза модулем (запис через чат, `log_meal`): без React і сховища,
+// комора — усі місця одним списком, як її бачить і сама форма прийому.
+describe("pantryDeductionOfferFor поза модулем", () => {
+  const pantries = [
+    { id: "shelf", name: "Полиця", items: [milk], text: "" },
+    { id: "fridge", name: "Холодильник", items: [rice], text: "" },
+  ];
+
+  it("знаходить позицію в будь-якому місці комори", () => {
+    expect(
+      pantryDeductionOfferFor(
+        [{ name: "Рис", amount_g: 200 }],
+        buildPlacedItems(pantries),
+      ),
+    ).toEqual({ itemName: "Рис", grams: 200 });
+  });
+
+  it("без збігу в коморі нічого не пропонує", () => {
+    expect(
+      pantryDeductionOfferFor(
+        [{ name: "Гречка", amount_g: 200 }],
+        buildPlacedItems(pantries),
+      ),
+    ).toBeNull();
+  });
+
+  it("кількість невідома — нічого не пропонує", () => {
+    expect(
+      pantryDeductionOfferFor(
+        [{ name: "Рис", amount_g: undefined }],
+        buildPlacedItems(pantries),
+      ),
     ).toBeNull();
   });
 });

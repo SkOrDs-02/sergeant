@@ -76,7 +76,7 @@ export function useQuickAddMealFromChip({
       // День, під яким запис ЛЯГ: `log.selectedDate` міг відстати від годинника.
       const dateForLog = log.handleAddMeal(meal);
       const pending: { link?: MealPantryLink | undefined } = {};
-      toast.success(
+      const recordToastId = toast.success(
         `${chip.label} додано · ${chip.macros.kcal} ккал`,
         undefined,
         {
@@ -88,7 +88,7 @@ export function useQuickAddMealFromChip({
           },
         },
       );
-      pending.link = pantryOffer?.([meal]);
+      pending.link = pantryOffer?.([meal], { after: recordToastId });
     },
     [log, toast, pantryOffer],
   );
