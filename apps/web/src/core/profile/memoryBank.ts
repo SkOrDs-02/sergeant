@@ -5,10 +5,10 @@ import { STORAGE_KEYS } from "@sergeant/shared";
 // у `kv_store` її партиції на старті невидимий. Порожній через це банк
 // наступною ж правкою перезаписував серверну копію (аудит 2026-09-28, D2).
 import {
-  safeReadLSDurable,
   safeReadLSValidatedDurable,
   safeWriteLSDurable,
 } from "@shared/lib/storage/storage";
+import { memoryBankSlot } from "../security/aiAtRest";
 import type { MemoryEntry } from "./types";
 import type { IconName } from "@shared/components/ui/Icon";
 
@@ -264,7 +264,13 @@ export function buildMemoryImportPreview(
 export function readMemoryEntries(): MemoryEntry[] {
   // priv-02: чужий банк для поточної сесії не існує (див. isMemoryBankForeign).
   if (isMemoryBankForeign()) return [];
-  const parsed = safeReadLSDurable<unknown[]>(PROFILE_KEY, []);
+  let parsed: unknown = [];
+  try {
+    const raw = memoryBankSlot.read();
+    if (raw) parsed = JSON.parse(raw);
+  } catch {
+    parsed = [];
+  }
   if (!Array.isArray(parsed)) return [];
   return parsed
     .map((item) => normalizeMemoryEntry(item))
@@ -315,6 +321,12 @@ export function subscribeLocalMemoryEdit(fn: MemoryBankListener): () => void {
   };
 }
 
+// Зашифрований банк у іншій вкладці / після перемикання розділу акаунта
+// розшифровується асинхронно: сповіщаємо UI, коли кеш оновився.
+memoryBankSlot.onExternalChange(() => {
+  notify(listeners, readMemoryEntries());
+});
+
 function notify(set: Set<MemoryBankListener>, entries: MemoryEntry[]): void {
   // Підписник, який кинув виняток, не має ховати сам запис — він уже
   // стався — і не має заважати решті підписників.
@@ -325,8 +337,20 @@ function notify(set: Set<MemoryBankListener>, entries: MemoryEntry[]): void {
   }
 }
 
+/** Зашифрований запис банку (aiAtRest); `false` лише якщо не серіалізується. */
+function writeMemoryBankSlot(entries: MemoryEntry[]): boolean {
+  let serialized: string;
+  try {
+    serialized = JSON.stringify(entries);
+  } catch {
+    return false;
+  }
+  memoryBankSlot.write(serialized);
+  return true;
+}
+
 export function writeMemoryEntries(entries: MemoryEntry[]): void {
-  if (!safeWriteLSDurable(PROFILE_KEY, entries)) {
+  if (!writeMemoryBankSlot(entries)) {
     throw new Error("Не вдалося зберегти памʼять профілю");
   }
   // L-8: генуїнний ЛОКАЛЬНИЙ запис — нова мітка часу ("зараз") + поточний
@@ -349,7 +373,7 @@ export function writeMemoryEntriesFromServer(
   entries: MemoryEntry[],
   serverUpdatedAt: string,
 ): void {
-  if (!safeWriteLSDurable(PROFILE_KEY, entries)) {
+  if (!writeMemoryBankSlot(entries)) {
     throw new Error("Не вдалося зберегти памʼять профілю");
   }
   writeMemoryBankMeta(serverUpdatedAt);

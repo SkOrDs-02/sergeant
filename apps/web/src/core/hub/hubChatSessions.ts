@@ -1,18 +1,19 @@
 import {
   resolveLsStore,
-  safeReadLS,
   safeReadStringLS,
   safeRemoveLS,
-  safeRemoveLSDurable,
   safeWriteLS,
-  safeWriteStringLSDurable,
 } from "@shared/lib/storage/storage";
+import {
+  chatLegacyHistorySlot,
+  chatSessionsMirrorSlot,
+  chatSessionsSlot,
+} from "../security/aiAtRest";
 import { getKyivShortDateStamp } from "@shared/lib/time/kyivTime";
 import { normalizeStoredMessages, type ChatMessage } from "../lib/hubChatUtils";
 
 export const SESSIONS_STORAGE_KEY = "hub_chat_sessions_v1";
 export const ACTIVE_SESSION_KEY = "hub_chat_active_session_v1";
-const LEGACY_KEY = "hub_chat_history";
 /**
  * Privacy F12 (браузерна верифікація 2026-08-06): чат-ключі плоскі —
  * без цього стампа історія розмов попереднього акаунта (фінанси,
@@ -96,9 +97,9 @@ function createInitialSession(messages?: ChatMessage[]): HubChatSession {
  * the new key already has data, leaves it untouched.
  */
 function migrateLegacyIfNeeded(): HubChatSession[] | null {
-  const existing = safeReadStringLS(SESSIONS_STORAGE_KEY);
+  const existing = chatSessionsSlot.read();
   if (existing) return null;
-  const parsed = safeReadLS<unknown>(LEGACY_KEY);
+  const parsed = parseJson(chatLegacyHistorySlot.read());
   if (!Array.isArray(parsed) || parsed.length === 0) return null;
   const session = createInitialSession(
     normalizeStoredMessages(parsed as ChatMessage[]),
@@ -114,6 +115,16 @@ function newestUpdatedAt(sessions: readonly HubChatSession[]): number {
     if (at > newest) newest = at;
   }
   return newest;
+}
+
+/** Історія чату зберігається зашифрованою (aiAtRest), слот віддає JSON-текст. */
+function parseJson(raw: string | null): unknown {
+  if (!raw) return null;
+  try {
+    return JSON.parse(raw);
+  } catch {
+    return null;
+  }
 }
 
 function parseSessionsBlob(raw: unknown): HubChatSession[] {
@@ -134,13 +145,7 @@ function parseSessionsBlob(raw: unknown): HubChatSession[] {
 }
 
 function readMirroredSessions(): HubChatSession[] {
-  const raw = resolveLsStore()?.getString(SESSIONS_MIRROR_KEY);
-  if (!raw) return [];
-  try {
-    return parseSessionsBlob(JSON.parse(raw));
-  } catch {
-    return [];
-  }
+  return parseSessionsBlob(parseJson(chatSessionsMirrorSlot.read()));
 }
 
 export function loadSessions(): HubChatSession[] {
@@ -185,7 +190,7 @@ function reconcileSessions(): HubChatSession[] {
   //
   // Тому джерело істини визначає дані, а не походження: перемагає той бік, у
   // якого свіжіший `updatedAt`. Це самовиправно в обидва боки.
-  const primary = parseSessionsBlob(safeReadLS<unknown>(SESSIONS_STORAGE_KEY));
+  const primary = parseSessionsBlob(parseJson(chatSessionsSlot.read()));
   const mirrored = readMirroredSessions();
   if (mirrored.length === 0) return primary;
   if (primary.length === 0) return mirrored;
@@ -205,12 +210,12 @@ export function saveSessions(sessions: HubChatSession[]): void {
       ...s,
       messages: s.messages.slice(-MESSAGES_PER_SESSION),
     }));
-  safeWriteLS(SESSIONS_STORAGE_KEY, trimmed);
+  chatSessionsSlot.write(JSON.stringify(trimmed));
   // Синхронне дзеркало проти гонки «запис → релоад» (див. `loadSessions`).
   // Пишемо під ОКРЕМИМ ключем, а не durable-хелпером по основному: інакше
   // `bootstrapKvStore()` підняв би дзеркало у warm-cache як основне значення,
   // і порівняння за `updatedAt` втратило б другий бік.
-  safeWriteStringLSDurable(SESSIONS_MIRROR_KEY, JSON.stringify(trimmed));
+  chatSessionsMirrorSlot.write(JSON.stringify(trimmed));
 
   // Mirror the most recent session's tail back into the legacy
   // `hub_chat_history` key so `hubBackup.buildHubBackupPayload`
@@ -219,7 +224,7 @@ export function saveSessions(sessions: HubChatSession[]): void {
   // out chat exports for users on the new schema.
   const newest = trimmed[0];
   if (newest) {
-    safeWriteLS(LEGACY_KEY, newest.messages.slice(-30));
+    chatLegacyHistorySlot.write(JSON.stringify(newest.messages.slice(-30)));
   }
 }
 
@@ -293,13 +298,13 @@ export function reconcileChatOwnerOnAuthChange(
   safeRemoveLS(CHAT_OWNER_KEY);
   const changed = prevOwner !== null;
   if (changed) {
-    safeRemoveLS(SESSIONS_STORAGE_KEY);
+    chatSessionsSlot.remove();
     safeRemoveLS(ACTIVE_SESSION_KEY);
-    safeRemoveLS(LEGACY_KEY);
+    chatLegacyHistorySlot.remove();
     // Дзеркало мусить гинути РАЗОМ з основним ключем: інакше приватність F12
     // (нижче в докстрінгу) обходиться через нього — наступний залогінений
     // юзер на тому ж пристрої прочитав би історію попереднього.
-    safeRemoveLSDurable(SESSIONS_MIRROR_KEY);
+    chatSessionsMirrorSlot.remove();
   }
   resolveLsStore()?.setString(CHAT_OWNER_KEY, nextOwner);
   return {
