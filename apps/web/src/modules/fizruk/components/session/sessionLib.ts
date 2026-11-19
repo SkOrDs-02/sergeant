@@ -11,26 +11,32 @@ import type {
   WorkoutItem,
 } from "@sergeant/fizruk-domain";
 import { pluralUa } from "@sergeant/shared";
+import { itemUsesSetRows } from "@sergeant/fizruk-domain/domain";
 import { messages } from "@shared/i18n/uk";
 import { isSetDone } from "../workouts/WorkoutSetRow";
 
 export type SessionItemState = "done" | "current" | "todo";
 
-/** Скільки підходів у силовій вправі вже позначені зробленими. */
+/**
+ * Скільки підходів вправи вже зараховано. Рядки підходів має силова вправа
+ * і будь-яка вправа з явним типом виміру (`itemUsesSetRows`): утримання
+ * рахується за секундами, дистанція за метрами (спека типу виміру).
+ */
 export function countDoneSets(it: WorkoutItem): number {
-  if (it.type !== "strength") return 0;
-  return (it.sets || []).filter(isSetDone).length;
+  if (!itemUsesSetRows(it)) return 0;
+  return (it.sets || []).filter((s) => isSetDone(s, it)).length;
 }
 
 /**
- * Вправа «зроблена», коли є хоч один підхід і всі вони зроблені (силова),
- * або коли записано час чи дистанцію (кардіо). Порожня силова вправа без
- * підходів — не зроблена: там ще нема чого рахувати.
+ * Вправа «зроблена», коли є хоч один підхід і всі вони зроблені (вправа з
+ * рядками підходів), або коли записано час чи дистанцію (старе поле на
+ * вправі). Порожня вправа без підходів — не зроблена: там ще нема чого
+ * рахувати.
  */
 export function isItemDone(it: WorkoutItem): boolean {
-  if (it.type === "strength") {
+  if (itemUsesSetRows(it)) {
     const sets = it.sets || [];
-    return sets.length > 0 && sets.every(isSetDone);
+    return sets.length > 0 && sets.every((s) => isSetDone(s, it));
   }
   if (it.type === "time") return (it.durationSec ?? 0) > 0;
   return (it.distanceM ?? 0) > 0 || (it.durationSec ?? 0) > 0;

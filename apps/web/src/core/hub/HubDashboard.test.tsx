@@ -2,6 +2,7 @@
 import { cleanup, fireEvent, render, screen } from "@testing-library/react";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { MemoryRouter } from "react-router-dom";
+import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import {
   FIRST_REAL_ENTRY_KEY,
   STORAGE_KEYS,
@@ -201,12 +202,16 @@ function renderDashboard({
   onOpenModule?: (module: string) => void;
   user?: User | null;
 } = {}) {
+  // Факти банку на хабі підписані на кеш стану синку Monobank
+  // (`finykKeys.monoSyncState`), тож дашборд рендериться з провайдером.
   const result = render(
-    <MemoryRouter>
-      <ToastProvider>
-        <HubDashboard user={user} onOpenModule={onOpenModule} />
-      </ToastProvider>
-    </MemoryRouter>,
+    <QueryClientProvider client={new QueryClient()}>
+      <MemoryRouter>
+        <ToastProvider>
+          <HubDashboard user={user} onOpenModule={onOpenModule} />
+        </ToastProvider>
+      </MemoryRouter>
+    </QueryClientProvider>,
   );
   return { ...result, onOpenModule };
 }

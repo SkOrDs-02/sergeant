@@ -6,7 +6,13 @@ import {
   isBlankRow,
   tokenizeCsv,
 } from "@sergeant/tabular-import/csvParser";
-import { FizrukData } from "@sergeant/fizruk-domain";
+import { FizrukData, type WorkoutSet } from "@sergeant/fizruk-domain";
+import {
+  catalogMeasure,
+  measureToItemType,
+  withMeasureMirror,
+  type ExerciseMeasure,
+} from "@sergeant/fizruk-domain/domain";
 import { sha256Hex } from "./sha256Hex";
 import { matchStrongExerciseName } from "./strongMatch";
 import type { StrongExerciseMatch } from "./strongMatch";
@@ -464,17 +470,50 @@ function sum(values: readonly number[]): number {
   return values.reduce((total, value) => total + value, 0);
 }
 
+/**
+ * Тип виміру імпортованої вправи (спека типу виміру): з даних, а не з
+ * вибору людини, тож памʼять типу імпорт не пише. Є метри — дистанція (з
+ * вагою чи з часом); є секунди — час (з вагою чи без); інакше вага ×
+ * повтори, а без ваги — дефолт каталогу, якщо він «лише повтори».
+ */
+export function strongItemMeasure(
+  sets: readonly StrongImportSet[],
+  exercise: FizrukData.RawExerciseDef,
+): ExerciseMeasure {
+  const anyWeight = sets.some((set) => set.weightKg > 0);
+  if (sets.some((set) => set.distanceM > 0)) {
+    return anyWeight ? "weight_distance" : "distance_time";
+  }
+  if (sets.some((set) => set.seconds > 0)) {
+    return anyWeight ? "weight_time" : "time";
+  }
+  if (anyWeight) return "weight_reps";
+  return catalogMeasure(exercise) === "reps" ? "reps" : "weight_reps";
+}
+
 function toSnapshotItem(
   idNamespace: string,
   strongDate: string,
   item: StrongImportItem,
   exercise: FizrukData.RawExerciseDef,
 ): FizrukItemSnapshot {
+  // Секунди й метри — на кожен підхід (рішення Р-1); суми на вправі —
+  // дзеркало для старих читачів (`withMeasureMirror`). Детерміновані id
+  // означають, що повторний імпорт того самого CSV переписує старий запис
+  // (сума на вправі, підходи без секунд) у нову форму.
+  const measure = strongItemMeasure(item.sets, exercise);
   const sets = item.sets.map((set): FizrukSetSnapshot => ({
     weightKg: set.weightKg,
     reps: set.reps,
+    ...(set.seconds > 0 ? { durationSec: Math.round(set.seconds) } : {}),
+    ...(set.distanceM > 0 ? { distanceM: Math.round(set.distanceM) } : {}),
     ...(set.rpe != null ? { rpe: set.rpe } : {}),
   }));
+  const mirrored = withMeasureMirror({
+    measure,
+    type: measureToItemType(measure),
+    sets: sets as WorkoutSet[],
+  });
   const snapshot: FizrukItemSnapshot = {
     id: itemId(idNamespace, strongDate, item.strongName),
     exerciseId: exercise.id,
@@ -482,10 +521,11 @@ function toSnapshotItem(
     primaryGroup: exercise.primaryGroup,
     musclesPrimary: exercise.muscles?.primary ?? [],
     musclesSecondary: exercise.muscles?.secondary ?? [],
-    type: item.type,
+    measure,
+    type: mirrored.type ?? item.type,
     sets,
-    ...(item.durationSec > 0 ? { durationSec: item.durationSec } : {}),
-    ...(item.distanceM > 0 ? { distanceM: item.distanceM } : {}),
+    ...(mirrored.durationSec ? { durationSec: mirrored.durationSec } : {}),
+    ...(mirrored.distanceM ? { distanceM: mirrored.distanceM } : {}),
   };
   return snapshot;
 }

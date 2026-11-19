@@ -4,13 +4,21 @@
  */
 import type { Dispatch, SetStateAction } from "react";
 import {
-  addDaysISODate,
   todayISODate,
   type Meal,
   type MealTypeId,
   type NutritionPrefs,
 } from "@sergeant/nutrition-domain";
 import { showUndoToast } from "@shared/lib/ui/undoToast";
+import {
+  useCopyYesterdayMeals,
+  yesterdayMealsOf,
+} from "../hooks/useCopyYesterdayMeals";
+import { usePhotoQuickSave } from "../hooks/usePhotoQuickSave";
+import { useSavedRecipes } from "../hooks/useSavedRecipes";
+import type { MealPantryOffer } from "../hooks/useMealPantryOffer";
+import type { MealSaveExtras } from "./meal-sheet/addMealSheetProps";
+import { lastFoodPortion } from "../lib/lastFoodPortion";
 import type { useToast } from "@shared/hooks/useToast";
 import { mealsByTypeForDay } from "../lib/nutritionStats";
 import { PantryManagerSheet } from "./PantryManagerSheet";
@@ -58,6 +66,7 @@ interface NutritionOverlaysProps {
     meal: Meal,
     photoFile?: File | null,
     newDate?: string,
+    extras?: MealSaveExtras,
   ) => void | Promise<void>;
   prefs: NutritionPrefs;
   setPrefs: Dispatch<SetStateAction<NutritionPrefs>>;
@@ -75,12 +84,16 @@ interface NutritionOverlaysProps {
   addMealInitialSourceTab?: SourceTabId | undefined;
   /** Тип прийому, обраний тапом по сегменту hero; `null` — вгадує годинник. */
   addMealInitialMealType?: MealTypeId | null | undefined;
-  onQuickAddMeal?: (chip: QuickChip) => void;
+  onQuickAddMeal?: (chip: QuickChip, mealType?: MealTypeId) => void;
   /** Тип прийому, розгорнутий тапом по сегменту hero; `null` — закрито. */
   openMealTypeSheet?: MealTypeId | null | undefined;
+  /** «Змінити» з тосту фото-запису: аркуш прийому за сьогодні (Х-2 а). */
+  onOpenMealTypeSheet?: ((type: MealTypeId) => void) | undefined;
   onCloseMealTypeSheet?: (() => void) | undefined;
   /** Потрібен аркушу прийому — undo після видалення свайпом. */
   toast: Toast;
+  /** «Списати … із комори?» після швидких записів (OD-27 Х-4 а). */
+  pantryOffer?: MealPantryOffer | undefined;
 }
 
 export function NutritionOverlays({
@@ -106,8 +119,10 @@ export function NutritionOverlays({
   addMealInitialMealType,
   onQuickAddMeal,
   openMealTypeSheet = null,
+  onOpenMealTypeSheet,
   onCloseMealTypeSheet,
   toast,
+  pantryOffer,
 }: NutritionOverlaysProps) {
   // Тертя запису їжі (`entry_compose_finished`, §6 контракту). Вимір
   // висить на ЄДИНОМУ прапорці відкриття шита, а не на кнопках, які його
@@ -144,11 +159,18 @@ export function NutritionOverlays({
   // обраним типом, а не FAB і не редагування.
   const yesterdayMeals =
     log.addMealSheetOpen && addMealInitialMealType && !editingMeal
-      ? mealsByTypeForDay(
-          log.nutritionLog,
-          addDaysISODate(log.getActiveDate(), -1),
-        )[addMealInitialMealType]
+      ? yesterdayMealsOf(log, addMealInitialMealType)
       : [];
+  const copyYesterday = useCopyYesterdayMeals({ log, toast, pantryOffer });
+  const photoQuickSave = usePhotoQuickSave({
+    log,
+    toast,
+    onEdit: onOpenMealTypeSheet,
+    pantryOffer,
+  });
+  // «Мої рецепти» як джерело форми (OD-27 Х-3 в): книга читається, коли
+  // аркуш відкрито на новий запис, тож щойно збережений рецепт уже є.
+  const recipeBook = useSavedRecipes(log.addMealSheetOpen && !editingMeal);
 
   return (
     <>
@@ -213,13 +235,13 @@ export function NutritionOverlays({
           log.setAddMealSheetOpen(false);
           setEditingMeal(null);
         }}
-        onSave={(meal, photoFile, newDate) => {
+        onSave={(meal, photoFile, newDate, extras) => {
           // Позначка ДО консюмерського шляху: подію емітить закриття шита
           // (перехід `open` → false), і воно прилітає вже після цього
           // виклику. Без позначки збережений запис пішов би в статистику
           // як `abandoned`.
           markComposeSaved(NUTRITION_MEAL_COMPOSE_KEY);
-          return wrappedSaveMeal(meal, photoFile, newDate);
+          return wrappedSaveMeal(meal, photoFile, newDate, extras);
         }}
         initialStep={addMealInitialStep}
         initialSourceTab={addMealInitialSourceTab}
@@ -228,25 +250,33 @@ export function NutritionOverlays({
         initialDate={editingMeal?.date}
         yesterdayMeals={yesterdayMeals}
         onCopyYesterday={() => {
-          if (!addMealInitialMealType) return;
-          const activeDate = log.getActiveDate();
-          const ids = log.handleCopyMeals(
-            yesterdayMeals,
-            activeDate,
-            addMealInitialMealType,
-          );
-          showUndoToast(toast, {
-            msg: "Скопійовано з учора",
-            onUndo: () =>
-              ids.forEach((id) => log.handleRemoveMeal(activeDate, id)),
-          });
+          if (addMealInitialMealType)
+            copyYesterday(yesterdayMeals, addMealInitialMealType);
+        }}
+        // Х-1 (б): вага минулого запису продукту — з журналу, без сховища.
+        getLastFoodPortion={(foodId) =>
+          lastFoodPortion(log.nutritionLog, foodId)
+        }
+        onPhotoSave={(photo, file) => {
+          // Позначка лише за успіху: збій лишає аркуш відкритим.
+          const saved = photoQuickSave(photo, file);
+          if (saved) markComposeSaved(NUTRITION_MEAL_COMPOSE_KEY);
+          return saved;
         }}
         mealTemplates={prefs.mealTemplates || []}
         setPrefs={setPrefs}
         pantryItems={pantry.effectiveItems}
         quickChips={quickChips}
-        onQuickAddMeal={onQuickAddMeal}
+        // Чип «Нещодавні» пише тип прийому, з яким відкрито аркуш (тап по
+        // сегменту «Вечеря»), а не той, що вгадав би годинник у мить тапу.
+        onQuickAddMeal={
+          onQuickAddMeal
+            ? (chip: QuickChip) =>
+                onQuickAddMeal(chip, addMealInitialMealType ?? undefined)
+            : undefined
+        }
         onConsumePantryItem={pantry.consumePantryItem}
+        savedRecipes={recipeBook.saved}
       />
 
       {/* Аркуш одного прийому hero-стрічки — див. `mealTypeSheetMeals`. */}

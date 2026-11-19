@@ -9,6 +9,8 @@
  */
 
 import { compareIsoDesc } from "../../lib/workoutStats.js";
+import { isSetCompleted } from "./setCompletion.js";
+import { itemHasVolume } from "./measureItem.js";
 import type {
   Workout,
   WorkoutForJournal,
@@ -102,7 +104,8 @@ export function computeWorkoutTonnageKg(
   if (!w) return 0;
   let total = 0;
   for (const it of w.items || []) {
-    if (it?.type !== "strength") continue;
+    // Обʼєм лише для вага × повтори (`itemHasVolume`, спека типу виміру).
+    if (!it || !itemHasVolume(it)) continue;
     for (const s of it.sets || []) {
       const wg = Number(s?.weightKg);
       const r = Number(s?.reps);
@@ -115,8 +118,8 @@ export function computeWorkoutTonnageKg(
 }
 
 /**
- * Total logged sets across strength items (non-zero reps OR weight
- * counted). Used by the journal row pill "N підходів".
+ * Зараховані підходи всіх вправ (`isSetCompleted`, за типом виміру). Плитка
+ * «Підходів», журнал, поріг повноцінного тренування.
  */
 export function computeWorkoutSetCount(
   w: WorkoutSummaryInput | null | undefined,
@@ -124,12 +127,37 @@ export function computeWorkoutSetCount(
   if (!w) return 0;
   let n = 0;
   for (const it of w.items || []) {
-    if (it?.type !== "strength") continue;
-    for (const s of it.sets || []) {
-      const wg = Number(s?.weightKg) || 0;
-      const r = Number(s?.reps) || 0;
-      if (wg > 0 || r > 0) n += 1;
+    // Підходи будь-якого типу виміру (спека типу виміру, Р-3 і Б-2 founder-а
+    // 2026-11-18): на час і на дистанцію теж ідуть у поріг повноцінного.
+    // Єдине визначення зарахованого підходу (`setCompletion.ts`): рядок
+    // лише з вагою — не підхід; старі item-и часу й дистанції без підходів
+    // нічого не дають.
+    for (const s of it?.sets || []) {
+      if (isSetCompleted(s, it)) n += 1;
     }
+  }
+  return n;
+}
+
+/**
+ * Зроблені вправи для підсумку «Вправ N з M» (рішення founder-а 2026-11-18):
+ * вправа з хоча б одним зарахованим підходом (`isSetCompleted`, той самий
+ * предикат, що й `computeWorkoutSetCount`). Старий item часу чи дистанції
+ * без рядків підходів зроблений, коли секунди чи метри записано на ньому
+ * самому. Лише підпис підсумку: журнал, історія й метрики число не беруть.
+ */
+export function computeWorkoutDoneItemCount(
+  w: WorkoutSummaryInput | null | undefined,
+): number {
+  if (!w) return 0;
+  let n = 0;
+  for (const it of w.items || []) {
+    if (!it) continue;
+    const counted = (it.sets || []).some((s) => isSetCompleted(s, it));
+    const legacy =
+      (it.sets?.length ?? 0) === 0 &&
+      (Number(it.durationSec) > 0 || Number(it.distanceM) > 0);
+    if (counted || legacy) n += 1;
   }
   return n;
 }

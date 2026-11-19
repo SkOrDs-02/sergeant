@@ -6,38 +6,34 @@
  * Звички, тренування, їжа і нудж Сержанта раніше слали пуші незалежно, тож
  * людина з пʼятьма звичками на різні години отримувала пʼять сповіщень.
  * Тепер усі приводи дня йдуть через один план: не більше `cap` відправок на
- * київську добу, а приводи понад стелю НЕ губляться, а згортаються в одне
+ * добу людини (її пояс), а приводи понад стелю НЕ губляться, а згортаються в одне
  * сповіщення, яке перелічує всі.
  *
  * Тут немає ні БД, ні пушу: лише чисті функції над уже зібраними приводами,
  * як і в сусідньому `./due.ts`.
  */
 
-import { QUIET_HOURS_END_KYIV, QUIET_HOURS_START_KYIV } from "./nudge.js";
 import type { DueReminder } from "./due.js";
+import {
+  hmToMinute as toMinutes,
+  isInQuietWindow,
+  minuteToHm as toHm,
+  type QuietWindow,
+} from "./time.js";
 
 /** Одна запланована відправка: коли і які часи приводів вона покриває. */
 export interface SendSlot {
-  /** Київський `HH:MM`, у який sweep відправить це сповіщення. */
+  /** `HH:MM` у поясі людини, у який sweep відправить це сповіщення. */
   sendAt: string;
   /** Часи приводів (`DueReminder.at`), згорнуті в цю відправку. */
   times: string[];
 }
 
-function toMinutes(hm: string): number {
-  const [h = 0, m = 0] = hm.split(":").map(Number);
-  return h * 60 + m;
-}
-
-function toHm(minutes: number): string {
-  const h = Math.floor(minutes / 60);
-  const m = minutes % 60;
-  return `${String(h).padStart(2, "0")}:${String(m).padStart(2, "0")}`;
-}
-
-function isQuietHm(hm: string): boolean {
-  const hour = Math.floor(toMinutes(hm) / 60);
-  return hour >= QUIET_HOURS_START_KYIV || hour < QUIET_HOURS_END_KYIV;
+function isQuietHm(hm: string, quiet: QuietWindow | null): boolean {
+  return (
+    quiet !== null &&
+    isInQuietWindow(toMinutes(hm), { enabled: true, ...quiet })
+  );
 }
 
 /**
@@ -47,19 +43,24 @@ function isQuietHm(hm: string): boolean {
  * одному пуші означають, що комусь із них час не підходить, і альтернатива
  * (пріоритет) губила б привід.
  *
- * Тихі години: середина, яку обрав продукт, не має права впасти в
- * [22:00, 08:00), навіть якщо обидва краї поза вікном не лежать поруч
- * (наприклад 07:00 і 23:30). Тоді беремо найближчий до середини час, який
- * людина обрала сама і який лежить поза вікном; якщо таких нема, людина
- * сама поставила все в ніч, і лишається її перший час.
+ * Тихі години: середина, яку обрав продукт, не має права впасти у вікно
+ * тихих годин людини (`quiet`, її пояс; за замовчуванням [22:00, 08:00)),
+ * навіть якщо обидва краї поза вікном не лежать поруч (наприклад 07:00 і
+ * 23:30). Тоді беремо найближчий до середини час, який людина обрала сама і
+ * який лежить поза вікном; якщо таких нема, людина сама поставила все в
+ * ніч, і лишається її перший час. `quiet = null` (тихі години вимкнені):
+ * вікна немає, це чиста середина.
  */
-export function compromiseTime(times: readonly string[]): string {
+export function compromiseTime(
+  times: readonly string[],
+  quiet: QuietWindow | null,
+): string {
   const sorted = [...times].sort();
   const first = sorted[0]!;
   const last = sorted[sorted.length - 1]!;
   const mid = toHm(Math.floor((toMinutes(first) + toMinutes(last)) / 2));
-  if (!isQuietHm(mid)) return mid;
-  const awake = sorted.filter((t) => !isQuietHm(t));
+  if (!isQuietHm(mid, quiet)) return mid;
+  const awake = sorted.filter((t) => !isQuietHm(t, quiet));
   if (awake.length === 0) return first;
   const target = toMinutes(mid);
   return awake.reduce((best, t) =>
@@ -78,7 +79,11 @@ export function compromiseTime(times: readonly string[]): string {
  * так ранкові приводи лишаються разом із ранковими, а вечірні з вечірніми,
  * і компромісний час зсуває кожен привід якнайменше.
  */
-export function planSends(times: readonly string[], cap: number): SendSlot[] {
+export function planSends(
+  times: readonly string[],
+  cap: number,
+  quiet: QuietWindow | null,
+): SendSlot[] {
   if (cap <= 0) return [];
   const unique = [...new Set(times)].sort();
   if (unique.length <= cap) {
@@ -102,7 +107,7 @@ export function planSends(times: readonly string[], cap: number): SendSlot[] {
   for (const cut of [...cuts, unique.length - 1]) {
     const group = unique.slice(start, cut + 1);
     slots.push({
-      sendAt: group.length === 1 ? group[0]! : compromiseTime(group),
+      sendAt: group.length === 1 ? group[0]! : compromiseTime(group, quiet),
       times: group,
     });
     start = cut + 1;

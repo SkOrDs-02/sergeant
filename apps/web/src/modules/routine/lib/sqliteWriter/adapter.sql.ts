@@ -42,8 +42,9 @@ const HABIT_UPSERT_SPEC: TableSpec = {
             archived, paused, recurrence, start_date, end_date,
             time_of_day, reminder_times_json, weekdays_json,
             pause_intervals_json, weekly_target_history_json,
+            count_target, count_unit, auto_mark_source,
             created_at, updated_at, deleted_at)
-         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, NULL)`,
+         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, NULL)`,
   conflictTarget: ["id"],
   updateColumns: [
     { column: "name" },
@@ -60,6 +61,9 @@ const HABIT_UPSERT_SPEC: TableSpec = {
     { column: "weekdays_json" },
     { column: "pause_intervals_json" },
     { column: "weekly_target_history_json" },
+    { column: "count_target" },
+    { column: "count_unit" },
+    { column: "auto_mark_source" },
     { column: "updated_at" },
     { column: "deleted_at", value: "NULL" },
   ],

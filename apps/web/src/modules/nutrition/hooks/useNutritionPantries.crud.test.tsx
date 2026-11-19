@@ -235,7 +235,9 @@ describe("useNutritionPantries CRUD", () => {
       "home",
     );
     const { result } = renderHarness();
-    act(() => result.current.consumePantryItem("Гречка", 200));
+    act(() => {
+      result.current.consumePantryItem("Гречка", 200);
+    });
     expect(result.current.pantryItems[0]).toMatchObject({
       name: "гречка",
       qty: 800,
@@ -337,7 +339,9 @@ describe("useNutritionPantries CRUD", () => {
       "home",
     );
     const { result } = renderHarness();
-    act(() => result.current.consumePantryItem("Гречка", 200));
+    act(() => {
+      result.current.consumePantryItem("Гречка", 200);
+    });
     expect(result.current.pantryItems[0]?.qty).toBe(800);
   });
 

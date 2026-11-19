@@ -197,6 +197,7 @@ import { useRestDayOverdueInsight } from "../hooks/useRestDayOverdueInsight";
 import { usePrPendingInsight } from "../hooks/usePrPendingInsight";
 import { useActiveFizrukWorkout } from "@shared/hooks/useActiveFizrukWorkout";
 import { useRecovery } from "../hooks/useRecovery";
+import type { InjurySiteId } from "@sergeant/fizruk-domain/data";
 import { useExerciseCatalog } from "../hooks/useExerciseCatalog";
 
 const mockNavigate = vi.fn();
@@ -589,6 +590,56 @@ describe("Dashboard extended coverage", () => {
     expect(screen.getByText("Скасувати")).toBeInTheDocument();
     expect(screen.getByText("Почати все одно")).toBeInTheDocument();
   });
+
+  it("позначка болю на зоні вправи теж зупиняє старт плану (ADR-0083)", () => {
+    // Втоми немає (`by` порожній): аркуш має відкрити саме травма. До фіксу
+    // `tryStartPlan` не передавав `rec.injurySites`, і шаблон стартував.
+    const catalogImpl = vi.mocked(useExerciseCatalog).getMockImplementation();
+    const recoveryImpl = vi.mocked(useRecovery).getMockImplementation();
+    vi.mocked(useExerciseCatalog).mockImplementation(
+      () =>
+        ({
+          exercises: [
+            {
+              id: "bench_press_barbell",
+              name: { uk: "Жим лежачи", en: "Bench press" },
+              primaryGroup: "chest",
+              muscles: { primary: ["pectoralis_major"], secondary: [] },
+            },
+          ],
+          musclesUk: { pectoralis_major: "Груди" },
+        }) as unknown as ReturnType<typeof useExerciseCatalog>,
+    );
+    vi.mocked(useRecovery).mockImplementation(
+      () =>
+        ({
+          ...recoveryImpl!(),
+          injurySites: new Set<InjurySiteId>(["shoulder"]),
+        }) as ReturnType<typeof useRecovery>,
+    );
+    vi.mocked(useWorkoutTemplates).mockReturnValueOnce({
+      templates: [
+        { id: "tpl1", name: "Грудні", exerciseIds: ["bench_press_barbell"] },
+        { id: "tpl2", name: "Спина", exerciseIds: ["bench_press_barbell"] },
+      ] as unknown as ReturnType<typeof useWorkoutTemplates>["templates"],
+      loaded: true,
+      recentlyUsed: [],
+      markTemplateUsed: vi.fn(),
+      addTemplate: vi.fn(),
+      updateTemplate: vi.fn(),
+      removeTemplate: vi.fn(),
+      restoreTemplate: vi.fn(),
+    } as unknown as ReturnType<typeof useWorkoutTemplates>);
+    try {
+      render(<Dashboard {...defaultProps} />);
+      fireEvent.click(screen.getByText("Спина"));
+      expect(screen.getByText("Є позначка болю")).toBeInTheDocument();
+      expect(screen.queryByText("Мʼязи ще відновлюються")).toBeNull();
+    } finally {
+      vi.mocked(useExerciseCatalog).mockImplementation(catalogImpl!);
+      vi.mocked(useRecovery).mockImplementation(recoveryImpl!);
+    }
+  });
 });
 
 describe("Dashboard — navigation callbacks", () => {
@@ -806,7 +857,7 @@ describe("Dashboard — program primaryAction hero state", () => {
         },
       },
     } as unknown as import("@sergeant/fizruk-domain/domain").TrainingProgramDef;
-    const todaySession = { sessionKey: "day1", name: "День 1" };
+    const todaySession = { sessionKey: "day1", name: "День 1", slot: 0 };
 
     render(
       <Dashboard
@@ -820,6 +871,7 @@ describe("Dashboard — program primaryAction hero state", () => {
     expect(onStartProgramWorkout).toHaveBeenCalledWith(
       expect.objectContaining({ name: "День 1" }),
       activeProgram,
+      0,
     );
   });
 });

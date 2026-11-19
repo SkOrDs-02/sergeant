@@ -232,9 +232,10 @@ export function prefetchHubNavigationPages(): void {
 /**
  * Register the intent-prefetch dispatcher so hover/focus handlers in
  * `intentPrefetch.ts` can reach `prefetchModule` without taking a
- * direct import on this file. Runs once at module init — `App.tsx`
- * imports this module synchronously at startup, well before any
- * dashboard card mounts.
+ * direct import on this file. Runs once at module init. З 2026-11-18
+ * файл вантажиться ліниво (`useAppEffects` через `import()` на маунті,
+ * `HubBottomNav` статично у своєму чанку), тож до того обробники
+ * `intentPrefetch` мовчки нічого не роблять — це best-effort.
  */
 setModulePrefetcher((module) => prefetchModule(module));
 

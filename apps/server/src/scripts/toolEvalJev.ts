@@ -19,6 +19,7 @@ import { parseArgs } from "node:util";
 import process from "node:process";
 
 import { env } from "../env/env.js";
+import { openRouterZdrProviderPrefs } from "../lib/llm/openrouterDataPolicy.js";
 import { percentile } from "../modules/chat/toolEval/latency.js";
 import {
   formatBinary,
@@ -65,7 +66,14 @@ async function callJev(
   state: string,
   questions: Record<string, JevQuestion>,
 ): Promise<CallResult> {
-  const body = JSON.stringify({ model, state, questions });
+  // Той самий `provider`, що в проді (`injectionShadowJev.ts`): інакше стенд
+  // міряв би маршрут, яким прод не ходить.
+  const body = JSON.stringify({
+    model,
+    state,
+    questions,
+    provider: openRouterZdrProviderPrefs(),
+  });
   const started = performance.now();
   try {
     let res: Response | undefined;

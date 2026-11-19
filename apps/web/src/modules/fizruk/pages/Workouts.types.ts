@@ -39,4 +39,10 @@ export type LastExerciseItem = WorkoutItem & {
    * `logic-04`): без них одна легка сесія після паузи вимикала б режим.
    */
   _sessions?: OneRmSessionPoint[];
+  /**
+   * Найпізніше зняття позначки травми, що накривала вправу
+   * (`latestClearedInjuryAtForExercise`): 21-денний мʼякий режим після травми
+   * в підказці наступного підходу (E-5, ADR-0083). `null` — зняття не було.
+   */
+  _injuryClearedAt?: string | null;
 };

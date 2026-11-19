@@ -25,11 +25,11 @@ function mergeCompletions(
   return out;
 }
 
-function mergeSkips(
-  current: NonNullable<RoutineState["skips"]>,
-  incoming: NonNullable<RoutineState["skips"]>,
-): NonNullable<RoutineState["skips"]> {
-  const out: NonNullable<RoutineState["skips"]> = { ...current };
+function mergeSkips<V>(
+  current: Record<string, Record<string, V>>,
+  incoming: Record<string, Record<string, V>>,
+): Record<string, Record<string, V>> {
+  const out: Record<string, Record<string, V>> = { ...current };
   for (const [habitId, byDay] of Object.entries(incoming)) {
     out[habitId] = { ...byDay, ...(out[habitId] ?? {}) };
   }
@@ -49,6 +49,9 @@ export function mergeRoutineStateAddMissing(
     habitOrder: addMissingBy(current.habitOrder, incoming.habitOrder, identity),
     completions: mergeCompletions(current.completions, incoming.completions),
     skips: mergeSkips(current.skips ?? {}, incoming.skips ?? {}),
+    // Лічильник (міграція 170): день, уже записаний тут, не перезаписується
+    // файлом — та сама семантика «лише додати відсутнє», що й у пропусків.
+    counts: mergeSkips(current.counts ?? {}, incoming.counts ?? {}),
     completionNotes: {
       ...incoming.completionNotes,
       ...current.completionNotes,

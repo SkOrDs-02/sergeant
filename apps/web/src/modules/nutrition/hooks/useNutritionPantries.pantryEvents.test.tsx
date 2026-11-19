@@ -151,7 +151,9 @@ describe("useNutritionPantries — ledger-подія на кожен з пʼят
   it("consumePantryItem → 'consume' з deltaQty = -(реально списана кількість)", () => {
     seedPantries([{ name: "рис", qty: 500, unit: "г", notes: null }]);
     const result = renderHarness();
-    act(() => result.current.consumePantryItem("рис", 120));
+    act(() => {
+      result.current.consumePantryItem("рис", 120);
+    });
     const ev = lastEvent();
     expect(ev.kind).toBe("consume");
     expect(ev.deltaQty).toBe(-120);
@@ -163,7 +165,9 @@ describe("useNutritionPantries — ledger-подія на кожен з пʼят
   it("consumePantryItem на невідому позицію НЕ емітить подію", () => {
     seedPantries([{ name: "рис", qty: 100, unit: "г", notes: null }]);
     const result = renderHarness();
-    act(() => result.current.consumePantryItem("гречка", 50));
+    act(() => {
+      result.current.consumePantryItem("гречка", 50);
+    });
     expect(appendMock).not.toHaveBeenCalled();
   });
 });
@@ -216,7 +220,9 @@ describe("useNutritionPantries - відкат автоімпорту (revertRepl
         { name: "рис", qty: 500, unit: "г", notes: null },
       ]);
     });
-    act(() => result.current.consumePantryItem("рис", 600));
+    act(() => {
+      result.current.consumePantryItem("рис", 600);
+    });
     act(() => result.current.revertReplenish(lines));
     expect(qtyOf(result, "рис")).toBe(0);
   });

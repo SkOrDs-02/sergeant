@@ -57,7 +57,10 @@ export function forget(action: ForgetAction): string {
   const id = (fact_id || "").trim();
   if (!id) return "Потрібен id факту для видалення.";
   const result = removeMemoryEntry(readMemoryEntries(), id);
-  if (!result.removed) return `Факт з id ${id} не знайдено.`;
+  // Видалення лише за точним id; текст факту в `fact_id` сюди не влучає.
+  // Підказка веде наступний хід моделі до справжнього id (стенд 2026-11-18).
+  if (!result.removed)
+    return `Факт не знайдено (id:${id}). Візьми id факту з my_profile.`;
   writeMemoryEntries(result.entries);
   return `Забув: ${result.removed.fact}`;
 }

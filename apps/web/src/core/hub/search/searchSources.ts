@@ -1,9 +1,5 @@
 import { FizrukData } from "@sergeant/fizruk-domain";
-import {
-  formatMoney,
-  formatMoneyFromKopecks,
-  pluralExercises,
-} from "@sergeant/shared";
+import { deviceDayKey, pluralExercises } from "@sergeant/shared";
 import { loadRoutineState } from "@routine/lib/routineStorage";
 import { getCachedFizrukSqliteState } from "@fizruk/lib/sqliteReader";
 import { loadNutritionLog } from "@nutrition/lib/nutritionStorage";
@@ -11,80 +7,12 @@ import { getVisibleFinykMonoMirrorState } from "@finyk/lib/monoMirrorReader";
 import { getCachedFinykSqliteState } from "@finyk/lib/sqliteReader";
 import { tokenize } from "../hubSearchEngine";
 import { searchActions, searchAiHandoff } from "./searchActions";
+import { finykManualSearchSnapshot, searchFinyk } from "./searchFinyk";
+import { habitScheduleLabel } from "./habitScheduleLabel";
 import { scoreLru } from "./searchCache";
 import { searchProfile } from "./searchProfile";
 import { searchAssistantTools, searchSettings } from "./searchSettings";
 import { type Hit, localDateKey, pushScored } from "./searchTypes";
-
-interface FinykTx {
-  id?: string;
-  time?: number;
-  amount?: number;
-  description?: string;
-  comment?: string;
-}
-
-interface FinykSub {
-  id?: string;
-  name?: string;
-  amount?: number;
-}
-
-function searchFinyk(tokens: string[]): Hit[] {
-  const results: Hit[] = [];
-
-  const txList = getVisibleFinykMonoMirrorState().transactions as FinykTx[];
-  if (Array.isArray(txList)) {
-    for (const tx of txList) {
-      if (!tx || typeof tx !== "object") continue;
-      const amtRaw = Number(tx.amount);
-      const amount = (Number.isFinite(amtRaw) ? amtRaw : 0) / 100;
-      const time = tx.time ?? 0;
-      const stop = pushScored(
-        results,
-        {
-          id: `finyk_tx_${tx.id || time}`,
-          module: "finyk",
-          moduleLabel: "Фінік",
-          title: tx.description || tx.comment || "Операція",
-          subtitle: `${formatMoney(amount, { signed: true, maxFractionDigits: 2 })} · ${time > 1e10 ? localDateKey(new Date(time)) : localDateKey(new Date(time * 1000))}`,
-          icon: "credit-card",
-          target: { kind: "module", moduleId: "finyk" },
-        },
-        tokens,
-        20,
-      );
-      if (stop) break;
-    }
-  }
-
-  // Підписки пишуться лише в SQLite (LS-ключ `finyk_subs` — tombstone),
-  // тож пошук читає SQLite-кеш Фініка.
-  const subs = getCachedFinykSqliteState().subscriptions as FinykSub[];
-  if (Array.isArray(subs)) {
-    for (const s of subs) {
-      if (!s || typeof s !== "object") continue;
-      const amtRaw = Number(s.amount);
-      const amt = Number.isFinite(amtRaw) && amtRaw > 0 ? amtRaw : 0;
-      pushScored(
-        results,
-        {
-          id: `finyk_sub_${s.id}`,
-          module: "finyk",
-          moduleLabel: "Фінік",
-          title: s.name || "Підписка",
-          subtitle: `Підписка · ${amt ? formatMoneyFromKopecks(amt) : ""}`,
-          icon: "refresh-cw",
-          target: { kind: "module", moduleId: "finyk" },
-        },
-        tokens,
-        25,
-      );
-    }
-  }
-
-  return results.sort((a, b) => b._score - a._score).slice(0, 10);
-}
 
 function searchFizruk(tokens: string[]): Hit[] {
   const results: Hit[] = [];
@@ -213,6 +141,9 @@ function searchRoutine(tokens: string[]): Hit[] {
   const results: Hit[] = [];
   // `hub_routine_v1` is tombstoned — read the canonical SQLite warm cache.
   const habits = loadRoutineState().habits;
+  // Ціль тижня звички — особиста сутність: день за годинником пристрою
+  // (ADR-0078), а не київський `localDateKey`.
+  const todayKey = deviceDayKey();
   for (const h of habits) {
     // AI-CONTEXT (2026-08-21): тут стояло `${h.emoji || ""} ${h.name}`.
     // Після переходу Рутини на icon-slug-и (2026-08-03) поле `emoji`
@@ -228,7 +159,7 @@ function searchRoutine(tokens: string[]): Hit[] {
         module: "routine",
         moduleLabel: "Рутина",
         title,
-        subtitle: h.archived ? "Архівовано" : h.recurrence || "daily",
+        subtitle: h.archived ? "Архівовано" : habitScheduleLabel(h, todayKey),
         icon: "check-circle",
         target: { kind: "module", moduleId: "routine" },
       },
@@ -298,7 +229,11 @@ function storageSnapshot(): string {
   const subsSnapshot = getCachedFinykSqliteState()
     .subscriptions.map((s) => `${s?.id ?? ""}${s?.name ?? ""}`)
     .join("|");
-  const lsParts = [mirrorSnapshot, `s:${subsSnapshot}`];
+  const lsParts = [
+    mirrorSnapshot,
+    `s:${subsSnapshot}`,
+    finykManualSearchSnapshot(),
+  ];
   const routine = loadRoutineState();
   const fizruk = getCachedFizrukSqliteState();
   const nutrition = loadNutritionLog();

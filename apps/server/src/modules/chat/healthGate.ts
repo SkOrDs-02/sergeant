@@ -25,14 +25,16 @@
 
 import {
   HEALTH_CONSENT_REQUIRED_MESSAGE,
+  TURN_REFS_HEADING,
   habitCorrelationMetric,
   isGoalProfileLabel,
   isHealthMemoryEntry,
   isHealthMemoryCategory,
   isHealthProfileLabel,
+  isHubChatToolName,
   isWeightGoalFact,
 } from "@sergeant/shared";
-import { HEALTH_ONLY_TOOL_NAMES } from "./tools.js";
+import { HEALTH_ONLY_TOOL_NAMES, NON_HEALTH_REF_TOOL_NAMES } from "./tools.js";
 import type { CoachMemory, CoachSnapshot } from "./coach.js";
 
 /**
@@ -96,16 +98,85 @@ function isHealthProfileEntryLine(line: string): boolean {
   );
 }
 
+// Рядок блоку записів: `- <tool>: <результат>` (`turnRefs.ts` веба). Будь-яка
+// інша форма всередині блоку вирізається.
+const TURN_REF_LINE = /^- ([a-z][a-z0-9_]*): /;
+// Та сама форма з поблажливим розпізнаванням (відступ, пробіли): так ловимо
+// рядок запису і поза блоком, якщо заголовок зламано.
+const LOOSE_TURN_REF_LINE = /^\s*-\s*([a-z][a-z0-9_]*)\s*:/;
+
+// Tools, чий вердикт `classifyToolUse` залежить від входу; у блоці записів
+// входу немає, тож без згоди їхній результат вирізається цілком.
+const INPUT_DEPENDENT_TOOLS: ReadonlySet<string> = new Set([
+  "get_daily_series",
+  "habit_correlation",
+  "compare_weeks",
+  "export_module_data",
+  "remember",
+  "my_profile",
+  "morning_briefing",
+  "weekly_summary",
+]);
+
+/**
+ * Чи лишити рядок блоку `[Записи з попередньої відповіді]` без згоди.
+ *
+ * AI-DANGER: перевірка дозвільна, а не заборонна. Лишається лише рядок рівно
+ * у форматі вебу з інструментом Фініка, Рутини чи комори
+ * (`NON_HEALTH_REF_TOOL_NAMES`); записи Фізрука, Харчування й памʼяті,
+ * невідоме імʼя, рядок без префікса чи з відступом вирізаються. Блок триває
+ * до кінця контексту (веб дописує його останнім), тож рядок «після блоку» не
+ * може вислизнути з нього, підробивши кінець.
+ */
+function keepTurnRefLine(line: string): boolean {
+  const name = TURN_REF_LINE.exec(line)?.[1];
+  return (
+    name !== undefined &&
+    NON_HEALTH_REF_TOOL_NAMES.has(name) &&
+    !INPUT_DEPENDENT_TOOLS.has(name)
+  );
+}
+
+/**
+ * Контекст, який іде моделі: зі згодою на дані про здоровʼя — як є, без
+ * неї — після `stripHealthContext`.
+ */
+export function gateClientContext(context: string, consent: boolean): string {
+  return consent ? context : stripHealthContext(context);
+}
+
 /**
  * Прибирає з клієнтського знімка секції про здоровʼя: тренування, харчування,
  * рекомендації модулів fizruk/nutrition, health-категорії профілю (здоровʼя,
- * алергії, дієта, тренування, цілі про вагу) і всю секцію інсайтів (вона крос-модульна: день тренувань, калорії проти звичок).
+ * алергії, дієта, тренування, цілі про вагу), всю секцію інсайтів (вона
+ * крос-модульна: день тренувань, калорії проти звичок) і з блоку записів
+ * попередньої відповіді — рядки поза Фініком, Рутиною й коморою.
  */
 export function stripHealthContext(context: string): string {
   if (!context) return context;
   const out: string[] = [];
   let inInsights = false;
+  let inTurnRefs = false;
   for (const line of context.split("\n")) {
+    if (line.trimStart().startsWith(TURN_REFS_HEADING)) {
+      inTurnRefs = true;
+      out.push(TURN_REFS_HEADING);
+      continue;
+    }
+    if (inTurnRefs) {
+      if (keepTurnRefLine(line)) out.push(line);
+      continue;
+    }
+    // Рядок запису інструмента поза блоком (зламаний заголовок): той самий
+    // дозвільний фільтр, щоб зламаний блок не обходив вирізання.
+    const looseName = LOOSE_TURN_REF_LINE.exec(line)?.[1];
+    if (
+      looseName !== undefined &&
+      isHubChatToolName(looseName) &&
+      !keepTurnRefLine(line)
+    ) {
+      continue;
+    }
     if (INSIGHTS_HEADING.test(line)) {
       inInsights = true;
       continue;

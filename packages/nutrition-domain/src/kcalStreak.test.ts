@@ -71,6 +71,19 @@ describe("countKcalStreakDays", () => {
     expect(countKcalStreakDays(log, GOALS, TODAY)).toBe(0);
   });
 
+  // logic-39 (аудит 2026-10-01): сніданок 450 ккал — сьогоднішній недобір, а
+  // не промах. День ще триває, тож серія рахується від учора, поки сьогодні
+  // не перевалило верхню межу.
+  it("сьогоднішній недобір серію НЕ обриває — рахуємо від учора", () => {
+    const log = logWith({ 0: 450, 1: 2000, 2: 1980, 3: 2050 });
+    expect(countKcalStreakDays(log, GOALS, TODAY)).toBe(3);
+  });
+
+  it("недобір учорашнього дня обриває — правило лише для сьогодні", () => {
+    const log = logWith({ 0: 2000, 1: 1500, 2: 2000 });
+    expect(countKcalStreakDays(log, GOALS, TODAY)).toBe(1);
+  });
+
   it("промах усередині обриває — рахується лише хвіст до нього", () => {
     const log = logWith({ 1: 2000, 2: 2000, 3: 900, 4: 2000 });
     expect(countKcalStreakDays(log, GOALS, TODAY)).toBe(2);

@@ -1435,13 +1435,16 @@
         },
         "responses": {
           "200": {
-            "description": "OK",
+            "description": "Без `stream`: перший хід — `ChatFirstTurnResponse`, тур синтезу — `{ text }`. Зі `stream: true`: `text/event-stream`, кожен рядок `data:` несе `ChatStreamFrame` (перший хід: `t` / `tool` / `final` / `err`; синтез: `t` / `err`), кінець — `data: [DONE]`.",
             "content": {
               "application/json": {
                 "schema": {
-                  "type": "object",
-                  "properties": {},
-                  "additionalProperties": {}
+                  "$ref": "#/components/schemas/ChatFirstTurnResponse"
+                }
+              },
+              "text/event-stream": {
+                "schema": {
+                  "$ref": "#/components/schemas/ChatStreamFrame"
                 }
               }
             }
@@ -4406,6 +4409,82 @@
         }
       }
     },
+    "/api/billing/manual-access": {
+      "post": {
+        "summary": "Попросити ручний Premium з пейволу (до запуску оплати)",
+        "description": "Записує запит у feedback_entries (category = premium_request) і шле founder-у повідомлення в Telegram з кнопкою видачі на 30 днів. Один запит на акаунт за весь час. Працює лише доки оплата вимкнена і бот вейтліста налаштований (`access.manualAccess.available` у `/api/billing/status`).",
+        "tags": ["monetization"],
+        "security": [
+          {
+            "cookieAuth": []
+          },
+          {
+            "bearerAuth": []
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ManualAccessRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Запит записано. Помилка доставки в Telegram відповідь не змінює.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ManualAccessResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad request — payload не пройшов zod-валідацію.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized — потрібна активна сесія.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "`MANUAL_ACCESS_ALREADY_REQUESTED`: акаунт уже просив. `MANUAL_ACCESS_NOT_NEEDED`: стан доступу не free. `MANUAL_ACCESS_CLOSED`: оплату увімкнено або Telegram не налаштовано. Значення `code` описує схема `ManualAccessConflictCode`.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Too many requests — спільний бакет з checkout (10 / IP / годину).",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/api/billing/stripe-webhook": {
       "post": {
         "summary": "Stripe webhook delivery endpoint",
@@ -5909,6 +5988,27 @@
                 "type": "null"
               }
             ]
+          },
+          "timeZone": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 64
+          },
+          "quietHoursEnabled": {
+            "type": "boolean"
+          },
+          "quietHoursStartMin": {
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 1439
+          },
+          "quietHoursEndMin": {
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 1439
+          },
+          "pushMonoTransactions": {
+            "type": "boolean"
           }
         },
         "additionalProperties": false,
@@ -6434,6 +6534,9 @@
             "type": "integer",
             "minimum": 0,
             "maximum": 9007199254740991
+          },
+          "ifAbsent": {
+            "type": "boolean"
           },
           "finyk": {
             "anyOf": [
@@ -7755,6 +7858,31 @@
         "required": ["plan"],
         "description": "POST /api/billing/checkout — Stripe Checkout session request."
       },
+      "ManualAccessRequest": {
+        "type": "object",
+        "properties": {
+          "surface": {
+            "type": "string",
+            "enum": [
+              "ai_chat_limit",
+              "csv_export",
+              "unlimited_ai_photo",
+              "week_plan",
+              "finyk_vision"
+            ]
+          },
+          "page": {
+            "type": "string",
+            "maxLength": 2048
+          },
+          "viewport": {
+            "type": "string",
+            "pattern": "^\\d{1,5}x\\d{1,5}$"
+          }
+        },
+        "required": ["surface"],
+        "description": "POST /api/billing/manual-access — запит ручного Premium з пейволу: поверхня пейволу і контекст сторінки."
+      },
       "WebVitalsPayload": {
         "type": "object",
         "properties": {
@@ -8303,6 +8431,25 @@
                   }
                 ]
               },
+              "timeZone": {
+                "type": ["string", "null"]
+              },
+              "quietHoursEnabled": {
+                "type": "boolean"
+              },
+              "quietHoursStartMin": {
+                "type": "integer",
+                "minimum": 0,
+                "maximum": 1439
+              },
+              "quietHoursEndMin": {
+                "type": "integer",
+                "minimum": 0,
+                "maximum": 1439
+              },
+              "pushMonoTransactions": {
+                "type": "boolean"
+              },
               "updatedAt": {
                 "anyOf": [
                   {
@@ -8794,6 +8941,25 @@
               }
             ]
           },
+          "timeZone": {
+            "type": ["string", "null"]
+          },
+          "quietHoursEnabled": {
+            "type": "boolean"
+          },
+          "quietHoursStartMin": {
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 1439
+          },
+          "quietHoursEndMin": {
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 1439
+          },
+          "pushMonoTransactions": {
+            "type": "boolean"
+          },
           "updatedAt": {
             "anyOf": [
               {
@@ -8820,6 +8986,119 @@
         ],
         "additionalProperties": false,
         "description": "Відповідь GET/PATCH /api/me/preferences — налаштування користувача."
+      },
+      "ChatFirstTurnResponse": {
+        "type": "object",
+        "properties": {
+          "text": {
+            "type": ["string", "null"]
+          },
+          "tool_calls": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "id": {
+                  "type": "string"
+                },
+                "name": {
+                  "type": "string"
+                },
+                "input": {}
+              },
+              "required": ["id", "name", "input"],
+              "additionalProperties": {}
+            }
+          },
+          "tool_calls_raw": {
+            "type": "array",
+            "items": {}
+          },
+          "round_trip_ticket": {
+            "type": "string"
+          }
+        },
+        "additionalProperties": false,
+        "description": "POST /api/chat, перший хід: JSON-тіло без `stream` і вміст кадру `final` зі `stream: true`."
+      },
+      "ChatStreamFrame": {
+        "anyOf": [
+          {
+            "type": "object",
+            "properties": {
+              "t": {
+                "type": "string"
+              }
+            },
+            "required": ["t"],
+            "additionalProperties": false
+          },
+          {
+            "type": "object",
+            "properties": {
+              "tool": {
+                "type": "string",
+                "maxLength": 64
+              }
+            },
+            "required": ["tool"],
+            "additionalProperties": false
+          },
+          {
+            "type": "object",
+            "properties": {
+              "final": {
+                "type": "object",
+                "properties": {
+                  "text": {
+                    "type": ["string", "null"]
+                  },
+                  "tool_calls": {
+                    "type": "array",
+                    "items": {
+                      "type": "object",
+                      "properties": {
+                        "id": {
+                          "type": "string"
+                        },
+                        "name": {
+                          "type": "string"
+                        },
+                        "input": {}
+                      },
+                      "required": ["id", "name", "input"],
+                      "additionalProperties": {}
+                    }
+                  },
+                  "tool_calls_raw": {
+                    "type": "array",
+                    "items": {}
+                  },
+                  "round_trip_ticket": {
+                    "type": "string"
+                  }
+                },
+                "additionalProperties": false
+              }
+            },
+            "required": ["final"],
+            "additionalProperties": false
+          },
+          {
+            "type": "object",
+            "properties": {
+              "err": {
+                "type": "string"
+              },
+              "code": {
+                "type": "string"
+              }
+            },
+            "required": ["err"],
+            "additionalProperties": false
+          }
+        ],
+        "description": "POST /api/chat зі `stream: true`: один кадр SSE (`data: <json>`), потік закінчує `data: [DONE]`."
       },
       "ChatUsageResponse": {
         "type": "object",
@@ -9148,6 +9427,9 @@
             "type": "integer",
             "minimum": 0,
             "maximum": 9007199254740991
+          },
+          "connectedAt": {
+            "type": ["string", "null"]
           }
         },
         "required": [
@@ -10575,6 +10857,19 @@
                 },
                 "required": ["aiActions", "aiPhoto", "finykVision"],
                 "additionalProperties": false
+              },
+              "manualAccess": {
+                "type": "object",
+                "properties": {
+                  "available": {
+                    "type": "boolean"
+                  },
+                  "requestedAt": {
+                    "type": ["string", "null"]
+                  }
+                },
+                "required": ["available", "requestedAt"],
+                "additionalProperties": false
               }
             },
             "required": [
@@ -10633,6 +10928,21 @@
         "required": ["ok"],
         "additionalProperties": false,
         "description": "Відповідь POST /api/billing/cancel — власне скасування Pro (LiqPay/Plata не мають Customer Portal)."
+      },
+      "ManualAccessResponse": {
+        "type": "object",
+        "properties": {
+          "ok": {
+            "type": "boolean",
+            "const": true
+          },
+          "requestedAt": {
+            "type": "string"
+          }
+        },
+        "required": ["ok", "requestedAt"],
+        "additionalProperties": false,
+        "description": "Відповідь POST /api/billing/manual-access: запит записано, `requestedAt` — час запису."
       },
       "TranscribeResponse": {
         "type": "object",

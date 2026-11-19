@@ -33,6 +33,19 @@ export interface ChatMessage {
    * репліка, ще й із кнопкою «Озвучити» (browser-QA 2026-09-02).
    */
   error?: boolean;
+  /**
+   * С-2 (а): результати інструментів цього ходу з технічними id, для блоку
+   * ДАНІ наступного повідомлення (`hub/chat/turnRefs.ts`). Людині не
+   * показується.
+   */
+  toolRefs?: string;
+  /**
+   * С-1 (а): стрім першого ходу обірвався після видимого тексту. Написане
+   * лишається, в історію сервера не йде (`hub/chat/firstTurnStream.ts`).
+   */
+  interrupted?: boolean;
+  /** Питання, яке шле «Ще раз» на обірваній відповіді. */
+  retryText?: string;
   /** Optional extra fields preserved from persisted history. */
   [key: string]: unknown;
 }

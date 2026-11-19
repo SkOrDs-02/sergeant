@@ -7,6 +7,8 @@ import { render, screen, fireEvent } from "@testing-library/react";
 // relevant to the collapse contract being tested here, so we stub all
 // three at the module boundary.
 vi.mock("./useWeeklyDigest", () => ({
+  // С-3 (а): стан «звіт збирається»; тут не в польоті.
+  useAutoDigestPending: () => false,
   useWeeklyDigest: () => ({
     digest: null,
     loading: false,

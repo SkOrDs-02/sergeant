@@ -56,7 +56,6 @@ export function moduleFor(name: string): ChatActionCardModule {
     name === "plan_workout" ||
     name === "finish_workout" ||
     name === "log_measurement" ||
-    name === "add_program_day" ||
     name === "log_wellbeing" ||
     name === "log_weight" ||
     name === "suggest_workout" ||
@@ -151,8 +150,6 @@ export function iconFor(name: string): string | undefined {
     case "log_measurement":
     case "log_weight":
       return "weighing-scale";
-    case "add_program_day":
-      return "calendar-days";
     case "log_wellbeing":
       return "smile";
     case "suggest_workout":
@@ -235,8 +232,9 @@ export function iconFor(name: string): string | undefined {
  * замість людського тексту»: звичка (`hab_<uuid>`), категорія Фініка
  * (`restaurant`), тип прийому їжі (`dinner`). Кожна функція повертає
  * `undefined`, коли резолв не вдався (звичку видалено, категорію
- * не впізнано) — виклики нижче в `hubChatActionCardsRegistry.ts` тоді
- * падають назад на raw id, а не на порожній рядок.
+ * не впізнано). Звичка тоді не падає на raw id: картка бере результат
+ * виконавця (перевірка першої хвилі 2026-11-18); категорія Фініка поки
+ * що показує свій slug.
  */
 
 const MCC_CATEGORY_LABEL_BY_ID: ReadonlyMap<string, string> = new Map(
@@ -257,8 +255,8 @@ function stripIdPrefix(raw: string): string {
 /**
  * Назва звички з локального стану Рутини (`loadRoutineState().habits`) —
  * той самий джерело істини, що читає UI. `undefined`, якщо звичку вже
- * видалено/архівовано локально або id не резолвиться — виклик нижче
- * falls back на сирий id, не ховає інформацію повністю.
+ * видалено/архівовано локально або id не резолвиться — тоді картка бере
+ * результат виконавця, а не сирий id.
  */
 export function habitNameFor(habitId: string | undefined): string | undefined {
   if (!habitId) return undefined;
@@ -374,8 +372,6 @@ export function titleFor(name: string, status: "completed" | "failed"): string {
       return `Тренування завершено${failedSuffix}`;
     case "log_measurement":
       return `Заміри записано${failedSuffix}`;
-    case "add_program_day":
-      return `День програми додано${failedSuffix}`;
     case "log_wellbeing":
       return `Самопочуття записано${failedSuffix}`;
     case "log_weight":

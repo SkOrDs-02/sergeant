@@ -19,6 +19,19 @@ export const FIZRUK_CASES: ToolCase[] = [
     accept: ["log_set"],
   },
   {
+    // Зріз 7 спеки типу виміру: підхід на час, без повторень.
+    name: "підхід на час (планка)",
+    user: "Простояв у планці 60 секунд",
+    accept: ["log_set"],
+    expectArgs: { log_set: { duration_sec: 60 } },
+  },
+  {
+    name: "підхід на дистанцію (біг)",
+    user: "Пробіг 400 метрів",
+    accept: ["log_set"],
+    expectArgs: { log_set: { distance_m: 400 } },
+  },
+  {
     name: "початок тренування",
     user: "Починаю тренування",
     accept: ["start_workout"],
@@ -34,9 +47,12 @@ export const FIZRUK_CASES: ToolCase[] = [
     accept: ["log_measurement"],
   },
   {
-    name: "день програми тренувань",
+    // `add_program_day` прибрано (2026-11-17): чат не редагує програму. Чесна
+    // відповідь - без інструмента, з відсиланням у Фізрук -> Програми.
+    name: "день програми тренувань (чат не вміє редагувати програму)",
     user: "Постав мені понеділок днем ніг: присідання, випади, жим ногами",
-    accept: ["add_program_day"],
+    accept: [],
+    expectNoTool: true,
   },
   {
     name: "самопочуття зі сном",

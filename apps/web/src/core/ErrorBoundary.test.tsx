@@ -112,3 +112,25 @@ describe("ErrorBoundary reset path", () => {
     consoleSpy.mockRestore();
   });
 });
+
+describe("ErrorBoundary: явний порожній fallback", () => {
+  // `BootGate` (`RootLayout.tsx`) передає `fallback={null}`: падіння
+  // невидимого boot-кластера має коштувати «модуль не прогрів кеш», а не
+  // повноекранну картку поверх живого застосунку. `null` хибний, тож перевірка
+  // «чи передали fallback» мусить відрізняти його від `undefined`.
+  it("fallback={null} нічого не малює і не чіпає сусідній вміст", () => {
+    const errSpy = vi.spyOn(console, "error").mockImplementation(() => {});
+    render(
+      <>
+        <ErrorBoundary fallback={null}>
+          <Bomb trigger />
+        </ErrorBoundary>
+        <p data-testid="sibling">модуль живий</p>
+      </>,
+    );
+    expect(screen.queryByRole("alert")).toBeNull();
+    expect(screen.queryByText(/Щось пішло не так/)).toBeNull();
+    expect(screen.getByTestId("sibling")).toBeInTheDocument();
+    errSpy.mockRestore();
+  });
+});

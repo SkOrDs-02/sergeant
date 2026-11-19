@@ -38,13 +38,13 @@ export function useNutritionReminders(prefs: NutritionReminderPrefs): void {
   // неактивний SW за ~30 с, а стан жив у його памʼяті). Нагадування тепер
   // шле сервер: `apps/server/src/lib/reminders/`.
 
-  // `onMinuteTick` receives Kyiv-local dayKey + hm — this is the bug fix:
-  // previously `new Date().getHours()` used the host timezone.
+  // `onMinuteTick` receives device-local dayKey + hm from the shared hook:
+  // година нагадування, яку людина поставила, — годинник її пристрою.
   const onMinuteTick = useCallback(
     ({ dayKey, hm }: { dayKey: string; hm: string }) => {
       const target = prefsRef.current.reminderHour ?? 12;
       // The user configures an hour only (no minute), so fire on the first
-      // foreground tick during the target Kyiv HOUR — matching the original
+      // foreground tick during the target device-local HOUR — matching the original
       // `getHours() === target` window — deduped once per day via the key
       // below. Comparing the full `hm` against `HH:00` would narrow this to a
       // single minute and silently drop the reminder when the app is opened

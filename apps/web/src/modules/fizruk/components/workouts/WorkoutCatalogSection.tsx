@@ -23,6 +23,7 @@ import { fmt } from "../../lib/numberFmt";
 
 type RecExerciseFn = typeof recoveryConflictsForExerciseFn;
 type RecoveryByMap = Parameters<RecExerciseFn>[1];
+type InjurySites = NonNullable<Parameters<RecExerciseFn>[2]>;
 
 export type CatalogGroup = {
   id: string;
@@ -61,7 +62,11 @@ type WorkoutCatalogSectionProps = {
   handleExerciseInListClick: (ex: FizrukData.RawExerciseDef) => void;
   setSelected: (ex: FizrukData.RawExerciseDef) => void;
   recoveryConflictsForExercise: RecExerciseFn;
-  rec: { by: RecoveryByMap };
+  /**
+   * `injurySites` обовʼязковий навмисно: без нього доменна перевірка мовчки
+   * падає в дефолт «позначок немає» і травма не видна в каталозі (ADR-0083).
+   */
+  rec: { by: RecoveryByMap; injurySites: InjurySites };
   musclesUk: Record<string, string>;
   /**
    * Скільки разів кожна вправа вже лежить в активному тренуванні.
@@ -329,7 +334,11 @@ export function WorkoutCatalogSection({
                     className="border-b border-line group-last/cg:border-b-0"
                   >
                     {g.items.map((ex) => {
-                      const catCf = recoveryConflictsForExercise(ex, rec.by);
+                      const catCf = recoveryConflictsForExercise(
+                        ex,
+                        rec.by,
+                        rec.injurySites,
+                      );
                       const addedCount =
                         mode === "log"
                           ? (addedCountByExerciseId?.[ex.id] ?? 0)

@@ -1,6 +1,6 @@
 # SPEC: Free і Premium: пакетування, єдиний реєстр доступу, reverse trial
 
-> **Last touched:** 2026-10-26 by @claude (тріаж документації: закрито як Implemented, залишок винесено, рев'ю: п. 5 Верифікації позначено перенесеним). **Next review:** 2027-04-04.
+> **Last touched:** 2026-11-18 by @claude (§ Поза скоупом: посилання на спеку ручного Premium за запитом). Раніше 2026-10-26: тріаж документації, закрито як Implemented. **Next review:** 2027-04-04.
 > **Status:** Implemented - `packages/shared/src/billing/entitlements.ts`, міграції `149`/`153`/`154`, `apps/server/src/modules/billing/{reverseTrial,accessSnapshot,checkoutGuard}.ts`, `apps/server/src/modules/chat/aiQuotaWeekly.ts`, [ADR-0100](../../governance/adr/0100-free-premium-weekly-quotas-registry.md); ручний click-through § Верифікація п. 5 винесено, див. § Стан виконання.
 
 <!-- Інтервʼю провела сесія «Спека free/premium доступу» (4 раунди, 2026-09-27); 5-й раунд (vision Фініка, плани харчування, tool-квоти, функції без AI) додано того ж дня після інвентаризації всіх AI-маршрутів. -->
@@ -124,7 +124,7 @@
 ## Поза скоупом v1
 
 - Річний план ₴1490 і proration: окрема спека (ADR-0068).
-- Адмін-інструмент ручної видачі Premium чи trial. Ручний грант лишається SQL-рядком `provider='manual'`, founder bypass лишається через env.
+- Адмін-інструмент ручної видачі Premium чи trial. Ручний грант лишається SQL-рядком `provider='manual'`, founder bypass лишається через env. Видачу на 30 днів за запитом із пейволу (кнопка в Telegram) до запуску оплати додала окрема спека [`manual-premium-request.md`](./manual-premium-request.md) (2026-11-18).
 - Гейт проактивності (push першим, нудж): id `ai.proactive` зарезервований, гейт не вішається, бо серверної проактивності немає.
 - Mobile-паритет UI пейволу (`apps/mobile`, пауза ADR-0094). Сервер гейтить однаково для всіх клієнтів.
 - Ціна на `/pricing`, живий checkout, увімкнення провайдера, зняття waitlist: окреме рішення founder-а.

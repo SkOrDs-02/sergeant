@@ -10,6 +10,7 @@ import {
   routineHabitOrder,
   routineCompletionNotes,
   routineCompletionEvents,
+  routineHabitCounts,
   syncOpOutbox,
   syncOpCursor,
   SYNC_OP_OUTBOX_OPS,
@@ -376,6 +377,9 @@ describe("sqlite/routineHabits schema snapshot", () => {
       "weekdays_json",
       "pause_intervals_json",
       "weekly_target_history_json",
+      "count_target",
+      "count_unit",
+      "auto_mark_source",
       "created_at",
       "updated_at",
       "deleted_at",
@@ -513,8 +517,8 @@ describe("sqlite/routineCompletionNotes schema snapshot", () => {
 });
 
 describe("sqlite/migrations exports", () => {
-  it("exports the ordered Routine migrations through the pushups drop 011", () => {
-    expect(ROUTINE_CLIENT_MIGRATIONS).toHaveLength(11);
+  it("exports the ordered Routine migrations through the counter 012", () => {
+    expect(ROUTINE_CLIENT_MIGRATIONS).toHaveLength(12);
     expect(ROUTINE_CLIENT_MIGRATIONS[0]!.name).toBe("001_routine_spike.sql");
     expect(ROUTINE_CLIENT_MIGRATIONS[0]!.sql).toMatch(
       /CREATE TABLE IF NOT EXISTS routine_entries/,
@@ -693,13 +697,29 @@ describe("sqlite/migrations exports", () => {
     );
   });
 
-  it("ends with the 011 pushups drop (mirror of server migration 139)", () => {
+  it("has the 011 pushups drop (mirror of server migration 139)", () => {
     expect(ROUTINE_CLIENT_MIGRATIONS[10]!.name).toBe(
       "011_routine_drop_pushups.sql",
     );
     expect(ROUTINE_CLIENT_MIGRATIONS[10]!.sql).toMatch(
       /DROP TABLE IF EXISTS routine_pushups/,
     );
+  });
+
+  it("ends with the 012 counter + auto-mark (mirror of server migration 170)", () => {
+    const m = ROUTINE_CLIENT_MIGRATIONS[11]!;
+    expect(m.name).toBe("012_routine_habit_counter_and_auto_mark.sql");
+    expect(m.sql).toMatch(
+      /ALTER TABLE routine_habits ADD COLUMN count_target INTEGER;/,
+    );
+    expect(m.sql).toMatch(
+      /ALTER TABLE routine_habits ADD COLUMN count_unit TEXT;/,
+    );
+    expect(m.sql).toMatch(
+      /ALTER TABLE routine_habits ADD COLUMN auto_mark_source TEXT;/,
+    );
+    expect(m.sql).toMatch(/CREATE TABLE IF NOT EXISTS routine_habit_counts/);
+    expect(m.sql).toMatch(/PRIMARY KEY \(user_id, id\)/);
   });
 
   it("uses the standard `__migrations` ledger table", () => {
@@ -752,5 +772,38 @@ describe("sqlite/routineCompletionEvents schema snapshot", () => {
       "routine_completion_events_user_habit_date_idx_lite",
       "routine_completion_events_user_occurred_idx_lite",
     ]);
+  });
+});
+
+/**
+ * `routine_habit_counts` — кроки лічильника звички за день (Р-1 (а),
+ * дзеркало серверної 170, клієнтська 012).
+ */
+describe("sqlite/routineHabitCounts schema snapshot", () => {
+  const cfg = getTableConfig(routineHabitCounts);
+
+  it("has the canonical table name and columns", () => {
+    expect(cfg.name).toBe("routine_habit_counts");
+    expect(cfg.columns.map((c) => c.name)).toEqual([
+      "id",
+      "user_id",
+      "habit_id",
+      "date_key",
+      "count",
+      "updated_at",
+      "deleted_at",
+    ]);
+  });
+
+  it("is keyed by (user_id, id) with a (user_id, habit_id) index", () => {
+    expect(cfg.primaryKeys[0]!.columns.map((c) => c.name)).toEqual([
+      "user_id",
+      "id",
+    ]);
+    expect(
+      cfg.indexes.find(
+        (i) => i.config.name === "routine_habit_counts_user_habit_idx_lite",
+      ),
+    ).toBeDefined();
   });
 });

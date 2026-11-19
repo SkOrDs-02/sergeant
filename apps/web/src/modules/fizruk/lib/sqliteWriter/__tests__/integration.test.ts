@@ -307,6 +307,45 @@ describe("dualWriteFizrukState — outbox enqueue wiring", () => {
     teardown();
   });
 
+  it("несе привʼязку до слоту програми в рядку синку (П-10), без неї — явні null", async () => {
+    const teardown = registerFizrukDualWriteContext(makeCtx());
+    const base = {
+      startedAt: "2026-05-01T10:00:00Z",
+      endedAt: null,
+      items: [],
+      groups: [],
+      warmup: null,
+      cooldown: null,
+      note: "",
+    };
+    await dualWriteFizrukState(EMPTY, {
+      ...EMPTY,
+      workouts: [
+        {
+          ...base,
+          id: "w-prog",
+          programRef: { programId: "starting_strength", slot: 2 },
+        },
+        { ...base, id: "w-free" },
+      ],
+    });
+    await Promise.resolve();
+    await Promise.resolve();
+
+    const rows = enqueueMock.mock.calls
+      .filter(([, input]) => input.table === "fizruk_workouts")
+      .map(([, input]) => input.row);
+    expect(rows.find((r) => r.id === "w-prog")).toMatchObject({
+      program_id: "starting_strength",
+      program_slot: 2,
+    });
+    expect(rows.find((r) => r.id === "w-free")).toMatchObject({
+      program_id: null,
+      program_slot: null,
+    });
+    teardown();
+  });
+
   it("enqueues fizruk_workout_items and fizruk_workout_sets inserts alongside the workout", async () => {
     const teardown = registerFizrukDualWriteContext(makeCtx());
     const next: FizrukDualWriteState = {

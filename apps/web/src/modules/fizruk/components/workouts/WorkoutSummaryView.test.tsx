@@ -40,6 +40,19 @@ describe("WorkoutSummaryView", () => {
     expect(screen.getByText("Обʼєм")).toBeInTheDocument();
   });
 
+  it("підзаголовок: дата й тривалість через один « · » (зйомка 2026-11-18)", () => {
+    render(
+      <WorkoutSummaryView
+        workout={makeWorkout()}
+        onRepeat={vi.fn()}
+        onClose={vi.fn()}
+        onDelete={vi.fn()}
+      />,
+    );
+    const line = screen.getByText(/60 хв 0 с/).closest("div");
+    expect(line?.textContent).toMatch(/\d{2}:\d{2} · 60 хв 0 с$/);
+  });
+
   // PR-Z3 (аудит 2026-09-13, хвиля 6): "Обʼєм" тут — `вага_кг × повторення`
   // (`computeWorkoutTonnageKg`), не маса. Канонічний підпис "кг×повт",
   // уніфікований з `WorkoutFinishSheets` і `RecentWorkoutsSection`.
@@ -67,6 +80,39 @@ describe("WorkoutSummaryView", () => {
       />,
     );
     expect(screen.getByText(flatMatch("1 000 кг×повт"))).toBeInTheDocument();
+  });
+
+  it("«Вправ N з M», коли зроблено не всі; одне число, коли всі (рішення founder-а 2026-11-18)", () => {
+    const ex = (id: string, reps: number) => ({
+      id,
+      exerciseId: id,
+      nameUk: id,
+      primaryGroup: "back",
+      musclesPrimary: [],
+      musclesSecondary: [],
+      type: "strength" as const,
+      sets: [{ weightKg: 0, reps }],
+    });
+    const { rerender } = render(
+      <WorkoutSummaryView
+        workout={makeWorkout({ items: [ex("a", 8), ex("b", 0), ex("c", 0)] })}
+        onRepeat={vi.fn()}
+        onClose={vi.fn()}
+        onDelete={vi.fn()}
+      />,
+    );
+    expect(screen.getByText("1 з 3")).toBeInTheDocument();
+    rerender(
+      <WorkoutSummaryView
+        workout={makeWorkout({ items: [ex("a", 8), ex("b", 5)] })}
+        onRepeat={vi.fn()}
+        onClose={vi.fn()}
+        onDelete={vi.fn()}
+      />,
+    );
+    const tile = screen.getByText("Вправ").parentElement;
+    expect(tile?.textContent).toContain("2");
+    expect(tile?.textContent).not.toMatch(/ з /);
   });
 
   it("shows a skipped exercise as «—», not the empty auto-row «0×0»", () => {
@@ -138,6 +184,39 @@ describe("WorkoutSummaryView", () => {
     );
     expect(screen.getByText("Жим лежачи")).toBeInTheDocument();
     expect(screen.getByText("40×8, 45×6")).toBeInTheDocument();
+  });
+
+  it("планка з трьох утримань — «3 × 30 с», плитка «Підходів» 3 (тип виміру)", () => {
+    const workout = makeWorkout({
+      items: [
+        {
+          id: "i1",
+          exerciseId: "plank",
+          nameUk: "Планка",
+          primaryGroup: "core",
+          musclesPrimary: [],
+          musclesSecondary: [],
+          type: "time",
+          measure: "time",
+          durationSec: 90,
+          sets: [1, 2, 3].map(() => ({
+            weightKg: 0,
+            reps: 0,
+            durationSec: 30,
+          })),
+        },
+      ],
+    });
+    render(
+      <WorkoutSummaryView
+        workout={workout}
+        onRepeat={vi.fn()}
+        onClose={vi.fn()}
+        onDelete={vi.fn()}
+      />,
+    );
+    expect(screen.getByText("3 × 30 с")).toBeInTheDocument();
+    expect(screen.queryByText(/0×/)).toBeNull();
   });
 
   // RPE is optional end-to-end (`WorkoutSetRpeMenu`) — a set without it

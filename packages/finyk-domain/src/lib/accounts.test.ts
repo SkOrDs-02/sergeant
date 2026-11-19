@@ -106,3 +106,23 @@ describe("accounts — getMonoDebt / isMonoDebt (unchanged)", () => {
     expect(getMonoDebt(acc)).toBe(50);
   });
 });
+
+describe("accounts — getMonoTotals: борг лише в гривнях (logic-46)", () => {
+  it("мінус на валютному рахунку не потрапляє в debt як гривні", () => {
+    const accounts: MonoAccount[] = [
+      { id: "usd", balance: -300_00, currencyCode: 840 },
+      { id: "uah", balance: 1000_00, currencyCode: 980 },
+    ];
+    const totals = getMonoTotals(accounts);
+    expect(totals.balance).toBe(1000);
+    expect(totals.debt).toBe(0);
+  });
+
+  it("валютна кредитка не додає борг, гривнева — додає", () => {
+    const accounts: MonoAccount[] = [
+      { id: "eur", balance: 100_00, creditLimit: 500_00, currencyCode: 978 },
+      { id: "uah", balance: 300_00, creditLimit: 1000_00, currencyCode: 980 },
+    ];
+    expect(getMonoTotals(accounts).debt).toBe(700);
+  });
+});

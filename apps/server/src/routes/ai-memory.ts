@@ -1,6 +1,10 @@
 import { Router } from "express";
 import type { Pool } from "pg";
 
+import {
+  AI_MEMORY_BROWSE_IP_RATE_LIMIT,
+  AI_MEMORY_BROWSE_RATE_LIMIT,
+} from "../config/rateLimit.js";
 import { rateLimitExpress, requireSession, setModule } from "../http/index.js";
 import { requireFeature } from "../modules/billing/index.js";
 import { recallMemoryHandler } from "../modules/ai-memory/recallRoute.js";
@@ -53,14 +57,11 @@ export function createAiMemoryRouter({ pool }: { pool: Pool }): Router {
     windowMs: 5 * 60_000,
   });
   /**
-   * Дешевий шлях: SELECT/DELETE по `ai_memories`. 200/5хв вистачає, щоб
-   * прочистити велику памʼять за один сеанс, і все ще зупиняє скрипт.
+   * Дешевий шлях: SELECT/DELETE по `ai_memories`. Числа й ключ — спільна
+   * константа (`config/rateLimit.ts`): той самий бакет має читання памʼяті
+   * коуча (`routes/coach.ts`).
    */
-  const browseRateLimit = rateLimitExpress({
-    key: "api:ai-memory:browse",
-    limit: 200,
-    windowMs: 5 * 60_000,
-  });
+  const browseRateLimit = rateLimitExpress(AI_MEMORY_BROWSE_RATE_LIMIT);
   /** Pre-auth IP-бакет для `recall` — окремий `key`, 5× heavyRateLimit. */
   const heavyPreAuthIp = rateLimitExpress({
     key: "api:ai-memory:ip",
@@ -68,11 +69,7 @@ export function createAiMemoryRouter({ pool }: { pool: Pool }): Router {
     windowMs: 5 * 60_000,
   });
   /** Pre-auth IP-бакет для list/delete — окремий `key`, 5× browseRateLimit. */
-  const browsePreAuthIp = rateLimitExpress({
-    key: "api:ai-memory:browse:ip",
-    limit: 1000,
-    windowMs: 5 * 60_000,
-  });
+  const browsePreAuthIp = rateLimitExpress(AI_MEMORY_BROWSE_IP_RATE_LIMIT);
 
   // requireSession() йде ПЕРЕД per-user rate-limit-ером навмисно на всіх
   // чотирьох роутах нижче (рецидив знахідки B31, PR-A3 у

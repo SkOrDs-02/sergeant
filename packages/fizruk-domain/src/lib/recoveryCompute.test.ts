@@ -202,6 +202,21 @@ describe("fizruk/recoveryCompute", () => {
     expect(
       loadPointsForItem({ type: "strength", sets: [{ weightKg: 0, reps: 0 }] }),
     ).toBe(0);
+    // Рядок лише з вагою (посів старту програми) — не підхід: 0 навантаження.
+    expect(
+      loadPointsForItem({
+        type: "strength",
+        sets: [{ weightKg: 60, reps: 0 }],
+      }),
+    ).toBe(0);
+    // Утримання з вагою й часом на вправі (Strong) лишається підходом.
+    expect(
+      loadPointsForItem({
+        type: "strength",
+        durationSec: 60,
+        sets: [{ weightKg: 20, reps: 0 }],
+      }),
+    ).toBeCloseTo(0.15);
     // Bodyweight set (reps only) still counts as a set.
     expect(
       loadPointsForItem({
@@ -368,5 +383,48 @@ describe("fizruk/recoveryCompute", () => {
       // Свіжий «чудовий сон» знижує втому; протухлий — уже ні.
       expect(fresh["chest"]!.fatigue).toBeLessThan(stale["chest"]!.fatigue);
     });
+  });
+});
+
+describe("loadPointsForItem — підходи на час і дистанцію (спека типу виміру)", () => {
+  it("сума зарахованих підходів дає те саме, що сума на вправі", () => {
+    const fromSets = loadPointsForItem({
+      type: "time",
+      measure: "time",
+      durationSec: 0,
+      sets: [
+        { weightKg: 0, reps: 0, durationSec: 60 },
+        { weightKg: 0, reps: 0, durationSec: 60 },
+        { weightKg: 0, reps: 0, durationSec: 0 },
+      ],
+    });
+    expect(fromSets).toBeCloseTo(
+      loadPointsForItem({ type: "time", durationSec: 120 }),
+    );
+    const run = loadPointsForItem({
+      type: "distance",
+      measure: "distance_time",
+      sets: [
+        { weightKg: 0, reps: 0, distanceM: 1000, durationSec: 300 },
+        { weightKg: 0, reps: 0, distanceM: 1000, durationSec: 300 },
+      ],
+    });
+    expect(run).toBeCloseTo(
+      loadPointsForItem({
+        type: "distance",
+        distanceM: 2000,
+        durationSec: 600,
+      }),
+    );
+  });
+
+  it("лише повтори — силова гілка (вага 0, підходи рахуються)", () => {
+    expect(
+      loadPointsForItem({
+        type: "strength",
+        measure: "reps",
+        sets: [{ weightKg: 0, reps: 15 }],
+      }),
+    ).toBeCloseTo(0.15);
   });
 });

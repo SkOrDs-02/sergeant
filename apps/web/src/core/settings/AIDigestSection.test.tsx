@@ -68,7 +68,7 @@ describe("AIDigestSection: усе, що Сержант робить сам (PR-S
     stubNotification("granted");
     renderSettingsSection(<AIDigestSection />);
     expect(
-      screen.getByRole("switch", { name: "Автогенерація щопонеділка" }),
+      screen.getByRole("switch", { name: "Автогенерація звіту" }),
     ).toBeTruthy();
     expect(screen.getByRole("switch", { name: NUDGES })).toBeTruthy();
   });
@@ -104,6 +104,84 @@ describe("AIDigestSection: усе, що Сержант робить сам (PR-S
     stubNotification("granted");
     renderSettingsSection(<AIDigestSection />);
     expect(screen.queryByText(/увімкни push у «Сповіщеннях»/)).toBeNull();
+  });
+});
+
+// С-3 (а), рішення власника 2026-11-18 (OD-30): автогенерація спрацьовує
+// при першому відкритті головної після завершення тижня, а не лише в
+// понеділок, тож налаштування більше не обіцяють «щопонеділка».
+describe("AIDigestSection — текст автогенерації", () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+    pushState.subscribed = true;
+    stubNotification("granted");
+  });
+  afterEach(() => {
+    vi.unstubAllGlobals();
+  });
+
+  it("описує нову поведінку і не обіцяє понеділок", () => {
+    renderSettingsSection(<AIDigestSection />);
+    expect(screen.getByText("Автогенерація звіту")).toBeInTheDocument();
+    expect(
+      screen.getByText(
+        "Перше відкриття головної після завершення тижня само збирає звіт за тиждень, що минув. Звіт не витрачає ліміт дій Сержанта.",
+      ),
+    ).toBeInTheDocument();
+    expect(screen.queryByText(/щопонеділка/)).toBeNull();
+    // Під рядком «Поточний тиждень» слова «цей тиждень» читались як поточний.
+    expect(screen.queryByText(/за цей тиждень/)).toBeNull();
+  });
+
+  it("абзац над тумблером без подвійного «і» і однозначно про тиждень, що минув", () => {
+    renderSettingsSection(<AIDigestSection />);
+    expect(
+      screen.getByText(
+        "Тижневий аналіз прогресу від Сержанта по всіх модулях: фінанси, тренування, харчування та звички. Звіт за тиждень, що минув, збирається сам при першому відкритті головної. Він чекає там у блоці «Звіт тижня», там же його можна оновити.",
+      ),
+    ).toBeInTheDocument();
+  });
+});
+
+// О-1 (б), рішення власника 2026-11-18: на iPhone у вкладці Safari push
+// неможливий. Тумблер «Повідомлення від Сержанта» (після PR-S8 він тут)
+// показує, як встановити застосунок, і нічого не пише на сервер.
+describe("AIDigestSection: iPhone у вкладці Safari", () => {
+  const INSTALL_HINT = /Встанови Sergeant на початковий екран/;
+
+  beforeEach(() => {
+    vi.clearAllMocks();
+    pushState.subscribed = false;
+  });
+  afterEach(() => {
+    vi.unstubAllGlobals();
+  });
+
+  it("показує підказку встановлення, тумблер лишається вимкненим, тосту немає", async () => {
+    vi.stubGlobal("navigator", {
+      ...window.navigator,
+      userAgent: "Mozilla/5.0 (iPhone; CPU iPhone OS 17_0 like Mac OS X)",
+      platform: "iPhone",
+      maxTouchPoints: 5,
+      standalone: false,
+    });
+    vi.stubGlobal(
+      "matchMedia",
+      (query: string) =>
+        ({
+          matches: false,
+          media: query,
+          addEventListener: () => {},
+          removeEventListener: () => {},
+        }) as unknown as MediaQueryList,
+    );
+    vi.stubGlobal("Notification", undefined);
+    renderSettingsSection(<AIDigestSection />);
+    expect(screen.queryByText(INSTALL_HINT)).toBeNull();
+    fireEvent.click(screen.getByRole("switch", { name: NUDGES }));
+    expect(await screen.findByText(INSTALL_HINT)).toBeTruthy();
+    expect(meApiMock.updatePreferences).not.toHaveBeenCalled();
+    expect(toastWarningMock).not.toHaveBeenCalled();
   });
 });
 

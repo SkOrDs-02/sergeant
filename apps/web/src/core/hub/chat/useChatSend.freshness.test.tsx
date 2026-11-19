@@ -72,7 +72,9 @@ afterEach(() => {
 it.each(["new records", "new day"])(
   "sends current canonical context after %s without reopening chat",
   async (change) => {
-    const send = vi.spyOn(chatApi, "send").mockResolvedValue({ text: "Ок." });
+    const send = vi
+      .spyOn(chatApi, "firstTurn")
+      .mockResolvedValue({ text: "Ок." });
     const { result } = renderHook(
       () => useChatSend({ messages: [], setMessages: vi.fn() }),
       { wrapper: Wrapper },

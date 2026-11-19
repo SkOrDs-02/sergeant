@@ -1,4 +1,4 @@
-import { describe, it, expect, beforeEach, vi } from "vitest";
+import { describe, it, expect, beforeEach, afterEach, vi } from "vitest";
 import type { Request, Response } from "express";
 import type { Mock } from "vitest";
 
@@ -165,6 +165,14 @@ function queueHappyPathClient(
 
 beforeEach(() => {
   vi.clearAllMocks();
+  // Вебхук звіряє поточну хвилину з тихими годинами людини (міграція 168):
+  // без фіксованого годинника тест «push пішов» червонів би вночі за Києвом.
+  vi.useFakeTimers({ toFake: ["Date"] });
+  vi.setSystemTime(new Date("2026-08-03T09:00:00Z")); // 12:00 за Києвом
+});
+
+afterEach(() => {
+  vi.useRealTimers();
 });
 
 describe("webhookHandler", () => {
@@ -422,7 +430,10 @@ describe("webhookHandler", () => {
     expect(res.body.ok).toBe(true);
     expect(counter.inc).toHaveBeenCalledWith({ status: "ok" });
     // Lookup мусить відбутись по тому самому secret-hash, що й path-варіант.
-    expect(dbQuery).toHaveBeenCalledTimes(1);
+    // Другий запит - налаштування push після відповіді (міграція 168).
+    expect(dbQuery).toHaveBeenCalledTimes(2);
+    expect(dbQuery.mock.calls[0]![0]).toMatch(/FROM mono_connection/);
+    expect(dbQuery.mock.calls[1]![0]).toMatch(/FROM user_preferences/);
     expect(pool.connect).toHaveBeenCalledTimes(1);
   });
 
@@ -656,5 +667,72 @@ describe("webhookHandler", () => {
     });
     // BEGIN, SAVEPOINT, fail, ROLLBACK — рівно 4 виклики, ніяких retry.
     expect(client.query).toHaveBeenCalledTimes(4);
+  });
+});
+
+// Спека notifications-quiet-hours-and-device-time: тумблер «Операції
+// Monobank» і тихі години в поясі людини (П-22 (А), Б-1 (А)).
+describe("webhookHandler - тумблер Monobank і тихі години", () => {
+  async function deliver(prefsRow: Record<string, unknown> | null) {
+    dbQuery
+      .mockResolvedValueOnce({ rows: [{ user_id: "user_1" }] })
+      .mockResolvedValueOnce({ rows: prefsRow ? [prefsRow] : [] });
+    const client = makeClient();
+    queueHappyPathClient(client, { inserted: true });
+    pool.connect.mockResolvedValue(client);
+    const res = makeRes();
+    await webhookHandler(makeReq(VALID_SECRET), res);
+    await Promise.resolve();
+    return { res, client };
+  }
+
+  it("вимкнений тумблер: push не йде, операція записана", async () => {
+    const { res, client } = await deliver({ push_mono_transactions: false });
+
+    expect(res.statusCode).toBe(200);
+    expect(
+      client.query.mock.calls.some(([sql]) =>
+        /INSERT INTO mono_transaction/.test(String(sql)),
+      ),
+    ).toBe(true);
+    expect(sendPushMock).not.toHaveBeenCalled();
+  });
+
+  it("операція о 23:30 за поясом людини при 22:00-08:00: push не йде", async () => {
+    // 2026-12-02 04:30Z = 23:30 1 грудня в Нью-Йорку, 06:30 у Києві.
+    vi.setSystemTime(new Date("2026-12-02T04:30:00Z"));
+    await deliver({
+      time_zone: "America/New_York",
+      quiet_hours_enabled: true,
+      quiet_hours_start_min: 1320,
+      quiet_hours_end_min: 480,
+      push_mono_transactions: true,
+    });
+    expect(sendPushMock).not.toHaveBeenCalled();
+  });
+
+  it("та сама мить при вимкнених тихих годинах: push іде", async () => {
+    vi.setSystemTime(new Date("2026-12-02T04:30:00Z"));
+    await deliver({
+      time_zone: "America/New_York",
+      quiet_hours_enabled: false,
+      quiet_hours_start_min: 1320,
+      quiet_hours_end_min: 480,
+      push_mono_transactions: true,
+    });
+    expect(sendPushMock).toHaveBeenCalledTimes(1);
+  });
+
+  it("вдень за поясом людини push іде, як і раніше", async () => {
+    // 2026-12-02 17:00Z = 12:00 у Нью-Йорку, 19:00 у Києві.
+    vi.setSystemTime(new Date("2026-12-02T17:00:00Z"));
+    await deliver({ time_zone: "America/New_York" });
+    expect(sendPushMock).toHaveBeenCalledTimes(1);
+  });
+
+  it("людина без рядка налаштувань: дефолтні тихі години за Києвом", async () => {
+    vi.setSystemTime(new Date("2026-08-03T21:00:00Z")); // 00:00 за Києвом
+    await deliver(null);
+    expect(sendPushMock).not.toHaveBeenCalled();
   });
 });

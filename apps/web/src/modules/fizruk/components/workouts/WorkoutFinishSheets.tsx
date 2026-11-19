@@ -7,6 +7,10 @@ import { FIELD_LABEL } from "@shared/components/ui/Input";
 import { Icon } from "@shared/components/ui/Icon";
 import { cn } from "@shared/lib/ui/cn";
 import { useDialogFocusTrap } from "@shared/hooks/useDialogFocusTrap";
+import {
+  SHEET_FOOTER_INSET_VAR,
+  useBottomInsetVar,
+} from "@shared/hooks/useBottomInsetVar";
 import { openHubModule } from "@shared/lib/modules/hubNav";
 import {
   isCrossModulePromptSuppressed,
@@ -149,6 +153,13 @@ export function WorkoutFinishSheets({
     onDone?.();
   };
   useDialogFocusTrap(!!finishFlash, trapRef, { onEscape: closeFinish });
+  // Панель — власний fixed-шар, а не `Sheet`, тож сама публікує, скільки
+  // займає знизу: трей тостів (тост «Повернутись у сесію», Фз-2) стає над
+  // нею, а не на «Пропустити» / «Зберегти». Той самий механізм і та сама
+  // змінна, що в `Sheet` з футером; закриття й розмонтування її знімають.
+  // Вимір іде з обгортки всіх кроків, тож інсет тримають і «Щось болить?»,
+  // і підсумок.
+  useBottomInsetVar(trapRef, SHEET_FOOTER_INSET_VAR, !!finishFlash);
 
   if (!finishFlash) return null;
   // Кроки оцінки — модальні (`aria-modal`), тож під ними затемнення: без

@@ -162,6 +162,23 @@ export interface HabitSkipDeleteOp {
   readonly skipKey: string;
 }
 
+/**
+ * Кроки лічильника звички за день (міграція 170, Р-1 (а)) →
+ * `routine_habit_counts`. `count` 0 = soft-delete рядка.
+ */
+export interface HabitCountUpsertOp {
+  readonly kind: "habit-count-upsert";
+  readonly habitId: string;
+  readonly dateKey: string;
+  readonly count: number;
+}
+
+export interface HabitCountDeleteOp {
+  readonly kind: "habit-count-delete";
+  readonly habitId: string;
+  readonly dateKey: string;
+}
+
 export type RoutineDualWriteOp =
   | CompletionAddOp
   | CompletionRemoveOp
@@ -178,7 +195,9 @@ export type RoutineDualWriteOp =
   | CompletionNoteUpsertOp
   | CompletionNoteDeleteOp
   | HabitSkipUpsertOp
-  | HabitSkipDeleteOp;
+  | HabitSkipDeleteOp
+  | HabitCountUpsertOp
+  | HabitCountDeleteOp;
 
 /**
  * Compute the dual-write operation list for the transition `prev → next`.
@@ -202,6 +221,7 @@ export type RoutineDualWriteOp =
  *   8. habit-order-set (at most one)
  *   9. completion-note-upsert / completion-note-delete (noteKey asc)
  *  10. habit-skip-upsert / habit-skip-delete (skipKey asc)
+ *  11. habit-count-upsert / habit-count-delete (habitId, dateKey asc)
  *
  * — so adapter callers can rely on a deterministic apply order, which
  * matters when several SQLite writes target the same row id (e.g. a
@@ -228,6 +248,7 @@ export function diffRoutineDualWriteOps(
   diffHabitOrderOps(prev, next, ops);
   diffCompletionNoteOps(prev, next, ops);
   diffHabitSkipOps(prev, next, ops);
+  diffHabitCountOps(prev, next, ops);
 
   return ops;
 }
@@ -535,6 +556,36 @@ function diffHabitSkipOps(
   ops.push(...upserts, ...deletes);
 }
 
+function diffHabitCountOps(
+  prev: RoutineState,
+  next: RoutineState,
+  ops: RoutineDualWriteOp[],
+): void {
+  if (prev.counts === next.counts) return;
+  const before = prev.counts ?? {};
+  const after = next.counts ?? {};
+  const out: Array<HabitCountUpsertOp | HabitCountDeleteOp> = [];
+  const habitIds = [
+    ...new Set([...Object.keys(before), ...Object.keys(after)]),
+  ].sort();
+  for (const habitId of habitIds) {
+    const b = before[habitId] ?? {};
+    const a = after[habitId] ?? {};
+    const days = [...new Set([...Object.keys(b), ...Object.keys(a)])].sort();
+    for (const dateKey of days) {
+      const was = b[dateKey] ?? 0;
+      const now = a[dateKey] ?? 0;
+      if (was === now) continue;
+      out.push(
+        now > 0
+          ? { kind: "habit-count-upsert", habitId, dateKey, count: now }
+          : { kind: "habit-count-delete", habitId, dateKey },
+      );
+    }
+  }
+  ops.push(...out);
+}
+
 // -----------------------------------------------------------------------
 // Generic entity-array diff (mirrors Fizruk's `diffArray`)
 // -----------------------------------------------------------------------
@@ -590,6 +641,10 @@ function habitChanged(prev: Habit, next: Habit): boolean {
     // рядка заявлена пауза не породжувала б `habit-upsert` взагалі й
     // лишалась би тільки в локальному стані.
     prev.pauseIntervals !== next.pauseIntervals ||
+    // Міграція 170: лічильник і автовідмітка — скаляри, тож за значенням.
+    (prev.countTarget ?? null) !== (next.countTarget ?? null) ||
+    (prev.countUnit ?? null) !== (next.countUnit ?? null) ||
+    (prev.autoMarkSource ?? null) !== (next.autoMarkSource ?? null) ||
     prev.createdAt !== next.createdAt
   );
 }

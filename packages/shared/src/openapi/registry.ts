@@ -118,6 +118,16 @@ const ChatRequest = schemas.ChatRequestSchema.meta({
   description:
     "POST /api/chat — Anthropic-чат із tool-results і опційним streaming.",
 });
+const ChatFirstTurnResponse = schemas.ChatFirstTurnResponseSchema.meta({
+  id: "ChatFirstTurnResponse",
+  description:
+    "POST /api/chat, перший хід: JSON-тіло без `stream` і вміст кадру `final` зі `stream: true`.",
+});
+const ChatStreamFrame = schemas.ChatStreamFrameSchema.meta({
+  id: "ChatStreamFrame",
+  description:
+    "POST /api/chat зі `stream: true`: один кадр SSE (`data: <json>`), потік закінчує `data: [DONE]`.",
+});
 const ChatUsageResponse = schemas.ChatUsageResponseSchema.meta({
   id: "ChatUsageResponse",
   description:
@@ -423,6 +433,21 @@ const BillingCheckoutConflictCode =
     description:
       "Значення `code` у 409-відповіді POST /api/billing/checkout: ALREADY_SUBSCRIBED (є діючий платний ентайтлмент) або CHECKOUT_PENDING (є непідтверджений Plata-checkout молодший за годину).",
   });
+const ManualAccessRequest = schemas.ManualAccessRequestSchema.meta({
+  id: "ManualAccessRequest",
+  description:
+    "POST /api/billing/manual-access — запит ручного Premium з пейволу: поверхня пейволу і контекст сторінки.",
+});
+const ManualAccessResponse = schemas.ManualAccessResponseSchema.meta({
+  id: "ManualAccessResponse",
+  description:
+    "Відповідь POST /api/billing/manual-access: запит записано, `requestedAt` — час запису.",
+});
+const ManualAccessConflictCode = schemas.ManualAccessConflictCodeSchema.meta({
+  id: "ManualAccessConflictCode",
+  description:
+    "Значення `code` у 409-відповіді POST /api/billing/manual-access: MANUAL_ACCESS_ALREADY_REQUESTED (акаунт уже просив), MANUAL_ACCESS_NOT_NEEDED (стан доступу не free), MANUAL_ACCESS_CLOSED (оплату увімкнено або Telegram не налаштовано).",
+});
 const BillingProvidersResponse = schemas.BillingProvidersResponseSchema.meta({
   id: "BillingProvidersResponse",
   description:
@@ -583,6 +608,8 @@ export const namedSchemas = {
   ManualExpenseCreate,
   ManualExpenseCreateResponse,
   ChatRequest,
+  ChatFirstTurnResponse,
+  ChatStreamFrame,
   ChatUsageResponse,
   RecallMemoryRequest,
   RecallMemoryResult,
@@ -647,6 +674,9 @@ export const namedSchemas = {
   BillingCancelResponse,
   BillingCheckoutConflictCode,
   BillingProvidersResponse,
+  ManualAccessRequest,
+  ManualAccessResponse,
+  ManualAccessConflictCode,
   TranscribeQuery,
   TranscribeResponse,
   WebVitalsPayload,

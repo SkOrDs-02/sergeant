@@ -17,10 +17,6 @@ import type { PwaAction } from "../hooks/usePwaActions";
 import type { HubUIState } from "../hooks/useHubUIState";
 import type { HubNavigation } from "../hooks/useHubNavigation";
 import type { useAuth } from "../auth/AuthContext";
-import {
-  prefetchCriticalModules,
-  prefetchHubNavigationPages,
-} from "../lib/useRoutePrefetch";
 import { useHubChatOverlay } from "../hub/useHubChatOverlay";
 import { shouldShowOnboarding } from "../onboarding/onboardingGate";
 import { useStorageReady } from "../db/storageReady";
@@ -65,31 +61,50 @@ export function useAppEffects(deps: AppEffectsDeps): void {
   // a permanently-busy main thread from starving the prefetch entirely.
   // Safari ≤ 16 has no `requestIdleCallback`, so we keep the original
   // 2 s fallback for it.
+  //
+  // AI-CONTEXT: сам `useRoutePrefetch` вантажиться ЛІНИВО, і це бюджет, а
+  // не стиль. Його мапа `import()` на всі модулі й сторінки тягне за собою
+  // `__vite__mapDeps` зі списком їхніх чанків, і статичне ребро звідси
+  // (eager `RootLayout` → `useAppEffects`) клало ~6 kB brotli на критичний
+  // шлях заради префетчу, якого людина не бачить. Ціна — один невеликий
+  // чанк перед першим префетчем; чанк спільний із `HubBottomNav`, який
+  // імпортує той самий файл статично. Розбір: журнал ратчетів 2026-11-18.
   useEffect(() => {
-    // Hub navigation pages (Reports + Settings) are primary tabs. Kick
-    // their chunks off immediately so a tap on the bottom-nav lands on
-    // a hydrated component instead of the Suspense skeleton. The inner
-    // `prefetchHubNavigationPages` still wraps each import in
-    // `requestIdleCallback` (with its own 3 s timeout), so this stays
-    // non-blocking — we just drop the outer idle wrap that was stacking
-    // on top and pushing first-touch latency past the user's tap.
-    prefetchHubNavigationPages();
-    if ("requestIdleCallback" in window) {
-      const moduleId = requestIdleCallback(
-        () => {
+    let disposed = false;
+    let cancelModules: (() => void) | null = null;
+    void import("../lib/useRoutePrefetch")
+      .then(({ prefetchCriticalModules, prefetchHubNavigationPages }) => {
+        if (disposed) return;
+        // Hub navigation pages (Reports + Settings) are primary tabs. Kick
+        // their chunks off immediately so a tap on the bottom-nav lands on
+        // a hydrated component instead of the Suspense skeleton. The inner
+        // `prefetchHubNavigationPages` still wraps each import in
+        // `requestIdleCallback` (with its own 3 s timeout), so this stays
+        // non-blocking — we just drop the outer idle wrap that was
+        // stacking on top and pushing first-touch latency past the tap.
+        prefetchHubNavigationPages();
+        if ("requestIdleCallback" in window) {
+          const moduleId = requestIdleCallback(
+            () => {
+              prefetchCriticalModules();
+            },
+            { timeout: 6000 },
+          );
+          cancelModules = () => cancelIdleCallback(moduleId);
+          return;
+        }
+        const moduleTimer = setTimeout(() => {
           prefetchCriticalModules();
-        },
-        { timeout: 6000 },
-      );
-      return () => {
-        cancelIdleCallback(moduleId);
-      };
-    }
-    const moduleTimer = setTimeout(() => {
-      prefetchCriticalModules();
-    }, 3000);
+        }, 3000);
+        cancelModules = () => clearTimeout(moduleTimer);
+      })
+      .catch(() => {
+        // Префетч best-effort: без чанка людина побачить звичайне
+        // завантаження екрана, коли до нього перейде.
+      });
     return () => {
-      clearTimeout(moduleTimer);
+      disposed = true;
+      cancelModules?.();
     };
   }, []);
 

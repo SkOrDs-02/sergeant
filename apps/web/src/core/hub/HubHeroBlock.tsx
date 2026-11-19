@@ -16,10 +16,17 @@ import {
 } from "./now/ChecklistNowRows";
 import { SectionHeading } from "@shared/components/ui/SectionHeading";
 import { coreMessages } from "@shared/i18n/uk.core";
-import { OnboardingProgress } from "../onboarding/OnboardingProgress";
 import { useFlag } from "../lib/featureFlags";
 import { OutcomeCard } from "./OutcomeCard";
 import { ValueProgressBar } from "./ValueProgressBar";
+import { NewcomerTimelineCard } from "./NewcomerTimelineCard";
+import { isNewcomerTimelineVisible } from "./newcomerTimeline";
+import { useNewcomerLinkProgress } from "./useNewcomerLinkProgress";
+import {
+  getFinykBankHistoryStart,
+  getMonoFirstConnectedAt,
+} from "@finyk/lib/bankHistory";
+import { BankHistoryFactsCard } from "./BankHistoryFactsCard";
 import { StreakIndicator } from "./dashboard/dashboardCards";
 import type { DashboardModuleId } from "./hub.types";
 import type { useOnboardingState } from "../onboarding/useOnboardingState";
@@ -38,6 +45,14 @@ export interface HubHeroBlockProps {
   activeModules: readonly string[];
   goals: ReturnType<typeof getOnboardingGoals>;
   hasValueBar: boolean;
+  /** Людина увійшла (Monobank і звіт тижня — лише з акаунтом). */
+  signedIn: boolean;
+  /**
+   * Триває перший тиждень акаунта (`isWithinChecklistWindow`): після
+   * першого запису картка «Що зʼявиться і коли» живе лише тоді (В-1 → (Б)).
+   * Факти банку мають власне вікно від підключення Monobank (В-2 → (Б)).
+   */
+  inFirstWeek: boolean;
   /**
    * Вісь дії (спека `hub-action-axis.md`): hero-слот займає купа «Зараз»
    * (`NowPile`). FirstAction / re-engagement перемагають так
@@ -60,10 +75,30 @@ export function HubHeroBlock({
   activeModules,
   goals,
   hasValueBar,
+  signedIn,
+  inFirstWeek,
   nowPile,
 }: HubHeroBlockProps) {
   const reengagementIsHero = reengagement.show;
   const outcomeCardEnabled = useFlag("ftux_outcome_card_v1");
+  // Після першого запису картка «Що зʼявиться і коли» живе перший тиждень
+  // або до першого звʼязку (В-1 → (Б)), зі справжнім прогресом спільних днів.
+  const linksRelevant = activeModules.length >= 2;
+  const linkProgress = useNewcomerLinkProgress(
+    hasRealEntry && inFirstWeek && linksRelevant,
+  );
+  const timelineAfterEntry =
+    hasRealEntry &&
+    isNewcomerTimelineVisible({
+      hasRealEntry,
+      inFirstWeek,
+      // Без двох модулів звʼязку не буде, рахувати нічого.
+      linkFound: linksRelevant ? (linkProgress?.linkFound ?? null) : false,
+    });
+  // Читання дзеркала лише тоді, коли картка взагалі може стояти на екрані.
+  const bankConnected =
+    (!hasRealEntry || timelineAfterEntry) &&
+    (getMonoFirstConnectedAt() !== null || getFinykBankHistoryStart() !== null);
 
   let hero: React.ReactNode;
   if (onboardingState.showFirstAction) {
@@ -120,8 +155,26 @@ export function HubHeroBlock({
         ) : hasValueBar ? (
           <ValueProgressBar activeModules={activeModules} goals={goals} />
         ) : (
-          <OnboardingProgress activeModules={activeModules} />
+          // «Що зʼявиться і коли» на місці смуги «Модулів увімкнено: N з 4»
+          // (П-20 (А)). Поки записів немає, спільних днів теж 0.
+          <NewcomerTimelineCard
+            activeModules={activeModules}
+            signedIn={signedIn}
+            bankConnected={bankConnected}
+            sharedDays={0}
+          />
         ))}
+      {timelineAfterEntry && (
+        <NewcomerTimelineCard
+          activeModules={activeModules}
+          signedIn={signedIn}
+          bankConnected={bankConnected}
+          sharedDays={linkProgress?.sharedDays ?? 0}
+        />
+      )}
+      <BankHistoryFactsCard
+        enabled={signedIn && activeModules.includes("finyk")}
+      />
       {hasRealEntry && crossModulePreviewSource && (
         <CrossModulePreview
           sourceModule={crossModulePreviewSource}

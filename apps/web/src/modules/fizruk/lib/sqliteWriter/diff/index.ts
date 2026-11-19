@@ -50,6 +50,7 @@
 import { diffCustomActivitiesOps } from "./customActivities";
 import { diffCustomExercisesOps } from "./customExercises";
 import { diffDailyLogOps } from "./dailyLog";
+import { diffExercisePrefsOps } from "./exercisePrefs";
 import { diffInjuriesOps } from "./injuries";
 import { diffMeasurementsOps } from "./measurements";
 import { diffMonthlyPlanOps } from "./monthlyPlan";
@@ -72,6 +73,11 @@ import type {
   DailyLogUpsertOp,
   FizrukDailyLogSnapshot,
 } from "./dailyLog";
+import type {
+  ExercisePrefDeleteOp,
+  ExercisePrefUpsertOp,
+  FizrukExercisePrefSnapshot,
+} from "./exercisePrefs";
 import type {
   FizrukInjurySnapshot,
   InjuryDeleteOp,
@@ -110,7 +116,10 @@ export type {
   CustomExerciseUpsertOp,
   DailyLogDeleteOp,
   DailyLogUpsertOp,
+  ExercisePrefDeleteOp,
+  ExercisePrefUpsertOp,
   FizrukCustomActivitySnapshot,
+  FizrukExercisePrefSnapshot,
   FizrukCustomExerciseSnapshot,
   FizrukDailyLogSnapshot,
   FizrukInjurySnapshot,
@@ -149,7 +158,9 @@ export type FizrukDualWriteOp =
   | WorkoutTemplateUpsertOp
   | WorkoutTemplateDeleteOp
   | InjuryUpsertOp
-  | InjuryDeleteOp;
+  | InjuryDeleteOp
+  | ExercisePrefUpsertOp
+  | ExercisePrefDeleteOp;
 
 // -----------------------------------------------------------------------
 // State shape
@@ -189,6 +200,11 @@ export interface FizrukDualWriteState {
    * тестах поля не несуть; `null`/відсутнє = «рядка ще немає».
    */
   readonly programs?: FizrukProgramsSnapshot | null;
+  /**
+   * Памʼять типу виміру вправи (`fizruk_exercise_prefs`, міграція 173):
+   * рядок на вправу. Опційне з тієї ж причини, що й `customActivities`.
+   */
+  readonly exercisePrefs?: readonly FizrukExercisePrefSnapshot[];
 }
 
 // -----------------------------------------------------------------------
@@ -222,5 +238,6 @@ export function diffFizrukDualWriteOps(
     ...diffWorkoutTemplatesOps(prev.workoutTemplates, next.workoutTemplates),
     ...diffInjuriesOps(prev.injuries, next.injuries),
     ...diffProgramsOps(prev.programs, next.programs),
+    ...diffExercisePrefsOps(prev.exercisePrefs, next.exercisePrefs),
   ];
 }

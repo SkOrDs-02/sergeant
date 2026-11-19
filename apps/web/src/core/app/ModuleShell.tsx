@@ -70,6 +70,7 @@ export function ModuleShell({
         searchOpen={ui.searchOpen}
         searchQuery={ui.searchQuery}
         onCloseSearch={ui.closeSearch}
+        onCloseSearchAfterNavigation={ui.closeSearchAfterNavigation}
         onOpenModule={openModule}
       />
       {shortcutsOpen && (

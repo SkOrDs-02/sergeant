@@ -76,7 +76,7 @@ export const CASSETTE_ANSWERS: readonly CassetteAnswer[] = [
     textLine: 2195,
     fedLine: null,
     userSrc:
-      "apps/server/src/modules/chat/toolSelectionCases/crossModule.ts:86",
+      "apps/server/src/modules/chat/toolSelectionCases/crossModule.ts:99",
     user: `Що я там собі записував останнім часом?`,
     fed: null,
     answer: `**Фінанси**: за 27–29 липня записано три витрати: 95 грн на метро, 640 грн у «АТБ» і 120 грн на каву.

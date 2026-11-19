@@ -13,10 +13,16 @@ import type {
   ChatActionCardModule,
 } from "../lib/hubChatActionCards";
 import { DataResultCard } from "../hub/chat/components/DataResultCard";
+import { hubChatStreamMessages as STREAM_COPY } from "@shared/i18n/uk.hubChatStream";
 
 interface ChatMessageProps {
   message: ChatMessageData;
   onSpeak?: () => void;
+  /**
+   * «Ще раз» на відповіді, що обірвалась посеред стріму (С-1 (а)): шле те
+   * саме питання. Без обробника (хід у польоті) кнопки немає.
+   */
+  onRetry?: (text: string) => void;
 }
 
 /**
@@ -192,8 +198,11 @@ function ConfirmCard({ card }: { card: ChatActionCard }) {
   );
 }
 
-function ChatMessageImpl({ message, onSpeak }: ChatMessageProps) {
+function ChatMessageImpl({ message, onSpeak, onRetry }: ChatMessageProps) {
   const { role, text, cards } = message;
+  const interrupted = message.interrupted === true;
+  const retryText =
+    typeof message.retryText === "string" ? message.retryText : "";
   const isAssistant = role === "assistant";
   // Збій — не відповідь моделі. Своя заливка й `role="alert"`, щоб його не
   // читали як репліку асистента, і без TTS: озвучувати текст помилки нема сенсу.
@@ -238,6 +247,20 @@ function ChatMessageImpl({ message, onSpeak }: ChatMessageProps) {
               <ModuleLink module={c.module} />
             </div>
           ))}
+        {isAssistant && interrupted && (
+          <div className="mt-1.5 flex flex-wrap items-center gap-x-2 text-style-caption text-muted">
+            <span>{STREAM_COPY.interrupted}</span>
+            {onRetry && retryText && (
+              <button
+                type="button"
+                onClick={() => onRetry(retryText)}
+                className="flex min-h-11 items-center font-medium text-text hover:underline focus-ring"
+              >
+                {STREAM_COPY.retry}
+              </button>
+            )}
+          </div>
+        )}
         {isAssistant && !isError && text && text.length > 3 && (
           <button
             type="button"
@@ -259,32 +282,49 @@ function ChatMessageImpl({ message, onSpeak }: ChatMessageProps) {
 
 export const ChatMessage = memo(ChatMessageImpl);
 
-export function TypingIndicator() {
+export interface TypingIndicatorProps {
+  /**
+   * Що Сержант робить зараз (С-1 (б), рішення власника 2026-11-18): підпис
+   * інструмента, поки клієнт його виконує. Без нього — нейтральне «Думаю…».
+   */
+  label?: string | null;
+}
+
+/**
+ * Бульбашка очікування: крапки (лише без reduced-motion) і підпис кроку.
+ *
+ * AI-CONTEXT: ширина бульбашки стала (`flex-1` до `max-w-xs`), тож зміна
+ * підпису не зсуває «Скасувати» поруч. Уміст `aria-hidden`, а назва статусу
+ * стала: крок оголошує ОДНА чемна область у `HubChatBody`, інакше читалка
+ * чула б його двічі.
+ */
+export function TypingIndicator({ label }: TypingIndicatorProps = {}) {
   return (
     <div
-      className="flex items-end gap-2"
+      className="flex min-w-0 max-w-xs flex-1 items-end"
       role="status"
       aria-label="Сержант набирає відповідь"
     >
-      {/* Animated dots — hidden when prefers-reduced-motion is active. */}
       <div
         aria-hidden
-        className="motion-safe:flex hidden bg-panel border border-line rounded-panel rounded-bl-sm px-4 py-3 gap-1.5 items-center"
+        className="flex w-full min-w-0 items-center gap-3 bg-panel border border-line rounded-panel rounded-bl-sm px-4 py-3"
       >
-        {[0, 0.15, 0.3].map((d, i) => (
-          <span
-            key={i}
-            className="w-1.5 h-1.5 bg-subtle rounded-mark motion-safe:animate-bounce"
-            style={{ animationDelay: `${d}s` }}
-          />
-        ))}
-      </div>
-      {/* Static label shown only when prefers-reduced-motion is set. */}
-      <div
-        aria-hidden
-        className="motion-reduce:flex motion-safe:hidden bg-panel border border-line rounded-panel rounded-bl-sm px-4 py-3 items-center"
-      >
-        <span className="text-style-body text-muted">Думаю…</span>
+        {/* Animated dots — hidden when prefers-reduced-motion is active. */}
+        <span className="motion-safe:flex hidden shrink-0 gap-1.5 items-center">
+          {[0, 0.15, 0.3].map((d, i) => (
+            <span
+              key={i}
+              className="w-1.5 h-1.5 bg-subtle rounded-mark motion-safe:animate-bounce"
+              style={{ animationDelay: `${d}s` }}
+            />
+          ))}
+        </span>
+        <span
+          data-testid="typing-indicator-label"
+          className="min-w-0 text-style-body text-muted text-pretty"
+        >
+          {label ?? "Думаю…"}
+        </span>
       </div>
     </div>
   );

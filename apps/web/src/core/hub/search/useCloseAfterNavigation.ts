@@ -32,6 +32,13 @@ export interface CloseAfterNavigation {
 
 export function useCloseAfterNavigation(
   onClose: () => void,
+  /**
+   * Той самий намір для власника стану пошуку, що не розмонтовується
+   * (`useHubUIState.closeSearchAfterNavigation`). Ефект нижче не виконується,
+   * якщо навігація розмонтовує сам пошук разом із екраном (головна → модуль),
+   * тож закрити має той, хто переживе зміну адреси.
+   */
+  onNavigationStart?: () => void,
 ): CloseAfterNavigation {
   const { key } = useLocation();
   const [fromKey, setFromKey] = useState<string | null>(null);
@@ -40,7 +47,8 @@ export function useCloseAfterNavigation(
   const closeAfterNavigation = useCallback(() => {
     firedRef.current = false;
     setFromKey(key);
-  }, [key]);
+    onNavigationStart?.();
+  }, [key, onNavigationStart]);
 
   useEffect(() => {
     if (fromKey === null || key === fromKey || firedRef.current) return;

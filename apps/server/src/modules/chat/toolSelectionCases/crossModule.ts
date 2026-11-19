@@ -19,8 +19,8 @@ export const CROSS_MODULE_CASES: ToolCase[] = [
     accept: ["weekly_summary", "compare_weeks"],
   },
   {
-    name: "комплексна ціль схуднення",
-    user: "Хочу скинути 5 кг до кінця жовтня, постав мені план",
+    name: "денна норма калорій як ціль",
+    user: "Постав мені ціль: 2200 ккал на день",
     accept: ["set_goal"],
   },
   {
@@ -49,9 +49,22 @@ export const CROSS_MODULE_CASES: ToolCase[] = [
     accept: ["compare_weeks", "weekly_summary"],
   },
   {
+    // id фактів у блоці ДАНІ немає (у проді профіль іде туди текстом, без
+    // id), тож правильний хід - `my_profile`, а `forget` уже з id з його
+    // результату. До 2026-11-18 кейс чекав `forget` одразу, тобто був
+    // непрохідним без вигаданого id: будь-який `fact_id` на першому ході
+    // моделі ніхто не давав. Формат результату - як `myProfile` веба.
     name: "видалення конкретного факту",
     user: "Забудь що я алергік на арахіс, це вже неактуально",
-    accept: ["forget"],
+    accept: ["my_profile", "forget"],
+    turns: [
+      {
+        result:
+          "Профіль користувача (3):\n  - [Алергії] Алергія на арахіс (id:mem_7f3a)\n  - [Цілі] Схуднути до 78 кг (id:mem_2c91)\n  - [Дієта] Не їм глютен (id:mem_5b10)",
+        accept: ["forget"],
+      },
+    ],
+    expectArgs: { forget: { fact_id: "mem_7f3a" } },
   },
   {
     name: "видалення факту без уточнення",
@@ -65,9 +78,9 @@ export const CROSS_MODULE_CASES: ToolCase[] = [
     accept: ["my_profile"],
   },
   {
-    name: "пошук схожого досвіду",
-    user: "Нагадай що я їв, коли останній раз худнув",
-    accept: ["recall_memory"],
+    name: "пошук у памʼяті (факти й дайджести)",
+    user: "Пошукай у памʼяті, що я тобі розповідав про свої цілі",
+    accept: ["recall_memory", "my_profile"],
   },
   {
     name: "конвертація одиниць",
@@ -90,5 +103,11 @@ export const CROSS_MODULE_CASES: ToolCase[] = [
     name: "експорт даних модуля",
     user: "Вивантаж мені всі мої тренування текстом, хочу зберегти",
     accept: ["export_module_data"],
+  },
+  {
+    // `recall_memory` не містить сирих записів їжі: правильний шлях - query_*.
+    name: "що я їв раніше (сирі дані, не памʼять)",
+    user: "Нагадай, що я їв позавчора",
+    accept: ["query_nutrition"],
   },
 ];

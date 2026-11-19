@@ -21,14 +21,19 @@
  */
 import type { ComponentProps, Dispatch, SetStateAction } from "react";
 import type {
+  Meal,
   MealTemplate,
+  MealTypeId,
   NutritionPrefs,
   PantryItem,
 } from "@sergeant/nutrition-domain";
+import type { SavedRecipe } from "../../lib/recipeBook";
 import type { QuickChip } from "../../hooks/useNutritionQuickChips";
 import type { MealFormState } from "./mealFormUtils";
 import { useState } from "react";
+import { pluralUa } from "@sergeant/shared";
 import { messages } from "@shared/i18n/uk";
+import { nutritionMealFeedbackMessages as FEEDBACK } from "@shared/i18n/uk.nutritionMealFeedback";
 import { Button } from "@shared/components/ui/Button";
 import { MyFoodsSheet } from "../MyFoodsSheet";
 import { CollapsibleSection } from "@shared/components/ui/CollapsibleSection";
@@ -38,6 +43,8 @@ import { FromPantryRow } from "./FromPantryRow";
 import type { MealSourcePick } from "./useMealSourcePick";
 import { MealTemplatesRow } from "./MealTemplatesRow";
 import { QuickAddChips } from "../QuickAddChips";
+import { RecipesFromBookRow } from "./RecipesFromBookRow";
+import { RecipeLogSheet } from "./RecipeLogSheet";
 
 interface SearchTabPanelProps {
   mealTemplates: MealTemplate[];
@@ -57,6 +64,12 @@ interface SearchTabPanelProps {
   setFromPantryItem: Dispatch<SetStateAction<string | null>>;
   /** Props пошуку йдуть групою — вони належать одному компоненту. */
   picker: ComponentProps<typeof FoodPickerSection>;
+  /** «Мої рецепти» (OD-27 Х-3 в); порожньо — блоку немає. */
+  savedRecipes?: readonly SavedRecipe[] | undefined;
+  /** Тип прийому, з яким рецепт ляже в журнал (`quickMealType`). */
+  recipeMealType?: MealTypeId | undefined;
+  /** Рецепт записано: аркуш прийому закривається. */
+  onRecipeLogged?: ((meal: Meal) => void) | undefined;
 }
 
 export function SearchTabPanel({
@@ -73,8 +86,12 @@ export function SearchTabPanel({
   fromPantryItem,
   setFromPantryItem,
   picker,
+  savedRecipes = [],
+  recipeMealType = "snack",
+  onRecipeLogged,
 }: SearchTabPanelProps) {
   const [myFoodsOpen, setMyFoodsOpen] = useState(false);
+  const [recipeToLog, setRecipeToLog] = useState<SavedRecipe | null>(null);
   return (
     <>
       <FoodPickerSection {...picker} />
@@ -97,7 +114,10 @@ export function SearchTabPanel({
           // сніданок — найкоротший шлях у цьому аркуші, і згорнути його
           // означало б додати клік саме туди, де їх і так найменше.
           defaultOpen
-          collapsedSubtitle={`${quickChips.length} прийомів`}
+          collapsedSubtitle={pluralUa(
+            quickChips.length,
+            FEEDBACK.recentCount,
+          ).replace("{n}", String(quickChips.length))}
           className="mb-4 min-w-0"
         >
           <QuickAddChips
@@ -108,6 +128,10 @@ export function SearchTabPanel({
             }}
           />
         </CollapsibleSection>
+      )}
+
+      {onRecipeLogged && (
+        <RecipesFromBookRow recipes={savedRecipes} onPick={setRecipeToLog} />
       )}
 
       {pantryItems.length > 0 && (
@@ -135,6 +159,17 @@ export function SearchTabPanel({
         onClose={() => setMyFoodsOpen(false)}
         zIndex={130}
       />
+      {onRecipeLogged && (
+        <RecipeLogSheet
+          recipe={recipeToLog}
+          mealType={recipeMealType}
+          onClose={() => setRecipeToLog(null)}
+          onLog={(meal) => {
+            setRecipeToLog(null);
+            onRecipeLogged(meal);
+          }}
+        />
+      )}
     </>
   );
 }

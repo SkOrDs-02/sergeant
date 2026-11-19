@@ -28,6 +28,7 @@ import { createHttpClient } from "../../httpClient";
 import {
   billingCheckoutConflictCode,
   createBillingEndpoints,
+  manualAccessConflictCode,
 } from "../../endpoints/billing";
 import { CONTRACT_SUITE_OPTIONS, createPact } from "./_pact";
 
@@ -292,6 +293,124 @@ describe(
             resetsAt: "2026-06-14T21:00:00.000Z",
           });
           expect(typeof out.access.meters.aiPhoto.used).toBe("number");
+          // Старий сервер поля не віддає: пейвол лишається як був.
+          expect(out.access.manualAccess).toBeUndefined();
+        });
+    });
+
+    // Ручний Premium (спека manual-premium-request.md): стан запиту їде в
+    // знімку, окремого GET немає.
+    it("returns the manual-access state inside the access snapshot", async () => {
+      await pact
+        .addInteraction()
+        .given("user-pact-002 is free and manual access is open")
+        .uponReceiving("a GET /api/v1/billing/status request (manual access)")
+        .withRequest("GET", "/api/v1/billing/status", (req) => {
+          req.headers({ accept: "application/json" });
+        })
+        .willRespondWith(200, (res) => {
+          res.headers({ "content-type": "application/json" });
+          res.jsonBody({
+            subscription: {
+              id: null,
+              provider: null,
+              plan: null,
+              status: null,
+              active: false,
+              currentPeriodEnd: null,
+              cancelAtPeriodEnd: false,
+            },
+            access: {
+              ...accessSnapshot("free"),
+              manualAccess: { available: true, requestedAt: null },
+            },
+          });
+        })
+        .executeTest(async (mockServer) => {
+          const http = createHttpClient({ baseUrl: mockServer.url });
+          const billing = createBillingEndpoints(http);
+          const out = await billing.status();
+          expect(out.access.manualAccess).toEqual({
+            available: true,
+            requestedAt: null,
+          });
+        });
+    });
+  },
+);
+
+describe(
+  "contract @ POST /api/v1/billing/manual-access",
+  CONTRACT_SUITE_OPTIONS,
+  () => {
+    let pact: PactV4;
+    beforeAll(() => {
+      pact = createPact();
+    });
+    afterAll(() => {});
+
+    it("records the request and returns requestedAt", async () => {
+      await pact
+        .addInteraction()
+        .given("user-pact-002 is free and manual access is open")
+        .uponReceiving("a POST /api/v1/billing/manual-access request")
+        .withRequest("POST", "/api/v1/billing/manual-access", (req) => {
+          req.headers({
+            accept: "application/json",
+            "content-type": "application/json",
+          });
+          req.jsonBody({ surface: "unlimited_ai_photo" });
+        })
+        .willRespondWith(200, (res) => {
+          res.headers({ "content-type": "application/json" });
+          res.jsonBody({ ok: true, requestedAt: "2026-11-18T10:00:00.000Z" });
+        })
+        .executeTest(async (mockServer) => {
+          const http = createHttpClient({ baseUrl: mockServer.url });
+          const billing = createBillingEndpoints(http);
+          const out = await billing.requestManualAccess({
+            surface: "unlimited_ai_photo",
+          });
+          expect(out).toEqual({
+            ok: true,
+            requestedAt: "2026-11-18T10:00:00.000Z",
+          });
+        });
+    });
+
+    it("rejects with 409 MANUAL_ACCESS_ALREADY_REQUESTED on the second request", async () => {
+      await pact
+        .addInteraction()
+        .given("user-pact-002 already requested manual access")
+        .uponReceiving("a POST /api/v1/billing/manual-access request (repeat)")
+        .withRequest("POST", "/api/v1/billing/manual-access", (req) => {
+          req.headers({
+            accept: "application/json",
+            "content-type": "application/json",
+          });
+          req.jsonBody({ surface: "week_plan" });
+        })
+        .willRespondWith(409, (res) => {
+          res.headers({ "content-type": "application/json" });
+          res.jsonBody({
+            error: "Manual access was already requested",
+            code: "MANUAL_ACCESS_ALREADY_REQUESTED",
+          });
+        })
+        .executeTest(async (mockServer) => {
+          const http = createHttpClient({ baseUrl: mockServer.url });
+          const billing = createBillingEndpoints(http);
+          let caught: unknown;
+          try {
+            await billing.requestManualAccess({ surface: "week_plan" });
+          } catch (err) {
+            caught = err;
+          }
+          expect(manualAccessConflictCode(caught)).toBe(
+            "MANUAL_ACCESS_ALREADY_REQUESTED",
+          );
+          // Чужий 409-код хелпер не плутає з кодом checkout-у.
+          expect(billingCheckoutConflictCode(caught)).toBeNull();
         });
     });
   },

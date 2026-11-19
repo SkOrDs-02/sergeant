@@ -5,7 +5,11 @@ import {
   getCachedFinykSqliteState,
 } from "../../../../modules/finyk/lib/sqliteReader";
 
-vi.mock("./dualWriteBridge", () => ({ finykChatWrite: vi.fn() }));
+// Справжній міст завжди повертає `Promise<boolean>`; на ньому `createTransaction`
+// чекає запис перед подією для Рутини.
+vi.mock("./dualWriteBridge", () => ({
+  finykChatWrite: vi.fn(() => Promise.resolve(true)),
+}));
 vi.mock("../../../../modules/finyk/utils", () => ({
   resolveExpenseCategoryMeta: vi.fn(() => null),
 }));
@@ -25,6 +29,7 @@ vi.mock("./entityLookup", async (importOriginal) => ({
   finykCategoryExists: vi.fn(() => true),
 }));
 
+import { stripTechnicalIds } from "../../chatDisplayText";
 import { finykChatWrite } from "./dualWriteBridge";
 import { resolveExpenseCategoryMeta } from "../../../../modules/finyk/utils";
 import {
@@ -66,6 +71,7 @@ function seedFinykCache(partial: Record<string, unknown>): void {
 
 beforeEach(() => {
   vi.clearAllMocks();
+  mockWrite.mockResolvedValue(true);
   // data-08: стан читається з прогрітого кешу SQLite (не з kv) — тести
   // перезасівають його через `__setFinykSqliteStateCacheForTests`.
   mockResolveMeta.mockReturnValue(null);
@@ -258,6 +264,18 @@ describe("hideTransaction", () => {
     expect(mockWrite).toHaveBeenCalledWith("finyk_hidden_txs", ["manual_tx1"]);
   });
 
+  // Перевірка першої хвилі 2026-11-18: людина бачила лише id. Підпис
+  // операції (опис і сума) тепер у результаті, id лишається моделі в `(id:…)`.
+  it("називає операцію людським підписом, а id тримає лише в (id:…)", () => {
+    const out = hideTransaction({
+      name: "hide_transaction",
+      input: { tx_id: "tx1" },
+    });
+    expect(out).toBe(
+      "Операцію «АТБ» на 80 грн приховано зі статистики (id:tx1)",
+    );
+  });
+
   it("банківську операцію ховає за її власним id", () => {
     seedFinykCache({ manualExpenses: [] });
     hideTransaction({ name: "hide_transaction", input: { tx_id: "bank1" } });
@@ -299,6 +317,9 @@ describe("deleteTransaction", () => {
       input: { tx_id: "bank_123" },
     });
     expect(out).toContain("hide_transaction");
+    // id моделі — у `(id:…)`, звідки його вирізає показ (`chatDisplayText`).
+    expect(out).toContain("не видалено (id:bank_123)");
+    expect(stripTechnicalIds(String(out))).not.toContain("bank_123");
     expect(mockWrite).not.toHaveBeenCalled();
   });
 
@@ -309,6 +330,9 @@ describe("deleteTransaction", () => {
       input: { tx_id: "m_ghost" },
     });
     expect(out).toContain("не знайдено");
+    expect(stripTechnicalIds(String(out))).toBe(
+      "Операцію не знайдено, вже видалена.",
+    );
     expect(mockWrite).not.toHaveBeenCalled();
   });
 
@@ -323,8 +347,7 @@ describe("deleteTransaction", () => {
       name: "delete_transaction",
       input: { tx_id: "m_1" },
     });
-    expect(out).toContain("m_1");
-    expect(out).toContain("видалено");
+    expect(out).toBe("Операцію на 1 грн видалено (id:m_1)");
     expect(mockWrite).toHaveBeenCalledWith("finyk_manual_expenses_v1", [
       { id: "m_2", amount: 2, date: "2026-04-22" },
     ]);

@@ -127,6 +127,42 @@ describe("refreshFizrukSqliteState", () => {
     expect(cache.workouts[0]?.wellbeing).toEqual({ energy: 4, mood: 3 });
   });
 
+  // П-10: привʼязка до слоту програми проходить снапшот → колонку →
+  // адаптер → читач; пропуск будь-якої ланки мовчки ламає курсор програми.
+  it("привʼязка тренування до слоту програми переживає перечитування", async () => {
+    const base = {
+      startedAt: "2026-05-01T10:00:00Z",
+      endedAt: "2026-05-01T11:00:00Z",
+      items: [],
+      groups: [],
+      warmup: null,
+      cooldown: null,
+      note: "",
+    };
+    await applyFizrukDualWriteOps(
+      handle.client,
+      [
+        {
+          kind: "workout-upsert",
+          workout: {
+            ...base,
+            id: "w-prog",
+            programRef: { programId: "starting_strength", slot: 1 },
+          },
+        },
+        { kind: "workout-upsert", workout: { ...base, id: "w-free" } },
+      ],
+      { userId: UID, clientTs: TS, logger: silentLogger },
+    );
+    const cache = await refreshFizrukSqliteState(handle.client, UID);
+    const byId = new Map(cache.workouts.map((w) => [w.id, w]));
+    expect(byId.get("w-prog")?.programRef).toEqual({
+      programId: "starting_strength",
+      slot: 1,
+    });
+    expect(byId.get("w-free")).not.toHaveProperty("programRef");
+  });
+
   // Спека fizruk-readiness-check § Верифікація: обовʼязковий тест на
   // мовчазну втрату. Готовність і вибір варіанта проходять ЧОТИРИ ланки
   // (снапшот → колонка → адаптер → читач); пропуск будь-якої не ламає ані

@@ -18,13 +18,17 @@ const FIXED_NOW = new Date("2026-07-10T12:00:00Z");
 
 // habitCompletionRate: returns rate=1 for habit "h1", rate=0.5 for "h2",
 // rate=0.2 for "h3" — good enough to drive best/worst branches.
+const rateCalls = vi.hoisted(() => [] as unknown[][]);
+
 vi.mock("../lib/streaks", () => ({
   habitCompletionRate: (
     habit: Habit,
     _completions: string[],
     _start: string,
     _end: string,
+    opts?: unknown,
   ) => {
+    rateCalls.push([habit.id, opts]);
     const map: Record<
       string,
       { completed: number; scheduled: number; rate: number }
@@ -139,5 +143,24 @@ describe("HabitLeadersBlock", () => {
     expect(screen.getByText("Найстабільніша")).toBeInTheDocument();
     expect(screen.queryByText("Найслабша")).not.toBeInTheDocument();
     expect(screen.getByText(/Активна/)).toBeInTheDocument();
+  });
+  it("passes the habit's «не зміг» days so they leave the denominator (П-18 (А))", () => {
+    rateCalls.length = 0;
+    const sick = { reason: "sick" as const, at: "2026-07-09T08:00:00Z" };
+    render(
+      <HabitLeadersBlock
+        habits={[makeHabit("h1", "Вода"), makeHabit("h2", "Біг")]}
+        completions={{} as Completions}
+        skips={{ h2: { "2026-07-09": sick } }}
+      />,
+    );
+    expect(rateCalls).toContainEqual([
+      "h2",
+      { skips: { "2026-07-09": sick }, pausedFrom: "2026-07-10" },
+    ]);
+    expect(rateCalls).toContainEqual([
+      "h1",
+      { skips: undefined, pausedFrom: "2026-07-10" },
+    ]);
   });
 });

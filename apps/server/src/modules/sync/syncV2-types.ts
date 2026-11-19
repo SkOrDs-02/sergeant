@@ -165,6 +165,23 @@ export const APPLY_REJECT_REASONS = [
   // мусить нести `prefs_json` як JSON-обʼєкт (патч верхніх ключів). Масив,
   // скаляр чи нерозбірний рядок злити нема з чим.
   "invalid_prefs_patch",
+  // Міграція 170 (Р-1 (а) і (в), Рутина): лічильник і автовідмітка звички.
+  // `count_target` — ціле ≥ 1 або null; `count_unit` — рядок або null;
+  // `auto_mark_source` — закритий список трьох джерел або null
+  // (`habitCounterFields.ts`). `routine_habit_counts`: `count` — ціле ≥ 0,
+  // `id` мусить дорівнювати `habit_id__date_key` (`applyHabitCounts.ts`).
+  "invalid_count_target",
+  "invalid_count_unit",
+  "invalid_auto_mark_source",
+  "invalid_count",
+  "invalid_count_key",
+  // Міграція 171 (Фізрук, П-10): `program_id` / `program_slot` тренування —
+  // обидва NULL або рядок + ціле ≥ 0 (хендлер `fizruk/applySync.ts`).
+  "invalid_program_ref",
+  // Міграція 172 (Фізрук, тип виміру): `measure` вправи поза
+  // `EXERCISE_MEASURES` (`fizruk/setMeasureFields.ts`). Секунди й метри
+  // підходу йдуть наявними `invalid_duration_sec` / `invalid_distance_m`.
+  "invalid_measure",
 ] as const;
 
 export type ApplyRejectReason = (typeof APPLY_REJECT_REASONS)[number];

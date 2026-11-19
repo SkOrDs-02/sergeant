@@ -9,11 +9,13 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 const lookupFoodByBarcodeMock = vi.fn();
 const bindBarcodeToFoodMock = vi.fn();
+const bindIfFreeMock = vi.fn();
 const lookupProductMock = vi.fn();
 
 vi.mock("../../lib/foodDb/foodDb", () => ({
   lookupFoodByBarcode: (...a: unknown[]) => lookupFoodByBarcodeMock(...a),
   bindBarcodeToFood: (...a: unknown[]) => bindBarcodeToFoodMock(...a),
+  bindBarcodeToFoodIfFree: (...a: unknown[]) => bindIfFreeMock(...a),
 }));
 
 vi.mock("../../hooks/useBarcodeProduct", () => ({
@@ -47,6 +49,7 @@ function setup(pickedFood: { id?: string } | null = null) {
 beforeEach(() => {
   lookupFoodByBarcodeMock.mockReset();
   bindBarcodeToFoodMock.mockReset();
+  bindIfFreeMock.mockReset();
   lookupProductMock.mockReset();
 });
 
@@ -265,5 +268,64 @@ describe("handleBarcodeBind", () => {
       "4820000000001",
       "food_1",
     );
+  });
+});
+
+describe("незнайдений штрихкод → свій продукт (OD-27 Х-5)", () => {
+  const CODE = "4820024700016";
+  const own = { id: "food_yogurt", name: "Йогурт", origin: "user" as const };
+
+  async function missed() {
+    const view = setup();
+    lookupFoodByBarcodeMock.mockResolvedValue(null);
+    lookupProductMock.mockResolvedValue(null);
+    act(() => view.result.current.setBarcode(CODE));
+    await act(async () => {
+      await view.result.current.handleBarcodeLookup(CODE);
+    });
+    return view;
+  }
+
+  it("свій збережений продукт: рядок-намір і привʼязка без перезапису", async () => {
+    const { result } = await missed();
+    expect(result.current.pendingBarcodeBind(own)).toBe(CODE);
+    act(() => result.current.bindMissedBarcode(own));
+    expect(bindIfFreeMock).toHaveBeenCalledWith(CODE, "food_yogurt");
+    expect(bindBarcodeToFoodMock).not.toHaveBeenCalled();
+  });
+
+  it("«Скасувати» знімає намір: ні рядка, ні привʼязки", async () => {
+    const { result } = await missed();
+    act(() => result.current.declineBarcodeBind(own));
+    expect(result.current.pendingBarcodeBind(own)).toBeNull();
+    act(() => result.current.bindMissedBarcode(own));
+    expect(bindIfFreeMock).not.toHaveBeenCalled();
+  });
+
+  it("базовий, зовнішній і продукт без origin: рядка немає", async () => {
+    const { result } = await missed();
+    expect(
+      result.current.pendingBarcodeBind({ id: "gen_banan", origin: "seed" }),
+    ).toBeNull();
+    expect(result.current.pendingBarcodeBind({ id: "off_123" })).toBeNull();
+    expect(
+      result.current.pendingBarcodeBind({
+        id: "gen_x",
+        origin: "user",
+      }),
+    ).toBeNull();
+  });
+
+  it("продукт з етикетки привʼязується як раніше, без рядка", async () => {
+    const { result } = await missed();
+    const created = { id: "food_new", origin: "user" as const, unsaved: true };
+    expect(result.current.pendingBarcodeBind(created)).toBeNull();
+    act(() => result.current.bindMissedBarcode(created));
+    expect(bindBarcodeToFoodMock).toHaveBeenCalledWith(CODE, "food_new");
+  });
+
+  it("без промаху скану рядка немає", () => {
+    const { result } = setup();
+    expect(result.current.pendingBarcodeBind(own)).toBeNull();
   });
 });

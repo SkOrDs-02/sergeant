@@ -21,6 +21,8 @@ import type { ModuleAccent } from "@sergeant/design-tokens";
 export const coachKeys = {
   all: ["coach"] as const,
   insight: (dayKey: string) => ["coach", "insight", dayKey] as const,
+  /** `GET /api/coach/memory`: серверна копія звітів тижня (С-3 (а)). */
+  memory: ["coach", "memory"] as const,
 };
 
 // ─── Weekly digest ────────────────────────────────────────────────────────
@@ -28,6 +30,9 @@ export const digestKeys = {
   all: ["weekly-digest"] as const,
   history: ["weekly-digest", "history"] as const,
   byWeek: (weekKey: string) => ["weekly-digest", weekKey] as const,
+  /** Ключ МУТАЦІЇ генерації звіту тижня (стан «звіт збирається», С-3 (а)). */
+  generate: (weekKey: string) =>
+    ["weekly-digest", "generate", weekKey] as const,
 };
 
 // ─── Nutrition ────────────────────────────────────────────────────────────

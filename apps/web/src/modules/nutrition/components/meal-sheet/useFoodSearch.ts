@@ -1,5 +1,5 @@
 /**
- * Last validated: 2026-06-15
+ * Last validated: 2026-11-18
  * Status: Active
  */
 import { useState, type Dispatch, type SetStateAction } from "react";
@@ -9,6 +9,7 @@ import { foodSearchApi } from "@shared/api";
 import type { FoodSearchProduct } from "@shared/api";
 import { nutritionKeys } from "@shared/lib/api/queryKeys";
 import { searchFoods } from "../../lib/foodDb/foodDb";
+import { ensureSeedFoodsOnce } from "../../lib/foodDb/seedFoodsOnce";
 import type { FoodProduct } from "../../lib/foodDb/foodDb";
 
 const LOCAL_DEBOUNCE_MS = 180;
@@ -73,7 +74,13 @@ export function useFoodSearch(foodQuery: string): UseFoodSearchResult {
 
   const local = useQuery<FoodProduct[]>({
     queryKey: nutritionKeys.foodSearchLocal(localQuery),
-    queryFn: () => searchFoods(localQuery, 8),
+    // Засів бази — тут, а не на відкритті якогось одного аркуша: інакше
+    // конструктор страви на свіжому пристрої шукав у порожній базі
+    // (зйомка 2026-11-18). Один прогін на сесію, `seedFoodsOnce.ts`.
+    queryFn: async () => {
+      await ensureSeedFoodsOnce();
+      return searchFoods(localQuery, 8);
+    },
     enabled: localQuery.length > 0,
     staleTime: 5 * 60_000,
   });

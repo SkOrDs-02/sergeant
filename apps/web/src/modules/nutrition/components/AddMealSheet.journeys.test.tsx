@@ -12,6 +12,7 @@ import { useState, type ComponentProps } from "react";
 import type { Meal } from "@sergeant/nutrition-domain";
 import type { NutritionPhotoItem, NutritionPhotoResult } from "@shared/api";
 import { AddMealSheet } from "./AddMealSheet";
+import { bindBarcodeToFood } from "../lib/foodDb/foodDb";
 import { Sheet } from "@shared/components/ui/Sheet";
 import { nutritionKeys } from "@shared/lib/api/queryKeys";
 
@@ -47,6 +48,8 @@ vi.mock("../lib/foodDb/foodDb", async (original) => ({
   ensureSeedFoods: vi.fn(async () => {}),
   getFoodById: vi.fn(async () => product),
   lookupFoodByBarcode: vi.fn(async () => null),
+  bindBarcodeToFood: vi.fn(async () => true),
+  upsertFood: vi.fn(async () => ({ ok: true })),
 }));
 vi.mock("./meal-sheet/useFoodSearch", () => ({ useFoodSearch: () => search }));
 vi.mock("./BarcodeScanner", () => ({
@@ -340,6 +343,136 @@ describe("AddMealSheet — complete edit and photo journeys", () => {
       macroSource: "manual",
       macros: { kcal: 500 },
     });
+  });
+
+  // Цикл «скан → не знайдено → додано» (канон §6): штрихкод, який не
+  // знайшовся, привʼязується до власного продукту, з яким людина записала
+  // прийом у тому ж аркуші. Привʼязка локальна (приватний внесок).
+  it("привʼязує незнайдений штрихкод до продукту, створеного з етикетки", async () => {
+    const { onSave } = renderJourney({ initialSourceTab: "scan" });
+    fireEvent.click(
+      await screen.findByRole("button", { name: "Зчитати невідомий штрихкод" }),
+    );
+    await screen.findByText("Продукт не знайдено");
+    fireEvent.click(screen.getByRole("button", { name: "Ввести вручну" }));
+    fireEvent.click(screen.getByRole("button", { name: /На 100 г/ }));
+    fireEvent.change(screen.getByLabelText("Назва продукту"), {
+      target: { value: "Кефір 2.5%" },
+    });
+    fireEvent.change(screen.getByLabelText("Ккал / 100 г"), {
+      target: { value: "53" },
+    });
+    fireEvent.click(screen.getByRole("button", { name: "Далі" }));
+    fireEvent.click(screen.getByRole("button", { name: "Додати прийом" }));
+    await waitFor(() => expect(onSave).toHaveBeenCalledTimes(1));
+    const saved = onSave.mock.calls[0]![0] as Meal;
+    expect(saved.foodId).toBeTruthy();
+    expect(bindBarcodeToFood).toHaveBeenCalledWith(
+      "4820000000000",
+      saved.foodId,
+    );
+  });
+
+  /** Скан → «не знайдено» → вибір наявного продукту в пошуку → запис. */
+  async function missThenPickFromSearch(name: RegExp) {
+    const { onSave } = renderJourney({ initialSourceTab: "scan" });
+    fireEvent.click(
+      await screen.findByRole("button", { name: "Зчитати невідомий штрихкод" }),
+    );
+    await screen.findByText("Продукт не знайдено");
+    fireEvent.click(
+      screen.getByRole("button", { name: "Змінити спосіб додавання" }),
+    );
+    const chooser = screen.getByRole("navigation", {
+      name: "Спосіб додавання їжі",
+    });
+    fireEvent.click(
+      within(chooser).getByRole("button", { name: "Пошук продукту" }),
+    );
+    fireEvent.click(screen.getByRole("button", { name }));
+    fireEvent.click(screen.getByRole("button", { name: "Додати прийом" }));
+    await waitFor(() => expect(onSave).toHaveBeenCalledTimes(1));
+  }
+
+  // Наявний свій продукт — неоднозначний випадок: людина могла кинути скан
+  // і записати щось інше, а хибну привʼязку в UI не скасувати. Поки власник
+  // не вирішив (рядок-підтвердження на «fill» чи перепривʼязка в «Мої
+  // продукти»), привʼязки тут немає.
+  it("не привʼязує незнайдений штрихкод до наявного свого продукту з пошуку", async () => {
+    await missThenPickFromSearch(/Йогурт/);
+    expect(bindBarcodeToFood).not.toHaveBeenCalled();
+  });
+
+  it("не привʼязує незнайдений штрихкод до базового продукту", async () => {
+    const seed = {
+      ...product,
+      id: "gen_kefir",
+      name: "Кефір",
+      norm: "кефір",
+      origin: "seed" as const,
+    };
+    const previous = search.foodHits;
+    search.foodHits = [seed];
+    try {
+      await missThenPickFromSearch(/Кефір/);
+    } finally {
+      search.foodHits = previous;
+    }
+    expect(bindBarcodeToFood).not.toHaveBeenCalled();
+  });
+
+  it("промах минулого відкриття аркуша не привʼязується до нового запису", async () => {
+    const onSave = vi.fn();
+    const client = new QueryClient({
+      defaultOptions: { queries: { retry: false } },
+    });
+    client.setQueryData(nutritionKeys.barcode("4820000000000"), null);
+    const sheet = (open: boolean) => (
+      <QueryClientProvider client={client}>
+        <AddMealSheet
+          open={open}
+          onClose={vi.fn()}
+          onSave={onSave}
+          initialSourceTab="scan"
+        />
+      </QueryClientProvider>
+    );
+    const { rerender } = render(sheet(true));
+    fireEvent.click(
+      await screen.findByRole("button", { name: "Зчитати невідомий штрихкод" }),
+    );
+    await screen.findByText("Продукт не знайдено");
+    rerender(sheet(false));
+    rerender(sheet(true));
+    // Новий продукт з етикетки, але вже в іншому відкритті аркуша: промах
+    // минулого відкриття до нього не стосується.
+    fireEvent.click(
+      screen.getByRole("button", { name: "Змінити спосіб додавання" }),
+    );
+    fireEvent.click(
+      within(
+        screen.getByRole("navigation", { name: "Спосіб додавання їжі" }),
+      ).getByRole("button", { name: "Ввести вручну" }),
+    );
+    fireEvent.click(screen.getByRole("button", { name: /На 100 г/ }));
+    fireEvent.change(screen.getByLabelText("Назва продукту"), {
+      target: { value: "Ряжанка" },
+    });
+    fireEvent.change(screen.getByLabelText("Ккал / 100 г"), {
+      target: { value: "85" },
+    });
+    fireEvent.click(screen.getByRole("button", { name: "Далі" }));
+    fireEvent.click(screen.getByRole("button", { name: "Додати прийом" }));
+    await waitFor(() => expect(onSave).toHaveBeenCalledTimes(1));
+    expect(bindBarcodeToFood).not.toHaveBeenCalled();
+  });
+
+  it("без промаху штрихкоду нічого не привʼязує", async () => {
+    const { onSave } = renderJourney({ initialSourceTab: "search" });
+    fireEvent.click(screen.getByRole("button", { name: /Йогурт/ }));
+    fireEvent.click(screen.getByRole("button", { name: "Додати прийом" }));
+    await waitFor(() => expect(onSave).toHaveBeenCalledTimes(1));
+    expect(bindBarcodeToFood).not.toHaveBeenCalled();
   });
 
   it("shows photo items as read-only and returns to the retained item editor", async () => {

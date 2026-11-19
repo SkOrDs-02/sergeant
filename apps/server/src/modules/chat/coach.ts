@@ -90,7 +90,7 @@ interface IncomingMemory {
   };
 }
 
-async function getMemory(userId: string): Promise<CoachMemory | null> {
+export async function getMemory(userId: string): Promise<CoachMemory | null> {
   // EXPLAIN ANALYZE: Index Scan using coach_memory_pkey на PRIMARY KEY
   //   (user_id) — point-lookup, O(log N), < 1мс.
   // До 2026-05-06 row жив у `module_data WHERE module='coach'`; перенесено

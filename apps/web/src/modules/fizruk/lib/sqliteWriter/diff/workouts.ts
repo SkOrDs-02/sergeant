@@ -53,6 +53,8 @@ export interface FizrukWorkoutSnapshot {
   } | null;
   /** Оцінка витрат, ккал. `null` - оцінювати нічим (немає ваги). */
   readonly kcalBurned?: number | null;
+  /** Слот програми (П-10, міграції 171 / 009). `null` = поза програмою. */
+  readonly programRef?: { programId: string; slot: number } | null;
   readonly [extra: string]: unknown;
 }
 
@@ -98,7 +100,8 @@ function workoutChanged(
     !snapshotValueEqual(prev.groups, next.groups) ||
     !snapshotValueEqual(prev.warmup, next.warmup) ||
     !snapshotValueEqual(prev.cooldown, next.cooldown) ||
-    !snapshotValueEqual(prev.wellbeing, next.wellbeing)
+    !snapshotValueEqual(prev.wellbeing, next.wellbeing) ||
+    !snapshotValueEqual(prev.programRef ?? null, next.programRef ?? null)
   );
 }
 

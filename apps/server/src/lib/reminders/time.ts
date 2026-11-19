@@ -1,29 +1,56 @@
 /**
- * Київський час для reminder-sweep-у.
+ * Час доби для reminder-sweep-у: у поясі людини і за Києвом.
  *
- * Domain invariant (AGENTS.md): усі межі доби рахуються в Europe/Kyiv, ніколи
- * не в UTC і не в локальній зоні контейнера. Контейнер у Coolify стоїть на
- * UTC, тож без явної зони нагадування о 00:30 їхали б у попередній день.
+ * Межі доби ніколи не рахуються в UTC чи в локальній зоні контейнера
+ * (Coolify стоїть на UTC). Нагадування, тихі години і нудж рахуються в
+ * збереженому поясі пристрою людини (`user_preferences.time_zone`,
+ * спека `notifications-quiet-hours-and-device-time.md`, ADR-0078); пояс
+ * невідомий = Europe/Kyiv. Серверні звіти й ретеншн журналу лишаються на
+ * Києві (`kyiv*` нижче).
  *
  * Формат `HH:MM` тут — та сама вісь, якою мислить клієнт
- * (`useModuleReminder` віддає `hm` у Kyiv-local), тож рядки з
+ * (`useModuleReminder` віддає `hm` за годинником пристрою), тож рядки з
  * `routine_habits.reminder_times` порівнюються напряму.
  */
 
-/** Київський day-key `YYYY-MM-DD`. */
-export function kyivDayKey(at: Date): string {
+/** Пояс, яким читається людина без збереженого поясу. */
+export const FALLBACK_TIME_ZONE = "Europe/Kyiv";
+
+/**
+ * Чи знає ICU цього процесу такий IANA-пояс. Список поясів змінюється з
+ * версією ICU, тому перевірка тут, а не CHECK у БД.
+ */
+export function isValidTimeZone(tz: string): boolean {
+  if (!tz) return false;
+  try {
+    new Intl.DateTimeFormat("en", { timeZone: tz });
+    return true;
+  } catch {
+    return false;
+  }
+}
+
+/** Збережений пояс або Київ, якщо пояс невідомий чи ICU його не знає. */
+export function resolveUserTimeZone(raw: unknown): string {
+  return typeof raw === "string" && isValidTimeZone(raw)
+    ? raw
+    : FALLBACK_TIME_ZONE;
+}
+
+/** Day-key `YYYY-MM-DD` у поясі `tz`. */
+export function dayKeyIn(at: Date, tz: string): string {
   return new Intl.DateTimeFormat("en-CA", {
-    timeZone: "Europe/Kyiv",
+    timeZone: tz,
     year: "numeric",
     month: "2-digit",
     day: "2-digit",
   }).format(at);
 }
 
-/** Київський час доби `HH:MM` у 24-годинному форматі. */
-export function kyivHm(at: Date): string {
+/** Час доби `HH:MM` (24 години) у поясі `tz`. */
+export function hmIn(at: Date, tz: string): string {
   const parts = new Intl.DateTimeFormat("en-GB", {
-    timeZone: "Europe/Kyiv",
+    timeZone: tz,
     hour: "2-digit",
     minute: "2-digit",
     hour12: false,
@@ -33,6 +60,56 @@ export function kyivHm(at: Date): string {
   const hour = Number(parts.find((p) => p.type === "hour")?.value ?? "0") % 24;
   const minute = parts.find((p) => p.type === "minute")?.value ?? "00";
   return `${String(hour).padStart(2, "0")}:${minute}`;
+}
+
+/** Київський day-key `YYYY-MM-DD`. */
+export function kyivDayKey(at: Date): string {
+  return dayKeyIn(at, FALLBACK_TIME_ZONE);
+}
+
+/** Київський час доби `HH:MM` у 24-годинному форматі. */
+export function kyivHm(at: Date): string {
+  return hmIn(at, FALLBACK_TIME_ZONE);
+}
+
+/** `HH:MM` → хвилина доби. */
+export function hmToMinute(hm: string): number {
+  const [h = 0, m = 0] = hm.split(":").map(Number);
+  return h * 60 + m;
+}
+
+/** Хвилина доби → `HH:MM`. */
+export function minuteToHm(minutes: number): string {
+  const h = Math.floor(minutes / 60);
+  const m = minutes % 60;
+  return `${String(h).padStart(2, "0")}:${String(m).padStart(2, "0")}`;
+}
+
+/**
+ * Тихі години людини: півінтервал [startMin, endMin) хвилин доби в її
+ * поясі. `null` = тихі години вимкнені, вікна немає.
+ */
+export interface QuietWindow {
+  startMin: number;
+  endMin: number;
+}
+
+/**
+ * Чи лежить хвилина доби в тихих годинах. Вікно може переходити через
+ * північ (22:00-08:00) і може не переходити (13:00-15:00); кінець не
+ * включно. Однакові межі БД відкидає CHECK-ом, тут вони дають «вікна
+ * немає».
+ */
+export function isInQuietWindow(
+  minuteOfDay: number,
+  quiet: { enabled: boolean; startMin: number; endMin: number },
+): boolean {
+  if (!quiet.enabled) return false;
+  const { startMin, endMin } = quiet;
+  if (startMin === endMin) return false;
+  return startMin < endMin
+    ? minuteOfDay >= startMin && minuteOfDay < endMin
+    : minuteOfDay >= startMin || minuteOfDay < endMin;
 }
 
 /**
@@ -57,12 +134,16 @@ const CATCH_UP_MINUTES = 10;
  * Без `lastSweepAt` (перший прохід процесу) вікно лише поточна хвилина.
  * Інша доба повертає "", тобто з початку доби: "" менше за будь-який HH:MM.
  */
-export function kyivCatchUpFromHm(now: Date, lastSweepAt: Date | null): string {
+export function catchUpFromHmIn(
+  now: Date,
+  lastSweepAt: Date | null,
+  tz: string,
+): string {
   const from = new Date(
     Math.max(
       lastSweepAt?.getTime() ?? now.getTime() - 60_000,
       now.getTime() - CATCH_UP_MINUTES * 60_000,
     ),
   );
-  return kyivDayKey(from) === kyivDayKey(now) ? kyivHm(from) : "";
+  return dayKeyIn(from, tz) === dayKeyIn(now, tz) ? hmIn(from, tz) : "";
 }

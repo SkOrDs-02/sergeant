@@ -10,6 +10,7 @@ import {
 } from "@sergeant/shared";
 import { getWeeklyUsage } from "../chat/aiQuota.js";
 import { accessStateOf, getUserPlan } from "./getUserPlan.js";
+import { manualAccessStatus } from "./manualAccess.js";
 
 /**
  * Знімок доступу для `GET /api/billing/status` (спека
@@ -27,6 +28,9 @@ export async function buildAccessSnapshot(
   const tier = state === "free" ? "free" : "pro";
   const usage = await getWeeklyUsage(userId);
   const resetsAt = new Date(nextWeekStartKyivMs(now)).toISOString();
+  // Запит ручного Premium (спека manual-premium-request.md): окремого GET
+  // немає, стан їде в знімку.
+  const manualAccess = await manualAccessStatus(pool, userId);
   const meter = (used: number, feature: FeatureId): BillingMeter => ({
     used,
     limit: weeklyLimit(tier, feature),
@@ -47,5 +51,6 @@ export async function buildAccessSnapshot(
       aiPhoto: meter(usage.photo, "ai.photo"),
       finykVision: meter(usage["finyk-vision"], "ai.finykVision"),
     },
+    manualAccess,
   };
 }

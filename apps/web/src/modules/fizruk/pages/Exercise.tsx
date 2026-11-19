@@ -2,6 +2,7 @@
  * Last validated: 2026-05-14
  * Status: Active
  */
+import { formatMeasureSets } from "../lib/measureFormat";
 import { useMemo, useState } from "react";
 import type { FizrukPage } from "../shell/fizrukRoute";
 import { SectionHeading } from "@shared/components/ui/SectionHeading";
@@ -485,33 +486,34 @@ export function Exercise({ exerciseId, onNavigate }: ExerciseProps) {
                       </div>
                     </div>
                     <div className="text-sm text-text mt-2">
-                      {item.type === "strength"
-                        ? (item.sets || [])
-                            .map(
-                              (s) =>
-                                `${fmtLoose(s.weightKg ?? 0)}×${s.reps ?? 0}`,
-                            )
-                            .join(", ") || "—"
-                        : item.type === "distance"
-                          ? (() => {
-                              const dist = Number(item.distanceM) || 0;
-                              const dur = Number(item.durationSec) || 0;
-                              const base = `${dist} м за ${formatDurShort(dur)}`;
-                              if (dist > 0 && dur > 0) {
-                                const distKm = dist / 1000;
-                                const paceMinKm = dur / 60 / distKm;
-                                let pm = Math.floor(paceMinKm);
-                                let ps = Math.round((paceMinKm - pm) * 60);
-                                if (ps >= 60) {
-                                  pm += 1;
-                                  ps = 0;
+                      {formatMeasureSets(item) ??
+                        (item.type === "strength"
+                          ? (item.sets || [])
+                              .map(
+                                (s) =>
+                                  `${fmtLoose(s.weightKg ?? 0)}×${s.reps ?? 0}`,
+                              )
+                              .join(", ") || "—"
+                          : item.type === "distance"
+                            ? (() => {
+                                const dist = Number(item.distanceM) || 0;
+                                const dur = Number(item.durationSec) || 0;
+                                const base = `${dist} м за ${formatDurShort(dur)}`;
+                                if (dist > 0 && dur > 0) {
+                                  const distKm = dist / 1000;
+                                  const paceMinKm = dur / 60 / distKm;
+                                  let pm = Math.floor(paceMinKm);
+                                  let ps = Math.round((paceMinKm - pm) * 60);
+                                  if (ps >= 60) {
+                                    pm += 1;
+                                    ps = 0;
+                                  }
+                                  const speed = fmt(distKm / (dur / 3600), 1);
+                                  return `${base} · ${pm}:${String(ps).padStart(2, "0")}\u202Fхв/км · ${speed}\u202Fкм/год`;
                                 }
-                                const speed = fmt(distKm / (dur / 3600), 1);
-                                return `${base} · ${pm}:${String(ps).padStart(2, "0")}\u202Fхв/км · ${speed}\u202Fкм/год`;
-                              }
-                              return base;
-                            })()
-                          : formatDurShort(item.durationSec ?? 0)}
+                                return base;
+                              })()
+                            : formatDurShort(item.durationSec ?? 0))}
                     </div>
                   </div>
                 ))}

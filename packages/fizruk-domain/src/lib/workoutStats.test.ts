@@ -209,6 +209,20 @@ describe("weeklyVolumeSeriesNow", () => {
     expect(volumeKg).toEqual([300, 0, 400, 0, 0, 0, 0]);
   });
 
+  // Графік не має малювати майбутні дні тижня нулями: лінія падала в 0 після
+  // «сьогодні» і читалась як провал (скрин /fizruk/progress, 2026-11-17).
+  it("повертає індекс сьогоднішнього дня в київському тижні", () => {
+    vi.useFakeTimers();
+    vi.setSystemTime(new Date("2026-06-10T12:00:00Z")); // Ср
+    expect(weeklyVolumeSeriesNow([]).todayIndex).toBe(2);
+
+    vi.setSystemTime(new Date("2026-06-07T21:30:00Z")); // Пн 00:30 Київ
+    expect(weeklyVolumeSeriesNow([]).todayIndex).toBe(0);
+
+    vi.setSystemTime(new Date("2026-06-14T20:30:00Z")); // Нд 23:30 Київ
+    expect(weeklyVolumeSeriesNow([]).todayIndex).toBe(6);
+  });
+
   // DST week: Kyiv springs forward Sun 2026-03-29 03:00 EET → 04:00 EEST,
   // so the week Mon 2026-03-23 .. Sun 2026-03-29 is 167 hours long.
   it("buckets days correctly across the spring-forward DST week", () => {

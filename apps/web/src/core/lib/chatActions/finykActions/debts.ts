@@ -100,7 +100,7 @@ export function markDebtPaid(action: MarkDebtPaidAction): ChatActionResult {
   if (!cache) return FINYK_COLD_CACHE_MESSAGE;
   const debts = [...(cache.manualDebts as Debt[])];
   const idx = debts.findIndex((d) => d.id === id);
-  if (idx < 0) return `Борг ${id} не знайдено.`;
+  if (idx < 0) return `Борг не знайдено (id:${id}).`;
 
   const debt = { ...debts[idx]! };
   // Залишок рахуємо так само, як чат-контекст і UI (`txLinks` → сума).

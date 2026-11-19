@@ -34,6 +34,7 @@ import {
   readDayCollapse,
   writeDayCollapse,
 } from "./transactionsLib";
+import { filterTransactionsBySearch } from "./transactionSearch";
 
 /**
  * Current Kyiv-local `{ year, month0 }` (month is 0-indexed to match the
@@ -85,6 +86,9 @@ export interface UseTransactionFiltersParams {
    * a tapped `MonthStrip` cell. Anything else is ignored.
    */
   dayFilter?: string | null | undefined;
+  /** Нотатки й теги за id операції: джерела текстового пошуку (Ф-2 а). */
+  txNotes?: Readonly<Record<string, string | undefined>> | undefined;
+  txTags?: Readonly<Record<string, readonly string[]>> | undefined;
 }
 
 /**
@@ -122,8 +126,14 @@ export function useTransactionFilters({
   categoryRange,
   onClearCategoryFilter,
   dayFilter,
+  txNotes,
+  txTags,
 }: UseTransactionFiltersParams) {
   const [filter, setFilter] = useState("all");
+  // Ф-2 (а): запит живе, поки відкриті «Операції», і переживає зміну місяця:
+  // гортати місяці з тим самим «сільпо» і є спосіб знайти давню оплату.
+  // Скидається кнопкою очищення або виходом зі сторінки (unmount).
+  const [searchQuery, setSearchQuery] = useState("");
   const [rangeFilter, setRangeFilter] = useState<{
     fromKey: string;
     toKey: string;
@@ -435,8 +445,13 @@ export function useTransactionFilters({
         );
       return getEffectiveCat(t).id === effectiveFilter;
     });
-    perfEnd(m, { n: res.length });
-    return res;
+    // Пошук поверх вкладки-фільтра: логічне «і».
+    const searched = filterTransactionsBySearch(res, searchQuery, {
+      notes: txNotes,
+      tags: txTags,
+    });
+    perfEnd(m, { n: searched.length });
+    return searched;
   }, [
     sortedTxs,
     effectiveFilter,
@@ -444,7 +459,11 @@ export function useTransactionFilters({
     getEffectiveCat,
     dayFilter,
     kyivNow,
+    searchQuery,
+    txNotes,
+    txTags,
   ]);
+  const searchActive = searchQuery.trim() !== "";
 
   const groupedByDate = useMemo(() => {
     const m = perfMark("finyk:tx:groupByDate");
@@ -551,11 +570,15 @@ export function useTransactionFilters({
   // транзакцій — нічого не зникає, все одно тап розгортає.
   const collapsedKeys = useMemo(() => {
     const s = new Set<string>();
+    // Під пошуком дні зі збігами розгорнуті: інакше знайдене ховалось би в
+    // згорнутому заголовку. Overrides не чіпаємо, тож після очищення
+    // запиту згортання повертається таким, яким людина його лишила.
+    if (searchActive) return s;
     for (const g of groupedByDate) {
       if (!isDayExpanded(dayOverrides, g.key, todayDayKey)) s.add(g.key);
     }
     return s;
-  }, [groupedByDate, dayOverrides, todayDayKey]);
+  }, [groupedByDate, dayOverrides, todayDayKey, searchActive]);
 
   const groupCounts = useMemo(
     () =>
@@ -584,6 +607,9 @@ export function useTransactionFilters({
     monthNav: { monthLabel, isCurrentMonth, goMonth, monthsBack, recentMonths },
     rangeFilter,
     clearRangeFilter: () => setRangeFilter(null),
+    searchQuery,
+    setSearchQuery,
+    searchActive,
     // derived
     activeTx,
     activeLoading,

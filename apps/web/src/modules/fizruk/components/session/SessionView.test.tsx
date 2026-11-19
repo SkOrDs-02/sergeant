@@ -99,6 +99,7 @@ function renderView(
           activeDuration="12:34"
           lastByExerciseId={{}}
           recBy={{}}
+          injurySites={new Set<never>()}
           removeItem={removeItem}
           updateItem={updateItem}
           updateWorkout={updateWorkout}
@@ -236,6 +237,7 @@ describe("SessionView — list", () => {
             activeDuration="12:34"
             lastByExerciseId={{}}
             recBy={{}}
+            injurySites={new Set<never>()}
             removeItem={removeItem}
             updateItem={updateItem}
             updateWorkout={updateWorkout}
@@ -284,6 +286,37 @@ describe("SessionView — exercise screen", () => {
     expect(onOpenItem).toHaveBeenCalledWith("a");
   });
 
+  it("без ілюстрації в каталозі чи при збої завантаження порожнього слота немає (зйомка 2026-11-18)", () => {
+    renderView({ focusItemId: "b" });
+    // id «b» у каталозі ілюстрацій немає (як «Віс на перекладині»).
+    expect(document.querySelector("[data-exercise-thumb]")).toBeNull();
+    cleanup();
+    renderView({
+      focusItemId: "deadlift",
+      activeWorkout: workout({
+        items: [item("deadlift", "Станова тяга", [[0, 0]])],
+      }),
+    });
+    const thumb = document.querySelector("[data-exercise-thumb]");
+    expect(thumb).not.toBeNull();
+    fireEvent.error(thumb!.querySelector("img")!);
+    expect(document.querySelector("[data-exercise-thumb]")).toBeNull();
+  });
+
+  it("сусідні вправи виглядають як дія: шеврон у бік переходу (зйомка 2026-11-18)", () => {
+    renderView({ focusItemId: "b" });
+    const next = screen.getByRole("button", {
+      name: "Наступна вправа: Тяга штанги",
+    });
+    const prev = screen.getByRole("button", {
+      name: "Попередня вправа: Жим лежачи",
+    });
+    // Шеврон останнім у «наступній» і першим у «попередній».
+    expect(next.lastElementChild?.tagName.toLowerCase()).toBe("svg");
+    expect(prev.firstElementChild?.tagName.toLowerCase()).toBe("svg");
+    expect(next).toHaveTextContent("Тяга штанги");
+  });
+
   it("removes the exercise from the ⋯ menu and returns to the list", () => {
     renderView({ focusItemId: "b" });
     fireEvent.click(
@@ -307,7 +340,9 @@ describe("SessionView — exercise screen", () => {
 
   it("shows an undo toast after deleting a set and restores the snapshot", () => {
     renderView({ focusItemId: "a" });
-    fireEvent.click(screen.getByRole("button", { name: "Видалити підхід 1" }));
+    fireEvent.click(
+      screen.getByRole("button", { name: "Видалити підхід 1: Жим лежачи" }),
+    );
     expect(undoMocks.last?.msg).toBe("Підхід видалено");
     undoMocks.last?.onUndo();
     expect(updateItem).toHaveBeenLastCalledWith("w1", "a", {
@@ -541,5 +576,41 @@ describe("SessionView — арифметика відпочинку", () => {
     });
     // Таймера немає — апдейтер не вигадує стан.
     expect(minus(null)).toBeNull();
+  });
+});
+
+describe("SessionView — Фз-1 екран не гасне", () => {
+  afterEach(() => {
+    delete (navigator as unknown as Record<string, unknown>)["wakeLock"];
+    localStorage.clear();
+  });
+
+  function mockWakeLock() {
+    const release = vi.fn(async () => {});
+    const request = vi.fn(async () => ({ released: false, release }));
+    Object.defineProperty(navigator, "wakeLock", {
+      configurable: true,
+      value: { request },
+    });
+    return { request, release };
+  }
+
+  it("тримає екран, поки відкрита активна сесія, і відпускає на виході", async () => {
+    const { request, release } = mockWakeLock();
+    renderView();
+    await vi.waitFor(() => expect(request).toHaveBeenCalledWith("screen"));
+    cleanup();
+    await vi.waitFor(() => expect(release).toHaveBeenCalled());
+  });
+
+  it("не тримає екран, коли тумблер вимкнено в налаштуваннях", async () => {
+    const { request } = mockWakeLock();
+    localStorage.setItem(
+      "fizruk_rest_settings_v1",
+      JSON.stringify({ keepScreenOn: false }),
+    );
+    renderView();
+    await Promise.resolve();
+    expect(request).not.toHaveBeenCalled();
   });
 });

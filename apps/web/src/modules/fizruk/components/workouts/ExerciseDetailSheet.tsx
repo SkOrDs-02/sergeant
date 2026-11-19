@@ -9,10 +9,12 @@ import { SectionHeading } from "@shared/components/ui/SectionHeading";
 import { Button } from "@shared/components/ui/Button";
 import { Sheet } from "@shared/components/ui/Sheet";
 import { WorkoutItemTypeSwitcher } from "./WorkoutItemTypeSwitcher";
+import { useExerciseMeasurePrefs } from "../../hooks/useExerciseMeasurePrefs";
 import { ExercisePhotoViewer } from "./ExercisePhotoViewer";
 
 type RecExerciseFn = typeof recoveryConflictsForExerciseFn;
 type RecoveryByMap = Parameters<RecExerciseFn>[1];
+type InjurySites = NonNullable<Parameters<RecExerciseFn>[2]>;
 
 type ToastApi = {
   warning?: (msg: string) => void;
@@ -25,7 +27,8 @@ type ExerciseDetailSheetProps = {
   musclesUk: Record<string, string>;
   primaryGroupsUk?: Record<string, string>;
   equipmentUk?: Record<string, string>;
-  rec: { by: RecoveryByMap } | null | undefined;
+  /** `injurySites` — активні позначки травми (ADR-0083), див. каталог. */
+  rec: { by: RecoveryByMap; injurySites: InjurySites } | null | undefined;
   recoveryConflictsForExercise: RecExerciseFn;
   activeWorkoutId: string | null | undefined;
   activeWorkout: Workout | null | undefined;
@@ -68,6 +71,7 @@ export function ExerciseDetailSheet({
 }: ExerciseDetailSheetProps) {
   // Вище раннього `return null`: хук не можна викликати умовно.
   const [viewerOpen, setViewerOpen] = useState(false);
+  const { rememberMeasure } = useExerciseMeasurePrefs();
 
   if (!selected) return null;
 
@@ -76,7 +80,7 @@ export function ExerciseDetailSheet({
       ? (activeWorkout?.items.find((i) => i.exerciseId === selected.id) ?? null)
       : null;
 
-  const cf = recoveryConflictsForExercise(selected, rec?.by);
+  const cf = recoveryConflictsForExercise(selected, rec?.by, rec?.injurySites);
   const isCustom =
     Boolean(selected["_custom"]) ||
     selected["source"] === "manual" ||
@@ -281,6 +285,11 @@ export function ExerciseDetailSheet({
             onChange={(patch) =>
               updateItem(activeWorkout.id, activeItem.id, patch)
             }
+            onMeasureChosen={(m) => {
+              if (activeItem.exerciseId) {
+                rememberMeasure(activeItem.exerciseId, m);
+              }
+            }}
           />
         </div>
       )}

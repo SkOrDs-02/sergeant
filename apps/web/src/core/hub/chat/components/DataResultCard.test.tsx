@@ -87,7 +87,46 @@ describe("DataResultCard (talk-to-your-data PR4)", () => {
     expect(card).toHaveTextContent("Знайдено 2 операц. на суму 320 грн");
     const items = within(card).getAllByRole("listitem");
     expect(items.length).toBe(2);
-    expect(items[0]).toHaveTextContent("m_1");
+    // id потрібен моделі (з нього вона кличе change_category), людині — ні:
+    // рядок несе дату, опис і категорію, сума праворуч.
+    expect(items[0]).toHaveTextContent("2026-05-01 · кава · Кафе");
+    expect(items[0]).toHaveTextContent("120 грн");
+    expect(card).not.toHaveTextContent("m_1");
+    expect(card).not.toHaveTextContent("m_2");
+    expect(card.getAttribute("aria-label")).not.toContain("m_1");
+  });
+
+  it("одна знайдена операція (без `; `-списку) теж без id", () => {
+    render(
+      <DataResultCard
+        toolName="query_transactions"
+        result="Знайдено 1 операц. на суму 120 грн: m_1: 2026-05-01 · 120 грн · кава · Кафе"
+        title="Операції за запитом"
+      />,
+    );
+    const card = screen.getByTestId("chat-data-card-query_transactions");
+    expect(card).toHaveTextContent("2026-05-01 · 120 грн · кава · Кафе");
+    expect(card).not.toHaveTextContent("m_1");
+  });
+
+  it("рядок операції без опису й дати не губить суму", () => {
+    const result =
+      "Знайдено 2 операц. на суму 320 грн: " +
+      "ZuHWzqkKGVo=: без дати · 120 грн · Інше; " +
+      "m_2: 2026-05-02 · 200 грн · Кафе";
+    render(
+      <DataResultCard
+        toolName="query_transactions"
+        result={result}
+        title="Операції за запитом"
+      />,
+    );
+    const items = within(
+      screen.getByTestId("chat-data-card-query_transactions"),
+    ).getAllByRole("listitem");
+    expect(items[0]).toHaveTextContent("без дати · Інше");
+    expect(items[0]).toHaveTextContent("120 грн");
+    expect(items[0]).not.toHaveTextContent("ZuHWzqkKGVo=");
   });
 
   it("показує warning-межу й факт помилки для failed", () => {

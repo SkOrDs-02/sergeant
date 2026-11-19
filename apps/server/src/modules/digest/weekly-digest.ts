@@ -25,6 +25,7 @@ import { als } from "../../obs/requestContext.js";
 import { enqueueMemoryIngest } from "../ai-memory/ingestQueue.js";
 import { getAiMemory } from "../ai-memory/bootstrap.js";
 import { buildWeeklyDigestPrompt } from "./weeklyDigestPrompt.js";
+import { readStoredDigest, type StoredDigest } from "./storedDigest.js";
 import { replaceLongDash } from "../../lib/modelText.js";
 import {
   countModuleSignals,
@@ -212,16 +213,78 @@ export interface WeeklyDigestHandlerOptions {
    * збережену згоду з БД (`resolveHealthConsent`, fail-closed).
    */
   resolveHealthConsent?: (userId: string | undefined) => Promise<boolean>;
+  /**
+   * Підмінка читання збереженого звіту тижня (`ifAbsent`) для тестів.
+   * Production читає памʼять коуча (`readStoredDigest`).
+   */
+  readStoredDigest?: (
+    userId: string,
+    weekKey: string,
+  ) => Promise<StoredDigest | null>;
+}
+
+/** Результат однієї генерації, який ділять усі учасники польоту. */
+interface DigestOutcome {
+  report: WeeklyDigestReport;
+  generatedAt: string;
+  usedFallback: boolean;
+  /** Звіт узято з памʼяті коуча (`ifAbsent`), моделі не було. */
+  fromStore: boolean;
+}
+
+/**
+ * Одна генерація звіту тижня в польоті, до якої приєднуються одночасні
+ * запити тієї самої людини за той самий тиждень.
+ *
+ * `waiting` — скільки учасників ще чекають на відповідь. Модель обриваємо
+ * лише тоді, коли зʼєднання закрили ВСІ: інакше закрита вкладка першого
+ * пристрою зривала б звіт другому, який на нього чекає.
+ */
+interface DigestFlight {
+  promise: Promise<DigestOutcome>;
+  controller: AbortController;
+  waiting: number;
+  /** Політ почав запит з `ifAbsent`: він може віддати збережений звіт. */
+  ifAbsent: boolean;
+}
+
+function attachToFlight(flight: DigestFlight, res: Response): void {
+  flight.waiting += 1;
+  // Юніт-тести підставляють `res` без EventEmitter (як і `abortOnClientClose`).
+  if (typeof res.on !== "function") return;
+  res.on("close", () => {
+    if (res.writableFinished) return;
+    flight.waiting -= 1;
+    if (flight.waiting <= 0) flight.controller.abort();
+  });
 }
 
 /**
  * POST /api/weekly-digest — згенерувати тижневий звіт. CORS/method/key/quota
  * забезпечені middleware-ами роутера; тут лише бізнес-логіка. Ключ Anthropic
  * читається з `req.anthropicKey`.
+ *
+ * AI-CONTEXT (С-3 (а), OD-30, 2026-11-18): одночасні запити тієї самої
+ * людини за той самий `weekKey` ділять ОДИН виклик моделі (single-flight у
+ * памʼяті процесу, той самий механізм, що `inFlightRefresh` у
+ * `silpo/tokenStore.ts` і `exportsInFlight` у `routes/me.ts`). Сценарій —
+ * два пристрої, що відкрили хаб у ті самі хвилини: обидва не знайшли звіту в
+ * памʼяті коуча й обидва попросили генерацію. Другий отримує той самий
+ * `{ report, generatedAt }`, памʼять AI пише лише перший.
+ *
+ * `ifAbsent: true` (шле лише автогенерація) — «згенеруй, лише якщо звіту
+ * тижня ще немає»: усередині того самого польоту сервер спершу читає памʼять
+ * коуча за `weekKey` і, якщо звіт там є, віддає його без виклику моделі.
+ * Запит без поля (ручне «Оновити звіт») генерує заново й до польоту з
+ * `ifAbsent` не приєднується, бо той міг віддати старий звіт. Замок на один
+ * інстанс (ADR-0074); якщо бекенд поїде в кілька реплік, другий інстанс
+ * знову дасть дубль.
  */
 export function createWeeklyDigestHandler(
   options: WeeklyDigestHandlerOptions = {},
 ): (req: Request, res: Response) => Promise<void> {
+  const inFlight = new Map<string, DigestFlight>();
+
   return async function handler(req: Request, res: Response): Promise<void> {
     const apiKey = (req as WithAnthropicKey).anthropicKey as string;
 
@@ -238,6 +301,7 @@ export function createWeeklyDigestHandler(
       ? rawParsed
       : { ...rawParsed, fizruk: null, nutrition: null };
     const { weekKey, weekRange, finyk, fizruk, nutrition, routine } = parsed;
+    const ifAbsent = parsed.ifAbsent === true;
 
     // Гейт СТОЇТЬ ПЕРЕД побудовою промпту й перед мережевим викликом — тиждень
     // без жодного змістовного сигналу не має ані отримувати шаблонний AI-аналіз
@@ -260,6 +324,183 @@ export function createWeeklyDigestHandler(
       );
     }
 
+    const sessionUser = (req as WithSessionUser).user ?? null;
+    const memorySourceRef = weekKey ?? weekRange ?? null;
+    const flightKey =
+      sessionUser?.id && memorySourceRef
+        ? `${sessionUser.id}\u0000${memorySourceRef}`
+        : null;
+
+    const candidate = flightKey ? inFlight.get(flightKey) : undefined;
+    const joined =
+      candidate && (ifAbsent || !candidate.ifAbsent) ? candidate : undefined;
+    if (joined) {
+      attachToFlight(joined, res);
+      // Помилку лідера (збій апстріму) отримує й цей запит: повтор того
+      // самого виклику в ту саму секунду дав би той самий збій.
+      const shared = await joined.promise;
+      logger.info({ msg: "weekly_digest_coalesced" });
+      res.status(200).json(
+        WeeklyDigestSuccessSchema.parse({
+          report: shared.report,
+          generatedAt: shared.generatedAt,
+        }),
+      );
+      return;
+    }
+
+    // Між `get` вище і `set` нижче немає жодного `await`, тож другий запит
+    // не може проскочити в цю щілину (один потік подій).
+    const controller = flightKey ? new AbortController() : null;
+    const signal = controller ? controller.signal : abortOnClientClose(res);
+    const storedLookup =
+      ifAbsent && sessionUser?.id && weekKey
+        ? { userId: sessionUser.id, weekKey }
+        : null;
+    const generation = storedLookup
+      ? storedOrGenerate(storedLookup, parsed, apiKey, signal, req)
+      : generateDigest(parsed, apiKey, signal, req);
+    let flight: DigestFlight | null = null;
+    if (flightKey && controller) {
+      flight = { promise: generation, controller, waiting: 0, ifAbsent };
+      attachToFlight(flight, res);
+      inFlight.set(flightKey, flight);
+      // Приєднані запити чекають на `flight.promise` самі; тут лише
+      // гасимо unhandled rejection у гілці без приєднаних.
+      generation.catch(() => undefined);
+    }
+
+    let outcome: DigestOutcome;
+    try {
+      outcome = await generation;
+    } finally {
+      if (flightKey && inFlight.get(flightKey) === flight) {
+        inFlight.delete(flightKey);
+      }
+    }
+    const { report, generatedAt, usedFallback, fromStore } = outcome;
+
+    res.status(200).json(
+      WeeklyDigestSuccessSchema.parse({
+        report,
+        generatedAt,
+      }),
+    );
+
+    // AI memory ingest hook (PR2). Fire-and-forget після відправки відповіді,
+    // щоб не затримувати клієнт (роут за requireSession(), тож req.user
+    // завжди є — ADR-0086 прибрав анонімний режим).
+    //
+    // Семантика "остання генерація тижня перемагає" (2026-08-30, знахідка
+    // W3 ревʼю дайджесту): sourceRef — канонічний weekKey (fallback на
+    // weekRange для старих бандлів), а перед enqueue старий рядок тижня
+    // hard-видаляється (той самий delete-then-insert патерн, що в
+    // profileMirror: BullMQ jobId-дедуп інакше мовчки відкидає повторну
+    // генерацію, і в памʼяті назавжди застигав перший, часто неповний,
+    // знімок тижня). dedupeSalt=generatedAt робить кожну генерацію
+    // окремим job-ом, а той самий знімок і далі дедуплікується.
+    //
+    // PR-25: template-fallback теж enqueue-ить memory (краще зберегти числа,
+    // ніж залишити gap у history); тег `usedFallback` потрапляє у metadata
+    // для post-hoc query "які тижні згенеровані без AI?".
+    // Збережений звіт у памʼять AI уже потрапив, коли його генерували.
+    if (sessionUser?.id && memorySourceRef && !fromStore) {
+      const userId = sessionUser.id;
+      void (async () => {
+        try {
+          const content = buildDigestMemoryContent(
+            weekRange ?? memorySourceRef,
+            report,
+          );
+          if (env.AI_MEMORY_ENABLED) {
+            await getAiMemory()
+              .forgetSource(userId, "digest", memorySourceRef)
+              .catch((err: unknown) => {
+                // Видалення — best-effort: якщо воно впало, enqueue все одно
+                // спробує записати (перший знімок тижня краще за жодного).
+                logger.warn({
+                  msg: "weekly_digest_memory_forget_failed",
+                  err: err instanceof Error ? err.message : String(err),
+                });
+              });
+          }
+          await enqueueMemoryIngest({
+            userId,
+            source: "digest",
+            sourceRef: memorySourceRef,
+            content,
+            metadata: {
+              weekRange,
+              generatedAt,
+              sections: {
+                finyk: !!finyk,
+                fizruk: !!fizruk,
+                nutrition: !!nutrition,
+                routine: !!routine,
+              },
+              usedFallback,
+            },
+            dedupeSalt: generatedAt,
+            // PR-S3: тижневий звіт осідає в `ai_memories` і потім щоразу
+            // підмішується в system prompt через `buildRagContext`. Коли в
+            // ньому є секції Фізрука чи Їжі — це дані про здоровʼя, і на
+            // персистентний запис потрібна окрема згода (GDPR Art. 9).
+            // Прапорець рахується з ФАКТИЧНОГО складу звіту, не з джерела:
+            // фінансово-рутинний тиждень health-даних не несе й гейтитись
+            // не має.
+            healthData: !!fizruk || !!nutrition,
+          });
+        } catch (err) {
+          logger.warn({
+            msg: "weekly_digest_memory_ingest_skipped",
+            err: err instanceof Error ? err.message : String(err),
+          });
+        }
+      })();
+    }
+  };
+
+  /**
+   * `ifAbsent`: збережений звіт тижня, якщо він є, інакше генерація. Збій
+   * читання памʼяті не валить запит: генеруємо, як без `ifAbsent` (у гіршому
+   * разі це дубль, а не відсутній звіт).
+   */
+  async function storedOrGenerate(
+    lookup: { userId: string; weekKey: string },
+    parsed: WeeklyDigestRequest,
+    apiKey: string,
+    signal: AbortSignal,
+    req: Request,
+  ): Promise<DigestOutcome> {
+    const stored = await (options.readStoredDigest ?? readStoredDigest)(
+      lookup.userId,
+      lookup.weekKey,
+    ).catch((err: unknown) => {
+      logger.warn({
+        msg: "weekly_digest_stored_read_failed",
+        err: err instanceof Error ? err.message : String(err),
+      });
+      return null;
+    });
+    if (stored) {
+      logger.info({ msg: "weekly_digest_served_stored" });
+      return {
+        report: stored.report,
+        generatedAt: stored.generatedAt,
+        usedFallback: false,
+        fromStore: true,
+      };
+    }
+    return generateDigest(parsed, apiKey, signal, req);
+  }
+
+  /** Виклик моделі й розбір відповіді (або шаблонний fallback). */
+  async function generateDigest(
+    parsed: WeeklyDigestRequest,
+    apiKey: string,
+    signal: AbortSignal,
+    req: Request,
+  ): Promise<DigestOutcome> {
     const prompt = buildWeeklyDigestPrompt(parsed);
 
     // PR-25: template-report заздалегідь — як stubResponse для StubProvider,
@@ -285,7 +526,7 @@ export function createWeeklyDigestHandler(
         system: prompt.system,
         messages: [{ role: "user", content: prompt.user }],
         endpoint: "internal/weekly-digest",
-        signal: abortOnClientClose(res),
+        signal,
         timeoutMs: 45_000,
         userId: (req as WithSessionUser).user?.id,
         // Ініціатива 0025, Фаза 2 — «id прогону». Digest — один Anthropic-виклик
@@ -363,86 +604,8 @@ export function createWeeklyDigestHandler(
 
     const generatedAt = new Date().toISOString();
 
-    res.status(200).json(
-      WeeklyDigestSuccessSchema.parse({
-        report,
-        generatedAt,
-      }),
-    );
-
-    // AI memory ingest hook (PR2). Fire-and-forget після відправки відповіді,
-    // щоб не затримувати клієнт (роут за requireSession(), тож req.user
-    // завжди є — ADR-0086 прибрав анонімний режим).
-    //
-    // Семантика "остання генерація тижня перемагає" (2026-08-30, знахідка
-    // W3 ревʼю дайджесту): sourceRef — канонічний weekKey (fallback на
-    // weekRange для старих бандлів), а перед enqueue старий рядок тижня
-    // hard-видаляється (той самий delete-then-insert патерн, що в
-    // profileMirror: BullMQ jobId-дедуп інакше мовчки відкидає повторну
-    // генерацію, і в памʼяті назавжди застигав перший, часто неповний,
-    // знімок тижня). dedupeSalt=generatedAt робить кожну генерацію
-    // окремим job-ом, а той самий знімок і далі дедуплікується.
-    //
-    // PR-25: template-fallback теж enqueue-ить memory (краще зберегти числа,
-    // ніж залишити gap у history); тег `usedFallback` потрапляє у metadata
-    // для post-hoc query "які тижні згенеровані без AI?".
-    const sessionUser = (req as WithSessionUser).user ?? null;
-    const memorySourceRef = weekKey ?? weekRange ?? null;
-    if (sessionUser?.id && memorySourceRef) {
-      const userId = sessionUser.id;
-      void (async () => {
-        try {
-          const content = buildDigestMemoryContent(
-            weekRange ?? memorySourceRef,
-            report,
-          );
-          if (env.AI_MEMORY_ENABLED) {
-            await getAiMemory()
-              .forgetSource(userId, "digest", memorySourceRef)
-              .catch((err: unknown) => {
-                // Видалення — best-effort: якщо воно впало, enqueue все одно
-                // спробує записати (перший знімок тижня краще за жодного).
-                logger.warn({
-                  msg: "weekly_digest_memory_forget_failed",
-                  err: err instanceof Error ? err.message : String(err),
-                });
-              });
-          }
-          await enqueueMemoryIngest({
-            userId,
-            source: "digest",
-            sourceRef: memorySourceRef,
-            content,
-            metadata: {
-              weekRange,
-              generatedAt,
-              sections: {
-                finyk: !!finyk,
-                fizruk: !!fizruk,
-                nutrition: !!nutrition,
-                routine: !!routine,
-              },
-              usedFallback,
-            },
-            dedupeSalt: generatedAt,
-            // PR-S3: тижневий звіт осідає в `ai_memories` і потім щоразу
-            // підмішується в system prompt через `buildRagContext`. Коли в
-            // ньому є секції Фізрука чи Їжі — це дані про здоровʼя, і на
-            // персистентний запис потрібна окрема згода (GDPR Art. 9).
-            // Прапорець рахується з ФАКТИЧНОГО складу звіту, не з джерела:
-            // фінансово-рутинний тиждень health-даних не несе й гейтитись
-            // не має.
-            healthData: !!fizruk || !!nutrition,
-          });
-        } catch (err) {
-          logger.warn({
-            msg: "weekly_digest_memory_ingest_skipped",
-            err: err instanceof Error ? err.message : String(err),
-          });
-        }
-      })();
-    }
-  };
+    return { report, generatedAt, usedFallback, fromStore: false };
+  }
 }
 
 /**

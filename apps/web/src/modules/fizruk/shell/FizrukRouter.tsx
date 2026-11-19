@@ -16,6 +16,13 @@ import { messages } from "@shared/i18n/uk";
 interface RouterTodaySession {
   sessionKey: string;
   name: string;
+  /** Індекс у `schedule` — пишеться в тренування як `programRef.slot` (П-10). */
+  slot: number;
+}
+
+interface RouterRestSession extends RouterTodaySession {
+  daysFromNow: number;
+  doneToday: boolean;
 }
 
 const PAGE_ERROR_TITLES: Record<FizrukPage, string> = {
@@ -77,6 +84,8 @@ export interface FizrukRouterProps {
   activateProgram: (id: string) => void;
   deactivateProgram: () => void;
   todaySession: RouterTodaySession | null;
+  /** День відпочинку або закритий день програми (П-10/П-11). */
+  restSession?: RouterRestSession | null | undefined;
   /**
    * Лічильник запитів «відкрити аркуш „Почати тренування“» (PWA-інтент
    * `start_workout`, клавіша `N`). Кожен інкремент відкриває аркуш на
@@ -95,6 +104,7 @@ export interface FizrukRouterProps {
   onStartProgramWorkout: (
     session: ProgramSessionDef,
     program: TrainingProgramDef,
+    slot: number,
   ) => void;
   onOpenModule?:
     ((moduleId: string, opts?: { hash?: string }) => void) | undefined;
@@ -112,6 +122,7 @@ function renderPage(props: FizrukRouterProps) {
     activateProgram,
     deactivateProgram,
     todaySession,
+    restSession,
     quickStartRequest,
     onNavigate,
     onStartProgramWorkout,
@@ -125,6 +136,7 @@ function renderPage(props: FizrukRouterProps) {
           onOpenPrograms={() => onNavigate("programs")}
           activeProgram={activeProgram}
           todaySession={todaySession}
+          restSession={restSession ?? null}
           onStartProgramWorkout={onStartProgramWorkout}
           onQuickStart={onQuickStart}
           onNavigate={onNavigate}
@@ -159,7 +171,11 @@ function renderPage(props: FizrukRouterProps) {
               ? {
                   label: todaySession.name,
                   onStart: () =>
-                    onStartProgramWorkout(programSession, activeProgram),
+                    onStartProgramWorkout(
+                      programSession,
+                      activeProgram,
+                      todaySession.slot,
+                    ),
                 }
               : undefined
           }

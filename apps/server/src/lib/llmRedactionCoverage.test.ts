@@ -60,7 +60,12 @@ const KNOWN_EXITS: Record<string, string> = {
   // який перестане ловити справжні виходи.
   "lib/mcc/batchPrompt.ts": "не викликає нічого; промпт іде через invokeLLM",
   "modules/ai-memory/embeddings.ts": "маскує сам (callVoyage)",
-  "modules/chat/chat.ts": "маскує context / messages / tool_results",
+  // Маскує `chat.ts` (context / messages / tool_results) і передає готовий
+  // payload у два виходи: JSON-шлях із продовженням і стрім першого ходу.
+  // Самого виклику моделі в `chat.ts` після С-1 (а) більше немає.
+  "modules/chat/chatUpstream.ts": "отримує вже замаскований payload із chat.ts",
+  "modules/chat/chatFirstTurnStream.ts":
+    "отримує вже замаскований payload із chat.ts",
   "modules/chat/chatStream.ts": "отримує вже замаскований payload із chat.ts",
   // Тіньовий детектор інʼєкцій (Jev через OpenRouter, субпроцесор TypeSafe,
   // погоджений власником за умови ZDR + data_collection=deny). Сам не

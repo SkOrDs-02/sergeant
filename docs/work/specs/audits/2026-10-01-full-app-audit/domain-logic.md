@@ -1198,7 +1198,7 @@ liqpay.ts:51-53 (PENDING_STATUSES), 328-331, 365-376; routes/billing.ts:355-380 
 
 ### `logic-18` [low] «+ Підхід» копіює попередній підхід і одразу рахує його виконаним: незроблені підходи йдуть в обʼєм, PR і recovery
 
-- **Стан:** відкрито
+- **Стан:** виправлено в гілці `claude/awesome-goodall-8s5uky` (2026-11-18, PR ще не відкрито): «+ Підхід» додає порожній рядок, значення лише плейсхолдерами, виконаним рядок стає після ✓ (рішення власника OD-28, Фз-3)
 - **Перевірка:** підтверджено · **Зусилля:** M · **Область:** web: Фізрук (сесія тренування)
 - **Де:** apps/web/src/modules/fizruk/components/workouts/WorkoutItemCard.tsx:320-341; apps/web/src/modules/fizruk/components/workouts/WorkoutSetRow.tsx:64-67
 - **Першопричина:** Новий рядок заповнюється значеннями останнього виконаного сету (або «було» з минулої сесії), а виконаність похідна: isSetDone = reps &gt; 0. Окремого прапорця «виконано», який ставив би лише тап ✓, немає.
@@ -2425,7 +2425,7 @@ f12_kcal_forgotten.mts: the same 5 sets (MET 6, 80 kg) give 480 kcal for 1 h and
 
 ### `logic-39` [low] Серія днів у нормі калорій падає в 0 після першого прийому їжі і повертається ввечері
 
-- **Стан:** відкрито
+- **Стан:** виправлено в гілці `claude/awesome-goodall-8s5uky` (2026-11-17, PR ще не відкрито; сьогоднішній недобір серію не обриває, перебір обриває)
 - **Перевірка:** підтверджено · **Зусилля:** S · **Швидкий виграш** · **Область:** nutrition-domain (kcalStreak)
 - **Де:** packages/nutrition-domain/src/kcalStreak.ts:38-46, 73; apps/web/src/modules/nutrition/components/NutritionDashboard.tsx:203-210
 - **Першопричина:** Сьогоднішній день пропускається лише при kcal === 0, тож будь-який недобір обриває серію. Це суперечить докстрінгу функції («якщо сьогодні ще не в нормі, лічильник починає з учора»).
@@ -2633,7 +2633,7 @@ v12.mjs: for two pool users, the first local hits for 'молоко' were 'Мо�
 
 ### `logic-43` [low] Журнал їжі приймає записи на майбутні дні, і тижнева картка рахує їх у середньому
 
-- **Стан:** відкрито
+- **Стан:** виправлено в гілці `claude/awesome-goodall-8s5uky` (2026-11-17, PR ще не відкрито; дні після сьогодні малюються, але в суму й середнє тижня не входять; навігацію в майбутні дні лишено як задуману)
 - **Перевірка:** підтверджено · **Зусилля:** S · **Швидкий виграш** · **Область:** web: Їжа (журнал)
 - **Де:** apps/web/src/modules/nutrition/components/LogCard.tsx (shiftDate); apps/web/src/modules/nutrition/components/NutritionDashboard.tsx (weekRows); WeekKcalCard / computeWeekKcalChart
 - **Першопричина:** LogCard.shiftDate не має верхньої межі, а computeWeekKcalChart рахує будь-який день тижня з kcal &gt; 0 у daysLogged/avgKcal. Аналітика трендів бере дні до сьогодні.
@@ -2767,7 +2767,7 @@ My script v13_cat.mts: bank restaurant 400 + manual 'cafe' 95 (as from the onboa
 
 ### `logic-46` [low] getMonoTotals додає борг валютних рахунків до пасивів 1:1 як гривні
 
-- **Стан:** відкрито
+- **Стан:** виправлено в гілці `claude/awesome-goodall-8s5uky` (2026-11-17, PR ще не відкрито; борг фільтрується тим самим UAH-правилом у `getMonoTotals` і в списку боргів на Активах; окремий показ валютного боргу лишився рішенням власника)
 - **Перевірка:** підтверджено · **Зусилля:** S · **Швидкий виграш** · **Область:** finyk-domain (accounts)
 - **Де:** packages/finyk-domain/src/lib/accounts.ts:68-88; packages/finyk-domain/src/domain/aggregates.ts:142-160
 - **Першопричина:** Баланс фільтрується за currencyCode === UAH, а борг ні: isMonoDebt/getMonoDebt беруть будь-який рахунок з мінусом і додають мінорні одиниці / 100 як гривні.

@@ -27,6 +27,7 @@ import { type NullableMacros } from "@sergeant/shared";
 import {
   matchFoodName,
   todayISODate,
+  type MealMacroSource,
   type NutritionLog,
   type PantryItem,
 } from "@sergeant/nutrition-domain";
@@ -46,6 +47,13 @@ export interface QuickChip {
   macros: QuickChipMacros;
   source: "pantry" | "recent-meal";
   lastUsedAt: string;
+  /**
+   * Продукт і походження КБЖВ запису, з якого взято чип. Повтор — це копія
+   * того запису (як «Як учора», `cloneMealsForCopy`), тож звʼязок із
+   * продуктом не губиться. Немає — чип пишеться ручним записом.
+   */
+  foodId?: string | null;
+  macroSource?: MealMacroSource;
 }
 
 interface Aggregate {
@@ -55,6 +63,8 @@ interface Aggregate {
   lastUsedAt: string;
   lastMacros: NullableMacros;
   lastGrams: number;
+  lastFoodId: string | null;
+  lastMacroSource: MealMacroSource;
 }
 
 function macrosUsable(m: NullableMacros | undefined): m is NullableMacros {
@@ -116,6 +126,8 @@ function aggregateRecentMeals(
           lastUsedAt: date,
           lastMacros: meal.macros,
           lastGrams: usableGrams,
+          lastFoodId: meal.foodId ? String(meal.foodId) : null,
+          lastMacroSource: meal.macroSource || "manual",
         });
       } else {
         existing.count += 1;
@@ -150,6 +162,8 @@ export function useNutritionQuickChips(
         macros: nullableToChipMacros(entry.lastMacros),
         source: isPantry ? "pantry" : "recent-meal",
         lastUsedAt: entry.lastUsedAt,
+        foodId: entry.lastFoodId,
+        macroSource: entry.lastMacroSource,
       });
     }
 

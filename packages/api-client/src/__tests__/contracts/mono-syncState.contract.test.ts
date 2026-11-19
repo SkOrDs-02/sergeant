@@ -2,7 +2,7 @@
 //
 // Consumer contract: `GET /api/v1/mono/sync-state` — Monobank webhook
 // connection state (status / webhookActive / lastEventAt /
-// lastBackfillAt / accountsCount). Hot endpoint for the **finyk
+// lastBackfillAt / accountsCount / connectedAt). Hot endpoint for the **finyk
 // persona** — `useMonobankWebhook` polls it on every Finyk dashboard
 // open + every reconnect attempt (see `apps/web/src/modules/finyk/`).
 //
@@ -45,6 +45,7 @@ describe(
             lastEventAt: "2026-05-13T08:30:00.000Z",
             lastBackfillAt: "2026-05-12T22:00:00.000Z",
             accountsCount: 2,
+            connectedAt: "2026-05-01T09:00:00.000Z",
           });
         })
         .executeTest(async (mockServer) => {
@@ -56,6 +57,8 @@ describe(
           expect(state.lastEventAt).toBe("2026-05-13T08:30:00.000Z");
           expect(state.lastBackfillAt).toBe("2026-05-12T22:00:00.000Z");
           expect(state.accountsCount).toBe(2);
+          // Момент підключення: вікно картки фактів банку на хабі.
+          expect(state.connectedAt).toBe("2026-05-01T09:00:00.000Z");
         });
     });
   },

@@ -19,6 +19,7 @@ import type { Insight } from "@shared/lib/insights/types";
 import { useExerciseCatalog } from "../hooks/useExerciseCatalog";
 import { useMeasurements } from "../hooks/useMeasurements";
 import { useRecovery } from "../hooks/useRecovery";
+import { useInjuries } from "../hooks/useInjuries";
 import { useWorkoutTemplates } from "../hooks/useWorkoutTemplates";
 import { isFizrukReadBootInFlight } from "../hooks/useFizrukSqliteReadBoot";
 import { useWorkouts } from "../hooks/useWorkouts";
@@ -51,19 +52,31 @@ import { useRestDayOverdueInsight } from "../hooks/useRestDayOverdueInsight";
 import { usePrPendingInsight } from "../hooks/usePrPendingInsight";
 import { usePrLatest } from "../hooks/usePrLatest";
 import { messages } from "@shared/i18n/uk";
+import { exerciseItemSeed } from "../lib/exerciseItemSeed";
+import { currentExerciseMeasurePrefs } from "../lib/exerciseMeasurePrefsCache";
 
 interface DashboardTodaySession {
   sessionKey: string;
   name: string;
+  /** Індекс у `schedule`, пишеться в тренування (П-10). */
+  slot: number;
+}
+
+interface DashboardRestSession extends DashboardTodaySession {
+  daysFromNow: number;
+  doneToday: boolean;
 }
 
 interface DashboardProps {
   onOpenPrograms?: () => void;
   activeProgram: TrainingProgramDef | null;
   todaySession: DashboardTodaySession | null;
+  /** Курсор програми в день відпочинку чи закритий день (`useTrainingProgram`). */
+  restSession?: DashboardRestSession | null | undefined;
   onStartProgramWorkout?: (
     session: ProgramSessionDef,
     program: TrainingProgramDef,
+    slot: number,
   ) => void;
   /**
    * Path-based navigation handler injected by `FizrukRouter`. Each of the
@@ -91,6 +104,7 @@ export function Dashboard({
   onOpenPrograms,
   activeProgram,
   todaySession,
+  restSession,
   onStartProgramWorkout,
   onQuickStart,
   onNavigate,
@@ -104,6 +118,7 @@ export function Dashboard({
     return formatKyivNominativeDate();
   }, [kyivNow]);
   const rec = useRecovery();
+  const { all: injuryMarks } = useInjuries();
   const {
     workouts,
     loaded: workoutsLoaded,
@@ -165,17 +180,13 @@ export function Dashboard({
   ) => {
     const w = createWorkout();
     for (const ex of picks) {
-      const isCardio = ex.primaryGroup === "cardio";
       addItem(w.id, {
         exerciseId: ex.id,
         nameUk: ex?.name?.uk || ex?.name?.en || ex.id,
         primaryGroup: ex.primaryGroup || "",
         musclesPrimary: ex?.muscles?.primary || [],
         musclesSecondary: ex?.muscles?.secondary || [],
-        type: isCardio ? "distance" : "strength",
-        ...(isCardio ? {} : { sets: [{ weightKg: 0, reps: 0 }] }),
-        durationSec: 0,
-        distanceM: 0,
+        ...exerciseItemSeed(ex, currentExerciseMeasurePrefs()),
       });
     }
     if (templateId) markTemplateUsed(templateId);
@@ -208,8 +219,11 @@ export function Dashboard({
     templateId?: string | null,
   ) => {
     if (!picks?.length) return;
+    // Травма входить у ту саму перевірку (ADR-0083): без `injurySites`
+    // домен вважав, що позначок немає, і план стартував без підтвердження.
     const risky = picks.some(
-      (ex) => recoveryConflictsForExercise(ex, rec.by).hasWarning,
+      (ex) =>
+        recoveryConflictsForExercise(ex, rec.by, rec.injurySites).hasWarning,
     );
     if (risky) {
       setPendingPicks(picks);
@@ -222,6 +236,24 @@ export function Dashboard({
     requestWorkoutFromPlan(picks, templateId);
   };
 
+  // Аркуш підтвердження каже, ЩО саме зупинило старт: біль і втома — різні
+  // за вагою застереження, і текст про відновлення мʼязів для травми бреше.
+  const pendingHasInjury = (pendingPicks ?? []).some(
+    (ex) =>
+      recoveryConflictsForExercise(ex, rec.by, rec.injurySites).injury.blocked,
+  );
+
+  // П-11 (Б), рішення власника 2026-11-18: активна програма без сесії
+  // сьогодні і без плану місяця на сьогодні — день відпочинку. Hero каже
+  // це і називає наступну сесію курсора (П-10), а шаблон-фолбек головною
+  // дією не стає.
+  const restNext = useMemo(() => {
+    if (!activeProgram || !restSession || monthlyPlan.todayTemplateId)
+      return null;
+    const session = activeProgram.sessions?.[restSession.sessionKey];
+    return session ? { ...restSession, session } : null;
+  }, [activeProgram, restSession, monthlyPlan.todayTemplateId]);
+
   const primaryAction = useMemo(() => {
     if (activeProgram && todaySession) {
       const session = activeProgram.sessions?.[todaySession.sessionKey];
@@ -232,9 +264,11 @@ export function Dashboard({
           hint: activeProgram.name,
           exerciseCount: (session.exerciseIds || []).length,
           sessionKey: todaySession.sessionKey,
+          slot: todaySession.slot,
         };
       }
     }
+    if (restNext) return null;
     const fallbackTemplateId =
       monthlyPlan.todayTemplateId ||
       recentlyUsed[0]?.id ||
@@ -268,6 +302,7 @@ export function Dashboard({
   }, [
     activeProgram,
     todaySession,
+    restNext,
     monthlyPlan.todayTemplateId,
     recentlyUsed,
     templates,
@@ -286,7 +321,7 @@ export function Dashboard({
     if (primaryAction.kind === "program") {
       const session = activeProgram?.sessions?.[primaryAction.sessionKey];
       if (session && onStartProgramWorkout) {
-        onStartProgramWorkout(session, activeProgram);
+        onStartProgramWorkout(session, activeProgram, primaryAction.slot);
       }
       return;
     }
@@ -306,6 +341,7 @@ export function Dashboard({
     workouts,
     loaded: workoutsLoaded,
     activeWorkoutId,
+    injuryMarks,
   });
   // Phase 6.7 — persistent PR summary surfaced on the hero corner.
   // Independent of the proximity-driven `pr-pending` insight: this
@@ -380,6 +416,15 @@ export function Dashboard({
         hint: primaryAction.hint,
       };
     }
+    if (restNext) {
+      return {
+        kind: "rest",
+        label: restNext.name,
+        daysFromNow: restNext.daysFromNow,
+        exerciseCount: restNext.session.exerciseIds.length,
+        doneToday: restNext.doneToday,
+      };
+    }
     if (nextPlanSession && !nextPlanSession.isToday) {
       return {
         kind: "upcoming",
@@ -393,6 +438,7 @@ export function Dashboard({
   }, [
     activeWorkout,
     primaryAction,
+    restNext,
     nextPlanSession,
     templates,
     estimatedDurationMin,
@@ -486,6 +532,16 @@ export function Dashboard({
           recoverByDate={heroRecoverByDate}
           onOpenAtlas={openAtlas}
           onStartToday={handleStartPrimary}
+          onStartNext={
+            restNext && activeProgram && onStartProgramWorkout
+              ? () =>
+                  onStartProgramWorkout(
+                    restNext.session,
+                    activeProgram,
+                    restNext.slot,
+                  )
+              : undefined
+          }
           onOpenPlan={openPlan}
           onOpenTemplates={openTemplates}
           onOpenPrograms={() => onOpenPrograms?.()}
@@ -610,7 +666,7 @@ export function Dashboard({
       <Sheet
         open={planConfirmOpen}
         onClose={closePlanConfirm}
-        title="Мʼязи ще відновлюються"
+        title={pendingHasInjury ? "Є позначка болю" : "Мʼязи ще відновлюються"}
         panelClassName="fizruk-sheet max-w-md"
         zIndex={100}
         footer={
@@ -640,8 +696,9 @@ export function Dashboard({
         }
       >
         <p className="text-style-body text-muted leading-relaxed">
-          У цьому шаблоні є вправи на мʼязи, які ще відновлюються. Продовжити
-          старт тренування?
+          {pendingHasInjury
+            ? "У цьому шаблоні є вправа на зону, де ти позначив біль. Навантажувати її не раджу. Почати все одно?"
+            : "У цьому шаблоні є вправи на мʼязи, які ще відновлюються. Продовжити старт тренування?"}
         </p>
       </Sheet>
 

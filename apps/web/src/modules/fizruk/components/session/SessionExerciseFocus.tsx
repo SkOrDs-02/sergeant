@@ -2,12 +2,15 @@
  * Last validated: 2026-11-19
  * Status: Active
  */
+import { useState } from "react";
 import type {
   Workout,
   WorkoutGroup,
   WorkoutItem,
   WorkoutSet,
 } from "@sergeant/fizruk-domain";
+import type { InjurySiteId } from "@sergeant/fizruk-domain/data";
+import { itemUsesSetRows } from "@sergeant/fizruk-domain/domain";
 import { FizrukData } from "@sergeant/fizruk-domain";
 import { Button } from "@shared/components/ui/Button";
 import {
@@ -18,6 +21,7 @@ import { Icon } from "@shared/components/ui/Icon";
 import { messages } from "@shared/i18n/uk";
 import type { RestTimerState } from "../../hooks/useFizrukRestSound";
 import { WorkoutItemCard } from "../workouts/WorkoutItemCard";
+import { useExerciseMeasurePrefs } from "../../hooks/useExerciseMeasurePrefs";
 import {
   countDoneSets,
   groupMemberPosition,
@@ -33,6 +37,8 @@ export interface SessionExerciseFocusProps {
   isReadOnly: boolean;
   lastByExerciseId: Record<string, unknown>;
   recBy: Record<string, unknown>;
+  /** Активні позначки травми (ADR-0083) для чипа відновлення. */
+  injurySites: ReadonlySet<InjurySiteId>;
   updateItem: (
     workoutId: string,
     itemId: string,
@@ -72,6 +78,7 @@ export function SessionExerciseFocus({
   isReadOnly,
   lastByExerciseId,
   recBy,
+  injurySites,
   updateItem,
   setRestTimer,
   getDefaultForGroup,
@@ -86,6 +93,9 @@ export function SessionExerciseFocus({
   isRetro = false,
 }: SessionExerciseFocusProps) {
   const ss = messages.fizruk.session;
+  // Тип, обраний у перемикачі, запамʼятовується і їде між пристроями
+  // (спека типу виміру, Р-2).
+  const { rememberMeasure } = useExerciseMeasurePrefs();
   const idx = items.findIndex((x) => x.id === it.id);
   const { prev, next } = neighbourItems(items, it.id);
   const pos = groupMemberPosition(it, group);
@@ -93,11 +103,11 @@ export function SessionExerciseFocus({
   const image = it.exerciseId
     ? FizrukData.exerciseImagePaths(it.exerciseId)[0]
     : undefined;
+  const [failedImage, setFailedImage] = useState<string | null>(null);
 
-  const subline =
-    it.type === "strength"
-      ? `${ss.exerciseOf} ${idx + 1} ${ss.of} ${items.length} · ${setsProgressLabel(countDoneSets(it), sets.length)}`
-      : `${ss.exerciseOf} ${idx + 1} ${ss.of} ${items.length}`;
+  const subline = itemUsesSetRows(it)
+    ? `${ss.exerciseOf} ${idx + 1} ${ss.of} ${items.length} · ${setsProgressLabel(countDoneSets(it), sets.length)}`
+    : `${ss.exerciseOf} ${idx + 1} ${ss.of} ${items.length}`;
 
   const menuItems: DropdownMenuItem[] = [
     ...(onOpenInfo
@@ -150,16 +160,24 @@ export function SessionExerciseFocus({
         className="rounded-panel bg-panel p-4"
       >
         <div className="flex items-center gap-3">
-          <div className="flex h-12 w-12 shrink-0 items-center justify-center overflow-hidden rounded-lg border border-line bg-panelHi">
-            {image ? (
+          {/* Слот лише з ілюстрацією: для вправи поза каталогом ілюстрацій
+              (`exerciseImagePaths` → []) чи при збої завантаження тут був
+              порожній білий квадрат (зйомка 2026-11-18, «Віс на
+              перекладині»). Так само `ExerciseDetailSheet` ховає фото. */}
+          {image && failedImage !== image ? (
+            <div
+              data-exercise-thumb
+              className="flex h-12 w-12 shrink-0 items-center justify-center overflow-hidden rounded-lg border border-line bg-panelHi"
+            >
               <img
                 src={image}
                 alt=""
                 className="h-full w-full object-cover"
                 loading="lazy"
+                onError={() => setFailedImage(image)}
               />
-            ) : null}
-          </div>
+            </div>
+          ) : null}
           <div className="min-w-0 flex-1">
             <h2
               id={`session-exercise-${it.id}`}
@@ -202,12 +220,14 @@ export function SessionExerciseFocus({
             isReadOnly={isReadOnly}
             lastByExerciseId={lastByExerciseId}
             recBy={recBy}
+            injurySites={injurySites}
             updateItem={updateItem}
             setRestTimer={setRestTimer}
             getDefaultForGroup={getDefaultForGroup}
             getDefaultForExercise={getDefaultForExercise}
             setDefaultForExercise={setDefaultForExercise}
             onDeleteSet={onDeleteSet}
+            onMeasureChosen={rememberMeasure}
             isRetro={isRetro}
           />
         </div>
@@ -217,34 +237,35 @@ export function SessionExerciseFocus({
         aria-label={ss.neighboursAria}
         className="flex items-center justify-between gap-2"
       >
-        {/* Кнопки без сусіда не рендеримо взагалі: вимкнений контрол із
+        {/* Сусіди — тиха дія рядка (`Button variant="text"` із шевроном у
+            бік переходу, як «Поточний тиждень» у `WeeklyDigestCard`): гола
+            назва праворуч не читалась як перехід (зйомка 2026-11-18).
+            Кнопки без сусіда не рендеримо взагалі: вимкнений контрол із
             прочерком читався як зламаний елемент (браузерний прохід
             2026-09-11). Порожній `span` тримає другу кнопку праворуч. */}
         {prev ? (
-          <button
-            type="button"
+          <Button
+            variant="text"
             onClick={() => onOpenItem(prev.id)}
             aria-label={`${ss.prevExercise}: ${prev.nameUk}`}
-            className="focus-ring flex min-h-[44px] min-w-0 items-center gap-1 rounded-lg px-2 text-style-label text-muted hover:text-text"
+            className="-ml-2 justify-start"
           >
             <Icon name="chevron-left" size="md" aria-hidden />
             <span className="truncate">{prev.nameUk}</span>
-          </button>
+          </Button>
         ) : (
           <span />
         )}
         {next ? (
-          <button
-            type="button"
+          <Button
+            variant="text"
             onClick={() => onOpenItem(next.id)}
             aria-label={`${ss.nextExercise}: ${next.nameUk}`}
-            className="focus-ring flex min-h-[44px] min-w-0 items-center justify-end gap-1 rounded-lg px-2 text-style-label font-semibold text-text hover:bg-panelHi"
+            className="-mr-2 justify-end"
           >
             <span className="truncate">{next.nameUk}</span>
-            {/* Шеврон каже, що це перехід, а не підпис: без нього назва
-                наступної вправи під карткою читалась як просто текст. */}
             <Icon name="chevron-right" size="md" aria-hidden />
-          </button>
+          </Button>
         ) : (
           <span />
         )}

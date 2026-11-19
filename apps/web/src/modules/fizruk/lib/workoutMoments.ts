@@ -33,3 +33,12 @@ export function recordWorkoutMoment(
   });
   if (moment) applyMoment(deviceDayKey(), "fizruk", moment);
 }
+
+/**
+ * Фз-2 (OD-28): «Повернутись у сесію» скасовує завершення, тож рядок
+ * моменту під цим тренуванням більше нічого не підтверджує. Повторне
+ * «Завершити» запише його знову.
+ */
+export function clearWorkoutMoment(workoutId: string): void {
+  applyMoment(deviceDayKey(), "fizruk", null, [workoutId]);
+}

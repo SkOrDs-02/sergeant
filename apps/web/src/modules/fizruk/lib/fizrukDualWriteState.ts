@@ -15,6 +15,10 @@
  * `peekNutritionDualWriteState` (Stage 8 PR #057n-tombstone).
  */
 
+import {
+  isExerciseMeasure,
+  type ExerciseMeasure,
+} from "@sergeant/fizruk-domain/domain";
 import type {
   Workout,
   WorkoutItem,
@@ -28,6 +32,7 @@ import type {
 import { isFizrukDualWriteRegistered } from "./sqliteWriter/index.js";
 import {
   type FizrukCustomActivitySnapshot,
+  type FizrukExercisePrefSnapshot,
   type FizrukCustomExerciseSnapshot,
   type FizrukDailyLogSnapshot,
   type FizrukDualWriteState,
@@ -99,6 +104,7 @@ export const EMPTY_FIZRUK_DUAL_WRITE_STATE: FizrukDualWriteState = {
   injuries: [],
   customActivities: [],
   programs: null,
+  exercisePrefs: [],
 };
 
 /**
@@ -124,6 +130,7 @@ export function peekFizrukDualWriteState(): FizrukDualWriteState | null {
         cache.customActivities ?? [],
       ),
       programs: extractProgramsSnapshot(cache.programs),
+      exercisePrefs: extractExercisePrefSnapshots(cache.exercisePrefs ?? {}),
     };
   } catch {
     return null;
@@ -154,6 +161,18 @@ export function extractCustomExerciseSnapshots(
   for (const e of customExercises) {
     if (!e || typeof e !== "object" || !e.id) continue;
     out.push({ ...e, id: String(e.id) });
+  }
+  return out;
+}
+
+/** Памʼять типу вправи (мапа id → тип) як рядки для дифу, у стабільному порядку. */
+export function extractExercisePrefSnapshots(
+  prefs: Readonly<Record<string, ExerciseMeasure | undefined>>,
+): FizrukExercisePrefSnapshot[] {
+  const out: FizrukExercisePrefSnapshot[] = [];
+  for (const id of Object.keys(prefs).sort()) {
+    const measure = prefs[id];
+    if (id && isExerciseMeasure(measure)) out.push({ id, measure });
   }
   return out;
 }
@@ -335,6 +354,12 @@ function toWorkoutSnapshot(workout: Workout): FizrukWorkoutSnapshot {
       Number.isFinite(workout.kcalBurned)
         ? workout.kcalBurned
         : null,
+    programRef: workout.programRef
+      ? {
+          programId: workout.programRef.programId,
+          slot: workout.programRef.slot,
+        }
+      : null,
   };
 }
 
@@ -351,6 +376,7 @@ function toItemSnapshot(item: WorkoutItem): FizrukItemSnapshot {
     durationSec?: number;
     distanceM?: number;
     chosenVariant?: string;
+    measure?: string;
   } = {
     id: String(item.id),
     exerciseId: String(item.exerciseId ?? ""),
@@ -369,6 +395,12 @@ function toItemSnapshot(item: WorkoutItem): FizrukItemSnapshot {
       weightKg: typeof s.weightKg === "number" ? s.weightKg : 0,
       reps: typeof s.reps === "number" ? s.reps : 0,
       ...(typeof s["rpe"] === "number" ? { rpe: s["rpe"] } : {}),
+      // Тип виміру (спека fizruk-exercise-measure-type): секунди й метри
+      // ОДНОГО підходу — той самий білий список, що `chosenVariant`.
+      ...(typeof s.durationSec === "number"
+        ? { durationSec: s.durationSec }
+        : {}),
+      ...(typeof s.distanceM === "number" ? { distanceM: s.distanceM } : {}),
     }));
   }
   if (typeof item.durationSec === "number") out.durationSec = item.durationSec;
@@ -377,6 +409,7 @@ function toItemSnapshot(item: WorkoutItem): FizrukItemSnapshot {
   // вибір варіанта не переживе перезавантаження, а лічильник трьох
   // полегшень поспіль ніколи не спрацює.
   if (item.chosenVariant !== undefined) out.chosenVariant = item.chosenVariant;
+  if (typeof item.measure === "string") out.measure = item.measure;
   return out as FizrukItemSnapshot;
 }
 

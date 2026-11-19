@@ -18,6 +18,12 @@
  * викликач (Europe/Kyiv за доменним інваріантом).
  */
 
+import {
+  hasExplicitMeasure,
+  itemMeasure,
+  measureHasVolume,
+} from "../domain/workouts/measure.js";
+
 interface AggSet {
   weightKg?: number | null | undefined;
   reps?: number | null | undefined;
@@ -109,7 +115,12 @@ export function calcFizrukPeriodAggregate(
     for (const item of w.items ?? []) {
       if (!item) continue;
       if (strengthOnly && item.type !== "strength") continue;
-      const vol = setVolume(item.sets);
+      // Обʼєм лише для вага × повтори (спека типу виміру): вправа з явним
+      // іншим типом («лише повтори» з вагою-залишком, час, дистанція) в обʼєм
+      // не йде. Записи без типу — як і раніше (див. `strengthOnly`).
+      const noVolume =
+        hasExplicitMeasure(item) && !measureHasVolume(itemMeasure(item));
+      const vol = noVolume ? 0 : setVolume(item.sets);
       if (!Number.isFinite(vol) || vol === 0) continue;
       totalVolume += vol;
       const key = exerciseKey(item);

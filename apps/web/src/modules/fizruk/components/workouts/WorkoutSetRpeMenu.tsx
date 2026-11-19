@@ -98,6 +98,7 @@ export function WorkoutSetRpeMenu({
       <span
         aria-label={triggerAria}
         data-testid={testID}
+        data-set-slot="rpe"
         className={cn(
           RPE_CELL_CLASS,
           "flex h-11 items-center justify-center rounded-lg border border-line bg-panelHi text-style-caption tabular-nums text-subtle",
@@ -118,6 +119,7 @@ export function WorkoutSetRpeMenu({
         aria-controls={panelId}
         title={sr.rpeTriggerTitle}
         data-testid={testID}
+        data-set-slot="rpe"
         onClick={() => setOpen((v) => !v)}
         className={cn(
           RPE_CELL_CLASS,

@@ -396,6 +396,7 @@ export function Progress({ onNavigate }: ProgressProps) {
                   <Card prominence="hero" tone="fizruk" padding="lg">
                     <WeeklyVolumeChart
                       volumeKg={weekly.volumeKg}
+                      todayIndex={weekly.todayIndex}
                       isLoading={!loaded}
                     />
                   </Card>

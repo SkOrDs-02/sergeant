@@ -21,6 +21,7 @@ vi.mock("../hubRoutineSync", () => ({
 import { trackEvent } from "../../../core/observability/analytics";
 import { notifyFinykRoutineCalendarSync } from "../hubRoutineSync";
 import { useFinykStorageMutations } from "./useFinykStorageMutations";
+import { __resetHubBusForTests, onHubBus } from "@shared/lib/modules/hubBus";
 import type { FinykStorageSlots } from "./useFinykStorageSlots";
 
 /**
@@ -102,6 +103,89 @@ function renderMutations(slots: FinykStorageSlots) {
 beforeEach(() => {
   vi.clearAllMocks();
   localStorage.clear();
+});
+
+describe("addManualExpense → автовідмітка звички (Рутина, 2026-11-18)", () => {
+  function listen() {
+    __resetHubBusForTests();
+    const events: unknown[] = [];
+    onHubBus("routineAutoMark", (d) => events.push(d));
+    return events;
+  }
+
+  it("ручна витрата людини → одна подія з днем витрати за годинником пристрою", () => {
+    const events = listen();
+    const { slots } = makeSlots();
+    const { result } = renderMutations(slots);
+
+    result.current.addManualExpense(
+      { amount: 120, date: "2026-11-18" },
+      undefined,
+      { userAction: true },
+    );
+
+    expect(events).toEqual([{ source: "finyk_expense", dayKey: "2026-11-18" }]);
+  });
+
+  it("ISO-дата → день за локальним годинником пристрою (ADR-0078)", () => {
+    const events = listen();
+    const { slots } = makeSlots();
+    const { result } = renderMutations(slots);
+    const date = new Date(2026, 10, 18, 23, 30).toISOString();
+
+    result.current.addManualExpense({ amount: 120, date }, undefined, {
+      userAction: true,
+    });
+
+    expect(events).toEqual([{ source: "finyk_expense", dayKey: "2026-11-18" }]);
+  });
+
+  it("надходження → події немає", () => {
+    const events = listen();
+    const { slots } = makeSlots();
+    const { result } = renderMutations(slots);
+
+    result.current.addManualExpense(
+      { amount: 5000, kind: "income", date: "2026-11-18" },
+      undefined,
+      { userAction: true },
+    );
+
+    expect(events).toEqual([]);
+  });
+
+  it("імпорт, чек Сільпо, undo (без позначки дії людини) → події немає", () => {
+    const events = listen();
+    const { slots } = makeSlots();
+    const { result } = renderMutations(slots);
+
+    result.current.addManualExpense({ amount: 120, date: "2026-11-18" });
+    result.current.restoreManualExpense({
+      id: "mx_old",
+      amount: 120,
+      date: "2026-11-18",
+    });
+
+    expect(events).toEqual([]);
+  });
+
+  it("збій запису → події немає", () => {
+    const events = listen();
+    const { slots } = makeSlots();
+    (slots as { setManualExpenses: unknown }).setManualExpenses = () => {
+      throw new Error("quota");
+    };
+    const { result } = renderMutations(slots);
+
+    expect(() =>
+      result.current.addManualExpense(
+        { amount: 120, date: "2026-11-18" },
+        undefined,
+        { userAction: true },
+      ),
+    ).toThrow("quota");
+    expect(events).toEqual([]);
+  });
 });
 
 describe("addManualExpense", () => {

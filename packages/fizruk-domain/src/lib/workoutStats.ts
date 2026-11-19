@@ -1,6 +1,8 @@
 /** Pure helpers for dashboard / analytics (kg, Kyiv-anchored week Mon–Sun). */
 
 import { kyivCalendarDaysBetween, kyivMondayStartMs } from "@sergeant/shared";
+import { itemHasMeasureRecord } from "../domain/workouts/measureRecords.js";
+import { itemHasVolume } from "../domain/workouts/measureItem.js";
 
 interface StatsSet {
   weightKg?: number | null | undefined;
@@ -233,6 +235,11 @@ export interface SuggestNextSetOptions {
   aging?: ReturnModeHint | null | undefined;
   /** Відсутня чи нейтральна готовність лишає результат таким, як був. */
   readiness?: ReadinessAnswer | null | undefined;
+  /**
+   * Діапазон повторів із плану сесії програми (5×5 → 5–5), сильніший за
+   * діапазон каталогу. Без нього — `targetRepRange(exercise)`.
+   */
+  targetReps?: TargetRepRange | null | undefined;
 }
 
 /**
@@ -308,7 +315,7 @@ export function suggestNextSet(
   const r = Number(lastBestSet?.reps) || 0;
   if (w <= 0 || r <= 0) return null;
 
-  const targetReps = targetRepRange(options.exercise);
+  const targetReps = options.targetReps ?? targetRepRange(options.exercise);
   const step = weightStepKg(options.exercise);
   const aging = options.aging;
   const readiness = classifyReadiness(options.readiness);
@@ -479,7 +486,10 @@ export function compareIsoDesc(
  * приходять із SQLite і з сервера, де числове поле може приїхати рядком.
  */
 export function itemTonnageKg(item: StatsItem | null | undefined): number {
-  if (!item || item.type !== "strength") return 0;
+  // Обʼєм `кг×повт` лише для вага × повтори (спека типу виміру): час і
+  // дистанція відсікаються за типом item-а, «лише повтори» — за `measure`
+  // (рядок цього типу поля ваги не показує, тож вага там — залишок).
+  if (!item || !itemHasVolume(item)) return 0;
   let t = 0;
   for (const s of item.sets || []) {
     t += (Number(s.weightKg) || 0) * (Number(s.reps) || 0);
@@ -511,7 +521,11 @@ export function workoutDurationSec(
   return Math.max(0, Math.floor((end - start) / 1000));
 }
 
-/** Кількість вправ, де є хоча б один зафіксований «рекорд» за оцінкою Еплі. */
+/**
+ * Кількість вправ, де є хоча б один зафіксований «рекорд»: оцінка Еплі для
+ * ваги × повтори, найдовший підхід для вправ на час і дистанцію (спека типу
+ * виміру; рухає видиме число — частина бампу `METRICS_VERSION`).
+ */
 export function personalRecordsExerciseCount(
   workouts: readonly StatsWorkout[] | null | undefined,
 ): number {
@@ -519,7 +533,12 @@ export function personalRecordsExerciseCount(
   for (const w of workouts || []) {
     for (const it of w.items || []) {
       const exId = it.exerciseId;
-      if (!exId || it.type !== "strength") continue;
+      if (!exId) continue;
+      if (itemHasMeasureRecord(it)) {
+        by[exId] = by[exId] || 1;
+        continue;
+      }
+      if (it.type !== "strength") continue;
       for (const s of it.sets || []) {
         const est = epley1rm(s.weightKg, s.reps);
         if (!est) continue;
@@ -542,13 +561,19 @@ function kyivDayIndexInWeek(t: number, week0: number): number {
 export interface WeeklyVolumeSeries {
   weekStartMs: number;
   volumeKg: number[];
+  /**
+   * Індекс сьогоднішнього дня (0=Пн … 6=Нд). Дні після нього ще не настали:
+   * їхні нулі — «ще не було», а не «нуль обʼєму», і графік їх не малює.
+   */
+  todayIndex: number;
 }
 
 /** 7 значень (Пн…Нд) для поточного календарного тижня (Europe/Kyiv), кг×повторення за день. */
 export function weeklyVolumeSeriesNow(
   workouts: readonly StatsWorkout[] | null | undefined,
 ): WeeklyVolumeSeries {
-  const week0 = kyivMondayStartMs(Date.now());
+  const nowMs = Date.now();
+  const week0 = kyivMondayStartMs(nowMs);
   const vol = [0, 0, 0, 0, 0, 0, 0];
 
   for (const w of workouts || []) {
@@ -562,7 +587,8 @@ export function weeklyVolumeSeriesNow(
     // `?? 0`, щоб уникнути non-null assertion.
     vol[idx] = (vol[idx] ?? 0) + workoutTonnageKg(w);
   }
-  return { weekStartMs: week0, volumeKg: vol };
+  const todayIndex = Math.min(6, Math.max(0, kyivDayIndexInWeek(nowMs, week0)));
+  return { weekStartMs: week0, volumeKg: vol, todayIndex };
 }
 
 export function formatCompactKg(kg: number | null | undefined): string {

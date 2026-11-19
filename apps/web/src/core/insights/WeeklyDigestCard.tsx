@@ -4,6 +4,7 @@
  */
 import { useEffect, useMemo, useState } from "react";
 import { cn } from "@shared/lib/ui/cn";
+import { Button } from "@shared/components/ui/Button";
 import { Icon } from "@shared/components/ui/Icon";
 import {
   DataState,
@@ -13,11 +14,12 @@ import { SkeletonText } from "@shared/components/ui/Skeleton";
 import { Tooltip } from "@shared/components/ui/Tooltip";
 import { Badge } from "@shared/components/ui/Badge";
 import { messages } from "@shared/i18n/uk";
-import { STORAGE_KEYS } from "@sergeant/shared";
+import { deviceDayKey, STORAGE_KEYS } from "@sergeant/shared";
 import { safeReadStringLS, safeWriteLS } from "@shared/lib/storage/storage";
 import {
   useWeeklyDigest,
   useDigestHistory,
+  useAutoDigestPending,
   getWeekKey,
   aggregateNutrition,
 } from "./useWeeklyDigest";
@@ -29,7 +31,7 @@ import {
   trackAdviceReaction,
   type AdviceSurface,
 } from "../observability/adviceTelemetry";
-import { formatDateShort } from "@shared/lib/time/formatDate";
+import { formatDayKeyUk } from "@shared/lib/time/dayKeyLabel";
 import {
   ModuleBlock,
   coverageBadge,
@@ -130,6 +132,12 @@ interface DigestContentProps {
   isCurrentWeek: boolean;
   /** Поточний АБО щойно завершений тиждень: для них дозволена (пере)генерація. */
   canGenerate: boolean;
+  /**
+   * Автогенерація чи читання серверної копії звіту за МИНУЛИЙ тиждень у
+   * польоті (`useAutoDigestPending`). Порожній стан поточного тижня тоді
+   * каже, що звіт збирається, а не мовчить.
+   */
+  autoDigestPending?: boolean | undefined;
   onGenerate: () => void;
   onUpdate: () => void;
   onPlayStories: () => void;
@@ -152,6 +160,7 @@ function DigestContent({
   insufficientData,
   isCurrentWeek,
   canGenerate,
+  autoDigestPending = false,
   onGenerate,
   onUpdate,
   onPlayStories,
@@ -248,18 +257,34 @@ function DigestContent({
   );
 
   // Порожній стан БЕЗ кнопки «Згенерувати звіт» (рішення власника
-  // 2026-09-03): звіт створює лише понеділкова автогенерація
-  // (`useMondayAutoDigest`), людина його не замовляє. «Оновити звіт» під
-  // тілом наявного звіту лишається — це перегенерація того, що вже є, а не
-  // створення. `canGenerate` тут далі розрізняє поточний/щойно завершений
+  // 2026-09-03): звіт створює лише автогенерація (`useMondayAutoDigest`),
+  // людина його не замовляє. «Оновити звіт» під тілом наявного звіту
+  // лишається — це перегенерація того, що вже є, а не створення.
+  // З 2026-11-18 (С-3 (а)) автогенерація спрацьовує при першому відкритті
+  // головної після завершення тижня, а не лише в понеділок, тож текст не
+  // обіцяє понеділок. `canGenerate` далі розрізняє поточний/щойно завершений
   // тиждень (звіт ще прийде) від давнішого (не збережено — і вже не буде).
   const emptySlot = (
     <div className="px-4 pb-4">
-      <p className="text-style-body text-muted text-center py-2 leading-relaxed">
-        {canGenerate
-          ? "Звіт зʼявиться сам у понеділок, коли тиждень завершиться."
-          : "Звіт за цей тиждень не збережено"}
-      </p>
+      {isCurrentWeek && autoDigestPending ? (
+        // С-3 (а): звіт за минулий тиждень саме збирається (рішення
+        // власника 2026-11-18). Після успіху картка сама перейде на нього
+        // (історія реактивна), після відмови повернеться чесний порожній стан.
+        <p
+          role="status"
+          className="text-style-body text-muted text-center py-2 leading-relaxed"
+        >
+          Збираю звіт за минулий тиждень…
+        </p>
+      ) : (
+        <p className="text-style-body text-muted text-center py-2 leading-relaxed">
+          {!canGenerate
+            ? "Звіт за цей тиждень не збережено"
+            : isCurrentWeek
+              ? "Звіт зʼявиться сам, коли тиждень завершиться і ти вперше відкриєш головну."
+              : "Звіт за цей тиждень ще не зібрано."}
+        </p>
+      )}
     </div>
   );
 
@@ -350,28 +375,27 @@ function DigestContent({
             </div>
           </div>
 
-          {!expanded && (
-            <div className="px-4 pb-3">
-              <button
-                type="button"
-                onClick={() => setExpandedTracked(true)}
-                className="w-full h-9 min-h-[44px] rounded-lg border border-line text-style-label text-muted hover:text-text hover:bg-panelHi transition-colors focus-ring"
-              >
-                Переглянути звіт
-              </button>
-            </div>
-          )}
-          {expanded && (
-            <div className="px-4 pb-3 border-t border-line pt-2">
-              <button
-                type="button"
-                onClick={() => setExpandedTracked(false)}
-                className="w-full h-9 min-h-[44px] rounded-lg border border-line text-style-label text-muted hover:text-text hover:bg-panelHi transition-colors focus-ring"
-              >
-                Сховати звіт
-              </button>
-            </div>
-          )}
+          {/* Тиха дія з шевроном, як «Поточний тиждень»: сіра обведена
+              кнопка читалась вимкненою (зйомка 2026-11-18). */}
+          <div
+            className={cn("px-4 pb-3", expanded && "border-t border-line pt-2")}
+          >
+            <Button
+              variant="text"
+              aria-expanded={expanded}
+              onClick={() => setExpandedTracked(!expanded)}
+              className="-ml-2"
+            >
+              {expanded
+                ? messages.sergeant.weeklyDigestHideReport
+                : messages.sergeant.weeklyDigestViewReport}
+              <Icon
+                name={expanded ? "chevron-up" : "chevron-down"}
+                size="md"
+                aria-hidden
+              />
+            </Button>
+          </div>
         </>
       )}
     </DataState>
@@ -415,6 +439,7 @@ export function WeeklyDigestCard({
     new Date(new Date(currentWeekKey + "T12:00:00").getTime() - 7 * 86_400_000),
   );
   const hasDigestFor = (wk: string) => history.some((h) => h.weekKey === wk);
+  const autoDigestPending = useAutoDigestPending(previousWeekKey);
   const [pickedWeekKey, setSelectedWeekKey] = useState<string | null>(null);
   const selectedWeekKey =
     pickedWeekKey ??
@@ -481,8 +506,10 @@ export function WeeklyDigestCard({
       <div>
         <div className="px-4 py-3.5 flex items-center gap-3">
           <div className="flex-1 min-w-0">
-            <div className="flex items-center gap-2 min-w-0">
-              <span className="text-style-title font-bold text-text truncate">
+            {/* Заголовок не скорочується: бейджі переносяться під нього
+                (зйомка 2026-11-18: «З…» поруч із «Новий звіт»). */}
+            <div className="flex flex-wrap items-center gap-x-2 gap-y-1 min-w-0">
+              <span className="text-style-title font-bold text-text shrink-0">
                 Звіт тижня
               </span>
               {hasUnreadDigest && (
@@ -490,26 +517,36 @@ export function WeeklyDigestCard({
                   {messages.sergeant.weeklyDigestUnread}
                 </Badge>
               )}
-              {/* Градація впевненості (Хвиля 4, hub-coach § G2): summary/
-                comment/recommendations — суцільний вільний текст моделі,
-                тож рівень «припущення» проставляється детерміновано на
-                рівні картки (не потребує розбору речень). */}
+            </div>
+            {/* Метадані одним рядком під заголовком: тиждень · дата
+                генерації · «Припущення» (зйомка 2026-11-18: бейдж і дата
+                були розкидані по шапці). */}
+            <div
+              data-digest-meta
+              className="mt-0.5 flex flex-wrap items-center gap-x-2 gap-y-1 text-style-caption text-muted"
+            >
+              <span>
+                {loading ? messages.sergeant.weeklyDigestPreparing : weekRange}
+                {/* Той самий форматер місяця, що й діапазон тижня
+                    (`getWeekRange` → `formatDayRangeUk`). */}
+                {!loading && digest?.generatedAt
+                  ? ` · ${formatDayKeyUk(
+                      deviceDayKey(new Date(digest.generatedAt)),
+                      { relative: false, todayKey: deviceDayKey() },
+                    )}`
+                  : null}
+              </span>
+              {/* Градація впевненості (Хвиля 4, hub-coach § G2): тіло звіту —
+                  суцільний вільний текст моделі, тож рівень «припущення»
+                  стоїть на рівні картки. */}
               {!loading && hasDigestBody(digest) && (
                 <Badge variant="neutral" size="xs">
                   {messages.sergeant.insightAssumptionBadge}
                 </Badge>
               )}
             </div>
-            <div className="text-style-caption text-muted mt-0.5">
-              {loading ? messages.sergeant.weeklyDigestPreparing : weekRange}
-            </div>
           </div>
           <div className="flex items-center gap-1.5 shrink-0">
-            {digest?.generatedAt && (
-              <span className="text-style-caption text-subtle">
-                {formatDateShort(new Date(digest.generatedAt))}
-              </span>
-            )}
             {history.length > 1 && (
               <button
                 type="button"
@@ -590,13 +627,17 @@ export function WeeklyDigestCard({
 
         {isPast && (
           <div className="px-4 pb-1">
-            <button
-              type="button"
+            {/* Тиха дія рядка (`variant="text"`): вага 600 і шеврон
+                відрізняють її від підпису, `TEXT_SIZE` дає 44 px. Раніше це
+                був голий текст (перевірка першої хвилі 2026-11-18). */}
+            <Button
+              variant="text"
               onClick={() => setSelectedWeekKey(currentWeekKey)}
-              className="inline-flex items-center text-style-label text-text hover:underline"
+              className="-ml-2"
             >
               Поточний тиждень
-            </button>
+              <Icon name="chevron-right" size="md" aria-hidden />
+            </Button>
           </div>
         )}
 
@@ -607,6 +648,7 @@ export function WeeklyDigestCard({
           insufficientData={insufficientData}
           isCurrentWeek={isCurrentWeek}
           canGenerate={canGenerate}
+          autoDigestPending={autoDigestPending}
           onGenerate={handleGenerate}
           onUpdate={handleGenerate}
           onPlayStories={() => setStoriesOpen(true)}

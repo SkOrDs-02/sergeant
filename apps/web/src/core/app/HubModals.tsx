@@ -29,6 +29,8 @@ export interface HubModalsProps {
   /** Готовий запит для пошуку (палітра команд → «Шукати „…“»). */
   searchQuery?: string;
   onCloseSearch: () => void;
+  /** `useHubUIState.closeSearchAfterNavigation`: закриття, що переживе зміну маршруту. */
+  onCloseSearchAfterNavigation?: (() => void) | undefined;
   onOpenModule: (
     id: string | null | undefined,
     opts?: OpenModuleOptions,
@@ -39,6 +41,7 @@ export function HubModals({
   searchOpen,
   searchQuery = "",
   onCloseSearch,
+  onCloseSearchAfterNavigation,
   onOpenModule,
 }: HubModalsProps) {
   return (
@@ -48,6 +51,7 @@ export function HubModals({
           <Suspense fallback={null}>
             <HubSearch
               onClose={onCloseSearch}
+              onCloseAfterNavigation={onCloseSearchAfterNavigation}
               onOpenModule={onOpenModule}
               initialQuery={searchQuery}
             />

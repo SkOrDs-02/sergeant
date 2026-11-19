@@ -37,8 +37,8 @@ const WORKOUT_UPSERT_SPEC: TableSpec = {
   insertClause: `INSERT INTO fizruk_workouts
        (id, user_id, started_at, ended_at, note, groups_json,
         warmup_json, cooldown_json, wellbeing_json, kcal_burned,
-        created_at, updated_at, deleted_at)
-     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, NULL)`,
+        program_id, program_slot, created_at, updated_at, deleted_at)
+     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, NULL)`,
   conflictTarget: ["id"],
   updateColumns: [
     { column: "started_at" },
@@ -49,6 +49,8 @@ const WORKOUT_UPSERT_SPEC: TableSpec = {
     { column: "cooldown_json" },
     { column: "wellbeing_json" },
     { column: "kcal_burned" },
+    { column: "program_id" },
+    { column: "program_slot" },
     { column: "updated_at" },
     { column: "deleted_at", value: "NULL" },
   ],
@@ -62,8 +64,8 @@ const WORKOUT_ITEM_UPSERT_SPEC: TableSpec = {
   insertClause: `INSERT INTO fizruk_workout_items
        (id, workout_id, user_id, exercise_id, name_uk, primary_group,
         muscles_primary, muscles_secondary, type, duration_sec, distance_m,
-        chosen_variant, sort_order, created_at, updated_at, deleted_at)
-     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, NULL)`,
+        chosen_variant, sort_order, created_at, updated_at, deleted_at, measure)
+     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, NULL, ?)`,
   conflictTarget: ["id"],
   updateColumns: [
     { column: "workout_id" },
@@ -76,6 +78,7 @@ const WORKOUT_ITEM_UPSERT_SPEC: TableSpec = {
     { column: "duration_sec" },
     { column: "distance_m" },
     { column: "chosen_variant" },
+    { column: "measure" },
     { column: "sort_order" },
     { column: "updated_at" },
     { column: "deleted_at", value: "NULL" },
@@ -89,13 +92,16 @@ const WORKOUT_SET_UPSERT_SPEC: TableSpec = {
   table: "fizruk_workout_sets",
   insertClause: `INSERT INTO fizruk_workout_sets
        (id, workout_item_id, user_id, weight_kg, reps, rpe,
-        sort_order, created_at, updated_at, deleted_at)
-     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, NULL)`,
+        sort_order, created_at, updated_at, deleted_at,
+        duration_sec, distance_m)
+     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, NULL, ?, ?)`,
   conflictTarget: ["id"],
   updateColumns: [
     { column: "weight_kg" },
     { column: "reps" },
     { column: "rpe" },
+    { column: "duration_sec" },
+    { column: "distance_m" },
     { column: "sort_order" },
     { column: "updated_at" },
     { column: "deleted_at", value: "NULL" },

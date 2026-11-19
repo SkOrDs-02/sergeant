@@ -13,6 +13,7 @@ import { isFirstRealEntryDone } from "../onboarding/vibePicks";
 import { useWhatsNew } from "../whatsNew";
 import { lazyImport } from "../lib/lazyImport";
 import { MemoryOnlyStorageBanner } from "../durability/MemoryOnlyStorageBanner";
+import { ManualPremiumNotice } from "../billing/ManualPremiumNotice";
 import type { HubNavigation } from "../hooks/useHubNavigation";
 import type { HubUIState } from "../hooks/useHubUIState";
 
@@ -181,6 +182,10 @@ export function HubHomeView(props: HubHomeViewProps) {
 
       <MemoryOnlyStorageBanner />
 
+      {/* Ручний Premium (спека manual-premium-request.md): рядок після видачі
+          і попередження перед кінцем; без гранту не рендерить нічого. */}
+      <ManualPremiumNotice />
+
       <HubMainContent
         onOpenModule={openFromDashboard}
         hubView={ui.hubView}
@@ -212,6 +217,7 @@ export function HubHomeView(props: HubHomeViewProps) {
         searchOpen={ui.searchOpen}
         searchQuery={ui.searchQuery}
         onCloseSearch={ui.closeSearch}
+        onCloseSearchAfterNavigation={ui.closeSearchAfterNavigation}
         onOpenModule={openFromSearch}
       />
       {shortcutsOpen && (

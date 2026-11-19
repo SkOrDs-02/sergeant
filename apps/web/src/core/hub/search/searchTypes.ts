@@ -24,7 +24,9 @@ export type Hit = {
   icon: string;
   /** Where the hit dispatches when activated. */
   target:
-    | { kind: "module"; moduleId: string }
+    // `path` — глибоке посилання всередину модуля замість його головної
+    // (Ф-2 а, 2026-11-18: хіт операції Фініка відкриває саму операцію).
+    | { kind: "module"; moduleId: string; path?: string }
     | { kind: "settings"; sectionId?: string }
     // PR-S5 (аудит 2026-09-13 хвиля 5): Профіль (пароль, сесії, PIN,
     // вага, вихід, видалення акаунта) не мав власного джерела в

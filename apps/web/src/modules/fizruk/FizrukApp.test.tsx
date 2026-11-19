@@ -5,7 +5,13 @@
  * module shell mounts, bottom nav renders, and default page loads.
  */
 import { describe, it, expect, vi, afterEach } from "vitest";
-import { render, screen, cleanup } from "@testing-library/react";
+import {
+  render,
+  screen,
+  cleanup,
+  act,
+  fireEvent,
+} from "@testing-library/react";
 
 // Stub kvStoreBoot (requires @sergeant/db-schema/sqlite WASM artefact)
 vi.mock("../../core/db/kvStoreBoot", () => ({
@@ -106,6 +112,7 @@ vi.mock("@shared/components/layout", async () => {
 });
 
 import FizrukApp from "./FizrukApp";
+import { useFizrukProgramStart } from "./hooks/useFizrukProgramStart";
 
 afterEach(() => {
   cleanup();
@@ -151,5 +158,19 @@ describe("FizrukApp smoke tests", () => {
         />,
       ),
     ).not.toThrow();
+  });
+
+  it("жорстке застереження на старті програми питає підтвердження (ADR-0083)", () => {
+    // Сам гейт тестується в `useFizrukProgramStart.test.tsx`; тут — що
+    // оболонка справді показує діалог і продовжує старт лише після «так».
+    render(<FizrukApp />);
+    const args = vi.mocked(useFizrukProgramStart).mock.calls.at(-1)?.[0];
+    expect(args?.injurySites).toBeInstanceOf(Set);
+    const proceed = vi.fn();
+    act(() => args?.onRecoveryConflict(proceed));
+    expect(screen.getByText("Є жорстке застереження")).toBeInTheDocument();
+    expect(proceed).not.toHaveBeenCalled();
+    fireEvent.click(screen.getByRole("button", { name: "Так, почати" }));
+    expect(proceed).toHaveBeenCalledTimes(1);
   });
 });

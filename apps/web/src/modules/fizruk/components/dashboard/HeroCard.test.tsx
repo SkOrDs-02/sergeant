@@ -204,6 +204,44 @@ describe("HeroCard · today state", () => {
   });
 });
 
+describe("HeroCard · rest state (П-11, OD-32)", () => {
+  it("каже «Сьогодні відпочинок», називає наступну сесію і дає другорядний старт", () => {
+    const onStartNext = vi.fn();
+    const { onStartToday } = renderHero(
+      {
+        kind: "rest",
+        label: "Workout B",
+        daysFromNow: 1,
+        exerciseCount: 3,
+      },
+      { onStartNext },
+    );
+    expect(
+      screen.getByRole("heading", { name: "Сьогодні відпочинок" }),
+    ).toBeInTheDocument();
+    expect(
+      screen.getByText("Наступна: Workout B · завтра · 3 вправи"),
+    ).toBeInTheDocument();
+    const start = screen.getByRole("button", {
+      name: "Почати зараз: Workout B",
+    });
+    fireEvent.click(start);
+    expect(onStartNext).toHaveBeenCalledTimes(1);
+    expect(onStartToday).not.toHaveBeenCalled();
+  });
+
+  it("без обробника старту кнопки немає, рядок наступної сесії лишається", () => {
+    renderHero({
+      kind: "rest",
+      label: "Push",
+      daysFromNow: 3,
+      exerciseCount: 6,
+    });
+    expect(screen.getByText(/Наступна: Push · за 3 дні/)).toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: /Почати зараз/ })).toBeNull();
+  });
+});
+
 describe("HeroCard · upcoming state", () => {
   it("renders days-away + date and wires the 'Відкрити план' CTA", () => {
     const { onOpenPlan } = renderHero({
@@ -217,7 +255,7 @@ describe("HeroCard · upcoming state", () => {
     // Тут CTA («Відкрити план») назви не несе, тож вона переїхала в голову
     // мета-рядка — заголовка немає, але з екрана вона не зникла.
     expect(screen.queryByRole("heading", { name: "Push B" })).toBeNull();
-    expect(screen.getByText(/Push B · За 2 дні/i)).toBeInTheDocument();
+    expect(screen.getByText(/Push B · за 2 дні/)).toBeInTheDocument();
 
     fireEvent.click(screen.getByRole("button", { name: /Відкрити план/i }));
     expect(onOpenPlan).toHaveBeenCalledTimes(1);
@@ -231,7 +269,7 @@ describe("HeroCard · upcoming state", () => {
       dateKey: "2026-05-01",
       exerciseCount: null,
     });
-    expect(screen.getByText(/За 5 днів/i)).toBeInTheDocument();
+    expect(screen.getByText(/X · за 5 днів/)).toBeInTheDocument();
     cleanup();
 
     renderHero({
@@ -241,7 +279,7 @@ describe("HeroCard · upcoming state", () => {
       dateKey: "2026-04-24",
       exerciseCount: null,
     });
-    expect(screen.getByText(/Завтра/i)).toBeInTheDocument();
+    expect(screen.getByText(/Y · завтра/)).toBeInTheDocument();
     cleanup();
 
     renderHero({
@@ -251,7 +289,7 @@ describe("HeroCard · upcoming state", () => {
       dateKey: "2026-05-14",
       exerciseCount: null,
     });
-    expect(screen.getByText(/За 21 день/i)).toBeInTheDocument();
+    expect(screen.getByText(/за 21 день/)).toBeInTheDocument();
   });
 
   it("hides exercise count when the catalogue doesn't know the template", () => {
