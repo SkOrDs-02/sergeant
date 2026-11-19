@@ -1,5 +1,4 @@
 import {
-  resolveOriginDeviceId,
   sweepStaleTerminalOutbox,
   SYNC_V2_MAX_OPS_PER_PUSH,
   SYNC_V2_PULL_MAX_LIMIT,
@@ -8,6 +7,7 @@ import type { RecoverDeadLetterTarget } from "@sergeant/db-schema/sqlite";
 import type { SqliteMigrationClient } from "@sergeant/db-schema/migrate/sqlite";
 
 import { webKVStore } from "@shared/lib/storage/storage";
+import { resolveBootOriginDeviceId } from "./originDeviceReset";
 
 // Статичний імпорт навмисно: `authClient` і так eager (статично тягнеться
 // `AuthContext`-ом у entry-chunk). Подвійний static+dynamic імпорт змушував
@@ -619,7 +619,10 @@ async function createSyncSharedContext(): Promise<SyncSharedContext> {
   // `STORAGE_KEYS.SYNC_ORIGIN_DEVICE_ID` via `webKVStore` so it
   // survives reloads, deploys, and the SQLite warm-cache hydration
   // (pre-bootstrap reads fall through to `localStorage`).
-  const originDeviceId = resolveOriginDeviceId({ store: webKVStore });
+  // Після стирання локальних даних (вихід, втрата сесії) старт видає НОВИЙ
+  // id: старий лежить в анонімному KV, куди чистка не дістає
+  // (`originDeviceReset.ts`).
+  const originDeviceId = resolveBootOriginDeviceId(webKVStore);
   sentry.setSentryTag("sync.origin_device_id_present", "true");
 
   const writerIntervalMs = randomizeIntervalMs(30_000, 0.2);
