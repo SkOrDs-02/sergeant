@@ -9,7 +9,7 @@
  * що колись була з розсипаними seed-мапами до появи `seedFTUX`).
  */
 
-import { expect, type Page } from "@playwright/test";
+import { expect, type BrowserContext, type Page } from "@playwright/test";
 
 /** Спільний пароль QA-акаунтів живих лейнів. */
 export const QA_PASSWORD = "QaProfile#2026";
@@ -71,6 +71,27 @@ export function signInInvite(page: Page) {
     .or(page.getByRole("button", { name: /увійти|вхід|зареєстр/i }))
     .filter({ visible: true })
     .first();
+}
+
+/**
+ * Рішення «ні» щодо згоди на аналітику — до першої навігації контексту.
+ *
+ * Банер згоди (`analytics-consent-banner`, fixed знизу) перекривав
+ * «Немає акаунту? Зареєструватися» на `/sign-in` і FAB «Додати» у Фініку:
+ * клік чекав 90 с і валив `beforeAll` усіх персон лейну профілів (прогін
+ * `full-2026-11-19`). Smoke- і ledger-лейни засівають той самий ключ у своїх
+ * `SEEDED_LS`; тут — для контекстів, що створюються вручну. Ставимо лише
+ * якщо рішення ще немає, щоб не переписати стан з `storageState`.
+ */
+export async function seedAnalyticsConsentDecision(
+  context: BrowserContext,
+): Promise<void> {
+  await context.addInitScript(() => {
+    const key = "sergeant.analytics_consent_decision.v1";
+    if (window.localStorage.getItem(key) === null) {
+      window.localStorage.setItem(key, JSON.stringify({ v: "denied" }));
+    }
+  });
 }
 
 export async function goto(page: Page, route: string): Promise<void> {
@@ -282,6 +303,38 @@ export async function waitForSyncQuiet(
   });
 }
 
+/**
+ * Барʼєр «сервер уже має ці записи»: опитує `GET /api/v2/sync/pull` сесією
+ * контексту, доки тіло не міститиме кожен із `needles` (назви, суми).
+ *
+ * Навіщо (прогін `full-2026-11-19`): `waitForSyncQuiet` чекає кнопку
+ * «в черзі», якої в UI вже немає, тож барʼєр став no-op, і «пристрій 1»
+ * персони P3 закривався раніше, ніж writer устигав push (~2 с після
+ * останньої навігації) — звичка не доїжджала на «новий пристрій». Тут
+ * перевіряється факт на сервері, а не стан UI, тож перейменування
+ * індикатора барʼєр не зламає.
+ */
+export async function waitForServerSync(
+  page: Page,
+  needles: readonly string[],
+  timeoutMs = 30_000,
+): Promise<void> {
+  const api = process.env["VITE_API_BASE_URL"] || "http://127.0.0.1:3000";
+  await expect
+    .poll(
+      async () => {
+        const res = await page.request.get(
+          `${api}/api/v2/sync/pull?since=0&limit=500`,
+        );
+        if (!res.ok()) return `HTTP ${res.status()}`;
+        const body = await res.text();
+        return needles.filter((n) => !body.includes(n)).join(", ") || "ok";
+      },
+      { timeout: timeoutMs, message: "записи не доїхали на сервер" },
+    )
+    .toBe("ok");
+}
+
 export async function signUp(
   page: Page,
   name: string,
@@ -319,33 +372,55 @@ export async function addExpense(
   amount: string,
 ): Promise<void> {
   await goto(page, "/finyk/transactions");
-  // FAB — фан-меню з трьох дій (PR #818, чек-скан): головна кнопка
-  // «Додати», дія «Додати витрату» — menuitem усередині фану.
-  await page.getByRole("button", { name: "Додати", exact: true }).click();
-  await page.getByRole("menuitem", { name: "Додати витрату" }).click();
-  await page.getByPlaceholder("0").first().fill(amount);
-  await page.getByPlaceholder("Назва", { exact: true }).fill(title);
+  // «Додати» в куті відкриває аркуш джерел («Вручну» / «Чек» /
+  // «Документи»), а не фан-меню з menuitem-ами (PR #818): той селектор
+  // чекав 90 с і валив лейн профілів (прогін `full-2026-11-19`). Той самий
+  // шлях, що в smoke `deep-module-crud`.
   await page
+    .getByTestId("corner-action")
+    .getByRole("button", { name: "Додати" })
+    .click();
+  await page
+    .getByTestId("add-sources")
+    .getByRole("button", { name: /^Вручну/ })
+    .click();
+  const dialog = page.getByRole("dialog", { name: "Додати витрату" });
+  await expect(dialog).toBeVisible();
+  await dialog.getByLabel("Сума ₴").fill(amount);
+  await dialog.getByLabel("Назва").fill(title);
+  await dialog
     .getByRole("button", { name: "Додати витрату", exact: true })
-    .last()
     .click();
   await expect(visibleText(page, "Витрату додано.")).toBeVisible();
 }
 
 export async function addHabit(page: Page, title: string): Promise<void> {
-  await goto(page, "/routine/habits");
-  await page.getByRole("button", { name: "Додати звичку" }).first().click();
-  await page.getByPlaceholder(/Напр\. Пити воду/).fill(title);
-  await page
+  await goto(page, "/routine");
+  // `/routine` відновлює останню вкладку (KV `hub_routine_main_tab_v1`), а
+  // вхід «Нова звичка» живе лише на «Огляді»: після «Статистики» його нема.
+  const create = page.getByRole("button", { name: "Нова звичка", exact: true });
+  if (!(await create.isVisible().catch(() => false))) {
+    await page
+      .getByRole("navigation", { name: "Розділи Рутини" })
+      .getByRole("tab", { name: "Огляд" })
+      .click();
+  }
+  // Діалог «Нова звичка» з полем «Назва звички» — той самий шлях, що в
+  // smoke `deep-module-crud`; старий селектор кнопки й плейсхолдера
+  // «Напр. Пити воду» вже не існує (прогін `full-2026-11-19`).
+  await create.click();
+  const dialog = page.getByRole("dialog", { name: "Нова звичка" });
+  await expect(dialog).toBeVisible();
+  await dialog.getByLabel("Назва звички").fill(title);
+  await dialog
     .getByRole("button", { name: "Додати звичку", exact: true })
-    .last()
     .click();
   await expect(visibleText(page, title)).toBeVisible();
 }
 
 export async function addPantryItem(page: Page, title: string): Promise<void> {
   await goto(page, "/nutrition/pantry");
-  await page.getByPlaceholder(/напр\. лосось/).fill(title);
+  await page.getByPlaceholder("Продукт", { exact: true }).fill(title);
   const add = page.getByRole("button", { name: "Додати", exact: true }).first();
   await expect(add).toBeEnabled();
   await add.click();
