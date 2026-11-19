@@ -4127,6 +4127,55 @@
       "canonical_owner": "docs/work/specs/audits/verification/runs/durability-2026-10-08/run.json"
     },
     {
+      "old_path": null,
+      "new_path": "docs/work/specs/audits/verification/runs/full-2026-11-19/durability.jsonl",
+      "action": "keep",
+      "genre": "active-work",
+      "canonical_owner": "docs/work/specs/audits/verification/runs/full-2026-11-19/durability.jsonl"
+    },
+    {
+      "old_path": null,
+      "new_path": "docs/work/specs/audits/verification/runs/full-2026-11-19/handoff.md",
+      "action": "keep",
+      "genre": "active-work",
+      "canonical_owner": "docs/work/specs/audits/verification/runs/full-2026-11-19/handoff.md"
+    },
+    {
+      "old_path": null,
+      "new_path": "docs/work/specs/audits/verification/runs/full-2026-11-19/lanes.txt",
+      "action": "keep",
+      "genre": "active-work",
+      "canonical_owner": "docs/work/specs/audits/verification/runs/full-2026-11-19/lanes.txt"
+    },
+    {
+      "old_path": null,
+      "new_path": "docs/work/specs/audits/verification/runs/full-2026-11-19/routine-replay-before-fix.png",
+      "action": "keep",
+      "genre": "active-work",
+      "canonical_owner": "docs/work/specs/audits/verification/runs/full-2026-11-19/routine-replay-before-fix.png"
+    },
+    {
+      "old_path": null,
+      "new_path": "docs/work/specs/audits/verification/runs/full-2026-11-19/run.json",
+      "action": "keep",
+      "genre": "active-work",
+      "canonical_owner": "docs/work/specs/audits/verification/runs/full-2026-11-19/run.json"
+    },
+    {
+      "old_path": null,
+      "new_path": "docs/work/specs/audits/verification/runs/full-2026-11-19/walk-local.json",
+      "action": "keep",
+      "genre": "active-work",
+      "canonical_owner": "docs/work/specs/audits/verification/runs/full-2026-11-19/walk-local.json"
+    },
+    {
+      "old_path": null,
+      "new_path": "docs/work/specs/audits/verification/runs/full-2026-11-19/walk-prod.json",
+      "action": "keep",
+      "genre": "active-work",
+      "canonical_owner": "docs/work/specs/audits/verification/runs/full-2026-11-19/walk-prod.json"
+    },
+    {
       "old_path": "docs/work/specs/audits/verification/runs/pilot-2026-09-05-a/handoff.md",
       "new_path": "docs/work/specs/audits/verification/runs/pilot-2026-09-05-a/handoff.md",
       "action": "keep",
