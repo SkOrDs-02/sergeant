@@ -1,3 +1,4 @@
+// @vitest-environment jsdom
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 vi.mock("../../../../../core/syncEngine/enqueueOutboxUpsert.js", () => ({
@@ -18,6 +19,13 @@ import {
 import { pendingDualWrites } from "../../../../../core/durability/dualWriteJournal.js";
 import { installMemoryLocalStorage } from "../../../../../core/durability/__tests__/memoryLocalStorage.js";
 import { createTestSqlite } from "./testSqlite.js";
+import {
+  clearSqliteRoutineStateCache,
+  getCachedSqliteRoutineState,
+  refreshSqliteRoutineState,
+} from "../../sqliteReader.js";
+import { ROUTINE_EVENT } from "@sergeant/routine-domain";
+import { __resetRoutineLocalWriteWindowForTests } from "../../localWriteWindow.js";
 
 const USER_ID = "user-1";
 
@@ -118,5 +126,43 @@ describe("Routine dual-write journal (аудит 2026-09-28, D1)", () => {
       () => expect(pendingDualWrites("routine", USER_ID)).toEqual([]),
       { timeout: 10_000 },
     );
+  });
+
+  it("refreshes the read cache and notifies the UI after a boot replay (full-2026-11-19)", async () => {
+    // Сторінка померла до коміту: запис лишився лише в журналі.
+    registerRoutineDualWriteContext(
+      ctx({ getMigrationClient: () => new Promise(() => {}) }),
+    );
+    triggerRoutineDualWrite(
+      state([]),
+      state([{ id: "h-journal", name: "Вода" }]),
+    );
+    await new Promise((r) => setTimeout(r, 10));
+
+    // Новий бут: read-boot уже прочитав порожню базу і прогрів кеш нулем —
+    // саме так анонім бачив «Звичок ще немає» до наступного перезавантаження.
+    // Вікно запису живе в модулі сторінки; та сторінка померла разом зі своїм
+    // «вічним» записом, тож новий бут стартує з нульовим лічильником.
+    __clearRoutineDualWriteContextForTests();
+    __resetRoutineLocalWriteWindowForTests();
+    clearSqliteRoutineStateCache();
+    await refreshSqliteRoutineState(handle.client, USER_ID);
+    expect(getCachedSqliteRoutineState().habits).toEqual([]);
+
+    const events = vi.fn();
+    window.addEventListener(ROUTINE_EVENT, events);
+    try {
+      registerRoutineDualWriteContext(ctx());
+      await vi.waitFor(
+        () =>
+          expect(getCachedSqliteRoutineState().habits.map((h) => h.id)).toEqual(
+            ["h-journal"],
+          ),
+        { timeout: 10_000 },
+      );
+      expect(events).toHaveBeenCalled();
+    } finally {
+      window.removeEventListener(ROUTINE_EVENT, events);
+    }
   });
 });
