@@ -1,5 +1,5 @@
 /**
- * Last validated: 2026-09-11
+ * Last validated: 2026-11-19
  * Status: Active
  *
  * Одна стрічка джерел для «Додати продукти» (рішення власника 2026-09-11):
@@ -28,6 +28,14 @@
  * дві, або три, або чотири — Tailwind-класи нижче перелічені явно
  * (`grid-cols-2/3/4`), бо динамічний рядок класу JIT не підхопить.
  *
+ * **Тап при відкритій клавіатурі (фідбек власника 2026-11-19).** Усі
+ * сегменти натискаються без зняття фокуса з поля (`keepFieldFocusProps`):
+ * інакше `focusout` на `mousedown` скидав відступ аркуша під клавіатуру,
+ * аркуш падав ще до `mouseup`, і перший тап по «Списком» губився. Режими
+ * лишають клавіатуру відкритою (нове поле бере фокус у `PantryCard`), а
+ * миттєві дії «Скан» і «З чека» ховають її в обробнику, коли тап уже
+ * зарахований: поверх них відкривається інший оверлей.
+ *
  * Чому не третій сегмент у старому перемикачі, а окрема стрічка: на 393px
  * чотири підписані сегменти в рядок уже на межі — розтягувати колишній
  * компактний перемикач до чотирьох при тому, що там ще й окрема
@@ -38,6 +46,10 @@
 import { useState } from "react";
 import { messages } from "@shared/i18n/uk";
 import { cn } from "@shared/lib/ui/cn";
+import {
+  blurActiveField,
+  keepFieldFocusProps,
+} from "@shared/lib/ui/keepFieldFocus";
 import { useSilpoSyncState } from "@finyk/hooks/useSilpoSyncState";
 import { SilpoPantryReplenishSheet } from "./SilpoPantryReplenishSheet";
 import type { PantryItem } from "../lib/pantryTextParser";
@@ -63,6 +75,7 @@ function SegmentButton({ seg }: { seg: Segment }) {
   return (
     <button
       type="button"
+      {...keepFieldFocusProps}
       onClick={seg.onClick}
       disabled={seg.disabled}
       aria-label={seg.ariaLabel}
@@ -122,7 +135,10 @@ export function PantrySourceTabs({
       label: "Скан",
       ariaLabel: "Сканувати штрих-код",
       disabled: busy,
-      onClick: onScanBarcode,
+      onClick: () => {
+        blurActiveField();
+        onScanBarcode();
+      },
     });
   }
   if (silpoConnected) {
@@ -134,7 +150,10 @@ export function PantrySourceTabs({
       // уже шукають смоук-тести і мобільний аудит (`entryCta`).
       ariaLabel: messages.nutrition.pantryReplenish.entryCta,
       disabled: busy,
-      onClick: () => setReceiptSheetOpen(true),
+      onClick: () => {
+        blurActiveField();
+        setReceiptSheetOpen(true);
+      },
     });
   }
 

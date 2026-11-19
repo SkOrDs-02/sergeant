@@ -193,6 +193,49 @@ describe("PantryCard add modes", () => {
   });
 });
 
+// Фідбек власника 2026-11-19: з відкритою клавіатурою аркуш комори стрибав,
+// а перший тап по кнопці губився. Причина — `focusout` на `mousedown`
+// скидав відступ під клавіатуру ще до `click` (`keepFieldFocus.ts`).
+describe("PantryCard: тап при відкритій клавіатурі", () => {
+  it("«Додати» не забирає фокус із поля (mousedown скасовано)", () => {
+    render(<Card {...baseProps({ newItemName: "Кефір" })} />);
+    // `fireEvent` повертає false, коли обробник викликав `preventDefault`.
+    expect(fireEvent.mouseDown(screen.getByText("Додати"))).toBe(false);
+  });
+
+  it("«Розібрати» теж не забирає фокус на mousedown, а клавіатуру ховає вже в click", () => {
+    const parsePantry = vi.fn();
+    render(<Card {...baseProps({ pantryText: "2 яйця", parsePantry })} />);
+    fireEvent.click(screen.getByText("Списком"));
+    const field = screen.getByLabelText("Список продуктів");
+    field.focus();
+    expect(fireEvent.mouseDown(screen.getByText("Розібрати"))).toBe(false);
+    expect(document.activeElement).toBe(field);
+    fireEvent.click(screen.getByText("Розібрати"));
+    expect(parsePantry).toHaveBeenCalled();
+    expect(document.activeElement).not.toBe(field);
+  });
+
+  it("перемикання режиму, поки друкуєш, переносить фокус у нове поле", () => {
+    render(<Card {...baseProps()} />);
+    screen.getByPlaceholderText("Продукт").focus();
+    fireEvent.click(screen.getByText("Списком"));
+    expect(document.activeElement).toBe(
+      screen.getByLabelText("Список продуктів"),
+    );
+    fireEvent.click(screen.getByText("По одному"));
+    expect(document.activeElement).toBe(
+      screen.getByLabelText("Назва продукту"),
+    );
+  });
+
+  it("без фокуса в полі інлайн-форма фокус не захоплює", () => {
+    render(<Card {...baseProps()} />);
+    fireEvent.click(screen.getByText("Списком"));
+    expect(document.activeElement).toBe(document.body);
+  });
+});
+
 describe("PantryCard inventory", () => {
   it("renders an empty state instead of hiding the inventory card", () => {
     render(<Card {...baseProps()} />);
