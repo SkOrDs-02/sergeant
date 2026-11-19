@@ -1,6 +1,6 @@
 # Observability-runbook
 
-> **Last touched:** 2026-11-19 by @claude (секція OpenRouterNoEndpoints); 2026-10-23 by @claude (секції AuthPasswordCheckFailureSeries, sec-10, і PlataSyncSlowTickStale, `plataSync` у `/health/workers`, rel-19); 2026-10-20 by @claude (секція ReminderSweepFailed, rel-01); 2026-10-03 by @claude (секція Renovate PR → PR Dependabot, ADR-0103). **Next review:** 2026-12-02.
+> **Last touched:** 2026-11-19 by @claude (OpenRouterNoEndpoints: `reason=ignored`, список обходу `OPENROUTER_IGNORE_PROVIDERS`); 2026-11-19 by @claude (секція OpenRouterNoEndpoints); 2026-10-23 by @claude (секції AuthPasswordCheckFailureSeries, sec-10, і PlataSyncSlowTickStale, `plataSync` у `/health/workers`, rel-19); 2026-10-20 by @claude (секція ReminderSweepFailed, rel-01); 2026-10-03 by @claude (секція Renovate PR → PR Dependabot, ADR-0103). **Next review:** 2026-12-02.
 > **Status:** Active
 
 > **Update 2026-07-21:** API/server logs — **Coolify** ([ADR-0074](../../governance/adr/0074-hosting-hetzner-coolify.md)). Посилання на «n8n Railway env» нижче — legacy n8n hosting (migrate TBD). OpenClaw WF-103 env — historical ([ADR-0075](../../governance/adr/0075-openclaw-gateway-decommissioned.md)).
@@ -351,9 +351,14 @@ session-check чекає слот.
    — причина:
    - `quantization` → жоден постачальник моделі не має квантизації від 8 біт
      (наприклад, лишились лише fp4-ендпойнти);
-   - `data_policy` → жоден не проходить `data_collection=deny`.
+   - `data_policy` → жоден не проходить `data_collection=deny`;
+   - `ignored` → список обходу `OPENROUTER_IGNORE_PROVIDERS` (дефолт `baidu`)
+     прибрав усіх постачальників моделі (шлюз: «All providers have been
+     ignored»). `ignore` звужує пул так само, як дві інші умови, і діє разом
+     із ними: модель, у якої під `deny` і межею 8 біт лишився один
+     постачальник, падає, щойно він потрапляє у список.
 2. Модель і ендпойнт — у лозі Pino `msg=openrouter_data_policy_no_endpoints`
-   (поля `model`, `endpoint`, `reason`). У лейблах метрики моделі немає
+   (поля `model`, `endpoint`, `reason`, `ignoredProviders`). У лейблах метрики моделі немає
    навмисно (серії заведено нулем, щоб не губити першу відмову).
 3. Перевір пул ендпойнтів моделі (поля `provider_name`, `quantization`,
    `status`):
@@ -363,7 +368,8 @@ session-check чекає слот.
    ```
 
 4. Відкат без релізу (Coolify env, рестарт): `OPENROUTER_QUANTIZATION_FLOOR=off`
-   знімає лише межу квантизації. `OPENROUTER_DATA_COLLECTION=allow` знімає
+   знімає лише межу квантизації; порожнє `OPENROUTER_IGNORE_PROVIDERS=` знімає
+   лише список обходу (або прибери з нього один слаг). `OPENROUTER_DATA_COLLECTION=allow` знімає
    заборону зберігання даних — це відступ від рішення власника про
    приватність, тож лише з його згоди. Постійне виправлення — заміна моделі
    слоту (`env/aiRoutingEnv.ts`, `env/chatModels.ts`) із заміром.

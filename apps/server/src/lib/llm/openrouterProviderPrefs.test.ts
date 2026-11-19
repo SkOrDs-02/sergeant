@@ -53,7 +53,7 @@ afterEach(() => {
 });
 
 describe("OpenRouterProvider — providerPrefs (лише для стенду)", () => {
-  it("без параметра тіло прод-запиту рівно таке (deny + квантизація від 8 біт)", async () => {
+  it("без параметра тіло прод-запиту рівно таке (deny + квантизація від 8 біт + обхід Baidu)", async () => {
     const fetchMock = stubGateway();
     await new OpenRouterProvider("k").generate(BASE);
     expect(sentBody(fetchMock)).toBe(
@@ -68,6 +68,7 @@ describe("OpenRouterProvider — providerPrefs (лише для стенду)", 
         provider: {
           data_collection: "deny",
           quantizations: ["fp8", "mxfp8", "fp16", "bf16", "fp32", "unknown"],
+          ignore: ["baidu"],
         },
       }),
     );
@@ -89,6 +90,16 @@ describe("OpenRouterProvider — providerPrefs (лише для стенду)", 
       ignore: ["relace"],
       data_collection: "deny",
     });
+  });
+
+  it("ignore стенду без Baidu перемагає дефолтний обхід (стенд може міряти Baidu)", async () => {
+    const fetchMock = stubGateway();
+    await new OpenRouterProvider("k").generate({
+      ...BASE,
+      providerPrefs: { ignore: [] },
+    });
+    const body = JSON.parse(sentBody(fetchMock)) as Record<string, unknown>;
+    expect(body["provider"]).toEqual({ ignore: [], data_collection: "deny" });
   });
 
   it("лише ignore від стенду: дефолтний список квантизацій не додається", async () => {

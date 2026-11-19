@@ -325,9 +325,11 @@ groups:
             Шлюз відмовив 404 «No endpoints found…» під наші `provider`-поля:
             `reason=data_policy` — жоден постачальник моделі не проходить
             `data_collection=deny`; `reason=quantization` — жоден не має
-            квантизації від 8 біт. Модель і ендпойнт шукай у лозі
+            квантизації від 8 біт; `reason=ignored` — список
+            `OPENROUTER_IGNORE_PROVIDERS` прибрав усіх. Модель і ендпойнт шукай у лозі
             `openrouter_data_policy_no_endpoints`. Відкат квантизації без
-            релізу: `OPENROUTER_QUANTIZATION_FLOOR=off`; зняття заборони
+            релізу: `OPENROUTER_QUANTIZATION_FLOOR=off`, списку обходу —
+            порожнє `OPENROUTER_IGNORE_PROVIDERS=`; зняття заборони
             зберігання даних лише за згодою власника (runbook).
           runbook: "docs/operations/observability/runbook.md#openrouternoendpoints"
 
