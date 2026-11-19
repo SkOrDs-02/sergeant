@@ -42,7 +42,9 @@ export interface TransactionFiltersProps {
  * сторінку — постійний хром заради рідкісної дії.
  *
  * Знадобиться звуження за сумою — це ввід «від / до» або пресети
- * («понад 1000 ₴»), а не діапазонний повзунок по скошеній шкалі.
+ * («понад 1000 ₴»), а не діапазонний повзунок по скошеній шкалі. Так і
+ * зроблено 2026-11-19: поля «від / до» в аркуші «Фільтри»
+ * (`TransactionsFiltersSheet`, Ф-2 (б)); пресети чекають чисел від власника.
  *
  * A11y (page-audit-05 F13): the strip is a WAI-ARIA **toolbar** — a single
  * Tab stop with roving `tabindex` (only the active pill is `tabindex={0}`),

@@ -16,6 +16,12 @@ import {
   TransactionsSearchEmpty,
   TransactionsSearchField,
 } from "./TransactionsSearchField";
+import {
+  TransactionsActiveFiltersChip,
+  TransactionsFiltersButton,
+  TransactionsFiltersEmpty,
+} from "./TransactionsFiltersControl";
+import type { LabelledAccount } from "../../lib/accountLabel";
 import { formatAnalyticsPeriod } from "../../lib/analyticsPeriodLabel";
 import { useTransactionFilters } from "./useTransactionFilters";
 import { formatDayFilterDate, isDayFilterKey } from "./transactionsLib";
@@ -305,6 +311,13 @@ export function Transactions({
     txTags: storage.txTags,
   });
 
+  // Рахунки для підписів аркуша «Фільтри» (`accountLabel` читає id, тип і
+  // маску картки, як «За рахунками» в Аналітиці).
+  const txAccountsForLabels = useMemo(
+    () => (accounts ?? []) as readonly LabelledAccount[],
+    [accounts],
+  );
+
   // Чіп дня — той самий візуальний блок для «сьогодні» (Overview, рядок
   // «Операції за сьогодні») і для конкретної дати (тап по клітинці
   // `MonthStrip`); різниться лише лівий текст, кнопка «Усі дні» спільна.
@@ -474,7 +487,15 @@ export function Transactions({
         }}
         onRefresh={handlePullRefresh}
         searchEmpty={
-          filters.searchActive ? (
+          filters.advancedActive ? (
+            <TransactionsFiltersEmpty
+              withSearch={filters.searchActive}
+              onReset={() => {
+                filters.clearAdvancedFilters();
+                filters.setSearchQuery("");
+              }}
+            />
+          ) : filters.searchActive ? (
             <TransactionsSearchEmpty
               query={filters.searchQuery}
               onClear={() => filters.setSearchQuery("")}
@@ -504,12 +525,30 @@ export function Transactions({
               query={filters.searchQuery}
               onQueryChange={filters.setSearchQuery}
               resultCount={filters.filtered.length}
+              narrowed={filters.advancedActive}
+              trailing={
+                <TransactionsFiltersButton
+                  value={filters.advancedFilters}
+                  baseList={filters.searchedTx}
+                  monthTx={filters.activeTx}
+                  tags={storage.txTags}
+                  accounts={txAccountsForLabels}
+                  onApply={filters.setAdvancedFilters}
+                />
+              }
               periodLabel={
                 filters.rangeFilter
                   ? null
                   : filters.monthLabel.charAt(0).toLocaleLowerCase("uk") +
                     filters.monthLabel.slice(1)
               }
+            />
+            {/* Ф-2 (б): що діє з аркуша «Фільтри», скидання одним тапом. */}
+            <TransactionsActiveFiltersChip
+              value={filters.advancedFilters}
+              accounts={txAccountsForLabels}
+              tags={storage.txTags}
+              onClear={filters.clearAdvancedFilters}
             />
             <TransactionSyncPill
               syncState={{

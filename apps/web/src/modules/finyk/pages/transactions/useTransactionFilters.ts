@@ -35,6 +35,12 @@ import {
   writeDayCollapse,
 } from "./transactionsLib";
 import { filterTransactionsBySearch } from "./transactionSearch";
+import {
+  EMPTY_TX_ADVANCED_FILTERS,
+  countActiveAdvancedFilters,
+  filterTransactionsByAdvanced,
+  type TxAdvancedFilters,
+} from "./transactionAdvancedFilters";
 
 /**
  * Current Kyiv-local `{ year, month0 }` (month is 0-indexed to match the
@@ -134,6 +140,11 @@ export function useTransactionFilters({
   // гортати місяці з тим самим «сільпо» і є спосіб знайти давню оплату.
   // Скидається кнопкою очищення або виходом зі сторінки (unmount).
   const [searchQuery, setSearchQuery] = useState("");
+  // Ф-2 (б): аркуш «Фільтри» (сума, рахунок, тег) живе за тим самим
+  // правилом, що й пошук: переживає зміну місяця, скидається явно.
+  const [advancedFilters, setAdvancedFilters] = useState<TxAdvancedFilters>(
+    EMPTY_TX_ADVANCED_FILTERS,
+  );
   const [rangeFilter, setRangeFilter] = useState<{
     fromKey: string;
     toKey: string;
@@ -416,7 +427,7 @@ export function useTransactionFilters({
   }, [txsToShow]);
 
   const kyivNow = useKyivDayNow();
-  const filtered = useMemo(() => {
+  const searchedTx = useMemo(() => {
     void kyivNow;
     const m = perfMark("finyk:tx:filter");
     // `dayFilter` accepts the `"today"` shortcut (resolved fresh, not
@@ -463,7 +474,14 @@ export function useTransactionFilters({
     txNotes,
     txTags,
   ]);
+  // Аркуш «Фільтри» поверх пошуку: теж «і». `searchedTx` окремо, бо аркуш
+  // рахує з нього, скільки операцій покаже чернетка фільтрів.
+  const filtered = useMemo(
+    () => filterTransactionsByAdvanced(searchedTx, advancedFilters, txTags),
+    [searchedTx, advancedFilters, txTags],
+  );
   const searchActive = searchQuery.trim() !== "";
+  const advancedActive = countActiveAdvancedFilters(advancedFilters) > 0;
 
   const groupedByDate = useMemo(() => {
     const m = perfMark("finyk:tx:groupByDate");
@@ -570,15 +588,15 @@ export function useTransactionFilters({
   // транзакцій — нічого не зникає, все одно тап розгортає.
   const collapsedKeys = useMemo(() => {
     const s = new Set<string>();
-    // Під пошуком дні зі збігами розгорнуті: інакше знайдене ховалось би в
-    // згорнутому заголовку. Overrides не чіпаємо, тож після очищення
-    // запиту згортання повертається таким, яким людина його лишила.
-    if (searchActive) return s;
+    // Під пошуком чи фільтрами аркуша дні зі збігами розгорнуті: інакше
+    // знайдене ховалось би в згорнутому заголовку. Overrides не чіпаємо, тож
+    // після очищення згортання повертається таким, яким людина його лишила.
+    if (searchActive || advancedActive) return s;
     for (const g of groupedByDate) {
       if (!isDayExpanded(dayOverrides, g.key, todayDayKey)) s.add(g.key);
     }
     return s;
-  }, [groupedByDate, dayOverrides, todayDayKey, searchActive]);
+  }, [groupedByDate, dayOverrides, todayDayKey, searchActive, advancedActive]);
 
   const groupCounts = useMemo(
     () =>
@@ -610,6 +628,11 @@ export function useTransactionFilters({
     searchQuery,
     setSearchQuery,
     searchActive,
+    advancedFilters,
+    setAdvancedFilters,
+    advancedActive,
+    clearAdvancedFilters: () => setAdvancedFilters(EMPTY_TX_ADVANCED_FILTERS),
+    searchedTx,
     // derived
     activeTx,
     activeLoading,
