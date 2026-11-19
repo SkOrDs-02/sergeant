@@ -1,9 +1,7 @@
 import type { FinykTxTagsSlice } from "../../hooks/useFinykTxTags";
-import { useKyivDayNow } from "@shared/hooks/useKyivDayNow";
 import { useCallback, useMemo, useState } from "react";
 import { useToast } from "@shared/hooks/useToast";
 import { useTransactionsPullRefresh } from "./useTransactionsPullRefresh";
-import { safeReadLS, safeWriteLS } from "@shared/lib/storage/storage";
 import { getKyivDayKey } from "@shared/lib/time/kyivTime";
 import { failedCopy } from "@shared/i18n/failedCopy";
 import { TransactionsHeader } from "./TransactionsHeader";
@@ -27,17 +25,8 @@ import {
 import type { MerchantRuleIndex } from "@sergeant/finyk-domain/lib/merchantRules";
 import type { UseFinykReceiptLinksResult } from "../../hooks/useFinykReceiptLinks";
 import { ConfirmDialog } from "@shared/components/ui/ConfirmDialog";
-import { TransferSuggestionCard } from "./TransferSuggestionCard";
-import {
-  filterTransferSuggestions,
-  findInternalTransferSuggestions,
-  transferSuggestionPairKey,
-} from "@sergeant/finyk-domain/domain/transferMatching";
-import {
-  FINYK_TRANSFER_SUGGESTION_REJECTED_KEY,
-  FINYK_TRANSFER_SUGGESTION_SNOOZED_KEY,
-} from "@sergeant/finyk-domain/storage-keys";
-import { INTERNAL_TRANSFER_ID } from "@sergeant/finyk-domain/constants";
+import { TransferSuggestions } from "./TransferSuggestionList";
+import { useTransferSuggestions } from "./useTransferSuggestions";
 import {
   isCashWithdrawalCandidate,
   type CashOnHandState,
@@ -313,84 +302,16 @@ export function Transactions({
         ? formatDayFilterDate(dayFilter)
         : "";
 
-  // Both actions below persist device-locally (no cross-device sync — see
-  // `FINYK_TRANSFER_SUGGESTION_REJECTED_KEY` / `_SNOOZED_KEY` docs), so a
-  // rejected/snoozed pair survives reload instead of only lasting for the
-  // current page mount.
-  const [rejectedTransferPairs, setRejectedTransferPairs] = useState<
-    Set<string>
-  >(
-    () =>
-      new Set(
-        safeReadLS<string[]>(FINYK_TRANSFER_SUGGESTION_REJECTED_KEY, []) ?? [],
-      ),
-  );
-  const [snoozedTransferPairs, setSnoozedTransferPairs] = useState<
-    Record<string, string>
-  >(
-    () =>
-      safeReadLS<Record<string, string>>(
-        FINYK_TRANSFER_SUGGESTION_SNOOZED_KEY,
-        {},
-      ) ?? {},
-  );
-
-  // `jars` приходить новим масивом на кожен рендер FinykApp, тож у залежності
-  // memo йде стабільний рядок id, а не сам масив.
-  const jarIdsKey = (jars ?? []).flatMap((j) => j.monoJarId ?? []).join("|");
-  const jarAccountIds = useMemo(
-    () => new Set(jarIdsKey ? jarIdsKey.split("|") : []),
-    [jarIdsKey],
-  );
-
-  const kyivNow = useKyivDayNow();
-  const transferSuggestions = useMemo(() => {
-    void kyivNow;
-    // До прогріву вже підтверджені перекази ще без категорії й поверталися
-    // б у чергу пропозицій цілою пачкою.
-    if (!storageReady) return [];
-    const hidden = new Set(hiddenTxIds);
-    const raw = findInternalTransferSuggestions(
-      filters.activeTx.filter((tx) => !hidden.has(tx.id)),
-      { txCategories, jarAccountIds },
-    );
-    return filterTransferSuggestions(raw, {
-      rejectedPairKeys: rejectedTransferPairs,
-      snoozedPairKeys: snoozedTransferPairs,
-      todayKey: getKyivDayKey(),
-    });
-  }, [
+  // Пропозиції «схоже на переказ» — усі разом і без повторів
+  // (`useTransferSuggestions`, фідбек власника 2026-11-19).
+  const transfers = useTransferSuggestions({
     storageReady,
-    filters.activeTx,
+    activeTx: filters.activeTx,
     hiddenTxIds,
     txCategories,
-    jarAccountIds,
-    rejectedTransferPairs,
-    snoozedTransferPairs,
-    kyivNow,
-  ]);
-  const visibleTransferSuggestion = transferSuggestions[0] ?? null;
-  const visibleTransferKey = visibleTransferSuggestion
-    ? transferSuggestionPairKey(visibleTransferSuggestion)
-    : null;
-
-  const rejectTransferSuggestion = useCallback((key: string) => {
-    setRejectedTransferPairs((current) => {
-      if (current.has(key)) return current;
-      const next = new Set(current);
-      next.add(key);
-      safeWriteLS(FINYK_TRANSFER_SUGGESTION_REJECTED_KEY, Array.from(next));
-      return next;
-    });
-  }, []);
-
-  const snoozeTransferSuggestion = useCallback((key: string) => {
-    setSnoozedTransferPairs((current) => {
-      const next = { ...current, [key]: getKyivDayKey() };
-      safeWriteLS(FINYK_TRANSFER_SUGGESTION_SNOOZED_KEY, next);
-      return next;
-    });
-  }, []);
+    jars,
+    overrideCategory,
+  });
 
   // Жест оновлення: банк + хмарний пул, провал пулу дає тост (PR-X3).
   const {
@@ -575,26 +496,22 @@ export function Transactions({
                 onClear={filters.clearRangeFilter}
               />
             )}
-            {visibleTransferSuggestion && visibleTransferKey && (
-              <TransferSuggestionCard
-                suggestion={visibleTransferSuggestion}
-                accounts={accounts}
-                showBalance={showBalance}
-                onConfirm={() => {
-                  overrideCategory(
-                    visibleTransferSuggestion.outgoing.id,
-                    INTERNAL_TRANSFER_ID,
-                  );
-                  overrideCategory(
-                    visibleTransferSuggestion.incoming.id,
-                    INTERNAL_TRANSFER_ID,
-                  );
-                  toast.success(messages.finyk.transferSuggestion.confirmed);
-                }}
-                onReject={() => rejectTransferSuggestion(visibleTransferKey)}
-                onSnooze={() => snoozeTransferSuggestion(visibleTransferKey)}
-              />
-            )}
+            <TransferSuggestions
+              suggestions={transfers.suggestions}
+              accounts={accounts}
+              showBalance={showBalance}
+              onConfirm={(suggestion) => {
+                transfers.confirm(suggestion);
+                toast.success(messages.finyk.transferSuggestion.confirmed);
+              }}
+              onReject={transfers.reject}
+              onSnooze={transfers.snooze}
+              onConfirmAll={() => {
+                transfers.confirmAll();
+                toast.success(messages.finyk.transferSuggestion.confirmedAll);
+              }}
+              onSnoozeAll={transfers.snoozeAll}
+            />
             <TransactionFilters
               filter={filters.filter}
               onChangeFilter={filters.setFilter}
