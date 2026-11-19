@@ -52,7 +52,8 @@ pnpm --filter @sergeant/server backfill:health-text  # разовий бекфі
 pnpm --filter @sergeant/server eval:models           # оцінка моделей (`scripts/model-eval.ts`)
 pnpm --filter @sergeant/server eval:tools            # eval вибору tool-ів на корпусі
 pnpm --filter @sergeant/server eval:stream           # перевірка стрімінгу відповідей чату
-pnpm --filter @sergeant/server eval:vision           # eval розпізнавання фото (vision)
+pnpm --filter @sergeant/server eval:vision           # зоровий стенд на прод-транспорті: фото їжі, чеки, скриншоти виписок
+pnpm --filter @sergeant/server eval:vision:render    # перемалювати синтетичні чеки й виписки (`scripts/eval/render-vision-docs.ts`, потрібен Playwright)
 pnpm --filter @sergeant/server rag-eval:embed        # побудова ембедингів для RAG-eval корпусу
 pnpm --filter @sergeant/server eval:tools:judge      # LLM-judge поверх результатів `eval:tools`
 pnpm --filter @sergeant/server eval:tools:jev        # замір Jev на розмітці стенду вибору інструментів (нічого не гейтить)
