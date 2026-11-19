@@ -42,6 +42,15 @@ export type BodySizeRule =
        */
       readonly inflate?: boolean;
       /**
+       * B28: `true` → ПЕРЕД парсером `applyPreParseAuthGuard()` відхиляє запит
+       * без жодних облікових даних (ні `Authorization`, ні session-cookie)
+       * кодом 401 і ганяє спільний per-IP ліміт — тіло не читається. Ставиться
+       * лише на session-авторизовані роути з лімітом понад дефолтні 128kb;
+       * HMAC/webhook-роути (`/api/mono/webhook`, `/api/internal`,
+       * `/api/billing/*`) його НЕ мають — вони автентифікуються підписом.
+       */
+      readonly requireCredentials?: boolean;
+      /**
        * If `true`, stashes the raw request bytes on `req.rawBody`. Needed
        * for downstream HMAC-signature verification (`/api/internal/*`).
        * Setting this on a sub-prefix that is shadowed by a more-specific
@@ -65,6 +74,15 @@ export type BodySizeRule =
        * клієнти не стискають тіла запитів, тож для AI-роутів вимикаємо.
        */
       readonly inflate?: boolean;
+      /**
+       * B28: `true` → ПЕРЕД парсером `applyPreParseAuthGuard()` відхиляє запит
+       * без жодних облікових даних (ні `Authorization`, ні session-cookie)
+       * кодом 401 і ганяє спільний per-IP ліміт — тіло не читається. Ставиться
+       * лише на session-авторизовані роути з лімітом понад дефолтні 128kb;
+       * HMAC/webhook-роути (`/api/mono/webhook`, `/api/internal`,
+       * `/api/billing/*`) його НЕ мають — вони автентифікуються підписом.
+       */
+      readonly requireCredentials?: boolean;
     }
   | {
       readonly pathPrefix: string;
@@ -108,6 +126,7 @@ export const BODY_SIZE_POLICY: ReadonlyArray<BodySizeRule> = [
   {
     pathPrefix: "/api/nutrition/analyze-photo",
     inflate: false,
+    requireCredentials: true,
     kind: "json",
     limit: "10mb",
     reason: "User photo upload (nutrition vision pipeline)",
@@ -115,6 +134,7 @@ export const BODY_SIZE_POLICY: ReadonlyArray<BodySizeRule> = [
   {
     pathPrefix: "/api/nutrition/refine-photo",
     inflate: false,
+    requireCredentials: true,
     kind: "json",
     limit: "10mb",
     reason: "Photo refinement second-pass",
@@ -122,6 +142,7 @@ export const BODY_SIZE_POLICY: ReadonlyArray<BodySizeRule> = [
   {
     pathPrefix: "/api/nutrition/backup-upload",
     inflate: false,
+    requireCredentials: true,
     kind: "json",
     limit: "4mb",
     reason: "Manual nutrition backup blob",
@@ -129,6 +150,7 @@ export const BODY_SIZE_POLICY: ReadonlyArray<BodySizeRule> = [
   {
     pathPrefix: "/api/finyk/receipts/analyze",
     inflate: false,
+    requireCredentials: true,
     kind: "json",
     limit: "10mb",
     reason:
@@ -137,6 +159,7 @@ export const BODY_SIZE_POLICY: ReadonlyArray<BodySizeRule> = [
   {
     pathPrefix: "/api/finyk/import/screenshot/analyze",
     inflate: false,
+    requireCredentials: true,
     kind: "json",
     limit: "10mb",
     reason:
@@ -145,6 +168,7 @@ export const BODY_SIZE_POLICY: ReadonlyArray<BodySizeRule> = [
   {
     pathPrefix: "/api/finyk/import/statement/preview",
     inflate: false,
+    requireCredentials: true,
     kind: "json",
     limit: "10mb",
     reason:
@@ -153,6 +177,7 @@ export const BODY_SIZE_POLICY: ReadonlyArray<BodySizeRule> = [
   {
     pathPrefix: "/api/finyk/import/commit",
     inflate: false,
+    requireCredentials: true,
     kind: "json",
     limit: "2mb",
     reason:
@@ -165,6 +190,7 @@ export const BODY_SIZE_POLICY: ReadonlyArray<BodySizeRule> = [
     // нижче. Прибереш його — push мовчки провалиться в дефолтні 128kb.
     pathPrefix: "/api/sync",
     inflate: false,
+    requireCredentials: true,
     kind: "json",
     limit: "6mb",
     reason:
@@ -182,6 +208,7 @@ export const BODY_SIZE_POLICY: ReadonlyArray<BodySizeRule> = [
     // офлайн не доїжджало на сервер ніколи й ніде не спливало.
     pathPrefix: "/api/v2/sync",
     inflate: false,
+    requireCredentials: true,
     kind: "json",
     limit: "6mb",
     reason:
@@ -190,6 +217,7 @@ export const BODY_SIZE_POLICY: ReadonlyArray<BodySizeRule> = [
   {
     pathPrefix: "/api/coach/memory",
     inflate: false,
+    requireCredentials: true,
     kind: "json",
     limit: "6mb",
     reason: "Coach long-term memory blob",
@@ -197,6 +225,7 @@ export const BODY_SIZE_POLICY: ReadonlyArray<BodySizeRule> = [
   {
     pathPrefix: "/api/chat",
     inflate: false,
+    requireCredentials: true,
     kind: "json",
     limit: "1mb",
     reason: "ChatRequestSchema (context + 50 msg + 20 tool_results)",
@@ -280,6 +309,7 @@ export const BODY_SIZE_POLICY: ReadonlyArray<BodySizeRule> = [
   {
     pathPrefix: "/api/transcribe",
     inflate: false,
+    requireCredentials: true,
     kind: "raw",
     limit: "10mb",
     reason: "Voice transcription (audio blob, not JSON)",

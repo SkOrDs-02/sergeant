@@ -11,6 +11,7 @@ import {
   precacheAndRoute,
   cleanupOutdatedCaches,
   matchPrecache,
+  addPlugins,
 } from "workbox-precaching";
 import {
   registerRoute,
@@ -34,6 +35,7 @@ import {
   resetActiveUserKeyInMemory,
 } from "./activeUserKey";
 import { isNavigationRequest, resolveOfflineShell } from "./offlineFallback";
+import { createFetchDiagPlugin, installFetchDiagListener } from "./fetchDiag";
 
 declare const self: ServiceWorkerGlobalScope & {
   __WB_MANIFEST: Array<{ url: string; revision: string | null }>;
@@ -121,6 +123,10 @@ const apiPartitionGuardPlugin = {
 export function setupCacheRoutes(): void {
   // Прогріваємо відновлення партиції з `sw-meta` на холодному старті воркера.
   primeActiveUserKey();
+  // DURABILITY-20261008-BOOT-1: спостерігач fetch-подій стоїть ПЕРШИМ, щоб
+  // бачити й запити, яких жоден route не взяв; плагіни мітять стадії стратегій.
+  installFetchDiagListener();
+  addPlugins([createFetchDiagPlugin("precache")]);
   cleanupOutdatedCaches();
   precacheAndRoute(self.__WB_MANIFEST);
 
@@ -130,6 +136,7 @@ export function setupCacheRoutes(): void {
         cacheName: CACHE_NAMES.navigations,
         networkTimeoutSeconds: 3,
         plugins: [
+          createFetchDiagPlugin("navigation"),
           new CacheableResponsePlugin({ statuses: [0, 200] }),
           userPartitionPlugin,
         ],
@@ -156,6 +163,7 @@ export function setupCacheRoutes(): void {
       cacheName: CACHE_NAMES.api,
       networkTimeoutSeconds: 5,
       plugins: [
+        createFetchDiagPlugin("api"),
         new CacheableResponsePlugin({ statuses: [200] }),
         apiPartitionGuardPlugin,
         new ExpirationPlugin({
@@ -177,6 +185,7 @@ export function setupCacheRoutes(): void {
     new CacheFirst({
       cacheName: CACHE_NAMES.exerciseImages,
       plugins: [
+        createFetchDiagPlugin("exercise-img"),
         new ExpirationPlugin({
           maxEntries: 400,
           maxAgeSeconds: 60 * 60 * 24 * 180,

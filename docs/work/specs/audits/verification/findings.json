@@ -353,7 +353,7 @@
       "title": "10 МБ тіла парситься до автентифікації, зі стисненням",
       "severity": "unrated",
       "source": "docs/work/specs/audits/ai-pipeline-2026-08-05.md",
-      "status": "open",
+      "status": "fixed-pending-verification",
       "history": [
         {
           "at": "2026-09-05",
@@ -364,6 +364,11 @@
           "at": "2026-11-19",
           "event": "retriaged",
           "note": "Ревалідація кодом 2026-11-19: стиснення закрито (inflate: false у apps/server/src/http/bodySizePolicy.ts). Головне відкрите: applyBodySizePolicy (app.ts:152) стоїть до registerRoutes (app.ts:174), тож до 10 МБ буферизується до requireSession і rate limit."
+        },
+        {
+          "at": "2026-11-19",
+          "event": "fixed",
+          "note": "Стиснення вимкнено раніше (inflate: false). Тепер pre-parse guard (http/preParseAuthGuard.ts) на 12 session-роутах з лімітом понад 128kb відповідає 401 без читання тіла, якщо немає ні Bearer, ні session-cookie, і ганяє спільний per-IP ліміт api:preparse:ip (600/хв) до парсера. Webhook/HMAC-роути не зачеплені. Покрито unit-тестами з supertest; живого прогону не було."
         }
       ],
       "sourceAnchor": "B28 — 10 МБ тіла парситься до автентифікації, зі стисненням"
@@ -3980,6 +3985,11 @@
           "at": "2026-11-19",
           "event": "retriaged",
           "note": "Ревалідація кодом 2026-11-19: корінь не зачеплено. Після 2026-10-08 комітів у precache/fetch-маршрутизацію SW і boot-watchdog немає; storage-фікси (a9c2bbb6a, 48b93f5ae тощо) діють після старту JS, а знімок показує завислі сабресурси до JS. Гіпотеза: диспетчеризація fetch у SW після swSetActiveUser/swClearCaches під час зміни користувача (apps/web/src/core/auth/AuthContext.tsx). Наступний крок: логування fetch-подій у SW і inline-watchdog у index.html."
+        },
+        {
+          "at": "2026-11-19",
+          "event": "instrumented",
+          "note": "Додано діагностику без виправлення кореня. SW (`sw/fetchDiag.ts`): кільцевий буфер 60 fetch-подій (шлях без query, режим, призначення, обробник Workbox, стадія, початок/кінець, результат) і позначки `SW_SET_USER`/`CLEAR_SW_CACHES` (початок і кінець); знімок за повідомленням `SW_FETCH_DIAG`. Зовнішній `boot-watchdog.js` замінено inline-сторожем у `index.html` (CSP-хеш у meta і `vercel.json`, синхронність тримає `bootWatchdog.test.ts`): через 10 с від старту скрипта, якщо `#root` порожній, тягне знімок SW, пише звіт у sessionStorage (у Sentry йде наступним бутом) і не частіше раз на хвилину робить unregister SW + reload (простий reload, якщо SW не винен). Наступний крок: зібрати звіти Sentry `boot_watchdog.*` або відтворити в харнесі (`liveJourneyHelpers` тепер друкує `swFetchDiag` і `watchdogReport`) і за стадією зависання шукати корінь. Статус лишається open: лікується симптом, не причина."
         }
       ]
     },
