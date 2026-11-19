@@ -27,6 +27,38 @@ export const aiCostEstimateUsd = new client.Counter({
 });
 
 /**
+ * Відмова шлюзу OpenRouter «No endpoints found…» під наші `provider`-поля
+ * (`lib/llm/openrouterDataPolicy.ts`): для моделі не лишилось жодного
+ * постачальника під `data_collection=deny` (`reason=data_policy`) чи під
+ * межею квантизації 8 біт (`reason=quantization`). Кожна така відмова
+ * означає, що пайплайн моделі не працює зовсім, тому алерт
+ * `OpenRouterNoEndpoints` спрацьовує на будь-який приріст.
+ *
+ * Лейбли лише `reason` (2 значення) і `transport` (`messages` |
+ * `chat_completions`). Моделі в лейблі немає: усі чотири серії заводяться
+ * нулем зі старту процесу (`initOpenRouterNoEndpointsSeries`), інакше
+ * `increase()` не бачить переходу «немає серії → 1» і першої відмови не
+ * ловить; серію з моделлю так наперед не заведеш. Модель, ендпойнт і режими
+ * лежать у лозі `openrouter_data_policy_no_endpoints` того ж виклику.
+ */
+export const openRouterNoEndpointsTotal = new client.Counter({
+  name: "openrouter_no_endpoints_total",
+  help: "OpenRouter 404 'No endpoints found' under our provider prefs (data policy or quantization floor)",
+  labelNames: ["reason", "transport"], // data_policy|quantization × messages|chat_completions
+  registers: [register],
+});
+
+/** Заводить усі чотири серії нулем (після `reset()` у тестах — теж). */
+export function initOpenRouterNoEndpointsSeries(): void {
+  for (const reason of ["data_policy", "quantization"]) {
+    for (const transport of ["messages", "chat_completions"]) {
+      openRouterNoEndpointsTotal.inc({ reason, transport }, 0);
+    }
+  }
+}
+initOpenRouterNoEndpointsSeries();
+
+/**
  * PR-33 — fixed monthly subscription cost для зовнішніх не-AI-провайдерів,
  * чий `usage` runtime-instance не бачить (Railway, Vercel, PostHog, Sentry).
  * Також тримає envelop-budget-и для AI-провайдерів (Anthropic / Voyage),

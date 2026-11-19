@@ -21,6 +21,8 @@ export {
 export {
   aiTokensTotal,
   aiCostEstimateUsd,
+  openRouterNoEndpointsTotal,
+  initOpenRouterNoEndpointsSeries,
   infraMonthlyCostUsd,
   voyageDailyBudgetUsd,
   anthropicPromptCacheHitTotal,

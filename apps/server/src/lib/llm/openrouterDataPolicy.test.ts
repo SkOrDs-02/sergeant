@@ -12,6 +12,10 @@ vi.mock("../../obs/logger.js", () => ({ logger: loggerMock }));
 
 import { aiRoutingEnvShape } from "../../env/aiRoutingEnv.js";
 import {
+  initOpenRouterNoEndpointsSeries,
+  openRouterNoEndpointsTotal,
+} from "../../obs/metrics.js";
+import {
   isOpenRouterDataPolicyRejection,
   noteOpenRouterDataPolicyRejection,
   OPENROUTER_MIN_8BIT_QUANTIZATIONS,
@@ -337,5 +341,63 @@ describe("noteOpenRouterDataPolicyRejection", () => {
       }),
     ).toBe(false);
     expect(loggerMock.warn).not.toHaveBeenCalled();
+  });
+});
+
+/**
+ * Сигнал для алерту `OpenRouterNoEndpoints`: лог `openrouter_data_policy_no_endpoints`
+ * до дашборда не доїжджає, а відмова означає, що пайплайн моделі не працює
+ * зовсім. Лічильник із лейблами `reason` і `transport` (без моделі: модель
+ * лишається в лозі, а серії з нею не можна завести нулем наперед).
+ */
+describe("openrouter_no_endpoints_total", () => {
+  async function value(reason: string, transport: string): Promise<number> {
+    const { values } = await openRouterNoEndpointsTotal.get();
+    return (
+      values.find(
+        (v) => v.labels.reason === reason && v.labels.transport === transport,
+      )?.value ?? Number.NaN
+    );
+  }
+
+  it("усі чотири серії існують нулем від старту процесу", async () => {
+    // Без цього `increase(...[10m])` не бачить переходу «немає серії → 1»
+    // і пропускає першу відмову (той самий урок, що й `reminder_sweep_runs_total`).
+    openRouterNoEndpointsTotal.reset();
+    initOpenRouterNoEndpointsSeries();
+    for (const reason of ["data_policy", "quantization"]) {
+      for (const transport of ["messages", "chat_completions"]) {
+        expect(await value(reason, transport)).toBe(0);
+      }
+    }
+  });
+
+  it("відмова шлюзу інкрементує серію своєї причини й транспорту", async () => {
+    openRouterNoEndpointsTotal.reset();
+    initOpenRouterNoEndpointsSeries();
+    noteOpenRouterDataPolicyRejection({
+      status: 404,
+      data: { type: "error", error: { type: "x", message: NO_QUANT } },
+      model: "z-ai/glm-5.2",
+      endpoint: "chat",
+      transport: "messages",
+    });
+    expect(await value("quantization", "messages")).toBe(1);
+    expect(await value("quantization", "chat_completions")).toBe(0);
+    expect(await value("data_policy", "messages")).toBe(0);
+  });
+
+  it("інша помилка лічильник не чіпає", async () => {
+    openRouterNoEndpointsTotal.reset();
+    initOpenRouterNoEndpointsSeries();
+    noteOpenRouterDataPolicyRejection({
+      status: 500,
+      data: { error: { message: "boom" } },
+      model: "m",
+      endpoint: "e",
+      transport: "chat_completions",
+    });
+    const { values } = await openRouterNoEndpointsTotal.get();
+    expect(values.every((v) => v.value === 0)).toBe(true);
   });
 });

@@ -40,6 +40,7 @@ import type {
   OpenRouterQuantizationFloor,
 } from "../../env/aiRoutingEnv.js";
 import { logger } from "../../obs/logger.js";
+import { openRouterNoEndpointsTotal } from "../../obs/metrics.js";
 
 /**
  * Рівні квантизації від 8 біт для `provider.quantizations`.
@@ -199,7 +200,8 @@ export interface DataPolicyRejectionContext {
 }
 
 /**
- * Пише окремий рядок у лог, коли шлюз відмовив через наші `provider`-поля, і
+ * Пише окремий рядок у лог і інкрементує `openrouter_no_endpoints_total`
+ * (`reason`, `transport`), коли шлюз відмовив через наші `provider`-поля, і
  * повертає `true`. Подія одна (`openrouter_data_policy_no_endpoints`, імʼя
  * лишилось від першого рішення), причину розводить поле `reason`:
  * `data_policy` або `quantization`. Нічого не ретраїть і на відкат не
@@ -212,6 +214,13 @@ export function noteOpenRouterDataPolicyRejection(
 ): boolean {
   const reason = openRouterNoEndpointsReason(ctx.status, ctx.data);
   if (!reason) return false;
+  // Сигнал для алерту `OpenRouterNoEndpoints` (сам лог до дашборда не
+  // доїжджає). Метрика advisory: збій реєстру не має зламати шлях помилки.
+  try {
+    openRouterNoEndpointsTotal.inc({ reason, transport: ctx.transport });
+  } catch {
+    /* ignore */
+  }
   const prefs = openRouterProviderPrefs();
   logger.warn({
     msg: "openrouter_data_policy_no_endpoints",
