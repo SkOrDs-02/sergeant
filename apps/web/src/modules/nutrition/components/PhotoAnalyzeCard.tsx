@@ -1,5 +1,5 @@
 /**
- * Last validated: 2026-08-13
+ * Last validated: 2026-11-19
  * Status: Active
  */
 import type { Dispatch, Ref, SetStateAction } from "react";
@@ -13,6 +13,7 @@ import type { NutritionNotFoodKind } from "@sergeant/api-client";
 import type { NullableMacros } from "@sergeant/shared";
 import type { NutritionPhotoItem } from "@sergeant/api-client";
 import { PHOTO_NOTE_MAX_LENGTH } from "../hooks/usePhotoAnalysis";
+import { visiblePhotoQuestions } from "../lib/photoQuestions";
 import { NotFoodNotice } from "./NotFoodNotice";
 import { PhotoItemsList } from "./PhotoItemsList";
 import { PhotoPrivacyNotice } from "./PhotoPrivacyNotice";
@@ -237,7 +238,13 @@ export function PhotoAnalyzeCard({
       )}
 
       {photoResult && photoResult.isFood !== false && (
-        <div className="mt-4 grid gap-3">
+        // `grid-cols-1` = `minmax(0, 1fr)`: без нього неявна колонка
+        // grid-у має мінімум min-content, а назва позиції з `truncate`
+        // (`white-space: nowrap`) робить min-content рівним усій назві. Після
+        // перерахунку з довгою назвою («Запечена курка з квасолею, грибами
+        // та овочами») колонка розпирала аркуш убік, і він їхав горизонтально
+        // (фідбек власника 2026-11-19).
+        <div className="mt-4 grid grid-cols-1 gap-3">
           <div className="flex items-center justify-between gap-2">
             <div>
               <div className="text-style-body font-semibold text-text">
@@ -305,7 +312,7 @@ export function PhotoAnalyzeCard({
                Підпис під нею потрібен
                окремо: з самої картки не видно, що без кліку аналіз нікуди
                не дінеться. */
-            <div className="grid gap-1.5">
+            <div className="grid grid-cols-1 gap-1.5">
               <Button
                 type="button"
                 size="lg"
@@ -342,7 +349,7 @@ export function PhotoAnalyzeCard({
               з 3, питань — жодного, тож канал «сказати своїми словами» був
               недосяжний рівно в тому випадку, заради якого потрібен. Порція
               і вільне зауваження доступні завжди; питання — коли є. */}
-          <div className="border-t border-line pt-3 grid gap-3">
+          <div className="border-t border-line pt-3 grid grid-cols-1 gap-3">
             <SectionHeading as="div" size="md">
               Уточнення
             </SectionHeading>
@@ -362,20 +369,19 @@ export function PhotoAnalyzeCard({
               </div>
             </div>
 
-            {Array.isArray(photoResult.questions) &&
-              photoResult.questions.slice(0, 6).map((q: string) => (
-                <div key={q}>
-                  <div className="text-style-caption text-muted mb-1">{q}</div>
-                  <Input
-                    value={answers[q] || ""}
-                    onChange={(e) =>
-                      setAnswers((a) => ({ ...a, [q]: e.target.value }))
-                    }
-                    placeholder="Твоя відповідь"
-                    disabled={busy}
-                  />
-                </div>
-              ))}
+            {visiblePhotoQuestions(photoResult.questions).map((q) => (
+              <div key={q}>
+                <div className="text-style-caption text-muted mb-1">{q}</div>
+                <Input
+                  value={answers[q] || ""}
+                  onChange={(e) =>
+                    setAnswers((a) => ({ ...a, [q]: e.target.value }))
+                  }
+                  placeholder="Твоя відповідь"
+                  disabled={busy}
+                />
+              </div>
+            ))}
 
             <div>
               <div className="text-style-caption text-muted mb-1">

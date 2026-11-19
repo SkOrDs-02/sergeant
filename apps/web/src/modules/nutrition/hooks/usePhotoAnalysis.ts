@@ -1,5 +1,5 @@
 /**
- * Last validated: 2026-06-15
+ * Last validated: 2026-11-19
  * Status: Active
  */
 import {
@@ -22,6 +22,7 @@ import { fileToBase64 } from "../lib/fileToBase64";
 import { formatNutritionError } from "../lib/nutritionErrors";
 import { failedCopy } from "@shared/i18n/failedCopy";
 import { isQuotaError } from "../../../core/billing/quotaError";
+import { visiblePhotoQuestions } from "../lib/photoQuestions";
 
 export interface PhotoAnalysisPayload {
   image_base64: string;
@@ -256,9 +257,9 @@ export function usePhotoAnalysis({
     mutationFn: () => {
       if (!lastPhotoPayload)
         throw new Error("Немає вихідного фото. Спочатку зроби аналіз.");
-      const questions = Array.isArray(photoResult?.questions)
-        ? photoResult.questions.slice(0, 6)
-        : [];
+      // Той самий список, що бачить картка: питання про вагу сховане (його
+      // місце займає поле «Порція (г)», яке йде окремо як `portion_grams`).
+      const questions = visiblePhotoQuestions(photoResult?.questions);
       const answered = questions
         .map((q) => ({ question: q, answer: String(answers[q] || "").trim() }))
         .filter((x) => x.answer);

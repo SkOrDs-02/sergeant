@@ -1,5 +1,5 @@
 /**
- * Last validated: 2026-09-03
+ * Last validated: 2026-11-19
  * Status: Active
  *
  * Список позицій фото-аналізу з можливістю прибрати хибну.
@@ -55,7 +55,9 @@ export function PhotoItemsList({
   if (!items.length && !renderAddItem) return null;
 
   return (
-    <div className="grid gap-2">
+    // `grid-cols-1` (`minmax(0, 1fr)`): назва позиції з `truncate` інакше
+    // розпирає колонку на всю свою довжину — див. `PhotoAnalyzeCard`.
+    <div className="grid grid-cols-1 gap-2">
       <SectionHeading as="div" size="md">
         {copy.heading}
       </SectionHeading>
