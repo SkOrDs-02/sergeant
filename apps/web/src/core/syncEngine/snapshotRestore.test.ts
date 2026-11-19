@@ -285,6 +285,56 @@ describe("snapshotRestore — копія приводиться до стану 
       ).toBe(2);
     });
 
+    it("410 на догоні нотаток при свіжому основному курсорі теж іде в знімок, без звіту в Sentry", async () => {
+      await markReplicaBootstrapDone(client, USER_ID);
+      // Основний курсор вище межі журналу, а догін нотаток ще з нуля.
+      await writePullSinceCursor(client, USER_ID, 150);
+      const pull = vi.fn(async (since: number) => {
+        if (since < 100) throw cursorExpired();
+        return { ops: [], next_cursor: null };
+      });
+      const snapshot = vi
+        .fn()
+        .mockResolvedValueOnce(snapshotPage(["h-note-era"], 160, null));
+      const captureException = vi.fn();
+      const runtime = createSyncEngineReaderRuntime({
+        pull: pull as never,
+        snapshot: snapshot as never,
+        resolveClient: async () => client,
+        resolveUserId: async () => USER_ID,
+        originDeviceId: "device-phone",
+        captureException,
+        setInterval: vi.fn(),
+        clearInterval: vi.fn(),
+        eventTarget: {
+          addEventListener: vi.fn(),
+          removeEventListener: vi.fn(),
+        },
+        intervalMs: 60_000,
+        limit: 100,
+      });
+
+      await runtime.pullOnce();
+
+      expect(snapshot).toHaveBeenCalledTimes(1);
+      expect(captureException).not.toHaveBeenCalled();
+      expect(pull).toHaveBeenLastCalledWith(160, {
+        limit: 100,
+        originDeviceId: "device-phone",
+      });
+      expect(await habitIds()).toEqual(["h-note-era"]);
+      expect(
+        await readCursorValue(
+          client,
+          `backfill_done:finyk_tx_notes:v1:${USER_ID}`,
+        ),
+      ).toBe(1);
+
+      // Наступний тік: догін уже позначено, знімок не повторюється.
+      await runtime.pullOnce();
+      expect(snapshot).toHaveBeenCalledTimes(1);
+    });
+
     it("без 410 знімок не викликається", async () => {
       await markReplicaBootstrapDone(client, USER_ID);
       const pull = vi.fn(async () => ({
