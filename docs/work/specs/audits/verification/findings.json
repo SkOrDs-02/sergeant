@@ -279,7 +279,7 @@
         {
           "at": "2026-11-19",
           "event": "fixed",
-          "note": "Рішення власника: шифрувати у спокої. Історія чату (сесії, дзеркало, легасі hub_chat_history) і Memory Bank зберігаються конвертом AES-GCM {v:1,iv,ct} з неекстрактовним ключем в IndexedDB (apps/web/src/core/security/aiAtRest.ts); легасі-текст мігрує при читанні. Застереження: без WebCrypto/IndexedDB слот пише відкритий текст і легасі не мігрує; браузер зберігає байти ключа в IndexedDB того ж профілю, тож повний дамп профілю (і код в origin) дані розшифровує, захист діє лише для localStorage/SQLite-файлів окремо від IndexedDB. Коміт лежить у гілці claude/clever-shannon-clj8s8-ai-history-encryption, живого прогону немає."
+          "note": "Рішення власника: шифрувати у спокої. Історія чату (сесії, дзеркало, легасі hub_chat_history) і Memory Bank зберігаються конвертом AES-GCM {v:1,iv,ct} з неекстрактовним ключем в IndexedDB (apps/web/src/core/security/aiAtRest.ts); легасі-текст мігрує при читанні. Застереження: без WebCrypto/IndexedDB слот пише відкритий текст і легасі не мігрує; браузер зберігає байти ключа в IndexedDB того ж профілю, тож повний дамп профілю (і код в origin) дані розшифровує, захист діє лише для localStorage/SQLite-файлів окремо від IndexedDB. Відкритий текст, записаний до міграції, може лишатися у звільнених сторінках SQLite, журналі й LevelDB localStorage, доки їх не перевикористано. Коміт лежить у гілці claude/clever-shannon-clj8s8-ai-history-encryption, живого прогону немає."
         }
       ],
       "sourceAnchor": "B24 — вся AI-історія лежить у localStorage відкритим текстом"
