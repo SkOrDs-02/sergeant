@@ -9,6 +9,7 @@ import {
   safeWriteLSDurable,
 } from "@shared/lib/storage/storage";
 import { memoryBankSlot } from "../security/aiAtRest";
+import { getAtRestWipeEpoch } from "../security/aiAtRestEpoch";
 import type { MemoryEntry } from "./types";
 import type { IconName } from "@shared/components/ui/Icon";
 
@@ -90,11 +91,11 @@ export function isMemoryBankForeign(): boolean {
   return storedOwner !== null && storedOwner !== currentMemoryBankOwner;
 }
 
-function writeMemoryBankMeta(updatedAt: string): void {
-  safeWriteLSDurable(MEMORY_BANK_META_KEY, {
-    updatedAt,
-    ownerId: currentMemoryBankOwner,
-  });
+function writeMemoryBankMeta(
+  updatedAt: string,
+  ownerId: string | null = currentMemoryBankOwner,
+): void {
+  safeWriteLSDurable(MEMORY_BANK_META_KEY, { updatedAt, ownerId });
 }
 
 // `icon` — імʼя з атласу дизайн-системи (`@shared/components/ui/Icon`).
@@ -337,29 +338,50 @@ function notify(set: Set<MemoryBankListener>, entries: MemoryEntry[]): void {
   }
 }
 
-/** Зашифрований запис банку (aiAtRest); `false` лише якщо не серіалізується. */
-function writeMemoryBankSlot(entries: MemoryEntry[]): boolean {
+/** Лічильник записів банку: мітку часу ставить лише останній із них. */
+let memoryWriteGeneration = 0;
+
+/**
+ * Пише банк у зашифрований слот (aiAtRest), а мітку часу й сповіщення —
+ * лише ПІСЛЯ того, як шифртекст ліг у сховище. Інакше релоад у вікні
+ * шифрування лишав би свіжу мітку при старих записах, і reconcile на буті
+ * штовхнув би їх на сервер як «новіші». Записи, перекриті новішим записом
+ * або стиранням (вихід), мітку не ставлять: її поставить новіший запис, а
+ * після стирання вона воскресила б банк попереднього власника. Коли запис
+ * синхронний (без WebCrypto/IDB), усе відбувається синхронно, як раніше.
+ */
+function commitMemoryBank(
+  entries: MemoryEntry[],
+  updatedAt: string,
+  local: boolean,
+): void {
   let serialized: string;
   try {
     serialized = JSON.stringify(entries);
   } catch {
-    return false;
+    throw new Error("Не вдалося зберегти памʼять профілю");
   }
-  memoryBankSlot.write(serialized);
-  return true;
+  const generation = ++memoryWriteGeneration;
+  const epoch = getAtRestWipeEpoch();
+  const ownerId = currentMemoryBankOwner;
+  const done = memoryBankSlot.write(serialized);
+  const finish = () => {
+    if (generation !== memoryWriteGeneration) return;
+    if (epoch !== getAtRestWipeEpoch()) return;
+    writeMemoryBankMeta(updatedAt, ownerId);
+    notify(listeners, entries);
+    // L-8: write-through push читає мітку з meta, тож лише після неї.
+    if (local) notify(localEditListeners, entries);
+  };
+  if (memoryBankSlot.hasPendingWrite()) void done.then(finish);
+  else finish();
 }
 
 export function writeMemoryEntries(entries: MemoryEntry[]): void {
-  if (!writeMemoryBankSlot(entries)) {
-    throw new Error("Не вдалося зберегти памʼять профілю");
-  }
   // L-8: генуїнний ЛОКАЛЬНИЙ запис — нова мітка часу ("зараз") + поточний
   // owner, які `profileWriteThrough.ts` звіряє з сервером на наступному
-  // boot-і (і які тригерять write-through push через `localEditListeners`
-  // нижче).
-  writeMemoryBankMeta(new Date().toISOString());
-  notify(listeners, entries);
-  notify(localEditListeners, entries);
+  // boot-і (і які тригерять write-through push через `localEditListeners`).
+  commitMemoryBank(entries, new Date().toISOString(), true);
 }
 
 /**
@@ -373,11 +395,7 @@ export function writeMemoryEntriesFromServer(
   entries: MemoryEntry[],
   serverUpdatedAt: string,
 ): void {
-  if (!writeMemoryBankSlot(entries)) {
-    throw new Error("Не вдалося зберегти памʼять профілю");
-  }
-  writeMemoryBankMeta(serverUpdatedAt);
-  notify(listeners, entries);
+  commitMemoryBank(entries, serverUpdatedAt, false);
 }
 
 export function groupMemoryEntries(

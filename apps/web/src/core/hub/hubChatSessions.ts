@@ -209,12 +209,12 @@ export function saveSessions(sessions: HubChatSession[]): void {
       ...s,
       messages: s.messages.slice(-MESSAGES_PER_SESSION),
     }));
-  chatSessionsSlot.write(JSON.stringify(trimmed));
+  void chatSessionsSlot.write(JSON.stringify(trimmed));
   // Синхронне дзеркало проти гонки «запис → релоад» (див. `loadSessions`).
   // Пишемо під ОКРЕМИМ ключем, а не durable-хелпером по основному: інакше
   // `bootstrapKvStore()` підняв би дзеркало у warm-cache як основне значення,
   // і порівняння за `updatedAt` втратило б другий бік.
-  chatSessionsMirrorSlot.write(JSON.stringify(trimmed));
+  void chatSessionsMirrorSlot.write(JSON.stringify(trimmed));
 
   // Mirror the most recent session's tail back into the legacy
   // `hub_chat_history` key so `hubBackup.buildHubBackupPayload`
@@ -223,7 +223,9 @@ export function saveSessions(sessions: HubChatSession[]): void {
   // out chat exports for users on the new schema.
   const newest = trimmed[0];
   if (newest) {
-    chatLegacyHistorySlot.write(JSON.stringify(newest.messages.slice(-30)));
+    void chatLegacyHistorySlot.write(
+      JSON.stringify(newest.messages.slice(-30)),
+    );
   }
 }
 

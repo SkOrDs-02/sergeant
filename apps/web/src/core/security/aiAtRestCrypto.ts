@@ -40,20 +40,27 @@ async function loadOrCreateKey(): Promise<CryptoKey> {
   );
   const db = await openDb();
   try {
+    // Резолвимо лише на `oncomplete`: ключ, що лишився тільки в памʼяті
+    // (транзакцію перервано), дав би шифртекст, нечитний після релоаду.
     return await new Promise<CryptoKey>((resolve, reject) => {
       const tx = db.transaction(STORE, "readwrite");
       const store = tx.objectStore(STORE);
+      let chosen: CryptoKey | null = null;
       const get = store.get(KEY_ID);
       get.onsuccess = () => {
         const existing = get.result as CryptoKey | undefined;
         if (existing) {
-          resolve(existing);
+          chosen = existing;
         } else {
+          chosen = fresh;
           store.put(fresh, KEY_ID);
-          resolve(fresh);
         }
       };
-      get.onerror = () => reject(get.error);
+      tx.oncomplete = () => {
+        if (chosen) resolve(chosen);
+        else reject(new Error("ключ не збережено"));
+      };
+      tx.onabort = () => reject(tx.error ?? new Error("транзакцію перервано"));
       tx.onerror = () => reject(tx.error);
     });
   } finally {

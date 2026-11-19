@@ -361,7 +361,9 @@ export async function applyHubBackupPayload(
     }
     if (typeof h.chatHistory === "string") {
       if (mode === "replace" || !chatLegacyHistorySlot.read()) {
-        chatLegacyHistorySlot.write(h.chatHistory);
+        // Чекаємо шифрований запис: HubBackupPanel перезавантажує сторінку
+        // одразу після відновлення, і запис у вікні шифрування загубився б.
+        await chatLegacyHistorySlot.write(h.chatHistory);
       }
     }
   }

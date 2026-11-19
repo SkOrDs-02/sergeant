@@ -158,8 +158,22 @@ export function useChatSessions(): UseChatSessionsResult {
         return updated;
       });
     };
+    // B24: запис тепер шифрується асинхронно (кілька мс), тож `beforeunload`
+    // на закритті вкладки може не дочекатись його. Ховання сторінки
+    // (`visibilitychange` → hidden, `pagehide`) приходить раніше або там,
+    // де `beforeunload` немає зовсім (мобільний бекграунд, bfcache), і
+    // сторінка після нього зазвичай ще живе досить, щоб запис доїхав.
+    const onHidden = () => {
+      if (document.visibilityState === "hidden") flush();
+    };
     window.addEventListener("beforeunload", flush);
-    return () => window.removeEventListener("beforeunload", flush);
+    window.addEventListener("pagehide", flush);
+    document.addEventListener("visibilitychange", onHidden);
+    return () => {
+      window.removeEventListener("beforeunload", flush);
+      window.removeEventListener("pagehide", flush);
+      document.removeEventListener("visibilitychange", onHidden);
+    };
   }, [activeId]);
 
   useEffect(() => {

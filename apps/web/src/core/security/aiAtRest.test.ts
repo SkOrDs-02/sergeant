@@ -35,7 +35,7 @@ describe("aiAtRest", () => {
 
   it("roundtrip: у сховищі конверт, а не відкритий текст; читання віддає оригінал", async () => {
     await hydrateAtRest();
-    chatSessionsSlot.write(PLAIN);
+    void chatSessionsSlot.write(PLAIN);
     // синхронне читання з кешу одразу після запису
     expect(chatSessionsSlot.read()).toBe(PLAIN);
     await flush();
@@ -52,7 +52,7 @@ describe("aiAtRest", () => {
 
   it("після «перезавантаження» (новий кеш) гідратація розшифровує збережене", async () => {
     await hydrateAtRest();
-    chatSessionsSlot.write(PLAIN);
+    void chatSessionsSlot.write(PLAIN);
     await flush();
     const stored = safeReadStringLS(KEY) as string;
 
@@ -84,7 +84,7 @@ describe("aiAtRest", () => {
 
   it("нечитний шифртекст (ключ втрачено) → порожньо, без винятку", async () => {
     await hydrateAtRest();
-    chatSessionsSlot.write(PLAIN);
+    void chatSessionsSlot.write(PLAIN);
     await flush();
     const stored = safeReadStringLS(KEY) as string;
 
@@ -96,7 +96,7 @@ describe("aiAtRest", () => {
     expect(chatSessionsSlot.read()).toBeNull();
 
     // і слот далі працює: новий запис перекриває сміття
-    chatSessionsSlot.write(PLAIN);
+    void chatSessionsSlot.write(PLAIN);
     await flush();
     expect(chatSessionsSlot.read()).toBe(PLAIN);
   });
@@ -116,7 +116,7 @@ describe("aiAtRest", () => {
 
   it("AAD привʼязує шифртекст до слота", async () => {
     await hydrateAtRest();
-    chatSessionsSlot.write(PLAIN);
+    void chatSessionsSlot.write(PLAIN);
     await flush();
     const stored = safeReadStringLS(KEY) as string;
     // підсовуємо конверт чату під ключ Memory Bank
@@ -128,7 +128,7 @@ describe("aiAtRest", () => {
 
   it("remove синхронно стирає і не воскресає від запису, що летить", async () => {
     await hydrateAtRest();
-    chatSessionsSlot.write(PLAIN);
+    void chatSessionsSlot.write(PLAIN);
     chatSessionsSlot.remove();
     await flush();
     expect(chatSessionsSlot.read()).toBeNull();
@@ -137,7 +137,7 @@ describe("aiAtRest", () => {
 
   it("масове стирання поза слотом (епоха) не дає запису, що летить, воскреснути", async () => {
     await hydrateAtRest();
-    chatSessionsSlot.write(PLAIN);
+    void chatSessionsSlot.write(PLAIN);
     webKVStore.remove(KEY);
     bumpAtRestWipeEpoch();
     await flush();
@@ -149,7 +149,7 @@ describe("aiAtRest", () => {
     (globalThis as { indexedDB?: unknown }).indexedDB = undefined;
     await __resetAtRestKeyForTests();
     await hydrateAtRest();
-    chatSessionsSlot.write(PLAIN);
+    void chatSessionsSlot.write(PLAIN);
     expect(chatSessionsSlot.read()).toBe(PLAIN);
     expect(safeReadStringLS(KEY)).toBe(PLAIN);
   });
