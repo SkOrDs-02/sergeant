@@ -21,6 +21,7 @@
  * Модуль імпортується з eager-ланцюжка `AuthContext`, тож sqlite-wasm,
  * db-schema і `applyPullOp` тягнуться лише динамічно (`sqlite.lazy.test.ts`).
  */
+import { holdAtRestWrites } from "../security/aiAtRestEpoch";
 import type { SqliteMigrationClient } from "@sergeant/db-schema/migrate/sqlite";
 import { logger } from "@shared/lib";
 
@@ -180,6 +181,7 @@ export async function inspectAnonymousLeftoversOnLogout(): Promise<AnonymousLeft
   let userId: string | null = null;
   let switched = false;
   let resume: (() => void) | null = null;
+  let releaseAtRest: (() => void) | null = null;
   try {
     sqlite = await import("../db/sqlite");
     userId = sqlite.readActiveSqliteUserId();
@@ -190,6 +192,10 @@ export async function inspectAnonymousLeftoversOnLogout(): Promise<AnonymousLeft
     const queuedCopies = await countQueuedCopies(ownClient, userId);
 
     resume = await pauseSyncReader();
+    // B24: шифровані AI-слоти пишуть асинхронно; запис акаунта A, що
+    // долетів би у вікні нижче, ліг би в анонімний kv_store (ключ один на
+    // профіль, тож там він розшифровний). Тримаємо записи до повернення.
+    releaseAtRest = holdAtRestWrites();
     switched = true;
     await sqlite.switchSqliteUser(null);
     const anonClient = (await sqlite.getSqliteDb()).migrationClient();
@@ -206,6 +212,7 @@ export async function inspectAnonymousLeftoversOnLogout(): Promise<AnonymousLeft
     }
     // Лише ПІСЛЯ повернення партиції: pull, що чекав, піде вже в партицію A.
     resume?.();
+    releaseAtRest?.();
   }
 }
 

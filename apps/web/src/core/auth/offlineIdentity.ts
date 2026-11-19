@@ -16,7 +16,7 @@
 import type { User } from "@sergeant/shared";
 import { logger } from "@shared/lib";
 import { resolveLsStore } from "@shared/lib/storage/storage";
-import { readDeviceOwnerId } from "../hub/hubChatSessions";
+import { readDeviceOwnerId } from "../hub/hubChatOwner";
 import { hasSessionExpiredMarker } from "./sessionExpiredMarker";
 
 /** Мітка часу (мс) останньої успішної відповіді `me`. */

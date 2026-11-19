@@ -303,6 +303,33 @@ describe("useChatSessions (audit 03 F22 — debounce/undo)", () => {
     );
   });
 
+  it.each([
+    ["pagehide", () => window.dispatchEvent(new Event("pagehide"))],
+    [
+      "visibilitychange→hidden",
+      () => {
+        Object.defineProperty(document, "visibilityState", {
+          configurable: true,
+          get: () => "hidden",
+        });
+        document.dispatchEvent(new Event("visibilitychange"));
+      },
+    ],
+  ])("flushes messages on %s without debounce (B24)", (_name, fire) => {
+    const { result } = renderHook(() => useChatSessions());
+    act(() => {
+      result.current.setMessages((m) => [...m, makeUserMsg("hide flush")]);
+    });
+    try {
+      act(() => fire());
+    } finally {
+      Reflect.deleteProperty(document, "visibilityState");
+    }
+
+    const stored = storedSessions();
+    expect(stored[0]!.messages.some((m) => m.text === "hide flush")).toBe(true);
+  });
+
   it("exposes history and details popover toggles", () => {
     const { result } = renderHook(() => useChatSessions());
 

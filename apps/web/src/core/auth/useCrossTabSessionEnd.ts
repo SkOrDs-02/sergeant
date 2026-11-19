@@ -18,7 +18,7 @@ import type { QueryClient } from "@tanstack/react-query";
 import { logger } from "@shared/lib";
 import { clearPersistedQueryCache } from "@shared/lib/api/queryClientPersister";
 
-import { reconcileChatOwnerOnAuthChange } from "../hub/hubChatSessions";
+import { reconcileChatOwnerOnAuthChange } from "../hub/hubChatOwner";
 import { clearHubQuickStatsSnapshots } from "./hubQuickStatsSnapshots";
 import { navigateToSignIn } from "./logoutBeforeNavigate";
 import { subscribeSessionEnded } from "./sessionBroadcast";

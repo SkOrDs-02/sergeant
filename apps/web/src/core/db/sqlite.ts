@@ -179,7 +179,14 @@ export async function switchSqliteUser(
   // KV-кеш заповнено на буті з `anon`: без перечитування залогінений
   // користувач читав би анонімні значення до кінця сесії. Після `close()`,
   // бо перечитування відкриває новий handle, а два одночасно не можна.
-  if (key !== ANON_USER_KEY) await refreshKvWarmCache();
+  if (key !== ANON_USER_KEY) {
+    await refreshKvWarmCache();
+    // Зашифровані слоти AI-історії: кеш відкритого тексту відповідає
+    // попередньому розділу, перечитуємо з нового.
+    await import("../security/aiAtRest")
+      .then((m) => m.hydrateAtRest())
+      .catch(() => undefined);
+  }
 }
 
 /**
