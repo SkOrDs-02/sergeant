@@ -24,9 +24,18 @@ import {
  *
  * Unknown ids fall back to `defaultPage` (default `"overview"`).
  */
+/**
+ * `replace: true` — службова навігація (прибрати одноразовий параметр на
+ * кшталт `?tx=`), яка не має лишати запис в історії.
+ */
+export type FinykNavigate = (
+  p: FinykPage | string,
+  opts?: { replace?: boolean },
+) => void;
+
 export function useFinykRoute(
   defaultPage: FinykPage = "overview",
-): [FinykPage, (p: FinykPage | string) => void] {
+): [FinykPage, FinykNavigate] {
   const routerLocation = useLocation();
   // Finyk is fully path-based. React Router must be the single source of
   // truth here; mixing it with a native popstate/hash snapshot can leave a
@@ -62,7 +71,7 @@ export function useFinykRoute(
   }, [navigate]);
 
   const navigateToPage = useCallback(
-    (p: FinykPage | string) => {
+    (p: FinykPage | string, opts?: { replace?: boolean }) => {
       // Accept either a typed `FinykPage` (preferred) or a raw string. The
       // string branch lets `NAV_IDS[idx]` swipe-navigation in `FinykApp`
       // pass values through without an extra cast — `parseFinykSegments`
@@ -78,7 +87,7 @@ export function useFinykRoute(
       ) {
         return;
       }
-      navigate(target, { replace: false });
+      navigate(target, { replace: opts?.replace ?? false });
     },
     [location.pathname, location.search, navigate],
   );

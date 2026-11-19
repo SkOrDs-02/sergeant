@@ -46,6 +46,23 @@ describe("WorkoutItemNextSetHint", () => {
     expect(onApply).toHaveBeenCalledWith(82.5, 5, "planned");
   });
 
+  it("тренування з програми 5×5 веде прогресію за планом сесії, а не діапазоном каталогу", () => {
+    const onApply = vi.fn();
+    render(
+      <WorkoutItemNextSetHint
+        last={lastStrength(3, [{ weightKg: 80, reps: 5 }])}
+        exerciseId="bench_press_barbell"
+        isReadOnly={false}
+        programRef={{ programId: "strength_5x5", slot: 0 }}
+        onApply={onApply}
+      />,
+    );
+    // План 5×5: 5 повторень — стеля, отже +2.5 кг і знову 5.
+    expect(screen.getByText(/ціль 5-5 повторень/)).toBeInTheDocument();
+    fireEvent.click(screen.getByRole("button", { name: /Наступний/ }));
+    expect(onApply).toHaveBeenCalledWith(82.5, 5, "planned");
+  });
+
   it("does not raise the weight after a long layoff", () => {
     const onApply = vi.fn();
     render(
@@ -57,6 +74,28 @@ describe("WorkoutItemNextSetHint", () => {
       />,
     );
     expect(screen.getByText(/легше після паузи/)).toBeInTheDocument();
+    fireEvent.click(screen.getByRole("button", { name: /Наступний/ }));
+    const [weight] = onApply.mock.calls[0] as [number, number];
+    expect(weight).toBeLessThan(80);
+  });
+
+  it("не піднімає вагу одразу після зняття позначки травми (E-5)", () => {
+    // Свіжа сесія без паузи, але позначку знято 5 днів тому: 21 день
+    // мʼякого режиму, як на сторінці вправи (аудит 2026-11-17, §3.4).
+    const last = {
+      ...lastStrength(3),
+      _injuryClearedAt: new Date(Date.now() - 5 * 86_400_000).toISOString(),
+    } as LastByExerciseEntry;
+    const onApply = vi.fn();
+    render(
+      <WorkoutItemNextSetHint
+        last={last}
+        exerciseId="bench_press_barbell"
+        isReadOnly={false}
+        onApply={onApply}
+      />,
+    );
+    expect(screen.getByText(/легше після позначки болю/)).toBeInTheDocument();
     fireEvent.click(screen.getByRole("button", { name: /Наступний/ }));
     const [weight] = onApply.mock.calls[0] as [number, number];
     expect(weight).toBeLessThan(80);

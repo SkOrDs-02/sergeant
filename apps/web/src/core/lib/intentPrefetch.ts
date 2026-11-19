@@ -15,8 +15,8 @@
  *     handlers that consult the registry at event time.
  *
  * `useRoutePrefetch.ts` is the only registrar (called once at module
- * init); it is loaded synchronously by `App.tsx`, so the registry is
- * populated before any dashboard card mounts. If for any reason the
+ * init); since 2026-11-18 it is loaded lazily (`useAppEffects` imports
+ * it on mount, `HubBottomNav` statically in its own chunk). If for any reason the
  * registrar hasn't run yet, the handlers no-op silently — intent-
  * prefetch is best-effort, not a correctness guarantee.
  */

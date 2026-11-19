@@ -25,6 +25,19 @@ export interface WorkoutsConfirmDialogsProps {
 }
 
 /**
+ * Текст підтвердження жорсткого застереження (червоний мʼяз або позначка
+ * болю, ADR-0083) на старті. Один на старт шаблону й старт програми
+ * (`FizrukApp`), щоб людина не бачила двох різних формулювань того самого.
+ */
+export const HARD_BLOCK_START_COPY = {
+  title: "Є жорстке застереження",
+  description:
+    "Ти позначив біль або ця група ще має червоний recovery-статус. Навантажувати її не раджу. Почати все одно?",
+  confirmLabel: "Так, почати",
+  cancelLabel: "Скасувати",
+} as const;
+
+/**
  * Bottom-of-page confirmation dialogs for the Workouts page. The
  * "Delete active workout" `ConfirmDialog` was removed in favour of
  * the unified soft-delete flow (`onDeleteWorkout` in
@@ -60,10 +73,10 @@ export function WorkoutsConfirmDialogs({
 
       <ConfirmDialog
         open={!!riskyTemplate}
-        title="Є жорстке застереження"
-        description="Ти позначив біль або ця група ще має червоний recovery-статус. Навантажувати її не раджу. Почати все одно?"
-        confirmLabel="Так, почати"
-        cancelLabel="Скасувати"
+        title={HARD_BLOCK_START_COPY.title}
+        description={HARD_BLOCK_START_COPY.description}
+        confirmLabel={HARD_BLOCK_START_COPY.confirmLabel}
+        cancelLabel={HARD_BLOCK_START_COPY.cancelLabel}
         danger={false}
         onConfirm={onRiskyTemplateConfirm}
         onCancel={onRiskyTemplateCancel}

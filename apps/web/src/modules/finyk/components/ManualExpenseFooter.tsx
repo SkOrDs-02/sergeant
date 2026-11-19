@@ -47,17 +47,20 @@ export function ManualExpenseFooter({
 }: ManualExpenseFooterProps) {
   return (
     <div className="space-y-2">
+      {/* «Скасувати» природної ширини, головна дія забирає решту й лишається
+          в один рядок: на 390 px дві рівні половини переносили «Додати
+          надходження» на два рядки (зйомка 2026-11-18). */}
       <div className="flex gap-3">
         <Button
           variant="outline"
-          className="flex-1"
+          className="shrink-0"
           onClick={onCancel}
           disabled={isSubmitting}
         >
           {copy.cancel}
         </Button>
         <Button
-          className="flex-1"
+          className="min-w-0 flex-1 whitespace-nowrap"
           onClick={onSubmit}
           disabled={isSubmitting}
           loading={storageLoading}

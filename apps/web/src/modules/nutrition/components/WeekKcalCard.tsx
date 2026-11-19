@@ -76,8 +76,10 @@ export function WeekKcalCard({
   onGoToLog,
 }: WeekKcalCardProps) {
   const model = useMemo(
-    () => computeWeekKcalChart(rows, goalsByDay),
-    [rows, goalsByDay],
+    // `todayIso` — межа факту: день після сьогодні малюється, але в суму й
+    // середнє не йде (журнал пускає в майбутнє, там план, logic-43).
+    () => computeWeekKcalChart(rows, goalsByDay, todayIso),
+    [rows, goalsByDay, todayIso],
   );
   const [selectedDate, setSelectedDate] = useState<string | null>(null);
 

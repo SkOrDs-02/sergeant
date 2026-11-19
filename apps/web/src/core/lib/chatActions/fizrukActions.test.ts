@@ -30,11 +30,7 @@ vi.mock("./fizrukActions/shared", async (orig) => {
 
 import { handleFizrukAction } from "./fizrukActions";
 import { triggerFizrukDualWrite } from "../../../modules/fizruk/lib/sqliteWriter/index";
-import {
-  persistFizrukWorkouts,
-  readFizrukWorkouts,
-} from "./fizrukActions/shared";
-import { getKyivDateParts } from "@shared/lib/time/kyivTime";
+import { persistFizrukWorkouts } from "./fizrukActions/shared";
 import {
   __setFizrukSqliteCacheForTests,
   clearFizrukSqliteCache,
@@ -187,41 +183,9 @@ describe("start_workout", () => {
     expect(out.length).toBeGreaterThan(0);
   });
 
-  /**
-   * Регресія 2026-08-07: о 02:48 асистент відрапортував «розпочато о 09:00».
-   * Модель заповнила опційне `time`, бо контекст ніс лише дату без годинника,
-   * а виконавець будь-яке значення приймав як істину. Виправлено з двох
-   * боків — тут фіксуємо клієнтську половину: без `time` береться поточна
-   * київська година, а не типова ранкова.
-   */
-  it("без time бере поточну київську годину, а не вигадану", () => {
-    const out = call({ name: "start_workout", input: {} }) as string;
-    const parts = getKyivDateParts();
-    const expected = `${String(parts.hour).padStart(2, "0")}:${String(parts.minute).padStart(2, "0")}`;
-    expect(out).toContain(`розпочато о ${expected}`);
-  });
-
-  /**
-   * `Date.parse("2026-08-07T09:00:00")` без суфікса зони читається у поясі
-   * ПРИСТРОЮ, а година й день-ключ тут київські. На пристрої поза Києвом
-   * збережений `startedAt` їхав на різницю поясів.
-   *
-   * Звірка з абсолютним інстантом, а не з відрендереною годиною: 7 серпня
-   * Київ у EEST (+3), тож 09:00 місцевих — це рівно 06:00Z. На київській
-   * машині розробника стара й нова реалізації збігаються і тест нічого не
-   * ловить; у CI (UTC) стара дала б 09:00Z і тест червоніє. Підкрутити TZ
-   * процесу не вийде — на Windows `TZ` до vitest-воркерів не долітає.
-   */
-  it("явний час осідає як київський стінний годинник, не як локальний", () => {
-    call({
-      name: "start_workout",
-      input: { date: "2026-08-07", time: "09:00" },
-    });
-    const stored = readFizrukWorkouts()[0];
-    expect(stored).toBeDefined();
-    expect(stored!.startedAt).toBe("2026-08-07T06:00:00.000Z");
-  });
-
+  // Годинник виконавця (ADR-0078, пристрій, а не Київ) і регресію
+  // 2026-08-07 «розпочато о 09:00 о 02:48» тримає
+  // `fizrukActions/workouts.deviceClock.test.ts`.
   it("неможлива година відхиляється, а не пишеться в майбутнє", () => {
     const out = call({ name: "start_workout", input: { time: "99:00" } });
     expect(out).toBe("Некоректна дата або час.");
@@ -293,26 +257,6 @@ describe("log_measurement", () => {
     });
     expect(typeof out).toBe("string");
     expect(out).toContain("weightKg=80");
-  });
-});
-
-// ---------------------------------------------------------------------------
-// add_program_day
-// ---------------------------------------------------------------------------
-describe("add_program_day", () => {
-  it("honest refusal: no 'saved' report and no localStorage write", () => {
-    const out = call({
-      name: "add_program_day",
-      input: {
-        weekday: 1,
-        name: "Push",
-        exercises: [{ name: "Жим лежачи", sets: 3, reps: 8, weight: 80 }],
-      },
-    });
-    expect(typeof out).toBe("string");
-    expect(out).toMatch(/^Не вдалося/);
-    expect(out).not.toContain("збережено:");
-    expect(localStorage.getItem("fizruk_plan_template_v1")).toBeNull();
   });
 });
 

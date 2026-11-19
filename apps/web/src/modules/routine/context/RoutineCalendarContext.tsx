@@ -67,6 +67,13 @@ export interface RoutineCalendarData {
 export interface RoutineCalendarActions {
   applyTimeMode: (mode: RoutineTimeMode) => void;
   onToggleHabit: (habitId: string, dateKey: string) => void;
+  /**
+   * Крок лічильника звички (Р-1 (а)): `+1` / `-1`. Необовʼязкове, щоб
+   * наявні фікстури контексту лишились валідними; без нього рядок
+   * звички з лічильником малює звичайний кружок.
+   */
+  onStepHabitCounter?:
+    ((habitId: string, dateKey: string, delta: number) => void) | undefined;
   setRoutine: Dispatch<SetStateAction<RoutineState>>;
   setMainTab: Dispatch<SetStateAction<RoutineMainTab>>;
   onOpenModule?:

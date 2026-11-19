@@ -5,7 +5,9 @@ import userEvent from "@testing-library/user-event";
 
 import { WelcomeModulePicker } from "./WelcomeModulePicker";
 import { messages } from "@shared/i18n/uk";
+import { coreMessages } from "@shared/i18n/uk.core";
 import { MODULE_LABELS } from "@shared/lib/modules/moduleLabels";
+import { CURATED_PAIR_PHRASES } from "../insights/digestCorrelations";
 
 describe("WelcomeModulePicker — preset grid shell", () => {
   afterEach(() => cleanup());
@@ -77,5 +79,15 @@ describe("WelcomeModulePicker — preset grid shell", () => {
       }),
     );
     expect(onOpenAuth).toHaveBeenCalledTimes(1);
+  });
+
+  it("показує один приклад звʼязку з курованої пари, без чисел", () => {
+    render(<WelcomeModulePicker onComplete={vi.fn()} onOpenAuth={vi.fn()} />);
+    const phrase = coreMessages.hub.welcomeLinkExamplePhrase;
+    // Фраза не вигадана: це одна з фраз курованого набору пар.
+    expect(CURATED_PAIR_PHRASES).toContain(phrase);
+    const line = screen.getByTestId("welcome-link-example");
+    expect(line).toHaveTextContent(phrase);
+    expect(line.textContent ?? "").not.toMatch(/\d/);
   });
 });

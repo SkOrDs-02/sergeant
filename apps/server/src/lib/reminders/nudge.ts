@@ -41,6 +41,12 @@ import { kyivCalendarDaysBetween } from "@sergeant/shared";
 import type { Pool } from "pg";
 
 import type { DueReminder } from "./due.js";
+import {
+  hmToMinute,
+  isInQuietWindow,
+  minuteToHm,
+  type QuietWindow,
+} from "./time.js";
 
 /**
  * На яку добу відсутності будимо. Затухаюча послідовність, а не «щодня»:
@@ -56,14 +62,6 @@ export const NUDGE_ABSENCE_DAYS: readonly number[] = [2, 4, 7];
  * підриває довіру рівно так само, як MCC-код замість назви категорії.
  */
 export const NUDGE_CACHE_TTL_MS = 48 * 60 * 60_000;
-
-/**
- * Тихі години у київському часі: [22:00, 08:00). Слот нуджа (09:00) у них
- * не потрапляє за конструкцією; межі читає план бюджету (`./budget.ts`),
- * щоб компромісний час згорнутого сповіщення не впав у ніч.
- */
-export const QUIET_HOURS_START_KYIV = 22;
-export const QUIET_HOURS_END_KYIV = 8;
 
 export const NUDGE_TITLE = "Сержант";
 
@@ -200,7 +198,8 @@ export async function selectNudgeCandidates(
 }
 
 /**
- * Слот нуджа, 09:00 Europe/Kyiv (спека D5).
+ * Слот нуджа, 09:00 за годинником пристрою людини (спека D5; пояс -
+ * спека `notifications-quiet-hours-and-device-time.md`).
  *
  * Нудж більше не має власного проходу: він привід у спільному плані дня
  * (`./sweep.ts`), тож ділить стелю з нагадуваннями модулів і згортається з
@@ -208,12 +207,31 @@ export async function selectNudgeCandidates(
  */
 export const NUDGE_AT_HM = "09:00";
 
-/** Кандидат нуджа як привід у плані дня. */
+/**
+ * Час нуджа для людини. 09:00 обрав продукт, не людина, тож він не має
+ * права лежати в її тихих годинах: тоді нудж переходить на кінець тихих
+ * годин того ж дня. `quiet = null` (тихі години вимкнені) лишає 09:00.
+ */
+export function nudgeAtHm(quiet: QuietWindow | null): string {
+  if (
+    quiet === null ||
+    !isInQuietWindow(hmToMinute(NUDGE_AT_HM), { enabled: true, ...quiet })
+  ) {
+    return NUDGE_AT_HM;
+  }
+  return minuteToHm(quiet.endMin);
+}
+
+/**
+ * Кандидат нуджа як привід у плані дня. `clock` - доба і тихі години
+ * людини в її поясі (`./userClock.ts`).
+ */
 export function nudgeReason(
   candidate: NudgeCandidate,
-  dayKey: string,
+  clock: { dayKey: string; quiet: QuietWindow | null },
   now: Date,
 ): DueReminder {
+  const { dayKey, quiet } = clock;
   return {
     userId: candidate.userId,
     module: "sergeant",
@@ -223,7 +241,7 @@ export function nudgeReason(
     title: NUDGE_TITLE,
     body: buildNudgeBody(candidate, now),
     url: "/",
-    at: NUDGE_AT_HM,
+    at: nudgeAtHm(quiet),
     label: NUDGE_TITLE,
   };
 }

@@ -122,6 +122,7 @@ export function loadRoutineState(): RoutineState {
       habitOrder: fullState.habitOrder,
       completionNotes: fullState.completionNotes,
       skips: fullState.skips,
+      counts: fullState.counts,
     };
   }
 
@@ -228,6 +229,7 @@ function writeThroughRoutineCaches(next: RoutineState): RoutineState {
     habitOrder: next.habitOrder,
     completionNotes: next.completionNotes,
     skips: next.skips ?? {},
+    counts: next.counts ?? {},
   });
   setCachedSqliteCompletions(next.completions);
   return prev;
@@ -270,6 +272,7 @@ function readCachedRoutineState(): RoutineState {
       habitOrder: fullState.habitOrder,
       completionNotes: fullState.completionNotes,
       skips: fullState.skips,
+      counts: fullState.counts,
     };
   }
   if (completionsCache.refreshedAt !== null) {

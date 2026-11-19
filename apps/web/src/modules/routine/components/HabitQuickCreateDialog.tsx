@@ -158,7 +158,7 @@ export function HabitQuickCreateDialog({
   if (!open) return null;
 
   const handleSave = () => {
-    const patch = habitDraftToPatch(draft);
+    const patch = habitDraftToPatch(draft, { editing: Boolean(editingId) });
     const nextErrors: HabitFormErrors = {};
     if (!patch.name) {
       nextErrors.name = "Додай назву звички.";
@@ -168,6 +168,14 @@ export function HabitQuickCreateDialog({
       (!patch.weekdays || patch.weekdays.length === 0)
     ) {
       nextErrors.weekdays = "Обери хоча б один день тижня.";
+    }
+    // Лічильник (Р-1 (а)): ціль — ціле ≥ 1; порожньо = звичка «так/ні».
+    if (
+      draft.countTarget !== null &&
+      draft.countTarget !== undefined &&
+      (!Number.isInteger(draft.countTarget) || draft.countTarget < 1)
+    ) {
+      nextErrors.countTarget = messages.routine.counter.targetError;
     }
     if (draft.startDate && classifyDateBound(draft.startDate) === "invalid") {
       nextErrors.startDate = DATE_INVALID_MESSAGE;

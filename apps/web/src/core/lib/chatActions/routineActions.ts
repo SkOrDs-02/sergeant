@@ -2,19 +2,20 @@ import {
   loadRoutineState,
   saveRoutineState,
 } from "../../../modules/routine/lib/routineStorage";
-// ADR-0078: межа доби відмітки — годинник ПРИСТРОЮ. У цьому ж файлі поруч
-// живе `getKyivDayKey` (він доречний для звітних періодів), тож підставити
-// його сюди було б природно і хибно — для користувача на захід від Києва
-// «завтра» настало б на добу раніше, ніж у нього на екрані.
+// ADR-0078: межа доби відмітки — годинник ПРИСТРОЮ. `getKyivDayKey`
+// доречний для звітних періодів, тож підставити його сюди було б природно і
+// хибно — для користувача на захід від Києва «завтра» настало б на добу
+// раніше, ніж у нього на екрані. Те саме з 2026-11-18 для вікон
+// `habit_stats` / `habit_trend`: відмітки лежать під ключами пристрою.
 import { anchoredCompletionBounds } from "../../../modules/routine/lib/dayAnchor";
 import { persistRoutineState } from "./routinePersistence";
-import { getKyivDayKey } from "@shared/lib/time/kyivTime";
 import {
   applyCreateHabit,
   applyPauseHabitBetween,
   applyResumeHabitFrom,
   applySetHabitSkip,
   applyToggleHabitCompletion,
+  dateKeyMinusDays,
   flexibleMaxStreakAllTime,
   flexibleStreakBreakdown,
   habitCompletionRate,
@@ -42,7 +43,6 @@ import type {
   ChatActionResult,
 } from "./types";
 import {
-  DAY_MS,
   habitTrendText,
   WEEKDAY_LABEL_UK,
   normalizeDayToken,
@@ -50,7 +50,7 @@ import {
   isDateKey,
   normalizeTimeOfDay,
 } from "./routineActions.helpers";
-import { formatNumberUk } from "@sergeant/shared";
+import { deviceDayKey, formatNumberUk } from "@sergeant/shared";
 
 // Undo тримає id (а не повний snapshot), щоб не переписувати інші зміни,
 // які могли статися між створенням і undo (інша звичка, completions).
@@ -80,7 +80,7 @@ export function handleRoutineAction(
       // `id:`-prefixed value) must not silently write a phantom completion
       // key and then claim success (QA D-005).
       if (!habit) {
-        return `Не знайшов звичку "${habitId || String(rawHabitId ?? "")}", перевір список звичок.`;
+        return `Не знайшов звичку (id:${habitId || String(rawHabitId ?? "")}), перевір список звичок.`;
       }
       // Дефолт беремо з ТІЄЇ САМОЇ межі, якою редюсер відсікає майбутнє,
       // тож неявна ціль не може бути ним відхилена за побудовою. Доти тут
@@ -215,9 +215,9 @@ export function handleRoutineAction(
       const state = loadRoutineState();
       const habits = state.habits.slice();
       const hIdx = habits.findIndex((h) => h.id === id);
-      if (hIdx < 0) return `Звичку ${id} не знайдено.`;
+      if (hIdx < 0) return `Звичку не знайдено (id:${id}).`;
       const habit = habits[hIdx];
-      if (!habit) return `Звичку ${id} не знайдено.`;
+      if (!habit) return `Звичку не знайдено (id:${id}).`;
       const reminders = Array.isArray(habit.reminderTimes)
         ? [...habit.reminderTimes]
         : [];
@@ -258,7 +258,7 @@ export function handleRoutineAction(
       const doComplete = completed !== false;
       const state = loadRoutineState();
       const habit = state.habits.find((h) => h.id === id);
-      if (!habit) return `Звичку ${id} не знайдено.`;
+      if (!habit) return `Звичку не знайдено (id:${id}).`;
       const habitLabel = habit.name || id;
       const prevArr = Array.isArray(state.completions[id])
         ? state.completions[id]
@@ -332,9 +332,9 @@ export function handleRoutineAction(
       const state = loadRoutineState();
       const habits = state.habits.slice();
       const idx = habits.findIndex((h) => h.id === id);
-      if (idx < 0) return `Звичку ${id} не знайдено.`;
+      if (idx < 0) return `Звичку не знайдено (id:${id}).`;
       const habit = habits[idx];
-      if (!habit) return `Звичку ${id} не знайдено.`;
+      if (!habit) return `Звичку не знайдено (id:${id}).`;
       if (!!habit.archived === doArchive) {
         return `Звичку "${habit.name || id}" вже ${doArchive ? "заархівовано" : "активна"}.`;
       }
@@ -394,9 +394,9 @@ export function handleRoutineAction(
       const state = loadRoutineState();
       const habits = state.habits.slice();
       const hIdx = habits.findIndex((h) => h.id === id);
-      if (hIdx < 0) return `Звичку ${id} не знайдено.`;
+      if (hIdx < 0) return `Звичку не знайдено (id:${id}).`;
       const habit = habits[hIdx];
-      if (!habit) return `Звичку ${id} не знайдено.`;
+      if (!habit) return `Звичку не знайдено (id:${id}).`;
       const updated = { ...habit };
       const changes: string[] = [];
       if (name && name.trim()) {
@@ -468,9 +468,9 @@ export function handleRoutineAction(
       const state = loadRoutineState();
       const habits = state.habits.slice();
       const hIdx = habits.findIndex((h) => h.id === id);
-      if (hIdx < 0) return `Звичку ${id} не знайдено.`;
+      if (hIdx < 0) return `Звичку не знайдено (id:${id}).`;
       const habit = habits[hIdx];
-      if (!habit) return `Звичку ${id} не знайдено.`;
+      if (!habit) return `Звичку не знайдено (id:${id}).`;
       habits[hIdx] = {
         ...habit,
         recurrence: "weekly",
@@ -494,7 +494,7 @@ export function handleRoutineAction(
       const target = paused !== false;
       const state = loadRoutineState();
       const habit = state.habits.find((h) => h.id === id);
-      if (!habit) return `Звичку ${id} не знайдено.`;
+      if (!habit) return `Звичку не знайдено (id:${id}).`;
       const habitName = habit.name || id;
       const todayKey = anchoredCompletionBounds().todayKey;
 
@@ -553,7 +553,7 @@ export function handleRoutineAction(
       const days = Number(period_days) || 30;
       const state = loadRoutineState();
       const habit = state.habits.find((h) => h.id === id);
-      if (!habit) return `Звичку ${id} не знайдено.`;
+      if (!habit) return `Звичку не знайдено (id:${id}).`;
       // LOG-1 (`docs/work/specs/audits/2026-09-01-product-audit/findings.md`)
       // — той самий гнучкий стрік і той самий per-habit rate, що рахує UI
       // (`flexStreak.ts`/`streaks.ts`), а не третя жорстка реалізація, яка
@@ -561,14 +561,16 @@ export function handleRoutineAction(
       // пропуску з причиною чи розкладу «3/тиждень».
       const completionsForHabit = state.completions[id];
       const skipsForHabit = state.skips?.[id];
-      const now = Date.now();
-      const todayKey = getKyivDayKey(now);
-      const startKey = getKyivDayKey(now - (days - 1) * DAY_MS);
+      // ADR-0078: відмітки лежать під ключами пристрою, тож і вікно теж.
+      const todayKey = deviceDayKey();
+      const startKey = dateKeyMinusDays(todayKey, days - 1);
+      // П-18 (А): день «не зміг» поза знаменником, як у картці звички.
       const { completed, scheduled } = habitCompletionRate(
         habit,
         completionsForHabit,
         startKey,
         todayKey,
+        { skips: skipsForHabit, pausedFrom: todayKey },
       );
       const pct = scheduled > 0 ? Math.round((completed / scheduled) * 100) : 0;
       // Гнучка звичка («N разів на тиждень») міряється тижнями (доменне
@@ -588,7 +590,7 @@ export function handleRoutineAction(
       const missedDates: string[] = [];
       // Для гнучкої звички «пропущеного дня» немає: вона не називає днів.
       for (let i = 0; !isFlex && i < days && missedDates.length < 5; i++) {
-        const dk = getKyivDayKey(now - i * DAY_MS);
+        const dk = dateKeyMinusDays(todayKey, i);
         if (!habitScheduledOnDate(habit, dk)) continue;
         const done =
           Array.isArray(completionsForHabit) &&
@@ -618,12 +620,13 @@ export function handleRoutineAction(
       const habits = habit_id
         ? state.habits.filter((h) => h.id === habit_id)
         : state.habits.filter((h) => !h.archived);
-      if (habits.length === 0) return `Звичку ${habit_id} не знайдено.`;
+      if (habits.length === 0) return `Звичку не знайдено (id:${habit_id}).`;
       return habitTrendText(
         habits,
         state.completions,
         Number(period_days) || 30,
         Date.now(),
+        state.skips,
       );
     }
     // ── Утиліти ────────────────────────────────────────────────

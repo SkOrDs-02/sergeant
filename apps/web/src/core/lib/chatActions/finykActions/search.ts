@@ -7,6 +7,7 @@ import { FINYK_COLD_CACHE_MESSAGE, warmFinykCache } from "./warmCache";
 import {
   finykCategoryExists,
   finykTransactionExists,
+  finykTransactionLabel,
   normalizeFinykId,
   unknownCategoryMessage,
   unknownTransactionMessage,
@@ -229,7 +230,8 @@ export function changeCategory(action: ChangeCategoryAction): ChatActionResult {
   cats[txId] = categoryId;
   void finykChatWrite("finyk_tx_cats", cats);
   const cat = resolveExpenseCategoryMeta(categoryId, cache.customCategories);
-  const result = `Категорію операції ${txId} змінено на ${cat?.label || categoryId}`;
+  const label = finykTransactionLabel(txId);
+  const result = `Категорію операції${label ? ` ${label}` : ""} змінено на ${cat?.label || categoryId} (id:${txId})`;
   return {
     result,
     undo: () => {
@@ -316,11 +318,17 @@ export function batchCategorize(
     return `Не знайшов операцій за pattern "${pattern}".`;
   }
   const preview = formatTxList(matches);
+  // Людина бачить назву категорії; сирий id лишається моделі в `(id:…)`,
+  // який показ вирізає (`chatDisplayText.ts`).
+  const catLabel =
+    resolveExpenseCategoryMeta(categoryId, cache.customCategories)?.label ||
+    categoryId;
+  const target = `«${catLabel}» (id:${categoryId})`;
   if (input.dry_run !== false) {
-    return `Dry-run: ${matches.length} операц. буде перенесено в ${categoryId}: ${preview}`;
+    return `Dry-run: ${matches.length} операц. буде перенесено в ${target}: ${preview}`;
   }
   const cats = { ...cache.txCategories } as Record<string, string>;
   for (const tx of matches) cats[tx.id] = categoryId;
   void finykChatWrite("finyk_tx_cats", cats);
-  return `Категорію ${matches.length} операц. змінено на ${categoryId}: ${preview}`;
+  return `Категорію ${matches.length} операц. змінено на ${target}: ${preview}`;
 }

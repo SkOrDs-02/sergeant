@@ -458,6 +458,7 @@ describe("FizrukApp (extra) — header callbacks", () => {
         typeof useTrainingProgram
       >["activeProgram"],
       todaySession: null,
+      restSession: null,
       activateProgram: vi.fn(),
       deactivateProgram: vi.fn(),
     });

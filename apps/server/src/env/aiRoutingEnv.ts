@@ -23,8 +23,104 @@ const stringWithDefault = (defaultValue: string) =>
 const llmProviderEnum = (d: "anthropic" | "openrouter" | "stub") =>
   z.enum(["anthropic", "openrouter", "stub"]).default(d);
 
+/**
+ * Допустима глибина міркувань першого ходу чату.
+ *
+ * Це `REASONING_EFFORTS` з `lib/llm/provider.ts` БЕЗ `minimal`. Перший хід
+ * ходить на Anthropic-сумісний `/api/v1/messages` шлюзу, а там глибину задають
+ * `output_config.effort` (`low | medium | high | xhigh | max`) і
+ * `thinking: { type: "disabled" }` для `none`; значення `minimal` цей
+ * ендпоінт не приймає взагалі. Перелік тут, а не імпортом із `provider.ts`:
+ * той модуль читає `env`, і імпорт звідси дав би цикл. Розходження двох
+ * переліків стереже `chatReasoning.test.ts`.
+ */
+export const CHAT_FIRST_TURN_REASONING_EFFORTS = [
+  "none",
+  "low",
+  "medium",
+  "high",
+  "xhigh",
+] as const;
+
+export type ChatFirstTurnReasoningEffort =
+  (typeof CHAT_FIRST_TURN_REASONING_EFFORTS)[number];
+
+/**
+ * Глибина першого ходу, коли змінна не задана. Один експорт на прод і стенди
+ * (`tool-selection-eval.ts`, `stream-check.ts`): без `--reasoning` вони міряють
+ * рівно те, що йде в прод.
+ */
+export const CHAT_FIRST_TURN_REASONING_EFFORT_DEFAULT: ChatFirstTurnReasoningEffort =
+  "low";
+
+/**
+ * Чи дозволено шлюзу OpenRouter обирати постачальників, які зберігають
+ * запити (і можуть на них тренуватись). Значення поля
+ * `provider.data_collection` у тілі запиту; як саме воно стає полем —
+ * `lib/llm/openrouterDataPolicy.ts`.
+ */
+export const OPENROUTER_DATA_COLLECTION_MODES = ["deny", "allow"] as const;
+
+export type OpenRouterDataCollection =
+  (typeof OPENROUTER_DATA_COLLECTION_MODES)[number];
+
+/**
+ * Нижня межа квантизації постачальників у OpenRouter: `fp8` — лише
+ * ендпойнти від 8 біт (поле `provider.quantizations`), `off` — без фільтра.
+ * Як значення стає полем — `lib/llm/openrouterDataPolicy.ts`.
+ */
+export const OPENROUTER_QUANTIZATION_FLOORS = ["fp8", "off"] as const;
+
+export type OpenRouterQuantizationFloor =
+  (typeof OPENROUTER_QUANTIZATION_FLOORS)[number];
+
 export const aiRoutingEnvShape = {
   OPENROUTER_API_KEY: stringWithDefault(""),
+
+  /**
+   * Заборона збереження даних у OpenRouter (рішення власника 2026-11-19: у
+   * запитах фінанси й дані про здоровʼя). Незадана або порожня — `deny`:
+   * кожен запит у шлюз несе `provider.data_collection=deny`, тобто шлюз бере
+   * лише постачальників, які дані не збирають. Обидва транспорти
+   * (`/api/v1/messages` і `/api/v1/chat/completions`) і стенди евалу.
+   *
+   * `allow` — аварійний відкат без релізу: поле `provider` не шлеться
+   * взагалі, шлюз знову обирає серед усіх постачальників моделі (поведінка до
+   * 2026-11-19). Знадобиться, якщо модель лишиться без жодного ендпойнта під
+   * `deny` (шлюз відповідає 404 «No endpoints found matching your data
+   * policy», у лозі `openrouter_data_policy_no_endpoints`).
+   *
+   * Регістр і пробіли не важливі; будь-що поза переліком валить старт.
+   * Прямого Anthropic, Groq і Voyage не стосується. Реєстр і умова зняття —
+   * `docs/engineering/architecture/feature-flags.md` § 3.1.
+   */
+  OPENROUTER_DATA_COLLECTION: z.preprocess(
+    (v) => (typeof v === "string" ? v.trim().toLowerCase() || undefined : v),
+    z.enum(OPENROUTER_DATA_COLLECTION_MODES).default("deny"),
+  ),
+
+  /**
+   * Квантизація постачальників не нижче 8 біт (рішення власника 2026-11-19:
+   * на `relace/fp4` `deepseek/deepseek-v4-flash` давав російську в 16 з 37
+   * відповідей, без 4-бітних — 0 з 79). Незадана або порожня — `fp8`: кожен
+   * запит у шлюз несе `provider.quantizations` зі списком від 8 біт плюс
+   * `unknown`. Обидва транспорти і стенди евалу.
+   *
+   * `off` — аварійний відкат без релізу: прибирає ЛИШЕ поле `quantizations`;
+   * `data_collection` від нього не залежить (його відкат —
+   * `OPENROUTER_DATA_COLLECTION`). Знадобиться, якщо модель лишиться без
+   * жодного ендпойнта від 8 біт (шлюз відповідає 404 «No endpoints found for
+   * the request with quantization», у лозі
+   * `openrouter_data_policy_no_endpoints` з `reason: "quantization"`).
+   *
+   * Регістр і пробіли не важливі; будь-що поза переліком валить старт.
+   * Прямого Anthropic, Groq і Voyage не стосується. Реєстр і умова зняття —
+   * `docs/engineering/architecture/feature-flags.md` § 3.1.
+   */
+  OPENROUTER_QUANTIZATION_FLOOR: z.preprocess(
+    (v) => (typeof v === "string" ? v.trim().toLowerCase() || undefined : v),
+    z.enum(OPENROUTER_QUANTIZATION_FLOORS).default("fp8"),
+  ),
 
   /** Глобальний override id; порожній — шлях бере власну змінну нижче. */
   OPENROUTER_MODEL: stringWithDefault(""),
@@ -72,6 +168,31 @@ export const aiRoutingEnvShape = {
    * дали 7/10: не читають обʼєм з етикетки й недораховують порцію.
    */
   OPENROUTER_VISION_MODEL: stringWithDefault("google/gemini-2.5-flash-lite"),
+
+  /**
+   * Глибина міркувань ПЕРШОГО ходу `/api/chat` (JSON і стрім), лише через
+   * шлюз OpenRouter. Незадана або порожня — `low`
+   * (`CHAT_FIRST_TURN_REASONING_EFFORT_DEFAULT`, рішення founder-а 2026-11-18
+   * після заміру: на `gemini-3.7-flash` та сама правильність вибору
+   * інструмента, нуль вигаданих id, медіана ~2,8 с проти ~3,5 с; спека
+   * `hubchat-first-turn-stream.md` § Замір 2026-11-18).
+   *
+   * Повернення без релізу: `CHAT_FIRST_TURN_REASONING_EFFORT=medium` — це
+   * дефолт шлюзу для `google/gemini-3.7-flash` за `GET /api/v1/models`
+   * (2026-11-18), тобто поведінка до цього рішення. Інша модель першого ходу
+   * може мати інший дефолт шлюзу: звір його в тому ж каталозі.
+   *
+   * Регістр і пробіли не важливі; будь-що поза переліком валить старт. Тур
+   * синтезу, коуч і дайджест її не читають; на прямому Anthropic поле не йде.
+   * Як значення стає полем запиту — `modules/chat/chatReasoning.ts`.
+   * Реєстр і умова зняття — `docs/engineering/architecture/feature-flags.md` § 3.1.
+   */
+  CHAT_FIRST_TURN_REASONING_EFFORT: z.preprocess(
+    (v) => (typeof v === "string" ? v.trim().toLowerCase() || undefined : v),
+    z
+      .enum(CHAT_FIRST_TURN_REASONING_EFFORTS)
+      .default(CHAT_FIRST_TURN_REASONING_EFFORT_DEFAULT),
+  ),
 
   LLM_PROVIDER: llmProviderEnum("anthropic"),
   LLM_READONLY_PROVIDER: llmProviderEnum("openrouter"),

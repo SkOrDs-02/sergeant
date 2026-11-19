@@ -329,7 +329,7 @@ export async function searchFoods(
 ): Promise<FoodProduct[]> {
   const q = normText(query);
   if (!q) return [];
-  const all = await listFoods(2000);
+  const [all, seedNorms] = await Promise.all([listFoods(2000), seedNormSet()]);
   const tokens = q.split(" ").filter(Boolean).slice(0, 6);
   const scored: Array<{ score: number; p: FoodProduct }> = [];
   for (const p of all) {
@@ -348,7 +348,27 @@ export async function searchFoods(
   scored.sort(
     (a, b) => a.score - b.score || (b.p.updatedAt || 0) - (a.p.updatedAt || 0),
   );
-  return scored.slice(0, Math.max(1, Number(limit) || 20)).map((x) => x.p);
+  return scored
+    .slice(0, Math.max(1, Number(limit) || 20))
+    .map((x) => withOrigin(x.p, seedNorms));
+}
+
+async function seedNormSet(): Promise<Set<string>> {
+  return new Set((await loadSeedFoods()).map((s) => normText(s.name)));
+}
+
+/**
+ * `origin` для запису, створеного до менеджера власних продуктів: збіг
+ * `norm` із вбудованим означає сід. Одне правило на список «Мої продукти»
+ * і на підпис джерела в пошуку аркуша, інакше старий сід у пошуку
+ * підписувався б «Мій продукт».
+ */
+function withOrigin(f: FoodProduct, seedNorms: Set<string>): FoodProduct {
+  if (f.origin) return f;
+  return {
+    ...f,
+    origin: seedNorms.has(normText(f.norm || f.name)) ? "seed" : "user",
+  };
 }
 
 export async function upsertFood(product: unknown): Promise<UpsertFoodResult> {
@@ -373,17 +393,10 @@ export async function upsertFood(product: unknown): Promise<UpsertFoodResult> {
  * збігається з назвою одного зі `SEED_FOODS_UK`, інакше своїми.
  */
 export async function listUserFoods(): Promise<FoodProduct[]> {
-  const seedNorms = new Set(
-    (await loadSeedFoods()).map((s) => normText(s.name)),
-  );
+  const seedNorms = await seedNormSet();
   const all = await listFoods(100000);
   return all
-    .map((f) => ({
-      ...f,
-      origin:
-        f.origin ??
-        (seedNorms.has(normText(f.norm || f.name)) ? "seed" : "user"),
-    }))
+    .map((f) => withOrigin(f, seedNorms))
     .filter((f) => f.origin === "user");
 }
 
@@ -471,6 +484,42 @@ export async function bindBarcodeToFood(
     if (!db) return false;
     const tx = db.transaction(STORE_BARCODES, "readwrite");
     tx.objectStore(STORE_BARCODES).put(id, bc);
+    await txDone(tx);
+    return true;
+  } catch {
+    return false;
+  }
+}
+
+/**
+ * Привʼязка штрихкоду до свого продукту з підтвердженням людини (OD-27 Х-5).
+ * Код, уже привʼязаний до ІНШОГО продукту, не перезаписується: привʼязка
+ * мовчки забрала б його в того продукту. Штрихкодів у продукту може бути
+ * кілька (сховище «код → продукт»), тож новий код не витісняє наявний.
+ */
+export async function bindBarcodeToFoodIfFree(
+  barcode: string,
+  foodId: string,
+): Promise<boolean> {
+  const bc = String(barcode || "").trim();
+  const id = String(foodId || "").trim();
+  if (!id || !/^\d{8,14}$/.test(bc)) return false;
+  try {
+    await ensureMigrated();
+    const db = await openSergeantDb();
+    if (!db) return false;
+    const tx = db.transaction(STORE_BARCODES, "readwrite");
+    const store = tx.objectStore(STORE_BARCODES);
+    const current = await new Promise<string>((resolve, reject) => {
+      const r = store.get(bc);
+      r.onsuccess = () => resolve(String(r.result || ""));
+      r.onerror = () => reject(r.error);
+    });
+    if (current && current !== id) {
+      await txDone(tx);
+      return false;
+    }
+    if (!current) store.put(id, bc);
     await txDone(tx);
     return true;
   } catch {

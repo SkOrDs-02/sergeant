@@ -805,6 +805,25 @@ describe("habit_stats", () => {
     expect(out).toContain("Макс. серія: 4 тижнів поспіль");
     expect(out).not.toContain("Останні пропуски");
   });
+
+  // П-18 (А), 2026-11-18: «не зміг» виходить зі знаменника відсотка всюди,
+  // де він показується, і в чаті теж (той самий `habitCompletionRate`).
+  it("П-18: день «не зміг» поза знаменником — 2/2, а не 2/3", () => {
+    seedHabit("h1", "Йога");
+    const seeded = loadRoutineState();
+    saveRoutineState({
+      ...seeded,
+      completions: { ...seeded.completions, h1: ["2026-04-20", "2026-04-22"] },
+      skips: {
+        h1: { "2026-04-21": { reason: "busy", at: "2026-04-21T08:00:00Z" } },
+      },
+    });
+    const out = call({
+      name: "habit_stats",
+      input: { habit_id: "h1", period_days: 3 },
+    });
+    expect(out).toContain("Виконано: 2/2 (100%)");
+  });
 });
 
 // ---------------------------------------------------------------------------
@@ -847,6 +866,26 @@ describe("habit_trend", () => {
     expect(out).toContain("По звичках:");
     expect(out).toMatch(/Біг: \d+\/\d+ \(\d+%\)/);
     expect(out).toMatch(/Читання: \d+\/\d+ \(\d+%\)/);
+  });
+
+  // П-18 (А): тижневий відсоток і розбивка по звичках на тому самому
+  // знаменнику, що й модуль: заплановані дні без днів «не зміг». Раніше
+  // тиждень рахувався плоско «звички × дні» (2 з 6 = 33%).
+  it("П-18: «не зміг» поза знаменником і в тижні, і в розбивці", () => {
+    seedHabit("h1", "Йога");
+    seedHabit("h2", "Читання");
+    const seeded = loadRoutineState();
+    saveRoutineState({
+      ...seeded,
+      completions: { ...seeded.completions, h1: ["2026-04-20", "2026-04-22"] },
+      skips: {
+        h1: { "2026-04-21": { reason: "busy", at: "2026-04-21T08:00:00Z" } },
+      },
+    });
+    const out = call({ name: "habit_trend", input: { period_days: 3 } });
+    expect(out).toContain("Тиждень 1: 40%");
+    expect(out).toContain("Йога: 2/2 (100%)");
+    expect(out).toContain("Читання: 0/3 (0%)");
   });
 
   it("shape: result is a non-empty string", () => {

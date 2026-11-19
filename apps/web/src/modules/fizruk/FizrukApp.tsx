@@ -12,6 +12,7 @@ import {
 import { ModuleBottomNav } from "@shared/components/ui/ModuleBottomNav";
 import { CornerAction } from "@shared/components/ui/CornerAction";
 import { Modal } from "@shared/components/ui/Modal";
+import { ConfirmDialog } from "@shared/components/ui/ConfirmDialog";
 import { Button } from "@shared/components/ui/Button";
 import { useActiveFizrukWorkout } from "@shared/hooks/useActiveFizrukWorkout";
 import { messages } from "@shared/i18n/uk";
@@ -20,6 +21,9 @@ import { useFizrukRoute } from "./hooks/useFizrukRoute";
 import { usePwaAction } from "@shared/hooks/usePwaAction";
 import { useExerciseCatalog } from "./hooks/useExerciseCatalog";
 import { useFizrukProgramStart } from "./hooks/useFizrukProgramStart";
+import { useRecovery } from "./hooks/useRecovery";
+import { useInjuries } from "./hooks/useInjuries";
+import { HARD_BLOCK_START_COPY } from "./components/workouts/WorkoutsConfirmDialogs";
 import { useFizrukQuickStart } from "./hooks/useFizrukQuickStart";
 import { useFizrukDualWriteBoot } from "./hooks/useFizrukDualWriteBoot";
 import { useFizrukSqliteReadBoot } from "./hooks/useFizrukSqliteReadBoot";
@@ -90,15 +94,18 @@ export default function FizrukApp({
   useFizrukSqliteReadBoot();
 
   const monthlyPlan = useMonthlyPlan();
+  const { workouts, createWorkout, addItem, endWorkout, deleteWorkout } =
+    useWorkouts();
+  // Журнал веде курсор програми (П-10): сьогоднішня сесія — слот після
+  // останнього повноцінного тренування програми, а не день тижня.
   const {
     activeProgramId,
     activeProgram,
     todaySession,
+    restSession,
     activateProgram,
     deactivateProgram,
-  } = useTrainingProgram();
-  const { workouts, createWorkout, addItem, endWorkout, deleteWorkout } =
-    useWorkouts();
+  } = useTrainingProgram(workouts);
   const { exercises } = useExerciseCatalog();
   // Keep the Hub fizruk bento card's quick-stats snapshot in sync with real
   // workouts, not just the onboarding demo seed.
@@ -115,6 +122,13 @@ export default function FizrukApp({
   const [pendingProgramStart, setPendingProgramStart] = useState<
     (() => void) | null
   >(null);
+  // Старт програми проходить ту саму перевірку відновлення й травми, що й
+  // старт шаблону (ADR-0083; аудит 2026-11-17, §3.4).
+  const rec = useRecovery();
+  const { all: injuryMarks } = useInjuries();
+  const [pendingRiskyProgramStart, setPendingRiskyProgramStart] = useState<
+    (() => void) | null
+  >(null);
   const handleStartProgramWorkout = useFizrukProgramStart({
     workouts,
     createWorkout,
@@ -122,6 +136,10 @@ export default function FizrukApp({
     exercises,
     navigate,
     onConflict: (start) => setPendingProgramStart(() => start),
+    recoveryBy: rec.by,
+    injurySites: rec.injurySites,
+    injuryMarks,
+    onRecoveryConflict: (start) => setPendingRiskyProgramStart(() => start),
   });
 
   // Той самий `onConflict`, що й у програмного старту: діалог «уже є
@@ -274,15 +292,33 @@ export default function FizrukApp({
               activateProgram={activateProgram}
               deactivateProgram={deactivateProgram}
               todaySession={todaySession}
+              restSession={restSession}
               quickStartRequest={quickStartRequest}
               onNavigate={(target) => navigate(target)}
-              onStartProgramWorkout={(session) =>
-                handleStartProgramWorkout(session)
+              onStartProgramWorkout={(session, program, slot) =>
+                handleStartProgramWorkout(session, {
+                  programId: program.id,
+                  slot,
+                })
               }
               onQuickStart={handleQuickStart}
               onOpenModule={onOpenModule}
             />
           </SwipePages>
+          <ConfirmDialog
+            open={pendingRiskyProgramStart !== null}
+            title={HARD_BLOCK_START_COPY.title}
+            description={HARD_BLOCK_START_COPY.description}
+            confirmLabel={HARD_BLOCK_START_COPY.confirmLabel}
+            cancelLabel={HARD_BLOCK_START_COPY.cancelLabel}
+            danger={false}
+            onConfirm={() => {
+              const proceed = pendingRiskyProgramStart;
+              setPendingRiskyProgramStart(null);
+              proceed?.();
+            }}
+            onCancel={() => setPendingRiskyProgramStart(null)}
+          />
           <Modal
             open={pendingProgramStart !== null}
             onClose={() => setPendingProgramStart(null)}

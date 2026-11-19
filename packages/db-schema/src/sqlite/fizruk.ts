@@ -40,6 +40,10 @@ export const fizrukWorkouts = sqliteTable(
     wellbeingJson: text("wellbeing_json"),
     /** Оцінка витрачених калорій (міграція 132). Nullable: без ваги оцінювати нічим. */
     kcalBurned: integer("kcal_burned"),
+    /** Програма, сесію якої закрило тренування (серверна 171, клієнтська 009). */
+    programId: text("program_id"),
+    /** Індекс запису в `schedule` програми, з 0. */
+    programSlot: integer("program_slot"),
     createdAt: text("created_at")
       .notNull()
       .default(sql`(datetime('now'))`),
@@ -86,6 +90,8 @@ export const fizrukWorkoutItems = sqliteTable(
      * CHECK на значення живе в міграції 134.
      */
     chosenVariant: text("chosen_variant"),
+    /** Тип виміру вправи в тренуванні (серверна 172, клієнтська 010). NULL = запис до фічі. */
+    measure: text(),
     sortOrder: integer("sort_order").notNull().default(0),
     createdAt: text("created_at")
       .notNull()
@@ -119,6 +125,10 @@ export const fizrukWorkoutSets = sqliteTable(
     weightKg: integer("weight_kg").notNull().default(0),
     reps: integer().notNull().default(0),
     rpe: integer(),
+    /** Секунди одного підходу (серверна 172, клієнтська 010). */
+    durationSec: integer("duration_sec"),
+    /** Метри одного підходу (серверна 172, клієнтська 010). */
+    distanceM: integer("distance_m"),
     sortOrder: integer("sort_order").notNull().default(0),
     createdAt: text("created_at")
       .notNull()
@@ -352,6 +362,29 @@ export const fizrukPrograms = sqliteTable("fizruk_programs", {
     .notNull()
     .default(sql`(datetime('now'))`),
 });
+
+/**
+ * SQLite counterpart of `fizruk_exercise_prefs` (серверна 173).
+ * Shipped by client migration `011_fizruk_exercise_prefs.sql`.
+ * Рядок на вправу: `id` = id вправи, `measure` = тип виміру, який обрала
+ * людина; soft-delete = «повернути дефолт каталогу».
+ */
+export const fizrukExercisePrefs = sqliteTable(
+  "fizruk_exercise_prefs",
+  {
+    id: text().notNull(),
+    userId: text("user_id").notNull(),
+    measure: text().notNull(),
+    createdAt: text("created_at")
+      .notNull()
+      .default(sql`(datetime('now'))`),
+    updatedAt: text("updated_at")
+      .notNull()
+      .default(sql`(datetime('now'))`),
+    deletedAt: text("deleted_at"),
+  },
+  (table) => [primaryKey({ columns: [table.userId, table.id] })],
+);
 
 /**
  * SQLite schema for `fizruk_wellbeing`.

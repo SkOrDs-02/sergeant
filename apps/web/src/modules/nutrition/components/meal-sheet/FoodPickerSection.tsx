@@ -34,10 +34,30 @@ const EXTERNAL_SOURCE_LABELS: Record<string, string> = {
 
 const OWN_PRODUCT_LABEL = "Мій продукт";
 
-function externalSourceLabel(source: string | undefined): string {
+/**
+ * Вбудована базова їжа (огірок, гречка): локальні сіди (`origin: "seed"`) і
+ * серверна `generic_foods`. Раніше перші підписувались «Мій продукт», а
+ * другі «USDA»: сервер віддає їх із `source: "usda"`, бо енум контракту
+ * базової їжі не знає (`genericFoods.ts`). Відрізняє їх стабільний id
+ * `gen_<slug>`, тож контракт лишається як є.
+ */
+const BASE_FOOD_LABEL = "Базовий продукт";
+
+function isBaseFoodId(id: unknown): boolean {
+  return String(id ?? "").startsWith("gen_");
+}
+
+function externalSourceLabel(source: string | undefined, id?: unknown): string {
+  if (isBaseFoodId(id)) return BASE_FOOD_LABEL;
   return (
     (source ? EXTERNAL_SOURCE_LABELS[source] : undefined) ?? "Open Food Facts"
   );
+}
+
+function localSourceLabel(p: FoodProduct): string {
+  return p.origin === "seed" || isBaseFoodId(p.id)
+    ? BASE_FOOD_LABEL
+    : OWN_PRODUCT_LABEL;
 }
 
 export interface PickedFood {
@@ -59,6 +79,11 @@ export interface PickedFood {
    * його пише `AddMealSheet` разом із записом (скасування нічого не лишає).
    */
   unsaved?: boolean;
+  /**
+   * Звідки продукт локальної бази (`FoodProduct.origin`): свій чи
+   * вбудований. Зовнішні хіти поля не мають.
+   */
+  origin?: "user" | "seed" | undefined;
   /**
    * Нутрієнти понад КБЖВ із відповіді на скан (N9). Транзитні: живуть у
    * вʼюмоделі аркуша й НЕ їдуть у `FoodProduct` — розбір у
@@ -104,7 +129,7 @@ export function FoodPickerSection({
   const offHitGroups = useMemo(() => {
     const groups: { label: string; hits: FoodSearchProduct[] }[] = [];
     for (const p of offHits) {
-      const label = externalSourceLabel(p.source);
+      const label = externalSourceLabel(p.source, p.id);
       const last = groups[groups.length - 1];
       if (last && last.label === label) last.hits.push(p);
       else groups.push({ label, hits: [p] });
@@ -155,7 +180,7 @@ export function FoodPickerSection({
               <FoodHitRow
                 key={p.id}
                 p={p}
-                externalSourceLabel={OWN_PRODUCT_LABEL}
+                externalSourceLabel={localSourceLabel(p)}
                 onPick={() => {
                   setPickedFood(p);
                   setPickedGrams(String(Math.round(p.defaultGrams || 100)));

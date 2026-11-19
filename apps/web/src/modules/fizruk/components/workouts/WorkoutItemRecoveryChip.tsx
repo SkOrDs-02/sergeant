@@ -6,6 +6,7 @@ import {
   recoveryConflictsForWorkoutItem,
   type WorkoutItem,
 } from "@sergeant/fizruk-domain";
+import type { InjurySiteId } from "@sergeant/fizruk-domain/data";
 import { Popover } from "@shared/components/ui/Popover";
 import { cn } from "@shared/lib/ui/cn";
 import { messages } from "@shared/i18n/uk";
@@ -13,6 +14,12 @@ import { messages } from "@shared/i18n/uk";
 export interface WorkoutItemRecoveryChipProps {
   it: WorkoutItem;
   recBy: Record<string, unknown>;
+  /**
+   * Активні позначки травми (`useRecovery().injurySites`, ADR-0083).
+   * Обовʼязковий: без нього домен мовчки вважає, що позначок немає, і чип
+   * ніколи не каже «Позначено біль» (аудит 2026-11-17, §3.4).
+   */
+  injurySites: ReadonlySet<InjurySiteId>;
 }
 
 export interface RecoveryChipSummary {
@@ -31,10 +38,12 @@ export interface RecoveryChipSummary {
 export function summarizeRecoveryChip(
   it: WorkoutItem,
   recBy: Record<string, unknown>,
+  injurySites: ReadonlySet<InjurySiteId>,
 ): RecoveryChipSummary | null {
   const cf = recoveryConflictsForWorkoutItem(
     it,
     recBy as Parameters<typeof recoveryConflictsForWorkoutItem>[1],
+    injurySites,
   );
   if (!cf.hasWarning) return null;
   const ss = messages.fizruk.session;
@@ -60,12 +69,14 @@ export function summarizeRecoveryChip(
 export function WorkoutItemRecoveryChip({
   it,
   recBy,
+  injurySites,
 }: WorkoutItemRecoveryChipProps) {
   const cf = recoveryConflictsForWorkoutItem(
     it,
     recBy as Parameters<typeof recoveryConflictsForWorkoutItem>[1],
+    injurySites,
   );
-  const summary = summarizeRecoveryChip(it, recBy);
+  const summary = summarizeRecoveryChip(it, recBy, injurySites);
   if (!cf.hasWarning || !summary) return null;
 
   const rc = messages.fizruk.recoveryChip;

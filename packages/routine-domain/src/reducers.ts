@@ -106,6 +106,10 @@ export function applyCreateHabit(
     timeOfDay = "",
     reminderTimes = [],
     weekdays = [0, 1, 2, 3, 4, 5, 6],
+    weeklyTargetHistory,
+    countTarget,
+    countUnit,
+    autoMarkSource,
     id,
   }: Partial<CreateHabitOptions> = {},
 ): RoutineState {
@@ -135,6 +139,14 @@ export function applyCreateHabit(
     weekdays: Array.isArray(weekdays)
       ? [...new Set(weekdays)].sort((a, b) => a - b)
       : [0, 1, 2, 3, 4, 5, 6],
+    // Без цього поля «5 разів на тиждень» мовчки жило б із дефолтними 3,
+    // доки звичку не відредагують (normalizeHabit бере історію з src).
+    weeklyTargetHistory,
+    // Той самий клас, що вище: без цих полів нова звичка губила б лічильник
+    // і автовідмітку з форми (міграція 170). Невалідне знімає normalizeHabit.
+    countTarget,
+    countUnit,
+    autoMarkSource,
   });
   const order = [...(state.habitOrder || []), h.id];
   return {

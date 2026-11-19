@@ -22,7 +22,7 @@
  * Тому клас — не про «мутує/не мутує дані» в буквальному сенсі, а про
  * «чи потрібен другий тур, щоб картка сказала правду».
  *
- * ОДНЕ ДЖЕРЕЛО ІСТИНИ. 78 tool-ів (`ALL_HUBCHAT_TOOL_NAMES`) — забагато,
+ * ОДНЕ ДЖЕРЕЛО ІСТИНИ. 77 tool-ів (`ALL_HUBCHAT_TOOL_NAMES`) — забагато,
  * щоб тримати прапорець по кількох файлах: `TOOL_OUTCOME_CLASS` — єдина
  * мапа поруч із реєстром імен (`toolNames.ts`), а не власна копія в
  * `hubChatActionCards.ts` чи `useChatSend.ts`. `toolOutcomeClass.test.ts`
@@ -77,7 +77,6 @@ export const TOOL_OUTCOME_CLASS: Readonly<
   start_workout: "state-mutating",
   finish_workout: "state-mutating",
   log_measurement: "state-mutating",
-  add_program_day: "state-mutating",
   log_wellbeing: "state-mutating",
   log_weight: "state-mutating",
   suggest_workout: "advice",

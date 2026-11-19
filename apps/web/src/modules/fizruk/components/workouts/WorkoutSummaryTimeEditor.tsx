@@ -45,6 +45,8 @@ export function WorkoutSummaryTimeEditor({
 
   if (!open) {
     return (
+      // Тиха дія рядка (`variant="text"`): `ghost` з `px-5` відсував
+      // «Змінити час» на 20 px убік (зйомка 2026-11-18).
       <Button
         variant="text"
         // `-ml-2` знімає власний `px-2` текстової кнопки, щоб підпис стояв

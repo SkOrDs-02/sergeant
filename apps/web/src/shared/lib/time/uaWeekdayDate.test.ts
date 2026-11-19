@@ -3,7 +3,7 @@
  * Status: Active
  */
 import { describe, expect, it } from "vitest";
-import { formatUaWeekdayDate } from "./uaWeekdayDate";
+import { formatUaWeekdayDate, uaWeekdayName } from "./uaWeekdayDate";
 
 const SEPT_2 = new Date(2026, 8, 2); // середа
 
@@ -46,5 +46,24 @@ describe("formatUaWeekdayDate", () => {
 
   it("повертає порожній рядок на невалідній даті", () => {
     expect(formatUaWeekdayDate(new Date("нісенітниця"))).toBe("");
+  });
+});
+
+describe("uaWeekdayName", () => {
+  it("рахує від понеділка і дає називний відмінок", () => {
+    expect([0, 1, 2, 3, 4, 5, 6].map(uaWeekdayName)).toEqual([
+      "понеділок",
+      "вівторок",
+      "середа",
+      "четвер",
+      "пʼятниця",
+      "субота",
+      "неділя",
+    ]);
+  });
+
+  it("індекс поза тижнем загортається", () => {
+    expect(uaWeekdayName(7)).toBe("понеділок");
+    expect(uaWeekdayName(-1)).toBe("неділя");
   });
 });

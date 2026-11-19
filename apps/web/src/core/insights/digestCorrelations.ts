@@ -218,6 +218,16 @@ export const CURATED_PAIRS: ReadonlyArray<{
   b: DailyMetric;
 }> = PAIRS.map((p) => ({ a: p.a, b: p.b }));
 
+/**
+ * Обидві фрази кожної курованої пари. Тримає приклад звʼязку на екрані
+ * вітання (`coreMessages.hub.welcomeLinkExample`) на справжній парі:
+ * сам екран цього модуля не імпортує, щоб не тягнути ряди метрик.
+ */
+export const CURATED_PAIR_PHRASES: readonly string[] = PAIRS.flatMap((p) => [
+  p.pos,
+  p.neg,
+]);
+
 const METRICS: DailyMetric[] = [
   "spending",
   "kcal",

@@ -3385,6 +3385,20 @@
       "canonical_owner": "docs/work/research/2026-09-20-competitor-handson-protocol.md"
     },
     {
+      "old_path": "docs/work/research/2026-11-17-modules-teardown-vs-leaders.md",
+      "new_path": "docs/work/research/2026-11-17-modules-teardown-vs-leaders.md",
+      "action": "keep",
+      "genre": "reference",
+      "canonical_owner": "docs/work/research/2026-11-17-modules-teardown-vs-leaders.md"
+    },
+    {
+      "old_path": "docs/work/research/2026-11-19-openrouter-new-models.md",
+      "new_path": "docs/work/research/2026-11-19-openrouter-new-models.md",
+      "action": "keep",
+      "genre": "reference",
+      "canonical_owner": "docs/work/research/2026-11-19-openrouter-new-models.md"
+    },
+    {
       "old_path": "docs/work/research/audience-discovery-kit/analysis-affinity-tracker.csv",
       "new_path": "docs/work/research/audience-discovery-kit/analysis-affinity-tracker.csv",
       "action": "keep",
@@ -4246,13 +4260,6 @@
       "canonical_owner": "docs/work/specs/c-section-consistency-migration.md"
     },
     {
-      "old_path": "docs/work/specs/chat-first-turn-streaming.md",
-      "new_path": "docs/work/specs/chat-first-turn-streaming.md",
-      "action": "keep",
-      "genre": "active-work",
-      "canonical_owner": "docs/work/specs/chat-first-turn-streaming.md"
-    },
-    {
       "old_path": "docs/work/specs/data/documentation-inventory.json",
       "new_path": "docs/work/specs/data/documentation-inventory.json",
       "action": "keep",
@@ -4309,6 +4316,13 @@
       "canonical_owner": "docs/work/specs/finyk-hero-month-strip.md"
     },
     {
+      "old_path": "docs/work/specs/finyk-history-three-months-and-upcoming-charges.md",
+      "new_path": "docs/work/specs/finyk-history-three-months-and-upcoming-charges.md",
+      "action": "keep",
+      "genre": "active-work",
+      "canonical_owner": "docs/work/specs/finyk-history-three-months-and-upcoming-charges.md"
+    },
+    {
       "old_path": "docs/work/specs/finyk-import-reminders.md",
       "new_path": "docs/work/specs/finyk-import-reminders.md",
       "action": "keep",
@@ -4351,11 +4365,25 @@
       "canonical_owner": "docs/work/specs/fizruk-exercise-illustrations.md"
     },
     {
+      "old_path": "docs/work/specs/fizruk-exercise-measure-type.md",
+      "new_path": "docs/work/specs/fizruk-exercise-measure-type.md",
+      "action": "keep",
+      "genre": "active-work",
+      "canonical_owner": "docs/work/specs/fizruk-exercise-measure-type.md"
+    },
+    {
       "old_path": "docs/work/specs/fizruk-hero-recovery-bars.md",
       "new_path": "docs/work/specs/fizruk-hero-recovery-bars.md",
       "action": "keep",
       "genre": "active-work",
       "canonical_owner": "docs/work/specs/fizruk-hero-recovery-bars.md"
+    },
+    {
+      "old_path": "docs/work/specs/fizruk-program-plan-sets.md",
+      "new_path": "docs/work/specs/fizruk-program-plan-sets.md",
+      "action": "keep",
+      "genre": "active-work",
+      "canonical_owner": "docs/work/specs/fizruk-program-plan-sets.md"
     },
     {
       "old_path": "docs/work/specs/fizruk-readiness-check.md",
@@ -4384,6 +4412,27 @@
       "action": "keep",
       "genre": "active-work",
       "canonical_owner": "docs/work/specs/hub-action-axis.md"
+    },
+    {
+      "old_path": "docs/work/specs/hub-newcomer-card-and-insights.md",
+      "new_path": "docs/work/specs/hub-newcomer-card-and-insights.md",
+      "action": "keep",
+      "genre": "active-work",
+      "canonical_owner": "docs/work/specs/hub-newcomer-card-and-insights.md"
+    },
+    {
+      "old_path": "docs/work/specs/hubchat-find-then-change.md",
+      "new_path": "docs/work/specs/hubchat-find-then-change.md",
+      "action": "keep",
+      "genre": "active-work",
+      "canonical_owner": "docs/work/specs/hubchat-find-then-change.md"
+    },
+    {
+      "old_path": "docs/work/specs/hubchat-first-turn-stream.md",
+      "new_path": "docs/work/specs/hubchat-first-turn-stream.md",
+      "action": "keep",
+      "genre": "active-work",
+      "canonical_owner": "docs/work/specs/hubchat-first-turn-stream.md"
     },
     {
       "old_path": "docs/work/specs/import-external-trackers.md",
@@ -4568,6 +4617,20 @@
       "canonical_owner": "docs/work/specs/link-evidence-standard.md"
     },
     {
+      "old_path": "docs/work/specs/manual-premium-request.md",
+      "new_path": "docs/work/specs/manual-premium-request.md",
+      "action": "keep",
+      "genre": "active-work",
+      "canonical_owner": "docs/work/specs/manual-premium-request.md"
+    },
+    {
+      "old_path": "docs/work/specs/notifications-quiet-hours-and-device-time.md",
+      "new_path": "docs/work/specs/notifications-quiet-hours-and-device-time.md",
+      "action": "keep",
+      "genre": "active-work",
+      "canonical_owner": "docs/work/specs/notifications-quiet-hours-and-device-time.md"
+    },
+    {
       "old_path": "docs/work/specs/nutrition-adaptive-goal.md",
       "new_path": "docs/work/specs/nutrition-adaptive-goal.md",
       "action": "keep",
@@ -4608,6 +4671,13 @@
       "action": "keep",
       "genre": "active-work",
       "canonical_owner": "docs/work/specs/nutrition-recipe-builder.md"
+    },
+    {
+      "old_path": "docs/work/specs/nutrition-recipes-in-meal-form-and-pantry-deduction.md",
+      "new_path": "docs/work/specs/nutrition-recipes-in-meal-form-and-pantry-deduction.md",
+      "action": "keep",
+      "genre": "active-work",
+      "canonical_owner": "docs/work/specs/nutrition-recipes-in-meal-form-and-pantry-deduction.md"
     },
     {
       "old_path": "docs/work/specs/offline-cold-start.md",
@@ -4825,6 +4895,13 @@
       "action": "keep",
       "genre": "active-work",
       "canonical_owner": "docs/work/specs/rls-ai-tables-and-isolation-gate.md"
+    },
+    {
+      "old_path": "docs/work/specs/routine-counter-automark-percent-and-hub-rows.md",
+      "new_path": "docs/work/specs/routine-counter-automark-percent-and-hub-rows.md",
+      "action": "keep",
+      "genre": "active-work",
+      "canonical_owner": "docs/work/specs/routine-counter-automark-percent-and-hub-rows.md"
     },
     {
       "old_path": "docs/work/specs/routine-flexible-weekly-frequency.md",

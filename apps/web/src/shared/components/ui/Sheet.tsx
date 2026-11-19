@@ -288,11 +288,17 @@ export function Sheet({
       className="fixed inset-0 flex items-end justify-center motion-safe:animate-fade-in"
       style={{ zIndex }}
     >
-      {/* Scrim. A real <button> makes the dismiss discoverable to AT. */}
+      {/* Scrim. A real <button> makes the dismiss discoverable to AT.
+          Виняток — `fullScreen`: панель накриває скрим цілком, його не видно
+          і не торкнутись, а для AT він був дублем закриття поруч із власним
+          (у чаті два «Закрити чат», перевірка першої хвилі 2026-11-18).
+          Закриття тоді несе шапка тіла, як `HubChatHeader`. */}
       <button
         type="button"
         onClick={onClose}
         aria-label={closeLabel}
+        data-sheet-scrim=""
+        {...(fullScreen ? { "aria-hidden": true, tabIndex: -1 } : {})}
         className="absolute inset-0 bg-black/40"
       />
       <div

@@ -304,18 +304,28 @@ Join-pattern із `app_build_info` (один gauge=1 на інстанс із л
 
 ## 6a. Очікування на першому ході чату
 
-| Metric                     | Type      | Labels                            | Emitter                                                                           |
-| -------------------------- | --------- | --------------------------------- | --------------------------------------------------------------------------------- |
-| `ai_first_token_ms`        | Histogram | `provider` · `model` · `endpoint` | [chatStream.ts](../../../apps/server/src/modules/chat/chatStream.ts) — SSE-шлях   |
-| `chat_first_turn_phase_ms` | Histogram | `phase`                           | [chat.ts](../../../apps/server/src/modules/chat/chat.ts) — нестрімовий перший хід |
+| Metric                               | Type      | Labels                            | Emitter                                                                                                     |
+| ------------------------------------ | --------- | --------------------------------- | ----------------------------------------------------------------------------------------------------------- |
+| `ai_first_token_ms`                  | Histogram | `provider` · `model` · `endpoint` | [chatStream.ts](../../../apps/server/src/modules/chat/chatStream.ts) — SSE тура синтезу                     |
+| `chat_first_turn_phase_ms`           | Histogram | `phase`                           | [chat.ts](../../../apps/server/src/modules/chat/chat.ts) — перший хід, JSON і стрім                         |
+| `chat_first_turn_first_visible_ms`   | Histogram | `kind` · `source`                 | [chatFirstTurnStream.ts](../../../apps/server/src/modules/chat/chatFirstTurnStream.ts) — стрім першого ходу |
+| `chat_first_turn_silent_retry_total` | Counter   | `reason`                          | [chatFirstTurnStream.ts](../../../apps/server/src/modules/chat/chatFirstTurnStream.ts) — стрім першого ходу |
 
-**Ці дві метрики міряють різні шляхи, і плутати їх — головна пастка секції.**
-`/api/chat` має два ходи, і стрімиться лише **другий** — синтез після
-tool-результатів. Перший хід не стрімиться взагалі: клієнт не просить
-(`useChatSend.ts` шле `send()` без прапорця), а сервер і не підтримав би —
-єдиний `if (stream)` у `chat.ts` живе всередині гілки tool-результатів. Тому
-`ai_first_token_ms`, який живе в `streamAnthropicToSse`, першого ходу **не
-бачить у принципі**, і порожнеча в його серіях не означає «швидко».
+**Ці метрики міряють різні шляхи, і плутати їх — головна пастка секції.**
+`/api/chat` має два ходи. До 2026-11-18 стрімився лише **другий** — синтез
+після tool-результатів. З 2026-11-18 веб просить стрім і першого ходу
+(`stream: true`, С-1 (а), спека
+[`hubchat-first-turn-stream.md`](../../work/specs/hubchat-first-turn-stream.md)),
+а старі клієнти (мобайл) далі отримують JSON. `ai_first_token_ms` живе в
+`streamAnthropicToSse`, тобто лише в турі синтезу, і першого ходу **не бачить
+у принципі**: порожнеча в його серіях не означає «швидко». Перший хід має
+власні: `chat_first_turn_first_visible_ms` — від входу в handler до першого
+видимого кадру (`kind="tool"` — ранній підпис кроку, `kind="text"` — перший
+шматок тексту; `source="cache"` — відповідь із кешу тими самими кадрами) і
+`chat_first_turn_silent_retry_total{reason="stall"|"network"|"status"}` —
+тихі повтори до першого кадру. **Ціль для першого видимого знаку ще не
+ратифіковано**: спершу замір `pnpm eval:stream --first-turn`. Кардинальність
+нової гістограми: 2 `kind` × 2 `source` × 13 ≈ 52 серії.
 
 Друге застереження до `ai_first_token_ms`: її відлік стартує з
 `streamStartedAtMs` — моменту, коли upstream **уже відповів заголовками**. Тобто
@@ -323,7 +333,9 @@ tool-результатів. Перший хід не стрімиться вз�
 час, ні час upstream до заголовків у неї не входять. Розбір — AI-2 у
 [`findings.md`](../../work/specs/audits/2026-09-01-product-audit/findings.md).
 
-`chat_first_turn_phase_ms` закриває саме цю прогалину. `phase`: `session` ·
+`chat_first_turn_phase_ms` закриває саме цю прогалину і на стрімі означає те
+саме, що в JSON: фаза `upstream` триває до зібраної відповіді, `total` — повна
+відповідь. `phase`: `session` ·
 `counterparties` · `correlations` · `rag` · `preferences` · `pre_upstream` ·
 `upstream` · `total`. Перші пʼять — серійний ланцюг до виклику моделі;
 `pre_upstream` накриває **все** наше від входу в handler, включно з парсингом і
@@ -369,10 +381,10 @@ sum(rate(chat_first_turn_phase_ms_sum{phase="pre_upstream"}[5m]))
 редакція «Anthropic `/api/chat` p95 first token < 1.5 s» була однією обіцянкою на
 два різні шляхи, і на першому з них не мала предмета. Тепер їх двоє:
 
-| Шлях                       | SLO                                                       | Метрика                                   |
-| -------------------------- | --------------------------------------------------------- | ----------------------------------------- |
-| Перший хід (не стрімиться) | p95 повної відповіді **< 15 с** — стеля-детектор, не ціль | `chat_first_turn_phase_ms{phase="total"}` |
-| Тур синтезу (стрімиться)   | p95 першого токена **< 1,5 с**, моделезалежно             | `ai_first_token_ms`                       |
+| Шлях                         | SLO                                                       | Метрика                                   |
+| ---------------------------- | --------------------------------------------------------- | ----------------------------------------- |
+| Перший хід (повна відповідь) | p95 повної відповіді **< 15 с** — стеля-детектор, не ціль | `chat_first_turn_phase_ms{phase="total"}` |
+| Тур синтезу (стрімиться)     | p95 першого токена **< 1,5 с**, моделезалежно             | `ai_first_token_ms`                       |
 
 **Чому 15 с, а не 1,5 і не 3.** Число взято із заміру, а не з побажання: 12
 промптів 2026-09-01 дали медіану ≈6,7 с і максимум 13,7 с. Поріг нижчий за факт

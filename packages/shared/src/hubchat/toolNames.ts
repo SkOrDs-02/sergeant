@@ -59,7 +59,6 @@ export const FIZRUK_TOOL_NAMES = [
   "start_workout",
   "finish_workout",
   "log_measurement",
-  "add_program_day",
   "log_wellbeing",
   "log_weight",
   "suggest_workout",

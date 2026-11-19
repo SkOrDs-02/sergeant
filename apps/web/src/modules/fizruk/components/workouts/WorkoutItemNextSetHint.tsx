@@ -4,12 +4,14 @@
  */
 import {
   computeNextSetAging,
+  programPlanTargetReps,
   progressionTopSet,
   suggestNextSet,
   uncappedEpley1rm,
 } from "@sergeant/fizruk-domain";
 import type {
   ReadinessAnswer,
+  WorkoutProgramRef,
   WorkoutVariantChoice,
 } from "@sergeant/fizruk-domain";
 import { findExerciseById } from "@sergeant/fizruk-domain/data";
@@ -28,6 +30,8 @@ export interface WorkoutItemNextSetHintProps {
    * Немає або нейтральна — картка виглядає рівно як до цієї фічі.
    */
   readiness?: ReadinessAnswer | null | undefined;
+  /** Привʼязка тренування до сесії програми (П-10) — звідти план повторів. */
+  programRef?: WorkoutProgramRef | null | undefined;
   onApply: (
     weightKg: number,
     reps: number,
@@ -56,15 +60,17 @@ const RETURN_REASON_TEXT: Record<string, string> = {
  * режимі повернення вагу не піднімає — обидва рішення живуть у домені
  * (`suggestNextSet`), тут лише виклик і копія.
  *
- * `injuryClearedAt` сюди не доходить: картка знає лише історію самої вправи,
- * тож м'який режим тут вмикає пауза. Позначка болю має власне попередження
- * у `WorkoutItemRecoveryChip` поруч.
+ * Мʼякий режим вмикає і пауза, і свіже зняття позначки травми
+ * (`last._injuryClearedAt`, 21 день, E-5 з ADR-0083) — так само, як на
+ * сторінці вправи. Активна позначка болю має власне попередження у
+ * `WorkoutItemRecoveryChip` поруч.
  */
 export function WorkoutItemNextSetHint({
   last,
   exerciseId,
   isReadOnly,
   readiness,
+  programRef,
   onApply,
 }: WorkoutItemNextSetHintProps) {
   if (isReadOnly || last?.type !== "strength") return null;
@@ -79,11 +85,14 @@ export function WorkoutItemNextSetHint({
     lastBest1rm: uncappedEpley1rm(best),
     lastSessionAt: last._startedAt ?? null,
     sessions: last._sessions,
+    injuryClearedAt: last._injuryClearedAt ?? null,
   });
   const suggestion = suggestNextSet(best, {
     exercise: exerciseId ? findExerciseById(exerciseId) : null,
     aging,
     ...(readiness ? { readiness } : {}),
+    // План сесії програми (5×5) сильніший за діапазон каталогу.
+    targetReps: programPlanTargetReps(programRef),
   });
   if (!suggestion) return null;
 

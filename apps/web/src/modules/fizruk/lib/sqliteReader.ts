@@ -14,6 +14,12 @@
  * single object-spread on every read.
  */
 
+import type { ExerciseMeasure } from "@sergeant/fizruk-domain/domain";
+import {
+  EXERCISE_PREFS_SELECT_SQL,
+  rowsToExercisePrefs,
+  type ExercisePrefRow,
+} from "./sqliteReader.exercisePrefs";
 import type { SqliteMigrationClient } from "@sergeant/db-schema/migrate/sqlite";
 import type {
   ChecklistItem,
@@ -23,6 +29,15 @@ import type {
   WorkoutWellbeing,
 } from "@sergeant/fizruk-domain/domain";
 import type { FizrukData } from "@sergeant/fizruk-domain";
+import {
+  isExerciseMeasure,
+  normalizeWorkoutProgramRef,
+} from "@sergeant/fizruk-domain/domain";
+import {
+  rowToWorkoutSet,
+  WORKOUT_SETS_SELECT_SQL,
+  type WorkoutSetRow,
+} from "./sqliteReader.sets";
 import type { MeasurementEntry } from "../hooks/useMeasurements";
 
 type RawExerciseDef = FizrukData.RawExerciseDef;
@@ -116,6 +131,8 @@ export interface SqliteFizrukCache {
    * would make "зняти позначку" indistinguishable from "видалити".
    */
   injuries: CachedInjury[];
+  /** Памʼять типу виміру: id вправи → тип, обраний людиною (міграція 173). */
+  exercisePrefs?: Record<string, ExerciseMeasure>;
   /** ISO timestamp of the last successful refresh, or null. */
   refreshedAt: string | null;
 }
@@ -130,6 +147,7 @@ const EMPTY_CACHE: SqliteFizrukCache = {
   programs: null,
   workoutTemplates: [],
   injuries: [],
+  exercisePrefs: {},
   refreshedAt: null,
 };
 
@@ -158,6 +176,8 @@ interface WorkoutRow {
   cooldown_json: string | null;
   wellbeing_json: string | null;
   kcal_burned: number | null;
+  program_id: string | null;
+  program_slot: number | null;
   [key: string]: unknown;
 }
 
@@ -173,16 +193,7 @@ interface WorkoutItemRow {
   duration_sec: number | null;
   distance_m: number | null;
   chosen_variant: string | null;
-  sort_order: number | null;
-  [key: string]: unknown;
-}
-
-interface WorkoutSetRow {
-  id: string;
-  workout_item_id: string;
-  weight_kg: number | null;
-  reps: number | null;
-  rpe: number | null;
+  measure?: string | null;
   sort_order: number | null;
   [key: string]: unknown;
 }
@@ -260,7 +271,14 @@ function rowToWorkout(
       : null,
     items: itemsByWorkout.get(row.id) ?? [],
     ...(row.kcal_burned != null ? { kcalBurned: row.kcal_burned } : {}),
+    ...programRefFromRow(row),
   };
+}
+
+/** Пара колонок → `programRef`; половина пари чи сміття = поза програмою. */
+function programRefFromRow(row: WorkoutRow): Pick<Workout, "programRef"> {
+  const ref = normalizeWorkoutProgramRef(row.program_id, row.program_slot);
+  return ref && ref !== "invalid" ? { programRef: ref } : {};
 }
 
 function rowToWorkoutItem(
@@ -284,6 +302,7 @@ function rowToWorkoutItem(
   if (sets && sets.length > 0) item.sets = sets;
   if (row.duration_sec != null) item.durationSec = row.duration_sec;
   if (row.distance_m != null) item.distanceM = row.distance_m;
+  if (isExerciseMeasure(row.measure)) item.measure = row.measure;
   // AI-DANGER: без цього рядка колонка читалась би у SELECT і не доїжджала
   // в `Workout` — рівно той сценарій, який нижче описаний для
   // `wellbeing_json`. Лічильник трьох полегшень тоді завжди дорівнює нулю,
@@ -476,10 +495,12 @@ export async function refreshFizrukSqliteState(
     programsRows,
     workoutTemplateRows,
     injuryRows,
+    exercisePrefRows,
   ] = await Promise.all([
     client.all<WorkoutRow>(
       `SELECT id, started_at, ended_at, note, groups_json,
-              warmup_json, cooldown_json, wellbeing_json, kcal_burned
+              warmup_json, cooldown_json, wellbeing_json, kcal_burned,
+              program_id, program_slot
          FROM fizruk_workouts
         WHERE user_id = ? AND deleted_at IS NULL
         ORDER BY started_at DESC`,
@@ -488,19 +509,13 @@ export async function refreshFizrukSqliteState(
     client.all<WorkoutItemRow>(
       `SELECT id, workout_id, exercise_id, name_uk, primary_group,
               muscles_primary, muscles_secondary, type,
-              duration_sec, distance_m, chosen_variant, sort_order
+              duration_sec, distance_m, chosen_variant, measure, sort_order
          FROM fizruk_workout_items
         WHERE user_id = ? AND deleted_at IS NULL
         ORDER BY workout_id ASC, sort_order ASC, id ASC`,
       [userId],
     ),
-    client.all<WorkoutSetRow>(
-      `SELECT id, workout_item_id, weight_kg, reps, rpe, sort_order
-         FROM fizruk_workout_sets
-        WHERE user_id = ? AND deleted_at IS NULL
-        ORDER BY workout_item_id ASC, sort_order ASC, id ASC`,
-      [userId],
-    ),
+    client.all<WorkoutSetRow>(WORKOUT_SETS_SELECT_SQL, [userId]),
     client.all<CustomExerciseRow>(
       `SELECT id, data_json
          FROM fizruk_custom_exercises
@@ -553,17 +568,14 @@ export async function refreshFizrukSqliteState(
         ORDER BY started_at DESC, id ASC`,
       [userId],
     ),
+    client.all<ExercisePrefRow>(EXERCISE_PREFS_SELECT_SQL, [userId]),
   ]);
 
   // Build sets-by-item map first.
   const setsByItem = new Map<string, WorkoutItem["sets"]>();
   for (const row of setRows) {
     const arr = setsByItem.get(row.workout_item_id) ?? [];
-    arr.push({
-      weightKg: row.weight_kg ?? 0,
-      reps: row.reps ?? 0,
-      ...(row.rpe != null ? { rpe: row.rpe } : {}),
-    });
+    arr.push(rowToWorkoutSet(row));
     setsByItem.set(row.workout_item_id, arr);
   }
 
@@ -601,6 +613,7 @@ export async function refreshFizrukSqliteState(
     programs,
     workoutTemplates,
     injuries,
+    exercisePrefs: rowsToExercisePrefs(exercisePrefRows),
     // eslint-disable-next-line no-restricted-syntax -- cache-freshness stamp: UTC wall-clock instant, not a Kyiv day boundary
     refreshedAt: new Date().toISOString(),
   };

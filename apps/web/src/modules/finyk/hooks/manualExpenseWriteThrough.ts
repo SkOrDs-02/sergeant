@@ -13,14 +13,18 @@
  */
 export interface ManualExpenseWriteThroughStorage {
   manualExpenses: ReadonlyArray<{ id: string }> | undefined;
-  addManualExpense: (expense: {
-    id: string;
-    date: string;
-    description: string;
-    amount: number;
-    category: string;
-    kind: "expense" | "income";
-  }) => unknown;
+  addManualExpense: (
+    expense: {
+      id: string;
+      date: string;
+      description: string;
+      amount: number;
+      category: string;
+      kind: "expense" | "income";
+    },
+    restoredLinks?: undefined,
+    opts?: { userAction?: boolean },
+  ) => unknown;
   /** Дзеркало server-side undo (`useImportBatchUndo`): коли `commitImport`
    * записав рядки локально (write-through), а користувач одразу натиснув
    * «Скасувати імпорт», сервер видаляє їх, але БЕЗ цього виклику вони

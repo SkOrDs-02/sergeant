@@ -12,6 +12,10 @@ import { estimateAnthropicCostUsd } from "./aiPricing.js";
 import { recordAnthropicUsageToDb } from "./anthropicUsageStore.js";
 import { captureAiGeneration, type AiProvider } from "./posthogAi.js";
 import { elapsedMs, sleep } from "./timing.js";
+import {
+  noteOpenRouterDataPolicyRejection,
+  withOpenRouterProviderPrefs,
+} from "./llm/openrouterDataPolicy.js";
 
 const ANTHROPIC_URL = "https://api.anthropic.com/v1/messages";
 const OPENROUTER_URL = "https://openrouter.ai/api/v1/messages";
@@ -124,6 +128,22 @@ function pickTransport(
       "anthropic-version": "2023-06-01",
     },
   };
+}
+
+/**
+ * Тіло для обраного транспорту. На шлюзі OpenRouter додає
+ * `provider.data_collection=deny` і `provider.quantizations` від 8 біт
+ * (рішення власника 2026-11-19, `llm/openrouterDataPolicy.ts`): усі
+ * `/messages`-шляхи (чат, зір, чеки, імпорт) отримують поле тут, а не кожен
+ * у своєму payload. Прямий Anthropic поля не бачить: це параметр шлюзу.
+ */
+function bodyForTransport(
+  payload: Record<string, unknown>,
+  provider: AiProvider,
+): Record<string, unknown> {
+  return provider === "openrouter"
+    ? withOpenRouterProviderPrefs(payload)
+    : payload;
 }
 
 /**
@@ -522,7 +542,7 @@ async function anthropicMessagesInner(
       const response = await fetch(transport.url, {
         method: "POST",
         headers: transport.headers,
-        body: JSON.stringify(payload),
+        body: JSON.stringify(bodyForTransport(payload, transport.provider)),
         signal,
       });
 
@@ -545,6 +565,15 @@ async function anthropicMessagesInner(
           traceId,
         });
       } else {
+        if (transport.provider === "openrouter") {
+          noteOpenRouterDataPolicyRejection({
+            status: response.status,
+            data,
+            model,
+            endpoint,
+            transport: "messages",
+          });
+        }
         recordOutcome(response.status === 429 ? "rate_limited" : "error", {
           model,
           endpoint,
@@ -647,7 +676,9 @@ async function anthropicMessagesStreamInner(
     response = await fetch(transport.url, {
       method: "POST",
       headers: transport.headers,
-      body: JSON.stringify({ ...payload, stream: true }),
+      body: JSON.stringify(
+        bodyForTransport({ ...payload, stream: true }, transport.provider),
+      ),
       signal,
     });
   } catch (e: unknown) {
@@ -673,6 +704,24 @@ async function anthropicMessagesStreamInner(
   if (!response.ok) {
     clearTimeout(t);
     const ms = sinceStart();
+    if (transport.provider === "openrouter" && response.status === 404) {
+      // Тіло читає caller (`readProviderError`), тож тут лише копія. Помилкове
+      // тіло коротке й уже прийшло цілком, очікування не додає латентності.
+      const errorBody: unknown =
+        typeof response.clone === "function"
+          ? await response
+              .clone()
+              .json()
+              .catch(() => null)
+          : null;
+      noteOpenRouterDataPolicyRejection({
+        status: response.status,
+        data: errorBody,
+        model,
+        endpoint,
+        transport: "messages",
+      });
+    }
     recordOutcome(response.status === 429 ? "rate_limited" : "error", {
       model,
       endpoint,

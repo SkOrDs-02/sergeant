@@ -285,4 +285,65 @@ describe("TypingIndicator", () => {
       screen.getByRole("status", { name: "Сержант набирає відповідь" }),
     ).toBeInTheDocument();
   });
+
+  // С-1 (б), рішення власника 2026-11-18: підпис кроку в тій самій бульбашці.
+  it("без кроку показує нейтральний підпис «Думаю…» поруч із крапками", () => {
+    renderInRouter(<TypingIndicator />);
+    expect(screen.getByTestId("typing-indicator-label")).toHaveTextContent(
+      /^Думаю…$/,
+    );
+  });
+
+  it("з кроком показує його замість нейтрального підпису", () => {
+    renderInRouter(<TypingIndicator label="Шукаю операцію" />);
+    expect(screen.getByTestId("typing-indicator-label")).toHaveTextContent(
+      /^Шукаю операцію$/,
+    );
+    expect(screen.queryByText("Думаю…")).not.toBeInTheDocument();
+  });
+
+  it("назва статусу стала і не міняється з кроком (оголошення — у HubChatBody)", () => {
+    renderInRouter(<TypingIndicator label="Шукаю операцію" />);
+    expect(
+      screen.getByRole("status", { name: "Сержант набирає відповідь" }),
+    ).toBeInTheDocument();
+  });
+});
+
+describe("ChatMessage — обрив стріму першого ходу (С-1 (а))", () => {
+  it("лишає написане, каже про обрив і дає «Ще раз» з тим самим питанням", () => {
+    const onRetry = vi.fn();
+    renderInRouter(
+      <ChatMessage
+        message={makeMessage({
+          role: "assistant",
+          text: "Цього тижня ти витратив ",
+          interrupted: true,
+          retryText: "скільки я витратив",
+        })}
+        onRetry={onRetry}
+      />,
+    );
+    expect(screen.getByTestId("assistant-body")).toHaveTextContent(
+      "Цього тижня ти витратив",
+    );
+    expect(screen.getByText("Відповідь обірвалась.")).toBeInTheDocument();
+    fireEvent.click(screen.getByRole("button", { name: "Ще раз" }));
+    expect(onRetry).toHaveBeenCalledWith("скільки я витратив");
+  });
+
+  it("без обробника (хід у польоті) кнопки «Ще раз» немає", () => {
+    renderInRouter(
+      <ChatMessage
+        message={makeMessage({
+          role: "assistant",
+          text: "Цього тижня",
+          interrupted: true,
+          retryText: "скільки",
+        })}
+      />,
+    );
+    expect(screen.getByText("Відповідь обірвалась.")).toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: "Ще раз" })).toBeNull();
+  });
 });

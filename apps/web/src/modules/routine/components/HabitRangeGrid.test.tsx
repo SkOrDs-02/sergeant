@@ -77,7 +77,8 @@ describe("HabitRangeGrid", () => {
     expect(within(row).queryAllByRole("button")).toHaveLength(0);
   });
 
-  it("mentions skipped days in the row summary", () => {
+  it("mentions skipped days in the row summary and drops them from the denominator", () => {
+    // OD-29, Р-3 (а), П-18 (А) 2026-11-18: «не зміг» поза знаменником.
     renderGrid(7, {
       skips: {
         gym: { "2026-01-07": { reason: "sick", at: "2026-01-07T08:00:00Z" } },
@@ -85,7 +86,7 @@ describe("HabitRangeGrid", () => {
     });
     expect(
       screen.getByRole("img", {
-        name: "Спортзал: 0 з 7 виконано, 1 – не зміг · останні 7 днів",
+        name: "Спортзал: 0 з 6 виконано, 1 – не зміг · останні 7 днів",
       }),
     ).toBeInTheDocument();
   });

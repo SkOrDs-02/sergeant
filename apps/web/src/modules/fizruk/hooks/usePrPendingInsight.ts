@@ -32,7 +32,17 @@
  */
 
 import { useMemo } from "react";
-import type { Workout, WorkoutItem } from "@sergeant/fizruk-domain/domain";
+import {
+  collectStrengthSessionPoints,
+  computeOneRmAging,
+  latestClearedInjuryAtForExercise,
+  type InjuryMark,
+} from "@sergeant/fizruk-domain";
+import {
+  collectExerciseHistory,
+  type Workout,
+  type WorkoutItem,
+} from "@sergeant/fizruk-domain/domain";
 import type { Insight } from "@shared/lib/insights/types";
 import { fmtLoose } from "../lib/numberFmt";
 
@@ -86,17 +96,52 @@ function maxWeightInItem(item: WorkoutItem): number | null {
   return best;
 }
 
+/**
+ * Чи вправа зараз у режимі повернення (пауза понад поріг, незавершене
+ * повернення або свіже зняття позначки травми) — той самий розрахунок, що й
+ * на сторінці вправи (`computeOneRmAging`). Історія — лише ЗАВЕРШЕНІ
+ * тренування: незавершене ще не є доказом повернення.
+ */
+function isExerciseInReturnMode(
+  item: WorkoutItem,
+  workouts: readonly Workout[],
+  injuryMarks: readonly InjuryMark[],
+): boolean {
+  const exerciseId = item.exerciseId;
+  if (!exerciseId) return false;
+  const history = collectExerciseHistory(
+    workouts.filter((w) => !!w.endedAt),
+    exerciseId,
+  );
+  const sessions = collectStrengthSessionPoints(history);
+  let peak1rm = 0;
+  for (const p of sessions) peak1rm = Math.max(peak1rm, p.best1rm);
+  return computeOneRmAging({
+    peak1rm,
+    // `collectExerciseHistory` сортує від найновішого.
+    lastSessionAt: history[0]?.workout.startedAt ?? null,
+    sessions,
+    injuryClearedAt: latestClearedInjuryAtForExercise(item, injuryMarks),
+  }).returnMode;
+}
+
 export interface PrPendingInsightOptions {
   workouts: readonly Workout[];
   loaded: boolean;
   /** id of the currently active (in-progress) workout, if any. */
   activeWorkoutId: string | null;
+  /**
+   * Усі позначки травми (`useInjuries().all`), включно зі знятими: свіже
+   * зняття вмикає режим повернення, у якому інсайт мовчить (канон §6).
+   */
+  injuryMarks: readonly InjuryMark[];
 }
 
 export function usePrPendingInsight({
   workouts,
   loaded,
   activeWorkoutId,
+  injuryMarks,
 }: PrPendingInsightOptions): Insight | null {
   // eslint-disable-next-line react-hooks/preserve-manual-memoization -- React Compiler inlines this thin derivation hook and elects not to re-memoize the result ("memoized in source but not in compilation output"); the memo body is pure and its deps are exhaustive. Compiler is not enabled at runtime, so this useMemo genuinely caches an O(workouts) scan on every Dashboard render — removing it is a real perf regression.
   return useMemo(() => {
@@ -132,6 +177,10 @@ export function usePrPendingInsight({
       // рекорд, і «спробуй більше сьогодні» там нічого не означає.
       if (currentMax < pr.maxWeightKg * PR_PROXIMITY_FACTOR) continue;
       if (currentMax >= pr.maxWeightKg) continue;
+      // Канон §6: у режимі повернення порівняння з піком ховаємо і вагу не
+      // підвищуємо, тож «спробуй рекорд + 2,5 кг» тут — пряма суперечність
+      // (аудит 2026-11-17, §3.4).
+      if (isExerciseInReturnMode(item, workouts, injuryMarks)) continue;
 
       const exerciseName = pr.nameUk ?? item.exerciseId;
       // Suggest the next 2.5 kg increment above their current max as
@@ -154,5 +203,5 @@ export function usePrPendingInsight({
     }
 
     return null;
-  }, [workouts, loaded, activeWorkoutId]);
+  }, [workouts, loaded, activeWorkoutId, injuryMarks]);
 }

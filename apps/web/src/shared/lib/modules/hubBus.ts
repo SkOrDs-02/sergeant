@@ -75,6 +75,19 @@ export interface HubBusEvents {
    * `withoutWeekReportTarget`).
    */
   openWeekReport: void;
+  /**
+   * Подія іншого модуля, що може сама відмітити звичку Рутини (Р-1 (в),
+   * рішення founder-а 2026-11-18): завершене повноцінне тренування,
+   * досягнута денна ціль води, витрата, записана вручну. Шле модуль-власник
+   * події в ТІЙ САМІЙ вкладці, коли подія сталась на цьому пристрої (не на
+   * sync-pull), з днем пристрою події (ADR-0078). Слухач —
+   * `useRoutineAutoMark` у `RoutineBootCluster`; він відмічає лише за
+   * сьогодні й лише звички, привʼязані до цього джерела.
+   */
+  routineAutoMark: {
+    source: "fizruk_workout" | "nutrition_water_goal" | "finyk_expense";
+    dayKey: string;
+  };
 }
 
 type Handler<K extends keyof HubBusEvents> = (detail: HubBusEvents[K]) => void;

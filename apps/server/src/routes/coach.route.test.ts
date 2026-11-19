@@ -103,7 +103,7 @@ vi.mock("./../push/send.js", () => ({
 // SEC-1 (продуктовий аудит 2026-09, той самий контракт, що B31 у
 // `chat.route.test.ts`): лімітер має бачити `req.user`, інакше бакетить по IP.
 const { rateLimitExpressCalls } = vi.hoisted(() => ({
-  rateLimitExpressCalls: [] as Array<{ hasUser: boolean }>,
+  rateLimitExpressCalls: [] as Array<{ key: string; hasUser: boolean }>,
 }));
 
 vi.mock("./../http/rateLimit.js", async () => {
@@ -113,8 +113,9 @@ vi.mock("./../http/rateLimit.js", async () => {
   return {
     ...actual,
     rateLimitExpress:
-      () => (req: { user?: unknown }, _res: unknown, next: () => void) => {
-        rateLimitExpressCalls.push({ hasUser: !!req.user });
+      (opts: { key: string }) =>
+      (req: { user?: unknown }, _res: unknown, next: () => void) => {
+        rateLimitExpressCalls.push({ key: opts.key, hasUser: !!req.user });
         next();
       },
   };
@@ -194,23 +195,49 @@ describe("coach routes — auth guard (unauthenticated → 401)", () => {
 describe("coach routes — middleware order (SEC-1)", () => {
   // Сесія на рівні роутера ПЕРЕД лімітером (як B31 у `chat.ts`): без цього
   // `rateLimitSubject` не бачить `req.user` і бакетить `api:coach` по IP.
-  it("лімітер бачить req.user, коли сесія є", async () => {
+  //
+  // `GET /memory` (С-3 (а), 2026-11-18) іде під бакет дешевих читань памʼяті
+  // AI, як list/delete у `ai-memory.ts`: попереду сесії стоїть лише
+  // pre-auth IP-бакет (`…:ip`), per-user бакет — після неї.
+  it("per-user лімітер бачить req.user, коли сесія є", async () => {
     getSessionUserMock.mockResolvedValue({ id: "u1" });
     queryMock.mockResolvedValueOnce({ rows: [] });
     const createApp = await loadCreateApp();
     const app = createApp();
     await request(app).get("/api/coach/memory");
-    expect(rateLimitExpressCalls.length).toBeGreaterThan(0);
-    expect(rateLimitExpressCalls.every((c) => c.hasUser)).toBe(true);
+    expect(rateLimitExpressCalls).toEqual([
+      { key: "api:ai-memory:browse:ip", hasUser: false },
+      { key: "api:ai-memory:browse", hasUser: true },
+    ]);
   });
 
-  it("без сесії 401 віддається до лімітера", async () => {
+  it("без сесії 401 віддається до per-user лімітера (лише pre-auth IP-бакет)", async () => {
     getSessionUserMock.mockResolvedValue(null);
     const createApp = await loadCreateApp();
     const app = createApp();
     const res = await request(app).get("/api/coach/memory");
     expect(res.status).toBe(401);
-    expect(rateLimitExpressCalls).toEqual([]);
+    expect(rateLimitExpressCalls).toEqual([
+      { key: "api:ai-memory:browse:ip", hasUser: false },
+    ]);
+  });
+
+  it("POST /memory: api:coach бачить req.user", async () => {
+    getSessionUserMock.mockResolvedValue({ id: "u1" });
+    queryMock.mockResolvedValue({ rows: [] });
+    const createApp = await loadCreateApp();
+    const app = createApp();
+    await request(app)
+      .post("/api/coach/memory")
+      .set("X-Requested-With", "XMLHttpRequest")
+      .set("Authorization", "Bearer test-session")
+      .send({});
+    // Перед парсером тіла стоїть pre-parse гейт B28 зі своїм per-IP бакетом
+    // (сесії ще немає); `api:coach` іде після `requireSession`.
+    expect(rateLimitExpressCalls).toEqual([
+      { key: "api:preparse:ip", hasUser: false },
+      { key: "api:coach", hasUser: true },
+    ]);
   });
 });
 

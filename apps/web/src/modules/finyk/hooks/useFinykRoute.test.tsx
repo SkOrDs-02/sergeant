@@ -1,19 +1,30 @@
 // @vitest-environment jsdom
 import { describe, it, expect } from "vitest";
 import { render, screen, fireEvent } from "@testing-library/react";
-import { MemoryRouter, Routes, Route, useLocation } from "react-router-dom";
+import {
+  MemoryRouter,
+  Routes,
+  Route,
+  useLocation,
+  useNavigationType,
+} from "react-router-dom";
 import { useFinykRoute, useFinykQueryParam } from "./useFinykRoute";
 
 function RouteProbe() {
   const [page, navigate] = useFinykRoute();
   const cat = useFinykQueryParam("cat");
   const location = useLocation();
+  const navType = useNavigationType();
   return (
     <div>
       <span data-testid="page">{page}</span>
       <span data-testid="path">{location.pathname}</span>
       <span data-testid="search">{location.search}</span>
       <span data-testid="cat">{cat ?? "none"}</span>
+      <span data-testid="nav-type">{navType}</span>
+      <button onClick={() => navigate("transactions", { replace: true })}>
+        clear-tx
+      </button>
       <button onClick={() => navigate("budgets")}>go-budgets</button>
       <button onClick={() => navigate("unknown-page")}>go-unknown</button>
       <button onClick={() => navigate("budgets")}>go-budgets-again</button>
@@ -72,6 +83,14 @@ describe("useFinykRoute", () => {
     fireEvent.click(screen.getByText("go-unknown"));
     expect(screen.getByTestId("page")).toHaveTextContent("overview");
     expect(screen.getByTestId("path")).toHaveTextContent("/finyk");
+  });
+
+  it("replace: прибирає одноразовий параметр без нового запису історії (Ф-2 а)", () => {
+    renderAt("/finyk/transactions?tx=abc");
+    fireEvent.click(screen.getByText("clear-tx"));
+    expect(screen.getByTestId("path")).toHaveTextContent("/finyk/transactions");
+    expect(screen.getByTestId("search")).toBeEmptyDOMElement();
+    expect(screen.getByTestId("nav-type")).toHaveTextContent("REPLACE");
   });
 
   it("treats a non-finyk pathname as overview", () => {

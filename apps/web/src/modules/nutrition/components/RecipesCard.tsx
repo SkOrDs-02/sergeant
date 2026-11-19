@@ -35,6 +35,7 @@ import {
   buildRecipeLogEntry,
   defaultServingGrams,
   parseGramsInput,
+  recipeMeal,
   supportsGramsLogging,
   type LoggableRecipe,
   type RecipeLogMode,
@@ -43,7 +44,6 @@ import { RecipeBuilderSheet } from "./RecipeBuilderSheet";
 import { getCachedNutritionSqliteState } from "../lib/sqliteReader";
 import { useNutritionSqliteReadTick } from "../lib/sqliteReadGate";
 import type { RecipeCacheEntry as StoredRecipeCacheEntry } from "../lib/recipeCache";
-import { MEAL_TYPES } from "../lib/mealTypes";
 import { newMealId } from "../lib/mealId";
 import {
   guessMealTypeIdNow,
@@ -204,10 +204,7 @@ export function RecipesCard({
       parsePortionFactor(portionById[key]),
       grams,
     );
-    const macros = entry.macros;
     const mealType = guessMealTypeIdNow();
-    const label =
-      MEAL_TYPES.find((x) => x.id === mealType)?.label || "Прийом їжі";
     // Не пишемо поточний час, якщо журнал відкритий не на сьогодні —
     // інакше "вчора 09:30" виглядає як артефакт. Див. H5 з аудиту.
     // ADR-0078 / unification-modules.md #1.25: `selectedDate` — device-local
@@ -216,23 +213,9 @@ export function RecipesCard({
     const now = new Date();
     const isToday = !selectedDate || selectedDate === deviceDayKey(now);
     const time = isToday ? deviceTimeOfDay(now) : "";
-    await addMealToLog({
-      id: newMealId(),
-      time,
-      mealType,
-      label,
-      name: r?.title || "Рецепт",
-      macros: {
-        kcal: macros.kcal ?? null,
-        protein_g: macros.protein_g ?? null,
-        fat_g: macros.fat_g ?? null,
-        carbs_g: macros.carbs_g ?? null,
-      },
-      source: "manual",
-      macroSource: entry.macroSource,
-      foodId: null,
-      amount_g: entry.amount_g,
-    });
+    await addMealToLog(
+      recipeMeal(r?.title, entry, { id: newMealId(), mealType, time }),
+    );
   }
 
   async function saveBuilt(recipe: SavedRecipe) {

@@ -147,6 +147,21 @@ describe("forget", () => {
     expect(result).toContain("не знайдено");
   });
 
+  it("підказує, де взяти id, коли модель передала текст факту (2026-11-18)", () => {
+    // Стенд 2026-11-18: модель клала в `fact_id` текст («алергія на арахіс»).
+    // Видалення лишається за точним id; результат веде моделі до my_profile,
+    // щоб наступний хід узяв справжній id, а не повторив текст.
+    mockRead.mockReturnValue([]);
+    mockRemove.mockReturnValue({ entries: [], removed: null });
+    const result = forget({
+      name: "forget",
+      input: { fact_id: "алергія на арахіс" },
+    });
+    expect(result).toContain("не знайдено");
+    expect(result).toContain("my_profile");
+    expect(mockWrite).not.toHaveBeenCalled();
+  });
+
   it("removes and returns confirmation with fact text", () => {
     const entry = {
       id: "e1",

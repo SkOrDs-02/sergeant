@@ -4,6 +4,7 @@ import type { Workout } from "../types.js";
 import {
   buildWorkoutJournalSections,
   compareWorkoutsByStartedAtDesc,
+  computeWorkoutDoneItemCount,
   computeWorkoutDurationSec,
   computeWorkoutSetCount,
   computeWorkoutSummary,
@@ -141,6 +142,26 @@ describe("computeWorkoutTonnageKg / computeWorkoutSetCount", () => {
     expect(computeWorkoutTonnageKg(workout)).toBe(60 * 10 + 60 * 8);
   });
 
+  it("обʼєм лише для вага × повтори: «лише повтори» з вагою не дає кг×повт", () => {
+    const repsOnly = w({
+      items: [
+        {
+          id: "it_r",
+          exerciseId: "pull_up",
+          nameUk: "Підтягування",
+          primaryGroup: "back",
+          musclesPrimary: [],
+          musclesSecondary: [],
+          type: "strength",
+          measure: "reps",
+          sets: [{ weightKg: 10, reps: 8 }],
+        },
+      ],
+    });
+    expect(computeWorkoutTonnageKg(repsOnly)).toBe(0);
+    expect(computeWorkoutSetCount(repsOnly)).toBe(1);
+  });
+
   it("counts non-empty strength sets", () => {
     expect(computeWorkoutSetCount(workout)).toBe(2);
   });
@@ -148,6 +169,43 @@ describe("computeWorkoutTonnageKg / computeWorkoutSetCount", () => {
   it("handles null / missing inputs", () => {
     expect(computeWorkoutTonnageKg(null)).toBe(0);
     expect(computeWorkoutSetCount(undefined)).toBe(0);
+  });
+  it("рядки лише з вагою (посів старту програми) не є підходами", () => {
+    const programUntouched = w({
+      items: ["ex_a", "ex_b", "ex_c"].map((id) => ({
+        id: `it_${id}`,
+        exerciseId: id,
+        nameUk: id,
+        primaryGroup: "chest",
+        musclesPrimary: [],
+        musclesSecondary: [],
+        type: "strength" as const,
+        sets: [{ weightKg: 60, reps: 0 }],
+      })),
+    });
+    expect(computeWorkoutSetCount(programUntouched)).toBe(0);
+  });
+
+  it("утримання з вагою й часом на вправі (Strong) рахується", () => {
+    const hold = w({
+      items: [
+        {
+          id: "it_hold",
+          exerciseId: "farmer",
+          nameUk: "Прогулянка фермера",
+          primaryGroup: "forearms",
+          musclesPrimary: [],
+          musclesSecondary: [],
+          type: "strength",
+          durationSec: 120,
+          sets: [
+            { weightKg: 32, reps: 0 },
+            { weightKg: 32, reps: 0 },
+          ],
+        },
+      ],
+    });
+    expect(computeWorkoutSetCount(hold)).toBe(2);
   });
 });
 
@@ -224,5 +282,83 @@ describe("formatWorkoutDateLabel", () => {
 
   it("falls back to the raw key for unparseable input", () => {
     expect(formatWorkoutDateLabel("nope")).toBe("nope");
+  });
+});
+
+describe("computeWorkoutSetCount — підходи на час і дистанцію (Р-3, Б-2)", () => {
+  it("рахує зараховані підходи всіх типів, legacy item часу без підходів — 0", () => {
+    const workout = {
+      startedAt: "2026-11-18T08:00:00.000Z",
+      endedAt: "2026-11-18T08:20:00.000Z",
+      items: [
+        {
+          type: "time",
+          measure: "time",
+          sets: [
+            { weightKg: 0, reps: 0, durationSec: 30 },
+            { weightKg: 0, reps: 0, durationSec: 0 },
+          ],
+        },
+        {
+          type: "distance",
+          measure: "weight_distance",
+          sets: [{ weightKg: 40, reps: 0, distanceM: 20 }],
+        },
+        { type: "time", durationSec: 90 },
+        { type: "strength", sets: [{ weightKg: 60, reps: 8 }] },
+      ],
+    };
+    expect(computeWorkoutSetCount(workout)).toBe(3);
+  });
+});
+
+describe("computeWorkoutDoneItemCount (рішення founder-а 2026-11-18: «Вправ N з M»)", () => {
+  const base = {
+    exerciseId: "ex",
+    primaryGroup: "chest",
+    musclesPrimary: [] as string[],
+    musclesSecondary: [] as string[],
+  };
+  it("вправа зроблена, коли є хоч один зарахований підхід", () => {
+    const workout = w({
+      items: [
+        // Один із трьох підходів — уже зроблена.
+        {
+          ...base,
+          id: "a",
+          nameUk: "Жим",
+          type: "strength",
+          sets: [
+            { weightKg: 60, reps: 8 },
+            { weightKg: 60, reps: 0 },
+          ],
+        },
+        // Рядок лише з вагою плану — не підхід (`isSetCompleted`).
+        {
+          ...base,
+          id: "b",
+          nameUk: "Тяга",
+          type: "strength",
+          sets: [{ weightKg: 80, reps: 0 }],
+        },
+        // Без рядків узагалі.
+        { ...base, id: "c", nameUk: "Присід", type: "strength", sets: [] },
+        // Старий item часу без підходів: робота записана на вправі.
+        {
+          ...base,
+          id: "d",
+          nameUk: "Біг",
+          type: "distance",
+          distanceM: 3000,
+          durationSec: 900,
+        },
+      ],
+    });
+    expect(computeWorkoutDoneItemCount(workout)).toBe(2);
+  });
+
+  it("порожнє чи відсутнє тренування — нуль", () => {
+    expect(computeWorkoutDoneItemCount(w())).toBe(0);
+    expect(computeWorkoutDoneItemCount(null)).toBe(0);
   });
 });

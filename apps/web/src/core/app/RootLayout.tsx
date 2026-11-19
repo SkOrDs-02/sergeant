@@ -77,6 +77,7 @@ import { useProfileWriteThroughBoot } from "../profile/useProfileWriteThroughBoo
 import { useAnalyticsConsentBoot } from "../observability/useAnalyticsConsentBoot";
 import { useActiveModulesSync } from "../hub/useActiveModulesSync";
 import { useHubPrefsSync } from "../settings/useHubPrefsSync";
+import { useDeviceTimeZoneSync } from "../settings/useDeviceTimeZoneSync";
 import { HubShellProvider, type HubShellValue } from "./HubShellContext";
 import { ErrorBoundary } from "../ErrorBoundary";
 
@@ -217,6 +218,8 @@ function AppShell({ children }: { children: React.ReactNode }) {
   // PR-S13: налаштування вигляду хаба їдуть між пристроями тим самим
   // write-through каналом, що й вибір модулів рядком вище.
   useHubPrefsSync();
+  // Пояс пристрою для серверних нагадувань і тихих годин (міграція 168).
+  useDeviceTimeZoneSync();
 
   // Вікно відкрите (403 на `me` вже сказав), а дати в тілі 403 не було:
   // чекаємо `deletion-status`, а не віддаємо застосунок позначеному акаунту.

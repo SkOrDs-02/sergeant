@@ -1,23 +1,23 @@
 import type { Request, Response } from "express";
 import { randomUUID } from "node:crypto";
 import { env } from "../../env.js";
-import { chatViaOpenRouter } from "../../env/chatModels.js";
 import { parseBody } from "../../http/validate.js";
 import { ChatRequestSchema } from "../../http/schemas.js";
-import {
-  anthropicMessages,
-  extractAnthropicText,
-} from "../../lib/anthropic.js";
+import { extractAnthropicText } from "../../lib/anthropic.js";
 import { resolveProTier } from "./aiQuota.js";
 import { issueRoundTripTicket } from "./chatRoundTripTicket.js";
 import {
   type AnthropicContentBlock,
-  type AnthropicMessagesResponseData,
-  type FetchResponse,
-  MAX_TEXT_CONTINUATIONS,
   refundQuotaOnUpstreamFailure,
 } from "./chatShared.js";
 import { streamAnthropicToSse } from "./chatStream.js";
+import { callAnthropicWithContinuation } from "./chatUpstream.js";
+import { firstTurnReasoningPayload } from "./chatReasoning.js";
+import {
+  type FirstTurnSse,
+  replayFirstTurnFromCache,
+  streamFirstTurnToSse,
+} from "./chatFirstTurnStream.js";
 import { SYSTEM_PROMPT_VERSION } from "./tools.js";
 import {
   applyMessagesCacheBreakpoint,
@@ -61,7 +61,7 @@ import { resolveHealthConsent } from "../../lib/healthConsent.js";
 import {
   redactHealthToolCalls,
   redactHealthToolResults,
-  stripHealthContext,
+  gateClientContext,
 } from "./healthGate.js";
 import { pool } from "../../db.js";
 
@@ -143,6 +143,8 @@ function rejectWithToolIterationCap(
   res: Response,
   boundary: "anthropic_response" | "client_request",
   observed: number,
+  /** Стрімовий перший хід: заголовки вже віддано, тож кадр `err`, не 422. */
+  sse?: FirstTurnSse,
 ): void {
   chatToolIterationCapHitTotal.inc({ boundary });
   emitSecurityEvent({
@@ -150,152 +152,17 @@ function rejectWithToolIterationCap(
     severity: boundary === "client_request" ? "high" : "medium",
     details: `boundary=${boundary} observed=${observed} max=${MAX_TOOL_ITERATIONS}`,
   });
+  const error = "Перевищено ліміт tool-ітерацій у запиті";
+  if (sse) {
+    sse.frame({ err: error, code: "MAX_TOOL_ITERATIONS" });
+    sse.close();
+    return;
+  }
   res.status(422).json({
-    error: "Перевищено ліміт tool-ітерацій у запиті",
+    error,
     code: "MAX_TOOL_ITERATIONS",
     detail: { boundary, observed, max: MAX_TOOL_ITERATIONS },
   });
-}
-
-/**
- * Викликає `anthropicMessages` у циклі: якщо відповідь обірвалася на max_tokens
- * і в content-і лише text-блоки (без tool_use), доклеює partial текст як
- * assistant-повідомлення і робить ще один виклик. Повертає останню response/data,
- * але з content, де вся накопичена текстова частина зібрана в один text-блок.
- *
- * Якщо в content-і є tool_use — НЕ продовжуємо: tool_use завжди має йти
- * парою з tool_result, який буде робити клієнт. Без cap-а на max_tokens в моделі,
- * що пише tool_use+text разом — рідкісний варіант; якщо трапляється, пропускаємо без
- * continuation — клієнт обробить tool_use, а якщо text при цьому обрізаний — це прийнятно.
- */
-async function callAnthropicWithContinuation(
-  apiKey: string,
-  basePayload: Record<string, unknown>,
-  options: {
-    timeoutMs?: number;
-    endpoint: string;
-    signal?: AbortSignal;
-    promptVersion?: string;
-    userId?: string;
-    /** `$ai_trace_id` — ініціатива 0025, Фаза 2 (`AnthropicCallOptions.traceId`). */
-    traceId?: string;
-    /** Стеля на весь логічний виклик — див. `AnthropicCallOptions.maxTotalMs`. */
-    maxTotalMs?: number;
-    /** Один ретрай після таймауту — див. `AnthropicCallOptions.retryOnTimeout`. */
-    retryOnTimeout?: boolean;
-  },
-): Promise<{
-  response: FetchResponse | null;
-  data: AnthropicMessagesResponseData;
-  continued: boolean;
-}> {
-  const baseMessages = (basePayload["messages"] as Array<unknown>) ?? [];
-  let currentMessages: Array<unknown> = baseMessages.slice();
-  const mergedTextChunks: string[] = [];
-  let lastResponse: FetchResponse | null = null;
-  let lastData: AnthropicMessagesResponseData = {};
-  let lastNonTextBlocks: AnthropicContentBlock[] = [];
-  let continued = false;
-
-  // AI-DANGER: do not remove this continuation loop as an "optimization". When
-  // Anthropic returns `stop_reason: "max_tokens"` with text-only content, this
-  // re-issues the call with the partial text appended so the model resumes
-  // exactly where it cut off — it is the safety net that hides short-capped
-  // replies (parity with a manual "продовж"). Capped at MAX_TEXT_CONTINUATIONS.
-  // (domain-invariants.md — PR #813.)
-  for (let i = 0; i <= MAX_TEXT_CONTINUATIONS; i++) {
-    if (options.signal?.aborted) break;
-
-    const { response, data } = await anthropicMessages(
-      apiKey,
-      { ...basePayload, messages: currentMessages },
-      // Умову приносить сам чат: `chatViaOpenRouter()` перевіряє і прапорець,
-      // і наявність ключа. Зорові шляхи мають власний прапорець.
-      { ...options, allowOpenRouter: chatViaOpenRouter() },
-    );
-    lastResponse = response;
-    lastData = data as AnthropicMessagesResponseData;
-
-    if (!response?.ok) {
-      // Якщо вже є partial-текст з попередніх успішних викликів — повертаємо його
-      // як успішний результат (graceful degradation): юзер бачить часткову
-      // відповідь замість 5xx, квоту не рефандимо (перші виклики легітимно
-      // обслужені). Без partial-у — помилку віддаємо caller-у на refund.
-      // Синтезуємо ok-response, щоб caller-и (які роблять `if (!response.ok)`)
-      // потрапили у success-гілку.
-      if (continued && mergedTextChunks.length > 0) {
-        return {
-          response: new Response(null, { status: 200 }) as FetchResponse,
-          data: {
-            content: buildMergedContent(
-              mergedTextChunks.join(""),
-              lastNonTextBlocks,
-            ),
-          },
-          continued,
-        };
-      }
-      return { response, data: lastData, continued };
-    }
-
-    const content: AnthropicContentBlock[] = lastData?.content ?? [];
-    const textParts = content
-      .filter((b) => b.type === "text")
-      .map((b) => b.text ?? "")
-      .join("");
-    if (textParts) mergedTextChunks.push(textParts);
-    lastNonTextBlocks = content.filter((b) => b.type !== "text");
-
-    const stopReason = lastData?.stop_reason;
-    const hasToolUse = lastNonTextBlocks.some((b) => b.type === "tool_use");
-
-    if (
-      stopReason !== "max_tokens" ||
-      hasToolUse ||
-      i === MAX_TEXT_CONTINUATIONS ||
-      !textParts
-    ) {
-      const mergedContent = buildMergedContent(
-        mergedTextChunks.join(""),
-        lastNonTextBlocks,
-      );
-      return {
-        response,
-        data: { ...lastData, content: mergedContent },
-        continued,
-      };
-    }
-
-    // Продовжуємо: rebuild з baseMessages + ОДИН assistant-msg з усім склеєним
-    // текстом. Anthropic Messages API вимагає user/assistant alternation —
-    // якщо просто .push-ити новий assistant-msg на кожній ітерації, на 2-му
-    // continuation-і отримаємо два assistant-and-row → 400 від upstream.
-    currentMessages = [
-      ...baseMessages,
-      { role: "assistant", content: mergedTextChunks.join("") },
-    ];
-    continued = true;
-  }
-
-  // Захисний fallback (не досяжний у нормальному флоу).
-  return {
-    response: lastResponse,
-    data: {
-      ...lastData,
-      content: buildMergedContent(mergedTextChunks.join(""), lastNonTextBlocks),
-    },
-    continued,
-  };
-}
-
-function buildMergedContent(
-  mergedText: string,
-  nonTextBlocks: AnthropicContentBlock[],
-): AnthropicContentBlock[] {
-  const out: AnthropicContentBlock[] = [];
-  if (mergedText) out.push({ type: "text", text: mergedText });
-  out.push(...nonTextBlocks);
-  return out;
 }
 
 /**
@@ -501,7 +368,7 @@ export default async function handler(
   const healthConsent = await timePhase("health_consent", () =>
     resolveHealthConsent(ledgerUserId),
   );
-  const clientContext = healthConsent ? context : stripHealthContext(context);
+  const clientContext = gateClientContext(context, healthConsent);
 
   // Маскування перед відправкою за периметр (рішення founder-а #10).
   //
@@ -803,9 +670,21 @@ export default async function handler(
     // «скільки коштує хід без моделі» видно саме за відсутністю фази.
     phaseMs.set("pre_upstream", Date.now() - handlerStartedAt);
     flushFirstTurnPhases();
-    res
-      .status(cached.status)
-      .json(attachRoundTripTicket(cached.body, ledgerUserId, chatTraceId));
+    const cachedBody = attachRoundTripTicket(
+      cached.body,
+      ledgerUserId,
+      chatTraceId,
+    );
+    // Стрімовий клієнт отримує кеш тими самими кадрами (С-1 (а)).
+    if (stream) {
+      replayFirstTurnFromCache(
+        res,
+        cachedBody as Record<string, unknown>,
+        handlerStartedAt,
+      );
+    } else {
+      res.status(cached.status).json(cachedBody);
+    }
     return;
   }
 
@@ -830,45 +709,81 @@ export default async function handler(
   // між цим числом і сумою названих фаз — робота, якої ми не назвали.
   phaseMs.set("pre_upstream", Date.now() - handlerStartedAt);
 
-  let response, data;
+  const firstTurnPayload = {
+    // AI-CONTEXT: перший крок чату — модель може повернути text або tool_use.
+    // Direct-text відповіді на питання типу «що з фінансами?» потребують
+    // більше за 600 токенів, бо це часто структуровані пояснення з
+    // markdown-форматуванням. Тримаємо нижче за tool-result cap, бо тут
+    // зазвичай немає таблиць/брифінгів.
+    // Haiku: ~4× дешевший за Sonnet на першому турі ($1 vs $3 /1M input,
+    // $5 vs $15 /1M output); підтримує той самий tool-calling формат.
+    // Tool-result synthesis (другий тур) лишається на Sonnet — там важлива
+    // якість складних звітів. Обидві моделі env-kеровані
+    // (CHAT_MODEL_FIRST_TURN / CHAT_MODEL_SYNTHESIS) — ре-тиринг без редеплою.
+    model: env.CHAT_MODEL_FIRST_TURN,
+    max_tokens: 1500,
+    system: firstTurnSystem,
+    tools: buildToolsPayload(
+      env.CHAT_MODEL_FIRST_TURN,
+      activeModules,
+      healthConsent,
+    ),
+    // 3-й cache breakpoint: кешуємо префікс історії діалогу, щоб наступний
+    // тур читав попередні повідомлення з кешу замість повного re-білінгу.
+    messages: applyMessagesCacheBreakpoint(cleaned),
+    // Глибина міркувань (`CHAT_FIRST_TURN_REASONING_EFFORT`): незадана — полів
+    // немає. Один payload на JSON і стрім, тож обидва шляхи шлють те саме.
+    ...firstTurnReasoningPayload(),
+  };
+
+  let content: AnthropicContentBlock[];
+  // Стрімовий перший хід (С-1 (а), спека `hubchat-first-turn-stream.md`):
+  // кадри йдуть людині під час генерації, а все нижче (M7, кеш, квиток,
+  // звірка чисел) працює на зібраній відповіді, як у JSON-шляху.
+  let sse: FirstTurnSse | undefined;
   const upstreamStartedAt = Date.now();
   try {
-    ({ response, data } = await callAnthropicWithContinuation(
-      apiKey,
-      // AI-CONTEXT: перший крок чату — модель може повернути text або tool_use.
-      // Direct-text відповіді на питання типу «що з фінансами?» потребують
-      // більше за 600 токенів, бо це часто структуровані пояснення з
-      // markdown-форматуванням. Тримаємо нижче за tool-result cap, бо тут
-      // зазвичай немає таблиць/брифінгів.
-      // Haiku: ~4× дешевший за Sonnet на першому турі ($1 vs $3 /1M input,
-      // $5 vs $15 /1M output); підтримує той самий tool-calling формат.
-      // Tool-result synthesis (другий тур) лишається на Sonnet — там важлива
-      // якість складних звітів. Обидві моделі env-kеровані
-      // (CHAT_MODEL_FIRST_TURN / CHAT_MODEL_SYNTHESIS) — ре-тиринг без редеплою.
-      {
-        model: env.CHAT_MODEL_FIRST_TURN,
-        max_tokens: 1500,
-        system: firstTurnSystem,
-        tools: buildToolsPayload(
-          env.CHAT_MODEL_FIRST_TURN,
-          activeModules,
-          healthConsent,
-        ),
-        // 3-й cache breakpoint: кешуємо префікс історії діалогу, щоб наступний
-        // тур читав попередні повідомлення з кешу замість повного re-білінгу.
-        messages: applyMessagesCacheBreakpoint(cleaned),
-      },
-      {
-        timeoutMs: CHAT_ATTEMPT_TIMEOUT_MS,
-        maxTotalMs: CHAT_TOTAL_TIMEOUT_MS,
-        retryOnTimeout: true,
-        endpoint: "chat",
+    if (stream) {
+      const streamed = await streamFirstTurnToSse({
+        req,
+        res,
+        apiKey,
+        payload: firstTurnPayload,
         signal: clientAbort.signal,
-        promptVersion: SYSTEM_PROMPT_VERSION,
         traceId: chatTraceId,
-        ...(ledgerUserId !== undefined ? { userId: ledgerUserId } : {}),
-      },
-    ));
+        userId: ledgerUserId,
+        promptVersion: SYSTEM_PROMPT_VERSION,
+        attemptTimeoutMs: CHAT_ATTEMPT_TIMEOUT_MS,
+        totalTimeoutMs: CHAT_TOTAL_TIMEOUT_MS,
+        handlerStartedAt,
+      });
+      // Потік уже закрито кадром `err` (або клієнт пішов): квоту вирішив модуль.
+      if (streamed.outcome !== "ok") return;
+      content = streamed.content;
+      sse = streamed.sse;
+    } else {
+      const { response, data } = await callAnthropicWithContinuation(
+        apiKey,
+        firstTurnPayload,
+        {
+          timeoutMs: CHAT_ATTEMPT_TIMEOUT_MS,
+          maxTotalMs: CHAT_TOTAL_TIMEOUT_MS,
+          retryOnTimeout: true,
+          endpoint: "chat",
+          signal: clientAbort.signal,
+          promptVersion: SYSTEM_PROMPT_VERSION,
+          traceId: chatTraceId,
+          ...(ledgerUserId !== undefined ? { userId: ledgerUserId } : {}),
+        },
+      );
+      if (!response?.ok) {
+        throw makeAiProviderError({
+          rawProviderMessage: data?.error?.message,
+          status: response?.status,
+        });
+      }
+      content = data?.content || [];
+    }
   } catch (e) {
     await refundQuotaOnUpstreamFailure(req);
     throw e;
@@ -876,19 +791,19 @@ export default async function handler(
     // `finally`, а не рядок після виклику: провал upstream — це найдовше
     // очікування, яке людина взагалі бачить (стеля `CHAT_TOTAL_TIMEOUT_MS`),
     // і викинути саме його з розподілу означало б міряти лише щасливий шлях.
+    // На стрімі фаза триває до зібраної відповіді, тобто теж «повна відповідь».
     phaseMs.set("upstream", Date.now() - upstreamStartedAt);
     flushFirstTurnPhases();
   }
+  const deliver = (body: unknown): void => {
+    if (sse) {
+      sse.frame({ final: body });
+      sse.close();
+      return;
+    }
+    res.status(200).json(body);
+  };
 
-  if (!response?.ok) {
-    await refundQuotaOnUpstreamFailure(req);
-    throw makeAiProviderError({
-      rawProviderMessage: data?.error?.message,
-      status: response?.status,
-    });
-  }
-
-  const content: AnthropicContentBlock[] = data?.content || [];
   const toolUses = content.filter((b) => b.type === "tool_use");
   const textParts = replaceLongDash(
     content
@@ -906,7 +821,7 @@ export default async function handler(
   // інструментами зі сміттєвої відповіді.
   if (toolUses.length > MAX_TOOL_ITERATIONS) {
     await refundQuotaOnUpstreamFailure(req);
-    rejectWithToolIterationCap(res, "anthropic_response", toolUses.length);
+    rejectWithToolIterationCap(res, "anthropic_response", toolUses.length, sse);
     return;
   }
 
@@ -927,9 +842,7 @@ export default async function handler(
     // `attachRoundTripTicket` видає свіжий на кожен send, кеш зберігає лише
     // канонічне тіло без нього.
     setCachedChatResponse(cacheKey, { status: 200, body });
-    res
-      .status(200)
-      .json(attachRoundTripTicket(body, ledgerUserId, chatTraceId));
+    deliver(attachRoundTripTicket(body, ledgerUserId, chatTraceId));
     return;
   }
 
@@ -951,7 +864,7 @@ export default async function handler(
   });
   const textBody = { text: textParts || "Немає відповіді від AI." };
   setCachedChatResponse(cacheKey, { status: 200, body: textBody });
-  res.status(200).json(textBody);
+  deliver(textBody);
 }
 
 function sanitizeMessages(messages: unknown): ClientChatMessage[] {

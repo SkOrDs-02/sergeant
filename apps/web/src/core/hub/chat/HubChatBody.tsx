@@ -13,10 +13,17 @@ type ChatMessageEntry = HubChatSession["messages"][number];
 export interface HubChatBodyProps {
   messages: ChatMessageEntry[];
   loading: boolean;
+  /**
+   * Крок, який Сержант виконує зараз (С-1 (б)), або `null` для нейтрального
+   * стану. Див. `useChatSend.step`.
+   */
+  step?: string | null;
   /** Notified when a message bubble starts TTS playback. */
   onSpeak: () => void;
   /** Cancel the in-flight chat request — wired to the inline cancel pill. */
   onCancel: () => void;
+  /** «Ще раз» на обірваній відповіді (С-1 (а)); діє лише поза ходом. */
+  onRetry?: (text: string) => void;
 }
 
 /**
@@ -32,8 +39,10 @@ const STICK_THRESHOLD_PX = 32;
 export function HubChatBody({
   messages,
   loading,
+  step = null,
   onSpeak,
   onCancel,
+  onRetry,
 }: HubChatBodyProps) {
   const chatRef = useRef<HTMLDivElement | null>(null);
   const stickToBottomRef = useRef(true);
@@ -103,7 +112,7 @@ export function HubChatBody({
         aria-atomic="true"
         className="sr-only"
       >
-        {loading ? "Сержант відповідає…" : announcedReply}
+        {loading ? (step ?? "Сержант відповідає…") : announcedReply}
       </span>
       {/*
         AI-DANGER: розкриття «це AI» (EU AI Act ст. 50(1), чинна з 2026-08-02)
@@ -121,11 +130,16 @@ export function HubChatBody({
         {uiCopy.hub.chatEmptyAiDisclosure}
       </p>
       {messages.map((m) => (
-        <ChatMessage key={m.id} message={m} onSpeak={onSpeak} />
+        <ChatMessage
+          key={m.id}
+          message={m}
+          onSpeak={onSpeak}
+          {...(onRetry && !loading ? { onRetry } : {})}
+        />
       ))}
       {loading && (
         <div className="flex items-center gap-2">
-          <TypingIndicator />
+          <TypingIndicator label={step} />
           <Tooltip content="Скасувати (Esc)" placement="top-center">
             <button
               type="button"

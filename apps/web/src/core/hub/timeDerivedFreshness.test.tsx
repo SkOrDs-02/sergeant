@@ -151,7 +151,9 @@ it("expires a pending habit streak after missed days without a record write", ()
   };
   const { result } = renderHook(() => useStreakRecordPendingInsight(routine));
   expect(result.current).not.toBeNull();
-  resume("2026-10-20T08:00:00Z");
+  // Два дні без відмітки поспіль (10-19, 10-20): один день прощає стартова
+  // заморозка серії (рішення власника 2026-11-18), два поспіль — ніколи.
+  resume("2026-10-21T08:00:00Z");
   expect(result.current).toBeNull();
 });
 it("changes the active program's session when the day changes", () => {
@@ -164,5 +166,8 @@ it("changes the active program's session when the day changes", () => {
   const sunday = result.current.todaySession;
   resume("2026-10-19T08:00:00Z");
   expect(result.current.todaySession).not.toEqual(sunday);
-  expect(result.current.todaySession?.day).toBe(1);
+  // Без історії курсор програми (П-10) падає на розклад: слот понеділка.
+  expect(result.current.todaySession?.slot).toBe(
+    program!.schedule.findIndex((s) => s.day === 1),
+  );
 });

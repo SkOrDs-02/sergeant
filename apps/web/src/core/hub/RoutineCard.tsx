@@ -137,7 +137,7 @@ export default function RoutineCard({ period, offset }: RoutineCardProps) {
       habits: routine.habits,
       completions: routine.completions,
       // «Не зміг» виходить зі знаменника (канон §5, рішення власника
-      // 2026-11-18, METRICS_VERSION 20). Без цього поля відсоток картки
+      // 2026-11-18, METRICS_VERSION 20; П-18 (А)). Без цього поля відсоток картки
       // знову рахує заявлений пропуск провалом.
       skips: routine.skips,
     };

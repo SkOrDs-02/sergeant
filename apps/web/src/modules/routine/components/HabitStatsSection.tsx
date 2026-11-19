@@ -25,21 +25,23 @@ import type { Habit } from "../lib/types";
  * without it, this card's own loop skipped the `once`-habit exclusion
  * (`habitCountsTowardMetrics`) that the rest of the module already
  * respects, so a one-off event showed a percentage nowhere else in the
- * product does. `habitCompletionRate` doesn't accept `skips` either, so
- * part of the divergence from the hero (which does) remains until that
- * option lands here too.
+ * product does. Since 2026-11-18 it also takes `skips` and `pausedFrom`, so
+ * a «не зміг» day leaves the denominator here exactly as in the hero and the
+ * stats page (канон §5, П-18 (А)).
  */
 function completionPct(
   habit: Habit,
   completions: string[],
   todayKey: string,
   days: number,
+  skips: Record<string, HabitSkip> | undefined,
 ): number | null {
   const { scheduled, rate } = habitCompletionRate(
     habit,
     completions,
     dateKeyMinusDays(todayKey, days - 1),
     todayKey,
+    { skips, pausedFrom: todayKey },
   );
   if (scheduled === 0) return null;
   return Math.round(rate * 100);
@@ -104,16 +106,16 @@ export function HabitStatsSection({
   const totalDone = completions.length;
 
   const pct7 = useMemo(
-    () => completionPct(habit, completions, todayKey, 7),
-    [habit, completions, todayKey],
+    () => completionPct(habit, completions, todayKey, 7, skips),
+    [habit, completions, todayKey, skips],
   );
   const pct30 = useMemo(
-    () => completionPct(habit, completions, todayKey, 30),
-    [habit, completions, todayKey],
+    () => completionPct(habit, completions, todayKey, 30, skips),
+    [habit, completions, todayKey, skips],
   );
   const pct90 = useMemo(
-    () => completionPct(habit, completions, todayKey, 90),
-    [habit, completions, todayKey],
+    () => completionPct(habit, completions, todayKey, 90, skips),
+    [habit, completions, todayKey, skips],
   );
 
   return (

@@ -93,4 +93,25 @@ describe("useRestSettings", () => {
       REST_DEFAULTS.compound,
     );
   });
+  it("Фз-1: «Не гасити екран» увімкнено за замовчуванням і переживає remount після вимкнення", () => {
+    const first = renderHook(() => useRestSettings());
+    expect(first.result.current.keepScreenOn).toBe(true);
+    act(() => {
+      first.result.current.updateSetting("compound", 120);
+    });
+    act(() => {
+      first.result.current.setKeepScreenOn(false);
+    });
+    expect(first.result.current.keepScreenOn).toBe(false);
+    first.unmount();
+
+    const second = renderHook(() => useRestSettings());
+    expect(second.result.current.keepScreenOn).toBe(false);
+    // Тумблер не стирає пресети, а пресет не скидає тумблер.
+    expect(second.result.current.settings.compound).toBe(120);
+    act(() => {
+      second.result.current.updateSetting("cardio", 45);
+    });
+    expect(second.result.current.keepScreenOn).toBe(false);
+  });
 });

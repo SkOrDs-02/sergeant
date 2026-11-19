@@ -5,6 +5,7 @@ import { SectionHeading } from "@shared/components/ui/SectionHeading";
 import { Sheet } from "@shared/components/ui/Sheet";
 import { SKIP_REASON_LABELS, SKIP_REASON_OPTIONS } from "../lib/skipReasons";
 import type { HabitSkip, SkipReason } from "@sergeant/routine-domain";
+import { anchoredTodayKey } from "../lib/dayAnchor";
 import type { Habit } from "../lib/types";
 
 export interface ScheduledHabitForReport extends Habit {
@@ -18,6 +19,8 @@ export interface DayReportSheetProps {
   scheduledHabits: ScheduledHabitForReport[];
   onToggleHabit: (habitId: string, dateKey: string) => void;
   dateKey: string;
+  /** Сьогодні за годинником пристрою; без нього береться `anchoredTodayKey()`. */
+  todayKey?: string | undefined;
   /** Позначки «не зміг» за цей день: `habitId → HabitSkip`. */
   skipsForDay?: Record<string, HabitSkip> | undefined;
   onSetSkip?: ((habitId: string, reason: SkipReason) => void) | undefined;
@@ -31,6 +34,7 @@ export function DayReportSheet({
   scheduledHabits,
   onToggleHabit,
   dateKey,
+  todayKey,
   skipsForDay,
   onSetSkip,
   onClearSkip,
@@ -47,6 +51,10 @@ export function DayReportSheet({
   const missed = scheduledHabits.filter((h) => !h.completed && !skips[h.id]);
   // Знаменник підсумку — без заявлених пропусків (канон §5: «не зміг» ≠ провал).
   const counted = done.length + missed.length;
+  // Сьогодні й майбутнє ще не закінчились: невідмічене там не «пропущено», а
+  // «ще не виконано». Провалом день стає, лише коли минув.
+  const dayIsOver = dateKey < (todayKey ?? anchoredTodayKey());
+  const futureDay = dateKey > (todayKey ?? anchoredTodayKey());
 
   return (
     <Sheet
@@ -91,7 +99,7 @@ export function DayReportSheet({
       {missed.length > 0 && (
         <div>
           <SectionHeading as="p" size="lg" className="mb-3">
-            Пропущено ({missed.length})
+            {dayIsOver ? "Пропущено" : "Ще не виконано"} ({missed.length})
           </SectionHeading>
           <ul className="space-y-1.5">
             {missed.map((h) => (
@@ -99,6 +107,7 @@ export function DayReportSheet({
                 <div className="flex items-center gap-3">
                   <HabitStateButton
                     completed={false}
+                    futureDay={futureDay}
                     onClick={() => onToggleHabit(h.id, dateKey)}
                     aria-label="Відмітити як виконано"
                   />

@@ -23,6 +23,8 @@ export const RestSettingsSchema = z
       ]),
     ) as { [K in keyof typeof REST_DEFAULTS]: z.ZodOptional<z.ZodNumber> }),
     byExercise: z.record(z.string(), z.number().positive()).optional(),
+    /** Фз-1: тримати екран увімкненим під час сесії; відсутнє = увімкнено. */
+    keepScreenOn: z.boolean().optional(),
   })
   .passthrough();
 

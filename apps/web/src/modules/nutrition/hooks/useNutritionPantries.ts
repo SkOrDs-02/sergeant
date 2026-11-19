@@ -31,7 +31,6 @@ import {
   type PantryItem,
 } from "../lib/pantryTextParser";
 import {
-  applyConsumeToPantryItem,
   buildPlacedItems,
   ensureStoragePlaces,
   mergeItemsIntoPlaces,
@@ -39,7 +38,6 @@ import {
   newPantryItemId,
   DEFAULT_PLACE_ID,
   type Pantry,
-  type PantryItemSource,
   type PlacedPantryItem,
 } from "@sergeant/nutrition-domain";
 import { usePantryPlaces } from "./usePantryPlaces";
@@ -48,6 +46,7 @@ import {
   rememberAmbiguousUnitChoice,
   type AmbiguousPantryUnit,
 } from "../lib/pantryAmbiguousUnitMemory";
+import { usePantryConsumeWrite } from "./usePantryConsumeWrite";
 import {
   usePantryReplenishWrite,
   normalizeIncomingItems,
@@ -445,106 +444,14 @@ export function useNutritionPantries({
     }
   };
 
-  // Вибір варіанта при списанні (рішення 11): показується ЛИШЕ коли
-  // варіантів два і більше. Списання спрацьовує всередині збереження
-  // прийому їжі, тож зайвий діалог у швидкому сценарії дорожчий за
-  // точність — на одному варіанті нічого не питаємо.
-  const [variantChoice, setVariantChoice] = useState<{
-    itemName: string;
-    grams: number;
-    sources: readonly PantryItemSource[];
-  } | null>(null);
-
-  // AI-CONTEXT: списує gramsConsumed зі складської позиції, конвертуючи грами
-  // в її одиницю через `gramsToUnitQty` (@sergeant/nutrition-domain): г/кг —
-  // маса 1:1, мл/л — через грубу таблицю густин, шт — через вагу однієї штуки.
-  // `null` означає одиницю без масового відображення (напр. уп) — лишаємо
-  // позицію без змін. Раніше тут пропускались усі немасові одиниці; конверсія
-  // закриває inventory-drift із F15 (page-audit-08-nutrition) і коректно
-  // обробляє кейс H2 ("200 г молока" зі "2 л" ≈ 0.19 л, а не вся пляшка).
-  //
-  // Розподіл між варіантами і видалення вичерпаних живуть у домені
-  // (`applyConsumeToPantryItem`) — там же тримається інваріант суми.
-  const applyConsume = (
-    name: string,
-    gramsConsumed: number,
-    variantName: string | null,
-  ) => {
-    const norm = matchFoodName(name);
-    if (!norm) return;
-    // Списуємо там, де позиція лежить, а не там, куди дивиться екран:
-    // прийом їжі не знає й не має знати про фільтр місця.
-    const holder = pantryItems.find((x) => matchFoodName(x.name) === norm);
-    if (!holder) return;
-    const holderId = holder.pantryId;
-    let deductedQty: number | null = null;
-    let deductedUnit: string | null = null;
-    setPantries((cur) =>
-      updatePantry(cur, holderId, (p) => {
-        const items = Array.isArray(p.items) ? [...p.items] : [];
-        const idx = items.findIndex((x) => matchFoodName(x?.name) === norm);
-        if (idx < 0) return p;
-        const item = items[idx];
-        if (!item) return p;
-        const res = applyConsumeToPantryItem(item, gramsConsumed, variantName);
-        if (!res) return p;
-        deductedQty = res.deducted;
-        deductedUnit = res.unit;
-        if (res.item === null) {
-          items.splice(idx, 1);
-        } else {
-          items[idx] = res.item;
-        }
-        return { ...p, items };
-      }),
-    );
-    // W1-PANTRY-APPEND стадія 2 — audit E-2: це саме той шлях, який ADR-0077
-    // закриває. 'consume' несе РЕАЛЬНО списану дельту (`deducted` = qty до
-    // мінус qty після; при вичерпанні — сира перевитрата), а не вигадану —
-    // batch-страва все одно дасть
-    // N подій на N логів, і це навмисно ВИДИМО, а не приховано (ADR §6).
-    if (deductedQty != null) {
-      appendNutritionPantryEvent({
-        id: null,
-        pantryId: holderId,
-        itemId: holder.id ?? null,
-        itemKey: canonicalFoodKey(norm),
-        kind: "consume",
-        deltaQty: -deductedQty,
-        absQty: null,
-        unit: deductedUnit,
-        source: "meal_log",
-        mealId: null,
-      });
-    }
-  };
-
-  const consumePantryItem = (name: string, gramsConsumed: number) => {
-    const norm = matchFoodName(name);
-    if (!norm) return;
-    const target = pantryItems.find((x) => matchFoodName(x?.name) === norm);
-    const sources = Array.isArray(target?.sources) ? target.sources : [];
-    if (target && sources.length >= 2) {
-      setVariantChoice({
-        itemName: displayFoodName(target.name),
-        grams: gramsConsumed,
-        sources,
-      });
-      return;
-    }
-    applyConsume(name, gramsConsumed, null);
-  };
-
-  /**
-   * Закриває вибір варіанта. `null` = «з найстарішого» — і це ж поведінка
-   * при закритті діалогу: прийом їжі вже збережено, тож не списати нічого
-   * означало б лишити комору з завищеним залишком.
-   */
-  const resolveVariantChoice = (variantName: string | null) => {
-    if (!variantChoice) return;
-    applyConsume(variantChoice.itemName, variantChoice.grams, variantName);
-    setVariantChoice(null);
-  };
+  // Списання з комори, вибір варіанта і відкат списання (OD-27 Х-4 а) - у
+  // `usePantryConsumeWrite.ts` (Hard Rule #18).
+  const {
+    consumePantryItem,
+    variantChoice,
+    resolveVariantChoice,
+    revertConsume,
+  } = usePantryConsumeWrite({ pantryItems, setPantries });
 
   const setPantryText = (text: string) => {
     const id = draftPantry?.id ?? DEFAULT_PLACE_ID;
@@ -739,5 +646,6 @@ export function useNutritionPantries({
     consumePantryItem,
     variantChoice,
     resolveVariantChoice,
+    revertConsume,
   };
 }

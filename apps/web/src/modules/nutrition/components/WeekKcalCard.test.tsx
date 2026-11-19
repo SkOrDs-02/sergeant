@@ -96,6 +96,22 @@ describe("WeekKcalCard", () => {
     expect(screen.getByText(/3\s?000 ккал · сер\. 1\s?500\/день/)).toBeTruthy();
   });
 
+  // logic-43: запис на завтра (журнал туди пускає навмисно) — план, і
+  // тижневе середнє його не рахує, як і «Аналітика (тренди)».
+  it("не підмішує майбутній день в агрегат тижня", () => {
+    const withFuture = WEEK.map((r) =>
+      r.date === "2026-08-14" ? row(r.date, 600) : r,
+    );
+    render(
+      <WeekKcalCard
+        rows={withFuture}
+        goalsByDay={flat(2000, withFuture)}
+        todayIso={TODAY}
+      />,
+    );
+    expect(screen.getByText(/3\s?000 ккал · сер\. 1\s?500\/день/)).toBeTruthy();
+  });
+
   it("показує ккал вибраного дня і знімає вибір повторним тапом", () => {
     render(
       <WeekKcalCard

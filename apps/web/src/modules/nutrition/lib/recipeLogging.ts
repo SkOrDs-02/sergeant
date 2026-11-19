@@ -5,8 +5,13 @@
  * Скільки і яких макросів іде в журнал, коли рецепт додають як прийом їжі.
  * Окремий модуль, щоб `RecipesCard.tsx` лишався під 600 рядків (Hard Rule #18).
  */
-import type { MealMacroSource } from "@sergeant/nutrition-domain";
+import type {
+  Meal,
+  MealMacroSource,
+  MealTypeId,
+} from "@sergeant/nutrition-domain";
 import {
+  MEAL_TYPES,
   computeRecipePer100,
   type RecipeComponent,
 } from "@sergeant/nutrition-domain";
@@ -82,5 +87,34 @@ export function buildRecipeLogEntry(
         ? Math.round((cooked / servings) * factor * 10) / 10
         : null,
     macroSource,
+  };
+}
+
+/**
+ * Рядок журналу з рецепта. Один будівельник для «Моїх рецептів» у Меню і
+ * для рецепта у формі прийому (OD-27 Х-3 в), щоб два входи писали одне й те
+ * саме: назва рецепта, КБЖВ і вага з `buildRecipeLogEntry`, без `foodId`.
+ */
+export function recipeMeal(
+  title: string | null | undefined,
+  entry: RecipeLogEntry,
+  at: { id: string; mealType: MealTypeId; time: string },
+): Meal {
+  return {
+    id: at.id,
+    time: at.time,
+    mealType: at.mealType,
+    label: MEAL_TYPES.find((x) => x.id === at.mealType)?.label || "Прийом їжі",
+    name: title || "Рецепт",
+    macros: {
+      kcal: entry.macros.kcal ?? null,
+      protein_g: entry.macros.protein_g ?? null,
+      fat_g: entry.macros.fat_g ?? null,
+      carbs_g: entry.macros.carbs_g ?? null,
+    },
+    source: "manual",
+    macroSource: entry.macroSource,
+    foodId: null,
+    amount_g: entry.amount_g,
   };
 }

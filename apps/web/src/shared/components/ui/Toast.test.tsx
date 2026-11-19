@@ -12,6 +12,7 @@ import { showUndoToast } from "@shared/lib/ui/undoToast";
 import { ToastContainer } from "./Toast";
 import { ScreenReaderAnnouncerProvider } from "./ScreenReaderAnnouncer";
 import { Sheet } from "./Sheet";
+import { CornerAction } from "./CornerAction";
 
 /**
  * Тестова обгортка — рендерить `<ToastContainer>` всередині `<ToastProvider>`
@@ -525,6 +526,34 @@ describe("Toast — трей над футером відкритого арку
     });
     expect(root.style.getPropertyValue("--sgt-toast-inset")).toBe("");
     vi.useRealTimers();
+  });
+
+  it("піднімається над кутовою кнопкою: читає --sgt-fab-inset в тому ж max(), що й футер аркуша", () => {
+    // Рішення власника 2026-11-18: тост накривав «Додати» в куті на кілька
+    // секунд. Кнопка публікує свою виміряну смугу, трей бере її в `max()`
+    // разом із навом і футером аркуша — не сумою, бо смуга кнопки вже
+    // включає нав (і safe-area всередині нього).
+    const root = document.documentElement;
+    render(
+      <ToastProvider>
+        <CornerAction label="Додати" plus onClick={() => {}} />
+        <ToastContainer />
+      </ToastProvider>,
+    );
+    const tray = screen.getByTestId("toast-tray");
+    expect(root.style.getPropertyValue("--sgt-fab-inset")).toMatch(/^\d+px$/);
+    const bottom = tray.style.bottom;
+    expect(bottom).toMatch(/^calc\(max\(/);
+    const maxArgs = bottom.slice(
+      bottom.indexOf("max(") + 4,
+      bottom.lastIndexOf(") +"),
+    );
+    // Одна `max()`: нічого не складається двічі.
+    expect(maxArgs).not.toContain("+");
+    expect(maxArgs).toContain("var(--sgt-fab-inset, 0px)");
+    expect(maxArgs).toContain("var(--sgt-sheet-footer-inset, 0px)");
+    expect(maxArgs).toContain("var(--sgt-bottom-nav-inset, 0px)");
+    expect(maxArgs).toContain("env(safe-area-inset-bottom, 0px)");
   });
 
   it("стоїть на токен-тірі z-toast, а не поза шкалою", () => {

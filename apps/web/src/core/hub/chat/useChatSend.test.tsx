@@ -35,7 +35,7 @@ vi.mock("@shared/api", async () => {
     await vi.importActual<typeof import("@shared/api")>("@shared/api");
   return {
     ...actual,
-    chatApi: { send: sendMock, stream: streamMock },
+    chatApi: { send: sendMock, firstTurn: sendMock, stream: streamMock },
   };
 });
 
@@ -190,6 +190,140 @@ describe("useChatSend (audit 03 F22 — SSE + tool-calls)", () => {
     }>;
     expect(dispatched[0]!.name).toBe("log_water");
     expect(streamMock).toHaveBeenCalledTimes(1);
+  });
+
+  // AI-5 рішення 1: хід з інструментом коштує ОДНУ одиницю квоти лише тоді,
+  // коли тур синтезу повертає квиток першого туру. Без нього сервер списує
+  // другу одиницю (`aiQuota.ts::tryConsumeRoundTripTicket`), а трейс ходу в
+  // PostHog розпадається на два (`chat.ts`, `toolTraceId`).
+  it("повертає round_trip_ticket першого туру в запиті синтезу", async () => {
+    sendMock.mockResolvedValue({
+      tool_calls: [{ id: "tc1", name: "log_water", input: { amount_ml: 250 } }],
+      tool_calls_raw: [{ type: "tool_use", id: "tc1" }],
+      round_trip_ticket: "4b0c5d2e-1f3a-4c6b-9d8e-7a6b5c4d3e2f",
+    });
+    executeActionsMock.mockResolvedValue([
+      { name: "log_water", result: "Записав 250 мл води" },
+    ]);
+    streamMock.mockResolvedValue(
+      new Response(JSON.stringify({ text: "Готово!" }), {
+        status: 200,
+        headers: { "content-type": "application/json" },
+      }),
+    );
+
+    const { result } = renderSend();
+    await act(async () => {
+      await result.current.send("випив 250 мл води");
+    });
+
+    await waitFor(() => expect(streamMock).toHaveBeenCalledTimes(1));
+    const payload = streamMock.mock.calls[0]![0] as {
+      round_trip_ticket?: string;
+    };
+    expect(payload.round_trip_ticket).toBe(
+      "4b0c5d2e-1f3a-4c6b-9d8e-7a6b5c4d3e2f",
+    );
+  });
+
+  // С-2 (а): «знайди, потім зміни ту» наступним повідомленням.
+  it("запамʼятовує id знайденої операції на репліці асистента", async () => {
+    const captured: ChatMessage[][] = [];
+    const setMessages = vi.fn((updater: unknown) => {
+      if (typeof updater === "function") {
+        const prev = captured.at(-1) ?? [];
+        captured.push((updater as (m: ChatMessage[]) => ChatMessage[])(prev));
+      }
+    });
+    sendMock.mockResolvedValue({
+      tool_calls: [
+        { id: "tc1", name: "find_transaction", input: { query: "Сільпо" } },
+      ],
+      tool_calls_raw: [{ type: "tool_use", id: "tc1" }],
+    });
+    const found =
+      "Знайдено 1 операц.: m_7c40: 2026-11-17 · 412 грн · Сільпо · Продукти";
+    executeActionsMock.mockResolvedValue([
+      { name: "find_transaction", result: found, ok: true },
+    ]);
+    streamMock.mockResolvedValue(
+      new Response(JSON.stringify({ text: "Знайшов покупку в Сільпо." }), {
+        status: 200,
+        headers: { "content-type": "application/json" },
+      }),
+    );
+
+    const { result } = renderHook(
+      () => useChatSend({ messages: [], setMessages }),
+      { wrapper: makeWrapper() },
+    );
+    await act(async () => {
+      await result.current.send("знайди Сільпо");
+    });
+
+    const reply = captured
+      .flat()
+      .find((m) => m.role === "assistant" && m.toolRefs);
+    expect(reply?.toolRefs).toBe(`- find_transaction: ${found}`);
+  });
+
+  it("наступне повідомлення несе id з останньої відповіді в блоці ДАНІ", async () => {
+    sendMock.mockResolvedValue({ text: "Ок." });
+    const { result } = renderSend([
+      { id: "u1", role: "user", text: "знайди Сільпо" },
+      {
+        id: "a1",
+        role: "assistant",
+        text: "Знайшов покупку в Сільпо.",
+        toolRefs: "- find_transaction: Знайдено 1 операц.: m_7c40: 2026-11-17",
+      },
+    ]);
+    await act(async () => {
+      await result.current.send("перенеси її в Кафе");
+    });
+
+    const payload = sendMock.mock.calls[0]![0] as { context: string };
+    expect(payload.context).toBe(
+      "ctx\n\n[Записи з попередньої відповіді]\n- find_transaction: Знайдено 1 операц.: m_7c40: 2026-11-17",
+    );
+  });
+
+  it("без tool-ходу перед повідомленням контекст без блоку записів", async () => {
+    sendMock.mockResolvedValue({ text: "Ок." });
+    const { result } = renderSend([
+      { id: "u1", role: "user", text: "привіт" },
+      { id: "a1", role: "assistant", text: "Привіт!" },
+    ]);
+    await act(async () => {
+      await result.current.send("як справи");
+    });
+    const payload = sendMock.mock.calls[0]![0] as { context: string };
+    expect(payload.context).toBe("ctx");
+  });
+
+  it("без квитка в першому турі поле в синтезі відсутнє, а не порожнє", async () => {
+    sendMock.mockResolvedValue({
+      tool_calls: [{ id: "tc1", name: "log_water", input: { amount_ml: 250 } }],
+      tool_calls_raw: [{ type: "tool_use", id: "tc1" }],
+    });
+    executeActionsMock.mockResolvedValue([
+      { name: "log_water", result: "Записав 250 мл води" },
+    ]);
+    streamMock.mockResolvedValue(
+      new Response(JSON.stringify({ text: "Готово!" }), {
+        status: 200,
+        headers: { "content-type": "application/json" },
+      }),
+    );
+
+    const { result } = renderSend();
+    await act(async () => {
+      await result.current.send("випив 250 мл води");
+    });
+
+    await waitFor(() => expect(streamMock).toHaveBeenCalledTimes(1));
+    const payload = streamMock.mock.calls[0]![0] as Record<string, unknown>;
+    expect("round_trip_ticket" in payload).toBe(false);
   });
 
   it("rejects a malformed tool call (unknown name) and never mutates", async () => {

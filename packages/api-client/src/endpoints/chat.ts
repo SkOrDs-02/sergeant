@@ -1,8 +1,40 @@
-import { ChatUsageResponseSchema } from "@sergeant/shared";
-import type { ChatPreset, ChatUsageResponse } from "@sergeant/shared";
+import {
+  ChatStreamFrameSchema,
+  ChatUsageResponseSchema,
+} from "@sergeant/shared";
+import type {
+  ChatFirstTurnResponse,
+  ChatPreset,
+  ChatStreamFrame,
+  ChatUsageResponse,
+} from "@sergeant/shared";
+import { ApiError } from "../ApiError";
 import type { HttpClient } from "../httpClient";
 
-export type { ChatPreset, ChatUsageResponse };
+export type {
+  ChatFirstTurnResponse,
+  ChatPreset,
+  ChatStreamFrame,
+  ChatUsageResponse,
+};
+
+/**
+ * Розбирає payload одного рядка `data:` SSE `/api/chat` (без префікса).
+ * `null` — кінець потоку (`[DONE]`), битий JSON або кадр невідомої форми:
+ * новий сервер може додати кадр, і старий клієнт має його пропустити, а не
+ * впасти. Форма кадрів — `ChatStreamFrameSchema` (`@sergeant/shared`).
+ */
+export function parseChatStreamFrame(raw: string): ChatStreamFrame | null {
+  if (raw === "[DONE]") return null;
+  let json: unknown;
+  try {
+    json = JSON.parse(raw);
+  } catch {
+    return null;
+  }
+  const parsed = ChatStreamFrameSchema.safeParse(json);
+  return parsed.success ? parsed.data : null;
+}
 
 export interface ChatMessage {
   role: "user" | "assistant" | string;
@@ -14,6 +46,12 @@ export interface ChatRequestPayload {
   messages: ChatMessage[];
   tool_results?: unknown;
   tool_calls_raw?: unknown;
+  /**
+   * `true` — відповідь SSE (`text/event-stream`, кадри `ChatStreamFrame`).
+   * Перший хід стрімить сервер із 2026-11-18 (кадри `t` / `tool` / `final` /
+   * `err`); старий сервер на перший хід відповідає JSON, тож клієнт мусить
+   * дивитись на `content-type`, а не на прапорець. Тур синтезу: `t` / `err`.
+   */
   stream?: boolean;
   /**
    * Сценарний режим розмови. Ідентифікатор із `CHAT_PRESETS`; текст
@@ -51,6 +89,118 @@ export interface ChatCallOpts {
   signal?: AbortSignal;
 }
 
+/** Колбеки стріму першого ходу (С-1 (а)). */
+export interface ChatFirstTurnOpts extends ChatCallOpts {
+  /** Шматок тексту, який модель пише просто зараз. */
+  onText?: (delta: string) => void;
+  /** Модель почала виклик інструмента: ранній підпис кроку. */
+  onTool?: (name: string) => void;
+}
+
+/**
+ * Збій стрімового першого ходу ПІСЛЯ того, як потік відкрито: кадр `err` від
+ * сервера або обрив без кадру `final`. `code` — стабільний код сервера
+ * (`MAX_TOOL_ITERATIONS`), якщо він був.
+ */
+export class ChatStreamError extends Error {
+  readonly code: string | undefined;
+  constructor(message: string, code?: string) {
+    super(message);
+    this.name = "ChatStreamError";
+    this.code = code;
+  }
+}
+
+/** Текст обриву без кадру `final` (`ChatStreamError.message`). */
+export const CHAT_STREAM_INTERRUPTED = "Відповідь обірвалась";
+
+/**
+ * Стеля байтів потоку першого ходу. Кадр `final` несе `tool_calls_raw` з
+ * результатами пошуку інструментів, тож стеля ширша за текстовий стрім.
+ */
+const FIRST_TURN_MAX_BYTES = 1024 * 1024;
+
+async function readFirstTurnSse(
+  res: Response,
+  opts: ChatFirstTurnOpts,
+): Promise<ChatResponse> {
+  const reader = res.body?.getReader();
+  if (!reader) throw new ChatStreamError(CHAT_STREAM_INTERRUPTED);
+  const dec = new TextDecoder();
+  let buf = "";
+  let total = 0;
+  for (;;) {
+    const { done, value } = await reader.read();
+    if (done) break;
+    total += value?.byteLength ?? 0;
+    if (total > FIRST_TURN_MAX_BYTES) {
+      await reader.cancel().catch(() => {});
+      throw new ChatStreamError(CHAT_STREAM_INTERRUPTED);
+    }
+    buf += dec.decode(value, { stream: true });
+    for (;;) {
+      const nl = buf.indexOf("\n");
+      if (nl === -1) break;
+      const line = buf.slice(0, nl).replace(/\r$/, "");
+      buf = buf.slice(nl + 1);
+      if (!line.startsWith("data: ")) continue;
+      const frame = parseChatStreamFrame(line.slice(6).trim());
+      if (!frame) continue;
+      if ("t" in frame) opts.onText?.(frame.t);
+      else if ("tool" in frame) opts.onTool?.(frame.tool);
+      else if ("err" in frame) throw new ChatStreamError(frame.err, frame.code);
+      else {
+        await reader.cancel().catch(() => {});
+        return frame.final as ChatResponse;
+      }
+    }
+  }
+  throw new ChatStreamError(CHAT_STREAM_INTERRUPTED);
+}
+
+/**
+ * Відповідь без SSE: старий сервер (до 2026-11-18 перший хід завжди JSON) або
+ * помилка до відкриття потоку. Помилки — у тій самій формі, що `send()`.
+ */
+async function readFirstTurnJson(res: Response): Promise<ChatResponse> {
+  const bodyText = await res.text();
+  let body: unknown;
+  let parseFailed = false;
+  try {
+    body = bodyText ? JSON.parse(bodyText) : {};
+  } catch {
+    parseFailed = true;
+    body = undefined;
+  }
+  if (!res.ok) {
+    const serverMessage =
+      body && typeof body === "object"
+        ? (body as { error?: unknown }).error
+        : undefined;
+    throw new ApiError({
+      kind: "http",
+      message:
+        typeof serverMessage === "string" && serverMessage.length > 0
+          ? serverMessage
+          : `HTTP ${res.status}`,
+      status: res.status,
+      body,
+      bodyText,
+      url: res.url,
+      requestId: res.headers.get("x-request-id") || undefined,
+    });
+  }
+  if (parseFailed) {
+    throw new ApiError({
+      kind: "parse",
+      message: "Некоректна відповідь сервера",
+      url: res.url,
+      bodyText,
+    });
+  }
+  return body as ChatResponse;
+}
+
 export interface ChatEndpoints {
   send: (
     payload: ChatRequestPayload,
@@ -60,6 +210,16 @@ export interface ChatEndpoints {
     payload: ChatRequestPayload,
     opts?: ChatCallOpts,
   ) => Promise<Response>;
+  /**
+   * Перший хід зі стрімом (С-1 (а)): просить `stream: true`, віддає текст і
+   * кроки колбеками і повертає зібрану відповідь у формі `send()`. Старий
+   * сервер відповідає JSON — тоді колбеків немає, а результат той самий.
+   * Збій після відкриття потоку — `ChatStreamError`.
+   */
+  firstTurn: (
+    payload: ChatRequestPayload,
+    opts?: ChatFirstTurnOpts,
+  ) => Promise<ChatResponse>;
   /** GET /api/chat/usage — Free-tier daily counter (PR-42 chat counter). */
   usage: (opts?: ChatCallOpts) => Promise<ChatUsageResponse>;
 }
@@ -74,6 +234,17 @@ export function createChatEndpoints(http: HttpClient): ChatEndpoints {
         body: payload,
         signal: opts.signal,
       }),
+    firstTurn: async (payload, opts = {}) => {
+      const res = await http.raw("/api/chat", {
+        method: "POST",
+        body: { ...payload, stream: true },
+        signal: opts.signal,
+      });
+      const ct = res.headers.get("content-type") || "";
+      return res.ok && ct.includes("text/event-stream")
+        ? readFirstTurnSse(res, opts)
+        : readFirstTurnJson(res);
+    },
     usage: async (opts = {}) => {
       const raw = await http.get<unknown>("/api/chat/usage", {
         signal: opts.signal,

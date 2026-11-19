@@ -411,7 +411,11 @@ export function PricingPage() {
               // хаба: stone-800 у світлій темі, інвертована світла плитка з
               // темним чорнилом у «Чорнилі». Same JSX block serves both
               // tiers, so ink tone must branch on `isPremium`.
-              const inkTone = "text-hero-ink dark:text-brand-900";
+              // Світла тема: картка лишається темною (`bg-brand-strong`), тож
+              // текст на ній `text-white`, як на інших `-strong` заливках.
+              // `text-hero-ink` тут не годиться: він = `--c-text`, темне
+              // чорнило сторінки, і давав темне на темному.
+              const inkTone = "text-white dark:text-brand-900";
               const headingTone = isPremium ? inkTone : "text-text";
               // Чорнило без альфи (A9, рішення власника 2026-10-01): на
               // Premium-картці приглушені рівні `muted`/`subtle` раніше були
@@ -459,16 +463,16 @@ export function PricingPage() {
                         <Badge
                           data-testid="current-plan-badge"
                           variant={isPremium ? "neutral" : "accent"}
-                          // Hero-картка: outline, а не заливка. Вимірювання
-                          // на світлому кінці градієнта (teal-700): чистий
-                          // `text-hero-ink` дає 5.22:1, а вже 15 % ink-washу
+                          // Ink-картка: outline, а не заливка. Вимірювання
+                          // на світлому кінці градієнта (teal-700): чисте
+                          // чорнило дає 5.22:1, а вже 15 % ink-washу
                           // під ним — 3.93:1, тобто нижче AA для 12px-копії.
                           tone={isPremium ? "outline" : "soft"}
                           size="sm"
                           className={cn(
                             "shrink-0",
                             isPremium &&
-                              "text-hero-ink border-hero-ink/40 dark:text-brand-900 dark:border-brand-900/40",
+                              "text-white border-white/40 dark:text-brand-900 dark:border-brand-900/40",
                           )}
                         >
                           {t.cta.currentPlan}

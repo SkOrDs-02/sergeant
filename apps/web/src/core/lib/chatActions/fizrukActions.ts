@@ -1,6 +1,5 @@
 import { calculate1rm } from "./fizrukActions/calculator";
 import { logMeasurement } from "./fizrukActions/measurements";
-import { addProgramDay } from "./fizrukActions/programs";
 import {
   compareProgress,
   suggestWorkout,
@@ -52,8 +51,6 @@ export function handleFizrukAction(
       return finishWorkout(action as FinishWorkoutAction);
     case "log_measurement":
       return logMeasurement(action as LogMeasurementAction);
-    case "add_program_day":
-      return addProgramDay();
     case "log_wellbeing":
       return logWellbeing(action as LogWellbeingAction);
     case "suggest_workout":

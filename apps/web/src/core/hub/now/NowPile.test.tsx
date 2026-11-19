@@ -42,7 +42,11 @@ function item(over: Partial<NowItem> & { id: string }): NowItem {
   };
 }
 
-function renderPile(items: NowItem[], onOpenTarget = vi.fn()) {
+function renderPile(
+  items: NowItem[],
+  onOpenTarget = vi.fn(),
+  onCheckHabit?: (habitId: string) => void,
+) {
   const now: UseNowItemsResult = {
     items,
     check: mocks.check,
@@ -51,7 +55,11 @@ function renderPile(items: NowItem[], onOpenTarget = vi.fn()) {
   };
   render(
     <MemoryRouter>
-      <NowPile now={now} onOpenTarget={onOpenTarget} />
+      <NowPile
+        now={now}
+        onOpenTarget={onOpenTarget}
+        onCheckHabit={onCheckHabit}
+      />
     </MemoryRouter>,
   );
   return onOpenTarget;
@@ -151,13 +159,80 @@ describe("NowPile", () => {
 
     fireEvent.click(toggle);
     expect(screen.getAllByTestId("now-row")).toHaveLength(5);
-    const collapse = screen.getByRole("button", { name: "ще 2" });
+    // Розгорнутий хвіст уже нічого не ховає: «ще N» зникає, доступне імʼя
+    // «Згорнути», видимий стан — шеврон (знахідка зйомки 2026-11-18: «ще 1»
+    // після розгортання; видимий текст стану забороняє UI-канон).
+    const collapse = screen.getByRole("button", { name: "Згорнути" });
     expect(collapse).toBe(toggle);
-    expect(screen.queryByText("Згорнути")).toBeNull();
     expect(collapse).toHaveAttribute("aria-expanded", "true");
+    expect(collapse.textContent).not.toMatch(/ще/);
+    expect(screen.queryByText("Згорнути")).toBeNull();
 
     fireEvent.click(collapse);
     expect(screen.getAllByTestId("now-row")).toHaveLength(3);
+    expect(screen.getByRole("button", { name: "ще 2" })).toBe(toggle);
+  });
+
+  it("рядок «ще N звичок» іде разом зі своїми звичками, лічильник рахує справи", () => {
+    const habit = (id: string, title: string) =>
+      item({
+        id: `routine_habit_now_${id}`,
+        title,
+        module: "routine",
+        priority: 65,
+        action: { kind: "open_module", module: "routine" },
+        checkbox: { kind: "habit", habitId: id },
+      });
+    const more = item({
+      id: "routine_habits_now_more",
+      title: "Ще 2 звички на сьогодні",
+      module: "routine",
+      priority: 65,
+      action: { kind: "open_module", module: "routine" },
+      checkbox: { kind: "none" },
+      represents: 2,
+    });
+    // Кадр `hub-now-habits-0.png`: їжа + дві звички заповнюють трійку.
+    renderPile([
+      item({ id: "food", priority: 70 }),
+      habit("h1", "Вода"),
+      habit("h2", "Прогулянка"),
+      more,
+    ]);
+    const rows = screen.getAllByTestId("now-row");
+    expect(rows.map((r) => r.textContent)).toEqual([
+      expect.stringContaining("title food"),
+      expect.stringContaining("Вода"),
+      expect.stringContaining("Прогулянка"),
+      expect.stringContaining("Ще 2 звички на сьогодні"),
+    ]);
+    // Нічого не сховано — перемикача немає.
+    expect(screen.queryByRole("button", { name: /^ще / })).toBeNull();
+  });
+
+  it("звички поза трійкою ховаються разом із рядком «ще N», і «ще» рахує справи", () => {
+    renderPile([
+      item({ id: "a", priority: 90 }),
+      item({ id: "b", priority: 80 }),
+      item({ id: "c", priority: 70 }),
+      item({
+        id: "routine_habit_now_h1",
+        title: "Вода",
+        priority: 65,
+        checkbox: { kind: "habit", habitId: "h1" },
+      }),
+      item({
+        id: "routine_habits_now_more",
+        title: "Ще 2 звички на сьогодні",
+        priority: 65,
+        checkbox: { kind: "none" },
+        represents: 2,
+      }),
+    ]);
+    expect(screen.getAllByTestId("now-row")).toHaveLength(3);
+    expect(screen.queryByText("Ще 2 звички на сьогодні")).toBeNull();
+    // Сховано звичку «Вода» і ще дві: три справи.
+    expect(screen.getByRole("button", { name: "ще 3" })).toBeInTheDocument();
   });
 
   it("без хвоста перемикача немає", () => {
@@ -267,5 +342,64 @@ describe("ChecklistNowRows", () => {
     expect(within(row).getByText("Переглянути аналітику")).toBeTruthy();
     expect(row.querySelector('[class*="border-2"]')).toBeNull();
     expect(within(row).queryByRole("checkbox")).toBeNull();
+  });
+});
+
+describe("рядки звичок (Р-2 (а), П-16 (А))", () => {
+  beforeEach(() => {
+    for (const m of Object.values(mocks)) m.mockClear();
+  });
+
+  it("чекбокс звички відмічає її, а не закриває на сьогодні; доступні імена різні", () => {
+    const onCheckHabit = vi.fn();
+    renderPile(
+      [
+        item({
+          id: "routine_habit_now_h1",
+          title: "Вода",
+          module: "routine",
+          action: { kind: "open_module", module: "routine" },
+          checkbox: { kind: "habit", habitId: "h1" },
+        }),
+        item({ id: "a" }),
+      ],
+      vi.fn(),
+      onCheckHabit,
+    );
+    fireEvent.click(
+      screen.getByRole("checkbox", { name: "Відмітити звичку: Вода" }),
+    );
+    expect(onCheckHabit).toHaveBeenCalledWith("h1");
+    expect(mocks.check).not.toHaveBeenCalled();
+    expect(
+      screen.getByRole("checkbox", { name: "Закрити на сьогодні: title a" }),
+    ).toBeInTheDocument();
+  });
+
+  it("рядок «ще N звичок» без чекбокса, веде в Рутину; лічильник рахує N", () => {
+    const onOpenTarget = vi.fn();
+    renderPile(
+      [
+        item({
+          id: "routine_habits_now_more",
+          title: "Ще 3 звички на сьогодні",
+          module: "routine",
+          action: { kind: "open_module", module: "routine" },
+          checkbox: { kind: "none" },
+          represents: 3,
+        }),
+      ],
+      onOpenTarget,
+    );
+    const row = screen.getByTestId("now-row");
+    expect(within(row).queryByRole("checkbox")).toBeNull();
+    fireEvent.click(
+      within(row).getByRole("button", {
+        name: "Відкрити Рутину: Ще 3 звички на сьогодні",
+      }),
+    );
+    expect(onOpenTarget).toHaveBeenCalledWith("routine", undefined);
+    // Лічильник «зараз N» рахує справи, а не рядки.
+    expect(screen.getByText("3", { selector: "span" })).toBeInTheDocument();
   });
 });

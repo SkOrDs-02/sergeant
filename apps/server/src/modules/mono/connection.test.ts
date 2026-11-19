@@ -86,6 +86,7 @@ interface TestResBody {
   webhookActive?: boolean;
   lastEventAt?: string | null;
   lastBackfillAt?: string | null;
+  connectedAt?: string | null;
   upstream?: string;
 }
 
@@ -569,6 +570,42 @@ describe("syncStateHandler", () => {
     expect(res.body.lastEventAt).toBe("2026-04-25T12:00:00.000Z");
     expect(res.body.lastBackfillAt).toBe("2026-04-26T08:30:00.000Z");
     expect(res.body.accountsCount).toBe(5);
+  });
+
+  // Картка хаба «Три факти з історії банку» рахує тиждень від підключення.
+  // Мітка жила лише в localStorage пристрою, що підключав, тож ноутбук
+  // після телефона картки не бачив. `created_at` рядка upsert у `connect`
+  // не чіпає, а `disconnect` видаляє рядок: це момент поточного підключення.
+  it("віддає connectedAt з created_at рядка підключення", async () => {
+    dbQuery.mockResolvedValueOnce({
+      rows: [
+        {
+          status: "active",
+          webhook_registered_at: new Date("2026-04-25T10:00:00Z"),
+          last_event_at: null,
+          last_backfill_at: null,
+          created_at: new Date("2026-04-20T07:15:00Z"),
+        },
+      ],
+    });
+    dbQuery.mockResolvedValueOnce({ rows: [{ count: "1" }] });
+
+    const req = { method: "GET", user: { id: "user_1" } } as unknown as Request;
+    const res = makeRes();
+    await syncStateHandler(req, res);
+
+    expect(res.body.connectedAt).toBe("2026-04-20T07:15:00.000Z");
+    expect(String(dbQuery.mock.calls[0]![0])).toContain("created_at");
+  });
+
+  it("connectedAt = null, коли підключення немає", async () => {
+    dbQuery.mockResolvedValueOnce({ rows: [] });
+
+    const req = { method: "GET", user: { id: "user_1" } } as unknown as Request;
+    const res = makeRes();
+    await syncStateHandler(req, res);
+
+    expect(res.body.connectedAt).toBeNull();
   });
 });
 

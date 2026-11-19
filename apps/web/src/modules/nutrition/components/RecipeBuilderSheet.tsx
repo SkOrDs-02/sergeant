@@ -216,40 +216,54 @@ export function RecipeBuilderSheet({
       {rows.length > 0 && (
         <ul className="mb-3 divide-y divide-line border-y border-line">
           {rows.map((r, i) => (
-            <li key={r.key} className="flex items-center gap-2 py-2">
-              <span className="min-w-0 flex-1 text-style-body text-text wrap-break-word">
+            // `Input` має обгортку `w-full`: без власної фіксованої обгортки
+            // поле забирало весь рядок, і назва стискалась до стовпчика літер
+            // (зйомка 2026-11-18). Назва тримає 8rem і переноситься словами;
+            // коли разом із грамами не влазить (320px, 200% тексту), група
+            // «грами · Прибрати» переходить на свій рядок, а на 200% тексту
+            // і «Прибрати» стає під поле, не виїжджаючи за край.
+            <li
+              key={r.key}
+              className="flex flex-wrap items-center gap-x-2 gap-y-1 py-2"
+            >
+              <span className="min-w-0 flex-1 basis-32 text-style-body text-text wrap-break-word">
                 {r.name}
               </span>
-              <Input
-                value={r.gramsRaw}
-                onChange={(e) =>
-                  setRows((rs) =>
-                    rs.map((x) =>
-                      x.key === r.key ? { ...x, gramsRaw: e.target.value } : x,
-                    ),
-                  )
-                }
-                inputMode="decimal"
-                aria-label={`${t.gramsAriaPrefix} ${r.name}`}
-                className="w-24"
-                maxLength={7}
-                showCharCount={false}
-                error={rowGrams[i] == null}
-              />
-              <span className="text-style-caption text-muted">
-                {t.gramUnit}
-              </span>
-              <Button
-                type="button"
-                variant="text"
-                size="sm"
-                aria-label={`${t.removeAriaPrefix} ${r.name}`}
-                onClick={() =>
-                  setRows((rs) => rs.filter((x) => x.key !== r.key))
-                }
-              >
-                {t.remove}
-              </Button>
+              <div className="ml-auto flex max-w-full flex-wrap items-center justify-end gap-2">
+                <div className="w-24 shrink-0">
+                  <Input
+                    value={r.gramsRaw}
+                    onChange={(e) =>
+                      setRows((rs) =>
+                        rs.map((x) =>
+                          x.key === r.key
+                            ? { ...x, gramsRaw: e.target.value }
+                            : x,
+                        ),
+                      )
+                    }
+                    inputMode="decimal"
+                    aria-label={`${t.gramsAriaPrefix} ${r.name}`}
+                    maxLength={7}
+                    showCharCount={false}
+                    error={rowGrams[i] == null}
+                  />
+                </div>
+                <span className="text-style-caption text-muted">
+                  {t.gramUnit}
+                </span>
+                <Button
+                  type="button"
+                  variant="text"
+                  size="sm"
+                  aria-label={`${t.removeAriaPrefix} ${r.name}`}
+                  onClick={() =>
+                    setRows((rs) => rs.filter((x) => x.key !== r.key))
+                  }
+                >
+                  {t.remove}
+                </Button>
+              </div>
             </li>
           ))}
         </ul>

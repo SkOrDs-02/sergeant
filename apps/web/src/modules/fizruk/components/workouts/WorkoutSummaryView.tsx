@@ -45,16 +45,18 @@ import {
   summarizeWorkoutForFinish,
 } from "@sergeant/fizruk-domain";
 import {
+  computeWorkoutDoneItemCount,
   computeWorkoutSetCount,
   computeWorkoutTonnageKg,
+  isSetCompleted,
   type Workout,
   type WorkoutItem,
 } from "@sergeant/fizruk-domain/domain";
 import { messages } from "@shared/i18n/uk";
 import { WorkoutStatTile } from "./WorkoutStatTile";
 import { fmtLoose } from "../../lib/numberFmt";
+import { formatMeasureSets } from "../../lib/measureFormat";
 import { WorkoutMomentLine } from "./WorkoutMomentLine";
-import { isSetDone } from "./WorkoutSetRow";
 import { WorkoutSummaryTimeEditor } from "./WorkoutSummaryTimeEditor";
 
 export interface WorkoutSummaryViewProps {
@@ -78,11 +80,16 @@ export interface WorkoutSummaryViewProps {
 
 /** One-line "what happened" caption for a single exercise entry. */
 function formatItemDetail(item: WorkoutItem, rpeLabel: string): string {
+  // Підходи на час, дистанцію чи лише повтори: «3 × 30 с», «3 × 400 м»
+  // (спека типу виміру). Вага × повтори і старі записи — нижче.
+  const measured = formatMeasureSets(item);
+  if (measured !== null) return measured;
   if (item.type === "strength") {
     // Порожній рядок, який сесія створює сама, не результат: без цього
     // фільтра пропущена вправа друкувалась як «0×0», хоча плитка
     // «Підходів» його вже не рахує.
-    const sets = (item.sets || []).filter(isSetDone);
+    // Той самий предикат, що й плитка «Підходів» (`computeWorkoutSetCount`).
+    const sets = (item.sets || []).filter((s) => isSetCompleted(s, item));
     if (sets.length === 0) return "—";
     return sets
       .map((s) => {
@@ -115,6 +122,7 @@ export function WorkoutSummaryView({
   const setCount = computeWorkoutSetCount(workout);
   const tonnageKg = computeWorkoutTonnageKg(workout);
   const items = workout.items || [];
+  const doneItems = computeWorkoutDoneItemCount(workout);
   const wellbeing = workout.wellbeing;
   const hasWellbeing = Boolean(
     wellbeing && (wellbeing.energy != null || wellbeing.mood != null),
@@ -147,11 +155,9 @@ export function WorkoutSummaryView({
         <h1 className="text-style-title text-text">{copy.title}</h1>
         <div className="text-style-caption text-subtle mt-0.5">
           {formatDateTimeShort(new Date(workout.startedAt))}
-          {summary ? (
-            <span className="ml-2">
-              · {formatDurShort(summary.durationSec)}
-            </span>
-          ) : null}
+          {/* Один « · » без відступу: `ml-2` разом із пробілом давав
+              подвійний проміжок «19:40  · 10 с» (зйомка 2026-11-18). */}
+          {summary ? ` · ${formatDurShort(summary.durationSec)}` : null}
         </div>
         <WorkoutMomentLine workoutId={workout.id} />
         {onUpdateTimes ? (
@@ -165,7 +171,15 @@ export function WorkoutSummaryView({
         <div className="grid grid-cols-3 gap-2 mt-4">
           <WorkoutStatTile
             label={copy.itemsLabel}
-            value={items.length}
+            value={
+              // «Вправ 1 з 6», коли зроблено не всі; одне число, коли всі
+              // (рішення founder-а 2026-11-18). Лише підпис підсумку.
+              doneItems < items.length
+                ? copy.itemsDoneOf
+                    .replace("{done}", String(doneItems))
+                    .replace("{total}", String(items.length))
+                : items.length
+            }
             size="lg"
           />
           <WorkoutStatTile label={copy.setsLabel} value={setCount} size="lg" />

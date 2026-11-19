@@ -64,6 +64,18 @@ describe("useNutritionQuickChips", () => {
     expect(chip.source).toBe("recent-meal");
   });
 
+  it("несе звʼязок із продуктом і походження КБЖВ останнього запису", () => {
+    const log = mkLog(1, [{ name: "Йогурт", kcal: 150, amount_g: 150 }]);
+    const meal = Object.values(log)[0]!.meals[0]!;
+    meal.foodId = "food_yogurt";
+    meal.macroSource = "productDb";
+    const { result } = renderHook(() => useNutritionQuickChips(log, []));
+    expect(result.current[0]).toMatchObject({
+      foodId: "food_yogurt",
+      macroSource: "productDb",
+    });
+  });
+
   it("tags chips matching a pantry item as 'pantry' and sorts them first", () => {
     const log = mkLog(0, [
       { name: "Яблуко", kcal: 80 },

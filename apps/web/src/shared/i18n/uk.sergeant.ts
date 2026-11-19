@@ -50,6 +50,10 @@ export const sergeantMessages = {
   capabilitiesOpenLabel: "Відкрити каталог",
   weeklyDigestPreparing: "Сержант готує звіт тижня…",
   weeklyDigestUnread: "Новий звіт",
+  // Дія розгортання тіла звіту (зйомка 2026-11-18: сіра кнопка читалась
+  // вимкненою). Тиха дія з шевроном, стан несе `aria-expanded`.
+  weeklyDigestViewReport: "Переглянути звіт",
+  weeklyDigestHideReport: "Сховати звіт",
   // Підпис під згенерованим тілом звіту — розкриття авторства AI
   // (EU AI Act ст. 50, чинна з 2026-08-02). Бейдж «припущення» у шапці
   // говорить про СТУПІНЬ впевненості, а не про автора: він однаково
@@ -70,4 +74,16 @@ export const sergeantMessages = {
     "Без дозволу браузера повідомлення від Сержанта не прийдуть. Дозволь сповіщення в налаштуваннях сайту.",
   nudgesSaveError: "Не вдалося зберегти налаштування. Спробуй ще раз.",
   nudgesAuthRequired: "Нагадування Сержанта працюють після входу в акаунт.",
+  // Тихі години і push Monobank (спека notifications-quiet-hours-and-device-time).
+  quietHoursTitle: "Тихі години",
+  quietHoursToggleLabel: "Тихі години",
+  quietHoursToggleDescription:
+    "У цей час не надсилатиму нагадувань, час яких обираю я, і не сповіщатиму про операції Monobank. Нагадування на твій власний час прийдуть як є.",
+  quietHoursStartLabel: "Початок",
+  quietHoursEndLabel: "Кінець",
+  quietHoursSameBoundsError: "Початок і кінець не можуть збігатися.",
+  monoPushGroupTitle: "Фінік",
+  monoPushToggleLabel: "Операції Monobank",
+  monoPushToggleDescription:
+    "Сповіщення про кожну нову операцію з картки. У тихі години не надходить.",
 };

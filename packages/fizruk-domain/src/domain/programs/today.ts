@@ -53,6 +53,39 @@ export function getProgramSessionForDay(
   return program.sessions[schedule.sessionKey] ?? null;
 }
 
+/** Наступна сесія розкладу після сьогодні й через скільки днів вона. */
+export interface NextScheduledProgramSession extends TodayProgramSession {
+  /** 1 = завтра … 7 = той самий день тижня наступного тижня. */
+  readonly daysFromNow: number;
+}
+
+/**
+ * Перший запис розкладу ПІСЛЯ сьогодні (1–7 днів уперед; сьогоднішній день
+ * не розглядається, для нього є {@link resolveTodaySession}). День тижня
+ * за годинником пристрою (ADR-0078), як і в `weekdayIndex`. `null`, коли
+ * програми немає, розклад порожній або всі ключі сесій відсутні.
+ *
+ * Рішення власника 2026-11-18 (П-11 (Б), OD-32): у день без розкладу hero
+ * каже «Сьогодні відпочинок · наступна: …». Доки тренування не привʼязане
+ * до сесії програми (П-10, спека `fizruk-program-plan-sets.md`), «наступна»
+ * означає наступний день розкладу.
+ */
+export function resolveNextScheduledSession(
+  program: TrainingProgramDef | null | undefined,
+  now: Date = new Date(),
+): NextScheduledProgramSession | null {
+  if (!program) return null;
+  const today = weekdayIndex(now);
+  for (let d = 1; d <= 7; d += 1) {
+    const schedule = getProgramScheduleForDay(program, (today + d) % 7);
+    if (!schedule) continue;
+    const session = program.sessions[schedule.sessionKey];
+    if (!session) continue;
+    return { programId: program.id, schedule, session, daysFromNow: d };
+  }
+  return null;
+}
+
 /**
  * Resolve the "today's session" triple for an active program. Returns
  * `null` when no program is active, when today is a rest day, or when

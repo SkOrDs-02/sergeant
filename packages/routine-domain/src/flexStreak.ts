@@ -19,12 +19,12 @@
  *    Це єдиний із трьох, що прощає БЕЗ участі користувача, тому він
  *    єдиний обмежений квотою.
  *
- * ⚠️ **Числа квоти — інженерний дефолт, не рішення founder-а.** Канон
- * вимагає бюджет, але жодної цифри не називає, і в § «На роздум власнику»
- * цього питання немає. Значення нижче обрані так, щоб бюджет не міг
- * намалювати стрік із повітря (див. доку кожної константи), і мають бути
- * ратифіковані окремо. Зміна будь-якої з них рухає видиме число, тож іде
- * разом із бампом `METRICS_VERSION`.
+ * **Числа квоти ратифіковані власником 2026-11-18** (OD-29, Р-4 (а), канон
+ * `routine.md` § Журнал рішень): 1 заморозка на старті серії, ще 1 за кожні
+ * 7 виконаних днів, стеля 4, два мовчазні пропуски поспіль не прощаються.
+ * До цього 7 / 4 / 1 були інженерним дефолтом, а стартової одиниці не було.
+ * Зміна будь-якої з констант рухає видиме число, тож іде разом із бампом
+ * `METRICS_VERSION`.
  */
 
 import { dateKeyMinusDays } from "./dateKeys.js";
@@ -37,12 +37,21 @@ import type { Habit, HabitSkip } from "./types.js";
 import { isFlexibleHabit, weekDoneCountExcludingDate } from "./weeklyTarget.js";
 
 /**
- * Скільки виконаних днів «оплачують» одну заморозку.
+ * Скільки заморозок серія має ще до першого виконаного дня.
  *
- * Бюджет заробляється самим стріком, а не видається наперед: у стріку
- * коротшому за 7 днів заморозок НЕМАЄ взагалі. Інакше механізм прощення
- * дозволяв би тримати «стрік» майже нічого не роблячи — а це рівно та
- * брехня, проти якої написана вся Хвиля 4.
+ * Бюджет похідний від історії, а не збережений: окремого лічильника в стані
+ * немає, тож «одна на старті» означає одну на старті КОЖНОЇ серії, включно з
+ * першою серією нової звички і новою серією після обриву. Одна, а не більше:
+ * правило двох пропусків поспіль діє раніше за бюджет, тож стартова одиниця
+ * прощає рівно один збій дня, а тримати «серію» без відміток не дає.
+ */
+export const GRACE_START_BUDGET = 1;
+
+/**
+ * Скільки виконаних днів «оплачують» ще одну заморозку понад стартову.
+ *
+ * Решта бюджету заробляється самою серією: без цього механізм прощення
+ * дозволяв би тримати «стрік» майже нічого не роблячи.
  */
 export const GRACE_EARN_EVERY_DAYS = 7;
 
@@ -82,6 +91,7 @@ export interface FlexibleStreakOptions {
   /** Пропуски цієї звички: `dateKey → HabitSkip`. */
   skipsForHabit?: Record<string, HabitSkip> | undefined;
   /** Перевизначення квоти — лише для тестів і what-if. */
+  graceStartBudget?: number | undefined;
   graceEarnEveryDays?: number | undefined;
   maxGraceBudget?: number | undefined;
 }
@@ -104,6 +114,19 @@ export interface FlexibleStreakBreakdown {
   graceUsed: number;
   /** Скільки лишилось при поточній довжині. */
   graceRemaining: number;
+  /** Увесь бюджет поточної серії (стартові + зароблені), у межах стелі. */
+  graceBudget: number;
+  /** Частина бюджету, що дана на старті серії. */
+  graceFromStart: number;
+  /** Частина бюджету, зароблена виконаними днями серії. */
+  graceFromDays: number;
+  /** Стеля бюджету. */
+  graceMax: number;
+  /**
+   * Скільки ще виконаних днів до наступної заморозки; `null` — бюджет уже
+   * на стелі або серії для звички не існує (`once`).
+   */
+  daysToNextGrace: number | null;
   /** Днів заявленої паузи всередині вікна серії. */
   pauseDays: number;
   /** Днів «не зміг з причиною» всередині вікна серії. */
@@ -151,11 +174,22 @@ export function flexibleStreakBreakdown(
   const skips = opts.skipsForHabit || {};
   const earnEvery = opts.graceEarnEveryDays ?? GRACE_EARN_EVERY_DAYS;
   const maxGrace = opts.maxGraceBudget ?? MAX_GRACE_BUDGET;
+  const startGrace = Math.min(
+    maxGrace,
+    Math.max(0, opts.graceStartBudget ?? GRACE_START_BUDGET),
+  );
+  const budgetFor = (doneDays: number) =>
+    graceBudgetForDays(doneDays, startGrace, earnEvery, maxGrace);
 
   const empty: FlexibleStreakBreakdown = {
     days: 0,
     graceUsed: 0,
     graceRemaining: 0,
+    graceBudget: 0,
+    graceFromStart: 0,
+    graceFromDays: 0,
+    graceMax: maxGrace,
+    daysToNextGrace: null,
     pauseDays: 0,
     skipDays: 0,
     todayPending: false,
@@ -179,6 +213,8 @@ export function flexibleStreakBreakdown(
     // «в очікуванні», а не провал.
     return {
       ...empty,
+      ...budgetFor(0),
+      graceRemaining: budgetFor(0).graceBudget,
       // Той самий предикат, що й у циклі нижче: без `weekDoneCount` гнучка
       // звичка з добраною ціллю висіла б «в очікуванні» в дні, коли робити
       // вже нічого не треба.
@@ -278,10 +314,7 @@ export function flexibleStreakBreakdown(
   for (;;) {
     let daysInside = 0;
     for (let i = 0; i < cut; i++) if (kinds[i] === "done") daysInside += 1;
-    const affordable = Math.min(
-      maxGrace,
-      earnEvery > 0 ? Math.floor(daysInside / earnEvery) : 0,
-    );
+    const affordable = budgetFor(daysInside).graceBudget;
     const inside = missPositions.filter((p) => p < cut);
     if (inside.length <= affordable) break;
     // Найдавніший пропуск, який уже не по кишені, обриває серію на собі.
@@ -324,10 +357,7 @@ export function flexibleStreakBreakdown(
   // Якщо за вікном — початок історії звички, обриву не було.
   brokenOn = kinds[cut] === "miss" ? (keys[cut] ?? null) : null;
 
-  const earned = Math.min(
-    maxGrace,
-    earnEvery > 0 ? Math.floor(days / earnEvery) : 0,
-  );
+  const budget = budgetFor(days);
 
   // Той самий [0, cut) зріз, з якого щойно порахували `days`/`graceUsed`/…,
   // але для UI-полотна — хронологічно, найдавніший день ліворуч.
@@ -341,12 +371,46 @@ export function flexibleStreakBreakdown(
   return {
     days,
     graceUsed,
-    graceRemaining: Math.max(0, earned - graceUsed),
+    graceRemaining: Math.max(0, budget.graceBudget - graceUsed),
+    ...budget,
     pauseDays,
     skipDays,
     todayPending,
     brokenOn,
     window,
+  };
+}
+
+/**
+ * Бюджет заморозок серії з `doneDays` виконаними днями: стартова одиниця
+ * плюс одна за кожні `earnEvery` днів, усе в межах `maxGrace`.
+ */
+function graceBudgetForDays(
+  doneDays: number,
+  startGrace: number,
+  earnEvery: number,
+  maxGrace: number,
+): Pick<
+  FlexibleStreakBreakdown,
+  | "graceBudget"
+  | "graceFromStart"
+  | "graceFromDays"
+  | "graceMax"
+  | "daysToNextGrace"
+> {
+  const earnedRaw = earnEvery > 0 ? Math.floor(doneDays / earnEvery) : 0;
+  const graceFromDays = Math.min(Math.max(0, maxGrace - startGrace), earnedRaw);
+  const graceBudget = startGrace + graceFromDays;
+  const daysToNextGrace =
+    graceBudget < maxGrace && earnEvery > 0
+      ? earnEvery - (doneDays % earnEvery)
+      : null;
+  return {
+    graceBudget,
+    graceFromStart: startGrace,
+    graceFromDays,
+    graceMax: maxGrace,
+    daysToNextGrace,
   };
 }
 

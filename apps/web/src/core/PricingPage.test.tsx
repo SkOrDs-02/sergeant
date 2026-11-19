@@ -647,4 +647,40 @@ describe("PricingPage (Phase 7 D3 — Free + Premium)", () => {
     expect(premium?.className).toContain("bg-brand-strong");
     expect(premium?.className).not.toContain("finyk");
   });
+
+  it("не малює текст Premium-картки сторінковим чорнилом на темній заливці", () => {
+    // Регресія: `hero-ink` = `--c-text`, тобто темне чорнило сторінки у
+    // світлій темі. Картка ж лишається темною (`bg-brand-strong`), тож
+    // `text-hero-ink` давав темне на темному. jsdom не рахує кольори, тому
+    // перевіряємо класи: у світлій гілці — `text-white`, у темній —
+    // `dark:text-brand-900`.
+    renderPricing();
+    const premium = screen.getByText("Скоро").closest("article");
+    expect(premium).not.toBeNull();
+    expect(premium?.className).toContain("bg-brand-strong");
+
+    const tokens = (el: Element) =>
+      (el.getAttribute("class") ?? "").split(/\s+/);
+    const all = [premium!, ...Array.from(premium!.querySelectorAll("*"))];
+    for (const el of all) {
+      const cls = tokens(el);
+      expect(cls).not.toContain("text-hero-ink");
+      expect(cls.some((c) => c.startsWith("border-hero-ink"))).toBe(false);
+    }
+
+    const onInk = (el: Element | null) => {
+      const cls = tokens(el!);
+      expect(cls).toContain("text-white");
+      expect(cls).toContain("dark:text-brand-900");
+    };
+    onInk(screen.getByRole("heading", { level: 3, name: "Premium" }));
+    onInk(screen.getByText("Скоро"));
+    // Рядки переліку та їхні іконки-галочки.
+    const rows = premium!.querySelectorAll("ul > li");
+    expect(rows.length).toBeGreaterThan(0);
+    for (const li of Array.from(rows)) {
+      onInk(li);
+      onInk(li.querySelector("svg"));
+    }
+  });
 });

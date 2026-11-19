@@ -51,15 +51,28 @@
  *   OPENROUTER_API_KEY=... pnpm eval:tools --record
  *   OPENROUTER_API_KEY=... pnpm eval:tools --models=anthropic/claude-haiku-4.5
  *   OPENROUTER_API_KEY=... pnpm eval:tools --repeat=5 --timeout=45000
+ *   OPENROUTER_API_KEY=... pnpm eval:tools --follow-up --repeat=5
+ *     (лише `FOLLOW_UP_CASES`, «знайди, потім зміни ту»; касету не пише)
+ *   OPENROUTER_API_KEY=... pnpm eval:tools --reasoning=medium
+ *     (без прапорця — прод-дефолт `low`; `medium` — стан до 2026-11-18)
+ *   OPENROUTER_API_KEY=... pnpm eval:tools --only=архівація,факту --repeat=5
  */
 
 import { parseArgs } from "node:util";
 import process from "node:process";
 
+import {
+  CHAT_FIRST_TURN_REASONING_EFFORT_DEFAULT,
+  CHAT_FIRST_TURN_REASONING_EFFORTS,
+  type ChatFirstTurnReasoningEffort,
+} from "../src/env/aiRoutingEnv.js";
 import { CHAT_MODEL_DEFAULTS } from "../src/env/chatModels.js";
+import { withOpenRouterProviderPrefs } from "../src/lib/llm/openrouterDataPolicy.js";
+import { firstTurnReasoningFields } from "../src/modules/chat/chatReasoning.js";
 import { SYSTEM_PREFIX, TOOLS } from "../src/modules/chat/tools.js";
 import {
   ALL_CASES as CASE_SET,
+  FOLLOW_UP_CASES,
   IMPLICIT_FACT_CASES,
   type ToolCase,
 } from "../src/modules/chat/toolSelectionCases/index.js";
@@ -83,6 +96,11 @@ import {
   summarize,
   type ReplayedCase,
 } from "../src/modules/chat/toolEval/replay.js";
+import {
+  filterCasesByName,
+  mark,
+  textOf,
+} from "../src/modules/chat/toolEval/cliHelpers.js";
 import {
   INJECTION_CASES,
   scoreInjection,
@@ -110,6 +128,13 @@ const IMPLICIT_NAMES = new Set(IMPLICIT_FACT_CASES.map((c) => c.name));
  * булевого значення.
  */
 const injectionHits = new Set<string>();
+
+/**
+ * Глибина міркувань прогону (`--reasoning`). Ставиться один раз у `main()`;
+ * без прапорця — прод-дефолт, тобто стенд міряє те, що йде в прод.
+ */
+let reasoningEffort: ChatFirstTurnReasoningEffort =
+  CHAT_FIRST_TURN_REASONING_EFFORT_DEFAULT;
 
 interface SkinResponse {
   content?: EvalBlock[];
@@ -165,13 +190,20 @@ async function callSkin(
         "HTTP-Referer": "https://sergeant.app",
         "X-Title": "Sergeant tool-selection eval",
       },
-      body: JSON.stringify({
-        model,
-        max_tokens: 1500,
-        system,
-        tools: TOOLS,
-        messages,
-      }),
+      // `withOpenRouterProviderPrefs` — той самий `provider`, що додає продовий
+      // транспорт `lib/anthropic.ts`: стенд іде тим самим маршрутом шлюзу.
+      body: JSON.stringify(
+        withOpenRouterProviderPrefs({
+          model,
+          max_tokens: 1500,
+          system,
+          tools: TOOLS,
+          messages,
+          // Та сама функція, що будує поля в `chat.ts`: форма запиту стенду і
+          // проду з заданою `CHAT_FIRST_TURN_REASONING_EFFORT` не розійдеться.
+          ...firstTurnReasoningFields(reasoningEffort),
+        }),
+      ),
     });
   } catch (e: unknown) {
     // `AbortSignal.timeout` кидає `TimeoutError`; решта — мережа/DNS/TLS.
@@ -206,9 +238,19 @@ async function runChain(
   withData: boolean,
   timeoutMs: number,
 ): Promise<ChainResult> {
-  const system = withData ? `${SYSTEM_PREFIX}${DATA_BLOCK}` : SYSTEM_PREFIX;
+  // `dataExtra` і `history` — лише в кейсах `FOLLOW_UP_CASES`; для решти рядок
+  // і масив ті самі, що були (касета від цього не протухає).
+  const system = withData
+    ? `${SYSTEM_PREFIX}${DATA_BLOCK}${toolCase.dataExtra ?? ""}`
+    : SYSTEM_PREFIX;
   const scenario = toolCase.turns ?? [];
-  const messages: unknown[] = [{ role: "user", content: toolCase.user }];
+  const messages: unknown[] = [
+    ...(toolCase.history ?? []).map((m) => ({
+      role: m.role,
+      content: m.content,
+    })),
+    { role: "user", content: toolCase.user },
+  ];
   const turns: RecordedTurn[] = [];
   let fedResult: string | null = null;
   const t0 = Date.now();
@@ -275,21 +317,6 @@ async function runChain(
     latencyMs: Date.now() - t0,
     timedOut: false,
   };
-}
-
-function mark(r: ReplayedCase): string {
-  if (r.error) return "ERR";
-  if (r.hallucinated.length) return "FAKE";
-  return r.correct ? "  ok" : "MISS";
-}
-
-function textOf(turn: RecordedTurn | undefined): string {
-  return (turn?.blocks ?? [])
-    .filter((b) => b.type === "text" && b.text)
-    .map((b) => b.text as string)
-    .join(" ")
-    .replace(/\s+/g, " ")
-    .slice(0, 220);
 }
 
 /**
@@ -378,10 +405,37 @@ async function main(): Promise<void> {
       "no-data": { type: "boolean", default: false },
       record: { type: "boolean", default: false },
       injections: { type: "boolean", default: false },
+      "follow-up": { type: "boolean", default: false },
       repeat: { type: "string" },
       timeout: { type: "string" },
+      reasoning: { type: "string" },
+      only: { type: "string" },
     },
   });
+
+  // `--reasoning` — замір іншої глибини, ніж прод-дефолт. Касета пінить
+  // поведінку проду, тож запис із явною глибиною підмінив би еталон іншим
+  // режимом моделі; запис без прапорця йде на прод-дефолті.
+  if (values.reasoning !== undefined) {
+    const effort = values.reasoning.trim().toLowerCase();
+    if (
+      !(CHAT_FIRST_TURN_REASONING_EFFORTS as readonly string[]).includes(effort)
+    ) {
+      console.error(
+        `--reasoning=${values.reasoning}: допустимо ${CHAT_FIRST_TURN_REASONING_EFFORTS.join(", ")}.`,
+      );
+      process.exitCode = 1;
+      return;
+    }
+    if (values.record) {
+      console.error(
+        "--reasoning несумісний з --record: касета пінить прод-форму (дефолтна глибина).",
+      );
+      process.exitCode = 1;
+      return;
+    }
+    reasoningEffort = effort as ChatFirstTurnReasoningEffort;
+  }
 
   const apiKey = process.env["OPENROUTER_API_KEY"] ?? "";
   if (!apiKey) {
@@ -399,6 +453,25 @@ async function main(): Promise<void> {
     process.exitCode = 1;
     return;
   }
+
+  // `--follow-up` — окремий платний замір кейсів «знайди, потім зміни ту»
+  // (С-2, П-19). Касета вимагає ВСІ кейси `ALL_CASES`, тож запис часткового
+  // набору її б зіпсував, а без ДАНІ блоку записів просто нема куди лягти.
+  const followUp = values["follow-up"] === true;
+  if (followUp && (values.record || values["no-data"])) {
+    console.error("--follow-up несумісний з --record і --no-data.");
+    process.exitCode = 1;
+    return;
+  }
+  if (values.only !== undefined && values.record) {
+    console.error("--only несумісний з --record: касета вимагає всі кейси.");
+    process.exitCode = 1;
+    return;
+  }
+  const cases: ToolCase[] = filterCasesByName(
+    followUp ? FOLLOW_UP_CASES : ALL_CASES,
+    values.only,
+  );
 
   // Стеля однієї спроби. Дефолт 30 000 — стеля ЛОГІЧНОГО виклику в проді
   // (`CHAT_TOTAL_TIMEOUT_MS`, chat.ts), а не бюджет спроби: стенд має
@@ -426,9 +499,9 @@ async function main(): Promise<void> {
     .map((m) => m.trim())
     .filter(Boolean);
 
-  const multiTurn = ALL_CASES.filter((c) => (c.turns?.length ?? 0) > 0).length;
+  const multiTurn = cases.filter((c) => (c.turns?.length ?? 0) > 0).length;
   console.log(
-    `Registry: ${TOOLS.length} tools (${WRITE_ID_FIELDS.size} write-tools with id args), system prefix ${SYSTEM_PREFIX.length} chars, ДАНІ: ${values["no-data"] ? "немає" : `${DATA_BLOCK.length} chars`}, кейсів: ${ALL_CASES.length} (неявних фактів: ${IMPLICIT_FACT_CASES.length}, багатоходових: ${multiTurn})${values.record ? ", режим: ЗАПИС КАСЕТИ" : ""}\n`,
+    `Registry: ${TOOLS.length} tools (${WRITE_ID_FIELDS.size} write-tools with id args), system prefix ${SYSTEM_PREFIX.length} chars, ДАНІ: ${values["no-data"] ? "немає" : `${DATA_BLOCK.length} chars`}, кейсів: ${cases.length} (неявних фактів: ${IMPLICIT_FACT_CASES.length}, багатоходових: ${multiTurn}), глибина: ${reasoningEffort}${values.record ? ", режим: ЗАПИС КАСЕТИ" : ""}\n`,
   );
 
   // Повтори множать той самий кейс у звіті; для касети потрібен рівно один
@@ -448,7 +521,7 @@ async function main(): Promise<void> {
     let attempts = 0;
     let timeouts = 0;
 
-    for (const toolCase of ALL_CASES) {
+    for (const toolCase of cases) {
       for (let i = 0; i < repeats; i += 1) {
         const chain = await runChain(
           apiKey,
@@ -482,14 +555,14 @@ async function main(): Promise<void> {
       }
     }
 
-    const summary = summarize(ALL_CASES, replayed);
+    const summary = summarize(cases, replayed);
     const lat = summarizeLatency(latencies, attempts, timeouts);
     console.log(
-      "\n| Model | Correct | Invented ids | Errors | Timeouts | p50 (ms) | p95 (ms) | max (ms) |",
+      "\n| Model | Reasoning | Correct | Invented ids | Errors | Timeouts | p50 (ms) | p95 (ms) | max (ms) |",
     );
-    console.log("| --- | --- | --- | --- | --- | --- | --- | --- |");
+    console.log("| --- | --- | --- | --- | --- | --- | --- | --- | --- |");
     console.log(
-      `| \`${model}\` | ${summary.correct}/${summary.total} | ${summary.invented}/${summary.total} | ${summary.errors} | ${lat.timeouts}/${lat.attempts} | ${lat.p50} | ${lat.p95} | ${lat.max} |`,
+      `| \`${model}\` | ${reasoningEffort} | ${summary.correct}/${summary.total} | ${summary.invented}/${summary.total} | ${summary.errors} | ${lat.timeouts}/${lat.attempts} | ${lat.p50} | ${lat.p95} | ${lat.max} |`,
     );
     if (timeouts > 0) {
       // Медіана хвоста не бачить, а саме хвіст і ламається — тож число

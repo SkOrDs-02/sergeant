@@ -138,6 +138,22 @@ export const finykPageMessages = {
     showAll: "Усі дні",
     showAllAria: "Показати всі дні",
   },
+  // Ф-2 (а), OD-26: пошук у шапці «Операцій».
+  transactionsSearch: {
+    label: "Пошук операцій",
+    // Без переліку полів: плейсхолдер-перелік заборонений (copy.slop.test).
+    placeholder: "Пошук операцій",
+    clear: "Очистити пошук",
+    /** `{count}` уже з узгодженим словом «операція». */
+    found: "Знайдено {count}",
+    foundInPeriod: "Знайдено {count} за {period}",
+    countOne: "операцію",
+    countFew: "операції",
+    countMany: "операцій",
+    emptyTitle: "Нічого не знайдено",
+    emptyDescription:
+      "За «{query}» тут операцій немає. Зміни запит, вкладку чи місяць або очисти пошук.",
+  },
   transferSuggestion: {
     title: "Схоже на внутрішній переказ",
     hint: "Після підтвердження обидві операції не рахуватимуться як витрата чи дохід.",
@@ -279,6 +295,13 @@ export const finykPageMessages = {
     dateLabel: "Дата",
     dateScrubberLabel: "Дата запису",
     dateOther: "Інша дата",
+    // Ф-1 (а), OD-26: теги й рахунок під розкривачем після дати.
+    moreTagsAccount: "Більше: теги, рахунок",
+    moreTags: "Більше: теги",
+    moreAccount: "Більше: рахунок",
+    tagCountOne: "тег",
+    tagCountFew: "теги",
+    tagCountMany: "тегів",
     cancel: "Скасувати",
     save: "Зберегти",
     saveAndAddMore: "Зберегти й додати ще",

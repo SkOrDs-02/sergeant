@@ -9,7 +9,11 @@
 
 import { describe, expect, it } from "vitest";
 
-import type { ToolCase } from "../toolSelectionCases/index.js";
+import {
+  ALL_CASES,
+  FOLLOW_UP_CASES,
+  type ToolCase,
+} from "../toolSelectionCases/index.js";
 import type { RecordedCase } from "./cassette.js";
 import { replayCase } from "./replay.js";
 
@@ -115,5 +119,118 @@ describe("оцінювання ланцюжка", () => {
     });
     expect(r.correct).toBe(false);
     expect(r.error).toBe("HTTP 429: rate limited");
+  });
+});
+
+describe("кейси «знайди, потім зміни ту» (С-2)", () => {
+  const [withRefs, control, workout] = FOLLOW_UP_CASES;
+
+  it("id з блоку записів попередньої відповіді не рахується вигаданим", () => {
+    const r = replayCase(withRefs!, {
+      name: withRefs!.name,
+      turns: [
+        {
+          blocks: [
+            toolUse("change_category", {
+              tx_id: "tx_7c40",
+              category_id: "cat_food_out",
+            }),
+          ],
+          fedResult: null,
+        },
+      ],
+    });
+    expect(r.hallucinated).toEqual([]);
+    expect(r.argViolations).toEqual([]);
+    expect(r.correct).toBe(true);
+  });
+
+  it("без блоку записів той самий id — вигаданий", () => {
+    const r = replayCase(control!, {
+      name: control!.name,
+      turns: [
+        {
+          blocks: [
+            toolUse("change_category", {
+              tx_id: "tx_7c40",
+              category_id: "cat_food_out",
+            }),
+          ],
+          fedResult: null,
+        },
+      ],
+    });
+    expect(r.hallucinated).toEqual(["change_category.tx_id=tx_7c40"]);
+    expect(r.correct).toBe(false);
+  });
+
+  it("тренування: id з блоку записів не вигаданий, чужий — вигаданий", () => {
+    const run = (workout_id: string) =>
+      replayCase(workout!, {
+        name: workout!.name,
+        turns: [
+          {
+            blocks: [toolUse("finish_workout", { workout_id })],
+            fedResult: null,
+          },
+        ],
+      });
+    const ok = run("w_mf3k51");
+    expect(ok.hallucinated).toEqual([]);
+    expect(ok.argViolations).toEqual([]);
+    expect(ok.correct).toBe(true);
+    expect(run("w_other").hallucinated).toEqual([
+      "finish_workout.workout_id=w_other",
+    ]);
+  });
+});
+
+describe("видалення факту памʼяті: id лише з my_profile (2026-11-18)", () => {
+  const FORGET_CASE = ALL_CASES.find(
+    (c) => c.name === "видалення конкретного факту",
+  ) as ToolCase;
+  const run = (turns: RecordedCase["turns"]) =>
+    replayCase(FORGET_CASE, { name: FORGET_CASE.name, turns });
+
+  it("кейс веде через my_profile: id фактів у блоці ДАНІ немає", () => {
+    expect(FORGET_CASE.accept).toContain("my_profile");
+    expect(FORGET_CASE.turns?.[0]?.accept).toEqual(["forget"]);
+  });
+
+  it("текст факту в fact_id лишається вигаданим id (повтор прогонів 2026-11-18)", () => {
+    const r = run([
+      {
+        blocks: [toolUse("forget", { fact_id: "алергія на арахіс" })],
+        fedResult: null,
+      },
+    ]);
+    expect(r.hallucinated).toEqual(["forget.fact_id=алергія на арахіс"]);
+  });
+
+  it("my_profile, потім forget з id із результату: правильно і без вигадок", () => {
+    const fed = FORGET_CASE.turns?.[0]?.result ?? null;
+    const r = run([
+      { blocks: [toolUse("my_profile", {})], fedResult: null },
+      {
+        blocks: [toolUse("forget", { fact_id: "mem_7f3a" })],
+        fedResult: fed,
+      },
+    ]);
+    expect(r.correct).toBe(true);
+    expect(r.hallucinated).toEqual([]);
+    expect(r.argViolations).toEqual([]);
+  });
+
+  it("id чужого факту з того самого профілю ловить перевірка аргументів", () => {
+    const fed = FORGET_CASE.turns?.[0]?.result ?? null;
+    const r = run([
+      { blocks: [toolUse("my_profile", {})], fedResult: null },
+      {
+        blocks: [toolUse("forget", { fact_id: "mem_2c91" })],
+        fedResult: fed,
+      },
+    ]);
+    expect(r.hallucinated).toEqual([]);
+    expect(r.argViolations.length).toBeGreaterThan(0);
   });
 });

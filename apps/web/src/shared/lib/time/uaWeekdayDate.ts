@@ -68,3 +68,20 @@ export function formatUaWeekdayDate(
     return "";
   }
 }
+
+// 2024-01-01 — понеділок: від нього рахуємо день тижня за індексом.
+const WEEKDAY_NAME_FORMAT = new Intl.DateTimeFormat("uk-UA", {
+  weekday: "long",
+  timeZone: "UTC",
+});
+
+/**
+ * Назва дня тижня в називному відмінку за індексом від понеділка
+ * (`0` → «понеділок», `6` → «неділя»). Окремий виклик лише з `weekday`, без
+ * решти полів дати, тому відмінок не псується (див. WHY у шапці файла).
+ * Індекс поза 0..6 загортається по модулю 7.
+ */
+export function uaWeekdayName(mondayIndex: number): string {
+  const idx = ((Math.trunc(mondayIndex) % 7) + 7) % 7;
+  return WEEKDAY_NAME_FORMAT.format(new Date(Date.UTC(2024, 0, 1 + idx)));
+}

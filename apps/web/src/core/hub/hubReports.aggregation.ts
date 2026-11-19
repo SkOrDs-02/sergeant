@@ -252,7 +252,7 @@ export function aggregateSpending(
 export interface RoutineState {
   habits?: Habit[];
   completions?: Record<string, string[]>;
-  /** «Не зміг» з причиною: `habitId → dateKey → HabitSkip` (канон §5). */
+  /** «Не зміг» з причиною: `habitId → dateKey → HabitSkip`, поза знаменником (канон Рутини §5, П-18 (А)). */
   skips?: Record<string, Record<string, HabitSkip>> | undefined;
 }
 
@@ -308,7 +308,7 @@ export function aggregateHabits(
     {
       ...(opts.pausedFrom === undefined ? {} : { pausedFrom: opts.pausedFrom }),
       // «Не зміг» з причиною виходить зі знаменника (канон routine.md §5,
-      // рішення власника 2026-11-18, METRICS_VERSION 20): як у Статистиці
+      // рішення власника 2026-11-18, METRICS_VERSION 20; П-18 (А)): як у Статистиці
       // модуля, сітці й календарі.
       skips: state.skips ?? {},
     },

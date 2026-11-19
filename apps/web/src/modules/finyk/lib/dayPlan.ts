@@ -2,7 +2,11 @@ import { calculateFinykDayPlan } from "@sergeant/finyk-domain/domain/dayPlan";
 import { calcFinykSpendingTotal } from "@sergeant/finyk-domain/lib/spending";
 import type { TxSplitsMap } from "@sergeant/finyk-domain/domain/types";
 import { getKyivDateParts, getKyivDayKey } from "@shared/lib/time/kyivTime";
-import { getFlowSchedule, type UseFlowScheduleParams } from "./flowSchedule";
+import {
+  getFlowSchedule,
+  selectPlannedOutflows,
+  type UseFlowScheduleParams,
+} from "./flowSchedule";
 import { filterToKyivMonth, txEpochMs } from "./monthWindow";
 
 type DayPlanInput = Pick<
@@ -54,22 +58,22 @@ export function getFinykDayPlan({
     kyivMonth: parts.month - 1,
     kyivDay: parts.day,
   });
-  const monthFlows = [
-    ...flows.subscriptionFlows,
-    ...flows.debtOutFlows,
-    ...flows.debtInFlows,
-  ].filter(
-    (f) => f.daysLeft >= 0 && f.dueDate <= new Date(parts.year, parts.month, 0),
-  );
-  const recurringMinor = (sign: string) =>
-    monthFlows.reduce(
+  const monthEnd = new Date(parts.year, parts.month, 0);
+  const inMonth = (f: { dueDate: Date }) => f.dueDate <= monthEnd;
+  const sumMinor = (list: readonly { amount: number | null }[]) =>
+    list.reduce(
       (sum, f) =>
-        sum +
-        (f.sign === sign && typeof f.amount === "number"
-          ? Math.round(f.amount * 100)
-          : 0),
+        sum + (typeof f.amount === "number" ? Math.round(f.amount * 100) : 0),
       0,
     );
+  // Заплановані списання — спільний предикат із рядком «спишеться» на хабі
+  // (`selectPlannedOutflows`, OD-26 Ф-4): не дублюй фільтр тут.
+  const outflowsMinor = sumMinor(selectPlannedOutflows(flows).filter(inMonth));
+  const inflowsMinor = sumMinor(
+    flows.debtInFlows.filter(
+      (f) => f.sign === "+" && f.daysLeft >= 0 && inMonth(f),
+    ),
+  );
   const daysInMonth = new Date(
     Date.UTC(parts.year, parts.month, 0),
   ).getUTCDate();
@@ -77,8 +81,8 @@ export function getFinykDayPlan({
     planExpenseMinor: Math.round(planExpense * 100),
     spentBeforeTodayMinor:
       Math.round(spent * 100) - Math.round(todaySpent * 100),
-    recurringOutMinor: recurringMinor("-"),
-    recurringInMinor: recurringMinor("+"),
+    recurringOutMinor: outflowsMinor,
+    recurringInMinor: inflowsMinor,
     remainingDays: daysInMonth - parts.day + 1,
   });
   return {

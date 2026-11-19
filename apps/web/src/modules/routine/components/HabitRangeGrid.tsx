@@ -187,7 +187,13 @@ export function HabitRangeGrid({
                     </span>
                     <span className="shrink-0 text-style-label text-muted tabular-nums">
                       {row.completed}/{row.scheduled} ·{" "}
-                      <Measure value={Math.round(row.rate * 100)} unit="%" />
+                      {/* Усі заплановані дні заявлені «не зміг»: знаменник
+                          порожній, відсотка немає (канон §5), а не «0 %». */}
+                      {row.scheduled > 0 ? (
+                        <Measure value={Math.round(row.rate * 100)} unit="%" />
+                      ) : (
+                        "—"
+                      )}
                     </span>
                   </div>
                   <div

@@ -9,6 +9,7 @@ import { SectionHeading } from "@shared/components/ui/SectionHeading";
 import { Spinner } from "@shared/components/ui/Spinner";
 import { useResetPinchZoomAfterCameraCapture } from "@shared/hooks/useResetPinchZoomOnResume";
 import { cn } from "@shared/lib/ui/cn";
+import { messages } from "@shared/i18n/uk";
 import type { NutritionNotFoodKind } from "@sergeant/api-client";
 import type { NullableMacros } from "@sergeant/shared";
 import type { NutritionPhotoItem } from "@sergeant/api-client";
@@ -329,10 +330,10 @@ export function PhotoAnalyzeCard({
               </Button>
               {/* AI-NOTE: підказка під кнопкою: класичний випадок, який
                   правило дозволяє лишити в caption, вона супроводжує контрол,
-                  а не читається окремо. */}
+                  а не читається окремо. З OD-27 Х-2 (а) кнопка пише одразу,
+                  тож підпис каже, КУДИ ляже запис і де його змінити. */}
               <p className="text-style-caption text-muted text-center">
-                Сам аналіз у журнал не потрапляє, збережи, щоб він порахувався в
-                дні.
+                {messages.nutrition.repeat.photoSaveHint}
               </p>
             </div>
           )}

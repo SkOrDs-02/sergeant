@@ -64,6 +64,7 @@ export {
   isApiError,
   createHttpClient,
   silpoConnectUrl,
+  ChatStreamError,
 } from "@sergeant/api-client";
 export type {
   ApiClient,

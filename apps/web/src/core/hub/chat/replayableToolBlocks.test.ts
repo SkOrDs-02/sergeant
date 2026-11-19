@@ -7,7 +7,10 @@
  * Тобто фікс безпеки без цього фільтра ламав би звичайний хід із 400.
  */
 import { describe, it, expect } from "vitest";
-import { keepReplayableToolBlocks } from "./replayableToolBlocks";
+import {
+  firstTurnEcho,
+  keepReplayableToolBlocks,
+} from "./replayableToolBlocks";
 
 const TOOL_USE = {
   type: "tool_use",
@@ -68,5 +71,30 @@ describe("keepReplayableToolBlocks", () => {
       { type: "tool_search_tool_result", tool_use_id: "srv_1", content: [] },
     ];
     expect(keepReplayableToolBlocks(blocks)).toEqual(blocks);
+  });
+});
+
+describe("firstTurnEcho", () => {
+  it("відбиває квиток першого туру разом із відфільтрованими блоками", () => {
+    expect(
+      firstTurnEcho({
+        tool_calls_raw: [
+          { type: "text", text: "зараз перевірю" },
+          { type: "tool_use", id: "t1", name: "log_water", input: {} },
+        ],
+        round_trip_ticket: "4b0c5d2e-1f3a-4c6b-9d8e-7a6b5c4d3e2f",
+      }),
+    ).toEqual({
+      tool_calls_raw: [
+        { type: "tool_use", id: "t1", name: "log_water", input: {} },
+      ],
+      round_trip_ticket: "4b0c5d2e-1f3a-4c6b-9d8e-7a6b5c4d3e2f",
+    });
+  });
+
+  it("без квитка поля round_trip_ticket немає", () => {
+    expect("round_trip_ticket" in firstTurnEcho({ tool_calls_raw: [] })).toBe(
+      false,
+    );
   });
 });

@@ -76,6 +76,8 @@ export function RoutineStatsPanel({
       completions,
       dateKeyMinusDays(todayKey, range.days - 1),
       todayKey,
+      // «Не зміг» поза знаменником (канон §5, П-18 (А) 2026-11-18): той самий
+      // знаменник, що в героєві, рядках по звичках, лідерах і картці звички.
       { pausedFrom: todayKey, skips: routine.skips ?? {} },
     );
     return { maxAllTime, rate };
@@ -204,6 +206,7 @@ export function RoutineStatsPanel({
       <HabitLeadersBlock
         habits={routine.habits}
         completions={routine.completions}
+        skips={routine.skips}
       />
     </div>
   );

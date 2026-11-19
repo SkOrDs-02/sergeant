@@ -15,6 +15,7 @@
  */
 
 import { env } from "../../env/env.js";
+import { openRouterZdrProviderPrefs } from "../../lib/llm/openrouterDataPolicy.js";
 import { chatPromptInjectionShadowTotal } from "../../obs/metrics.js";
 
 export const JEV_MODEL = "typesafe/jev-1.13";
@@ -52,7 +53,11 @@ export async function jevInjectionVerdict(
         // TypeSafe - новий субпроцесор даних; власник погодив лише за умови,
         // що провайдер не зберігає й не вчиться на цих рядках. OpenRouter
         // валідує ці поля і без ZDR-маршруту відмовив би, а не пішов в обхід.
-        provider: { zdr: true, data_collection: "deny" },
+        // ZDR тримається і при аварійному `OPENROUTER_DATA_COLLECTION=allow`:
+        // відкат для решти моделей не знімає умову погодження Jev. Квантизація
+        // від 8 біт іде за спільним перемикачем; жива проба 2026-11-19: 200, але
+        // `/systemone` поле не фільтрує (список лише з `fp32` теж дає 200).
+        provider: openRouterZdrProviderPrefs(),
       }),
       signal: AbortSignal.timeout(TIMEOUT_MS),
     });

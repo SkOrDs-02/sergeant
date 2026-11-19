@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { cn } from "@shared/lib/ui/cn";
 import { messages } from "@shared/i18n/uk";
-import { measurementGuideRows } from "@shared/i18n/uk.fizruk";
+import { measurementGuideRows } from "@shared/i18n/uk.fizrukMeasurementGuide";
 import { SectionHeading } from "@shared/components/ui/SectionHeading";
 import { EmptyState } from "@shared/components/ui/EmptyState";
 import { DataTable } from "@shared/components/ui/DataTable";
@@ -120,18 +120,20 @@ export function Measurements() {
       ref={guideTriggerRef}
       type="button"
       onClick={() => setGuideOpen(true)}
-      className="focus-ring flex items-center gap-3 bg-panel border border-line rounded-lg p-4"
+      className="focus-ring flex items-center gap-3 bg-panel border border-line rounded-lg p-4 text-left"
     >
+      {/* Обидва рядки блочні: як `inline-flex` вони ставали в один рядок
+          без пробілу («МануалЯк правильно…», скрин 390 px 2026-11-17). */}
       <div className="min-w-0">
         <SectionHeading
           as="div"
           size="xs"
           variant="fizruk"
-          className="inline-flex items-center gap-1.5"
+          className="flex items-center gap-1.5"
         >
           {messages.fizruk.measurements.manual}
         </SectionHeading>
-        <div className="text-style-label text-text mt-0.5 inline-flex items-center gap-0.5">
+        <div className="text-style-label text-text mt-0.5 flex items-center gap-0.5">
           {messages.fizruk.measurements.manualLink}
         </div>
       </div>

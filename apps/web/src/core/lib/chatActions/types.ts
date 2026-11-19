@@ -39,7 +39,6 @@ import type {
   StartWorkoutAction,
   FinishWorkoutAction,
   LogMeasurementAction,
-  AddProgramDayAction,
   LogWellbeingAction,
   LogWeightAction,
   SuggestWorkoutAction,
@@ -136,7 +135,6 @@ export type {
   StartWorkoutAction,
   FinishWorkoutAction,
   LogMeasurementAction,
-  AddProgramDayAction,
   LogWellbeingAction,
   LogWeightAction,
   SuggestWorkoutAction,
@@ -234,7 +232,6 @@ export type ChatAction =
   | StartWorkoutAction
   | FinishWorkoutAction
   | LogMeasurementAction
-  | AddProgramDayAction
   | LogWellbeingAction
   | LogWeightAction
   | SuggestWorkoutAction

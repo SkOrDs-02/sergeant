@@ -3,6 +3,7 @@
  * Status: Active
  */
 import { focusFallbackProps } from "@shared/lib/ui/focusFallback";
+import type { InjurySiteId } from "@sergeant/fizruk-domain/data";
 import { SESSION_FOCUS_FALLBACK } from "./focusFallback";
 import type { WorkoutGroup, WorkoutItem } from "@sergeant/fizruk-domain";
 import { Button } from "@shared/components/ui/Button";
@@ -12,6 +13,8 @@ import { fmtLoose } from "../../lib/numberFmt";
 import type { LastByExerciseEntry } from "../workouts/WorkoutItemLastTimeHint";
 import { filterNonEmptyStrengthSets } from "../workouts/WorkoutItemLastTimeHint";
 import { isSetDone } from "../workouts/WorkoutSetRow";
+import { itemMeasure, itemUsesSetRows } from "@sergeant/fizruk-domain/domain";
+import { formatMeasureSets } from "../../lib/measureFormat";
 import { summarizeRecoveryChip } from "../workouts/WorkoutItemRecoveryChip";
 import {
   groupMemberPosition,
@@ -26,6 +29,8 @@ export interface SessionExerciseListProps {
   isReadOnly: boolean;
   lastByExerciseId: Record<string, unknown>;
   recBy: Record<string, unknown>;
+  /** Активні позначки травми (ADR-0083) для чипа відновлення. */
+  injurySites: ReadonlySet<InjurySiteId>;
   onOpenItem: (itemId: string) => void;
   onAddExercise: () => void;
   /** Режим вибору для суперсету: рядки стають чекбоксами. */
@@ -44,25 +49,35 @@ function rowSubline(
   state: SessionItemState,
   last: LastByExerciseEntry | undefined,
   recBy: Record<string, unknown>,
+  injurySites: ReadonlySet<InjurySiteId>,
 ): { text: string; danger: boolean } {
   const ss = messages.fizruk.session;
-  const rec = summarizeRecoveryChip(it, recBy);
+  const rec = summarizeRecoveryChip(it, recBy, injurySites);
   if (rec?.tone === "red") return { text: rec.label, danger: true };
-  if (it.type === "strength") {
+  if (itemUsesSetRows(it)) {
     const sets = it.sets || [];
-    const done = sets.filter(isSetDone).length;
+    const doneSets = sets.filter((s) => isSetDone(s, it));
+    const done = doneSets.length;
+    const measure = itemMeasure(it);
     if (done > 0 || state === "done") {
-      const lastDone = [...sets].reverse().find(isSetDone);
-      const tail = lastDone
-        ? ` · ${fmtLoose(lastDone.weightKg ?? 0)} кг × ${lastDone.reps}`
-        : "";
+      // Вага × повтори — останній підхід «80 кг × 8»; інші типи — підсумок
+      // зарахованих («2 × 30 с», спека типу виміру).
+      const lastDone = doneSets[doneSets.length - 1];
+      const tail =
+        measure !== "weight_reps"
+          ? done > 0
+            ? ` · ${formatMeasureSets(it) ?? ""}`
+            : ""
+          : lastDone
+            ? ` · ${fmtLoose(lastDone.weightKg ?? 0)} кг × ${lastDone.reps}`
+            : "";
       return {
         text: `${setsProgressLabel(done, sets.length)}${tail}`,
         danger: false,
       };
     }
     const ghost =
-      last?.type === "strength"
+      measure === "weight_reps" && last?.type === "strength"
         ? filterNonEmptyStrengthSets(last.sets)[0]
         : undefined;
     if (ghost) {
@@ -98,6 +113,7 @@ export function SessionExerciseList({
   isReadOnly,
   lastByExerciseId,
   recBy,
+  injurySites,
   onOpenItem,
   onAddExercise,
   selectMode,
@@ -144,7 +160,7 @@ export function SessionExerciseList({
             ? (lastByExerciseId[it.exerciseId] as
                 LastByExerciseEntry | undefined)
             : undefined;
-          const sub = rowSubline(it, state, last, recBy);
+          const sub = rowSubline(it, state, last, recBy, injurySites);
           const isCurrent = state === "current" && !isReadOnly;
           const checked = selected.has(it.id);
           return (

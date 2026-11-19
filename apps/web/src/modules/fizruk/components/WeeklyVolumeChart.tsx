@@ -48,6 +48,14 @@ interface WeeklyVolumeChartProps {
    * is known.
    */
   isLoading?: boolean;
+  /**
+   * Індекс сьогоднішнього дня (0=Пн … 6=Нд, `weeklyVolumeSeriesNow`).
+   * Дні після нього ще не настали: лінія закінчується на сьогодні, а не
+   * падає в 0 до неділі — інакше середина тижня читалась як провал обʼєму
+   * (скрин /fizruk/progress, 2026-11-17). Підписи осі лишаються на весь
+   * тиждень. Обовʼязковий, щоб нулі майбутніх днів не повернулись мовчки.
+   */
+  todayIndex: number;
 }
 
 export function WeeklyVolumeChart({
@@ -55,6 +63,7 @@ export function WeeklyVolumeChart({
   className,
   weeklyGoal,
   isLoading = false,
+  todayIndex,
 }: WeeklyVolumeChartProps) {
   const vals = useMemo(
     () =>
@@ -74,14 +83,16 @@ export function WeeklyVolumeChart({
   const innerH = h - padT - padB;
   const n = vals.length;
   const step = pointStep(innerW, n);
+  // Скільки днів тижня вже настало (включно із сьогодні).
+  const shown = Math.min(n, Math.max(1, Math.floor(todayIndex) + 1));
   const svgRef = useRef<SVGSVGElement>(null);
   const xPositions = useMemo(
-    () => vals.map((_, index) => xAt(padL, index, step)),
-    [vals, step],
+    () => vals.slice(0, shown).map((_, index) => xAt(padL, index, step)),
+    [vals, shown, step],
   );
   const { activeIndex, scrubX, bind } = useChartScrub({
     svgRef,
-    pointCount: n,
+    pointCount: shown,
     xPositions,
     viewBoxWidth: w,
   });
@@ -126,7 +137,7 @@ export function WeeklyVolumeChart({
   const max = Math.max(1, ...vals.map((v) => Number(v) || 0));
   // Домен [0, max] з клемпом лише зверху — нижнього клемпа тут ніколи не
   // було (обʼєм не буває відʼємним), тож зберігаємо формулу дослівно.
-  const points = vals.map((v, i) => {
+  const points = vals.slice(0, shown).map((v, i) => {
     const x = xAt(padL, i, step);
     const y = linearY(Math.min(Number(v) || 0, max), 0, max, padT, innerH);
     return { x, y, v: Number(v) || 0 };
@@ -294,7 +305,7 @@ export function WeeklyVolumeChart({
           кг×повт.
         </p>
         <ul>
-          {LABELS_UK.map((lab, i) => (
+          {LABELS_UK.slice(0, shown).map((lab, i) => (
             <li key={lab}>
               {lab}: {formatNumberUk(Number(vals[i]) || 0)} кг×повт
             </li>

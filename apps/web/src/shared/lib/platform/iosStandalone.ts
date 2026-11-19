@@ -38,6 +38,15 @@ export function isStandalonePWA(): boolean {
 }
 
 /**
+ * `true` на iPhone/iPad у звичайній вкладці Safari (застосунок не встановлено
+ * на початковий екран). Саме тут Web Push неможливий: `Notification` і
+ * `PushManager` на iOS зʼявляються лише у встановленому PWA.
+ */
+export function isIOSBrowserTab(): boolean {
+  return isIOS() && !isStandalonePWA();
+}
+
+/**
  * `true` лише у standalone-PWA на iOS — режим, де Web Speech API присутній,
  * але непрацездатний. У Safari-вкладці (не standalone) повертає `false`, бо
  * там Web Speech працює нормально.
