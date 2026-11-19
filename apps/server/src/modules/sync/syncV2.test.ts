@@ -21,7 +21,10 @@ vi.mock("./routine/applySync.js", () => ({
 }));
 
 import _pool from "../../db.js";
-import { applyRoutineEntries as _applyRoutineEntries } from "./routine/applySync.js";
+import {
+  applyRoutineEntries as _applyRoutineEntries,
+  applyRoutineStreaks as _applyRoutineStreaks,
+} from "./routine/applySync.js";
 import {
   APPLY_REJECT_REASONS,
   ENGINE_REJECT_REASONS,
@@ -56,6 +59,7 @@ const dbModule = (await import("../../db.js")) as unknown as {
 const client = dbModule.__client;
 const notify = _notify as unknown as Mock;
 const applyRoutineEntries = _applyRoutineEntries as unknown as Mock;
+const applyRoutineStreaks = _applyRoutineStreaks as unknown as Mock;
 
 interface TestRes {
   statusCode: number;
@@ -540,6 +544,93 @@ describe("syncV2Push · new-op apply path", () => {
           reason: "op_not_supported",
         },
       ],
+    });
+  });
+
+  describe("increment, старший за вікно чистки журналу (ADR-0105 §2)", () => {
+    const DAY = 24 * 60 * 60 * 1000;
+    const savedDays = env.SYNC_OP_LOG_APPLIED_RETENTION_DAYS;
+
+    function streakIncrement(key: string, ageMs: number) {
+      return op(key, {
+        table: "routine_streaks",
+        op: "increment",
+        row: { id: "streak-1", delta: 1 },
+        client_ts: new Date(Date.now() - ageMs).toISOString(),
+      });
+    }
+
+    it("за увімкненої чистки відхиляється без apply", async () => {
+      env.SYNC_OP_LOG_APPLIED_RETENTION_DAYS = 90;
+      try {
+        client.query
+          .mockResolvedValueOnce({ rows: [] }) // BEGIN
+          .mockResolvedValueOnce({ rows: [] }) // user-lock
+          .mockResolvedValueOnce({ rows: [] }) // дедуп-SELECT
+          .mockResolvedValueOnce({ rows: [] }) // SAVEPOINT op_log_write
+          .mockResolvedValueOnce({
+            rows: [{ id: "45", server_ts: new Date() }],
+          })
+          .mockResolvedValueOnce({ rows: [] }) // RELEASE op_log_write
+          .mockResolvedValueOnce({ rows: [] }); // COMMIT
+        const res = makeRes();
+
+        await syncV2Push(
+          makeReq({ body: { ops: [streakIncrement("old-inc", 95 * DAY)] } }),
+          res,
+        );
+
+        expect(applyRoutineStreaks).not.toHaveBeenCalled();
+        expect(res.body).toMatchObject({
+          accepted: 0,
+          results: [
+            {
+              idempotency_key: "old-inc",
+              status: "rejected",
+              reason: "stale_increment",
+            },
+          ],
+        });
+      } finally {
+        env.SYNC_OP_LOG_APPLIED_RETENTION_DAYS = savedDays;
+      }
+    });
+
+    it("свіжий increment за увімкненої чистки застосовується", async () => {
+      env.SYNC_OP_LOG_APPLIED_RETENTION_DAYS = 90;
+      try {
+        mockInsertPath("46", new Date());
+        const res = makeRes();
+
+        await syncV2Push(
+          makeReq({ body: { ops: [streakIncrement("new-inc", DAY)] } }),
+          res,
+        );
+
+        expect(applyRoutineStreaks).toHaveBeenCalledTimes(1);
+        expect(res.body).toMatchObject({
+          accepted: 1,
+          results: [{ idempotency_key: "new-inc", status: "applied" }],
+        });
+      } finally {
+        env.SYNC_OP_LOG_APPLIED_RETENTION_DAYS = savedDays;
+      }
+    });
+
+    it("за вимкненої чистки (дефолт 0) старий increment не відхиляється", async () => {
+      expect(env.SYNC_OP_LOG_APPLIED_RETENTION_DAYS).toBe(0);
+      mockInsertPath("47", new Date());
+      const res = makeRes();
+
+      await syncV2Push(
+        makeReq({ body: { ops: [streakIncrement("old-inc-off", 400 * DAY)] } }),
+        res,
+      );
+
+      expect(applyRoutineStreaks).toHaveBeenCalledTimes(1);
+      expect(res.body).toMatchObject({
+        results: [{ idempotency_key: "old-inc-off", status: "applied" }],
+      });
     });
   });
 

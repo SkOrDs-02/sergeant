@@ -61,6 +61,8 @@ describe("syncV2 wire reason/type registries", () => {
       "oplog_write_failed",
       // `U+0000` / одинокий сурогат у `row` відсікається ДО apply (data-17).
       "invalid_text_encoding",
+      // `increment` старший за вікно чистки журналу (ADR-0105 §2).
+      "stale_increment",
     ]);
     expect(new Set(ENGINE_REJECT_REASONS).size).toBe(
       ENGINE_REJECT_REASONS.length,

@@ -86,6 +86,10 @@ import {
 } from "./finyk/applySync.js";
 import { applyFinykTxNotes } from "./finyk/applyTxNotes.js";
 import { applyFinykTxTags } from "./finyk/applyTxTags.js";
+import {
+  appliedRetentionDays,
+  isIncrementPastReplayWindow,
+} from "./staleIncrementGuard.js";
 
 export { APPLY_REJECT_REASONS, ENGINE_REJECT_REASONS };
 export type { ApplyRejectReason, EngineRejectReason, RejectReason };
@@ -396,6 +400,21 @@ export async function syncV2Push(req: Request, res: Response): Promise<void> {
       ) {
         status = "rejected";
         reason = "op_not_supported";
+      }
+
+      // ADR-0105 §2: ключ ідемпотентності старшого `increment` чистка вже
+      // могла видалити, і повтор подвоїв би лічильник (`staleIncrementGuard`).
+      if (
+        status === "applied" &&
+        op.op === "increment" &&
+        isIncrementPastReplayWindow(
+          clientTs,
+          Date.now(),
+          appliedRetentionDays(),
+        )
+      ) {
+        status = "rejected";
+        reason = "stale_increment";
       }
 
       // `U+0000` / одинокий сурогат у `row` jsonb-журнал не прийме. Ловимо ДО

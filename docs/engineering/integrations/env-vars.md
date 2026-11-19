@@ -1,6 +1,6 @@
 # Environment variables — повний reference
 
-> **Last touched:** 2026-10-26 by @claude (rel-06: `SYNC_SNAPSHOT_ENABLED`); 2026-10-10 by @claude (rel-03: `SERGEANT_CLIENT_IP_SECRET`); 2026-10-03 by @claude (sec-08: `AUTH_EXPO_PLUGIN_ENABLED`, нативні схеми в проді порожні); 2026-09-17 (§ `LLM_*` узгоджено з `env/aiRoutingEnv.ts` — OpenRouter живий, дефолти `openrouter`; продюсери ai-memory без ingest/mono). **Next review:** 2026-12-16.
+> **Last touched:** 2026-11-19 by @claude (ADR-0105 §2: `SYNC_OP_LOG_APPLIED_RETENTION_DAYS`); 2026-10-26 by @claude (rel-06: `SYNC_SNAPSHOT_ENABLED`); 2026-10-10 by @claude (rel-03: `SERGEANT_CLIENT_IP_SECRET`); 2026-10-03 by @claude (sec-08: `AUTH_EXPO_PLUGIN_ENABLED`, нативні схеми в проді порожні); 2026-09-17 (§ `LLM_*` узгоджено з `env/aiRoutingEnv.ts` — OpenRouter живий, дефолти `openrouter`; продюсери ai-memory без ingest/mono). **Next review:** 2026-12-16.
 > **Status:** Active
 
 Цей документ — канонічний reference усіх змінних оточення Sergeant. Мінімальний `.env` (12 змінних, потрібних для `pnpm dev:web` + `pnpm dev:server`) лежить у [`/.env.example`](../../../.env.example) у корені репо. Сюди винесено: повний опис, формати, default-и, наслідки незаповненості, перехресні посилання на код / ADR / hardening-ноти.
@@ -423,6 +423,10 @@ Graceful shutdown.
 ### `SYNC_SNAPSHOT_ENABLED` _(optional, default `false`)_
 
 Рубильник `GET /api/v2/sync/snapshot` (ADR-0105 §3.3, аудит `rel-06`): знімок поточного стану модульних sync-таблиць користувача для пристрою, чий курсор pull отримав `410 sync_cursor_expired`. **Default `false`** → маршрут відповідає `404` (навіть без сесії), доки клієнт не вміє snapshot-bootstrap. Приймає `true/false/1/0`, читається з `process.env` на кожному запиті (`modules/sync/syncV2Snapshot.ts`). Сторінки обмежує той самий `SYNC_V2_PULL_MAX_BYTES`. Реєстр прапорців: [`feature-flags.md`](../architecture/feature-flags.md#32-фічі-та-інтеграції).
+
+### `SYNC_OP_LOG_APPLIED_RETENTION_DAYS` _(optional, default `0`)_
+
+Скільки днів живуть `applied`-оп-и журналу синку `sync_op_log` (ADR-0105 §2). **Default `0`** = чистка вимкнена, журнал росте як раніше. За `N ≥ 1` поллер [`logRetention/syncOpLogAppliedRetention.ts`](../../../apps/server/src/modules/logRetention/syncOpLogAppliedRetention.ts) раз на годину видаляє до 5 000 найстаріших `applied`-рядків старших за `N` днів і в тій самій транзакції піднімає `sync_op_log_floor` (пристрій із курсором нижче межі отримує `410 sync_cursor_expired` і бере знімок). Те саме число вмикає на push відмову `stale_increment` для `increment`, старших за `N` днів мінус добу. Читається при старті процесу; значення `< 1` = вимкнено. Ставить `90` власник, коли `SYNC_SNAPSHOT_ENABLED=true` і клієнтів без знімка майже немає; відкат - `0` (видалене не повертається). Реєстр прапорців: [`feature-flags.md`](../architecture/feature-flags.md#32-фічі-та-інтеграції).
 
 ### `ALLOWED_ORIGIN_REGEX` _(optional)_
 

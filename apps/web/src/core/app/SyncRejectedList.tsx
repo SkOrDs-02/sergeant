@@ -37,6 +37,7 @@ const REASON_LABEL: Record<string, string> = {
   op_not_supported: "застаріла версія застосунку",
   table_not_allowed: "застаріла версія застосунку",
   duplicate: "дубль уже прийнятого запису",
+  stale_increment: "надто давній запис, сервер уже не може його звірити",
 };
 
 const MODULE_LABEL: readonly (readonly [prefix: string, label: string])[] = [

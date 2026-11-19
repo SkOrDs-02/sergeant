@@ -8,7 +8,12 @@
  * before `http`/`express` are pulled in — which is the only way Sentry's
  * auto-instrumentation (it uses OTel internally) can monkey-patch them.
  * See `apps/server/src/sentry.ts`.
+ *
+ * Єдиний виняток: `./startupFatal.js` стоїть ще вище. Він тягне лише
+ * `node:fs` і мусить бути першим, щоб throw під час оцінки будь-якого
+ * імпорту нижче потрапив у stdout, а не зник.
  */
+import { releaseStartupFatalHandler } from "./startupFatal.js";
 import "./sentry.js";
 
 import { assertStartupEnv } from "./env/env.js";
@@ -77,6 +82,7 @@ import {
   registerSecurityEventsRoom,
 } from "./obs/securityEventsRoom.js";
 import { LogArchivePoller } from "./modules/logRetention/archivePoller.js";
+import { SyncOpLogAppliedRetentionPoller } from "./modules/logRetention/syncOpLogAppliedRetention.js";
 import { WebhookEventsRetentionPoller } from "./modules/webhooks/retentionPoller.js";
 import { PlataSyncPoller } from "./modules/billing/plataSync.js";
 import { SupersedeRetryPoller } from "./modules/billing/supersedeRetryPoller.js";
@@ -256,6 +262,15 @@ const logArchivePoller = new LogArchivePoller({
   bucket: env.GCS_LOG_ARCHIVE_BUCKET,
 });
 logArchivePoller.start();
+
+// Чистка `applied`-оп-ів журналу синку (ADR-0105 §2) — окремо від архіву:
+// не залежить від `LOG_ARCHIVE_ENABLED` і бакета. Off, поки
+// `SYNC_OP_LOG_APPLIED_RETENTION_DAYS=0` (дефолт).
+const syncOpLogRetentionPoller = new SyncOpLogAppliedRetentionPoller({
+  pool,
+  retentionDays: env.SYNC_OP_LOG_APPLIED_RETENTION_DAYS,
+});
+syncOpLogRetentionPoller.start();
 
 // Plata (monobank) native subscriptions — звірка проти subscription/status
 // (webhook лише прискорювач, полінг — арбітр стану). Off, поки
@@ -594,6 +609,9 @@ async function shutdown(reason: string, exitCode: number): Promise<void> {
     await runBackgroundStop("log_archive_poller", () =>
       logArchivePoller.stop(),
     );
+    await runBackgroundStop("sync_op_log_retention_poller", () =>
+      syncOpLogRetentionPoller.stop(),
+    );
 
     try {
       // Anthropic budget guard timer — synchronous stop, не блокує shutdown.
@@ -681,6 +699,7 @@ process.on("unhandledRejection", (reason: unknown) => {
   // AI-респонс = рестарт процесу. uncaughtException — інша історія.
 });
 
+releaseStartupFatalHandler();
 process.on("uncaughtException", (err: Error) => {
   try {
     uncaughtExceptionsTotal.inc();

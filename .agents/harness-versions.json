@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "current": "8.15.1",
+  "current": "8.15.2",
   "versions": {
     "0.1.0": {
       "releasedAt": "2026-06-29",
@@ -915,6 +915,14 @@
       "passRateBaseline": null
     },
     "8.15.1": {
+      "releasedAt": "2026-11-19",
+      "changes": [
+        "bump from 8.15.0 -> 8.15.1: typo / link / freshness-only change"
+      ],
+      "agentsTestedWith": [],
+      "passRateBaseline": null
+    },
+    "8.15.2": {
       "releasedAt": "2026-11-19",
       "changes": [
         "AGENTS.md § Performance budgets: стеля eager 274 -> 259 kB рішенням власника 2026-11-19 (барель @sergeant/shared поза критичним шляхом)"
