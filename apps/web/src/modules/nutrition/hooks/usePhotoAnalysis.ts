@@ -22,7 +22,7 @@ import { fileToBase64 } from "../lib/fileToBase64";
 import { formatNutritionError } from "../lib/nutritionErrors";
 import { failedCopy } from "@shared/i18n/failedCopy";
 import { isQuotaError } from "../../../core/billing/quotaError";
-import { visiblePhotoQuestions } from "../lib/photoQuestions";
+import { splitPhotoQuestions } from "../lib/photoQuestions";
 
 export interface PhotoAnalysisPayload {
   image_base64: string;
@@ -257,12 +257,23 @@ export function usePhotoAnalysis({
     mutationFn: () => {
       if (!lastPhotoPayload)
         throw new Error("Немає вихідного фото. Спочатку зроби аналіз.");
-      // Той самий список, що бачить картка: питання про вагу сховане (його
-      // місце займає поле «Порція (г)», яке йде окремо як `portion_grams`).
-      const questions = visiblePhotoQuestions(photoResult?.questions);
-      const answered = questions
+      // Той самий розклад, що бачить картка: питання моделі про вагу страви
+      // підписує поле порції, а не живе окремим полем (`photoQuestions.ts`).
+      const { portionQuestion, otherQuestions } = splitPhotoQuestions(
+        photoResult?.questions,
+        photoResult?.items?.length ?? 0,
+      );
+      const grams = Number(String(portionGrams).replace(",", "."));
+      const portionKnown = Number.isFinite(grams) && grams > 0;
+      const answered = otherQuestions
         .map((q) => ({ question: q, answer: String(answers[q] || "").trim() }))
         .filter((x) => x.answer);
+      // Відповідь у полі порції закриває й власне питання моделі про вагу:
+      // числом вона вже їде в `portion_grams`, а парою в `qna` модель бачить,
+      // що її питання не лишилось без відповіді.
+      if (portionQuestion && portionKnown) {
+        answered.unshift({ question: portionQuestion, answer: `${grams} г` });
+      }
       // Зауваження стоїть ПЕРШИМ: `qna` ріжеться до 8 пар на сервері, і
       // якщо модель колись поставить більше питань, першою випаде не та
       // репліка, яку людина написала своїми словами.
@@ -270,11 +281,10 @@ export function usePhotoAnalysis({
       const qna = freeNote
         ? [{ question: PHOTO_NOTE_QUESTION, answer: freeNote }, ...answered]
         : answered;
-      const grams = Number(String(portionGrams).replace(",", "."));
       return nutritionApi.refinePhoto({
         ...lastPhotoPayload,
         prior_result: photoResult,
-        portion_grams: Number.isFinite(grams) && grams > 0 ? grams : null,
+        portion_grams: portionKnown ? grams : null,
         qna,
         locale: "uk-UA",
       });

@@ -447,9 +447,9 @@ describe("usePhotoAnalysis", () => {
 
     it("reuses lastPhotoPayload and updates photoResult", async () => {
       apiAnalyzePhoto.mockResolvedValueOnce({
-        // Питання про вагу — дубль поля «Порція (г)»: картка його не
-        // показує, тож і в `qna` воно не їде, навіть із відповіддю
-        // (`visiblePhotoQuestions`, фідбек 2026-11-19).
+        // Питання моделі про вагу підписує поле порції (одне поле, а не два,
+        // рішення власника 2026-11-19): окремої текстової відповіді на нього
+        // немає, а число з поля закриває його парою в `qna`.
         result: { name: "v1", questions: ["Яка порція?", "Зі сметаною?"] },
       });
       apiRefinePhoto.mockResolvedValueOnce({
@@ -487,7 +487,10 @@ describe("usePhotoAnalysis", () => {
         expect.objectContaining({
           image_base64: "BASE64",
           portion_grams: 250,
-          qna: [{ question: "Зі сметаною?", answer: "так" }],
+          qna: [
+            { question: "Яка порція?", answer: "250 г" },
+            { question: "Зі сметаною?", answer: "так" },
+          ],
           locale: "uk-UA",
         }),
       );

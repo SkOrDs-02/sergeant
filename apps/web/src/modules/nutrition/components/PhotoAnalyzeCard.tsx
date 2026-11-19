@@ -2,7 +2,7 @@
  * Last validated: 2026-11-19
  * Status: Active
  */
-import type { Dispatch, Ref, SetStateAction } from "react";
+import { useId, type Dispatch, type Ref, type SetStateAction } from "react";
 import { Button } from "@shared/components/ui/Button";
 import { Input, Textarea } from "@shared/components/ui/Input";
 import { SectionHeading } from "@shared/components/ui/SectionHeading";
@@ -13,7 +13,7 @@ import type { NutritionNotFoodKind } from "@sergeant/api-client";
 import type { NullableMacros } from "@sergeant/shared";
 import type { NutritionPhotoItem } from "@sergeant/api-client";
 import { PHOTO_NOTE_MAX_LENGTH } from "../hooks/usePhotoAnalysis";
-import { visiblePhotoQuestions } from "../lib/photoQuestions";
+import { splitPhotoQuestions } from "../lib/photoQuestions";
 import { NotFoodNotice } from "./NotFoodNotice";
 import { PhotoItemsList } from "./PhotoItemsList";
 import { PhotoPrivacyNotice } from "./PhotoPrivacyNotice";
@@ -141,6 +141,11 @@ export function PhotoAnalyzeCard({
   renderAddItem,
 }: PhotoAnalyzeCardProps) {
   const armPinchZoomReset = useResetPinchZoomAfterCameraCapture();
+  const portionFieldId = useId();
+  const questionsSplit = splitPhotoQuestions(
+    photoResult?.questions,
+    photoResult?.items?.length ?? 0,
+  );
   return (
     // Раніше — самостійна картка на сторінці «Огляд»; тепер живе кроком
     // усередині AddMealSheet, тож без власного Card-хрому: панель і
@@ -354,12 +359,19 @@ export function PhotoAnalyzeCard({
               Уточнення
             </SectionHeading>
 
+            {/* Порцію питаємо один раз (рішення власника 2026-11-19): якщо
+                модель спитала вагу страви, її питання підписує це числове
+                поле замість окремого текстового — див. `photoQuestions.ts`. */}
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
               <div>
-                <div className="text-style-caption text-muted mb-1">
-                  Порція (г), якщо знаєш
-                </div>
+                <label
+                  htmlFor={portionFieldId}
+                  className="block text-style-caption text-muted mb-1"
+                >
+                  {questionsSplit.portionQuestion ?? "Порція (г), якщо знаєш"}
+                </label>
                 <Input
+                  id={portionFieldId}
                   value={portionGrams}
                   onChange={(e) => setPortionGrams(e.target.value)}
                   inputMode="decimal"
@@ -369,7 +381,7 @@ export function PhotoAnalyzeCard({
               </div>
             </div>
 
-            {visiblePhotoQuestions(photoResult.questions).map((q) => (
+            {questionsSplit.otherQuestions.map((q) => (
               <div key={q}>
                 <div className="text-style-caption text-muted mb-1">{q}</div>
                 <Input
