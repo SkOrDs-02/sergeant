@@ -24,6 +24,7 @@ import {
   itemMeasure,
   itemUsesSetRows,
   measureCountsBy,
+  measureFields,
   programPlanForWorkoutItem,
   type ExerciseMeasure,
 } from "@sergeant/fizruk-domain/domain";
@@ -113,7 +114,8 @@ function findDoneSetBefore(
  * сам рядок, а виконаність похідна (`isSetDone` = reps > 0), тож незроблений
  * підхід одразу йшов у лічильник, обʼєм, рекорди й відновлення. Тепер рядок
  * народжується `{0, 0}` і стає виконаним лише після ✓ (або власного вводу
- * повторень). Не повертай копію значень у сам підхід.
+ * повторень). Не повертай копію значень у сам підхід у живій сесії. Виняток
+ * лише ретро без ✓ (рішення власника 2026-11-19, `seedSetForAdd`).
  */
 export function placeholderSetFor(
   sets: WorkoutSet[],
@@ -131,6 +133,39 @@ export function placeholderSetFor(
   return Number.isFinite(ownWeight) && ownWeight > 0
     ? { ...ghost, weightKg: ownWeight }
     : ghost;
+}
+
+/**
+ * Новий рядок «+ Підхід». У живій сесії — порожній `{0, 0}` (logic-18, див.
+ * AI-CONTEXT біля `placeholderSetFor`). У ретро ✓ немає, тож прийняти
+ * плейсхолдер одним тапом нічим: рядок одразу несе поля типу виміру з
+ * останнього зарахованого підходу цієї вправи, а коли його ще немає, з
+ * «було» тієї ж позиції минулої сесії, як у `main` (рішення власника
+ * 2026-11-19). RPE не копіюється. Немає ні того, ні того — порожній рядок.
+ */
+export function seedSetForAdd(
+  sets: WorkoutSet[],
+  item: WorkoutItem,
+  measure: ExerciseMeasure,
+  isRetro: boolean,
+  lastSessionSets: WorkoutSet[] = [],
+): WorkoutSet {
+  const empty: WorkoutSet = { weightKg: 0, reps: 0 };
+  if (!isRetro) return empty;
+  const src =
+    findDoneSetBefore(sets, sets.length, item) ?? lastSessionSets[sets.length];
+  if (!src) return empty;
+  const f = measureFields(measure);
+  return {
+    weightKg: f.weight ? (src.weightKg ?? 0) : 0,
+    reps: f.reps ? (src.reps ?? 0) : 0,
+    ...(f.time && src.durationSec != null
+      ? { durationSec: src.durationSec }
+      : {}),
+    ...(f.distance && src.distanceM != null
+      ? { distanceM: src.distanceM }
+      : {}),
+  };
 }
 
 /**
@@ -409,12 +444,20 @@ export function WorkoutItemCard({
                 data-emphasis={addSetIsNext ? "next" : undefined}
                 onClick={() => {
                   const currentSets = it.sets || [];
-                  // Порожній рядок: минулі значення лише плейсхолдерами
-                  // (`placeholderSetFor`), виконаним він стає після ✓.
-                  // Див. AI-CONTEXT біля `placeholderSetFor` (logic-18).
+                  // Жива сесія: порожній рядок, виконаним стає після ✓.
+                  // Ретро: копія останнього підходу (`seedSetForAdd`).
                   setSetIds((prev) => [...prev, crypto.randomUUID()]);
                   updateItem(activeWorkout.id, it.id, {
-                    sets: [...currentSets, { weightKg: 0, reps: 0 }],
+                    sets: [
+                      ...currentSets,
+                      seedSetForAdd(
+                        currentSets,
+                        it,
+                        measure,
+                        isRetro,
+                        lastFilteredSets,
+                      ),
+                    ],
                   });
                 }}
               >

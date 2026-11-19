@@ -397,15 +397,99 @@ describe("WorkoutItemCard — retro (logged after the fact)", () => {
   it("keeps editing and '+ Підхід' working", () => {
     renderCard({ isRetro: true });
     fireEvent.click(screen.getByRole("button", { name: "+ Підхід" }));
-    // Порожній рядок, як і в живій сесії (OD-28 Фз-3, `logic-18`): минулі
-    // значення лише плейсхолдерами.
+    // Рішення власника 2026-11-19: у ретро ✓ немає, тож новий рядок одразу
+    // несе значення останнього підходу, лишається поправити відмінне.
     expect(updateItem).toHaveBeenCalledWith("w1", "it-1", {
       sets: [
         { weightKg: 50, reps: 8 },
-        { weightKg: 0, reps: 0 },
+        { weightKg: 50, reps: 8 },
       ],
     });
     expect(setRestTimer).not.toHaveBeenCalled();
+  });
+
+  it("'+ Підхід' copies the LAST completed set, skipping an open row and RPE", () => {
+    renderCard({
+      isRetro: true,
+      it: makeItem({
+        sets: [
+          { weightKg: 50, reps: 8 },
+          { weightKg: 60, reps: 6, rpe: 9 },
+          { weightKg: 0, reps: 0 },
+        ],
+      }),
+    });
+    fireEvent.click(screen.getByRole("button", { name: "+ Підхід" }));
+    expect(updateItem).toHaveBeenCalledWith("w1", "it-1", {
+      sets: [
+        { weightKg: 50, reps: 8 },
+        { weightKg: 60, reps: 6, rpe: 9 },
+        { weightKg: 0, reps: 0 },
+        { weightKg: 60, reps: 6 },
+      ],
+    });
+  });
+
+  it("'+ Підхід' on a time exercise copies the seconds of the last set", () => {
+    renderCard({
+      isRetro: true,
+      it: makeItem({
+        exerciseId: "plank",
+        type: "strength",
+        measure: "time",
+        sets: [{ weightKg: 0, reps: 0, durationSec: 45 }],
+      } as Partial<WorkoutItem>),
+    });
+    fireEvent.click(screen.getByRole("button", { name: "+ Підхід" }));
+    expect(updateItem).toHaveBeenCalledWith("w1", "it-1", {
+      sets: [
+        { weightKg: 0, reps: 0, durationSec: 45 },
+        { weightKg: 0, reps: 0, durationSec: 45 },
+      ],
+    });
+  });
+
+  it("'+ Підхід' with no set yet copies the same-position set of the last session (as main)", () => {
+    renderCard({
+      isRetro: true,
+      it: makeItem({ sets: [] }),
+      lastByExerciseId: {
+        bench: makeItem({
+          id: "prev",
+          sets: [{ weightKg: 70, reps: 5, rpe: 8 }],
+        }),
+      },
+    });
+    fireEvent.click(screen.getByRole("button", { name: "+ Підхід" }));
+    expect(updateItem).toHaveBeenCalledWith("w1", "it-1", {
+      sets: [{ weightKg: 70, reps: 5 }],
+    });
+  });
+
+  it("'+ Підхід' with no set and no last session seeds an empty row", () => {
+    renderCard({ isRetro: true, it: makeItem({ sets: [] }) });
+    fireEvent.click(screen.getByRole("button", { name: "+ Підхід" }));
+    expect(updateItem).toHaveBeenCalledWith("w1", "it-1", {
+      sets: [{ weightKg: 0, reps: 0 }],
+    });
+  });
+
+  it("live session keeps the empty row on a time exercise too (logic-18)", () => {
+    renderCard({
+      it: makeItem({
+        exerciseId: "plank",
+        type: "strength",
+        measure: "time",
+        sets: [{ weightKg: 0, reps: 0, durationSec: 45 }],
+      } as Partial<WorkoutItem>),
+    });
+    fireEvent.click(screen.getByRole("button", { name: "+ Підхід" }));
+    expect(updateItem).toHaveBeenCalledWith("w1", "it-1", {
+      sets: [
+        { weightKg: 0, reps: 0, durationSec: 45 },
+        { weightKg: 0, reps: 0 },
+      ],
+    });
   });
 });
 
