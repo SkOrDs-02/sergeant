@@ -743,7 +743,9 @@ Endpoint `/api/internal/alerts/send` приймає `dedupSignature` (stable has
 
 > Defence-in-depth поверх `INTERNAL_API_KEY`. Trio змінних читається в [`apps/server/src/http/verifyWebhookSignature.ts`](../../../apps/server/src/http/verifyWebhookSignature.ts) і застосовується middleware-ом на `/api/internal/*` ПІСЛЯ bearer-token guard. Same trio має бути виставлений на n8n Railway env — workflow Function-node читає `$env.WEBHOOK_HMAC_SECRET` (template: [`ops/n8n-workflows/_lib/sign-internal-request.js`](https://github.com/SkOrDs-02/sergeant/blob/ffdf694cb60dcfeebc2c1de14887c5a8a1d71e6b/ops/n8n-workflows/_lib/sign-internal-request.js)).
 
-### `WEBHOOK_HMAC_SECRET` _(optional, recommended for prod)_
+### `WEBHOOK_HMAC_SECRET` _(обовʼязковий у production, якщо задано `INTERNAL_API_KEY` і `WEBHOOK_HMAC_REQUIRED=true`)_
+
+З 2026-11-19 (AIP-20260805-B27, рішення власника) `assertStartupEnv` у production **кидає помилку** на комбінацію «`INTERNAL_API_KEY` задано, `WEBHOOK_HMAC_REQUIRED=true`, секрет порожній»: контейнер не стартує, Coolify відкочується на старий. Перед деплоєм цієї зміни секрет має стояти в Coolify. Свідомий opt-out лише `WEBHOOK_HMAC_REQUIRED=false`. Поза production лишається warning. CLI-скрипти `scripts/replay-dlq.mjs` і `scripts/replay-webhook.mjs` підписують запити тим самим секретом з env (`scripts/lib/sign-internal-request.mjs`).
 
 32+ байтовий shared-secret. Згенерувати: `openssl rand -hex 32`. Пустий рядок (default) — middleware no-op, тільки bearer guard. Виставлений → перевіряється `X-Signature` = `hex(HMAC-SHA256(secret, "<X-Timestamp>.<rawBody>"))`. Той самий байтовий вміст має бути виставлений на n8n Railway, інакше Function-node-template падає з `WEBHOOK_HMAC_SECRET is not set`. Ротація — атомарно в обох місцях через [`rotate-secrets.md`](../../start/instructions/rotate-secrets.md) (replay-window 5min робить тимчасовий розфаз нешкідливим).
 

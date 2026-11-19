@@ -117,6 +117,24 @@ describe("appendFinanceLines", () => {
     expect(out).not.toContain("manual_m_ab12");
   });
 
+  it("[Останні операції] зберігає копійки: 12345 копійок → «123,45 грн»", () => {
+    const out = joined(
+      baseData({
+        statTx: [
+          {
+            id: "t-exact",
+            amount: -12345,
+            time: Math.floor(NOW.getTime() / 1000) - 100,
+            description: "Кава",
+          },
+        ],
+      }),
+      NOW,
+    );
+    expect(out).toContain("id:t-exact |");
+    expect(out).toContain("-123,45 грн");
+  });
+
   it("monthly totals are windowed to the current month (стадія 2c)", () => {
     // Раніше «Витрати місяця» сумували ВЕСЬ mono-mirror-кеш і підписувались
     // як місяць: транзакція за травень тягнулась у червневе число, а прогноз
