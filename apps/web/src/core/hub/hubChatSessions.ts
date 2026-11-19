@@ -1,32 +1,32 @@
 import {
-  resolveLsStore,
-  safeReadLS,
   safeReadStringLS,
   safeRemoveLS,
-  safeRemoveLSDurable,
   safeWriteLS,
-  safeWriteStringLSDurable,
 } from "@shared/lib/storage/storage";
+import {
+  chatLegacyHistorySlot,
+  chatSessionsMirrorSlot,
+  chatSessionsSlot,
+} from "../security/aiAtRest";
 import { getKyivShortDateStamp } from "@shared/lib/time/kyivTime";
+import { ACTIVE_SESSION_KEY } from "./hubChatOwner";
 import { normalizeStoredMessages, type ChatMessage } from "../lib/hubChatUtils";
 
-export const SESSIONS_STORAGE_KEY = "hub_chat_sessions_v1";
-export const ACTIVE_SESSION_KEY = "hub_chat_active_session_v1";
-const LEGACY_KEY = "hub_chat_history";
-/**
- * Privacy F12 (браузерна верифікація 2026-08-06): чат-ключі плоскі —
- * без цього стампа історія розмов попереднього акаунта (фінанси,
- * здоровʼя) читалась наступним залогіненим юзером на тому ж пристрої.
- */
-export const CHAT_OWNER_KEY = "hub_chat_owner_v1";
-/**
- * Синхронне localStorage-дзеркало сесій. Існує лише щоб пережити релоад,
- * який випередив асинхронний запис у SQLite — розбір у `loadSessions`.
- */
-export const SESSIONS_MIRROR_KEY = "hub_chat_sessions_mirror_v1";
-const ANON_OWNER = "__anon__";
 const SESSION_LIMIT = 20;
 const MESSAGES_PER_SESSION = 60;
+
+// Власник-штамп і прибирання при зміні особи живуть у `hubChatOwner.ts`
+// (без залежності від aiAtRest, щоб не тягнути його в eager-чанк).
+export {
+  ACTIVE_SESSION_KEY,
+  CHAT_OWNER_KEY,
+  SESSIONS_MIRROR_KEY,
+  SESSIONS_STORAGE_KEY,
+  deviceOwnerIsUser,
+  readDeviceOwnerId,
+  reconcileChatOwnerOnAuthChange,
+  type ChatOwnerReconcileResult,
+} from "./hubChatOwner";
 
 export interface HubChatSession {
   id: string;
@@ -96,9 +96,9 @@ function createInitialSession(messages?: ChatMessage[]): HubChatSession {
  * the new key already has data, leaves it untouched.
  */
 function migrateLegacyIfNeeded(): HubChatSession[] | null {
-  const existing = safeReadStringLS(SESSIONS_STORAGE_KEY);
+  const existing = chatSessionsSlot.read();
   if (existing) return null;
-  const parsed = safeReadLS<unknown>(LEGACY_KEY);
+  const parsed = parseJson(chatLegacyHistorySlot.read());
   if (!Array.isArray(parsed) || parsed.length === 0) return null;
   const session = createInitialSession(
     normalizeStoredMessages(parsed as ChatMessage[]),
@@ -114,6 +114,16 @@ function newestUpdatedAt(sessions: readonly HubChatSession[]): number {
     if (at > newest) newest = at;
   }
   return newest;
+}
+
+/** Історія чату зберігається зашифрованою (aiAtRest), слот віддає JSON-текст. */
+function parseJson(raw: string | null): unknown {
+  if (!raw) return null;
+  try {
+    return JSON.parse(raw);
+  } catch {
+    return null;
+  }
 }
 
 function parseSessionsBlob(raw: unknown): HubChatSession[] {
@@ -134,13 +144,7 @@ function parseSessionsBlob(raw: unknown): HubChatSession[] {
 }
 
 function readMirroredSessions(): HubChatSession[] {
-  const raw = resolveLsStore()?.getString(SESSIONS_MIRROR_KEY);
-  if (!raw) return [];
-  try {
-    return parseSessionsBlob(JSON.parse(raw));
-  } catch {
-    return [];
-  }
+  return parseSessionsBlob(parseJson(chatSessionsMirrorSlot.read()));
 }
 
 export function loadSessions(): HubChatSession[] {
@@ -185,7 +189,7 @@ function reconcileSessions(): HubChatSession[] {
   //
   // Тому джерело істини визначає дані, а не походження: перемагає той бік, у
   // якого свіжіший `updatedAt`. Це самовиправно в обидва боки.
-  const primary = parseSessionsBlob(safeReadLS<unknown>(SESSIONS_STORAGE_KEY));
+  const primary = parseSessionsBlob(parseJson(chatSessionsSlot.read()));
   const mirrored = readMirroredSessions();
   if (mirrored.length === 0) return primary;
   if (primary.length === 0) return mirrored;
@@ -205,12 +209,12 @@ export function saveSessions(sessions: HubChatSession[]): void {
       ...s,
       messages: s.messages.slice(-MESSAGES_PER_SESSION),
     }));
-  safeWriteLS(SESSIONS_STORAGE_KEY, trimmed);
+  void chatSessionsSlot.write(JSON.stringify(trimmed));
   // Синхронне дзеркало проти гонки «запис → релоад» (див. `loadSessions`).
   // Пишемо під ОКРЕМИМ ключем, а не durable-хелпером по основному: інакше
   // `bootstrapKvStore()` підняв би дзеркало у warm-cache як основне значення,
   // і порівняння за `updatedAt` втратило б другий бік.
-  safeWriteStringLSDurable(SESSIONS_MIRROR_KEY, JSON.stringify(trimmed));
+  void chatSessionsMirrorSlot.write(JSON.stringify(trimmed));
 
   // Mirror the most recent session's tail back into the legacy
   // `hub_chat_history` key so `hubBackup.buildHubBackupPayload`
@@ -219,93 +223,10 @@ export function saveSessions(sessions: HubChatSession[]): void {
   // out chat exports for users on the new schema.
   const newest = trimmed[0];
   if (newest) {
-    safeWriteLS(LEGACY_KEY, newest.messages.slice(-30));
+    void chatLegacyHistorySlot.write(
+      JSON.stringify(newest.messages.slice(-30)),
+    );
   }
-}
-
-/**
- * Wipe chat history when the device identity changes (F12 privacy).
- *
- * Called from `AuthProvider` whenever the resolved auth identity settles
- * (`userId` — Better Auth id, `null` — signed-out/anonymous). Semantics:
- *
- *  - first ever call (no stored owner) → stamp only, keep sessions: an
- *    anonymous visitor who signs up keeps their draft conversation (same
- *    continuity contract as the anonymous-data migration);
- *  - stored owner differs from the new identity → wipe sessions + active
- *    id + the legacy mirror, then stamp. Covers logout (user → anon) and
- *    a different account signing in on the shared device.
- *
- * @returns `changed` — a previous different owner's chat state was wiped
- *   (the caller's "identity actually changed on this device" signal for
- *   clearing other non-user-scoped residue, e.g. quick-stats);
- *   `prevOwnerWasUser` — that previous owner was an AUTHENTICATED user
- *   (not the anonymous placeholder). Only this stricter signal may
- *   trigger the heavy teardown (React-Query clear + persisted-snapshot
- *   purge + reload): an `anon → user` transition must stay soft so the
- *   anonymous-data migration can carry local drafts into the account.
- */
-export interface ChatOwnerReconcileResult {
-  changed: boolean;
-  prevOwnerWasUser: boolean;
-}
-
-/**
- * Чи штампований власник цього пристрою — справжній користувач (а не анонім і
- * не «ще не штамповано»).
- *
- * Потрібен AuthContext-у, щоб відрізнити «залогінений пристрій, `me` тимчасово
- * недоступний» (особистість тримаємо, нічого не стираємо) від анонімного
- * пристрою, якому тримати нічого. Лише читає, нічого не пише.
- */
-export function deviceOwnerIsUser(): boolean {
-  return readDeviceOwnerId() !== null;
-}
-
-/** Id власника-користувача зі штампа; `null` для аноніма і нештампованого. */
-export function readDeviceOwnerId(): string | null {
-  const owner = readOwnerStamp();
-  return owner === null || owner === ANON_OWNER ? null : owner;
-}
-
-/**
- * Штамп живе в сирому localStorage, а не в `webKVStore`. KV партиційований:
- * холодний старт читає `anon`-партицію, а вихід і втрата сесії пишуть
- * `"__anon__"` у партицію користувача, тож у `anon` назавжди лишався id
- * користувача, який уже вийшов (крок 0 спеки офлайн холодного старту).
- * Сирий LS спільний для партицій, і purge виходу та teardown знімає його
- * разом з усіма `hub_`-ключами.
- */
-function readOwnerStamp(): string | null {
-  return resolveLsStore()?.getString(CHAT_OWNER_KEY) ?? null;
-}
-
-export function reconcileChatOwnerOnAuthChange(
-  userId: string | null,
-): ChatOwnerReconcileResult {
-  const nextOwner = userId ?? ANON_OWNER;
-  const prevOwner = readOwnerStamp();
-  if (prevOwner === nextOwner) {
-    return { changed: false, prevOwnerWasUser: false };
-  }
-  // Копія штампа в KV від старих білдів: у `anon`-партиції вона тримала id
-  // користувача, який вийшов.
-  safeRemoveLS(CHAT_OWNER_KEY);
-  const changed = prevOwner !== null;
-  if (changed) {
-    safeRemoveLS(SESSIONS_STORAGE_KEY);
-    safeRemoveLS(ACTIVE_SESSION_KEY);
-    safeRemoveLS(LEGACY_KEY);
-    // Дзеркало мусить гинути РАЗОМ з основним ключем: інакше приватність F12
-    // (нижче в докстрінгу) обходиться через нього — наступний залогінений
-    // юзер на тому ж пристрої прочитав би історію попереднього.
-    safeRemoveLSDurable(SESSIONS_MIRROR_KEY);
-  }
-  resolveLsStore()?.setString(CHAT_OWNER_KEY, nextOwner);
-  return {
-    changed,
-    prevOwnerWasUser: changed && prevOwner !== ANON_OWNER,
-  };
 }
 
 export function loadActiveSessionId(): string | null {

@@ -5,10 +5,12 @@ import { STORAGE_KEYS } from "@sergeant/shared";
 // у `kv_store` її партиції на старті невидимий. Порожній через це банк
 // наступною ж правкою перезаписував серверну копію (аудит 2026-09-28, D2).
 import {
-  safeReadLSDurable,
   safeReadLSValidatedDurable,
   safeWriteLSDurable,
 } from "@shared/lib/storage/storage";
+import { logger } from "@shared/lib";
+import { memoryBankSlot } from "../security/aiAtRest";
+import { getAtRestWipeEpoch } from "../security/aiAtRestEpoch";
 import type { MemoryEntry } from "./types";
 import type { IconName } from "@shared/components/ui/Icon";
 
@@ -90,11 +92,11 @@ export function isMemoryBankForeign(): boolean {
   return storedOwner !== null && storedOwner !== currentMemoryBankOwner;
 }
 
-function writeMemoryBankMeta(updatedAt: string): void {
-  safeWriteLSDurable(MEMORY_BANK_META_KEY, {
-    updatedAt,
-    ownerId: currentMemoryBankOwner,
-  });
+function writeMemoryBankMeta(
+  updatedAt: string,
+  ownerId: string | null = currentMemoryBankOwner,
+): void {
+  safeWriteLSDurable(MEMORY_BANK_META_KEY, { updatedAt, ownerId });
 }
 
 // `icon` — імʼя з атласу дизайн-системи (`@shared/components/ui/Icon`).
@@ -264,7 +266,13 @@ export function buildMemoryImportPreview(
 export function readMemoryEntries(): MemoryEntry[] {
   // priv-02: чужий банк для поточної сесії не існує (див. isMemoryBankForeign).
   if (isMemoryBankForeign()) return [];
-  const parsed = safeReadLSDurable<unknown[]>(PROFILE_KEY, []);
+  let parsed: unknown = [];
+  try {
+    const raw = memoryBankSlot.read();
+    if (raw) parsed = JSON.parse(raw);
+  } catch {
+    parsed = [];
+  }
   if (!Array.isArray(parsed)) return [];
   return parsed
     .map((item) => normalizeMemoryEntry(item))
@@ -315,6 +323,12 @@ export function subscribeLocalMemoryEdit(fn: MemoryBankListener): () => void {
   };
 }
 
+// Зашифрований банк у іншій вкладці / після перемикання розділу акаунта
+// розшифровується асинхронно: сповіщаємо UI, коли кеш оновився.
+memoryBankSlot.onExternalChange(() => {
+  notify(listeners, readMemoryEntries());
+});
+
 function notify(set: Set<MemoryBankListener>, entries: MemoryEntry[]): void {
   // Підписник, який кинув виняток, не має ховати сам запис — він уже
   // стався — і не має заважати решті підписників.
@@ -325,17 +339,61 @@ function notify(set: Set<MemoryBankListener>, entries: MemoryEntry[]): void {
   }
 }
 
-export function writeMemoryEntries(entries: MemoryEntry[]): void {
-  if (!safeWriteLSDurable(PROFILE_KEY, entries)) {
+/** Лічильник записів банку: мітку часу ставить лише останній із них. */
+let memoryWriteGeneration = 0;
+
+/**
+ * Пише банк у зашифрований слот (aiAtRest), а мітку часу й сповіщення —
+ * лише ПІСЛЯ того, як шифртекст справді ліг у сховище (`stored`). Інакше релоад у вікні
+ * шифрування лишав би свіжу мітку при старих записах, і reconcile на буті
+ * штовхнув би їх на сервер як «новіші». Записи, перекриті новішим записом
+ * або стиранням (вихід), мітку не ставлять: її поставить новіший запис, а
+ * після стирання вона воскресила б банк попереднього власника. Коли запис
+ * синхронний (без WebCrypto/IDB), усе відбувається синхронно, як раніше.
+ */
+function commitMemoryBank(
+  entries: MemoryEntry[],
+  updatedAt: string,
+  local: boolean,
+): void {
+  let serialized: string;
+  try {
+    serialized = JSON.stringify(entries);
+  } catch {
     throw new Error("Не вдалося зберегти памʼять профілю");
   }
+  const generation = ++memoryWriteGeneration;
+  const epoch = getAtRestWipeEpoch();
+  const ownerId = currentMemoryBankOwner;
+  const done = memoryBankSlot.write(serialized);
+  const finish = (stored: boolean) => {
+    if (generation !== memoryWriteGeneration) return;
+    if (epoch !== getAtRestWipeEpoch()) return;
+    if (!stored) {
+      // Записи лишились тільки в памʼяті (ключ недоступний чи сховище
+      // відмовило): мітку часу не рухаємо і на сервер не штовхаємо, інакше
+      // reconcile вважав би старі записи на диску «новішими». UI бачить
+      // поточний стан із кешу.
+      logger.warn("[memoryBank] encrypted write not stored");
+      notify(listeners, entries);
+      return;
+    }
+    writeMemoryBankMeta(updatedAt, ownerId);
+    notify(listeners, entries);
+    // L-8: write-through push читає мітку з meta, тож лише після неї.
+    if (local) notify(localEditListeners, entries);
+  };
+  // Синхронно завершитись запис може лише двома шляхами: відкритий запис
+  // (середовище без шифрування, успіх) або замкнений слот (відмова).
+  if (memoryBankSlot.hasPendingWrite()) void done.then(finish);
+  else finish(!memoryBankSlot.isLocked());
+}
+
+export function writeMemoryEntries(entries: MemoryEntry[]): void {
   // L-8: генуїнний ЛОКАЛЬНИЙ запис — нова мітка часу ("зараз") + поточний
   // owner, які `profileWriteThrough.ts` звіряє з сервером на наступному
-  // boot-і (і які тригерять write-through push через `localEditListeners`
-  // нижче).
-  writeMemoryBankMeta(new Date().toISOString());
-  notify(listeners, entries);
-  notify(localEditListeners, entries);
+  // boot-і (і які тригерять write-through push через `localEditListeners`).
+  commitMemoryBank(entries, new Date().toISOString(), true);
 }
 
 /**
@@ -349,11 +407,7 @@ export function writeMemoryEntriesFromServer(
   entries: MemoryEntry[],
   serverUpdatedAt: string,
 ): void {
-  if (!safeWriteLSDurable(PROFILE_KEY, entries)) {
-    throw new Error("Не вдалося зберегти памʼять профілю");
-  }
-  writeMemoryBankMeta(serverUpdatedAt);
-  notify(listeners, entries);
+  commitMemoryBank(entries, serverUpdatedAt, false);
 }
 
 export function groupMemoryEntries(

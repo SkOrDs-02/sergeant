@@ -264,7 +264,7 @@
       "title": "вся AI-історія лежить у localStorage відкритим текстом",
       "severity": "unrated",
       "source": "docs/work/specs/audits/ai-pipeline-2026-08-05.md",
-      "status": "open",
+      "status": "fixed-pending-verification",
       "history": [
         {
           "at": "2026-09-05",
@@ -275,6 +275,11 @@
           "at": "2026-11-19",
           "event": "retriaged",
           "note": "Ревалідація кодом 2026-11-19: досі відкрито. Сесії чату і Memory Bank пишуться в localStorage відкритим JSON (apps/web/src/core/hub/hubChatSessions.ts, apps/web/src/core/profile/memoryBank.ts). ADR про прийняття ризику немає (ADR-0011 лише «TBD» про E2E). Потрібне рішення власника: ADR-прийняття або шифрування at rest невивантажуваним WebCrypto-ключем."
+        },
+        {
+          "at": "2026-11-19",
+          "event": "fixed",
+          "note": "Рішення власника: шифрувати у спокої. Історія чату (сесії, дзеркало, легасі hub_chat_history) і Memory Bank зберігаються конвертом AES-GCM {v:1,iv,ct} з неекстрактовним ключем в IndexedDB (apps/web/src/core/security/aiAtRest.ts); легасі-текст мігрує при читанні. Застереження: без WebCrypto/IndexedDB слот пише відкритий текст і легасі не мігрує; браузер зберігає байти ключа в IndexedDB того ж профілю, тож повний дамп профілю (і код в origin) дані розшифровує, захист діє лише для localStorage/SQLite-файлів окремо від IndexedDB. Відкритий текст, записаний до міграції, може лишатися у звільнених сторінках SQLite, журналі й LevelDB localStorage, доки їх не перевикористано. Коміт лежить у гілці claude/clever-shannon-clj8s8-ai-history-encryption, живого прогону немає."
         }
       ],
       "sourceAnchor": "B24 — вся AI-історія лежить у localStorage відкритим текстом"

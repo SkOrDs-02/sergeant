@@ -35,7 +35,7 @@ import { billingKeys } from "@shared/lib/api/queryKeys";
 import {
   deviceOwnerIsUser,
   reconcileChatOwnerOnAuthChange,
-} from "../hub/hubChatSessions";
+} from "../hub/hubChatOwner";
 import { clearPersistedQueryCache } from "@shared/lib/api/queryClientPersister";
 import { checkLogoutLoss } from "./logoutLossCheck";
 import { useUnsyncedLossPrompt } from "./useUnsyncedLossPrompt";

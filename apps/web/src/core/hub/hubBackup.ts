@@ -6,6 +6,7 @@ import {
   type BackupRestoreMode,
 } from "@shared/lib/backup/restoreMode";
 import { safeReadStringLS, safeWriteLS } from "@shared/lib/storage/storage";
+import { chatLegacyHistorySlot } from "../security/aiAtRest";
 import { isDualWriteOutcomeClean } from "../durability/dualWriteJournal";
 import {
   getHubRestoreModuleBlock,
@@ -38,7 +39,6 @@ import { applyNutritionBackupFoods } from "../../modules/nutrition/domain/nutrit
 import { isHubModuleId } from "@shared/lib/modules/hubNav";
 
 const HUB_MODULE_KEY = "hub_last_module";
-const HUB_CHAT_KEY = "hub_chat_history";
 
 export const HUB_BACKUP_KIND = "hub-backup";
 export const HUB_BACKUP_SCHEMA_VERSION = 1;
@@ -119,7 +119,7 @@ export function buildHubBackupPayload(
   const m = safeReadStringLS(HUB_MODULE_KEY);
   if (m) hub["lastModule"] = m;
   if (includeChat) {
-    const chat = safeReadStringLS(HUB_CHAT_KEY);
+    const chat = chatLegacyHistorySlot.read();
     if (chat) hub["chatHistory"] = chat;
   }
   return {
@@ -360,8 +360,19 @@ export async function applyHubBackupPayload(
       }
     }
     if (typeof h.chatHistory === "string") {
-      if (mode === "replace" || !safeReadStringLS(HUB_CHAT_KEY)) {
-        safeWriteLS(HUB_CHAT_KEY, h.chatHistory);
+      if (mode === "replace" || !chatLegacyHistorySlot.read()) {
+        // Чекаємо шифрований запис: HubBackupPanel перезавантажує сторінку
+        // одразу після відновлення, і запис у вікні шифрування загубився б.
+        // `false`: шифрований запис не ліг (ключ недоступний чи сховище
+        // відмовило). Кажемо про це, як і про збій модуля, а не «успіх».
+        if (!(await chatLegacyHistorySlot.write(h.chatHistory))) {
+          const done = restored.map((m) => RESTORE_MODULE_NAMES[m]).join(", ");
+          throw new Error(
+            done
+              ? `Відновлено: ${done}. Не вдалось відновити: історію чату. Спробуй імпорт ще раз.`
+              : "Не вдалось відновити історію чату. Спробуй імпорт ще раз.",
+          );
+        }
       }
     }
   }
