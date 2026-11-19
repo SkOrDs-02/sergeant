@@ -45,9 +45,12 @@ type ManualExpenseRow = {
  * (ADR-0078), а не київську північ із `isoDate`. Спільна для серверного шляху
  * і локального фолбеку; дохід, збій запису і відкат її не викликають.
  */
-export function emitChatExpenseRoutineAutoMark(date: string | undefined): void {
+export function emitChatExpenseRoutineAutoMark(
+  date: string | undefined,
+  recordedAt: Date = new Date(),
+): void {
   emitFinykExpenseRoutineAutoMark(
-    date && /^\d{4}-\d{2}-\d{2}$/.test(date) ? date : new Date(),
+    date && /^\d{4}-\d{2}-\d{2}$/.test(date) ? date : recordedAt,
   );
 }
 
@@ -61,7 +64,11 @@ export function createTransaction(
   if (!checked.ok) return checked.message;
   const amt = checked.amount;
   const txType = type === "income" ? "income" : "expense";
-  const nowIso = new Date().toISOString();
+  // Мить запису фіксуємо тут, а не в `.then` після SQLite: день події для
+  // Рутини має бути днем, коли людина записала витрату, а не днем, коли
+  // відпрацював запис (різниця видна біля півночі).
+  const recordedAt = new Date();
+  const nowIso = recordedAt.toISOString();
   const isoDate =
     date && /^\d{4}-\d{2}-\d{2}$/.test(date)
       ? (parseKyivDate(date)?.toISOString() ?? nowIso)
@@ -90,7 +97,7 @@ export function createTransaction(
     // Лише коли запис ліг: відмова чи тайм-аут SQLite не відмічає звичку.
     void write.then(
       (ok) => {
-        if (ok) emitChatExpenseRoutineAutoMark(date);
+        if (ok) emitChatExpenseRoutineAutoMark(date, recordedAt);
       },
       () => undefined,
     );

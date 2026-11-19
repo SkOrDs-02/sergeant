@@ -20,6 +20,7 @@ import { Icon } from "@shared/components/ui/Icon";
 import { coreMessages } from "@shared/i18n/uk.core";
 import { webKVStore } from "@shared/lib/storage/storage";
 import { formatKyivLongDate } from "@shared/lib/time/kyivTime";
+import { uaWeekdayName } from "@shared/lib/time/uaWeekdayDate";
 import {
   isFinykBalanceHidden,
   maskAmount,
@@ -48,16 +49,6 @@ function money(units: number, hidden: boolean, symbol = "₴"): string {
     `${formatNumberUk(Math.round(units))}${NARROW_NBSP}${symbol}`,
     hidden,
   );
-}
-
-// 2024-01-01 — понеділок; назва дня тижня з Intl, а не з каталогу копії
-// (каталог приймає лише рядки).
-const WEEKDAY_FORMAT = new Intl.DateTimeFormat("uk-UA", {
-  weekday: "long",
-  timeZone: "UTC",
-});
-function weekdayName(mondayIndex: number): string {
-  return WEEKDAY_FORMAT.format(new Date(Date.UTC(2024, 0, 1 + mondayIndex)));
 }
 
 /** Рядки картки; порожній масив — фактів немає, картки теж. */
@@ -92,7 +83,7 @@ export function formatBankHistoryFacts(
   if (third?.kind === "weekday") {
     lines.push(
       fill(copy.weekday, {
-        weekday: weekdayName(third.mondayIndex),
+        weekday: uaWeekdayName(third.mondayIndex),
         amount: money(third.avgMinor / 100, hidden),
       }),
     );
