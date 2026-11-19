@@ -96,21 +96,29 @@ afterEach(() => {
 });
 
 describe("aiAtRest: гонки", () => {
-  it("#2 розшифровка старого конверта не перетирає новіший запис", async () => {
+  it("#2/#19 запис до розбору шифртексту не замінює його; розбір не губиться", async () => {
     webKVStore.setString(KEY, envOf("B"));
     expect(chatSessionsSlot.read()).toBeNull(); // розшифровка B летить
+    expect(chatSessionsSlot.isReady()).toBe(false);
     await tick();
     expect(h.opens).toHaveLength(1);
 
-    void chatSessionsSlot.write("C");
+    // Холодний бут: споживач побачив «порожньо» і пише нове.
+    expect(await chatSessionsSlot.write("C")).toBe(false);
+    expect(h.seals).toHaveLength(0);
+    expect(safeReadStringLS(KEY)).toBe(envOf("B"));
+
+    h.opens[0]!.resolve("B");
+    await tick();
+    expect(chatSessionsSlot.isReady()).toBe(true);
+    expect(chatSessionsSlot.read()).toBe("B");
+
+    // Після розбору запис іде звичайно.
+    const p = chatSessionsSlot.write("C");
     await tick();
     resolveSeal("C");
-    await tick();
+    expect(await p).toBe(true);
     expect(safeReadStringLS(KEY)).toBe(envOf("C"));
-
-    h.opens[0]!.resolve("B"); // запізніла розшифровка
-    await tick();
-    expect(chatSessionsSlot.read()).toBe("C");
   });
 
   it("#3 міграція легасі не перезаписує запис, зроблений під час await ключа", async () => {
@@ -324,7 +332,10 @@ describe("aiAtRest: результат запису (#15)", () => {
     expect(memoryBankSlot.isLocked()).toBe(true);
     const pushed = vi.fn();
     const off = subscribeLocalMemoryEdit(pushed);
-    writeMemoryEntries([{ id: "m1", fact: "x", category: "other" } as never]);
+    // Банк не розібраний: локальна правка падає, а не робить вигляд.
+    expect(() =>
+      writeMemoryEntries([{ id: "m1", fact: "x", category: "other" } as never]),
+    ).toThrow(/завантажується/);
     await tick();
     expect(readMemoryBankMeta().updatedAt).toBe(MEMORY_BANK_META_EPOCH);
     expect(pushed).not.toHaveBeenCalled();

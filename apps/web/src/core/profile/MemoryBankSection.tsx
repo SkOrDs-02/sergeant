@@ -17,7 +17,9 @@ import {
   MEMORY_MANUAL_STEPS,
   memoryStorageSize,
   MEMORY_ONBOARDING_PROMPT,
+  isMemoryBankReady,
   readMemoryEntries,
+  whenMemoryBankReady,
   removeMemoryEntry,
   subscribeMemoryEntries,
   upsertMemoryFact,
@@ -63,6 +65,27 @@ export function MemoryBankSection() {
   // ще в TDZ у момент створення замикання.
   const saveEntries = useCallback(
     function persist(next: MemoryEntry[]) {
+      // B24: банк ще не розшифровано, а `next` збудовано на порожньому
+      // виді. Повтор цього `next` після розшифровки затер би справжній банк,
+      // тож тут без кнопки «Повторити»: показуємо, що є, і просимо ще раз.
+      if (!isMemoryBankReady()) {
+        setEntries(readMemoryEntries());
+        toast.error(
+          "Памʼять ще завантажується. Спробуй ще раз за мить.",
+          undefined,
+          {
+            // Не повтор `next` (він зі стану до розшифровки), а оновлення
+            // списку зі сховища: правку людина повторює вже на справжніх даних.
+            label: "Оновити",
+            onClick: () => {
+              void whenMemoryBankReady().then(() =>
+                setEntries(readMemoryEntries()),
+              );
+            },
+          },
+        );
+        return;
+      }
       setEntries(next);
       try {
         writeMemoryEntries(next);

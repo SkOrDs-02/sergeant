@@ -34,7 +34,11 @@ import {
 import { resolveKcalGoalsForDays } from "@sergeant/nutrition-domain";
 import { generateRecommendations } from "../recommendationEngine";
 import { generateInsights } from "../insightsEngine";
-import { CATEGORY_META, readMemoryEntries } from "../../profile/memoryBank";
+import {
+  CATEGORY_META,
+  isMemoryBankReady,
+  readMemoryEntries,
+} from "../../profile/memoryBank";
 import type { NutritionMeal } from "./types";
 
 /**
@@ -308,7 +312,11 @@ export function appendAiSignalLines(lines: string[]): void {
   }
 
   try {
-    const profile = readMemoryEntries();
+    // B24: нерозшифрований банк — це «недоступно», а не «порожньо».
+    if (!isMemoryBankReady()) {
+      lines.push(`[Профіль користувача] ${DATA_UNAVAILABLE_MARKER}`);
+    }
+    const profile = isMemoryBankReady() ? readMemoryEntries() : [];
     if (profile.length > 0) {
       lines.push("[Профіль користувача]");
       // AI-DANGER: мітка рядка — контракт із сервером. `healthGate.ts`

@@ -205,6 +205,26 @@ describe("applyHubBackupPayload", () => {
     expect(localStorage.getItem(HUB_CHAT_KEY)).toBe('[{"role":"user"}]');
   });
 
+  it("B24 #20: історія чату замкнена (ключа немає) → імпорт кидає і при повторі, merge не бачить «порожньо»", async () => {
+    const ready = vi
+      .spyOn(chatLegacyHistorySlot, "whenReady")
+      .mockResolvedValue(false);
+    const write = vi.spyOn(chatLegacyHistorySlot, "write");
+    try {
+      for (let attempt = 0; attempt < 2; attempt++) {
+        await expect(
+          applyHubBackupPayload(
+            validPayload({ hub: { chatHistory: '[{"role":"user"}]' } }),
+          ),
+        ).rejects.toThrow(/історію чату/);
+      }
+      expect(write).not.toHaveBeenCalled();
+    } finally {
+      ready.mockRestore();
+      write.mockRestore();
+    }
+  });
+
   it("B24: шифрований запис історії чату не ліг → відновлення кидає, а не рапортує успіх", async () => {
     const spy = vi
       .spyOn(chatLegacyHistorySlot, "write")
