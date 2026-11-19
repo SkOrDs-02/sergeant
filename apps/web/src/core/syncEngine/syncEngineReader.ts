@@ -1,4 +1,10 @@
 import type { SyncV2PullOp, SyncV2PullResponse } from "@sergeant/api-client";
+import {
+  markReplicaBootstrapDone,
+  REPLICA_BOOTSTRAP_ORIGIN,
+  resolvePullMode,
+  skipDuringBootstrap,
+} from "./replicaBootstrap.js";
 import type { SqliteMigrationClient } from "@sergeant/db-schema/migrate/sqlite";
 
 import { applyPullOp } from "./applyPullOp.js";
@@ -286,7 +292,19 @@ export function createSyncEngineReaderRuntime(
       // Інший користувач або нова партиція бази = початковий pull знову
       // «не завершено» (див. `initialPullState.ts`).
       reconcileInitialPull(userId, client);
-      let since = await readPullSinceCursor(client, userId);
+      // Розділ без позначки «відновлено» один раз тягне ВСЕ від нуля, разом
+      // із власними оп-ами пристрою (`replicaBootstrap.ts`): інакше скинута
+      // копія ніколи не отримала б назад того, що записала сама.
+      const resolved = await resolvePullMode(
+        client,
+        userId,
+        await readPullSinceCursor(client, userId),
+      );
+      const bootstrap = resolved.mode === "bootstrap";
+      const pullOriginId = bootstrap
+        ? REPLICA_BOOTSTRAP_ORIGIN
+        : deps.originDeviceId;
+      let since = resolved.since;
       let pulled = 0;
       let applied = 0;
       let skipped = 0;
@@ -308,7 +326,7 @@ export function createSyncEngineReaderRuntime(
           try {
             return await deps.pull(from, {
               limit: deps.limit,
-              originDeviceId: deps.originDeviceId,
+              originDeviceId: pullOriginId,
             });
           } catch (error) {
             const waitMs = rateLimitWaitMs(error);
@@ -325,28 +343,30 @@ export function createSyncEngineReaderRuntime(
       // Догін нотаток до операцій для пристроїв зі старого бандла (див.
       // `txNotesBackfill.ts`). Збій не має блокувати основний pull: звітуємо
       // й ідемо далі, наступний тік продовжить із збереженого прогресу.
-      try {
-        await backfillTxNotesOnce({
-          client,
-          userId,
-          originDeviceId: deps.originDeviceId,
-          mainCursor: since,
-          fetchPage,
-          affectedTables,
-          isConstraintFailure,
-        });
-      } catch (error) {
+      // Відновлення від нуля й так охоплює нотатки: догін не потрібен.
+      if (!bootstrap)
         try {
-          // Офлайн основний pull нижче впаде сам і буде класифікований.
-          if (readOnlineStatus() !== false)
-            deps.captureException?.(error, {
-              scope: "sync-v2-tx-notes-backfill",
-              tags: { area: "sync", sync_direction: "pull" },
-            });
-        } catch {
-          /* обсервабіліті ніколи не має ламати шлях читання */
+          await backfillTxNotesOnce({
+            client,
+            userId,
+            originDeviceId: deps.originDeviceId,
+            mainCursor: since,
+            fetchPage,
+            affectedTables,
+            isConstraintFailure,
+          });
+        } catch (error) {
+          try {
+            // Офлайн основний pull нижче впаде сам і буде класифікований.
+            if (readOnlineStatus() !== false)
+              deps.captureException?.(error, {
+                scope: "sync-v2-tx-notes-backfill",
+                tags: { area: "sync", sync_direction: "pull" },
+              });
+          } catch {
+            /* обсервабіліті ніколи не має ламати шлях читання */
+          }
         }
-      }
 
       // Основний pull отримує власний бюджет чекань рейт-ліміту, навіть коли
       // догін вичерпав свій.
@@ -359,13 +379,12 @@ export function createSyncEngineReaderRuntime(
           pulled += 1;
           maxOpId = Math.max(maxOpId, op.id);
           let outcome: Awaited<ReturnType<typeof applyPullOp>>;
+          if (bootstrap && skipDuringBootstrap(op, deps.originDeviceId)) {
+            skipped += 1;
+            continue;
+          }
           try {
-            outcome = await applyPullOp(
-              client,
-              op,
-              userId,
-              deps.originDeviceId,
-            );
+            outcome = await applyPullOp(client, op, userId, pullOriginId);
           } catch (error) {
             // BUSY/IOERR/full disk/closed worker must retry this cursor.
             // Advancing it would permanently omit a valid server record.
@@ -405,7 +424,10 @@ export function createSyncEngineReaderRuntime(
       }
 
       // Повний pull з нуля вже охопив і нотатки: догін не потрібен.
-      if (startedFresh) await markTxNotesBackfillDone(client, userId);
+      if (startedFresh || bootstrap) {
+        await markTxNotesBackfillDone(client, userId);
+      }
+      if (bootstrap) await markReplicaBootstrapDone(client, userId);
 
       // Не `applied > 0`: у множині можуть лежати таблиці з попереднього
       // невдалого тіка (див. `pendingRefresh`).
