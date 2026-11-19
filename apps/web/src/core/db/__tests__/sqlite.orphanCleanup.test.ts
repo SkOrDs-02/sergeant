@@ -67,7 +67,9 @@ vi.mock("@sqlite.org/sqlite-wasm", () => {
     importDb: async () => {},
     unlink(name: string) {
       if (wasm.state.unlinkThrows) throw new Error("unlink failed");
-      return wasm.state.files.delete(wasm.norm(name));
+      // Як справжній пул: `unlink` НЕ нормалізує ім'я (`deletePath`), тож
+      // голе ім'я без скісної не знаходить файл. Нормалізує лише відкриття.
+      return wasm.state.files.delete(name);
     },
   };
   return {

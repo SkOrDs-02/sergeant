@@ -134,6 +134,17 @@ export function findInternalTransferSuggestions(
       ? options.jarAccountIds
       : new Set(options.jarAccountIds ?? []);
   const edges: MatchEdge[] = [];
+  /**
+   * Ноги вже закритих пар (обидві позначені переказом і підходять одна
+   * одній). Така операція не може стати ногою ще одного переказу.
+   *
+   * AI-CONTEXT (фідбек власника 2026-11-19, «перепитує ті ж самі
+   * операції»): закрита пара A:B випадала з графа, але ребро A:C до нової
+   * операції C лишалось — гілка «добити наполовину позначену пару» бачила A
+   * як позначену без партнера й пропонувала A ще раз. Добивання справжньої
+   * половинки (A позначена, а B ще ні) лишається: там A у цій множині немає.
+   */
+  const pairedTransferIds = new Set<string>();
 
   for (let i = 0; i < list.length; i += 1) {
     const left = list[i];
@@ -195,6 +206,11 @@ export function findInternalTransferSuggestions(
         isAlreadyTransfer(outgoing, txCategories) &&
         isAlreadyTransfer(incoming, txCategories)
       ) {
+        // Обидві ноги вже позначені й підходять одна одній — це закрита
+        // пара. Запамʼятовуємо її ноги, щоб жодна не отримала нового
+        // партнера нижче.
+        pairedTransferIds.add(outgoing.id);
+        pairedTransferIds.add(incoming.id);
         continue;
       }
 
@@ -208,9 +224,18 @@ export function findInternalTransferSuggestions(
     }
   }
 
-  const accepted = edges.filter((edge) => {
-    const outgoingBest = bestUnambiguousEdge(edge.outgoing.id, edges);
-    const incomingBest = bestUnambiguousEdge(edge.incoming.id, edges);
+  // Ребра до вже закритих пар прибираємо ДО вибору найкращого: інакше така
+  // нога і сама потрапила б у пропозицію, і робила б неоднозначним
+  // справжнього кандидата поруч.
+  const openEdges = edges.filter(
+    (edge) =>
+      !pairedTransferIds.has(edge.outgoing.id) &&
+      !pairedTransferIds.has(edge.incoming.id),
+  );
+
+  const accepted = openEdges.filter((edge) => {
+    const outgoingBest = bestUnambiguousEdge(edge.outgoing.id, openEdges);
+    const incomingBest = bestUnambiguousEdge(edge.incoming.id, openEdges);
     return outgoingBest === edge && incomingBest === edge;
   });
 
@@ -258,6 +283,17 @@ export interface TransferSuggestionFilterOptions {
    * again.
    */
   snoozedPairKeys?: Readonly<Record<string, string>> | undefined;
+  /**
+   * Id операцій, про які вже відповіли «Не переказ». Пропозиція з будь-якою
+   * з них більше не показується, навіть у парі з іншою операцією.
+   *
+   * AI-CONTEXT (фідбек власника 2026-11-19): відмова за ключем ПАРИ ховала
+   * лише цю пару. Щойно приходила нова операція з тією ж сумою, відхилена
+   * нога ставала найкращим збігом уже для неї, і людину питали про ту саму
+   * операцію вдруге — «не повторюватися» означає памʼятати операції, а не
+   * пари.
+   */
+  reviewedTxIds?: ReadonlySet<string> | readonly string[] | undefined;
   /** Current Kyiv day key (`YYYY-MM-DD`), e.g. from `getKyivDayKey()`. */
   todayKey: string;
 }
@@ -275,10 +311,20 @@ export function filterTransferSuggestions(
     options.rejectedPairKeys instanceof Set
       ? options.rejectedPairKeys
       : new Set(options.rejectedPairKeys ?? []);
+  const reviewed =
+    options.reviewedTxIds instanceof Set
+      ? options.reviewedTxIds
+      : new Set(options.reviewedTxIds ?? []);
   const snoozed = options.snoozedPairKeys ?? {};
   return suggestions.filter((suggestion) => {
     const key = transferSuggestionPairKey(suggestion);
     if (rejected.has(key)) return false;
+    if (
+      reviewed.has(suggestion.outgoing.id) ||
+      reviewed.has(suggestion.incoming.id)
+    ) {
+      return false;
+    }
     return snoozed[key] !== options.todayKey;
   });
 }

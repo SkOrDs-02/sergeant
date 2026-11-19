@@ -1,6 +1,6 @@
 # Playbook: Червоний бандл-бюджет (size-limit / eager)
 
-> **Last touched:** 2026-11-19 by @claude (стеля eager 274 → 259 kB рішенням власника). **Next review:** 2027-03-15.
+> **Last touched:** 2026-11-19 by @claude. **Next review:** 2027-03-16.; 2026-11-19 by @claude (стеля eager 274 → 259 kB рішенням власника). **Next review:** 2027-03-15.
 > **Status:** Active
 > **Runtime-specific:** no
 

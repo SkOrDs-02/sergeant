@@ -1,5 +1,5 @@
 /**
- * Last validated: 2026-05-14
+ * Last validated: 2026-11-19
  * Status: Active
  */
 import { MorphChevron } from "@shared/components/ui/MorphChevron";
@@ -12,6 +12,11 @@ import { SectionHeading } from "@shared/components/ui/SectionHeading";
 import { Sheet } from "@shared/components/ui/Sheet";
 import { messages } from "@shared/i18n/uk";
 import { NAME_MAX_LEN, NOTE_MAX_LEN } from "@shared/lib/text/limits";
+import { isTextEntryElement } from "@shared/lib/platform/softKeyboard";
+import {
+  blurActiveField,
+  keepFieldFocusProps,
+} from "@shared/lib/ui/keepFieldFocus";
 import { usePantryFirstPullPending } from "../hooks/usePantryFirstPullPending";
 import { formatPantryQty } from "../lib/formatPantryQty";
 import { PantryListGuide, PantryParsePreview } from "./PantryParsePanel";
@@ -412,6 +417,20 @@ export function PantryCard({
 }: PantryCardProps) {
   const [mode, setMode] = useState<PantryInputMode>("single");
   const [addOpen, setAddOpen] = useState(false);
+  // Перемикання «По одному» ↔ «Списком», поки людина друкує: нове поле
+  // забирає фокус у старого, тож клавіатура не ховається між ними, а аркуш
+  // не стрибає (фідбек власника 2026-11-19). В аркуші поле й так має
+  // `autoFocus`, а в інлайн-формі на сторінці — лише якщо фокус уже був
+  // у полі форми.
+  const formRef = useRef<HTMLDivElement>(null);
+  const [focusNewField, setFocusNewField] = useState(false);
+  const changeMode = (next: PantryInputMode) => {
+    const active = document.activeElement;
+    setFocusNewField(
+      isTextEntryElement(active) && Boolean(formRef.current?.contains(active)),
+    );
+    setMode(next);
+  };
 
   // «Порожня» = у коморі немає ЗБЕРЕЖЕНИХ позицій. `effectiveItems` для
   // порожньої комори — це живий парс чернетки textarea («Списком»), тож
@@ -433,11 +452,11 @@ export function PantryCard({
   const formInline = empty || (hasPending && !addOpen);
 
   const addForm = (
-    <>
+    <div ref={formRef}>
       <div className="mb-3">
         <PantrySourceTabs
           mode={mode}
-          onModeChange={setMode}
+          onModeChange={changeMode}
           onScanBarcode={onScanBarcode}
           pantryItems={pantryItems}
           upsertItem={upsertItem}
@@ -464,13 +483,17 @@ export function PantryCard({
             aria-label="Назва продукту"
             placeholder="Продукт"
             // eslint-disable-next-line jsx-a11y/no-autofocus -- фокус лише в аркуші, відкритому тапом «Додати»
-            autoFocus={!formInline}
+            autoFocus={!formInline || focusNewField}
             maxLength={NAME_MAX_LEN}
             disabled={busy}
           />
           <Button
             type="button"
             variant="solid"
+            // Тап не забирає фокус із поля: клавіатура лишається для
+            // наступного продукту, а аркуш не падає між `mousedown` і
+            // `click` — інакше перший тап губився (`keepFieldFocus.ts`).
+            {...keepFieldFocusProps}
             onClick={() => {
               upsertItem(newItemName);
               setNewItemName("");
@@ -496,7 +519,7 @@ export function PantryCard({
               // сусідні тести шукають саме їх підрядком через `getByLabelText`.
               aria-label="Список продуктів"
               // eslint-disable-next-line jsx-a11y/no-autofocus -- фокус лише в аркуші, відкритому тапом «Додати»
-              autoFocus={!formInline}
+              autoFocus={!formInline || focusNewField}
               placeholder="Список продуктів"
               className="min-h-[96px] px-3 py-2.5"
               maxLength={NOTE_MAX_LEN}
@@ -506,7 +529,15 @@ export function PantryCard({
           <Button
             type="button"
             variant="solid"
-            onClick={parsePantry}
+            // Той самий захист тапу, що й у «Додати». Але після розбору
+            // клавіатура ховається: інакше вона накрила б превʼю позицій,
+            // яке зʼявляється нижче. Ховаємо вже в `click`, коли тап
+            // зарахований.
+            {...keepFieldFocusProps}
+            onClick={() => {
+              parsePantry();
+              blurActiveField();
+            }}
             disabled={busy || !pantryText.trim()}
             // Той самий 44px-флор, що й у «Додати» вище (ревʼю CodeRabbit 2026-08-26).
             className="shrink-0 mt-0.5 pointer-coarse:min-h-[44px]"
@@ -541,7 +572,7 @@ export function PantryCard({
           }
         />
       )}
-    </>
+    </div>
   );
 
   if (syncing) {

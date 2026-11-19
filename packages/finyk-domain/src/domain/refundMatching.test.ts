@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
 import {
+  REFUND_CLOCK_SKEW_SECONDS,
   REFUND_MAX_GAP_DAYS,
   cancelledMerchantOf,
   findCancellationPairs,
@@ -284,5 +285,89 @@ describe("findCancellationPairs — кілька однакових списан
         tx("in", 18_900, BASE + 600, "Скасування. Uklon"),
       ]),
     ).toEqual([]);
+  });
+});
+
+// Фідбек власника 2026-11-19: відхилені перекази на картку за номером
+// («410247******8090» −170 000 ₴ і «Скасування. 410247******8090» +170 000 ₴)
+// рахувались витратою й доходом, бо ключ мерчанта з маскованого номера був
+// порожній.
+describe("findCancellationPairs — переказ на картку за номером", () => {
+  const card = { accountId: "white" };
+
+  it("парує списання й скасування з маскованим номером картки", () => {
+    const list = [
+      tx("p1-out", -17_000_000, BASE, "410247******8090", card),
+      tx("p1-in", 17_000_000, BASE, "Скасування. 410247******8090", card),
+      tx("p2-out", -17_000_000, BASE - 180, "535557******8159", card),
+      tx("p2-in", 17_000_000, BASE - 180, "Скасування. 535557******8159", card),
+    ];
+    const pairs = findCancellationPairs(list);
+    expect(pairs.map((p) => `${p.debit.id}→${p.credit.id}`).sort()).toEqual([
+      "p1-out→p1-in",
+      "p2-out→p2-in",
+    ]);
+    expect([...findCancelledTxIds(list)].sort()).toEqual([
+      "p1-in",
+      "p1-out",
+      "p2-in",
+      "p2-out",
+    ]);
+  });
+
+  it("інша картка з тією ж сумою не парується", () => {
+    expect(
+      findCancellationPairs([
+        tx("out", -17_000_000, BASE, "410247******8090", card),
+        tx("in", 17_000_000, BASE + 60, "Скасування. 535557******8159", card),
+      ]),
+    ).toEqual([]);
+  });
+
+  it("пробіли в номері не заважають, але опис без цифр і слів не стає ключем", () => {
+    expect(
+      findCancellationPairs([
+        tx("out", -50_000, BASE, "4102 47** **** 8090"),
+        tx("in", 50_000, BASE + 60, "Скасування. 410247******8090"),
+      ]),
+    ).toHaveLength(1);
+    expect(
+      findCancellationPairs([
+        tx("out", -50_000, BASE, "***"),
+        tx("in", 50_000, BASE + 60, "Скасування. ***"),
+      ]),
+    ).toEqual([]);
+  });
+});
+
+describe("findCancellationPairs — допуск годинника", () => {
+  it(`скасування на ${REFUND_CLOCK_SKEW_SECONDS} с раніше за списання ще пара, на секунду більше — ні`, () => {
+    const out = tx("out", -18_900, BASE, "Uklon");
+    expect(
+      findCancellationPairs([
+        out,
+        tx("in", 18_900, BASE - REFUND_CLOCK_SKEW_SECONDS, "Скасування. Uklon"),
+      ]),
+    ).toHaveLength(1);
+    expect(
+      findCancellationPairs([
+        out,
+        tx(
+          "in",
+          18_900,
+          BASE - REFUND_CLOCK_SKEW_SECONDS - 1,
+          "Скасування. Uklon",
+        ),
+      ]),
+    ).toEqual([]);
+  });
+
+  it("скасована й одразу перезамовлена поїздка: пара з першою, друга лишається витратою", () => {
+    const first = tx("out-1", -18_900, BASE, "Uklon");
+    const rebooked = tx("out-2", -18_900, BASE + 120, "Uklon");
+    const credit = tx("in", 18_900, BASE + 60, "Скасування. Uklon");
+    const pairs = findCancellationPairs([first, rebooked, credit]);
+    expect(pairs.map((p) => p.debit.id)).toEqual(["out-1"]);
+    expect(pairs[0]?.gapMs).toBe(60_000);
   });
 });

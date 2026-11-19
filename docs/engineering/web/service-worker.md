@@ -1,6 +1,6 @@
 # Service Worker (apps/web)
 
-> **Last touched:** 2026-10-09 by @claude (Шар 3: idle-reload не руйнує форми, зокрема інлайн-поля; пізня активація поважає реєстр; reload лише у вкладці-ініціаторі). **Next review:** 2026-12-16.
+> **Last touched:** 2026-11-19 by @claude (Шар 2: перевірка оновлення при поверненні PWA з фону, iOS заморожує інтервал); 2026-10-09 by @claude (Шар 3: idle-reload не руйнує форми, зокрема інлайн-поля; пізня активація поважає реєстр; reload лише у вкладці-ініціаторі). **Next review:** 2026-12-16.
 > **Status:** Active
 
 Внутрішня документація стратегії оновлення Service Worker-а у `apps/web`. Базовий entry-point — [`apps/web/src/sw.ts`](../../../apps/web/src/sw.ts) (через `vite-plugin-pwa`). Build-id інжектиться у клієнт через `import.meta.env.VITE_BUILD_ID` (Vite `define`-pattern), а на сервері — через cascade `SENTRY_RELEASE → GIT_SHA → SOURCE_COMMIT → VERCEL_GIT_COMMIT_SHA → GITHUB_SHA → BUILD_ID` ([`apps/server/src/http/buildIdHeader.ts`](../../../apps/server/src/http/buildIdHeader.ts); `GIT_SHA` запікає `Dockerfile.api` (`${GIT_SHA:-${SOURCE_COMMIT}}`), `SOURCE_COMMIT` дає Coolify, що збирає образ з репо, ADR-0102 — `RAILWAY_GIT_COMMIT_SHA` знято разом із Railway, ADR-0074).
@@ -37,6 +37,8 @@ Stack-pulse 2026-05 / [PR-21](https://github.com/Skords-01/Sergeant/blob/d068c73
 
 - 1 HEAD/GET на SW manifest кожні 30 хв — мінімальний bandwidth.
 - Skip якщо `navigator.connection.saveData === true` (mobile-юзер на economy-режимі).
+
+**Плюс перевірка при поверненні з фону** (`visibilitychange` → `visible`), не частіше разу на `resumeUpdateCheckMinGapMs` (1 хв; `0` вимикає; стартова перевірка теж рахується). Причина (фідбек власника 2026-11-19): встановлена PWA на iOS лишалась на збірці до #1701 щонайменше пів доби після деплою, хоча прод уже віддавав нове. iOS заморожує таймери застосунку у фоні, а PWA там здебільшого розгортають, а не відкривають наново, тож навігації, на якій браузер сам перевірив би `sw.js`, немає. Інтервал у 30 хв при коротких сесіях міг не спрацювати жодного разу, а Шар 3 при поверненні лише питав, чи вже є `waiting`, не шукаючи його. Знайдене оновлення йде звичним шляхом: `waiting` → тост «Доступна нова версія» (Шар 1) або тихе застосування на наступному поверненні після 5+ хв у фоні (Шар 3).
 
 ### Шар 3 — idle auto-skipWaiting
 
@@ -97,7 +99,7 @@ Waiting-SW тоді лишається, а користувач бачить man
 
 - [`apps/web/src/core/lib/bootWatchdog.test.ts`](../../../apps/web/src/core/lib/bootWatchdog.test.ts): inline-сторож (reload при порожньому `#root`, тиша при змонтованому, cooldown, відмова без `sessionStorage`, обхід SW із діагностикою) і синхронність CSP-хешу в `index.html` та `vercel.json`.
 - [`apps/web/src/sw/fetchDiag.test.ts`](../../../apps/web/src/sw/fetchDiag.test.ts): кільцевий буфер, маскування шляхів, позначки повідомлень. [`bootWatchdogReport.test.ts`](../../../apps/web/src/core/observability/bootWatchdogReport.test.ts): одноразовий звіт у Sentry.
-- [`apps/web/src/core/app/autoUpdate.test.ts`](../../../apps/web/src/core/app/autoUpdate.test.ts) — JSDOM + fake timers: periodic polling, saveData skip, idle-skipWaiting, ПРОПУСК idle-reload при непорожньому реєстрі брудного стану / стрімі HubChat / мутаціях у польоті (з реальною формою «Тіла» у [`inlineFormUpdateGate.test.tsx`](../../../apps/web/src/core/app/inlineFormUpdateGate.test.tsx)), no-waiting-SW guard, build-id force-prompt лише після зміни server id у сесії (стабільний `API на B, веб на A` не промптить) + reset on catch-up, short-sha ↔ full-sha нормалізація, ignores empty observations.
+- [`apps/web/src/core/app/autoUpdate.test.ts`](../../../apps/web/src/core/app/autoUpdate.test.ts) — JSDOM + fake timers: periodic polling, перевірка при поверненні з фону з порогом, saveData skip, idle-skipWaiting, ПРОПУСК idle-reload при непорожньому реєстрі брудного стану / стрімі HubChat / мутаціях у польоті (з реальною формою «Тіла» у [`inlineFormUpdateGate.test.tsx`](../../../apps/web/src/core/app/inlineFormUpdateGate.test.tsx)), no-waiting-SW guard, build-id force-prompt лише після зміни server id у сесії (стабільний `API на B, веб на A` не промптить) + reset on catch-up, short-sha ↔ full-sha нормалізація, ignores empty observations.
 - [`apps/web/src/core/app/useSWUpdate.test.ts`](../../../apps/web/src/core/app/useSWUpdate.test.ts) — defer-while-busy + поведінка `applyUpdate`: без waiting-воркера кнопка робить прямий reload; з waiting-воркером reload рівно один раз після `controllerchange`, статус-тост через 3 с без нього; тост замість reload у вкладці, що оновлення не ініціювала; пізня активація при відкритій формі, стрімі чи мутації не перезавантажує, а показує тост.
 - [`apps/server/src/http/buildIdHeader.test.ts`](../../../apps/server/src/http/buildIdHeader.test.ts) — cascade priority, 7-char truncation, missing-env behavior.
 

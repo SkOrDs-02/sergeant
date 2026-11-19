@@ -102,6 +102,123 @@ describe("setupAutoUpdate", () => {
     });
   });
 
+  // Фідбек власника 2026-11-19: iOS-PWA лишалась на старій збірці, бо
+  // таймер інтервалу у фоні не біжить, а розгортання з фону нової версії не
+  // шукало. Повернення з фону тепер саме запускає `registration.update()`.
+  describe("перевірка оновлення при поверненні з фону", () => {
+    // Власний документ: попередні тести лишають слухачів на глобальному.
+    let doc: Document;
+    beforeEach(() => {
+      doc = document.implementation.createHTMLDocument("resume");
+      Object.defineProperty(doc, "visibilityState", {
+        value: "visible",
+        configurable: true,
+      });
+    });
+    function setVisibility(state: "visible" | "hidden") {
+      Object.defineProperty(doc, "visibilityState", {
+        value: state,
+        configurable: true,
+      });
+      doc.dispatchEvent(new Event("visibilitychange"));
+    }
+    async function flush() {
+      for (let i = 0; i < 4; i += 1) await Promise.resolve();
+    }
+
+    it("шукає нову версію, щойно вкладка повернулась, але не частіше за поріг", async () => {
+      const { reg } = installServiceWorkerMock();
+      let fakeNow = 0;
+      const ctrl = setupAutoUpdate({
+        updateSW: vi.fn(),
+        updateIntervalMs: 0,
+        documentRef: doc,
+        now: () => fakeNow,
+      });
+
+      await flush();
+      // Одна перевірка на старті була й раніше.
+      expect(reg.update).toHaveBeenCalledTimes(1);
+
+      setVisibility("hidden");
+      fakeNow = 2 * 60 * 1000;
+      setVisibility("visible");
+      await flush();
+      expect(reg.update).toHaveBeenCalledTimes(2);
+
+      // Швидке перемикання застосунків не смикає мережу щоразу.
+      setVisibility("hidden");
+      fakeNow += 10_000;
+      setVisibility("visible");
+      await flush();
+      expect(reg.update).toHaveBeenCalledTimes(2);
+
+      setVisibility("hidden");
+      fakeNow += 60_000;
+      setVisibility("visible");
+      await flush();
+      expect(reg.update).toHaveBeenCalledTimes(3);
+      ctrl.dispose();
+    });
+
+    it("одразу після буту не дублює перевірку старту", async () => {
+      const { reg } = installServiceWorkerMock();
+      let fakeNow = 0;
+      const ctrl = setupAutoUpdate({
+        updateSW: vi.fn(),
+        updateIntervalMs: 0,
+        documentRef: doc,
+        now: () => fakeNow,
+      });
+      setVisibility("hidden");
+      fakeNow = 5_000;
+      setVisibility("visible");
+      await flush();
+      expect(reg.update).toHaveBeenCalledTimes(1);
+      ctrl.dispose();
+    });
+
+    it("поважає saveData і поріг 0", async () => {
+      const { reg } = installServiceWorkerMock();
+      let fakeNow = 0;
+      const ctrl = setupAutoUpdate({
+        updateSW: vi.fn(),
+        updateIntervalMs: 0,
+        resumeUpdateCheckMinGapMs: 0,
+        documentRef: doc,
+        now: () => fakeNow,
+      });
+      setVisibility("hidden");
+      fakeNow = 10 * 60 * 1000;
+      setVisibility("visible");
+      await flush();
+      expect(reg.update).toHaveBeenCalledTimes(1);
+      ctrl.dispose();
+
+      Object.defineProperty(globalThis.navigator, "connection", {
+        value: { saveData: true },
+        configurable: true,
+      });
+      const ctrl2 = setupAutoUpdate({
+        updateSW: vi.fn(),
+        updateIntervalMs: 0,
+        documentRef: doc,
+        now: () => fakeNow,
+      });
+      setVisibility("hidden");
+      fakeNow += 10 * 60 * 1000;
+      setVisibility("visible");
+      await flush();
+      // saveData глушить і стартову, і повторну перевірку.
+      expect(reg.update).toHaveBeenCalledTimes(1);
+      ctrl2.dispose();
+      Object.defineProperty(globalThis.navigator, "connection", {
+        value: undefined,
+        configurable: true,
+      });
+    });
+  });
+
   it("auto skip-waiting when tab visible after >5min hidden with waiting SW", async () => {
     const waitingSW = { postMessage: vi.fn() } as unknown as ServiceWorker;
     const { reg } = installServiceWorkerMock({ waiting: waitingSW });

@@ -1,4 +1,17 @@
-import type { SyncV2PullOp, SyncV2PullResponse } from "@sergeant/api-client";
+import type {
+  SyncV2PullOp,
+  SyncV2PullResponse,
+  SyncV2SnapshotOptions,
+  SyncV2SnapshotResponse,
+} from "@sergeant/api-client";
+import { isSyncCursorExpiredError } from "@sergeant/api-client";
+import { restoreFromSnapshot } from "./snapshotRestore.js";
+import {
+  markReplicaBootstrapDone,
+  REPLICA_BOOTSTRAP_ORIGIN,
+  resolvePullMode,
+  skipDuringBootstrap,
+} from "./replicaBootstrap.js";
 import type { SqliteMigrationClient } from "@sergeant/db-schema/migrate/sqlite";
 
 import { applyPullOp } from "./applyPullOp.js";
@@ -73,6 +86,15 @@ export interface SyncEngineReaderDeps {
   };
   readonly intervalMs: number;
   readonly limit: number;
+  /**
+   * Знімок стану сервера (`GET /api/v2/sync/snapshot`). Потрібен, коли pull
+   * відповідає `410 sync_cursor_expired`: журнал обрізано нижче курсора, і
+   * дочитати його вже неможливо (`snapshotRestore.ts`). Без цієї залежності
+   * 410 лишається звичайною помилкою тіка.
+   */
+  readonly snapshot?: (
+    opts: SyncV2SnapshotOptions,
+  ) => Promise<SyncV2SnapshotResponse>;
   /**
    * Канал обсервабіліті тіка. Крім помилок самого тіка сюди їде КОЖНЕ
    * термінальне відхилення опа на застосуванні (`reportPullRejection`) —
@@ -286,7 +308,19 @@ export function createSyncEngineReaderRuntime(
       // Інший користувач або нова партиція бази = початковий pull знову
       // «не завершено» (див. `initialPullState.ts`).
       reconcileInitialPull(userId, client);
-      let since = await readPullSinceCursor(client, userId);
+      // Розділ без позначки «відновлено» один раз тягне ВСЕ від нуля, разом
+      // із власними оп-ами пристрою (`replicaBootstrap.ts`): інакше скинута
+      // копія ніколи не отримала б назад того, що записала сама.
+      const resolved = await resolvePullMode(
+        client,
+        userId,
+        await readPullSinceCursor(client, userId),
+      );
+      const bootstrap = resolved.mode === "bootstrap";
+      const pullOriginId = bootstrap
+        ? REPLICA_BOOTSTRAP_ORIGIN
+        : deps.originDeviceId;
+      let since = resolved.since;
       let pulled = 0;
       let applied = 0;
       let skipped = 0;
@@ -308,7 +342,7 @@ export function createSyncEngineReaderRuntime(
           try {
             return await deps.pull(from, {
               limit: deps.limit,
-              originDeviceId: deps.originDeviceId,
+              originDeviceId: pullOriginId,
             });
           } catch (error) {
             const waitMs = rateLimitWaitMs(error);
@@ -325,47 +359,93 @@ export function createSyncEngineReaderRuntime(
       // Догін нотаток до операцій для пристроїв зі старого бандла (див.
       // `txNotesBackfill.ts`). Збій не має блокувати основний pull: звітуємо
       // й ідемо далі, наступний тік продовжить із збереженого прогресу.
-      try {
-        await backfillTxNotesOnce({
-          client,
-          userId,
-          originDeviceId: deps.originDeviceId,
-          mainCursor: since,
-          fetchPage,
-          affectedTables,
-          isConstraintFailure,
-        });
-      } catch (error) {
+      // Відновлення від нуля й так охоплює нотатки: догін не потрібен.
+      if (!bootstrap)
         try {
-          // Офлайн основний pull нижче впаде сам і буде класифікований.
-          if (readOnlineStatus() !== false)
-            deps.captureException?.(error, {
-              scope: "sync-v2-tx-notes-backfill",
-              tags: { area: "sync", sync_direction: "pull" },
-            });
-        } catch {
-          /* обсервабіліті ніколи не має ламати шлях читання */
+          await backfillTxNotesOnce({
+            client,
+            userId,
+            originDeviceId: deps.originDeviceId,
+            mainCursor: since,
+            fetchPage,
+            affectedTables,
+            isConstraintFailure,
+          });
+        } catch (error) {
+          try {
+            // Офлайн основний pull нижче впаде сам і буде класифікований.
+            if (readOnlineStatus() !== false)
+              deps.captureException?.(error, {
+                scope: "sync-v2-tx-notes-backfill",
+                tags: { area: "sync", sync_direction: "pull" },
+              });
+          } catch {
+            /* обсервабіліті ніколи не має ламати шлях читання */
+          }
         }
-      }
 
       // Основний pull отримує власний бюджет чекань рейт-ліміту, навіть коли
       // догін вичерпав свій.
       rateLimitWaits = 0;
 
+      // Знімок із тим самим повтором на рейт-ліміт, що й сторінки pull.
+      const fetchSnapshot = async (
+        opts: SyncV2SnapshotOptions,
+      ): Promise<SyncV2SnapshotResponse> => {
+        const snapshot = deps.snapshot;
+        if (!snapshot) throw new Error("sync reader: snapshot is not wired");
+        for (;;) {
+          try {
+            return await snapshot(opts);
+          } catch (error) {
+            const waitMs = rateLimitWaitMs(error);
+            if (waitMs === null || rateLimitWaits >= MAX_RATE_LIMIT_WAITS)
+              throw error;
+            rateLimitWaits += 1;
+            await new Promise((resolve) => setTimeout(resolve, waitMs));
+          }
+        }
+      };
+
       for (;;) {
-        const page = await fetchPage(since);
+        let page: SyncV2PullResponse;
+        try {
+          page = await fetchPage(since);
+        } catch (error) {
+          // Журнал обрізано нижче курсора (ADR-0105): дочитати неможливо,
+          // копію відновлює знімок, далі pull від `as_of_op_id`.
+          if (!isSyncCursorExpiredError(error) || !deps.snapshot) throw error;
+          const restored = await restoreFromSnapshot({
+            client,
+            userId,
+            fetchSnapshot,
+            isConstraintFailure,
+            onRejected: (op, cause) => reportPullApplyFailure(deps, op, cause),
+          });
+          // Черга ще не доїхала: знімок перебив би правку. Тік закінчується
+          // без мітки «pull завершено», наступний спробує знову.
+          if (restored.status === "postponed") {
+            return { pulled, applied, skipped, rejected, lastOpId: maxOpId };
+          }
+          applied += restored.applied;
+          rejected += restored.rejected;
+          for (const table of restored.affectedTables)
+            affectedTables.add(table);
+          since = restored.asOfOpId;
+          maxOpId = Math.max(maxOpId, since);
+          continue;
+        }
 
         for (const op of page.ops) {
           pulled += 1;
           maxOpId = Math.max(maxOpId, op.id);
           let outcome: Awaited<ReturnType<typeof applyPullOp>>;
+          if (bootstrap && skipDuringBootstrap(op, deps.originDeviceId)) {
+            skipped += 1;
+            continue;
+          }
           try {
-            outcome = await applyPullOp(
-              client,
-              op,
-              userId,
-              deps.originDeviceId,
-            );
+            outcome = await applyPullOp(client, op, userId, pullOriginId);
           } catch (error) {
             // BUSY/IOERR/full disk/closed worker must retry this cursor.
             // Advancing it would permanently omit a valid server record.
@@ -405,7 +485,10 @@ export function createSyncEngineReaderRuntime(
       }
 
       // Повний pull з нуля вже охопив і нотатки: догін не потрібен.
-      if (startedFresh) await markTxNotesBackfillDone(client, userId);
+      if (startedFresh || bootstrap) {
+        await markTxNotesBackfillDone(client, userId);
+      }
+      if (bootstrap) await markReplicaBootstrapDone(client, userId);
 
       // Не `applied > 0`: у множині можуть лежати таблиці з попереднього
       // невдалого тіка (див. `pendingRefresh`).
