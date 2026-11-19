@@ -119,8 +119,8 @@ export async function goto(page: Page, route: string): Promise<void> {
   } catch {
     // Знімок стану в момент білого екрана: без нього B1 роками лишався
     // «гонкою SW» без доказів. readyState != "complete" означає, що подія
-    // `load` не настала, і `boot-watchdog.js` (він чекає саме `load`) не
-    // спрацює ніколи; незавершені `/assets/*` показують, на чому зависло.
+    // `load` не настала, і старий зовнішній `boot-watchdog.js` (він чекав саме `load`) не
+    // спрацьовував ніколи; тепер сторож inline у `index.html`; незавершені `/assets/*` показують, на чому зависло.
     const snapshot = await page
       .evaluate(async () => {
         const assets = performance
@@ -139,6 +139,18 @@ export async function goto(page: Page, route: string): Promise<void> {
               }
             : null,
           watchdogAt: sessionStorage.getItem("sergeant.boot_watchdog_at"),
+          watchdogReport: sessionStorage.getItem(
+            "sergeant.boot_watchdog_report",
+          ),
+          // Знімок fetch-буфера SW (DURABILITY-20261008-BOOT-1).
+          swFetchDiag: await new Promise((resolve) => {
+            const ctl = navigator.serviceWorker?.controller;
+            if (!ctl) return resolve(null);
+            const ch = new MessageChannel();
+            ch.port1.onmessage = (e) => resolve(e.data?.snapshot ?? null);
+            setTimeout(() => resolve("timeout-1.5s"), 1500);
+            ctl.postMessage({ type: "SW_FETCH_DIAG" }, [ch.port2]);
+          }),
           assetsLoaded: assets.length,
           assetsUnfinished: assets
             .filter((e) => e.responseEnd === 0)
@@ -158,7 +170,7 @@ export async function goto(page: Page, route: string): Promise<void> {
               const t0 = Date.now();
               const keys = await caches.keys();
               const tKeys = Date.now() - t0;
-              const hit = await caches.match("/boot-watchdog.js", {
+              const hit = await caches.match("/icon.svg", {
                 ignoreSearch: true,
               });
               return {

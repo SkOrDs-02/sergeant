@@ -20,6 +20,7 @@ import { setupCacheRoutes, listStaleCaches } from "./sw/cache";
 import { CACHE_NAMES } from "./sw/version";
 import { handleSwMessage } from "./sw/messages";
 import { recordNotified } from "./sw/notifiedKeys";
+import { fetchDiag } from "./sw/fetchDiag";
 import {
   ALLOWED_NOTIFICATION_MODULES,
   normalizePushPayload,
@@ -124,6 +125,7 @@ self.addEventListener("activate", (event) => {
       // by `listStaleCaches`; the *current* generation is preserved.
       void CACHE_NAMES;
       await self.clients.claim();
+      fetchDiag.mark("activate");
     })(),
   );
 });
