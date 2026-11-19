@@ -362,6 +362,18 @@ function commitMemoryBank(
   } catch {
     throw new Error("Не вдалося зберегти памʼять профілю");
   }
+  // B24: банк — читання-зміна-запис. Поки шифртекст у сховищі не розібрано
+  // (холодний бут, ключ не завантажився), `readMemoryEntries` не відображає
+  // сховище, і запис, побудований на ньому, затер би справжній банк. Слот і
+  // сам такого запису не пропустить; тут ми ще й не робимо вигляд, що він
+  // відбувся: локальна правка падає з помилкою, гідратація з сервера чекає.
+  if (!memoryBankSlot.isReady()) {
+    if (local) {
+      throw new Error("Памʼять ще завантажується. Спробуй ще раз за мить.");
+    }
+    logger.warn("[memoryBank] server hydrate skipped: local bank not ready");
+    return;
+  }
   const generation = ++memoryWriteGeneration;
   const epoch = getAtRestWipeEpoch();
   const ownerId = currentMemoryBankOwner;
@@ -370,12 +382,11 @@ function commitMemoryBank(
     if (generation !== memoryWriteGeneration) return;
     if (epoch !== getAtRestWipeEpoch()) return;
     if (!stored) {
-      // Записи лишились тільки в памʼяті (ключ недоступний чи сховище
-      // відмовило): мітку часу не рухаємо і на сервер не штовхаємо, інакше
-      // reconcile вважав би старі записи на диску «новішими». UI бачить
-      // поточний стан із кешу.
+      // Запис не ліг (шифрування чи сховище відмовили): мітку часу не
+      // рухаємо і на сервер не штовхаємо, інакше reconcile вважав би старі
+      // записи на диску «новішими». UI показуємо те, що справді збережено.
       logger.warn("[memoryBank] encrypted write not stored");
-      notify(listeners, entries);
+      notify(listeners, readMemoryEntries());
       return;
     }
     writeMemoryBankMeta(updatedAt, ownerId);
@@ -383,10 +394,20 @@ function commitMemoryBank(
     // L-8: write-through push читає мітку з meta, тож лише після неї.
     if (local) notify(localEditListeners, entries);
   };
-  // Синхронно завершитись запис може лише двома шляхами: відкритий запис
-  // (середовище без шифрування, успіх) або замкнений слот (відмова).
+  // Синхронно запис завершується лише відкритим фолбеком (середовище без
+  // шифрування) на готовому слоті, тобто успіхом.
   if (memoryBankSlot.hasPendingWrite()) void done.then(finish);
-  else finish(!memoryBankSlot.isLocked());
+  else finish(true);
+}
+
+/** Чи відображає локальний банк сховище (див. `commitMemoryBank`). */
+export function isMemoryBankReady(): boolean {
+  return memoryBankSlot.isReady();
+}
+
+/** Чекає розбору шифрованого банку; `false` — ключ зараз недоступний. */
+export function whenMemoryBankReady(): Promise<boolean> {
+  return memoryBankSlot.whenReady();
 }
 
 export function writeMemoryEntries(entries: MemoryEntry[]): void {

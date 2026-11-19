@@ -5,6 +5,7 @@ vi.mock("../../../profile/memoryBank", () => ({
     personal: { label: "Особисте" },
     preference: { label: "Уподобання" },
   },
+  isMemoryBankReady: vi.fn(() => true),
   readMemoryEntries: vi.fn(),
   removeMemoryEntry: vi.fn(),
   upsertMemoryFact: vi.fn(),
@@ -13,6 +14,7 @@ vi.mock("../../../profile/memoryBank", () => ({
 
 import {
   CATEGORY_META as _cat,
+  isMemoryBankReady,
   readMemoryEntries,
   removeMemoryEntry,
   upsertMemoryFact,
@@ -217,5 +219,28 @@ describe("myProfile", () => {
     ] as MemoryEntry[]);
     const result = myProfile({ name: "my_profile", input: {} });
     expect(result).toContain("abc123");
+  });
+});
+
+describe("B24: банк ще не розшифровано", () => {
+  it("remember/forget/myProfile не пишуть і не кажуть «порожньо»", () => {
+    vi.mocked(isMemoryBankReady).mockReturnValue(false);
+    try {
+      const msg = "Памʼять ще завантажується. Спробуй ще раз за мить.";
+      expect(
+        remember({
+          name: "remember",
+          input: { fact: "x", category: "preference" },
+        } as never),
+      ).toBe(msg);
+      expect(
+        forget({ name: "forget", input: { fact_id: "m1" } } as never),
+      ).toBe(msg);
+      expect(myProfile({ name: "my_profile", input: {} } as never)).toBe(msg);
+      expect(writeMemoryEntries).not.toHaveBeenCalled();
+      expect(readMemoryEntries).not.toHaveBeenCalled();
+    } finally {
+      vi.mocked(isMemoryBankReady).mockReturnValue(true);
+    }
   });
 });

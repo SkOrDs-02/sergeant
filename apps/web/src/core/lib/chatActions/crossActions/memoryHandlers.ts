@@ -1,5 +1,6 @@
 import {
   CATEGORY_META,
+  isMemoryBankReady,
   readMemoryEntries,
   removeMemoryEntry,
   upsertMemoryFact,
@@ -12,7 +13,13 @@ import type {
   RememberAction,
 } from "../types";
 
+// B24: поки шифрований банк не розібрано, `readMemoryEntries` не відображає
+// сховище. Інструменти тоді чесно кажуть, що памʼять ще завантажується,
+// а не «порожньо» чи «не знайдено», і нічого не пишуть.
+const MEMORY_NOT_READY = "Памʼять ще завантажується. Спробуй ще раз за мить.";
+
 export function remember(action: RememberAction): ChatActionResult {
+  if (!isMemoryBankReady()) return MEMORY_NOT_READY;
   const { fact, category } = (action as RememberAction).input || {};
   try {
     const prevEntries = readMemoryEntries();
@@ -32,6 +39,7 @@ export function remember(action: RememberAction): ChatActionResult {
     return {
       result: resultStr,
       undo: () => {
+        if (!isMemoryBankReady()) return;
         if (result.created) {
           const cur = readMemoryEntries();
           const removed = removeMemoryEntry(cur, entryId);
@@ -56,6 +64,7 @@ export function forget(action: ForgetAction): string {
   const { fact_id } = (action as ForgetAction).input || {};
   const id = (fact_id || "").trim();
   if (!id) return "Потрібен id факту для видалення.";
+  if (!isMemoryBankReady()) return MEMORY_NOT_READY;
   const result = removeMemoryEntry(readMemoryEntries(), id);
   if (!result.removed) return `Факт з id ${id} не знайдено.`;
   writeMemoryEntries(result.entries);
@@ -64,6 +73,7 @@ export function forget(action: ForgetAction): string {
 
 export function myProfile(action: MyProfileAction): string {
   const { category } = (action as MyProfileAction).input || {};
+  if (!isMemoryBankReady()) return MEMORY_NOT_READY;
   const profile = readMemoryEntries();
   if (profile.length === 0) return "Профіль памʼяті порожній.";
   const cat = category?.trim().toLowerCase();

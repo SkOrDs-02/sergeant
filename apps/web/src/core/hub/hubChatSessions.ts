@@ -8,6 +8,7 @@ import {
   chatSessionsMirrorSlot,
   chatSessionsSlot,
 } from "../security/aiAtRest";
+import { logger } from "@shared/lib";
 import { getKyivShortDateStamp } from "@shared/lib/time/kyivTime";
 import { ACTIVE_SESSION_KEY } from "./hubChatOwner";
 import { normalizeStoredMessages, type ChatMessage } from "../lib/hubChatUtils";
@@ -198,7 +199,79 @@ function reconcileSessions(): HubChatSession[] {
     : primary;
 }
 
+/**
+ * B24: історія чату — читання-зміна-запис (`loadSessions` зводить основний
+ * ключ і дзеркало). Поки шифртекст хоч одного з них не розібрано (холодний
+ * бут до `hydrateAtRest`, ключ не завантажився, перемикання розділу),
+ * `loadSessions` не відображає сховище, і збереження, побудоване на ньому,
+ * затерло б справжню історію.
+ */
+export function isChatHistoryReady(): boolean {
+  return chatSessionsSlot.isReady() && chatSessionsMirrorSlot.isReady();
+}
+
+/**
+ * Чекає розбору всіх трьох ключів історії (легасі теж: з нього мігрує
+ * `loadSessions`). `false` — основний ключ чи дзеркало замкнені (ключа
+ * шифрування зараз немає): історію не показати й не зберегти.
+ */
+export async function whenChatHistoryReady(): Promise<boolean> {
+  const [primary, mirror] = await Promise.all([
+    chatSessionsSlot.whenReady(),
+    chatSessionsMirrorSlot.whenReady(),
+    chatLegacyHistorySlot.whenReady(),
+  ]);
+  return primary && mirror;
+}
+
+/**
+ * Склеює історію зі сховища з тим, що є в памʼяті (після розбору нового
+ * шифртексту: холодний бут, зміна розділу, інша вкладка). По кожній бесіді
+ * виграє свіжіший `updatedAt`; бесіди з памʼяті, яких у сховищі немає,
+ * додаються, лише якщо в них є повідомлення (порожня свіжа бесіда,
+ * створена на порожньому виді, просто зникає).
+ */
+export function mergeSessionsAfterHydration(
+  stored: HubChatSession[],
+  inMemory: HubChatSession[],
+): HubChatSession[] {
+  const byId = new Map(stored.map((s) => [s.id, s]));
+  for (const s of inMemory) {
+    const cur = byId.get(s.id);
+    if (!cur) {
+      if (s.messages.length > 0) byId.set(s.id, s);
+    } else if (s.updatedAt > cur.updatedAt) {
+      byId.set(s.id, s);
+    }
+  }
+  return Array.from(byId.values());
+}
+
+/**
+ * Сповіщає, коли слот історії розібрав новий вміст сховища (розшифровка
+ * після буту, зміни розділу, запису іншої вкладки). Власні записи подію не
+ * породжують.
+ */
+export function subscribeChatHistoryChanges(fn: () => void): () => void {
+  const offs = [
+    chatSessionsSlot.onExternalChange(fn),
+    chatSessionsMirrorSlot.onExternalChange(fn),
+  ];
+  return () => {
+    for (const off of offs) off();
+  };
+}
+
 export function saveSessions(sessions: HubChatSession[]): void {
+  if (!isChatHistoryReady()) {
+    // Не тихо: якщо до цього дійшло, `useChatSessions` збереже знову після
+    // розбору; замкнений слот (ключа немає) лишає чат лише в памʼяті.
+    logger.warn("[hubChatSessions] history not ready, save skipped");
+    // Запускаємо розбір: після нього слот сповістить, і `useChatSessions`
+    // зведе сховище з памʼяттю та збереже вже на справжній історії.
+    void whenChatHistoryReady();
+    return;
+  }
   // Keep newest first; cap at SESSION_LIMIT and trim each session's
   // tail so localStorage doesn't grow unbounded.
   const trimmed = sessions

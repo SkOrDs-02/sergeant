@@ -25,6 +25,8 @@ const removeMemoryEntryMock = vi.fn((entries: MemoryEntry[], id: string) => ({
 }));
 
 vi.mock("./memoryBank", () => ({
+  isMemoryBankReady: () => true,
+  whenMemoryBankReady: () => Promise.resolve(true),
   readMemoryEntries: () => storedEntries,
   // Підписка на зміни зі сховища — компонент вішає її в `useEffect`.
   subscribeMemoryEntries: () => () => {},
