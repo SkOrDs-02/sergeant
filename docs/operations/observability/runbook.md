@@ -380,19 +380,24 @@ session-check чекає слот.
 читати `chat_synthesis_empty_retry_total`. Модель синтезу на шлюзі інколи пише
 відповідь лише в міркування і закриває стрім без тексту; сервер тоді раз
 перепитує без міркувань (`modules/chat/chatStreamEmptyRetry.ts`, рішення
-власника 2026-11-19).
+власника 2026-11-19). З того ж дня так само поводиться тур синтезу без стріму
+(`modules/chat/chatSynthesisJson.ts`): лічильник спільний, шлях видно лише в
+лозі (поле `mode`: `stream` | `json`); замість колишньої заглушки «Готово.»
+фінальна порожнеча там дає 502 `ANTHROPIC_ERROR` з поверненою квотою.
 
 - Частка порожніх перших спроб:
   `sum(increase(chat_synthesis_empty_retry_total[1d])) / sum(increase(ai_requests_total{endpoint="chat-tool-result",provider="openrouter"}[1d]))`.
   Офлайн-замір 2026-11-19 (`deepseek-v4-flash`, короткий вхід, Fireworks):
-  9 з 30 і 14 з 30; на вході прод-розміру 0 з 40.
+  9 з 30 і 14 з 30; на вході прод-розміру 0 з 40. Без стріму, той самий
+  короткий вхід: 8 з 20 (усі відновлено перезапитом).
 - Що бачить людина: `outcome="recovered"` — нічого (плюс приблизно 1 с);
   `still_empty` і `error` — загальну помилку з поверненою квотою. Частка
   `still_empty + error` від суми і є залишковий збій.
 - Модель — у лозі Pino `msg=chat_stream_empty_retry` (поля `outcome`,
-  `model`, `reason` без тексту відповіді); фінальна порожнеча додатково пише
-  `msg=chat_stream_empty_ok` з полем `retry` (`still_empty` | `error` |
-  `none`, де `none` — перезапиту не було: прямий Anthropic або вимикач).
+  `mode`, `model`, `reason` без тексту відповіді); фінальна порожнеча додатково
+  пише `msg=chat_stream_empty_ok` (стрім) або `msg=chat_json_empty_ok` (JSON) з
+  полем `retry` (`still_empty` | `error` | `none`, де `none` — перезапиту не
+  було: прямий Anthropic або вимикач).
 - Зростання `still_empty` означає, що модель порожніє і без міркувань: це
   питання заміни моделі слоту, а не перезапиту. Вимикач без релізу:
   `CHAT_SYNTHESIS_EMPTY_RETRY=off` (Coolify env, рестарт).

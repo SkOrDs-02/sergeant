@@ -315,7 +315,7 @@ Join-pattern із `app_build_info` (один gauge=1 на інстанс із л
 | `chat_first_turn_phase_ms`           | Histogram | `phase`                           | [chat.ts](../../../apps/server/src/modules/chat/chat.ts) — перший хід, JSON і стрім                         |
 | `chat_first_turn_first_visible_ms`   | Histogram | `kind` · `source`                 | [chatFirstTurnStream.ts](../../../apps/server/src/modules/chat/chatFirstTurnStream.ts) — стрім першого ходу |
 | `chat_first_turn_silent_retry_total` | Counter   | `reason`                          | [chatFirstTurnStream.ts](../../../apps/server/src/modules/chat/chatFirstTurnStream.ts) — стрім першого ходу |
-| `chat_synthesis_empty_retry_total`   | Counter   | `outcome`                         | [chatStreamEmptyRetry.ts](../../../apps/server/src/modules/chat/chatStreamEmptyRetry.ts) — стрім синтезу    |
+| `chat_synthesis_empty_retry_total`   | Counter   | `outcome`                         | [chatStreamEmptyRetry.ts](../../../apps/server/src/modules/chat/chatStreamEmptyRetry.ts) — тур синтезу      |
 
 **Ці метрики міряють різні шляхи, і плутати їх — головна пастка секції.**
 `/api/chat` має два ходи. До 2026-11-18 стрімився лише **другий** — синтез
@@ -360,8 +360,10 @@ Join-pattern із `app_build_info` (один gauge=1 на інстанс із л
 
 **Страховка-перезапит порожнього синтезу** (рішення власника 2026-11-19).
 `chat_synthesis_empty_retry_total{outcome="recovered"|"still_empty"|"error"}`
-рахує перезапити туру синтезу без міркувань: стрім через шлюз закрився успішно
-без жодного символу тексту, і сервер раз перепитав той самий payload з
+рахує перезапити туру синтезу без міркувань: синтез через шлюз (стрім або, з
+того ж дня, JSON-шлях `chatSynthesisJson.ts`; окремої мітки шляху немає, лише
+поле `mode` у лозі) завершився успішно без жодного символу тексту, і сервер раз
+перепитав той самий payload з
 `thinking: {type: "disabled"}`. `recovered` — людина отримала текст без
 помилки; `still_empty` — знову порожньо, квота повертається, загальна помилка;
 `error` — перезапит не відкрився або обірвався. Три серії заводяться нулем.

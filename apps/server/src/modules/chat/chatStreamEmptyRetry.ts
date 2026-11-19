@@ -14,7 +14,8 @@ import { firstTurnReasoningFields } from "./chatReasoning.js";
  * (`docs/work/research/2026-11-19-openrouter-new-models.md` § 6.4). Тому
  * перша спроба лишається з міркуваннями (без них модель пропускала пастку
  * «розбіжність у сумах»), а на порожню відповідь сервер РІВНО ОДИН раз
- * перепитує той самий payload без міркувань у ту саму SSE-відповідь.
+ * перепитує той самий payload без міркувань у ту саму SSE-відповідь. Той самий
+ * перезапит робить і тур синтезу без стріму (`chatSynthesisJson.ts`).
  *
  * Лише шлюз: на прямому Anthropic `thinking` у синтезі не шлеться, і
  * порожнечі такого виду там не спостерігалось.
@@ -40,16 +41,25 @@ export type EmptyRetryOutcome = "recovered" | "still_empty" | "error";
 
 /**
  * Лічильник і лог одного перезапиту. Жодного тексту відповіді й чисел
- * користувача (Hard Rule #21): лише результат, ендпоінт і модель у лозі.
+ * користувача (Hard Rule #21): лише результат, ендпоінт, модель і шлях у лозі.
+ * Спільний для стріму (`chatStream.ts`) і JSON-синтезу (`chatSynthesisJson.ts`):
+ * лічильник один, шлях розрізняє лише поле `mode` у лозі (`stream` | `json`),
+ * бо сусідні метрики чату транспорт міткою не ділять.
  */
 export function noteEmptyRetry(
   outcome: EmptyRetryOutcome,
-  ctx: { endpoint: string; model: string; reason?: string },
+  ctx: {
+    endpoint: string;
+    model: string;
+    reason?: string;
+    mode?: "stream" | "json";
+  },
 ): void {
   chatSynthesisEmptyRetryTotal.inc({ outcome });
   const entry = {
     msg: "chat_stream_empty_retry",
     outcome,
+    mode: ctx.mode ?? "stream",
     endpoint: ctx.endpoint,
     model: ctx.model,
     ...(ctx.reason ? { reason: ctx.reason } : {}),

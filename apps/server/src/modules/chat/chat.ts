@@ -3,7 +3,6 @@ import { randomUUID } from "node:crypto";
 import { env } from "../../env.js";
 import { parseBody } from "../../http/validate.js";
 import { ChatRequestSchema } from "../../http/schemas.js";
-import { extractAnthropicText } from "../../lib/anthropic.js";
 import { resolveProTier } from "./aiQuota.js";
 import { issueRoundTripTicket } from "./chatRoundTripTicket.js";
 import {
@@ -12,6 +11,7 @@ import {
 } from "./chatShared.js";
 import { streamAnthropicToSse } from "./chatStream.js";
 import { callAnthropicWithContinuation } from "./chatUpstream.js";
+import { callSynthesisJson } from "./chatSynthesisJson.js";
 import {
   firstTurnReasoningPayload,
   synthesisReasoningPayload,
@@ -538,7 +538,7 @@ export default async function handler(
       // підтримують не всі моделі, тож payload будується під фактичну.
       //
       // На турі синтезу шлемо лише згадані в реплеї визначення: `tool_use`
-      // звідси нікуди не доїжджає (нижче — `extractAnthropicText`, у стрімі —
+      // звідси нікуди не доїжджає (нижче — `chatSynthesisJson.ts`, у стрімі —
       // лише `text_delta`), а під шлюзом без tool search тут інакше їхав би
       // весь реєстр — ~18k токенів без кешу на кожному турі. Деталі й межі —
       // `promptCache.ts::buildSynthesisToolsPayload`.
@@ -568,43 +568,25 @@ export default async function handler(
       return;
     }
 
-    let response, data;
-    try {
-      ({ response, data } = await callAnthropicWithContinuation(
-        apiKey,
-        payload,
-        {
-          timeoutMs: CHAT_ATTEMPT_TIMEOUT_MS,
-          maxTotalMs: CHAT_TOTAL_TIMEOUT_MS,
-          retryOnTimeout: true,
-          endpoint: "chat-tool-result",
-          signal: clientAbort.signal,
-          promptVersion: SYSTEM_PROMPT_VERSION,
-          traceId: toolTraceId,
-          ...(ledgerUserId !== undefined ? { userId: ledgerUserId } : {}),
-        },
-      ));
-    } catch (e) {
-      await refundQuotaOnUpstreamFailure(req);
-      throw e;
-    }
-
-    if (!response?.ok) {
-      await refundQuotaOnUpstreamFailure(req);
-      throw makeAiProviderError({
-        rawProviderMessage: data?.error?.message,
-        status: response?.status,
-      });
-    }
-
-    const text = replaceLongDash(extractAnthropicText(data));
+    // Порожня відповідь моделі тут не норма: модуль робить страховку-перезапит
+    // і на невдачу повертає квоту й кидає 502 (раніше була заглушка
+    // «Готово.», техборг 2026-11-19). Повертає завжди непорожній текст.
+    const text = await callSynthesisJson(req, apiKey, payload, {
+      endpoint: "chat-tool-result",
+      timeoutMs: CHAT_ATTEMPT_TIMEOUT_MS,
+      maxTotalMs: CHAT_TOTAL_TIMEOUT_MS,
+      signal: clientAbort.signal,
+      promptVersion: SYSTEM_PROMPT_VERSION,
+      traceId: toolTraceId,
+      ...(ledgerUserId !== undefined ? { userId: ledgerUserId } : {}),
+    });
     shadowVerifyNumbers({
       turn: "synthesis",
       model: proTier.model,
       answer: text,
       given: synthesisGiven,
     });
-    res.status(200).json({ text: text || "Готово." });
+    res.status(200).json({ text });
     return;
   }
 
