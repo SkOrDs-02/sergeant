@@ -1,6 +1,6 @@
 # SPEC: Програми з планом «підходи × повтори» і наступною сесією
 
-> **Last touched:** 2026-11-18 by @claude. **Next review:** 2027-02-18.
+> **Last touched:** 2026-11-19 by @claude. **Next review:** 2027-05-21.
 > **Status:** Active
 
 ## Проблема

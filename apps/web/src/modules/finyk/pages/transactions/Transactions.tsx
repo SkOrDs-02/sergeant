@@ -20,7 +20,6 @@ import { formatAnalyticsPeriod } from "../../lib/analyticsPeriodLabel";
 import { useTransactionFilters } from "./useTransactionFilters";
 import { formatDayFilterDate, isDayFilterKey } from "./transactionsLib";
 import { useTransactionSelection } from "./useTransactionSelection";
-import { useTransferSuggestions } from "./useTransferSuggestions";
 import { useFocusTransaction } from "./useFocusTransaction";
 import { BankTransactionDetailsSheet } from "../../components/BankTransactionDetailsSheet";
 import { useDebtPaymentSplitSync } from "../../hooks/useDebtPaymentSplitSync";
@@ -31,8 +30,8 @@ import {
 import type { MerchantRuleIndex } from "@sergeant/finyk-domain/lib/merchantRules";
 import type { UseFinykReceiptLinksResult } from "../../hooks/useFinykReceiptLinks";
 import { ConfirmDialog } from "@shared/components/ui/ConfirmDialog";
-import { TransferSuggestionCard } from "./TransferSuggestionCard";
-import { INTERNAL_TRANSFER_ID } from "@sergeant/finyk-domain/constants";
+import { TransferSuggestions } from "./TransferSuggestionList";
+import { useTransferSuggestions } from "./useTransferSuggestions";
 import {
   isCashWithdrawalCandidate,
   type CashOnHandState,
@@ -318,17 +317,15 @@ export function Transactions({
         ? formatDayFilterDate(dayFilter)
         : "";
 
-  const {
-    visibleTransferSuggestion,
-    visibleTransferKey,
-    rejectTransferSuggestion,
-    snoozeTransferSuggestion,
-  } = useTransferSuggestions({
+  // Пропозиції «схоже на переказ» — усі разом і без повторів
+  // (`useTransferSuggestions`, фідбек власника 2026-11-19).
+  const transfers = useTransferSuggestions({
     storageReady,
     activeTx: filters.activeTx,
     hiddenTxIds,
     txCategories,
     jars,
+    overrideCategory,
   });
 
   // Жест оновлення: банк + хмарний пул, провал пулу дає тост (PR-X3).
@@ -544,26 +541,22 @@ export function Transactions({
                 onClear={filters.clearRangeFilter}
               />
             )}
-            {visibleTransferSuggestion && visibleTransferKey && (
-              <TransferSuggestionCard
-                suggestion={visibleTransferSuggestion}
-                accounts={accounts}
-                showBalance={showBalance}
-                onConfirm={() => {
-                  overrideCategory(
-                    visibleTransferSuggestion.outgoing.id,
-                    INTERNAL_TRANSFER_ID,
-                  );
-                  overrideCategory(
-                    visibleTransferSuggestion.incoming.id,
-                    INTERNAL_TRANSFER_ID,
-                  );
-                  toast.success(messages.finyk.transferSuggestion.confirmed);
-                }}
-                onReject={() => rejectTransferSuggestion(visibleTransferKey)}
-                onSnooze={() => snoozeTransferSuggestion(visibleTransferKey)}
-              />
-            )}
+            <TransferSuggestions
+              suggestions={transfers.suggestions}
+              accounts={accounts}
+              showBalance={showBalance}
+              onConfirm={(suggestion) => {
+                transfers.confirm(suggestion);
+                toast.success(messages.finyk.transferSuggestion.confirmed);
+              }}
+              onReject={transfers.reject}
+              onSnooze={transfers.snooze}
+              onConfirmAll={() => {
+                transfers.confirmAll();
+                toast.success(messages.finyk.transferSuggestion.confirmedAll);
+              }}
+              onSnoozeAll={transfers.snoozeAll}
+            />
             <TransactionFilters
               filter={filters.filter}
               onChangeFilter={filters.setFilter}

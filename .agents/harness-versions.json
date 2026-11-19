@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "current": "8.13.0",
+  "current": "8.15.0",
   "versions": {
     "0.1.0": {
       "releasedAt": "2026-06-29",
@@ -886,6 +886,30 @@
         "AGENTS.md § Performance budgets: стеля JS (size-limit) 1.55 -> 1.61 MB за дві хвилі продуктових фіч гілки claude/awesome-goodall-8s5uky (+32.8 kB brotli, без нових vendor-пакетів); eager 268.7 -> 262.9 kB без руху стелі 268 (useRoutePrefetch з критичного шляху). Заміри й розбір у bundle-budget-ratchet-log.md 2026-11-18",
         "у гілці claude/awesome-goodall-8s5uky це був 8.11.0; перенумеровано після вливання main (там 8.9.0..8.10.1 уже зайняті)",
         "після вливання main стелю переміряно на злитому дереві: JS 1 536 482 B, стеля 1.52 -> 1.56 MB (а не 1.61, як було в гілці); eager 270.2 kB при стелі 274 з main (bundle-budget-ratchet-log.md 2026-11-18, запис «після вливання main»)"
+      ],
+      "agentsTestedWith": [],
+      "passRateBaseline": null
+    },
+    "8.13.1": {
+      "releasedAt": "2026-11-19",
+      "changes": [
+        "bump from 8.13.0 -> 8.13.1: typo / link / freshness-only change"
+      ],
+      "agentsTestedWith": [],
+      "passRateBaseline": null
+    },
+    "8.14.0": {
+      "releasedAt": "2026-11-19",
+      "changes": [
+        "bump from 8.13.1 -> 8.14.0: skill file added/modified"
+      ],
+      "agentsTestedWith": [],
+      "passRateBaseline": null
+    },
+    "8.15.0": {
+      "releasedAt": "2026-11-19",
+      "changes": [
+        "bump from 8.14.0 -> 8.15.0: skill file added/modified"
       ],
       "agentsTestedWith": [],
       "passRateBaseline": null

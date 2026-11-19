@@ -1,5 +1,11 @@
 /** @vitest-environment jsdom */
-import { cleanup, fireEvent, render, screen } from "@testing-library/react";
+import {
+  act,
+  cleanup,
+  fireEvent,
+  render,
+  screen,
+} from "@testing-library/react";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import type { ReactNode } from "react";
 
@@ -62,6 +68,10 @@ import {
   noteActiveSqliteVfs,
   noteSqliteVfsFallbackReason,
 } from "../db/storageBackendState";
+import {
+  __resetSnapshotRestoringForTests,
+  setSnapshotRestoring,
+} from "../syncEngine/snapshotRestoreState";
 
 describe("SyncStatusSheet", () => {
   afterEach(() => {
@@ -70,6 +80,28 @@ describe("SyncStatusSheet", () => {
     dismissOutboxPurgeNoticeMock.mockClear();
     opfsProbeRef.value = Promise.resolve({ kind: "ok" });
     __resetActiveSqliteVfsForTests();
+    __resetSnapshotRestoringForTests();
+  });
+
+  // Рішення власника 2026-11-19: відновлення зі знімка тихе, видно лише тут.
+  it("рядок «Відновлення з сервера» видно лише під час відновлення", () => {
+    render(
+      <SyncStatusSheet
+        open
+        onClose={vi.fn()}
+        online
+        pending={0}
+        deadLetter={0}
+      />,
+    );
+    expect(screen.queryByText("Відновлення з сервера")).not.toBeInTheDocument();
+
+    act(() => setSnapshotRestoring(true));
+    expect(screen.getByText("Відновлення з сервера")).toBeInTheDocument();
+    expect(screen.getByText("Відновлюю дані…")).toBeInTheDocument();
+
+    act(() => setSnapshotRestoring(false));
+    expect(screen.queryByText("Відновлення з сервера")).not.toBeInTheDocument();
   });
 
   // Доступу до Sentry є не в кожного, хто дивиться на цей аркуш, а

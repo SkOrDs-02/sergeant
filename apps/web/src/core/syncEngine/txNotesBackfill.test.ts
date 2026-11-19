@@ -23,6 +23,7 @@ import { __resetApplyPullOpCachesForTests } from "./applyPullOp";
 import { BACKFILL_PAGES_PER_TICK } from "./txNotesBackfill";
 import { createSyncEngineReaderRuntime } from "./syncEngineReader";
 import { readPullSinceCursor, writePullSinceCursor } from "./syncOpCursor";
+import { markReplicaBootstrapDone } from "./replicaBootstrap";
 
 vi.mock("./refreshCachesAfterPull", () => ({
   refreshCachesAfterPull: vi.fn(async () => {}),
@@ -114,6 +115,9 @@ beforeEach(async () => {
       tableName,
     });
   }
+  // Копія вже пройшла разове відновлення (`replicaBootstrap.ts`): догін
+  // нотаток стосується звичайного pull.
+  await markReplicaBootstrapDone(client, USER);
 });
 
 afterEach(() => db.close());

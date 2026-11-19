@@ -898,15 +898,19 @@ export function AuthProvider({ children }: AuthProviderProps) {
       // partition to `anon` for any post-logout anonymous usage. Dynamic import
       // keeps the sqlite-wasm chunk lazy (see `sqlite.lazy.test.ts`).
       try {
-        // Скидаємо origin-device-id ДО wipe, поки `kv_store` ще привʼязаний.
-        // Сервер відсіює на pull операції, чий `origin_device_id` дорівнює
-        // нашому — echo-suppression. Але id живе у `kv_store`, який не
-        // user-scoped, тож `wipeSqliteDb()` його не чіпає: пристрій лишався
-        // «тим самим», і власні рядки, які він же і запушив, більше НІКОЛИ
-        // не поверталися після того, як logout стер локальну копію.
-        // Виміряно 2026-08-06: акаунт із рядком на сервері входить назад на
-        // цей пристрій і бачить порожній Фінік, бо його єдина операція має
-        // origin цього ж пристрою. Свіжий id = pull віддає все своє.
+        // Скидаємо origin-device-id у розділі акаунта ДО wipe. Сервер
+        // відсіює на pull операції, чий `origin_device_id` дорівнює нашому
+        // (echo-suppression), тож після стирання копії пристрій мусить стати
+        // «новим» (виміряно 2026-08-06: інакше власні рядки не поверталися).
+        //
+        // AI-CONTEXT: цей `remove` сам по собі вже НЕ скидає id. З
+        // 2026-09-15 KV розділений по файлах, а id мінтиться й живе в
+        // АНОНІМНОМУ розділі (рушій синку стартує до входу), тож тут він
+        // влучає лише в розділ акаунта. Справжнє скидання — позначка, яку
+        // ставить `purgeAppOwnedLocalData` нижче, і новий id на наступному
+        // старті (`core/syncEngine/originDeviceReset.ts`, 2026-11-19). Дані
+        // повертає й без нього разове відновлення копії
+        // (`core/syncEngine/replicaBootstrap.ts`).
         await webKVStore.remove(SYNC_ORIGIN_DEVICE_ID_KEY);
       } catch (err) {
         logger.warn("[auth.logout] origin-device-id reset failed", err);

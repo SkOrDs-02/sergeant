@@ -30,6 +30,7 @@ import { __resetApplyPullOpCachesForTests } from "./applyPullOp.js";
 import { __resetInitialPullStateForTests } from "./initialPullState.js";
 import { createSyncEngineReaderRuntime } from "./syncEngineReader.js";
 import { readPullSinceCursor } from "./syncOpCursor.js";
+import { markReplicaBootstrapDone } from "./replicaBootstrap.js";
 
 const USER_ID = "user-poison";
 
@@ -112,6 +113,8 @@ describe("syncEngineReader — отруйний оп (rel-11)", () => {
       files: NUTRITION_CLIENT_MIGRATIONS,
       tableName: "__nutrition_migrations",
     });
+    // Копія вже пройшла разове відновлення: тут перевіряється звичайний pull.
+    await markReplicaBootstrapDone(client, USER_ID);
   });
 
   afterEach(() => {

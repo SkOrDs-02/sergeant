@@ -25,6 +25,7 @@ async function putInline(
 }
 
 import { isHandoffDone, markHandoffDone } from "../../../core/db/kvvfsHandoff";
+import { ORIGIN_DEVICE_RESET_MARKER } from "../../../core/syncEngine/originDeviceReset";
 import {
   isAppOwnedLocalStorageKey,
   purgeAppOwnedLocalData,
@@ -159,6 +160,17 @@ describe("purgeAppOwnedLocalData", () => {
 
     expect(localStorage.getItem("finyk_tx_cache")).toBeNull();
     expect(localStorage.getItem("ph_keep")).toBe("1");
+  });
+
+  // 2026-11-19: стерта копія = новий пристрій для синку. Id лежить в
+  // анонімному KV, куди чистка не дістає, тож вона просить наступний старт
+  // видати новий (`originDeviceReset.ts`).
+  it("просить новий id пристрою на наступному старті, а повторна чистка прохання не з'їдає", async () => {
+    await purgeAppOwnedLocalData();
+    expect(localStorage.getItem(ORIGIN_DEVICE_RESET_MARKER)).toBe("1");
+
+    purgeAppOwnedLocalStorage();
+    expect(localStorage.getItem(ORIGIN_DEVICE_RESET_MARKER)).toBe("1");
   });
 });
 

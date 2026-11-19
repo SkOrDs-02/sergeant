@@ -16,10 +16,12 @@ import { txTimeMs } from "../lib/transactions.js";
  *    регістру; після нього `.`/`:`/пробіл) — інші формулювання («Повернення …»)
  *    сюди не входять, доки не бачили їх у реальній виписці;
  *  - списання з тим самим нормалізованим мерчантом (`normalizeMerchantKey`,
- *    як у детектора регулярних платежів) і ТОЧНО тією ж сумою в копійках:
- *    часткове скасування (сума відрізняється) не парується;
+ *    як у детектора регулярних платежів; для опису без слів — сам опис, див.
+ *    `refundKeyOf`) і ТОЧНО тією ж сумою в копійках: часткове скасування
+ *    (сума відрізняється) не парується;
  *  - списання РАНІШЕ за надходження і не далі ніж за {@link REFUND_MAX_GAP_DAYS}
- *    днів;
+ *    днів; лише коли такого немає, підходить списання, датоване щонайбільше на
+ *    {@link REFUND_CLOCK_SKEW_SECONDS} с ПІЗНІШЕ (див. константу);
  *  - той самий рахунок і валюта, коли обидва відомі: скасування повертає гроші
  *    на ту саму картку;
  *  - єдиний найкращий збіг: найближче попереднє списання; за рівної відстані
@@ -37,7 +39,41 @@ import { txTimeMs } from "../lib/transactions.js";
  */
 export const REFUND_MAX_GAP_DAYS = 30;
 
+/**
+ * На скільки секунд скасування може бути датоване РАНІШЕ за своє списання.
+ *
+ * AI-CONTEXT (фідбек власника 2026-11-19): відхилений переказ на картку
+ * банк проводить як списання і «Скасування. …» в ту саму хвилину, і в
+ * Операціях списання стояло НАД своїм скасуванням. Порядок однієї секунди
+ * список не гарантує, тож це не доказ, але хибна різниця в кілька секунд між
+ * двома ногами однієї операції безпечніша за переказ на 170 000 ₴, що
+ * лічиться витратою й доходом водночас. Пізніше списання береться лише тоді,
+ * коли попереднього кандидата немає: скасована й одразу перезамовлена поїздка
+ * на ту саму суму парується з першою, а не з другою.
+ */
+export const REFUND_CLOCK_SKEW_SECONDS = 300;
+
 const DAY_MS = 86_400_000;
+const CLOCK_SKEW_MS = REFUND_CLOCK_SKEW_SECONDS * 1000;
+
+/**
+ * Ключ, за яким звіряються ноги пари.
+ *
+ * AI-CONTEXT (фідбек власника 2026-11-19, «Скасування. 410247******8090»):
+ * переказ на картку за номером Monobank описує маскованим номером картки, а
+ * `normalizeMerchantKey` викидає цифри й зірочки — ключ виходив порожній, і
+ * пара не ловилась зовсім: обидва 170 000 ₴ рахувались витратою («Перекази
+ * людям») і доходом («Інше»). Коли слів в описі немає, ключем стає сам опис
+ * без регістру й пробілів, і лише якщо в ньому є цифри: збіг лишається
+ * точним, правило не ширшає.
+ */
+function refundKeyOf(description: string | null | undefined): string {
+  const merchant = normalizeMerchantKey(description);
+  if (merchant) return merchant;
+  if (typeof description !== "string") return "";
+  const raw = description.toLowerCase().replace(/\s+/g, "");
+  return /\d/.test(raw) ? raw : "";
+}
 
 /**
  * Префікс опису скасування: слово, за яким іде крапка, двокрапка чи пробіл.
@@ -64,7 +100,10 @@ export interface CancellationPair<T extends RefundTxLike = RefundTxLike> {
   debit: T;
   /** Скасування — надходження «Скасування. …». */
   credit: T;
-  /** Відстань між ногами, мс. */
+  /**
+   * Від списання до скасування, мс. Відʼємна лише в межах
+   * {@link REFUND_CLOCK_SKEW_SECONDS}: скасування датоване трохи раніше.
+   */
   gapMs: number;
 }
 
@@ -138,11 +177,11 @@ export function findCancellationPairs<T extends RefundTxLike>(
 
     if (tx.amount > 0) {
       const merchant = cancelledMerchantOf(tx.description);
-      const key = merchant ? normalizeMerchantKey(merchant) : "";
+      const key = merchant ? refundKeyOf(merchant) : "";
       if (key) credits.push({ tx, timeMs, key });
       continue;
     }
-    const key = normalizeMerchantKey(tx.description);
+    const key = refundKeyOf(tx.description);
     if (!key) continue;
     const bucketKey = `${key}|${-tx.amount}`;
     const bucket = debits.get(bucketKey);
@@ -160,31 +199,39 @@ export function findCancellationPairs<T extends RefundTxLike>(
     const bucket = debits.get(`${credit.key}|${credit.tx.amount}`);
     if (!bucket) continue;
 
+    // Ранг кандидата: спершу попередні списання (gap ≥ 0) за відстанню, і
+    // лише без них — пізніші в межах допуску годинника (див.
+    // `REFUND_CLOCK_SKEW_SECONDS`), теж за відстанню.
     let best: Leg<T> | null = null;
-    let bestGap = Infinity;
+    let bestRank = Infinity;
     let tied = false;
     for (const debit of bucket) {
       if (claimed.has(debit.tx.id)) continue;
       const gap = credit.timeMs - debit.timeMs;
-      if (gap < 0 || gap > maxGapMs) continue;
+      if (gap < -CLOCK_SKEW_MS || gap > maxGapMs) continue;
       if (
         !sameWhenKnown(accountIdOf(debit.tx), accountIdOf(credit.tx)) ||
         !sameWhenKnown(currencyOf(debit.tx), currencyOf(credit.tx))
       ) {
         continue;
       }
-      if (gap < bestGap) {
+      const rank = gap >= 0 ? gap : maxGapMs + 1 - gap;
+      if (rank < bestRank) {
         best = debit;
-        bestGap = gap;
+        bestRank = rank;
         tied = false;
-      } else if (gap === bestGap) {
+      } else if (rank === bestRank) {
         tied = true;
       }
     }
     if (!best || tied) continue;
 
     claimed.add(best.tx.id);
-    pairs.push({ debit: best.tx, credit: credit.tx, gapMs: bestGap });
+    pairs.push({
+      debit: best.tx,
+      credit: credit.tx,
+      gapMs: credit.timeMs - best.timeMs,
+    });
   }
 
   return pairs;
