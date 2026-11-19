@@ -68,6 +68,7 @@ function renderCard(
       getDefaultForExercise={props.getDefaultForExercise}
       setDefaultForExercise={props.setDefaultForExercise}
       onDeleteSet={onDeleteSet}
+      isRetro={props.isRetro}
     />,
   );
 }
@@ -249,18 +250,57 @@ describe("WorkoutItemCard — strength set rows", () => {
     fireEvent.click(screen.getByRole("button", { name: /Підхід 1: зроблено/ }));
     expect(setRestTimer).not.toHaveBeenCalled();
   });
+
+  it("'+ Підхід' is the filled next step once every row is done, outline while a row is open", () => {
+    const { unmount } = renderCard();
+    expect(
+      screen.getByRole("button", { name: "+ Підхід" }).dataset["emphasis"],
+    ).toBe("next");
+    unmount();
+    renderCard({ it: makeItem({ sets: [{ weightKg: 50, reps: 0 }] }) });
+    expect(
+      screen.getByRole("button", { name: "+ Підхід" }).dataset["emphasis"],
+    ).toBeUndefined();
+  });
+});
+
+// Фідбек власника 2026-11-19: тренування, внесене заднім числом, — не живе.
+// ✓ у ньому стартувала таймер відпочинку посеред вечора.
+describe("WorkoutItemCard — retro (logged after the fact)", () => {
+  it("hides ✓ and the rest preset, so nothing can start a rest timer", () => {
+    renderCard({ isRetro: true });
+    expect(
+      screen.queryByRole("button", { name: /Підхід 1: зроблено/ }),
+    ).toBeNull();
+    expect(screen.queryByRole("button", { name: /відпоч/i })).toBeNull();
+    expect(screen.queryByRole("button", { name: /^\d+ с$/ })).toBeNull();
+    expect(setRestTimer).not.toHaveBeenCalled();
+  });
+
+  it("keeps editing and '+ Підхід' working", () => {
+    renderCard({ isRetro: true });
+    fireEvent.click(screen.getByRole("button", { name: "+ Підхід" }));
+    expect(updateItem).toHaveBeenCalledWith("w1", "it-1", {
+      sets: [
+        { weightKg: 50, reps: 8 },
+        { weightKg: 50, reps: 8 },
+      ],
+    });
+    expect(setRestTimer).not.toHaveBeenCalled();
+  });
 });
 
 // RPE (Borg 1..10) — optional per-set effort rating (`WorkoutSetRpeMenu`).
 // Closes the drift where the landing page promised "оцінка зусилля за
 // Боргом" but neither the field nor the word existed in the app.
 describe("WorkoutItemCard — RPE (Borg 1..10)", () => {
-  it("shows a dash trigger when the set has no RPE yet", () => {
+  it("labels the empty trigger «RPE» so the column is discoverable", () => {
     renderCard();
     const trigger = screen.getByRole("button", {
       name: "Підхід 1: оцінка зусилля, не вказано",
     });
-    expect(trigger).toHaveTextContent("–");
+    expect(trigger).toHaveTextContent("RPE");
+    expect(trigger).toHaveAttribute("aria-expanded", "false");
   });
 
   it("picking a value from the picker writes it onto that set only", () => {

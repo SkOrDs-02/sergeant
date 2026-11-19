@@ -1,5 +1,5 @@
 /**
- * Last validated: 2026-10-22
+ * Last validated: 2026-11-19
  * Status: Active
  *
  * Редактор початку й кінця на підсумку ЗАВЕРШЕНОГО тренування (аудит
@@ -15,6 +15,7 @@ import { Input } from "@shared/components/ui/Input";
 import { messages } from "@shared/i18n/uk";
 import type { Workout } from "@sergeant/fizruk-domain/domain";
 import {
+  DATETIME_CLASS,
   datetimeLocalValueToIso,
   isoToDatetimeLocalValue,
 } from "./activeWorkoutLib";
@@ -24,10 +25,6 @@ export interface WorkoutSummaryTimeEditorProps {
   workout: Workout;
   onUpdateTimes: (patch: { startedAt: string; endedAt: string }) => void;
 }
-
-// Нативний datetime-local має власну intrinsic-ширину; `min-inline-size: 0`
-// не дає йому розперти колонку.
-const DATETIME_CLASS = "min-w-0 [min-inline-size:0]";
 
 export function WorkoutSummaryTimeEditor({
   workout,
@@ -49,8 +46,10 @@ export function WorkoutSummaryTimeEditor({
   if (!open) {
     return (
       <Button
-        variant="ghost"
-        className="mt-2"
+        variant="text"
+        // `-ml-2` знімає власний `px-2` текстової кнопки, щоб підпис стояв
+        // на одній вертикалі з заголовком і датою над ним.
+        className="mt-1 -ml-2"
         type="button"
         onClick={() => setOpen(true)}
       >

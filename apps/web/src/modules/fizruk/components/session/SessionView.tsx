@@ -126,6 +126,9 @@ export function SessionView({
    * лишитись закритим, а не тихо ожити.
    */
   const isReadOnly = Boolean(activeWorkout.endedAt);
+  // Ретро-сесія: кінець уже введений у формі «Записати проведене» і чекає
+  // кроку «Завершити». Людина не тренується зараз, тож відпочинку немає.
+  const isRetro = !isReadOnly && Boolean(pendingRetroEnd);
   const items: WorkoutItem[] = activeWorkout.items || [];
   const groups: WorkoutGroup[] = useMemo(
     () => activeWorkout.groups || [],
@@ -323,6 +326,7 @@ export function SessionView({
                 ? () => onOpenExerciseStats(focused.exerciseId as string)
                 : null
             }
+            isRetro={isRetro}
           />
         ) : (
           <>

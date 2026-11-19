@@ -508,6 +508,7 @@ export function Workouts({
           }
           updateWorkout={o.updateWorkout}
           onDone={activeOnly ? () => onNavigate?.("workouts") : undefined}
+          docked={activeOnly}
         />
         <StrongImportReview
           open={strongImportOpen}

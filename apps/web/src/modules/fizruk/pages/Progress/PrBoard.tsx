@@ -1,9 +1,10 @@
 /**
- * Last validated: 2026-08-08
+ * Last validated: 2026-11-19
  * Status: Active
  */
 import { cn } from "@shared/lib/ui/cn";
 import { Card } from "@shared/components/ui/Card";
+import { Icon } from "@shared/components/ui/Icon";
 import { SectionHeading } from "@shared/components/ui/SectionHeading";
 import { EmptyState } from "@shared/components/ui/EmptyState";
 import { messages } from "@shared/i18n/uk";
@@ -61,6 +62,11 @@ interface PrBoardProps {
    */
   primaryGroupsUk: Record<string, string> | undefined;
   onSelect: (id: string) => void;
+}
+
+/** Роздільник фактів у рядку рекорду; скрінрідеру не потрібен. */
+function Dot() {
+  return <span aria-hidden>{"· "}</span>;
 }
 
 /**
@@ -147,96 +153,109 @@ export function PrBoard({
         />
       ) : (
         <div className="space-y-2">
+          {/*
+            Фідбек власника 2026-11-19: «рекорди важко розписані». Рядок
+            тепер короткий — назва, оцінка на 1 раз із підписом, найкращий
+            підхід і дата — а деталі (історія, графік, калькулятор) живуть на
+            сторінці вправи, куди веде тап; шеврон це показує. Місця з
+            подіуму («1», «2», «3» перед назвою) знято: оцінки різних вправ
+            між собою не порівнюються, жим ногами завжди «важчий» за жим
+            лежачи, і номер читався як частина назви.
+          */}
           {filtered.map((p) => {
-            const globalRank = prs.findIndex((x) => x.id === p.id);
-            const podiumRank =
-              globalRank >= 0 && globalRank < 3 ? globalRank + 1 : null;
+            const reduced = (p.reductionPct ?? 0) > 0;
             return (
               <button
                 key={p.id}
                 type="button"
-                className="focus-ring w-full text-left border border-line rounded-lg p-3 bg-bg hover:bg-panelHi transition-colors"
+                className="focus-ring flex w-full items-center gap-3 text-left rounded-lg p-3 bg-panelHi hover:bg-bg transition-colors"
                 onClick={() => onSelect(p.id)}
               >
-                <div className="flex items-center justify-between gap-2">
-                  <div className="flex items-center gap-2 min-w-0">
-                    {podiumRank && (
-                      <span className="shrink-0 inline-flex items-center gap-1 text-style-caption text-text">
-                        {podiumRank}
-                      </span>
-                    )}
-                    <div className="text-style-label text-text truncate">
+                <div className="min-w-0 flex-1">
+                  <div className="flex items-baseline justify-between gap-2">
+                    <div className="text-style-label font-semibold text-text truncate">
                       {p.name}
                     </div>
+                    <div className="shrink-0 text-style-label font-semibold text-text tabular-nums">
+                      {(p.reference1rm ?? p.best1rm).toFixed(0)}{" "}
+                      {messages.fizruk.kgUnit}
+                    </div>
                   </div>
-                  <div className="shrink-0 text-style-label text-text tabular-nums">
-                    {(p.reference1rm ?? p.best1rm).toFixed(0)}{" "}
-                    {messages.fizruk.kgUnit}
-                  </div>
-                </div>
-                {/*
-                  П4 — with all four badges present (weight×reps, date,
-                  stale/regression badge, muscle-group chip) this row could
-                  overflow on narrow screens; `flex-wrap` + `min-w-0` let it
-                  wrap onto a second line instead of clipping.
-                */}
-                <div className="flex flex-wrap items-center gap-x-2 gap-y-1 mt-0.5 min-w-0">
-                  <span className="text-style-caption text-muted tabular-nums">
-                    {fmtLoose(p.weightKg ?? 0)} {messages.fizruk.kgUnit} ×{" "}
-                    {p.reps ?? 0}
-                  </span>
-                  {p.at && (
-                    <span className="text-style-caption text-muted">
-                      ·{" "}
-                      {formatDayKeyUk(deviceDayKey(new Date(p.at)), {
-                        todayKey: deviceDayKey(),
-                        relative: false,
-                      })}
-                    </span>
-                  )}
                   {/*
-                    Борд раніше реагував лише на рух УГОРУ (`isNewPR`), тож
-                    регрес і застарілий рекорд були невидимі — канон §6
-                    вимагає протилежного. Тон нейтральний: жодного
-                    попереджувального кольору, це факт, а не осуд.
+                    П4 — `flex-wrap` + `min-w-0`, щоб усі факти рядка
+                    переносились, а не обрізались на вузькому екрані.
                   */}
-                  {p.isStale && (
-                    <span className="text-style-caption text-muted">
-                      · {messages.fizruk.prBoard.staleBadge}
+                  <div className="flex flex-wrap items-baseline gap-x-1 gap-y-0.5 mt-0.5 min-w-0 text-style-caption text-muted">
+                    <span className="tabular-nums">
+                      {fmtLoose(p.weightKg ?? 0)} {messages.fizruk.kgUnit} ×{" "}
+                      {p.reps ?? 0}
                     </span>
-                  )}
-                  {p.isRegression && (
-                    <span className="text-style-caption text-muted tabular-nums">
-                      · {messages.fizruk.prBoard.belowPeakPrefix}{" "}
-                      {p.deltaVsPeakPct}%
+                    {p.at && (
+                      <span>
+                        <Dot />
+                        {formatDayKeyUk(deviceDayKey(new Date(p.at)), {
+                          todayKey: deviceDayKey(),
+                          relative: false,
+                        })}
+                      </span>
+                    )}
+                    {p.muscleGroupLabel && (
+                      <span>
+                        <Dot />
+                        {/* Окремий вузол: група — те саме слово, що й у
+                            фільтрі над списком, і тест шукає саме його. */}
+                        <span>{p.muscleGroupLabel}</span>
+                      </span>
+                    )}
+                    {/*
+                      Борд раніше реагував лише на рух УГОРУ (`isNewPR`), тож
+                      регрес і застарілий рекорд були невидимі — канон §6
+                      вимагає протилежного. Тон нейтральний: це факт, а не
+                      осуд.
+                    */}
+                    {p.isStale && (
+                      <span>
+                        <Dot />
+                        {messages.fizruk.prBoard.staleBadge}
+                      </span>
+                    )}
+                    {p.isRegression && (
+                      <span className="tabular-nums">
+                        <Dot />
+                        {messages.fizruk.prBoard.belowPeakPrefix}{" "}
+                        {p.deltaVsPeakPct}%
+                      </span>
+                    )}
+                    <span className="ml-auto shrink-0 text-subtle">
+                      {reduced
+                        ? messages.fizruk.prBoard.referenceCaption
+                        : messages.fizruk.prBoard.oneRepCaption}
                     </span>
-                  )}
-                  {p.muscleGroupLabel && (
-                    // Contrast fix (П4): `text-fizruk/70` cleared only
-                    // ≈2.2:1 on the dark chip background — below WCAG AA.
-                    // `-strong`/module-tint pair mirrors the icon tiles
-                    // above and clears AA in both themes.
-                    <span className="ml-auto text-style-caption px-2 py-0.5 rounded-lg bg-panelHi text-text font-medium shrink-0">
-                      {p.muscleGroupLabel}
-                    </span>
+                  </div>
+                  {/*
+                    Шкала повернення лише там, де їй є що сказати: орієнтир
+                    просів від піка або рекорд застарів. На свіжій вправі
+                    вона малювала порожню доріжку з «−25% … 0%, свіже · 0 дн.
+                    тому, пік 53» — чотири числа, що не кажуть нічого нового
+                    (фідбек 2026-11-19; переглядає рішення 2026-08-06 «шкала
+                    для всіх»). Повна шкала й калькулятор — на сторінці вправи.
+                  */}
+                  {p.reductionPct != null && (reduced || p.isStale) && (
+                    <ReturnScale
+                      peak1rm={p.best1rm}
+                      reference1rm={p.reference1rm ?? p.best1rm}
+                      reductionPct={p.reductionPct}
+                      daysSinceLastSession={p.daysSinceLastSession ?? null}
+                      isStale={p.isStale === true}
+                    />
                   )}
                 </div>
-                {/*
-                  Шкала показується для ВСІХ вправ, не лише застарілих
-                  (рішення власника 2026-08-06). Повна шкала — теж
-                  інформація («ти на піку»), а список, що стрибає між
-                  рядками зі шкалою і без, читається гірше за кілька
-                  повних смуг поспіль.
-                */}
-                {p.reductionPct != null && (
-                  <ReturnScale
-                    peak1rm={p.best1rm}
-                    reference1rm={p.reference1rm ?? p.best1rm}
-                    reductionPct={p.reductionPct}
-                    daysSinceLastSession={p.daysSinceLastSession ?? null}
-                    isStale={p.isStale === true}
-                  />
-                )}
+                <Icon
+                  name="chevron-right"
+                  size={18}
+                  className="shrink-0 text-subtle"
+                  aria-hidden
+                />
               </button>
             );
           })}

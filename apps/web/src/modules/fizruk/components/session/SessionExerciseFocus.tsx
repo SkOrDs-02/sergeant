@@ -1,5 +1,5 @@
 /**
- * Last validated: 2026-09-11
+ * Last validated: 2026-11-19
  * Status: Active
  */
 import type {
@@ -54,6 +54,8 @@ export interface SessionExerciseFocusProps {
   onUngroup: (() => void) | null;
   onOpenInfo: (() => void) | null;
   onOpenStats: (() => void) | null;
+  /** Ретро-сесія: без ✓ і відпочинку (див. `WorkoutItemCard.isRetro`). */
+  isRetro?: boolean | undefined;
 }
 
 /**
@@ -81,6 +83,7 @@ export function SessionExerciseFocus({
   onUngroup,
   onOpenInfo,
   onOpenStats,
+  isRetro = false,
 }: SessionExerciseFocusProps) {
   const ss = messages.fizruk.session;
   const idx = items.findIndex((x) => x.id === it.id);
@@ -205,6 +208,7 @@ export function SessionExerciseFocus({
             getDefaultForExercise={getDefaultForExercise}
             setDefaultForExercise={setDefaultForExercise}
             onDeleteSet={onDeleteSet}
+            isRetro={isRetro}
           />
         </div>
       </section>
@@ -223,6 +227,7 @@ export function SessionExerciseFocus({
             aria-label={`${ss.prevExercise}: ${prev.nameUk}`}
             className="focus-ring flex min-h-[44px] min-w-0 items-center gap-1 rounded-lg px-2 text-style-label text-muted hover:text-text"
           >
+            <Icon name="chevron-left" size="md" aria-hidden />
             <span className="truncate">{prev.nameUk}</span>
           </button>
         ) : (
@@ -236,6 +241,9 @@ export function SessionExerciseFocus({
             className="focus-ring flex min-h-[44px] min-w-0 items-center justify-end gap-1 rounded-lg px-2 text-style-label font-semibold text-text hover:bg-panelHi"
           >
             <span className="truncate">{next.nameUk}</span>
+            {/* Шеврон каже, що це перехід, а не підпис: без нього назва
+                наступної вправи під карткою читалась як просто текст. */}
+            <Icon name="chevron-right" size="md" aria-hidden />
           </button>
         ) : (
           <span />

@@ -40,7 +40,7 @@ describe("ModulePanel money privacy", () => {
     expect(finance).not.toHaveTextContent(/1\s234/);
     expect(
       screen.getByRole("button", { name: "Перейти до модуля Фізрук" }),
-    ).toHaveTextContent("3 трен.");
+    ).toHaveTextContent("3 трен. за тиж.");
     expect(
       screen.getByRole("button", { name: "Перейти до модуля Рутина" }),
     ).toHaveTextContent("2/4");

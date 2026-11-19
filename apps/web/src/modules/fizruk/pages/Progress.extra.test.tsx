@@ -215,10 +215,9 @@ describe("Progress page — muscle volume & PR board", () => {
     expect(screen.getByText("Спина")).toBeInTheDocument();
   });
 
-  // П3 — the bars plot an internal `loadPoints` score, not kilograms. The
-  // formula paragraph is gone (redesign v3.2, item 09); the unit «у. о.»
-  // sits next to every number instead.
-  it("labels the muscle-volume numbers as load-score units, not kilograms (П3)", () => {
+  // П3 → фідбек 2026-11-19: обʼєм по мʼязах — робочі підходи за тиждень,
+  // а не внутрішній бал «у. о.», який ні з чим не звірити.
+  it("labels the muscle-volume numbers as weekly working sets, not «у. о.»", () => {
     const at = new Date(NOW - 1 * DAY).toISOString();
     setHooks({
       musclesUk: { chest: "Груди" },
@@ -241,8 +240,9 @@ describe("Progress page — muscle volume & PR board", () => {
       ],
     });
     render(<Progress onNavigate={onNavigate} />);
-    expect(screen.queryByText(/Умовні одиниці навантаження/)).toBeNull();
-    expect(screen.getAllByText(/у\. о\./).length).toBeGreaterThan(0);
+    expect(screen.queryByText(/у\. о\./)).toBeNull();
+    // Один підхід 100×10 — це «1 підх.», а не тоннаж ÷ 1000.
+    expect(screen.getByText("1 підх.")).toBeInTheDocument();
   });
 
   it("filters the PR board by muscle group and resets via «Всі»", () => {

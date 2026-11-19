@@ -1,5 +1,5 @@
 /**
- * Last validated: 2026-09-11
+ * Last validated: 2026-11-19
  * Status: Active
  */
 import { useRef } from "react";
@@ -12,7 +12,7 @@ import type { WorkoutSet } from "@sergeant/fizruk-domain";
 import { messages } from "@shared/i18n/uk";
 import { MAX_REPS, MAX_WEIGHT_KG } from "../../lib/numericBounds";
 import { fmtLoose } from "../../lib/numberFmt";
-import { WorkoutSetRpeMenu } from "./WorkoutSetRpeMenu";
+import { RPE_CELL_CLASS, WorkoutSetRpeMenu } from "./WorkoutSetRpeMenu";
 
 export interface WorkoutSetRowProps {
   /** 0-based position inside `it.sets`. */
@@ -43,6 +43,14 @@ export interface WorkoutSetRowProps {
    */
   rpe?: number | null | undefined;
   onChangeRpe?: ((rpe: number | null) => void) | undefined;
+  /**
+   * Чи показувати ✓. Запис тренування заднім числом (ретро-сесія з
+   * відкладеним кінцем) ✓ не має: там нема чого «завершувати» й нема
+   * відпочинку, а тап по ✓ запускав таймер посеред вечора, коли людина
+   * вже давно не в залі (фідбек власника 2026-11-19). Підхід із повторами
+   * і так зарахований (`isSetDone`), а наступний додає «+ Підхід».
+   */
+  showCheck?: boolean | undefined;
   /** Fill both fields from `ghost` — no-op if `ghost` is null. */
   onApplyGhost: () => void;
   /** Tap on the ✓ control once the row is "done" (see {@link isSetDone});
@@ -72,6 +80,17 @@ const INPUT_CLASS =
   "bg-bg px-3 font-semibold tabular-nums placeholder:font-normal read-only:opacity-70 read-only:cursor-not-allowed";
 
 /**
+ * Слот кошика і його порожній двійник в інших рядках.
+ *
+ * AI-DANGER: ширина мусить збігатись у кнопки й заглушки на ОБОХ типах
+ * вказівника. Глобальна сітка безпеки (`styles/mobile.css`) на тачі розтягує
+ * будь-який `<button>` до 44 px, а `<span>`-заглушку не чіпає, тож при `w-9`
+ * в обох рядок із кошиком був на 8 px вужчим за решту і поля «кг»/«повт»
+ * їхали сходинкою (скріншот власника 2026-11-19).
+ */
+const TRASH_SLOT_CLASS = "w-9 shrink-0 pointer-coarse:w-11";
+
+/**
  * One editable set row inside the exercise card: `№ · кг · повт · ✓`
  * (+ кошик лише на останньому рядку).
  *
@@ -95,6 +114,7 @@ export function WorkoutSetRow({
   onChangeReps,
   rpe,
   onChangeRpe,
+  showCheck = true,
   onApplyGhost,
   onCheckTap,
   onDelete,
@@ -139,9 +159,12 @@ export function WorkoutSetRow({
   };
 
   return (
+    // `flex-wrap`: панель RPE (`WorkoutSetRpeMenu`) — `basis-full order-last`
+    // дитина цього ж контейнера і переноситься на власну лінію під полями.
+    // Поля мають `flex-1` (базис 0), тож самі по собі рядок не переносять.
     <div
       className={cn(
-        "flex items-center gap-2 rounded-lg px-1 py-1 -mx-1 transition-colors",
+        "flex flex-wrap items-center gap-2 rounded-lg px-1 py-1 -mx-1 transition-colors",
         isCurrent && !isReadOnly && "bg-panelHi",
       )}
       data-current={isCurrent && !isReadOnly ? "true" : undefined}
@@ -199,42 +222,57 @@ export function WorkoutSetRow({
           onChange={onChangeRpe}
         />
       )}
-      <button
-        type="button"
-        disabled={isReadOnly}
-        aria-label={checkAria}
-        className={cn(
-          "flex h-11 w-11 shrink-0 items-center justify-center rounded-lg border transition-colors",
-          "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-focus/45 focus-visible:ring-offset-2 focus-visible:ring-offset-bg",
-          "disabled:cursor-not-allowed",
-          done
-            ? "border-line bg-panelHi text-text hover:bg-panelHi"
-            : ghostSet
-              ? "border-line bg-panel text-text hover:bg-panelHi"
-              : "border-line bg-panel text-text opacity-70 hover:opacity-100",
-        )}
-        onClick={handleCheck}
-      >
-        <Icon name="check" size={18} aria-hidden />
-      </button>
+      {showCheck ? (
+        <button
+          type="button"
+          disabled={isReadOnly}
+          aria-label={checkAria}
+          className={cn(
+            "flex h-11 w-11 shrink-0 items-center justify-center rounded-lg border transition-colors",
+            "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-focus/45 focus-visible:ring-offset-2 focus-visible:ring-offset-bg",
+            "disabled:cursor-not-allowed",
+            done
+              ? "border-line bg-panelHi text-text hover:bg-panelHi"
+              : ghostSet
+                ? "border-line bg-panel text-text hover:bg-panelHi"
+                : "border-line bg-panel text-text opacity-70 hover:opacity-100",
+          )}
+          onClick={handleCheck}
+        >
+          <Icon name="check" size={18} aria-hidden />
+        </button>
+      ) : null}
       {isLast && !isReadOnly ? (
         <button
           type="button"
-          className="flex h-11 w-9 shrink-0 items-center justify-center rounded-lg pointer-coarse:min-h-[44px] text-subtle hover:text-danger transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-focus/45 focus-visible:ring-offset-2 focus-visible:ring-offset-bg"
+          className={cn(
+            TRASH_SLOT_CLASS,
+            "flex h-11 items-center justify-center rounded-lg pointer-coarse:min-h-[44px] text-subtle hover:text-danger transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-focus/45 focus-visible:ring-offset-2 focus-visible:ring-offset-bg",
+          )}
           onClick={onDelete}
           aria-label={`${sr.deleteAriaPrefix} ${setNumber}`}
         >
           <Icon name="trash" size={15} aria-hidden />
         </button>
       ) : (
-        <span className="w-9 shrink-0" aria-hidden />
+        <span className={TRASH_SLOT_CLASS} aria-hidden />
       )}
     </div>
   );
 }
 
-/** Column captions rendered once above the first row of a strength card. */
-export function WorkoutSetColumnHeader() {
+/**
+ * Column captions rendered once above the first row of a strength card.
+ * Слоти праворуч мусять дзеркалити рядок (`WorkoutSetRow`) класами, а не
+ * числами: інакше підписи «кг»/«повт» роз'їжджаються з полями під ними.
+ */
+export function WorkoutSetColumnHeader({
+  showRpe = true,
+  showCheck = true,
+}: {
+  showRpe?: boolean | undefined;
+  showCheck?: boolean | undefined;
+} = {}) {
   const ss = messages.fizruk.session;
   return (
     <div className="flex items-center gap-2 px-1 -mx-1" aria-hidden>
@@ -245,11 +283,10 @@ export function WorkoutSetColumnHeader() {
       <span className="flex-1 px-3 text-style-caption text-subtle">
         {ss.columnReps}
       </span>
-      {/* RPE column — icon-only trigger in the row below, no caption here
-          (mirrors the check/trash slots, which also caption nothing). */}
-      <span className="w-9 shrink-0" />
-      <span className="w-11 shrink-0" />
-      <span className="w-9 shrink-0" />
+      {/* RPE несе підпис у самій порожній клітинці, тож тут без тексту. */}
+      {showRpe ? <span className={RPE_CELL_CLASS} /> : null}
+      {showCheck ? <span className="w-11 shrink-0" /> : null}
+      <span className={TRASH_SLOT_CLASS} />
     </div>
   );
 }

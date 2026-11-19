@@ -169,7 +169,7 @@ test("@critical fizruk: start → set → refresh → resume → finish", async 
   // Крок «Самопочуття» аркуша `WorkoutFinishSheets` — його «Пропустити».
   await page.getByRole("button", { name: "Пропустити" }).click();
   await expect(
-    page.getByRole("dialog", { name: "Біль після тренування" }),
+    page.getByRole("dialog", { name: "Травма чи гострий біль?" }),
   ).toBeVisible();
   // Крок травм має власну копію — «Нічого не позначати», не «Пропустити»
   // (`messages.fizruk.injuries.skip`). Формулювання свідоме: позначити травму
