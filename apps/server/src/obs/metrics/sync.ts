@@ -169,6 +169,28 @@ export const syncPullTruncatedTotal = new client.Counter({
 });
 
 /**
+ * Видалені чисткою `applied`-оп-и `sync_op_log` (ADR-0105 §2, прапорець
+ * `SYNC_OP_LOG_APPLIED_RETENTION_DAYS`). Нуль за увімкненого прапорця
+ * тижнями = поллер не стартував або журнал молодший за вікно.
+ */
+export const syncOpLogAppliedDeletedTotal = new client.Counter({
+  name: "sync_op_log_applied_deleted_total",
+  help: "Applied sync_op_log rows deleted by retention (ADR-0105)",
+  registers: [register],
+});
+
+/**
+ * Оцінка кількості рядків `sync_op_log` (`pg_class.reltuples`, без скану),
+ * знімається на кожному тіку чистки (ADR-0105 §5, крок 2). Показує, чи
+ * журнал справді перестав рости після ввімкнення.
+ */
+export const syncOpLogRows = new client.Gauge({
+  name: "sync_op_log_rows",
+  help: "Estimated sync_op_log row count (pg_class.reltuples), sampled by the retention tick (ADR-0105)",
+  registers: [register],
+});
+
+/**
  * Тривалість `GET /api/v2/sync/state-hash` (ADR-0106 §3): транзакція
  * REPEATABLE READ + канонізатор. Оцінку вартості з ADR підтверджуємо цією
  * метрикою на проді ДО ввімкнення клієнтської перевірки. `table` — лише з

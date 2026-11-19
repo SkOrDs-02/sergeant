@@ -298,7 +298,8 @@ async function createDefaultReaderRuntime(): Promise<SyncEngineReaderRuntime> {
       }),
     // Журнал обрізано нижче курсора (`410 sync_cursor_expired`): копію
     // відновлює знімок (`snapshotRestore.ts`). Ендпоінт за серверним
-    // прапорцем `SYNC_SNAPSHOT_ENABLED`; поки журнал не чиститься, 410 немає.
+    // прапорцем `SYNC_SNAPSHOT_ENABLED`; 410 буває лише за увімкненої чистки
+    // журналу (`SYNC_OP_LOG_APPLIED_RETENTION_DAYS`, ADR-0105 §2).
     snapshot: (opts) => shared.apiClient.syncV2.snapshotV2(opts),
     resolveClient: shared.resolveClient,
     // data-04: `null` тут означає «вийшов», а reader на `null` скидає прапор

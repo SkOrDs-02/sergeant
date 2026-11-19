@@ -1,6 +1,6 @@
 # Log retention archive cron
 
-> **Last touched:** 2026-10-03 by @claude (`sync_op_log` rejected-рядки в ретеншені). **Next review:** 2026-12-30.
+> **Last touched:** 2026-11-19 by @claude (чистка `applied`-оп-ів `sync_op_log`, ADR-0105 §2, за прапорцем); 2026-10-03 by @claude (`sync_op_log` rejected-рядки в ретеншені). **Next review:** 2026-12-30.
 > **Status:** Active.
 > **Code:** [`apps/server/src/modules/logRetention/archivePoller.ts`](../../../apps/server/src/modules/logRetention/archivePoller.ts).
 
@@ -35,13 +35,39 @@ not just a SQL migration.
   і в DELETE) та TTL 30 днів - константа `SYNC_OP_LOG_REJECTED_RETENTION_DAYS`;
   в архів їдуть метадані без `row` (у старих відхилених рядків там повний
   payload до 256 КБ);
-- `applied`-рядки **не видаляються**: це журнал, по якому курсором ходить
-  pull. Їхній ретеншен (ADR-0065) - окрема робота;
+- `applied`-рядки цей поллер **не чіпає**: їх чистить окремий поллер (нижче);
 - повтор відхиленого `idempotency_key` після TTL знову проходить apply.
 
 Поллер працює лише з `LOG_ARCHIVE_ENABLED=true` і заданим
-`GCS_LOG_ARCHIVE_BUCKET`; без цього рядки `sync_op_log` не чистяться (але й
-нові відхилені більше не несуть payload).
+`GCS_LOG_ARCHIVE_BUCKET`; без цього відхилені рядки `sync_op_log` не
+чистяться (але й нові відхилені більше не несуть payload).
+
+### `sync_op_log`: чистка `applied`-оп-ів (ADR-0105 §2)
+
+Окремий поллер [`syncOpLogAppliedRetention.ts`](../../../apps/server/src/modules/logRetention/syncOpLogAppliedRetention.ts),
+не залежить від `LOG_ARCHIVE_ENABLED` і бакета: без архіву, бо стан
+користувача живе в модульних таблицях (ADR-0105, варіант 4 відкинуто).
+
+- **Вимкнено за замовчуванням:** `SYNC_OP_LOG_APPLIED_RETENTION_DAYS=0`.
+  Значення `90` ставить власник у Coolify (ADR-0105 §5, крок 4); відкат -
+  повернути `0` (видалене при цьому не повертається).
+- Раз на годину (плюс стартовий тік після деплою) одним запитом видаляє до
+  5 000 найстаріших `applied`-рядків зі `server_ts` старшим за вікно і в тій
+  самій транзакції піднімає `sync_op_log_floor.floor_id` кожного
+  зачепленого користувача до максимального видаленого `id`. Пристрій із
+  курсором нижче межі отримує на pull `410 sync_cursor_expired` і
+  відновлюється зі знімка (`GET /api/v2/sync/snapshot`, потрібен
+  `SYNC_SNAPSHOT_ENABLED=true`).
+- Те саме число вмикає на push відмову `stale_increment` для `increment`,
+  старших за вікно мінус добу: після чистки їхній ключ ідемпотентності вже
+  не знайдеться, і повтор подвоїв би лічильник. Обмеження за віком у
+  клієнтській черзі немає (лише 10 спроб), тож межу тримає сервер.
+- Метрики: `sync_op_log_applied_deleted_total`, `sync_op_log_rows`
+  (оцінка `pg_class.reltuples` на кожному тіку). Лог:
+  `sync_op_log_retention_batch_done`.
+- Перед ввімкненням має бути застосована міграція 174: вона дотягує з
+  журналу в таблиці поля, які старий контейнер не записав у вікні деплою
+  170/171; інакше знімок віддав би їх порожніми.
 
 ## Env vars
 

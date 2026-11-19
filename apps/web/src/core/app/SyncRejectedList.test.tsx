@@ -100,4 +100,15 @@ describe("describeRejectedRow", () => {
       "невідома причина",
     );
   });
+
+  it("давній крок лічильника (чистка журналу, ADR-0105) має людську назву", () => {
+    expect(
+      describeRejectedRow(
+        row({ tableName: "routine_streaks", rejectReason: "stale_increment" }),
+      ),
+    ).toEqual({
+      module: "Рутина",
+      reason: "надто давній запис, сервер уже не може його звірити",
+    });
+  });
 });

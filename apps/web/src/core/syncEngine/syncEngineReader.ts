@@ -360,6 +360,9 @@ export function createSyncEngineReaderRuntime(
       // `txNotesBackfill.ts`). Збій не має блокувати основний pull: звітуємо
       // й ідемо далі, наступний тік продовжить із збереженого прогресу.
       // Відновлення від нуля й так охоплює нотатки: догін не потрібен.
+      // Журнал обрізано нижче прогресу догону (410, ADR-0105): тоді нотатки
+      // довезе знімок, і основний цикл починає саме з нього.
+      let expiredBeforePull: unknown = null;
       if (!bootstrap)
         try {
           await backfillTxNotesOnce({
@@ -372,16 +375,19 @@ export function createSyncEngineReaderRuntime(
             isConstraintFailure,
           });
         } catch (error) {
-          try {
-            // Офлайн основний pull нижче впаде сам і буде класифікований.
-            if (readOnlineStatus() !== false)
-              deps.captureException?.(error, {
-                scope: "sync-v2-tx-notes-backfill",
-                tags: { area: "sync", sync_direction: "pull" },
-              });
-          } catch {
-            /* обсервабіліті ніколи не має ламати шлях читання */
-          }
+          if (isSyncCursorExpiredError(error) && deps.snapshot)
+            expiredBeforePull = error;
+          else
+            try {
+              // Офлайн основний pull нижче впаде сам і буде класифікований.
+              if (readOnlineStatus() !== false)
+                deps.captureException?.(error, {
+                  scope: "sync-v2-tx-notes-backfill",
+                  tags: { area: "sync", sync_direction: "pull" },
+                });
+            } catch {
+              /* обсервабіліті ніколи не має ламати шлях читання */
+            }
         }
 
       // Основний pull отримує власний бюджет чекань рейт-ліміту, навіть коли
@@ -410,6 +416,11 @@ export function createSyncEngineReaderRuntime(
       for (;;) {
         let page: SyncV2PullResponse;
         try {
+          if (expiredBeforePull !== null) {
+            const expired = expiredBeforePull;
+            expiredBeforePull = null;
+            throw expired;
+          }
           page = await fetchPage(since);
         } catch (error) {
           // Журнал обрізано нижче курсора (ADR-0105): дочитати неможливо,

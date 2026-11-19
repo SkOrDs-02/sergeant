@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "current": "8.15.0",
+  "current": "8.15.1",
   "versions": {
     "0.1.0": {
       "releasedAt": "2026-06-29",
@@ -910,6 +910,14 @@
       "releasedAt": "2026-11-19",
       "changes": [
         "bump from 8.14.0 -> 8.15.0: skill file added/modified"
+      ],
+      "agentsTestedWith": [],
+      "passRateBaseline": null
+    },
+    "8.15.1": {
+      "releasedAt": "2026-11-19",
+      "changes": [
+        "bump from 8.15.0 -> 8.15.1: typo / link / freshness-only change"
       ],
       "agentsTestedWith": [],
       "passRateBaseline": null
