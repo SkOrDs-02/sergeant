@@ -5,6 +5,7 @@ import { lookupMccCategory } from "../../lib/mcc/mccMap.js";
 import { maskPii } from "../../lib/pii-mask.js";
 import { monoMccMatchTotal } from "../../obs/metrics.js";
 import { env } from "../../env.js";
+import { providerUpstreamReady } from "../../http/requireAnthropicKey.js";
 
 export const CATEGORIES = [
   "groceries",
@@ -194,6 +195,20 @@ export function createCategorizeInternalRouter(): Router {
       return;
     }
     const body: CategorizeArgs = parsed.data;
+    // Без ключа обраного `LLM_READONLY_PROVIDER` `getLLMProvider` мовчки віддає
+    // StubProvider → `{other, 0}` з 200 (AIP-20260805-B20). Гейтимо лише шлях,
+    // якому справді потрібна модель: відомий MCC резолвиться таблицею і без
+    // ключа. Тіло 503 те саме, що в `requireLlmUpstream` (coach/digest).
+    if (
+      lookupMccCategory(body.mcc) === null &&
+      !providerUpstreamReady("readonly")
+    ) {
+      res.status(503).json({
+        error: "AI-помічник тимчасово недоступний. Спробуй пізніше.",
+        code: "ANTHROPIC_KEY_MISSING",
+      });
+      return;
+    }
     try {
       const result = await categorizeTransaction({
         description: body.description,
