@@ -47,7 +47,10 @@ test("контроль: без сторожа той самий обрив ли�
   page,
 }) => {
   let aborted = 0;
-  await page.route(/\/boot-watchdog\.js$/, (route) => route.abort("aborted"));
+  // Сторож тепер inline: «вимикаємо» його міткою cooldown (спрацює лише звіт).
+  await page.addInitScript(() =>
+    sessionStorage.setItem("sergeant.boot_watchdog_at", String(Date.now())),
+  );
   await page.route(/\/assets\/vendor-react-[^/]*\.js$/, async (route) => {
     if (aborted === 0) {
       aborted++;

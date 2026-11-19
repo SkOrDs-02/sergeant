@@ -39,7 +39,7 @@
         },
         {
           "key": "Content-Security-Policy",
-          "value": "default-src 'self'; script-src 'self' 'wasm-unsafe-eval' https://*.posthog.com https://*.sentry-cdn.com https://*.sentry.io https://js.sentry-cdn.com; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob: https:; font-src 'self' data:; connect-src 'self' https://*.sentry.io https://*.ingest.sentry.io https://*.posthog.com https://api.sergeant.com.ua; worker-src 'self' blob:; manifest-src 'self'; base-uri 'self'; form-action 'self'; frame-ancestors 'none'; object-src 'none'; report-uri https://api.sergeant.com.ua/api/csp-report; report-to csp-endpoint"
+          "value": "default-src 'self'; script-src 'self' 'wasm-unsafe-eval' 'sha256-/Fha0pr46W0sUDHj92uMDOsjb2l01wtbzajcFGo5JEU=' https://*.posthog.com https://*.sentry-cdn.com https://*.sentry.io https://js.sentry-cdn.com; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob: https:; font-src 'self' data:; connect-src 'self' https://*.sentry.io https://*.ingest.sentry.io https://*.posthog.com https://api.sergeant.com.ua; worker-src 'self' blob:; manifest-src 'self'; base-uri 'self'; form-action 'self'; frame-ancestors 'none'; object-src 'none'; report-uri https://api.sergeant.com.ua/api/csp-report; report-to csp-endpoint"
         }
       ]
     },
