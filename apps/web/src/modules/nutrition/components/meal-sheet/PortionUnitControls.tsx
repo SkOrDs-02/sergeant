@@ -14,7 +14,12 @@ import { stepButtonClass } from "./choiceClasses";
 import { messages } from "@shared/i18n/uk";
 import type { FoodPortion } from "../../lib/foodDb/foodDb";
 import { MAX_PORTION_GRAMS } from "./mealFormUtils";
-import { GRAMS_UNIT, gramsToQty, qtyToGrams } from "./portionUnits";
+import {
+  GRAMS_UNIT,
+  gramsToQty,
+  portionQtyLabel,
+  qtyToGrams,
+} from "./portionUnits";
 
 const portionLabel = (p: FoodPortion) => `${p.name}, ${p.grams} г`;
 
@@ -120,7 +125,9 @@ export function PortionQuantityField({
       >
         +
       </button>
-      <span className="text-style-caption text-subtle">{portion.name}</span>
+      <span className="text-style-caption text-subtle">
+        {portionQtyLabel(portion, qty)}
+      </span>
     </div>
   );
 }

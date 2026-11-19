@@ -30,6 +30,7 @@ import type {
 import type { SavedRecipe } from "../../lib/recipeBook";
 import type { QuickChip } from "../../hooks/useNutritionQuickChips";
 import type { MealFormState } from "./mealFormUtils";
+import type { NutritionFavorites } from "../../hooks/useNutritionFavorites";
 import { useState } from "react";
 import { pluralUa } from "@sergeant/shared";
 import { messages } from "@shared/i18n/uk";
@@ -70,6 +71,8 @@ interface SearchTabPanelProps {
   recipeMealType?: MealTypeId | undefined;
   /** Рецепт записано: аркуш прийому закривається. */
   onRecipeLogged?: ((meal: Meal) => void) | undefined;
+  /** Улюблені (OD-27 Х-3 б): позначка рецепта в кроці «скільки зʼїв». */
+  favorites?: NutritionFavorites | undefined;
 }
 
 export function SearchTabPanel({
@@ -89,6 +92,7 @@ export function SearchTabPanel({
   savedRecipes = [],
   recipeMealType = "snack",
   onRecipeLogged,
+  favorites,
 }: SearchTabPanelProps) {
   const [myFoodsOpen, setMyFoodsOpen] = useState(false);
   const [recipeToLog, setRecipeToLog] = useState<SavedRecipe | null>(null);
@@ -163,6 +167,7 @@ export function SearchTabPanel({
         <RecipeLogSheet
           recipe={recipeToLog}
           mealType={recipeMealType}
+          favorites={favorites}
           onClose={() => setRecipeToLog(null)}
           onLog={(meal) => {
             setRecipeToLog(null);

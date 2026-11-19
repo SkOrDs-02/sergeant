@@ -16,6 +16,7 @@ import { Input, FIELD_LABEL } from "@shared/components/ui/Input";
 import type { FoodSearchProduct } from "@shared/api";
 import { FoodHitRow } from "./FoodHitRow";
 import type { FoodPortion, FoodProduct } from "../../lib/foodDb/foodDb";
+import { withHouseholdServing } from "../../lib/foodDb/householdPortions";
 import { searchFieldProps } from "@shared/lib/ui/searchFieldProps";
 import { SEARCH_QUERY_MAX_LEN, type ProductNutrients } from "@sergeant/shared";
 
@@ -182,8 +183,10 @@ export function FoodPickerSection({
                 p={p}
                 externalSourceLabel={localSourceLabel(p)}
                 onPick={() => {
-                  setPickedFood(p);
-                  setPickedGrams(String(Math.round(p.defaultGrams || 100)));
+                  // Базовий продукт стартує з побутової порції (OD-27 Х-1 а).
+                  const food = withHouseholdServing(p);
+                  setPickedFood(food);
+                  setPickedGrams(String(Math.round(food.defaultGrams || 100)));
                   setFoodQuery("");
                 }}
               />
@@ -203,8 +206,9 @@ export function FoodPickerSection({
                     p={p}
                     externalSourceLabel={group.label}
                     onPick={() => {
-                      setPickedFood(p as PickedFood);
-                      const grams = Number(p.defaultGrams) || 100;
+                      const food = withHouseholdServing(p as PickedFood);
+                      setPickedFood(food);
+                      const grams = Number(food.defaultGrams) || 100;
                       setPickedGrams(String(Math.round(grams)));
                       setFoodQuery("");
                     }}

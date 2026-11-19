@@ -30,6 +30,8 @@ import {
 import { newMealId } from "../../lib/mealId";
 import { currentTime } from "./mealFormUtils";
 import { nutritionRecipeLogMessages as COPY } from "@shared/i18n/uk.nutritionRecipeLog";
+import type { NutritionFavorites } from "../../hooks/useNutritionFavorites";
+import { FavoriteToggle } from "./FavoriteToggle";
 
 interface RecipeLogSheetProps {
   /** `null` — аркуш закрито. */
@@ -38,6 +40,8 @@ interface RecipeLogSheetProps {
   mealType: MealTypeId;
   onClose: () => void;
   onLog: (meal: Meal) => void;
+  /** Позначка «улюблене» на рецепті (OD-27 Х-3 б). */
+  favorites?: NutritionFavorites | undefined;
 }
 
 /** Скільки порцій: число > 0 з комою чи крапкою, інакше `null`. */
@@ -51,6 +55,7 @@ export function RecipeLogSheet({
   mealType,
   onClose,
   onLog,
+  favorites,
 }: RecipeLogSheetProps) {
   const [mode, setMode] = useState<RecipeLogMode>("portions");
   const [portionsRaw, setPortionsRaw] = useState("1");
@@ -112,6 +117,15 @@ export function RecipeLogSheet({
     >
       {recipe && (
         <div className="space-y-4">
+          {favorites && (
+            <div className="-mb-2 flex justify-end">
+              <FavoriteToggle
+                name={recipe.title}
+                favorite={favorites.recipeIds.has(recipe.id)}
+                onToggle={() => favorites.toggleRecipe(recipe.id)}
+              />
+            </div>
+          )}
           {canGrams && (
             <ChoiceGroup
               size="sm"

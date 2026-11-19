@@ -94,6 +94,30 @@ describe("FoodPickerSection — search mode", () => {
     expect(setFoodQuery).toHaveBeenCalledWith("");
   });
 
+  it("base food (local or server) starts from its household portion (Х-1 а)", () => {
+    const setPickedFood = vi.fn();
+    const setPickedGrams = vi.fn();
+    render(
+      <Section
+        {...baseProps({
+          foodHits: [{ id: "gen_khlib-zhytnii", name: "Хліб житній" }],
+          offHits: [{ id: "gen_banan", name: "Банан", defaultGrams: 100 }],
+          setPickedFood,
+          setPickedGrams,
+        })}
+      />,
+    );
+    fireEvent.click(screen.getByText("hit:Хліб житній"));
+    expect(setPickedGrams).toHaveBeenLastCalledWith("30");
+    expect(setPickedFood).toHaveBeenLastCalledWith(
+      expect.objectContaining({
+        portions: [expect.objectContaining({ id: "hh_slice", grams: 30 })],
+      }),
+    );
+    fireEvent.click(screen.getByText("hit:Банан"));
+    expect(setPickedGrams).toHaveBeenLastCalledWith("120");
+  });
+
   it("shows a busy search indicator", () => {
     render(<Section {...baseProps({ foodBusy: true })} />);
     expect(screen.getByText("пошук…")).toBeInTheDocument();

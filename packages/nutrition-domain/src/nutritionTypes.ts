@@ -48,6 +48,12 @@ export interface NutritionPrefs {
   dailyTargetFat_g: number | null;
   dailyTargetCarbs_g: number | null;
   mealTemplates: MealTemplate[];
+  /**
+   * Улюблені продукти (`foodId`) і рецепти (id книги), найсвіжіша позначка
+   * перша (OD-27 Х-3 б). Необовʼязкові: prefs до 2026-11-19 їх не мають.
+   */
+  favoriteFoodIds?: string[];
+  favoriteRecipeIds?: string[];
   reminderEnabled: boolean;
   reminderHour: number;
   waterGoalMl: number;
