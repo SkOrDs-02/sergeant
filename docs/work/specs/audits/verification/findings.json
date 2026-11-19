@@ -33,7 +33,7 @@
       "severity": "major",
       "source": "docs/work/specs/audits/verification/runs/pilot-2026-09-05-b/handoff.md",
       "sourceAnchor": "AI-expense-grounding",
-      "status": "open",
+      "status": "fixed-pending-verification",
       "history": [
         {
           "at": "2026-09-05",
@@ -44,6 +44,11 @@
           "at": "2026-11-19",
           "event": "retriaged",
           "note": "Ревалідація кодом 2026-11-19: корінь підтверджено - суми округлюються до гривні до моделі: fmt = formatNumberUk(Math.round(n)) у контексті останніх операцій (apps/web/src/core/lib/hubChatContext/finance.ts) і roundGrn у query_finyk (apps/web/src/core/lib/chatActions/queryFinykActions.ts)."
+        },
+        {
+          "at": "2026-11-19",
+          "event": "fixed",
+          "note": "Фікс 8b507e050: контекст останніх операцій і query_transactions несуть копійки (fmtExact, «123,45 грн»); агрегати навмисно в гривнях. Юніт-тести є (finance.test.ts, queryFinykActions.test.ts), live-прогону з моделлю немає."
         }
       ]
     },
@@ -481,12 +486,17 @@
       "title": "брак AI-ключа тихо підмінюється заглушкою",
       "severity": "unrated",
       "source": "docs/work/specs/audits/ai-pipeline-2026-08-05.md",
-      "status": "open",
+      "status": "fixed-pending-verification",
       "history": [
         {
           "at": "2026-09-05",
           "event": "imported",
           "note": "Актуальність потребує тріажу; імпорт історичного спостереження, без нового відтворення."
+        },
+        {
+          "at": "2026-11-19",
+          "event": "fixed",
+          "note": "Залишок закрито c76107089: /api/internal/categorize без ключа LLM_READONLY_PROVIDER і з невідомим MCC віддає 503 ANTHROPIC_KEY_MISSING; відомий MCC без ключа працює. Решта роутів - 1fb62a5f2. getLLMProvider досі тихо повертає StubProvider як механізм, але всі AI-роути тепер гейтяться перед ним. Live-прогону немає."
         }
       ],
       "sourceAnchor": "B20 — брак AI-ключа тихо підмінюється заглушкою"
