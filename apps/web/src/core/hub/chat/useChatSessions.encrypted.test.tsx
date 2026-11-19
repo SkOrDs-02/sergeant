@@ -22,13 +22,19 @@ vi.mock("@shared/lib/ui/undoToast", () => ({ showUndoToast: vi.fn() }));
 vi.mock("../../lib/hubChatSpeech", () => ({ stopSpeaking: vi.fn() }));
 
 import { useChatSessions } from "./useChatSessions";
-import { SESSIONS_STORAGE_KEY, type HubChatSession } from "../hubChatSessions";
+import {
+  SESSIONS_STORAGE_KEY,
+  whenChatHistoryReady,
+  type HubChatSession,
+} from "../hubChatSessions";
 import { makeUserMsg } from "../../lib/hubChatUtils";
 import {
   __resetAtRestKeyForTests,
   flushAtRest,
   hydrateAtRest,
+  sealAtRest,
 } from "../../security/aiAtRest";
+import { bumpAtRestWipeEpoch } from "../../security/aiAtRestEpoch";
 import { open } from "../../security/aiAtRestCrypto";
 
 const originalIDB = (globalThis as { indexedDB?: unknown }).indexedDB;
@@ -104,4 +110,133 @@ describe("useChatSessions: флаш на ховання з шифрування�
       unmount();
     },
   );
+});
+
+describe("useChatSessions: оверлей відкрито до розшифровки історії (B24 #19)", () => {
+  it("стара історія не затирається, набране за цей час зберігається поруч", async () => {
+    vi.mocked(crypto.subtle.encrypt).mockRestore(); // шифр без воріт
+    // Історія, вже зашифрована на диску попереднім сеансом.
+    const old: HubChatSession = {
+      id: "old-1",
+      title: "Стара бесіда",
+      titleSource: "auto",
+      createdAt: 1,
+      updatedAt: 1,
+      messages: [makeUserMsg("старе повідомлення")],
+    } as HubChatSession;
+    const written: Record<string, string> = {};
+    for (const key of [SESSIONS_STORAGE_KEY, "hub_chat_sessions_mirror_v1"]) {
+      const env = (await sealAtRest(key, JSON.stringify([old]))) as string;
+      written[key] = env;
+      localStorage.setItem(key, env);
+    }
+    // Холодний бут: слоти нічого не знають, а розшифровка ще не завершилась.
+    bumpAtRestWipeEpoch();
+    const decryptGates: Array<() => void> = [];
+    const realDecrypt = crypto.subtle.decrypt.bind(crypto.subtle);
+    vi.spyOn(crypto.subtle, "decrypt").mockImplementation(
+      (...args: Parameters<SubtleCrypto["decrypt"]>) =>
+        new Promise<ArrayBuffer>((resolve, reject) => {
+          decryptGates.push(() => {
+            realDecrypt(...args).then(resolve, reject);
+          });
+        }),
+    );
+
+    const { result, unmount } = renderHook(() => useChatSessions());
+    expect(result.current.messages).toHaveLength(0); // історії ще не видно
+    act(() => {
+      result.current.setMessages((m) => [...m, makeUserMsg("нове до розбору")]);
+    });
+    act(() => {
+      window.dispatchEvent(new Event("pagehide")); // спроба зберегти до розбору
+    });
+    await act(async () => {
+      await new Promise((r) => setTimeout(r, 0));
+    });
+    // Збереження відмовлено: на диску досі той самий шифртекст.
+    expect(localStorage.getItem(SESSIONS_STORAGE_KEY)).toBe(
+      written[SESSIONS_STORAGE_KEY],
+    );
+    expect(localStorage.getItem("hub_chat_sessions_mirror_v1")).toBe(
+      written["hub_chat_sessions_mirror_v1"],
+    );
+
+    await act(async () => {
+      for (let i = 0; i < 20 && decryptGates.length === 0; i++) {
+        await new Promise((r) => setTimeout(r, 0));
+      }
+      while (decryptGates.length > 0) decryptGates.shift()!();
+      vi.mocked(crypto.subtle.decrypt).mockRestore(); // далі без воріт
+      await whenChatHistoryReady();
+      await new Promise((r) => setTimeout(r, 0));
+      await flushAtRest();
+    });
+
+    const ids = result.current.sessions.map((s) => s.id);
+    expect(ids).toContain("old-1");
+    const stored = JSON.parse(
+      await open(
+        SESSIONS_STORAGE_KEY,
+        JSON.parse(localStorage.getItem(SESSIONS_STORAGE_KEY) as string),
+      ),
+    ) as HubChatSession[];
+    const texts = stored.flatMap((s) => s.messages.map((m) => m.text));
+    expect(texts).toContain("старе повідомлення");
+    expect(texts).toContain("нове до розбору");
+    unmount();
+  });
+});
+
+describe("useChatSessions: історію під хуком замінили (інша вкладка / розділ) (B24)", () => {
+  it("зведення по бесідах: чужа історія лишається, свої нові повідомлення теж", async () => {
+    vi.mocked(crypto.subtle.encrypt).mockRestore();
+    const { result, unmount } = renderHook(() => useChatSessions());
+    act(() => {
+      result.current.setMessages((m) => [...m, makeUserMsg("моє перше")]);
+    });
+    act(() => {
+      window.dispatchEvent(new Event("pagehide"));
+    });
+    await act(async () => {
+      await flushAtRest();
+    });
+
+    // Інша вкладка (або історія акаунта після входу) поклала своє.
+    const theirs: HubChatSession = {
+      id: "theirs-1",
+      title: "Чужа бесіда",
+      titleSource: "auto",
+      createdAt: 5,
+      updatedAt: 5,
+      messages: [makeUserMsg("чуже повідомлення")],
+    } as HubChatSession;
+    for (const key of [SESSIONS_STORAGE_KEY, "hub_chat_sessions_mirror_v1"]) {
+      const env = (await sealAtRest(key, JSON.stringify([theirs]))) as string;
+      localStorage.setItem(key, env);
+    }
+
+    act(() => {
+      result.current.setMessages((m) => [...m, makeUserMsg("моє друге")]);
+    });
+    act(() => {
+      window.dispatchEvent(new Event("pagehide")); // відмова + запуск розбору
+    });
+    await act(async () => {
+      for (let i = 0; i < 10; i++) await new Promise((r) => setTimeout(r, 0));
+      await flushAtRest();
+    });
+
+    const stored = JSON.parse(
+      await open(
+        SESSIONS_STORAGE_KEY,
+        JSON.parse(localStorage.getItem(SESSIONS_STORAGE_KEY) as string),
+      ),
+    ) as HubChatSession[];
+    const texts = stored.flatMap((s) => s.messages.map((m) => m.text));
+    expect(texts).toContain("чуже повідомлення");
+    expect(texts).toContain("моє перше");
+    expect(texts).toContain("моє друге");
+    unmount();
+  });
 });
