@@ -13,6 +13,8 @@ export interface LogMealAction {
     protein_g?: number | string;
     fat_g?: number | string;
     carbs_g?: number | string;
+    /** Вага порції в грамах; без неї пропозиції списати з комори немає. */
+    amount_g?: number | string;
   };
 }
 

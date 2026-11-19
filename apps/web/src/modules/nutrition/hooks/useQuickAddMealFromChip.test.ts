@@ -85,16 +85,17 @@ describe("useQuickAddMealFromChip — комора (OD-27 Х-4 а)", () => {
       handleAddMeal: vi.fn(() => "2026-11-17"),
       handleRemoveMeal: vi.fn(),
     };
-    const toast = { success: vi.fn() } as unknown as ToastApi;
+    const toast = { success: vi.fn(() => 7) } as unknown as ToastApi;
     const link = { undo: vi.fn() };
     const pantryOffer = vi.fn(() => link);
     const { result } = renderHook(() =>
       useQuickAddMealFromChip({ log, toast, pantryOffer }),
     );
     result.current(CHIP);
-    expect(pantryOffer).toHaveBeenCalledWith([
-      expect.objectContaining({ name: "Йогурт", amount_g: 150 }),
-    ]);
+    expect(pantryOffer).toHaveBeenCalledWith(
+      [expect.objectContaining({ name: "Йогурт", amount_g: 150 })],
+      { after: 7 },
+    );
     const [, , action] = vi.mocked(toast.success).mock.calls[0]!;
     action?.onClick();
     expect(log.handleRemoveMeal).toHaveBeenCalled();

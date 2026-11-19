@@ -8,6 +8,7 @@
 import { pluralUa } from "@sergeant/shared";
 import { messages } from "@shared/i18n/uk";
 import { fmt } from "../../lib/numberFmt";
+import { formatWorkoutItemsCount } from "../../lib/workoutItemsLabel";
 
 /** Скільки після завершення можна повернутись у сесію (рішення OD-28). */
 export const FINISH_UNDO_WINDOW_MS = 10_000;
@@ -15,6 +16,11 @@ export const FINISH_UNDO_WINDOW_MS = 10_000;
 export interface FinishConfirmFacts {
   durationSec: number;
   items: number;
+  /**
+   * Вправи з хоча б одним зарахованим підходом (`computeWorkoutDoneItemCount`):
+   * «1 з 2 вправ», як плитка «Вправ 1 з 2» підсумку (2026-11-19).
+   */
+  doneItems: number;
   /** Зараховані підходи (`computeWorkoutSetCount`), не рядки. */
   sets: number;
   tonnageKg: number;
@@ -28,7 +34,7 @@ export function buildFinishConfirmSummary(f: FinishConfirmFacts): string {
     minutes > 0
       ? c.minutes.replace("{n}", String(minutes))
       : c.seconds.replace("{n}", String(Math.max(0, f.durationSec))),
-    `${f.items} ${pluralUa(f.items, { one: c.exerciseOne, few: c.exerciseFew, many: c.exerciseMany })}`,
+    formatWorkoutItemsCount(f.doneItems, f.items),
     `${f.sets} ${pluralUa(f.sets, { one: c.setOne, few: c.setFew, many: c.setMany })}`,
   ];
   if (f.tonnageKg > 0) {

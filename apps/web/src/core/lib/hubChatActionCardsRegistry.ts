@@ -121,10 +121,16 @@ const SUMMARY_REGISTRY: Record<string, SummaryFn> = {
   },
 
   log_meal: (input) => {
-    const calories = numberField(input, "calories");
+    // Схема інструмента шле `kcal`; `calories` — давня форма карток.
+    const calories =
+      numberField(input, "calories") ?? numberField(input, "kcal");
+    const grams = numberField(input, "amount_g");
     return joinParts([
       mealTypeLabelFor(stringField(input, "meal_type")),
       stringField(input, "description") || stringField(input, "name"),
+      grams !== undefined && grams > 0
+        ? `${formatNumberUk(grams)}\u00a0г`
+        : undefined,
       calories !== undefined ? `${formatNumberUk(calories)} ккал` : undefined,
     ]);
   },

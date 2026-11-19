@@ -140,7 +140,18 @@ interface SkinResponse {
   content?: EvalBlock[];
   error?: { message?: string };
   stop_reason?: string;
+  /** Постачальник, якого обрав шлюз (OpenRouter дописує його у відповідь). */
+  provider?: string;
+  usage?: Record<string, unknown>;
 }
+
+/**
+ * Списана сума (`usage.cost`) і постачальники поточної моделі. Скидаються на
+ * початку кожної моделі в `main()`: заміри порівнюють вартість ходу між
+ * моделями, а спільний лічильник ключа OpenRouter ділять кілька прогонів.
+ */
+let spentUsd = 0;
+const providers = new Map<string, number>();
 
 interface ChainResult {
   model: string;
@@ -213,6 +224,11 @@ async function callSkin(
     throw e;
   }
   const data = (await response.json()) as SkinResponse;
+  const cost = data.usage?.["cost"];
+  if (typeof cost === "number") spentUsd += cost;
+  if (data.provider) {
+    providers.set(data.provider, (providers.get(data.provider) ?? 0) + 1);
+  }
   if (!response.ok) {
     return {
       ...data,
@@ -520,6 +536,8 @@ async function main(): Promise<void> {
     const latencies: number[] = [];
     let attempts = 0;
     let timeouts = 0;
+    spentUsd = 0;
+    providers.clear();
 
     for (const toolCase of cases) {
       for (let i = 0; i < repeats; i += 1) {
@@ -581,6 +599,12 @@ async function main(): Promise<void> {
     const implicit = replayed.filter((r) => IMPLICIT_NAMES.has(r.name));
     console.log(
       `implicit remember: ${implicit.filter((r) => r.correct).length}/${implicit.length}  \`${model}\``,
+    );
+    const providerList = [...providers]
+      .map(([name, n]) => `${name} ${n}`)
+      .join(", ");
+    console.log(
+      `usage.cost разом: $${spentUsd.toFixed(6)} за ${attempts} спроб (~$${(spentUsd / Math.max(1, attempts)).toFixed(6)} на кейс); постачальники: ${providerList || "—"}`,
     );
 
     if (values.record) {

@@ -88,7 +88,7 @@ export function usePhotoQuickSave({
         .replace("{kcal}", String(kcal));
       const today = added.every((a) => a.date === todayISODate());
       const pending: { link?: MealPantryLink | undefined } = {};
-      toast.success(
+      const recordToastId = toast.success(
         msg,
         undefined,
         onEdit && today
@@ -103,7 +103,9 @@ export function usePhotoQuickSave({
             },
       );
       // Фото з кількома позиціями списання не пропонує (П-7 Б).
-      pending.link = pantryOffer?.(meals.length === 1 ? meals : []);
+      pending.link = pantryOffer?.(meals.length === 1 ? meals : [], {
+        after: recordToastId,
+      });
       return true;
     },
     [log, toast, onEdit, pantryOffer],

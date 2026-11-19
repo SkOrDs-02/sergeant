@@ -1,7 +1,8 @@
 import { FizrukData } from "@sergeant/fizruk-domain";
-import { deviceDayKey, pluralExercises } from "@sergeant/shared";
+import { deviceDayKey } from "@sergeant/shared";
 import { loadRoutineState } from "@routine/lib/routineStorage";
 import { getCachedFizrukSqliteState } from "@fizruk/lib/sqliteReader";
+import { workoutItemsLabel } from "@fizruk/lib/workoutItemsLabel";
 import { loadNutritionLog } from "@nutrition/lib/nutritionStorage";
 import { getVisibleFinykMonoMirrorState } from "@finyk/lib/monoMirrorReader";
 import { getCachedFinykSqliteState } from "@finyk/lib/sqliteReader";
@@ -94,10 +95,12 @@ function searchFizruk(tokens: string[]): Hit[] {
         module: "fizruk",
         moduleLabel: "Фізрук",
         title: combinedTitle,
+        // Число вправ тим самим хелпером, що історія Фізрука: «1 з 2 вправ»,
+        // коли зроблено не всі (рішення founder-а 2026-11-18, «Вправ N з M»).
         subtitle:
           dateLabel +
           (itemsRaw.length
-            ? ` · ${itemsRaw.length} ${pluralExercises(itemsRaw.length)} · ${fullTokensText}`
+            ? ` · ${workoutItemsLabel(w)} · ${fullTokensText}`
             : ""),
         icon: "dumbbell",
         target: { kind: "module", moduleId: "fizruk" },

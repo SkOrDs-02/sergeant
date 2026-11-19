@@ -26,6 +26,8 @@ import { buildShoppingListPrompt } from "../modules/nutrition/shopping-list.js";
 import { buildRecommendRecipesPrompt } from "../modules/nutrition/recommend-recipes.js";
 import { buildParsePantryPrompt } from "../modules/nutrition/parse-pantry.js";
 import { SYSTEM_PREFIX } from "../modules/chat/toolDefs/systemPrompt.js";
+import { buildSystem } from "../modules/chat/promptCache.js";
+import { PROD_SIZE_DATA_BLOCK } from "../../scripts/eval/pipelines.synthesisProd.js";
 
 const byKey = (key: string) => {
   const pipeline = PIPELINES.find((p) => p.key === key);
@@ -128,6 +130,19 @@ describe("стенд моделей подає продові промпти", (
     expect(byKey("analysis").system).toBe(SYSTEM_PREFIX);
   });
 
+  it("synthesis-prod — продовий buildSystem() з ДАНИМИ прод-розміру, кейси analysis дослівно", () => {
+    const system = byKey("synthesis-prod").system ?? "";
+    expect(system).toBe(
+      buildSystem(PROD_SIZE_DATA_BLOCK)
+        .map((b) => b.text)
+        .join("\n\n"),
+    );
+    expect(system.startsWith(SYSTEM_PREFIX)).toBe(true);
+    const analysisNames = byKey("analysis").cases.map((c) => c.name);
+    const prodNames = byKey("synthesis-prod").cases.map((c) => c.name);
+    expect(prodNames.slice(0, analysisNames.length)).toEqual(analysisNames);
+  });
+
   it("нутриційні — байт у байт з продовими білдерами", () => {
     expect(byKey("day-plan").system).toBe(
       buildDayPlanPrompt(NUTRITION_FIXTURES.dayPlanBase).system,
@@ -154,7 +169,10 @@ describe("стенд моделей подає продові промпти", (
     // Свідомо поза списком: `chat-stream`/`chat-tool-result` (той самий
     // промпт, інший транспорт — `pnpm eval:stream`), `embed` (Voyage, не
     // LLM-роутинг), `analyze-photo`/`refine-photo` (зоровий стенд).
+    // `synthesis-prod` — не окремий шлях, а той самий синтез чату на
+    // прод-розмірі входу (близько 10k токенів, доперевірка 2026-11-19).
     const expected = [
+      "synthesis-prod",
       "classify",
       "digest",
       "mono",

@@ -3,6 +3,7 @@ import { describe, expect, it } from "vitest";
 import { CROSS_MODULE_TOOLS } from "./crossModule.js";
 import { FIZRUK_TOOLS } from "./fizruk.js";
 import { MEMORY_TOOLS } from "./memory.js";
+import { NUTRITION_TOOLS } from "./nutrition.js";
 import { ROUTINE_TOOLS } from "./routine.js";
 import { TOOLS } from "../tools.js";
 
@@ -117,5 +118,19 @@ describe("чесність опису тулів (аудит 2026-11-17 § 5.4)"
       expect(d, name).toMatch(/query_habits/);
       expect(d, name).toMatch(/не є id/);
     }
+  });
+  it("log_meal: вага в грамах необовʼязкова, модель її не вигадує (комора з чату, 2026-11-19)", () => {
+    const tool = find(NUTRITION_TOOLS, "log_meal") as unknown as {
+      input_schema: {
+        properties: Record<string, { type: string; description: string }>;
+        required: string[];
+      };
+    };
+    const amount = tool.input_schema.properties["amount_g"];
+    expect(amount?.type).toBe("number");
+    expect(tool.input_schema.required).not.toContain("amount_g");
+    // Без ваги виконавець не пропонує списання з комори, тож вигадана вага
+    // дала б пропозицію списати те, чого людина не казала.
+    expect(amount?.description).toMatch(/не вигадуй/i);
   });
 });

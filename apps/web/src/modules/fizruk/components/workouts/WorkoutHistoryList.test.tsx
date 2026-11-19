@@ -189,6 +189,34 @@ describe("WorkoutHistoryList – badge variants", () => {
     expect(screen.queryByText("легке")).toBeNull();
   });
 
+  it("число вправ — як плитка підсумку: «1 з 2 вправ», коли друга без зарахованого підходу (2026-11-19)", () => {
+    const item = (id: string, reps: number) => ({
+      id,
+      exerciseId: id,
+      nameUk: id,
+      primaryGroup: "chest",
+      musclesPrimary: [],
+      musclesSecondary: [],
+      type: "strength" as const,
+      sets: [{ weightKg: 60, reps }],
+    });
+    const partial = makeWorkout({
+      id: "w-partial",
+      endedAt: new Date().toISOString(),
+      items: [item("a", 8), item("b", 0)],
+    });
+    const done = makeWorkout({
+      id: "w-done",
+      endedAt: new Date().toISOString(),
+      items: [item("a", 8), item("b", 6)],
+    });
+    renderWithToast(
+      <WorkoutHistoryList {...baseProps({ workouts: [partial, done] })} />,
+    );
+    expect(screen.getByText("1 з 2 вправ")).toBeTruthy();
+    expect(screen.getByText("2 вправи")).toBeTruthy();
+  });
+
   it("shows workout note when present", () => {
     const noted = makeWorkout({ id: "w-note", note: "Важке тренування" });
     renderWithToast(

@@ -144,7 +144,9 @@ export function computeWorkoutSetCount(
  * вправа з хоча б одним зарахованим підходом (`isSetCompleted`, той самий
  * предикат, що й `computeWorkoutSetCount`). Старий item часу чи дистанції
  * без рядків підходів зроблений, коли секунди чи метри записано на ньому
- * самому. Лише підпис підсумку: журнал, історія й метрики число не беруть.
+ * самому. Підпис числа вправ скрізь, де видно минуле чи завершуване
+ * тренування: плитка підсумку, «Завершити зараз?», історія, «Останні»
+ * (2026-11-19). Метрики, стрік і поріг повноцінного число не беруть.
  */
 export function computeWorkoutDoneItemCount(
   w: WorkoutSummaryInput | null | undefined,
@@ -185,6 +187,7 @@ export function computeWorkoutSummary(
 ): WorkoutSummary {
   return {
     itemCount: (w?.items || []).length,
+    doneItemCount: computeWorkoutDoneItemCount(w),
     setCount: computeWorkoutSetCount(w),
     tonnageKg: computeWorkoutTonnageKg(w),
     durationSec: computeWorkoutDurationSec(w),

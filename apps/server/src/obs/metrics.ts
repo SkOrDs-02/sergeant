@@ -21,6 +21,10 @@ export {
 export {
   aiTokensTotal,
   aiCostEstimateUsd,
+  openRouterNoEndpointsTotal,
+  initOpenRouterNoEndpointsSeries,
+  chatSynthesisEmptyRetryTotal,
+  initChatSynthesisEmptyRetrySeries,
   infraMonthlyCostUsd,
   voyageDailyBudgetUsd,
   anthropicPromptCacheHitTotal,

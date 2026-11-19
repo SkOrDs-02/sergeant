@@ -11,9 +11,11 @@
 
 import { FINANCE_PIPELINES } from "./pipelines.finance.js";
 import { NUTRITION_PIPELINES } from "./pipelines.nutrition.js";
+import { synthesisProdPipeline } from "./pipelines.synthesisProd.js";
 import type { Pipeline } from "./types.js";
 
 export const PIPELINES: Pipeline[] = [
   ...FINANCE_PIPELINES,
   ...NUTRITION_PIPELINES,
+  synthesisProdPipeline,
 ];

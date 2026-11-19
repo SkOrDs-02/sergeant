@@ -305,6 +305,34 @@ groups:
             Reason label: {{ $labels.reason }}.
           runbook: "docs/operations/observability/runbook.md#aiquotastoredown"
 
+      # 2026-11-19. Кожен запит до OpenRouter несе `provider.data_collection=deny`
+      # і межу квантизації 8 біт (`apps/server/src/lib/llm/openrouterDataPolicy.ts`).
+      # Якщо для моделі під ними не лишилось постачальника, шлюз віддає 404
+      # «No endpoints found…», і пайплайн цієї моделі не працює ЗОВСІМ, тож
+      # поріг — будь-який приріст. Вікно, `for` і severity взято з
+      # `AiQuotaStoreDown` (найближче: той самий AI-шар, лічильник збою,
+      # поріг «> 0»). Серії заведено нулем зі старту процесу, тож перша
+      # відмова не губиться. Правило треба залити в Mimir вручну
+      # (`mimirtool rules sync`).
+      - alert: OpenRouterNoEndpoints
+        expr: sum by (reason, transport) (increase(openrouter_no_endpoints_total[10m])) > 0
+        for: 5m
+        labels:
+          severity: ticket
+        annotations:
+          summary: "OpenRouter: для моделі немає постачальника під нашою політикою (reason={{ $labels.reason }}, transport={{ $labels.transport }})"
+          description: |
+            Шлюз відмовив 404 «No endpoints found…» під наші `provider`-поля:
+            `reason=data_policy` — жоден постачальник моделі не проходить
+            `data_collection=deny`; `reason=quantization` — жоден не має
+            квантизації від 8 біт; `reason=ignored` — список
+            `OPENROUTER_IGNORE_PROVIDERS` прибрав усіх. Модель і ендпойнт шукай у лозі
+            `openrouter_data_policy_no_endpoints`. Відкат квантизації без
+            релізу: `OPENROUTER_QUANTIZATION_FLOOR=off`, списку обходу —
+            порожнє `OPENROUTER_IGNORE_PROVIDERS=`; зняття заборони
+            зберігання даних лише за згодою власника (runbook).
+          runbook: "docs/operations/observability/runbook.md#openrouternoendpoints"
+
   # ──────────────────────────── External HTTP (SLO 95.0% per-upstream) ─
   - name: slo_external_http
     rules:

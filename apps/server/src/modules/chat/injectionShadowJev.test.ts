@@ -21,7 +21,7 @@ describe("injectionShadowJev", () => {
     chatPromptInjectionShadowTotal.reset();
   });
 
-  it("шле ZDR, no-training і квантизацію від 8 біт у кожному запиті", async () => {
+  it("шле ZDR, no-training, квантизацію від 8 біт і обхід Baidu у кожному запиті", async () => {
     const fetchImpl = vi.fn().mockResolvedValue(jevResponse(0.9));
     await jevInjectionVerdict("текст", fetchImpl);
     const body = JSON.parse(fetchImpl.mock.calls[0]?.[1]?.body as string);
@@ -29,6 +29,7 @@ describe("injectionShadowJev", () => {
       zdr: true,
       data_collection: "deny",
       quantizations: ["fp8", "mxfp8", "fp16", "bf16", "fp32", "unknown"],
+      ignore: ["baidu"],
     });
     expect(body.state).toBe("текст");
   });

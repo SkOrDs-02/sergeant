@@ -406,7 +406,26 @@ describe("FinykApp (extra) — ManualExpenseSheet onSave", () => {
     openManualExpense();
     fireEvent.click(screen.getByTestId("save-add"));
     expect(storageMock.addManualExpense).toHaveBeenCalled();
-    expect(toastMock.success).toHaveBeenCalledWith("Витрату додано.");
+    expect(toastMock.success).toHaveBeenCalledWith(
+      "Витрату додано.",
+      undefined,
+      expect.objectContaining({ label: "Скасувати", kind: "undo" }),
+    );
+  });
+
+  it("«Скасувати» в тості видаляє той самий запис, що щойно додано", () => {
+    render(<FinykApp onOpenAuth={NOOP_AUTH} />);
+    openManualExpense();
+    fireEvent.click(screen.getByTestId("save-add"));
+    const added = storageMock.addManualExpense.mock.calls.at(-1)?.[0] as {
+      id?: string;
+    };
+    expect(added.id).toMatch(/^mx/);
+    const undo = toastMock.success.mock.calls.at(-1)?.[2] as {
+      onClick: () => void;
+    };
+    undo.onClick();
+    expect(storageMock.removeManualExpense).toHaveBeenCalledWith(added.id);
   });
 
   it("onSave with id calls editManualExpense + success toast 'Витрату оновлено'", () => {

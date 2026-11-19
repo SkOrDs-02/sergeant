@@ -12,7 +12,10 @@ import {
 } from "./chatShared.js";
 import { streamAnthropicToSse } from "./chatStream.js";
 import { callAnthropicWithContinuation } from "./chatUpstream.js";
-import { firstTurnReasoningPayload } from "./chatReasoning.js";
+import {
+  firstTurnReasoningPayload,
+  synthesisReasoningPayload,
+} from "./chatReasoning.js";
 import {
   type FirstTurnSse,
   replayFirstTurnFromCache,
@@ -544,6 +547,9 @@ export default async function handler(
         toolNamesFromRawCalls(tool_calls_raw),
       ),
       messages: fullMessages,
+      // Глибина синтезу Premium (`CHAT_SYNTHESIS_PREMIUM_REASONING_EFFORT`):
+      // за замовчуванням полів немає; standard і floor їх не отримують.
+      ...synthesisReasoningPayload(proTier.tier),
     };
 
     if (stream) {

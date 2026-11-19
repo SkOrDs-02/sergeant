@@ -57,14 +57,14 @@ export function NutritionLogPage({
           // нижче. Без цього помилковий тап по рядку пошуку коштував
           // ручного пошуку запису й видалення (знахідка PR-N1, аудит
           // 2026-09-13).
-          showUndoToast(toast, {
+          const recordToastId = showUndoToast(toast, {
             msg: "Страву додано",
             onUndo: () => {
               log.handleRemoveMeal(dateForLog, id);
               pending.link?.undo();
             },
           });
-          pending.link = pantryOffer?.([meal]);
+          pending.link = pantryOffer?.([meal], { after: recordToastId });
         }}
         onRemoveMeal={(date: string, meal: Meal) => {
           if (!meal?.id) return;
