@@ -4337,6 +4337,13 @@
       "canonical_owner": "docs/work/specs/finyk-observations.md"
     },
     {
+      "old_path": null,
+      "new_path": "docs/work/specs/finyk-savings-assets.md",
+      "action": "keep",
+      "genre": "active-work",
+      "canonical_owner": "docs/work/specs/finyk-savings-assets.md"
+    },
+    {
       "old_path": "docs/work/specs/finyk-unified-category-catalog.md",
       "new_path": "docs/work/specs/finyk-unified-category-catalog.md",
       "action": "keep",
