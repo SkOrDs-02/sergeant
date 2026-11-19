@@ -8,6 +8,7 @@ import {
 import { defaultChatModel } from "../env/chatModels.js";
 import { aiRoutingEnvShape } from "../env/aiRoutingEnv.js";
 import { tierModel } from "../modules/chat/aiQuotaTierModels.js";
+import { env } from "../env.js";
 
 /**
  * PR-12 — unit-coverage для pricing-helper-ів. Перевіряємо:
@@ -325,4 +326,59 @@ describe("pricing coverage — model ids reachable from chatModels.ts / aiRoutin
       expect(pickAnthropicPricing(model)).not.toBeNull();
     },
   );
+});
+
+/**
+ * Звірка 2026-11-19: таблиця розійшлась із цінами шлюзу (перший хід чату
+ * рахувався за flex-ціною, удвічі нижчою за факт). Правило з коментаря в
+ * `aiPricing.ts`: ціна моделі шлюзу — оцінка зверху, тобто не нижча за ціну
+ * ендпойнта за замовчуванням з каталогу `GET /api/v1/models` того ж дня.
+ * Числа нижче — саме ця каталожна ціна ($ за 1M, вхід/вихід); таблиця може
+ * бути вищою, але не нижчою.
+ */
+describe("ціни моделей шлюзу не нижчі за каталог OpenRouter 2026-11-19", () => {
+  it.each([
+    ["google/gemini-3.7-flash", 0.75, 3.75],
+    ["google/gemini-3.5-flash-lite", 0.3, 2.5],
+    ["google/gemini-2.5-flash-lite", 0.1, 0.4],
+    ["deepseek/deepseek-v4-flash", 0.09, 0.18],
+    ["z-ai/glm-5.2", 0.62, 2.42],
+    ["anthropic/claude-sonnet-4.6", 3.0, 15.0],
+  ] as const)("%s ≥ %s / %s", (model, input, output) => {
+    const price = pickAnthropicPricing(model);
+    expect(price).not.toBeNull();
+    expect(price!.input).toBeGreaterThanOrEqual(input);
+    expect(price!.output).toBeGreaterThanOrEqual(output);
+  });
+});
+
+/**
+ * Третій обхід поверх `chatModels.ts`, `aiRoutingEnv.ts` і тир-таблиці:
+ * зібраний `env` цілком. Моделі прямого Anthropic (`COACH_MODEL_ANTHROPIC`,
+ * `NUTRITION_MODEL`, `DIGEST_MODEL`, `CLASSIFY_MODEL`,
+ * `MONO_ENRICHMENT_MODEL`) і тир-дефолти `AI_PRO_*_MODEL` у `env/env.ts`
+ * обходи вище не бачать. Беремо кожен ключ, у назві якого є `MODEL`, щоб
+ * новий слот моделі потрапив під гейт без правки тесту.
+ */
+describe("pricing coverage — кожен *MODEL* слот зібраного env", () => {
+  // Не LLM і не через цю таблицю: транскрипція Groq і ембеддинги Voyage
+  // (ціну Voyage рахує `modules/ai-memory/embeddings.ts`).
+  const NOT_PRICED_HERE = new Set([
+    "GROQ_TRANSCRIBE_MODEL",
+    "VOYAGE_EMBEDDING_MODEL",
+  ]);
+  const slots = Object.entries(env as Record<string, unknown>).filter(
+    ([key]) => key.includes("MODEL") && !NOT_PRICED_HERE.has(key),
+  );
+
+  it("знайдено слоти моделей (sanity check для обходу нижче)", () => {
+    expect(slots.length).toBeGreaterThanOrEqual(15);
+  });
+
+  it.each(slots)("%s = %s має ціну", (key, model) => {
+    expect(typeof model).toBe("string");
+    // `OPENROUTER_MODEL` порожній за задумом: глобальний override вимкнено.
+    if (key === "OPENROUTER_MODEL" && model === "") return;
+    expect(pickAnthropicPricing(model as string)).not.toBeNull();
+  });
 });

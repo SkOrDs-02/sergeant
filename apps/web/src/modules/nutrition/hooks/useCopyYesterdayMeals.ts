@@ -56,7 +56,7 @@ export function useCopyYesterdayMeals({
       const activeDate = log.getActiveDate();
       const ids = log.handleCopyMeals(meals, activeDate, mealType);
       const pending: { link?: MealPantryLink | undefined } = {};
-      showUndoToast(toast, {
+      const recordToastId = showUndoToast(toast, {
         msg: "Скопійовано з учора",
         onUndo: () => {
           ids.forEach((id) => log.handleRemoveMeal(activeDate, id));
@@ -65,7 +65,9 @@ export function useCopyYesterdayMeals({
       });
       // Копія кількох рядків пропозиції не дає, як фото з кількома
       // позиціями (П-7 Б): відкрите питання в спеці.
-      pending.link = pantryOffer?.(ids.length === 1 ? meals : []);
+      pending.link = pantryOffer?.(ids.length === 1 ? meals : [], {
+        after: recordToastId,
+      });
     },
     [log, toast, pantryOffer],
   );

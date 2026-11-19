@@ -16,6 +16,11 @@
  *   pnpm eval:vision -- --pipeline=refine-photo
  *   pnpm eval:vision -- --repeat=3      # мінімум 3 у живому прогоні
  *   pnpm eval:vision -- --out=docs/work/specs/planning/vision-eval-2026-08-04.md
+ *   pnpm eval:vision -- --extra=analyze-photo:openrouter:openai/gpt-6-luna:luna-none:none
+ *                                       # 5-те поле — reasoning.effort (як у eval:models)
+ *   pnpm eval:vision -- --only-model=google/gemini-2.5-flash-lite,openai/gpt-6-luna
+ *   pnpm eval:vision -- --json-out=/tmp/vision.json
+ *                                       # сирі рядки (з `servedBy`, `gatewayCostUsd`)
  *
  * Код виходу: 0 завжди (це звіт, не гейт), 1 — помилка розбору аргументів.
  */
@@ -34,6 +39,7 @@ import {
   type ModalityFilter,
 } from "./eval/vision.js";
 import type { RunResult } from "./eval/types.js";
+import { isReasoningEffort } from "../src/lib/llm/provider.js";
 
 function modalitySection(
   dropped: ModalityFilter["dropped"],
@@ -72,6 +78,8 @@ async function main(): Promise<void> {
       out: { type: "string" },
       extra: { type: "string", multiple: true, default: [] },
       repeat: { type: "string" },
+      "only-model": { type: "string" },
+      "json-out": { type: "string" },
     },
   });
 
@@ -91,15 +99,34 @@ async function main(): Promise<void> {
   // `model-eval.ts`. Без нього зоровий стенд можна було перевірити лише на
   // вшитій трійці кандидатів, і кожен новий кандидат вимагав правки коду.
   for (const raw of values.extra ?? []) {
-    const [key, provider, model, label] = raw.split(":");
+    const [key, provider, model, label, effort] = raw.split(":");
     const pipeline = pipelines.find((p) => p.key === key);
-    if (!pipeline || provider !== "openrouter" || !model) {
+    if (
+      !pipeline ||
+      provider !== "openrouter" ||
+      !model ||
+      (effort !== undefined && !isReasoningEffort(effort))
+    ) {
       console.error(
-        `Ignoring malformed --extra="${raw}" (expected pipeline:openrouter:model[:label])`,
+        `Ignoring malformed --extra="${raw}" (expected pipeline:openrouter:model[:label[:effort]])`,
       );
       continue;
     }
-    pipeline.candidates.push({ provider, model, label: label ?? model });
+    pipeline.candidates.push({
+      provider,
+      model,
+      label: label ?? model,
+      ...(effort === undefined ? {} : { reasoning: effort }),
+    });
+  }
+
+  if (values["only-model"]) {
+    const only = new Set(values["only-model"].split(",").map((s) => s.trim()));
+    for (const pipeline of pipelines) {
+      pipeline.candidates = pipeline.candidates.filter((c) =>
+        only.has(c.model),
+      );
+    }
   }
 
   const dryRun = values["dry-run"] === true;
@@ -129,6 +156,13 @@ async function main(): Promise<void> {
   }
 
   const generatedAt = new Date().toISOString();
+  if (values["json-out"]) {
+    writeFileSync(
+      resolve(values["json-out"]),
+      JSON.stringify({ generatedAt, results }, null, 2),
+      "utf-8",
+    );
+  }
   const markdown = [
     toMarkdown(results, pipelines, generatedAt),
     ...modalitySection(dropped, !dryRun),

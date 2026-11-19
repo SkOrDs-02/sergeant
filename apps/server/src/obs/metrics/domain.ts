@@ -27,6 +27,67 @@ export const aiCostEstimateUsd = new client.Counter({
 });
 
 /**
+ * Відмова шлюзу OpenRouter «No endpoints found…» під наші `provider`-поля
+ * (`lib/llm/openrouterDataPolicy.ts`): для моделі не лишилось жодного
+ * постачальника під `data_collection=deny` (`reason=data_policy`), під
+ * межею квантизації 8 біт (`reason=quantization`) чи після списку обходу
+ * `OPENROUTER_IGNORE_PROVIDERS` (`reason=ignored`, «All providers have been
+ * ignored»). Кожна така відмова
+ * означає, що пайплайн моделі не працює зовсім, тому алерт
+ * `OpenRouterNoEndpoints` спрацьовує на будь-який приріст.
+ *
+ * Лейбли лише `reason` (3 значення) і `transport` (`messages` |
+ * `chat_completions`). Моделі в лейблі немає: усі шість серій заводяться
+ * нулем зі старту процесу (`initOpenRouterNoEndpointsSeries`), інакше
+ * `increase()` не бачить переходу «немає серії → 1» і першої відмови не
+ * ловить; серію з моделлю так наперед не заведеш. Модель, ендпойнт і режими
+ * лежать у лозі `openrouter_data_policy_no_endpoints` того ж виклику.
+ */
+export const openRouterNoEndpointsTotal = new client.Counter({
+  name: "openrouter_no_endpoints_total",
+  help: "OpenRouter 404 'No endpoints found' under our provider prefs (data policy, quantization floor or ignored providers)",
+  labelNames: ["reason", "transport"], // data_policy|quantization|ignored × messages|chat_completions
+  registers: [register],
+});
+
+/** Заводить усі шість серій нулем (після `reset()` у тестах — теж). */
+export function initOpenRouterNoEndpointsSeries(): void {
+  for (const reason of ["data_policy", "quantization", "ignored"]) {
+    for (const transport of ["messages", "chat_completions"]) {
+      openRouterNoEndpointsTotal.inc({ reason, transport }, 0);
+    }
+  }
+}
+initOpenRouterNoEndpointsSeries();
+
+/**
+ * Страховка-перезапит порожнього туру синтезу чату (рішення власника
+ * 2026-11-19, `modules/chat/chatStreamEmptyRetry.ts`): стрім синтезу через
+ * шлюз закрився успішно без жодного символу тексту, і сервер раз перепитав
+ * без міркувань. `outcome`: `recovered` (перезапит дав текст), `still_empty`
+ * (знову порожньо, людина бачить загальну помилку), `error` (перезапит не
+ * відкрився або обірвався). Частку порожніх перших спроб дає ділення суми
+ * на `ai_requests_total{endpoint="chat-tool-result",provider="openrouter"}`.
+ * Модель і текст — лише в лозі `chat_stream_empty_retry` без тексту
+ * відповіді (Hard Rule #21). Три серії заводяться нулем зі старту, щоб
+ * `increase()` бачив перший перезапит.
+ */
+export const chatSynthesisEmptyRetryTotal = new client.Counter({
+  name: "chat_synthesis_empty_retry_total",
+  help: "Retries without reasoning after an empty streamed chat synthesis, by outcome",
+  labelNames: ["outcome"], // recovered|still_empty|error
+  registers: [register],
+});
+
+/** Заводить три серії нулем (після `reset()` у тестах — теж). */
+export function initChatSynthesisEmptyRetrySeries(): void {
+  for (const outcome of ["recovered", "still_empty", "error"]) {
+    chatSynthesisEmptyRetryTotal.inc({ outcome }, 0);
+  }
+}
+initChatSynthesisEmptyRetrySeries();
+
+/**
  * PR-33 — fixed monthly subscription cost для зовнішніх не-AI-провайдерів,
  * чий `usage` runtime-instance не бачить (Railway, Vercel, PostHog, Sentry).
  * Також тримає envelop-budget-и для AI-провайдерів (Anthropic / Voyage),

@@ -114,7 +114,10 @@ describe("usePhotoQuickSave — комора (OD-27 Х-4 а, П-7 Б)", () => {
       handleAddMeal: vi.fn(() => "2026-11-17"),
       handleRemoveMeal: vi.fn(),
     };
-    const toast = { success: vi.fn(), error: vi.fn() } as unknown as ToastApi;
+    const toast = {
+      success: vi.fn(() => 7),
+      error: vi.fn(),
+    } as unknown as ToastApi;
     const pantryOffer = vi.fn(() => ({ undo: vi.fn() }));
     const { result } = renderHook(() =>
       usePhotoQuickSave({ log, toast, pantryOffer }),
@@ -125,14 +128,16 @@ describe("usePhotoQuickSave — комора (OD-27 Х-4 а, П-7 Б)", () => {
   it("фото з однією позицією пропонує списання", () => {
     const { save, pantryOffer } = withOffer();
     save({ meals: [meal("a", 300)], title: "Рис" }, null);
-    expect(pantryOffer).toHaveBeenCalledWith([
-      expect.objectContaining({ id: "a" }),
-    ]);
+    // Пропозиція стає в чергу за тостом запису (його id), а не поруч.
+    expect(pantryOffer).toHaveBeenCalledWith(
+      [expect.objectContaining({ id: "a" })],
+      { after: 7 },
+    );
   });
 
   it("фото з кількома позиціями списання не пропонує", () => {
     const { save, pantryOffer } = withOffer();
     save({ meals: [meal("a", 300), meal("b", 100)], title: "Обід" }, null);
-    expect(pantryOffer).toHaveBeenCalledWith([]);
+    expect(pantryOffer).toHaveBeenCalledWith([], { after: 7 });
   });
 });

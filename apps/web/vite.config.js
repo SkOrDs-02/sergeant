@@ -339,6 +339,26 @@ export default defineConfig(({ mode }) => {
       // лінкає maps через debug-id, який плагін інжектить у бандл.
       sourcemap: "hidden",
       rollupOptions: {
+        // AI-CONTEXT: `@sergeant/shared` оголошено без побічних ефектів лише
+        // для цього білда (сервер і мобільний його не бачать). Без правила
+        // барель `export *` робить кожен модуль пакета статично досяжним із
+        // `main.tsx`, і Rolldown кладе в eager-чанк усе, що з бареля вживає
+        // хоч один лінивий екран (`assistantCatalogue`, `speechParsers`,
+        // `hints`…). З правилом імпорт через барель іде прямо до модуля, що
+        // дає символ, і чанк визначає реальний споживач. Замір 2026-11-19:
+        // eager 270 333 → 254 565 B brotli (A/B на одному дереві), журнал
+        // `docs/work/specs/tech-debt/bundle-budget-ratchet-log.md`. Правило
+        // безпечне, доки в `packages/shared/src` немає модулів, які
+        // працюють лише своїм top-level кодом (`import "…"` без символів):
+        // такий модуль тут мовчки випаде з бандла.
+        treeshake: {
+          moduleSideEffects: [
+            {
+              test: /[\\/]packages[\\/]shared[\\/]src[\\/]/,
+              sideEffects: false,
+            },
+          ],
+        },
         output: {
           manualChunks(id) {
             if (!id) return;

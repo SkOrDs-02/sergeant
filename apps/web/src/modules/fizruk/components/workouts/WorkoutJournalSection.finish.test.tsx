@@ -127,7 +127,31 @@ describe("WorkoutJournalSection – Завершити finish flow", () => {
   });
 
   it("Фз-2: тап «Завершити» лише питає «Завершити зараз?» з підсумком і нічого не зберігає", () => {
+    // Зроблені вправи діалог рахує зі справжнього тренування
+    // (`computeWorkoutDoneItemCount`, 2026-11-19), тож фікстура несе ту
+    // саму вправу з одним зарахованим підходом, що й мок підсумку.
     const props = baseProps({
+      activeWorkout: {
+        id: "w-active",
+        startedAt: new Date(Date.now() - 3600_000).toISOString(),
+        endedAt: null,
+        items: [
+          {
+            id: "it-1",
+            exerciseId: "bench",
+            nameUk: "Жим",
+            primaryGroup: "chest",
+            musclesPrimary: [],
+            musclesSecondary: [],
+            type: "strength",
+            sets: [{ weightKg: 87, reps: 10 }],
+          },
+        ],
+        groups: [],
+        warmup: null,
+        cooldown: null,
+        note: "",
+      } as unknown as Workout,
       summarizeWorkoutForFinish: vi.fn(() => ({
         durationSec: 30 * 60,
         items: 1,
@@ -145,6 +169,41 @@ describe("WorkoutJournalSection – Завершити finish flow", () => {
     expect(dialog).toHaveTextContent("10 секунд");
     expect(props.endWorkout).not.toHaveBeenCalled();
     expect(props.setFinishFlash).not.toHaveBeenCalled();
+  });
+
+  it("діалог каже «1 з 2 вправ», як плитка підсумку, коли друга вправа без зарахованого підходу (2026-11-19)", () => {
+    const item = (id: string, reps: number) => ({
+      id,
+      exerciseId: id,
+      nameUk: id,
+      primaryGroup: "chest",
+      musclesPrimary: [],
+      musclesSecondary: [],
+      type: "strength" as const,
+      sets: [{ weightKg: 60, reps }],
+    });
+    const props = baseProps({
+      activeWorkout: {
+        id: "w-active",
+        startedAt: new Date(Date.now() - 3600_000).toISOString(),
+        endedAt: null,
+        items: [item("a", 8), item("b", 0)],
+        groups: [],
+        warmup: null,
+        cooldown: null,
+        note: "",
+      } as unknown as Workout,
+      summarizeWorkoutForFinish: vi.fn(() => ({
+        durationSec: 26,
+        items: 2,
+        tonnageKg: 480,
+      })),
+    });
+    renderWithToast(<WorkoutJournalSection {...props} />);
+    fireEvent.click(screen.getByTestId("finish-btn"));
+    expect(screen.getByRole("alertdialog")).toHaveTextContent(
+      "26 с · 1 з 2 вправ · 1 підхід · 480 кг×повт",
+    );
   });
 
   it("Фз-2: «Завершити» в підтвердженні — основна, не деструктивна кнопка", () => {

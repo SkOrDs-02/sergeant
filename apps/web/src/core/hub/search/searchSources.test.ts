@@ -275,8 +275,11 @@ describe("searchSources.performSearch (audit 03 F22 — scoring)", () => {
             id: `w-${n}`,
             startedAt: "2026-06-14T10:00:00.000Z",
             endedAt: "2026-06-14T11:00:00.000Z",
+            // Кожна вправа з зарахованим підходом — повна форма «N вправ».
             items: Array.from({ length: n }, () => ({
               nameUk: "Присідання",
+              type: "strength",
+              sets: [{ weightKg: 0, reps: 10 }],
             })),
             note: "",
           },
@@ -287,9 +290,43 @@ describe("searchSources.performSearch (audit 03 F22 — scoring)", () => {
         (r) => r.module === "fizruk" && r.id.startsWith("fizruk_w_"),
       );
       expect(hit).toBeDefined();
-      expect(hit!.subtitle).toContain(`${n} ${form} ·`);
+      expect(hit!.subtitle).toContain(`· ${n} ${form} ·`);
     },
   );
+
+  // Той самий лічильник, що історія Фізрука (`workoutItemsLabel`): вправа
+  // без зарахованого підходу не зроблена, і підпис каже «N з M», а не голе
+  // число доданих вправ (рішення founder-а 2026-11-18, «Вправ N з M»).
+  it("підпис тренування з незробленою вправою — «1 з 2 вправ», як в історії", () => {
+    seedFizruk({
+      workouts: [
+        {
+          id: "w-partial",
+          startedAt: "2026-06-14T10:00:00.000Z",
+          endedAt: "2026-06-14T11:00:00.000Z",
+          items: [
+            {
+              nameUk: "Тяга штанги",
+              type: "strength",
+              sets: [{ weightKg: 60, reps: 8 }],
+            },
+            {
+              nameUk: "Тяга блоку",
+              type: "strength",
+              sets: [{ weightKg: 40, reps: 0 }],
+            },
+          ],
+          note: "",
+        },
+      ],
+    });
+    const hit = performSearch("тяга").find(
+      (r) => r.id === "fizruk_w_w-partial",
+    );
+    expect(hit).toBeDefined();
+    expect(hit!.subtitle).toContain("· 1 з 2 вправ ·");
+    expect(hit!.subtitle).not.toContain("2 вправи");
+  });
 
   it("matches a Fizruk custom exercise by name (canonical SQLite cache)", () => {
     seedFizruk({

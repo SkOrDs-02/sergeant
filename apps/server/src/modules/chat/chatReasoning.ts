@@ -1,6 +1,10 @@
 import { env } from "../../env.js";
-import type { ChatFirstTurnReasoningEffort } from "../../env/aiRoutingEnv.js";
+import type {
+  ChatFirstTurnReasoningEffort,
+  ChatSynthesisPremiumReasoningEffort,
+} from "../../env/aiRoutingEnv.js";
 import { chatViaOpenRouter } from "../../env/chatModels.js";
+import type { ProTier } from "./aiQuotaTierModels.js";
 
 /**
  * Глибина міркувань першого ходу чату як поля тіла запиту.
@@ -42,4 +46,33 @@ export function firstTurnReasoningFields(
 export function firstTurnReasoningPayload(): Record<string, unknown> {
   if (!chatViaOpenRouter()) return {};
   return firstTurnReasoningFields(env.CHAT_FIRST_TURN_REASONING_EFFORT);
+}
+
+/**
+ * Поля глибини туру синтезу. Лише тир Premium: на standard (Free,
+ * `deepseek-v4-flash`) і floor глибину не чіпаємо за жодного значення, бо
+ * `none` там гірша за дефолт (дослідження 2026-11-19 § 6.4). `default` —
+ * полів немає. Інакше та сама граматика, що в першого ходу
+ * (`firstTurnReasoningFields`), бо синтез теж іде на `/messages`.
+ */
+export function synthesisReasoningFields(
+  tier: ProTier,
+  effort: ChatSynthesisPremiumReasoningEffort | undefined,
+): Record<string, unknown> {
+  if (tier !== "premium" || !effort || effort === "default") return {};
+  return firstTurnReasoningFields(effort);
+}
+
+/**
+ * Поля для payload туру синтезу в `chat.ts`. Лише на шлюзі, з тієї ж причини,
+ * що й `firstTurnReasoningPayload`: на прямому Anthropic поле дало б 400.
+ */
+export function synthesisReasoningPayload(
+  tier: ProTier,
+): Record<string, unknown> {
+  if (!chatViaOpenRouter()) return {};
+  return synthesisReasoningFields(
+    tier,
+    env.CHAT_SYNTHESIS_PREMIUM_REASONING_EFFORT,
+  );
 }

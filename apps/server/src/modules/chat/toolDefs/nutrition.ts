@@ -49,6 +49,11 @@ export const NUTRITION_TOOLS: AnthropicTool[] = [
           type: "number",
           description: "Вуглеводи в грамах (опційно)",
         },
+        amount_g: {
+          type: "number",
+          description:
+            "Вага порції в грамах (опційно). Лише коли людина її назвала або вона прямо випливає зі сказаного («пачка 200 г»); не вигадуй.",
+        },
       },
       required: ["name", "kcal"],
     },

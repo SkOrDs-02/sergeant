@@ -1,6 +1,6 @@
 # Playbook: Червоний бандл-бюджет (size-limit / eager)
 
-> **Last touched:** 2026-11-19 by @claude. **Next review:** 2027-03-16.
+> **Last touched:** 2026-11-19 by @claude. **Next review:** 2027-03-16.; 2026-11-19 by @claude (стеля eager 274 → 259 kB рішенням власника). **Next review:** 2027-03-15.
 > **Status:** Active
 > **Runtime-specific:** no
 
@@ -22,7 +22,7 @@
 | ------------------------ | ----------------------------------------------------------------------- | ----------- | --------------------------------------------- |
 | `size-limit` (JS усього) | **суму всіх** емітованих чанків `apps/server/dist/assets/*.js` (brotli) | **1.56 MB** | `pnpm --filter @sergeant/web exec size-limit` |
 | `size-limit` (CSS)       | `apps/server/dist/assets/*.css` (brotli)                                | **40 kB**   | те саме                                       |
-| **eager**                | лише те, що Vite вписав у `index.html` як `modulepreload`/`script src`  | **274 kB**  | `node scripts/ci/check-eager-bundle.mjs`      |
+| **eager**                | лише те, що Vite вписав у `index.html` як `modulepreload`/`script src`  | **259 kB**  | `node scripts/ci/check-eager-bundle.mjs`      |
 
 **Ці метрики рухаються від різних дій.** Lazy-split покращує досвід завантаження і НЕ рухає `size-limit` — той сумує і чанки, які більшість людей ніколи не завантажить (`vendor-zxing` — лише сканер, `NutritionApp` — лише при вході в модуль). Відчутну швидкість першого екрана корелює **eager**, і саме він ратчетнутий УНИЗ тричі (470 → 430 → 280 → 268; 2026-11-18 рішенням власника 268 → 274 через security-бампи). Тому червоний eager і червоний `size-limit` — це дві різні задачі, не одна.
 

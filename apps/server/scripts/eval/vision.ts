@@ -297,6 +297,9 @@ interface RawCall {
   text: string;
   inputTokens: number | null;
   outputTokens: number | null;
+  /** Постачальник і списана шлюзом вартість (лише OpenRouter-гілка). */
+  servedBy?: string | null;
+  gatewayCostUsd?: number | null;
   error?: string;
 }
 
@@ -387,6 +390,11 @@ async function callVision(
         model: candidate.model,
         max_tokens: maxTokens,
         temperature: 0.2,
+        // Лише стенд: 5-те поле `--extra` (як у `eval:models`). Без нього
+        // шлюз вирішує глибину сам, як у проді.
+        ...(candidate.reasoning
+          ? { reasoning: { effort: candidate.reasoning } }
+          : {}),
         messages: [
           { role: "system", content: system },
           {
@@ -408,7 +416,12 @@ async function callVision(
   });
   const data = (await response.json().catch(() => ({}))) as {
     choices?: Array<{ message?: { content?: string | null } }>;
-    usage?: { prompt_tokens?: number; completion_tokens?: number };
+    usage?: {
+      prompt_tokens?: number;
+      completion_tokens?: number;
+      cost?: number;
+    };
+    provider?: string;
     error?: { message?: string };
   };
   if (!response.ok) {
@@ -425,6 +438,9 @@ async function callVision(
     text: data.choices?.[0]?.message?.content ?? "",
     inputTokens: data.usage?.prompt_tokens ?? null,
     outputTokens: data.usage?.completion_tokens ?? null,
+    servedBy: typeof data.provider === "string" ? data.provider : null,
+    gatewayCostUsd:
+      typeof data.usage?.cost === "number" ? data.usage.cost : null,
   };
 }
 
@@ -459,6 +475,8 @@ export async function runVisionOne(
     trap: goldenCase.trap,
     candidate,
     latencyMs: Date.now() - t0,
+    servedBy: raw.servedBy ?? null,
+    gatewayCostUsd: raw.gatewayCostUsd ?? null,
     cacheReadTokens: null,
     // Зорові шляхи не user-facing текстом — голос міряти нема на чому.
     voiceFails: null,

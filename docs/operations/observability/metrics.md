@@ -1,6 +1,6 @@
 # Довідник Prometheus-метрик
 
-> **Last touched:** 2026-11-19 by @claude (sync: +`sync_op_log_applied_deleted_total`, +`sync_op_log_rows`, +1 engine-reason `stale_increment`, ADR-0105 §2); 2026-10-23 by @claude (auth: +`auth_password_check_failures_total`, sec-10); 2026-10-20 by @claude (sync: +1 apply-reason `invalid_prefs_patch`, data-04); 2026-10-03 by @claude (sync: +1 engine-reason `invalid_text_encoding`, §4; раніше: джерело істини → реєстр `obs/metrics/`; alert-routing без n8n; зняті хардкоди лічильників). **Next review:** 2026-12-16.
+> **Last touched:** 2026-11-19 by @claude (sync: +`sync_op_log_applied_deleted_total`, +`sync_op_log_rows`, +1 engine-reason `stale_increment`, ADR-0105 §2); 2026-11-19 by @claude (AI: +`chat_synthesis_empty_retry_total`, страховка-перезапит порожнього синтезу, § 6a); 2026-11-19 by @claude (AI: `openrouter_no_endpoints_total` +`reason=ignored`); 2026-11-19 by @claude (AI: +`openrouter_no_endpoints_total` і алерт `OpenRouterNoEndpoints`); 2026-10-23 by @claude (auth: +`auth_password_check_failures_total`, sec-10); 2026-10-20 by @claude (sync: +1 apply-reason `invalid_prefs_patch`, data-04); 2026-10-03 by @claude (sync: +1 engine-reason `invalid_text_encoding`, §4; раніше: джерело істини → реєстр `obs/metrics/`; alert-routing без n8n; зняті хардкоди лічильників). **Next review:** 2026-12-16.
 > **Status:** Active — **каталог неповний**, див. врізку одразу нижче
 
 > **⚠️ Каталог відстав від коду — і відстає далі.**
@@ -238,8 +238,9 @@ rate(rate_limit_hits_total{key="api:auth:sensitive",outcome="blocked"}[5m])    #
 | `anthropic_prompt_cache_hit_total` | Counter   | `version` · `outcome`                         | [anthropic.ts:161](../../../apps/server/src/lib/anthropic.ts#L161)                                                                                                          |
 | `ai_quota_blocks_total`            | Counter   | `reason`                                      | [aiQuota.ts:168](../../../apps/server/src/modules/chat/aiQuota.ts#L168)                                                                                                     |
 | `ai_quota_fail_open_total`         | Counter   | `reason`                                      | [aiQuota.ts](../../../apps/server/src/modules/chat/aiQuota.ts) `logQuotaStoreUnavailable()`                                                                                 |
+| `openrouter_no_endpoints_total`    | Counter   | `reason` · `transport`                        | [openrouterDataPolicy.ts](../../../apps/server/src/lib/llm/openrouterDataPolicy.ts) `noteOpenRouterDataPolicyRejection()`                                                   |
 
-`provider`: `anthropic` · `voyage`. `outcome` (requests): `ok` · `rate_limited` · `timeout` · `error` · `bad_response`. `kind` (tokens): `prompt` · `completion` · `cache_write` · `cache_read` (Voyage-embedding-и записуються як `kind="prompt"`, бо у Voyage-billing-у input-tokens — єдина категорія). `endpoint`: `messages` (Anthropic) · `embed` (Voyage). `outcome` (cache): `hit` · `miss`. `reason` (quota blocks): `limit` · `disabled` · `tool_disabled`. `reason` (fail-open): `database_url_missing` · `db_error`. Buckets duration: `100…60000` ms.
+`provider`: `anthropic` · `voyage`. `outcome` (requests): `ok` · `rate_limited` · `timeout` · `error` · `bad_response`. `kind` (tokens): `prompt` · `completion` · `cache_write` · `cache_read` (Voyage-embedding-и записуються як `kind="prompt"`, бо у Voyage-billing-у input-tokens — єдина категорія). `endpoint`: `messages` (Anthropic) · `embed` (Voyage). `outcome` (cache): `hit` · `miss`. `reason` (quota blocks): `limit` · `disabled` · `tool_disabled`. `reason` (fail-open): `database_url_missing` · `db_error`. `reason` (OpenRouter no endpoints, з 2026-11-19): `data_policy` · `quantization` · `ignored`; `transport`: `messages` · `chat_completions`; усі 6 серій заведено нулем зі старту процесу, модель лише в лозі `openrouter_data_policy_no_endpoints`. **Alert**: `OpenRouterNoEndpoints` — [runbook.md](./runbook.md#openrouternoendpoints). Buckets duration: `100…60000` ms.
 
 **Voyage cost (PR-33)**: `recordVoyageUsage()` після успішного embedding-batch-у пушить `usage.total_tokens` у `ai_tokens_total{provider="voyage", endpoint="embed", kind="prompt"}` і USD-переклад в `ai_cost_estimate_usd_total{provider="voyage", model, endpoint="embed"}`. Прайс-таблиця — `VOYAGE_PRICING_USD_PER_MTOK` у [embeddings.ts](../../../apps/server/src/modules/ai-memory/embeddings.ts) (`voyage-3.5-lite=$0.02/MTok`, `voyage-3.5=$0.06/MTok`, `voyage-3-large=$0.18/MTok` тощо). Невідома модель → cost-counter не інкрементується (token-counter інкрементується завжди), щоб помилковий model-string не привʼязав ціну від іншої версії.
 
@@ -314,6 +315,7 @@ Join-pattern із `app_build_info` (один gauge=1 на інстанс із л
 | `chat_first_turn_phase_ms`           | Histogram | `phase`                           | [chat.ts](../../../apps/server/src/modules/chat/chat.ts) — перший хід, JSON і стрім                         |
 | `chat_first_turn_first_visible_ms`   | Histogram | `kind` · `source`                 | [chatFirstTurnStream.ts](../../../apps/server/src/modules/chat/chatFirstTurnStream.ts) — стрім першого ходу |
 | `chat_first_turn_silent_retry_total` | Counter   | `reason`                          | [chatFirstTurnStream.ts](../../../apps/server/src/modules/chat/chatFirstTurnStream.ts) — стрім першого ходу |
+| `chat_synthesis_empty_retry_total`   | Counter   | `outcome`                         | [chatStreamEmptyRetry.ts](../../../apps/server/src/modules/chat/chatStreamEmptyRetry.ts) — стрім синтезу    |
 
 **Ці метрики міряють різні шляхи, і плутати їх — головна пастка секції.**
 `/api/chat` має два ходи. До 2026-11-18 стрімився лише **другий** — синтез
@@ -355,6 +357,20 @@ Join-pattern із `app_build_info` (один gauge=1 на інстанс із л
 Три фази умовні й порожні в анона: `correlations` і `preferences` потребують
 сесії, `upstream` не пишеться при попаданні в response-cache. Відсутність серії
 тут — відповідь, а не діра.
+
+**Страховка-перезапит порожнього синтезу** (рішення власника 2026-11-19).
+`chat_synthesis_empty_retry_total{outcome="recovered"|"still_empty"|"error"}`
+рахує перезапити туру синтезу без міркувань: стрім через шлюз закрився успішно
+без жодного символу тексту, і сервер раз перепитав той самий payload з
+`thinking: {type: "disabled"}`. `recovered` — людина отримала текст без
+помилки; `still_empty` — знову порожньо, квота повертається, загальна помилка;
+`error` — перезапит не відкрився або обірвався. Три серії заводяться нулем.
+Вимикач `CHAT_SYNTHESIS_EMPTY_RETRY=off`. Перезапит пише власну мітку
+`endpoint="chat-tool-result-retry"` в `ai_requests_total`, `ai_tokens_total` і
+`ai_cost_estimate_usd_total`, тож його вартість видно окремо, а
+`ai_first_token_ms` відновленої відповіді включає невдалу першу спробу. Як
+читати частку — [runbook.md § ChatSynthesisEmptyRetry](./runbook.md#chatsynthesisemptyretry).
+Алерту немає: поріг ратифікують після заміру в проді.
 
 **Кардинальність**: 8 phase × (9 buckets + `_sum` + `_count` + `+Inf`) ≈ **96**
 серій. Бакети навмисно рідші за сусідні гістограми (`5, 25, 100, 250, 500,

@@ -14,6 +14,12 @@
  * відповідей, без 4-бітних ендпойнтів 0 з 79. Список (а не `ignore`
  * конкретного постачальника) ловить і майбутні стиснені варіанти.
  *
+ * Третє рішення того ж дня: список постачальників, яких обходимо
+ * (`provider.ignore`, env `OPENROUTER_IGNORE_PROVIDERS`, дефолт `baidu`).
+ * Підстава — той самий документ, § 6.4: під межею 8 біт синтез
+ * `deepseek/deepseek-v4-flash` ішов на Baidu 100 %, а Baidu віддавав порожній
+ * текст у 16 з 42 викликів; без Baidu (Fireworks) порожня одна з 42.
+ *
  * AI-CONTEXT: чому `data_collection=deny`, а не `zdr: true`. ZDR суворіший
  * (нуль зберігання навіть транзитно), але живі проби 2026-11-19 показали:
  * під `zdr: true` у `google/gemini-2.5-flash-lite` не лишається жодного
@@ -35,11 +41,13 @@
  * Groq і Voyage поля не отримують: це параметр OpenRouter.
  */
 import { env } from "../../env.js";
-import type {
-  OpenRouterDataCollection,
-  OpenRouterQuantizationFloor,
+import {
+  OPENROUTER_IGNORE_PROVIDERS_DEFAULT,
+  type OpenRouterDataCollection,
+  type OpenRouterQuantizationFloor,
 } from "../../env/aiRoutingEnv.js";
 import { logger } from "../../obs/logger.js";
+import { openRouterNoEndpointsTotal } from "../../obs/metrics.js";
 
 /**
  * Рівні квантизації від 8 біт для `provider.quantizations`.
@@ -67,6 +75,7 @@ export type OpenRouterQuantization =
 export interface OpenRouterProviderPrefs {
   data_collection?: "deny";
   quantizations?: OpenRouterQuantization[];
+  ignore?: string[];
   zdr?: true;
 }
 
@@ -79,11 +88,23 @@ function quantizationsFor(
 }
 
 /**
- * `provider` для тіла запиту за поточними режимами. Два перемикачі
+ * Fail-closed: відсутній список (тестові моки env без поля) дає дефолт
+ * `OPENROUTER_IGNORE_PROVIDERS_DEFAULT`; порожній — поля немає (відкат).
+ */
+function ignoreFor(
+  list: readonly string[] | undefined,
+): Pick<OpenRouterProviderPrefs, "ignore"> {
+  const slugs = list ?? OPENROUTER_IGNORE_PROVIDERS_DEFAULT;
+  return slugs.length > 0 ? { ignore: [...slugs] } : {};
+}
+
+/**
+ * `provider` для тіла запиту за поточними режимами. Три перемикачі
  * незалежні: `OPENROUTER_DATA_COLLECTION=allow` прибирає лише
  * `data_collection`, `OPENROUTER_QUANTIZATION_FLOOR=off` — лише
- * `quantizations`. `undefined` означає «поля не слати» (обидва відкати,
- * поведінка до 2026-11-19).
+ * `quantizations`, порожній `OPENROUTER_IGNORE_PROVIDERS` — лише `ignore`.
+ * `undefined` означає «поля не слати» (усі три відкати, поведінка до
+ * 2026-11-19).
  *
  * Fail-closed: будь-яке значення, крім рівно `allow`/`off`, дає `deny`/`fp8`.
  * Схема env і так не пропускає іншого, але тестові моки env часто не мають
@@ -93,10 +114,12 @@ export function openRouterProviderPrefs(
   mode: OpenRouterDataCollection | undefined = env.OPENROUTER_DATA_COLLECTION,
   floor:
     OpenRouterQuantizationFloor | undefined = env.OPENROUTER_QUANTIZATION_FLOOR,
+  ignore: readonly string[] | undefined = env.OPENROUTER_IGNORE_PROVIDERS,
 ): OpenRouterProviderPrefs | undefined {
   const prefs: OpenRouterProviderPrefs = {
     ...(mode === "allow" ? {} : { data_collection: "deny" as const }),
     ...quantizationsFor(floor),
+    ...ignoreFor(ignore),
   };
   return Object.keys(prefs).length > 0 ? prefs : undefined;
 }
@@ -104,14 +127,20 @@ export function openRouterProviderPrefs(
 /**
  * ZDR + `deny` незалежно від відкату даних. Лише для Jev (TypeSafe):
  * власник погодив цього субпроцесора за умови ZDR, тож аварійний `allow` для
- * решти моделей не має знімати умову з нього. Квантизація йде за спільним
- * перемикачем, як і в усіх інших запитах.
+ * решти моделей не має знімати умову з нього. Квантизація й обхід
+ * постачальників ідуть за спільними перемикачами, як і в усіх інших запитах.
  */
 export function openRouterZdrProviderPrefs(
   floor:
     OpenRouterQuantizationFloor | undefined = env.OPENROUTER_QUANTIZATION_FLOOR,
+  ignore: readonly string[] | undefined = env.OPENROUTER_IGNORE_PROVIDERS,
 ): OpenRouterProviderPrefs & { zdr: true; data_collection: "deny" } {
-  return { zdr: true, data_collection: "deny", ...quantizationsFor(floor) };
+  return {
+    zdr: true,
+    data_collection: "deny",
+    ...quantizationsFor(floor),
+    ...ignoreFor(ignore),
+  };
 }
 
 /**
@@ -119,19 +148,22 @@ export function openRouterZdrProviderPrefs(
  * Якщо caller уже поклав свій `provider` (наприклад, `sort`), його поля
  * лишаються, а `data_collection` перекривається.
  *
- * Виняток для квантизації: якщо caller явно передав `quantizations` або
- * `ignore` (це робить лише стенд `eval:models --provider-prefs`), дефолтний
- * список НЕ додається і не перекриває його вибір, інакше стенд не зміг би
- * міряти інші варіанти. Прод цих полів не передає.
+ * Виняток для маршрутизації: якщо caller явно передав `quantizations` або
+ * `ignore` (це робить лише стенд `eval:models --provider-prefs`), дефолтні
+ * списки квантизацій і обходу НЕ додаються і не перекривають його вибір,
+ * інакше стенд не зміг би міряти інші варіанти (зокрема саме Baidu). Прод цих
+ * полів не передає.
  */
 export function withOpenRouterProviderPrefs<T extends Record<string, unknown>>(
   body: T,
   mode?: OpenRouterDataCollection,
   floor?: OpenRouterQuantizationFloor,
+  ignore?: readonly string[],
 ): T {
   const prefs = openRouterProviderPrefs(
     mode ?? env.OPENROUTER_DATA_COLLECTION,
     floor ?? env.OPENROUTER_QUANTIZATION_FLOOR,
+    ignore ?? env.OPENROUTER_IGNORE_PROVIDERS,
   );
   if (!prefs) return body;
   const existing = body["provider"];
@@ -139,21 +171,25 @@ export function withOpenRouterProviderPrefs<T extends Record<string, unknown>>(
     existing && typeof existing === "object" && !Array.isArray(existing)
       ? (existing as Record<string, unknown>)
       : {};
-  const { quantizations, ...rest } = prefs;
+  const { quantizations, ignore: ignoreList, ...rest } = prefs;
   const callerChoseRouting = "quantizations" in base || "ignore" in base;
   const merged = {
     ...base,
     ...rest,
     ...(quantizations && !callerChoseRouting ? { quantizations } : {}),
+    ...(ignoreList && !callerChoseRouting ? { ignore: ignoreList } : {}),
   };
   return { ...body, provider: merged };
 }
 
 const DATA_POLICY_RE = /No endpoints found matching your data policy/i;
 const QUANTIZATION_RE = /No endpoints found for the request with quantization/i;
+/** Живий текст шлюзу 2026-11-19 на обох транспортах, коли `ignore` спорожнив пул. */
+const IGNORED_RE = /All providers have been ignored/i;
 
 /** Чому шлюз не знайшов ендпойнта під наші `provider`-поля. */
-export type OpenRouterNoEndpointsReason = "data_policy" | "quantization";
+export type OpenRouterNoEndpointsReason =
+  "data_policy" | "quantization" | "ignored";
 
 function errorMessage(data: unknown): string | undefined {
   if (!data || typeof data !== "object") return undefined;
@@ -165,7 +201,8 @@ function errorMessage(data: unknown): string | undefined {
 
 /**
  * Причина 404 шлюзу, коли для моделі не лишилось ендпойнта під наші
- * `provider`-поля: політика даних (`data_collection`/`zdr`) чи квантизація.
+ * `provider`-поля: політика даних (`data_collection`/`zdr`), квантизація чи
+ * список обходу (`ignore`).
  * Форми обох транспортів: `{error:{message}}` (`/chat/completions`) і
  * `{type:"error", error:{type, message}}` (`/messages`). Будь-яка інша
  * помилка — `undefined`.
@@ -179,6 +216,7 @@ export function openRouterNoEndpointsReason(
   if (message === undefined) return undefined;
   if (DATA_POLICY_RE.test(message)) return "data_policy";
   if (QUANTIZATION_RE.test(message)) return "quantization";
+  if (IGNORED_RE.test(message)) return "ignored";
   return undefined;
 }
 
@@ -199,10 +237,11 @@ export interface DataPolicyRejectionContext {
 }
 
 /**
- * Пише окремий рядок у лог, коли шлюз відмовив через наші `provider`-поля, і
+ * Пише окремий рядок у лог і інкрементує `openrouter_no_endpoints_total`
+ * (`reason`, `transport`), коли шлюз відмовив через наші `provider`-поля, і
  * повертає `true`. Подія одна (`openrouter_data_policy_no_endpoints`, імʼя
  * лишилось від першого рішення), причину розводить поле `reason`:
- * `data_policy` або `quantization`. Нічого не ретраїть і на відкат не
+ * `data_policy`, `quantization` або `ignored`. Нічого не ретраїть і на відкат не
  * перемикає: помилка далі йде наявним шляхом помилок upstream. Лише модель,
  * ендпойнт, причина й режими: ні тексту запиту, ні тексту відповіді (Hard
  * Rule #21).
@@ -212,6 +251,13 @@ export function noteOpenRouterDataPolicyRejection(
 ): boolean {
   const reason = openRouterNoEndpointsReason(ctx.status, ctx.data);
   if (!reason) return false;
+  // Сигнал для алерту `OpenRouterNoEndpoints` (сам лог до дашборда не
+  // доїжджає). Метрика advisory: збій реєстру не має зламати шлях помилки.
+  try {
+    openRouterNoEndpointsTotal.inc({ reason, transport: ctx.transport });
+  } catch {
+    /* ignore */
+  }
   const prefs = openRouterProviderPrefs();
   logger.warn({
     msg: "openrouter_data_policy_no_endpoints",
@@ -222,6 +268,8 @@ export function noteOpenRouterDataPolicyRejection(
     status: ctx.status,
     dataCollection: prefs?.data_collection ? "deny" : "allow",
     quantizationFloor: prefs?.quantizations ? "fp8" : "off",
+    // Слаги постачальників, не дані користувача.
+    ignoredProviders: prefs?.ignore ?? [],
   });
   return true;
 }

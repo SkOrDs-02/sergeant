@@ -18,6 +18,7 @@ vi.hoisted(() => {
   delete process.env["LLM_RECEIPT_PROVIDER"];
   delete process.env["OPENROUTER_DATA_COLLECTION"];
   delete process.env["OPENROUTER_QUANTIZATION_FLOOR"];
+  delete process.env["OPENROUTER_IGNORE_PROVIDERS"];
 });
 
 const loggerMock = vi.hoisted(() => ({
@@ -46,6 +47,8 @@ const { Response: NodeResponse, TextEncoder: NodeTextEncoder } = globalThis;
 const DENY = {
   data_collection: "deny",
   quantizations: ["fp8", "mxfp8", "fp16", "bf16", "fp32", "unknown"],
+  // Рішення власника 2026-11-19: Baidu обходимо за замовчуванням.
+  ignore: ["baidu"],
 };
 const NO_ENDPOINTS = "No endpoints found matching your data policy";
 
@@ -125,12 +128,14 @@ beforeEach(() => {
   vi.stubGlobal("fetch", fetchMock);
   env.OPENROUTER_DATA_COLLECTION = "deny";
   env.OPENROUTER_QUANTIZATION_FLOOR = "fp8";
+  env.OPENROUTER_IGNORE_PROVIDERS = ["baidu"];
 });
 
 afterEach(() => {
   vi.unstubAllGlobals();
   env.OPENROUTER_DATA_COLLECTION = "deny";
   env.OPENROUTER_QUANTIZATION_FLOOR = "fp8";
+  env.OPENROUTER_IGNORE_PROVIDERS = ["baidu"];
 });
 
 const CHAT_PAYLOAD = {
@@ -139,7 +144,7 @@ const CHAT_PAYLOAD = {
   messages: [{ role: "user", content: "привіт" }],
 };
 
-describe("provider: deny + квантизація від 8 біт на кожному транспорті OpenRouter", () => {
+describe("provider: deny + квантизація від 8 біт + обхід Baidu на кожному транспорті OpenRouter", () => {
   it("перший хід чату (стрім /api/v1/messages)", async () => {
     fetchMock.mockResolvedValueOnce(sseResponse());
     const result = await streamFirstTurnToSse({
@@ -199,17 +204,65 @@ describe("provider: deny + квантизація від 8 біт на кожн�
   });
 });
 
-describe("відкати OPENROUTER_DATA_COLLECTION і OPENROUTER_QUANTIZATION_FLOOR", () => {
-  it("лише allow: лишається тільки quantizations", async () => {
+describe("відкати OPENROUTER_DATA_COLLECTION, OPENROUTER_QUANTIZATION_FLOOR і OPENROUTER_IGNORE_PROVIDERS", () => {
+  it("лише allow: лишаються quantizations і ignore", async () => {
     env.OPENROUTER_DATA_COLLECTION = "allow";
     fetchMock.mockResolvedValueOnce(jsonResponse(MESSAGES_OK));
     await callAnthropicWithContinuation("", CHAT_PAYLOAD, { endpoint: "chat" });
     expect(sentBody()["provider"]).toEqual({
       quantizations: DENY.quantizations,
+      ignore: DENY.ignore,
     });
   });
 
-  it("лише off: лишається тільки data_collection", async () => {
+  it("порожній OPENROUTER_IGNORE_PROVIDERS, /messages: поля ignore немає", async () => {
+    env.OPENROUTER_IGNORE_PROVIDERS = [];
+    fetchMock.mockResolvedValueOnce(jsonResponse(MESSAGES_OK));
+    await callAnthropicWithContinuation("", CHAT_PAYLOAD, { endpoint: "chat" });
+    expect(sentBody()["provider"]).toEqual({
+      data_collection: "deny",
+      quantizations: DENY.quantizations,
+    });
+  });
+
+  it("порожній OPENROUTER_IGNORE_PROVIDERS, /chat/completions: поля ignore немає", async () => {
+    env.OPENROUTER_IGNORE_PROVIDERS = [];
+    fetchMock.mockResolvedValueOnce(
+      jsonResponse({ choices: [{ message: { content: "ok" } }] }),
+    );
+    await new OpenRouterProvider("sk-or-test").generate({
+      model: "m",
+      messages: [{ role: "user", content: "x" }],
+      maxTokens: 10,
+    });
+    expect(sentBody()["provider"]).toEqual({
+      data_collection: "deny",
+      quantizations: DENY.quantizations,
+    });
+  });
+
+  it("власний список обходу з env іде в обидва транспорти", async () => {
+    env.OPENROUTER_IGNORE_PROVIDERS = ["baidu", "relace"];
+    fetchMock
+      .mockResolvedValueOnce(jsonResponse(MESSAGES_OK))
+      .mockResolvedValueOnce(
+        jsonResponse({ choices: [{ message: { content: "ok" } }] }),
+      );
+    await callAnthropicWithContinuation("", CHAT_PAYLOAD, { endpoint: "chat" });
+    await new OpenRouterProvider("sk-or-test").generate({
+      model: "m",
+      messages: [{ role: "user", content: "x" }],
+      maxTokens: 10,
+    });
+    expect(sentBody(0)["provider"]).toMatchObject({
+      ignore: ["baidu", "relace"],
+    });
+    expect(sentBody(1)["provider"]).toMatchObject({
+      ignore: ["baidu", "relace"],
+    });
+  });
+
+  it("лише off: лишаються data_collection і ignore", async () => {
     env.OPENROUTER_QUANTIZATION_FLOOR = "off";
     fetchMock.mockResolvedValueOnce(
       jsonResponse({ choices: [{ message: { content: "ok" } }] }),
@@ -219,20 +272,25 @@ describe("відкати OPENROUTER_DATA_COLLECTION і OPENROUTER_QUANTIZATION_F
       messages: [{ role: "user", content: "x" }],
       maxTokens: 10,
     });
-    expect(sentBody()["provider"]).toEqual({ data_collection: "deny" });
+    expect(sentBody()["provider"]).toEqual({
+      data_collection: "deny",
+      ignore: DENY.ignore,
+    });
   });
 
-  it("/messages, обидва відкати: поля provider немає", async () => {
+  it("/messages, усі три відкати: поля provider немає", async () => {
     env.OPENROUTER_DATA_COLLECTION = "allow";
     env.OPENROUTER_QUANTIZATION_FLOOR = "off";
+    env.OPENROUTER_IGNORE_PROVIDERS = [];
     fetchMock.mockResolvedValueOnce(jsonResponse(MESSAGES_OK));
     await callAnthropicWithContinuation("", CHAT_PAYLOAD, { endpoint: "chat" });
     expect(sentBody()).not.toHaveProperty("provider");
   });
 
-  it("/chat/completions, обидва відкати: поля provider немає", async () => {
+  it("/chat/completions, усі три відкати: поля provider немає", async () => {
     env.OPENROUTER_DATA_COLLECTION = "allow";
     env.OPENROUTER_QUANTIZATION_FLOOR = "off";
+    env.OPENROUTER_IGNORE_PROVIDERS = [];
     fetchMock.mockResolvedValueOnce(
       jsonResponse({ choices: [{ message: { content: "ok" } }] }),
     );

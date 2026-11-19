@@ -35,6 +35,9 @@
  *        OPENROUTER_API_KEY=... pnpm eval:stream --first-turn --reasoning=medium \
  *          --models=google/gemini-3.7-flash --repeat=5
  *
+ * `--synthesis-reasoning=<effort>` (лише без `--first-turn`, лише стенд)
+ * додає ту саму граматику глибини до сценаріїв синтезу; прод її там не шле.
+ *
  * `--reasoning` (лише з `--first-turn`) додає глибину міркувань у тій самій
  * формі, що прод із заданою `CHAT_FIRST_TURN_REASONING_EFFORT`
  * (`chatReasoning.ts`). Без прапорця — прод-дефолт `low`; `medium` — стан до
@@ -162,13 +165,14 @@ async function checkStream(
   model: string,
   scenario: Scenario,
   reasoning: ChatFirstTurnReasoningEffort,
+  synthesisReasoning?: ChatFirstTurnReasoningEffort,
 ): Promise<StreamReport> {
   const t0 = Date.now();
   const report: StreamReport = {
     model,
     scenario: scenario.name,
     // Глибина йде лише в прод-форму першого ходу; інші сценарії без поля.
-    reasoning: scenario.prodFirstTurn ? reasoning : "—",
+    reasoning: scenario.prodFirstTurn ? reasoning : (synthesisReasoning ?? "—"),
     ok: false,
     events: new Set(),
     deltaTypes: new Set(),
@@ -218,6 +222,9 @@ async function checkStream(
                 system: SYSTEM_PREFIX,
                 messages: [{ role: "user", content: scenario.user }],
                 ...(scenario.withTools ? { tools: TOOLS } : {}),
+                // Лише стенд (`--synthesis-reasoning`): та сама граматика, що
+                // в першого ходу; без прапорця поля немає, як у проді.
+                ...firstTurnReasoningFields(synthesisReasoning),
               },
         ),
       ),
@@ -314,6 +321,7 @@ async function main(): Promise<void> {
       "first-turn": { type: "boolean" },
       repeat: { type: "string" },
       reasoning: { type: "string" },
+      "synthesis-reasoning": { type: "string" },
     },
   });
   const firstTurn = values["first-turn"] === true;
@@ -337,6 +345,21 @@ async function main(): Promise<void> {
     }
     reasoning = effort as ChatFirstTurnReasoningEffort;
   }
+  let synthesisReasoning: ChatFirstTurnReasoningEffort | undefined;
+  if (values["synthesis-reasoning"] !== undefined) {
+    const effort = values["synthesis-reasoning"].trim().toLowerCase();
+    if (
+      firstTurn ||
+      !(CHAT_FIRST_TURN_REASONING_EFFORTS as readonly string[]).includes(effort)
+    ) {
+      console.error(
+        `--synthesis-reasoning=${values["synthesis-reasoning"]}: лише без --first-turn, допустимо ${CHAT_FIRST_TURN_REASONING_EFFORTS.join(", ")}.`,
+      );
+      process.exitCode = 1;
+      return;
+    }
+    synthesisReasoning = effort as ChatFirstTurnReasoningEffort;
+  }
   const repeat = Math.max(1, Number.parseInt(values.repeat ?? "1", 10) || 1);
   const apiKey = process.env["OPENROUTER_API_KEY"] ?? "";
   if (!apiKey) {
@@ -357,7 +380,13 @@ async function main(): Promise<void> {
   for (const model of models) {
     for (const scenario of firstTurn ? FIRST_TURN_SCENARIOS : SCENARIOS) {
       for (let run = 0; run < repeat; run++) {
-        const r = await checkStream(apiKey, model, scenario, reasoning);
+        const r = await checkStream(
+          apiKey,
+          model,
+          scenario,
+          reasoning,
+          synthesisReasoning,
+        );
         reports.push(r);
         const mark = r.error ? "ERR " : r.ok ? " ok " : "FAIL";
         console.log(

@@ -7,10 +7,14 @@
  * 150 г із комори? · Списати» — цей хук. Спільний компонент тостів не
  * змінюється: одна дія на тост (`docs/design/ui/toast-policy.md`).
  *
- * Шлях запису кличе `offer(meals, ticket)` ПІСЛЯ свого тосту і з його
- * «Скасувати» кличе `link.undo()`. Що робить `undo`:
- * - «Списати» ще не натиснуто — гасить пропозицію: скасованого запису
- *   немає з чого списувати;
+ * Шлях запису кличе `offer(meals, { ticket, after })` ПІСЛЯ свого тосту,
+ * передає в `after` його id і з його «Скасувати» кличе `link.undo()`.
+ * Пропозиція стає в чергу ЗА тостом запису (`afterGone` провайдера) і
+ * зʼявляється, коли той зник сам або його закрили, а не стосом поруч:
+ * «поспіль» у П-6 (А), одна думка за раз (зйомка 2026-11-19). Що робить
+ * `undo`:
+ * - пропозиція ще чекає своєї черги або «Списати» не натиснуто — гасить
+ *   її: скасованого запису немає з чого списувати;
  * - списання вже відбулось (через «Списати» або рядок «З комори» у формі,
  *   тоді квитанцію приносить `ticket`) — повертає списане в комору і
  *   пояснює це тостом «Запис скасовано, 150 г повернув у комору»;
@@ -22,7 +26,8 @@
  */
 import { useCallback, useEffect, useRef } from "react";
 import type { Meal, PantryItem } from "@sergeant/nutrition-domain";
-import type { ToastApi } from "@shared/hooks/useToast";
+import type { ToastApi, ToastContextValue } from "@shared/hooks/useToast";
+import { showUndoToast } from "@shared/lib/ui/undoToast";
 import { nutritionMealFeedbackMessages as COPY } from "@shared/i18n/uk.nutritionMealFeedback";
 import {
   pantryDeductionOfferFor,
@@ -41,6 +46,19 @@ export interface PantryOfferPort {
   revert: (receipt: PantryConsumeReceipt) => boolean;
 }
 
+/** Те, що пропозиції треба від провайдера тостів (`useToast()`). */
+export type PantryOfferToast = ToastApi & Pick<ToastContextValue, "afterGone">;
+
+export interface MealPantryOfferOptions {
+  /**
+   * Списання вже зроблене шляхом запису («З комори»): тоді нічого не
+   * пропонуємо, лише вміємо його відкотити.
+   */
+  ticket?: PantryConsumeTicket | null | undefined;
+  /** Id тосту запису: пропозиція зʼявиться, коли він зникне. */
+  after?: number | undefined;
+}
+
 export interface MealPantryLink {
   /** Виклик із «Скасувати» тосту запису. */
   undo: () => void;
@@ -48,46 +66,62 @@ export interface MealPantryLink {
 
 /**
  * `meals` — записані рядки; пропозиція лише на один (фото з кількома
- * позиціями не пропонує, П-7 Б). `ticket` — списання вже зроблене шляхом
- * запису («З комори»): тоді нічого не пропонуємо, лише вміємо його відкотити.
+ * позиціями не пропонує, П-7 Б).
  */
 export type MealPantryOffer = (
   meals: readonly Pick<Meal, "name" | "amount_g">[],
-  ticket?: PantryConsumeTicket | null,
+  options?: MealPantryOfferOptions,
 ) => MealPantryLink;
 
 export function offerPantryDeduction(
-  toast: ToastApi,
+  toast: PantryOfferToast,
   getPantry: () => PantryOfferPort,
   meals: readonly Pick<Meal, "name" | "amount_g">[],
-  ticket: PantryConsumeTicket | null = null,
+  { ticket = null, after }: MealPantryOfferOptions = {},
 ): MealPantryLink {
   const session = {
     cancelled: false,
     ticket,
     offerId: null as number | null,
   };
-  if (!ticket) {
+  const show = () => {
+    if (session.cancelled) return;
+    // Комора читається в мить показу: поки пропозиція чекала черги, її
+    // стан міг змінитись.
     const offer = pantryDeductionOfferFor(meals, getPantry().items);
-    if (offer) {
-      session.offerId = toast.info(pantryOfferMessage(offer.grams), undefined, {
-        label: "Списати",
-        onClick: () => {
-          if (session.cancelled) return;
-          session.ticket =
-            getPantry().consume(offer.itemName, offer.grams) ?? null;
-          // Тост пропозиції закривається на тап, і без відгуку людина не
-          // бачила, що списання відбулось (зйомка 2026-11-18). Лише коли
-          // квитанція вже є: вибір варіанта показує свій діалог, і він сам
-          // є відгуком. Без дії: відкат живе в «Скасувати» тосту запису.
-          if (session.ticket?.receipt) {
-            toast.success(
-              COPY.pantryConsumed.replace("{grams}", String(offer.grams)),
-            );
-          }
-        },
-      });
-    }
+    if (!offer) return;
+    session.offerId = toast.info(pantryOfferMessage(offer.grams), undefined, {
+      label: "Списати",
+      onClick: () => {
+        if (session.cancelled) return;
+        session.ticket =
+          getPantry().consume(offer.itemName, offer.grams) ?? null;
+        // Тост пропозиції закривається на тап, і без відгуку людина не
+        // бачила, що списання відбулось (зйомка 2026-11-18). Лише коли
+        // квитанція вже є: вибір варіанта показує свій діалог, і він сам
+        // є відгуком. Тост запису на цей момент уже зник, тож відкат живе
+        // тут: «Повернути» за квитанцією (рішення власника 2026-11-19, Б).
+        const receipt = session.ticket?.receipt;
+        if (receipt) {
+          showUndoToast(toast, {
+            msg: COPY.pantryConsumed.replace("{grams}", String(offer.grams)),
+            onUndo: () => {
+              // `false` — позицію вже прибрали: списане лишається, і
+              // людина має це побачити (`showUndoToast` → тост помилки).
+              if (!getPantry().revert(receipt)) {
+                throw new Error("pantry revert refused");
+              }
+              session.ticket = null;
+            },
+            onUndoErrorMsg: COPY.pantryReturnFailed,
+          });
+        }
+      },
+    });
+  };
+  if (!ticket) {
+    if (after == null) show();
+    else toast.afterGone(after, show);
   }
   return {
     undo: () => {
@@ -110,7 +144,7 @@ export function offerPantryDeduction(
  * списання), а відкат зі старого знімка повернув би вдвічі.
  */
 export function useMealPantryOffer(
-  toast: ToastApi,
+  toast: PantryOfferToast,
   pantry: PantryOfferPort,
 ): MealPantryOffer {
   const pantryRef = useRef(pantry);
@@ -118,8 +152,8 @@ export function useMealPantryOffer(
     pantryRef.current = pantry;
   });
   return useCallback(
-    (meals, ticket) =>
-      offerPantryDeduction(toast, () => pantryRef.current, meals, ticket),
+    (meals, options) =>
+      offerPantryDeduction(toast, () => pantryRef.current, meals, options),
     [toast],
   );
 }

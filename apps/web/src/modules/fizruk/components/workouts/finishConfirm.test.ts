@@ -10,10 +10,23 @@ describe("buildFinishConfirmSummary (Фз-2)", () => {
       buildFinishConfirmSummary({
         durationSec: 30 * 60 + 6,
         items: 1,
+        doneItems: 1,
         sets: 2,
         tonnageKg: 870,
       }),
     ).toBe("30 хв · 1 вправа · 2 підходи · 870 кг×повт");
+  });
+
+  it("каже зроблені з усіх, як плитка «Вправ N з M» підсумку (рішення 2026-11-18)", () => {
+    expect(
+      buildFinishConfirmSummary({
+        durationSec: 26,
+        items: 2,
+        doneItems: 1,
+        sets: 1,
+        tonnageKg: 336,
+      }),
+    ).toBe("26 с · 1 з 2 вправ · 1 підхід · 336 кг×повт");
   });
 
   it("drops volume when there is none and keeps seconds for a sub-minute session", () => {
@@ -21,6 +34,7 @@ describe("buildFinishConfirmSummary (Фз-2)", () => {
       buildFinishConfirmSummary({
         durationSec: 42,
         items: 0,
+        doneItems: 0,
         sets: 0,
         tonnageKg: 0,
       }),

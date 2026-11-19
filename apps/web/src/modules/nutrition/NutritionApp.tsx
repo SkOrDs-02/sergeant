@@ -450,7 +450,7 @@ export default function NutritionApp({
         const pending: { link?: MealPantryLink | undefined } = {};
         // Додавання миттєве і без підтвердження — тост мусить нести
         // «Скасувати», як quick-chip нижче (бета-фідбек 2026-08-07).
-        toast.success("Страву додано.", undefined, {
+        const recordToastId = toast.success("Страву додано.", undefined, {
           label: "Скасувати",
           kind: "undo",
           onClick: () => {
@@ -458,10 +458,10 @@ export default function NutritionApp({
             pending.link?.undo();
           },
         });
-        pending.link = pantryOffer(
-          extras?.multiRow ? [] : [meal],
-          extras?.pantryTicket,
-        );
+        pending.link = pantryOffer(extras?.multiRow ? [] : [meal], {
+          ticket: extras?.pantryTicket,
+          after: recordToastId,
+        });
       }
       // Оригінал фото приходить із AddMealSheet (крок фото демонтується
       // до збереження, тож file input там уже недоступний).

@@ -70,6 +70,8 @@ export interface WorkoutCatalogGroup {
 /** Aggregated summary of a single workout (used by journal rows). */
 export interface WorkoutSummary {
   itemCount: number;
+  /** Вправи з хоча б одним зарахованим підходом (`computeWorkoutDoneItemCount`). */
+  doneItemCount: number;
   setCount: number;
   tonnageKg: number;
   durationSec: number | null;

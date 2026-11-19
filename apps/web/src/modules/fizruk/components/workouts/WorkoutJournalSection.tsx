@@ -37,6 +37,7 @@ import {
 } from "../../../../core/observability/analytics";
 import { readSignalContext } from "../../../../core/observability/valueSignalAttribution";
 import {
+  computeWorkoutDoneItemCount,
   computeWorkoutSetCount,
   type Workout,
   type WorkoutItem,
@@ -453,6 +454,7 @@ export function WorkoutJournalSection({
                 ...activeWorkout,
                 endedAt: peekPendingRetroEnd(activeWorkout.id),
               }) ?? { durationSec: 0, items: 0, tonnageKg: 0 }),
+              doneItems: computeWorkoutDoneItemCount(activeWorkout),
               sets: computeWorkoutSetCount(activeWorkout),
             })}
             . {finishUndoHint()}

@@ -259,11 +259,30 @@ describe("computeWorkoutSummary", () => {
     );
     expect(summary).toEqual({
       itemCount: 1,
+      doneItemCount: 1,
       setCount: 1,
       tonnageKg: 400,
       durationSec: 3600,
       isFinished: true,
     });
+  });
+
+  it("doneItemCount — той самий лічильник, що «Вправ N з M» підсумку", () => {
+    const item = (id: string, reps: number) => ({
+      id,
+      exerciseId: id,
+      nameUk: id,
+      primaryGroup: "chest",
+      musclesPrimary: [] as string[],
+      musclesSecondary: [] as string[],
+      type: "strength" as const,
+      sets: [{ weightKg: 60, reps }],
+    });
+    const summary = computeWorkoutSummary(
+      w({ items: [item("a", 8), item("b", 0)] }),
+    );
+    expect(summary.itemCount).toBe(2);
+    expect(summary.doneItemCount).toBe(1);
   });
 });
 

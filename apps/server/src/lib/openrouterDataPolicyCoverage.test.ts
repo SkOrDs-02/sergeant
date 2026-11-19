@@ -20,9 +20,10 @@
  * може. Гейт ловить третій шлях — файл, що сам будує тіло й сам кличе
  * `openrouter.ai`.
  *
- * Друга перевірка: літерал `data_collection:` поза хелпером заборонений, щоб
- * значення не розʼїхалось по файлах і відкат `OPENROUTER_DATA_COLLECTION=allow`
- * діяв усюди однаково.
+ * Друга перевірка: літерали `data_collection:`, `quantizations:` і `ignore: [`
+ * поза хелпером заборонені, щоб значення не розʼїхались по файлах і відкати
+ * (`OPENROUTER_DATA_COLLECTION=allow`, `OPENROUTER_QUANTIZATION_FLOOR=off`,
+ * порожній `OPENROUTER_IGNORE_PROVIDERS`) діяли всюди однаково.
  */
 import { readdirSync, readFileSync, statSync } from "node:fs";
 import { join } from "node:path";
@@ -123,6 +124,27 @@ describe("заборона збереження даних у OpenRouter: пок
     const offenders = sources()
       .filter(({ path }) => path !== HELPER_FILE)
       .filter(({ src }) => /\bquantizations\s*:/.test(src))
+      .map(({ path }) => path);
+    expect(offenders).toEqual([]);
+  });
+
+  it("літерал ignore: [ живе лише в хелпері", () => {
+    // Список постачальників, яких обходимо (рішення власника 2026-11-19:
+    // прибрати Baidu з маршруту), — одне джерело, щоб відкат порожнім
+    // `OPENROUTER_IGNORE_PROVIDERS` діяв усюди однаково. Регулярка ловить саме
+    // масив: обʼєкти цілей нутриції мають ключ `ignore:` із рядком, і це не
+    // маршрутизація.
+    const offenders = sources()
+      .filter(({ path }) => path !== HELPER_FILE)
+      .filter(({ src }) => /\bignore\s*:\s*\[/.test(src))
+      .map(({ path }) => path);
+    expect(offenders).toEqual([]);
+  });
+
+  it("дефолтний слаг baidu живе лише в env-модулі", () => {
+    const offenders = sources()
+      .filter(({ path }) => path !== "src/env/aiRoutingEnv.ts")
+      .filter(({ src }) => /["']baidu["']/.test(src))
       .map(({ path }) => path);
     expect(offenders).toEqual([]);
   });

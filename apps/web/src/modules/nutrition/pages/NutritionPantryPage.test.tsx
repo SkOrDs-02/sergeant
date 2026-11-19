@@ -138,6 +138,7 @@ function makeToast(): ReturnType<typeof useToast> {
     pause: vi.fn(),
     resume: vi.fn(),
     toasts: [],
+    afterGone: vi.fn(),
   } as ReturnType<typeof useToast>;
 }
 

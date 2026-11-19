@@ -153,7 +153,9 @@ export function summarize(
     correct: replayed.filter((r) => r.correct).length,
     invented: replayed.filter((r) => r.hallucinated.length > 0).length,
     errors: replayed.filter((r) => r.error).length,
-    multiTurnCases: multiTurn.size,
+    // Знаменник рахує спроби, як і чисельник: з `--repeat=3` стенд друкував
+    // «6/2» (шість правильних спроб на два кейси).
+    multiTurnCases: replayed.filter((r) => multiTurn.has(r.name)).length,
     multiTurnCorrect: replayed.filter((r) => multiTurn.has(r.name) && r.correct)
       .length,
   };

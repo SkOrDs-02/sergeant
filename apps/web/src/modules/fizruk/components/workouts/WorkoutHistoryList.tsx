@@ -16,7 +16,7 @@
  */
 import { useCallback } from "react";
 import { VirtualList } from "@shared/components/ui/VirtualList";
-import { deviceDayKey, pluralExercises } from "@sergeant/shared";
+import { deviceDayKey } from "@sergeant/shared";
 import { SectionHeading } from "@shared/components/ui/SectionHeading";
 import { ModuleEmptyState } from "@shared/components/ui/EmptyState";
 import { SwipeToAction } from "@shared/components/ui/SwipeToAction";
@@ -26,6 +26,7 @@ import { formatDayKeyUk } from "@shared/lib/time/dayKeyLabel";
 import { messages } from "@shared/i18n/uk";
 import { isLightWorkout, type Workout } from "@sergeant/fizruk-domain";
 import { deleteWorkoutWithUndo } from "../../lib/deleteWorkoutWithUndo";
+import { workoutItemsLabel } from "../../lib/workoutItemsLabel";
 
 export interface WorkoutHistoryListProps {
   workouts: readonly Workout[];
@@ -78,8 +79,9 @@ function WorkoutRow({ w, onOpen }: WorkoutRowProps) {
           })}
         </div>
         <div className="flex items-center gap-2">
+          {/* «1 з 2 вправ», як плитка підсумку (рішення 2026-11-19). */}
           <span className="text-style-caption text-subtle">
-            {(w.items || []).length} {pluralExercises((w.items || []).length)}
+            {workoutItemsLabel(w)}
           </span>
           {/* «легке» стоїть ПОРУЧ із «Завершене», не замість: запис і
               завершений, і легкий — це два факти, і другий пояснює, чому
