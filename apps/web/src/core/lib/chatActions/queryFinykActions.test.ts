@@ -127,6 +127,26 @@ describe("query_transactions", () => {
     expect(out).not.toContain("m_march"); // March excluded by date range
   });
 
+  it("зберігає копійки: 12345 копійок → «123,45 грн» (PILOT-20260905-AI-1)", () => {
+    seed();
+    __setFinykMonoMirrorCacheForTests({
+      transactions: [
+        {
+          id: "b_exact",
+          date: "2026-04-21",
+          description: "Кава",
+          amount: -12345,
+        },
+      ] as never[],
+    });
+    const out = call({
+      name: "query_transactions",
+      input: { query: "b_exact" },
+    });
+    expect(out).toContain("123,45 грн");
+    expect(out).not.toMatch(/(?<![\d,])123 грн/);
+  });
+
   it("error: no filters returns guidance string", () => {
     seed();
     const out = call({ name: "query_transactions", input: {} });

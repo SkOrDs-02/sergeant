@@ -867,6 +867,36 @@ describe("webhook HMAC — default posture and the silent-no-op guard", () => {
     expect(warnedAbout(warn)).toBe(false);
   });
 
+  it("throws in production when the flag is on but no secret backs it (B27)", async () => {
+    const assertStartupEnv = await loadAssertStartupEnv({
+      ...PROD_BASELINE,
+      INTERNAL_API_KEY: "internal-key",
+      WEBHOOK_HMAC_SECRET: "",
+    });
+    expect(() => assertStartupEnv()).toThrow(/WEBHOOK_HMAC_SECRET is required/);
+  });
+
+  it("lets production start with an explicit opt-out", async () => {
+    vi.spyOn(console, "warn").mockImplementation(() => {});
+    const assertStartupEnv = await loadAssertStartupEnv({
+      ...PROD_BASELINE,
+      INTERNAL_API_KEY: "internal-key",
+      WEBHOOK_HMAC_SECRET: "",
+      WEBHOOK_HMAC_REQUIRED: "false",
+    });
+    expect(() => assertStartupEnv()).not.toThrow();
+  });
+
+  it("lets production start once a secret backs the flag", async () => {
+    vi.spyOn(console, "warn").mockImplementation(() => {});
+    const assertStartupEnv = await loadAssertStartupEnv({
+      ...PROD_BASELINE,
+      INTERNAL_API_KEY: "internal-key",
+      WEBHOOK_HMAC_SECRET: "s".repeat(32),
+    });
+    expect(() => assertStartupEnv()).not.toThrow();
+  });
+
   it("stays quiet when the internal API is unconfigured (bearer gate already 503s)", async () => {
     const warn = vi.spyOn(console, "warn").mockImplementation(() => {});
     const mod = await loadEnv({

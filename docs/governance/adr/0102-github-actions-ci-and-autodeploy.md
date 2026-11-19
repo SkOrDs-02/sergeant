@@ -1,8 +1,9 @@
 # ADR-0102: Повернення CI на GitHub Actions і автодеплой бекенду після зеленого CI
 
-- **Status:** Proposed
+- **Status:** Accepted
+- **Accepted:** 2026-11-19 (рішення власника: автодеплой працює з 2026-09-30, джоба `deploy-api` гейтить прод)
 - **Date:** 2026-09-30
-- **Last validated:** 2026-09-30
+- **Last validated:** 2026-11-19
 - **Next review:** 2026-12-30
 - **Deciders:** @SkOrDs-02
 - **Supersedes:** —
@@ -45,7 +46,7 @@
   - Щопонеділка і вручну: `ai-legacy-scan`, `codeql`, `container-scan`, `contract-tests`, `docs-automation`, `docs-freshness`, `extended-e2e`, `skill-freshness`, `post-deploy-smoke` (без `deployment_status`), `docs-daily-brief`, `nightly-audit`, `pact-drift`, `web-route-ledger` (останні чотири були щоденні). Поправка 2026-10-01: `docs-daily-brief` переведено на лише ручний запуск (рішення власника, причина в шапці воркфлоу). Без змін: `db-backup-verify`, `mutation-testing`, `rag-eval-live` (уже щотижневі).
   - Лише вручну: `deploy-landing` (раніше автодеплой лендінгу на push), `deploy-config-staging-gate`, `mobile-shell-android`, `mobile-shell-ios` (мобільний контур на паузі, ADR-0094), `posthog-release-annotation`, `storybook-deploy`. Вже були ручними: `detox-*`, `mobile-flaky-verify`, `mobile-shell-*-release`.
   - `pr-backlinks.yml` лишається на `pull_request_target: closed`, але вимкнений змінною `PR_LEDGER_ON_GITHUB` (джоба одразу `skipped`).
-- З `.husky/pre-push` знято перевірку змердженого PR на Bitbucket (`scripts/pre-push-merged-pr.mjs`) разом із нагадуванням про реєстр PR. Оновлення `main` у трунку `D:\Sergeant` лишилось: від Bitbucket воно не залежить, а без нього застарівають хуки в усіх worktree.
+- З `.husky/pre-push` знято перевірку змердженого PR на Bitbucket ([`scripts/pre-push-merged-pr.mjs`](https://github.com/SkOrDs-02/sergeant/blob/4c93df12c6929ba0f44a5bd9f4939a08d239a0d0/scripts/pre-push-merged-pr.mjs), файл прибрано цим ADR) разом із нагадуванням про реєстр PR. Оновлення `main` у трунку `D:\Sergeant` лишилось: від Bitbucket воно не залежить, а без нього застарівають хуки в усіх worktree. <!-- removed -->
 - PR створюються через `gh pr create`. Bitbucket лишається архівним remote `bitbucket`, дзеркало Hetzner - другою push-адресою `origin`.
 
 ## Rationale
@@ -65,7 +66,7 @@
 ### Negative
 
 - На дату рішення critical-flow червоний (15 із 52), тож автодеплой фактично не спрацює, доки E2E не полагодять. Це ціна безпечного гейта, а не дефект механізму.
-- Реєстр PR (Hard Rule #26) лишився без механізму повноти: писач уміє читати лише Bitbucket API, `pr-backlinks.yml` вимкнено змінною репо `PR_LEDGER_ON_GITHUB`.
+- Реєстр PR (Hard Rule #26) лишився без механізму повноти: писач уміє читати лише Bitbucket API, `pr-backlinks.yml` вимкнено змінною репо `PR_LEDGER_ON_GITHUB`. (Уточнення 2026-11-19: з 2026-10-08 писач `update-pr-backlinks.mjs` знову читає GitHub REST API; workflow лишається вимкненим тією самою змінною, див. [правило 26](../governance/rules/26-pr-ledger-update-on-merge.md).)
 - Хвилини Actions: повний прогін `ci.yml` - близько 15-20 хвилин паралельних джоб. На PR застарілі прогони скасовуються (`cancel-in-progress`), на `main` ні.
 
 ### Neutral

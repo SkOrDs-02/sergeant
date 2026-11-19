@@ -38,6 +38,10 @@ async function makeApp(internalKey: string | undefined, pool = makePool()) {
   if (internalKey === undefined) delete process.env["INTERNAL_API_KEY"];
   else process.env["INTERNAL_API_KEY"] = internalKey;
   process.env["ANTHROPIC_API_KEY"] = "anthropic-test-key";
+  // `/api/internal/categorize` гейтиться `providerUpstreamReady("readonly")`
+  // (B20): дефолтний `LLM_READONLY_PROVIDER` — openrouter, тож без його
+  // ключа роут віддав би 503 ще до моку `invokeLLM`.
+  process.env["OPENROUTER_API_KEY"] = "openrouter-test-key";
 
   const { createInternalRouter } = await import("./internal/index.js");
   const app = express();
