@@ -1,4 +1,4 @@
-import { afterEach, describe, expect, it, vi } from "vitest";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 const indexMocks = vi.hoisted(() => ({
   assertStartupEnv: vi.fn(),
@@ -159,30 +159,38 @@ vi.mock("./modules/logRetention/archivePoller.js", () => ({
     this.stop = indexMocks.logArchiveStop;
   }),
 }));
-vi.mock("./modules/logRetention/syncOpLogAppliedRetention.js", () => ({
-  SyncOpLogAppliedRetentionPoller: vi.fn(
-    function SyncOpLogAppliedRetentionPoller(this: {
-      start: () => void;
-      stop: () => Promise<void>;
-    }) {
-      this.start = indexMocks.syncOpLogRetentionStart;
-      this.stop = indexMocks.syncOpLogRetentionStop;
-    },
-  ),
-}));
-vi.mock("./modules/webhooks/retentionPoller.js", () => ({
-  WebhookEventsRetentionPoller: vi.fn(
-    function WebhookEventsRetentionPoller(this: {
-      start: () => void;
-      stop: () => Promise<void>;
-    }) {
-      this.start = indexMocks.webhookRetentionStart;
-      this.stop = indexMocks.webhookRetentionStop;
-    },
-  ),
-}));
+// Полери чистки `applied`-оп-ів і `n8n_webhook_events` імпортуються
+// справжніми (як `PlataSyncPoller`, `GdprCleanupPoller`): моку модуля не
+// треба, досить підмінити `start`/`stop` на прототипі. Підміна стоїть до
+// `import("./index.js")` і не дає справжнім `start` завести таймери чи
+// стартовий тік у фейковий пул. Модулі тягнемо після `vi.resetModules()`,
+// тож це той самий екземпляр класу, який отримає `index.ts`.
+async function stubRetentionPollers(): Promise<void> {
+  const { SyncOpLogAppliedRetentionPoller } =
+    await import("./modules/logRetention/syncOpLogAppliedRetention.js");
+  const { WebhookEventsRetentionPoller } =
+    await import("./modules/webhooks/retentionPoller.js");
+  vi.spyOn(
+    SyncOpLogAppliedRetentionPoller.prototype,
+    "start",
+  ).mockImplementation(indexMocks.syncOpLogRetentionStart);
+  vi.spyOn(
+    SyncOpLogAppliedRetentionPoller.prototype,
+    "stop",
+  ).mockImplementation(indexMocks.syncOpLogRetentionStop);
+  vi.spyOn(WebhookEventsRetentionPoller.prototype, "start").mockImplementation(
+    indexMocks.webhookRetentionStart,
+  );
+  vi.spyOn(WebhookEventsRetentionPoller.prototype, "stop").mockImplementation(
+    indexMocks.webhookRetentionStop,
+  );
+}
 
 describe("server entrypoint", () => {
+  beforeEach(async () => {
+    await stubRetentionPollers();
+  });
+
   afterEach(() => {
     vi.clearAllMocks();
     Object.assign(indexMocks.env, {
