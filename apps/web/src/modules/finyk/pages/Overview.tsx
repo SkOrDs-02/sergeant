@@ -243,6 +243,7 @@ export function Overview({
 
                   <OverviewTextRows
                     income={d.income}
+                    savedThisMonth={d.savedThisMonth.totalMinor / 100}
                     showMonthForecast={d.showMonthForecast && showBalance}
                     projectedSpend={d.projectedSpend}
                     hasExpensePlan={d.hasExpensePlan}

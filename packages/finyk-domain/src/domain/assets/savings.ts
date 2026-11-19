@@ -13,16 +13,42 @@
 import type { AssetEvent, ManualAsset } from "./types.js";
 import { dayNumber, toUahMinor } from "./valuation.js";
 
+/**
+ * Сирі записи активів: доменні `ManualAsset` або рядки сховища, де поля
+ * рахунку-активу лежать як невідомі ключі. Події перевіряються тут, тож
+ * викликачам не треба приводити тип.
+ */
 type AssetsLike =
-  readonly (ManualAsset | null | undefined)[] | null | undefined;
+  | readonly (ManualAsset | Record<string, unknown> | null | undefined)[]
+  | null
+  | undefined;
+
+const EVENT_TYPES = new Set<AssetEvent["type"]>([
+  "contribution",
+  "withdrawal",
+  "income",
+  "valuation",
+]);
+
+function asEvent(raw: unknown): AssetEvent | null {
+  if (!raw || typeof raw !== "object") return null;
+  const e = raw as Record<string, unknown>;
+  if (typeof e["id"] !== "string" || typeof e["date"] !== "string") return null;
+  if (!EVENT_TYPES.has(e["type"] as AssetEvent["type"])) return null;
+  return raw as AssetEvent;
+}
 
 function eachEvent(
   assets: AssetsLike,
   fn: (asset: ManualAsset, event: AssetEvent) => void,
 ): void {
-  for (const asset of assets ?? []) {
-    if (!asset) continue;
-    for (const event of asset.events ?? []) {
+  for (const raw of assets ?? []) {
+    if (!raw || typeof raw !== "object") continue;
+    const asset = raw as ManualAsset;
+    const events = (raw as { events?: unknown }).events;
+    if (!Array.isArray(events)) continue;
+    for (const item of events) {
+      const event = asEvent(item);
       if (event) fn(asset, event);
     }
   }
@@ -166,4 +192,23 @@ export function computeMonthlySaved(input: MonthlySavedInput): MonthlySaved {
     byAsset: list,
     unconvertedCount: unconverted.size,
   };
+}
+
+/**
+ * Ключ отримувача → актив, куди туди востаннє вносили (лише активні
+ * активи): основа пропозицій «Схоже на внесок у …».
+ */
+export function contributionMerchantIndex(
+  assets: AssetsLike,
+): Map<string, string> {
+  const latest = new Map<string, { assetId: string; date: string }>();
+  eachEvent(assets, (asset, e) => {
+    if (e.type !== "contribution" || !e.merchantKey) return;
+    if ((asset as { status?: unknown }).status === "closed") return;
+    const prev = latest.get(e.merchantKey);
+    if (!prev || e.date >= prev.date) {
+      latest.set(e.merchantKey, { assetId: asset.id, date: e.date });
+    }
+  });
+  return new Map([...latest].map(([k, v]) => [k, v.assetId]));
 }

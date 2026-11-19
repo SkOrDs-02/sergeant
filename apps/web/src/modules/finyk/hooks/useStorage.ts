@@ -1,5 +1,6 @@
 import { useMemo } from "react";
 import { buildFinykExcludedTxIds } from "@sergeant/finyk-domain";
+import { assetTransferTxIds } from "@sergeant/finyk-domain/domain/assets";
 import { manualExpenseToTransaction } from "@sergeant/finyk-domain/domain/transactions";
 import { findCancelledTxIds } from "@sergeant/finyk-domain/domain/refundMatching";
 import { writeJSON } from "../lib/finykStorage";
@@ -166,8 +167,17 @@ export function useStorage({
         receivables,
         excludedStatTxIds,
         transactions: manualTxs,
+        // Внески й повернення рахунків-активів (спека finyk-savings-assets).
+        assetTransferTxIds: assetTransferTxIds(manualAssets),
       }),
-    [hiddenTxIds, txCategories, receivables, excludedStatTxIds, manualTxs],
+    [
+      hiddenTxIds,
+      txCategories,
+      receivables,
+      excludedStatTxIds,
+      manualTxs,
+      manualAssets,
+    ],
   );
 
   // Скасовані платежі («Uklon −189» + «Скасування. Uklon +189», рішення

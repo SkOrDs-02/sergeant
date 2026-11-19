@@ -82,6 +82,33 @@ export const finykSavingsMessages = {
     rateUpdate: "Курс, ₴",
     rateSave: "Оновити курс",
   },
+  assetLink: {
+    title: "Відкладення",
+    actions: {
+      contribution: "Це внесок у…",
+      withdrawal: "Повернення з…",
+      income: "Дохід з…",
+    },
+    linked: {
+      contribution: "Внесок у «{name}»",
+      withdrawal: "Повернення з «{name}»",
+      income: "Дохід з «{name}»",
+      valuation: "Оцінка «{name}»",
+    },
+    hint: "Внесок і повернення не рахуються ні витратою, ні доходом. Дохід з активу рахується.",
+    unlink: "Відвʼязати",
+    pickAsset: "Актив",
+    amountIn: "Сума в {currency}",
+    count: "Облігацій, шт",
+    confirm: "Привʼязати",
+    cancel: "Не треба",
+  },
+  assetSuggestion: {
+    title: "Схоже на внесок у «{name}»",
+    accept: "Так, внесок",
+    reject: "Ні",
+    rejectAria: "Ні, «{tx}» не внесок у «{name}»",
+  },
   monthlySaved: {
     label: "Відкладено",
     hint: "Внески в активи й банки мінус повернення за місяць",

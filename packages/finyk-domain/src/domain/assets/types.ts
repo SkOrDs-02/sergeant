@@ -43,6 +43,11 @@ export interface AssetEvent {
   txId?: string | undefined;
   /** ОВДП: кількість облігацій у внеску (купівля) чи поверненні (продаж). */
   count?: number | undefined;
+  /**
+   * `normalizeMerchantKey` опису привʼязаної операції: за ним Фінік
+   * пропонує привʼязати наступні операції тому ж отримувачу.
+   */
+  merchantKey?: string | undefined;
 }
 
 /** `monthly` — щомісячна капіталізація, `end` — у кінці строку, `payout` — виплата на картку. */
