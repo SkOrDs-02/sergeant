@@ -4330,7 +4330,7 @@
       "canonical_owner": "docs/work/specs/finyk-import-reminders.md"
     },
     {
-      "old_path": null,
+      "old_path": "docs/work/specs/finyk-limit-and-recurring-push.md",
       "new_path": "docs/work/specs/finyk-limit-and-recurring-push.md",
       "action": "keep",
       "genre": "active-work",
@@ -4344,7 +4344,7 @@
       "canonical_owner": "docs/work/specs/finyk-observations.md"
     },
     {
-      "old_path": null,
+      "old_path": "docs/work/specs/finyk-operations-filters.md",
       "new_path": "docs/work/specs/finyk-operations-filters.md",
       "action": "keep",
       "genre": "active-work",
@@ -4372,7 +4372,7 @@
       "canonical_owner": "docs/work/specs/fizruk-activity-logging.md"
     },
     {
-      "old_path": null,
+      "old_path": "docs/work/specs/fizruk-edit-finished-workout.md",
       "new_path": "docs/work/specs/fizruk-edit-finished-workout.md",
       "action": "keep",
       "genre": "active-work",
@@ -4414,7 +4414,7 @@
       "canonical_owner": "docs/work/specs/fizruk-readiness-check.md"
     },
     {
-      "old_path": null,
+      "old_path": "docs/work/specs/fizruk-set-done-flag-and-set-type.md",
       "new_path": "docs/work/specs/fizruk-set-done-flag-and-set-type.md",
       "action": "keep",
       "genre": "active-work",
@@ -4526,7 +4526,7 @@
       "canonical_owner": "docs/work/specs/initiatives/README.md"
     },
     {
-      "old_path": null,
+      "old_path": "docs/work/specs/ios-install-hint-after-two-sessions.md",
       "new_path": "docs/work/specs/ios-install-hint-after-two-sessions.md",
       "action": "keep",
       "genre": "active-work",
@@ -4673,7 +4673,7 @@
       "canonical_owner": "docs/work/specs/nutrition-adaptive-goal.md"
     },
     {
-      "old_path": null,
+      "old_path": "docs/work/specs/nutrition-favorites-and-time-of-day-sort.md",
       "new_path": "docs/work/specs/nutrition-favorites-and-time-of-day-sort.md",
       "action": "keep",
       "genre": "active-work",
@@ -4694,7 +4694,7 @@
       "canonical_owner": "docs/work/specs/nutrition-hero-day-strip.md"
     },
     {
-      "old_path": null,
+      "old_path": "docs/work/specs/nutrition-household-portions.md",
       "new_path": "docs/work/specs/nutrition-household-portions.md",
       "action": "keep",
       "genre": "active-work",
