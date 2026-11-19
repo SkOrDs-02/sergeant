@@ -9,6 +9,7 @@ import type {
 
 import { pool } from "./db.js";
 import { applyBodySizePolicy } from "./http/bodySizePolicy.js";
+import { applyPreParseAuthGuard } from "./http/preParseAuthGuard.js";
 import { clientIpMiddleware } from "./http/clientIp.js";
 import {
   apiCorsMiddleware,
@@ -149,6 +150,8 @@ export function createApp({
   // `sergeant-design/no-inline-body-size-limit` блокує inline
   // `express.json({ limit })` поза тим файлом, щоб новий route випадково
   // не обійшов policy і не зламав specificity-order.
+  // B28: на large-body роутах відсікаємо анонімів і флуд ДО читання тіла.
+  applyPreParseAuthGuard(app);
   applyBodySizePolicy(app);
 
   // Global CORS for the whole /api surface. Individual handlers may re-set
