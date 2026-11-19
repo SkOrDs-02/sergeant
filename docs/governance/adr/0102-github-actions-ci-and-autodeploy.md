@@ -1,8 +1,9 @@
 # ADR-0102: Повернення CI на GitHub Actions і автодеплой бекенду після зеленого CI
 
-- **Status:** Proposed
+- **Status:** Accepted
+- **Accepted:** 2026-11-19 (рішення власника: автодеплой працює з 2026-09-30, джоба `deploy-api` гейтить прод)
 - **Date:** 2026-09-30
-- **Last validated:** 2026-09-30
+- **Last validated:** 2026-11-19
 - **Next review:** 2026-12-30
 - **Deciders:** @SkOrDs-02
 - **Supersedes:** —
