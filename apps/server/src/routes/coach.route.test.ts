@@ -230,8 +230,12 @@ describe("coach routes — middleware order (SEC-1)", () => {
     await request(app)
       .post("/api/coach/memory")
       .set("X-Requested-With", "XMLHttpRequest")
+      .set("Authorization", "Bearer test-session")
       .send({});
+    // Перед парсером тіла стоїть pre-parse гейт B28 зі своїм per-IP бакетом
+    // (сесії ще немає); `api:coach` іде після `requireSession`.
     expect(rateLimitExpressCalls).toEqual([
+      { key: "api:preparse:ip", hasUser: false },
       { key: "api:coach", hasUser: true },
     ]);
   });
