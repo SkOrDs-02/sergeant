@@ -181,6 +181,7 @@ describe("chat route — auth guard", () => {
     const res = await request(app)
       .post("/api/chat")
       .set("X-Requested-With", "XMLHttpRequest")
+      .set("Authorization", "Bearer test-session")
       .send({ messages: [{ role: "user", content: "Привіт" }] });
     expect(res.status).toBe(401);
     expect(anthropicMessagesMock).not.toHaveBeenCalled();
@@ -204,11 +205,16 @@ describe("chat route — B31 rate-limit ordering", () => {
     const res = await request(app)
       .post("/api/chat")
       .set("X-Requested-With", "XMLHttpRequest")
+      .set("Authorization", "Bearer test-session")
       .send({ messages: [{ role: "user", content: "Привіт" }] });
 
     expect(res.status).toBe(200);
-    expect(rateLimitExpressCalls).toHaveLength(1);
-    expect(rateLimitExpressCalls[0]).toEqual({ hasUser: true });
+    // Перший виклик — pre-parse per-IP ліміт (B28, до сесії, hasUser=false);
+    // другий — per-user ліміт роутера після requireSession.
+    expect(rateLimitExpressCalls).toEqual([
+      { hasUser: false },
+      { hasUser: true },
+    ]);
   });
 
   it("без сесії rateLimitExpress НЕ виконується (401 зупиняє ланцюг раніше)", async () => {
@@ -220,10 +226,12 @@ describe("chat route — B31 rate-limit ordering", () => {
     const res = await request(app)
       .post("/api/chat")
       .set("X-Requested-With", "XMLHttpRequest")
+      .set("Authorization", "Bearer test-session")
       .send({ messages: [{ role: "user", content: "Привіт" }] });
 
     expect(res.status).toBe(401);
-    expect(rateLimitExpressCalls).toHaveLength(0);
+    // Лише pre-parse IP-ліміт (B28); per-user ліміт роутера не виконується.
+    expect(rateLimitExpressCalls).toEqual([{ hasUser: false }]);
   });
 });
 
@@ -234,6 +242,7 @@ describe("chat route — key guard", () => {
     const res = await request(app)
       .post("/api/chat")
       .set("X-Requested-With", "XMLHttpRequest")
+      .set("Authorization", "Bearer test-session")
       .send({ messages: [{ role: "user", content: "Привіт" }] });
     expect(res.status).toBe(503);
     expect(res.body).toMatchObject({ code: "ANTHROPIC_KEY_MISSING" });
@@ -264,6 +273,7 @@ describe("chat route — non-stream tool_use", () => {
     const res = await request(app)
       .post("/api/chat")
       .set("X-Requested-With", "XMLHttpRequest")
+      .set("Authorization", "Bearer test-session")
       .send({
         messages: [{ role: "user", content: "Видали транзакцію m_abc123" }],
       });
@@ -319,6 +329,7 @@ describe("chat route — SSE + tool_use end-to-end", () => {
     const firstTurn = await request(app)
       .post("/api/chat")
       .set("X-Requested-With", "XMLHttpRequest")
+      .set("Authorization", "Bearer test-session")
       .send({
         messages: [{ role: "user", content: "Видали транзакцію m_abc123" }],
       });
@@ -344,6 +355,7 @@ describe("chat route — SSE + tool_use end-to-end", () => {
     const res = await request(app)
       .post("/api/chat")
       .set("X-Requested-With", "XMLHttpRequest")
+      .set("Authorization", "Bearer test-session")
       .send({
         stream: true,
         messages: [{ role: "user", content: "Видали транзакцію m_abc123" }],

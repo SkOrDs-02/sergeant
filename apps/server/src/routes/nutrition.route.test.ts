@@ -136,6 +136,7 @@ function post(path: string) {
   return request(createApp())
     .post(path)
     .set("X-Requested-With", "XMLHttpRequest")
+    .set("Authorization", "Bearer test-session")
     .send({});
 }
 
@@ -179,6 +180,7 @@ describe("nutrition shopping-list HTTP contract", () => {
     const res = await request(createApp())
       .post("/api/nutrition/shopping-list")
       .set("X-Requested-With", "XMLHttpRequest")
+      .set("Authorization", "Bearer test-session")
       .send({ recipes: [{ title: "Омлет", ingredients: ["яйця"] }] });
 
     expect(res.status).toBe(401);
@@ -188,6 +190,7 @@ describe("nutrition shopping-list HTTP contract", () => {
     const res = await request(createApp())
       .post("/api/nutrition/shopping-list")
       .set("X-Requested-With", "XMLHttpRequest")
+      .set("Authorization", "Bearer test-session")
       .send({
         recipes: [{ title: "Омлет", ingredients: ["яйця"] }],
         locale: "uk-UA",
@@ -204,6 +207,7 @@ describe("nutrition shopping-list HTTP contract", () => {
     const res = await request(createApp())
       .post("/api/nutrition/shopping-list")
       .set("X-Requested-With", "XMLHttpRequest")
+      .set("Authorization", "Bearer test-session")
       .send({ recipes: "not-an-array", locale: "uk-UA" });
 
     expect(res.status).toBe(400);
@@ -217,6 +221,7 @@ describe("nutrition parse-pantry HTTP contract", () => {
     const res = await request(createApp())
       .post("/api/nutrition/parse-pantry")
       .set("X-Requested-With", "XMLHttpRequest")
+      .set("Authorization", "Bearer test-session")
       .send({ text: "яблука", locale: "uk-UA" });
 
     expect(res.status).toBe(200);
@@ -230,6 +235,7 @@ describe("nutrition parse-pantry HTTP contract", () => {
     const res = await request(createApp())
       .post("/api/nutrition/parse-pantry")
       .set("X-Requested-With", "XMLHttpRequest")
+      .set("Authorization", "Bearer test-session")
       .send({ text: "", locale: "uk-UA" });
 
     expect(res.status).toBe(400);
@@ -284,6 +290,7 @@ describe("remaining nutrition text AI HTTP contracts", () => {
       const res = await request(createApp())
         .post(path)
         .set("X-Requested-With", "XMLHttpRequest")
+        .set("Authorization", "Bearer test-session")
         .send(valid);
 
       expect(res.status, JSON.stringify(res.body)).toBe(200);
@@ -302,6 +309,7 @@ describe("remaining nutrition text AI HTTP contracts", () => {
       const res = await request(createApp())
         .post(path)
         .set("X-Requested-With", "XMLHttpRequest")
+        .set("Authorization", "Bearer test-session")
         .send(invalid);
 
       expect(res.status).toBe(400);
@@ -358,6 +366,7 @@ describe("nutrition photo AI HTTP contracts", () => {
       const res = await request(createApp())
         .post(path)
         .set("X-Requested-With", "XMLHttpRequest")
+        .set("Authorization", "Bearer test-session")
         .send(valid);
 
       expect(res.status, JSON.stringify(res.body)).toBe(200);
@@ -372,6 +381,7 @@ describe("nutrition photo AI HTTP contracts", () => {
       const res = await request(createApp())
         .post(path)
         .set("X-Requested-With", "XMLHttpRequest")
+        .set("Authorization", "Bearer test-session")
         .send({ ...valid, image_base64: "" });
 
       expect(res.status).toBe(400);

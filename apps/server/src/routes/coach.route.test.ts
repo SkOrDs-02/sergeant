@@ -174,6 +174,7 @@ describe("coach routes — auth guard (unauthenticated → 401)", () => {
     const res = await request(app)
       .post("/api/coach/memory")
       .set("X-Requested-With", "XMLHttpRequest")
+      .set("Authorization", "Bearer test-session")
       .send({ weeklyDigest: { weekKey: "2026-W18" } });
     expect(res.status).toBe(401);
   });
@@ -184,6 +185,7 @@ describe("coach routes — auth guard (unauthenticated → 401)", () => {
     const res = await request(app)
       .post("/api/coach/insight")
       .set("X-Requested-With", "XMLHttpRequest")
+      .set("Authorization", "Bearer test-session")
       .send({ snapshot: {} });
     expect(res.status).toBe(401);
   });
@@ -225,6 +227,7 @@ describe("coach routes — key guard", () => {
     const res = await request(app)
       .post("/api/coach/insight")
       .set("X-Requested-With", "XMLHttpRequest")
+      .set("Authorization", "Bearer test-session")
       .send({ snapshot: {} });
     expect(res.status).toBe(503);
     expect(res.body).toMatchObject({ error: expect.any(String) });
@@ -284,6 +287,7 @@ describe("coach routes — POST /memory", () => {
     const res = await request(app)
       .post("/api/coach/memory")
       .set("X-Requested-With", "XMLHttpRequest")
+      .set("Authorization", "Bearer test-session")
       .send({
         weeklyDigest: {
           weekKey: "2026-W18",
@@ -305,6 +309,7 @@ describe("coach routes — POST /memory", () => {
     const res = await request(app)
       .post("/api/coach/memory")
       .set("X-Requested-With", "XMLHttpRequest")
+      .set("Authorization", "Bearer test-session")
       .send({ weeklyDigest: { summary: "no weekKey" } });
 
     expect(res.status).toBe(400);
@@ -336,6 +341,7 @@ describe("coach routes — POST /insight", () => {
     const res = await request(app)
       .post("/api/coach/insight")
       .set("X-Requested-With", "XMLHttpRequest")
+      .set("Authorization", "Bearer test-session")
       .send({
         snapshot: {
           finyk: { summary: "5 000 ₴ витрати." },
