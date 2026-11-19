@@ -38,6 +38,7 @@ beforeEach(() => {
   vi.useFakeTimers();
   trackEventMock.mockReset();
   window.localStorage.clear();
+  window.sessionStorage.clear();
 });
 
 afterEach(() => {
