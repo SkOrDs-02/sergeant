@@ -63,6 +63,10 @@ export function createPreParseAuthGuard(
         error: "Потрібна автентифікація",
         message: "Потрібна автентифікація",
         code: "UNAUTHORIZED",
+        // `requestIdMiddleware` стоїть у app.ts раніше за цей гейт, тож id є
+        // і 401 несе його, як відповідь errorHandler (гейт
+        // check-inline-error-responses).
+        requestId: (req as Request & { requestId?: string }).requestId,
       });
     });
   };
