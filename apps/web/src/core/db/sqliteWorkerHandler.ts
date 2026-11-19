@@ -186,7 +186,13 @@ export function createSqliteWorkerHandler(): SqliteWorkerHandler {
         // тож спершу `close()`. Той самий інваріант — у `wipeSqliteDb`.
         db?.close();
         db = null;
-        if (pool && openDbName) pool.unlink(openDbName);
+        // AI-DANGER: ім'я НОРМАЛІЗОВАНЕ, зі скісною на початку — як для
+        // `importDb` вище. `unlink` пулу не нормалізує шлях (іде прямо в
+        // `deletePath`), а відкриті файли лежать у його мапі під
+        // `/sergeant-…db`. Голе ім'я тихо повертало `false`, і файл розділу
+        // на виході не стирався взагалі, доки його не прибирав примусовий
+        // prune на наступному старті (знайдено 2026-11-19).
+        if (pool && openDbName) pool.unlink(`/${openDbName}`);
         return { id, ok: true, kind: "wipe" };
       }
       case "prune": {
