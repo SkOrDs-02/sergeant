@@ -11,6 +11,9 @@ const { flagMock, openActionMock } = vi.hoisted(() => ({
 }));
 
 vi.mock("../lib/featureFlags", () => ({ useFlag: flagMock }));
+// `useChecklistSignals` питає статус сесії; справжній хук тягне весь
+// `AuthContext` (а з ним `hubNav`, який тут замоканий частково).
+vi.mock("../auth/useSessionReady", () => ({ useSessionReady: () => true }));
 vi.mock("@shared/lib/modules/hubNav", () => ({
   openHubModuleWithAction: openActionMock,
 }));
