@@ -1,5 +1,5 @@
 /**
- * Last validated: 2026-10-19
+ * Last validated: 2026-11-19
  * Status: Active
  *
  * Гейт на хибні твердження про потоки даних у політиці приватності
@@ -12,7 +12,7 @@
  */
 import { describe, expect, it } from "vitest";
 
-import { INFRA_PROCESSORS } from "./legalShared";
+import { AI_PROCESSORS, INFRA_PROCESSORS } from "./legalShared";
 import { privacyDocument } from "./privacyDocument";
 
 const lines = privacyDocument.sections.flatMap((section) => section.body);
@@ -65,5 +65,33 @@ describe("privacyDocument: потоки даних Monobank", () => {
   it("місце зберігання з речення збігається з регіоном Hetzner у переліку", () => {
     const hetzner = INFRA_PROCESSORS.find((p) => p.name === "Hetzner");
     expect(hetzner?.region).toContain("ЄС");
+  });
+});
+
+describe("privacyDocument: чеки й скриншоти виписок ідуть до OpenAI", () => {
+  // Рішення власника 2026-11-19: скан чека й імпорт скриншота банківської
+  // виписки за замовчуванням ідуть через OpenRouter до `openai/gpt-6-luna`
+  // (`OPENROUTER_RECEIPT_MODEL`, docs/governance/security/llm-subprocessors.md
+  // примітка ²). Публічний перелік обробників мусить це називати.
+  it("роль OpenRouter називає OpenAI і розпізнавання чеків і виписок", () => {
+    const openRouter = AI_PROCESSORS.find((p) => p.name === "OpenRouter");
+    expect(openRouter).toBeDefined();
+    expect(openRouter?.role).toContain("OpenAI");
+    expect(openRouter?.role).toContain(
+      "розпізнавання чеків і скриншотів банківських виписок",
+    );
+  });
+
+  it("розділ про AI каже, що кадр чека чи виписки їде цілком і не маскується", () => {
+    const aiSection = privacyDocument.sections.find((section) =>
+      section.title.startsWith("AI: що саме виходить"),
+    );
+    const receipt = aiSection?.body.find((line) =>
+      line.startsWith("Фото чека чи скриншот банківської виписки"),
+    );
+    expect(receipt).toBeDefined();
+    expect(receipt).toContain("OpenRouter");
+    expect(receipt).toContain("OpenAI");
+    expect(receipt).toContain("не маскується");
   });
 });
