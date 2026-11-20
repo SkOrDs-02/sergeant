@@ -130,6 +130,7 @@ export function registerRoutineDualWriteContext(
   liveContexts.push(ctx);
   registeredContext = ctx;
   replayRoutineJournal(ctx);
+  flushPendingBeforeRegistration();
   return () => {
     const at = liveContexts.lastIndexOf(ctx);
     if (at === -1) return;
@@ -143,6 +144,7 @@ export function __clearRoutineDualWriteContextForTests(): void {
   registeredContext = null;
   liveContexts.length = 0;
   replayedJournalIds.clear();
+  pendingBeforeRegistration.length = 0;
 }
 
 /**
@@ -274,12 +276,45 @@ export async function routineDualWriteIdle(): Promise<void> {
  * `routineStore.ts`. Resolves immediately so the LS-write call site
  * doesn't pay any latency on the happy path.
  */
+/** Записи, що прийшли до реєстрації контексту — див. AI-DANGER у {@link triggerRoutineDualWrite}. */
+let pendingBeforeRegistration: { prev: RoutineState; next: RoutineState }[] =
+  [];
+
+/** Скільки записів пішло в буфер до реєстрації контексту. Монотонний. */
+let bufferedRuns = 0;
+
+export function routineDualWriteBufferedRuns(): number {
+  return bufferedRuns;
+}
+
+function flushPendingBeforeRegistration(): void {
+  if (pendingBeforeRegistration.length === 0) return;
+  const queued = pendingBeforeRegistration;
+  pendingBeforeRegistration = [];
+  for (const { prev, next } of queued) triggerRoutineDualWrite(prev, next);
+}
+
 export function triggerRoutineDualWrite(
   prev: RoutineState,
   next: RoutineState,
 ): void {
   const ctx = registeredContext;
-  if (!ctx) return;
+  if (!ctx) {
+    // AI-DANGER: контекст реєструється лише після auth-резолву
+    // (`useLocalUserId` не віддає навіть анонімний id, доки
+    // `status === "loading"`) і після лінивого чанка boot-кластера. На проді
+    // для гостя це ~8 с після завантаження (повільний `/me` + чанки), і
+    // звичка, створена в цьому вікні, раніше мовчки зникала: ні SQLite, ні
+    // журналу (перевірка проду 2026-11-20, `FULL-20261120-DATA-2`). Локально
+    // `/me` миттєвий, тож вікно не видно. Буферуємо в пам'яті й наздоганяємо
+    // звичайним журнальованим шляхом, щойно контекст з'явиться в межах ЦІЄЇ
+    // сторінки — той самий шаблон, що в Їжі (2026-09-28). Перезавантаження
+    // ДО реєстрації буфер не переживе: userId ще невідомий, журналювати нема
+    // під чим.
+    pendingBeforeRegistration.push({ prev, next });
+    bufferedRuns += 1;
+    return;
+  }
   // Diff, мітку часу і журнал беремо синхронно, до мікротаски:
   // див. `core/durability/dualWriteJournal.ts`.
   const ops = diffRoutineDualWriteOps(prev, next);
