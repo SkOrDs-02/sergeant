@@ -2,7 +2,7 @@ import { useEffect } from "react";
 import { useQueryClient } from "@tanstack/react-query";
 import { monoWebhookApi, billingApi, pushApi } from "@shared/api";
 import { finykKeys, billingKeys, pushKeys } from "@shared/lib/api/queryKeys";
-import { useAuthOptional } from "../auth/AuthContext";
+import { useSessionReady } from "../auth/useSessionReady";
 import { shouldPrefetchOnConnection } from "./connectionGate";
 import type { HubModuleId } from "../hooks/useHubNavigation";
 
@@ -36,8 +36,9 @@ export function useModuleRouteLoader(activeModule: HubModuleId | null): void {
   const queryClient = useQueryClient();
   // FUN-1 (аудит 2026-09): анонім отримував 401 на `billing/status` при
   // кожній навігації між модулями. Без сесії Pro-гейт і так закритий.
-  const auth = useAuthOptional();
-  const signedOut = auth?.status === "unauthenticated";
+  // Поки сесія ще `loading`, гейт `!== "unauthenticated"` пропускав запит —
+  // і 401 летіли далі (FULL-20261119-PERF-1). Тепер лише підтверджена сесія.
+  const sessionReady = useSessionReady();
 
   useEffect(() => {
     if (!activeModule) return;
@@ -45,7 +46,7 @@ export function useModuleRouteLoader(activeModule: HubModuleId | null): void {
 
     // Billing status is relevant for all modules — gates Pro UI. Prefetch
     // once; RQ deduplicates subsequent calls within staleTime.
-    if (!signedOut) {
+    if (sessionReady) {
       void queryClient.prefetchQuery({
         queryKey: billingKeys.status,
         queryFn: ({ signal }) => billingApi.status({ signal }),
@@ -67,7 +68,9 @@ export function useModuleRouteLoader(activeModule: HubModuleId | null): void {
       retry: false,
     });
 
-    if (activeModule === "finyk") {
+    // Стан вебхука Monobank — лише із сесією: анонім отримував 401 на кожен
+    // вхід у Фінік.
+    if (activeModule === "finyk" && sessionReady) {
       // Monobank webhook sync state determines whether the user is connected
       // and whether Finyk shows the "connect" CTA or the transaction list.
       // Warm this before the module chunk even finishes loading so the first
@@ -78,5 +81,5 @@ export function useModuleRouteLoader(activeModule: HubModuleId | null): void {
         staleTime: STALE_TIME,
       });
     }
-  }, [activeModule, queryClient, signedOut]);
+  }, [activeModule, queryClient, sessionReady]);
 }

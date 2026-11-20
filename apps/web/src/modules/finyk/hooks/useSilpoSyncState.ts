@@ -6,6 +6,7 @@
 import { useQuery } from "@tanstack/react-query";
 import { isApiError, silpoApi, type SilpoSyncState } from "@shared/api";
 import { silpoKeys } from "@shared/lib/api/queryKeys";
+import { useSessionReady } from "../../../core/auth/useSessionReady";
 
 const STALE_TIME = 30_000;
 
@@ -52,10 +53,13 @@ function isSilpoDisabledError(error: unknown): boolean {
 export function useSilpoSyncState({
   enabled = true,
 }: { enabled?: boolean } = {}): UseSilpoSyncStateResult {
+  // Сесія — обовʼязкова умова: без неї 401 на кожному маршруті Їжі й Фініка
+  // (FULL-20261119-PERF-1).
+  const sessionReady = useSessionReady();
   const query = useQuery<SilpoSyncState>({
     queryKey: silpoKeys.syncState,
     queryFn: ({ signal }) => silpoApi.syncState({ signal }),
-    enabled,
+    enabled: enabled && sessionReady,
     staleTime: STALE_TIME,
     refetchOnWindowFocus: true,
     // 503 SILPO_DISABLED is a steady-state "feature off" answer, not a

@@ -47,6 +47,7 @@ import { setHubStreaming } from "../streamingStore";
 import { useFinykHubPreview } from "../useFinykHubPreview";
 import type { HubChatSession } from "../hubChatSessions";
 import { usePlan } from "../../billing/usePlan";
+import { useSessionReady } from "../../auth/useSessionReady";
 import { requiresConfirmation } from "@sergeant/shared";
 
 type ChatMessage = HubChatSession["messages"][number];
@@ -185,10 +186,12 @@ export function useChatSend({
   // per-user), тож два ходи з інструментом розходились із серверним
   // рахунком удвічі. `enabled: !isPro` — Pro не гейтиться взагалі, запит
   // не потрібен.
+  // Без сесії ендпоінт віддає 401 (FULL-20261119-PERF-1): гість квоти не має.
+  const sessionReady = useSessionReady();
   const { data: usageData } = useQuery({
     queryKey: chatKeys.usage,
     queryFn: ({ signal }) => chatApi.usage({ signal }),
-    enabled: !isPro,
+    enabled: !isPro && sessionReady,
     staleTime: 30_000,
     retry: false,
   });

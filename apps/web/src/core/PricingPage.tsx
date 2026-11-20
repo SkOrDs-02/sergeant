@@ -21,6 +21,7 @@ import { ANALYTICS_EVENTS, trackEvent } from "./observability/analytics";
 import { captureException } from "./observability/sentry";
 import { usePlan } from "./billing";
 import { useAuthOptional } from "./auth/AuthContext";
+import { useSessionReady } from "./auth/useSessionReady";
 import { SIGN_IN_PATH } from "./app/appPaths";
 import { WaitlistForm } from "./pricing/WaitlistForm";
 import { buildTiers, type Tier } from "./pricing/pricingTiers";
@@ -107,6 +108,7 @@ export function PricingPage() {
   // монтують сторінку голою — там лишаємо попередню поведінку.
   const auth = useAuthOptional();
   const signedOut = auth?.status === "unauthenticated";
+  const sessionReady = useSessionReady();
   // Payment-провайдери, доступні юзеру (UA → liqpay/plata). Джерело кнопок
   // checkout-у. 401 → fall through до порожнього списку (default-flow).
   const providersQuery = useQuery({
@@ -114,8 +116,9 @@ export function PricingPage() {
     queryFn: ({ signal }) => billingApi.providers({ signal }),
     staleTime: 5 * 60_000,
     retry: false,
-    // FUN-1 (аудит 2026-09): без сесії ендпоінт віддає 401 — не питаємо.
-    enabled: !signedOut,
+    // FUN-1 (аудит 2026-09): без сесії ендпоінт віддає 401 — не питаємо,
+    // і поки сесія ще визначається, теж (FULL-20261119-PERF-1).
+    enabled: sessionReady,
   });
   const enabledProviders = providersQuery.data?.providers ?? [];
   // i18n. Resolved messages frozen per-locale у resolver → memo identity

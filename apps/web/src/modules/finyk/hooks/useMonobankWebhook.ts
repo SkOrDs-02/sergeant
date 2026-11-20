@@ -14,6 +14,7 @@ import {
 import { messages } from "@shared/i18n/uk";
 import { finykKeys, hubKeys } from "@shared/lib/api/queryKeys";
 import { authAwareRetry } from "@shared/lib/api/queryClient";
+import { useSessionReady } from "../../../core/auth/useSessionReady";
 import type { Transaction } from "@sergeant/finyk-domain/domain/types";
 import { webhookTxToNormalized } from "./monoTxNormalize";
 import { CURRENCY } from "../constants";
@@ -75,10 +76,13 @@ export function useMonobankWebhook({
   const [authError, setAuthError] = useState("");
 
   // === Sync state ===
+  // Сесія — обовʼязкова умова (FULL-20261119-PERF-1): `userId` тут може
+  // бути локальною ідентичністю аноніма, а сервер без кукі віддає 401.
+  const sessionReady = useSessionReady();
   const syncStateQuery = useQuery<MonoSyncState>({
     queryKey: finykKeys.monoSyncState,
     queryFn: ({ signal }) => monoWebhookApi.syncState({ signal }),
-    enabled,
+    enabled: enabled && sessionReady,
     staleTime: SYNC_STATE_STALE,
     refetchOnMount: "always",
     refetchOnWindowFocus: "always",
