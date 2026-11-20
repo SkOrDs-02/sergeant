@@ -13,6 +13,7 @@ vi.mock("@sergeant/db-schema/sqlite", () => ({
 import {
   __clearRoutineDualWriteContextForTests,
   registerRoutineDualWriteContext,
+  routineDualWriteBufferedRuns,
   triggerRoutineDualWrite,
   type RoutineDualWriteContext,
 } from "../index.js";
@@ -72,6 +73,23 @@ describe("Routine dual-write journal (аудит 2026-09-28, D1)", () => {
       "SELECT id FROM routine_habits WHERE id = ? AND deleted_at IS NULL",
       ["h-journal"],
     );
+
+  it("applies a habit created before the context registered (prod 2026-11-20, DATA-2)", async () => {
+    const before = routineDualWriteBufferedRuns();
+    triggerRoutineDualWrite(
+      state([]) as never,
+      state([{ id: "h-journal", name: "Рання звичка" }]) as never,
+    );
+    expect(routineDualWriteBufferedRuns()).toBe(before + 1);
+    await new Promise((r) => setTimeout(r, 10));
+    expect(await habitRows()).toEqual([]);
+
+    registerRoutineDualWriteContext(ctx());
+
+    await vi.waitFor(async () => expect(await habitRows()).toHaveLength(1), {
+      timeout: 2000,
+    });
+  });
 
   it("replays a habit whose page died before the write reached SQLite", async () => {
     registerRoutineDualWriteContext(

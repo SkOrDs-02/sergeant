@@ -4163,6 +4163,11 @@
           "at": "2026-11-20",
           "event": "fixed",
           "note": "cafd28716 (рішення власника 2026-11-19): перший справжній запис у модулі ставить ONBOARDING_DONE_KEY (useOnboardingDoneOnRealEntry у boot-кластерах). Профілі 18/18, з Pro 24/24."
+        },
+        {
+          "at": "2026-11-20",
+          "event": "retested",
+          "note": "Прод після деплою 88e28458 (анонім): гість зі звичкою на /insights і на хабі онбординг «Модулі» не бачить. Статус verified не ставлю: формального прогону з attempt на проді немає."
         }
       ]
     },
@@ -4184,6 +4189,11 @@
           "at": "2026-11-20",
           "event": "fixed",
           "note": "db301f141 + 44b0f7c23: useSessionReady (лише authenticated) у всіх сесійних запитах, префетчі модулів і чеклісті хаба. Обхід 80 сторінок аноніма: 401 лише на /me (було 58 × billing/status, mono, silpo, preferences, chat/usage)."
+        },
+        {
+          "at": "2026-11-20",
+          "event": "retested",
+          "note": "Прод після деплою 88e28458 (анонім, обхід маршрутів): 401 лише на /api/v1/me; billing/status, sync-state, preferences, chat/usage гість більше не шле. Статус verified не ставлю: формального прогону з attempt на проді немає."
         }
       ]
     },
@@ -4300,6 +4310,43 @@
           "at": "2026-11-20",
           "event": "observed",
           "note": "Окремий замір origin/main (20634aa28): 1 562 373 B brotli при стелі 1 560 000 B; гілка після злиття 1 562 974 B (+0.6 kB від фіксів). Eager у межах: 256.1 / 259 kB. Стелю не піднімав: рішення власника за правилом § Performance budgets."
+        }
+      ]
+    },
+    {
+      "id": "FULL-20261120-DATA-2",
+      "legacyId": "routine-write-before-dualwrite-registration",
+      "title": "Звичка, створена гостем до реєстрації dual-write контексту Рутини, зникала без сліду",
+      "severity": "major",
+      "source": "docs/work/specs/audits/verification/runs/full-2026-11-20/handoff.md",
+      "sourceAnchor": "DATA-durability-live",
+      "status": "fixed-pending-verification",
+      "history": [
+        {
+          "at": "2026-11-20",
+          "event": "observed",
+          "note": "Прод 88e28458, анонім без активного сервіс-воркера: контекст Рутини реєструється ~7.8 с після завантаження (повільний /me + ліниві чанки), а triggerRoutineDualWrite до того робив `if (!ctx) return` — ні SQLite, ні журналу. Звичка, створена в цьому вікні, після reload відсутня. З активним SW вікно коротше і звичка доживає; локально /me миттєвий, тому лейни durability і prod-anon smoke (чекає SW) цього не ловили. Дефект старший за PR #1712."
+        },
+        {
+          "at": "2026-11-20",
+          "event": "fixed",
+          "note": "Буфер pendingBeforeRegistration у routine/lib/sqliteWriter (шаблон Їжі 2026-09-28): запис до реєстрації чекає в пам'яті й іде журнальованим шляхом одразу після registerRoutineDualWriteContext. Юніт journal.test.ts червоний без фіксу, зелений із ним. Reload ДО реєстрації буфер не переживе."
+        }
+      ]
+    },
+    {
+      "id": "FULL-20261120-DATA-3",
+      "legacyId": "finyk-fizruk-write-before-dualwrite-registration",
+      "title": "Фінік і Фізрук можуть так само губити запис, зроблений до реєстрації dual-write контексту",
+      "severity": "major",
+      "source": "docs/work/specs/audits/verification/runs/full-2026-11-20/handoff.md",
+      "sourceAnchor": "DATA-durability-live",
+      "status": "open",
+      "history": [
+        {
+          "at": "2026-11-20",
+          "event": "observed",
+          "note": "Статичний аналіз, на проді не відтворено. Фінік: useFinykDualWriteSync без контексту зсуває prevRef на поточний стан, тож запис до реєстрації ніколи не потрапляє в діф. Фізрук: тригер має той самий `if (!ctx) return`, а peekFizrukDualWriteState без контексту повертає null. Буфер у тригері тут не допоможе: потрібна зміна хуків і відтворення на проді (анонім без SW, запис у перші ~8 с)."
         }
       ]
     }
