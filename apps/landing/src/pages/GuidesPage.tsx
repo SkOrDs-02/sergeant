@@ -154,7 +154,7 @@ export default function GuidesPage() {
                   <h3 className="max-w-2xl text-xl font-bold leading-snug text-balance text-foreground-strong group-hover:underline sm:text-2xl">
                     {ROUTE_META[guide.href].title}
                   </h3>
-                  <p className="mt-2 max-w-2xl text-sm leading-relaxed text-muted">
+                  <p className="mt-2 max-w-2xl text-[15px] leading-relaxed text-muted">
                     {guide.teaser}
                   </p>
                 </a>

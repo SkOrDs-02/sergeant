@@ -85,7 +85,7 @@ export default function GuidePauzaPropuskPage() {
               <h3 className="font-bold text-foreground-strong">
                 Відкрий картку звички
               </h3>
-              <p className="mt-1.5 text-sm leading-relaxed text-muted">
+              <p className="mt-1.5 text-[15px] leading-relaxed text-muted">
                 У Рутині натисни на саму звичку, щоб розкрити її деталі.
                 Потрібна секція називається «Пауза».
               </p>
@@ -94,7 +94,7 @@ export default function GuidePauzaPropuskPage() {
               <h3 className="font-bold text-foreground-strong">
                 Постав межі: «З» і «По»
               </h3>
-              <p className="mt-1.5 text-sm leading-relaxed text-muted">
+              <p className="mt-1.5 text-[15px] leading-relaxed text-muted">
                 Друге поле необовʼязкове. Якщо не знаєш, коли повернешся, лиши
                 його порожнім: пауза буде відкритою, і в картці зʼявиться підпис
                 «На паузі з» датою.
@@ -104,7 +104,7 @@ export default function GuidePauzaPropuskPage() {
               <h3 className="font-bold text-foreground-strong">
                 Натисни «Поставити паузу»
               </h3>
-              <p className="mt-1.5 text-sm leading-relaxed text-muted">
+              <p className="mt-1.5 text-[15px] leading-relaxed text-muted">
                 Дні всередині інтервалу випадають із розкладу звички: серія їх
                 не бачить і не подовжує на них. Якщо повернувся раніше, кнопка
                 «Повернутись сьогодні» закриває паузу поточним днем.
@@ -128,7 +128,7 @@ export default function GuidePauzaPropuskPage() {
               <h3 className="font-bold text-foreground-strong">
                 Відкрий денний звіт
               </h3>
-              <p className="mt-1.5 text-sm leading-relaxed text-muted">
+              <p className="mt-1.5 text-[15px] leading-relaxed text-muted">
                 Це підсумок дня зі списком запланованих звичок і трьома станами:
                 зроблено, не зміг із причиною, не зроблено.
               </p>
@@ -137,7 +137,7 @@ export default function GuidePauzaPropuskPage() {
               <h3 className="font-bold text-foreground-strong">
                 Вибери причину зі списку
               </h3>
-              <p className="mt-1.5 text-sm leading-relaxed text-muted">
+              <p className="mt-1.5 text-[15px] leading-relaxed text-muted">
                 Причина розкривається прямо в рядку звички, окремого діалогу
                 немає. Варіанти фіксовані:
               </p>
@@ -180,7 +180,7 @@ export default function GuidePauzaPropuskPage() {
             {NOT_THE_SAME.map((item) => (
               <li
                 key={item}
-                className="flex items-baseline gap-2.5 text-sm leading-relaxed text-muted"
+                className="flex items-baseline gap-2.5 text-[15px] leading-relaxed text-muted"
               >
                 <span
                   aria-hidden="true"

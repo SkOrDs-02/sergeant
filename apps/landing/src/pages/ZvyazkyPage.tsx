@@ -87,7 +87,7 @@ export default function ZvyazkyPage() {
           {TIERS.map((tier) => (
             <div key={tier.name} className="border-t border-cardline pt-4">
               <dt className="font-bold text-foreground-strong">{tier.name}</dt>
-              <dd className="mt-1.5 max-w-2xl text-sm leading-relaxed text-muted">
+              <dd className="mt-1.5 max-w-2xl text-[15px] leading-relaxed text-muted">
                 {tier.text}
               </dd>
             </div>
@@ -186,7 +186,7 @@ export default function ZvyazkyPage() {
           {LIMITS.map((limit) => (
             <li
               key={limit}
-              className="flex items-baseline gap-2.5 text-sm leading-relaxed text-muted"
+              className="flex items-baseline gap-2.5 text-[15px] leading-relaxed text-muted"
             >
               <span
                 aria-hidden="true"

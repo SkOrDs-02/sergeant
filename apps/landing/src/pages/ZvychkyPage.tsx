@@ -100,7 +100,7 @@ export default function ZvychkyPage() {
               <h3 className="mt-2 text-xl font-bold leading-tight text-foreground-strong">
                 {way.title}
               </h3>
-              <p className="mt-2 text-sm leading-relaxed text-muted">
+              <p className="mt-2 text-[15px] leading-relaxed text-muted">
                 {way.text}
               </p>
             </div>
@@ -194,7 +194,7 @@ export default function ZvychkyPage() {
           {BOUNDARIES.map((item) => (
             <li
               key={item}
-              className="flex items-baseline gap-2.5 text-sm leading-relaxed text-muted"
+              className="flex items-baseline gap-2.5 text-[15px] leading-relaxed text-muted"
             >
               <span
                 aria-hidden="true"
@@ -236,7 +236,7 @@ export default function ZvychkyPage() {
               <h3 className="max-w-2xl text-lg font-bold leading-snug text-foreground-strong group-hover:underline">
                 {guide.title}
               </h3>
-              <p className="mt-1.5 max-w-2xl text-sm leading-relaxed text-muted">
+              <p className="mt-1.5 max-w-2xl text-[15px] leading-relaxed text-muted">
                 {guide.teaser}
               </p>
             </a>

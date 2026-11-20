@@ -84,7 +84,7 @@ export default function TrenuvanniaPage() {
           {METRICS.map((metric) => (
             <li
               key={metric}
-              className="flex items-baseline gap-2.5 text-sm leading-relaxed text-muted"
+              className="flex items-baseline gap-2.5 text-[15px] leading-relaxed text-muted"
             >
               <span
                 aria-hidden="true"
@@ -144,7 +144,7 @@ export default function TrenuvanniaPage() {
           {PRACTICE_NOTES.map((note) => (
             <li
               key={note}
-              className="flex items-baseline gap-2.5 text-sm leading-relaxed text-muted"
+              className="flex items-baseline gap-2.5 text-[15px] leading-relaxed text-muted"
             >
               <span
                 aria-hidden="true"
@@ -170,7 +170,7 @@ export default function TrenuvanniaPage() {
             <h3 className="mt-1 text-lg font-bold text-foreground-strong">
               Журнал самопочуття старіє
             </h3>
-            <p className="mt-1.5 max-w-2xl text-sm leading-relaxed text-muted">
+            <p className="mt-1.5 max-w-2xl text-[15px] leading-relaxed text-muted">
               Запис про сон чи енергію, що давно не оновлювався, у розрахунку не
               враховується, і застосунок каже це окремим рядком: «Журнал
               самопочуття застарів». Сон і енергія старіють незалежно один від
@@ -181,7 +181,7 @@ export default function TrenuvanniaPage() {
             <h3 className="mt-1 text-lg font-bold text-foreground-strong">
               Порада рахується з того, що є на цьому пристрої
             </h3>
-            <p className="mt-1.5 max-w-2xl text-sm leading-relaxed text-muted">
+            <p className="mt-1.5 max-w-2xl text-[15px] leading-relaxed text-muted">
               Поруч із нею стоїть стан синхронізації: коли востаннє приїхали
               зміни з інших пристроїв і чи є свої, які ще не пішли на сервер.
               Якщо стан невідомий, застосунок вважає картину неповною і пише:
@@ -193,7 +193,7 @@ export default function TrenuvanniaPage() {
             <h3 className="mt-1 text-lg font-bold text-foreground-strong">
               Пороги підібрані на одному тілі
             </h3>
-            <p className="mt-1.5 max-w-2xl text-sm leading-relaxed text-muted">
+            <p className="mt-1.5 max-w-2xl text-[15px] leading-relaxed text-muted">
               Числа, за якими група стає жовтою чи червоною, і швидкість, з якою
               втома згасає, підбирались на одній людині. Калібрування під себе
               поки немає, і під карткою відновлення про це написано.
@@ -228,7 +228,7 @@ export default function TrenuvanniaPage() {
           {NOT_YET.map((item) => (
             <li
               key={item}
-              className="flex items-baseline gap-2.5 text-sm leading-relaxed text-muted"
+              className="flex items-baseline gap-2.5 text-[15px] leading-relaxed text-muted"
             >
               <span
                 aria-hidden="true"

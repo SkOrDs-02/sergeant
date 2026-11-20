@@ -86,7 +86,7 @@ export default function GuideOhlyadDnyaPage() {
             {SOURCES.map((s) => (
               <li key={s.title} className="border-t border-cardline pt-4">
                 <h3 className="font-bold text-foreground-strong">{s.title}</h3>
-                <p className="mt-1.5 text-sm leading-relaxed text-muted">
+                <p className="mt-1.5 text-[15px] leading-relaxed text-muted">
                   {s.body}
                 </p>
               </li>
@@ -101,7 +101,7 @@ export default function GuideOhlyadDnyaPage() {
               <h3 className="font-bold text-foreground-strong">
                 Відкрий місячну сітку або стрічку дня
               </h3>
-              <p className="mt-1.5 text-sm leading-relaxed text-muted">
+              <p className="mt-1.5 text-[15px] leading-relaxed text-muted">
                 У вкладці «Огляд» Рутини тренування й платежі позначені
                 кольоровою смужкою зліва в картці події й окремим кольором
                 клітинки в сітці місяця.
@@ -111,7 +111,7 @@ export default function GuideOhlyadDnyaPage() {
               <h3 className="font-bold text-foreground-strong">
                 Фільтруй чипами над стрічкою
               </h3>
-              <p className="mt-1.5 text-sm leading-relaxed text-muted">
+              <p className="mt-1.5 text-[15px] leading-relaxed text-muted">
                 Чип «Фізрук» лишає в стрічці тільки тренування, чип «Підписки
                 Фініка» тільки платежі. Обидва вимикаються так само, як тег чи
                 категорія.
@@ -121,7 +121,7 @@ export default function GuideOhlyadDnyaPage() {
               <h3 className="font-bold text-foreground-strong">
                 Керуй показом у налаштуваннях
               </h3>
-              <p className="mt-1.5 text-sm leading-relaxed text-muted">
+              <p className="mt-1.5 text-[15px] leading-relaxed text-muted">
                 У розділі налаштувань «Рутина» → «Календар» два тумблери:
                 «Показувати тренування з Фізрука в календарі» і «Показувати
                 планові платежі підписок Фініка в календарі». Вимкнений тумблер
@@ -137,7 +137,7 @@ export default function GuideOhlyadDnyaPage() {
             {LIMITS.map((item) => (
               <li
                 key={item}
-                className="flex items-baseline gap-2.5 text-sm leading-relaxed text-muted"
+                className="flex items-baseline gap-2.5 text-[15px] leading-relaxed text-muted"
               >
                 <span
                   aria-hidden="true"

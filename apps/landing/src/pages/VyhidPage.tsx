@@ -57,7 +57,7 @@ export default function VyhidPage() {
             <h3 className="text-xl font-bold leading-tight text-foreground-strong">
               Акаунтські дані
             </h3>
-            <p className="mt-2 text-sm leading-relaxed text-muted">
+            <p className="mt-2 text-[15px] leading-relaxed text-muted">
               Усе, що знає сервер: витрати й операції, тренування, звички,
               харчування, підключення банку, білінг. Одним файлом із профілю.
               Файл сам перелічує, чого в ньому немає і чому.
@@ -67,7 +67,7 @@ export default function VyhidPage() {
             <h3 className="text-xl font-bold leading-tight text-foreground-strong">
               Те, що сервер не бачив
             </h3>
-            <p className="mt-2 text-sm leading-relaxed text-muted">
+            <p className="mt-2 text-[15px] leading-relaxed text-muted">
               Записи без входу в акаунт і все, що ще не синхронізувалось із
               пристрою. Знімається окремим локальним бекапом.
             </p>

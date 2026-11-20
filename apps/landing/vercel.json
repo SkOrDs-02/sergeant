@@ -85,6 +85,10 @@
         {
           "key": "Vary",
           "value": "Accept"
+        },
+        {
+          "key": "Speculation-Rules",
+          "value": "\"/speculationrules.json\""
         }
       ]
     },
@@ -121,6 +125,19 @@
         {
           "key": "X-Robots-Tag",
           "value": "noindex"
+        }
+      ]
+    },
+    {
+      "source": "/speculationrules.json",
+      "headers": [
+        {
+          "key": "Content-Type",
+          "value": "application/speculationrules+json"
+        },
+        {
+          "key": "Cache-Control",
+          "value": "public, max-age=3600"
         }
       ]
     }

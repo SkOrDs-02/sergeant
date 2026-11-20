@@ -114,7 +114,7 @@ export default function YizhaPage() {
               <p className="mt-2 text-sm leading-relaxed text-subtle">
                 {mode.subtitle}
               </p>
-              <p className="mt-2 text-sm leading-relaxed text-muted">
+              <p className="mt-2 text-[15px] leading-relaxed text-muted">
                 {mode.text}
               </p>
             </div>
@@ -209,7 +209,7 @@ export default function YizhaPage() {
           {BOUNDARIES.map((item) => (
             <li
               key={item}
-              className="flex items-baseline gap-2.5 text-sm leading-relaxed text-muted"
+              className="flex items-baseline gap-2.5 text-[15px] leading-relaxed text-muted"
             >
               <span
                 aria-hidden="true"
@@ -261,7 +261,7 @@ export default function YizhaPage() {
               <h3 className="max-w-2xl text-lg font-bold leading-snug text-foreground-strong group-hover:underline">
                 {guide.title}
               </h3>
-              <p className="mt-1.5 max-w-2xl text-sm leading-relaxed text-muted">
+              <p className="mt-1.5 max-w-2xl text-[15px] leading-relaxed text-muted">
                 {guide.teaser}
               </p>
             </a>
