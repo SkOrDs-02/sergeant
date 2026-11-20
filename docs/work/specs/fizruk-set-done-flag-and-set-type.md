@@ -1,7 +1,7 @@
 # SPEC: Явний прапорець «виконано» в підході і тип підходу
 
 > **Last touched:** 2026-11-20 by @claude. **Next review:** 2027-06-13.
-> **Status:** Active - клієнт і домен реалізовано 2026-11-19 (домен, сховище SQLite, outbox, жива сесія, редактор завершеного тренування); міграція 176 і серверний синк — паралельні заходи агентів міграцій і сервера. `METRICS_VERSION` 24 → 25 за картку «Обʼєм по мʼязах» (§ Ризики). Відкрите: `plan_workout` у чаті (зона AI-шару, § Ризики) і click-through на пристрої.
+> **Status:** Implemented - домен, сховище SQLite, outbox, жива сесія, редактор завершеного тренування, міграція 176, серверний синк і чат (`plan_workout` сіє рядки плану з `done: false`, `log_set` пише `done: true`); змерджено в `main` 2026-11-20 (PR #1709). `METRICS_VERSION` 24 → 25 за картку «Обʼєм по мʼязах» (§ Ризики). Click-through на пристрої не виконано.
 
 ## Проблема
 
@@ -279,12 +279,11 @@ M», історія, «Останні», `fizruk_workout_finished`), поріг 
   `packages/shared/src/lib/metricsVersion.ts`). Журнал канону
   2026-11-19 («Час і дистанція в цю картку не входять») цим переглянуто:
   в картку входить КІЛЬКІСТЬ таких підходів, не секунди.
-- **`plan_workout` у чаті** (`apps/web/src/core/lib/chatActions/fizrukActions/workouts.ts`,
-  зона агента AI-шару): за П-Фз3-5 (А) виклик
-  `buildPlannedSets(sets, weightKg)` має стати
-  `buildPlannedSets(sets, weightKg, { reps })` (рядки з `done: false`), а
-  `log_set` — писати `done: true`. Без правки чат сіє рядки як до фічі
-  (повтори 0, без прапорця): нічого не ламається, лише немає значень плану.
+- **`plan_workout` у чаті: закрито 2026-11-19.** За П-Фз3-5 (А)
+  `apps/web/src/core/lib/chatActions/fizrukActions/workouts.ts` сіє рядки
+  плану через `buildPlannedSets(sets, weightKg, { reps, durationSec })` з
+  `done: false`, а `log_set` пише `done: true`
+  (`fizrukActions/setMeasure.ts`).
 - **Підказка наступного підходу** (`WorkoutItemNextSetHint` → `onApply` у
   `WorkoutItemCard`) прапорець не ставить: заповнений нею рядок без
   прапорця зараховується за значеннями, як до фічі; рядок `done: false`
