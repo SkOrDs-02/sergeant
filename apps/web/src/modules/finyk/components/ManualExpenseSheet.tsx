@@ -6,7 +6,8 @@
  * the visible blocks to sibling sections so this file stays under Hard
  * Rule #18 (`max-lines: 600`): `ManualExpenseKindTabs`,
  * `ManualExpenseAmountSection`, `ManualExpenseDescriptionSection`,
- * `ManualExpenseDateSection`, `ManualExpenseCategorySection` and
+ * `ManualExpenseDateSection`, `ManualExpenseCategorySection`,
+ * `ManualExpenseMoreFields` (теги й рахунок під «Більше», Ф-1 а) and
  * `ManualExpenseFooter`. Category slug system lives in
  * `./manualExpenseCategories`; pure helpers in `./manualExpenseForm`.
  *
@@ -73,13 +74,10 @@ import { useManualCategoryHydration } from "./useManualCategoryHydration";
 import { ManualExpenseKindTabs } from "./ManualExpenseKindTabs";
 import { ManualExpenseDateSection } from "./ManualExpenseDateSection";
 import { ManualExpenseFooter } from "./ManualExpenseFooter";
-import {
-  ManualExpenseAccountSection,
-  type ManualAccount,
-} from "./ManualExpenseAccountSection";
+import { ManualExpenseMoreFields } from "./ManualExpenseMoreSection";
+import { type ManualAccount } from "./ManualExpenseAccountSection";
 import { manualLinkKey } from "@sergeant/finyk-domain/domain/debtLinkKeys";
 import { DebtTxLinkSection } from "./DebtTxLinkSection";
-import { TxTagsField } from "./TxTagsField";
 import type { TagSummary } from "@sergeant/finyk-domain/domain/tags";
 import { decideManualDebtLink } from "./manualDebtLink";
 import { useManualCustomCategories } from "./useManualCustomCategories";
@@ -650,11 +648,18 @@ export function ManualExpenseSheet({
   };
 
   // A kind change invalidates the old taxonomy category. The required empty
-  // value makes the user explicitly choose from the new taxonomy before save.
+  // value makes the user explicitly choose from the new taxonomy before save;
+  // the error shows on the save attempt, not on the switch itself.
   const handleKindChange = (nextKind: ManualExpenseKind) => {
     if (nextKind === kind) return;
     setKind(nextKind);
-    setValue("category", "", { shouldDirty: true, shouldValidate: true });
+    // Валідуємо лише після спроби зберегти: інакше саме перемикання
+    // «Витрата / Надходження» фарбувало поле червоним «Обери категорію»
+    // ще до будь-якої дії людини (зйомка 2026-11-18).
+    setValue("category", "", {
+      shouldDirty: true,
+      shouldValidate: formState.isSubmitted,
+    });
     setAiAppliedCategory(null);
   };
 
@@ -712,6 +717,76 @@ export function ManualExpenseSheet({
           onKindChange={handleKindChange}
         />
 
+        {/* Ф-1 (а), OD-26 (2026-11-18): сума, категорія, назва, дата;
+            теги й рахунок під «Більше». Сума — єдине обовʼязкове поле, тож
+            стоїть першою (S15), категорія одразу під нею, над згином. */}
+        <ManualExpenseAmountSection
+          amountId={amountId}
+          amountSuggestions={amountSuggestions}
+          amountError={amountError}
+          amountHeroVisible={amountHeroVisible}
+          amountNumeric={amountNumeric}
+          isSubmitting={isSubmitting}
+          register={register}
+          setValue={setValue}
+          focusRef={batchFocusRef}
+        />
+
+        <ManualExpenseCategorySection
+          catLabelId={catLabelId}
+          categoryDisplay={categoryDisplay}
+          aiAppliedCategory={aiAppliedCategory}
+          categoryError={categoryError}
+          categorySlug={categorySlug}
+          categorySlugs={categorySlugs}
+          frequentCategoryIds={isIncome ? [] : frequentCategoryIds}
+          register={register}
+          setValue={setValue}
+          setAiAppliedCategory={setAiAppliedCategory}
+        />
+
+        <ManualExpenseDescriptionSection
+          formId={formId}
+          descId={descId}
+          isSubmitting={isSubmitting}
+          showMerchantHints={showMerchantHints}
+          merchantSuggestions={merchantSuggestions}
+          setDescFocused={setDescFocused}
+          setAiAppliedCategory={setAiAppliedCategory}
+          register={register}
+          setValue={setValue}
+        />
+
+        <ManualExpenseDateSection
+          dateId={dateId}
+          date={date}
+          dateError={dateError}
+          dateWarning={dateWarning}
+          isSubmitting={isSubmitting}
+          onDateChange={(iso) =>
+            setValue("date", iso, { shouldDirty: true, shouldValidate: false })
+          }
+          register={register}
+          after={
+            <ManualExpenseMoreFields
+              isEditing={isEditing}
+              tags={tags}
+              onTagsChange={onTagsChange}
+              draftTags={draftTags}
+              onDraftTagsChange={setDraftTags}
+              knownTags={knownTags}
+              onCreateCash={onCreateCashOnHand}
+              account={account}
+              onAccountChange={setAccount}
+              cashExists={cashOnHandExists}
+              cashCreatedAt={cashOnHandCreatedAt}
+              defaultAccount={defaultAccount}
+              date={kind === "income" ? undefined : date}
+              isSubmitting={isSubmitting}
+            />
+          }
+        />
+
         {isEditing && receiptId != null && (
           <ReceiptItemsSection receiptId={receiptId} />
         )}
@@ -757,88 +832,6 @@ export function ManualExpenseSheet({
             existingSplitsCount={(txSplits?.[expenseId] ?? []).length}
           />
         )}
-
-        {isEditing && onTagsChange && (
-          <TxTagsField
-            tags={tags ?? []}
-            known={knownTags ?? []}
-            onChange={onTagsChange}
-          />
-        )}
-        {!isEditing && knownTags && (
-          <TxTagsField
-            tags={draftTags}
-            known={knownTags}
-            onChange={setDraftTags}
-          />
-        )}
-
-        {/* S15: amount is the only «must-fill» field — it used to live
-            under the name input, so new users had to scroll past an
-            optional field before they could do the single thing that
-            makes an expense valid. Amount is now the first block on the
-            sheet; the mic stays near it because dictation typically
-            produces both the amount and the description in one shot. */}
-        <ManualExpenseAmountSection
-          amountId={amountId}
-          amountSuggestions={amountSuggestions}
-          amountError={amountError}
-          amountHeroVisible={amountHeroVisible}
-          amountNumeric={amountNumeric}
-          isSubmitting={isSubmitting}
-          register={register}
-          setValue={setValue}
-          focusRef={batchFocusRef}
-        />
-
-        <ManualExpenseDescriptionSection
-          formId={formId}
-          descId={descId}
-          isSubmitting={isSubmitting}
-          showMerchantHints={showMerchantHints}
-          merchantSuggestions={merchantSuggestions}
-          setDescFocused={setDescFocused}
-          setAiAppliedCategory={setAiAppliedCategory}
-          register={register}
-          setValue={setValue}
-        />
-
-        <ManualExpenseDateSection
-          dateId={dateId}
-          date={date}
-          dateError={dateError}
-          dateWarning={dateWarning}
-          isSubmitting={isSubmitting}
-          onDateChange={(iso) =>
-            setValue("date", iso, { shouldDirty: true, shouldValidate: false })
-          }
-          register={register}
-        />
-
-        {showAccount && (
-          <ManualExpenseAccountSection
-            account={account}
-            onAccountChange={setAccount}
-            cashExists={cashOnHandExists}
-            date={kind === "income" ? undefined : date}
-            cashCreatedAt={cashOnHandCreatedAt}
-            onCreateCash={onCreateCashOnHand}
-            isSubmitting={isSubmitting}
-          />
-        )}
-
-        <ManualExpenseCategorySection
-          catLabelId={catLabelId}
-          categoryDisplay={categoryDisplay}
-          aiAppliedCategory={aiAppliedCategory}
-          categoryError={categoryError}
-          categorySlug={categorySlug}
-          categorySlugs={categorySlugs}
-          frequentCategoryIds={isIncome ? [] : frequentCategoryIds}
-          register={register}
-          setValue={setValue}
-          setAiAppliedCategory={setAiAppliedCategory}
-        />
       </div>
     </Sheet>
   );

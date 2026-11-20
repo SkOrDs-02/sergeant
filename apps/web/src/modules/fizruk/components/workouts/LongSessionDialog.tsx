@@ -12,6 +12,7 @@ import { Button } from "@shared/components/ui/Button";
 import { Input } from "@shared/components/ui/Input";
 import { messages } from "@shared/i18n/uk";
 import {
+  DATETIME_CLASS,
   datetimeLocalValueToIso,
   isoToDatetimeLocalValue,
 } from "./activeWorkoutLib";
@@ -82,7 +83,7 @@ export function LongSessionDialog({
         id="long-session-end"
         label={copy.endLabel}
         type="datetime-local"
-        className="min-w-0 [min-inline-size:0]"
+        className={DATETIME_CLASS}
         value={value}
         onChange={(e) => setValue(e.target.value)}
       />

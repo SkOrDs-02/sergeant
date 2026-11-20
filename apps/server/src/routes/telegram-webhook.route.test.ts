@@ -18,8 +18,10 @@ const {
   sendMessageMock,
   editMessageTextMock,
   answerCallbackQueryMock,
+  grantManualAccessMock,
   envStub,
 } = vi.hoisted(() => ({
+  grantManualAccessMock: vi.fn(),
   sendMessageMock: vi.fn().mockResolvedValue({ ok: true }),
   editMessageTextMock: vi.fn().mockResolvedValue({ ok: true }),
   answerCallbackQueryMock: vi.fn().mockResolvedValue({ ok: true }),
@@ -58,6 +60,15 @@ vi.mock("../http/index.js", async () => {
       next(),
   };
 });
+
+// Ядро видачі ручного Premium має власні тести (`billing/manualAccess.test.ts`);
+// тут перевіряємо гейт chat/from і протокол відповіді боту.
+vi.mock("../modules/billing/manualAccess.js", async () => ({
+  ...(await vi.importActual<
+    typeof import("../modules/billing/manualAccess.js")
+  >("../modules/billing/manualAccess.js")),
+  grantManualAccess: grantManualAccessMock,
+}));
 
 const { createTelegramWebhookRouter } = await import("./telegram-webhook.js");
 
@@ -121,6 +132,7 @@ beforeEach(() => {
   sendMessageMock.mockClear();
   editMessageTextMock.mockClear();
   answerCallbackQueryMock.mockClear();
+  grantManualAccessMock.mockReset();
   envStub["TELEGRAM_WAITLIST_ADMIN_CHAT_ID"] = ADMIN_CHAT_ID;
 });
 
@@ -458,5 +470,110 @@ describe("telegram webhook — груповий чат", () => {
     expect(res.status).toBe(200);
     expect(sendMessageMock).not.toHaveBeenCalled();
     expect(query).not.toHaveBeenCalled();
+  });
+});
+
+describe("POST /api/telegram/webhook — видача ручного Premium", () => {
+  const ADMIN = Number(ADMIN_CHAT_ID);
+  const END = new Date("2026-12-18T10:00:00Z");
+
+  function grantUpdate(
+    data: string,
+    opts: { chatId?: number; fromId?: number; chatType?: string } = {},
+  ) {
+    return {
+      callback_query: {
+        id: "cbq-mp",
+        from: { id: opts.fromId ?? ADMIN, is_bot: false },
+        message: {
+          message_id: 4242,
+          chat: { id: opts.chatId ?? ADMIN, type: opts.chatType ?? "private" },
+        },
+        data,
+      },
+    };
+  }
+
+  it("тап власника: видача, квитанція і текст «видано до» без клавіатури", async () => {
+    grantManualAccessMock.mockResolvedValueOnce({
+      ok: true,
+      currentPeriodEnd: END,
+    });
+    const query = vi.fn();
+    const res = await post(query, grantUpdate("mp:grant:17"));
+
+    expect(res.status).toBe(200);
+    expect(grantManualAccessMock).toHaveBeenCalledTimes(1);
+    expect(grantManualAccessMock.mock.calls[0]?.[1]).toBe("17");
+    expect(answerCallbackQueryMock).toHaveBeenCalledWith({
+      callbackQueryId: "cbq-mp",
+      text: "Видано до 18.12.2026",
+    });
+    expect(editMessageTextMock).toHaveBeenCalledWith({
+      chatId: ADMIN_CHAT_ID,
+      messageId: 4242,
+      text: "Запит Premium #17 · видано до 18.12.2026",
+    });
+    expect(sendMessageMock).not.toHaveBeenCalled();
+  });
+
+  it("повторний тап: лише квитанція «уже видано», без редагування", async () => {
+    grantManualAccessMock.mockResolvedValueOnce({
+      ok: false,
+      reason: "ALREADY_GRANTED",
+    });
+    const res = await post(vi.fn(), grantUpdate("mp:grant:17"));
+
+    expect(res.status).toBe(200);
+    expect(answerCallbackQueryMock).toHaveBeenCalledWith({
+      callbackQueryId: "cbq-mp",
+      text: "Уже видано",
+    });
+    expect(editMessageTextMock).not.toHaveBeenCalled();
+  });
+
+  it.each([
+    ["чужий чат", { chatId: 123456, fromId: 123456 }],
+    ["чужий from у чаті власника", { fromId: 123456 }],
+    ["груповий чат з id власника", { chatType: "supergroup" }],
+  ])("%s: 200 і нуль дій", async (_label, opts) => {
+    const query = vi.fn();
+    const res = await post(query, grantUpdate("mp:grant:17", opts));
+
+    expect(res.status).toBe(200);
+    expect(grantManualAccessMock).not.toHaveBeenCalled();
+    expect(answerCallbackQueryMock).not.toHaveBeenCalled();
+    expect(editMessageTextMock).not.toHaveBeenCalled();
+    expect(query).not.toHaveBeenCalled();
+  });
+
+  it.each(["mp:grant:abc", "mp:grant:0", "mp:grant:017", "mp:grant:1 "])(
+    "биті дані %j: тиша",
+    async (data) => {
+      const query = vi.fn();
+      const res = await post(query, grantUpdate(data));
+
+      expect(res.status).toBe(200);
+      expect(grantManualAccessMock).not.toHaveBeenCalled();
+      expect(answerCallbackQueryMock).not.toHaveBeenCalled();
+      expect(query).not.toHaveBeenCalled();
+    },
+  );
+
+  it("без заголовка секрету: 401 і видачі немає", async () => {
+    const res = await request(makeApp(vi.fn()))
+      .post("/api/telegram/webhook")
+      .send(grantUpdate("mp:grant:17"));
+
+    expect(res.status).toBe(401);
+    expect(grantManualAccessMock).not.toHaveBeenCalled();
+  });
+
+  it("збій БД під час видачі: 500, щоб Telegram повторив", async () => {
+    grantManualAccessMock.mockRejectedValueOnce(new Error("db down"));
+    const res = await post(vi.fn(), grantUpdate("mp:grant:17"));
+
+    expect(res.status).toBe(500);
+    expect(answerCallbackQueryMock).not.toHaveBeenCalled();
   });
 });

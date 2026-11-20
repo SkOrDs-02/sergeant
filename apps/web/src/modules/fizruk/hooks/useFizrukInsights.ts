@@ -18,6 +18,7 @@ import { useMemo } from "react";
 import { useWorkouts } from "./useWorkouts";
 import { useActiveFizrukWorkout } from "@shared/hooks/useActiveFizrukWorkout";
 import { usePrPendingInsight } from "./usePrPendingInsight";
+import { useInjuries } from "./useInjuries";
 import { useRestDayOverdueInsight } from "./useRestDayOverdueInsight";
 import type { Insight } from "@shared/lib/insights/types";
 
@@ -28,10 +29,13 @@ export function useFizrukInsights(): Insight[] {
   const { workouts, loaded } = useWorkouts();
   const activeWorkoutId = useActiveFizrukWorkout();
 
+  const { all: injuryMarks } = useInjuries();
+
   const prPendingInsight = usePrPendingInsight({
     workouts,
     loaded,
     activeWorkoutId,
+    injuryMarks,
   });
 
   const restDayInsight = useRestDayOverdueInsight(workouts, loaded);

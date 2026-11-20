@@ -3,6 +3,11 @@
  * Status: Active
  */
 import type { Workout, WorkoutItem } from "@sergeant/fizruk-domain";
+import {
+  formatProgramExercisePlan,
+  programPlanForWorkoutItem,
+} from "@sergeant/fizruk-domain";
+import { findExerciseById } from "@sergeant/fizruk-domain/data";
 import { Input } from "@shared/components/ui/Input";
 import { clampNumericInput } from "@shared/lib/format/numberInput";
 import { messages } from "@shared/i18n/uk";
@@ -59,6 +64,13 @@ export function WorkoutItemCardioFields({
   );
 
   if (it.type === "time") {
+    // Утримання з програми: план «3×20–40 с», а поле одне на всю вправу —
+    // секунд на підхід модель поки не має (спека типу виміру вправи).
+    const plan = programPlanForWorkoutItem(
+      activeWorkout.programRef,
+      it.exerciseId ? findExerciseById(it.exerciseId) : null,
+    );
+    const timedPlan = plan?.kind === "time" ? plan : null;
     return (
       <div className="mt-2 space-y-1.5">
         <div className="grid grid-cols-2 gap-2">
@@ -66,7 +78,9 @@ export function WorkoutItemCardioFields({
           <div className="h-12" aria-hidden />
         </div>
         <div className="text-style-caption text-subtle">
-          {ss.cardioTimeHint}
+          {timedPlan
+            ? `${ss.timedPlanPrefix} ${formatProgramExercisePlan(timedPlan)}, ${ss.timedPlanTotalHint}`
+            : ss.cardioTimeHint}
         </div>
       </div>
     );

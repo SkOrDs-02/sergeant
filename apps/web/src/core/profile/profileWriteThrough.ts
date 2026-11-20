@@ -66,6 +66,8 @@ import {
 import {
   MEMORY_BANK_META_EPOCH,
   isMemoryBankForeign,
+  isMemoryBankReady,
+  whenMemoryBankReady,
   normalizeMemoryEntry,
   readMemoryBankMeta,
   readMemoryEntries,
@@ -173,12 +175,20 @@ function fitMemoryBankPayload(
  * надішле чужі факти під сесією поточної людини.
  */
 function readMemoryBankUpdatedAtForWire(): string {
-  return isMemoryBankForeign()
+  return isMemoryBankForeign() || !isMemoryBankReady()
     ? MEMORY_BANK_META_EPOCH
     : readMemoryBankMeta().updatedAt;
 }
 
+/**
+ * B24: поки шифрований банк не розібрано, локальні записи не відображають
+ * сховище (порожньо при свіжій мітці). Тоді, як і для чужого банку, на
+ * дріт їде порожній список з EPOCH: сервер не прийме його як новіший.
+ */
 function readMemoryBankForWire(): MemoryBankWirePayload {
+  if (!isMemoryBankReady()) {
+    return { entries: [], updatedAt: MEMORY_BANK_META_EPOCH };
+  }
   return {
     entries: readMemoryEntries(),
     updatedAt: readMemoryBankUpdatedAtForWire(),
@@ -494,6 +504,13 @@ export async function reconcileMemoryBankWithServerProfile(
   // Defensive, same rationale as `reconcileBiometricsWithServerProfile`'s
   // own stamp: keeps this function correct in isolation.
   setMemoryBankOwner(currentUserId);
+
+  // B24: звіряти можна лише розібраний банк. Порожній список до розшифровки
+  // виглядав би як «свіжий пристрій»: локальні факти перезаписались би
+  // серверними або на сервер пішла б порожнеча. Ключ недоступний — звіримо
+  // наступного разу; чужий банк тим часом лишається схованим
+  // (`readMemoryEntries` його не віддає).
+  if (!(await whenMemoryBankReady())) return;
 
   // priv-02: банк іншого акаунта (сесія попередника закінчилась без «Вийти»)
   // — спершу скинути локальну копію до серверної (або порожньої), і лише

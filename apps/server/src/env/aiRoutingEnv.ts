@@ -20,17 +20,213 @@ const stringWithDefault = (defaultValue: string) =>
     .optional()
     .transform((v) => v ?? defaultValue);
 
+/** Дефолт текстових непотокових шляхів шлюзу (рішення власника 2026-11-19). */
+const TEXT_PIPELINE_MODEL = "google/gemini-3.5-flash-lite";
+
 const llmProviderEnum = (d: "anthropic" | "openrouter" | "stub") =>
   z.enum(["anthropic", "openrouter", "stub"]).default(d);
+
+/**
+ * Допустима глибина міркувань першого ходу чату.
+ *
+ * Це `REASONING_EFFORTS` з `lib/llm/provider.ts` БЕЗ `minimal`. Перший хід
+ * ходить на Anthropic-сумісний `/api/v1/messages` шлюзу, а там глибину задають
+ * `output_config.effort` (`low | medium | high | xhigh | max`) і
+ * `thinking: { type: "disabled" }` для `none`; значення `minimal` цей
+ * ендпоінт не приймає взагалі. Перелік тут, а не імпортом із `provider.ts`:
+ * той модуль читає `env`, і імпорт звідси дав би цикл. Розходження двох
+ * переліків стереже `chatReasoning.test.ts`.
+ */
+export const CHAT_FIRST_TURN_REASONING_EFFORTS = [
+  "none",
+  "low",
+  "medium",
+  "high",
+  "xhigh",
+] as const;
+
+export type ChatFirstTurnReasoningEffort =
+  (typeof CHAT_FIRST_TURN_REASONING_EFFORTS)[number];
+
+/**
+ * Глибина першого ходу, коли змінна не задана. Один експорт на прод і стенди
+ * (`tool-selection-eval.ts`, `stream-check.ts`): без `--reasoning` вони міряють
+ * рівно те, що йде в прод.
+ */
+export const CHAT_FIRST_TURN_REASONING_EFFORT_DEFAULT: ChatFirstTurnReasoningEffort =
+  "low";
+
+/**
+ * Глибина туру синтезу на тирі Premium: `default` (поля немає, глибину
+ * ставить шлюз) плюс ті самі значення, що в першого ходу, і та сама форма
+ * поля для `/messages` (`chatReasoning.ts`).
+ */
+export const CHAT_SYNTHESIS_PREMIUM_REASONING_EFFORTS = [
+  "default",
+  ...CHAT_FIRST_TURN_REASONING_EFFORTS,
+] as const;
+
+export type ChatSynthesisPremiumReasoningEffort =
+  (typeof CHAT_SYNTHESIS_PREMIUM_REASONING_EFFORTS)[number];
+
+/**
+ * `default`, а не `none`, за доперевіркою 2026-11-19 на прод-розмірі входу
+ * (близько 10k токенів, `scripts/eval/pipelines.synthesisProd.ts`): з `none`
+ * `z-ai/glm-5.2` на пастці «розбіжність у сумах» давала хибні числа в 3 з 10
+ * відповідей (у режимі «як зараз» 0 з 10), хоч і вдвічі швидше й на 40 %
+ * дешевше (`docs/work/research/2026-11-19-openrouter-new-models.md` § 6.4).
+ */
+export const CHAT_SYNTHESIS_PREMIUM_REASONING_EFFORT_DEFAULT: ChatSynthesisPremiumReasoningEffort =
+  "default";
+
+/**
+ * Чи дозволено шлюзу OpenRouter обирати постачальників, які зберігають
+ * запити (і можуть на них тренуватись). Значення поля
+ * `provider.data_collection` у тілі запиту; як саме воно стає полем —
+ * `lib/llm/openrouterDataPolicy.ts`.
+ */
+export const OPENROUTER_DATA_COLLECTION_MODES = ["deny", "allow"] as const;
+
+export type OpenRouterDataCollection =
+  (typeof OPENROUTER_DATA_COLLECTION_MODES)[number];
+
+/**
+ * Нижня межа квантизації постачальників у OpenRouter: `fp8` — лише
+ * ендпойнти від 8 біт (поле `provider.quantizations`), `off` — без фільтра.
+ * Як значення стає полем — `lib/llm/openrouterDataPolicy.ts`.
+ */
+export const OPENROUTER_QUANTIZATION_FLOORS = ["fp8", "off"] as const;
+
+export type OpenRouterQuantizationFloor =
+  (typeof OPENROUTER_QUANTIZATION_FLOORS)[number];
+
+/**
+ * Постачальники OpenRouter, яких обходимо, коли змінна не задана.
+ *
+ * Рішення власника 2026-11-19 за заміром
+ * `docs/work/research/2026-11-19-openrouter-new-models.md` § 6.4: під
+ * квантизацією від 8 біт `deepseek/deepseek-v4-flash` (синтез Free/standard)
+ * ішов на Baidu 100 %, а Baidu віддавав порожній текст із «салатом» у полі
+ * `reasoning` (16 із 42 на стенді, 4 із 5 стрімів синтезу через `/messages`).
+ * Без Baidu (`provider.ignore`) запити пішли на Fireworks: 39/42, порожня одна
+ * (це без стріму). У стрімі той самий Fireworks дав 9 порожніх із 30
+ * (`eval:stream --repeat=30`, 2026-11-19); їх закриває страховка-перезапит
+ * без міркувань (`CHAT_SYNTHESIS_EMPTY_RETRY`).
+ * Слаг звірено наживо в `GET /api/v1/models/deepseek/deepseek-v4-flash/endpoints`
+ * (`tag: "baidu/fp8"`; базовий слаг `baidu` за документацією шлюзу ловить
+ * усі варіанти й регіони постачальника).
+ */
+export const OPENROUTER_IGNORE_PROVIDERS_DEFAULT: readonly string[] = ["baidu"];
+
+/**
+ * Слаг постачальника OpenRouter: `provider[/variant][/region][/tier]`
+ * (`baidu`, `deepinfra/turbo`, `google-vertex/us-east5`), після нормалізації
+ * до нижнього регістру.
+ */
+const OPENROUTER_PROVIDER_SLUG_RE =
+  /^[a-z0-9][a-z0-9._-]*(?:\/[a-z0-9][a-z0-9._-]*)*$/;
 
 export const aiRoutingEnvShape = {
   OPENROUTER_API_KEY: stringWithDefault(""),
 
+  /**
+   * Заборона збереження даних у OpenRouter (рішення власника 2026-11-19: у
+   * запитах фінанси й дані про здоровʼя). Незадана або порожня — `deny`:
+   * кожен запит у шлюз несе `provider.data_collection=deny`, тобто шлюз бере
+   * лише постачальників, які дані не збирають. Обидва транспорти
+   * (`/api/v1/messages` і `/api/v1/chat/completions`) і стенди евалу.
+   *
+   * `allow` — аварійний відкат без релізу: поле `provider` не шлеться
+   * взагалі, шлюз знову обирає серед усіх постачальників моделі (поведінка до
+   * 2026-11-19). Знадобиться, якщо модель лишиться без жодного ендпойнта під
+   * `deny` (шлюз відповідає 404 «No endpoints found matching your data
+   * policy», у лозі `openrouter_data_policy_no_endpoints`).
+   *
+   * Регістр і пробіли не важливі; будь-що поза переліком валить старт.
+   * Прямого Anthropic, Groq і Voyage не стосується. Реєстр і умова зняття —
+   * `docs/engineering/architecture/feature-flags.md` § 3.1.
+   */
+  OPENROUTER_DATA_COLLECTION: z.preprocess(
+    (v) => (typeof v === "string" ? v.trim().toLowerCase() || undefined : v),
+    z.enum(OPENROUTER_DATA_COLLECTION_MODES).default("deny"),
+  ),
+
+  /**
+   * Квантизація постачальників не нижче 8 біт (рішення власника 2026-11-19:
+   * на `relace/fp4` `deepseek/deepseek-v4-flash` давав російську в 16 з 37
+   * відповідей, без 4-бітних — 0 з 79). Незадана або порожня — `fp8`: кожен
+   * запит у шлюз несе `provider.quantizations` зі списком від 8 біт плюс
+   * `unknown`. Обидва транспорти і стенди евалу.
+   *
+   * `off` — аварійний відкат без релізу: прибирає ЛИШЕ поле `quantizations`;
+   * `data_collection` від нього не залежить (його відкат —
+   * `OPENROUTER_DATA_COLLECTION`). Знадобиться, якщо модель лишиться без
+   * жодного ендпойнта від 8 біт (шлюз відповідає 404 «No endpoints found for
+   * the request with quantization», у лозі
+   * `openrouter_data_policy_no_endpoints` з `reason: "quantization"`).
+   *
+   * Регістр і пробіли не важливі; будь-що поза переліком валить старт.
+   * Прямого Anthropic, Groq і Voyage не стосується. Реєстр і умова зняття —
+   * `docs/engineering/architecture/feature-flags.md` § 3.1.
+   */
+  OPENROUTER_QUANTIZATION_FLOOR: z.preprocess(
+    (v) => (typeof v === "string" ? v.trim().toLowerCase() || undefined : v),
+    z.enum(OPENROUTER_QUANTIZATION_FLOORS).default("fp8"),
+  ),
+
+  /**
+   * Постачальники, яких шлюз OpenRouter обходить для кожного запиту (поле
+   * `provider.ignore`). Незадана — `baidu`
+   * (`OPENROUTER_IGNORE_PROVIDERS_DEFAULT`, рішення власника 2026-11-19).
+   * Значення — слаги постачальників через кому; регістр і пробіли не
+   * важливі, дублікати зникають. Обидва транспорти, Jev і стенди евалу; явний
+   * `ignore` стенду (`eval:models --provider-prefs`) перемагає цей список.
+   *
+   * Порожнє значення (`OPENROUTER_IGNORE_PROVIDERS=`) — аварійний відкат без
+   * релізу: поля `ignore` немає, решта `provider` не змінюється. Знадобиться,
+   * якщо модель лишиться без постачальника (шлюз відповідає 404 «All
+   * providers have been ignored», у лозі `openrouter_data_policy_no_endpoints`
+   * з `reason: "ignored"`). Будь-що, крім слагів через кому, валить старт.
+   * Реєстр і умова зняття — `docs/engineering/architecture/feature-flags.md` § 3.1.
+   */
+  OPENROUTER_IGNORE_PROVIDERS: z
+    .string()
+    .optional()
+    .transform((v, ctx) => {
+      if (v === undefined) return [...OPENROUTER_IGNORE_PROVIDERS_DEFAULT];
+      const slugs = v
+        .split(",")
+        .map((s) => s.trim().toLowerCase())
+        .filter((s) => s.length > 0);
+      const bad = slugs.filter((s) => !OPENROUTER_PROVIDER_SLUG_RE.test(s));
+      if (bad.length > 0) {
+        ctx.addIssue({
+          code: "custom",
+          message: `OPENROUTER_IGNORE_PROVIDERS: not a provider slug: ${bad.join(", ")} (expected comma-separated slugs like "baidu,deepinfra/turbo", or empty to disable)`,
+        });
+        return z.NEVER;
+      }
+      return [...new Set(slugs)];
+    }),
+
   /** Глобальний override id; порожній — шлях бере власну змінну нижче. */
   OPENROUTER_MODEL: stringWithDefault(""),
 
-  OPENROUTER_READONLY_MODEL: stringWithDefault("google/gemini-2.5-flash-lite"),
-  OPENROUTER_DIGEST_MODEL: stringWithDefault("google/gemini-2.5-flash-lite"),
+  /**
+   * Текстові непотокові шляхи: категоризація (`READONLY`), дайджест, Mono і
+   * текстова нутриція (`NUTRITION`: день, тиждень, список покупок, рецепти,
+   * розбір комори). `google/gemini-3.5-flash-lite` з 2026-11-19 (рішення
+   * власника за заміром `docs/work/research/2026-11-19-openrouter-new-models.md`
+   * § 6.4: 71/75 проти 51/57 і 18 відмов 429 з 75 у `gemini-2.5-flash-lite`,
+   * швидкість та сама, дорожче у 3–5 разів). Міркування в неї обовʼязкові
+   * (каталожний дефолт `minimal`), тож шляхи не шлють `reasoning`; запас
+   * `max_tokens` звірено живим прогоном того ж дня. Відкат без релізу:
+   * задати змінну назад `google/gemini-2.5-flash-lite`. Зір, чеки й імпорт
+   * виписок (`OPENROUTER_VISION_MODEL`, `OPENROUTER_RECEIPT_MODEL`) лишились
+   * на 2.5: на фото 3.5 гірша.
+   */
+  OPENROUTER_READONLY_MODEL: stringWithDefault(TEXT_PIPELINE_MODEL),
+  OPENROUTER_DIGEST_MODEL: stringWithDefault(TEXT_PIPELINE_MODEL),
   /**
    * `anthropic/claude-sonnet-4.6`, НЕ `openai/gpt-5.1` (стояло тут до
    * 2026-08-25 — B37). Це другий source of truth для тієї самої моделі:
@@ -54,14 +250,16 @@ export const aiRoutingEnvShape = {
    * gemini-flash-lite, не gpt-5.1.
    */
   OPENROUTER_COACH_MODEL: stringWithDefault("anthropic/claude-sonnet-4.6"),
-  OPENROUTER_NUTRITION_MODEL: stringWithDefault("google/gemini-2.5-flash-lite"),
-  OPENROUTER_MONO_MODEL: stringWithDefault("google/gemini-2.5-flash-lite"),
+  OPENROUTER_NUTRITION_MODEL: stringWithDefault(TEXT_PIPELINE_MODEL),
+  OPENROUTER_MONO_MODEL: stringWithDefault(TEXT_PIPELINE_MODEL),
 
   /**
    * `POST /api/finyk/receipts/analyze` (чек-скан v1, vision-fallback без
-   * QR — `docs/work/specs/receipt-scan.md`). Той самий
-   * Flash-Lite, що вже дефолт для nutrition/mono — 10/10 на пастках
-   * зорового стенду за копійки/чек (спека § Вартість).
+   * QR — `docs/work/specs/receipt-scan.md`) і імпорт скриншотів виписок.
+   * `gemini-2.5-flash-lite`, як і зір нутриції — 10/10 на пастках зорового
+   * стенду за копійки/чек (спека § Вартість). Текстові шляхи 2026-11-19
+   * перейшли на 3.5, цей лишився: на фото 3.5 гірша, а чеки й виписки
+   * зоровим стендом не покриті.
    */
   OPENROUTER_RECEIPT_MODEL: stringWithDefault("google/gemini-2.5-flash-lite"),
 
@@ -72,6 +270,76 @@ export const aiRoutingEnvShape = {
    * дали 7/10: не читають обʼєм з етикетки й недораховують порцію.
    */
   OPENROUTER_VISION_MODEL: stringWithDefault("google/gemini-2.5-flash-lite"),
+
+  /**
+   * Глибина міркувань ПЕРШОГО ходу `/api/chat` (JSON і стрім), лише через
+   * шлюз OpenRouter. Незадана або порожня — `low`
+   * (`CHAT_FIRST_TURN_REASONING_EFFORT_DEFAULT`, рішення founder-а 2026-11-18
+   * після заміру: на `gemini-3.7-flash` та сама правильність вибору
+   * інструмента, нуль вигаданих id, медіана ~2,8 с проти ~3,5 с; спека
+   * `hubchat-first-turn-stream.md` § Замір 2026-11-18).
+   *
+   * Повернення без релізу: `CHAT_FIRST_TURN_REASONING_EFFORT=medium` — це
+   * дефолт шлюзу для `google/gemini-3.7-flash` за `GET /api/v1/models`
+   * (2026-11-18), тобто поведінка до цього рішення. Інша модель першого ходу
+   * може мати інший дефолт шлюзу: звір його в тому ж каталозі.
+   *
+   * Регістр і пробіли не важливі; будь-що поза переліком валить старт. Тур
+   * синтезу, коуч і дайджест її не читають; на прямому Anthropic поле не йде.
+   * Як значення стає полем запиту — `modules/chat/chatReasoning.ts`.
+   * Реєстр і умова зняття — `docs/engineering/architecture/feature-flags.md` § 3.1.
+   */
+  CHAT_FIRST_TURN_REASONING_EFFORT: z.preprocess(
+    (v) => (typeof v === "string" ? v.trim().toLowerCase() || undefined : v),
+    z
+      .enum(CHAT_FIRST_TURN_REASONING_EFFORTS)
+      .default(CHAT_FIRST_TURN_REASONING_EFFORT_DEFAULT),
+  ),
+
+  /**
+   * Глибина міркувань ТУРУ СИНТЕЗУ `/api/chat` (після результатів
+   * інструментів) лише на тирі Premium (`CHAT_MODEL_SYNTHESIS`, за
+   * замовчуванням `z-ai/glm-5.2`) і лише через шлюз OpenRouter. Тир standard
+   * (Free, `deepseek-v4-flash`) і floor її не читають: на стенді `none` там
+   * гірша (33/42 проти 39/42, дослідження 2026-11-19 § 6.4).
+   *
+   * Незадана або порожня — `default`: поля глибини немає, шлюз ставить свій
+   * дефолт (поведінка до 2026-11-19). Рішення власника того ж дня вимкнути
+   * міркування стояло за умовою доперевірки на прод-розмірі входу; вона
+   * показала втрату чисел, тож `none` лишився перемикачем, а не дефолтом
+   * (`CHAT_SYNTHESIS_PREMIUM_REASONING_EFFORT_DEFAULT`).
+   *
+   * `none` — без міркувань (`thinking: {type: "disabled"}`): перший токен
+   * удвічі швидше, виклик на 40 % дешевший, відповіді коротші. Регістр і
+   * пробіли не важливі; будь-що поза переліком валить старт. Як значення
+   * стає полем — `modules/chat/chatReasoning.ts`. Реєстр і умова зняття —
+   * `docs/engineering/architecture/feature-flags.md` § 3.1.
+   */
+  CHAT_SYNTHESIS_PREMIUM_REASONING_EFFORT: z.preprocess(
+    (v) => (typeof v === "string" ? v.trim().toLowerCase() || undefined : v),
+    z
+      .enum(CHAT_SYNTHESIS_PREMIUM_REASONING_EFFORTS)
+      .default(CHAT_SYNTHESIS_PREMIUM_REASONING_EFFORT_DEFAULT),
+  ),
+
+  /**
+   * Страховка-перезапит порожнього ТУРУ СИНТЕЗУ `/api/chat` у стрімі, лише
+   * через шлюз (рішення власника 2026-11-19). Незадана або порожня — `on`:
+   * стрім синтезу закрився успішно без жодного символу тексту → сервер рівно
+   * один раз перепитує той самий payload з `thinking: {type: "disabled"}` у
+   * ту саму SSE-відповідь (`modules/chat/chatStreamEmptyRetry.ts`). Будь-яка
+   * модель синтезу на шлюзі, будь-який тир.
+   *
+   * `off` — аварійний відкат без релізу: порожня відповідь знову одразу дає
+   * людині загальну помилку і повертає квоту (поведінка до 2026-11-19).
+   * Регістр і пробіли не важливі; будь-що поза переліком валить старт.
+   * Перший хід, JSON-синтез і прямий Anthropic її не читають. Реєстр і умова
+   * зняття — `docs/engineering/architecture/feature-flags.md` § 3.1.
+   */
+  CHAT_SYNTHESIS_EMPTY_RETRY: z.preprocess(
+    (v) => (typeof v === "string" ? v.trim().toLowerCase() || undefined : v),
+    z.enum(["on", "off"]).default("on"),
+  ),
 
   LLM_PROVIDER: llmProviderEnum("anthropic"),
   LLM_READONLY_PROVIDER: llmProviderEnum("openrouter"),

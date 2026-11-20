@@ -10,6 +10,7 @@ import {
   routineHabitOrder,
   routineCompletionNotes,
   routineCompletionEvents,
+  routineHabitCounts,
 } from "../pg/routine.js";
 
 /**
@@ -180,6 +181,9 @@ describe("pg/routineHabits schema snapshot", () => {
       "weekdays",
       "pause_intervals",
       "weekly_target_history",
+      "count_target",
+      "count_unit",
+      "auto_mark_source",
       "created_at",
       "updated_at",
       "deleted_at",
@@ -367,5 +371,45 @@ describe("pg/routineCompletionEvents schema snapshot", () => {
       "routine_completion_events_user_habit_date_idx",
       "routine_completion_events_user_occurred_idx",
     ]);
+  });
+});
+
+/**
+ * `routine_habit_counts` — кроки лічильника звички за день (Р-1 (а),
+ * міграція 170).
+ */
+describe("pg/routineHabitCounts schema snapshot", () => {
+  const cfg = getTableConfig(routineHabitCounts);
+
+  it("has the canonical table name and columns in migration order", () => {
+    expect(cfg.name).toBe("routine_habit_counts");
+    expect(cfg.columns.map((c) => c.name)).toEqual([
+      "id",
+      "user_id",
+      "habit_id",
+      "date_key",
+      "count",
+      "updated_at",
+      "deleted_at",
+    ]);
+  });
+
+  it("is keyed by (user_id, id) with a (user_id, habit_id) index", () => {
+    expect(cfg.primaryKeys[0]!.columns.map((c) => c.name)).toEqual([
+      "user_id",
+      "id",
+    ]);
+    const idx = cfg.indexes.find(
+      (i) => i.config.name === "routine_habit_counts_user_habit_idx",
+    );
+    expect(idx).toBeDefined();
+    expect(idx!.config.where).toBeUndefined();
+  });
+
+  it("count is NOT NULL integer without default", () => {
+    const count = cfg.columns.find((c) => c.name === "count")!;
+    expect(count.notNull).toBe(true);
+    expect(count.hasDefault).toBe(false);
+    expect(count.columnType).toBe("PgInteger");
   });
 });

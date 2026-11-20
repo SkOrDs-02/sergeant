@@ -8,7 +8,19 @@
  *      transitions into `waiting` even if the user never navigates. The
  *      existing `vite-plugin-pwa` `registerSW({ onNeedRefresh })` wiring
  *      (in `main.tsx`) then dispatches the `pwa-update-ready` custom event
- *      and the `useSWUpdate` toast appears as usual.
+ *      and the `useSWUpdate` toast appears as usual. The same check also
+ *      runs when the tab comes back to the foreground (throttled by
+ *      `resumeUpdateCheckMinGapMs`, 1 min default).
+ *
+ *      AI-CONTEXT (фідбек власника 2026-11-19): встановлена PWA на iOS
+ *      лишалась на збірці до #1701 щонайменше пів доби після деплою —
+ *      на телефоні «у. о.» і старі екрани Фізрука, хоча прод уже віддавав
+ *      нове. iOS заморожує таймери застосунку у фоні, а PWA там здебільшого
+ *      РОЗГОРТАЮТЬ, а не відкривають наново, тож навігації, на якій браузер
+ *      сам перевірив би `sw.js`, немає. Інтервал у 30 хв при коротких
+ *      сесіях міг не спрацювати жодного разу, а повернення з фону лише
+ *      питало, чи вже є `waiting`, не шукаючи його. Тепер повернення саме
+ *      запускає `registration.update()`.
  *
  *   2. **Idle auto-skipWaiting** — when the tab becomes visible after
  *      sitting in the background for more than `idleSkipWaitingMs`
@@ -56,6 +68,12 @@ declare global {
 export interface AutoUpdateOptions {
   /** Period for `registration.update()` polling. Default: 30 minutes. */
   updateIntervalMs?: number;
+  /**
+   * Мінімальний проміжок між перевірками оновлення, які запускає повернення
+   * вкладки з фону (`visibilitychange` → `visible`). Default: 1 хвилина;
+   * `0` вимикає перевірку на поверненні.
+   */
+  resumeUpdateCheckMinGapMs?: number;
   /**
    * Minimum hidden duration before a visibility-change triggers
    * skip-waiting on a `waiting` SW. Default: 5 minutes.
@@ -114,6 +132,7 @@ export interface AutoUpdateController {
 }
 
 const DEFAULT_UPDATE_INTERVAL_MS = 30 * 60 * 1000;
+const DEFAULT_RESUME_UPDATE_CHECK_MIN_GAP_MS = 60 * 1000;
 const DEFAULT_IDLE_SKIP_WAITING_MS = 5 * 60 * 1000;
 const DEFAULT_BUILD_ID_MISMATCH_MS = 60 * 60 * 1000;
 
@@ -188,6 +207,8 @@ export function setupAutoUpdate(
   const uninstallInputTracker = installTypedInputTracker(doc);
 
   const updateIntervalMs = opts.updateIntervalMs ?? DEFAULT_UPDATE_INTERVAL_MS;
+  const resumeUpdateCheckMinGapMs =
+    opts.resumeUpdateCheckMinGapMs ?? DEFAULT_RESUME_UPDATE_CHECK_MIN_GAP_MS;
   const idleSkipWaitingMs =
     opts.idleSkipWaitingMs ?? DEFAULT_IDLE_SKIP_WAITING_MS;
   const buildIdMismatchPromptMs =
@@ -245,11 +266,14 @@ export function setupAutoUpdate(
 
   // --- 1. Periodic update polling -------------------------------------
   let intervalHandle: ReturnType<typeof setInterval> | null = null;
+  // Стартова перевірка (`tickUpdate()` наприкінці) теж рахується.
+  let lastUpdateCheckAt = now();
   const tickUpdate = async () => {
     if (nav.connection?.saveData) {
       debug("periodic update skipped (saveData)");
       return;
     }
+    lastUpdateCheckAt = now();
     try {
       const reg = await getRegistration(nav);
       if (reg) await reg.update();
@@ -274,6 +298,14 @@ export function setupAutoUpdate(
       return;
     }
     // visibilityState === "visible"
+    // Повернення з фону — сама нагода пошукати нову версію (див. шапку,
+    // шар 1): на iOS таймер інтервалу у фоні не біжить.
+    if (
+      resumeUpdateCheckMinGapMs > 0 &&
+      now() - lastUpdateCheckAt >= resumeUpdateCheckMinGapMs
+    ) {
+      void tickUpdate();
+    }
     const startedHiddenAt = hiddenSince;
     hiddenSince = null;
     if (startedHiddenAt == null) return;

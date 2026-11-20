@@ -11,6 +11,7 @@ import {
   withManualExpenses,
 } from "@sergeant/finyk-domain/domain/transactions";
 import { buildFinykExcludedTxIds } from "@sergeant/finyk-domain/utils";
+import { assetTransferTxIds } from "@sergeant/finyk-domain/domain/assets";
 import { withMerchantRuleOverrides } from "@sergeant/finyk-domain/lib/merchantRuleOverrides";
 import { buildMerchantRuleIndex } from "@sergeant/finyk-domain/lib/merchantRules";
 
@@ -55,6 +56,7 @@ export function useFinykStatTransactions() {
           excludedStatTxIds: slots.excludedStatTxIds,
           transactions: mergedTransactions,
           cashOnHand: slots.cashOnHand,
+          assetTransferTxIds: assetTransferTxIds(slots.manualAssets),
         }),
       ),
     [
@@ -64,6 +66,7 @@ export function useFinykStatTransactions() {
       slots.receivables,
       slots.excludedStatTxIds,
       slots.cashOnHand,
+      slots.manualAssets,
     ],
   );
   // Правила «Завжди так для цього магазину» (2026-10-01): споживачі цього

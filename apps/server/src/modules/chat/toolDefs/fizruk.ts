@@ -4,7 +4,7 @@ export const FIZRUK_TOOLS: AnthropicTool[] = [
   {
     name: "plan_workout",
     description:
-      "Створити (запланувати) тренування у Фізруку на сьогодні або вказану дату/час. Можна додати список вправ із підходами/повтореннями/вагою.",
+      "Створити (запланувати) тренування у Фізруку на сьогодні або вказану дату/час. Можна додати список вправ із кількістю підходів і вагою; повторення в план не записуються, підхід зараховується, коли його зроблять.",
     input_schema: {
       type: "object",
       properties: {
@@ -25,14 +25,30 @@ export const FIZRUK_TOOLS: AnthropicTool[] = [
         exercises: {
           type: "array",
           description:
-            "Список вправ. Кожна вправа: name (обовʼязково), sets, reps, weight (опційно).",
+            "Список вправ. Кожна вправа: name (обовʼязково), sets, weight, seconds (опційно).",
           items: {
             type: "object",
             properties: {
               name: { type: "string", description: "Назва вправи" },
               sets: { type: "number", description: "Кількість підходів" },
-              reps: { type: "number", description: "Повторень у підході" },
+              // `reps` лишається в схемі заради сумісності виконавця і
+              // `toolParity`, але `planWorkout` його не зберігає (`reps: 0`
+              // у рядках плану). Опис каже правду, щоб модель не обіцяла
+              // людині «3×10 записано».
+              reps: {
+                type: "number",
+                description:
+                  "Повторень у підході. У план не записуються, лише для розмови",
+              },
               weight: { type: "number", description: "Вага в кг" },
+              // Як і `reps`, у рядки плану не пишеться: рядок із секундами
+              // вже зарахований підхід. Секунди лише ставлять вправі тип
+              // «на час» (спека `fizruk-exercise-measure-type.md`, зріз 7).
+              seconds: {
+                type: "number",
+                description:
+                  "Секунд у підході для вправи на час (планка). У план не записуються, лише ставлять вправі тип на час",
+              },
             },
             required: ["name"],
           },
@@ -43,8 +59,13 @@ export const FIZRUK_TOOLS: AnthropicTool[] = [
   {
     name: "log_set",
     description:
-      "Додати підхід (set) до тренування у Фізрук. Використовуй коли користувач каже 'я зробив X повторень Y кг жиму/присіду' тощо. Якщо зараз є активне тренування — додає підхід до відповідної вправи; інакше — створює нове тренування на сьогодні й додає туди.",
-    strict: true,
+      "Додати підхід (set) до тренування у Фізрук. Використовуй коли користувач каже 'я зробив X повторень Y кг жиму/присіду', 'простояв у планці 60 секунд', 'пробіг 400 метрів' тощо. Потрібне хоч одне з reps, duration_sec, distance_m. Якщо зараз є активне тренування — додає підхід до відповідної вправи; інакше — створює нове тренування на сьогодні й додає туди.",
+    // AI-CONTEXT (2026-11-18, тип виміру вправи, зріз 7): `strict` знято.
+    // З необовʼязковими `reps` / `duration_sec` / `distance_m` tool давав 5
+    // optional-параметрів, і сума по strict-tools виходила 28 при бюджеті
+    // граматики 25 (`strict-normalize.test.ts`). Підіймати бюджет без
+    // заміру не стали; типи й «хоч одне з трьох» перевіряє виконавець
+    // (`logSet` у вебі, `Number(...)` на кожному полі).
     input_schema: {
       type: "object",
       properties: {
@@ -57,12 +78,25 @@ export const FIZRUK_TOOLS: AnthropicTool[] = [
           description: "Вага в кг (0 — якщо власна вага)",
         },
         reps: { type: "number", description: "Кількість повторень у підході" },
+        duration_sec: {
+          type: "number",
+          description:
+            "Тривалість одного підходу в секундах (планка, вис, переноска; хвилини переведи в секунди)",
+        },
+        distance_m: {
+          type: "number",
+          description:
+            "Дистанція одного підходу в метрах (біг, веслування; кілометри переведи в метри)",
+        },
         sets: {
           type: "number",
           description: "Скільки однакових підходів додати (опційно, default 1)",
         },
       },
-      required: ["exercise_name", "reps"],
+      // `reps` більше не обовʼязкове: підхід може бути на час чи дистанцію.
+      // «Хоч одне з трьох» схема strict не виражає, тож це перевіряє
+      // виконавець (`logSet`, веб).
+      required: ["exercise_name"],
     },
   },
   {
@@ -125,36 +159,6 @@ export const FIZRUK_TOOLS: AnthropicTool[] = [
         calf_l_cm: { type: "number", description: "Литка лівий см" },
         calf_r_cm: { type: "number", description: "Литка правий см" },
       },
-    },
-  },
-  {
-    name: "add_program_day",
-    description:
-      "Додати/оновити день тижневого шаблону програми тренувань (fizruk_plan_template_v1). weekday: 0=неділя..6=субота. Ідемпотентно: перезаписує день за weekday.",
-    input_schema: {
-      type: "object",
-      properties: {
-        weekday: {
-          type: "number",
-          description: "День тижня 0-6 (0=нд, 1=пн, …, 6=сб)",
-        },
-        name: { type: "string", description: "Назва тренування дня" },
-        exercises: {
-          type: "array",
-          description: "Список вправ для дня",
-          items: {
-            type: "object",
-            properties: {
-              name: { type: "string", description: "Назва вправи" },
-              sets: { type: "number", description: "Кількість підходів" },
-              reps: { type: "number", description: "Повторень" },
-              weight: { type: "number", description: "Вага кг" },
-            },
-            required: ["name"],
-          },
-        },
-      },
-      required: ["weekday", "name"],
     },
   },
   {

@@ -11,15 +11,18 @@ import {
   decryptAndLazyReencrypt,
   type MonoTokenRow,
 } from "./tokenStore.js";
+import {
+  MONO_STATEMENT_PAGE_SIZE,
+  monoHistoryWindows,
+  nextStatementPageTo,
+} from "./statementWindows.js";
 
 interface AuthedRequest extends Request {
   user?: { id: string };
 }
 
-const BACKFILL_DAYS = 31;
 const PACING_MS = 60_000;
 const MAX_PAGES = 20;
-const PAGE_SIZE = 500;
 
 type Sleeper = (ms: number) => Promise<void>;
 const defaultSleep: Sleeper = (ms) => new Promise((r) => setTimeout(r, ms));
@@ -257,46 +260,64 @@ async function backfillAccount(
   userId: string,
   accountId: string,
 ): Promise<number> {
-  const now = Math.floor(Date.now() / 1000);
-  const from = now - BACKFILL_DAYS * 24 * 60 * 60;
-  let pageTo = now;
   let totalInserted = 0;
+  let requests = 0;
 
-  for (let page = 0; page < MAX_PAGES; page++) {
-    if (page > 0) {
-      await _sleep(PACING_MS);
+  // Три вікна по 31 дню (OD-26 Ф-3 (а)), найновіше першим; усередині вікна
+  // сторінки теж ідуть від нових до старих. Помилка кидається нагору і
+  // зупиняє рахунок, тож покриття лишається суцільним від «зараз» назад, а
+  // повторний запуск дотягує решту (upsert за `mono_tx_id`, без дублів).
+  for (const window of monoHistoryWindows(Math.floor(Date.now() / 1000))) {
+    let pageTo = window.to;
+    // Межа сторінки включна, тож операції на ній приходять двічі: рахуємо
+    // кожну один раз, щоб лічильник прогресу не брехав.
+    const seen = new Set<string>();
+    for (let page = 0; page < MAX_PAGES; page++) {
+      // Ліміт Monobank: один запит виписки на 60 с на токен. Пауза стоїть
+      // перед кожним запитом рахунку, крім першого (між рахунками пауза
+      // окрема, у циклі обробника).
+      if (requests > 0) {
+        await _sleep(PACING_MS);
+      }
+      requests++;
+
+      const rows = await fetchStatementPage(
+        token,
+        accountId,
+        window.from,
+        pageTo,
+      );
+      if (rows.length === 0) break;
+
+      for (const tx of rows) {
+        if (seen.has(tx.id)) continue;
+        seen.add(tx.id);
+        await upsertTransaction(userId, accountId, tx);
+        totalInserted++;
+        // Live counter: bump after every successful upsert so the UI bar
+        // animates smoothly even within a single account's pages.
+        const p = progressByUser.get(userId);
+        if (p) p.transactionsProcessed += 1;
+      }
+
+      if (rows.length < MONO_STATEMENT_PAGE_SIZE) break;
+      const nextTo = nextStatementPageTo(
+        rows.map((r) => r.time),
+        pageTo,
+        window.from,
+      );
+      if (nextTo === null) break;
+      pageTo = nextTo;
     }
-
-    const rows = await fetchStatementPage(token, accountId, from, pageTo);
-    if (rows.length === 0) break;
-
-    for (const tx of rows) {
-      await upsertTransaction(userId, accountId, tx);
-      totalInserted++;
-      // Live counter: bump after every successful upsert so the UI bar
-      // animates smoothly even within a single account's pages.
-      const p = progressByUser.get(userId);
-      if (p) p.transactionsProcessed += 1;
-    }
-
-    if (rows.length < PAGE_SIZE) break;
-
-    let oldest = Number.POSITIVE_INFINITY;
-    for (const r of rows) {
-      if (typeof r.time === "number" && r.time < oldest) oldest = r.time;
-    }
-    if (!Number.isFinite(oldest)) break;
-    const nextTo = oldest - 1;
-    if (nextTo <= from) break;
-    pageTo = nextTo;
   }
 
   return totalInserted;
 }
 
 /**
- * POST /api/mono/backfill — triggers re-backfill of last 31 days for all
- * stored accounts. Rate-limited: one concurrent backfill per user (in-memory guard).
+ * POST /api/mono/backfill — triggers re-backfill of the last three months
+ * (three 31-day statement windows, `statementWindows.ts`) for all stored
+ * accounts: ~3 min per account under the Monobank statement rate limit. Rate-limited: one concurrent backfill per user (in-memory guard).
  */
 export async function backfillHandler(
   req: Request,
@@ -352,7 +373,7 @@ export async function backfillHandler(
   });
 
   // Hard Rule #3: validate the synchronous "started" response shape against
-  // the SSOT before emitting. The 31-day statement pull then continues in
+  // the SSOT before emitting. The three-month statement pull then continues in
   // the background — clients poll `/api/mono/backfill-progress` (or the
   // legacy `sync-state.lastBackfillAt`) for completion.
   res.json(

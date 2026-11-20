@@ -4,6 +4,9 @@ import { MANUAL_INCOME_TAXONOMY } from "./lib/manualTaxonomy.js";
 // Транзакції з цією категорією НЕ рахуються у витратах і доходах.
 export const INTERNAL_TRANSFER_ID = "internal_transfer";
 
+/** Доходна категорія виплат із рахунків-активів (купон, відсотки). */
+export const ASSET_INCOME_CATEGORY_ID = "in_assets";
+
 // `accountId` операцій рахунку «Готівка на руках» (ADR-0076).
 export const CASH_ACCOUNT_ID = "cash_on_hand";
 
@@ -557,6 +560,9 @@ export const INCOME_CATEGORIES = [
   // keywords навмисно порожні: автокатегоризація за словами дала б хибні
   // спрацювання на «повернення боргу» (спека finyk-observations, PR-3).
   { id: "in_debt", label: "Борг", keywords: [] },
+  // Купони ОВДП і відсотки депозиту, привʼязані до рахунку-активу (спека
+  // finyk-savings-assets). Ставить писач привʼязки, не автокатегоризація.
+  { id: ASSET_INCOME_CATEGORY_ID, label: "Дохід з активів", keywords: [] },
   { id: "in_other", label: "Надходження", keywords: [] },
 ];
 

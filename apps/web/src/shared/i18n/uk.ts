@@ -25,6 +25,7 @@ import { finykRedesign } from "./uk.finykRedesign";
  */
 
 import { fizrukPageMessages } from "./uk.fizruk";
+import { fizrukSessionMessages } from "./uk.fizrukSession";
 import { finykPageMessages } from "./uk.finyk";
 import { routinePageMessages } from "./uk.routine";
 import { dataDisclosureMessages } from "./uk.dataDisclosure";
@@ -32,6 +33,7 @@ import { dataExportMessages } from "./uk.dataExport";
 import { nutritionPageMessages } from "./uk.nutrition";
 import { nutritionTdeeMessages } from "./uk.nutritionTdee";
 import { pricingMessages } from "./uk.pricing";
+import { publicStatusMessages } from "./uk.publicStatus";
 import { privacyMessages } from "./uk.privacy";
 import { crossModuleLinkMessages } from "./uk.crossModuleLink";
 import { sergeantMessages } from "./uk.sergeant";
@@ -421,6 +423,15 @@ export const messages = {
       /** Канон §6: борд бачить не лише рух угору. */
       staleBadge: "давно не робив",
       belowPeakPrefix: "зараз",
+      /**
+       * Підпис під головним числом рядка. Це оцінка ваги на один повтор
+       * (Еплі з найкращого підходу), а не вага, яку людина піднімала: без
+       * підпису «53 кг» поруч із «40 кг × 10» читалось як помилка (фідбек
+       * власника 2026-11-19).
+       */
+      oneRepCaption: "≈ на 1 раз",
+      /** Те саме число в режимі повернення: від нього рахується робоча вага. */
+      referenceCaption: "орієнтир",
     },
     /**
      * Шкала повернення — signature-view Фізрука (анти-слоп П1).
@@ -460,6 +471,7 @@ export const messages = {
     // 600-line module-size guardrail, Hard Rule #18) and are spread here so
     // call-sites keep referencing `messages.fizruk.<page>.<key>`.
     ...fizrukPageMessages,
+    ...fizrukSessionMessages,
   },
 
   nutrition: {
@@ -557,6 +569,13 @@ export const messages = {
   // в `uk.sergeant.ts` (той самий прецедент, що `uk.privacy.ts`).
   sergeant: sergeantMessages,
 
+  // Підказка встановлення на iPhone/iPad у вкладці Safari, коли людина вмикає
+  // нагадування (`IosInstallPushHint`, О-1): push там можливий лише з PWA.
+  iosInstallHint: {
+    title: "Встанови Sergeant на початковий екран",
+    body: "У Safari відкрий «Поділитися» й обери «На початковий екран». Нагадування працюють лише у встановленому застосунку.",
+  },
+
   // Крос-модульний звʼязок (`CrossModuleLinkCard`, P2 анти-слоп плану) —
   // копія в `uk.crossModuleLink.ts` (той самий прецедент, що `uk.privacy.ts`).
   crossModuleLink: crossModuleLinkMessages,
@@ -651,26 +670,7 @@ export const messages = {
   // Public status page (`/status`, PR-41). Анонімна health-сторінка; копія
   // має лишатись нейтральною (без module-accent persona-голосу), бо це
   // public-trust surface.
-  publicStatus: {
-    pageTitle: "Sergeant · Status",
-    pollNote: "Поточний стан компонентів. Оновлюється автоматично кожні",
-    pollNoteSuffix: "с.",
-    loading: "Завантаження стану сервісу…",
-    overallOperational: "Усі сервіси працюють",
-    overallDegraded: "Часткова деградація",
-    overallDown: "Серйозна проблема",
-    pillOperational: "Працює",
-    pillDegraded: "Деградація",
-    pillDown: "Не працює",
-    timestampPrefix: "оновлено",
-    componentsLabel: "Компоненти",
-    lastIncidentNone: "Інцидентів за останні 7 днів не зафіксовано.",
-    lastIncidentPrefix: "Останній інцидент:",
-    errorTitle: "Не вдалося завантажити статус",
-    errorRetry: "Спробувати ще",
-    errorFallback: "Не вдалося завантажити статус сервісу.",
-    errorHttpPrefix: "Сервер відповів HTTP",
-  },
+  publicStatus: publicStatusMessages,
 
   // Legal pages (`/legal/*`, PR-#3465). Публічні юридичні сторінки
   // (privacy / terms / cookies / offer) — UA-only surface. Сам контент

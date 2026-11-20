@@ -7,6 +7,7 @@
  */
 
 import { finiteOrNull } from "@sergeant/shared";
+import { itemHasVolume } from "../workouts/measureItem.js";
 
 import type { DashboardRecentWorkout, DashboardWorkoutInput } from "./types.js";
 
@@ -24,7 +25,7 @@ function computeTonnageKg(w: DashboardWorkoutInput): number {
   let total = 0;
   const items = w.items ?? [];
   for (const item of items) {
-    if (item?.type !== "strength") continue;
+    if (!itemHasVolume(item)) continue;
     const sets = item.sets ?? [];
     for (const s of sets) {
       const weight = finiteOrNull(s?.weightKg);

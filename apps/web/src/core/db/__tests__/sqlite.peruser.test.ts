@@ -104,7 +104,10 @@ describe("getSqliteDb — per-user partitioning", () => {
     await getSqliteDb();
 
     await wipeSqliteDb();
-    expect(opfsUnlinkMock).toHaveBeenCalledWith("sergeant-dave.db");
+    // Нормалізований шлях: `unlink` пулу шукає файл рівно під тим ключем,
+    // під яким його зберіг `xOpen`, — зі скісною (див. AI-DANGER у
+    // `sqliteWorkerHandler.ts`). Голе ім'я нічого не стирало.
+    expect(opfsUnlinkMock).toHaveBeenCalledWith("/sergeant-dave.db");
 
     // Singleton was reset → the next call re-initialises (same key, so it
     // re-opens dave's now-empty file).

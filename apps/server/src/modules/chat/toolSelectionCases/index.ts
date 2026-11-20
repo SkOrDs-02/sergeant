@@ -18,8 +18,10 @@ import { NUTRITION_CASES } from "./nutrition.js";
 import { ROUTINE_CASES } from "./routine.js";
 import { CROSS_MODULE_CASES } from "./crossModule.js";
 
-export type { ToolCase, ToolTurn } from "./types.js";
+export type { HistoryMessage, ToolCase, ToolTurn } from "./types.js";
 export { IMPLICIT_FACT_CASES } from "./baseline.js";
+// Поза `ALL_CASES` навмисно — див. докстрінг `followUp.ts`.
+export { FOLLOW_UP_CASES } from "./followUp.js";
 
 /** Усі кейси стенду, крім блоку неявної памʼяті (він рахується окремо). */
 export const ALL_CASES: ToolCase[] = [

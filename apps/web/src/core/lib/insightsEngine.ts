@@ -12,7 +12,8 @@
  */
 
 import { txTimeMs } from "@sergeant/finyk-domain/lib/transactions";
-import { formatNumberUk, pluralUa } from "@sergeant/shared";
+import { deviceDayKey, formatNumberUk, pluralUa } from "@sergeant/shared";
+import { bestRoutineMonth } from "@sergeant/routine-domain";
 import {
   getTxStatAmount,
   readFinykStatsContext,
@@ -221,7 +222,8 @@ export interface HabitInsightProgress {
 type RoutineStateSlice = Pick<
   ReturnType<typeof loadRoutineState>,
   "habits" | "completions"
->;
+> &
+  Partial<Pick<ReturnType<typeof loadRoutineState>, "skips">>;
 
 export function habitInsightProgress(
   state: RoutineStateSlice,
@@ -253,6 +255,7 @@ export function habitInsightProgress(
  */
 export function bestHabitMonthInsight(
   state: RoutineStateSlice = loadRoutineState(),
+  todayKey: string = deviceDayKey(),
 ): Insight | null {
   const habits = (state.habits || []).filter((h) => !h.archived);
   if (habits.length === 0) return null;
@@ -272,22 +275,16 @@ export function bestHabitMonthInsight(
   const months = Object.keys(monthDone);
   if (months.length < HABIT_INSIGHT_MIN_MONTHS) return null;
 
-  let bestMk: string | null = null;
-  let bestPct = 0;
-
-  for (const mk of months) {
-    const [y, m] = mk.split("-").map(Number);
-    const daysInMonth = new Date(Date.UTC(y!, m!, 0)).getUTCDate();
-    const total = habits.length * daysInMonth;
-    if (total === 0) continue;
-    const pct = Math.round((monthDone[mk]! / total) * 100);
-    if (pct > bestPct) {
-      bestPct = pct;
-      bestMk = mk;
-    }
-  }
-
-  if (!bestMk || bestPct < 10) return null;
+  // П-18 (А), 2026-11-18 (`METRICS_VERSION` 23): той самий знаменник, що
+  // модуль: заплановані дні без днів «не зміг», поточний місяць до сьогодні
+  // (`bestRoutineMonth`). Раніше тут стояло плоске «звички × дні місяця».
+  const best = bestRoutineMonth(habits, state.completions || {}, {
+    todayKey,
+    skips: state.skips,
+  });
+  if (!best || best.pct < 10) return null;
+  const bestMk = best.monthKey;
+  const bestPct = best.pct;
 
   const [y, m] = bestMk.split("-").map(Number);
   const label = `${MONTHS_UK[m! - 1]} ${y}`;

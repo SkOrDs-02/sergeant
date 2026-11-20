@@ -5,6 +5,7 @@ vi.mock("../../../profile/memoryBank", () => ({
     personal: { label: "Особисте" },
     preference: { label: "Уподобання" },
   },
+  isMemoryBankReady: vi.fn(() => true),
   readMemoryEntries: vi.fn(),
   removeMemoryEntry: vi.fn(),
   upsertMemoryFact: vi.fn(),
@@ -13,6 +14,7 @@ vi.mock("../../../profile/memoryBank", () => ({
 
 import {
   CATEGORY_META as _cat,
+  isMemoryBankReady,
   readMemoryEntries,
   removeMemoryEntry,
   upsertMemoryFact,
@@ -145,6 +147,21 @@ describe("forget", () => {
     expect(result).toContain("не знайдено");
   });
 
+  it("підказує, де взяти id, коли модель передала текст факту (2026-11-18)", () => {
+    // Стенд 2026-11-18: модель клала в `fact_id` текст («алергія на арахіс»).
+    // Видалення лишається за точним id; результат веде моделі до my_profile,
+    // щоб наступний хід узяв справжній id, а не повторив текст.
+    mockRead.mockReturnValue([]);
+    mockRemove.mockReturnValue({ entries: [], removed: null });
+    const result = forget({
+      name: "forget",
+      input: { fact_id: "алергія на арахіс" },
+    });
+    expect(result).toContain("не знайдено");
+    expect(result).toContain("my_profile");
+    expect(mockWrite).not.toHaveBeenCalled();
+  });
+
   it("removes and returns confirmation with fact text", () => {
     const entry = {
       id: "e1",
@@ -157,39 +174,6 @@ describe("forget", () => {
     expect(result).toContain("Забув");
     expect(result).toContain("Стара нотатка");
     expect(mockWrite).toHaveBeenCalledOnce();
-  });
-
-  it("видаляє за точним текстом, коли модель прислала текст замість id (full-2026-11-19)", () => {
-    const entry = {
-      id: "e9",
-      fact: "Не їм глютен",
-      category: "health",
-    } as MemoryEntry;
-    mockRead.mockReturnValue([entry]);
-    mockRemove.mockImplementation((entries: MemoryEntry[], id: string) => {
-      const removed = entries.find((e) => e.id === id) ?? null;
-      return { entries: removed ? [] : entries, removed };
-    });
-    const result = forget({
-      name: "forget",
-      input: { fact_id: " «не їм глютен» " },
-    });
-    expect(result).toContain("Забув");
-    expect(mockRemove).toHaveBeenLastCalledWith([entry], "e9");
-    expect(mockWrite).toHaveBeenCalledOnce();
-  });
-
-  it("неоднозначний текст не видаляє нічого", () => {
-    const a = { id: "a", fact: "Кава", category: "personal" } as MemoryEntry;
-    const b = { id: "b", fact: "кава", category: "preference" } as MemoryEntry;
-    mockRead.mockReturnValue([a, b]);
-    mockRemove.mockImplementation((entries: MemoryEntry[]) => ({
-      entries,
-      removed: null,
-    }));
-    const result = forget({ name: "forget", input: { fact_id: "кава" } });
-    expect(result).toContain("не знайдено");
-    expect(mockWrite).not.toHaveBeenCalled();
   });
 });
 
@@ -250,5 +234,28 @@ describe("myProfile", () => {
     ] as MemoryEntry[]);
     const result = myProfile({ name: "my_profile", input: {} });
     expect(result).toContain("abc123");
+  });
+});
+
+describe("B24: банк ще не розшифровано", () => {
+  it("remember/forget/myProfile не пишуть і не кажуть «порожньо»", () => {
+    vi.mocked(isMemoryBankReady).mockReturnValue(false);
+    try {
+      const msg = "Памʼять ще завантажується. Спробуй ще раз за мить.";
+      expect(
+        remember({
+          name: "remember",
+          input: { fact: "x", category: "preference" },
+        } as never),
+      ).toBe(msg);
+      expect(
+        forget({ name: "forget", input: { fact_id: "m1" } } as never),
+      ).toBe(msg);
+      expect(myProfile({ name: "my_profile", input: {} } as never)).toBe(msg);
+      expect(writeMemoryEntries).not.toHaveBeenCalled();
+      expect(readMemoryEntries).not.toHaveBeenCalled();
+    } finally {
+      vi.mocked(isMemoryBankReady).mockReturnValue(true);
+    }
   });
 });

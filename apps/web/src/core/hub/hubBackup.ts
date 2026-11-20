@@ -6,6 +6,7 @@ import {
   type BackupRestoreMode,
 } from "@shared/lib/backup/restoreMode";
 import { safeReadStringLS, safeWriteLS } from "@shared/lib/storage/storage";
+import { chatLegacyHistorySlot } from "../security/aiAtRest";
 import { isDualWriteOutcomeClean } from "../durability/dualWriteJournal";
 import {
   getHubRestoreModuleBlock,
@@ -38,7 +39,6 @@ import { applyNutritionBackupFoods } from "../../modules/nutrition/domain/nutrit
 import { isHubModuleId } from "@shared/lib/modules/hubNav";
 
 const HUB_MODULE_KEY = "hub_last_module";
-const HUB_CHAT_KEY = "hub_chat_history";
 
 export const HUB_BACKUP_KIND = "hub-backup";
 export const HUB_BACKUP_SCHEMA_VERSION = 1;
@@ -119,7 +119,7 @@ export function buildHubBackupPayload(
   const m = safeReadStringLS(HUB_MODULE_KEY);
   if (m) hub["lastModule"] = m;
   if (includeChat) {
-    const chat = safeReadStringLS(HUB_CHAT_KEY);
+    const chat = chatLegacyHistorySlot.read();
     if (chat) hub["chatHistory"] = chat;
   }
   return {
@@ -360,8 +360,27 @@ export async function applyHubBackupPayload(
       }
     }
     if (typeof h.chatHistory === "string") {
-      if (mode === "replace" || !safeReadStringLS(HUB_CHAT_KEY)) {
-        safeWriteLS(HUB_CHAT_KEY, h.chatHistory);
+      const chatFailed = () => {
+        const done = restored.map((m) => RESTORE_MODULE_NAMES[m]).join(", ");
+        return new Error(
+          done
+            ? `Відновлено: ${done}. Не вдалось відновити: історію чату. Спробуй імпорт ще раз.`
+            : "Не вдалось відновити історію чату. Спробуй імпорт ще раз.",
+        );
+      };
+      // B24: `merge` вирішує за наявною історією, тож спершу її треба
+      // розібрати: нерозшифрований конверт читається як «порожньо». Замкнена
+      // історія (ключа зараз немає) — помилка в обох режимах: слот однаково
+      // не замінить шифртекст, якого не розібрав.
+      if (!(await chatLegacyHistorySlot.whenReady())) throw chatFailed();
+      if (mode === "replace" || !chatLegacyHistorySlot.read()) {
+        // Чекаємо шифрований запис: HubBackupPanel перезавантажує сторінку
+        // одразу після відновлення, і запис у вікні шифрування загубився б.
+        // `false`: запис не ліг. Після нього читання знову показує сховище,
+        // тож повторний імпорт не прийме незбережене за наявну історію.
+        if (!(await chatLegacyHistorySlot.write(h.chatHistory))) {
+          throw chatFailed();
+        }
       }
     }
   }

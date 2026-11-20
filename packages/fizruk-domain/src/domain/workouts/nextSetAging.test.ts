@@ -102,3 +102,41 @@ describe("computeNextSetAging — підказка наступного підх
     });
   });
 });
+
+describe("computeNextSetAging — зняття позначки травми (E-5, аудит 2026-11-17)", () => {
+  // Свіжа історія без пауз: режим повернення може ввімкнути лише травма.
+  const lastSet = { weightKg: 100, reps: 8 };
+  const sessions = [
+    { at: daysAgo(8), best1rm: epley1rm(100, 7) },
+    { at: daysAgo(2), best1rm: epley1rm(100, 8) },
+  ];
+
+  it("позначку знято 5 днів тому → мʼякий режим «injury», вага не росте", () => {
+    const aging = computeNextSetAging({
+      lastBest1rm: epley1rm(100, 8),
+      lastSessionAt: daysAgo(2),
+      sessions,
+      injuryClearedAt: daysAgo(5),
+      now: NOW,
+    });
+    expect(aging.returnMode).toBe(true);
+    expect(aging.returnReason).toBe("injury");
+    expect(aging.reductionPct).toBe(10);
+
+    const s = suggestNextSet(lastSet, { exercise: SQUAT, aging });
+    expect(s?.softMode).toBe(true);
+    expect(s?.weightKg).toBeLessThan(100);
+  });
+
+  it("позначку знято понад 21 день тому → звичайна прогресія", () => {
+    const aging = computeNextSetAging({
+      lastBest1rm: epley1rm(100, 8),
+      lastSessionAt: daysAgo(2),
+      sessions,
+      injuryClearedAt: daysAgo(30),
+      now: NOW,
+    });
+    expect(aging.returnMode).toBe(false);
+    expect(aging.returnReason).toBeNull();
+  });
+});

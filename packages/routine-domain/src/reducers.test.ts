@@ -911,3 +911,17 @@ describe("заборона відмітки майбутнього дня (PR-R3
     expect(next.completions["h1"]).toEqual(["2026-01-06"]);
   });
 });
+
+describe("applyCreateHabit — тижнева ціль гнучкої звички (R1)", () => {
+  it("зберігає weeklyTargetHistory з патча створення", () => {
+    const next = applyCreateHabit(baseState(), {
+      name: "Біг",
+      recurrence: "flexible",
+      startDate: "2026-11-02",
+      weeklyTargetHistory: [{ from: "2026-11-02", target: 5 }],
+    });
+    expect(next.habits[0]?.weeklyTargetHistory).toEqual([
+      { from: "2026-11-02", target: 5 },
+    ]);
+  });
+});

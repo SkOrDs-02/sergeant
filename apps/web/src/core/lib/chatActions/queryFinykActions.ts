@@ -19,6 +19,7 @@ import {
   type CategoryLike,
   type TxSplitsLike,
 } from "@sergeant/finyk-domain/utils";
+import { assetTransferTxIds } from "@sergeant/finyk-domain/domain/assets";
 import { getKyivDateParts, getKyivDayKey } from "@shared/lib/time/kyivTime";
 import { clamp, isoOrUndef, normalizeText, round } from "./queryArgs";
 import { getCachedFinykSqliteState } from "../../../modules/finyk/lib/sqliteReader";
@@ -201,6 +202,7 @@ function readStatTransactions(): FinykSearchTx[] {
       // як Огляд і Звіти.
       ...getVisibleFinykMonoMirrorState().transactions,
     ],
+    assetTransferTxIds: assetTransferTxIds(sqlite.manualAssets),
   });
   return readQueryTransactions().filter(
     (tx) => !hasFinykTxKey(excluded, tx.id, txSourceOf(tx)),

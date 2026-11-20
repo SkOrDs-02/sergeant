@@ -22,6 +22,7 @@ import {
   readSqliteVfsFallbackReason,
   type SqliteVfsName,
 } from "../db/storageBackendState";
+import { useSnapshotRestoring } from "../syncEngine/snapshotRestoreState";
 import { probeOpfsInWorker } from "../db/opfsProbe";
 import type { OpfsProbeResult } from "../db/opfsProbe.worker";
 import { formatDayMonth } from "@shared/lib/time/formatDate";
@@ -54,6 +55,8 @@ const COPY = {
   storageUnsupported: "Лише памʼять: браузер не підтримує файлове сховище",
   storageOtherTab:
     "База відкрита в іншій вкладці. Закрий зайві вкладки Sergeant і онови цю.",
+  restore: "Відновлення з сервера",
+  restoreActive: "Відновлюю дані…",
   opfsWorker: "Файлове сховище у фоні",
   opfsWorkerChecking: "Перевіряю…",
   opfsWorkerOk: "Доступний",
@@ -193,6 +196,7 @@ export function SyncStatusSheet({
   const purgeNotice = useOutboxPurgeNotice();
   const storage = describeVfs(readActiveSqliteVfs());
   const opfsWorker = useOpfsWorkerStatus(open);
+  const restoring = useSnapshotRestoring();
   const rows: { label: string; value: string; tone: RowTone }[] = [
     {
       label: COPY.network,
@@ -214,6 +218,17 @@ export function SyncStatusSheet({
       value: rejected > 0 ? String(rejected) : COPY.rejectedEmpty,
       tone: rejected > 0 ? "err" : "ok",
     },
+    // Лише на час відновлення зі знімка (рішення власника 2026-11-19:
+    // відновлення тихе, у фоні, видно тільки тут).
+    ...(restoring
+      ? [
+          {
+            label: COPY.restore,
+            value: COPY.restoreActive,
+            tone: "warn" as const,
+          },
+        ]
+      : []),
     { label: COPY.storage, value: storage.value, tone: storage.tone },
     {
       label: COPY.opfsWorker,

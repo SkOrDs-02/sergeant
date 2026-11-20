@@ -43,6 +43,13 @@ export const STORAGE_KEYS = {
   NUTRITION_LAST_PORTION_UNIT: "nutrition_last_portion_unit_v1",
   ONBOARDING_DONE: "hub_onboarding_done_v1",
   FTUX_MODULES_HINT_DISMISSED: "sergeant.hub.ftuxModulesHint.dismissed.v1",
+  /**
+   * Рядок про ручний Premium на хабі закрито (спека
+   * `manual-premium-request.md`): `"<currentPeriodEnd>|granted"` або
+   * `"<currentPeriodEnd>|warning"`. Ключ зі строком кінця, тож показ один на
+   * видачу і окремо на попередження; без синку.
+   */
+  MANUAL_PREMIUM_NOTICE_DISMISSED: "hub_manual_premium_notice_dismissed_v1",
   DASHBOARD_ORDER: "hub_dashboard_order_v1",
   HUB_PREFS: "hub_prefs_v1",
   /**
@@ -93,6 +100,14 @@ export const STORAGE_KEYS = {
    * записи не накопичуються.
    */
   MOMENTS_TODAY: "hub_moments_today_v1",
+  /**
+   * Рутина, автовідмітка (Р-1 (в), рішення founder-а 2026-11-18): звички,
+   * відмітку яких людина СЬОГОДНІ зняла, тож подія іншого модуля до кінця
+   * доби пристрою її не повертає (П-13 (А)). `{ dayKey, habitIds }`; лише
+   * на цьому пристрої, без синку (відповідь founder-а). Учорашній запис
+   * читається як порожній.
+   */
+  ROUTINE_AUTO_MARK_SUPPRESSED: "routine_auto_mark_suppressed_v1",
   /**
    * Звʼязки між сферами, які вже бували помітними: `{ pairKey: { a, b,
    * phrase, seenOn } }`. Потрібні F-5 (спека `reward-loop-and-reminders.md`):
@@ -153,6 +168,13 @@ export const STORAGE_KEYS = {
   FINYK_TX_CACHE_LAST_GOOD: "finyk_tx_cache_last_good",
   FINYK_INFO_CACHE: "finyk_info_cache",
   FINYK_TOKEN: "finyk_token",
+  /**
+   * Мс першого підключення Monobank з ЦЬОГО пристрою (`bankHistory.ts`).
+   * Сервер мітки підключення клієнту не віддає, тож пишемо на успішному
+   * `connect`; для підключень, зроблених до цієї зміни, ключа немає.
+   * Префікс `finyk_` — дренується `purgeLocalData` на виході.
+   */
+  FINYK_MONO_FIRST_CONNECTED_AT: "finyk_mono_first_connected_at_v1",
   // FINYK_STORAGE (`finyk_storage_v2`) entry was dropped in PR #072
   // (storage-roadmap Stage 13). The monolithic blob from the pre-Stage-4
   // era (PR #035–#039 split it into per-key slots + per-table SQLite
@@ -356,6 +378,11 @@ export const STORAGE_KEYS = {
   // юзер дізнавався про новий звіт, тільки якщо сам відкривав блок. Тепер
   // картка носить бейдж, поки цей ключ не збігається з поточним тижнем.
   WEEKLY_DIGEST_LAST_SEEN: "hub_weekly_digest_last_seen_v1",
+  // Маркер «автогенерація звіту за `weekKey` уже отримала INSUFFICIENT_DATA
+  // сьогодні (`dayKey` пристрою)». Одне значення `{ weekKey, dayKey }`, що
+  // перезаписується, тож не росте; чиститься разом з іншими `hub_`-ключами
+  // при виході. Під регекс дати в історії дайджестів не підпадає.
+  WEEKLY_DIGEST_AUTO_ATTEMPT: "hub_weekly_digest_auto_attempt_v1",
 
   // ─── Cross-module links ───────────────────────────────────────────────
   /**
@@ -369,6 +396,12 @@ export const STORAGE_KEYS = {
    * підняв би довіру, якої на цьому пристрої ніхто не перевіряв.
    */
   CROSS_MODULE_LINK_HISTORY: "hub_cross_module_link_history_v1",
+  /**
+   * Картку «Що видно з історії банку» на хабі закрили (С-4 (б), спека
+   * `hub-newcomer-card-and-insights.md`): `"1"`. Одноразова на профіль
+   * браузера, за зразком `hub_cross_module_preview_seen_v1`; без синку.
+   */
+  HUB_BANK_FACTS_SEEN: "hub_bank_facts_seen_v1",
 
   // ─── Mobile: cloud sync metadata ──────────────────────────────────────
   // 6 mobile sync-metadata keys dropped in Stage 13 PR #077.

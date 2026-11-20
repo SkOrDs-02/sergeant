@@ -1,6 +1,6 @@
 # Довідник Prometheus-метрик
 
-> **Last touched:** 2026-10-23 by @claude (auth: +`auth_password_check_failures_total`, sec-10); 2026-10-20 by @claude (sync: +1 apply-reason `invalid_prefs_patch`, data-04); 2026-10-03 by @claude (sync: +1 engine-reason `invalid_text_encoding`, §4; раніше: джерело істини → реєстр `obs/metrics/`; alert-routing без n8n; зняті хардкоди лічильників). **Next review:** 2026-12-16.
+> **Last touched:** 2026-11-19 by @claude (sync: +`sync_op_log_applied_deleted_total`, +`sync_op_log_rows`, +1 engine-reason `stale_increment`, ADR-0105 §2); 2026-11-19 by @claude (AI: +`chat_synthesis_empty_retry_total`, страховка-перезапит порожнього синтезу, § 6a); 2026-11-19 by @claude (AI: `openrouter_no_endpoints_total` +`reason=ignored`); 2026-11-19 by @claude (AI: +`openrouter_no_endpoints_total` і алерт `OpenRouterNoEndpoints`); 2026-10-23 by @claude (auth: +`auth_password_check_failures_total`, sec-10); 2026-10-20 by @claude (sync: +1 apply-reason `invalid_prefs_patch`, data-04); 2026-10-03 by @claude (sync: +1 engine-reason `invalid_text_encoding`, §4; раніше: джерело істини → реєстр `obs/metrics/`; alert-routing без n8n; зняті хардкоди лічильників). **Next review:** 2026-12-16.
 > **Status:** Active — **каталог неповний**, див. врізку одразу нижче
 
 > **⚠️ Каталог відстав від коду — і відстає далі.**
@@ -165,27 +165,31 @@ sum(rate(auth_attempts_total{outcome="error"}[5m])) / sum(rate(auth_attempts_tot
 
 ## 4. Sync
 
-| Metric                         | Type      | Labels                        | Emitter                                                                         |
-| ------------------------------ | --------- | ----------------------------- | ------------------------------------------------------------------------------- |
-| `sync_operations_total`        | Counter   | `op` · `module` · `outcome`   | [syncV2.ts](../../../apps/server/src/modules/sync/syncV2.ts)                    |
-| `sync_duration_ms`             | Histogram | `op` · `module`               | [syncV2.ts](../../../apps/server/src/modules/sync/syncV2.ts)                    |
-| `sync_payload_bytes`           | Histogram | `op` · `module`               | [syncV2.ts](../../../apps/server/src/modules/sync/syncV2.ts)                    |
-| `sync_conflicts_total`         | Counter   | `module`                      | [syncV2.ts](../../../apps/server/src/modules/sync/syncV2.ts)                    |
-| `sync_op_log_apply_total`      | Counter   | `table` · `status` · `reason` | [syncV2.ts](../../../apps/server/src/modules/sync/syncV2.ts) (PR #048)          |
-| `sync_op_log_pull_lag_ms`      | Histogram | —                             | [syncV2.ts](../../../apps/server/src/modules/sync/syncV2.ts) (PR #048)          |
-| `sync_op_log_pull_queue_depth` | Histogram | —                             | [syncV2.ts](../../../apps/server/src/modules/sync/syncV2.ts) (PR #048)          |
-| `sync_pull_page_bytes`         | Histogram | —                             | [syncV2Pull.ts](../../../apps/server/src/modules/sync/syncV2Pull.ts) (ADR-0105) |
-| `sync_pull_truncated_total`    | Counter   | —                             | [syncV2Pull.ts](../../../apps/server/src/modules/sync/syncV2Pull.ts) (ADR-0105) |
+| Metric                              | Type      | Labels                        | Emitter                                                                                                                  |
+| ----------------------------------- | --------- | ----------------------------- | ------------------------------------------------------------------------------------------------------------------------ |
+| `sync_operations_total`             | Counter   | `op` · `module` · `outcome`   | [syncV2.ts](../../../apps/server/src/modules/sync/syncV2.ts)                                                             |
+| `sync_duration_ms`                  | Histogram | `op` · `module`               | [syncV2.ts](../../../apps/server/src/modules/sync/syncV2.ts)                                                             |
+| `sync_payload_bytes`                | Histogram | `op` · `module`               | [syncV2.ts](../../../apps/server/src/modules/sync/syncV2.ts)                                                             |
+| `sync_conflicts_total`              | Counter   | `module`                      | [syncV2.ts](../../../apps/server/src/modules/sync/syncV2.ts)                                                             |
+| `sync_op_log_apply_total`           | Counter   | `table` · `status` · `reason` | [syncV2.ts](../../../apps/server/src/modules/sync/syncV2.ts) (PR #048)                                                   |
+| `sync_op_log_pull_lag_ms`           | Histogram | —                             | [syncV2.ts](../../../apps/server/src/modules/sync/syncV2.ts) (PR #048)                                                   |
+| `sync_op_log_pull_queue_depth`      | Histogram | —                             | [syncV2.ts](../../../apps/server/src/modules/sync/syncV2.ts) (PR #048)                                                   |
+| `sync_pull_page_bytes`              | Histogram | —                             | [syncV2Pull.ts](../../../apps/server/src/modules/sync/syncV2Pull.ts) (ADR-0105)                                          |
+| `sync_pull_truncated_total`         | Counter   | —                             | [syncV2Pull.ts](../../../apps/server/src/modules/sync/syncV2Pull.ts) (ADR-0105)                                          |
+| `sync_op_log_applied_deleted_total` | Counter   | —                             | [syncOpLogAppliedRetention.ts](../../../apps/server/src/modules/logRetention/syncOpLogAppliedRetention.ts) (ADR-0105 §2) |
+| `sync_op_log_rows`                  | Gauge     | —                             | [syncOpLogAppliedRetention.ts](../../../apps/server/src/modules/logRetention/syncOpLogAppliedRetention.ts) (ADR-0105 §2) |
 
 `op`: `push` · `pull` · `push_all` · `pull_all` · `v2_push` · `v2_pull`. `module`: `finyk` · `fizruk` · `routine` · `nutrition` · `profile` · `syncV2`. `outcome`: `ok` · `empty` · `conflict` · `invalid` · `too_large` · `unauthorized` · `error` · `partial`. Buckets duration: `10…10000` ms; bytes: `1024…5242880` (MAX_BLOB_SIZE = 5 MB).
 
-**v2 op-log per-op (`sync_op_log_apply_total`)**: `table` ∈ whitelist `OP_LOG_TABLE_REGISTRY` + `__unknown__`; `status` ∈ `applied|rejected|duplicate|retry` (`retry` - транзієнтні SQLSTATE `data-18` і `unknown_table` `data-48`; обидва НЕ пишуться в `sync_op_log`; невідома таблиця з `rejected / table_not_allowed` теж не пишеться в журнал і мітиться `table="__unknown__"`); `reason` — закритий allowlist (PR #043c + PR #042a/b, Stage 5): `none` (для applied) + 7 engine-level (`clock_skew` · `table_not_allowed` · `apply_failed` · `duplicate` · `op_not_supported` · `oplog_write_failed` · `invalid_text_encoding`) + 69 apply-fn-level (`lww_conflict` · `tombstoned` · `not_found` · `delete_not_supported` · `user_id_mismatch` · `fk_violation` · `append_only_violation` + 16 `missing_*` + 46 `invalid_*`). Source-of-truth: `APPLY_REJECT_REASONS` / `ENGINE_REJECT_REASONS` у [`syncV2.ts`](../../../apps/server/src/modules/sync/syncV2.ts) — TS-union блокує emit невідомого літерала на compile-time, regression-тест у [`metrics.test.ts`](../../../apps/server/src/obs/metrics.test.ts) фіксує довжину allowlist-у. Cardinality cap: 45 tables × 3 statuses × 77 reasons (`none` + 7 engine + 69 apply) ≈ 10_395 series worst-case (phenomenologically <100 — більшість табл/reason пар не зустрічаються одночасно). PR #042a розширив engine-level allowlist `op_not_supported` як gate на `op='increment'` для таблиць поза `INCREMENT_OP_SUPPORTED_TABLES`; PR #042b опт-інив `routine_streaks` у whitelist + додав apply-level `missing_delta`/`invalid_delta` для PN-counter payload-валідації. Хвиля 1 (стадія 1) додала три append-only таблиці в `OP_LOG_TABLE_REGISTRY` — `routine_completion_events`, `nutrition_pantry_events`, `nutrition_goal_periods` (реєстр виріс до 45) — і три apply-level причини: `append_only_violation` — гейт на `op='update'|'delete'` для append-only журналу відміток: подія незмінна, виправлення історії = НОВА подія; `invalid_event_kind` + `missing_delta_or_abs` (валідація payload-у ledger-а комори) і `invalid_goal_origin` (журнал цілей КБЖВ). CodeRabbit PR #627: +1 `invalid_tz_offset_min` (`tz_offset_min` набуло real-world range-check замість "будь-який integer"). Аудит 2026-10-01 (rel-01): +3 `invalid_recurrence` / `invalid_start_date` / `invalid_end_date` (`applyRoutineHabits` відхиляє розклад звички не з enum чи не реальну дату `YYYY-MM-DD` до запису; `routine_habits.recurrence/start_date/end_date` — TEXT без CHECK) — актуальна довжина allowlist-у 78 apply-level (цифри 69/77 і cardinality вище застарілі ще до цієї правки, рахуй за `APPLY_REJECT_REASONS`). Аудит 2026-10-01 (data-04): +1 apply-level `invalid_prefs_patch` (`nutrition_prefs` із `prefs_merge: true` мусить нести `prefs_json` як JSON-обʼєкт; allowlist тепер 79 apply-level). Міграція 146: +10 apply-level `invalid_*` на решту полів заміру тіла (`body_fat_pct`, `neck_cm`, `bicep_l_cm`, `bicep_r_cm`, `forearm_l_cm`, `forearm_r_cm`, `thigh_l_cm`, `thigh_r_cm`, `calf_l_cm`, `calf_r_cm`) — веб-форма збирала їх, а колонок під них не було, тож значення зникали після перезавантаження. Фікс «оп-лог поза savepoint»: +1 engine-level `oplog_write_failed` — запис рядка в `sync_op_log` тепер іде під власним savepoint-ом `op_log_write`, тож його помилка (класика — `U+0000` у рядковому полі `row`: zod пропускає, `jsonb` ні) відхиляє ОДИН оп замість ROLLBACK-у всієї транзакції; сплеск цієї лінії читається як «клієнт шле payload, який Postgres не приймає», а не як збій БД. Тепер apply такого опа відкочується разом із відмовою журналу (apply і журнал атомарні; раніше при `oplog_write_failed` доменний запис лишався закоміченим без рядка в журналі, `data-17`). +1 engine-level `invalid_text_encoding`: `U+0000` або одинокий сурогат у `row` (типово - назва, обрізана посеред емодзі) відхиляється ДО apply, тож `oplog_write_failed` лишається страховкою від непередбачених збоїв запису. Відхилені оп-и пишуть у `sync_op_log.row` лише `{}` (`data-48`). **`tombstoned` виведено з обігу на шляху запису** (регресія `SERGEANT-WEB-T`): жоден apply-хендлер його більше не повертає, тож на дашборді ця лінія має впасти в нуль — не-нуль означає стару інстанцію сервера за проксі. Значення лишається в allowlist-і (довжина не змінилась), бо в клієнтських аутбоксах уже лежать рядки з цим `reject_reason`; обґрунтування зняття — в `guardUuidPkApply` ([`applySync-helpers.ts`](../../../apps/server/src/modules/sync/applySync-helpers.ts)).
+**v2 op-log per-op (`sync_op_log_apply_total`)**: `table` ∈ whitelist `OP_LOG_TABLE_REGISTRY` + `__unknown__`; `status` ∈ `applied|rejected|duplicate|retry` (`retry` - транзієнтні SQLSTATE `data-18` і `unknown_table` `data-48`; обидва НЕ пишуться в `sync_op_log`; невідома таблиця з `rejected / table_not_allowed` теж не пишеться в журнал і мітиться `table="__unknown__"`); `reason` — закритий allowlist (PR #043c + PR #042a/b, Stage 5): `none` (для applied) + 8 engine-level (`clock_skew` · `table_not_allowed` · `apply_failed` · `duplicate` · `op_not_supported` · `oplog_write_failed` · `invalid_text_encoding` · `stale_increment`) + 69 apply-fn-level (`lww_conflict` · `tombstoned` · `not_found` · `delete_not_supported` · `user_id_mismatch` · `fk_violation` · `append_only_violation` + 16 `missing_*` + 46 `invalid_*`). Source-of-truth: `APPLY_REJECT_REASONS` / `ENGINE_REJECT_REASONS` у [`syncV2.ts`](../../../apps/server/src/modules/sync/syncV2.ts) — TS-union блокує emit невідомого літерала на compile-time, regression-тест у [`metrics.test.ts`](../../../apps/server/src/obs/metrics.test.ts) фіксує довжину allowlist-у. Cardinality cap: 45 tables × 3 statuses × 77 reasons (`none` + 7 engine + 69 apply) ≈ 10_395 series worst-case (phenomenologically <100 — більшість табл/reason пар не зустрічаються одночасно). PR #042a розширив engine-level allowlist `op_not_supported` як gate на `op='increment'` для таблиць поза `INCREMENT_OP_SUPPORTED_TABLES`; PR #042b опт-інив `routine_streaks` у whitelist + додав apply-level `missing_delta`/`invalid_delta` для PN-counter payload-валідації. Хвиля 1 (стадія 1) додала три append-only таблиці в `OP_LOG_TABLE_REGISTRY` — `routine_completion_events`, `nutrition_pantry_events`, `nutrition_goal_periods` (реєстр виріс до 45) — і три apply-level причини: `append_only_violation` — гейт на `op='update'|'delete'` для append-only журналу відміток: подія незмінна, виправлення історії = НОВА подія; `invalid_event_kind` + `missing_delta_or_abs` (валідація payload-у ledger-а комори) і `invalid_goal_origin` (журнал цілей КБЖВ). CodeRabbit PR #627: +1 `invalid_tz_offset_min` (`tz_offset_min` набуло real-world range-check замість "будь-який integer"). Аудит 2026-10-01 (rel-01): +3 `invalid_recurrence` / `invalid_start_date` / `invalid_end_date` (`applyRoutineHabits` відхиляє розклад звички не з enum чи не реальну дату `YYYY-MM-DD` до запису; `routine_habits.recurrence/start_date/end_date` — TEXT без CHECK) — актуальна довжина allowlist-у 78 apply-level (цифри 69/77 і cardinality вище застарілі ще до цієї правки, рахуй за `APPLY_REJECT_REASONS`). Аудит 2026-10-01 (data-04): +1 apply-level `invalid_prefs_patch` (`nutrition_prefs` із `prefs_merge: true` мусить нести `prefs_json` як JSON-обʼєкт; allowlist тепер 79 apply-level). Міграція 146: +10 apply-level `invalid_*` на решту полів заміру тіла (`body_fat_pct`, `neck_cm`, `bicep_l_cm`, `bicep_r_cm`, `forearm_l_cm`, `forearm_r_cm`, `thigh_l_cm`, `thigh_r_cm`, `calf_l_cm`, `calf_r_cm`) — веб-форма збирала їх, а колонок під них не було, тож значення зникали після перезавантаження. Фікс «оп-лог поза savepoint»: +1 engine-level `oplog_write_failed` — запис рядка в `sync_op_log` тепер іде під власним savepoint-ом `op_log_write`, тож його помилка (класика — `U+0000` у рядковому полі `row`: zod пропускає, `jsonb` ні) відхиляє ОДИН оп замість ROLLBACK-у всієї транзакції; сплеск цієї лінії читається як «клієнт шле payload, який Postgres не приймає», а не як збій БД. Тепер apply такого опа відкочується разом із відмовою журналу (apply і журнал атомарні; раніше при `oplog_write_failed` доменний запис лишався закоміченим без рядка в журналі, `data-17`). +1 engine-level `invalid_text_encoding`: `U+0000` або одинокий сурогат у `row` (типово - назва, обрізана посеред емодзі) відхиляється ДО apply, тож `oplog_write_failed` лишається страховкою від непередбачених збоїв запису. `stale_increment`: `increment`, старший за вікно чистки журналу `SYNC_OP_LOG_APPLIED_RETENTION_DAYS` мінус добу (ADR-0105 §2), відхиляється без apply, бо його ключ ідемпотентності чистка могла вже видалити; за прапорця `0` причина не виникає. Відхилені оп-и пишуть у `sync_op_log.row` лише `{}` (`data-48`). **`tombstoned` виведено з обігу на шляху запису** (регресія `SERGEANT-WEB-T`): жоден apply-хендлер його більше не повертає, тож на дашборді ця лінія має впасти в нуль — не-нуль означає стару інстанцію сервера за проксі. Значення лишається в allowlist-і (довжина не змінилась), бо в клієнтських аутбоксах уже лежать рядки з цим `reject_reason`; обґрунтування зняття — в `guardUuidPkApply` ([`applySync-helpers.ts`](../../../apps/server/src/modules/sync/applySync-helpers.ts)).
 
 **`sync_conflicts_total`**: оголошений у [`obs/metrics/domain.ts`](../../../apps/server/src/obs/metrics/domain.ts), інкрементиться в [`syncV2.ts`](../../../apps/server/src/modules/sync/syncV2.ts) — в тому самому per-op циклі `syncV2Push`, одразу після `.inc()` на `sync_op_log_apply_total`, коли свіжообчислений (не duplicate-replay) `reason === "lww_conflict"`. Це єдиний choke-point: усі apply-функції (`finyk/applySync.ts`, `routine/applySync.ts`, `fizruk/applySync.ts`, `nutrition/applySync.ts`, спільні guard-и в `applySync-helpers.ts` тощо) повертають `{status, reason}` через `ApplyFn`, і саме тут той результат перетворюється на HTTP-відповідь — тому інструментувати треба було рівно одне місце, а не кожен apply-хендлер окремо. `module` — перший underscore-сегмент `table` (`routine_entries` → `routine`), бо всі таблиці реєстру іменовані `<module>_<rest>`. До W4 (2026-09-16) лічильник був оголошений, але жоден код його не інкрементив — `sum by (module) (rate(sync_conflicts_total[1h]))` з runbook-у (`SyncConflictSpike`) завжди повертав порожній результат.
 
 **v2 pull lag/queue (`sync_op_log_pull_lag_ms`, `sync_op_log_pull_queue_depth`)**: гістограми без лейблів, спостерігаються по одній observation на `GET /v2/sync/pull` із непорожньою відповіддю. Buckets pull lag: `50…3_600_000` ms (SSE happy-path → offline-replay). Buckets queue depth: `0…1000` ops/pull.
 
 **Байтовий бюджет pull (`sync_pull_page_bytes`, `sync_pull_truncated_total`, ADR-0105 §1, `rel-06`)**: `sync_pull_page_bytes` - гістограма фактичного розміру сторінки (`sum(octet_length(row::text))` повернутих оп-ів; buckets `1024…4_194_304`), одна observation на кожен `GET /v2/sync/pull`. `sync_pull_truncated_total` - лічильник сторінок, обрізаних бюджетом `SYNC_V2_PULL_MAX_BYTES` (дефолт 2 MiB). Бюджет переглядається за цими метриками після тижня в проді: `histogram_quantile(0.99, sum by (le) (rate(sync_pull_page_bytes_bucket[1h])))` близько до бюджету й помітний `rate(sync_pull_truncated_total[1h])` = бюджет замалий або є акаунти з великими рядками.
+
+**Чистка журналу (`sync_op_log_applied_deleted_total`, `sync_op_log_rows`, ADR-0105 §2)**: лічильник `applied`-рядків, видалених поллером чистки за `SYNC_OP_LOG_APPLIED_RETENTION_DAYS > 0`, і оцінка розміру журналу (`pg_class.reltuples`, без скану), яку знімає кожен тік. Обидві мовчать, поки прапорець `0`: поллер не стартує. Після ввімкнення `sync_op_log_rows` має вийти на плато, а нуль у лічильнику тижнями означає, що поллер не стартував або журнал молодший за вікно.
 
 **Кардинальність v1 sync**: 4 × 5 × 7 ≈ **140** (counter); histograms ~180 кожна.
 
@@ -234,8 +238,9 @@ rate(rate_limit_hits_total{key="api:auth:sensitive",outcome="blocked"}[5m])    #
 | `anthropic_prompt_cache_hit_total` | Counter   | `version` · `outcome`                         | [anthropic.ts:161](../../../apps/server/src/lib/anthropic.ts#L161)                                                                                                          |
 | `ai_quota_blocks_total`            | Counter   | `reason`                                      | [aiQuota.ts:168](../../../apps/server/src/modules/chat/aiQuota.ts#L168)                                                                                                     |
 | `ai_quota_fail_open_total`         | Counter   | `reason`                                      | [aiQuota.ts](../../../apps/server/src/modules/chat/aiQuota.ts) `logQuotaStoreUnavailable()`                                                                                 |
+| `openrouter_no_endpoints_total`    | Counter   | `reason` · `transport`                        | [openrouterDataPolicy.ts](../../../apps/server/src/lib/llm/openrouterDataPolicy.ts) `noteOpenRouterDataPolicyRejection()`                                                   |
 
-`provider`: `anthropic` · `voyage`. `outcome` (requests): `ok` · `rate_limited` · `timeout` · `error` · `bad_response`. `kind` (tokens): `prompt` · `completion` · `cache_write` · `cache_read` (Voyage-embedding-и записуються як `kind="prompt"`, бо у Voyage-billing-у input-tokens — єдина категорія). `endpoint`: `messages` (Anthropic) · `embed` (Voyage). `outcome` (cache): `hit` · `miss`. `reason` (quota blocks): `limit` · `disabled` · `tool_disabled`. `reason` (fail-open): `database_url_missing` · `db_error`. Buckets duration: `100…60000` ms.
+`provider`: `anthropic` · `voyage`. `outcome` (requests): `ok` · `rate_limited` · `timeout` · `error` · `bad_response`. `kind` (tokens): `prompt` · `completion` · `cache_write` · `cache_read` (Voyage-embedding-и записуються як `kind="prompt"`, бо у Voyage-billing-у input-tokens — єдина категорія). `endpoint`: `messages` (Anthropic) · `embed` (Voyage). `outcome` (cache): `hit` · `miss`. `reason` (quota blocks): `limit` · `disabled` · `tool_disabled`. `reason` (fail-open): `database_url_missing` · `db_error`. `reason` (OpenRouter no endpoints, з 2026-11-19): `data_policy` · `quantization` · `ignored`; `transport`: `messages` · `chat_completions`; усі 6 серій заведено нулем зі старту процесу, модель лише в лозі `openrouter_data_policy_no_endpoints`. **Alert**: `OpenRouterNoEndpoints` — [runbook.md](./runbook.md#openrouternoendpoints). Buckets duration: `100…60000` ms.
 
 **Voyage cost (PR-33)**: `recordVoyageUsage()` після успішного embedding-batch-у пушить `usage.total_tokens` у `ai_tokens_total{provider="voyage", endpoint="embed", kind="prompt"}` і USD-переклад в `ai_cost_estimate_usd_total{provider="voyage", model, endpoint="embed"}`. Прайс-таблиця — `VOYAGE_PRICING_USD_PER_MTOK` у [embeddings.ts](../../../apps/server/src/modules/ai-memory/embeddings.ts) (`voyage-3.5-lite=$0.02/MTok`, `voyage-3.5=$0.06/MTok`, `voyage-3-large=$0.18/MTok` тощо). Невідома модель → cost-counter не інкрементується (token-counter інкрементується завжди), щоб помилковий model-string не привʼязав ціну від іншої версії.
 
@@ -304,18 +309,29 @@ Join-pattern із `app_build_info` (один gauge=1 на інстанс із л
 
 ## 6a. Очікування на першому ході чату
 
-| Metric                     | Type      | Labels                            | Emitter                                                                           |
-| -------------------------- | --------- | --------------------------------- | --------------------------------------------------------------------------------- |
-| `ai_first_token_ms`        | Histogram | `provider` · `model` · `endpoint` | [chatStream.ts](../../../apps/server/src/modules/chat/chatStream.ts) — SSE-шлях   |
-| `chat_first_turn_phase_ms` | Histogram | `phase`                           | [chat.ts](../../../apps/server/src/modules/chat/chat.ts) — нестрімовий перший хід |
+| Metric                               | Type      | Labels                            | Emitter                                                                                                     |
+| ------------------------------------ | --------- | --------------------------------- | ----------------------------------------------------------------------------------------------------------- |
+| `ai_first_token_ms`                  | Histogram | `provider` · `model` · `endpoint` | [chatStream.ts](../../../apps/server/src/modules/chat/chatStream.ts) — SSE тура синтезу                     |
+| `chat_first_turn_phase_ms`           | Histogram | `phase`                           | [chat.ts](../../../apps/server/src/modules/chat/chat.ts) — перший хід, JSON і стрім                         |
+| `chat_first_turn_first_visible_ms`   | Histogram | `kind` · `source`                 | [chatFirstTurnStream.ts](../../../apps/server/src/modules/chat/chatFirstTurnStream.ts) — стрім першого ходу |
+| `chat_first_turn_silent_retry_total` | Counter   | `reason`                          | [chatFirstTurnStream.ts](../../../apps/server/src/modules/chat/chatFirstTurnStream.ts) — стрім першого ходу |
+| `chat_synthesis_empty_retry_total`   | Counter   | `outcome`                         | [chatStreamEmptyRetry.ts](../../../apps/server/src/modules/chat/chatStreamEmptyRetry.ts) — стрім синтезу    |
 
-**Ці дві метрики міряють різні шляхи, і плутати їх — головна пастка секції.**
-`/api/chat` має два ходи, і стрімиться лише **другий** — синтез після
-tool-результатів. Перший хід не стрімиться взагалі: клієнт не просить
-(`useChatSend.ts` шле `send()` без прапорця), а сервер і не підтримав би —
-єдиний `if (stream)` у `chat.ts` живе всередині гілки tool-результатів. Тому
-`ai_first_token_ms`, який живе в `streamAnthropicToSse`, першого ходу **не
-бачить у принципі**, і порожнеча в його серіях не означає «швидко».
+**Ці метрики міряють різні шляхи, і плутати їх — головна пастка секції.**
+`/api/chat` має два ходи. До 2026-11-18 стрімився лише **другий** — синтез
+після tool-результатів. З 2026-11-18 веб просить стрім і першого ходу
+(`stream: true`, С-1 (а), спека
+[`hubchat-first-turn-stream.md`](../../work/specs/hubchat-first-turn-stream.md)),
+а старі клієнти (мобайл) далі отримують JSON. `ai_first_token_ms` живе в
+`streamAnthropicToSse`, тобто лише в турі синтезу, і першого ходу **не бачить
+у принципі**: порожнеча в його серіях не означає «швидко». Перший хід має
+власні: `chat_first_turn_first_visible_ms` — від входу в handler до першого
+видимого кадру (`kind="tool"` — ранній підпис кроку, `kind="text"` — перший
+шматок тексту; `source="cache"` — відповідь із кешу тими самими кадрами) і
+`chat_first_turn_silent_retry_total{reason="stall"|"network"|"status"}` —
+тихі повтори до першого кадру. **Ціль для першого видимого знаку ще не
+ратифіковано**: спершу замір `pnpm eval:stream --first-turn`. Кардинальність
+нової гістограми: 2 `kind` × 2 `source` × 13 ≈ 52 серії.
 
 Друге застереження до `ai_first_token_ms`: її відлік стартує з
 `streamStartedAtMs` — моменту, коли upstream **уже відповів заголовками**. Тобто
@@ -323,7 +339,9 @@ tool-результатів. Перший хід не стрімиться вз�
 час, ні час upstream до заголовків у неї не входять. Розбір — AI-2 у
 [`findings.md`](../../work/specs/audits/2026-09-01-product-audit/findings.md).
 
-`chat_first_turn_phase_ms` закриває саме цю прогалину. `phase`: `session` ·
+`chat_first_turn_phase_ms` закриває саме цю прогалину і на стрімі означає те
+саме, що в JSON: фаза `upstream` триває до зібраної відповіді, `total` — повна
+відповідь. `phase`: `session` ·
 `counterparties` · `correlations` · `rag` · `preferences` · `pre_upstream` ·
 `upstream` · `total`. Перші пʼять — серійний ланцюг до виклику моделі;
 `pre_upstream` накриває **все** наше від входу в handler, включно з парсингом і
@@ -339,6 +357,20 @@ tool-результатів. Перший хід не стрімиться вз�
 Три фази умовні й порожні в анона: `correlations` і `preferences` потребують
 сесії, `upstream` не пишеться при попаданні в response-cache. Відсутність серії
 тут — відповідь, а не діра.
+
+**Страховка-перезапит порожнього синтезу** (рішення власника 2026-11-19).
+`chat_synthesis_empty_retry_total{outcome="recovered"|"still_empty"|"error"}`
+рахує перезапити туру синтезу без міркувань: стрім через шлюз закрився успішно
+без жодного символу тексту, і сервер раз перепитав той самий payload з
+`thinking: {type: "disabled"}`. `recovered` — людина отримала текст без
+помилки; `still_empty` — знову порожньо, квота повертається, загальна помилка;
+`error` — перезапит не відкрився або обірвався. Три серії заводяться нулем.
+Вимикач `CHAT_SYNTHESIS_EMPTY_RETRY=off`. Перезапит пише власну мітку
+`endpoint="chat-tool-result-retry"` в `ai_requests_total`, `ai_tokens_total` і
+`ai_cost_estimate_usd_total`, тож його вартість видно окремо, а
+`ai_first_token_ms` відновленої відповіді включає невдалу першу спробу. Як
+читати частку — [runbook.md § ChatSynthesisEmptyRetry](./runbook.md#chatsynthesisemptyretry).
+Алерту немає: поріг ратифікують після заміру в проді.
 
 **Кардинальність**: 8 phase × (9 buckets + `_sum` + `_count` + `+Inf`) ≈ **96**
 серій. Бакети навмисно рідші за сусідні гістограми (`5, 25, 100, 250, 500,
@@ -369,10 +401,10 @@ sum(rate(chat_first_turn_phase_ms_sum{phase="pre_upstream"}[5m]))
 редакція «Anthropic `/api/chat` p95 first token < 1.5 s» була однією обіцянкою на
 два різні шляхи, і на першому з них не мала предмета. Тепер їх двоє:
 
-| Шлях                       | SLO                                                       | Метрика                                   |
-| -------------------------- | --------------------------------------------------------- | ----------------------------------------- |
-| Перший хід (не стрімиться) | p95 повної відповіді **< 15 с** — стеля-детектор, не ціль | `chat_first_turn_phase_ms{phase="total"}` |
-| Тур синтезу (стрімиться)   | p95 першого токена **< 1,5 с**, моделезалежно             | `ai_first_token_ms`                       |
+| Шлях                         | SLO                                                       | Метрика                                   |
+| ---------------------------- | --------------------------------------------------------- | ----------------------------------------- |
+| Перший хід (повна відповідь) | p95 повної відповіді **< 15 с** — стеля-детектор, не ціль | `chat_first_turn_phase_ms{phase="total"}` |
+| Тур синтезу (стрімиться)     | p95 першого токена **< 1,5 с**, моделезалежно             | `ai_first_token_ms`                       |
 
 **Чому 15 с, а не 1,5 і не 3.** Число взято із заміру, а не з побажання: 12
 промптів 2026-09-01 дали медіану ≈6,7 с і максимум 13,7 с. Поріг нижчий за факт

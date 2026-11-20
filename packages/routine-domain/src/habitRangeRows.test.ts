@@ -67,10 +67,10 @@ describe("routine-domain/habitRangeRows", () => {
     expect(byKey.get("2026-01-10")).toBe("unscheduled");
   });
 
-  it("keeps skipped days inside the denominator so rows match Зведення", () => {
-    // Свідома асиметрія: клітинка показує `skipped` окремим станом, але зі
-    // знаменника день не виходить — так само, як його рахує
-    // `completionRateForRange` без опції `skips` (див. AI-CONTEXT у модулі).
+  it("drops «не зміг» days from the denominator, same as Зведення (П-18 (А))", () => {
+    // OD-29, Р-3 (а), 2026-11-18: клітинка показує `skipped` окремим станом,
+    // а зі знаменника день виходить — так само, як у `completionRateForRange`
+    // з опцією `skips`, якою тепер рахує «Зведення».
     const rows = buildHabitRangeRows(
       [dailyHabit("a")],
       { a: ["2026-01-10"] },
@@ -80,10 +80,22 @@ describe("routine-domain/habitRangeRows", () => {
     );
 
     const row = rows[0];
-    expect(row?.scheduled).toBe(3);
+    expect(row?.scheduled).toBe(2);
     expect(row?.completed).toBe(1);
     expect(row?.skipped).toBe(1);
-    expect(row?.rate).toBeCloseTo(1 / 3);
+    expect(row?.rate).toBeCloseTo(1 / 2);
+    const states = row?.cells.map((c) => c.state);
+    expect(states).toEqual(["missed", "skipped", "done"]);
+  });
+
+  it("keeps a row whose every scheduled day is «не зміг», with rate 0 and empty denominator", () => {
+    const rows = buildHabitRangeRows([dailyHabit("a")], { a: [] }, TODAY, 2, {
+      skips: { a: { "2026-01-09": skip(), "2026-01-10": skip() } },
+    });
+    expect(rows).toHaveLength(1);
+    expect(rows[0]?.scheduled).toBe(0);
+    expect(rows[0]?.skipped).toBe(2);
+    expect(rows[0]?.rate).toBe(0);
   });
 
   it("drops habits with nothing scheduled in the window", () => {

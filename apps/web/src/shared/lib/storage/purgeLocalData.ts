@@ -65,9 +65,14 @@ import { STORAGE_KEYS } from "@sergeant/shared";
 // eslint-disable-next-line sergeant-design/no-flat-shared-lib -- log/ is a real subdir; mirrors storageManager.ts.
 import { logger } from "../log";
 import { SERGEANT_STORE, dbClear, dbDel } from "../idb/sergeantDb";
+import { bumpAtRestWipeEpoch } from "../../../core/security/aiAtRestEpoch";
 import { resolveLsStore, safeListSSKeys, safeRemoveSS } from "./storage";
 import { reloadAllTypedStores } from "./typedStore";
 import { resetKvStoreBoot } from "../../../core/db/kvStoreBoot";
+import {
+  ORIGIN_DEVICE_RESET_MARKER,
+  requestOriginDeviceReset,
+} from "../../../core/syncEngine/originDeviceReset";
 
 /**
  * Prefix families for app-owned `localStorage` keys whose exact names are
@@ -104,7 +109,13 @@ const APP_OWNED_LS_PREFIXES = [
  * Literal mirrors `MARKER_PREFIX` in `core/db/kvvfsHandoff.ts` (importing it
  * would pull the sqlite layer into this module; a pin test keeps them equal).
  */
-const PRESERVED_LS_PREFIXES = ["sergeant.storage.opfsHandoff."] as const;
+const PRESERVED_LS_PREFIXES = [
+  "sergeant.storage.opfsHandoff.",
+  // Прохання видати новий id пристрою на наступному старті ставить сама
+  // чистка (див. кінець `purgeAppOwnedLocalData`); повторна чистка до старту
+  // не має його з'їсти. Даних користувача в ньому немає.
+  ORIGIN_DEVICE_RESET_MARKER,
+] as const;
 
 /**
  * Exact app-owned keys: every literal in the central registry plus the two
@@ -202,6 +213,8 @@ export async function purgeNutritionIdbStores(): Promise<void> {
  * blocks the others or the logout flow.
  */
 export async function purgeAppOwnedLocalData(): Promise<void> {
+  // Зашифровані AI-слоти (aiAtRest): запис, що летить, не має воскресити стерте.
+  bumpAtRestWipeEpoch();
   try {
     purgeAppOwnedLocalStorage();
   } catch (err) {
@@ -230,4 +243,8 @@ export async function purgeAppOwnedLocalData(): Promise<void> {
   } catch (err) {
     logger.warn("[purgeLocalData] nutrition IDB purge failed", err);
   }
+  // Локальні дані стерто, тож пристрій для синку має стати «новим»: id
+  // пристрою лежить в анонімному розділі KV, до якого чистка не дістає, тому
+  // його перевипускає наступний старт (`originDeviceReset.ts`).
+  requestOriginDeviceReset();
 }

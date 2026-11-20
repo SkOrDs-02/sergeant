@@ -21,6 +21,7 @@ import {
   categoryLabelFor,
   mealTypeLabelFor,
 } from "./hubChatActionCardsHelpers";
+import { summaryFor } from "./hubChatActionCardsSummary";
 
 describe("moduleFor", () => {
   it("maps finyk tools", () => {
@@ -75,7 +76,6 @@ describe("moduleFor", () => {
       "plan_workout",
       "finish_workout",
       "log_measurement",
-      "add_program_day",
       "log_wellbeing",
       "log_weight",
       "suggest_workout",
@@ -136,7 +136,6 @@ describe("iconFor", () => {
     expect(iconFor("log_set")).toBe("activity");
     expect(iconFor("finish_workout")).toBe("flag");
     expect(iconFor("log_measurement")).toBe("weighing-scale");
-    expect(iconFor("add_program_day")).toBe("calendar-days");
     expect(iconFor("log_wellbeing")).toBe("smile");
     expect(iconFor("suggest_workout")).toBe("zap");
     expect(iconFor("compare_progress")).toBe("trending-up");
@@ -274,7 +273,6 @@ describe("titleFor", () => {
       "plan_workout",
       "finish_workout",
       "log_measurement",
-      "add_program_day",
       "log_wellbeing",
       "log_weight",
       "suggest_workout",
@@ -374,6 +372,28 @@ describe("habitNameFor", () => {
   it("strips an `id:`-prefix before lookup, like `normalizeHabitId`", () => {
     seedHabit("hab_1", "Читати");
     expect(habitNameFor("id: hab_1")).toBe("Читати");
+  });
+
+  // Картка звички з назвою, а не з `hab_<uuid>`: діапазон паузи й
+  // повернення з паузи (хвиля 4) на засіяній звичці.
+  it("pause_habit: назва звички з діапазоном або поверненням", () => {
+    seedHabit("hab_1", "Біг");
+    expect(
+      summaryFor(
+        "pause_habit",
+        { habit_id: "hab_1", from: "2026-08-10", to: "2026-08-17" },
+        "r",
+      ),
+    ).toBe("Біг · 2026-08-10 – 2026-08-17");
+    expect(
+      summaryFor("pause_habit", { habit_id: "hab_1", from: "2026-08-10" }, "r"),
+    ).toBe("Біг · з 2026-08-10");
+    expect(summaryFor("pause_habit", { habit_id: "hab_1" }, "r")).toBe(
+      "Біг · пауза",
+    );
+    expect(
+      summaryFor("pause_habit", { habit_id: "hab_1", paused: false }, "r"),
+    ).toBe("Біг · повернення з паузи");
   });
 
   it("returns undefined for an unknown/deleted habit id", () => {

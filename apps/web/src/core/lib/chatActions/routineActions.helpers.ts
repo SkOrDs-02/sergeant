@@ -1,5 +1,5 @@
 /**
- * Last validated: 2026-09-01
+ * Last validated: 2026-11-18
  * Status: Active
  *
  * Хелпери `routineActions.ts`, винесені за Hard Rule #18 (600 рядків):
@@ -7,11 +7,15 @@
  * дат) і константи тижня.
  */
 
-import { habitCompletionRate, type Habit } from "@sergeant/routine-domain";
-import { getKyivDayKey, parseKyivDate } from "@shared/lib/time/kyivTime";
-import { formatNumberUk } from "@sergeant/shared";
-
-export const DAY_MS = 86_400_000;
+import {
+  calcRoutinePeriodCompletion,
+  dateKeyMinusDays,
+  habitCompletionRate,
+  type Habit,
+  type HabitSkip,
+} from "@sergeant/routine-domain";
+import { parseKyivDate } from "@shared/lib/time/kyivTime";
+import { deviceDayKey, formatNumberUk } from "@sergeant/shared";
 
 // Mon-first 0..6 — matches `@sergeant/routine-domain` `isoWeekdayFromDateKey`
 // and `WEEKDAY_LABELS`. Both English short names and Ukrainian short names
@@ -97,21 +101,37 @@ export function habitTrendText(
   completions: Readonly<Record<string, string[] | undefined>>,
   days: number,
   now: number,
+  skips?: Record<string, Record<string, HabitSkip>>,
 ): string {
+  // П-18 (А), 2026-11-18: тиждень рахується тим самим знаменником, що
+  // модуль (`calcRoutinePeriodCompletion`): заплановані дні без днів «не
+  // зміг». Раніше тут стояло плоске «звички × дні».
+  // ADR-0078 (2026-11-18): тижні рахуються від дня ПРИСТРОЮ, бо відмітки
+  // лежать під його ключами; київський день після київської півночі вже
+  // завтрашній, і сьогоднішня відмітка випадала з вікна.
+  const todayKey = deviceDayKey(now);
+  const safeCompletions: Record<string, string[]> = {};
+  for (const [id, list] of Object.entries(completions)) {
+    if (list) safeCompletions[id] = list;
+  }
   const weeklyData: number[] = [];
   for (let w = 0; w < Math.ceil(days / 7); w++) {
-    let done = 0;
-    let possible = 0;
+    const weekKeys: string[] = [];
     for (let d = 0; d < 7; d++) {
       const dayOffset = w * 7 + d;
       if (dayOffset >= days) break;
-      const dk = getKyivDayKey(now - dayOffset * DAY_MS);
-      for (const h of habits) {
-        possible++;
-        if (completions[h.id]?.includes(dk)) done++;
-      }
+      weekKeys.push(dateKeyMinusDays(todayKey, dayOffset));
     }
-    weeklyData.push(possible > 0 ? Math.round((done / possible) * 100) : 0);
+    const week = calcRoutinePeriodCompletion(
+      habits,
+      safeCompletions,
+      weekKeys,
+      {
+        pausedFrom: todayKey,
+        skips,
+      },
+    );
+    weeklyData.push(week.pct);
   }
   weeklyData.reverse();
   const parts = [
@@ -134,8 +154,7 @@ export function habitTrendText(
     );
   }
   if (habits.length > 1) {
-    const todayKey = getKyivDayKey(now);
-    const startKey = getKyivDayKey(now - (days - 1) * DAY_MS);
+    const startKey = dateKeyMinusDays(todayKey, days - 1);
     parts.push("По звичках:");
     for (const h of habits) {
       const { completed, scheduled } = habitCompletionRate(
@@ -143,6 +162,7 @@ export function habitTrendText(
         completions[h.id],
         startKey,
         todayKey,
+        { skips: skips?.[h.id], pausedFrom: todayKey },
       );
       const pct = scheduled > 0 ? Math.round((completed / scheduled) * 100) : 0;
       parts.push(

@@ -16,6 +16,10 @@ import { LogCard } from "../components/LogCard";
 import { newMealId } from "../lib/mealId";
 import type { useNutritionLog } from "../hooks/useNutritionLog";
 import type { EditingMealState } from "../hooks/useNutritionUiState";
+import type {
+  MealPantryLink,
+  MealPantryOffer,
+} from "../hooks/useMealPantryOffer";
 
 type LogController = ReturnType<typeof useNutritionLog>;
 type Toast = ReturnType<typeof useToast>;
@@ -24,12 +28,15 @@ interface NutritionLogPageProps {
   log: LogController;
   toast: Toast;
   setEditingMeal: Dispatch<SetStateAction<EditingMealState | null>>;
+  /** «Списати … із комори?» після запису з пошуку (OD-27 Х-4 а). */
+  pantryOffer?: MealPantryOffer | undefined;
 }
 
 export function NutritionLogPage({
   log,
   toast,
   setEditingMeal,
+  pantryOffer,
 }: NutritionLogPageProps) {
   return (
     <SectionErrorBoundary key="page-log" title="Не вдалось показати «Щоденник»">
@@ -44,15 +51,20 @@ export function NutritionLogPage({
           // рендеру міг відстати від годинника, і «Скасувати» не знайшло б
           // запис.
           const dateForLog = log.handleAddMeal({ ...meal, id });
+          const pending: { link?: MealPantryLink | undefined } = {};
           // Додавання миттєве і без підтвердження, тож тост мусить нести
           // «Скасувати» — як аркуш прийому (`NutritionApp`) і як видалення
           // нижче. Без цього помилковий тап по рядку пошуку коштував
           // ручного пошуку запису й видалення (знахідка PR-N1, аудит
           // 2026-09-13).
-          showUndoToast(toast, {
+          const recordToastId = showUndoToast(toast, {
             msg: "Страву додано",
-            onUndo: () => log.handleRemoveMeal(dateForLog, id),
+            onUndo: () => {
+              log.handleRemoveMeal(dateForLog, id);
+              pending.link?.undo();
+            },
           });
+          pending.link = pantryOffer?.([meal], { after: recordToastId });
         }}
         onRemoveMeal={(date: string, meal: Meal) => {
           if (!meal?.id) return;

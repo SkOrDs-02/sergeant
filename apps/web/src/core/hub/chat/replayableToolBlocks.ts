@@ -34,3 +34,26 @@ export function keepReplayableToolBlocks(raw: unknown): unknown[] | undefined {
   const kept = raw.filter((b) => ToolCallsRawBlockSchema.safeParse(b).success);
   return kept.length > 0 ? kept : undefined;
 }
+
+/**
+ * Що тур синтезу відбиває назад із першого туру того самого ходу: блоки
+ * `tool_calls_raw` (через фільтр вище) і `round_trip_ticket`, якщо сервер
+ * його видав.
+ *
+ * AI-CONTEXT (2026-11-18, спека `hubchat-find-then-change.md`): квиток сервер
+ * видавав з AI-5, а клієнт його не повертав, тож кожен хід з інструментом
+ * списував дві одиниці тижневої квоти (`aiQuota.ts::tryConsumeRoundTripTicket`)
+ * і рвав трейс ходу в PostHog надвоє (`chat.ts`, `toolTraceId`). Без квитка
+ * поле відсутнє, а не порожнє: порожній рядок сервер однаково відкидає.
+ */
+export function firstTurnEcho(first: {
+  tool_calls_raw?: unknown;
+  round_trip_ticket?: string;
+}): { tool_calls_raw: unknown[] | undefined; round_trip_ticket?: string } {
+  return {
+    tool_calls_raw: keepReplayableToolBlocks(first.tool_calls_raw),
+    ...(first.round_trip_ticket
+      ? { round_trip_ticket: first.round_trip_ticket }
+      : {}),
+  };
+}

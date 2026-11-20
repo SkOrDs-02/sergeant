@@ -3,6 +3,8 @@
  */
 
 import { kyivCalendarDaysBetween } from "@sergeant/shared";
+import { isSetCompleted } from "../domain/workouts/setCompletion.js";
+import { sumCompletedSets } from "../domain/workouts/measureRecords.js";
 import type {
   MuscleState,
   RecoveryStatus,
@@ -36,19 +38,24 @@ export function loadPointsForItem(
       (s, x) => s + (Number(x.weightKg) || 0) * (Number(x.reps) || 0),
       0,
     );
-    const setCount = sets.filter(
-      (x) => (Number(x.reps) || 0) > 0 || (Number(x.weightKg) || 0) > 0,
-    ).length;
+    // Той самий предикат, що лічильник сесії й `computeWorkoutSetCount`.
+    const setCount = sets.filter((x) => isSetCompleted(x, item)).length;
     return tonnage / 1000 + setCount * 0.15;
   }
+  // Тип виміру (спека типу виміру): суми беремо з зарахованих підходів, а
+  // для записів без них (до фічі, «Заняття й час») — суму на вправі. Ті самі
+  // коефіцієнти: формула відновлення не змінюється, лише джерело суми.
   if (item.type === "time") {
-    const sec = Number(item.durationSec) || 0;
+    const sec =
+      sumCompletedSets(item, "durationSec") ?? (Number(item.durationSec) || 0);
     return sec / 240;
   }
   if (item.type === "distance") {
-    const km = (Number(item.distanceM) || 0) / 1000;
-    const min = (Number(item.durationSec) || 0) / 60;
-    return km + min / 30;
+    const metres =
+      sumCompletedSets(item, "distanceM") ?? (Number(item.distanceM) || 0);
+    const sec =
+      sumCompletedSets(item, "durationSec") ?? (Number(item.durationSec) || 0);
+    return metres / 1000 + sec / 60 / 30;
   }
   return 0;
 }

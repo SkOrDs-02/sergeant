@@ -1,5 +1,6 @@
 import { useQueryClient } from "@tanstack/react-query";
 import { notifyFinykRoutineCalendarSync } from "../hubRoutineSync";
+import { emitFinykExpenseRoutineAutoMark } from "../lib/routineAutoMark";
 import { hubKeys } from "@shared/lib/api/queryKeys";
 import { generatePrefixedId } from "@sergeant/shared";
 import type { Budget } from "@sergeant/finyk-domain/domain/types";
@@ -94,6 +95,12 @@ export function useFinykStorageMutations(slots: FinykStorageSlots) {
     expense: Partial<ManualExpense> & { id?: unknown },
     /** Привʼязки до боргів, зняті `removeManualExpense` (undo) — `data-24`. */
     restoredLinks?: readonly ManualExpenseLinkSnapshot[],
+    /**
+     * `userAction: true` — запис зробила людина на цьому пристрої (форма,
+     * чек зі скану). Лише тоді витрата відмічає звичку в Рутині; імпорт,
+     * Сільпо й undo позначку не ставлять (`lib/routineAutoMark.ts`).
+     */
+    opts?: { userAction?: boolean },
   ) => {
     const isIncome = expense.kind === "income";
     const entry: ManualExpense = {
@@ -107,6 +114,10 @@ export function useFinykStorageMutations(slots: FinykStorageSlots) {
       ...(expense.account === "cash" ? { account: "cash" as const } : {}),
     };
     setManualExpenses((prev) => [entry, ...prev]);
+    // Після запису: якщо сетер кинув, сигналу немає.
+    if (opts?.userAction && !isIncome) {
+      emitFinykExpenseRoutineAutoMark(entry.date);
+    }
     if (restoredLinks && restoredLinks.length > 0) {
       const forDebts = restoredLinks.filter((l) => l.type === "debt");
       const forRecv = restoredLinks.filter((l) => l.type === "receivable");

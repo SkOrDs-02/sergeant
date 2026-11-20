@@ -188,6 +188,11 @@ export const routineHabits = sqliteTable(
     weeklyTargetHistoryJson: text("weekly_target_history_json")
       .notNull()
       .default("[]"),
+    /** Ціль лічильника (дзеркало серверної 170, клієнтська 012). NULL = «так/ні». */
+    countTarget: integer("count_target"),
+    countUnit: text("count_unit"),
+    /** `'fizruk_workout'` | `'nutrition_water_goal'` | `'finyk_expense'` | NULL. */
+    autoMarkSource: text("auto_mark_source"),
     createdAt: text("created_at")
       .notNull()
       .default(sql`(datetime('now'))`),
@@ -318,6 +323,32 @@ export const routineHabitSkips = sqliteTable(
     index("routine_habit_skips_user_active_idx_lite")
       .on(table.userId)
       .where(sql`${table.deletedAt} IS NULL`),
+  ],
+);
+
+/**
+ * SQLite counterpart of `routine_habit_counts` (Р-1 (а), серверна 170).
+ * Shipped by client migration `012_routine_habit_counter_and_auto_mark.sql`.
+ */
+export const routineHabitCounts = sqliteTable(
+  "routine_habit_counts",
+  {
+    id: text().notNull(),
+    userId: text("user_id").notNull(),
+    habitId: text("habit_id").notNull(),
+    dateKey: text("date_key").notNull(),
+    count: integer().notNull(),
+    updatedAt: text("updated_at")
+      .notNull()
+      .default(sql`(datetime('now'))`),
+    deletedAt: text("deleted_at"),
+  },
+  (table) => [
+    primaryKey({ columns: [table.userId, table.id] }),
+    index("routine_habit_counts_user_habit_idx_lite").on(
+      table.userId,
+      table.habitId,
+    ),
   ],
 );
 

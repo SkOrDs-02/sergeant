@@ -2,13 +2,16 @@
  * Last validated: 2026-11-18
  * Status: Active
  */
+import { useState } from "react";
 import { useHubPref, HUB_PREF_MONDAY_AUTO } from "./hubPrefs";
 import { settingsSectionTitle } from "../hub/settingsSectionsCatalog";
 import { useWeeklyDigest } from "../insights/useWeeklyDigest";
+import { IosInstallPushHint } from "@shared/components/ui/IosInstallPushHint";
 import { requestNotificationPermission } from "@shared/hooks/useModuleReminder";
 import { usePushNotifications } from "@shared/hooks/usePushNotifications";
 import { useToast } from "@shared/hooks/useToast";
 import { messages } from "@shared/i18n/uk";
+import { isIOSBrowserTab } from "@shared/lib/platform/iosStandalone";
 import {
   SettingsGroup,
   SettingsSubGroup,
@@ -33,6 +36,10 @@ export function AIDigestSection() {
   const { digest, weekRange } = useWeeklyDigest();
   const { warning: toastWarning } = useToast();
   const { subscribed: pushSubscribed } = usePushNotifications();
+  // iPhone/iPad у вкладці Safari: push неможливий, тож замість тосту
+  // показуємо, як встановити застосунок (О-1 (б), рішення власника
+  // 2026-11-18); тумблер лишається вимкненим.
+  const [showInstallHint, setShowInstallHint] = useState(false);
   // Default ON з 2026-08-30: дайджест поза AI-квотою, тож автозапуск
   // більше нічого не «зʼїдає». Відсутнє значення = увімкнено; «0» —
   // явний opt-out.
@@ -60,6 +67,10 @@ export function AIDigestSection() {
   };
 
   const handleToggleNudges = (checked: boolean) => {
+    if (checked && isIOSBrowserTab()) {
+      setShowInstallHint(true);
+      return;
+    }
     // Дозвіл питаємо поруч із записом: увімкнений на сервері канал без
     // дозволу браузера — це тиха підписка на нічого. Запис не блокуємо,
     // як і доти в «Сповіщеннях»: дозвіл можна дати пізніше.
@@ -69,6 +80,10 @@ export function AIDigestSection() {
       Notification.permission !== "granted"
     ) {
       void requestNotificationPermission().then((perm) => {
+        if (perm === "install-required") {
+          setShowInstallHint(true);
+          return;
+        }
         if (perm === "denied" || perm === "default") {
           toastWarning(sergeantCopy.nudgesPermissionDenied);
         }
@@ -91,7 +106,8 @@ export function AIDigestSection() {
   // UX-feedback 2026-05-08: видалили кнопку «Згенерувати звіт зараз» —
   // вона дублювала аналогічну дію на дашборді (`WeeklyDigestCard` /
   // `WeeklyDigestFooter`), тож «Згенерувати/Оновити» було двічі. У
-  // налаштуваннях лишився тільки тумблер автогенерації по понеділках.
+  // налаштуваннях лишився тільки тумблер автогенерації (з 2026-11-18 не
+  // лише в понеділок, а при першому відкритті головної після тижня, С-3 (а)).
   // 2026-09-03: ручного «Згенерувати» більше немає ніде — звіт створює
   // лише автогенерація, тож тумблер нижче — єдиний спосіб його отримати.
   return (
@@ -100,13 +116,14 @@ export function AIDigestSection() {
     // тут vs "AI-дайджести" у пошуку) без жодної перевірки.
     <SettingsGroup
       title={settingsSectionTitle("ai")}
-      value={mondayAuto ? "Звіт щопонеділка" : "Звіт вимкнено"}
+      value={mondayAuto ? "Звіт щотижня" : "Звіт вимкнено"}
     >
       <SettingsSubGroup variant="bounded" title="Звіт тижня">
         <p className="text-style-body text-subtle leading-snug">
           Тижневий аналіз прогресу від Сержанта по всіх модулях: фінанси,
-          тренування, харчування та звички. Звіт збирається сам щопонеділка і
-          чекає на головній у блоці «Звіт тижня»; там же його можна оновити.
+          тренування, харчування та звички. Звіт за тиждень, що минув,
+          збирається сам при першому відкритті головної. Він чекає там у блоці
+          «Звіт тижня», там же його можна оновити.
         </p>
         <div>
           <p className="text-style-label text-text">Поточний тиждень</p>
@@ -118,8 +135,8 @@ export function AIDigestSection() {
           )}
         </div>
         <ToggleRow
-          label="Автогенерація щопонеділка"
-          description="Перша сесія понеділка сама збирає звіт за завершений тиждень. Звіт не витрачає денний ліміт AI-запитів."
+          label="Автогенерація звіту"
+          description="Перше відкриття головної після завершення тижня само збирає звіт за тиждень, що минув. Звіт не витрачає ліміт дій Сержанта."
           checked={mondayAuto}
           onChange={handleToggleMondayAuto}
         />
@@ -136,6 +153,7 @@ export function AIDigestSection() {
           checked={sergeantNudges.value}
           onChange={handleToggleNudges}
         />
+        {showInstallHint && <IosInstallPushHint className="mt-2" />}
         {/* Огляд 2026-09-04: до першого завантаження «помилка» — це гість
             («увійди, щоб…»), не збій. Червоним лишається лише збій
             збереження після успішного завантаження. */}

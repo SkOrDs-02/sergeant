@@ -1,5 +1,5 @@
 /**
- * Last validated: 2026-08-07
+ * Last validated: 2026-11-17
  * Status: Active
  *
  * Phase 6.6 — one-tap add from a hero quick-chip. Reuses `log.handleAddMeal`
@@ -13,15 +13,13 @@
  * Поведінка не мінялась.
  */
 import { useCallback } from "react";
-import type { Meal } from "@sergeant/nutrition-domain";
-import {
-  MEAL_TYPES,
-  deviceTimeOfDay,
-  mealTypeByHour,
-} from "@sergeant/nutrition-domain";
+import type { Meal, MealTypeId } from "@sergeant/nutrition-domain";
+import { MEAL_TYPES, deviceTimeOfDay } from "@sergeant/nutrition-domain";
+import { quickMealType } from "../lib/quickMealType";
 import type { ToastApi } from "@shared/hooks/useToast";
 import { newMealId } from "../lib/mealId";
 import type { QuickChip } from "./useNutritionQuickChips";
+import type { MealPantryLink, MealPantryOffer } from "./useMealPantryOffer";
 
 /** Мінімальний зріз `useNutritionLog`, потрібний квік-чипу. */
 interface QuickAddMealLog {
@@ -32,18 +30,24 @@ interface QuickAddMealLog {
 export function useQuickAddMealFromChip({
   log,
   toast,
+  pantryOffer,
 }: {
   log: QuickAddMealLog;
   toast: ToastApi;
-}): (chip: QuickChip) => void {
+  /** «Списати … із комори?» другим тостом (OD-27 Х-4 а). */
+  pantryOffer?: MealPantryOffer | undefined;
+}): (chip: QuickChip, mealType?: MealTypeId) => void {
   return useCallback(
-    (chip: QuickChip) => {
+    (chip: QuickChip, mealType?: MealTypeId) => {
       // ADR-0078: і `mealType`, і `time` беремо з годинника ПРИСТРОЮ — з
       // того самого, що дав `log.selectedDate`. Київська пара поруч із
       // девайсовим день-ключем робила `eaten_at` неіснуючим моментом.
       const now = new Date();
-      // eslint-disable-next-line sergeant-design/prefer-kyiv-time -- ADR-0078: тип прийому їжі й час доби належать ОСОБИСТОМУ дню, а він за пристроєм — тим самим годинником, що дав `log.selectedDate`
-      const mealTypeId = mealTypeByHour(now.getHours());
+      // Тип, обраний в аркуші (сегмент «Вечеря» в hero), виграє годинник:
+      // інакше «Вечеря» о 13:00 + тап по чипу писали «Обід».
+      // Спільне правило швидкого запису (`quickMealType`): чип, «Як учора»
+      // в аркуші «Додати» і запис фото беруть тип однаково.
+      const mealTypeId = quickMealType(mealType, now);
       const mealLabel =
         MEAL_TYPES.find((m) => m.id === mealTypeId)?.label || "Прийом їжі";
       const id = newMealId();
@@ -59,18 +63,20 @@ export function useQuickAddMealFromChip({
           fat_g: chip.macros.fat_g,
           carbs_g: chip.macros.carbs_g,
         },
-        // Quick-chip is a synthetic re-log; treat it as manual so existing
-        // analytics / dual-write paths handle it like any keyboard entry.
-        // `MealMacroSource` enum has no "pantry" member — the chip's pantry
-        // affinity is a display hint only, not a persisted classification.
+        // Чип — повтор наявного запису, як «Як учора» (`cloneMealsForCopy`):
+        // `source` ручний, а продукт і походження КБЖВ переходять від запису,
+        // з якого чип узято (раніше `foodId: null` рвав звʼязок із продуктом).
+        // `MealMacroSource` не має члена "pantry" — спорідненість чипа з
+        // коморою лише підказка показу, не збережена класифікація.
         source: "manual",
-        macroSource: "manual",
+        macroSource: chip.macroSource ?? "manual",
         amount_g: chip.grams,
-        foodId: null,
+        foodId: chip.foodId ?? null,
       };
       // День, під яким запис ЛЯГ: `log.selectedDate` міг відстати від годинника.
       const dateForLog = log.handleAddMeal(meal);
-      toast.success(
+      const pending: { link?: MealPantryLink | undefined } = {};
+      const recordToastId = toast.success(
         `${chip.label} додано · ${chip.macros.kcal} ккал`,
         undefined,
         {
@@ -78,10 +84,12 @@ export function useQuickAddMealFromChip({
           kind: "undo",
           onClick: () => {
             log.handleRemoveMeal(dateForLog, id);
+            pending.link?.undo();
           },
         },
       );
+      pending.link = pantryOffer?.([meal], { after: recordToastId });
     },
-    [log, toast],
+    [log, toast, pantryOffer],
   );
 }

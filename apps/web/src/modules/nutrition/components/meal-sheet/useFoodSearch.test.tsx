@@ -15,6 +15,13 @@ vi.mock("../../lib/foodDb/foodDb", () => ({
   searchFoods: (...a: unknown[]) => searchFoodsMock(...a),
 }));
 
+// Засів бази продуктів (зйомка 2026-11-18: конструктор страви на свіжому
+// пристрої шукав у порожній базі, бо засів кликав лише аркуш прийому).
+const seedMock = vi.fn<() => Promise<boolean>>(() => Promise.resolve(true));
+vi.mock("../../lib/foodDb/seedFoodsOnce", () => ({
+  ensureSeedFoodsOnce: () => seedMock(),
+}));
+
 const offSearchMock = vi.fn();
 vi.mock("@shared/api", async () => {
   const actual =
@@ -42,6 +49,8 @@ beforeEach(() => {
   vi.useFakeTimers();
   searchFoodsMock.mockReset();
   offSearchMock.mockReset();
+  seedMock.mockReset();
+  seedMock.mockImplementation(() => Promise.resolve(true));
 });
 
 afterEach(() => {
@@ -80,6 +89,36 @@ describe("useFoodSearch", () => {
       },
       { interval: 10 },
     );
+  });
+
+  it("локальний пошук спершу чекає засіву бази продуктів", async () => {
+    let finishSeed: (ok: boolean) => void = () => {};
+    seedMock.mockImplementation(
+      () => new Promise<boolean>((r) => (finishSeed = r)),
+    );
+    searchFoodsMock.mockResolvedValue([{ id: "gen_banana", name: "Банан" }]);
+    offSearchMock.mockResolvedValue({ products: [] });
+
+    const { result } = renderHook(() => useFoodSearch("банан"), {
+      wrapper: makeWrapper(),
+    });
+    await act(async () => {
+      vi.advanceTimersByTime(200);
+      await Promise.resolve();
+    });
+    await vi.waitFor(() => expect(seedMock).toHaveBeenCalled(), {
+      interval: 10,
+    });
+    expect(searchFoodsMock).not.toHaveBeenCalled();
+
+    await act(async () => {
+      finishSeed(true);
+      await Promise.resolve();
+    });
+    await vi.waitFor(() => expect(result.current.foodHits).toHaveLength(1), {
+      interval: 10,
+    });
+    expect(searchFoodsMock).toHaveBeenCalledWith("банан", 8);
   });
 
   it("queries OpenFoodFacts after the OFF debounce window", async () => {

@@ -1,10 +1,12 @@
 import { useCallback, useMemo } from "react";
+import { withMeasureMirror } from "@sergeant/fizruk-domain/domain";
 import { useSqliteTickOverlay } from "@shared/hooks/useSqliteTickOverlay";
 import type {
   ChecklistItem,
   Workout,
   WorkoutGroup,
   WorkoutItem,
+  WorkoutProgramRef,
 } from "@sergeant/fizruk-domain/domain";
 import { triggerFizrukDualWrite } from "../lib/sqliteWriter/index";
 import { extractWorkoutSnapshots } from "../lib/fizrukDualWriteState";
@@ -140,21 +142,29 @@ export function useWorkouts() {
     [intended, setWorkouts],
   );
 
-  const createWorkout = useCallback((): Workout => {
-    const w: Workout = {
-      id: uid("w"),
-      // eslint-disable-next-line no-restricted-syntax -- UTC-anchored wall-clock instant для startedAt (не Kyiv-межа доби)
-      startedAt: new Date().toISOString(),
-      endedAt: null,
-      items: [],
-      groups: [],
-      warmup: null,
-      cooldown: null,
-      note: "",
-    };
-    persist((prev: Workout[]) => [w, ...prev]);
-    return w;
-  }, [persist]);
+  /**
+   * `init.programRef` — слот програми, з якого стартує тренування (П-10):
+   * пишеться в рядок одразу, тим самим записом, що й нове тренування.
+   */
+  const createWorkout = useCallback(
+    (init?: { programRef?: WorkoutProgramRef }): Workout => {
+      const w: Workout = {
+        id: uid("w"),
+        // eslint-disable-next-line no-restricted-syntax -- UTC-anchored wall-clock instant для startedAt (не Kyiv-межа доби)
+        startedAt: new Date().toISOString(),
+        endedAt: null,
+        items: [],
+        groups: [],
+        warmup: null,
+        cooldown: null,
+        note: "",
+        ...(init?.programRef ? { programRef: init.programRef } : {}),
+      };
+      persist((prev: Workout[]) => [w, ...prev]);
+      return w;
+    },
+    [persist],
+  );
 
   /**
    * `startedAt` із форми — для «внести проведене заняття»: сесія жива, просто
@@ -255,7 +265,10 @@ export function useWorkouts() {
           if (w.id !== workoutId) return w;
           return {
             ...w,
-            items: [...(w.items || []), { id: itemId, ...item } as WorkoutItem],
+            items: [
+              ...(w.items || []),
+              withMeasureMirror({ id: itemId, ...item } as WorkoutItem),
+            ],
           };
         }),
       );
@@ -272,7 +285,10 @@ export function useWorkouts() {
           return {
             ...w,
             items: (w.items || []).map((i: WorkoutItem) =>
-              i.id === itemId ? { ...i, ...patch } : i,
+              // Дзеркало типу виміру (`withMeasureMirror`): похідний `type`
+              // і суми секунд / метрів зарахованих підходів на вправі, щоб
+              // старий клієнт і калорії бачили правдиву суму.
+              i.id === itemId ? withMeasureMirror({ ...i, ...patch }) : i,
             ),
           };
         }),

@@ -1,5 +1,5 @@
 /**
- * Last validated: 2026-05-14
+ * Last validated: 2026-11-19
  * Status: Active
  */
 import { useState } from "react";
@@ -23,6 +23,7 @@ import { fmt } from "../../lib/numberFmt";
 
 type RecExerciseFn = typeof recoveryConflictsForExerciseFn;
 type RecoveryByMap = Parameters<RecExerciseFn>[1];
+type InjurySites = NonNullable<Parameters<RecExerciseFn>[2]>;
 
 export type CatalogGroup = {
   id: string;
@@ -61,7 +62,11 @@ type WorkoutCatalogSectionProps = {
   handleExerciseInListClick: (ex: FizrukData.RawExerciseDef) => void;
   setSelected: (ex: FizrukData.RawExerciseDef) => void;
   recoveryConflictsForExercise: RecExerciseFn;
-  rec: { by: RecoveryByMap };
+  /**
+   * `injurySites` обовʼязковий навмисно: без нього доменна перевірка мовчки
+   * падає в дефолт «позначок немає» і травма не видна в каталозі (ADR-0083).
+   */
+  rec: { by: RecoveryByMap; injurySites: InjurySites };
   musclesUk: Record<string, string>;
   /**
    * Скільки разів кожна вправа вже лежить в активному тренуванні.
@@ -329,7 +334,11 @@ export function WorkoutCatalogSection({
                     className="border-b border-line group-last/cg:border-b-0"
                   >
                     {g.items.map((ex) => {
-                      const catCf = recoveryConflictsForExercise(ex, rec.by);
+                      const catCf = recoveryConflictsForExercise(
+                        ex,
+                        rec.by,
+                        rec.injurySites,
+                      );
                       const addedCount =
                         mode === "log"
                           ? (addedCountByExerciseId?.[ex.id] ?? 0)
@@ -350,7 +359,7 @@ export function WorkoutCatalogSection({
                               addedCount > 0 && "bg-panelHi",
                             )}
                           >
-                            <div className="flex items-start justify-between gap-3">
+                            <div className="flex items-center justify-between gap-3">
                               <div className="min-w-0">
                                 <div className="text-style-label text-text truncate flex items-center gap-2">
                                   {ex?.name?.uk || ex?.name?.en}
@@ -369,16 +378,6 @@ export function WorkoutCatalogSection({
                                           .recovering}
                                   </p>
                                 )}
-                                {addedCount > 0 && (
-                                  <div className="mt-1">
-                                    <span className="inline-flex items-center gap-1 rounded-lg bg-panelHi px-2 py-0.5 text-style-caption font-semibold text-text">
-                                      {catalogCopy.addedBadge}
-                                      {addedCount > 1
-                                        ? ` ${catalogCopy.addedBadgeTimes}${addedCount}`
-                                        : ""}
-                                    </span>
-                                  </div>
-                                )}
                                 <div className="text-style-caption text-muted mt-0.5">
                                   Мʼязи:{" "}
                                   <span className="font-semibold text-muted">
@@ -388,10 +387,40 @@ export function WorkoutCatalogSection({
                                   </span>
                                 </div>
                               </div>
-                              <div className="shrink-0 text-style-caption text-muted tabular-nums">
-                                {typeof ex["rating"] === "number"
-                                  ? fmt(ex["rating"], 1)
-                                  : ""}
+                              <div className="flex shrink-0 items-center gap-2">
+                                <span className="text-style-caption text-muted tabular-nums">
+                                  {typeof ex["rating"] === "number"
+                                    ? fmt(ex["rating"], 1)
+                                    : ""}
+                                </span>
+                                {mode === "log" &&
+                                  (addedCount > 0 ? (
+                                    // Стан праворуч, де око шукає результат
+                                    // тапу, і заливкою чорнилом. Раніше
+                                    // «Додано» було сірим чипом на білому
+                                    // рядку — того самого кольору, що й
+                                    // рядок (фідбек власника 2026-11-19).
+                                    <span className="inline-flex items-center gap-1 rounded-lg bg-text px-2 py-1 text-style-caption font-semibold text-bg tabular-nums">
+                                      <Icon
+                                        name="check"
+                                        size="sm"
+                                        aria-hidden
+                                      />
+                                      {catalogCopy.addedBadge}
+                                      {addedCount > 1
+                                        ? ` ${catalogCopy.addedBadgeTimes}${addedCount}`
+                                        : ""}
+                                    </span>
+                                  ) : (
+                                    // «+» на ще не доданих рядках каже, що
+                                    // тап по рядку додає, а не відкриває.
+                                    <span
+                                      aria-hidden
+                                      className="flex h-7 w-7 items-center justify-center rounded-lg border border-control text-muted"
+                                    >
+                                      <Icon name="plus" size="sm" />
+                                    </span>
+                                  ))}
                               </div>
                             </div>
                           </button>

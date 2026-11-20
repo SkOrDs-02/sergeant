@@ -21,7 +21,10 @@ describe("syncV2 wire reason/type registries", () => {
     // (`invalid_recurrence`, `invalid_start_date`, `invalid_end_date`).
     // Аудит 2026-10-01 (data-04): +1 `invalid_prefs_patch` (nutrition_prefs
     // із prefs_merge мусить нести JSON-обʼєкт).
-    expect(APPLY_REJECT_REASONS).toHaveLength(79);
+    // Міграція 170 (Рутина): +5 причин лічильника й автовідмітки звички.
+    // Міграція 171 (Фізрук): +1 `invalid_program_ref`.
+    // Міграція 172 (Фізрук, тип виміру): +1 `invalid_measure`.
+    expect(APPLY_REJECT_REASONS).toHaveLength(86);
     expect(new Set(APPLY_REJECT_REASONS).size).toBe(
       APPLY_REJECT_REASONS.length,
     );
@@ -58,6 +61,8 @@ describe("syncV2 wire reason/type registries", () => {
       "oplog_write_failed",
       // `U+0000` / одинокий сурогат у `row` відсікається ДО apply (data-17).
       "invalid_text_encoding",
+      // `increment` старший за вікно чистки журналу (ADR-0105 §2).
+      "stale_increment",
     ]);
     expect(new Set(ENGINE_REJECT_REASONS).size).toBe(
       ENGINE_REJECT_REASONS.length,

@@ -136,6 +136,11 @@ export interface HubDashboardState {
   // Module checklist
   primaryModule: "finyk" | "fizruk" | "routine" | "nutrition" | undefined;
   showChecklist: boolean;
+  /**
+   * Перший тиждень акаунта (або пристрою до входу) — те саме вікно, що в
+   * чекліста онбордингу. Хаб показує в ньому факти з історії банку (С-4 (б)).
+   */
+  inFirstWeek: boolean;
 
   // Onboarding progress
   goals: ReturnType<typeof getOnboardingGoals>;
@@ -157,7 +162,7 @@ export function useHubDashboardState(props: {
 }): HubDashboardState {
   const { onOpenModule, user, insightsOpen } = props;
 
-  useMondayAutoDigest();
+  useMondayAutoDigest({ signedIn: Boolean(user) });
 
   // AI-CONTEXT: `bump` тут не декоративний. Докази «юзер уже не новий»
   // живуть у SQLite warm-caches, які теплішають АСИНХРОННО після
@@ -288,14 +293,15 @@ export function useHubDashboardState(props: {
   // server-stamped `user.createdAt` cannot be reset that way; the device
   // counter is kept only as the pre-auth fallback, where it is also the
   // correct signal because there is no account yet.
+  const inFirstWeek = isWithinChecklistWindow({
+    accountCreatedAt: user?.createdAt ?? null,
+    sessionDays,
+  });
   const showChecklist =
     primaryModule &&
     hasRealEntry &&
     !onboardingState.showFirstAction &&
-    isWithinChecklistWindow({
-      accountCreatedAt: user?.createdAt ?? null,
-      sessionDays,
-    });
+    inFirstWeek;
 
   // Smart-expand: open insights on first render when the user has at least
   // one actionable rec, is past FTUX, and is on a viewport wide enough to
@@ -351,6 +357,7 @@ export function useHubDashboardState(props: {
     insightsDefaultOpen,
     primaryModule,
     showChecklist: Boolean(showChecklist),
+    inFirstWeek,
     goals,
     hasValueBar,
   };

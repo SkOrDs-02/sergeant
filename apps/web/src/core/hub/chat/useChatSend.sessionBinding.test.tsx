@@ -90,7 +90,7 @@ const streamMock = vi.fn();
 beforeEach(() => {
   sendMock.mockReset();
   streamMock.mockReset();
-  vi.spyOn(chatApi, "send").mockImplementation(sendMock);
+  vi.spyOn(chatApi, "firstTurn").mockImplementation(sendMock);
   vi.spyOn(chatApi, "stream").mockImplementation(streamMock);
   executeActionsMock.mockReset();
   localStorage.clear();

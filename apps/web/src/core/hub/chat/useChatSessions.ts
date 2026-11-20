@@ -7,11 +7,15 @@ import {
   deleteSession as deleteSessionFn,
   deriveSessionTitle,
   ensureActiveSession,
+  isChatHistoryReady,
   loadActiveSessionId,
   loadSessions,
+  mergeSessionsAfterHydration,
   saveActiveSessionId,
   saveSessions,
+  subscribeChatHistoryChanges,
   upsertSession,
+  whenChatHistoryReady,
   type HubChatSession,
 } from "../hubChatSessions";
 import {
@@ -70,9 +74,13 @@ export interface UseChatSessionsResult {
 export function useChatSessions(): UseChatSessionsResult {
   const toast = useToast();
 
-  const [boot] = useState(() =>
-    ensureActiveSession(loadSessions(), loadActiveSessionId()),
-  );
+  const [boot] = useState(() => {
+    const storedActiveId = loadActiveSessionId();
+    return {
+      ...ensureActiveSession(loadSessions(), storedActiveId),
+      storedActiveId,
+    };
+  });
 
   const [sessions, setSessions] = useState<HubChatSession[]>(
     () => boot.sessions,
@@ -102,6 +110,62 @@ export function useChatSessions(): UseChatSessionsResult {
   useEffect(() => {
     lastMessagesRef.current = messages;
   }, [messages]);
+
+  const sessionsRef = useRef(sessions);
+  useEffect(() => {
+    sessionsRef.current = sessions;
+  }, [sessions]);
+
+  // B24: історія шифрується, тож те, що в памʼяті хука, може не відображати
+  // сховище: на холодному буті оверлей відкривається раніше, ніж
+  // `hydrateAtRest` розшифрує історію; після входу розділ SQLite міняє її на
+  // історію акаунта; інша вкладка кладе свою. Поки слот не розібрав новий
+  // шифртекст, `saveSessions` відмовляє. Щойно розібрав (подія слота або
+  // завершення `whenChatHistoryReady`), приймаємо сховище: зводимо його з
+  // памʼяттю по бесідах (свіжіший `updatedAt` виграє, нові бесіди з
+  // повідомленнями додаються) і зберігаємо разом. Замкнена історія (ключа
+  // зараз немає) лишає чат лише в памʼяті до наступного розбору.
+  useEffect(() => {
+    let alive = true;
+    const adopt = () => {
+      if (!alive || !isChatHistoryReady()) return;
+      const prev = sessionsRef.current;
+      const active = prev.find((s) => s.id === activeIdRef.current);
+      const latest = lastMessagesRef.current;
+      const inMemory =
+        active && active.messages !== latest
+          ? upsertSession(prev, {
+              ...active,
+              messages: latest,
+              updatedAt: Date.now(),
+            })
+          : prev;
+      const merged = mergeSessionsAfterHydration(loadSessions(), inMemory);
+      const keepActive = merged.some((s) => s.id === activeIdRef.current);
+      const next = ensureActiveSession(
+        merged,
+        keepActive ? activeIdRef.current : boot.storedActiveId,
+      );
+      setSessions(next.sessions);
+      sessionsRef.current = next.sessions;
+      saveSessions(next.sessions);
+      const target = next.sessions.find((s) => s.id === next.activeId);
+      if (next.activeId !== activeIdRef.current) switchActive(next.activeId);
+      if (target && target.messages !== latest) {
+        setMessages(normalizeStoredMessages(target.messages));
+      }
+    };
+    const offs = subscribeChatHistoryChanges(adopt);
+    if (!isChatHistoryReady()) {
+      void whenChatHistoryReady().then((ready) => {
+        if (ready) adopt();
+      });
+    }
+    return () => {
+      alive = false;
+      offs();
+    };
+  }, [boot.storedActiveId, switchActive]);
 
   // Debounced session write. Title is re-derived on every flush so a
   // freshly-typed first user message renames the session in the
@@ -158,8 +222,22 @@ export function useChatSessions(): UseChatSessionsResult {
         return updated;
       });
     };
+    // B24: запис тепер шифрується асинхронно (кілька мс), тож `beforeunload`
+    // на закритті вкладки може не дочекатись його. Ховання сторінки
+    // (`visibilitychange` → hidden, `pagehide`) приходить раніше або там,
+    // де `beforeunload` немає зовсім (мобільний бекграунд, bfcache), і
+    // сторінка після нього зазвичай ще живе досить, щоб запис доїхав.
+    const onHidden = () => {
+      if (document.visibilityState === "hidden") flush();
+    };
     window.addEventListener("beforeunload", flush);
-    return () => window.removeEventListener("beforeunload", flush);
+    window.addEventListener("pagehide", flush);
+    document.addEventListener("visibilitychange", onHidden);
+    return () => {
+      window.removeEventListener("beforeunload", flush);
+      window.removeEventListener("pagehide", flush);
+      document.removeEventListener("visibilitychange", onHidden);
+    };
   }, [activeId]);
 
   useEffect(() => {

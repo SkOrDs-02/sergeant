@@ -8,7 +8,10 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { createHttpClient } from "../httpClient";
 import { firstCall } from "../__test-utils/firstCall";
-import { createWeeklyDigestEndpoints } from "./weeklyDigest";
+import {
+  createWeeklyDigestEndpoints,
+  type WeeklyDigestPayload,
+} from "./weeklyDigest";
 
 type FetchMock = ReturnType<typeof vi.fn>;
 
@@ -54,6 +57,33 @@ describe("createWeeklyDigestEndpoints.generate", () => {
     const [url, init] = firstCall(fetchMock);
     expect(String(url)).toBe("https://api.example.com/api/v1/weekly-digest");
     expect((init as RequestInit).method).toBe("POST");
+    expect(JSON.parse(String((init as RequestInit).body))).toEqual(payload);
+  });
+
+  it("передає опційний ifAbsent у тілі запиту як є (С-3 (а))", async () => {
+    const fetchMock = mockFetchOnce({
+      report: {
+        finyk: null,
+        fizruk: null,
+        nutrition: null,
+        routine: null,
+        overallRecommendations: [],
+      },
+      generatedAt: "2026-11-16T08:00:00.000Z",
+    });
+    const http = createHttpClient({ baseUrl: "https://api.example.com" });
+    const weeklyDigest = createWeeklyDigestEndpoints(http);
+
+    // Тип запиту виводиться зі схеми `WeeklyDigestSchema`, тож поле
+    // типізоване без касту.
+    const payload: WeeklyDigestPayload = {
+      weekKey: "2026-11-09",
+      ifAbsent: true,
+      finyk: null,
+    };
+    await weeklyDigest.generate(payload);
+
+    const [, init] = firstCall(fetchMock);
     expect(JSON.parse(String((init as RequestInit).body))).toEqual(payload);
   });
 

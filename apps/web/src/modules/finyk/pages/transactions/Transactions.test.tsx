@@ -113,9 +113,15 @@ import type {
   TransactionsStorageSlice,
 } from "./Transactions";
 import { requestCloudPull } from "@shared/lib/modules/cloudPullRequest";
-import { safeReadLS } from "@shared/lib/storage/storage";
+import { safeReadLS, safeWriteLS } from "@shared/lib/storage/storage";
+import {
+  __resetStorageReadyForTests,
+  markStorageBooting,
+  markStorageReady,
+} from "../../../../core/db/storageReady";
 import {
   FINYK_TRANSFER_SUGGESTION_REJECTED_KEY,
+  FINYK_TRANSFER_SUGGESTION_REJECTED_TX_KEY,
   FINYK_TRANSFER_SUGGESTION_SNOOZED_KEY,
 } from "@sergeant/finyk-domain/storage-keys";
 
@@ -711,6 +717,165 @@ describe("Transactions page shell", () => {
     expect(card?.textContent).toContain("−100");
     expect(card?.textContent).toContain("+100");
     expect(card?.textContent).not.toMatch(/[−+]\d+\s*(вер|чер)/);
+  });
+
+  describe("кілька пропозицій: усі разом і без повторів (фідбек 2026-11-19)", () => {
+    const DAY = 24 * 60 * 60;
+    function buildSecondPair() {
+      const [out, inc] = buildTransferPair();
+      return [
+        {
+          ...out!,
+          id: "second-out",
+          amount: -30_000,
+          time: out!.time + DAY,
+          accountId: "white",
+          _accountId: "white",
+        },
+        {
+          ...inc!,
+          id: "second-in",
+          amount: 30_000,
+          time: inc!.time + DAY,
+          accountId: "fop",
+          _accountId: "fop",
+        },
+      ];
+    }
+
+    it("показує обидві пари одним списком, а не по черзі", () => {
+      renderTransactions({
+        mono: { realTx: [...buildTransferPair(), ...buildSecondPair()] },
+      });
+      const list = screen.getByRole("region", {
+        name: "Схожі на внутрішні перекази",
+      });
+      expect(within(list).getByText("Пар операцій: 2")).toBeInTheDocument();
+      expect(
+        within(list).getAllByRole("button", { name: /^Переказ:/ }),
+      ).toHaveLength(2);
+      expect(
+        screen.queryByText("Схоже на внутрішній переказ"),
+      ).not.toBeInTheDocument();
+    });
+
+    it("«Усе це перекази» позначає обидві ноги кожної пари одним тапом", () => {
+      const overrideCategory = vi.fn();
+      renderTransactions({
+        mono: { realTx: [...buildTransferPair(), ...buildSecondPair()] },
+        storage: { overrideCategory },
+      });
+      fireEvent.click(screen.getByRole("button", { name: "Усе це перекази" }));
+      expect(
+        overrideCategory.mock.calls.map(([id]) => id as string).sort(),
+      ).toEqual(["second-in", "second-out", "transfer-in", "transfer-out"]);
+      for (const [, category] of overrideCategory.mock.calls) {
+        expect(category).toBe("internal_transfer");
+      }
+    });
+
+    it("«Не зараз» відкладає до завтра всі пари разом", () => {
+      renderTransactions({
+        mono: { realTx: [...buildTransferPair(), ...buildSecondPair()] },
+      });
+      fireEvent.click(screen.getByRole("button", { name: "Не зараз" }));
+      expect(
+        screen.queryByRole("region", { name: "Схожі на внутрішні перекази" }),
+      ).not.toBeInTheDocument();
+      expect(
+        safeReadLS<Record<string, string>>(
+          FINYK_TRANSFER_SUGGESTION_SNOOZED_KEY,
+          {},
+        ),
+      ).toEqual({
+        "transfer-out:transfer-in": "2026-06-15",
+        "second-out:second-in": "2026-06-15",
+      });
+    });
+
+    // «Після оновлень наново перепитує»: на жорсткому перезавантаженні
+    // екран монтувався раніше за bootstrap `kv_store` і читав порожні
+    // відмови з сирого `localStorage`.
+    it("не питає до прогріву сховища і перечитує відповіді після нього", () => {
+      markStorageBooting();
+      try {
+        renderTransactions({ mono: { realTx: buildTransferPair() } });
+        expect(
+          screen.queryByText("Схоже на внутрішній переказ"),
+        ).not.toBeInTheDocument();
+        // Справжні відповіді стають видимими лише з bootstrap-ом сховища.
+        safeWriteLS(FINYK_TRANSFER_SUGGESTION_REJECTED_TX_KEY, [
+          "transfer-out",
+          "transfer-in",
+        ]);
+        act(() => markStorageReady());
+        expect(
+          screen.queryByText("Схоже на внутрішній переказ"),
+        ).not.toBeInTheDocument();
+      } finally {
+        __resetStorageReadyForTests();
+      }
+    });
+
+    it("після прогріву без збережених відповідей пропозиція зʼявляється", () => {
+      markStorageBooting();
+      try {
+        renderTransactions({ mono: { realTx: buildTransferPair() } });
+        act(() => markStorageReady());
+        expect(
+          screen.getByText("Схоже на внутрішній переказ"),
+        ).toBeInTheDocument();
+      } finally {
+        __resetStorageReadyForTests();
+      }
+    });
+
+    it("відхилена операція не повертається в пару з новою операцією", () => {
+      const [first, second] = buildTransferPair();
+      // Вхідна нога за 2 хв від вихідної, щоб новачок нижче (за 1 хв) став
+      // для відхиленої вихідної ноги кращим збігом, ніж її стара пара.
+      const pair = [first!, { ...second!, time: second!.time + 120 }];
+      const { unmount } = renderTransactions({
+        mono: { realTx: [...pair, ...buildSecondPair()] },
+      });
+      fireEvent.click(
+        screen.getAllByRole("button", { name: /^Ні, не переказ:/ })[0]!,
+      );
+      expect(
+        safeReadLS<string[]>(FINYK_TRANSFER_SUGGESTION_REJECTED_TX_KEY, []),
+      ).toHaveLength(2);
+      // Одна пара лишилась — звичайна картка, не список з одного рядка.
+      expect(
+        screen.getByText("Схоже на внутрішній переказ"),
+      ).toBeInTheDocument();
+      fireEvent.click(screen.getByRole("button", { name: "Не переказ" }));
+      expect(
+        safeReadLS<string[]>(FINYK_TRANSFER_SUGGESTION_REJECTED_TX_KEY, []),
+      ).toHaveLength(4);
+
+      // Пізніше приходить нова операція на ту саму суму поруч у часі з уже
+      // відхиленою: раніше відхилена нога ставала її парою, і питання
+      // поверталось.
+      unmount();
+      const newcomer = {
+        ...first!,
+        id: "newcomer-in",
+        amount: 10_000,
+        time: first!.time + 60,
+        accountId: "jar",
+        _accountId: "jar",
+        type: "income" as const,
+      };
+      renderTransactions({
+        mono: { realTx: [...pair, ...buildSecondPair(), newcomer] },
+      });
+      expect(
+        screen.queryByText("Схоже на внутрішній переказ"),
+      ).not.toBeInTheDocument();
+      expect(
+        screen.queryByRole("region", { name: "Схожі на внутрішні перекази" }),
+      ).not.toBeInTheDocument();
+    });
   });
 
   it("routes the list to the skeleton slot on first-paint loading", () => {

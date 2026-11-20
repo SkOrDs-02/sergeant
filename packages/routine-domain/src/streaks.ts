@@ -226,11 +226,24 @@ export function completionRateForRange(
  * `getKyivDayKey`) rather than read from the host clock — the previous
  * `new Date()`-based rolling window silently drifted by timezone.
  */
+export interface HabitCompletionRateOptions {
+  /**
+   * Пропуски саме цієї звички: `dateKey → HabitSkip`. Канон §5: день «не
+   * зміг» виходить зі знаменника, як у `completionRateForRange` (OD-29,
+   * Р-3 (а), відповідь власника П-18 (А) 2026-11-18: один знаменник для
+   * всіх місць, де показується відсоток).
+   */
+  skips?: Record<string, HabitSkip> | undefined;
+  /** Заморозка минулого щодо недатованого `paused` (ADR-0079 §2). */
+  pausedFrom?: string | undefined;
+}
+
 export function habitCompletionRate(
   habit: Habit,
   completions: string[] | undefined,
   startKey: string,
   endKey: string,
+  opts: HabitCompletionRateOptions = {},
 ): CompletionRateResult {
   const dateList: string[] = [];
   const d = parseDateKey(startKey);
@@ -249,8 +262,16 @@ export function habitCompletionRate(
   }
 
   const set = new Set(completions || []);
+  const scheduleOpts =
+    opts.pausedFrom === undefined ? {} : { pausedFrom: opts.pausedFrom };
   if (isFlexibleHabit(habit)) {
-    const result = flexibleCompletionForDays(habit, set, dateList, {});
+    const result = flexibleCompletionForDays(
+      habit,
+      set,
+      dateList,
+      scheduleOpts,
+      opts.skips,
+    );
     return {
       completed: result.completed,
       scheduled: result.scheduled,
@@ -260,7 +281,9 @@ export function habitCompletionRate(
   let scheduled = 0;
   let completed = 0;
   for (const dk of dateList) {
-    if (!habitScheduledOnDate(habit, dk)) continue;
+    if (!habitScheduledOnDate(habit, dk, scheduleOpts)) continue;
+    // «Не зміг з причиною» виходить зі знаменника (канон §5).
+    if (opts.skips?.[dk] && !set.has(dk)) continue;
     scheduled += 1;
     if (set.has(dk)) completed += 1;
   }

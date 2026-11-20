@@ -1,5 +1,5 @@
 /**
- * Last validated: 2026-09-01
+ * Last validated: 2026-11-19
  * Status: Active
  *
  * Два допоміжні блоки режиму «Списком» у Коморі:
@@ -24,6 +24,7 @@ import { cn } from "@shared/lib/ui/cn";
 import type { PantryItem } from "../lib/pantryTextParser";
 import type { PantryParsePreview as PantryParsePreviewData } from "../hooks/useNutritionPantries";
 import type { AmbiguousPantryUnit } from "../lib/pantryAmbiguousUnitMemory";
+import { keepFieldFocusProps } from "@shared/lib/ui/keepFieldFocus";
 
 function formatQty(item: PantryItem): string {
   if (item.qty != null && item.unit) return `${item.qty} ${item.unit}`;
@@ -43,7 +44,14 @@ const UNITS = Object.keys(UNIT_CTA) as AmbiguousPantryUnit[];
 export function PantryListGuide() {
   return (
     <details className="mt-2 group">
-      <summary className="text-style-caption text-subtle cursor-pointer list-none flex items-center justify-between gap-2 min-h-[44px] rounded-lg focus-ring">
+      <summary
+        // Розгортають, поки друкують список: без цього `focusout` скидав
+        // відступ аркуша під клавіатуру і перший тап губився
+        // (`keepFieldFocus.ts`, фідбек 2026-11-19). Розгортання `<details>`
+        // живе на `click`, тож `mousedown` йому не потрібен.
+        {...keepFieldFocusProps}
+        className="text-style-caption text-subtle cursor-pointer list-none flex items-center justify-between gap-2 min-h-[44px] rounded-lg focus-ring"
+      >
         {GUIDE.summary}
         <MorphChevron
           open={false}

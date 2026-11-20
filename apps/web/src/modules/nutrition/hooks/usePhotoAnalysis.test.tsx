@@ -447,7 +447,10 @@ describe("usePhotoAnalysis", () => {
 
     it("reuses lastPhotoPayload and updates photoResult", async () => {
       apiAnalyzePhoto.mockResolvedValueOnce({
-        result: { name: "v1", questions: ["Яка порція?"] },
+        // Питання моделі про вагу підписує поле порції (одне поле, а не два,
+        // рішення власника 2026-11-19): окремої текстової відповіді на нього
+        // немає, а число з поля закриває його парою в `qna`.
+        result: { name: "v1", questions: ["Яка порція?", "Зі сметаною?"] },
       });
       apiRefinePhoto.mockResolvedValueOnce({
         result: { name: "v2", kcal: 420 },
@@ -465,7 +468,11 @@ describe("usePhotoAnalysis", () => {
 
       act(() => {
         result.current.setPortionGrams("250");
-        result.current.setAnswers((a) => ({ ...a, "Яка порція?": "звичайна" }));
+        result.current.setAnswers((a) => ({
+          ...a,
+          "Яка порція?": "звичайна",
+          "Зі сметаною?": "так",
+        }));
       });
 
       act(() => {
@@ -480,7 +487,10 @@ describe("usePhotoAnalysis", () => {
         expect.objectContaining({
           image_base64: "BASE64",
           portion_grams: 250,
-          qna: [{ question: "Яка порція?", answer: "звичайна" }],
+          qna: [
+            { question: "Яка порція?", answer: "250 г" },
+            { question: "Зі сметаною?", answer: "так" },
+          ],
           locale: "uk-UA",
         }),
       );
@@ -492,7 +502,7 @@ describe("usePhotoAnalysis", () => {
       // своїми словами (звіт тестової групи 2026-08-12 — «третє не булочка,
       // а сирник»).
       apiAnalyzePhoto.mockResolvedValueOnce({
-        result: { name: "v1", questions: ["Яка порція?"] },
+        result: { name: "v1", questions: ["Зі сметаною?"] },
       });
       apiRefinePhoto.mockResolvedValueOnce({ result: { name: "v2" } });
       const { result } = renderUsePhotoAnalysis();
@@ -507,7 +517,7 @@ describe("usePhotoAnalysis", () => {
       );
 
       act(() => {
-        result.current.setAnswers((a) => ({ ...a, "Яка порція?": "звичайна" }));
+        result.current.setAnswers((a) => ({ ...a, "Зі сметаною?": "так" }));
         result.current.setNote("  третє — не булочка, а сирник  ");
       });
 
@@ -526,7 +536,7 @@ describe("usePhotoAnalysis", () => {
               question: PHOTO_NOTE_QUESTION,
               answer: "третє — не булочка, а сирник",
             },
-            { question: "Яка порція?", answer: "звичайна" },
+            { question: "Зі сметаною?", answer: "так" },
           ],
         }),
       );

@@ -3,6 +3,14 @@
  *
  * Sources:
  *   https://www.anthropic.com/pricing  — як на 2026-Q2.
+ *   Звірка 2026-11-19 з каталогом OpenRouter (`GET /api/v1/models`) і
+ *   ендпойнтами моделей (`GET /api/v1/models/<id>/endpoints`): Sonnet 4.x
+ *   (`anthropic/claude-sonnet-4.6`, 3/15/3.75/0.3), Haiku 4.5 (1/5/1.25/0.1)
+ *   і Opus 4/4.1 (15/75/18.75/1.5) збігаються. Opus 4.5+ коштує 5/25, тож
+ *   префікс `claude-opus-4` для них дає оцінку зверху; у маршрутизації Opus
+ *   немає. Сімейств `claude-3-*` у каталозі 2026-11-19 немає, їх ціни не
+ *   переперевірено (у маршрутизації їх теж немає). Правило для моделей шлюзу
+ *   — у коментарі над блоком «Моделі через OpenRouter».
  *
  * Ключі — model-prefix, що матчить `pickAnthropicPricing()` через
  * `startsWith`. Це стійкіше за повну назву моделі: Anthropic регулярно
@@ -103,25 +111,52 @@ export const ANTHROPIC_PRICING_USD_PER_MTOK: Record<
     cacheWrite: 18.75,
     cacheRead: 1.5,
   },
-  // ── Моделі чату через OpenRouter (2026-07-30) ──────────────────────────
+  // ── Моделі через OpenRouter ────────────────────────────────────────────
   // Запасний шлях: коли шлюз прислав `usage.cost`, ця таблиця не потрібна
-  // (див. `estimateAnthropicCostUsd`). Cache-ціни — за тією ж конвенцією
-  // 1.25×/0.10×. Вимірювання cache-токенів через шлюз суперечливі: ADR-0087
-  // бачив `cache_read` = 0, а спека `ai-cost-ceiling.md` (за ініціативою 0025)
-  // переказує рівні `cache_read` = `cache_creation` = 14 574 при нульовому
-  // `input_tokens`. Сирого payload-у в репо немає, тож НЕ спирайся на ці
-  // cache-ціни для моделей шлюзу: джерелом вартості є `usage.cost`, таблиця
-  // лише запасний шлях.
+  // (див. `estimateAnthropicCostUsd`). Вимірювання cache-токенів через шлюз
+  // суперечливі: ADR-0087 бачив `cache_read` = 0, а спека `ai-cost-ceiling.md`
+  // (за ініціативою 0025) переказує рівні `cache_read` = `cache_creation` =
+  // 14 574 при нульовому `input_tokens`. Сирого payload-у в репо немає, тож НЕ
+  // спирайся на ці cache-ціни для моделей шлюзу: джерелом вартості є
+  // `usage.cost`, таблиця лише запасний шлях.
+  //
+  // AI-CONTEXT: правило ціни (звірка 2026-11-19). Ціна моделі шлюзу — це
+  // МАКСИМУМ кожного поля окремо серед ендпойнтів, які може обрати наш
+  // запит: `GET /api/v1/models/<id>/endpoints`, лише ендпойнти з
+  // квантизацією зі списку `OPENROUTER_MIN_8BIT_QUANTIZATIONS`
+  // (`llm/openrouterDataPolicy.ts`), без `flex`-тиру (ми не шлемо
+  // `service_tier`), а `priority`-тир лише для відкритих моделей (за
+  // документацією service tiers він бере участь у дефолтній маршрутизації
+  // саме в них). Фільтр `data_collection=deny` з публічного API не видно,
+  // тож пул береться ширший за справжній, і максимум по ньому — оцінка
+  // зверху: стеля `anthropicBudgetGuard` краще спрацює раніше, ніж пізніше.
+  // Де ендпойнти не дають окремої ціни запису кешу (`input_cache_write`
+  // відсутній), `cacheWrite` = `input`: запис кешу рахуємо як звичайний
+  // вхід. Ціни ендпойнтів шлюзу змінюються протягом доби (знижки
+  // постачальників), тож звірку повторюй разом із кожною зміною моделі.
+  // Звірка й правило описані в `docs/work/specs/tech-debt/backend.md`
+  // (блок 2026-11-19).
+  //
+  // Не в маршрутизації з 2026-08-25 (B37), лишено для старих рядків
+  // леджера. Ендпойнти 2026-11-19 (OpenAI, Azure; без flex і priority):
+  // 1.25/10, cache read 0.13 (Azure); ціни запису кешу немає → = input.
+  // Префікс ловить і `openai/gpt-5.1-mini`/`-codex-mini`, яким ця ціна
+  // завищена.
   "openai/gpt-5.1": {
     input: 1.25,
     output: 10.0,
-    cacheWrite: 1.5625,
-    cacheRead: 0.125,
+    cacheWrite: 1.25,
+    cacheRead: 0.13,
   },
+  // Шість непотокових пайплайнів (`env/aiRoutingEnv.ts`) і тир-дефолти коуча
+  // в `env/env.ts`. Ендпойнти 2026-11-19: лише Google AI Studio, стандартний
+  // 0.10/0.40, cache write 0.0833, cache read 0.01 (flex і priority
+  // виключено правилом вище). Запис кешу був 0.125 за евристикою 1.25×
+  // input; тепер число каталогу.
   "google/gemini-2.5-flash-lite": {
     input: 0.1,
     output: 0.4,
-    cacheWrite: 0.125,
+    cacheWrite: 0.0833,
     cacheRead: 0.01,
   },
   // Standard- і floor-тир КОУЧА з 2026-08-26 (див.
@@ -129,14 +164,12 @@ export const ANTHROPIC_PRICING_USD_PER_MTOK: Record<
   // виміром 2026-08-25: 8/8 на коуч-стенді, нуль порушень голосу, 987 мс —
   // проти `gemini-2.5-flash-lite`, яка стояла тут раніше.
   //
-  // Ціни — каталог OpenRouter, знято 2026-08-26 (`/api/v1/models`), а не
-  // виведено з агрегованої вартості прогону. Це втричі дорожче за вхід і
-  // вшестеро за вихід, ніж 2.5-flash-lite — саме звідси $0.16 → $0.64 на 1k
-  // викликів у звіті; два незалежні джерела зійшлись.
+  // Ціни — каталог OpenRouter, знято 2026-08-26; звірено з ендпойнтами
+  // 2026-11-19 (Google Vertex і AI Studio, стандартні: 0.30/2.50, cache
+  // write 0.0833, cache read 0.03) — без змін.
   //
-  // AI-NOTE: `cacheWrite` тут МЕНШИЙ за `input` (0.0833 проти 0.30) і тому
-  // ламає евристику `input × 1.25`, за якою складені сусідні gemini-записи.
-  // Це не помилка перенесення: каталог віддає саме таке число
+  // AI-NOTE: `cacheWrite` тут МЕНШИЙ за `input` (0.0833 проти 0.30). Це не
+  // помилка перенесення: каталог віддає саме таке число
   // (`input_cache_write: 0.0000000833…`) — у Google context-caching інша
   // модель тарифікації, ніж у Anthropic. Не «виправляй» під евристику.
   "google/gemini-3.5-flash-lite": {
@@ -145,30 +178,44 @@ export const ANTHROPIC_PRICING_USD_PER_MTOK: Record<
     cacheWrite: 0.0833,
     cacheRead: 0.03,
   },
-  // Floor-тир чату з 2026-08-26 (див. `env/chatModels.ts::CHAT_MODEL_DEFAULTS`).
+  // Перший хід чату і floor-тир (`env/chatModels.ts::CHAT_MODEL_DEFAULTS`).
+  // Ендпойнти 2026-11-19 (Google Vertex і AI Studio, стандартні): 0.75/3.75,
+  // cache write 0.0417, cache read 0.075. До звірки тут стояло 0.38/1.88 —
+  // ціна flex-ендпойнта (0.375/1.875), на який без `service_tier: "flex"`
+  // запит не потрапляє, тобто оцінка була вдвічі заниженою.
   "google/gemini-3.7-flash": {
-    input: 0.38,
-    output: 1.88,
-    cacheWrite: 0.475,
-    cacheRead: 0.038,
+    input: 0.75,
+    output: 3.75,
+    cacheWrite: 0.0417,
+    cacheRead: 0.075,
   },
-  // ── Chat-дефолти під `CHAT_VIA_OPENROUTER=true` (2026-08-25, B38) ──────
-  // `env/chatModels.ts::CHAT_MODEL_DEFAULTS` реально ганяє основний трафік
-  // чату на ці два id (firstTurn/standard → deepseek, synthesis → glm-5.2),
-  // а таблиця вище про них не знала — `est_cost_usd` для основного трафіку
-  // мовчки виходив 0 (рятував лише `usage.cost` від шлюзу, якщо той його
-  // прислав). Ціни — каталог OpenRouter станом на 2026-08-25.
+  // Синтез standard-тиру і Free (`env/chatModels.ts`). Ендпойнти 2026-11-19
+  // під межею 8 біт: Baidu, StreamLake, Fireworks, DeepInfra (+priority),
+  // GMICloud, Venice, SiliconFlow, Parasail, Mancer, Azure. Максимум: вхід і
+  // вихід 0.21/0.56 (Azure), cache read 0.075 (Mancer); ціни запису кешу
+  // немає → = input. Каталог (ціна за замовчуванням) 0.09/0.18; живі проби
+  // того дня йшли на StreamLake і Baidu (0.07/0.14 і 0.027/0.055).
+  // AI-NOTE: префікс ловить і `deepseek/deepseek-v4-flash-vision-exp`
+  // (каталог 0.44/1.32): якщо її колись маршрутизують, потрібен окремий
+  // ключ ПЕРЕД цим.
   "deepseek/deepseek-v4-flash": {
-    input: 0.04,
-    output: 0.08,
-    cacheWrite: 0.05,
-    cacheRead: 0.004,
+    input: 0.21,
+    output: 0.56,
+    cacheWrite: 0.21,
+    cacheRead: 0.075,
   },
+  // Синтез premium-тиру (`env/chatModels.ts`). Ендпойнти 2026-11-19 під
+  // межею 8 біт: Cloudflare, StreamLake, Baidu, Morph, Novita, SiliconFlow,
+  // DigitalOcean, AtlasCloud, Alibaba, Mistral, BaseTen, Together, Venice,
+  // GMICloud, Friendli, Z.AI і priority-ендпойнти BaseTen та Alibaba.
+  // Максимум: вхід 2.31 (alibaba/fast), вихід 8.0 (Cloudflare), cache read
+  // 0.462 (alibaba/fast); ціни запису кешу немає → = input. Каталог 0.62/2.42;
+  // живі проби того дня йшли на Cloudflare (0.19/8.0).
   "z-ai/glm-5.2": {
-    input: 1.4,
-    output: 4.4,
-    cacheWrite: 1.75,
-    cacheRead: 0.14,
+    input: 2.31,
+    output: 8.0,
+    cacheWrite: 2.31,
+    cacheRead: 0.462,
   },
   // `env/aiRoutingEnv.ts::OPENROUTER_COACH_MODEL` defaults to this
   // vendor-prefixed OpenRouter id (fixed 2026-08-25, B37 — was the
@@ -177,7 +224,8 @@ export const ANTHROPIC_PRICING_USD_PER_MTOK: Record<
   // Same underlying model as the bare `claude-sonnet-4` prefix above
   // (identical $3/$15 pricing) — needs its own key because OpenRouter ids
   // are vendor-prefixed (`anthropic/…`) and `startsWith` won't bridge the
-  // two id styles.
+  // two id styles. Ендпойнти `anthropic/claude-sonnet-4.6` 2026-11-19 (усі
+  // пʼять постачальників): 3/15, cache write 3.75, cache read 0.3 — без змін.
   "anthropic/claude-sonnet-4": {
     input: 3.0,
     output: 15.0,

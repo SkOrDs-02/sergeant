@@ -180,6 +180,11 @@ describe("RecipesCard — saved-recipes section", () => {
         screen.getByText(/Тут зʼявляться збережені рецепти/i),
       ).toBeTruthy(),
     );
+    // Зйомка 2026-11-18: «Нова страва» і "Зберегти" в одній підказці.
+    // Style-guide: лише «ялинки».
+    const hint = screen.getByText(/Тут зʼявляться збережені рецепти/i);
+    expect(hint.textContent).toContain("«Зберегти»");
+    expect(hint.textContent).not.toMatch(/"/);
   });
 
   it("shows saved recipe title after expanding the saved section", async () => {

@@ -15,6 +15,7 @@
 import { sumMacrosNullable } from "@sergeant/shared";
 
 import { env } from "../../src/env/env.js";
+import { withOpenRouterProviderPrefs } from "../../src/lib/llm/openrouterDataPolicy.js";
 import { extractJsonFromText } from "../../src/http/jsonSafe.js";
 import {
   anthropicMessages,
@@ -296,6 +297,9 @@ interface RawCall {
   text: string;
   inputTokens: number | null;
   outputTokens: number | null;
+  /** Постачальник і списана шлюзом вартість (лише OpenRouter-гілка). */
+  servedBy?: string | null;
+  gatewayCostUsd?: number | null;
   error?: string;
 }
 
@@ -379,31 +383,45 @@ async function callVision(
       "HTTP-Referer": "https://sergeant.app",
       "X-Title": "Sergeant",
     },
-    body: JSON.stringify({
-      model: candidate.model,
-      max_tokens: maxTokens,
-      temperature: 0.2,
-      messages: [
-        { role: "system", content: system },
-        {
-          role: "user",
-          content: [
-            {
-              type: "image_url",
-              image_url: {
-                url: `data:${img.mimeType};base64,${img.base64}`,
+    // Той самий `provider`, що в проді (`OpenRouterProvider`): без нього стенд
+    // міряв би постачальників, яких прод під `data_collection=deny` не бере.
+    body: JSON.stringify(
+      withOpenRouterProviderPrefs({
+        model: candidate.model,
+        max_tokens: maxTokens,
+        temperature: 0.2,
+        // Лише стенд: 5-те поле `--extra` (як у `eval:models`). Без нього
+        // шлюз вирішує глибину сам, як у проді.
+        ...(candidate.reasoning
+          ? { reasoning: { effort: candidate.reasoning } }
+          : {}),
+        messages: [
+          { role: "system", content: system },
+          {
+            role: "user",
+            content: [
+              {
+                type: "image_url",
+                image_url: {
+                  url: `data:${img.mimeType};base64,${img.base64}`,
+                },
               },
-            },
-            { type: "text", text: goldenCase.user },
-          ],
-        },
-      ],
-    }),
+              { type: "text", text: goldenCase.user },
+            ],
+          },
+        ],
+      }),
+    ),
     signal: AbortSignal.timeout(60_000),
   });
   const data = (await response.json().catch(() => ({}))) as {
     choices?: Array<{ message?: { content?: string | null } }>;
-    usage?: { prompt_tokens?: number; completion_tokens?: number };
+    usage?: {
+      prompt_tokens?: number;
+      completion_tokens?: number;
+      cost?: number;
+    };
+    provider?: string;
     error?: { message?: string };
   };
   if (!response.ok) {
@@ -420,6 +438,9 @@ async function callVision(
     text: data.choices?.[0]?.message?.content ?? "",
     inputTokens: data.usage?.prompt_tokens ?? null,
     outputTokens: data.usage?.completion_tokens ?? null,
+    servedBy: typeof data.provider === "string" ? data.provider : null,
+    gatewayCostUsd:
+      typeof data.usage?.cost === "number" ? data.usage.cost : null,
   };
 }
 
@@ -454,6 +475,8 @@ export async function runVisionOne(
     trap: goldenCase.trap,
     candidate,
     latencyMs: Date.now() - t0,
+    servedBy: raw.servedBy ?? null,
+    gatewayCostUsd: raw.gatewayCostUsd ?? null,
     cacheReadTokens: null,
     // Зорові шляхи не user-facing текстом — голос міряти нема на чому.
     voiceFails: null,

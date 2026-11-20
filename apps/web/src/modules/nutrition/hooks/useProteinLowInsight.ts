@@ -59,7 +59,7 @@ export function useProteinLowInsight(
     return {
       id: "nutrition-protein-low",
       module: "nutrition",
-      title: `Білку: ${consumed} з ${goal}г`,
+      title: `Білку: ${consumed} з ${goal}\u00a0г`,
       subtitle: isMostlyEstimated
         ? messages.nutrition.proteinLowEstimated.subtitle
         : `Додати джерело білка`,

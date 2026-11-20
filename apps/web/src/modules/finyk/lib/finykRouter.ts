@@ -70,6 +70,18 @@ export function finykRoutePath(next: FinykPage | null | undefined): string {
 }
 
 /**
+ * Query-параметр «відкрий цю операцію» на сторінці Операцій (Ф-2 а,
+ * 2026-11-18). Значення — id рядка списку: банківський id або
+ * `manual_<id>` для ручного запису (`manualExpenseToTransaction`).
+ */
+export const FINYK_FOCUS_TX_PARAM = "tx";
+
+/** `/finyk/transactions?tx=<id>`: глибоке посилання на одну операцію. */
+export function finykTransactionPath(txId: string): string {
+  return `${finykRoutePath("transactions")}?${FINYK_FOCUS_TX_PARAM}=${encodeURIComponent(txId)}`;
+}
+
+/**
  * Legacy hash-URL parser. Kept ONLY for the one-time redirect-on-mount compat
  * shim (`useFinykRoute`) — when a user lands on `/finyk#budgets` (PWA install
  * / share-card / push notification / Hub recommendation from before

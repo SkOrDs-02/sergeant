@@ -1,6 +1,8 @@
 /** @status Active */
+import { finykSavingsMessages } from "./uk.finykSavings";
 
 export const finykPageMessages = {
+  ...finykSavingsMessages,
   // Аркуш «Додати» з кнопки в куті (redesign v3, PR4b): наявні входи модуля.
   addSources: {
     manual: { label: "Вручну", hint: "Сума, категорія і дата" },
@@ -138,6 +140,22 @@ export const finykPageMessages = {
     showAll: "Усі дні",
     showAllAria: "Показати всі дні",
   },
+  // Ф-2 (а), OD-26: пошук у шапці «Операцій».
+  transactionsSearch: {
+    label: "Пошук операцій",
+    // Без переліку полів: плейсхолдер-перелік заборонений (copy.slop.test).
+    placeholder: "Пошук операцій",
+    clear: "Очистити пошук",
+    /** `{count}` уже з узгодженим словом «операція». */
+    found: "Знайдено {count}",
+    foundInPeriod: "Знайдено {count} за {period}",
+    countOne: "операцію",
+    countFew: "операції",
+    countMany: "операцій",
+    emptyTitle: "Нічого не знайдено",
+    emptyDescription:
+      "За «{query}» тут операцій немає. Зміни запит, вкладку чи місяць або очисти пошук.",
+  },
   transferSuggestion: {
     title: "Схоже на внутрішній переказ",
     hint: "Після підтвердження обидві операції не рахуватимуться як витрата чи дохід.",
@@ -163,6 +181,23 @@ export const finykPageMessages = {
     /** Позначка кредитного рахунку в рядку напрямку переказу. */
     creditAccountTag: "кредитна",
     confirmed: "Переказ не враховується у витратах і доходах.",
+    /**
+     * Кілька пропозицій показуємо одним списком, а не по черзі: інакше після
+     * кожної відповіді спливала наступна, і це читалось як «знаходить нові,
+     * про які не питало» (фідбек власника 2026-11-19).
+     */
+    listTitle: "Схожі на внутрішні перекази",
+    listCount: "Пар операцій: {n}",
+    listHint:
+      "Перекази між своїми рахунками й погашення кредитки не рахуються як витрата чи дохід. Познач кожну пару або всі разом.",
+    rowConfirm: "Переказ",
+    rowCreditConfirm: "Погашення",
+    rowReject: "Ні",
+    /** Назва «Ні» для скрінрідера: коротке «Ні» однакове в кожному рядку. */
+    rowRejectAria: "Ні, не переказ",
+    confirmAll: "Усе це перекази",
+    dismissAll: "Не зараз",
+    confirmedAll: "Перекази не враховуються у витратах і доходах.",
   },
   transactionDetails: {
     title: "Деталі операції",
@@ -279,6 +314,13 @@ export const finykPageMessages = {
     dateLabel: "Дата",
     dateScrubberLabel: "Дата запису",
     dateOther: "Інша дата",
+    // Ф-1 (а), OD-26: теги й рахунок під розкривачем після дати.
+    moreTagsAccount: "Більше: теги, рахунок",
+    moreTags: "Більше: теги",
+    moreAccount: "Більше: рахунок",
+    tagCountOne: "тег",
+    tagCountFew: "теги",
+    tagCountMany: "тегів",
     cancel: "Скасувати",
     save: "Зберегти",
     saveAndAddMore: "Зберегти й додати ще",

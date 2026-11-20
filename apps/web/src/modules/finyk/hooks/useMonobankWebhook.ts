@@ -29,6 +29,11 @@ import type { MeResponse } from "@sergeant/api-client";
 import { getSqliteDb } from "../../../core/db/sqlite";
 import { migrateFinyk } from "../lib/clientMigrate";
 import { MonoNotConnectedError } from "../lib/monoBankErrors";
+import {
+  applyMonoServerConnectedAt,
+  clearMonoFirstConnectedAt,
+  recordMonoFirstConnectedAt,
+} from "../lib/bankHistory";
 import { failedCopy } from "@shared/i18n/failedCopy";
 import {
   deleteMonoTransactionsOfAccounts,
@@ -92,6 +97,17 @@ export function useMonobankWebhook({
   const syncStateData = syncStateQuery.data ?? null;
   const isConnected =
     syncStateData != null && syncStateData.status !== "disconnected";
+
+  // Момент підключення з сервера — джерело правди для вікна картки фактів
+  // банку на хабі (`getMonoFirstConnectedAt`). Ефект живе тут, бо
+  // `FinykBootCluster` монтує цей хук на кожному автентифікованому маршруті.
+  // Поки стану немає, `undefined` нічого не міняє.
+  const serverConnectedAt = syncStateData
+    ? syncStateData.connectedAt
+    : undefined;
+  useEffect(() => {
+    applyMonoServerConnectedAt(serverConnectedAt);
+  }, [serverConnectedAt]);
 
   // === Accounts ===
   const accountsQuery = useQuery<MonoAccountDto[]>({
@@ -502,6 +518,8 @@ export function useMonobankWebhook({
           queryKey: hubKeys.preview("finyk"),
         });
 
+        recordMonoFirstConnectedAt();
+
         trackEvent(ANALYTICS_EVENTS.BANK_CONNECT_SUCCESS, {
           bank: "monobank",
           mode: "webhook",
@@ -598,6 +616,7 @@ export function useMonobankWebhook({
     } catch {
       // best-effort
     }
+    clearMonoFirstConnectedAt();
     queryClient.removeQueries({ queryKey: finykKeys.mono });
     queryClient.removeQueries({ queryKey: finykKeys.monoSyncState });
     queryClient.removeQueries({ queryKey: finykKeys.monoWebhookAccounts });

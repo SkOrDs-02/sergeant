@@ -1,5 +1,4 @@
 import {
-  resolveOriginDeviceId,
   sweepStaleTerminalOutbox,
   SYNC_V2_MAX_OPS_PER_PUSH,
   SYNC_V2_PULL_MAX_LIMIT,
@@ -8,6 +7,7 @@ import type { RecoverDeadLetterTarget } from "@sergeant/db-schema/sqlite";
 import type { SqliteMigrationClient } from "@sergeant/db-schema/migrate/sqlite";
 
 import { webKVStore } from "@shared/lib/storage/storage";
+import { resolveBootOriginDeviceId } from "./originDeviceReset";
 
 // Статичний імпорт навмисно: `authClient` і так eager (статично тягнеться
 // `AuthContext`-ом у entry-chunk). Подвійний static+dynamic імпорт змушував
@@ -296,6 +296,11 @@ async function createDefaultReaderRuntime(): Promise<SyncEngineReaderRuntime> {
         limit: opts.limit,
         originDeviceId: opts.originDeviceId,
       }),
+    // Журнал обрізано нижче курсора (`410 sync_cursor_expired`): копію
+    // відновлює знімок (`snapshotRestore.ts`). Ендпоінт за серверним
+    // прапорцем `SYNC_SNAPSHOT_ENABLED`; 410 буває лише за увімкненої чистки
+    // журналу (`SYNC_OP_LOG_APPLIED_RETENTION_DAYS`, ADR-0105 §2).
+    snapshot: (opts) => shared.apiClient.syncV2.snapshotV2(opts),
     resolveClient: shared.resolveClient,
     // data-04: `null` тут означає «вийшов», а reader на `null` скидає прапор
     // «початковий pull завершено». Тимчасовий збій `getSession` (офлайн, 5xx)
@@ -619,7 +624,10 @@ async function createSyncSharedContext(): Promise<SyncSharedContext> {
   // `STORAGE_KEYS.SYNC_ORIGIN_DEVICE_ID` via `webKVStore` so it
   // survives reloads, deploys, and the SQLite warm-cache hydration
   // (pre-bootstrap reads fall through to `localStorage`).
-  const originDeviceId = resolveOriginDeviceId({ store: webKVStore });
+  // Після стирання локальних даних (вихід, втрата сесії) старт видає НОВИЙ
+  // id: старий лежить в анонімному KV, куди чистка не дістає
+  // (`originDeviceReset.ts`).
+  const originDeviceId = resolveBootOriginDeviceId(webKVStore);
   sentry.setSentryTag("sync.origin_device_id_present", "true");
 
   const writerIntervalMs = randomizeIntervalMs(30_000, 0.2);

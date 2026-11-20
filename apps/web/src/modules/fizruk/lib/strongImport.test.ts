@@ -378,6 +378,70 @@ describe("buildStrongImportState", () => {
     expect(result.skippedExerciseNames).toContain("Totally Unknown Machine");
   });
 
+  it("секунди й метри кладуться в підходи, тип — з даних (спека типу виміру)", () => {
+    const csv = [
+      "Date,Workout Name,Duration,Exercise Name,Set Order,Weight,Reps,Distance,Seconds,RPE",
+      "2024-03-04 07:00:00,Core,30m,Plank,1,0,0,,30,",
+      "2024-03-04 07:00:00,Core,30m,Plank,2,0,0,,45,",
+      "2024-03-04 07:00:00,Core,30m,Carry,1,24,0,40,,",
+    ].join("\n");
+    const draft = parseStrongWorkoutCsv(csv, "kg");
+    const result = buildStrongImportState(
+      EMPTY_FIZRUK_DUAL_WRITE_STATE,
+      draft,
+      matchStrongExercises(draft),
+      { Plank: "plank", Carry: "farmers_walk" },
+      "user-a",
+    );
+    const items = result.next.workouts.flatMap((w) => w.items);
+    const plank = items.find((i) => i.exerciseId === "plank")!;
+    expect(plank["measure"]).toBe("time");
+    expect(plank.type).toBe("time");
+    expect(plank.sets?.map((s) => s["durationSec"])).toEqual([30, 45]);
+    expect(plank.durationSec).toBe(75);
+    const carry = items.find((i) => i.exerciseId === "farmers_walk")!;
+    expect(carry["measure"]).toBe("weight_distance");
+    expect(carry.sets?.[0]).toMatchObject({ weightKg: 24, distanceM: 40 });
+  });
+
+  it("повторний імпорт того самого CSV оновлює старий запис до нової форми", () => {
+    const csv = [
+      "Date,Workout Name,Duration,Exercise Name,Set Order,Weight,Reps,Distance,Seconds,RPE",
+      "2024-03-04 07:00:00,Core,30m,Plank,1,0,0,,30,",
+    ].join("\n");
+    const draft = parseStrongWorkoutCsv(csv, "kg");
+    const matches = matchStrongExercises(draft);
+    const first = buildStrongImportState(
+      EMPTY_FIZRUK_DUAL_WRITE_STATE,
+      draft,
+      matches,
+      { Plank: "plank" },
+      "user-a",
+    );
+    // Стара форма (до типу виміру): сума на вправі, підходи без секунд.
+    const legacy: FizrukDualWriteState = {
+      ...first.next,
+      workouts: first.next.workouts.map((w) => ({
+        ...w,
+        items: w.items.map(({ measure: _m, ...i }) => ({
+          ...i,
+          sets: [{ weightKg: 0, reps: 0 }],
+        })),
+      })),
+    };
+    const again = buildStrongImportState(
+      legacy,
+      draft,
+      matches,
+      { Plank: "plank" },
+      "user-a",
+    );
+    expect(again.next.workouts).toHaveLength(1);
+    const plank = again.next.workouts[0]!.items[0]!;
+    expect(plank["measure"]).toBe("time");
+    expect(plank.sets?.[0]?.["durationSec"]).toBe(30);
+  });
+
   it("writes manually selected names from the same catalogue", () => {
     const draft = parseStrongWorkoutCsv(fixture, "kg");
     const matches = matchStrongExercises(draft);

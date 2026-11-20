@@ -7,6 +7,7 @@ import {
   finykCategoryExists,
   finykExpenseAmountUah,
   finykTransactionExists,
+  finykTransactionLabel,
   normalizeFinykId,
   unknownCategoryMessage,
   unknownTransactionMessage,
@@ -16,6 +17,7 @@ import {
   triggerHiddenTransactionSqliteMirror,
   triggerManualExpenseDeleteSqliteMirror,
 } from "../../../../modules/finyk/lib/sqliteWriter";
+import { emitFinykExpenseRoutineAutoMark } from "../../../../modules/finyk/lib/routineAutoMark";
 import { parseKyivDate } from "@shared/lib/time/kyivTime";
 import { formatNumberUk } from "@sergeant/shared";
 import { manualLinkKey } from "@sergeant/finyk-domain/domain/debtLinkKeys";
@@ -36,6 +38,22 @@ type ManualExpenseRow = {
   type?: string;
 };
 
+/**
+ * Подія «записана витрата» для автовідмітки Рутини (рішення founder-а
+ * 2026-11-18): витрата з чату записана самою людиною, як і з форми. Явна дата
+ * `YYYY-MM-DD` уже є день-ключем, без неї день бере годинник пристрою
+ * (ADR-0078), а не київську північ із `isoDate`. Спільна для серверного шляху
+ * і локального фолбеку; дохід, збій запису і відкат її не викликають.
+ */
+export function emitChatExpenseRoutineAutoMark(
+  date: string | undefined,
+  recordedAt: Date = new Date(),
+): void {
+  emitFinykExpenseRoutineAutoMark(
+    date && /^\d{4}-\d{2}-\d{2}$/.test(date) ? date : recordedAt,
+  );
+}
+
 export function createTransaction(
   action: CreateTransactionAction,
 ): ChatActionResult {
@@ -46,7 +64,11 @@ export function createTransaction(
   if (!checked.ok) return checked.message;
   const amt = checked.amount;
   const txType = type === "income" ? "income" : "expense";
-  const nowIso = new Date().toISOString();
+  // Мить запису фіксуємо тут, а не в `.then` після SQLite: день події для
+  // Рутини має бути днем, коли людина записала витрату, а не днем, коли
+  // відпрацював запис (різниця видна біля півночі).
+  const recordedAt = new Date();
+  const nowIso = recordedAt.toISOString();
   const isoDate =
     date && /^\d{4}-\d{2}-\d{2}$/.test(date)
       ? (parseKyivDate(date)?.toISOString() ?? nowIso)
@@ -70,7 +92,16 @@ export function createTransaction(
     type: txType,
   };
   manualExpenses.unshift(entry);
-  void finykChatWrite("finyk_manual_expenses_v1", manualExpenses);
+  const write = finykChatWrite("finyk_manual_expenses_v1", manualExpenses);
+  if (txType === "expense") {
+    // Лише коли запис ліг: відмова чи тайм-аут SQLite не відмічає звичку.
+    void write.then(
+      (ok) => {
+        if (ok) emitChatExpenseRoutineAutoMark(date, recordedAt);
+      },
+      () => undefined,
+    );
+  }
   const label = categoryLabel ? ` (${categoryLabel})` : "";
   const human = txType === "income" ? "Дохід" : "Витрату";
   const result = `${human} ${formatNumberUk(amt)} грн${description ? ` "${description.trim()}"` : ""}${label} записано (id:${manualId})`;
@@ -94,6 +125,12 @@ export function createTransaction(
   };
 }
 
+/** ` «Кава» на 120 грн` для речення «Операцію… видалено»; порожньо без підпису. */
+function labelPart(id: string): string {
+  const label = finykTransactionLabel(id);
+  return label ? ` ${label}` : "";
+}
+
 export function hideTransaction(
   action: HideTransactionAction,
 ): ChatActionResult {
@@ -115,7 +152,7 @@ export function hideTransaction(
   // Mirror into `finyk_hidden_transactions` — the hidden-tx read
   // (search / analytics / report) overlays from SQLite. Idempotent.
   triggerHiddenTransactionSqliteMirror(key);
-  return `Операцію ${txId} приховано зі статистики`;
+  return `Операцію${labelPart(txId)} приховано зі статистики (id:${txId})`;
 }
 
 export function deleteTransaction(
@@ -125,18 +162,20 @@ export function deleteTransaction(
   const id = String(tx_id || "").trim();
   if (!id) return "Потрібен tx_id для видалення.";
   if (!id.startsWith("m_")) {
-    return `Операцію ${id} не видалено: можна видаляти лише ручні (m_…). Для монобанк-операцій використай hide_transaction.`;
+    return `Операцію${labelPart(id)} не видалено (id:${id}): можна видаляти лише ручні записи. Для операцій Monobank використай hide_transaction.`;
   }
   const cache = warmFinykCache();
   if (!cache) return FINYK_COLD_CACHE_MESSAGE;
   const list = cache.manualExpenses;
   const idx = list.findIndex((t) => t.id === id);
-  if (idx < 0) return `Операцію ${id} не знайдено (вже видалена).`;
+  if (idx < 0) return `Операцію не знайдено, вже видалена (id:${id}).`;
+  // Підпис рахуємо до запису: після нього операції в кеші вже немає.
+  const label = labelPart(id);
   const next = list.slice();
   next.splice(idx, 1);
   void finykChatWrite("finyk_manual_expenses_v1", next);
   triggerManualExpenseDeleteSqliteMirror(id);
-  return `Операцію ${id} видалено`;
+  return `Операцію${label} видалено (id:${id})`;
 }
 
 export function splitTransaction(
@@ -159,7 +198,7 @@ export function splitTransaction(
   // розподіл витрати рівно на її суму.
   const total = finykExpenseAmountUah(id);
   if (total === null)
-    return `Операцію ${id} не розділено: розділити можна лише витрату.`;
+    return `Операцію${labelPart(id)} не розділено (id:${id}): розділити можна лише витрату.`;
   const customC = cache.customCategories;
   const newSplits = splitParts.map((p) => ({
     categoryId: normalizeFinykId(p.category_id),
@@ -169,7 +208,7 @@ export function splitTransaction(
     return "Кожна частина має бути сумою в гривнях, більшою за 0.";
   const partsSum = newSplits.reduce((sum, s) => sum + s.amount, 0);
   if (Math.round(partsSum * 100) !== Math.round(total * 100))
-    return `Операцію ${id} не розділено: частини дають ${formatNumberUk(partsSum)} грн, а операція на ${formatNumberUk(total)} грн. Сума частин має дорівнювати сумі операції.`;
+    return `Операцію${labelPart(id)} не розділено (id:${id}): частини дають ${formatNumberUk(partsSum)} грн, а операція на ${formatNumberUk(total)} грн. Сума частин має дорівнювати сумі операції.`;
   const unknownPart = newSplits.find((s) => !finykCategoryExists(s.categoryId));
   if (unknownPart) return unknownCategoryMessage(unknownPart.categoryId);
   // Спліти для tx_id перезаписуються цілком: знімок попередніх потрібен
@@ -189,7 +228,7 @@ export function splitTransaction(
     })
     .join(", ");
   return {
-    result: `Операцію ${id} розділено на ${newSplits.length} частин: ${desc}`,
+    result: `Операцію${labelPart(id)} розділено на ${newSplits.length} частин: ${desc} (id:${id})`,
     // Читає свіжий кеш і чіпає лише ключ цього tx, щоб не затерти спліти
     // інших операцій, змінені між дією й відкатом.
     undo: () => {

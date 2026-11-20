@@ -59,6 +59,17 @@ export interface NowItem {
   /** Походження — обидва id, щоб dismiss ішов в обидва сховища. */
   recId?: string | undefined;
   insightId?: string | undefined;
+  /**
+   * Що робить чекбокс рядка. Без поля — «закрити на сьогодні» (рядок іде в
+   * «Закрито»). `habit` — відмічає звичку за сьогодні (П-16 (А) 2026-11-18,
+   * `hubNowRows.ts`); `none` — чекбокса немає (рядок «ще N звичок»).
+   */
+  checkbox?: { kind: "habit"; habitId: string } | { kind: "none" } | undefined;
+  /**
+   * Скільки відкритих справ представляє рядок для лічильника «зараз N»;
+   * без поля — одна. Рядок «ще N звичок» представляє N.
+   */
+  represents?: number | undefined;
 }
 
 /**

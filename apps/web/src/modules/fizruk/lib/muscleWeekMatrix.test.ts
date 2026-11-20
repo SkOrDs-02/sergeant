@@ -16,14 +16,15 @@ const DAY = 24 * 60 * 60 * 1000;
 /** Середа, щоб «понеділок тижня» не збігався з самою датою. */
 const NOW = Date.parse("2026-08-05T12:00:00.000Z");
 
-function strengthWorkout(atMs: number, muscle: string, kg: number) {
+/** Тренування з `sets` робочими підходами 60×10 на один мʼяз. */
+function strengthWorkout(atMs: number, muscle: string, sets: number) {
   return {
     startedAt: new Date(atMs).toISOString(),
     items: [
       {
         type: "strength",
         musclesPrimary: [muscle],
-        sets: [{ weightKg: kg, reps: 10 }],
+        sets: Array.from({ length: sets }, () => ({ weightKg: 60, reps: 10 })),
       },
     ],
   };
@@ -42,7 +43,7 @@ describe("buildMuscleWeekMatrix", () => {
     // Пн 2026-08-03 00:30 JST = 2026-08-02T15:30Z (за Києвом ще неділя).
     const at = Date.parse("2026-08-02T15:30:00.000Z");
     const m = buildMuscleWeekMatrix(
-      [strengthWorkout(at, "chest", 100)],
+      [strengthWorkout(at, "chest", 3)],
       null,
       Date.parse("2026-08-05T03:00:00.000Z"),
     );
@@ -54,9 +55,9 @@ describe("buildMuscleWeekMatrix", () => {
   it("тримає всі чотири тижні, а не лише останній", () => {
     const m = buildMuscleWeekMatrix(
       [
-        strengthWorkout(NOW, "chest", 100),
-        strengthWorkout(NOW - 7 * DAY, "chest", 50),
-        strengthWorkout(NOW - 21 * DAY, "chest", 200),
+        strengthWorkout(NOW, "chest", 2),
+        strengthWorkout(NOW - 7 * DAY, "chest", 1),
+        strengthWorkout(NOW - 21 * DAY, "chest", 4),
       ],
       { chest: "Груди" },
       NOW,
@@ -66,15 +67,13 @@ describe("buildMuscleWeekMatrix", () => {
     const chest = m.rows.find((r) => r.id === "chest");
     expect(chest?.weekly).toHaveLength(MATRIX_WEEKS);
     // Найстаріший → найновіший: 21 днів тому, порожньо, тиждень тому, зараз.
-    expect(chest?.weekly.map((v) => Number(v.toFixed(2)))).toEqual([
-      2, 0, 0.5, 1,
-    ]);
-    expect(chest?.latest).toBeCloseTo(1);
+    expect(chest?.weekly).toEqual([4, 0, 1, 2]);
+    expect(chest?.latest).toBe(2);
   });
 
   it("тиждень без тренувань лишається НУЛЕМ, а не зникає", () => {
     const m = buildMuscleWeekMatrix(
-      [strengthWorkout(NOW, "chest", 100)],
+      [strengthWorkout(NOW, "chest", 3)],
       null,
       NOW,
     );
@@ -88,9 +87,9 @@ describe("buildMuscleWeekMatrix", () => {
     const m = buildMuscleWeekMatrix(
       [
         // Спина: багато три тижні тому, нічого зараз.
-        strengthWorkout(NOW - 21 * DAY, "back", 400),
+        strengthWorkout(NOW - 21 * DAY, "back", 4),
         // Груди: трохи, зате цього тижня.
-        strengthWorkout(NOW, "chest", 50),
+        strengthWorkout(NOW, "chest", 1),
       ],
       null,
       NOW,
@@ -100,7 +99,7 @@ describe("buildMuscleWeekMatrix", () => {
 
   it("нормалізує по ВСІЙ матриці, тож рядки лишаються порівнюваними", () => {
     const m = buildMuscleWeekMatrix(
-      [strengthWorkout(NOW, "back", 400), strengthWorkout(NOW, "chest", 50)],
+      [strengthWorkout(NOW, "back", 4), strengthWorkout(NOW, "chest", 1)],
       null,
       NOW,
     );
@@ -111,7 +110,7 @@ describe("buildMuscleWeekMatrix", () => {
 
   it("рахує тижні з даними для порога мовчання", () => {
     const one = buildMuscleWeekMatrix(
-      [strengthWorkout(NOW, "chest", 100)],
+      [strengthWorkout(NOW, "chest", 3)],
       null,
       NOW,
     );
@@ -120,8 +119,8 @@ describe("buildMuscleWeekMatrix", () => {
 
     const two = buildMuscleWeekMatrix(
       [
-        strengthWorkout(NOW, "chest", 100),
-        strengthWorkout(NOW - 7 * DAY, "chest", 100),
+        strengthWorkout(NOW, "chest", 3),
+        strengthWorkout(NOW - 7 * DAY, "chest", 3),
       ],
       null,
       NOW,
@@ -139,7 +138,7 @@ describe("buildMuscleWeekMatrix", () => {
     }
   });
 
-  it("додає вторинні мʼязи з вагою 0.55", () => {
+  it("додає вторинні мʼязи половиною підходу", () => {
     const m = buildMuscleWeekMatrix(
       [
         {
@@ -157,8 +156,51 @@ describe("buildMuscleWeekMatrix", () => {
       null,
       NOW,
     );
-    expect(m.rows.find((r) => r.id === "chest")?.latest).toBeCloseTo(1);
-    expect(m.rows.find((r) => r.id === "triceps")?.latest).toBeCloseTo(0.55);
+    expect(m.rows.find((r) => r.id === "chest")?.latest).toBe(1);
+    expect(m.rows.find((r) => r.id === "triceps")?.latest).toBe(0.5);
+  });
+
+  it("підхід із власною вагою зараховується, порожній рядок — ні", () => {
+    // Стара формула (кг×повт) давала нуль усім вправам без ваги: «0×15» на
+    // сідничних не навантажувало жодного мʼяза.
+    const m = buildMuscleWeekMatrix(
+      [
+        {
+          startedAt: new Date(NOW).toISOString(),
+          items: [
+            {
+              type: "strength",
+              musclesPrimary: ["glutes"],
+              sets: [
+                { weightKg: 0, reps: 15 },
+                { weightKg: 0, reps: 15 },
+                { weightKg: 20, reps: 0 },
+              ],
+            },
+          ],
+        },
+      ],
+      null,
+      NOW,
+    );
+    expect(m.rows.find((r) => r.id === "glutes")?.latest).toBe(2);
+  });
+
+  it("час і дистанція не змішуються з підходами", () => {
+    const m = buildMuscleWeekMatrix(
+      [
+        {
+          startedAt: new Date(NOW).toISOString(),
+          items: [
+            { type: "time", musclesPrimary: ["quadriceps"], durationSec: 1800 },
+          ],
+        },
+      ],
+      null,
+      NOW,
+    );
+    expect(m.rows).toEqual([]);
+    expect(m.weeksWithData).toBe(0);
   });
 
   it("порожній вхід не кидає і дає max = 1", () => {

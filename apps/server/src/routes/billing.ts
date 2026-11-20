@@ -8,6 +8,8 @@ import {
   BillingPortalResponseSchema,
   BillingProvidersResponseSchema,
   BillingStatusResponseSchema,
+  ManualAccessRequestSchema,
+  ManualAccessResponseSchema,
 } from "@sergeant/shared";
 import {
   rateLimitExpress,
@@ -35,7 +37,13 @@ import {
 // роути, яким цей граф не потрібен.
 import { buildAccessSnapshot } from "../modules/billing/accessSnapshot.js";
 import { assertCheckoutAllowed } from "../modules/billing/checkoutGuard.js";
+import {
+  manualAccessConfig,
+  requestManualAccess,
+} from "../modules/billing/manualAccess.js";
+import { createTelegramApiClient } from "../modules/alerts/telegramShipper.js";
 import { emitSecurityEvent } from "../obs/securityEvents.js";
+import { env } from "../env/env.js";
 import { logger } from "../obs/logger.js";
 import { billingCheckoutTotal, billingWebhookTotal } from "../obs/metrics.js";
 import {
@@ -165,6 +173,41 @@ export function createBillingRouter({ pool }: { pool: Pool }): Router {
         if (handleBillingError(err, res)) return;
         throw err;
       }
+    },
+  );
+
+  // Ручний Premium за запитом із пейволу (спека manual-premium-request.md).
+  // Бакет rate limit спільний із checkout: до запуску оплати checkout не
+  // працює, а після запуску цей ендпоінт закритий (`MANUAL_ACCESS_CLOSED`).
+  r.post(
+    "/api/billing/manual-access",
+    requireSession(),
+    rateLimitExpress({
+      key: "api:billing:checkout",
+      limit: 10,
+      windowMs: 60 * 60 * 1000,
+    }),
+    async (req: AuthedRequest, res: Response) => {
+      const parsed = parseBody(ManualAccessRequestSchema, req);
+      const cfg = manualAccessConfig();
+      const userAgent =
+        typeof req.headers["user-agent"] === "string"
+          ? req.headers["user-agent"].slice(0, 256)
+          : null;
+      const { requestedAt } = await requestManualAccess(
+        pool,
+        req.user!.id,
+        {
+          surface: parsed.surface,
+          page: parsed.page ?? null,
+          viewport: parsed.viewport ?? null,
+          userAgent,
+          appEnv: env.APP_ENV ?? env.NODE_ENV ?? null,
+        },
+        createTelegramApiClient(cfg.botToken),
+        cfg,
+      );
+      res.json(ManualAccessResponseSchema.parse({ ok: true, requestedAt }));
     },
   );
 

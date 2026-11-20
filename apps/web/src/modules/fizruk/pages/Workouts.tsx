@@ -337,6 +337,7 @@ export function Workouts({
                   pendingRetroEnd={o.pendingRetroEnd}
                   onPendingRetroEndChange={o.updatePendingRetroEnd}
                   recBy={o.rec.by}
+                  injurySites={o.rec.injurySites}
                   lastByExerciseId={o.lastByExerciseId}
                   setRestTimer={o.setRestTimer}
                   updateWorkout={o.updateWorkout}
@@ -508,6 +509,7 @@ export function Workouts({
           }
           updateWorkout={o.updateWorkout}
           onDone={activeOnly ? () => onNavigate?.("workouts") : undefined}
+          docked={activeOnly}
         />
         <StrongImportReview
           open={strongImportOpen}

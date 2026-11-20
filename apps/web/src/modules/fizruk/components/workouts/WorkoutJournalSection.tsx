@@ -18,23 +18,26 @@
  * `/fizruk/history` route (03-A) — this component is now always
  * route-owned, single-workout.
  */
-import { useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
+import type { InjurySiteId } from "@sergeant/fizruk-domain/data";
 import { Card } from "@shared/components/ui/Card";
 import { Button } from "@shared/components/ui/Button";
+import { ConfirmDialog } from "@shared/components/ui/ConfirmDialog";
 import { SessionView } from "../session/SessionView";
 import { WorkoutSummaryView } from "../workouts/WorkoutSummaryView";
 import { SectionErrorBoundary } from "@shared/components/ui/SectionErrorBoundary";
 import { useToast } from "@shared/hooks/useToast";
 import { hapticSuccess } from "@shared/lib/adapters/haptic";
-import { useAnnounce } from "@shared/components/ui/ScreenReaderAnnouncer";
 import { showUndoToast } from "@shared/lib/ui/undoToast";
 import { messages } from "@shared/i18n/uk";
+import { UNDO_TOAST_DEFAULT_ERROR_MSG } from "@sergeant/shared";
 import {
   ANALYTICS_EVENTS,
   trackEvent,
 } from "../../../../core/observability/analytics";
 import { readSignalContext } from "../../../../core/observability/valueSignalAttribution";
 import {
+  computeWorkoutDoneItemCount,
   computeWorkoutSetCount,
   type Workout,
   type WorkoutItem,
@@ -42,15 +45,26 @@ import {
 import type { WorkoutFinishSummary } from "@sergeant/fizruk-domain";
 import type { RestTimerState } from "../../hooks/useFizrukRestSound";
 import { trackFizrukWorkoutDiscarded } from "../../lib/workoutTelemetry";
-import { recordWorkoutMoment } from "../../lib/workoutMoments";
+import {
+  clearWorkoutMoment,
+  recordWorkoutMoment,
+} from "../../lib/workoutMoments";
+import { reopenWorkoutDetached } from "../../lib/reopenWorkoutDetached";
 import { deleteWorkoutWithUndo } from "../../lib/deleteWorkoutWithUndo";
 import { restoreWorkoutDetached } from "../../lib/restoreWorkoutDetached";
+import { signalFinishedWorkoutForRoutine } from "../../lib/routineAutoMarkSignal";
 import {
+  clearPendingRetroEnd,
   peekPendingRetroEnd,
   setPendingRetroEnd,
 } from "../../lib/pendingRetroEnd";
 import { isImplausiblyLongSession } from "../../lib/sessionDuration";
 import { LongSessionDialog } from "./LongSessionDialog";
+import {
+  FINISH_UNDO_WINDOW_MS,
+  buildFinishConfirmSummary,
+  finishUndoHint,
+} from "./finishConfirm";
 
 /**
  * Local view state used to drive the post-finish flash card. The shape merges
@@ -85,6 +99,8 @@ interface WorkoutJournalSectionProps {
   pendingRetroEnd?: string | null | undefined;
   onPendingRetroEndChange?: ((iso: string) => void) | undefined;
   recBy: Record<string, unknown>;
+  /** Активні позначки травми (ADR-0083) для чипа відновлення. */
+  injurySites: ReadonlySet<InjurySiteId>;
   lastByExerciseId: Record<string, unknown>;
   setRestTimer: (s: RestTimerState | null) => void;
   updateWorkout: (id: string, patch: Partial<Workout>) => void;
@@ -122,6 +138,7 @@ export function WorkoutJournalSection({
   pendingRetroEnd,
   onPendingRetroEndChange,
   recBy,
+  injurySites,
   lastByExerciseId,
   setRestTimer,
   updateWorkout,
@@ -135,14 +152,38 @@ export function WorkoutJournalSection({
   onClose,
 }: WorkoutJournalSectionProps) {
   const toast = useToast();
-  const { announce } = useAnnounce();
   const copy = messages.fizruk.workoutSummary;
+  const finishCopy = messages.fizruk.finishConfirm;
   // Guard the finish flow against double-click re-entry — the state updates
   // inside onFinishClick are async, so React may still render the "Завершити"
   // button for one more frame while a second click is already queued.
   const finishingRef = useRef(false);
   // Кінець, що вийшов би неправдоподібно довгим: показуємо попередження.
   const [longSessionEnd, setLongSessionEnd] = useState<string | null>(null);
+  // Фз-2: «Завершити» спершу питає «Завершити зараз?».
+  const [confirmOpen, setConfirmOpen] = useState(false);
+  // Тост «Повернутись у сесію» щойно завершеного тренування: підсумок гасить
+  // його, коли людина стартує нове чи видаляє це, інакше відкат воскресив би
+  // видалене або дав би дві активні сесії.
+  const finishUndoRef = useRef<{ workoutId: string; toastId: number } | null>(
+    null,
+  );
+  // Відкат через хук сторінки, поки вона змонтована; після навігації хук
+  // мертвий (setState розмонтованого не викликає dual-write), тоді детачено.
+  const mountedRef = useRef(false);
+  useEffect(() => {
+    mountedRef.current = true;
+    return () => {
+      mountedRef.current = false;
+    };
+  }, []);
+
+  const dismissFinishUndo = (workoutId: string) => {
+    const pending = finishUndoRef.current;
+    if (pending?.workoutId !== workoutId) return;
+    toast.dismiss(pending.toastId);
+    finishUndoRef.current = null;
+  };
 
   if (!activeWorkout) {
     return (
@@ -169,13 +210,17 @@ export function WorkoutJournalSection({
     return (
       <WorkoutSummaryView
         workout={activeWorkout}
-        onRepeat={() => onRepeatWorkout(activeWorkout)}
+        onRepeat={() => {
+          dismissFinishUndo(activeWorkout.id);
+          onRepeatWorkout(activeWorkout);
+        }}
         onClose={onClose}
         onUpdateTimes={(patch) => updateWorkout(activeWorkout.id, patch)}
         onDelete={() => {
           // ux-11: той самий шлях, що й свайп в історії, — видалення з
           // undo-тостом; потім назад до списку (сторінки вже нема). Undo НЕ
           // через хук сесії: `onClose()` розмонтує його, а тост лишиться.
+          dismissFinishUndo(activeWorkout.id);
           deleteWorkoutWithUndo({
             toast,
             workout: activeWorkout,
@@ -187,6 +232,25 @@ export function WorkoutJournalSection({
       />
     );
   }
+
+  /**
+   * Тап «Завершити» (Фз-2, OD-28): нічого не зберігає, а питає. Забута сесія
+   * (data-37) іде одразу в `LongSessionDialog` — він сам є підтвердженням, і
+   * два діалоги поспіль були б зайвим кроком.
+   */
+  const requestFinish = () => {
+    if (finishingRef.current) return;
+    if (!activeWorkout || activeWorkout.endedAt) return;
+    const plannedEnd =
+      peekPendingRetroEnd(activeWorkout.id) ??
+      // eslint-disable-next-line no-restricted-syntax -- UTC-anchored wall-clock instant для endedAt (не Kyiv-межа доби)
+      new Date().toISOString();
+    if (isImplausiblyLongSession(activeWorkout.startedAt, plannedEnd)) {
+      setLongSessionEnd(plannedEnd);
+      return;
+    }
+    setConfirmOpen(true);
+  };
 
   const handleFinish = (opts?: { endIso?: string; acknowledged?: boolean }) => {
     // Ignore re-entry from rapid double-clicks and from any stray
@@ -209,19 +273,14 @@ export function WorkoutJournalSection({
       setLongSessionEnd(plannedEnd);
       return;
     }
+    // Ретро-кінець ДО цього завершення: «Повернутись у сесію» відновлює
+    // саме його, а не виправлений у попередженні data-37.
+    const retroEndBefore = peekPendingRetroEnd(activeWorkout.id);
+    const beforeFinish = activeWorkout;
     if (opts?.endIso) setPendingRetroEnd(activeWorkout.id, opts.endIso);
     setLongSessionEnd(null);
+    setConfirmOpen(false);
     finishingRef.current = true;
-    // Detect whether this is a real "Workout Win" — at least one
-    // strength item has recorded sets, meaning the final set of a
-    // substantive session was just saved. Non-strength items
-    // (time/distance) are also counted to cover cardio sessions.
-    const isWorkoutWin = (activeWorkout.items || []).some(
-      (item) =>
-        (item.type === "strength" && (item.sets?.length ?? 0) > 0) ||
-        item.type === "time" ||
-        item.type === "distance",
-    );
     const sum = summarizeWorkoutForFinish({
       ...activeWorkout,
       endedAt: opts?.endIso ?? peekPendingRetroEnd(activeWorkout.id),
@@ -249,7 +308,10 @@ export function WorkoutJournalSection({
     });
     // До `endWorkout`: кеш ще тримає стан «до» (ADR-0096, момент).
     recordWorkoutMoment(wid, activeWorkout.startedAt);
-    endWorkout(wid);
+    const ended = endWorkout(wid);
+    const endedIso = ended?.endedAt ?? plannedEnd;
+    // Автовідмітка Рутини (Р-1 (в)): лише повноцінне, раз на тренування.
+    signalFinishedWorkoutForRoutine(ended ?? activeWorkout, endedIso);
     // Confirm the action visually + with haptic so the user does
     // not have to read the modal to know the session was saved.
     hapticSuccess();
@@ -276,31 +338,53 @@ export function WorkoutJournalSection({
         mood: null,
         injurySites: [],
       });
-      // Аркуш «Самопочуття» — не live-region; без цього факт
-      // збереження лишався б неозвученим.
-      announce("Тренування завершено та збережено.");
-    } else if (isWorkoutWin) {
-      // Підсумку немає (порожня чи шаблонна сесія), але робота
-      // була. Рішення власника 2026-09-11 (аудит O1): завершене
-      // тренування — часта подія, тож повноекранна
-      // celebration-модалка з конфеті знижена до тихого тосту —
-      // той самий канонічний механізм, що й у гілці нижче.
-      //
-      // Окремого `announce()` тут НЕМА свідомо: тост несе
-      // `role="status" aria-live="polite"` зі своїм текстом, і
-      // дубль означав би, що незряча людина чує про одне
-      // збереження двічі, різними словами.
-      toast.success("Тренування завершено, сесію збережено.");
-    } else {
-      // Empty or template-only workout: fall back to a plain toast
-      // so the save is still acknowledged without a jarring modal.
-      //
-      // Окремого `announce()` тут НЕМА свідомо: тост уже несе
-      // `role="status" aria-live="polite"` зі своїм текстом, і
-      // дубль означав би, що незряча людина чує про одне
-      // збереження двічі, різними словами.
-      toast.success("Тренування збережено.");
     }
+    // Рішення власника 2026-09-11 (аудит O1): завершене тренування — часта
+    // подія, тож celebration знижена до тихого тосту. Один короткий текст на
+    // всі гілки: поруч стоїть довга дія «Повернутись у сесію», і на 390 px
+    // довший рядок переносився на три (зйомка 2026-11-18).
+    const savedMsg = "Тренування збережено.";
+    // Фз-2 (OD-28): одне повідомлення про збереження, і воно ж несе
+    // «Повернутись у сесію» на 10 с. Тост має `role="status"`, тож окремого
+    // `announce()` немає: незряча людина почула б про збереження двічі.
+    // Тост лишається поза inert-фоном аркуша самопочуття (Toast.tsx).
+    //
+    // AI-DANGER: коміт уже стався (`endWorkout` вище). Повернення — це
+    // відкат до знімка ДО завершення, а не відкладений коміт: закрита
+    // вкладка у вікні мусить лишити тренування завершеним.
+    const reopenSession = () => {
+      finishUndoRef.current = null;
+      try {
+        if (mountedRef.current) {
+          updateWorkout(wid, {
+            endedAt: null,
+            wellbeing: beforeFinish.wellbeing ?? null,
+          });
+        } else {
+          reopenWorkoutDetached(beforeFinish, endedIso);
+        }
+      } catch {
+        // Тренування лишилось завершеним — кажемо про це і даємо повтор.
+        toast.error(UNDO_TOAST_DEFAULT_ERROR_MSG, undefined, {
+          label: messages.actions.retry,
+          onClick: reopenSession,
+        });
+        return;
+      }
+      // Без хвостів: аркуш самопочуття, рядок моменту, ретро-кінець.
+      // Рекорди, просування програми, інсайти й стрік рахуються з
+      // журналу і з `endedAt = null` зникають самі.
+      setFinishFlash(null);
+      clearWorkoutMoment(wid);
+      if (retroEndBefore) setPendingRetroEnd(wid, retroEndBefore);
+      else clearPendingRetroEnd(wid);
+    };
+    const toastId = toast.show(savedMsg, "success", FINISH_UNDO_WINDOW_MS, {
+      label: finishCopy.undoLabel,
+      kind: "undo",
+      onClick: reopenSession,
+    });
+    finishUndoRef.current = { workoutId: wid, toastId };
     // A dangling rest timer from the last set must not keep ticking
     // after finish — otherwise it eventually beeps/vibrates long
     // after the session is over.
@@ -331,6 +415,7 @@ export function WorkoutJournalSection({
           onPendingRetroEndChange={onPendingRetroEndChange}
           lastByExerciseId={lastByExerciseId}
           recBy={recBy}
+          injurySites={injurySites}
           removeItem={removeItem}
           updateItem={updateItem}
           updateWorkout={updateWorkout}
@@ -338,7 +423,7 @@ export function WorkoutJournalSection({
           onAddExercise={onAddExercise}
           onOpenExerciseInfo={onOpenExerciseInfo}
           onOpenExerciseStats={onOpenExerciseStats}
-          onFinishClick={() => handleFinish()}
+          onFinishClick={requestFinish}
           onDeleteWorkout={() => {
             // Unified undo: snapshot the active workout, run the
             // soft-delete immediately, then surface a 5 s undo toast
@@ -359,6 +444,30 @@ export function WorkoutJournalSection({
           onCollapse={onClose}
         />
       </SectionErrorBoundary>
+      <ConfirmDialog
+        open={confirmOpen}
+        title={finishCopy.title}
+        description={
+          <>
+            {buildFinishConfirmSummary({
+              ...(summarizeWorkoutForFinish({
+                ...activeWorkout,
+                endedAt: peekPendingRetroEnd(activeWorkout.id),
+              }) ?? { durationSec: 0, items: 0, tonnageKg: 0 }),
+              doneItems: computeWorkoutDoneItemCount(activeWorkout),
+              sets: computeWorkoutSetCount(activeWorkout),
+            })}
+            . {finishUndoHint()}
+          </>
+        }
+        // Завершення не деструктивне (його можна відкотити 10 с): основна
+        // чорна кнопка, як на погодженому мокапі, а не червона.
+        danger={false}
+        confirmLabel={finishCopy.confirm}
+        cancelLabel={finishCopy.cancel}
+        onConfirm={() => handleFinish({ acknowledged: true })}
+        onCancel={() => setConfirmOpen(false)}
+      />
       {longSessionEnd ? (
         <LongSessionDialog
           open

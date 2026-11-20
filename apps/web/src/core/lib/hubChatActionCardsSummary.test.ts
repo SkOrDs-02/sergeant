@@ -63,6 +63,12 @@ describe("summaryFor", () => {
     ).toBe("сніданок · Омлет · 350 ккал");
   });
 
+  it("log_meal: схема шле kcal і вагу в грамах (2026-11-19)", () => {
+    expect(
+      summaryFor("log_meal", { name: "Рис", kcal: 195, amount_g: 150 }, "r"),
+    ).toBe("Рис · 150\u00a0г · 195 ккал");
+  });
+
   it("log_water: amount_ml preferred", () => {
     expect(summaryFor("log_water", { amount_ml: 250, amount: 999 }, "r")).toBe(
       "250 мл",
@@ -90,8 +96,11 @@ describe("summaryFor", () => {
     );
   });
 
+  // Перевірка першої хвилі 2026-11-18: сирий id на екрані не показуємо.
+  // Звичка, якої немає локально, падає на результат виконавця (там назва),
+  // а не на свій `habit_id`.
   it("mark_habit_done / create_habit", () => {
-    expect(summaryFor("mark_habit_done", { habit_id: "h1" }, "r")).toBe("h1");
+    expect(summaryFor("mark_habit_done", { habit_id: "h1" }, "r")).toBe("r");
     expect(summaryFor("create_habit", { name: "Біг" }, "r")).toBe("Біг");
   });
 
@@ -106,29 +115,23 @@ describe("summaryFor", () => {
 
   it("pause_habit: діапазон і повернення з паузи", () => {
     // Хвиля 4: пауза датована, тож summary показує межі, а не лише стан.
-    expect(summaryFor("pause_habit", { habit_id: "h1" }, "r")).toBe(
-      "h1 · пауза",
-    );
+    // Невідома локально звичка: без сирого id картка бере результат
+    // виконавця, де є і назва, і діапазон. Шлях з назвою — у
+    // `hubChatActionCardsHelpers.test.ts`.
+    expect(summaryFor("pause_habit", { habit_id: "h1" }, "r")).toBe("r");
     expect(
       summaryFor(
         "pause_habit",
         { habit_id: "h1", from: "2026-08-10", to: "2026-08-17" },
         "r",
       ),
-    ).toBe("h1 · 2026-08-10 – 2026-08-17");
-    expect(
-      summaryFor("pause_habit", { habit_id: "h1", from: "2026-08-10" }, "r"),
-    ).toBe("h1 · з 2026-08-10");
-    expect(
-      summaryFor("pause_habit", { habit_id: "h1", paused: false }, "r"),
-    ).toBe("h1 · повернення з паузи");
-    expect(summaryFor("pause_habit", { paused: false }, "r")).toBe(
-      "повернення з паузи",
-    );
+    ).toBe("r");
+    expect(summaryFor("pause_habit", { paused: false }, "r")).toBe("r");
   });
 
-  it("start_workout", () => {
-    expect(summaryFor("start_workout", { program_id: "p1" }, "r")).toBe("p1");
+  it("start_workout: без сирого program_id", () => {
+    expect(summaryFor("start_workout", { program_id: "p1" }, "r")).toBe("r");
+    expect(summaryFor("start_workout", { name: "Ноги" }, "r")).toBe("Ноги");
   });
 
   it("compare_weeks: all branches", () => {
@@ -144,27 +147,33 @@ describe("summaryFor", () => {
     expect(summaryFor("compare_weeks", {}, "r")).toBe("поточний vs попередній");
   });
 
-  it("change_category", () => {
-    expect(
-      summaryFor("change_category", { tx_id: "t1", category_id: "c1" }, "r"),
-    ).toBe("→ c1");
-    // Відомий id категорії — людська назва, без внутрішнього tx_id.
+  // Перевірка першої хвилі 2026-11-18: картка показувала `TX: m_…`. Підпис
+  // операції (опис, сума) несе результат виконавця, id з нього вирізано.
+  it("change_category: підпис операції з результату, без id", () => {
+    const summary = summaryFor(
+      "change_category",
+      { tx_id: "m_84920a0a", category_id: "cafe" },
+      "Категорію операції «Кава» на 120 грн змінено на Кафе (id:m_84920a0a)",
+    );
+    expect(summary).toBe(
+      "Категорію операції «Кава» на 120 грн змінено на Кафе",
+    );
+  });
+  it("delete_transaction / hide_transaction: без id", () => {
     expect(
       summaryFor(
-        "change_category",
-        { tx_id: "mx_1", category_id: "transport" },
-        "r",
+        "delete_transaction",
+        { tx_id: "m_84920a0a" },
+        "Операцію «Кава» на 120 грн видалено (id:m_84920a0a)",
       ),
-    ).toBe("→ Транспорт");
-  });
-  it("delete_transaction / hide_transaction", () => {
-    // Лише внутрішній id — у підсумку його немає, картці вистачає заголовка.
+    ).toBe("Операцію «Кава» на 120 грн видалено");
     expect(
-      summaryFor("delete_transaction", { tx_id: "t1" }, "r") ?? "",
-    ).not.toContain("t1");
-    expect(
-      summaryFor("hide_transaction", { tx_id: "t1" }, "r") ?? "",
-    ).not.toContain("t1");
+      summaryFor(
+        "hide_transaction",
+        { tx_id: "t1" },
+        "Операцію «АТБ» на 300 грн приховано зі статистики (id:t1)",
+      ),
+    ).toBe("Операцію «АТБ» на 300 грн приховано зі статистики");
   });
 
   it("set_budget_limit / update_budget", () => {
@@ -214,8 +223,12 @@ describe("summaryFor", () => {
 
   it("mark_debt_paid", () => {
     expect(
-      summaryFor("mark_debt_paid", { debt_id: "d1", amount: 200 }, "r"),
-    ).toBe("d1 200 ₴");
+      summaryFor(
+        "mark_debt_paid",
+        { debt_id: "d1", amount: 200 },
+        'Погашено 200 грн з "Кредит" (tx:m_1)',
+      ),
+    ).toBe('Погашено 200 грн з "Кредит"');
   });
 
   it("add_asset: with custom currency and default", () => {
@@ -233,15 +246,14 @@ describe("summaryFor", () => {
 
   it("split_transaction", () => {
     expect(
-      summaryFor("split_transaction", { tx_id: "t1", parts: [1, 2, 3] }, "r"),
-    ).toBe("на 3 частини");
-    expect(
       summaryFor(
         "split_transaction",
-        { tx_id: "t1", parts: [1, 2, 3, 4, 5] },
-        "r",
+        { tx_id: "t1", parts: [1, 2] },
+        "Операцію «АТБ» на 300 грн розділено на 2 частин: Продукти: 200 грн, Дім: 100 грн (id:t1)",
       ),
-    ).toBe("на 5 частин");
+    ).toBe(
+      "Операцію «АТБ» на 300 грн розділено на 2 частин: Продукти: 200 грн, Дім: 100 грн",
+    );
   });
 
   it("recurring_expense", () => {
@@ -260,7 +272,7 @@ describe("summaryFor", () => {
   it("create_reminder", () => {
     expect(
       summaryFor("create_reminder", { habit_id: "h1", time: "08:00" }, "r"),
-    ).toBe("h1 о 08:00");
+    ).toBe("о 08:00");
   });
 
   it("complete_habit_for_date: branches", () => {
@@ -270,22 +282,22 @@ describe("summaryFor", () => {
         { habit_id: "h1", date: "2024-01-01" },
         "r",
       ),
-    ).toBe("h1 · 2024-01-01 · виконано");
+    ).toBe("r");
     expect(
       summaryFor(
         "complete_habit_for_date",
         { habit_id: "h1", date: "2024-01-01", completed: false },
         "r",
       ),
-    ).toBe("h1 · 2024-01-01 · не виконано");
+    ).toBe("r");
     expect(summaryFor("complete_habit_for_date", { habit_id: "h1" }, "r")).toBe(
-      "h1 · виконано",
+      "r",
     );
   });
 
   it("archive_habit / edit_habit", () => {
-    expect(summaryFor("archive_habit", { habit_id: "h1" }, "r")).toBe("h1");
-    expect(summaryFor("edit_habit", { habit_id: "h2" }, "r")).toBe("h2");
+    expect(summaryFor("archive_habit", { habit_id: "h1" }, "r")).toBe("r");
+    expect(summaryFor("edit_habit", { habit_id: "h2" }, "r")).toBe("r");
   });
 
   it("add_calendar_event", () => {
@@ -301,12 +313,10 @@ describe("summaryFor", () => {
   });
 
   it("habit_stats: default period", () => {
-    expect(summaryFor("habit_stats", { habit_id: "h1" }, "r")).toBe(
-      "h1 · 30 днів",
-    );
+    expect(summaryFor("habit_stats", { habit_id: "h1" }, "r")).toBe("r");
     expect(
       summaryFor("habit_stats", { habit_id: "h1", period_days: 7 }, "r"),
-    ).toBe("h1 · 7 днів");
+    ).toBe("r");
   });
 
   it("add_recipe", () => {
@@ -384,23 +394,20 @@ describe("summaryFor", () => {
   });
 
   it("finish_workout: with id and default", () => {
-    expect(summaryFor("finish_workout", { workout_id: "w1" }, "r")).toBe(
-      "ID: w1",
-    );
-    expect(summaryFor("finish_workout", {}, "r")).toBe("Поточне тренування");
+    expect(
+      summaryFor(
+        "finish_workout",
+        { workout_id: "w1" },
+        "Тренування завершено (id:w1), підходів: 5",
+      ),
+    ).toBe("Тренування завершено, підходів: 5");
+    expect(summaryFor("finish_workout", {}, "r")).toBe("r");
   });
 
   it("log_measurement", () => {
     expect(
       summaryFor("log_measurement", { weight_kg: 80, body_fat_pct: 15 }, "r"),
     ).toBe("80 кг · 15% жиру");
-  });
-
-  it("add_program_day: weekday mapping and out-of-range", () => {
-    expect(
-      summaryFor("add_program_day", { weekday: 1, name: "Push" }, "r"),
-    ).toBe("пн · Push");
-    expect(summaryFor("add_program_day", { weekday: 99 }, "r")).toBe("?");
   });
 
   it("log_wellbeing", () => {
@@ -429,7 +436,7 @@ describe("summaryFor", () => {
         { source_workout_id: "w1", date: "2024-01-01" },
         "r",
       ),
-    ).toBe("з w1 на 2024-01-01");
+    ).toBe("на 2024-01-01");
     expect(summaryFor("copy_workout", {}, "r")).toBe("Останнє тренування");
   });
 
@@ -446,19 +453,30 @@ describe("summaryFor", () => {
     );
   });
 
-  it("set_goal: short, long and empty", () => {
+  // Перевірка першої хвилі 2026-11-18: виконавець зберігає ЛИШЕ денну норму
+  // ккал (rel-16), а картка «Ціль встановлено» показувала цільову вагу.
+  it("set_goal: лише збережена норма ккал, без ваги", () => {
+    expect(
+      summaryFor(
+        "set_goal",
+        {
+          description: "Схуднути до 70 кг",
+          target_weight_kg: 70,
+          daily_kcal: 1800,
+        },
+        "r",
+      ),
+    ).toMatch(/^1\s800 ккал\/день$/);
+    // Без ккал виконавець відмовляє: картка показує його пояснення.
     expect(
       summaryFor(
         "set_goal",
         { description: "Схуднути", target_weight_kg: 70 },
-        "r",
+        "Не вдалося зберегти ціль: поки що я зберігаю лише денну норму калорій",
       ),
-    ).toBe("Схуднути · 70 кг");
-    const long = "a".repeat(60);
-    expect(summaryFor("set_goal", { description: long }, "r")).toBe(
-      long.slice(0, 50) + "…",
+    ).toBe(
+      "Не вдалося зберегти ціль: поки що я зберігаю лише денну норму калорій",
     );
-    expect(summaryFor("set_goal", {}, "r")).toBe("Нова ціль");
   });
 
   it("analytics period tools", () => {
@@ -539,6 +557,30 @@ describe("summaryFor", () => {
     expect(summaryFor("query_transactions", {}, longResult)).toBe(longResult);
     expect(summaryFor("aggregate_spending", {}, longResult)).toBe(longResult);
     expect(summaryFor("nutrition_averages", {}, longResult)).toBe(longResult);
+  });
+
+  it("фолбек на результат вирізає технічний id (нотатка, звичка, тренування)", () => {
+    expect(
+      summaryFor(
+        "save_note",
+        {},
+        'Нотатку збережено: "Купити хліб" [інше] (id:n_1)',
+      ),
+    ).toBe('Нотатку збережено: "Купити хліб" [інше]');
+    expect(
+      summaryFor(
+        "create_habit",
+        {},
+        'Звичку "Біг" створено (щодня, id:hab_413be8ae)',
+      ),
+    ).toBe('Звичку "Біг" створено (щодня)');
+    expect(
+      summaryFor(
+        "plan_workout",
+        { date: "2026-11-20" },
+        "Тренування заплановано (id:w_1)",
+      ),
+    ).not.toContain("w_1");
   });
 
   it("default + truncation: unknown tool truncates result to 120 chars", () => {

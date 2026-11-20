@@ -22,13 +22,27 @@ import {
 } from "./initialPullState.js";
 import { writePullSinceCursor } from "./syncOpCursor.js";
 
+/**
+ * Рядки `sync_op_cursor` для копії, що вже пройшла разове відновлення
+ * (`replicaBootstrap.ts`): ці тести про звичайний pull із власним id.
+ */
+function bootstrappedCursorRows(params?: readonly unknown[]): never[] {
+  return (
+    String(params?.[0] ?? "").startsWith("replica_bootstrap:")
+      ? [{ value_int: 2 }]
+      : []
+  ) as never[];
+}
+
 function makeDeps(
   overrides: Partial<Parameters<typeof createSyncEngineReaderRuntime>[0]> = {},
 ) {
   return {
     pull: vi.fn().mockResolvedValue({ ops: [], next_cursor: null }),
     resolveClient: async () => ({
-      all: vi.fn(async () => []),
+      all: vi.fn(async (_sql: string, params?: readonly unknown[]) =>
+        bootstrappedCursorRows(params),
+      ),
       run: vi.fn(),
       exec: vi.fn(),
     }),
@@ -90,8 +104,9 @@ describe("createSyncEngineReaderRuntime", () => {
 
     const runCalls: unknown[][] = [];
     const client = {
-      all: vi.fn((sql: string) => {
-        if (sql.includes("sync_op_cursor")) return [];
+      all: vi.fn((sql: string, params?: readonly unknown[]) => {
+        if (sql.includes("sync_op_cursor"))
+          return bootstrappedCursorRows(params);
         return [];
       }),
       run: vi.fn((_sql: string, params?: readonly unknown[]) => {

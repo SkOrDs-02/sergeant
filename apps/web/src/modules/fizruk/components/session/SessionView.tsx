@@ -3,6 +3,7 @@
  * Status: Active
  */
 import { focusFallbackProps } from "@shared/lib/ui/focusFallback";
+import type { InjurySiteId } from "@sergeant/fizruk-domain/data";
 import { SESSION_FOCUS_FALLBACK } from "./focusFallback";
 import { useCallback, useMemo, useState } from "react";
 import type {
@@ -19,6 +20,7 @@ import { showUndoToast } from "@shared/lib/ui/undoToast";
 import { messages } from "@shared/i18n/uk";
 import { formatTimeHm } from "@shared/lib/time/formatDate";
 import { useRestSettings } from "../../hooks/useRestSettings";
+import { useScreenWakeLock } from "../../hooks/useScreenWakeLock";
 import { useRestTimer } from "../../context/RestTimerContext";
 import {
   makeDefaultWarmup,
@@ -28,6 +30,7 @@ import { trackFizrukRestTimerDone } from "../../lib/workoutTelemetry";
 import { adjustRestTimerState } from "../../lib/restTimer";
 import { uid } from "../workouts/activeWorkoutLib";
 import { isSetDone } from "../workouts/WorkoutSetRow";
+import { itemUsesSetRows } from "@sergeant/fizruk-domain/domain";
 import { SessionTopBar } from "./SessionTopBar";
 import { SessionDock } from "./SessionDock";
 import { SessionExtrasRow } from "./SessionExtrasRow";
@@ -52,6 +55,8 @@ export interface SessionViewProps {
   onPendingRetroEndChange?: ((iso: string) => void) | undefined;
   lastByExerciseId: Record<string, unknown>;
   recBy: Record<string, unknown>;
+  /** Активні позначки травми (ADR-0083) для чипа відновлення. */
+  injurySites: ReadonlySet<InjurySiteId>;
   removeItem: (workoutId: string, itemId: string) => void;
   updateItem: (
     workoutId: string,
@@ -84,6 +89,7 @@ export function SessionView({
   onPendingRetroEndChange,
   lastByExerciseId,
   recBy,
+  injurySites,
   removeItem,
   updateItem,
   updateWorkout,
@@ -98,8 +104,12 @@ export function SessionView({
   const ss = messages.fizruk.session;
   const toast = useToast();
   const { restTimer, setRestTimer } = useRestTimer();
-  const { getDefaultForGroup, getDefaultForExercise, setDefaultForExercise } =
-    useRestSettings();
+  const {
+    getDefaultForGroup,
+    getDefaultForExercise,
+    setDefaultForExercise,
+    keepScreenOn,
+  } = useRestSettings();
   const [groupSelectMode, setGroupSelectMode] = useState(false);
   const [groupSelected, setGroupSelected] = useState<Set<string>>(
     () => new Set<string>(),
@@ -126,6 +136,12 @@ export function SessionView({
    * лишитись закритим, а не тихо ожити.
    */
   const isReadOnly = Boolean(activeWorkout.endedAt);
+  // Фз-1: екран не гасне, поки відкрита активна сесія. Вихід зі сесії й
+  // «Завершити» розмонтовують цей екран і відпускають блокування.
+  useScreenWakeLock(keepScreenOn && !isReadOnly);
+  // Ретро-сесія: кінець уже введений у формі «Записати проведене» і чекає
+  // кроку «Завершити». Людина не тренується зараз, тож відпочинку немає.
+  const isRetro = !isReadOnly && Boolean(pendingRetroEnd);
   const items: WorkoutItem[] = activeWorkout.items || [];
   const groups: WorkoutGroup[] = useMemo(
     () => activeWorkout.groups || [],
@@ -249,9 +265,9 @@ export function SessionView({
   // Підпис під відліком у доку: який підхід далі (на екрані вправи) або
   // яка вправа наступна (у списку).
   const restHint = (() => {
-    if (focused && focused.type === "strength") {
+    if (focused && itemUsesSetRows(focused)) {
       const sets = focused.sets || [];
-      const nextIdx = sets.findIndex((s) => !isSetDone(s));
+      const nextIdx = sets.findIndex((s) => !isSetDone(s, focused));
       if (nextIdx !== -1) return `${ss.restNextSet} ${nextIdx + 1}`;
       const idx = items.findIndex((x) => x.id === focused.id);
       const next = items[idx + 1];
@@ -298,6 +314,7 @@ export function SessionView({
             isReadOnly={isReadOnly}
             lastByExerciseId={lastByExerciseId}
             recBy={recBy}
+            injurySites={injurySites}
             updateItem={updateItem}
             setRestTimer={setRestTimer}
             getDefaultForGroup={getDefaultForGroup}
@@ -323,6 +340,7 @@ export function SessionView({
                 ? () => onOpenExerciseStats(focused.exerciseId as string)
                 : null
             }
+            isRetro={isRetro}
           />
         ) : (
           <>
@@ -356,6 +374,7 @@ export function SessionView({
               isReadOnly={isReadOnly}
               lastByExerciseId={lastByExerciseId}
               recBy={recBy}
+              injurySites={injurySites}
               onOpenItem={(id) => onOpenItem(id)}
               onAddExercise={onAddExercise}
               selectMode={selectMode}

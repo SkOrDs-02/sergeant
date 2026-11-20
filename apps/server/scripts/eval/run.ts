@@ -28,11 +28,29 @@ export function candidateProviderAvailable(candidate: Candidate): boolean {
   );
 }
 
+/**
+ * Хто відповів і скільки списав шлюз — із сирої відповіді OpenRouter.
+ * Для Anthropic і Stub обидва поля `null`.
+ */
+export function gatewayFacts(raw: Record<string, unknown> | undefined): {
+  servedBy: string | null;
+  gatewayCostUsd: number | null;
+} {
+  const servedBy = raw?.["provider"];
+  const usage = raw?.["usage"] as { cost?: unknown } | undefined;
+  return {
+    servedBy: typeof servedBy === "string" ? servedBy : null,
+    gatewayCostUsd: typeof usage?.cost === "number" ? usage.cost : null,
+  };
+}
+
 export async function runOne(
   pipeline: Pipeline,
   goldenCase: GoldenCase,
   candidate: Candidate,
   dryRun: boolean,
+  /** Додаткові `provider`-поля OpenRouter (`--provider-prefs`), лише стенд. */
+  providerPrefs?: Readonly<Record<string, unknown>>,
 ): Promise<RunResult> {
   const provider = getLLMProvider({
     provider: dryRun ? "stub" : candidate.provider,
@@ -71,6 +89,7 @@ export async function runOne(
     ...(candidate.reasoning
       ? { reasoning: { effort: candidate.reasoning } }
       : {}),
+    ...(providerPrefs ? { providerPrefs } : {}),
   });
   const latencyMs = Date.now() - t0;
 
@@ -81,6 +100,7 @@ export async function runOne(
     trap: goldenCase.trap,
     candidate,
     latencyMs,
+    ...gatewayFacts(result.raw),
   };
 
   if (!result.ok) {

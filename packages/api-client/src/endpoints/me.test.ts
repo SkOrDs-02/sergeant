@@ -232,6 +232,76 @@ describe("createMeEndpoints", () => {
     expect(init.body).toBe(JSON.stringify({ healthDataConsent: true }));
   });
 
+  // ──────────── Сповіщення, міграція 168 (тихі години, пояс, Monobank) ──────
+  // Поля `.optional()` БЕЗ дефолту: їх відсутність у відповіді - ознака
+  // старого сервера, і веб тоді не шле патч, який той відхилив би `400`.
+
+  it("GET /api/me/preferences: старий сервер без полів 168 - парсинг не падає, поля undefined", async () => {
+    mockFetchOnce({
+      analytics: false,
+      aiMemory: true,
+      pushNotifications: false,
+      sergeantNudges: false,
+      pushDailyCap: 2,
+      updatedAt: null,
+    });
+    const me = createMeEndpoints(createHttpClient());
+
+    const out = await me.getPreferences();
+    expect(out.timeZone).toBeUndefined();
+    expect(out.quietHoursEnabled).toBeUndefined();
+    expect(out.quietHoursStartMin).toBeUndefined();
+    expect(out.quietHoursEndMin).toBeUndefined();
+    expect(out.pushMonoTransactions).toBeUndefined();
+    expect("timeZone" in out).toBe(false);
+  });
+
+  it("GET /api/me/preferences: новий сервер віддає пояс (і null), межі й тумблери", async () => {
+    mockFetchOnce({
+      analytics: false,
+      aiMemory: true,
+      pushNotifications: false,
+      sergeantNudges: false,
+      pushDailyCap: 2,
+      timeZone: null,
+      quietHoursEnabled: true,
+      quietHoursStartMin: 1320,
+      quietHoursEndMin: 480,
+      pushMonoTransactions: true,
+      updatedAt: null,
+    });
+    const me = createMeEndpoints(createHttpClient());
+
+    await expect(me.getPreferences()).resolves.toMatchObject({
+      timeZone: null,
+      quietHoursEnabled: true,
+      quietHoursStartMin: 1320,
+      quietHoursEndMin: 480,
+      pushMonoTransactions: true,
+    });
+  });
+
+  it("PATCH /api/me/preferences шле пояс і межі тихих годин у body", async () => {
+    const fetchMock = mockFetchOnce({
+      analytics: false,
+      aiMemory: true,
+      pushNotifications: false,
+      sergeantNudges: false,
+      timeZone: "America/New_York",
+      quietHoursEnabled: true,
+      quietHoursStartMin: 1380,
+      quietHoursEndMin: 420,
+      pushMonoTransactions: false,
+      updatedAt: "2026-11-18T10:00:00.000Z",
+    });
+    const me = createMeEndpoints(createHttpClient());
+
+    await me.updatePreferences({ timeZone: "America/New_York" });
+
+    const init = firstCall(fetchMock)[1] as RequestInit;
+    expect(init.body).toBe(JSON.stringify({ timeZone: "America/New_York" }));
+  });
+
   // ────────────────────── /api/me/profile (write-through) ──────────────────
   // Migration 115 — profile/biometrics blob. NOT oplog-sync: plain GET/PUT
   // upsert by user_id, "defaults, not 404" when no row exists yet.

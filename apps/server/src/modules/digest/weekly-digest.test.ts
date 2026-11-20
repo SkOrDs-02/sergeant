@@ -1480,3 +1480,269 @@ describe("weekly-digest handler · гейт згоди на дані про зд
     expect(provider.calls).toHaveLength(0);
   });
 });
+
+describe("weekly-digest handler · одночасні запити того самого тижня (С-3 (а))", () => {
+  const settle = () => new Promise<void>((r) => setTimeout(r, 0));
+
+  /** Провайдер, чия відповідь приходить лише після `release()`. */
+  function makeGatedProvider(
+    result: LLMGenerateResult = okResult(JSON.stringify(validReport)),
+  ) {
+    let release!: () => void;
+    const gate = new Promise<void>((resolve) => {
+      release = resolve;
+    });
+    const provider = makeFakeProvider("anthropic", async () => {
+      await gate;
+      return result;
+    });
+    return { provider, release };
+  }
+
+  function digestReq(userId: string, weekKey: string): Request {
+    return asReq({
+      anthropicKey: "k",
+      user: { id: userId },
+      body: {
+        weekRange: "9 лист. – 15 лист.",
+        weekKey,
+        finyk: { totalSpent: 1, totalIncome: 1, txCount: 1 },
+      },
+    });
+  }
+
+  /** `res` з подією 'close', як у Express. */
+  function makeClosableRes() {
+    const listeners: Array<() => void> = [];
+    const res = makeRes() as TestRes &
+      Response & { writableFinished: boolean; close(): void };
+    Object.assign(res, {
+      writableFinished: false,
+      on(event: string, cb: () => void) {
+        if (event === "close") listeners.push(cb);
+        return res;
+      },
+      close() {
+        for (const cb of listeners) cb();
+      },
+    });
+    return res;
+  }
+
+  it("два пристрої в ту саму мить: ОДИН виклик моделі, однаковий звіт, памʼять пишеться раз", async () => {
+    const { provider, release } = makeGatedProvider();
+    const handler = createWeeklyDigestHandler({
+      provider,
+      fallbackOnError: false,
+    });
+    const resA = makeRes();
+    const resB = makeRes();
+
+    const a = handler(digestReq("user_42", "2026-11-09"), resA);
+    const b = handler(digestReq("user_42", "2026-11-09"), resB);
+    await settle();
+    release();
+    await Promise.all([a, b]);
+
+    expect(provider.calls).toHaveLength(1);
+    expect(resA.statusCode).toBe(200);
+    expect(resB.statusCode).toBe(200);
+    expect(resB.body).toEqual(resA.body);
+    expect(enqueueMemoryIngest).toHaveBeenCalledTimes(1);
+  });
+
+  it("інший тиждень чи інша людина — окремі генерації", async () => {
+    const { provider, release } = makeGatedProvider();
+    const handler = createWeeklyDigestHandler({
+      provider,
+      fallbackOnError: false,
+    });
+    const runs = [
+      handler(digestReq("user_42", "2026-11-09"), makeRes()),
+      handler(digestReq("user_42", "2026-11-02"), makeRes()),
+      handler(digestReq("user_7", "2026-11-09"), makeRes()),
+    ];
+    await settle();
+    release();
+    await Promise.all(runs);
+    expect(provider.calls).toHaveLength(3);
+  });
+
+  it("послідовний запит (ручне «Оновити звіт») генерує заново", async () => {
+    const { handler, provider } = buildHandler();
+    await handler(digestReq("user_42", "2026-11-09"), makeRes());
+    await handler(digestReq("user_42", "2026-11-09"), makeRes());
+    expect(provider.calls).toHaveLength(2);
+  });
+
+  it("збій апстріму лідера отримує й приєднаний запит, без другого виклику", async () => {
+    const { provider, release } = makeGatedProvider({
+      ok: false,
+      code: "upstream_error",
+      status: 500,
+      error: "boom",
+    } as unknown as LLMGenerateResult);
+    const handler = createWeeklyDigestHandler({
+      provider,
+      fallbackOnError: false,
+    });
+    const a = handler(digestReq("user_42", "2026-11-09"), makeRes());
+    const b = handler(digestReq("user_42", "2026-11-09"), makeRes());
+    await settle();
+    release();
+    const [ra, rb] = await Promise.allSettled([a, b]);
+    expect(ra.status).toBe("rejected");
+    expect(rb.status).toBe("rejected");
+    expect(provider.calls).toHaveLength(1);
+  });
+
+  it("закрита вкладка лідера не обриває модель, поки приєднаний ще чекає", async () => {
+    const { provider, release } = makeGatedProvider();
+    const handler = createWeeklyDigestHandler({
+      provider,
+      fallbackOnError: false,
+    });
+    const resA = makeClosableRes();
+    const resB = makeClosableRes();
+    const a = handler(digestReq("user_42", "2026-11-09"), resA);
+    const b = handler(digestReq("user_42", "2026-11-09"), resB);
+
+    await vi.waitFor(() => expect(provider.calls).toHaveLength(1));
+    resA.close();
+    expect(provider.calls[0]!.signal!.aborted).toBe(false);
+    resB.close();
+    expect(provider.calls[0]!.signal!.aborted).toBe(true);
+
+    await settle();
+    release();
+    await Promise.allSettled([a, b]);
+  });
+});
+
+describe("weekly-digest handler · ifAbsent: звіт тижня вже збережено (С-3 (а))", () => {
+  const stored = {
+    report: { ...deliveredReport, overallRecommendations: ["Збережений"] },
+    generatedAt: "2026-11-16T08:00:00.000Z",
+  };
+
+  function req(body: Record<string, unknown>): Request {
+    return asReq({
+      anthropicKey: "k",
+      user: { id: "user_42" },
+      body: {
+        weekRange: "9 лист. – 15 лист.",
+        weekKey: "2026-11-09",
+        finyk: { totalSpent: 1, totalIncome: 1, txCount: 1 },
+        ...body,
+      },
+    });
+  }
+
+  it("ifAbsent + звіт є → нуль викликів моделі, відповідь — збережений звіт, памʼять AI не пишеться", async () => {
+    const readStoredDigest = vi.fn(async () => stored);
+    const { handler, provider } = buildHandler(undefined, {
+      readStoredDigest,
+    });
+    const res = makeRes();
+    await handler(req({ ifAbsent: true }), res);
+
+    expect(provider.calls).toHaveLength(0);
+    expect(readStoredDigest).toHaveBeenCalledWith("user_42", "2026-11-09");
+    expect(res.statusCode).toBe(200);
+    expect(res.body).toEqual(stored);
+    expect(enqueueMemoryIngest).not.toHaveBeenCalled();
+  });
+
+  it("ifAbsent + звіту немає → генерація", async () => {
+    const readStoredDigest = vi.fn(async () => null);
+    const { handler, provider } = buildHandler(undefined, {
+      readStoredDigest,
+    });
+    const res = makeRes();
+    await handler(req({ ifAbsent: true }), res);
+
+    expect(readStoredDigest).toHaveBeenCalledTimes(1);
+    expect(provider.calls).toHaveLength(1);
+    expect((res.body as { report: unknown }).report).toEqual(deliveredReport);
+    expect(enqueueMemoryIngest).toHaveBeenCalledTimes(1);
+  });
+
+  it("без ifAbsent + звіт є → генерація (ручне «Оновити звіт» живе), памʼять не читається", async () => {
+    const readStoredDigest = vi.fn(async () => stored);
+    const { handler, provider } = buildHandler(undefined, {
+      readStoredDigest,
+    });
+    await handler(req({}), makeRes());
+
+    expect(readStoredDigest).not.toHaveBeenCalled();
+    expect(provider.calls).toHaveLength(1);
+  });
+
+  it("ifAbsent + збій читання памʼяті → генерація, а не помилка", async () => {
+    const readStoredDigest = vi.fn(async () => {
+      throw new Error("db down");
+    });
+    const { handler, provider } = buildHandler(undefined, {
+      readStoredDigest,
+    });
+    const res = makeRes();
+    await handler(req({ ifAbsent: true }), res);
+
+    expect(provider.calls).toHaveLength(1);
+    expect(res.statusCode).toBe(200);
+  });
+
+  it("два ifAbsent-запити одночасно: одне читання, нуль викликів моделі, обидва отримують збережений", async () => {
+    let release!: () => void;
+    const gate = new Promise<void>((r) => {
+      release = r;
+    });
+    const readStoredDigest = vi.fn(async () => {
+      await gate;
+      return stored;
+    });
+    const { handler, provider } = buildHandler(undefined, {
+      readStoredDigest,
+    });
+    const resA = makeRes();
+    const resB = makeRes();
+    const a = handler(req({ ifAbsent: true }), resA);
+    const b = handler(req({ ifAbsent: true }), resB);
+    await vi.waitFor(() => expect(readStoredDigest).toHaveBeenCalledTimes(1));
+    await new Promise<void>((r) => setTimeout(r, 0));
+    release();
+    await Promise.all([a, b]);
+
+    expect(readStoredDigest).toHaveBeenCalledTimes(1);
+    expect(provider.calls).toHaveLength(0);
+    expect(resA.body).toEqual(stored);
+    expect(resB.body).toEqual(stored);
+  });
+
+  it("ручний запит не приєднується до польоту ifAbsent (той міг віддати старий звіт)", async () => {
+    let release!: () => void;
+    const gate = new Promise<void>((r) => {
+      release = r;
+    });
+    const readStoredDigest = vi.fn(async () => {
+      await gate;
+      return stored;
+    });
+    const { handler, provider } = buildHandler(undefined, {
+      readStoredDigest,
+    });
+    const resAuto = makeRes();
+    const resManual = makeRes();
+    const a = handler(req({ ifAbsent: true }), resAuto);
+    await vi.waitFor(() => expect(readStoredDigest).toHaveBeenCalledTimes(1));
+    const m = handler(req({}), resManual);
+    release();
+    await Promise.all([a, m]);
+
+    expect(resAuto.body).toEqual(stored);
+    expect(provider.calls).toHaveLength(1);
+    expect((resManual.body as { report: unknown }).report).toEqual(
+      deliveredReport,
+    );
+  });
+});

@@ -21,6 +21,10 @@ export {
 export {
   aiTokensTotal,
   aiCostEstimateUsd,
+  openRouterNoEndpointsTotal,
+  initOpenRouterNoEndpointsSeries,
+  chatSynthesisEmptyRetryTotal,
+  initChatSynthesisEmptyRetrySeries,
   infraMonthlyCostUsd,
   voyageDailyBudgetUsd,
   anthropicPromptCacheHitTotal,
@@ -249,11 +253,12 @@ export const aiFirstTokenMs = new client.Histogram({
  * Фази ПЕРШОГО ходу чату, мс. Одна серія на фазу.
  *
  * Чому окрема метрика, хоча `ai_first_token_ms` вище нібито про те саме.
- * Перший хід `/api/chat` **не стрімиться взагалі**: клієнт не просить
- * (`useChatSend.ts` шле `send()` без прапорця), а сервер і не підтримав би —
- * єдиний `if (stream)` у `chat.ts` живе всередині гілки tool-результатів.
- * Отже `ai_first_token_ms` цього шляху не бачить у принципі, бо живе в
- * `streamAnthropicToSse`. До того ж її відлік починається з
+ * До 2026-11-18 перший хід `/api/chat` не стрімився взагалі; з того дня веб
+ * просить `stream: true` (`chatFirstTurnStream.ts`), а старі клієнти й далі
+ * отримують JSON. В обох шляхах `ai_first_token_ms` першого ходу не бачить,
+ * бо живе в `streamAnthropicToSse` (тур синтезу); час до першого видимого
+ * знаку стрімового першого ходу міряє `chat_first_turn_first_visible_ms`
+ * нижче, а ця метрика — повну відповідь в обох шляхах. До того ж її відлік починається з
  * `streamStartedAtMs` — моменту, коли upstream УЖЕ відповів заголовками, —
  * тобто вона міряє латентність токенів моделі, а не очікування людини.
  * Розбір: AI-2 у `docs/work/specs/audits/2026-09-01-product-audit/findings.md`.
@@ -280,9 +285,37 @@ export const aiFirstTokenMs = new client.Histogram({
  */
 export const chatFirstTurnPhaseMs = new client.Histogram({
   name: "chat_first_turn_phase_ms",
-  help: "Duration of each serial phase of the non-streaming first chat turn, ms",
+  help: "Duration of each serial phase of the first chat turn (JSON or streamed), ms",
   labelNames: ["phase"],
   buckets: [5, 25, 100, 250, 500, 1000, 2000, 5000, 15000],
+  registers: [register],
+});
+
+/**
+ * Від входу в handler до першого ВИДИМОГО знаку першого ходу, мс (С-1 (а),
+ * спека `hubchat-first-turn-stream.md`): кадр `{ tool }` (ранній підпис
+ * кроку) або `{ t }` (перший шматок тексту). `kind` — що побачили першим,
+ * `source` — модель чи кеш відповіді. Пишеться лише на стрімовому шляху;
+ * повну відповідь далі міряє `chat_first_turn_phase_ms{phase="total"}`.
+ * Ціль ще не ратифіковано: спершу замір (`pnpm eval:stream --first-turn`).
+ */
+export const chatFirstTurnFirstVisibleMs = new client.Histogram({
+  name: "chat_first_turn_first_visible_ms",
+  help: "Time from chat handler entry to the first visible frame of a streamed first turn, ms",
+  labelNames: ["kind", "source"],
+  buckets: [250, 500, 1000, 1500, 2000, 3000, 5000, 8000, 12000, 30000],
+  registers: [register],
+});
+
+/**
+ * Тихі повторні спроби стрімового першого ходу — до першого видимого кадру,
+ * поки людина ще нічого не бачила. `reason`: `stall` (немає жодного кадру за
+ * бюджет спроби), `network`, `status` (429/5xx від провайдера).
+ */
+export const chatFirstTurnSilentRetryTotal = new client.Counter({
+  name: "chat_first_turn_silent_retry_total",
+  help: "Silent upstream retries of a streamed first chat turn before anything was shown",
+  labelNames: ["reason"],
   registers: [register],
 });
 
@@ -626,6 +659,8 @@ export {
   syncPullPageBytes,
   syncPullTruncatedTotal,
   syncStateHashComputeMs,
+  syncOpLogAppliedDeletedTotal,
+  syncOpLogRows,
 } from "./metrics/sync.js";
 
 export {

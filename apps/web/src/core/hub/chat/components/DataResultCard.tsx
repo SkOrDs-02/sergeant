@@ -4,6 +4,7 @@
  */
 import { memo } from "react";
 import { cn } from "@shared/lib/ui/cn";
+import { stripTechnicalIds } from "../../../lib/chatDisplayText";
 
 /**
  * Структурована картка для read-only query/analytics tool-ів
@@ -142,6 +143,22 @@ const LIST_INTRO_BY_TOOL: Readonly<Record<string, string>> = {
   query_nutrition: "г)",
 };
 
+/**
+ * Рядок операції з `query_transactions`: `<id>: <дата> · <сума> · [опис ·]
+ * <категорія>`. id лишається моделі (з нього вона кличе change_category
+ * наступним повідомленням), людині показуємо дату з описом і суму праворуч.
+ * Масштаб mini-bar — сума, а не рік із дати.
+ */
+function txListRow(row: BreakdownRow): BreakdownRow {
+  const [date = "", amount = "", ...rest] = row.display.split(" · ");
+  if (!amount) return row;
+  return {
+    label: [date, ...rest].filter(Boolean).join(" · "),
+    amount: leadingNumber(amount),
+    display: amount,
+  };
+}
+
 function parseSingleLineWithList(
   toolName: string,
   result: string,
@@ -158,7 +175,13 @@ function parseSingleLineWithList(
       if (colon !== -1 && result.indexOf("; ", colon) !== -1) {
         const headline = result.slice(0, colon).trim();
         const tail = result.slice(colon + 2).trim();
-        return { headline, metrics: [], breakdown: parseBreakdownList(tail) };
+        const rows = parseBreakdownList(tail);
+        return {
+          headline,
+          metrics: [],
+          breakdown:
+            toolName === "query_transactions" ? rows.map(txListRow) : rows,
+        };
       }
     }
   }
@@ -170,7 +193,10 @@ function parseResult(toolName: string, result: string): ParsedResult {
   if (toolName === "compare_periods") {
     return { headline: result, metrics: [], breakdown: [] };
   }
-  return parseSingleLineWithList(toolName, result);
+  const parsed = parseSingleLineWithList(toolName, result);
+  // Без `; `-списку (одна знайдена операція) весь результат лягає в headline
+  // разом з id, тож чистимо його на межі показу, як і решту карток.
+  return { ...parsed, headline: stripTechnicalIds(parsed.headline) };
 }
 
 /**

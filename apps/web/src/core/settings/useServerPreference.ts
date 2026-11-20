@@ -20,17 +20,37 @@ import {
  * але окремим PR-ом, а не всередині фічі.
  */
 
+/**
+ * Поля з `undefined` (міграція 168: `.optional()` без дефолту) теж скалярні:
+ * `undefined` у відповіді означає «старий сервер поля не знає», а не значення.
+ */
 type ScalarPreferenceKey = {
-  [K in keyof UserPreferences]: UserPreferences[K] extends boolean | number
+  [K in keyof UserPreferences]-?: Exclude<
+    UserPreferences[K],
+    undefined
+  > extends boolean | number
     ? K
     : never;
 }[keyof UserPreferences];
+
+type PreferenceValue<K extends ScalarPreferenceKey> = Exclude<
+  UserPreferences[K],
+  undefined
+>;
 
 export interface ServerPreferenceState<V> {
   /** До відповіді сервера тут `initial`. */
   value: V;
   /** `false`, поки сервер не відповів або відповів помилкою. */
   loaded: boolean;
+  /**
+   * Чи знає сервер це поле: `true`, коли відповідь читання містить ключ;
+   * `false`, коли відповідь його не містить (старий сервер у вікні між
+   * деплоєм веба і бекенду, спека notifications-quiet-hours-and-device-time);
+   * `null`, поки відповіді не було. При `false` `set` не ходить у мережу:
+   * старий сервер відхилив би невідоме поле `400` (`.strict()` патча).
+   */
+  supported: boolean | null;
   /** Непорожній рядок = показати користувачу, що збереження не відбулось. */
   error: string | null;
   saving: boolean;
@@ -40,10 +60,13 @@ export interface ServerPreferenceState<V> {
 export function useServerPreference<K extends ScalarPreferenceKey>(
   key: K,
   copy: { saveError: string; authRequired: string },
-  initial: UserPreferences[K],
-): ServerPreferenceState<UserPreferences[K]> {
-  const [value, setValue] = useState<UserPreferences[K]>(initial);
+  initial: PreferenceValue<K>,
+): ServerPreferenceState<PreferenceValue<K>> {
+  const [value, setValue] = useState<PreferenceValue<K>>(initial);
   const [loaded, setLoaded] = useState(false);
+  const [supported, setSupported] = useState<boolean | null>(null);
+  // Ref поруч зі станом: `set` читає його без перестворення колбека.
+  const supportedRef = useRef<boolean | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
 
@@ -107,7 +130,11 @@ export function useServerPreference<K extends ScalarPreferenceKey>(
         // другим випадком.
         if (requestId <= appliedRequestIdRef.current) return;
         appliedRequestIdRef.current = requestId;
-        setValue(prefs[key]);
+        const next = prefs[key];
+        const known = next !== undefined;
+        supportedRef.current = known;
+        setSupported(known);
+        if (known) setValue(next as PreferenceValue<K>);
         setLoaded(true);
       })
       .catch((err: unknown) => {
@@ -133,7 +160,8 @@ export function useServerPreference<K extends ScalarPreferenceKey>(
   }, [key, copy.authRequired, authStatus, guest]);
 
   const set = useCallback(
-    async (next: UserPreferences[K]) => {
+    async (next: PreferenceValue<K>) => {
+      if (supportedRef.current === false) return;
       const requestId = ++requestIdRef.current;
       const appliedAtStart = appliedRequestIdRef.current;
       inFlightSavesRef.current += 1;
@@ -147,7 +175,8 @@ export function useServerPreference<K extends ScalarPreferenceKey>(
         // летів, вона авторитетна; застосовувати цю (застарілу) не можна.
         if (requestId <= appliedRequestIdRef.current) return;
         appliedRequestIdRef.current = requestId;
-        setValue(saved[key]);
+        const confirmed = saved[key];
+        if (confirmed !== undefined) setValue(confirmed as PreferenceValue<K>);
         setLoaded(true);
       } catch {
         // F3: відкочувати до `previous` можна лише якщо НІЧОГО новішого
@@ -170,6 +199,7 @@ export function useServerPreference<K extends ScalarPreferenceKey>(
   return {
     value,
     loaded: guest ? false : loaded,
+    supported,
     error: guest ? copy.authRequired : error,
     saving,
     set,

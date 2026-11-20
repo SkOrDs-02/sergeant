@@ -6,6 +6,9 @@ import {
   BillingPortalResponseSchema,
   BillingProvidersResponseSchema,
   BillingStatusResponseSchema,
+  ManualAccessConflictCodeSchema,
+  ManualAccessRequestSchema,
+  ManualAccessResponseSchema,
   z,
 } from "@sergeant/shared";
 import { isApiError } from "../ApiError";
@@ -21,6 +24,10 @@ export const BillingProvidersResponseBodySchema =
   BillingProvidersResponseSchema;
 export const BillingCheckoutConflictCodeBodySchema =
   BillingCheckoutConflictCodeSchema;
+export const ManualAccessRequestBodySchema = ManualAccessRequestSchema;
+export const ManualAccessResponseBodySchema = ManualAccessResponseSchema;
+export const ManualAccessConflictCodeBodySchema =
+  ManualAccessConflictCodeSchema;
 
 export type BillingCheckoutRequest = z.infer<
   typeof BillingCheckoutRequestBodySchema
@@ -64,6 +71,34 @@ export function billingCheckoutConflictCode(
   return parsed.success ? parsed.data : null;
 }
 
+/** Тіло `POST /api/billing/manual-access`: поверхня пейволу + контекст сторінки. */
+export type ManualAccessRequest = z.infer<typeof ManualAccessRequestBodySchema>;
+export type ManualAccessResponse = z.infer<
+  typeof ManualAccessResponseBodySchema
+>;
+/** Стан запиту ручного Premium у знімку; на старому сервері поля немає. */
+export type BillingManualAccess = NonNullable<BillingAccess["manualAccess"]>;
+/** `code` 409-відповіді `POST /api/billing/manual-access`. */
+export type ManualAccessConflictCode = z.infer<
+  typeof ManualAccessConflictCodeBodySchema
+>;
+
+/**
+ * Розпізнає 409-відмову запиту ручного Premium (`MANUAL_ACCESS_*`).
+ * `null` для будь-якої іншої помилки, зокрема 409 з чужим `code`.
+ */
+export function manualAccessConflictCode(
+  err: unknown,
+): ManualAccessConflictCode | null {
+  if (!isApiError(err) || err.status !== 409) return null;
+  const code =
+    err.body && typeof err.body === "object"
+      ? (err.body as { code?: unknown }).code
+      : undefined;
+  const parsed = ManualAccessConflictCodeBodySchema.safeParse(code);
+  return parsed.success ? parsed.data : null;
+}
+
 export interface BillingEndpoints {
   createCheckout: (
     body: BillingCheckoutRequest,
@@ -81,6 +116,10 @@ export interface BillingEndpoints {
   providers: (
     opts?: Pick<RequestOptions, "signal">,
   ) => Promise<BillingProvidersResponse>;
+  requestManualAccess: (
+    body: ManualAccessRequest,
+    opts?: Pick<RequestOptions, "signal">,
+  ) => Promise<ManualAccessResponse>;
 }
 
 export function createBillingEndpoints(http: HttpClient): BillingEndpoints {
@@ -110,6 +149,12 @@ export function createBillingEndpoints(http: HttpClient): BillingEndpoints {
     providers: async ({ signal } = {}) => {
       const raw = await http.get<unknown>("/api/billing/providers", { signal });
       return BillingProvidersResponseBodySchema.parse(raw);
+    },
+    requestManualAccess: async (body, { signal } = {}) => {
+      const raw = await http.post<unknown>("/api/billing/manual-access", body, {
+        signal,
+      });
+      return ManualAccessResponseBodySchema.parse(raw);
     },
   };
 }

@@ -1,6 +1,6 @@
 // @vitest-environment jsdom
 /**
- * Last validated: 2026-08-13
+ * Last validated: 2026-11-19
  * Status: Active
  */
 import { fireEvent, render, screen } from "@testing-library/react";
@@ -102,9 +102,11 @@ describe("PhotoAnalyzeCard", () => {
 
     expect(save.className).toContain("bg-text");
     expect(refine.className).not.toContain("bg-text ");
+    // OD-27 Х-2 (а): кнопка пише одразу, підпис більше не просить «збережи».
     expect(
-      screen.getByText(/Сам аналіз у журнал не потрапляє/),
+      screen.getByText("Запишу у прийом за часом доби, змінити можна з тосту."),
     ).toBeInTheDocument();
+    expect(screen.queryByText(/не потрапляє/)).toBeNull();
   });
 
   it("refuses a non-food result: no macros, no save-to-log, no portion questions", () => {
@@ -393,5 +395,47 @@ describe("PhotoAnalyzeCard", () => {
       }),
     );
     expect(refinePhoto).toHaveBeenCalledTimes(1);
+  });
+});
+
+describe("PhotoAnalyzeCard — порцію питаємо один раз", () => {
+  // Рішення власника 2026-11-19: під полем «Порція (г), якщо знаєш» модель
+  // питала «Яка приблизна вага страви на тарілці?» окремим полем.
+  it("питання моделі про вагу підписує поле порції замість окремого поля", () => {
+    render(
+      <PhotoAnalyzeCard
+        {...baseProps}
+        photoResult={{
+          dishName: "Курка з квасолею",
+          macros: { kcal: 350 },
+          questions: [
+            "Яка приблизна вага страви на тарілці?",
+            "Чи використовувалася олія?",
+          ],
+        }}
+      />,
+    );
+    const portion = screen.getByLabelText(
+      "Яка приблизна вага страви на тарілці?",
+    );
+    expect(portion).toHaveAttribute("inputmode", "decimal");
+    expect(screen.queryByText("Порція (г), якщо знаєш")).toBeNull();
+    // Одне текстове поле — лише для олії; ваги серед них немає.
+    expect(screen.getAllByPlaceholderText("Твоя відповідь")).toHaveLength(1);
+    expect(screen.getByText("Чи використовувалася олія?")).toBeInTheDocument();
+  });
+
+  it("без питання про вагу поле порції має власний підпис", () => {
+    render(
+      <PhotoAnalyzeCard
+        {...baseProps}
+        photoResult={{
+          dishName: "Борщ",
+          macros: { kcal: 200 },
+          questions: ["Зі сметаною?"],
+        }}
+      />,
+    );
+    expect(screen.getByLabelText("Порція (г), якщо знаєш")).toBeInTheDocument();
   });
 });

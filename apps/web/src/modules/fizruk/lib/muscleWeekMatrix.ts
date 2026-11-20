@@ -1,5 +1,5 @@
 /**
- * Last validated: 2026-08-07
+ * Last validated: 2026-11-19
  * Status: Active
  *
  * Матриця «мʼяз × тиждень» — signature-view Фізрука (П4,
@@ -66,7 +66,10 @@ interface MatrixWorkout {
 export interface MuscleWeekRow {
   id: string;
   label: string;
-  /** Бали по тижнях, найстаріший → найновіший. Довжина завжди `MATRIX_WEEKS`. */
+  /**
+   * Робочі підходи по тижнях, найстаріший → найновіший. Довжина завжди
+   * `MATRIX_WEEKS`. Дробові, бо другорядний мʼяз рахується половиною.
+   */
   weekly: number[];
   /** Останній тиждень — число, яке лишається на екрані числом. */
   latest: number;
@@ -92,24 +95,32 @@ export interface MuscleWeekMatrix {
   weeksWithData: number;
 }
 
-/** Бали одного елемента тренування — та сама формула, що була в `Progress.tsx`. */
-function itemPoints(item: MatrixItem): number {
-  if (item.type === "strength") {
-    return (
-      (item.sets || []).reduce(
-        (sum, s) => sum + (Number(s.weightKg) || 0) * (Number(s.reps) || 0),
-        0,
-      ) / 1000
-    );
-  }
-  if (item.type === "time") return (Number(item.durationSec) || 0) / 240;
-  if (item.type === "distance") {
-    return (
-      (Number(item.distanceM) || 0) / 1000 +
-      (Number(item.durationSec) || 0) / 60 / 30
-    );
-  }
-  return 0;
+/**
+ * Вага другорядного мʼяза: підхід жиму лежачи — повний підхід для грудей і
+ * половина для трицепса. Та сама конвенція «фракційних підходів», якою
+ * зазвичай рахують тижневий обʼєм на мʼяз.
+ */
+export const SECONDARY_SET_WEIGHT = 0.5;
+
+/**
+ * Скільки робочих підходів дав один елемент тренування.
+ *
+ * AI-CONTEXT: до 2026-11-19 тут був внутрішній бал (`кг×повт / 1000` для
+ * силових, плюс секунди й метри для кардіо), і екран підписував його «у. о.»
+ * — власник спитав «що за у. о.?», бо число ні з чим не звіряється. Підходи
+ * людина рахує сама, і «Квадрицепс · 4 підх.» звіряється з власною памʼяттю
+ * про тиждень. Заразом зникла сліпа пляма старої формули: підхід із власною
+ * вагою (0 кг × 15) давав нуль, тобто вправи без ваги не навантажували
+ * жодного мʼяза.
+ *
+ * Зараховується той самий підхід, що й у `isSetDone` (повтори > 0), тож
+ * порожній рядок, який сесія створює сама, обʼєму не додає. Час і дистанція
+ * сюди не входять: «хвилини» й «підходи» на одній шкалі — це знову бал без
+ * одиниці. Навантаження від них і далі рахує відновлення (`loadPoints`).
+ */
+function itemSets(item: MatrixItem): number {
+  if (item.type !== "strength") return 0;
+  return (item.sets || []).filter((s) => (Number(s.reps) || 0) > 0).length;
 }
 
 /**
@@ -150,7 +161,7 @@ export function buildMuscleWeekMatrix(
     if (idx === undefined) continue;
 
     for (const item of w.items || []) {
-      const pts = itemPoints(item);
+      const pts = itemSets(item);
       if (pts === 0) continue;
       weeksSeen.add(idx);
       const add = (id: string, weight: number) => {
@@ -163,7 +174,8 @@ export function buildMuscleWeekMatrix(
         row[idx] = (row[idx] ?? 0) + pts * weight;
       };
       for (const id of item.musclesPrimary || []) add(id, 1);
-      for (const id of item.musclesSecondary || []) add(id, 0.55);
+      for (const id of item.musclesSecondary || [])
+        add(id, SECONDARY_SET_WEIGHT);
     }
   }
 

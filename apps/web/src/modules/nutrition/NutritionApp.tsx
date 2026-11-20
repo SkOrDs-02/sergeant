@@ -7,6 +7,11 @@ import type { Meal, MealTypeId } from "@sergeant/nutrition-domain";
 import { todayISODate } from "@sergeant/nutrition-domain";
 import { mealsByTypeForDay } from "./lib/nutritionStats";
 import { useQuickAddMealFromChip } from "./hooks/useQuickAddMealFromChip";
+import {
+  useMealPantryOffer,
+  type MealPantryLink,
+} from "./hooks/useMealPantryOffer";
+import type { MealSaveExtras } from "./components/meal-sheet/addMealSheetProps";
 import type { DataStateQueryLike } from "@shared/components/ui/DataState";
 import type { NutritionDayPlan } from "./hooks/useNutritionUiState";
 import { NutritionHeader } from "./components/NutritionHeader";
@@ -17,9 +22,7 @@ import { NutritionPantryPage } from "./pages/NutritionPantryPage";
 import { NutritionLogPage } from "./pages/NutritionLogPage";
 import { NutritionMenuPage } from "./pages/NutritionMenuPage";
 import { Notice } from "@shared/components/ui/Notice";
-import { AddAction } from "@shared/components/ui/CornerAction";
-import { WATER_ADD_EVENT } from "./hooks/useWaterTracker";
-import { messages } from "@shared/i18n/uk";
+import { NutritionAddAction } from "./components/NutritionAddAction";
 import type { SourceTabId } from "./components/meal-sheet/SourceTabs";
 import {
   MeshBackground,
@@ -408,8 +411,20 @@ export default function NutritionApp({
     [recipeCacheKey],
   );
 
+  // OD-27 Х-4 а: «Списати … із комори?» другим тостом після запису.
+  const pantryOffer = useMealPantryOffer(toast, {
+    items: pantry.pantryItems,
+    consume: pantry.consumePantryItem,
+    revert: pantry.revertConsume,
+  });
+
   const wrappedSaveMeal = useCallback(
-    async (meal: Meal, photoFile?: File | null, newDate?: string) => {
+    async (
+      meal: Meal,
+      photoFile?: File | null,
+      newDate?: string,
+      extras?: MealSaveExtras,
+    ) => {
       const isEdit = !!editingMeal?.id;
       if (isEdit && editingMeal && editingMeal.date) {
         const fromDate = editingMeal.date;
@@ -432,14 +447,20 @@ export default function NutritionApp({
         // День — той, під яким запис ЛЯГ (повертає `handleAddMeal`), а не
         // `log.selectedDate` цього рендеру: він міг відстати від годинника.
         const dateForLog = log.handleAddMeal(meal);
+        const pending: { link?: MealPantryLink | undefined } = {};
         // Додавання миттєве і без підтвердження — тост мусить нести
         // «Скасувати», як quick-chip нижче (бета-фідбек 2026-08-07).
-        toast.success("Страву додано.", undefined, {
+        const recordToastId = toast.success("Страву додано.", undefined, {
           label: "Скасувати",
           kind: "undo",
           onClick: () => {
             log.handleRemoveMeal(dateForLog, meal.id);
+            pending.link?.undo();
           },
+        });
+        pending.link = pantryOffer(extras?.multiRow ? [] : [meal], {
+          ticket: extras?.pantryTicket,
+          after: recordToastId,
         });
       }
       // Оригінал фото приходить із AddMealSheet (крок фото демонтується
@@ -449,12 +470,16 @@ export default function NutritionApp({
         if (blob) await saveMealThumbnail(meal.id, blob);
       }
     },
-    [editingMeal, log, setEditingMeal, toast],
+    [editingMeal, log, setEditingMeal, toast, pantryOffer],
   );
 
   // Phase 6.6 quick-chip: логіка в `useQuickAddMealFromChip` (винесено
   // 2026-08-07 під стелю Hard Rule #18).
-  const handleQuickAddMealFromChip = useQuickAddMealFromChip({ log, toast });
+  const handleQuickAddMealFromChip = useQuickAddMealFromChip({
+    log,
+    toast,
+    pantryOffer,
+  });
 
   const storageBanner = [
     log.storageErr,
@@ -491,7 +516,6 @@ export default function NutritionApp({
     isLoading: dayPlanBusy,
   };
 
-  const src = messages.nutrition.addSources;
   return (
     // Sergeant v2 redesign (2026-05, PR-6) — Nutrition shell wraps content
     // in MeshBackground. ModuleAccentProvider drops asShellRoot; shell-root
@@ -601,6 +625,7 @@ export default function NutritionApp({
                   <NutritionLogPage
                     log={log}
                     toast={toast}
+                    pantryOffer={pantryOffer}
                     setEditingMeal={setEditingMeal}
                   />
                 )}
@@ -653,38 +678,16 @@ export default function NutritionApp({
           </PullToRefresh>
         </SwipePages>
 
-        {(activePage === "start" || activePage === "log") && (
-          <AddAction
-            sources={[
-              {
-                id: "search",
-                ...src.search,
-                onSelect: () => openAddMealAt("search"),
-              },
-              {
-                id: "scan",
-                ...src.scan,
-                onSelect: () => openAddMealAt("scan"),
-              },
-              { id: "photo", ...src.photo, onSelect: handleOpenMealPhoto },
-              {
-                id: "manual",
-                ...src.manual,
-                onSelect: () => openAddMealAt("manual"),
-              },
-              ...(activePage === "start"
-                ? [
-                    {
-                      id: "water",
-                      ...src.water,
-                      onSelect: () =>
-                        window.dispatchEvent(new Event(WATER_ADD_EVENT)),
-                    },
-                  ]
-                : []),
-            ]}
-          />
-        )}
+        <NutritionAddAction
+          activePage={activePage}
+          log={log}
+          pantryItems={pantry.effectiveItems}
+          toast={toast}
+          onOpenAt={openAddMealAt}
+          onOpenPhoto={handleOpenMealPhoto}
+          onQuickAdd={handleQuickAddMealFromChip}
+          pantryOffer={pantryOffer}
+        />
 
         <NutritionBottomNav
           activePage={activePage}
@@ -714,8 +717,10 @@ export default function NutritionApp({
           addMealInitialMealType={addMealInitialMealType}
           onQuickAddMeal={handleQuickAddMealFromChip}
           openMealTypeSheet={openMealTypeSheet}
+          onOpenMealTypeSheet={setOpenMealTypeSheet}
           onCloseMealTypeSheet={() => setOpenMealTypeSheet(null)}
           toast={toast}
+          pantryOffer={pantryOffer}
         />
       </MeshBackground>
     </ModuleAccentProvider>

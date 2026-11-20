@@ -33,6 +33,17 @@ export const nutritionPageMessages = {
     rememberForRepeat: "Запамʼятати для повтору",
     rememberForRepeatHint:
       "Назва, тип прийому та КБЖВ потрапляють у швидкі прийоми.",
+    // Кнопки й діалоги кроку «fill» (`MealSheetActions`).
+    dateLabel: "Дата",
+    dateAria: "Дата запису",
+    save: "Додати прийом",
+    saveEdit: "Зберегти зміни",
+    cancel: "Скасувати",
+    emptyMacrosTitle: "Зберегти без калорійності?",
+    emptyMacrosDescription:
+      "КБЖВ порожні, запис не вплине на денну статистику. Зберегти як є?",
+    emptyMacrosConfirm: "Зберегти",
+    emptyMacrosBack: "Повернутись",
   },
   copyMeal: {
     title: "Скопіювати прийом",
@@ -486,6 +497,36 @@ export const nutritionPageMessages = {
     grams: "г",
     decrease: "Зменшити",
     increase: "Збільшити",
+  },
+
+  // Хвиля 1 OD-27 (рішення власника 2026-11-18). `{…}` підставляє місце виклику.
+  repeat: {
+    // Х-1 (б): звідки на колесі вага — з минулого запису цього продукту.
+    lastPortion: "Як минулого разу: {grams} г, {date}",
+    today: "сьогодні",
+    yesterdayDay: "вчора",
+    // Х-2 (а): «Зберегти в журнал» після фото пише одразу.
+    photoSaveHint: "Запишу у прийом за часом доби, змінити можна з тосту.",
+    photoSaved: "Записав {meal}: {name}, {kcal} ккал.",
+    photoSaveFailed: "Не вдалося записати страву. Спробуй ще раз.",
+    retry: "Повторити",
+    edit: "Змінити",
+    // Знахідний відмінок прийому після «Записав».
+    into: {
+      breakfast: "у сніданок",
+      lunch: "в обід",
+      dinner: "у вечерю",
+      snack: "у перекус",
+    },
+    // Х-3 (а): повтор в аркуші «Додати».
+    yesterday: "Як учора",
+    yesterdayHint: "{names} · {kcal} ккал",
+    recent: "Нещодавні",
+    // Х-5 (а): штрихкод після «не знайдено» до свого продукту з пошуку.
+    bindBarcode:
+      "Штрихкод {code} запамʼятаю для цього продукту: наступний скан знайде його сам.",
+    bindBarcodeCancel: "Скасувати",
+    bindBarcodeCancelAria: "Скасувати привʼязку штрихкоду",
   },
 
   pantryPortion: {

@@ -38,6 +38,9 @@ import { PortionQuantityField, PortionUnitPicker } from "./PortionUnitControls";
 import { pickInitialUnit, readLastUnit } from "./portionUnits";
 import type { PickedFood } from "./FoodPickerSection";
 import { messages } from "@shared/i18n/uk";
+import { formatDayMonth } from "@shared/lib/time/formatDate";
+import { addDaysISODate, todayISODate } from "@sergeant/nutrition-domain";
+import type { LastFoodPortion } from "../../lib/lastFoodPortion";
 
 const QUICK_GRAMS = ["50", "100", "150", "200"] as const;
 
@@ -70,6 +73,25 @@ interface PickedFoodCardProps {
   skipInitialRescale?: boolean | undefined;
   /** Повідомляє обрану одиницю продукту з порціями (памʼять «остання одиниця»). */
   onUnitChange?: ((foodId: string, unitId: string) => void) | undefined;
+  /**
+   * Вага минулого запису цього продукту (OD-27 Х-1 б). Читається раз на
+   * монтуванні; відсутня (редагування, комора) — старт як раніше.
+   */
+  getLastPortion?: ((foodId: string) => LastFoodPortion | null) | undefined;
+}
+
+/**
+ * «сьогодні» / «вчора» / «15 листопада» з день-ключа пристрою (ADR-0078).
+ * Не `formatDayKeyUk`: той дає короткий місяць («15 лис»), а погоджений
+ * мокап — повний.
+ */
+function lastPortionDate(date: string): string {
+  const today = todayISODate();
+  if (date === today) return messages.nutrition.repeat.today;
+  if (date === addDaysISODate(today, -1))
+    return messages.nutrition.repeat.yesterdayDay;
+  const [y, m, d] = date.split("-").map(Number);
+  return formatDayMonth(new Date(y ?? 0, (m ?? 1) - 1, d ?? 1));
 }
 
 export function PickedFoodCard({
@@ -80,6 +102,7 @@ export function PickedFoodCard({
   onChangeProduct,
   skipInitialRescale = false,
   onUnitChange,
+  getLastPortion,
 }: PickedFoodCardProps) {
   const portions = pickedFood.portions ?? [];
   const foodId = pickedFood.id != null ? String(pickedFood.id) : "";
@@ -94,9 +117,17 @@ export function PickedFoodCard({
   // Одиниця за замовчуванням - порція з кількістю 1: вага мусить їй
   // відповідати, інакше поле показувало б «0,33 скибки». Один раз на старті.
   const [startPortion] = useState(portion);
+  // Вага минулого запису виграє типову, але лише коли на старті стоїть саме
+  // типова вага продукту: фасування з чека чи відновлена чернетка точніші.
+  const [lastPortion] = useState(() => {
+    if (skipInitialRescale || !foodId || !getLastPortion) return null;
+    const typical = Math.round(Number(pickedFood.defaultGrams) || 100);
+    return Number(pickedGrams) === typical ? getLastPortion(foodId) : null;
+  });
   useEffect(() => {
-    if (startPortion) setPickedGrams(String(startPortion.grams));
-  }, [startPortion, setPickedGrams]);
+    const start = lastPortion?.grams ?? startPortion?.grams;
+    if (start != null) setPickedGrams(String(start));
+  }, [lastPortion, startPortion, setPickedGrams]);
   useEffect(() => {
     if (foodId && portions.length > 0) onUnitChange?.(foodId, unitId);
   }, [foodId, portions.length, unitId, onUnitChange]);
@@ -319,6 +350,13 @@ export function PickedFoodCard({
           </>
         )}
       </div>
+      {lastPortion && Number(pickedGrams) === lastPortion.grams && (
+        <p className="-mt-1 pb-3 text-style-caption text-muted">
+          {messages.nutrition.repeat.lastPortion
+            .replace("{grams}", String(lastPortion.grams).replace(".", ","))
+            .replace("{date}", lastPortionDate(lastPortion.date))}
+        </p>
+      )}
 
       {/*
         Рядка «Live КБЖВ плашки» тут БІЛЬШЕ НЕМАЄ — не забули, прибрали

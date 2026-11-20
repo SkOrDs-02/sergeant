@@ -5,6 +5,7 @@
 import { useMemo } from "react";
 import { pluralExercises } from "@sergeant/shared";
 import { setsCountLabel } from "../session/sessionLib";
+import { formatWorkoutItemsCount } from "../../lib/workoutItemsLabel";
 import { Button } from "@shared/components/ui/Button";
 import { Card } from "@shared/components/ui/Card";
 import { messages } from "@shared/i18n/uk";
@@ -304,8 +305,11 @@ export function RecentWorkoutSummary({ workout }: RecentWorkoutSummaryProps) {
   const started = new Date(workout.startedAt);
   const dateLabel = formatDateShort(started);
   const parts: string[] = [];
+  // «1 з 2 вправ», як плитка підсумку (рішення 2026-11-19).
   if (summary.itemCount > 0)
-    parts.push(`${summary.itemCount} ${pluralExercises(summary.itemCount)}`);
+    parts.push(
+      formatWorkoutItemsCount(summary.doneItemCount, summary.itemCount),
+    );
   if (summary.setCount > 0) parts.push(setsCountLabel(summary.setCount));
   const durMin = summary.durationSec
     ? Math.max(1, Math.round(summary.durationSec / 60))

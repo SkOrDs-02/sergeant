@@ -7,6 +7,10 @@ import { FIELD_LABEL } from "@shared/components/ui/Input";
 import { Icon } from "@shared/components/ui/Icon";
 import { cn } from "@shared/lib/ui/cn";
 import { useDialogFocusTrap } from "@shared/hooks/useDialogFocusTrap";
+import {
+  SHEET_FOOTER_INSET_VAR,
+  useBottomInsetVar,
+} from "@shared/hooks/useBottomInsetVar";
 import { openHubModule } from "@shared/lib/modules/hubNav";
 import {
   isCrossModulePromptSuppressed,
@@ -53,16 +57,19 @@ function InjuryChip({
       aria-pressed={selected}
       className={cn(
         "flex min-h-[44px] w-full items-center justify-between gap-2 rounded-lg border px-3 py-2 text-left text-style-caption transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-focus/45",
+        // Обране — заливкою чорнилом (мова станів v3.1), а не білим на
+        // білому: раніше позначену зону від непозначеної відрізняла лише
+        // дрібна «✓» (фідбек власника 2026-11-19).
         selected
-          ? "border-line bg-panelHi text-text"
-          : "border-line bg-bg text-muted hover:border-muted hover:text-text",
+          ? "border-text bg-text text-bg"
+          : "border-control bg-panelHi text-text hover:border-text",
       )}
       onClick={() => onToggle(site)}
     >
       <span>
         {INJURY_SITE_LABELS_UK[site as keyof typeof INJURY_SITE_LABELS_UK]}
       </span>
-      {selected && "✓"}
+      {selected && <Icon name="check" size="md" aria-hidden />}
     </button>
   );
 }
@@ -72,12 +79,42 @@ const WELLBEING_SCALE = ["1", "2", "3", "4", "5"].map((n) => ({
   label: n,
 }));
 
+/**
+ * Поверхня кроків «Самопочуття» й «Біль».
+ *
+ * AI-DANGER: не `bg-panel`. Плитки `ChoiceGroup` у спокої — саме `bg-panel`
+ * без рамки, тож на картці-панелі шкали 1–5 зливались із фоном і читались як
+ * голі цифри (фідбек власника 2026-11-19). Аркуш — колір сторінки з тінню
+ * плаваючого, як `Sheet`; липкі шапка й низ кроку болю беруть той самий фон.
+ */
+const STEP_SURFACE =
+  "bg-bg shadow-e4 space-y-4 max-h-[min(70vh,520px)] overflow-y-auto overscroll-contain";
+
+/** Підписи країв шкали 1–5: без них «3» не має сенсу. */
+function ScaleAnchors({ low, high }: { low: string; high: string }) {
+  return (
+    <div
+      className="mt-1 flex justify-between gap-2 text-style-caption text-subtle"
+      aria-hidden
+    >
+      <span>{low}</span>
+      <span>{high}</span>
+    </div>
+  );
+}
+
 interface WorkoutFinishSheetsProps {
   finishFlash: FinishFlashState | null;
   setFinishFlash: Dispatch<SetStateAction<FinishFlashState | null>>;
   workoutWellbeing?: WorkoutWellbeing | null | undefined;
   updateWorkout: (id: string, patch: { wellbeing?: WorkoutWellbeing }) => void;
   onDone?: (() => void) | undefined;
+  /**
+   * Сторінка без нижньої навігації (сесійний маршрут `workout/<id>`): аркуш
+   * стоїть на нижньому краї екрана, а не на 60 px вище — там табів немає, і
+   * під аркушем просвічувала сторінка.
+   */
+  docked?: boolean | undefined;
 }
 
 export function WorkoutFinishSheets({
@@ -86,6 +123,7 @@ export function WorkoutFinishSheets({
   workoutWellbeing,
   updateWorkout,
   onDone,
+  docked = false,
 }: WorkoutFinishSheetsProps) {
   const { markMany } = useInjuries();
   const { entries: dailyLogEntries, addEntry: addDailyLogEntry } =
@@ -115,160 +153,193 @@ export function WorkoutFinishSheets({
     onDone?.();
   };
   useDialogFocusTrap(!!finishFlash, trapRef, { onEscape: closeFinish });
+  // Панель — власний fixed-шар, а не `Sheet`, тож сама публікує, скільки
+  // займає знизу: трей тостів (тост «Повернутись у сесію», Фз-2) стає над
+  // нею, а не на «Пропустити» / «Зберегти». Той самий механізм і та сама
+  // змінна, що в `Sheet` з футером; закриття й розмонтування її знімають.
+  // Вимір іде з обгортки всіх кроків, тож інсет тримають і «Щось болить?»,
+  // і підсумок.
+  useBottomInsetVar(trapRef, SHEET_FOOTER_INSET_VAR, !!finishFlash);
 
   if (!finishFlash) return null;
+  // Кроки оцінки — модальні (`aria-modal`), тож під ними затемнення: без
+  // нього картка висіла над підсумком тренування без жодної межі й
+  // «зливалась» зі сторінкою. Підсумок наприкінці — не модальний, там
+  // затемнення немає, щоб згорнута плашка «Результати» не блокувала екран.
+  const modalStep =
+    finishFlash.step === "wellbeing" || finishFlash.step === "injury";
   return (
-    <div
-      className="fixed left-0 right-0 z-100 px-4 pointer-events-none fizruk-above-tabbar"
-      role="region"
-      aria-label="Підсумок тренування"
-    >
+    <>
+      {modalStep ? (
+        <div
+          className="fixed inset-0 z-100 bg-black/40 motion-safe:animate-fade-in"
+          aria-hidden
+          data-testid="fizruk-finish-scrim"
+        />
+      ) : null}
       <div
-        ref={trapRef}
-        className="pointer-events-auto max-w-4xl mx-auto fizruk-sheet"
-      >
-        {finishFlash.step === "wellbeing" && (
-          <Card
-            prominence="panel"
-            // `overscroll-contain`: без нього жест, доведений до межі
-            // внутрішнього скролу, перекидався на сторінку ПІД аркушем —
-            // журнал їхав, аркуш стояв, і це читалось як «не скролиться».
-            // Особливо помітно при спробі повернутись угору з розкритих
-            // мʼязів (скарга власника 2026-08-08).
-            className="space-y-4 max-h-[min(70vh,520px)] overflow-y-auto overscroll-contain"
-            role="dialog"
-            aria-modal="true"
-            aria-labelledby="fizruk-wellbeing-title"
-          >
-            <div
-              id="fizruk-wellbeing-title"
-              className="text-style-label text-text"
-            >
-              Самопочуття
-            </div>
-            <p
-              id="fizruk-wellbeing-hint"
-              className="text-style-caption text-subtle leading-relaxed"
-            >
-              Оціни по шкалі 1–5 (можна пропустити).
-            </p>
-            <div>
-              <div
-                id="fizruk-wellbeing-energy"
-                className={`${FIELD_LABEL} mb-2`}
-              >
-                Енергія
-              </div>
-              <ChoiceGroup
-                size="sm"
-                className="grid grid-cols-5"
-                ariaLabelledBy="fizruk-wellbeing-energy"
-                ariaDescribedBy="fizruk-wellbeing-hint"
-                value={
-                  finishFlash.energy == null ? null : String(finishFlash.energy)
-                }
-                onChange={(n) =>
-                  setFinishFlash((f) => f && { ...f, energy: Number(n) })
-                }
-                items={WELLBEING_SCALE}
-              />
-            </div>
-            <div>
-              <div id="fizruk-wellbeing-mood" className={`${FIELD_LABEL} mb-2`}>
-                Настрій
-              </div>
-              <ChoiceGroup
-                size="sm"
-                className="grid grid-cols-5"
-                ariaLabelledBy="fizruk-wellbeing-mood"
-                ariaDescribedBy="fizruk-wellbeing-hint"
-                value={
-                  finishFlash.mood == null ? null : String(finishFlash.mood)
-                }
-                onChange={(n) =>
-                  setFinishFlash((f) => f && { ...f, mood: Number(n) })
-                }
-                items={WELLBEING_SCALE}
-              />
-            </div>
-            <div className="flex gap-2">
-              <Button
-                variant="outline"
-                className="flex-1 h-12 min-h-[44px]"
-                type="button"
-                onClick={() =>
-                  setFinishFlash((f) => f && { ...f, step: "injury" })
-                }
-              >
-                Пропустити
-              </Button>
-              <Button
-                variant="solid"
-                tone="neutral"
-
-                className="flex-1 h-12 min-h-[44px]"
-                type="button"
-                onClick={() => {
-                  const wid = finishFlash.workoutId;
-                  if (wid && (finishFlash.energy || finishFlash.mood)) {
-                    updateWorkout(wid, {
-                      wellbeing: {
-                        ...workoutWellbeing,
-                        ...(finishFlash.energy != null
-                          ? { energy: finishFlash.energy }
-                          : {}),
-                        ...(finishFlash.mood != null
-                          ? { mood: finishFlash.mood }
-                          : {}),
-                      },
-                    });
-                    // Той самий факт — і в денний журнал Body, інакше
-                    // після «енергія 4 / настрій 4» тут Body показував
-                    // порожню форму за сьогодні (аудит L-10.3). Місток
-                    // однобічний: дописує, але ніколи не переписує
-                    // оцінку, яку людина вже поставила вручну — правило
-                    // й межа доби живуть у `wellbeingBridge.ts`.
-                    const handoff = planWellbeingHandoff(
-                      { energy: finishFlash.energy, mood: finishFlash.mood },
-                      dailyLogEntries,
-                      // eslint-disable-next-line no-restricted-syntax -- ADR-0078: денний запис Body — особиста сутність, її доба належить пристрою
-                      new Date(),
-                    );
-                    if (handoff) addDailyLogEntry(handoff);
-                  }
-                  setFinishFlash(
-                    (f) =>
-                      f && {
-                        ...f,
-                        step: "injury",
-                        savedWellbeing:
-                          f.energy || f.mood
-                            ? { energy: f.energy, mood: f.mood }
-                            : null,
-                      },
-                  );
-                }}
-              >
-                Зберегти
-              </Button>
-            </div>
-          </Card>
+        className={cn(
+          "fixed left-0 right-0 z-100 px-4 pointer-events-none",
+          docked
+            ? "bottom-0 pb-[max(1rem,env(safe-area-inset-bottom))]"
+            : "fizruk-above-tabbar",
         )}
+        role="region"
+        aria-label="Підсумок тренування"
+      >
+        <div
+          ref={trapRef}
+          className="pointer-events-auto max-w-4xl mx-auto fizruk-sheet"
+        >
+          {finishFlash.step === "wellbeing" && (
+            <Card
+              prominence="panel"
+              // `overscroll-contain`: без нього жест, доведений до межі
+              // внутрішнього скролу, перекидався на сторінку ПІД аркушем —
+              // журнал їхав, аркуш стояв, і це читалось як «не скролиться».
+              // Особливо помітно при спробі повернутись угору з розкритих
+              // мʼязів (скарга власника 2026-08-08).
+              className={STEP_SURFACE}
+              role="dialog"
+              aria-modal="true"
+              aria-labelledby="fizruk-wellbeing-title"
+            >
+              <div
+                id="fizruk-wellbeing-title"
+                className="text-style-title text-text"
+              >
+                Самопочуття
+              </div>
+              <p
+                id="fizruk-wellbeing-hint"
+                className="text-style-caption text-subtle leading-relaxed"
+              >
+                Оціни від 1 до 5, можна пропустити.
+              </p>
+              <div>
+                <div
+                  id="fizruk-wellbeing-energy"
+                  className={`${FIELD_LABEL} mb-2`}
+                >
+                  Енергія
+                </div>
+                <ChoiceGroup
+                  size="sm"
+                  className="grid grid-cols-5"
+                  ariaLabelledBy="fizruk-wellbeing-energy"
+                  ariaDescribedBy="fizruk-wellbeing-hint"
+                  value={
+                    finishFlash.energy == null
+                      ? null
+                      : String(finishFlash.energy)
+                  }
+                  onChange={(n) =>
+                    setFinishFlash((f) => f && { ...f, energy: Number(n) })
+                  }
+                  items={WELLBEING_SCALE}
+                />
+                <ScaleAnchors low="без сил" high="повно сил" />
+              </div>
+              <div>
+                <div
+                  id="fizruk-wellbeing-mood"
+                  className={`${FIELD_LABEL} mb-2`}
+                >
+                  Настрій
+                </div>
+                <ChoiceGroup
+                  size="sm"
+                  className="grid grid-cols-5"
+                  ariaLabelledBy="fizruk-wellbeing-mood"
+                  ariaDescribedBy="fizruk-wellbeing-hint"
+                  value={
+                    finishFlash.mood == null ? null : String(finishFlash.mood)
+                  }
+                  onChange={(n) =>
+                    setFinishFlash((f) => f && { ...f, mood: Number(n) })
+                  }
+                  items={WELLBEING_SCALE}
+                />
+                <ScaleAnchors low="погано" high="чудово" />
+              </div>
+              <div className="flex gap-2">
+                <Button
+                  variant="outline"
+                  className="flex-1 h-12 min-h-[44px]"
+                  type="button"
+                  onClick={() =>
+                    setFinishFlash((f) => f && { ...f, step: "injury" })
+                  }
+                >
+                  Пропустити
+                </Button>
+                <Button
+                  variant="solid"
+                  tone="neutral"
 
-        {finishFlash.step === "injury" && (
-          <Card
-            prominence="panel"
-            // `overscroll-contain`: без нього жест, доведений до межі
-            // внутрішнього скролу, перекидався на сторінку ПІД аркушем —
-            // журнал їхав, аркуш стояв, і це читалось як «не скролиться».
-            // Особливо помітно при спробі повернутись угору з розкритих
-            // мʼязів (скарга власника 2026-08-08).
-            className="space-y-4 max-h-[min(70vh,520px)] overflow-y-auto overscroll-contain"
-            role="dialog"
-            aria-modal="true"
-            aria-labelledby="fizruk-injury-title"
-          >
-            {/*
+                  className="flex-1 h-12 min-h-[44px]"
+                  type="button"
+                  onClick={() => {
+                    const wid = finishFlash.workoutId;
+                    if (wid && (finishFlash.energy || finishFlash.mood)) {
+                      updateWorkout(wid, {
+                        wellbeing: {
+                          ...workoutWellbeing,
+                          ...(finishFlash.energy != null
+                            ? { energy: finishFlash.energy }
+                            : {}),
+                          ...(finishFlash.mood != null
+                            ? { mood: finishFlash.mood }
+                            : {}),
+                        },
+                      });
+                      // Той самий факт — і в денний журнал Body, інакше
+                      // після «енергія 4 / настрій 4» тут Body показував
+                      // порожню форму за сьогодні (аудит L-10.3). Місток
+                      // однобічний: дописує, але ніколи не переписує
+                      // оцінку, яку людина вже поставила вручну — правило
+                      // й межа доби живуть у `wellbeingBridge.ts`.
+                      const handoff = planWellbeingHandoff(
+                        { energy: finishFlash.energy, mood: finishFlash.mood },
+                        dailyLogEntries,
+                        // eslint-disable-next-line no-restricted-syntax -- ADR-0078: денний запис Body — особиста сутність, її доба належить пристрою
+                        new Date(),
+                      );
+                      if (handoff) addDailyLogEntry(handoff);
+                    }
+                    setFinishFlash(
+                      (f) =>
+                        f && {
+                          ...f,
+                          step: "injury",
+                          savedWellbeing:
+                            f.energy || f.mood
+                              ? { energy: f.energy, mood: f.mood }
+                              : null,
+                        },
+                    );
+                  }}
+                >
+                  Зберегти
+                </Button>
+              </div>
+            </Card>
+          )}
+
+          {finishFlash.step === "injury" && (
+            <Card
+              prominence="panel"
+              // `overscroll-contain`: без нього жест, доведений до межі
+              // внутрішнього скролу, перекидався на сторінку ПІД аркушем —
+              // журнал їхав, аркуш стояв, і це читалось як «не скролиться».
+              // Особливо помітно при спробі повернутись угору з розкритих
+              // мʼязів (скарга власника 2026-08-08).
+              className={STEP_SURFACE}
+              role="dialog"
+              aria-modal="true"
+              aria-labelledby="fizruk-injury-title"
+            >
+              {/*
               Липка шапка — пара до липкого рядка дій унизу. Розкриті
               мʼязи роблять вміст удвічі вищим за вікно картки, і
               заголовок «Біль після тренування» їхав під верхню межу: щоб зрозуміти,
@@ -278,18 +349,18 @@ export function WorkoutFinishSheets({
               `p-4` картки, щоб смуга діставала до її країв і під нею не
               просвічували чипи, що проїжджають.
             */}
-            <div className="sticky -top-4 -mx-4 -mt-4 px-4 pt-4 pb-3 bg-panel border-b border-line">
-              <div
-                id="fizruk-injury-title"
-                className="text-style-label text-text"
-              >
-                {injuryCopy.finishTitle}
+              <div className="sticky -top-4 -mx-4 -mt-4 px-4 pt-4 pb-3 bg-bg border-b border-line">
+                <div
+                  id="fizruk-injury-title"
+                  className="text-style-title text-text"
+                >
+                  {injuryCopy.finishTitle}
+                </div>
+                <p className="text-style-caption text-subtle mt-1">
+                  {injuryCopy.finishDescription}
+                </p>
               </div>
-              <p className="text-style-caption text-subtle mt-1">
-                {injuryCopy.finishDescription}
-              </p>
-            </div>
-            {/*
+              {/*
               Суглоби й хребет — ПЕРШИМИ й без розкриття, мʼязи — за ним.
               Той самий порядок, що в `InjurySection.tsx`, і з тієї самої
               причини (див. AI-CONTEXT у його шапці): типові травми на
@@ -300,50 +371,12 @@ export function WorkoutFinishSheets({
               девʼять суглобів і обидві кнопки дій: людині з болем у коліні
               екран першими показував «Квадрицепс» і «Сідниці».
             */}
-            <div>
-              <p className="text-style-label font-semibold text-muted mb-2">
-                {injuryCopy.groupZones}
-              </p>
-              <div className="flex flex-wrap gap-2">
-                {INJURY_ZONE_IDS.map((site) => (
-                  <InjuryChip
-                    key={site}
-                    site={site}
-                    selected={finishFlash.injurySites.includes(site)}
-                    onToggle={toggleSite}
-                  />
-                ))}
-              </div>
-            </div>
-
-            <div>
-              <button
-                type="button"
-                aria-expanded={musclesOpen}
-                onClick={() => setMusclesOpen((open) => !open)}
-                className="flex w-full items-center justify-between gap-2 min-h-[44px] rounded-lg border border-line bg-panelHi px-3 py-2 text-style-label text-text transition-colors hover:border-muted focus:outline-none focus-visible:ring-2 focus-visible:ring-focus/45"
-              >
-                <span className="inline-flex items-center gap-2">
-                  {injuryCopy.groupMuscles}
-                  {selectedMuscleCount > 0 && (
-                    <span className="rounded-lg bg-panelHi px-2 py-0.5 text-style-caption text-text">
-                      {selectedMuscleCount}
-                    </span>
-                  )}
-                </span>
-                <span className="text-style-caption text-subtle">
-                  {BODY_ATLAS_MUSCLE_IDS.length}{" "}
-                  {pluralUa(BODY_ATLAS_MUSCLE_IDS.length, {
-                    one: "зона",
-                    few: "зони",
-                    many: "зон",
-                  })}
-                  <span aria-hidden>{musclesOpen ? " ⌃" : " ⌄"}</span>
-                </span>
-              </button>
-              {musclesOpen && (
-                <div className="mt-2 grid grid-cols-2 gap-2 sm:grid-cols-3">
-                  {BODY_ATLAS_MUSCLE_IDS.map((site) => (
+              <div>
+                <p className="text-style-label font-semibold text-muted mb-2">
+                  {injuryCopy.groupZones}
+                </p>
+                <div className="flex flex-wrap gap-2">
+                  {INJURY_ZONE_IDS.map((site) => (
                     <InjuryChip
                       key={site}
                       site={site}
@@ -352,9 +385,47 @@ export function WorkoutFinishSheets({
                     />
                   ))}
                 </div>
-              )}
-            </div>
-            {/*
+              </div>
+
+              <div>
+                <button
+                  type="button"
+                  aria-expanded={musclesOpen}
+                  onClick={() => setMusclesOpen((open) => !open)}
+                  className="flex w-full items-center justify-between gap-2 min-h-[44px] rounded-lg border border-line bg-panelHi px-3 py-2 text-style-label text-text transition-colors hover:border-muted focus:outline-none focus-visible:ring-2 focus-visible:ring-focus/45"
+                >
+                  <span className="inline-flex items-center gap-2">
+                    {injuryCopy.groupMuscles}
+                    {selectedMuscleCount > 0 && (
+                      <span className="rounded-lg bg-panelHi px-2 py-0.5 text-style-caption text-text">
+                        {selectedMuscleCount}
+                      </span>
+                    )}
+                  </span>
+                  <span className="text-style-caption text-subtle">
+                    {BODY_ATLAS_MUSCLE_IDS.length}{" "}
+                    {pluralUa(BODY_ATLAS_MUSCLE_IDS.length, {
+                      one: "зона",
+                      few: "зони",
+                      many: "зон",
+                    })}
+                    <span aria-hidden>{musclesOpen ? " ⌃" : " ⌄"}</span>
+                  </span>
+                </button>
+                {musclesOpen && (
+                  <div className="mt-2 grid grid-cols-2 gap-2 sm:grid-cols-3">
+                    {BODY_ATLAS_MUSCLE_IDS.map((site) => (
+                      <InjuryChip
+                        key={site}
+                        site={site}
+                        selected={finishFlash.injurySites.includes(site)}
+                        onToggle={toggleSite}
+                      />
+                    ))}
+                  </div>
+                )}
+              </div>
+              {/*
               Липкий низ, а не звичайний рядок у потоці: розкриті мʼязи
               роблять картку вищою за її `max-h`, і на 390px обидві кнопки
               йшли під згин — тобто рівно та проблема, заради якої групи й
@@ -362,151 +433,152 @@ export function WorkoutFinishSheets({
               поля компенсують `p-4` самої картки, щоб смуга діставала до
               її країв і не лишала прозорих кутів над контентом, що скролиться.
             */}
-            <div className="sticky -bottom-4 -mx-4 -mb-4 px-4 pt-3 pb-4 bg-panel border-t border-line flex gap-2">
-              <Button
-                variant="outline"
-                className="flex-1 h-12"
-                disabled={savingInjuries}
-                onClick={() =>
-                  setFinishFlash(
-                    (current) => current && { ...current, step: "summary" },
-                  )
-                }
-              >
-                {injuryCopy.skip}
-              </Button>
-              <Button
-                variant="solid"
-                tone="neutral"
-
-                className="flex-1 h-12"
-                disabled={
-                  savingInjuries || finishFlash.injurySites.length === 0
-                }
-                onClick={() => {
-                  setSavingInjuries(true);
-                  try {
-                    // Одним записом: цикл `mark` у одному тіку лишав лише
-                    // останню зону (аудит data-36).
-                    markMany(finishFlash.injurySites.filter(isInjurySiteId));
+              <div className="sticky -bottom-4 -mx-4 -mb-4 px-4 pt-3 pb-4 bg-bg border-t border-line flex gap-2">
+                <Button
+                  variant="outline"
+                  className="flex-1 h-12"
+                  disabled={savingInjuries}
+                  onClick={() =>
                     setFinishFlash(
                       (current) => current && { ...current, step: "summary" },
-                    );
-                  } finally {
-                    setSavingInjuries(false);
+                    )
                   }
-                }}
-              >
-                {/*
+                >
+                  {injuryCopy.skip}
+                </Button>
+                <Button
+                  variant="solid"
+                  tone="neutral"
+
+                  className="flex-1 h-12"
+                  disabled={
+                    savingInjuries || finishFlash.injurySites.length === 0
+                  }
+                  onClick={() => {
+                    setSavingInjuries(true);
+                    try {
+                      // Одним записом: цикл `mark` у одному тіку лишав лише
+                      // останню зону (аудит data-36).
+                      markMany(finishFlash.injurySites.filter(isInjurySiteId));
+                      setFinishFlash(
+                        (current) => current && { ...current, step: "summary" },
+                      );
+                    } finally {
+                      setSavingInjuries(false);
+                    }
+                  }}
+                >
+                  {/*
                   Лічильник у самій кнопці: обрані чипи можуть лежати у
                   згорнутій групі мʼязів, тож «скільки я позначив» більше
                   не треба рахувати очима по підсвічених чипах.
                 */}
-                {injuryCopy.saveCta}
-                {finishFlash.injurySites.length > 0
-                  ? ` (${finishFlash.injurySites.length})`
-                  : ""}
-              </Button>
-            </div>
-          </Card>
-        )}
-
-        {finishFlash.step === "summary" && finishFlash.collapsed && (
-          <button
-            type="button"
-            className="w-full flex items-center justify-between gap-3 rounded-lg border border-line bg-panel px-4 py-3 min-h-[44px] text-left"
-            onClick={() =>
-              setFinishFlash((f) => f && { ...f, collapsed: false })
-            }
-          >
-            <span className="text-style-label text-text inline-flex items-center gap-1.5">
-              Результати
-            </span>
-            <span className="text-style-caption text-subtle tabular-nums">
-              {formatDurShort(finishFlash.durationSec)}
-            </span>
-          </button>
-        )}
-
-        {finishFlash.step === "summary" && !finishFlash.collapsed && (
-          <div className="rounded-panel overflow-hidden bg-panel">
-            <div className="fizruk-summary-header">
-              <div className="flex items-start justify-between gap-2">
-                <div>
-                  <SectionHeading size="xs" variant="fizruk" as="div">
-                    Завершено
-                  </SectionHeading>
-                  <div className="text-style-title text-text mt-1 leading-tight">
-                    Тренування виконано
-                  </div>
-                </div>
-                <button
-                  type="button"
-                  // `text-lg` прибрано: єдиний вміст кнопки — `<Icon size="md">`,
-                  // тобто SVG із власним розміром, на який шкала шрифта не
-                  // впливає. Клас нічого не робив, лише тягнув за собою
-                  // попередження про сиру шкалу.
-                  className="w-9 h-9 pointer-coarse:min-w-[44px] pointer-coarse:min-h-[44px] flex items-center justify-center rounded-lg bg-panelHi text-text hover:opacity-70"
-                  aria-label="Закрити"
-                  onClick={closeFinish}
-                >
-                  <Icon name="close" size="md" aria-hidden />
-                </button>
+                  {injuryCopy.saveCta}
+                  {finishFlash.injurySites.length > 0
+                    ? ` (${finishFlash.injurySites.length})`
+                    : ""}
+                </Button>
               </div>
-              {/* Метрики (час, вправи, обʼєм, самопочуття) показує сторінка
+            </Card>
+          )}
+
+          {finishFlash.step === "summary" && finishFlash.collapsed && (
+            <button
+              type="button"
+              className="w-full flex items-center justify-between gap-3 rounded-lg border border-line bg-panel px-4 py-3 min-h-[44px] text-left"
+              onClick={() =>
+                setFinishFlash((f) => f && { ...f, collapsed: false })
+              }
+            >
+              <span className="text-style-label text-text inline-flex items-center gap-1.5">
+                Результати
+              </span>
+              <span className="text-style-caption text-subtle tabular-nums">
+                {formatDurShort(finishFlash.durationSec)}
+              </span>
+            </button>
+          )}
+
+          {finishFlash.step === "summary" && !finishFlash.collapsed && (
+            <div className="rounded-panel overflow-hidden bg-panel">
+              <div className="fizruk-summary-header">
+                <div className="flex items-start justify-between gap-2">
+                  <div>
+                    <SectionHeading size="xs" variant="fizruk" as="div">
+                      Завершено
+                    </SectionHeading>
+                    <div className="text-style-title text-text mt-1 leading-tight">
+                      Тренування виконано
+                    </div>
+                  </div>
+                  <button
+                    type="button"
+                    // `text-lg` прибрано: єдиний вміст кнопки — `<Icon size="md">`,
+                    // тобто SVG із власним розміром, на який шкала шрифта не
+                    // впливає. Клас нічого не робив, лише тягнув за собою
+                    // попередження про сиру шкалу.
+                    className="w-9 h-9 pointer-coarse:min-w-[44px] pointer-coarse:min-h-[44px] flex items-center justify-center rounded-lg bg-panelHi text-text hover:opacity-70"
+                    aria-label="Закрити"
+                    onClick={closeFinish}
+                  >
+                    <Icon name="close" size="md" aria-hidden />
+                  </button>
+                </div>
+                {/* Метрики (час, вправи, обʼєм, самопочуття) показує сторінка
                   підсумку просто під цією карткою; тут вони дублювались. */}
-            </div>
-            <div className="flex flex-col gap-2 p-3 bg-panel">
-              {/* Cross-module nudge → Nutrition. Inline (not a toast)
+              </div>
+              <div className="flex flex-col gap-2 p-3 bg-panel">
+                {/* Cross-module nudge → Nutrition. Inline (not a toast)
                   because the finish-sheet itself is the natural moment
                   to suggest. Snoozed for 12 h after acceptance so a
                   user who logged a post-workout meal once today doesn't
                   see this on a second workout the same evening. See
                   docs/design/design/cross-module-prompts.md. */}
-              {!isCrossModulePromptSuppressed("fizruk-finish-to-meal") && (
-                <button
-                  type="button"
-                  // AI-NOTE: `text-xs` лишається сирим — це розмір
-                  // КОНТРОЛА: висота кнопки задана парою `text-xs` +
-                  // `py-1.5`, і роль із `line-height: 1.4` зсунула б її
-                  // відносно сусідніх дій. Одна з двох причин лишати
-                  // сирий розмір (див. `tailwind-preset.js`, § ролі).
+                {!isCrossModulePromptSuppressed("fizruk-finish-to-meal") && (
+                  <button
+                    type="button"
+                    // AI-NOTE: `text-xs` лишається сирим — це розмір
+                    // КОНТРОЛА: висота кнопки задана парою `text-xs` +
+                    // `py-1.5`, і роль із `line-height: 1.4` зсунула б її
+                    // відносно сусідніх дій. Одна з двох причин лишати
+                    // сирий розмір (див. `tailwind-preset.js`, § ролі).
 
-                  className="w-full text-xs text-muted hover:text-text transition-colors py-1.5 flex items-center justify-center gap-1.5"
-                  onClick={() => {
-                    recordCrossModulePromptAccepted("fizruk-finish-to-meal");
-                    setFinishFlash(null);
-                    openHubModule("nutrition", "log");
-                  }}
-                >
-                  <span>Додати білок після тренування</span>
-                  <span aria-hidden>→</span>
-                </button>
-              )}
-              <div className="flex gap-2">
-                <Button
-                  variant="outline"
-                  className="flex-1 h-12 min-h-[44px] rounded-lg"
-                  type="button"
-                  onClick={() =>
-                    setFinishFlash((f) => f && { ...f, collapsed: true })
-                  }
-                >
-                  Сховати
-                </Button>
-                <button
-                  type="button"
+                    className="w-full text-xs text-muted hover:text-text transition-colors py-1.5 flex items-center justify-center gap-1.5"
+                    onClick={() => {
+                      recordCrossModulePromptAccepted("fizruk-finish-to-meal");
+                      setFinishFlash(null);
+                      openHubModule("nutrition", "log");
+                    }}
+                  >
+                    <span>Додати білок після тренування</span>
+                    <span aria-hidden>→</span>
+                  </button>
+                )}
+                <div className="flex gap-2">
+                  <Button
+                    variant="outline"
+                    className="flex-1 h-12 min-h-[44px] rounded-lg"
+                    type="button"
+                    onClick={() =>
+                      setFinishFlash((f) => f && { ...f, collapsed: true })
+                    }
+                  >
+                    Сховати
+                  </Button>
+                  <button
+                    type="button"
 
-                  className="fizruk-cta-accent flex-1 py-3 rounded-lg text-base"
-                  onClick={closeFinish}
-                >
-                  Готово
-                </button>
+                    className="fizruk-cta-accent flex-1 py-3 rounded-lg text-base"
+                    onClick={closeFinish}
+                  >
+                    Готово
+                  </button>
+                </div>
               </div>
             </div>
-          </div>
-        )}
+          )}
+        </div>
       </div>
-    </div>
+    </>
   );
 }

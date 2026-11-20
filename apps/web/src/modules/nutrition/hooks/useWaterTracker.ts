@@ -1,8 +1,9 @@
 /**
- * Last validated: 2026-07-05
+ * Last validated: 2026-11-18
  * Status: Active
  */
-import { useCallback, useEffect } from "react";
+import { useCallback, useEffect, useRef } from "react";
+import { emitHubBus } from "@shared/lib/modules/hubBus";
 import { useSqliteTickOverlay } from "@shared/hooks/useSqliteTickOverlay";
 import {
   loadWaterLog,
@@ -33,7 +34,31 @@ export interface UseWaterTrackerResult {
   reset: () => void;
 }
 
-export function useWaterTracker(): UseWaterTrackerResult {
+/**
+ * День, у якому додавання вперше довело суму до цілі; інакше `null`.
+ * `addWaterMl` пише в день за годинником пристрою (ADR-0078), тож це
+ * єдиний день, що міг змінитись.
+ */
+export function waterGoalReachedDay(
+  prev: WaterLog,
+  next: WaterLog,
+  goalMl: number,
+): string | null {
+  if (!(goalMl > 0)) return null;
+  for (const [day, ml] of Object.entries(next)) {
+    if (ml >= goalMl && (prev[day] ?? 0) < goalMl) return day;
+  }
+  return null;
+}
+
+/**
+ * @param goalMl денна ціль води. Коли дія людини (`add`) вперше за день
+ *   доводить суму до цілі, хук шле `routineAutoMark` з
+ *   `source: "nutrition_water_goal"` — джерело автовідмітки звички Рутини
+ *   (рішення власника 2026-11-18). Синк і відновлення йдуть повз `add`,
+ *   тож події не дають; без цілі (`0`) події немає.
+ */
+export function useWaterTracker(goalMl = 0): UseWaterTrackerResult {
   const sqliteCacheTick = useNutritionSqliteReadTick();
   const [log, setLog] = useSqliteTickOverlay<WaterLog>(
     sqliteCacheTick,
@@ -52,22 +77,44 @@ export function useWaterTracker(): UseWaterTrackerResult {
 
   const todayMl = getTodayWaterMl(log);
 
+  // Свіжий журнал для порівняння «до / після» поза updater-ом: подія —
+  // побічний ефект, а updater React може викликати двічі.
+  const logRef = useRef(log);
+  useEffect(() => {
+    logRef.current = log;
+  }, [log]);
+  // Один перетин на день за сесію: зменшення й повторний перетин не шлють.
+  const emittedDaysRef = useRef(new Set<string>());
+
   const add = useCallback(
     (ml: number) => {
-      setLog((prev) => addWaterMl(prev, ml));
+      const prev = logRef.current;
+      const next = addWaterMl(prev, ml);
+      logRef.current = next;
+      setLog(next);
+      const day = waterGoalReachedDay(prev, next, goalMl);
+      if (day && !emittedDaysRef.current.has(day)) {
+        emittedDaysRef.current.add(day);
+        emitHubBus("routineAutoMark", {
+          source: "nutrition_water_goal",
+          dayKey: day,
+        });
+      }
     },
-    [setLog],
+    [setLog, goalMl],
   );
 
   const subtract = useCallback(
     (ml: number) => {
-      setLog((prev) => subtractWaterMl(prev, ml));
+      logRef.current = subtractWaterMl(logRef.current, ml);
+      setLog(logRef.current);
     },
     [setLog],
   );
 
   const reset = useCallback(() => {
-    setLog((prev) => resetTodayWater(prev));
+    logRef.current = resetTodayWater(logRef.current);
+    setLog(logRef.current);
   }, [setLog]);
 
   return { todayMl, log, add, subtract, reset };

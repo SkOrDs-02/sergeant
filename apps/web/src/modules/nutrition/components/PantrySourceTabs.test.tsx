@@ -9,6 +9,7 @@
 import { describe, expect, it, vi, beforeEach, afterEach } from "vitest";
 import {
   cleanup,
+  fireEvent,
   render as rtlRender,
   screen,
   waitFor,
@@ -109,6 +110,31 @@ describe("PantrySourceTabs — mode + scan segments", () => {
     );
     expect(onScanBarcode).toHaveBeenCalledTimes(1);
     expect(onModeChange).not.toHaveBeenCalled();
+  });
+
+  it("сегменти не забирають фокус із поля на mousedown (тап при відкритій клавіатурі)", () => {
+    // Фідбек власника 2026-11-19: `focusout` на `mousedown` скидав відступ
+    // аркуша під клавіатуру, і перший тап по «Списком» губився.
+    render(<PantrySourceTabs {...baseProps()} />);
+    for (const name of ["По одному", "Списком", "Сканувати штрих-код"]) {
+      expect(fireEvent.mouseDown(screen.getByRole("button", { name }))).toBe(
+        false,
+      );
+    }
+  });
+
+  it("«Скан» ховає клавіатуру вже в click, перед сканером", async () => {
+    const onScanBarcode = vi.fn();
+    render(<PantrySourceTabs {...baseProps({ onScanBarcode })} />);
+    const input = document.createElement("input");
+    document.body.appendChild(input);
+    input.focus();
+    await userEvent.click(
+      screen.getByRole("button", { name: "Сканувати штрих-код" }),
+    );
+    expect(onScanBarcode).toHaveBeenCalledTimes(1);
+    expect(document.activeElement).not.toBe(input);
+    input.remove();
   });
 
   it("omits the scan segment entirely (2 columns) when onScanBarcode isn't provided", () => {

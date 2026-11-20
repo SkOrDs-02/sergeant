@@ -166,10 +166,16 @@ test("@critical fizruk: start → set → refresh → resume → finish", async 
   ).toHaveValue("8");
 
   await page.getByRole("button", { name: "Завершити" }).click();
+  // Фз-2 (2026-11-18): «Завершити» у шапці спершу питає «Завершити зараз?»,
+  // сесію закриває кнопка в самому підтвердженні (`alertdialog`).
+  await page
+    .getByRole("alertdialog")
+    .getByRole("button", { name: "Завершити" })
+    .click();
   // Крок «Самопочуття» аркуша `WorkoutFinishSheets` — його «Пропустити».
   await page.getByRole("button", { name: "Пропустити" }).click();
   await expect(
-    page.getByRole("dialog", { name: "Біль після тренування" }),
+    page.getByRole("dialog", { name: "Позначити травму чи гострий біль" }),
   ).toBeVisible();
   // Крок травм має власну копію — «Нічого не позначати», не «Пропустити»
   // (`messages.fizruk.injuries.skip`). Формулювання свідоме: позначити травму

@@ -24,6 +24,7 @@ import {
   getProgramSessionForDay,
   normalizeActiveProgramState,
   resolveActiveProgram,
+  resolveNextScheduledSession,
   resolveTodaySession,
   ukPluralCategory,
   weekdayIndex,
@@ -158,6 +159,80 @@ describe("getProgramSessionForDay", () => {
     expect(getProgramSessionForDay(null, 0)).toBeNull();
     expect(getProgramSessionForDay(undefined, 0)).toBeNull();
     expect(getProgramSessionForDay(broken, 0)).toBeNull();
+  });
+});
+
+describe("resolveNextScheduledSession", () => {
+  const ss = PROGRAM_CATALOGUE.find((p) => p.id === "starting_strength")!;
+  const ppl = PROGRAM_CATALOGUE.find((p) => p.id === "ppl")!;
+
+  it("дає завтрашню сесію в день відпочинку", () => {
+    // 2026-04-21 — вівторок; лінійна прогресія тренує Пн/Ср/Пт.
+    const next = resolveNextScheduledSession(
+      ss,
+      new Date("2026-04-21T12:00:00Z"),
+    );
+    expect(next?.schedule.day).toBe(3);
+    expect(next?.schedule.sessionKey).toBe("ss_b");
+    expect(next?.session.name).toBe("Workout B");
+    expect(next?.daysFromNow).toBe(1);
+  });
+
+  it("перескакує через вихідні до понеділка", () => {
+    // 2026-04-25 — субота → понеділок за 2 дні.
+    const next = resolveNextScheduledSession(
+      ss,
+      new Date("2026-04-25T12:00:00Z"),
+    );
+    expect(next?.schedule.day).toBe(1);
+    expect(next?.daysFromNow).toBe(2);
+  });
+
+  it("не повертає сьогоднішню сесію навіть у день тренування", () => {
+    // 2026-04-20 — понеділок PPL (push) → наступна pull у вівторок.
+    const next = resolveNextScheduledSession(
+      ppl,
+      new Date("2026-04-20T12:00:00Z"),
+    );
+    expect(next?.schedule.sessionKey).toBe("pull");
+    expect(next?.daysFromNow).toBe(1);
+  });
+
+  it("програма з одним днем дає той самий день за тиждень", () => {
+    const weekly: TrainingProgramDef = {
+      id: "weekly",
+      name: "Weekly",
+      description: "",
+      days: 1,
+      durationWeeks: 1,
+      schedule: [{ day: 1, sessionKey: "x", name: "X" }],
+      sessions: {
+        x: {
+          name: "X",
+          exerciseIds: ["a"],
+          progressionKg: 0,
+          defaultRestSec: 60,
+        },
+      },
+    };
+    expect(
+      resolveNextScheduledSession(weekly, new Date("2026-04-20T12:00:00Z"))
+        ?.daysFromNow,
+    ).toBe(7);
+  });
+
+  it("null без програми або без живих сесій", () => {
+    expect(resolveNextScheduledSession(null)).toBeNull();
+    const broken: TrainingProgramDef = {
+      id: "broken",
+      name: "Broken",
+      description: "",
+      days: 1,
+      durationWeeks: 1,
+      schedule: [{ day: 1, sessionKey: "ghost", name: "Ghost" }],
+      sessions: {},
+    };
+    expect(resolveNextScheduledSession(broken)).toBeNull();
   });
 });
 

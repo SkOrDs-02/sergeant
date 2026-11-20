@@ -27,7 +27,10 @@ import {
 } from "../../../modules/finyk/lib/finykStorage";
 import { isApiError, type ApiError } from "@sergeant/api-client";
 import { validateTransactionInput } from "./finykActions/transactionInputValidation";
-import { createTransaction as createTransactionLocal } from "./finykActions/transactions";
+import {
+  createTransaction as createTransactionLocal,
+  emitChatExpenseRoutineAutoMark,
+} from "./finykActions/transactions";
 import { withChatWriteConfirm } from "./chatWrites";
 import { finykChatMirrorManualExpenses } from "./finykActions/dualWriteBridge";
 import type { Transaction } from "@sergeant/finyk-domain/domain/types";
@@ -256,6 +259,9 @@ async function handleCreateTransaction(
     // alone never reaches the structured `finyk_manual_expenses` table the
     // UI reads post-cutover.
     finykChatMirrorManualExpenses(prevManual, nextManual);
+    // Сервер прийняв запис — витрату записано; подію для Рутини шлемо тут,
+    // офлайн-фолбек шле її сам у `createTransactionLocal` після запису.
+    emitChatExpenseRoutineAutoMark(date);
     const meta = category?.trim()
       ? resolveExpenseCategoryMeta(category.trim(), getCategories())
       : undefined;

@@ -26,6 +26,8 @@ import { useCloseAfterNavigation } from "./useCloseAfterNavigation";
 
 export interface UseSearchEngineOptions {
   onClose: () => void;
+  /** Див. `useCloseAfterNavigation(…, onNavigationStart)`. */
+  onCloseAfterNavigation?: (() => void) | undefined;
   onOpenModule: (moduleId: string) => void;
   /** Запит, з яким пошук відкрили ззовні; читається лише на маунті. */
   initialQuery?: string | undefined;
@@ -76,6 +78,7 @@ export interface UseSearchEngineResult {
  */
 export function useSearchEngine({
   onClose,
+  onCloseAfterNavigation,
   onOpenModule,
   initialQuery = "",
 }: UseSearchEngineOptions): UseSearchEngineResult {
@@ -88,7 +91,10 @@ export function useSearchEngine({
   const inlineAi = useInlineAiRail();
   const inlineAsk = inlineAi.ask;
   const inlineReset = inlineAi.reset;
-  const { navigating, closeAfterNavigation } = useCloseAfterNavigation(onClose);
+  const { navigating, closeAfterNavigation } = useCloseAfterNavigation(
+    onClose,
+    onCloseAfterNavigation,
+  );
 
   useEffect(() => {
     inputRef.current?.focus();
@@ -237,7 +243,14 @@ export function useSearchEngine({
       //                    the full /assistant catalogue route.
       switch (hit.target.kind) {
         case "module":
-          openModule(hit.target.moduleId);
+          // Ф-2 (а): хіт із глибоким посиланням (операція Фініка) веде
+          // саме туди; закриття, як і для інших цілей, після зміни адреси.
+          if (hit.target.path) {
+            closeAfterNavigation();
+            navigate(hit.target.path);
+          } else {
+            openModule(hit.target.moduleId);
+          }
           break;
         case "settings": {
           const sectionId = hit.target.sectionId;

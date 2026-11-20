@@ -58,11 +58,14 @@ export * from "./hubchat/toolNames";
 // — state-mutating vs advice/read-only-з-синтезом класифікація tool-ів,
 // одне джерело істини поруч із реєстром імен вище.
 export * from "./hubchat/toolOutcomeClass";
+export * from "./hubchat/turnRefs";
 
 // Канонічні межі числових полів заміру тіла (Фізрук) — єдине джерело
 // правди для доменного реєстру полів і серверного sync-апплаєра.
 // Див. docstring `./fizruk/measurementBounds.ts` (аудит 2026-08-04).
 export * from "./fizruk/measurementBounds";
+// Тип виміру вправи: перелік і межі підходу (спека fizruk-exercise-measure-type).
+export * from "./fizruk/exerciseMeasure";
 
 // Провенанс метрик — версія методики підрахунку (ADR-0079 §3-§4).
 export * from "./lib/metricsVersion";

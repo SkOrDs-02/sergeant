@@ -8,6 +8,7 @@ import {
   countEventsByDate,
 } from "./calendarEvents.js";
 import { completionNoteKey } from "./completionNoteKey.js";
+import { defaultRoutineState } from "./storage.js";
 import type { Habit, HubCalendarEvent, RoutineState } from "./types.js";
 
 function habit(partial: Partial<Habit>): Habit {
@@ -204,5 +205,27 @@ describe("routine-domain/calendarEvents", () => {
       sourceKind: "finyk_sub",
     });
     expect(events[0]?.subtitle).toContain("129,5 UAH");
+  });
+});
+
+describe("buildHubCalendarEvents — ручний порядок звичок (R3)", () => {
+  it("події одного дня йдуть за habitOrder, а не за алфавітом", () => {
+    const mk = (id: string, name: string) => ({
+      id,
+      name,
+      recurrence: "daily" as const,
+      startDate: "2026-11-01",
+      weekdays: [0, 1, 2, 3, 4, 5, 6],
+    });
+    const state = {
+      ...defaultRoutineState(),
+      habits: [mk("a", "Арфа"), mk("b", "Бігти"), mk("c", "Вода")],
+      habitOrder: ["c", "a", "b"],
+    } as RoutineState;
+    const events = buildHubCalendarEvents(state, {
+      startKey: "2026-11-17",
+      endKey: "2026-11-17",
+    });
+    expect(events.map((e) => e.habitId)).toEqual(["c", "a", "b"]);
   });
 });

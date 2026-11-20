@@ -26,7 +26,12 @@ import {
 } from "@sergeant/finyk-domain/domain/transactions";
 import { getKyivDateParts, getKyivDayKey } from "@shared/lib/time/kyivTime";
 import { logger } from "@shared/lib";
-import { computeAssetsSummary } from "@sergeant/finyk-domain/domain/assets/aggregates";
+import {
+  computeAssetsSummary,
+  countExcludedManualAssets,
+} from "@sergeant/finyk-domain/domain/assets/aggregates";
+import { computeMonthlySaved } from "@sergeant/finyk-domain/domain/assets/savings";
+import { toDomainAsset } from "../../lib/manualAssetAdapter";
 import { filterToKyivMonth, txEpochMs } from "../../lib/monthWindow";
 import { useRecurringHistory } from "../../hooks/useRecurringHistory";
 import { useBankHistoryTx } from "../../hooks/useBankHistoryTx";
@@ -211,13 +216,9 @@ export function useOverviewData({ mono, storage }: UseOverviewDataParams) {
               typeof a.balance === "number",
           ),
         hiddenAccounts,
-        manualAssets: (manualAssets || []).map((asset) => ({
-          id: asset.id,
-          name: asset.name ?? "",
-          amount: asset.amount,
-          currency: asset.currency ?? "",
-          ...(asset.emoji !== undefined ? { emoji: asset.emoji } : {}),
-        })),
+        // Увесь запис: тип, журнал і курс рахунку-активу теж визначають
+        // вартість (спека finyk-savings-assets).
+        manualAssets: (manualAssets || []).map(toDomainAsset),
         manualDebts,
         receivables,
         transactions: linkableTx,
@@ -240,10 +241,28 @@ export function useOverviewData({ mono, storage }: UseOverviewDataParams) {
   // `privatDebt` now goes through the same `getMonoTotals` creditLimit/
   // overdraft rule as Monobank's `totalLiabilities`.
   const totalDebt = assetsSummary.totalLiabilities + privatDebt;
-  const nonUahManualAssetCount = useMemo(() => {
-    const all = manualAssets || [];
-    return all.filter((a) => a.currency !== "UAH").length;
-  }, [manualAssets]);
+  // Негривневі без курсу: у капітал не входять, банер їх називає.
+  const nonUahManualAssetCount = useMemo(
+    () => countExcludedManualAssets((manualAssets || []).map(toDomainAsset)),
+    [manualAssets],
+  );
+  // «Відкладено за місяць»: внески − повернення в активах + чисте
+  // поповнення власних гривневих банок (спека finyk-savings-assets).
+  const savedThisMonth = useMemo(() => {
+    const [y, m] = kyivMonthPrefix.split("-").map(Number) as [number, number];
+    const next =
+      m === 12 ? `${y + 1}-01` : `${y}-${String(m + 1).padStart(2, "0")}`;
+    const jarAccountIds = (jars ?? [])
+      .filter((j) => (j.currencyCode ?? 980) === 980)
+      .flatMap((j) => (j.monoJarId ? [j.monoJarId] : []));
+    return computeMonthlySaved({
+      assets: manualAssets,
+      from: `${kyivMonthPrefix}-01`,
+      to: `${next}-01`,
+      jarTransactions: transactions,
+      jarAccountIds,
+    });
+  }, [manualAssets, kyivMonthPrefix, jars, transactions]);
   useEffect(() => {
     if (nonUahManualAssetCount > 0) {
       logger.warn(
@@ -513,6 +532,7 @@ export function useOverviewData({ mono, storage }: UseOverviewDataParams) {
     dateLabel,
     spent,
     income,
+    savedThisMonth,
     todaySpent,
     todayIncome: todaySummary.incomeMinor / 100,
     dailyPlan,

@@ -49,7 +49,6 @@ export const floatingPromisesBaseline = [
   "apps/web/src/core/hub/HubChatPage.tsx",
   "apps/web/src/core/hub/HubSettingsPage.tsx",
   "apps/web/src/core/hub/chat/useChatSend.ts",
-  "apps/web/src/core/hub/dashboard/useMondayAutoDigest.ts",
   "apps/web/src/core/hub/search/useSearchEngine.test.tsx",
   "apps/web/src/core/hub/search/useSearchEngine.ts",
   "apps/web/src/core/hub/useFinykHubPreview.ts",

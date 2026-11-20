@@ -1041,7 +1041,6 @@ describe("TOOLS registry — структура нових tools", () => {
     "start_workout",
     "finish_workout",
     "log_measurement",
-    "add_program_day",
     "log_wellbeing",
     // Рутина
     "create_reminder",

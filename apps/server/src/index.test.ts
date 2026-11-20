@@ -375,9 +375,16 @@ describe("server entrypoint", () => {
     const unhandled = indexMocks.processOn.mock.calls.find(
       ([event]) => event === "unhandledRejection",
     )?.[1] as ((reason: unknown) => void) | undefined;
-    const uncaught = indexMocks.processOn.mock.calls.find(
+    // Обробників `uncaughtException` два: спершу ставить свій
+    // `startupFatal.ts` (#1706, виходить лише через 2 с), потім `index.ts`
+    // знімає його й ставить штатний. Перевіряємо штатний — останній.
+    // Без нового `vi.mock`: файл на стелі гейту `check-vi-mock-cap`.
+    const uncaughtCalls = indexMocks.processOn.mock.calls.filter(
       ([event]) => event === "uncaughtException",
-    )?.[1] as ((error: Error) => void) | undefined;
+    );
+    expect(uncaughtCalls).toHaveLength(2);
+    const uncaught = uncaughtCalls[uncaughtCalls.length - 1]?.[1] as
+      ((error: Error) => void) | undefined;
 
     unhandled?.(new Error("promise boom"));
     expect(indexMocks.loggerError).toHaveBeenCalledWith({

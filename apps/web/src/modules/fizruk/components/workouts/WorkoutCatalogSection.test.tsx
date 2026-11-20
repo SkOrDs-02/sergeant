@@ -8,7 +8,11 @@
  */
 import { describe, it, expect, vi, afterEach } from "vitest";
 import { render, screen, cleanup, fireEvent } from "@testing-library/react";
-import type { FizrukData } from "@sergeant/fizruk-domain";
+import {
+  recoveryConflictsForExercise,
+  type FizrukData,
+} from "@sergeant/fizruk-domain";
+import { messages } from "@shared/i18n/uk";
 import {
   WorkoutCatalogSection,
   type CatalogGroup,
@@ -73,7 +77,7 @@ function baseProps(
     handleExerciseInListClick: vi.fn(),
     setSelected: vi.fn(),
     recoveryConflictsForExercise: vi.fn(() => noWarning),
-    rec: { by: {} },
+    rec: { by: {}, injurySites: new Set<never>() },
     musclesUk: { pec: "Грудні" },
     ...overrides,
   };
@@ -382,6 +386,28 @@ describe("WorkoutCatalogSection — recovery warning", () => {
       />,
     );
     expect(screen.getByText("Мʼязи ще відновлюються")).toBeInTheDocument();
+  });
+
+  it("показує біль, коли активна позначка накриває вправу (ADR-0083)", () => {
+    // Справжня доменна функція, а не стаб: дефект був саме в тому, що
+    // виклик не передавав `rec.injurySites`, тож стаб його б не побачив.
+    const ex = {
+      ...makeEx("bench_press_barbell", "Жим лежачи"),
+      muscles: { primary: ["pectoralis_major"], secondary: [] },
+    } as unknown as FizrukData.RawExerciseDef;
+    render(
+      <WorkoutCatalogSection
+        {...baseProps({
+          grouped: [makeGroup("chest", [ex])],
+          open: { chest: true },
+          recoveryConflictsForExercise,
+          rec: { by: {}, injurySites: new Set(["shoulder"] as const) },
+        })}
+      />,
+    );
+    expect(
+      screen.getByText(messages.fizruk.recoveryWarnings.injury),
+    ).toBeInTheDocument();
   });
 
   it("hides ⚠ when there is no warning", () => {

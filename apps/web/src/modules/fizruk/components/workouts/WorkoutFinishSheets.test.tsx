@@ -274,7 +274,9 @@ describe("WorkoutFinishSheets — injury step", () => {
   // суглобів і обидві кнопки дій.
   it("показує суглоби без розкриття, а мʼязи — за ним", () => {
     renderSheets(makeFlash({ step: "injury" }));
-    expect(screen.getByText("Біль після тренування")).toBeInTheDocument();
+    expect(
+      screen.getByText("Позначити травму чи гострий біль"),
+    ).toBeInTheDocument();
 
     expect(screen.getByRole("button", { name: "Коліно" })).toBeInTheDocument();
     expect(screen.getByRole("button", { name: "Поперек" })).toBeInTheDocument();
@@ -340,11 +342,13 @@ describe("WorkoutFinishSheets — injury step", () => {
     renderSheets(makeFlash({ step: "injury" }));
 
     const dialog = screen.getByRole("dialog", {
-      name: "Біль після тренування",
+      name: "Позначити травму чи гострий біль",
     });
     expect(dialog.className).toContain("overscroll-contain");
 
-    const header = screen.getByText("Біль після тренування").parentElement;
+    const header = screen.getByText(
+      "Позначити травму чи гострий біль",
+    ).parentElement;
     expect(header?.className).toContain("sticky");
 
     const actionsRow = screen.getByRole("button", {
@@ -444,5 +448,49 @@ describe("WorkoutFinishSheets — summary step expanded", () => {
       screen.getByRole("button", { name: /Додати білок після тренування/ }),
     );
     expect(openHubModule).toHaveBeenCalledWith("nutrition", "log");
+  });
+});
+
+describe("WorkoutFinishSheets — трей тостів над панеллю (Фз-2)", () => {
+  const VAR = "--sgt-sheet-footer-inset";
+  const inset = () =>
+    document.documentElement.style.getPropertyValue(VAR).trim();
+
+  afterEach(() => {
+    document.documentElement.style.removeProperty(VAR);
+  });
+
+  it.each(["wellbeing", "injury", "summary"] as const)(
+    "крок «%s»: поки панель відкрита, її висота опублікована, тож тост «Повернутись у сесію» стає над кнопками",
+    (step) => {
+      renderSheets(makeFlash({ step }));
+      expect(inset()).toMatch(/^\d+px$/);
+    },
+  );
+
+  it("закриття панелі знімає інсет", () => {
+    const setFinishFlash = vi.fn();
+    const updateWorkout = vi.fn();
+    const view = renderSheets(
+      makeFlash({ step: "wellbeing" }),
+      setFinishFlash,
+      updateWorkout,
+    );
+    expect(inset()).not.toBe("");
+    view.rerender(
+      <WorkoutFinishSheets
+        finishFlash={null}
+        setFinishFlash={setFinishFlash}
+        updateWorkout={updateWorkout}
+      />,
+    );
+    expect(inset()).toBe("");
+  });
+
+  it("розмонтування (навігація геть) теж знімає інсет", () => {
+    const view = renderSheets(makeFlash({ step: "injury" }));
+    expect(inset()).not.toBe("");
+    view.unmount();
+    expect(inset()).toBe("");
   });
 });

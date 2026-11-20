@@ -24,6 +24,8 @@
 import type { SqliteMigrationClient } from "@sergeant/db-schema/migrate/sqlite";
 import {
   SKIP_REASONS,
+  isAutoMarkSource,
+  normalizeHabitCounts,
   parseHabitSkipKey,
   type Habit,
   type HabitSkip,
@@ -151,6 +153,8 @@ export interface SqliteRoutineStateCache {
   completionNotes: Record<string, string>;
   /** Третій стан дня — `habitId → dateKey → HabitSkip` (Хвиля 4, канон §5). */
   skips: Record<string, Record<string, HabitSkip>>;
+  /** Кроки лічильника — `habitId → dateKey → n` (міграція 170, Р-1 (а)). */
+  counts: Record<string, Record<string, number>>;
   refreshedAt: string | null;
 }
 
@@ -162,6 +166,7 @@ const EMPTY_STATE_CACHE: SqliteRoutineStateCache = {
   habitOrder: [],
   completionNotes: {},
   skips: {},
+  counts: {},
   refreshedAt: null,
 };
 
@@ -182,7 +187,7 @@ export async function refreshSqliteRoutineState(
 ): Promise<SqliteRoutineStateCache> {
   const seq = ++stateRefreshSeq;
   const localWrites = markRoutineLocalWrites();
-  const [habits, tags, categories, prefs, order, notes, skips] =
+  const [habits, tags, categories, prefs, order, notes, skips, counts] =
     await Promise.all([
       readHabits(client, userId),
       readTags(client, userId),
@@ -191,6 +196,7 @@ export async function refreshSqliteRoutineState(
       readHabitOrder(client, userId),
       readCompletionNotes(client, userId),
       readHabitSkips(client, userId),
+      readHabitCounts(client, userId),
     ]);
 
   if (seq <= statePublishedSeq) return stateCache;
@@ -211,6 +217,7 @@ export async function refreshSqliteRoutineState(
     habitOrder: order,
     completionNotes: notes,
     skips,
+    counts,
     // eslint-disable-next-line no-restricted-syntax -- `refreshedAt` — це UTC-мітка «коли кеш прогріли», а не доменний день: вона порівнюється лише сама з собою (warm/cold гейт), тож київська межа доби до неї не застосовна
     refreshedAt: new Date().toISOString(),
   };
@@ -244,7 +251,8 @@ export function setCachedSqliteRoutineState(
     | "habitOrder"
     | "completionNotes"
     | "skips"
-  >,
+  > &
+    Partial<Pick<SqliteRoutineStateCache, "counts">>,
 ): void {
   // Write-through publishes too (DCRUD-007b): an older in-flight
   // refresh must not clobber this just-saved state when it lands.
@@ -257,6 +265,7 @@ export function setCachedSqliteRoutineState(
     habitOrder: state.habitOrder,
     completionNotes: state.completionNotes,
     skips: state.skips,
+    counts: state.counts ?? {},
     // eslint-disable-next-line no-restricted-syntax -- `refreshedAt` — це UTC-мітка «коли кеш прогріли», а не доменний день: вона порівнюється лише сама з собою (warm/cold гейт), тож київська межа доби до неї не застосовна
     refreshedAt: new Date().toISOString(),
   };
@@ -336,6 +345,9 @@ interface HabitRow extends Record<string, unknown> {
   pause_intervals_json: string;
   weekly_target_history_json: string;
   created_at: string;
+  count_target: number | null;
+  count_unit: string | null;
+  auto_mark_source: string | null;
 }
 
 async function readHabits(
@@ -346,7 +358,8 @@ async function readHabits(
     `SELECT id, name, emoji, tag_ids_json, category_id,
             archived, paused, recurrence, start_date, end_date,
             time_of_day, reminder_times_json, weekdays_json,
-            pause_intervals_json, weekly_target_history_json, created_at
+            pause_intervals_json, weekly_target_history_json, created_at,
+            count_target, count_unit, auto_mark_source
        FROM routine_habits
       WHERE user_id = ? AND deleted_at IS NULL
       ORDER BY id ASC`,
@@ -372,6 +385,13 @@ async function readHabits(
       [],
     ),
     createdAt: r.created_at,
+    // Міграція 170: лише присутні значення, щоб звичка «так/ні» лишалась
+    // без цих ключів (`normalizeHabitCounterFields`).
+    ...(r.count_target != null ? { countTarget: r.count_target } : {}),
+    ...(r.count_unit ? { countUnit: r.count_unit } : {}),
+    ...(isAutoMarkSource(r.auto_mark_source)
+      ? { autoMarkSource: r.auto_mark_source }
+      : {}),
   }));
 }
 
@@ -491,6 +511,29 @@ async function readHabitSkips(
     out[parsed.habitId] = forHabit;
   }
   return out;
+}
+
+interface CountRow extends Record<string, unknown> {
+  habit_id: string;
+  date_key: string;
+  count: number;
+}
+
+/** Кроки лічильника (Р-1 (а)); нулі й сміття відкидає нормалізатор домену. */
+async function readHabitCounts(
+  client: SqliteMigrationClient,
+  userId: string,
+): Promise<Record<string, Record<string, number>>> {
+  const rows = await client.all<CountRow>(
+    `SELECT habit_id, date_key, count FROM routine_habit_counts
+      WHERE user_id = ? AND deleted_at IS NULL`,
+    [userId],
+  );
+  const raw: Record<string, Record<string, number>> = {};
+  for (const row of rows) {
+    (raw[row.habit_id] ??= {})[row.date_key] = Number(row.count);
+  }
+  return normalizeHabitCounts(raw);
 }
 
 /** Нерозпізнана причина деградує в `other`, а не валить читання. */

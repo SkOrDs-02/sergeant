@@ -8,8 +8,10 @@ import {
 import {
   buildPlacedItems,
   canonicalFoodKey,
+  matchFoodName,
   todayISODate,
 } from "@sergeant/nutrition-domain";
+import { mealGramsFromInput, pantryOfferHint } from "./nutritionPantryOffer";
 import { saveRecipeToBook } from "../../../modules/nutrition/lib/recipeBook";
 import { recordBodyWeight } from "../../profile/recordBodyWeight";
 import {
@@ -74,9 +76,10 @@ export function handleNutritionAction(
 ): ChatActionResult | undefined {
   switch (action.name) {
     case "log_meal": {
-      const { name, kcal, protein_g, fat_g, carbs_g } = (
+      const { name, kcal, protein_g, fat_g, carbs_g, amount_g } = (
         action as LogMealAction
       ).input;
+      const grams = mealGramsFromInput(amount_g);
       const todayKey = todayISODate();
       const mealId = generatePrefixedId("m");
       // `addLogEntry` runs the entry through `normalizeMeal`, filling the
@@ -87,6 +90,7 @@ export function handleNutritionAction(
         addLogEntry(loadNutritionLog(), todayKey, {
           id: mealId,
           name: name || "Без назви",
+          amount_g: grams,
           macros: {
             kcal: Number(kcal) || 0,
             protein_g: Number(protein_g) || 0,
@@ -95,7 +99,8 @@ export function handleNutritionAction(
           },
         }),
       );
-      const result = `Прийом їжі "${name || "Без назви"}" записано: ${formatNumberUk(Math.round(Number(kcal) || 0))} ккал`;
+      // Пропозиція списати з комори — факт для моделі, не тост (2026-11-19).
+      const result = `Прийом їжі "${name || "Без назви"}" записано: ${formatNumberUk(Math.round(Number(kcal) || 0))} ккал${pantryOfferHint(name || "", grams)}`;
       return {
         result,
         // `removeLogEntry` is idempotent (filters by id, drops the day when it
@@ -281,12 +286,11 @@ export function handleNutritionAction(
       // немає, і пошук в одній полиці означав би «не знайдено» для всього,
       // що лежить у холодильнику чи морозилці.
       const pantries = loadPantries();
-      const lower = rawName.toLowerCase();
+      // Ключ той самий, що в пропозиції після `log_meal` (`matchFoodName`):
+      // інакше чат запропонував би позицію, яку потім сам не знайде.
+      const key = matchFoodName(rawName);
       const placed = buildPlacedItems(pantries).find(
-        (it) =>
-          String(it.name || "")
-            .trim()
-            .toLowerCase() === lower,
+        (it) => matchFoodName(it.name) === key,
       );
       if (!placed) {
         return `Продукт "${rawName}" у коморі не знайдено.`;

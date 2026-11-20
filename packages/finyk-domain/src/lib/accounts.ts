@@ -47,6 +47,14 @@ export function isMonoDebt(acc: MonoAccount): boolean {
   return balance < 0;
 }
 
+/**
+ * Рахунок у гривні. Продукт UAH-only, доки немає канонічного курсу
+ * (канон finyk §13): валютні рахунки не входять ні в активи, ні в пасиви.
+ */
+export function isUahAccount(acc: MonoAccount): boolean {
+  return acc.currencyCode === (CURRENCY.UAH as number);
+}
+
 export function getMonthStart(): Date {
   const now = new Date();
   return new Date(now.getFullYear(), now.getMonth(), 1);
@@ -73,17 +81,17 @@ export function getMonoTotals(
   // Кредитки більше не виключені з balance — власні кошти зверху ліміту
   // (getMonoOwnFunds) враховуються в капітал, лише сам борг (creditLimit -
   // balance, коли додатний) лишається виключно в debt/«Пасиви» нижче.
-  const balance = visible
-    .filter((a) => a.currencyCode === (CURRENCY.UAH as number))
-    .reduce((sum, a) => {
-      const ownFunds = getMonoOwnFunds(a);
-      return ownFunds > 0 ? sum + ownFunds / 100 : sum;
-    }, 0);
+  const balance = visible.filter(isUahAccount).reduce((sum, a) => {
+    const ownFunds = getMonoOwnFunds(a);
+    return ownFunds > 0 ? sum + ownFunds / 100 : sum;
+  }, 0);
   // Приховані рахунки виключаємо і з balance, і з debt —
   // інакше при схованій кредитці `networth = balance - debt` займає
   // її борг, а сама кредитка не видна у списку.
+  // Борг, як і баланс, лише гривневий: інакше мінус на USD/EUR-рахунку
+  // ішов у пасиви 1:1 як гривні (аудит logic-46).
   const debt = visible
-    .filter((a) => isMonoDebt(a))
+    .filter((a) => isUahAccount(a) && isMonoDebt(a))
     .reduce((sum, a) => sum + getMonoDebt(a), 0);
   return { balance, debt };
 }

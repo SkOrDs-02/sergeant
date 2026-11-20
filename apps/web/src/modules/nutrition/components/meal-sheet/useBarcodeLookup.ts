@@ -1,5 +1,5 @@
 /**
- * Last validated: 2026-06-15
+ * Last validated: 2026-11-17
  * Status: Active
  */
 import {
@@ -11,6 +11,7 @@ import {
 import { isApiError } from "@shared/api";
 import {
   bindBarcodeToFood,
+  bindBarcodeToFoodIfFree,
   lookupFoodByBarcode,
   type FoodProduct,
 } from "../../lib/foodDb/foodDb";
@@ -47,6 +48,46 @@ export interface UseBarcodeLookupResult {
   setScannerOpen: Dispatch<SetStateAction<boolean>>;
   handleBarcodeLookup: (code: string) => Promise<void>;
   handleBarcodeBind: (code: string) => Promise<void>;
+  /**
+   * Замикає цикл «скан → не знайдено → додано» (канон §6): штрихкод, що
+   * в цьому аркуші дав 404, привʼязується до продукту, який людина тут же
+   * створила з етикетки, і лише до нього. Викликається в мить збереження
+   * запису.
+   */
+  bindMissedBarcode: (food: PickedFood | null) => void;
+  /**
+   * Код, що привʼяжеться до цього СВОГО продукту з пошуку під час збереження
+   * (рядок-підтвердження на кроці «fill», OD-27 Х-5); `null` — рядка немає.
+   */
+  pendingBarcodeBind: (food: PickedFood | null) => string | null;
+  /** «Скасувати» в рядку: цей код до цього продукту не привʼязувати. */
+  declineBarcodeBind: (food: PickedFood | null) => void;
+}
+
+/**
+ * Однозначний випадок привʼязки: продукт створено з етикетки в цьому ж
+ * аркуші після промаху (`unsaved`, ляже в базу разом із записом). Хибну
+ * привʼязку в UI не скасувати, тож наявний свій продукт із пошуку не
+ * привʼязується: людина могла кинути скан і записати щось інше (як це
+ * підтверджувати — рішення власника, канон §6). Базовий продукт (`gen_…`,
+ * `origin: "seed"`), зовнішній хіт і картка зі скану — тим паче ні.
+ */
+function isCreatedFromLabel(food: PickedFood | null): food is PickedFood {
+  if (!food || food.id == null || String(food.id) === "") return false;
+  return food.unsaved === true;
+}
+
+/**
+ * Свій продукт із локальної бази, уже збережений (OD-27 Х-5, рішення
+ * власника 2026-11-18): привʼязка лише після рядка-підтвердження зі
+ * «Скасувати». Штрихкод власний тримає лише такий продукт: базовий
+ * (`gen_…`, `origin: "seed"`) не привʼязується ніколи (канон §6), а
+ * зовнішній хіт і картка зі скану в локальній базі не лежать.
+ */
+function isOwnSavedFood(food: PickedFood | null): food is PickedFood {
+  if (!food || food.id == null || food.unsaved === true) return false;
+  const id = String(food.id);
+  return id !== "" && food.origin === "user" && !id.startsWith("gen_");
 }
 
 export function useBarcodeLookup({
@@ -60,6 +101,13 @@ export function useBarcodeLookup({
   const [barcodeNotice, setBarcodeNotice] =
     useState<BarcodeLookupNotice | null>(null);
   const [scannerOpen, setScannerOpen] = useState(false);
+  // Код, який не знайшовся ніде (404). Не `barcodeNotice`: картку «не
+  // знайдено» прибирає вже перехід на «Ввести вручну». Чинний, лише поки
+  // він і є поточний `barcode`: нове відкриття аркуша скидає `barcode` у
+  // "", і промах минулого відкриття ні до чого не привʼяжеться.
+  const [missedBarcode, setMissedBarcode] = useState<string | null>(null);
+  // `код|продукт`, для якого людина натиснула «Скасувати» в рядку привʼязки.
+  const [declinedBind, setDeclinedBind] = useState<string | null>(null);
   const lookupProduct = useBarcodeProductLookup();
 
   const handleBarcodeLookup = useCallback(
@@ -68,6 +116,8 @@ export function useBarcodeLookup({
       if (!code) return;
       setBarcodeStatus("Шукаю…");
       setBarcodeNotice(null);
+      setMissedBarcode(null);
+      setDeclinedBind(null);
 
       const localFound = await lookupFoodByBarcode(code);
       if (localFound) {
@@ -111,6 +161,7 @@ export function useBarcodeLookup({
       if (!p) {
         setBarcodeStatus("");
         setBarcodeNotice({ kind: "not-found", code });
+        setMissedBarcode(code);
         return;
       }
       if (!p.name) {
@@ -200,6 +251,44 @@ export function useBarcodeLookup({
     [pickedFood],
   );
 
+  const pendingBarcodeBind = useCallback(
+    (food: PickedFood | null) => {
+      if (!missedBarcode || missedBarcode !== barcode) return null;
+      if (!isOwnSavedFood(food)) return null;
+      return declinedBind === `${missedBarcode}|${String(food.id)}`
+        ? null
+        : missedBarcode;
+    },
+    [missedBarcode, barcode, declinedBind],
+  );
+
+  const declineBarcodeBind = useCallback(
+    (food: PickedFood | null) => {
+      if (missedBarcode && food?.id != null)
+        setDeclinedBind(`${missedBarcode}|${String(food.id)}`);
+    },
+    [missedBarcode],
+  );
+
+  const bindMissedBarcode = useCallback(
+    (food: PickedFood | null) => {
+      if (!missedBarcode || missedBarcode !== barcode) return;
+      // Привʼязка лише на цьому пристрої — приватний внесок (модель
+      // Cronometer, дослідження 2026-07-25): у спільний каталог не їде.
+      const id = String(food?.id ?? "");
+      if (isCreatedFromLabel(food)) {
+        void bindBarcodeToFood(missedBarcode, id);
+      } else if (pendingBarcodeBind(food) !== null) {
+        // Свій продукт: код, зайнятий іншим продуктом, не перезаписуємо.
+        void bindBarcodeToFoodIfFree(missedBarcode, id);
+      } else {
+        return;
+      }
+      setMissedBarcode(null);
+    },
+    [missedBarcode, barcode, pendingBarcodeBind],
+  );
+
   return {
     barcode,
     setBarcode,
@@ -211,5 +300,8 @@ export function useBarcodeLookup({
     setScannerOpen,
     handleBarcodeLookup,
     handleBarcodeBind,
+    bindMissedBarcode,
+    pendingBarcodeBind,
+    declineBarcodeBind,
   };
 }

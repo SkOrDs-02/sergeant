@@ -193,14 +193,19 @@ describe("useReceiptSave — local visibility write-through", () => {
     });
 
     expect(onReceiptLinked).toHaveBeenCalledWith("expense-uuid-1", 42);
-    expect(storage.addManualExpense).toHaveBeenCalledWith({
-      id: "expense-uuid-1",
-      date: "2026-08-17",
-      description: "Сільпо",
-      amount: 150.75,
-      category: "groceries",
-      kind: "expense",
-    });
+    expect(storage.addManualExpense).toHaveBeenCalledWith(
+      {
+        id: "expense-uuid-1",
+        date: "2026-08-17",
+        description: "Сільпо",
+        amount: 150.75,
+        category: "groceries",
+        kind: "expense",
+      },
+      undefined,
+      // Скан чека — дія людини: витрата відмічає звичку в Рутині.
+      { userAction: true },
+    );
   });
 
   it("does NOT write through for a mono-linked receipt (already visible via mono sync)", async () => {

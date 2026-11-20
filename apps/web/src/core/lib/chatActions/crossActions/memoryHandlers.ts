@@ -1,5 +1,6 @@
 import {
   CATEGORY_META,
+  isMemoryBankReady,
   readMemoryEntries,
   removeMemoryEntry,
   upsertMemoryFact,
@@ -12,7 +13,13 @@ import type {
   RememberAction,
 } from "../types";
 
+// B24: поки шифрований банк не розібрано, `readMemoryEntries` не відображає
+// сховище. Інструменти тоді чесно кажуть, що памʼять ще завантажується,
+// а не «порожньо» чи «не знайдено», і нічого не пишуть.
+const MEMORY_NOT_READY = "Памʼять ще завантажується. Спробуй ще раз за мить.";
+
 export function remember(action: RememberAction): ChatActionResult {
+  if (!isMemoryBankReady()) return MEMORY_NOT_READY;
   const { fact, category } = (action as RememberAction).input || {};
   try {
     const prevEntries = readMemoryEntries();
@@ -32,6 +39,7 @@ export function remember(action: RememberAction): ChatActionResult {
     return {
       result: resultStr,
       undo: () => {
+        if (!isMemoryBankReady()) return;
         if (result.created) {
           const cur = readMemoryEntries();
           const removed = removeMemoryEntry(cur, entryId);
@@ -52,39 +60,23 @@ export function remember(action: RememberAction): ChatActionResult {
   }
 }
 
-/** Регістр, пробіли й лапки-обгортки не роблять факт іншим. */
-function normalizeFact(raw: string): string {
-  return raw
-    .trim()
-    .replace(/^[«"'“]+|[»"'”]+$/g, "")
-    .replace(/\s+/g, " ")
-    .toLowerCase();
-}
-
 export function forget(action: ForgetAction): string {
   const { fact_id } = (action as ForgetAction).input || {};
   const id = (fact_id || "").trim();
   if (!id) return "Потрібен id факту для видалення.";
-  const entries = readMemoryEntries();
-  let result = removeMemoryEntry(entries, id);
-  if (!result.removed) {
-    // Модель на «забудь X» часто шле в `fact_id` сам ТЕКСТ факту, а не id
-    // (живий прогін `full-2026-11-19`: «Забуто, не вийшло», факт лишився).
-    // Людина бачила цей текст у діалозі підтвердження, тож видаляємо за
-    // точним збігом тексту — але лише однозначним, інакше чесна відмова.
-    const wanted = normalizeFact(id);
-    const matches = entries.filter((e) => normalizeFact(e.fact) === wanted);
-    if (matches.length === 1 && matches[0]) {
-      result = removeMemoryEntry(entries, matches[0].id);
-    }
-  }
-  if (!result.removed) return `Факт з id ${id} не знайдено.`;
+  if (!isMemoryBankReady()) return MEMORY_NOT_READY;
+  const result = removeMemoryEntry(readMemoryEntries(), id);
+  // Видалення лише за точним id; текст факту в `fact_id` сюди не влучає.
+  // Підказка веде наступний хід моделі до справжнього id (стенд 2026-11-18).
+  if (!result.removed)
+    return `Факт не знайдено (id:${id}). Візьми id факту з my_profile.`;
   writeMemoryEntries(result.entries);
   return `Забув: ${result.removed.fact}`;
 }
 
 export function myProfile(action: MyProfileAction): string {
   const { category } = (action as MyProfileAction).input || {};
+  if (!isMemoryBankReady()) return MEMORY_NOT_READY;
   const profile = readMemoryEntries();
   if (profile.length === 0) return "Профіль памʼяті порожній.";
   const cat = category?.trim().toLowerCase();

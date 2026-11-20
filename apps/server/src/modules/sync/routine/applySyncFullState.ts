@@ -16,6 +16,7 @@ import {
   isValidRecurrence,
   parseOptionalDayKey,
 } from "../../../lib/routineScheduleFields.js";
+import { readHabitCounterFields } from "./habitCounterFields.js";
 
 /**
  * `routine_habits.recurrence` / `start_date` / `end_date` — TEXT без CHECK,
@@ -100,6 +101,10 @@ export async function applyRoutineHabits(
 
   const schedule = readHabitScheduleFields(row);
   if ("reject" in schedule) return schedule.reject;
+  // Лічильник і автовідмітка (міграція 170). Відсутній ключ = не чіпати
+  // колонку (AI-DANGER у `habitCounterFields.ts`).
+  const counter = readHabitCounterFields(row);
+  if ("reject" in counter) return counter.reject;
 
   const emoji = typeof row["emoji"] === "string" ? row["emoji"] : "";
   const tagIds = readJsonbField(row, "tag_ids", "tag_ids_json", "[]");
@@ -138,9 +143,11 @@ export async function applyRoutineHabits(
          (id, user_id, name, emoji, tag_ids, category_id,
           archived, paused, recurrence, start_date, end_date,
           time_of_day, reminder_times, weekdays, pause_intervals,
-          weekly_target_history, created_at, updated_at, deleted_at)
+          weekly_target_history, created_at, updated_at, deleted_at,
+          count_target, count_unit, auto_mark_source)
        VALUES ($1, $2, $3, $4, $5::jsonb, $6, $7, $8, $9, $10, $11,
-               $12, $13::jsonb, $14::jsonb, $15::jsonb, $16::jsonb, $17, $18, $19)`,
+               $12, $13::jsonb, $14::jsonb, $15::jsonb, $16::jsonb, $17, $18, $19,
+               $20, $21, $22)`,
       [
         id,
         userId,
@@ -161,6 +168,9 @@ export async function applyRoutineHabits(
         createdAt ?? clientTs,
         clientTs,
         deletedAt ?? null,
+        counter.countTarget ?? null,
+        counter.countUnit ?? null,
+        counter.autoMarkSource ?? null,
       ],
     );
   } else {
@@ -173,7 +183,10 @@ export async function applyRoutineHabits(
              reminder_times = $11::jsonb, weekdays = $12::jsonb,
              pause_intervals = $13::jsonb,
              weekly_target_history = $14::jsonb,
-             updated_at = $15, deleted_at = $16
+             updated_at = $15, deleted_at = $16,
+             count_target = CASE WHEN $19::boolean THEN $20::integer ELSE count_target END,
+             count_unit = CASE WHEN $21::boolean THEN $22::text ELSE count_unit END,
+             auto_mark_source = CASE WHEN $23::boolean THEN $24::text ELSE auto_mark_source END
        WHERE id = $17 AND user_id = $18 AND updated_at < $15`,
       [
         name,
@@ -194,6 +207,12 @@ export async function applyRoutineHabits(
         deletedAt ?? null,
         id,
         userId,
+        counter.countTarget !== undefined,
+        counter.countTarget ?? null,
+        counter.countUnit !== undefined,
+        counter.countUnit ?? null,
+        counter.autoMarkSource !== undefined,
+        counter.autoMarkSource ?? null,
       ],
     );
   }

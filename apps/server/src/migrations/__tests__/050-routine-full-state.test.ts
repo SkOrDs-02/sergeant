@@ -227,6 +227,11 @@ describe("050_routine_full_state migration", () => {
         // 135_routine_weekly_target_history.sql — історія тижневої цілі для
         // `recurrence='flexible'`. Так само фізично додається в кінець.
         "weekly_target_history",
+        // 170_routine_habit_counter_and_auto_mark.sql — ціль і одиниця
+        // лічильника та джерело автовідмітки. Теж у кінці.
+        "count_target",
+        "count_unit",
+        "auto_mark_source",
       ]);
 
       const byName = Object.fromEntries(cols.map((c) => [c.name, c]));
@@ -463,6 +468,11 @@ describe("050_routine_full_state migration", () => {
       // тут, інакше `before` матиме колонку, а `after` — ні. Повний набір:
       // `grep -l routine_habits apps/server/src/migrations/*.sql`.
       await execSqlFile(pool, "135_routine_weekly_target_history.sql");
+      // 170_routine_habit_counter_and_auto_mark.sql — те саме: три колонки
+      // лічильника й автовідмітки в `routine_habits`. Файл ідемпотентний
+      // (`ADD COLUMN IF NOT EXISTS`, `CREATE TABLE IF NOT EXISTS`), тож
+      // повторний накат не чіпає вже наявну `routine_habit_counts`.
+      await execSqlFile(pool, "170_routine_habit_counter_and_auto_mark.sql");
 
       const after = {
         tables: await listFullStateTables(pool),

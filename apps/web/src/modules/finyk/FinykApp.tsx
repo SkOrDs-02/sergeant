@@ -23,6 +23,7 @@ import { formatMoney, generatePrefixedId } from "@sergeant/shared";
 import type { TxSplit } from "@sergeant/finyk-domain/domain/types";
 import { manualLinkKey } from "@sergeant/finyk-domain/domain/debtLinkKeys";
 import { showUndoToast } from "@shared/lib/ui/undoToast";
+import { showManualEntryAddedToast } from "./lib/manualEntryAddedToast";
 import { tryShowCrossModulePrompt } from "@shared/lib/modules/crossModulePrompt";
 import { openHubModuleWithAction } from "@shared/lib/modules/hubNav";
 import { Overview } from "./pages/Overview";
@@ -44,6 +45,7 @@ import { FinykLoginScreen } from "./components/FinykLoginScreen";
 import { FinykScanEntryPoints } from "./components/FinykScanEntryPoints";
 import { NAV_ICONS, NAV_IDS, NAV_ITEMS } from "./components/finykNav";
 import { useFinykRoute, useFinykQueryParam } from "./hooks/useFinykRoute";
+import { FINYK_FOCUS_TX_PARAM } from "./lib/finykRouter";
 import { useStorageWarmGate } from "./hooks/useStorageWarmGate";
 import { useUnifiedFinanceData } from "./hooks/useUnifiedFinanceData";
 import { useCashHistoryBackfill } from "./hooks/useCashHistoryBackfill";
@@ -113,6 +115,14 @@ export default function App({
   const focusLimitCategoryId = useFinykQueryParam("cat");
   const focusAssetSection = useFinykQueryParam("section");
   const focusTransactionDate = useFinykQueryParam("date");
+  // Ф-2 (а): `?tx=<id>` з хабового пошуку відкриває саму операцію. Після
+  // відкриття параметр прибираємо через `replace`, щоб «Назад» не вертав
+  // на посилання, яке знову відкрило б аркуш.
+  const focusTxId = useFinykQueryParam(FINYK_FOCUS_TX_PARAM);
+  const clearFocusTx = useCallback(
+    () => navigate("transactions", { replace: true }),
+    [navigate],
+  );
 
   // First-run state
   const { firstRun: firstRunFinyk, markSeen: markFinykSeen } =
@@ -303,6 +313,8 @@ export default function App({
               setEditingManualExpenseId(String(id));
               setShowExpenseSheet(true);
             }}
+            focusTxId={focusTxId}
+            onFocusTxConsumed={clearFocusTx}
           />
         </SectionErrorBoundary>
       );
@@ -400,15 +412,18 @@ export default function App({
       toast.success(isIncome ? "Надходження оновлено." : "Витрату оновлено.");
       return "updated";
     }
-    // Новий запис без id: генеруємо його тут, щоб прикріпити теги до тієї ж операції.
-    const newId = expense?.tags?.length ? generatePrefixedId("mx") : undefined;
-    storage.addManualExpense(
-      newId ? { ...expense, id: newId } : (expense ?? {}),
-    );
-    if (newId && expense?.tags) {
+    // Новий запис без id: генеруємо його тут, щоб прикріпити теги до тієї ж
+    // операції і щоб «Скасувати» в тості прибрало саме її.
+    const newId = generatePrefixedId("mx");
+    const hasTags = Boolean(expense?.tags?.length);
+    // Новий запис із форми — дія людини: відмічає звичку в Рутині.
+    storage.addManualExpense({ ...expense, id: newId }, undefined, {
+      userAction: true,
+    });
+    if (hasTags && expense?.tags) {
       storage.setTxTags(manualLinkKey(newId), expense.tags);
     }
-    toast.success(isIncome ? "Надходження додано." : "Витрату додано.");
+    showManualEntryAddedToast(toast, storage, { id: newId, isIncome, hasTags });
     return "added";
   };
 

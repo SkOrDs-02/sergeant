@@ -1,9 +1,12 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { isMonoDebt } from "../utils";
+import { isUahAccount } from "@sergeant/finyk-domain/lib/accounts";
 import {
   computeAssetsSummary,
+  countExcludedManualAssets,
   filterVisibleAccounts,
 } from "@sergeant/finyk-domain/domain/assets/aggregates";
+import { toDomainAsset } from "../lib/manualAssetAdapter";
 import { computeFinykSchedule, startOfToday } from "../lib/upcomingSchedule";
 import { useDebtAutoLink } from "../hooks/useDebtAutoLink";
 import { motionScrollBehavior } from "@shared/lib/ui/motion";
@@ -207,13 +210,9 @@ export function useAssetsState({
   const assetsSummary = computeAssetsSummary({
     accounts: monoAccounts,
     hiddenAccounts,
-    manualAssets: manualAssets.map((asset) => ({
-      id: asset.id,
-      name: asset.name ?? "",
-      amount: asset.amount,
-      currency: asset.currency ?? "",
-      ...(asset.emoji !== undefined ? { emoji: asset.emoji } : {}),
-    })),
+    // Увесь запис, а не вибрані поля: тип, журнал і курс рахунку-активу
+    // (спека finyk-savings-assets) теж визначають вартість.
+    manualAssets: manualAssets.map(toDomainAsset),
     manualDebts,
     receivables,
     transactions,
@@ -236,15 +235,15 @@ export function useAssetsState({
     networth,
     totalAssets,
   } = assetsSummary;
-  // Той самий предикат, що в `sumManualAssetsUAH`: у капітал іде лише
-  // `currency === "UAH"`, решту картка капіталу мусить назвати вголос.
-  const nonUahManualAssetCount = manualAssets.filter(
-    (a) => a.currency !== "UAH",
-  ).length;
+  // Той самий предикат, що в `sumManualAssetsUAH`: негривневий актив без
+  // курсу в капітал не йде, і картка капіталу мусить назвати його вголос.
+  const nonUahManualAssetCount = countExcludedManualAssets(
+    manualAssets.map(toDomainAsset),
+  );
   const monoDebtAccounts = filterVisibleAccounts(
     monoAccounts,
     hiddenAccounts,
-  ).filter((a) => isMonoDebt(a));
+  ).filter((a) => isUahAccount(a) && isMonoDebt(a));
 
   const [todayStart] = useState<Date>(startOfToday);
 

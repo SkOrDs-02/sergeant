@@ -165,7 +165,7 @@ export function buildHubCalendarEvents(
     state.habitOrder || [],
   );
   for (const date of days) {
-    for (const h of activeHabits) {
+    for (const [habitIndex, h] of activeHabits.entries()) {
       const completions = state.completions[h.id] || [];
       // Гнучка звичка зникає зі списку, щойно тиждень добрано. Лічильник
       // виключає сам цей день — інакше закритий тиждень 3/3 стер би з
@@ -193,7 +193,10 @@ export function buildHubCalendarEvents(
         title: h.name,
         subtitle: habitSubtitle(h, date, completed, timePart, weekDoneCount),
         tagLabels,
-        sortKey: `${date} 1 ${h.name}`,
+        // Позиція у ручному порядку звичок (`habitOrder`), а не назва:
+        // інакше фінальне сортування нижче вирівнювало б список за алфавітом
+        // і перекривало порядок, який людина задала у вкладці «Звички».
+        sortKey: `${date} 1 ${String(habitIndex).padStart(6, "0")} ${h.name}`,
         habitId: h.id,
         completed,
         note,

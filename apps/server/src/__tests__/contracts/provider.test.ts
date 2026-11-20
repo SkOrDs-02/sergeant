@@ -326,7 +326,11 @@ describe("Pact provider replay — consumer=sergeant-api-client, provider=sergea
     // маршрути на провайдері не реплеяться (див. шапку файлу): поведінку
     // тримають `modules/sync/syncOpLogFloor.test.ts` і
     // `syncV2Snapshot.integration.test.ts`.
-    expect(pact.interactions).toHaveLength(93);
+    // 96, не 93: +3 інтеракції ручного Premium (спека
+    // manual-premium-request.md) - `access.manualAccess` на вже покритому
+    // `GET /billing/status` і дві на НОВОМУ маршруті
+    // `POST /billing/manual-access` (200 і 409), тож росте й `expectedRoutes`.
+    expect(pact.interactions).toHaveLength(96);
     const expectedRoutes = new Set([
       // PR-42 baseline (5)
       "GET /api/v1/me",
@@ -415,6 +419,8 @@ describe("Pact provider replay — consumer=sergeant-api-client, provider=sergea
       "POST /api/v1/silpo/receipts/rcpt-pact-0001/pantry-release",
       // хеш стану sync (ADR-0106, крок 1): 1 інтеракція / 1 маршрут
       "GET /api/v2/sync/state-hash",
+      // ручний Premium з пейволу: 2 інтеракції / 1 новий маршрут
+      "POST /api/v1/billing/manual-access",
     ]);
     const actualRoutes = new Set(
       pact.interactions.map((i) => `${i.request.method} ${i.request.path}`),
@@ -480,6 +486,11 @@ describe("Pact provider replay — consumer=sergeant-api-client, provider=sergea
       healthDataConsent: boolean;
       activeModules: string[] | null;
       hubPrefs: Record<string, unknown> | null;
+      timeZone: string | null;
+      quietHoursEnabled: boolean;
+      quietHoursStartMin: number;
+      quietHoursEndMin: number;
+      pushMonoTransactions: boolean;
       updatedAt: string | null;
     };
 
@@ -504,6 +515,12 @@ describe("Pact provider replay — consumer=sergeant-api-client, provider=sergea
           // серіалізатор — `hubPrefs: null` («сервер не знає, лиши
           // локальні»), НЕ `{}` («знає, і всі дефолтні»).
           hub_prefs: expected.hubPrefs,
+          // Міграція 168: пояс, тихі години і тумблер Monobank.
+          time_zone: expected.timeZone,
+          quiet_hours_enabled: expected.quietHoursEnabled,
+          quiet_hours_start_min: expected.quietHoursStartMin,
+          quiet_hours_end_min: expected.quietHoursEndMin,
+          push_mono_transactions: expected.pushMonoTransactions,
           updated_at: expected.updatedAt,
         },
       ],
@@ -524,6 +541,10 @@ describe("Pact provider replay — consumer=sergeant-api-client, provider=sergea
     // серверних налаштувань немає — інакше клієнт не відрізнить «не знаю»
     // від «знаю, і все дефолтне», і затре локальні налаштування.
     expect(res.body).toHaveProperty("hubPrefs", null);
+    // Міграція 168: ключі присутні завжди - веб за їх відсутністю впізнає
+    // старий сервер і не показує контролів, які нічого не зберегли б.
+    expect(res.body).toHaveProperty("timeZone", "America/New_York");
+    expect(res.body).toHaveProperty("pushMonoTransactions", false);
   });
 
   // ── GET /api/v1/me/profile ─────────────────────────────────────────────────
@@ -687,7 +708,7 @@ describe("Pact provider replay — consumer=sergeant-api-client, provider=sergea
   // ── GET /api/v1/mono/sync-state ────────────────────────────────────────────
   //
   // Handler runs **two** sequential SQL reads against `pool.query`:
-  //   1) SELECT status, webhook_registered_at, last_event_at, last_backfill_at FROM mono_connection
+  //   1) SELECT status, webhook_registered_at, last_event_at, last_backfill_at, created_at FROM mono_connection
   //   2) SELECT COUNT(*)::text AS count FROM mono_account
   //
   // We canned-respond in order so the handler assembles the exact wire
@@ -701,6 +722,7 @@ describe("Pact provider replay — consumer=sergeant-api-client, provider=sergea
       lastEventAt: string | null;
       lastBackfillAt: string | null;
       accountsCount: number;
+      connectedAt?: string | null;
     };
 
     getSessionUserMock.mockResolvedValue({ id: "user-pact-001" });
@@ -709,6 +731,9 @@ describe("Pact provider replay — consumer=sergeant-api-client, provider=sergea
         rows: [
           {
             status: expected.status,
+            created_at: expected.connectedAt
+              ? new Date(expected.connectedAt)
+              : null,
             // webhookActive=true iff status='active' AND webhook_registered_at != null.
             webhook_registered_at: expected.webhookActive
               ? new Date("2026-05-10T00:00:00.000Z")

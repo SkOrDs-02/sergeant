@@ -35,6 +35,7 @@ import {
   applyRoutineStreaks,
 } from "./routine/applySync.js";
 import { applyRoutineCompletionEvents } from "./routine/applyCompletionEvents.js";
+import { applyRoutineHabitCounts } from "./routine/applyHabitCounts.js";
 import {
   applyRoutineCompletionNotes,
   applyRoutineHabitSkips,
@@ -60,6 +61,7 @@ import {
   applyFizrukWorkoutTemplates,
 } from "./fizruk/applySyncFullState.js";
 import { applyFizrukInjuries } from "./fizruk/applyInjuries.js";
+import { applyFizrukExercisePrefs } from "./fizruk/applyExercisePrefs.js";
 import {
   applyNutritionMeals,
   applyNutritionPantries,
@@ -84,6 +86,10 @@ import {
 } from "./finyk/applySync.js";
 import { applyFinykTxNotes } from "./finyk/applyTxNotes.js";
 import { applyFinykTxTags } from "./finyk/applyTxTags.js";
+import {
+  appliedRetentionDays,
+  isIncrementPastReplayWindow,
+} from "./staleIncrementGuard.js";
 
 export { APPLY_REJECT_REASONS, ENGINE_REJECT_REASONS };
 export type { ApplyRejectReason, EngineRejectReason, RejectReason };
@@ -152,6 +158,8 @@ const OP_LOG_TABLE_REGISTRY: Record<string, ApplyFn> = {
   routine_completion_notes: applyRoutineCompletionNotes,
   // Хвиля 4 — третій стан дня «не зміг з причиною» (канон §5).
   routine_habit_skips: applyRoutineHabitSkips,
+  // Міграція 170 (Р-1 (а)): кроки лічильника звички за день.
+  routine_habit_counts: applyRoutineHabitCounts,
   // W1-ROUTINE-APPEND стадія 1 — append-only журнал відміток. `op='update'`
   // / `'delete'` відхиляються з `append_only_violation`; читачів у цій
   // стадії нема.
@@ -173,6 +181,8 @@ const OP_LOG_TABLE_REGISTRY: Record<string, ApplyFn> = {
   // значення клієнт відкидає в `activeInjurySites`, тобто воно деградує в
   // «нічого не блокує», а не в помилку.
   fizruk_injuries: applyFizrukInjuries,
+  // Міграція 173 (спека типу виміру, Р-2): тип вправи, обраний людиною.
+  fizruk_exercise_prefs: applyFizrukExercisePrefs,
   nutrition_meals: applyNutritionMeals,
   nutrition_pantries: applyNutritionPantries,
   nutrition_pantry_items: applyNutritionPantryItems,
@@ -390,6 +400,21 @@ export async function syncV2Push(req: Request, res: Response): Promise<void> {
       ) {
         status = "rejected";
         reason = "op_not_supported";
+      }
+
+      // ADR-0105 §2: ключ ідемпотентності старшого `increment` чистка вже
+      // могла видалити, і повтор подвоїв би лічильник (`staleIncrementGuard`).
+      if (
+        status === "applied" &&
+        op.op === "increment" &&
+        isIncrementPastReplayWindow(
+          clientTs,
+          Date.now(),
+          appliedRetentionDays(),
+        )
+      ) {
+        status = "rejected";
+        reason = "stale_increment";
       }
 
       // `U+0000` / одинокий сурогат у `row` jsonb-журнал не прийме. Ловимо ДО

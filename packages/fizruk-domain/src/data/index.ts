@@ -47,6 +47,10 @@ export interface RawExerciseDef {
   /** MET вправи — вхід оцінки витрат; проставляється
    *  `scripts/fizruk/assign-exercise-met.mjs`. */
   met?: number;
+  /** Тип виміру за замовчуванням (`ExerciseMeasure`); проставляється
+   *  `scripts/fizruk/assign-exercise-measure.mjs`. Рядок, а не union: JSON
+   *  типізується ширше, читай через `catalogMeasure`. */
+  measure?: string;
   muscles?: { primary?: string[]; secondary?: string[] };
   equipment?: string[];
   aliases?: string[];

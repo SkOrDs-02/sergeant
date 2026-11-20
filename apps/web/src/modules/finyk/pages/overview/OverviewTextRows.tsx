@@ -20,6 +20,11 @@ export interface OverviewTextRowsProps {
   recurringInThisMonth: number;
   unknownOutCount: number;
   showBalance: boolean;
+  /**
+   * «Відкладено за місяць», грн: внески − повернення в рахунках-активах +
+   * чисте поповнення банок (спека finyk-savings-assets). `0` — рядка немає.
+   */
+  savedThisMonth?: number | undefined;
 }
 
 /** Month income, forecast and scheduled cash flows on one neutral panel.
@@ -34,6 +39,7 @@ const OverviewTextRowsImpl = function OverviewTextRows({
   recurringInThisMonth,
   unknownOutCount,
   showBalance,
+  savedThisMonth = 0,
 }: OverviewTextRowsProps) {
   // Той самий контракт, що й колишній `MonthPulseCard.showForecastBlock` /
   // `showForecastNumber` — переносимо ОБИДВІ умови, інакше прогноз зникає
@@ -82,6 +88,15 @@ const OverviewTextRowsImpl = function OverviewTextRows({
             "••••"
           )}
         </p>
+        {savedThisMonth !== 0 && showBalance && (
+          <p
+            className="text-style-caption text-muted mt-0.5"
+            title={messages.finyk.monthlySaved.hint}
+          >
+            {messages.finyk.monthlySaved.label}{" "}
+            <Money amount={savedThisMonth} signed />
+          </p>
+        )}
         {(recurringOutThisMonth > 0 || recurringInThisMonth > 0) &&
           showBalance && (
             <p className="text-style-caption text-muted mt-0.5 leading-relaxed">

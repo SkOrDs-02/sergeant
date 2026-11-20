@@ -133,13 +133,23 @@ async function flushMicrotasks(): Promise<void> {
   for (let i = 0; i < 5; i++) await Promise.resolve();
 }
 
+// Годинник нагадувань — годинник ПРИСТРОЮ (спека
+// notifications-quiet-hours-and-device-time, ADR-0078), а не Київ. Київські
+// фікстури нижче лишаються чинними для пристрою, що стоїть у Києві: пояс
+// пристрою перемикаємо тут (Node перечитує `process.env.TZ` на льоту),
+// бо `vitest.config.js` пінить `TZ=UTC`.
+const ORIGINAL_TZ = process.env["TZ"];
+
 beforeEach(() => {
+  process.env["TZ"] = "Europe/Kyiv";
   store.clear();
   vi.useFakeTimers();
   vi.setSystemTime(KYIV_NOW);
 });
 
 afterEach(() => {
+  if (ORIGINAL_TZ === undefined) delete process.env["TZ"];
+  else process.env["TZ"] = ORIGINAL_TZ;
   // Drop the recursive scheduler timer so it can't leak into the next test.
   vi.clearAllTimers();
   vi.useRealTimers();
@@ -182,6 +192,24 @@ describe("cleanupStaleRoutineNotifyKeys", () => {
     // same-day key is retained and the 2-day-old key is purged.
     expect(store.has(yesterdayKyiv)).toBe(true);
     expect(store.has(twoDaysAgo)).toBe(false);
+  });
+});
+
+describe("cleanupStaleRoutineNotifyKeys — день пристрою", () => {
+  it("рахує cutoff за днем пристрою, а не за Києвом", () => {
+    // 2026-06-04 01:30 у Києві, але 2026-06-03 18:30 у Нью-Йорку.
+    process.env["TZ"] = "America/New_York";
+    vi.setSystemTime(KYIV_BOUNDARY);
+    const deviceYesterday = `${ROUTINE_NOTIFY_PREFIX}h1_08:00_2026-06-02`;
+    const older = `${ROUTINE_NOTIFY_PREFIX}h1_08:00_2026-06-01`;
+    store.set(deviceYesterday, "1");
+    store.set(older, "1");
+
+    cleanupStaleRoutineNotifyKeys(1); // cutoff = 2026-06-02 (день пристрою)
+
+    // Київський cutoff 2026-06-03 видалив би й ключ 2026-06-02.
+    expect(store.has(deviceYesterday)).toBe(true);
+    expect(store.has(older)).toBe(false);
   });
 });
 

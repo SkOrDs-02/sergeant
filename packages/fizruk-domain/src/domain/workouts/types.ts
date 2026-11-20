@@ -70,6 +70,8 @@ export interface WorkoutCatalogGroup {
 /** Aggregated summary of a single workout (used by journal rows). */
 export interface WorkoutSummary {
   itemCount: number;
+  /** Вправи з хоча б одним зарахованим підходом (`computeWorkoutDoneItemCount`). */
+  doneItemCount: number;
   setCount: number;
   tonnageKg: number;
   durationSec: number | null;
@@ -88,11 +90,20 @@ export interface WorkoutSummary {
 export interface WorkoutSetLike {
   weightKg?: unknown;
   reps?: unknown;
+  /** Секунди й метри ОДНОГО підходу (тип виміру на час / дистанцію). */
+  durationSec?: unknown;
+  distanceM?: unknown;
 }
 
 export interface WorkoutItemLike {
   type?: string | undefined;
+  /** Тип виміру (`measure.ts`); відсутній = запис до фічі. */
+  measure?: unknown;
   sets?: ReadonlyArray<WorkoutSetLike | null | undefined> | undefined;
+  /** Час на вправі: для силової — ознака утримання (`setCompletion.ts`). */
+  durationSec?: unknown;
+  /** Дистанція на старому item-і без підходів (`computeWorkoutDoneItemCount`). */
+  distanceM?: unknown;
 }
 
 export interface WorkoutSummaryInput {

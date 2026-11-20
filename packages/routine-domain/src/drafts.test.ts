@@ -11,6 +11,7 @@ import {
   routineTodayDate,
   validateHabitDraft,
 } from "./drafts.js";
+import { dateKeyFromDate } from "./dateKeys.js";
 import type { Habit } from "./types.js";
 
 describe("routine-domain/drafts", () => {
@@ -206,5 +207,58 @@ describe("routine-domain/drafts", () => {
       expect(matchReminderPreset(["не-час"])).toBeNull();
       expect(matchReminderPreset(["25:00"])).toBeNull();
     });
+  });
+});
+
+describe("habitDraftToPatch — історія тижневої цілі (R2)", () => {
+  const base = {
+    name: "Біг",
+    emoji: "",
+    tagIds: [],
+    categoryId: null,
+    recurrence: "flexible" as const,
+    startDate: "2026-01-05",
+    endDate: "",
+    timeOfDay: "",
+    reminderTimes: [],
+    weekdays: [],
+    paused: false,
+  };
+
+  it("нова звичка: ціль діє з дати початку", () => {
+    const p = habitDraftToPatch({
+      ...base,
+      weeklyTarget: 5,
+      weeklyTargetHistory: [],
+    });
+    expect(p.weeklyTargetHistory).toEqual([{ from: "2026-01-05", target: 5 }]);
+  });
+
+  it("редагування зі зміною цілі дописує інтервал із сьогодні, не переписуючи минуле", () => {
+    const today = dateKeyFromDate(routineTodayDate());
+    const p = habitDraftToPatch(
+      {
+        ...base,
+        weeklyTarget: 5,
+        weeklyTargetHistory: [{ from: "2026-01-05", target: 3 }],
+      },
+      { editing: true },
+    );
+    expect(p.weeklyTargetHistory).toEqual([
+      { from: "2026-01-05", target: 3 },
+      { from: today, target: 5 },
+    ]);
+  });
+
+  it("редагування без зміни цілі не чіпає історію", () => {
+    const hist = [
+      { from: "2026-01-05", target: 3 },
+      { from: "2026-02-02", target: 4 },
+    ];
+    const p = habitDraftToPatch(
+      { ...base, weeklyTarget: 4, weeklyTargetHistory: hist },
+      { editing: true },
+    );
+    expect(p.weeklyTargetHistory).toEqual(hist);
   });
 });

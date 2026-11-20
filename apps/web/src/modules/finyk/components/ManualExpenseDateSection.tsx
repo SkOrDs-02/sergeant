@@ -27,7 +27,7 @@
  * ловили у формах Фініка і в `LogPastWorkoutSheet`; рецепт —
  * `docs/start/instructions/fix-mobile-horizontal-overflow.md`.
  */
-import { useState } from "react";
+import { useState, type ReactNode } from "react";
 import type { UseFormRegister } from "react-hook-form";
 import {
   DateScrubber,
@@ -54,6 +54,12 @@ export interface ManualExpenseDateSectionProps {
   isSubmitting: boolean;
   onDateChange: (iso: string) => void;
   register: UseFormRegister<ExpenseFormValues>;
+  /**
+   * Сусід «Інша дата» в одному рядку (Ф-1 а: розкривач «Більше»). Згорнуті
+   * розкривачі стоять поруч, розкритий займає весь рядок (`open:basis-full`),
+   * тож «Більше» видно без прокрутки на 390 × 844, а порядок полів той самий.
+   */
+  after?: ReactNode;
 }
 
 export function ManualExpenseDateSection({
@@ -64,6 +70,7 @@ export function ManualExpenseDateSection({
   isSubmitting,
   onDateChange,
   register,
+  after,
 }: ManualExpenseDateSectionProps) {
   const value = date || toKyivISODate();
   const outOfWindow = !isWithinDateScrubberWindow(value);
@@ -90,36 +97,39 @@ export function ManualExpenseDateSection({
         value={value}
         onChange={onDateChange}
       />
-      <details
-        className="mt-2"
-        open={otherOpen}
-        onToggle={(event) => setOtherOpenOverride(event.currentTarget.open)}
-      >
-        {/* Тиха текст-кнопка (рівень 3, redesign v3.1): ті самі класи,
+      <div className="mt-2 flex flex-wrap items-start gap-x-4">
+        <details
+          className="min-w-0 open:basis-full"
+          open={otherOpen}
+          onToggle={(event) => setOtherOpenOverride(event.currentTarget.open)}
+        >
+          {/* Тиха текст-кнопка (рівень 3, redesign v3.1): ті самі класи,
             що `Button variant="text"`, бо `<summary>` мусить лишатись
             нативним перемикачем `<details>`. */}
-        <summary className="-ml-2 inline-flex min-h-[44px] min-w-[44px] cursor-pointer list-none items-center rounded-lg px-2 text-style-body font-semibold text-text hover:bg-panel focus-ring [&::-webkit-details-marker]:hidden">
-          {copy.dateOther}
-        </summary>
-        <DateField
-          id={dateId}
-          className="mt-2"
-          // Мітка секції вище стоїть над стрічкою, а не над цим полем, тож
-          // власне імʼя контролу задаємо явно — інакше `DateField` підставив
-          // би службове «Обери дату».
-          aria-label={copy.dateLabel}
-          value={value}
-          // Аркуш рахує і помилку, і мʼяке попередження сам (`dateWarning`
-          // нижче) — вбудована звірка меж дублювала б їх.
-          bounded={false}
-          min={HARD_MIN_DAY_KEY}
-          max={HARD_MAX_DAY_KEY}
-          error={!!dateError}
-          helperText={dateError ?? undefined}
-          disabled={isSubmitting}
-          {...register("date")}
-        />
-      </details>
+          <summary className="-ml-2 inline-flex min-h-[44px] min-w-[44px] cursor-pointer list-none items-center rounded-lg px-2 text-style-body font-semibold text-text hover:bg-panel focus-ring [&::-webkit-details-marker]:hidden">
+            {copy.dateOther}
+          </summary>
+          <DateField
+            id={dateId}
+            className="mt-2"
+            // Мітка секції вище стоїть над стрічкою, а не над цим полем, тож
+            // власне імʼя контролу задаємо явно — інакше `DateField` підставив
+            // би службове «Обери дату».
+            aria-label={copy.dateLabel}
+            value={value}
+            // Аркуш рахує і помилку, і мʼяке попередження сам (`dateWarning`
+            // нижче) — вбудована звірка меж дублювала б їх.
+            bounded={false}
+            min={HARD_MIN_DAY_KEY}
+            max={HARD_MAX_DAY_KEY}
+            error={!!dateError}
+            helperText={dateError ?? undefined}
+            disabled={isSubmitting}
+            {...register("date")}
+          />
+        </details>
+        {after}
+      </div>
       {dateWarning ? (
         <p className="mt-2 text-style-caption text-warning-strong dark:text-warning">
           {dateWarning}

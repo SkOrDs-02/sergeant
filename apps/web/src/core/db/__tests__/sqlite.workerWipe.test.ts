@@ -172,9 +172,11 @@ describe("wipeSqliteDb на воркерному бекенді (priv-05)", () =
       sent.includes("close") ? sent.indexOf("close") : Infinity,
     );
     // Воркер сам закрив БД ПЕРЕД unlink; terminate — лише потім.
+    // Ім'я зі скісною: так файл лежить у мапі пулу (див. AI-DANGER у
+    // `sqliteWorkerHandler.ts`), голе ім'я `unlink` не знаходить.
     expect(wasm.events).toEqual([
       "db.close",
-      "unlink:sergeant-dave.db",
+      "unlink:/sergeant-dave.db",
       "worker.terminate",
     ]);
     expect(loggerError).not.toHaveBeenCalled();

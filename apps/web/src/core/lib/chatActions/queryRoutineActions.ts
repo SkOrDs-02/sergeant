@@ -13,7 +13,12 @@ import { getVisibleFinykMonoMirrorState } from "../../../modules/finyk/lib/monoM
 import { getCachedFinykSqliteState } from "../../../modules/finyk/lib/sqliteReader";
 import { buildFinykSpendingUniverse } from "@sergeant/finyk-domain";
 import type { ChatAction, ChatActionResult } from "./types";
-import { formatNumberUk, habitCorrelationMetric } from "@sergeant/shared";
+import {
+  deviceDayKey,
+  formatNumberUk,
+  habitCorrelationMetric,
+} from "@sergeant/shared";
+import { dateKeyMinusDays } from "@sergeant/routine-domain";
 
 /**
  * Read-only "talk to your data" виконавці для Рутини (PR3 talk-to-your-data).
@@ -25,7 +30,8 @@ import { formatNumberUk, habitCorrelationMetric } from "@sergeant/shared";
  *
  * Реєструється у `hubChatActions.ts` dispatch-chain окремою гілкою, не
  * чіпаючи мутаційний `handleRoutineAction`. Дні рахуються від `Date.now()`
- * (days-ago cutoff); day-key — Europe/Kyiv через `getKyivDayKey`.
+ * (days-ago cutoff). Вікно звичок і біни тренувань — день-ключі ПРИСТРОЮ
+ * (ADR-0078); біни витрат для кореляції поки київські (`getKyivDayKey`).
  */
 
 interface QueryHabitsAction {
@@ -121,12 +127,16 @@ function selectHabits(habits: RoutineHabit[], filter: string): RoutineHabit[] {
   return habits.filter((h) => normalizeText(h.name).includes(filter));
 }
 
-/** Day keys (Kyiv) for the last `days`, today inclusive — newest first. */
+/**
+ * День-ключі пристрою за останні `days`, сьогодні включно, від нового.
+ * ADR-0078: відмітки лежать під ключами ПРИСТРОЮ, тож і вікно теж; київський
+ * день після київської півночі вже завтрашній (2026-11-18).
+ */
 function lastDayKeys(days: number): string[] {
+  const today = deviceDayKey();
   const keys: string[] = [];
-  const now = Date.now();
   for (let i = 0; i < days; i++) {
-    keys.push(getKyivDayKey(now - i * DAY_MS));
+    keys.push(dateKeyMinusDays(today, i));
   }
   return keys;
 }
@@ -211,7 +221,7 @@ export function queryHabits(action: QueryHabitsAction): ChatActionResult {
     );
   }
   if (missedDays.length > 0) {
-    const today = getKyivDayKey();
+    const today = deviceDayKey();
     const labels = missedDays.map((d) =>
       formatDayKeyUk(d, { todayKey: today }),
     );
@@ -257,7 +267,7 @@ function spendingByDay(days: number): Map<string, number> {
   return byDay;
 }
 
-/** Per-Kyiv-day completed-workout count. */
+/** Завершені тренування по днях ПРИСТРОЮ (особиста сутність, ADR-0078). */
 function workoutsByDay(days: number): Map<string, number> {
   const byDay = new Map<string, number>();
   const cutoff = Date.now() - days * DAY_MS;
@@ -265,7 +275,7 @@ function workoutsByDay(days: number): Map<string, number> {
     if (!w.endedAt) continue;
     const ts = new Date(w.startedAt).getTime();
     if (!Number.isFinite(ts) || ts < cutoff) continue;
-    const dk = getKyivDayKey(ts);
+    const dk = deviceDayKey(ts);
     byDay.set(dk, (byDay.get(dk) ?? 0) + 1);
   }
   return byDay;

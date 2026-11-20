@@ -264,7 +264,7 @@
       "title": "вся AI-історія лежить у localStorage відкритим текстом",
       "severity": "unrated",
       "source": "docs/work/specs/audits/ai-pipeline-2026-08-05.md",
-      "status": "open",
+      "status": "fixed-pending-verification",
       "history": [
         {
           "at": "2026-09-05",
@@ -275,6 +275,11 @@
           "at": "2026-11-19",
           "event": "retriaged",
           "note": "Ревалідація кодом 2026-11-19: досі відкрито. Сесії чату і Memory Bank пишуться в localStorage відкритим JSON (apps/web/src/core/hub/hubChatSessions.ts, apps/web/src/core/profile/memoryBank.ts). ADR про прийняття ризику немає (ADR-0011 лише «TBD» про E2E). Потрібне рішення власника: ADR-прийняття або шифрування at rest невивантажуваним WebCrypto-ключем."
+        },
+        {
+          "at": "2026-11-19",
+          "event": "fixed",
+          "note": "Рішення власника: шифрувати у спокої. Історія чату (сесії, дзеркало, легасі hub_chat_history) і Memory Bank зберігаються конвертом AES-GCM {v:1,iv,ct} з неекстрактовним ключем в IndexedDB (apps/web/src/core/security/aiAtRest.ts); легасі-текст мігрує при читанні. Застереження: без WebCrypto/IndexedDB слот пише відкритий текст і легасі не мігрує; браузер зберігає байти ключа в IndexedDB того ж профілю, тож повний дамп профілю (і код в origin) дані розшифровує, захист діє лише для localStorage/SQLite-файлів окремо від IndexedDB. Відкритий текст, записаний до міграції, може лишатися у звільнених сторінках SQLite, журналі й LevelDB localStorage, доки їх не перевикористано. Коміт лежить у гілці claude/clever-shannon-clj8s8-ai-history-encryption, живого прогону немає."
         }
       ],
       "sourceAnchor": "B24 — вся AI-історія лежить у localStorage відкритим текстом"
@@ -2834,7 +2839,7 @@
       "title": "Перший хід чату не стрімиться взагалі: клієнт не просить, сервер не підтримує, метрика `ai_first_token_ms` цього шляху не бачить. «TTFT 5–14 с» — це повна генерація плюс серійна робота до виклику; SLO «first token < 1,5 с» до шляху не застосовний",
       "severity": "major",
       "source": "docs/work/specs/audits/2026-09-01-product-audit/findings.md",
-      "status": "open",
+      "status": "fixed-pending-verification",
       "history": [
         {
           "at": "2026-09-05",
@@ -2845,6 +2850,11 @@
           "at": "2026-11-19",
           "event": "retriaged",
           "note": "Ревалідація кодом 2026-11-19: досі відкрито. Сервер стрімить лише тур синтезу після tool-result (apps/server/src/modules/chat/chat.ts), перший хід - callAnthropicWithContinuation без стріму; клієнт шле перший хід без stream (apps/web/src/core/hub/chat/useChatSend.ts)."
+        },
+        {
+          "at": "2026-11-19",
+          "event": "fixed",
+          "note": "Фікс 66d728a (гілка claude/awesome-goodall-8s5uky, PR #1700): веб стрімить перший хід, сервер віддає SSE з підписом кроку і живим текстом, tool_use цілим кадром; старий сервер відповідає JSON, клієнт зважає на content-type. Спека docs/work/specs/hubchat-first-turn-stream.md, метрика chat_first_turn_first_visible_ms. Юніт- і контракт-тести є; замір у проді й клік через прод-проксі не робились, поріг метрики ще не ухвалено."
         }
       ],
       "sourceAnchor": "AI-2 — перший хід чату не стрімиться взагалі [major]"

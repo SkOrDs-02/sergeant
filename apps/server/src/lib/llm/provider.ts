@@ -31,6 +31,10 @@ import { Sentry } from "../../sentry.js";
 import { anthropicMessages, extractAnthropicText } from "../anthropic.js";
 import { getCounterpartyNames } from "../counterpartyNames.js";
 import { maskMachineText } from "../llmRedaction.js";
+import {
+  noteOpenRouterDataPolicyRejection,
+  withOpenRouterProviderPrefs,
+} from "./openrouterDataPolicy.js";
 
 /**
  * Канонічний дискримінатор provider-у. Розширюємо по мірі додавання
@@ -111,6 +115,15 @@ export interface LLMGenerateOpts {
    * порожньою. Без поля шлюз вирішує сам, як і досі. Anthropic ігнорує.
    */
   reasoning?: { effort: ReasoningEffort } | undefined;
+  /**
+   * Додаткові поля `provider` для OpenRouter (`quantizations`, `ignore`).
+   * AI-NOTE: лише для стенду `eval:models` (замір fp4-ендпойнтів 2026-11-19).
+   * Прод цього поля не передає, тож тіло прод-запиту не змінюється. Явні
+   * `quantizations`/`ignore` звідси перемагають дефолтний список від 8 біт,
+   * а `data_collection` з `withOpenRouterProviderPrefs` однаково перекриває
+   * будь-яке значення звідси. Anthropic і Stub ігнорують.
+   */
+  providerPrefs?: Readonly<Record<string, unknown>> | undefined;
 }
 
 export const REASONING_EFFORTS = [
@@ -499,6 +512,7 @@ export class OpenRouterProvider implements LLMProvider {
     };
     if (opts.temperature !== undefined) body["temperature"] = opts.temperature;
     if (opts.reasoning) body["reasoning"] = opts.reasoning;
+    if (opts.providerPrefs) body["provider"] = { ...opts.providerPrefs };
 
     const controller = new AbortController();
     let timeoutId: ReturnType<typeof setTimeout> | null = null;
@@ -546,7 +560,9 @@ export class OpenRouterProvider implements LLMProvider {
           "HTTP-Referer": "https://sergeant.app",
           "X-Title": "Sergeant",
         },
-        body: JSON.stringify(body),
+        // `provider.data_collection=deny` і квантизація від 8 біт — рішення
+        // власника 2026-11-19, див. `openrouterDataPolicy.ts`.
+        body: JSON.stringify(withOpenRouterProviderPrefs(body)),
         signal,
       });
       if (timeoutId) clearTimeout(timeoutId);
@@ -554,6 +570,13 @@ export class OpenRouterProvider implements LLMProvider {
       const data = (await response.json()) as OpenRouterData;
 
       if (!response.ok) {
+        noteOpenRouterDataPolicyRejection({
+          status: response.status,
+          data,
+          model,
+          endpoint: opts.endpoint ?? "unknown",
+          transport: "chat_completions",
+        });
         return {
           ok: false,
           error: data?.error?.message ?? `OpenRouter HTTP ${response.status}`,

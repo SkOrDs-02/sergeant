@@ -144,6 +144,21 @@ export const HEALTH_ONLY_TOOL_NAMES: ReadonlySet<string> = new Set([
 ]);
 
 /**
+ * Tools, чиї результати блок `[Записи з попередньої відповіді]` може нести
+ * без згоди на дані про здоровʼя: Фінік, Рутина й комора/покупки Харчування,
+ * без health-only. Крос-модульні tools і памʼять сюди не входять: їхній
+ * вердикт залежить від входу (`healthGate.ts::classifyToolUse`), а в блоці
+ * лежить лише результат. Список дозвільний: невідоме імʼя вирізається.
+ */
+export const NON_HEALTH_REF_TOOL_NAMES: ReadonlySet<string> = new Set(
+  [
+    ...TOOL_NAMES_BY_MODULE.finyk,
+    ...TOOL_NAMES_BY_MODULE.routine,
+    ...NON_HEALTH_NUTRITION_TOOLS,
+  ].filter((n) => !HEALTH_ONLY_TOOL_NAMES.has(n)),
+);
+
+/**
  * Прибирає з реєстру health-only tools, коли згоди на дані про здоровʼя немає.
  * `granted === true` → реєстр без змін (той самий референс).
  *

@@ -1,6 +1,6 @@
 # Toast policy
 
-> **Last touched:** 2026-11-17 by @claude. **Next review:** 2027-05-28.
+> **Last touched:** 2026-11-18 by @claude (трей над кутовою кнопкою, § Layout). **Next review:** 2027-05-28.
 > **Status:** Active.
 
 Канонічна довідка для агентів і розробників: коли який toast, скільки
@@ -154,7 +154,16 @@ WCAG 4.1.3 (Status Messages, Level AA) вимагає, що повідомлен
   на паузу назавжди (E2E `fizruk-active-workout`, 2026-10-25). Правило для
   нових fixed-смуг з CTA внизу екрана: публікуй висоту власною змінною і
   додай її в `max()` трею.
-- Нижній відступ = `max(safe-area, --sgt-bottom-nav-inset, --sgt-workout-banner-inset, --sgt-sheet-footer-inset, --sgt-session-dock-inset) + 0.75rem`.
+- **Над кутовою кнопкою дії теж: `--sgt-fab-inset`** (рішення власника
+  2026-11-18). Тост на кілька секунд накривав «Додати» на Операціях Фініка,
+  у Харчуванні й скрізь, де є `CornerAction` / `AddAction`. Кнопка вже
+  публікувала виміряну смугу для `page-tabbar-pad` (нав + `pb-3.5` + власна
+  висота, поки видима; під клавіатурою знімає), і трей бере її в той самий
+  `max()`. Смуга вже включає нав, тож вона не додається до нього; поруч із
+  футером відкритого аркуша виграє вищий, суми немає. Без кнопки змінної
+  немає, і трей стоїть як раніше. Тест у `Toast.test.tsx` і
+  `CornerAction.test.tsx`.
+- Нижній відступ = `max(safe-area, --sgt-bottom-nav-inset, --sgt-workout-banner-inset, --sgt-sheet-footer-inset, --sgt-session-dock-inset, --sgt-fab-inset) + 0.75rem`.
   **AI-DANGER:** усі `--sgt-*` змінні ставить хук
   [`useBottomInsetVar`](../../../apps/web/src/shared/hooks/useBottomInsetVar.ts)
   на `<html>`. Локальна `--bottom-nav-height` (утиліта

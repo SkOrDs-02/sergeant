@@ -15,6 +15,7 @@ import {
   decrementWeight,
   incrementReps,
   incrementWeight,
+  isSetCompleted,
   isSetDraftValid,
   RPE_MAX,
   RPE_MIN,
@@ -48,6 +49,11 @@ export interface ActiveSetEditorProps {
    * 0×0 draft (new-set mode).
    */
   initialSet?: WorkoutSet | null;
+  /**
+   * Час на вправі (`item.durationSec`): для утримань зі Strong підхід із
+   * вагою без повторень зараховується (див. `isSetCompleted`).
+   */
+  durationSec?: number;
   onSubmit(set: WorkoutSet): void;
   /** Optional root testID — sub-ids derive from it. */
   testID?: string;
@@ -81,6 +87,7 @@ export function ActiveSetEditor({
   exerciseName,
   setIndex,
   initialSet,
+  durationSec,
   onSubmit,
   testID = "fizruk-workouts-set-editor",
 }: ActiveSetEditorProps) {
@@ -142,6 +149,13 @@ export function ActiveSetEditor({
       hapticWarning();
       return;
     }
+    // Той самий предикат, що в лічильнику сесії, підсумку й стріку: рядок
+    // «вага × 0» не зараховується, тож не зберігаємо його як виконаний.
+    if (!isSetCompleted(draft, { durationSec })) {
+      setErrors({ reps: "Вкажи повторення" });
+      hapticWarning();
+      return;
+    }
     setErrors({});
     hapticSuccess();
     const { weightKg, reps, rpe } = draft;
@@ -151,7 +165,7 @@ export function ActiveSetEditor({
     }
     onSubmit(payload);
     onClose();
-  }, [draft, onClose, onSubmit]);
+  }, [draft, durationSec, onClose, onSubmit]);
 
   const title = useMemo(() => {
     if (setIndex && setIndex > 0) {

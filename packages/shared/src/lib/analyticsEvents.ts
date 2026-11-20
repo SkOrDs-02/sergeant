@@ -144,8 +144,10 @@ export const ANALYTICS_EVENTS = Object.freeze({
   //   HUBCHAT_TOOL_INVOKED   { tool: string, module: string,
   //                            success: boolean, latency_ms: number }
   //   HUBCHAT_ERROR          { kind: "http" | "parse" | "aborted" | "network"
-  //                                 | "unknown",
+  //                                 | "interrupted" | "unknown",
   //                            status?: number }
+  //   (`interrupted` — стрім першого ходу обірвався після видимого тексту,
+  //   написане лишилось із «Ще раз»; С-1 (а), 2026-11-18.)
   //
   // `tool` — канонічне імʼя ChatAction (напр. `add_expense`, `log_workout`).
   // Body повідомлень / tool_input НЕ потрапляють у payload — лише counts

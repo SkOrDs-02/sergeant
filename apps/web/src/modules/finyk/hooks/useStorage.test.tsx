@@ -164,6 +164,26 @@ describe("useStorage composition root", () => {
       expect(result.current.excludedTxIds.has("coffee")).toBe(false);
     });
 
+    // Фідбек власника 2026-11-19: відхилені перекази на картку за номером
+    // («410247******8090» −170 000 ₴ і «Скасування. …» +170 000 ₴) лічились
+    // витратою й доходом, бо ключ мерчанта з маскованого номера був порожній.
+    it("переказ на картку за номером і його скасування теж виходять зі статистики", () => {
+      __setFinykMonoMirrorCacheForTests({
+        transactions: [
+          bankTx("p2p-out", -17_000_000, T0, "410247******8090"),
+          bankTx("p2p-in", 17_000_000, T0, "Скасування. 410247******8090"),
+        ],
+      });
+      const { result } = renderHook(() => useStorage(), { wrapper });
+
+      expect([...result.current.cancelledTxIds].sort()).toEqual([
+        "p2p-in",
+        "p2p-out",
+      ]);
+      expect(result.current.excludedTxIds.has("p2p-out")).toBe(true);
+      expect(result.current.excludedTxIds.has("p2p-in")).toBe(true);
+    });
+
     it("без другої ноги нічого не виключається", () => {
       __setFinykMonoMirrorCacheForTests({ transactions: [uklonPair[0]!] });
       const { result } = renderHook(() => useStorage(), { wrapper });

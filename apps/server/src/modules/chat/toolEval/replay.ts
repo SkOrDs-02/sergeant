@@ -71,7 +71,12 @@ export function replayCase(
   recorded: RecordedCase,
 ): ReplayedCase {
   const expectedTurns = toolCase.turns ?? [];
-  let context = `${SYSTEM_PREFIX}${DATA_BLOCK}\n${toolCase.user}`;
+  // `dataExtra` і `history` — частина того, що модель бачила, тож id звідти
+  // не вигаданий. Для кейсів без них рядок той самий, що й був.
+  const history = (toolCase.history ?? [])
+    .map((m) => `${m.content}\n`)
+    .join("");
+  let context = `${SYSTEM_PREFIX}${DATA_BLOCK}${toolCase.dataExtra ?? ""}\n${history}${toolCase.user}`;
   const turnHits: boolean[] = [];
   const pickedByTurn: string[][] = [];
   const hallucinated: string[] = [];
@@ -148,7 +153,9 @@ export function summarize(
     correct: replayed.filter((r) => r.correct).length,
     invented: replayed.filter((r) => r.hallucinated.length > 0).length,
     errors: replayed.filter((r) => r.error).length,
-    multiTurnCases: multiTurn.size,
+    // Знаменник рахує спроби, як і чисельник: з `--repeat=3` стенд друкував
+    // «6/2» (шість правильних спроб на два кейси).
+    multiTurnCases: replayed.filter((r) => multiTurn.has(r.name)).length,
     multiTurnCorrect: replayed.filter((r) => multiTurn.has(r.name) && r.correct)
       .length,
   };

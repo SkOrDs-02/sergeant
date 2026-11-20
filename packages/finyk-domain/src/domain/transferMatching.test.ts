@@ -120,6 +120,41 @@ describe("findInternalTransferSuggestions", () => {
       }),
     ).toEqual([]);
   });
+
+  // Фідбек власника 2026-11-19: «наново перепитує ті ж самі операції».
+  it("never offers a leg of a confirmed pair again with a newer operation", () => {
+    const outgoing = tx("out", -70_000, "black", 1_000);
+    const incoming = tx("in", 70_000, "white", 1_020);
+    const later = tx("in-later", 70_000, "jar", 1_100, "Переказ у банку");
+
+    expect(
+      findInternalTransferSuggestions([outgoing, incoming, later], {
+        txCategories: {
+          out: INTERNAL_TRANSFER_ID,
+          in: INTERNAL_TRANSFER_ID,
+        },
+      }),
+    ).toEqual([]);
+  });
+
+  it("a confirmed pair does not make a genuine new pair next to it ambiguous", () => {
+    const outgoing = tx("out", -70_000, "black", 1_000);
+    const incoming = tx("in", 70_000, "white", 1_020);
+    const newIncoming = tx("in-2", 70_000, "jar", 1_100, "Переказ у банку");
+    // Рівно та сама відстань до `in-2`, що й у закритої ноги `out`.
+    const newOutgoing = tx("out-2", -70_000, "fop", 1_200);
+
+    const suggestions = findInternalTransferSuggestions(
+      [outgoing, incoming, newIncoming, newOutgoing],
+      {
+        txCategories: {
+          out: INTERNAL_TRANSFER_ID,
+          in: INTERNAL_TRANSFER_ID,
+        },
+      },
+    );
+    expect(suggestions.map(transferSuggestionPairKey)).toEqual(["out-2:in-2"]);
+  });
 });
 
 describe("findInternalTransferSuggestions — real Monobank card↔jar phrasings", () => {
@@ -363,6 +398,23 @@ describe("filterTransferSuggestions", () => {
       filterTransferSuggestions(suggestions, {
         snoozedPairKeys: { "out:in": "2026-06-15" },
         todayKey: "2026-06-16",
+      }),
+    ).toEqual(suggestions);
+  });
+
+  it("drops a suggestion once either of its operations was answered «Не переказ»", () => {
+    for (const reviewed of [["out"], new Set(["in"])]) {
+      expect(
+        filterTransferSuggestions(suggestions, {
+          reviewedTxIds: reviewed,
+          todayKey: "2026-06-15",
+        }),
+      ).toEqual([]);
+    }
+    expect(
+      filterTransferSuggestions(suggestions, {
+        reviewedTxIds: ["other"],
+        todayKey: "2026-06-15",
       }),
     ).toEqual(suggestions);
   });

@@ -59,15 +59,12 @@ export interface HabitRangeRow {
   /**
    * Скільки днів звичка була в розкладі.
    *
-   * AI-CONTEXT: пропуски з причиною тут НЕ виходять зі знаменника, хоча
-   * `completionRateForRange` уміє їх виключати опцією `skips`. Це навмисно:
-   * сторінка статистики зараз рахує зведення без `skips`, і якби рядок
-   * рахував інакше, сума рядків не сходилась би зі числом у «Зведенні».
-   * Клітинка все одно показує `skipped` окремим станом — користувач бачить,
-   * що позначку враховано як інформацію, просто не як виняток зі знаменника.
-   * Перемикання обох на `skips` рухає число, яке користувач уже бачив, тож
-   * їде окремою поставкою з `metricsVersion` (як `denominator: "scheduled"`
-   * у хітмапі — ADR-0079 §3).
+   * AI-CONTEXT: день «не зміг» (`opts.skips`) виходить зі знаменника, як у
+   * `completionRateForRange` і в «Зведенні» сторінки (канон §5; OD-29,
+   * Р-3 (а), відповідь власника П-18 (А) 2026-11-18). До цієї дати рядок
+   * навмисно рахував пропуск провалом, щоб сходитись зі «Зведенням», яке теж
+   * рахувало без `skips`; тепер обидва рахують однаково. Клітинка й далі
+   * показує `skipped` окремим станом.
    */
   scheduled: number;
   /** Скільки запланованих днів позначено «не зміг». */
@@ -166,15 +163,17 @@ export function buildHabitRangeRows(
           }
         }
       } else if (habitScheduledOnDate(habit, dateKey, scheduleOpts)) {
-        scheduled += 1;
         if (done.has(dateKey)) {
           state = "done";
           completed += 1;
+          scheduled += 1;
         } else if (habitSkips?.[dateKey]) {
+          // Поза знаменником (канон §5), але клітинка лишається видимою.
           state = "skipped";
           skipped += 1;
         } else {
           state = "missed";
+          scheduled += 1;
         }
       }
       cells.push({
@@ -186,19 +185,22 @@ export function buildHabitRangeRows(
     }
 
     if (flexible) {
-      // Без `skips`: рядок навмисно не виключає «не зміг» зі знаменника, щоб
-      // сума рядків сходилась зі «Зведенням» (AI-CONTEXT у `scheduled` вище).
+      // З `skips`, як «Зведення» (AI-CONTEXT у `scheduled` вище).
       const agg = flexibleCompletionForDays(
         habit,
         done,
         dateKeys,
         scheduleOpts,
+        habitSkips,
       );
       completed = agg.completed;
       scheduled = agg.scheduled;
     }
 
-    if (scheduled === 0) continue;
+    // Рядок, де всі заплановані дні заявлені «не зміг», лишається: клітинки
+    // несуть інформацію, а `rate` 0 при `scheduled === 0` читається як «немає
+    // з чого рахувати», не як провал.
+    if (scheduled === 0 && skipped === 0) continue;
 
     rows.push({
       habitId: habit.id,
@@ -206,7 +208,7 @@ export function buildHabitRangeRows(
       completed,
       scheduled,
       skipped,
-      rate: completed / scheduled,
+      rate: scheduled > 0 ? completed / scheduled : 0,
     });
   }
 

@@ -9,6 +9,8 @@ import { useHistoryDismiss } from "@shared/hooks/useHistoryDismiss";
 
 export interface HubSearchProps {
   onClose: () => void;
+  /** Закрити пошук у спільному стані, щойно ініційована ним навігація змінить адресу. */
+  onCloseAfterNavigation?: (() => void) | undefined;
   onOpenModule: (moduleId: string) => void;
   /** Готовий запит (палітра команд → «Шукати „…“ у Sergeant»). */
   initialQuery?: string | undefined;
@@ -34,6 +36,7 @@ export interface HubSearchProps {
  */
 export function HubSearch({
   onClose,
+  onCloseAfterNavigation,
   onOpenModule,
   initialQuery,
 }: HubSearchProps) {
@@ -54,7 +57,12 @@ export function HubSearch({
     commitQuery,
     inlineAi,
     escalateToChat,
-  } = useSearchEngine({ onClose, onOpenModule, initialQuery });
+  } = useSearchEngine({
+    onClose,
+    onCloseAfterNavigation,
+    onOpenModule,
+    initialQuery,
+  });
   const panelRef = useRef<HTMLDivElement | null>(null);
 
   useDialogFocusTrap(true, panelRef, { inertBackground: true });

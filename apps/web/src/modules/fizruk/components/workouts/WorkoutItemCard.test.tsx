@@ -62,12 +62,14 @@ function renderCard(
       isReadOnly={props.isReadOnly ?? false}
       lastByExerciseId={props.lastByExerciseId ?? {}}
       recBy={props.recBy ?? {}}
+      injurySites={new Set<never>()}
       updateItem={updateItem}
       setRestTimer={setRestTimer}
       getDefaultForGroup={getDefaultForGroup}
       getDefaultForExercise={props.getDefaultForExercise}
       setDefaultForExercise={props.setDefaultForExercise}
       onDeleteSet={onDeleteSet}
+      isRetro={props.isRetro}
     />,
   );
 }
@@ -96,13 +98,14 @@ describe("WorkoutItemCard — strength set rows", () => {
     expect(
       screen.getByRole("button", { name: /Підхід 1: зроблено/ }),
     ).toBeInTheDocument();
-    // Кошик лише на останньому рядку.
+    // Одна дія під рядками й лише для останнього підходу (рішення
+    // founder-а 2026-11-18): у самих рядках кошика немає.
     expect(
-      screen.queryByRole("button", { name: "Видалити підхід 1" }),
+      screen.queryByRole("button", { name: /^Видалити підхід 1/ }),
     ).toBeNull();
-    expect(
-      screen.getByRole("button", { name: "Видалити підхід 2" }),
-    ).toBeInTheDocument();
+    const del = screen.getByRole("button", { name: /^Видалити підхід 2: / });
+    expect(del).toHaveTextContent("Видалити підхід 2");
+    expect(del.closest("[data-set-row]")).toBeNull();
   });
 
   it("marks the first undone row as the current one", () => {
@@ -191,6 +194,30 @@ describe("WorkoutItemCard — strength set rows", () => {
     });
   });
 
+  it("✓ on a planned program row keeps the plan weight and takes only reps from «було» (Фз-4, П-9)", () => {
+    renderCard({
+      it: makeItem({ sets: [{ weightKg: 85, reps: 0 }] }),
+      lastByExerciseId: {
+        bench: {
+          id: "prev",
+          exerciseId: "bench",
+          nameUk: "Жим лежачи",
+          type: "strength",
+          primaryGroup: "chest",
+          musclesPrimary: [],
+          musclesSecondary: [],
+          sets: [{ weightKg: 80, reps: 8 }],
+        },
+      },
+    });
+    fireEvent.click(
+      screen.getByRole("button", { name: /Підхід 1: повторити 85×8/ }),
+    );
+    expect(updateItem).toHaveBeenCalledWith("w1", "it-1", {
+      sets: [{ weightKg: 85, reps: 8 }],
+    });
+  });
+
   it("treats a bodyweight set (0 кг × N) as done", () => {
     renderCard({ it: makeItem({ sets: [{ weightKg: 0, reps: 12 }] }) });
     fireEvent.click(screen.getByRole("button", { name: /Підхід 1: зроблено/ }));
@@ -210,15 +237,104 @@ describe("WorkoutItemCard — strength set rows", () => {
     expect(setRestTimer).not.toHaveBeenCalled();
   });
 
-  it("'+ Підхід' copies the last completed set forward", () => {
+  it("'+ Підхід' appends an EMPTY row, not a copy that would count as done (logic-18)", () => {
     renderCard();
     fireEvent.click(screen.getByRole("button", { name: "+ Підхід" }));
     expect(updateItem).toHaveBeenCalledWith("w1", "it-1", {
       sets: [
         { weightKg: 50, reps: 8 },
-        { weightKg: 50, reps: 8 },
+        { weightKg: 0, reps: 0 },
       ],
     });
+  });
+
+  it("an empty row after a done set shows that set as placeholders, is current, and ✓ applies it", () => {
+    const { container } = renderCard({
+      it: makeItem({
+        sets: [
+          { weightKg: 60, reps: 8 },
+          { weightKg: 65, reps: 6 },
+          { weightKg: 0, reps: 0 },
+        ],
+      }),
+    });
+    const weights = screen.getAllByRole("textbox", {
+      name: "Вага в кілограмах",
+    });
+    const reps = screen.getAllByRole("spinbutton", {
+      name: "Кількість повторень",
+    });
+    expect(weights[2]).toHaveAttribute("placeholder", "65");
+    expect(weights[2]).toHaveValue("");
+    expect(reps[2]).toHaveAttribute("placeholder", "6");
+    const current = container.querySelectorAll('[data-current="true"]');
+    expect(current).toHaveLength(1);
+    expect(current[0]?.textContent).toContain("3");
+    fireEvent.click(
+      screen.getByRole("button", { name: /Підхід 3: повторити 65×6/ }),
+    );
+    expect(updateItem).toHaveBeenCalledWith("w1", "it-1", {
+      sets: [
+        { weightKg: 60, reps: 8 },
+        { weightKg: 65, reps: 6 },
+        { weightKg: 65, reps: 6 },
+      ],
+    });
+    expect(setRestTimer).toHaveBeenCalled();
+  });
+
+  it("an untouched program row from last session ({вага, 0}) is not a «було» ghost", () => {
+    renderCard({
+      it: makeItem({ sets: [{ weightKg: 0, reps: 0 }] }),
+      lastByExerciseId: {
+        bench: {
+          id: "prev",
+          exerciseId: "bench",
+          nameUk: "Жим лежачи",
+          type: "strength",
+          primaryGroup: "chest",
+          musclesPrimary: [],
+          musclesSecondary: [],
+          sets: [{ weightKg: 60, reps: 0 }],
+        },
+      },
+    });
+    expect(
+      screen.getByRole("textbox", { name: "Вага в кілограмах" }),
+    ).toHaveAttribute("placeholder", "");
+    expect(
+      screen.getByRole("button", { name: /Підхід 1: ще не заповнено/ }),
+    ).toBeInTheDocument();
+  });
+
+  it("the same-position ghost from the last session wins over the previous set in this session", () => {
+    renderCard({
+      it: makeItem({
+        sets: [
+          { weightKg: 60, reps: 8 },
+          { weightKg: 0, reps: 0 },
+        ],
+      }),
+      lastByExerciseId: {
+        bench: {
+          id: "prev",
+          exerciseId: "bench",
+          nameUk: "Жим лежачи",
+          type: "strength",
+          primaryGroup: "chest",
+          musclesPrimary: [],
+          musclesSecondary: [],
+          sets: [
+            { weightKg: 60, reps: 8 },
+            { weightKg: 70, reps: 5 },
+          ],
+        },
+      },
+    });
+    const weights = screen.getAllByRole("textbox", {
+      name: "Вага в кілограмах",
+    });
+    expect(weights[1]).toHaveAttribute("placeholder", "70");
   });
 
   it("'+ Підхід' seeds an empty row when there is no completed set and no ghost", () => {
@@ -234,7 +350,9 @@ describe("WorkoutItemCard — strength set rows", () => {
 
   it("deleting the last set snapshots and calls onDeleteSet", () => {
     renderCard();
-    fireEvent.click(screen.getByRole("button", { name: "Видалити підхід 1" }));
+    fireEvent.click(
+      screen.getByRole("button", { name: /^Видалити підхід 1: / }),
+    );
     expect(updateItem).toHaveBeenCalledWith("w1", "it-1", { sets: [] });
     expect(onDeleteSet).toHaveBeenCalledWith("w1", "it-1", [
       { weightKg: 50, reps: 8 },
@@ -249,18 +367,143 @@ describe("WorkoutItemCard — strength set rows", () => {
     fireEvent.click(screen.getByRole("button", { name: /Підхід 1: зроблено/ }));
     expect(setRestTimer).not.toHaveBeenCalled();
   });
+
+  it("'+ Підхід' is the filled next step once every row is done, outline while a row is open", () => {
+    const { unmount } = renderCard();
+    expect(
+      screen.getByRole("button", { name: "+ Підхід" }).dataset["emphasis"],
+    ).toBe("next");
+    unmount();
+    renderCard({ it: makeItem({ sets: [{ weightKg: 50, reps: 0 }] }) });
+    expect(
+      screen.getByRole("button", { name: "+ Підхід" }).dataset["emphasis"],
+    ).toBeUndefined();
+  });
+});
+
+// Фідбек власника 2026-11-19: тренування, внесене заднім числом, — не живе.
+// ✓ у ньому стартувала таймер відпочинку посеред вечора.
+describe("WorkoutItemCard — retro (logged after the fact)", () => {
+  it("hides ✓ and the rest preset, so nothing can start a rest timer", () => {
+    renderCard({ isRetro: true });
+    expect(
+      screen.queryByRole("button", { name: /Підхід 1: зроблено/ }),
+    ).toBeNull();
+    expect(screen.queryByRole("button", { name: /відпоч/i })).toBeNull();
+    expect(screen.queryByRole("button", { name: /^\d+ с$/ })).toBeNull();
+    expect(setRestTimer).not.toHaveBeenCalled();
+  });
+
+  it("keeps editing and '+ Підхід' working", () => {
+    renderCard({ isRetro: true });
+    fireEvent.click(screen.getByRole("button", { name: "+ Підхід" }));
+    // Рішення власника 2026-11-19: у ретро ✓ немає, тож новий рядок одразу
+    // несе значення останнього підходу, лишається поправити відмінне.
+    expect(updateItem).toHaveBeenCalledWith("w1", "it-1", {
+      sets: [
+        { weightKg: 50, reps: 8 },
+        { weightKg: 50, reps: 8 },
+      ],
+    });
+    expect(setRestTimer).not.toHaveBeenCalled();
+  });
+
+  it("'+ Підхід' copies the LAST completed set, skipping an open row and RPE", () => {
+    renderCard({
+      isRetro: true,
+      it: makeItem({
+        sets: [
+          { weightKg: 50, reps: 8 },
+          { weightKg: 60, reps: 6, rpe: 9 },
+          { weightKg: 0, reps: 0 },
+        ],
+      }),
+    });
+    fireEvent.click(screen.getByRole("button", { name: "+ Підхід" }));
+    expect(updateItem).toHaveBeenCalledWith("w1", "it-1", {
+      sets: [
+        { weightKg: 50, reps: 8 },
+        { weightKg: 60, reps: 6, rpe: 9 },
+        { weightKg: 0, reps: 0 },
+        { weightKg: 60, reps: 6 },
+      ],
+    });
+  });
+
+  it("'+ Підхід' on a time exercise copies the seconds of the last set", () => {
+    renderCard({
+      isRetro: true,
+      it: makeItem({
+        exerciseId: "plank",
+        type: "strength",
+        measure: "time",
+        sets: [{ weightKg: 0, reps: 0, durationSec: 45 }],
+      } as Partial<WorkoutItem>),
+    });
+    fireEvent.click(screen.getByRole("button", { name: "+ Підхід" }));
+    expect(updateItem).toHaveBeenCalledWith("w1", "it-1", {
+      sets: [
+        { weightKg: 0, reps: 0, durationSec: 45 },
+        { weightKg: 0, reps: 0, durationSec: 45 },
+      ],
+    });
+  });
+
+  it("'+ Підхід' with no set yet copies the same-position set of the last session (as main)", () => {
+    renderCard({
+      isRetro: true,
+      it: makeItem({ sets: [] }),
+      lastByExerciseId: {
+        bench: makeItem({
+          id: "prev",
+          sets: [{ weightKg: 70, reps: 5, rpe: 8 }],
+        }),
+      },
+    });
+    fireEvent.click(screen.getByRole("button", { name: "+ Підхід" }));
+    expect(updateItem).toHaveBeenCalledWith("w1", "it-1", {
+      sets: [{ weightKg: 70, reps: 5 }],
+    });
+  });
+
+  it("'+ Підхід' with no set and no last session seeds an empty row", () => {
+    renderCard({ isRetro: true, it: makeItem({ sets: [] }) });
+    fireEvent.click(screen.getByRole("button", { name: "+ Підхід" }));
+    expect(updateItem).toHaveBeenCalledWith("w1", "it-1", {
+      sets: [{ weightKg: 0, reps: 0 }],
+    });
+  });
+
+  it("live session keeps the empty row on a time exercise too (logic-18)", () => {
+    renderCard({
+      it: makeItem({
+        exerciseId: "plank",
+        type: "strength",
+        measure: "time",
+        sets: [{ weightKg: 0, reps: 0, durationSec: 45 }],
+      } as Partial<WorkoutItem>),
+    });
+    fireEvent.click(screen.getByRole("button", { name: "+ Підхід" }));
+    expect(updateItem).toHaveBeenCalledWith("w1", "it-1", {
+      sets: [
+        { weightKg: 0, reps: 0, durationSec: 45 },
+        { weightKg: 0, reps: 0 },
+      ],
+    });
+  });
 });
 
 // RPE (Borg 1..10) — optional per-set effort rating (`WorkoutSetRpeMenu`).
 // Closes the drift where the landing page promised "оцінка зусилля за
 // Боргом" but neither the field nor the word existed in the app.
 describe("WorkoutItemCard — RPE (Borg 1..10)", () => {
-  it("shows a dash trigger when the set has no RPE yet", () => {
+  it("labels the empty trigger «RPE» so the column is discoverable", () => {
     renderCard();
     const trigger = screen.getByRole("button", {
       name: "Підхід 1: оцінка зусилля, не вказано",
     });
-    expect(trigger).toHaveTextContent("–");
+    expect(trigger).toHaveTextContent("RPE");
+    expect(trigger).toHaveAttribute("aria-expanded", "false");
   });
 
   it("picking a value from the picker writes it onto that set only", () => {
@@ -373,6 +616,25 @@ describe("WorkoutItemCard — type switcher", () => {
 });
 
 describe("WorkoutItemCard — time / distance", () => {
+  it("утримання з програми показує план підходів × секунд і що вписати", () => {
+    renderCard({
+      it: makeItem({
+        exerciseId: "plank",
+        type: "time",
+        sets: [],
+        durationSec: 0,
+      }),
+      activeWorkout: makeWorkout({
+        programRef: { programId: "home_bodyweight", slot: 0 },
+      }),
+    });
+    expect(
+      screen.getByText(
+        "План програми: 3×20–40 с, у поле впиши сумарний час усіх підходів",
+      ),
+    ).toBeInTheDocument();
+  });
+
   it("renders a single duration input for a time item and writes durationSec", () => {
     renderCard({ it: makeItem({ type: "time", durationSec: 30 }) });
     const input = screen.getByRole("spinbutton", {
@@ -436,7 +698,7 @@ describe("WorkoutItemCard — recovery chip and read-only", () => {
     ).toHaveAttribute("readonly");
     expect(screen.queryByRole("button", { name: "+ Підхід" })).toBeNull();
     expect(
-      screen.queryByRole("button", { name: "Видалити підхід 1" }),
+      screen.queryByRole("button", { name: /^Видалити підхід/ }),
     ).toBeNull();
   });
 });
