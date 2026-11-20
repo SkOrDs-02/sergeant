@@ -23,7 +23,10 @@ import {
   pluralDays,
   pluralExercises,
   pluralHabits,
+  pluralUa,
 } from "@sergeant/shared";
+
+const PARTS_FORMS = { one: "частину", few: "частини", many: "частин" };
 
 type SummaryInput = Record<string, unknown>;
 
@@ -154,27 +157,16 @@ const SUMMARY_REGISTRY: Record<string, SummaryFn> = {
     return "поточний vs попередній";
   },
 
-  change_category: (input) =>
-    joinParts(
-      [
-        stringField(input, "tx_id")
-          ? `TX: ${stringField(input, "tx_id")}`
-          : undefined,
-        stringField(input, "category_id")
-          ? `→ ${stringField(input, "category_id")}`
-          : undefined,
-      ],
-      " ",
-    ),
+  // Внутрішній `tx_id` (`mx_…`) — не текст для людини: картка показувала
+  // «TX: mx_d028…» і «→ food» (прогін `full-2026-11-19`). Яку саме операцію
+  // зачеплено, вже каже відповідь Сержанта; картка лишає лише людську суть.
+  change_category: (input) => {
+    const id = stringField(input, "category_id");
+    return id ? `→ ${categoryLabelFor(id) ?? id}` : undefined;
+  },
 
-  delete_transaction: (input) => {
-    const txId = stringField(input, "tx_id");
-    return txId ? `TX: ${txId}` : undefined;
-  },
-  hide_transaction: (input) => {
-    const txId = stringField(input, "tx_id");
-    return txId ? `TX: ${txId}` : undefined;
-  },
+  delete_transaction: () => undefined,
+  hide_transaction: () => undefined,
 
   set_budget_limit: (input) => {
     const limit =
@@ -247,10 +239,9 @@ const SUMMARY_REGISTRY: Record<string, SummaryFn> = {
   },
 
   split_transaction: (input) => {
-    const txId = stringField(input, "tx_id");
-    if (!txId) return undefined;
     const parts = input["parts"];
-    return `TX: ${txId} → ${Array.isArray(parts) ? parts.length : 0} частин`;
+    if (!Array.isArray(parts) || parts.length === 0) return undefined;
+    return `на ${parts.length} ${pluralUa(parts.length, PARTS_FORMS)}`;
   },
 
   recurring_expense: (input) => {

@@ -20,7 +20,19 @@
  * а не омана.
  */
 
+import { categoryLabelFor } from "../../lib/hubChatActionCardsHelpers";
+
 const BATCH_CATEGORIZE_DEFAULT_LIMIT = 20;
+
+/**
+ * Людська назва категорії Фініка за її id. Модель шле id (`transport`), і
+ * діалог підтвердження показував «витрата 120 грн, transport» — англійський
+ * ідентифікатор в українському UI (прогін `full-2026-11-19`). Невідомий id
+ * (власна категорія, вже людський рядок) лишається як є.
+ */
+function categoryLabel(id: string): string {
+  return categoryLabelFor(id)?.toLowerCase() ?? id;
+}
 const BATCH_CATEGORIZE_MAX_LIMIT = 50;
 
 function clampBatchLimit(raw: unknown): number {
@@ -81,7 +93,7 @@ export function summarizeDestructiveToolInput(
       const rawCat = input["category"];
       const category = typeof rawCat === "string" ? rawCat.trim() : "";
       return category
-        ? `${kind} ${amount} грн, ${category}`
+        ? `${kind} ${amount} грн, ${categoryLabel(category)}`
         : `${kind} ${amount} грн`;
     }
     case "export_module_data": {

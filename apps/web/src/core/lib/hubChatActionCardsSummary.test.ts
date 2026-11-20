@@ -147,13 +147,24 @@ describe("summaryFor", () => {
   it("change_category", () => {
     expect(
       summaryFor("change_category", { tx_id: "t1", category_id: "c1" }, "r"),
-    ).toBe("TX: t1 → c1");
+    ).toBe("→ c1");
+    // Відомий id категорії — людська назва, без внутрішнього tx_id.
+    expect(
+      summaryFor(
+        "change_category",
+        { tx_id: "mx_1", category_id: "transport" },
+        "r",
+      ),
+    ).toBe("→ Транспорт");
   });
   it("delete_transaction / hide_transaction", () => {
-    expect(summaryFor("delete_transaction", { tx_id: "t1" }, "r")).toBe(
-      "TX: t1",
-    );
-    expect(summaryFor("hide_transaction", { tx_id: "t1" }, "r")).toBe("TX: t1");
+    // Лише внутрішній id — у підсумку його немає, картці вистачає заголовка.
+    expect(
+      summaryFor("delete_transaction", { tx_id: "t1" }, "r") ?? "",
+    ).not.toContain("t1");
+    expect(
+      summaryFor("hide_transaction", { tx_id: "t1" }, "r") ?? "",
+    ).not.toContain("t1");
   });
 
   it("set_budget_limit / update_budget", () => {
@@ -223,7 +234,14 @@ describe("summaryFor", () => {
   it("split_transaction", () => {
     expect(
       summaryFor("split_transaction", { tx_id: "t1", parts: [1, 2, 3] }, "r"),
-    ).toBe("TX: t1 → 3 частин");
+    ).toBe("на 3 частини");
+    expect(
+      summaryFor(
+        "split_transaction",
+        { tx_id: "t1", parts: [1, 2, 3, 4, 5] },
+        "r",
+      ),
+    ).toBe("на 5 частин");
   });
 
   it("recurring_expense", () => {

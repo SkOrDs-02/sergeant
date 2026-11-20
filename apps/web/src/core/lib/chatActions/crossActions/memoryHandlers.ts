@@ -52,11 +52,32 @@ export function remember(action: RememberAction): ChatActionResult {
   }
 }
 
+/** Регістр, пробіли й лапки-обгортки не роблять факт іншим. */
+function normalizeFact(raw: string): string {
+  return raw
+    .trim()
+    .replace(/^[«"'“]+|[»"'”]+$/g, "")
+    .replace(/\s+/g, " ")
+    .toLowerCase();
+}
+
 export function forget(action: ForgetAction): string {
   const { fact_id } = (action as ForgetAction).input || {};
   const id = (fact_id || "").trim();
   if (!id) return "Потрібен id факту для видалення.";
-  const result = removeMemoryEntry(readMemoryEntries(), id);
+  const entries = readMemoryEntries();
+  let result = removeMemoryEntry(entries, id);
+  if (!result.removed) {
+    // Модель на «забудь X» часто шле в `fact_id` сам ТЕКСТ факту, а не id
+    // (живий прогін `full-2026-11-19`: «Забуто, не вийшло», факт лишився).
+    // Людина бачила цей текст у діалозі підтвердження, тож видаляємо за
+    // точним збігом тексту — але лише однозначним, інакше чесна відмова.
+    const wanted = normalizeFact(id);
+    const matches = entries.filter((e) => normalizeFact(e.fact) === wanted);
+    if (matches.length === 1 && matches[0]) {
+      result = removeMemoryEntry(entries, matches[0].id);
+    }
+  }
   if (!result.removed) return `Факт з id ${id} не знайдено.`;
   writeMemoryEntries(result.entries);
   return `Забув: ${result.removed.fact}`;

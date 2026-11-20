@@ -158,6 +158,39 @@ describe("forget", () => {
     expect(result).toContain("Стара нотатка");
     expect(mockWrite).toHaveBeenCalledOnce();
   });
+
+  it("видаляє за точним текстом, коли модель прислала текст замість id (full-2026-11-19)", () => {
+    const entry = {
+      id: "e9",
+      fact: "Не їм глютен",
+      category: "health",
+    } as MemoryEntry;
+    mockRead.mockReturnValue([entry]);
+    mockRemove.mockImplementation((entries: MemoryEntry[], id: string) => {
+      const removed = entries.find((e) => e.id === id) ?? null;
+      return { entries: removed ? [] : entries, removed };
+    });
+    const result = forget({
+      name: "forget",
+      input: { fact_id: " «не їм глютен» " },
+    });
+    expect(result).toContain("Забув");
+    expect(mockRemove).toHaveBeenLastCalledWith([entry], "e9");
+    expect(mockWrite).toHaveBeenCalledOnce();
+  });
+
+  it("неоднозначний текст не видаляє нічого", () => {
+    const a = { id: "a", fact: "Кава", category: "personal" } as MemoryEntry;
+    const b = { id: "b", fact: "кава", category: "preference" } as MemoryEntry;
+    mockRead.mockReturnValue([a, b]);
+    mockRemove.mockImplementation((entries: MemoryEntry[]) => ({
+      entries,
+      removed: null,
+    }));
+    const result = forget({ name: "forget", input: { fact_id: "кава" } });
+    expect(result).toContain("не знайдено");
+    expect(mockWrite).not.toHaveBeenCalled();
+  });
 });
 
 // ─── myProfile ────────────────────────────────────────────────────────────────
