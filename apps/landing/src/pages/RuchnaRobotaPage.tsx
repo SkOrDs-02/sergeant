@@ -143,7 +143,7 @@ export default function RuchnaRobotaPage() {
           {DAILY.map((item) => (
             <li
               key={item}
-              className="flex items-baseline gap-2.5 text-sm leading-relaxed text-muted"
+              className="flex items-baseline gap-2.5 text-[15px] leading-relaxed text-muted"
             >
               <span
                 aria-hidden="true"

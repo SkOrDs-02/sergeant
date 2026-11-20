@@ -98,7 +98,7 @@ export default function PomichnykPage() {
               <h3 className="text-lg font-bold leading-tight text-foreground-strong">
                 «{item.q}»
               </h3>
-              <p className="mt-2 text-sm leading-relaxed text-muted">
+              <p className="mt-2 text-[15px] leading-relaxed text-muted">
                 {item.a}
               </p>
             </div>
@@ -117,7 +117,7 @@ export default function PomichnykPage() {
           {DO.map((item) => (
             <li
               key={item}
-              className="flex items-baseline gap-2.5 text-sm leading-relaxed text-muted"
+              className="flex items-baseline gap-2.5 text-[15px] leading-relaxed text-muted"
             >
               <span
                 aria-hidden="true"
@@ -135,7 +135,7 @@ export default function PomichnykPage() {
           {NOT.map((item) => (
             <li
               key={item}
-              className="flex items-baseline gap-2.5 text-sm leading-relaxed text-muted"
+              className="flex items-baseline gap-2.5 text-[15px] leading-relaxed text-muted"
             >
               <span
                 aria-hidden="true"

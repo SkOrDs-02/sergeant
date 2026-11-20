@@ -157,7 +157,7 @@ export default function HroshiPage() {
               <h3 className="mt-2 text-xl font-bold leading-tight text-foreground-strong">
                 {entry.title}
               </h3>
-              <p className="mt-2 text-sm leading-relaxed text-muted">
+              <p className="mt-2 text-[15px] leading-relaxed text-muted">
                 {entry.text}
               </p>
             </div>
@@ -203,7 +203,7 @@ export default function HroshiPage() {
               <h3 className="mt-1 text-lg font-bold text-foreground-strong">
                 {step.title}
               </h3>
-              <p className="mt-1.5 max-w-2xl text-sm leading-relaxed text-muted">
+              <p className="mt-1.5 max-w-2xl text-[15px] leading-relaxed text-muted">
                 {step.text}
               </p>
             </li>
@@ -211,19 +211,19 @@ export default function HroshiPage() {
         </ol>
         <h3 className={h3}>Що помітно на практиці</h3>
         <ul className="mt-4 flex max-w-2xl flex-col gap-3">
-          <li className="text-sm leading-relaxed text-muted">
+          <li className="text-[15px] leading-relaxed text-muted">
             <strong className="text-foreground-strong">Пачкою.</strong>{" "}
             «Сканувати чек» приймає одне фото чи кілька: два і більше
             відкривають список до десяти чеків за раз, і кожен розгортається в
             той самий екран перевірки.
           </li>
-          <li className="text-sm leading-relaxed text-muted">
+          <li className="text-[15px] leading-relaxed text-muted">
             <strong className="text-foreground-strong">Дублі.</strong> Той самий
             чек, сфотографований удруге, створить другу витрату: дублі Фінік
             ловить за фіскальним номером, а його дає лише QR, який зараз не
             читається.
           </li>
-          <li className="text-sm leading-relaxed text-muted">
+          <li className="text-[15px] leading-relaxed text-muted">
             <strong className="text-foreground-strong">
               Порожня чернетка.
             </strong>{" "}
@@ -243,7 +243,7 @@ export default function HroshiPage() {
           {FORMATS.map((format) => (
             <li
               key={format}
-              className="flex items-baseline gap-2.5 text-sm leading-relaxed text-muted"
+              className="flex items-baseline gap-2.5 text-[15px] leading-relaxed text-muted"
             >
               <span
                 aria-hidden="true"
@@ -294,7 +294,7 @@ export default function HroshiPage() {
           {BOUNDARIES.map((item) => (
             <li
               key={item}
-              className="flex items-baseline gap-2.5 text-sm leading-relaxed text-muted"
+              className="flex items-baseline gap-2.5 text-[15px] leading-relaxed text-muted"
             >
               <span
                 aria-hidden="true"
@@ -335,7 +335,7 @@ export default function HroshiPage() {
               <h3 className="max-w-2xl text-lg font-bold leading-snug text-foreground-strong group-hover:underline">
                 {guide.title}
               </h3>
-              <p className="mt-1.5 max-w-2xl text-sm leading-relaxed text-muted">
+              <p className="mt-1.5 max-w-2xl text-[15px] leading-relaxed text-muted">
                 {guide.teaser}
               </p>
             </a>

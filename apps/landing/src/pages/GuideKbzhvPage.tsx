@@ -100,7 +100,7 @@ export default function GuideKbzhvPage() {
                 <span className="pt-3.5 text-sm font-bold text-foreground sm:border-b sm:border-cardline sm:py-3.5 sm:pr-6 sm:font-semibold">
                   {row.when}
                 </span>
-                <span className="border-b border-cardline pb-3.5 pt-1 text-sm leading-relaxed text-muted sm:py-3.5">
+                <span className="border-b border-cardline pb-3.5 pt-1 text-[15px] leading-relaxed text-muted sm:py-3.5">
                   {row.what}
                 </span>
               </div>

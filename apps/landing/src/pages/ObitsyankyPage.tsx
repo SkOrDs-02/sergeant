@@ -101,7 +101,7 @@ export default function ObitsyankyPage() {
               {rule.title}
             </h2>
             <div className="flex flex-col gap-3">
-              <p className="text-sm leading-relaxed text-muted">
+              <p className="text-[15px] leading-relaxed text-muted">
                 {rule.text}
                 {rule.link && (
                   <>
@@ -136,7 +136,7 @@ export default function ObitsyankyPage() {
           {CHECKS.map((check) => (
             <li
               key={check}
-              className="flex items-baseline gap-2.5 text-sm leading-relaxed text-muted"
+              className="flex items-baseline gap-2.5 text-[15px] leading-relaxed text-muted"
             >
               <span
                 aria-hidden="true"

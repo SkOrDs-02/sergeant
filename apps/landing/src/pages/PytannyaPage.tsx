@@ -76,7 +76,7 @@ export default function PytannyaPage() {
                     <path d="M8 2 v12 M2 8 h12" />
                   </svg>
                 </summary>
-                <p className="max-w-2xl pb-5 text-sm leading-relaxed text-muted">
+                <p className="max-w-2xl pb-5 text-[15px] leading-relaxed text-muted">
                   {item.a}
                 </p>
               </details>

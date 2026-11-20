@@ -78,7 +78,7 @@ export default function GuideKilkaBankivPage() {
               <h3 className="font-bold text-foreground-strong">
                 Основну карту підключаєш до автосинхронізації
               </h3>
-              <p className="mt-1.5 text-sm leading-relaxed text-muted">
+              <p className="mt-1.5 text-[15px] leading-relaxed text-muted">
                 Ту, якою платиш найчастіше. Її операції приходять самі, і
                 щоденної роботи з нею немає.
               </p>
@@ -87,7 +87,7 @@ export default function GuideKilkaBankivPage() {
               <h3 className="font-bold text-foreground-strong">
                 Решту заводиш випискою раз на період
               </h3>
-              <p className="mt-1.5 text-sm leading-relaxed text-muted">
+              <p className="mt-1.5 text-[15px] leading-relaxed text-muted">
                 Зручний ритм – раз на місяць, коли банк уже сформував повний
                 період. Читаються CSV і XLSX, а також файл, який банк віддає під
                 іменем .xls, хоча всередині там HTML-таблиця. PDF-виписку Фінік
@@ -98,7 +98,7 @@ export default function GuideKilkaBankivPage() {
               <h3 className="font-bold text-foreground-strong">
                 Перевіряєш таблицю перед збереженням
               </h3>
-              <p className="mt-1.5 text-sm leading-relaxed text-muted">
+              <p className="mt-1.5 text-[15px] leading-relaxed text-muted">
                 Рядки приїжджають із підказкою категорії, а ті, що схожі на вже
                 записані, отримують бейдж і зняту галочку. Нічого не
                 зберігається без твого підтвердження, і весь імпорт можна
@@ -128,7 +128,7 @@ export default function GuideKilkaBankivPage() {
             ].map((item) => (
               <li
                 key={item}
-                className="flex items-baseline gap-2.5 text-sm leading-relaxed text-muted"
+                className="flex items-baseline gap-2.5 text-[15px] leading-relaxed text-muted"
               >
                 <span
                   aria-hidden="true"

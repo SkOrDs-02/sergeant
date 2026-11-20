@@ -131,59 +131,67 @@ export default function SiteHeader() {
           >
             У чергу
           </a>
-          <button
-            type="button"
-            aria-expanded={open}
-            aria-label={open ? "Закрити меню" : "Відкрити меню"}
-            aria-controls="mobile-nav"
-            onClick={() => setOpen((v) => !v)}
-            className="inline-flex min-h-11 min-w-11 items-center justify-center text-foreground-strong transition hover:bg-cardline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ink lg:hidden"
+          {/* Нативний `<details>`, а не кнопка зі станом: меню відкривається
+              і до гідрації, і зовсім без JS (аудит сайту 2026-10-08, F13).
+              Після розбиття JS по сторінках (F3) гідрація чекає ще й чанк
+              сторінки, і кнопка на React у цей час не робила нічого. React
+              лише синхронізує стан і додає закриття по Escape і тапу повз
+              меню. Меню позиціюється від `<header>` (`relative`). */}
+          <details
+            open={open}
+            onToggle={(e) => setOpen(e.currentTarget.open)}
+            className="group lg:hidden"
           >
-            <svg
-              width="22"
-              height="22"
-              viewBox="0 0 24 24"
-              fill="none"
-              aria-hidden="true"
-              stroke="currentColor"
-              strokeWidth="2"
-              strokeLinecap="round"
+            <summary
+              aria-label={open ? "Закрити меню" : "Відкрити меню"}
+              className="inline-flex min-h-11 min-w-11 cursor-pointer list-none items-center justify-center text-foreground-strong transition hover:bg-cardline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ink [&::-webkit-details-marker]:hidden"
             >
-              {open ? (
-                <path d="M6 6 18 18 M18 6 6 18" />
-              ) : (
-                <path d="M4 7 h16 M4 12 h16 M4 17 h16" />
-              )}
-            </svg>
-          </button>
+              <svg
+                width="22"
+                height="22"
+                viewBox="0 0 24 24"
+                fill="none"
+                aria-hidden="true"
+                stroke="currentColor"
+                strokeWidth="2"
+                strokeLinecap="round"
+              >
+                <path
+                  className="group-open:hidden"
+                  d="M4 7 h16 M4 12 h16 M4 17 h16"
+                />
+                <path
+                  className="hidden group-open:block"
+                  d="M6 6 18 18 M18 6 6 18"
+                />
+              </svg>
+            </summary>
+            <nav
+              id="mobile-nav"
+              aria-label="Мобільна навігація"
+              className="absolute left-0 right-0 top-full z-10 flex flex-col gap-0 border-b-2 border-foreground-strong bg-background px-5 pb-4 shadow-lg sm:px-8 lg:hidden"
+            >
+              {MOBILE_GROUPS.map((group) => (
+                <div key={group.label} className="flex flex-col">
+                  <p className="pt-4 font-display text-xs font-bold uppercase tracking-[0.12em] text-subtle">
+                    {group.label}
+                  </p>
+                  {group.items.map((item) => (
+                    <a
+                      key={item.href}
+                      href={item.href}
+                      className={mobileNavLink}
+                      onClick={() => setOpen(false)}
+                      {...currentProps(item.href)}
+                    >
+                      {item.label}
+                    </a>
+                  ))}
+                </div>
+              ))}
+            </nav>
+          </details>
         </div>
-
-        {open && (
-          <nav
-            id="mobile-nav"
-            aria-label="Мобільна навігація"
-            className="absolute left-0 right-0 top-full z-10 flex flex-col gap-0 border-b-2 border-foreground-strong bg-background px-5 pb-4 shadow-lg sm:px-8 lg:hidden"
-          >
-            {MOBILE_GROUPS.map((group) => (
-              <div key={group.label} className="flex flex-col">
-                <p className="pt-4 font-display text-xs font-bold uppercase tracking-[0.12em] text-subtle">
-                  {group.label}
-                </p>
-                {group.items.map((item) => (
-                  <a
-                    key={item.href}
-                    href={item.href}
-                    className={mobileNavLink}
-                    onClick={() => setOpen(false)}
-                    {...currentProps(item.href)}
-                  >
-                    {item.label}
-                  </a>
-                ))}
-              </div>
-            ))}
-          </nav>
-        )}
       </div>
     </header>
   );

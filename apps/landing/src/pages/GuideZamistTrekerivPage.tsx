@@ -129,13 +129,13 @@ export default function GuideZamistTrekerivPage() {
                     {item.sphere}
                   </a>
                 </h3>
-                <p className="mt-1.5 text-sm leading-relaxed text-muted">
+                <p className="mt-1.5 text-[15px] leading-relaxed text-muted">
                   {item.how}
                 </p>
               </li>
             ))}
           </ul>
-          <p className="mt-5 text-sm leading-relaxed text-muted">
+          <p className="mt-5 text-[15px] leading-relaxed text-muted">
             Це чотири модулі, кожен зі своєю сторінкою. Жоден не обовʼязковий:
             можна вести лише гроші й звички, і звʼязки рахуватимуться між тими
             сферами, де є дані.
@@ -153,7 +153,7 @@ export default function GuideZamistTrekerivPage() {
                 <h3 className="font-bold text-foreground-strong">
                   {item.sphere}
                 </h3>
-                <p className="mt-2 text-sm leading-relaxed text-muted">
+                <p className="mt-2 text-[15px] leading-relaxed text-muted">
                   {item.what}
                 </p>
               </div>
@@ -167,7 +167,7 @@ export default function GuideZamistTrekerivPage() {
             {NOT_CONNECTED.map((item) => (
               <li
                 key={item}
-                className="flex items-baseline gap-2.5 text-sm leading-relaxed text-muted"
+                className="flex items-baseline gap-2.5 text-[15px] leading-relaxed text-muted"
               >
                 <span
                   aria-hidden="true"
@@ -204,7 +204,7 @@ export default function GuideZamistTrekerivPage() {
             {BETTER_ELSEWHERE.map((item) => (
               <li
                 key={item}
-                className="flex items-baseline gap-2.5 text-sm leading-relaxed text-muted"
+                className="flex items-baseline gap-2.5 text-[15px] leading-relaxed text-muted"
               >
                 <span
                   aria-hidden="true"
