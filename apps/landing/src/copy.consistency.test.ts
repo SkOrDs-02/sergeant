@@ -54,6 +54,7 @@ describe("узгодженість копії між сторінками", () =
       "pages/TermsPage.tsx",
       "pages/PrivacyPage.tsx",
       "pages/GuideBankBezpekaPage.tsx",
+      "pages/ObitsyankyPage.tsx",
     ]) {
       expect(read(file), file).toMatch(/EXPORT_CLAIM/);
     }
