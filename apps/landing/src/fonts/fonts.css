@@ -1,0 +1,188 @@
+/* AI-GENERATED: scripts/subset-fonts.mjs – не правити руками, перезапусти скрипт. */
+
+@font-face {
+  font-family: "Manrope Variable";
+  font-style: normal;
+  font-display: swap;
+  font-weight: 200 800;
+  src: url("./manrope-cyrillic-ext.woff2") format("woff2");
+  unicode-range: U+20B4;
+}
+
+@font-face {
+  font-family: "Manrope Variable";
+  font-style: normal;
+  font-display: swap;
+  font-weight: 200 800;
+  src: url("./manrope-cyrillic.woff2") format("woff2");
+  unicode-range:
+    U+0404, U+0406-0407, U+0410-0429, U+042C, U+042E-0449, U+044C, U+044E-044F,
+    U+0454, U+0456-0457, U+0490-0491, U+2116;
+}
+
+@font-face {
+  font-family: "Manrope Variable";
+  font-style: normal;
+  font-display: swap;
+  font-weight: 200 800;
+  src: url("./manrope-latin-ext.woff2") format("woff2");
+  unicode-range: U+20B4;
+}
+
+@font-face {
+  font-family: "Manrope Variable";
+  font-style: normal;
+  font-display: swap;
+  font-weight: 200 800;
+  src: url("./manrope-latin.woff2") format("woff2");
+  unicode-range:
+    U+0020-007E, U+00A0, U+00A9, U+00AB, U+00B0-00B1, U+00B7, U+00BB, U+00D7,
+    U+02BC, U+2013-2014, U+2018-2019, U+201C-201E, U+2026, U+20AC, U+2191,
+    U+2193;
+}
+
+@font-face {
+  font-family: "Unbounded";
+  font-style: normal;
+  font-display: swap;
+  font-weight: 500;
+  src: url("./unbounded-cyrillic-ext-500.woff2") format("woff2");
+  unicode-range: U+20B4;
+}
+
+@font-face {
+  font-family: "Unbounded";
+  font-style: normal;
+  font-display: swap;
+  font-weight: 500;
+  src: url("./unbounded-cyrillic-500.woff2") format("woff2");
+  unicode-range:
+    U+0404, U+0406-0407, U+0410-0429, U+042C, U+042E-0449, U+044C, U+044E-044F,
+    U+0454, U+0456-0457, U+0490-0491, U+2116;
+}
+
+@font-face {
+  font-family: "Unbounded";
+  font-style: normal;
+  font-display: swap;
+  font-weight: 500;
+  src: url("./unbounded-latin-ext-500.woff2") format("woff2");
+  unicode-range: U+20B4;
+}
+
+@font-face {
+  font-family: "Unbounded";
+  font-style: normal;
+  font-display: swap;
+  font-weight: 500;
+  src: url("./unbounded-latin-500.woff2") format("woff2");
+  unicode-range:
+    U+0020-007E, U+00A0, U+00A9, U+00AB, U+00B0-00B1, U+00B7, U+00BB, U+00D7,
+    U+02BC, U+2013-2014, U+2018-2019, U+201C-201E, U+2026, U+20AC, U+2191,
+    U+2193;
+}
+
+@font-face {
+  font-family: "Unbounded";
+  font-style: normal;
+  font-display: swap;
+  font-weight: 700;
+  src: url("./unbounded-cyrillic-ext-700.woff2") format("woff2");
+  unicode-range: U+20B4;
+}
+
+@font-face {
+  font-family: "Unbounded";
+  font-style: normal;
+  font-display: swap;
+  font-weight: 700;
+  src: url("./unbounded-cyrillic-700.woff2") format("woff2");
+  unicode-range:
+    U+0404, U+0406-0407, U+0410-0429, U+042C, U+042E-0449, U+044C, U+044E-044F,
+    U+0454, U+0456-0457, U+0490-0491, U+2116;
+}
+
+@font-face {
+  font-family: "Unbounded";
+  font-style: normal;
+  font-display: swap;
+  font-weight: 700;
+  src: url("./unbounded-latin-ext-700.woff2") format("woff2");
+  unicode-range: U+20B4;
+}
+
+@font-face {
+  font-family: "Unbounded";
+  font-style: normal;
+  font-display: swap;
+  font-weight: 700;
+  src: url("./unbounded-latin-700.woff2") format("woff2");
+  unicode-range:
+    U+0020-007E, U+00A0, U+00A9, U+00AB, U+00B0-00B1, U+00B7, U+00BB, U+00D7,
+    U+02BC, U+2013-2014, U+2018-2019, U+201C-201E, U+2026, U+20AC, U+2191,
+    U+2193;
+}
+
+@font-face {
+  font-family: "Unbounded";
+  font-style: normal;
+  font-display: swap;
+  font-weight: 800;
+  src: url("./unbounded-cyrillic-ext-800.woff2") format("woff2");
+  unicode-range: U+20B4;
+}
+
+@font-face {
+  font-family: "Unbounded";
+  font-style: normal;
+  font-display: swap;
+  font-weight: 800;
+  src: url("./unbounded-cyrillic-800.woff2") format("woff2");
+  unicode-range:
+    U+0404, U+0406-0407, U+0410-0429, U+042C, U+042E-0449, U+044C, U+044E-044F,
+    U+0454, U+0456-0457, U+0490-0491, U+2116;
+}
+
+@font-face {
+  font-family: "Unbounded";
+  font-style: normal;
+  font-display: swap;
+  font-weight: 800;
+  src: url("./unbounded-latin-ext-800.woff2") format("woff2");
+  unicode-range: U+20B4;
+}
+
+@font-face {
+  font-family: "Unbounded";
+  font-style: normal;
+  font-display: swap;
+  font-weight: 800;
+  src: url("./unbounded-latin-800.woff2") format("woff2");
+  unicode-range:
+    U+0020-007E, U+00A0, U+00A9, U+00AB, U+00B0-00B1, U+00B7, U+00BB, U+00D7,
+    U+02BC, U+2013-2014, U+2018-2019, U+201C-201E, U+2026, U+20AC, U+2191,
+    U+2193;
+}
+
+/* Фолбеки з метриками шрифтів (F9): поки вантажиться Manrope чи Unbounded,
+   Arial масштабований під їхню ширину і висоту рядка, тож заміна не зсуває
+   текст. Де Arial немає (Android), правило пропускається і працює
+   ui-sans-serif із `--font-sans`. */
+@font-face {
+  font-family: "Manrope Fallback";
+  src: local("Arial"), local("ArialMT"), local("Liberation Sans");
+  size-adjust: 98.9%;
+  ascent-override: 107.79%;
+  descent-override: 30.33%;
+  line-gap-override: 0%;
+}
+
+@font-face {
+  font-family: "Unbounded Fallback";
+  src:
+    local("Arial Bold"), local("Arial-BoldMT"), local("Liberation Sans Bold");
+  size-adjust: 134.4%;
+  ascent-override: 74.03%;
+  descent-override: 18.23%;
+  line-gap-override: 0%;
+}

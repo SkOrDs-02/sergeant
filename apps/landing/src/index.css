@@ -19,10 +19,14 @@
 */
 
 @theme {
+  /* «… Fallback» – Arial, масштабований під метрики шрифту
+     (`src/fonts/fonts.css`, F9): поки шрифт вантажиться, рядки не
+     зсуваються. */
   --font-sans:
-    "Manrope Variable", "Manrope", ui-sans-serif, system-ui, sans-serif;
+    "Manrope Variable", "Manrope Fallback", ui-sans-serif, system-ui, sans-serif;
   --font-display:
-    "Unbounded", "Manrope Variable", ui-sans-serif, system-ui, sans-serif;
+    "Unbounded", "Unbounded Fallback", "Manrope Variable", ui-sans-serif,
+    system-ui, sans-serif;
 
   /* Surfaces – теплий папір (темніший за колишній крем, щоб білі картки
      і жовті нотатки читались як окремі шари, а не зливались із фоном) */

@@ -44,7 +44,7 @@ const tag = (marker) =>
  * на 1.7 с при повному завантаженні сторінки за 2.5 с. Preload піднімає їх
  * у початок черги, і текст перестає перемальовуватись системним шрифтом.
  *
- * Рівно два файли, не всі девʼять: `manrope-cyrillic` несе основний текст,
+ * Рівно два файли, не всі шістнадцять: `manrope-cyrillic` несе основний текст,
  * `unbounded-cyrillic-800` – заголовок першого екрана. Решта підмножин
  * (латиниця, латиниця-розширена під ₴) доїжджають своєю чергою і чекати на
  * них перший кадр не мусить.
@@ -52,11 +52,18 @@ const tag = (marker) =>
 function preloadLinks() {
   const dir = path.join(DIST, "assets");
   const files = readdirSync(dir);
+  // Імена дає `scripts/subset-fonts.mjs` (`src/fonts/`), Vite додає хеш
+  // після дефіса. `-ext-` – окремі крихітні підмножини, їх не прелоадимо.
   const pick = (needle) =>
-    files.find((f) => f.startsWith(needle) && f.endsWith(".woff2"));
+    files.find(
+      (f) =>
+        f.startsWith(`${needle}-`) &&
+        !f.startsWith(`${needle}-ext-`) &&
+        f.endsWith(".woff2"),
+    );
   const critical = [
-    pick("manrope-cyrillic-wght-normal"),
-    pick("unbounded-cyrillic-800-normal"),
+    pick("manrope-cyrillic"),
+    pick("unbounded-cyrillic-800"),
   ].filter(Boolean);
   if (critical.length !== 2) {
     throw new Error(

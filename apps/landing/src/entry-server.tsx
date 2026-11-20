@@ -1,7 +1,10 @@
 import { StrictMode } from "react";
 import { renderToString } from "react-dom/server";
-import { ROUTES } from "./App";
-import NotFoundPage from "./pages/NotFoundPage";
+import { resolveRoute } from "./routing/routes";
+
+/** Для `scripts/prerender.mjs`: який чанк сторінки прелоадити. */
+export { ROUTE_PAGES } from "./routing/routes";
+import { ROUTES } from "./routing/serverRoutes";
 import { takeSsgJsonLd } from "./lib/ssgJsonLd";
 import { CurrentRouteContext } from "./lib/currentRoute";
 import { absolutizeJsonLd, enrichJsonLd, withBreadcrumb } from "./lib/jsonLd";
@@ -19,7 +22,7 @@ export function render(
   path: string,
   origin: string,
 ): { html: string; jsonLd: object | null } {
-  const Page = ROUTES[path] ?? NotFoundPage;
+  const Page = ROUTES[resolveRoute(path)];
   const html = renderToString(
     <StrictMode>
       <CurrentRouteContext.Provider value={path}>

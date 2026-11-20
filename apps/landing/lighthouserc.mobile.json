@@ -1,0 +1,89 @@
+{
+  "ci": {
+    "collect": {
+      "numberOfRuns": 3,
+      "startServerCommand": "pnpm preview:lhci",
+      "startServerReadyPattern": "127\\.0\\.0\\.1:4175",
+      "startServerReadyTimeout": 45000,
+      "url": [
+        "http://127.0.0.1:4175/",
+        "http://127.0.0.1:4175/hroshi",
+        "http://127.0.0.1:4175/guides/monobank",
+        "http://127.0.0.1:4175/pytannya"
+      ],
+      "settings": {
+        "onlyCategories": [
+          "performance",
+          "accessibility",
+          "best-practices",
+          "seo"
+        ],
+        "skipAudits": ["uses-http2", "redirects-http", "canonical"],
+        "chromeFlags": "--no-sandbox --disable-dev-shm-usage"
+      }
+    },
+    "assert": {
+      "assertions": {
+        "categories:accessibility": [
+          "error",
+          {
+            "minScore": 1,
+            "aggregationMethod": "median-run"
+          }
+        ],
+        "categories:seo": [
+          "error",
+          {
+            "minScore": 1,
+            "aggregationMethod": "median-run"
+          }
+        ],
+        "categories:best-practices": [
+          "warn",
+          {
+            "minScore": 0.95,
+            "aggregationMethod": "median-run"
+          }
+        ],
+        "categories:performance": [
+          "warn",
+          {
+            "minScore": 0.9,
+            "aggregationMethod": "median-run"
+          }
+        ],
+        "largest-contentful-paint": [
+          "warn",
+          {
+            "maxNumericValue": 2500,
+            "aggregationMethod": "median-run"
+          }
+        ],
+        "cumulative-layout-shift": [
+          "warn",
+          {
+            "maxNumericValue": 0.1,
+            "aggregationMethod": "median-run"
+          }
+        ],
+        "first-contentful-paint": [
+          "warn",
+          {
+            "maxNumericValue": 1800,
+            "aggregationMethod": "median-run"
+          }
+        ],
+        "total-blocking-time": [
+          "warn",
+          {
+            "maxNumericValue": 200,
+            "aggregationMethod": "median-run"
+          }
+        ]
+      }
+    },
+    "upload": {
+      "target": "temporary-public-storage"
+    }
+  }
+}

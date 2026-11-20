@@ -2,11 +2,11 @@ import { readFileSync } from "node:fs";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 import { describe, expect, it } from "vitest";
-import { ROUTES } from "../App";
+import { ROUTES } from "../routing/serverRoutes";
 import { ROUTE_META } from "./pageMeta";
 
 /**
- * Гейт двох реєстрів. `ROUTES` (App.tsx) і `routeMeta.json` незалежні, а
+ * Гейт двох реєстрів. `ROUTE_PAGES` (`routing/routes.ts`) і `routeMeta.json` незалежні, а
  * розходження між ними тихе при зеленому білді:
  *
  * - маршрут лише в `routeMeta` → `dist/<route>/index.html` дістає правильний

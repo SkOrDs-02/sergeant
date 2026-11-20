@@ -8,6 +8,8 @@
     "content:hashes": "node scripts/update-content-hashes.mjs",
     "dev": "vite --port 3100 --host 0.0.0.0",
     "lighthouse": "lhci autorun --config=lighthouserc.json",
+    "lighthouse:mobile": "lhci autorun --config=lighthouserc.mobile.json",
+    "fonts:subset": "node scripts/subset-fonts.mjs",
     "lint": "eslint --cache .",
     "preview": "vite preview --port 3100",
     "preview:lhci": "vite preview --port 4175 --host 127.0.0.1",

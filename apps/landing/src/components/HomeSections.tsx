@@ -2,7 +2,7 @@ import TelegramCta from "./TelegramCta";
 import { LogoMark } from "./Wordmark";
 import { CONFIDENCE } from "../content/confidenceLevels";
 import { formatDateUk } from "../lib/dates";
-import { STATUS_UPDATED } from "../pages/StanPage";
+import { STATUS_UPDATED } from "../content/statusUpdated";
 import { AUTHOR_NAME } from "../content/author";
 
 /** Стрілка звʼязку між парою модулів. */
@@ -238,7 +238,7 @@ export function FounderSection() {
 /**
  * Рядок-місток замість винесеної `StatusSection`. Не опційний елемент:
  * без нього сигнал життя продукту зникає з першої сторінки. Дата береться
- * зі `STATUS_UPDATED` у `pages/StanPage.tsx`, а не дублюється руками.
+ * зі `STATUS_UPDATED` у `content/statusUpdated.ts`, а не дублюється руками.
  */
 export function StatusBridge() {
   return (

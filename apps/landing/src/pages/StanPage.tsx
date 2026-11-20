@@ -5,13 +5,7 @@ import { formatDateUk } from "../lib/dates";
 import { AUTHOR_JSON_LD } from "../content/author";
 import { EXPORT_CLAIM } from "../content/exportClaim";
 import { MOBILE_CLAIM } from "../content/mobileClaim";
-
-/**
- * Єдина сторінка сайту, яка змінюється щотижня, і єдина, де видима дата –
- * частина змісту. `STATUS_UPDATED` мусить збігатися з `lastmod` запису
- * `/stan` у routeMeta і з датою в рядку-містку на головній.
- */
-export const STATUS_UPDATED = "2026-11-20";
+import { STATUS_UPDATED } from "../content/statusUpdated";
 
 const NOW = [
   "Автосинхронізація фінансів через Monobank, при підключенні історія за три місяці",

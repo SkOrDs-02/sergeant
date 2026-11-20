@@ -86,9 +86,18 @@
         // generated favicon/apple-touch-icon are committed, so builds do not
         // import this script.
         "scripts/generate-icons.mjs",
+        // Ручний генератор підмножин шрифтів (README лендінга, F5/F9);
+        // результат `src/fonts/` закомічено.
+        "scripts/subset-fonts.mjs",
         "middleware.ts"
       ],
-      "ignore": ["scripts/site-url.d.mts"]
+      "ignore": ["scripts/site-url.d.mts"],
+      // Пакети fontsource – джерело для `scripts/subset-fonts.mjs`, який
+      // резолвить їх динамічним `require.resolve`; у бандл вони не йдуть.
+      "ignoreDependencies": [
+        "@fontsource-variable/manrope",
+        "@fontsource/unbounded"
+      ]
     },
     "apps/server": {
       "project": ["src/**/*.{js,ts}"],
