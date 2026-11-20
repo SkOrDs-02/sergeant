@@ -4351,7 +4351,7 @@
       "canonical_owner": "docs/work/specs/finyk-operations-filters.md"
     },
     {
-      "old_path": null,
+      "old_path": "docs/work/specs/finyk-receipt-total-not-visible.md",
       "new_path": "docs/work/specs/finyk-receipt-total-not-visible.md",
       "action": "keep",
       "genre": "active-work",
