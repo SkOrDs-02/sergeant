@@ -113,12 +113,12 @@ export function HubSpendHero({ storageBump }: HubSpendHeroProps) {
           </span>
         </p>
         {/* Тиха дія (рішення власника 2026-11-19): той самий інтент, що пошук
-            «Додати витрату» і клавіша N; форма відкривається в Фініку. */}
+            «Додати витрату» і клавіша N; форма відкривається в Фініку.
+            `text` - канонічна тиха дія в рядку (v3.1): без заливки й hue
+            модуля, зона дотику 44 px задана самим варіантом. */}
         <Button
-          variant="ghost"
-          tone="finyk"
-          size="sm"
-          className="-mr-2 shrink-0 pointer-coarse:min-h-[44px] pointer-coarse:min-w-[44px]"
+          variant="text"
+          className="-mr-2 shrink-0"
           aria-label={t.addExpenseAria}
           onClick={() =>
             openHubModuleWithAction("finyk", "add_expense", "hub_dashboard")
