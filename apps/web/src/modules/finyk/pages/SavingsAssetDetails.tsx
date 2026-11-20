@@ -154,7 +154,7 @@ export function SavingsAssetDetails({
               })
             }
           >
-            {t.rateSave}
+            {t.rateApply}
           </Button>
         </div>
       )}
