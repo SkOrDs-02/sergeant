@@ -15,7 +15,11 @@ import { useMonthlyPlan } from "../../modules/fizruk/hooks/useMonthlyPlan";
 import { patchNutritionPrefs } from "../../modules/nutrition/lib/nutritionStorage";
 import { useNutritionPrefsSnapshot } from "../../modules/nutrition/hooks/useNutritionPrefsHydration";
 import { messages } from "@shared/i18n/uk";
+import { webKVStore } from "@shared/lib/storage/storage";
+import { useStorageReady } from "../db/storageReady";
 import {
+  getActiveModules,
+  isActiveModule,
   PUSH_DAILY_CAP_DEFAULT,
   PUSH_DAILY_CAP_MAX,
   QUIET_HOURS_DEFAULT_END_MIN,
@@ -110,6 +114,18 @@ export function NotificationsSection() {
     serverCopy,
     true,
   );
+
+  const pushFinykAlerts = useServerPreference(
+    "pushFinykAlerts",
+    serverCopy,
+    true,
+  );
+  // Тумблер лімітів і платежів видно, лише коли «Фінік» увімкнений. Вибір
+  // модулів лежить у `webKVStore`, що до bootstrap порожній: перечитуємо,
+  // щойно сховище готове (AGENTS apps/web, `useStorageReady`).
+  // Підписка перерендерить секцію, коли bootstrap закінчиться; читання синхронне.
+  useStorageReady();
+  const finykActive = isActiveModule(getActiveModules(webKVStore), "finyk");
 
   const monthlyPlan = useMonthlyPlan();
 
@@ -387,7 +403,11 @@ export function NotificationsSection() {
         )}
       </SettingsSubGroup>
 
-      <MonoPushSetting pref={pushMonoTransactions} />
+      <MonoPushSetting
+        pref={pushMonoTransactions}
+        alertsPref={pushFinykAlerts}
+        finykActive={finykActive}
+      />
     </SettingsGroup>
   );
 }
