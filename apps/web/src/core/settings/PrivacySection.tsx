@@ -13,6 +13,7 @@ import { PUSH_DAILY_CAP_DEFAULT } from "@sergeant/shared";
 import { useOptionalHubShell } from "../app/HubShellContext";
 import { PROFILE_SECTION_HASHES } from "../profile/profileSectionNavigation";
 import { LegalLinks } from "../legal/LegalLinks";
+import { fillAiProcessorNames } from "../legal/legalShared";
 import { settingsSectionTitle } from "../hub/settingsSectionsCatalog";
 import {
   SettingsGroup,
@@ -384,7 +385,8 @@ export function PrivacySection() {
       {/* PR-S4 (рішення founder-а 2026-09-14): обидві декларації переїхали
           сюди з «Резервної копії». Вони стоять ПІСЛЯ згод і юрдоків
           навмисно — спершу те, чим людина керує, потім те, що їй обіцяють.
-          Текст не змінено жодним словом, лише місце. */}
+          Назви обробників у тексті підставляються з `legal/legalShared.ts`
+          (одне джерело з політикою приватності, 2026-11-19). */}
       <SettingsSubGroup title={disclosure.subprocessors.title}>
         <ContentGroup>
           <ContentRow>
@@ -392,7 +394,7 @@ export function PrivacySection() {
               {AI_DATA_ROW_TITLES.text}
             </p>
             <p className="mt-1 text-style-body text-subtle leading-relaxed">
-              {disclosure.subprocessors.body}
+              {fillAiProcessorNames(disclosure.subprocessors.body)}
             </p>
           </ContentRow>
           <ContentRow>

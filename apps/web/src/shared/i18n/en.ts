@@ -271,7 +271,7 @@ export const messagesEn: Partial<{
   dataDisclosure: {
     subprocessors: {
       title: "Where your data goes for AI",
-      body: "To answer in chat, give advice and recognize photos, we send requests to Anthropic, and to Voyage AI for memory search. Before sending we strip email, phone, IBAN, card number and tax ID, and people's names from bank transfers.",
+      body: "To answer in chat, give advice and recognize photos, we send requests through the {gateway} gateway to models from {gatewayVendors}, or directly to {fallback} if the gateway is unavailable. {voice} transcribes voice recordings and {memory} powers memory search. Before sending text we strip email, phone, IBAN, card number and tax ID.",
       photoNote:
         "Photos are the exception: part of the frame cannot be hidden, so it is sent whole. We warn you before the first photo.",
     },

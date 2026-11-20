@@ -28,31 +28,129 @@ export interface LegalProcessor {
 }
 
 /**
+ * Постачальник моделі за шлюзом OpenRouter. Шлюз сам моделей не має: запит
+ * виконує модель одного з цих постачальників, і дані бачить і шлюз, і він.
+ *
+ * AI-CONTEXT: перелік звіряється з машиночитним блоком
+ * `public-ai-processors` у `docs/governance/security/llm-subprocessors.md` і
+ * з префіксами дефолтних моделей сервера (`legalProcessorsRegistry.test.ts`).
+ * Змінилась модель на сервері → спершу реєстр, потім цей перелік; текст
+ * політики й блок у Налаштуваннях збираються звідси самі.
+ */
+export interface AiGatewayVendor {
+  /** Назва компанії латинкою, як у реєстрі. */
+  readonly name: string;
+  /** Префікс моделі в OpenRouter (`openai/gpt-6-luna` → `openai`). */
+  readonly slug: string;
+  /** Родина моделей у дужках, якщо назва компанії її не каже. */
+  readonly models?: string;
+}
+
+export const AI_GATEWAY_VENDORS: ReadonlyArray<AiGatewayVendor> = [
+  { name: "Google", slug: "google", models: "Gemini" },
+  { name: "Z.ai", slug: "z-ai", models: "GLM" },
+  { name: "DeepSeek", slug: "deepseek" },
+  { name: "Anthropic", slug: "anthropic", models: "Claude" },
+  { name: "OpenAI", slug: "openai", models: "GPT" },
+] as const;
+
+/**
+ * Хто може розпізнавати фото чека й скриншот банківської виписки: чинний
+ * постачальник за замовчуванням (`OPENROUTER_RECEIPT_MODEL`) і ті, на кого
+ * власник може повернути шлях змінною без релізу. Текст політики називає
+ * обох, тож відкат у межах цього списку не робить його неправдою.
+ */
+export const RECEIPT_VISION_VENDORS = {
+  defaultSlug: "openai",
+  rollbackSlugs: ["google"],
+} as const;
+
+export function gatewayVendorName(slug: string): string {
+  const vendor = AI_GATEWAY_VENDORS.find((v) => v.slug === slug);
+  if (!vendor) throw new Error(`Unknown AI gateway vendor: ${slug}`);
+  return vendor.name;
+}
+
+function formatGatewayVendor(vendor: AiGatewayVendor): string {
+  return vendor.models ? `${vendor.name} (${vendor.models})` : vendor.name;
+}
+
+/** «Google (Gemini), Z.ai (GLM), DeepSeek, Anthropic (Claude), OpenAI (GPT)». */
+export const AI_GATEWAY_VENDOR_LIST =
+  AI_GATEWAY_VENDORS.map(formatGatewayVendor).join(", ");
+
+/** «OpenAI (за замовчуванням) або Google». */
+export const RECEIPT_VISION_VENDOR_LIST = [
+  `${gatewayVendorName(RECEIPT_VISION_VENDORS.defaultSlug)} (за замовчуванням)`,
+  ...RECEIPT_VISION_VENDORS.rollbackSlugs.map(gatewayVendorName),
+].join(" або ");
+
+/**
  * Субпроцесори згруповані за призначенням, щоб користувач бачив не
  * алфавітний список вендорів, а маршрути своїх даних.
+ *
+ * `AI_PROCESSORS` — ті, з ким сервер говорить напряму. Імена в полі
+ * `registryName` збігаються з блоком `public-ai-processors` реєстру.
  */
-export const AI_PROCESSORS: ReadonlyArray<LegalProcessor> = [
+export interface AiLegalProcessor extends LegalProcessor {
+  readonly registryName: string;
+}
+
+export const AI_PROCESSORS: ReadonlyArray<AiLegalProcessor> = [
+  {
+    name: "OpenRouter",
+    registryName: "OpenRouter",
+    role: `Шлюз, через який за замовчуванням ідуть текстові запити й фото до AI: чат Сержанта, поради коуча, тижневий дайджест, план харчування, аналіз фото страв, категоризація транзакцій Monobank, розпізнавання чеків і скриншотів банківських виписок. Відповідає модель одного з постачальників за шлюзом: ${AI_GATEWAY_VENDOR_LIST}. Які саме моделі стоять за шлюзом, може змінюватись; цей перелік ми тримаємо актуальним`,
+    region: "США; модель постачальника може працювати в іншій юрисдикції",
+  },
   {
     name: "Anthropic (Claude)",
-    role: "AI-чат, поради коуча, аналіз фото страв, автокатегоризація транзакцій",
+    registryName: "Anthropic",
+    role: "Резервний шлях для тих самих AI-функцій, коли шлюз OpenRouter недоступний",
     region: "США",
   },
   {
-    name: "OpenRouter",
-    role: "Маршрутизація частини AI-запитів (поради коуча, тижневий дайджест, планування харчування, категоризація транзакцій Monobank, розпізнавання чеків і скриншотів банківських виписок) до сторонніх моделей, зокрема Google Gemini та OpenAI",
-    region: "США; upstream-модель може працювати в іншій юрисдикції",
-  },
-  {
     name: "Groq",
+    registryName: "Groq",
     role: "Розпізнавання голосових записів у текст (транскрипція)",
     region: "США",
   },
   {
     name: "Voyage AI",
+    registryName: "Voyage AI",
     role: "Векторні представлення (embeddings) текстів для памʼяті AI-асистента",
     region: "США",
   },
 ] as const;
+
+function aiProcessorName(registryName: string): string {
+  const processor = AI_PROCESSORS.find((p) => p.registryName === registryName);
+  if (!processor) throw new Error(`Unknown AI processor: ${registryName}`);
+  return processor.registryName;
+}
+
+/**
+ * Підставляє назви обробників ШІ в короткий текст каталогу (блок «Куди
+ * їдуть дані для AI» у Налаштуваннях), щоб і він, і політика брали назви з
+ * одного переліку. Плейсхолдери: `{gateway}`, `{gatewayVendors}`,
+ * `{fallback}`, `{voice}`, `{memory}`.
+ */
+export function fillAiProcessorNames(template: string): string {
+  const names: Record<string, string> = {
+    gateway: aiProcessorName("OpenRouter"),
+    gatewayVendors: AI_GATEWAY_VENDOR_LIST,
+    fallback: aiProcessorName("Anthropic"),
+    voice: aiProcessorName("Groq"),
+    memory: aiProcessorName("Voyage AI"),
+  };
+  return template.replace(/\{(\w+)\}/g, (match, key: string) => {
+    const name = names[key];
+    if (name === undefined) {
+      throw new Error(`Unknown AI processor placeholder: ${match}`);
+    }
+    return name;
+  });
+}
 
 export const PAYMENT_PROCESSORS: ReadonlyArray<LegalProcessor> = [
   {
