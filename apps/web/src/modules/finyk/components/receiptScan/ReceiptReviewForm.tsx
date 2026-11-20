@@ -17,6 +17,7 @@ import { DateField } from "@shared/components/ui/DateField";
 import { Input } from "@shared/components/ui/Input";
 import { Label } from "@shared/components/ui/FormField";
 import { Select } from "@shared/components/ui/Select";
+import { messages } from "@shared/i18n/uk";
 import type { ReceiptDraft } from "@sergeant/api-client";
 import type { CustomCategoryInput } from "@sergeant/finyk-domain";
 import {
@@ -29,6 +30,8 @@ import { expenseCustomCategories } from "../manualIncomeCategories";
 import {
   addBlankDraftItem,
   draftDateKey,
+  draftLooksUnrecognized,
+  receiptTotalMissing,
   removeDraftItem,
   updateDraftDate,
   updateDraftItem,
@@ -86,6 +89,14 @@ export function ReceiptReviewForm({
     ...CATEGORY_SLUGS,
     ...expenseCategories.map((c) => c.id),
   ];
+
+  // Підсумку на фото не видно (рішення власника 2026-11-19): поле «Сума»
+  // підсвічене з підказкою. Порожня чернетка («не чек») має власний банер
+  // у викликача, тож тут мовчимо, щоб не було двох попереджень.
+  const totalHint =
+    receiptTotalMissing(draft) && !draftLooksUnrecognized(draft)
+      ? messages.finyk.receiptTotal.hint
+      : undefined;
 
   const handleEditItem = (index: number, patch: EditableItemPatch) =>
     setDraft((d) => updateDraftItem(d, index, patch));
@@ -155,6 +166,8 @@ export function ReceiptReviewForm({
             ariaLabel="Сума чека"
             disabled={disabled}
             size="md"
+            error={totalHint !== undefined}
+            helperText={totalHint}
           />
         </div>
       </div>

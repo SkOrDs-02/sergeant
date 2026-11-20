@@ -508,6 +508,11 @@ describe("ReceiptScanSheet — чеки пачкою (multiple-пікер)", () 
     fireEvent.change(screen.getByLabelText("Магазин"), {
       target: { value: "Кіоск" },
     });
+    // Сума 0 з фото не зберігається (рішення власника 2026-11-19): чек
+    // повертається у вибрані лише разом із введеною сумою.
+    fireEvent.change(screen.getByLabelText("Сума чека"), {
+      target: { value: "25" },
+    });
     fireEvent.click(screen.getByRole("button", { name: "Готово" }));
 
     // Авто-повернення у вибрані (`updateItemDraft`): заповнені поля =

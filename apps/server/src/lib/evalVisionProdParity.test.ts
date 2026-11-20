@@ -197,6 +197,24 @@ describe("зоровий стенд шле те саме тіло, що прод
         expect(c.user, `${key}/${c.name}`).toBe(p.shape.user);
     }
   });
+
+  it("обрізаний чек: промпт велить ставити 0, а суддя приймає лише 0 (рішення власника 2026-11-19)", () => {
+    const p = pipeline("receipt-scan");
+    expect(p.shape.system).toContain("не рахуй суму видимих позицій");
+    const cut = p.cases.find((c) => c.name.startsWith("обрізаний знизу"));
+    if (!cut?.judge) throw new Error("кейс обрізаного чека зник");
+    const answer = (total: number) =>
+      JSON.stringify({
+        store: "Сільпо",
+        date: "2026-11-19",
+        time: null,
+        total_kopiykas: total,
+        items: [],
+        confidence: 0.5,
+      });
+    expect(cut.judge(answer(0))).toBe(true);
+    expect(cut.judge(answer(4250))).not.toBe(true);
+  });
 });
 
 describe("фікстури чеків і виписок", () => {

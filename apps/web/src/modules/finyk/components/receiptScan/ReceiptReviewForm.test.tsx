@@ -165,4 +165,44 @@ describe("ReceiptReviewForm", () => {
     expect(labels).toContain("Хобі");
     expect(labels).not.toContain("Оренда");
   });
+
+  describe("підсумку на фото не видно (рішення власника 2026-11-19)", () => {
+    it("vision-чек із позиціями і сумою 0: попередження біля «Сума», поле підсвічене", () => {
+      render(<Harness initialDraft={{ ...baseDraft(), totalKopiykas: 0 }} />);
+      const total = screen.getByLabelText("Сума чека");
+      expect(total).toHaveAttribute("aria-invalid", "true");
+      expect(
+        screen.getByText("Підсумку на фото не видно, введи суму."),
+      ).toBeInTheDocument();
+    });
+
+    it("введена сума прибирає попередження", () => {
+      render(<Harness initialDraft={{ ...baseDraft(), totalKopiykas: 0 }} />);
+      fireEvent.change(screen.getByLabelText("Сума чека"), {
+        target: { value: "42,50" },
+      });
+      expect(
+        screen.queryByText("Підсумку на фото не видно, введи суму."),
+      ).not.toBeInTheDocument();
+      expect(screen.getByLabelText("Сума чека")).not.toHaveAttribute(
+        "aria-invalid",
+      );
+    });
+
+    it("порожня чернетка («не чек») не дублює попередження біля суми", () => {
+      render(
+        <Harness
+          initialDraft={{
+            ...baseDraft(),
+            store: "",
+            items: [],
+            totalKopiykas: 0,
+          }}
+        />,
+      );
+      expect(
+        screen.queryByText("Підсумку на фото не видно, введи суму."),
+      ).not.toBeInTheDocument();
+    });
+  });
 });

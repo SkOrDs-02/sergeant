@@ -16,6 +16,7 @@ import type {
   ReceiptRow,
 } from "./serialize.js";
 import { kyivDateString } from "./kyivClock.js";
+import { ValidationError } from "../../../obs/errors.js";
 import {
   emitServerSyncOps,
   lockUserSyncOpLog,
@@ -34,6 +35,17 @@ type WithSessionUser = Request & { user?: { id: string } };
  * (буквально коментар міграції), а не мовчки на рівні DB-дефолту.
  */
 const FALLBACK_STORE_NAME = "Невідомий магазин";
+
+/**
+ * Чек із фото, на якому не видно підсумку (рішення власника 2026-11-19,
+ * спека `docs/work/specs/finyk-receipt-total-not-visible.md`): модель
+ * ставить `total_kopiykas: 0`, і без цього guard-а чек ставав ручною
+ * витратою на 0 ₴. Код читає веб (`receiptErrors.ts`) і показує те саме
+ * спонукання, що й під полем «Сума». Схема `@sergeant/shared` нуль
+ * приймає навмисно: чек ДПС з нулем поводиться як раніше.
+ */
+export const RECEIPT_TOTAL_REQUIRED_CODE = "RECEIPT_TOTAL_REQUIRED";
+const RECEIPT_TOTAL_REQUIRED_MESSAGE = "Підсумку на фото не видно, введи суму.";
 
 // Колонки `receipts`, потрібні серіалізатору (`serialize.ts#ReceiptRow`).
 // Виписані буквально в КОЖНОМУ з трьох SQL нижче (а не через спільний
@@ -265,6 +277,15 @@ export default async function saveReceiptHandler(
 ): Promise<void> {
   const body = parseBody(ReceiptSaveRequestSchema, req);
   const userId = (req as WithSessionUser).user!.id;
+
+  // До транзакції: ні чека, ні витрати на 0 ₴. Ретрай уже збереженого
+  // раніше нульового чека теж отримає 400, а не старий рядок; таких чеків
+  // нові клієнти не створюють.
+  if (body.source === "vision" && body.totalKopiykas === 0) {
+    throw new ValidationError(RECEIPT_TOTAL_REQUIRED_MESSAGE, {
+      code: RECEIPT_TOTAL_REQUIRED_CODE,
+    });
+  }
 
   const storeName = body.store.trim() || FALLBACK_STORE_NAME;
   const purchasedAt = new Date(body.purchasedAt);
