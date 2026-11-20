@@ -705,7 +705,12 @@ describe("PrivacySection — V-12 (SettingsSubGroup primitive)", () => {
       renderSection();
       await openSection();
       expect(screen.getByText("Куди їдуть дані для AI")).toBeInTheDocument();
-      expect(screen.getByText(/Anthropic/)).toBeInTheDocument();
+      // Назви з `legal/legalShared.ts` (2026-11-19): шлюз, моделі за ним,
+      // без сирих плейсхолдерів каталогу.
+      const ai = screen.getByText(/Anthropic/);
+      expect(ai).toHaveTextContent(/OpenRouter/);
+      expect(ai).toHaveTextContent(/OpenAI/);
+      expect(ai.textContent).not.toMatch(/[{}]/);
       // Фото — саме той виняток, заради якого декларація й потрібна: воно
       // їде цілим, і замовчати це означало б обіцяти маскування, якого
       // немає.

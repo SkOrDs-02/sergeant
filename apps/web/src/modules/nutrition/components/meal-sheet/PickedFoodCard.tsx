@@ -41,6 +41,8 @@ import { messages } from "@shared/i18n/uk";
 import { formatDayMonth } from "@shared/lib/time/formatDate";
 import { addDaysISODate, todayISODate } from "@sergeant/nutrition-domain";
 import type { LastFoodPortion } from "../../lib/lastFoodPortion";
+import type { NutritionFavorites } from "../../hooks/useNutritionFavorites";
+import { FavoriteToggle } from "./FavoriteToggle";
 
 const QUICK_GRAMS = ["50", "100", "150", "200"] as const;
 
@@ -78,6 +80,8 @@ interface PickedFoodCardProps {
    * монтуванні; відсутня (редагування, комора) — старт як раніше.
    */
   getLastPortion?: ((foodId: string) => LastFoodPortion | null) | undefined;
+  /** Позначка «улюблене» (OD-27 Х-3 б); немає — серця немає. */
+  favorites?: NutritionFavorites | undefined;
 }
 
 /**
@@ -103,27 +107,30 @@ export function PickedFoodCard({
   skipInitialRescale = false,
   onUnitChange,
   getLastPortion,
+  favorites,
 }: PickedFoodCardProps) {
   const portions = pickedFood.portions ?? [];
   const foodId = pickedFood.id != null ? String(pickedFood.id) : "";
+  // Вага минулого запису виграє типову (і побутову порцію корпусу), але
+  // лише коли на старті стоїть саме типова вага продукту: фасування з чека
+  // чи відновлена чернетка точніші.
+  const [lastPortion] = useState(() => {
+    if (skipInitialRescale || !foodId || !getLastPortion) return null;
+    const typical = Math.round(Number(pickedFood.defaultGrams) || 100);
+    return Number(pickedGrams) === typical ? getLastPortion(foodId) : null;
+  });
   const [unitId, setUnitId] = useState(() =>
     pickInitialUnit(
       portions,
       foodId ? readLastUnit(foodId) : null,
       skipInitialRescale,
+      lastPortion != null,
     ),
   );
   const portion = portions.find((p) => p.id === unitId) ?? null;
   // Одиниця за замовчуванням - порція з кількістю 1: вага мусить їй
   // відповідати, інакше поле показувало б «0,33 скибки». Один раз на старті.
   const [startPortion] = useState(portion);
-  // Вага минулого запису виграє типову, але лише коли на старті стоїть саме
-  // типова вага продукту: фасування з чека чи відновлена чернетка точніші.
-  const [lastPortion] = useState(() => {
-    if (skipInitialRescale || !foodId || !getLastPortion) return null;
-    const typical = Math.round(Number(pickedFood.defaultGrams) || 100);
-    return Number(pickedGrams) === typical ? getLastPortion(foodId) : null;
-  });
   useEffect(() => {
     const start = lastPortion?.grams ?? startPortion?.grams;
     if (start != null) setPickedGrams(String(start));
@@ -232,6 +239,14 @@ export function PickedFoodCard({
             <span className="opacity-60">/ 100 г</span>
           </div>
         </div>
+        {/* Продукт «З упаковки» ще не в базі: позначати поки нічого. */}
+        {favorites && foodId && !pickedFood.unsaved && (
+          <FavoriteToggle
+            name={pickedFood.name ?? ""}
+            favorite={favorites.foodIds.has(foodId)}
+            onToggle={() => favorites.toggleFood(foodId)}
+          />
+        )}
         <button
           type="button"
           onClick={onChangeProduct}

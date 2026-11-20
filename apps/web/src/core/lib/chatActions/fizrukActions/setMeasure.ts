@@ -127,7 +127,11 @@ export function measureForChatSet(
   return counted(base, v) && fitsWeight ? base : measureFromData(v, base);
 }
 
-/** `count` однакових підходів із полями лише цього типу. */
+/**
+ * `count` однакових підходів із полями лише цього типу. Підхід, записаний
+ * через чат (`log_set`), уже зроблений: `done: true` (Фз-3 (в), спека
+ * `fizruk-set-done-flag-and-set-type.md`).
+ */
 export function buildChatSets(
   m: ExerciseMeasure,
   v: ChatSetValues,
@@ -138,6 +142,7 @@ export function buildChatSets(
     const set: WorkoutSet = {
       weightKg: f.weight ? v.weightKg : 0,
       reps: f.reps ? v.reps : 0,
+      done: true,
     };
     if (f.time && v.durationSec > 0) set.durationSec = v.durationSec;
     if (f.distance && v.distanceM > 0) set.distanceM = v.distanceM;

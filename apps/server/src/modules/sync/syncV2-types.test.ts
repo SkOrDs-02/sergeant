@@ -24,7 +24,8 @@ describe("syncV2 wire reason/type registries", () => {
     // Міграція 170 (Рутина): +5 причин лічильника й автовідмітки звички.
     // Міграція 171 (Фізрук): +1 `invalid_program_ref`.
     // Міграція 172 (Фізрук, тип виміру): +1 `invalid_measure`.
-    expect(APPLY_REJECT_REASONS).toHaveLength(86);
+    // Міграція 176 (Фізрук, Фз-3 (в)): +2 `invalid_done`, `invalid_set_type`.
+    expect(APPLY_REJECT_REASONS).toHaveLength(88);
     expect(new Set(APPLY_REJECT_REASONS).size).toBe(
       APPLY_REJECT_REASONS.length,
     );

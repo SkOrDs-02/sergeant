@@ -3,6 +3,8 @@ import type { ReceiptDraft } from "@sergeant/api-client";
 import {
   addBlankDraftItem,
   draftDateKey,
+  draftLooksUnrecognized,
+  receiptTotalMissing,
   removeDraftItem,
   updateDraftDate,
   updateDraftItem,
@@ -117,5 +119,32 @@ describe("updateDraftItem / removeDraftItem / addBlankDraftItem", () => {
     removeDraftItem(draft, 0);
     addBlankDraftItem(draft);
     expect(draft).toEqual(snapshot);
+  });
+});
+
+describe("receiptTotalMissing (чек без видимого підсумку, рішення власника 2026-11-19)", () => {
+  it("vision-чек із позиціями і сумою 0: суму треба ввести", () => {
+    const draft = { ...baseDraft(), totalKopiykas: 0 };
+    expect(receiptTotalMissing(draft)).toBe(true);
+    // Не «не чек»: позиції є, тож це окремий стан, а не банер.
+    expect(draftLooksUnrecognized(draft)).toBe(false);
+  });
+
+  it("введена сума знімає стан", () => {
+    const draft = updateDraftTotalKopiykas(
+      { ...baseDraft(), totalKopiykas: 0 },
+      4250,
+    );
+    expect(receiptTotalMissing(draft)).toBe(false);
+  });
+
+  it("чек не з фото (ДПС) з нулем поводиться як раніше", () => {
+    const draft: ReceiptDraft = {
+      ...baseDraft(),
+      source: "dps",
+      fiscalNum: "4000123456",
+      totalKopiykas: 0,
+    };
+    expect(receiptTotalMissing(draft)).toBe(false);
   });
 });

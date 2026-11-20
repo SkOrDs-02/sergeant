@@ -131,14 +131,17 @@ export function planWorkout(action: PlanWorkoutAction): ChatActionResult {
             Number.isFinite(seconds) ? seconds : 0,
             weightKg,
           );
-          // logic-18: план сіє НЕзараховані рядки (`reps: 0`), як старт
-          // програми. Повтори й секунди з запиту в рядок не пишуться: рядок із
-          // ними вже «виконаний підхід» (`isSetCompleted`), а поля плану у
-          // `WorkoutItem` немає (`ProgramSessionDef.plan` — каталог програми).
-          const sets = buildPlannedSets(
-            setsN,
-            measureFields(measure).weight ? weightKg : 0,
-          );
+          // logic-18 + Фз-3 (в), дефолт П-Фз3-5 (А): рядки плану несуть
+          // значення плану й `done: false` — ціль, не факт; зарахованим рядок
+          // стає лише після ✓ (`isSetCompleted`). Значення лише за полями
+          // типу: повтори для типів із повторами, секунди для типів із часом.
+          const fields = measureFields(measure);
+          const reps = Number(ex.reps);
+          const sets = buildPlannedSets(setsN, fields.weight ? weightKg : 0, {
+            reps: fields.reps && Number.isFinite(reps) ? reps : undefined,
+            durationSec:
+              fields.time && Number.isFinite(seconds) ? seconds : undefined,
+          });
           return withMeasureMirror(
             withMeasure(
               buildWorkoutItemFromExercise(
@@ -166,18 +169,13 @@ export function planWorkout(action: PlanWorkoutAction): ChatActionResult {
   persistFizrukCustomExercises(resolver.created);
   persistFizrukWorkouts([newW, ...readFizrukWorkouts()]);
   const exCount = items.length;
-  // Модель не має переказати «3×10 записано»: повтори й секунди з запиту не
-  // зберігаються.
-  const asked = (key: "reps" | "seconds") =>
-    Array.isArray(exercises) && exercises.some((ex) => ex?.[key] != null);
-  const notStored = [
-    asked("reps") ? "Повтори" : "",
-    asked("seconds") ? "секунди" : "",
-  ]
-    .filter(Boolean)
-    .join(" й ");
-  const repsNote = notStored
-    ? `. ${notStored.charAt(0).toUpperCase()}${notStored.slice(1)} в план не записуються: підхід зараховується, коли його зроблять`
+  // Модель не має переказати «3×10 записано» як зроблене: значення плану —
+  // ціль, рядки не зараховані до ✓ людини.
+  const asked =
+    Array.isArray(exercises) &&
+    exercises.some((ex) => ex?.reps != null || ex?.seconds != null);
+  const repsNote = asked
+    ? ". Повтори й секунди записано як план: підхід зараховується, коли його відмітять виконаним"
     : "";
   return `Тренування заплановано на ${targetDate} о ${timeStr}${note ? ` ("${note}")` : ""}: ${exCount} вправ${exCount === 1 ? "а" : exCount >= 2 && exCount <= 4 ? "и" : ""} (id:${wid})${repsNote}`;
 }

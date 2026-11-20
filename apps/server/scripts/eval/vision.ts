@@ -1,5 +1,6 @@
 /**
- * Зорові пайплайни стенду — `analyze-photo` і `refine-photo`.
+ * Зорові пайплайни стенду — `analyze-photo`, `refine-photo`, а з 2026-11-19
+ * ще скан чека й імпорт скриншота виписки (`vision.finyk.ts`).
  *
  * Чому окремо від текстового стенду (спека `ai-eval-harness-v2.md` § Зорові
  * шляхи): інший вхід (зображення, не репліка), інші кандидати (не кожна
@@ -10,28 +11,40 @@
  * `buildRefinePhotoPrompt`, не копії. Судді СТРУКТУРНІ: відповідь іде через
  * `extractJsonFromText` + `normalizePhotoResult`, тобто рівно той шлях, яким
  * прод перетворює текст моделі на екран користувача.
+ *
+ * Транспорт — продовий (`visionProdTransport.ts`): `/messages` через
+ * `anthropicMessages`, як у `analyze-photo.ts` і клієнтах фінʼїка.
  */
 
-import { sumMacrosNullable } from "@sergeant/shared";
-
 import { env } from "../../src/env/env.js";
-import { withOpenRouterProviderPrefs } from "../../src/lib/llm/openrouterDataPolicy.js";
 import { extractJsonFromText } from "../../src/http/jsonSafe.js";
 import {
-  anthropicMessages,
-  extractAnthropicText,
-} from "../../src/lib/anthropic.js";
-import {
   normalizePhotoResult,
-  PHOTO_ITEMS_LIMIT,
   type NormalizedPhotoResult,
 } from "../../src/lib/nutritionResponse.js";
 import { buildAnalyzePhotoPrompt } from "../../src/modules/nutrition/analyze-photo.js";
 import { buildRefinePhotoPrompt } from "../../src/modules/nutrition/refine-photo.js";
 import { visionViaOpenRouter } from "../../src/modules/nutrition/visionTransport.js";
+import {
+  RECEIPT_ANTHROPIC_FALLBACK_MODEL,
+  receiptVisionViaOpenRouter,
+} from "../../src/modules/finyk/receipts/visionTransport.js";
 import { prodRoutedCandidates } from "./candidates.js";
 import { catalogEntry, estimateCost } from "./cost.js";
-import type { Candidate, GoldenCase, Pipeline, RunResult } from "./types.js";
+import type { Candidate, RunResult } from "./types.js";
+import type { VisionCase, VisionPipeline } from "./visionCase.js";
+import {
+  RECEIPT_CASES,
+  STATEMENT_CASES,
+  STATEMENT_TODAY,
+} from "./vision.finyk.js";
+import {
+  callProdVision,
+  photoShape,
+  receiptShape,
+  statementShape,
+  type ProdVisionCall,
+} from "./visionProdTransport.js";
 import {
   BLURRED_PNG_B64,
   EMPTY_PNG_B64,
@@ -53,28 +66,23 @@ function photoResult(text: string): NormalizedPhotoResult | null {
 }
 
 /**
- * Посегментна якість розбивки (ініціатива 0023, крок 6 PR-1).
+ * «Кілька страв у кадрі» — чесне очікування для намальованого кадру.
  *
- * На кадрі три різні страви, тож єдиний рядок — це провал, який людина
- * побачить як занижений денний підсумок і не зможе виправити точково.
- * Перевіряємо три речі одночасно: скільки позицій приїхало, чи тримається
- * стеля 5, і чи підсумок дорівнює сумі позицій — розбіжність тут означає,
- * що екран показує число, якого в рядках немає.
+ * AI-CONTEXT: кадр — три кольорові кружки (`vision-images.ts`), а не фото.
+ * До 2026-11-19 суддя вимагав три позиції в `items`, тобто нагороджував
+ * модель за те, що вона назвала кружки стравами, і карав чесне «це малюнок,
+ * не їжа» (замір § 6.4 дослідження `2026-11-19-openrouter-new-models.md`:
+ * flash-lite «проходив», назвавши кадр «Три кульки» з порожніми КБЖВ, усі
+ * кандидати «провалювали», відповідаючи чесно). Сегментацію справжніх страв
+ * намальованим кадром не виміряти, тож кейс тепер міряє стриманість: провал —
+ * лише впевнена страва з калоріями.
  */
-function segmentationJudge(text: string): true | string {
+function drawingJudge(text: string): true | string {
   const r = photoResult(text);
   if (!r) return "не розібрався прод-парсером";
-  if (r.items.length < 2) {
-    return `позицій ${r.items.length} на кадрі з трьох страв (${r.dishName})`;
-  }
-  if (r.items.length > PHOTO_ITEMS_LIMIT) {
-    return `позицій ${r.items.length} — стеля ${PHOTO_ITEMS_LIMIT} не втрималась`;
-  }
-  const summed = sumMacrosNullable(r.items.map((i) => i.macros));
-  if (summed.kcal !== r.macros.kcal) {
-    return `підсумок ${r.macros.kcal ?? "—"} ≠ сума позицій ${summed.kcal ?? "—"}`;
-  }
-  return true;
+  if (!r.isFood || hedged(r) || r.macros.kcal == null) return true;
+  const names = r.items.map((i) => i.name).join(", ");
+  return `впевнено назвав малюнок їжею: «${r.dishName}»${names ? ` (${names})` : ""}, ${r.macros.kcal} ккал`;
 }
 
 /** Модель зізналася, що даних бракує: питання або низька впевненість. */
@@ -104,9 +112,15 @@ function refusalJudge(text: string): true | string {
 
 const image = (base64: string) => ({ base64, mimeType: PNG_MIME });
 
+/** Вигадка на кадрі без їжі: прод показав би страву з калоріями. */
+const inventedFood = (text: string) => {
+  const r = photoResult(text);
+  return r !== null && r.isFood && r.macros.kcal != null && r.macros.kcal > 0;
+};
+
 const analyzePrompt = buildAnalyzePhotoPrompt({ locale: "uk-UA" });
 
-const ANALYZE_CASES: GoldenCase[] = [
+const ANALYZE_CASES: VisionCase[] = [
   {
     name: "етикетка іноземною",
     trap: "НЕПРАВИЛЬНО: не прочитати намальований текст і вигадати страву замість молока, або загубити обʼєм 950 мл. Обʼєктивна перевірка тут одна — чи доїхали числа з етикетки у відповідь.",
@@ -127,27 +141,41 @@ const ANALYZE_CASES: GoldenCase[] = [
     trap: "НЕПРАВИЛЬНО: впевнено назвати страву й видати точні КБЖВ по кадру, де нічого не розібрати. Правильно — питання або низька confidence. Прод показує ці цифри як факт, тож вигадана впевненість тут дорожча за відмову.",
     user: analyzePrompt.user,
     image: image(BLURRED_PNG_B64),
+    abstain: true,
+    fabricated: (text) => {
+      const r = photoResult(text);
+      return r !== null && !hedged(r) && r.isFood;
+    },
+    // AI-CONTEXT: до 2026-11-19 суддя вимагав лише `hedged`, тобто валив
+    // чесну відмову («розмите фото, їжі не видно», `isFood: false` з високою
+    // впевненістю саме в цьому) і пропускав вигадану страву з питанням. Провал
+    // тепер — лише впевнена страва без питань, як і каже пастка.
     judge: (text) => {
       const r = photoResult(text);
       if (!r) return "не розібрався прод-парсером";
       return (
+        !r.isFood ||
         hedged(r) ||
         `впевнений на розмитому: confidence=${r.confidence}, питань ${r.questions.length}`
       );
     },
   },
   {
-    name: "кілька страв у кадрі",
-    trap: "НЕПРАВИЛЬНО: описати одну страву з трьох і порахувати КБЖВ лише для неї — користувач отримає занижений денний підсумок. Правильно: окрема позиція в `items` на кожну страву, щоб хибну можна було виправити без арифметики.",
+    name: "намальовані кружки замість страв",
+    trap: "НЕПРАВИЛЬНО: назвати три намальовані кружки стравами і впевнено порахувати калорії. Кадр синтетичний, це не їжа, тож чесна відповідь — відмова, питання чи низька впевненість. Сегментацію справжніх страв цим кадром не виміряти (див. `drawingJudge`).",
     user: analyzePrompt.user,
     image: image(MULTI_DISH_PNG_B64),
-    judge: segmentationJudge,
+    abstain: true,
+    fabricated: inventedFood,
+    judge: drawingJudge,
   },
   {
     name: "порожній кадр",
     trap: "НЕПРАВИЛЬНО: вигадати страву і КБЖВ там, де їжі немає взагалі. Це найдорожчий режим відмови: цифри потрапляють у денний щоденник як справжні. Уточнююче питання тут теж провал — питати про порцію порожнечі нема сенсу, потрібна відмова.",
     user: analyzePrompt.user,
     image: image(EMPTY_PNG_B64),
+    abstain: true,
+    fabricated: inventedFood,
     judge: refusalJudge,
   },
   {
@@ -155,12 +183,14 @@ const ANALYZE_CASES: GoldenCase[] = [
     trap: "НЕПРАВИЛЬНО: назвати предмет стравою або почати зʼясовувати його порцію. Саме цей режим відмови зловили на фото кота: «Кіт», впевненість 100%, нулі в КБЖВ і питання «Чи є на фото щось інше, окрім кота?» — з кнопкою «Зберегти в журнал» під ними.",
     user: analyzePrompt.user,
     image: image(NON_FOOD_PNG_B64),
+    abstain: true,
+    fabricated: inventedFood,
     judge: refusalJudge,
   },
 ];
 
 /** Попередній результат для refine — свідомо занижений під 150 г. */
-const PRIOR_RESULT = {
+export const PRIOR_RESULT = {
   dishName: "Овочева тарілка",
   confidence: 0.5,
   portion: { label: "150 г", gramsApprox: 150 },
@@ -169,14 +199,24 @@ const PRIOR_RESULT = {
   questions: ["Яка вага порції?"],
 };
 
-const refinePrompt = buildRefinePhotoPrompt({
+/**
+ * Тіло refine-запиту кейса — тест паритету шле його в прод-хендлер.
+ *
+ * AI-CONTEXT: до 2026-11-19 тут стояло `{ q, a }`, а прод-схема
+ * (`RefinePhotoSchema`) приймає `{ question, answer }` і зайві ключі зрізає:
+ * стенд показував моделі Q&A, якого прод не шле ніколи (у проді доїхало б
+ * `[{}]`). Знайшов тест паритету транспорту.
+ */
+export const REFINE_INPUT = {
   prior_result: PRIOR_RESULT,
   portion_grams: 450,
-  qna: [{ q: "Чи була олія?", a: "Так, столова ложка" }],
+  qna: [{ question: "Чи була олія?", answer: "Так, столова ложка" }],
   locale: "uk-UA",
-});
+};
 
-const REFINE_CASES: GoldenCase[] = [
+const refinePrompt = buildRefinePhotoPrompt(REFINE_INPUT);
+
+const REFINE_CASES: VisionCase[] = [
   {
     name: "перерахунок під 450 г",
     trap: "НЕПРАВИЛЬНО: повторити КБЖВ попереднього результату (180 ккал на 150 г) при вазі, більшій утричі. Уточнення користувача тоді не має жодного ефекту — саме та тиха поломка, заради якої існує окремий ендпоінт.",
@@ -187,9 +227,17 @@ const REFINE_CASES: GoldenCase[] = [
       if (!r) return "не розібрався прод-парсером";
       // Порція втричі більша — ккал мають помітно зрости. Точний множник не
       // вимагаємо: додана олія теж легально змінює число.
+      //
+      // AI-CONTEXT: до 2026-11-19 поріг був 350, тобто «помнож чернетку на
+      // три». Промпт же прямо каже, що попередній результат — чернетка, а не
+      // істина, і кандидати (замір § 6.5 дослідження
+      // `2026-11-19-openrouter-new-models.md`) перераховували з нуля: 450 г
+      // овочів плюс ложка олії = 300–340 ккал, що фізично правдоподібно, а
+      // суддя це валив. Пастка ж — «повторити 180». Нижня межа 250: 450 г
+      // найлегших овочів (~130 ккал) плюс столова ложка олії (~120 ккал).
       if (r.macros.kcal == null) return "ккал відсутні";
       return (
-        r.macros.kcal >= 350 || `${r.macros.kcal} ккал — не перерахував із 180`
+        r.macros.kcal >= 250 || `${r.macros.kcal} ккал — не перерахував із 180`
       );
     },
   },
@@ -216,15 +264,54 @@ const VISION_CANDIDATES: Candidate[] = [
   },
 ];
 
-export const VISION_PIPELINES: Pipeline[] = [
+/** Чек і виписка ходять на одній env-парі (`OPENROUTER_RECEIPT_MODEL`). */
+/**
+ * Колишній дефолт чеків лишається кандидатом для порівняння (рішення
+ * власника 2026-11-19 перевело шлях на Luna; база у зведенні — чинний
+ * прод-дефолт, див. `prodBaselineFor`).
+ */
+const RECEIPT_PREVIOUS_DEFAULT = "google/gemini-2.5-flash-lite";
+
+const RECEIPT_CANDIDATES: Candidate[] = [
+  ...prodRoutedCandidates(
+    receiptVisionViaOpenRouter() ? "openrouter" : "anthropic",
+    env.OPENROUTER_RECEIPT_MODEL,
+    RECEIPT_ANTHROPIC_FALLBACK_MODEL,
+  ),
+  ...(env.OPENROUTER_RECEIPT_MODEL === RECEIPT_PREVIOUS_DEFAULT
+    ? []
+    : [
+        {
+          provider: "openrouter" as const,
+          model: RECEIPT_PREVIOUS_DEFAULT,
+          label: "попередній дефолт чеків",
+        },
+      ]),
+];
+
+/** Чинний прод-дефолт шляху — база колонки «×база» у зведенні. */
+export function prodBaselineFor(path: string): string {
+  return path === "food"
+    ? env.OPENROUTER_VISION_MODEL
+    : env.OPENROUTER_RECEIPT_MODEL;
+}
+
+const analyzeShape = photoShape("analyze-photo", analyzePrompt);
+const refineShape = photoShape("refine-photo", refinePrompt);
+const receipt = receiptShape();
+const statement = statementShape(STATEMENT_TODAY);
+
+export const VISION_PIPELINES: VisionPipeline[] = [
   {
     key: "analyze-photo",
     label: "Nutrition analyze-photo (зір)",
-    system: analyzePrompt.system,
+    path: "food",
+    shape: analyzeShape,
+    system: analyzeShape.system,
     promptOrigin: "modules/nutrition/analyze-photo.ts::buildAnalyzePhotoPrompt",
     // Дзеркалить прод (`analyze-photo.ts`): нижча стеля рвала б JSON посеред
     // масиву позицій, і стенд міряв би власний ліміт замість якості моделі.
-    maxTokens: 1000,
+    maxTokens: analyzeShape.maxTokens,
     judge: (text) => photoResult(text) !== null,
     cases: ANALYZE_CASES,
     candidates: [...VISION_CANDIDATES],
@@ -232,12 +319,40 @@ export const VISION_PIPELINES: Pipeline[] = [
   {
     key: "refine-photo",
     label: "Nutrition refine-photo (зір)",
-    system: refinePrompt.system,
+    path: "food",
+    shape: refineShape,
+    system: refineShape.system,
     promptOrigin: "modules/nutrition/refine-photo.ts::buildRefinePhotoPrompt",
-    maxTokens: 950,
+    maxTokens: refineShape.maxTokens,
     judge: (text) => photoResult(text) !== null,
     cases: REFINE_CASES,
     candidates: [...VISION_CANDIDATES],
+  },
+  {
+    key: "receipt-scan",
+    label: "Finyk скан чека (зір)",
+    path: "receipt",
+    shape: receipt,
+    system: receipt.system,
+    promptOrigin:
+      "modules/finyk/receipts/prompts.ts::RECEIPT_VISION_SYSTEM_PROMPT",
+    maxTokens: receipt.maxTokens,
+    judge: (text) => extractJsonFromText(text) !== null,
+    cases: RECEIPT_CASES.map((c) => ({ ...c, user: receipt.user })),
+    candidates: [...RECEIPT_CANDIDATES],
+  },
+  {
+    key: "statement-import",
+    label: "Finyk імпорт скриншота виписки (зір)",
+    path: "statement",
+    shape: statement,
+    system: statement.system,
+    promptOrigin:
+      "modules/finyk/import/prompts.ts::IMPORT_SCREENSHOT_VISION_SYSTEM_PROMPT",
+    maxTokens: statement.maxTokens,
+    judge: (text) => extractJsonFromText(text) !== null,
+    cases: STATEMENT_CASES.map((c) => ({ ...c, user: statement.user })),
+    candidates: [...RECEIPT_CANDIDATES],
   },
 ];
 
@@ -290,207 +405,102 @@ export function filterByModality(
 
 // ── Прогін ──────────────────────────────────────────────────────────
 
-const OPENROUTER_URL = "https://openrouter.ai/api/v1/chat/completions";
+const DRY_RUN_CALL: ProdVisionCall = {
+  ok: true,
+  text: "stub",
+  inputTokens: 0,
+  outputTokens: 0,
+  servedBy: null,
+  gatewayCostUsd: null,
+  stopReason: null,
+  attemptStatuses: [],
+  finalStatus: null,
+};
 
-interface RawCall {
-  ok: boolean;
-  text: string;
-  inputTokens: number | null;
-  outputTokens: number | null;
-  /** Постачальник і списана шлюзом вартість (лише OpenRouter-гілка). */
-  servedBy?: string | null;
-  gatewayCostUsd?: number | null;
-  error?: string;
+/** Вердикт судді з тексту відповіді: спільний для прогону і перерахунку. */
+function judgeVisionText(
+  pipeline: VisionPipeline,
+  goldenCase: VisionCase,
+  text: string,
+): Pick<
+  RunResult,
+  "passedJudge" | "judgeReason" | "brokenJson" | "fabricated"
+> {
+  const verdict = (goldenCase.judge ?? pipeline.judge)(text);
+  return {
+    passedJudge: verdict === true,
+    judgeReason: typeof verdict === "string" ? verdict : null,
+    brokenJson: typeof verdict === "string" && /прод-парсер/.test(verdict),
+    fabricated:
+      verdict !== true && goldenCase.fabricated
+        ? goldenCase.fabricated(text)
+        : false,
+  };
 }
 
 /**
- * AI-CONTEXT: чому не `invokeLLM`, яким ходить текстовий стенд. `LLMMessage.content`
- * у продовій абстракції — це `string`; блоків із зображенням у неї не влазить,
- * і продові зорові хендлери теж ідуть повз неї, прямо в `anthropicMessages()`.
- * Тож anthropic-гілка нижче викликає РІВНО ту саму функцію, що
- * `analyze-photo.ts`, а openrouter-гілка дзеркалить `OpenRouterProvider`
- * з `image_url`-блоком. Маскування PII тут навмисно немає: у стенді немає
- * даних користувача — картинки намальовані, промпт продовий.
+ * Перерахунок збереженого рядка (`--json-out`) поточними суддями, без
+ * мережі: правка судді не вимагає платного повтору. `null` — кейс або
+ * пайплайн зник зі стенду.
  */
-async function callVision(
-  candidate: Candidate,
-  system: string,
-  goldenCase: GoldenCase,
-  maxTokens: number,
-  endpoint: string,
-): Promise<RawCall> {
-  const img = goldenCase.image;
-  if (!img)
-    return {
-      ok: false,
-      text: "",
-      inputTokens: null,
-      outputTokens: null,
-      error: "кейс без зображення",
-    };
-
-  if (candidate.provider === "anthropic") {
-    const { response, data } = await anthropicMessages(
-      env.ANTHROPIC_API_KEY,
-      {
-        model: candidate.model,
-        max_tokens: maxTokens,
-        temperature: 0.2,
-        system,
-        messages: [
-          {
-            role: "user",
-            content: [
-              {
-                type: "image",
-                source: {
-                  type: "base64",
-                  media_type: img.mimeType,
-                  data: img.base64,
-                },
-              },
-              { type: "text", text: goldenCase.user },
-            ],
-          },
-        ],
-      },
-      { timeoutMs: 60_000, endpoint },
-    );
-    if (!response || !response.ok) {
-      return {
-        ok: false,
-        text: "",
-        inputTokens: null,
-        outputTokens: null,
-        error: `anthropic HTTP ${response?.status ?? 0}`,
-      };
-    }
-    const usage = (data as { usage?: Record<string, number> } | undefined)
-      ?.usage;
-    return {
-      ok: true,
-      text: extractAnthropicText(data),
-      inputTokens: usage?.["input_tokens"] ?? null,
-      outputTokens: usage?.["output_tokens"] ?? null,
-    };
-  }
-
-  const response = await fetch(OPENROUTER_URL, {
-    method: "POST",
-    headers: {
-      "Content-Type": "application/json",
-      Authorization: `Bearer ${env.OPENROUTER_API_KEY}`,
-      "HTTP-Referer": "https://sergeant.app",
-      "X-Title": "Sergeant",
-    },
-    // Той самий `provider`, що в проді (`OpenRouterProvider`): без нього стенд
-    // міряв би постачальників, яких прод під `data_collection=deny` не бере.
-    body: JSON.stringify(
-      withOpenRouterProviderPrefs({
-        model: candidate.model,
-        max_tokens: maxTokens,
-        temperature: 0.2,
-        // Лише стенд: 5-те поле `--extra` (як у `eval:models`). Без нього
-        // шлюз вирішує глибину сам, як у проді.
-        ...(candidate.reasoning
-          ? { reasoning: { effort: candidate.reasoning } }
-          : {}),
-        messages: [
-          { role: "system", content: system },
-          {
-            role: "user",
-            content: [
-              {
-                type: "image_url",
-                image_url: {
-                  url: `data:${img.mimeType};base64,${img.base64}`,
-                },
-              },
-              { type: "text", text: goldenCase.user },
-            ],
-          },
-        ],
-      }),
-    ),
-    signal: AbortSignal.timeout(60_000),
-  });
-  const data = (await response.json().catch(() => ({}))) as {
-    choices?: Array<{ message?: { content?: string | null } }>;
-    usage?: {
-      prompt_tokens?: number;
-      completion_tokens?: number;
-      cost?: number;
-    };
-    provider?: string;
-    error?: { message?: string };
+export function rejudgeVisionResult(r: RunResult): RunResult | null {
+  const pipeline = VISION_PIPELINES.find((p) => p.key === r.pipeline);
+  const goldenCase = pipeline?.cases.find((c) => c.name === r.caseName);
+  if (!pipeline || !goldenCase) return null;
+  const base = {
+    ...r,
+    path: pipeline.path,
+    abstain: goldenCase.abstain === true,
   };
-  if (!response.ok) {
-    return {
-      ok: false,
-      text: "",
-      inputTokens: null,
-      outputTokens: null,
-      error: data.error?.message ?? `openrouter HTTP ${response.status}`,
-    };
-  }
-  return {
-    ok: true,
-    text: data.choices?.[0]?.message?.content ?? "",
-    inputTokens: data.usage?.prompt_tokens ?? null,
-    outputTokens: data.usage?.completion_tokens ?? null,
-    servedBy: typeof data.provider === "string" ? data.provider : null,
-    gatewayCostUsd:
-      typeof data.usage?.cost === "number" ? data.usage.cost : null,
-  };
+  if (r.transportFailed) return base;
+  return { ...base, ...judgeVisionText(pipeline, goldenCase, r.text) };
 }
 
 export async function runVisionOne(
-  pipeline: Pipeline,
-  goldenCase: GoldenCase,
+  pipeline: VisionPipeline,
+  goldenCase: VisionCase,
   candidate: Candidate,
   dryRun: boolean,
 ): Promise<RunResult> {
-  const system = goldenCase.system ?? pipeline.system ?? "";
   const t0 = Date.now();
-  const raw: RawCall = dryRun
-    ? { ok: true, text: "stub", inputTokens: 0, outputTokens: 0 }
-    : await callVision(
-        candidate,
-        system,
-        goldenCase,
-        pipeline.maxTokens,
-        `internal/vision-eval/${pipeline.key}`,
-      ).catch((err: unknown) => ({
-        ok: false,
-        text: "",
-        inputTokens: null,
-        outputTokens: null,
-        error: err instanceof Error ? err.message : String(err),
-      }));
+  const img = goldenCase.image;
+  const raw: ProdVisionCall = dryRun
+    ? DRY_RUN_CALL
+    : !img
+      ? { ...DRY_RUN_CALL, ok: false, text: "", error: "кейс без зображення" }
+      : await callProdVision(
+          candidate,
+          { ...pipeline.shape, user: goldenCase.user },
+          img,
+          `internal/vision-eval/${pipeline.key}`,
+        );
 
   const base = {
     ...(dryRun ? { executionMode: "dry-run" as const } : {}),
     pipeline: pipeline.key,
+    path: pipeline.path,
     caseName: goldenCase.name,
     trap: goldenCase.trap,
     candidate,
     latencyMs: Date.now() - t0,
-    servedBy: raw.servedBy ?? null,
-    gatewayCostUsd: raw.gatewayCostUsd ?? null,
+    servedBy: raw.servedBy,
+    gatewayCostUsd: raw.gatewayCostUsd,
     cacheReadTokens: null,
     // Зорові шляхи не user-facing текстом — голос міряти нема на чому.
     voiceFails: null,
+    attemptStatuses: raw.attemptStatuses,
+    finalStatus: raw.finalStatus,
+    stopReason: raw.stopReason,
+    abstain: goldenCase.abstain === true,
   };
 
   if (!raw.ok) {
     return {
       ...base,
       ok: false,
-      // Транспортна помилка (B47, напр. HTTP 401 без ключа) — модель не
-      // відповіла, це не вердикт судді. `report.ts` виключає такі рядки зі
-      // знаменника точності, інакше 401 рендериться як «модель провалила
-      // всі пастки» (закоміченy звіт `vision-eval-2026-08-25.md` саме так
-      // прочитався).
+      // Транспортна помилка (B47, напр. HTTP 401 без ключа чи 429 після
+      // ретраїв) — модель не відповіла, це не вердикт судді. `report.ts`
+      // виключає такі рядки зі знаменника точності.
       transportFailed: true,
       passedJudge: false,
       judgeReason: null,
@@ -499,15 +509,18 @@ export async function runVisionOne(
       costUsd: null,
       text: "",
       error: raw.error ?? "error",
+      brokenJson: false,
+      fabricated: false,
     };
   }
-  const verdict = (goldenCase.judge ?? pipeline.judge)(raw.text);
+  const judged = judgeVisionText(pipeline, goldenCase, raw.text);
   return {
     ...base,
     ok: true,
     transportFailed: false,
-    passedJudge: verdict === true,
-    judgeReason: typeof verdict === "string" ? verdict : null,
+    ...judged,
+    // Stub-відповідь не JSON: у сухому прогоні це не «бите JSON» моделі.
+    ...(dryRun ? { brokenJson: false, fabricated: false } : {}),
     inputTokens: raw.inputTokens,
     outputTokens: raw.outputTokens,
     costUsd: estimateCost(candidate.model, raw.inputTokens, raw.outputTokens),

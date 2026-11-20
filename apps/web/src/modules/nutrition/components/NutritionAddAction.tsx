@@ -48,7 +48,12 @@ export function NutritionAddAction({
   onQuickAdd,
   pantryOffer,
 }: NutritionAddActionProps) {
-  const chips = useNutritionQuickChips(log.nutritionLog, pantryItems);
+  // Х-3 (б): чипи за частотою в прийомі поточного часу доби.
+  const chips = useNutritionQuickChips(
+    log.nutritionLog,
+    pantryItems,
+    quickMealType(),
+  );
   const copyYesterday = useCopyYesterdayMeals({ log, toast, pantryOffer });
   if (activePage !== "start" && activePage !== "log") return null;
   const src = messages.nutrition.addSources;

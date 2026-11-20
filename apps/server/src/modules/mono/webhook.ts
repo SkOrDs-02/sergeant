@@ -11,6 +11,8 @@ import { sendToUserQuietly } from "../../push/send.js";
 import type { PushPayload } from "../../push/types.js";
 import { categorizeMcc } from "./mccCategories.js";
 import { loadMonoPushVerdict } from "./monoPushGate.js";
+import { finykPushDbFromQuery } from "../finyk/push/db.js";
+import { runFinykLimitPushQuietly } from "../finyk/push/limitPush.js";
 import { webhookSecretHash } from "./crypto.js";
 import { emitSecurityEvent } from "../../obs/securityEvents.js";
 import { elapsedMs } from "../../lib/timing.js";
@@ -471,6 +473,18 @@ export async function webhookHandler(
   // після відповіді Monobank. У тиху годину push не йде зовсім, без
   // зведення (Б-1 (А)); операція вже записана і видна у Фініку.
   const verdict = await loadMonoPushVerdict(userId, new Date());
+  // Push Фініка про ліміт 80 % / 100 % (Ф-4 (б)): лише нова гривнева
+  // витрата може перетнути поріг; надходження чи повтор доставки ні.
+  // Окремий тумблер, стеля й тихі години (`finyk/push/limitPush.ts`),
+  // незалежно від вердикту push про саму операцію.
+  if (item.amount < 0 && item.currencyCode === 980) {
+    void runFinykLimitPushQuietly(
+      finykPushDbFromQuery(query),
+      userId,
+      new Date(),
+      "mono_webhook",
+    );
+  }
   if (verdict !== "send") {
     // Без суми й опису операції (Hard Rule #21).
     logger.info({

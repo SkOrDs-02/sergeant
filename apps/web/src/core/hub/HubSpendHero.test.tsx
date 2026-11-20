@@ -1,6 +1,13 @@
 // @vitest-environment jsdom
 import { afterEach, describe, expect, it, vi } from "vitest";
-import { act, cleanup, render, screen } from "@testing-library/react";
+import {
+  act,
+  cleanup,
+  fireEvent,
+  render,
+  screen,
+} from "@testing-library/react";
+import { openHubModuleWithAction } from "@shared/lib/modules/hubNav";
 import { safeReadStringLS } from "@shared/lib/storage/storage";
 import { isFinykBalanceHidden } from "../../modules/finyk/lib/balanceVisibility";
 import { HubSpendHero } from "./HubSpendHero";
@@ -13,10 +20,58 @@ vi.mock(
     isFinykBalanceHidden: vi.fn(() => false),
   }),
 );
+vi.mock("@shared/lib/modules/hubNav", () => ({
+  openHubModuleWithAction: vi.fn(),
+}));
 afterEach(() => {
   cleanup();
+  vi.mocked(openHubModuleWithAction).mockClear();
   vi.useRealTimers();
   vi.mocked(isFinykBalanceHidden).mockReturnValue(false);
+});
+
+describe("HubSpendHero quick expense action", () => {
+  it("кнопка «Додати витрату» поруч із числом викликає інтент add_expense", () => {
+    vi.mocked(safeReadStringLS).mockReturnValue(
+      JSON.stringify({ todaySpent: 250, dayPlan: 1000, todayPoints: [] }),
+    );
+    render(<HubSpendHero />);
+    const btn = screen.getByRole("button", { name: "Додати витрату" });
+    expect(btn).toHaveTextContent("Витрата");
+    fireEvent.click(btn);
+    expect(openHubModuleWithAction).toHaveBeenCalledWith(
+      "finyk",
+      "add_expense",
+      "hub_dashboard",
+    );
+  });
+
+  it("порожній день (0 ₴) лишає кнопку: число показано нулем", () => {
+    vi.mocked(safeReadStringLS).mockReturnValue(
+      JSON.stringify({ todaySpent: 0, dayPlan: null, todayPoints: [] }),
+    );
+    render(<HubSpendHero />);
+    expect(
+      screen.getByRole("button", { name: "Додати витрату" }),
+    ).toBeInTheDocument();
+  });
+
+  it("без знімка hero немає, а отже немає й кнопки", () => {
+    vi.mocked(safeReadStringLS).mockReturnValue(null);
+    render(<HubSpendHero />);
+    expect(screen.queryByRole("button", { name: "Додати витрату" })).toBeNull();
+  });
+
+  it("при прихованих сумах кнопка лишається, суми замасковані", () => {
+    vi.mocked(isFinykBalanceHidden).mockReturnValue(true);
+    vi.mocked(safeReadStringLS).mockReturnValue(
+      JSON.stringify({ todaySpent: 1234, dayPlan: null, todayPoints: [] }),
+    );
+    render(<HubSpendHero />);
+    expect(
+      screen.getByRole("button", { name: "Додати витрату" }),
+    ).toBeInTheDocument();
+  });
 });
 
 describe("HubSpendHero money presentation", () => {

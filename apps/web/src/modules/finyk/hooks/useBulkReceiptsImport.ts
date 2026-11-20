@@ -32,7 +32,10 @@ import { parseDpsReceiptQrUrl } from "../lib/receiptQr";
 import { decodeQrFromImageFile } from "./useReceiptQrScanner";
 import { DPS_QR_SCAN_ENABLED } from "../components/receiptScan/dpsQrGate";
 import { DEFAULT_CATEGORY } from "../components/manualExpenseCategories";
-import { draftLooksUnrecognized } from "../components/receiptDraftEdit";
+import {
+  draftLooksUnrecognized,
+  receiptTotalMissing,
+} from "../components/receiptDraftEdit";
 import { useReceiptSave, type ReceiptSaveStorageSlice } from "./useReceiptSave";
 
 /** Спека § Відкриті питання Фази 2, п.1 — рекомендація founder-а. */
@@ -56,6 +59,14 @@ export interface BatchReceiptItem {
   category: string;
   included: boolean;
   error: string | null;
+}
+
+/** Чек, який пачка не збереже сама: «схоже, не чек» або чек із фото без
+ * суми (рішення власника 2026-11-19: сума 0 не стає витратою на 0 ₴).
+ * Такий рядок приходить невибраним і повертається у вибрані, щойно людина
+ * заповнила поля в повному review. */
+function draftNeedsAttention(draft: ReceiptDraft): boolean {
+  return draftLooksUnrecognized(draft) || receiptTotalMissing(draft);
 }
 
 export interface UseBulkReceiptsImportOptions {
@@ -153,7 +164,7 @@ export function useBulkReceiptsImport({
           patchItem(item.id, {
             status: "drafted",
             draft,
-            included: !draftLooksUnrecognized(draft),
+            included: !draftNeedsAttention(draft),
           });
         } catch (err) {
           patchItem(item.id, {
@@ -186,8 +197,7 @@ export function useBulkReceiptsImport({
           const nextDraft =
             typeof action === "function" ? action(x.draft) : action;
           const autoReinclude =
-            draftLooksUnrecognized(x.draft) &&
-            !draftLooksUnrecognized(nextDraft);
+            draftNeedsAttention(x.draft) && !draftNeedsAttention(nextDraft);
           return {
             ...x,
             draft: nextDraft,
@@ -201,7 +211,12 @@ export function useBulkReceiptsImport({
   const toggleItemIncluded = useCallback(
     (id: string) =>
       setItems((prev) =>
-        prev.map((x) => (x.id === id ? { ...x, included: !x.included } : x)),
+        prev.map((x) =>
+          // Чек із фото без суми галочкою не вмикається: спершу сума.
+          x.id === id && !(x.draft && receiptTotalMissing(x.draft))
+            ? { ...x, included: !x.included }
+            : x,
+        ),
       ),
     [],
   );
@@ -217,6 +232,7 @@ export function useBulkReceiptsImport({
     setIsSaving(true);
     for (const item of items) {
       if (item.status !== "drafted" || !item.included || !item.draft) continue;
+      if (receiptTotalMissing(item.draft)) continue;
       patchItem(item.id, { status: "saving" });
       try {
         const result = await saveReceipt(

@@ -341,6 +341,7 @@ describe("ціни моделей шлюзу не нижчі за каталог
     ["google/gemini-3.7-flash", 0.75, 3.75],
     ["google/gemini-3.5-flash-lite", 0.3, 2.5],
     ["google/gemini-2.5-flash-lite", 0.1, 0.4],
+    ["openai/gpt-6-luna", 0.1, 0.5],
     ["deepseek/deepseek-v4-flash", 0.09, 0.18],
     ["z-ai/glm-5.2", 0.62, 2.42],
     ["anthropic/claude-sonnet-4.6", 3.0, 15.0],

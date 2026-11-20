@@ -13,10 +13,23 @@
  */
 import { isApiError } from "@shared/api";
 import { formatApiError } from "@shared/lib/api/apiErrorFormat";
+import { messages } from "@shared/i18n/uk";
 import {
   isImageValidationErrorBody,
   type ImageValidationErrorBody,
 } from "@sergeant/api-client";
+
+/** Код серверної відмови `POST /api/finyk/receipts` для чека з фото з
+ * сумою 0 (`apps/server/src/modules/finyk/receipts/save.ts`). */
+export const RECEIPT_TOTAL_REQUIRED_CODE = "RECEIPT_TOTAL_REQUIRED";
+
+function isReceiptTotalRequired(body: unknown): boolean {
+  return (
+    typeof body === "object" &&
+    body !== null &&
+    (body as { code?: unknown }).code === RECEIPT_TOTAL_REQUIRED_CODE
+  );
+}
 
 function imageValidationErrorMessage(body: ImageValidationErrorBody): string {
   switch (body.code) {
@@ -38,6 +51,11 @@ function imageValidationErrorMessage(body: ImageValidationErrorBody): string {
  * лишається тим самим контрактом, що загальний `formatApiError`.
  */
 export function formatReceiptError(err: unknown, fallback: string): string {
+  // Те саме спонукання, що й під полем «Сума» на екрані перевірки: сервер
+  // відхилив чек із фото без суми (рішення власника 2026-11-19).
+  if (isApiError(err) && isReceiptTotalRequired(err.body)) {
+    return messages.finyk.receiptTotal.hint;
+  }
   if (
     isApiError(err) &&
     (err.status === 413 || err.status === 415) &&

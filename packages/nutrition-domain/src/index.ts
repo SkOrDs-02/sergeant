@@ -45,6 +45,7 @@ export * from "./deviceDayKey.js";
 
 export * from "./nutritionTypes.js";
 export * from "./nutritionPrefs.js";
+export * from "./nutritionFavorites.js";
 export * from "./nutritionPantries.js";
 // Місця зберігання: плаский погляд на всі комори разом + правила, за
 // якими позиція потрапляє в місце. Ручний вибір сильніший за вгадування.

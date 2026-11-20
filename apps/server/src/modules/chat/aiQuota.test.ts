@@ -889,6 +889,54 @@ describe("assertAiQuota — AI-5 round-trip ticket", () => {
     ).toBe(false);
     expect(res.statusCode).toBe(429);
   });
+
+  // С-2 (б), спека `hubchat-second-tool-round.md`: хід «пошук → запис →
+  // синтез» — три запити до `/api/chat`, і за AI-5 він коштує одну одиницю.
+  it("Free з останньою одиницею тижня проходить хід «пошук → запис → синтез» без 429", async () => {
+    getSessionUser.mockResolvedValue({ id: "u-free" });
+    const { query } = makeAtomicPoolMock();
+    pool.query = query;
+
+    // 19 звичайних ходів, лишається одна одиниця.
+    for (let i = 0; i < 19; i += 1) {
+      expect(await assertAiQuota(makeReq(), makeRes(), "ai", ALLOW)).toBe(true);
+    }
+
+    // 1) Перший хід: списує останню одиницю, модель обрала пошук.
+    expect(await assertAiQuota(makeReq(), makeRes(), "ai", ALLOW)).toBe(true);
+    const firstTicket = issueRoundTripTicket({ userId: "u-free" });
+
+    // 2) Синтез після пошуку за квитком першого ходу: безкоштовно, і запит
+    //    позначено раундом 1 — обробник може дати другий раунд.
+    const secondReq = makeReq({}, continuationBody(firstTicket));
+    expect(await assertAiQuota(secondReq, makeRes(), "ai", ALLOW)).toBe(true);
+    expect(
+      (secondReq as Request & { aiRoundTripRound?: number }).aiRoundTripRound,
+    ).toBe(1);
+
+    // 3) Синтез після запису за квитком другого раунду: теж безкоштовно,
+    //    позначка 2 — третього раунду обробник не дасть.
+    const roundTwoTicket = issueRoundTripTicket({ userId: "u-free", round: 2 });
+    const thirdReq = makeReq({}, continuationBody(roundTwoTicket));
+    const thirdRes = makeRes();
+    expect(await assertAiQuota(thirdReq, thirdRes, "ai", ALLOW)).toBe(true);
+    expect(thirdRes.statusCode).toBe(200);
+    expect(
+      (thirdReq as Request & { aiRoundTripRound?: number }).aiRoundTripRound,
+    ).toBe(2);
+
+    // Повтор того самого квитка вже не погашається: тижня немає → 429.
+    const replayRes = makeRes();
+    expect(
+      await assertAiQuota(
+        makeReq({}, continuationBody(roundTwoTicket)),
+        replayRes,
+        "ai",
+        ALLOW,
+      ),
+    ).toBe(false);
+    expect(replayRes.statusCode).toBe(429);
+  });
 });
 
 // Спека `docs/work/specs/access-tiers.md` § Верифікація п.2: окремі тижневі

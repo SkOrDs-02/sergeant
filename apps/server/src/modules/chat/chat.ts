@@ -3,15 +3,23 @@ import { randomUUID } from "node:crypto";
 import { env } from "../../env.js";
 import { parseBody } from "../../http/validate.js";
 import { ChatRequestSchema } from "../../http/schemas.js";
-import { extractAnthropicText } from "../../lib/anthropic.js";
 import { resolveProTier } from "./aiQuota.js";
-import { issueRoundTripTicket } from "./chatRoundTripTicket.js";
+import {
+  issueRoundTripTicket,
+  type RoundTripRound,
+  type WithRoundTripRound,
+} from "./chatRoundTripTicket.js";
 import {
   type AnthropicContentBlock,
   refundQuotaOnUpstreamFailure,
 } from "./chatShared.js";
 import { streamAnthropicToSse } from "./chatStream.js";
 import { callAnthropicWithContinuation } from "./chatUpstream.js";
+import { callSynthesisJson } from "./chatSynthesisJson.js";
+import {
+  isSecondRoundEligible,
+  requestSecondToolRound,
+} from "./chatSecondRound.js";
 import {
   firstTurnReasoningPayload,
   synthesisReasoningPayload,
@@ -212,6 +220,7 @@ function attachRoundTripTicket(
   body: unknown,
   ledgerUserId: string | undefined,
   traceId: string,
+  round: RoundTripRound = 1,
 ): unknown {
   if (!ledgerUserId) return body;
   if (
@@ -228,6 +237,7 @@ function attachRoundTripTicket(
     round_trip_ticket: issueRoundTripTicket({
       userId: ledgerUserId,
       id: traceId,
+      round,
     }),
   };
 }
@@ -309,7 +319,8 @@ export default async function handler(
     tool_calls_raw,
     stream,
     preset,
-    round_trip_ticket;
+    round_trip_ticket,
+    second_tool_round;
   try {
     ({
       context = "",
@@ -319,6 +330,7 @@ export default async function handler(
       stream,
       preset,
       round_trip_ticket,
+      second_tool_round,
     } = parseBody(ChatRequestSchema, req));
   } catch (e) {
     await refundQuotaOnUpstreamFailure(req);
@@ -492,14 +504,66 @@ export default async function handler(
           m.content.trim(),
       );
 
+    const replayedCalls = healthConsent
+      ? tool_calls_raw
+      : redactHealthToolCalls(tool_calls_raw);
+
+    // С-2 (б): після пошуку модель першого ходу ще раз обирає, чи записати
+    // знайдене в цьому ж ході. Лише для клієнта, що це вміє
+    // (`second_tool_round`), і не для запиту, оплаченого квитком другого
+    // раунду (стеля два раунди, `chatSecondRound.ts`); `null` означає
+    // звичайний синтез нижче.
+    if (
+      second_tool_round === true &&
+      (req as Request & WithRoundTripRound).aiRoundTripRound !== 2 &&
+      isSecondRoundEligible(tool_calls_raw)
+    ) {
+      const second = await requestSecondToolRound({
+        apiKey,
+        history: sanitizeMessages(maskedMessages),
+        toolCallsRaw: replayedCalls,
+        toolResultMessages,
+        system: buildSystem(
+          maskMachineText(clientContext, knownValues),
+          preset,
+          healthConsent,
+        ),
+        activeModules: ledgerUserId
+          ? await getUserPreferences(pool, ledgerUserId)
+              .then((p) => p.activeModules)
+              .catch(() => null)
+          : null,
+        healthConsent,
+        maxToolUses: MAX_TOOL_ITERATIONS - incomingToolUses.length,
+        signal: clientAbort.signal,
+        traceId: toolTraceId,
+        userId: ledgerUserId,
+        promptVersion: SYSTEM_PROMPT_VERSION,
+      });
+      if (second) {
+        // Квиток «раунд 2»: синтез після запису не списує ще одну одиницю
+        // (AI-5, «хід з дією коштує один запит»), а права на третій раунд
+        // не дає. Ідентифікатор лишається трейсом ходу, якщо квиток першого
+        // ходу справді погашено; інакше свіжий.
+        const paidByTicket = !!(req as Request & WithRoundTripRound)
+          .aiRoundTripRound;
+        res
+          .status(200)
+          .json(
+            attachRoundTripTicket(
+              second,
+              ledgerUserId,
+              paidByTicket ? toolTraceId : randomUUID(),
+              2,
+            ),
+          );
+        return;
+      }
+    }
+
     const fullMessages = [
       ...(lastUserMsg ? [{ role: "user", content: lastUserMsg.content }] : []),
-      {
-        role: "assistant",
-        content: healthConsent
-          ? tool_calls_raw
-          : redactHealthToolCalls(tool_calls_raw),
-      },
+      { role: "assistant", content: replayedCalls },
       { role: "user", content: toolResultMessages },
     ];
 
@@ -538,7 +602,7 @@ export default async function handler(
       // підтримують не всі моделі, тож payload будується під фактичну.
       //
       // На турі синтезу шлемо лише згадані в реплеї визначення: `tool_use`
-      // звідси нікуди не доїжджає (нижче — `extractAnthropicText`, у стрімі —
+      // звідси нікуди не доїжджає (нижче — `chatSynthesisJson.ts`, у стрімі —
       // лише `text_delta`), а під шлюзом без tool search тут інакше їхав би
       // весь реєстр — ~18k токенів без кешу на кожному турі. Деталі й межі —
       // `promptCache.ts::buildSynthesisToolsPayload`.
@@ -568,43 +632,25 @@ export default async function handler(
       return;
     }
 
-    let response, data;
-    try {
-      ({ response, data } = await callAnthropicWithContinuation(
-        apiKey,
-        payload,
-        {
-          timeoutMs: CHAT_ATTEMPT_TIMEOUT_MS,
-          maxTotalMs: CHAT_TOTAL_TIMEOUT_MS,
-          retryOnTimeout: true,
-          endpoint: "chat-tool-result",
-          signal: clientAbort.signal,
-          promptVersion: SYSTEM_PROMPT_VERSION,
-          traceId: toolTraceId,
-          ...(ledgerUserId !== undefined ? { userId: ledgerUserId } : {}),
-        },
-      ));
-    } catch (e) {
-      await refundQuotaOnUpstreamFailure(req);
-      throw e;
-    }
-
-    if (!response?.ok) {
-      await refundQuotaOnUpstreamFailure(req);
-      throw makeAiProviderError({
-        rawProviderMessage: data?.error?.message,
-        status: response?.status,
-      });
-    }
-
-    const text = replaceLongDash(extractAnthropicText(data));
+    // Порожня відповідь моделі тут не норма: модуль робить страховку-перезапит
+    // і на невдачу повертає квоту й кидає 502 (раніше була заглушка
+    // «Готово.», техборг 2026-11-19). Повертає завжди непорожній текст.
+    const text = await callSynthesisJson(req, apiKey, payload, {
+      endpoint: "chat-tool-result",
+      timeoutMs: CHAT_ATTEMPT_TIMEOUT_MS,
+      maxTotalMs: CHAT_TOTAL_TIMEOUT_MS,
+      signal: clientAbort.signal,
+      promptVersion: SYSTEM_PROMPT_VERSION,
+      traceId: toolTraceId,
+      ...(ledgerUserId !== undefined ? { userId: ledgerUserId } : {}),
+    });
     shadowVerifyNumbers({
       turn: "synthesis",
       model: proTier.model,
       answer: text,
       given: synthesisGiven,
     });
-    res.status(200).json({ text: text || "Готово." });
+    res.status(200).json({ text });
     return;
   }
 

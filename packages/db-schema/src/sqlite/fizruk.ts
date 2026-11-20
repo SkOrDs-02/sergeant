@@ -129,6 +129,13 @@ export const fizrukWorkoutSets = sqliteTable(
     durationSec: integer("duration_sec"),
     /** Метри одного підходу (серверна 172, клієнтська 010). */
     distanceM: integer("distance_m"),
+    /**
+     * Явний стан «виконано» (серверна 176, клієнтська 012): 1 / 0, NULL =
+     * запис до фічі, стан виводиться з значень (`isSetCompleted`).
+     */
+    done: integer(),
+    /** Тип підходу (серверна 176, клієнтська 012): warmup | drop | failure, NULL = звичайний. */
+    setType: text("set_type"),
     sortOrder: integer("sort_order").notNull().default(0),
     createdAt: text("created_at")
       .notNull()

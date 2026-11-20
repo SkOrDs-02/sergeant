@@ -70,6 +70,10 @@ const PROMPT_CONSUMERS = new Map([
   ],
   ["chat/chat.ts", "кличе buildSystem() — межа приходить із SYSTEM_PREFIX"],
   [
+    "chat/chatSecondRound.ts",
+    "`system` приходить параметром із chat.ts, де його зібрав buildSystem(): межа приходить із SYSTEM_PREFIX, власного тексту файл не має",
+  ],
+  [
     "digest/weekly-digest.ts",
     "кличе buildWeeklyDigestPrompt(): межа приходить із weeklyDigestPrompt.ts",
   ],

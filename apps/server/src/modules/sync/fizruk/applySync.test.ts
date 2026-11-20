@@ -258,6 +258,9 @@ describe("applyFizrukSets", () => {
       // duration_sec, distance_m (міграція 172): рядок без ключів — NULL.
       null,
       null,
+      // done, set_type (міграція 176): рядок без ключів — NULL.
+      null,
+      null,
     ]);
   });
 
@@ -396,6 +399,8 @@ describe("applyFizrukSets", () => {
         0,
         clientTs,
         clientTs,
+        null,
+        null,
         null,
         null,
         null,

@@ -80,6 +80,7 @@ import {
 import { BarcodeBindRow } from "./meal-sheet/BarcodeBindRow";
 import { buildPhotoQuickMeals } from "./meal-sheet/photoQuickSave";
 import type { AddMealSheetProps } from "./meal-sheet/addMealSheetProps";
+import { useFavoritesFirst } from "../hooks/useNutritionFavorites";
 
 /**
  * Фізіологічно правдоподібні стелі для одного прийому їжі. Не медичні
@@ -131,6 +132,7 @@ export function AddMealSheet({
   getLastFoodPortion,
   onPhotoSave,
   savedRecipes = [],
+  favorites,
 }: AddMealSheetProps) {
   const [form, setForm] = useState<MealFormState>(() => emptyForm(null));
   const [foodQuery, setFoodQuery] = useState("");
@@ -155,7 +157,10 @@ export function AddMealSheet({
   const [manualMacros, setManualMacros] = useState(false);
 
   const search = useFoodSearch(foodQuery);
-  const { foodHits, offHits, foodBusy, offBusy, foodErr, setFoodErr } = search;
+  const { foodBusy, offBusy, foodErr, setFoodErr } = search;
+  // Х-3 (б): улюблені продукти вгору видачі, порядок решти не міняється.
+  const foodHits = useFavoritesFirst(search.foodHits, favorites?.foodIds);
+  const offHits = useFavoritesFirst(search.offHits, favorites?.foodIds);
   const sourcePick = useMealSourcePick({
     foodQuery,
     search,
@@ -636,6 +641,7 @@ export function AddMealSheet({
                 },
                 // Х-3 (в): рецепт пише крок «скільки зʼїв», не форма.
                 savedRecipes: initialMeal?.id ? [] : savedRecipes,
+                favorites,
                 recipeMealType: quickMealType(initialMealType),
                 onRecipeLogged: (meal) => {
                   hapticSuccess();
@@ -700,6 +706,7 @@ export function AddMealSheet({
                 onChangeProduct={handleChangeProduct}
                 skipInitialRescale={editedFood.rehydrated}
                 onUnitChange={savePicked.onUnitChange}
+                favorites={favorites}
                 getLastPortion={
                   initialMeal?.id || fromPantryItem
                     ? undefined

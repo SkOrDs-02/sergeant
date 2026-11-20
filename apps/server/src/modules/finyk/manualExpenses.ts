@@ -10,6 +10,8 @@ import {
   buildManualExpenseInsertOpWithKey,
   serverManualExpenseOpKey,
 } from "./import/syncOps.js";
+import { finykPushDbFromPool } from "./push/db.js";
+import { runFinykLimitPushQuietly } from "./push/limitPush.js";
 
 type WithSessionUser = Request & { user?: { id: string } };
 
@@ -155,4 +157,12 @@ export async function createManualExpense(
   }
 
   res.status(201).json({ ok: true, expense });
+  // Push ліміту Фініка (Ф-4 (б)) після COMMIT: витрата могла перетнути
+  // 80 % чи 100 %. Не кидає; відповідь уже віддано.
+  void runFinykLimitPushQuietly(
+    finykPushDbFromPool(pool),
+    userId,
+    new Date(),
+    "manual_expense",
+  );
 }

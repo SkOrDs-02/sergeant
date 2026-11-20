@@ -83,7 +83,9 @@ describe("log_set: секунди й метри", () => {
     const item = persistedItem();
     expect(item.measure).toBe("time");
     expect(item.type).toBe("time");
-    expect(item.sets).toEqual([{ weightKg: 0, reps: 0, durationSec: 60 }]);
+    expect(item.sets).toEqual([
+      { weightKg: 0, reps: 0, durationSec: 60, done: true },
+    ]);
     expect(item.durationSec).toBe(60);
     expect(result).toContain("1 хв 0 с");
   });
@@ -154,6 +156,7 @@ describe("log_set: тип вправи", () => {
       weightKg: 20,
       reps: 0,
       durationSec: 40,
+      done: true,
     });
   });
 
@@ -173,7 +176,7 @@ describe("log_set: тип вправи", () => {
     });
     const item = persistedItem();
     expect(item.measure).toBe("reps");
-    expect(item.sets?.[0]).toEqual({ weightKg: 0, reps: 15 });
+    expect(item.sets?.[0]).toEqual({ weightKg: 0, reps: 15, done: true });
   });
 
   it("вправа із зробленими повторами не перемикається на час", () => {
@@ -222,13 +225,14 @@ describe("plan_workout: секунди", () => {
     const item = persisted[0]!.items[0]!;
     expect(item.measure).toBe("time");
     expect(item.type).toBe("time");
+    // Фз-3 (в): секунди плану в рядку разом із `done: false` (ціль, не факт).
     expect(item.sets).toEqual([
-      { weightKg: 0, reps: 0 },
-      { weightKg: 0, reps: 0 },
-      { weightKg: 0, reps: 0 },
+      { weightKg: 0, reps: 0, durationSec: 30, done: false },
+      { weightKg: 0, reps: 0, durationSec: 30, done: false },
+      { weightKg: 0, reps: 0, durationSec: 30, done: false },
     ]);
     expect(computeWorkoutSetCount(persisted[0]!)).toBe(0);
-    expect(result).toContain("Секунди в план не записуються");
+    expect(result).toContain("зараховується, коли його відмітять виконаним");
   });
 
   it("без секунд вправа бере тип каталогу", () => {

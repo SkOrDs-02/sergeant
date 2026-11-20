@@ -161,6 +161,9 @@ describe("pg/fizrukWorkoutSets schema snapshot", () => {
       // Міграція 172 (pg) / 010 (клієнт): секунди й метри на підхід.
       "duration_sec",
       "distance_m",
+      // Міграція 176 (pg) / 012 (клієнт): «виконано» і тип підходу.
+      "done",
+      "set_type",
       "sort_order",
       "created_at",
       "updated_at",
@@ -184,6 +187,11 @@ describe("pg/fizrukWorkoutSets schema snapshot", () => {
     expect(columnMap["duration_sec"]!.notNull).toBe(false);
     expect(columnMap["distance_m"]!.dataType).toBe("number");
     expect(columnMap["distance_m"]!.notNull).toBe(false);
+    expect(columnMap["done"]!.columnType).toBe("PgBoolean");
+    expect(columnMap["done"]!.notNull).toBe(false);
+    expect(columnMap["done"]!.hasDefault).toBe(false);
+    expect(columnMap["set_type"]!.columnType).toBe("PgText");
+    expect(columnMap["set_type"]!.notNull).toBe(false);
   });
 });
 

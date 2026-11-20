@@ -196,6 +196,13 @@ export const UserPreferencesSchema = z.object({
   quietHoursEndMin: z.number().int().min(0).max(MINUTE_OF_DAY_MAX).optional(),
   /** Push про нову операцію Monobank (вебхук); дефолт сервера `true`. */
   pushMonoTransactions: z.boolean().optional(),
+  /**
+   * Push Фініка: 80 % і 100 % ліміту та напередодні запланованого списання
+   * (міграція 175, спека `finyk-limit-and-recurring-push.md`); дефолт
+   * сервера `true`. `.optional()` без `.default` з тієї ж причини, що й
+   * сусіди вище: відсутність ключа = старий сервер.
+   */
+  pushFinykAlerts: z.boolean().optional(),
   updatedAt: z.string().datetime({ offset: true }).nullable(),
 });
 export type UserPreferences = z.infer<typeof UserPreferencesSchema>;
@@ -249,6 +256,7 @@ export const UserPreferencesPatchSchema = z
       .optional(),
     quietHoursEndMin: z.number().int().min(0).max(MINUTE_OF_DAY_MAX).optional(),
     pushMonoTransactions: z.boolean().optional(),
+    pushFinykAlerts: z.boolean().optional(),
   })
   .strict();
 export type UserPreferencesPatch = z.infer<typeof UserPreferencesPatchSchema>;
@@ -732,6 +740,13 @@ export const ChatRequestSchema = z.object({
    * тут, у схемі.
    */
   round_trip_ticket: z.string().max(200).optional(),
+  /**
+   * С-2 (б), спека `docs/work/specs/hubchat-second-tool-round.md`: клієнт
+   * уміє виконати другий раунд інструментів, тобто на запит синтезу після
+   * пошуку прийняти `tool_calls` замість тексту. Без поля (старий бандл PWA,
+   * мобайл) сервер другого раунду не робить, поведінка як до 2026-11-19.
+   */
+  second_tool_round: z.boolean().optional(),
 });
 
 /**

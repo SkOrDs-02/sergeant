@@ -154,6 +154,17 @@ describe("logSet", () => {
     expect(persisted[0]?.items[0]?.sets?.length).toBeLessThanOrEqual(20);
   });
 
+  it("Фз-3: підхід, записаний через чат, виконаний (done: true)", () => {
+    mockReadWorkouts.mockReturnValue([]);
+    logSet({
+      name: "log_set",
+      input: { exercise_name: "Squat", reps: 5, weight_kg: 100, sets: 2 },
+    });
+    const w = (mockPersist.mock.calls[0]![0] as Workout[])[0]!;
+    expect(w.items[0]?.sets?.map((s) => s.done)).toEqual([true, true]);
+    expect(computeWorkoutSetCount(w)).toBe(2);
+  });
+
   it("uses 0kg when weight is absent/negative", () => {
     mockReadWorkouts.mockReturnValue([]);
     logSet({
@@ -430,27 +441,47 @@ describe("planWorkout", () => {
     );
   });
 
-  // logic-18: заплановані рядки не зараховані. Повтори з запиту моделі
-  // в тренування не пишуться: рядок із повторами вже «виконаний підхід»
-  // (`isSetCompleted`), а чесного поля плану у `WorkoutItem` немає.
-  it("logic-18: план сіє незараховані рядки з вагою плану", () => {
+  // logic-18 + Фз-3 (в), дефолт П-Фз3-5 (А) (спека
+  // `fizruk-set-done-flag-and-set-type.md`): рядки плану несуть значення плану
+  // і `done: false`, тож не зараховані, доки людина не поставить ✓.
+  it("Фз-3: план із трьома підходами — три рядки зі значеннями й done: false", () => {
     mockReadWorkouts.mockReturnValue([]);
-    planWorkout({
+    const out = planWorkout({
       name: "plan_workout",
       input: { exercises: [{ name: "Squat", sets: 3, reps: 10, weight: 60 }] },
     });
     const w = (mockPersist.mock.calls[0]![0] as Workout[])[0]!;
     expect(w.items[0]?.sets).toEqual([
-      { weightKg: 60, reps: 0 },
-      { weightKg: 60, reps: 0 },
-      { weightKg: 60, reps: 0 },
+      { weightKg: 60, reps: 10, done: false },
+      { weightKg: 60, reps: 10, done: false },
+      { weightKg: 60, reps: 10, done: false },
     ]);
     expect(computeWorkoutSetCount(w)).toBe(0);
-    const out = planWorkout({
+    expect(out).toContain("зараховується, коли його відмітять виконаним");
+    // Після ✓ рядок стає зарахованим.
+    const ticked: Workout = {
+      ...w,
+      items: w.items.map((it) => ({
+        ...it,
+        sets: (it.sets ?? []).map((s, i) =>
+          i === 0 ? { ...s, done: true } : s,
+        ),
+      })),
+    };
+    expect(computeWorkoutSetCount(ticked)).toBe(1);
+  });
+
+  it("Фз-3: план без повторів — рядки done: false з нулем повторів", () => {
+    mockReadWorkouts.mockReturnValue([]);
+    planWorkout({
       name: "plan_workout",
-      input: { exercises: [{ name: "Squat", sets: 3, reps: 10 }] },
+      input: { exercises: [{ name: "Squat", sets: 2, weight: 60 }] },
     });
-    expect(out).toContain("Повтори в план не записуються");
+    const w = (mockPersist.mock.calls[0]![0] as Workout[])[0]!;
+    expect(w.items[0]?.sets).toEqual([
+      { weightKg: 60, reps: 0, done: false },
+      { weightKg: 60, reps: 0, done: false },
+    ]);
   });
 
   // ADR-0078: тренування — особиста сутність, день і година за годинником

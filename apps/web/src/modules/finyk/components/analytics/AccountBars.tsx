@@ -1,6 +1,5 @@
 import { useMemo } from "react";
 import { chartHex } from "@sergeant/design-tokens/tokens";
-import { CASH_ACCOUNT_ID } from "@sergeant/finyk-domain/constants";
 import {
   aggregateSpendingByAccount,
   NO_ACCOUNT_KEY,
@@ -13,34 +12,13 @@ import { Button } from "@shared/components/ui/Button";
 import { Card } from "@shared/components/ui/Card";
 import { SectionHeading } from "@shared/components/ui/SectionHeading";
 import { messages } from "@shared/i18n/uk";
-import { getAccountVisual } from "../../lib/accountVisual";
+import { accountLabel, type LabelledAccount } from "../../lib/accountLabel";
 import { CategoryBars } from "./CategoryBars";
 
 const t = messages.finyk.cashOnHand;
 const ACCOUNT_COLOR = "rgb(var(--c-chart-finyk))";
 
-export interface AccountBarsAccount {
-  id?: string | undefined;
-  type?: string | undefined;
-  creditLimit?: number | undefined;
-  maskedPan?: unknown;
-}
-
-function accountLabel(
-  key: string,
-  accounts: readonly AccountBarsAccount[],
-): string {
-  if (key === CASH_ACCOUNT_ID) return t.title;
-  if (key === NO_ACCOUNT_KEY) return t.noAccount;
-  const acc = accounts.find((a) => a.id === key);
-  if (!acc) return t.cardFallback;
-  const pan = Array.isArray(acc.maskedPan)
-    ? acc.maskedPan.find((v): v is string => typeof v === "string")
-    : undefined;
-  const last4 = pan?.replace(/\D/g, "").slice(-4);
-  const name = getAccountVisual(acc).name;
-  return last4 ? `${name} • ${last4}` : name;
-}
+export type AccountBarsAccount = LabelledAccount;
 
 /**
  * «За рахунками» (Р4): мова H через `CategoryBars`, той самий рядок і

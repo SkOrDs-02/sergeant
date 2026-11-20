@@ -1,6 +1,6 @@
 # SPEC: Рахунки-активи поза Моно (депозити, ОВДП, фонди) і «Відкладено за місяць»
 
-> **Last touched:** 2026-11-19 by @claude. **Next review:** 2027-02-19.
+> **Last touched:** 2026-11-20 by @claude. **Next review:** 2027-05-27.
 > **Status:** Active
 
 ## Проблема

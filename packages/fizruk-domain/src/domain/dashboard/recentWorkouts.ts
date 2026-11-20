@@ -8,6 +8,7 @@
 
 import { finiteOrNull } from "@sergeant/shared";
 import { itemHasVolume } from "../workouts/measureItem.js";
+import { isWorkingSet } from "../workouts/setCompletion.js";
 
 import type { DashboardRecentWorkout, DashboardWorkoutInput } from "./types.js";
 
@@ -28,6 +29,7 @@ function computeTonnageKg(w: DashboardWorkoutInput): number {
     if (!itemHasVolume(item)) continue;
     const sets = item.sets ?? [];
     for (const s of sets) {
+      if (!isWorkingSet(s)) continue;
       const weight = finiteOrNull(s?.weightKg);
       const reps = finiteOrNull(s?.reps);
       if (weight == null || reps == null) continue;

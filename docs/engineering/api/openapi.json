@@ -6009,6 +6009,9 @@
           },
           "pushMonoTransactions": {
             "type": "boolean"
+          },
+          "pushFinykAlerts": {
+            "type": "boolean"
           }
         },
         "additionalProperties": false,
@@ -6197,6 +6200,9 @@
           "round_trip_ticket": {
             "type": "string",
             "maxLength": 200
+          },
+          "second_tool_round": {
+            "type": "boolean"
           }
         },
         "description": "POST /api/chat — Anthropic-чат із tool-results і опційним streaming."
@@ -8450,6 +8456,9 @@
               "pushMonoTransactions": {
                 "type": "boolean"
               },
+              "pushFinykAlerts": {
+                "type": "boolean"
+              },
               "updatedAt": {
                 "anyOf": [
                   {
@@ -8958,6 +8967,9 @@
             "maximum": 1439
           },
           "pushMonoTransactions": {
+            "type": "boolean"
+          },
+          "pushFinykAlerts": {
             "type": "boolean"
           },
           "updatedAt": {

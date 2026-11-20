@@ -16,6 +16,7 @@ import { Input, FIELD_LABEL } from "@shared/components/ui/Input";
 import type { FoodSearchProduct } from "@shared/api";
 import { FoodHitRow } from "./FoodHitRow";
 import type { FoodPortion, FoodProduct } from "../../lib/foodDb/foodDb";
+import { withHouseholdServing } from "../../lib/foodDb/householdPortions";
 import { searchFieldProps } from "@shared/lib/ui/searchFieldProps";
 import { SEARCH_QUERY_MAX_LEN, type ProductNutrients } from "@sergeant/shared";
 
@@ -96,6 +97,19 @@ export interface PickedFood {
    * `FoodProduct` не їде. Немає — картка малює іконку категорії.
    */
   imageUrl?: string | null;
+}
+
+/**
+ * Старт картки «скільки зʼїв» для продукту з пошуку чи блоку «Улюблені»:
+ * побутова порція корпусу (OD-27 Х-1 а) і вага на старті. Один шлях на
+ * обидва входи, тож картка поводиться однаково.
+ */
+export function startPickedFood(p: PickedFood): {
+  food: PickedFood;
+  grams: string;
+} {
+  const food = withHouseholdServing(p);
+  return { food, grams: String(Math.round(Number(food.defaultGrams) || 100)) };
 }
 
 interface FoodPickerSectionProps {
@@ -182,8 +196,10 @@ export function FoodPickerSection({
                 p={p}
                 externalSourceLabel={localSourceLabel(p)}
                 onPick={() => {
-                  setPickedFood(p);
-                  setPickedGrams(String(Math.round(p.defaultGrams || 100)));
+                  // Базовий продукт стартує з побутової порції (OD-27 Х-1 а).
+                  const start = startPickedFood(p);
+                  setPickedFood(start.food);
+                  setPickedGrams(start.grams);
                   setFoodQuery("");
                 }}
               />
@@ -203,9 +219,9 @@ export function FoodPickerSection({
                     p={p}
                     externalSourceLabel={group.label}
                     onPick={() => {
-                      setPickedFood(p as PickedFood);
-                      const grams = Number(p.defaultGrams) || 100;
-                      setPickedGrams(String(Math.round(grams)));
+                      const start = startPickedFood(p as PickedFood);
+                      setPickedFood(start.food);
+                      setPickedGrams(start.grams);
                       setFoodQuery("");
                     }}
                   />

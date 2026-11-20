@@ -24,7 +24,6 @@ import {
   itemMeasure,
   itemUsesSetRows,
   measureCountsBy,
-  measureFields,
   programPlanForWorkoutItem,
   type ExerciseMeasure,
 } from "@sergeant/fizruk-domain/domain";
@@ -44,6 +43,11 @@ import {
   WorkoutSetRow,
 } from "./WorkoutSetRow";
 import { MeasureChoice } from "./WorkoutItemTypeSwitcher";
+import {
+  seedLiveSet,
+  setValuesFor,
+  withDoneOnCountInput,
+} from "../../lib/setDoneFlag";
 import { messages } from "@shared/i18n/uk";
 
 export type WorkoutItemCardProps = {
@@ -111,11 +115,12 @@ function findDoneSetBefore(
  * лишається одним тапом.
  *
  * AI-CONTEXT: logic-18 (OD-28, Фз-3). «+ Підхід» колись копіював значення в
- * сам рядок, а виконаність похідна (`isSetDone` = reps > 0), тож незроблений
- * підхід одразу йшов у лічильник, обʼєм, рекорди й відновлення. Тепер рядок
- * народжується `{0, 0}` і стає виконаним лише після ✓ (або власного вводу
- * повторень). Не повертай копію значень у сам підхід у живій сесії. Виняток
- * лише ретро без ✓ (рішення власника 2026-11-19, `seedSetForAdd`).
+ * сам рядок, а виконаність була похідна (`isSetDone` = reps > 0), тож
+ * незроблений підхід одразу йшов у лічильник, обʼєм, рекорди й відновлення.
+ * Фз-3 (в) дала рядку явний прапорець (`done`, спека
+ * `fizruk-set-done-flag-and-set-type.md`): тепер «+ Підхід» у живій сесії
+ * знову несе значення, але з `done: false` (`seedLiveSet`), і виконаним рядок
+ * стає лише після ✓. Не копіюй значення в рядок БЕЗ `done: false`.
  */
 export function placeholderSetFor(
   sets: WorkoutSet[],
@@ -136,8 +141,8 @@ export function placeholderSetFor(
 }
 
 /**
- * Новий рядок «+ Підхід». У живій сесії — порожній `{0, 0}` (logic-18, див.
- * AI-CONTEXT біля `placeholderSetFor`). У ретро ✓ немає, тож прийняти
+ * Новий рядок «+ Підхід». У живій сесії — значення попереднього підходу з
+ * `done: false` (дефолт П-Фз3-4 (Б), `seedLiveSet`). У ретро ✓ немає, тож прийняти
  * плейсхолдер одним тапом нічим: рядок одразу несе поля типу виміру з
  * останнього зарахованого підходу цієї вправи, а коли його ще немає, з
  * «було» тієї ж позиції минулої сесії, як у `main` (рішення власника
@@ -150,22 +155,11 @@ export function seedSetForAdd(
   isRetro: boolean,
   lastSessionSets: WorkoutSet[] = [],
 ): WorkoutSet {
-  const empty: WorkoutSet = { weightKg: 0, reps: 0 };
-  if (!isRetro) return empty;
+  if (!isRetro) return seedLiveSet(sets, measure, lastSessionSets);
   const src =
     findDoneSetBefore(sets, sets.length, item) ?? lastSessionSets[sets.length];
-  if (!src) return empty;
-  const f = measureFields(measure);
-  return {
-    weightKg: f.weight ? (src.weightKg ?? 0) : 0,
-    reps: f.reps ? (src.reps ?? 0) : 0,
-    ...(f.time && src.durationSec != null
-      ? { durationSec: src.durationSec }
-      : {}),
-    ...(f.distance && src.distanceM != null
-      ? { distanceM: src.distanceM }
-      : {}),
-  };
+  if (!src) return { weightKg: 0, reps: 0 };
+  return setValuesFor(src, measure);
 }
 
 /**
@@ -298,7 +292,10 @@ export function WorkoutItemCard({
     const next = [...(it.sets || [])];
     const current = next[idx];
     if (!current) return;
-    next[idx] = { ...current, ...patch };
+    // У ретро ✓ немає: рядок `done: false` (план) зараховує введена
+    // лічильна величина (`withDoneOnCountInput`).
+    const p = isRetro ? withDoneOnCountInput(current, patch, measure) : patch;
+    next[idx] = { ...current, ...p };
     updateItem(activeWorkout.id, it.id, { sets: next });
   };
 
@@ -393,7 +390,9 @@ export function WorkoutItemCard({
                   it,
                 );
                 if (!ghost) return;
+                // «Повторити» приходить лише з ✓, тож рядок одразу зроблений.
                 updateSet(idx, {
+                  done: true,
                   weightKg: ghost.weightKg ?? 0,
                   reps: ghost.reps ?? 0,
                   ...(ghost.durationSec != null
@@ -408,6 +407,10 @@ export function WorkoutItemCard({
               // from the reps `onChange` transition — that heuristic is what
               // produced stray 0×0 sets (redesign 2026-08, item 2).
               onCheckTap={startRest}
+              onSetDone={
+                isRetro ? undefined : (done) => updateSet(idx, { done })
+              }
+              onChangeSetType={(setType) => updateSet(idx, { setType })}
             />
           ))}
           {/* Видалення останнього підходу — тиха дія під рядками, а не
@@ -494,9 +497,12 @@ export function WorkoutItemCard({
                       setVoiceErr(messages.fizruk.voiceSet.notParsed);
                       return;
                     }
-                    const newSet = {
+                    // Сказаний підхід — уже зроблений (✓ у живій сесії);
+                    // у ретро прапорця немає, як до фічі.
+                    const newSet: WorkoutSet = {
                       weightKg: parsed.weight ?? 0,
                       reps: parsed.reps ?? 0,
+                      ...(isRetro ? {} : { done: true }),
                     };
                     setVoiceErr(null);
                     setSetIds((prev) => [...prev, crypto.randomUUID()]);

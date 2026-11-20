@@ -13,6 +13,7 @@ import type {
   PantryItem,
 } from "@sergeant/nutrition-domain";
 import type { QuickChip } from "../../hooks/useNutritionQuickChips";
+import type { NutritionFavorites } from "../../hooks/useNutritionFavorites";
 import type { PantryConsumeTicket } from "../../hooks/usePantryConsumeWrite";
 import type { SavedRecipe } from "../../lib/recipeBook";
 import type { LastFoodPortion } from "../../lib/lastFoodPortion";
@@ -69,4 +70,6 @@ export interface AddMealSheetProps {
   /** «Зберегти в журнал» після фото пише одразу (Х-2 а); `false` — збій. */
   onPhotoSave?:
     ((photo: PhotoQuickMeals, file: File | null) => boolean) | undefined;
+  /** Улюблені продукти й рецепти (OD-27 Х-3 б): позначка і порядок у пошуку. */
+  favorites?: NutritionFavorites | undefined;
 }

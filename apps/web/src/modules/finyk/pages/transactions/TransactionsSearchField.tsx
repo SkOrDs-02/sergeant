@@ -6,6 +6,7 @@
  * 2026-11-18). Сам пошук чистий (`transactionSearch.ts`) і живе в
  * `useTransactionFilters`; тут лише поле, очищення й рядок «Знайдено N».
  */
+import type { ReactNode } from "react";
 import { pluralUa } from "@sergeant/shared";
 import { Button } from "@shared/components/ui/Button";
 import { EmptyState } from "@shared/components/ui/EmptyState";
@@ -35,6 +36,10 @@ export interface TransactionsSearchFieldProps {
   resultCount: number;
   /** Підпис періоду в знахідному відмінку («листопад 2026 р.»); `null` — без нього. */
   periodLabel: string | null;
+  /** Праворуч від поля: кнопка «Фільтри» (Ф-2 (б)). */
+  trailing?: ReactNode;
+  /** Діють фільтри аркуша: рядок «Знайдено N» показується і без запиту. */
+  narrowed?: boolean;
 }
 
 export function TransactionsSearchField({
@@ -42,42 +47,49 @@ export function TransactionsSearchField({
   onQueryChange,
   resultCount,
   periodLabel,
+  trailing,
+  narrowed = false,
 }: TransactionsSearchFieldProps) {
   const active = query.trim() !== "";
   const count = formatFoundOperations(resultCount);
   return (
     <div className="space-y-1">
-      <Input
-        type="search"
-        aria-label={copy.label}
-        {...searchFieldProps("finyk-transactions-search")}
-        placeholder={copy.placeholder}
-        value={query}
-        onChange={(event) => onQueryChange(event.target.value)}
-        // Нативний хрестик `type="search"` дублював би власну кнопку
-        // очищення нижче (зйомка 2026-11-18). Ховаємо лише тут: в інших
-        // полях пошуку нативний хрестик може бути єдиним способом очистити.
-        className={HIDE_NATIVE_SEARCH_CANCEL}
-        onKeyDown={(event) => {
-          if (event.key === "Escape" && active) {
-            event.preventDefault();
-            onQueryChange("");
-          }
-        }}
-        icon={<Icon name="search" size="md" aria-hidden />}
-        suffix={
-          active ? (
-            <SearchClearButton
-              label={copy.clear}
-              onClear={() => onQueryChange("")}
-              className="-mr-2"
-            />
-          ) : undefined
-        }
-      />
+      <div className="flex items-center gap-2">
+        <div className="min-w-0 flex-1">
+          <Input
+            type="search"
+            aria-label={copy.label}
+            {...searchFieldProps("finyk-transactions-search")}
+            placeholder={copy.placeholder}
+            value={query}
+            onChange={(event) => onQueryChange(event.target.value)}
+            // Нативний хрестик `type="search"` дублював би власну кнопку
+            // очищення нижче (зйомка 2026-11-18). Ховаємо лише тут: в інших
+            // полях пошуку нативний хрестик може бути єдиним способом очистити.
+            className={HIDE_NATIVE_SEARCH_CANCEL}
+            onKeyDown={(event) => {
+              if (event.key === "Escape" && active) {
+                event.preventDefault();
+                onQueryChange("");
+              }
+            }}
+            icon={<Icon name="search" size="md" aria-hidden />}
+            suffix={
+              active ? (
+                <SearchClearButton
+                  label={copy.clear}
+                  onClear={() => onQueryChange("")}
+                  className="-mr-2"
+                />
+              ) : undefined
+            }
+          />
+        </div>
+        {trailing}
+      </div>
       {/* При нулі збігів говорить порожній стан списку («Нічого не
           знайдено»), тож другого `role=status` поруч не ставимо. */}
-      {active && resultCount > 0 ? (
+      {(active || narrowed) && resultCount > 0 ? (
         <p
           className="px-1 text-style-caption text-subtle"
           role="status"

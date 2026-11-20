@@ -80,6 +80,17 @@ export const CHAT_SYNTHESIS_PREMIUM_REASONING_EFFORT_DEFAULT: ChatSynthesisPremi
   "default";
 
 /**
+ * Глибина міркувань скану чека й імпорту скриншота виписки
+ * (`OPENROUTER_RECEIPT_MODEL`): той самий перелік і та сама граматика поля
+ * `/messages`, що в синтезу Premium. `none` за замовчуванням, бо саме так
+ * `openai/gpt-6-luna` міряли й обрали (рішення власника 2026-11-19, § 6.5
+ * дослідження `2026-11-19-openrouter-new-models.md`): без вимкнення міркування
+ * в неї зʼїдали `max_tokens` і множили латентність (§ 6.4).
+ */
+export const RECEIPT_VISION_REASONING_EFFORT_DEFAULT: ChatSynthesisPremiumReasoningEffort =
+  "none";
+
+/**
  * Чи дозволено шлюзу OpenRouter обирати постачальників, які зберігають
  * запити (і можуть на них тренуватись). Значення поля
  * `provider.data_collection` у тілі запиту; як саме воно стає полем —
@@ -221,9 +232,9 @@ export const aiRoutingEnvShape = {
    * швидкість та сама, дорожче у 3–5 разів). Міркування в неї обовʼязкові
    * (каталожний дефолт `minimal`), тож шляхи не шлють `reasoning`; запас
    * `max_tokens` звірено живим прогоном того ж дня. Відкат без релізу:
-   * задати змінну назад `google/gemini-2.5-flash-lite`. Зір, чеки й імпорт
-   * виписок (`OPENROUTER_VISION_MODEL`, `OPENROUTER_RECEIPT_MODEL`) лишились
-   * на 2.5: на фото 3.5 гірша.
+   * задати змінну назад `google/gemini-2.5-flash-lite`. Зір нутриції
+   * (`OPENROUTER_VISION_MODEL`) лишився на 2.5; чеки й імпорт виписок
+   * (`OPENROUTER_RECEIPT_MODEL`) з 2026-11-19 на `openai/gpt-6-luna`.
    */
   OPENROUTER_READONLY_MODEL: stringWithDefault(TEXT_PIPELINE_MODEL),
   OPENROUTER_DIGEST_MODEL: stringWithDefault(TEXT_PIPELINE_MODEL),
@@ -256,12 +267,34 @@ export const aiRoutingEnvShape = {
   /**
    * `POST /api/finyk/receipts/analyze` (чек-скан v1, vision-fallback без
    * QR — `docs/work/specs/receipt-scan.md`) і імпорт скриншотів виписок.
-   * `gemini-2.5-flash-lite`, як і зір нутриції — 10/10 на пастках зорового
-   * стенду за копійки/чек (спека § Вартість). Текстові шляхи 2026-11-19
-   * перейшли на 3.5, цей лишився: на фото 3.5 гірша, а чеки й виписки
-   * зоровим стендом не покриті.
+   * `openai/gpt-6-luna` з 2026-11-19 (рішення власника за заміром
+   * `docs/work/research/2026-11-19-openrouter-new-models.md` § 6.5, прод-
+   * транспорт, ×3): виписки 24/24, чеки 21/24, вигадок на пастках 0, на
+   * 11–14 % дешевша за `gemini-2.5-flash-lite`, яка дала 7/22 на чеках,
+   * вигадала на всіх шести пастках і втратила 10 з 24 викликів виписки на
+   * 429. Відомий ризик: на нахиленому розмитому фото чека плутає назви
+   * позицій (підсумок вірний), p95 чека 10,6 с при таймауті 20 с. Міркування
+   * вимкнені (`RECEIPT_VISION_REASONING_EFFORT`). Відкат без релізу: задати
+   * змінну `google/gemini-2.5-flash-lite`.
    */
-  OPENROUTER_RECEIPT_MODEL: stringWithDefault("google/gemini-2.5-flash-lite"),
+  OPENROUTER_RECEIPT_MODEL: stringWithDefault("openai/gpt-6-luna"),
+
+  /**
+   * Глибина міркувань для `OPENROUTER_RECEIPT_MODEL`, лише через шлюз.
+   * Незадана або порожня — `none` (`RECEIPT_VISION_REASONING_EFFORT_DEFAULT`):
+   * `thinking: {type: "disabled"}` у тілі `/messages`. `default` — поля немає,
+   * глибину ставить шлюз; решта — `output_config.effort`. Як значення стає
+   * полем і для яких моделей `none` не шлеться —
+   * `modules/finyk/receipts/visionTransport.ts`. Регістр і пробіли не
+   * важливі; будь-що поза переліком валить старт. Реєстр —
+   * `docs/engineering/architecture/feature-flags.md` § 3.1.
+   */
+  RECEIPT_VISION_REASONING_EFFORT: z.preprocess(
+    (v) => (typeof v === "string" ? v.trim().toLowerCase() || undefined : v),
+    z
+      .enum(CHAT_SYNTHESIS_PREMIUM_REASONING_EFFORTS)
+      .default(RECEIPT_VISION_REASONING_EFFORT_DEFAULT),
+  ),
 
   /**
    * Модель зору під шлюзом. `gemini-2.5-flash-lite` — 10/10 на пастках
@@ -323,20 +356,43 @@ export const aiRoutingEnvShape = {
   ),
 
   /**
-   * Страховка-перезапит порожнього ТУРУ СИНТЕЗУ `/api/chat` у стрімі, лише
+   * Страховка-перезапит порожнього ТУРУ СИНТЕЗУ `/api/chat` (стрім і JSON), лише
    * через шлюз (рішення власника 2026-11-19). Незадана або порожня — `on`:
-   * стрім синтезу закрився успішно без жодного символу тексту → сервер рівно
+   * синтез завершився успішно без жодного символу тексту → сервер рівно
    * один раз перепитує той самий payload з `thinking: {type: "disabled"}` у
-   * ту саму SSE-відповідь (`modules/chat/chatStreamEmptyRetry.ts`). Будь-яка
-   * модель синтезу на шлюзі, будь-який тир.
+   * ту саму SSE-відповідь (`modules/chat/chatStreamEmptyRetry.ts`). Тур
+   * синтезу без стріму робить той самий перезапит у JSON-відповідь
+   * (`modules/chat/chatSynthesisJson.ts`, з 2026-11-19). Будь-яка модель
+   * синтезу на шлюзі, будь-який тир.
    *
    * `off` — аварійний відкат без релізу: порожня відповідь знову одразу дає
-   * людині загальну помилку і повертає квоту (поведінка до 2026-11-19).
+   * людині загальну помилку і повертає квоту (стрім: поведінка до
+   * 2026-11-19; JSON-синтез замість колишньої заглушки «Готово.» теж дає 502).
    * Регістр і пробіли не важливі; будь-що поза переліком валить старт.
-   * Перший хід, JSON-синтез і прямий Anthropic її не читають. Реєстр і умова
+   * Перший хід і прямий Anthropic її не читають. Реєстр і умова
    * зняття — `docs/engineering/architecture/feature-flags.md` § 3.1.
    */
   CHAT_SYNTHESIS_EMPTY_RETRY: z.preprocess(
+    (v) => (typeof v === "string" ? v.trim().toLowerCase() || undefined : v),
+    z.enum(["on", "off"]).default("on"),
+  ),
+  /**
+   * Другий раунд інструментів у ході чату для пари «пошук → запис» (С-2 (б),
+   * спека `docs/work/specs/hubchat-second-tool-round.md`). Незадана або
+   * порожня — `on`: коли перший раунд складався лише з пошуку операцій
+   * (`find_transaction`), сервер перед синтезом ще раз питає модель першого
+   * ходу з інструментами запису; якщо вона обрала запис, хід повертає ці
+   * виклики клієнту (стеля два раунди), інакше йде звичайний синтез.
+   * Ціна: плюс один виклик моделі на хід із пошуком. Лише для клієнта,
+   * що шле `second_tool_round: true` у запиті синтезу.
+   *
+   * `off` — аварійний відкат без релізу: хід знову має рівно один раунд
+   * інструментів (поведінка до 2026-11-19), «зміни ту» працює наступним
+   * повідомленням через блок записів (С-2 (а)). Регістр і пробіли не
+   * важливі; будь-що поза переліком валить старт. Реєстр і умова зняття —
+   * `docs/engineering/architecture/feature-flags.md` § 3.1.
+   */
+  CHAT_SECOND_TOOL_ROUND: z.preprocess(
     (v) => (typeof v === "string" ? v.trim().toLowerCase() || undefined : v),
     z.enum(["on", "off"]).default("on"),
   ),

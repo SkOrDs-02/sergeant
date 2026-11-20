@@ -187,8 +187,9 @@ describe("metrics registry — v2 sync op-log RED metrics (PR #048)", () => {
     // `invalid_count_unit`, `invalid_auto_mark_source`, `invalid_count`,
     // `invalid_count_key`). Міграція 171 (Фізрук, П-10): +1
     // `invalid_program_ref`. Міграція 172 (Фізрук, тип виміру): +1
-    // `invalid_measure`.
-    expect(APPLY_REJECT_REASONS.length).toBe(86);
+    // `invalid_measure`. Міграція 176 (Фізрук, Фз-3 (в)): +2 `invalid_done`,
+    // `invalid_set_type`.
+    expect(APPLY_REJECT_REASONS.length).toBe(88);
     // data-17: +1 engine-level `invalid_text_encoding` — `U+0000` / одинокий
     // сурогат у `row` відсікається ДО apply.
     // ADR-0105 §2: +1 `stale_increment` — `increment` старший за вікно

@@ -19,6 +19,7 @@
  * обчислювальний код замість дублювання статистики.
  */
 import { calcCategorySpent } from "@sergeant/finyk-domain";
+import { isWorkingSet } from "@sergeant/fizruk-domain";
 import { calcRoutinePeriodCompletion } from "@sergeant/routine-domain/period-completion";
 import {
   CORRELATION_MIN_N,
@@ -342,7 +343,11 @@ function readFizrukWorkoutMetric(
         (s, item) =>
           s +
           (item.sets ?? []).reduce(
-            (ss, set) => ss + (set.weightKg ?? 0) * (set.reps ?? 0),
+            // Незроблений рядок плану й розминка поза обʼємом (Фз-3 (в)).
+            (ss, set) =>
+              isWorkingSet(set)
+                ? ss + (set.weightKg ?? 0) * (set.reps ?? 0)
+                : ss,
             0,
           ),
         0,

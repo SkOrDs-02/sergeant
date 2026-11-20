@@ -41,13 +41,35 @@ vi.mock("../workouts/WorkoutSummaryView", () => ({
     workout,
     onRepeat,
     onDelete,
+    onUpdateItemSets,
+    onDeleteSet,
   }: {
     workout: Workout;
     onRepeat: () => void;
     onDelete: () => void;
+    onUpdateItemSets?: (
+      itemId: string,
+      sets: { weightKg: number; reps: number }[],
+    ) => void;
+    onDeleteSet?: (
+      itemId: string,
+      snapshot: { weightKg: number; reps: number }[],
+    ) => void;
   }) => (
     <div data-testid="summary-view">
       <span data-testid="summary-workout-id">{workout.id}</span>
+      <button
+        type="button"
+        onClick={() => onUpdateItemSets?.("i1", [{ weightKg: 50, reps: 6 }])}
+      >
+        Виправити підхід
+      </button>
+      <button
+        type="button"
+        onClick={() => onDeleteSet?.("i1", [{ weightKg: 50, reps: 5 }])}
+      >
+        Видалити підхід
+      </button>
       <button type="button" onClick={onRepeat}>
         Повторити це тренування
       </button>
@@ -155,6 +177,40 @@ describe("WorkoutJournalSection – not found", () => {
     renderWithToast(<WorkoutJournalSection {...baseProps({ onClose })} />);
     fireEvent.click(screen.getByRole("button", { name: /до тренувань/i }));
     expect(onClose).toHaveBeenCalledTimes(1);
+  });
+});
+
+describe("WorkoutJournalSection – правка підходів завершеного (Фз-2 (б))", () => {
+  it("пише лише підходи вправи через updateItem, час тренування не чіпає", () => {
+    const updateItem = vi.fn();
+    const updateWorkout = vi.fn();
+    const ended = makeWorkout({ endedAt: "2025-03-10T11:00:00.000Z" });
+    renderWithToast(
+      <WorkoutJournalSection
+        {...baseProps({ activeWorkout: ended, updateItem, updateWorkout })}
+      />,
+    );
+    fireEvent.click(screen.getByRole("button", { name: "Виправити підхід" }));
+    expect(updateItem).toHaveBeenCalledWith("w1", "i1", {
+      sets: [{ weightKg: 50, reps: 6 }],
+    });
+    expect(updateWorkout).not.toHaveBeenCalled();
+  });
+
+  it("видалений підхід повертається з тосту тим самим знімком", () => {
+    const updateItem = vi.fn();
+    const ended = makeWorkout({ endedAt: "2025-03-10T11:00:00.000Z" });
+    renderWithToast(
+      <WorkoutJournalSection
+        {...baseProps({ activeWorkout: ended, updateItem })}
+      />,
+    );
+    fireEvent.click(screen.getByRole("button", { name: "Видалити підхід" }));
+    expect(screen.getByText("Підхід видалено")).toBeTruthy();
+    fireEvent.click(screen.getByRole("button", { name: "Повернути" }));
+    expect(updateItem).toHaveBeenCalledWith("w1", "i1", {
+      sets: [{ weightKg: 50, reps: 5 }],
+    });
   });
 });
 

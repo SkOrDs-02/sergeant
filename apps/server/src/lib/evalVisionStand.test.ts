@@ -168,6 +168,47 @@ describe("зоровий стенд", () => {
     expect(judge?.(guessed)).toBe("не прочитано: обʼєм 950, молоко");
   });
 
+  it("суддя розмитого кадру приймає чесну відмову і валить впевнену страву", () => {
+    const judge = caseByName("analyze-photo", "розмите фото").judge;
+    const refusal = JSON.stringify({
+      isFood: false,
+      notFoodKind: "other",
+      dishName: "Розмите фото без чітких обʼєктів",
+      confidence: 0.9,
+      macros: { kcal: null, protein_g: null, fat_g: null, carbs_g: null },
+      questions: [],
+    });
+    const confident = JSON.stringify({
+      isFood: true,
+      dishName: "Молочний коктейль",
+      confidence: 0.9,
+      macros: { kcal: 250, protein_g: 9, fat_g: 8, carbs_g: 35 },
+      questions: [],
+    });
+    expect(judge?.(refusal)).toBe(true);
+    expect(judge?.(confident)).toBe(
+      "впевнений на розмитому: confidence=0.9, питань 0",
+    );
+  });
+
+  it("суддя refine ловить повтор чернетки, а не перерахунок із нуля", () => {
+    const judge = caseByName("refine-photo", "перерахунок під 450 г").judge;
+    const answer = (kcal: number) =>
+      JSON.stringify({
+        isFood: true,
+        dishName: "Овочева тарілка",
+        confidence: 0.7,
+        portion: { label: "450 г", gramsApprox: 450 },
+        macros: { kcal, protein_g: 10, fat_g: 15, carbs_g: 30 },
+        questions: [],
+      });
+    // Повтор 180 ккал — та сама тиха поломка, заради якої кейс існує.
+    expect(judge?.(answer(180))).toBe("180 ккал — не перерахував із 180");
+    // 450 г овочів і ложка олії, пораховані з нуля: промпт це дозволяє
+    // («чернетка, а не істина»), до 2026-11-19 поріг 350 це валив.
+    expect(judge?.(answer(330))).toBe(true);
+  });
+
   it("фільтр модальностей fail-close: без каталогу openrouter-кандидати відсіюються", () => {
     // У тесті каталог не завантажений (мережі немає за задумом), тож усі
     // openrouter-моделі невідомі. Це навмисно: краще прибрати рядок, ніж

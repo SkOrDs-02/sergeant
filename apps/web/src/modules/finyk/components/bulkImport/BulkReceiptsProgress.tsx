@@ -19,7 +19,11 @@ import { Money } from "@shared/components/ui/Money";
 import type { CustomCategoryInput } from "@sergeant/finyk-domain";
 import { CATEGORY_DISPLAY, CATEGORY_SLUGS } from "../manualExpenseCategories";
 import { expenseCustomCategories } from "../manualIncomeCategories";
-import { draftLooksUnrecognized } from "../receiptDraftEdit";
+import { messages } from "@shared/i18n/uk";
+import {
+  draftLooksUnrecognized,
+  receiptTotalMissing,
+} from "../receiptDraftEdit";
 import type {
   BatchReceiptItem,
   BatchReceiptStatus,
@@ -77,6 +81,12 @@ function ItemRow({
   const canEdit = item.status === "drafted";
   const unrecognized =
     canEdit && item.draft ? draftLooksUnrecognized(item.draft) : false;
+  // Чек із фото без суми (рішення власника 2026-11-19): бейдж замість
+  // «з фото», галочка неактивна, доки суму не введено в повному review.
+  const needsTotal =
+    canEdit && item.draft && !unrecognized
+      ? receiptTotalMissing(item.draft)
+      : false;
   const isError = item.status === "fetch-error" || item.status === "save-error";
   const expenseCategories = expenseCustomCategories(customCategories);
   const categoryDisplay: Readonly<Record<string, { label: string }>> = {
@@ -100,7 +110,7 @@ function ItemRow({
           <button
             type="button"
             onClick={() => onToggleIncluded(item.id)}
-            disabled={disabled}
+            disabled={disabled || needsTotal}
             aria-label={item.included ? "Виключити чек" : "Включити чек"}
             className="touch-target mt-0.5 shrink-0"
           >
@@ -144,6 +154,10 @@ function ItemRow({
               {unrecognized ? (
                 <Badge variant="warning" tone="soft" size="xs">
                   схоже, не чек
+                </Badge>
+              ) : needsTotal ? (
+                <Badge variant="warning" tone="soft" size="xs">
+                  {messages.finyk.receiptTotal.batchBadge}
                 </Badge>
               ) : (
                 item.draft.source === "vision" && (

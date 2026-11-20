@@ -37,3 +37,24 @@ export const WORKOUT_SET_DISTANCE_M_BOUNDS = {
   min: 0,
   max: 1_000_000,
 } as const;
+
+/**
+ * Тип підходу Фізрука (міграція 176, спека
+ * `docs/work/specs/fizruk-set-done-flag-and-set-type.md`). NULL / відсутнє
+ * поле = звичайний підхід, тож «звичайного» в переліку немає. Postgres CHECK
+ * перевіряє лише форму ідентифікатора; перелік тримає цей масив (домен і
+ * серверний sync-хендлер, `invalid_set_type`).
+ *
+ * Семантика — рішення власника 2026-11-19 (П-Фз3-1…3): розминка поза
+ * результатом (обʼєм, рекорди, зараховані підходи), але в навантаженні
+ * відновлення; дроп і «до відмови» — лише позначка, рахуються як звичайні.
+ */
+export const WORKOUT_SET_TYPES = ["warmup", "drop", "failure"] as const;
+
+export type WorkoutSetType = (typeof WORKOUT_SET_TYPES)[number];
+
+const SET_TYPE_SET: ReadonlySet<string> = new Set(WORKOUT_SET_TYPES);
+
+export function isWorkoutSetType(v: unknown): v is WorkoutSetType {
+  return typeof v === "string" && SET_TYPE_SET.has(v);
+}

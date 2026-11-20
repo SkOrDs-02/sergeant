@@ -1,4 +1,6 @@
+import { useEffect } from "react";
 import { messages } from "../../i18n/uk";
+import { markIosInstallHintInlineShown } from "../../lib/platform/iosInstallHintVisit";
 import { cn } from "../../lib/ui/cn";
 
 const copy = messages.iosInstallHint;
@@ -14,6 +16,11 @@ const copy = messages.iosInstallHint;
  * людина піде з екрана.
  */
 export function IosInstallPushHint({ className }: { className?: string }) {
+  // О-1 (а): рядок у дзвонику хаба не показує ту саму підказку вдруге за
+  // візит (`core/app/useIosInstallHint.ts`).
+  useEffect(() => {
+    markIosInstallHintInlineShown();
+  }, []);
   return (
     <div
       role="status"

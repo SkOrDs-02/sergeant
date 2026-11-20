@@ -119,18 +119,22 @@ exports[`fizruk dual-write SQL snapshot (ADR-0073 Крок 0) > emits a byte-sta
       "2026-06-23T00:00:00.000Z",
       null,
       null,
+      null,
+      null,
     ],
     "sql": "INSERT INTO fizruk_workout_sets
        (id, workout_item_id, user_id, weight_kg, reps, rpe,
         sort_order, created_at, updated_at, deleted_at,
-        duration_sec, distance_m)
-     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, NULL, ?, ?)
+        duration_sec, distance_m, done, set_type)
+     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, NULL, ?, ?, ?, ?)
      ON CONFLICT(id) DO UPDATE SET
        weight_kg       = excluded.weight_kg,
        reps            = excluded.reps,
        rpe             = excluded.rpe,
        duration_sec    = excluded.duration_sec,
        distance_m      = excluded.distance_m,
+       done            = excluded.done,
+       set_type        = excluded.set_type,
        sort_order      = excluded.sort_order,
        updated_at      = excluded.updated_at,
        deleted_at      = NULL
@@ -141,7 +145,7 @@ exports[`fizruk dual-write SQL snapshot (ADR-0073 Крок 0) > emits a byte-sta
       "u1",
       "fizruk_workout_sets",
       "insert",
-      "{"id":"i1:s0","user_id":"u1","workout_item_id":"i1","weight_kg":80,"reps":8,"rpe":null,"duration_sec":null,"distance_m":null,"sort_order":0,"created_at":"2026-06-23T00:00:00.000Z","deleted_at":null}",
+      "{"id":"i1:s0","user_id":"u1","workout_item_id":"i1","weight_kg":80,"reps":8,"rpe":null,"duration_sec":null,"distance_m":null,"done":null,"set_type":null,"sort_order":0,"created_at":"2026-06-23T00:00:00.000Z","deleted_at":null}",
       "2026-06-23T00:00:00.000Z",
       "00000000-0000-4000-8000-000000000003",
     ],
@@ -162,18 +166,22 @@ exports[`fizruk dual-write SQL snapshot (ADR-0073 Крок 0) > emits a byte-sta
       "2026-06-23T00:00:00.000Z",
       null,
       null,
+      null,
+      null,
     ],
     "sql": "INSERT INTO fizruk_workout_sets
        (id, workout_item_id, user_id, weight_kg, reps, rpe,
         sort_order, created_at, updated_at, deleted_at,
-        duration_sec, distance_m)
-     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, NULL, ?, ?)
+        duration_sec, distance_m, done, set_type)
+     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, NULL, ?, ?, ?, ?)
      ON CONFLICT(id) DO UPDATE SET
        weight_kg       = excluded.weight_kg,
        reps            = excluded.reps,
        rpe             = excluded.rpe,
        duration_sec    = excluded.duration_sec,
        distance_m      = excluded.distance_m,
+       done            = excluded.done,
+       set_type        = excluded.set_type,
        sort_order      = excluded.sort_order,
        updated_at      = excluded.updated_at,
        deleted_at      = NULL
@@ -184,7 +192,7 @@ exports[`fizruk dual-write SQL snapshot (ADR-0073 Крок 0) > emits a byte-sta
       "u1",
       "fizruk_workout_sets",
       "insert",
-      "{"id":"i1:s1","user_id":"u1","workout_item_id":"i1","weight_kg":85,"reps":6,"rpe":8,"duration_sec":null,"distance_m":null,"sort_order":1,"created_at":"2026-06-23T00:00:00.000Z","deleted_at":null}",
+      "{"id":"i1:s1","user_id":"u1","workout_item_id":"i1","weight_kg":85,"reps":6,"rpe":8,"duration_sec":null,"distance_m":null,"done":null,"set_type":null,"sort_order":1,"created_at":"2026-06-23T00:00:00.000Z","deleted_at":null}",
       "2026-06-23T00:00:00.000Z",
       "00000000-0000-4000-8000-000000000004",
     ],

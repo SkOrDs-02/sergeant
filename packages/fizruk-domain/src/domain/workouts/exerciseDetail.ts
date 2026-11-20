@@ -22,6 +22,7 @@
 
 import { deviceDayKey, deviceMondayStart } from "@sergeant/shared";
 import { compareIsoDesc } from "../../lib/workoutStats.js";
+import { isWorkingSet } from "./setCompletion.js";
 
 import {
   epley1rm,
@@ -250,6 +251,8 @@ export function computeExerciseBest(
       }
     }
     for (const s of sets) {
+      // Розминка й незроблене — не рекорд і не верхній підхід (П-Фз3-1).
+      if (!isWorkingSet(s)) continue;
       const est = epley1rm(s.weightKg, s.reps);
       if (est > best1rm) {
         best1rm = est;
@@ -328,6 +331,7 @@ export function computeExerciseWeeklyTrend(
     let maxRm = 0;
     let vol = 0;
     for (const s of sets) {
+      if (!isWorkingSet(s)) continue;
       const rm = epley1rm(s.weightKg, s.reps);
       if (rm > maxRm) maxRm = rm;
       vol += toNum(s.weightKg) * toNum(s.reps);

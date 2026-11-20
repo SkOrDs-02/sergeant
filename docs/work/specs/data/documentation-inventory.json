@@ -4330,11 +4330,32 @@
       "canonical_owner": "docs/work/specs/finyk-import-reminders.md"
     },
     {
+      "old_path": "docs/work/specs/finyk-limit-and-recurring-push.md",
+      "new_path": "docs/work/specs/finyk-limit-and-recurring-push.md",
+      "action": "keep",
+      "genre": "active-work",
+      "canonical_owner": "docs/work/specs/finyk-limit-and-recurring-push.md"
+    },
+    {
       "old_path": "docs/work/specs/finyk-observations.md",
       "new_path": "docs/work/specs/finyk-observations.md",
       "action": "keep",
       "genre": "active-work",
       "canonical_owner": "docs/work/specs/finyk-observations.md"
+    },
+    {
+      "old_path": "docs/work/specs/finyk-operations-filters.md",
+      "new_path": "docs/work/specs/finyk-operations-filters.md",
+      "action": "keep",
+      "genre": "active-work",
+      "canonical_owner": "docs/work/specs/finyk-operations-filters.md"
+    },
+    {
+      "old_path": "docs/work/specs/finyk-receipt-total-not-visible.md",
+      "new_path": "docs/work/specs/finyk-receipt-total-not-visible.md",
+      "action": "keep",
+      "genre": "active-work",
+      "canonical_owner": "docs/work/specs/finyk-receipt-total-not-visible.md"
     },
     {
       "old_path": "docs/work/specs/finyk-savings-assets.md",
@@ -4363,6 +4384,13 @@
       "action": "keep",
       "genre": "active-work",
       "canonical_owner": "docs/work/specs/fizruk-activity-logging.md"
+    },
+    {
+      "old_path": "docs/work/specs/fizruk-edit-finished-workout.md",
+      "new_path": "docs/work/specs/fizruk-edit-finished-workout.md",
+      "action": "keep",
+      "genre": "active-work",
+      "canonical_owner": "docs/work/specs/fizruk-edit-finished-workout.md"
     },
     {
       "old_path": "docs/work/specs/fizruk-exercise-illustrations.md",
@@ -4400,6 +4428,13 @@
       "canonical_owner": "docs/work/specs/fizruk-readiness-check.md"
     },
     {
+      "old_path": "docs/work/specs/fizruk-set-done-flag-and-set-type.md",
+      "new_path": "docs/work/specs/fizruk-set-done-flag-and-set-type.md",
+      "action": "keep",
+      "genre": "active-work",
+      "canonical_owner": "docs/work/specs/fizruk-set-done-flag-and-set-type.md"
+    },
+    {
       "old_path": "docs/work/specs/health-text-encryption.md",
       "new_path": "docs/work/specs/health-text-encryption.md",
       "action": "keep",
@@ -4428,6 +4463,13 @@
       "canonical_owner": "docs/work/specs/hub-newcomer-card-and-insights.md"
     },
     {
+      "old_path": "docs/work/specs/hub-quick-expense-action.md",
+      "new_path": "docs/work/specs/hub-quick-expense-action.md",
+      "action": "keep",
+      "genre": "active-work",
+      "canonical_owner": "docs/work/specs/hub-quick-expense-action.md"
+    },
+    {
       "old_path": "docs/work/specs/hubchat-find-then-change.md",
       "new_path": "docs/work/specs/hubchat-find-then-change.md",
       "action": "keep",
@@ -4440,6 +4482,13 @@
       "action": "keep",
       "genre": "active-work",
       "canonical_owner": "docs/work/specs/hubchat-first-turn-stream.md"
+    },
+    {
+      "old_path": "docs/work/specs/hubchat-second-tool-round.md",
+      "new_path": "docs/work/specs/hubchat-second-tool-round.md",
+      "action": "keep",
+      "genre": "active-work",
+      "canonical_owner": "docs/work/specs/hubchat-second-tool-round.md"
     },
     {
       "old_path": "docs/work/specs/import-external-trackers.md",
@@ -4503,6 +4552,13 @@
       "action": "keep",
       "genre": "active-work",
       "canonical_owner": "docs/work/specs/initiatives/README.md"
+    },
+    {
+      "old_path": "docs/work/specs/ios-install-hint-after-two-sessions.md",
+      "new_path": "docs/work/specs/ios-install-hint-after-two-sessions.md",
+      "action": "keep",
+      "genre": "active-work",
+      "canonical_owner": "docs/work/specs/ios-install-hint-after-two-sessions.md"
     },
     {
       "old_path": "docs/work/specs/kv-warm-cache-user-partition.md",
@@ -4645,6 +4701,13 @@
       "canonical_owner": "docs/work/specs/nutrition-adaptive-goal.md"
     },
     {
+      "old_path": "docs/work/specs/nutrition-favorites-and-time-of-day-sort.md",
+      "new_path": "docs/work/specs/nutrition-favorites-and-time-of-day-sort.md",
+      "action": "keep",
+      "genre": "active-work",
+      "canonical_owner": "docs/work/specs/nutrition-favorites-and-time-of-day-sort.md"
+    },
+    {
       "old_path": "docs/work/specs/nutrition-goal-journal-cutover.md",
       "new_path": "docs/work/specs/nutrition-goal-journal-cutover.md",
       "action": "keep",
@@ -4657,6 +4720,13 @@
       "action": "keep",
       "genre": "active-work",
       "canonical_owner": "docs/work/specs/nutrition-hero-day-strip.md"
+    },
+    {
+      "old_path": "docs/work/specs/nutrition-household-portions.md",
+      "new_path": "docs/work/specs/nutrition-household-portions.md",
+      "action": "keep",
+      "genre": "active-work",
+      "canonical_owner": "docs/work/specs/nutrition-household-portions.md"
     },
     {
       "old_path": "docs/work/specs/nutrition-norm-without-login.md",

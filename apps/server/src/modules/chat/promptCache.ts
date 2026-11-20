@@ -13,7 +13,7 @@ import {
   filterToolsByHealthConsent,
 } from "./tools.js";
 import { HEALTH_CONSENT_SYSTEM_NOTE } from "./healthGate.js";
-import type { DashboardModuleId } from "@sergeant/shared";
+import { isStateMutatingTool, type DashboardModuleId } from "@sergeant/shared";
 import { wrapAndScanUserContext } from "./toolOutputWrapping.js";
 import {
   buildToolSearchPayload,
@@ -362,6 +362,33 @@ export function buildSynthesisToolsPayload(
   if (subset.length === 0) return full;
 
   return applyToolsCacheBreakpoint(subset);
+}
+
+/**
+ * Інструменти другого раунду (С-2 (б), `chatSecondRound.ts`): усі інструменти
+ * запису, які цей хід мав би й так (той самий зріз модулів і згоди на дані про
+ * здоровʼя, що на першому ході), плюс визначення інструментів першого раунду,
+ * чиї `tool_use` лежать у розмові (той самий аргумент, що в
+ * `buildSynthesisToolsPayload`: payload без їхніх схем живим запитом не
+ * перевірявся).
+ *
+ * Без tool search навмисно і на Anthropic: запит одноразовий, а відкладене
+ * завантаження ховало б саме ті схеми запису, заради яких раунд існує.
+ */
+export function buildSecondRoundToolsPayload(
+  usedToolNames: readonly string[],
+  activeModules: readonly DashboardModuleId[] | null,
+  healthConsent: boolean,
+): ReadonlyArray<object> {
+  const used = new Set(usedToolNames);
+  const registry = filterToolsByHealthConsent(
+    filterToolsByActiveModules(TOOLS, activeModules),
+    healthConsent,
+  ).filter((t) => isStateMutatingTool(t.name) || used.has(t.name));
+  const base = env.CHAT_STRICT_TOOLS
+    ? keepStrictTrueOnly(registry)
+    : stripStrictModeForAnthropic(registry);
+  return applyToolsCacheBreakpoint(base);
 }
 
 /** Імена `tool_use`-блоків у відтвореному `tool_calls_raw`. */

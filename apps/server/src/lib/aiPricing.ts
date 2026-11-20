@@ -148,6 +148,20 @@ export const ANTHROPIC_PRICING_USD_PER_MTOK: Record<
     cacheWrite: 1.25,
     cacheRead: 0.13,
   },
+  // Скан чека й імпорт скриншота виписки (`OPENROUTER_RECEIPT_MODEL`) з
+  // 2026-11-19, рішення власника за заміром § 6.5 дослідження
+  // `2026-11-19-openrouter-new-models.md`. Ендпойнти того ж дня: OpenAI,
+  // Azure, Amazon Bedrock — 0.10/0.50, cache write 0.125, cache read 0.01;
+  // `openai/flex` і `openai/fast` (priority, модель закрита) виключено
+  // правилом вище. Вище 272k токенів входу ціна інша (0.20/0.75): наші запити
+  // на порядки менші. Префікс ловить і `openai/gpt-6-luna-pro` (каталог
+  // 2026-11-19 — та сама 0.10/0.50).
+  "openai/gpt-6-luna": {
+    input: 0.1,
+    output: 0.5,
+    cacheWrite: 0.125,
+    cacheRead: 0.01,
+  },
   // Шість непотокових пайплайнів (`env/aiRoutingEnv.ts`) і тир-дефолти коуча
   // в `env/env.ts`. Ендпойнти 2026-11-19: лише Google AI Studio, стандартний
   // 0.10/0.40, cache write 0.0833, cache read 0.01 (flex і priority

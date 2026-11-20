@@ -431,9 +431,12 @@ describe("webhookHandler", () => {
     expect(counter.inc).toHaveBeenCalledWith({ status: "ok" });
     // Lookup мусить відбутись по тому самому secret-hash, що й path-варіант.
     // Другий запит - налаштування push після відповіді (міграція 168).
-    expect(dbQuery).toHaveBeenCalledTimes(2);
+    // Третій - гейт push ліміту Фініка (витрата, міграція 175): після
+    // вердикту Monobank, тож порядок перших двох не змінився.
+    expect(dbQuery).toHaveBeenCalledTimes(3);
     expect(dbQuery.mock.calls[0]![0]).toMatch(/FROM mono_connection/);
     expect(dbQuery.mock.calls[1]![0]).toMatch(/FROM user_preferences/);
+    expect(dbQuery.mock.calls[2]![0]).toMatch(/push_finyk_alerts/);
     expect(pool.connect).toHaveBeenCalledTimes(1);
   });
 

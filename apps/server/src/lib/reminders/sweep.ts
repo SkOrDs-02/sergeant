@@ -51,7 +51,8 @@ import {
   parseOptionalDayKey,
 } from "../routineScheduleFields.js";
 import { sendToUserQuietly } from "../../push/send.js";
-import { budgetSlotKey, collapseReminders, planSends } from "./budget.js";
+import { collapseReminders, planSends } from "./budget.js";
+import { claimBudgetSlot, releaseBudgetSlot } from "./budgetSlots.js";
 import {
   fizrukDueNow,
   fizrukReminderHm,
@@ -457,45 +458,6 @@ async function claim(
     [reminder.userId, reminder.dedupKey, reminder.module, dayKey],
   );
   return (rowCount ?? 0) > 0;
-}
-
-/**
- * Застовпити один із `cap` слотів бюджету доби. Повертає ключ слота або
- * `null`, якщо всі слоти вже зайняті.
- *
- * Бюджет живе в тому самому журналі й тим самим `ON CONFLICT`, що й дедуп
- * приводів, тож стелю не пробити ні перегонами реплік, ні зміною плану
- * посеред доби (людина додала звичку чи змінила стелю): слотів рівно `cap`.
- */
-async function claimBudgetSlot(
-  pool: Pool,
-  userId: string,
-  dayKey: string,
-  cap: number,
-): Promise<string | null> {
-  for (let k = 1; k <= cap; k++) {
-    const key = budgetSlotKey(dayKey, k);
-    const { rowCount } = await pool.query(
-      `INSERT INTO push_reminder_log (user_id, dedup_key, module, day_key)
-            VALUES ($1, $2, 'budget', $3)
-       ON CONFLICT (user_id, dedup_key) DO NOTHING`,
-      [userId, key, dayKey],
-    );
-    if ((rowCount ?? 0) > 0) return key;
-  }
-  return null;
-}
-
-/** Повернути слот, під який не лишилось жодного приводу. */
-async function releaseBudgetSlot(
-  pool: Pool,
-  userId: string,
-  key: string,
-): Promise<void> {
-  await pool.query(
-    `DELETE FROM push_reminder_log WHERE user_id = $1 AND dedup_key = $2`,
-    [userId, key],
-  );
 }
 
 function groupByUser(reminders: DueReminder[]): Map<string, DueReminder[]> {

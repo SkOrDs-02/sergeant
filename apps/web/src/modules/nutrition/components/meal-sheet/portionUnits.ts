@@ -7,7 +7,9 @@
  */
 import { STORAGE_KEYS } from "@sergeant/shared";
 import { safeReadLS, safeWriteLS } from "@shared/lib/storage/storage";
+import { pluralUa } from "@sergeant/shared";
 import type { FoodPortion } from "../../lib/foodDb/foodDb";
+import type { HouseholdForms } from "../../lib/foodDb/householdPortions";
 
 export const GRAMS_UNIT = "g";
 
@@ -37,8 +39,12 @@ export function pickInitialUnit(
   portions: readonly FoodPortion[],
   lastUnitId: string | null,
   editing: boolean,
+  hasLastWeight = false,
 ): string {
   if (editing || portions.length === 0) return GRAMS_UNIT;
+  // Вага минулого запису без збереженої одиниці введена грамами (порцій
+  // тоді ще не було): лишаємо грами, щоб не показувати «2,18 яйця».
+  if (!lastUnitId && hasLastWeight) return GRAMS_UNIT;
   // Збережена порція, якої вже немає, падає на «г», а не на першу: людина
   // свідомо обирала саме її, і вгадувати іншу штуку було б підміною.
   if (lastUnitId) {
@@ -55,4 +61,19 @@ export function gramsToQty(grams: number, portionGrams: number): number {
 
 export function qtyToGrams(qty: number, portionGrams: number): number {
   return Math.round(qty * portionGrams * 100) / 100;
+}
+
+/**
+ * Назва одиниці, узгоджена з кількістю: «1 яйце», «2 яйця», «5 яєць»,
+ * «1,5 яйця» (дріб бере родовий відмінок однини). Власна порція людини
+ * форм не має і лишається своєю назвою, як і раніше.
+ */
+export function portionQtyLabel(
+  portion: FoodPortion & { forms?: HouseholdForms },
+  qty: number,
+): string {
+  const forms = portion.forms;
+  if (!forms) return portion.name;
+  if (!Number.isInteger(qty)) return forms[3];
+  return pluralUa(qty, { one: forms[0], few: forms[1], many: forms[2] });
 }

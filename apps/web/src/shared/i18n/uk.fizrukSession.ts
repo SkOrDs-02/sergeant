@@ -14,11 +14,15 @@
  * Ключі верхнього рівня не повинні збігатися з ключами `uk.fizruk.ts`.
  */
 import { fizrukMeasureMessages } from "./uk.fizrukMeasure";
+import { fizrukSetTypeMessages } from "./uk.fizrukSetType";
 
 export const fizrukSessionMessages = {
   // Тип виміру вправи (окремий файл каталогу, спека типу виміру): спред
   // тут, а не в `uk.ts`, бо той упирається в 600 рядків.
   ...fizrukMeasureMessages,
+  // Прапорець «виконано» і тип підходу (спека
+  // fizruk-set-done-flag-and-set-type), той самий прийом.
+  ...fizrukSetTypeMessages,
   duringWorkoutSettings: {
     title: "Під час тренування",
     keepScreenOnLabel: "Не гасити екран",
@@ -34,9 +38,6 @@ export const fizrukSessionMessages = {
     cancel: "Ще тренуюсь",
     minutes: "{n} хв",
     seconds: "{n} с",
-    exerciseOne: "вправа",
-    exerciseFew: "вправи",
-    exerciseMany: "вправ",
     setOne: "підхід",
     setFew: "підходи",
     setMany: "підходів",
@@ -53,5 +54,18 @@ export const fizrukSessionMessages = {
     doneOf: "{done} з {total} {noun}",
     ofOne: "вправи",
     ofMany: "вправ",
+  },
+  /**
+   * Правка підходів у підсумку завершеного тренування (Фз-2 (б), спека
+   * `fizruk-edit-finished-workout.md`). Ті самі поля, що в сесії; час
+   * завершення не змінюється.
+   */
+  editFinishedSets: {
+    edit: "Виправити",
+    editAria: "Виправити підходи: {name}",
+    done: "Готово",
+    addSet: "+ Підхід",
+    setDeleted: "Підхід видалено",
+    hint: "Числа тренування перерахуються, час завершення лишиться.",
   },
 };

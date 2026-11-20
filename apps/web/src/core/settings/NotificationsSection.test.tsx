@@ -85,6 +85,8 @@ vi.mock("@shared/api", async (importOriginal) => ({
   meApi: meApiMock,
 }));
 
+import { setActiveModules } from "@sergeant/shared";
+import { webKVStore } from "@shared/lib/storage/storage";
 import { NotificationsSection } from "./NotificationsSection";
 
 // Шукаємо перемикач за підписом рядка, а не за позицією у дереві. Раніше
@@ -535,8 +537,10 @@ describe("NotificationsSection", () => {
       quietHoursStartMin: 1320,
       quietHoursEndMin: 480,
       pushMonoTransactions: true,
+      pushFinykAlerts: true,
     };
     afterEach(() => {
+      setActiveModules(webKVStore, []);
       // `mockReset` повертає початкову реалізацію (відповідь старого сервера).
       meApiMock.getPreferences.mockReset();
       meApiMock.updatePreferences.mockReset();
@@ -548,14 +552,17 @@ describe("NotificationsSection", () => {
       await waitFor(() =>
         expect(screen.getByRole("radio", { name: "2" })).toBeChecked(),
       );
-      // Пʼять читань: стеля і чотири поля міграції 168 («Повідомлення від
+      // Шість читань: стеля, чотири поля міграції 168 і тумблер Фініка (175) («Повідомлення від
       // Сержанта» з власним читанням переїхали в секцію «Сержант», PR-S8).
       await waitFor(() =>
-        expect(meApiMock.getPreferences).toHaveBeenCalledTimes(5),
+        expect(meApiMock.getPreferences).toHaveBeenCalledTimes(6),
       );
       expect(screen.queryByRole("switch", { name: "Тихі години" })).toBeNull();
       expect(
         screen.queryByRole("switch", { name: "Операції Monobank" }),
+      ).toBeNull();
+      expect(
+        screen.queryByRole("switch", { name: "Ліміти й платежі Фініка" }),
       ).toBeNull();
       expect(screen.queryByLabelText("Початок")).toBeNull();
     });
@@ -635,6 +642,55 @@ describe("NotificationsSection", () => {
           pushMonoTransactions: false,
         }),
       );
+    });
+
+    describe("тумблер «Ліміти й платежі Фініка» (міграція 175)", () => {
+      const NAME = "Ліміти й платежі Фініка";
+
+      it("увімкнений за замовчуванням, коли Фінік активний", async () => {
+        meApiMock.getPreferences.mockResolvedValue(NEW_SERVER as never);
+        renderSettingsSection(<NotificationsSection />);
+        expect(await screen.findByRole("switch", { name: NAME })).toBeChecked();
+      });
+
+      it("перемикання шле pushFinykAlerts на сервер", async () => {
+        meApiMock.getPreferences.mockResolvedValue(NEW_SERVER as never);
+        meApiMock.updatePreferences.mockResolvedValue({
+          ...NEW_SERVER,
+          pushFinykAlerts: false,
+        } as never);
+        renderSettingsSection(<NotificationsSection />);
+        fireEvent.click(await screen.findByRole("switch", { name: NAME }));
+        await waitFor(() =>
+          expect(meApiMock.updatePreferences).toHaveBeenCalledWith({
+            pushFinykAlerts: false,
+          }),
+        );
+      });
+
+      it("помилка запису відкочує стан і показує повідомлення", async () => {
+        meApiMock.getPreferences.mockResolvedValue(NEW_SERVER as never);
+        meApiMock.updatePreferences.mockRejectedValue(new Error("offline"));
+        renderSettingsSection(<NotificationsSection />);
+        const toggle = await screen.findByRole("switch", { name: NAME });
+        fireEvent.click(toggle);
+        expect(
+          await screen.findByText(
+            "Не вдалося зберегти налаштування. Спробуй ще раз.",
+          ),
+        ).toBeInTheDocument();
+        expect(screen.getByRole("switch", { name: NAME })).toBeChecked();
+      });
+
+      it("без Фініка тумблера немає, а Monobank лишається", async () => {
+        setActiveModules(webKVStore, ["routine"]);
+        meApiMock.getPreferences.mockResolvedValue(NEW_SERVER as never);
+        renderSettingsSection(<NotificationsSection />);
+        expect(
+          await screen.findByRole("switch", { name: "Операції Monobank" }),
+        ).toBeInTheDocument();
+        expect(screen.queryByRole("switch", { name: NAME })).toBeNull();
+      });
     });
   });
 });

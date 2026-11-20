@@ -234,3 +234,36 @@ describe("видалення факту памʼяті: id лише з my_profil
     expect(r.argViolations.length).toBeGreaterThan(0);
   });
 });
+
+describe("другий раунд: хід без запису (С-2 (б))", () => {
+  const NO_WRITE = FOLLOW_UP_CASES.find((c) =>
+    c.name.startsWith("другий раунд: двозначний"),
+  )!;
+  const first = { blocks: [toolUse("find_transaction", {})], fedResult: null };
+
+  it("текст після пошуку зараховується", () => {
+    const r = replayCase(NO_WRITE, {
+      name: NO_WRITE.name,
+      turns: [
+        first,
+        { blocks: [{ type: "text", text: "Яку з двох?" }], fedResult: "…" },
+      ],
+    });
+    expect(r.correct).toBe(true);
+  });
+
+  it("запис із id з результату — провал", () => {
+    const r = replayCase(NO_WRITE, {
+      name: NO_WRITE.name,
+      turns: [
+        first,
+        {
+          blocks: [toolUse("delete_transaction", { tx_id: "m_5d12" })],
+          fedResult: "Знайдено 2 операц.: m_5d12: …",
+        },
+      ],
+    });
+    expect(r.correct).toBe(false);
+    expect(r.hallucinated).toEqual([]);
+  });
+});

@@ -111,4 +111,17 @@ describe("formatReceiptError", () => {
   it("uses the caller fallback for non-error values", () => {
     expect(formatReceiptError(null, "fallback")).toBe("fallback");
   });
+
+  it("RECEIPT_TOTAL_REQUIRED від сервера показується тим самим спонуканням, що й на екрані", () => {
+    const err = new ApiError({
+      kind: "http",
+      status: 400,
+      message: "HTTP 400",
+      url: "https://api.test/finyk/receipts",
+      body: { error: "щось технічне", code: "RECEIPT_TOTAL_REQUIRED" },
+    });
+    expect(formatReceiptError(err, "fallback")).toBe(
+      "Підсумку на фото не видно, введи суму.",
+    );
+  });
 });

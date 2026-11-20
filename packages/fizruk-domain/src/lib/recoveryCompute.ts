@@ -35,7 +35,12 @@ export function loadPointsForItem(
   if (item.type === "strength") {
     const sets = item.sets || [];
     const tonnage = sets.reduce(
-      (s, x) => s + (Number(x.weightKg) || 0) * (Number(x.reps) || 0),
+      (s, x) =>
+        // Незроблений рядок (`done: false`) не навантаження; розминка —
+        // так (рішення власника 2026-11-19, П-Фз3-1).
+        isSetCompleted(x, item)
+          ? s + (Number(x.weightKg) || 0) * (Number(x.reps) || 0)
+          : s,
       0,
     );
     // Той самий предикат, що лічильник сесії й `computeWorkoutSetCount`.

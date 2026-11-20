@@ -95,6 +95,7 @@ describe("007_fizruk_pushups_to_workouts", () => {
       "009_fizruk_workout_program_ref.sql",
       "010_fizruk_set_measure.sql",
       "011_fizruk_exercise_prefs.sql",
+      "012_fizruk_set_done_and_type.sql",
     ]);
 
     const tables = db

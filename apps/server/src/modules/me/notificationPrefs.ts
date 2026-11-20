@@ -1,6 +1,7 @@
 /**
  * Налаштування сповіщень із міграції 168: пояс пристрою, тихі години і
- * тумблер push Monobank. Серіалізація й валідація патча для
+ * тумблер push Monobank; з міграції 175 ще тумблер push Фініка (ліміти й
+ * платежі, спека `finyk-limit-and-recurring-push.md`). Серіалізація й валідація патча для
  * `/api/me/preferences` (`./dataRights.ts`).
  *
  * Спека: docs/work/specs/notifications-quiet-hours-and-device-time.md.
@@ -24,6 +25,7 @@ export interface NotificationPrefs {
   quietHoursStartMin: number;
   quietHoursEndMin: number;
   pushMonoTransactions: boolean;
+  pushFinykAlerts: boolean;
 }
 
 /**
@@ -37,6 +39,8 @@ export const NOTIFICATION_PREF_DEFAULTS: NotificationPrefs = {
   quietHoursStartMin: QUIET_HOURS_DEFAULT_START_MIN,
   quietHoursEndMin: QUIET_HOURS_DEFAULT_END_MIN,
   pushMonoTransactions: true,
+  // Міграція 175: `DEFAULT TRUE` (відповідь власника 2026-11-19).
+  pushFinykAlerts: true,
 };
 
 function minuteOr(value: unknown, fallback: number): number {
@@ -64,6 +68,7 @@ export function serializeNotificationPrefs(
     ),
     quietHoursEndMin: minuteOr(row["quiet_hours_end_min"], d.quietHoursEndMin),
     pushMonoTransactions: row["push_mono_transactions"] !== false,
+    pushFinykAlerts: row["push_finyk_alerts"] !== false,
   };
 }
 
@@ -84,6 +89,7 @@ export function mergeNotificationPrefs(
     quietHoursEndMin: patch.quietHoursEndMin ?? base.quietHoursEndMin,
     pushMonoTransactions:
       patch.pushMonoTransactions ?? base.pushMonoTransactions,
+    pushFinykAlerts: patch.pushFinykAlerts ?? base.pushFinykAlerts,
   };
   if (patch.timeZone !== undefined && !isValidTimeZone(patch.timeZone)) {
     throw new ValidationError("Невідомий часовий пояс", {

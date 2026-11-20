@@ -6,6 +6,7 @@
  * тут почервоніло при валідному маніфесті, зламали ми, а не постачальник.
  */
 
+import { isStateMutatingTool } from "@sergeant/shared";
 import { SYSTEM_PREFIX } from "../tools.js";
 import type { ToolCase } from "../toolSelectionCases/index.js";
 import { DATA_BLOCK } from "./dataBlock.js";
@@ -96,7 +97,9 @@ export function replayCase(
     turnHits.push(
       index === 0
         ? scoreCase(toolCase, picked)
-        : scoreTurn(expected?.accept ?? [], picked),
+        : expected?.expectNoWrite
+          ? !picked.some((p) => isStateMutatingTool(p.split("(")[0] ?? ""))
+          : scoreTurn(expected?.accept ?? [], picked),
     );
     if (index === 0 && expectedTurns.length > 0) {
       shortCircuited = reachedFinalTurn(toolCase, picked);

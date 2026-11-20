@@ -20,6 +20,7 @@ import type { Pool } from "pg";
 
 import { logger, serializeError } from "../../obs/logger.js";
 import { reminderSweepRunsTotal } from "../../obs/metrics.js";
+import { runFinykPushSweep } from "../../modules/finyk/push/sweep.js";
 import { pruneReminderLog, runReminderSweep } from "./sweep.js";
 
 export interface StartedReminderScheduler {
@@ -72,10 +73,15 @@ export function startReminderScheduler(pool: Pool): StartedReminderScheduler {
     let sweepCompleted = false;
     try {
       const startedAt = new Date();
-      const result = await runReminderSweep(pool, startedAt, lastSweepAt);
+      const prevSweepAt = lastSweepAt;
+      const result = await runReminderSweep(pool, startedAt, prevSweepAt);
       lastSweepAt = startedAt;
       sweepCompleted = true;
       reminderSweepRunsTotal.inc({ outcome: "ok" });
+      // Push Фініка («завтра спишеться», досилання порогів після тихих
+      // годин) після нагадувань: ті самі слоти стелі, нагадування першими.
+      // Не кидає: власні збої логує сам.
+      await runFinykPushSweep(pool, startedAt, prevSweepAt);
       // Прибирання привʼязане до київської години, а не до інтервалу: так
       // воно трапляється рівно раз на добу незалежно від рестартів.
       if (result.hm === PRUNE_AT_HM && lastPruneDayKey !== result.dayKey) {
