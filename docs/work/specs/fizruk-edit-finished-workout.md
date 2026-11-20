@@ -1,6 +1,6 @@
 # SPEC: Правка підходів у підсумку завершеного тренування
 
-> **Last touched:** 2026-11-19 by @claude. **Next review:** 2027-05-19.
+> **Last touched:** 2026-11-20 by @claude. **Next review:** 2027-06-12.
 > **Status:** Implemented - `WorkoutSummaryItemEditor.tsx`, `WorkoutSummaryView.tsx`, `WorkoutJournalSection.tsx` (2026-11-19); відкриті питання П-Фз2-1…3 не блокують, поведінка консервативна (§ Ризики).
 
 ## Проблема

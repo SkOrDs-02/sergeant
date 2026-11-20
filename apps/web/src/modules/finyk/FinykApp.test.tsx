@@ -314,6 +314,20 @@ describe("FinykApp — connect flow (real FinykLoginScreen)", () => {
 describe("FinykApp — connected Monobank state over real MSW transport", () => {
   it("shows a real sync pill with an explicit label while a Mono sync is pending, and hides the no-bank banner", async () => {
     server.use(
+      // Підключений Monobank буває лише із сесією: запити `mono/*` чекають
+      // `authenticated` (useSessionReady, FULL-20261119-PERF-1).
+      http.get("*/api/v1/me", () =>
+        HttpResponse.json({
+          user: {
+            id: "local-anon",
+            email: "qa@example.com",
+            name: "QA",
+            image: null,
+            emailVerified: true,
+            createdAt: "2026-08-01T00:00:00.000Z",
+          },
+        }),
+      ),
       http.get("*/api/v1/mono/sync-state", () =>
         HttpResponse.json({
           status: "pending",

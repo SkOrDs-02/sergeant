@@ -8,8 +8,10 @@
 import { useFizrukDualWriteBoot } from "./useFizrukDualWriteBoot";
 import { useFizrukSqliteReadBoot } from "./useFizrukSqliteReadBoot";
 import { useFizrukQuickStatsBoot } from "./useFizrukQuickStatsBoot";
+import { useOnboardingDoneOnRealEntry } from "../../../core/onboarding/useOnboardingDoneOnRealEntry";
 
 export default function FizrukBootCluster(): null {
+  useOnboardingDoneOnRealEntry("fizruk");
   useFizrukDualWriteBoot();
   useFizrukSqliteReadBoot();
   // Знімок quick-stats для бенто-картки хаба. Без нього картка лишалася на

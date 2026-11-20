@@ -2,6 +2,7 @@ import { useQuery } from "@tanstack/react-query";
 import { billingApi } from "@shared/api";
 import { billingKeys } from "@shared/lib/api/queryKeys";
 import { useAuthOptional } from "../auth/AuthContext";
+import { useSessionReady } from "../auth/useSessionReady";
 import type { BillingAccess, BillingStatusResponse } from "@sergeant/shared";
 
 /**
@@ -58,11 +59,11 @@ export function usePlan(): UsePlanResult {
   // «free» — запит не потрібен. Поза `AuthProvider` (голі юніт-тести)
   // поведінка попередня.
   const auth = useAuthOptional();
-  const signedOut = auth?.status === "unauthenticated";
+  const sessionReady = useSessionReady();
   const query = useQuery({
     queryKey: billingKeys.status,
     queryFn: ({ signal }) => billingApi.status({ signal }),
-    enabled: !signedOut,
+    enabled: sessionReady,
     // Plan rarely changes — 60 s staleTime is enough to coalesce focus
     // refetches across tabs; webhook-driven invalidation picks up fresh
     // post-checkout state without polling the server.

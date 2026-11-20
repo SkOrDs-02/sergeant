@@ -21,6 +21,7 @@ import { ConfirmDialog } from "@shared/components/ui/ConfirmDialog";
 import { SettingsSubGroup } from "./SettingsPrimitives";
 import { MonoTokenInlineForm } from "./MonoTokenInlineForm";
 import { failedCopy } from "@shared/i18n/failedCopy";
+import { useSessionReady } from "../auth/useSessionReady";
 
 type ConfirmKind = "cache" | "disconnect" | null;
 
@@ -89,6 +90,7 @@ export function FinykWebhookServiceSection({
   inView,
 }: FinykWebhookServiceSectionProps) {
   const queryClient = useQueryClient();
+  const sessionReady = useSessionReady();
   const [confirmKind, setConfirmKind] = useState<ConfirmKind>(null);
   const [webhookTokenInput, setWebhookTokenInput] = useState("");
   const [webhookConnecting, setWebhookConnecting] = useState(false);
@@ -99,7 +101,8 @@ export function FinykWebhookServiceSection({
   const syncStateQuery = useQuery<MonoSyncState>({
     queryKey: finykKeys.monoSyncState,
     queryFn: ({ signal }) => monoWebhookApi.syncState({ signal }),
-    enabled: inView,
+    // Без сесії — 401 (FULL-20261119-PERF-1).
+    enabled: inView && sessionReady,
     staleTime: 30_000,
     refetchOnWindowFocus: true,
   });

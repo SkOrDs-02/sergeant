@@ -1,0 +1,19 @@
+# Підсумки лейнів (фінальний регресійний прогін після фіксів, 2026-11-19)
+static: format:check exit 0; lint exit 0 (після фіксу check-dead-doc-links); check:typecheck-and-test 35/35 tasks exit 0; test:scripts 1416 pass після фіксу tsconfig-guard
+budgets: JS 1.5 MB / 1.52 MB; CSS 31.78 kB / 40 kB; eager 273.4 kB / 274 kB (74 preload-чанки)
+smoke rc=1  1 failed  63 passed (4.4m) 
+a11y rc=0  86 passed (4.3m) 
+mobile rc=0  41 passed (1.6m) 
+sweep rc=0  70 passed (2.7m) 
+ledger rc=0  48 passed (28.1s) 
+profiles rc=1  1 failed  12 skipped  1 did not run  16 passed (2.4m) 
+audit rc=0  4 passed (8.0m) 
+durability rc=1  2 failed  9 passed (6.2m) 
+durability-rerun rc=0 9 passed; 97/97 перевірок [PASS]
+live-chat (OpenRouter) rc=0 2 passed
+prod-anon (app.sergeant.com.ua) rc=0 4 passed
+walk local: 80 сторінок, 0 console/pageerror/overflow/clipped/empty
+walk prod: 80 сторінок, 0 console/pageerror/overflow/clipped/empty
+# smoke: 1 fail = hub-chat-smoke «degraded 503» очікує сервер БЕЗ AI-ключа; у фінальному прогоні ключ був (live-чат зелений). До підключення ключа smoke 63/64 з єдиним фейлом live-чату.
+# profiles: 1 fail = FULL-20261119-UX-1 (відкрита); 12 skipped = Pro-профіль без PW_PRO_USER_EMAIL і сідери за прапорцями.
+# durability (фінальний): 2 тести / 6 перевірок P3/P5 упали один раз; повтор 97/97, окреме відтворення P3 2/2 зелене.

@@ -35,4 +35,17 @@ describe("TodayOperations", () => {
       /Витрати.*300.*Дохід.*1\s000.*Баланс.*700/,
     );
   });
+
+  it("is a level-2 section under the page h1 (axe heading-order)", () => {
+    render(
+      <TodayOperations
+        showBalance
+        onOpenToday={() => {}}
+        summary={{ expense: 0, income: 0, balance: 0 }}
+        transactions={[]}
+      />,
+    );
+    expect(screen.getByRole("heading", { level: 2 })).toBeInTheDocument();
+    expect(screen.queryByRole("heading", { level: 3 })).toBeNull();
+  });
 });

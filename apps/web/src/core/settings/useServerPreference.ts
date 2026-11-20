@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { meApi, type UserPreferences } from "@shared/api";
+import { useAuthOptional } from "../auth/AuthContext";
 import {
   classifyPreferenceLoadFailure,
   PREFERENCE_LOAD_FAILURE_COPY,
@@ -103,7 +104,16 @@ export function useServerPreference<K extends ScalarPreferenceKey>(
   // (зміна deps) поки цей виклик ще летів.
   const inFlightSavesRef = useRef(0);
 
+  // Статус сесії: поки він `loading`, GET не шлемо, а гостю одразу кажемо
+  // «увійди» замість 401 від сервера (FULL-20261119-PERF-1). Поза
+  // `AuthProvider` (юніт-тести) — `null`, попередня поведінка.
+  const authStatus = useAuthOptional()?.status ?? null;
+
+  const guest =
+    authStatus === "unauthenticated" || authStatus === "pending_deletion";
+
   useEffect(() => {
+    if (authStatus === "loading" || guest) return;
     const requestId = ++requestIdRef.current;
     let cancelled = false;
     meApi
@@ -147,7 +157,7 @@ export function useServerPreference<K extends ScalarPreferenceKey>(
     return () => {
       cancelled = true;
     };
-  }, [key, copy.authRequired]);
+  }, [key, copy.authRequired, authStatus, guest]);
 
   const set = useCallback(
     async (next: PreferenceValue<K>) => {
@@ -185,5 +195,13 @@ export function useServerPreference<K extends ScalarPreferenceKey>(
     [key, value, copy.saveError],
   );
 
-  return { value, loaded, supported, error, saving, set };
+  // Гостю — та сама копія «увійди», що раніше приходила з 401, але без запиту.
+  return {
+    value,
+    loaded: guest ? false : loaded,
+    supported,
+    error: guest ? copy.authRequired : error,
+    saving,
+    set,
+  };
 }

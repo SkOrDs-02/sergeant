@@ -1,6 +1,6 @@
 # SPEC: Відновлення локальної копії зі знімка сервера (клієнт)
 
-> **Last touched:** 2026-11-19 by @claude. **Next review:** 2027-02-19.
+> **Last touched:** 2026-11-20 by @claude. **Next review:** 2027-06-06.
 > **Status:** Active
 
 ## Проблема

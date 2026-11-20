@@ -13,6 +13,8 @@ import {
   uncaughtOnly,
   visibleText,
   type Recorder,
+  seedAnalyticsConsentDecision,
+  waitForServerSync,
 } from "../utils/liveJourneyHelpers";
 import { JOURNEY, PROFILES, type TestProfile } from "./profileMatrix";
 
@@ -95,6 +97,7 @@ for (const profile of PROFILES) {
           locale: "uk-UA",
           timezoneId: "Europe/Kyiv",
         });
+        await seedAnalyticsConsentDecision(c);
         return { c, p: await c.newPage() };
       };
       const first = await newCtx();
@@ -109,6 +112,12 @@ for (const profile of PROFILES) {
         // localStorage/SQLite, як на новому телефоні) і заходимо наново.
         await addExpense(page, `QA ${profile.id} витрата`, "249");
         await addHabit(page, `QA ${profile.id} звичка`);
+        // Закрити «пристрій» лише тоді, коли сервер уже має обидва записи:
+        // writer шле push ~2 с після останньої навігації.
+        await waitForServerSync(page, [
+          `QA ${profile.id} витрата`,
+          `QA ${profile.id} звичка`,
+        ]);
         await context.close();
 
         const second = await newCtx();
@@ -162,6 +171,11 @@ for (const profile of PROFILES) {
         await expect(
           page.getByRole("button", { name: /Керувати підпискою/ }),
         ).toBeVisible();
+      } else if (profile.account === "anonymous") {
+        // Гість не має плану: бейджа «Зараз твій план» йому не показують
+        // (`isCurrent` вимагає сесії), Free-CTA веде на вхід.
+        await expect(visibleText(page, "Увійти й почати")).toBeVisible();
+        await expect(visibleText(page, "Зараз твій план")).toHaveCount(0);
       } else {
         await expect(visibleText(page, "Зараз твій план")).toBeVisible();
       }
@@ -170,7 +184,11 @@ for (const profile of PROFILES) {
     test(`${profile.id}: PDF-експорт відповідає тарифу`, async () => {
       await goto(page, "/insights");
       await page.getByRole("button", { name: /Експортувати PDF/ }).click();
-      const paywall = page.getByText("PDF-звіти у Premium");
+      // Пейвол — діалог «PDF-звіти – у Premium» (тире, як у smoke
+      // `paywall-locale-journeys`), а не голий текст без тире.
+      const paywall = page.getByRole("dialog", {
+        name: "PDF-звіти – у Premium",
+      });
       if (profile.plan === "pro") {
         await expect(paywall).toBeHidden();
       } else {

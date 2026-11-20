@@ -154,7 +154,13 @@ export function parseWorld(value: unknown, id: WorldId): ScenarioWorld {
       receiptsCount: asInt(s["receiptsCount"], `${id}.silpo.receiptsCount`),
     };
   }
-  return { version: 1, id, user: null, mono, silpo, local: r["local"] };
+  // Monobank і Сільпо підключаються лише з акаунтом: світ з інтеграцією без
+  // користувача — неможливий стан. Відколи сесійні запити чекають
+  // `authenticated` (useSessionReady, FULL-20261119-PERF-1), такий світ
+  // рендерив порожній Огляд замість транзакцій. Тест, якому потрібен гість,
+  // і далі явно ставить `user: null` (ledger).
+  const user = mono || silpo ? QA_USER : null;
+  return { version: 1, id, user, mono, silpo, local: r["local"] };
 }
 
 const RAW: Record<WorldId, unknown> = {

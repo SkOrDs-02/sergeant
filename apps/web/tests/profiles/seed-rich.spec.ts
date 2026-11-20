@@ -10,6 +10,7 @@ import {
   signUp,
   visibleText,
   waitForSyncQuiet,
+  seedAnalyticsConsentDecision,
 } from "../utils/liveJourneyHelpers";
 
 /**
@@ -165,6 +166,7 @@ test.describe.serial("@seed Q3 — автосідер насиченого ак�
         timezoneId: "Europe/Kyiv",
         ...(deviceState ? { storageState: deviceState } : {}),
       });
+      await seedAnalyticsConsentDecision(context);
       const page = await context.newPage();
       const pushes = trackSyncPushes(page);
 
@@ -256,6 +258,7 @@ test.describe.serial("@seed Q3 — автосідер насиченого ак�
       locale: "uk-UA",
       timezoneId: "Europe/Kyiv",
     });
+    await seedAnalyticsConsentDecision(verifyCtx);
     const verifyPage = await verifyCtx.newPage();
     await signIn(verifyPage, EMAIL, QA_PASSWORD);
     await goto(verifyPage, "/routine/habits");

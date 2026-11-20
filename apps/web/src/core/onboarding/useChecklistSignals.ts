@@ -32,6 +32,7 @@ import { emitHubBus } from "@shared/lib/modules/hubBus";
 import { finykKeys } from "@shared/lib/api/queryKeys";
 import { useHubStorageBump } from "../hub/useHubStorageBump";
 import { webRealEntryProbe } from "./realEntryProbe";
+import { useSessionReady } from "../auth/useSessionReady";
 
 /** Matches `useModuleRouteLoader`'s prefetch so the two calls dedupe. */
 const STALE_TIME_MS = 30_000;
@@ -97,6 +98,7 @@ export function useChecklistSignals(
   moduleId: DashboardModuleId,
 ): ChecklistSignals {
   const bump = useHubStorageBump();
+  const sessionReady = useSessionReady();
 
   // Server-side truth for "Підключити Monobank" — no local trace exists,
   // and the connection survives a reinstall, which is exactly the case
@@ -106,7 +108,9 @@ export function useChecklistSignals(
     queryKey: finykKeys.monoSyncState,
     queryFn: ({ signal }) => monoWebhookApi.syncState({ signal }),
     staleTime: STALE_TIME_MS,
-    enabled: moduleId === "finyk",
+    // Гість банк не підключає, а сервер без сесії віддає 401 на кожен рендер
+    // хаба (FULL-20261119-PERF-1).
+    enabled: moduleId === "finyk" && sessionReady,
     // A failed probe must not read as "not connected": it leaves the step
     // to whatever is already latched in storage rather than asserting a
     // false negative.

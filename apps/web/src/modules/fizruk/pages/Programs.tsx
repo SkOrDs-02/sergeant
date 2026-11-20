@@ -160,7 +160,11 @@ export function Programs({
                                 // де-акцент: дні БЕЗ тренування і так
                                 // відрізняються від `bg-fizruk/15` фоном
                                 // і відтінком, а не лише блідістю.
-                                "bg-line/30 text-subtle",
+                                // `text-muted`, не `text-subtle`: subtle
+                                // тримає 4.52:1 лише на голій панелі, а на
+                                // підкладці `bg-line/30` падав нижче 4.5
+                                // (axe, прогін `full-2026-11-19`).
+                                "bg-line/30 text-muted",
                           )}
                         >
                           {DAY_LABELS[i]}

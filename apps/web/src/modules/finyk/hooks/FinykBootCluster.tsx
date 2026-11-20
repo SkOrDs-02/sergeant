@@ -15,8 +15,10 @@ import { useFinykDualWriteBoot } from "./useFinykDualWriteBoot";
 import { useFinykSqliteReadBoot } from "./useFinykSqliteReadBoot";
 import { useFinykMonoMirrorBoot } from "./useFinykMonoMirrorBoot";
 import { useFinykQuickStatsBoot } from "./useFinykQuickStatsBoot";
+import { useOnboardingDoneOnRealEntry } from "../../../core/onboarding/useOnboardingDoneOnRealEntry";
 
 export default function FinykBootCluster(): null {
+  useOnboardingDoneOnRealEntry("finyk");
   const userId = useLocalUserId();
   // Bank webhooks land on the server. Refresh their local mirror on every
   // authenticated route, not only when FinykApp happens to be mounted.

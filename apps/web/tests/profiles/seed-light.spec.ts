@@ -10,6 +10,7 @@ import {
   addPantryItem,
   goto,
   signUp,
+  seedAnalyticsConsentDecision,
 } from "../utils/liveJourneyHelpers";
 
 /**
@@ -88,6 +89,7 @@ test.describe.serial("@seed-light акаунти Q1/Q2/Q4/Q5/Q8", () => {
         locale: "uk-UA",
         timezoneId: "Europe/Kyiv",
       });
+      await seedAnalyticsConsentDecision(context);
       const page = await context.newPage();
       await signUp(page, account.name, email, QA_PASSWORD);
       await goto(page, "/");
