@@ -80,7 +80,7 @@ export const finykSavingsMessages = {
     deleteEventAria: "Видалити подію «{type}» від {date}",
     linkedTx: "з операції",
     rateUpdate: "Курс, ₴",
-    rateSave: "Оновити курс",
+    rateApply: "Оновити курс",
   },
   assetLink: {
     title: "Відкладення",
