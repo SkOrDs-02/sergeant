@@ -39,7 +39,7 @@
 
 **Що вже покрито в текстах** (перевірено проти чекліста нижче): категорії даних, правові підстави, спеціальні категорії (health), перелік субпроцесорів із регіонами, права суб'єкта даних, міжнародні трансфери через SCC, retention-періоди (30 днів grace → hard-delete, бекапи 90 днів, білінг 5 років, логи 12 міс), breach-повідомлення за 72 години, вікове обмеження 18+, посилання між документами.
 
-> **Звірка 2026-10-22:** обіцянка «30 днів grace → hard-delete» реалізована: `ACCOUNT_DELETION_GRACE_DAYS`, міграція 145, `deletionPoller`, [ADR-0098](../../../governance/adr/0098-account-deletion-grace-window.md), спека [`user-deletion-grace-window.md`](../../user-deletion-grace-window.md) має статус `Implemented`. Лишається відкритим cleanup у сторонніх сервісах (Art. 17, нижче).
+> **Звірка 2026-10-22:** обіцянка «30 днів grace → hard-delete» реалізована: `ACCOUNT_DELETION_GRACE_DAYS`, міграція 145, `deletionPoller`, [ADR-0098](../../../../governance/adr/0098-account-deletion-grace-window.md), спека [`user-deletion-grace-window.md`](../../user-deletion-grace-window.md) має статус `Implemented`. Лишається відкритим cleanup у сторонніх сервісах (Art. 17, нижче).
 
 > **Розбіжність, яку варто знати.** Юридичний пак називає платіжним провайдером **LiqPay (АТ КБ «ПриватБанк»)** і хостинг-провайдером **Hetzner (ЄС, Німеччина)**. Решта цього документа (§2, §4.3) писалась під Stripe і Railway. У коді реалізовані **три** білінг-провайдери — `stripe.ts`, `liqpay.ts`, `plata.ts` (`apps/server/src/modules/billing/`). Перед public launch треба зафіксувати, який із них є користувацьким за замовчуванням, і привести §2 у відповідність — зараз джерелом істини для юзера є текст оферти, тобто LiqPay.
 
