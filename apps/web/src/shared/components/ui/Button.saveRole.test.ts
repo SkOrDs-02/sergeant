@@ -46,8 +46,6 @@ const ALLOWED: Record<string, string> = {
     "рядок згенерованого рецепта: «Зберегти» і «У журнал» — дві рівні дії рядка",
   "modules/fizruk/components/workouts/LogPastWorkoutSheet.tsx:outline":
     "вкладена підформа «Нове заняття»; головна дія аркуша — його власний solid-сабміт",
-  "modules/finyk/pages/SavingsAssetDetails.tsx:outline":
-    "підпис «Оновити курс» (ключ `rateSave`), не «Зберегти»: однопольна вкладена підформа курсу в картці активу, поруч рівні outline-дії «Закрити» і «Додати подію»",
 };
 
 interface SaveButton {
