@@ -4,7 +4,7 @@ import { fileURLToPath } from "node:url";
 import { describe, expect, it } from "vitest";
 import { AUTHOR_NAME } from "./content/author";
 import { ROUTE_META } from "./lib/pageMeta";
-import { STATUS_UPDATED } from "./pages/StanPage";
+import { STATUS_UPDATED } from "./content/statusUpdated";
 
 /**
  * Гейт узгодженості копії між сторінками. Аудит сайту 2026-09-01 знайшов,

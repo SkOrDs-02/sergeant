@@ -5,6 +5,8 @@ import { resolveSiteUrl } from "./scripts/site-url.mjs";
 import react from "@vitejs/plugin-react";
 import tailwindcss from "@tailwindcss/vite";
 
+const SRC_DIR = path.join(import.meta.dirname, "src");
+
 /**
  * Абсолютні URL у head. `og:image`, `og:url` і `canonical` мають бути
  * абсолютними — Telegram, X і Facebook не резолвлять відносний `og:image`, і
@@ -83,6 +85,24 @@ export default defineConfig(({ mode }) => {
       dedupe: ["react", "react-dom"],
     },
     build: {
+      // Маніфест читає `scripts/prerender.mjs`: з нього береться чанк сторінки
+      // для `modulepreload` у її HTML (аудит сайту 2026-10-08, F3). Після
+      // пререндеру файл видаляється з dist.
+      manifest: true,
+      rollupOptions: {
+        output: {
+          // Спільні компоненти, контент і утиліти – одним чанком «site». Без
+          // цього Rollup різав їх по модулях, і сторінка тягнула вісім файлів
+          // по кількасот байт. Сторінки (`src/pages/`) лишаються окремими:
+          // саме це і є розбиття по маршрутах (F3).
+          manualChunks(id) {
+            const rel = path.relative(SRC_DIR, id);
+            if (rel.startsWith("..") || path.isAbsolute(rel)) return undefined;
+            if (/^(components|content|lib)[\\/]/.test(rel)) return "site";
+            return undefined;
+          },
+        },
+      },
       // Шрифти завжди окремими файлами. Дефолтний ліміт 4 КБ вбудовував
       // base64 чотири підмножини cyrillic-ext у render-blocking CSS, хоча їхні
       // гліфи на сторінках не трапляються: CSS важив 14,6 КБ br замість 9

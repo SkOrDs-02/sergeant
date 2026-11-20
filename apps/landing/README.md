@@ -1,6 +1,6 @@
 # @sergeant/landing
 
-> **Last touched:** 2026-10-08 by @claude (аудит сайту: телеметрія, гейт дат, іконки й og, preview як Vercel). **Next review:** 2027-01-08.
+> **Last touched:** 2026-11-20 by @claude (розбиття JS по сторінках, підмножини шрифтів і фолбек-метрики, мобільний Lighthouse; аудит сайту 2026-10-08, F3/F5/F7/F9). **Next review:** 2027-01-08.
 > **Status:** Active
 
 Маркетинговий сайт Sergeant: 31 маршрут із `src/lib/routeMeta.json`, кожен
@@ -32,12 +32,49 @@ pnpm --filter @sergeant/landing shots           # скріншоти сторі�
 pnpm --filter @sergeant/landing verify:browser  # браузерна перевірка збірки (`scripts/verify-browser.mjs`)
 pnpm --filter @sergeant/landing test:a11y       # axe-core по ВСІХ маршрутах із routeMeta (гейт CI)
 pnpm --filter @sergeant/landing lighthouse      # Lighthouse-бюджети на чотирьох маршрутах (гейт CI)
+pnpm --filter @sergeant/landing lighthouse:mobile  # те саме з мобільним пресетом, швидкодія як warn
+pnpm --filter @sergeant/landing fonts:subset    # перегенерувати підмножини шрифтів (потрібен fonttools)
 pnpm --filter @sergeant/landing preview:lhci    # превʼю на :4175 для прогону Lighthouse
 ```
 
 Обидва гейти якості будують сайт самі й міряють пререндерений `dist/`, тобто
 рівно те, що бачать людина і краулер. Пороги Lighthouse і причина саме таких
-чисел лежать у `lighthouserc.json`.
+чисел лежать у `lighthouserc.json`; мобільний прогін (`lighthouserc.mobile.json`)
+тримає ті самі адреси, але метрики швидкодії там `warn`, поки немає базової
+лінії.
+
+## Маршрути і чанки
+
+Реєстр маршрутів – `src/routing/routes.ts` (шлях → файл сторінки). Клієнт
+вантажить лише чанк поточної сторінки (`src/routing/loadPage.ts`) і робить це
+до гідрації, тож пререндер не перемальовується фолбеком. `scripts/prerender.mjs`
+кладе в HTML кожної сторінки `modulepreload` на її чанк з маніфесту Vite, тому
+чанк їде паралельно з головним скриптом. SSG рендерить усі сторінки одразу через
+`src/routing/serverRoutes.ts`. Спільні компоненти, контент і утиліти йдуть
+одним чанком `site` (`manualChunks` у `vite.config.ts`).
+
+Новий маршрут = запис у `routes.ts` і в `routeMeta.json`; розходження ловить
+`routeRegistry.test.ts`.
+
+## Шрифти
+
+Manrope і Unbounded – підмножини лише з символів сайту в `src/fonts/`,
+згенеровані `scripts/subset-fonts.mjs` з пакетів fontsource: ASCII, повний
+український алфавіт, типографіка і все, що трапляється в пререндері. Там же
+`fonts.css` з `@font-face` і фолбеками `Manrope Fallback` / `Unbounded Fallback`
+(Arial з `size-adjust` під метрики шрифту, щоб заміна не зсувала рядки).
+У Manrope немає ʼ (U+02BC), тож у підмножині він отримує гліф апострофа U+2019.
+
+`src/lib/fontCoverage.test.ts` рендерить усі сторінки й червоніє, якщо в тексті
+зʼявився символ поза набором. Тоді:
+
+```bash
+pip install fonttools brotli          # одноразово; потрібен і Liberation Sans (метрики Arial)
+pnpm --filter @sergeant/landing build
+pnpm --filter @sergeant/landing fonts:subset
+```
+
+Результат закомічено, тож збірці й CI fonttools не потрібен.
 
 ## Деплой на Vercel
 

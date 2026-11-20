@@ -3,6 +3,7 @@ import path from "node:path";
 import { fileURLToPath } from "node:url";
 import { describe, expect, it } from "vitest";
 import routeMeta from "./lib/routeMeta.json";
+import { ROUTE_PAGES } from "./routing/routes";
 
 /**
  * Гейт тону сайту: механічні ознаки ШІ-тексту, за якими аудит копії
@@ -22,7 +23,7 @@ import routeMeta from "./lib/routeMeta.json";
  */
 const SRC = path.dirname(fileURLToPath(import.meta.url));
 
-/** Маршрут → файли з його видимим текстом (App.tsx ROUTES + винесений контент). */
+/** Маршрут → файли з його видимим текстом (`routing/routes.ts` + винесений контент). */
 const PAGES: Record<string, { files: string[]; words: number }> = {
   "/": {
     files: ["pages/HomePage.tsx", "components/HomeSections.tsx"],
@@ -217,11 +218,8 @@ describe("тон сайту в межах порогів аудиту копії
     });
   }
 
-  it("усі маршрути App.tsx покриті бюджетом", () => {
-    const routes = [
-      ...read("App.tsx").matchAll(/^\s+"(\/[^"]*)": \w+Page,/gm),
-    ].map((m) => m[1]);
-    expect(routes.sort()).toEqual(Object.keys(PAGES).sort());
+  it("усі маршрути реєстру покриті бюджетом", () => {
+    expect(Object.keys(ROUTE_PAGES).sort()).toEqual(Object.keys(PAGES).sort());
     expect(Object.keys(routeMeta).filter((r) => !(r in PAGES))).toEqual([]);
   });
 

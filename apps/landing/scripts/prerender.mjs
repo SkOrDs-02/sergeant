@@ -4,7 +4,13 @@
 // написав postbuild-seo.mjs. Разом із тілом у <head> їде jsonLd сторінки.
 // Без цього кроку AI-краулери (GPTBot, ClaudeBot, PerplexityBot), які не
 // виконують JS, бачили лише title/description. Запуск: частина `pnpm build`.
-import { copyFileSync, readFileSync, writeFileSync, rmSync } from "node:fs";
+import {
+  copyFileSync,
+  existsSync,
+  readFileSync,
+  writeFileSync,
+  rmSync,
+} from "node:fs";
 import path from "node:path";
 import { fileURLToPath, pathToFileURL } from "node:url";
 import { resolveSiteUrl } from "./site-url.mjs";
@@ -13,7 +19,7 @@ const ROOT = path.dirname(path.dirname(fileURLToPath(import.meta.url)));
 const DIST = path.join(ROOT, "dist");
 const SSR_DIR = path.join(ROOT, "dist-ssr");
 
-const { render } = await import(
+const { render, ROUTE_PAGES } = await import(
   pathToFileURL(path.join(SSR_DIR, "entry-server.js")).href
 );
 
@@ -26,6 +32,37 @@ const routes = JSON.parse(
 const site = resolveSiteUrl();
 
 const EMPTY_ROOT = '<div id="root"></div>';
+
+/**
+ * Чанк сторінки і його спільні залежності як `modulepreload` (аудит сайту
+ * 2026-10-08, F3). Клієнт вантажить сторінку лінивим `import()` до гідрації
+ * (`src/routing/loadPage.ts`); без підказки браузер дізнався б про чанк лише
+ * після виконання головного скрипта, і гідрація чекала б ще один запит.
+ * Маніфест пише `build.manifest` у `vite.config.ts`.
+ */
+const MANIFEST_FILE = path.join(DIST, ".vite", "manifest.json");
+const manifest = JSON.parse(readFileSync(MANIFEST_FILE, "utf8"));
+
+function preloadTags(route, html) {
+  const page = ROUTE_PAGES[route] ?? ROUTE_PAGES["/404"];
+  const key = `src/pages/${page}.tsx`;
+  if (!manifest[key]) {
+    throw new Error(`prerender: у маніфесті немає чанка ${key}`);
+  }
+  const files = new Set();
+  const visit = (k) => {
+    const entry = manifest[k];
+    if (!entry || entry.isEntry || files.has(entry.file)) return;
+    files.add(entry.file);
+    for (const dep of entry.imports ?? []) visit(dep);
+  };
+  visit(key);
+  // Спільний чанк Vite вже прелоадить сам як статичний імпорт входу.
+  return [...files]
+    .filter((file) => !html.includes(`href="/${file}"`))
+    .map((file) => `<link rel="modulepreload" crossorigin href="/${file}">`)
+    .join("\n    ");
+}
 
 /**
  * Текст сторінки для llms-full.txt: лише `<main>`, бо шапка й підвал
@@ -92,6 +129,7 @@ for (const route of Object.keys(routes)) {
 
   const page = render(route, site);
   html = html.replace(EMPTY_ROOT, `<div id="root">${page.html}</div>`);
+  html = html.replace("</head>", `  ${preloadTags(route, html)}\n  </head>`);
 
   if (page.jsonLd) {
     // < замість «<» усередині JSON: рядок даних не може закрити <script>.
@@ -135,6 +173,8 @@ copyFileSync(path.join(DIST, "404", "index.html"), path.join(DIST, "404.html"));
 copyFileSync(path.join(DIST, "404", "index.md"), path.join(DIST, "404.md"));
 
 rmSync(SSR_DIR, { recursive: true, force: true });
+if (existsSync(MANIFEST_FILE))
+  rmSync(path.join(DIST, ".vite"), { recursive: true });
 console.log(
   `prerender: ${written} сторінок із повним HTML і markdown, 404.html, 404.md`,
 );

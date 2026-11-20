@@ -1,81 +1,7 @@
 import { useEffect, type ComponentType } from "react";
-import HomePage from "./pages/HomePage";
-import BetaPage from "./pages/BetaPage";
-import AboutPage from "./pages/AboutPage";
-import DataPage from "./pages/DataPage";
-import GuidesPage from "./pages/GuidesPage";
-import RuchnaRobotaPage from "./pages/RuchnaRobotaPage";
-import VyhidPage from "./pages/VyhidPage";
-import HroshiPage from "./pages/HroshiPage";
-import YizhaPage from "./pages/YizhaPage";
-import ZvychkyPage from "./pages/ZvychkyPage";
-import TrenuvanniaPage from "./pages/TrenuvanniaPage";
-import ZvyazkyPage from "./pages/ZvyazkyPage";
-import PomichnykPage from "./pages/PomichnykPage";
-import StanPage from "./pages/StanPage";
-import ObitsyankyPage from "./pages/ObitsyankyPage";
-import PytannyaPage from "./pages/PytannyaPage";
-import ContactPage from "./pages/ContactPage";
-import GuideMonobankPage from "./pages/GuideMonobankPage";
-import GuideKbzhvPage from "./pages/GuideKbzhvPage";
-import GuideChekyPage from "./pages/GuideChekyPage";
-import GuideFotoKaloriiPage from "./pages/GuideFotoKaloriiPage";
-import GuideBankBezpekaPage from "./pages/GuideBankBezpekaPage";
-import GuideKilkaBankivPage from "./pages/GuideKilkaBankivPage";
-import GuidePryvat24Page from "./pages/GuidePryvat24Page";
-import GuideSilpoPage from "./pages/GuideSilpoPage";
-import GuidePauzaPropuskPage from "./pages/GuidePauzaPropuskPage";
-import GuideOhlyadDnyaPage from "./pages/GuideOhlyadDnyaPage";
-import GuideTyzhnevyiPidsumokPage from "./pages/GuideTyzhnevyiPidsumokPage";
-import GuideZamistTrekerivPage from "./pages/GuideZamistTrekerivPage";
-import PrivacyPage from "./pages/PrivacyPage";
-import TermsPage from "./pages/TermsPage";
-import NotFoundPage from "./pages/NotFoundPage";
 import { ANALYTICS_EVENTS, LANDING_LOCALE, track } from "./lib/analytics";
 import { CurrentRouteContext } from "./lib/currentRoute";
-
-/**
- * Маршрути сайту. Лендінг лишається MPA-простим: без client-side router,
- * кожен перехід – повне завантаження, App обирає сторінку за pathname.
- * Новий маршрут = новий запис тут (він же потрапляє в `path` події
- * `LANDING_VIEWED`; усе невідоме зводиться до `/404`).
- */
-export const ROUTES: Record<string, ComponentType> = {
-  "/": HomePage,
-  "/beta": BetaPage,
-  "/about": AboutPage,
-  "/data": DataPage,
-  "/hroshi": HroshiPage,
-  "/yizha": YizhaPage,
-  "/zvychky": ZvychkyPage,
-  "/trenuvannia": TrenuvanniaPage,
-  "/ruchna-robota": RuchnaRobotaPage,
-  "/vyhid": VyhidPage,
-  "/guides": GuidesPage,
-  "/zvyazky": ZvyazkyPage,
-  "/pomichnyk": PomichnykPage,
-  "/stan": StanPage,
-  "/obitsyanky": ObitsyankyPage,
-  "/pytannya": PytannyaPage,
-  "/contact": ContactPage,
-  "/guides/monobank": GuideMonobankPage,
-  "/guides/kbzhv": GuideKbzhvPage,
-  "/guides/cheky": GuideChekyPage,
-  "/guides/foto-kalorii": GuideFotoKaloriiPage,
-  "/guides/bank-bezpeka": GuideBankBezpekaPage,
-  "/guides/kilka-bankiv": GuideKilkaBankivPage,
-  "/guides/pryvat24": GuidePryvat24Page,
-  "/guides/silpo": GuideSilpoPage,
-  "/guides/pauza-i-propusk": GuidePauzaPropuskPage,
-  "/guides/ohlyad-dnya": GuideOhlyadDnyaPage,
-  "/guides/tyzhnevyi-pidsumok": GuideTyzhnevyiPidsumokPage,
-  "/guides/zamist-chotyryokh-trekeriv": GuideZamistTrekerivPage,
-  "/privacy": PrivacyPage,
-  "/terms": TermsPage,
-  // Свій маршрут, щоб prerender поклав у dist/404/index.html тіло цієї
-  // сторінки, а не пререндерене тіло головної (soft-404 в індексі).
-  "/404": NotFoundPage,
-};
+import { resolveRoute } from "./routing/routes";
 
 /**
  * Зовнішній referrer першого входу. Внутрішні переходи віддають наш власний
@@ -96,15 +22,25 @@ function usePageview(pathname: string) {
   useEffect(() => {
     const ref = externalReferrer();
     track(ANALYTICS_EVENTS.LANDING_VIEWED, {
-      path: pathname in ROUTES ? pathname : "/404",
+      path: resolveRoute(pathname),
       locale: LANDING_LOCALE,
       ...(ref ? { referrer: ref } : {}),
     });
   }, [pathname]);
 }
 
-export default function App() {
-  const pathname = window.location.pathname.replace(/\/+$/, "") || "/";
+/**
+ * Сторінку обирає і завантажує `main.tsx` до гідрації (`routing/loadPage.ts`):
+ * так перший рендер клієнта збігається з пререндером, і React не малює
+ * фолбек поверх готового DOM.
+ */
+export default function App({
+  pathname,
+  Page,
+}: {
+  pathname: string;
+  Page: ComponentType;
+}) {
   usePageview(pathname);
 
   useEffect(() => {
@@ -120,7 +56,6 @@ export default function App() {
     });
   }, []);
 
-  const Page = ROUTES[pathname] ?? NotFoundPage;
   return (
     <CurrentRouteContext.Provider value={pathname}>
       <Page />

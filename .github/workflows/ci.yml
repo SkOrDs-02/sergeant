@@ -1051,6 +1051,20 @@ jobs:
           pnpm --filter @sergeant/landing build
           pnpm --filter @sergeant/landing lighthouse
 
+      - name: Lighthouse mobile (warn)
+        # Мобільний пресет (повільний 4G, 4x CPU) на тих самих чотирьох
+        # адресах. Метрики швидкодії тут `warn`: число видно у звіті, але
+        # джоба від нього не червоніє, поки немає базової лінії (аудит сайту
+        # 2026-10-08, F7). A11y і SEO лишаються `error`, вони від пресета не
+        # залежать. Десктопний звіт переїжджає в окрему теку, бо lhci чистить
+        # `.lighthouseci` на старті.
+        if: always()
+        working-directory: apps/landing
+        run: |
+          rm -rf .lighthouseci-desktop
+          if [ -d .lighthouseci ]; then mv .lighthouseci .lighthouseci-desktop; fi
+          pnpm lighthouse:mobile
+
       - name: Upload reports
         if: always()
         # actions/upload-artifact v7.0.0 (SHA-pinned)
@@ -1060,6 +1074,7 @@ jobs:
           path: |
             apps/landing/playwright-report
             apps/landing/.lighthouseci
+            apps/landing/.lighthouseci-desktop
           if-no-files-found: ignore
           retention-days: 7
 

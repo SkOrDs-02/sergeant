@@ -26,6 +26,7 @@ test-results/
 
 # Lighthouse CI reports (uploaded as workflow artifact + to temporary-public-storage)
 .lighthouseci/
+.lighthouseci-desktop/
 
 # Stryker mutation testing artefacts
 .stryker-tmp/
