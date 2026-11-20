@@ -182,6 +182,10 @@ export const APPLY_REJECT_REASONS = [
   // `EXERCISE_MEASURES` (`fizruk/setMeasureFields.ts`). Секунди й метри
   // підходу йдуть наявними `invalid_duration_sec` / `invalid_distance_m`.
   "invalid_measure",
+  // Міграція 176 (Фізрук, Фз-3 (в)): `done` підходу не boolean / 0 / 1 / null
+  // і `set_type` поза `WORKOUT_SET_TYPES` (`fizruk/setMeasureFields.ts`).
+  "invalid_done",
+  "invalid_set_type",
 ] as const;
 
 export type ApplyRejectReason = (typeof APPLY_REJECT_REASONS)[number];

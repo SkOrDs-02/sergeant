@@ -14,7 +14,11 @@ import {
 } from "../syncV2-core.js";
 import type { AppliedStatus } from "../syncV2-types.js";
 import { applyIfNewer, guardParentOwned } from "../applySync-helpers.js";
-import { parseItemMeasure, parseSetMeasureFields } from "./setMeasureFields.js";
+import {
+  parseItemMeasure,
+  parseSetDoneFields,
+  parseSetMeasureFields,
+} from "./setMeasureFields.js";
 
 /**
  * Привʼязка тренування до слоту програми (міграція 171, П-10). Пара
@@ -451,6 +455,11 @@ export async function applyFizrukSets(
     return { status: "rejected", reason: measureFields.reject };
   }
   const { durationSec, distanceM } = measureFields;
+  const doneFields = parseSetDoneFields(row);
+  if ("reject" in doneFields) {
+    return { status: "rejected", reason: doneFields.reject };
+  }
+  const { done, setType } = doneFields;
   const sortOrder = toNonNegativeInt(row["sort_order"]) ?? 0;
   const createdAt = parseOptionalDate(row["created_at"]);
   if (createdAt === "invalid") {
@@ -476,8 +485,8 @@ export async function applyFizrukSets(
       `INSERT INTO fizruk_workout_sets
          (id, workout_item_id, user_id, weight_kg, reps, rpe,
           sort_order, created_at, updated_at, deleted_at,
-          duration_sec, distance_m)
-       VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12)`,
+          duration_sec, distance_m, done, set_type)
+       VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14)`,
       [
         id,
         workoutItemId,
@@ -491,6 +500,8 @@ export async function applyFizrukSets(
         deletedAt ?? null,
         durationSec.value,
         distanceM.value,
+        done.value,
+        setType.value,
       ],
     );
   } else {
@@ -505,7 +516,9 @@ export async function applyFizrukSets(
              updated_at      = $6,
              deleted_at      = $7,
              duration_sec    = CASE WHEN $10::boolean THEN $11::integer ELSE duration_sec END,
-             distance_m      = CASE WHEN $12::boolean THEN $13::integer ELSE distance_m END
+             distance_m      = CASE WHEN $12::boolean THEN $13::integer ELSE distance_m END,
+             done            = CASE WHEN $14::boolean THEN $15::boolean ELSE done END,
+             set_type        = CASE WHEN $16::boolean THEN $17::text ELSE set_type END
        WHERE id = $8 AND user_id = $9 AND updated_at < $6`,
       [
         workoutItemId,
@@ -521,6 +534,10 @@ export async function applyFizrukSets(
         durationSec.value,
         distanceM.present,
         distanceM.value,
+        done.present,
+        done.value,
+        setType.present,
+        setType.value,
       ],
     );
   }
