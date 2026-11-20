@@ -176,8 +176,15 @@ describe("round_trip_ticket: ланцюжок через реальну квот
       .round_trip_ticket;
 
     // Навіть якщо модель на турі синтезу знову «хоче» tool_use, відповідь
-    // віддається текстом (`extractAnthropicText`) і квитка не несе.
-    modelReturnsToolUse("toolu_2");
+    // віддається текстом (`chatSynthesisJson.ts`) і квитка не несе. Текст
+    // поряд потрібен: синтез без тексту з 2026-11-19 це 502, а не «Готово.»
+    // (`chat.synthesisJsonEmpty.test.ts`).
+    anthropicMessages.mockResolvedValueOnce({
+      response: { ok: true, status: 200 },
+      data: {
+        content: [{ type: "text", text: "Відмітив." }, toolUse("toolu_2")],
+      },
+    });
     const second = await send({
       messages: [{ role: "user", content: "Відміть звичку" }],
       tool_calls_raw: [toolUse("toolu_1")],

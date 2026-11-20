@@ -1,4 +1,5 @@
 import {
+  boolean,
   index,
   integer,
   jsonb,
@@ -147,6 +148,17 @@ export const fizrukWorkoutSets = pgTable(
     durationSec: integer("duration_sec"),
     /** Метри одного підходу (міграція 172). NULL = підхід без дистанції. */
     distanceM: integer("distance_m"),
+    /**
+     * Явний стан «виконано» (міграція 176, спека
+     * fizruk-set-done-flag-and-set-type). NULL = запис до фічі, стан
+     * виводиться з значень (`isSetCompleted`).
+     */
+    done: boolean(),
+    /**
+     * Тип підходу (міграція 176): warmup | drop | failure, NULL = звичайний.
+     * CHECK на форму ідентифікатора живе в SQL, перелік перевіряє хендлер.
+     */
+    setType: text("set_type"),
     sortOrder: integer("sort_order").notNull().default(0),
     createdAt: timestamp("created_at", { withTimezone: true })
       .notNull()

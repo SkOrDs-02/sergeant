@@ -28,6 +28,7 @@ import {
   matchFoodName,
   todayISODate,
   type MealMacroSource,
+  type MealTypeId,
   type NutritionLog,
   type PantryItem,
 } from "@sergeant/nutrition-domain";
@@ -60,6 +61,8 @@ interface Aggregate {
   norm: string;
   label: string;
   count: number;
+  /** Скільки разів записано в кожен тип прийому (Х-3 б). */
+  byType: Partial<Record<string, number>>;
   lastUsedAt: string;
   lastMacros: NullableMacros;
   lastGrams: number;
@@ -118,11 +121,15 @@ function aggregateRecentMeals(
       const grams = Number(meal.amount_g);
       const usableGrams = Number.isFinite(grams) && grams > 0 ? grams : 100;
 
+      const byType = existing?.byType ?? {};
+      const type = String(meal.mealType || "");
+      if (type) byType[type] = (byType[type] ?? 0) + 1;
       if (!existing || date >= existing.lastUsedAt) {
         out.set(norm, {
           norm,
           label: existing?.label || name,
           count: (existing?.count ?? 0) + 1,
+          byType,
           lastUsedAt: date,
           lastMacros: meal.macros,
           lastGrams: usableGrams,
@@ -138,9 +145,16 @@ function aggregateRecentMeals(
   return out;
 }
 
+/**
+ * `mealType` — прийом поточного часу доби (`quickMealType`: обраний сегмент
+ * hero, інакше годинник пристрою). Із ним чипи всередині своєї групи
+ * сортуються за тим, скільки разів страву записано саме в цей прийом за
+ * 30 днів (OD-27 Х-3 б), далі свіжіше вище. Без нього порядок як раніше.
+ */
 export function useNutritionQuickChips(
   log: NutritionLog,
   pantryItems: readonly PantryItem[] = [],
+  mealType?: MealTypeId,
 ): QuickChip[] {
   return useMemo(() => {
     const agg = aggregateRecentMeals(log, 30);
@@ -169,15 +183,18 @@ export function useNutritionQuickChips(
 
     // Rank: pantry-matched first (the user explicitly stocked it), then by
     // most-recent usage. Frequency breaks ties at the recency level.
+    const aggOf = (c: QuickChip) => agg.get(c.id.replace(/^quickchip:/, ""));
+    const inSlot = (c: QuickChip) =>
+      mealType ? (aggOf(c)?.byType[mealType] ?? 0) : 0;
     chips.sort((a, b) => {
       if (a.source !== b.source) return a.source === "pantry" ? -1 : 1;
+      const slot = inSlot(b) - inSlot(a);
+      if (slot !== 0) return slot;
       if (a.lastUsedAt !== b.lastUsedAt)
         return a.lastUsedAt < b.lastUsedAt ? 1 : -1;
-      const ac = agg.get(a.id.replace(/^quickchip:/, ""))?.count ?? 0;
-      const bc = agg.get(b.id.replace(/^quickchip:/, ""))?.count ?? 0;
-      return bc - ac;
+      return (aggOf(b)?.count ?? 0) - (aggOf(a)?.count ?? 0);
     });
 
     return chips.slice(0, 5);
-  }, [log, pantryItems]);
+  }, [log, pantryItems, mealType]);
 }

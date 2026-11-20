@@ -43,7 +43,8 @@ describe("applyFizrukSets — секунди й метри підходу", () =
     expect(result).toEqual({ status: "applied" });
     const insert = lastQuery(fake);
     expect(insert.sql).toContain("duration_sec, distance_m");
-    expect(insert.params.slice(-2)).toEqual([30, 400]);
+    // Хвіст параметрів: duration_sec, distance_m, done, set_type (176).
+    expect(insert.params.slice(-4, -2)).toEqual([30, 400]);
   });
 
   it("рядок старого клієнта без ключів вставляє NULL-и", async () => {

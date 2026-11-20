@@ -18,6 +18,7 @@
  * послідовно, а нова форма на кожен модуль — це той самий слоп, лише
  * дорожчий.
  */
+import { isWorkingSet } from "@sergeant/fizruk-domain";
 import { deviceMondayStart } from "@sergeant/shared";
 
 const DAY_MS = 24 * 60 * 60 * 1000;
@@ -47,10 +48,15 @@ export const MATRIX_ROWS = 10;
 interface MatrixSet {
   weightKg?: number | string | null | undefined;
   reps?: number | string | null | undefined;
+  durationSec?: number | string | null | undefined;
+  distanceM?: number | string | null | undefined;
+  done?: boolean | null | undefined;
+  setType?: string | null | undefined;
 }
 
 interface MatrixItem {
   type?: string | null | undefined;
+  measure?: string | null | undefined;
   musclesPrimary?: string[] | null | undefined;
   musclesSecondary?: string[] | null | undefined;
   sets?: MatrixSet[] | null | undefined;
@@ -113,14 +119,17 @@ export const SECONDARY_SET_WEIGHT = 0.5;
  * вагою (0 кг × 15) давав нуль, тобто вправи без ваги не навантажували
  * жодного мʼяза.
  *
- * Зараховується той самий підхід, що й у `isSetDone` (повтори > 0), тож
- * порожній рядок, який сесія створює сама, обʼєму не додає. Час і дистанція
- * сюди не входять: «хвилини» й «підходи» на одній шкалі — це знову бал без
- * одиниці. Навантаження від них і далі рахує відновлення (`loadPoints`).
+ * Зараховується робочий підхід (`isWorkingSet`: зарахований за типом
+ * виміру, не `done: false` і не розминка, спека
+ * `fizruk-set-done-flag-and-set-type.md`), тож порожній рядок, який сесія
+ * створює сама, обʼєму не додає. До 2026-11-19 тут стояло «повтори > 0» для
+ * силових: підходи на час і дистанцію (планка 3×60 с) давали мʼязу нуль.
+ * Рахується КІЛЬКІСТЬ рядків, а не секунди чи метри: «хвилини» й «підходи»
+ * на одній шкалі були б знову балом без одиниці. Старі вправи часу й
+ * дистанції без рядків підходів, як і раніше, дають нуль.
  */
 function itemSets(item: MatrixItem): number {
-  if (item.type !== "strength") return 0;
-  return (item.sets || []).filter((s) => (Number(s.reps) || 0) > 0).length;
+  return (item.sets || []).filter((s) => isWorkingSet(s, item)).length;
 }
 
 /**

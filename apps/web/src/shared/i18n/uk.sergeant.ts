@@ -86,4 +86,8 @@ export const sergeantMessages = {
   monoPushToggleLabel: "Операції Monobank",
   monoPushToggleDescription:
     "Сповіщення про кожну нову операцію з картки. У тихі години не надходить.",
+  // Push Фініка про ліміти й платежі (спека finyk-limit-and-recurring-push).
+  finykAlertsToggleLabel: "Ліміти й платежі Фініка",
+  finykAlertsToggleDescription:
+    "Сповіщу, коли ліміт вибрано на 80 % і 100 %, і напередодні регулярного платежу. Рахується в денну стелю сповіщень, у тихі години прийде після їх кінця.",
 };

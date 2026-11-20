@@ -140,6 +140,26 @@ export const STORAGE_KEYS = {
   IOS_BANNER_DISMISSED: "ios_install_banner_dismissed",
   /** Snooze record (`{ until, count }`) for the iOS install banner's "×" close. */
   IOS_BANNER_SNOOZE: "ios_install_banner_snooze_v1",
+  /**
+   * sessionStorage-маркер «цю вкладку вже зараховано в `PWA_SESSION_COUNT`»
+   * (`core/app/installSessions.ts`). Перезавантаження тієї самої вкладки
+   * сесію не додає; нова вкладка чи новий запуск додає.
+   */
+  PWA_SESSION_COUNTED: "pwa_session_counted",
+  /**
+   * О-1 (а), спека `ios-install-hint-after-two-sessions.md`: рядок «Встанови
+   * Sergeant на початковий екран» у дзвонику хаба закрито кнопкою «Зрозуміло».
+   * Назавжди, як і явна відмова старого банера (`IOS_BANNER_DISMISSED`).
+   */
+  IOS_INSTALL_HINT_DISMISSED: "ios_install_hint_dismissed_v1",
+  /**
+   * sessionStorage: у цьому візиті підказку встановлення вже показано під
+   * тумблером нагадувань (О-1 (б), `IosInstallPushHint`), тож дзвоник її
+   * вдруге не показує.
+   */
+  IOS_INSTALL_HINT_INLINE_SHOWN: "ios_install_hint_inline_shown",
+  /** sessionStorage: подію показу рядка в дзвонику вже надіслано в цьому візиті. */
+  IOS_INSTALL_HINT_PROMPTED: "ios_install_hint_prompted",
 
   // Cloud sync metadata — 5 web keys dropped in Stage 13 PR #077.
   // Historically: SYNC_VERSIONS ("hub_sync_versions"),

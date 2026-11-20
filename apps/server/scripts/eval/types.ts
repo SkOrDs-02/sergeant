@@ -129,4 +129,18 @@ export interface RunResult {
   /** `null` — пайплайн не user-facing, голос не міряємо. */
   voiceFails: string[] | null;
   error?: string;
+  // ── Лише зоровий стенд (`vision.ts`, прод-транспорт `/messages`) ──
+  /** Прод-шлях: `receipt` | `statement` | `food`. */
+  path?: string;
+  /** HTTP-статус кожної спроби, включно з тими, що проковтнув ретрай. */
+  attemptStatuses?: number[];
+  /** Статус фінальної відповіді; `null` — виняток (таймаут, мережа). */
+  finalStatus?: number | null;
+  stopReason?: string | null;
+  /** Відповідь прийшла, але прод-парсер не дістав із неї JSON. */
+  brokenJson?: boolean;
+  /** Кейс-пастка «чесно відмовитись». */
+  abstain?: boolean;
+  /** На пастці модель вигадала те, чого на зображенні немає. */
+  fabricated?: boolean;
 }

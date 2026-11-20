@@ -10,6 +10,7 @@
  */
 
 import type { ProgressKpis, ProgressWorkoutInput } from "./types.js";
+import { isWorkingSet } from "../workouts/setCompletion.js";
 
 /** Sentinel used by the web copy when no completed workout exists. */
 export const NO_LATEST_WORKOUT_LABEL = "—";
@@ -57,6 +58,7 @@ export function countExercisePRs(
     for (const it of w.items ?? []) {
       if (!it.exerciseId || it.type !== "strength") continue;
       for (const s of it.sets ?? []) {
+        if (!isWorkingSet(s)) continue;
         if (epley1rmStrict(s.weightKg, s.reps) > 0) {
           seen.add(it.exerciseId);
           break;

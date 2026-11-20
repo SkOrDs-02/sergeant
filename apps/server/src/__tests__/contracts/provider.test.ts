@@ -491,6 +491,7 @@ describe("Pact provider replay — consumer=sergeant-api-client, provider=sergea
       quietHoursStartMin: number;
       quietHoursEndMin: number;
       pushMonoTransactions: boolean;
+      pushFinykAlerts: boolean;
       updatedAt: string | null;
     };
 
@@ -521,6 +522,8 @@ describe("Pact provider replay — consumer=sergeant-api-client, provider=sergea
           quiet_hours_start_min: expected.quietHoursStartMin,
           quiet_hours_end_min: expected.quietHoursEndMin,
           push_mono_transactions: expected.pushMonoTransactions,
+          // Міграція 175: тумблер push Фініка.
+          push_finyk_alerts: expected.pushFinykAlerts,
           updated_at: expected.updatedAt,
         },
       ],

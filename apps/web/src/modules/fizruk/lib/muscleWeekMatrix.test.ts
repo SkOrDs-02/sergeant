@@ -203,6 +203,59 @@ describe("buildMuscleWeekMatrix", () => {
     expect(m.weeksWithData).toBe(0);
   });
 
+  it("підходи на час і дистанцію рахуються як підходи (предикат, спека прапорця)", () => {
+    // До 2026-11-19 тут стояло `reps > 0`: планка 3×60 с давала мʼязу нуль
+    // підходів, хоча людина зробила три. Секунди не змішуються з підходами —
+    // рахується кількість зарахованих рядків, а не сума часу.
+    const m = buildMuscleWeekMatrix(
+      [
+        {
+          startedAt: new Date(NOW).toISOString(),
+          items: [
+            {
+              type: "time",
+              measure: "time",
+              musclesPrimary: ["abs"],
+              sets: [
+                { weightKg: 0, reps: 0, durationSec: 60 },
+                { weightKg: 0, reps: 0, durationSec: 60 },
+                { weightKg: 0, reps: 0, durationSec: 0 },
+              ],
+            },
+          ],
+        },
+      ],
+      null,
+      NOW,
+    );
+    expect(m.rows.find((r) => r.id === "abs")?.latest).toBe(2);
+  });
+
+  it("розминка й незроблений рядок не робочі підходи (П-Фз3-1)", () => {
+    const m = buildMuscleWeekMatrix(
+      [
+        {
+          startedAt: new Date(NOW).toISOString(),
+          items: [
+            {
+              type: "strength",
+              musclesPrimary: ["chest"],
+              sets: [
+                { weightKg: 20, reps: 10, done: true, setType: "warmup" },
+                { weightKg: 80, reps: 8, done: false },
+                { weightKg: 80, reps: 8, done: true, setType: "drop" },
+                { weightKg: 80, reps: 8 },
+              ],
+            },
+          ],
+        },
+      ],
+      null,
+      NOW,
+    );
+    expect(m.rows.find((r) => r.id === "chest")?.latest).toBe(2);
+  });
+
   it("порожній вхід не кидає і дає max = 1", () => {
     const m = buildMuscleWeekMatrix(null, null, NOW);
     expect(m.rows).toEqual([]);

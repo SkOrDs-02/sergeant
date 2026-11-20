@@ -2,14 +2,19 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import { ANALYTICS_EVENTS } from "@sergeant/shared";
 import { isIOS, isStandalonePWA } from "@shared/lib/platform/iosStandalone";
 import { safeReadStringLS, safeWriteLS } from "@shared/lib/storage/storage";
+import { useStorageReady } from "../db/storageReady";
 import { trackEvent } from "../observability/analytics";
+import {
+  MIN_INSTALL_SESSIONS,
+  countInstallSession,
+  readInstallSessionCount,
+} from "./installSessions";
 import {
   isInstallBannerSnoozed,
   readInstallBannerSnooze,
   snoozeInstallBanner,
 } from "./installBannerSnooze";
 
-const PWA_SESSIONS_KEY = "pwa_session_count";
 /**
  * @deprecated Founder-ux-review round 2 (O2) — the "×" close now writes
  * `PWA_SNOOZE_KEY` (30-day TTL, max 3 shows). This flag is kept as a
@@ -27,7 +32,6 @@ const PWA_SNOOZE_KEY = "pwa_install_snooze_v1";
  */
 const PWA_INSTALL_REPORTED_KEY = "pwa_install_reported";
 const INSTALL_DELAY_MS = 30000;
-const MIN_SESSIONS = 2;
 
 /**
  * `true` when the install banner must stay suppressed: either the legacy
@@ -48,7 +52,7 @@ interface BeforeInstallPromptEvent extends Event {
 
 /**
  * Контролер PWA-install-banner-а: ловимо `beforeinstallprompt`, відкладаємо
- * до тих пір, поки користувач не побачив застосунок принаймні `MIN_SESSIONS`
+ * до тих пір, поки користувач не побачив застосунок принаймні `MIN_INSTALL_SESSIONS`
  * раз і не пробув ≥ `INSTALL_DELAY_MS` мс на поточному заході — і вже після
  * цього показуємо банер у `HubMainContent`.
  *
@@ -96,10 +100,15 @@ export function usePwaInstall() {
     });
   }, []);
 
+  // Сесія = вкладка чи запуск, не перезавантаження (`installSessions.ts`,
+  // О-1 (а)); лічимо лише після бутстрапу `kv_store`, інакше читання бачить
+  // порожній сирий localStorage і перезаписує лічильник одиницею.
+  const storageReady = useStorageReady();
   useEffect(() => {
-    const count = parseInt(safeReadStringLS(PWA_SESSIONS_KEY) || "0", 10) + 1;
-    safeWriteLS(PWA_SESSIONS_KEY, String(count));
+    if (storageReady) countInstallSession();
+  }, [storageReady]);
 
+  useEffect(() => {
     const handler = (e: Event) => {
       e.preventDefault();
       // Explicit standalone gate (founder-ux-review round 2, O2): Chromium
@@ -139,9 +148,7 @@ export function usePwaInstall() {
     if (!prompt) return undefined;
     if (isPwaInstallSuppressed()) return undefined;
 
-    const sessions = parseInt(safeReadStringLS(PWA_SESSIONS_KEY) || "1", 10);
-
-    if (sessions >= MIN_SESSIONS) {
+    if (readInstallSessionCount() >= MIN_INSTALL_SESSIONS) {
       const timer = setTimeout(() => setReady(true), INSTALL_DELAY_MS);
       return () => clearTimeout(timer);
     }

@@ -1,4 +1,5 @@
 import { env } from "../../../env.js";
+import { firstTurnReasoningFields } from "../../chat/chatReasoning.js";
 
 /**
  * Транспорт і модель для `POST /api/finyk/receipts/analyze`.
@@ -35,4 +36,43 @@ export function receiptVisionModel(): string {
   return receiptVisionViaOpenRouter()
     ? env.OPENROUTER_RECEIPT_MODEL
     : RECEIPT_ANTHROPIC_FALLBACK_MODEL;
+}
+
+/**
+ * Моделі, для яких `thinking: {type: "disabled"}` перевірено наживо через
+ * `/messages` шлюзу (2026-11-19): Luna і Haiku 5.5 міряли з ним на зоровому
+ * стенді, `gemini-2.5-flash-lite` (модель відкату) відповіла 200 на пробний
+ * виклик. Моделі з обовʼязковими міркуваннями (`google/gemini-3.5-flash-lite`,
+ * `google/gemini-3.7-flash`) на нього відповідають 400 «Reasoning is
+ * mandatory for this endpoint and cannot be disabled».
+ *
+ * AI-DANGER: тому `none` шлеться лише моделям зі списку. Нова модель через
+ * env отримує запит без поля (глибину ставить шлюз): повільніше, але не
+ * зламано. Додаєш модель сюди — спершу живий виклик із полем.
+ */
+export const RECEIPT_REASONING_NONE_VERIFIED_MODELS: ReadonlySet<string> =
+  new Set([
+    "openai/gpt-6-luna",
+    "anthropic/claude-haiku-5.5",
+    "google/gemini-2.5-flash-lite",
+  ]);
+
+/**
+ * Поле глибини міркувань для тіла чека й виписки
+ * (`RECEIPT_VISION_REASONING_EFFORT`). Граматика — `firstTurnReasoningFields`
+ * першого ходу чату (`none` → `thinking: {type: "disabled"}`, решта →
+ * `output_config.effort`), лише через шлюз: прямий Anthropic-фолбек
+ * (`claude-haiku-4-5`) без явного `thinking` не міркує, а
+ * `output_config.effort` у нього дав би 400.
+ */
+export function receiptVisionReasoningFields(
+  model: string,
+): Record<string, unknown> {
+  if (!receiptVisionViaOpenRouter()) return {};
+  const effort = env.RECEIPT_VISION_REASONING_EFFORT;
+  if (effort === "default") return {};
+  if (effort === "none" && !RECEIPT_REASONING_NONE_VERIFIED_MODELS.has(model)) {
+    return {};
+  }
+  return firstTurnReasoningFields(effort);
 }

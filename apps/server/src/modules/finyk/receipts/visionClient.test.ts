@@ -7,8 +7,9 @@ import {
 const envMock = vi.hoisted(() => ({
   LLM_RECEIPT_PROVIDER: "openrouter" as "openrouter" | "anthropic" | "stub",
   OPENROUTER_API_KEY: "",
-  OPENROUTER_RECEIPT_MODEL: "google/gemini-2.5-flash-lite",
+  OPENROUTER_RECEIPT_MODEL: "openai/gpt-6-luna",
   ANTHROPIC_API_KEY: "",
+  RECEIPT_VISION_REASONING_EFFORT: "none" as string,
 }));
 vi.mock("../../../env.js", () => ({ env: envMock }));
 vi.mock("../../../lib/anthropic.js", () => createAnthropicMockHandle());
@@ -23,6 +24,8 @@ beforeEach(() => {
   envMock.LLM_RECEIPT_PROVIDER = "openrouter";
   envMock.OPENROUTER_API_KEY = "";
   envMock.ANTHROPIC_API_KEY = "";
+  envMock.OPENROUTER_RECEIPT_MODEL = "openai/gpt-6-luna";
+  envMock.RECEIPT_VISION_REASONING_EFFORT = "none";
 });
 
 describe("callReceiptVision", () => {
@@ -59,7 +62,7 @@ describe("callReceiptVision", () => {
       Record<string, unknown>,
     ];
     expect(opts["allowOpenRouter"]).toBe(true);
-    expect(payload["model"]).toBe("google/gemini-2.5-flash-lite");
+    expect(payload["model"]).toBe("openai/gpt-6-luna");
   });
 
   it("openrouter БЕЗ OPENROUTER_API_KEY → деградує до Anthropic-fallback-моделі", async () => {
@@ -119,5 +122,51 @@ describe("callReceiptVision", () => {
     await expect(
       callReceiptVision({ base64: "abc", mediaType: "image/jpeg" }),
     ).rejects.toMatchObject({ status: 503 });
+  });
+
+  describe("глибина міркувань (RECEIPT_VISION_REASONING_EFFORT)", () => {
+    async function sentPayload(): Promise<Record<string, unknown>> {
+      anthropicMessages.mockResolvedValueOnce(anthropicResponses.text("{}"));
+      await callReceiptVision({ base64: "abc", mediaType: "image/jpeg" });
+      const call = anthropicMessages.mock.calls.at(-1) as [
+        string,
+        Record<string, unknown>,
+      ];
+      return call[1];
+    }
+
+    it("через шлюз за замовчуванням вимикає міркування Luna", async () => {
+      envMock.OPENROUTER_API_KEY = "or-key";
+      expect((await sentPayload())["thinking"]).toEqual({ type: "disabled" });
+    });
+
+    it("відкат на 2.5 env-ом лишає поле: модель його приймає (живий виклик 2026-11-19)", async () => {
+      envMock.OPENROUTER_API_KEY = "or-key";
+      envMock.OPENROUTER_RECEIPT_MODEL = "google/gemini-2.5-flash-lite";
+      expect((await sentPayload())["thinking"]).toEqual({ type: "disabled" });
+    });
+
+    it("модель з обовʼязковими міркуваннями поля `none` не отримує (інакше 400)", async () => {
+      envMock.OPENROUTER_API_KEY = "or-key";
+      envMock.OPENROUTER_RECEIPT_MODEL = "google/gemini-3.5-flash-lite";
+      expect(await sentPayload()).not.toHaveProperty("thinking");
+    });
+
+    it("`default` — без поля; явна глибина йде в `output_config`", async () => {
+      envMock.OPENROUTER_API_KEY = "or-key";
+      envMock.RECEIPT_VISION_REASONING_EFFORT = "default";
+      const plain = await sentPayload();
+      expect(plain).not.toHaveProperty("thinking");
+      expect(plain).not.toHaveProperty("output_config");
+      envMock.RECEIPT_VISION_REASONING_EFFORT = "low";
+      expect((await sentPayload())["output_config"]).toEqual({ effort: "low" });
+    });
+
+    it("прямий Anthropic (без ключа шлюзу) поля не отримує", async () => {
+      envMock.OPENROUTER_API_KEY = "";
+      const payload = await sentPayload();
+      expect(payload).not.toHaveProperty("thinking");
+      expect(payload).not.toHaveProperty("output_config");
+    });
   });
 });

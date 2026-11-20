@@ -1,6 +1,6 @@
 import { messages } from "@shared/i18n";
 /**
- * Last validated: 2026-09-03
+ * Last validated: 2026-11-19
  * Status: Active
  *
  * Розклад майбутніх потоків: підписки (наступне списання), борги
@@ -13,14 +13,19 @@ import { messages } from "@shared/i18n";
  * самий розрахунок потрібен двом сторінкам, тож він винесений сюди, а не
  * скопійований: розбіжність у двох копіях (інший поріг днів, інший
  * порядок) помітили б не одразу.
+ *
+ * AI-CONTEXT (2026-11-19, Ф-4 (б)): сам розрахунок (цикл підписки, залишок
+ * боргу, київський `daysLeft`, предикат запланованого списання) переїхав у
+ * `@sergeant/finyk-domain/domain/flowSchedule`, бо його читає й серверний
+ * push «завтра спишеться». Тут лишились підписи екрана з i18n.
  */
-import { getSubscriptionAmountMeta } from "@sergeant/finyk-domain/domain/subscriptionUtils";
-import { kyivCalendarDaysBetween, pluralDays } from "@sergeant/shared";
-import { getSubscriptionDueDate } from "./upcomingSchedule";
 import {
-  calcDebtRemaining,
-  calcReceivableRemaining,
-} from "@sergeant/finyk-domain/domain/debtEngine";
+  PLANNED_FLOWS_HORIZON_DAYS,
+  buildFinykFlowSchedule,
+  selectPlannedOutflows as selectDomainPlannedOutflows,
+  type FinykFlow,
+} from "@sergeant/finyk-domain/domain/flowSchedule";
+import { pluralDays } from "@sergeant/shared";
 import type { useStorage } from "../hooks/useStorage";
 import type { FlowItem } from "../pages/overview/FlowRow";
 import type { Transaction } from "@sergeant/finyk-domain/domain/types";
@@ -33,13 +38,8 @@ export type ScheduledFlow = FlowItem & {
   dueDate: Date;
 };
 
-/** Скільки днів наперед показують «Найближчі платежі». */
-export const PLANNED_FLOWS_HORIZON_DAYS = 10;
-
-const parseLocalDate = (isoDate: string | null | undefined): Date => {
-  const [y, m, d] = (isoDate || "").split("-").map(Number);
-  return new Date(y ?? 0, (m || 1) - 1, d || 1);
-};
+/** Скільки днів наперед показують «Найближчі платежі» (константа домену). */
+export { PLANNED_FLOWS_HORIZON_DAYS };
 
 const formatDaysLeft = (days: number): string => {
   if (days === 0) return messages.finykRedesign.dueToday;
@@ -58,6 +58,24 @@ export interface UseFlowScheduleParams {
   kyivDay: number;
 }
 
+/** Доменний потік → рядок екрана: підпис днів і запасна назва з i18n. */
+const toScheduledFlow = (f: FinykFlow, fallbackTitle: string) => ({
+  id: f.id,
+  // AI-CONTEXT (2026-08-21): тут клеївся `sub.emoji`, засіяний дефолт
+  // «📱», який людина ніколи не обирала. Рядок потоку показує назву.
+  title: f.name || fallbackTitle,
+  amount: f.amount,
+  sign: f.sign as string,
+  daysLeft: f.daysLeft,
+  hint: formatDaysLeft(f.daysLeft),
+  currency: f.currency,
+  dueDate: f.dueDate,
+});
+
+/**
+ * Розклад рахує домен (`buildFinykFlowSchedule`, Ф-4 (б)): ті самі потоки
+ * читає серверний push «завтра спишеться». Тут лише підписи.
+ */
 export function getFlowSchedule({
   subscriptions,
   manualDebts,
@@ -67,88 +85,25 @@ export function getFlowSchedule({
   kyivMonth,
   kyivDay,
 }: UseFlowScheduleParams) {
-  // Memoize the Kyiv day-start epoch so it is a stable primitive: it only
-  // changes when the calendar day rolls over. Deriving it inline from a `new
-  // Date(...)` each render makes React Compiler treat the Date-derived value as
-  // potentially-mutable and skip memoization of every flow that depends on it;
-  // the wrapped primitive keeps the dependency arrays below simple expressions
-  // and lets the debt/subscription flow memos below preserve cleanly.
-
-  const todayStartMs = new Date(kyivYear, kyivMonth, kyivDay).getTime();
-
-  const subscriptionFlows = subscriptions.map((sub) => {
-    const { amount, currency, lastTx } = getSubscriptionAmountMeta(
-      sub,
-      transactions,
-    );
-    // Полудень UTC київської дати: у Києві це той самий день за будь-якого
-    // часового поясу пристрою.
-    const dueDate = getSubscriptionDueDate(
-      Number(sub.billingDay) || 1,
-      new Date(Date.UTC(kyivYear, kyivMonth, kyivDay, 12)),
-      lastTx?.time,
-    );
-    const daysLeft = kyivCalendarDaysBetween(dueDate.getTime(), todayStartMs);
-    return {
-      id: `sub-${sub.id}`,
-      // AI-CONTEXT (2026-08-21): тут клеївся `sub.emoji`. Поле
-      // ЖОДНОГО разу не редагується користувачем — форма підписки
-      // не має для нього поля, тож у ньому завжди лежав засіяний
-      // дефолт «📱». Тобто це був не вибір людини, а хардкод
-      // емодзі, який малювався системним шрифтом. Рядок потоку
-      // показує назву; гліф йому не потрібен.
-      title: sub.name,
-      amount,
-      sign: "-",
-      daysLeft,
-      hint: formatDaysLeft(daysLeft),
-      currency,
-      dueDate,
-    };
+  // Полудень UTC київської дати: у Києві це той самий день за будь-якого
+  // часового поясу пристрою.
+  const schedule = buildFinykFlowSchedule({
+    subscriptions,
+    manualDebts,
+    receivables,
+    transactions,
+    nowMs: Date.UTC(kyivYear, kyivMonth, kyivDay, 12),
   });
 
-  const debtOutFlows = manualDebts
-    .map((d) => ({ ...d, remaining: calcDebtRemaining(d, transactions) }))
-    .filter((d) => d.dueDate && d.remaining > 0)
-    .map((d) => {
-      const daysLeft = kyivCalendarDaysBetween(
-        parseLocalDate(d.dueDate).getTime(),
-        todayStartMs,
-      );
-      return {
-        id: `debt-${d.id}`,
-        title: d.name || messages.finykRedesign.passive,
-        amount: d.remaining,
-        sign: "-",
-        daysLeft,
-        hint: formatDaysLeft(daysLeft),
-        currency: "₴",
-        dueDate: parseLocalDate(d.dueDate),
-      };
-    });
-
-  const debtInFlows = receivables
-    .map((r) => ({
-      ...r,
-      remaining: calcReceivableRemaining(r, transactions),
-    }))
-    .filter((r) => r.dueDate && r.remaining > 0)
-    .map((r) => {
-      const daysLeft = kyivCalendarDaysBetween(
-        parseLocalDate(r.dueDate).getTime(),
-        todayStartMs,
-      );
-      return {
-        id: `recv-${r.id}`,
-        title: r.name || messages.finykRedesign.receivable,
-        amount: r.remaining,
-        sign: "+",
-        daysLeft,
-        hint: formatDaysLeft(daysLeft),
-        currency: "₴",
-        dueDate: parseLocalDate(r.dueDate),
-      };
-    });
+  const subscriptionFlows = schedule.subscriptionFlows.map((f) =>
+    toScheduledFlow(f, ""),
+  );
+  const debtOutFlows = schedule.debtOutFlows.map((f) =>
+    toScheduledFlow(f, messages.finykRedesign.passive),
+  );
+  const debtInFlows = schedule.debtInFlows.map((f) =>
+    toScheduledFlow(f, messages.finykRedesign.receivable),
+  );
 
   const plannedFlows = [...subscriptionFlows, ...debtOutFlows, ...debtInFlows]
     .filter((x) => x.daysLeft >= 0 && x.daysLeft <= PLANNED_FLOWS_HORIZON_DAYS)
@@ -169,20 +124,16 @@ export type PlannedOutflow = ScheduledFlow & {
  * ще не минув (`daysLeft >= 0`). «Мені винні» сюди не входять: це
  * надходження.
  *
- * AI-CONTEXT: одне джерело правди для двох поверхонь (OD-26 Ф-4, П-4 (Б),
- * рішення founder-а 2026-11-18). Денна норма «Можна сьогодні»
- * (`getFinykDayPlan`) віднімає рівно ці потоки в межах місяця, а рядок
- * «спишеться» на хабі (`selectDueCharges`) показує їх же за сьогодні й
- * завтра. Не копіюй фільтр поруч: інакше хаб і число дня розійдуться.
+ * AI-CONTEXT: одне джерело правди (OD-26 Ф-4, П-4 (Б), рішення founder-а
+ * 2026-11-18). Денна норма «Можна сьогодні» (`getFinykDayPlan`) віднімає
+ * рівно ці потоки в межах місяця, рядок «спишеться» на хабі
+ * (`selectDueCharges`) показує їх же за сьогодні й завтра, а серверний push
+ * (Ф-4 (б)) бере їх за завтра. Предикат живе в домені
+ * (`selectPlannedOutflows` з `@sergeant/finyk-domain/domain/flowSchedule`);
+ * тут лише типізована обгортка. Не копіюй фільтр поруч.
  */
 export function selectPlannedOutflows(
   schedule: Pick<FlowSchedule, "subscriptionFlows" | "debtOutFlows">,
 ): PlannedOutflow[] {
-  return [
-    ...schedule.subscriptionFlows.map((f) => ({
-      ...f,
-      kind: "subscription" as const,
-    })),
-    ...schedule.debtOutFlows.map((f) => ({ ...f, kind: "debt" as const })),
-  ].filter((f) => f.sign === "-" && f.daysLeft >= 0);
+  return selectDomainPlannedOutflows(schedule);
 }

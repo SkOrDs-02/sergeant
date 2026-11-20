@@ -24,4 +24,5 @@ export const ADD_MEAL_SECTION_KEYS = {
   recent: "sergeant.nutrition.addMeal.recent.open.v1",
   pantry: "sergeant.nutrition.addMeal.pantry.open.v2",
   recipes: "sergeant.nutrition.addMeal.recipes.open.v1",
+  favorites: "sergeant.nutrition.addMeal.favorites.open.v1",
 } as const;

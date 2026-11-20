@@ -8,6 +8,7 @@ import { type HubNotification } from "./NotificationBell";
 import { HubMainContent } from "./HubMainContent";
 import { HubModals } from "./HubModals";
 import { OfflineBanner } from "./OfflineBanner";
+import { useIosInstallHint } from "./useIosInstallHint";
 import { hasAnyRealEntry } from "../onboarding/firstRealEntry";
 import { isFirstRealEntryDone } from "../onboarding/vibePicks";
 import { useWhatsNew } from "../whatsNew";
@@ -140,6 +141,13 @@ export function HubHomeView(props: HubHomeViewProps) {
       actionLabel: "Оновити",
       onAction: onApplyUpdate,
     });
+  }
+  // О-1 (а): Safari на iPhone не має `beforeinstallprompt`, тож замість
+  // рядка «Встановити» з другої сесії тут інструкція «Поділитися → На
+  // початковий екран» (спека ios-install-hint-after-two-sessions.md).
+  const iosInstallHint = useIosInstallHint(!inFtuxSession);
+  if (iosInstallHint.notification) {
+    notifications.push(iosInstallHint.notification);
   }
   if (!inFtuxSession && canInstall) {
     notifications.push({

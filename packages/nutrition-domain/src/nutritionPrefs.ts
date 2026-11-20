@@ -5,6 +5,7 @@
 import { normalizeMacrosNullable, type NullableMacros } from "@sergeant/shared";
 
 import { isMealTypeId } from "./mealTypes.js";
+import { normalizeFavoriteIds } from "./nutritionFavorites.js";
 import {
   DEFAULT_WEEKLY_RATE_KG,
   WEEKLY_RATES_KG,
@@ -138,6 +139,14 @@ export function normalizeNutritionPrefs(p: unknown): NutritionPrefs {
       dailyTargetFat_g: optionalPositiveNumber(raw["dailyTargetFat_g"]),
       dailyTargetCarbs_g: optionalPositiveNumber(raw["dailyTargetCarbs_g"]),
       mealTemplates,
+      // Ключі лише коли вони є: старі prefs не обростають порожніми
+      // списками, і синк не шле зайвого патча.
+      ...("favoriteFoodIds" in raw
+        ? { favoriteFoodIds: normalizeFavoriteIds(raw["favoriteFoodIds"]) }
+        : {}),
+      ...("favoriteRecipeIds" in raw
+        ? { favoriteRecipeIds: normalizeFavoriteIds(raw["favoriteRecipeIds"]) }
+        : {}),
       reminderEnabled: Boolean(raw["reminderEnabled"]),
       reminderHour:
         raw["reminderHour"] != null &&

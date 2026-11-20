@@ -33,6 +33,7 @@
  */
 import {
   useEffect,
+  useId,
   useRef,
   useState,
   type Dispatch,
@@ -50,7 +51,11 @@ import type {
 } from "@sergeant/api-client";
 import type { CustomCategoryInput } from "@sergeant/finyk-domain";
 import { DEFAULT_CATEGORY } from "../manualExpenseCategories";
-import { draftLooksUnrecognized } from "../receiptDraftEdit";
+import { messages } from "@shared/i18n/uk";
+import {
+  draftLooksUnrecognized,
+  receiptTotalMissing,
+} from "../receiptDraftEdit";
 import { formatReceiptError } from "../../lib/receiptErrors";
 import { readReceiptImageFile } from "../../lib/receiptImage";
 import { parseDpsReceiptQrUrl } from "../../lib/receiptQr";
@@ -304,8 +309,13 @@ export function ReceiptScanSheet({
         ) ?? null)
       : null;
 
+  // Чек із фото без суми не зберігається (рішення власника 2026-11-19):
+  // кнопка неактивна, причина написана під нею, а не мовчки.
+  const saveBlockedByTotal = draft !== null && receiptTotalMissing(draft);
+  const saveBlockedId = useId();
+
   const handleSave = async () => {
-    if (!draft) return;
+    if (!draft || receiptTotalMissing(draft)) return;
     try {
       const result = await saveReceipt(draft, category || DEFAULT_CATEGORY);
       onSaved(result.alreadyExists);
@@ -352,14 +362,22 @@ export function ReceiptScanSheet({
               <Button
                 variant="solid"
                 className="flex-1"
-
                 onClick={() => void handleSave()}
                 loading={isSaving}
+                disabled={saveBlockedByTotal}
+                aria-describedby={
+                  saveBlockedByTotal ? saveBlockedId : undefined
+                }
                 tone="ink"
               >
                 Зберегти
               </Button>
             </div>
+            {saveBlockedByTotal && (
+              <p id={saveBlockedId} className="text-style-caption text-muted">
+                {messages.finyk.receiptTotal.saveBlocked}
+              </p>
+            )}
           </div>
         ) : editingItem ? (
           <Button

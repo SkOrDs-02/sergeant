@@ -371,3 +371,47 @@ describe("useBulkReceiptsImport — saveAll", () => {
     expect(result.current.items[1]?.category).not.toBe("groceries");
   });
 });
+
+describe("useBulkReceiptsImport — чек із фото без суми (рішення власника 2026-11-19)", () => {
+  it("приходить невибраним, галочкою не вмикається і saveAll його не зберігає", async () => {
+    decodeQrFromImageFileMock.mockResolvedValue(null);
+    analyzeReceiptMock.mockResolvedValue({
+      draft: draft({
+        totalKopiykas: 0,
+        items: [
+          {
+            position: 1,
+            name: "Хліб",
+            qty: 1,
+            priceKopiykas: 3200,
+            sumKopiykas: 3200,
+          },
+        ],
+      }),
+    });
+    const storage = makeStorage();
+    const { result } = renderHook(
+      () => useBulkReceiptsImport({ storage, onReceiptLinked: vi.fn() }),
+      { wrapper: makeWrapper() },
+    );
+    await act(async () => {
+      await result.current.startFiles([makeFile("a.jpg")]);
+    });
+    const id = result.current.items[0]!.id;
+    expect(result.current.items[0]).toMatchObject({
+      status: "drafted",
+      included: false,
+    });
+
+    act(() => {
+      result.current.toggleItemIncluded(id);
+    });
+    expect(result.current.items[0]?.included).toBe(false);
+
+    await act(async () => {
+      await result.current.saveAll();
+    });
+    expect(saveReceiptMock).not.toHaveBeenCalled();
+    expect(result.current.items[0]?.status).toBe("drafted");
+  });
+});

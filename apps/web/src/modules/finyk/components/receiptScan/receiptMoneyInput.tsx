@@ -38,6 +38,10 @@ export interface ReceiptMoneyInputProps {
   /** `sm` у рядку позиції, `md` для суми чека в формі. */
   size?: InputSize | undefined;
   className?: string | undefined;
+  /** Підсвітка помилки (той самий стан, що й в інших полях форм). */
+  error?: boolean | undefined;
+  /** Текст під полем; з `error` стає червоним і читається скрінрідером. */
+  helperText?: string | undefined;
 }
 
 export function ReceiptMoneyInput({
@@ -48,6 +52,8 @@ export function ReceiptMoneyInput({
   disabled,
   size = "sm",
   className,
+  error,
+  helperText,
 }: ReceiptMoneyInputProps) {
   const draft = useDecimalDraft(
     kopiykas === 0 ? null : kopiykas / 100,
@@ -69,6 +75,8 @@ export function ReceiptMoneyInput({
       onChange={draft.onChange}
       disabled={disabled}
       aria-label={ariaLabel}
+      error={error}
+      helperText={helperText}
       placeholder="0"
       className={cn("px-2 text-right tabular-nums", className)}
     />

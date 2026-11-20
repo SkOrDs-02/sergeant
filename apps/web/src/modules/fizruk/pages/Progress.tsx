@@ -18,6 +18,7 @@ import { WeeklyVolumeChart } from "../components/WeeklyVolumeChart";
 import {
   buildBodyWeightSeries,
   epley1rm,
+  isWorkingSet,
   selectBodyWeightSamples,
   weeklyVolumeSeriesNow,
 } from "@sergeant/fizruk-domain";
@@ -140,6 +141,8 @@ export function Progress({ onNavigate }: ProgressProps) {
         if (!exId || it.type !== "strength") continue;
         let sessionBest = 0;
         for (const s of it.sets || []) {
+          // Розминка й незроблене — не рекорд (П-Фз3-1, `isWorkingSet`).
+          if (!isWorkingSet(s)) continue;
           const est = epley1rm(s.weightKg, s.reps);
           if (!est) continue;
           sessionBest = Math.max(sessionBest, est);

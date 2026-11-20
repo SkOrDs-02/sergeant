@@ -95,7 +95,10 @@ export function metForItem(item: KcalItem | null | undefined): number | null {
 }
 
 function itemSetCount(item: KcalItem): number {
-  return (item.sets ?? []).length;
+  // Рядок, свідомо лишений незробленим (`done: false`: план, «+ Підхід»
+  // без ✓), не спалює калорій; розминка спалює. Старі рядки без прапорця —
+  // як і раніше.
+  return (item.sets ?? []).filter((s) => s?.["done"] !== false).length;
 }
 
 /**

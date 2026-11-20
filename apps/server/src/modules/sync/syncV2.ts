@@ -12,6 +12,9 @@ import {
 } from "../../obs/metrics.js";
 import { notifySyncV2OpsApplied, type SyncV2StreamOp } from "./syncV2Stream.js";
 import { lockUserSyncOpLog } from "./serverOpLog.js";
+import { finykLimitPushNeeded } from "./finyk/limitPushTrigger.js";
+import { finykPushDbFromPool } from "../finyk/push/db.js";
+import { runFinykLimitPushQuietly } from "../finyk/push/limitPush.js";
 import { elapsedMs } from "../../lib/timing.js";
 import {
   APPLY_REJECT_REASONS,
@@ -660,6 +663,15 @@ export async function syncV2Push(req: Request, res: Response): Promise<void> {
   }
 
   notifySyncV2OpsApplied(user.id, newlyAppliedForStream);
+  // Push ліміту Фініка (Ф-4 (б)) після COMMIT, раз на батч; не кидає.
+  if (finykLimitPushNeeded(newlyAppliedForStream)) {
+    void runFinykLimitPushQuietly(
+      finykPushDbFromPool(pool),
+      user.id,
+      new Date(),
+      "sync",
+    );
+  }
 
   const outcome: SyncV2Outcome =
     rejectedCount === 0

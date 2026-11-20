@@ -1225,6 +1225,21 @@ CREATE TABLE IF NOT EXISTS fizruk_exercise_prefs (
 );
 `;
 
+/**
+ * 012 — явний прапорець «виконано» і тип підходу (дзеркало серверної 176,
+ * спека fizruk-set-done-flag-and-set-type).
+ *
+ * `fizruk_workout_sets.done`: 1 / 0, NULL = запис до фічі, стан виводиться
+ * з значень. `fizruk_workout_sets.set_type`: warmup | drop | failure, NULL =
+ * звичайний підхід. Наявні рядки не переписуються. CHECK і індексів немає,
+ * як у `010`: валідацію тримає сервер. Леджер `__fizruk_migrations` не дає
+ * `ADD COLUMN` виконатись двічі.
+ */
+const FIZRUK_012_SET_DONE_AND_TYPE_SQL = `
+ALTER TABLE fizruk_workout_sets ADD COLUMN done INTEGER;
+ALTER TABLE fizruk_workout_sets ADD COLUMN set_type TEXT;
+`;
+
 export const FIZRUK_CLIENT_MIGRATIONS: readonly MigrationFile[] = [
   { name: "001_fizruk_tables.sql", sql: FIZRUK_001_SQL },
   {
@@ -1266,6 +1281,10 @@ export const FIZRUK_CLIENT_MIGRATIONS: readonly MigrationFile[] = [
   {
     name: "011_fizruk_exercise_prefs.sql",
     sql: FIZRUK_011_EXERCISE_PREFS_SQL,
+  },
+  {
+    name: "012_fizruk_set_done_and_type.sql",
+    sql: FIZRUK_012_SET_DONE_AND_TYPE_SQL,
   },
 ] as const;
 

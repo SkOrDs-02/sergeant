@@ -23,6 +23,7 @@
     "eval:tools": "node --env-file-if-exists=.env --env-file-if-exists=../../.env --import tsx scripts/tool-selection-eval.ts",
     "eval:stream": "node --env-file-if-exists=.env --import tsx scripts/stream-check.ts",
     "eval:vision": "node --env-file-if-exists=.env --import tsx scripts/vision-eval.ts",
+    "eval:vision:render": "node --import tsx scripts/eval/render-vision-docs.ts",
     "rag-eval:embed": "node --env-file-if-exists=.env --env-file-if-exists=../../.env --import tsx src/scripts/ragEvalEmbed.ts",
     "eval:tools:judge": "node --env-file-if-exists=.env --env-file-if-exists=../../.env --import tsx src/scripts/toolEvalJudge.ts",
     "eval:tools:jev": "node --env-file-if-exists=.env --env-file-if-exists=../../.env --import tsx src/scripts/toolEvalJev.ts",

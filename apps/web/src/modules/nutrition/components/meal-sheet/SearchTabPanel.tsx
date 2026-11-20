@@ -30,6 +30,7 @@ import type {
 import type { SavedRecipe } from "../../lib/recipeBook";
 import type { QuickChip } from "../../hooks/useNutritionQuickChips";
 import type { MealFormState } from "./mealFormUtils";
+import type { NutritionFavorites } from "../../hooks/useNutritionFavorites";
 import { useState } from "react";
 import { pluralUa } from "@sergeant/shared";
 import { messages } from "@shared/i18n/uk";
@@ -38,7 +39,9 @@ import { Button } from "@shared/components/ui/Button";
 import { MyFoodsSheet } from "../MyFoodsSheet";
 import { CollapsibleSection } from "@shared/components/ui/CollapsibleSection";
 import { ADD_MEAL_SECTION_KEYS } from "./addMealSections";
-import { FoodPickerSection } from "./FoodPickerSection";
+import { FoodPickerSection, startPickedFood } from "./FoodPickerSection";
+import { FavoriteFoodsRow } from "./FavoriteFoodsRow";
+import { useFavoriteFoods } from "../../hooks/useFavoriteFoods";
 import { FromPantryRow } from "./FromPantryRow";
 import type { MealSourcePick } from "./useMealSourcePick";
 import { MealTemplatesRow } from "./MealTemplatesRow";
@@ -70,6 +73,8 @@ interface SearchTabPanelProps {
   recipeMealType?: MealTypeId | undefined;
   /** Рецепт записано: аркуш прийому закривається. */
   onRecipeLogged?: ((meal: Meal) => void) | undefined;
+  /** Улюблені (OD-27 Х-3 б): позначка рецепта в кроці «скільки зʼїв». */
+  favorites?: NutritionFavorites | undefined;
 }
 
 export function SearchTabPanel({
@@ -89,9 +94,14 @@ export function SearchTabPanel({
   savedRecipes = [],
   recipeMealType = "snack",
   onRecipeLogged,
+  favorites,
 }: SearchTabPanelProps) {
   const [myFoodsOpen, setMyFoodsOpen] = useState(false);
   const [recipeToLog, setRecipeToLog] = useState<SavedRecipe | null>(null);
+  // Х-3 (б): блок «Улюблені» лише до набору запиту; з запитом позначені
+  // й так стоять першими у видачі.
+  const queryEmpty = picker.foodQuery.trim() === "";
+  const favoriteFoods = useFavoriteFoods(favorites?.foodIds, queryEmpty);
   return (
     <>
       <FoodPickerSection {...picker} />
@@ -130,6 +140,17 @@ export function SearchTabPanel({
         </CollapsibleSection>
       )}
 
+      {queryEmpty && (
+        <FavoriteFoodsRow
+          foods={favoriteFoods}
+          onPick={(food) => {
+            const start = startPickedFood(food);
+            picker.setPickedFood(start.food);
+            picker.setPickedGrams(start.grams);
+          }}
+        />
+      )}
+
       {onRecipeLogged && (
         <RecipesFromBookRow recipes={savedRecipes} onPick={setRecipeToLog} />
       )}
@@ -163,6 +184,7 @@ export function SearchTabPanel({
         <RecipeLogSheet
           recipe={recipeToLog}
           mealType={recipeMealType}
+          favorites={favorites}
           onClose={() => setRecipeToLog(null)}
           onLog={(meal) => {
             setRecipeToLog(null);

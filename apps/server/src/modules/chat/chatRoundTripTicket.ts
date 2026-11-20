@@ -1,4 +1,5 @@
 import { randomUUID } from "node:crypto";
+import type { Request } from "express";
 
 /**
  * AI-5 рішення 1 (`docs/work/specs/audits/2026-09-01-product-audit/findings.md`,
@@ -51,9 +52,23 @@ import { randomUUID } from "node:crypto";
  * (falls back to charging), ніколи fail-open на безлім.
  */
 
+/**
+ * Раунд інструментів, після якого видано квиток (С-2 (б), спека
+ * `docs/work/specs/hubchat-second-tool-round.md`). `1` — квиток першого ходу:
+ * запит, оплачений ним, може отримати другий раунд. `2` — квиток другого
+ * раунду: запит, оплачений ним, іде лише в синтез і нових квитків не видає.
+ * Так хід «знайди й зміни» коштує одну одиницю (AI-5), а підроблений «пошук»
+ * не крутить безкоштовні виклики моделі по колу.
+ */
+export type RoundTripRound = 1 | 2;
+
+/** Позначка на `req`, яку ставить `assertAiQuota`, коли погасив квиток. */
+export type WithRoundTripRound = { aiRoundTripRound?: RoundTripRound };
+
 interface TicketRecord {
   userId: string;
   expiresAt: number;
+  round: RoundTripRound;
 }
 
 /**
@@ -89,11 +104,17 @@ function pruneExpired(now: number): void {
 export function issueRoundTripTicket(input: {
   userId: string;
   id?: string | undefined;
+  /** Раунд, після якого видано квиток; без поля — перший хід. */
+  round?: RoundTripRound;
 }): string {
   const now = Date.now();
   pruneExpired(now);
   const id = input.id || randomUUID();
-  store.set(id, { userId: input.userId, expiresAt: now + TICKET_TTL_MS });
+  store.set(id, {
+    userId: input.userId,
+    expiresAt: now + TICKET_TTL_MS,
+    round: input.round ?? 1,
+  });
   return id;
 }
 
@@ -109,16 +130,76 @@ export function consumeRoundTripTicket(input: {
   ticket: string;
   userId: string;
 }): boolean {
+  return redeemRoundTripTicket(input) !== null;
+}
+
+/**
+ * Те саме споживання, що `consumeRoundTripTicket`, але повертає раунд
+ * погашеного квитка (`null` — не погашено). Потрібне `assertAiQuota`, щоб
+ * обробник знав, чи має запит право на другий раунд.
+ */
+export function redeemRoundTripTicket(input: {
+  ticket: string;
+  userId: string;
+}): RoundTripRound | null {
   const now = Date.now();
   pruneExpired(now);
   const rec = store.get(input.ticket);
-  if (!rec) return false;
+  if (!rec) return null;
   if (rec.expiresAt <= now) {
     store.delete(input.ticket);
+    return null;
+  }
+  if (rec.userId !== input.userId) return null; // чужий квиток — не видаляємо
+  store.delete(input.ticket); // одноразовий
+  return rec.round;
+}
+
+/**
+ * Винесено з `aiQuota.ts` (2026-11-19, С-2 (б)): там лише виклик, тут уся
+ * механіка квитка.
+ *
+ * Читає `round_trip_ticket` із сирого `req.body` (цей middleware стоїть ДО
+ * `parseBody(ChatRequestSchema, …)` у `chat.ts`, той самий патерн, що
+ * `resolvePresetBudget` уже використовує для `preset`) і намагається його
+ * спожити для `userId`. `req.body` тут може бути `undefined` узагалі —
+ * `requireAiQuota()` монтується і на роутах без tool-round-trip (`coach.ts`,
+ * `nutrition.ts`), де поля просто нема.
+ *
+ * Увага (sec-03 / logic-02, аудит 2026-10-01): квиток погашається ЛИШЕ на
+ * запиті форми «непорожні `tool_results` І `tool_calls_raw`». Без цього він
+ * знімав списання з будь-якого запиту, а перший тур видає новий квиток на
+ * кожну відповідь із `tool_calls`: виходив безкінечний ланцюжок безкоштовних
+ * ходів повз тижневу квоту Free. Форма сама НЕ авторизація (її підробляє
+ * клієнт, див. `chatRoundTripTicket.ts`): авторизує серверний квиток, а
+ * форма лише звужує, де його можна витратити. Запит, оплачений квитком,
+ * завжди йде гілкою синтезу `chat.ts`; новий квиток вона видає лише разом із
+ * другим раундом інструментів і з позначкою «раунд 2» (С-2 (б)), а запит,
+ * оплачений квитком другого раунду, ні раунду, ні квитка вже не отримує. Квиток,
+ * що не пройшов умову форми, НЕ споживається, а запит списується як звичайний.
+ */
+export function tryConsumeRoundTripTicket(
+  req: Request,
+  userId: string,
+): boolean {
+  const body = req.body as
+    | {
+        round_trip_ticket?: unknown;
+        tool_results?: unknown;
+        tool_calls_raw?: unknown;
+      }
+    | undefined;
+  const raw = body?.round_trip_ticket;
+  if (typeof raw !== "string" || raw.length === 0) return false;
+  const nonEmpty = (v: unknown) => Array.isArray(v) && v.length > 0;
+  if (!nonEmpty(body?.tool_results) || !nonEmpty(body?.tool_calls_raw)) {
     return false;
   }
-  if (rec.userId !== input.userId) return false; // чужий квиток — не видаляємо
-  store.delete(input.ticket); // одноразовий
+  const round = redeemRoundTripTicket({ ticket: raw, userId });
+  if (round === null) return false;
+  // С-2 (б): запит, оплачений квитком другого раунду, третього раунду не
+  // отримує (`chatSecondRound.ts`).
+  (req as Request & WithRoundTripRound).aiRoundTripRound = round;
   return true;
 }
 

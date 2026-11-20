@@ -25,6 +25,16 @@
  * типу і з часом на ній підхід із вагою зараховано. Новий імпорт пише
  * секунди в підходи з типом `weight_time`, тож виняток стосується лише
  * історії.
+ *
+ * Явний прапорець і тип підходу (спека `fizruk-set-done-flag-and-set-type.md`,
+ * міграція 176). `set.done === false` прибирає рядок із підрахунку навіть зі
+ * значеннями (план програми, «+ Підхід» без ✓); `true` нічого не додає:
+ * порожній рядок, відмічений помилково, не зарахований. NULL / відсутнє поле
+ * — запис до фічі, чинне правило вище, тож старі числа не рухаються.
+ * Тип `warmup` за рішенням власника 2026-11-19 (П-Фз3-1, А) лишається
+ * зарахованим (відновлення його бачить), але не робочим: обʼєм, рекорди,
+ * «Підходів», «Вправ N з M» і поріг повноцінного тренування читають
+ * `isWorkingSet`. Дроп і «до відмови» — лише позначка (П-Фз3-2, 3).
  */
 
 import { hasExplicitMeasure, itemMeasure, measureCountsBy } from "./measure.js";
@@ -34,6 +44,10 @@ export interface CompletableSet {
   readonly reps?: unknown;
   readonly durationSec?: unknown;
   readonly distanceM?: unknown;
+  /** `true` / `false` / NULL (запис до фічі). Див. AI-CONTEXT вище. */
+  readonly done?: unknown;
+  /** `warmup` | `drop` | `failure`, NULL = звичайний. */
+  readonly setType?: unknown;
 }
 
 export interface SetCompletionItemContext {
@@ -52,6 +66,7 @@ export function isSetCompleted(
   item?: SetCompletionItemContext | null,
 ): boolean {
   if (!set) return false;
+  if (set.done === false) return false;
   const dim = measureCountsBy(itemMeasure(item));
   if (dim === "time") return positive(set.durationSec);
   if (dim === "distance") return positive(set.distanceM);
@@ -61,4 +76,28 @@ export function isSetCompleted(
     positive(item?.durationSec) &&
     positive(set.weightKg)
   );
+}
+
+/** Розминка (тип `warmup`). */
+export function isWarmupSet(set: CompletableSet | null | undefined): boolean {
+  return set?.setType === "warmup";
+}
+
+/**
+ * Робочий підхід: зарахований і не розминка. Читають числа результату:
+ * обʼєм, рекорди, прогресія, «Підходів», «Вправ N з M», поріг
+ * повноцінного тренування, робочі підходи на мʼяз. Відновлення й калорії
+ * читають `isSetCompleted` (розминка — теж навантаження).
+ *
+ * Споживачі «вага × повтори» (тоннаж, e1RM, прогресія) кличуть його БЕЗ
+ * item-а: обидві величини там і так вимагають повторень, а правило без
+ * контексту — «повторення > 0», тож на старих рядках (без `done` і типу)
+ * число рівно те саме, що до фічі, навіть для старих item-ів часу з
+ * випадковими повтореннями.
+ */
+export function isWorkingSet(
+  set: CompletableSet | null | undefined,
+  item?: SetCompletionItemContext | null,
+): boolean {
+  return isSetCompleted(set, item) && !isWarmupSet(set);
 }

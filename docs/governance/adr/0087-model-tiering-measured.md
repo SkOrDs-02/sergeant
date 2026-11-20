@@ -83,6 +83,14 @@ Standard і floor переведено з `gemini-2.5-flash-lite` **рішенн
 > § 6.4. Того ж дня: синтез `deepseek-v4-flash` обходить постачальника Baidu
 > (`OPENROUTER_IGNORE_PROVIDERS`), глибина синтезу `glm-5.2` лишилась за
 > замовчуванням шлюзу з перемикачем `CHAT_SYNTHESIS_PREMIUM_REASONING_EFFORT`.
+>
+> **Примітка 2026-11-19, пізніше (рішення власника за заміром § 6.5 того ж
+> дослідження, текст рішення вище не змінено).** Чеки й імпорт скриншотів
+> виписок (`OPENROUTER_RECEIPT_MODEL`) перейшли на `openai/gpt-6-luna` без
+> міркувань (`RECEIPT_VISION_REASONING_EFFORT=none`): виписки 24/24, чеки
+> 21/24, вигадок на пастках 0 проти 7/22 і 6 вигадок у
+> `gemini-2.5-flash-lite`. Зір нутриції (`OPENROUTER_VISION_MODEL`) лишився на
+> `gemini-2.5-flash-lite`, доки немає стенда на справжніх фото.
 
 ## Rationale
 

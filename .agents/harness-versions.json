@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "current": "8.15.2",
+  "current": "8.15.3",
   "versions": {
     "0.1.0": {
       "releasedAt": "2026-06-29",
@@ -926,6 +926,14 @@
       "releasedAt": "2026-11-19",
       "changes": [
         "AGENTS.md § Performance budgets: стеля eager 274 -> 259 kB рішенням власника 2026-11-19 (барель @sergeant/shared поза критичним шляхом)"
+      ],
+      "agentsTestedWith": [],
+      "passRateBaseline": null
+    },
+    "8.15.3": {
+      "releasedAt": "2026-11-20",
+      "changes": [
+        "bump from 8.15.2 -> 8.15.3: AGENTS.md § Performance budgets, стеля JS size-limit 1.56 -> 1.60 MB рішенням власника (main 1 562 439 B уже над стелею, гілка 1 575 505 B за третю хвилю фіч у лінивих чанках, eager 256.5 kB без руху; bundle-budget-ratchet-log.md 2026-11-20)"
       ],
       "agentsTestedWith": [],
       "passRateBaseline": null

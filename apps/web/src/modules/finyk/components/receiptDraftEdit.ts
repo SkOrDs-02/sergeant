@@ -93,3 +93,13 @@ export function addBlankDraftItem(draft: ReceiptDraft): ReceiptDraft {
 export function draftLooksUnrecognized(draft: ReceiptDraft): boolean {
   return draft.items.length === 0 && draft.totalKopiykas === 0 && !draft.store;
 }
+
+/** Чек із фото без суми: на фото не видно рядка підсумку, і модель чесно
+ * поставила 0 (рішення власника 2026-11-19, спека
+ * `docs/work/specs/finyk-receipt-total-not-visible.md`). Такий чек не
+ * зберігається, доки людина не введе суму: інакше він ставав витратою на
+ * 0 ₴. Сервер відхиляє той самий випадок (`RECEIPT_TOTAL_REQUIRED`). Лише
+ * `vision`: чек ДПС несе суму зі структурованих даних і поводиться як раніше. */
+export function receiptTotalMissing(draft: ReceiptDraft): boolean {
+  return draft.source === "vision" && draft.totalKopiykas <= 0;
+}

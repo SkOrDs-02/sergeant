@@ -41,6 +41,11 @@ import {
   useNutritionQuickChips,
   type QuickChip,
 } from "../hooks/useNutritionQuickChips";
+import { quickMealType } from "../lib/quickMealType";
+import {
+  useFavoritesFirst,
+  useNutritionFavorites,
+} from "../hooks/useNutritionFavorites";
 import {
   markComposeSaved,
   useComposeTelemetry,
@@ -140,9 +145,11 @@ export function NutritionOverlays({
     surface: addMealInitialStep ?? "source",
   });
 
+  // Х-3 (б): частота в прийомі, з яким відкрито аркуш (або за годинником).
   const quickChips = useNutritionQuickChips(
     log.nutritionLog,
     pantry.effectiveItems,
+    quickMealType(addMealInitialMealType),
   );
 
   // Рядки прийому, розгорнутого тапом по сегменту hero. Читаємо журнал
@@ -171,6 +178,9 @@ export function NutritionOverlays({
   // «Мої рецепти» як джерело форми (OD-27 Х-3 в): книга читається, коли
   // аркуш відкрито на новий запис, тож щойно збережений рецепт уже є.
   const recipeBook = useSavedRecipes(log.addMealSheetOpen && !editingMeal);
+  // Х-3 (б): улюблені рецепти вгору «Моїх рецептів» у формі прийому.
+  const favorites = useNutritionFavorites(prefs, setPrefs);
+  const savedRecipes = useFavoritesFirst(recipeBook.saved, favorites.recipeIds);
 
   return (
     <>
@@ -276,7 +286,8 @@ export function NutritionOverlays({
             : undefined
         }
         onConsumePantryItem={pantry.consumePantryItem}
-        savedRecipes={recipeBook.saved}
+        savedRecipes={savedRecipes}
+        favorites={favorites}
       />
 
       {/* Аркуш одного прийому hero-стрічки — див. `mealTypeSheetMeals`. */}

@@ -14,6 +14,7 @@
 import { finiteOrNull } from "@sergeant/shared";
 
 import { epley1rm } from "../../lib/workoutStats.js";
+import { isWorkingSet } from "../workouts/setCompletion.js";
 import type { DashboardPRItem, DashboardWorkoutInput } from "./types.js";
 
 /** Default top-N rendered on the dashboard. */
@@ -60,6 +61,7 @@ export function computeTopPRs(
           : null;
       const sets = item.sets ?? [];
       for (const s of sets) {
+        if (!isWorkingSet(s)) continue;
         const weight = finiteOrNull(s?.weightKg);
         const reps = finiteOrNull(s?.reps);
         if (weight == null || reps == null) continue;

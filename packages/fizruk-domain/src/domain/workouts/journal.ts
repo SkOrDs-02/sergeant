@@ -9,7 +9,7 @@
  */
 
 import { compareIsoDesc } from "../../lib/workoutStats.js";
-import { isSetCompleted } from "./setCompletion.js";
+import { isWorkingSet } from "./setCompletion.js";
 import { itemHasVolume } from "./measureItem.js";
 import type {
   Workout,
@@ -107,6 +107,8 @@ export function computeWorkoutTonnageKg(
     // Обʼєм лише для вага × повтори (`itemHasVolume`, спека типу виміру).
     if (!it || !itemHasVolume(it)) continue;
     for (const s of it.sets || []) {
+      // Розминка й незроблене поза обʼємом (П-Фз3-1, спека прапорця).
+      if (!isWorkingSet(s)) continue;
       const wg = Number(s?.weightKg);
       const r = Number(s?.reps);
       if (!Number.isFinite(wg) || !Number.isFinite(r)) continue;
@@ -118,7 +120,8 @@ export function computeWorkoutTonnageKg(
 }
 
 /**
- * Зараховані підходи всіх вправ (`isSetCompleted`, за типом виміру). Плитка
+ * Робочі підходи всіх вправ (`isWorkingSet`: зарахований за типом виміру і
+ * не розминка, П-Фз3-1). Плитка
  * «Підходів», журнал, поріг повноцінного тренування.
  */
 export function computeWorkoutSetCount(
@@ -133,7 +136,7 @@ export function computeWorkoutSetCount(
     // лише з вагою — не підхід; старі item-и часу й дистанції без підходів
     // нічого не дають.
     for (const s of it?.sets || []) {
-      if (isSetCompleted(s, it)) n += 1;
+      if (isWorkingSet(s, it)) n += 1;
     }
   }
   return n;
@@ -141,7 +144,7 @@ export function computeWorkoutSetCount(
 
 /**
  * Зроблені вправи для підсумку «Вправ N з M» (рішення founder-а 2026-11-18):
- * вправа з хоча б одним зарахованим підходом (`isSetCompleted`, той самий
+ * вправа з хоча б одним робочим підходом (`isWorkingSet`, той самий
  * предикат, що й `computeWorkoutSetCount`). Старий item часу чи дистанції
  * без рядків підходів зроблений, коли секунди чи метри записано на ньому
  * самому. Підпис числа вправ скрізь, де видно минуле чи завершуване
@@ -155,7 +158,7 @@ export function computeWorkoutDoneItemCount(
   let n = 0;
   for (const it of w.items || []) {
     if (!it) continue;
-    const counted = (it.sets || []).some((s) => isSetCompleted(s, it));
+    const counted = (it.sets || []).some((s) => isWorkingSet(s, it));
     const legacy =
       (it.sets?.length ?? 0) === 0 &&
       (Number(it.durationSec) > 0 || Number(it.distanceM) > 0);

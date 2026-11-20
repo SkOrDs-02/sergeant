@@ -1,7 +1,9 @@
 #!/usr/bin/env node
 /**
- * `pnpm eval:vision` — зоровий стенд для `analyze-photo` і `refine-photo`
- * (спека `docs/work/specs/ai-eval-harness-v2.md` § Зорові шляхи).
+ * `pnpm eval:vision` — зоровий стенд для `analyze-photo`, `refine-photo`,
+ * скану чека (`receipt-scan`) та імпорту скриншота виписки
+ * (`statement-import`) (спека `docs/work/specs/ai-eval-harness-v2.md`
+ * § Зорові шляхи). Транспорт — продовий `/messages` (`visionProdTransport.ts`).
  *
  * Чому окремо від `eval:models`: інший вхід (зображення), інші кандидати —
  * не кожна модель приймає картинки, тож список фільтрується за
@@ -17,17 +19,27 @@
  *   pnpm eval:vision -- --repeat=3      # мінімум 3 у живому прогоні
  *   pnpm eval:vision -- --out=docs/work/specs/planning/vision-eval-2026-08-04.md
  *   pnpm eval:vision -- --extra=analyze-photo:openrouter:openai/gpt-6-luna:luna-none:none
- *                                       # 5-те поле — reasoning.effort (як у eval:models)
+ *                                       # 5-те поле — глибина; на `/messages` `none`
+ *                                       # стає `thinking: {type: "disabled"}`
+ *   pnpm eval:vision -- --extra='*:openrouter:google/gemini-3.7-flash:g37'
+ *                                       # `*` — кандидат у кожен обраний пайплайн
  *   pnpm eval:vision -- --only-model=google/gemini-2.5-flash-lite,openai/gpt-6-luna
  *   pnpm eval:vision -- --json-out=/tmp/vision.json
  *                                       # сирі рядки (з `servedBy`, `gatewayCostUsd`)
+ *   pnpm eval:vision -- --case=кавʼярня  # лише кейси з підрядком у назві
+ *   pnpm eval:vision -- --rejudge=/tmp/a.json,/tmp/b.json
+ *                                       # звіт зі збережених `--json-out` поточними
+ *                                       # суддями, без мережі
+ *   pnpm eval:vision -- --baseline=google/gemini-2.5-flash-lite
+ *                                       # база «×база» для всіх шляхів; без прапорця —
+ *                                       # чинний прод-дефолт кожного шляху
  *
  * Код виходу: 0 завжди (це звіт, не гейт), 1 — помилка розбору аргументів.
  */
 
 import { parseArgs } from "node:util";
 import process from "node:process";
-import { writeFileSync, mkdirSync } from "node:fs";
+import { readFileSync, writeFileSync, mkdirSync } from "node:fs";
 import { dirname, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 import { loadCatalog } from "./eval/cost.js";
@@ -35,10 +47,13 @@ import { toMarkdown } from "./eval/report.js";
 import {
   VISION_PIPELINES,
   filterByModality,
+  prodBaselineFor,
+  rejudgeVisionResult,
   runVisionOne,
   type ModalityFilter,
 } from "./eval/vision.js";
 import type { RunResult } from "./eval/types.js";
+import { pathSummaryMarkdown } from "./eval/visionSummary.js";
 import { isReasoningEffort } from "../src/lib/llm/provider.js";
 
 function modalitySection(
@@ -80,6 +95,9 @@ async function main(): Promise<void> {
       repeat: { type: "string" },
       "only-model": { type: "string" },
       "json-out": { type: "string" },
+      baseline: { type: "string" },
+      case: { type: "string" },
+      rejudge: { type: "string" },
     },
   });
 
@@ -100,9 +118,10 @@ async function main(): Promise<void> {
   // вшитій трійці кандидатів, і кожен новий кандидат вимагав правки коду.
   for (const raw of values.extra ?? []) {
     const [key, provider, model, label, effort] = raw.split(":");
-    const pipeline = pipelines.find((p) => p.key === key);
+    const targets =
+      key === "*" ? pipelines : pipelines.filter((p) => p.key === key);
     if (
-      !pipeline ||
+      targets.length === 0 ||
       provider !== "openrouter" ||
       !model ||
       (effort !== undefined && !isReasoningEffort(effort))
@@ -112,12 +131,14 @@ async function main(): Promise<void> {
       );
       continue;
     }
-    pipeline.candidates.push({
-      provider,
-      model,
-      label: label ?? model,
-      ...(effort === undefined ? {} : { reasoning: effort }),
-    });
+    for (const pipeline of targets) {
+      pipeline.candidates.push({
+        provider,
+        model,
+        label: label ?? model,
+        ...(effort === undefined ? {} : { reasoning: effort }),
+      });
+    }
   }
 
   if (values["only-model"]) {
@@ -129,13 +150,30 @@ async function main(): Promise<void> {
     }
   }
 
-  const dryRun = values["dry-run"] === true;
+  // `--rejudge=a.json,b.json`: звіт зі збережених прогонів поточними
+  // суддями, без мережі (правка судді не вимагає платного повтору).
+  const rejudgeFiles = values.rejudge?.split(",").map((s) => s.trim()) ?? [];
+  const dryRun = values["dry-run"] === true || rejudgeFiles.length > 0;
   const repeats = Math.max(1, Number(values.repeat ?? 1) || 1);
   if (!dryRun) await loadCatalog();
 
   const dropped: ModalityFilter["dropped"] = [];
   const results: RunResult[] = [];
-  for (const pipeline of pipelines) {
+  const onlyModels = values["only-model"]
+    ? new Set(values["only-model"].split(",").map((s) => s.trim()))
+    : null;
+  for (const file of rejudgeFiles) {
+    const saved = JSON.parse(readFileSync(resolve(file), "utf-8")) as {
+      results: RunResult[];
+    };
+    for (const r of saved.results) {
+      if (onlyModels && !onlyModels.has(r.candidate.model)) continue;
+      if (!pipelines.some((p) => p.key === r.pipeline)) continue;
+      const rejudged = rejudgeVisionResult(r);
+      if (rejudged) results.push(rejudged);
+    }
+  }
+  for (const pipeline of rejudgeFiles.length > 0 ? [] : pipelines) {
     const modality = filterByModality(pipeline.candidates, {
       enforce: !dryRun,
     });
@@ -144,7 +182,11 @@ async function main(): Promise<void> {
         dropped.push(d);
       }
     }
-    for (const goldenCase of pipeline.cases) {
+    const caseFilter = values.case?.toLowerCase();
+    const cases = caseFilter
+      ? pipeline.cases.filter((c) => c.name.toLowerCase().includes(caseFilter))
+      : pipeline.cases;
+    for (const goldenCase of cases) {
       for (const candidate of modality.kept) {
         for (let i = 0; i < repeats; i += 1) {
           results.push(
@@ -165,14 +207,23 @@ async function main(): Promise<void> {
   }
   const markdown = [
     toMarkdown(results, pipelines, generatedAt),
+    ...pathSummaryMarkdown(
+      results,
+      (path) => values.baseline ?? prodBaselineFor(path),
+    ),
     ...modalitySection(dropped, !dryRun),
     "",
     "## Про зображення",
     "",
-    "Голден-сет намальовано програмно (`scripts/eval/vision-images.ts`):",
+    "Кадри їжі намальовано програмно (`scripts/eval/vision-images.ts`):",
     "плоскі заливки, диски й растровий шрифт 3×5, не фотографії. Тому судді",
     "міряють структуру відповіді (прод-нормалізатор), прочитаний текст",
     "етикетки і стриманість на порожньому кадрі — а не впізнавання страв.",
+    "",
+    "Чеки й виписки — синтетичні HTML-рендери (`scripts/eval/render-vision-docs.ts`,",
+    "дані й істина в `scripts/eval/visionDocs.data.ts`, файли в",
+    "`src/__fixtures__/vision-eval/`): рівний шрифт, без бліків і зминань,",
+    "тож вони простіші за справжнє фото з каси (крім кейса «погане фото»).",
     "",
   ].join("\n");
   console.log(markdown);

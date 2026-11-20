@@ -110,4 +110,55 @@ describe("useNutritionQuickChips", () => {
     const { result } = renderHook(() => useNutritionQuickChips(log, []));
     expect(result.current[0]!.label).toBe("Йогурт грецький 2%");
   });
+
+  describe("частота для поточного часу доби (OD-27 Х-3 б)", () => {
+    function typed(
+      daysAgo: number,
+      name: string,
+      mealType: "breakfast" | "lunch" | "dinner" | "snack",
+    ): NutritionLog {
+      const log = mkLog(daysAgo, [{ name }]);
+      for (const day of Object.values(log)) {
+        for (const m of day.meals) m.mealType = mealType;
+      }
+      return log;
+    }
+    function merge(...logs: NutritionLog[]): NutritionLog {
+      const out: NutritionLog = {};
+      for (const l of logs) {
+        for (const [date, day] of Object.entries(l)) {
+          out[date] = { meals: [...(out[date]?.meals ?? []), ...day.meals] };
+        }
+      }
+      return out;
+    }
+    // Вівсянку їдять на сніданок тричі, суп — двічі на обід, але вчора.
+    const log = merge(
+      typed(5, "Вівсянка", "breakfast"),
+      typed(4, "Вівсянка", "breakfast"),
+      typed(3, "Вівсянка", "breakfast"),
+      typed(2, "Суп", "lunch"),
+      typed(1, "Суп", "lunch"),
+    );
+
+    it("вранці першою йде те, що найчастіше їдять на сніданок", () => {
+      const { result } = renderHook(() =>
+        useNutritionQuickChips(log, [], "breakfast"),
+      );
+      expect(result.current.map((c) => c.label)).toEqual(["Вівсянка", "Суп"]);
+    });
+
+    it("в обід — найчастіше обіднє, навіть якщо інше свіжіше", () => {
+      const lunchLog = merge(log, typed(0, "Вівсянка", "breakfast"));
+      const { result } = renderHook(() =>
+        useNutritionQuickChips(lunchLog, [], "lunch"),
+      );
+      expect(result.current.map((c) => c.label)).toEqual(["Суп", "Вівсянка"]);
+    });
+
+    it("без часу доби порядок як раніше: свіжіше вище", () => {
+      const { result } = renderHook(() => useNutritionQuickChips(log, []));
+      expect(result.current.map((c) => c.label)).toEqual(["Суп", "Вівсянка"]);
+    });
+  });
 });

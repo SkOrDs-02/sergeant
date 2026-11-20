@@ -438,6 +438,30 @@ describe("buildDailySeries — fizruk metrics", () => {
     expect(s.raw["workout_volume"]![0]).toBe(510);
   });
 
+  it("workout_volume: незроблений рядок плану (done: false) і розминка поза обʼємом", () => {
+    mockReadFizrukWorkouts.mockReturnValue([
+      {
+        startedAt: "2026-04-22T10:00:00Z",
+        endedAt: "2026-04-22T11:00:00Z",
+        items: [
+          {
+            sets: [
+              { weightKg: 60, reps: 5 },
+              { weightKg: 80, reps: 5, done: false },
+              { weightKg: 20, reps: 10, setType: "warmup" },
+            ],
+          },
+        ],
+      },
+    ]);
+
+    const s = buildDailySeries(["workout_volume"], {
+      from: "2026-04-22",
+      to: "2026-04-22",
+    });
+    expect(s.raw["workout_volume"]![0]).toBe(300);
+  });
+
   it("workout_volume: workout with zero volume is not stored", () => {
     mockReadFizrukWorkouts.mockReturnValue([
       {

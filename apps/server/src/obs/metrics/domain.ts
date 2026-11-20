@@ -62,9 +62,10 @@ initOpenRouterNoEndpointsSeries();
 
 /**
  * Страховка-перезапит порожнього туру синтезу чату (рішення власника
- * 2026-11-19, `modules/chat/chatStreamEmptyRetry.ts`): стрім синтезу через
- * шлюз закрився успішно без жодного символу тексту, і сервер раз перепитав
- * без міркувань. `outcome`: `recovered` (перезапит дав текст), `still_empty`
+ * 2026-11-19, `modules/chat/chatStreamEmptyRetry.ts`): тур синтезу через
+ * шлюз (стрім або JSON, `chatSynthesisJson.ts`) завершився успішно без жодного
+ * символу тексту, і сервер раз перепитав без міркувань. Шлях окремою міткою
+ * не ділиться (сусідні метрики чату так не роблять): він є полем `mode` у лозі. `outcome`: `recovered` (перезапит дав текст), `still_empty`
  * (знову порожньо, людина бачить загальну помилку), `error` (перезапит не
  * відкрився або обірвався). Частку порожніх перших спроб дає ділення суми
  * на `ai_requests_total{endpoint="chat-tool-result",provider="openrouter"}`.
@@ -74,7 +75,7 @@ initOpenRouterNoEndpointsSeries();
  */
 export const chatSynthesisEmptyRetryTotal = new client.Counter({
   name: "chat_synthesis_empty_retry_total",
-  help: "Retries without reasoning after an empty streamed chat synthesis, by outcome",
+  help: "Retries without reasoning after an empty chat synthesis (stream or JSON), by outcome",
   labelNames: ["outcome"], // recovered|still_empty|error
   registers: [register],
 });

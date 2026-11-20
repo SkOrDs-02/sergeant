@@ -312,9 +312,12 @@ describe("log_set", () => {
     expect(saved.workouts[0]?.endedAt).toBeNull();
     expect(saved.workouts[0]?.items[0]?.nameUk).toBe("Жим штанги");
     expect(saved.workouts[0]?.items[0]?.sets).toHaveLength(1);
+    // Фз-3 (`fizruk-set-done-flag-and-set-type.md`): підхід, записаний через
+    // чат, — факт, тож рядок одразу виконаний.
     expect(saved.workouts[0]?.items[0]?.sets?.[0]).toEqual({
       reps: 8,
       weightKg: 80,
+      done: true,
     });
 
     // `fizruk_active_workout_id_v1` is stored as a raw string (not JSON), so
@@ -336,6 +339,11 @@ describe("log_set", () => {
     expect(saved.workouts).toHaveLength(1);
     expect(saved.workouts[0]?.items).toHaveLength(1);
     expect(saved.workouts[0]?.items[0]?.sets).toHaveLength(3);
+    expect(saved.workouts[0]?.items[0]?.sets?.map((s) => s.done)).toEqual([
+      true,
+      true,
+      true,
+    ]);
   });
 
   it("відмовляє без reps", () => {

@@ -7,6 +7,7 @@ import { als } from "../../../obs/requestContext.js";
 import { env } from "../../../env.js";
 import {
   receiptVisionModel,
+  receiptVisionReasoningFields,
   receiptVisionViaOpenRouter,
 } from "./visionTransport.js";
 import {
@@ -58,8 +59,9 @@ export async function callReceiptVision(
   }
 
   const apiKey = env.ANTHROPIC_API_KEY;
+  const model = receiptVisionModel();
   const payload = {
-    model: receiptVisionModel(),
+    model,
     // 4000, НЕ 900/2000 (live-бенч 2026-08-18, два раунди): відповідь по
     // 18-позиційному чеку обрізалась на 900 токенах, по 40-позиційному
     // (буденний супермаркет-чек) — і на 2000 (~4000 символів JSON) —
@@ -85,6 +87,9 @@ export async function callReceiptVision(
         ],
       },
     ],
+    // Міркування вимкнені за замовчуванням (`RECEIPT_VISION_REASONING_EFFORT`,
+    // рішення власника 2026-11-19); правило — `visionTransport.ts`.
+    ...receiptVisionReasoningFields(model),
   };
 
   const { response, data } = await anthropicMessages(apiKey, payload, {

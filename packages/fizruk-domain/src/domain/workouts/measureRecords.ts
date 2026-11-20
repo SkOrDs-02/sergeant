@@ -15,7 +15,11 @@ import {
   type ExerciseMeasure,
   type MeasureItemLike,
 } from "./measure.js";
-import { isSetCompleted, type CompletableSet } from "./setCompletion.js";
+import {
+  isSetCompleted,
+  isWorkingSet,
+  type CompletableSet,
+} from "./setCompletion.js";
 
 interface RecordSetLike extends CompletableSet {
   readonly [key: string]: unknown;
@@ -54,7 +58,8 @@ export function setMeasureValue(
   item: MeasureItemLike | null | undefined,
 ): { dimension: "time" | "distance"; value: number } | null {
   const dim = measureCountsBy(itemMeasure(item));
-  if (dim === "reps" || !set || !isSetCompleted(set, item)) return null;
+  // Рекорд — лише робочий підхід (розминка поза рекордами, П-Фз3-1).
+  if (dim === "reps" || !set || !isWorkingSet(set, item)) return null;
   return {
     dimension: dim,
     value: num(dim === "time" ? set.durationSec : set.distanceM),

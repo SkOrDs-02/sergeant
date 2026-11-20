@@ -253,6 +253,7 @@ describe("createMeEndpoints", () => {
     expect(out.quietHoursStartMin).toBeUndefined();
     expect(out.quietHoursEndMin).toBeUndefined();
     expect(out.pushMonoTransactions).toBeUndefined();
+    expect(out.pushFinykAlerts).toBeUndefined();
     expect("timeZone" in out).toBe(false);
   });
 
@@ -268,6 +269,7 @@ describe("createMeEndpoints", () => {
       quietHoursStartMin: 1320,
       quietHoursEndMin: 480,
       pushMonoTransactions: true,
+      pushFinykAlerts: false,
       updatedAt: null,
     });
     const me = createMeEndpoints(createHttpClient());
@@ -278,6 +280,7 @@ describe("createMeEndpoints", () => {
       quietHoursStartMin: 1320,
       quietHoursEndMin: 480,
       pushMonoTransactions: true,
+      pushFinykAlerts: false,
     });
   });
 

@@ -1,7 +1,11 @@
 // @vitest-environment jsdom
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { renderHook } from "@testing-library/react";
-import { ACTIVE_WORKOUT_KEY, type InjuryMark } from "@sergeant/fizruk-domain";
+import {
+  ACTIVE_WORKOUT_KEY,
+  computeWorkoutSetCount,
+  type InjuryMark,
+} from "@sergeant/fizruk-domain";
 import type { InjurySiteId } from "@sergeant/fizruk-domain/data";
 import type { WorkoutItem } from "@sergeant/fizruk-domain/domain";
 import { useFizrukProgramStart } from "./useFizrukProgramStart";
@@ -141,7 +145,7 @@ describe("useFizrukProgramStart", () => {
     expect(bench?.sets?.[0]?.weightKg).toBe(0);
   });
 
-  it("сіє порожні рядки за планом: 3 підходи за замовчуванням, жоден не зарахований", () => {
+  it("сіє рядки плану (вага + нижній край повторів) з done: false — жоден не зарахований (П-Фз3-5)", () => {
     const { start, added } = setup([
       {
         endedAt: "2026-07-01T10:00:00.000Z",
@@ -151,10 +155,13 @@ describe("useFizrukProgramStart", () => {
     start({ exerciseIds: ["bench"], progressionKg: 2.5 });
     const sets = added.find((i) => i.exerciseId === "bench")?.sets;
     expect(sets).toEqual([
-      { weightKg: 52.5, reps: 0 },
-      { weightKg: 52.5, reps: 0 },
-      { weightKg: 52.5, reps: 0 },
+      { weightKg: 52.5, reps: 8, done: false },
+      { weightKg: 52.5, reps: 8, done: false },
+      { weightKg: 52.5, reps: 8, done: false },
     ]);
+    expect(
+      computeWorkoutSetCount({ items: [{ type: "strength", sets }] }),
+    ).toBe(0);
   });
 
   it("старт із програми пише привʼязку до слоту (П-10)", () => {
@@ -174,16 +181,16 @@ describe("useFizrukProgramStart", () => {
     expect(createWorkout).toHaveBeenCalledWith();
   });
 
-  it("утримання стартує трьома порожніми рядками секунд (лічильник «0 з 3»)", () => {
+  it("утримання стартує трьома рядками секунд плану з done: false (лічильник «0 з 3»)", () => {
     const { start, added } = setup();
     start({ exerciseIds: ["plank"] });
     const plank = added.find((i) => i.exerciseId === "plank");
     expect(plank?.type).toBe("time");
     expect(plank?.measure).toBe("time");
     expect(plank?.sets).toEqual([
-      { weightKg: 0, reps: 0 },
-      { weightKg: 0, reps: 0 },
-      { weightKg: 0, reps: 0 },
+      { weightKg: 0, reps: 0, durationSec: 20, done: false },
+      { weightKg: 0, reps: 0, durationSec: 20, done: false },
+      { weightKg: 0, reps: 0, durationSec: 20, done: false },
     ]);
   });
 
@@ -206,7 +213,7 @@ describe("useFizrukProgramStart", () => {
     start({ exerciseIds: ["bench"], plan: { sets: 5, reps: 5 } });
     const sets = added.find((i) => i.exerciseId === "bench")?.sets;
     expect(sets).toHaveLength(5);
-    expect(sets?.every((s) => s.reps === 0)).toBe(true);
+    expect(sets?.every((s) => s.reps === 5 && s.done === false)).toBe(true);
   });
 
   it("defers creation to the conflict resolver when a workout is unfinished", () => {

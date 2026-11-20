@@ -198,6 +198,9 @@ describe("sqlite/fizrukWorkoutSets schema snapshot", () => {
       // Серверна 172 / клієнтська 010: секунди й метри на підхід.
       "duration_sec",
       "distance_m",
+      // Серверна 176 / клієнтська 012: «виконано» і тип підходу.
+      "done",
+      "set_type",
       "sort_order",
       "created_at",
       "updated_at",
@@ -230,6 +233,11 @@ describe("sqlite/fizrukWorkoutSets schema snapshot", () => {
     expect(columnMap["duration_sec"]!.notNull).toBe(false);
     expect(columnMap["distance_m"]!.dataType).toBe("number");
     expect(columnMap["distance_m"]!.notNull).toBe(false);
+
+    expect(columnMap["done"]!.dataType).toBe("number");
+    expect(columnMap["done"]!.notNull).toBe(false);
+    expect(columnMap["set_type"]!.dataType).toBe("string");
+    expect(columnMap["set_type"]!.notNull).toBe(false);
   });
 
   it("declares the item index", () => {
@@ -601,8 +609,8 @@ describe("sqlite/fizrukWorkoutTemplates schema snapshot", () => {
 });
 
 describe("sqlite/fizruk migrations exports", () => {
-  it("exports the 001 baseline + 002 full-state + 003 injuries + 004 pushups + 005 kcal/activities + 006 chosen-variant + 007 pushups→workouts + 008 measurement-fields + 009 program-ref + 010 set-measure + 011 exercise-prefs migration", () => {
-    expect(FIZRUK_CLIENT_MIGRATIONS).toHaveLength(11);
+  it("exports the 001 baseline + 002 full-state + 003 injuries + 004 pushups + 005 kcal/activities + 006 chosen-variant + 007 pushups→workouts + 008 measurement-fields + 009 program-ref + 010 set-measure + 011 exercise-prefs + 012 set-done-and-type migration", () => {
+    expect(FIZRUK_CLIENT_MIGRATIONS).toHaveLength(12);
     expect(FIZRUK_CLIENT_MIGRATIONS[0]!.name).toBe("001_fizruk_tables.sql");
     expect(FIZRUK_CLIENT_MIGRATIONS[0]!.sql).toMatch(
       /CREATE TABLE IF NOT EXISTS fizruk_workouts/,
@@ -735,6 +743,17 @@ describe("sqlite/fizruk migrations exports", () => {
     expect(FIZRUK_CLIENT_MIGRATIONS[10]!.sql).toMatch(
       /PRIMARY KEY \(user_id, id\)/,
     );
+
+    // 012 дзеркалить серверну 176: «виконано» і тип підходу.
+    expect(FIZRUK_CLIENT_MIGRATIONS[11]!.name).toBe(
+      "012_fizruk_set_done_and_type.sql",
+    );
+    for (const stmt of [
+      /ALTER TABLE fizruk_workout_sets ADD COLUMN done INTEGER;/,
+      /ALTER TABLE fizruk_workout_sets ADD COLUMN set_type TEXT;/,
+    ]) {
+      expect(FIZRUK_CLIENT_MIGRATIONS[11]!.sql).toMatch(stmt);
+    }
 
     expect(FIZRUK_CLIENT_MIGRATIONS[7]!.name).toBe(
       "008_fizruk_measurement_fields.sql",

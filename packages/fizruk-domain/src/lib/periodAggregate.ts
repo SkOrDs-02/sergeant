@@ -23,6 +23,7 @@ import {
   itemMeasure,
   measureHasVolume,
 } from "../domain/workouts/measure.js";
+import { isWorkingSet } from "../domain/workouts/setCompletion.js";
 
 interface AggSet {
   weightKg?: number | null | undefined;
@@ -81,6 +82,8 @@ export interface FizrukPeriodAggregateOptions {
 function setVolume(sets: AggSet[] | null | undefined): number {
   let vol = 0;
   for (const s of sets ?? []) {
+    // Розминка й незроблене поза обʼємом (П-Фз3-1, спека прапорця).
+    if (!isWorkingSet(s)) continue;
     const w = Number(s?.weightKg) || 0;
     const r = Number(s?.reps) || 0;
     vol += w * r;
