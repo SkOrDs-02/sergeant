@@ -669,7 +669,7 @@ describe("useChatSend — підтвердження незворотних ді
     {
       name: "create_transaction",
       input: { type: "expense", amount: 200, category: "food" },
-      summary: "витрата 200 грн, food",
+      summary: "витрата 200 грн, продукти",
     },
     {
       name: "export_module_data",

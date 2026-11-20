@@ -8,9 +8,11 @@
 import { useRoutineDualWriteBoot } from "./useRoutineDualWriteBoot";
 import { useSqliteReadBoot as useRoutineSqliteReadBoot } from "./useSqliteReadBoot";
 import { useRoutineQuickStatsBoot } from "./useRoutineQuickStatsBoot";
+import { useOnboardingDoneOnRealEntry } from "../../../core/onboarding/useOnboardingDoneOnRealEntry";
 import { useRoutineAutoMark } from "./useRoutineAutoMark";
 
 export default function RoutineBootCluster(): null {
+  useOnboardingDoneOnRealEntry("routine");
   useRoutineDualWriteBoot();
   useRoutineSqliteReadBoot();
   useRoutineQuickStatsBoot();

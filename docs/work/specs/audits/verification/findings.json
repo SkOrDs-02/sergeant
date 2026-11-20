@@ -4018,6 +4018,290 @@
           "note": "Одноразово: офлайн goto /finyk/transactions → FinykApp, RoutineBootCluster, sqliteWriter: ERR_ABORTED / Failed to fetch dynamically imported module, хоча чанки є в прекеші SW (controller активний). Повтори не падали. Не підтверджено, можливо гонка навігації з SW."
         }
       ]
+    },
+    {
+      "id": "FULL-20261119-DATA-1",
+      "legacyId": "routine-journal-replay-empty",
+      "title": "Анонім бачить «Звичок ще немає» на першому завантаженні після створення звички",
+      "severity": "major",
+      "source": "docs/work/specs/audits/verification/runs/full-2026-11-19/handoff.md",
+      "sourceAnchor": "DATA-durability-live",
+      "status": "fixed-pending-verification",
+      "history": [
+        {
+          "at": "2026-11-19",
+          "event": "observed",
+          "note": "Звичка, чия сторінка закрилась до коміту в SQLite, доїжджала в базу реплеєм журналу, але кеш Рутини вже був прогрітий порожнім знімком; без sync-рушія (анонім) екран лишався порожнім до наступного перезавантаження. Відтворено 4/4 у браузері."
+        },
+        {
+          "at": "2026-11-19",
+          "event": "fixed",
+          "note": "882f2328b: після реплею журналу, що застосував рядки, Рутина перечитує стан і відмітки та шле ROUTINE_EVENT. Юніт-тест червоний без фіксу; у браузері 3/3 звичка видна на першому завантаженні."
+        }
+      ]
+    },
+    {
+      "id": "FULL-20261119-A11Y-1",
+      "legacyId": "pricing-premium-ink",
+      "title": "Premium-картка на /pricing: темний текст на темному фоні, 1.12:1",
+      "severity": "major",
+      "source": "docs/work/specs/audits/verification/runs/full-2026-11-19/handoff.md",
+      "sourceAnchor": "EXP-a11y-interaction-copy",
+      "status": "fixed-pending-verification",
+      "history": [
+        {
+          "at": "2026-11-19",
+          "event": "observed",
+          "note": "axe color-contrast serious на /pricing (світла і HC): `text-hero-ink` після мови H = --c-text, а фон картки stone-800."
+        },
+        {
+          "at": "2026-11-19",
+          "event": "fixed",
+          "note": "e4a260adc: `text-bg` на картці (пара як у Button primary). a11y 86/86."
+        }
+      ]
+    },
+    {
+      "id": "FULL-20261119-A11Y-2",
+      "legacyId": "fizruk-programs-rest-day",
+      "title": "Дні без тренування в /fizruk/programs нижче 4.5:1",
+      "severity": "minor",
+      "source": "docs/work/specs/audits/verification/runs/full-2026-11-19/handoff.md",
+      "sourceAnchor": "EXP-a11y-interaction-copy",
+      "status": "fixed-pending-verification",
+      "history": [
+        {
+          "at": "2026-11-19",
+          "event": "observed",
+          "note": "axe color-contrast serious: `text-subtle` на підкладці `bg-line/30`."
+        },
+        {
+          "at": "2026-11-19",
+          "event": "fixed",
+          "note": "e4a260adc: `text-muted`. a11y-expanded зелений."
+        }
+      ]
+    },
+    {
+      "id": "FULL-20261119-A11Y-3",
+      "legacyId": "finyk-overview-heading",
+      "title": "Огляд Фініка: стрибок h1 → h3",
+      "severity": "minor",
+      "source": "docs/work/specs/audits/verification/runs/full-2026-11-19/handoff.md",
+      "sourceAnchor": "EXP-a11y-interaction-copy",
+      "status": "fixed-pending-verification",
+      "history": [
+        {
+          "at": "2026-11-19",
+          "event": "observed",
+          "note": "axe heading-order у світі finyk-month: секція «Сьогодні» рендерилась дефолтним h3."
+        },
+        {
+          "at": "2026-11-19",
+          "event": "fixed",
+          "note": "e4a260adc: as=\"h2\" + юніт-тест."
+        }
+      ]
+    },
+    {
+      "id": "FULL-20261119-TOOL-1",
+      "legacyId": "stale-harnesses",
+      "title": "Лейни profiles і data-durability та гейт нетекстового контрасту зламані застарілими селекторами",
+      "severity": "minor",
+      "source": "docs/work/specs/audits/verification/runs/full-2026-11-19/handoff.md",
+      "sourceAnchor": "TECH-test-matrix-and-flakes",
+      "status": "fixed-pending-verification",
+      "history": [
+        {
+          "at": "2026-11-19",
+          "event": "observed",
+          "note": "profiles: усі персони падали (банер згоди, аркуш «Вручну», діалог «Нова звичка», «Продукт», пейвол-діалог); durability 17 провалів; waitForSyncQuiet no-op; contrast-nontext міряв згорнуті/disabled контроли і 44px-обгортку замість індикатора."
+        },
+        {
+          "at": "2026-11-19",
+          "event": "fixed",
+          "note": "5339e3d95: оновлені хелпери, waitForServerSync, пропуск inactive/hidden і вимір індикатора. profiles 16 pass, durability 97/97, contrast-nontext 10/10."
+        }
+      ]
+    },
+    {
+      "id": "FULL-20261119-TOOL-2",
+      "legacyId": "local-lint-worktrees",
+      "title": "Локальний pnpm lint і test:scripts червоні без змін у коді",
+      "severity": "minor",
+      "source": "docs/work/specs/audits/verification/runs/full-2026-11-19/handoff.md",
+      "sourceAnchor": "TECH-test-matrix-and-flakes",
+      "status": "fixed-pending-verification",
+      "history": [
+        {
+          "at": "2026-11-19",
+          "event": "observed",
+          "note": "check-dead-doc-links сканував gitignored .claude/worktrees (10 «нових мертвих посилань»); tsconfig-guard тест імпортував vitest, але запускається через node --test."
+        },
+        {
+          "at": "2026-11-19",
+          "event": "fixed",
+          "note": "1b8f28376: пропуск .claude/worktrees, тест на node:test. lint exit 0, test:scripts 0 fail."
+        }
+      ]
+    },
+    {
+      "id": "FULL-20261119-UX-1",
+      "legacyId": "onboarding-gate-stale-ls",
+      "title": "Користувач із даними, що прийшов глибоким посиланням, на хабі бачить онбординг «Модулі»",
+      "severity": "minor",
+      "source": "docs/work/specs/audits/verification/runs/full-2026-11-19/handoff.md",
+      "sourceAnchor": "JRN-ftux-paywall-state",
+      "status": "fixed-pending-verification",
+      "history": [
+        {
+          "at": "2026-11-19",
+          "event": "observed",
+          "note": "hasExistingData у гейті онбордингу читає tombstone-нуті LS-ключі (finyk_manual_expenses_v1, hub_routine_v1 тощо), тож дані в SQLite він не бачить. Анонім P1 з витратою, звичкою і продуктом на /insights отримав екран «Модулі». Потрібне рішення власника: чи пропускати онбординг за наявності даних (синхронного маркера немає; FIRST_REAL_ENTRY_KEY ставиться лише на хабі)."
+        },
+        {
+          "at": "2026-11-20",
+          "event": "fixed",
+          "note": "cafd28716 (рішення власника 2026-11-19): перший справжній запис у модулі ставить ONBOARDING_DONE_KEY (useOnboardingDoneOnRealEntry у boot-кластерах). Профілі 18/18, з Pro 24/24."
+        }
+      ]
+    },
+    {
+      "id": "FULL-20261119-PERF-1",
+      "legacyId": "anon-auth-queries",
+      "title": "Анонім шле автентифіковані запити й отримує 401 на кожній сторінці",
+      "severity": "minor",
+      "source": "docs/work/specs/audits/verification/runs/full-2026-11-19/handoff.md",
+      "sourceAnchor": "JRN-route-contract",
+      "status": "fixed-pending-verification",
+      "history": [
+        {
+          "at": "2026-11-19",
+          "event": "observed",
+          "note": "billing/status, mono/sync-state, silpo/sync-state, me/preferences, chat/usage: enabled вмикається до того, як /me визначив сесію. Прод: 58 × 401 billing/status на 80 сторінок. UX не ламає; фікс зачіпає показ Premium-гейтів у залогінених, тож лишено на рішення."
+        },
+        {
+          "at": "2026-11-20",
+          "event": "fixed",
+          "note": "db301f141 + 44b0f7c23: useSessionReady (лише authenticated) у всіх сесійних запитах, префетчі модулів і чеклісті хаба. Обхід 80 сторінок аноніма: 401 лише на /me (було 58 × billing/status, mono, silpo, preferences, chat/usage)."
+        }
+      ]
+    },
+    {
+      "id": "FULL-20261120-AI-1",
+      "legacyId": "ai-forget-by-text",
+      "title": "«Забудь факт X» у чаті не видаляв факт",
+      "severity": "major",
+      "source": "docs/work/specs/audits/verification/runs/full-2026-11-20/handoff.md",
+      "sourceAnchor": "AI-memory-coach-digest-vision",
+      "status": "fixed-pending-verification",
+      "history": [
+        {
+          "at": "2026-11-20",
+          "event": "observed",
+          "note": "forget приймає fact_id, модель шле текст факту; виконавець відповідав «не знайдено», факт лишався в user_profile (live, Pro)."
+        },
+        {
+          "at": "2026-11-20",
+          "event": "fixed",
+          "note": "5d878a0c3: запасний пошук за однозначним точним текстом. Live: «Забув факт…», у user_profile 1 → 0."
+        },
+        {
+          "at": "2026-11-20",
+          "event": "note",
+          "note": "При злитті з main фолбек за текстом знято: у main той самий дефект закрито інакше — forget видаляє лише за id і повертає моделі підказку «візьми id з my_profile» (стенд 2026-11-18). Рішення main не перебиваю; живий прогін версії main не робився."
+        }
+      ]
+    },
+    {
+      "id": "FULL-20261120-AI-2",
+      "legacyId": "ai-internal-ids-in-ui",
+      "title": "Діалог підтвердження і картки дій показують внутрішні id («transport», «TX: mx_…», «→ food»)",
+      "severity": "minor",
+      "source": "docs/work/specs/audits/verification/runs/full-2026-11-20/handoff.md",
+      "sourceAnchor": "AI-tool-safety-and-errors",
+      "status": "fixed-pending-verification",
+      "history": [
+        {
+          "at": "2026-11-20",
+          "event": "observed",
+          "note": "Підсумок create_transaction: «витрата 120 грн, transport»; картки hide/delete/change_category: «TX: mx_d028…»; split: «3 частин»."
+        },
+        {
+          "at": "2026-11-20",
+          "event": "fixed",
+          "note": "5d878a0c3: categoryLabelFor у підсумку й картках, без tx_id, pluralUa. Live: «витрата 64 грн, транспорт», у UI немає «TX: »."
+        },
+        {
+          "at": "2026-11-20",
+          "event": "note",
+          "note": "При злитті з main картки дій узято з main (підпис операції з результату виконавця, без id); з цього прогону лишився фікс діалогу підтвердження («транспорт» замість transport)."
+        }
+      ]
+    },
+    {
+      "id": "FULL-20261120-OBS-1",
+      "legacyId": "chat-rate-6-per-min",
+      "title": "Ліміт чату 6 запитів/хв: 3–4 дії з інструментом за хвилину дають 429",
+      "severity": "minor",
+      "source": "docs/work/specs/audits/verification/runs/full-2026-11-20/handoff.md",
+      "sourceAnchor": "AI-tool-safety-and-errors",
+      "status": "accepted",
+      "history": [
+        {
+          "at": "2026-11-20",
+          "event": "observed",
+          "note": "rateLimitExpress api:chat: 60 одиниць/хв, вартість 10, хід з інструментом = 2 запити. Повідомлення людяне («Забагато запитів. Спробуй через 12 секунд.»). Свідоме налаштування проти зловживань, лишено без змін."
+        }
+      ]
+    },
+    {
+      "id": "FULL-20261120-OBS-2",
+      "legacyId": "session-cookie-cache-window",
+      "title": "Стара сесійна кукі після виходу працює до 5 хв на кешованих роутах",
+      "severity": "minor",
+      "source": "docs/work/specs/audits/verification/runs/full-2026-11-20/handoff.md",
+      "sourceAnchor": "DATA-api-security-integrations",
+      "status": "accepted",
+      "history": [
+        {
+          "at": "2026-11-20",
+          "event": "observed",
+          "note": "cookieCache.maxAge 5 хв (ADR-0017): /me і sync/pull зі старою кукі → 200; експорт усіх даних (requireFreshSession) → 401. За дизайном."
+        }
+      ]
+    },
+    {
+      "id": "FULL-20261120-OBS-3",
+      "legacyId": "rare-blank-page-on-rapid-goto",
+      "title": "Рідкісна порожня сторінка з обірваними чанками при швидких повних навігаціях",
+      "severity": "minor",
+      "source": "docs/work/specs/audits/verification/runs/full-2026-11-20/handoff.md",
+      "sourceAnchor": "JRN-route-contract",
+      "status": "open",
+      "history": [
+        {
+          "at": "2026-11-20",
+          "event": "observed",
+          "note": "1 сторінка на ~80 у трьох обходах (різні маршрути, ERR_ABORTED чанків, #root порожній через 1.2 с після networkidle). Не відтворено: 0/88 у цільовій пробі, 0/160 у двох інструментованих обходах (жодного повторного load). Ймовірно, таймінг сервіс-воркера при навігаціях кожні ~2 с; реальні користувачі так не навігують."
+        }
+      ]
+    },
+    {
+      "id": "FULL-20261120-BUDGET-1",
+      "legacyId": "main-js-over-budget",
+      "title": "main перевищує стелю JS size-limit на 2.37 kB",
+      "severity": "minor",
+      "source": "docs/work/specs/audits/verification/runs/full-2026-11-20/handoff.md",
+      "sourceAnchor": "TECH-performance-budgets",
+      "status": "open",
+      "history": [
+        {
+          "at": "2026-11-20",
+          "event": "observed",
+          "note": "Окремий замір origin/main (20634aa28): 1 562 373 B brotli при стелі 1 560 000 B; гілка після злиття 1 562 974 B (+0.6 kB від фіксів). Eager у межах: 256.1 / 259 kB. Стелю не піднімав: рішення власника за правилом § Performance budgets."
+        }
+      ]
     }
   ]
 }

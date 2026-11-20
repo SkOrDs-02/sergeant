@@ -497,13 +497,52 @@ export function measureInPage(opts: MeasureOptions): PageMeasure {
     });
   }
 
+  /** Індикатор стану всередині контрола: `aria-hidden` бокс із власною
+   *  заливкою чи межею (квадрат-чекбокс у рядку списку, трек у обгортці).
+   *  `visualBox` його не бачить: 22px-квадрат у 44px hit-area — це 25%
+   *  площі, нижче його порогу 60%. */
+  function indicatorOf(el: Element): Element | null {
+    for (const d of Array.from(el.querySelectorAll("[aria-hidden='true']"))) {
+      if (!visible(d, 12, 12)) continue;
+      const cs = getComputedStyle(d);
+      if (parse(cs.backgroundColor).a > 0.05 || sideBorder(cs).w > 0) return d;
+    }
+    return null;
+  }
+
+  /** Неактивний (disabled) або прихований від користувача контрол.
+   *  WCAG 1.4.11 звільняє inactive-компоненти, а `inert`/`aria-hidden`
+   *  гілка — це згорнутий акордеон чи закрита панель: `visible()` її не
+   *  відсіює, бо дивиться на власний бокс, а не на кліп нульовим предком
+   *  (push-перемикач у згорнутій секції налаштувань, прогін
+   *  `full-2026-11-19`). Той самий пропуск disabled, що в кнопок нижче. */
+  function inactiveOrHidden(el: Element): boolean {
+    return (
+      (el as HTMLInputElement).disabled === true ||
+      el.getAttribute("aria-disabled") === "true" ||
+      el.closest("[inert],[aria-hidden='true']") !== null
+    );
+  }
+
   const TOGGLE_SEL =
     "[role=switch],input[type=checkbox],input[type=radio],[role=checkbox],[role=radio]";
   for (const el of Array.from(root.querySelectorAll(TOGGLE_SEL))) {
+    if (inactiveOrHidden(el)) continue;
     // Візуальний трек: сам елемент, якщо видимий, інакше сусідній бокс
     // (`sr-only` input + `label > span` трек у `Switch`).
     let box: Element | null = el;
     let r = visible(el, 8, 8);
+    if (r) {
+      // Видима, але «гола» обгортка (hit-area 44px без заливки й межі):
+      // міряємо індикатор усередині, а не порожню рамку навколо нього.
+      const own = boundaryOf(el);
+      const ind =
+        own.borderPx === 0 && own.fillRatio <= 1.02 ? indicatorOf(el) : null;
+      if (ind) {
+        box = ind;
+        r = visible(ind, 8, 8);
+      }
+    }
     if (!r || getComputedStyle(el).opacity === "0") {
       const label =
         (el as HTMLInputElement).labels?.[0] ?? el.nextElementSibling;
@@ -598,7 +637,17 @@ export function measureInPage(opts: MeasureOptions): PageMeasure {
         const sf = effBg(s, true);
         sibRatio = Math.max(sibRatio ?? 1, ratio(m.fill.c, sf.c));
       }
-      const best = Math.max(m.fillRatio, m.borderRatio ?? 1, sibRatio ?? 1);
+      // Стан, який показує індикатор (заповнений чекбокс у рядку), а не
+      // заливка всього рядка. Лише ЗАЛИВКА індикатора проти фону: межу
+      // має і невибраний квадрат, тож вона стану не розрізняє.
+      const ind = indicatorOf(el);
+      const indRatio = ind ? boundaryOf(ind).fillRatio : null;
+      const best = Math.max(
+        m.fillRatio,
+        m.borderRatio ?? 1,
+        sibRatio ?? 1,
+        indRatio ?? 1,
+      );
       bump("state");
       boundary.push({
         kind: "state",
@@ -610,6 +659,7 @@ export function measureInPage(opts: MeasureOptions): PageMeasure {
           fillRatio: r2(m.fillRatio),
           borderRatio: m.borderRatio === null ? null : r2(m.borderRatio),
           siblingRatio: sibRatio === null ? null : r2(sibRatio),
+          indicatorRatio: indRatio === null ? null : r2(indRatio),
           fill: hex(m.fill.c),
           parentBg: hex(m.outside.c),
         },

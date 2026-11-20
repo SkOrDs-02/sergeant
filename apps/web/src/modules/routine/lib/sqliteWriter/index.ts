@@ -1,4 +1,4 @@
-import type { RoutineState } from "@sergeant/routine-domain";
+import { ROUTINE_EVENT, type RoutineState } from "@sergeant/routine-domain";
 import type { SqliteMigrationClient } from "@sergeant/db-schema/migrate/sqlite";
 import type { DualWriteOutcome } from "@sergeant/dualwrite-core";
 import { logger as webLogger } from "@shared/lib";
@@ -25,6 +25,11 @@ import {
   beginRoutineLocalWrite,
   endRoutineLocalWrite,
 } from "../localWriteWindow.js";
+import {
+  refreshSqliteCompletions,
+  refreshSqliteRoutineState,
+} from "../sqliteReader.js";
+import { emitHubBus } from "@shared/lib/modules/hubBus";
 
 /**
  * Orchestrator for the routine dual-write layer.
@@ -328,12 +333,13 @@ function startRoutineRun(
   // стартує в цьому ж тіку, має вже бачити запис у польоті. Розбір —
   // `../localWriteWindow.ts`.
   beginRoutineLocalWrite();
+  let outcome: DualWriteOutcome | null = null;
   // Schedule on a microtask so a synchronous LS-side caller gets
   // control back before any async work begins.
   const task = Promise.resolve()
     .then(async () => {
       const outboxSettled = outboxCheckpoint();
-      const outcome = await runRoutineOps(ctx, ops, clientTs, next);
+      outcome = await runRoutineOps(ctx, ops, clientTs, next);
       recordDualWriteOutcome("routine", outcome);
       // «sqlite недоступна» лишає запис у журналі для наступного буту.
       // Рядок outbox, що ще не ліг, теж лишає запис (див. outboxCheckpoint).
@@ -350,8 +356,57 @@ function startRoutineRun(
     // дійшовши до логу.
     .finally(() => {
       endRoutineLocalWrite();
+    })
+    .then(() => {
+      // Реплей (`next === null`) — після закриття вікна, інакше гвард
+      // теплого кеша відкинув би це читання як причинно застаріле.
+      if (next === null && wroteRows(outcome)) {
+        return refreshAfterReplay(ctx);
+      }
+      return undefined;
     });
   inFlight = Promise.allSettled([inFlight, task]);
+}
+
+function wroteRows(outcome: DualWriteOutcome | null): boolean {
+  return outcome?.status === "applied" && outcome.result.applied > 0;
+}
+
+/**
+ * Перечитати кеш і сповістити екран після реплею журналу на старті.
+ *
+ * AI-CONTEXT (прогін `full-2026-11-19`): запис, чия сторінка померла до
+ * коміту в SQLite, доїжджає в базу реплеєм, але read-boot до того вже
+ * прогрів кеш порожнім знімком. Write-through-у в реплею немає, тож
+ * Рутина показувала «Звичок ще немає» до наступного перезавантаження. У
+ * залогіненого це маскував pull-refresh sync-рушія
+ * (`refreshCachesAfterPull`), а в аноніма рушія немає. Фінік, Їжа й Фізрук
+ * перечитують кеш після КОЖНОГО застосування; Рутина — лише тут, бо на
+ * звичайному шляху теплий кеш уже тримає оптимістичний стан.
+ */
+async function refreshAfterReplay(ctx: RoutineDualWriteContext): Promise<void> {
+  const userId = ctx.getUserId();
+  if (!userId) return;
+  try {
+    const client = await ctx.getMigrationClient();
+    if (!client) return;
+    await refreshSqliteRoutineState(client, userId);
+    await refreshSqliteCompletions(client, userId);
+  } catch (err) {
+    recordReadFallback(
+      "routine",
+      err instanceof Error
+        ? `replay-refresh-failed: ${err.message}`
+        : "replay-refresh-failed",
+    );
+    return;
+  }
+  try {
+    window.dispatchEvent(new CustomEvent(ROUTINE_EVENT));
+  } catch {
+    /* noop — без window (тести, воркер) сповіщати нікого */
+  }
+  emitHubBus("storageUpdated", undefined);
 }
 
 function logSafe(

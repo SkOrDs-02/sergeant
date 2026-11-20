@@ -35,11 +35,19 @@ const addHabit = settled(addHabitRaw);
 // хелпер знає лише інлайн-форму порожньої комори.
 const addPantryItem = settled(async (page: Page, title: string) => {
   await goto(page, "/nutrition/pantry");
-  const input = page.getByPlaceholder(/напр\. лосось/);
+  const input = page.getByPlaceholder("Продукт", { exact: true });
   const openSheet = page.getByRole("button", { name: "Додати продукти" });
   await expect(input.or(openSheet).first()).toBeVisible({ timeout: 30_000 });
-  if (!(await input.isVisible())) await openSheet.click();
+  // Аркуш відкривається з анімацією, а перший клік одразу після появи кнопки
+  // (ще до гідратації комори) інколи губився: поле так і не з'являлось, і
+  // заповнення летіло в нікуди (прогін `full-2026-11-19`, P4; окремо 5/5
+  // відкриттів, тож це таймінг харнесу, не продукт). Клік повторюємо.
+  await expect(async () => {
+    if (!(await input.isVisible())) await openSheet.click();
+    await expect(input).toBeVisible({ timeout: 2_000 });
+  }).toPass({ timeout: 20_000 });
   await input.fill(title);
+  await expect(input).toHaveValue(title);
   const add = page.getByRole("button", { name: "Додати", exact: true }).last();
   await expect(add).toBeEnabled();
   await add.click();
@@ -370,21 +378,14 @@ async function routineRestoresStatsTab(page: Page) {
   await goto(page, "/routine");
   await expect(page).toHaveURL(/\/routine\/stats/, { timeout: 30_000 });
 }
-// На /routine/habits кнопки рядка — «Деталі / Змінити / В архів / Видалити»
-// без назви звички, тож рядок шукаємо як найближчого предка з цими кнопками.
-function habitRowButton(page: Page, name: string, button: string) {
-  // Предки назви звички в порядку документа йдуть від зовнішнього до
-  // внутрішнього, тож `.last()` — найглибший, тобто сам рядок.
-  return page
-    .locator("div, li")
-    .filter({ has: page.getByText(name, { exact: true }) })
-    .filter({ has: page.getByRole("button", { name: button, exact: true }) })
-    .last()
-    .getByRole("button", { name: button, exact: true });
-}
 async function renameHabit(page: Page, from: string, to: string) {
   await goto(page, "/routine/habits");
-  await habitRowButton(page, from, "Змінити").click();
+  // Дії рядка тепер у меню «…» (`HabitListItem`), окремої кнопки «Змінити»
+  // в рядку немає — так само, як у `deleteHabit` нижче.
+  await page
+    .getByRole("button", { name: `Ще дії зі звичкою ${from}`, exact: true })
+    .click();
+  await page.getByRole("menuitem", { name: "Змінити" }).click();
   const edit = page.getByRole("dialog", { name: "Редагувати звичку" });
   await expect(edit).toBeVisible({ timeout: 10_000 });
   await edit.getByLabel("Назва звички").fill(to);

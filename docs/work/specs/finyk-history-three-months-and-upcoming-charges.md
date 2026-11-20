@@ -1,6 +1,6 @@
 # SPEC: Фінік — три місяці історії Monobank і дані рядка «спишеться»
 
-> **Last touched:** 2026-11-19 by @claude. **Next review:** 2027-07-14.
+> **Last touched:** 2026-11-20 by @claude. **Next review:** 2027-07-15.
 > **Status:** Active
 
 Пункти OD-26 Ф-3 (а) і Ф-4 (а) розбору

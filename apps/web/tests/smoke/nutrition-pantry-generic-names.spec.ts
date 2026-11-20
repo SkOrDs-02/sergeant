@@ -109,6 +109,25 @@ function summary(receiptId: string, purchasedAt: string, totalKop: number) {
  * розійтись.
  */
 async function mockSilpo(page: Page) {
+  // Підключене Сільпо буває лише із сесією: `useSilpoSyncState` питає стан
+  // тільки для `authenticated` (useSessionReady, FULL-20261119-PERF-1), тож
+  // мокаємо і `/me`, інакше кнопка «З покупок Сільпо» не зʼявиться.
+  await page.route("**/api/v1/me", (route) =>
+    route.fulfill({
+      status: 200,
+      contentType: "application/json",
+      body: JSON.stringify({
+        user: {
+          id: "demo-silpo-user",
+          email: "demo@example.com",
+          name: "Demo",
+          image: null,
+          emailVerified: true,
+          createdAt: "2026-08-01T00:00:00.000Z",
+        },
+      }),
+    }),
+  );
   await page.route("**/silpo/sync-state", (route) =>
     route.fulfill({
       status: 200,

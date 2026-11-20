@@ -140,9 +140,10 @@ export function SavingsAssetDetails({
             onChange={(e) => setRateDraft(e.target.value)}
             className="flex-1"
           />
+          {/* «Зберегти» — одна форма, суцільна чорнилом (гейт
+              `Button.saveRole.test.ts`). */}
           <Button
             size="sm"
-            variant="outline"
             disabled={!((parseDecimal(rateDraft) ?? 0) > 0)}
             onClick={() =>
               commit({

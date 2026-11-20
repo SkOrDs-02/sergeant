@@ -103,7 +103,21 @@ describe("summarizeDestructiveToolInput", () => {
         amount: 200,
         category: "food",
       }),
-    ).toBe("витрата 200 грн, food");
+    ).toBe("витрата 200 грн, продукти");
+    // Модель шле id категорії — у діалозі людська назва, не `transport`.
+    expect(
+      summarizeDestructiveToolInput("create_transaction", {
+        amount: 120,
+        category: "transport",
+      }),
+    ).toBe("витрата 120 грн, транспорт");
+    // Невідомий id (власна категорія) — як є.
+    expect(
+      summarizeDestructiveToolInput("create_transaction", {
+        amount: 50,
+        category: "Мій клуб",
+      }),
+    ).toBe("витрата 50 грн, Мій клуб");
     expect(
       summarizeDestructiveToolInput("create_transaction", {}),
     ).toBeUndefined();
