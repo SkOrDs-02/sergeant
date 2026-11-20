@@ -265,11 +265,36 @@ const VISION_CANDIDATES: Candidate[] = [
 ];
 
 /** Чек і виписка ходять на одній env-парі (`OPENROUTER_RECEIPT_MODEL`). */
-const RECEIPT_CANDIDATES: Candidate[] = prodRoutedCandidates(
-  receiptVisionViaOpenRouter() ? "openrouter" : "anthropic",
-  env.OPENROUTER_RECEIPT_MODEL,
-  RECEIPT_ANTHROPIC_FALLBACK_MODEL,
-);
+/**
+ * Колишній дефолт чеків лишається кандидатом для порівняння (рішення
+ * власника 2026-11-19 перевело шлях на Luna; база у зведенні — чинний
+ * прод-дефолт, див. `prodBaselineFor`).
+ */
+const RECEIPT_PREVIOUS_DEFAULT = "google/gemini-2.5-flash-lite";
+
+const RECEIPT_CANDIDATES: Candidate[] = [
+  ...prodRoutedCandidates(
+    receiptVisionViaOpenRouter() ? "openrouter" : "anthropic",
+    env.OPENROUTER_RECEIPT_MODEL,
+    RECEIPT_ANTHROPIC_FALLBACK_MODEL,
+  ),
+  ...(env.OPENROUTER_RECEIPT_MODEL === RECEIPT_PREVIOUS_DEFAULT
+    ? []
+    : [
+        {
+          provider: "openrouter" as const,
+          model: RECEIPT_PREVIOUS_DEFAULT,
+          label: "попередній дефолт чеків",
+        },
+      ]),
+];
+
+/** Чинний прод-дефолт шляху — база колонки «×база» у зведенні. */
+export function prodBaselineFor(path: string): string {
+  return path === "food"
+    ? env.OPENROUTER_VISION_MODEL
+    : env.OPENROUTER_RECEIPT_MODEL;
+}
 
 const analyzeShape = photoShape("analyze-photo", analyzePrompt);
 const refineShape = photoShape("refine-photo", refinePrompt);

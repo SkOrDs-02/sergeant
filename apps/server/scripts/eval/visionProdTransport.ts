@@ -13,11 +13,11 @@
  * `src/lib/evalVisionProdParity.test.ts`: він ловить, що прод передає в
  * `anthropicMessages`, і порівнює з білдерами нижче байт у байт.
  *
- * Відмінність від проду одна й навмисна: `firstTurnReasoningFields` для
- * кандидатів із `reasoning` (5-те поле `--extra`). Прод на зорових шляхах
- * глибину не шле взагалі; кандидат, якому без `none` міркування зʼїдають
- * `max_tokens`, у проді потребуватиме такого ж поля (це висновок заміру, а
- * не властивість стенду).
+ * Глибина міркувань: кандидат без `reasoning` отримує те саме поле, що
+ * поставив би прод (`ProdVisionShape.reasoningFields`; з 2026-11-19 чек і
+ * виписка шлють `thinking: {type: "disabled"}` за
+ * `RECEIPT_VISION_REASONING_EFFORT`, зір нутриції глибину не шле). Кандидат
+ * із `reasoning` (5-те поле `--extra`) перекриває це явним значенням.
  */
 
 import { env } from "../../src/env/env.js";
@@ -34,6 +34,7 @@ import {
   RECEIPT_VISION_SYSTEM_PROMPT,
 } from "../../src/modules/finyk/receipts/prompts.js";
 import { firstTurnReasoningFields } from "../../src/modules/chat/chatReasoning.js";
+import { receiptVisionReasoningFields } from "../../src/modules/finyk/receipts/visionTransport.js";
 import type { Candidate } from "./types.js";
 
 export interface VisionImage {
@@ -50,6 +51,8 @@ export interface ProdVisionShape {
   timeoutMs: number;
   /** `endpoint` метрик прода — для стенду з префіксом `internal/vision-eval/`. */
   prodEndpoint: string;
+  /** Поле глибини, яке прод додає в кінець тіла для цієї моделі. */
+  reasoningFields?: (model: string) => Record<string, unknown>;
 }
 
 /** `callReceiptVision` (`modules/finyk/receipts/visionClient.ts`). */
@@ -61,6 +64,7 @@ export function receiptShape(): ProdVisionShape {
     temperature: 0.1,
     timeoutMs: 20_000,
     prodEndpoint: "finyk-receipts-analyze",
+    reasoningFields: receiptVisionReasoningFields,
   };
 }
 
@@ -73,6 +77,7 @@ export function statementShape(todayKyiv: string): ProdVisionShape {
     temperature: 0.1,
     timeoutMs: 45_000,
     prodEndpoint: "finyk-import-screenshot-analyze",
+    reasoningFields: receiptVisionReasoningFields,
   };
 }
 
@@ -118,6 +123,32 @@ export function buildProdVisionPayload(
         ],
       },
     ],
+  };
+}
+
+/**
+ * Тіло стенда для кандидата: продове тіло плюс поле глибини. Без явного
+ * `reasoning` — рівно те, що додав би прод (тест паритету порівнює саме
+ * цю функцію з тілом, яке передає прод).
+ */
+export function benchVisionPayload(
+  candidate: Candidate,
+  shape: ProdVisionShape,
+  image: VisionImage,
+): Record<string, unknown> {
+  const reasoning =
+    candidate.provider !== "openrouter"
+      ? {}
+      : candidate.reasoning === undefined
+        ? (shape.reasoningFields?.(candidate.model) ?? {})
+        : candidate.reasoning === "minimal"
+          ? // Граматика та сама, що в першого ходу; `minimal` (gemini-3.5) у
+            // чатовий тип не входить, тож окремою гілкою.
+            { output_config: { effort: "minimal" } }
+          : firstTurnReasoningFields(candidate.reasoning);
+  return {
+    ...buildProdVisionPayload(candidate.model, shape, image),
+    ...reasoning,
   };
 }
 
@@ -179,16 +210,7 @@ export async function callProdVision(
   image: VisionImage,
   endpointTag: string,
 ): Promise<ProdVisionCall> {
-  const payload = {
-    ...buildProdVisionPayload(candidate.model, shape, image),
-    ...(candidate.provider !== "openrouter"
-      ? {}
-      : candidate.reasoning === "minimal"
-        ? // Граматика та сама, що в першого ходу; `minimal` (gemini-3.5) у
-          // чатовий тип не входить, тож окремою гілкою.
-          { output_config: { effort: "minimal" } }
-        : firstTurnReasoningFields(candidate.reasoning)),
-  };
+  const payload = benchVisionPayload(candidate, shape, image);
   const statuses: number[] = [];
   try {
     const { response, data } = await withAttemptTap(statuses, () =>

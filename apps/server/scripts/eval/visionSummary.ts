@@ -110,25 +110,29 @@ const fmtUsd = (v: number | null) => (v === null ? "—" : `$${v.toFixed(6)}`);
 
 export function pathSummaryMarkdown(
   results: RunResult[],
-  baselineModel: string,
+  baselineFor: (path: string) => string,
 ): string[] {
   const stats = pathStats(results);
   const lines = [
     "",
     "## Зведення по прод-шляхах",
     "",
-    "Пройдено — з тих, що відповіли. Вигадки — на кейсах-пастках «чесно відмовитись» (у дужках скільки таких відповідей). 429 і інші відмови — фінальні, після ретраїв `anthropicMessages`; «429 у ретраях» — проковтнуті ретраєм у відповідях, що дійшли. Вартість — середній `usage.cost` на виклик; ×база — відносно `" +
-      baselineModel +
-      "` на тому ж шляху.",
+    "Пройдено — з тих, що відповіли. Вигадки — на кейсах-пастках «чесно відмовитись» (у дужках скільки таких відповідей). 429 і інші відмови — фінальні, після ретраїв `anthropicMessages`; «429 у ретраях» — проковтнуті ретраєм у відповідях, що дійшли. Вартість — середній `usage.cost` на виклик; ×база — відносно бази шляху (за замовчуванням чинний прод-дефолт), назва бази — у підзаголовку.",
     "",
   ];
   for (const path of ["receipt", "statement", "food"]) {
     const rows = stats.filter((s) => s.path === path);
     if (rows.length === 0) continue;
+    const baselineModel = baselineFor(path);
+    // Ключ рядка несе глибину в дужках («openai/gpt-6-luna (none)»), тож
+    // базу шукаємо за самим id моделі.
     const base =
-      rows.find((r) => r.model === baselineModel)?.meanCostUsd ?? null;
+      rows.find((r) => r.model.split(" ")[0] === baselineModel)?.meanCostUsd ??
+      null;
     lines.push(
       `### ${PATH_LABEL[path] ?? path}`,
+      "",
+      `База: \`${baselineModel}\`.`,
       "",
       "| Модель | Пройдено | Вигадки | 429 | 402 (кредит) | Інші відмови | 429 у ретраях | Бите JSON | Обрізано | p50 / p95, мс | `usage.cost` | ×база | Постачальник |",
       "| --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |",

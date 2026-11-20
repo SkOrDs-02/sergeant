@@ -31,7 +31,8 @@
  *                                       # звіт зі збережених `--json-out` поточними
  *                                       # суддями, без мережі
  *   pnpm eval:vision -- --baseline=google/gemini-2.5-flash-lite
- *                                       # база для колонки «×база» у зведенні
+ *                                       # база «×база» для всіх шляхів; без прапорця —
+ *                                       # чинний прод-дефолт кожного шляху
  *
  * Код виходу: 0 завжди (це звіт, не гейт), 1 — помилка розбору аргументів.
  */
@@ -46,6 +47,7 @@ import { toMarkdown } from "./eval/report.js";
 import {
   VISION_PIPELINES,
   filterByModality,
+  prodBaselineFor,
   rejudgeVisionResult,
   runVisionOne,
   type ModalityFilter,
@@ -207,7 +209,7 @@ async function main(): Promise<void> {
     toMarkdown(results, pipelines, generatedAt),
     ...pathSummaryMarkdown(
       results,
-      values.baseline ?? "google/gemini-2.5-flash-lite",
+      (path) => values.baseline ?? prodBaselineFor(path),
     ),
     ...modalitySection(dropped, !dryRun),
     "",

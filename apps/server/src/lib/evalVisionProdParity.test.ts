@@ -39,7 +39,7 @@ import refinePhotoHandler from "../modules/nutrition/refine-photo.js";
 import { validateImageBase64 } from "./imageMagic.js";
 import { REFINE_INPUT, VISION_PIPELINES } from "../../scripts/eval/vision.js";
 import {
-  buildProdVisionPayload,
+  benchVisionPayload,
   receiptShape,
   statementShape,
   type ProdVisionShape,
@@ -78,7 +78,12 @@ function expectSameCall(
   image: { base64: string; mimeType: string },
 ) {
   const { payload, opts } = lastCall();
-  const bench = buildProdVisionPayload(String(payload["model"]), shape, image);
+  // Кандидат без явної глибини — рівно те, що стенд шле для прод-дефолту.
+  const bench = benchVisionPayload(
+    { provider: "openrouter", model: String(payload["model"]), label: "prod" },
+    shape,
+    image,
+  );
   // JSON-рядок, а не toEqual: порядок полів теж частина «того самого тіла».
   expect(JSON.stringify(payload)).toBe(JSON.stringify(bench));
   expect(opts["timeoutMs"]).toBe(shape.timeoutMs);
@@ -123,6 +128,20 @@ describe("зоровий стенд шле те саме тіло, що прод
     });
     expectSameCall(receiptShape(), image);
     expect(pipeline("receipt-scan").shape).toEqual(receiptShape());
+    // Рішення власника 2026-11-19: Luna без міркувань, і стенд шле те саме.
+    expect(lastCall().payload["model"]).toBe("openai/gpt-6-luna");
+    expect(lastCall().payload["thinking"]).toEqual({ type: "disabled" });
+  });
+
+  it("скан чека після відкату на модель з обовʼязковими міркуваннями — без поля", async () => {
+    mutableEnv["OPENROUTER_RECEIPT_MODEL"] = "google/gemini-3.5-flash-lite";
+    const image = fixtureImage(FIXTURE_FILES.receipt("cafe"));
+    await callReceiptVision({
+      base64: image.base64,
+      mediaType: image.mimeType,
+    });
+    expectSameCall(receiptShape(), image);
+    expect(lastCall().payload).not.toHaveProperty("thinking");
   });
 
   it("імпорт виписки — `callImportScreenshotVision` з тим самим якорем дати", async () => {

@@ -8,6 +8,7 @@ import { kyivDateString } from "../receipts/kyivClock.js";
 import { env } from "../../../env.js";
 import {
   receiptVisionModel,
+  receiptVisionReasoningFields,
   receiptVisionViaOpenRouter,
 } from "../receipts/visionTransport.js";
 import {
@@ -90,8 +91,9 @@ export async function callImportScreenshotVision(
   }
 
   const apiKey = env.ANTHROPIC_API_KEY;
+  const model = receiptVisionModel();
   const payload = {
-    model: receiptVisionModel(),
+    model,
     // 8000, не 2000 (бета-фідбек 2026-08-25 «не може знайти транзакції на
     // скріншоті»). Рядок цієї схеми — це 8 полів, серед них кириличний
     // `description`, який токенізується по 2-3 токени на слово: реально
@@ -125,6 +127,9 @@ export async function callImportScreenshotVision(
         ],
       },
     ],
+    // Та сама глибина, що в чека (одна env-пара); правило —
+    // `receipts/visionTransport.ts`.
+    ...receiptVisionReasoningFields(model),
   };
 
   const { response, data } = await anthropicMessages(apiKey, payload, {
