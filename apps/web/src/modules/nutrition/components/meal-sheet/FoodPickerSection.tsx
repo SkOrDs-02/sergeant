@@ -99,6 +99,19 @@ export interface PickedFood {
   imageUrl?: string | null;
 }
 
+/**
+ * Старт картки «скільки зʼїв» для продукту з пошуку чи блоку «Улюблені»:
+ * побутова порція корпусу (OD-27 Х-1 а) і вага на старті. Один шлях на
+ * обидва входи, тож картка поводиться однаково.
+ */
+export function startPickedFood(p: PickedFood): {
+  food: PickedFood;
+  grams: string;
+} {
+  const food = withHouseholdServing(p);
+  return { food, grams: String(Math.round(Number(food.defaultGrams) || 100)) };
+}
+
 interface FoodPickerSectionProps {
   foodQuery: string;
   setFoodQuery: Dispatch<SetStateAction<string>>;
@@ -184,9 +197,9 @@ export function FoodPickerSection({
                 externalSourceLabel={localSourceLabel(p)}
                 onPick={() => {
                   // Базовий продукт стартує з побутової порції (OD-27 Х-1 а).
-                  const food = withHouseholdServing(p);
-                  setPickedFood(food);
-                  setPickedGrams(String(Math.round(food.defaultGrams || 100)));
+                  const start = startPickedFood(p);
+                  setPickedFood(start.food);
+                  setPickedGrams(start.grams);
                   setFoodQuery("");
                 }}
               />
@@ -206,10 +219,9 @@ export function FoodPickerSection({
                     p={p}
                     externalSourceLabel={group.label}
                     onPick={() => {
-                      const food = withHouseholdServing(p as PickedFood);
-                      setPickedFood(food);
-                      const grams = Number(food.defaultGrams) || 100;
-                      setPickedGrams(String(Math.round(grams)));
+                      const start = startPickedFood(p as PickedFood);
+                      setPickedFood(start.food);
+                      setPickedGrams(start.grams);
                       setFoodQuery("");
                     }}
                   />

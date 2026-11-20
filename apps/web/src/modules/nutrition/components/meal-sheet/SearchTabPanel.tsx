@@ -39,7 +39,9 @@ import { Button } from "@shared/components/ui/Button";
 import { MyFoodsSheet } from "../MyFoodsSheet";
 import { CollapsibleSection } from "@shared/components/ui/CollapsibleSection";
 import { ADD_MEAL_SECTION_KEYS } from "./addMealSections";
-import { FoodPickerSection } from "./FoodPickerSection";
+import { FoodPickerSection, startPickedFood } from "./FoodPickerSection";
+import { FavoriteFoodsRow } from "./FavoriteFoodsRow";
+import { useFavoriteFoods } from "../../hooks/useFavoriteFoods";
 import { FromPantryRow } from "./FromPantryRow";
 import type { MealSourcePick } from "./useMealSourcePick";
 import { MealTemplatesRow } from "./MealTemplatesRow";
@@ -96,6 +98,10 @@ export function SearchTabPanel({
 }: SearchTabPanelProps) {
   const [myFoodsOpen, setMyFoodsOpen] = useState(false);
   const [recipeToLog, setRecipeToLog] = useState<SavedRecipe | null>(null);
+  // Х-3 (б): блок «Улюблені» лише до набору запиту; з запитом позначені
+  // й так стоять першими у видачі.
+  const queryEmpty = picker.foodQuery.trim() === "";
+  const favoriteFoods = useFavoriteFoods(favorites?.foodIds, queryEmpty);
   return (
     <>
       <FoodPickerSection {...picker} />
@@ -132,6 +138,17 @@ export function SearchTabPanel({
             }}
           />
         </CollapsibleSection>
+      )}
+
+      {queryEmpty && (
+        <FavoriteFoodsRow
+          foods={favoriteFoods}
+          onPick={(food) => {
+            const start = startPickedFood(food);
+            picker.setPickedFood(start.food);
+            picker.setPickedGrams(start.grams);
+          }}
+        />
       )}
 
       {onRecipeLogged && (
