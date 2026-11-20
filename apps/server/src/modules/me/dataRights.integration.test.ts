@@ -89,6 +89,28 @@ async function purgeUserData(
 
 const TEST_USER_ID = "user_datarights_int";
 const TEST_USER_EMAIL = `${TEST_USER_ID}@test.local`;
+// Тестовий пароль credential-акаунта (не секрет: існує лише в контейнері).
+const TEST_PASSWORD = "correct-horse-battery-staple";
+
+/**
+ * `DELETE /api/me` (sec-10) вимагає повторної автентифікації: пароль для
+ * акаунта з credential-входом. Сід кладе справжній хеш Better Auth
+ * (`ctx.password.hash`), тож роут проходить НАСПРАВДІ свою звірку
+ * (`verifyAccountPassword`) без жодного додаткового мока гварда. Без
+ * credential-акаунта роут вимагав би сесію ≤ 10 хв із БД, якої в цьому
+ * харнесі (мокнутий `getSessionUser`) немає.
+ */
+async function seedPasswordAccount(db: Pool): Promise<void> {
+  const { auth } = await import("../../auth.js");
+  const ctx = await auth.$context;
+  const hash = await ctx.password.hash(TEST_PASSWORD);
+  await db.query(`DELETE FROM account WHERE "userId" = $1`, [TEST_USER_ID]);
+  await db.query(
+    `INSERT INTO account (id, "accountId", "providerId", "userId", password)
+     VALUES ($1, $2, 'credential', $2, $3)`,
+    [`acc_${TEST_USER_ID}`, TEST_USER_ID, hash],
+  );
+}
 
 let app: Express | undefined;
 let pool: Pool | undefined;
@@ -160,10 +182,13 @@ describe("DELETE /api/me — GDPR account deletion + CASCADE", () => {
       [TEST_USER_ID],
     );
 
+    await seedPasswordAccount(pool);
+
     const res = await request(app)
       .delete("/api/me")
       .set(CSRF_HEADERS)
-      .set("Authorization", "Bearer test-bearer");
+      .set("Authorization", "Bearer test-bearer")
+      .send({ password: TEST_PASSWORD });
 
     expect(res.status).toBe(200);
     expect(res.body).toMatchObject({ ok: true });
@@ -243,10 +268,13 @@ describe("DELETE /api/me — GDPR account deletion + CASCADE", () => {
   it("a fresh login during the grace window is blocked by the pending-deletion gate", async (ctx) => {
     if (!dockerAvailable || !app || !pool) return ctx.skip();
 
+    await seedPasswordAccount(pool);
+
     const first = await request(app)
       .delete("/api/me")
       .set(CSRF_HEADERS)
-      .set("Authorization", "Bearer test-bearer");
+      .set("Authorization", "Bearer test-bearer")
+      .send({ password: TEST_PASSWORD });
     expect(first.status).toBe(200);
     expect(first.body.ok).toBe(true);
 
@@ -265,7 +293,8 @@ describe("DELETE /api/me — GDPR account deletion + CASCADE", () => {
     const second = await request(app)
       .delete("/api/me")
       .set(CSRF_HEADERS)
-      .set("Authorization", "Bearer test-bearer-relogin");
+      .set("Authorization", "Bearer test-bearer-relogin")
+      .send({ password: TEST_PASSWORD });
     expect(second.status).toBe(403);
     expect(second.body.code).toBe(ACCOUNT_PENDING_DELETION_CODE);
     expect(second.body.scheduledPurgeAt).toBe(first.body.scheduledPurgeAt);
@@ -282,6 +311,13 @@ describe("GET /api/me/export — GDPR data export", () => {
     await pool.query(
       `INSERT INTO routine_habits (user_id, name) VALUES ($1, 'Вода')`,
       [TEST_USER_ID],
+    );
+    // Аватар (ux-14) їде в експорт як base64, а не в `excluded`.
+    await pool.query(
+      `INSERT INTO user_avatars (user_id, content_type, data)
+       VALUES ($1, 'image/png', $2)
+       ON CONFLICT (user_id) DO UPDATE SET data = EXCLUDED.data`,
+      [TEST_USER_ID, Buffer.from("AVATAR-BYTES")],
     );
 
     const res = await request(app)
@@ -325,12 +361,15 @@ describe("GET /api/me/export — GDPR data export", () => {
       "aiUsage",
       "coachMemory",
       "nudgeCache",
-      "avatar",
       "authSessions",
       "billingProviderIds",
       "integrationSecrets",
       "serviceQueues",
     ]);
+    expect(res.body.data.avatar).toMatchObject({
+      mimeType: "image/png",
+      dataBase64: Buffer.from("AVATAR-BYTES").toString("base64"),
+    });
     expect(res.body.data.ai).toBeUndefined();
 
     const mono = res.body.data.mono;
