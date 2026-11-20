@@ -13,8 +13,10 @@
 import { useNutritionDualWriteBoot } from "./useNutritionDualWriteBoot";
 import { useNutritionSqliteReadBoot } from "./useNutritionSqliteReadBoot";
 import { useNutritionQuickStatsBoot } from "./useNutritionQuickStatsBoot";
+import { useOnboardingDoneOnRealEntry } from "../../../core/onboarding/useOnboardingDoneOnRealEntry";
 
 export default function NutritionBootCluster(): null {
+  useOnboardingDoneOnRealEntry("nutrition");
   useNutritionDualWriteBoot();
   useNutritionSqliteReadBoot();
   useNutritionQuickStatsBoot();
