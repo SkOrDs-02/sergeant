@@ -21,7 +21,7 @@ import {
   type AssertAiQuotaOptions,
   type QuotaBudget,
 } from "./aiQuotaBudget.js";
-import { consumeRoundTripTicket } from "./chatRoundTripTicket.js";
+import { tryConsumeRoundTripTicket } from "./chatRoundTripTicket.js";
 import {
   AI_QUOTA_ENDPOINT,
   WEEKLY_METERS,
@@ -290,41 +290,6 @@ function today(): string {
 
 function resetsAtIso(): string {
   return new Date(nextWeekStartKyivMs()).toISOString();
-}
-
-/**
- * Читає `round_trip_ticket` із сирого `req.body` (цей middleware стоїть ДО
- * `parseBody(ChatRequestSchema, …)` у `chat.ts`, той самий патерн, що
- * `resolvePresetBudget` уже використовує для `preset`) і намагається його
- * спожити для `userId`. `req.body` тут може бути `undefined` узагалі —
- * `requireAiQuota()` монтується і на роутах без tool-round-trip (`coach.ts`,
- * `nutrition.ts`), де поля просто нема.
- *
- * Увага (sec-03 / logic-02, аудит 2026-10-01): квиток погашається ЛИШЕ на
- * запиті форми «непорожні `tool_results` І `tool_calls_raw`». Без цього він
- * знімав списання з будь-якого запиту, а перший тур видає новий квиток на
- * кожну відповідь із `tool_calls`: виходив безкінечний ланцюжок безкоштовних
- * ходів повз тижневу квоту Free. Форма сама НЕ авторизація (її підробляє
- * клієнт, див. `chatRoundTripTicket.ts`): авторизує серверний квиток, а
- * форма лише звужує, де його можна витратити. Запит, оплачений квитком,
- * завжди йде гілкою синтезу `chat.ts`, яка нових квитків не видає. Квиток,
- * що не пройшов умову форми, НЕ споживається, а запит списується як звичайний.
- */
-function tryConsumeRoundTripTicket(req: Request, userId: string): boolean {
-  const body = req.body as
-    | {
-        round_trip_ticket?: unknown;
-        tool_results?: unknown;
-        tool_calls_raw?: unknown;
-      }
-    | undefined;
-  const raw = body?.round_trip_ticket;
-  if (typeof raw !== "string" || raw.length === 0) return false;
-  const nonEmpty = (v: unknown) => Array.isArray(v) && v.length > 0;
-  if (!nonEmpty(body?.tool_results) || !nonEmpty(body?.tool_calls_raw)) {
-    return false;
-  }
-  return consumeRoundTripTicket({ ticket: raw, userId });
 }
 
 /**

@@ -84,4 +84,64 @@ export const FOLLOW_UP_CASES: ToolCase[] = [
     accept: ["finish_workout"],
     expectArgs: { finish_workout: { workout_id: "w_mf3k51" } },
   },
+  // С-2 (б), другий раунд «пошук → запис» в одному повідомленні (спека
+  // `docs/work/specs/hubchat-second-tool-round.md`). Операцій немає в
+  // `DATA_BLOCK`, тож перший хід мусить шукати (`find_transaction` — єдиний
+  // інструмент, після якого прод дає другий раунд, `chatSecondRound.ts`), а
+  // другий бере id з результату пошуку. Формат результату — `formatTxList`
+  // виконавця `find_transaction`.
+  {
+    name: "другий раунд: пошук → зміна категорії",
+    user: "Покупку в Сільпо 22 липня на 412 грн перенеси в їжу поза домом",
+    accept: ["find_transaction"],
+    expectArgs: {
+      change_category: { tx_id: "tx_7c40", category_id: "cat_food_out" },
+    },
+    turns: [
+      {
+        result:
+          "Знайдено 1 операц.: tx_7c40: 2026-07-22 · 412 грн · Сільпо · Продукти",
+        accept: ["change_category"],
+      },
+    ],
+  },
+  {
+    name: "другий раунд: пошук → видалення ручного запису",
+    user: "Видали ручний запис про таксі на 230 грн за вчора, я його вніс помилково",
+    accept: ["find_transaction"],
+    expectArgs: { delete_transaction: { tx_id: "m_5d12" } },
+    turns: [
+      {
+        result:
+          "Знайдено 1 операц.: m_5d12: 2026-07-29 · 230 грн · таксі · вручну",
+        accept: ["delete_transaction"],
+      },
+    ],
+  },
+  {
+    name: "другий раунд: двозначний пошук → уточнення, не запис",
+    user: "Видали ту витрату на таксі, яку я вносив вручну цього тижня",
+    accept: ["find_transaction"],
+    turns: [
+      {
+        result:
+          "Знайдено 2 операц.: m_5d12: 2026-07-29 · 230 грн · таксі · вручну; m_5d31: 2026-07-27 · 180 грн · таксі · вручну",
+        accept: [],
+        expectNoWrite: true,
+      },
+    ],
+  },
+  {
+    name: "другий раунд: людина просила лише знайти → запису немає",
+    user: "Знайди мою покупку в Сільпо 22 липня",
+    accept: ["find_transaction"],
+    turns: [
+      {
+        result:
+          "Знайдено 1 операц.: tx_7c40: 2026-07-22 · 412 грн · Сільпо · Продукти",
+        accept: [],
+        expectNoWrite: true,
+      },
+    ],
+  },
 ];

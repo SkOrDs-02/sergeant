@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
-import { ApiError, chatApi, isApiError } from "@shared/api";
+import { chatApi, isApiError } from "@shared/api";
 import {
   createStreamedReply,
   requestFirstTurn,
@@ -8,7 +8,6 @@ import {
   withoutInterrupted,
 } from "./firstTurnStream";
 import { useToast } from "@shared/hooks/useToast";
-import { showUndoToast } from "@shared/lib/ui/undoToast";
 import { useOnlineStatus } from "@shared/hooks/useOnlineStatus";
 import { useRegisterDirtyState } from "@shared/hooks/useRegisterDirtyState";
 import { initialChatInput, useChatInputDraft } from "./chatInputDraft";
@@ -17,10 +16,7 @@ import { perfMark, perfEnd } from "@shared/lib/ui/perf";
 import {
   CONTEXT_TTL_MS,
   cancelIdle,
-  consumeHubChatSse,
-  friendlyApiError,
   friendlyChatError,
-  CHAT_RESPONSE_TOO_LONG_TEXT,
   getActiveModule,
   isHelpCommand,
   makeAssistantMsg,
@@ -33,11 +29,7 @@ import {
 import { buildContextMeasured } from "../../lib/hubChatContext";
 import { executeActions } from "../../lib/hubChatActions";
 import { logger } from "@shared/lib";
-import {
-  ANALYTICS_EVENTS,
-  getToolModule,
-  type ChatPreset,
-} from "@sergeant/shared";
+import { ANALYTICS_EVENTS, type ChatPreset } from "@sergeant/shared";
 import { trackEvent } from "../../observability/analytics";
 import { parseToolCalls } from "./toolCallSchema";
 import { SYNTHESIS_STEP_LABEL, describeToolStep } from "./chatProgress";
@@ -47,34 +39,25 @@ import {
   isAutoTtsEnabled,
 } from "./chatSendText";
 import { firstTurnEcho } from "./replayableToolBlocks";
+import { requestSynthesis } from "./synthesisRequest";
+import {
+  destructiveConfirmItems,
+  reportExecutedTools,
+  runSecondToolRound,
+} from "./secondToolRound";
 import { buildTurnCards, markCardsAfterFailedSynthesis } from "./turnCards";
 import { historyForServer, turnRefsField, withTurnRefs } from "./turnRefs";
-import { stripTechnicalIds } from "../../lib/chatDisplayText";
 import {
   useDestructiveConfirm,
   type UseDestructiveConfirmResult,
 } from "./useDestructiveConfirm";
-import { summarizeDestructiveToolInput } from "./destructiveConfirmSummary";
 import { VOICE_KEYWORDS, speak } from "../../lib/hubChatSpeech";
 import { setHubStreaming } from "../streamingStore";
 import { useFinykHubPreview } from "../useFinykHubPreview";
 import type { HubChatSession } from "../hubChatSessions";
 import { usePlan } from "../../billing/usePlan";
-import { requiresConfirmation } from "@sergeant/shared";
 
 type ChatMessage = HubChatSession["messages"][number];
-
-/**
- * Audit 03 F15 (perf): cap the accumulated assistant text length per stream.
- * `consumeHubChatSse` already bounds the raw transport (256 KB total / 8 KB
- * per line), but a runaway model can still legitimately stream many small
- * deltas — each `acc += delta` triggers a full `setMessages(... .map ...)`
- * rerender (chat list + markdown reparse). Beyond this many chars the answer
- * is no longer readable on a phone anyway, so we abort the controller and let
- * the friendly-error path surface "Відповідь занадто довга". A char is a cheap
- * proxy for bytes here — UTF-16 code units, ~256 KB worst case for BMP text.
- */
-const MAX_STREAM_CHARS = 256 * 1024;
 
 /**
  * Скільки ПОСЛІДОВНИХ відправок несуть preset, рахуючи seed-повідомлення.
@@ -484,41 +467,24 @@ export function useChatSend({
           // ПЕРЕД виконанням. Гейт стоїть тут, а не всередині хендлерів:
           // хендлери — чисті функції над сховищем, у них немає UI, і
           // підтвердження в кожному з них розповзлось би шістьма копіями.
-          const destructive = toolCalls.filter((tc) =>
-            requiresConfirmation(tc.name as string),
-          );
-          if (destructive.length > 0) {
-            const approved = await requestDestructiveConfirm(
-              destructive.map((tc) => {
-                const toolName = tc.name as string;
-                // `exactOptionalPropertyTypes` — `summary?: string` means
-                // "present and a string, or absent", never "present and
-                // `undefined`". Omit the key entirely for tools without a
-                // summary instead of assigning `undefined` to it.
-                const summary = summarizeDestructiveToolInput(
-                  toolName,
-                  tc.input as Record<string, unknown>,
-                );
-                return summary
-                  ? { name: toolName, summary }
-                  : { name: toolName };
-              }),
-            );
-            if (!approved) {
-              // Скасування — весь батч, а не лише деструктивна його
-              // частина. Часткове виконання лишило б стан, якого
-              // користувач не обмірковував: він відмовився від «видали
-              // й перепиши», а отримав би половину.
-              //
-              // Другий запит до моделі теж не робимо: `tool_calls_raw`
-              // йде лише в ньому, тож жоден `tool_use` не лишається без
-              // пари — протокол не ламається, а токени не палимо.
-              setTurnMessages((m) => [
-                ...m,
-                makeAssistantMsg(CANCELLED_BY_USER_TEXT),
-              ]);
-              return;
-            }
+          const confirmItems = destructiveConfirmItems(toolCalls);
+          if (
+            confirmItems.length > 0 &&
+            !(await requestDestructiveConfirm(confirmItems))
+          ) {
+            // Скасування — весь батч, а не лише деструктивна його
+            // частина. Часткове виконання лишило б стан, якого
+            // користувач не обмірковував: він відмовився від «видали
+            // й перепиши», а отримав би половину.
+            //
+            // Другий запит до моделі теж не робимо: `tool_calls_raw`
+            // йде лише в ньому, тож жоден `tool_use` не лишається без
+            // пари — протокол не ламається, а токени не палимо.
+            setTurnMessages((m) => [
+              ...m,
+              makeAssistantMsg(CANCELLED_BY_USER_TEXT),
+            ]);
+            return;
           }
 
           // С-1 (б): крок показуємо рівно на час виконання, не за таймером.
@@ -529,62 +495,23 @@ export function useChatSend({
           // Друга фаза: інструменти відпрацювали, далі модель пише відповідь.
           setStep(SYNTHESIS_STEP_LABEL);
 
-          // `hubchat_tool_invoked` — подія стояла в каталозі
-          // (`ANALYTICS_EVENTS`) із квітня, закріплена тестом, і НІХТО її не
-          // слав: панель tool-leaderboard у `hubchat.json` була порожня
-          // назавжди, а виглядала як «інструментами не користуються».
-          //
-          // Емітимо тут, а не в кожному хендлері: це єдина точка, крізь яку
-          // проходить кожен виконаний tool-call, тож розповзання на шість
-          // копій виключене — той самий аргумент, що для гейта підтверджень
-          // вище.
-          //
-          // `success` береться зі СТРУКТУРНОГО `ok`, а не з префікса тексту:
-          // рядок «Помилка виконання: …» — це копірайт, який колись
-          // перепишуть, і телеметрія тихо почала б рахувати провали успіхами.
-          for (const r of handlerResults) {
-            trackEvent(ANALYTICS_EVENTS.HUBCHAT_TOOL_INVOKED, {
-              tool: r.name,
-              module: getToolModule(r.name),
-              success: r.ok,
-              latency_ms: r.latencyMs,
-            });
-          }
+          // `hubchat_tool_invoked` і undo-тости мутаторів — одна точка для
+          // обох раундів (`secondToolRound.ts`).
+          reportExecutedTools(handlerResults, toast);
           const toolResults = toolCalls.map((tc, idx) => ({
             tool_use_id: tc.id,
             content: handlerResults[idx]?.result ?? "",
           }));
 
-          // Mutator handlers (`create_transaction`, `mark_habit_done`,
-          // `log_meal`, `create_habit`, …) return `{ undo }` alongside
-          // the textual result. Show the standard 5-second undo toast
-          // for each — `showUndoToast` returns its own timer
-          // (overlap-stack is acceptable: one tool-call covers 99 %
-          // of turns; in the rare 2-3 simultaneous mutations case the
-          // user sees one toast per change). Read-only handlers
-          // (search, totals, summaries) have no `undo` so no toast.
-          for (const hr of handlerResults) {
-            if (hr.undo) {
-              const undoFn = hr.undo;
-              showUndoToast(toast, {
-                // Результат пишеться для моделі й несе `(id:…)`; людині — без.
-                msg: stripTechnicalIds(hr.result),
-                onUndo: undoFn,
-              });
-            }
-          }
-
           // Картки для відомих tool-ів + текстовий фолбек для решти.
-          const { cards, uncardedText } = buildTurnCards(
+          let { cards, uncardedText } = buildTurnCards(
             toolCalls,
             handlerResults,
           );
           // Вступ моделі перед інструментом (стрім або `text` старого
           // сервера) стоїть над картками в тій самій бульбашці.
-          const prefix = toolTurnPrefix(
-            reply.text || data.text || "",
-            uncardedText,
-          );
+          const preamble = reply.text || data.text || "";
+          let prefix = toolTurnPrefix(preamble, uncardedText);
 
           const assistantId = reply.id ?? newMsgId();
           reply.put({
@@ -594,94 +521,95 @@ export function useChatSend({
             ...(cards.length > 0 ? { cards } : {}),
             ...turnRefsField(toolCalls, handlerResults),
           });
+          const patchTurn = (patch: Partial<ChatMessage>): void =>
+            setTurnMessages((m) =>
+              m.map((x) => (x.id === assistantId ? { ...x, ...patch } : x)),
+            );
 
           let followUpText = "";
           // Синтез (другий тур) міг упасти — тоді в бульбашці лежить текст
           // помилки, а не відповідь, і озвучувати його не треба.
           let synthesisFailed = false;
           try {
-            const res2 = await chatApi.stream(
+            const synthesisOpts = {
+              signal,
+              abort: () => ac.abort(),
+              onText: (acc: string) => patchTurn({ text: prefix + acc }),
+            };
+            // Той самий preset і на турі синтезу: інструкція має діяти й
+            // після `remember`, і цей запит теж має списатись із
+            // preset-відра, а не з денного.
+            const synthesisBase = {
+              context: contextRef.current.text || context,
+              messages: history,
+              stream: true,
+              ...(turnPreset ? { preset: turnPreset } : {}),
+            };
+            // Блоки першого туру і його квиток (`firstTurnEcho`): сервер
+            // приймає лише `tool_use`-подібні блоки (B32), а без квитка
+            // синтез списує другу одиницю квоти (AI-5).
+            const firstEcho = firstTurnEcho(data);
+            // `second_tool_round`: цей клієнт уміє прийняти виклики запису
+            // другого раунду замість тексту (С-2 (б)).
+            let outcome = await requestSynthesis(
               {
-                context: contextRef.current.text || context,
-                messages: history,
+                ...synthesisBase,
                 tool_results: toolResults,
-                // Сервер приймає в `tool_calls_raw` лише блоки
-                // `tool_use | server_tool_use | tool_search_tool_result`
-                // (B32: інакше клієнт може вписати довільний текст від імені
-                // асистента — єдиної ролі без огорожі). Модель же штатно
-                // повертає ще й `text`-преамбулу перед викликом інструмента,
-                // і досі ми відбивали `tool_calls_raw` назад ДОСЛІВНО.
-                //
-                // Тому фільтруємо тут, ТІЄЮ САМОЮ схемою, що валідує сервер —
-                // не власним списком типів, який мовчки розʼїхався б із
-                // серверним при наступній зміні. Преамбула не губиться для
-                // користувача: вона стоїть у бульбашці над картками (С-1 (а)).
-                // Разом із блоками їде квиток першого туру (`firstTurnEcho`):
-                // без нього синтез списує другу одиницю квоти (AI-5).
-                ...firstTurnEcho(data),
-                stream: true,
-                // Той самий preset і на турі синтезу: інструкція має діяти
-                // й після `remember`, і цей запит теж має списатись із
-                // preset-відра, а не з денного.
-                ...(turnPreset ? { preset: turnPreset } : {}),
+                ...firstEcho,
+                second_tool_round: true,
               },
-              { signal },
+              synthesisOpts,
             );
 
-            const ct = res2.headers.get("content-type") || "";
-            if (res2.ok && ct.includes("text/event-stream")) {
-              let acc = "";
-              await consumeHubChatSse(res2, (delta) => {
-                if (acc.length + delta.length > MAX_STREAM_CHARS) {
-                  // Abort the in-flight controller so the reader stops pulling
-                  // chunks, then throw — the surrounding catch renders the
-                  // friendly "Відповідь занадто довга" tail on this turn.
-                  ac.abort();
-                  throw new Error(CHAT_RESPONSE_TOO_LONG_TEXT);
-                }
-                acc += delta;
-                setTurnMessages((m) =>
-                  m.map((x) =>
-                    x.id === assistantId ? { ...x, text: prefix + acc } : x,
-                  ),
-                );
+            // С-2 (б): після пошуку сервер може повернути виклики запису
+            // другого раунду замість тексту. Стеля два раунди: синтез після
+            // них уже не повертає інструментів (`chatSecondRound.ts`).
+            if (outcome.kind === "tools") {
+              const second = await runSecondToolRound(outcome.data, {
+                confirm: requestDestructiveConfirm,
+                onExecuting: (names) => setStep(describeToolStep(names)),
               });
-              followUpText = acc;
-            } else {
-              const raw2 = await res2.text();
-              let data2 = {};
-              try {
-                data2 = raw2 ? JSON.parse(raw2) : {};
-              } catch {
-                data2 = { error: raw2 };
-              }
-              const parsed = data2 as {
-                error?: string;
-                text?: string;
-                code?: string;
-              };
-              if (!res2.ok)
-                throw new ApiError({
-                  kind: "http",
-                  message: friendlyApiError(
-                    res2.status,
-                    parsed?.error,
-                    parsed?.code,
+              if (second.kind === "cancelled") {
+                // Перший раунд лише шукав, тож справді нічого не змінено.
+                outcome = { kind: "text", text: CANCELLED_BY_USER_TEXT };
+                patchTurn({ text: prefix + CANCELLED_BY_USER_TEXT });
+              } else if (second.kind === "invalid") {
+                throw new Error("second-round tool_calls schema mismatch");
+              } else {
+                setStep(SYNTHESIS_STEP_LABEL);
+                reportExecutedTools(second.results, toast);
+                const more = buildTurnCards(second.toolCalls, second.results);
+                cards = [...cards, ...more.cards];
+                uncardedText = [uncardedText, more.uncardedText]
+                  .filter(Boolean)
+                  .join("\n\n");
+                prefix = toolTurnPrefix(preamble, uncardedText);
+                patchTurn({
+                  text: prefix,
+                  ...(cards.length > 0 ? { cards } : {}),
+                  ...turnRefsField(
+                    [...toolCalls, ...second.toolCalls],
+                    [...handlerResults, ...second.results],
                   ),
-                  status: res2.status,
-                  body: data2,
-                  bodyText: raw2,
-                  url: res2.url,
                 });
-              followUpText = parsed.text || "";
-              setTurnMessages((m) =>
-                m.map((x) =>
-                  x.id === assistantId
-                    ? { ...x, text: prefix + followUpText }
-                    : x,
-                ),
-              );
+                // Квиток другого раунду: хід коштує одну одиницю (AI-5).
+                outcome = await requestSynthesis(
+                  {
+                    ...synthesisBase,
+                    tool_results: [...toolResults, ...second.toolResults],
+                    tool_calls_raw: [
+                      ...(firstEcho.tool_calls_raw ?? []),
+                      ...second.replay,
+                    ],
+                    ...(second.ticket
+                      ? { round_trip_ticket: second.ticket }
+                      : {}),
+                  },
+                  synthesisOpts,
+                );
+              }
             }
+            followUpText = outcome.kind === "text" ? outcome.text : "";
           } catch (e2) {
             synthesisFailed = true;
             setTurnMessages((m) =>
