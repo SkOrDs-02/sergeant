@@ -1,0 +1,118 @@
+/** @status Active */
+
+/**
+ * Фінік: рахунки-активи поза Моно — депозит, ОВДП, фонд — і «Відкладено за
+ * місяць» (спека `docs/work/specs/finyk-savings-assets.md`).
+ *
+ * AI-CONTEXT: винесено з `uk.finyk.ts`, бо той стоїть під `max-lines: 600`
+ * (Hard Rule #18). Спредиться в `messages.finyk`; ключ верхнього рівня
+ * (`savingsAssets`) не повинен збігатися з ключами `uk.finyk.ts`.
+ */
+export const finykSavingsMessages = {
+  savingsAssets: {
+    nameAria: "Назва активу",
+    namePlaceholder: "Назва",
+    add: "Додати",
+    kindLabel: "Що це",
+    kinds: {
+      other: "Інше",
+      deposit: "Депозит",
+      ovdp: "ОВДП",
+      fund: "Фонд",
+    },
+    kindHints: {
+      other: "Готівка, крипта, авто: суму оновлюєш сам",
+      deposit: "Відсотки нараховуються самі за ставкою",
+      ovdp: "Вартість іде до номіналу, купони за графіком",
+      fund: "Скільки вклав і скільки коштує зараз",
+    },
+    currency: "Валюта",
+    fxRate: "Курс, ₴ за 1 {currency}",
+    fxRateHint: "Без курсу актив не входить у капітал. Оновлюй, коли хочеш.",
+    invested: "Скільки вклав",
+    investedOvdp: "Скільки заплатив",
+    date: "Дата внеску",
+    rate: "Ставка, % річних",
+    startDate: "Відсотки з",
+    endDate: "Кінець строку",
+    endDateEmpty: "Без кінця строку",
+    capitalization: "Куди йдуть відсотки",
+    capitalizationOptions: {
+      monthly: "Щомісяця до суми",
+      end: "До суми в кінці строку",
+      payout: "На картку",
+    },
+    taxPct: "Податок з доходу, %",
+    nominal: "Номінал однієї облігації",
+    count: "Скільки облігацій",
+    couponRate: "Купон, % річних",
+    couponsPerYear: "Виплат купона на рік",
+    maturityDate: "Дата погашення",
+    currentValue: "Скільки коштує зараз",
+    currentValueHint: "Необовʼязково, зі звіту фонду",
+    fillRequired: "Заповни назву, суму внеску і поля типу.",
+    investedLine: "Вкладено {invested} · {result} ({pct}%)",
+    investedOnly: "Вкладено {invested}",
+    fxLine: "≈ {uah} за курсом {rate} від {date}",
+    noFxLine: "Без курсу: не входить у капітал",
+    depositMeta: "{rate}% річних",
+    depositUntil: "{rate}% річних · до {date}",
+    ovdpMeta: "{count} шт · погашення {date}",
+    nextCoupon: "Наступний купон {date}",
+    matured: "Строк минув. Привʼяжи повернення або закрий актив.",
+    close: "Закрити актив",
+    closeAria: "Закрити актив «{name}»",
+    closedGroup: "Закриті ({n})",
+    journalToggle: "Історія ({n})",
+    journalToggleAria: "Історія активу «{name}»",
+    journalEmpty: "Подій ще немає",
+    eventTypes: {
+      contribution: "Внесок",
+      withdrawal: "Повернення",
+      income: "Дохід",
+      valuation: "Оцінка",
+    },
+    eventTypeLabel: "Що сталося",
+    eventAmount: "Сума",
+    eventDate: "Дата",
+    eventCount: "Облігацій, шт",
+    addEvent: "Записати",
+    deleteEventAria: "Видалити подію «{type}» від {date}",
+    linkedTx: "з операції",
+    rateUpdate: "Курс, ₴",
+    rateSave: "Оновити курс",
+  },
+  assetLink: {
+    title: "Відкладення",
+    actions: {
+      contribution: "Це внесок у…",
+      withdrawal: "Повернення з…",
+      income: "Дохід з…",
+    },
+    linked: {
+      contribution: "Внесок у «{name}»",
+      withdrawal: "Повернення з «{name}»",
+      income: "Дохід з «{name}»",
+      valuation: "Оцінка «{name}»",
+    },
+    hint: "Внесок і повернення не рахуються ні витратою, ні доходом. Дохід з активу рахується.",
+    unlink: "Відвʼязати",
+    pickAsset: "Актив",
+    amountIn: "Сума в {currency}",
+    count: "Облігацій, шт",
+    confirm: "Привʼязати",
+    cancel: "Не треба",
+  },
+  assetSuggestion: {
+    title: "Схоже на внесок у «{name}»",
+    accept: "Так, внесок",
+    reject: "Ні",
+    rejectAria: "Ні, «{tx}» не внесок у «{name}»",
+  },
+  monthlySaved: {
+    label: "Відкладено",
+    hint: "Внески в активи й банки мінус повернення за місяць",
+    jars: "Банки Monobank",
+    unconverted: "Без курсу не пораховано: {n}",
+  },
+} as const;

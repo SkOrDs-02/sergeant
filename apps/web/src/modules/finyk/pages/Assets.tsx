@@ -2,6 +2,7 @@ import { messages } from "@shared/i18n";
 import { useAssetsState, type AssetsProps } from "./useAssetsState";
 import { AssetsTxPickerView } from "./AssetsTxPickerView";
 import { AssetsTable } from "./AssetsTable";
+import { AssetsMonthlySaved } from "./AssetsMonthlySaved";
 
 export function Assets({
   mono,
@@ -47,6 +48,12 @@ export function Assets({
         <h1 className="text-style-headline text-text">
           {messages.finykRedesign.assetsTitle}
         </h1>
+        <AssetsMonthlySaved
+          manualAssets={state.manualAssets}
+          jars={state.jars}
+          transactions={state.transactions}
+          showBalance={state.showBalance}
+        />
         <AssetsTable state={state} />
       </div>
     </div>

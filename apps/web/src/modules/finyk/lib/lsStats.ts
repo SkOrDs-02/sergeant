@@ -1,3 +1,4 @@
+import { assetTransferTxIds } from "@sergeant/finyk-domain/domain/assets";
 /* eslint-disable sergeant-design/no-raw-storage-key --
    Cold-cache fallback читає retired finyk-ключі
    (finyk_hidden_txs / finyk_tx_cats / finyk_recv / finyk_excluded_stat_txs /
@@ -127,6 +128,11 @@ export function getFinykExcludedTxIdsFromStorage() {
     // Банк із дзеркала: пара «списання ↔ скасування» потребує обох ніг
     // (рішення власника 2026-10-01).
     transactions: getVisibleFinykMonoMirrorState().transactions,
+    // Внески й повернення рахунків-активів (спека finyk-savings-assets);
+    // активи живуть лише в SQLite-кеші, LS-ключ `finyk_assets` застарів.
+    assetTransferTxIds: assetTransferTxIds(
+      getCachedFinykSqliteState().manualAssets,
+    ),
   });
 }
 

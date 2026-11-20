@@ -19,10 +19,82 @@ export type { MonoAccount };
 export type AssetCurrency = "UAH" | "USD" | "EUR" | (string & {});
 
 /**
+ * Тип рахунку-активу поза Моно (спека `finyk-savings-assets.md`). Без
+ * `kind` (або `other`) актив поводиться як до спеки: вартість = `amount`.
+ */
+export type AssetKind = "deposit" | "ovdp" | "fund" | "other";
+
+/**
+ * Подія журналу активу. `contribution` / `withdrawal` — гроші в актив і
+ * назад (переказ у відкладення, не витрата й не дохід), `income` — виплачений
+ * дохід (купон, відсотки), `valuation` — оцінка «коштує на дату».
+ */
+export type AssetEventType =
+  "contribution" | "withdrawal" | "income" | "valuation";
+
+export interface AssetEvent {
+  id: string;
+  type: AssetEventType;
+  /** `YYYY-MM-DD` за годинником пристрою (ADR-0078). */
+  date: string;
+  /** Копійки/центи у валюті активу, ≥ 0. */
+  amountMinor: number;
+  /** Привʼязана банківська операція. */
+  txId?: string | undefined;
+  /** ОВДП: кількість облігацій у внеску (купівля) чи поверненні (продаж). */
+  count?: number | undefined;
+  /**
+   * `normalizeMerchantKey` опису привʼязаної операції: за ним Фінік
+   * пропонує привʼязати наступні операції тому ж отримувачу.
+   */
+  merchantKey?: string | undefined;
+}
+
+/** `monthly` — щомісячна капіталізація, `end` — у кінці строку, `payout` — виплата на картку. */
+export type DepositCapitalization = "monthly" | "end" | "payout";
+
+export interface DepositParams {
+  /** Річна ставка, %. */
+  ratePct: number;
+  /** `YYYY-MM-DD`: з цієї дати нараховуються відсотки. */
+  startDate: string;
+  /** `YYYY-MM-DD` кінця строку; без неї — безстроковий. */
+  endDate?: string | null | undefined;
+  capitalization: DepositCapitalization;
+  /** Податок на відсотки, %. */
+  taxPct: number;
+}
+
+export interface OvdpParams {
+  /** Номінал однієї облігації, копійки/центи. */
+  nominalMinor: number;
+  /** Річна купонна ставка, %. */
+  couponRatePct: number;
+  /** Купонних виплат на рік. */
+  couponsPerYear: number;
+  /** `YYYY-MM-DD` погашення. */
+  maturityDate: string;
+  /** Податок на купон, %. */
+  taxPct: number;
+}
+
+/** Курс, який користувач вводить сам: гривень за одиницю валюти активу. */
+export interface AssetFxRate {
+  uahPerUnit: number;
+  /** `YYYY-MM-DD`, від якої дати курс. */
+  asOf: string;
+}
+
+/**
  * User-added "manual" asset row rendered in the Assets page.
  * The canonical persisted shape (keys match `finyk_assets` localStorage /
  * MMKV entries). `amount` is in major units (UAH, not копійки) so it
  * lines up with how the Assets UI reads it.
+ *
+ * Поля після `currency` — рахунки-активи (спека `finyk-savings-assets.md`).
+ * Синкаються як частина `finyk_assets.data_json` без міграції. Для актива
+ * з `kind` писач тримає в `amount` вартість на момент запису (у валюті
+ * активу, основні одиниці), щоб старий клієнт показав осмислене число.
  */
 export interface ManualAsset {
   id: string;
@@ -30,6 +102,14 @@ export interface ManualAsset {
   emoji?: string;
   amount: number;
   currency: AssetCurrency;
+  kind?: AssetKind | undefined;
+  events?: readonly AssetEvent[] | undefined;
+  deposit?: DepositParams | undefined;
+  ovdp?: OvdpParams | undefined;
+  fxRate?: AssetFxRate | null | undefined;
+  /** Закритий актив не входить у капітал і «Відкладено за місяць». */
+  status?: "active" | "closed" | undefined;
+  closedAt?: string | null | undefined;
 }
 
 /**
@@ -107,4 +187,9 @@ export interface AssetsSummaryInput {
   jars?: readonly MonoJarLike[] | undefined;
   /** Баланс «Готівки на руках» у копійках; `null`, коли рахунку немає. */
   cashOnHandMinor?: number | null | undefined;
+  /**
+   * `YYYY-MM-DD`, на яку рахується вартість активів із типом. Без неї —
+   * сьогодні за годинником пристрою.
+   */
+  today?: string | undefined;
 }

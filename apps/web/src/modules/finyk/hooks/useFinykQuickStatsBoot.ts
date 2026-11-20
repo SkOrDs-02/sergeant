@@ -1,6 +1,7 @@
 import { useEffect } from "react";
 import { useKyivDayNow } from "@shared/hooks/useKyivDayNow";
 import { buildFinykExcludedTxIds } from "@sergeant/finyk-domain";
+import { assetTransferTxIds } from "@sergeant/finyk-domain/domain/assets";
 import { manualExpenseToTransaction } from "@sergeant/finyk-domain/domain/transactions";
 import { getLimitBudgets } from "@sergeant/finyk-domain/domain/budget";
 import { useFinykMonoMirrorTick } from "../lib/monoMirrorGate";
@@ -44,6 +45,7 @@ export function useFinykQuickStatsBoot(): void {
       // Банк теж: пари «списання ↔ скасування» ловляться лише коли обидві
       // ноги у вході (рішення власника 2026-10-01).
       transactions: [...manualTxs, ...mono.transactions],
+      assetTransferTxIds: assetTransferTxIds(storage.manualAssets),
     });
 
     writeFinykQuickStatsSnapshot({

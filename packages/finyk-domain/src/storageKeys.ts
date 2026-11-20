@@ -110,3 +110,11 @@ export const FINYK_TRANSFER_SUGGESTION_SNOOZED_KEY =
  */
 export const FINYK_TRANSFER_SUGGESTION_REJECTED_TX_KEY =
   "finyk_transfer_suggestion_rejected_tx_v1";
+
+/**
+ * Id операцій, на пропозицію «Схоже на внесок у …» про які відповіли «Ні»
+ * (спека `finyk-savings-assets.md`). Device-local, той самий мотив, що в
+ * {@link FINYK_TRANSFER_SUGGESTION_REJECTED_TX_KEY}.
+ */
+export const FINYK_ASSET_LINK_SUGGESTION_REJECTED_TX_KEY =
+  "finyk_asset_link_suggestion_rejected_tx_v1";

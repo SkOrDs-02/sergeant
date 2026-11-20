@@ -4351,6 +4351,13 @@
       "canonical_owner": "docs/work/specs/finyk-operations-filters.md"
     },
     {
+      "old_path": null,
+      "new_path": "docs/work/specs/finyk-savings-assets.md",
+      "action": "keep",
+      "genre": "active-work",
+      "canonical_owner": "docs/work/specs/finyk-savings-assets.md"
+    },
+    {
       "old_path": "docs/work/specs/finyk-unified-category-catalog.md",
       "new_path": "docs/work/specs/finyk-unified-category-catalog.md",
       "action": "keep",
@@ -4449,7 +4456,7 @@
       "canonical_owner": "docs/work/specs/hub-newcomer-card-and-insights.md"
     },
     {
-      "old_path": null,
+      "old_path": "docs/work/specs/hub-quick-expense-action.md",
       "new_path": "docs/work/specs/hub-quick-expense-action.md",
       "action": "keep",
       "genre": "active-work",
@@ -4470,7 +4477,7 @@
       "canonical_owner": "docs/work/specs/hubchat-first-turn-stream.md"
     },
     {
-      "old_path": null,
+      "old_path": "docs/work/specs/hubchat-second-tool-round.md",
       "new_path": "docs/work/specs/hubchat-second-tool-round.md",
       "action": "keep",
       "genre": "active-work",

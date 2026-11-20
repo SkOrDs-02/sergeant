@@ -1,4 +1,4 @@
-import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
+import { afterEach, describe, expect, it, vi } from "vitest";
 
 const indexMocks = vi.hoisted(() => ({
   assertStartupEnv: vi.fn(),
@@ -23,9 +23,6 @@ const indexMocks = vi.hoisted(() => ({
   startMemoryIngestWorker: vi.fn(),
   logArchiveStart: vi.fn(),
   logArchiveStop: vi.fn(async () => undefined),
-  releaseStartupFatalHandler: vi.fn(),
-  syncOpLogRetentionStart: vi.fn(),
-  syncOpLogRetentionStop: vi.fn(async () => undefined),
   webhookRetentionStart: vi.fn(),
   webhookRetentionStop: vi.fn(async () => undefined),
   loggerInfo: vi.fn(),
@@ -56,13 +53,6 @@ const indexMocks = vi.hoisted(() => ({
   },
 }));
 
-// Обробник фатальної помилки старту (`startupFatal.ts`, свій тест) реєструє
-// `uncaughtException` першим. Справжній модуль тут підсунув би його замість
-// штатного обробника `index.ts`: `find` нижче бере перший зареєстрований, а
-// той виходить лише через 2 с і ставить `process.exitCode = 1` воркеру тестів.
-vi.mock("./startupFatal.js", () => ({
-  releaseStartupFatalHandler: indexMocks.releaseStartupFatalHandler,
-}));
 vi.mock("./obs/tracing.js", () => ({}));
 vi.mock("./sentry.js", () => ({
   Sentry: { flush: indexMocks.sentryFlush },
@@ -159,38 +149,19 @@ vi.mock("./modules/logRetention/archivePoller.js", () => ({
     this.stop = indexMocks.logArchiveStop;
   }),
 }));
-// Полери чистки `applied`-оп-ів і `n8n_webhook_events` імпортуються
-// справжніми (як `PlataSyncPoller`, `GdprCleanupPoller`): моку модуля не
-// треба, досить підмінити `start`/`stop` на прототипі. Підміна стоїть до
-// `import("./index.js")` і не дає справжнім `start` завести таймери чи
-// стартовий тік у фейковий пул. Модулі тягнемо після `vi.resetModules()`,
-// тож це той самий екземпляр класу, який отримає `index.ts`.
-async function stubRetentionPollers(): Promise<void> {
-  const { SyncOpLogAppliedRetentionPoller } =
-    await import("./modules/logRetention/syncOpLogAppliedRetention.js");
-  const { WebhookEventsRetentionPoller } =
-    await import("./modules/webhooks/retentionPoller.js");
-  vi.spyOn(
-    SyncOpLogAppliedRetentionPoller.prototype,
-    "start",
-  ).mockImplementation(indexMocks.syncOpLogRetentionStart);
-  vi.spyOn(
-    SyncOpLogAppliedRetentionPoller.prototype,
-    "stop",
-  ).mockImplementation(indexMocks.syncOpLogRetentionStop);
-  vi.spyOn(WebhookEventsRetentionPoller.prototype, "start").mockImplementation(
-    indexMocks.webhookRetentionStart,
-  );
-  vi.spyOn(WebhookEventsRetentionPoller.prototype, "stop").mockImplementation(
-    indexMocks.webhookRetentionStop,
-  );
-}
+vi.mock("./modules/webhooks/retentionPoller.js", () => ({
+  WebhookEventsRetentionPoller: vi.fn(
+    function WebhookEventsRetentionPoller(this: {
+      start: () => void;
+      stop: () => Promise<void>;
+    }) {
+      this.start = indexMocks.webhookRetentionStart;
+      this.stop = indexMocks.webhookRetentionStop;
+    },
+  ),
+}));
 
 describe("server entrypoint", () => {
-  beforeEach(async () => {
-    await stubRetentionPollers();
-  });
-
   afterEach(() => {
     vi.clearAllMocks();
     Object.assign(indexMocks.env, {
@@ -239,7 +210,6 @@ describe("server entrypoint", () => {
     expect(indexMocks.startMemoryIngestWorker).toHaveBeenCalledOnce();
     expect(indexMocks.webhookRetentionStart).toHaveBeenCalledOnce();
     expect(indexMocks.logArchiveStart).toHaveBeenCalledOnce();
-    expect(indexMocks.syncOpLogRetentionStart).toHaveBeenCalledOnce();
     expect(indexMocks.listen).toHaveBeenCalledWith(
       3000,
       "0.0.0.0",
@@ -326,7 +296,6 @@ describe("server entrypoint", () => {
     expect(mccStop).toHaveBeenCalledOnce();
     expect(indexMocks.webhookRetentionStop).toHaveBeenCalledOnce();
     expect(indexMocks.logArchiveStop).toHaveBeenCalledOnce();
-    expect(indexMocks.syncOpLogRetentionStop).toHaveBeenCalledOnce();
     expect(indexMocks.anthropicBudgetGuardStop).toHaveBeenCalledOnce();
     expect(indexMocks.endPoolWithAbortTimeout).toHaveBeenCalledOnce();
     expect(indexMocks.disconnectRedis).toHaveBeenCalledOnce();
@@ -406,9 +375,16 @@ describe("server entrypoint", () => {
     const unhandled = indexMocks.processOn.mock.calls.find(
       ([event]) => event === "unhandledRejection",
     )?.[1] as ((reason: unknown) => void) | undefined;
-    const uncaught = indexMocks.processOn.mock.calls.find(
+    // Обробників `uncaughtException` два: спершу ставить свій
+    // `startupFatal.ts` (#1706, виходить лише через 2 с), потім `index.ts`
+    // знімає його й ставить штатний. Перевіряємо штатний — останній.
+    // Без нового `vi.mock`: файл на стелі гейту `check-vi-mock-cap`.
+    const uncaughtCalls = indexMocks.processOn.mock.calls.filter(
       ([event]) => event === "uncaughtException",
-    )?.[1] as ((error: Error) => void) | undefined;
+    );
+    expect(uncaughtCalls).toHaveLength(2);
+    const uncaught = uncaughtCalls[uncaughtCalls.length - 1]?.[1] as
+      ((error: Error) => void) | undefined;
 
     unhandled?.(new Error("promise boom"));
     expect(indexMocks.loggerError).toHaveBeenCalledWith({
@@ -424,17 +400,5 @@ describe("server entrypoint", () => {
       msg: "uncaught_exception",
       err: { message: "Error: crash" },
     });
-    // Обробник старту знято до реєстрації штатного (інакше обидва ловили б
-    // той самий виняток).
-    expect(indexMocks.releaseStartupFatalHandler).toHaveBeenCalledOnce();
-    expect(
-      indexMocks.releaseStartupFatalHandler.mock.invocationCallOrder[0],
-    ).toBeLessThan(
-      indexMocks.processOn.mock.invocationCallOrder[
-        indexMocks.processOn.mock.calls.findIndex(
-          ([event]) => event === "uncaughtException",
-        )
-      ]!,
-    );
   });
 });
