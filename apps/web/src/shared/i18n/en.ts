@@ -332,6 +332,8 @@ export const messagesEn: Partial<{
       left: "left",
       over: "over",
       noPlan: "no monthly plan",
+      addExpense: "Expense",
+      addExpenseAria: "Add expense",
     },
     daySummary: {
       now: "now",

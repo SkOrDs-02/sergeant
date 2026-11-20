@@ -13,7 +13,10 @@ import { useMinuteNow } from "@shared/hooks/useMinuteNow";
  */
 import { useMemo } from "react";
 import { STORAGE_KEYS, formatNumberUk } from "@sergeant/shared";
+import { Button } from "@shared/components/ui/Button";
 import { Card } from "@shared/components/ui/Card";
+import { Icon } from "@shared/components/ui/Icon";
+import { openHubModuleWithAction } from "@shared/lib/modules/hubNav";
 import { safeReadStringLS } from "@shared/lib/storage/storage";
 import { getKyivDateParts } from "@shared/lib/time/kyivTime";
 import { coreMessages } from "@shared/i18n/uk.core";
@@ -95,19 +98,36 @@ export function HubSpendHero({ storageBump }: HubSpendHeroProps) {
             : `${t.plan} ${formatAmount(view.dayPlan)}`}
         </span>
       </div>
-      <p className="mt-1.5 text-style-display tnum text-text">
-        {formatAmount(view.todaySpent)}{" "}
-        <span
-          className={cn(
-            "text-style-label-lg font-medium tracking-normal",
-            left !== null && left < 0 ? "text-danger-strong" : "text-muted",
-          )}
+      <div className="mt-1.5 flex items-center justify-between gap-2">
+        <p className="min-w-0 text-style-display tnum text-text">
+          {formatAmount(view.todaySpent)}{" "}
+          <span
+            className={cn(
+              "text-style-label-lg font-medium tracking-normal",
+              left !== null && left < 0 ? "text-danger-strong" : "text-muted",
+            )}
+          >
+            ₴
+            {left !== null &&
+              ` · ${left < 0 ? t.over : t.left} ${formatAmount(Math.abs(left))}`}
+          </span>
+        </p>
+        {/* Тиха дія (рішення власника 2026-11-19): той самий інтент, що пошук
+            «Додати витрату» і клавіша N; форма відкривається в Фініку. */}
+        <Button
+          variant="ghost"
+          tone="finyk"
+          size="sm"
+          className="-mr-2 shrink-0 pointer-coarse:min-h-[44px] pointer-coarse:min-w-[44px]"
+          aria-label={t.addExpenseAria}
+          onClick={() =>
+            openHubModuleWithAction("finyk", "add_expense", "hub_dashboard")
+          }
         >
-          ₴
-          {left !== null &&
-            ` · ${left < 0 ? t.over : t.left} ${formatAmount(Math.abs(left))}`}
-        </span>
-      </p>
+          <Icon name="plus" size="sm" aria-hidden />
+          {t.addExpense}
+        </Button>
+      </div>
       <svg
         width="100%"
         height={LINE_H}
