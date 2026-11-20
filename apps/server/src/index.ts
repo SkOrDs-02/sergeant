@@ -83,6 +83,7 @@ import {
 } from "./obs/securityEventsRoom.js";
 import { LogArchivePoller } from "./modules/logRetention/archivePoller.js";
 import { SyncOpLogAppliedRetentionPoller } from "./modules/logRetention/syncOpLogAppliedRetention.js";
+import { closeAllSyncV2Streams } from "./modules/sync/syncV2Stream.js";
 import { WebhookEventsRetentionPoller } from "./modules/webhooks/retentionPoller.js";
 import { PlataSyncPoller } from "./modules/billing/plataSync.js";
 import { SupersedeRetryPoller } from "./modules/billing/supersedeRetryPoller.js";
@@ -524,6 +525,10 @@ async function shutdown(reason: string, exitCode: number): Promise<void> {
           resolve();
         }, graceMs);
         graceTimer.unref();
+
+        // SSE-стріми синку - довгі запити, і `close()` чекав би на них до
+        // кінця grace. Закриваємо їх штатно (кадр `closed`), до `close()`.
+        closeAllSyncV2Streams("shutdown");
 
         server.close((err) => {
           clearTimeout(graceTimer);
