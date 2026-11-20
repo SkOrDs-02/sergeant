@@ -188,14 +188,21 @@ export function useFizrukProgramStart({
             musclesSecondary: ex?.muscles?.secondary || [],
             measure,
             type,
-            // План сесії як порожні рядки (П-9, OD-32): лічильник одразу
-            // «0 з N», зарахованим рядок стає лише з лічильною величиною
-            // (повтори, секунди, метри). Утримання — N рядків секунд
-            // (плейсхолдер — діапазон плану в рядку), кардіо — один рядок
-            // (спека типу виміру, зріз 4).
+            // План сесії (П-9, OD-32): лічильник одразу «0 з N». Утримання —
+            // N рядків секунд, кардіо — один рядок (спека типу виміру,
+            // зріз 4).
+            // Рядки несуть значення плану з `done: false` (дефолт П-Фз3-5
+            // (А) від 2026-11-19, спека fizruk-set-done-flag-and-set-type):
+            // «0 з N» лишається, ✓ зараховує рядок як є. Кардіо — один
+            // порожній рядок, як і раніше.
             sets: buildPlannedSets(
               isStrength || plan.kind === "time" ? plan.sets : 1,
               suggestedWeight,
+              plan.kind === "time"
+                ? { durationSec: plan.secMin }
+                : isStrength
+                  ? { reps: plan.repsMin }
+                  : undefined,
             ),
             durationSec: 0,
             ...(type === "distance" ? { distanceM: 0 } : {}),

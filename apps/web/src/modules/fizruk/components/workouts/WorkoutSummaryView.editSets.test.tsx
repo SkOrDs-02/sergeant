@@ -199,4 +199,63 @@ describe("WorkoutSummaryView — правка підходів завершен�
     render(<Harness initial={makeWorkout([cardio])} />);
     expect(screen.queryByRole("button", { name: /Виправити/ })).toBeNull();
   });
+
+  it("розминка виходить із «Підходів»; тип виправляється тапом по номеру", () => {
+    render(
+      <Harness
+        initial={makeWorkout([
+          bench([
+            { weightKg: 40, reps: 10, done: true },
+            { weightKg: 80, reps: 8, done: true },
+          ]),
+        ])}
+      />,
+    );
+    expect(tileValue("Підходів")).toBe("2");
+    fireEvent.click(screen.getByRole("button", { name: /Виправити підходи/ }));
+    fireEvent.click(
+      screen.getByRole("button", { name: "Підхід 1, звичайний: змінити тип" }),
+    );
+    fireEvent.click(screen.getByRole("button", { name: "Розминка" }));
+
+    expect(latest?.items[0]?.sets?.[0]).toEqual({
+      weightKg: 40,
+      reps: 10,
+      done: true,
+      setType: "warmup",
+    });
+    // Рішення власника 2026-11-19 (П-Фз3-1): розминка поза зарахованими.
+    expect(tileValue("Підходів")).toBe("1");
+    // Правка значень зберігає і прапорець, і тип.
+    const reps = screen.getAllByLabelText(/повтор/i);
+    fireEvent.change(reps[0]!, { target: { value: "12" } });
+    expect(latest?.items[0]?.sets?.[0]).toMatchObject({
+      reps: 12,
+      done: true,
+      setType: "warmup",
+    });
+  });
+
+  it("незроблений рядок плану (done: false) зараховується, коли вписано повтори", () => {
+    render(
+      <Harness
+        initial={makeWorkout([
+          bench([
+            { weightKg: 80, reps: 8, done: true },
+            { weightKg: 80, reps: 0, done: false },
+          ]),
+        ])}
+      />,
+    );
+    expect(tileValue("Підходів")).toBe("1");
+    fireEvent.click(screen.getByRole("button", { name: /Виправити підходи/ }));
+    const reps = screen.getAllByLabelText(/повтор/i);
+    fireEvent.change(reps[1]!, { target: { value: "6" } });
+    expect(latest?.items[0]?.sets?.[1]).toEqual({
+      weightKg: 80,
+      reps: 6,
+      done: true,
+    });
+    expect(tileValue("Підходів")).toBe("2");
+  });
 });

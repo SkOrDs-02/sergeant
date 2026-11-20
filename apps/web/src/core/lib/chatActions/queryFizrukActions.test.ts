@@ -38,7 +38,7 @@ function call(action: ChatAction): string {
 function item(
   nameUk: string,
   primary: string[],
-  sets: Array<{ weightKg: number; reps: number }>,
+  sets: Array<{ weightKg: number; reps: number; done?: boolean }>,
 ) {
   return {
     id: `it_${nameUk}`,
@@ -183,6 +183,38 @@ describe("exercise_progress", () => {
     });
     expect(typeof out).toBe("string");
     expect(out.length).toBeGreaterThan(0);
+  });
+});
+
+// Фз-3 (в), спека `fizruk-set-done-flag-and-set-type.md`: рядок плану несе
+// значення плану й `done: false` і до ✓ людини не зарахований — ні в макс.
+// вагу, ні в кількість підходів, навіть у завершеному тренуванні.
+describe("незроблені рядки плану (done: false)", () => {
+  function seedWithPlanRow(): void {
+    seed();
+    const w1 = mem.workouts[0] as FizrukWorkout;
+    w1.items[0]!.sets = [
+      ...(w1.items[0]!.sets ?? []),
+      { weightKg: 120, reps: 10, done: false },
+    ];
+  }
+
+  it("exercise_progress не бере вагу незробленого рядка", () => {
+    seedWithPlanRow();
+    const out = call({
+      name: "exercise_progress",
+      input: { exercise_name: "жим" },
+    });
+    expect(out).toMatch(/75 → 82,5/);
+    expect(out).not.toContain("120");
+  });
+
+  it("training_stats і query_workouts не рахують його підходом", () => {
+    seedWithPlanRow();
+    expect(
+      call({ name: "training_stats", input: { period_days: 30 } }),
+    ).toContain("підходів: 4");
+    expect(call({ name: "query_workouts", input: {} })).toContain("2 підх.");
   });
 });
 

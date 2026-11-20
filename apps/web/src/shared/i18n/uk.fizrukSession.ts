@@ -14,11 +14,15 @@
  * Ключі верхнього рівня не повинні збігатися з ключами `uk.fizruk.ts`.
  */
 import { fizrukMeasureMessages } from "./uk.fizrukMeasure";
+import { fizrukSetTypeMessages } from "./uk.fizrukSetType";
 
 export const fizrukSessionMessages = {
   // Тип виміру вправи (окремий файл каталогу, спека типу виміру): спред
   // тут, а не в `uk.ts`, бо той упирається в 600 рядків.
   ...fizrukMeasureMessages,
+  // Прапорець «виконано» і тип підходу (спека
+  // fizruk-set-done-flag-and-set-type), той самий прийом.
+  ...fizrukSetTypeMessages,
   duringWorkoutSettings: {
     title: "Під час тренування",
     keepScreenOnLabel: "Не гасити екран",

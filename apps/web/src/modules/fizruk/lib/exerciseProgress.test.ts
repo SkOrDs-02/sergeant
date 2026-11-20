@@ -7,9 +7,7 @@ import {
   startOfLocalIsoWeek,
 } from "./exerciseProgress";
 
-function strengthItem(
-  sets: Array<{ weightKg: number; reps: number }>,
-): WorkoutItem {
+function strengthItem(sets: WorkoutItem["sets"]): WorkoutItem {
   return {
     id: "item-1",
     exerciseId: "bench",
@@ -45,5 +43,21 @@ describe("exercise progress aggregation", () => {
     expect(progress.volPoints).toEqual([
       { dateLabel: progress.rmPoints[0]!.dateLabel, value: 1300 },
     ]);
+  });
+
+  it("розминка й незроблений рядок не дають ні обʼєму, ні 1RM (П-Фз3-1)", () => {
+    const at = new Date(2026, 0, 6, 18, 0).toISOString();
+    const progress = buildStrengthProgressData([
+      {
+        workout: { startedAt: at },
+        item: strengthItem([
+          { weightKg: 40, reps: 10, done: true, setType: "warmup" },
+          { weightKg: 200, reps: 5, done: false },
+          { weightKg: 80, reps: 10, done: true },
+        ]),
+      },
+    ]);
+    expect(progress.volPoints[0]!.value).toBe(800);
+    expect(progress.rmPoints[0]!.value).toBe(107);
   });
 });

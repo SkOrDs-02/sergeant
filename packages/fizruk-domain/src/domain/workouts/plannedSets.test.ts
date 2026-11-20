@@ -42,3 +42,28 @@ describe("buildPlannedSets", () => {
     expect(buildPlannedSets(1, -5)).toEqual([{ weightKg: 0, reps: 0 }]);
   });
 });
+
+describe("buildPlannedSets — значення плану з done: false (П-Фз3-5)", () => {
+  it("рядки несуть повтори плану, але не зараховані", () => {
+    const sets = buildPlannedSets(3, 60, { reps: 5 });
+    expect(sets).toEqual([
+      { weightKg: 60, reps: 5, done: false },
+      { weightKg: 60, reps: 5, done: false },
+      { weightKg: 60, reps: 5, done: false },
+    ]);
+    expect(
+      computeWorkoutSetCount({ items: [{ type: "strength", sets }] }),
+    ).toBe(0);
+  });
+
+  it("утримання: секунди плану, повтори нуль", () => {
+    expect(buildPlannedSets(1, 0, { durationSec: 20 })).toEqual([
+      { weightKg: 0, reps: 0, durationSec: 20, done: false },
+    ]);
+  });
+
+  it("✓ (done: true) зараховує рядок плану", () => {
+    const [row] = buildPlannedSets(1, 60, { reps: 5 });
+    expect(isSetCompleted({ ...row!, done: true })).toBe(true);
+  });
+});

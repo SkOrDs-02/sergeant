@@ -1,5 +1,6 @@
 import {
   epley1rm,
+  isWorkingSet,
   type Workout,
   type WorkoutItem,
   type WorkoutSet,
@@ -37,6 +38,8 @@ export function buildStrengthProgressData(history: ExerciseHistoryEntry[]): {
     let maxRm = 0;
     let vol = 0;
     for (const s of sets) {
+      // Розминка й незроблене поза обʼємом і 1RM (П-Фз3-1, спека прапорця).
+      if (!isWorkingSet(s)) continue;
       const rm = epley1rm(s.weightKg, s.reps);
       if (rm > maxRm) maxRm = rm;
       vol += (Number(s.weightKg) || 0) * (Number(s.reps) || 0);

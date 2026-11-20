@@ -3,6 +3,7 @@
 import { kyivCalendarDaysBetween, kyivMondayStartMs } from "@sergeant/shared";
 import { itemHasMeasureRecord } from "../domain/workouts/measureRecords.js";
 import { itemHasVolume } from "../domain/workouts/measureItem.js";
+import { isWorkingSet } from "../domain/workouts/setCompletion.js";
 
 interface StatsSet {
   weightKg?: number | null | undefined;
@@ -58,6 +59,7 @@ export function progressionTopSet<T extends ProgressionSet>(
   let topW = 0;
   let topR = 0;
   for (const s of sets ?? []) {
+    if (!isWorkingSet(s)) continue;
     const w = Number(s?.weightKg) || 0;
     const r = Number(s?.reps) || 0;
     if (w <= 0 || r <= 0) continue;
@@ -109,6 +111,7 @@ export function getExercisePR(
     for (const it of w.items || []) {
       if (it.exerciseId !== exerciseId || it.type !== "strength") continue;
       for (const s of it.sets || []) {
+        if (!isWorkingSet(s)) continue;
         const est = epley1rm(s.weightKg, s.reps);
         if (est > best1rm) {
           best1rm = est;
@@ -492,6 +495,8 @@ export function itemTonnageKg(item: StatsItem | null | undefined): number {
   if (!item || !itemHasVolume(item)) return 0;
   let t = 0;
   for (const s of item.sets || []) {
+    // Розминка й незроблене поза обʼємом (П-Фз3-1, спека прапорця).
+    if (!isWorkingSet(s)) continue;
     t += (Number(s.weightKg) || 0) * (Number(s.reps) || 0);
   }
   return t;
@@ -540,6 +545,7 @@ export function personalRecordsExerciseCount(
       }
       if (it.type !== "strength") continue;
       for (const s of it.sets || []) {
+        if (!isWorkingSet(s)) continue;
         const est = epley1rm(s.weightKg, s.reps);
         if (!est) continue;
         if (!by[exId] || est > by[exId]) by[exId] = est;

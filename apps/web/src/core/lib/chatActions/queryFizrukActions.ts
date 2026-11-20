@@ -2,7 +2,7 @@ import { getKyivDayKey } from "@shared/lib/time/kyivTime";
 import { readFizrukWorkouts } from "./fizrukActions/shared";
 import { clamp, clampDays, normalizeText, round } from "./queryArgs";
 import type { Workout, WorkoutItem } from "@sergeant/fizruk-domain";
-import { workoutTonnageKg } from "@sergeant/fizruk-domain";
+import { isWorkingSet, workoutTonnageKg } from "@sergeant/fizruk-domain";
 import type { ChatAction, ChatActionResult } from "./types";
 import { itemTonnageKg } from "@sergeant/fizruk-domain/lib/workoutStats";
 import { formatNumberUk } from "@sergeant/shared";
@@ -107,7 +107,7 @@ export function queryWorkouts(action: QueryWorkoutsAction): ChatActionResult {
   const list = shown
     .map((w) => {
       const names = w.items.map((it) => it.nameUk).join(", ") || "без вправ";
-      const sets = w.items.reduce((s, it) => s + (it.sets ?? []).length, 0);
+      const sets = w.items.reduce((s, it) => s + workingSets(it).length, 0);
       return `${dayLabel(w)}: ${names} · ${sets} підх. · ${formatNumberUk(round(workoutVolume(w)))} кг×повт`;
     })
     .join("; ");
@@ -116,6 +116,15 @@ export function queryWorkouts(action: QueryWorkoutsAction): ChatActionResult {
       ? ` (показано ${shown.length} з ${matched.length})`
       : "";
   return `Тренувань за ${days} днів: ${matched.length}, сумарний обʼєм ${formatNumberUk(round(totalVolume))} кг×повт${more}: ${list}`;
+}
+
+/**
+ * Зроблені робочі підходи вправи (`isWorkingSet`): рядок плану з `done: false`
+ * і розминка не йдуть ні в кількість підходів, ні в вагу (Фз-3 (в), спека
+ * `fizruk-set-done-flag-and-set-type.md`).
+ */
+function workingSets(it: WorkoutItem): NonNullable<WorkoutItem["sets"]> {
+  return (it.sets ?? []).filter((s) => isWorkingSet(s, it));
 }
 
 export function exerciseProgress(
@@ -135,10 +144,10 @@ export function exerciseProgress(
       if (items.length === 0) return null;
       const maxWeight = Math.max(
         0,
-        ...items.flatMap((it) => (it.sets ?? []).map((s) => s.weightKg)),
+        ...items.flatMap((it) => workingSets(it).map((s) => s.weightKg)),
       );
       const reps = items.reduce(
-        (s, it) => s + (it.sets ?? []).reduce((ss, set) => ss + set.reps, 0),
+        (s, it) => s + workingSets(it).reduce((ss, set) => ss + set.reps, 0),
         0,
       );
       const volume = items.reduce((s, it) => s + itemVolume(it), 0);
@@ -185,7 +194,7 @@ export function trainingStats(action: TrainingStatsAction): ChatActionResult {
   for (const w of completed) {
     for (const item of w.items) {
       exerciseFreq.set(item.nameUk, (exerciseFreq.get(item.nameUk) ?? 0) + 1);
-      totalSets += (item.sets ?? []).length;
+      totalSets += workingSets(item).length;
       for (const m of item.musclesPrimary) {
         muscleFreq.set(m, (muscleFreq.get(m) ?? 0) + 1);
       }

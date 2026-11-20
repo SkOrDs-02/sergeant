@@ -401,6 +401,10 @@ function toItemSnapshot(item: WorkoutItem): FizrukItemSnapshot {
         ? { durationSec: s.durationSec }
         : {}),
       ...(typeof s.distanceM === "number" ? { distanceM: s.distanceM } : {}),
+      // Прапорець «виконано» і тип підходу (спека
+      // fizruk-set-done-flag-and-set-type): той самий білий список.
+      ...(typeof s.done === "boolean" ? { done: s.done } : {}),
+      ...(typeof s.setType === "string" ? { setType: s.setType } : {}),
     }));
   }
   if (typeof item.durationSec === "number") out.durationSec = item.durationSec;

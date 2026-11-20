@@ -34,6 +34,7 @@
  */
 
 import { epley1rm } from "../../lib/workoutStats.js";
+import { isWorkingSet } from "./setCompletion.js";
 import type {
   ExerciseBestSummary,
   ExerciseHistoryEntry,
@@ -354,6 +355,7 @@ export function collectStrengthSessionPoints(
     if (typeof at !== "string" || at.length === 0) continue;
     let best1rm = 0;
     for (const s of Array.isArray(item.sets) ? item.sets : []) {
+      if (!isWorkingSet(s)) continue;
       best1rm = Math.max(best1rm, epley1rm(s.weightKg, s.reps));
     }
     // Точка є для КОЖНОЇ силової сесії, навіть коли e1RM = 0 (reps понад

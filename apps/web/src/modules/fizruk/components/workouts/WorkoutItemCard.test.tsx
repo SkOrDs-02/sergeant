@@ -185,7 +185,7 @@ describe("WorkoutItemCard — strength set rows", () => {
       screen.getByRole("button", { name: /Підхід 1: повторити 80×8/ }),
     );
     expect(updateItem).toHaveBeenCalledWith("w1", "it-1", {
-      sets: [{ weightKg: 80, reps: 8 }],
+      sets: [{ done: true, weightKg: 80, reps: 8 }],
     });
     expect(setRestTimer).toHaveBeenCalledWith({
       remaining: 90,
@@ -214,7 +214,7 @@ describe("WorkoutItemCard — strength set rows", () => {
       screen.getByRole("button", { name: /Підхід 1: повторити 85×8/ }),
     );
     expect(updateItem).toHaveBeenCalledWith("w1", "it-1", {
-      sets: [{ weightKg: 85, reps: 8 }],
+      sets: [{ done: true, weightKg: 85, reps: 8 }],
     });
   });
 
@@ -237,13 +237,13 @@ describe("WorkoutItemCard — strength set rows", () => {
     expect(setRestTimer).not.toHaveBeenCalled();
   });
 
-  it("'+ Підхід' appends an EMPTY row, not a copy that would count as done (logic-18)", () => {
+  it("'+ Підхід' copies the previous set but marks it NOT done (П-Фз3-4, Б)", () => {
     renderCard();
     fireEvent.click(screen.getByRole("button", { name: "+ Підхід" }));
     expect(updateItem).toHaveBeenCalledWith("w1", "it-1", {
       sets: [
         { weightKg: 50, reps: 8 },
-        { weightKg: 0, reps: 0 },
+        { weightKg: 50, reps: 8, done: false },
       ],
     });
   });
@@ -277,7 +277,7 @@ describe("WorkoutItemCard — strength set rows", () => {
       sets: [
         { weightKg: 60, reps: 8 },
         { weightKg: 65, reps: 6 },
-        { weightKg: 65, reps: 6 },
+        { done: true, weightKg: 65, reps: 6 },
       ],
     });
     expect(setRestTimer).toHaveBeenCalled();
@@ -343,7 +343,7 @@ describe("WorkoutItemCard — strength set rows", () => {
     expect(updateItem).toHaveBeenCalledWith("w1", "it-1", {
       sets: [
         { weightKg: 0, reps: 0 },
-        { weightKg: 0, reps: 0 },
+        { weightKg: 0, reps: 0, done: false },
       ],
     });
   });
@@ -474,7 +474,7 @@ describe("WorkoutItemCard — retro (logged after the fact)", () => {
     });
   });
 
-  it("live session keeps the empty row on a time exercise too (logic-18)", () => {
+  it("live session copies the seconds with done: false on a time exercise too", () => {
     renderCard({
       it: makeItem({
         exerciseId: "plank",
@@ -487,7 +487,7 @@ describe("WorkoutItemCard — retro (logged after the fact)", () => {
     expect(updateItem).toHaveBeenCalledWith("w1", "it-1", {
       sets: [
         { weightKg: 0, reps: 0, durationSec: 45 },
-        { weightKg: 0, reps: 0 },
+        { weightKg: 0, reps: 0, durationSec: 45, done: false },
       ],
     });
   });

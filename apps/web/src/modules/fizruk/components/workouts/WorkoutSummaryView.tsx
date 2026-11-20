@@ -37,6 +37,8 @@
  * колонці праворуч від стрілки і поля дати виповзали за край), і жест
  * «назад» від лівого краю в standalone-PWA (`useEdgeSwipeBack`).
  */
+import { isWorkoutSetType } from "@sergeant/shared";
+import { setNumberLabel } from "./WorkoutSetTypeMenu";
 import { useState } from "react";
 import { formatDateTimeShort } from "@shared/lib/time/formatDate";
 import { useEdgeSwipeBack } from "@shared/hooks/useEdgeSwipeBack";
@@ -106,7 +108,12 @@ function formatItemDetail(item: WorkoutItem, rpeLabel: string): string {
     if (sets.length === 0) return "—";
     return sets
       .map((s) => {
-        const base = `${fmtLoose(s.weightKg ?? 0)}×${s.reps ?? 0}`;
+        // Тип підходу літерою перед значеннями («Р 40×10»): розминка тут
+        // видна, хоча в «Підходів» не входить (П-Фз3-1).
+        const letter = isWorkoutSetType(s.setType)
+          ? `${setNumberLabel(s.setType, 0)} `
+          : "";
+        const base = `${letter}${fmtLoose(s.weightKg ?? 0)}×${s.reps ?? 0}`;
         const rpe = s["rpe"];
         // RPE is strictly optional (Borg 1..10) — omit the suffix entirely
         // rather than print a misleading "RPE 0" when it was never filled

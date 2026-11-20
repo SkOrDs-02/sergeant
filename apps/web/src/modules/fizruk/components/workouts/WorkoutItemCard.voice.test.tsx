@@ -101,7 +101,7 @@ describe("WorkoutItemCard voice set entry", () => {
     expect(updateItem).toHaveBeenCalledWith("w1", "it-1", {
       sets: [
         { weightKg: 50, reps: 8 },
-        { weightKg: 80, reps: 6 },
+        { weightKg: 80, reps: 6, done: true },
       ],
     });
     expect(setRestTimer).toHaveBeenCalledWith({
@@ -172,7 +172,7 @@ describe("WorkoutItemCard voice set entry", () => {
     expect(updateItem).toHaveBeenCalledWith("w1", "it-1", {
       sets: [
         { weightKg: 50, reps: 8 },
-        { weightKg: 0, reps: 12 },
+        { weightKg: 0, reps: 12, done: true },
       ],
     });
     expect(setRestTimer).not.toHaveBeenCalled();

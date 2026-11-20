@@ -11,6 +11,12 @@
  * як у ретро-сесії), перемикача типу (тип вирішується до першого підходу),
  * підказки наступного підходу й голосу.
  *
+ * Явний прапорець і тип підходу (спека
+ * `fizruk-set-done-flag-and-set-type.md`): правка зберігає `done` і
+ * `setType` рядка (патч зливається з підходом), тип виправляється тапом по
+ * номеру, а рядок `done: false` (план, незавершений «+ Підхід») стає
+ * зробленим, коли людина вписує лічильну величину (`withDoneOnCountInput`).
+ *
  * AI-CONTEXT: компонент нічого не рахує. Підсумок, історія, рекорди,
  * відновлення й стрік читають той самий журнал (`Workout`), тож після
  * `onUpdateSets` усі числа перераховуються з одного джерела. `endedAt` не
@@ -24,6 +30,7 @@ import { itemMeasure } from "@sergeant/fizruk-domain/domain";
 import { messages } from "@shared/i18n/uk";
 import { WorkoutSetColumnHeader, WorkoutSetRow } from "./WorkoutSetRow";
 import { seedSetForAdd } from "./WorkoutItemCard";
+import { withDoneOnCountInput } from "../../lib/setDoneFlag";
 
 export interface WorkoutSummaryItemEditorProps {
   item: WorkoutItem;
@@ -55,7 +62,10 @@ export function WorkoutSummaryItemEditor({
     const current = sets[idx];
     if (!current) return;
     const next = [...sets];
-    next[idx] = { ...current, ...patch };
+    next[idx] = {
+      ...current,
+      ...withDoneOnCountInput(current, patch, measure),
+    };
     onUpdateSets(next);
   };
 
@@ -83,6 +93,7 @@ export function WorkoutSummaryItemEditor({
           onChangeRpe={(rpe) => updateSet(idx, { rpe })}
           onApplyGhost={noop}
           onCheckTap={noop}
+          onChangeSetType={(setType) => updateSet(idx, { setType })}
         />
       ))}
       {sets.length > 0 && (

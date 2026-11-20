@@ -25,6 +25,13 @@ import {
 } from "../../lib/numericBounds";
 import { fmtLoose } from "../../lib/numberFmt";
 import { RPE_CELL_CLASS, WorkoutSetRpeMenu } from "./WorkoutSetRpeMenu";
+import { isWorkoutSetType, type WorkoutSetType } from "@sergeant/shared";
+import {
+  SET_NUMBER_CELL_CLASS,
+  setNumberLabel,
+  setTypeName,
+  WorkoutSetTypeMenu,
+} from "./WorkoutSetTypeMenu";
 
 export interface WorkoutSetRowProps {
   /** 0-based position inside `it.sets`. */
@@ -76,6 +83,19 @@ export interface WorkoutSetRowProps {
    * величиною і так зарахований (`isSetDone`), а наступний додає «+ Підхід».
    */
   showCheck?: boolean | undefined;
+  /**
+   * Явний прапорець «виконано» (спека `fizruk-set-done-flag-and-set-type.md`).
+   * З пропом ✓ ставить `true` і стартує відпочинок (рядок зі значеннями
+   * без позначки: план, «+ Підхід», вписані повтори), а на рядку з явним
+   * `done: true` знімає позначку (`false`). Без пропа — як до фічі: ✓ на
+   * зробленому лише стартує відпочинок.
+   */
+  onSetDone?: ((done: boolean) => void) | undefined;
+  /**
+   * Тип підходу (дефолт П-Фз3-6 (А) від 2026-11-19): з пропом номер стає
+   * тригером панелі типу. Без пропа номер лише показує літеру типу.
+   */
+  onChangeSetType?: ((t: WorkoutSetType | null) => void) | undefined;
 }
 
 /**
@@ -85,10 +105,10 @@ export interface WorkoutSetRowProps {
  * `weightKg > 0` зробила б ✓ мертвою для цілого класу вправ, тобто
  * зламала б і старт таймера для них.
  *
- * Це похідне читання, а НЕ збережений прапорець — `WorkoutSet`
- * лишається простою доменною формою `{weightKg, reps}`; додавання поля
- * означало б зміну `packages/fizruk-domain` + sqlite-схеми + dual-write
- * заради того, що виводиться з наявних даних.
+ * З 2026-11-19 підхід несе й явний прапорець `done` (спека
+ * `fizruk-set-done-flag-and-set-type.md`): `false` прибирає рядок зі
+ * значеннями з підрахунку, відсутній — правило вище. Обидва читання живуть
+ * у доменному `isSetCompleted`.
  */
 export function isSetDone(
   s: WorkoutSet | null | undefined,
@@ -179,11 +199,17 @@ export function WorkoutSetRow({
   onApplyGhost,
   onCheckTap,
   showCheck = true,
+  onSetDone,
+  onChangeSetType,
 }: WorkoutSetRowProps) {
   const sr = messages.fizruk.setRow;
   const ss = messages.fizruk.session;
   const mr = messages.fizruk.measureRow;
+  const sd = messages.fizruk.setDone;
   const done = isSetDone(set, item ?? { measure });
+  const setType: WorkoutSetType | null = isWorkoutSetType(set.setType)
+    ? set.setType
+    : null;
   const setNumber = index + 1;
   const ghostSet = ghost && !done && !isReadOnly ? ghost : null;
   const countRef = useRef<HTMLInputElement>(null);
@@ -201,21 +227,43 @@ export function WorkoutSetRow({
   );
 
   const ghostLabel = ghostSet ? ghostText(ghostSet, fields) : null;
+  // Рядок уже має лічильну величину, але позначений незробленим (план
+  // програми, «+ Підхід» у живій сесії): ✓ зараховує його як є.
+  const filledNotDone =
+    !done &&
+    set.done === false &&
+    isSetCompleted({ ...set, done: null }, item ?? { measure });
   const fillAria =
     countBy === "time"
       ? mr.fillSecAria
       : countBy === "distance"
         ? mr.fillMetersAria
         : ss.fillRepsAria;
+  // Знімається лише ЯВНА позначка: рядок, зарахований за значеннями без
+  // прапорця (людина вписала повтори й тапає ✓), як і раніше підтверджує
+  // підхід і стартує відпочинок, а не гасне.
+  const explicitlyDone = done && set.done === true && Boolean(onSetDone);
   const checkAria = done
-    ? `${sr.numberAriaPrefix} ${setNumber}: ${sr.doneAriaLabel}`
-    : ghostLabel
-      ? `${sr.numberAriaPrefix} ${setNumber}: ${ss.repeatGhostAria} ${ghostLabel} ${ss.repeatGhostAriaSuffix}`
-      : `${sr.numberAriaPrefix} ${setNumber}: ${sr.notDoneAriaLabel}, ${fillAria}`;
+    ? `${sr.numberAriaPrefix} ${setNumber}: ${explicitlyDone ? sd.doneAria : sr.doneAriaLabel}`
+    : filledNotDone && onSetDone
+      ? `${sr.numberAriaPrefix} ${setNumber}: ${sd.markDoneAria.replace("{values}", ghostText(set, fields))}`
+      : ghostLabel
+        ? `${sr.numberAriaPrefix} ${setNumber}: ${ss.repeatGhostAria} ${ghostLabel} ${ss.repeatGhostAriaSuffix}`
+        : `${sr.numberAriaPrefix} ${setNumber}: ${sr.notDoneAriaLabel}, ${fillAria}`;
 
   const handleCheck = () => {
     if (isReadOnly) return;
+    if (explicitlyDone) {
+      onSetDone?.(false);
+      return;
+    }
     if (done) {
+      onSetDone?.(true);
+      onCheckTap();
+      return;
+    }
+    if (filledNotDone && onSetDone) {
+      onSetDone(true);
       onCheckTap();
       return;
     }
@@ -319,15 +367,32 @@ export function WorkoutSetRow({
         data-current={isCurrent && !isReadOnly ? "true" : undefined}
         data-set-row
       >
-        <span
-          className={cn(
-            "w-6 shrink-0 text-center text-style-label tabular-nums",
-            isCurrent && !isReadOnly ? "font-bold text-text" : "text-subtle",
-          )}
-          aria-hidden
-        >
-          {setNumber}
-        </span>
+        {onChangeSetType && !isReadOnly ? (
+          <WorkoutSetTypeMenu
+            setNumber={setNumber}
+            value={setType}
+            isCurrent={isCurrent}
+            onChange={onChangeSetType}
+          />
+        ) : (
+          <span
+            className={cn(
+              SET_NUMBER_CELL_CLASS,
+              "text-center text-style-label tabular-nums",
+              setType === "warmup"
+                ? "text-muted"
+                : isCurrent && !isReadOnly
+                  ? "font-bold text-text"
+                  : "text-subtle",
+            )}
+            data-set-type={setType ?? undefined}
+          >
+            <span aria-hidden>{setNumberLabel(setType, setNumber)}</span>
+            {setType ? (
+              <span className="sr-only">{setTypeName(setType)}</span>
+            ) : null}
+          </span>
+        )}
         {fields.map((k) =>
           k === "weight" ? (
             <div key={k} className="min-w-0 flex-1">
@@ -363,6 +428,7 @@ export function WorkoutSetRow({
             type="button"
             disabled={isReadOnly}
             aria-label={checkAria}
+            aria-pressed={onSetDone ? explicitlyDone : undefined}
             data-set-slot="check"
             className={cn(
               "flex h-11 w-11 shrink-0 items-center justify-center rounded-lg border transition-colors",
@@ -424,7 +490,7 @@ export function WorkoutSetColumnHeader({
       aria-hidden
       data-set-header
     >
-      <span className="w-6 shrink-0" />
+      <span className={SET_NUMBER_CELL_CLASS} />
       {fields.map((k) => (
         <span key={k} className="flex-1 px-3 text-style-caption text-subtle">
           {caption(k)}

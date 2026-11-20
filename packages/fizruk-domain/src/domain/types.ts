@@ -5,6 +5,8 @@
  * does not break existing JS callers or persisted localStorage payloads.
  */
 
+import type { WorkoutSetType } from "@sergeant/shared";
+
 /** Recovery status for a muscle group. */
 export type RecoveryStatus = "green" | "yellow" | "red";
 
@@ -49,6 +51,15 @@ export interface WorkoutSet {
   reps: number;
   durationSec?: number | undefined;
   distanceM?: number | undefined;
+  /**
+   * Явний стан «виконано» (міграція 176, спека
+   * `fizruk-set-done-flag-and-set-type.md`). `false` прибирає рядок із
+   * підрахунку навіть зі значеннями; відсутнє / `null` — запис до фічі,
+   * стан виводиться з значень (`isSetCompleted`).
+   */
+  done?: boolean | null | undefined;
+  /** Тип підходу; відсутнє / `null` — звичайний (`WORKOUT_SET_TYPES`). */
+  setType?: WorkoutSetType | null | undefined;
   // Persisted payloads carry extra ad-hoc fields (e.g. `_at` annotations
   // attached when computing PR/last-top sets). Mirrors the loose shape of
   // `WorkoutItem`/`Workout` so consumers can structurally narrow without
