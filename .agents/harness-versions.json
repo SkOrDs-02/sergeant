@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "current": "8.15.3",
+  "current": "8.15.4",
   "versions": {
     "0.1.0": {
       "releasedAt": "2026-06-29",
@@ -934,6 +934,14 @@
       "releasedAt": "2026-11-20",
       "changes": [
         "bump from 8.15.2 -> 8.15.3: AGENTS.md § Performance budgets, стеля JS size-limit 1.56 -> 1.60 MB рішенням власника (main 1 562 439 B уже над стелею, гілка 1 575 505 B за третю хвилю фіч у лінивих чанках, eager 256.5 kB без руху; bundle-budget-ratchet-log.md 2026-11-20)"
+      ],
+      "agentsTestedWith": [],
+      "passRateBaseline": null
+    },
+    "8.15.4": {
+      "releasedAt": "2026-11-20",
+      "changes": [
+        "bump from 8.15.3 -> 8.15.4: typo / link / freshness-only change"
       ],
       "agentsTestedWith": [],
       "passRateBaseline": null

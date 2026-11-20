@@ -13,7 +13,16 @@
  * Маршрут за прапорцем `SYNC_V2_STREAM_ENABLED` (дефолт off, 404). 404 і 401
  * не повторюються часто: клієнт відкладає наступну спробу на довгий строк, а
  * польовий pull (інтервал, `visibilitychange`, після push) працює як і раніше.
+ *
+ * AI-CONTEXT: обрив уже відкритого стріму - не помилка, а життєвий цикл:
+ * iOS рве сокети застосунку у фоні, проксі рвуть довгі зʼєднання, деплой
+ * бекенду закриває процес. Тому обрив після `200` у Sentry не йде (інакше
+ * кожен деплой давав би подію від кожного відкритого застосунку), а помилка
+ * САМОГО підключення класифікується тим самим `classifyTickError`, що й pull:
+ * плутанини «мережа чи стейл-асет» тут немає, бо читання тіла відповіді, яка
+ * вже прийшла, не буває провальним динамічним імпортом.
  */
+import { classifyTickError, readOnlineStatus } from "./tickErrorReport.js";
 
 export interface SyncStreamConsumerDeps {
   /** Абсолютний або відносний URL без query (`since` додає споживач). */
@@ -31,6 +40,8 @@ export interface SyncStreamConsumerDeps {
   readonly clearTimeout?: (handle: unknown) => void;
   /** `[0,1)`; лише для джитера бекофу. */
   readonly random?: () => number;
+  /** Годинник для віку зʼєднання; дефолт `Date.now`. */
+  readonly now?: () => number;
   readonly captureException?: (
     error: unknown,
     context?: Record<string, unknown>,
@@ -48,6 +59,19 @@ export const SYNC_STREAM_RECONNECT_MIN_MS = 1_000;
 export const SYNC_STREAM_RECONNECT_MAX_MS = 60_000;
 /** Прапорець вимкнено (404) або сесії немає (401/403): не смикаємо часто. */
 export const SYNC_STREAM_DISABLED_RETRY_MS = 30 * 60_000;
+/**
+ * Сервер витіснив стрім (`closed: evicted`): у користувача вже відкрито
+ * `SYNC_V2_STREAM_MAX_PER_USER` інших. Швидкий реконект витіснив би вже
+ * когось із них, і пристрої перекидались би стрімом щосекунди, зʼїдаючи
+ * спільний з push/pull рейт-ліміт. Цей пристрій тим часом живе на pull.
+ */
+export const SYNC_STREAM_EVICTED_RETRY_MS = 5 * 60_000;
+/**
+ * Стрім, що прожив менше, вважається невдалою спробою: бекоф росте. Інакше
+ * зʼєднання, яке обривається одразу після `200`, перепідключалось би раз на
+ * секунду без кінця.
+ */
+export const SYNC_STREAM_HEALTHY_MS = 30_000;
 
 interface SseFrame {
   readonly event: string;
@@ -82,6 +106,20 @@ export function parseSseFrames(buffer: string): {
   return { frames, rest };
 }
 
+/** `{"reason":"…"}` з кадру `closed`; будь-що інше - `null`. */
+function parseCloseReason(data: string): string | null {
+  try {
+    const parsed: unknown = JSON.parse(data);
+    if (parsed && typeof parsed === "object" && "reason" in parsed) {
+      const { reason } = parsed;
+      return typeof reason === "string" ? reason : null;
+    }
+  } catch {
+    /* битий кадр - як звичайне закриття */
+  }
+  return null;
+}
+
 export function createSyncStreamConsumer(
   deps: SyncStreamConsumerDeps,
 ): SyncStreamConsumer {
@@ -92,6 +130,7 @@ export function createSyncStreamConsumer(
     deps.clearTimeout ??
     ((handle) => globalThis.clearTimeout(handle as number));
   const random = deps.random ?? Math.random;
+  const now = deps.now ?? Date.now;
 
   let running = false;
   let controller: AbortController | null = null;
@@ -127,6 +166,7 @@ export function createSyncStreamConsumer(
     if (!running) return;
     const ctrl = new AbortController();
     controller = ctrl;
+    let response: Response;
     try {
       const since = await deps.getSince();
       if (!running || ctrl.signal.aborted) return;
@@ -134,7 +174,7 @@ export function createSyncStreamConsumer(
         scheduleReconnect(SYNC_STREAM_RECONNECT_MAX_MS);
         return;
       }
-      const response = await doFetch(`${deps.url}?since=${since}`, {
+      response = await doFetch(`${deps.url}?since=${since}`, {
         method: "GET",
         credentials: "include",
         headers: {
@@ -143,44 +183,69 @@ export function createSyncStreamConsumer(
         },
         signal: ctrl.signal,
       });
-      if (
-        response.status === 404 ||
-        response.status === 401 ||
-        response.status === 403
-      ) {
-        scheduleReconnect(SYNC_STREAM_DISABLED_RETRY_MS);
-        return;
-      }
-      if (!response.ok || !response.body) {
-        failures += 1;
-        scheduleReconnect(backoffMs());
-        return;
-      }
-      failures = 0;
-      await readFrames(response.body, ctrl.signal);
-      // Нормальне закриття (`closed`, max_age, обрив проксі): перепідключення.
-      scheduleReconnect(backoffMs());
     } catch (error) {
       if (ctrl.signal.aborted || !running) return;
       failures += 1;
-      deps.captureException?.(error, { scope: "sync-v2-stream" });
+      const verdict = classifyTickError(
+        error,
+        "sync-v2-stream",
+        readOnlineStatus(),
+      );
+      if (verdict.report) deps.captureException?.(error, verdict.context);
       scheduleReconnect(backoffMs());
+      return;
     }
+    if (
+      response.status === 404 ||
+      response.status === 401 ||
+      response.status === 403
+    ) {
+      scheduleReconnect(SYNC_STREAM_DISABLED_RETRY_MS);
+      return;
+    }
+    if (!response.ok || !response.body) {
+      failures += 1;
+      scheduleReconnect(backoffMs());
+      return;
+    }
+
+    const openedAt = now();
+    let closeReason: string | null = null;
+    try {
+      closeReason = await readFrames(response.body, ctrl.signal);
+    } catch {
+      // Обрив відкритого стріму: життєвий цикл, а не збій (див. шапку).
+    }
+    if (ctrl.signal.aborted || !running) return;
+    if (closeReason === "evicted") {
+      failures = 0;
+      scheduleReconnect(SYNC_STREAM_EVICTED_RETRY_MS);
+      return;
+    }
+    if (closeReason === "session_revoked") {
+      scheduleReconnect(SYNC_STREAM_DISABLED_RETRY_MS);
+      return;
+    }
+    // `shutdown`, `max_age`, обрив проксі чи мережі: перепідключення.
+    failures = now() - openedAt >= SYNC_STREAM_HEALTHY_MS ? 0 : failures + 1;
+    scheduleReconnect(backoffMs());
   }
 
+  /** Читає кадри до кінця стріму; повертає `reason` кадру `closed`, якщо був. */
   async function readFrames(
     body: ReadableStream<Uint8Array>,
     abort: AbortSignal,
-  ): Promise<void> {
+  ): Promise<string | null> {
     const reader = body.getReader();
     const decoder = new TextDecoder();
     let buffer = "";
     let caughtUp = false;
     let sawBacklogOp = false;
+    let closeReason: string | null = null;
     try {
       for (;;) {
         const { done, value } = await reader.read();
-        if (done || abort.aborted) return;
+        if (done || abort.aborted) return closeReason;
         buffer += decoder.decode(value, { stream: true });
         const parsed = parseSseFrames(buffer);
         buffer = parsed.rest;
@@ -196,6 +261,8 @@ export function createSyncStreamConsumer(
               sawBacklogOp = false;
               signal();
             }
+          } else if (frame.event === "closed") {
+            closeReason = parseCloseReason(frame.data);
           }
         }
       }

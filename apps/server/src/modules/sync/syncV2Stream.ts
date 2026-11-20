@@ -44,7 +44,9 @@ import { selectPullPage } from "./syncV2Pull.js";
  *     і закриває стрім, якщо її немає; зʼєднання живе не довше
  *     `SYNC_V2_STREAM_MAX_AGE_MS`; не більше `SYNC_V2_STREAM_MAX_PER_USER`
  *     одночасних стрімів на юзера (новий витісняє найстаріший). Перед
- *     серверним закриттям летить кадр `event: closed` із `reason`.
+ *     серверним закриттям летить кадр `event: closed` із `reason`; на
+ *     SIGTERM усі стріми закриваються так само, з `reason: "shutdown"`
+ *     ({@link closeAllSyncV2Streams}).
  *   * rel-05: стрім, який не читає (сокет тримає понад
  *     `SYNC_V2_STREAM_MAX_WRITABLE_BYTES` або `write()` повернув false без
  *     `drain` до наступного emit), закривається з reason `backpressure`.
@@ -88,7 +90,8 @@ export type SyncV2StreamCloseReason =
   | "session_revoked"
   | "session_check_failed"
   | "evicted"
-  | "backpressure";
+  | "backpressure"
+  | "shutdown";
 
 type WithSessionUser = Request & { user?: { id: string } };
 
@@ -121,6 +124,27 @@ function registerStream(userId: string, handle: StreamHandle): void {
 export const __testingResetSyncV2StreamRegistry = (): void => {
   streamsByUser.clear();
 };
+
+/**
+ * Закрити всі відкриті стріми процесу з кадром `closed` (graceful shutdown).
+ * Повертає кількість закритих.
+ *
+ * AI-CONTEXT: стрім - довгий запит, і `server.close()` чекає на нього, як на
+ * будь-який in-flight. Без цього виклику кожен деплой із відкритими стрімами
+ * спалював увесь `SHUTDOWN_GRACE_MS`, потім `closeAllConnections()` рвав їх
+ * посеред chunked-відповіді (у браузері `ERR_INCOMPLETE_CHUNKED_ENCODING`,
+ * тобто помилка замість штатного кінця), а фази зупинки полерів після HTTP
+ * лишались без бюджету й пропускались (`shutdown_phase_skipped`, заміряно
+ * локально 2026-11-20). Тому `index.ts` кличе це ПЕРЕД `server.close()`.
+ */
+export function closeAllSyncV2Streams(
+  reason: SyncV2StreamCloseReason = "shutdown",
+): number {
+  // Знімок: `close()` через cleanup прибирає handle з реєстру під час обходу.
+  const handles = [...streamsByUser.values()].flatMap((set) => [...set]);
+  for (const handle of handles) handle.close(reason);
+  return handles.length;
+}
 
 function unregisterStream(userId: string, handle: StreamHandle): void {
   const set = streamsByUser.get(userId);

@@ -1,9 +1,12 @@
-import { describe, expect, it, vi } from "vitest";
+import { afterEach, describe, expect, it, vi } from "vitest";
 
 import {
   createSyncStreamConsumer,
   parseSseFrames,
   SYNC_STREAM_DISABLED_RETRY_MS,
+  SYNC_STREAM_EVICTED_RETRY_MS,
+  SYNC_STREAM_HEALTHY_MS,
+  SYNC_STREAM_RECONNECT_MIN_MS,
   SYNC_STREAM_SIGNAL_DEBOUNCE_MS,
 } from "./syncStreamConsumer";
 
@@ -18,9 +21,22 @@ function sseResponse(chunks: string[], status = 200): Response {
   return new Response(body, { status });
 }
 
-function harness(fetchImpl: typeof fetch) {
+/** Стрім, що віддав кадри й обірвався мережею (як iOS у фоні чи деплой). */
+function droppedSseResponse(chunks: string[]): Response {
+  const encoder = new TextEncoder();
+  const body = new ReadableStream<Uint8Array>({
+    start(controller) {
+      for (const chunk of chunks) controller.enqueue(encoder.encode(chunk));
+      controller.error(new TypeError("network error"));
+    },
+  });
+  return new Response(body, { status: 200 });
+}
+
+function harness(fetchImpl: typeof fetch, opts: { now?: () => number } = {}) {
   const timers: Array<{ handler: () => void; ms: number; live: boolean }> = [];
   const onSignal = vi.fn();
+  const captureException = vi.fn();
   const consumer = createSyncStreamConsumer({
     url: "/api/v2/sync/stream",
     originDeviceId: "dev-1",
@@ -36,6 +52,8 @@ function harness(fetchImpl: typeof fetch) {
       (handle as { live: boolean }).live = false;
     },
     random: () => 1,
+    captureException,
+    ...(opts.now ? { now: opts.now } : {}),
   });
   const fire = (ms: number) => {
     const entry = timers.find((t) => t.live && t.ms === ms);
@@ -43,7 +61,7 @@ function harness(fetchImpl: typeof fetch) {
     entry.live = false;
     entry.handler();
   };
-  return { consumer, onSignal, timers, fire };
+  return { consumer, onSignal, captureException, timers, fire };
 }
 
 const flush = () => new Promise((resolve) => setTimeout(resolve, 0));
@@ -65,6 +83,10 @@ describe("parseSseFrames", () => {
 });
 
 describe("createSyncStreamConsumer", () => {
+  afterEach(() => {
+    vi.unstubAllGlobals();
+  });
+
   it("шле since з курсора та X-Origin-Device-Id", async () => {
     const fetchMock = vi.fn(async () => sseResponse([]));
     const { consumer } = harness(fetchMock as unknown as typeof fetch);
@@ -139,5 +161,78 @@ describe("createSyncStreamConsumer", () => {
     reconnect?.handler();
     await flush();
     expect(fetchMock).toHaveBeenCalledTimes(1);
+  });
+  it("обрив відкритого стріму не йде в Sentry, а перепідключається", async () => {
+    const { consumer, captureException, timers } = harness((async () =>
+      droppedSseResponse([
+        "event: caught_up\ndata: {}\n\n",
+      ])) as unknown as typeof fetch);
+    consumer.start();
+    await flush();
+    expect(captureException).not.toHaveBeenCalled();
+    expect(timers.some((t) => t.live)).toBe(true);
+    consumer.stop();
+  });
+
+  it("помилка підключення офлайн не йде в Sentry, онлайн - іде з міткою transport", async () => {
+    const failing = (async () => {
+      throw new TypeError("Failed to fetch");
+    }) as unknown as typeof fetch;
+
+    vi.stubGlobal("navigator", { onLine: false });
+    const offline = harness(failing);
+    offline.consumer.start();
+    await flush();
+    expect(offline.captureException).not.toHaveBeenCalled();
+    offline.consumer.stop();
+
+    vi.stubGlobal("navigator", { onLine: true });
+    const online = harness(failing);
+    online.consumer.start();
+    await flush();
+    expect(online.captureException).toHaveBeenCalledWith(
+      expect.any(TypeError),
+      expect.objectContaining({ scope: "sync-v2-stream", transport: true }),
+    );
+    online.consumer.stop();
+  });
+
+  it("`closed: evicted` відкладає реконект на SYNC_STREAM_EVICTED_RETRY_MS", async () => {
+    const { consumer, timers } = harness((async () =>
+      sseResponse([
+        "event: caught_up\ndata: {}\n\n",
+        'event: closed\ndata: {"reason":"evicted"}\n\n',
+      ])) as unknown as typeof fetch);
+    consumer.start();
+    await flush();
+    const live = timers.filter((t) => t.live).map((t) => t.ms);
+    expect(live).toEqual([SYNC_STREAM_EVICTED_RETRY_MS]);
+    consumer.stop();
+  });
+
+  it("`closed: shutdown` після здорового стріму - швидкий реконект, короткий стрім нарощує бекоф", async () => {
+    const shutdownFrame = 'event: closed\ndata: {"reason":"shutdown"}\n\n';
+    const respond = (async () =>
+      sseResponse([shutdownFrame])) as unknown as typeof fetch;
+
+    // Перший виклик `now` - момент відкриття, другий - кінець стріму.
+    let calls = 0;
+    const healthy = harness(respond, {
+      now: () => (calls++ === 0 ? 0 : SYNC_STREAM_HEALTHY_MS),
+    });
+    healthy.consumer.start();
+    await flush();
+    expect(healthy.timers.filter((t) => t.live).map((t) => t.ms)).toEqual([
+      SYNC_STREAM_RECONNECT_MIN_MS,
+    ]);
+    healthy.consumer.stop();
+
+    const short = harness(respond, { now: () => 0 });
+    short.consumer.start();
+    await flush();
+    expect(short.timers.filter((t) => t.live).map((t) => t.ms)).toEqual([
+      SYNC_STREAM_RECONNECT_MIN_MS * 2,
+    ]);
+    short.consumer.stop();
   });
 });

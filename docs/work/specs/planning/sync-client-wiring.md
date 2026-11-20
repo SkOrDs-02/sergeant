@@ -1,7 +1,7 @@
 # Sync client wiring — multi-device op-log після SQLite cut-over
 
 > **Status:** Active - Наступна дія: ADR-0065 retention + PG NOTIFY fan-out (Phase 3) або свідомо відкласти; далі Phase 4. Блокує: рішення власника (multi-instance тригер ADR-0065) і локальний E2E. SSE-consumer на клієнті вже є (`syncStreamConsumer.ts`).
-> **Last touched:** 2026-10-26 by @claude (тріаж документації: шапка: наступна дія, SSE-consumer на клієнті існує, рев'ю: «consumer відсутній» позначено історичним). **Next review:** 2026-12-16.
+> **Last touched:** 2026-11-20 by @claude (Фаза 3: ручний E2E стріму пройдено, фікси зупинки й шуму в Sentry); 2026-10-26 by @claude (тріаж документації: шапка: наступна дія, SSE-consumer на клієнті існує, рев'ю: «consumer відсутній» позначено історичним). **Next review:** 2026-12-16.
 > Трек-документ follow-up ініціативи після [`dualwrite-teardown.md`](https://github.com/Skords-01/Sergeant/blob/d068c73a2f21881d5c1305544fe99f3ea8be81f4/docs/90-work/planning/archive/dualwrite-teardown.md) (SQLite — єдиний writer модульних даних на клієнті) і [`storage-roadmap.md`](https://github.com/Skords-01/Sergeant/blob/d068c73a2f21881d5c1305544fe99f3ea8be81f4/docs/90-work/planning/archive/storage-roadmap.md) (Stage 5 sync v2 server-side). **Фаза 1 (enqueue + pull) і Phase 2 registry expansion (27→42 на момент 2026-07-20; чинний склад реєстру — ключі `OP_LOG_TABLE_REGISTRY` в `apps/server/src/modules/sync/syncV2.ts`, число тут не дублюється) — shipped у коді.** Залишок: локальна/CI verification (Testcontainers, dual-device E2E), потім Phase 3 SSE/ops. Звірка 2026-09-17: Phase 3 і 4 досі відкриті — `EventSource`-consumer у `apps/web/src` відсутній (історично: відтоді додано `syncStreamConsumer.ts`, поточний розрив = Phase 3 retention + NOTIFY fan-out); ADR-0065 має статус Accepted, але реалізація (retention + NOTIFY fan-out) не завезена.
 
 ---
@@ -185,7 +185,7 @@ pnpm check
 
 ### Фаза 3 — Realtime + ops
 
-- [x] Client SSE consumer (`syncStreamConsumer.ts`, fetch-стрім замість `EventSource` заради `X-Origin-Device-Id`) as optional fast-path before pull. Сигнал «зроби pull», не курсор; сервер за `SYNC_V2_STREAM_ENABLED` (дефолт off, 404). Ручний E2E з увімкненим прапорцем ще не проганяли.
+- [x] Client SSE consumer (`syncStreamConsumer.ts`, fetch-стрім замість `EventSource` заради `X-Origin-Device-Id`) as optional fast-path before pull. Сигнал «зроби pull», не курсор; сервер за `SYNC_V2_STREAM_ENABLED` (дефолт off, 404). Ручний E2E з увімкненим прапорцем пройдено 2026-11-20 (два браузери одного акаунта, локальний стек як у `critical-flow`): чужий push доходить pull-ом за 0,8 с. Тим самим прогоном знайдено й виправлено дві речі: на SIGTERM стріми тримали `server.close()` увесь grace і обривались посеред chunked-відповіді (фази зупинки полерів після HTTP пропускались), а клієнт слав кожен такий обрив у Sentry. Тепер сервер закриває їх кадром `closed: shutdown`, обрив відкритого стріму в Sentry не йде, `closed: evicted` відкладає реконект на 5 хв.
 - [ ] ADR-0065 implementation: `sync_op_log` retention + PG NOTIFY multi-instance fan-out.
 - [ ] Wire SLO alert `BackendHealthP95High` (design-only today).
 

@@ -57,6 +57,7 @@ import _pool from "../../db.js";
 import { getFreshSessionUser as _getFreshSessionUser } from "../../auth.js";
 import {
   __testingResetSyncV2StreamRegistry,
+  closeAllSyncV2Streams,
   notifySyncV2OpsApplied,
   opLogEmitter,
   syncV2Stream,
@@ -553,6 +554,23 @@ describe("syncV2Stream handler — sec-09 session / max-age / per-user cap", () 
     expect(res.ended).toBe(true);
     expect(closedFrame(res, "max_age")).toBe(true);
     expect(opLogEmitter.listenerCount("user:u1")).toBe(0);
+  });
+
+  it("closeAllSyncV2Streams закриває всі стріми штатно, з кадром `closed` reason `shutdown`", async () => {
+    const a = await open("u1");
+    const b = await open("u1");
+    const c = await open("u2");
+
+    expect(closeAllSyncV2Streams()).toBe(3);
+
+    for (const s of [a, b, c]) {
+      expect(s.res.ended).toBe(true);
+      expect(closedFrame(s.res, "shutdown")).toBe(true);
+    }
+    expect(opLogEmitter.listenerCount("user:u1")).toBe(0);
+    expect(opLogEmitter.listenerCount("user:u2")).toBe(0);
+    // Реєстр порожній: повторний виклик нічого не закриває.
+    expect(closeAllSyncV2Streams()).toBe(0);
   });
 
   it("evicts the OLDEST stream when a user opens more than SYNC_V2_STREAM_MAX_PER_USER", async () => {
