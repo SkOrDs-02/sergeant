@@ -1,0 +1,84 @@
+[
+  {
+    "name": "A push власного запису",
+    "ok": true,
+    "detail": "HTTP 200 {\"accepted\":1,\"last_op_id\":236,\"results\":[{\"idempotency_key\":\"ddb1cb26-2cfd-4d70-9b28-6daadbd1ff9a\",\"status\":\"applied\"}]",
+    "note": "відповідь має поле accepted, а не applied — хиба перевірки"
+  },
+  {
+    "name": "B pull не бачить запис A",
+    "ok": true,
+    "detail": "HTTP 200 ops=0"
+  },
+  {
+    "name": "B не може переписати запис A (чужий user_id у row)",
+    "ok": true,
+    "detail": "push HTTP 200 {\"accepted\":0,\"last_op_id\":237,\"results\":[{\"idempotency_key\":\"f3fee6ec-4235-45eb-b2f3-3b00e217ca85\",\"status\":\"rejected\",\"reason\":\"user_id_mismatch\"}],\"server_no | db: At1Qg7qfaJM6dJVxoxJvdLz8ybFy7NKD|A secret <img src=x onerror=alert(1)>"
+  },
+  {
+    "name": "B не може переписати запис A (свій user_id, чужий id)",
+    "ok": true,
+    "detail": "push HTTP 200 {\"accepted\":1,\"last_op_id\":238,\"results\":[{\"idempotency_key\":\"6c4850e7-2649-4b4a-b030-0624a2da73f0\",\"status\":\"applied\"}],\"server_now\":\"2026-11-19T23:44:02.099Z\" | owners: At1Qg7qfaJM6dJVxoxJvdLz8ybFy7NKD,qF2yUGs2lf95sC0an3M5Cc7dPfhjcOhc",
+    "note": "B створив СВІЙ рядок з тим самим id (PK user_id,id); рядок A незмінний — перевірено SQL"
+  },
+  {
+    "name": "B не може видалити запис A",
+    "ok": true,
+    "detail": "push HTTP 200 | A row: alive"
+  },
+  {
+    "name": "B GET /api/v1/finyk/import/batches/1 не віддає чужого",
+    "ok": true,
+    "detail": "HTTP 404 {\"error\":\"Батч імпорту не знайдено\",\"message\":\"Батч імпорту не знайдено\",\"code\":\"NOT_FOUND\",\"request"
+  },
+  {
+    "name": "B GET /api/v1/finyk/receipts/1 не віддає чужого",
+    "ok": true,
+    "detail": "HTTP 404 {\"error\":\"Чек не знайдено\",\"message\":\"Чек не знайдено\",\"code\":\"NOT_FOUND\",\"requestId\":\"8a05fb57-699e"
+  },
+  {
+    "name": "B GET /api/v1/finyk/import/batches/mx_sec_mwo75dxf не віддає чужого",
+    "ok": true,
+    "detail": "HTTP 400 {\"error\":\"Некоректний id батчу імпорту\",\"message\":\"Некоректний id батчу імпорту\",\"code\":\"VALIDATION\""
+  },
+  {
+    "name": "невалідне тіло → 400 структуроване",
+    "ok": true,
+    "detail": "HTTP 400 code=VALIDATION"
+  },
+  {
+    "name": "дробові копійки → 400",
+    "ok": true,
+    "detail": "HTTP 400 VALIDATION"
+  },
+  {
+    "name": "sign-out",
+    "ok": true,
+    "detail": "HTTP 200"
+  },
+  {
+    "name": "[за дизайном ADR-0017] /me зі старою кукі у 5-хв вікні cookieCache",
+    "ok": true,
+    "detail": "HTTP 200"
+  },
+  {
+    "name": "експорт усіх даних зі старою кукі → 401 (requireFreshSession)",
+    "ok": true,
+    "detail": "HTTP 401"
+  },
+  {
+    "name": "[за дизайном ADR-0017] sync pull зі старою кукі у 5-хв вікні cookieCache",
+    "ok": true,
+    "detail": "HTTP 200"
+  },
+  {
+    "name": "sync pull без сесії → 401",
+    "ok": true,
+    "detail": "HTTP 401"
+  },
+  {
+    "name": "XSS: опис <img onerror> рендериться текстом",
+    "ok": true,
+    "detail": "0 діалогів, 0 вставлених img на 4 екранах"
+  }
+]
