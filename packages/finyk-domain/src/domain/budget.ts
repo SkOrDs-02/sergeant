@@ -386,6 +386,32 @@ export interface LimitUsagesOptions {
  * зі статистики; вікно періоду накладається тут, тож передавай історію
  * цілком, а не місячний зріз (тижневий і разовий ліміт мають власне вікно).
  */
+/**
+ * Витрачено по одному ліміту за його періодом (гривні, без округлення):
+ * вікно періоду + кошики категорій. Одна функція для картки ліміту в
+ * Плануванні, `calcLimitUsages` і push порогів (`limitPush.ts`).
+ * `transactions` вже без прихованих і виключених зі статистики.
+ */
+export function calcLimitBudgetSpent<
+  T extends SpendingTxLike & {
+    time?: number | undefined;
+    date?: string | undefined;
+  },
+>(
+  budget: LimitBudget,
+  transactions: readonly T[],
+  opts: LimitUsagesOptions = {},
+): number {
+  const { txCategories = {}, txSplits = {}, customCategories = [], now } = opts;
+  return calcLimitCategorySpent(
+    filterTransactionsForLimitPeriod(transactions, budget, now ?? new Date()),
+    limitBudgetCategoryIds(budget),
+    txCategories,
+    txSplits,
+    customCategories,
+  );
+}
+
 export function calcLimitUsages<
   T extends SpendingTxLike & {
     time?: number | undefined;
@@ -396,19 +422,15 @@ export function calcLimitUsages<
   transactions: readonly T[],
   opts: LimitUsagesOptions = {},
 ): LimitUsageEntry[] {
-  const { txCategories = {}, txSplits = {}, customCategories = [], now } = opts;
-  const at = now ?? new Date();
+  const at = opts.now ?? new Date();
   const out: LimitUsageEntry[] = [];
   for (const budget of getLimitBudgets(budgets)) {
     const categoryIds = limitBudgetCategoryIds(budget);
     if (categoryIds.length === 0 || !(Number(budget.limit) > 0)) continue;
-    const spent = calcLimitCategorySpent(
-      filterTransactionsForLimitPeriod(transactions, budget, at),
-      categoryIds,
-      txCategories,
-      txSplits,
-      customCategories,
-    );
+    const spent = calcLimitBudgetSpent(budget, transactions, {
+      ...opts,
+      now: at,
+    });
     out.push({
       ...calculateLimitUsage(budget, spent),
       ...calcLimitPace(budget, spent, at),

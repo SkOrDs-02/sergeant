@@ -8,8 +8,11 @@
  *
  * Аркуш редагує чернетку і нічого не застосовує, доки не натиснуто
  * «Показати N»: число рахується з того самого списку, що звужують фільтри,
- * тож людина бачить результат до того, як закрила аркуш. Пресетів суми тут
- * немає навмисно: їхніх чисел власник ще не назвав (спека, § Ризики).
+ * тож людина бачить результат до того, як закрила аркуш. Над полями суми
+ * чотири пресети (рішення власника 2026-11-19, `TX_AMOUNT_PRESETS`): тап
+ * заповнює «від» і «до», повторний тап по активному знімає їх. Підсвітка
+ * не зберігається окремо, а виводиться з полів (`matchTxAmountPreset`),
+ * тож ручна правка знімає її сама, а збіг повертає.
  */
 import { useId, useMemo, useState } from "react";
 import type { TxTagsMap } from "@sergeant/finyk-domain/domain/tags";
@@ -27,8 +30,12 @@ import {
   filterTransactionsByAdvanced,
   listAccountKeys,
   listTagOptions,
+  TX_AMOUNT_PRESETS,
+  formatTxAmountPresetLabel,
+  matchTxAmountPreset,
   parseAmountBound,
   type TxAdvancedFilters,
+  type TxAmountPresetId,
 } from "./transactionAdvancedFilters";
 
 const ALL = "__all";
@@ -89,6 +96,23 @@ export function TransactionsFiltersSheet({
     tags,
   ).length;
 
+  const activePreset =
+    from.ok && to.ok ? matchTxAmountPreset(from.minor, to.minor) : null;
+  const presetItems = useMemo(
+    () =>
+      TX_AMOUNT_PRESETS.map((p) => ({
+        value: p.id,
+        label: formatTxAmountPresetLabel(p),
+      })),
+    [],
+  );
+  const applyPreset = (id: TxAmountPresetId) => {
+    const p = TX_AMOUNT_PRESETS.find((x) => x.id === id);
+    if (!p) return;
+    setFromRaw(p.minKop === null ? "" : formatMinorAsInput(p.minKop));
+    setToRaw(p.maxKop === null ? "" : formatMinorAsInput(p.maxKop));
+  };
+
   const accountKeys = useMemo(
     () => listAccountKeys(monthTx, value.accountKey),
     [monthTx, value.accountKey],
@@ -140,6 +164,19 @@ export function TransactionsFiltersSheet({
         <legend className="text-style-label text-text mb-2">
           {copy.amountLegend}
         </legend>
+        <ChoiceGroup
+          variant="tiles"
+          size="sm"
+          ariaLabel={copy.presetsAria}
+          className="grid grid-cols-2 gap-2"
+          items={presetItems}
+          value={activePreset}
+          onChange={applyPreset}
+          onDeselect={() => {
+            setFromRaw("");
+            setToRaw("");
+          }}
+        />
         <div className="grid grid-cols-2 gap-2">
           <Input
             id={fromId}

@@ -11,7 +11,6 @@
 import { Suspense, useState } from "react";
 import { tagKey, type TxTagsMap } from "@sergeant/finyk-domain/domain/tags";
 import type { Transaction } from "@sergeant/finyk-domain/domain/types";
-import { formatMoneyFromKopecks } from "@sergeant/shared";
 import { Button } from "@shared/components/ui/Button";
 import { EmptyState } from "@shared/components/ui/EmptyState";
 import { Spinner } from "@shared/components/ui/Spinner";
@@ -21,6 +20,7 @@ import { accountLabel, type LabelledAccount } from "../../lib/accountLabel";
 import { TransactionsFilterChip } from "./TransactionsFilterChip";
 import {
   countActiveAdvancedFilters,
+  formatTxAmountKop as amountText,
   type TxAdvancedFilters,
 } from "./transactionAdvancedFilters";
 
@@ -28,13 +28,6 @@ const TransactionsFiltersSheet = lazyImport(
   () => import("./TransactionsFiltersSheet"),
   "TransactionsFiltersSheet",
 );
-
-function amountText(kop: number): string {
-  return formatMoneyFromKopecks(kop, {
-    symbol: "",
-    maxFractionDigits: 2,
-  }).trim();
-}
 
 /** Підпис плашки: «від 1 000 ₴ · Готівка на руках · Кава». */
 export function describeAdvancedFilters(

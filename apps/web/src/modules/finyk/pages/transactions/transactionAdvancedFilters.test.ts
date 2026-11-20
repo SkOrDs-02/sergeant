@@ -9,6 +9,9 @@ import {
   listAccountKeys,
   listTagOptions,
   parseAmountBound,
+  TX_AMOUNT_PRESETS,
+  formatTxAmountPresetLabel,
+  matchTxAmountPreset,
   type TxAdvancedFilters,
 } from "./transactionAdvancedFilters";
 
@@ -138,5 +141,46 @@ describe("опції аркуша", () => {
     const opts = listTagOptions(list.slice(0, 4), tags, null);
     expect(opts.map((o) => o.key)).toEqual(["кава", "ремонт", "робота"]);
     expect(opts[0]?.label).toBe("Кава");
+  });
+});
+
+describe("пресети суми (рішення власника 2026-11-19)", () => {
+  it("чотири фіксовані межі в копійках", () => {
+    expect(TX_AMOUNT_PRESETS.map((p) => [p.id, p.minKop, p.maxKop])).toEqual([
+      ["upTo100", null, 10_000],
+      ["from100to500", 10_000, 50_000],
+      ["from500to1000", 50_000, 100_000],
+      ["over1000", 100_000, null],
+    ]);
+  });
+
+  it("matchTxAmountPreset упізнає пресет лише за точним збігом обох меж", () => {
+    expect(matchTxAmountPreset(null, 10_000)).toBe("upTo100");
+    expect(matchTxAmountPreset(50_000, 100_000)).toBe("from500to1000");
+    expect(matchTxAmountPreset(100_000, null)).toBe("over1000");
+    expect(matchTxAmountPreset(10_000, 60_000)).toBeNull();
+    expect(matchTxAmountPreset(null, null)).toBeNull();
+  });
+
+  it("операція рівно на межі (500 ₴) не зникає з жодного сусіднього пресету", () => {
+    const list = [tx("a", -50_000)];
+    for (const id of ["from100to500", "from500to1000"] as const) {
+      const p = TX_AMOUNT_PRESETS.find((x) => x.id === id)!;
+      expect(
+        filterTransactionsByAdvanced(
+          list,
+          { ...EMPTY_TX_ADVANCED_FILTERS, minKop: p.minKop, maxKop: p.maxKop },
+          undefined,
+        ),
+      ).toHaveLength(1);
+    }
+  });
+
+  it("підпис іде через форматування грошей", () => {
+    expect(
+      TX_AMOUNT_PRESETS.map((p) =>
+        formatTxAmountPresetLabel(p).replace(/\s/g, " "),
+      ),
+    ).toEqual(["до 100 ₴", "100–500 ₴", "500–1 000 ₴", "понад 1 000 ₴"]);
   });
 });

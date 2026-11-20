@@ -15,6 +15,10 @@ export const finykTxFiltersMessages = {
   amountLegend: "Сума, ₴",
   amountFrom: "Від",
   amountTo: "До",
+  /** Група пресетів суми над полями (рішення власника 2026-11-19). */
+  presetsAria: "Швидкий вибір суми",
+  /** Крайній пресет без верхньої межі: `{from}` уже відформатована сума. */
+  presetOver: "понад {from} ₴",
   amountInvalid: "Сума має бути числом.",
   amountOrder: "«Від» має бути не більше за «до».",
   accountLegend: "Рахунок",

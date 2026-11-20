@@ -10,10 +10,7 @@ import {
   type DataStateQueryLike,
 } from "@shared/components/ui/DataState";
 import { calcCategorySpent } from "../../utils";
-import {
-  calcLimitCategoryBreakdown,
-  calcLimitCategorySpent,
-} from "./limitCategorySpend";
+import { calcLimitCategoryBreakdown } from "./limitCategorySpend";
 import {
   currentKyivMonthPrefix,
   filterToKyivMonth,
@@ -28,13 +25,14 @@ import {
   filterTransactionsForLimitPeriod,
   limitBudgetCategoryIds,
   projectMonthEndSpend,
+  calcLimitBudgetSpent,
 } from "@sergeant/finyk-domain/domain/budget";
+import { prepareFinykLimitSpendContext } from "@sergeant/finyk-domain/domain/limitPush";
 import {
   filterStatTransactions,
   manualExpenseToTransaction,
 } from "@sergeant/finyk-domain/domain/transactions";
 import { getMonthlySummary } from "@sergeant/finyk-domain/domain/selectors";
-import { withMerchantRuleOverrides } from "@sergeant/finyk-domain/lib/merchantRuleOverrides";
 import type { MerchantRuleIndex } from "@sergeant/finyk-domain/lib/merchantRules";
 import type { ManualExpense } from "@sergeant/finyk-domain/domain/personalization";
 import { MonthlyPlanCard } from "../../components/budgets/MonthlyPlanCard";
@@ -235,24 +233,28 @@ export function Budgets({
    * understates spend against the limit. Для цього `realTx` вище доповнено
    * дзеркалом (`useBankHistoryTx`): мережа після відповіді тримає лише
    * поточний місяць, і без дзеркала вікна тижня/разового ліміту порожніли.
+   *
+   * Підготовка (виключені зі статистики + правила мерчанта) і сума по
+   * ліміту доменні (`limitPush.ts`, Ф-4 (б)): ті самі функції рахує
+   * серверний push 80 % і 100 %, тож число на картці й у push одне.
+   * `txCategories` — ефективна мапа лише для читання агрегаторами.
    */
-  const allStatTx = useMemo(
-    () => filterStatTransactions(allTx, excludedTxIds),
-    [allTx, excludedTxIds],
-  );
-
-  // Ефективна мапа категорій: явні override-и плюс виведене правилами
-  // мерчантів. Лише для читання агрегаторами нижче; у слот не пишеться.
-  // `allStatTx` ширший за місячний `statTx`, тож покриває обидва.
-  const txCategories = useMemo(
+  const { statTx: allStatTx, txCategories } = useMemo(
     () =>
-      withMerchantRuleOverrides(
-        allStatTx,
-        explicitTxCategories,
+      prepareFinykLimitSpendContext({
+        transactions: allTx,
+        excludedTxIds,
+        txCategories: explicitTxCategories,
         merchantRuleIndex,
         customCategories,
-      ),
-    [allStatTx, explicitTxCategories, merchantRuleIndex, customCategories],
+      }),
+    [
+      allTx,
+      excludedTxIds,
+      explicitTxCategories,
+      merchantRuleIndex,
+      customCategories,
+    ],
   );
 
   /** Month-clamped counterpart — for the monthly plan-vs-fact card only. */
@@ -288,18 +290,17 @@ export function Budgets({
           customCategories,
         );
       }
-      // `calcLimitCategorySpent`, а не `calcCategorySpent`: ліміт живе в
+      // `calcLimitBudgetSpent`, а не `calcCategorySpent`: ліміт живе в
       // словнику MCC, а ручна витрата — у детальнішій ручній таксономії,
       // і кілька її слагів (`groceries`, `cafe`, `tech`) мають ІНШИЙ
       // канонічний id. Буквальне порівняння id давало нуль у ліміті при
       // видимих витратах в Аналітиці — див. `./limitCategorySpend.ts`.
-      return calcLimitCategorySpent(
-        filterTransactionsForLimitPeriod(allStatTx, budget, now),
-        limitBudgetCategoryIds(budget),
+      return calcLimitBudgetSpent(budget, allStatTx, {
         txCategories,
         txSplits,
         customCategories,
-      );
+        now,
+      });
     },
     [customCategories, now, allStatTx, txCategories, txSplits],
   );

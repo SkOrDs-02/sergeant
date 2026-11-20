@@ -23,7 +23,9 @@ import {
   type TxTagsMap,
 } from "@sergeant/finyk-domain/domain/tags";
 import type { Transaction } from "@sergeant/finyk-domain/domain/types";
+import { formatMoneyFromKopecks } from "@sergeant/shared";
 import { parseAmountToMinor } from "@shared/lib/format/amount";
+import { finykTxFiltersMessages as copy } from "@shared/i18n/uk.finykTxFilters";
 
 export interface TxAdvancedFilters {
   /** Нижня межа суми за модулем, копійки; `null` без межі. */
@@ -84,6 +86,68 @@ export function parseAmountBound(raw: string): AmountBoundResult {
   if (raw.trim() === "") return { ok: true, minor: null };
   const parsed = parseAmountToMinor(raw);
   return parsed.ok ? { ok: true, minor: parsed.minor } : { ok: false };
+}
+
+/** Сума в копійках для підписів фільтра: «1 000», «307,50», без символу. */
+export function formatTxAmountKop(kop: number): string {
+  return formatMoneyFromKopecks(kop, {
+    symbol: "",
+    maxFractionDigits: 2,
+  }).trim();
+}
+
+export type TxAmountPresetId =
+  "upTo100" | "from100to500" | "from500to1000" | "over1000";
+
+export interface TxAmountPreset {
+  id: TxAmountPresetId;
+  /** Копійки; `null` без нижньої межі. */
+  minKop: number | null;
+  /** Копійки; `null` без верхньої межі. */
+  maxKop: number | null;
+}
+
+/**
+ * Пресети суми, рішення власника 2026-11-19: «Фіксовані чотири: "до 100 ₴ ·
+ * 100–500 ₴ · 500–1000 ₴ · понад 1000 ₴". Тап заповнює поля "від" і "до",
+ * їх можна підправити руками».
+ *
+ * AI-CONTEXT: межі включні, як у фільтрі (`filterTransactionsByAdvanced`),
+ * тож сусідні пресети ділять межу: операція рівно на 500 ₴ є і в
+ * «100–500», і в «500–1000», рівно на 1000 ₴ і в «500–1000», і в «понад
+ * 1000». Це свідомо: межа не випадає з жодного пресету, а поля «від / до»
+ * показують точні числа. Напіввідкриті межі сховали б 500 ₴ з одного з
+ * пресетів без жодного сліду в полях.
+ */
+export const TX_AMOUNT_PRESETS: readonly TxAmountPreset[] = Object.freeze([
+  { id: "upTo100", minKop: null, maxKop: 10_000 },
+  { id: "from100to500", minKop: 10_000, maxKop: 50_000 },
+  { id: "from500to1000", minKop: 50_000, maxKop: 100_000 },
+  { id: "over1000", minKop: 100_000, maxKop: null },
+]);
+
+/** Пресет, чиї межі точно збігаються з полями; інакше `null`. */
+export function matchTxAmountPreset(
+  minKop: number | null,
+  maxKop: number | null,
+): TxAmountPresetId | null {
+  return (
+    TX_AMOUNT_PRESETS.find((p) => p.minKop === minKop && p.maxKop === maxKop)
+      ?.id ?? null
+  );
+}
+
+/** Підпис чипа: «до 100 ₴», «100–500 ₴», «понад 1 000 ₴». */
+export function formatTxAmountPresetLabel(p: TxAmountPreset): string {
+  if (p.minKop !== null && p.maxKop !== null) {
+    return copy.chipAmountRange
+      .replace("{from}", formatTxAmountKop(p.minKop))
+      .replace("{to}", formatTxAmountKop(p.maxKop));
+  }
+  if (p.minKop !== null) {
+    return copy.presetOver.replace("{from}", formatTxAmountKop(p.minKop));
+  }
+  return copy.chipAmountTo.replace("{to}", formatTxAmountKop(p.maxKop ?? 0));
 }
 
 /**
