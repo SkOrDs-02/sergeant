@@ -11,10 +11,11 @@ const { flagMock, openActionMock } = vi.hoisted(() => ({
 }));
 
 vi.mock("../lib/featureFlags", () => ({ useFlag: flagMock }));
-// `useChecklistSignals` питає статус сесії; справжній хук тягне весь
-// `AuthContext` (а з ним `hubNav`, який тут замоканий частково).
-vi.mock("../auth/useSessionReady", () => ({ useSessionReady: () => true }));
-vi.mock("@shared/lib/modules/hubNav", () => ({
+// Частковий мок: `useChecklistSignals` питає статус сесії через
+// `useSessionReady` → `AuthContext`, а той читає інші експорти `hubNav`
+// (`HUB_MODULE_IDS`). Підміняємо лише навігацію з дією.
+vi.mock("@shared/lib/modules/hubNav", async (importOriginal) => ({
+  ...(await importOriginal<typeof import("@shared/lib/modules/hubNav")>()),
   openHubModuleWithAction: openActionMock,
 }));
 vi.mock("../onboarding/FirstActionSheet", () => ({
