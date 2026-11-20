@@ -2,11 +2,17 @@ import { expect, test } from "@playwright/test";
 
 test.use({ storageState: { cookies: [], origins: [] } });
 
-test("boot-watchdog піднімає застосунок після обірваного vendor-чанка", async ({
+// Обриваємо ВХІДНИЙ чанк (`index-*.js` зі `<script src>`; перший запит під
+// цей патерн — саме він). До 2026-11-20 тут обривався `vendor-react`, але його
+// тепер рятує `chunkReload` (одноразове перезавантаження з вхідного бандла) ще
+// до сторожа: тест перестав перевіряти сторожа, а «контроль» — давати білий
+// екран (прогін `full-2026-11-20`). Без вхідного чанка жоден JS застосунку не
+// стартує, тож врятувати може лише інлайн-сторож з `index.html`.
+test("boot-watchdog піднімає застосунок після обірваного вхідного чанка", async ({
   page,
 }) => {
   let aborted = 0;
-  await page.route(/\/assets\/vendor-react-[^/]*\.js$/, async (route) => {
+  await page.route(/\/assets\/index-[^/]*\.js$/, async (route) => {
     if (aborted === 0) {
       aborted++;
       await route.abort("aborted");
@@ -51,7 +57,7 @@ test("контроль: без сторожа той самий обрив ли�
   await page.addInitScript(() =>
     sessionStorage.setItem("sergeant.boot_watchdog_at", String(Date.now())),
   );
-  await page.route(/\/assets\/vendor-react-[^/]*\.js$/, async (route) => {
+  await page.route(/\/assets\/index-[^/]*\.js$/, async (route) => {
     if (aborted === 0) {
       aborted++;
       await route.abort("aborted");
