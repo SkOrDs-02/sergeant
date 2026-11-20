@@ -855,6 +855,7 @@
           "healthDataConsent": true,
           "hubPrefs": null,
           "pushDailyCap": 3,
+          "pushFinykAlerts": false,
           "pushMonoTransactions": false,
           "pushNotifications": true,
           "quietHoursEnabled": true,

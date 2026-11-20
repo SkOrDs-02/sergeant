@@ -69,6 +69,14 @@ export interface ChatRequestPayload {
    * списання — не контракт, а optimization.
    */
   round_trip_ticket?: string;
+  /**
+   * С-2 (б): клієнт уміє другий раунд інструментів. Тоді відповідь на запит
+   * синтезу після пошуку може бути `ChatResponse` з `tool_calls` (виклики
+   * запису) і `round_trip_ticket` другого раунду замість тексту; клієнт
+   * виконує їх і шле синтез обох раундів із цим квитком. Без поля сервер
+   * другого раунду не робить.
+   */
+  second_tool_round?: boolean;
 }
 
 export interface ChatResponse {

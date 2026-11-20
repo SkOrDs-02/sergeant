@@ -184,7 +184,8 @@ export async function getUserPreferences(
     `SELECT analytics, ai_memory, push_notifications, sergeant_nudges,
             push_daily_cap, health_data_consent, active_modules, hub_prefs,
             time_zone, quiet_hours_enabled, quiet_hours_start_min,
-            quiet_hours_end_min, push_mono_transactions, updated_at
+            quiet_hours_end_min, push_mono_transactions, push_finyk_alerts,
+            updated_at
        FROM user_preferences
       WHERE user_id = $1`,
     [userId],
@@ -231,9 +232,10 @@ export async function upsertUserPreferences(
         (user_id, analytics, ai_memory, push_notifications, sergeant_nudges,
          health_data_consent, active_modules, hub_prefs, push_daily_cap,
          time_zone, quiet_hours_enabled, quiet_hours_start_min,
-         quiet_hours_end_min, push_mono_transactions, updated_at)
+         quiet_hours_end_min, push_mono_transactions, push_finyk_alerts,
+         updated_at)
       VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9,
-              $10, $11, $12, $13, $14, NOW())
+              $10, $11, $12, $13, $14, $15, NOW())
       ON CONFLICT (user_id) DO UPDATE SET
         analytics = EXCLUDED.analytics,
         ai_memory = EXCLUDED.ai_memory,
@@ -248,12 +250,13 @@ export async function upsertUserPreferences(
         quiet_hours_start_min = EXCLUDED.quiet_hours_start_min,
         quiet_hours_end_min = EXCLUDED.quiet_hours_end_min,
         push_mono_transactions = EXCLUDED.push_mono_transactions,
+        push_finyk_alerts = EXCLUDED.push_finyk_alerts,
         updated_at = NOW()
       RETURNING analytics, ai_memory, push_notifications, sergeant_nudges,
                 push_daily_cap, health_data_consent, active_modules,
                 hub_prefs, time_zone, quiet_hours_enabled,
                 quiet_hours_start_min, quiet_hours_end_min,
-                push_mono_transactions, updated_at`,
+                push_mono_transactions, push_finyk_alerts, updated_at`,
     [
       userId,
       next.analytics,
@@ -269,6 +272,7 @@ export async function upsertUserPreferences(
       next.quietHoursStartMin,
       next.quietHoursEndMin,
       next.pushMonoTransactions,
+      next.pushFinykAlerts,
     ],
   );
   return serializePreferences(result.rows[0]);

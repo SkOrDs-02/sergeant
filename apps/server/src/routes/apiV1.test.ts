@@ -280,6 +280,7 @@ describe("/api/v1/me data rights", () => {
       quietHoursStartMin: 1320,
       quietHoursEndMin: 480,
       pushMonoTransactions: true,
+      pushFinykAlerts: true,
       updatedAt: null,
     });
   });
@@ -332,6 +333,7 @@ describe("/api/v1/me data rights", () => {
       quietHoursStartMin: 1320,
       quietHoursEndMin: 480,
       pushMonoTransactions: true,
+      pushFinykAlerts: true,
       updatedAt: "2026-06-06T10:05:00.000Z",
     });
     const [sql, params] = queryMock.mock.calls[1]!;
@@ -354,6 +356,8 @@ describe("/api/v1/me data rights", () => {
       true,
       1320,
       480,
+      true,
+      // Міграція 175: тумблер push Фініка, дефолт увімкнено.
       true,
     ]);
   });

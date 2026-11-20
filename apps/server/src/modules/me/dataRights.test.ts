@@ -73,6 +73,8 @@ describe("getUserPreferences — contract fixture (Hard Rule #3)", () => {
       quietHoursStartMin: 1320,
       quietHoursEndMin: 480,
       pushMonoTransactions: true,
+      // Міграція 175 (Ф-4 (б)): push Фініка увімкнений за замовчуванням.
+      pushFinykAlerts: true,
       updatedAt: null,
     });
   });
@@ -93,6 +95,7 @@ describe("getUserPreferences — contract fixture (Hard Rule #3)", () => {
         quiet_hours_start_min: 1380,
         quiet_hours_end_min: 420,
         push_mono_transactions: false,
+        push_finyk_alerts: false,
         updated_at: new Date("2026-06-06T10:00:00.000Z"),
       },
     ]);
@@ -114,6 +117,7 @@ describe("getUserPreferences — contract fixture (Hard Rule #3)", () => {
       quietHoursStartMin: 1380,
       quietHoursEndMin: 420,
       pushMonoTransactions: false,
+      pushFinykAlerts: false,
       updatedAt: "2026-06-06T10:00:00.000Z",
     });
   });
@@ -288,6 +292,7 @@ describe("upsertUserPreferences — сповіщення, міграція 168",
             quiet_hours_start_min: p[11],
             quiet_hours_end_min: p[12],
             push_mono_transactions: p[13],
+            push_finyk_alerts: p[14],
             updated_at: new Date("2026-11-18T10:00:00.000Z"),
           },
         ],
@@ -303,6 +308,7 @@ describe("upsertUserPreferences — сповіщення, міграція 168",
       quietHoursStartMin: 1380,
       quietHoursEndMin: 420,
       pushMonoTransactions: false,
+      pushFinykAlerts: false,
     });
     expect(result).toMatchObject({
       timeZone: "America/New_York",
@@ -310,12 +316,14 @@ describe("upsertUserPreferences — сповіщення, міграція 168",
       quietHoursStartMin: 1380,
       quietHoursEndMin: 420,
       pushMonoTransactions: false,
+      pushFinykAlerts: false,
     });
     expect(query.mock.calls[1]?.[1]?.slice(9)).toEqual([
       "America/New_York",
       true,
       1380,
       420,
+      false,
       false,
     ]);
     expect(() => UserPreferencesSchema.parse(result)).not.toThrow();
@@ -329,6 +337,7 @@ describe("upsertUserPreferences — сповіщення, міграція 168",
       true,
       1320,
       480,
+      true,
       true,
     ]);
   });

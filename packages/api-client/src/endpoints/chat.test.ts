@@ -5,6 +5,7 @@
 // SSE, via `HttpClient.raw`). Both accept an AbortSignal for HubChat's
 // cancel button.
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
+import { ChatRequestSchema } from "@sergeant/shared";
 import { createHttpClient } from "../httpClient";
 import { firstCall } from "../__test-utils/firstCall";
 import { ApiError, isApiError } from "../ApiError";
@@ -161,6 +162,35 @@ describe("createChatEndpoints.stream", () => {
 
     const [, init] = firstCall(fetchMock);
     expect(JSON.parse(String((init as RequestInit).body))).toEqual(body);
+  });
+
+  // Hard Rule #3 — `second_tool_round` (С-2 (б), спека
+  // `hubchat-second-tool-round.md`): тіло синтезу несе згоду клієнта на
+  // другий раунд дослівно, і серверна схема (`ChatRequestSchema`) її приймає;
+  // без поля сервер другого раунду не робить (`chat.secondRound.test.ts`).
+  it("надсилає second_tool_round у тілі синтезу, і схема сервера його приймає", async () => {
+    const fetchMock = vi.fn(
+      async () => new Response("", { status: 200 }),
+    ) as FetchMock;
+    globalThis.fetch = fetchMock as unknown as typeof fetch;
+
+    const http = createHttpClient({ baseUrl: "https://api.example.com" });
+    const chat = createChatEndpoints(http);
+    const body = {
+      ...payload,
+      tool_results: [{ tool_use_id: "tc1", content: "ok" }],
+      tool_calls_raw: [{ type: "tool_use", id: "tc1", name: "x", input: {} }],
+      second_tool_round: true,
+      stream: true,
+    };
+    await chat.stream(body);
+
+    const [, init] = firstCall(fetchMock);
+    const sent = JSON.parse(String((init as RequestInit).body));
+    expect(sent).toEqual(body);
+    const parsed = ChatRequestSchema.parse(sent);
+    expect(parsed.second_tool_round).toBe(true);
+    expect(ChatRequestSchema.parse(payload).second_tool_round).toBeUndefined();
   });
 
   it("passes through an AbortSignal on stream()", async () => {

@@ -124,6 +124,10 @@ describe(
             quietHoursStartMin: 1380,
             quietHoursEndMin: 420,
             pushMonoTransactions: false,
+            // Міграція 175: тумблер push Фініка (ліміт 80/100 %, платіж
+            // завтра). Дефолт сервера `true`, тож `false` доводить, що
+            // значення їде з колонки.
+            pushFinykAlerts: false,
             updatedAt: "2026-08-01T12:00:00.000Z",
           });
         })
@@ -139,6 +143,8 @@ describe(
           expect(out.quietHoursStartMin).toBe(1380);
           expect(out.quietHoursEndMin).toBe(420);
           expect(out.pushMonoTransactions).toBe(false);
+          expect(out.pushFinykAlerts).toBe(false);
+          expect(typeof out.pushFinykAlerts).toBe("boolean");
         });
     });
 
@@ -177,6 +183,7 @@ describe(
           expect(out.timeZone).toBeUndefined();
           expect(out.quietHoursEnabled).toBeUndefined();
           expect(out.pushMonoTransactions).toBeUndefined();
+          expect(out.pushFinykAlerts).toBeUndefined();
         });
     });
 
