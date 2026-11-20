@@ -61,7 +61,7 @@ export default function DataPage() {
             створюєш сам на api.monobank.ua і можеш відкликати там само в один
             клік. Токен зберігається зашифрованим.
           </p>
-          <p className="mt-4 text-sm leading-relaxed text-muted">
+          <p className="mt-4 text-[15px] leading-relaxed text-muted">
             Що саме бачить токен і чого не може, таблицею, і покроково про
             підключення й відкликання:{" "}
             <a

@@ -127,7 +127,7 @@ export default function BetaPage() {
           {MINI_FAQ.map((item) => (
             <div key={item.q} className="border-t border-cardline py-5">
               <h3 className="font-bold text-foreground-strong">{item.q}</h3>
-              <p className="mt-2 max-w-2xl text-sm leading-relaxed text-muted">
+              <p className="mt-2 max-w-2xl text-[15px] leading-relaxed text-muted">
                 {item.a ?? (
                   <>
                     Список відомих проблем – у розділі{" "}

@@ -136,7 +136,7 @@ export default function GuideBankBezpekaPage() {
                 <p className="mt-1.5 leading-relaxed text-foreground">
                   {item.why}
                 </p>
-                <p className="mt-3 border-l-2 border-ink pl-4 text-sm leading-relaxed text-muted">
+                <p className="mt-3 border-l-2 border-ink pl-4 text-[15px] leading-relaxed text-muted">
                   <span className="font-display text-xs font-semibold uppercase tracking-[0.12em] text-foreground-strong">
                     Sergeant:
                   </span>{" "}

@@ -249,7 +249,10 @@ for (const [vw, tag] of [
   const { ctx, page } = await newPage({ width: 390, height: 844 });
   await page.goto(BASE + "/", { waitUntil: "networkidle" });
 
-  const burger = page.getByRole("button", { name: /меню/i });
+  // Бургер – `<summary>` нативного `<details>` (F13): скрінрідер оголошує
+  // його кнопкою, але Playwright роль `button` йому не дає.
+  const burgerSel = 'summary[aria-label*="меню"]';
+  const burger = page.locator(burgerSel);
   ok("mobile бургер видимий", await burger.isVisible());
   const bb = await burger.boundingBox();
   ok(
@@ -277,7 +280,7 @@ for (const [vw, tag] of [
   // Меню-пастка: розкривний список, з якого не вийти нічим, крім повторного
   // тапу по бургеру. Обидві дірки знайдені живим кліком 2026-08-31.
   await page.goto(BASE + "/", { waitUntil: "networkidle" });
-  const trapBurger = page.getByRole("button", { name: /меню/i });
+  const trapBurger = page.locator(burgerSel);
   const mobileNav = page.getByLabel("Мобільна навігація");
 
   await trapBurger.click();
@@ -301,7 +304,7 @@ for (const [vw, tag] of [
   );
 
   // Бургер працює і на внутрішній сторінці
-  await page.getByRole("button", { name: /меню/i }).click();
+  await page.locator(burgerSel).click();
   await page.waitForTimeout(300);
   await page
     .getByLabel("Мобільна навігація")
@@ -312,6 +315,26 @@ for (const [vw, tag] of [
     "mobile меню Про проєкт → /about (з /guides)",
     page.url().endsWith("/about"),
   );
+
+  // Меню без JS (F13): нативний `<details>` відкривається й тоді, коли
+  // скрипт не виконався або чанк сторінки ще їде.
+  {
+    const noJs = await browser.newContext({
+      viewport: { width: 390, height: 844 },
+      javaScriptEnabled: false,
+    });
+    const p2 = await noJs.newPage();
+    await p2.goto(BASE + "/hroshi", { waitUntil: "load" });
+    await p2.locator(burgerSel).click();
+    ok(
+      "mobile меню відкривається без JS",
+      await p2
+        .getByLabel("Мобільна навігація")
+        .getByRole("link", { name: "Гайди" })
+        .isVisible(),
+    );
+    await noJs.close();
+  }
 
   await ctx.close();
 }

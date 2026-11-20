@@ -114,7 +114,7 @@ export default function GuidePryvat24Page() {
                 <h3 className="font-bold text-foreground-strong">
                   {step.title}
                 </h3>
-                <p className="mt-1.5 text-sm leading-relaxed text-muted">
+                <p className="mt-1.5 text-[15px] leading-relaxed text-muted">
                   {step.text}
                 </p>
               </li>
@@ -126,8 +126,8 @@ export default function GuidePryvat24Page() {
           <h2 className={h2}>Наскільки добре читається категорія</h2>
           <p className="mt-4 leading-relaxed text-muted">
             Виписка Приват24 несе власну колонку «Категорія», і Фінік бере її як
-            перший доказ. На одній живій виписці з 27 рядків із категорією
-            приїхали 23. Це один замір на одному файлі. Підказка нічого не
+            перший доказ. На одній живій виписці з 27 рядків 23 приїхали з
+            категорією. Це один замір на одному файлі. Підказка нічого не
             вирішує остаточно: кожен рядок проходить таблицю перевірки перед
             збереженням.
           </p>
@@ -139,7 +139,7 @@ export default function GuidePryvat24Page() {
             {LIMITS.map((item) => (
               <li
                 key={item}
-                className="flex items-baseline gap-2.5 text-sm leading-relaxed text-muted"
+                className="flex items-baseline gap-2.5 text-[15px] leading-relaxed text-muted"
               >
                 <span
                   aria-hidden="true"

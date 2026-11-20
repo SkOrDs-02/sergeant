@@ -140,7 +140,7 @@ export default function GuideSilpoPage() {
                 <h3 className="font-bold text-foreground-strong">
                   {step.title}
                 </h3>
-                <p className="mt-1.5 text-sm leading-relaxed text-muted">
+                <p className="mt-1.5 text-[15px] leading-relaxed text-muted">
                   {step.text}
                 </p>
               </li>
@@ -156,7 +156,7 @@ export default function GuideSilpoPage() {
                 <h3 className="font-bold text-foreground-strong">
                   {item.title}
                 </h3>
-                <p className="mt-2 text-sm leading-relaxed text-muted">
+                <p className="mt-2 text-[15px] leading-relaxed text-muted">
                   {item.text}
                 </p>
               </div>
@@ -170,7 +170,7 @@ export default function GuideSilpoPage() {
             {LIMITS.map((item) => (
               <li
                 key={item}
-                className="flex items-baseline gap-2.5 text-sm leading-relaxed text-muted"
+                className="flex items-baseline gap-2.5 text-[15px] leading-relaxed text-muted"
               >
                 <span
                   aria-hidden="true"
@@ -207,7 +207,7 @@ export default function GuideSilpoPage() {
         </section>
 
         <div className="flex flex-col gap-2.5 border-t border-cardline pt-6">
-          <p className="text-sm leading-relaxed text-muted">
+          <p className="text-[15px] leading-relaxed text-muted">
             Звʼязка з Сільпо доповнює способи додати витрату у Фініку:
             автосинхронізацію Monobank, фото чека, виписку файлом і ручну форму.{" "}
             <a href="/hroshi" className={link}>
