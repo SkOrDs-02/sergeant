@@ -465,10 +465,10 @@ session-check чекає слот.
 
 ## `/health/workers` — worker fleet snapshot
 
-`GET /health/workers` (PR-31) повертає JSON з per-queue/worker breakdown. **Не** є platform-probe-ом — Coolify його не використовує. Призначення: дашборди, runbook-investigation, alert-channel debug.
+`GET /health/workers` (PR-31) повертає JSON з per-queue/worker breakdown. **Не** є platform-probe-ом — Coolify його не використовує. Призначення: дашборди, runbook-investigation, alert-channel debug. З 2026-11-21 роут (як і `/healthz`) за Bearer `METRICS_TOKEN`, без нього 401 (sec-40).
 
 ```bash
-curl https://api.sergeant/health/workers | jq
+curl -H "Authorization: Bearer $METRICS_TOKEN" https://api.sergeant/health/workers | jq
 ```
 
 Контракт відповіді:
@@ -735,7 +735,7 @@ context-и, що деградує AI-відповіді.
    - ingestion-worker no-op-ує (BullMQ-jobs минають processing);
    - `/api/chat` працює без RAG-injection (`AI_MEMORY_RAG_TOP_K`
      ефективно стає `0`).
-2. Перевір що kill-switch застосувався: `curl
+2. Перевір що kill-switch застосувався: `curl -H "Authorization: Bearer $METRICS_TOKEN"
 https://<server>/health/workers` — `ai-memory-ingest` має бути `stopped`.
 3. Створи incident-thread у `#alerts` (Telegram) з посиланням на issue
    - workflow run.

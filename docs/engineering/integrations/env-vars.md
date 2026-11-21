@@ -369,7 +369,7 @@ Operator-toggle для n8n WF-30 [`30-ai-memory-daily-digest.json`](https://gith
 
 ### `METRICS_TOKEN` _(optional)_
 
-Bearer-токен для захисту `/metrics` (Prometheus scrape endpoint). Якщо не заданий — `/metrics` вимкнений. Для Grafana Agent / Prometheus scraper: `Authorization: Bearer <METRICS_TOKEN>`.
+Bearer-токен для захисту `/metrics` (Prometheus scrape endpoint), а з 2026-11-21 також `/healthz` і `/health/workers` (sec-40; анонімними лишаються `/livez`, `/readyz`, `/health`). Якщо не заданий — `/metrics` вимкнений. Для Grafana Agent / Prometheus scraper: `Authorization: Bearer <METRICS_TOKEN>`.
 
 ### `GRAFANA_CLOUD_LOKI_URL`, `GRAFANA_CLOUD_LOKI_USERNAME`, `GRAFANA_CLOUD_LOKI_TOKEN` _(optional)_
 

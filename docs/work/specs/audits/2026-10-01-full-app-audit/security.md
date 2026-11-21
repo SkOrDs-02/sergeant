@@ -2981,7 +2981,7 @@ verify-server-static-reliability-ops/err-probe.mjs (pool-юзер audit_pool159)
 
 ### `sec-40` [low] Анонімні /healthz, /health/workers і /api/status без rate limit роблять SQL на кожен виклик і розкривають операційні дані
 
-- **Стан:** відкрито
+- **Стан:** закрито 2026-11-21: `/healthz` і `/health/workers` за Bearer `METRICS_TOKEN` (`http/requireMetricsToken.ts`, спільний з `/metrics`), анонім отримує 401 без запиту в БД; `/livez`, `/readyz`, `/health` лишились анонімними, smoke-тести переведено на `auth: "metrics"`. Кеш знімка і статус n8n у `/api/status` у рішення не входили
 - **Рішення власника 2026-11-21:** `/healthz` і `/health/workers` закрити `METRICS_TOKEN`-ом, як `/metrics`; анонімними лишаються лише `/livez` і `/readyz`, скрипти проб оновити. Той самий кластер, що `priv-30`.
 - **Перевірка:** підтверджено · **Зусилля:** S · **Швидкий виграш** · **Область:** server: health / observability
 - **Де:** apps/server/src/routes/health.ts:55-56; apps/server/src/http/health.ts:106-191,222-256; apps/server/src/modules/me/deletionPoller.ts:242-262; apps/server/src/modules/gdpr/cleanupPoller.ts:226-244; apps/server/src/http/status.ts:115-140

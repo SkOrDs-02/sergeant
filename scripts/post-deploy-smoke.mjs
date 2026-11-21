@@ -29,8 +29,12 @@
 //
 // Env:
 //   STAGING_SESSION_COOKIE  Cookie for `auth: session` tests.
+//   SMOKE_METRICS_TOKEN     Bearer for `auth: metrics` tests (`/healthz`,
+//                           `/health/workers`; = серверний METRICS_TOKEN).
+//                           Без нього такі тести перевіряють, що гейт
+//                           закритий: очікують 401 `unauthorized`.
 //   SMOKE_ALLOWED_HOSTS     Comma-separated hosts (or URLs) allowed to receive
-//                           that cookie. Required whenever the cookie is set.
+//                           that cookie / token. Required whenever either is set.
 //
 // Exit codes:
 //   0  All checks pass.
@@ -220,6 +224,34 @@ export function isCookieHostAllowed(baseUrl, allowedHosts) {
     return false;
   }
   return allowedHosts.includes(host);
+}
+
+// ---------- Auth modes ----------
+
+/**
+ * `auth: "metrics"` — роут за серверним `METRICS_TOKEN` (sec-40):
+ * з токеном шлемо `Authorization: Bearer …` і перевіряємо форму як
+ * завжди; без токена перевіряємо протилежне — що анонім отримує 401.
+ * Так тест не червоніє там, де секрет не налаштовано, і водночас ловить
+ * регресію, яка знову відкрила б роут.
+ *
+ * @param {ReturnType<typeof normaliseTests>[number]} test
+ * @param {{ metricsToken?: string }} opts
+ */
+export function applyAuthMode(test, { metricsToken } = {}) {
+  if (test.auth !== "metrics") return test;
+  if (metricsToken) {
+    return {
+      ...test,
+      headers: { ...test.headers, authorization: `Bearer ${metricsToken}` },
+    };
+  }
+  return {
+    ...test,
+    expectedStatus: 401,
+    shape: undefined,
+    expectedBodyContains: "unauthorized",
+  };
 }
 
 // ---------- Filtering ----------
@@ -645,6 +677,7 @@ export async function runMain(argv = process.argv.slice(2)) {
 
   const generatedAt = new Date().toISOString();
   const sessionCookie = process.env.STAGING_SESSION_COOKIE || "";
+  const metricsToken = process.env.SMOKE_METRICS_TOKEN || "";
 
   if (args.dryRun) {
     process.stdout.write(`Dry-run — ${tests.length} test(s) planned:\n`);
@@ -654,7 +687,11 @@ export async function runMain(argv = process.argv.slice(2)) {
           ? sessionCookie
             ? "auth=session(set)"
             : "auth=session(MISSING — will run anonymously)"
-          : "auth=none";
+          : t.auth === "metrics"
+            ? metricsToken
+              ? "auth=metrics(set)"
+              : "auth=metrics(MISSING — expects 401)"
+            : "auth=none";
       process.stdout.write(
         `  - ${t.name} [${t.tier}] ${t.method} ${t.path} expect=${t.expectedStatus} budget=${t.latencyBudgetMs}ms ${authNote}\n`,
       );
@@ -662,18 +699,22 @@ export async function runMain(argv = process.argv.slice(2)) {
     return 0;
   }
 
-  if (sessionCookie) {
+  if (sessionCookie || metricsToken) {
     const allowedHosts = parseAllowedHosts(process.env.SMOKE_ALLOWED_HOSTS);
     if (!isCookieHostAllowed(baseUrl, allowedHosts)) {
+      const which = sessionCookie
+        ? "STAGING_SESSION_COOKIE"
+        : "SMOKE_METRICS_TOKEN";
       process.stderr.write(
-        `Error: STAGING_SESSION_COOKIE is set but ${baseUrl} is not in SMOKE_ALLOWED_HOSTS ` +
-          `(${allowedHosts.join(", ") || "empty"}). Refusing to send the session cookie.\n`,
+        `Error: ${which} is set but ${baseUrl} is not in SMOKE_ALLOWED_HOSTS ` +
+          `(${allowedHosts.join(", ") || "empty"}). Refusing to send credentials.\n`,
       );
       return 2;
     }
   }
 
-  const results = await runWithConcurrency(tests, args.concurrency, (t) =>
+  const authed = tests.map((t) => applyAuthMode(t, { metricsToken }));
+  const results = await runWithConcurrency(authed, args.concurrency, (t) =>
     executeTest(t, {
       baseUrl,
       sessionCookie,

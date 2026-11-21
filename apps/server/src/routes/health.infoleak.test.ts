@@ -20,9 +20,11 @@ import request from "supertest";
  *    (`commit`, `sha`, `version`, `build`, `buildDate`, `buildSha`,
  *    `gitSha`, `release`). Build metadata moves to an internal,
  *    `requireApiSecret`-gated route if/when ops actually needs it.
- * 3. `/healthz` must remain reachable from openclaw `get_server_stats`
- *    and external monitoring without a session — a regression that
- *    demands auth here would silently break Phase-2 monitoring.
+ * 3. `/healthz` не вимагає КОРИСТУВАЦЬКОЇ сесії — моніторинг ходить
+ *    без акаунта. З 2026-11-21 (sec-40, priv-30) його, як і
+ *    `/health/workers`, гейтить лише Bearer `METRICS_TOKEN` (той самий,
+ *    що `/metrics`; межу тримає `health.metricsToken.test.ts`). Тут
+ *    токен не задано, тож роут відповідає без заголовків.
  * 4. Жодна health-відповідь не несе сирого ТЕКСТУ помилки підсистеми.
  *    `pg` і `ioredis` кладуть у `message` внутрішній хост, порт і імʼя
  *    DB-користувача (`password authentication failed for user
@@ -192,10 +194,10 @@ describe("L7: /healthz JSON body excludes build identifiers", () => {
     );
   });
 
-  it("remains reachable without a session (UptimeRobot / openclaw monitoring)", async () => {
+  it("does not demand a user session (only METRICS_TOKEN gates it)", async () => {
     const app = createApp();
     const res = await request(app).get("/healthz");
-    // Public probe — no 401/403 even with zero auth headers.
+    // METRICS_TOKEN не задано в тестовому env → без 401/403 і без сесії.
     expect([200, 503]).toContain(res.status);
   });
 });

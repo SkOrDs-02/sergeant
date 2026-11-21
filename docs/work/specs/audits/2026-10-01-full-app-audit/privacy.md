@@ -1738,7 +1738,7 @@ v1.log: #13.1 sign-up audit_a@example.com → 422 {"message":"User already exist
 
 ### `priv-30` [low] Анонімні /healthz і /health/workers без rate-limit і кешу розкривають внутрішній стан і кількість акаунтів у вікні видалення та щоразу виконують агрегатні SQL
 
-- **Стан:** відкрито
+- **Стан:** закрито 2026-11-21 разом із [`sec-40`](./security.md#sec-40): обидва ендпоінти за Bearer `METRICS_TOKEN`, для проб лишились `/livez` і `/readyz`
 - **Рішення власника 2026-11-21:** закрити обидва ендпоінти `METRICS_TOKEN`-ом, для проб лишити `/livez` і `/readyz` (як `sec-40`).
 - **Перевірка:** підтверджено · **Зусилля:** S · **Швидкий виграш** · **Область:** server: health / observability
 - **Та сама першопричина, що й** [`sec-40`](./security.md#sec-40): Той самий дефект: анонімні /healthz, /health/workers і /api/status без rate-limit роблять SQL на кожен виклик і розкривають операційні дані.

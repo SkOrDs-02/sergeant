@@ -22,7 +22,7 @@
 
 ## 0. TL;DR — що зробити, якщо щось горить
 
-1. **Підтвердь incident:** перевір `https://api.sergeant/healthz` (детальний JSON) і `https://api.sergeant/health/workers`. Якщо `status: unhealthy` — incident; якщо `healthy` — швидше за все user-error / Vercel-side проблема.
+1. **Підтвердь incident:** перевір `https://api.sergeant/healthz` (детальний JSON) і `https://api.sergeant/health/workers` (обидва з `Authorization: Bearer $METRICS_TOKEN`, без нього 401). Якщо `status: unhealthy` — incident; якщо `healthy` — швидше за все user-error / Vercel-side проблема.
 2. **Дізнайся що саме впало:** [§7 «Куди дивитися першим»](#7-куди-дивитися-першим).
 3. **Знайди відповідний runbook:** [`docs/operations/observability/runbook.md`](../../operations/observability/runbook.md) має алерт-decoder («Що робити, якщо ALERT-NAME триггериться»).
 4. **Якщо runbook відсутній або не допомагає:** [`docs/start/instructions/declare-incident.md`](./declare-incident.md) — escalation flow + Telegram комунікація.
@@ -82,7 +82,7 @@ Surface-і та їх deploy targets:
 
 1. **Sentry weekly digest** (Telegram `Sergeant_ops:⚙ Контрол-план`, тема `incidents`) — будь-які `level: fatal` за ніч?
 2. **PostHog dashboards** — [`docs/operations/observability/posthog-ftux-dashboards.md`](../../operations/observability/posthog-ftux-dashboards.md). Drop ≥ 30% у `signup_completed` = щось зламалось у auth flow.
-3. **`/health/workers`** (PR-31): `curl https://api.sergeant/health/workers | jq '.workers.aiMemoryIngest.jobCounts.failed'` — має бути 0 або тренд-вниз. Якщо росте >24h — Anthropic / Voyage incident.
+3. **`/health/workers`** (PR-31): `curl -H "Authorization: Bearer $METRICS_TOKEN" https://api.sergeant/health/workers | jq '.workers.aiMemoryIngest.jobCounts.failed'` — має бути 0 або тренд-вниз. Якщо росте >24h — Anthropic / Voyage incident.
 4. **Coolify / API logs** — Coolify UI → API app → Logs, або `docker logs` на VPS. Шукай `level: error` / `level: fatal`.
 5. **Серверні таймери** — pino-логи `sergeant-api` за іменем таймера (ADR-0089).
 
@@ -116,8 +116,8 @@ pnpm deploy:api -- --yes   # server-side build на Coolify, ~4 хв; без --y
 pnpm deploy:web -- --yes   # локальний Vercel CLI, прямо в прод; без --yes лише прев'ю
 
 # 4. Smoke-verify:
-curl https://api.sergeant/healthz | jq '.status'         # "healthy"
-curl https://api.sergeant/health/workers | jq '.status'  # "healthy"
+curl -H "Authorization: Bearer $METRICS_TOKEN" https://api.sergeant/healthz | jq '.status'         # "healthy"
+curl -H "Authorization: Bearer $METRICS_TOKEN" https://api.sergeant/health/workers | jq '.status'  # "healthy"
 curl -I https://app.sergeant.bot/                        # 200 OK + COOP header
 ```
 

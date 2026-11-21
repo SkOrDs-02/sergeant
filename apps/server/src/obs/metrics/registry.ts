@@ -3,7 +3,7 @@ import client from "prom-client";
 import type { Pool } from "pg";
 
 import { env } from "../../env/env.js";
-import { safeStringEqual } from "../../http/safeCompare.js";
+import { hasValidMetricsToken } from "../../http/requireMetricsToken.js";
 import { logger, serializeError } from "../logger.js";
 
 /**
@@ -164,10 +164,9 @@ export function startPoolSampler(
  * `Authorization: Bearer <token>`. У dev/локально можна не ставити токен
  * (production хард-фейлить у `assertStartupEnv` — див. T2 audit #4).
  *
- * Токен-compare використовує `safeStringEqual` (поверх
- * `crypto.timingSafeEqual`) замість наївного `!==`, щоб не лікати
- * позицію першої розбіжності через CPU branch-timing — мережевий
- * атакуючий міг би статистично відновити токен побайтово.
+ * Перевірка токена — спільний `hasValidMetricsToken`
+ * (`http/requireMetricsToken.ts`, timing-safe compare); той самий гейт
+ * стоїть на `/healthz` і `/health/workers`.
  *
  * На фейлі рендера тіло відповіді — голе `metrics_error`, без тексту
  * помилки. Гейт по токену тут коректний, тож ризик вужчий, ніж на
@@ -176,14 +175,9 @@ export function startPoolSampler(
  * БД. Діагностика живе в лозі, де її читає ops.
  */
 export function metricsHandler(req: Request, res: Response): void {
-  const expected = env.METRICS_TOKEN;
-  if (expected) {
-    const auth = req.get("authorization") || "";
-    const got = auth.startsWith("Bearer ") ? auth.slice(7) : "";
-    if (!safeStringEqual(got, expected)) {
-      res.status(401).type("text/plain").send("unauthorized");
-      return;
-    }
+  if (!hasValidMetricsToken(req)) {
+    res.status(401).type("text/plain").send("unauthorized");
+    return;
   }
   register
     .metrics()
