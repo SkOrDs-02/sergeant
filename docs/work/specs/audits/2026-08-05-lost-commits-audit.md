@@ -2,8 +2,8 @@
 
 > **Поточні статуси перенесених знахідок:** [єдиний реєстр верифікації](verification/findings.json). Цей документ зберігає історичні результати; нові спроби та виправлення ведуться в реєстрі.
 
-> **Last touched:** 2026-09-30 by @claude. **Next review:** 2028-01-07.
-> **Status:** Active — знахідки §3 відкриті; після їх закриття перевести у Reference.
+> **Last touched:** 2026-11-21 by @claude (звірка §3 з `main`: закрито 3.1, хвилі 19–21, `spike/pro-monthly-cap`; реєстр синхронізовано). **Next review:** 2028-01-07.
+> **Status:** Active — у §3 відкриті `CMP-74`, хвиля 18, `claude/spec-fab-manual-income` і §3.3; після їх закриття перевести у Reference.
 
 - **Питання:** чи лишилися на гілках коміти або зміни, які загубилися або пішли поверх мерджу і не потрапили на `main`?
 - **База:** `SkOrDs-02/sergeant`, `origin/main@44b2218`, 416 remote-гілок, 619 PR-записів (повна історія, un-shallow).
@@ -113,6 +113,13 @@ when text scales», зроблений 2026-08-01 **о 18:55**, тоді як [P
   source-рефи як твердження про поточний код, а тут суть знахідки — що файлу немає.)
 - `playwright.config.ts` — підняття таймауту, потрібне цьому спеку.
 
+> **ЗАКРИТО 2026-11-21** (звірка з `main@87d592ad`): лейбли на `leading-tight`
+> (`apps/web/src/core/app/HubBottomNav.tsx:197`,
+> `apps/web/src/shared/components/ui/ModuleBottomNav.tsx:307`, у `HubHeader.tsx`
+> `leading-none` немає), спек `apps/web/tests/a11y/low-vision.spec.ts` є, таймаут 90 с
+> у `apps/web/playwright.config.ts:33`. Реєстр: `LOST-20260805-3-1` →
+> `fixed-pending-verification`.
+
 ### 3.2 Гілки, які ніколи не мали PR
 
 | Гілка                                            | Дата       | Що втрачено                                                                                                                                                                                                                                    |
@@ -127,6 +134,25 @@ when text scales», зроблений 2026-08-01 **о 18:55**, тоді як [P
 
 Разом по чотирьох coverage-хвилях — **43 тест-файли**, які ніколи не заходили в `main`
 (конвенція `*.branches.test.*` у `main` жива — 41 такий файл, тобто інші хвилі зайшли, а ці чотири ні).
+
+> **Статус 2026-11-21** (звірка файлів кожного коміту з `main@87d592ad`, деталі в
+> [реєстрі](verification/findings.json)):
+>
+> - **`wave19-finyk` — ЗАКРИТО.** 7 з 8 тестів є як `*.branches.test.*` поруч із джерелом
+>   (напр. `apps/web/src/modules/finyk/pages/budgets/PlannedFlowsCard.branches.test.tsx`),
+>   джерело `FirstInsightBanner` видалено.
+> - **`wave20-nutrition` — ЗАКРИТО.** 12 з 13 є як `*.branches.test.*`
+>   (напр. `apps/web/src/modules/nutrition/components/DailyPlanMacros.branches.test.tsx`),
+>   окремий модуль `RecipesCard.ChevronIcon` видалено.
+> - **`wave21-fizruk-routine` — ЗАКРИТО.** `ArchivedHabitsSection` і `HabitListItem` переїхали
+>   в `components/habits/` разом із тестами, `DayProgressRing` видалено.
+> - **`spike/pro-monthly-cap` — ЗАКРИТО як застаріле** (`accepted`): квоти Free перейшли на
+>   тижневі відра (`apps/server/src/migrations/149_ai_usage_daily_week_buckets.sql`), місячне
+>   відро не переносимо.
+> - **`wave18-core-hub` — ВІДКРИТО.** 6 тестів зайшли під тими самими іменами, 3 з 8 джерел
+>   без тестів уже видалено (`HubModulesGrid`, `BentoCard`, `AssistantCatalogueSection`);
+>   бракує 5 тестів на живі `dashboardStore.ts`, `searchActions.ts`, `searchCache.ts`,
+>   `streamingStore.ts`, `hubPrefs.schema.ts`.
 
 ### 3.3 Закритий PR
 

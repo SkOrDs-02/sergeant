@@ -3240,12 +3240,17 @@
       "title": "Коміт 106b43d3 поверх мерджу: навігаційні підписи й low-vision тест",
       "severity": "unrated",
       "source": "docs/work/specs/audits/2026-08-05-lost-commits-audit.md",
-      "status": "open",
+      "status": "fixed-pending-verification",
       "history": [
         {
           "at": "2026-09-05",
           "event": "imported",
           "note": "Актуальність потребує тріажу; імпорт історичного спостереження, без нового відтворення."
+        },
+        {
+          "at": "2026-11-21",
+          "event": "fixed",
+          "note": "Звірено кодом main@87d592ad: лейбли навігації на leading-tight (apps/web/src/core/app/HubBottomNav.tsx:197, apps/web/src/shared/components/ui/ModuleBottomNav.tsx:307), у HubHeader.tsx leading-none більше немає; спек apps/web/tests/a11y/low-vision.spec.ts є, таймаут 90 с у apps/web/playwright.config.ts:33. Коміт 106b43d3 перенесено не дослівно, а наново; live-прогону спеку під цю знахідку немає."
         }
       ],
       "sourceAnchor": "3.1 Коміти поверх мерджу"
@@ -3293,6 +3298,11 @@
           "at": "2026-09-05",
           "event": "imported",
           "note": "Актуальність потребує тріажу; імпорт історичного спостереження, без нового відтворення."
+        },
+        {
+          "at": "2026-11-21",
+          "event": "retriaged",
+          "note": "Частково закрито, звірено з файлами коміту 25781ec9: 6 тестів є в main під тими самими іменами (apps/web/src/core/hub/HubHeroBlock.test.tsx, HubInsightsBlock, HubChatComposer, HubChatHeader, moduleConfigs, DashboardSection), ще 6 змінено в main за тим самим шляхом. З 8 джерел, яких тест так і не дійшов, 3 уже видалено (HubModulesGrid, BentoCard з двома тестами, AssistantCatalogueSection). Бракує 5 тестів на живі джерела: dashboardStore.ts, searchActions.ts, searchCache.ts, streamingStore.ts, hubPrefs.schema.ts (hubPrefs.ts частково покриває hubPrefs.migrate.test.ts). Лишається open."
         }
       ]
     },
@@ -3302,12 +3312,17 @@
       "title": "`cursor/web-coverage-wave20-nutrition-ab0a`: 13 тест-файлів (nutrition components + hooks)",
       "severity": "unrated",
       "source": "docs/work/specs/audits/2026-08-05-lost-commits-audit.md",
-      "status": "open",
+      "status": "fixed-pending-verification",
       "history": [
         {
           "at": "2026-09-05",
           "event": "imported",
           "note": "Актуальність потребує тріажу; імпорт історичного спостереження, без нового відтворення."
+        },
+        {
+          "at": "2026-11-21",
+          "event": "fixed",
+          "note": "Звірено з файлами коміту 5414574e: 12 з 13 втрачених тестів є в main як *.branches.test.* поруч із джерелом (apps/web/src/modules/nutrition/components/DailyPlanMacros.branches.test.tsx та ін., apps/web/src/modules/nutrition/lib/sqliteReadGate.branches.test.ts). Окремого модуля RecipesCard.ChevronIcon у main немає, тест не потрібен."
         }
       ]
     },
@@ -3317,12 +3332,17 @@
       "title": "`cursor/web-coverage-wave19-finyk-ab0a`: 8 тест-файлів (finyk lazy pages + hooks)",
       "severity": "unrated",
       "source": "docs/work/specs/audits/2026-08-05-lost-commits-audit.md",
-      "status": "open",
+      "status": "fixed-pending-verification",
       "history": [
         {
           "at": "2026-09-05",
           "event": "imported",
           "note": "Актуальність потребує тріажу; імпорт історичного спостереження, без нового відтворення."
+        },
+        {
+          "at": "2026-11-21",
+          "event": "fixed",
+          "note": "Звірено з файлами коміту bd59eb8b: 7 з 8 втрачених тестів є в main як *.branches.test.* поруч із джерелом (CategorySelector, useFinykManualExpenseConflicts, AssetsBars, FlowRow, NetworthSection, TransactionDayHeader; PlannedFlowsCard переїхав у apps/web/src/modules/finyk/pages/budgets/PlannedFlowsCard.branches.test.tsx). Джерела FirstInsightBanner у main немає, тест не потрібен."
         }
       ]
     },
@@ -3332,12 +3352,17 @@
       "title": "`cursor/web-coverage-wave21-fizruk-routine-ab0a`: 3 тест-файли (routine/fizruk shell)",
       "severity": "unrated",
       "source": "docs/work/specs/audits/2026-08-05-lost-commits-audit.md",
-      "status": "open",
+      "status": "fixed-pending-verification",
       "history": [
         {
           "at": "2026-09-05",
           "event": "imported",
           "note": "Актуальність потребує тріажу; імпорт історичного спостереження, без нового відтворення."
+        },
+        {
+          "at": "2026-11-21",
+          "event": "fixed",
+          "note": "Звірено з файлами коміту 23e834c8: ArchivedHabitsSection і HabitListItem переїхали в components/habits/ разом із тестами (apps/web/src/modules/routine/components/habits/ArchivedHabitsSection.test.tsx, HabitListItem.test.tsx); компонента DayProgressRing у main немає, тест не потрібен."
         }
       ]
     },
@@ -3347,12 +3372,17 @@
       "title": "`spike/pro-monthly-cap`: `feat(server): add monthly AI usage bucket` — міграція `077_ai_usage_daily_monthly_bucket`. Номер 077 у `main` вже зайнятий `077_ai_usage_daily_pro_tier_buckets`, тож гілка конфліктує з Hard Rule #4 і в поточному вигляді не застосовна",
       "severity": "unrated",
       "source": "docs/work/specs/audits/2026-08-05-lost-commits-audit.md",
-      "status": "open",
+      "status": "accepted",
       "history": [
         {
           "at": "2026-09-05",
           "event": "imported",
           "note": "Актуальність потребує тріажу; імпорт історичного спостереження, без нового відтворення."
+        },
+        {
+          "at": "2026-11-21",
+          "event": "retriaged",
+          "note": "Застаріло: місячного відра в main немає і не планується, квоти Free перейшли на тижневі відра (apps/server/src/migrations/149_ai_usage_daily_week_buckets.sql:1, спека access-tiers.md), номер 077 зайнятий. Спайк не переносимо; гілку видалить власник."
         }
       ]
     },
