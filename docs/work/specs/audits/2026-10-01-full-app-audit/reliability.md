@@ -2429,7 +2429,7 @@ verify-.../rl.mjs: POST /api/finyk/receipts/lookup з body {} → 400 VALIDATION
 
 ### `rel-37` [low] POST /api/auth/send-verification-email без власного ліміту і без стелі на акаунт
 
-- **Стан:** відкрито
+- **Стан:** виправлено в гілці backlog/rel-37 (`send-verification-email` входить у per-IP `authSensitiveRateLimit` (5/60 с) і в per-email бакет `api:auth:verification-email` (5 листів на годину на SHA-256 email, окремо від бюджету входу `api:auth:account`), обидва fail-closed і не залежать від NODE_ENV-лімітера Better Auth; change-email уже обмежено sec-06, решта catch-all шляхів `/api/auth` лишається поза app-лімітом)
 - **Перевірка:** підтверджено · **Зусилля:** S · **Швидкий виграш** · **Область:** server: auth (Better Auth)
 - **Та сама першопричина, що й** [`sec-25`](./security.md#sec-25): Той самий дефект: send-verification-email (і change-email) без app-ліміту і без стелі на акаунт.
 - **Де:** apps/server/src/routes/auth.ts:23-28; apps/server/src/auth.ts:345-409; node_modules/better-auth/dist/context/create-context.mjs:171

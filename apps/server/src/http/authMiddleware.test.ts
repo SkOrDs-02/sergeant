@@ -1,7 +1,21 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
 import { createHash } from "crypto";
+import express from "express";
+import request from "supertest";
 import type { Request, Response } from "express";
 import type { Mock } from "vitest";
+
+// Бакети лімітерів емулюються моком `pool.query` (лічильник по
+// `(rl_key, subject)`), Redis вимкнено; решта — справжній `rateLimitExpress`.
+const { rlBuckets, queryMock } = vi.hoisted(() => ({
+  rlBuckets: new Map<string, number>(),
+  queryMock: vi.fn(),
+}));
+vi.mock("../db.js", () => ({
+  default: { query: queryMock },
+  pool: { query: queryMock },
+}));
+vi.mock("../lib/redis.js", () => ({ getRedis: () => null }));
 
 // Мокаємо logger ДО імпорту модуля, щоб зафіксувати виклики.
 vi.mock("../obs/logger.js", async () => {
@@ -28,7 +42,11 @@ vi.mock("../obs/metrics.js", async () => {
 
 import { logger } from "../obs/logger.js";
 import { authAttemptsTotal } from "../obs/metrics.js";
-import { authMetricsMiddleware } from "./authMiddleware.js";
+import {
+  authAccountRateLimit,
+  authMetricsMiddleware,
+  authSensitiveRateLimit,
+} from "./authMiddleware.js";
 
 describe("authMetricsMiddleware structured auth_event log", () => {
   interface TestRes {
@@ -242,5 +260,70 @@ describe("authMetricsMiddleware structured auth_event log", () => {
     } as unknown as Request;
     authMetricsMiddleware(getReq, res, next);
     expect(authAttemptsTotal.inc).not.toHaveBeenCalled();
+  });
+});
+
+describe("POST /api/auth/send-verification-email — ліміти (rel-37)", () => {
+  function makeApp() {
+    const app = express();
+    app.set("trust proxy", 1);
+    app.use(express.json());
+    app.use("/api/auth", authSensitiveRateLimit);
+    app.use("/api/auth", authAccountRateLimit);
+    app.all("/api/auth/{*splat}", (_req, res) => {
+      res.status(200).json({ status: true });
+    });
+    return app;
+  }
+
+  const send = (app: express.Express, ip: string, email: string) =>
+    request(app)
+      .post("/api/auth/send-verification-email")
+      .set("X-Forwarded-For", ip)
+      .send({ email, callbackURL: "/" });
+
+  beforeEach(() => {
+    rlBuckets.clear();
+    queryMock.mockReset();
+    queryMock.mockImplementation(async (sql: string, params?: unknown[]) => {
+      if (sql.includes("INSERT INTO rate_limit_buckets")) {
+        const [key, subject] = params as [string, string];
+        const k = `${key}|${subject}`;
+        const count = (rlBuckets.get(k) ?? 0) + 1;
+        rlBuckets.set(k, count);
+        return { rows: [{ count, elapsed_ms: "0" }] };
+      }
+      return { rows: [] };
+    });
+  });
+
+  it("шостий запит з одного IP за 60 с → 429, незалежно від NODE_ENV Better Auth", async () => {
+    const app = makeApp();
+    for (let i = 0; i < 5; i++) {
+      const ok = await send(app, "203.0.113.9", `user${i}@example.com`);
+      expect(ok.status).toBe(200);
+    }
+    const blocked = await send(app, "203.0.113.9", "user5@example.com");
+    expect(blocked.status).toBe(429);
+    expect(
+      [...rlBuckets.keys()].some((k) => k.startsWith("api:auth:sensitive|")),
+    ).toBe(true);
+  });
+
+  it("стеля на адресу: шостий лист на той самий email з різних IP → 429", async () => {
+    const app = makeApp();
+    for (let i = 0; i < 5; i++) {
+      const ok = await send(app, `198.51.100.${i + 1}`, "Victim@Example.com");
+      expect(ok.status).toBe(200);
+    }
+    const blocked = await send(app, "198.51.100.77", "victim@example.com");
+    expect(blocked.status).toBe(429);
+
+    const subject = `a:${createHash("sha256")
+      .update("victim@example.com")
+      .digest("hex")}`;
+    expect(rlBuckets.get(`api:auth:verification-email|${subject}`)).toBe(6);
+    // Окремий бакет: розсилка листів не з'їдає бюджет входу жертви.
+    expect(rlBuckets.has(`api:auth:account|${subject}`)).toBe(false);
   });
 });
