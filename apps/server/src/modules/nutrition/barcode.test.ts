@@ -466,7 +466,8 @@ describe("barcode handler", () => {
       expect(global.fetch).toHaveBeenCalledTimes(3);
     });
 
-    it("USDA hit falls back to the first food when gtinUpc is not an exact barcode match", async () => {
+    it("USDA без збігу gtinUpc — miss: чужий foods[0] не віддається і не пишеться в каталог (data-56)", async () => {
+      upsertIntoCatalogMock.mockClear();
       global.fetch = vi
         .fn()
         .mockResolvedValueOnce(OFF_MISS)
@@ -475,9 +476,9 @@ describe("barcode handler", () => {
             body: {
               foods: [
                 {
-                  description: "Fallback Yogurt",
-                  brandOwner: "Fallback Dairy",
-                  gtinUpc: "0000000000000",
+                  description: "Unrelated Yogurt",
+                  brandOwner: "Other Dairy",
+                  gtinUpc: "070038000563",
                   foodNutrients: [
                     { nutrientId: 1008, value: 61 },
                     { nutrientId: 1003, value: 9 },
@@ -485,22 +486,58 @@ describe("barcode handler", () => {
                     { nutrientId: 1005, value: 4 },
                   ],
                 },
+                {
+                  // Відсутній gtinUpc не має «збігатися» з кодом із нулів.
+                  description: "No Gtin Food",
+                  foodNutrients: [{ nutrientId: 1008, value: 10 }],
+                },
               ],
             },
           }),
-        );
-      const req = asReq({ barcode: "0818290015938" });
+        )
+        .mockResolvedValueOnce(UPCITEMDB_MISS);
+      const req = asReq({ barcode: "4820000000017" });
       const res = mockRes();
       await handler(req, res);
+      expect(res.statusCode).toBe(404);
+      expect(global.fetch).toHaveBeenCalledTimes(3);
+      expect(upsertIntoCatalogMock).not.toHaveBeenCalled();
+    });
+
+    it("USDA: код із самих нулів не збігається з food без gtinUpc", async () => {
+      global.fetch = vi
+        .fn()
+        .mockResolvedValueOnce(OFF_MISS)
+        .mockResolvedValueOnce(
+          mockFetchResponse({
+            body: {
+              foods: [
+                {
+                  description: "Chicken Nuggets",
+                  foodNutrients: [{ nutrientId: 1008, value: 250 }],
+                },
+              ],
+            },
+          }),
+        )
+        .mockResolvedValueOnce(UPCITEMDB_MISS);
+      const res = mockRes();
+      await handler(asReq({ barcode: "00000000" }), res);
+      expect(res.statusCode).toBe(404);
+    });
+
+    it("USDA: збіг gtinUpc не залежить від провідних нулів (UPC-A ↔ EAN-13)", async () => {
+      global.fetch = vi
+        .fn()
+        .mockResolvedValueOnce(OFF_MISS)
+        .mockResolvedValueOnce(USDA_HIT);
+      const res = mockRes();
+      // USDA_HIT має gtinUpc 0818290015938; скан UPC-A без провідного нуля.
+      await handler(asReq({ barcode: "818290015938" }), res);
       expect(res.statusCode).toBe(200);
       expect(res.body).toMatchObject({
-        product: {
-          name: "Fallback Yogurt",
-          brand: "Fallback Dairy",
-          source: "usda",
-        },
+        product: { name: "Greek Yogurt", source: "usda" },
       });
-      expect(global.fetch).toHaveBeenCalledTimes(2);
     });
 
     it("OFF повертає продукт без жодного макроса — нормалізатор віддає null, cascade продовжує", async () => {

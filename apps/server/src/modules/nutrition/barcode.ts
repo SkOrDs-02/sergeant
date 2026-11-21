@@ -276,6 +276,15 @@ function normalizeUSDA(
   return normalizeUSDABarcode(food);
 }
 
+/**
+ * GTIN-8/UPC-A/EAN-13/GTIN-14 одного товару відрізняються лише провідними
+ * нулями, тож порівнюємо цифри без них. Порожній рядок (код із самих нулів
+ * чи відсутній gtinUpc) — не ідентифікатор і ніколи не збігається.
+ */
+function canonicalGtin(code: string): string {
+  return code.replace(/\D/g, "").replace(/^0+/, "");
+}
+
 async function lookupUSDA(barcode: string): Promise<NormalizedProduct | null> {
   const key =
     process.env["USDA_FDC_API_KEY"] ||
@@ -303,14 +312,14 @@ async function lookupUSDA(barcode: string): Promise<NormalizedProduct | null> {
       return null;
     }
 
-    // Prefer exact gtinUpc match, fallback to first result
-    const exact = foods.find(
-      (f) =>
-        String(f.gtinUpc || "").replace(/^0+/, "") ===
-        barcode.replace(/^0+/, ""),
-    );
-    const food = exact || foods[0];
-    const product = normalizeUSDA(food);
+    // Лише точний збіг gtinUpc. `/foods/search` — повнотекстовий пошук, тож
+    // `foods[0]` без збігу — чужий продукт із чужими КБЖВ, а результат іде
+    // write-through у спільний `product_catalog` (data-56). Немає збігу → miss.
+    const wanted = canonicalGtin(barcode);
+    const food = wanted
+      ? foods.find((f) => canonicalGtin(String(f.gtinUpc ?? "")) === wanted)
+      : undefined;
+    const product = food ? normalizeUSDA(food) : null;
     recordLookup("usda", product ? "hit" : "miss", elapsedMs(start));
     return product;
   } catch (e: unknown) {
