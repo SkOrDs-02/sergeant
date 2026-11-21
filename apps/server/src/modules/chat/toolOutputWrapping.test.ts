@@ -394,3 +394,64 @@ describe("огорожі <tool_output>/<user_data> — sec-31", () => {
     );
   });
 });
+
+describe("PROMPT_INJECTION_PATTERNS — лінійний час (sec-63)", () => {
+  // 40 000 символів — стеля `context` у схемі `/api/chat`.
+  const N = 40_000;
+  const fill = (unit: string): string =>
+    unit.repeat(Math.ceil(N / unit.length)).slice(0, N);
+  const spaces = " ".repeat(N);
+
+  // Форми, на яких старі патерни йшли в куб/квадрат, плюс сусідні варіанти
+  // для кожного патерну: довгий ряд пробілів після префікса і префікс,
+  // що повторюється по всьому рядку.
+  const ADVERSARIAL: Record<string, string> = {
+    "< + пробіли": `<${spaces}`,
+    "</ + пробіли": `</${spaces}`,
+    "<| + пробіли": `<|${spaces}`,
+    "< / | + пробіли": `< / |${spaces}`,
+    "<im_start| + пробіли": `<im_start|${spaces}`,
+    "<system + пробіли": `<system${spaces}`,
+    "повтор '< '": fill("< "),
+    "ignore + пробіли": `ignore${spaces}`,
+    "ignore all the + пробіли": `ignore all the${spaces}`,
+    "повтор 'you are now '": fill("you are now "),
+    "повтор 'act as if you are '": fill("act as if you are "),
+    "повтор 'new system '": fill("new system "),
+    "повтор 'ігнор'": fill("ігнор"),
+    "ігнор + літери": `ігнор${"а".repeat(N)}`,
+    "ігнор попередн + пробіли": `ігнор попередн${spaces}`,
+    "повтор 'нов'": fill("нов"),
+    "нов інструкц + літери": `нов інструкц${"я".repeat(N)}`,
+    "повтор 'забудь '": fill("забудь "),
+    "повтор 'тепер ти '": fill("тепер ти "),
+    "повтор 'режим '": fill("режим "),
+  };
+
+  it.each(Object.entries(ADVERSARIAL))(
+    "%s: повний прогін усіх патернів < 50 мс",
+    (_name, input) => {
+      const start = performance.now();
+      for (const p of PROMPT_INJECTION_PATTERNS) p.test(input);
+      expect(performance.now() - start).toBeLessThan(50);
+    },
+  );
+
+  it("переписані <system>/<im_start> ловлять ті самі варіанти", () => {
+    const hits = [
+      "<system>",
+      "</system>",
+      "< / system >",
+      "<\n/\tsystem\n>",
+      "<|im_start|>",
+      "<im-start>",
+      "</|im_start>",
+      "< / | im_start | >",
+      "<\t|\tIM_START\t|\t>",
+    ];
+    const misses = ["<//system>", "<||im_start>", "<im_start||>", "<sys tem>"];
+    const any = (s: string) => PROMPT_INJECTION_PATTERNS.some((p) => p.test(s));
+    for (const s of hits) expect(any(s), s).toBe(true);
+    for (const s of misses) expect(any(s), s).toBe(false);
+  });
+});
