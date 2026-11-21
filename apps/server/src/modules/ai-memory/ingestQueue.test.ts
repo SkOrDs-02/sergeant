@@ -4,6 +4,7 @@ const bullmqMocks = vi.hoisted(() => ({
   queueAdd: vi.fn(),
   queueClose: vi.fn(),
   queueGetJobCounts: vi.fn(),
+  queueGetJobs: vi.fn(),
   queueInstances: [] as Array<{
     handlers: Record<string, (...args: unknown[]) => unknown>;
   }>,
@@ -31,6 +32,10 @@ vi.mock("bullmq", () => ({
 
     getJobCounts(...args: unknown[]) {
       return bullmqMocks.queueGetJobCounts(...args);
+    }
+
+    getJobs(...args: unknown[]) {
+      return bullmqMocks.queueGetJobs(...args);
     }
 
     on(event: string, handler: (...args: unknown[]) => unknown) {
@@ -189,6 +194,7 @@ function resetBullmqMocks(): void {
   bullmqMocks.queueAdd.mockReset();
   bullmqMocks.queueClose.mockReset();
   bullmqMocks.queueGetJobCounts.mockReset();
+  bullmqMocks.queueGetJobs.mockReset();
   bullmqMocks.workerClose.mockReset();
   bullmqMocks.queueInstances.length = 0;
   bullmqMocks.workerInstances.length = 0;
@@ -886,5 +892,142 @@ describe("memory ingest BullMQ lifecycle and stats", () => {
     const noRedis = await loadFreshMemoryIngestModule();
     noRedis.createBullConnectionMock.mockReturnValue(null);
     expect(noRedis.mod.startMemoryIngestWorker()).toBeNull();
+  });
+});
+
+// B12 (аудит ai-pipeline-2026-08-05): після «Очистити памʼять» задачі, що
+// вже лежали в Redis, повертали стерті факти — воркер дивився лише на згоду.
+describe("B12: очищення памʼяті і задачі в черзі", () => {
+  const CLEARED_KEY = "sergeant:ai_memory:cleared_at:u1";
+
+  function makeRedis(initial: Record<string, string> = {}) {
+    const store = new Map(Object.entries(initial));
+    return {
+      store,
+      quit: vi.fn(),
+      disconnect: vi.fn(),
+      get: vi.fn(async (key: string) => store.get(key) ?? null),
+      set: vi.fn(async (key: string, value: string) => {
+        store.set(key, value);
+        return "OK";
+      }),
+    };
+  }
+
+  function makeJob(userId: string) {
+    return { data: { ...samplePayload, userId }, remove: vi.fn() };
+  }
+
+  beforeEach(() => {
+    vi.clearAllMocks();
+    resetBullmqMocks();
+    process.env["AI_MEMORY_ENABLED"] = "true";
+  });
+
+  afterEach(() => {
+    delete process.env["AI_MEMORY_ENABLED"];
+  });
+
+  it("purge ставить мітку з TTL і знімає з черги лише задачі цього юзера", async () => {
+    const fresh = await loadFreshMemoryIngestModule();
+    const redis = makeRedis();
+    fresh.createBullConnectionMock.mockReturnValue(redis);
+    const mine = makeJob("u1");
+    const other = makeJob("u2");
+    bullmqMocks.queueGetJobs.mockResolvedValue([mine, other, undefined]);
+
+    const removed = await fresh.mod.purgeQueuedIngestForUser("u1");
+
+    expect(removed).toBe(1);
+    expect(redis.set).toHaveBeenCalledWith(
+      CLEARED_KEY,
+      expect.stringMatching(/^\d+$/),
+      "EX",
+      24 * 3600,
+    );
+    expect(bullmqMocks.queueGetJobs).toHaveBeenCalledWith([
+      "waiting",
+      "delayed",
+      "prioritized",
+      "paused",
+    ]);
+    expect(mine.remove).toHaveBeenCalledOnce();
+    expect(other.remove).not.toHaveBeenCalled();
+  });
+
+  it("purge без Redis повертає 0 і не кидає", async () => {
+    const fresh = await loadFreshMemoryIngestModule();
+    await expect(fresh.mod.purgeQueuedIngestForUser("u1")).resolves.toBe(0);
+  });
+
+  it("purge ковтає збій Redis: видалення рядків від черги не залежить", async () => {
+    const fresh = await loadFreshMemoryIngestModule();
+    const redis = makeRedis();
+    redis.set.mockRejectedValue(new Error("redis down"));
+    fresh.createBullConnectionMock.mockReturnValue(redis);
+
+    await expect(fresh.mod.purgeQueuedIngestForUser("u1")).resolves.toBe(0);
+  });
+
+  it("воркер пропускає задачу, поставлену до очищення", async () => {
+    const fresh = await loadFreshMemoryIngestModule();
+    fresh.createBullConnectionMock.mockReturnValue(
+      makeRedis({ [CLEARED_KEY]: "2000" }),
+    );
+    const remember = vi.fn().mockResolvedValue(undefined);
+    fresh.mod.__resetMemoryIngestQueueForTesting(makeFakeService(remember));
+
+    await fresh.mod.processMemoryIngestJob({
+      data: samplePayload,
+      attemptsMade: 1,
+      name: "cofounder",
+      timestamp: 1000,
+    });
+
+    expect(remember).not.toHaveBeenCalled();
+  });
+
+  it("воркер пише задачу, поставлену після очищення", async () => {
+    const fresh = await loadFreshMemoryIngestModule();
+    fresh.createBullConnectionMock.mockReturnValue(
+      makeRedis({ [CLEARED_KEY]: "2000" }),
+    );
+    const service = makeFakeService();
+    fresh.mod.__resetMemoryIngestQueueForTesting(service);
+
+    await fresh.mod.processMemoryIngestJob({
+      data: samplePayload,
+      attemptsMade: 0,
+      name: "cofounder",
+      timestamp: 3000,
+    });
+
+    expect(service.remember).toHaveBeenCalledOnce();
+    expect(service.forgetSource).not.toHaveBeenCalled();
+  });
+
+  it("очищення під час ембеддингу: щойно записаний рядок прибирається", async () => {
+    const fresh = await loadFreshMemoryIngestModule();
+    const redis = makeRedis();
+    fresh.createBullConnectionMock.mockReturnValue(redis);
+    // Мітка зʼявляється, поки задача ембедиться (вона вже `active`).
+    const service = makeFakeService(async () => {
+      redis.store.set(CLEARED_KEY, "5000");
+    });
+    fresh.mod.__resetMemoryIngestQueueForTesting(service);
+
+    await fresh.mod.processMemoryIngestJob({
+      data: samplePayload,
+      attemptsMade: 0,
+      name: "cofounder",
+      timestamp: 4000,
+    });
+
+    expect(service.remember).toHaveBeenCalledOnce();
+    expect(service.forgetSource).toHaveBeenCalledWith(
+      samplePayload.userId,
+      samplePayload.source,
+      samplePayload.sourceRef,
+    );
   });
 });

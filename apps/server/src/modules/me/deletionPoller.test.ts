@@ -8,6 +8,13 @@ vi.mock("./dataRights.js", () => ({
   purgeUserData: (...args: unknown[]) => purgeUserData(...args),
 }));
 
+const purgeQueuedIngestForUser = vi.fn();
+
+vi.mock("../ai-memory/ingestQueue.js", () => ({
+  purgeQueuedIngestForUser: (...args: unknown[]) =>
+    purgeQueuedIngestForUser(...args),
+}));
+
 const {
   AccountDeletionPoller,
   getAccountDeletionWorkerStatus,
@@ -46,6 +53,8 @@ function mockPool(matureIds: string[]): {
 beforeEach(() => {
   purgeUserData.mockReset();
   purgeUserData.mockResolvedValue({ ok: true });
+  purgeQueuedIngestForUser.mockReset();
+  purgeQueuedIngestForUser.mockResolvedValue(0);
   __testingResetLastRunAt();
 });
 
@@ -119,6 +128,19 @@ describe("AccountDeletionPoller", () => {
     const result = await poller.runOnce();
 
     expect(result).toEqual({ claimed: 2, purged: 1, skipped: 1, failed: 0 });
+  });
+
+  // B12 (аудит ai-pipeline-2026-08-05): задачі ingest видаленого акаунта
+  // знімаються з черги, а відновленого не чіпаються.
+  it("знімає з черги AI-памʼяті задачі лише видалених акаунтів", async () => {
+    const { pool } = mockPool(["restored", "user-old-2"]);
+    purgeUserData.mockResolvedValueOnce(null);
+    const poller = new AccountDeletionPoller({ pool, intervalMs: 0 });
+
+    await poller.runOnce();
+
+    expect(purgeQueuedIngestForUser).toHaveBeenCalledTimes(1);
+    expect(purgeQueuedIngestForUser).toHaveBeenCalledWith("user-old-2");
   });
 
   it("claim іде у власній транзакції і завжди відпускає клієнта", async () => {

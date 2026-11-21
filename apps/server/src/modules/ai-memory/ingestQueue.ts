@@ -54,6 +54,10 @@ import { elapsedMs } from "../../lib/timing.js";
 import { getAiMemory } from "./bootstrap.js";
 import { hasAiMemoryConsent, hasHealthDataConsent } from "./consent.js";
 import { recordIngestDlq } from "./dlq.js";
+import {
+  isClearedAfterEnqueue,
+  purgeUserIngestJobs,
+} from "./ingestClearMarker.js";
 import { MissingVoyageApiKeyError, VoyageHttpError } from "./embeddings.js";
 import type { AiMemoryService } from "./service.js";
 import { ALLOWED_MEMORY_SOURCES, type MemorySource } from "./types.js";
@@ -447,16 +451,53 @@ async function enqueueMemoryIngestImpl(
   }
 }
 
+/** B12: чи очищено памʼять юзера після постановки задачі (`ingestClearMarker.ts`). */
+async function wasClearedAfterEnqueue(job: {
+  data: MemoryIngestPayload;
+  timestamp?: number | undefined;
+}): Promise<boolean> {
+  const client = getOrCreateMemoryIngestQueue() ? state.queueConnection : null;
+  return isClearedAfterEnqueue(client, job.data.userId, job.timestamp);
+}
+
+/**
+ * B12 (аудит ai-pipeline-2026-08-05): ставить мітку очищення і знімає з
+ * черги задачі юзера, що ще не почались. Не кидає; деталі й обґрунтування —
+ * `ingestClearMarker.ts`. Без Redis (fallback) черги немає — 0.
+ */
+export async function purgeQueuedIngestForUser(
+  userId: string,
+): Promise<number> {
+  const queue = getOrCreateMemoryIngestQueue();
+  if (!queue || !state.queueConnection) return 0;
+  return purgeUserIngestJobs(queue, state.queueConnection, userId);
+}
+
+function recordProcessedOutcome(
+  outcome: string,
+  source: string,
+  startedAt: bigint,
+): void {
+  aiMemoryIngestProcessedTotal.inc({ outcome, source });
+  aiMemoryIngestDurationMs.observe({ outcome, source }, elapsedMs(startedAt));
+}
+
 /**
  * Worker-processor — чиста функція, тестовна окремо без Redis. throw →
  * BullMQ retry (тільки якщо `isRetryableIngestError`).
  */
 export async function processMemoryIngestJob(
-  job: Pick<Job<MemoryIngestPayload>, "data" | "attemptsMade" | "name">,
+  job: Pick<Job<MemoryIngestPayload>, "data" | "attemptsMade" | "name"> & {
+    timestamp?: number | undefined;
+  },
 ): Promise<void> {
   const startedAt = process.hrtime.bigint();
   const sourceLabel = job.data.source;
   try {
+    if (await wasClearedAfterEnqueue(job)) {
+      recordProcessedOutcome("cleared", sourceLabel, startedAt);
+      return;
+    }
     if (!(await hasAiMemoryConsent(pool, job.data.userId))) {
       aiMemoryIngestProcessedTotal.inc({
         outcome: "consent_disabled",
@@ -477,6 +518,20 @@ export async function processMemoryIngestJob(
         metadata: job.data.metadata,
       },
     ]);
+    // B12: «Очистити памʼять» спрацював, поки ця задача ембедилась. Очищення
+    // ставить мітку ДО видалення рядків, а ця перевірка йде ПІСЛЯ запису,
+    // тож або DELETE очищення вже бачить наш рядок, або ми бачимо мітку.
+    if (await wasClearedAfterEnqueue(job)) {
+      if (job.data.sourceRef != null) {
+        await getService().forgetSource(
+          job.data.userId,
+          job.data.source,
+          job.data.sourceRef,
+        );
+      }
+      recordProcessedOutcome("cleared", sourceLabel, startedAt);
+      return;
+    }
     aiMemoryIngestProcessedTotal.inc({ outcome: "ok", source: sourceLabel });
     aiMemoryIngestDurationMs.observe(
       { outcome: "ok", source: sourceLabel },

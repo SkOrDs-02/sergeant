@@ -104,3 +104,24 @@ export async function flushPendingProfileMirrors(): Promise<void> {
   }
   await Promise.all([...inFlight.values()]);
 }
+
+/**
+ * B12 (аудит ai-pipeline-2026-08-05): скасувати відкладене дзеркалення
+ * користувача і дочекатись того, що вже в польоті. Кличе «Очистити памʼять»
+ * ДО мітки очищення в черзі: відкладений профіль інакше через 10 с поставив
+ * би стерті факти назад у чергу вже ПІСЛЯ мітки, і воркер їх би пропустив.
+ * Дзеркалення в польоті дочікуємо, щоб його задачі встигли лягти в чергу
+ * раніше за мітку й були нею відсічені.
+ *
+ * Діє в межах процесу: відкладене на іншій репліці так не скасувати.
+ */
+export async function cancelPendingProfileMirror(
+  userId: string,
+): Promise<void> {
+  const entry = pending.get(userId);
+  if (entry) {
+    clearTimeout(entry.timer);
+    pending.delete(userId);
+  }
+  await inFlight.get(userId);
+}

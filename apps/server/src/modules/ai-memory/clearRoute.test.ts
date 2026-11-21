@@ -1,5 +1,24 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
 import type { Request, Response } from "express";
+
+const { callOrder, purgeQueuedIngestForUser, cancelPendingProfileMirror } =
+  vi.hoisted(() => {
+    const order: string[] = [];
+    return {
+      callOrder: order,
+      purgeQueuedIngestForUser: vi.fn(async (_userId: string) => {
+        order.push("purgeQueue");
+        return 0;
+      }),
+      cancelPendingProfileMirror: vi.fn(async (_userId: string) => {
+        order.push("cancelMirror");
+      }),
+    };
+  });
+
+vi.mock("./ingestQueue.js", () => ({ purgeQueuedIngestForUser }));
+vi.mock("./profileMirrorDebounce.js", () => ({ cancelPendingProfileMirror }));
+
 import { __resetAiMemoryForTest } from "./bootstrap.js";
 import { clearAiMemoryHandler } from "./clearRoute.js";
 import type { AiMemoryService } from "./service.js";
@@ -33,6 +52,9 @@ function makeReq(userId: string): Request {
 
 afterEach(() => {
   __resetAiMemoryForTest(undefined);
+  callOrder.length = 0;
+  purgeQueuedIngestForUser.mockClear();
+  cancelPendingProfileMirror.mockClear();
 });
 
 describe("clearAiMemoryHandler", () => {
@@ -58,5 +80,22 @@ describe("clearAiMemoryHandler", () => {
     await clearAiMemoryHandler(req, res);
 
     expect(res.body).toEqual({ ok: true, deleted: 0 });
+  });
+
+  // B12 (аудит ai-pipeline-2026-08-05): задачі ingest, що вже лежали в
+  // Redis, повертали стерті факти. Черга чиститься і мітка ставиться ДО
+  // видалення рядків, а відкладене дзеркалення профілю глушиться ще раніше.
+  it("глушить дзеркалення і чистить чергу ingest до видалення рядків", async () => {
+    const forgetUser = vi.fn(async () => {
+      callOrder.push("forgetUser");
+      return 3;
+    });
+    __resetAiMemoryForTest({ forgetUser } as unknown as AiMemoryService);
+
+    await clearAiMemoryHandler(makeReq("user_3"), makeRes());
+
+    expect(cancelPendingProfileMirror).toHaveBeenCalledWith("user_3");
+    expect(purgeQueuedIngestForUser).toHaveBeenCalledWith("user_3");
+    expect(callOrder).toEqual(["cancelMirror", "purgeQueue", "forgetUser"]);
   });
 });

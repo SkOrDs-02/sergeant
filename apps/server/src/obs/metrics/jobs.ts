@@ -113,6 +113,9 @@ export const aiMemoryIngestProcessedTotal = new client.Counter({
   //                    so dashboards can distinguish "wrote to DLQ" from
   //                    "final fail outcome".
   //   skipped        — pre-flight skip (legacy; kept for back-compat).
+  //   cleared        — job created before «Очистити памʼять» (B12 tombstone,
+  //                    `ingestClearMarker.ts`): skipped, or the row it just
+  //                    wrote was removed again.
   labelNames: ["outcome", "source"],
   registers: [register],
 });

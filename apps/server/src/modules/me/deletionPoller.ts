@@ -30,6 +30,7 @@ import {
   scheduleStartupTick,
 } from "../../lib/pollerStartupTick.js";
 import { toPublicErrorCode } from "../../obs/errorCode.js";
+import { purgeQueuedIngestForUser } from "../ai-memory/ingestQueue.js";
 import { purgeUserData } from "./dataRights.js";
 
 const DEFAULT_INTERVAL_MS = 60 * 60 * 1000;
@@ -198,8 +199,15 @@ export class AccountDeletionPoller {
           // відновлення повертає акаунт цілим. Чергу наповнює сам
           // `purgeUserData` усередині своєї транзакції.
           const result = await purgeUserData(this.pool, userId);
-          if (result) purged += 1;
-          else skipped += 1;
+          if (result) {
+            purged += 1;
+            // B12 (аудит ai-pipeline-2026-08-05): задачі ingest цього юзера,
+            // що ще лежать у Redis, після видалення акаунта писали б у
+            // `ai_memories` неіснуючого юзера, падали на FK і після ретраїв
+            // осідали в DLQ з повним текстом. Знімаємо їх і ставимо мітку.
+            // Не кидає: збій Redis видалення акаунта не відкочує.
+            await purgeQueuedIngestForUser(userId);
+          } else skipped += 1;
         } catch (err) {
           failed += 1;
           logger.error({

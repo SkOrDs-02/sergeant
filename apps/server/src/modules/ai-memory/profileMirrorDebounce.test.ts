@@ -14,6 +14,7 @@ import type { Pool } from "pg";
 
 import {
   PROFILE_MIRROR_DEBOUNCE_MS,
+  cancelPendingProfileMirror,
   flushPendingProfileMirrors,
   scheduleProfileMemoryMirror,
 } from "./profileMirrorDebounce.js";
@@ -81,5 +82,34 @@ describe("scheduleProfileMemoryMirror (rel-34)", () => {
     mirrorMock.mockRejectedValueOnce(new Error("boom"));
     scheduleProfileMemoryMirror(pool, "u1", { v: 1 });
     await expect(flushPendingProfileMirrors()).resolves.toBeUndefined();
+  });
+
+  // B12 (аудит ai-pipeline-2026-08-05): відкладене дзеркалення після
+  // «Очистити памʼять» повернуло б стерті факти профілю в чергу.
+  it("cancel скасовує відкладене дзеркалення лише цього користувача", async () => {
+    scheduleProfileMemoryMirror(pool, "u1", { v: 1 });
+    scheduleProfileMemoryMirror(pool, "u2", { v: 1 });
+    await cancelPendingProfileMirror("u1");
+    await vi.advanceTimersByTimeAsync(PROFILE_MIRROR_DEBOUNCE_MS * 2);
+    expect(mirrorMock).toHaveBeenCalledTimes(1);
+    expect(mirrorMock).toHaveBeenCalledWith(pool, "u2", { v: 1 });
+  });
+
+  it("cancel дочікується дзеркалення, що вже в польоті", async () => {
+    let release!: () => void;
+    mirrorMock.mockImplementationOnce(
+      () => new Promise((resolve) => (release = () => resolve({ ok: true }))),
+    );
+    scheduleProfileMemoryMirror(pool, "u1", { v: 1 });
+    await vi.advanceTimersByTimeAsync(PROFILE_MIRROR_DEBOUNCE_MS);
+    let done = false;
+    const cancelled = cancelPendingProfileMirror("u1").then(() => {
+      done = true;
+    });
+    await vi.advanceTimersByTimeAsync(0);
+    expect(done).toBe(false);
+    release();
+    await cancelled;
+    expect(done).toBe(true);
   });
 });
