@@ -76,6 +76,59 @@ export const strictBoolFromEnv = (name: string, defaultValue: boolean) =>
     });
 
 /**
+ * Розбір JSON-мапи `{"key": nonNegInt}` (напр. `AI_QUOTA_TOOL_LIMITS`).
+ * Чиста функція без логів: її ділять Zod-схема env (fail на старті) і
+ * ран-тайм, який читає `process.env` напряму.
+ */
+export const parseNonNegIntRecord = (
+  raw: string,
+):
+  | { ok: true; value: Record<string, number> }
+  | { ok: false; error: string } => {
+  let parsed: unknown;
+  try {
+    parsed = JSON.parse(raw);
+  } catch (e: unknown) {
+    return { ok: false, error: `invalid JSON (${(e as Error).message})` };
+  }
+  if (!parsed || typeof parsed !== "object" || Array.isArray(parsed)) {
+    return { ok: false, error: "expected a JSON object" };
+  }
+  const value: Record<string, number> = {};
+  for (const [key, v] of Object.entries(parsed)) {
+    if (typeof v !== "number" || !Number.isInteger(v) || v < 0) {
+      return {
+        ok: false,
+        error: `value for ${JSON.stringify(key)} must be a non-negative integer (got ${JSON.stringify(v)})`,
+      };
+    }
+    value[key] = v;
+  }
+  return { ok: true, value };
+};
+
+/**
+ * Fail-loud JSON-мапа лімітів (аудит ai-pipeline B15): битий JSON або
+ * нечислове значення раніше тихо знімали всі tool-ліміти. Тепер — ZodIssue,
+ * тобто throw на старті. Порожнє чи відсутнє значення валідне. Значення
+ * повертається як є — ран-тайм читає `process.env` напряму.
+ */
+export const jsonRecordOfNonNegIntFromEnv = (name: string) =>
+  z
+    .string()
+    .optional()
+    .superRefine((v, ctx) => {
+      if (v === undefined || v.trim() === "") return;
+      const r = parseNonNegIntRecord(v);
+      if (!r.ok) {
+        ctx.addIssue({
+          code: z.ZodIssueCode.custom,
+          message: `${name}: ${r.error} — refusing to run with quota limits silently disabled`,
+        });
+      }
+    });
+
+/**
  * `AI_QUOTA_FOUNDER_IDS`: comma-separated Better Auth user id (opaque string,
  * не UUID). Кожен запис після trim — непорожній і без пробільних символів
  * усередині (типова помилка: пропущена кома дає «id1 id2», який мовчки не

@@ -1,6 +1,6 @@
 # Environment variables — повний reference
 
-> **Last touched:** 2026-11-20 by @claude (`SYNC_V2_STREAM_ENABLED`: клієнт-споживач, закриття стрімів на SIGTERM); 2026-11-19 by @claude (ADR-0105 §2: `SYNC_OP_LOG_APPLIED_RETENTION_DAYS`); 2026-10-26 by @claude (rel-06: `SYNC_SNAPSHOT_ENABLED`); 2026-10-10 by @claude (rel-03: `SERGEANT_CLIENT_IP_SECRET`); 2026-10-03 by @claude (sec-08: `AUTH_EXPO_PLUGIN_ENABLED`, нативні схеми в проді порожні); 2026-09-17 (§ `LLM_*` узгоджено з `env/aiRoutingEnv.ts` — OpenRouter живий, дефолти `openrouter`; продюсери ai-memory без ingest/mono). **Next review:** 2026-12-16.
+> **Last touched:** 2026-11-21 by @claude (B15: `AI_QUOTA_TOOL_LIMITS` валідується на старті, `AI_QUOTA_TOOL_DEFAULT_LIMIT` без дефолту); 2026-11-20 by @claude (`SYNC_V2_STREAM_ENABLED`: клієнт-споживач, закриття стрімів на SIGTERM); 2026-11-19 by @claude (ADR-0105 §2: `SYNC_OP_LOG_APPLIED_RETENTION_DAYS`); 2026-10-26 by @claude (rel-06: `SYNC_SNAPSHOT_ENABLED`); 2026-10-10 by @claude (rel-03: `SERGEANT_CLIENT_IP_SECRET`); 2026-10-03 by @claude (sec-08: `AUTH_EXPO_PLUGIN_ENABLED`, нативні схеми в проді порожні); 2026-09-17 (§ `LLM_*` узгоджено з `env/aiRoutingEnv.ts` — OpenRouter живий, дефолти `openrouter`; продюсери ai-memory без ingest/mono). **Next review:** 2026-12-16.
 > **Status:** Active
 
 Цей документ — канонічний reference усіх змінних оточення Sergeant. Мінімальний `.env` (12 змінних, потрібних для `pnpm dev:web` + `pnpm dev:server`) лежить у [`/.env.example`](../../../.env.example) у корені репо. Сюди винесено: повний опис, формати, default-и, наслідки незаповненості, перехресні посилання на код / ADR / hardening-ноти.
@@ -150,8 +150,8 @@ Origin веб-застосунку — куди повертається кор�
 Tool-use квота (окремий bucket у `ai_usage_daily`). Кожен виклик tool-а (наприклад `change_category`, `create_debt`) коштує `AI_QUOTA_TOOL_COST` одиниць у власному лічильнику `tool:<name>`.
 
 - `AI_QUOTA_TOOL_COST=3` (default).
-- `AI_QUOTA_TOOL_DEFAULT_LIMIT=60` (default).
-- `AI_QUOTA_TOOL_LIMITS={"change_category":30,"create_debt":10,"create_receivable":10,"hide_transaction":30,"set_budget_limit":10,"set_monthly_plan":5,"mark_habit_done":30,"plan_workout":10,"create_habit":10}` — JSON з лімітами на кожен tool. Tool-и, не вказані у JSON, беруть `AI_QUOTA_TOOL_DEFAULT_LIMIT` (або unlimited якщо пусто).
+- `AI_QUOTA_TOOL_DEFAULT_LIMIT` — дефолту немає: не задано = tool-и поза мапою безлімітні. Приклад: `AI_QUOTA_TOOL_DEFAULT_LIMIT=60`.
+- `AI_QUOTA_TOOL_LIMITS={"change_category":30,"create_debt":10,"create_receivable":10,"hide_transaction":30,"set_budget_limit":10,"set_monthly_plan":5,"mark_habit_done":30,"plan_workout":10,"create_habit":10}` — JSON з лімітами на кожен tool. Tool-и, не вказані у JSON, беруть `AI_QUOTA_TOOL_DEFAULT_LIMIT` (або unlimited якщо пусто). Значення — лише невідʼємні цілі. **Битий JSON, не-обʼєкт чи нечислове значення валять сервер на старті** (`jsonRecordOfNonNegIntFromEnv`, аудит ai-pipeline B15): раніше одна зайва кома тихо знімала всі tool-ліміти.
 
 ### `AI_QUOTA_PRESET_LIMITS`, `AI_QUOTA_PRESET_WEEKLY_LIMIT` _(optional)_
 

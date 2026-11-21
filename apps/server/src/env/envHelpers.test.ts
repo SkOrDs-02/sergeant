@@ -4,6 +4,7 @@ import { z } from "zod";
 import {
   founderIdsFromEnv,
   enumBoolFromEnv,
+  jsonRecordOfNonNegIntFromEnv,
   optionalStrictBoolFromEnv,
   strictBoolFromEnv,
 } from "./envHelpers.js";
@@ -52,6 +53,33 @@ describe("founderIdsFromEnv (B16)", () => {
   });
 });
 
+describe("jsonRecordOfNonNegIntFromEnv (ai-pipeline B15)", () => {
+  const schema = z.object({ M: jsonRecordOfNonNegIntFromEnv("M") });
+
+  it("приймає відсутнє, порожнє і валідну мапу", () => {
+    expect(schema.safeParse({}).success).toBe(true);
+    expect(schema.safeParse({ M: "" }).success).toBe(true);
+    expect(schema.safeParse({ M: '{"a":0,"b":30}' }).success).toBe(true);
+  });
+
+  it.each([
+    "{not valid",
+    '{"a":30,}',
+    "[1,2]",
+    "null",
+    "30",
+    '{"a":"30"}',
+    '{"a":-1}',
+    '{"a":2.5}',
+  ])("відкидає %j", (raw) => {
+    const r = schema.safeParse({ M: raw });
+    expect(r.success).toBe(false);
+    if (!r.success) {
+      expect(r.error.issues[0]?.message).toMatch(/^M: .*silently disabled/);
+    }
+  });
+});
+
 describe("env.ts — startup fail-loud", () => {
   afterEach(() => {
     vi.unstubAllEnvs();
@@ -72,6 +100,12 @@ describe("env.ts — startup fail-loud", () => {
     await expect(import("./env.js")).rejects.toThrow(
       /ANTHROPIC_BUDGET_ALERT_ENABLED must be one of/,
     );
+  });
+
+  it("AI_QUOTA_TOOL_LIMITS з битим JSON кидає на старті", async () => {
+    vi.stubEnv("AI_QUOTA_TOOL_LIMITS", '{"create_debt":10,}');
+    vi.resetModules();
+    await expect(import("./env.js")).rejects.toThrow(/AI_QUOTA_TOOL_LIMITS/);
   });
 
   it("AI_QUOTA_FOUNDER_IDS з пробілом усередині кидає на старті", async () => {

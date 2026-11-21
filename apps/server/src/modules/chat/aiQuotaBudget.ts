@@ -93,8 +93,9 @@ function thisWeek(): string {
 /**
  * Per-preset ліміт із JSON-мапи `AI_QUOTA_PRESET_LIMITS`
  * (`{"profile_interview":10,"profile_add_info":4}`). `undefined` — ключа
- * немає або значення невалідне; битий JSON — fail-open + warn, як у
- * `toolLimit()`: advisory-налаштування не має класти запити.
+ * немає або значення невалідне; битий JSON — fail-open + warn на наступний
+ * рівень, який завжди скінченний (на відміну від `toolLimit()`, де fail-open
+ * давав unlimited і тому валідується на старті, аудит ai-pipeline B15).
  */
 function presetLimitFromMap(preset: ChatPreset): number | undefined {
   const raw = process.env["AI_QUOTA_PRESET_LIMITS"];

@@ -14,6 +14,7 @@ import {
   floatFromEnv,
   intFromEnv,
   founderIdsFromEnv,
+  jsonRecordOfNonNegIntFromEnv,
   optionalStrictBoolFromEnv,
   optionalSecretFromEnv,
   optionalUrl,
@@ -226,7 +227,7 @@ const envSchema = z.object({
 
   AI_QUOTA_TOOL_COST: coerceInt.nonnegative().optional(),
 
-  AI_QUOTA_TOOL_LIMITS: z.string().optional(),
+  AI_QUOTA_TOOL_LIMITS: jsonRecordOfNonNegIntFromEnv("AI_QUOTA_TOOL_LIMITS"),
 
   AI_QUOTA_TOOL_DEFAULT_LIMIT: coerceInt.nonnegative().optional(),
 
