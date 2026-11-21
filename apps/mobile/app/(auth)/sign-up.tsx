@@ -46,6 +46,10 @@ export default function SignUpScreen() {
   const [password, setPassword] = useState("");
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
+  // sec-46: сервер із межею `EMAIL_VERIFICATION_REQUIRED_FROM` сесії не
+  // видає і для нової, і для зайнятої адреси відповідає однаково, тож
+  // `router.replace("/")` без сесії лише повертав на вхід.
+  const [checkEmailFor, setCheckEmailFor] = useState<string | null>(null);
 
   async function onSubmit() {
     setError(null);
@@ -56,12 +60,38 @@ export default function SignUpScreen() {
         setError(res.error.message ?? "Не вдалося створити акаунт");
         return;
       }
+      if (!res.data?.token) {
+        setCheckEmailFor(email.trim());
+        return;
+      }
       router.replace("/");
     } catch (e) {
       setError(e instanceof Error ? e.message : "Не вдалося створити акаунт");
     } finally {
       setLoading(false);
     }
+  }
+
+  if (checkEmailFor !== null) {
+    return (
+      <SafeAreaView className="flex-1 bg-bg" edges={["bottom"]}>
+        <View className="flex-1 px-6 justify-center gap-4">
+          <Text className="text-text text-3xl font-bold">Перевір пошту</Text>
+          <Text className="text-text text-base">
+            Я надіслав лист на {checkEmailFor}. Відкрий посилання з нього, а
+            потім увійди тут.
+          </Text>
+          <Text className="text-muted text-sm">
+            Листа немає за кілька хвилин? Зазирни в «Спам».
+          </Text>
+          <Link href="/(auth)/sign-in" className="mt-4 self-center px-1">
+            <Text className="text-accent text-sm font-medium">
+              Повернутися до входу
+            </Text>
+          </Link>
+        </View>
+      </SafeAreaView>
+    );
   }
 
   return (
