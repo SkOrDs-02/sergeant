@@ -1,8 +1,8 @@
 # Аудит 2026-10-01 · Надійність, продуктивність, експлуатація
 
 > **Status:** Active. 64 кластери (91 знахідка) за першопричиною. Загальний план, метод і обмеження — у [README](./README.md).
-> **Last validated:** 2026-10-02
-> **Next review:** 2026-11-02
+> **Last touched:** 2026-11-21 by @claude (рішення власника по кластерах, раунди 5–10); раніше перевірено 2026-10-02.
+> **Next review:** 2027-01-21
 > **Spec-lint:** skip. Реєстр знахідок аудиту, не специфікація реалізації.
 
 Найгостріше місце теми — спільні точки відмови single-process бекенду. Одна отруєна звичка зупиняє серверні нагадування всім користувачам (high), а анонім чи будь-який зареєстрований клієнт може дешево зайняти event loop, пам'ять або диск: pre-auth gzip, ReDoS у PII-масці, SSE без стелі, sync_op_log без меж. Клієнтський синк працює, але марнотратно. Пуш на кожне натискання, перезаливка всієї історії Фізрука й O(n²) у коморі впираються в спільний бакет 60/хв, а один отруйний pulled-оп чи завислий push мовчки зупиняють синк пристрою. На краях бракує стійкості: не-401 помилка /me робить користувача гостем, вихід видаляє precache, а збій чанка чи оновлення SW лишає модуль або вкладку зламаними до ручного reload. Частина операційних гейтів лише створює видимість перевірки: down-drill нічого не порівнює, перевірка бекапу жодного разу не торкалася прод-даних, фонові полери після кожного деплою відкладаються. Більшість фіксів локальні (S), і лише retention та вотермарк синку, а також онлайн-міграції потребують зміни дизайну.
@@ -2257,6 +2257,7 @@ apps/server/src/env/env.ts:36 REQUEST_TIMEOUT_MS: intFromEnv(120_000); syncSched
 ### `rel-34` [low] Один користувач може вичерпати глобальний добовий бюджет Voyage і вимкнути пам'ять AI для всіх
 
 - **Стан:** відкрито
+- **Рішення власника 2026-11-21:** стеля 50 ембеддингів профілю на користувача на добу плюс debounce дзеркалення профілю.
 - **Перевірка:** підтверджено · **Зусилля:** M · **Область:** server: ai-memory
 - **Де:** apps/server/src/routes/me.ts:229-257; apps/server/src/modules/ai-memory/profileMirror.ts:97,315-334; apps/server/src/modules/ai-memory/voyageBudget.ts; apps/server/src/modules/ai-memory/service.ts:201-213,331-337
 - **Першопричина:** PUT /api/me/profile (60 за 5 хв) дзеркалить memoryBank в ai_memories, і кожен змінений текст факту дає новий embed. Бюджет Voyage глобальний на процес (soft 1 USD, hard 5 USD), а per-user ліміту ембеддингів немає, хоча коментар у routes/ai-memory.ts його обіцяє.
@@ -2302,6 +2303,7 @@ embeddings.ts:274-288 (soft preflight before fetch, non-critical -> throw); serv
 ### `rel-35` [low] Анонімні /api/barcode і /api/food-search спалюють спільні добові квоти UPCitemdb і USDA DEMO_KEY
 
 - **Стан:** відкрито
+- **Рішення власника 2026-11-21:** власник ставить `USDA_FDC_API_KEY` і `UPCITEMDB_API_KEY` у Coolify, а код додає глобальні добові бакети на апстрім нижче стелі постачальника. Той самий кластер, що `sec-24`.
 - **Перевірка:** підтверджено · **Зусилля:** S · **Швидкий виграш** · **Область:** server: nutrition barcode / food-search
 - **Та сама першопричина, що й** [`sec-24`](./security.md#sec-24): Той самий дефект: анонімні /api/barcode і /api/food-search спалюють спільні добові квоти UPCitemdb і USDA.
 - **Де:** apps/server/src/routes/barcode.ts:21-36; apps/server/src/modules/nutrition/barcode.ts:331-380,444; apps/server/src/routes/food-search.ts:20-29
@@ -3708,6 +3710,7 @@ v2-pantry-memory.mjs: 5170 рядків 'SQL TRACE' за 4 memory-заванта
 ### `rel-62` [low] Раннер міграцій не підтримує онлайн-міграцій: усе в одній транзакції, без CONCURRENTLY і NOT VALID, а таймаути конфліктують із healthcheck
 
 - **Стан:** відкрито
+- **Рішення власника 2026-11-21:** зараз лише `pg_try_advisory_lock` з дедлайном; онлайн-режим (`migrate:no-transaction`, лінт на `CREATE INDEX` без `CONCURRENTLY`) перед першою міграцією на великій таблиці.
 - **Перевірка:** підтверджено · **Зусилля:** L · **Область:** server: міграції / деплой
 - **Де:** apps/server/src/db.ts:73,399-402,463-475; apps/server/migrate.mjs:85-87; Dockerfile.api:321; apps/server/src/migrations/117_fizruk_workout_sets_user_idx.sql:32-35; apps/server/src/migrations/142_cascade_user_id_indexes.sql; apps/server/src/migrations/149_ai_usage_daily_week_buckets.sql:1-20; apps/server/src/migrations/150_ai_usage_daily_preset_buckets.sql; apps/server/src/migrations/144_ai_memories_prune_dead_sources.sql:6-12
 - **Першопричина:** runPendingSqlMigrations обгортає кожен файл у BEGIN/COMMIT без opt-out, тож CREATE INDEX CONCURRENTLY неможливий. CHECK на ai_usage_daily і ai_memories розширюють через DROP+ADD без NOT VALID, під ACCESS EXCLUSIVE. migrate.mjs ставить statement_timeout=0 і lock_timeout=10 с, який діє і на pg_advisory_lock, а самі міграції виконуються в ENTRYPOINT до старту сервера.

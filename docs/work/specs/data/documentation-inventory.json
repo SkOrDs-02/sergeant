@@ -4309,6 +4309,27 @@
       "canonical_owner": "docs/work/specs/audits/verification/runs/pilot-2026-09-05-b/run.json"
     },
     {
+      "old_path": "docs/work/specs/audits/verification/runs/prod-2026-11-21/early-write.json",
+      "new_path": "docs/work/specs/audits/verification/runs/prod-2026-11-21/early-write.json",
+      "action": "keep",
+      "genre": "active-work",
+      "canonical_owner": "docs/work/specs/audits/verification/runs/prod-2026-11-21/early-write.json"
+    },
+    {
+      "old_path": "docs/work/specs/audits/verification/runs/prod-2026-11-21/handoff.md",
+      "new_path": "docs/work/specs/audits/verification/runs/prod-2026-11-21/handoff.md",
+      "action": "keep",
+      "genre": "active-work",
+      "canonical_owner": "docs/work/specs/audits/verification/runs/prod-2026-11-21/handoff.md"
+    },
+    {
+      "old_path": "docs/work/specs/audits/verification/runs/prod-2026-11-21/run.json",
+      "new_path": "docs/work/specs/audits/verification/runs/prod-2026-11-21/run.json",
+      "action": "keep",
+      "genre": "active-work",
+      "canonical_owner": "docs/work/specs/audits/verification/runs/prod-2026-11-21/run.json"
+    },
+    {
       "old_path": "docs/work/specs/audits/verification/runs/sync-audit-2026-10-13/fresh-device.png",
       "new_path": "docs/work/specs/audits/verification/runs/sync-audit-2026-10-13/fresh-device.png",
       "action": "keep",

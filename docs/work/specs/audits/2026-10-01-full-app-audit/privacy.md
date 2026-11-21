@@ -1,8 +1,8 @@
 # Аудит 2026-10-01 · Приватність і відповідність
 
 > **Status:** Active. 38 кластерів (48 знахідок) за першопричиною. Загальний план, метод і обмеження — у [README](./README.md).
-> **Last validated:** 2026-10-02
-> **Next review:** 2026-11-02
+> **Last touched:** 2026-11-21 by @claude (рішення власника по кластерах, раунди 5–10); раніше перевірено 2026-10-02.
+> **Next review:** 2027-01-21
 > **Spec-lint:** skip. Реєстр знахідок аудиту, не специфікація реалізації.
 
 Приватність — одна з найслабших зон застосунку. На спільному пристрої обіцянки не працюють на жодному шляху: вихід не стирає SQLite і не знімає push-підписку; протухла сесія взагалі нічого не чистить і переносить чужі медичні факти в серверний профіль наступного користувача; легасі kvvfs і IndexedDB модуля Їжа живуть вічно; PIN-блокування вимикається після перезавантаження і обходиться 10 спробами. На сервері головний ризик — Sentry: транзакції везуть паролі, текст чату й cookie, а токени скидання пароля і секрети вебхуків осідають в атрибутах URL. Друга лінія — розрив між політикою приватності і кодом: health-гейт пропускає алергії і тренування, AI-події PostHog ігнорують відмову від аналітики, чат іде до нерозкритих субпроцесорів, фото чеків відправляються без обіцяного попередження, а експорт і видалення даних неповні. Більшість фіксів локальні (S), тож п'ять high-кластерів реально закрити за кілька днів; жоден із них не виправлено комітами після c7c09607.
@@ -1180,6 +1180,7 @@ verify-server-static-ai-layer/mask-v2.mts: «+380 67 123 45 67» без змін
 ### `priv-20` [low] Персональні дані поза каскадом видалення і без строку зберігання: сирі payload-и LiqPay і Stripe, push-аудит, журнал розсилок, фідбек, відписки і waitlist
 
 - **Стан:** відкрито
+- **Рішення власника 2026-11-21:** `purgeUserData` чистить усе перелічене (фідбек, відписки, журнал розсилок, push-аудит, waitlist), payload-и webhook і push-аудит живуть 30 днів; разом із цим нічний крон hard-delete `ai_memories` з `deleted_at` старше 7 днів (AI-pipeline B13).
 - **Перевірка:** підтверджено · **Зусилля:** M · **Область:** server: білінг / права на дані / міграції
 - **Де:** apps/server/src/modules/billing/liqpay.ts:470-476; apps/server/src/modules/billing/stripeWebhook.ts:31-35; apps/server/src/modules/webhooks/retentionPoller.ts:126-130; apps/server/src/modules/me/dataRights.ts:652-734; apps/server/src/migrations/041_push_send_audit.sql:14-16; apps/server/src/migrations/093_feedback_entries.sql:34; apps/server/src/migrations/043_email_unsubscribes.sql:39; apps/server/src/migrations/009_waitlist.sql:12; apps/server/src/migrations/**tests**/141-142-user-scoped-cascade.test.ts:42-55, 227
 - **Першопричина:** Частина таблиць тримає ідентифікатор чи PII без FK на user (feedback_entries, email_unsubscribes, email_campaigns_log.recipient_id, push_send_audit.target_user_id), waitlist_entries має ON DELETE SET NULL. Гейт каскаду шукає лише колонку з іменем user_id. LiqPay і Stripe пишуть увесь колбек у JSONB без редакції (для Plata є redactPlataPayload). Retention-поллер чистить лише n8n_webhook_events, а purgeUserData явно чистить тільки ai_usage_daily і ai_memory_ingest_failed.
@@ -1368,6 +1369,7 @@ Harness output: {size:1200000,type:image/jpeg} -> false; {size:900000,type:image
 ### `priv-22` [low] FTUX-розсилка йде без маркетингової згоди і до підтвердження email, а відписка — state-changing GET без List-Unsubscribe
 
 - **Стан:** відкрито
+- **Рішення власника 2026-11-21:** FTUX-серія = онбординг з opt-out: слати лише після `emailVerified`, з посиланням «відписатись» і заголовками `List-Unsubscribe`/`List-Unsubscribe-Post`.
 - **Перевірка:** підтверджено · **Зусилля:** M · **Область:** server: email
 - **Де:** apps/server/src/auth.ts:481-515; apps/server/src/email/ftuxDripMail.ts:290-301, 342-460; apps/server/src/routes/email-unsubscribe.ts:177-222; apps/server/src/email/ftuxUnsubscribeToken.ts:22-35, 139-145; apps/web/src/core/legal/privacyDocument.ts:133
 - **Першопричина:** Хук user.create.after ставить у чергу три листи з порадами кожному новому користувачу без перевірки emailVerified чи згоди. dispatchFtuxDripEmail перевіряє лише існування користувача, opt-out і дедуп. Лист не має заголовків List-Unsubscribe/List-Unsubscribe-Post, а GET /api/email/unsubscribe одразу записує відписку.
@@ -1690,6 +1692,7 @@ psql \d telegram_waitlist: колонки start_payload, telegram_username, firs
 ### `priv-29` [low] Енумерація користувачів через реєстрацію: наявний email повертає 422 USER_ALREADY_EXISTS
 
 - **Стан:** відкрито
+- **Рішення власника 2026-11-21:** нейтральна відповідь реєстрації «перевір пошту» плюс лист «у тебе вже є акаунт»; верифікація email обовʼязкова (як `sec-46`).
 - **Перевірка:** підтверджено · **Зусилля:** S · **Область:** server: auth
 - **Та сама першопричина, що й** [`sec-46`](./security.md#sec-46): Той самий дефект: реєстрація повертає 422 USER_ALREADY_EXISTS і розкриває наявність акаунта.
 - **Де:** apps/server/src/auth.ts:368; apps/server/src/env/env.ts:85-88; apps/server/src/http/authMiddleware.ts:61-64; node_modules/better-auth/dist/api/routes/sign-up.mjs:161-207
@@ -1736,6 +1739,7 @@ v1.log: #13.1 sign-up audit_a@example.com → 422 {"message":"User already exist
 ### `priv-30` [low] Анонімні /healthz і /health/workers без rate-limit і кешу розкривають внутрішній стан і кількість акаунтів у вікні видалення та щоразу виконують агрегатні SQL
 
 - **Стан:** відкрито
+- **Рішення власника 2026-11-21:** закрити обидва ендпоінти `METRICS_TOKEN`-ом, для проб лишити `/livez` і `/readyz` (як `sec-40`).
 - **Перевірка:** підтверджено · **Зусилля:** S · **Швидкий виграш** · **Область:** server: health / observability
 - **Та сама першопричина, що й** [`sec-40`](./security.md#sec-40): Той самий дефект: анонімні /healthz, /health/workers і /api/status без rate-limit роблять SQL на кожен виклик і розкривають операційні дані.
 - **Де:** apps/server/src/routes/health.ts:55-56; apps/server/src/http/health.ts:106-191, 195-256; apps/server/src/routes/status.ts:15; apps/server/src/modules/mono/enrichmentWorker.ts:434-438

@@ -1,8 +1,8 @@
 # Аудит 2026-10-01 · Цілісність даних і синхронізація
 
 > **Status:** Active. 82 кластери (129 знахідок) за першопричиною. Загальний план, метод і обмеження — у [README](./README.md).
-> **Last validated:** 2026-10-02
-> **Next review:** 2026-11-02
+> **Last touched:** 2026-11-21 by @claude (рішення власника по кластерах, раунди 5–10); раніше перевірено 2026-10-02.
+> **Next review:** 2027-01-21
 > **Spec-lint:** skip. Реєстр знахідок аудиту, не специфікація реалізації.
 
 Цілісність даних — найслабше місце застосунку: 129 кандидатів зведено до 82 кластерів (11 high, 38 medium, 32 low, 1 info), майже всі підтверджені живим відтворенням або кодом, і жоден не закритий комітами після c7c09607, бо вони не торкались sync і сховища. Головні корені системні, а не точкові: глобальні PK на передбачуваних клієнтських id (крос-юзерні колізії й сквотинг), pull-апплаєр, що не скидає deleted_at при відновленні запису, запис цілих blob-ів із ще не прогрітого кешу (список покупок, nutrition_prefs, комора в memory-режимі) і журнал dual-write, що знімається попри помилку SQLite. Протокол синку має ще кілька тихих розривів: курсор pull перескакує оп-и паралельних транзакцій (пункт технборгу хибно закрито), hard-delete таблиці без tombstone, термінальні відмови на гонках першого INSERT і серверні записи в обхід sync_op_log, а бекап/відновлення й AI-чат обходять гарантії dual-write. Майже всі втрати тихі: користувач бачить тост успіху, а розбіжність проявляється лише на іншому пристрої чи після reload. Найшвидше вплинуть S-фікси: deleted_at у applyPullOp, ack журналу лише при errored = 0, гейт nutrition-persist до гідратації, emitServerSyncOps для серверних витрат, rollback на oplog_write_failed і прибирання ?sync=; системні кроки — складений PK (user_id, id) і per-user серіалізація записів у sync_op_log.
@@ -236,6 +236,7 @@ verify/imp.mjs run vx2 (uid crL78tWN…): oplog 18786 finyk_manual_expenses|inse
 ### `data-02` [high] Запис, відновлений після видалення («Повернути», повторний пропуск, hide→show→hide), назавжди лишається видаленим на інших і нових пристроях
 
 - **Стан:** виправлено в #1326 (змерджено 2026-10-03) (клієнтський generic upsert; пункт про переграш логу для застряглих пристроїв — рішення власника, не зроблено)
+- **Рішення власника 2026-11-21:** одноразовий примусовий повний re-pull на всіх клієнтах (скидання курсора, зі знімком сервера для швидкості); закриває і пропуски після перестрибнутого курсора (tech-debt/backend.md § Курсор pull).
 - **Перевірка:** підтверджено · **Зусилля:** S · **Швидкий виграш** · **Область:** web: syncEngine (applyPullOp) + writers усіх модулів
 - **Де:** apps/web/src/core/syncEngine/applyPullOp.ts:311-366 (insertCols на :344); apps/web/src/modules/finyk/lib/sqliteWriter/adapter.ts:155-165,209-219; apps/web/src/modules/routine/lib/sqliteWriter/adapter.ts:358-381,573-628; apps/web/src/modules/nutrition/lib/sqliteWriter/adapter.ts:335-357
 - **Першопричина:** Writers кладуть в outbox insert-рядки без ключа deleted_at, сервер зберігає op.row як є і так само віддає його на pull. applyGenericRegistryRow будує ON CONFLICT DO UPDATE лише з колонок, присутніх у рядку, тож локальний tombstone не скидається; коментар AI-DANGER і регресійний тест (з явним deleted_at: null) хибно вважають це закритим.
@@ -3924,6 +3925,7 @@ claimBatch: `BEGIN; SELECT id ... FOR UPDATE SKIP LOCKED; COMMIT;` і лише �
 ### `data-51` [low] LWW за годинником пристрою: годинник, що поспішає до години, «замикає» рядки й тихо відкидає правки інших пристроїв, а понад годину всі записи пристрою термінально відхиляються
 
 - **Стан:** відкрито
+- **Рішення власника 2026-11-21:** `updated_at = min(client_ts, server_now)`, вікно наперед звузити з години до хвилин; HLC не робимо.
 - **Перевірка:** підтверджено · **Зусилля:** M · **Область:** server: sync (syncV2, applySync-helpers) + web: syncEngine
 - **Де:** apps/server/src/modules/sync/syncV2.ts:131,370-378; apps/server/src/modules/sync/applySync-helpers.ts:61-74; apps/web/src/core/syncEngine/applyPullOp.ts:90-99,303-331; apps/web/src/core/syncEngine/singleton.ts:45,64-67; apps/web/src/core/syncEngine/clockSkew.ts:1-30
 - **Першопричина:** Сервер приймає client_ts до +60 хв і пише його в updated_at без обмеження, LWW порівнює за клієнтським часом; lww_conflict клієнт вважає benign і термінальним, clock_skew теж термінальний без ретраю після виправлення годинника, а нижньої межі немає (0001-01-01 приймається).
@@ -4621,6 +4623,7 @@ purgeStaleTerminalOutbox(client, { olderThanDays: 30 }) без userId; пред�
 ### `data-59` [low] Евікція сховища (Safari 7-day cap, очищення даних) мовчки знищує офлайн-чергу: «13 в черзі» зникає без попередження
 
 - **Стан:** відкрито
+- **Рішення власника 2026-11-21:** лише клієнтський стан «Завантажую з хмари» замість empty-state з повторами 2/5/15 с; серверний high-water mark черги (міграція) не робимо.
 - **Перевірка:** підтверджено · **Зусилля:** M · **Область:** web: durability (outbox, persistentStorage, sw)
 - **Де:** apps/web/src/core/syncEngine/outboxPurgeNotice.ts; apps/web/src/core/app/OfflineBanner.tsx; apps/web/src/core/db/persistentStorage.ts; apps/web/src/sw.ts
 - **Першопричина:** Незасинхронізовані оп-и живуть лише в OPFS (sync_op_outbox), Background Sync немає, а сервер нічого не знає про незавершену чергу, тож після евікції немає з чим звірити й про що попередити.
@@ -4667,6 +4670,7 @@ purgeStaleTerminalOutbox(client, { olderThanDays: 30 }) без userId; пред�
 ### `data-60` [low] Новий пристрій: якщо перший pull падає, модулі показують порожній стан із закликом «Додай першу…» без індикатора, а повтор лише через ~60 с
 
 - **Стан:** відкрито
+- **Рішення власника 2026-11-21:** лише клієнтський стан «перший pull» з повторами 2/5/15 с, без міграції (разом із `data-59`).
 - **Перевірка:** підтверджено · **Зусилля:** M · **Область:** web: syncEngine (syncEngineReader)
 - **Де:** apps/web/src/core/syncEngine/singleton.ts:243; apps/web/src/core/syncEngine/syncEngineReader.ts:287-293
 - **Першопричина:** syncEngineReader.start() робить один tick і далі чекає інтервал 60 с ±20% без короткого бекофу; стану «перший pull ще не вдався» немає, а індикатор синку відображає лише outbox.
@@ -4712,6 +4716,7 @@ Independent repro with v2-pullfail.mjs (fresh context, so empty OPFS for rop-mai
 ### `data-61` [low] Рутина: збереження застарілої форми редагування звички мовчки затирає свіжіші правки з іншого пристрою
 
 - **Стан:** відкрито
+- **Рішення власника 2026-11-21:** пушити лише змінені поля (field-level merge), а не весь рядок форми.
 - **Перевірка:** підтверджено · **Зусилля:** M · **Область:** web: Рутина (HabitQuickCreateDialog) + sync LWW
 - **Де:** apps/web/src/modules/routine/components/HabitDetailSheet.tsx; apps/web/src/modules/routine/components/HabitQuickCreateDialog.tsx; apps/web/src/modules/routine/lib/sqliteWriter/adapter.ts:358-381
 - **Першопричина:** Чернетка засівається один раз на відкриття і не оновлюється при зміні звички під нею; handleSave застосовує патч з усіма полями поверх свіжого стану, рядок пушиться цілком, і сервер робить per-row LWW.

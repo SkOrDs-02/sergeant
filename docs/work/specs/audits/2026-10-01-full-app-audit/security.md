@@ -1,8 +1,8 @@
 # Аудит 2026-10-01 · Безпека та доступ
 
 > **Status:** Active. 62 кластери (96 знахідок) за першопричиною. Загальний план, метод і обмеження — у [README](./README.md).
-> **Last validated:** 2026-10-02
-> **Next review:** 2026-11-02
+> **Last touched:** 2026-11-21 by @claude (рішення власника по кластерах, раунди 5–10); раніше перевірено 2026-10-02.
+> **Next review:** 2027-01-21
 > **Spec-lint:** skip. Реєстр знахідок аудиту, не специфікація реалізації.
 
 Безпека й доступ тримаються на кількох місцях, де одна помилка конфігурації дає повне захоплення акаунта. Головне з них: мертвий домен sergeant.2dmanager.com.ua досі дозволений у credentialed CORS (sec-01, critical, підтверджено на проді), а сирий session token із get-session і list-sessions працює як Bearer (sec-05). Друга системна вада в тому, що відкликання сесій не спрацьовує повністю. Cookie-кеш через update-user продовжується до 7 днів (sec-02), SSE-стрім живе після виходу (sec-09), невдалий офлайн-вихід лишає сесію живою (sec-07), а change-email без пароля дає непідтвердженим акаунтам шлях до захоплення (sec-06). PIN-блокування вебу фактично не захищає: воно вимикається після reload, знімається десятьма невдалими спробами і обходиться через Ctrl+K (sec-04, sec-12, sec-13). AI-квоти й пейвол обходяться ланцюжком round-trip-квитків і через refine-photo (sec-03, sec-14), а нативний auth-контур (expo(), sergeant://) лишається відкритим у проді, хоча мобільний розвиток на паузі (sec-08). Негативні тести показали, що тримаються межі тіла запиту, точний збіг CORS, JSON-парсер та ізоляція чужих даних на читанні. Станом на HEAD 7611f169 жодну знахідку теми не виправлено, лише розширено гейт ізоляції (PR #1308).
@@ -1981,6 +1981,7 @@ node .../agents/api-live-input-fuzz/r1_csrf.mjs (стовпець X-Api-Secret:a
 ### `sec-24` [low] Анонімні /api/barcode і /api/food-search дають вичерпати спільну зовнішню квоту власника з однієї IP
 
 - **Стан:** відкрито
+- **Рішення власника 2026-11-21:** ключі постачальників у проді плюс глобальний добовий бакет на ключ апстріму нижче стелі (як `rel-35`).
 - **Перевірка:** підтверджено · **Зусилля:** S · **Швидкий виграш** · **Область:** server: nutrition / зовнішні API
 - **Де:** apps/server/src/routes/barcode.ts:17-33; apps/server/src/routes/food-search.ts:16-33; apps/server/src/modules/nutrition/barcode.ts:327-395,454-509
 - **Першопричина:** Роути без requireSession мають лише per-IP бакети, і добовий бакет barcode (300 на IP) вищий за стелю UPCitemdb trial (100 на добу на весь проєкт); food-search (600 на IP) так само спалює USDA-ключ власника. Глобального бакета на ключ апстріму немає.
@@ -2486,6 +2487,7 @@ Script <scratch>/agents/verify-server-static-ai-layer/fence-v3.mts output: "a</u
 ### `sec-32` [low] Premium-фіча «Пам'ять Сержанта» (ai.memoryRecall) доступна Free через RAG у чаті
 
 - **Стан:** відкрито
+- **Рішення власника 2026-11-21:** Free отримує урізаний RAG памʼяті в чаті (3 спогади), Premium повний; текст тарифів оновити під це.
 - **Перевірка:** підтверджено · **Зусилля:** S · **Область:** server: AI / billing
 - **Де:** apps/server/src/modules/chat/chat.ts:745-756; apps/server/src/modules/ai-memory/ragContext.ts:137-197; apps/server/src/routes/ai-memory.ts:84-91; packages/shared/src/billing/entitlements.ts:55
 - **Першопричина:** requireFeature('ai.memoryRecall') стоїть лише на POST /api/ai-memory/recall, а перший тур /api/chat викликає buildRagContext → recall для будь-якого користувача без перевірки плану.
@@ -2532,6 +2534,7 @@ chat.ts: grep 'getUserPlan|accessStateOf|hasFeature' порожній; єдин�
 ### `sec-33` [low] Країна для вибору платіжного провайдера береться з клієнтського X-Vercel-IP-Country, а Stripe пропонується попри STRIPE_ENABLED=false
 
 - **Стан:** відкрито
+- **Рішення власника 2026-11-21:** заголовок `X-Vercel-IP-Country` на API не читаємо; усім показуємо UA-провайдерів, Stripe лише за `STRIPE_ENABLED`. Той самий кластер, що `logic-33`.
 - **Перевірка:** підтверджено · **Зусилля:** S · **Швидкий виграш** · **Область:** server: billing
 - **Де:** apps/server/src/routes/billing.ts:62-66; apps/server/src/modules/billing/provider.ts:182-201
 - **Першопричина:** userCountry() читає X-Vercel-IP-Country, хоча перед бекендом на Hetzner/Coolify Vercel немає і заголовок повністю задає клієнт; getEnabledProviders() для не-UA безумовно повертає ['stripe'], не дивлячись на STRIPE_ENABLED.
@@ -2962,6 +2965,7 @@ verify-server-static-reliability-ops/err-probe.mjs (pool-юзер audit_pool159)
 ### `sec-40` [low] Анонімні /healthz, /health/workers і /api/status без rate limit роблять SQL на кожен виклик і розкривають операційні дані
 
 - **Стан:** відкрито
+- **Рішення власника 2026-11-21:** `/healthz` і `/health/workers` закрити `METRICS_TOKEN`-ом, як `/metrics`; анонімними лишаються лише `/livez` і `/readyz`, скрипти проб оновити. Той самий кластер, що `priv-30`.
 - **Перевірка:** підтверджено · **Зусилля:** S · **Швидкий виграш** · **Область:** server: health / observability
 - **Де:** apps/server/src/routes/health.ts:55-56; apps/server/src/http/health.ts:106-191,222-256; apps/server/src/modules/me/deletionPoller.ts:242-262; apps/server/src/modules/gdpr/cleanupPoller.ts:226-244; apps/server/src/http/status.ts:115-140
 - **Першопричина:** Діагностичні ендпоінти змонтовано без токена, ліміту й кешу: /health/workers на кожен виклик робить COUNT-запити (черга видалень, GDPR, mono), /healthz показує стан пулу й circuit breaker, а статус n8n рахується лише за таблицею помилок.
@@ -3006,6 +3010,7 @@ Script: <scratch>/agents/verify-server-static-reliability-ops/r2-probe.mjs. Resu
 ### `sec-41` [low] Креденшел PIN лишається після виходу, а «Змінити PIN» і вимкнення не питають поточний PIN
 
 - **Стан:** відкрито
+- **Рішення власника 2026-11-21:** стирати PIN-креденшел при будь-якому виході з акаунта і вимагати поточний PIN для зміни чи вимкнення PIN.
 - **Перевірка:** підтверджено · **Зусилля:** S · **Швидкий виграш** · **Область:** web: блокування застосунку
 - **Де:** apps/web/src/core/security/lockStorage.ts:26-40,142-149; apps/web/src/core/security/useAppLock.ts:135-141; apps/web/src/core/security/AppLock.tsx:125-148; apps/web/src/core/auth/AuthContext.tsx:551-697; apps/web/src/shared/lib/storage/purgeLocalData.ts:125-141
 - **Першопричина:** logout() і purgeAppOwnedLocalData не чистять IndexedDB sergeant_app_lock, а startChange одразу відкриває PinSetupFlow без перевірки старого PIN; disablePin вимагає лише діалог підтвердження.
@@ -3331,6 +3336,7 @@ apps/server/src/dbContext.ts:99-115. Виклики: usdCap.ts:126-128 (`id ? \`
 ### `sec-46` [low] Реєстрація розкриває, чи існує акаунт з email, хоча вхід і «Забули пароль» нейтральні
 
 - **Стан:** відкрито
+- **Рішення власника 2026-11-21:** нейтральна відповідь реєстрації «перевір пошту» плюс лист власнику адреси «у тебе вже є акаунт»; верифікація email стає обовʼязковою. Той самий кластер, що `priv-29`.
 - **Перевірка:** підтверджено · **Зусилля:** M · **Область:** web+server: auth
 - **Де:** apps/server/src/auth.ts:368; apps/web/src/core/auth/RegisterForm.tsx; apps/web/src/core/auth/AuthContext.tsx:182-184,525-526
 - **Першопричина:** POST /api/auth/sign-up/email повертає 422 USER_ALREADY_EXISTS_USE_ANOTHER_EMAIL, а клієнт показує «Цей email вже зареєстровано»; нейтральна відповідь неможлива без обов'язкового підтвердження email (REQUIRE_EMAIL_VERIFICATION=false).
@@ -3722,6 +3728,7 @@ grep generatePDFReport|dataToHTMLTable: є лише HubReports.tsx:14/204, ре-
 ### `sec-53` [info] Публічне репо розкриває особисті email засновника, факт прод-акаунта з реальними фінансами й root-SSH адресу сервера
 
 - **Стан:** відкрито
+- **Рішення власника 2026-11-21:** прибрати особисті email (`scripts/docs/author-map.json`) і згадку про реальні фінанси з поточних файлів, `root@IP` замінити SSH-alias; історію git не переписуємо.
 - **Перевірка:** підтверджено · **Зусилля:** S · **Область:** docs: публічне репо
 - **Де:** docs/work/specs/planning/product-knowledge-backlog.md:1722; scripts/docs/author-map.json:5-7; AGENTS.md:228; docs/governance/governance/external-link-allowlist.json:135
 - **Першопричина:** Після відкриття репо (2026-09-30) у відстежуваних доках лишились внутрішні деталі: gmail-адреси в product-knowledge-backlog.md і author-map.json, згадка про «справжні фінанси власника», root@167.233.98.92 в AGENTS.md.
