@@ -89,12 +89,13 @@ export const ftuxDripUnsubscribesTotal = new client.Counter({
 export const aiMemoryIngestEnqueuedTotal = new client.Counter({
   name: "ai_memory_ingest_enqueued_total",
   help: "AI memory ingest enqueue attempts by mode and source",
-  // mode: queued|fallback|enqueue_error|disabled|source_disabled
+  // mode: queued|fallback|enqueue_error|disabled|source_disabled|user_cap
   //   queued          — job pushed to BullMQ successfully
   //   fallback        — Redis unavailable; in-process direct dispatch
   //   enqueue_error   — Redis push failed (network / serialization / invalid source)
   //   disabled        — master AI_MEMORY_ENABLED=false (kills all sources)
   //   source_disabled — per-source flag off (e.g. DIGEST_AI_MEMORY_INGEST_ENABLED=false)
+  //   user_cap        — per-user daily embed cap hit, write skipped (rel-34, source=profile)
   labelNames: ["mode", "source"],
   registers: [register],
 });

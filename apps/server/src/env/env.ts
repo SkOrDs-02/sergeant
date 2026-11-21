@@ -22,6 +22,7 @@ import {
   strictBoolFromEnv,
   stringWithDefault,
 } from "./envHelpers.js";
+import { aiMemoryEnvShape } from "./aiMemoryEnv.js";
 import { pgEnvShape } from "./pgEnv.js";
 import { syncEnvShape } from "./syncEnv.js";
 import { telegramEnvShape } from "./telegramEnv.js";
@@ -620,35 +621,8 @@ const envSchema = z.object({
   // Sync v2 рубильники й бюджети — у `syncEnv.ts` (Hard Rule #18).
   ...syncEnvShape,
 
-  VOYAGE_API_KEY: stringWithDefault(""),
-
-  VOYAGE_EMBEDDING_MODEL: stringWithDefault("voyage-3.5-lite"),
-
-  VOYAGE_EMBEDDING_DIM: intFromEnv(1024),
-
-  AI_MEMORY_EMBEDDING_VERSION: stringWithDefault("1"),
-
-  VOYAGE_TIMEOUT_MS: intFromEnv(15_000),
-
-  VOYAGE_MAX_RETRIES: intFromEnv(2),
-
-  VOYAGE_BATCH_SIZE: intFromEnv(32),
-
-  AI_MEMORY_HNSW_EF_SEARCH: intFromEnv(40),
-
-  AI_MEMORY_TOP_K: intFromEnv(8),
-
-  AI_MEMORY_RAG_TOP_K: intFromEnv(4),
-
-  AI_MEMORY_RAG_TIMEOUT_MS: intFromEnv(1_500),
-
-  AI_MEMORY_DEDUP_THRESHOLD: floatFromEnv(0.97),
-
-  AI_MEMORY_INGEST_CONCURRENCY: intFromEnv(4),
-
-  AI_MEMORY_INGEST_MAX_CONTENT_LEN: intFromEnv(4_000),
-
-  AI_MEMORY_INGEST_ATTEMPTS: intFromEnv(5),
+  // Voyage і AI-memory — у `aiMemoryEnv.ts` (Hard Rule #18).
+  ...aiMemoryEnvShape,
 
   DIGEST_AI_MEMORY_INGEST_ENABLED: boolFromEnv(true),
 

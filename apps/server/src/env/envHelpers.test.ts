@@ -9,6 +9,7 @@ import {
   optionalStrictBoolFromEnv,
   parseIsoInstant,
   strictBoolFromEnv,
+  strictPositiveIntFromEnv,
 } from "./envHelpers.js";
 
 describe("strictBoolFromEnv (B15)", () => {
@@ -199,4 +200,25 @@ describe("optionalIsoInstantFromEnv (sec-46: EMAIL_VERIFICATION_REQUIRED_FROM)",
     expect(schema.safeParse({ AT: raw }).success).toBe(false);
     expect(parseIsoInstant(raw)).toBeNull();
   });
+});
+
+describe("strictPositiveIntFromEnv (rel-34)", () => {
+  const schema = z.object({ N: strictPositiveIntFromEnv("N", 50) });
+
+  it("відсутнє чи порожнє значення дає дефолт", () => {
+    expect(schema.parse({}).N).toBe(50);
+    expect(schema.parse({ N: "  " }).N).toBe(50);
+  });
+
+  it("приймає ціле ≥ 1 (з крайніми пробілами)", () => {
+    expect(schema.parse({ N: "1" }).N).toBe(1);
+    expect(schema.parse({ N: " 120 " }).N).toBe(120);
+  });
+
+  it.each(["0", "-1", "5O", "1.5", "1e3", "abc", "50 users"])(
+    "%j — помилка на старті, а не тихий дефолт",
+    (raw) => {
+      expect(() => schema.parse({ N: raw })).toThrow(/integer >= 1/);
+    },
+  );
 });

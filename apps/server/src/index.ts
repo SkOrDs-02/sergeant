@@ -54,6 +54,7 @@ import {
   startMemoryIngestWorker,
   type StartedMemoryIngestWorker,
 } from "./modules/ai-memory/ingestQueue.js";
+import { flushPendingProfileMirrors } from "./modules/ai-memory/profileMirrorDebounce.js";
 import {
   startMonoEnrichmentWorker,
   type StartedWorker,
@@ -578,6 +579,12 @@ async function shutdown(reason: string, exitCode: number): Promise<void> {
         reminderScheduler.stop(),
       );
     }
+
+    // rel-34: відкладені дебаунсом дзеркалення профілю — ДО зупинки воркера
+    // інжесту й дренажу пулу, інакше останні правки фактів не доїдуть у RAG.
+    await runBackgroundStop("ai_memory_profile_mirror_flush", () =>
+      flushPendingProfileMirrors(),
+    );
 
     if (memoryIngestWorker) {
       await runBackgroundStop("ai_memory_ingest_worker", () =>

@@ -76,6 +76,29 @@ export const strictBoolFromEnv = (name: string, defaultValue: boolean) =>
     });
 
 /**
+ * Fail-loud ціле ≥ 1 для лімітів, що стримують витрати (`AI_MEMORY_PROFILE_
+ * EMBED_DAILY_CAP`, rel-34). `intFromEnv` на `"5O"` чи `"-1"` тихо дав би
+ * дефолт або від'ємну стелю, тобто ліміт, якого ніхто не задавав. Тут
+ * порожнє чи відсутнє значення дає дефолт, решта, що не є цілим ≥ 1, — це
+ * ZodIssue, тобто throw на старті.
+ */
+export const strictPositiveIntFromEnv = (name: string, defaultValue: number) =>
+  z
+    .string()
+    .optional()
+    .transform((v, ctx) => {
+      if (v === undefined || v.trim() === "") return defaultValue;
+      const trimmed = v.trim();
+      const n = Number(trimmed);
+      if (/^\d+$/.test(trimmed) && Number.isSafeInteger(n) && n >= 1) return n;
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        message: `${name} must be an integer >= 1 (got ${JSON.stringify(v)}) — refusing to guess on a cost-control limit`,
+      });
+      return z.NEVER;
+    });
+
+/**
  * Розбір JSON-мапи `{"key": nonNegInt}` (напр. `AI_QUOTA_TOOL_LIMITS`).
  * Чиста функція без логів: її ділять Zod-схема env (fail на старті) і
  * ран-тайм, який читає `process.env` напряму.
