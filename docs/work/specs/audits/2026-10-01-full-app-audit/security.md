@@ -1,6 +1,6 @@
 # Аудит 2026-10-01 · Безпека та доступ
 
-> **Status:** Active. 62 кластери (96 знахідок) за першопричиною. Загальний план, метод і обмеження — у [README](./README.md).
+> **Status:** Active. 63 кластери (97 знахідок) за першопричиною. Загальний план, метод і обмеження — у [README](./README.md).
 > **Last touched:** 2026-11-21 by @claude (рішення власника по кластерах, раунди 5–10); раніше перевірено 2026-10-02.
 > **Next review:** 2027-01-21
 > **Spec-lint:** skip. Реєстр знахідок аудиту, не специфікація реалізації.
@@ -12,7 +12,7 @@
 | Серйозність | Кластерів |
 | ----------- | --------- |
 | critical    | 1         |
-| high        | 3         |
+| high        | 4         |
 | medium      | 15        |
 | low         | 30        |
 | info        | 13        |
@@ -435,6 +435,23 @@ Code path, traced end to end at HEAD c7c09607:
 1. `flagsStore` is created when `featureFlags.ts` is evaluated (featureFlags.ts:93-98). That happens in the eager graph, before `mountApp()`. At creation, `createTypedStore` immediately calls `webKVStore.onChange(key, reload)` (typedStore.ts:255-257). `webKVStore.onChange` resolves the backend at call time (storage.ts:170-172 → `resolveStore()` storage.ts:151-155). Before boot, `getActiveSqliteKvStore()` is null, so the subscription is bound to the localStorage adapter's DOM `storage` event. The SQLite adapter's `replaceCache` and writes never fire it.
 2. `get()` caches the first read permanently (`cachedLoaded = true`, typedStore.ts:193-200). Nothing ever calls `flagsStore.reload()`. A grep for `.reload()` and `flagsStore` across apps/web/src finds only tests, and there is no hook on `markStorageReady`.
 3. main.tsx:198-200 mounts React first. `bootstrapKvStore()` runs later, async (main.tsx:211-273). On top of that, boot opens the anon partition (sqlite.ts:102-109, kvStoreBoot.ts:176). The user partition, where `setFlag` wrote `app-lock-enabled`, is loaded only after auth resolves, via `switchSqliteUser` → `refreshKvWarmCache` → `store.replaceCache` (sqlite.ts:187, kvStoreBoot.ts:300). So even when the router's `HydrateFallback` delays the first render past boot, the first read of `useFlag('app-lock-enabled')` still lands before the user …[обрізано]
+```
+
+<a id="sec-63"></a>
+
+### `sec-63` [high] Сканер prompt-injection має кубічний регексп: один запит до /api/chat блокує event loop на години
+
+- **Стан:** відкрито
+- **Перевірка:** відтворено на регекспі напряму (2026-11-21, під час фіксу sec-31), через HTTP не проганялось; серйозність попередня · **Зусилля:** S · **Область:** server: AI-чат
+- **Де:** apps/server/src/modules/chat/toolOutputWrapping.ts, `PROMPT_INJECTION_PATTERNS` (`/<\s*\/?\s*\|?\s*im[_-]start\s*\|?\s*>/i`, також `/<\s*\/?\s*system\s*>/i`); виклики: promptCache.ts (`wrapAndScanUserContext(context)`), prepareToolResults.ts, coach.ts, digest/weeklyDigestPrompt.ts; ліміт `context` 40 000 символів (packages/shared/src/schemas/api.ts)
+- **Першопричина:** сусідні `\s*`, розділені лише необовʼязковими `\/?` і `\|?`, дають катастрофічний backtracking: на `<` і довгому ряду пробілів без закривального `>` патерн `im_start` кубічний, `system` квадратичний. Сканер біжить синхронно на кожному запиті, і `.some()` без збігу проганяє всі патерни.
+- **Вплив:** автентифікований користувач із квотою шле `context` = `<` + 39 999 пробілів, і Node-процес API зависає на години (екстраполяція кубу), разом з усіма іншими запитами. Tool_result-и після truncate (~2000 символів) дають ~1,5 с на блок, до 20 блоків на хід.
+- **Що зробити:** переписати патерни без сусідніх квантифікаторів (наприклад `<[\s/|]*(?:system|im[_-]start)[\s|]*>`) або різати пробіли до сканування; додати тест на час виконання для `<` + 40 000 пробілів.
+
+**Докази:**
+
+```text
+Node 22, `re.test("<" + " ".repeat(n))`: im_start n=1000 175 мс, n=2000 1 360 мс, n=4000 10 875 мс (×8 на подвоєння, куб); system n=8000 31 мс, n=20 000 213 мс, n=50 000 1 492 мс (квадрат). Валідатор sec-31 бачив зависання понад 2 хв і приписав його патерну `system`; за замірами повільний саме `im_start`, `system` на 40 000 символів займає близько секунди.
 ```
 
 ## medium
@@ -2442,7 +2459,7 @@ The finder's export agents/browser-surfaces-finyk-flows/r3-csvinj.csv contains u
 
 ### `sec-31` [low] Екранування огорожі &lt;user_data&gt;/&lt;tool_output&gt; у промпті ловить лише точний закривальний тег
 
-- **Стан:** відкрито
+- **Стан:** виправлено в гілці `backlog/sec-31-r2` (2026-11-21, PR ще не відкрито; обидві огорожі замінюють у недовірених даних кожен `<`, його NFKD-форми (`＜`, `﹤`, `≮`) і двійники з Unicode confusables та кутові дужки на `&lt;`, а `>` на `&gt;`, тож ні закривальний, ні відкривальний тег не утворюється; тест генерує кандидатів із властивостей Unicode, а не з продакшн-списку. Не покрито: літери поза переліком, що лише нагадують `<`. Перша спроба `backlog/sec-31` відхилена. Окрему ваду сканера знайдено при перевірці, див. [`sec-63`](#sec-63))
 - **Перевірка:** підтверджено · **Зусилля:** S · **Швидкий виграш** · **Область:** server: AI-чат
 - **Де:** apps/server/src/modules/chat/toolOutputWrapping.ts:98-102,116-118; apps/web/src/core/lib/hubChatContext/finance.ts:187-189
 - **Першопричина:** escapeUserDataClose/escapeToolOutputClose замінюють тільки буквальні '&lt;/user_data&gt;' і '&lt;/tool_output&gt;', тож варіанти з пробілом чи переносом ('&lt;/user_data &gt;', '&lt;/ user_data&gt;') проходять і візуально закривають огорожу.

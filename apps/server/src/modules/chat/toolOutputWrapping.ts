@@ -18,10 +18,9 @@
  * 2. Pattern-match по регекспах у contenті: на матч —
  *    `chat_prompt_injection_attempt_total{tool}.inc({tool})`. Лічильник
  *    fires один раз на tool_result, не за кожен матч (cardinality cap).
- * 3. Закриваючий тег `</tool_output>` усередині content екскейпимо, щоб
- *    шкідливий blob не міг "вистрибнути" зі своєї огорожі. Це ефективна
- *    лінія захисту проти найпростішого prompt-injection-вектора (тільки
- *    закриваючий-тег ламає envelope).
+ * 3. Усі `<` (і їхні двійники) усередині content стають `&lt;`, `>` стає
+ *    `&gt;`, тож шкідливий blob не може ні закрити свою огорожу, ні
+ *    відкрити нову: тегу без `<` не буває (sec-31, див. `neutralizeMarkup`).
  *
  * Розмірний cap (50KB hard upper bound з recommendation-секції) уже
  * закривається існуючими лініями: schema `ToolResult.content.max(8000)`
@@ -91,14 +90,34 @@ function safeName(name: string | undefined): string {
 }
 
 /**
- * Екранує закриваючий тег `</tool_output>` у контенті, щоб шкідливий
- * blob не міг закрити envelope передчасно. Інші теги лишаємо як є —
- * модель сприймає їх як data всередині `<tool_output>`.
+ * `<` і символи, які модель може прочитати як `<`.
+ *
+ * - NFKC/NFKD-форми з `<` усередині: `≮` (U+226E, канонічно `<` + U+0338),
+ *   малий `﹤` (U+FE64), повноширинний `＜` (U+FF1C). Інших у Unicode немає,
+ *   це перевіряє повний перебір кодових точок у тесті.
+ * - Візуальні двійники з Unicode confusables і кутові дужки: `˂` `ᐸ` `ᚲ` `‹`
+ *   `❬` `❮` `❰` `⟨` `〈` `〈` `⧼` `𝈶`.
+ *
+ * `«` (U+00AB) свідомо НЕ тут: це звичайні українські лапки в описах операцій.
  */
-function escapeToolOutputClose(s: string): string {
-  // Ентіті, як і в `escapeUserDataClose`: zero-width-варіант (B8) візуально
-  // лишався закривальним тегом, ентіті однозначні.
-  return s.replace(/<\/tool_output>/gi, "&lt;/tool_output&gt;");
+const LT_LIKE_RE =
+  /[<\u226E\uFE64\uFF1C\u02C2\u1438\u16B2\u2039\u276C\u276E\u2770\u27E8\u2329\u3008\u29FC\u{1D236}]/gu;
+
+/**
+ * Нейтралізує розмітку в недовірених даних перед тим, як покласти їх в
+ * огорожу `<tool_output>` чи `<user_data>`: кожен `<` (і двійник) стає
+ * `&lt;`, кожен `>` стає `&gt;`.
+ *
+ * AI-DANGER: не повертай сюди точковий регексп на `</user_data>` і схожі.
+ * Огорожу закривали варіанти тегу, які модель упізнає очима:
+ * пробіли, атрибути, zero-width і variation selectors, tag-символи U+E00xx,
+ * U+3164 і U+2800 між `<` і `/`, комбіновані знаки, жирні математичні
+ * літери, `<//user_data>`, `</user.data>`, `</user‗data>`, а ще відкривальний
+ * `<user_data>`, що вкладав фальшиву огорожу. Перелічити варіанти неможливо,
+ * а без `<` тег не утвориться взагалі. `>` екрануємо для парності ентіті.
+ */
+function neutralizeMarkup(s: string): string {
+  return s.replace(LT_LIKE_RE, "&lt;").replace(/>/g, "&gt;");
 }
 
 export interface NormalizedToolResult {
@@ -112,10 +131,6 @@ export interface NormalizedToolResult {
  * обмеженою реєстром інструментів плюс цим одним значенням.
  */
 const USER_CONTEXT_LABEL = "user_context";
-
-function escapeUserDataClose(s: string): string {
-  return s.replace(/<\/user_data>/gi, "&lt;/user_data&gt;");
-}
 
 /**
  * Те саме, що `wrapAndScanToolResults`, але для `context` із тіла `/api/chat`.
@@ -148,7 +163,7 @@ export function wrapAndScanUserContext(
       });
     inc({ tool: USER_CONTEXT_LABEL });
   }
-  return `<user_data>${escapeUserDataClose(context)}</user_data>`;
+  return `<user_data>${neutralizeMarkup(context)}</user_data>`;
 }
 
 export interface WrapToolResultsOptions {
@@ -196,7 +211,7 @@ export function wrapAndScanToolResults(
       inc({ tool });
     }
     opts.onScanned?.({ tool, content: r.content, matched });
-    const escaped = escapeToolOutputClose(r.content);
+    const escaped = neutralizeMarkup(r.content);
     const wrapped = `<tool_output tool="${tool}">${escaped}</tool_output>`;
     return { tool_use_id: r.tool_use_id, content: wrapped };
   });
