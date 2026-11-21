@@ -2170,7 +2170,7 @@ v1.log, той самий непідтверджений користувач: P
 
 ### `sec-28` [low] Перевірку same-origin у тапі по push обходить /\host: сповіщення відкриває чужий сайт
 
-- **Стан:** відкрито
+- **Стан:** виправлено: `safeNotificationPath` (`apps/web/src/sw/pushPayload.ts`) відкидає `\` і керівні символи, парсить рядок через `new URL` і пропускає лише шлях на тому самому origin-і, а канонічний шлях, що після згортання dot-сегментів почався з `//` (`/.//host`, `/a/..//host`, `/%2e//host`), теж відкидає; регресійні кейси й property-тест (вихід ніколи не починається з `//` і лишається на origin-і) у `pushPayload.test.ts`; серверний `PushTestRequestSchema.url` не звужено, бо native приймає `sergeant://`-схему
 - **Перевірка:** підтверджено · **Зусилля:** S · **Швидкий виграш** · **Область:** web: service worker / push
 - **Де:** apps/web/src/sw/pushPayload.ts:82-87; apps/web/src/sw.ts:65-110; packages/shared/src/schemas/api.ts:1336-1352; apps/server/src/modules/push/push.ts:388-397
 - **Першопричина:** safeNotificationPath перевіряє лише startsWith('/') і !startsWith('//'), а WHATWG URL трактує '\' як '/' і вирізає \t та \n, тож '/\evil.example' резолвиться в https://evil.example. client.navigate і clients.openWindow дозволяють cross-origin, а PushTestRequestSchema приймає довільні url, title і body.

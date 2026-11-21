@@ -72,18 +72,45 @@ export const ALLOWED_NOTIFICATION_MODULES: ReadonlySet<string> = new Set([
 ]);
 
 /**
+ * Базовий origin для парсингу шляху. Справжній origin SW тут не потрібен:
+ * досить перевірити, що рядок резолвиться в ТОЙ САМИЙ origin, що й база.
+ * Фіксована база тримає функцію чистою і детермінованою в тестах.
+ */
+const PATH_BASE_ORIGIN = "https://sergeant.invalid";
+
+/**
  * Звузити довільний рядок із push-payload-у до безпечного same-origin шляху.
  *
- * `clients.openWindow` радо відкриє `https://evil.example` або `javascript:`,
- * тобто без цієї перевірки нотифікація стає вектором фішингу. Пропускаємо
- * лише рядки, що починаються з одного `/`; `//host` — protocol-relative URL
- * на чужий origin, тож відсікається окремо.
+ * `clients.openWindow` і `client.navigate` радо відкриють `https://evil.example`
+ * або `javascript:`, тобто без цієї перевірки нотифікація стає вектором
+ * фішингу.
+ *
+ * Префіксної перевірки (`/`, але не `//`) замало (аудит 2026-10-01, sec-28):
+ * WHATWG URL трактує `\` як `/` і вирізає `\t`/`\n`/`\r`, тож `/\evil.example`
+ * чи `/\t/evil.example` резолвляться в `https://evil.example`. Тому рядки з
+ * `\` чи керівними символами відкидаємо одразу, а решту парсимо як URL і
+ * пропускаємо лише той, що лишився на базовому origin-і.
+ *
+ * Канонічний шлях після парсингу перевіряємо на `//` ще раз: парсер згортає
+ * dot-сегменти (`/.//evil.example`, `/a/..//evil.example`, `/%2e//evil.example`
+ * дають pathname `//evil.example`), а такий рядок у `navigate`/`openWindow`
+ * знову стає protocol-relative URL на чужий origin.
  */
 export function safeNotificationPath(raw: unknown): string | null {
   if (typeof raw !== "string") return null;
-  if (!raw.startsWith("/") || raw.startsWith("//")) return null;
   if (raw.length > 512) return null;
-  return raw;
+  if (!raw.startsWith("/") || raw.startsWith("//")) return null;
+  if (/[\\\p{Cc}]/u.test(raw)) return null;
+  let parsed: URL;
+  try {
+    parsed = new URL(raw, PATH_BASE_ORIGIN);
+  } catch {
+    return null;
+  }
+  if (parsed.origin !== PATH_BASE_ORIGIN) return null;
+  const path = parsed.pathname + parsed.search + parsed.hash;
+  if (!path.startsWith("/") || path.startsWith("//")) return null;
+  return path;
 }
 
 /**
