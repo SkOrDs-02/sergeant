@@ -1834,7 +1834,7 @@ r2/v1_nul.mjs, r2/v1b.mjs. Нюанс: feedback з самотнім сурога
 
 ### `rel-27` [low] Запити sync push і pull без таймауту: один завислий push блокує відправку змін на всю сесію
 
-- **Стан:** відкрито
+- **Стан:** виправлено в гілці backlog/rel-27 (pushV2 і pullV2 передають `timeoutMs` зі стелею `SYNC_V2_REQUEST_TIMEOUT_MS` 30 с, перевизначається через `opts.timeoutMs`; завислий запит падає `ApiError`, і планувальник повторює його з backoff; дефолтного таймауту в `createApiClient` і окремого стану таймауту в UI синку не додано)
 - **Перевірка:** підтверджено · **Зусилля:** S · **Швидкий виграш** · **Область:** api-client / web sync engine
 - **Де:** packages/api-client/src/endpoints/syncV2.ts:116-133; packages/api-client/src/httpClient.ts:184-193; packages/api-client/src/endpoints/syncV2.pushScheduler.ts; apps/web/src/core/syncEngine/singleton.ts:613
 - **Першопричина:** pushV2 і pullV2 не передають ні signal, ні timeoutMs, а httpClient не має дефолтного таймауту. Поки inflight !== null, push-планувальник пропускає тіки і повертає той самий promise.

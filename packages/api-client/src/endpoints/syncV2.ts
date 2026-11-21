@@ -115,18 +115,31 @@ export interface SyncV2PullResponse {
   next_cursor: number | null;
 }
 
+/**
+ * rel-27: стеля одного запиту push/pull. Без неї завислий TCP (перемикання
+ * Wi-Fi/LTE, black-holed з'єднання) тримав `inflight` push-планувальника
+ * хвилинами, і жодна наступна зміна не йшла на сервер до кінця сесії.
+ * Таймаут дає `ApiError` (`aborted`/`network`), який рушій трактує як
+ * транзієнтну помилку й повторює з backoff.
+ */
+export const SYNC_V2_REQUEST_TIMEOUT_MS = 30_000;
+
 export interface SyncV2PushOptions {
   /**
    * Опціональний `X-Origin-Device-Id`-заголовок, що дозволить
    * `pull` із того ж пристрою виключати власні записи.
    */
   originDeviceId?: string;
+  /** Стеля запиту в мс; дефолт {@link SYNC_V2_REQUEST_TIMEOUT_MS}. */
+  timeoutMs?: number;
 }
 
 export interface SyncV2PullOptions {
   /** Серверний default — 100, max — 500. */
   limit?: number;
   originDeviceId?: string;
+  /** Стеля запиту в мс; дефолт {@link SYNC_V2_REQUEST_TIMEOUT_MS}. */
+  timeoutMs?: number;
 }
 
 export interface SyncV2Endpoints {
@@ -160,6 +173,7 @@ export function createSyncV2Endpoints(http: HttpClient): SyncV2Endpoints {
           // заголовок: старий бекенд ігнорує query, а невідомий заголовок
           // завалив би CORS preflight (див. `protocolVersion.ts`).
           query: { [SYNC_PROTOCOL_QUERY_PARAM]: SYNC_PROTOCOL_VERSION },
+          timeoutMs: opts?.timeoutMs ?? SYNC_V2_REQUEST_TIMEOUT_MS,
           ...(opts?.originDeviceId
             ? { headers: { "X-Origin-Device-Id": opts.originDeviceId } }
             : {}),
@@ -171,6 +185,7 @@ export function createSyncV2Endpoints(http: HttpClient): SyncV2Endpoints {
           since,
           ...(opts?.limit != null ? { limit: opts.limit } : {}),
         },
+        timeoutMs: opts?.timeoutMs ?? SYNC_V2_REQUEST_TIMEOUT_MS,
         ...(opts?.originDeviceId
           ? { headers: { "X-Origin-Device-Id": opts.originDeviceId } }
           : {}),
