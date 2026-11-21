@@ -67,6 +67,16 @@ vi.mock("./genericFoods.js", () => ({
   seedGenericFoods: vi.fn(async () => 0),
 }));
 
+/** Глобальний бюджет USDA (rel-35); дефолт «бюджет є». */
+const budgetMock = vi.hoisted(() =>
+  vi.fn<(upstream: string, opts: { keyed: boolean }) => Promise<boolean>>(
+    async () => true,
+  ),
+);
+vi.mock("./upstreamBudget.js", () => ({
+  tryConsumeUpstreamBudget: budgetMock,
+}));
+
 import {
   stableId,
   hasErrorName,
@@ -154,6 +164,7 @@ beforeEach(() => {
   silpoMocks.isSilpoConnectedUser.mockReset().mockResolvedValue(false);
   silpoMocks.searchSilpoProducts.mockReset().mockResolvedValue([]);
   silpoMocks.envOverrides.SILPO_ENABLED = true;
+  budgetMock.mockReset().mockResolvedValue(true);
   externalHttpRequestsTotal.reset();
 });
 
@@ -456,6 +467,43 @@ describe("food-search handler", () => {
     expect(String(fetchMock.mock.calls[2]?.[0])).toContain(
       "api_key=test-usda-key",
     );
+  });
+
+  it("вичерпаний бюджет USDA: апстрім не викликається, видача OFF без публічного кешу (rel-35)", async () => {
+    vi.stubEnv("USDA_FDC_API_KEY", "fdc-key");
+    budgetMock.mockResolvedValue(false);
+    const fetchMock = vi.mocked(global.fetch);
+    fetchMock
+      .mockResolvedValueOnce(jsonResponse(true, { products: [offPear] }))
+      .mockResolvedValueOnce(jsonResponse(true, { products: [] }));
+
+    const res = mockRes();
+    await handler(asReq({ q: "груша", limit: "5" }), res);
+
+    expect(res.statusCode).toBe(200);
+    expect(products(res.body).map((p) => p["source"])).toEqual(["off"]);
+    const urls = fetchMock.mock.calls.map((call) => String(call[0]));
+    expect(urls).toHaveLength(2);
+    expect(urls.some((u) => u.includes("api.nal.usda.gov"))).toBe(false);
+    expect(budgetMock).toHaveBeenCalledWith("usda", { keyed: true });
+    // Видача неповна: публічний кеш роутера тримав би її після оновлення
+    // бюджету.
+    expect(res.headers["Cache-Control"]).toBe("no-store");
+  });
+
+  it("вичерпаний бюджет USDA і порожній OFF → 503 no-store, а не 200 {products:[]} (rel-35)", async () => {
+    budgetMock.mockResolvedValue(false);
+    vi.mocked(global.fetch).mockResolvedValue(
+      jsonResponse(true, { products: [] }),
+    );
+
+    const res = mockRes();
+    await expect(
+      handler(asReq({ q: "груша", limit: "5" }), res),
+    ).rejects.toMatchObject({ status: 503, code: "UPSTREAM_UNAVAILABLE" });
+    expect(res.headers["Cache-Control"]).toBe("no-store");
+    const urls = vi.mocked(global.fetch).mock.calls.map((c) => String(c[0]));
+    expect(urls.some((u) => u.includes("api.nal.usda.gov"))).toBe(false);
   });
 
   it("prefers USDA_FDC_API_KEY over the legacy USDA_API_KEY env var", async () => {

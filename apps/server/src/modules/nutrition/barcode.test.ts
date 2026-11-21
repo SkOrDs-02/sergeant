@@ -69,6 +69,31 @@ vi.mock("./productCatalog.js", () => ({
   upsertIntoCatalog: upsertIntoCatalogMock,
 }));
 
+/**
+ * Глобальний бюджет апстрімів (rel-35) мокається тут: ці тести перевіряють
+ * каскад, а логіку лічильника тримає `upstreamBudget.test.ts`. Дефолт
+ * «бюджет є», тож наявні сценарії читаються без змін.
+ */
+const budgetMock = vi.hoisted(() =>
+  vi.fn<(upstream: string, opts: { keyed: boolean }) => Promise<boolean>>(
+    async () => true,
+  ),
+);
+vi.mock("./upstreamBudget.js", () => ({
+  tryConsumeUpstreamBudget: budgetMock,
+  // Та сама семантика, що в модулі: вичерпаний бюджет кидає помилку з
+  // іменем, за яким її відрізняє каскад.
+  consumeUpstreamBudgetOrThrow: async (
+    upstream: string,
+    opts: { keyed: boolean },
+  ) => {
+    if (await budgetMock(upstream, opts)) return;
+    const error = new Error(`${upstream} upstream budget exhausted`);
+    error.name = "UpstreamBudgetExhaustedError";
+    throw error;
+  },
+}));
+
 const handlerModule = await import("./barcode.js");
 const { errorHandler } = await import("../../http/errorHandler.js");
 const rawHandler = handlerModule.default;
@@ -210,6 +235,7 @@ describe("barcode handler", () => {
     silpoMocks.isSilpoConnectedUser.mockReset().mockResolvedValue(false);
     silpoMocks.lookupSilpoBarcode.mockReset().mockResolvedValue(null);
     silpoMocks.envOverrides.SILPO_ENABLED = true;
+    budgetMock.mockReset().mockResolvedValue(true);
   });
 
   afterEach(() => {
@@ -353,6 +379,55 @@ describe("barcode handler", () => {
       if (saved === undefined) delete process.env["UPCITEMDB_BASE_URL"];
       else process.env["UPCITEMDB_BASE_URL"] = saved;
       vi.resetModules();
+    });
+
+    it("вичерпаний глобальний бюджет UPCitemdb: апстрім не викликається, відповідь 503 без кешу, а не 404 (rel-35, G5)", async () => {
+      budgetMock.mockImplementation(
+        async (upstream) => upstream !== "upcitemdb",
+      );
+      global.fetch = vi
+        .fn()
+        .mockResolvedValueOnce(OFF_MISS)
+        .mockResolvedValueOnce(USDA_MISS);
+      const res1 = mockRes();
+      await handler(asReq({ barcode: "1234567890123" }), res1);
+      // «Не питали» не означає «немає в базі»: той самий 503, що й збій
+      // джерела, і без публічного кешу роутера.
+      expect(res1.statusCode).toBe(503);
+      expect(res1.body).toMatchObject({ code: "BARCODE_SOURCES_UNAVAILABLE" });
+      expect(res1.headers["Cache-Control"]).toBe("no-store");
+      const urls = vi.mocked(global.fetch).mock.calls.map((c) => String(c[0]));
+      expect(urls).toHaveLength(2);
+      expect(urls.some((u) => u.includes("upcitemdb"))).toBe(false);
+      expect(budgetMock).toHaveBeenCalledWith("upcitemdb", { keyed: false });
+
+      // Бюджет оновився: miss-sentinel не записаний, тож каскад іде знову і
+      // знаходить продукт, а не віддає з кешу 404 ще 30 хвилин.
+      budgetMock.mockResolvedValue(true);
+      (global.fetch as ReturnType<typeof vi.fn>)
+        .mockResolvedValueOnce(OFF_MISS)
+        .mockResolvedValueOnce(USDA_MISS)
+        .mockResolvedValueOnce(UPCITEMDB_HIT);
+      const res2 = mockRes();
+      await handler(asReq({ barcode: "1234567890123" }), res2);
+      expect(res2.statusCode).toBe(200);
+      expect(res2.body).toMatchObject({ product: { source: "upcitemdb" } });
+      expect(global.fetch).toHaveBeenCalledTimes(5);
+    });
+
+    it("вичерпаний бюджет USDA: каскад іде одразу в UPCitemdb (rel-35)", async () => {
+      budgetMock.mockImplementation(async (upstream) => upstream !== "usda");
+      global.fetch = vi
+        .fn()
+        .mockResolvedValueOnce(OFF_MISS)
+        .mockResolvedValueOnce(UPCITEMDB_HIT);
+      const res = mockRes();
+      await handler(asReq({ barcode: "1234567890123" }), res);
+      expect(res.statusCode).toBe(200);
+      expect(res.body).toMatchObject({ product: { source: "upcitemdb" } });
+      const urls = vi.mocked(global.fetch).mock.calls.map((c) => String(c[0]));
+      expect(urls.some((u) => u.includes("api.nal.usda.gov"))).toBe(false);
+      expect(budgetMock).toHaveBeenCalledWith("usda", { keyed: false });
     });
 
     it("всі три upstream miss → 404 без crash", async () => {

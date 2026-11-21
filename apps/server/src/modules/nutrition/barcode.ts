@@ -25,6 +25,7 @@ import {
   isSilpoConnectedUser,
   lookupSilpoBarcode,
 } from "../silpo/foodSource.js";
+import { consumeUpstreamBudgetOrThrow } from "./upstreamBudget.js";
 
 /**
  * Best-effort session peek. `/api/barcode` is deliberately session-less
@@ -290,6 +291,9 @@ async function lookupUSDA(barcode: string): Promise<NormalizedProduct | null> {
     process.env["USDA_FDC_API_KEY"] ||
     process.env["USDA_API_KEY"] ||
     "DEMO_KEY";
+  // Глобальний бюджет на ключ (rel-35): вичерпано, тож кидаємо, і каскад
+  // рахує USDA неавторитетним (як збій), а не авторитетним miss.
+  await consumeUpstreamBudgetOrThrow("usda", { keyed: key !== "DEMO_KEY" });
   // Search Branded Foods by GTIN/UPC (barcode is stored in gtinUpc field)
   const url = `${FDC_BASE}/foods/search?query=${encodeURIComponent(barcode)}&dataType=Branded&pageSize=5&api_key=${key}`;
   const start = process.hrtime.bigint();
@@ -350,6 +354,13 @@ async function lookupUPCitemdb(
 ): Promise<NormalizedProduct | null> {
   const base = env.UPCITEMDB_BASE_URL.replace(/\/+$/, "");
   const url = `${base}/lookup?upc=${encodeURIComponent(barcode)}`;
+  // Глобальний добовий бюджет (rel-35): per-IP бакет роутера (300 на добу)
+  // вищий за стелю тріалу на весь продукт, тож без нього один анонім
+  // вимикав джерело всім. Вичерпано: кидаємо без виклику, і для каскаду це
+  // неавторитетна відповідь (503 без кешу), а не «немає в базі».
+  await consumeUpstreamBudgetOrThrow("upcitemdb", {
+    keyed: Boolean(env.UPCITEMDB_API_KEY),
+  });
   const start = process.hrtime.bigint();
   try {
     const r = await fetch(url, {
@@ -561,7 +572,9 @@ export default async function handler(
         );
       }
       // Справжній all-miss: усі джерела відповіли, і в жодного немає такого
-      // штрихкоду. Лише це кешуємо як miss-sentinel.
+      // штрихкоду. Лише це кешуємо як miss-sentinel. Апстрім, пропущений за
+      // глобальним бюджетом (rel-35), сюди не доходить: він кидає і ставить
+      // `upstreamThrew`, бо «не питали» не означає «немає в базі».
       cacheSet(barcode, null);
       throw productNotFound();
     }

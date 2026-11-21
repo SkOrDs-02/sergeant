@@ -506,6 +506,22 @@ const envSchema = z.object({
   UPCITEMDB_API_KEY: z.string().optional(),
 
   /**
+   * Глобальний добовий бюджет запитів до UPCitemdb на всі інстанси
+   * (`modules/nutrition/upstreamBudget.ts`, rel-35). Порожній дає 90, тобто
+   * нижче стелі тріалу (100 на добу на продукт). На платному плані підніми
+   * під його стелю, лишаючи запас.
+   */
+  UPCITEMDB_DAILY_BUDGET: coerceInt.positive().optional(),
+
+  /**
+   * Глобальний годинний бюджет запитів до USDA FDC з власним ключем
+   * (`USDA_FDC_API_KEY`). Порожній дає 450: половина ковзної стелі
+   * api.data.gov (1000 на годину), бо вікна бюджету вирівняні за годиною.
+   * На DEMO_KEY діють фіксовані 15 на годину і 45 на добу.
+   */
+  USDA_HOURLY_BUDGET: coerceInt.positive().optional(),
+
+  /**
    * Скільки чекаємо на завершення in-flight HTTP-запитів після SIGTERM.
    *
    * AI-DANGER: стеля прив'язана до stop-grace платформи, а не до наших

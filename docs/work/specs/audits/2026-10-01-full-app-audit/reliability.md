@@ -2302,7 +2302,7 @@ embeddings.ts:274-288 (soft preflight before fetch, non-critical -> throw); serv
 
 ### `rel-35` [low] Анонімні /api/barcode і /api/food-search спалюють спільні добові квоти UPCitemdb і USDA DEMO_KEY
 
-- **Стан:** відкрито
+- **Стан:** закрито в гілці `backlog/rel-35-r2` (2026-11-21): глобальні бюджети на апстрім у спільному сторі лімітера (`modules/nutrition/upstreamBudget.ts`): UPCitemdb 90 на UTC-добу, USDA з ключем 450 на годину, DEMO_KEY 15 на годину і 45 на добу; апстрім, пропущений за бюджетом, неавторитетний, як упалий (G5): штрихкод без іншого збігу дає 503 `BARCODE_SOURCES_UNAVAILABLE` з `no-store` без miss-кешу, пошук без USDA віддає `no-store`, а порожній дає 503 (`upstreamBudget.test.ts`, `barcode.test.ts`, `food-search.test.ts`); ключі й `UPCITEMDB_DAILY_BUDGET`/`USDA_HOURLY_BUDGET` описані в `env-vars.md`; разом із `sec-24`. Не входило: sweep Postgres-бакетів (`logic-14`), який без Redis скидає добові бакети
 - **Рішення власника 2026-11-21:** власник ставить `USDA_FDC_API_KEY` і `UPCITEMDB_API_KEY` у Coolify, а код додає глобальні добові бакети на апстрім нижче стелі постачальника. Той самий кластер, що `sec-24`.
 - **Перевірка:** підтверджено · **Зусилля:** S · **Швидкий виграш** · **Область:** server: nutrition barcode / food-search
 - **Та сама першопричина, що й** [`sec-24`](./security.md#sec-24): Той самий дефект: анонімні /api/barcode і /api/food-search спалюють спільні добові квоти UPCitemdb і USDA.
