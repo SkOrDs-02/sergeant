@@ -1,5 +1,5 @@
 /**
- * Last validated: 2026-10-02
+ * Last validated: 2026-11-21
  * Status: Active
  *
  * Прапор «початковий pull завершено» для поточного користувача (data-04).
@@ -29,6 +29,27 @@ interface CompletedPull {
 
 let completed: CompletedPull | null = null;
 let version = 0;
+
+/**
+ * Що показувати замість порожнього стану модуля, поки копія ще жодного разу
+ * не наздогнала акаунт (data-59/60): `idle` — нічого (аноніми, копія вже
+ * наповнена попереднім pull-ом, pull завершено), `loading` — перший pull іде
+ * або чекає повтору, `failed` — повтори вичерпано, показуємо помилку з «Ще раз».
+ *
+ * AI-CONTEXT: на відміну від `completed`, це про ВІДОБРАЖЕННЯ, а не про гейти
+ * запису. Наповнена копія (`replicaBootstrap` = done) лишається `idle` навіть
+ * офлайн: її порожній стан правдивий, і заклик «Додай першу…» там доречний.
+ */
+export type FirstPullPhase = "idle" | "loading" | "failed";
+
+let firstPullPhase: FirstPullPhase = "idle";
+let firstPullFailures = 0;
+
+function setFirstPullPhase(next: FirstPullPhase): void {
+  if (firstPullPhase === next) return;
+  firstPullPhase = next;
+  bump();
+}
 const listeners = new Set<() => void>();
 
 function bump(): void {
@@ -55,6 +76,8 @@ export function markInitialPullComplete(userId: string, client: unknown): void {
     return;
   }
   completed = { userId, client };
+  firstPullFailures = 0;
+  firstPullPhase = "idle";
   bump();
 }
 
@@ -79,9 +102,38 @@ export function reconcileInitialPull(
 
 /** Скинути прапор (logout, зупинка reader-а, тести). */
 export function resetInitialPull(): void {
-  if (completed === null) return;
+  firstPullFailures = 0;
+  if (completed === null && firstPullPhase === "idle") return;
   completed = null;
+  firstPullPhase = "idle";
   bump();
+}
+
+/** Тік почав тягнути копію, яку ще жодного разу не наповнював повний pull. */
+export function markFirstPullPending(): void {
+  setFirstPullPhase("loading");
+}
+
+/** Копія вже наповнена або сесії немає: порожній стан модуля правдивий. */
+export function markFirstPullSettled(): void {
+  firstPullFailures = 0;
+  setFirstPullPhase("idle");
+}
+
+/**
+ * Тік першого pull упав. Повертає номер невдачі (1, 2, …); після
+ * `maxRetries` повторів фаза стає `failed`. Поза першим pull (`idle`) нічого
+ * не рахує і повертає 0: звичайний збій тіка чекає наступного інтервалу.
+ */
+export function noteFirstPullFailure(maxRetries: number): number {
+  if (firstPullPhase === "idle") return 0;
+  firstPullFailures += 1;
+  if (firstPullFailures > maxRetries) setFirstPullPhase("failed");
+  return firstPullFailures;
+}
+
+export function getFirstPullPhase(): FirstPullPhase {
+  return firstPullPhase;
 }
 
 /**
@@ -110,5 +162,7 @@ export function subscribeInitialPull(listener: () => void): () => void {
 export function __resetInitialPullStateForTests(): void {
   completed = null;
   version = 0;
+  firstPullPhase = "idle";
+  firstPullFailures = 0;
   listeners.clear();
 }

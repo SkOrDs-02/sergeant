@@ -39,6 +39,8 @@ import { Icon } from "./Icon";
 import { Button, type ButtonProps } from "./Button";
 import { formatNumberUk, NARROW_NBSP } from "@sergeant/shared";
 import { coreMessages } from "@shared/i18n/uk.core";
+import { useFirstCloudPullPhase } from "@shared/hooks/useFirstCloudPullPhase";
+import { requestCloudPull } from "@shared/lib/modules/cloudPullRequest";
 
 export type EmptyStateSize = "sm" | "md" | "lg";
 
@@ -179,6 +181,65 @@ export function EmptyState({
   );
 }
 
+export interface FirstCloudPullGateProps {
+  /** Звичайний порожній стан: показується, коли перший pull не очікується. */
+  children: ReactNode;
+  compact?: boolean | undefined;
+  className?: string | undefined;
+}
+
+function retryFirstCloudPull(): void {
+  // Невдачу покаже сама фаза (`failed`), тост тут зайвий.
+  void requestCloudPull().catch(() => undefined);
+}
+
+/**
+ * Замінник порожнього стану модуля, поки копія ще не наздогнала акаунт
+ * (data-59/60, рішення власника 2026-11-21).
+ *
+ * AI-CONTEXT: на новому пристрої чи після евікції сховища локальна база
+ * порожня до першого pull, і заклик «Додай першу…» підштовхував вводити
+ * наново те, що вже лежить на сервері (після pull виходили дублікати). Поки
+ * перший pull іде, тут «Завантажую з хмари…»; коли повтори 2/5/15 с
+ * вичерпано (`syncEngineReader.ts`), чесна помилка з «Ще раз». Наповнена
+ * копія (`idle`) показує звичайний порожній стан, навіть офлайн.
+ */
+export function FirstCloudPullGate({
+  children,
+  compact = false,
+  className,
+}: FirstCloudPullGateProps) {
+  const phase = useFirstCloudPullPhase();
+  if (phase === "idle") return <>{children}</>;
+  const copy = coreMessages.firstCloudPull;
+  const size = compact ? "sm" : "md";
+  if (phase === "loading") {
+    return (
+      <EmptyState
+        title={copy.loadingTitle}
+        description={copy.loadingDescription}
+        showDescription
+        size={size}
+        className={className}
+      />
+    );
+  }
+  return (
+    <EmptyState
+      title={copy.failedTitle}
+      description={copy.failedDescription}
+      showDescription
+      size={size}
+      className={className}
+      action={
+        <Button variant="outline" size={size} onClick={retryFirstCloudPull}>
+          {copy.retry}
+        </Button>
+      }
+    />
+  );
+}
+
 /**
  * Module-specific empty state with contextual guidance. Wraps `<EmptyState>`
  * with the canonical title / description / hint / example for the
@@ -306,43 +367,45 @@ export function ModuleEmptyState({
       : config.description);
 
   return (
-    <div className="relative">
-      {dismissible && onDismiss && (
-        <button
-          type="button"
-          onClick={onDismiss}
-          aria-label="Закрити"
-          className={cn(
-            "absolute top-2 right-2 p-1.5 rounded-lg text-muted hover:text-text hover:bg-panelHi transition-colors z-10",
-            // Hard Rule #14 — visible focus indicator via focus-visible:
-            "focus:outline-none focus-visible:ring-2 focus-visible:ring-focus/45 focus-visible:ring-offset-2 focus-visible:ring-offset-panel",
-          )}
-        >
-          <Icon name="close" size="md" aria-hidden="true" />
-        </button>
-      )}
-      <EmptyState
-        title={title ?? config.title}
-        description={resolvedDescription}
-        showDescription
-        size={compact ? "sm" : "md"}
-        className={className}
-        action={
-          onAction && (
-            <Button
-              variant="outline"
-              size={compact ? "sm" : "md"}
-              onClick={onAction}
-            >
-              {/* Fallback for modules (currently only `finyk`) whose config
+    <FirstCloudPullGate compact={compact} className={className}>
+      <div className="relative">
+        {dismissible && onDismiss && (
+          <button
+            type="button"
+            onClick={onDismiss}
+            aria-label="Закрити"
+            className={cn(
+              "absolute top-2 right-2 p-1.5 rounded-lg text-muted hover:text-text hover:bg-panelHi transition-colors z-10",
+              // Hard Rule #14 — visible focus indicator via focus-visible:
+              "focus:outline-none focus-visible:ring-2 focus-visible:ring-focus/45 focus-visible:ring-offset-2 focus-visible:ring-offset-panel",
+            )}
+          >
+            <Icon name="close" size="md" aria-hidden="true" />
+          </button>
+        )}
+        <EmptyState
+          title={title ?? config.title}
+          description={resolvedDescription}
+          showDescription
+          size={compact ? "sm" : "md"}
+          className={className}
+          action={
+            onAction && (
+              <Button
+                variant="outline"
+                size={compact ? "sm" : "md"}
+                onClick={onAction}
+              >
+                {/* Fallback for modules (currently only `finyk`) whose config
                   has no `actionLabel` — the button only renders when the
                   caller passes `onAction`, so a caller that does so without
                   an explicit `actionLabel` still gets a labelled button. */}
-              {actionLabel ?? config.actionLabel ?? "Додати"}
-            </Button>
-          )
-        }
-      />
-    </div>
+                {actionLabel ?? config.actionLabel ?? "Додати"}
+              </Button>
+            )
+          }
+        />
+      </div>
+    </FirstCloudPullGate>
   );
 }

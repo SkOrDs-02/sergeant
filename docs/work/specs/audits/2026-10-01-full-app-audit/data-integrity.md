@@ -4622,7 +4622,7 @@ purgeStaleTerminalOutbox(client, { olderThanDays: 30 }) без userId; пред�
 
 ### `data-59` [low] Евікція сховища (Safari 7-day cap, очищення даних) мовчки знищує офлайн-чергу: «13 в черзі» зникає без попередження
 
-- **Стан:** відкрито
+- **Стан:** закрито в гілці `backlog/data-59-60` (2026-11-21) у межах рішення власника: копія без повного pull (новий пристрій, евікція) показує в порожніх станах модулів «Завантажую з хмари…» замість заклику, а після вичерпаних повторів помилку з «Ще раз» (`FirstCloudPullGate`, разом із `data-60`). Серверний high-water mark черги, Background Sync і попередження «N офлайн-записів могли не дійти» свідомо не робимо
 - **Рішення власника 2026-11-21:** лише клієнтський стан «Завантажую з хмари» замість empty-state з повторами 2/5/15 с; серверний high-water mark черги (міграція) не робимо.
 - **Перевірка:** підтверджено · **Зусилля:** M · **Область:** web: durability (outbox, persistentStorage, sw)
 - **Де:** apps/web/src/core/syncEngine/outboxPurgeNotice.ts; apps/web/src/core/app/OfflineBanner.tsx; apps/web/src/core/db/persistentStorage.ts; apps/web/src/sw.ts
@@ -4669,7 +4669,7 @@ purgeStaleTerminalOutbox(client, { olderThanDays: 30 }) без userId; пред�
 
 ### `data-60` [low] Новий пристрій: якщо перший pull падає, модулі показують порожній стан із закликом «Додай першу…» без індикатора, а повтор лише через ~60 с
 
-- **Стан:** відкрито
+- **Стан:** закрито в гілці `backlog/data-59-60` (2026-11-21): reader повторює перший pull копії без `replicaBootstrap = done` через 2/5/15 с і веде фазу `idle`/`loading`/`failed` в `initialPullState.ts`; `ModuleEmptyState` і порожній список звичок `RoutineCalendarPanel` через `FirstCloudPullGate` показують «Завантажую з хмари…», після останнього повтору помилку з «Ще раз» (`requestCloudPull`). Наповнена копія лишається на звичайному порожньому стані й інтервалі 60 с (`syncEngineReader.firstPull.test.ts`, `EmptyState.firstCloudPull.test.tsx`). Залишок: помилки pull в OfflineBanner/SyncStatusSheet, комора й далі на власному `usePantryFirstPullPending`
 - **Рішення власника 2026-11-21:** лише клієнтський стан «перший pull» з повторами 2/5/15 с, без міграції (разом із `data-59`).
 - **Перевірка:** підтверджено · **Зусилля:** M · **Область:** web: syncEngine (syncEngineReader)
 - **Де:** apps/web/src/core/syncEngine/singleton.ts:243; apps/web/src/core/syncEngine/syncEngineReader.ts:287-293
