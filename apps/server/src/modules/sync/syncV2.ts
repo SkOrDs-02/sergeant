@@ -12,6 +12,11 @@ import {
 } from "../../obs/metrics.js";
 import { notifySyncV2OpsApplied, type SyncV2StreamOp } from "./syncV2Stream.js";
 import { lockUserSyncOpLog } from "./serverOpLog.js";
+import {
+  clockSkewRetry,
+  createClientTsClamp,
+  exceedsForwardSkew,
+} from "./clientClock.js";
 import { finykLimitPushNeeded } from "./finyk/limitPushTrigger.js";
 import { finykPushDbFromPool } from "../finyk/push/db.js";
 import { runFinykLimitPushQuietly } from "../finyk/push/limitPush.js";
@@ -126,8 +131,6 @@ interface SyncOpLogDuplicateRow {
   status: "applied" | "duplicate" | "rejected";
   reject_reason: string | null;
 }
-
-const CLOCK_SKEW_FORWARD_MS = 60 * 60 * 1000;
 
 // Tables whose apply logic is identical bar the table name (and, for tx-scoped
 // jsonb arrays, the payload column) bind the shared implementation directly in
@@ -309,6 +312,8 @@ export async function syncV2Push(req: Request, res: Response): Promise<void> {
   let appliedCount = 0;
   let rejectedCount = 0;
   const newlyAppliedForStream: SyncV2StreamOp[] = [];
+  // data-51: `updated_at = min(client_ts, server_now)`, монотонно в межах пуша.
+  const clampClientTs = createClientTsClamp();
 
   /**
    * Оп уже лежить у журналі. Два шляхи сюди: дедуп-SELECT на початку
@@ -388,13 +393,20 @@ export async function syncV2Push(req: Request, res: Response): Promise<void> {
         continue;
       }
 
-      const clientTs = new Date(op.client_ts);
+      // data-51: годинник пристрою поза допуском наперед — `retry`, без
+      // журналу (запис чекає на пристрої, а не губиться). У межах допуску
+      // мітка обрізається до годинника сервера: пристрій, що поспішає, не
+      // «замикає» рядок проти пізнішої правки з правильним годинником. Далі
+      // (apply, журнал, SSE) їде лише обрізана мітка (`clientClock.ts`).
+      const nowMs = Date.now();
+      const rawClientTs = new Date(op.client_ts);
+      if (exceedsForwardSkew(rawClientTs, nowMs)) {
+        results.push(clockSkewRetry(op));
+        continue;
+      }
+      const clientTs = clampClientTs(rawClientTs, nowMs);
       let status: "applied" | "rejected" = "applied";
       let reason: RejectReason | null = null;
-      if (clientTs.getTime() - Date.now() > CLOCK_SKEW_FORWARD_MS) {
-        status = "rejected";
-        reason = "clock_skew";
-      }
 
       if (
         status === "applied" &&
@@ -697,7 +709,8 @@ export async function syncV2Push(req: Request, res: Response): Promise<void> {
     last_op_id: lastOpId,
     results,
     // Годинник сервера в момент відповіді. Сервер перевіряє лише годинник,
-    // що ВИПЕРЕДЖАЄ (`CLOCK_SKEW_FORWARD_MS`); відсталий годинник програє
+    // що ВИПЕРЕДЖАЄ (`CLOCK_SKEW_FORWARD_MS` у `clientClock.ts`; поза
+    // допуском `retry / clock_skew`, у межах обрізка); відсталий годинник програє
     // кожен LWW-конфлікт, і клієнт вважав це штатним `lww_conflict`. Це
     // поле дає клієнту прямий замір зсуву (`core/syncEngine/clockSkew.ts`),
     // без окремого round-trip-у й без довіри до `Date` header-а проксі

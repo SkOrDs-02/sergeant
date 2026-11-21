@@ -1,7 +1,7 @@
 # Аудит 2026-10-01 · Цілісність даних і синхронізація
 
 > **Status:** Active. 82 кластери (129 знахідок) за першопричиною. Загальний план, метод і обмеження — у [README](./README.md).
-> **Last touched:** 2026-11-21 by @claude (рішення власника по кластерах, раунди 5–10); раніше перевірено 2026-10-02.
+> **Last touched:** 2026-11-21 by @claude (data-51: серверна обрізка `client_ts`, `clock_skew` → `retry`); 2026-11-21 by @claude (рішення власника по кластерах, раунди 5–10); раніше перевірено 2026-10-02.
 > **Next review:** 2027-01-21
 > **Spec-lint:** skip. Реєстр знахідок аудиту, не специфікація реалізації.
 
@@ -3924,7 +3924,7 @@ claimBatch: `BEGIN; SELECT id ... FOR UPDATE SKIP LOCKED; COMMIT;` і лише �
 
 ### `data-51` [low] LWW за годинником пристрою: годинник, що поспішає до години, «замикає» рядки й тихо відкидає правки інших пристроїв, а понад годину всі записи пристрою термінально відхиляються
 
-- **Стан:** відкрито
+- **Стан:** виправлено на сервері (гілка `backlog/data-51`, 2026-11-21): допуск годинника наперед 1 год → 2 хв (`clientClock.ts`), у межах допуску `updated_at` і `sync_op_log.client_ts` = `min(client_ts, server_now)` (монотонно в межах пуша), поза ним `retry / clock_skew` без запису в журнал замість термінального `rejected`; клієнтська частина (власна локальна копія пристрою, що поспішав, `lww_conflict` без підтягування переможця) лишається відкритою
 - **Рішення власника 2026-11-21:** `updated_at = min(client_ts, server_now)`, вікно наперед звузити з години до хвилин; HLC не робимо.
 - **Перевірка:** підтверджено · **Зусилля:** M · **Область:** server: sync (syncV2, applySync-helpers) + web: syncEngine
 - **Де:** apps/server/src/modules/sync/syncV2.ts:131,370-378; apps/server/src/modules/sync/applySync-helpers.ts:61-74; apps/web/src/core/syncEngine/applyPullOp.ts:90-99,303-331; apps/web/src/core/syncEngine/singleton.ts:45,64-67; apps/web/src/core/syncEngine/clockSkew.ts:1-30

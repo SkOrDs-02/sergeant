@@ -804,7 +804,7 @@ describe("syncV2Push / syncV2Pull integration", () => {
   );
 
   it(
-    "clock skew — client_ts > server+1h reject-нуто",
+    "clock skew — client_ts поза допуском (+2 год) дає retry / clock_skew без журналу",
     async (ctx) => {
       if (!dockerAvailable || !testPool) return ctx.skip();
       await ensureUser("u-skew");
@@ -837,7 +837,83 @@ describe("syncV2Push / syncV2Pull integration", () => {
         results: Array<{ status: string; reason?: string }>;
       };
       expect(body.accepted).toBe(0);
+      expect(body!.results[0]!.status).toBe("retry");
       expect(body!.results[0]!.reason).toBe("clock_skew");
+      // data-51: retry не пишеться в журнал, тож повтор після вирівнювання
+      // годинника пройде apply, а не отримає кешовану відмову.
+      const log = await testPool.query<{ c: string }>(
+        `SELECT COUNT(*)::text AS c FROM sync_op_log WHERE user_id = $1`,
+        ["u-skew"],
+      );
+      expect(Number(log.rows[0]!.c)).toBe(0);
+    },
+    TIMEOUT_MS,
+  );
+
+  it(
+    "data-51: пристрій, що поспішає (у межах допуску), не замикає рядок проти пізнішої правки з правильного годинника",
+    async (ctx) => {
+      if (!dockerAvailable || !testPool) return ctx.skip();
+      await ensureUser("u-skew-lock");
+      const id = "eeeeeeee-1111-4111-8111-eeeeeeeeeeee";
+
+      const pushEntry = async (key: string, name: string, ts: string) => {
+        const res = makeRes();
+        await syncV2Push(
+          makeReq({
+            userId: "u-skew-lock",
+            body: {
+              ops: [
+                {
+                  table: "routine_entries",
+                  op: "insert" as const,
+                  row: { id, user_id: "u-skew-lock", name },
+                  client_ts: ts,
+                  idempotency_key: key,
+                },
+              ],
+            },
+          }),
+          res,
+        );
+        return res.body as {
+          results: Array<{ status: string; reason?: string }>;
+        };
+      };
+
+      const before = Date.now();
+      const fast = await pushEntry("skew-lock-fast", "fast", isoNow(90_000));
+      expect(fast.results[0]!.status).toBe("applied");
+
+      // updated_at обрізано до годинника сервера, а не +90 с пристрою; та
+      // сама мітка в журналі (з неї пишуть рядок pull / SSE інших пристроїв).
+      const stored = await testPool.query<{ updated_at: Date }>(
+        `SELECT updated_at FROM routine_entries WHERE id = $1`,
+        [id],
+      );
+      expect(stored.rows[0]!.updated_at.getTime()).toBeLessThanOrEqual(
+        Date.now(),
+      );
+      expect(stored.rows[0]!.updated_at.getTime()).toBeGreaterThanOrEqual(
+        before,
+      );
+      const logged = await testPool.query<{ client_ts: Date }>(
+        `SELECT client_ts FROM sync_op_log WHERE user_id = $1`,
+        ["u-skew-lock"],
+      );
+      expect(logged.rows[0]!.client_ts.getTime()).toBe(
+        stored.rows[0]!.updated_at.getTime(),
+      );
+
+      // Правильний годинник, трохи пізніше. Доти: lww_conflict на 90 с.
+      await new Promise((r) => setTimeout(r, 5));
+      const honest = await pushEntry("skew-lock-honest", "honest", isoNow());
+      expect(honest.results[0]!.status).toBe("applied");
+      const row = await testPool.query<{ name: string }>(
+        `SELECT name FROM routine_entries WHERE id = $1`,
+        [id],
+      );
+      expect(row.rows[0]!.name).toBe("honest");
     },
     TIMEOUT_MS,
   );
