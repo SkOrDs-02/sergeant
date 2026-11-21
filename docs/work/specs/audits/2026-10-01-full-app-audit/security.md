@@ -2380,7 +2380,7 @@ PlanSection.tsx:123 `const portal = await billingApi.createPortal(); window.loca
 
 ### `sec-30` [low] CSV-експорт операцій Фініка не нейтралізує формули (=, +, -, @)
 
-- **Стан:** відкрито
+- **Стан:** виправлено (гілка `backlog/sec-30`): `arrayToCSV` пропускає кожну текстову клітинку через спільний `neutralizeCsvFormula` з `packages/shared` (regex `/^[=+\-@\t\r]/`, той самий у `escapeCsvValue`), а колонка суми Фініка позначена `numeric: true` і лишається відʼємним числом; тести на `=HYPERLINK`, `@SUM` і відʼємну суму
 - **Перевірка:** підтверджено · **Зусилля:** S · **Швидкий виграш** · **Область:** web: Фінік / експорт
 - **Де:** apps/web/src/shared/lib/ui/export.ts:24-30; apps/web/src/modules/finyk/pages/transactions/exportTransactionsCsv.ts:110-150; packages/shared/src/lib/exportCsv.ts:48-56
 - **Першопричина:** Фінік експортує через arrayToCSV/escapeCSV з shared/lib/ui/export.ts, який лише квотує роздільник, лапки й \n, а не через спільний escapeCsvValue з packages/shared, де префікс ' для формул уже є.
