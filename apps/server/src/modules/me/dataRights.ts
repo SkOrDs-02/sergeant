@@ -9,6 +9,7 @@ import type {
   UserPreferencesPatch,
 } from "@sergeant/shared";
 import {
+  ACCOUNT_DELETION_GRACE_DAYS,
   DASHBOARD_MODULE_IDS,
   accountDeletionDeadline,
   PUSH_DAILY_CAP_DEFAULT,
@@ -512,6 +513,9 @@ export async function requestAccountDeletion(
  *
  * Підписку не відновлюємо навмисно (рішення 5 спеки): її скасували в день
  * прохання, і повернути її може лише нове оформлення.
+ *
+ * Окремий лок не потрібен: UPDATE сам чекає на `FOR UPDATE` добивача в
+ * `purgeUserData` і після його COMMIT рядка вже не бачить (data-50).
  */
 export async function restoreAccount(
   pool: Pool,
@@ -550,11 +554,14 @@ export async function getAccountDeletionStatus(
  * появи вікна. Тепер її кличе лише добивач після кінця вікна, тож
  * `notifyProvidersCancel` тут немає — провайдерам сказали зупинитись ще в
  * день прохання.
+ *
+ * Повертає `null`, якщо видаляти нічого: акаунт уже відновлено, вікно ще
+ * не минуло або рядка вже немає (data-50).
  */
 export async function purgeUserData(
   pool: Pool,
   userId: string,
-): Promise<MeDeleteResponse> {
+): Promise<MeDeleteResponse | null> {
   const client = await pool.connect();
   try {
     await client.query("BEGIN");
@@ -564,32 +571,42 @@ export async function purgeUserData(
     // добивача `AccountDeletionPoller`; обидва передають конкретний userId.
     await client.query("SELECT set_config('app.user_id', $1, true)", [userId]);
 
-    // Snapshot email + Stripe customer id BEFORE any deletion, for the
-    // external-services cleanup queue (ADR-0016 § ADR-6.3). Skipped
-    // entirely when the user row is already gone (idempotent second
-    // delete, or founder-confirmed pre-beta test data) — nothing to
-    // snapshot, nothing to clean up externally.
+    // AI-DANGER: (data-50) claim добивача комітиться окремо, тож між ним і
+    // цим місцем людина могла натиснути «Скасувати видалення». Тому мітку
+    // перечитуємо тут, під `FOR UPDATE` до самого COMMIT: відновлення, що
+    // встигло раніше, робить рядок невидимим для цієї умови, а пізніше
+    // чекає на лок і бачить уже видалений рядок (404). Друга репліка теж
+    // чекає на лок і не ставить зовнішнє очищення в чергу вдруге.
+    //
+    // Snapshot email BEFORE any deletion, for the external-services cleanup
+    // queue (ADR-0016 § ADR-6.3).
     const userRow = await client.query<{ email: string | null }>(
-      `SELECT email FROM "user" WHERE id = $1`,
+      `SELECT email FROM "user"
+        WHERE id = $1
+          AND deletion_requested_at IS NOT NULL
+          AND deletion_requested_at < NOW() - ($2 || ' days')::interval
+        FOR UPDATE`,
+      [userId, String(ACCOUNT_DELETION_GRACE_DAYS)],
+    );
+    if (userRow.rows.length === 0) {
+      await client.query("ROLLBACK");
+      return null;
+    }
+    const stripeRow = await client.query<{
+      provider_customer_id: string | null;
+    }>(
+      `SELECT provider_customer_id
+         FROM subscriptions
+        WHERE user_id = $1 AND provider = 'stripe'
+        ORDER BY updated_at DESC
+        LIMIT 1`,
       [userId],
     );
-    if (userRow.rows.length > 0) {
-      const stripeRow = await client.query<{
-        provider_customer_id: string | null;
-      }>(
-        `SELECT provider_customer_id
-           FROM subscriptions
-          WHERE user_id = $1 AND provider = 'stripe'
-          ORDER BY updated_at DESC
-          LIMIT 1`,
-        [userId],
-      );
-      await enqueueGdprCleanup(client, {
-        userId,
-        email: userRow.rows[0]!.email ?? `${userId}@deleted.sergeant.app`,
-        stripeCustomerId: stripeRow.rows[0]?.provider_customer_id ?? null,
-      });
-    }
+    await enqueueGdprCleanup(client, {
+      userId,
+      email: userRow.rows[0]!.email ?? `${userId}@deleted.sergeant.app`,
+      stripeCustomerId: stripeRow.rows[0]?.provider_customer_id ?? null,
+    });
 
     await client.query(
       `UPDATE subscriptions

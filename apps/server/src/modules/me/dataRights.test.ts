@@ -511,22 +511,28 @@ describe("buildMeExport — contract fixture (Hard Rule #3)", () => {
 
 // ─── purgeUserData (незворотна частина; кличе добивач) ─────────────────────────────────────────────────────────
 
+/**
+ * Рядок, який повертає guard-SELECT purge-у: акаунт позначений і вікно
+ * минуло. Без нього `purgeUserData` нічого не видаляє (data-50).
+ */
+const MATURED_ROWS = [{ email: "gone@example.com" }];
+
 describe("purgeUserData — contract fixture (Hard Rule #3)", () => {
   it("returns { ok: true, deletedAt: <ISO string> }", async () => {
-    const pool = mockPoolWithTransaction();
+    const pool = mockPoolWithTransaction(MATURED_ROWS);
     const result = await purgeUserData(pool, "user-1");
-    expect(result.ok).toBe(true);
-    expect(result.deletedAt).toMatch(/^\d{4}-\d{2}-\d{2}T/);
+    expect(result?.ok).toBe(true);
+    expect(result?.deletedAt).toMatch(/^\d{4}-\d{2}-\d{2}T/);
   });
 
   it("output passes MeDeleteResponseSchema — contract triplet anchor", async () => {
-    const pool = mockPoolWithTransaction();
+    const pool = mockPoolWithTransaction(MATURED_ROWS);
     const result = await purgeUserData(pool, "user-1");
     expect(() => MeDeleteResponseSchema.parse(result)).not.toThrow();
   });
 
   it("runs BEGIN/COMMIT transaction and releases the client", async () => {
-    const pool = mockPoolWithTransaction();
+    const pool = mockPoolWithTransaction(MATURED_ROWS);
     await purgeUserData(pool, "user-1");
 
     const client = await (pool.connect as ReturnType<typeof vi.fn>).mock
@@ -568,7 +574,7 @@ describe("purgeUserData — contract fixture (Hard Rule #3)", () => {
   // усе одно завершується успішно.
   it("still deletes the user when provider-cancel fails (best-effort)", async () => {
     const client = {
-      query: vi.fn().mockResolvedValue({ rows: [] }),
+      query: vi.fn().mockResolvedValue({ rows: MATURED_ROWS }),
       release: vi.fn(),
     };
     const pool = {
@@ -579,7 +585,7 @@ describe("purgeUserData — contract fixture (Hard Rule #3)", () => {
 
     const result = await purgeUserData(pool, "user-1");
 
-    expect(result.ok).toBe(true);
+    expect(result?.ok).toBe(true);
     // Транзакція видалення все одно виконалась (BEGIN … COMMIT через client).
     const queryArgs = (client.query as ReturnType<typeof vi.fn>).mock.calls.map(
       (c: unknown[]) => c[0],
@@ -592,7 +598,7 @@ describe("purgeUserData — contract fixture (Hard Rule #3)", () => {
   // "user"(id) (subject_key is a bare TEXT), so CASCADE never reaches it —
   // an explicit purge is required (ADR-0016 § ADR-6.2).
   it("purges ai_usage_daily rows for the deleted user's subject_key", async () => {
-    const pool = mockPoolWithTransaction();
+    const pool = mockPoolWithTransaction(MATURED_ROWS);
     await purgeUserData(pool, "user-1");
 
     const client = await (pool.connect as ReturnType<typeof vi.fn>).mock
@@ -609,7 +615,7 @@ describe("purgeUserData — contract fixture (Hard Rule #3)", () => {
 
   // B11 (ai-pipeline-2026-08-05): DLQ AI-пам'яті без FK на user.
   it("purges ai_memory_ingest_failed rows for the deleted user", async () => {
-    const pool = mockPoolWithTransaction();
+    const pool = mockPoolWithTransaction(MATURED_ROWS);
     await purgeUserData(pool, "user-1");
 
     const client = await (pool.connect as ReturnType<typeof vi.fn>).mock
@@ -631,7 +637,7 @@ describe("purgeUserData — contract fixture (Hard Rule #3)", () => {
   // the very rows the soft-delete had just marked — a self-contradicting
   // no-op write.
   it("does NOT soft-delete ai_memories separately (hard-delete cascade only)", async () => {
-    const pool = mockPoolWithTransaction();
+    const pool = mockPoolWithTransaction(MATURED_ROWS);
     await purgeUserData(pool, "user-1");
 
     const client = await (pool.connect as ReturnType<typeof vi.fn>).mock
@@ -731,22 +737,50 @@ describe("purgeUserData — contract fixture (Hard Rule #3)", () => {
     }
   });
 
-  it("skips gdpr_cleanup_queue enqueue when the user row is already gone (idempotent second delete)", async () => {
-    // mockPoolWithTransaction() defaults every client.query call to
-    // `{ rows: [] }` — including the SELECT email snapshot, simulating a
-    // second delete() call after the user row is already removed.
-    const pool = mockPoolWithTransaction();
+  // data-50: claim добивача комітиться окремо від purge, тож між ними
+  // людина може відновити акаунт (або друга репліка вже видалила рядок).
+  // Guard-SELECT під FOR UPDATE тоді нічого не повертає, і purge мусить
+  // відкотитись, не чіпаючи ні рядок, ні чергу зовнішнього очищення.
+  it("re-checks the deletion mark under FOR UPDATE before deleting", async () => {
+    const pool = mockPoolWithTransaction(MATURED_ROWS);
     await purgeUserData(pool, "user-1");
 
     const client = await (pool.connect as ReturnType<typeof vi.fn>).mock
       .results[0]?.value;
     const calls = (client.query as ReturnType<typeof vi.fn>).mock.calls;
-    const enqueueCall = calls.find(
+    const guard = calls.find(
       (c: unknown[]) =>
         typeof c[0] === "string" &&
-        (c[0] as string).includes("INSERT INTO gdpr_cleanup_queue"),
+        (c[0] as string).includes(`SELECT email FROM "user"`),
+    ) as [string, unknown[]] | undefined;
+    expect(guard).toBeDefined();
+    expect(guard![0]).toContain("deletion_requested_at IS NOT NULL");
+    expect(guard![0]).toContain("deletion_requested_at < NOW() -");
+    expect(guard![0]).toContain("FOR UPDATE");
+    expect(guard![1]).toEqual(["user-1", String(ACCOUNT_DELETION_GRACE_DAYS)]);
+  });
+
+  it("does not delete an account restored between claim and purge", async () => {
+    // Guard-SELECT повертає порожньо: мітку вже зняв restoreAccount.
+    const pool = mockPoolWithTransaction([]);
+    const result = await purgeUserData(pool, "user-1");
+
+    expect(result).toBeNull();
+    const client = await (pool.connect as ReturnType<typeof vi.fn>).mock
+      .results[0]?.value;
+    const queryArgs = (client.query as ReturnType<typeof vi.fn>).mock.calls.map(
+      (c: unknown[]) => String(c[0]),
     );
-    expect(enqueueCall).toBeUndefined();
+    expect(queryArgs.some((q) => q.includes(`DELETE FROM "user"`))).toBe(false);
+    expect(
+      queryArgs.some((q) => q.includes("INSERT INTO gdpr_cleanup_queue")),
+    ).toBe(false);
+    expect(queryArgs.some((q) => q.includes("UPDATE subscriptions"))).toBe(
+      false,
+    );
+    expect(queryArgs).toContain("ROLLBACK");
+    expect(queryArgs).not.toContain("COMMIT");
+    expect(client.release).toHaveBeenCalledOnce();
   });
 });
 

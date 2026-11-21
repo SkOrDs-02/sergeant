@@ -56,7 +56,7 @@ describe("AccountDeletionPoller", () => {
 
     const result = await poller.runOnce();
 
-    expect(result).toEqual({ claimed: 2, purged: 2, failed: 0 });
+    expect(result).toEqual({ claimed: 2, purged: 2, skipped: 0, failed: 0 });
     expect(purgeUserData).toHaveBeenCalledTimes(2);
     expect(purgeUserData.mock.calls.map((c) => c[1])).toEqual([
       "user-old-1",
@@ -70,7 +70,7 @@ describe("AccountDeletionPoller", () => {
 
     const result = await poller.runOnce();
 
-    expect(result).toEqual({ claimed: 0, purged: 0, failed: 0 });
+    expect(result).toEqual({ claimed: 0, purged: 0, skipped: 0, failed: 0 });
     expect(purgeUserData).not.toHaveBeenCalled();
   });
 
@@ -105,8 +105,20 @@ describe("AccountDeletionPoller", () => {
 
     const result = await poller.runOnce();
 
-    expect(result).toEqual({ claimed: 2, purged: 1, failed: 1 });
+    expect(result).toEqual({ claimed: 2, purged: 1, skipped: 0, failed: 1 });
     expect(purgeUserData).toHaveBeenCalledTimes(2);
+  });
+
+  // data-50: purge повертає null, коли між claim і purge акаунт відновили.
+  // Такий акаунт не рахується видаленим.
+  it("акаунт, відновлений між claim і purge, рахується пропущеним", async () => {
+    const { pool } = mockPool(["restored", "user-old-2"]);
+    purgeUserData.mockResolvedValueOnce(null);
+    const poller = new AccountDeletionPoller({ pool, intervalMs: 0 });
+
+    const result = await poller.runOnce();
+
+    expect(result).toEqual({ claimed: 2, purged: 1, skipped: 1, failed: 0 });
   });
 
   it("claim іде у власній транзакції і завжди відпускає клієнта", async () => {

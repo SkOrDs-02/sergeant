@@ -62,14 +62,21 @@ export interface AccountDeletionTickResult {
   claimed: number;
   /** Скільки з них дійсно видалено. */
   purged: number;
+  /**
+   * Скільки пропущено: між claim і purge акаунт відновили або його вже
+   * видалила інша репліка (data-50).
+   */
+  skipped: number;
   /** Скільки впало на помилці; лишаються позначеними і дозріють знову. */
   failed: number;
 }
 
 /**
  * Забирає дозрілі акаунти одним атомарним запитом. `FOR UPDATE SKIP
- * LOCKED` дає двом реплікам працювати одночасно без подвійного видалення
- * того самого акаунта.
+ * LOCKED` тут лише розводить репліки по різних рядках у момент claim:
+ * блокування знімається на COMMIT claim-у, до purge. Від подвійного
+ * видалення і від видалення щойно відновленого акаунта захищає повторна
+ * перевірка мітки під `FOR UPDATE` усередині `purgeUserData` (data-50).
  *
  * Лізи (`next_attempt_at`) тут немає навмисно, на відміну від
  * `gdpr_cleanup_queue`: рядок зникає разом із самим акаунтом, тож
@@ -181,6 +188,7 @@ export class AccountDeletionPoller {
       const ids = await this.claimBatch();
 
       let purged = 0;
+      let skipped = 0;
       let failed = 0;
       for (const userId of ids) {
         try {
@@ -189,8 +197,9 @@ export class AccountDeletionPoller {
           // Stripe, Sentry, PostHog і Resend нічого не чіпається, тож
           // відновлення повертає акаунт цілим. Чергу наповнює сам
           // `purgeUserData` усередині своєї транзакції.
-          await purgeUserData(this.pool, userId);
-          purged += 1;
+          const result = await purgeUserData(this.pool, userId);
+          if (result) purged += 1;
+          else skipped += 1;
         } catch (err) {
           failed += 1;
           logger.error({
@@ -204,15 +213,16 @@ export class AccountDeletionPoller {
       }
 
       lastRunAtIso = new Date().toISOString();
-      if (purged > 0 || failed > 0) {
+      if (purged > 0 || skipped > 0 || failed > 0) {
         logger.info({
           msg: "account_deletion_tick",
           claimed: ids.length,
           purged,
+          skipped,
           failed,
         });
       }
-      return { claimed: ids.length, purged, failed };
+      return { claimed: ids.length, purged, skipped, failed };
     } finally {
       this.running = false;
     }
@@ -221,7 +231,8 @@ export class AccountDeletionPoller {
   /**
    * Claim у власній короткій транзакції: `FOR UPDATE SKIP LOCKED` тримає
    * блокування лише до COMMIT, а саме видалення йде своїми транзакціями і
-   * довгого lock-у на `"user"` не тримає.
+   * довгого lock-у на `"user"` не тримає. Тому claim лише кандидати:
+   * `purgeUserData` перевіряє мітку ще раз під власним локом (data-50).
    */
   private async claimBatch(): Promise<string[]> {
     const client = await this.pool.connect();

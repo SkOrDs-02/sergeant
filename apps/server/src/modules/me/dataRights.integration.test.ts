@@ -88,6 +88,19 @@ async function purgeUserData(
 }
 
 const TEST_USER_ID = "user_datarights_int";
+
+/**
+ * Ставить мітку видалення старшою за вікно: `purgeUserData` видаляє лише
+ * дозрілі акаунти (data-50).
+ */
+async function markMatured(p: Pool): Promise<void> {
+  await p.query(
+    `UPDATE "user"
+        SET deletion_requested_at = NOW() - (($2::int + 1) || ' days')::interval
+      WHERE id = $1`,
+    [TEST_USER_ID, ACCOUNT_DELETION_GRACE_DAYS],
+  );
+}
 const TEST_USER_EMAIL = `${TEST_USER_ID}@test.local`;
 // Тестовий пароль credential-акаунта (не секрет: існує лише в контейнері).
 const TEST_PASSWORD = "correct-horse-battery-staple";
@@ -225,8 +238,9 @@ describe("DELETE /api/me — GDPR account deletion + CASCADE", () => {
       [TEST_USER_ID],
     );
 
+    await markMatured(pool);
     const res = await purgeUserData(pool, TEST_USER_ID);
-    expect(res.ok).toBe(true);
+    expect(res?.ok).toBe(true);
 
     const { rows: userRows } = await pool.query(
       `SELECT id FROM "user" WHERE id = $1`,
@@ -248,6 +262,7 @@ describe("DELETE /api/me — GDPR account deletion + CASCADE", () => {
       TEST_USER_ID,
     ]);
 
+    await markMatured(pool);
     await purgeUserData(pool, TEST_USER_ID);
 
     const { rows } = await pool.query<{ service: string; email: string }>(
@@ -263,6 +278,34 @@ describe("DELETE /api/me — GDPR account deletion + CASCADE", () => {
     for (const row of rows) {
       expect(row.email).toBe(TEST_USER_EMAIL);
     }
+  });
+
+  // data-50: claim добивача комітиться до purge, тож відновлення може
+  // встигнути між ними. Purge мусить перечитати мітку і нічого не видалити.
+  it("purgeUserData leaves an account restored after the claim untouched", async (ctx) => {
+    if (!dockerAvailable || !pool) return ctx.skip();
+
+    await pool.query(`DELETE FROM gdpr_cleanup_queue WHERE user_id = $1`, [
+      TEST_USER_ID,
+    ]);
+    await markMatured(pool);
+    await pool.query(
+      `UPDATE "user" SET deletion_requested_at = NULL WHERE id = $1`,
+      [TEST_USER_ID],
+    );
+
+    expect(await purgeUserData(pool, TEST_USER_ID)).toBeNull();
+
+    const { rows: userRows } = await pool.query(
+      `SELECT id FROM "user" WHERE id = $1`,
+      [TEST_USER_ID],
+    );
+    expect(userRows).toHaveLength(1);
+    const { rows: queued } = await pool.query(
+      `SELECT 1 FROM gdpr_cleanup_queue WHERE user_id = $1`,
+      [TEST_USER_ID],
+    );
+    expect(queued).toHaveLength(0);
   });
 
   it("a fresh login during the grace window is blocked by the pending-deletion gate", async (ctx) => {

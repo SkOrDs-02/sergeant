@@ -3816,7 +3816,7 @@ The code confirms it and I reproduced it in the browser. analyticsConsent.ts:79 
 
 ### `data-50` [low] Добивач видалення акаунтів може знищити акаунт, який користувач щойно відновив
 
-- **Стан:** відкрито
+- **Стан:** закрито в гілці `backlog/data-50` (2026-11-21): `purgeUserData` перечитує мітку під `SELECT … FOR UPDATE` з умовою дозрілого вікна і відкочується з `null`, якщо акаунт відновили чи видалила інша репліка; `restoreAccount` чекає на цей лок сам, добивач рахує такі акаунти як `skipped`, коментар про репліки виправлено. Дедлайн у restore (спека §4) не додано: відновлення після кінця вікна, але до purge, безпечне.
 - **Перевірка:** підтверджено · **Зусилля:** S · **Швидкий виграш** · **Область:** server: me (deletionPoller, dataRights)
 - **Де:** apps/server/src/modules/me/deletionPoller.ts:61-87,157-169,198-215; apps/server/src/modules/me/dataRights.ts:614-627,652-735
 - **Першопричина:** claimBatch знімає FOR UPDATE на COMMIT ще до purge, purgeUserData не перечитує deletion_requested_at і робить безумовний DELETE FROM user, а restoreAccount не бере лок і не перевіряє дедлайн.
