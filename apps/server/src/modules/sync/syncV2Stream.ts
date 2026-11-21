@@ -333,7 +333,10 @@ function readLastEventId(req: Request): number | null {
   const raw = req.headers["last-event-id"];
   if (typeof raw !== "string") return null;
   const n = Number(raw.trim());
-  if (!Number.isFinite(n) || n < 0 || !Number.isInteger(n)) return null;
+  // `isSafeInteger`, а не `isInteger`: `1e30` теж «ціле», але до int8 у SQL
+  // не влазить і після flushHeaders обриває стрім 500-кою (rel-26). Межа та
+  // сама, що в `SyncV2PullSchema.since` (zod `.int()` = safe integer).
+  if (!Number.isSafeInteger(n) || n < 0) return null;
   return n;
 }
 

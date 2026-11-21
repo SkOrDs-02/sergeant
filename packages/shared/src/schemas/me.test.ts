@@ -165,6 +165,23 @@ describe("UserProfilePayloadSchema — write-through profile blob", () => {
     expect(UserProfilePayloadSchema.safeParse([1, 2, 3]).success).toBe(false);
   });
 
+  it("глибоко вкладені масиви не валять depth-guard стек-оверфлоу (rel-47)", () => {
+    // Масиви прозорі для ліміту вкладеності, тож рекурсивний обхід ішов
+    // на повну глибину й кидав RangeError, а той ставав 500.
+    let nested: unknown = 0;
+    for (let i = 0; i < 100_000; i++) nested = [nested];
+    expect(() =>
+      UserProfilePayloadSchema.safeParse({ blob: nested }),
+    ).not.toThrow();
+  });
+
+  it("глибоко вкладені обʼєкти відхиляються без стек-оверфлоу (rel-47)", () => {
+    let nested: unknown = 0;
+    for (let i = 0; i < 100_000; i++) nested = { a: [nested] };
+    const result = UserProfilePayloadSchema.safeParse({ blob: nested });
+    expect(result.success).toBe(false);
+  });
+
   it(`USER_PROFILE_MAX_DEPTH дорівнює 3`, () => {
     expect(USER_PROFILE_MAX_DEPTH).toBe(3);
   });

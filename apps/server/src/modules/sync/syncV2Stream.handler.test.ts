@@ -301,6 +301,23 @@ describe("syncV2Stream handler — handshake & replay", () => {
     expect(args[1]).toBe(10);
   });
 
+  it.each(["1e30", "99999999999999999999"])(
+    "ignores out-of-range Last-Event-ID %s and falls back to ?since= (rel-26)",
+    async (lastEventId) => {
+      pool.query.mockResolvedValueOnce({ rows: [] });
+      const req = makeReq({
+        userId: "u1",
+        query: { since: "10" },
+        headers: { "last-event-id": lastEventId },
+      }) as unknown as FakeReq & Request;
+      const res = makeRes() as unknown as FakeRes & Response;
+
+      await syncV2Stream(req as Request, res as Response);
+      const args = pool!.query.mock.calls[0]![1] as unknown[];
+      expect(args[1]).toBe(10);
+    },
+  );
+
   it("propagates X-Origin-Device-Id to the SQL filter", async () => {
     pool.query.mockResolvedValueOnce({ rows: [] });
     const req = makeReq({

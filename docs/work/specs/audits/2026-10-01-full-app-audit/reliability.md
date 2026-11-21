@@ -1630,7 +1630,7 @@ plata.ts:305-313 `ON CONFLICT (user_id) DO UPDATE SET subscription_id = EXCLUDED
 
 ### `rel-26` [low] Некоректний ввід доходить до Postgres і повертає 500 з сирим SQLSTATE замість 400
 
-- **Стан:** відкрито
+- **Стан:** закрито в гілці `backlog/rel-26-rel-47-rel-48` (2026-11-21): SQLSTATE класу 22 мапиться на 400 VALIDATION без pg-коду ([`sec-39`](./security.md#sec-39), `http/errorClassification.ts`), тож кривий id, курсор чи NUL більше не дають 500 і Sentry-подію; `Last-Event-ID` у SSE обмежено `Number.isSafeInteger` (та сама межа, що в `since`), позамежне значення ігнорується до SQL (`syncV2Stream.handler.test.ts`). Залишок гігієни без 500: явні Zod-межі для id, from/to і курсорів, відсікання U+0000 і самотніх сурогатів у спільних схемах
 - **Перевірка:** підтверджено · **Зусилля:** M · **Область:** server: валідація вводу / errorHandler
 - **Та сама першопричина, що й** [`sec-39`](./security.md#sec-39): Той самий дефект: errorHandler перетворює помилки вводу, що дійшли до Postgres, на 500 і віддає клієнту SQLSTATE.
 - **Де:** apps/server/src/http/errorHandler.ts:48-57,94-101; apps/server/src/modules/finyk/receipts/get.ts:27; apps/server/src/modules/finyk/import/batches.ts:26-31; apps/server/src/modules/mono/read.ts:138-179; packages/shared/src/schemas/api.ts:1412-1418; apps/server/src/modules/silpo/receiptsRead.ts:52-75; apps/server/src/modules/sync/syncV2Stream.ts:194-200,237-238
@@ -2915,7 +2915,7 @@ Reproduced in the prompt builder. CoachMemoryEchoSchema accepts z.array(z.unknow
 
 ### `rel-47` [low] Рекурсивний depth-guard профілю сам падає зі stack overflow на глибоко вкладених масивах
 
-- **Стан:** відкрито
+- **Стан:** закрито в гілці `backlog/rel-26-rel-47-rel-48` (2026-11-21): `exceedsJsonNestingDepth` обходить профіль ітеративно з явним стеком і зупиняється на першому обʼєкті понад `USER_PROFILE_MAX_DEPTH`; 100 000 вкладених масивів не кидають RangeError, глибокі обʼєкти дають 400 (`me.test.ts`)
 - **Перевірка:** підтверджено · **Зусилля:** S · **Швидкий виграш** · **Область:** packages/shared schemas (PUT /api/me/profile)
 - **Де:** packages/shared/src/schemas/api.ts:346-358,390-392
 - **Першопричина:** jsonNestingDepth рекурсує через Array.map і spread Math.max без обмеження глибини, а другий .refine в UserProfilePayloadSchema не має try/catch. Масиви не враховуються в ліміті вкладеності 3, тож тіло ~10 КБ з 3000-5000 рівнями проходить byte-cap.
@@ -2961,7 +2961,7 @@ node .../agents/api-live-input-fuzz/r1_profile.mjs fuzz2 (PUT profile x=nested a
 
 ### `rel-48` [low] DELETE /api/me валідує тіло сирим .parse(): криве тіло дає 500 замість 400
 
-- **Стан:** відкрито
+- **Стан:** закрито разом із [`sec-39`](./security.md#sec-39): `DELETE /api/me` валідує тіло через `parseBody(MeDeleteBodySchema, req)`, криве тіло дає 400; перевірено ще раз у гілці `backlog/rel-26-rel-47-rel-48` (2026-11-21)
 - **Перевірка:** підтверджено · **Зусилля:** S · **Швидкий виграш** · **Область:** server: me
 - **Де:** apps/server/src/routes/me.ts:282
 - **Першопричина:** routes/me.ts викликає MeDeleteBodySchema.parse(req.body ?? {}) замість parseBody, тож ZodError не перетворюється на операційну 400.
