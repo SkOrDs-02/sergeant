@@ -3,8 +3,8 @@ import * as Sentry from "@sentry/node";
 import { logger, serializeError } from "../obs/logger.js";
 import { als } from "../obs/requestContext.js";
 import { appErrorsTotal } from "../obs/metrics.js";
-import { isOperationalError } from "../obs/errors.js";
 import { redactSensitiveUrl } from "../obs/sensitiveUrl.js";
+import { classifyError } from "./errorClassification.js";
 
 /**
  * Термінальний error handler Express. Має стояти ПІСЛЯ
@@ -12,7 +12,10 @@ import { redactSensitiveUrl } from "../obs/sensitiveUrl.js";
  *
  * Правила:
  *  - `AppError` і підкласи → 4xx + `warn` + стабільне JSON body з `code`.
- *  - Все інше → 500 + `error` + generic message; деталі лише в логах/Sentry.
+ *  - pg SQLSTATE 22/23 → 400/409, 40P01/40001 → 503 + `Retry-After`, без
+ *    Sentry (класифікація в `errorClassification.ts`, sec-39).
+ *  - Все інше → 500 + `error` + generic message + `code: "INTERNAL"`;
+ *    деталі лише в логах/Sentry.
  *  - Клієнт завжди отримує `requestId`, щоб було що вставити в тікет.
  */
 type AppLikeError = Error & {
@@ -41,23 +44,12 @@ export const errorHandler: ErrorRequestHandler = (
   res: Response,
   _next,
 ) => {
-  const operational = isOperationalError(err);
+  // sec-39: статус, `code` і текст бере спільний класифікатор — той самий,
+  // що вирішує `shouldHandleError` у Sentry-хендлері перед нами. Сирий
+  // `e.code` (SQLSTATE, ECONNREFUSED) у non-operational 5xx не потрапляє.
+  const classified = classifyError(err);
+  const { status, code, operational } = classified;
   const e = (err && typeof err === "object" ? err : {}) as AppLikeError;
-  const status = Number(e.status) || (operational ? 400 : 500);
-  // Non-operational error carrying an explicit 4xx status is a client error
-  // surfaced by a library (body-parser: malformed JSON → 400, payload too
-  // large → 413, unsupported media → 415), not a programmer bug. Serialise it
-  // as a clean VALIDATION 4xx instead of the INTERNAL/"Server error" 5xx path.
-  const clientError = !operational && status >= 400 && status < 500;
-  const code =
-    (typeof e.code === "string" && e.code) ||
-    (status === 429
-      ? "RATE_LIMIT"
-      : operational
-        ? "BAD_REQUEST"
-        : clientError
-          ? "VALIDATION"
-          : "INTERNAL");
   const mod = als.getStore()?.module || "unknown";
 
   try {
@@ -92,7 +84,9 @@ export const errorHandler: ErrorRequestHandler = (
   // ловить, але дубль-safe: якщо порядок middleware колись зміниться і
   // Sentry-хендлер не спрацює, ми все одно отримаємо подію. Sentry сам дедупає
   // однакові events, тому подвійних подій у проді не буде.
-  if (status >= 500 && !operational) {
+  // Operational 5xx (ExternalServiceError тощо) ловить лише Sentry-хендлер;
+  // змаплені pg-помилки (22/23/транзієнтні) не репортяться ніде.
+  if (classified.report && !operational) {
     try {
       Sentry.captureException(err);
     } catch {
@@ -109,12 +103,15 @@ export const errorHandler: ErrorRequestHandler = (
   // Auth-власний хендлер (rate-limit, AppError, generic 500), приходить у
   // фронт без `message` → ловиться загальним fallback-ом на кшталт
   // «Помилка входу» без жодних деталей.
-  const userMessage = operational || clientError ? e.message : "Server error";
+  const userMessage = classified.message;
   // Surfacing `details` лише для operational помилок (4xx). Це формат,
   // який кидають `parseBody`/`parseQuery` через `cause: { details }`.
   // Для programmer-помилок (5xx) клієнт отримує тільки generic
   // `Server error` без cause, щоб уникнути витоку внутрішніх обʼєктів.
   const details = operational ? extractClientDetails(e.cause) : undefined;
+  if (classified.retryAfterSec) {
+    res.setHeader("Retry-After", String(classified.retryAfterSec));
+  }
   res.status(status).json({
     error: userMessage,
     message: userMessage,

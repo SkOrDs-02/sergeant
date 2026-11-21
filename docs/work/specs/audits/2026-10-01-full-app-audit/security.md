@@ -2933,7 +2933,7 @@ v4-all.mjs і v4-nutr.mjs. routine_habits name з 100 000 символів => ap
 
 ### `sec-39` [low] errorHandler віддає клієнту SQLSTATE і системні коди та перетворює помилки вводу на 500 із Sentry-подією
 
-- **Стан:** відкрито
+- **Стан:** закрито в гілці `backlog/sec-39-r2` (ще не змерджено): non-operational 5xx віддає лише `INTERNAL`; pg SQLSTATE 22xxx дає 400 `VALIDATION`, 23xxx дає 409 `CONFLICT`, 40P01/40001 дають 503 `UNAVAILABLE` з `Retry-After`, усі без Sentry, бо `shouldHandleError` Sentry-хендлера бере той самий класифікатор (`http/errorClassification.ts`); ZodError на 400 лише на межі запиту (`DELETE /api/me` перейшов на `parseBody`), невловлений ZodError схеми відповіді лишається 500 `INTERNAL` із Sentry без деталей; не входило: санітизація NUL на рівні zod-схем
 - **Перевірка:** підтверджено · **Зусилля:** S · **Швидкий виграш** · **Область:** server: обробка помилок
 - **Де:** apps/server/src/http/errorHandler.ts:46-60,95-101,118-124; apps/server/src/app.ts:189-190; apps/server/src/routes/me.ts:282
 - **Першопричина:** Термінальний хендлер бере e.code для будь-якої помилки, включно з non-operational 5xx, і шле в Sentry кожен такий 5xx; мапінгу ZodError і pg SQLSTATE класів 22/23 на 4xx немає, а NUL і невалідний UTF-8 не відсікаються на рівні схем.

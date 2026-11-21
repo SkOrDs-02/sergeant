@@ -310,7 +310,9 @@ export function createMeRouter(): Router {
       // сесію», і вкрадена сесія могла б запустити 30-денний відлік.
       // OAuth-only акаунт пароля не має: йому потрібна сесія ≤ 10 хв
       // (sec-10, рішення власника 2026-10-23; `modules/me/reauth.ts`).
-      const body = MeDeleteBodySchema.parse(req.body ?? {});
+      // sec-39: `parseBody`, а не `.parse()` — невалідне тіло має стати
+      // 400 `VALIDATION`, а не невловленим ZodError (500 + Sentry).
+      const body = parseBody(MeDeleteBodySchema, req);
       const reauth = await reauthenticate(user.id, body.password, () =>
         sessionCreatedAtOf(req.headers),
       );

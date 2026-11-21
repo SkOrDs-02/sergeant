@@ -8,6 +8,7 @@ import {
 } from "@sergeant/shared";
 import { als } from "./obs/requestContext.js";
 import { redactSensitiveUrl } from "./obs/sensitiveUrl.js";
+import { shouldReportToSentry } from "./http/errorClassification.js";
 
 function parseRate(val: string | undefined, fallback: number): number {
   if (val == null || val === "") return fallback;
@@ -558,12 +559,22 @@ if (dsn) {
 }
 
 /**
+ * Опції Sentry express-хендлера. Дефолтний `shouldHandleError` рахує помилку
+ * без `.status` як 500, тож pg-помилку вводу (22P05) чи unique-конфлікт
+ * (23505), які `errorHandler` віддає як 400/409, він слав би в Sentry.
+ * Спільний класифікатор тримає обидва хендлери в згоді (sec-39).
+ */
+export const SENTRY_EXPRESS_HANDLER_OPTIONS = {
+  shouldHandleError: (error: unknown): boolean => shouldReportToSentry(error),
+};
+
+/**
  * Підключає Sentry-обробник помилок до Express-додатка.
  * Має викликатись *після* всіх роутерів і *перед* власним error handler-ом.
  */
 export function attachSentryErrorHandler(app: Express): void {
   if (!dsn) return;
-  Sentry.setupExpressErrorHandler(app);
+  Sentry.setupExpressErrorHandler(app, SENTRY_EXPRESS_HANDLER_OPTIONS);
 }
 
 export { Sentry };

@@ -13,10 +13,19 @@ export interface AppErrorOptions {
   cause?: unknown;
 }
 
+/**
+ * Бренд через глобальний реєстр символів: `instanceof` хибить, коли модуль
+ * `errors.ts` завантажено двічі (vi.resetModules, дубль пакета в бандлі), і
+ * тоді operational `AppError` у `errorHandler` виглядав би programmer-помилкою:
+ * 5xx замість свого `code` отримав би `INTERNAL` (sec-39).
+ */
+const APP_ERROR_BRAND: unique symbol = Symbol.for("sergeant.AppError");
+
 export class AppError extends Error {
   status: number;
   code: string;
   override cause?: unknown;
+  readonly [APP_ERROR_BRAND] = true;
 
   constructor(message: string, opts: AppErrorOptions = {}) {
     super(message);
@@ -73,7 +82,12 @@ export class ExternalServiceError extends AppError {
 }
 
 export function isOperationalError(err: unknown): err is AppError {
-  return err instanceof AppError;
+  if (err instanceof AppError) return true;
+  return (
+    !!err &&
+    typeof err === "object" &&
+    (err as { [APP_ERROR_BRAND]?: unknown })[APP_ERROR_BRAND] === true
+  );
 }
 
 /**
