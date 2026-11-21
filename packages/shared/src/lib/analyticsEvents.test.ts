@@ -22,17 +22,10 @@ describe("ANALYTICS_EVENTS registry", () => {
   // Canonical event names — if any of these change, dashboards / funnels in
   // PostHog must move with them in the same PR. The registry is the source
   // of truth, but this assertion makes a rename impossible by accident.
-  it("exposes the HubChat / CloudSync / Subscription groups verbatim", () => {
+  it("exposes the HubChat / Subscription groups verbatim", () => {
     expect(ANALYTICS_EVENTS.HUBCHAT_MESSAGE_SENT).toBe("hubchat_message_sent");
     expect(ANALYTICS_EVENTS.HUBCHAT_TOOL_INVOKED).toBe("hubchat_tool_invoked");
     expect(ANALYTICS_EVENTS.HUBCHAT_ERROR).toBe("hubchat_error");
-
-    expect(ANALYTICS_EVENTS.SYNC_STARTED).toBe("sync_started");
-    expect(ANALYTICS_EVENTS.SYNC_SUCCEEDED).toBe("sync_succeeded");
-    expect(ANALYTICS_EVENTS.SYNC_FAILED).toBe("sync_failed");
-    expect(ANALYTICS_EVENTS.SYNC_CONFLICT_RESOLVED).toBe(
-      "sync_conflict_resolved",
-    );
 
     expect(ANALYTICS_EVENTS.SIGNUP_COMPLETED).toBe("signup_completed");
 
@@ -126,39 +119,44 @@ describe("ANALYTICS_EVENTS registry", () => {
     expect(ANALYTICS_EVENTS.APP_LOCK_UNLOCK_FAILED).toBe(
       "app_lock_unlock_failed",
     );
-    expect(ANALYTICS_EVENTS.BIOMETRIC_SETUP_COMPLETED).toBe(
-      "biometric_setup_completed",
-    );
-    expect(ANALYTICS_EVENTS.BIOMETRIC_AUTH_SUCCESS).toBe(
-      "biometric_auth_success",
-    );
-    expect(ANALYTICS_EVENTS.BIOMETRIC_AUTH_FAILED_FALLBACK_PIN).toBe(
-      "biometric_auth_failed_fallback_pin",
-    );
 
     // Module navigation — PR-2 / PR-4
     expect(ANALYTICS_EVENTS.MODULE_SETTINGS_OPENED).toBe(
       "module_settings_opened_from_module",
-    );
-    expect(ANALYTICS_EVENTS.MODULE_LANDING_TAB_CLICKED).toBe(
-      "module_landing_tab_clicked",
     );
 
     // Error recovery — PR-14
     expect(ANALYTICS_EVENTS.ERROR_BOUNDARY_REQUEST_ID_COPIED).toBe(
       "error_boundary_request_id_copied",
     );
-    expect(ANALYTICS_EVENTS.ERROR_BOUNDARY_RETRIED).toBe(
-      "error_boundary_retried",
-    );
+  });
 
-    // Permissions — PR-7
-    expect(ANALYTICS_EVENTS.PERMISSIONS_SETTINGS_OPENED).toBe(
-      "permissions_settings_opened",
-    );
-    expect(ANALYTICS_EVENTS.PERMISSION_STATUS_CHANGED).toBe(
-      "permission_status_changed",
-    );
+  // Аудит сиріт 2026-08-05 § 9а/9б: ці константи не мали жодного call site
+  // в apps/** і packages/** (never-wired placeholder-и або емітер видалено),
+  // тож їх знято з реєстру. Асерт не дає повернути мертву константу «про
+  // запас»: нова подія приходить разом зі своїм емітером.
+  it("does not carry retired never-fired constants (orphaned-code audit § 9а/9б)", () => {
+    const retired: Record<string, string> = {
+      BIOMETRIC_AUTH_FAILED_FALLBACK_PIN: "biometric_auth_failed_fallback_pin",
+      BIOMETRIC_AUTH_SUCCESS: "biometric_auth_success",
+      BIOMETRIC_SETUP_COMPLETED: "biometric_setup_completed",
+      ERROR_BOUNDARY_RETRIED: "error_boundary_retried",
+      MODULE_LANDING_TAB_CLICKED: "module_landing_tab_clicked",
+      PERMISSION_STATUS_CHANGED: "permission_status_changed",
+      PERMISSIONS_SETTINGS_OPENED: "permissions_settings_opened",
+      SYNC_CONFLICT_RESOLVED: "sync_conflict_resolved",
+      SYNC_STARTED: "sync_started",
+      SYNC_SUCCEEDED: "sync_succeeded",
+      SYNC_FAILED: "sync_failed",
+      HINT_CLICKED: "hint_clicked",
+      HINT_COMPLETED: "hint_completed",
+    };
+    const keys = new Set(Object.keys(ANALYTICS_EVENTS));
+    const values = new Set<string>(Object.values(ANALYTICS_EVENTS));
+    for (const [key, value] of Object.entries(retired)) {
+      expect(keys.has(key), key).toBe(false);
+      expect(values.has(value), value).toBe(false);
+    }
   });
 
   // Хвиля 2 — петлі цінності. Ці 10 рядків заморожені ДО того, як

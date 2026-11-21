@@ -2,7 +2,7 @@
 
 > **Поточні статуси перенесених знахідок:** [єдиний реєстр верифікації](verification/findings.json). Цей документ зберігає історичні результати; нові спроби та виправлення ведуться в реєстрі.
 
-> **Last touched:** 2026-11-21 by @claude. **Next review:** 2027-12-29.
+> **Last touched:** 2026-11-21 by @claude (§ 9а/9б: мертві константи аналітики знято; `check:dualwrite-residue` у CI). **Next review:** 2027-12-29.
 > **Status:** Active
 >
 > **Звірка 2026-10-22:** `routes/internal/seo.ts`, `marketing.ts` і `growth.ts` з § 3а вже видалені (#1310, #1536); `strategic.ts`, `debug-window.ts`, `email.ts` та неспожиті хуки api-client лишаються.
@@ -433,6 +433,8 @@ Vite + React (не Next), 17 файлів, повністю підключени
 | `hint_clicked`, `hint_completed`                | 2026-06-02  | `7b26a8f32` 2026-07-17 «founder feedback remediation (#303)»    |
 
 Рекомендація: видалити константи (плюс `SYNC_CONFLICT_RESOLVED` з 9а — та сама cloudSync-ера).
+
+> ✅ **Закрито 2026-11-21 (гілка `backlog/9ab-dead-analytics-constants`):** з `ANALYTICS_EVENTS` знято 13 констант — усі 5 із 9б (`SYNC_STARTED/SUCCEEDED/FAILED`, `HINT_CLICKED`, `HINT_COMPLETED`) і 8 із 9а (`BIOMETRIC_*` ×3, `ERROR_BOUNDARY_RETRIED`, `MODULE_LANDING_TAB_CLICKED`, `PERMISSIONS_SETTINGS_OPENED`, `PERMISSION_STATUS_CHANGED`, `SYNC_CONFLICT_RESOLVED`); повторний grep по `apps/**` і `packages/**` (ключ і рядкове значення) дав 0 call sites, у mobile лишилась тільки згадка `HINT_COMPLETED` у коментарі `useHints.ts`. Тест `analyticsEvents.test.ts` тепер падає, якщо котрусь повернуть; прибрано також записи в `.telemetry/tracking-plan.yaml`, секцію CloudSync у `frontend.md` і рядок `hint_completed` у `posthog-ftux-dashboards.md`. З 9а лишились `hubchat_tool_invoked` і `landing_email_captured` — поза скоупом.
 
 ### 9в. Call sites живі, у прод не досяжні (~20)
 

@@ -3735,6 +3735,11 @@
           "at": "2026-09-05",
           "event": "imported",
           "note": "Тематичний кластер із джерела; актуальність і членство потребують тріажу на поточному commit. Це не нове відтворення."
+        },
+        {
+          "at": "2026-11-21",
+          "event": "retriaged",
+          "note": "8 із 10 знято з ANALYTICS_EVENTS (BIOMETRIC_* ×3, ERROR_BOUNDARY_RETRIED, MODULE_LANDING_TAB_CLICKED, PERMISSIONS_SETTINGS_OPENED, PERMISSION_STATUS_CHANGED, SYNC_CONFLICT_RESOLVED), гілка backlog/9ab-dead-analytics-constants. Лишились hubchat_tool_invoked і landing_email_captured."
         }
       ],
       "sourceAnchor": "9а. Placeholder-и без call sites, вік 3+ місяці (10) — справжні never-wired"
@@ -3745,12 +3750,17 @@
       "title": "Consumer-removed: подія стріляла, споживача видалили, константа лишилась (5)",
       "severity": "unrated",
       "source": "docs/work/specs/audits/2026-08-05-orphaned-code-audit.md",
-      "status": "open",
+      "status": "fixed-pending-verification",
       "history": [
         {
           "at": "2026-09-05",
           "event": "imported",
           "note": "Тематичний кластер із джерела; актуальність і членство потребують тріажу на поточному commit. Це не нове відтворення."
+        },
+        {
+          "at": "2026-11-21",
+          "event": "fixed",
+          "note": "Усі 5 констант (SYNC_STARTED/SUCCEEDED/FAILED, HINT_CLICKED, HINT_COMPLETED) знято з ANALYTICS_EVENTS, гілка backlog/9ab-dead-analytics-constants; повернення ловить analyticsEvents.test.ts."
         }
       ],
       "sourceAnchor": "9б. Consumer-removed: подія стріляла, споживача видалили, константа лишилась (5)"

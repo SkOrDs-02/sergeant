@@ -127,10 +127,11 @@ export const ANALYTICS_EVENTS = Object.freeze({
   CROSS_MODULE_PREVIEW_DISMISSED: "cross_module_preview_dismissed",
 
   // Hints / tips system
+  // `hint_clicked` / `hint_completed` знято 2026-11-21: їхній web-емітер
+  // (хінт-оркестратор) прибрано 2026-07-17 (#303), mobile шле лише
+  // SHOWN / DISMISSED. Історичні події лишаються в PostHog.
   HINT_SHOWN: "hint_shown",
-  HINT_CLICKED: "hint_clicked",
   HINT_DISMISSED: "hint_dismissed",
-  HINT_COMPLETED: "hint_completed",
 
   // HubChat — AI conversational assistant.
   //
@@ -166,23 +167,10 @@ export const ANALYTICS_EVENTS = Object.freeze({
   HUBCHAT_TOOL_INVOKED: "hubchat_tool_invoked",
   HUBCHAT_ERROR: "hubchat_error",
 
-  // CloudSync — local-first replication engine (`apps/web/src/core/cloudSync`).
-  //
-  //   SYNC_STARTED            { trigger?: "manual" | "auto" | "initial" }
-  //   SYNC_SUCCEEDED          { duration_ms: number, modules?: number }
-  //   SYNC_FAILED             { error_type: SyncError["type"],
-  //                             retryable: boolean, duration_ms?: number }
-  //   SYNC_CONFLICT_RESOLVED  { kind: "push" | "initial-merge",
-  //                             modules: number }
-  //
-  // `SYNC_CONFLICT_RESOLVED.modules` — кількість модулів, для яких LWW
-  // guard на бекенді повернув `conflict: true` (push) або локальні
-  // dirty-зміни переважили cloud-snapshot (initial-merge). Дозволяє
-  // алерт-ити spike-и conflict-ів без експорту body.
-  SYNC_STARTED: "sync_started",
-  SYNC_SUCCEEDED: "sync_succeeded",
-  SYNC_FAILED: "sync_failed",
-  SYNC_CONFLICT_RESOLVED: "sync_conflict_resolved",
+  // CloudSync v1 (`sync_started` / `sync_succeeded` / `sync_failed` /
+  // `sync_conflict_resolved`) знято 2026-11-21: емітер видалено разом із
+  // v1 engine 2026-05-06 (ADR-0047), op-log v2 цих подій не шле.
+  // Історичні події лишаються в PostHog.
 
   // Acquisition — `signup_completed` рахується у WF-60 growth funnel
   // (`ops/n8n-workflows/60-growth-funnel-snapshot.json`) як перехід
@@ -404,40 +392,34 @@ export const ANALYTICS_EVENTS = Object.freeze({
   //   APP_LOCK_UNLOCK_SUCCESS  { method: "pin" | "biometric" }
   //   APP_LOCK_UNLOCK_FAILED   { method: "pin" | "biometric",
   //                              attempt: number }
-  //   BIOMETRIC_SETUP_COMPLETED { kind: "face_id" | "touch_id" | "webauthn" }
-  //   BIOMETRIC_AUTH_SUCCESS    { kind: "face_id" | "touch_id" | "webauthn" }
-  //   BIOMETRIC_AUTH_FAILED_FALLBACK_PIN {}
+  //
+  // Біометричні `biometric_setup_completed` / `biometric_auth_success` /
+  // `biometric_auth_failed_fallback_pin` знято 2026-11-21: задекларовані
+  // 2026-05-07, жодного call site так і не отримали.
   APP_LOCK_SETUP_STARTED: "app_lock_setup_started",
   APP_LOCK_SETUP_COMPLETED: "app_lock_setup_completed",
   APP_LOCK_UNLOCK_SUCCESS: "app_lock_unlock_success",
   APP_LOCK_UNLOCK_FAILED: "app_lock_unlock_failed",
-  BIOMETRIC_SETUP_COMPLETED: "biometric_setup_completed",
-  BIOMETRIC_AUTH_SUCCESS: "biometric_auth_success",
-  BIOMETRIC_AUTH_FAILED_FALLBACK_PIN: "biometric_auth_failed_fallback_pin",
 
   // UX-roast 2026-Q2 — Module navigation (PR-2 gear, PR-4 landing tab).
   //
   //   MODULE_SETTINGS_OPENED   { module: DashboardModuleId }
-  //   MODULE_LANDING_TAB_CLICKED { module: DashboardModuleId, tab_key: string }
+  //
+  // `module_landing_tab_clicked` (PR-4) знято 2026-11-21: call site не
+  // з'явився.
   MODULE_SETTINGS_OPENED: "module_settings_opened_from_module",
-  MODULE_LANDING_TAB_CLICKED: "module_landing_tab_clicked",
 
   // UX-roast 2026-Q2 — Error recovery (PR-14 request-ID copy).
   //
   //   ERROR_BOUNDARY_REQUEST_ID_COPIED { scope: "hub" | "module",
   //                                      request_id: string }
-  //   ERROR_BOUNDARY_RETRIED           { scope: "hub" | "module" }
-  ERROR_BOUNDARY_REQUEST_ID_COPIED: "error_boundary_request_id_copied",
-  ERROR_BOUNDARY_RETRIED: "error_boundary_retried",
-
-  // UX-roast 2026-Q2 — Permissions (PR-7 overview in Settings).
   //
-  //   PERMISSIONS_SETTINGS_OPENED  {}
-  //   PERMISSION_STATUS_CHANGED    { type: "notifications" | "microphone"
-  //                                       | "camera" | "geolocation",
-  //                                  status: "granted" | "denied" | "prompt" }
-  PERMISSIONS_SETTINGS_OPENED: "permissions_settings_opened",
-  PERMISSION_STATUS_CHANGED: "permission_status_changed",
+  // `error_boundary_retried` знято 2026-11-21: call site не з'явився.
+  ERROR_BOUNDARY_REQUEST_ID_COPIED: "error_boundary_request_id_copied",
+
+  // UX-roast 2026-Q2 — Permissions (PR-7): `permissions_settings_opened` і
+  // `permission_status_changed` знято 2026-11-21, call site-ів не було.
+  // Живі permission-події — PERMISSION_REQUESTED / _GRANTED / _DENIED.
 
   // Demo mode (S4.1) стояв тут із трьома подіями — `demo_started`,
   // `demo_dismissed`, `demo_to_wizard_confirmed`. Режим знято
