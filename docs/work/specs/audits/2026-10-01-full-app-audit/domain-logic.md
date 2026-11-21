@@ -2120,7 +2120,7 @@ psql: `6 days`. plataSync.ts:240-247 (slow tick включає past_due), 166-17
 
 ### `logic-33` [low] Білінг вибирає провайдера за клієнтським заголовком x-vercel-ip-country і пропонує Stripe, навіть коли він вимкнений
 
-- **Стан:** відкрито
+- **Стан:** закрито в гілці `backlog/sec-33` (2026-11-21): API більше не читає `X-Vercel-IP-Country`, `getEnabledProviders()` однаковий для всіх (LiqPay і Plata за своїми прапорцями, Stripe лише за `STRIPE_ENABLED=true`), тож `provider=stripe` при вимкненому прапорці дає 400 `PROVIDER_UNAVAILABLE` (`provider.test.ts`, `billing.test.ts`); разом із `sec-33`
 - **Рішення власника 2026-11-21:** країну з заголовка не беремо: UA-провайдери всім, Stripe лише за `STRIPE_ENABLED` (як `sec-33`).
 - **Перевірка:** підтверджено · **Зусилля:** S · **Швидкий виграш** · **Область:** server: білінг (провайдери)
 - **Та сама першопричина, що й** [`sec-33`](./security.md#sec-33): Той самий дефект: провайдер оплати обирається за клієнтським X-Vercel-IP-Country, і Stripe пропонується попри STRIPE_ENABLED=false.

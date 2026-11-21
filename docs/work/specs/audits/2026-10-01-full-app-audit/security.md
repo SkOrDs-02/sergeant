@@ -2550,7 +2550,7 @@ chat.ts: grep 'getUserPlan|accessStateOf|hasFeature' порожній; єдин�
 
 ### `sec-33` [low] Країна для вибору платіжного провайдера береться з клієнтського X-Vercel-IP-Country, а Stripe пропонується попри STRIPE_ENABLED=false
 
-- **Стан:** відкрито
+- **Стан:** закрито в гілці `backlog/sec-33` (2026-11-21): API більше не читає `X-Vercel-IP-Country`, `getEnabledProviders()` однаковий для всіх (LiqPay і Plata за своїми прапорцями, Stripe лише за `STRIPE_ENABLED=true`), тож `provider=stripe` при вимкненому прапорці дає 400 `PROVIDER_UNAVAILABLE` (`provider.test.ts`, `billing.test.ts`); разом із `logic-33`
 - **Рішення власника 2026-11-21:** заголовок `X-Vercel-IP-Country` на API не читаємо; усім показуємо UA-провайдерів, Stripe лише за `STRIPE_ENABLED`. Той самий кластер, що `logic-33`.
 - **Перевірка:** підтверджено · **Зусилля:** S · **Швидкий виграш** · **Область:** server: billing
 - **Де:** apps/server/src/routes/billing.ts:62-66; apps/server/src/modules/billing/provider.ts:182-201

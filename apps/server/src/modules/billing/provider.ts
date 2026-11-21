@@ -5,7 +5,7 @@
  * другий provider для українського ринку — UA-картки мають вищий
  * 3DS-failure rate на Stripe (ADR-0001 §ADR-1.1), тому частина платежів
  * зривається. Live LiqPay-інтеграція — Phase 7; цей модуль лише фіксує
- * контракт (`BillingProvider`) і resolver (`getProviderForCountry`), щоб
+ * контракт (`BillingProvider`) і resolver (`getEnabledProviders`), щоб
  * live-код вбудувався без рефакторингу білінгу.
  *
  * Stripe-модуль (`./stripe.ts`) ще НЕ реалізує цей інтерфейс напряму —
@@ -28,8 +28,8 @@ import { env } from "../../env/env.js";
  * що йдуть через native IAP, а не через цей web-billing resolver.
  *
  * Phase 7 UA billing: `liqpay` (ПриватБанк) і `plata` (monobank) — live
- * UA-provider-и; `stripe` — dormant за флагом (ніколи не пропонується
- * українцям, лишається у репо для легкого реверту).
+ * UA-provider-и; `stripe` — dormant за `STRIPE_ENABLED` (пропонується лише
+ * коли прапорець увімкнено, лишається у репо для легкого реверту).
  */
 export type ProviderId = "stripe" | "liqpay" | "plata";
 
@@ -161,18 +161,18 @@ export function isBillingEnforced({
 }
 
 export interface EnabledProvidersOptions {
-  /** ISO-3166 alpha-2 країна користувача (наприклад `"UA"`, `"US"`). */
-  country?: string | null;
-  /** Override `env.LIQPAY_ENABLED` (для тестів / майбутнього flag-rollout-у). */
+  /** Override `env.LIQPAY_ENABLED` (для тестів). */
   liqpayEnabled?: boolean;
   /** Override `env.PLATA_ENABLED`. */
   plataEnabled?: boolean;
+  /** Override `env.STRIPE_ENABLED`. */
+  stripeEnabled?: boolean;
 }
 
 /**
- * Кинуто, коли користувач обрав provider, недоступний у його країні
- * (наприклад `stripe` для UA, або provider з вимкненим флагом). Route-layer
- * мапить це на `400 PROVIDER_UNAVAILABLE`.
+ * Кинуто, коли користувач обрав provider із вимкненим прапорцем (наприклад
+ * `stripe` при `STRIPE_ENABLED=false`). Route-layer мапить це на
+ * `400 PROVIDER_UNAVAILABLE`.
  */
 export class ProviderNotAvailableError extends Error {
   constructor(public readonly providerId: string) {
@@ -182,35 +182,35 @@ export class ProviderNotAvailableError extends Error {
 }
 
 /**
- * Повертає впорядкований список payment-provider-ів, доступних користувачу з
- * `country`. Це джерело правди для UI-кнопок на `/pricing` і для
- * валідації в {@link resolveProvider}.
+ * Повертає впорядкований список payment-provider-ів, увімкнених прапорцями.
+ * Це джерело правди для UI-кнопок на `/pricing` і для валідації в
+ * {@link resolveProvider}.
  *
- * Phase 7 UA billing: для `country==='UA'` пропонуємо лише увімкнені
- * UA-provider-и (`liqpay`, `plata`) — **Stripe свідомо ніколи не потрапляє
- * у список для українців** (dormant). Для решти країн — `['stripe']`
- * (canonical). Порядок фіксований: LiqPay перший (scaffold готовий, менший
- * ризик), Plata другий.
+ * Країну користувача тут свідомо НЕ враховуємо (sec-33 / logic-33, рішення
+ * власника 2026-11-21). Раніше роут брав її з `X-Vercel-IP-Country`, але
+ * бекенд стоїть на Hetzner/Coolify без Vercel перед собою, тож заголовок
+ * повністю задавав клієнт: `US` відкривав «сплячий» Stripe-checkout, а
+ * справжні іноземці без заголовка отримували UA-набір. Тепер список один для
+ * всіх: UA-провайдери (`liqpay`, `plata`) за своїми прапорцями, `stripe` лише
+ * за `STRIPE_ENABLED=true`. Порядок фіксований: LiqPay, Plata, Stripe.
  */
 export function getEnabledProviders({
-  country,
   liqpayEnabled = env.LIQPAY_ENABLED,
   plataEnabled = env.PLATA_ENABLED,
+  stripeEnabled = env.STRIPE_ENABLED,
 }: EnabledProvidersOptions = {}): ProviderId[] {
-  if (country?.toUpperCase() === "UA") {
-    const providers: ProviderId[] = [];
-    if (liqpayEnabled) providers.push("liqpay");
-    if (plataEnabled) providers.push("plata");
-    return providers;
-  }
-  return ["stripe"];
+  const providers: ProviderId[] = [];
+  if (liqpayEnabled) providers.push("liqpay");
+  if (plataEnabled) providers.push("plata");
+  if (stripeEnabled) providers.push("stripe");
+  return providers;
 }
 
 /**
  * Валідує provider, обраний користувачем на checkout, проти
  * {@link getEnabledProviders}. Повертає той самий `id`, якщо він дозволений;
  * інакше кидає {@link ProviderNotAvailableError}. Захищає від підробленого
- * `provider` у тілі запиту (наприклад `stripe` від UA-юзера).
+ * `provider` у тілі запиту (наприклад `stripe` при вимкненому прапорці).
  */
 export function resolveProvider(
   id: ProviderId,

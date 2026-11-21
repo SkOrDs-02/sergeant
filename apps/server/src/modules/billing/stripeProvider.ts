@@ -2,8 +2,8 @@
  * Stripe as a {@link BillingProvider} — thin adapter over the existing
  * `./stripe.ts` functions (Phase 7 UA billing).
  *
- * Stripe стає **dormant** у Phase 7: `getEnabledProviders('UA')` ніколи не
- * пропонує його українцям, а `/api/billing/stripe-webhook` лишається
+ * Stripe стає **dormant** у Phase 7: `getEnabledProviders()` пропонує його
+ * лише за `STRIPE_ENABLED=true`, а `/api/billing/stripe-webhook` лишається
  * власним route-ом (не через registry). Цей адаптер існує, щоб
  * `providerRegistry` мав повний `Record<ProviderId, BillingProvider>` і щоб
  * `cancelSubscription` працював уніфіковано (deletion юзера / admin-cancel).

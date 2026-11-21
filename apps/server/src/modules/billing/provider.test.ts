@@ -6,22 +6,22 @@ import {
 } from "./provider.js";
 
 describe("getEnabledProviders", () => {
-  it("returns [] for UA when both UA providers are disabled (pre-rollout)", () => {
+  it("returns [] when every provider is disabled (pre-rollout)", () => {
     expect(
       getEnabledProviders({
-        country: "UA",
         liqpayEnabled: false,
         plataEnabled: false,
+        stripeEnabled: false,
       }),
     ).toEqual([]);
   });
 
-  it("returns ['liqpay','plata'] for UA when both are enabled", () => {
+  it("returns ['liqpay','plata'] when both UA providers are enabled", () => {
     expect(
       getEnabledProviders({
-        country: "UA",
         liqpayEnabled: true,
         plataEnabled: true,
+        stripeEnabled: false,
       }),
     ).toEqual(["liqpay", "plata"]);
   });
@@ -29,81 +29,87 @@ describe("getEnabledProviders", () => {
   it("filters to only the enabled UA provider", () => {
     expect(
       getEnabledProviders({
-        country: "UA",
         liqpayEnabled: true,
         plataEnabled: false,
+        stripeEnabled: false,
       }),
     ).toEqual(["liqpay"]);
     expect(
       getEnabledProviders({
-        country: "UA",
         liqpayEnabled: false,
         plataEnabled: true,
+        stripeEnabled: false,
       }),
     ).toEqual(["plata"]);
   });
 
-  it("keeps LiqPay before Plata (rollout order)", () => {
+  // sec-33 / logic-33: Stripe раніше пропонувався кожному не-UA (або з
+  // підробленим `X-Vercel-IP-Country`) попри `STRIPE_ENABLED=false`.
+  it("never offers Stripe while STRIPE_ENABLED is off", () => {
     expect(
       getEnabledProviders({
-        country: "ua",
-        liqpayEnabled: true,
-        plataEnabled: true,
+        liqpayEnabled: false,
+        plataEnabled: false,
+        stripeEnabled: false,
       }),
-    ).toEqual(["liqpay", "plata"]);
+    ).not.toContain("stripe");
   });
 
-  it("never offers a UA provider to non-UA countries — Stripe only", () => {
+  it("appends Stripe after the UA providers only when STRIPE_ENABLED is on", () => {
     expect(
       getEnabledProviders({
-        country: "US",
         liqpayEnabled: true,
         plataEnabled: true,
+        stripeEnabled: true,
       }),
-    ).toEqual(["stripe"]);
-  });
-
-  it("defaults to ['stripe'] when country is missing", () => {
-    expect(
-      getEnabledProviders({ liqpayEnabled: true, plataEnabled: true }),
-    ).toEqual(["stripe"]);
+    ).toEqual(["liqpay", "plata", "stripe"]);
     expect(
       getEnabledProviders({
-        country: null,
-        liqpayEnabled: true,
-        plataEnabled: true,
+        liqpayEnabled: false,
+        plataEnabled: false,
+        stripeEnabled: true,
       }),
     ).toEqual(["stripe"]);
   });
 });
 
 describe("resolveProvider", () => {
-  it("returns the id when it is enabled for the country", () => {
+  it("returns the id when it is enabled", () => {
     expect(
       resolveProvider("liqpay", {
-        country: "UA",
         liqpayEnabled: true,
         plataEnabled: true,
+        stripeEnabled: false,
       }),
     ).toBe("liqpay");
   });
 
-  it("rejects 'stripe' for a UA user (Stripe is dormant for UA)", () => {
+  it("rejects 'stripe' while STRIPE_ENABLED is off", () => {
     expect(() =>
       resolveProvider("stripe", {
-        country: "UA",
         liqpayEnabled: true,
         plataEnabled: true,
+        stripeEnabled: false,
       }),
     ).toThrow(ProviderNotAvailableError);
+  });
+
+  it("accepts 'stripe' when STRIPE_ENABLED is on", () => {
+    expect(
+      resolveProvider("stripe", {
+        liqpayEnabled: false,
+        plataEnabled: false,
+        stripeEnabled: true,
+      }),
+    ).toBe("stripe");
   });
 
   it("rejects a provider whose flag is off", () => {
     expect(() =>
       resolveProvider("plata", {
-        country: "UA",
         liqpayEnabled: true,
         plataEnabled: false,
+        stripeEnabled: false,
       }),
     ).toThrow(ProviderNotAvailableError);
   });

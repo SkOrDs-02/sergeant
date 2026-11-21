@@ -62,16 +62,6 @@ function rawBody(req: Request): Buffer {
     : Buffer.from(JSON.stringify(req.body ?? {}), "utf8");
 }
 
-/**
- * Країна юзера для resolver-а. Sergeant — UA-market, тож дефолт `UA`;
- * якщо перед сервером стоїть proxy з geo-хедером — беремо з нього.
- */
-function userCountry(req: Request): string {
-  const header = req.headers["x-vercel-ip-country"];
-  const country = Array.isArray(header) ? header[0] : header;
-  return (country && country.length === 2 ? country : "UA").toUpperCase();
-}
-
 function handleBillingError(err: unknown, res: Response): boolean {
   if (err instanceof ProviderNotAvailableError) {
     res.status(400).json({
@@ -110,8 +100,10 @@ export function createBillingRouter({ pool }: { pool: Pool }): Router {
   r.get(
     "/api/billing/providers",
     requireSession(),
-    (req: AuthedRequest, res: Response) => {
-      const providers = getEnabledProviders({ country: userCountry(req) });
+    (_req: Request, res: Response) => {
+      // Країну з `X-Vercel-IP-Country` не читаємо: перед API немає Vercel,
+      // заголовок задає клієнт (sec-33). Список однаковий для всіх.
+      const providers = getEnabledProviders();
       res.json(BillingProvidersResponseSchema.parse({ providers }));
     },
   );
@@ -126,14 +118,13 @@ export function createBillingRouter({ pool }: { pool: Pool }): Router {
     }),
     async (req: AuthedRequest, res: Response) => {
       const parsed = parseBody(BillingCheckoutRequestSchema, req);
-      const country = userCountry(req);
 
       let providerId: ProviderId = "stripe";
       try {
-        // Явний provider → валідуємо; інакше беремо перший enabled для країни.
+        // Явний provider → валідуємо; інакше беремо перший увімкнений.
         providerId = parsed.provider
-          ? resolveProvider(parsed.provider, { country })
-          : (getEnabledProviders({ country })[0] ??
+          ? resolveProvider(parsed.provider)
+          : (getEnabledProviders()[0] ??
             (() => {
               throw new ProviderNotAvailableError("none");
             })());
@@ -255,11 +246,11 @@ export function createBillingRouter({ pool }: { pool: Pool }): Router {
       windowMs: 60 * 60 * 1000,
     }),
     async (req: AuthedRequest, res: Response) => {
-      // Provider беремо з ВЛАСНОЇ активної підписки юзера (authoritative), а
-      // не з geo — інакше legacy Stripe-підписник у UA потрапив би у no-op
-      // LiqPay-portal і втратив би доступ до оновлення картки/інвойсів.
-      // Fallback на geo лише коли підписки ще нема. `manual` (founder/comp)
-      // не має registry-провайдера → теж fallback на geo.
+      // Provider беремо з ВЛАСНОЇ активної підписки юзера (authoritative) —
+      // інакше legacy Stripe-підписник потрапив би у no-op LiqPay-portal і
+      // втратив би доступ до оновлення картки/інвойсів. Fallback на перший
+      // увімкнений провайдер лише коли підписки ще нема. `manual`
+      // (founder/comp) не має registry-провайдера → теж fallback.
       const { rows } = await pool.query<{ provider: string }>(
         `SELECT provider
            FROM subscriptions
@@ -272,7 +263,7 @@ export function createBillingRouter({ pool }: { pool: Pool }): Router {
       const providerId: ProviderId =
         owned === "stripe" || owned === "liqpay" || owned === "plata"
           ? owned
-          : (getEnabledProviders({ country: userCountry(req) })[0] ?? "stripe");
+          : (getEnabledProviders()[0] ?? "stripe");
       try {
         const payload = BillingPortalResponseSchema.parse(
           await providerRegistry[providerId].createCustomerPortalSession({
