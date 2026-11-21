@@ -35,6 +35,7 @@ import {
   parseCallbackData,
   signData,
 } from "./liqpay.js";
+import { billingPaymentReversedTotal } from "../../obs/metrics.js";
 
 describe("liqpay signature", () => {
   it("computes base64(sha1(private + data + private))", () => {
@@ -235,20 +236,141 @@ describe("liqpay processWebhook", () => {
     );
   });
 
-  it("cancels on a reversed status even without an unsubscribe action", async () => {
-    const { pool, calls } = mockPool();
-    const data = encodeData({
-      status: "reversed",
-      order_id: orderId,
-      payment_id: 9006,
-    });
-    await liqpayProvider.processWebhook(pool, data);
-    const cancel = calls.find(
+  const writesSubscription = (calls: { sql: string }[]) =>
+    calls.some(
       (c) =>
-        c.sql.includes("UPDATE subscriptions") && c.sql.includes("canceled"),
+        c.sql.includes("INSERT INTO subscriptions") ||
+        c.sql.includes("UPDATE subscriptions"),
     );
-    expect(cancel).toBeDefined();
+
+  // ADR-0003 (Amended 2026-11-21, аудит logic-17): `reversed` — повернення
+  // одного платежу, а не кінець підписки. Доти він ставив `canceled`.
+  it.each(["regular", "pay", "subscribe", undefined])(
+    "reversed (action=%s) не чіпає підписку, лише warn-лог і запис",
+    async (action) => {
+      const { pool, calls } = mockPool();
+      await liqpayProvider.processWebhook(
+        pool,
+        encodeData({
+          status: "reversed",
+          action,
+          order_id: orderId,
+          payment_id: 9006,
+        }),
+      );
+      expect(writesSubscription(calls)).toBe(false);
+      expect(calls.some((c) => c.sql.includes("billing_webhook_events"))).toBe(
+        true,
+      );
+      expect(loggerMock.warn).toHaveBeenCalledWith(
+        expect.objectContaining({
+          msg: "liqpay_payment_reversed",
+          orderId,
+          paymentId: "9006",
+        }),
+      );
+    },
+  );
+
+  it("reversed інкрементує billing_payment_reversed_total", async () => {
+    const before =
+      (await billingPaymentReversedTotal.get()).values.find(
+        (v) => v.labels["provider"] === "liqpay",
+      )?.value ?? 0;
+    const { pool } = mockPool();
+    await liqpayProvider.processWebhook(
+      pool,
+      encodeData({ status: "reversed", order_id: orderId, payment_id: 9016 }),
+    );
+    const after = (await billingPaymentReversedTotal.get()).values.find(
+      (v) => v.labels["provider"] === "liqpay",
+    )?.value;
+    expect(after).toBe(before + 1);
   });
+
+  // Проміжні й невідомі статуси = pending: доти будь-що поза трьома
+  // «відомими» ставило активному платникові past_due.
+  it.each([
+    "3ds_verify",
+    "otp_verify",
+    "cvv_verify",
+    "hold_wait",
+    "invoice_wait",
+    "wait_lc",
+    "wait_reserve",
+    "prepared",
+    "processing",
+    "something_new_from_liqpay",
+  ])(
+    "статус %s на регулярному списанні — pending, без past_due",
+    async (status) => {
+      const { pool, calls } = mockPool();
+      await liqpayProvider.processWebhook(
+        pool,
+        encodeData({
+          status,
+          action: "regular",
+          order_id: orderId,
+          payment_id: `p_${status}`,
+        }),
+      );
+      expect(writesSubscription(calls)).toBe(false);
+    },
+  );
+
+  it("невідомий статус лишає warn-слід", async () => {
+    const { pool } = mockPool();
+    await liqpayProvider.processWebhook(
+      pool,
+      encodeData({
+        status: "something_new_from_liqpay",
+        action: "regular",
+        order_id: orderId,
+        payment_id: 9017,
+      }),
+    );
+    expect(loggerMock.warn).toHaveBeenCalledWith(
+      expect.objectContaining({
+        msg: "liqpay_callback_unknown_status",
+        status: "something_new_from_liqpay",
+      }),
+    );
+  });
+
+  it.each(["failure", "error"])(
+    "%s на регулярному списанні ставить past_due для того ж order_id",
+    async (status) => {
+      const { pool, calls } = mockPool();
+      await liqpayProvider.processWebhook(
+        pool,
+        encodeData({
+          status,
+          action: "regular",
+          order_id: orderId,
+          payment_id: `f_${status}`,
+        }),
+      );
+      const pastDue = calls.find((c) => c.sql.includes("past_due"));
+      expect(pastDue?.params).toEqual([userId, orderId]);
+    },
+  );
+
+  it.each(["subscribe", "pay"])(
+    "failure на першому checkout (action=%s) не чіпає живу підписку",
+    async (action) => {
+      const { pool, calls } = mockPool();
+      await liqpayProvider.processWebhook(
+        pool,
+        encodeData({
+          status: "failure",
+          action,
+          order_id: orderId,
+          payment_id: `c_${action}`,
+        }),
+      );
+      expect(writesSubscription(calls)).toBe(false);
+    },
+  );
 
   it("falls back to order_id:status:action as the dedup event id when no payment/transaction id is present", async () => {
     const { pool, calls } = mockPool();
@@ -348,7 +470,7 @@ describe("liqpay processWebhook — одна транзакція на деду�
  * no-op; наступний `success` спокійно вставляв місяць Pro за скасований
  * платіж. Дедуп по `payment_id` не рятує — це РІЗНІ події.
  */
-describe("liqpay processWebhook — reversed раніше за success", () => {
+describe("liqpay processWebhook — скасування раніше за success", () => {
   const userId = "usr_race";
   const orderId = encodeOrderId(userId);
 
@@ -373,10 +495,7 @@ describe("liqpay processWebhook — reversed раніше за success", () => {
       if (sql.includes("FROM billing_webhook_events")) {
         const target = String(params?.[0]);
         const hit = events.filter(
-          (e) =>
-            e.orderId === target &&
-            (e.eventType.startsWith("unsubscribe:") ||
-              e.eventType.endsWith(":reversed")),
+          (e) => e.orderId === target && e.eventType.startsWith("unsubscribe:"),
         );
         return {
           rowCount: hit.length,
@@ -393,12 +512,16 @@ describe("liqpay processWebhook — reversed раніше за success", () => {
     };
   }
 
-  it("не активує підписку, коли reversed для того самого order_id уже записаний", async () => {
+  it("не активує підписку, коли unsubscribe для того самого order_id уже записаний", async () => {
     const { pool, calls } = statefulPool();
 
     await liqpayProvider.processWebhook(
       pool,
-      encodeData({ status: "reversed", order_id: orderId, payment_id: 8001 }),
+      encodeData({
+        status: "unsubscribed",
+        action: "unsubscribe",
+        order_id: orderId,
+      }),
     );
     await liqpayProvider.processWebhook(
       pool,
@@ -417,6 +540,41 @@ describe("liqpay processWebhook — reversed раніше за success", () => {
       expect.objectContaining({
         msg: "liqpay_success_after_cancellation_ignored",
         orderId,
+      }),
+    );
+  });
+
+  // logic-17: один рефанд (`reversed`) більше не блокує order_id назавжди —
+  // наступне регулярне списання знову продовжує Pro.
+  it("reversed одного платежу не блокує наступне списання того ж order_id", async () => {
+    const { pool, calls } = statefulPool();
+    loggerMock.warn.mockClear();
+
+    await liqpayProvider.processWebhook(
+      pool,
+      encodeData({
+        status: "reversed",
+        action: "regular",
+        order_id: orderId,
+        payment_id: 8001,
+      }),
+    );
+    await liqpayProvider.processWebhook(
+      pool,
+      encodeData({
+        status: "success",
+        action: "regular",
+        order_id: orderId,
+        payment_id: 8004,
+      }),
+    );
+
+    expect(calls.some((c) => c.sql.includes("INSERT INTO subscriptions"))).toBe(
+      true,
+    );
+    expect(loggerMock.warn).not.toHaveBeenCalledWith(
+      expect.objectContaining({
+        msg: "liqpay_success_after_cancellation_ignored",
       }),
     );
   });

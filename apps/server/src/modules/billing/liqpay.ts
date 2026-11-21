@@ -24,6 +24,7 @@ import type {
 } from "@sergeant/shared";
 import { env } from "../../env/env.js";
 import { logger } from "../../obs/logger.js";
+import { billingPaymentReversedTotal } from "../../obs/metrics.js";
 import type {
   BillingProvider,
   CancelSubscriptionOutcome,
@@ -62,8 +63,27 @@ const ACTIVE_STATUSES = new Set(["active", "trialing"]);
  * Приймаємо його лише під sandbox-ключем — див. {@link sandboxPaymentsAccepted}.
  */
 const SUCCESS_STATUSES = new Set(["success", "subscribed"]);
-/** Проміжний 3DS-стан — фінального рішення ще нема, підписку не чіпаємо. */
-const PENDING_STATUSES = new Set(["wait_secure", "wait_accept", "processing"]);
+/**
+ * Фінальні невдачі списання — єдині статуси, що можуть поставити `past_due`
+ * (і лише для рекурентного `action:regular`). Явний allowlist, а не «решта»:
+ * доти будь-який незнайомий статус (`3ds_verify`, `otp_verify`, `hold_wait`…)
+ * валив оплачену підписку в dunning (аудит logic-17, ADR-0003 Amended
+ * 2026-11-21).
+ */
+const FAILURE_STATUSES = new Set(["failure", "error"]);
+/**
+ * Відомі проміжні стани (`wait_*`, `*_verify` як `3ds_verify`/`otp_verify`,
+ * `*_wait` як `hold_wait`, `processing`, `prepared`) — фінального рішення ще
+ * нема, підписку не чіпаємо. Невідомі статуси трактуємо так само, але з
+ * warn-логом, щоб новий статус LiqPay не пройшов непоміченим.
+ */
+function isPendingStatus(status: string): boolean {
+  return (
+    status === "processing" ||
+    status === "prepared" ||
+    /^wait_|_verify$|_wait$/.test(status)
+  );
+}
 
 function getAppBaseUrl(): string {
   return (
@@ -207,11 +227,14 @@ interface LiqPayCallbackContext {
   orderId: string;
   status: string;
   action: string;
+  paymentId: string | null;
 }
 
 /**
- * Чи приходив уже для ЦЬОГО `order_id` callback скасування
- * (`status:reversed` або `action:unsubscribe`).
+ * Чи приходив уже для ЦЬОГО `order_id` callback скасування підписки
+ * (`action:unsubscribe`). `reversed` сюди НЕ входить: це повернення одного
+ * платежу, а не кінець підписки (ADR-0003 Amended 2026-11-21) — доти один
+ * рефанд назавжди блокував усі наступні списання цього order_id.
  *
  * Потрібно тому, що порядок доставки LiqPay не гарантований, а гілка
  * скасування — це `UPDATE ... WHERE status IN (активні)`: якщо активного
@@ -228,7 +251,7 @@ async function hasCancellationEvent(
     `SELECT 1
        FROM billing_webhook_events
       WHERE provider = 'liqpay'
-        AND (event_type LIKE 'unsubscribe:%' OR event_type LIKE '%:reversed')
+        AND event_type LIKE 'unsubscribe:%'
         AND payload->>'order_id' = $1
       LIMIT 1`,
     [orderId],
@@ -242,17 +265,22 @@ async function hasCancellationEvent(
  * @returns замінену рекурентку, яку треба скасувати у провайдера ПІСЛЯ COMMIT
  *   (див. `supersede.ts`), або `null`.
  *
- * Скасування (`unsubscribe`/`reversed`) і невдале списання скоуплені на
- * `order_id` callback-у: у користувача може бути кілька order_id (нова
- * підписка замінила стару), і термінальна подія СТАРОГО order_id не має гасити
- * рядок НОВОГО. Рядок без order_id (NULL) гаситься як і раніше.
+ * Скасування (`unsubscribe`) і невдале списання скоуплені на `order_id`
+ * callback-у: у користувача може бути кілька order_id (нова підписка замінила
+ * стару), і термінальна подія СТАРОГО order_id не має гасити рядок НОВОГО.
+ * Рядок без order_id (NULL) гаситься як і раніше.
+ *
+ * Семантика статусів — ADR-0003 (Amended 2026-11-21, аудит logic-17):
+ * `reversed` = повернення одного платежу, підписку не чіпає (лише лог,
+ * метрика і запис у `billing_webhook_events`); `past_due` — лише на
+ * `failure`/`error` рекурентного списання (`action:regular`); решта статусів —
+ * pending.
  */
 async function applyLiqPayCallback(
   client: PoolClient,
-  { userId, orderId, status, action }: LiqPayCallbackContext,
+  { userId, orderId, status, action, paymentId }: LiqPayCallbackContext,
 ): Promise<PreviousRecurrence | null> {
-  const isCancel = action === "unsubscribe" || status === "reversed";
-  if (isCancel) {
+  if (action === "unsubscribe") {
     await client.query(
       `UPDATE subscriptions
           SET status = 'canceled', updated_at = NOW()
@@ -264,8 +292,22 @@ async function applyLiqPayCallback(
     return null;
   }
 
-  if (PENDING_STATUSES.has(status)) {
-    // 3DS-очікування — фінальний callback прийде окремо.
+  if (status === "reversed") {
+    // Повернення одного платежу (рефанд/chargeback): доступ і рекурентку не
+    // чіпаємо — скасовує підписку лише `unsubscribe`. Сигнал для людини:
+    // warn-лог + метрика; сам callback уже лежить у `billing_webhook_events`.
+    billingPaymentReversedTotal.inc({ provider: "liqpay" });
+    logger.warn({
+      msg: "liqpay_payment_reversed",
+      orderId,
+      paymentId,
+      action,
+    });
+    return null;
+  }
+
+  if (isPendingStatus(status)) {
+    // 3DS/OTP/холд-очікування — фінальний callback прийде окремо.
     return null;
   }
 
@@ -337,9 +379,21 @@ async function applyLiqPayCallback(
       : null;
   }
 
-  // Решта (`failure`, `error`) — невдале списання. Якщо це рекурентка на
-  // активній підписці → past_due (dunning); інакше ігноруємо (перший
-  // checkout просто не створює рядок).
+  if (!FAILURE_STATUSES.has(status)) {
+    // Невідомий статус — фінального рішення не знаємо, тож як pending: не
+    // збиваємо оплачену підписку в dunning, але лишаємо слід.
+    logger.warn({ msg: "liqpay_callback_unknown_status", status, action });
+    return null;
+  }
+
+  if (action !== "regular") {
+    // Невдалий перший checkout (`subscribe`/`pay`) рядка не створює і не має
+    // чіпати живу підписку: dunning — лише для рекурентного списання.
+    return null;
+  }
+
+  // Невдале рекурентне списання на активній підписці того ж order_id →
+  // past_due (dunning).
   await client.query(
     `UPDATE subscriptions
         SET status = 'past_due', updated_at = NOW()
@@ -460,6 +514,10 @@ export const liqpayProvider: BillingProvider = {
         orderId,
         status,
         action,
+        paymentId:
+          cb.payment_id === undefined || cb.payment_id === null
+            ? null
+            : String(cb.payment_id),
       });
       await client.query("COMMIT");
     } catch (err) {

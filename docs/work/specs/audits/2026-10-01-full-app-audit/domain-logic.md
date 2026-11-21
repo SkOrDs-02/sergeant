@@ -1121,7 +1121,7 @@ x17b.mjs: `success final url: http://127.0.0.1:4173/pricing toasts seen: ["Пі�
 
 ### `logic-17` [low] LiqPay-колбек грубо розбирає статуси: один reversed назавжди блокує order, а проміжні статуси ставлять активним платникам past_due
 
-- **Стан:** відкрито
+- **Стан:** виправлено в гілці `backlog/logic-17` (2026-11-21, ще не змерджено) (`reversed` лише warn-лог `liqpay_payment_reversed` + метрика `billing_payment_reversed_total` і більше не блокує order_id; проміжні й невідомі статуси = pending; `past_due` лише на `failure`/`error` з `action:regular`; лишилось: Prometheus-алерт на метрику)
 - **Рішення власника 2026-11-21:** `reversed` = повернення одного платежу: підписку не чіпати, лише алерт і запис; проміжні статуси (`3ds_verify`, `otp_verify`, `hold_wait` та невідомі) = pending, `past_due` лише на `failure`/`error`. Зафіксовано в ADR-0003 (Amended 2026-11-21).
 - **Перевірка:** підтверджено · **Зусилля:** M · **Область:** server: білінг / LiqPay
 - **Де:** apps/server/src/modules/billing/liqpay.ts:51-53, 295-348, 368-376
