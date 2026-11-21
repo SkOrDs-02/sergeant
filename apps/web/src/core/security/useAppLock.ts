@@ -10,6 +10,7 @@ import {
   savePinHash,
   verifyPinAttempt,
   type LockStatus,
+  type VerifyPinResult,
 } from "./lockStorage";
 
 /**
@@ -21,13 +22,13 @@ import {
  * знімається, цифрова панель не показується, лишається тільки вихід з акаунта.
  */
 export type LockState =
-  "checking" | "idle" | "locked" | "lockedOut" | "setup" | "change";
+  "checking" | "idle" | "locked" | "lockedOut" | "setup" | "change" | "disable";
 
 /**
  * Стани, у яких приватний контент не має бути в DOM (sec-13, priv-15):
  * екран PIN або вичерпаний ліміт. `checking` сюди не входить: його вже
  * закриває непрозора завіса, а гейт на ньому відклав би перший кадр усім
- * користувачам без PIN. `setup`/`change` теж ні: людина вже в застосунку й
+ * користувачам без PIN. `setup`/`change`/`disable` теж ні: людина вже в застосунку й
  * сама налаштовує PIN з екрана налаштувань, який не можна зносити під нею.
  */
 export function isPrivateContentHidden(state: LockState): boolean {
@@ -52,6 +53,18 @@ export interface UseAppLockReturn {
   startSetup: () => void;
   /** Begin the change-PIN flow (called by PrivacySection). */
   startChange: () => void;
+  /**
+   * sec-41: почати вимкнення PIN. Сам креденшел стирає лише `disablePin` з
+   * правильним поточним PIN.
+   */
+  startDisable: () => void;
+  /** Закрити вимкнення PIN без змін. */
+  cancelDisable: () => void;
+  /**
+   * sec-41: перевірити поточний PIN перед зміною. Спроба йде в той самий
+   * лічильник перебору, що й розблокування; вичерпаний ліміт дає `lockedOut`.
+   */
+  verifyCurrentPin: (pin: string) => Promise<boolean>;
   /** Called by AppLock when the user submits a PIN in the unlock screen. */
   unlock: (pin: string) => Promise<boolean>;
   /** Called after setup/change is complete. */
@@ -67,10 +80,11 @@ export interface UseAppLockReturn {
   /** Whether the current user has a PIN configured (called by PrivacySection). */
   hasPin: () => Promise<boolean>;
   /**
-   * Clear the current user's PIN credential (called by PrivacySection when
-   * disabling the lock). Scoped to `user?.id` so the right slot is wiped.
+   * Clear the current user's PIN credential (called by the `disable` flow).
+   * Scoped to `user?.id` so the right slot is wiped. sec-41: стирає лише після
+   * правильного поточного PIN; `false` — PIN хибний, креденшел на місці.
    */
-  disablePin: () => Promise<void>;
+  disablePin: (currentPin: string) => Promise<boolean>;
   /**
    * Epoch ms, до якого нові спроби PIN відхиляються (наростаюча пауза після
    * 5-ї невдачі), або `null`, якщо паузи нема.
@@ -213,10 +227,28 @@ export function useAppLock(): UseAppLockReturn {
     });
   }, []);
 
+  const startDisable = useCallback(() => {
+    setState("disable");
+  }, []);
+
+  const cancelDisable = useCallback(() => {
+    setState("idle");
+  }, []);
+
   const finishSetup = useCallback(() => {
     const mode = setupModeRef.current;
     setState("idle");
     capturePostHogEvent(ANALYTICS_EVENTS.APP_LOCK_SETUP_COMPLETED, { mode });
+  }, []);
+
+  const noteFailedAttempt = useCallback((result: VerifyPinResult) => {
+    setRetryAt(
+      result.retryAfterMs > 0 ? Date.now() + result.retryAfterMs : null,
+    );
+    // sec-12/priv-14: вичерпаний ліміт НЕ знімає замок (раніше тут було
+    // `setState("idle")` після стирання креденшела, і 10 хибних PIN
+    // відкривали застосунок). Показуємо `lockedOut`: лишається тільки вихід.
+    if (result.lockedOut) setState("lockedOut");
   }, []);
 
   const unlock = useCallback(
@@ -234,13 +266,7 @@ export function useAppLock(): UseAppLockReturn {
         resetIdleTimer();
         return true;
       }
-      setRetryAt(
-        result.retryAfterMs > 0 ? Date.now() + result.retryAfterMs : null,
-      );
-      // sec-12/priv-14: вичерпаний ліміт НЕ знімає замок (раніше тут було
-      // `setState("idle")` після стирання креденшела, і 10 хибних PIN
-      // відкривали застосунок). Показуємо `lockedOut`: лишається тільки вихід.
-      if (result.lockedOut) setState("lockedOut");
+      noteFailedAttempt(result);
       // Відхилена без перевірки спроба (пауза / lockedOut) не є спробою
       // підбору, тож подію не шлемо: дашборди рахують лише реальні невдачі.
       if (!result.throttled) {
@@ -252,7 +278,23 @@ export function useAppLock(): UseAppLockReturn {
       }
       return false;
     },
-    [resetIdleTimer, userId],
+    [noteFailedAttempt, resetIdleTimer, userId],
+  );
+
+  // sec-41: зміна й вимкнення PIN вимагають поточний PIN. Без цього той, хто
+  // на хвилину отримав розблокований пристрій, міняв чи знімав PIN без знання
+  // старого. Спроба рахується в тому ж лічильнику, що й розблокування.
+  const verifyCurrentPin = useCallback(
+    async (pin: string): Promise<boolean> => {
+      const result = await verifyPinAttempt(pin, userId);
+      if (result.ok) {
+        setRetryAt(null);
+        return true;
+      }
+      noteFailedAttempt(result);
+      return false;
+    },
+    [noteFailedAttempt, userId],
   );
 
   // Audit F16 closures — bind the storage helpers to the resolved `userId`
@@ -263,7 +305,16 @@ export function useAppLock(): UseAppLockReturn {
     [userId],
   );
   const hasPin = useCallback(() => hasPinSet(userId), [userId]);
-  const disablePin = useCallback(() => clearPinHash(userId), [userId]);
+  const disablePin = useCallback(
+    async (currentPin: string): Promise<boolean> => {
+      if (!(await verifyCurrentPin(currentPin))) return false;
+      await clearPinHash(userId);
+      setFlag("app-lock-enabled", false);
+      setState("idle");
+      return true;
+    },
+    [userId, verifyCurrentPin],
+  );
 
   // sec-12/priv-14: єдиний шлях з `lockedOut` і дія «Забув PIN?». Креденшел
   // стираємо ЛИШЕ в межах підтвердженого виходу: якщо `logout()` скасовано
@@ -296,6 +347,9 @@ export function useAppLock(): UseAppLockReturn {
     state,
     startSetup,
     startChange,
+    startDisable,
+    cancelDisable,
+    verifyCurrentPin,
     unlock,
     finishSetup,
     lock,

@@ -292,6 +292,9 @@ function AppShell({ children }: { children: React.ReactNode }) {
         state={appLock.state}
         onUnlock={appLock.unlock}
         onSavePin={appLock.savePin}
+        onVerifyCurrentPin={appLock.verifyCurrentPin}
+        onDisablePin={appLock.disablePin}
+        onDisableCancel={appLock.cancelDisable}
         onSignOut={appLock.signOut}
         isGuest={appLock.isGuest}
         retryAt={appLock.retryAt}

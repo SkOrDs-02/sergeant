@@ -3026,7 +3026,7 @@ Script: <scratch>/agents/verify-server-static-reliability-ops/r2-probe.mjs. Resu
 
 ### `sec-41` [low] Креденшел PIN лишається після виходу, а «Змінити PIN» і вимкнення не питають поточний PIN
 
-- **Стан:** відкрито
+- **Стан:** виправлено в гілці `backlog/sec-41` (не змерджено): `logout()` стирає PIN-креденшел вийденого акаунта при будь-якому виході (`runLogoutHooks` у `logoutBeforeNavigate.ts`, чужі слоти не чіпає; тест `AuthContext.appLockWipe.test.tsx`); «Змінити PIN» спершу питає поточний PIN, а вимкнення йде через екран PIN, і `disablePin(currentPin)` стирає креденшел лише після правильного; хибна спроба йде в той самий лічильник перебору, на ліміті `lockedOut` (тести в `useAppLock.test.ts`, `AppLock.test.tsx`)
 - **Рішення власника 2026-11-21:** стирати PIN-креденшел при будь-якому виході з акаунта і вимагати поточний PIN для зміни чи вимкнення PIN.
 - **Перевірка:** підтверджено · **Зусилля:** S · **Швидкий виграш** · **Область:** web: блокування застосунку
 - **Де:** apps/web/src/core/security/lockStorage.ts:26-40,142-149; apps/web/src/core/security/useAppLock.ts:135-141; apps/web/src/core/security/AppLock.tsx:125-148; apps/web/src/core/auth/AuthContext.tsx:551-697; apps/web/src/shared/lib/storage/purgeLocalData.ts:125-141

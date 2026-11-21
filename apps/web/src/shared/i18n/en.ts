@@ -477,6 +477,7 @@ export const messagesEn: Partial<{
       setupTitle: "Set PIN",
       setupSubtitle: "Enter 4–6 digits",
       changeTitle: "Change PIN",
+      currentPinSubtitle: "Enter your current PIN",
       confirmTitle: "Confirm PIN",
       confirmSubtitle: "Enter your PIN again to confirm",
       checking: "Checking app lock…",

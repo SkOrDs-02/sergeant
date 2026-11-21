@@ -26,7 +26,7 @@ import { useSwControllerResync } from "./useSwControllerResync";
 import { logger } from "@shared/lib";
 import {
   navigateToSignIn,
-  runBeforeNavigate,
+  runLogoutHooks,
   type LogoutOptions,
 } from "./logoutBeforeNavigate";
 import { buildIdentifyTraits } from "../observability/identifyTraits";
@@ -876,10 +876,10 @@ export function AuthProvider({ children }: AuthProviderProps) {
       //      up-front makes the UI transition unconditional; everything below is
       //      cleanup that must never gate it.
       queryClient.clear();
-      // Хук викликача (стирання PIN-замка) — ДО повільних кроків teardown і
-      // тим більше до навігації: `location.assign` вивантажує документ і
+      // PIN-креденшел акаунта (sec-41) і хук викликача — ДО повільних кроків
+      // teardown і тим більше до навігації: `location.assign` вивантажує документ і
       // переривало б IndexedDB-транзакцію, запущену після `await logout()`.
-      await runBeforeNavigate(options?.beforeNavigate);
+      await runLogoutHooks(user?.id ?? null, options?.beforeNavigate);
       // Audit 03 / Decision #2 (C): wipe SW caches on logout so user B
       // never resolves a stale cache entry that belonged to user A on
       // shared devices. Fire-and-forget — ignore SW failures since the
@@ -963,7 +963,7 @@ export function AuthProvider({ children }: AuthProviderProps) {
       navigateToSignIn();
       return true;
     },
-    [askUnsyncedLoss, queryClient],
+    [askUnsyncedLoss, queryClient, user?.id],
   );
 
   // Привʼязуємо/відвʼязуємо аналітику до userId. Ref тримає попередній

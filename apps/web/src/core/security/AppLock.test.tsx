@@ -17,6 +17,9 @@ function renderLock(
     onSetupCancel: vi.fn(noop),
     onChangeCancel: vi.fn(noop),
     onSavePin: vi.fn(asyncNoop),
+    onVerifyCurrentPin: vi.fn(async () => true),
+    onDisablePin: vi.fn(async () => true),
+    onDisableCancel: vi.fn(noop),
     onSignOut: vi.fn(async () => true),
     ...overrides,
   };
@@ -319,6 +322,50 @@ describe("AppLock", () => {
     renderLock({ state: "change", onSetupCancel, onChangeCancel });
     fireEvent.keyDown(document, { key: "Escape" });
     expect(onChangeCancel).toHaveBeenCalled();
+    expect(onSetupCancel).not.toHaveBeenCalled();
+  });
+
+  // sec-41: «Змінити PIN» спершу питає поточний PIN; без нього нового не
+  // поставити.
+  it("change mode asks for the current PIN before the new one", async () => {
+    const onVerifyCurrentPin = vi.fn(async (pin: string) => pin === "1234");
+    renderLock({ state: "change", onVerifyCurrentPin });
+    expect(screen.getByText("Введи поточний PIN")).toBeInTheDocument();
+
+    "9999".split("").forEach(pressDigit);
+    fireEvent.click(screen.getByRole("button", { name: "Далі" }));
+    expect(
+      await screen.findByText("Неправильний PIN. Спробуй ще раз."),
+    ).toBeInTheDocument();
+    expect(screen.queryByText("Введи 4–6 цифр")).not.toBeInTheDocument();
+
+    "1234".split("").forEach(pressDigit);
+    fireEvent.click(screen.getByRole("button", { name: "Далі" }));
+    expect(await screen.findByText("Введи 4–6 цифр")).toBeInTheDocument();
+    expect(onVerifyCurrentPin).toHaveBeenCalledWith("9999");
+    expect(onVerifyCurrentPin).toHaveBeenCalledWith("1234");
+  });
+
+  it("disable mode passes the entered PIN to onDisablePin and shows an error on a wrong one", async () => {
+    const onDisablePin = vi.fn(async () => false);
+    renderLock({ state: "disable", onDisablePin });
+    expect(screen.getByText("Вимкнути блокування")).toBeInTheDocument();
+
+    "4321".split("").forEach(pressDigit);
+    fireEvent.click(screen.getByRole("button", { name: "Вимкнути" }));
+    await waitFor(() => expect(onDisablePin).toHaveBeenCalledWith("4321"));
+    expect(
+      await screen.findByText("Неправильний PIN. Спробуй ще раз."),
+    ).toBeInTheDocument();
+  });
+
+  it("cancel and Escape in disable mode route through onDisableCancel", () => {
+    const onDisableCancel = vi.fn(noop);
+    const onSetupCancel = vi.fn(noop);
+    renderLock({ state: "disable", onDisableCancel, onSetupCancel });
+    fireEvent.click(screen.getByRole("button", { name: "Скасувати" }));
+    fireEvent.keyDown(document, { key: "Escape" });
+    expect(onDisableCancel).toHaveBeenCalledTimes(2);
     expect(onSetupCancel).not.toHaveBeenCalled();
   });
 });

@@ -29,6 +29,9 @@ function Shell() {
         state={appLock.state}
         onUnlock={appLock.unlock}
         onSavePin={appLock.savePin}
+        onVerifyCurrentPin={appLock.verifyCurrentPin}
+        onDisablePin={appLock.disablePin}
+        onDisableCancel={appLock.cancelDisable}
         onSetupDone={appLock.finishSetup}
         onSetupCancel={appLock.finishSetup}
         onChangeCancel={appLock.finishSetup}

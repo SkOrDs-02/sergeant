@@ -24,6 +24,8 @@ export const privacyMessages = {
     setupTitle: "Встановити PIN",
     setupSubtitle: "Введи 4–6 цифр",
     changeTitle: "Змінити PIN",
+    // sec-41: зміна й вимкнення PIN спершу питають поточний.
+    currentPinSubtitle: "Введи поточний PIN",
     confirmTitle: "Підтвердь PIN",
     confirmSubtitle: "Введи PIN ще раз для підтвердження",
     checking: "Перевіряю блокування…",
