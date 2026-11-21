@@ -59,6 +59,8 @@ vi.mock("./../auth.js", () => ({
 
 vi.mock("./../modules/ai-memory/ingestQueue.js", () => ({
   enqueueMemoryIngest: vi.fn().mockResolvedValue(undefined),
+  // B12: «Очистити памʼять» знімає задачі ingest користувача з черги.
+  purgeQueuedIngestForUser: vi.fn().mockResolvedValue(0),
   startMemoryIngestWorker: vi.fn(() => null),
   __resetMemoryIngestQueueForTesting: vi.fn(),
 }));
