@@ -235,4 +235,32 @@ describe("ResetPasswordPage — submit flow", () => {
     expect(toastSuccessMock).not.toHaveBeenCalled();
     expect(navigateMock).not.toHaveBeenCalled();
   });
+
+  it("offers a way back to sign-in after INVALID_TOKEN (ux-49)", async () => {
+    resetPasswordMock.mockResolvedValue({
+      error: { code: "INVALID_TOKEN", message: "Invalid token" },
+    });
+    renderAt("/reset-password?token=bogus");
+
+    expect(screen.queryByRole("button", { name: "На сторінку входу" })).toBe(
+      null,
+    );
+
+    fireEvent.change(screen.getByLabelText("Новий пароль"), {
+      target: { value: "valid-password-1" },
+    });
+    fireEvent.change(screen.getByLabelText("Підтвердження"), {
+      target: { value: "valid-password-1" },
+    });
+    fireEvent.click(
+      screen.getByRole("button", { name: "Встановити новий пароль" }),
+    );
+
+    const back = await screen.findByRole("button", {
+      name: "На сторінку входу",
+    });
+    fireEvent.click(back);
+    expect(navigateMock).toHaveBeenCalledWith("/sign-in", { replace: true });
+    expect(resetPasswordMock).toHaveBeenCalledTimes(1);
+  });
 });

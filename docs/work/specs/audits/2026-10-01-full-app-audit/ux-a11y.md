@@ -3098,7 +3098,7 @@ v9.mjs: `label violations: [{impact:critical,n:2,...value="1"..., value="25"}]`;
 
 ### `ux-49` [low] Відновлення пароля: Enter у панелі «Забули пароль?» нічого не відправляє, а після невалідного чи протермінованого токена немає жодної дії
 
-- **Стан:** відкрито
+- **Стан:** виправлено в гілці `backlog/ux-49` (панель «Забули пароль?» стала окремою `<form>` з кнопкою type=submit, тож Enter відправляє лист; email перевіряється на формат до запиту; після помилки сервера на сторінці нового пароля з'являється кнопка «На сторінку входу»)
 - **Перевірка:** підтверджено · **Зусилля:** S · **Швидкий виграш** · **Область:** web: відновлення пароля
 - **Де:** apps/web/src/core/auth/ForgotPasswordPanel.tsx; apps/web/src/core/auth/useForgotPassword.ts; apps/web/src/core/auth/ResetPasswordPage.tsx; apps/web/src/core/auth/AuthPage.tsx:151-153
 - **Першопричина:** ForgotPasswordPanel рендериться поза &lt;form&gt;, кнопка має type=button, email не валідується. ResetPasswordPage для INVALID_TOKEN показує лише текст, а кнопка «На сторінку входу» є тільки в гілці без токена.

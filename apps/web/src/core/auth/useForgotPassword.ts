@@ -1,5 +1,11 @@
 import { useEffect, useRef, useState } from "react";
+import { z } from "zod";
+import { messages } from "@shared/i18n/uk";
 import { useAuth } from "./AuthContext";
+
+// Той самий формат, що й у `loginSchema` (`authSchemas.ts`): без нього
+// «not-an-email» летів на сервер і панель мовчки показувала «лист надіслано».
+const forgotEmailSchema = z.string().email();
 
 type ForgotState = "idle" | "sending" | "sent";
 
@@ -48,6 +54,11 @@ export function useForgotPassword(): UseForgotPasswordResult {
       setAuthError("Введи email, на який відправити лист.");
       return;
     }
+    if (!forgotEmailSchema.safeParse(target).success) {
+      setAuthError(messages.validation.emailInvalid);
+      return;
+    }
+    setAuthError(null);
     setForgotState("sending");
     const ok = await requestPasswordReset(target);
     setForgotState(ok ? "sent" : "idle");

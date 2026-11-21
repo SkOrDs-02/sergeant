@@ -73,6 +73,25 @@ describe("ForgotPasswordPanel", () => {
     expect(submit).toHaveBeenCalledTimes(1);
   });
 
+  it("submits on Enter in the email field (ux-49: панель має власну <form>)", () => {
+    const submit = vi.fn().mockResolvedValue(undefined);
+    const state = makeState({ submit, forgotEmail: "user@example.com" });
+    render(<ForgotPasswordPanel state={state} authError={null} />);
+
+    const email = screen.getByLabelText("Email для скидання");
+    const form = email.closest("form");
+    expect(form).not.toBeNull();
+    expect(
+      screen
+        .getByRole("button", { name: /Надіслати лист/ })
+        .getAttribute("type"),
+    ).toBe("submit");
+    // jsdom не робить implicit submission на Enter, тож шлемо submit форми,
+    // який браузер робить на Enter у єдиному полі.
+    fireEvent.submit(form!);
+    expect(submit).toHaveBeenCalledTimes(1);
+  });
+
   it("shows loading state and disables email while sending", () => {
     const state = makeState({ forgotState: "sending" });
     render(<ForgotPasswordPanel state={state} authError={null} />);
