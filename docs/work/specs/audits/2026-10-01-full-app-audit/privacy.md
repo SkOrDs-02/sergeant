@@ -1460,7 +1460,7 @@ node <scratch>/agents/verify-server-static-privacy-logging/v2/iph.mjs → `127.0
 
 ### `priv-24` [low] Повний tool_result (лише маскований, а за згоди й з даними про здоров'я) кладеться в Sentry-breadcrumb без скрабінгу
 
-- **Стан:** відкрито
+- **Стан:** закрито 2026-11-21 в гілці `backlog/priv-24` (breadcrumb `chat.tool_result` несе лише `original_length` і 12-символьний `sha256_prefix` замість `data.full`; `applyBeforeBreadcrumb` додатково викидає `data.full` для цієї категорії; зовнішнього сховища з TTL для blob-у не заводили)
 - **Перевірка:** підтверджено · **Зусилля:** S · **Швидкий виграш** · **Область:** server: AI-шар / Sentry
 - **Де:** apps/server/src/modules/chat/toolResultTruncation.ts:140-158; apps/server/src/sentry.ts:349-369
 - **Першопричина:** truncateToolResults додає breadcrumb з category 'chat.tool_result', у якому data.full — оригінал до 8000 символів. applyBeforeBreadcrumb скрабить data лише для category 'http', а ключовий scrubPII поля full не знає.

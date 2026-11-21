@@ -104,7 +104,7 @@ describe("truncateToolResults — long content (> threshold)", () => {
     expect(summary.length).toBeLessThan(content.length / 2);
   });
 
-  it("шле повний blob у Sentry breadcrumb з category=chat.tool_result", () => {
+  it("шле в Sentry breadcrumb лише метадані, без самого blob-у (priv-24)", () => {
     const content = bigContent();
     const addBreadcrumb = vi.fn();
     truncateToolResults([{ tool_use_id: "big", content }], {
@@ -120,7 +120,9 @@ describe("truncateToolResults — long content (> threshold)", () => {
     expect(bc.data.tool_use_id).toBe("big");
     expect(bc.data.original_length).toBe(content.length);
     expect(bc.data.threshold).toBe(TOOL_RESULT_TRUNCATE_THRESHOLD);
-    expect(bc.data.full).toBe(content);
+    expect(bc.data).not.toHaveProperty("full");
+    expect(bc.data.sha256_prefix).toMatch(/^[0-9a-f]{12}$/);
+    expect(JSON.stringify(bc)).not.toContain(content.slice(0, 200));
   });
 
   it("інкрементить метрику з reason=size_threshold за кожен truncate", () => {

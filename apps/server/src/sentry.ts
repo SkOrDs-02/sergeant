@@ -420,6 +420,11 @@ export function applyBeforeBreadcrumb(
     redactUrlAttributes(breadcrumb.data);
     scrubPII(breadcrumb.data);
   }
+  // priv-24: повний tool_result (фінанси, здоровʼя) не має їхати в Sentry,
+  // хоч би яке місце коду поклало його в breadcrumb усічення.
+  if (breadcrumb?.category === "chat.tool_result" && breadcrumb.data) {
+    delete breadcrumb.data["full"];
+  }
   if (typeof breadcrumb?.message === "string") {
     breadcrumb.message = scrubPIIString(breadcrumb.message);
   }

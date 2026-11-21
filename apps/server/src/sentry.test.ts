@@ -595,6 +595,19 @@ describe("applyBeforeBreadcrumb (priv-07)", () => {
   });
 });
 
+describe("applyBeforeBreadcrumb (priv-24)", () => {
+  it("викидає data.full з breadcrumb-а chat.tool_result", () => {
+    const bc = {
+      category: "chat.tool_result",
+      data: { tool_use_id: "t1", original_length: 5000, full: "HEALTHBLOB" },
+    } as unknown as Breadcrumb;
+    const out = applyBeforeBreadcrumb(bc);
+    expect(out?.data).not.toHaveProperty("full");
+    expect(out?.data?.["original_length"]).toBe(5000);
+    expect(JSON.stringify(out)).not.toContain("HEALTHBLOB");
+  });
+});
+
 describe("SENTRY_DENY_URLS", () => {
   it("блокує health-probe URL-и (uptime monitor 502 noise)", () => {
     // String match is substring per Sentry SDK contract.

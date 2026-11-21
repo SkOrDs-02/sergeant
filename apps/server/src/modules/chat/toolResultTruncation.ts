@@ -21,9 +21,13 @@
  *
  * Рішення (PR-12.E): якщо `content` довший за поріг
  * `TOOL_RESULT_TRUNCATE_THRESHOLD`, замінюємо його на короткий summary
- * (`head` + `tail` + size), а ПОВНИЙ blob кладемо в Sentry-breadcrumb
- * категорії `chat.tool_result`, де він залишається для debug-у, але не
- * вилазить у HTTP-payload до Anthropic.
+ * (`head` + `tail` + size) і пишемо Sentry-breadcrumb категорії
+ * `chat.tool_result` лише з метаданими: довжина і короткий sha256-префікс.
+ *
+ * AI-DANGER: сам blob у breadcrumb НЕ кладемо (priv-24). Там фінансові деталі
+ * і, за згоди, дані про здоровʼя (ст. 9), а Sentry задекларований лише для
+ * помилок і продуктивності. Хеш дає звірити два прогони без вмісту;
+ * `applyBeforeBreadcrumb` у `sentry.ts` додатково викидає `data.full`.
  *
  * Клієнтська схема `ToolResult.content` уже капнута на 8 000 chars
  * (`packages/shared/src/schemas/api.ts`). Цей helper працює всередині
@@ -31,6 +35,8 @@
  * захисту, а truncation — другою (для випадків, коли клієнт навмисно
  * шле великий blob, бо «це ж дозволений ліміт»).
  */
+import { createHash } from "node:crypto";
+
 import { Sentry } from "../../sentry.js";
 import { chatToolResultTruncatedTotal } from "../../obs/metrics.js";
 // `NormalizedToolResult` живе у `./toolOutputWrapping` (канонічний shape
@@ -45,6 +51,8 @@ export const TOOL_RESULT_TRUNCATE_THRESHOLD = 2000;
 const HEAD_BYTES = 600;
 /** Скільки лишаємо з кінця при truncate-і. */
 const TAIL_BYTES = 400;
+/** Скільки hex-символів sha256 кладемо в breadcrumb (48 біт, для звірки). */
+const SHA256_PREFIX_CHARS = 12;
 
 export interface RawToolResult {
   tool_use_id: string;
@@ -152,7 +160,10 @@ export function truncateToolResults(
         summary_length: summarized.length,
         threshold,
         ...(opts.requestId ? { request_id: opts.requestId } : {}),
-        full: original,
+        sha256_prefix: createHash("sha256")
+          .update(original)
+          .digest("hex")
+          .slice(0, SHA256_PREFIX_CHARS),
       },
     });
     recordMetric({ reason: "size_threshold" });
