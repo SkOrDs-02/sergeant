@@ -248,7 +248,11 @@ describe("ensureSchema", () => {
       return "CREATE TABLE demo(id int);";
     });
     const client = {
-      query: vi.fn(async () => ({ rows: [], rowCount: 0 })),
+      query: vi.fn(async (sql: string) =>
+        sql.includes("pg_try_advisory_lock")
+          ? { rows: [{ locked: true }], rowCount: 1 }
+          : { rows: [], rowCount: 0 },
+      ),
       release: vi.fn(),
     };
     latestPool().__connectMock.mockResolvedValue(client);
@@ -258,7 +262,7 @@ describe("ensureSchema", () => {
     const sqlCalls = (client.query.mock.calls as unknown[][]).map((call) =>
       String(call[0]),
     );
-    expect(sqlCalls[0]).toContain("pg_advisory_lock");
+    expect(sqlCalls[0]).toContain("pg_try_advisory_lock");
     expect(sqlCalls.some((sql) => sql.includes("schema_migrations"))).toBe(
       true,
     );
@@ -269,6 +273,41 @@ describe("ensureSchema", () => {
       true,
     );
     expect(sqlCalls).not.toContain("002_rollback.down.sql");
+    expect(client.release).toHaveBeenCalledOnce();
+  });
+
+  // rel-62: блокуючий `pg_advisory_lock` чекав під `lock_timeout` пулу і
+  // падав з невиразним 55P03. Тепер зайнятий lock — це власний дедлайн і
+  // помилка `MIGRATION_LOCK_TIMEOUT`, а не блокуюче очікування.
+  it("fails with MIGRATION_LOCK_TIMEOUT when another session holds the lock", async () => {
+    const db = await loadDb(
+      {
+        DATABASE_URL: "postgres://app:app@db.internal:5432/sergeant",
+        MIGRATE_LOCK_WAIT_MS: "0",
+      },
+      { mockFs: true },
+    );
+    fsReaddir!.mockResolvedValue(["001_init.sql"]);
+    fsReadFile!.mockResolvedValue("CREATE TABLE demo(id int);");
+    const client = {
+      query: vi.fn(async (sql: string) =>
+        sql.includes("pg_try_advisory_lock")
+          ? { rows: [{ locked: false }], rowCount: 1 }
+          : { rows: [], rowCount: 0 },
+      ),
+      release: vi.fn(),
+    };
+    latestPool().__connectMock.mockResolvedValue(client);
+
+    await expect(db.ensureSchema()).rejects.toMatchObject({
+      code: "MIGRATION_LOCK_TIMEOUT",
+    });
+
+    const sqlCalls = (client.query.mock.calls as unknown[][]).map((call) =>
+      String(call[0]),
+    );
+    expect(sqlCalls.some((sql) => /pg_advisory_lock\(/.test(sql))).toBe(false);
+    expect(sqlCalls).not.toContain("CREATE TABLE demo(id int);");
     expect(client.release).toHaveBeenCalledOnce();
   });
 });

@@ -1,7 +1,7 @@
 # Аудит 2026-10-01 · Надійність, продуктивність, експлуатація
 
 > **Status:** Active. 64 кластери (91 знахідка) за першопричиною. Загальний план, метод і обмеження — у [README](./README.md).
-> **Last touched:** 2026-11-21 by @claude (рішення власника по кластерах, раунди 5–10); раніше перевірено 2026-10-02.
+> **Last touched:** 2026-11-21 by @claude (rel-62: advisory-lock раннера з дедлайном; раніше того ж дня рішення власника по кластерах, раунди 5–10); раніше перевірено 2026-10-02.
 > **Next review:** 2027-01-21
 > **Spec-lint:** skip. Реєстр знахідок аудиту, не специфікація реалізації.
 
@@ -3709,7 +3709,7 @@ v2-pantry-memory.mjs: 5170 рядків 'SQL TRACE' за 4 memory-заванта
 
 ### `rel-62` [low] Раннер міграцій не підтримує онлайн-міграцій: усе в одній транзакції, без CONCURRENTLY і NOT VALID, а таймаути конфліктують із healthcheck
 
-- **Стан:** відкрито
+- **Стан:** частково виправлено в гілці backlog/rel-62 (advisory-lock раннера береться опитуванням `pg_try_advisory_lock` з дедлайном `MIGRATE_LOCK_WAIT_MS`, 120 с, тож `lock_timeout` на нього не діє, а по дедлайну раннер пише `migration_lock_timeout` і виходить з кодом 1; онлайн-режим — `-- migrate:no-transaction`, лінт на `CREATE INDEX` без `CONCURRENTLY`, CHECK через `NOT VALID` — відкладено за рішенням власника до першої міграції на великій таблиці)
 - **Рішення власника 2026-11-21:** зараз лише `pg_try_advisory_lock` з дедлайном; онлайн-режим (`migrate:no-transaction`, лінт на `CREATE INDEX` без `CONCURRENTLY`) перед першою міграцією на великій таблиці.
 - **Перевірка:** підтверджено · **Зусилля:** L · **Область:** server: міграції / деплой
 - **Де:** apps/server/src/db.ts:73,399-402,463-475; apps/server/migrate.mjs:85-87; Dockerfile.api:321; apps/server/src/migrations/117_fizruk_workout_sets_user_idx.sql:32-35; apps/server/src/migrations/142_cascade_user_id_indexes.sql; apps/server/src/migrations/149_ai_usage_daily_week_buckets.sql:1-20; apps/server/src/migrations/150_ai_usage_daily_preset_buckets.sql; apps/server/src/migrations/144_ai_memories_prune_dead_sources.sql:6-12

@@ -15,6 +15,7 @@ import {
 } from "./obs/metrics.js";
 import { elapsedMs, sleep } from "./lib/timing.js";
 import { installInt8Parser } from "./lib/pgInt8.js";
+import { acquireMigrationLock } from "./migrateLock.js";
 import {
   runWithBypassContext,
   runWithSubjectContext,
@@ -361,9 +362,10 @@ const MIGRATIONS_ADVISORY_LOCK_KEY = 7317483629462015n;
  * Tracked in schema_migrations. schema_migrations itself is the only table
  * created inline — everything else is defined in migration files.
  *
- * `pg_advisory_lock` серіалізує паралельні виклики: другий claim буде
- * спати доти, доки перший не відпустить lock (у `ensureSchema.finally`).
- * Після розблокування другий увійде, побачить уже застосовані файли у
+ * Advisory-lock серіалізує паралельні виклики: другий раннер опитує
+ * `pg_try_advisory_lock` до `MIGRATE_LOCK_WAIT_MS`, доки перший не відпустить
+ * lock (у `ensureSchema.finally`), а по дедлайну падає з
+ * `MIGRATION_LOCK_TIMEOUT`. Після розблокування другий увійде, побачить уже застосовані файли у
  * `schema_migrations` і тихо no-op-не.
  */
 /** Каталог із SQL-міграціями, що поїхали в цьому образі. */
@@ -397,9 +399,12 @@ export async function listShippedMigrations(): Promise<string[]> {
 }
 
 async function runPendingSqlMigrations(client: PoolClient): Promise<void> {
-  await client.query("SELECT pg_advisory_lock($1)", [
-    MIGRATIONS_ADVISORY_LOCK_KEY.toString(),
-  ]);
+  // `pg_try_advisory_lock` з власним дедлайном, а не блокуючий
+  // `pg_advisory_lock`: на очікування останнього діяв би `lock_timeout`
+  // пулу (rel-62). Деталі — `migrateLock.ts`.
+  await acquireMigrationLock(client, MIGRATIONS_ADVISORY_LOCK_KEY, {
+    waitMs: env.MIGRATE_LOCK_WAIT_MS,
+  });
 
   await client.query(`
     CREATE TABLE IF NOT EXISTS schema_migrations (
@@ -481,8 +486,8 @@ export async function ensureSchema(): Promise<void> {
   try {
     await runPendingSqlMigrations(client);
   } finally {
-    // Best-effort відпускання advisory-lock. Якщо pg_advisory_lock ніколи
-    // не викликався (наприклад, connect впав), unlock поверне false і не
+    // Best-effort відпускання advisory-lock. Якщо lock не взято (connect
+    // впав, вичерпано MIGRATE_LOCK_WAIT_MS), unlock поверне false і не
     // кине. Release клієнта — окремо у finally, щоб lock не "зависнув"
     // поки pg не задетектить дропнуту сесію.
     try {
