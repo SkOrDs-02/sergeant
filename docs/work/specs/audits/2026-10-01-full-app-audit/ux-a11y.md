@@ -4868,7 +4868,7 @@ apps/web/src/shared/i18n/uk.crossModuleLink.ts:99-100: коментар `«14 д
 
 ### `ux-83` [info] Невідомі /api/\* маршрути повертають HTML-сторінку Express «Cannot GET …» замість JSON-помилки
 
-- **Стан:** відкрито
+- **Стан:** виправлено 2026-11-21: після `registerRoutes` і до SPA-fallback стоїть `app.use("/api", …)` з `NotFoundError`, тож невідомий `/api/*` і `/api/v1/*` віддає JSON-404 `{error, message, code: "NOT_FOUND", requestId}` через `errorHandler`; тест у `routes/apiV1.test.ts`
 - **Перевірка:** підтверджено · **Зусилля:** S · **Швидкий виграш** · **Область:** server: маршрути /api
 - **Де:** apps/server/src/app.ts:169-190
 - **Першопричина:** У app.ts після registerRoutes немає JSON-обробника 404 для префікса /api, тож спрацьовує стандартний HTML-обробник Express.
