@@ -216,3 +216,45 @@ describe("свіжа сесія підтверджена БД → чутливі
     expect(vi.mocked(requestAccountDeletion)).toHaveBeenCalledTimes(1);
   });
 });
+
+// Аудит 2026-10-01 sec-26: `/api/privat/connect` гейтився лише свіжою
+// сесією, а `requireVerifiedEmail()` стояв тільки на Mono. Свіжа сесія з
+// непідтвердженим email тепер дістає 403 на обох connect-ах ще до хендлера
+// (ні запиту в ПриватБанк, ні запису в БД); disconnect лишається відкритим
+// (anti-lock-in).
+describe("свіжа сесія, email не підтверджено → 403 на підʼєднанні банку", () => {
+  const UNVERIFIED_USER = { ...CACHED_USER, emailVerified: false };
+
+  it.each([
+    ["post", "/api/privat/connect"],
+    ["post", "/api/mono/connect"],
+  ] as const)(
+    "%s %s → 403 EMAIL_VERIFICATION_REQUIRED, хендлер не виконується",
+    async (method, path) => {
+      getFreshSessionUserMock.mockResolvedValue(UNVERIFIED_USER);
+      const app = createApp();
+      const res = await request(app)
+        [method](path)
+        .set("X-Requested-With", "XMLHttpRequest")
+        .set("Authorization", "Bearer x")
+        .send({ merchantId: "m-1", token: "t-1" });
+
+      expect(res.status).toBe(403);
+      expect(res.body).toMatchObject({ code: "EMAIL_VERIFICATION_REQUIRED" });
+      expect(queryMock).not.toHaveBeenCalled();
+      expect(mockPool.connect).not.toHaveBeenCalled();
+    },
+  );
+
+  it("контроль: POST /api/privat/disconnect без підтвердженого email не блокується", async () => {
+    getFreshSessionUserMock.mockResolvedValue(UNVERIFIED_USER);
+    const app = createApp();
+    const res = await request(app)
+      .post("/api/privat/disconnect")
+      .set("X-Requested-With", "XMLHttpRequest")
+      .set("Authorization", "Bearer x")
+      .send({});
+
+    expect(res.status).not.toBe(403);
+  });
+});

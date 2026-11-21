@@ -2098,7 +2098,7 @@ verify-server-static-auth-session/v1.mjs + v1.log на окремому pool-к�
 
 ### `sec-26` [low] /api/privat/connect не вимагає підтвердженого email, хоча для Mono той самий вектор закрито
 
-- **Стан:** відкрито
+- **Стан:** виправлено в гілці `backlog/sec-26` (не змерджено): `requireVerifiedEmail()` стоїть після `requireFreshSession()` на `/api/privat/connect`, як на Mono; непідтверджений email дає 403 до виклику ПриватБанку (тест у `fresh-session.route.test.ts`); reverse trial для непідтверджених не чіпали, це окреме рішення власника
 - **Перевірка:** підтверджено · **Зусилля:** S · **Швидкий виграш** · **Область:** server: банки
 - **Де:** apps/server/src/routes/banks.ts:43-52; apps/server/src/routes/mono-webhook.ts:64-93; apps/server/src/auth.ts:500-510
 - **Першопричина:** requireVerifiedEmail() стоїть лише на /api/mono/connect; /api/privat/connect і privatConnection.ts перевірки emailVerified не мають, а reverse trial Pro видається кожній реєстрації, навіть непідтвердженій.
