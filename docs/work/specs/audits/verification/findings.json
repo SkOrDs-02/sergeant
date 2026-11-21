@@ -4320,7 +4320,7 @@
       "severity": "major",
       "source": "docs/work/specs/audits/verification/runs/full-2026-11-20/handoff.md",
       "sourceAnchor": "DATA-durability-live",
-      "status": "fixed-pending-verification",
+      "status": "verified",
       "history": [
         {
           "at": "2026-11-20",
@@ -4336,8 +4336,17 @@
           "at": "2026-11-20",
           "event": "retested",
           "note": "Прод 428099e6f (містить #1715): tests/verification-live/prod-anon-early-write.spec.ts — 2/2 pass. Звичка, створена гостем при затриманих на 25 с чанках dualWriteBoot-* і заблокованому SW, після reload на місці (до фіксу той самий спек падав). Статус verified не ставлю: формального прогону з attempt немає."
+        },
+        {
+          "at": "2026-11-21",
+          "event": "retested",
+          "note": "Формальний live-прогін prod-2026-11-21 (прод a4bfb94fa): prod-anon-early-write 2/2 pass, доказ runs/prod-2026-11-21/early-write.json. Статус → verified."
         }
-      ]
+      ],
+      "verification": {
+        "runId": "prod-2026-11-21",
+        "attemptId": "prod1121-DATA-durability-live"
+      }
     },
     {
       "id": "FULL-20261120-DATA-3",
