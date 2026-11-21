@@ -1,6 +1,6 @@
 # Довідник Prometheus-метрик
 
-> **Last touched:** 2026-11-19 by @claude (push: +`finyk_push_evaluations_total`, push Фініка про ліміт і платіж, § 9); 2026-11-19 by @claude (sync: +2 apply-reason `invalid_done`, `invalid_set_type`, міграція 176); 2026-11-19 by @claude (sync: +`sync_op_log_applied_deleted_total`, +`sync_op_log_rows`, +1 engine-reason `stale_increment`, ADR-0105 §2); 2026-11-19 by @claude (AI: +`chat_synthesis_empty_retry_total`, страховка-перезапит порожнього синтезу, § 6a); 2026-11-19 by @claude (AI: `openrouter_no_endpoints_total` +`reason=ignored`); 2026-11-19 by @claude (AI: +`openrouter_no_endpoints_total` і алерт `OpenRouterNoEndpoints`); 2026-10-23 by @claude (auth: +`auth_password_check_failures_total`, sec-10); 2026-10-20 by @claude (sync: +1 apply-reason `invalid_prefs_patch`, data-04); 2026-10-03 by @claude (sync: +1 engine-reason `invalid_text_encoding`, §4; раніше: джерело істини → реєстр `obs/metrics/`; alert-routing без n8n; зняті хардкоди лічильників). **Next review:** 2026-12-16.
+> **Last touched:** 2026-11-21 by @claude (Сільпо: +`silpo_receipts_skipped_total`, rel-32, § 8); 2026-11-19 by @claude (push: +`finyk_push_evaluations_total`, push Фініка про ліміт і платіж, § 9); 2026-11-19 by @claude (sync: +2 apply-reason `invalid_done`, `invalid_set_type`, міграція 176); 2026-11-19 by @claude (sync: +`sync_op_log_applied_deleted_total`, +`sync_op_log_rows`, +1 engine-reason `stale_increment`, ADR-0105 §2); 2026-11-19 by @claude (AI: +`chat_synthesis_empty_retry_total`, страховка-перезапит порожнього синтезу, § 6a); 2026-11-19 by @claude (AI: `openrouter_no_endpoints_total` +`reason=ignored`); 2026-11-19 by @claude (AI: +`openrouter_no_endpoints_total` і алерт `OpenRouterNoEndpoints`); 2026-10-23 by @claude (auth: +`auth_password_check_failures_total`, sec-10); 2026-10-20 by @claude (sync: +1 apply-reason `invalid_prefs_patch`, data-04); 2026-10-03 by @claude (sync: +1 engine-reason `invalid_text_encoding`, §4; раніше: джерело істини → реєстр `obs/metrics/`; alert-routing без n8n; зняті хардкоди лічильників). **Next review:** 2026-12-16.
 > **Status:** Active — **каталог неповний**, див. врізку одразу нижче
 
 > **⚠️ Каталог відстав від коду — і відстає далі.**
@@ -464,6 +464,16 @@ sum by (upstream) (rate(external_http_requests_total{outcome=~"error|timeout"}[5
 ```
 
 **SLO/alert**: [SLO.md §6](./SLO.md#6-external-http-per-upstream-slo-950-) · `ExternalHttpErrorBudgetBurnSlow`.
+
+| Metric                         | Type    | Labels    | Emitter                                                               |
+| ------------------------------ | ------- | --------- | --------------------------------------------------------------------- |
+| `silpo_receipts_skipped_total` | Counter | `channel` | [obs/metrics/silpo.ts](../../../apps/server/src/obs/metrics/silpo.ts) |
+
+Чеки Сільпо, які синк пропустив, бо їхній запис у Postgres упав (аудит 2026-10-01, rel-32): синк не падає, решта чеків пишеться. `channel`: `offline` · `online`. **Кардинальність**: **2**. Ріст без спаду означає чек, що ламається стабільно; SQLSTATE у лозі `silpo_receipt_upsert_skipped`.
+
+```promql
+sum by (channel) (increase(silpo_receipts_skipped_total[1h]))
+```
 
 ---
 

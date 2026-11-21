@@ -17,6 +17,7 @@
 import type { PoolClient } from "pg";
 import { pool } from "../../db.js";
 import { logger } from "../../obs/logger.js";
+import { silpoReceiptsSkippedTotal } from "../../obs/metrics/silpo.js";
 import { loadReceiptsWipedAtMs } from "./receiptsWipe.js";
 import type { QueryFn } from "./tokenStore.js";
 
@@ -80,6 +81,43 @@ export async function defaultWithTransaction<T>(
   }
 }
 
+/** Одинокий сурогат UTF-16 (половина пари без другої половини). */
+const LONE_SURROGATE_RE =
+  /[\uD800-\uDBFF](?![\uDC00-\uDFFF])|(?<![\uD800-\uDBFF])[\uDC00-\uDFFF]/g;
+
+/**
+ * Готує значення до запису в Postgres, рекурсивно по рядках і ключах:
+ * прибирає U+0000 і міняє одинокі сурогати на U+FFFD.
+ *
+ * Postgres не приймає NUL ні в TEXT (`invalid byte sequence`), ні в JSONB
+ * (`unsupported Unicode escape sequence` на `\u0000`), а JSONB ще й
+ * одинокий сурогат, який `JSON.stringify` пише як `\ud800`. Сільпо віддає
+ * назви товарів і сирий order як є, тож один такий символ у будь-якому полі
+ * валив запис чека (аудит 2026-10-01, rel-32). Чистимо саме значення, а не
+ * готовий JSON-рядок: заміна в тексті JSON зламала б екранований зворотний
+ * слеш перед літеральним `u0000`.
+ */
+export function sanitizeForPg<T>(value: T): T {
+  if (typeof value === "string") {
+    return value
+      .replaceAll("\u0000", "")
+      .replace(LONE_SURROGATE_RE, "\uFFFD") as T;
+  }
+  if (Array.isArray(value)) return value.map((v) => sanitizeForPg(v)) as T;
+  if (
+    value !== null &&
+    typeof value === "object" &&
+    [Object.prototype, null].includes(Object.getPrototypeOf(value))
+  ) {
+    const out: Record<string, unknown> = {};
+    for (const [k, v] of Object.entries(value)) {
+      out[sanitizeForPg(k)] = sanitizeForPg(v);
+    }
+    return out as T;
+  }
+  return value;
+}
+
 /**
  * Inserts a receipt (+ its items). Both statements run inside ONE
  * transaction: before this fix they were independent, so a failed items
@@ -108,9 +146,10 @@ export async function defaultWithTransaction<T>(
 export async function upsertReceipt(
   userId: string,
   channel: "online" | "offline",
-  receipt: ParsedReceipt,
+  rawReceipt: ParsedReceipt,
   withTransaction: SilpoTransactionRunner,
 ): Promise<{ inserted: boolean; itemsInserted: number }> {
+  const receipt = sanitizeForPg(rawReceipt);
   return withTransaction(async (queryFn) => {
     // Маркер wipe перечитуємо ТУТ, у транзакції запису: синк, що почався до
     // `POST /api/silpo/wipe`, читав маркер раз на старті і дописував чеки
@@ -192,4 +231,44 @@ export async function upsertReceipt(
     }
     return { inserted, itemsInserted: receipt.items.length };
   });
+}
+
+/**
+ * Пише чеки одного каналу по одному, і збій запису ОДНОГО чека не валить
+ * решту синку: чек пропускається з логом і метрикою.
+ *
+ * До цього цикл у `pullAndSyncReceipts` не мав try/catch, і будь-яка
+ * помилка БД на одному чеку виходила з синку як 500: наступні чеки не
+ * писались, матчер не біг, а полер щогодини повторював той самий збій
+ * (аудит 2026-10-01, rel-32). Кожен чек — окрема транзакція, тож пропуск
+ * не лишає напівзаписаних рядків, а наступний синк спробує чек знову.
+ *
+ * У лог іде лише SQLSTATE і клас помилки: текст і `detail` Postgres можуть
+ * нести значення полів покупки (Hard Rule #21).
+ */
+export async function upsertReceiptsIsolated(
+  userId: string,
+  channel: "online" | "offline",
+  receipts: readonly ParsedReceipt[],
+  withTransaction: SilpoTransactionRunner,
+): Promise<{ receiptsInserted: number; itemsInserted: number }> {
+  let receiptsInserted = 0;
+  let itemsInserted = 0;
+  for (const receipt of receipts) {
+    try {
+      const r = await upsertReceipt(userId, channel, receipt, withTransaction);
+      if (r.inserted) receiptsInserted++;
+      itemsInserted += r.itemsInserted;
+    } catch (err) {
+      silpoReceiptsSkippedTotal.inc({ channel });
+      const code = (err as { code?: unknown } | null)?.code;
+      logger.warn({
+        msg: "silpo_receipt_upsert_skipped",
+        channel,
+        pgCode: typeof code === "string" ? code : null,
+        errName: err instanceof Error ? err.name : typeof err,
+      });
+    }
+  }
+  return { receiptsInserted, itemsInserted };
 }

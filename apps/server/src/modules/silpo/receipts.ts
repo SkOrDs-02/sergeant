@@ -28,6 +28,7 @@ import {
 import {
   defaultWithTransaction,
   upsertReceipt,
+  upsertReceiptsIsolated,
   type ParsedItem,
   type ParsedReceipt,
   type SilpoTransactionRunner,
@@ -715,18 +716,23 @@ export async function pullAndSyncReceipts(
     wipedAtMs,
   );
 
-  let receiptsInserted = 0;
-  let itemsInserted = 0;
-  for (const receipt of offlineParsed) {
-    const r = await upsertReceipt(userId, "offline", receipt, withTransaction);
-    if (r.inserted) receiptsInserted++;
-    itemsInserted += r.itemsInserted;
-  }
-  for (const receipt of onlineParsed) {
-    const r = await upsertReceipt(userId, "online", receipt, withTransaction);
-    if (r.inserted) receiptsInserted++;
-    itemsInserted += r.itemsInserted;
-  }
+  // Збій запису одного чека не валить синк: чек пропускається з логом і
+  // метрикою, решта пишеться, матчер біжить (аудит 2026-10-01, rel-32).
+  const offlineRes = await upsertReceiptsIsolated(
+    userId,
+    "offline",
+    offlineParsed,
+    withTransaction,
+  );
+  const onlineRes = await upsertReceiptsIsolated(
+    userId,
+    "online",
+    onlineParsed,
+    withTransaction,
+  );
+  const receiptsInserted =
+    offlineRes.receiptsInserted + onlineRes.receiptsInserted;
+  const itemsInserted = offlineRes.itemsInserted + onlineRes.itemsInserted;
 
   const { matched, ambiguous, unmatched } = await matchAndLink(userId, queryFn);
 

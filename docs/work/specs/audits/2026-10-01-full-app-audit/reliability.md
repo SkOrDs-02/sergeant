@@ -2167,7 +2167,7 @@ scripts/migration-down-drill.mjs: `async function applyForward(client, files) { 
 
 ### `rel-32` [low] Один «отруйний» чек Сільпо (NUL-символ чи інша помилка БД) назавжди ламає синк користувача
 
-- **Стан:** відкрито
+- **Стан:** виправлено в гілці backlog/rel-32 (`sanitizeForPg` у `receiptsUpsert.ts` прибирає U+0000 і міняє одинокі сурогати на U+FFFD перед записом; `upsertReceiptsIsolated` пропускає чек, чий запис упав, з логом `silpo_receipt_upsert_skipped` (лише SQLSTATE) і метрикою `silpo_receipts_skipped_total{channel}`, решта синку і матчер ідуть далі; стелю розміру raw свідомо не додано)
 - **Перевірка:** підтверджено · **Зусилля:** S · **Швидкий виграш** · **Область:** server: Сільпо receipts
 - **Де:** apps/server/src/modules/silpo/receipts.ts:691-695,704-718; apps/server/src/modules/silpo/receiptsUpsert.ts:114-130
 - **Першопричина:** Цикл upsertReceipt у receipts.ts не має try/catch. Рядки з U+0000 перед записом у JSONB і TEXT не санітизуються. recordSyncFailure викликається лише на помилках MCP, тож виняток БД виходить як 500.

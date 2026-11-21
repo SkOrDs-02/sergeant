@@ -47,6 +47,7 @@ import {
   type SilpoTransactionRunner,
 } from "./receipts.js";
 import type { QueryFn } from "./tokenStore.js";
+import { silpoReceiptsSkippedTotal } from "../../obs/metrics/silpo.js";
 
 const { normalizeRawOrder } = __test__;
 
@@ -287,6 +288,8 @@ function makeFakeDb(
      * моделюється wipe, що стався МІЖ стартом синку й записом чека.
      */
     receiptsWipedAt?: Date | null | Array<Date | null>;
+    /** Чеки, на записі яких «БД» падає (будь-яка не-NUL помилка Postgres). */
+    failReceiptIds?: string[];
   } = {},
 ) {
   const receipts = new Map<string, FakeReceiptRow>();
@@ -300,6 +303,22 @@ function makeFakeDb(
   let markerReads = 0;
 
   const query = (async (text: string, values: unknown[] = []) => {
+    // Як справжній Postgres: NUL не пролазить ні в TEXT, ні в JSONB.
+    if (text.includes("INSERT INTO")) {
+      for (const v of values) {
+        if (typeof v !== "string") continue;
+        if (v.includes("\u0000")) {
+          throw Object.assign(new Error("invalid byte sequence"), {
+            code: "22021",
+          });
+        }
+        if (/\\u0000|\\ud[89ab]/.test(v)) {
+          throw Object.assign(new Error("unsupported Unicode escape"), {
+            code: "22P05",
+          });
+        }
+      }
+    }
     if (text.includes("INSERT INTO silpo_receipts")) {
       const [, receiptId, purchasedAt, , , , totalKop] = values as [
         string,
@@ -311,6 +330,11 @@ function makeFakeDb(
         number,
         string,
       ];
+      if (seed.failReceiptIds?.includes(receiptId)) {
+        throw Object.assign(new Error("fake db: write failed"), {
+          code: "XX000",
+        });
+      }
       if (receipts.has(receiptId)) return { rows: [], rowCount: 0 };
       receipts.set(receiptId, { receiptId, purchasedAt, totalKop });
       return { rows: [], rowCount: 1 };
@@ -680,6 +704,64 @@ describe("pullAndSyncReceipts", () => {
 
     expect(result).toMatchObject({ receiptsInserted: 1, itemsInserted: 2 });
     expect([...db.receipts.keys()]).toEqual(["r2token"]);
+  });
+
+  it("NUL чи одинокий сурогат у назві або сирому order не валить синк: чиститься перед записом (rel-32)", async () => {
+    const db = makeFakeDb();
+    const poisoned = {
+      ...OFFLINE_ORDER,
+      filialName: "Сільпо\u0000",
+      cityName: "Тестове\ud800",
+      products: [
+        { lagerId: 1, name: "Хлі\u0000б", unit: "шт", quantity: 1, price: 30 },
+        { lagerId: 2, name: "Молоко", unit: "шт", quantity: 1, price: 20 },
+      ],
+    };
+    mocks.callWithFreshAccessToken.mockResolvedValue({
+      ok: true,
+      data: { offline: [poisoned], online: [] },
+    });
+
+    const result = await pullAndSyncReceipts("user-1", {
+      query: db.query,
+      withTransaction: db.withTransaction,
+    });
+
+    expect(result).toMatchObject({ receiptsInserted: 1, itemsInserted: 2 });
+    expect(db.items.map((i) => i.name)).toEqual(["Хліб", "Молоко"]);
+  });
+
+  it("помилка БД на одному чеку пропускає лише його, решта синку йде далі (rel-32)", async () => {
+    const db = makeFakeDb({ failReceiptIds: [OFFLINE_ORDER_RECEIPT_ID] });
+    const second = {
+      ...OFFLINE_ORDER,
+      createdAt: "2026-08-11T15:00:00",
+      receiptUrl: "https://receipt.silpo.elkasa.com.ua/r2token",
+    };
+    mocks.callWithFreshAccessToken.mockResolvedValue({
+      ok: true,
+      data: { offline: [OFFLINE_ORDER, second], online: [] },
+    });
+    const before =
+      (await silpoReceiptsSkippedTotal.get()).values.find(
+        (v) => v.labels.channel === "offline",
+      )?.value ?? 0;
+
+    const result = await pullAndSyncReceipts("user-1", {
+      query: db.query,
+      withTransaction: db.withTransaction,
+    });
+
+    expect(result).toMatchObject({
+      status: "connected",
+      receiptsInserted: 1,
+      itemsInserted: 2,
+    });
+    expect([...db.receipts.keys()]).toEqual(["r2token"]);
+    const after = (await silpoReceiptsSkippedTotal.get()).values.find(
+      (v) => v.labels.channel === "offline",
+    )?.value;
+    expect(after).toBe(before + 1);
   });
 
   it("leaves a receipt unmatched (first-class state) when no mono transaction candidate exists", async () => {
