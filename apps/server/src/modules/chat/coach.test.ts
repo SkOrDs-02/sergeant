@@ -733,6 +733,68 @@ describe("coachInsight", () => {
     expect(aiQuotaRefund).not.toHaveBeenCalled();
   });
 
+  // ── rel-46: битий `memory.weeklyDigests` не дає 500 і не зʼїдає квоту ──
+
+  it("weeklyDigests з null, числом і не-масивними полями → 200, битий тиждень відкинуто", async () => {
+    anthropicMessages.mockResolvedValueOnce({
+      response: { ok: true, status: 200 },
+      data: { content: [{ type: "text", text: "ok" }] },
+    });
+    const { req, aiQuotaRefund } = makeReqWithRefundSpy({
+      snapshot: {},
+      memory: {
+        weeklyDigests: [
+          null,
+          1,
+          { weekKey: "2026-W11", correlations: 5, overallRecommendations: 7 },
+          {
+            weekKey: "2026-W10",
+            finyk: { summary: "finyk summary" },
+            correlations: ["corr-ok"],
+          },
+        ],
+      },
+    });
+
+    const res = makeRes();
+    await coachInsight(req, res);
+
+    expect(res.statusCode).toBe(200);
+    expect(aiQuotaRefund).not.toHaveBeenCalled();
+    const [, payload] = anthropicMessages.mock.calls[0] as [
+      unknown,
+      { messages: { content: string }[] },
+    ];
+    const prompt = payload!.messages[0]!.content;
+    expect(prompt).toContain("finyk summary");
+    expect(prompt).toContain("corr-ok");
+  });
+
+  it("weeklyDigests лише з не-обʼєктів → памʼять вважається порожньою", () => {
+    const prompt = buildCoachInsightPrompt({
+      snapshot: {},
+      memory: {
+        weeklyDigests: [null, 1] as unknown as [],
+        lastInsightDate: null,
+        lastInsightText: null,
+      },
+    }).user;
+    expect(prompt).toContain("Памʼяті ще немає: це перший сеанс.");
+  });
+
+  it("виняток до upstream (згода не читається) повертає квоту", async () => {
+    resolveHealthConsentMock.mockRejectedValueOnce(new Error("db down"));
+    const { req, aiQuotaRefund } = makeReqWithRefundSpy({
+      snapshot: {},
+      memory: {},
+    });
+
+    await expect(coachInsight(req, makeRes())).rejects.toThrow("db down");
+
+    expect(aiQuotaRefund).toHaveBeenCalledTimes(1);
+    expect(anthropicMessages).not.toHaveBeenCalled();
+  });
+
   it("порожній snapshot → prompt містить 'Даних за поточний тиждень ще немає.'", async () => {
     anthropicMessages.mockResolvedValueOnce({
       response: { ok: true, status: 200 },

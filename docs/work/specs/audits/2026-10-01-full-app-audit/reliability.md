@@ -2870,7 +2870,7 @@ Not reproduced live: needs LLM tool_calls; verified by code. grep: `setHubStream
 
 ### `rel-46` [low] POST /api/coach/insight падає з 500 на некоректних weeklyDigests і не повертає списану квоту
 
-- **Стан:** відкрито
+- **Стан:** закрито в гілці `backlog/rel-46` (2026-11-21): `buildMemorySummary` відкидає не-обʼєкти з `weeklyDigests`, а `correlations`/`overallRecommendations`, що не є масивами, пропускає; згода, промпт, тир і `invokeLLM` тепер в одному `try` з `refundQuotaOnUpstreamFailure`, тож будь-який виняток до upstream повертає квоту (`coach.test.ts`). Схему `CoachMemoryEchoSchema` не чіпали
 - **Перевірка:** підтверджено · **Зусилля:** S · **Швидкий виграш** · **Область:** server: coach
 - **Де:** packages/shared/src/schemas/api.ts:1112-1117; apps/server/src/modules/chat/coach.ts:228-291,554-571,584
 - **Першопричина:** CoachMemoryEchoSchema приймає weeklyDigests як z.array(z.unknown()), а buildMemorySummary розіменовує елементи без перевірки (null, correlations, що не є масивом). Виняток виникає до invokeLLM, а refund обгортає лише сам виклик LLM.

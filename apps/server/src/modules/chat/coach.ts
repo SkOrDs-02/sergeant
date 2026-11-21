@@ -229,7 +229,10 @@ function pickRecentCorrelations(
   const seen = new Set<string>();
   const picked: string[] = [];
   for (const d of digests) {
-    for (const raw of d.correlations || []) {
+    // Елемент `correlations` у збереженій чи підробленій памʼяті може бути не
+    // масивом (rel-46: `correlations: 5` давав «is not iterable» і 500).
+    if (!Array.isArray(d.correlations)) continue;
+    for (const raw of d.correlations) {
       if (typeof raw !== "string") continue;
       const c = clip(raw, CORRELATION_MAX_CHARS);
       if (seen.has(c)) continue;
@@ -251,8 +254,19 @@ function buildMemorySummary(memory: CoachMemory | null): string {
     return "Памʼяті ще немає: це перший сеанс.";
   }
 
+  // `CoachMemoryEchoSchema` пропускає `weeklyDigests` як `unknown[]`, тож
+  // `null` чи число в масиві доходило сюди й валило `/api/coach/insight` з 500
+  // (rel-46). Не-обʼєкти просто відкидаємо: памʼять коуча є підказкою, не
+  // контрактом, і поламаний тиждень не має забирати пораду.
+  const digests = memory.weeklyDigests
+    .filter(
+      (d): d is WeeklyDigestEntry =>
+        d !== null && typeof d === "object" && !Array.isArray(d),
+    )
+    .slice(0, 8);
+  if (digests.length === 0) return "Памʼяті ще немає: це перший сеанс.";
+
   const lines: string[] = [];
-  const digests = memory.weeklyDigests.slice(0, 8);
   lines.push(`Накопичено даних за ${digests.length} тижнів.`);
 
   const finykSummaries = digests
@@ -297,7 +311,9 @@ function buildMemorySummary(memory: CoachMemory | null): string {
   }
 
   const allRecs = digests
-    .flatMap((d) => d.overallRecommendations || [])
+    .flatMap((d) =>
+      Array.isArray(d.overallRecommendations) ? d.overallRecommendations : [],
+    )
     .slice(0, 6);
   if (allRecs.length) {
     lines.push("Попередні рекомендації:");
@@ -580,44 +596,46 @@ export async function coachInsight(req: Request, res: Response): Promise<void> {
     memory: CoachMemory | null;
   };
 
-  // Гейт на дані про здоровʼя (GDPR Art. 9, рішення власника 2026-09-29):
-  // без збереженої згоди тренування, харчування й крос-модульні кореляції
-  // до моделі не йдуть. Пораду не блокуємо: вона вужчає до фінансів і звичок.
-  const healthConsent = await resolveHealthConsent(
-    (req as WithSessionUser).user?.id,
-  );
-  const { snapshot, memory } = healthConsent
-    ? parsedInput
-    : stripHealthFromCoachInput(parsedInput);
-
-  const prompt = buildCoachInsightPrompt({ snapshot, memory });
-
-  // Pro tiered degradation: resolveProTier picks the OpenRouter model for this
-  // Pro user's daily tier (premium gpt-5.1 → standard gemini-lite → floor free).
-  // Free/anon тут лишаються на premium — на відміну від чату, який 2026-08-06
-  // перевели на standard. Причина в співвідношенні: у чаті це −$0.014 на
-  // повідомлення, а тут розрив gpt-5.1 → gemini-lite найбільший за якістю і
-  // дає лише ~$0.0035 на виклик. Обґрунтування — в `aiQuota.ts::unpaid`.
-  const tier = await resolveProTier(req, res, "coach");
-
-  // Routed through the LLMProvider factory so coach can be re-targeted off
-  // Sonnet via env (LLM_COACH_PROVIDER / OPENROUTER_COACH_MODEL) without a
-  // redeploy; Anthropic stays the fallback. `env.COACH_MODEL_ANTHROPIC`
-  // (default `claude-sonnet-4-6`) is the model the Anthropic provider uses —
-  // окрема від `CHAT_MODEL_SYNTHESIS`, бо той під `CHAT_VIA_OPENROUTER`
-  // несе OpenRouter-only id, на який Anthropic віддає 404.
-  const provider = getLLMProvider({
-    provider: env.LLM_COACH_PROVIDER,
-    anthropicApiKey: apiKey,
-    openrouterModel: tier.model,
-  });
   // Дзеркалить патерн `chat.ts` (`refundQuotaOnUpstreamFailure` навколо
   // upstream-виклику): `requireAiQuota()` уже списав квиток ДО цього
-  // handler-а, тож і виняток з `invokeLLM`, і провал провайдера
-  // (`!aiResult.ok`) мають повертати квоту — інакше 5xx OpenRouter/Anthropic
-  // зʼїдає денний ліміт користувача (аудит PR-A2, канон hub-coach §6.2).
+  // handler-а, тож і будь-який виняток до відповіді upstream (згода, промпт,
+  // тир, `invokeLLM`), і провал провайдера (`!aiResult.ok`) мають повертати
+  // квоту — інакше 5xx OpenRouter/Anthropic чи битий `memory` зʼїдає денний
+  // ліміт користувача (аудит PR-A2, канон hub-coach §6.2; rel-46).
   let aiResult;
   try {
+    // Гейт на дані про здоровʼя (GDPR Art. 9, рішення власника 2026-09-29):
+    // без збереженої згоди тренування, харчування й крос-модульні кореляції
+    // до моделі не йдуть. Пораду не блокуємо: вона вужчає до фінансів і звичок.
+    const healthConsent = await resolveHealthConsent(
+      (req as WithSessionUser).user?.id,
+    );
+    const { snapshot, memory } = healthConsent
+      ? parsedInput
+      : stripHealthFromCoachInput(parsedInput);
+
+    const prompt = buildCoachInsightPrompt({ snapshot, memory });
+
+    // Pro tiered degradation: resolveProTier picks the OpenRouter model for
+    // this Pro user's daily tier (premium gpt-5.1 → standard gemini-lite →
+    // floor free). Free/anon тут лишаються на premium — на відміну від чату,
+    // який 2026-08-06 перевели на standard. Причина в співвідношенні: у чаті
+    // це −$0.014 на повідомлення, а тут розрив gpt-5.1 → gemini-lite
+    // найбільший за якістю і дає лише ~$0.0035 на виклик. Обґрунтування — в
+    // `aiQuota.ts::unpaid`.
+    const tier = await resolveProTier(req, res, "coach");
+
+    // Routed through the LLMProvider factory so coach can be re-targeted off
+    // Sonnet via env (LLM_COACH_PROVIDER / OPENROUTER_COACH_MODEL) without a
+    // redeploy; Anthropic stays the fallback. `env.COACH_MODEL_ANTHROPIC`
+    // (default `claude-sonnet-4-6`) is the model the Anthropic provider uses —
+    // окрема від `CHAT_MODEL_SYNTHESIS`, бо той під `CHAT_VIA_OPENROUTER`
+    // несе OpenRouter-only id, на який Anthropic віддає 404.
+    const provider = getLLMProvider({
+      provider: env.LLM_COACH_PROVIDER,
+      anthropicApiKey: apiKey,
+      openrouterModel: tier.model,
+    });
     aiResult = await invokeLLM(provider, {
       model: coachAnthropicModel(tier.tier),
       maxTokens: 300,
