@@ -1,0 +1,26 @@
+{
+  "baseUrl": "https://app.sergeant.com.ua",
+  "spec": "apps/web/tests/verification-live/prod-anon-early-write.spec.ts",
+  "stats": {
+    "startTime": "2026-11-21T01:08:00.920Z",
+    "duration": 110648.092,
+    "expected": 2,
+    "skipped": 0,
+    "unexpected": 0,
+    "flaky": 0
+  },
+  "tests": [
+    {
+      "title": "prod-anon routine: habit created before dual-write boot survives reload",
+      "status": "passed",
+      "durationMs": 49662,
+      "errors": []
+    },
+    {
+      "title": "prod-anon fizruk: body entry created on first render survives reload",
+      "status": "passed",
+      "durationMs": 44272,
+      "errors": []
+    }
+  ]
+}
