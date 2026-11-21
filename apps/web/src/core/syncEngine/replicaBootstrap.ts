@@ -91,6 +91,14 @@ export type PullMode = "normal" | "bootstrap";
 
 const STATE_IN_PROGRESS = 1;
 const STATE_DONE = 2;
+/**
+ * Примусовий повтор копії, яка вже колись відновилась повністю (старша
+ * версія проходу). Окремо від {@link STATE_IN_PROGRESS}, щоб обірваний
+ * повтор на наступному тіку не виглядав як перше відновлення порожньої
+ * копії і не вмикав «Завантажую з хмари» (data-59/60) на наповненому
+ * пристрої.
+ */
+const STATE_REPULL_IN_PROGRESS = 3;
 
 /**
  * Версія примусового повного проходу. Позначка «готово» без цієї версії
@@ -133,24 +141,37 @@ export async function resolvePullMode(
   client: SqliteMigrationClient,
   userId: string,
   since: number,
-): Promise<{ mode: PullMode; since: number }> {
+): Promise<{ mode: PullMode; since: number; firstReplica: boolean }> {
   const state = await readCursorValue(client, stateKey(userId));
+  // Копія вже колись пройшла повне відновлення (зараз лише примусовий
+  // повтор за версією): дані на пристрої є, порожній стан не загрожує.
+  const firstReplica =
+    state !== STATE_DONE && state !== STATE_REPULL_IN_PROGRESS;
   // Стан чинний лише для поточної версії проходу: «готово» чи «триває» зі
   // старшої версії означає новий прохід від нуля.
   const current =
     (await readCursorValue(client, repullKey(userId))) >=
     REPLICA_REPULL_VERSION;
-  if (current && state === STATE_DONE) return { mode: "normal", since };
-  if (current && state === STATE_IN_PROGRESS)
-    return { mode: "bootstrap", since };
-  if (await hasPendingOutbox(client, userId)) return { mode: "normal", since };
+  if (current && state === STATE_DONE)
+    return { mode: "normal", since, firstReplica };
+  if (
+    current &&
+    (state === STATE_IN_PROGRESS || state === STATE_REPULL_IN_PROGRESS)
+  )
+    return { mode: "bootstrap", since, firstReplica };
+  if (await hasPendingOutbox(client, userId))
+    return { mode: "normal", since, firstReplica };
   // Позначка спершу, курсор потім: обірваний між ними старт лишає «триває»
   // зі старим курсором, і наступний тік бере відновлення з нього, а не
   // мовчки повертається до звичайного pull.
-  await writeCursorValue(client, stateKey(userId), STATE_IN_PROGRESS);
+  await writeCursorValue(
+    client,
+    stateKey(userId),
+    firstReplica ? STATE_IN_PROGRESS : STATE_REPULL_IN_PROGRESS,
+  );
   await writeCursorValue(client, repullKey(userId), REPLICA_REPULL_VERSION);
   if (since !== 0) await writePullSinceCursor(client, userId, 0);
-  return { mode: "bootstrap", since: 0 };
+  return { mode: "bootstrap", since: 0, firstReplica };
 }
 
 /**

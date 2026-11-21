@@ -341,7 +341,8 @@ export function createSyncEngineReaderRuntime(
       const bootstrap = resolved.mode === "bootstrap";
       // data-59/60: копія без жодного повного pull (новий пристрій, евікція
       // сховища) показує «Завантажую з хмари» замість порожнього стану.
-      if (bootstrap) markFirstPullPending();
+      // Примусовий повтор наповненої копії (`sync-lost-ops-repull`) — ні.
+      if (bootstrap && resolved.firstReplica) markFirstPullPending();
       else markFirstPullSettled();
       const pullOriginId = bootstrap
         ? REPLICA_BOOTSTRAP_ORIGIN
