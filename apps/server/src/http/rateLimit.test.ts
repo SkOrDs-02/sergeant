@@ -45,6 +45,7 @@ import {
   rateLimitExpress,
   resolveRateLimitCost,
   __resetRateLimitPgWarnForTests,
+  pgBucketSweepTtlMs,
 } from "./rateLimit.js";
 import { getRedis } from "../lib/redis.js";
 
@@ -800,6 +801,53 @@ describe("rateLimitExpress — Postgres path", () => {
       expect.any(Array),
     );
     expect(next).toHaveBeenCalledOnce();
+  });
+
+  it("sweep from a 60s route keeps hourly and daily buckets of other keys", async () => {
+    // logic-14: the sweep DELETE has no key filter, so its TTL used to be
+    // 2× the window of whichever route triggered it — a 60-second route
+    // wiped 1h/24h buckets (upstream daily budgets) after ~2 minutes.
+    pgQueryMock.mockResolvedValue({
+      rows: [{ count: 1, elapsed_ms: "0" }],
+    });
+    const randomSpy = vi.spyOn(Math, "random").mockReturnValue(0);
+    try {
+      const middleware = rateLimitExpress({
+        key: "mw:pg-sweep-short",
+        limit: 5,
+        windowMs: 60_000,
+      });
+      const { res } = makeRes();
+      await middleware(makeReq("10.0.0.11"), res, vi.fn());
+      await Promise.resolve();
+    } finally {
+      randomSpy.mockRestore();
+    }
+
+    const sweep = pgQueryMock.mock.calls.find(
+      ([sql]) =>
+        typeof sql === "string" &&
+        sql.includes("DELETE FROM rate_limit_buckets"),
+    );
+    expect(sweep).toBeDefined();
+    const ttlMs = Number((sweep?.[1] as string[])[0]);
+    // A 1h bucket and a 24h bucket must both survive the sweep.
+    expect(ttlMs).toBeGreaterThan(60 * 60 * 1000);
+    expect(ttlMs).toBeGreaterThanOrEqual(2 * 24 * 60 * 60 * 1000);
+    expect(ttlMs).toBe(pgBucketSweepTtlMs());
+  });
+
+  it("widens the sweep TTL to cover the longest window seen at runtime", async () => {
+    pgQueryMock.mockResolvedValue({
+      rows: [{ count: 1, elapsed_ms: "0" }],
+    });
+    const weekMs = 7 * 24 * 60 * 60 * 1000;
+    await checkRateLimitPg(makeReq("10.0.0.12"), {
+      key: "pg:week",
+      limit: 5,
+      windowMs: weekMs,
+    });
+    expect(pgBucketSweepTtlMs()).toBeGreaterThanOrEqual(2 * weekMs);
   });
 
   it("falls back to in-memory when Postgres table is missing and warns once", async () => {
