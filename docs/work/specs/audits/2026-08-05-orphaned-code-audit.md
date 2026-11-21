@@ -2,7 +2,7 @@
 
 > **Поточні статуси перенесених знахідок:** [єдиний реєстр верифікації](verification/findings.json). Цей документ зберігає історичні результати; нові спроби та виправлення ведуться в реєстрі.
 
-> **Last touched:** 2026-11-11 by @claude. **Next review:** 2027-12-29.
+> **Last touched:** 2026-11-21 by @claude. **Next review:** 2027-12-29.
 > **Status:** Active
 >
 > **Звірка 2026-10-22:** `routes/internal/seo.ts`, `marketing.ts` і `growth.ts` з § 3а вже видалені (#1310, #1536); `strategic.ts`, `debug-window.ts`, `email.ts` та неспожиті хуки api-client лишаються.
@@ -61,15 +61,15 @@
 
 ## 1. Стан механічних гейтів і їхні сліпі зони
 
-| Гейт                                | Результат                        | Сліпа зона                                                                                                                                                                                                                          |
-| ----------------------------------- | -------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `pnpm knip` (CI «Dead Code (Knip)») | ✅ чисто                         | `knip.json` exclude-ить категорії `exports`, `types`, `duplicates`, `unresolved` → 28 експортів і 16 типів (§ 7–8) невидимі для CI                                                                                                  |
-| `pnpm dead-code:files`              | ✅ «No unmarked unused files»    | поважає `@scaffolded` — навмисно; але не бачить mobile (нижче)                                                                                                                                                                      |
-| knip для `apps/mobile`              | —                                | `knip.json` оголошує `"entry": ["app/**", "src/**"]` → **кожен src-файл є entry, сирітські файли в mobile принципово невидимі** (~35 файлів у § 5)                                                                                  |
-| `check:dualwrite-residue`           | ✅ clean (1613 files)            | **не підключений ні до CI, ні до turbo** — лише ручний npm-script (грепи по `.github/workflows` і `turbo.json` — нуль збігів)                                                                                                       |
-| `docs:check-links`                  | ✅ 5161 internal + 1480 external | не ловить посилання код→док (напр. docstring-и на видалені доки, § 4–5)                                                                                                                                                             |
-| `lint:ai-legacy`                    | ✅ 3 маркери, всі fresh          | усі 3 без issue-ref `#NNN` (сам гейт це і показує warn-ом): `scripts/billing/grant-beta-pro.mjs`, `scripts/telegram/broadcast-waitlist.mjs`, `scripts/telegram/send-survey.mjs` — тимчасова інфра закритої бети, expires 2026-10-31 |
-| Конфіг-залишок                      | —                                | `knip.json` → `apps/landing` entry `middleware.ts` **не існує** (слід минулого стека; єдиний configuration hint у прогоні)                                                                                                          |
+| Гейт                                | Результат                        | Сліпа зона                                                                                                                                                                                                                                                                                                                   |
+| ----------------------------------- | -------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `pnpm knip` (CI «Dead Code (Knip)») | ✅ чисто                         | `knip.json` exclude-ить категорії `exports`, `types`, `duplicates`, `unresolved` → 28 експортів і 16 типів (§ 7–8) невидимі для CI                                                                                                                                                                                           |
+| `pnpm dead-code:files`              | ✅ «No unmarked unused files»    | поважає `@scaffolded` — навмисно; але не бачить mobile (нижче)                                                                                                                                                                                                                                                               |
+| knip для `apps/mobile`              | —                                | `knip.json` оголошує `"entry": ["app/**", "src/**"]` → **кожен src-файл є entry, сирітські файли в mobile принципово невидимі** (~35 файлів у § 5)                                                                                                                                                                           |
+| `check:dualwrite-residue`           | ✅ clean (1613 files)            | ~~**не підключений ні до CI, ні до turbo** — лише ручний npm-script (грепи по `.github/workflows` і `turbo.json` — нуль збігів)~~ ✅ Закрито 2026-11-21: крок `pnpm check:dualwrite-residue` у джобі `check` (`ci.yml`) до «Format, lint, test, build»; форму стереже `scripts/__tests__/ci-dualwrite-residue-gate.test.mjs` |
+| `docs:check-links`                  | ✅ 5161 internal + 1480 external | не ловить посилання код→док (напр. docstring-и на видалені доки, § 4–5)                                                                                                                                                                                                                                                      |
+| `lint:ai-legacy`                    | ✅ 3 маркери, всі fresh          | усі 3 без issue-ref `#NNN` (сам гейт це і показує warn-ом): `scripts/billing/grant-beta-pro.mjs`, `scripts/telegram/broadcast-waitlist.mjs`, `scripts/telegram/send-survey.mjs` — тимчасова інфра закритої бети, expires 2026-10-31                                                                                          |
+| Конфіг-залишок                      | —                                | `knip.json` → `apps/landing` entry `middleware.ts` **не існує** (слід минулого стека; єдиний configuration hint у прогоні)                                                                                                                                                                                                   |
 
 Окремо: `scripts/check-schema-drift.mjs` (гейт Drizzle↔SQL↔SQLite) має allowlist `SQL_ONLY_TABLES` на ~60 server-only таблиць — **усі 6 повних таблиць-сиріт із § 2 значаться саме там**, тож гейт їх легалізує, а не ловить.
 
@@ -139,7 +139,7 @@ if (relPath.startsWith("docs/work/specs/audits/archive/")) return true;
 
 ### 2д. Dual-write residue — закритий
 
-«Dual-write era» — це **клієнтська** міграція LS/MMKV → SQLite (ADR-0073), не Postgres. `packages/dualwrite-core` — живий і спожитий усіма 4 модулями web+mobile. Postgres-слід ери закритий повністю (`module_data` → DROP у 046, v1-ендпоінти → 410 Gone). Гвард `scripts/dualwrite-residue.ts` тримає baseline (~35 файлів «Phase 5 teardown» в allowlist), але — див. § 1 — **у CI не підключений**.
+«Dual-write era» — це **клієнтська** міграція LS/MMKV → SQLite (ADR-0073), не Postgres. `packages/dualwrite-core` — живий і спожитий усіма 4 модулями web+mobile. Postgres-слід ери закритий повністю (`module_data` → DROP у 046, v1-ендпоінти → 410 Gone). Гвард `scripts/dualwrite-residue.ts` тримає baseline (~35 файлів «Phase 5 teardown» в allowlist), але — див. § 1 — **у CI не підключений**. ✅ Закрито 2026-11-21: крок у джобі `check`.
 
 ## 3. API-ендпоінти і контрактний шар
 

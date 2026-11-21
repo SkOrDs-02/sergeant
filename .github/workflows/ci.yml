@@ -235,6 +235,17 @@ jobs:
         # Intentional divergences → whitelist in scripts/check-schema-drift.mjs.
         run: node scripts/check-schema-drift.mjs
 
+      - name: Dual-write residue guard (ADR-0073 teardown baseline)
+        # Сканує web/mobile на повернення прямих LS/MMKV-ключів модулів
+        # (`finyk_*`, `fizruk_*`, `nutrition_*`, `hub_routine*`) і читань
+        # tombstoned-ключів повз dualwrite-core; baseline-allowlist живе в
+        # самому скрипті. До 2026-11-21 був лише ручним `pnpm`-скриптом, і
+        # жоден прогін його не викликав (аудит 2026-08-05 § 1). Стоїть ДО
+        # «Format, lint, test, build», бо гейт після нього мовчить, щойно
+        # той червоніє; форму стереже
+        # scripts/__tests__/ci-dualwrite-residue-gate.test.mjs.
+        run: pnpm check:dualwrite-residue
+
       - name: Discoverability (every role reaches its target in ≤2 hops)
         # Walks the markdown link graph from documented entrypoints
         # (README.md, AGENTS.md, docs/start/agents/onboarding.md,
