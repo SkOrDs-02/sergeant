@@ -40,6 +40,9 @@ export const pricingEn: MessageGroupShape<(typeof ukMessages)["pricing"]> = {
   limits: {
     perWeek: " / week",
     unlimited: "unlimited",
+    upTo: "up to ",
+    memoryItems: " memories in chat",
+    fullMemory: "full, plus on-demand search",
   },
   cta: {
     tryPremium: "Try Premium",

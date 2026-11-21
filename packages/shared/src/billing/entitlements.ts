@@ -29,6 +29,11 @@ export interface FeatureSpec {
   pro: Access;
   surface?: PaywallSurface;
   meter?: MeterId;
+  /**
+   * Урізана Free-форма закритої фічі: скільки елементів Free отримує там,
+   * де фіча спрацьовує сама, без явного запиту. Premium стелі не має.
+   */
+  freeItems?: number;
 }
 
 export const FEATURES = {
@@ -51,8 +56,11 @@ export const FEATURES = {
     meter: "finykVision",
   },
   "ai.voice": { free: false, pro: true },
-  // Перегляд і стирання фактів лишаються Free (GDPR); гейт лише на recall.
-  "ai.memoryRecall": { free: false, pro: true },
+  // Перегляд і стирання фактів лишаються Free (GDPR). Явний recall
+  // (`POST /api/ai-memory/recall`, tool `recall_memory`) лише Premium; RAG
+  // першого туру чату Free отримує урізаним, до `freeItems` спогадів
+  // (рішення власника 2026-11-21, аудит sec-32).
+  "ai.memoryRecall": { free: false, pro: true, freeItems: 3 },
   // Id зарезервований, гейт не вішається: серверної проактивності немає.
   "ai.proactive": { free: false, pro: true },
   "export.pdf": { free: false, pro: true, surface: "csv_export" },
@@ -98,6 +106,16 @@ export function hasFeature(tier: PlanTier, id: FeatureId): boolean {
 export function weeklyLimit(tier: PlanTier, id: FeatureId): number | null {
   const access: Access = FEATURES[id][tier];
   return typeof access === "object" ? access.perWeek : null;
+}
+
+/**
+ * Стеля елементів фічі для плану: `null` = без стелі, `0` = недоступно.
+ * Для закритої на Free фічі з `freeItems` Free отримує урізану форму.
+ */
+export function itemLimit(tier: PlanTier, id: FeatureId): number | null {
+  const spec: FeatureSpec = FEATURES[id];
+  if (tier === "free" && spec.freeItems !== undefined) return spec.freeItems;
+  return hasFeature(tier, id) ? null : 0;
 }
 
 const DAY_MS = 24 * 60 * 60 * 1000;

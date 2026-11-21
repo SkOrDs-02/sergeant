@@ -1,4 +1,9 @@
-import { FEATURES, type Access, type FeatureId } from "@sergeant/shared";
+import {
+  FEATURES,
+  type Access,
+  type FeatureId,
+  type FeatureSpec,
+} from "@sergeant/shared";
 import type { useLocale } from "@shared/i18n/useLocale";
 
 type PricingMessages = ReturnType<typeof useLocale>["messages"]["pricing"];
@@ -45,7 +50,20 @@ const PRICING_ROWS: ReadonlyArray<readonly [FeatureId, FeatureLabelKey]> = [
   ["nutrition.weekPlan", "weekPlan"],
 ];
 
-function freeCell(label: string, access: Access, t: PricingMessages): Feature {
+function freeCell(
+  label: string,
+  spec: FeatureSpec,
+  t: PricingMessages,
+): Feature {
+  const access: Access = spec.free;
+  // Урізана Free-форма закритої фічі (памʼять у чаті, sec-32): рядок
+  // входить, підпис каже стелю.
+  if (access === false && spec.freeItems !== undefined) {
+    return {
+      label,
+      limit: `${t.limits.upTo}${spec.freeItems}${t.limits.memoryItems}`,
+    };
+  }
   if (typeof access === "object") {
     return { label, limit: `${access.perWeek}${t.limits.perWeek}` };
   }
@@ -54,17 +72,21 @@ function freeCell(label: string, access: Access, t: PricingMessages): Feature {
 
 /**
  * Free-колонка показує всі рядки; Premium лише те, що він додає: квотні
- * рядки як «без ліміту» і закриті на Free фічі.
+ * рядки як «без ліміту», урізані на Free як повну форму і закриті на Free
+ * фічі.
  */
 export function buildTiers(t: PricingMessages): ReadonlyArray<Tier> {
   const free: Feature[] = [];
   const premium: Feature[] = [];
   for (const [id, key] of PRICING_ROWS) {
     const label = t.features[key];
-    const access: Access = FEATURES[id].free;
-    free.push(freeCell(label, access, t));
+    const spec: FeatureSpec = FEATURES[id];
+    const access: Access = spec.free;
+    free.push(freeCell(label, spec, t));
     if (typeof access === "object") {
       premium.push({ label, limit: t.limits.unlimited });
+    } else if (access === false && spec.freeItems !== undefined) {
+      premium.push({ label, limit: t.limits.fullMemory });
     } else if (access === false) {
       premium.push({ label });
     }

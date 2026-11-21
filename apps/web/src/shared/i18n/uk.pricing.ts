@@ -61,6 +61,10 @@ export const pricingMessages = {
     // Leading space intentional: composes як `${N} / тиждень`.
     perWeek: " / тиждень",
     unlimited: "без ліміту",
+    // Памʼять у чаті (sec-32): composes як `до ${N} спогадів у чаті`.
+    upTo: "до ",
+    memoryItems: " спогадів у чаті",
+    fullMemory: "повна, і пошук на запит",
   },
   cta: {
     tryPremium: "Спробувати Premium",

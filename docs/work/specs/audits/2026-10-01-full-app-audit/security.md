@@ -2503,7 +2503,7 @@ Script <scratch>/agents/verify-server-static-ai-layer/fence-v3.mts output: "a</u
 
 ### `sec-32` [low] Premium-фіча «Пам'ять Сержанта» (ai.memoryRecall) доступна Free через RAG у чаті
 
-- **Стан:** відкрито
+- **Стан:** закрито в гілці `backlog/sec-32` (2026-11-21): реєстр дає `ai.memoryRecall.freeItems: 3` і `itemLimit()`, перший тур `/api/chat` урізає RAG-top-K через `featureItemLimit()` (Free до 3 спогадів, Premium і небілінговий режим повний), явний recall лишається Premium, `/pricing` пише «до 3 спогадів у чаті» (`chat.memoryRagTier.test.ts`, `ragContext.test.ts`, `requirePlan.test.ts`, `pricingTiers.test.ts`)
 - **Рішення власника 2026-11-21:** Free отримує урізаний RAG памʼяті в чаті (3 спогади), Premium повний; текст тарифів оновити під це.
 - **Перевірка:** підтверджено · **Зусилля:** S · **Область:** server: AI / billing
 - **Де:** apps/server/src/modules/chat/chat.ts:745-756; apps/server/src/modules/ai-memory/ragContext.ts:137-197; apps/server/src/routes/ai-memory.ts:84-91; packages/shared/src/billing/entitlements.ts:55

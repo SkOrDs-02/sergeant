@@ -246,3 +246,60 @@ describe("requirePlan middleware", () => {
     await expect(import("../../env/env.js")).rejects.toThrow(/STRIPE_ENABLED/);
   });
 });
+
+describe("featureItemLimit (sec-32: RAG памʼяті в чаті)", () => {
+  afterEach(() => {
+    vi.unstubAllEnvs();
+    vi.resetModules();
+    vi.resetAllMocks();
+  });
+
+  async function loadFeatureItemLimit(stripeEnabled: string) {
+    vi.stubEnv("STRIPE_ENABLED", stripeEnabled);
+    vi.stubEnv("LIQPAY_ENABLED", "false");
+    vi.stubEnv("PLATA_ENABLED", "false");
+    vi.resetModules();
+    const mod = await import("./requirePlan.js");
+    return mod.featureItemLimit;
+  }
+
+  const plan = (p: "free" | "pro") => ({
+    plan: p,
+    status: "active",
+    currentPeriodEnd: null,
+    cancelAtPeriodEnd: false,
+  });
+
+  it("Free отримує стелю реєстру: 3 спогади", async () => {
+    const featureItemLimit = await loadFeatureItemLimit("true");
+    getUserPlanMock.mockResolvedValue(plan("free"));
+    await expect(
+      featureItemLimit(pool, "user_1", "ai.memoryRecall"),
+    ).resolves.toBe(3);
+  });
+
+  it("Premium без стелі", async () => {
+    const featureItemLimit = await loadFeatureItemLimit("true");
+    getUserPlanMock.mockResolvedValue(plan("pro"));
+    await expect(
+      featureItemLimit(pool, "user_1", "ai.memoryRecall"),
+    ).resolves.toBeNull();
+  });
+
+  it("білінг не запущено: без стелі й без запиту плану", async () => {
+    const featureItemLimit = await loadFeatureItemLimit("false");
+    await expect(
+      featureItemLimit(pool, "user_1", "ai.memoryRecall"),
+    ).resolves.toBeNull();
+    expect(getUserPlanMock).not.toHaveBeenCalled();
+  });
+
+  it("founder без стелі незалежно від плану", async () => {
+    vi.stubEnv("AI_QUOTA_FOUNDER_IDS", "founder_1");
+    const featureItemLimit = await loadFeatureItemLimit("true");
+    await expect(
+      featureItemLimit(pool, "founder_1", "ai.memoryRecall"),
+    ).resolves.toBeNull();
+    expect(getUserPlanMock).not.toHaveBeenCalled();
+  });
+});

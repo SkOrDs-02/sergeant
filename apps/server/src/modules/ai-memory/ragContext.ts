@@ -119,6 +119,12 @@ interface BuildRagContextOptions {
   userId: string | null | undefined;
   baseContext: string;
   messages: readonly MaybeUserChatMessage[];
+  /**
+   * Стеля спогадів за планом (`featureItemLimit(..., "ai.memoryRecall")`):
+   * `null` = без стелі, число = не більше стількох. Викликається лише коли
+   * recall справді відбудеться, тож вимкнена памʼять не коштує запиту плану.
+   */
+  resolveMaxItems?: (userId: string) => Promise<number | null>;
 }
 
 /**
@@ -129,6 +135,7 @@ interface BuildRagContextOptions {
  *   - `AI_MEMORY_RAG_TOP_K === 0` → no-op (A/B вимикач);
  *   - не сесійний user (відсутній userId) → no-op;
  *   - порожнє / занадто коротке user-повідомлення → no-op;
+ *   - стеля плану `0` → no-op; інакше top-K урізається до стелі (Free 3);
  *   - помилка / timeout → no-op + warn-лог.
  *
  * Завжди повертає string (`baseContext` як floor), щоб caller не дбав про
@@ -138,16 +145,21 @@ export async function buildRagContext({
   userId,
   baseContext,
   messages,
+  resolveMaxItems,
 }: BuildRagContextOptions): Promise<string> {
   if (!env.AI_MEMORY_ENABLED) return baseContext;
-  const topK = env.AI_MEMORY_RAG_TOP_K;
-  if (!topK || topK <= 0) return baseContext;
+  const envTopK = env.AI_MEMORY_RAG_TOP_K;
+  if (!envTopK || envTopK <= 0) return baseContext;
   if (!userId) return baseContext;
 
   const query = lastUserContent(messages);
   if (query.length < MIN_QUERY_LEN) return baseContext;
 
   try {
+    const maxItems = resolveMaxItems ? await resolveMaxItems(userId) : null;
+    const topK = maxItems === null ? envTopK : Math.min(envTopK, maxItems);
+    if (topK <= 0) return baseContext;
+
     const recallPromise = getAiMemory().recall({
       userId,
       query,
