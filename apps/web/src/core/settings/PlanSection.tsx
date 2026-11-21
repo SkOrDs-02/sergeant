@@ -8,6 +8,7 @@ import { billingApi } from "@shared/api";
 import { messages } from "@shared/i18n/uk";
 import { billingKeys } from "@shared/lib/api/queryKeys";
 import { usePlan } from "../billing";
+import { premiumAdditions } from "../pricing/pricingTiers";
 import { ContentGroup } from "@shared/components/ui/ContentGroup";
 import { SettingsGroup } from "./SettingsPrimitives";
 import { formatKyivLongDate } from "@shared/lib/time/kyivTime";
@@ -263,11 +264,22 @@ export function PlanSection() {
         )}
 
         {!isPro && !planUnknown && status !== "canceled" && (
-          <p className="text-style-body text-subtle leading-snug">
-            Ти на безкоштовному плані. {premiumName} відкриває безлімітний чат
-            із Сержантом, CloudSync між пристроями, авто-Mono sync і експорт
-            CSV/PDF.
-          </p>
+          <div className="text-style-body text-subtle leading-snug">
+            <p>Ти на безкоштовному плані. {premiumName} додає:</p>
+            {/* Список із реєстру entitlements, як Premium-колонка /pricing
+                (ux-30): рукописний текст обіцяв у Premium те, що є й у Free. */}
+            <ul
+              data-testid="plan-premium-features"
+              className="mt-1 list-disc pl-5"
+            >
+              {premiumAdditions(messages.pricing).map((f) => (
+                <li key={f.label}>
+                  {f.label}
+                  {f.limit ? ` (${f.limit})` : ""}
+                </li>
+              ))}
+            </ul>
+          </div>
         )}
 
         {!isPro && status === "canceled" && (

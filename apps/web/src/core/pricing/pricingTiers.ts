@@ -36,7 +36,9 @@ export interface Tier {
  * `docs/work/specs/access-tiers.md`), тож тут лише порядок і текст. Рядки
  * «без AI = ядро» стоять явно, щоб Free не виглядав урізаним.
  */
-const PRICING_ROWS: ReadonlyArray<readonly [FeatureId, FeatureLabelKey]> = [
+export const PRICING_ROWS: ReadonlyArray<
+  readonly [FeatureId, FeatureLabelKey]
+> = [
   ["tracking.manual", "manualTracking"],
   ["ai.actions", "aiActions"],
   ["ai.photo", "aiPhotoFoodShort"],
@@ -76,21 +78,10 @@ function freeCell(
  * фічі.
  */
 export function buildTiers(t: PricingMessages): ReadonlyArray<Tier> {
-  const free: Feature[] = [];
-  const premium: Feature[] = [];
-  for (const [id, key] of PRICING_ROWS) {
-    const label = t.features[key];
-    const spec: FeatureSpec = FEATURES[id];
-    const access: Access = spec.free;
-    free.push(freeCell(label, spec, t));
-    if (typeof access === "object") {
-      premium.push({ label, limit: t.limits.unlimited });
-    } else if (access === false && spec.freeItems !== undefined) {
-      premium.push({ label, limit: t.limits.fullMemory });
-    } else if (access === false) {
-      premium.push({ label });
-    }
-  }
+  const free = PRICING_ROWS.map(([id, key]) =>
+    freeCell(t.features[key], FEATURES[id], t),
+  );
+  const premium = premiumAdditions(t);
   return [
     {
       id: "free",
@@ -111,4 +102,27 @@ export function buildTiers(t: PricingMessages): ReadonlyArray<Tier> {
       features: premium,
     },
   ];
+}
+
+/**
+ * Що Premium додає до Free: квотні рядки як «без ліміту» і закриті на Free
+ * фічі. Те саме, що Premium-колонка `/pricing`; Налаштування (PlanSection)
+ * беруть список звідси, а не пишуть його вручну (ux-30: текст обіцяв у
+ * Premium CloudSync, авто-Mono і CSV, які реєстр дає й Free).
+ */
+export function premiumAdditions(t: PricingMessages): ReadonlyArray<Feature> {
+  const premium: Feature[] = [];
+  for (const [id, key] of PRICING_ROWS) {
+    const label = t.features[key];
+    const spec: FeatureSpec = FEATURES[id];
+    const access: Access = spec.free;
+    if (typeof access === "object") {
+      premium.push({ label, limit: t.limits.unlimited });
+    } else if (access === false && spec.freeItems !== undefined) {
+      premium.push({ label, limit: t.limits.fullMemory });
+    } else if (access === false) {
+      premium.push({ label });
+    }
+  }
+  return premium;
 }

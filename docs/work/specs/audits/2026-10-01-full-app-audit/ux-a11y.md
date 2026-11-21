@@ -1840,7 +1840,7 @@ w8-pricing.mjs (userA): providers=[] -> кнопка `disabled=false` -> 400 `Pr
 
 ### `ux-30` [low] Тексти про план суперечать реєстру фіч: Налаштування кажуть, що CloudSync, Mono і CSV є лише в Premium, а пейволи й /pricing продають вимкнений «Голосовий ввід»
 
-- **Стан:** відкрито
+- **Стан:** виправлено в гілці `backlog/ux-30` (2026-11-21): список «що додає Premium» у Налаштуваннях (PlanSection) тепер будується з реєстру `FEATURES` тим самим `premiumAdditions` (`core/pricing/pricingTiers.ts`), що й Premium-колонка /pricing, тож CloudSync, авто-Mono і CSV там більше не продаються; «денний ліміт» в AIDigestSection уже прибрано раніше. Лишилось: «Голосовий ввід» за вимкненим флагом (рішення власника) і «Legacy Stripe» у футері /pricing
 - **Рішення власника 2026-11-21:** правий реєстр entitlements: тексти в Налаштуваннях генерувати з нього (автосинк Mono також безкоштовний, див. SECURITY-20260804-1-5).
 - **Перевірка:** підтверджено · **Зусилля:** S · **Швидкий виграш** · **Область:** web: тексти про план
 - **Де:** apps/web/src/core/settings/PlanSection.tsx:249-253; apps/web/src/core/settings/AIDigestSection.tsx:67; apps/web/src/shared/i18n/uk.pricing.ts:100; pricingTiers.ts:42; apps/web/src/shared/i18n/uk.ts:815; apps/web/src/shared/components/ui/voice/resolveVoiceProvider.ts:56-57; packages/shared/src/billing/entitlements.ts:59-61
