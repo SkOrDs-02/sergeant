@@ -97,6 +97,9 @@ export function PendingVoiceChip({
   const circumference = 2 * Math.PI * radius;
   const secondsLeft = Math.ceil(progress * (VOICE_CONFIRM_MS / 1000));
 
+  // AI-NOTE: `useBodyScrollLock` тут свідомо немає. Чип позиційований
+  // біля якоря мікрофона і без скриму: це поповер, а не модалка над
+  // сторінкою (frontend.md, п.4).
   if (typeof document === "undefined") return null;
   return createPortal(
     <div

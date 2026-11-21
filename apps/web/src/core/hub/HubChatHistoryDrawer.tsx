@@ -7,6 +7,7 @@ import { pluralUa } from "@sergeant/shared";
 import { cn } from "@shared/lib/ui/cn";
 import { Icon } from "@shared/components/ui/Icon";
 import { Button } from "@shared/components/ui/Button";
+import { useBodyScrollLock } from "@shared/hooks/useBodyScrollLock";
 import { useDialogFocusTrap } from "@shared/hooks/useDialogFocusTrap";
 import { useHistoryDismiss } from "@shared/hooks/useHistoryDismiss";
 import {
@@ -123,6 +124,10 @@ function HistoryPanel({
     onEscape: onClose,
     inertBackground: true,
   });
+
+  // Скрим над сторінкою: `inertBackground` закриває фокус і a11y-дерево,
+  // але не скрол, тож без локу сторінка під списком бесід прокручувалась.
+  useBodyScrollLock(true);
 
   // Панель монтується лише на відкритому списку, тож `open` тут завжди true.
   // Системний Back закриває лише список бесід, а не чат під ним.

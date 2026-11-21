@@ -150,6 +150,9 @@ export function Popover({
     prevOpenRef.current = open;
   }, [open]);
 
+  // AI-NOTE: `useBodyScrollLock` тут свідомо немає. Поповер позиційований
+  // біля тригера і без скриму; якщо заблокувати скрол сторінки, панель
+  // відірветься від якоря. Не підключай хук sweep-ом (frontend.md, п.4).
   const panel = open ? (
     <div
       ref={panelRef}

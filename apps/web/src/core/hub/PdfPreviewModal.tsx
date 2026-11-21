@@ -16,6 +16,7 @@
 import { useEffect, useRef } from "react";
 import { createPortal } from "react-dom";
 import { Button } from "@shared/components/ui/Button";
+import { useBodyScrollLock } from "@shared/hooks/useBodyScrollLock";
 
 // UA copy is kept local rather than in the shared `uk.ts` catalog: that
 // file is already at its 600-line `max-lines` ceiling (Hard Rule #18), so
@@ -38,6 +39,10 @@ export interface PdfPreviewModalProps {
 export function PdfPreviewModal({ html, onClose }: PdfPreviewModalProps) {
   const iframeRef = useRef<HTMLIFrameElement>(null);
   const dialogRef = useRef<HTMLDivElement>(null);
+
+  // Full-screen takeover з `aria-modal`: сторінка під ним не має скролитись
+  // (на iOS Safari інакше rubber-band тягне body під фіксованим оверлеєм).
+  useBodyScrollLock(true);
 
   useEffect(() => {
     // Move focus into the dialog for AT users, then restore it on close.

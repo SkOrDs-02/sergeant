@@ -1,6 +1,6 @@
 # Frontend Tech Debt — Sergeant Web
 
-> **Last touched:** 2026-11-19 by @claude (сторож побічних ефектів верхнього рівня в `packages/shared/src`, `noTopLevelSideEffects.test.ts`). Раніше 2026-11-19 by @claude (закрито борг бареля `@sergeant/shared` в eager: 270.3 → 254.6 kB правилом `moduleSideEffects` у веб-білді). Раніше 2026-11-17 by @claude (звірка реєстру з HEAD: лічильники таблиці 2026-09-17 переміряно, §5 web 1 → 3, §14 — до `@removeBy 2026-12-01` два тижні). **Last validated:** 2026-11-17 by @claude (вибіркова звірка, перелік неперевіреного — у маркері нижче). **Next review:** 2026-12-16.
+> **Last touched:** 2026-11-21 by @claude (п.4: скрол-лок для `HubChatHistoryDrawer` і `PdfPreviewModal`, винятки поповерів зафіксовано `AI-NOTE`). Раніше 2026-11-19 by @claude (сторож побічних ефектів верхнього рівня в `packages/shared/src`, `noTopLevelSideEffects.test.ts`). Раніше 2026-11-19 by @claude (закрито борг бареля `@sergeant/shared` в eager: 270.3 → 254.6 kB правилом `moduleSideEffects` у веб-білді). Раніше 2026-11-17 by @claude (звірка реєстру з HEAD: лічильники таблиці 2026-09-17 переміряно, §5 web 1 → 3, §14 — до `@removeBy 2026-12-01` два тижні). **Last validated:** 2026-11-17 by @claude (вибіркова звірка, перелік неперевіреного — у маркері нижче). **Next review:** 2026-12-16.
 > **Status:** Active
 
 > **Оновлено 2026-11-17 (звірка реєстру з HEAD `b0e61055c`).** Вибірковий прохід: переміряно кожен рядок таблиці 2026-09-17 нижче і пункти з 🔴/🟡, повного аудиту не було. Методика лічби та сама, що в таблиці (команди в тілі відповідних пунктів).
@@ -170,6 +170,19 @@
 >    а позиційовані поповери; для них «немає скрол-локу» майже напевно
 >    правильна поведінка, тож рішення для них — не «підключити хук», а
 >    зафіксувати виняток.
+>
+>    ~~**Підпункт design-audit-4 (`HubChatHistoryDrawer`, `PdfPreviewModal`,
+>    винятки поповерів)**~~ — **закрито 2026-11-21.** `HubChatHistoryDrawer`
+>    (скрим `bg-black/50`, `aria-modal`) і `PdfPreviewModal` (full-page
+>    takeover з `aria-modal`) підключили `useBodyScrollLock`; тести
+>    `HubChatHistoryDrawer.test.tsx` і `PdfPreviewModal.test.tsx` перевіряють
+>    лок на `body` і його зняття. Для `Popover.tsx`, `voice/PendingVoiceChip.tsx`
+>    і `core/app/NotificationBell.tsx` виняток зафіксовано `AI-NOTE` біля
+>    `role="dialog"`: це позиційовані поповери без скриму. Залишок без
+>    скрол-локу і без рішення: `FinykApp.tsx`, `BarcodeScanner.tsx`,
+>    `MacrosEditor.tsx`, `HabitGlyphPicker.tsx`, `WorkoutItemRecoveryChip.tsx`,
+>    `WorkoutFinishSheets.tsx`, `HubSearch.tsx`, `AppLock.tsx`,
+>    `core/profile/PendingDeletionScreen.tsx`.
 >
 > 5. **SubTabs → shared** як `bar`-варіант Segmented (зараз застряг у
 >    modules/nutrition, активний таб 40px).

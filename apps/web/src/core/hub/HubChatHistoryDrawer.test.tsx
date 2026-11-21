@@ -70,6 +70,16 @@ describe("HubChatHistoryDrawer", () => {
     vi.clearAllMocks();
   });
 
+  it("блокує скрол сторінки, поки список відкритий, і знімає лок при закритті", () => {
+    const view = renderDrawer({ open: true });
+    expect(document.body.style.overflow).toBe("hidden");
+    expect(document.body.style.position).toBe("fixed");
+
+    view.unmount();
+    expect(document.body.style.overflow).toBe("");
+    expect(document.body.style.position).toBe("");
+  });
+
   it("renders nothing when closed", () => {
     const { container } = renderDrawer({ open: false });
     expect(container.firstChild).toBeNull();
