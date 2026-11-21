@@ -213,6 +213,34 @@ describe("шаблони листів", () => {
   });
 });
 
+describe("accountExistsMail (sec-46)", () => {
+  it("веде на вхід і на вхід із відкритою панеллю скидання пароля", async () => {
+    const m = await loadModule({
+      ...BETTER_AUTH_URL_KEYS,
+      WEB_APP_URL: "https://app.example.com",
+    });
+    const mail = m.accountExistsMail();
+    expect(mail.subject).toContain("вже є акаунт");
+    expect(mail.text).toContain("https://app.example.com/sign-in\n");
+    expect(mail.text).toContain("https://app.example.com/sign-in?forgot=1");
+    expect(mail.html).toContain(
+      'href="https://app.example.com/sign-in?forgot=1"',
+    );
+    expect(mail.text).toContain("Якщо це був не ти");
+    expect(mail.text).not.toContain("—");
+  });
+
+  it("без web-origin не вигадує посилань, але пояснює, що робити", async () => {
+    const m = await loadModule({
+      ...BETTER_AUTH_URL_KEYS,
+      NODE_ENV: "production",
+    });
+    const mail = m.accountExistsMail();
+    expect(mail.text).not.toContain("http");
+    expect(mail.text).toContain("«Забули пароль?»");
+  });
+});
+
 /**
  * Екранування винесене в окремий describe після того, як CodeQL позначив
  * попередню пару `escapeHtmlAttr`/`escapeHtmlText` як неповну санітизацію

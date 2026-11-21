@@ -35,6 +35,10 @@ import {
 } from "./auth/pushSessionBinding.js";
 import { queueAuthTransactionalEmail } from "./email/authTransactionalMail.js";
 import {
+  emailVerificationGateOptions,
+  guardEmailVerifiedSignIn,
+} from "./auth/emailVerificationGate.js";
+import {
   changeEmailConfirmationMail,
   getWebAppOrigin,
   passwordResetMail,
@@ -291,6 +295,10 @@ const tokenKeyRing = parseKeyRing({
   legacyKey: env.BETTER_AUTH_TOKEN_ENC_KEY,
   envName: "BETTER_AUTH_TOKEN_ENC_KEY",
 });
+/** sec-46 / priv-29: межа обовʼязкового підтвердження email. */
+const verificationCutoff = env.EMAIL_VERIFICATION_REQUIRED_FROM;
+const verificationGate = emailVerificationGateOptions(verificationCutoff);
+
 const databaseConfig = tokenKeyRing
   ? createEncryptingAdapter(tokenKeyRing)
   : drizzleAdapter(db, { provider: "pg" });
@@ -433,6 +441,10 @@ export const auth = betterAuth({
      * форсує те саме для `/change-password`.
      */
     revokeSessionsOnPasswordReset: true,
+    // sec-46 / priv-29: за межею `EMAIL_VERIFICATION_REQUIRED_FROM` sign-up не
+    // логінить і на зайняту адресу відповідає так само, як на нову, а
+    // власнику адреси йде лист «у тебе вже є акаунт».
+    ...verificationGate.emailAndPassword,
     // Не await-имо відправку — зменшує ризик timing enumeration (див. Better Auth docs).
     sendResetPassword: async ({ user, url }) => {
       queueAuthTransactionalEmail({
@@ -452,6 +464,13 @@ export const auth = betterAuth({
      * (dev) — лог-warn без падіння flow-у sign-up.
      */
     sendOnSignUp: true,
+    /**
+     * sec-46: непідтверджений вхід (гейт межі чи `REQUIRE_EMAIL_VERIFICATION`)
+     * повторно шле лист, тож «перевір пошту» у відповіді правдиве. Клік у
+     * листі за активної межі одразу відкриває сесію.
+     */
+    sendOnSignIn: true,
+    autoSignInAfterVerification: verificationGate.autoSignInAfterVerification,
     /**
      * `url` від Better Auth має вигляд
      * `{baseURL}/api/auth/verify-email?token=…&callbackURL=/`, тобто після
@@ -638,7 +657,7 @@ export const auth = betterAuth({
      */
     session: {
       create: {
-        before: async (data) => {
+        before: async (data, context) => {
           // AI-LEGACY: expires 2027-02-28 — друга половина рубильника;
           // прибирання — https://github.com/SkOrDs-02/sergeant/blob/97e477e90b711b210184ff2b9426b4452c1cd43f/docs/work/specs/beta-launch/README.md § Що прибрати.
           // Блокування `user.create` зупиняє лише НОВИХ; сесію ж отримує
@@ -651,6 +670,9 @@ export const auth = betterAuth({
               message: "Доступ зараз закритий.",
             });
           }
+          // sec-46: новий акаунт за межею входить паролем лише з
+          // підтвердженим email (після перевірки пароля, без енумерації).
+          await guardEmailVerifiedSignIn(data, context, verificationCutoff);
           if (!data.ipAddress) return undefined;
           const truncated = ipPrefix(data.ipAddress);
           if (truncated && truncated !== data.ipAddress) {

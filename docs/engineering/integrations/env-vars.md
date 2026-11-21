@@ -1,6 +1,6 @@
 # Environment variables — повний reference
 
-> **Last touched:** 2026-11-21 by @claude (rel-62: `MIGRATE_LOCK_WAIT_MS`); 2026-11-21 by @claude (B15: `AI_QUOTA_TOOL_LIMITS` валідується на старті, `AI_QUOTA_TOOL_DEFAULT_LIMIT` без дефолту); 2026-11-20 by @claude (`SYNC_V2_STREAM_ENABLED`: клієнт-споживач, закриття стрімів на SIGTERM); 2026-11-19 by @claude (ADR-0105 §2: `SYNC_OP_LOG_APPLIED_RETENTION_DAYS`); 2026-10-26 by @claude (rel-06: `SYNC_SNAPSHOT_ENABLED`); 2026-10-10 by @claude (rel-03: `SERGEANT_CLIENT_IP_SECRET`); 2026-10-03 by @claude (sec-08: `AUTH_EXPO_PLUGIN_ENABLED`, нативні схеми в проді порожні); 2026-09-17 (§ `LLM_*` узгоджено з `env/aiRoutingEnv.ts` — OpenRouter живий, дефолти `openrouter`; продюсери ai-memory без ingest/mono). **Next review:** 2026-12-16.
+> **Last touched:** 2026-11-21 by @claude (sec-46 / priv-29: `EMAIL_VERIFICATION_REQUIRED_FROM`); 2026-11-21 by @claude (rel-62: `MIGRATE_LOCK_WAIT_MS`); 2026-11-21 by @claude (B15: `AI_QUOTA_TOOL_LIMITS` валідується на старті, `AI_QUOTA_TOOL_DEFAULT_LIMIT` без дефолту); 2026-11-20 by @claude (`SYNC_V2_STREAM_ENABLED`: клієнт-споживач, закриття стрімів на SIGTERM); 2026-11-19 by @claude (ADR-0105 §2: `SYNC_OP_LOG_APPLIED_RETENTION_DAYS`); 2026-10-26 by @claude (rel-06: `SYNC_SNAPSHOT_ENABLED`); 2026-10-10 by @claude (rel-03: `SERGEANT_CLIENT_IP_SECRET`); 2026-10-03 by @claude (sec-08: `AUTH_EXPO_PLUGIN_ENABLED`, нативні схеми в проді порожні); 2026-09-17 (§ `LLM_*` узгоджено з `env/aiRoutingEnv.ts` — OpenRouter живий, дефолти `openrouter`; продюсери ai-memory без ingest/mono). **Next review:** 2026-12-16.
 > **Status:** Active
 
 Цей документ — канонічний reference усіх змінних оточення Sergeant. Мінімальний `.env` (12 змінних, потрібних для `pnpm dev:web` + `pnpm dev:server`) лежить у [`/.env.example`](../../../.env.example) у корені репо. Сюди винесено: повний опис, формати, default-и, наслідки незаповненості, перехресні посилання на код / ADR / hardening-ноти.
@@ -116,6 +116,19 @@ Origin веб-застосунку — куди повертається кор�
 - `/api/mono/connect` гейтиться на `email_verified=true` через `requireVerifiedEmail()` middleware.
 
 Дивись [`docs/work/specs/security-hardening/H6-email-verification.md`](https://github.com/Skords-01/Sergeant/blob/d1a37e0bed4e403477376eae9ee9a078e4179da8/docs/04-governance/security/hardening/archive/H6-email-verification.md).
+
+### `EMAIL_VERIFICATION_REQUIRED_FROM` _(optional, default порожньо = вимкнено)_
+
+Межа обовʼязкового підтвердження email для нових акаунтів (sec-46 / priv-29, рішення власника 2026-11-21). Формат строгий: `YYYY-MM-DD` (північ за UTC) або ISO 8601 час із зоною (`2026-11-21T10:00:00+02:00`, `…Z`). Будь-що інше валить старт, а не вимикає гейт тихо.
+
+Коли задано:
+
+- `POST /api/auth/sign-up/email` сесії не видає і для нової, і для зайнятої адреси відповідає однаковим 200 `{ token: null, user }`. Веб і мобайл показують «Перевір пошту». Власнику зайнятої адреси йде лист «у тебе вже є акаунт» із посиланнями на вхід і на скидання пароля (`/sign-in?forgot=1`), не частіше одного на 15 хвилин.
+- Вхід паролем для акаунта з `createdAt` не раніше межі і без `email_verified` дає 403 `EMAIL_NOT_VERIFIED` (лише після правильного пароля, тож енумерації це не відкриває) і повторно шле лист підтвердження.
+- Клік у листі підтвердження відкриває сесію (`autoSignInAfterVerification`).
+- Акаунти, створені раніше, входять як і досі. Міграції немає.
+
+Ставити дату деплою. Межа в майбутньому вмикає нейтральну реєстрацію одразу (опції Better Auth статичні), а гейт входу лише з моменту межі. Smoke E2E живе з `2026-01-01` (`playwright.smoke.config.ts`, `ci.yml`), а клік у листі відтворює `apps/web/tests/smoke/smokeEmailVerification.ts` smoke-секретом. Глобальний `REQUIRE_EMAIL_VERIFICATION` від цього не залежить. Реєстр: [`feature-flags.md § 3.2`](../architecture/feature-flags.md).
 
 ### `MIN_PASSWORD_LENGTH`, `MAX_PASSWORD_LENGTH` _(optional)_
 

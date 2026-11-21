@@ -5,7 +5,9 @@ import {
   founderIdsFromEnv,
   enumBoolFromEnv,
   jsonRecordOfNonNegIntFromEnv,
+  optionalIsoInstantFromEnv,
   optionalStrictBoolFromEnv,
+  parseIsoInstant,
   strictBoolFromEnv,
 } from "./envHelpers.js";
 
@@ -163,5 +165,38 @@ describe("enumBoolFromEnv", () => {
 
   it.each(["yes", "TRUE", " true"])("відкидає %j", (raw) => {
     expect(schema.safeParse({ FLAG: raw }).success).toBe(false);
+  });
+});
+
+describe("optionalIsoInstantFromEnv (sec-46: EMAIL_VERIFICATION_REQUIRED_FROM)", () => {
+  const schema = z.object({ AT: optionalIsoInstantFromEnv("AT") });
+
+  it.each([undefined, "", "  "])("%j означає «не задано»", (raw) => {
+    expect(schema.parse({ AT: raw }).AT).toBeUndefined();
+  });
+
+  it("дата без часу — північ за UTC", () => {
+    expect(schema.parse({ AT: "2026-11-21" }).AT?.toISOString()).toBe(
+      "2026-11-21T00:00:00.000Z",
+    );
+  });
+
+  it("datetime із зоною зводиться до UTC", () => {
+    expect(
+      schema.parse({ AT: "2026-11-21T10:00:00+02:00" }).AT?.toISOString(),
+    ).toBe("2026-11-21T08:00:00.000Z");
+  });
+
+  it.each([
+    "2026-02-30",
+    "2026-13-01",
+    "2026-11-21T10:00:00",
+    "21.11.2026",
+    "tomorrow",
+    "2026-11-21T25:00Z",
+    "1732147200",
+  ])("відкидає %j, а не вмикає гейт тихо", (raw) => {
+    expect(schema.safeParse({ AT: raw }).success).toBe(false);
+    expect(parseIsoInstant(raw)).toBeNull();
   });
 });

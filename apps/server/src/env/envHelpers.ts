@@ -225,3 +225,55 @@ export const optionalStrictBoolFromEnv = () =>
     .enum(["true", "false", "1", "0", ""])
     .default("")
     .transform((v) => (v === "" ? undefined : v === "true" || v === "1"));
+
+const ISO_INSTANT_RE =
+  /^(\d{4})-(\d{2})-(\d{2})(?:T(\d{2}):(\d{2})(?::(\d{2})(?:\.\d{1,3})?)?(Z|[+-]\d{2}:\d{2}))?$/;
+
+/**
+ * Строгий розбір моменту часу з env: `YYYY-MM-DD` (північ за UTC) або
+ * `YYYY-MM-DDTHH:MM[:SS[.mmm]]` з обовʼязковою зоною (`Z` чи `±HH:MM`).
+ * `null` на все інше, зокрема на неіснуючу дату (`2026-02-30`), яку
+ * `new Date()` мовчки перекотив би на 2 березня.
+ */
+export function parseIsoInstant(raw: string): Date | null {
+  const m = ISO_INSTANT_RE.exec(raw);
+  if (!m) return null;
+  const [, y, mo, d, hh, mm, ss] = m;
+  const year = Number(y);
+  const month = Number(mo);
+  const day = Number(d);
+  const calendar = new Date(Date.UTC(year, month - 1, day));
+  if (
+    calendar.getUTCFullYear() !== year ||
+    calendar.getUTCMonth() !== month - 1 ||
+    calendar.getUTCDate() !== day
+  ) {
+    return null;
+  }
+  if (hh === undefined) return calendar;
+  if (Number(hh) > 23 || Number(mm) > 59 || Number(ss ?? "0") > 59) {
+    return null;
+  }
+  const instant = new Date(raw);
+  return Number.isNaN(instant.getTime()) ? null : instant;
+}
+
+/**
+ * Опційний момент часу (`parseIsoInstant`): порожньо чи не задано дає
+ * `undefined`, кривий рядок валить парсинг env на старті, а не вимикає
+ * поведінку тихо. Зразок — `EMAIL_VERIFICATION_REQUIRED_FROM` в `env.ts`.
+ */
+export const optionalIsoInstantFromEnv = (name: string) =>
+  z
+    .string()
+    .optional()
+    .transform((v, ctx) => {
+      if (v === undefined || v.trim() === "") return undefined;
+      const instant = parseIsoInstant(v.trim());
+      if (instant) return instant;
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        message: `${name} must be YYYY-MM-DD or an ISO 8601 datetime with a zone (got ${JSON.stringify(v)})`,
+      });
+      return z.NEVER;
+    });

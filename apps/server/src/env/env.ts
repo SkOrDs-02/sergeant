@@ -15,6 +15,7 @@ import {
   intFromEnv,
   founderIdsFromEnv,
   jsonRecordOfNonNegIntFromEnv,
+  optionalIsoInstantFromEnv,
   optionalStrictBoolFromEnv,
   optionalSecretFromEnv,
   optionalUrl,
@@ -98,6 +99,17 @@ const envSchema = z.object({
   MAX_PASSWORD_LENGTH: coerceInt.positive().max(256).default(256),
 
   REQUIRE_EMAIL_VERIFICATION: enumBoolFromEnv(),
+
+  /**
+   * sec-46 / priv-29: з цього моменту нові акаунти email+пароль входять
+   * лише після підтвердження адреси, а реєстрація відповідає нейтрально
+   * («перевір пошту») і для нової, і для зайнятої адреси. Акаунти, створені
+   * раніше, входять як і досі. Не задано = вимкнено. Формат і поведінку
+   * описують `env-vars.md` і `auth/emailVerificationGate.ts`.
+   */
+  EMAIL_VERIFICATION_REQUIRED_FROM: optionalIsoInstantFromEnv(
+    "EMAIL_VERIFICATION_REQUIRED_FROM",
+  ),
 
   /**
    * sec-08 (аудит 2026-10-01): вмикає Better Auth `expo()` плагін
