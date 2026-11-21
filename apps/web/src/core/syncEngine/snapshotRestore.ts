@@ -55,6 +55,8 @@ export interface SnapshotRestoreDeps {
   readonly isConstraintFailure: (error: unknown) => boolean;
   readonly onRejected?: (op: SyncV2PullOp, error: unknown) => void;
   readonly limit?: number;
+  /** Знімок посеред разового повного проходу (див. `ApplyPullOptions`). */
+  readonly healTombstoneTie?: boolean;
 }
 
 export type SnapshotRestoreResult =
@@ -151,6 +153,7 @@ export async function restoreFromSnapshot(
             op,
             userId,
             SNAPSHOT_LOCAL_DEVICE,
+            { healTombstoneTie: deps.healTombstoneTie === true },
           );
           if (outcome === "applied") {
             applied += 1;

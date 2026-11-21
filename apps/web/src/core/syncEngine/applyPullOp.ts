@@ -275,6 +275,7 @@ async function applyGenericRegistryRow(
   table: string,
   op: SyncV2PullOp,
   userId: string,
+  options: ApplyPullOptions,
 ): Promise<ApplyPullOutcome> {
   const row = op.row;
   if (row["user_id"] !== userId) return "rejected";
@@ -315,11 +316,23 @@ async function applyGenericRegistryRow(
     : whereClause;
   const lookupValues = scopeByUser ? [...pkValues, userId] : pkValues;
 
+  // Живий рядок сервера проти локального tombstone з ТИМ САМИМ `updated_at`
+  // (`healTombstoneTie`): так виглядає рядок, зіпсований до фіксу data-02.
+  const healTie =
+    options.healTombstoneTie === true &&
+    hasUpdatedAt &&
+    hasDeletedAt &&
+    op.op !== "delete" &&
+    (row["deleted_at"] ?? null) === null;
+
   if (hasUpdatedAt) {
-    // `deleted_at` тут більше не читається (див. AI-DANGER нижче), тож і не
-    // селектиться: у вибірці лишається рівно те, на чому стоїть рішення.
-    const existing = await client.all<{ updated_at: string }>(
-      `SELECT updated_at FROM ${safeTable} WHERE ${lookupWhere}`,
+    // `deleted_at` читається лише для `healTie`; чому інакше його тут
+    // немає, пояснює коментар-попередження нижче.
+    const existing = await client.all<{
+      updated_at: string;
+      deleted_at?: string | null;
+    }>(
+      `SELECT updated_at${healTie ? ", deleted_at" : ""} FROM ${safeTable} WHERE ${lookupWhere}`,
       lookupValues,
     );
     const local = existing[0];
@@ -345,7 +358,12 @@ async function applyGenericRegistryRow(
     // upsert, зібраний лише з присутніх колонок, лишав локальний tombstone
     // (data-02: «Повернути» губило запис на інших і нових пристроях). Тому
     // для не-delete опа `deleted_at = row.deleted_at ?? NULL` пишеться завжди.
-    if (local && isStaleLocal(local.updated_at, incomingMs)) return "skipped";
+    const tombstoneTie =
+      healTie &&
+      local?.deleted_at != null &&
+      new Date(local.updated_at).getTime() === incomingMs;
+    if (local && !tombstoneTie && isStaleLocal(local.updated_at, incomingMs))
+      return "skipped";
   }
 
   if (op.op === "delete") {
@@ -406,7 +424,13 @@ async function applyGenericRegistryRow(
   const newerOnly = hasUpdatedAt
     ? ` WHERE ${scopeByUser ? `${safeTable}.user_id != excluded.user_id OR ` : ""}
         julianday(${safeTable}.updated_at) IS NULL
-        OR julianday(${safeTable}.updated_at) < julianday(excluded.updated_at)`
+        OR julianday(${safeTable}.updated_at) < julianday(excluded.updated_at)${
+          healTie
+            ? `
+        OR (${safeTable}.deleted_at IS NOT NULL
+            AND julianday(${safeTable}.updated_at) = julianday(excluded.updated_at))`
+            : ""
+        }`
     : "";
   const changed = await client.all(
     `INSERT INTO ${safeTable} (${insertCols.join(", ")})
@@ -509,6 +533,19 @@ const SPECIAL_HANDLERS: Record<
   nutrition_goal_periods: applyNutritionGoalPeriodsPull,
 };
 
+export interface ApplyPullOptions {
+  /**
+   * Лише для разового повного проходу (`replicaBootstrap.ts`, знімок у ньому).
+   * Живий не-delete рядок сервера перемагає локальний tombstone і при РІВНОМУ
+   * `updated_at`. Саме такий стан лишав generic upsert до фіксу data-02:
+   * «Повернути» доходило insert-ом без `deleted_at`, `updated_at` ставав T3,
+   * а tombstone лишався, тож повтор того самого insert-а зі строгим `>`
+   * скіпався б назавжди. Штатне видалення пише `updated_at = deleted_at`, і
+   * живий оп із тим самим часом інакше не виникає.
+   */
+  readonly healTombstoneTie?: boolean;
+}
+
 /**
  * Apply one server-side op into the local SQLite module tables.
  * LWW-guard uses strict `>` semantics (ADR-0004 / R1).
@@ -518,6 +555,7 @@ export async function applyPullOp(
   op: SyncV2PullOp,
   userId: string,
   localDeviceId: string,
+  options: ApplyPullOptions = {},
 ): Promise<ApplyPullOutcome> {
   if (op.origin_device_id !== null && op.origin_device_id === localDeviceId) {
     return "skipped";
@@ -536,7 +574,7 @@ export async function applyPullOp(
   if (special) {
     return special(client, op, userId);
   }
-  return applyGenericRegistryRow(client, op.table, op, userId);
+  return applyGenericRegistryRow(client, op.table, op, userId, options);
 }
 
 /** Test-only: clear pragma caches between cases. */

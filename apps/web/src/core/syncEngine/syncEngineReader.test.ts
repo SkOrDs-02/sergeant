@@ -20,6 +20,7 @@ import {
   __resetInitialPullStateForTests,
   getInitialPullVersion,
 } from "./initialPullState.js";
+import { REPLICA_REPULL_VERSION } from "./replicaBootstrap.js";
 import { writePullSinceCursor } from "./syncOpCursor.js";
 
 /**
@@ -27,11 +28,13 @@ import { writePullSinceCursor } from "./syncOpCursor.js";
  * (`replicaBootstrap.ts`): ці тести про звичайний pull із власним id.
  */
 function bootstrappedCursorRows(params?: readonly unknown[]): never[] {
-  return (
-    String(params?.[0] ?? "").startsWith("replica_bootstrap:")
-      ? [{ value_int: 2 }]
-      : []
-  ) as never[];
+  const key = String(params?.[0] ?? "");
+  if (key.startsWith("replica_bootstrap:"))
+    return [{ value_int: 2 }] as never[];
+  // Примусовий прохід поточної версії теж уже пройдено.
+  if (key.startsWith("sync_repull:"))
+    return [{ value_int: REPLICA_REPULL_VERSION }] as never[];
+  return [] as never[];
 }
 
 function makeDeps(

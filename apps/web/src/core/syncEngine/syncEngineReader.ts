@@ -457,6 +457,7 @@ export function createSyncEngineReaderRuntime(
             userId,
             fetchSnapshot,
             isConstraintFailure,
+            healTombstoneTie: bootstrap,
             onRejected: (op, cause) => reportPullApplyFailure(deps, op, cause),
           });
           // Черга ще не доїхала: знімок перебив би правку. Тік закінчується
@@ -482,7 +483,9 @@ export function createSyncEngineReaderRuntime(
             continue;
           }
           try {
-            outcome = await applyPullOp(client, op, userId, pullOriginId);
+            outcome = await applyPullOp(client, op, userId, pullOriginId, {
+              healTombstoneTie: bootstrap,
+            });
           } catch (error) {
             // BUSY/IOERR/full disk/closed worker must retry this cursor.
             // Advancing it would permanently omit a valid server record.
