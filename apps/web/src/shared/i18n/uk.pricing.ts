@@ -72,6 +72,12 @@ export const pricingMessages = {
     // Гість: «Зараз твій план» — неправда, поки акаунта немає. Free-CTA
     // для нього стає входом (browser QA 2026-08-23).
     signInToStart: "Увійти й почати",
+    // ux-29 (рішення власника 2026-11-21): поки жоден провайдер оплати не
+    // увімкнений, Premium-CTA тут і в пейволах записує в лист очікування
+    // замість checkout-у, який гарантовано впаде.
+    notifyLaunch: "Повідомити про запуск",
+    notifyLaunchBusy: "Записую…",
+    notifyLaunchDone: "Ти в списку",
   },
   status: {
     // Renders як «Сесію оплати створено (test mode).» — caller appends `(${mode} mode).`.
@@ -96,6 +102,14 @@ export const pricingMessages = {
     subscriptionActive: "Підписку активовано, Premium уже діє.",
     subscriptionActiveCta: "Перейти у налаштування",
     paymentCanceled: "Оплату скасовано. Підписка не оформлена.",
+  },
+  // Тости one-tap запису в лист очікування (`usePremiumLaunch`).
+  launchNotify: {
+    created: "Email збережено. Напишу, щойно Premium запуститься.",
+    alreadyListed: "Ти вже в списку. Напишу, щойно Premium запуститься.",
+    rateLimited: "Забагато запитів. Спробуй за годину.",
+    failed:
+      "Не вдалося записати тебе в список. Перевір звʼязок і спробуй ще раз.",
   },
   waitlist: {
     headline: "Повідомити про запуск Premium",

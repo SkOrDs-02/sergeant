@@ -1763,7 +1763,7 @@ v2-pantry-memory.mjs: хаб під квотою 1e6 показує 'Запис�
 
 ### `ux-29` [low] Premium-CTA ведуть у глухий кут: checkout падає (провайдерів немає), а гостеві відповідь 401 показується як «Оплата тимчасово недоступна»
 
-- **Стан:** відкрито
+- **Стан:** виправлено в гілці `backlog/ux-29` (2026-11-21): поки `/api/billing/providers` порожній, Premium-CTA на /pricing і в `PaywallModal` стає «Повідомити про запуск» і одним тапом записує email сесії в лист очікування (`usePremiumLaunch.ts`), гість іде до форми листа замість checkout-у з 401; у catch checkout-у 401/403 ведуть на вхід, а `PROVIDER_UNAVAILABLE`/`BILLING_UNAVAILABLE` більше не йдуть у Sentry. Вхід із поверненням на /pricing для гостя після запуску оплати лишається за механізмом returnTo
 - **Рішення власника 2026-11-21:** поки провайдерів оплати нуль, Premium-CTA стає «Повідомити про запуск» (запис у лист очікування) замість checkout.
 - **Перевірка:** підтверджено · **Зусилля:** S · **Швидкий виграш** · **Область:** web: /pricing і пейволи
 - **Де:** apps/web/src/core/PricingPage.tsx:175-216; PaywallModal (handleCta → /pricing?source=paywall); apps/web/src/core/settings/PlanSection.tsx

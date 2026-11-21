@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
-import { useQuery, useQueryClient } from "@tanstack/react-query";
+import { useQueryClient } from "@tanstack/react-query";
 import { cn } from "@shared/lib/ui/cn";
 import { motionScrollBehavior } from "@shared/lib/ui/motion";
 import { Badge } from "@shared/components/ui/Badge";
@@ -14,14 +14,19 @@ import { useToast } from "@shared/hooks/useToast";
 import { useLocale } from "@shared/i18n/useLocale";
 import {
   billingCheckoutConflictCode,
+  isApiError,
   type BillingCheckoutResponse,
 } from "@sergeant/api-client";
+import type { WaitlistSource } from "@sergeant/shared";
 import { openHubSettingsSection } from "@shared/lib/modules/hubNav";
 import { ANALYTICS_EVENTS, trackEvent } from "./observability/analytics";
 import { captureException } from "./observability/sentry";
 import { usePlan } from "./billing";
 import { useAuthOptional } from "./auth/AuthContext";
-import { useSessionReady } from "./auth/useSessionReady";
+import {
+  usePremiumCheckoutAvailability,
+  usePremiumLaunchNotify,
+} from "./billing/usePremiumLaunch";
 import { SIGN_IN_PATH } from "./app/appPaths";
 import { WaitlistForm } from "./pricing/WaitlistForm";
 import { buildTiers, type Tier } from "./pricing/pricingTiers";
@@ -108,19 +113,19 @@ export function PricingPage() {
   // монтують сторінку голою — там лишаємо попередню поведінку.
   const auth = useAuthOptional();
   const signedOut = auth?.status === "unauthenticated";
-  const sessionReady = useSessionReady();
   // Payment-провайдери, доступні юзеру (UA → liqpay/plata). Джерело кнопок
-  // checkout-у. 401 → fall through до порожнього списку (default-flow).
-  const providersQuery = useQuery({
-    queryKey: billingKeys.providers,
-    queryFn: ({ signal }) => billingApi.providers({ signal }),
-    staleTime: 5 * 60_000,
-    retry: false,
-    // FUN-1 (аудит 2026-09): без сесії ендпоінт віддає 401 — не питаємо,
-    // і поки сесія ще визначається, теж (FULL-20261119-PERF-1).
-    enabled: sessionReady,
-  });
-  const enabledProviders = providersQuery.data?.providers ?? [];
+  // checkout-у і стану «оплата ще не запущена» (ux-29): без сесії ендпоінт
+  // віддає 401, тож гостеві його не питаємо (FUN-1, FULL-20261119-PERF-1).
+  const checkoutAvailability = usePremiumCheckoutAvailability();
+  const enabledProviders = checkoutAvailability.providers;
+  // ux-29 (рішення власника 2026-11-21): поки провайдерів нуль, Premium-CTA
+  // записує в лист очікування. Гостеві checkout віддав би 401, а лист
+  // очікування анонімний, тож гість іде в ту саму гілку: CTA веде до форми
+  // з полем email. Коли оплату запустять, гостеві потрібен вхід із
+  // поверненням на /pricing — це окремий механізм returnTo.
+  const prelaunch =
+    checkoutAvailability.state === "prelaunch" ||
+    checkoutAvailability.state === "guest";
   // i18n. Resolved messages frozen per-locale у resolver → memo identity
   // stable, `tiers` recomputes лише при locale-flip (rare).
   const { messages } = useLocale();
@@ -134,6 +139,24 @@ export function PricingPage() {
   // референс і повторно слала б PRICING_VIEWED з тим самим source (audit F25
   // + cubic: дубль pageview при поверненні з checkout).
   const viewSource = searchParams.get("source") ?? "direct";
+  const waitlistSource: WaitlistSource =
+    viewSource === "paywall" || viewSource === "settings"
+      ? viewSource
+      : "pricing_page";
+  const launchNotify = usePremiumLaunchNotify(
+    waitlistSource,
+    (outcome, message, retry) => {
+      if (outcome === "created") toast.success(message);
+      else if (outcome === "alreadyListed") toast.info(message);
+      // Ліміт пояснює сама копія («Спробуй за годину»): повтор одразу марний.
+      else if (outcome === "rateLimited") toast.warning(message);
+      else
+        toast.error(message, undefined, {
+          label: messages.actions.retry,
+          onClick: retry,
+        });
+    },
+  );
   useEffect(() => {
     trackEvent(ANALYTICS_EVENTS.PRICING_VIEWED, { source: viewSource });
   }, [viewSource]);
@@ -178,6 +201,37 @@ export function PricingPage() {
     toast.info(t.toast.paymentCanceled);
   }, [searchParams, setSearchParams, queryClient, toast, navigate, t]);
 
+  function scrollToWaitlist({ focusEmail = false } = {}): void {
+    const anchor = document.getElementById("waitlist-anchor");
+    if (anchor && typeof anchor.scrollIntoView === "function") {
+      // `block: "nearest"` (not "start") — the waitlist section sits near
+      // the end of the page; aligning it to the viewport TOP over-scrolls
+      // past it, revealing the trailing padding below the footer as a
+      // dead empty zone (round-2 UI audit X5). "nearest" scrolls only as
+      // far as needed to bring it into view.
+      anchor.scrollIntoView({
+        behavior: motionScrollBehavior(),
+        block: "nearest",
+      });
+    }
+    if (focusEmail) {
+      document.getElementById("waitlist-email")?.focus({ preventScroll: true });
+    }
+  }
+
+  /** ux-29: Premium-CTA до запуску оплати — запис у лист очікування. */
+  function handleNotifyLaunch(): void {
+    trackEvent(ANALYTICS_EVENTS.PRICING_CTA_CLICKED, {
+      tier: "pro",
+      cta: "notify_launch",
+    });
+    if (!signedOut && launchNotify.email) {
+      launchNotify.notify();
+      return;
+    }
+    scrollToWaitlist({ focusEmail: true });
+  }
+
   async function handlePremiumCta(provider?: string): Promise<void> {
     trackEvent(ANALYTICS_EVENTS.PRICING_CTA_CLICKED, {
       tier: "pro",
@@ -221,22 +275,25 @@ export function PricingPage() {
         }
         return;
       }
-      captureException(err, {
-        tags: { scope: "pricing-checkout-redirect" },
-      });
-      setCheckoutError(t.errors.checkoutUnavailable);
-      const anchor = document.getElementById("waitlist-anchor");
-      if (anchor && typeof anchor.scrollIntoView === "function") {
-        // `block: "nearest"` (not "start") — the waitlist section sits near
-        // the end of the page; aligning it to the viewport TOP over-scrolls
-        // past it, revealing the trailing padding below the footer as a
-        // dead empty zone (round-2 UI audit X5). "nearest" scrolls only as
-        // far as needed to bring it into view.
-        anchor.scrollIntoView({
-          behavior: motionScrollBehavior(),
-          block: "nearest",
+      // ux-29: сесія злетіла — це не «оплата недоступна», а вхід.
+      if (isApiError(err) && err.isAuth) {
+        navigate(SIGN_IN_PATH);
+        return;
+      }
+      // Провайдера чи білінгу немає — очікуваний стан, не збій для Sentry.
+      const code =
+        isApiError(err) && err.body && typeof err.body === "object"
+          ? (err.body as { code?: unknown }).code
+          : undefined;
+      const expected =
+        code === "PROVIDER_UNAVAILABLE" || code === "BILLING_UNAVAILABLE";
+      if (!expected) {
+        captureException(err, {
+          tags: { scope: "pricing-checkout-redirect" },
         });
       }
+      setCheckoutError(t.errors.checkoutUnavailable);
+      scrollToWaitlist();
     } finally {
       setCheckoutPlan(null);
     }
@@ -378,9 +435,15 @@ export function PricingPage() {
                   ? portalLoading
                     ? t.cta.openingPortal
                     : t.cta.manageSubscription
-                  : checkoutLoading
-                    ? t.cta.openingCheckout
-                    : t.cta.tryPremium
+                  : prelaunch
+                    ? launchNotify.done
+                      ? t.cta.notifyLaunchDone
+                      : launchNotify.busy
+                        ? t.cta.notifyLaunchBusy
+                        : t.cta.notifyLaunch
+                    : checkoutLoading
+                      ? t.cta.openingCheckout
+                      : t.cta.tryPremium
                 : signedOut
                   ? t.cta.signInToStart
                   : isPremiumActive
@@ -389,7 +452,9 @@ export function PricingPage() {
               const ctaDisabled = isPremium
                 ? isPremiumActive
                   ? portalLoading
-                  : checkoutLoading
+                  : prelaunch
+                    ? launchNotify.busy || launchNotify.done
+                    : checkoutLoading
                 : // Free CTA: disabled both для активного Free-юзера
                   // (вже ваш план) і для Premium-юзера (downgrade /
                   // cancel живе у Settings, не тут). Для гостя вона,
@@ -399,7 +464,9 @@ export function PricingPage() {
               // передавати його прямо в onClick (MouseEvent став би provider).
               const onPremiumClick = isPremiumActive
                 ? handleManageSubscription
-                : () => void handlePremiumCta(enabledProviders[0]);
+                : prelaunch
+                  ? handleNotifyLaunch
+                  : () => void handlePremiumCta(enabledProviders[0]);
               // Кілька UA-провайдерів → показуємо кнопку на кожен (вибір на
               // checkout). Один/нуль → звичайна одна CTA (server-default).
               const showProviderChoice =

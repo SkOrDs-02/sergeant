@@ -49,6 +49,9 @@ export const pricingEn: MessageGroupShape<(typeof ukMessages)["pricing"]> = {
     switchToFree: "Switch to Free",
     currentPlan: "Your current plan",
     signInToStart: "Sign in to start",
+    notifyLaunch: "Notify me at launch",
+    notifyLaunchBusy: "Saving…",
+    notifyLaunchDone: "You're on the list",
   },
   status: {
     checkoutCreatedPrefix: "Payment session created",
@@ -71,6 +74,14 @@ export const pricingEn: MessageGroupShape<(typeof ukMessages)["pricing"]> = {
     subscriptionActive: "Subscription active, welcome to Premium!",
     subscriptionActiveCta: "Go to settings",
     paymentCanceled: "Payment canceled. No subscription was created.",
+  },
+  launchNotify: {
+    created: "Email saved. I'll write as soon as Premium launches.",
+    alreadyListed:
+      "You're already on the list. I'll write when Premium launches.",
+    rateLimited: "Too many requests. Try again in an hour.",
+    failed:
+      "Couldn't add you to the list. Check your connection and try again.",
   },
   waitlist: {
     headline: "Waitlist email",
