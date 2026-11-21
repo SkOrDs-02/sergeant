@@ -12,7 +12,11 @@ interface MailHarness {
   configureFtuxDripDispatcher(deps: { pool: unknown }): void;
   classifyDispatchOutcome(err: unknown): { outcome: string };
   FtuxDripSkip: new (
-    outcome: "skipped_optout" | "skipped_already_sent" | "skipped_user_deleted",
+    outcome:
+      | "skipped_optout"
+      | "skipped_already_sent"
+      | "skipped_user_deleted"
+      | "skipped_unverified",
     message: string,
   ) => Error;
 }
@@ -44,6 +48,13 @@ function job(day: FtuxDay = "day_0") {
   };
 }
 
+const VERIFIED_USER = {
+  id: "u_1",
+  email: "fresh@example.com",
+  name: null,
+  email_verified: true,
+};
+
 describe("ftux drip mail dispatcher", () => {
   const fetchMock = vi.fn();
 
@@ -68,7 +79,14 @@ describe("ftux drip mail dispatcher", () => {
     const query = vi
       .fn()
       .mockResolvedValueOnce({
-        rows: [{ id: "u_1", email: "fresh@example.com", name: " Діма " }],
+        rows: [
+          {
+            id: "u_1",
+            email: "fresh@example.com",
+            name: " Діма ",
+            email_verified: true,
+          },
+        ],
       })
       .mockResolvedValueOnce({ rows: [] })
       .mockResolvedValueOnce({ rows: [{ id: "55" }] })
@@ -130,7 +148,7 @@ describe("ftux drip mail dispatcher", () => {
     const optOutQuery = vi
       .fn()
       .mockResolvedValueOnce({
-        rows: [{ id: "u_1", email: "fresh@example.com", name: null }],
+        rows: [VERIFIED_USER],
       })
       .mockResolvedValueOnce({ rows: [{ "?column?": 1 }] });
     mail.configureFtuxDripDispatcher({ pool: { query: optOutQuery } as never });
@@ -141,7 +159,7 @@ describe("ftux drip mail dispatcher", () => {
     const alreadySentQuery = vi
       .fn()
       .mockResolvedValueOnce({
-        rows: [{ id: "u_1", email: "fresh@example.com", name: null }],
+        rows: [VERIFIED_USER],
       })
       .mockResolvedValueOnce({ rows: [] })
       .mockResolvedValueOnce({ rows: [] });
@@ -160,7 +178,7 @@ describe("ftux drip mail dispatcher", () => {
     const query = vi
       .fn()
       .mockResolvedValueOnce({
-        rows: [{ id: "u_1", email: "fresh@example.com", name: null }],
+        rows: [VERIFIED_USER],
       })
       .mockResolvedValueOnce({ rows: [] })
       .mockResolvedValueOnce({ rows: [{ id: "55" }] })
@@ -181,7 +199,7 @@ describe("ftux drip mail dispatcher", () => {
     const query = vi
       .fn()
       .mockResolvedValueOnce({
-        rows: [{ id: "u_1", email: "fresh@example.com", name: null }],
+        rows: [VERIFIED_USER],
       })
       .mockResolvedValueOnce({ rows: [] })
       .mockResolvedValueOnce({ rows: [{ id: "55" }] })
@@ -208,7 +226,7 @@ describe("ftux drip mail dispatcher", () => {
     const query = vi
       .fn()
       .mockResolvedValueOnce({
-        rows: [{ id: "u_1", email: "fresh@example.com", name: null }],
+        rows: [VERIFIED_USER],
       })
       .mockResolvedValueOnce({ rows: [] })
       .mockResolvedValueOnce({ rows: [{ id: "55" }] });
@@ -224,6 +242,94 @@ describe("ftux drip mail dispatcher", () => {
     // тут означало б ризик другого листа тій самій людині — а дубль гірший
     // за рідкісний втрачений лист.
     expect(query).toHaveBeenCalledTimes(3);
+  });
+
+  it("priv-22: не шле нічого на непідтверджену адресу", async () => {
+    const { jobs, mail } = await loadHarness();
+    const query = vi.fn();
+    mail.configureFtuxDripDispatcher({ pool: { query } as never });
+
+    for (const day of ["day_0", "day_1", "day_3"] as const) {
+      query.mockResolvedValueOnce({
+        rows: [{ ...VERIFIED_USER, email_verified: false }],
+      });
+      await expect(jobs.processFtuxDripJob(job(day))).resolves.toBeUndefined();
+    }
+
+    expect(fetchMock).not.toHaveBeenCalled();
+    // Лише lookup користувача: ні opt-out, ні claim у `email_campaigns_log`,
+    // тож після підтвердження серія ще може піти.
+    for (const call of query.mock.calls) {
+      expect(call[0]).toMatch(/FROM "user" u/);
+      expect(call[0]).toMatch(/"emailVerified"/);
+    }
+    expect(query).toHaveBeenCalledTimes(3);
+  });
+
+  it("priv-22: кожен лист несе List-Unsubscribe і one-click List-Unsubscribe-Post", async () => {
+    const { jobs, mail } = await loadHarness();
+    mail.configureFtuxDripDispatcher({
+      pool: {
+        query: vi.fn(async (sql: string) =>
+          /FROM "user" u/.test(sql)
+            ? { rows: [VERIFIED_USER] }
+            : /INSERT INTO email_campaigns_log/.test(sql)
+              ? { rows: [{ id: "55" }] }
+              : { rows: [] },
+        ),
+      } as never,
+    });
+
+    for (const day of ["day_0", "day_1", "day_3"] as const) {
+      fetchMock.mockResolvedValueOnce(
+        new Response(JSON.stringify({ id: `email_${day}` }), { status: 200 }),
+      );
+      await jobs.processFtuxDripJob(job(day));
+    }
+
+    expect(fetchMock).toHaveBeenCalledTimes(3);
+    for (const call of fetchMock.mock.calls) {
+      const body = JSON.parse((call[1] as { body: string }).body) as {
+        html: string;
+        text: string;
+        headers?: Record<string, string>;
+      };
+      const header = body.headers?.["List-Unsubscribe"] ?? "";
+      expect(header).toMatch(
+        /^<https:\/\/app\.example\.com\/api\/email\/unsubscribe\?u=u_1\.[0-9a-f]+>$/,
+      );
+      expect(body.headers?.["List-Unsubscribe-Post"]).toBe(
+        "List-Unsubscribe=One-Click",
+      );
+      // Той самий URL і у футері листа.
+      const url = header.slice(1, -1);
+      expect(body.text).toContain(url);
+      expect(body.html).toContain(url);
+    }
+  });
+
+  it("priv-22: відписаний користувач не отримує листа", async () => {
+    const { jobs, mail } = await loadHarness();
+    const query = vi
+      .fn()
+      .mockResolvedValueOnce({ rows: [VERIFIED_USER] })
+      .mockResolvedValueOnce({ rows: [{ "?column?": 1 }] });
+    mail.configureFtuxDripDispatcher({ pool: { query } as never });
+
+    await expect(
+      jobs.processFtuxDripJob(job("day_0")),
+    ).resolves.toBeUndefined();
+
+    expect(fetchMock).not.toHaveBeenCalled();
+    expect(query).toHaveBeenCalledTimes(2);
+    expect(query.mock.calls[1]?.[1]).toEqual(["u_1", "ftux_drip"]);
+  });
+
+  it("buildListUnsubscribeHeaders без підписаного URL не ставить заголовків", async () => {
+    const mail = (await import("./ftuxDripMail.js")) as {
+      buildListUnsubscribeHeaders(url: string | null): Record<string, string>;
+    };
+    expect(mail.buildListUnsubscribeHeaders(null)).toEqual({});
   });
 
   it("classifies direct-dispatch outcomes", async () => {

@@ -166,6 +166,8 @@ const NOT_USER_SCOPED: Record<string, string> = {
   "POST /api/feedback": "публічна форма зворотного зв'язку, лише запис",
   "POST /api/v1/feedback": "публічна форма зворотного зв'язку, лише запис",
   "GET /api/email/unsubscribe": "одноразове посилання з підписаним токеном",
+  "POST /api/email/unsubscribe":
+    "RFC 8058 one-click за тим самим підписаним токеном",
 };
 
 /** `/api/internal/*`: machine-to-machine, `requireInternalIp` + INTERNAL_API_KEY. */

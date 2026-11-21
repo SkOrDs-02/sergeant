@@ -295,6 +295,25 @@ const databaseConfig = tokenKeyRing
   ? createEncryptingAdapter(tokenKeyRing)
   : drizzleAdapter(db, { provider: "pg" });
 
+/**
+ * Ставить FTUX-серію в чергу, не валячи auth-flow: помилка enqueue лише
+ * логується (без plaintext email).
+ */
+function startFtuxDrip(user: { id: string; email: string }): void {
+  try {
+    queueFtuxDripForNewUser({ userId: user.id, email: user.email });
+  } catch (err) {
+    logger.error(
+      {
+        event: "auth.user.ftux_drip.enqueue_error",
+        email_hash: emailFingerprint(user.email),
+        err: err instanceof Error ? err.message : String(err),
+      },
+      "queueFtuxDripForNewUser threw while starting the FTUX drip",
+    );
+  }
+}
+
 export const auth = betterAuth({
   database: databaseConfig,
   baseURL: getBaseURL(),
@@ -448,6 +467,15 @@ export const auth = betterAuth({
         ...verificationMail(url),
       });
     },
+    /**
+     * priv-22 — FTUX-серія стартує з підтвердження адреси, а не з
+     * реєстрації. Спрацьовує і на підтвердження нової адреси при зміні
+     * email: повторного листа не буде, дедуп тримає `email_campaigns_log`.
+     */
+    afterEmailVerification: async (user) => {
+      if (user.emailVerified !== true) return;
+      startFtuxDrip({ id: user.id, email: user.email });
+    },
   },
   /**
    * 7-day hard expiry + 1-day rolling refresh. Active користувачі
@@ -524,7 +552,9 @@ export const auth = betterAuth({
           return { data: result.data };
         },
         /**
-         * S4.3 — FTUX email drip (Day 0 / 1 / 3) через Resend.
+         * S4.3 — FTUX email drip (Day 0 / 1 / 3) через Resend. З priv-22
+         * тут стартує лише вже підтверджена адреса (соцвхід); решта — з
+         * `emailVerification.afterEmailVerification`.
          *
          * Триггер свідомо у `.after`, а не у `.before`: до `.after`-моменту
          * у нас уже є реальний `user.id`, потрібний для unsubscribe-токена,
@@ -553,17 +583,11 @@ export const auth = betterAuth({
           // Reverse trial (за прапорцем); сам ловить свої помилки, тож
           // реєстрацію не валить навіть при збої вставки.
           await grantReverseTrial(pool, user.id);
-          try {
-            queueFtuxDripForNewUser({ userId: user.id, email: user.email });
-          } catch (err) {
-            logger.error(
-              {
-                event: "auth.user.ftux_drip.enqueue_error",
-                email_hash: emailFingerprint(user.email),
-                err: err instanceof Error ? err.message : String(err),
-              },
-              "queueFtuxDripForNewUser threw during user.create.after hook",
-            );
+          // priv-22: лише підтверджена адреса (Google/Apple приходять уже
+          // з `emailVerified`). Email+пароль стартує серію з
+          // `emailVerification.afterEmailVerification`.
+          if (user.emailVerified === true) {
+            startFtuxDrip({ id: user.id, email: user.email });
           }
         },
       },

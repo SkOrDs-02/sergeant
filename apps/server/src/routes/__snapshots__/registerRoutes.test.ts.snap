@@ -77,6 +77,7 @@ exports[`registerRoutes > mounts the stable set of /api/* endpoints (snapshot) 1
   "POST /api/coach/insight",
   "POST /api/coach/memory",
   "POST /api/csp-report",
+  "POST /api/email/unsubscribe",
   "POST /api/feedback",
   "POST /api/finyk/import/commit",
   "POST /api/finyk/import/screenshot/analyze",

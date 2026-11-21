@@ -41,6 +41,7 @@ export const authMailQueueDepth = new client.Gauge({
 //   - `skipped_optout` — opt-out зафіксований у `email_unsubscribes`
 //   - `skipped_already_sent` — `email_campaigns_log` уже має row
 //   - `skipped_user_deleted` — юзера вже немає (3-day-ге очікування)
+//   - `skipped_unverified` — email ще не підтверджений (priv-22)
 //   - `retry` / `permanent_fail` — як і в auth-mail.
 export const ftuxDripJobsEnqueuedTotal = new client.Counter({
   name: "ftux_drip_jobs_enqueued_total",
@@ -53,7 +54,7 @@ export const ftuxDripJobsProcessedTotal = new client.Counter({
   name: "ftux_drip_jobs_processed_total",
   help: "FTUX drip mail processor outcomes",
   labelNames: ["outcome", "day"],
-  // outcome: ok|retry|permanent_fail|skipped_optout|skipped_already_sent|skipped_user_deleted
+  // outcome: ok|retry|permanent_fail|skipped_optout|skipped_already_sent|skipped_user_deleted|skipped_unverified
   registers: [register],
 });
 

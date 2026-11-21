@@ -1,7 +1,7 @@
 # Аудит 2026-10-01 · Приватність і відповідність
 
 > **Status:** Active. 38 кластерів (48 знахідок) за першопричиною. Загальний план, метод і обмеження — у [README](./README.md).
-> **Last touched:** 2026-11-21 by @claude (рішення власника по кластерах, раунди 5–10); раніше перевірено 2026-10-02.
+> **Last touched:** 2026-11-21 by @claude (priv-22 закрито: FTUX лише після підтвердження email і з one-click відпискою; рішення власника по кластерах, раунди 5–10); раніше перевірено 2026-10-02.
 > **Next review:** 2027-01-21
 > **Spec-lint:** skip. Реєстр знахідок аудиту, не специфікація реалізації.
 
@@ -1368,7 +1368,7 @@ Harness output: {size:1200000,type:image/jpeg} -> false; {size:900000,type:image
 
 ### `priv-22` [low] FTUX-розсилка йде без маркетингової згоди і до підтвердження email, а відписка — state-changing GET без List-Unsubscribe
 
-- **Стан:** відкрито
+- **Стан:** закрито 2026-11-21 в гілці `backlog/priv-22` (серія стартує з `afterEmailVerification` або з уже підтвердженого соцвходу, диспетчер скіпає `skipped_unverified` на кожному дні; кожен лист несе `List-Unsubscribe` і `List-Unsubscribe-Post: List-Unsubscribe=One-Click`, `POST /api/email/unsubscribe` відписує за тим самим токеном через `email_unsubscribes`; GET-відписка, окремий секрет токена і текст політики в `privacyDocument.ts:133` не змінювались)
 - **Рішення власника 2026-11-21:** FTUX-серія = онбординг з opt-out: слати лише після `emailVerified`, з посиланням «відписатись» і заголовками `List-Unsubscribe`/`List-Unsubscribe-Post`.
 - **Перевірка:** підтверджено · **Зусилля:** M · **Область:** server: email
 - **Де:** apps/server/src/auth.ts:481-515; apps/server/src/email/ftuxDripMail.ts:290-301, 342-460; apps/server/src/routes/email-unsubscribe.ts:177-222; apps/server/src/email/ftuxUnsubscribeToken.ts:22-35, 139-145; apps/web/src/core/legal/privacyDocument.ts:133

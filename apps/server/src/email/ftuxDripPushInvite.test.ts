@@ -65,7 +65,13 @@ describe("dispatcher вирішує про запрошення за стано�
       .fn()
       .mockResolvedValueOnce({
         rows: [
-          { id: "u_1", email: "u@example.com", name: null, has_push: hasPush },
+          {
+            id: "u_1",
+            email: "u@example.com",
+            name: null,
+            email_verified: true,
+            has_push: hasPush,
+          },
         ],
       })
       .mockResolvedValueOnce({ rows: [] })

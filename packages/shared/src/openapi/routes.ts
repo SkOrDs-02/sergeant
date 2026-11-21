@@ -2215,6 +2215,20 @@ export const paths: ZodOpenApiPathsObject = {
         "503": { description: "Секрет підпису не налаштовано." },
       },
     },
+    post: {
+      summary: "One-click відписка (RFC 8058) за HMAC-токеном",
+      description:
+        "Викликає поштовий клієнт за заголовком `List-Unsubscribe-Post: List-Unsubscribe=One-Click`. Токен — у query `?u=<userId>.<hmac>`, тіло (`List-Unsubscribe=One-Click`) не читається. Без сесії й CSRF-заголовка.",
+      tags: ["email"],
+      requestParams: { query: z.object({ u: z.string() }) },
+      responses: {
+        "200": {
+          description: "HTML-сторінка (успіх або невалідний токен).",
+          content: { "text/html": { schema: { type: "string" } } },
+        },
+        "503": { description: "Секрет підпису не налаштовано." },
+      },
+    },
   },
 
   // ────────────────────── /api/telegram/webhook ──────────────────────

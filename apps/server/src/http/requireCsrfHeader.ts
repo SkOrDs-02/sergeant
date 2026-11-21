@@ -42,6 +42,9 @@ import type { RequestHandler } from "express";
  *     LiqPay `signature`, Plata `X-Sign` ECDSA), який кожен handler
  *     верифікує сам. Без exempt-у CSRF-гейт рубав би їх 403-ю ДО
  *     перевірки підпису, і колбеки платежів мовчки не доходили б.
+ *   - `/api/email/unsubscribe` — RFC 8058 one-click POST від поштовика
+ *     (Gmail, Yahoo) без cookie і custom header-ів; захист — HMAC-токен у
+ *     query, який handler верифікує сам (priv-22).
  *   - `/api/csp-report` — браузерний `report-uri` POST без custom
  *     header-ів (browser-controlled).
  *   - `/api/metrics/web-vitals` — sendBeacon-style телеметрія,
@@ -87,6 +90,7 @@ const EXEMPT_PATH_PREFIXES: readonly string[] = [
   "/api/billing/liqpay-callback",
   "/api/billing/plata-charge",
   "/api/billing/plata-status",
+  "/api/email/unsubscribe",
   "/api/csp-report",
   "/api/metrics/web-vitals",
   "/api/v1/metrics/web-vitals",

@@ -53,6 +53,11 @@ type AuthCallbacks = {
         user: { email: string };
         url: string;
       }) => Promise<void>;
+      afterEmailVerification: (user: {
+        id: string;
+        email: string;
+        emailVerified: boolean;
+      }) => Promise<void>;
     };
     databaseHooks: {
       user: { create: { after: (user: unknown) => Promise<void> } };
@@ -106,13 +111,42 @@ describe("auth email callbacks", () => {
 });
 
 describe("auth user creation callback", () => {
-  it("starts reverse trial and FTUX drip for a newly created user", async () => {
+  it("starts reverse trial and FTUX drip for a user created already verified (social)", async () => {
     await options.databaseHooks.user.create.after({
       id: "new-user",
       email: "new@example.com",
+      emailVerified: true,
     });
 
     expect(reverseTrial).toHaveBeenCalledWith(expect.anything(), "new-user");
+    expect(ftuxQueue).toHaveBeenCalledExactlyOnceWith({
+      userId: "new-user",
+      email: "new@example.com",
+    });
+  });
+
+  it("priv-22: unverified sign-up gets reverse trial but no FTUX drip", async () => {
+    await options.databaseHooks.user.create.after({
+      id: "new-user",
+      email: "someone-else@example.com",
+      emailVerified: false,
+    });
+    await options.databaseHooks.user.create.after({
+      id: "new-user-2",
+      email: "no-flag@example.com",
+    });
+
+    expect(reverseTrial).toHaveBeenCalledTimes(2);
+    expect(ftuxQueue).not.toHaveBeenCalled();
+  });
+
+  it("priv-22: FTUX drip starts once the email is verified", async () => {
+    await options.emailVerification.afterEmailVerification({
+      id: "new-user",
+      email: "new@example.com",
+      emailVerified: true,
+    });
+
     expect(ftuxQueue).toHaveBeenCalledExactlyOnceWith({
       userId: "new-user",
       email: "new@example.com",
@@ -137,6 +171,7 @@ describe("auth user creation callback", () => {
       options.databaseHooks.user.create.after({
         id: "new-user",
         email: "Private@Example.com",
+        emailVerified: true,
       }),
     ).resolves.toBeUndefined();
     const [fields] = loggerMock.error.mock.calls[0] as [
