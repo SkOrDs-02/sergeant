@@ -195,7 +195,7 @@ describe("OpenAPI roundtrip: representative live responses", () => {
     expectMatchesOpenApi("/api/billing/status", 401, response.body);
   });
 
-  it("validates authenticated /api/billing/providers (non-UA → stripe) against OpenAPI", async () => {
+  it("validates authenticated /api/billing/providers against OpenAPI and ignores x-vercel-ip-country (sec-33)", async () => {
     getSessionUserMock.mockResolvedValueOnce(SESSION_USER);
 
     const response = await request(createApp())
@@ -204,7 +204,9 @@ describe("OpenAPI roundtrip: representative live responses", () => {
       .set("x-vercel-ip-country", "US");
 
     expect(response.status).toBe(200);
-    expect(response.body).toEqual({ providers: ["stripe"] });
+    // Заголовок країни від клієнта більше не впливає на вибір: Stripe лише за
+    // STRIPE_ENABLED, якого в тестовому оточенні немає.
+    expect(response.body.providers).not.toContain("stripe");
     expectMatchesOpenApi("/api/billing/providers", 200, response.body);
   });
 
