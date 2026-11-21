@@ -2531,7 +2531,7 @@ Scripts: <scratch>/agents/verify-browser-surfaces-fizruk-flows/v1.mjs (per-page 
 
 ### `ux-42` [low] Відʼємні суми у світлій темі мають контраст 3.76:1 (text-danger на білому)
 
-- **Стан:** відкрито
+- **Стан:** виправлено 2026-11-21 (`signedDeltaClass` для відʼємних значень віддає `text-danger-strong dark:text-danger`, тож `Delta`/`Money` у аналітиці, продавцях і дельтах категорій Фініка мають AA; ту саму пару отримали три підписи помилок у Фініку з голим `text-danger`; стан із відʼємним балансом у регресійному гейті контрасту не додано)
 - **Перевірка:** підтверджено · **Зусилля:** S · **Швидкий виграш** · **Область:** web: контраст / Фінік
 - **Де:** apps/web/src/shared/lib/ui/amountTone.ts:34; apps/web/src/modules/finyk/pages/Analytics.tsx:616; Money.tsx:201; finyk analytics/MerchantList.tsx; CategoryDeltaTable.tsx; finyk overview/pulseStyle.ts:37,83
 - **Першопричина:** signedDeltaClass для value&lt;0 повертає голий "text-danger", а для додатних значень пару text-success-strong dark:text-success. Токен danger-strong (8.31:1) існує, але тут не використовується.

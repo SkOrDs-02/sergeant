@@ -108,7 +108,10 @@ export function SilpoReceiptPickerSheet({
         )}
 
         {relink.isError && (
-          <p role="alert" className="mb-2 text-style-caption text-danger">
+          <p
+            role="alert"
+            className="mb-2 text-style-caption text-danger-strong dark:text-danger"
+          >
             {COPY.failed}
           </p>
         )}

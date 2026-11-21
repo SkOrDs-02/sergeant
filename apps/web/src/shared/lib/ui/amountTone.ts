@@ -22,7 +22,7 @@
  *
  * If you find yourself reaching for `text-emerald-` / `text-green-` /
  * `text-red-` to colour an amount, that's a code smell — use these
- * helpers (or `text-success-strong` / `text-danger` directly).
+ * helpers (or `text-success-strong` / `text-danger-strong` directly).
  */
 
 /**
@@ -31,7 +31,10 @@
  */
 export function signedDeltaClass(value: number): string {
   if (value > 0) return "text-success-strong dark:text-success";
-  if (value < 0) return "text-danger";
+  // AI-CONTEXT (ux-42): обидві знакові гілки — `-strong`-компаньйон.
+  // Голий `text-danger` (red-500) на білому дає 3.76:1, нижче WCAG AA,
+  // а саме ним малювались відʼємні баланси й дельти Фініка.
+  if (value < 0) return "text-danger-strong dark:text-danger";
   return "text-muted";
 }
 

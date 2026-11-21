@@ -417,7 +417,10 @@ export function SilpoReceiptSection({
           а сусідній «Розбити за чеком» лишається головним. */}
       <div className="mt-3 flex items-center justify-end gap-2 border-t border-line pt-2">
         {unlinkMutation.isError && (
-          <p role="alert" className="text-style-caption text-danger">
+          <p
+            role="alert"
+            className="text-style-caption text-danger-strong dark:text-danger"
+          >
             {copy.unlinkFailed}
           </p>
         )}

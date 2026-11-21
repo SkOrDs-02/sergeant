@@ -103,7 +103,7 @@ describe("Delta — зміна як типографіка, а не бейдж",
       <Delta value={340} polarity="negative" />,
     );
     expect(grow.firstElementChild).toHaveClass("text-success-strong");
-    expect(spend.firstElementChild).toHaveClass("text-danger");
+    expect(spend.firstElementChild).toHaveClass("text-danger-strong");
   });
 
   /**
@@ -134,7 +134,7 @@ describe("Delta — зміна як типографіка, а не бейдж",
     const { container } = render(<Delta value={-340} polarity="positive" />);
     const sign = container.querySelector(".text-\\[0\\.78em\\]");
     const sym = container.querySelector(".text-\\[0\\.72em\\]");
-    expect(container.firstElementChild).toHaveClass("text-danger");
+    expect(container.firstElementChild).toHaveClass("text-danger-strong");
     for (const tier of [sign, sym]) {
       expect(tier!.className).not.toMatch(/opacity-/);
       expect(tier!.className).not.toMatch(/text-muted/);

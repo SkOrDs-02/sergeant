@@ -198,7 +198,10 @@ export function TransactionsFiltersSheet({
           />
         </div>
         {(!from.ok || !to.ok || orderError) && (
-          <p className="text-style-caption text-danger" role="alert">
+          <p
+            className="text-style-caption text-danger-strong dark:text-danger"
+            role="alert"
+          >
             {orderError ? copy.amountOrder : copy.amountInvalid}
           </p>
         )}

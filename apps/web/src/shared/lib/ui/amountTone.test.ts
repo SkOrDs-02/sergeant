@@ -10,10 +10,25 @@ describe("signedDeltaClass", () => {
     );
   });
 
-  it("відʼємна дельта → danger без dark-перекриття", () => {
-    expect(signedDeltaClass(-1)).toBe("text-danger");
-    expect(signedDeltaClass(-0.0001)).toBe("text-danger");
-    expect(signedDeltaClass(Number.MIN_SAFE_INTEGER)).toBe("text-danger");
+  // Регресія ux-42: голий `text-danger` (red-500) на білому дає 3.76:1,
+  // нижче WCAG AA 4.5:1 — і саме ним малювались відʼємні баланси Фініка.
+  it("відʼємна дельта → danger-strong зі світлим dark-варіантом", () => {
+    expect(signedDeltaClass(-1)).toBe("text-danger-strong dark:text-danger");
+    expect(signedDeltaClass(-0.0001)).toBe(
+      "text-danger-strong dark:text-danger",
+    );
+    expect(signedDeltaClass(Number.MIN_SAFE_INTEGER)).toBe(
+      "text-danger-strong dark:text-danger",
+    );
+  });
+
+  it("у світлій темі жодна знакова гілка не віддає голий базовий тон", () => {
+    for (const value of [1, -1]) {
+      const classes = signedDeltaClass(value).split(" ");
+      expect(classes.filter((c) => !c.startsWith("dark:"))).toEqual([
+        expect.stringMatching(/-strong$/),
+      ]);
+    }
   });
 
   it("нуль → muted (нейтрально)", () => {
@@ -35,7 +50,9 @@ describe("signedDeltaClass", () => {
     expect(signedDeltaClass(Number.POSITIVE_INFINITY)).toBe(
       "text-success-strong dark:text-success",
     );
-    expect(signedDeltaClass(Number.NEGATIVE_INFINITY)).toBe("text-danger");
+    expect(signedDeltaClass(Number.NEGATIVE_INFINITY)).toBe(
+      "text-danger-strong dark:text-danger",
+    );
   });
 });
 
