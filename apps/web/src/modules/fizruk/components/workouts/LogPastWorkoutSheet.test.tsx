@@ -294,6 +294,46 @@ describe("LogPastWorkoutSheet", () => {
     expect(arg.activity?.kcalBurned).toBe(270);
   });
 
+  it("вага з комою «75,5» лягає як 75,5 кг, а не 755", () => {
+    // data-62: поле було `type="number"`, і браузер з крапкою в локалі
+    // викидав кому — «75,5» ставало 755 кг у журналі тіла й 10× ккал.
+    const { onRecordWeight, onSubmit } = setup({ weightKg: null });
+    fireEvent.change(field("Дата"), { target: { value: PAST_DAY } });
+    pickActivity();
+    const weight = field("Твоя вага, кг");
+    expect(weight.type).toBe("text");
+    expect(weight.inputMode).toBe("decimal");
+    fireEvent.change(weight, { target: { value: "75,5" } });
+    fireEvent.click(screen.getByText("Записати"));
+
+    expect(onRecordWeight).toHaveBeenCalledWith(75.5);
+    const arg = onSubmit.mock.calls[0]![0] as {
+      activity?: { kcalBurned: number | null };
+    };
+    // MET 6 × 75,5 кг × 0.75 год ≈ 340.
+    expect(arg.activity?.kcalBurned).toBe(340);
+  });
+
+  it("неможливу вагу не пише в журнал і пояснює межі біля поля", () => {
+    const { onRecordWeight, onSubmit } = setup({ weightKg: null });
+    fireEvent.change(field("Дата"), { target: { value: PAST_DAY } });
+    pickActivity();
+    const weight = field("Твоя вага, кг");
+    fireEvent.change(weight, { target: { value: "755" } });
+    fireEvent.blur(weight);
+
+    expect(weight).toHaveAttribute("aria-invalid", "true");
+    expect(screen.getByRole("alert")).toHaveTextContent(
+      "Вага має бути від 20 до 400 кг",
+    );
+    expect(screen.queryByText(/Приблизно/)).toBeNull();
+    const submit = screen.getByText("Записати");
+    expect(submit).toBeDisabled();
+    fireEvent.click(submit);
+    expect(onRecordWeight).not.toHaveBeenCalled();
+    expect(onSubmit).not.toHaveBeenCalled();
+  });
+
   it("не питає вагу, коли вона вже відома", () => {
     setup({ weightKg: 80 });
     pickActivity();

@@ -53,7 +53,11 @@ vi.mock(
   },
 );
 
-import { BIOMETRICS_DEFAULT, type Biometrics } from "./biometrics";
+import {
+  BIOMETRICS_DEFAULT,
+  WEIGHT_KG_RANGE,
+  type Biometrics,
+} from "./biometrics";
 import { BiometricsSection } from "./BiometricsSection";
 
 beforeEach(() => {
@@ -85,7 +89,7 @@ describe("BiometricsSection", () => {
     expect(screen.getByLabelText("Дата народження")).toHaveValue("");
     expect(screen.getByLabelText("Стать")).toHaveValue("");
     expect(screen.getByLabelText("Рівень активності")).toHaveValue("");
-    expect(screen.getByLabelText("Поточна вага (кг)")).toHaveValue(null);
+    expect(screen.getByLabelText("Поточна вага (кг)")).toHaveValue("");
   });
 
   it("hydrates from a persisted record", () => {
@@ -107,7 +111,7 @@ describe("BiometricsSection", () => {
     expect(screen.getByLabelText("Дата народження")).toHaveValue("1990-05-12");
     expect(screen.getByLabelText("Стать")).toHaveValue("male");
     expect(screen.getByLabelText("Рівень активності")).toHaveValue("moderate");
-    expect(screen.getByLabelText("Поточна вага (кг)")).toHaveValue(80);
+    expect(screen.getByLabelText("Поточна вага (кг)")).toHaveValue("80");
   });
 
   it("disables Зберегти until the form is dirty", () => {
@@ -376,19 +380,37 @@ describe("BiometricsSection — L-4 (значення поза діапазон�
 
   // Симетричний пін для ваги — раніше не існував узагалі (D3), хоча діра
   // там ширша: `min: 40` дає підрядок "40" усередині "400".
-  it("повідомлення про діапазон називає ті самі межі, що й атрибути поля (вага)", () => {
+  // data-62: поле ваги стало `type="text"` (кома), атрибутів `min`/`max`
+  // у нього більше немає, тож пін звіряє повідомлення з самою константою.
+  it("повідомлення про діапазон називає ті самі межі, що й WEIGHT_KG_RANGE (вага)", () => {
     render(<BiometricsSection online />);
     const weight = screen.getByLabelText("Поточна вага (кг)");
-    const min = weight.getAttribute("min");
-    const max = weight.getAttribute("max");
-    expect(min).toBeTruthy();
-    expect(max).toBeTruthy();
 
     fireEvent.change(weight, { target: { value: "9999" } });
     fireEvent.blur(weight);
 
     const message = screen.getByText(/Вага має бути/).textContent ?? "";
-    expect(message).toBe(`Вага має бути від ${min} до ${max} кг`);
+    expect(message).toBe(
+      `Вага має бути від ${WEIGHT_KG_RANGE.min} до ${WEIGHT_KG_RANGE.max} кг`,
+    );
+  });
+
+  // data-62: `type="number"` у браузері з крапкою в локалі викидав кому, і
+  // «75,5» доїжджало як 755 - замість ваги людина бачила помилку меж.
+  it("вага з комою «75,5» зберігається як 75,5 кг", () => {
+    render(<BiometricsSection />);
+    const weight = screen.getByLabelText(
+      "Поточна вага (кг)",
+    ) as HTMLInputElement;
+    expect(weight.type).toBe("text");
+    expect(weight.inputMode).toBe("decimal");
+
+    fireEvent.change(weight, { target: { value: "75,5" } });
+    fireEvent.blur(weight);
+    expect(screen.queryByText(/Вага має бути/)).toBeNull();
+    fireEvent.click(screen.getByRole("button", { name: "Зберегти" }));
+
+    expect(readStored()?.weightKg).toBe(75.5);
   });
 
   it("клік по «Зберегти» (навіть форсований) не стирає збережений зріст і не рапортує хибний успіх", () => {

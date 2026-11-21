@@ -4762,7 +4762,7 @@ apps/web/src/modules/routine/components/HabitQuickCreateDialog.tsx:98-122 (seed 
 
 ### `data-62` [low] Фізрук «Записати заняття»: вага «75,5» стає 755 кг і без перевірки діапазону пишеться в журнал тіла
 
-- **Стан:** відкрито
+- **Стан:** виправлено в гілці `backlog/data-62` (PR ще не відкрито): поле ваги в «Записати заняття» і в біометрії профілю - `type="text"` + `inputMode="decimal"`, кома парситься `parseDecimalInput`; у формі заняття вага поза `WEIGHT_KG_RANGE` (20–400) не йде ні в ккал, ні в журнал тіла, «Записати» чекає виправлення, а біля поля помилка меж. Межі 20–300 у `BodyEntryForm` проти 20–400 не узгоджено, це лишається окремим кроком
 - **Перевірка:** підтверджено · **Зусилля:** S · **Швидкий виграш** · **Область:** web: Фізрук (LogPastWorkoutSheet) + профіль (BiometricsSection)
 - **Де:** apps/web/src/modules/fizruk/components/workouts/LogPastWorkoutSheet.tsx:217,264-270,328-330,624-633; apps/web/src/core/profile/BiometricsSection.tsx:524-536
 - **Першопричина:** Поле ваги має type=number, тож Chromium з українською локаллю викидає кому і заміна коми на крапку мертва; effectiveWeightKg перевіряє лише &gt; 0, а onRecordWeight пише в addDailyLogEntry в обхід меж 20–300 кг з BodyEntryForm.

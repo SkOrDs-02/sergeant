@@ -82,8 +82,9 @@ export function biometricsToForm(b: Biometrics): FormState {
 
 /**
  * `HEIGHT_CM_RANGE`/`WEIGHT_KG_RANGE` (imported from `./biometrics`) feed
- * BOTH the `<Input min max>` attributes below AND `BiometricsSchema`'s
- * bounds — one constant, not three copies (audit finding D5, see the
+ * BOTH the validation below (plus the height `<Input min max>` hint; the
+ * weight field is `type="text"` since data-62, so it has no such attributes)
+ * AND `BiometricsSchema`'s bounds — one constant, not three copies (audit finding D5, see the
  * comment above their declaration in `biometrics.ts`). Browser `min`/`max`
  * are only a hint — paste or a programmatic submit bypasses them (the
  * same gate as `Measurements`) — so this is PII in a profile: out-of-range
@@ -463,19 +464,21 @@ export function BiometricsFormFields({
         >
           {COPY.weightLabel}
         </label>
+        {/* data-62: `type="text"`, бо `type="number"` у браузері з крапкою в
+            локалі викидав кому: «75,5» доїжджало як 755 і замість ваги
+            людина бачила незрозумілу помилку меж. Межі тримає
+            `parseRangedField`, не атрибути браузера. */}
         <Input
           id="biometrics-weight"
-          type="number"
+          type="text"
           inputMode="decimal"
-          min={WEIGHT_KG_RANGE.min}
-          max={WEIGHT_KG_RANGE.max}
-          step={0.1}
+          autoComplete="off"
           value={form.weightKg}
           onChange={(e) =>
             setForm((prev) => ({ ...prev, weightKg: e.target.value }))
           }
           onBlur={state.touchWeight}
-          placeholder="75.5"
+          placeholder="75,5"
           disabled={disabled}
           className="min-w-0 max-w-full"
           error={state.weightShowError}
