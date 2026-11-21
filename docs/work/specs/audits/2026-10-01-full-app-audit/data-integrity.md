@@ -4944,7 +4944,7 @@ historyFetch.ts:196-203 makes a single await fetchAccountStatement(token, accoun
 
 ### `data-66` [low] Ретрай старої події Mono-вебхука перезаписує баланс рахунку застарілим значенням
 
-- **Стан:** відкрито
+- **Стан:** закрито в гілці `backlog/data-66` (2026-11-21): `UPDATE mono_account` у вебхуку бере `balance` лише коли в `mono_transaction` цього рахунку немає новішої за `item.time` події (без міграції, мірило - час транзакцій); `last_seen_at` бампається завжди. Тести: `webhook.test.ts` (форма умови) і `webhook.integration.test.ts` (A → B → ретрай A лишає баланс B).
 - **Перевірка:** підтверджено · **Зусилля:** S · **Швидкий виграш** · **Область:** server: mono (webhook)
 - **Де:** apps/server/src/modules/mono/webhook.ts:397-404
 - **Першопричина:** UPDATE mono_account SET balance виконується і на гілці ON CONFLICT (дубль чи ретрай) без порівняння item.time з часом уже застосованого балансу, а періодичної звірки client-info немає.

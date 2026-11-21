@@ -397,12 +397,36 @@ export async function webhookHandler(
       autocreated = true;
     }
 
+    // Баланс беремо лише з найсвіжішої відомої події рахунку (data-66).
+    // Monobank ретраїть недоставлену подію через 60 і 600 с, тож стара
+    // подія A може прийти ПІСЛЯ новішої B; без цієї умови `balance` з A
+    // перезаписував би актуальний баланс з B аж до наступної транзакції.
+    // Часу балансу в `mono_account` немає, тож мірилом служить
+    // `mono_transaction.time` інших подій цього рахунку (індекс
+    // `mono_tx_user_account_time_idx`); рівний час не блокує оновлення.
+    // `last_seen_at` бампається завжди: подія по рахунку таки була.
     if (item.balance != null) {
       await client.query(
         `UPDATE mono_account
-         SET balance = $1, last_seen_at = NOW()
+         SET balance = CASE
+               WHEN EXISTS (
+                 SELECT 1 FROM mono_transaction t
+                  WHERE t.user_id = $2
+                    AND t.mono_account_id = $3
+                    AND t.mono_tx_id <> $5
+                    AND t.time > $4
+               ) THEN mono_account.balance
+               ELSE $1
+             END,
+             last_seen_at = NOW()
          WHERE user_id = $2 AND mono_account_id = $3`,
-        [item.balance, userId, monoAccountId],
+        [
+          item.balance,
+          userId,
+          monoAccountId,
+          new Date(item.time * 1000).toISOString(),
+          item.id,
+        ],
       );
     }
 
