@@ -49,6 +49,7 @@ import {
   getCoachCorrelationsBlock,
 } from "./coach.js";
 import { MAX_BLOB_SIZE } from "./coach.js";
+import { TRAINING_PRAISE_RULE } from "../../lib/trainingPraise.js";
 import { ExternalServiceError } from "../../obs/errors.js";
 import { logger as _logger } from "../../obs/logger.js";
 
@@ -839,6 +840,34 @@ describe("buildCoachInsightPrompt — що можна просити в люди
     );
     expect(text).toContain(
       "віднести операції до категорій, записати їжу, тренування чи витрату, відмітити звичку",
+    );
+  });
+});
+
+describe("buildCoachInsightPrompt — хвалить відновлення, а не обʼєм (W4)", () => {
+  // Рішення founder-а (fizruk.md § Метрика похвали): «Recovery головний —
+  // хвалити розумне, не більше». До правила коуч не мав жодної інструкції
+  // про обʼєм і вітав «+20% кг» навіть при поганому відновленні.
+  const snapshot = {
+    fizruk: {
+      workoutsCount: 6,
+      totalVolume: 18000,
+      recoveryLabel: "Погане",
+    },
+  } as never;
+  const prompt = buildCoachInsightPrompt({ snapshot, memory: null }).user;
+
+  it("несе спільне правило похвали тренувань", () => {
+    expect(prompt).toContain(TRAINING_PRAISE_RULE);
+  });
+
+  it("подає відновлення першим у рядку тренувань", () => {
+    const line = prompt
+      .split("\n")
+      .find((l) => l.includes("[ТРЕНУВАННЯ ЦЬОГО ТИЖНЯ]"));
+    expect(line).toBeDefined();
+    expect(line!.indexOf("Відновлення: Погане")).toBeLessThan(
+      line!.indexOf("Обʼєм:"),
     );
   });
 });

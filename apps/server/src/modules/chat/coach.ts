@@ -16,6 +16,7 @@ import { resolveHealthConsent } from "../../lib/healthConsent.js";
 import { stripHealthFromCoachInput } from "./healthGate.js";
 
 import { ADVICE_BOUNDARY_RULE } from "../../lib/adviceBoundary.js";
+import { TRAINING_PRAISE_RULE } from "../../lib/trainingPraise.js";
 import {
   DATA_FENCE_RULE,
   PERSONA_RULE,
@@ -486,7 +487,7 @@ export function buildCoachInsightPrompt(input: {
   }
   if (snapshot?.fizruk) {
     snapshotLines.push(
-      `[ТРЕНУВАННЯ ЦЬОГО ТИЖНЯ] Тренувань: ${snapshot.fizruk.workoutsCount ?? 0}, Обʼєм: ${snapshot.fizruk.totalVolume ?? 0} кг, Відновлення: ${snapshot.fizruk.recoveryLabel ?? "?"}`,
+      `[ТРЕНУВАННЯ ЦЬОГО ТИЖНЯ] Відновлення: ${snapshot.fizruk.recoveryLabel ?? "?"}, Тренувань: ${snapshot.fizruk.workoutsCount ?? 0}, Обʼєм: ${snapshot.fizruk.totalVolume ?? 0} кг`,
     );
   }
   if (snapshot?.nutrition) {
@@ -510,6 +511,8 @@ export function buildCoachInsightPrompt(input: {
 Ти знаєш цю людину по місяцях даних і пишеш їй коротке повідомлення дня.
 
 ${ADVICE_BOUNDARY_RULE}
+
+${TRAINING_PRAISE_RULE}
 
 КОНТЕКСТ ДАТИ (Київ):
 ${dateContextText}
