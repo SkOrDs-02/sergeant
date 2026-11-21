@@ -86,7 +86,7 @@
 
 ### DG-4. Hard Rule #6 (force push у main) спирається на неіснуючий GitHub-захист
 
-**Докази.** `hard-rules.json:130-134`, `rules/06-no-force-push-to-main.md:17`: «GitHub branch protection». `operations-runbook.md:37,378,384` і `hard-rules-matrix.md:44` так само. Про Bitbucket-обмеження є одне речення в `AGENTS.md` на `origin/main`, без правила й ADR. `origin` має **два** pushurl (Bitbucket і bare-дзеркало `167.233.98.92:/srv/git/sergeant.git`), і git пушить у кожен незалежно: force push, відхилений Bitbucket, може переписати `main` на дзеркалі, з якого Coolify збирає прод. Налаштування `receive.denyNonFastForwards` дзеркала з репо не видно, тому впевненість середня.
+**Докази.** `hard-rules.json:130-134`, `rules/06-no-force-push-to-main.md:17`: «GitHub branch protection». `operations-runbook.md:37,378,384` і `hard-rules-matrix.md:44` так само. Про Bitbucket-обмеження є одне речення в `AGENTS.md` на `origin/main`, без правила й ADR. `origin` має **два** pushurl (Bitbucket і bare-дзеркало `sergeant-mirror:/srv/git/sergeant.git`), і git пушить у кожен незалежно: force push, відхилений Bitbucket, може переписати `main` на дзеркалі, з якого Coolify збирає прод. Налаштування `receive.denyNonFastForwards` дзеркала з репо не видно, тому впевненість середня.
 
 **Що зробити.** Перевірити й увімкнути `receive.denyNonFastForwards=true` і `denyDeletes` на дзеркалі; записати обидва механізми в правило #6 з датою перевірки.
 

@@ -3744,11 +3744,11 @@ grep generatePDFReport|dataToHTMLTable: є лише HubReports.tsx:14/204, ре-
 
 ### `sec-53` [info] Публічне репо розкриває особисті email засновника, факт прод-акаунта з реальними фінансами й root-SSH адресу сервера
 
-- **Стан:** відкрито
+- **Стан:** закрито в гілці `backlog/sec-53` (2026-11-21): у `author-map.json` особисті адреси лишились тільки як sha256 (`emailSha256ToHandle`, гейт у `bump-last-validated.test.mjs`), адреси прибрано з `external-link-allowlist.json` і цього аудиту, абзац про реальні фінанси в `product-knowledge-backlog.md` переписано без них, `root@IP` у AGENTS.md замінено SSH-alias `sergeant-mirror` з `~/.ssh/config` власника; історію git не переписано, закриття SSH для root і пароля перевіряє власник на сервері
 - **Рішення власника 2026-11-21:** прибрати особисті email (`scripts/docs/author-map.json`) і згадку про реальні фінанси з поточних файлів, `root@IP` замінити SSH-alias; історію git не переписуємо.
 - **Перевірка:** підтверджено · **Зусилля:** S · **Область:** docs: публічне репо
 - **Де:** docs/work/specs/planning/product-knowledge-backlog.md:1722; scripts/docs/author-map.json:5-7; AGENTS.md:228; docs/governance/governance/external-link-allowlist.json:135
-- **Першопричина:** Після відкриття репо (2026-09-30) у відстежуваних доках лишились внутрішні деталі: gmail-адреси в product-knowledge-backlog.md і author-map.json, згадка про «справжні фінанси власника», root@167.233.98.92 в AGENTS.md.
+- **Першопричина:** Після відкриття репо (2026-09-30) у відстежуваних доках лишились внутрішні деталі: gmail-адреси в product-knowledge-backlog.md і author-map.json, згадка про «справжні фінанси власника», root@<IP сервера> в AGENTS.md.
 - **Вплив:** Полегшує таргетований фішинг і credential stuffing саме на акаунт із реальними банківськими підключеннями та розвідку SSH-поверхні сервера. Приріст малий: ті самі email уже є в метаданих git-комітів, ключів і токенів не знайдено.
 - **Що зробити:** Прибрати особисту адресу й згадку про реальні фінанси з публічних доків, замінити root@IP на SSH-alias і переконатися, що SSH для root і за паролем закрито.
 
@@ -3764,25 +3764,25 @@ grep generatePDFReport|dataToHTMLTable: є лише HubReports.tsx:14/204, ре-
 **Докази:**
 
 ```text
-product-knowledge-backlog.md:1722: «дозвіл на `<email власника>` є, але 11 тестових записів у справжніх фінансах власника...»; AGENTS.md:228: «bare-дзеркало `root@167.233.98.92:/srv/git/sergeant.git`». git grep по відстежуваних файлах і `git log -p --all -G` (396 комітів, shallow) на sk-ant-/sk-or-v1-/ghp_/AKIA/gsk_/re_/whsec_/Telegram-токени/Sentry DSN/postgres-URL з паролями — лише плейсхолдери й тестові фікстури.
+product-knowledge-backlog.md:1722: «дозвіл на `<email власника>` є, але 11 тестових записів у справжніх фінансах власника...»; AGENTS.md:228: «bare-дзеркало `root@<IP сервера>:/srv/git/sergeant.git`». git grep по відстежуваних файлах і `git log -p --all -G` (396 комітів, shallow) на sk-ant-/sk-or-v1-/ghp_/AKIA/gsk_/re_/whsec_/Telegram-токени/Sentry DSN/postgres-URL з паролями — лише плейсхолдери й тестові фікстури.
 ```
 
 **Відтворення:**
 
 ```text
-git grep -n -I -E 'gmail\.com|167\.233\.98\.92'
+git grep -n -I -E 'gmail\.com|<IP сервера>'
 ```
 
 **Верифікатор:**
 
 ```text
-Факти наявні у відстежуваних файлах. product-knowledge-backlog.md:1722 називає `<email власника>` і «справжні фінанси власника». scripts/docs/author-map.json:5-7 містить дві gmail-адреси засновника. AGENTS.md:228 містить `root@167.233.98.92:/srv/git/sergeant.git`. Репо публічне з 2026-09-30 (AGENTS.md, ADR-0101). Приріст розкриття малий. Ті самі адреси вже публічні в метаданих git-комітів: `git log --format=%ae` дає 86 комітів від <email власника> і 86 від ще однієї gmail-адреси. IP бекенд-хоста фактично видно з DNS API. Новим лишається лише контекст «цей акаунт підключений до реальних фінансів» і те, що SSH-користувач git-дзеркала — root. Перше суперечить власному правилу AGENTS.md «реальні user ID, фінансову топологію ... не комітьте». Секретів не знайдено. Severity info коректна.
+Факти наявні у відстежуваних файлах. product-knowledge-backlog.md:1722 називає `<email власника>` і «справжні фінанси власника». scripts/docs/author-map.json:5-7 містить дві gmail-адреси засновника. AGENTS.md:228 містить `root@<IP сервера>:/srv/git/sergeant.git`. Репо публічне з 2026-09-30 (AGENTS.md, ADR-0101). Приріст розкриття малий. Ті самі адреси вже публічні в метаданих git-комітів: `git log --format=%ae` дає 86 комітів від <email власника> і 86 від ще однієї gmail-адреси. IP бекенд-хоста фактично видно з DNS API. Новим лишається лише контекст «цей акаунт підключений до реальних фінансів» і те, що SSH-користувач git-дзеркала — root. Перше суперечить власному правилу AGENTS.md «реальні user ID, фінансову топологію ... не комітьте». Секретів не знайдено. Severity info коректна.
 ```
 
 **Додаткові докази верифікатора:**
 
 ```text
-git grep -n -I -E 'gmail\.com|167\.233\.98\.92' → AGENTS.md:228, product-knowledge-backlog.md:1722, scripts/docs/author-map.json:5,7 (+ тестова фікстура bump-last-validated.test.mjs:49). git log --format='%ae' | sort | uniq -c → 86 <email власника>, 86 dimastahov16012003@gmail.com. Ні в аудитах, ні в open-work.md це не зафіксовано (docs-governance-audit:89 лише цитує pushurl дзеркала в іншому контексті).
+git grep -n -I -E 'gmail\.com|<IP сервера>' → AGENTS.md:228, product-knowledge-backlog.md:1722, scripts/docs/author-map.json:5,7 (+ тестова фікстура bump-last-validated.test.mjs:49). git log --format='%ae' | sort | uniq -c → 86 <email власника>, 86 <ще одна адреса>. Ні в аудитах, ні в open-work.md це не зафіксовано (docs-governance-audit:89 лише цитує pushurl дзеркала в іншому контексті).
 ```
 
 <a id="sec-54"></a>

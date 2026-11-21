@@ -10,12 +10,23 @@ import {
   todayISO,
   addDays,
   resolveHandle,
+  hashedEmailKey,
+  mergeAuthorMap,
+  loadAuthorMap,
   findHeaderLine,
   bumpHeader,
   bumpFiles,
 } from "../bump-last-validated.mjs";
 
+import { readFileSync } from "node:fs";
+import { createHash } from "node:crypto";
+import { fileURLToPath } from "node:url";
+
 import { DEFAULT_CONFIG } from "../freshness-config.mjs";
+
+const AUTHOR_MAP_PATH = fileURLToPath(
+  new URL("../author-map.json", import.meta.url),
+);
 
 // ── Date helpers ─────────────────────────────────────────────────────────────
 
@@ -46,12 +57,22 @@ describe("addDays", () => {
 
 describe("resolveHandle", () => {
   const map = {
-    "buk55267@gmail.com": "Skords-01",
+    "someone@users.noreply.github.com": "Skords-01",
     "158243933+devin-ai-integration[bot]@users.noreply.github.com": "devin-ai",
   };
 
   it("returns the mapped handle (case-insensitive email)", () => {
-    assert.equal(resolveHandle(map, "BUK55267@gmail.com"), "Skords-01");
+    assert.equal(
+      resolveHandle(map, "SomeOne@users.noreply.github.com"),
+      "Skords-01",
+    );
+  });
+
+  it("resolves a personal address stored only as a sha256 hash", () => {
+    const hex = createHash("sha256").update("person@example.org").digest("hex");
+    const merged = mergeAuthorMap({ emailSha256ToHandle: { [hex]: "owner" } });
+    assert.equal(hashedEmailKey("Person@Example.org"), `sha256:${hex}`);
+    assert.equal(resolveHandle(merged, "Person@Example.org"), "owner");
   });
 
   it("falls back to local-part when unmapped", () => {
@@ -68,6 +89,44 @@ describe("resolveHandle", () => {
   it("returns null on null/empty email", () => {
     assert.equal(resolveHandle(map, null), null);
     assert.equal(resolveHandle(map, ""), null);
+  });
+});
+
+// ── author-map.json (public repo, sec-53) ───────────────────────────────────
+
+describe("author-map.json", () => {
+  // Репо публічне: відкритим текстом дозволені лише noreply/бот-адреси,
+  // особисті пошти зберігаються тільки як sha256 (sec-53).
+  const PUBLIC_EMAIL =
+    /^[^@\s]+@(users\.noreply\.github\.com|anthropic\.com|cognition\.ai)$/;
+
+  it("keeps only public noreply/bot addresses in plain text", () => {
+    const raw = JSON.parse(readFileSync(AUTHOR_MAP_PATH, "utf8"));
+    const leaked = Object.keys(raw.emailToHandle || {}).filter(
+      (e) => !PUBLIC_EMAIL.test(e.toLowerCase()),
+    );
+    assert.deepEqual(leaked, []);
+  });
+
+  it("contains no email address anywhere outside emailToHandle keys", () => {
+    const raw = JSON.parse(readFileSync(AUTHOR_MAP_PATH, "utf8"));
+    const rest = JSON.stringify({ ...raw, emailToHandle: undefined });
+    assert.doesNotMatch(rest, /[A-Za-z0-9._%+-]+@[A-Za-z0-9-]+\.[A-Za-z]{2,}/);
+  });
+
+  it("stores hashed keys as 64-char lowercase sha256 hex", () => {
+    const raw = JSON.parse(readFileSync(AUTHOR_MAP_PATH, "utf8"));
+    for (const k of Object.keys(raw.emailSha256ToHandle || {})) {
+      assert.match(k, /^[0-9a-f]{64}$/);
+    }
+  });
+
+  it("still maps the owner's commits to @Skords-01", () => {
+    const merged = loadAuthorMap(AUTHOR_MAP_PATH);
+    const owners = Object.entries(merged).filter(
+      ([k, v]) => k.startsWith("sha256:") && v === "Skords-01",
+    );
+    assert.ok(owners.length >= 1);
   });
 });
 
