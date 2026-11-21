@@ -4715,7 +4715,7 @@ Independent repro with v2-pullfail.mjs (fresh context, so empty OPFS for rop-mai
 
 ### `data-61` [low] Рутина: збереження застарілої форми редагування звички мовчки затирає свіжіші правки з іншого пристрою
 
-- **Стан:** відкрито
+- **Стан:** закрито в гілці `backlog/data-61` (2026-11-21): форма редагування (`HabitQuickCreateDialog`) запамʼятовує значення, з якими відкрилась, і на сабміті накладає на свіжий стан лише змінені поля (`changedHabitFields`), тож правки іншого пристрою, що приїхали pull-ом, переживають збереження; заодно чернетка засівається з полями лічильника, які раніше обнулялись. Залишок: якщо pull ще не приїхав до сабміту, рядок пушиться цілком і сервер робить per-row LWW (серверного поле-рівневого мержу немає)
 - **Рішення власника 2026-11-21:** пушити лише змінені поля (field-level merge), а не весь рядок форми.
 - **Перевірка:** підтверджено · **Зусилля:** M · **Область:** web: Рутина (HabitQuickCreateDialog) + sync LWW
 - **Де:** apps/web/src/modules/routine/components/HabitDetailSheet.tsx; apps/web/src/modules/routine/components/HabitQuickCreateDialog.tsx; apps/web/src/modules/routine/lib/sqliteWriter/adapter.ts:358-381

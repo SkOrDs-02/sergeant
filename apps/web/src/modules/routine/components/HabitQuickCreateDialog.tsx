@@ -23,6 +23,7 @@ import {
   routineTodayDate,
 } from "../lib/routineDraftUtils";
 import { dateKeyFromDate } from "../lib/hubCalendarAggregate";
+import { changedHabitFields } from "../lib/habitEditPatch";
 import { Button } from "@shared/components/ui/Button";
 import { HabitForm, type HabitFormErrors } from "./settings/HabitForm";
 import type { Habit, HabitDraft, RoutineState } from "../lib/types";
@@ -77,6 +78,9 @@ function habitToDraft(habit: Habit): HabitDraft {
     weeklyTargetHistory: normalizeWeeklyTargetHistory(
       habit.weeklyTargetHistory,
     ),
+    countTarget: habit.countTarget ?? null,
+    countUnit: habit.countUnit ?? "",
+    autoMarkSource: habit.autoMarkSource ?? null,
   };
 }
 
@@ -101,6 +105,9 @@ export function HabitQuickCreateDialog({
   const [errors, setErrors] = useState<HabitFormErrors>({});
 
   const [draftId, setDraftId] = useState("");
+  // Значення, з якими форма редагування відкрилась: на сабміті пишемо лише
+  // поля, що відрізняються від них (data-61).
+  const [baseDraft, setBaseDraft] = useState<HabitDraft | null>(null);
 
   const [prevOpenKey, setPrevOpenKey] = useState("");
   const openKey = `${open}:${editingId ?? ""}:${focusTick ?? 0}`;
@@ -121,9 +128,12 @@ export function HabitQuickCreateDialog({
     setDraftId(routineUid("hab"));
     if (editingId) {
       const habit = routine.habits.find((h) => h.id === editingId);
-      setDraft(habit ? habitToDraft(habit) : emptyHabitDraft());
+      const seeded = habit ? habitToDraft(habit) : emptyHabitDraft();
+      setDraft(seeded);
+      setBaseDraft(habit ? seeded : null);
     } else {
       setDraft(emptyHabitDraft());
+      setBaseDraft(null);
     }
     setErrors({});
     setInternalFocusTick((t) => t + 1);
@@ -202,7 +212,15 @@ export function HabitQuickCreateDialog({
     }
     setErrors({});
     if (editingId) {
-      setRoutine((s) => updateHabit(s, editingId, patch));
+      // Лише змінені поля поверх свіжого стану: правки з іншого пристрою,
+      // що приїхали pull-ом, поки форма була відкрита, не відкочуються.
+      const changed = baseDraft
+        ? changedHabitFields(
+            habitDraftToPatch(baseDraft, { editing: true }),
+            patch,
+          )
+        : patch;
+      setRoutine((s) => updateHabit(s, editingId, changed));
       hapticSuccess();
       toast.success("Звичку оновлено.");
     } else {
