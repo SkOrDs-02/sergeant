@@ -31,6 +31,7 @@ import { prepareFinykLimitSpendContext } from "@sergeant/finyk-domain/domain/lim
 import {
   filterStatTransactions,
   manualExpenseToTransaction,
+  withManualExpenses,
 } from "@sergeant/finyk-domain/domain/transactions";
 import { getMonthlySummary } from "@sergeant/finyk-domain/domain/selectors";
 import type { MerchantRuleIndex } from "@sergeant/finyk-domain/lib/merchantRules";
@@ -502,14 +503,22 @@ export function Budgets({
     remaining: remaining2,
     pctExpense,
     isOver,
-    daysLeft: daysLeft2,
   } = getMonthlyPlanUsage(
     { planIncome, planExpense, totalFact: totalExpenseFact },
     now,
   );
 
-  const { dayPlan } = getFinykDayPlan({
+  // Денна норма і її дні — з того самого селектора, що й «Лишилось на
+  // сьогодні» в Огляді (ADR-0079, рішення власника 2026-11-21, logic-44).
+  // `safePerDay`/`daysLeft` з `getMonthlyPlanUsage` сюди не йдуть: там
+  // стара формула без регулярних потоків і дні без сьогодні.
+  const { dayPlan, remainingDays } = getFinykDayPlan({
     transactions: allTx,
+    // Розклад підписок/боргів — з того самого набору, що й `linkableTx` Огляду.
+    scheduleTransactions: withManualExpenses(
+      mono.transactions ?? networkTx,
+      manualExpenses,
+    ),
     planExpense,
     excludedTxIds: new Set(excludedTxIds),
     txSplits,
@@ -553,7 +562,7 @@ export function Budgets({
               safePerDay={dayPlan ?? 0}
               pctExpense={pctExpense}
               isOver={isOver}
-              daysLeft={daysLeft2}
+              daysLeft={remainingDays}
               forecastExpense={forecastExpense}
               firstRunHint={monthlyPlanFirstRunHint}
             />
