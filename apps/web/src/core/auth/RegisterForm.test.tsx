@@ -29,7 +29,7 @@ beforeEach(() => {
 
 describe("RegisterForm", () => {
   it("enforces 10-char password minimum", async () => {
-    render(<RegisterForm onAlreadyRegistered={vi.fn()} />);
+    render(<RegisterForm onCheckEmail={vi.fn()} />);
 
     fireEvent.change(screen.getByLabelText("Email"), {
       target: { value: "alice@example.com" },
@@ -47,7 +47,7 @@ describe("RegisterForm", () => {
 
   it("falls back to email prefix when name is empty", async () => {
     registerMock.mockResolvedValue(true);
-    render(<RegisterForm onAlreadyRegistered={vi.fn()} />);
+    render(<RegisterForm onCheckEmail={vi.fn()} />);
 
     fireEvent.change(screen.getByLabelText("Email"), {
       target: { value: "bob@example.com" },
@@ -68,7 +68,7 @@ describe("RegisterForm", () => {
 
   it("uses trimmed name when provided", async () => {
     registerMock.mockResolvedValue(true);
-    render(<RegisterForm onAlreadyRegistered={vi.fn()} />);
+    render(<RegisterForm onCheckEmail={vi.fn()} />);
 
     fireEvent.change(screen.getByLabelText("Імʼя"), {
       target: { value: "  Боб  " },
@@ -90,14 +90,13 @@ describe("RegisterForm", () => {
     });
   });
 
-  it("calls onAlreadyRegistered when email is already registered", async () => {
-    const onAlreadyRegistered = vi.fn();
-    // Контракт F4: `register` повертає "exists" синхронно — auto-switch
-    // більше не читає `authError` (stale на першому фейлі), тому
-    // передумови зі стейтом тут навмисно немає.
-    registerMock.mockResolvedValue("exists");
+  it("sec-46: без сесії викликає onCheckEmail з адресою, помилки не показує", async () => {
+    const onCheckEmail = vi.fn();
+    // Та сама відповідь і для нової, і для зайнятої адреси: окремої гілки
+    // «вже зареєстровано» у формі більше немає.
+    registerMock.mockResolvedValue("check-email");
 
-    render(<RegisterForm onAlreadyRegistered={onAlreadyRegistered} />);
+    render(<RegisterForm onCheckEmail={onCheckEmail} />);
 
     fireEvent.change(screen.getByLabelText("Email"), {
       target: { value: "dup@example.com" },
@@ -108,14 +107,32 @@ describe("RegisterForm", () => {
     fireEvent.click(screen.getByRole("button", { name: /^Зареєструватися$/ }));
 
     await waitFor(() => {
-      expect(onAlreadyRegistered).toHaveBeenCalled();
+      expect(onCheckEmail).toHaveBeenCalledWith("dup@example.com");
     });
+    expect(screen.queryByRole("alert")).toBeNull();
+  });
+
+  it("успішна реєстрація з сесією не веде на «Перевір пошту»", async () => {
+    const onCheckEmail = vi.fn();
+    registerMock.mockResolvedValue(true);
+    render(<RegisterForm onCheckEmail={onCheckEmail} />);
+
+    fireEvent.change(screen.getByLabelText("Email"), {
+      target: { value: "new@example.com" },
+    });
+    fireEvent.change(screen.getByLabelText("Пароль"), {
+      target: { value: "longenoughpw" },
+    });
+    fireEvent.click(screen.getByRole("button", { name: /^Зареєструватися$/ }));
+
+    await waitFor(() => expect(registerMock).toHaveBeenCalled());
+    expect(onCheckEmail).not.toHaveBeenCalled();
   });
 
   it("shows authError alert on server failure", async () => {
     registerMock.mockResolvedValue(false);
     authErrorState = "Щось пішло не так";
-    render(<RegisterForm onAlreadyRegistered={vi.fn()} />);
+    render(<RegisterForm onCheckEmail={vi.fn()} />);
 
     fireEvent.change(screen.getByLabelText("Email"), {
       target: { value: "alice@example.com" },
@@ -134,7 +151,7 @@ describe("RegisterForm", () => {
   });
 
   it("shows password strength bar while typing", () => {
-    render(<RegisterForm onAlreadyRegistered={vi.fn()} />);
+    render(<RegisterForm onCheckEmail={vi.fn()} />);
 
     fireEvent.change(screen.getByLabelText("Пароль"), {
       target: { value: "Aa1!Aa1!Aa1!" },
@@ -144,7 +161,7 @@ describe("RegisterForm", () => {
 
   it("після невдалої реєстрації фокус не губиться на body, поля не disabled", async () => {
     registerMock.mockResolvedValue("error");
-    render(<RegisterForm onAlreadyRegistered={vi.fn()} />);
+    render(<RegisterForm onCheckEmail={vi.fn()} />);
 
     fireEvent.change(screen.getByLabelText("Email"), {
       target: { value: "bob@example.com" },

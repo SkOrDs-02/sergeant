@@ -39,7 +39,13 @@ export const messagesEn: Partial<{
     invalidPassword: "Incorrect password.",
     passwordTooShort: "Password is too short.",
     passwordTooLong: "Password is too long.",
-    emailNotVerified: "Your email hasn't been verified yet. Check your inbox.",
+    emailNotVerified:
+      "Your email hasn't been verified yet. Open the link in the email I sent to this address.",
+    checkEmailTitle: "Check your inbox",
+    checkEmailSentTo: "I sent an email to",
+    checkEmailBody: "Open the link in it to continue.",
+    checkEmailSpamHint: "No email after a few minutes? Check your spam folder.",
+    checkEmailBack: "Back to sign in",
     providerNotFound: "This sign-in provider is not configured.",
     sessionFailure: "Sign-in failed. Please try again.",
 

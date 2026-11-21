@@ -17,10 +17,14 @@ import {
 import { restoreFocusIfLost } from "./restoreFocusIfLost";
 
 interface RegisterFormProps {
-  onAlreadyRegistered: () => void;
+  /**
+   * sec-46: сервер сесії не видав, далі екран «Перевір пошту». Та сама
+   * відповідь і для нової, і для зайнятої адреси, тож форма їх не розрізняє.
+   */
+  onCheckEmail: (email: string) => void;
 }
 
-export function RegisterForm({ onAlreadyRegistered }: RegisterFormProps) {
+export function RegisterForm({ onCheckEmail }: RegisterFormProps) {
   const { register: signup, authError } = useAuth();
   const [showPassword, setShowPassword] = useState(false);
 
@@ -41,17 +45,14 @@ export function RegisterForm({ onAlreadyRegistered }: RegisterFormProps) {
         values.password,
         values.name?.trim() || fallbackName,
       );
+      if (result === "check-email") {
+        onCheckEmail(values.email.trim());
+        return true;
+      }
       if (result !== true) {
-        // «Вже зареєстровано» приходить синхронно з `register` —
-        // читання `authError` одразу після await ловило stale state і
-        // auto-switch на login ніколи не спрацьовував на першій спробі.
-        if (result === "exists") {
-          onAlreadyRegistered();
-        } else {
-          // Кнопка сабміту на час запиту `disabled`, і браузер скидає з неї
-          // фокус на <body>; поля лише `readOnly` і фокус зберігають.
-          restoreFocusIfLost(() => setFocus("email"));
-        }
+        // Кнопка сабміту на час запиту `disabled`, і браузер скидає з неї
+        // фокус на <body>; поля лише `readOnly` і фокус зберігають.
+        restoreFocusIfLost(() => setFocus("email"));
         throw new Error("");
       }
       return true;

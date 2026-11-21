@@ -10,6 +10,7 @@ import { seedFTUX } from "../utils/seedFTUX";
 import { waitForServiceWorkerActivated } from "../utils/serviceWorker";
 import { waitForSqliteRefreshAfter } from "../utils/sqliteRefresh";
 import { HUB_USER_AUTH_STATE } from "./authState";
+import { completeSignUp } from "./smokeEmailVerification";
 import {
   collectPageErrors,
   settleToasts,
@@ -121,7 +122,7 @@ async function restart(page: Page) {
   }
 }
 
-async function openRegistration(page: Page) {
+async function openRegistration(page: Page): Promise<string> {
   await requireControlledShell(page);
   await page.goto("/sign-in", { waitUntil: "domcontentloaded" });
   await page
@@ -129,19 +130,26 @@ async function openRegistration(page: Page) {
     .click();
   const nonce = crypto.randomUUID();
   await page.fill("#auth-name", "Anonymous Recovery Smoke");
-  await page.fill("#auth-email", `anon_recovery_${nonce}@example.com`);
+  const email = `anon_recovery_${nonce}@example.com`;
+  await page.fill("#auth-email", email);
   await page.fill("#auth-password", `pw_${nonce}_long_enough`);
+  return email;
 }
 
 async function registerAndMigrate(page: Page) {
-  await openRegistration(page);
-  await Promise.all([
-    page
-      .getByTestId("toast-tray")
-      .getByText(SUCCESS, { exact: true })
-      .waitFor({ timeout: 60_000 }),
-    page.getByRole("button", { name: "Зареєструватися", exact: true }).click(),
-  ]);
+  const email = await openRegistration(page);
+  // Очікування тосту стартує ДО кліку (перенос може випередити його) і
+  // переживає навігацію підтвердження email (sec-46): локатор
+  // перерезолвиться в новому документі.
+  const migrated = page
+    .getByTestId("toast-tray")
+    .getByText(SUCCESS, { exact: true })
+    .waitFor({ timeout: 60_000 });
+  await page
+    .getByRole("button", { name: "Зареєструватися", exact: true })
+    .click();
+  await completeSignUp(page, email);
+  await migrated;
 }
 
 async function remoteExpenseOps(context: BrowserContext, title: string) {
@@ -234,7 +242,7 @@ test("@critical anonymous: reload після перерваного push від�
       await route.continue();
     }
   });
-  await openRegistration(page);
+  const email = await openRegistration(page);
   const failedPush = page.waitForEvent("requestfailed", {
     predicate: (request) => matchingPushOps(request, title).length > 0,
     timeout: 60_000,
@@ -242,6 +250,8 @@ test("@critical anonymous: reload після перерваного push від�
   await page
     .getByRole("button", { name: "Зареєструватися", exact: true })
     .click();
+  // sec-46: з межею перенос стартує лише після підтвердження email.
+  await completeSignUp(page, email);
   await failedPush;
   expect(interrupted).toBe(true);
   // Keep every retry blocked until the new document is loaded. Otherwise

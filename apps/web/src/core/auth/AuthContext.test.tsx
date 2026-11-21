@@ -27,7 +27,9 @@ const signUpEmail: ReturnType<
       name: string;
     }) => Promise<AuthResult>
   >
-> = vi.fn(async () => ok());
+  // Реєстрація без межі sec-46 відповідає з токеном сесії; без токена
+  // `register` повертає "check-email" (див. AuthContext.extra.test.tsx).
+> = vi.fn(async () => ({ data: { token: "session-token" }, error: null }));
 const signOut: ReturnType<typeof vi.fn<() => Promise<void>>> = vi.fn(
   async () => undefined,
 );

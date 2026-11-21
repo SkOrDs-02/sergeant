@@ -356,15 +356,16 @@ interface AuthContextValue {
   loginWithGoogle: () => Promise<boolean>;
   loginWithApple: () => Promise<boolean>;
   /**
-   * `true` — акаунт створено; `"exists"` — email вже зареєстровано
-   * (форма перемикається на login синхронно, без читання `authError`,
-   * який на момент повернення ще stale); `false` — інша помилка.
+   * `true` — акаунт створено і сесія вже є; `"check-email"` — сервер сесії
+   * не видав (sec-46: межа `EMAIL_VERIFICATION_REQUIRED_FROM`), і та сама
+   * відповідь приходить і для нової, і для зайнятої адреси, тож далі лише
+   * «перевір пошту»; `false` — помилка (текст в `authError`).
    */
   register: (
     email: string,
     password: string,
     name: string,
-  ) => Promise<boolean | "exists">;
+  ) => Promise<boolean | "check-email">;
   /**
    * Вихід із акаунта з повним локальним teardown (включно зі стиранням
    * локальної SQLite).
@@ -759,17 +760,20 @@ export function AuthProvider({ children }: AuthProviderProps) {
           setAuthError(
             translateAuthError(result.error, messages.auth.registerFailure),
           );
-          const code = (result.error as { code?: string }).code;
-          return code === "USER_ALREADY_EXISTS" ||
-            code === "USER_ALREADY_EXISTS_USE_ANOTHER_EMAIL"
-            ? "exists"
-            : false;
+          return false;
         }
         // WF-60 growth funnel рахує цю подію як перехід
         // visit → signup. Fire-and-forget — `trackEvent` ловить власні
         // помилки і ніколи не кидає. Викликаємо до `invalidateMe`, щоб
         // ивент полетів навіть якщо рефетч `me` зависне.
         trackEvent(ANALYTICS_EVENTS.SIGNUP_COMPLETED, { method: "email" });
+        // sec-46: без токена сесії немає. Повторна реєстрація зайнятої
+        // адреси відповідає так само, тож нічого не розрізняємо і не
+        // кличемо `me`: людина входить кліком у листі. Анонімні дані
+        // лишаються на пристрої і переносяться при першому вході. Подія
+        // вище тут рахує і повтор зайнятої адреси: клієнт за задумом не
+        // відрізняє його від нової реєстрації.
+        if (!result?.data?.token) return "check-email";
         pendingSignOut.clearPendingSignOut();
         setSignedOut(false);
         await invalidateMe();

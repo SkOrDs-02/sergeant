@@ -258,6 +258,67 @@ describe("AuthPage — register mode", () => {
   });
 });
 
+describe("AuthPage — sec-46: «Перевір пошту» після реєстрації", () => {
+  async function submitRegistration(email: string) {
+    fireEvent.click(screen.getByRole("button", { name: /Немає акаунту/ }));
+    fireEvent.change(screen.getByLabelText("Email"), {
+      target: { value: email },
+    });
+    fireEvent.change(screen.getByLabelText("Пароль"), {
+      target: { value: "longenoughpw" },
+    });
+    fireEvent.click(screen.getByRole("button", { name: /^Зареєструватися$/ }));
+  }
+
+  it("без сесії показує однаковий екран з адресою, а не форму входу чи помилку", async () => {
+    registerMock.mockResolvedValue("check-email");
+    render(
+      <MemoryRouter>
+        <AuthPage />
+      </MemoryRouter>,
+    );
+    await submitRegistration("dup@example.com");
+
+    expect(
+      await screen.findByRole("heading", { name: "Перевір пошту" }),
+    ).toBeTruthy();
+    expect(screen.getByRole("status").textContent).toContain("dup@example.com");
+    expect(screen.queryByLabelText("Пароль")).toBeNull();
+    expect(screen.queryByText(/вже зареєстровано/i)).toBeNull();
+  });
+
+  it("«Повернутися до входу» відкриває форму входу", async () => {
+    registerMock.mockResolvedValue("check-email");
+    render(
+      <MemoryRouter>
+        <AuthPage />
+      </MemoryRouter>,
+    );
+    await submitRegistration("new@example.com");
+    fireEvent.click(
+      await screen.findByRole("button", { name: "Повернутися до входу" }),
+    );
+    expect(screen.getByRole("heading", { name: "Вхід в акаунт" })).toBeTruthy();
+    expect(screen.getByLabelText("Пароль")).toBeTruthy();
+  });
+
+  it("?forgot=1 з листа «у тебе вже є акаунт» одразу відкриває скидання пароля", () => {
+    window.history.replaceState(null, "", "/sign-in?forgot=1");
+    try {
+      render(
+        <MemoryRouter>
+          <AuthPage />
+        </MemoryRouter>,
+      );
+      expect(
+        screen.getByRole("group", { name: "Скидання пароля" }),
+      ).toBeTruthy();
+    } finally {
+      window.history.replaceState(null, "", "/");
+    }
+  });
+});
+
 describe("AuthPage — mode switching", () => {
   it("clears authError when switching modes", () => {
     authErrorState = "Stale";

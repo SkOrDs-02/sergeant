@@ -8,6 +8,7 @@ import {
   settleToasts,
   waitForInitialSqliteRefresh,
 } from "./smokeHelpers";
+import { completeSignUp } from "./smokeEmailVerification";
 
 /**
  * E2E-приймання спеки `docs/work/specs/anonymous-local-first-persistence.md`
@@ -157,10 +158,17 @@ test("@critical anonymous: запис, створений без входу, з�
   const migrationSuccessToast = page
     .getByTestId("toast-tray")
     .getByText(SUCCESS_TOAST_TEXT, { exact: true });
-  await Promise.all([
-    migrationSuccessToast.waitFor({ state: "visible", timeout: 60_000 }),
-    page.getByRole("button", { name: "Зареєструватися", exact: true }).click(),
-  ]);
+  // sec-46: з межею підтвердження сесію (а з нею і перенос) дає клік у
+  // листі; очікування тосту переживає цю навігацію.
+  const migrated = migrationSuccessToast.waitFor({
+    state: "visible",
+    timeout: 60_000,
+  });
+  await page
+    .getByRole("button", { name: "Зареєструватися", exact: true })
+    .click();
+  await completeSignUp(page, email);
+  await migrated;
   await expect(page).not.toHaveURL(/\/sign-in/);
 
   // Фінальна перевірка — прямий факт, не побічний сигнал: свіжий акаунт без

@@ -1,4 +1,5 @@
 import { test, expect, type Page } from "@playwright/test";
+import { completeSignUp, waitForSignUpOutcome } from "./smokeEmailVerification";
 
 // Override the default `storageState` from `playwright.smoke.config.ts`
 // (pre-baked logged-in user). This file exercises the cold-start signup
@@ -245,9 +246,11 @@ test("@critical onboarding: welcome wizard → hub-overview → sign-up fires on
   await page.fill("#auth-password", password);
   await page.getByRole("button", { name: "Зареєструватися" }).click();
 
-  await page.waitForURL((url) => url.pathname !== "/sign-in", {
-    timeout: 15_000,
-  });
+  // sec-46: з межею `EMAIL_VERIFICATION_REQUIRED_FROM` реєстрація лишає на
+  // /sign-in з «Перевір пошту». Буфер аналітики живе в памʼяті документа,
+  // тож читаємо його ДО навігації підтвердження (крок 5a), а підтверджуємо
+  // після.
+  await waitForSignUpOutcome(page);
 
   // -----------------------------------------------------------------
   // 5a. Assert `signup_completed` in the JS context that fired it.
@@ -274,6 +277,9 @@ test("@critical onboarding: welcome wizard → hub-overview → sign-up fires on
   // (no live Google/Apple provider) — covered by unit tests on
   // `AuthContext` instead.
   expect(signupCompleted!.payload).toMatchObject({ method: "email" });
+
+  // 5b. Сесія: без межі вона вже є, з межею її дає клік у листі.
+  await completeSignUp(page, email);
 
   // -----------------------------------------------------------------
   // 6. Regression guard (аудит 2026-08-04, знахідка 5 / `88dbb3a`):
