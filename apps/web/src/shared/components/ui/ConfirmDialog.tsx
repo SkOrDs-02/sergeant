@@ -186,7 +186,8 @@ export const ConfirmDialog = memo(function ConfirmDialog({
         )}
         <div className="flex flex-col gap-2">
           <Button
-            variant={danger ? "destructive" : "primary"}
+            variant="solid"
+            tone={danger ? "danger" : "neutral"}
             className="w-full h-12"
             onClick={onConfirm}
           >

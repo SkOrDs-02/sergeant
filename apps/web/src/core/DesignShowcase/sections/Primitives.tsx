@@ -25,42 +25,42 @@ export function PrimitivesSection() {
       {/* ── Tooltip ───────────────────────────────────────────── */}
       <Group label="Tooltip: розміщення" row>
         <Tooltip content="top-start" placement="top-start">
-          <Button variant="secondary" size="sm">
+          <Button variant="outline" size="sm">
             top-start
           </Button>
         </Tooltip>
         <Tooltip content="top" placement="top">
-          <Button variant="secondary" size="sm">
+          <Button variant="outline" size="sm">
             top
           </Button>
         </Tooltip>
         <Tooltip content="top-end" placement="top-end">
-          <Button variant="secondary" size="sm">
+          <Button variant="outline" size="sm">
             top-end
           </Button>
         </Tooltip>
         <Tooltip content="right" placement="right">
-          <Button variant="secondary" size="sm">
+          <Button variant="outline" size="sm">
             right
           </Button>
         </Tooltip>
         <Tooltip content="bottom-start" placement="bottom-start">
-          <Button variant="secondary" size="sm">
+          <Button variant="outline" size="sm">
             bottom-start
           </Button>
         </Tooltip>
         <Tooltip content="bottom" placement="bottom">
-          <Button variant="secondary" size="sm">
+          <Button variant="outline" size="sm">
             bottom
           </Button>
         </Tooltip>
         <Tooltip content="bottom-end" placement="bottom-end">
-          <Button variant="secondary" size="sm">
+          <Button variant="outline" size="sm">
             bottom-end
           </Button>
         </Tooltip>
         <Tooltip content="left" placement="left">
-          <Button variant="secondary" size="sm">
+          <Button variant="outline" size="sm">
             left
           </Button>
         </Tooltip>
@@ -86,7 +86,7 @@ export function PrimitivesSection() {
       <Group label="Popover: меню дій" row>
         <Popover
           trigger={
-            <Button variant="secondary" size="sm">
+            <Button variant="outline" size="sm">
               Опції картки
             </Button>
           }
@@ -126,7 +126,7 @@ export function PrimitivesSection() {
           open={filtersOpen}
           onOpenChange={setFiltersOpen}
           trigger={
-            <Button variant="secondary" size="sm">
+            <Button variant="outline" size="sm">
               Фільтри транзакцій
             </Button>
           }

@@ -13,7 +13,7 @@ import { Button } from "./Button";
  *   `nutrition` | `danger` | `success` | `ink`
  *
  * Старі плоскі варіанти (`primary`, `finyk-soft`, …) та проп `module`
- * лишаються як **deprecated-аліаси** з байт-ідентичним виводом.
+ * знято 2026-11-22, до дедлайну 2026-12-01.
  *
  * Розмір `xs` / `sm` / icon-only автоматично отримує `min 44×44px` під
  * `@media (pointer: coarse)`, щоб primary controls лишались тапабельними.
@@ -26,30 +26,8 @@ const meta: Meta<typeof Button> = {
   argTypes: {
     variant: {
       control: "select",
-      description: "Емфаза (канонічна) або legacy-alias",
-      options: [
-        // canonical emphasis
-        "solid",
-        "soft",
-        "outline",
-        "ghost",
-        "text",
-        // legacy aliases (deprecated)
-        "primary",
-        "secondary",
-        "danger",
-        "destructive",
-        "success",
-        "finyk",
-        "fizruk",
-        "routine",
-        "nutrition",
-        "finyk-soft",
-        "fizruk-soft",
-        "routine-soft",
-        "nutrition-soft",
-        "primary-ink",
-      ],
+      description: "Емфаза (канонічна вісь)",
+      options: ["solid", "soft", "outline", "ghost", "text"],
     },
     tone: {
       control: "select",
@@ -103,10 +81,10 @@ export const Destructive: Story = {
  * однієї ролі» й пропонував злити. Це не так: вони живуть у різних клітинках
  * канонічної сітки і виглядають по-різному.
  *
- * | Роль | Канонічно | Legacy-alias | Коли |
- * | --- | --- | --- | --- |
- * | Незворотна дія у **кроці підтвердження** | `solid` + `danger` | `destructive` | Кнопка, яка ЗАРАЗ видалить. Одна на екран, суцільна червона. `ConfirmDialog` бере саме її. |
- * | Незворотна дія **в рядку списку** | `soft` + `danger` | `danger` | «Видалити» серед сусідніх дій. Мʼякий червоний чип: помітний, але не кричить із кожного рядка. |
+ * | Роль | Канонічно | Коли |
+ * | --- | --- | --- |
+ * | Незворотна дія у **кроці підтвердження** | `solid` + `danger` | Кнопка, яка ЗАРАЗ видалить. Одна на екран, суцільна червона. `ConfirmDialog` бере саме її. |
+ * | Незворотна дія **в рядку списку** | `soft` + `danger` | «Видалити» серед сусідніх дій. Мʼякий червоний чип: помітний, але не кричить із кожного рядка. |
  *
  * Третього способу немає. Зокрема, **не можна** брати `secondary` чи `ghost`
  * і домальовувати `text-danger-*` руками: у `secondary` ховер несе
@@ -126,7 +104,6 @@ export const DestructiveRoles: Story = {
           <Button variant="solid" tone="danger">
             Видалити
           </Button>
-          <Button variant="destructive">Видалити (legacy-alias)</Button>
         </div>
       </div>
       <div className="flex flex-col gap-2">
@@ -136,9 +113,6 @@ export const DestructiveRoles: Story = {
         <div className="flex flex-wrap items-center gap-3">
           <Button variant="soft" tone="danger" size="sm">
             Видалити
-          </Button>
-          <Button variant="danger" size="sm">
-            Видалити (legacy-alias)
           </Button>
         </div>
       </div>
@@ -200,21 +174,6 @@ export const VariantToneMatrix: Story = {
           ghost / neutral
         </Button>
       </div>
-    </div>
-  ),
-};
-
-/**
- * Module brand variants через легасі-аліаси (deprecated). Еквівалент
- * `variant="solid" tone="{module}"` — лишено як приклад зворотної сумісності.
- */
-export const ModuleVariantsLegacy: Story = {
-  render: () => (
-    <div className="flex flex-wrap items-center gap-3">
-      <Button variant="finyk">Finyk</Button>
-      <Button variant="fizruk">Fizruk</Button>
-      <Button variant="routine">Routine</Button>
-      <Button variant="nutrition">Nutrition</Button>
     </div>
   ),
 };

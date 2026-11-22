@@ -47,13 +47,13 @@ function ShowcaseDemo() {
   return (
     <div className="flex flex-wrap gap-2">
       <Button
-        variant="primary"
+        variant="solid"
         onClick={() => t.success("Тренування збережено: +180 ккал.")}
       >
         success
       </Button>
       <Button
-        variant="secondary"
+        variant="outline"
         onClick={() =>
           t.info("Sync v2 завершено — 14 операцій записано у хмару.")
         }
@@ -61,7 +61,7 @@ function ShowcaseDemo() {
         info
       </Button>
       <Button
-        variant="secondary"
+        variant="outline"
         onClick={() =>
           t.warning("Бюджет на «Кафе»: лишилось 18% на 11 днів.", 5000)
         }
@@ -69,7 +69,8 @@ function ShowcaseDemo() {
         warning
       </Button>
       <Button
-        variant="danger"
+        variant="soft"
+        tone="danger"
         onClick={() =>
           t.error("Помилка синхронізації Mono — перевір токен у Settings.")
         }
@@ -89,7 +90,7 @@ function SingleDemo() {
   const t = useToast();
   return (
     <Button
-      variant="primary"
+      variant="solid"
       onClick={() => t.success("Тренування збережено: +180 ккал.")}
     >
       Single toast (success)
@@ -106,7 +107,7 @@ function StackOfThreeDemo() {
   const t = useToast();
   return (
     <Button
-      variant="secondary"
+      variant="outline"
       onClick={() => {
         t.info("Перший toast — info");
         t.success("Другий toast — success");
@@ -130,7 +131,8 @@ function WithUndoDemo() {
   const t = useToast();
   return (
     <Button
-      variant="danger"
+      variant="soft"
+      tone="danger"
       onClick={() => {
         showUndoToast(t, {
           msg: "Видалено звичку «Вода»",
@@ -157,7 +159,8 @@ function ErrorOnlyDemo() {
   const t = useToast();
   return (
     <Button
-      variant="danger"
+      variant="soft"
+      tone="danger"
       onClick={() =>
         t.error("Не вдалося синхронізувати тренування — спробуй через хвилину.")
       }
@@ -181,7 +184,7 @@ function WithActionDemo() {
   return (
     <div className="flex flex-wrap gap-2">
       <Button
-        variant="primary"
+        variant="solid"
         onClick={() =>
           t.success("Операцію додано.", undefined, {
             label: "Скасувати",
@@ -192,7 +195,8 @@ function WithActionDemo() {
         З action-кнопкою
       </Button>
       <Button
-        variant="danger"
+        variant="soft"
+        tone="danger"
         onClick={() =>
           t.error("Не вдалося завантажити рецепт.", undefined, {
             label: "Повторити",
@@ -216,7 +220,7 @@ function StackDemo() {
   return (
     <div className="flex flex-wrap gap-2">
       <Button
-        variant="secondary"
+        variant="outline"
         onClick={() => {
           t.info("Перший toast");
           t.success("Другий toast");
@@ -265,13 +269,13 @@ function CustomDurationDemo() {
   return (
     <div className="flex flex-wrap gap-2">
       <Button
-        variant="secondary"
+        variant="outline"
         onClick={() => t.info("Швидкий — 1 секунда.", 1000)}
       >
         1s
       </Button>
       <Button
-        variant="secondary"
+        variant="outline"
         onClick={() => t.info("Тривалий — 10 секунд.", 10_000)}
       >
         10s
@@ -300,7 +304,7 @@ export const MobileStack: Story = {
       return (
         <div className="flex flex-col gap-2 max-w-[20rem]">
           <Button
-            variant="secondary"
+            variant="outline"
             onClick={() => {
               t.info("Перший toast — info");
               t.warning("Другий — warning");

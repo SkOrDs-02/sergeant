@@ -98,11 +98,11 @@ export function MultiSelectDemo() {
                 Обрано {picked.size}
               </span>
               <div className="ml-auto flex gap-2">
-                <Button variant="secondary" size="sm">
+                <Button variant="outline" size="sm">
                   <Icon name="tag" size="sm" />
                   Категорія
                 </Button>
-                <Button variant="destructive" size="sm">
+                <Button variant="solid" tone="danger" size="sm">
                   <Icon name="trash" size="sm" />
                   Видалити
                 </Button>

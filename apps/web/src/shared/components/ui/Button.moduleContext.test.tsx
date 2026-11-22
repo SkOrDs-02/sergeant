@@ -58,7 +58,9 @@ describe("Button × ModuleAccentProvider", () => {
   it("danger усередині модуля лишається небезпечним", () => {
     render(
       <ModuleAccentProvider module="nutrition">
-        <Button variant="danger">Видалити</Button>
+        <Button variant="soft" tone="danger">
+          Видалити
+        </Button>
       </ModuleAccentProvider>,
     );
     expect(cls("Видалити")).not.toContain("nutrition");

@@ -36,7 +36,7 @@ export function EmptyStatesSection() {
                 title={`size="${s}"`}
                 description="Опис порожнього стану"
                 primaryAction={
-                  <Button variant="primary" size={s === "lg" ? "lg" : "md"}>
+                  <Button variant="solid" size={s === "lg" ? "lg" : "md"}>
                     Дія
                   </Button>
                 }
@@ -57,12 +57,12 @@ export function EmptyStatesSection() {
                 title={`variant="${v}"`}
                 description="Контекстне повідомлення з потрібним тоном."
                 primaryAction={
-                  <Button variant="primary" size="md">
+                  <Button variant="solid" size="md">
                     Основна дія
                   </Button>
                 }
                 secondaryAction={
-                  <Button variant="secondary" size="md">
+                  <Button variant="outline" size="md">
                     Другорядна
                   </Button>
                 }
@@ -108,7 +108,7 @@ export function EmptyStatesSection() {
               title="Сторінку не знайдено"
               description="Здається, ця адреса вже не існує."
               primaryAction={
-                <Button variant="primary" size="lg" disabled>
+                <Button variant="solid" size="lg" disabled>
                   <Icon name="home" size="md" />
                   На головну
                 </Button>
@@ -122,7 +122,7 @@ export function EmptyStatesSection() {
               title="Щось пішло не так"
               description="Сервер тимчасово не зміг обробити запит."
               primaryAction={
-                <Button variant="primary" size="lg" disabled>
+                <Button variant="solid" size="lg" disabled>
                   <Icon name="refresh-cw" size="md" />
                   Оновити сторінку
                 </Button>
@@ -136,7 +136,7 @@ export function EmptyStatesSection() {
               title="Немає зʼєднання"
               description="Дані збережуться локально і синхронізуються, коли зʼєднання повернеться."
               primaryAction={
-                <Button variant="primary" size="lg" disabled>
+                <Button variant="solid" size="lg" disabled>
                   <Icon name="refresh-cw" size="md" />
                   Спробувати ще
                 </Button>

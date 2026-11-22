@@ -14,7 +14,9 @@
  *    в канонічних emphasis-словах і в `LEGACY_VARIANTS`, а legacy-перевірка
  *    йде першою. Тому `variant="ghost" tone="finyk"` — рівно та форма, яку
  *    документує канонічна вісь — давала звичайний нейтральний ghost. Шість
- *    викликів у Фініку просили акцент і тихо його не отримували.
+ *    викликів у Фініку просили акцент і тихо його не отримували. Гілку знято
+ *    разом із легасі-варіантами 2026-11-22: плоских імен тип більше не
+ *    приймає, тож цей механізм тепер ловить компілятор, а не тест.
  *
  * 2. **Канонічна гілка падає в `?? "primary"`.** У `outline` і `ghost` є
  *    лише клітинка `neutral`, тож `variant="outline" tone="fizruk"` не
@@ -39,9 +41,9 @@ import { fileURLToPath } from "node:url";
 const SRC = fileURLToPath(new URL("../../..", import.meta.url));
 
 /**
- * Дзеркало `EMPHASIS_TONE_MAP` і `LEGACY_VARIANTS` із `Button.tsx`.
+ * Дзеркало `EMPHASIS_TONE_MAP` із `Button.tsx`.
  *
- * Свідома копія, а не імпорт: обидві структури там не експортуються, і
+ * Свідома копія, а не імпорт: таблиця там не експортується, і
  * експортувати їх заради тесту означало б розширити публічний API
  * компонента. Розходження ловить третій тест нижче.
  */
@@ -66,24 +68,6 @@ const EMPHASIS_TONES: Record<string, ReadonlySet<string>> = {
   outline: new Set(["neutral", "danger"]),
   ghost: new Set(["neutral"]),
 };
-
-const LEGACY_VARIANTS = new Set([
-  "primary",
-  "secondary",
-  "ghost",
-  "danger",
-  "destructive",
-  "success",
-  "finyk",
-  "fizruk",
-  "routine",
-  "nutrition",
-  "finyk-soft",
-  "fizruk-soft",
-  "routine-soft",
-  "nutrition-soft",
-  "primary-ink",
-]);
 
 function walk(dir: string, out: string[] = []): string[] {
   for (const name of readdirSync(dir)) {
@@ -143,14 +127,14 @@ function buttonTags(src: string): Array<{ tag: string; line: number }> {
  *  - `variant="solid"`            → `["solid"]`
  *  - `variant={c ? "a" : "b"}`    → `["a", "b"]` (перевіряємо обидві гілки)
  *  - `variant={someVar}`          → `null` (не читається — не вгадуємо)
- *  - пропа немає                  → `["primary"]` (справжній дефолт компонента)
+ *  - пропа немає                  → `["solid"]` (справжній дефолт компонента)
  */
 function variantCandidates(tag: string): string[] | null {
   const literal = /\bvariant="([^"]+)"/.exec(tag);
   if (literal) return [literal[1] as string];
 
   const expr = /\bvariant=\{/.exec(tag);
-  if (!expr) return ["primary"]; // пропа немає — діє дефолт `variant = "primary"`
+  if (!expr) return ["solid"]; // пропа немає — діє дефолт `variant = "solid"`
 
   // Вміст `{...}` з урахуванням вкладених дужок.
   let i = expr.index + expr[0].length;
@@ -189,21 +173,12 @@ function findOffenders(): Offender[] {
       // Тому замість «літерал або дефолт» тут ПЕРЕЛІК можливих значень:
       // з `variant={a ? "x" : "y"}` дістаємо обидві гілки й перевіряємо
       // кожну. Це сильніше за пропуск динамічних тегів — реальний
-      // порушник `variant={c ? "primary" : "secondary"} tone="finyk"`
+      // порушник `variant={c ? "outline" : "ghost"} tone="finyk"`
       // лишається спійманим по обох гілках.
       const variants = variantCandidates(tag);
       if (variants === null) continue; // справді не читається — не вгадуємо
 
       for (const variant of variants) {
-        if (LEGACY_VARIANTS.has(variant)) {
-          offenders.push({
-            where,
-            variant,
-            tone,
-            why: "legacy-варіант: `tone` відкидається не читаючи",
-          });
-          continue;
-        }
         const allowed = EMPHASIS_TONES[variant];
         if (allowed && !allowed.has(tone)) {
           offenders.push({

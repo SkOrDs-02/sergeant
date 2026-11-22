@@ -1,6 +1,6 @@
 # Design System — Примітиви UI, Focus, A11y та Gestures
 
-> **Last touched:** 2026-10-23 by @claude (`ChoiceGroup` / `ChoiceCheckbox`, межа «вибір / вкладка / тумблер», `Input` на мові H; рішення власника за v3.1); 2026-10-17 by @codex (цільові підрозділи Профілю та чесний підсумок фото). **Next review:** 2027-04-12.
+> **Last touched:** 2026-11-22 by @claude (легасі-варіанти `Button` і проп `module` знято); 2026-10-23 by @claude (`ChoiceGroup` / `ChoiceCheckbox`, межа «вибір / вкладка / тумблер», `Input` на мові H; рішення власника за v3.1); 2026-10-17 by @codex (цільові підрозділи Профілю та чесний підсумок фото). **Next review:** 2027-04-12.
 > **Status:** Active
 
 Цей документ охоплює UI-примітиви, focus/disabled/loading контракт, правила кодування, міграційні патерни, нові компоненти та хуки, gestures/a11y, та keyboard-first overlays (DropdownMenu, CommandPalette).
@@ -86,14 +86,15 @@ import {
 <Button variant="outline" tone="neutral">Назад</Button>   // нейтральна з межею
 ```
 
-**Легасі-імена заборонені храповиком.** Плоскі варіанти `primary` /
+**Легасі-імена знято з API.** Плоскі варіанти `primary` /
 `secondary` / `danger` / `destructive` / `success` / `finyk…nutrition` /
-`*-soft` / `primary-ink` і проп `module=` лишаються тонкими аліасами з
-байт-у-байт тим самим виводом (`@removeBy 2026-12-01`), але у `apps/web/src`
-їх **нуль від 2026-09-16**: codemod PR [#38](https://github.com/zaebal-beep/Sergeant/pull/38)
+`*-soft` / `primary-ink` і проп `module=` до 2026-11-22 жили тонкими
+аліасами (`@removeBy 2026-12-01`); тепер тип `ButtonVariant` = лише емфаза,
+дефолт `solid`, і плоске імʼя не проходить typecheck. У продуктовому коді
+`apps/web/src` їх **нуль від 2026-09-16**: codemod PR [#38](https://github.com/zaebal-beep/Sergeant/pull/38)
 перевів 255 тегів, а гейт `pnpm lint:ui-canon`
 ([`scripts/check-ui-canon-ratchet.mjs`](../../../../scripts/check-ui-canon-ratchet.mjs),
-бюджет `legacyButton: 0`) не пускає їх назад. Читаєш старий код або доку —
+бюджет `legacyButton: 0`) лишається страховкою поверх tsc. Читаєш старий код або доку —
 ось мапа: `primary` = `solid`+`neutral`, `secondary` = `outline`+`neutral`,
 `danger` = `soft`+`danger`, `destructive` = `solid`+`danger`, `success` =
 `soft`+`success`, `finyk` = `solid`+`finyk`, `finyk-soft` = `soft`+`finyk`,

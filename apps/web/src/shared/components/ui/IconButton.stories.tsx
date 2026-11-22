@@ -53,7 +53,7 @@ export const Default: Story = {};
 /** Primary — іконка-CTA на яскравому accent-фоні. */
 export const Primary: Story = {
   args: {
-    variant: "primary",
+    variant: "solid",
     "aria-label": "Додати запис",
     children: <Icon name="plus" />,
   },
@@ -62,7 +62,8 @@ export const Primary: Story = {
 /** Danger — destructive action (видалити, скинути). */
 export const Danger: Story = {
   args: {
-    variant: "danger",
+    variant: "soft",
+    tone: "danger",
     "aria-label": "Видалити запис",
     children: <Icon name="trash" />,
   },

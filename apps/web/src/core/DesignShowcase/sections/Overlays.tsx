@@ -47,7 +47,7 @@ export function OverlaysSection() {
         {(["sm", "md", "lg"] as const).map((size) => (
           <Button
             key={size}
-            variant="secondary"
+            variant="outline"
             size="sm"
             onClick={() => setModal(size)}
           >
@@ -57,14 +57,15 @@ export function OverlaysSection() {
       </Group>
 
       <Group label="Sheet та ConfirmDialog" row>
-        <Button
-          variant="secondary"
-          size="sm"
-          onClick={() => setSheetOpen(true)}
-        >
+        <Button variant="outline" size="sm" onClick={() => setSheetOpen(true)}>
           Відкрити Sheet
         </Button>
-        <Button variant="danger" size="sm" onClick={() => setConfirmOpen(true)}>
+        <Button
+          variant="soft"
+          tone="danger"
+          size="sm"
+          onClick={() => setConfirmOpen(true)}
+        >
           ConfirmDialog
         </Button>
       </Group>

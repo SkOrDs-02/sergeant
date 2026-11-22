@@ -73,7 +73,7 @@ describe("EmptyState — a11y", () => {
       <EmptyState
         title="Список порожній"
         action={
-          <Button variant="primary" size="md">
+          <Button variant="solid" size="md">
             Створити
           </Button>
         }
@@ -90,7 +90,7 @@ describe("EmptyState — a11y", () => {
       <EmptyState
         title="Список порожній"
         action={
-          <Button variant="primary" size="md">
+          <Button variant="solid" size="md">
             Створити
           </Button>
         }

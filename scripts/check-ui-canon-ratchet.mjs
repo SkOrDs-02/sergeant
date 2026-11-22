@@ -7,8 +7,11 @@
 // НЕканонічний спосіб зробити те, що має канонічний»:
 //
 //   1. `legacyButton`  — легасі-варіанти `<Button>` (`primary`, `secondary`,
-//      `danger`, `finyk-soft`, …) і застарілий проп `module=`. Канон —
-//      `(variant, tone)`, де `variant` ∈ solid|soft|outline|ghost.
+//      `danger`, `finyk-soft`, …) і проп `module=`. Канон — `(variant, tone)`,
+//      де `variant` ∈ solid|soft|outline|ghost|text. З 2026-11-22 тип
+//      `ButtonVariantLegacy` і проп `module` знято з `Button.tsx`, тож
+//      typecheck ловить їх першим; метрика лишається страховкою (бюджет 0)
+//      для місць, куди tsc не дивиться (каст `as`, нетипізований виклик).
 //   2. `handRolledFocusRing` — рукописний `focus-visible:ring-2` там, де є
 //      готова утиліта `.focus-ring`.
 //   3. `offCanonRingOpacity` — `ring-focus` із непрозорістю, відмінною від
@@ -497,8 +500,7 @@ export function scanSource(relPath, src) {
         metric: "legacyButton",
         file: relPath,
         line,
-        detail:
-          "проп `module=` застарілий (@removeBy 2026-12-01); канон: `tone`",
+        detail: "проп `module=` знято 2026-11-22; канон: `tone`",
       });
     }
   }

@@ -48,8 +48,8 @@ describe("Button", () => {
     expect(ref.current?.textContent).toBe("Ok");
   });
 
-  it("primary = чорнило на сторінці (мова H), темна перевертається токенами", () => {
-    const { getByRole } = render(<Button variant="primary">Go</Button>);
+  it("solid = чорнило на сторінці (мова H), темна перевертається токенами", () => {
+    const { getByRole } = render(<Button variant="solid">Go</Button>);
     const cls = getByRole("button").className;
     expect(cls).toContain("bg-text");
     expect(cls).toContain("text-bg");
@@ -60,7 +60,7 @@ describe("Button", () => {
     "%s: радіус 8 px, без тіні, масштабу й glow",
     (size) => {
       const { getByRole } = render(
-        <Button size={size} variant="finyk">
+        <Button size={size} variant="solid" tone="finyk">
           Go
         </Button>,
       );
@@ -81,16 +81,20 @@ describe("Button", () => {
     // nutrition's `-strong` is lime-800 already, so hover only goes to lime-900.
     ["nutrition", "hover:bg-lime-900", null],
   ] as const)(
-    "%s variant darkens monotonically from -strong (no inverted hover)",
-    (variant, hoverCls, activeCls) => {
-      const { getByRole } = render(<Button variant={variant}>Go</Button>);
+    "solid/%s darkens monotonically from -strong (no inverted hover)",
+    (tone, hoverCls, activeCls) => {
+      const { getByRole } = render(
+        <Button variant="solid" tone={tone}>
+          Go
+        </Button>,
+      );
       const cls = getByRole("button").className;
-      expect(cls).toContain(`bg-${variant}-strong`);
+      expect(cls).toContain(`bg-${tone}-strong`);
       expect(cls).toContain(hoverCls);
       if (activeCls) expect(cls).toContain(activeCls);
       // The pre-fix tokens (`*-hover` = -600 step) would lighten the button
       // on hover relative to a -strong (700+) base.
-      expect(cls).not.toContain(`hover:bg-${variant}-hover`);
+      expect(cls).not.toContain(`hover:bg-${tone}-hover`);
     },
   );
 
@@ -113,93 +117,16 @@ describe("Button", () => {
     expect(cls).toMatch(/\bw-11\b/);
   });
 
-  describe("module prop redirects neutral variants", () => {
-    it.each([
-      ["finyk", "bg-finyk-strong"],
-      ["fizruk", "bg-fizruk-strong"],
-      ["routine", "bg-routine-strong"],
-      ["nutrition", "bg-nutrition-strong"],
-    ] as const)(
-      "module=%s + variant=primary → renders %s solid",
-      (module, expectedBg) => {
-        const { getByRole } = render(
-          <Button module={module} variant="primary">
-            Go
-          </Button>,
-        );
-        expect(getByRole("button").className).toContain(expectedBg);
-      },
+  it("solid/{module}: темна - тир 400 під чорнилом сторінки, без тіні", () => {
+    const { getByRole } = render(
+      <Button variant="solid" tone="routine">
+        Go
+      </Button>,
     );
-
-    it("module primary: темна - тир 400 під чорнилом сторінки, без тіні", () => {
-      const { getByRole } = render(
-        <Button module="routine" variant="primary">
-          Go
-        </Button>,
-      );
-      const cls = getByRole("button").className;
-      expect(cls).toContain("dark:bg-routine");
-      expect(cls).toContain("dark:text-bg");
-      expect(cls).not.toMatch(/shadow/);
-    });
-
-    it.each([
-      ["finyk", "text-finyk-soft-fg"],
-      ["fizruk", "text-fizruk-soft-fg"],
-      ["routine", "text-routine-soft-fg"],
-      ["nutrition", "text-nutrition-soft-fg"],
-    ] as const)(
-      "module=%s + variant=secondary → renders %s soft",
-      (module, expectedFg) => {
-        const { getByRole } = render(
-          <Button module={module} variant="secondary">
-            Cancel
-          </Button>,
-        );
-        expect(getByRole("button").className).toContain(expectedFg);
-      },
-    );
-
-    it("destructive variant is NOT redirected even when module is set", () => {
-      // Delete buttons stay red inside any module — destructive intent
-      // overrides module branding.
-      const { getByRole } = render(
-        <Button module="fizruk" variant="destructive">
-          Delete
-        </Button>,
-      );
-      const cls = getByRole("button").className;
-      expect(cls).toContain("bg-danger-strong");
-      expect(cls).not.toContain("bg-fizruk");
-    });
-
-    it("ghost / danger variants are pass-through (not redirected)", () => {
-      const { getByRole, rerender } = render(
-        <Button module="routine" variant="ghost">
-          Skip
-        </Button>,
-      );
-      expect(getByRole("button").className).toContain("bg-transparent");
-
-      rerender(
-        <Button module="routine" variant="danger">
-          Remove
-        </Button>,
-      );
-      expect(getByRole("button").className).toContain("bg-danger-soft");
-    });
-
-    it("explicit module variant ignores the `module` prop entirely", () => {
-      // If a caller already wrote `variant="finyk"`, the `module` prop is
-      // a no-op (no double-mapping or surprise inversion).
-      const { getByRole } = render(
-        <Button module="fizruk" variant="finyk">
-          X
-        </Button>,
-      );
-      expect(getByRole("button").className).toContain("bg-finyk-strong");
-      expect(getByRole("button").className).not.toContain("bg-fizruk-strong");
-    });
+    const cls = getByRole("button").className;
+    expect(cls).toContain("dark:bg-routine");
+    expect(cls).toContain("dark:text-bg");
+    expect(cls).not.toMatch(/shadow/);
   });
 
   describe("orthogonal variant × tone API", () => {
@@ -315,7 +242,7 @@ describe("Button", () => {
       expect(cls).not.toContain("px-5");
     });
 
-    it("text лишається чорнилом усередині модуля й з будь-яким тоном", () => {
+    it("text лишається чорнилом з будь-яким тоном", () => {
       const { getByRole, rerender } = render(
         <Button variant="text" tone="finyk">
           A
@@ -325,7 +252,7 @@ describe("Button", () => {
       expect(base).toContain("text-text");
       expect(base).not.toContain("finyk");
       rerender(
-        <Button variant="text" module="routine">
+        <Button variant="text" tone="routine">
           A
         </Button>,
       );
@@ -333,10 +260,13 @@ describe("Button", () => {
     });
   });
 
-  describe("legacy ⇄ canonical output equivalence", () => {
-    // The whole point of the refactor: every legacy alias must emit exactly
-    // the same class string as its orthogonal (variant, tone) equivalent, so
-    // 433 existing call-sites are provably unaffected.
+  describe("легасі-API знято (дедлайн 2026-12-01)", () => {
+    // Плоскі варіанти (`primary`, `finyk-soft`, …) і проп `module` знято
+    // 2026-11-22. `@ts-expect-error` тримає тип: якщо аліас повернуть у
+    // `ButtonVariant` чи `module` у `ButtonProps`, директива стане зайвою і
+    // впаде typecheck. Рантайм-перевірки тримають резолвер: колір дає лише
+    // `tone`, а рядок поза типом падає в дефолтний `solid`, а не в легасі-
+    // клітинку і не в краш рендера.
     const clsOf = (ui: ReactElement) => {
       const { getByRole, unmount } = render(ui);
       const cls = getByRole("button").className;
@@ -344,52 +274,43 @@ describe("Button", () => {
       return cls;
     };
 
-    it.each([
-      ["primary", "solid", "neutral"],
-      ["secondary", "outline", "neutral"],
-      ["ghost", "ghost", "neutral"],
-      ["danger", "soft", "danger"],
-      ["destructive", "solid", "danger"],
-      ["success", "soft", "success"],
-      ["primary-ink", "solid", "ink"],
-      ["finyk", "solid", "finyk"],
-      ["fizruk", "solid", "fizruk"],
-      ["routine", "solid", "routine"],
-      ["nutrition", "solid", "nutrition"],
-      ["finyk-soft", "soft", "finyk"],
-      ["fizruk-soft", "soft", "fizruk"],
-      ["routine-soft", "soft", "routine"],
-      ["nutrition-soft", "soft", "nutrition"],
-    ] as const)(
-      "legacy variant='%s' === variant='%s' tone='%s'",
-      (legacy, variant, tone) => {
-        expect(clsOf(<Button variant={legacy}>X</Button>)).toBe(
-          clsOf(
-            <Button variant={variant} tone={tone}>
-              X
-            </Button>,
-          ),
+    it("дефолт без пропів = solid / neutral", () => {
+      expect(clsOf(<Button>X</Button>)).toBe(
+        clsOf(
+          <Button variant="solid" tone="neutral">
+            X
+          </Button>,
+        ),
+      );
+    });
+
+    it.each(["finyk", "finyk-soft", "destructive", "primary-ink"] as const)(
+      "легасі-рядок variant='%s' більше не фарбує кнопку",
+      (legacy) => {
+        const cls = clsOf(
+          <Button
+            // @ts-expect-error — плоских аліасів у `ButtonVariant` немає.
+            variant={legacy}
+          >
+            X
+          </Button>,
         );
+        expect(cls).toBe(clsOf(<Button>X</Button>));
       },
     );
 
-    it.each(["finyk", "fizruk", "routine", "nutrition"] as const)(
-      "module='%s' + primary === tone='%s' + solid",
-      (module) => {
-        expect(
-          clsOf(
-            <Button module={module} variant="primary">
-              X
-            </Button>,
-          ),
-        ).toBe(
-          clsOf(
-            <Button variant="solid" tone={module}>
-              X
-            </Button>,
-          ),
-        );
-      },
-    );
+    it("проп `module` більше не підміняє тон", () => {
+      const cls = clsOf(
+        <Button
+          // @ts-expect-error — `module` знято з `ButtonProps`, канон `tone`.
+          module="finyk"
+          variant="solid"
+        >
+          X
+        </Button>,
+      );
+      expect(cls).not.toContain("finyk");
+      expect(cls).toContain("bg-text");
+    });
   });
 });

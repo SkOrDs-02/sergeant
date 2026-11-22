@@ -204,7 +204,7 @@ export function VerifyEmailPage() {
 
           <Button
             type="button"
-            variant={isProblem ? "secondary" : "primary"}
+            variant={isProblem ? "outline" : "solid"}
             size="lg"
             className="w-full"
             onClick={() =>

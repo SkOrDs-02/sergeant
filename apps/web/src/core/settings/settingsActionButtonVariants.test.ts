@@ -109,8 +109,8 @@ describe("дія-блок у Налаштуваннях несе межу", () =
         for (const hit of bareBlockGhosts(readFileSync(file, "utf8"))) {
           offenders.push(
             `${relative(SRC, file)}:${hit.line} — ${hit.text}\n` +
-              `      → візьми "secondary" (нейтральна дія), "danger" ` +
-              `(деструктивна) або "primary" (головна дія блока). ` +
+              `      → візьми "outline" (нейтральна дія), "soft" + ` +
+              `tone="danger" (деструктивна) або "solid" (головна дія блока). ` +
               `"ghost" лишається для дії ВСЕРЕДИНІ вже обмеженої коробки ` +
               `або для тихої половини пари.`,
           );
