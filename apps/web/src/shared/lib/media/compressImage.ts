@@ -1,5 +1,5 @@
 /**
- * Last validated: 2026-08-18
+ * Last validated: 2026-11-22
  * Status: Active
  *
  * Клієнтське стиснення фото перед AI-аналізом (чек-скан finyk і КБЖВ-фото
@@ -14,15 +14,22 @@
  * - вихід завжди `image/jpeg` → айфонівський HEIC зникає як клас
  *   (Safari декодує HEIC у canvas нативно; Anthropic-fallback vision
  *   HEIC не приймає — після нормалізації питання знімається);
- * - re-encode через canvas відкидає EXIF, включно з GPS-координатами
- *   кадру — privacy-бонус для фото чеків і їжі.
+ * - JPEG на виході не несе EXIF/XMP з GPS-координатами кадру: canvas
+ *   re-encode їх відкидає, а коли перекодування пропущено (малий web-safe
+ *   файл) чи відкинуто (не виграло в розмірі, декодер або canvas
+ *   недоступні), JPEG-оригінал проходить `stripJpegExif` — байтове
+ *   вирізання APP1 без перекодування (priv-21). Малі PNG/WebP йдуть як є:
+ *   їхні EXIF-чанки не вирізаються.
  *
- * `null` = «лишай оригінал»: і коли стискати нема сенсу (малий
- * web-safe файл), і коли декодувати не вдалося (битий файл, формат без
- * підтримки браузером, тестовий jsdom без canvas). Колер у відповідь
- * МУСИТЬ падати назад на оригінальний файл і наявну валідацію
- * розміру/типу — стиснення ніколи не перетворює робочий кейс на помилку.
+ * `null` = «лишай оригінал»: стискати нема сенсу і вирізати нічого
+ * (малий web-safe файл без EXIF), або декодувати не вдалося і це не JPEG
+ * з EXIF (битий файл, формат без підтримки браузером, тестовий jsdom без
+ * canvas). Колер у відповідь МУСИТЬ падати назад на оригінальний файл і
+ * наявну валідацію розміру/типу — стиснення ніколи не перетворює робочий
+ * кейс на помилку.
  */
+
+import { stripJpegExif } from "./stripJpegExif";
 
 export const COMPRESS_MAX_SIDE_PX = 2048;
 export const COMPRESS_JPEG_QUALITY = 0.85;
@@ -122,10 +129,17 @@ async function decodeImage(file: File): Promise<Decoded | null> {
 }
 
 /**
- * Стискає фото у JPEG ≤2048px по довшій стороні. `null` = лишай
- * оригінал (див. докстрінг модуля — це і skip, і graceful failure).
+ * Стискає фото у JPEG ≤2048px по довшій стороні; якщо перекодування
+ * пропущено чи відкинуто, JPEG-оригінал повертається без EXIF/XMP.
+ * `null` = лишай оригінал (див. докстрінг модуля).
  */
 export async function compressImageFile(file: File): Promise<File | null> {
+  const reencoded = await reencodeImageFile(file).catch(() => null);
+  if (reencoded) return reencoded;
+  return await stripJpegExif(file).catch(() => null);
+}
+
+async function reencodeImageFile(file: File): Promise<File | null> {
   if (typeof document === "undefined") return null;
   if (!shouldAttemptCompression(file)) return null;
   // Без робочого 2D-canvas (jsdom у тестах, екзотичні embedded-браузери)
