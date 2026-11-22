@@ -35,6 +35,7 @@ import {
 } from "./auth/pushSessionBinding.js";
 import { queueAuthTransactionalEmail } from "./email/authTransactionalMail.js";
 import {
+  accountLinkingOptions,
   emailVerificationGateOptions,
   guardEmailVerifiedSignIn,
 } from "./auth/emailVerificationGate.js";
@@ -410,6 +411,8 @@ export const auth = betterAuth({
     },
   },
   ...(socialProviders ? { socialProviders } : {}),
+  // sec-46: соцвхід не привʼязується до непідтвердженого email+пароль акаунта.
+  account: { accountLinking: accountLinkingOptions },
   emailAndPassword: {
     enabled: true,
     // NIST SP 800-63B рекомендує мінімум 8 символів; 10 — розумний trade-off,

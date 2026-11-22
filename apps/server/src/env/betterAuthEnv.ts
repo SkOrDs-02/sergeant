@@ -11,6 +11,11 @@ const WEAK_BETTER_AUTH_SECRETS = new Set([
   "changeme",
   "secret",
   "better-auth-secret",
+  // sec-46: дефолт smoke-лейну, закомічений у публічне репо
+  // (`ci.yml`, `playwright.smoke.config.ts`, `smokeEmailVerification.ts`).
+  // Ним smoke сам підписує токени підтвердження email, тож у проді він
+  // дав би будь-кому підтвердити чужу адресу й підробити сесію.
+  "smoke_test_better_auth_secret_32_chars_min",
 ]);
 
 /**
@@ -34,6 +39,16 @@ export function assertBetterAuthStartupEnv(): void {
     throw new Error(
       "BETTER_AUTH_SECRET matches a known placeholder — set a unique random value (e.g. openssl rand -base64 32).",
     );
+  }
+
+  if (!process.env["EMAIL_VERIFICATION_REQUIRED_FROM"]?.trim()) {
+    // sec-46: без межі реєстрація розкриває зайняту адресу (422), а новий
+    // акаунт входить без підтвердження email. Не фатально: рішення власника
+    // ставити межу датою деплою, але мовчки цей стан не лишаємо.
+    logger.warn({
+      msg: "email_verification_cutoff_unset",
+      hint: "Set EMAIL_VERIFICATION_REQUIRED_FROM to the deploy date to enable neutral sign-up and mandatory email verification (see auth/emailVerificationGate.ts).",
+    });
   }
 
   const base = resolveBetterAuthBaseURL();

@@ -17,6 +17,7 @@ const {
   requiresVerifiedEmail,
   resetMailThrottleForTests,
   takeMailSlot,
+  MAIL_THROTTLE_MAX_KEYS,
   MAIL_THROTTLE_WINDOW_MS,
 } = await import("./emailVerificationGate.js");
 
@@ -246,6 +247,19 @@ describe("takeMailSlot", () => {
     expect(
       takeMailSlot("k", "a@example.com", now + MAIL_THROTTLE_WINDOW_MS),
     ).toBe(true);
+  });
+
+  it("флуд новими адресами витісняє найстаріші слоти, а не обнуляє троттл жертви", () => {
+    const now = Date.now();
+    expect(takeMailSlot("k", "oldest@example.com", now)).toBe(true);
+    expect(takeMailSlot("k", "victim@example.com", now + 1)).toBe(true);
+    // Заповнюємо памʼять до межі свіжими адресами в межах того самого вікна.
+    for (let i = 0; i < MAIL_THROTTLE_MAX_KEYS - 1; i += 1) {
+      takeMailSlot("k", `flood-${i}@example.com`, now + 2);
+    }
+    // Витіснено лише найстаріший слот; жертва далі під троттлом.
+    expect(takeMailSlot("k", "victim@example.com", now + 3)).toBe(false);
+    expect(takeMailSlot("k", "oldest@example.com", now + 3)).toBe(true);
   });
 });
 

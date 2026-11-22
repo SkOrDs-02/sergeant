@@ -39,7 +39,8 @@ import { accountExistsMail } from "./verificationMail.js";
  * після рестарту зайвий лист нешкідливий.
  */
 export const MAIL_THROTTLE_WINDOW_MS = 15 * 60 * 1000;
-const MAIL_THROTTLE_MAX_KEYS = 10_000;
+export const MAIL_THROTTLE_MAX_KEYS = 10_000;
+/** Порядок вставки = порядок часу: ключ перевставляється на кожен лист. */
 const lastMailAt = new Map<string, number>();
 
 function emailFingerprint(email: string): string {
@@ -58,11 +59,13 @@ export function takeMailSlot(
   const key = `${kind}:${emailFingerprint(email)}`;
   const last = lastMailAt.get(key);
   if (last !== undefined && now - last < MAIL_THROTTLE_WINDOW_MS) return false;
-  if (lastMailAt.size >= MAIL_THROTTLE_MAX_KEYS) {
-    for (const [k, at] of lastMailAt) {
-      if (now - at >= MAIL_THROTTLE_WINDOW_MS) lastMailAt.delete(k);
-    }
-    if (lastMailAt.size >= MAIL_THROTTLE_MAX_KEYS) lastMailAt.clear();
+  lastMailAt.delete(key);
+  // Витісняємо найстаріші слоти, а не всі разом: колись тут був `clear()`,
+  // і флуд з 10 000 нових адрес обнуляв троттл кожної, тож жертву знову
+  // можна було засипати листами (sec-46, ревʼю PR).
+  for (const k of lastMailAt.keys()) {
+    if (lastMailAt.size < MAIL_THROTTLE_MAX_KEYS) break;
+    lastMailAt.delete(k);
   }
   lastMailAt.set(key, now);
   return true;
@@ -219,6 +222,26 @@ export async function notifyExistingUserSignUp({
     ...accountExistsMail(),
   });
 }
+
+/**
+ * sec-46 (ревʼю PR): pre-account-takeover через неявне привʼязування OAuth.
+ * Сценарій: зловмисник реєструє email+пароль на чужу адресу (непідтверджену),
+ * а власник адреси згодом входить Google чи Apple. Якби Better Auth
+ * привʼязав соцакаунт до наявного користувача, він би поставив
+ * `emailVerified = true` (`dist/oauth2/link-account.mjs`), і пароль
+ * зловмисника став би повноцінним входом у чужий акаунт, з
+ * `requireVerifiedEmail()` на mono/privat включно.
+ *
+ * Better Auth 1.7.25 такого не робить: `requireLocalEmailVerified` за
+ * замовчуванням `true`, і непідтверджений локальний користувач отримує
+ * «account not linked» замість привʼязки. Пишемо прапорець явно, щоб
+ * оновлення бібліотеки чи чужа правка конфігу не повернули вектор тихо;
+ * регресію тримає `emailVerificationGate.test.ts` проти справжнього
+ * `betterAuth()`.
+ */
+export const accountLinkingOptions = {
+  requireLocalEmailVerified: true,
+} as const;
 
 /**
  * Частини конфігу Better Auth, що залежать від межі. Без межі порожньо:
