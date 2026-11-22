@@ -36,9 +36,12 @@ vi.mock("@shared/hooks/useToast", () => ({
   }),
 }));
 
-import { monoWebhookApi } from "@shared/api";
+import { ApiError, monoWebhookApi } from "@shared/api";
 import { trackEvent } from "../../../core/observability/analytics";
-import { useMonoTokenMigration } from "./useMonoTokenMigration";
+import {
+  MONO_TOKEN_MIGRATION_MAX_FAILURES,
+  useMonoTokenMigration,
+} from "./useMonoTokenMigration";
 
 const mockedConnect = monoWebhookApi.connect as unknown as ReturnType<
   typeof vi.fn
@@ -155,5 +158,99 @@ describe("useMonoTokenMigration", () => {
     expect(localStorage.getItem("finyk_token")).toBe("legacy-token");
     // Migration flag NOT set
     expect(localStorage.getItem("finyk_mono_token_migrated")).toBeNull();
+  });
+
+  // priv-32: на остаточній відмові хук лише скидав ref, і токен Monobank
+  // лишався на пристрої назавжди, щоразу їдучи на сервер.
+  describe("лічильник остаточних відмов", () => {
+    function httpError(status: number) {
+      return new ApiError({
+        kind: "http",
+        status,
+        message: `HTTP ${status}`,
+        url: "/api/mono/connect",
+      });
+    }
+
+    async function mountOnce() {
+      const { unmount } = renderHook(() => useMonoTokenMigration(true), {
+        wrapper: makeWrapper(),
+      });
+      await waitFor(() => {
+        expect(mockedConnect).toHaveBeenCalled();
+      });
+      await new Promise((r) => setTimeout(r, 0));
+      unmount();
+      mockedConnect.mockClear();
+    }
+
+    it(`видаляє легасі-ключі після ${MONO_TOKEN_MIGRATION_MAX_FAILURES} відмов 4xx`, async () => {
+      localStorage.setItem("finyk_token", "legacy-token");
+      localStorage.setItem("finyk_token_remembered", "remembered-token");
+      sessionStorage.setItem("finyk_token", "session-token");
+      mockedConnect.mockRejectedValue(httpError(401));
+
+      for (let i = 1; i < MONO_TOKEN_MIGRATION_MAX_FAILURES; i++) {
+        await mountOnce();
+        expect(localStorage.getItem("finyk_token_remembered")).toBe(
+          "remembered-token",
+        );
+      }
+      await mountOnce();
+
+      expect(localStorage.getItem("finyk_token")).toBeNull();
+      expect(localStorage.getItem("finyk_token_remembered")).toBeNull();
+      expect(sessionStorage.getItem("finyk_token")).toBeNull();
+      expect(
+        localStorage.getItem("finyk_mono_token_migration_failures"),
+      ).toBeNull();
+
+      // Токена більше немає: наступний маунт нічого не шле.
+      renderHook(() => useMonoTokenMigration(true), {
+        wrapper: makeWrapper(),
+      });
+      await new Promise((r) => setTimeout(r, 50));
+      expect(mockedConnect).not.toHaveBeenCalled();
+    });
+
+    it("тимчасові відмови (мережа, 5xx, 429) лічильник не чіпають", async () => {
+      localStorage.setItem("finyk_token", "legacy-token");
+      const transient = [
+        new ApiError({ kind: "network", message: "offline", url: "/x" }),
+        httpError(503),
+        httpError(429),
+        new Error("boom"),
+      ];
+      for (const err of transient) {
+        mockedConnect.mockRejectedValueOnce(err);
+        await mountOnce();
+      }
+
+      expect(localStorage.getItem("finyk_token")).toBe("legacy-token");
+      expect(
+        localStorage.getItem("finyk_mono_token_migration_failures"),
+      ).toBeNull();
+    });
+
+    it("успіх після відмови скидає лічильник", async () => {
+      localStorage.setItem("finyk_token", "legacy-token");
+      mockedConnect.mockRejectedValueOnce(httpError(401));
+      await mountOnce();
+      expect(localStorage.getItem("finyk_mono_token_migration_failures")).toBe(
+        "1",
+      );
+
+      mockedConnect.mockResolvedValueOnce({
+        status: "active",
+        accountsCount: 1,
+      });
+      await mountOnce();
+      await waitFor(() => {
+        expect(localStorage.getItem("finyk_mono_token_migrated")).toBe("1");
+      });
+      expect(
+        localStorage.getItem("finyk_mono_token_migration_failures"),
+      ).toBeNull();
+    });
   });
 });

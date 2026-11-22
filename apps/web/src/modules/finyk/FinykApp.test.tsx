@@ -430,7 +430,7 @@ describe("FinykApp — regression: malformed /api/v1/mono/accounts payload (deep
 describe("FinykApp — a rejected Mono token surfaces the real authError banner", () => {
   it("shows and dismisses the dismissible auth-error banner after a 401 MONO_TOKEN_INVALID over MSW", async () => {
     server.use(
-      http.post("*/api/v1/mono/connect", () =>
+      http.post("*/mono/connect", () =>
         HttpResponse.json(
           { code: "MONO_TOKEN_INVALID", error: "Invalid token" },
           { status: 401 },
@@ -468,6 +468,61 @@ describe("FinykApp — a rejected Mono token surfaces the real authError banner"
 
     await waitFor(() => {
       expect(screen.queryByRole("alert")).not.toBeInTheDocument();
+    });
+  });
+});
+
+// priv-32: FinykApp передавав `useMonoTokenMigration(true)`, і анонім із
+// легасі-ключем слав токен на `/mono/connect` (401) на кожному маунті.
+describe("FinykApp — легасі-міграція Mono-токена гейтиться сесією (priv-32)", () => {
+  it("анонім не шле легасі-токен на /mono/connect", async () => {
+    window.localStorage.setItem("finyk_token", "legacy-token");
+    const connectCalls: string[] = [];
+    server.use(
+      http.post("*/mono/connect", ({ request }) => {
+        connectCalls.push(request.url);
+        return HttpResponse.json({ error: "Unauthorized" }, { status: 401 });
+      }),
+    );
+
+    renderApp();
+    expect(await screen.findAllByText("Фінік")).not.toHaveLength(0);
+    // `/me` → 401 уже відповів: статус `unauthenticated` стабільний.
+    await new Promise((r) => setTimeout(r, 200));
+
+    expect(connectCalls).toEqual([]);
+    expect(window.localStorage.getItem("finyk_token")).toBe("legacy-token");
+  });
+
+  it("із підтвердженою сесією легасі-токен переїжджає на сервер", async () => {
+    window.localStorage.setItem("finyk_token", "legacy-token");
+    const connectBodies: unknown[] = [];
+    server.use(
+      http.get("*/api/v1/me", () =>
+        HttpResponse.json({
+          user: {
+            id: "u-priv-32",
+            email: "qa@example.com",
+            name: "QA",
+            image: null,
+            emailVerified: true,
+            createdAt: "2026-08-01T00:00:00.000Z",
+          },
+        }),
+      ),
+      http.post("*/mono/connect", async ({ request }) => {
+        connectBodies.push(await request.json());
+        return HttpResponse.json({ status: "active", accountsCount: 0 });
+      }),
+    );
+
+    renderApp();
+
+    await waitFor(() => {
+      expect(connectBodies).toEqual([{ token: "legacy-token" }]);
+    });
+    await waitFor(() => {
+      expect(window.localStorage.getItem("finyk_token")).toBeNull();
     });
   });
 });

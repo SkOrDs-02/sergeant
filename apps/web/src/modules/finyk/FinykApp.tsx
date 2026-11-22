@@ -53,6 +53,7 @@ import { useFinykQuickStatsWriter } from "./hooks/useFinykQuickStatsWriter";
 import { useFinykPersonalization } from "./hooks/useFinykPersonalization";
 import { useFinykReceiptLinks } from "./hooks/useFinykReceiptLinks";
 import { useMonoTokenMigration } from "./hooks/useMonoTokenMigration";
+import { useSessionReady } from "../../core/auth/useSessionReady";
 import { useDebtPaymentSplitSync } from "./hooks/useDebtPaymentSplitSync";
 import { consumePresetPrefill } from "../../core/onboarding/presetPrefill";
 import { useModuleFirstRun } from "../../core/onboarding/useModuleFirstRun";
@@ -100,7 +101,8 @@ export default function App({
   // observes the same query keys without persisting every response twice.
   const mono = useMonobank({ writeMirror: false });
   const privat = usePrivatbank(PRIVAT_ENABLED);
-  useMonoTokenMigration(true);
+  // Лише підтверджена сесія: анонім слав легасі-токен і ловив 401 (priv-32).
+  useMonoTokenMigration(useSessionReady());
   const toast = useToast();
   const storage = useStorage({ toast });
   useCashHistoryBackfill(storage.cashOnHand?.createdAt, mono.fetchRange);
