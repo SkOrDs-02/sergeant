@@ -31,6 +31,14 @@ vi.mock("../kvvfsHandoff.js", () => ({
   markHandoffDone: vi.fn(),
   readKvvfsSnapshot: vi.fn(() => null),
   pruneForeignPartitionRows: vi.fn(async () => 0),
+  takeKvvfsCensus: vi.fn(async () => ({
+    userIds: [],
+    outboxRows: 0,
+    kvStoreRows: 0,
+  })),
+  canRemoveKvvfsStore: vi.fn(() => false),
+  removeKvvfsStore: vi.fn(() => 0),
+  isAnotherAccountHandoffDone: vi.fn(() => false),
 }));
 
 import {

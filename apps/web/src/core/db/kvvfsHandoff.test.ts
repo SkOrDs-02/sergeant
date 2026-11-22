@@ -11,9 +11,13 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
 import {
+  canRemoveKvvfsStore,
+  hasKvvfsData,
+  isAnotherAccountHandoffDone,
   isHandoffDone,
   markHandoffDone,
   pruneForeignPartitionRows,
+  removeKvvfsStore,
 } from "./kvvfsHandoff";
 import type { SqliteConnection } from "./sqliteConnection";
 
@@ -73,7 +77,9 @@ describe("pruneForeignPartitionRows", () => {
       _migrations: ["name", "applied_at"],
     });
 
-    const pruned = await pruneForeignPartitionRows(conn, "user42");
+    const pruned = await pruneForeignPartitionRows(conn, "user42", {
+      keepKvStore: true,
+    });
 
     expect(pruned).toBe(2);
     expect(executed.map((e) => e.sql)).toEqual([
@@ -92,7 +98,7 @@ describe("pruneForeignPartitionRows", () => {
       sync_op_cursor: ["key", "value_int", "updated_at"],
     });
 
-    await pruneForeignPartitionRows(conn, "user42");
+    await pruneForeignPartitionRows(conn, "user42", { keepKvStore: true });
 
     expect(executed.map((e) => e.sql)).toContain("DELETE FROM sync_op_cursor");
   });
@@ -102,7 +108,7 @@ describe("pruneForeignPartitionRows", () => {
       routine_entries: ["id", "user_id"],
     });
 
-    await pruneForeignPartitionRows(conn, null);
+    await pruneForeignPartitionRows(conn, null, { keepKvStore: true });
 
     // `local-anon` і `demo-local` — це і є анонімна партиція; усе інше
     // належить акаунтам і поїде у власні файли.
@@ -118,11 +124,129 @@ describe("pruneForeignPartitionRows", () => {
       routine_entries: ["user_id"],
     });
 
-    await pruneForeignPartitionRows(conn, "user42");
+    await pruneForeignPartitionRows(conn, "user42", { keepKvStore: true });
 
     // Ім'я таблиці не можна передати параметром, тож воно потрапляє в SQL
     // текстом. Єдиний захист — біле поле символів, і саме його тут пін.
     expect(executed).toHaveLength(1);
     expect(executed[0]?.sql).toContain("routine_entries");
+  });
+});
+
+describe("kv_store зі знімка (priv-17)", () => {
+  it("лишається першому акаунту і вирізається для решти", async () => {
+    const tables = {
+      routine_entries: ["id", "user_id"],
+      kv_store: ["key", "value", "updated_at"],
+    };
+    const first = fakeConnection(tables);
+    await pruneForeignPartitionRows(first.conn, "user42", {
+      keepKvStore: true,
+    });
+    expect(first.executed.map((e) => e.sql)).not.toContain(
+      "DELETE FROM kv_store",
+    );
+
+    // Наступний акаунт не успадковує чужих налаштувань (зокрема біометрії),
+    // які інакше поїхали б write-through на сервер уже під його id.
+    const next = fakeConnection(tables);
+    await pruneForeignPartitionRows(next.conn, "user99", {
+      keepKvStore: false,
+    });
+    expect(next.executed.map((e) => e.sql)).toContain("DELETE FROM kv_store");
+  });
+
+  it("«перший акаунт» не рахує ні себе, ні анонімну партицію", () => {
+    markHandoffDone("anon");
+    markHandoffDone("user42");
+
+    expect(isAnotherAccountHandoffDone("user42", "anon")).toBe(false);
+    expect(isAnotherAccountHandoffDone("user99", "anon")).toBe(true);
+  });
+});
+
+describe("стадія 3: чи можна стерти старе сховище", () => {
+  const allDone = {
+    anonHandedOff: true,
+    isAccountHandedOff: () => true,
+    kvStoreDelivered: true,
+  };
+
+  it("порожня черга і всі партиції перелиті: можна", () => {
+    expect(
+      canRemoveKvvfsStore(
+        { userIds: ["user42", "user99"], outboxRows: 0, kvStoreRows: 0 },
+        { ...allDone, anonHandedOff: false },
+      ),
+    ).toBe(true);
+  });
+
+  it("недоставлене в черзі знімка: не можна", () => {
+    expect(
+      canRemoveKvvfsStore(
+        { userIds: ["user42"], outboxRows: 3, kvStoreRows: 0 },
+        allDone,
+      ),
+    ).toBe(false);
+  });
+
+  it("анонімні рядки чекають перелиття своєї партиції", () => {
+    const census = {
+      userIds: ["local-anon", "user42"],
+      outboxRows: 0,
+      kvStoreRows: 0,
+    };
+    expect(
+      canRemoveKvvfsStore(census, { ...allDone, anonHandedOff: false }),
+    ).toBe(false);
+    expect(canRemoveKvvfsStore(census, allDone)).toBe(true);
+  });
+
+  it("акаунт зі знімка без власної позначки: не можна, навіть після анонімної", () => {
+    const census = {
+      userIds: ["local-anon", "user42", "user99"],
+      outboxRows: 0,
+      kvStoreRows: 0,
+    };
+    const progress = {
+      ...allDone,
+      isAccountHandedOff: (id: string) => id === "user42",
+    };
+    expect(canRemoveKvvfsStore(census, progress)).toBe(false);
+    expect(
+      canRemoveKvvfsStore(census, {
+        ...progress,
+        isAccountHandedOff: () => true,
+      }),
+    ).toBe(true);
+  });
+
+  it("непорожній kv_store чекає першого акаунта", () => {
+    const census = { userIds: ["local-anon"], outboxRows: 0, kvStoreRows: 5 };
+    expect(
+      canRemoveKvvfsStore(census, { ...allDone, kvStoreDelivered: false }),
+    ).toBe(false);
+    expect(canRemoveKvvfsStore(census, allDone)).toBe(true);
+  });
+});
+
+describe("removeKvvfsStore", () => {
+  it("стирає всі kvvfs-local-* і нічого іншого", () => {
+    localStorage.setItem("kvvfs-local-sz", "8192");
+    localStorage.setItem("kvvfs-local-jrnl", "j");
+    localStorage.setItem("kvvfs-local-1", "p1");
+    localStorage.setItem("kvvfs-local-2", "p2");
+    localStorage.setItem("sergeant.storage.opfsHandoff.v1.anon", "done");
+
+    expect(hasKvvfsData()).toBe(true);
+    expect(removeKvvfsStore()).toBe(4);
+
+    expect(hasKvvfsData()).toBe(false);
+    expect(
+      Object.keys(localStorage).filter((k) => k.startsWith("kvvfs-local-")),
+    ).toEqual([]);
+    // Позначки перелиття мусять пережити стирання: без них наступний
+    // старт вважав би партицію неперелитою.
+    expect(isHandoffDone("anon")).toBe(true);
   });
 });
