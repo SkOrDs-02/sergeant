@@ -4349,7 +4349,7 @@ Confirmed with a tsx harness against the real strongImport.ts. buildStrongImport
 
 ### `data-55` [low] boundedDayKeySchema не перевіряє календар: «2024-02-30» і «2024-13-45» зберігаються й реплікуються, а import/commit на них падає з 500
 
-- **Стан:** відкрито
+- **Стан:** виправлено 2026-11-22 (`backlog/data-55`): `boundedDayKeySchema` перевіряє календар round-trip через `Date.UTC` (`isCalendarDayKey`), тож manual-expenses і import/commit відхиляють `2024-02-30` як 400; `screenshotAnalyze` валідує дату тією самою схемою і кладе такий рядок у `dropped.unreadable`. Серверний apply sync (`routine_entries`) цим не покритий
 - **Перевірка:** підтверджено · **Зусилля:** S · **Швидкий виграш** · **Область:** packages/shared (schemas/bounds) + server: finyk
 - **Де:** packages/shared/src/schemas/bounds.ts:58-66; apps/server/src/modules/finyk/import/dedupMono.ts:68; apps/server/src/modules/finyk/import/screenshotAnalyze.ts:41-43,128; apps/server/src/modules/finyk/manualExpenses.ts:93-110
 - **Першопричина:** Схема перевіряє лише regex і рядкове порівняння діапазону 1970..2100, isValidDayKey у screenshotAnalyze теж лише regex; справжня date-колонка в findMonoMatchedRows падає з 22008, а sync у timestamptz мовчки нормалізує дату.

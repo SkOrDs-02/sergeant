@@ -51,14 +51,45 @@ export const amountMinorSchema = z
   .min(AMOUNT_MINOR_MIN)
   .max(AMOUNT_MINOR_MAX);
 
+/** Формат `YYYY-MM-DD`; цей самий pattern іде в OpenAPI. */
+const DAY_KEY_RE = /^\d{4}-\d{2}-\d{2}$/;
+
+/**
+ * Чи існує такий день у календарі: `2024-02-29` так, `2024-02-30` і
+ * `2024-13-45` ні. Round-trip через `Date.UTC`: JS мовчки переносить
+ * переповнення (`02-30` → `03-01`), тож розбіжність компонентів означає
+ * неіснуючу дату. Рядок не у форматі `YYYY-MM-DD` → `false`.
+ *
+ * AI-CONTEXT: без цієї перевірки «30 лютого» проходило схему, лягало в jsonb
+ * і на першій справжній `date`-колонці падало з 22008 (data-55).
+ */
+export function isCalendarDayKey(value: string): boolean {
+  if (!DAY_KEY_RE.test(value)) return false;
+  const y = Number(value.slice(0, 4));
+  const mo = Number(value.slice(5, 7));
+  const d = Number(value.slice(8, 10));
+  const date = new Date(Date.UTC(y, mo - 1, d));
+  return (
+    date.getUTCFullYear() === y &&
+    date.getUTCMonth() === mo - 1 &&
+    date.getUTCDate() === d
+  );
+}
+
 /**
  * Календарний день `YYYY-MM-DD` у жорсткому вікні. Мʼяке вікно (±5 років /
  * +1 рік) навмисно НЕ перевіряється на сервері — це попередження в UI, а
  * не помилка: «вчорашній чек» і «звичка на наступний місяць» легітимні.
+ * Неіснуючий день (`2024-02-30`) відхиляється окремою помилкою.
  */
 export const boundedDayKeySchema = z
   .string()
-  .regex(/^\d{4}-\d{2}-\d{2}$/, "Дата має бути у форматі YYYY-MM-DD")
+  .regex(DAY_KEY_RE, "Дата має бути у форматі YYYY-MM-DD")
+  // Неправильний формат уже дав помилку regex — другу не додаємо.
+  .refine(
+    (v) => !DAY_KEY_RE.test(v) || isCalendarDayKey(v),
+    "Такої дати немає в календарі",
+  )
   .refine(
     (v) => v >= HARD_MIN_DAY_KEY && v <= HARD_MAX_DAY_KEY,
     "Дата поза допустимим діапазоном",

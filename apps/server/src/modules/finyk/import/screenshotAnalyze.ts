@@ -6,6 +6,7 @@ import {
   ImportScreenshotAnalyzeRequestSchema,
   ImportScreenshotAnalyzeResponseSchema,
   IMPORT_SCREENSHOT_DOC_TYPES,
+  boundedDayKeySchema,
 } from "@sergeant/shared";
 import type {
   ImportScreenshotDocType,
@@ -26,11 +27,7 @@ import { withOccurrenceIndices } from "./rowKey.js";
 import { receiptVisionViaOpenRouter } from "../receipts/visionTransport.js";
 import { resolveCategoryHint } from "./categoryHint.js";
 import { isUahCurrencyValue } from "./csvProfiles.js";
-import {
-  isAmountKopiykasInBounds,
-  isDayKeyInBounds,
-  truncateImportText,
-} from "./rowLimits.js";
+import { isAmountKopiykasInBounds, truncateImportText } from "./rowLimits.js";
 
 type WithSessionUser = Request & { user?: { id: string } };
 
@@ -55,8 +52,10 @@ function toSafePositiveIntKopiykas(v: unknown): number {
   return isAmountKopiykasInBounds(n) ? n : 0;
 }
 
+/** Формат, календар (`2024-02-30` — ні) і жорстке вікно — та сама схема,
+ * що потім перевіряє `ImportScreenshotRowSchema` (data-55). */
 function isValidDayKey(v: unknown): v is string {
-  return typeof v === "string" && /^\d{4}-\d{2}-\d{2}$/.test(v);
+  return boundedDayKeySchema.safeParse(v).success;
 }
 
 const HHMM_RE = /^([01]\d|2[0-3]):[0-5]\d$/;
@@ -144,13 +143,11 @@ export function normalizeImportScreenshotResult(
       dropped.nonUah += 1;
       continue;
     }
-    // Дата поза вікном схеми (модель галюцинує рік: `2206-08-16`) — така сама
-    // нечитабельна, як відсутня: інакше `ImportScreenshotRowSchema` валив би
-    // увесь драфт (rel-20).
-    const date =
-      isValidDayKey(row["date"]) && isDayKeyInBounds(row["date"])
-        ? row["date"]
-        : null;
+    // Дата поза вікном схеми (модель галюцинує рік: `2206-08-16`) або
+    // неіснуюча (`2024-02-30`) — така сама нечитабельна, як відсутня: інакше
+    // `ImportScreenshotRowSchema` валив би увесь драфт (rel-20), а commit
+    // падав би на `date`-колонці з 22008 (data-55).
+    const date = isValidDayKey(row["date"]) ? row["date"] : null;
     const amountKopiykas = toSafePositiveIntKopiykas(row["amount_kopiykas"]);
     // Рядок без розпізнаваної дати чи додатної суми — непридатний для
     // bulk-review (не можна показати картку транзакції без цих двох
