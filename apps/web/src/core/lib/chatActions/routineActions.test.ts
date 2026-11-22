@@ -1294,3 +1294,135 @@ describe("mark_habit_done · неявна дата біля межі доби", 
     expect(state.completions["h1"]).not.toContain("2026-04-23");
   });
 });
+
+// ─────────────────────────────────────────────────────────────────────────
+// logic-03 (аудит 2026-10-01, domain-logic): `edit_habit`,
+// `set_habit_schedule` і `pause_habit` переписували звичку без undo, хоча
+// поза `TOOL_RISK` і без підтвердження. Undo повертає лише записані тулом
+// поля і лише поки в них досі значення тула (той самий принцип, що
+// field-level форма редагування, `data-61`).
+// ─────────────────────────────────────────────────────────────────────────
+function undoOf(action: ChatAction): () => void {
+  const out = handleRoutineAction(action);
+  if (typeof out !== "object" || out == null || !out.undo) {
+    throw new Error(`expected undoable result, got ${JSON.stringify(out)}`);
+  }
+  return out.undo;
+}
+
+function habitById(id: string) {
+  return loadRoutineState().habits.find((h) => h.id === id);
+}
+
+describe("logic-03 · undo для перезапису звички", () => {
+  it("edit_habit: undo повертає назву, розклад і дні", () => {
+    seedHabit("h1", "Вода", { recurrence: "daily", weekdays: [0, 1, 2] });
+    const undo = undoOf({
+      name: "edit_habit",
+      input: {
+        habit_id: "h1",
+        name: "Чай",
+        recurrence: "weekly",
+        weekdays: [4],
+      },
+    });
+    expect(habitById("h1")).toMatchObject({
+      name: "Чай",
+      recurrence: "weekly",
+      weekdays: [4],
+    });
+    undo();
+    expect(habitById("h1")).toMatchObject({
+      name: "Вода",
+      recurrence: "daily",
+      weekdays: [0, 1, 2],
+    });
+  });
+
+  it("edit_habit: undo не відкочує поле, змінене вже після тула", () => {
+    seedHabit("h1", "Вода", { recurrence: "daily" });
+    const undo = undoOf({
+      name: "edit_habit",
+      input: { habit_id: "h1", name: "Чай", recurrence: "weekly" },
+    });
+    // Між дією і «скасувати» назву змінили ще раз (форма, інший пристрій).
+    const state = loadRoutineState();
+    saveRoutineState({
+      ...state,
+      habits: state.habits.map((h) =>
+        h.id === "h1" ? { ...h, name: "Кава", tagIds: ["t1"] } : h,
+      ),
+    });
+    undo();
+    const habit = habitById("h1");
+    expect(habit?.name).toBe("Кава");
+    expect(habit?.tagIds).toEqual(["t1"]);
+    expect(habit?.recurrence).toBe("daily");
+  });
+
+  it("set_habit_schedule: undo повертає попередній розклад", () => {
+    seedHabit("h1", "Вода", { recurrence: "daily", weekdays: [0, 1, 2, 3] });
+    const undo = undoOf({
+      name: "set_habit_schedule",
+      input: { habit_id: "h1", days: ["mon", "wed"] },
+    });
+    expect(habitById("h1")).toMatchObject({
+      recurrence: "weekly",
+      weekdays: [0, 2],
+    });
+    undo();
+    expect(habitById("h1")).toMatchObject({
+      recurrence: "daily",
+      weekdays: [0, 1, 2, 3],
+    });
+  });
+
+  it("pause_habit: undo знімає інтервал паузи, зокрема заднім числом", () => {
+    seedHabit("h1", "Вода");
+    const undo = undoOf({
+      name: "pause_habit",
+      input: { habit_id: "h1", from: "2026-04-01", to: "2026-04-20" },
+    });
+    expect(habitById("h1")?.pauseIntervals).toEqual([
+      { from: "2026-04-01", to: "2026-04-20" },
+    ]);
+    undo();
+    expect(habitById("h1")?.pauseIntervals ?? []).toEqual([]);
+  });
+
+  it("pause_habit(paused:false): undo повертає паузу, що діяла", () => {
+    seedHabit("h1", "Вода", {
+      pauseIntervals: [{ from: "2026-04-10", to: null }],
+    });
+    const undo = undoOf({
+      name: "pause_habit",
+      input: { habit_id: "h1", paused: false },
+    });
+    expect(habitById("h1")?.pauseIntervals).toEqual([
+      { from: "2026-04-10", to: "2026-04-21" },
+    ]);
+    undo();
+    expect(habitById("h1")?.pauseIntervals).toEqual([
+      { from: "2026-04-10", to: null },
+    ]);
+  });
+
+  it("undo не чіпає інші звички", () => {
+    seedHabit("h1", "Вода");
+    seedHabit("h2", "Сон");
+    const undo = undoOf({
+      name: "edit_habit",
+      input: { habit_id: "h1", name: "Чай" },
+    });
+    const state = loadRoutineState();
+    saveRoutineState({
+      ...state,
+      habits: state.habits.map((h) =>
+        h.id === "h2" ? { ...h, name: "Сон 8 год" } : h,
+      ),
+    });
+    undo();
+    expect(habitById("h1")?.name).toBe("Вода");
+    expect(habitById("h2")?.name).toBe("Сон 8 год");
+  });
+});
