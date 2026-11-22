@@ -1,7 +1,7 @@
 # Аудит 2026-10-01 · Надійність, продуктивність, експлуатація
 
 > **Status:** Active. 64 кластери (91 знахідка) за першопричиною. Загальний план, метод і обмеження — у [README](./README.md).
-> **Last touched:** 2026-11-22 by @claude (рішення власника по решті питань беклогу); 2026-11-21 by @claude (rel-34-r2: стеля ембеддингів профілю не списує факти без згоди і ті, що вже в черзі); 2026-11-21 by @claude (rel-62: advisory-lock раннера з дедлайном; раніше того ж дня рішення власника по кластерах, раунди 5–10); раніше перевірено 2026-10-02.
+> **Last touched:** 2026-11-22 by @claude (rel-32: системний збій запису чеків більше не гасить плашку збою синку); 2026-11-22 by @claude (рішення власника по решті питань беклогу); 2026-11-21 by @claude (rel-34-r2: стеля ембеддингів профілю не списує факти без згоди і ті, що вже в черзі); 2026-11-21 by @claude (rel-62: advisory-lock раннера з дедлайном; раніше того ж дня рішення власника по кластерах, раунди 5–10); раніше перевірено 2026-10-02.
 > **Next review:** 2027-01-21
 > **Spec-lint:** skip. Реєстр знахідок аудиту, не специфікація реалізації.
 
@@ -2173,6 +2173,7 @@ scripts/migration-down-drill.mjs: `async function applyForward(client, files) { 
 ### `rel-32` [low] Один «отруйний» чек Сільпо (NUL-символ чи інша помилка БД) назавжди ламає синк користувача
 
 - **Стан:** виправлено в гілці backlog/rel-32 (`sanitizeForPg` у `receiptsUpsert.ts` прибирає U+0000 і міняє одинокі сурогати на U+FFFD перед записом; `upsertReceiptsIsolated` пропускає чек, чий запис упав, з логом `silpo_receipt_upsert_skipped` (лише SQLSTATE) і метрикою `silpo_receipts_skipped_total{channel}`, решта синку і матчер ідуть далі; стелю розміру raw свідомо не додано)
+- **Дочищено:** закрито в гілці `backlog/rv-server-misc` (2026-11-22, PR-рев'ю): `upsertReceiptsIsolated` повертає пропуски, і якщо хоч один чек упав не з SQLSTATE класу 22/23 або не записався жоден, синк пише `last_failed_at` з кодом `SILPO_RECEIPTS_WRITE_FAILED` замість `last_sync_at`, тож плашка збою не гасне при лежачій БД; заодно клас 23 у `errorHandler` іде в Sentry рівня `warning` ([`sec-39`](./security.md#sec-39)), а опис `GET /api/billing/providers` в OpenAPI більше не обіцяє Stripe за країною
 - **Перевірка:** підтверджено · **Зусилля:** S · **Швидкий виграш** · **Область:** server: Сільпо receipts
 - **Де:** apps/server/src/modules/silpo/receipts.ts:691-695,704-718; apps/server/src/modules/silpo/receiptsUpsert.ts:114-130
 - **Першопричина:** Цикл upsertReceipt у receipts.ts не має try/catch. Рядки з U+0000 перед записом у JSONB і TEXT не санітизуються. recordSyncFailure викликається лише на помилках MCP, тож виняток БД виходить як 500.

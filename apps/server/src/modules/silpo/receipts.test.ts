@@ -290,6 +290,8 @@ function makeFakeDb(
     receiptsWipedAt?: Date | null | Array<Date | null>;
     /** Чеки, на записі яких «БД» падає (будь-яка не-NUL помилка Postgres). */
     failReceiptIds?: string[];
+    /** SQLSTATE помилки для `failReceiptIds` (дефолт `XX000`, збій бази). */
+    failReceiptCode?: string;
   } = {},
 ) {
   const receipts = new Map<string, FakeReceiptRow>();
@@ -300,6 +302,7 @@ function makeFakeDb(
   const monoTx = seed.monoTransactions ?? [];
   const manualTx = seed.manualExpenses ?? [];
   const finykLinked = new Set(seed.finykLinkedTxIds ?? []);
+  const connectionUpdates: string[] = [];
   let markerReads = 0;
 
   const query = (async (text: string, values: unknown[] = []) => {
@@ -332,7 +335,7 @@ function makeFakeDb(
       ];
       if (seed.failReceiptIds?.includes(receiptId)) {
         throw Object.assign(new Error("fake db: write failed"), {
-          code: "XX000",
+          code: seed.failReceiptCode ?? "XX000",
         });
       }
       if (receipts.has(receiptId)) return { rows: [], rowCount: 0 };
@@ -429,7 +432,13 @@ function makeFakeDb(
       };
     }
     if (text.includes("UPDATE silpo_connection")) {
-      // last_sync_at touch наприкінці успішного pullAndSyncReceipts.
+      // last_sync_at touch наприкінці успішного pullAndSyncReceipts або
+      // слід провалу (`recordSyncFailure`).
+      connectionUpdates.push(
+        text.includes("last_failed_at = NOW()")
+          ? `failed:${String(values[1])}`
+          : "synced",
+      );
       return { rows: [], rowCount: 1 };
     }
     throw new Error(`fake db: unhandled query: ${text}`);
@@ -454,7 +463,7 @@ function makeFakeDb(
     }
   };
 
-  return { query, withTransaction, receipts, items, links };
+  return { query, withTransaction, receipts, items, links, connectionUpdates };
 }
 
 // Вигадані дані у формі живого silpo_get_my_offline_orders (спайк §0).
@@ -762,6 +771,87 @@ describe("pullAndSyncReceipts", () => {
       (v) => v.labels.channel === "offline",
     )?.value;
     expect(after).toBe(before + 1);
+  });
+
+  it("системний збій запису всіх чеків лишає слід провалу, а не успіху (rel-32)", async () => {
+    // Пул вичерпано / БД лягла: кожен upsert падає без data-level SQLSTATE.
+    // До фіксу синк однаково писав last_sync_at і гасив плашку збою.
+    const db = makeFakeDb({
+      failReceiptIds: [OFFLINE_ORDER_RECEIPT_ID],
+      failReceiptCode: "53300",
+    });
+    mocks.callWithFreshAccessToken.mockResolvedValue({
+      ok: true,
+      data: { offline: [OFFLINE_ORDER], online: [] },
+    });
+
+    const result = await pullAndSyncReceipts("user-1", {
+      query: db.query,
+      withTransaction: db.withTransaction,
+    });
+
+    expect(result).toMatchObject({ receiptsInserted: 0, itemsInserted: 0 });
+    expect(db.connectionUpdates).toEqual([
+      "failed:SILPO_RECEIPTS_WRITE_FAILED",
+    ]);
+  });
+
+  it("помилка даних (клас 22/23) на одному чеку при записаних інших — синк успішний (rel-32)", async () => {
+    const db = makeFakeDb({
+      failReceiptIds: [OFFLINE_ORDER_RECEIPT_ID],
+      failReceiptCode: "23514",
+    });
+    const second = {
+      ...OFFLINE_ORDER,
+      createdAt: "2026-08-11T15:00:00",
+      receiptUrl: "https://receipt.silpo.elkasa.com.ua/r2token",
+    };
+    mocks.callWithFreshAccessToken.mockResolvedValue({
+      ok: true,
+      data: { offline: [OFFLINE_ORDER, second], online: [] },
+    });
+
+    await pullAndSyncReceipts("user-1", {
+      query: db.query,
+      withTransaction: db.withTransaction,
+    });
+
+    expect(db.connectionUpdates).toEqual(["synced"]);
+  });
+
+  it("помилки даних і жодного записаного чека — теж провал, не успіх (rel-32)", async () => {
+    const db = makeFakeDb({
+      failReceiptIds: [OFFLINE_ORDER_RECEIPT_ID],
+      failReceiptCode: "22P05",
+    });
+    mocks.callWithFreshAccessToken.mockResolvedValue({
+      ok: true,
+      data: { offline: [OFFLINE_ORDER], online: [] },
+    });
+
+    await pullAndSyncReceipts("user-1", {
+      query: db.query,
+      withTransaction: db.withTransaction,
+    });
+
+    expect(db.connectionUpdates).toEqual([
+      "failed:SILPO_RECEIPTS_WRITE_FAILED",
+    ]);
+  });
+
+  it("синк без пропусків гасить слід провалу", async () => {
+    const db = makeFakeDb();
+    mocks.callWithFreshAccessToken.mockResolvedValue({
+      ok: true,
+      data: { offline: [OFFLINE_ORDER], online: [] },
+    });
+
+    await pullAndSyncReceipts("user-1", {
+      query: db.query,
+      withTransaction: db.withTransaction,
+    });
+
+    expect(db.connectionUpdates).toEqual(["synced"]);
   });
 
   it("leaves a receipt unmatched (first-class state) when no mono transaction candidate exists", async () => {

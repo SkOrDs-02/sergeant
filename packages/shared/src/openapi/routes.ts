@@ -1895,7 +1895,8 @@ export const paths: ZodOpenApiPathsObject = {
       security: cookieOrBearer,
       responses: {
         "200": {
-          description: "UA → увімкнені liqpay/plata; інші країни → stripe.",
+          description:
+            "Один список для всіх (країну не враховуємо): liqpay і plata, кожен за своїм прапорцем; stripe лише за STRIPE_ENABLED.",
           content: {
             "application/json": {
               schema: namedSchemas.BillingProvidersResponse,

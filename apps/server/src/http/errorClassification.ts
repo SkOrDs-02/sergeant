@@ -14,7 +14,10 @@ import { isOperationalError } from "../obs/errors.js";
  *  - `AppError` (operational) → свій `status`/`code`/текст.
  *  - Бібліотечна помилка з явним 4xx (body-parser) → свій текст, `VALIDATION`.
  *  - pg SQLSTATE без `.status`: клас 22 → 400 `VALIDATION`, клас 23 → 409
- *    `CONFLICT`, 40P01/40001 → 503 `UNAVAILABLE` + `Retry-After`. Без Sentry.
+ *    `CONFLICT`, 40P01/40001 → 503 `UNAVAILABLE` + `Retry-After`. Клас 22 і
+ *    транзієнтні — без Sentry. Клас 23 — подія рівня `warning` (див.
+ *    `reportWarning`): FK/unique/check, що долетіли сюди, найчастіше наш
+ *    власний баг (гонка, неперевірене посилання), а не помилка клієнта.
  *  - Решта non-operational (включно з невловленим `ZodError`: схеми відповіді,
  *    Hard Rule #3, це дрейф контракту, а не помилка клієнта) → 500
  *    `INTERNAL`, generic текст, подія в Sentry. Сирий `e.code` (SQLSTATE,
@@ -33,9 +36,18 @@ export interface ErrorClassification {
   retryAfterSec?: number;
   /**
    * Чи це баг, вартий Sentry-події: ефективний статус ≥ 500 і помилка не з
-   * тих, що ми свідомо змапили (pg 22/23/транзієнтні).
+   * тих, що ми свідомо змапили (pg 22/23/транзієнтні). Саме це поле читає
+   * `shouldHandleError` Sentry-хендлера.
    */
   report: boolean;
+  /**
+   * Подія рівня `warning` при 4xx для клієнта — лише pg клас 23. Її шле
+   * `errorHandler` сам, а НЕ Sentry-хендлер: той не вміє задати рівень і
+   * завів би `error`. Тому `report` тут `false`, і подія рівно одна.
+   */
+  reportWarning: boolean;
+  /** SQLSTATE змапленої pg-помилки — для тегу події, не для клієнта. */
+  sqlState?: string;
 }
 
 export const GENERIC_SERVER_MESSAGE = "Server error";
@@ -85,6 +97,7 @@ export function classifyError(err: unknown): ErrorClassification {
       operational,
       message: ownMessage,
       report: status >= 500,
+      reportWarning: false,
     };
   }
 
@@ -98,6 +111,7 @@ export function classifyError(err: unknown): ErrorClassification {
       operational,
       message: ownMessage,
       report: false,
+      reportWarning: false,
     };
   }
 
@@ -110,6 +124,8 @@ export function classifyError(err: unknown): ErrorClassification {
         operational,
         message: INPUT_MESSAGE,
         report: false,
+        reportWarning: false,
+        sqlState,
       };
     }
     if (sqlState?.startsWith("23")) {
@@ -119,6 +135,8 @@ export function classifyError(err: unknown): ErrorClassification {
         operational,
         message: CONFLICT_MESSAGE,
         report: false,
+        reportWarning: true,
+        sqlState,
       };
     }
     if (sqlState) {
@@ -129,6 +147,8 @@ export function classifyError(err: unknown): ErrorClassification {
         message: UNAVAILABLE_MESSAGE,
         retryAfterSec: TRANSIENT_RETRY_AFTER_SEC,
         report: false,
+        reportWarning: false,
+        sqlState,
       };
     }
   }
@@ -140,12 +160,14 @@ export function classifyError(err: unknown): ErrorClassification {
     operational,
     message: GENERIC_SERVER_MESSAGE,
     report: status >= 500,
+    reportWarning: false,
   };
 }
 
 /**
  * `shouldHandleError` для `Sentry.setupExpressErrorHandler`: та сама відповідь,
- * що й у `errorHandler`, щоб змаплені на 4xx/503 помилки не ставали подіями.
+ * що й у `errorHandler`, щоб змаплені на 4xx/503 помилки не ставали подіями
+ * рівня `error` (клас 23 `errorHandler` шле сам, рівнем `warning`).
  */
 export function shouldReportToSentry(err: unknown): boolean {
   return classifyError(err).report;

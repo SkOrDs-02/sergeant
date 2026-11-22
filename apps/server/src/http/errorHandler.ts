@@ -12,8 +12,9 @@ import { classifyError } from "./errorClassification.js";
  *
  * Правила:
  *  - `AppError` і підкласи → 4xx + `warn` + стабільне JSON body з `code`.
- *  - pg SQLSTATE 22/23 → 400/409, 40P01/40001 → 503 + `Retry-After`, без
- *    Sentry (класифікація в `errorClassification.ts`, sec-39).
+ *  - pg SQLSTATE 22/23 → 400/409, 40P01/40001 → 503 + `Retry-After`
+ *    (класифікація в `errorClassification.ts`, sec-39). Без Sentry, крім
+ *    класу 23: той іде подією рівня `warning`, бо це найчастіше наш баг.
  *  - Все інше → 500 + `error` + generic message + `code: "INTERNAL"`;
  *    деталі лише в логах/Sentry.
  *  - Клієнт завжди отримує `requestId`, щоб було що вставити в тікет.
@@ -85,10 +86,22 @@ export const errorHandler: ErrorRequestHandler = (
   // Sentry-хендлер не спрацює, ми все одно отримаємо подію. Sentry сам дедупає
   // однакові events, тому подвійних подій у проді не буде.
   // Operational 5xx (ExternalServiceError тощо) ловить лише Sentry-хендлер;
-  // змаплені pg-помилки (22/23/транзієнтні) не репортяться ніде.
+  // змаплені pg-помилки 22 і транзієнтні не репортяться ніде.
   if (classified.report && !operational) {
     try {
       Sentry.captureException(err);
+    } catch {
+      /* Sentry must never break error handling */
+    }
+  } else if (classified.reportWarning) {
+    // pg клас 23 (FK/unique/check): клієнт отримує 409, але це найчастіше
+    // наш баг, тож подія потрібна — рівнем `warning`. Шлемо лише звідси:
+    // Sentry-хендлер рівня не задає, і `report` для нього `false`.
+    try {
+      Sentry.captureException(err, {
+        level: "warning",
+        tags: { sqlstate: classified.sqlState ?? "unknown" },
+      });
     } catch {
       /* Sentry must never break error handling */
     }

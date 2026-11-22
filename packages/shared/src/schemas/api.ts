@@ -1998,8 +1998,8 @@ export const BillingPlanSchema = z.enum(["plus", "pro"]);
 export type BillingPlan = z.infer<typeof BillingPlanSchema>;
 
 // Web payment providers (Phase 7 UA billing) — те, що юзер може ОБРАТИ на
-// checkout. `stripe` — dormant (ніколи не пропонується UA); `liqpay`
-// (ПриватБанк) + `plata` (monobank) — live UA.
+// checkout. `stripe` — dormant (пропонується лише за `STRIPE_ENABLED`);
+// `liqpay` (ПриватБанк) + `plata` (monobank) — live UA.
 export const BillingProviderIdSchema = z.enum(["stripe", "liqpay", "plata"]);
 export type BillingProviderId = z.infer<typeof BillingProviderIdSchema>;
 
@@ -2217,8 +2217,9 @@ export const BillingCancelResponseSchema = z.object({
 export type BillingCancelResponse = z.infer<typeof BillingCancelResponseSchema>;
 
 // `GET /api/billing/providers` — список payment-provider-ів, доступних
-// поточному юзеру (для кнопок на /pricing). UA → увімкнені liqpay/plata;
-// інші країни → stripe.
+// поточному юзеру (для кнопок на /pricing). Список один для всіх, країну не
+// враховуємо (sec-33): `liqpay` і `plata` кожен за своїм прапорцем, `stripe`
+// лише за `STRIPE_ENABLED=true`. Порядок фіксований: LiqPay, Plata, Stripe.
 export const BillingProvidersResponseSchema = z.object({
   providers: z.array(BillingProviderIdSchema),
 });

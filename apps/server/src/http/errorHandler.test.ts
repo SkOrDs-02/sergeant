@@ -304,13 +304,22 @@ describe("errorHandler → класифікація non-operational помило
     expect(Sentry.captureException).not.toHaveBeenCalled();
   });
 
-  it("pg 23505 у `cause` обгортки → 409 CONFLICT без Sentry", () => {
+  it("pg 23505 у `cause` обгортки → 409 CONFLICT + Sentry рівня warning", () => {
+    // Клас 23 (FK/unique/check) найчастіше наш баг: клієнт бачить 409, але
+    // подія мусить бути — інакше такі баги зникають із дашборда (sec-39).
     const { req, res } = makeReqRes();
     const wrapped = new Error("Failed query", { cause: pgError("23505") });
     errorHandler(wrapped, req, res, () => {});
     expect(res.statusCode).toBe(409);
     expect(res.body).toEqual(expect.objectContaining({ code: "CONFLICT" }));
-    expect(Sentry.captureException).not.toHaveBeenCalled();
+    expect(JSON.stringify(res.body)).not.toContain("23505");
+    expect(Sentry.captureException).toHaveBeenCalledTimes(1);
+    expect(Sentry.captureException).toHaveBeenCalledWith(wrapped, {
+      level: "warning",
+      tags: { sqlstate: "23505" },
+    });
+    // Sentry-хендлер (`shouldHandleError`) цю подію НЕ дублює рівнем error.
+    expect(shouldReportToSentry(wrapped)).toBe(false);
   });
 
   it.each(["40P01", "40001"])(
@@ -364,7 +373,6 @@ describe("shouldReportToSentry ↔ errorHandler (sec-39)", () => {
     ["ZodError", zodError()],
     ["pg 42P01", pgError("42P01")],
     ["pg 22P05", pgError("22P05")],
-    ["pg 23505", pgError("23505")],
     ["pg 40P01", pgError("40P01")],
     ["body-parser 400", Object.assign(new Error("bad json"), { status: 400 })],
     ["explicit 502", Object.assign(new Error("x"), { status: 502 })],

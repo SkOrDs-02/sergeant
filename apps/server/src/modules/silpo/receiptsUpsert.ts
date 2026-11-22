@@ -245,30 +245,77 @@ export async function upsertReceipt(
  *
  * У лог іде лише SQLSTATE і клас помилки: текст і `detail` Postgres можуть
  * нести значення полів покупки (Hard Rule #21).
+ *
+ * Пропуски повертаються викликачу: без них системний збій (пул вичерпано,
+ * БД лягла) пропускав УСІ чеки, а синк однаково писав `last_sync_at` і гасив
+ * плашку збою — тобто зламаний синк виглядав успішним. Див.
+ * {@link isReceiptWriteDegraded}.
  */
 export async function upsertReceiptsIsolated(
   userId: string,
   channel: "online" | "offline",
   receipts: readonly ParsedReceipt[],
   withTransaction: SilpoTransactionRunner,
-): Promise<{ receiptsInserted: number; itemsInserted: number }> {
+): Promise<ReceiptsWriteResult> {
   let receiptsInserted = 0;
   let itemsInserted = 0;
+  let skipped = 0;
+  let systemicSkipped = 0;
   for (const receipt of receipts) {
     try {
       const r = await upsertReceipt(userId, channel, receipt, withTransaction);
       if (r.inserted) receiptsInserted++;
       itemsInserted += r.itemsInserted;
     } catch (err) {
+      skipped++;
       silpoReceiptsSkippedTotal.inc({ channel });
       const code = (err as { code?: unknown } | null)?.code;
+      const pgCode = typeof code === "string" ? code : null;
+      if (!isDataLevelSqlState(pgCode)) systemicSkipped++;
       logger.warn({
         msg: "silpo_receipt_upsert_skipped",
         channel,
-        pgCode: typeof code === "string" ? code : null,
+        pgCode,
         errName: err instanceof Error ? err.name : typeof err,
       });
     }
   }
-  return { receiptsInserted, itemsInserted };
+  return { receiptsInserted, itemsInserted, skipped, systemicSkipped };
+}
+
+/** Підсумок запису чеків одного каналу. */
+export interface ReceiptsWriteResult {
+  receiptsInserted: number;
+  itemsInserted: number;
+  /** Чеки, чий запис упав і які пропущено. */
+  skipped: number;
+  /** З них — ті, що впали НЕ з причини даних (див. {@link isDataLevelSqlState}). */
+  systemicSkipped: number;
+}
+
+/**
+ * SQLSTATE класу 22 (кривий формат значення) або 23 (порушене обмеження) —
+ * збій ОДНОГО чека через його дані. Усе інше (немає коду, 08 зʼєднання,
+ * 53 ресурси, 57 адмін-зупинка, XX000) — збій бази, а не чека.
+ */
+function isDataLevelSqlState(code: string | null): boolean {
+  return code !== null && /^2[23][0-9A-Z]{3}$/.test(code);
+}
+
+/**
+ * Чи лишати після синку слід провалу замість успіху. Так, якщо хоч один чек
+ * упав із системної причини, або якщо чеки падали, а записати не вдалось
+ * нічого: тоді «синк пройшов» — неправда, і плашка збою має лишитись.
+ */
+export function isReceiptWriteDegraded(
+  results: readonly ReceiptsWriteResult[],
+): boolean {
+  let skipped = 0;
+  let written = 0;
+  for (const r of results) {
+    if (r.systemicSkipped > 0) return true;
+    skipped += r.skipped;
+    written += r.receiptsInserted + r.itemsInserted;
+  }
+  return skipped > 0 && written === 0;
 }
