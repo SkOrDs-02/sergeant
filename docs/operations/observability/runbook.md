@@ -1,6 +1,6 @@
 # Observability-runbook
 
-> **Last touched:** 2026-11-19 by @claude (секція ChatSynthesisEmptyRetry: як читати частку перезапитів порожнього синтезу); 2026-11-19 by @claude (OpenRouterNoEndpoints: `reason=ignored`, список обходу `OPENROUTER_IGNORE_PROVIDERS`); 2026-11-19 by @claude (секція OpenRouterNoEndpoints); 2026-10-23 by @claude (секції AuthPasswordCheckFailureSeries, sec-10, і PlataSyncSlowTickStale, `plataSync` у `/health/workers`, rel-19); 2026-10-20 by @claude (секція ReminderSweepFailed, rel-01); 2026-10-03 by @claude (секція Renovate PR → PR Dependabot, ADR-0103). **Next review:** 2026-12-02.
+> **Last touched:** 2026-11-22 by @claude (AiQuotaStoreDown: `AI_DAILY_USER_LIMIT` у схемі env більше немає, B14); 2026-11-19 by @claude (секція ChatSynthesisEmptyRetry: як читати частку перезапитів порожнього синтезу); 2026-11-19 by @claude (OpenRouterNoEndpoints: `reason=ignored`, список обходу `OPENROUTER_IGNORE_PROVIDERS`); 2026-11-19 by @claude (секція OpenRouterNoEndpoints); 2026-10-23 by @claude (секції AuthPasswordCheckFailureSeries, sec-10, і PlataSyncSlowTickStale, `plataSync` у `/health/workers`, rel-19); 2026-10-20 by @claude (секція ReminderSweepFailed, rel-01); 2026-10-03 by @claude (секція Renovate PR → PR Dependabot, ADR-0103). **Next review:** 2026-12-02.
 > **Status:** Active
 
 > **Update 2026-07-21:** API/server logs — **Coolify** ([ADR-0074](../../governance/adr/0074-hosting-hetzner-coolify.md)). Посилання на «n8n Railway env» нижче — legacy n8n hosting (migrate TBD). OpenClaw WF-103 env — historical ([ADR-0075](../../governance/adr/0075-openclaw-gateway-decommissioned.md)).
@@ -330,10 +330,10 @@ session-check чекає слот.
    тіру. `AI_DAILY_ANON_LIMIT` для цього більше не існує — анонімного трафіку
    в AI-роутах немає, вони всі за `requireSession()`
    ([ADR-0086](../../governance/adr/0086-no-anonymous-ai-sign-in-required.md)).
-   ⚠️ **Перевір перед інцидентом, а не під час:** `AI_DAILY_USER_LIMIT` лежить
-   у схемі env, але `userDailyLimit()` його не читає — ліміт іде з
-   `billing/effectiveLimits.ts` за планом. Тобто цей крок сьогодні працює лише
-   через правку `FREE_LIMITS`/`PRO_LIMITS` і деплой, не через env.
+   ⚠️ **Перевір перед інцидентом, а не під час:** env-важеля для ліміту
+   залогіненого юзера немає. `AI_DAILY_USER_LIMIT` зі схеми env прибрано,
+   `userDailyLimit()` бере ліміт з `billing/effectiveLimits.ts` за планом.
+   Тобто цей крок працює лише через правку `FREE_LIMITS`/`PRO_LIMITS` і деплой.
 3. Перевір міграцію `ai_usage_daily`: `SELECT to_regclass('ai_usage_daily')`.
    Якщо null — запусти міграції.
 4. Після відновлення — дивись Anthropic-dashboard, чи не було сплеску
