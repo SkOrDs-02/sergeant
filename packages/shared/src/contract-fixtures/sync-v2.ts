@@ -45,6 +45,8 @@ interface SyncV2OpResult {
   idempotency_key: string;
   status: "applied" | "duplicate" | "rejected" | "retry";
   reason?: string;
+  /** Записана мітка, якщо сервер обрізав `client_ts` (data-51). */
+  client_ts?: string;
 }
 interface SyncV2PushResponseShape {
   accepted: number;
@@ -98,6 +100,18 @@ export const syncV2PushFixtures = {
         idempotency_key: "01HZ000000000000000000000D",
         status: "rejected",
         reason: "table_not_allowed",
+      },
+    ],
+  },
+  pushClampedClientTs: {
+    accepted: 1,
+    last_op_id: 1044,
+    server_now: "2026-05-12T09:30:01.000Z",
+    results: [
+      {
+        idempotency_key: "01HZ000000000000000000000E",
+        status: "applied",
+        client_ts: "2026-05-12T09:30:00.000Z",
       },
     ],
   },
@@ -210,6 +224,17 @@ export function assertSyncV2FixturesValid(): void {
       throw new Error(
         `Contract fixture "sync-v2.push.${name}": "results" must be an array`,
       );
+    }
+    for (const result of fixture.results as readonly SyncV2OpResult[]) {
+      if (
+        result.client_ts !== undefined &&
+        (result.status !== "applied" ||
+          Number.isNaN(Date.parse(result.client_ts)))
+      ) {
+        throw new Error(
+          `Contract fixture "sync-v2.push.${name}": "client_ts" must be an ISO timestamp on an applied result`,
+        );
+      }
     }
   }
   for (const [name, fixture] of Object.entries(syncV2PullFixtures)) {

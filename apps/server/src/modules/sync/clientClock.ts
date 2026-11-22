@@ -11,13 +11,17 @@ import { syncOpLogApplyTotal } from "../../obs/metrics.js";
  * Тепер два кроки:
  *   1. Допуск наперед — хвилини, а не година ({@link CLOCK_SKEW_FORWARD_MS}).
  *      Оп поза допуском НЕ відхиляється назавжди, а отримує `retry` з
- *      `reason: "clock_skew"`: у журнал не пишеться, клієнт повторить його
- *      звичайним бекофом (і пізніше, з `dead_letter`). Доти це була
- *      термінальна відмова: запис лишався лише на пристрої.
+ *      `reason: "clock_skew"`: у журнал не пишеться, клієнт повторює його з
+ *      тим самим `client_ts`, не палячи спроб, раз на `client_ts − server_now`
+ *      (не довше 5 хв), тож оп проходить, щойно годинник сервера наздожене
+ *      мітку, і в `dead_letter` через зсув не йде (`syncV2.pushLoop.ts`).
+ *      Доти це була термінальна відмова: запис лишався лише на пристрої.
  *   2. У межах допуску мітка обрізається: `updated_at = min(client_ts,
  *      server_now)` ({@link createClientTsClamp}). Та сама обрізана мітка
  *      йде в `sync_op_log.client_ts`, тож інші пристрої (pull / SSE пишуть
  *      `updated_at = op.client_ts`) бачать той самий порядок, що й сервер.
+ *      Сам автор свій оп назад не отримує (фільтр за origin), тому обрізану
+ *      мітку йому повертає `result.client_ts` ({@link storedClientTsField}).
  *
  * HLC свідомо не робимо (рішення власника).
  */
@@ -53,6 +57,27 @@ export function createClientTsClamp(): (clientTs: Date, nowMs: number) => Date {
     lastMs = Math.max(lastMs, clampedMs);
     return new Date(clampedMs);
   };
+}
+
+/**
+ * Поле `client_ts` per-op відповіді `applied`: мітка, яку сервер записав, коли
+ * вона відрізняється від надісланої (обрізка вище). Без нього пристрій, що
+ * поспішав, лишав у себе `updated_at = client_ts` пристрою, свій оп не тягнув
+ * (pull фільтрує власні за origin), а чужу пізнішу правку відкидав як
+ * старішу за локальну: розходження до наступної правки рядка. Клієнт
+ * переписує локальну мітку рядка на цю, якщо вона досі дорівнює надісланій.
+ * `null` (рядок журналу без мітки) і незмінна мітка поля не дають.
+ */
+export function storedClientTsField(
+  sentClientTs: string,
+  storedClientTs: Date | string | null | undefined,
+): { client_ts?: string } {
+  if (storedClientTs == null) return {};
+  const storedMs = new Date(storedClientTs).getTime();
+  if (!Number.isFinite(storedMs) || storedMs === Date.parse(sentClientTs)) {
+    return {};
+  }
+  return { client_ts: new Date(storedMs).toISOString() };
 }
 
 /** Per-op відповідь `retry / clock_skew` + метрика; журнал не чіпаємо. */

@@ -67,6 +67,14 @@ export interface SyncV2OpResult {
   idempotency_key: string;
   status: SyncV2OpResultStatus;
   reason?: string;
+  /**
+   * Лише на `applied`: мітка, яку сервер записав у `updated_at` і журнал,
+   * коли вона відрізняється від надісланого `client_ts` (data-51: годинник
+   * пристрою, що поспішає, обрізається до `server_now`). Клієнт переписує на
+   * неї локальну мітку рядка, інакше відкидав би пізніші чужі правки як
+   * старіші за свою. Сервери до цієї зміни поля не шлють.
+   */
+  client_ts?: string;
 }
 
 /**

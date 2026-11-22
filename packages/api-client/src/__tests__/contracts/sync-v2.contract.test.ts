@@ -238,6 +238,65 @@ describe("contract @ POST /api/v2/sync/push", CONTRACT_SUITE_OPTIONS, () => {
       });
   });
 
+  it("returns the stored client_ts when the server clamped a fast device clock", async () => {
+    const op = {
+      table: "routine_entries",
+      op: "insert" as const,
+      row: {
+        id: "entry_pact_004",
+        user_id: "user-pact-001",
+        routine_id: "routine_004",
+        completed_at: "2026-05-12T09:31:30.000Z",
+      },
+      // Годинник пристрою на 90 с попереду сервера.
+      client_ts: "2026-05-12T09:31:30.000Z",
+      idempotency_key: "01HZ000000000000000000000E",
+    };
+    await pact
+      .addInteraction()
+      .given(
+        "authenticated user-pact-001; server clock is 2026-05-12T09:30:00Z, the op client_ts is 90 s ahead",
+      )
+      .uponReceiving(
+        "a POST /api/v2/sync/push whose client_ts the server clamps to server_now",
+      )
+      .withRequest("POST", "/api/v2/sync/push", (req) => {
+        req.query({ sync_protocol: String(SYNC_PROTOCOL_VERSION) });
+        req.headers({
+          accept: "application/json",
+          "content-type": "application/json",
+        });
+        req.jsonBody({ ops: [op] });
+      })
+      .willRespondWith(200, (res) => {
+        res.headers({ "content-type": "application/json" });
+        res.jsonBody({
+          accepted: 1,
+          last_op_id: 1044,
+          server_now: "2026-05-12T09:30:01.000Z",
+          results: [
+            {
+              idempotency_key: "01HZ000000000000000000000E",
+              status: "applied",
+              client_ts: "2026-05-12T09:30:00.000Z",
+            },
+          ],
+        });
+      })
+      .executeTest(async (mockServer) => {
+        const http = createHttpClient({ baseUrl: mockServer.url });
+        const sync = createSyncV2Endpoints(http);
+        const out = await sync.pushV2([op]);
+
+        expect(out.results[0]!.status).toBe("applied");
+        // data-51: записана мітка, на яку клієнт переписує локальний рядок.
+        expect(out.results[0]!.client_ts).toBe("2026-05-12T09:30:00.000Z");
+        expect(Date.parse(out.results[0]!.client_ts!)).toBeLessThan(
+          Date.parse(op.client_ts),
+        );
+      });
+  });
+
   it("returns duplicate status on idempotent replay of an already-applied op", async () => {
     await pact
       .addInteraction()

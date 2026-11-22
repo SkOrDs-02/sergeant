@@ -16,6 +16,7 @@ import {
   clockSkewRetry,
   createClientTsClamp,
   exceedsForwardSkew,
+  storedClientTsField,
 } from "./clientClock.js";
 import { finykLimitPushNeeded } from "./finyk/limitPushTrigger.js";
 import { finykPushDbFromPool } from "../finyk/push/db.js";
@@ -130,6 +131,8 @@ interface SyncOpLogDuplicateRow {
   id: string;
   status: "applied" | "duplicate" | "rejected";
   reject_reason: string | null;
+  /** Записана (обрізана) мітка; повтор опа віддає її так само, як перший пуш. */
+  client_ts: Date | null;
 }
 
 // Tables whose apply logic is identical bar the table name (and, for tx-scoped
@@ -305,6 +308,8 @@ export async function syncV2Push(req: Request, res: Response): Promise<void> {
     idempotency_key: string;
     status: "applied" | "duplicate" | "rejected" | "retry";
     reason?: string;
+    /** data-51: записана мітка, якщо сервер її обрізав (`storedClientTsField`). */
+    client_ts?: string;
   };
   const results: OpResult[] = [];
   let acceptedCount = 0;
@@ -334,6 +339,9 @@ export async function syncV2Push(req: Request, res: Response): Promise<void> {
         : r.status === "duplicate"
           ? { reason: "duplicate" }
           : {}),
+      ...(r.status === "applied"
+        ? storedClientTsField(sourceOp.client_ts, r.client_ts)
+        : {}),
     });
     if (r.status === "applied") {
       acceptedCount++;
@@ -370,7 +378,7 @@ export async function syncV2Push(req: Request, res: Response): Promise<void> {
     const prior = await client.query<
       SyncOpLogDuplicateRow & { idempotency_key: string }
     >(
-      `SELECT id, status, reject_reason, idempotency_key
+      `SELECT id, status, reject_reason, client_ts, idempotency_key
          FROM sync_op_log
         WHERE user_id = $1 AND idempotency_key = ANY($2::text[])`,
       [user.id, ops.map((o) => o.idempotency_key)],
@@ -535,7 +543,7 @@ export async function syncV2Push(req: Request, res: Response): Promise<void> {
         insertedRow = inserted.rows[0];
         if (!insertedRow) {
           const raced = await client.query<SyncOpLogDuplicateRow>(
-            `SELECT id, status, reject_reason
+            `SELECT id, status, reject_reason, client_ts
                FROM sync_op_log
               WHERE user_id = $1 AND idempotency_key = $2`,
             [user.id, op.idempotency_key],
@@ -610,6 +618,7 @@ export async function syncV2Push(req: Request, res: Response): Promise<void> {
         id: insertedRow.id,
         status,
         reject_reason: reason,
+        client_ts: clientTs,
       });
 
       const insertedId = Number(insertedRow.id);
@@ -621,6 +630,7 @@ export async function syncV2Push(req: Request, res: Response): Promise<void> {
         results.push({
           idempotency_key: op.idempotency_key,
           status: "applied",
+          ...storedClientTsField(op.client_ts, clientTs),
         });
         newlyAppliedForStream.push({
           id: insertedId,

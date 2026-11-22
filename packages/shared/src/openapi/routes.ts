@@ -437,7 +437,7 @@ export const paths: ZodOpenApiPathsObject = {
       responses: {
         "200": {
           description:
-            "Результат по кожному op-у (`applied` / `duplicate` / `rejected` / `retry` + `reason`; `retry` - транзієнтна помилка БД, оп не в журналі, повтори його). `last_op_id` — number; `server_now` — годинник сервера для виміру clock skew.",
+            "Результат по кожному op-у (`applied` / `duplicate` / `rejected` / `retry` + `reason`; `retry` - транзієнтна помилка БД, оп не в журналі, повтори його; `client_ts` на `applied` - записана обрізана мітка). `last_op_id` — number; `server_now` — годинник сервера для виміру clock skew.",
           content: {
             "application/json": {
               schema: z.object({
@@ -453,6 +453,10 @@ export const paths: ZodOpenApiPathsObject = {
                       "retry",
                     ]),
                     reason: z.string().optional(),
+                    client_ts: z.string().optional().meta({
+                      description:
+                        "Лише на `applied`: мітка, яку сервер записав, якщо вона відрізняється від надісланого `client_ts` (годинник пристрою обрізано до `server_now`). Клієнт переписує на неї локальний `updated_at` рядка.",
+                    }),
                   }),
                 ),
                 server_now: z.string(),

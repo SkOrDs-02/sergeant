@@ -988,6 +988,7 @@ describe("syncV2Push · годинник пристрою (data-51)", () => {
         idempotency_key: string;
         status: string;
         reason?: string;
+        client_ts?: string;
       }>;
     };
   }
@@ -1030,6 +1031,52 @@ describe("syncV2Push · годинник пристрою (data-51)", () => {
     expect(honest.results).toEqual([
       { idempotency_key: "honest", status: "applied" },
     ]);
+  });
+
+  it("обрізана мітка повертається в результаті опа, необрізана — ні (rv-sync-clock)", async () => {
+    // Без поля пристрій лишав у себе updated_at = NOW + 90 с і відкидав
+    // пізнішу чужу правку (NOW + 30 с) як старішу: розходження до наступної
+    // правки рядка, бо власний оп pull фільтрує за origin.
+    const fast = await push([entryOp("fast", NOW + 90_000, "fast")]);
+    expect(fast.results).toEqual([
+      {
+        idempotency_key: "fast",
+        status: "applied",
+        client_ts: new Date(NOW).toISOString(),
+      },
+    ]);
+    vi.setSystemTime(NOW + 10_000);
+    const honest = await push([entryOp("honest", NOW + 5_000, "honest")]);
+    expect(honest.results).toEqual([
+      { idempotency_key: "honest", status: "applied" },
+    ]);
+  });
+
+  it("повтор уже записаного опа віддає ту саму обрізану мітку з журналу", async () => {
+    client.query.mockImplementation(async (sql: string) =>
+      /idempotency_key = ANY/.test(String(sql))
+        ? {
+            rows: [
+              {
+                id: "7",
+                status: "applied",
+                reject_reason: null,
+                client_ts: new Date(NOW - 60_000),
+                idempotency_key: "fast",
+              },
+            ],
+          }
+        : { rows: [] },
+    );
+    const body = await push([entryOp("fast", NOW + 30_000, "fast")]);
+    expect(body.results).toEqual([
+      {
+        idempotency_key: "fast",
+        status: "applied",
+        client_ts: new Date(NOW - 60_000).toISOString(),
+      },
+    ]);
+    expect(applyRoutineEntries).not.toHaveBeenCalled();
   });
 
   it("кілька правок одного рядка з пристрою, що поспішає, в одному пуші: остання виграє", async () => {

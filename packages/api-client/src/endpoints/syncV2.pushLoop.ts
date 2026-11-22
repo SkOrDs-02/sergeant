@@ -318,6 +318,20 @@ export interface SyncEnginePushDeps {
    * помилку, і рядок піде в звичайний ретрай).
    */
   readonly isOnline?: () => boolean;
+  /**
+   * Сервер прийняв оп з іншою міткою, ніж надіслана (`result.client_ts`,
+   * data-51: годинник пристрою, що поспішав, обрізано до `server_now`).
+   * Харнес переписує локальний `updated_at` рядка на `storedClientTs`, якщо
+   * він досі дорівнює `row.clientTs` (новіша локальна правка лишається).
+   * Інакше пристрій тримав би мітку з майбутнього, власний оп pull не
+   * поверне (фільтр за origin), і чужа пізніша правка відкидалась би як
+   * старіша — розходження до наступної правки рядка. Викликається ДО ack:
+   * збій лишає рядок у черзі, повтор дасть `applied` з тією ж міткою.
+   */
+  readonly adoptStoredClientTs?: (
+    row: DrainedOutboxRowShape,
+    storedClientTs: string,
+  ) => Promise<void>;
 }
 
 export interface SyncEnginePushOptions {
@@ -495,6 +509,13 @@ export async function runSyncEnginePushOnce(
     for (const row of segment.rows) {
       const result = resultByKey.get(row.idempotencyKey);
       if (result?.status === "applied" || result?.status === "duplicate") {
+        if (
+          deps.adoptStoredClientTs &&
+          typeof result.client_ts === "string" &&
+          Date.parse(result.client_ts) !== Date.parse(row.clientTs)
+        ) {
+          await deps.adoptStoredClientTs(row, result.client_ts);
+        }
         if (deps.markSuccessBatch) {
           deps.onBatchedSuccess?.();
           acknowledgedIds.push(row.id);
@@ -523,18 +544,23 @@ export async function runSyncEnginePushOnce(
         // data-48: `unknown_table` - сервер ще не знає таблиці (фронт
         // викотився раніше за бекенд). Це не збій опа: спроби не палимо
         // (інакше за ~10 хв рядок піде в dead_letter), чекаємо 5 хв.
+        // data-51: `clock_skew` - `client_ts` випереджає сервер понад допуск.
+        // Повтор із тією самою міткою пройде, щойно годинник сервера її
+        // наздожене, тож спроби теж не палимо (бекоф 1→512 с доводив
+        // пристрій, що поспішає на ~20 хв, до dead_letter), а чекаємо до
+        // `client_ts` за `server_now`, не довше 5 хв.
         const lastError = `server_retry:${result.reason ?? "unspecified"}`;
         if (result.reason !== "unknown_table") olderRowHeldBack = true;
+        const waitMs =
+          result.reason === "unknown_table"
+            ? MAX_THROTTLE_DELAY_MS
+            : result.reason === "clock_skew"
+              ? clockSkewWaitMs(row.clientTs, response.server_now)
+              : undefined;
         await deps.markRetry(
           row.id,
-          result.reason === "unknown_table"
-            ? planThrottledRetry(
-                deps,
-                row.attempts,
-                now,
-                lastError,
-                MAX_THROTTLE_DELAY_MS,
-              )
+          waitMs !== undefined
+            ? planThrottledRetry(deps, row.attempts, now, lastError, waitMs)
             : callPlanRetry(deps, row.attempts, now, lastError),
         );
         retried += 1;
@@ -618,6 +644,20 @@ const THROTTLED_PUSH_HTTP_STATUSES: ReadonlySet<number> = new Set([429, 503]);
  * `SYNC_OP_MAX_BACKOFF_MS` у db-schema (api-client від нього не залежить).
  */
 const MAX_THROTTLE_DELAY_MS = 5 * 60 * 1_000;
+
+/**
+ * Скільки чекати повтору `retry / clock_skew`: поки годинник сервера дійде до
+ * `client_ts` опа (тоді зсуву немає взагалі), щонайменше 1 с і не довше
+ * {@link MAX_THROTTLE_DELAY_MS}. Без `server_now` (старий сервер) — стеля.
+ */
+function clockSkewWaitMs(clientTs: string, serverNow: string | undefined) {
+  const aheadMs =
+    serverNow === undefined
+      ? NaN
+      : Date.parse(clientTs) - Date.parse(serverNow);
+  if (!Number.isFinite(aheadMs)) return MAX_THROTTLE_DELAY_MS;
+  return Math.min(Math.max(aheadMs, 1_000), MAX_THROTTLE_DELAY_MS);
+}
 
 /**
  * `true`, якщо push відхилено через ліміт/перевантаження (429 / 503).

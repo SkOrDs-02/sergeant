@@ -87,7 +87,7 @@ export const CLIENT_PULL_SUPPORTED_TABLES = new Set<string>([
  * Той самий прийом на сервері: `OP_LOG_TABLE_REGISTRY` у `syncV2.ts`
  * резолвиться в літерал, а не в прокинутий рядок.
  */
-const SAFE_TABLE_SQL: Readonly<Record<string, string>> = Object.freeze(
+export const SAFE_TABLE_SQL: Readonly<Record<string, string>> = Object.freeze(
   Object.fromEntries(
     [...CLIENT_PULL_SUPPORTED_TABLES].map((name) => [name, name]),
   ),
@@ -107,7 +107,7 @@ function isStaleLocal(updatedAt: string | null, incomingMs: number): boolean {
   return localMs >= incomingMs;
 }
 
-async function getTableColumns(
+export async function getTableColumns(
   client: SqliteMigrationClient,
   table: string,
 ): Promise<string[]> {
@@ -122,7 +122,7 @@ async function getTableColumns(
   return cols;
 }
 
-async function getPrimaryKeyColumns(
+export async function getPrimaryKeyColumns(
   client: SqliteMigrationClient,
   table: string,
 ): Promise<string[]> {

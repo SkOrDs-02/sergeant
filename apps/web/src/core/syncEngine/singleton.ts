@@ -772,6 +772,18 @@ async function createDefaultRuntime(): Promise<SyncEngineWriterRuntime> {
         );
         return shared.dbSchema.markOutboxRejected(receiptClient(), id, reason);
       },
+      // data-51: сервер обрізав мітку пристрою, що поспішає; без цього рядок
+      // тримав би мітку з майбутнього й відкидав пізніші чужі правки.
+      adoptStoredClientTs: async (row, storedClientTs) => {
+        const { adoptStoredClientTs } = await import("./adoptStoredClientTs");
+        await adoptStoredClientTs(receiptClient(), {
+          table: row.table,
+          op: row.op,
+          row: row.row,
+          sentClientTs: row.clientTs,
+          storedClientTs,
+        });
+      },
       planRetry: shared.dbSchema.planRetry,
       now: () => new Date(),
       jitterMs: () => Math.random() * shared.dbSchema.SYNC_OP_JITTER_WINDOW_MS,
