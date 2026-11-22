@@ -1,7 +1,7 @@
 # Аудит 2026-10-01 · Логіка доменів
 
 > **Status:** Active. 66 кластерів (89 знахідок) за першопричиною. Загальний план, метод і обмеження — у [README](./README.md).
-> **Last touched:** 2026-11-22 by @claude (logic-03 закрито: undo для перезапису звички, тест-інваріант undo/TOOL_RISK); 2026-11-22 by @claude (рішення власника по решті питань беклогу); 2026-11-21 by @claude (рішення власника по кластерах, раунди 5–10); раніше перевірено 2026-10-02.
+> **Last touched:** 2026-11-22 by @claude (logic-03 частково: undo для перезапису звички і set_goal, тест-інваріант undo/TOOL_RISK; consume_from_pantry лишився); 2026-11-22 by @claude (рішення власника по решті питань беклогу); 2026-11-21 by @claude (рішення власника по кластерах, раунди 5–10); раніше перевірено 2026-10-02.
 > **Next review:** 2027-01-21
 > **Spec-lint:** skip. Реєстр знахідок аудиту, не специфікація реалізації.
 
@@ -151,7 +151,7 @@ Code path (main @ c7c09607):
 
 ### `logic-03` [medium] Незворотні та перезаписні чат-дії виконуються без підтвердження і без undo
 
-- **Стан:** закрито. Частину виправлено в [#1398](https://github.com/SkOrDs-02/sergeant/pull/1398) (змерджено 2026-10-08) і в [#1642](https://github.com/SkOrDs-02/sergeant/pull/1642) (змерджено 2026-10-23) (`update_budget(goal)` із `saved_amount` дописує різницю в лог поповнень, а не замінює його; рішення власника 2026-10-23), решту закрито в гілці `backlog/logic-03` (2026-11-22): edit_habit, set_habit_schedule і pause_habit повертають undo, що відновлює лише записані тулом поля (field-level, як `data-61`), а `toolUndoInvariant.test.ts` вимагає від кожного мутуючого тула запису в TOOL_RISK або undo (свідомі винятки з причиною: consume_from_pantry і set_goal чекають компенсуючої події журналу за ADR-0077)
+- **Стан:** частково виправлено. Частину виправлено в [#1398](https://github.com/SkOrDs-02/sergeant/pull/1398) (змерджено 2026-10-08) і в [#1642](https://github.com/SkOrDs-02/sergeant/pull/1642) (змерджено 2026-10-23) (`update_budget(goal)` із `saved_amount` дописує різницю в лог поповнень, а не замінює його; рішення власника 2026-10-23), решту закрито в гілці `backlog/logic-03` (2026-11-22): edit_habit, set_habit_schedule і pause_habit повертають undo, що відновлює лише записані тулом поля (field-level, як `data-61`), а `toolUndoInvariant.test.ts` вимагає від кожного мутуючого тула запису в TOOL_RISK або undo (свідомий виняток із причиною: consume_from_pantry чекає компенсуючої події журналу комори за ADR-0077). set_goal теж повертає undo: знімок лише `dailyTargetKcal`, як у `set_daily_plan`. Лишилось: undo для consume_from_pantry
 - **Перевірка:** підтверджено · **Зусилля:** M · **Область:** web: HubChat / виконавці дій
 - **Де:** packages/shared/src/lib/toolRisk.ts:54-116; apps/web/src/core/lib/chatActions/finykActions/debts.ts:72-123; .../finykActions/transactions.ts:95-158; .../finykActions/budgets.ts:182-201; .../nutritionActions.ts:261-416; .../crossActions/goalAndUtility.ts:179-189; .../routineActions.ts:397-556
 - **Першопричина:** Політика TOOL_RISK така: незворотне йде через confirm, решта має undo. Але частина мутуючих тулів не входить у TOOL_RISK і повертає звичайний рядок без undo. mark_debt_paid видаляє борг (splice), consume_from_pantry без qty прибирає позицію цілком. set_daily_plan і set_goal вимикають адаптивну ціль, edit_habit, set_habit_schedule і pause_habit (заднім числом) переписують звичку. split_transaction перезаписує спліти, а update_budget(goal) замінює історію поповнень цілі.
