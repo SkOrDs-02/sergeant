@@ -1,7 +1,7 @@
 # Аудит 2026-10-01 · Цілісність даних і синхронізація
 
 > **Status:** Active. 82 кластери (129 знахідок) за першопричиною. Загальний план, метод і обмеження — у [README](./README.md).
-> **Last touched:** 2026-11-22 by @claude (рішення власника по решті питань беклогу); 2026-11-21 by @claude (`data-02`: переграш для застряглих пристроїв зроблено); 2026-11-21 by @claude (data-51: серверна обрізка `client_ts`, `clock_skew` → `retry`); 2026-11-21 by @claude (рішення власника по кластерах, раунди 5–10); раніше перевірено 2026-10-02.
+> **Last touched:** 2026-11-22 by @claude (data-39 закрито: `add_program_day` прибрано в #1700); 2026-11-22 by @claude (рішення власника по решті питань беклогу); 2026-11-21 by @claude (`data-02`: переграш для застряглих пристроїв зроблено); 2026-11-21 by @claude (data-51: серверна обрізка `client_ts`, `clock_skew` → `retry`); 2026-11-21 by @claude (рішення власника по кластерах, раунди 5–10); раніше перевірено 2026-10-02.
 > **Next review:** 2027-01-21
 > **Spec-lint:** skip. Реєстр знахідок аудиту, не специфікація реалізації.
 
@@ -3229,8 +3229,8 @@ kill1.mjs: у вправі «Віджимання» вага s0 = 20, далі �
 
 ### `data-39` [medium] Активна тренувальна програма і план тижня з чат-тулу add_program_day живуть лише в localStorage: не синхронізуються й не читаються з pulled fizruk_programs
 
-- **Стан:** частково виправлено в [#1564](https://github.com/SkOrDs-02/sergeant/pull/1564) (змерджено 2026-10-20) (вибір програми тепер в `fizruk_programs` з sync і LS-дреном; `add_program_day` чесно відмовляє й нічого не пише, але ще лишається в реєстрі тулів сервера: повне видалення за рішенням власника потребує платного перезапису касет tool-eval; `fizruk_plan_templates` і `fizruk_wellbeing` у вебі досі без писаря)
-- **Рішення власника 2026-11-22:** Так, перезаписати касети: власник обрав повне видалення `add_program_day` з реєстру тулів сервера з платним перезаписом касет tool-eval замість рекомендованого «лишити тул»; поки лише рішення, не реалізовано.
+- **Стан:** закрито. Вибір програми в `fizruk_programs` з sync і LS-дреном у [#1564](https://github.com/SkOrDs-02/sergeant/pull/1564) (змерджено 2026-10-20); `add_program_day` повністю прибрано з реєстру тулів, схеми, веб-виконавця й каталогу, касети tool-eval перезаписано в [#1700](https://github.com/SkOrDs-02/sergeant/pull/1700) (запис у журналі рішень 2026-11-17; гейт `toolContractHonesty.test.ts`). Звірено 2026-11-22. ~~частково виправлено в [#1564](https://github.com/SkOrDs-02/sergeant/pull/1564) (змерджено 2026-10-20) (вибір програми тепер в `fizruk_programs` з sync і LS-дреном; `add_program_day` чесно відмовляє й нічого не пише, але ще лишається в реєстрі тулів сервера: повне видалення за рішенням власника потребує платного перезапису касет tool-eval; `fizruk_plan_templates` і `fizruk_wellbeing` у вебі досі без писаря)~~
+- **Рішення власника 2026-11-22:** Так, перезаписати касети: власник обрав повне видалення `add_program_day` з реєстру тулів сервера з платним перезаписом касет tool-eval замість рекомендованого «лишити тул»; на момент рішення вже виконано в #1700, платний перезапис не знадобився.
 - **Перевірка:** підтверджено · **Зусилля:** M · **Область:** web: Фізрук (useTrainingProgram) + AI-чат (fizrukActions)
 - **Де:** apps/web/src/modules/fizruk/hooks/useTrainingProgram.ts:9-22; apps/web/src/core/lib/chatActions/fizrukActions/programs.ts:34-41; apps/server/src/modules/sync/fizruk/applySyncFullState.ts:187-197; packages/shared/src/lib/storageKeys.ts:272-293
 - **Першопричина:** useTrainingProgram читає й пише лише LS-ключ fizruk_active_program_id_v1 (позначений @deprecated на користь SQLite fizruk_programs), а чат-тул add_program_day пише fizruk_plan_template_v1, який у вебі ніхто не читає. Веб-писача fizruk_programs і fizruk_plan_templates немає, хоча сервер і pull їх підтримують.
