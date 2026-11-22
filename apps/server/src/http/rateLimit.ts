@@ -475,6 +475,11 @@ export function __resetRateLimitPgWarnForTests(): void {
   pgUndefinedTableLogged = false;
 }
 
+/** Тести: очистити in-memory бакети (фолбек без Redis і Postgres). */
+export function __resetRateLimitMemoryForTests(): void {
+  buckets.clear();
+}
+
 interface PgErrorLike {
   code?: string;
   message?: string;
