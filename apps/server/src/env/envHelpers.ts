@@ -52,9 +52,36 @@ export const boolFromEnv = (defaultValue: boolean) =>
     });
 
 /**
- * Fail-loud варіант `boolFromEnv` для прапорців, що керують витратами
- * (`ANTHROPIC_BUDGET_*`). Тихий дефолт на `yes`/`on` під час інциденту витрат
- * лишає «справжню стелю» вимкненою без жодного сигналу (аудит ai-pipeline B15).
+ * Fail-loud варіант `floatFromEnv` для стель бюджету (`ANTHROPIC_BUDGET_*_USD`,
+ * `VOYAGE_DAILY_BUDGET_USD_*`, `*_MONTHLY_BUDGET_USD`; аудит ai-pipeline B16).
+ * `floatFromEnv` на `"5$"` дає `5`, на `"yes"` — дефолт, на `"-1"` — від'ємну
+ * стелю, і все це мовчки. Тут порожнє чи відсутнє значення дає дефолт, решта,
+ * що не є десятковим числом ≥ 0, — ZodIssue, тобто throw на старті. `0`
+ * лишається валідним: це задокументований kill-switch алярму.
+ */
+export const strictFloatFromEnv = (name: string, defaultValue: number) =>
+  z
+    .string()
+    .optional()
+    .transform((v, ctx) => {
+      if (v === undefined || v.trim() === "") return defaultValue;
+      const trimmed = v.trim();
+      const n = Number(trimmed);
+      if (/^(\d+(\.\d*)?|\.\d+)$/.test(trimmed) && Number.isFinite(n)) {
+        return n;
+      }
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        message: `${name} must be a decimal number >= 0 (got ${JSON.stringify(v)}) — refusing to guess on a cost-control limit`,
+      });
+      return z.NEVER;
+    });
+
+/**
+ * Fail-loud варіант `boolFromEnv` для прапорців, що керують витратами чи
+ * захистом (`ANTHROPIC_BUDGET_*`, `AI_TIERED_PRO_ENABLED`,
+ * `WEBHOOK_HMAC_REQUIRED`). Тихий дефолт на `yes`/`on` під час інциденту
+ * лишає «справжню стелю» вимкненою без жодного сигналу (аудит ai-pipeline B15/B16).
  * Приймає лише true/false/1/0 (регістр і крайні пробіли не важливі); порожнє
  * або відсутнє значення дає дефолт; решта — ZodIssue, тобто throw на старті.
  * Зразок — `STRIPE_ENABLED` в `env.ts`.
@@ -70,7 +97,7 @@ export const strictBoolFromEnv = (name: string, defaultValue: boolean) =>
       if (lower === "false" || lower === "0") return false;
       ctx.addIssue({
         code: z.ZodIssueCode.custom,
-        message: `${name} must be one of true/false/1/0 (got ${JSON.stringify(v)}) — refusing to guess on a cost-control flag`,
+        message: `${name} must be one of true/false/1/0 (got ${JSON.stringify(v)}) — refusing to guess on a cost/security flag`,
       });
       return z.NEVER;
     });

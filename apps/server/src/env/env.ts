@@ -11,7 +11,6 @@ import {
   boolFromEnv,
   coerceInt,
   enumBoolFromEnv,
-  floatFromEnv,
   intFromEnv,
   founderIdsFromEnv,
   jsonRecordOfNonNegIntFromEnv,
@@ -23,6 +22,7 @@ import {
   stringWithDefault,
 } from "./envHelpers.js";
 import { aiMemoryEnvShape } from "./aiMemoryEnv.js";
+import { costBudgetEnvShape } from "./costBudgetEnv.js";
 import { pgEnvShape } from "./pgEnv.js";
 import { syncEnvShape } from "./syncEnv.js";
 import { telegramEnvShape } from "./telegramEnv.js";
@@ -252,7 +252,7 @@ const envSchema = z.object({
   // значення лишає продукт відкритим. Логіка — `auth/accessGate.ts`.
   ACCESS_ALLOWLIST_USER_IDS: z.string().optional(),
 
-  AI_TIERED_PRO_ENABLED: boolFromEnv(true),
+  AI_TIERED_PRO_ENABLED: strictBoolFromEnv("AI_TIERED_PRO_ENABLED", true),
 
   /**
    * Повернути Free/анона на premium-модель синтезу (стан до 2026-08-06).
@@ -566,7 +566,7 @@ const envSchema = z.object({
    * секрета цей прапорець не робить нічого. `assertStartupEnv` попереджає про
    * таку конфігурацію при старті — див. warning `WEBHOOK_HMAC_REQUIRED=true`.
    */
-  WEBHOOK_HMAC_REQUIRED: boolFromEnv(true),
+  WEBHOOK_HMAC_REQUIRED: strictBoolFromEnv("WEBHOOK_HMAC_REQUIRED", true),
 
   WEBHOOK_HMAC_TS_TOLERANCE_SEC: intFromEnv(300),
 
@@ -679,50 +679,7 @@ const envSchema = z.object({
 
   GCS_LOG_ARCHIVE_BUCKET: stringWithDefault(""),
 
-  HETZNER_MONTHLY_COST_USD: floatFromEnv(0),
-
-  HETZNER_PLAN: stringWithDefault("cx23"),
-
-  VERCEL_MONTHLY_COST_USD: floatFromEnv(0),
-
-  VERCEL_PLAN: stringWithDefault("hobby"),
-
-  POSTHOG_MONTHLY_COST_USD: floatFromEnv(0),
-
-  POSTHOG_PLAN: stringWithDefault("free"),
-
-  SENTRY_MONTHLY_COST_USD: floatFromEnv(0),
-
-  SENTRY_PLAN: stringWithDefault("developer"),
-
-  ANTHROPIC_MONTHLY_BUDGET_USD: floatFromEnv(0),
-
-  ANTHROPIC_PLAN: stringWithDefault("usage"),
-
-  VOYAGE_MONTHLY_BUDGET_USD: floatFromEnv(0),
-
-  VOYAGE_PLAN: stringWithDefault("usage"),
-
-  VOYAGE_DAILY_BUDGET_USD: floatFromEnv(0),
-
-  ANTHROPIC_BUDGET_SOFT_USD: floatFromEnv(3),
-  ANTHROPIC_BUDGET_HARD_USD: floatFromEnv(5),
-
-  ANTHROPIC_BUDGET_CHECK_INTERVAL_MS: intFromEnv(300_000),
-
-  ANTHROPIC_BUDGET_ALERT_ENABLED: strictBoolFromEnv(
-    "ANTHROPIC_BUDGET_ALERT_ENABLED",
-    true,
-  ),
-
-  ANTHROPIC_BUDGET_HARD_DEGRADE_ALL: strictBoolFromEnv(
-    "ANTHROPIC_BUDGET_HARD_DEGRADE_ALL",
-    false,
-  ),
-
-  VOYAGE_DAILY_BUDGET_USD_SOFT: floatFromEnv(1),
-
-  VOYAGE_DAILY_BUDGET_USD_HARD: floatFromEnv(5),
+  ...costBudgetEnvShape,
 
   // Модель, яку коуч шле в Anthropic (прямий провайдер або fallback під
   // OpenRouter-ом). WHY окрема змінна: раніше тут стояв

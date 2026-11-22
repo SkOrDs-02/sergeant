@@ -197,15 +197,11 @@ describe("applyVoyageDailyBudget() — PR-38", () => {
     expect(text).toMatch(/^voyage_daily_budget_usd 0$/m);
   });
 
-  it("коли env <= 0 (negative) — early-return; gauge не змінюється з default `0`", async () => {
+  it("від'ємний env валить boot env, а не публікує negative gauge (ai-pipeline B16)", async () => {
     process.env["VOYAGE_DAILY_BUDGET_USD"] = "-5";
-    const { applyVoyageDailyBudget } = await import("./cost.js");
-    const { register } = await import("./metrics.js");
-    applyVoyageDailyBudget();
-    const text = await register.metrics();
-    // Гарантія: не пушимо negative-значення (gauge.set би прийняв -5).
-    expect(text).toMatch(/^voyage_daily_budget_usd 0$/m);
-    expect(text).not.toMatch(/voyage_daily_budget_usd -/);
+    await expect(import("./cost.js")).rejects.toThrow(
+      /VOYAGE_DAILY_BUDGET_USD/,
+    );
   });
 
   it("idempotent: повторні виклики не дублюють серію", async () => {

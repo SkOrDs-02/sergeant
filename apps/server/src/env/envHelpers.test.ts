@@ -9,6 +9,7 @@ import {
   optionalStrictBoolFromEnv,
   parseIsoInstant,
   strictBoolFromEnv,
+  strictFloatFromEnv,
   strictPositiveIntFromEnv,
 } from "./envHelpers.js";
 
@@ -219,6 +220,33 @@ describe("strictPositiveIntFromEnv (rel-34)", () => {
     "%j — помилка на старті, а не тихий дефолт",
     (raw) => {
       expect(() => schema.parse({ N: raw })).toThrow(/integer >= 1/);
+    },
+  );
+});
+
+describe("strictFloatFromEnv (ai-pipeline B16)", () => {
+  const schema = z.object({ USD: strictFloatFromEnv("USD", 5) });
+
+  it("відсутнє чи порожнє значення дає дефолт", () => {
+    expect(schema.parse({}).USD).toBe(5);
+    expect(schema.parse({ USD: "" }).USD).toBe(5);
+    expect(schema.parse({ USD: "  " }).USD).toBe(5);
+  });
+
+  it.each([
+    ["0", 0],
+    ["3", 3],
+    ["2.5", 2.5],
+    [" 7.25 ", 7.25],
+    [".5", 0.5],
+  ])("приймає %j", (raw, expected) => {
+    expect(schema.parse({ USD: raw }).USD).toBe(expected);
+  });
+
+  it.each(["yes", "5$", "-1", "1e3", "0x10", "5,5", "Infinity", "NaN"])(
+    "%j — помилка на старті, а не тихий дефолт чи часткове число",
+    (raw) => {
+      expect(() => schema.parse({ USD: raw })).toThrow(/decimal number >= 0/);
     },
   );
 });

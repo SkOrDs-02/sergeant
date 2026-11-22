@@ -2,7 +2,7 @@
 
 > **Поточні статуси перенесених знахідок:** [єдиний реєстр верифікації](verification/findings.json). Цей документ зберігає історичні результати; нові спроби та виправлення ведуться в реєстрі.
 
-> **Last touched:** 2026-11-22 by @claude (рішення власника по решті питань беклогу); 2026-11-21 by @claude (B12 закрито: мітка очищення в Redis і чистка черги ingest перед `DELETE`; B15 закрито: `AI_QUOTA_TOOL_LIMITS` fail-loud на старті; B13: рішення власника — крон hard-delete через 7 днів); 2026-10-26 by @claude (тріаж документації: шапка звірена: B30 неактуальна, B4-B29 на ревалідацію, рев'ю: B21 знято з пріоритетів - закрито 2026-09-29). **Next review:** 2027-12-24.
+> **Last touched:** 2026-11-22 by @claude (B16 закрито повністю: стелі бюджету й `WEBHOOK_HMAC_REQUIRED`/`AI_TIERED_PRO_ENABLED` fail-loud на старті); 2026-11-22 by @claude (рішення власника по решті питань беклогу); 2026-11-21 by @claude (B12 закрито: мітка очищення в Redis і чистка черги ingest перед `DELETE`; B15 закрито: `AI_QUOTA_TOOL_LIMITS` fail-loud на старті; B13: рішення власника — крон hard-delete через 7 днів); 2026-10-26 by @claude (тріаж документації: шапка звірена: B30 неактуальна, B4-B29 на ревалідацію, рев'ю: B21 знято з пріоритетів - закрито 2026-09-29). **Next review:** 2027-12-24.
 > **Status:** Active - Наступна дія: ревалідувати B4-B29 проти `main` і позначити закриті (пріоритет B26, B25, B27; B13 і B14, схоже, вже закриті; B21 закрито 2026-09-29, див. § B21).
 > B1 і B2 закрито кодом у гілці `claude/sergeant-security-review-h4s302` з регресійними тестами, B3 - 2026-09-29;
 > B30 неактуальна (міграції `104_ai_usage_endpoint_and_cache` і `105_rename_091_…` мають `.down.sql`). Знімок стану на момент аудиту.
@@ -432,9 +432,11 @@ tool-call коштує 3× звичайного повідомлення (`DEFAU
 unlimited) або валідувати JSON у Zod-схемі env, щоб битий конфіг не давав
 серверу піднятись.
 
-### B16 — env-прапорці мовчки дефолтяться, включно з аварійною стелею
+### B16 — env-прапорці мовчки дефолтяться, включно з аварійною стелею ✅ виправлено
 
 > **Закрито для `ANTHROPIC_BUDGET_*` 2026-09-29:** `strictBoolFromEnv` у [`envHelpers.ts`](../../../../apps/server/src/env/envHelpers.ts) кидає на старті для `ANTHROPIC_BUDGET_ALERT_ENABLED` / `ANTHROPIC_BUDGET_HARD_DEGRADE_ALL` (тест `envHelpers.test.ts`). Решта `boolFromEnv`/`floatFromEnv` без змін.
+>
+> **Закрито решту 2026-11-22:** `strictFloatFromEnv` (порожнє = дефолт, сміття чи від'ємне = throw на старті) на всіх стелях `*_BUDGET_*_USD`, винесених у [`costBudgetEnv.ts`](../../../../apps/server/src/env/costBudgetEnv.ts); `WEBHOOK_HMAC_REQUIRED` і `AI_TIERED_PRO_ENABLED` на `strictBoolFromEnv`. Тести `envHelpers.test.ts`, `costBudgetEnv.test.ts`; `env-vars.md` оновлено. Поріг `ANTHROPIC_BUDGET_HARD_USD=0` лишився задокументованим kill-switch-ем.
 
 [`env.ts:28-38`](../../../../apps/server/src/env/env.ts) (`boolFromEnv`): будь-що,
 крім `true|1|false|0`, повертає дефолт **без помилки й без попередження**. Те
