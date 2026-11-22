@@ -66,7 +66,10 @@ test("@critical billing: pricing Premium CTA creates a checkout session and redi
   // (VITE_API_BASE_URL → http://127.0.0.1:3000). Відповідь типізована
   // `BillingCheckoutResponse`, тож дрейф контракту ловить typecheck.
   await installWorld(page, getWorld("empty"), {
-    only: ["/billing/checkout"],
+    // `/billing/providers`: smoke-сервер без платіжних env віддає порожній
+    // список, і CTA показав би передзапусковий «Повідомити про запуск»
+    // (ux-29). Тут перевіряємо саме шлях до checkout-у.
+    only: ["/billing/checkout", "/billing/providers"],
     checkoutUrl: CHECKOUT_STUB_URL,
   });
 
