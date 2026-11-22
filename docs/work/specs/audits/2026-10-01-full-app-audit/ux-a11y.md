@@ -4691,7 +4691,7 @@ v13.mjs: `200 application/manifest+json "orientation":"portrait"`, `<link rel="m
 
 ### `ux-79` [low] Фото продуктів з Open Food Facts у проді не показуються взагалі: COEP require-corp блокує &lt;img&gt; без crossOrigin
 
-- **Стан:** відкрито
+- **Стан:** виправлено в гілці `backlog/ux-79` (2026-11-22): `<img>` у `ProductThumb` вантажить фото OFF з `crossOrigin="anonymous"`, тож COEP require-corp пропускає його через CORS (OFF віддає ACAO \*); інших `<img>` з чужих хостів у вебі немає (фото вправ Фізрука same-origin); рядок «OFF photos» додано в COEP-матрицю `vercel.md`, регресійний тест у `ProductThumb.test.tsx`
 - **Перевірка:** підтверджено · **Зусилля:** S · **Швидкий виграш** · **Область:** web: Їжа / фото продуктів
 - **Де:** apps/web/src/modules/nutrition/components/meal-sheet/ProductThumb.tsx:53-63; apps/web/vercel.json:50-61; apps/web/vite.config.js:122-126
 - **Першопричина:** Прод (vercel.json) і preview віддають Cross-Origin-Embedder-Policy: require-corp, а ProductThumb рендерить &lt;img&gt; з images.openfoodfacts.org без атрибута crossOrigin. OFF не віддає CORP, тож браузер блокує завантаження, а onError тихо підставляє іконку.

@@ -55,6 +55,13 @@ export function ProductThumb({ name, imageUrl }: ProductThumbProps) {
           alt=""
           loading="lazy"
           decoding="async"
+          // AI-DANGER: без `crossOrigin` фото в проді не вантажиться ВЗАГАЛІ.
+          // Прод і preview шлють `Cross-Origin-Embedder-Policy: require-corp`
+          // (apps/web/vercel.json, vite.config.js), а OFF не віддає CORP —
+          // браузер блокує no-cors `<img>`, і `onError` нижче мовчки малює
+          // іконку. З `anonymous` запит іде через CORS, а OFF відповідає
+          // `Access-Control-Allow-Origin: *`, тож COEP його пропускає (ux-79).
+          crossOrigin="anonymous"
           // `alt=""` навмисно порожній: підпис уже несе контейнер вище
           // (`role="img"` + `aria-label`), а дубль змусив би скрінрідер
           // прочитати те саме двічі.

@@ -19,6 +19,18 @@ describe("ProductThumb", () => {
     expect(img?.getAttribute("src")).toBe(OFF_URL);
   });
 
+  /**
+   * РЕГРЕСІЯ ux-79. Прод шле COEP `require-corp`, а OFF не віддає CORP:
+   * `<img>` без `crossorigin` браузер блокує, і `onError` тихо підміняє
+   * фото іконкою — фіча мертва непомітно. Через CORS (`anonymous`)
+   * картинка проходить, бо OFF віддає `Access-Control-Allow-Origin: *`.
+   */
+  it("вантажить фото через CORS, щоб COEP require-corp його не блокував", () => {
+    render(<ProductThumb name="Молоко 2.5%" imageUrl={OFF_URL} />);
+    const img = document.querySelector("img");
+    expect(img?.getAttribute("crossorigin")).toBe("anonymous");
+  });
+
   // Фолбек резолвиться з САМОЇ НАЗВИ — без мережі й без штрихкода, тож
   // квадратик ніколи не буває порожнім.
   it("без фото малює іконку категорії, а не діру", () => {
