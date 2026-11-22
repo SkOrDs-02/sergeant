@@ -1,4 +1,10 @@
+import { useCallback } from "react";
 import { usePushNotifications } from "@shared/hooks/usePushNotifications";
+import {
+  describePushSubscribeError,
+  PUSH_SUBSCRIBE_RETRY_LABEL,
+} from "@shared/hooks/pushSubscribeError";
+import { useToast } from "@shared/hooks/useToast";
 import { Switch } from "@shared/components/ui/Switch";
 import { cn } from "@shared/lib/ui/cn";
 
@@ -23,6 +29,23 @@ export function PushNotificationToggle({
 }: PushNotificationToggleProps) {
   const { supported, permission, subscribed, loading, subscribe, unsubscribe } =
     usePushNotifications();
+  const toast = useToast();
+
+  // Відхилена підписка раніше лише писалась у лог, і тумблер мовчки лишався
+  // «вимкнено» (ux-33). Тост пояснює, чия це збоїна (сервер чи браузер), а
+  // «Повторити» робить той самий виклик; невдалий повтор показує тост знову.
+  const enable = useCallback(() => {
+    const attempt = (): Promise<void> =>
+      subscribe().catch((err: unknown) => {
+        toast.error(describePushSubscribeError(err), undefined, {
+          label: PUSH_SUBSCRIBE_RETRY_LABEL,
+          onClick: () => {
+            void attempt();
+          },
+        });
+      });
+    return attempt();
+  }, [subscribe, toast]);
 
   // Мовчазне зникнення тоглу читається як «фічі не існує». На iOS
   // Web Push живе ЛИШЕ у PWA з початкового екрана (16.4+) — у вкладці
@@ -61,7 +84,7 @@ export function PushNotificationToggle({
           companion pair already solves that contrast. */}
       <Switch
         checked={subscribed}
-        onChange={(next) => (next ? subscribe() : unsubscribe())}
+        onChange={(next) => (next ? enable() : unsubscribe())}
         disabled={loading || blocked}
         aria-label={
           subscribed ? "Вимкнути push-сповіщення" : "Увімкнути push-сповіщення"

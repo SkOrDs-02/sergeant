@@ -4,7 +4,7 @@
  * subscribed / loading states without exercising the full push stack.
  */
 import { afterEach, describe, expect, it, vi } from "vitest";
-import { cleanup, render, screen } from "@testing-library/react";
+import { cleanup, render, screen, waitFor } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 
 const pushState = {
@@ -12,15 +12,22 @@ const pushState = {
   permission: "default" as NotificationPermission,
   subscribed: false,
   loading: false,
-  subscribe: vi.fn(),
-  unsubscribe: vi.fn(),
+  subscribe: vi.fn(async () => {}),
+  unsubscribe: vi.fn(async () => {}),
 };
 
 vi.mock("@shared/hooks/usePushNotifications", () => ({
   usePushNotifications: () => pushState,
 }));
 
+const toastErrorMock = vi.fn();
+vi.mock("@shared/hooks/useToast", () => ({
+  useToast: () => ({ error: toastErrorMock }),
+}));
+
+import { ApiError } from "@sergeant/api-client";
 import { PushNotificationToggle } from "./PushNotificationToggle";
+import { PUSH_SUBSCRIBE_ERROR_COPY } from "@shared/hooks/pushSubscribeError";
 
 describe("PushNotificationToggle", () => {
   afterEach(() => {
@@ -95,5 +102,53 @@ describe("PushNotificationToggle", () => {
     expect(
       screen.getByRole("switch", { name: "Увімкнути push-сповіщення" }),
     ).toBeDisabled();
+  });
+
+  it("shows an error toast with retry when subscribe rejects (ux-33)", async () => {
+    pushState.subscribe
+      .mockRejectedValueOnce(
+        new Error("Registration failed - push service error"),
+      )
+      .mockResolvedValueOnce(undefined);
+    const user = userEvent.setup();
+    render(<PushNotificationToggle />);
+
+    await user.click(
+      screen.getByRole("switch", { name: "Увімкнути push-сповіщення" }),
+    );
+
+    await waitFor(() => expect(toastErrorMock).toHaveBeenCalledTimes(1));
+    const [message, , action] = toastErrorMock.mock.calls[0]!;
+    expect(message).toBe(PUSH_SUBSCRIBE_ERROR_COPY.browser);
+    expect(action).toMatchObject({ label: "Повторити" });
+
+    action.onClick();
+    await waitFor(() => expect(pushState.subscribe).toHaveBeenCalledTimes(2));
+    expect(toastErrorMock).toHaveBeenCalledTimes(1);
+  });
+
+  it("says push is temporarily unavailable when the server answers 503", async () => {
+    pushState.subscribe.mockRejectedValueOnce(
+      new ApiError({
+        kind: "http",
+        status: 503,
+        message: "Service Unavailable",
+        url: "/api/v1/push/vapid-public",
+      }),
+    );
+    const user = userEvent.setup();
+    render(<PushNotificationToggle />);
+
+    await user.click(
+      screen.getByRole("switch", { name: "Увімкнути push-сповіщення" }),
+    );
+
+    await waitFor(() =>
+      expect(toastErrorMock).toHaveBeenCalledWith(
+        PUSH_SUBSCRIBE_ERROR_COPY.unavailable,
+        undefined,
+        expect.objectContaining({ label: "Повторити" }),
+      ),
+    );
   });
 });

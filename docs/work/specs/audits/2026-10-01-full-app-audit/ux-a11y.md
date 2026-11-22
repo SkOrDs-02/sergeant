@@ -2040,7 +2040,7 @@ Finder screenshot syncfail-500-sheet.png (viewed): 'Мережа Онлайн / 
 
 ### `ux-33` [low] Збій увімкнення push мовчазний: тумблер повертається у «вимкнено» без жодного повідомлення
 
-- **Стан:** відкрито
+- **Стан:** виправлено в гілці backlog/ux-33 (2026-11-22): `PushNotificationToggle` ловить відхилений `subscribe()` і показує `toast.error` з «Повторити»; текст розрізняє 503 або відсутній VAPID («Сповіщення тимчасово недоступні»), мережу, інший збій сервера і збій браузера (`pushSubscribeError.ts`)
 - **Перевірка:** підтверджено · **Зусилля:** S · **Швидкий виграш** · **Область:** web: push-сповіщення
 - **Де:** apps/web/src/shared/hooks/usePushNotifications.ts:188-194; apps/web/src/core/components/PushNotificationToggle.tsx:61-68
 - **Першопричина:** onError у subscribeMutation лише пише logger.warn, PushNotificationToggle не ловить відхилений mutateAsync, а глобального MutationCache.onError у вебі немає.

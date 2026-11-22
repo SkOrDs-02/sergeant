@@ -17,6 +17,7 @@ import {
   unsubscribeNativePush,
 } from "@shared/lib/adapters/pushNative";
 
+import { PUSH_VAPID_MISSING_MESSAGE } from "./pushSubscribeError";
 import { PUSH_SUB_KEY } from "./pushSubscribedFlag";
 
 // Весь web-push флоу (`urlBase64ToUint8Array` + `pushManager.subscribe/
@@ -171,7 +172,7 @@ export function usePushNotifications(): UsePushNotificationsResult {
           gcTime: Infinity,
         }));
       const publicKey = vapid?.publicKey;
-      if (!publicKey) throw new Error("VAPID not configured");
+      if (!publicKey) throw new Error(PUSH_VAPID_MISSING_MESSAGE);
 
       const { subscribeToWebPush } = await loadWebPushModule();
       const { endpoint, p256dh, auth } = await subscribeToWebPush(publicKey);
@@ -190,6 +191,8 @@ export function usePushNotifications(): UsePushNotificationsResult {
       const message = isApiError(e)
         ? e.serverMessage || `Server error ${e.status}`
         : (e as Error).message;
+      // Тост із «Повторити» показує `PushNotificationToggle`: він єдиний
+      // викликач `subscribe()` і отримує відхилений `mutateAsync` (ux-33).
       logger.warn("[push] subscribe failed:", message);
     },
   });
