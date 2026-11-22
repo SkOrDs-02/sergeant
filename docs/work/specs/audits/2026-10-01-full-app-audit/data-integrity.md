@@ -1,9 +1,13 @@
 # Аудит 2026-10-01 · Цілісність даних і синхронізація
 
 > **Status:** Active. 82 кластери (129 знахідок) за першопричиною. Загальний план, метод і обмеження — у [README](./README.md).
-> **Last touched:** 2026-11-21 by @claude (`data-02`: переграш для застряглих пристроїв зроблено); 2026-11-21 by @claude (data-51: серверна обрізка `client_ts`, `clock_skew` → `retry`); 2026-11-21 by @claude (рішення власника по кластерах, раунди 5–10); раніше перевірено 2026-10-02.
+> **Last touched:** 2026-11-22 by @claude (рішення власника по решті питань беклогу); 2026-11-21 by @claude (`data-02`: переграш для застряглих пристроїв зроблено); 2026-11-21 by @claude (data-51: серверна обрізка `client_ts`, `clock_skew` → `retry`); 2026-11-21 by @claude (рішення власника по кластерах, раунди 5–10); раніше перевірено 2026-10-02.
 > **Next review:** 2027-01-21
 > **Spec-lint:** skip. Реєстр знахідок аудиту, не специфікація реалізації.
+
+> **Рішення власника 2026-11-22** (решта питань беклогу, сторінка рішень; кожне чекає виконання, пункти не закрито):
+>
+> - `data-low-backlog` — Крім топ-6, у коді підтверджено ще дрібні відкриті дефекти, які агент може закрити без міграцій: data-80 (web-vitals бере rating від клієнта), data-63 (повтори 7.5 приймаються в… **Рішення:** Одна хвиля «low quick wins» після топ-6.
 
 Цілісність даних — найслабше місце застосунку: 129 кандидатів зведено до 82 кластерів (11 high, 38 medium, 32 low, 1 info), майже всі підтверджені живим відтворенням або кодом, і жоден не закритий комітами після c7c09607, бо вони не торкались sync і сховища. Головні корені системні, а не точкові: глобальні PK на передбачуваних клієнтських id (крос-юзерні колізії й сквотинг), pull-апплаєр, що не скидає deleted_at при відновленні запису, запис цілих blob-ів із ще не прогрітого кешу (список покупок, nutrition_prefs, комора в memory-режимі) і журнал dual-write, що знімається попри помилку SQLite. Протокол синку має ще кілька тихих розривів: курсор pull перескакує оп-и паралельних транзакцій (пункт технборгу хибно закрито), hard-delete таблиці без tombstone, термінальні відмови на гонках першого INSERT і серверні записи в обхід sync_op_log, а бекап/відновлення й AI-чат обходять гарантії dual-write. Майже всі втрати тихі: користувач бачить тост успіху, а розбіжність проявляється лише на іншому пристрої чи після reload. Найшвидше вплинуть S-фікси: deleted_at у applyPullOp, ack журналу лише при errored = 0, гейт nutrition-persist до гідратації, emitServerSyncOps для серверних витрат, rollback на oplog_write_failed і прибирання ?sync=; системні кроки — складений PK (user_id, id) і per-user серіалізація записів у sync_op_log.
 
@@ -2110,6 +2114,7 @@ How the loss happens:
 ### `data-23` [medium] Чат-екзекутори обходять серверні межі: create_transaction на будь-яку 400 пише локально з поясненням «сервер недоступний», а log_weight, log_measurement і log_meal не мають меж
 
 - **Стан:** частково виправлено в [#1490](https://github.com/SkOrDs-02/sergeant/pull/1490) (змерджено 2026-10-09) (лишилось: Idempotency-Key/client id у POST /manual-expenses, межі решти мутаторів у toolCallSchema, серверна валідація data_json у sync; add_asset, recurring_expense та log_meal/log_water без стелі)
+- **Рішення власника 2026-11-22:** Лише стелі в toolCallSchema без міграції.
 - **Перевірка:** підтверджено · **Зусилля:** M · **Область:** web: AI-чат (serverActions, toolCallSchema, nutritionActions, fizrukActions)
 - **Де:** apps/web/src/core/lib/chatActions/serverActions.ts:183-250; apps/web/src/core/lib/chatActions/finykActions/transactions.ts:28-71; apps/web/src/core/lib/chatActions/nutritionActions.ts:66-111,419-437; apps/web/src/core/lib/chatActions/fizrukActions/measurements.ts:13-62; apps/web/src/core/hub/chat/toolCallSchema.ts:41-337
 - **Першопричина:** serverActions ловить будь-яку помилку голим catch і йде в локальний fallback без MAX_AMOUNT, ліміту опису й межі дати, а sync потім доносить запис у ту саму таблицю. Аргументи інших мутаторів не валідуються спільними примітивами меж: toolCallSchema покриває близько 20 мутаторів лише numOrStr без діапазонів.
@@ -3225,6 +3230,7 @@ kill1.mjs: у вправі «Віджимання» вага s0 = 20, далі �
 ### `data-39` [medium] Активна тренувальна програма і план тижня з чат-тулу add_program_day живуть лише в localStorage: не синхронізуються й не читаються з pulled fizruk_programs
 
 - **Стан:** частково виправлено в [#1564](https://github.com/SkOrDs-02/sergeant/pull/1564) (змерджено 2026-10-20) (вибір програми тепер в `fizruk_programs` з sync і LS-дреном; `add_program_day` чесно відмовляє й нічого не пише, але ще лишається в реєстрі тулів сервера: повне видалення за рішенням власника потребує платного перезапису касет tool-eval; `fizruk_plan_templates` і `fizruk_wellbeing` у вебі досі без писаря)
+- **Рішення власника 2026-11-22:** Так, перезаписати касети: власник обрав повне видалення `add_program_day` з реєстру тулів сервера з платним перезаписом касет tool-eval замість рекомендованого «лишити тул»; поки лише рішення, не реалізовано.
 - **Перевірка:** підтверджено · **Зусилля:** M · **Область:** web: Фізрук (useTrainingProgram) + AI-чат (fizrukActions)
 - **Де:** apps/web/src/modules/fizruk/hooks/useTrainingProgram.ts:9-22; apps/web/src/core/lib/chatActions/fizrukActions/programs.ts:34-41; apps/server/src/modules/sync/fizruk/applySyncFullState.ts:187-197; packages/shared/src/lib/storageKeys.ts:272-293
 - **Першопричина:** useTrainingProgram читає й пише лише LS-ключ fizruk_active_program_id_v1 (позначений @deprecated на користь SQLite fizruk_programs), а чат-тул add_program_day пише fizruk_plan_template_v1, який у вебі ніхто не читає. Веб-писача fizruk_programs і fizruk_plan_templates немає, хоча сервер і pull їх підтримують.
@@ -4577,6 +4583,7 @@ Repro outputs: "150" gives total 150; "150.00" gives 15000; DOCSUBTYPE=1 gives t
 ### `data-58` [low] TTL-замітач outbox рахує вік від created_at і чистить на весь пристрій: щойно мертвий рядок старого офлайн-запису видаляється на найближчому буті
 
 - **Стан:** відкрито
+- **Рішення власника 2026-11-22:** Мінімум без міграції: передавати userId (опція вже є) і не чистити dead_letter.
 - **Перевірка:** підтверджено · **Зусилля:** S · **Швидкий виграш** · **Область:** web: syncEngine + db-schema (purgeStaleTerminalOutbox)
 - **Де:** packages/db-schema/src/sqlite/syncOpOutboxPurgeStale.ts:136-210; apps/web/src/core/syncEngine/singleton.ts:448-460; apps/web/src/core/syncEngine/outboxPurgeNotice.ts
 - **Першопричина:** purgeStaleTerminalOutbox видаляє rejected і dead_letter за умовою вік від created_at понад 30 днів, без userId; колонки моменту переходу в термінальний статус немає, а markOutboxRetry created_at не оновлює.
@@ -4853,6 +4860,7 @@ psql: sync_op_log ops 19333/19388/19413/19439 мають fizruk_workout_sets rep
 ### `data-64` [low] Після скасування імпорту ті самі рядки неможливо імпортувати вдруге: вони tombstoned, а UI показує їх як дублікати
 
 - **Стан:** відкрито
+- **Рішення власника 2026-11-22:** Відроджувати їх на повторному commit (deleted_at = NULL).
 - **Перевірка:** підтверджено · **Зусилля:** M · **Область:** server: finyk import (commit, batches)
 - **Де:** apps/server/src/modules/finyk/import/commit.ts:243-256; apps/server/src/modules/finyk/import/batches.ts:110-119; packages/shared/src/schemas/import.ts:343-344
 - **Першопричина:** Id рядка імпорту детермінований і не залежить від батчу чи категорії, undo батчу soft-delete-ить рядки, а повторний commit через ON CONFLICT DO NOTHING дає tombstoned, що рахується як duplicate.
@@ -5730,6 +5738,7 @@ hrefs.mjs: js=true → hero_1ceqmsxxsfdcst8b / footer_2jtadonpi52tn3es; js=false
 ### `data-82` [info] Повтор idempotency_key з іншим payload мовчки звітує applied, а accepted рахує повтори
 
 - **Стан:** відкрито
+- **Рішення власника 2026-11-22:** Ні, закрити як задумане.
 - **Перевірка:** підтверджено · **Зусилля:** S · **Область:** server: sync (syncV2 push)
 - **Де:** apps/server/src/modules/sync/syncV2.ts:235-265,353-368
 - **Першопричина:** recordExistingOpLogRow на збіг ключа віддає збережений статус оригіналу без порівняння table, op і row, а accepted інкрементується і для повторів.

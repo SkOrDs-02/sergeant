@@ -1,7 +1,7 @@
 # Аудит 2026-10-01 · Приватність і відповідність
 
 > **Status:** Active. 38 кластерів (48 знахідок) за першопричиною. Загальний план, метод і обмеження — у [README](./README.md).
-> **Last touched:** 2026-11-21 by @claude (priv-22 закрито: FTUX лише після підтвердження email і з one-click відпискою; рішення власника по кластерах, раунди 5–10); раніше перевірено 2026-10-02.
+> **Last touched:** 2026-11-22 by @claude (рішення власника по решті питань беклогу); 2026-11-21 by @claude (priv-22 закрито: FTUX лише після підтвердження email і з one-click відпискою; рішення власника по кластерах, раунди 5–10); раніше перевірено 2026-10-02.
 > **Next review:** 2027-01-21
 > **Spec-lint:** skip. Реєстр знахідок аудиту, не специфікація реалізації.
 
@@ -1965,6 +1965,7 @@ v2-finyk.mjs: після кліку на око aria-label став «Показ
 ### `priv-34` [info] Waitlist приймає будь-чий email без підтвердження і показує, чи адреса вже в списку
 
 - **Стан:** відкрито
+- **Рішення власника 2026-11-22:** Double opt-in і однакова відповідь для нових і наявних адрес.
 - **Перевірка:** підтверджено · **Зусилля:** M · **Область:** web + server: waitlist
 - **Де:** apps/web/src/core/pricing/WaitlistForm.tsx:117-147; apps/server/src/routes/waitlist.ts:29-49; apps/server/src/modules/waitlist/waitlistService.ts:45-58
 - **Першопричина:** POST /api/v1/waitlist робить INSERT ... ON CONFLICT DO NOTHING без double opt-in і повертає created: true/false, а форма для цих випадків показує різні тексти.
@@ -2103,6 +2104,7 @@ apps/web/src/shared/components/ui/voice/useGroqVoiceInput.ts:171-181: для cas
 ### `priv-37` [info] redactPii у резервній копії не прибирає ідентифікатори рахунків Monobank у значеннях (hiddenAccounts), хоча коментар це обіцяє
 
 - **Стан:** відкрито
+- **Рішення власника 2026-11-22:** Виправити коментар і текст панелі бекапу: id рахунків лишаються.
 - **Перевірка:** підтверджено · **Зусилля:** S · **Область:** web: резервні копії
 - **Де:** apps/web/src/core/hub/hubBackup.ts:30-73; apps/web/src/modules/finyk/lib/finykBackup.ts:94-96
 - **Першопричина:** PII_KEY_RE перевіряє лише імена ключів, а hiddenAccounts — це масив значень з id рахунків. Він експортується без змін, як і hiddenTxIds та excludedStatTxIds.

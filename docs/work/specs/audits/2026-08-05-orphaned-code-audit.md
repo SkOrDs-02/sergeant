@@ -2,10 +2,18 @@
 
 > **Поточні статуси перенесених знахідок:** [єдиний реєстр верифікації](verification/findings.json). Цей документ зберігає історичні результати; нові спроби та виправлення ведуться в реєстрі.
 
-> **Last touched:** 2026-11-21 by @claude (§ 9а/9б: мертві константи аналітики знято; `check:dualwrite-residue` у CI). **Next review:** 2027-12-29.
+> **Last touched:** 2026-11-22 by @claude (рішення власника по решті питань беклогу); 2026-11-21 by @claude (§ 9а/9б: мертві константи аналітики знято; `check:dualwrite-residue` у CI). **Next review:** 2027-12-29.
 > **Status:** Active
 >
 > **Звірка 2026-10-22:** `routes/internal/seo.ts`, `marketing.ts` і `growth.ts` з § 3а вже видалені (#1310, #1536); `strategic.ts`, `debug-window.ts`, `email.ts` та неспожиті хуки api-client лишаються.
+
+> **Рішення власника 2026-11-22** (решта питань беклогу, сторінка рішень; кожне чекає виконання, пункти не закрито):
+>
+> - `3ab-internal-routes-after-n8n-openclaw` — Після виводу n8n (ADR-0090) і OpenClaw (ADR-0075) internal-роути strategic (6 шт.), prompts, categorize (HTTP-обгортка), ai-usage, email/sent, users/cohort, alerts/history і ale… **Рішення:** Видалити всі разом із тестами (in-process функції лишити).
+> - `4a-strategic-mode` — Strategic mode: StrategyPage не змонтована з PR-34 (@nextStep PR-35+), strategicKeys.goalsForWeek і internal-роути живуть заради неї. **Рішення:** Видалити UI-сторінку і ключ, серверну половину лишити.
+> - `2v-openclaw-mute-state` — Таблицю openclaw_mute_state читає alerts-guard (modules/alerts/mute-state.ts), але писача немає, тож мут увімкнути неможливо. **Рішення:** Прибрати guard і дропнути таблицю двофазною міграцією.
+> - `2v-growth-funnel-acquisition-tables` — growth_funnel_daily і growth_acquisition_daily писали n8n WF-60/63; n8n виведено, писачів і читачів у коді нема, у фазу 2 DROP вони не ввійшли. **Рішення:** Двофазний DROP за зразком 152/167.
+> - `4d-KeyboardAccessory-OptimizedImage` — KeyboardAccessory (лише демо в DesignShowcase) і OptimizedImage (@scaffolded без дедлайну з 2026-04-28) досі без споживачів. **Рішення:** Видалити обидва зараз.
 
 > **Governing skill:** `sergeant-tech-debt` · **Playbook:** [`cleanup-dead-code.md`](../../../start/instructions/cleanup-dead-code.md).
 > Це read-only аудит: у цьому PR нічого не видаляється. Кожна знахідка отримує клас, докази («чому воно осиротіло») і рекомендацію. Самі видалення — окремими PR-ами за класами боргу (політика skill-у: не змішувати dead-code, lint-cleanup і декомпозицію в одному PR).

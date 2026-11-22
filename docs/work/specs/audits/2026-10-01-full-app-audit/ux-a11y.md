@@ -1,7 +1,7 @@
 # Аудит 2026-10-01 · UX і доступність
 
 > **Status:** Active. 86 кластерів (121 знахідка) за першопричиною. Загальний план, метод і обмеження — у [README](./README.md).
-> **Last touched:** 2026-11-21 by @claude (рішення власника по кластерах, раунди 5–10); раніше перевірено 2026-10-02.
+> **Last touched:** 2026-11-22 by @claude (рішення власника по решті питань беклогу); 2026-11-21 by @claude (рішення власника по кластерах, раунди 5–10); раніше перевірено 2026-10-02.
 > **Next review:** 2027-01-21
 > **Spec-lint:** skip. Реєстр знахідок аудиту, не специфікація реалізації.
 
@@ -812,6 +812,7 @@ vb/05-list-typing.mjs, новий користувач. На старті «Ту
 ### `ux-13` [medium] У прийомі, доданому з бази продуктів, на іншому пристрої чи після очищення даних не можна змінити вагу, і він підписаний «Вручну»
 
 - **Стан:** частково виправлено в [#1474](https://github.com/SkOrDs-02/sergeant/pull/1474) (змерджено 2026-10-18) (старі рядки `productDb` із ручними КБЖВ, збережені до фіксу, на пристрої без локального продукту отримують масштабоване поле ваги: потрібне рішення власника, див. журнал рішень nutrition.md 2026-10-08)
+- **Рішення власника 2026-11-22:** Показувати такі записи лише для читання (без зміни ваги).
 - **Перевірка:** підтверджено · **Зусилля:** M · **Область:** web: Їжа / журнал
 - **Де:** apps/web/src/modules/nutrition/components/meal-sheet/useEditedFoodRehydration.ts; nutrition foodDb (makeFoodProduct, ensureSeedFoods); nutrition_meals.food_id
 - **Першопричина:** Seed-продукти отримують випадковий локальний id food\_&lt;uuid&gt; окремо на кожному пристрої. Прийом зберігає цей id без per100, а useEditedFoodRehydration шукає продукт лише в локальній IndexedDB. На іншому пристрої продукт не знаходиться, поля ваги немає, і запис показується як ручний.
@@ -1087,6 +1088,7 @@ r2/second-tab.mjs output: 8/8 routes busy=true. r2/takeover.mjs: after «Пра�
 ### `ux-19` [low] Банер згоди на аналітику на /sign-in перекриває «Увійти через Google», «Зареєструватися» і «Пропустити», а на 375x667 навіть «Увійти»
 
 - **Стан:** відкрито
+- **Рішення власника 2026-11-22:** Не показувати на auth-маршрутах і /pricing, показати на хабі після входу.
 - **Перевірка:** підтверджено · **Зусилля:** S · **Швидкий виграш** · **Область:** web: згода на аналітику / вхід
 - **Де:** apps/web/src/core/observability/AnalyticsConsentGate.tsx:51-52
 - **Першопричина:** AnalyticsConsentGate робить виняток лише для onboarding і /legal, тож фіксований банер (z-40, низ екрана) показується на /sign-in і не резервує під собою місця. Прокрутка не допомагає.
@@ -1627,6 +1629,7 @@ Finder screenshot chunk-hubpage-abort-direct.png (viewed): only the line 'Ця �
 ### `ux-26` [low] AI у модулі Їжа (фото страви, денний план) у нового користувача впирається в 403 через відсутню згоду на дані про здоровʼя, а «Спробувати ще раз» повторює ту саму помилку
 
 - **Стан:** відкрито
+- **Рішення власника 2026-11-22:** Інлайн-кнопка «Дати згоду» з поясненням, далі повтор аналізу на місці.
 - **Перевірка:** підтверджено · **Зусилля:** S · **Швидкий виграш** · **Область:** web: Їжа / AI і згода на дані здоровʼя
 - **Де:** apps/web/src/modules/nutrition/components/PhotoAnalyzeCard.tsx; apps/web/src/modules/nutrition/components/AddMealSheet.tsx (PhotoStep); apps/web/src/modules/nutrition/components/DailyPlanCard.tsx; apps/web/src/shared/lib/api/friendlyApiError.ts; apps/server/src/lib/healthConsent.ts
 - **Першопричина:** Новий користувач має healthDataConsent:false, а analyze-photo і day-plan вимагають згоди (HEALTH_CONSENT_REQUIRED). Клієнт не має для цього коду інлайн-дії: основна кнопка стає «Спробувати ще раз», а згоду можна ввімкнути лише тумблером у Налаштування → Додатково → Дані та приватність.
@@ -2083,6 +2086,7 @@ s46-notif-granted.out (permission=granted): 'Увімкнути push-спові�
 ### `ux-34` [low] Автопереходи в модулях: перший вхід у Їжу перекидає на «Меню» на кожному візиті, доки не закрито підказку, і перебиває legacy-хеші; автопереходи додають зайві кроки «Назад»
 
 - **Стан:** відкрито
+- **Рішення власника 2026-11-22:** Одразу після першого автопереходу.
 - **Перевірка:** підтверджено · **Зусилля:** S · **Швидкий виграш** · **Область:** web: Їжа і Рутина / автонавігація
 - **Де:** apps/web/src/modules/nutrition/hooks/useNutritionFirstRun.ts:90-121; apps/web/src/modules/nutrition/hooks/useNutritionRoute.ts:79-114; apps/web/src/modules/nutrition/NutritionApp.tsx:686-690; apps/web/src/core/onboarding/useModuleFirstRun.ts:17-21; apps/web/src/modules/routine/useRoutineAppState.ts:214; apps/web/src/modules/routine/hooks/useRoutineRoute.ts:63
 - **Першопричина:** useNutritionFirstRun позначає first-run побаченим лише при закритті підказки, хоча useModuleFirstRun документує markSeen і при редагуванні поля. Перехід на «Меню» робиться через navigate(replace:false) і спрацьовує після hash-шиму, тож перебиває /nutrition#log. Відновлення останньої вкладки Рутини теж робить push.
@@ -2444,6 +2448,7 @@ v9-tpl.mjs (vfy-smf-fiz3, 390×844 touch): toggles = [{name:null, pressed:null, 
 ### `ux-40` [low] Порожнє тренування (0 вправ) завершується й зберігається без підтвердження і рахується в історії, у лічильнику дня й на хабі
 
 - **Стан:** відкрито
+- **Рішення власника 2026-11-22:** Пропонувати «Видалити порожнє тренування» замість збереження.
 - **Перевірка:** підтверджено · **Зусилля:** S · **Швидкий виграш** · **Область:** web: Фізрук / тренування
 - **Де:** apps/web/src/modules/fizruk/components/workouts/WorkoutJournalSection.tsx:195-299; packages/fizruk-domain workoutUi.ts:17-28; useFizrukQuickStart
 - **Першопричина:** «Швидкий старт» навмисно одразу створює сесію, а onFinishClick викликає endWorkout, не перевіряючи, чи є хоч один підхід. summarizeWorkoutForFinish повертає підсумок для будь-якої сесії зі startedAt.
@@ -4961,6 +4966,7 @@ v11.mjs (390 і 1280): `Налаштування|vis="Опції" w=30 op=1 cur=
 ### `ux-85` [info] Підписка не має поля суми: без операції-збігу вона показується як «сума невідома», а календар Рутини обіцяє «суму … вручну у Фініку»
 
 - **Стан:** відкрито
+- **Рішення власника 2026-11-22:** Додати необов'язкове поле «Сума» у форму підписки.
 - **Перевірка:** підтверджено · **Зусилля:** M · **Область:** web: Фінік / підписки
 - **Де:** apps/web/src/modules/finyk/pages/AssetsForm.tsx:45-180; packages/routine-domain/src/calendarEvents.ts:271-274; packages/finyk-domain/src/domain/subscriptionUtils.ts:49-60
 - **Першопричина:** SubscriptionForm має лише назву, ключове слово й день списання. expectedAmount записується тільки автодетекцією, а підпис події в календарі обіцяє ручну суму.

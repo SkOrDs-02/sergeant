@@ -1,9 +1,13 @@
 # Аудит 2026-10-01 · Логіка доменів
 
 > **Status:** Active. 66 кластерів (89 знахідок) за першопричиною. Загальний план, метод і обмеження — у [README](./README.md).
-> **Last touched:** 2026-11-21 by @claude (рішення власника по кластерах, раунди 5–10); раніше перевірено 2026-10-02.
+> **Last touched:** 2026-11-22 by @claude (рішення власника по решті питань беклогу); 2026-11-21 by @claude (рішення власника по кластерах, раунди 5–10); раніше перевірено 2026-10-02.
 > **Next review:** 2027-01-21
 > **Spec-lint:** skip. Реєстр знахідок аудиту, не специфікація реалізації.
+
+> **Рішення власника 2026-11-22** (решта питань беклогу, сторінка рішень; кожне чекає виконання, пункти не закрито):
+>
+> - `overflow-agent-doable` — Окрім 6 пунктів у роботі є ще ~20 підтверджених у коді дрібних фіксів, які агент може зробити без твого рішення. **Рішення:** Білінг/сервер: logic-16 (тост «Premium уже діє» без перевірки оплати), logic-31 (internal upgrade не оживляє прострочений рядок), logic-32 (Plata grace 6 днів замість 3), logic-34 (Сільпо auth_required → schema_drift), logic-36 (sync audit enum v2), logic-30 (відписка на GET/HEAD).
 
 Доменна логіка здебільшого працює, але має системну хворобу: ті самі величини (витрати, ліміти, серії й відсоток звичок, межа доби) рахуються різними функціями на різних поверхнях, тож хаб, модулі й звіти показують різні числа про ті самі дані. Найсерйозніше — недосяжне відновлення акаунта у 30-денному вікні видалення (high) і обхід Free-квоти AI через квиток round_trip_ticket. Серед medium також ризикові для тіла розрахунки (старіння 1ПМ, адаптивний TDEE), незворотні чат-дії без підтвердження й undo, імпорт Дебет/Кредит навпаки і крос-модульні функції, мертві через читання localStorage-ключів після переходу на SQLite. Білінгові дефекти (LiqPay і Plata, тост checkout=success, гео-заголовок) латентні, бо оплати вимкнені, але їх треба закрити до запуску. Після аудиту виправлено лише частину: київську добу й верхню межу в денній картці темпу (889f028f) і одну з колізій категоризатора продуктів (e3009eb8).
 
@@ -2212,6 +2216,7 @@ branchContext.ts: fetchFromCart і fetchFromBranches роблять `if (!x.ok) 
 ### `logic-35` [low] Відхилені пари чек↔транзакція відфільтровуються вже після матчингу, а relink дозволяє привʼязати чек до кількох транзакцій
 
 - **Стан:** відкрито
+- **Рішення власника 2026-11-22:** Без міграції: relink спершу знімає попередній лінк чека, а відхилення передаються в matcher до підрахунку неоднозначності.
 - **Перевірка:** підтверджено · **Зусилля:** M · **Область:** server+finyk-domain: Сільпо чеки
 - **Де:** apps/server/src/modules/silpo/receiptsMatch.ts:188-206; packages/finyk-domain/src/domain/receiptMatching.ts:146-182; apps/server/src/modules/silpo/receiptsRead.ts:270-292
 - **Першопричина:** matchAndLink викликає matchReceiptsToTransactions з повним набором кандидатів і лише потім відкидає відхилені пари, тож відхилена транзакція далі рахується конкурентом. relinkReceiptToTransaction вставляє лінк без перевірки, чи чек уже привʼязаний, а UNIQUE (user_id, receipt_id) у silpo_tx_receipt_links немає.
@@ -2473,6 +2478,7 @@ node --import tsx f6_kcal_streak.mts: 29 good days, nothing today → 29; breakf
 ### `logic-40` [low] «Жорстке застереження» про відновлення спрацьовує хибно, не називає мʼяз і діє не на всіх шляхах старту
 
 - **Стан:** відкрито
+- **Рішення власника 2026-11-22:** Hard-block лише для первинних мʼязів із високою втомою (fatigue) або травми, решта як мʼяке попередження.
 - **Перевірка:** підтверджено · **Зусилля:** M · **Область:** fizruk-domain / web: Фізрук
 - **Де:** packages/fizruk-domain/src/lib/recoveryCompute.ts:286-290; packages/fizruk-domain/src/lib/recoveryConflict.ts:66-75; apps/web/src/modules/fizruk/components/workouts/WorkoutsConfirmDialogs.tsx:61-70; apps/web/src/modules/fizruk/hooks/useWorkoutsOrchestrator.ts:389-395
 - **Першопричина:** recoveryCompute ставить status = 'red' будь-якому мʼязу з daysSince ≤ 1 незалежно від навантаження, а recoveryConflict рахує hasHardBlock і для вторинних мʼязів. Діалог не перелічує групи. Старт програми й «Повторити» перевірку оминають.
@@ -2593,6 +2599,7 @@ verify parse.mts: 'рис 99999999 кг' -> parsed {qty:null,unit:null} -> merge
 ### `logic-42` [low] «З комори» мовчки підставляє перший збіг пошуку: «молоко» стає «Молоко топлене 4%» або «згущене»
 
 - **Стан:** відкрито
+- **Рішення власника 2026-11-22:** Автопідбір лише за точним збігом canonicalFoodKey, інакше просити вибрати.
 - **Перевірка:** підтверджено · **Зусилля:** S · **Швидкий виграш** · **Область:** web: Їжа (додавання прийому)
 - **Де:** apps/web/src/modules/nutrition/components/meal-sheet/useSourceAutoPick.ts
 - **Першопричина:** useSourceAutoPick бере search.foodHits[0] ?? search.offHits[0]. Локальний пошук ранжує всі префіксні збіги однаково і розвʼязує нічию за updatedAt, тож перший результат фактично випадковий.
@@ -3086,6 +3093,7 @@ v12-order.ts (node --import tsx на src пакета): habitOrder [Медита
 ### `logic-53` [low] Build-id hard-floor порівнює SHA незалежно задеплоєних фронта й API: хибне «Доступна нова версія», а «Оновити» вантажить ту саму збірку
 
 - **Стан:** відкрито
+- **Рішення власника 2026-11-22:** /version.json з Vercel-деплою фронта (версія самого фронта).
 - **Перевірка:** спірне · **Зусилля:** M · **Область:** web: автооновлення / server: X-Server-Build-Id
 - **Де:** apps/web/src/core/app/autoUpdate.ts:274-330; apps/web/src/core/app/useSWUpdate.ts:74-93; apps/server/src/http/buildIdHeader.ts:24-41; apps/web/vite.config.js:84-89; apps/web/vercel.json; .github/workflows/deploy-api.yml:100-111; Dockerfile.api:248-254
 - **Першопричина:** Клієнт порівнює VITE_BUILD_ID (VERCEL_GIT_COMMIT_SHA) з X-Server-Build-Id (SENTRY_RELEASE → GIT_SHA → …), але фронт і бекенд деплояться за різними path-фільтрами (ignoreCommand Vercel, фільтр deploy-api.yml), тож SHA зазвичай різні. Без waiting-SW applyUpdate робить reload у ту саму збірку, а firedForBuildId живе лише в памʼяті.
@@ -3330,6 +3338,7 @@ rm2.mjs, anon: /finyk/nope лишає URL /finyk/nope і показує h1 «О�
 ### `logic-57` [low] Після входу немає повернення на вихідну сторінку: чат обіцяє «я повернусь до розмови», а людину кидає на /
 
 - **Стан:** відкрито
+- **Рішення власника 2026-11-22:** Додати безпечний returnTo (лише same-origin відносні шляхи) для чату, Pricing і Google callbackURL.
 - **Перевірка:** підтверджено · **Зусилля:** S · **Швидкий виграш** · **Область:** web: auth (вхід)
 - **Де:** apps/web/src/core/app/StandaloneRoutes.tsx:182-194; apps/web/src/core/hub/chat/ChatAuthGate.tsx:52; apps/web/src/core/auth/AuthContext.tsx:462, 495
 - **Першопричина:** Гілка SIGN_IN_PATH у StandaloneRoutes безумовно рендерить &lt;RedirectTo to='/' /&gt;, ChatAuthGate веде на голий /sign-in, а Google-вхід має callbackURL '/'. Механізму returnTo немає.
@@ -3635,6 +3644,7 @@ read.test.ts:548 uses receiptId "XXXX-XXXX-XXXX-XXXX". analyze.ts:206 sets `fisc
 ### `logic-63` [info] cart/apply Сільпо не обмежує кількість: ні верхньої межі, ні кроку для штучних товарів, дублікати дозволені, lagerId не підписаний
 
 - **Стан:** відкрито
+- **Рішення власника 2026-11-22:** Лише межі кількості й дедуп, lagerId без підпису.
 - **Перевірка:** підтверджено · **Зусилля:** S · **Область:** server: Сільпо (кошик)
 - **Де:** packages/shared/src/schemas/silpo.ts:418-424; apps/server/src/modules/silpo/cartNormalize.ts:33-56; apps/server/src/modules/silpo/cart.ts:377-391
 - **Першопричина:** SilpoCartSelectionSchema має лише quantity: z.number().positive(), а makeApplySelections передає значення в silpo_add_or_update_cart_products як є. decodeLagerId декодує непідписаний токен.
@@ -3726,6 +3736,7 @@ epley1rm: 100x1=103.33, 100x2=106.67, 97x2=103.47. Тест exerciseDetail.test.
 ### `logic-65` [info] Переплата боргу поглинається без підказки: «Сплачено 1 200 з 1 000 ₴», залишок 0
 
 - **Стан:** відкрито
+- **Рішення власника 2026-11-22:** Показувати «Переплата N ₴» на картці боргу.
 - **Перевірка:** підтверджено · **Зусилля:** S · **Область:** finyk-domain (debtEngine)
 - **Де:** packages/finyk-domain/src/domain/debtEngine.ts:345-356
 - **Першопричина:** calcDebtRemaining клампить залишок через Math.max(0, …), а надлишок ніде не відображається і не стає дебіторкою.
@@ -3771,6 +3782,7 @@ DebtCard.tsx:67 has pct = Math.min(100, …). DebtCard.tsx:133-139 renders paid 
 ### `logic-66` [info] Відновлення історії чату з бекапу нічого не робить, хоча діалог обіцяє її перезаписати
 
 - **Стан:** відкрито
+- **Рішення власника 2026-11-22:** Прибрати chatHistory з restore і з переліку в діалозі.
 - **Перевірка:** підтверджено · **Зусилля:** S · **Область:** web: хаб (бекап)
 - **Де:** apps/web/src/core/hub/hubBackup.ts:173-181; apps/web/src/core/hub/hubChatSessions.ts:96-103, 141-158, 214-219; apps/web/src/core/hub/HubBackupPanel.tsx:30, 81
 - **Першопричина:** Restore пише лише legacy-ключ hub_chat_history, а loadSessions читає його тільки коли sessions порожні, і наступний saveSessions його перезаписує.
