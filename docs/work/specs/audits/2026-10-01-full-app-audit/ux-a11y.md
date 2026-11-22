@@ -1134,7 +1134,7 @@ v2-signin.mjs. At 390x844: bannerTop=514, Google/Зареєструватися/
 
 ### `ux-20` [low] Трей тостів перекриває головні дії й поле вводу: CTA «Додати прийом» в аркуші їжі, композер /chat, кнопки банера згоди
 
-- **Стан:** відкрито
+- **Стан:** частково виправлено в гілці `backlog/ux-20` (2026-11-22): AddMealSheet кладе «Додати прийом»/«Зберегти зміни» і «Скасувати» у слот `footer` Sheet на кроці заповнення, тож аркуш публікує `--sgt-sheet-footer-inset` і трей тостів стає над CTA (тест у `AddMealSheet.journeys.test.tsx`). Лишилось: інсет композера на /chat і в HubChat (`ChatInput.tsx`, нова інсет-змінна в Toast), CTA у тілі AddExerciseSheet, ExerciseDetailSheet, ItemEditSheet, MealTypeSheet, PantryManagerSheet, тост «offline ready» поверх активного вводу
 - **Перевірка:** підтверджено · **Зусилля:** S · **Швидкий виграш** · **Область:** web: тости
 - **Де:** apps/web/src/shared/components/ui/Toast.tsx:295,420-466; apps/web/src/shared/components/ui/Sheet.tsx:140; apps/web/src/modules/nutrition/components/AddMealSheet.tsx:614-620,795-812; apps/web/src/core/app/useSWUpdate.ts:193; apps/web/src/core/components/ChatInput.tsx
 - **Першопричина:** Трей тостів позиціюється лише через інсет-змінні bottom-nav, workout-banner і sheet-footer. AddMealSheet і ще кілька аркушів (AddExerciseSheet, ExerciseDetailSheet, ItemEditSheet, MealTypeSheet, PantryManagerSheet) тримають CTA в тілі аркуша, а не в слоті footer, а /chat і HubChat свого інсету не публікують, тож трей лягає поверх. Рядки тостів мають pointer-events:auto, а ToastRow має tabIndex=0 і ставиться на паузу при фокусі.

@@ -31,11 +31,13 @@ vi.mock("@shared/components/ui/Sheet", () => ({
     children,
     title,
     onClose,
+    footer,
   }: {
     open: boolean;
     children: React.ReactNode;
     title: React.ReactNode;
     onClose: () => void;
+    footer?: React.ReactNode;
   }) =>
     open ? (
       <div role="dialog" data-testid="sheet">
@@ -44,6 +46,7 @@ vi.mock("@shared/components/ui/Sheet", () => ({
           ✕
         </button>
         {children}
+        {footer && <div data-sheet-footer>{footer}</div>}
       </div>
     ) : null,
 }));

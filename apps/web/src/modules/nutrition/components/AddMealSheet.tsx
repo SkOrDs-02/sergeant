@@ -600,6 +600,18 @@ export function AddMealSheet({
         title={title}
         panelClassName="nutrition-sheet"
         zIndex={120}
+        // CTA живе у слоті footer: лише тоді Sheet публікує
+        // `--sgt-sheet-footer-inset` і трей тостів піднімається над
+        // кнопками, а не лягає на «Додати прийом» (аудит ux-20).
+        footer={
+          step === "source" ? undefined : (
+            <MealSaveButtons
+              editing={Boolean(initialMeal?.id)}
+              onSave={handleSave}
+              onCancel={onClose}
+            />
+          )
+        }
       >
         <div ref={stepAnchorRef} hidden={step !== "source"}>
           {(!initialMeal?.id || sourceReplaced) && (
@@ -776,12 +788,6 @@ export function AddMealSheet({
                 />
               )
             )}
-
-            <MealSaveButtons
-              editing={Boolean(initialMeal?.id)}
-              onSave={handleSave}
-              onCancel={onClose}
-            />
           </>
         )}
       </Sheet>
