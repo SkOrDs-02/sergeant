@@ -57,6 +57,13 @@ Snapshot-аудит на HEAD `a618e9317` (гілка `claude/security-audit-1d5
 5. `ci.yml:344-347` — job `coverage` має **`contents: write`**, а `actions/checkout` скрізь іде з
    дефолтним `persist-credentials: true` (єдиний виняток — `extended-e2e.yml:218`). Postinstall
    читає `.git/config` і забирає `GITHUB_TOKEN` із правом запису.
+   **Стан 2026-11-22:** у `coverage` закрито (`persist-credentials: false`, токен лише в
+   push-кроці через одноразовий `extraheader`; гейт `scripts/__tests__/ci-coverage-credentials.test.mjs`).
+   Той самий візерунок лишається в `docs-daily-brief.yml` (checkout з токеном і дефолтним
+   `persist-credentials`, далі `pnpm install`) і `pr-backlinks.yml` (крок «Checkout main», далі
+   `pnpm install`): обидва з `contents: write` і `pull-requests: write`. Ланцюг §1.0 там
+   розірваний іншою ланкою (`pnpm.onlyBuiltDependencies`, див. реєстр), тож це залишок
+   defense-in-depth, а не відкритий ланцюг.
 6. Auto-merge у `main` чіпає `pnpm-lock.yaml` → `deploy-api.yml:20-34` → ghcr `:latest`
    (`:62-92`) → вебхук Coolify (`:94-113`) → прод.
 

@@ -616,6 +616,14 @@ jobs:
     steps:
       # actions/checkout v6.0.2 (SHA-pinned for supply-chain hardening)
       - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd
+        with:
+          # Аудит 2026-08-04 §1.0 п.5: джоба має `contents: write`, а
+          # `pnpm install` нижче виконує postinstall-скрипти залежностей.
+          # З дефолтним `persist-credentials: true` токен лежав би в
+          # `.git/config`, і отруєний devDependency забрав би його з правом
+          # запису в репо. Токен отримує лише push-крок, через власний `env:`.
+          # Форму стереже `scripts/__tests__/ci-coverage-credentials.test.mjs`.
+          persist-credentials: false
 
       # pnpm/action-setup v6.0.3 (SHA-pinned for supply-chain hardening)
       - uses: pnpm/action-setup@0e279bb959325dab635dd2c09392533439d90093
@@ -695,15 +703,24 @@ jobs:
           github.event.pull_request.head.repo.full_name == github.repository
         env:
           HEAD_REF: ${{ github.event.pull_request.head.ref }}
+          # Чекаут вище йде з `persist-credentials: false`, тож у `.git/config`
+          # токена немає: він приходить лише в цей крок і йде git-у явно через
+          # `-c http.<url>.extraheader` (так само, як це робить сам checkout).
+          PUSH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
           set -euo pipefail
+          AUTH_B64="$(printf 'x-access-token:%s' "$PUSH_TOKEN" | base64 -w0)"
+          echo "::add-mask::$AUTH_B64"
+          git_auth() {
+            git -c "http.https://github.com/.extraheader=AUTHORIZATION: basic $AUTH_B64" "$@"
+          }
           if git diff --quiet -- coverage-ratchet.json; then
             echo "Baseline unchanged — nothing to push."
             exit 0
           fi
           cp coverage-ratchet.json /tmp/coverage-ratchet.json
           git checkout -- coverage-ratchet.json
-          git fetch origin "$HEAD_REF"
+          git_auth fetch origin "$HEAD_REF"
           git checkout -B "$HEAD_REF" "origin/$HEAD_REF"
           cp /tmp/coverage-ratchet.json coverage-ratchet.json
           if git diff --quiet -- coverage-ratchet.json; then
@@ -717,7 +734,7 @@ jobs:
           # Best-effort: сам gate вже пройшов зеленим. Rejected/transient push
           # (напр. гілка зрушила між checkout і push) не має валити coverage-job —
           # bump під'їде наступним раном. Лишаємо WARNING і виходимо 0.
-          if ! git push origin "$HEAD_REF"; then
+          if ! git_auth push origin "$HEAD_REF"; then
             echo "::warning::coverage-ratchet baseline bump push failed; gate stays green, bump retries next run."
             exit 0
           fi
