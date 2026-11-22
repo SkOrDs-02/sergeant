@@ -8,6 +8,7 @@ import { billingApi } from "@shared/api";
 import { messages } from "@shared/i18n/uk";
 import { billingKeys } from "@shared/lib/api/queryKeys";
 import { usePlan } from "../billing";
+import { assertAllowedBillingUrl } from "../billing/billingRedirect";
 import { premiumAdditions } from "../pricing/pricingTiers";
 import { ContentGroup } from "@shared/components/ui/ContentGroup";
 import { SettingsGroup } from "./SettingsPrimitives";
@@ -126,7 +127,9 @@ export function PlanSection() {
     setPortalError("");
     try {
       const portal = await billingApi.createPortal();
-      window.location.assign(portal.url);
+      // Audit F4 / sec-29: той самий гард, що й на /pricing, інакше цей
+      // вхід у портал обходить allow-list провайдерів.
+      window.location.assign(assertAllowedBillingUrl(portal.url));
     } catch {
       setPortalError(BILLING_PORTAL_UNAVAILABLE);
       setRedirecting(false);

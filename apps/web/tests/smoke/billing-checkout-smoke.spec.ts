@@ -22,7 +22,7 @@ test.use({ serviceWorkers: "block" });
  *      server-contract plan id (`plan: "pro"` — the D3 "Premium" label
  *      is UI-only, the server enum is still `"plus" | "pro"`).
  *   2. The returned `checkout.url` passes the open-redirect allow-list
- *      guard (`assertAllowedCheckoutUrl`, audit F4) and the browser is
+ *      guard (`assertAllowedBillingUrl`, audit F4) and the browser is
  *      handed off to `checkout.stripe.com`.
  *
  * Why the API call is mocked: the smoke stack boots the real server
@@ -100,7 +100,7 @@ test("@critical billing: pricing Premium CTA creates a checkout session and redi
 
   // ------------------------------------------------------------------
   // Redirect landed on the (stubbed) Stripe-hosted checkout page. This
-  // implicitly proves `assertAllowedCheckoutUrl` accepted the host —
+  // implicitly proves `assertAllowedBillingUrl` accepted the host —
   // a non-allow-listed URL would throw before `location.assign` and
   // surface the checkout-error state instead of navigating.
   // ------------------------------------------------------------------

@@ -16,7 +16,7 @@
  */
 import { useState } from "react";
 import { Select } from "@shared/components/ui/Select";
-import { formatMoneyFromKopecks } from "@sergeant/shared";
+import { formatMoneyFromKopecks, safeSilpoHref } from "@sergeant/shared";
 import { Sheet } from "@shared/components/ui/Sheet";
 import { Notice } from "@shared/components/ui/Notice";
 import { Button } from "@shared/components/ui/Button";
@@ -279,6 +279,11 @@ function SuccessView({
   cleared: boolean;
   clearErrorKind: SilpoCartErrorKind;
 }) {
+  // sec-29: `cartUrl` приходить з upstream Сільпо. Сервер уже відсікає
+  // не-https і чужі хости, тут друга лінія: посилання без перевірки дало б
+  // open redirect (або `javascript:`) з довірою Sergeant. Невалідне — кнопку
+  // ховаємо, як і для порожнього кошика.
+  const cartHref = safeSilpoHref(cart.cartUrl);
   return (
     <div role="status" aria-live="polite" className="grid gap-4">
       <div className="flex items-center gap-2.5">
@@ -307,9 +312,9 @@ function SuccessView({
           <Money amount={cart.totalKop / 100} kopecks />
         </div>
       )}
-      {cart.cartUrl && (
+      {cartHref && (
         <a
-          href={cart.cartUrl}
+          href={cartHref}
           target="_blank"
           rel="noopener noreferrer"
           className="min-h-[44px] rounded-lg border border-border-strong text-text flex items-center justify-center text-style-label font-semibold hover:bg-line/40 transition-colors focus-ring"

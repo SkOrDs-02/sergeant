@@ -442,7 +442,11 @@ export type SilpoCartItemDto = z.infer<typeof SilpoCartItemDtoSchema>;
  * discounts are absent, or `null` when Silpo's response has neither
  * (schema-drift degrade, never a thrown error). `cartUrl` is
  * `checkoutWebLink` from the tool response, or `null` for an empty/erroring
- * cart (Silpo only emits it for a non-empty, error-free cart).
+ * cart (Silpo only emits it for a non-empty, error-free cart). The server
+ * passes it through `safeSilpoHref` (https on `silpo.ua`/`*.silpo.ua` only,
+ * anything else → `null`, sec-29); the schema stays a plain string so an
+ * old server's value degrades on the client (it re-checks before `href`)
+ * instead of failing the whole cart parse.
  */
 export const SilpoCartDtoSchema = z.object({
   items: z.array(SilpoCartItemDtoSchema),

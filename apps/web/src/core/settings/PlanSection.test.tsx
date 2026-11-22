@@ -227,6 +227,26 @@ describe("PlanSection (audit P1-6 — Settings plan + manage subscription)", () 
     );
   });
 
+  it.each([
+    ["javascript:alert(document.domain)"],
+    ["https://evil.example/phish"],
+    ["http://billing.stripe.com/session/bps_test_42"],
+  ])(
+    "не переходить на portal.url поза allow-list провайдерів (%s) — sec-29",
+    async (url) => {
+      statusMock.mockResolvedValue(PRO_ACTIVE_RESPONSE);
+      createPortalMock.mockResolvedValue({ ok: true, url });
+      renderSection();
+      await openSection();
+
+      fireEvent.click(await screen.findByTestId("plan-manage-button"));
+      expect(await screen.findByTestId("plan-portal-error")).toHaveTextContent(
+        /тимчасово недоступний/,
+      );
+      expect(window.location.assign).not.toHaveBeenCalled();
+    },
+  );
+
   it("shows the Premium badge + canceled warning with end date + Manage button when subscription is canceled but still in grace period", async () => {
     statusMock.mockResolvedValue(PRO_CANCELED_RESPONSE);
     renderSection();

@@ -2273,7 +2273,7 @@ node <scratch>/agents/client-static-web-xss-injection/urltest.mjs. Поточн�
 
 ### `sec-29` [low] Зовнішні URL з відповідей сервера йдуть у навігацію без перевірки схеми й хоста (портал білінгу в налаштуваннях, cartUrl Сільпо)
 
-- **Стан:** відкрито
+- **Стан:** закрито в гілці `backlog/sec-29` (2026-11-22): спільний `safeExternalHref` у `@sergeant/shared` (лише `https:`, без облікових даних і порту, хост з allow-list); білінг іде через `assertAllowedBillingUrl` (`core/billing/billingRedirect.ts`) і на `/pricing`, і в «Керувати підпискою» налаштувань; сервер віддає `cartUrl` лише https на `silpo.ua`/`*.silpo.ua`, інакше `null`, а `SilpoCartSheet` перевіряє ще раз і ховає кнопку (`safeExternalHref.test.ts`, `billingRedirect.test.ts`, `PlanSection.test.tsx`, `SilpoCartEntry.test.tsx`, `cartNormalize.test.ts`)
 - **Перевірка:** підтверджено · **Зусилля:** S · **Швидкий виграш** · **Область:** web: білінг / Сільпо
 - **Де:** apps/web/src/core/settings/PlanSection.tsx:118-128; apps/web/src/core/PricingPage.tsx:49-86,259-262; apps/web/src/modules/nutrition/components/SilpoCartSheet.tsx:327-336; apps/server/src/modules/silpo/cartNormalize.ts:301-302,372; packages/shared/src/schemas/silpo.ts:450
 - **Першопричина:** Немає спільного хелпера безпечного зовнішнього URL. PlanSection.handleManage робить location.assign(portal.url) без assertAllowedCheckoutUrl, який для того самого createPortal() викликає PricingPage; SilpoCartSheet рендерить cartUrl з upstream у href без перевірки схеми. Схеми відповіді лише z.string()/url(), що пропускає javascript: і будь-який хост.

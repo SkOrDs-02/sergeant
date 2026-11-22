@@ -22,6 +22,7 @@ import { openHubSettingsSection } from "@shared/lib/modules/hubNav";
 import { ANALYTICS_EVENTS, trackEvent } from "./observability/analytics";
 import { captureException } from "./observability/sentry";
 import { usePlan } from "./billing";
+import { assertAllowedBillingUrl } from "./billing/billingRedirect";
 import { useAuthOptional } from "./auth/AuthContext";
 import {
   usePremiumCheckoutAvailability,
@@ -55,42 +56,12 @@ import { LegalLinks } from "./legal/LegalLinks";
 // з каталогу (`tiers.premiumPrice` / `tiers.premiumCadence`); повертати
 // число слід туди ж, а не хардкодом у компонент.
 
-// Defense-in-depth open-redirect guard (audit F4,
-// docs/audits/2026-05-13-page-audit-10-errors-pwa-marketing.md). Backend
-// returns checkout.url / portal.url (LiqPay / Plata / legacy Stripe);
-// додатково валідовуємо host на клієнті — щоб контракт-дрифт чи
-// компроментація бекенду не змогли перевести юзера на довільний origin
-// у high-trust моменті funnel-у.
-const ALLOWED_CHECKOUT_HOSTS: ReadonlySet<string> = new Set([
-  "checkout.stripe.com",
-  "billing.stripe.com",
-  // Phase 7 UA billing — LiqPay (ПриватБанк) checkout host.
-  "www.liqpay.ua",
-  // Plata by mono (monopay) invoice-page hosts.
-  "pay.mbnk.biz",
-  "pay.monobank.ua",
-]);
-
 // Людські назви провайдерів для кнопок checkout-у.
 const PROVIDER_LABELS: Record<string, string> = {
   liqpay: "LiqPay",
   plata: "Plata by mono",
   stripe: "Карткою",
 };
-
-function assertAllowedCheckoutUrl(raw: string): string {
-  const parsed = new URL(raw, window.location.origin);
-  // Same-origin manage-URL (LiqPay/Plata не мають зовнішнього Customer
-  // Portal → повертають `${app}/settings?billing=manage`) безпечний за
-  // визначенням — не проганяємо через host-allow-list зовнішніх checkout-ів.
-  if (parsed.origin === window.location.origin) {
-    return parsed.toString();
-  }
-  if (!ALLOWED_CHECKOUT_HOSTS.has(parsed.host)) {
-    throw new Error(`checkout url host not in allow-list: ${parsed.host}`);
-  }
-  return parsed.toString();
-}
 
 export function PricingPage() {
   const navigate = useNavigate();
@@ -255,7 +226,7 @@ export function PricingPage() {
         mode: checkout.mode,
       });
       // Audit F4: refuse to navigate if server returned a non-allowlisted host.
-      const safeUrl = assertAllowedCheckoutUrl(checkout.url);
+      const safeUrl = assertAllowedBillingUrl(checkout.url);
       window.location.assign(safeUrl);
       return;
     } catch (err) {
@@ -337,7 +308,7 @@ export function PricingPage() {
     try {
       const { url } = await billingApi.createPortal();
       // Audit F4: refuse to navigate if server returned a non-allowlisted host.
-      const safeUrl = assertAllowedCheckoutUrl(url);
+      const safeUrl = assertAllowedBillingUrl(url);
       window.location.assign(safeUrl);
     } catch (err) {
       const status =
