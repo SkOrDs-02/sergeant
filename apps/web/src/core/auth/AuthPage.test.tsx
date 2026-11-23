@@ -332,6 +332,22 @@ describe("AuthPage — mode switching", () => {
 
     expect(setAuthErrorMock).toHaveBeenCalledWith(null);
   });
+
+  // `text-brand-strong` сам перемикається в темній темі (`--c-brand-ink`);
+  // ручна пара `dark:text-brand-*` перебиває змінну сирим тиром палітри.
+  it("текстові посилання входу тримають колір токеном, без ручної dark:-пари", () => {
+    render(
+      <MemoryRouter>
+        <AuthPage />
+      </MemoryRouter>,
+    );
+
+    for (const name of [/Немає акаунту/, /Забули пароль/]) {
+      const cls = screen.getByRole("button", { name }).className;
+      expect(cls).toContain("text-brand-strong");
+      expect(cls).not.toMatch(/(^|\s)dark:text-/);
+    }
+  });
 });
 
 describe("AuthPage — UX polish (autoFocus / password toggle / a11y)", () => {

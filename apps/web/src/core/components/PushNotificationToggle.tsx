@@ -1,9 +1,7 @@
 import { useCallback } from "react";
 import { usePushNotifications } from "@shared/hooks/usePushNotifications";
-import {
-  describePushSubscribeError,
-  PUSH_SUBSCRIBE_RETRY_LABEL,
-} from "@shared/hooks/pushSubscribeError";
+import { describePushSubscribeError } from "@shared/hooks/pushSubscribeError";
+import { coreMessages } from "@shared/i18n/uk.core";
 import { useToast } from "@shared/hooks/useToast";
 import { Switch } from "@shared/components/ui/Switch";
 import { cn } from "@shared/lib/ui/cn";
@@ -38,7 +36,7 @@ export function PushNotificationToggle({
     const attempt = (): Promise<void> =>
       subscribe().catch((err: unknown) => {
         toast.error(describePushSubscribeError(err), undefined, {
-          label: PUSH_SUBSCRIBE_RETRY_LABEL,
+          label: coreMessages.pushSubscribe.retry,
           onClick: () => {
             void attempt();
           },

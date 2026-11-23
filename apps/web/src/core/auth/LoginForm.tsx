@@ -139,7 +139,7 @@ export function LoginForm({ onForgotPassword, showForgot }: LoginFormProps) {
         <button
           type="button"
           onClick={() => onForgotPassword(emailValue)}
-          className="col-start-2 row-start-1 mb-1.5 text-style-caption text-brand-strong dark:text-brand-400 hover:underline focus:outline-none focus-visible:ring-2 focus-visible:ring-focus/45 rounded px-1"
+          className="col-start-2 row-start-1 mb-1.5 text-style-caption text-brand-strong hover:underline focus:outline-none focus-visible:ring-2 focus-visible:ring-focus/45 rounded px-1"
         >
           Забули пароль?
         </button>

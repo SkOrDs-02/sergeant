@@ -52,6 +52,19 @@ describe("SignUpScreen", () => {
     expect(screen.queryByTestId("auth-sign-up-submit")).toBeNull();
   });
 
+  it("«Повернутися до входу» має ціль дотику ≥44 px", async () => {
+    mockSignUpEmail.mockResolvedValueOnce({
+      data: { token: null, user: { id: "x" } },
+      error: null,
+    });
+    const screen = render(<SignUpScreen />);
+    submit(screen);
+
+    const back = await screen.findByTestId("auth-sign-up-back-to-sign-in");
+    expect(back.props.className).toContain("min-h-[44px]");
+    expect(back.props.accessibilityRole).toBe("link");
+  });
+
   it("із токеном сесії лишається на звичному шляху без «Перевір пошту»", async () => {
     mockSignUpEmail.mockResolvedValueOnce({
       data: { token: "t", user: { id: "x" } },

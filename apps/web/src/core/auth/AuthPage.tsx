@@ -208,7 +208,7 @@ export function AuthPage({ onContinueWithoutAccount }: AuthPageProps) {
                   <button
                     type="button"
                     onClick={switchMode}
-                    className="min-h-touch-target text-style-label text-brand-strong dark:text-brand-400 hover:underline px-3 py-2 rounded-lg focus:outline-none focus-visible:ring-2 focus-visible:ring-focus/45"
+                    className="min-h-touch-target text-style-label text-brand-strong hover:underline px-3 py-2 rounded-lg focus:outline-none focus-visible:ring-2 focus-visible:ring-focus/45"
                   >
                     {mode === "login"
                       ? "Немає акаунту? Зареєструватися"

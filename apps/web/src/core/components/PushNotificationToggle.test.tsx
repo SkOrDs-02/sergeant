@@ -27,7 +27,9 @@ vi.mock("@shared/hooks/useToast", () => ({
 
 import { ApiError } from "@sergeant/api-client";
 import { PushNotificationToggle } from "./PushNotificationToggle";
-import { PUSH_SUBSCRIBE_ERROR_COPY } from "@shared/hooks/pushSubscribeError";
+import { coreMessages } from "@shared/i18n/uk.core";
+
+const PUSH_SUBSCRIBE_ERROR_COPY = coreMessages.pushSubscribe;
 
 describe("PushNotificationToggle", () => {
   afterEach(() => {

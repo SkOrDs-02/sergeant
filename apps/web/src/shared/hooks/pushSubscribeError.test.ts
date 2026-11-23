@@ -2,9 +2,11 @@ import { describe, expect, it } from "vitest";
 import { ApiError } from "@sergeant/api-client";
 import {
   describePushSubscribeError,
-  PUSH_SUBSCRIBE_ERROR_COPY,
   PUSH_VAPID_MISSING_MESSAGE,
 } from "./pushSubscribeError";
+import { coreMessages } from "@shared/i18n/uk.core";
+
+const PUSH_SUBSCRIBE_ERROR_COPY = coreMessages.pushSubscribe;
 
 const url = "/api/v1/push/register";
 
@@ -41,5 +43,17 @@ describe("describePushSubscribeError", () => {
     expect(describePushSubscribeError(err)).toBe(
       PUSH_SUBSCRIBE_ERROR_COPY.browser,
     );
+  });
+});
+
+describe("pushSubscribeError copy", () => {
+  it("тексти тосту живуть у каталозі, а не в модулі хелпера", async () => {
+    const { readFileSync } = await import("node:fs");
+    const src = readFileSync(
+      new URL("./pushSubscribeError.ts", import.meta.url),
+      "utf8",
+    ).replace(/\/\*[\s\S]*?\*\/|\/\/.*$/gm, "");
+    expect(src).not.toMatch(/[А-Яа-яЄєІіЇїҐґ]/);
+    expect(coreMessages.pushSubscribe.retry).toBe("Повторити");
   });
 });

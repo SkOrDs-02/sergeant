@@ -1,4 +1,5 @@
 import { isApiError } from "@shared/api";
+import { coreMessages } from "@shared/i18n/uk.core";
 
 /**
  * Повідомлення, яким `usePushNotifications` відхиляє підписку, коли сервер
@@ -7,14 +8,7 @@ import { isApiError } from "@shared/api";
  */
 export const PUSH_VAPID_MISSING_MESSAGE = "VAPID not configured";
 
-export const PUSH_SUBSCRIBE_RETRY_LABEL = "Повторити";
-
-export const PUSH_SUBSCRIBE_ERROR_COPY = {
-  unavailable: "Сповіщення тимчасово недоступні. Спробуй пізніше.",
-  network: "Не вдалося увімкнути сповіщення, перевір зʼєднання.",
-  server: "Сервер тимчасово не відповідає. Спробуй ще раз.",
-  browser: "Браузер не зміг увімкнути сповіщення. Спробуй ще раз.",
-} as const;
+const copy = coreMessages.pushSubscribe;
 
 /**
  * Текст тосту для відхиленої підписки на push (ux-33).
@@ -22,16 +16,17 @@ export const PUSH_SUBSCRIBE_ERROR_COPY = {
  * ЧОМУ РОЗРІЗНЯЄМО. До 2026-11-22 будь-який збій ішов лише в `logger.warn`,
  * і тумблер мовчки повертався у «вимкнено». Людині треба знати, чи це її
  * браузер (push-сервіс, дозвіл, service worker), чи сервер: у першому разі
- * допомагає повтор чи інший браузер, у другому лише час.
+ * допомагає повтор чи інший браузер, у другому лише час. Самі рядки живуть
+ * у каталозі (`coreMessages.pushSubscribe`), не тут.
  */
 export function describePushSubscribeError(err: unknown): string {
   if (isApiError(err)) {
-    if (err.kind === "network") return PUSH_SUBSCRIBE_ERROR_COPY.network;
-    if (err.status === 503) return PUSH_SUBSCRIBE_ERROR_COPY.unavailable;
-    return PUSH_SUBSCRIBE_ERROR_COPY.server;
+    if (err.kind === "network") return copy.network;
+    if (err.status === 503) return copy.unavailable;
+    return copy.server;
   }
   if (err instanceof Error && err.message === PUSH_VAPID_MISSING_MESSAGE) {
-    return PUSH_SUBSCRIBE_ERROR_COPY.unavailable;
+    return copy.unavailable;
   }
-  return PUSH_SUBSCRIBE_ERROR_COPY.browser;
+  return copy.browser;
 }

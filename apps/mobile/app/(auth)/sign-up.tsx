@@ -1,6 +1,12 @@
 import { Link, useRouter } from "expo-router";
 import { useState } from "react";
-import { KeyboardAvoidingView, Platform, Text, View } from "react-native";
+import {
+  KeyboardAvoidingView,
+  Platform,
+  Pressable,
+  Text,
+  View,
+} from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { UserPlus } from "lucide-react-native";
 
@@ -84,10 +90,18 @@ export default function SignUpScreen() {
           <Text className="text-muted text-sm">
             Листа немає за кілька хвилин? Зазирни в «Спам».
           </Text>
-          <Link href="/(auth)/sign-in" className="mt-4 self-center px-1">
-            <Text className="text-accent text-sm font-medium">
-              Повернутися до входу
-            </Text>
+          {/* Ціль ≥44×44 (WCAG 2.5.5): голий `Link` — це лише рядок тексту
+              заввишки ~20 px. */}
+          <Link href="/(auth)/sign-in" asChild>
+            <Pressable
+              testID="auth-sign-up-back-to-sign-in"
+              accessibilityRole="link"
+              className="mt-4 self-center min-h-[44px] justify-center px-3"
+            >
+              <Text className="text-accent text-sm font-medium">
+                Повернутися до входу
+              </Text>
+            </Pressable>
           </Link>
         </View>
       </SafeAreaView>
