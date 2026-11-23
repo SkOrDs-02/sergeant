@@ -218,7 +218,10 @@ describe("Progress page — muscle volume & PR board", () => {
   // П3 → фідбек 2026-11-19: обʼєм по мʼязах — робочі підходи за тиждень,
   // а не внутрішній бал «у. о.», який ні з чим не звірити.
   it("labels the muscle-volume numbers as weekly working sets, not «у. о.»", () => {
-    const at = new Date(NOW - 1 * DAY).toISOString();
+    // Тренування «зараз», а не «вчора»: обʼєм рахується за поточний тиждень
+    // (з понеділка), тож у понеділок «вчора» — це вже минулий тиждень, і
+    // тест падав рівно раз на тиждень.
+    const at = new Date(NOW).toISOString();
     setHooks({
       musclesUk: { chest: "Груди" },
       workouts: [
