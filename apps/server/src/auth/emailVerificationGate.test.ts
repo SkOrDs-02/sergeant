@@ -249,17 +249,27 @@ describe("takeMailSlot", () => {
     ).toBe(true);
   });
 
-  it("флуд новими адресами витісняє найстаріші слоти, а не обнуляє троттл жертви", () => {
+  it("флуд новими адресами у вікні не обнуляє троттл жертви (fail-closed)", () => {
     const now = Date.now();
-    expect(takeMailSlot("k", "oldest@example.com", now)).toBe(true);
-    expect(takeMailSlot("k", "victim@example.com", now + 1)).toBe(true);
-    // Заповнюємо памʼять до межі свіжими адресами в межах того самого вікна.
-    for (let i = 0; i < MAIL_THROTTLE_MAX_KEYS - 1; i += 1) {
-      takeMailSlot("k", `flood-${i}@example.com`, now + 2);
+    expect(takeMailSlot("k", "victim@example.com", now)).toBe(true);
+    // Флуд у межах того самого вікна: більше адрес, ніж вміщує памʼять.
+    for (let i = 0; i < MAIL_THROTTLE_MAX_KEYS + 50; i += 1) {
+      takeMailSlot("k", `flood-${i}@example.com`, now + 1);
     }
-    // Витіснено лише найстаріший слот; жертва далі під троттлом.
-    expect(takeMailSlot("k", "victim@example.com", now + 3)).toBe(false);
-    expect(takeMailSlot("k", "oldest@example.com", now + 3)).toBe(true);
+    // Жертва далі під троттлом, а нові адреси, поки памʼять повна, листа
+    // не отримують.
+    expect(takeMailSlot("k", "victim@example.com", now + 2)).toBe(false);
+    expect(takeMailSlot("k", "fresh@example.com", now + 2)).toBe(false);
+  });
+
+  it("після вікна прострочені слоти звільняються і листи знову йдуть", () => {
+    const now = Date.now();
+    for (let i = 0; i < MAIL_THROTTLE_MAX_KEYS; i += 1) {
+      takeMailSlot("k", `old-${i}@example.com`, now);
+    }
+    const later = now + MAIL_THROTTLE_WINDOW_MS;
+    expect(takeMailSlot("k", "fresh@example.com", later)).toBe(true);
+    expect(takeMailSlot("k", "old-0@example.com", later)).toBe(true);
   });
 });
 

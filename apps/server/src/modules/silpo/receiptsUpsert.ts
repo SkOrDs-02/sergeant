@@ -303,19 +303,15 @@ function isDataLevelSqlState(code: string | null): boolean {
 }
 
 /**
- * Чи лишати після синку слід провалу замість успіху. Так, якщо хоч один чек
- * упав із системної причини, або якщо чеки падали, а записати не вдалось
- * нічого: тоді «синк пройшов» — неправда, і плашка збою має лишитись.
+ * Чи лишати після синку слід провалу замість успіху: так, лише якщо хоч один
+ * чек упав із системної причини (не data-level SQLSTATE). Збій через дані
+ * одного чека (клас 22/23, «отруйний» чек із rel-32) провалом НЕ вважається
+ * навіть тоді, коли нічого не записано: чеки незмінні, тож синк без нових
+ * покупок нормально пише нуль, і один вічно битий чек тримав би плашку
+ * збою й гальмував `last_sync_at` (повтор щогодини замість 8 год, ревʼю PR).
  */
 export function isReceiptWriteDegraded(
   results: readonly ReceiptsWriteResult[],
 ): boolean {
-  let skipped = 0;
-  let written = 0;
-  for (const r of results) {
-    if (r.systemicSkipped > 0) return true;
-    skipped += r.skipped;
-    written += r.receiptsInserted + r.itemsInserted;
-  }
-  return skipped > 0 && written === 0;
+  return results.some((r) => r.systemicSkipped > 0);
 }

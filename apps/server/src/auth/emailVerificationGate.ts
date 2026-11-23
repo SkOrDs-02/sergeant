@@ -60,13 +60,18 @@ export function takeMailSlot(
   const last = lastMailAt.get(key);
   if (last !== undefined && now - last < MAIL_THROTTLE_WINDOW_MS) return false;
   lastMailAt.delete(key);
-  // Витісняємо найстаріші слоти, а не всі разом: колись тут був `clear()`,
-  // і флуд з 10 000 нових адрес обнуляв троттл кожної, тож жертву знову
-  // можна було засипати листами (sec-46, ревʼю PR).
-  for (const k of lastMailAt.keys()) {
-    if (lastMailAt.size < MAIL_THROTTLE_MAX_KEYS) break;
+  // Витісняємо лише слоти, чиє вікно вже минуло. Map тримає порядок
+  // вставки, а ключ щоразу видаляється й ставиться наново, тож перший
+  // запис і є найстаріший: щойно він ще у вікні, решта теж. Колись тут був
+  // `clear()`, потім витіснення найстаріших без огляду на вікно, і обидва
+  // давали флуду з 10 000 нових адрес обнулити троттл жертви (sec-46, ревʼю
+  // PR). Якщо після цього місця нема, лист не шлемо (fail-closed): відповідь
+  // реєстрації однаково нейтральна, а лист «акаунт уже є» лише інформує.
+  for (const [k, at] of lastMailAt) {
+    if (now - at < MAIL_THROTTLE_WINDOW_MS) break;
     lastMailAt.delete(k);
   }
+  if (lastMailAt.size >= MAIL_THROTTLE_MAX_KEYS) return false;
   lastMailAt.set(key, now);
   return true;
 }

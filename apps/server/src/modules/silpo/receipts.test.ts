@@ -819,24 +819,30 @@ describe("pullAndSyncReceipts", () => {
     expect(db.connectionUpdates).toEqual(["synced"]);
   });
 
-  it("помилки даних і жодного записаного чека — теж провал, не успіх (rel-32)", async () => {
+  it("вічно битий чек (клас 22/23) не тримає плашку збою на синках без нових покупок (rel-32)", async () => {
+    // Чеки незмінні: після першого синку синк без нових покупок нормально
+    // пише нуль. Один «отруйний» чек не має перетворювати кожен такий синк
+    // на провал (ревʼю PR: інакше last_sync_at стоїть і синк крутиться
+    // щогодини).
     const db = makeFakeDb({
       failReceiptIds: [OFFLINE_ORDER_RECEIPT_ID],
       failReceiptCode: "22P05",
     });
+    const good = {
+      ...OFFLINE_ORDER,
+      createdAt: "2026-08-11T15:00:00",
+      receiptUrl: "https://receipt.silpo.elkasa.com.ua/r2token",
+    };
     mocks.callWithFreshAccessToken.mockResolvedValue({
       ok: true,
-      data: { offline: [OFFLINE_ORDER], online: [] },
+      data: { offline: [OFFLINE_ORDER, good], online: [] },
     });
+    const deps = { query: db.query, withTransaction: db.withTransaction };
 
-    await pullAndSyncReceipts("user-1", {
-      query: db.query,
-      withTransaction: db.withTransaction,
-    });
+    await pullAndSyncReceipts("user-1", deps);
+    await pullAndSyncReceipts("user-1", deps);
 
-    expect(db.connectionUpdates).toEqual([
-      "failed:SILPO_RECEIPTS_WRITE_FAILED",
-    ]);
+    expect(db.connectionUpdates).toEqual(["synced", "synced"]);
   });
 
   it("синк без пропусків гасить слід провалу", async () => {
