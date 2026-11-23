@@ -1,7 +1,7 @@
 # Аудит 2026-10-01 · Логіка доменів
 
 > **Status:** Active. 67 кластерів (90 знахідок) за першопричиною. Загальний план, метод і обмеження — у [README](./README.md).
-> **Last touched:** 2026-11-23 by @claude (logic-67: чат міняв категорію ручної витрати не там, виправлено); 2026-11-22 by @claude (logic-03 частково: undo для перезапису звички і set_goal, тест-інваріант undo/TOOL_RISK; consume_from_pantry лишився); 2026-11-22 by @claude (рішення власника по решті питань беклогу); 2026-11-21 by @claude (рішення власника по кластерах, раунди 5–10); раніше перевірено 2026-10-02.
+> **Last touched:** 2026-11-23 by @claude (bv-chat-search-date закрито: київська доба в пошуку операцій чату, біля logic-60; logic-67: чат міняв категорію ручної витрати не там, виправлено); 2026-11-22 by @claude (logic-03 частково: undo для перезапису звички і set_goal, тест-інваріант undo/TOOL_RISK; consume_from_pantry лишився); 2026-11-22 by @claude (рішення власника по решті питань беклогу); 2026-11-21 by @claude (рішення власника по кластерах, раунди 5–10); раніше перевірено 2026-10-02.
 > **Next review:** 2027-01-21
 > **Spec-lint:** skip. Реєстр знахідок аудиту, не специфікація реалізації.
 
@@ -3517,6 +3517,7 @@ Computed with Intl Europe/Kyiv (dst.mjs): 2027-03-29T00:30+03:00 gives today 202
 ### `logic-60` [low] UTC-день замість дня користувача в дедупі нагадування про імпорт і в датах назв файлів експорту
 
 - **Стан:** відкрито
+- **Суміжне, закрито:** `bv-chat-search-date` (medium, HubChat-пошук Фініка) виправлено в гілці `backlog/bv-chat-search-date` (2026-11-23): `toIsoDay` у `chatActions/finykActions/search.ts` бере київську добу UTC-миті ручної витрати, як список Операцій, а не UTC-префікс, тож `find_transaction` і фільтр «вчора» більше не губляться в 00:00–03:00 за Києвом (тести опівночі взимку, влітку і в доби переходу часу); дефект був і на `main`.
 - **Перевірка:** підтверджено · **Зусилля:** S · **Швидкий виграш** · **Область:** web: Фінік, налаштування, бекап
 - **Де:** apps/web/src/modules/finyk/pages/overview/useImportReminder.ts:167; apps/web/src/core/settings/DataExportSection.tsx:15; apps/web/src/core/hub/HubBackupPanel.tsx:83; apps/web/src/core/profile/MemoryBankSection.tsx:127
 - **Першопричина:** Дату беруть як new Date(...).toISOString().slice(0, 10), тобто UTC-день, а не день пристрою чи Київ, як вимагає AGENTS.md.

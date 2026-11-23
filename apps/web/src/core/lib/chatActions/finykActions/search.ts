@@ -72,6 +72,14 @@ export function hasFinykTxKey(
 
 export function toIsoDay(value: unknown): string {
   if (typeof value === "string" && /^\d{4}-\d{2}-\d{2}/.test(value)) {
+    // Голий `YYYY-MM-DD` уже є календарним ключем.
+    if (value.length === 10) return value;
+    // Ручна витрата зберігає UTC-мить ("2026-11-22T23:52:01Z" = 01:52
+    // 23-го за Києвом). UTC-префікс дав би вчорашній день, тож беремо
+    // київську добу миті, як список Операцій (`manualExpenseToTransaction`
+    // → `time` → `getKyivDayKey`), інакше чат і список розходяться.
+    const ms = Date.parse(value);
+    if (Number.isFinite(ms)) return getKyivDayKey(new Date(ms));
     return value.slice(0, 10);
   }
   if (typeof value === "number" && Number.isFinite(value)) {
