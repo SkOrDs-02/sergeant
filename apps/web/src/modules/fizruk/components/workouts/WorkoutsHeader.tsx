@@ -1,6 +1,8 @@
 import { pluralExercises } from "@sergeant/shared";
 import { Button } from "@shared/components/ui/Button";
 import { Icon } from "@shared/components/ui/Icon";
+import { useFirstCloudPullPhase } from "@shared/hooks/useFirstCloudPullPhase";
+import { coreMessages } from "@shared/i18n/uk.core";
 import type { Workout } from "@sergeant/fizruk-domain";
 import type { WorkoutsView } from "../../pages/Workouts.types";
 
@@ -48,6 +50,15 @@ export function WorkoutsHeader({
             : "Журнал"
           : "Тренування";
 
+  // bv-first-pull-gaps: поки копія ще не наздогнала акаунт, «Перше
+  // тренування – попереду» неправда: журнал просто ще їде з хмари.
+  const firstPullPhase = useFirstCloudPullPhase();
+  const emptySubtitle =
+    firstPullPhase === "loading"
+      ? coreMessages.firstCloudPull.loadingTitle
+      : firstPullPhase === "failed"
+        ? coreMessages.firstCloudPull.failedTitle
+        : "Перше тренування – попереду";
   const homeSubtitle =
     activeWorkout && !activeWorkout.endedAt
       ? `Активне · ${(activeWorkout.items || []).length} ${pluralExercises(
@@ -55,7 +66,7 @@ export function WorkoutsHeader({
         )}`
       : finishedCount > 0
         ? `Завершено: ${finishedCount}`
-        : "Перше тренування – попереду";
+        : emptySubtitle;
 
   return (
     <div className="flex items-center gap-3 mb-3">

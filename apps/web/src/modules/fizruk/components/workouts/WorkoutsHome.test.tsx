@@ -1,7 +1,19 @@
 // @vitest-environment jsdom
 import { describe, it, expect, vi, beforeEach } from "vitest";
-import { render, screen, fireEvent, cleanup } from "@testing-library/react";
+import {
+  act,
+  render,
+  screen,
+  fireEvent,
+  cleanup,
+} from "@testing-library/react";
 import { WorkoutsHome, RecentWorkoutSummary } from "./WorkoutsHome";
+import {
+  __resetInitialPullStateForTests,
+  markFirstPullPending,
+  noteFirstPullFailure,
+} from "../../../../core/syncEngine/initialPullState";
+import { coreMessages } from "@shared/i18n/uk.core";
 
 const NOW = "2026-07-01T10:00:00.000Z";
 
@@ -393,5 +405,37 @@ describe("RecentWorkoutSummary", () => {
     // і картка після одного підходу писала «1 сетів».
     expect(screen.getByText(/2 підходи/)).toBeInTheDocument();
     expect(screen.getByText(/45 хв/)).toBeInTheDocument();
+  });
+});
+
+describe("WorkoutsHome під час першого pull (bv-first-pull-gaps)", () => {
+  beforeEach(() => {
+    cleanup();
+    __resetInitialPullStateForTests();
+  });
+
+  it("порожні «Останні тренування»: завантаження, потім помилка з «Ще раз»", () => {
+    render(
+      <WorkoutsHome
+        activeWorkout={null}
+        activeDuration={null}
+        recentWorkouts={[]}
+        {...baseHandlers()}
+      />,
+    );
+    expect(screen.getByText(/зʼявляться останні сесії/)).toBeInTheDocument();
+
+    act(() => markFirstPullPending());
+    expect(
+      screen.getByText(coreMessages.firstCloudPull.loadingTitle),
+    ).toBeInTheDocument();
+    expect(screen.queryByText(/зʼявляться останні сесії/)).toBeNull();
+
+    act(() => {
+      for (let i = 0; i < 4; i += 1) noteFirstPullFailure(3);
+    });
+    expect(
+      screen.getByRole("button", { name: coreMessages.firstCloudPull.retry }),
+    ).toBeInTheDocument();
   });
 });

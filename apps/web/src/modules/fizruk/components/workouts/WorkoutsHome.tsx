@@ -8,6 +8,7 @@ import { setsCountLabel } from "../session/sessionLib";
 import { formatWorkoutItemsCount } from "../../lib/workoutItemsLabel";
 import { Button } from "@shared/components/ui/Button";
 import { Card } from "@shared/components/ui/Card";
+import { FirstCloudPullGate } from "@shared/components/ui/EmptyState";
 import { messages } from "@shared/i18n/uk";
 import { formatDateShort } from "@shared/lib/time/formatDate";
 import {
@@ -214,9 +215,12 @@ export function WorkoutsHome({
             ))}
           </ul>
         ) : (
-          <div className="py-3 text-style-body text-subtle text-center">
-            Після першого завершеного тренування тут зʼявляться останні сесії.
-          </div>
+          // bv-first-pull-gaps: на новому пристрої журнал ще їде з хмари.
+          <FirstCloudPullGate compact>
+            <div className="py-3 text-style-body text-subtle text-center">
+              Після першого завершеного тренування тут зʼявляться останні сесії.
+            </div>
+          </FirstCloudPullGate>
         )}
       </Card>
 

@@ -11,6 +11,12 @@ import { openHubModuleWithAction } from "@shared/lib/modules/hubNav";
 import { safeReadStringLS } from "@shared/lib/storage/storage";
 import { isFinykBalanceHidden } from "../../modules/finyk/lib/balanceVisibility";
 import { HubSpendHero } from "./HubSpendHero";
+import {
+  __resetInitialPullStateForTests,
+  markFirstPullPending,
+  noteFirstPullFailure,
+} from "../syncEngine/initialPullState";
+import { coreMessages } from "@shared/i18n/uk.core";
 
 vi.mock("@shared/lib/storage/storage", () => ({ safeReadStringLS: vi.fn() }));
 vi.mock(
@@ -25,6 +31,7 @@ vi.mock("@shared/lib/modules/hubNav", () => ({
 }));
 afterEach(() => {
   cleanup();
+  __resetInitialPullStateForTests();
   vi.mocked(openHubModuleWithAction).mockClear();
   vi.useRealTimers();
   vi.mocked(isFinykBalanceHidden).mockReturnValue(false);
@@ -129,5 +136,46 @@ describe("HubSpendHero money presentation", () => {
     const hero = screen.getByTestId("hub-spend-hero");
     expect(hero).not.toHaveTextContent(/1\s234|4\s321|3\s087/);
     expect(hero).toHaveTextContent("••••");
+  });
+});
+
+describe("HubSpendHero під час першого pull (bv-first-pull-gaps)", () => {
+  const copy = coreMessages.firstCloudPull;
+
+  it("нуль дня до кінця першого pull: «Завантажую з хмари…», а не «0 ₴»", () => {
+    vi.mocked(safeReadStringLS).mockReturnValue(
+      JSON.stringify({ todaySpent: 0, dayPlan: 1000, todayPoints: [] }),
+    );
+    render(<HubSpendHero />);
+    expect(screen.getByText("0")).toBeInTheDocument();
+
+    act(() => markFirstPullPending());
+    expect(screen.getByText(copy.loadingTitle)).toBeInTheDocument();
+    expect(screen.queryByText("0")).toBeNull();
+  });
+
+  it("вичерпані повтори: помилка з «Ще раз»", () => {
+    vi.mocked(safeReadStringLS).mockReturnValue(
+      JSON.stringify({ todaySpent: 0, dayPlan: null, todayPoints: [] }),
+    );
+    render(<HubSpendHero />);
+    act(() => {
+      markFirstPullPending();
+      for (let i = 0; i < 4; i += 1) noteFirstPullFailure(3);
+    });
+    expect(screen.getByText(copy.failedTitle)).toBeInTheDocument();
+    expect(
+      screen.getByRole("button", { name: copy.retry }),
+    ).toBeInTheDocument();
+  });
+
+  it("ненульові витрати під час pull показуються як є", () => {
+    vi.mocked(safeReadStringLS).mockReturnValue(
+      JSON.stringify({ todaySpent: 250, dayPlan: null, todayPoints: [] }),
+    );
+    render(<HubSpendHero />);
+    act(() => markFirstPullPending());
+    expect(screen.queryByText(copy.loadingTitle)).toBeNull();
+    expect(screen.getByText("250")).toBeInTheDocument();
   });
 });

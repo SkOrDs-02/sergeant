@@ -23,6 +23,7 @@ import {
 import { refreshCachesAfterPull } from "./refreshCachesAfterPull.js";
 import { classifyTickError, readOnlineStatus } from "./tickErrorReport.js";
 import {
+  getFirstPullPhase,
   markFirstPullPending,
   markFirstPullSettled,
   markInitialPullComplete,
@@ -272,11 +273,26 @@ function rateLimitWaitMs(error: unknown): number | null {
     retryAfterMs?: unknown;
   };
   if (status !== 429 && status !== 503) return null;
+  // AI-CONTEXT (bv-first-pull-gaps): на першому pull 503 не перечікуємо в
+  // тіку. Інакше кожен тік ковтав по три паузи, і до «Не вдалося» людина
+  // чекала ~16 запитів за хвилину з порожнім станом, а 500 давав це за 4.
+  // Тепер 503 одразу йде в бюджет повторів першого pull, а `Retry-After`
+  // шанує `scheduleFirstPullRetry`. 429 і далі перечікуємо: це справжній
+  // рейт-ліміт, і довгий догін має доходити до кінця.
+  if (status === 503 && getFirstPullPhase() === "loading") return null;
   const requested =
     typeof retryAfterMs === "number" && retryAfterMs > 0
       ? retryAfterMs
       : DEFAULT_RATE_LIMIT_WAIT_MS;
   return Math.min(requested, MAX_RATE_LIMIT_WAIT_MS);
+}
+
+/** `Retry-After` з помилки (мс, зі стелею), або 0, якщо сервер його не дав. */
+function retryAfterFloorMs(error: unknown): number {
+  if (typeof error !== "object" || error === null) return 0;
+  const { retryAfterMs } = error as { retryAfterMs?: unknown };
+  if (typeof retryAfterMs !== "number" || retryAfterMs <= 0) return 0;
+  return Math.min(retryAfterMs, MAX_RATE_LIMIT_WAIT_MS);
 }
 
 export function createSyncEngineReaderRuntime(
@@ -563,7 +579,7 @@ export function createSyncEngineReaderRuntime(
         if (verdict.report) {
           deps.captureException?.(error, verdict.context);
         }
-        scheduleFirstPullRetry();
+        scheduleFirstPullRetry(error);
         throw error;
       })
       .finally(() => {
@@ -585,11 +601,15 @@ export function createSyncEngineReaderRuntime(
     retryHandle = null;
   };
 
-  /** Короткий повтор невдалого першого pull (2/5/15 с), далі фаза `failed`. */
-  function scheduleFirstPullRetry(): void {
+  /**
+   * Короткий повтор невдалого першого pull (2/5/15 с), далі фаза `failed`.
+   * Сервер, що попросив довшу паузу (`Retry-After`), її отримує.
+   */
+  function scheduleFirstPullRetry(error: unknown): void {
     const failures = noteFirstPullFailure(FIRST_PULL_RETRY_DELAYS_MS.length);
-    const delay = FIRST_PULL_RETRY_DELAYS_MS[failures - 1];
-    if (!started || delay === undefined) return;
+    const base = FIRST_PULL_RETRY_DELAYS_MS[failures - 1];
+    if (!started || base === undefined) return;
+    const delay = Math.max(base, retryAfterFloorMs(error));
     clearFirstPullRetry();
     retryHandle = (deps.setTimeout ?? ((h, ms) => setTimeout(h, ms)))(() => {
       retryHandle = null;

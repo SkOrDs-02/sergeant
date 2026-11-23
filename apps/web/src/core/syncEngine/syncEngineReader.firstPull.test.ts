@@ -143,6 +143,38 @@ describe("перший pull: бекоф і фаза порожнього ста�
     expect(timers).toHaveLength(0);
   });
 
+  it("503 на першому pull іде в бюджет повторів: failed за 4 запити, а не за 16", async () => {
+    const outage = Object.assign(new Error("503"), { status: 503 });
+    const pull = vi.fn<ReaderDeps["pull"]>().mockRejectedValue(outage);
+    const { runtime, timers } = makeRuntime({ seeded: false, pull });
+
+    runtime.start();
+    await settle();
+    // Без паузи рейт-ліміту в тіку: один запит, далі повтор першого pull.
+    expect(pull).toHaveBeenCalledTimes(1);
+    expect(timers.map((t) => t.ms)).toEqual([2_000]);
+    for (let i = 0; i < 3; i += 1) {
+      timers[i]!.handler();
+      await settle();
+    }
+    expect(getFirstPullPhase()).toBe("failed");
+    expect(pull).toHaveBeenCalledTimes(4);
+  });
+
+  it("503 з Retry-After на першому pull: повтор не раніше, ніж просить сервер", async () => {
+    const outage = Object.assign(new Error("503"), {
+      status: 503,
+      retryAfterMs: 30_000,
+    });
+    const pull = vi.fn<ReaderDeps["pull"]>().mockRejectedValue(outage);
+    const { runtime, timers } = makeRuntime({ seeded: false, pull });
+
+    runtime.start();
+    await settle();
+    expect(pull).toHaveBeenCalledTimes(1);
+    expect(timers.map((t) => t.ms)).toEqual([30_000]);
+  });
+
   it("stop() знімає запланований повтор і скидає фазу", async () => {
     const pull = vi
       .fn<ReaderDeps["pull"]>()

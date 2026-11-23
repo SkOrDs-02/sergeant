@@ -1,7 +1,7 @@
 # Аудит 2026-10-01 · Цілісність даних і синхронізація
 
 > **Status:** Active. 82 кластери (129 знахідок) за першопричиною. Загальний план, метод і обмеження — у [README](./README.md).
-> **Last touched:** 2026-11-22 by @claude (rv-sync-clock закрито: обрізана мітка повертається клієнту, `clock_skew` не палить спроб); 2026-11-22 by @claude (data-39 закрито: `add_program_day` прибрано в #1700); 2026-11-22 by @claude (рішення власника по решті питань беклогу); 2026-11-21 by @claude (`data-02`: переграш для застряглих пристроїв зроблено); 2026-11-21 by @claude (data-51: серверна обрізка `client_ts`, `clock_skew` → `retry`); 2026-11-21 by @claude (рішення власника по кластерах, раунди 5–10); раніше перевірено 2026-10-02.
+> **Last touched:** 2026-11-23 by @claude (bv-first-pull-gaps закрито: Фізрук, Активи й hero хаба на фазі першого pull, 503 у бюджеті повторів); 2026-11-22 by @claude (rv-sync-clock закрито: обрізана мітка повертається клієнту, `clock_skew` не палить спроб); 2026-11-22 by @claude (data-39 закрито: `add_program_day` прибрано в #1700); 2026-11-22 by @claude (рішення власника по решті питань беклогу); 2026-11-21 by @claude (`data-02`: переграш для застряглих пристроїв зроблено); 2026-11-21 by @claude (data-51: серверна обрізка `client_ts`, `clock_skew` → `retry`); 2026-11-21 by @claude (рішення власника по кластерах, раунди 5–10); раніше перевірено 2026-10-02.
 > **Next review:** 2027-01-21
 > **Spec-lint:** skip. Реєстр знахідок аудиту, не специфікація реалізації.
 
@@ -4678,6 +4678,7 @@ purgeStaleTerminalOutbox(client, { olderThanDays: 30 }) без userId; пред�
 
 - **Стан:** закрито в гілці `backlog/data-59-60` (2026-11-21): reader повторює перший pull копії без `replicaBootstrap = done` через 2/5/15 с і веде фазу `idle`/`loading`/`failed` в `initialPullState.ts`; `ModuleEmptyState` і порожній список звичок `RoutineCalendarPanel` через `FirstCloudPullGate` показують «Завантажую з хмари…», після останнього повтору помилку з «Ще раз» (`requestCloudPull`). Наповнена копія лишається на звичайному порожньому стані й інтервалі 60 с (`syncEngineReader.firstPull.test.ts`, `EmptyState.firstCloudPull.test.tsx`). Залишок: помилки pull в OfflineBanner/SyncStatusSheet, комора й далі на власному `usePantryFirstPullPending`
 - **Рішення власника 2026-11-21:** лише клієнтський стан «перший pull» з повторами 2/5/15 с, без міграції (разом із `data-59`).
+- **Браузерна перевірка (`bv-first-pull-gaps`):** закрито в гілці `backlog/bv-first-pull-gaps` (2026-11-23): підзаголовок і «Останні тренування» Фізрука, «Загальний капітал» Активів і hero хаба «Витрати сьогодні» з нулем теж ідуть через `useFirstCloudPullPhase`/`FirstCloudPullGate` («Завантажую з хмари…», після повторів помилка з «Ще раз»), а 503 на першому pull більше не перечікується в тіку як рейт-ліміт: рахується в бюджет повторів (`failed` за 4 запити, як 500), `Retry-After` подовжує паузу повтору (`syncEngineReader.firstPull.test.ts` і тести поверхонь).
 - **Перевірка:** підтверджено · **Зусилля:** M · **Область:** web: syncEngine (syncEngineReader)
 - **Де:** apps/web/src/core/syncEngine/singleton.ts:243; apps/web/src/core/syncEngine/syncEngineReader.ts:287-293
 - **Першопричина:** syncEngineReader.start() робить один tick і далі чекає інтервал 60 с ±20% без короткого бекофу; стану «перший pull ще не вдався» немає, а індикатор синку відображає лише outbox.
