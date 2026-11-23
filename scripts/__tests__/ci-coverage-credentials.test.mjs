@@ -2,7 +2,7 @@
 //
 // Shape-regression test для джоби `coverage` у `.github/workflows/ci.yml`.
 //
-// Аудит безпеки 2026-08-04, §1.0 п.5: `coverage` має `contents: write`, а
+// Аудит безпеки 2026-08-04, §1.0 п.5: `coverage` мала `contents: write`, а
 // `actions/checkout` ішов із дефолтним `persist-credentials: true`. Чекаут
 // тоді кладе GITHUB_TOKEN у `.git/config` (http.extraheader), і наступний
 // крок `pnpm install` виконує postinstall-скрипти залежностей. Отруєний
@@ -16,7 +16,12 @@
 //   2. регрес — push-крок бере токен зі свого `env:` і передає його git-у
 //      явно (`-c http...extraheader`), а не покладається на `.git/config`;
 //   3. edge case — жоден крок ДО push-кроку (install, тести, ратчет) не
-//      отримує токен.
+//      отримує токен;
+//   4. найменші права — `contents: write` джоба тримає лише тоді, коли
+//      push-крок узагалі може виконатись. Push-крок вимагає `pull_request`,
+//      а джоба з 2026-09-30 біжить тільки за розкладом і вручну, тож
+//      дозвіл на запис нікому не потрібен і лише розширює поверхню для
+//      postinstall-скриптів (рев'ю 2026-11-23).
 //
 // Парсер навмисно рядковий і без залежностей — той самий компроміс, що й
 // у сусідніх shape-тестах (ci-bundle-budget-gates, ci-dedupe-gate).
@@ -88,11 +93,6 @@ const TOKEN_REF_RE = /\$\{\{\s*(secrets\.GITHUB_TOKEN|github\.token)\s*\}\}/;
 
 test("happy path: чекаут джоби `coverage` не персистить токен у .git/config", () => {
   assert.ok(COVERAGE_JOB, "очікується джоба `coverage:` під `jobs:`");
-  assert.match(
-    COVERAGE_JOB,
-    /^ {6}contents: write\s*$/m,
-    "тест писався під `contents: write` у `coverage`; якщо дозвіл зняли, перегляньте тест",
-  );
 
   const checkouts = STEPS.filter((s) => CHECKOUT_RE.test(s));
   assert.ok(checkouts.length >= 1, "очікується крок actions/checkout");
@@ -101,7 +101,7 @@ test("happy path: чекаут джоби `coverage` не персистить �
       step,
       /^\s+persist-credentials:\s*false\s*$/m,
       "actions/checkout у `coverage` мусить мати `persist-credentials: false`: " +
-        "джоба має `contents: write`, а `pnpm install` після чекауту виконує " +
+        "push-крок отримує токен явно, а `pnpm install` після чекауту виконує " +
         "postinstall-скрипти, які інакше прочитають токен із .git/config (аудит 2026-08-04 §1.0)",
     );
   }
@@ -164,5 +164,53 @@ test("edge case: жоден крок до push-кроку не бачить GITH
     jobHeader,
     TOKEN_REF_RE,
     "GITHUB_TOKEN не має стояти в `env:` усієї джоби `coverage`",
+  );
+});
+
+/** Умова `if:` на рівні джоби (4 пробіли), однорядкова або `>-`-блок. */
+function jobCondition(jobBlock) {
+  const lines = jobBlock.split("\n");
+  const idx = lines.findIndex((l) => /^ {4}if:/.test(l));
+  if (idx === -1) return null;
+  const parts = [lines[idx].replace(/^ {4}if:\s*(>-?|\|-?)?\s*/, "")];
+  for (let i = idx + 1; i < lines.length && /^ {6,}\S/.test(lines[i]); i++) {
+    parts.push(lines[i].trim());
+  }
+  return parts.join(" ").trim();
+}
+
+test("найменші права: `contents: write` лише коли push-крок може виконатись", () => {
+  assert.ok(COVERAGE_JOB, "очікується джоба `coverage:` під `jobs:`");
+  const push = STEPS.find((s) => PUSH_STEP_RE.test(s));
+  assert.ok(push, "очікується крок «Push coverage-ratchet baseline bump»");
+  assert.match(
+    push,
+    /github\.event_name == 'pull_request'/,
+    "тест писався під push-крок, що біжить лише на pull_request; змінилась умова, перегляньте тест",
+  );
+
+  const condition = jobCondition(COVERAGE_JOB);
+  const runsOnPullRequest =
+    condition === null || /pull_request/.test(condition);
+  const jobHeader = COVERAGE_JOB.split(/^ {4}steps:\s*$/m)[0];
+
+  if (runsOnPullRequest) {
+    assert.match(
+      jobHeader,
+      /^ {6}contents: write\s*$/m,
+      "джоба біжить на pull_request, тож push-кроку потрібен `contents: write`",
+    );
+    return;
+  }
+  assert.match(
+    jobHeader,
+    /^ {6}contents: read\s*$/m,
+    `джоба \`coverage\` не біжить на pull_request (if: ${condition}), push-крок ` +
+      "ніколи не виконується, тож права мають бути `contents: read`",
+  );
+  assert.doesNotMatch(
+    jobHeader,
+    /^ {6}contents: write\s*$/m,
+    "`contents: write` у джобі, де push-крок недосяжний, лише дає токен із правом запису postinstall-скриптам",
   );
 });

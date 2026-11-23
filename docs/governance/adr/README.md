@@ -1,6 +1,6 @@
 # Architecture Decision Records (ADR) — реєстр рішень
 
-> **Last touched:** 2026-10-23 by @claude (ADR-0105: байтовий бюджет pull і retention `applied`-оп-ів, ADR-0106: reconcile за хешем стану). **Next review:** 2027-01-23.
+> **Last touched:** 2026-11-23 by @claude (шапку доповнено пропущеним записом 2026-11-21: ADR-0003 прийнято в нейтральній до провайдера редакції); 2026-10-23 by @claude (ADR-0105: байтовий бюджет pull і retention `applied`-оп-ів, ADR-0106: reconcile за хешем стану). **Next review:** 2027-01-23.
 > **Status:** Active
 
 > Архітектурні рішення Sergeant. Кожен ADR фіксує **рішення з контекстом і альтернативами**, щоб через рік не довелось гадати «чому ми тут зробили так, а не інакше».

@@ -463,7 +463,7 @@
       "title": "`AI_QUOTA_FOUNDER_IDS` — необмежений байпас без жодної перевірки",
       "severity": "unrated",
       "source": "docs/work/specs/audits/ai-pipeline-2026-08-05.md",
-      "status": "fixed-pending-verification",
+      "status": "open",
       "history": [
         {
           "at": "2026-09-05",
@@ -474,6 +474,11 @@
           "at": "2026-11-22",
           "event": "fixed",
           "note": "Тріаж кодом 2026-11-22: закрито 2026-09-29. AI_QUOTA_FOUNDER_IDS валідується founderIdsFromEnv при парсингу env (apps/server/src/env/env.ts:247, envHelpers.ts:161); тест envHelpers.test.ts. Сам байпас лишається за задумом."
+        },
+        {
+          "at": "2026-11-23",
+          "event": "retriaged",
+          "note": "Рев'ю 2026-11-23: виправлено лише формат (founderIdsFromEnv). isFounderUser в apps/server/src/modules/chat/aiQuota.ts і getUserPlan.ts читають сирий process.env, строку дії байпасу немає, тож забутий id лишається вічним безлімітом. Частково виправлено, повернуто в open."
         }
       ],
       "sourceAnchor": "B17 — `AI_QUOTA_FOUNDER_IDS` — необмежений байпас без жодної перевірки"

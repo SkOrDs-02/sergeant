@@ -610,14 +610,18 @@ jobs:
     if: github.event_name == 'schedule' || github.event_name == 'workflow_dispatch'
     runs-on: ubuntu-latest
     permissions:
-      # contents: write — потрібен КРОКУ «Push coverage-ratchet baseline bump»,
-      # який комітить піднятий baseline назад у PR-гілку (same-repo PRs only).
-      contents: write
+      # contents: read. Крок «Push coverage-ratchet baseline bump» нижче
+      # біжить лише на pull_request, а джоба з 2026-09-30 біжить тільки за
+      # розкладом і вручну, тож push недосяжний і право запису нікому не
+      # потрібне (рев'ю 2026-11-23). Повернеш джобу на PR — поверни й
+      # `contents: write`; пару стереже
+      # `scripts/__tests__/ci-coverage-credentials.test.mjs`.
+      contents: read
     steps:
       # actions/checkout v6.0.2 (SHA-pinned for supply-chain hardening)
       - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd
         with:
-          # Аудит 2026-08-04 §1.0 п.5: джоба має `contents: write`, а
+          # Аудит 2026-08-04 §1.0 п.5: на PR джоба мала `contents: write`, а
           # `pnpm install` нижче виконує postinstall-скрипти залежностей.
           # З дефолтним `persist-credentials: true` токен лежав би в
           # `.git/config`, і отруєний devDependency забрав би його з правом

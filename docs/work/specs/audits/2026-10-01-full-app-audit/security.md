@@ -1,7 +1,7 @@
 # Аудит 2026-10-01 · Безпека та доступ
 
 > **Status:** Active. 63 кластери (97 знахідок) за першопричиною. Загальний план, метод і обмеження — у [README](./README.md).
-> **Last touched:** 2026-11-22 by @claude (sec-39: клас 23 іде в Sentry рівня warning); 2026-11-22 by @claude (рішення власника по решті питань беклогу); 2026-11-21 by @claude (рішення власника по кластерах, раунди 5–10); раніше перевірено 2026-10-02.
+> **Last touched:** 2026-11-23 by @claude (sec-53: IP прод-сервера прибрано з доказів sec-01 і XFF); 2026-11-22 by @claude (sec-39: клас 23 іде в Sentry рівня warning); 2026-11-22 by @claude (рішення власника по решті питань беклогу); 2026-11-21 by @claude (рішення власника по кластерах, раунди 5–10); раніше перевірено 2026-10-02.
 > **Next review:** 2027-01-21
 > **Spec-lint:** skip. Реєстр знахідок аудиту, не специфікація реалізації.
 
@@ -57,7 +57,7 @@ PROD_ORIGINS = ["https://sergeant.vercel.app", "https://sergeant.2dmanager.com.u
 **Верифікатор:**
 
 ```text
-Відтворено повністю, і в коді, і наживо. cors.ts:23-27 тримає `https://sergeant.2dmanager.com.ua` у PROD_ORIGINS, тобто в проді він теж є. setCorsHeaders (cors.ts:129-132) відповідає на нього ACAO=origin і ACAC=true. Домен ніхто не контролює: dns.resolve дає ENOTFOUND для 2dmanager.com.ua, sergeant.2dmanager.com.ua і www, а dns.google і cloudflare-dns обидва повертають NXDOMAIN із SOA зони com.ua. WHOIS hostmaster.ua для 2dmanager.com.ua: «ДОМЕННЕ ІМ'Я ВІЛЬНЕ … доступне для реєстрації». Для порівняння, sergeant.com.ua зареєстровано 2026-08-27 з NS на vercel-dns, тобто це домен власника. У проді API на api.sergeant.com.ua (167.233.98.92), а BETTER_AUTH_URL там https, тож getAdvancedCookieOptions ставить SameSite=None; Secure, і cookie їде в cross-site credentialed fetch. Нейтралізатора не знайшов. Better Auth originCheck (getTrustedOrigins) покриває лише POST /api/auth/*, GET його не стосується. Глобальний CSRF-гейт знімається, бо preflight від цього origin проходить і X-Requested-With дозволено. Обмеження експлуатації: потрібен браузер, що шле third-party SameSite=None cookie, тобто Chrome або Edge за замовчуванням. Safari ITP такі cookie блокує, Firefox TCP їх партиціонує. Цього д …[обрізано]
+Відтворено повністю, і в коді, і наживо. cors.ts:23-27 тримає `https://sergeant.2dmanager.com.ua` у PROD_ORIGINS, тобто в проді він теж є. setCorsHeaders (cors.ts:129-132) відповідає на нього ACAO=origin і ACAC=true. Домен ніхто не контролює: dns.resolve дає ENOTFOUND для 2dmanager.com.ua, sergeant.2dmanager.com.ua і www, а dns.google і cloudflare-dns обидва повертають NXDOMAIN із SOA зони com.ua. WHOIS hostmaster.ua для 2dmanager.com.ua: «ДОМЕННЕ ІМ'Я ВІЛЬНЕ … доступне для реєстрації». Для порівняння, sergeant.com.ua зареєстровано 2026-08-27 з NS на vercel-dns, тобто це домен власника. У проді API на api.sergeant.com.ua (IP прод-сервера), а BETTER_AUTH_URL там https, тож getAdvancedCookieOptions ставить SameSite=None; Secure, і cookie їде в cross-site credentialed fetch. Нейтралізатора не знайшов. Better Auth originCheck (getTrustedOrigins) покриває лише POST /api/auth/*, GET його не стосується. Глобальний CSRF-гейт знімається, бо preflight від цього origin проходить і X-Requested-With дозволено. Обмеження експлуатації: потрібен браузер, що шле third-party SameSite=None cookie, тобто Chrome або Edge за замовчуванням. Safari ITP такі cookie блокує, Firefox TCP їх партиціонує. Цього д …[обрізано]
 ```
 
 **Додаткові докази верифікатора:**
@@ -1882,7 +1882,7 @@ Bearer fail-closed (503 без INTERNAL_API_KEY, constant-time), це корек
 **Докази:**
 
 ```text
-Локально (прямий доступ, trust proxy=1) запит з X-Forwarded-For: 10.11.12.13 записано з іншим ipHash (551ddf8b5dff17e9 проти 12ca17b49af22894 у решти 267 node-запитів), тобто req.ip контролює клієнт. За Traefik, який дописує реальну IP, це безпечно. Але будь-який шлях до контейнера в обхід Traefik (опублікований порт 3000 на 167.233.98.92, помилковий TRUST_PROXY>фактичних hop-ів) дозволяє пройти IP-гейт /api/push/send і /api/internal з `X-Forwarded-For: 127.0.0.1` і обходити per-IP лімітери.
+Локально (прямий доступ, trust proxy=1) запит з X-Forwarded-For: 10.11.12.13 записано з іншим ipHash (551ddf8b5dff17e9 проти 12ca17b49af22894 у решти 267 node-запитів), тобто req.ip контролює клієнт. За Traefik, який дописує реальну IP, це безпечно. Але будь-який шлях до контейнера в обхід Traefik (опублікований порт 3000 на IP прод-сервера, помилковий TRUST_PROXY>фактичних hop-ів) дозволяє пройти IP-гейт /api/push/send і /api/internal з `X-Forwarded-For: 127.0.0.1` і обходити per-IP лімітери.
 ```
 
 **Відтворення:**
