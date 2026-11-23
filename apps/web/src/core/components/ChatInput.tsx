@@ -92,13 +92,20 @@ export function ChatInput({
     rawToggleMic();
   }, [rawToggleMic]);
 
+  // Розміри тут свідомо в px, а не в rem. Кнопки — іконки фіксованого
+  // розміру з 44px floor, а rem-утиліти (`w-11`) при 200% кореневого
+  // тексту роздували кожну до 88px. Разом із нативною мінімальною шириною
+  // поля (~20 символів, теж росте з текстом) рядок переповнювався, і
+  // «Надіслати» опинялась за правим краєм екрана (bv-chat-large-text).
+  // `min-w-0` на полі знімає його нативний мінімум: дефіцит забирає поле,
+  // а не кнопки.
   return (
     <div className="flex gap-2 px-4 pt-2 pb-4 shrink-0">
       <Tooltip content="Список команд (/help)" placement="top-center">
         <button
           type="button"
           onClick={onHelp}
-          className="w-11 h-11 rounded-lg flex items-center justify-center shrink-0 transition-[background-color,border-color,color,opacity] border bg-panel border-line text-muted hover:text-text hover:border-muted focus:outline-none focus-visible:ring-2 focus-visible:ring-focus/45 focus-visible:ring-offset-2 focus-visible:ring-offset-panel"
+          className="size-[44px] rounded-lg flex items-center justify-center shrink-0 transition-[background-color,border-color,color,opacity] border bg-panel border-line text-muted hover:text-text hover:border-muted focus:outline-none focus-visible:ring-2 focus-visible:ring-focus/45 focus-visible:ring-offset-2 focus-visible:ring-offset-panel"
           aria-label="Команди: показати довідку"
           title="Команди"
         >
@@ -123,7 +130,7 @@ export function ChatInput({
       <input
         ref={inputRef}
         className={cn(
-          "flex-1 bg-panel border border-control rounded-lg px-4 py-3 text-style-body text-text placeholder:text-subtle outline-none disabled:opacity-50",
+          "flex-1 min-w-0 bg-panel border border-control rounded-lg px-4 py-3 text-style-body text-text placeholder:text-subtle outline-none disabled:opacity-50",
           fieldFocus(false),
         )}
         placeholder={
@@ -150,7 +157,7 @@ export function ChatInput({
             stopSpeaking();
             setSpeaking(false);
           }}
-          className="w-11 h-11 rounded-lg flex items-center justify-center shrink-0 transition-[background-color,border-color,color,opacity] border bg-warning/15 border-warning text-warning-strong dark:text-warning motion-safe:animate-pulse focus:outline-none focus-visible:ring-2 focus-visible:ring-focus/45 focus-visible:ring-offset-2 focus-visible:ring-offset-panel"
+          className="size-[44px] rounded-lg flex items-center justify-center shrink-0 transition-[background-color,border-color,color,opacity] border bg-warning/15 border-warning text-warning-strong dark:text-warning motion-safe:animate-pulse focus:outline-none focus-visible:ring-2 focus-visible:ring-focus/45 focus-visible:ring-offset-2 focus-visible:ring-offset-panel"
           title="Зупинити озвучення"
           aria-label="Зупинити озвучення"
         >
@@ -171,7 +178,7 @@ export function ChatInput({
           type="button"
           onClick={toggleMic}
           className={cn(
-            "w-11 h-11 rounded-lg flex items-center justify-center shrink-0 transition-[background-color,border-color,color,opacity] border focus:outline-none focus-visible:ring-2 focus-visible:ring-focus/45 focus-visible:ring-offset-2 focus-visible:ring-offset-panel",
+            "size-[44px] rounded-lg flex items-center justify-center shrink-0 transition-[background-color,border-color,color,opacity] border focus:outline-none focus-visible:ring-2 focus-visible:ring-focus/45 focus-visible:ring-offset-2 focus-visible:ring-offset-panel",
             listening
               ? "bg-danger-strong text-white border-danger-strong motion-safe:animate-pulse"
               : "bg-panel border-line text-muted hover:text-text hover:border-muted",
@@ -202,7 +209,7 @@ export function ChatInput({
         type="button"
         onClick={onSend}
         disabled={loading || !input.trim() || !online}
-        className="w-11 h-11 rounded-lg bg-primary text-bg flex items-center justify-center shrink-0 hover:brightness-110 transition-[filter,opacity] disabled:opacity-40 focus:outline-none focus-visible:ring-2 focus-visible:ring-focus/45 focus-visible:ring-offset-2 focus-visible:ring-offset-panel"
+        className="size-[44px] rounded-lg bg-primary text-bg flex items-center justify-center shrink-0 hover:brightness-110 transition-[filter,opacity] disabled:opacity-40 focus:outline-none focus-visible:ring-2 focus-visible:ring-focus/45 focus-visible:ring-offset-2 focus-visible:ring-offset-panel"
         aria-label={online ? "Надіслати" : "Надсилання недоступне офлайн"}
         title={online ? "Надіслати" : "Немає інтернету, Сержант офлайн"}
       >

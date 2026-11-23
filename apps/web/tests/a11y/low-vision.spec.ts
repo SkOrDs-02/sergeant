@@ -1,6 +1,8 @@
 import { expect, test, type Page } from "@playwright/test";
 import AxeBuilder from "@axe-core/playwright";
 
+import { getWorld } from "../fixtures/worlds";
+import { installWorld } from "../utils/scenario";
 import { seedFTUX } from "../utils/seedFTUX";
 import { settleAnimations } from "../utils/settleAnimations";
 
@@ -261,3 +263,106 @@ test("overlay-reflow: the command palette does not overflow at 320px", async ({
     "command palette overflows the viewport at 320px",
   ).toMatchObject({ scrollWidth: clientWidth });
 });
+
+// ── 4. Чат при 200% тексту ──────────────────────────────────────────────
+// Композер і шапка чату — рядки з кнопками фіксованої ролі (закрити,
+// надіслати), а маршрути з `ROUTES` їх не рендерять: композер є лише в
+// залогіненого (неавтентифікованому замість нього `ChatAuthGate`). Тому
+// окремий тест зі світом, де є сесія. Регресія (bv-chat-large-text,
+// 2026-11-23): поле вводу мало нативну мінімальну ширину (~20 символів),
+// яка росте з текстом, тож при 200% «Надіслати» стояла на x=449 при
+// вʼюпорті 320-390, а фокус у полі прокручував увесь чат убік і виносив
+// за лівий край шапку з довідкою. Документ при цьому НЕ переповнювався
+// (кліпер `overflow: hidden`), тож перевірка з розділу 2 була б зеленою:
+// міряємо самі кнопки і кожен кліпер усередині чату.
+const CHAT_CONTROLS = [
+  "Команди: показати довідку",
+  "Надіслати",
+  "Нова бесіда",
+  "Закрити чат",
+] as const;
+
+for (const { name, open } of [
+  { name: "/chat", open: "/chat" },
+  { name: "sheet", open: "/finyk" },
+] as const) {
+  for (const width of [320, 390]) {
+    test(`text-scale: chat ${name} keeps its controls on screen under 200% text at ${width}px`, async ({
+      page,
+    }) => {
+      await page.setViewportSize({ width, height: 780 });
+      await installWorld(page, getWorld("finyk-month"));
+      await page.addInitScript(() => {
+        document.addEventListener("DOMContentLoaded", () => {
+          document.documentElement.style.fontSize = "200%";
+        });
+      });
+      await bootstrap(page, open);
+      await page.evaluate(() => {
+        document.documentElement.style.fontSize = "200%";
+      });
+      if (name === "sheet") {
+        await page
+          .getByRole("button", { name: "Відкрити Сержанта" })
+          .first()
+          .click();
+      }
+      const region = page
+        .getByRole("region")
+        .filter({ has: page.locator("#hub-chat-title") });
+      const input = region.getByLabel("Повідомлення Сержанту");
+      await expect(input).toBeVisible({ timeout: 15_000 });
+      // Фокус у полі — те, що прокручувало переповнений чат убік.
+      await input.fill("Привіт");
+      await nextFrames(page);
+      await settleAnimations(page);
+
+      const report = await region.evaluate((root, labels) => {
+        const vw = window.innerWidth;
+        const offscreen: string[] = [];
+        for (const label of labels) {
+          const el = root.querySelector(`[aria-label="${label}"]`);
+          if (!el) {
+            offscreen.push(`${label}: missing`);
+            continue;
+          }
+          const r = el.getBoundingClientRect();
+          if (r.left < 0 || r.right > vw + 1) {
+            offscreen.push(
+              `${label}: ${Math.round(r.left)}..${Math.round(r.right)}`,
+            );
+          }
+          if (r.width < 44 || r.height < 44) {
+            offscreen.push(
+              `${label}: ${Math.round(r.width)}x${Math.round(r.height)}`,
+            );
+          }
+        }
+        const clipped: string[] = [];
+        for (const el of [root, ...Array.from(root.querySelectorAll("*"))]) {
+          const style = getComputedStyle(el);
+          if (style.overflowX === "visible") continue;
+          // Поле вводу прокручує власний текст — це норма, не обрізка.
+          if (el instanceof HTMLInputElement) continue;
+          // Три крапки — задумане вкорочення (пігулка лічильника AI віддає
+          // простір першою, повне значення в aria-label); його стереже
+          // `nav-label-fit.spec.ts` там, де воно заборонене.
+          if (style.textOverflow === "ellipsis") continue;
+          if (el.scrollWidth > el.clientWidth + 1) {
+            const cls =
+              typeof el.className === "string" ? el.className.trim() : "";
+            clipped.push(
+              `<${el.tagName.toLowerCase()}.${cls.split(/\s+/).slice(0, 3).join(".")}> ${el.scrollWidth}>${el.clientWidth}`,
+            );
+          }
+        }
+        return { offscreen, clipped: clipped.slice(0, 5) };
+      }, CHAT_CONTROLS);
+
+      expect(report, `chat ${name} at ${width}px under 200% text`).toEqual({
+        offscreen: [],
+        clipped: [],
+      });
+    });
+  }
+}
