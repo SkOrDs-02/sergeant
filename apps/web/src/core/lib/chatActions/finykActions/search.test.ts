@@ -59,6 +59,9 @@ beforeEach(() => {
     if (key === "finyk_tx_cats") {
       cacheState.txCategories = value as Record<string, string>;
     }
+    if (key === "finyk_manual_expenses_v1") {
+      cacheState.manualExpenses = value as unknown[];
+    }
     return Promise.resolve(true);
   });
 });
@@ -312,7 +315,7 @@ describe("data-08: категорії операцій з SQLite-кешу", () =
     });
   });
 
-  it("batchCategorize (dry_run=false) зберігає наявні override-и з UI", () => {
+  it("batchCategorize (dry_run=false) міняє поле ручного запису і не чіпає override-и з UI", () => {
     cacheState.txCategories = { m_other: "housing" };
     cacheState.manualExpenses = [
       { id: "m_1", date: "2026-04-22", description: "АТБ", amount: 10 },
@@ -321,10 +324,10 @@ describe("data-08: категорії операцій з SQLite-кешу", () =
       name: "batch_categorize",
       input: { pattern: "АТБ", category_id: "food", dry_run: false },
     });
-    expect(mockWrite).toHaveBeenCalledWith("finyk_tx_cats", {
-      m_other: "housing",
-      m_1: "food",
-    });
+    expect(cacheState.manualExpenses).toEqual([
+      expect.objectContaining({ id: "m_1", category: "food" }),
+    ]);
+    expect(cacheState.txCategories).toEqual({ m_other: "housing" });
   });
 
   it("холодний кеш: чесна відповідь замість запису", () => {
@@ -340,5 +343,91 @@ describe("data-08: категорії операцій з SQLite-кешу", () =
     expect(a).toContain("ще завантажуються");
     expect(b).toContain("ще завантажуються");
     expect(mockWrite).not.toHaveBeenCalled();
+  });
+});
+
+// --- bv-chat-category: ручний запис міняє власне поле, а не override ---
+
+describe("bv-chat-category: категорія ручного запису", () => {
+  const coffee = {
+    id: "mx_coffee",
+    date: "2026-11-20",
+    description: "Кава",
+    amount: 60,
+    category: "other",
+    kind: "expense",
+  };
+
+  it("change_category пише category у запис, а не override під сирим id", () => {
+    cacheState.manualExpenses = [{ ...coffee }];
+    const out = changeCategory({
+      name: "change_category",
+      input: { tx_id: "mx_coffee", category_id: "restaurant" },
+    });
+    expect(isUndoable(out)).toBe(true);
+    expect(cacheState.manualExpenses).toEqual([
+      expect.objectContaining({ id: "mx_coffee", category: "restaurant" }),
+    ]);
+    // Override під сирим id жоден екран не читає: його бути не мусить.
+    expect(cacheState.txCategories).toEqual({});
+    expect(mockWrite).not.toHaveBeenCalledWith(
+      "finyk_tx_cats",
+      expect.anything(),
+    );
+  });
+
+  it("знімає override-и обох форм id, які перебили б нову категорію", () => {
+    cacheState.manualExpenses = [{ ...coffee }];
+    cacheState.txCategories = {
+      mx_coffee: "transport",
+      manual_mx_coffee: "health",
+      bank_1: "food",
+    };
+    changeCategory({
+      name: "change_category",
+      input: { tx_id: "mx_coffee", category_id: "restaurant" },
+    });
+    expect(cacheState.txCategories).toEqual({ bank_1: "food" });
+  });
+
+  it("undo повертає категорію запису і зняті override-и", () => {
+    cacheState.manualExpenses = [{ ...coffee }];
+    cacheState.txCategories = { manual_mx_coffee: "health" };
+    const out = changeCategory({
+      name: "change_category",
+      input: { tx_id: "mx_coffee", category_id: "restaurant" },
+    });
+    if (!isUndoable(out)) throw new Error("expected an undoable result");
+    out.undo?.();
+    expect(cacheState.manualExpenses).toEqual([
+      expect.objectContaining({ id: "mx_coffee", category: "other" }),
+    ]);
+    expect(cacheState.txCategories).toEqual({ manual_mx_coffee: "health" });
+  });
+
+  it("приймає й id у формі списку Операцій (manual_<id>)", () => {
+    cacheState.manualExpenses = [{ ...coffee }];
+    changeCategory({
+      name: "change_category",
+      input: { tx_id: "manual_mx_coffee", category_id: "restaurant" },
+    });
+    expect(cacheState.manualExpenses).toEqual([
+      expect.objectContaining({ id: "mx_coffee", category: "restaurant" }),
+    ]);
+  });
+
+  it("batch_categorize: ручні в запис, банківські в override", () => {
+    cacheState.manualExpenses = [{ ...coffee }];
+    cacheState.txCategories = {};
+    // Банківських рядків у моку дзеркала немає; перевіряємо, що ручний
+    // рядок не потрапив у мапу override-ів.
+    batchCategorize({
+      name: "batch_categorize",
+      input: { pattern: "Кава", category_id: "restaurant", dry_run: false },
+    });
+    expect(cacheState.manualExpenses).toEqual([
+      expect.objectContaining({ id: "mx_coffee", category: "restaurant" }),
+    ]);
+    expect(cacheState.txCategories).toEqual({});
   });
 });

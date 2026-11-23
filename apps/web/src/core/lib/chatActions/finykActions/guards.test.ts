@@ -89,8 +89,11 @@ describe("change_category guards", () => {
       }),
     );
     expect(out).toContain(REAL_TX);
-    const cats = JSON.parse(localStorage.getItem("finyk_tx_cats") ?? "{}");
-    expect(cats[REAL_TX]).toBe("transport");
+    // Ручний запис міняє власне поле (bv-chat-category), не override.
+    const rows = JSON.parse(
+      localStorage.getItem("finyk_manual_expenses_v1") ?? "[]",
+    );
+    expect(rows[0]).toMatchObject({ id: REAL_TX, category: "transport" });
   });
 
   it("accepts a mirrored bank transaction", () => {

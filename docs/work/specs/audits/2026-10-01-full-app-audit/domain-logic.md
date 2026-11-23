@@ -1,7 +1,7 @@
 # Аудит 2026-10-01 · Логіка доменів
 
-> **Status:** Active. 66 кластерів (89 знахідок) за першопричиною. Загальний план, метод і обмеження — у [README](./README.md).
-> **Last touched:** 2026-11-22 by @claude (logic-03 частково: undo для перезапису звички і set_goal, тест-інваріант undo/TOOL_RISK; consume_from_pantry лишився); 2026-11-22 by @claude (рішення власника по решті питань беклогу); 2026-11-21 by @claude (рішення власника по кластерах, раунди 5–10); раніше перевірено 2026-10-02.
+> **Status:** Active. 67 кластерів (90 знахідок) за першопричиною. Загальний план, метод і обмеження — у [README](./README.md).
+> **Last touched:** 2026-11-23 by @claude (logic-67: чат міняв категорію ручної витрати не там, виправлено); 2026-11-22 by @claude (logic-03 частково: undo для перезапису звички і set_goal, тест-інваріант undo/TOOL_RISK; consume_from_pantry лишився); 2026-11-22 by @claude (рішення власника по решті питань беклогу); 2026-11-21 by @claude (рішення власника по кластерах, раунди 5–10); раніше перевірено 2026-10-02.
 > **Next review:** 2027-01-21
 > **Spec-lint:** skip. Реєстр знахідок аудиту, не специфікація реалізації.
 
@@ -17,7 +17,7 @@
 | ----------- | --------- |
 | critical    | 0         |
 | high        | 1         |
-| medium      | 11        |
+| medium      | 12        |
 | low         | 49        |
 | info        | 5         |
 
@@ -834,6 +834,17 @@ node s48-monday.mjs Europe/Kyiv 2026-10-05T09:00:00+03:00 kyiv-mon clkKyiv (ко
 ```text
 Повʼязаний, але не той самий запис: docs/work/specs/audits/2026-10-01-full-app-audit/domain-logic.md:267 (buildRoutineRecs ігнорує розклад). Канонічні розрахунки: apps/web/src/core/hub/hubReports.aggregation.ts:302 і apps/web/src/core/insights/useWeeklyDigest.ts:377 (calcRoutinePeriodCompletion).
 ```
+
+<a id="logic-67"></a>
+
+### `logic-67` [medium] Чат «перенеси в Кафе» для ручної витрати каже «Категорію змінено», але категорія не змінюється
+
+- **Стан:** виправлено в гілці `backlog/bv-chat-category` (знахідка перевірки 2026-11-20, `bv-chat-category`; було й на `main` a685f5324): ручний запис міняє власне поле `category` з undo, override-и обох форм id знімаються.
+- **Перевірка:** підтверджено (браузер, PR #1722; тест) · **Зусилля:** S · **Область:** web: HubChat (finykActions), Фінік (категорії)
+- **Де:** apps/web/src/core/lib/chatActions/finykActions/search.ts (changeCategory, batchCategorize); apps/web/src/core/lib/chatActions/finykActions/manualCategory.ts
+- **Першопричина:** change_category і batch_categorize писали override у finyk_tx_categories під сирим id ручного запису (`mx_…`), а список, аркуш і Аналітика бачать запис як `manual_<id>` і беруть категорію з його поля `category`.
+
+Знахідок у кластері: 1.
 
 ## low
 
