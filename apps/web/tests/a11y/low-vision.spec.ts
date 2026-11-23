@@ -319,6 +319,7 @@ for (const { name, open } of [
 
       const report = await region.evaluate((root, labels) => {
         const vw = window.innerWidth;
+        const vh = window.innerHeight;
         const offscreen: string[] = [];
         for (const label of labels) {
           const el = root.querySelector(`[aria-label="${label}"]`);
@@ -330,6 +331,15 @@ for (const { name, open } of [
           if (r.left < 0 || r.right > vw + 1) {
             offscreen.push(
               `${label}: ${Math.round(r.left)}..${Math.round(r.right)}`,
+            );
+          }
+          // Вертикаль теж: переповнений по висоті чат сам прокручував
+          // кліпер `overflow: hidden` до поля вводу, і шапка з «Закрити
+          // чат» опинялась над верхнім краєм (y=-117 при 320px), куди
+          // пальцем уже не дістатись.
+          if (r.top < 0 || r.bottom > vh + 1) {
+            offscreen.push(
+              `${label}: y ${Math.round(r.top)}..${Math.round(r.bottom)}`,
             );
           }
           if (r.width < 44 || r.height < 44) {
