@@ -47,7 +47,7 @@ export function NotFoundPage({ homePath = "/" }: NotFoundPageProps) {
             Прийшов за зовнішнім посиланням?{" "}
             <a
               href={`mailto:${SUPPORT_EMAIL}`}
-              className="inline-flex min-h-[44px] items-center text-brand-strong underline rounded-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-focus/45"
+              className="inline-flex min-h-[44px] items-center text-brand-strong underline rounded-sm focus-ring"
             >
               Напиши нам
             </a>

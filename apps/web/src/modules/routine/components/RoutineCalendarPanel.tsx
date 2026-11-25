@@ -461,7 +461,7 @@ export function RoutineCalendarPanel({
           className="mt-3 w-full"
           onClick={() => onOpenQuickAddHabit()}
         >
-          <Icon name="plus" size={16} aria-hidden />
+          <Icon name="plus" size="md" aria-hidden />
           {messages.routine.newHabit}
         </Button>
       </section>
