@@ -204,14 +204,38 @@
   "local": {
     "scenario": "landing-world",
     "routineHabits": [
-      { "id": "habit-water", "name": "Вода зранку", "streakDays": 7 },
-      { "id": "habit-walk", "name": "Прогулянка", "streakDays": 14 },
-      { "id": "habit-read", "name": "Читання перед сном", "streakDays": 30 },
-      { "id": "habit-vitamins", "name": "Вітаміни", "streakDays": 5 },
-      { "id": "habit-stretch", "name": "Розтяжка", "streakDays": 3 }
+      {
+        "id": "habit-water",
+        "name": "Вода зранку",
+        "streakDays": 7
+      },
+      {
+        "id": "habit-walk",
+        "name": "Прогулянка",
+        "streakDays": 14
+      },
+      {
+        "id": "habit-read",
+        "name": "Читання перед сном",
+        "streakDays": 30
+      },
+      {
+        "id": "habit-vitamins",
+        "name": "Вітаміни",
+        "streakDays": 5
+      },
+      {
+        "id": "habit-stretch",
+        "name": "Розтяжка",
+        "streakDays": 3
+      }
     ],
     "finykBudgets": [
-      { "id": "e2e-budget-food", "categoryId": "food", "limit": 3000 },
+      {
+        "id": "e2e-budget-food",
+        "categoryId": "food",
+        "limit": 3000
+      },
       {
         "id": "e2e-budget-restaurant",
         "categoryId": "restaurant",
@@ -226,6 +250,138 @@
         "id": "e2e-budget-entertainment",
         "categoryId": "entertainment",
         "limit": 2000
+      }
+    ],
+    "fizrukWorkouts": [
+      {
+        "id": "e2e-workout-full",
+        "daysAgo": 1,
+        "items": [
+          {
+            "id": "e2e-full-squat",
+            "exerciseId": "squat_barbell",
+            "nameUk": "Присідання зі штангою",
+            "primaryGroup": "quadriceps",
+            "musclesPrimary": ["quadriceps", "gluteus_maximus"],
+            "musclesSecondary": [
+              "hamstrings",
+              "erector_spinae",
+              "adductors",
+              "calves"
+            ],
+            "sets": [
+              {
+                "weightKg": 80,
+                "reps": 8
+              },
+              {
+                "weightKg": 85,
+                "reps": 6
+              },
+              {
+                "weightKg": 85,
+                "reps": 6
+              }
+            ]
+          },
+          {
+            "id": "e2e-full-bench",
+            "exerciseId": "bench_press_barbell",
+            "nameUk": "Жим штанги лежачи",
+            "primaryGroup": "chest",
+            "musclesPrimary": ["pectoralis_major"],
+            "musclesSecondary": [
+              "front_deltoid",
+              "triceps",
+              "serratus_anterior"
+            ],
+            "sets": [
+              {
+                "weightKg": 60,
+                "reps": 8
+              },
+              {
+                "weightKg": 65,
+                "reps": 6
+              },
+              {
+                "weightKg": 65,
+                "reps": 6
+              }
+            ]
+          },
+          {
+            "id": "e2e-full-row",
+            "exerciseId": "barbell_row",
+            "nameUk": "Тяга штанги в нахилі",
+            "primaryGroup": "back",
+            "musclesPrimary": ["latissimus_dorsi", "rhomboids", "upper_back"],
+            "musclesSecondary": [
+              "biceps",
+              "rear_deltoid",
+              "erector_spinae",
+              "forearms"
+            ],
+            "sets": [
+              {
+                "weightKg": 55,
+                "reps": 10
+              },
+              {
+                "weightKg": 60,
+                "reps": 8
+              },
+              {
+                "weightKg": 60,
+                "reps": 8
+              }
+            ]
+          },
+          {
+            "id": "e2e-full-ohp",
+            "exerciseId": "overhead_press_barbell",
+            "nameUk": "Жим штанги стоячи",
+            "primaryGroup": "shoulders",
+            "musclesPrimary": ["front_deltoid", "lateral_deltoid"],
+            "musclesSecondary": ["triceps", "trapezius", "serratus_anterior"],
+            "sets": [
+              {
+                "weightKg": 40,
+                "reps": 8
+              },
+              {
+                "weightKg": 42.5,
+                "reps": 6
+              },
+              {
+                "weightKg": 42.5,
+                "reps": 6
+              }
+            ]
+          },
+          {
+            "id": "e2e-full-rdl",
+            "exerciseId": "romanian_deadlift",
+            "nameUk": "Румунська тяга",
+            "primaryGroup": "hamstrings",
+            "musclesPrimary": ["hamstrings", "gluteus_maximus"],
+            "musclesSecondary": ["erector_spinae", "calves"],
+            "sets": [
+              {
+                "weightKg": 80,
+                "reps": 10
+              },
+              {
+                "weightKg": 90,
+                "reps": 8
+              },
+              {
+                "weightKg": 90,
+                "reps": 8
+              }
+            ]
+          }
+        ]
       }
     ]
   }

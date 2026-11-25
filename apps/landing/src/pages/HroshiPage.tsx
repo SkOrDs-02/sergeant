@@ -304,9 +304,9 @@ export default function HroshiPage() {
         <figure className="mt-6 max-w-[320px]">
           <img
             src="/screens/finyk.webp"
-            alt="Огляд Фініка: на сьогодні лишилось 462 ₴ у межах плану, витрати й надходження за день і графік капіталу"
-            width={414}
-            height={896}
+            alt="Огляд Фініка: сьогодні ще можна витратити 1 909 ₴ із плану дня 2 900 ₴, за місяць витрачено 31 493 ₴ із 45 000 ₴, капітал 24 500 ₴ і сьогоднішні операції"
+            width={390}
+            height={844}
             loading="lazy"
             className="paper-shadow w-full rounded-[var(--radius-card)] border border-cardline-strong bg-card"
           />

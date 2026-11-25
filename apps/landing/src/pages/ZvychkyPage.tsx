@@ -196,14 +196,14 @@ export default function ZvychkyPage() {
         <figure className="mt-6 max-w-[320px]">
           <img
             src="/screens/routine.webp"
-            alt="Денний звіт Рутини: пʼять виконаних звичок і пропуск «10 000 кроків» із причиною «У дорозі», який не ламає серію"
-            width={414}
-            height={896}
+            alt="Денний звіт Рутини: три виконані звички і пропуск «Розтяжки» з причиною «Не було часу», який не ламає серію"
+            width={390}
+            height={844}
             loading="lazy"
             className="paper-shadow w-full rounded-[var(--radius-card)] border border-cardline-strong bg-card"
           />
           <figcaption className="mt-2.5 text-xs text-subtle">
-            Рутина: звички дня, тижнева стрічка і серія. Екран бети з
+            Рутина: денний звіт із виконаними звичками і пропуском. Екран бети з
             демо-даними.
           </figcaption>
         </figure>

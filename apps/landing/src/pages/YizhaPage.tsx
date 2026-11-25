@@ -225,9 +225,9 @@ export default function YizhaPage() {
         <figure className="mt-6 max-w-[320px]">
           <img
             src="/screens/nutrition.webp"
-            alt="Екран Харчування: 950 ккал лишилось на вечерю, білки, жири й вуглеводи, калорії за тиждень і вода за день"
-            width={414}
-            height={896}
+            alt="Огляд Їжі: три прийоми їжі за сьогодні, 785 ккал лишилось на вечерю, білки 62 з 120 г, жири 28 з 60 г, вуглеводи 143 з 230 г, калорії за тиждень і вода за день"
+            width={390}
+            height={844}
             loading="lazy"
             className="paper-shadow w-full rounded-[var(--radius-card)] border border-cardline-strong bg-card"
           />
