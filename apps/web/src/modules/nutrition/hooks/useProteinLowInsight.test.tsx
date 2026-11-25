@@ -81,7 +81,7 @@ describe("useProteinLowInsight", () => {
     const { result } = renderHook(() =>
       useProteinLowInsight(log, { dailyTargetProtein_g: 120 } as never),
     );
-    expect(result.current?.subtitle).toContain("білка малувато");
+    expect(result.current?.subtitle).toContain("Білка, схоже, мало");
     expect(result.current?.subtitle).not.toBe("Додати джерело білка");
   });
 });

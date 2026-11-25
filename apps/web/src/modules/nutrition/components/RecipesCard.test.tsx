@@ -177,12 +177,12 @@ describe("RecipesCard — saved-recipes section", () => {
     fireEvent.click(screen.getByRole("button", { name: /Мої рецепти/i }));
     await waitFor(() =>
       expect(
-        screen.getByText(/Тут зʼявляться збережені рецепти/i),
+        screen.getByText(/Збережені рецепти зʼявляться тут/i),
       ).toBeTruthy(),
     );
     // Зйомка 2026-11-18: «Нова страва» і "Зберегти" в одній підказці.
     // Style-guide: лише «ялинки».
-    const hint = screen.getByText(/Тут зʼявляться збережені рецепти/i);
+    const hint = screen.getByText(/Збережені рецепти зʼявляться тут/i);
     expect(hint.textContent).toContain("«Зберегти»");
     expect(hint.textContent).not.toMatch(/"/);
   });

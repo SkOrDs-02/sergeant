@@ -846,7 +846,7 @@ describe("AddMealSheet — source step (with templates)", () => {
     renderSheet({ mealTemplates: [] });
     goToWholeMeal();
     expect(
-      screen.getByText(/Значення – за всю порцію, як зʼїв, а не на 100 г/),
+      screen.getByText(/Значення – за всю порцію, як зʼїв/),
     ).toBeInTheDocument();
     expect(screen.queryByTestId("picked-food-card")).not.toBeInTheDocument();
     fireEvent.click(
@@ -1826,9 +1826,7 @@ describe("AddMealSheet — хвиля 1 OD-27 (2026-11-18)", () => {
     renderSheet();
     fireEvent.click(screen.getByTestId("pick-food"));
     expect(
-      screen.getByText(
-        "Штрихкод 4820024700016 запамʼятаю для цього продукту: наступний скан знайде його сам.",
-      ),
+      screen.getByText("Запамʼятаю штрихкод 4820024700016 для цього продукту."),
     ).toBeInTheDocument();
     fireEvent.click(
       screen.getByRole("button", { name: "Скасувати привʼязку штрихкоду" }),

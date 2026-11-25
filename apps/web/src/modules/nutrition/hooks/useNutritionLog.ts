@@ -333,7 +333,7 @@ export function useNutritionLog() {
         parsed = JSON.parse(text);
       } catch {
         toast.error(
-          "Не вдалося прочитати файл: це не резервна копія журналу харчування. Вибери файл, збережений із Sergeant.",
+          "Це не резервна копія журналу. Вибери файл, збережений із Sergeant.",
         );
         return false;
       }
@@ -362,7 +362,7 @@ export function useNutritionLog() {
         parsed = JSON.parse(text);
       } catch {
         toast.error(
-          "Не вдалося обʼєднати журнал: файл не є резервною копією журналу харчування. Вибери файл, збережений із Sergeant.",
+          "Це не резервна копія журналу. Вибери файл, збережений із Sergeant.",
         );
         return false;
       }

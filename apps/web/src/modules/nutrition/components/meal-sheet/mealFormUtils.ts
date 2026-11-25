@@ -42,7 +42,7 @@ export function validateMealMacroFields(
   ) as [number | null, number | null, number | null, number | null];
   if (kcal != null && kcal > MAX_KCAL_PER_MEAL) {
     return {
-      error: `Забагато калорій: максимум ${MAX_KCAL_PER_MEAL} ккал на прийом. Зменш значення або розбий на кілька прийомів.`,
+      error: `Забагато калорій: максимум ${MAX_KCAL_PER_MEAL} ккал на прийом. Розбий на кілька прийомів.`,
     };
   }
   if (

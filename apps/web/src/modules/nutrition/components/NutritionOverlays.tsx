@@ -207,7 +207,7 @@ export function NutritionOverlays({
       <ConfirmDialog
         open={pantry.confirmDeleteOpen}
         title="Видалити місце?"
-        description="Це прибере всі продукти в ньому. Дію не можна відмінити."
+        description="Усі продукти в ньому видаляться. Повернути не вийде."
         confirmLabel="Видалити"
         danger
         onConfirm={pantry.onConfirmDeletePantry}

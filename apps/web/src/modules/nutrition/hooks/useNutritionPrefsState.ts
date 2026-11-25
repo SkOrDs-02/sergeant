@@ -25,8 +25,7 @@ interface UseNutritionPrefsStateResult {
 }
 
 const PERSIST_ERR = "Не вдалося зберегти налаштування.";
-const STILL_LOADING_ERR =
-  "Дані Їжі ще завантажуються. Спробуй за кілька секунд.";
+const STILL_LOADING_ERR = "Дані ще завантажуються, спробуй за мить.";
 
 /** Поля, які `next` змінив відносно `base` (глибоке порівняння через JSON). */
 function changedPrefsFields(

@@ -527,7 +527,7 @@ describe("ShoppingListCard — вибір рецептів (збережені +
   it("збій читання книги — каже про помилку, а не «порожньо»", () => {
     render(<ShoppingListCard {...baseProps({ savedRecipesError: true })} />);
     expect(screen.getByRole("alert")).toHaveTextContent(
-      "Не вдалося прочитати збережені рецепти",
+      "Не вдалося завантажити рецепти",
     );
     expect(
       screen.queryByText(/Збережених рецептів немає/),

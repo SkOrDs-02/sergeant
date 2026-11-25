@@ -18,7 +18,7 @@ export const nutritionPageMessages = {
   addSources: {
     search: { label: "Пошук продукту", hint: "Продукт або страва з бази" },
     scan: { label: "Штрихкод", hint: "Штрихкод на упаковці" },
-    photo: { label: "Фото страви", hint: "AI оцінить страву на фото" },
+    photo: { label: "Фото страви", hint: "Сержант оцінить страву" },
     manual: { label: "Ввести вручну", hint: "На 100 г або за всю порцію" },
     // Лише на Огляді, де живе картка води (redesign v3.2, позиція 01).
     water: { label: "Вода", hint: "Свій обʼєм у мл" },
@@ -31,8 +31,7 @@ export const nutritionPageMessages = {
     editTitle: "Редагувати прийом їжі",
     copyYesterday: "Як учора",
     rememberForRepeat: "Запамʼятати для повтору",
-    rememberForRepeatHint:
-      "Назва, тип прийому та КБЖВ потрапляють у швидкі прийоми.",
+    rememberForRepeatHint: "Піде у швидкі прийоми.",
     // Кнопки й діалоги кроку «fill» (`MealSheetActions`).
     dateLabel: "Дата",
     dateAria: "Дата запису",
@@ -40,14 +39,13 @@ export const nutritionPageMessages = {
     saveEdit: "Зберегти зміни",
     cancel: "Скасувати",
     emptyMacrosTitle: "Зберегти без калорійності?",
-    emptyMacrosDescription:
-      "КБЖВ порожні, запис не вплине на денну статистику. Зберегти як є?",
+    emptyMacrosDescription: "Без КБЖВ запис не потрапить у денну статистику.",
     emptyMacrosConfirm: "Зберегти",
     emptyMacrosBack: "Повернутись",
   },
   copyMeal: {
     title: "Скопіювати прийом",
-    description: "Записи з цього прийому ляжуть у вибраний день і прийом.",
+    description: "Записи підуть у вибраний день і прийом.",
     dateLabel: "Дата",
     dateAria: "Дата копії",
     mealLabel: "Прийом",
@@ -58,9 +56,8 @@ export const nutritionPageMessages = {
   // Наближення до звʼязку не називає звʼязок: до порога його не доведено
   // (ADR-0097), тож рядок обіцяє лише перевірку.
   moments: {
-    threshold:
-      "Записів досить для нового висновку: «{detail}». Він уже у Звітах.",
-    link: "Зʼявився звʼязок: {detail}. Деталі у Звітах.",
+    threshold: "Новий висновок: «{detail}». Він у Звітах.",
+    link: "Новий звʼязок: {detail}. Деталі у Звітах.",
     approachLink:
       "Ще {n} із записами тут і в модулі {module}, і я перевірю, чи вони повʼязані.",
     approachKcal:
@@ -102,9 +99,8 @@ export const nutritionPageMessages = {
     label: "≈",
     // Текстовий еквівалент бейджа для aria-label (a11y — бейдж не може
     // бути єдиним сигналом).
-    a11ySuffix: "переважно оцінка з фото, точна цифра невідома",
-    caption:
-      "Більшість ккал сьогодні – з фото-оцінки Сержанта, не з бази чи етикетки.",
+    a11ySuffix: "переважно оцінка з фото",
+    caption: "Більшість ккал сьогодні – оцінка Сержанта з фото.",
   },
 
   /**
@@ -155,7 +151,7 @@ export const nutritionPageMessages = {
 
   /** Помʼякшена копія `nutrition-protein-low` при високій частці photoAI. */
   proteinLowEstimated: {
-    subtitle: "Схоже, білка малувато, але сьогодні багато цифр з фото-оцінки.",
+    subtitle: "Білка, схоже, мало, але багато цифр з фото-оцінки.",
   },
 
   /**
@@ -172,7 +168,7 @@ export const nutritionPageMessages = {
     prefer: "Переважно з наявного",
     only: "Тільки з наявного",
     ignore: "Не враховувати комору",
-    scopeHint: "Діє і на рецепти, і на денний та тижневий план.",
+    scopeHint: "Діє на рецепти, денний і тижневий план.",
   },
 
   /**
@@ -222,7 +218,7 @@ export const nutritionPageMessages = {
     unknownAddedAt: "без дати",
     consumeTitle: "Списати з покупки",
     consumeDescription:
-      "У цій позиції кілька покупок. Обери, з якої списати, або лишай найстарішу: вона псується першою.",
+      "Обери, з якої покупки списати. Найстаріша псується першою.",
     consumeOldestCta: "З найстарішої",
   },
 
@@ -291,7 +287,7 @@ export const nutritionPageMessages = {
   shoppingListPantryMath: {
     toggleLabel: "Враховувати комору",
     athomeSectionLabel: "Вже вдома",
-    athomeSectionHint: "Достатньо в коморі: купувати не треба, лише звір.",
+    athomeSectionHint: "Достатньо в коморі, лише звір.",
     // Той самий бейдж-текст, що і `pantryLowStock.badge` на позиції комори —
     // одна фраза на все, свідомо коротша за назву fallback-категорії
     // `LOW_STOCK_CATEGORY_NAME` («Закінчується вдома»), щоб бейдж на
@@ -326,11 +322,9 @@ export const nutritionPageMessages = {
     clearSelection: "Зняти вибір",
     maxHint: "Максимум 20 рецептів за раз.",
     pickHint: "Познач рецепти, з яких скласти список.",
-    emptyHint:
-      "Збережених рецептів немає. Їх можна згенерувати в Меню → Рецепти.",
+    emptyHint: "Збережених рецептів немає. Згенеруй їх у Меню → Рецепти.",
     savedLoading: "Завантажую збережені рецепти…",
-    savedError:
-      "Не вдалося прочитати збережені рецепти. Онови сторінку, щоб спробувати ще раз.",
+    savedError: "Не вдалося завантажити рецепти. Онови сторінку.",
     noIngredients: "без списку інгредієнтів",
     ingredientsOne: "інгредієнт",
     ingredientsFew: "інгредієнти",
@@ -349,14 +343,14 @@ export const nutritionPageMessages = {
     entryCta: "У кошик Сільпо",
     sheetTitle: "У кошик Сільпо",
     listAria: "Позиції для кошика",
-    sheetDescription: "Обери позиції та підтверди, додам їх у твій кошик.",
+    sheetDescription: "Обери позиції, додам їх у кошик.",
     // Коротке нагадування (1 речення) перед записом у зовнішній кошик —
     // не дублює повну обіцянку приватності з картки Сільпо в
     // Налаштуваннях (`SilpoPrivacyPromise`), лише її суть у моменті
     // підтвердження.
     privacyReminder: "У Сільпо піде лише те, що ти підтвердиш нижче.",
     loading: "Шукаю позиції в каталозі…",
-    emptyList: "У списку покупок немає невідмічених позицій.",
+    emptyList: "Невідмічених позицій немає.",
     unmatched: "Не знайшлось у Сільпо",
     /**
      * Товар існує, але закінчився у філії. Позицію показуємо (людина має
@@ -383,7 +377,7 @@ export const nutritionPageMessages = {
      */
     clearConfirmTitle: "Очистити кошик Сільпо?",
     clearConfirmBody:
-      "Приберу з кошика Сільпо всі позиції: і додані звідси, і ті, що ти клала в застосунку Сільпо. Відновити не вийде, доведеться зібрати заново.",
+      "Приберу все з кошика Сільпо: і додане звідси, і додане в самому Сільпо. Повернути не вийде.",
     clearConfirmCta: "Очистити",
     cleared: "Кошик Сільпо порожній.",
     errorNotConnected: "Сільпо не звʼязано. Звʼяжи акаунт у Налаштуваннях.",
@@ -429,7 +423,7 @@ export const nutritionPageMessages = {
     gramsUnit: "г",
     editCta: "Змінити позиції",
     total: "Разом",
-    saveHint: "Кожна позиція збережеться окремим записом у журналі.",
+    saveHint: "Кожна позиція – окремий запис.",
     protein: "Білки",
     fat: "Жири",
     carbs: "Вуглеводи",
@@ -451,7 +445,7 @@ export const nutritionPageMessages = {
    * читає етикетку, тобто на 100 г — без підпису це тиха підміна одиниці.
    */
   portionUnitHint: {
-    body: "Значення – за всю порцію, як зʼїв, а не на 100 г.",
+    body: "Значення – за всю порцію, як зʼїв.",
     packageCta: "Маю етикетку на 100 г",
   },
 
@@ -461,7 +455,7 @@ export const nutritionPageMessages = {
     title: "Мої продукти",
     editTitle: "Редагувати продукт",
     emptyBody:
-      "Своїх продуктів ще немає. Створити продукт можна під час запису прийому: вкладка «Своє», далі «З упаковки».",
+      "Своїх продуктів немає. Створи при записі прийому: «Своє» → «З упаковки».",
     kcalPer100: "ккал / 100 г",
     portionsCount: "порцій: {n}",
     editAction: "Змінити",
@@ -472,17 +466,17 @@ export const nutritionPageMessages = {
     deleteTitle: "Видалити «{name}»?",
     deleteTitleFallback: "Видалити продукт?",
     deleteBody:
-      "Записи в щоденнику лишаться з їхніми числами. Перерахувати їх від ваги вже не вийде.",
+      "Записи в щоденнику лишаться, але перерахувати їх від ваги вже не вийде.",
     save: "Зберегти",
     cancel: "Скасувати",
-    existingUnchanged: "Записи, які вже є, не зміняться.",
+    existingUnchanged: "Наявні записи не зміняться.",
     nameLabel: "Назва продукту",
     namePlaceholder: "Равіолі з сиром",
   },
 
   portionRows: {
     heading: "Порції",
-    hint: "Необовʼязково: скибка, батон, пачка. Тоді при записі можна вводити кількість штук.",
+    hint: "Необовʼязково: скибка, батон, пачка. Тоді вводитимеш штуки.",
     nameLabel: "Назва",
     gramsLabel: "Грами",
     namePlaceholder: "скибка",
@@ -506,7 +500,7 @@ export const nutritionPageMessages = {
     today: "сьогодні",
     yesterdayDay: "вчора",
     // Х-2 (а): «Зберегти в журнал» після фото пише одразу.
-    photoSaveHint: "Запишу у прийом за часом доби, змінити можна з тосту.",
+    photoSaveHint: "Запишу в прийом за часом доби, змінити можна після.",
     photoSaved: "Записав {meal}: {name}, {kcal} ккал.",
     photoSaveFailed: "Не вдалося записати страву. Спробуй ще раз.",
     retry: "Повторити",
@@ -523,15 +517,14 @@ export const nutritionPageMessages = {
     yesterdayHint: "{names} · {kcal} ккал",
     recent: "Нещодавні",
     // Х-5 (а): штрихкод після «не знайдено» до свого продукту з пошуку.
-    bindBarcode:
-      "Штрихкод {code} запамʼятаю для цього продукту: наступний скан знайде його сам.",
+    bindBarcode: "Запамʼятаю штрихкод {code} для цього продукту.",
     bindBarcodeCancel: "Скасувати",
     bindBarcodeCancelAria: "Скасувати привʼязку штрихкоду",
   },
 
   pantryPortion: {
     label: "Вага порції, г",
-    description: "Стільки буде списано з комори після збереження.",
+    description: "Стільки спишеться з комори.",
     a11yPrefix: "Введи вагу порції від 1 до",
     a11ySuffix: "грамів.",
   },
@@ -551,7 +544,7 @@ export const nutritionPageMessages = {
   recipeBuilder: {
     titleNew: "Нова страва",
     titleEdit: "Редагувати страву",
-    description: "Склади страву з продуктів і грамів, КБЖВ порахується само.",
+    description: "Продукти й грами, КБЖВ порахується само.",
     nameLabel: "Назва",
     namePlaceholder: "Назва страви",
     nameAria: "Назва страви",
@@ -589,7 +582,7 @@ export const nutritionPageMessages = {
     rateOption: "{rate} кг",
     goalWeightLabel: "Цільова вага, кг (необовʼязково)",
     goalWeightRangeError: "Вага має бути від 20 до 400 кг",
-    goalDate: "Орієнтовно до цілі: {date}. Це прикидка, а не обіцянка.",
+    goalDate: "Орієнтовно до цілі: {date}.",
     resultLabel: "Твоя норма",
     resultKcal: "{kcal} ккал на день",
     activitySedentary: "сидячий",
@@ -620,7 +613,7 @@ export const nutritionPageMessages = {
 
   photoAuth: {
     heading: "Потрібен обліковий запис",
-    body: "Фото надсилається на сервер для розпізнавання, тому цей сценарій доступний після входу. Ручне додавання їжі працює локально.",
+    body: "Фото розпізнається на сервері, тому потрібен вхід. Вручну можна додавати й без входу.",
     signIn: "Увійти",
   },
 };

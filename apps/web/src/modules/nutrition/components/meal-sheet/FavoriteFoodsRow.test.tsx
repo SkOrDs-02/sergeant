@@ -114,9 +114,7 @@ describe("блок «Улюблені» на вкладці «Пошук»", () 
     expect(names[0]).toContain("Продукт 0");
     expect(names[7]).toContain("Продукт 7");
     expect(
-      screen.getByText(
-        "Решту улюблених знайдеш пошуком: вони там стоять першими.",
-      ),
+      screen.getByText("Решта улюблених – у пошуку, вони там першими."),
     ).toBeInTheDocument();
   });
 
@@ -124,7 +122,7 @@ describe("блок «Улюблені» на вкладці «Пошук»", () 
     favState.foods = [food("gen_banan", "Банан")];
     render(<SearchTabPanel {...props()} />);
     fireEvent.click(section()!);
-    expect(screen.queryByText(/Решту улюблених/)).toBeNull();
+    expect(screen.queryByText(/Решта улюблених/)).toBeNull();
   });
 
   it("тап відкриває картку продукту з побутовою порцією, нічого не пише", () => {

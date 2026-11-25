@@ -240,7 +240,7 @@ export function LogCard({
       <ConfirmDialog
         open={trimConfirm}
         title="Видалити стару історію?"
-        description="Журнал буде обрізано до останніх 365 днів. Старіші прийоми та фото страв безповоротно видаляються."
+        description="Лишу останні 365 днів. Старіші прийоми й фото страв видаляться безповоротно."
         confirmLabel="Видалити"
         danger
         onConfirm={() => {

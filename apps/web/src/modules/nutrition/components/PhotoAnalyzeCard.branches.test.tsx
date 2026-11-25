@@ -104,7 +104,7 @@ describe("PhotoAnalyzeCard", () => {
     expect(refine.className).not.toContain("bg-text ");
     // OD-27 Х-2 (а): кнопка пише одразу, підпис більше не просить «збережи».
     expect(
-      screen.getByText("Запишу у прийом за часом доби, змінити можна з тосту."),
+      screen.getByText("Запишу в прийом за часом доби, змінити можна після."),
     ).toBeInTheDocument();
     expect(screen.queryByText(/не потрапляє/)).toBeNull();
   });
@@ -202,10 +202,8 @@ describe("PhotoAnalyzeCard", () => {
       />,
     );
 
-    expect(screen.getByText("Це не страва, а тваринка")).toBeInTheDocument();
-    expect(
-      screen.getByText(/погладь і пригости смаколиком/),
-    ).toBeInTheDocument();
+    expect(screen.getByText("Це тваринка")).toBeInTheDocument();
+    expect(screen.getByText(/Погладь її/)).toBeInTheDocument();
     expect(screen.getByText(/схоже на «Кіт»/)).toBeInTheDocument();
     expect(
       screen.queryByRole("button", { name: /Зберегти в журнал/ }),
@@ -225,7 +223,7 @@ describe("PhotoAnalyzeCard", () => {
         }}
       />,
     );
-    expect(screen.getByText(/На фото тваринка, а не їжа/)).toBeInTheDocument();
+    expect(screen.getByText(/На фото тваринка\./)).toBeInTheDocument();
   });
 
   it("points a person back at the plate", () => {
@@ -241,7 +239,7 @@ describe("PhotoAnalyzeCard", () => {
         }}
       />,
     );
-    expect(screen.getByText("Це людина, а не страва")).toBeInTheDocument();
+    expect(screen.getByText("Це людина")).toBeInTheDocument();
     expect(screen.getByText(/Наведи камеру на тарілку/)).toBeInTheDocument();
   });
 

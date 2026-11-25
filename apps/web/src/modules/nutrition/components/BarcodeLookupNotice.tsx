@@ -41,7 +41,7 @@ const COPY: Record<BarcodeLookupNoticeKind, { title: string; body: string }> = {
   },
   unavailable: {
     title: "Джерела тимчасово не відповідають",
-    body: "Це не означає, що продукту немає, бази лежать, а не порожні. Спробуй ще раз за хвилину.",
+    body: "Продукт може бути в базі. Спробуй ще раз за хвилину.",
   },
 };
 
