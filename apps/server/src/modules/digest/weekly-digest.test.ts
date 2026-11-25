@@ -1240,7 +1240,7 @@ describe("buildTemplateReport (PR-25)", () => {
     const r = buildTemplateReport({
       routine: { habitCount: 5, overallRate: 92 },
     });
-    expect(r.routine!.summary).toBe("5 звичок, загальний відсоток 92%.");
+    expect(r.routine!.summary).toBe("5 звичок, виконано 92%.");
   });
 
   it("підставляє нулі у template-report коли секції є, але числа відсутні", () => {
@@ -1257,7 +1257,7 @@ describe("buildTemplateReport (PR-25)", () => {
     expect(r.nutrition!.summary).toBe(
       "Середньодобово 0 ккал з 0/7 днів записів.",
     );
-    expect(r.routine!.summary).toBe("0 звичок, загальний відсоток 0%.");
+    expect(r.routine!.summary).toBe("0 звичок, виконано 0%.");
   });
 
   it("дотримується WeeklyDigestReportSchema (валідний shape)", async () => {

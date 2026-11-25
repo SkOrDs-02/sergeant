@@ -159,8 +159,7 @@ export function buildTemplateReport(
     finyk: finyk
       ? {
           summary: `Витрати ${finyk.totalSpent ?? 0} грн, надходження ${finyk.totalIncome ?? 0} грн, ${finyk.txCount ?? 0} операцій.`,
-          comment:
-            "Це лише числа з тижневих даних: розбір зараз недоступний. Висновки додам, щойно зможу.",
+          comment: "Розбір поки недоступний, лише числа тижня.",
           recommendations: [],
         }
       : null,
@@ -169,24 +168,21 @@ export function buildTemplateReport(
           summary: `${fizruk.workoutsCount ?? 0} тренувань, обсяг ${fizruk.totalVolume ?? 0} кг${
             fizruk.recoveryLabel ? `, стан: ${fizruk.recoveryLabel}` : ""
           }.`,
-          comment:
-            "Це лише числа з тижневих даних: розбір тренувань додам, щойно зможу.",
+          comment: "Розбір поки недоступний, лише числа тижня.",
           recommendations: [],
         }
       : null,
     nutrition: nutrition
       ? {
           summary: `Середньодобово ${nutrition.avgKcal ?? 0} ккал з ${nutrition.daysLogged ?? 0}/7 днів записів.`,
-          comment:
-            "Це лише числа з тижневих даних: макроси й тенденції розберу, щойно зможу.",
+          comment: "Розбір поки недоступний, лише числа тижня.",
           recommendations: [],
         }
       : null,
     routine: routine
       ? {
-          summary: `${routine.habitCount ?? 0} звичок, загальний відсоток ${routine.overallRate ?? 0}%.`,
-          comment:
-            "Це лише числа з тижневих даних: розбір звичок додам, щойно зможу.",
+          summary: `${routine.habitCount ?? 0} звичок, виконано ${routine.overallRate ?? 0}%.`,
+          comment: "Розбір поки недоступний, лише числа тижня.",
           recommendations: [],
         }
       : null,
@@ -319,7 +315,7 @@ export function createWeeklyDigestHandler(
         });
       }
       throw new ValidationError(
-        "Замало даних за цей тиждень для звіту. Додай операцію, тренування, прийом їжі чи звичку і спробуй ще раз.",
+        "Замало даних за тиждень. Запиши операцію, тренування, їжу чи звичку і спробуй ще раз.",
         { code: "INSUFFICIENT_DATA" },
       );
     }
@@ -564,10 +560,13 @@ export function createWeeklyDigestHandler(
       const rawReport = extractJsonObject(replaceLongDash(llmResult.text));
       if (!rawReport) {
         if (!fallbackOnError) {
-          throw new ExternalServiceError("Не вдалося розпарсити відповідь AI", {
-            status: 502,
-            code: "ANTHROPIC_PARSE_ERROR",
-          });
+          throw new ExternalServiceError(
+            "Не вдалося прочитати відповідь Сержанта. Спробуй ще раз.",
+            {
+              status: 502,
+              code: "ANTHROPIC_PARSE_ERROR",
+            },
+          );
         }
         logger.warn({
           msg: "weekly_digest_llm_parse_fallback_to_template",
@@ -583,7 +582,7 @@ export function createWeeklyDigestHandler(
         if (!reportParse.success) {
           if (!fallbackOnError) {
             throw new ExternalServiceError(
-              "Відповідь AI не відповідає очікуваній структурі звіту",
+              "Звіт прийшов у невірному вигляді. Спробуй ще раз.",
               {
                 status: 502,
                 code: "ANTHROPIC_SHAPE_MISMATCH",

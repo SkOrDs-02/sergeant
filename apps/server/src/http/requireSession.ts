@@ -285,7 +285,7 @@ export function requireSessionSoft(): RequestHandler {
 
     if (escalate) {
       res.status(503).json({
-        error: "Сервіс автентифікації тимчасово недоступний",
+        error: "Вхід тимчасово недоступний. Спробуй ще раз.",
         code: "SESSION_LOOKUP_UNAVAILABLE",
       });
       return;

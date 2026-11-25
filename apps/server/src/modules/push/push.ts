@@ -186,7 +186,7 @@ export async function register(req: Request, res: Response): Promise<void> {
     if (upsert.rowCount === 0) {
       await throwIfPendingDeletion(user.id);
       throw new AppError(
-        "Цей пристрій уже зареєстровано на інший акаунт. Вийди з того акаунта на цьому пристрої й увімкни сповіщення знову.",
+        "Цей пристрій уже підключено до іншого акаунта. Вийди з нього тут і ввімкни сповіщення знову.",
         {
           status: 409,
           code: "PUSH_SUBSCRIPTION_OWNED",
@@ -212,7 +212,7 @@ export async function register(req: Request, res: Response): Promise<void> {
   if (upsert.rowCount === 0) {
     await throwIfPendingDeletion(user.id);
     throw new AppError(
-      "Цей пристрій уже зареєстровано на інший акаунт. Вийди з того акаунта на цьому пристрої й увімкни сповіщення знову.",
+      "Цей пристрій уже підключено до іншого акаунта. Вийди з нього тут і ввімкни сповіщення знову.",
       {
         status: 409,
         code: "PUSH_DEVICE_OWNED",
@@ -328,7 +328,7 @@ export async function sendPush(req: Request, res: Response): Promise<void> {
       /* swallow header-set failures (already-sent etc.) */
     }
     res.status(429).json({
-      error: "Забагато push-сповіщень для цього користувача. Спробуй пізніше.",
+      error: "Забагато сповіщень за короткий час. Спробуй пізніше.",
       code: "PUSH_TARGET_RATE_LIMIT",
     });
     return;
