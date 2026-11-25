@@ -11,6 +11,7 @@ import { searchActions, searchAiHandoff } from "./searchActions";
 import { finykManualSearchSnapshot, searchFinyk } from "./searchFinyk";
 import { habitScheduleLabel } from "./habitScheduleLabel";
 import { scoreLru } from "./searchCache";
+import { dedupeHits } from "./searchDedupe";
 import { searchProfile } from "./searchProfile";
 import { searchAssistantTools, searchSettings } from "./searchSettings";
 import { type Hit, localDateKey, pushScored } from "./searchTypes";
@@ -270,7 +271,9 @@ export function performSearch(query: string): Hit[] {
   // user may be chasing concrete records; settings + AI capabilities are
   // the «what can I do?» tail; AI handoff sits at the very end as the
   // graceful-degradation fallback when nothing structured matched.
-  const results: Hit[] = [
+  // Різні джерела можуть повернути ту саму сутність (дію і однойменну
+  // можливість Сержанта) — зливаємо їх в одному місці, див. `searchDedupe`.
+  const results: Hit[] = dedupeHits([
     ...searchActions(tokens),
     ...searchFinyk(tokens),
     ...searchFizruk(tokens),
@@ -280,7 +283,7 @@ export function performSearch(query: string): Hit[] {
     ...searchProfile(tokens),
     ...searchAssistantTools(tokens),
     ...searchAiHandoff(query),
-  ];
+  ]);
   scoreLru.set(lruKey, results);
   return results;
 }
