@@ -19,7 +19,7 @@ export function WellbeingChart({ data }: WellbeingChartProps) {
         compact
         className="rounded-panel border border-dashed border-line bg-panelHi/50"
         title="Немає даних для графіка"
-        description="Після кількох тренувань з оцінкою енергії та настрою тут зʼявиться діаграма."
+        description="Діаграма зʼявиться після кількох тренувань з оцінкою енергії та настрою."
       />
     );
   }
@@ -29,7 +29,7 @@ export function WellbeingChart({ data }: WellbeingChartProps) {
         compact
         className="rounded-panel border border-dashed border-line bg-panelHi/50"
         title="Замало точок"
-        description="Потрібно щонайменше два тренування з оцінкою самопочуття, щоб порівняти динаміку."
+        description="Потрібні щонайменше два тренування з оцінкою самопочуття."
       />
     );
   }

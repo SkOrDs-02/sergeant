@@ -89,7 +89,7 @@ export function AddExerciseSheet({
       open={open}
       onClose={handleClose}
       title="Додати вправу"
-      description="Збережеться локально на цьому пристрої"
+      description="Збережеться на цьому пристрої"
       closeLabel="Закрити форму"
       panelClassName="fizruk-sheet"
       zIndex={100}
@@ -268,9 +268,7 @@ export function AddExerciseSheet({
           onClick={() => {
             const nameUk = (form.nameUk || "").trim();
             if (!nameUk) {
-              setNameError(
-                "Вкажи назву українською, без неї вправа не збережеться.",
-              );
+              setNameError("Вкажи назву українською.");
               return;
             }
             const id = newCustomExerciseId();

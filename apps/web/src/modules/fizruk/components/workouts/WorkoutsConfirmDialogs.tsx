@@ -32,7 +32,7 @@ export interface WorkoutsConfirmDialogsProps {
 export const HARD_BLOCK_START_COPY = {
   title: "Є жорстке застереження",
   description:
-    "Ти позначив біль або ця група ще має червоний recovery-статус. Навантажувати її не раджу. Почати все одно?",
+    "Ти позначив біль або ця група ще не відновилась. Навантажувати її не раджу. Почати все одно?",
   confirmLabel: "Так, почати",
   cancelLabel: "Скасувати",
 } as const;

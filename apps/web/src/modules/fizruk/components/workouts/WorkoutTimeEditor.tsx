@@ -131,7 +131,7 @@ export function WorkoutTimeEditor({
           <>
             <Input
               id={endId}
-              label="Завершення (можна виправити після занесення)"
+              label="Завершення (можна виправити пізніше)"
               type="datetime-local"
               className={DATETIME_CLASS}
               value={isoToDatetimeLocalValue(endedAt)}
@@ -147,7 +147,7 @@ export function WorkoutTimeEditor({
           <>
             <Input
               id={endId}
-              label="Завершення (запишеться, коли натиснеш «Завершити»)"
+              label="Завершення (запишеться після «Завершити»)"
               type="datetime-local"
               className={DATETIME_CLASS}
               value={isoToDatetimeLocalValue(pendingEnd)}

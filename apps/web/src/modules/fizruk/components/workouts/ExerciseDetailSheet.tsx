@@ -193,7 +193,7 @@ export function ExerciseDetailSheet({
 
       {images.length === 0 && !selected.description && tips.length === 0 && (
         <p className="mb-4 text-style-body text-subtle leading-relaxed">
-          Опису для цієї вправи немає, нижче тільки мʼязи й обладнання.
+          Опису немає, лише мʼязи й обладнання.
         </p>
       )}
 

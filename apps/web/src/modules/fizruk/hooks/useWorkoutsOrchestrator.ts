@@ -301,9 +301,7 @@ export function useWorkoutsOrchestrator(
         return;
       }
       if (!activeWorkoutId) {
-        toast.warning(
-          "Спочатку натисни «Почати тренування», щоб зʼявилось активне тренування.",
-        );
+        toast.warning("Спочатку натисни «Почати тренування».");
         return;
       }
       if (activeWorkout?.endedAt) {
@@ -387,9 +385,7 @@ export function useWorkoutsOrchestrator(
         .map((id: string) => exercises.find((e) => e.id === id))
         .filter((e): e is RawExerciseDef => Boolean(e));
       if (!picks.length) {
-        toast.warning(
-          "У шаблоні немає вправ з каталогу. Відредагуй шаблон і додай вправи.",
-        );
+        toast.warning("У шаблоні немає вправ з каталогу. Додай їх у шаблон.");
         return;
       }
       const risky = picks.some((ex) => conflictsOf(ex).hasHardBlock);

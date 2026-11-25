@@ -170,7 +170,7 @@ describe("Body page — trends + journal", () => {
     const cards = screen.getAllByTestId("trend-card");
     expect(cards.length).toBeGreaterThanOrEqual(1);
     // The collecting-placeholder is gone once a card renders.
-    expect(screen.queryByText("Тренди ще збираються")).not.toBeInTheDocument();
+    expect(screen.queryByText("Графіки ще збираються")).not.toBeInTheDocument();
   });
 
   it("renders the journal section and deletes an entry via the undo toast", () => {

@@ -67,7 +67,7 @@ describe("RecoveryHonestyNotes", () => {
         syncEnabled
       />,
     );
-    expect(screen.getByText(/ще не пішли на сервер/)).toBeTruthy();
+    expect(screen.getByText(/ще не на сервері/)).toBeTruthy();
   });
 
   it("синку не було — окреме формулювання, не «давно»", () => {
@@ -103,7 +103,7 @@ describe("RecoveryHonestyNotes", () => {
       />,
     );
     expect(screen.getByText(/Журнал самопочуття застарів/)).toBeTruthy();
-    expect(screen.getByText(/більше не враховується/)).toBeTruthy();
+    expect(screen.getByText(/вже не враховано/)).toBeTruthy();
   });
 
   it("згорнуто в один рядок жанру, повний текст відкривається тапом", () => {
