@@ -45,7 +45,7 @@ import { FINYK_PHOTO_PRIVACY_ACK_KEY } from "./FinykPhotoPrivacyNotice";
 import type { ReceiptSaveStorageSlice } from "../../hooks/useReceiptSave";
 
 const HINT = "Підсумку на фото не видно, введи суму.";
-const SAVE_BLOCKED = "Введи суму чека, щоб зберегти.";
+const SAVE_BLOCKED = "Введи суму чека.";
 
 function visionDraft(overrides: Partial<ReceiptDraft> = {}): ReceiptDraft {
   return {

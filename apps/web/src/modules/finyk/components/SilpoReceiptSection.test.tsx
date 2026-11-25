@@ -238,9 +238,7 @@ describe("SilpoReceiptSection", () => {
     );
 
     expect(
-      screen.getByText(
-        "У операції вже є ручне розбиття, підтвердження замінить його.",
-      ),
+      screen.getByText("Ручне розбиття буде замінено."),
     ).toBeInTheDocument();
   });
 

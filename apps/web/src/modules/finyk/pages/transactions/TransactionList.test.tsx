@@ -151,7 +151,7 @@ describe("TransactionList — DataState routing", () => {
 
       expect(screen.getByText("Цей місяць ще порожній")).toBeInTheDocument();
       expect(
-        screen.getByText(/За серпень 2026 операцій поки немає/),
+        screen.getByText(/За серпень 2026 операцій немає/),
       ).toBeInTheDocument();
       // The first-run onboarding hero must NOT claim this user has no data.
       expect(

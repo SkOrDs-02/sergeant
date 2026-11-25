@@ -434,7 +434,7 @@ describe("BulkImportSheet — screenshot path", () => {
     // підказку з екрана на час розпізнавання).
     await waitFor(() =>
       expect(
-        screen.getByText(/Це схоже на чек, не скрін банкінгу/),
+        screen.getByText(/Це схоже на чек\. Відкрий «Сканувати чек»/),
       ).toBeInTheDocument(),
     );
   });
@@ -550,7 +550,7 @@ describe("BulkImportSheet — screenshot path", () => {
 
     await waitFor(() =>
       expect(
-        screen.getByText(/жодну не вдалось прочитати/i),
+        screen.getByText(/Операції не вдалось прочитати повністю/i),
       ).toBeInTheDocument(),
     );
   });
@@ -578,9 +578,7 @@ describe("BulkImportSheet — screenshot path", () => {
     });
 
     await waitFor(() =>
-      expect(
-        screen.getByText(/не схоже на екран банківського застосунку/i),
-      ).toBeInTheDocument(),
+      expect(screen.getByText(/не схоже на екран банку/i)).toBeInTheDocument(),
     );
     // Відмова = знову вибір файлу: помилка без шляху далі лишала б людину
     // на мертвому спінері.

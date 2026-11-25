@@ -83,8 +83,7 @@ import { BulkReviewTable } from "./BulkReviewTable";
 type Stage =
   "choose" | "processing" | "csv-mapper" | "bulk-review" | "commit-summary";
 
-const SCREENSHOT_SLOW_HINT =
-  "Ще працюю. Що більше рядків на скріні, то довше розпізнавання.";
+const SCREENSHOT_SLOW_HINT = "Ще працюю. Багато рядків читаються довше.";
 const CSV_SLOW_HINT = "Ще працюю. Велика виписка читається довше.";
 
 const SKIP_REASON_LABEL: Record<string, string> = {
@@ -107,7 +106,7 @@ const FAILED_FORMS = { one: "операція", few: "операції", many: "
 
 function explainEmptyScreenshot(draft: ImportScreenshotDraft): string {
   if (draft.truncated) {
-    return "На скріні забагато операцій, не встиг дочитати список. Зроби кілька скрінів по частинах.";
+    return "На скріні забагато операцій. Зроби кілька скрінів по частинах.";
   }
   const { failed, nonUah, unreadable } = draft.dropped;
   if (nonUah > 0 && failed === 0 && unreadable === 0) {
@@ -117,12 +116,12 @@ function explainEmptyScreenshot(draft: ImportScreenshotDraft): string {
     return `Усі ${failed} ${pluralUa(failed, FAILED_FORMS)} на скріні позначені як невдалі: гроші за ними не рухались.`;
   }
   if (failed + nonUah + unreadable > 0) {
-    return "Бачу операції, але жодну не вдалось прочитати повністю. Спробуй скрін крупніше або без обрізаних країв.";
+    return "Операції не вдалось прочитати повністю. Спробуй скрін крупніше й без обрізаних країв.";
   }
   if (draft.docType === "other") {
-    return "Це не схоже на екран банківського застосунку. Відкрий список операцій у банку і зроби скрін звідти.";
+    return "Це не схоже на екран банку. Відкрий список операцій і зроби скрін звідти.";
   }
-  return "Не знайшов операцій на скріні. Переконайся, що на ньому видно список операцій із сумами.";
+  return "Операцій на скріні не знайшов. Перевір, що на ньому видно список із сумами.";
 }
 
 function defaultCategoryFor(direction: "expense" | "income"): string {
@@ -268,7 +267,7 @@ export function BulkImportSheet({
       );
       if (draft.docType === "receipt") {
         failBackToChoose(
-          "Це схоже на чек, не скрін банкінгу. Використай «Сканувати чек», там можна і кілька фото одразу.",
+          "Це схоже на чек. Відкрий «Сканувати чек», там можна кілька фото одразу.",
         );
         return;
       }

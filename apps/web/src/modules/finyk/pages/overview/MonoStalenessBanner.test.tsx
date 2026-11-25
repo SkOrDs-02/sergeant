@@ -25,9 +25,9 @@ describe("MonoStalenessBanner", () => {
     // Канон §6.3: тиша webhook-а ззовні ідентична тиші користувача, тож
     // однозначний діагноз тут був би вигадкою в половині випадків.
     render(<MonoStalenessBanner days={9} />);
-    const hint = screen.getByText(/Можливо, витрат справді не було/);
+    const hint = screen.getByText(/Або витрат не було/);
     expect(hint).toBeInTheDocument();
-    expect(hint.textContent).toMatch(/можливо, звʼязок із банком обірвався/);
+    expect(hint.textContent).toMatch(/звʼязок із банком обірвався/);
   });
 
   it("оголошується асистивним технологіям як статус", () => {

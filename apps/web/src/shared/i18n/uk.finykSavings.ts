@@ -28,7 +28,7 @@ export const finykSavingsMessages = {
     },
     currency: "Валюта",
     fxRate: "Курс, ₴ за 1 {currency}",
-    fxRateHint: "Без курсу актив не входить у капітал. Оновлюй, коли хочеш.",
+    fxRateHint: "Без курсу актив не рахується в капіталі.",
     invested: "Скільки вклав",
     investedOvdp: "Скільки заплатив",
     date: "Дата внеску",
