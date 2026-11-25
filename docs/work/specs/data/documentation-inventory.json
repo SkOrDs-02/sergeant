@@ -4470,6 +4470,13 @@
       "canonical_owner": "docs/work/specs/e2e-repeatable-states.md"
     },
     {
+      "old_path": "docs/work/specs/finyk-fx-nbu.md",
+      "new_path": "docs/work/specs/finyk-fx-nbu.md",
+      "action": "keep",
+      "genre": "active-work",
+      "canonical_owner": "docs/work/specs/finyk-fx-nbu.md"
+    },
+    {
       "old_path": "docs/work/specs/finyk-hero-month-strip.md",
       "new_path": "docs/work/specs/finyk-hero-month-strip.md",
       "action": "keep",
