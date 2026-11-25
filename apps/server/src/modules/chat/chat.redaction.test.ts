@@ -164,12 +164,12 @@ describe("маскування на вході чату", () => {
   });
 
   // Знахідка B2 (`docs/work/specs/audits/ai-pipeline-2026-08-05.md`): Anthropic —
-  // не єдиний стік за периметром. `truncateToolResults` кладе ПОВНИЙ оригінал
-  // у Sentry-breadcrumb (`data.full`), а `applyBeforeBreadcrumb` чистить `data`
-  // лише для `category: "http"`. Поки маска стояла ПІСЛЯ усічення, сирі імена
-  // їхали в Sentry. Тест дивиться саме на breadcrumb, а не на payload — інакше
-  // регресія знову пройде повз (payload лишиться чистим в обох порядках).
-  it("не пускає немасковане імʼя у Sentry-breadcrumb усічення", async () => {
+  // не єдиний стік за периметром. Колись `truncateToolResults` клав ПОВНИЙ
+  // оригінал у Sentry-breadcrumb (`data.full`), і поки маска стояла ПІСЛЯ
+  // усічення, сирі імена їхали в Sentry. З priv-24 breadcrumb несе лише
+  // довжину і sha256-префікс. Тест дивиться саме на breadcrumb, а не на
+  // payload: payload лишається чистим за будь-якого порядку.
+  it("не пускає вміст tool_result у Sentry-breadcrumb усічення", async () => {
     const long = `Від Іван Петренко ivan@mail.com ${"деталі ".repeat(400)}`;
     expect(long.length).toBeGreaterThan(2000); // інакше truncate не спрацює
 
@@ -190,9 +190,12 @@ describe("маскування на вході чату", () => {
       .filter((b) => b?.category === "chat.tool_result");
     expect(breadcrumbs).toHaveLength(1);
 
-    const full = String(breadcrumbs[0]?.data?.["full"] ?? "");
-    expect(full).not.toBe("");
-    expect(full).not.toContain("Іван Петренко");
-    expect(full).not.toContain("ivan@mail.com");
+    const data = breadcrumbs[0]?.data ?? {};
+    expect(data).not.toHaveProperty("full");
+    expect(data["original_length"]).toEqual(expect.any(Number));
+    const json = JSON.stringify(breadcrumbs[0]);
+    expect(json).not.toContain("Іван Петренко");
+    expect(json).not.toContain("ivan@mail.com");
+    expect(json).not.toContain("деталі");
   });
 });

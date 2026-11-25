@@ -51,6 +51,9 @@ describe("escapeCsvValue", () => {
     expect(escapeCsvValue("=1+1")).toBe("'=1+1");
     expect(escapeCsvValue("-Іван")).toBe("'-Іван");
     expect(escapeCsvValue("@user")).toBe("'@user");
+    // Таб і \r на початку частина парсерів зрізає, відкриваючи формулу.
+    expect(escapeCsvValue("\t=1+1")).toBe("'\t=1+1");
+    expect(escapeCsvValue("\r=1+1")).toBe('"\'\r=1+1"');
     // Відʼємне ЧИСЛО при цьому лишається числом — інакше зіпсували б
     // кожну витрату у файлі.
     expect(escapeCsvValue(-500)).toBe("'-500");

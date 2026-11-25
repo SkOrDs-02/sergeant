@@ -1,4 +1,4 @@
-import { beforeEach, describe, expect, it, vi } from "vitest";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import type { Mock } from "vitest";
 import type { Request, Response } from "express";
 
@@ -924,6 +924,173 @@ describe("syncV2Push · new-op apply path", () => {
         ],
       });
     });
+  });
+});
+
+// ────────────────────────────────────────────────────────────────────────────
+// data-51: годинник пристрою, що поспішає. Доти сервер приймав client_ts до
+// +1 год і писав його в updated_at як є: пристрій +50 хв «замикав» рядок, і
+// кожна правка з правильного годинника за цей час отримувала lww_conflict.
+// Тут apply — справжній LWW у памʼяті (`updated_at >= clientTs` → конфлікт),
+// тож тест бачить рівно ту мітку, яку сервер записав би в рядок.
+// ────────────────────────────────────────────────────────────────────────────
+
+describe("syncV2Push · годинник пристрою (data-51)", () => {
+  const NOW = Date.parse("2026-11-21T12:00:00.000Z");
+  const MIN = 60 * 1000;
+  let rowUpdatedAt: Map<string, number>;
+  let nextOpId: number;
+
+  beforeEach(() => {
+    vi.useFakeTimers({ toFake: ["Date"] });
+    vi.setSystemTime(NOW);
+    rowUpdatedAt = new Map();
+    nextOpId = 1;
+    applyRoutineEntries.mockImplementation(
+      async (_c: unknown, o: { row: { id: string } }, _u: string, ts: Date) => {
+        const prev = rowUpdatedAt.get(o.row.id);
+        if (prev !== undefined && prev >= ts.getTime()) {
+          return { status: "rejected", reason: "lww_conflict" };
+        }
+        rowUpdatedAt.set(o.row.id, ts.getTime());
+        return { status: "applied" };
+      },
+    );
+    client.query.mockImplementation(async (sql: string) =>
+      /INSERT INTO sync_op_log/.test(String(sql))
+        ? {
+            rows: [{ id: String(nextOpId++), server_ts: new Date(Date.now()) }],
+          }
+        : { rows: [] },
+    );
+  });
+
+  afterEach(() => {
+    vi.useRealTimers();
+  });
+
+  function entryOp(key: string, clientMs: number, title: string) {
+    return {
+      table: "routine_entries",
+      op: "update" as const,
+      row: { id: "entry-1", title },
+      client_ts: new Date(clientMs).toISOString(),
+      idempotency_key: key,
+    };
+  }
+
+  async function push(ops: unknown[]) {
+    const res = makeRes();
+    await syncV2Push(makeReq({ body: { ops } }), res);
+    return res.body as {
+      accepted: number;
+      results: Array<{
+        idempotency_key: string;
+        status: string;
+        reason?: string;
+        client_ts?: string;
+      }>;
+    };
+  }
+
+  function opLogClientTs(): number[] {
+    return client.query.mock.calls
+      .filter(([sql]) => /INSERT INTO sync_op_log/.test(String(sql)))
+      .map(([, params]) => ((params as unknown[])[5] as Date).getTime());
+  }
+
+  it("пристрій +50 хв: retry / clock_skew без apply і без журналу; пізніша правка з правильного годинника застосовується", async () => {
+    const fast = await push([entryOp("fast", NOW + 50 * MIN, "fast")]);
+    expect(fast.results).toEqual([
+      { idempotency_key: "fast", status: "retry", reason: "clock_skew" },
+    ]);
+    expect(applyRoutineEntries).not.toHaveBeenCalled();
+    expect(opLogClientTs()).toEqual([]);
+
+    vi.setSystemTime(NOW + MIN);
+    const honest = await push([entryOp("honest", NOW + MIN, "honest")]);
+    expect(honest.results).toEqual([
+      { idempotency_key: "honest", status: "applied" },
+    ]);
+  });
+
+  it("пристрій +90 с (у межах допуску): updated_at обрізається до server_now і не замикає рядок", async () => {
+    const fast = await push([entryOp("fast", NOW + 90_000, "fast")]);
+    expect(fast.results[0]).toMatchObject({ status: "applied" });
+    // Apply і журнал (а з ним pull / SSE інших пристроїв) бачать server_now.
+    expect(applyRoutineEntries.mock.calls[0]![3]).toEqual(new Date(NOW));
+    expect(opLogClientTs()).toEqual([NOW]);
+    expect(notify.mock.calls[0]![1][0].client_ts).toBe(
+      new Date(NOW).toISOString(),
+    );
+
+    // Правильний годинник, через 10 с — раніше за +90 с пристрою, але пізніше
+    // за момент, коли сервер прийняв його правку. Доти — lww_conflict.
+    vi.setSystemTime(NOW + 10_000);
+    const honest = await push([entryOp("honest", NOW + 10_000, "honest")]);
+    expect(honest.results).toEqual([
+      { idempotency_key: "honest", status: "applied" },
+    ]);
+  });
+
+  it("обрізана мітка повертається в результаті опа, необрізана — ні (rv-sync-clock)", async () => {
+    // Без поля пристрій лишав у себе updated_at = NOW + 90 с і відкидав
+    // пізнішу чужу правку (NOW + 30 с) як старішу: розходження до наступної
+    // правки рядка, бо власний оп pull фільтрує за origin.
+    const fast = await push([entryOp("fast", NOW + 90_000, "fast")]);
+    expect(fast.results).toEqual([
+      {
+        idempotency_key: "fast",
+        status: "applied",
+        client_ts: new Date(NOW).toISOString(),
+      },
+    ]);
+    vi.setSystemTime(NOW + 10_000);
+    const honest = await push([entryOp("honest", NOW + 5_000, "honest")]);
+    expect(honest.results).toEqual([
+      { idempotency_key: "honest", status: "applied" },
+    ]);
+  });
+
+  it("повтор уже записаного опа віддає ту саму обрізану мітку з журналу", async () => {
+    client.query.mockImplementation(async (sql: string) =>
+      /idempotency_key = ANY/.test(String(sql))
+        ? {
+            rows: [
+              {
+                id: "7",
+                status: "applied",
+                reject_reason: null,
+                client_ts: new Date(NOW - 60_000),
+                idempotency_key: "fast",
+              },
+            ],
+          }
+        : { rows: [] },
+    );
+    const body = await push([entryOp("fast", NOW + 30_000, "fast")]);
+    expect(body.results).toEqual([
+      {
+        idempotency_key: "fast",
+        status: "applied",
+        client_ts: new Date(NOW - 60_000).toISOString(),
+      },
+    ]);
+    expect(applyRoutineEntries).not.toHaveBeenCalled();
+  });
+
+  it("кілька правок одного рядка з пристрою, що поспішає, в одному пуші: остання виграє", async () => {
+    const body = await push([
+      entryOp("a", NOW + 60_000, "a"),
+      entryOp("b", NOW + 61_000, "b"),
+    ]);
+    expect(body.results.map((r) => r.status)).toEqual(["applied", "applied"]);
+    expect(opLogClientTs()).toEqual([NOW, NOW + 1]);
+  });
+
+  it("мітка в минулому не змінюється", async () => {
+    await push([entryOp("past", NOW - 5_000, "past")]);
+    expect(opLogClientTs()).toEqual([NOW - 5_000]);
   });
 });
 

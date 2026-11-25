@@ -64,7 +64,8 @@
       "path": "/healthz",
       "expectedStatus": 200,
       "latencyBudgetMs": 2500,
-      "auth": "none",
+      "auth": "metrics",
+      "comment": "За METRICS_TOKEN (sec-40). З SMOKE_METRICS_TOKEN перевіряє форму, без нього — що анонім отримує 401.",
       "tier": "critical",
       "shape": {
         "status": "string",
@@ -78,7 +79,8 @@
       "path": "/health/workers",
       "expectedStatus": 200,
       "latencyBudgetMs": 2500,
-      "auth": "none",
+      "auth": "metrics",
+      "comment": "За METRICS_TOKEN (sec-40). З SMOKE_METRICS_TOKEN перевіряє форму, без нього — що анонім отримує 401.",
       "tier": "extended",
       "shape": {
         "status": "string",

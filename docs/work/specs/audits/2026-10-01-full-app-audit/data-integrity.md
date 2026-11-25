@@ -1,9 +1,13 @@
 # Аудит 2026-10-01 · Цілісність даних і синхронізація
 
 > **Status:** Active. 82 кластери (129 знахідок) за першопричиною. Загальний план, метод і обмеження — у [README](./README.md).
-> **Last validated:** 2026-10-02
-> **Next review:** 2026-11-02
+> **Last touched:** 2026-11-23 by @claude (bv-first-pull-gaps закрито: Фізрук, Активи й hero хаба на фазі першого pull, 503 у бюджеті повторів); 2026-11-22 by @claude (rv-sync-clock закрито: обрізана мітка повертається клієнту, `clock_skew` не палить спроб); 2026-11-22 by @claude (data-39 закрито: `add_program_day` прибрано в #1700); 2026-11-22 by @claude (рішення власника по решті питань беклогу); 2026-11-21 by @claude (`data-02`: переграш для застряглих пристроїв зроблено); 2026-11-21 by @claude (data-51: серверна обрізка `client_ts`, `clock_skew` → `retry`); 2026-11-21 by @claude (рішення власника по кластерах, раунди 5–10); раніше перевірено 2026-10-02.
+> **Next review:** 2027-01-21
 > **Spec-lint:** skip. Реєстр знахідок аудиту, не специфікація реалізації.
+
+> **Рішення власника 2026-11-22** (решта питань беклогу, сторінка рішень; кожне чекає виконання, пункти не закрито):
+>
+> - `data-low-backlog` — Крім топ-6, у коді підтверджено ще дрібні відкриті дефекти, які агент може закрити без міграцій: data-80 (web-vitals бере rating від клієнта), data-63 (повтори 7.5 приймаються в… **Рішення:** Одна хвиля «low quick wins» після топ-6.
 
 Цілісність даних — найслабше місце застосунку: 129 кандидатів зведено до 82 кластерів (11 high, 38 medium, 32 low, 1 info), майже всі підтверджені живим відтворенням або кодом, і жоден не закритий комітами після c7c09607, бо вони не торкались sync і сховища. Головні корені системні, а не точкові: глобальні PK на передбачуваних клієнтських id (крос-юзерні колізії й сквотинг), pull-апплаєр, що не скидає deleted_at при відновленні запису, запис цілих blob-ів із ще не прогрітого кешу (список покупок, nutrition_prefs, комора в memory-режимі) і журнал dual-write, що знімається попри помилку SQLite. Протокол синку має ще кілька тихих розривів: курсор pull перескакує оп-и паралельних транзакцій (пункт технборгу хибно закрито), hard-delete таблиці без tombstone, термінальні відмови на гонках першого INSERT і серверні записи в обхід sync_op_log, а бекап/відновлення й AI-чат обходять гарантії dual-write. Майже всі втрати тихі: користувач бачить тост успіху, а розбіжність проявляється лише на іншому пристрої чи після reload. Найшвидше вплинуть S-фікси: deleted_at у applyPullOp, ack журналу лише при errored = 0, гейт nutrition-persist до гідратації, emitServerSyncOps для серверних витрат, rollback на oplog_write_failed і прибирання ?sync=; системні кроки — складений PK (user_id, id) і per-user серіалізація записів у sync_op_log.
 
@@ -235,7 +239,8 @@ verify/imp.mjs run vx2 (uid crL78tWN…): oplog 18786 finyk_manual_expenses|inse
 
 ### `data-02` [high] Запис, відновлений після видалення («Повернути», повторний пропуск, hide→show→hide), назавжди лишається видаленим на інших і нових пристроях
 
-- **Стан:** виправлено в #1326 (змерджено 2026-10-03) (клієнтський generic upsert; пункт про переграш логу для застряглих пристроїв — рішення власника, не зроблено)
+- **Стан:** виправлено в #1326 (змерджено 2026-10-03) (клієнтський generic upsert); переграш для застряглих пристроїв зроблено 2026-11-21: примусовий повний прохід за версією `sync_repull` (`replicaBootstrap.ts`), у ньому tombstone при рівному `updated_at` поступається живому рядку сервера (`healTombstoneTie`), бо строгий LWW такий рядок не лікував
+- **Рішення власника 2026-11-21:** одноразовий примусовий повний re-pull на всіх клієнтах (скидання курсора, зі знімком сервера для швидкості); закриває і пропуски після перестрибнутого курсора (tech-debt/backend.md § Курсор pull).
 - **Перевірка:** підтверджено · **Зусилля:** S · **Швидкий виграш** · **Область:** web: syncEngine (applyPullOp) + writers усіх модулів
 - **Де:** apps/web/src/core/syncEngine/applyPullOp.ts:311-366 (insertCols на :344); apps/web/src/modules/finyk/lib/sqliteWriter/adapter.ts:155-165,209-219; apps/web/src/modules/routine/lib/sqliteWriter/adapter.ts:358-381,573-628; apps/web/src/modules/nutrition/lib/sqliteWriter/adapter.ts:335-357
 - **Першопричина:** Writers кладуть в outbox insert-рядки без ключа deleted_at, сервер зберігає op.row як є і так само віддає його на pull. applyGenericRegistryRow будує ON CONFLICT DO UPDATE лише з колонок, присутніх у рядку, тож локальний tombstone не скидається; коментар AI-DANGER і регресійний тест (з явним deleted_at: null) хибно вважають це закритим.
@@ -2109,6 +2114,7 @@ How the loss happens:
 ### `data-23` [medium] Чат-екзекутори обходять серверні межі: create_transaction на будь-яку 400 пише локально з поясненням «сервер недоступний», а log_weight, log_measurement і log_meal не мають меж
 
 - **Стан:** частково виправлено в [#1490](https://github.com/SkOrDs-02/sergeant/pull/1490) (змерджено 2026-10-09) (лишилось: Idempotency-Key/client id у POST /manual-expenses, межі решти мутаторів у toolCallSchema, серверна валідація data_json у sync; add_asset, recurring_expense та log_meal/log_water без стелі)
+- **Рішення власника 2026-11-22:** Лише стелі в toolCallSchema без міграції.
 - **Перевірка:** підтверджено · **Зусилля:** M · **Область:** web: AI-чат (serverActions, toolCallSchema, nutritionActions, fizrukActions)
 - **Де:** apps/web/src/core/lib/chatActions/serverActions.ts:183-250; apps/web/src/core/lib/chatActions/finykActions/transactions.ts:28-71; apps/web/src/core/lib/chatActions/nutritionActions.ts:66-111,419-437; apps/web/src/core/lib/chatActions/fizrukActions/measurements.ts:13-62; apps/web/src/core/hub/chat/toolCallSchema.ts:41-337
 - **Першопричина:** serverActions ловить будь-яку помилку голим catch і йде в локальний fallback без MAX_AMOUNT, ліміту опису й межі дати, а sync потім доносить запис у ту саму таблицю. Аргументи інших мутаторів не валідуються спільними примітивами меж: toolCallSchema покриває близько 20 мутаторів лише numOrStr без діапазонів.
@@ -3223,7 +3229,8 @@ kill1.mjs: у вправі «Віджимання» вага s0 = 20, далі �
 
 ### `data-39` [medium] Активна тренувальна програма і план тижня з чат-тулу add_program_day живуть лише в localStorage: не синхронізуються й не читаються з pulled fizruk_programs
 
-- **Стан:** частково виправлено в [#1564](https://github.com/SkOrDs-02/sergeant/pull/1564) (змерджено 2026-10-20) (вибір програми тепер в `fizruk_programs` з sync і LS-дреном; `add_program_day` чесно відмовляє й нічого не пише, але ще лишається в реєстрі тулів сервера: повне видалення за рішенням власника потребує платного перезапису касет tool-eval; `fizruk_plan_templates` і `fizruk_wellbeing` у вебі досі без писаря)
+- **Стан:** закрито. Вибір програми в `fizruk_programs` з sync і LS-дреном у [#1564](https://github.com/SkOrDs-02/sergeant/pull/1564) (змерджено 2026-10-20); `add_program_day` повністю прибрано з реєстру тулів, схеми, веб-виконавця й каталогу, касети tool-eval перезаписано в [#1700](https://github.com/SkOrDs-02/sergeant/pull/1700) (запис у журналі рішень 2026-11-17; гейт `toolContractHonesty.test.ts`). Звірено 2026-11-22. ~~частково виправлено в [#1564](https://github.com/SkOrDs-02/sergeant/pull/1564) (змерджено 2026-10-20) (вибір програми тепер в `fizruk_programs` з sync і LS-дреном; `add_program_day` чесно відмовляє й нічого не пише, але ще лишається в реєстрі тулів сервера: повне видалення за рішенням власника потребує платного перезапису касет tool-eval; `fizruk_plan_templates` і `fizruk_wellbeing` у вебі досі без писаря)~~
+- **Рішення власника 2026-11-22:** Так, перезаписати касети: власник обрав повне видалення `add_program_day` з реєстру тулів сервера з платним перезаписом касет tool-eval замість рекомендованого «лишити тул»; на момент рішення вже виконано в #1700, платний перезапис не знадобився.
 - **Перевірка:** підтверджено · **Зусилля:** M · **Область:** web: Фізрук (useTrainingProgram) + AI-чат (fizrukActions)
 - **Де:** apps/web/src/modules/fizruk/hooks/useTrainingProgram.ts:9-22; apps/web/src/core/lib/chatActions/fizrukActions/programs.ts:34-41; apps/server/src/modules/sync/fizruk/applySyncFullState.ts:187-197; packages/shared/src/lib/storageKeys.ts:272-293
 - **Першопричина:** useTrainingProgram читає й пише лише LS-ключ fizruk_active_program_id_v1 (позначений @deprecated на користь SQLite fizruk_programs), а чат-тул add_program_day пише fizruk_plan_template_v1, який у вебі ніхто не читає. Веб-писача fizruk_programs і fizruk_plan_templates немає, хоча сервер і pull їх підтримують.
@@ -3815,7 +3822,7 @@ The code confirms it and I reproduced it in the browser. analyticsConsent.ts:79 
 
 ### `data-50` [low] Добивач видалення акаунтів може знищити акаунт, який користувач щойно відновив
 
-- **Стан:** відкрито
+- **Стан:** закрито в гілці `backlog/data-50` (2026-11-21): `purgeUserData` перечитує мітку під `SELECT … FOR UPDATE` з умовою дозрілого вікна і відкочується з `null`, якщо акаунт відновили чи видалила інша репліка; `restoreAccount` чекає на цей лок сам, добивач рахує такі акаунти як `skipped`, коментар про репліки виправлено. Дедлайн у restore (спека §4) не додано: відновлення після кінця вікна, але до purge, безпечне.
 - **Перевірка:** підтверджено · **Зусилля:** S · **Швидкий виграш** · **Область:** server: me (deletionPoller, dataRights)
 - **Де:** apps/server/src/modules/me/deletionPoller.ts:61-87,157-169,198-215; apps/server/src/modules/me/dataRights.ts:614-627,652-735
 - **Першопричина:** claimBatch знімає FOR UPDATE на COMMIT ще до purge, purgeUserData не перечитує deletion_requested_at і робить безумовний DELETE FROM user, а restoreAccount не бере лок і не перевіряє дедлайн.
@@ -3923,7 +3930,8 @@ claimBatch: `BEGIN; SELECT id ... FOR UPDATE SKIP LOCKED; COMMIT;` і лише �
 
 ### `data-51` [low] LWW за годинником пристрою: годинник, що поспішає до години, «замикає» рядки й тихо відкидає правки інших пристроїв, а понад годину всі записи пристрою термінально відхиляються
 
-- **Стан:** відкрито
+- **Стан:** виправлено на сервері (гілка `backlog/data-51`, 2026-11-21): допуск годинника наперед 1 год → 2 хв (`clientClock.ts`), у межах допуску `updated_at` і `sync_op_log.client_ts` = `min(client_ts, server_now)` (монотонно в межах пуша), поза ним `retry / clock_skew` без запису в журнал замість термінального `rejected`. Регрес обрізки (рев'ю `rv-sync-clock`) закрито 2026-11-22 у гілці `backlog/rv-sync-clock`: сервер повертає записану мітку в `results[].client_ts` на `applied` (і на повторі з журналу), а клієнт переписує на неї локальний `updated_at` рядка, якщо там досі надіслана мітка (`adoptStoredClientTs.ts`), тож пристрій, що поспішав, більше не відкидає пізніших чужих правок; `retry / clock_skew` не палить спроб і чекає `client_ts − server_now` (не довше 5 хв), тож оп доходить, щойно годинник сервера наздожене мітку, а не йде в `dead_letter` за ~17 хв бекофу, як писалося раніше. Відкритим лишається лише `lww_conflict` без підтягування переможця
+- **Рішення власника 2026-11-21:** `updated_at = min(client_ts, server_now)`, вікно наперед звузити з години до хвилин; HLC не робимо.
 - **Перевірка:** підтверджено · **Зусилля:** M · **Область:** server: sync (syncV2, applySync-helpers) + web: syncEngine
 - **Де:** apps/server/src/modules/sync/syncV2.ts:131,370-378; apps/server/src/modules/sync/applySync-helpers.ts:61-74; apps/web/src/core/syncEngine/applyPullOp.ts:90-99,303-331; apps/web/src/core/syncEngine/singleton.ts:45,64-67; apps/web/src/core/syncEngine/clockSkew.ts:1-30
 - **Першопричина:** Сервер приймає client_ts до +60 хв і пише його в updated_at без обмеження, LWW порівнює за клієнтським часом; lww_conflict клієнт вважає benign і термінальним, clock_skew теж термінальний без ретраю після виправлення годинника, а нижньої межі немає (0001-01-01 приймається).
@@ -4341,7 +4349,7 @@ Confirmed with a tsx harness against the real strongImport.ts. buildStrongImport
 
 ### `data-55` [low] boundedDayKeySchema не перевіряє календар: «2024-02-30» і «2024-13-45» зберігаються й реплікуються, а import/commit на них падає з 500
 
-- **Стан:** відкрито
+- **Стан:** виправлено 2026-11-22 (`backlog/data-55`): `boundedDayKeySchema` перевіряє календар round-trip через `Date.UTC` (`isCalendarDayKey`), тож manual-expenses і import/commit відхиляють `2024-02-30` як 400; `screenshotAnalyze` валідує дату тією самою схемою і кладе такий рядок у `dropped.unreadable`. Серверний apply sync (`routine_entries`) цим не покритий
 - **Перевірка:** підтверджено · **Зусилля:** S · **Швидкий виграш** · **Область:** packages/shared (schemas/bounds) + server: finyk
 - **Де:** packages/shared/src/schemas/bounds.ts:58-66; apps/server/src/modules/finyk/import/dedupMono.ts:68; apps/server/src/modules/finyk/import/screenshotAnalyze.ts:41-43,128; apps/server/src/modules/finyk/manualExpenses.ts:93-110
 - **Першопричина:** Схема перевіряє лише regex і рядкове порівняння діапазону 1970..2100, isValidDayKey у screenshotAnalyze теж лише regex; справжня date-колонка в findMonoMatchedRows падає з 22008, а sync у timestamptz мовчки нормалізує дату.
@@ -4419,7 +4427,7 @@ r2/v1_nul.mjs, секція #2: 4×201, 2×400 і commit 500 22008 для обо
 
 ### `data-56` [low] Анонімний пошук штрихкоду пише в спільний product_catalog довільний USDA-продукт (foods[0]) чи мотлох з OFF, і цей рядок назавжди віддається всім першим
 
-- **Стан:** відкрито
+- **Стан:** закрито частково в гілці `backlog/data-56`: USDA-гілка приймає результат лише за точного збігу `gtinUpc` без провідних нулів, без збігу (і для коду з самих нулів) це miss, тож чужий `foods[0]` у `product_catalog` більше не пишеться (`barcode.test.ts`). Залишок: контрольна цифра GTIN, TTL/ревалідація й адмін-видалення рядків каталогу, фільтр неперевірених write-through рядків у пошуку, чистка наявних usda-рядків без збігу gtin
 - **Перевірка:** підтверджено · **Зусилля:** S · **Швидкий виграш** · **Область:** server: nutrition (barcode, productCatalog)
 - **Де:** apps/server/src/modules/nutrition/barcode.ts:306-311,452,565; apps/server/src/modules/nutrition/productCatalog.ts:103-136,266-300,356-446
 - **Першопричина:** USDA-гілка бере exact || foods[0], тобто перший повнотекстовий результат без збігу gtinUpc, а void upsertIntoCatalog пише результат будь-якого, зокрема анонімного запиту в глобальний довідник. Tier-1 lookupInCatalog віддає рядок раніше за апстріми без TTL і ревалідації, і рядок з'являється в searchCatalog.
@@ -4575,6 +4583,7 @@ Repro outputs: "150" gives total 150; "150.00" gives 15000; DOCSUBTYPE=1 gives t
 ### `data-58` [low] TTL-замітач outbox рахує вік від created_at і чистить на весь пристрій: щойно мертвий рядок старого офлайн-запису видаляється на найближчому буті
 
 - **Стан:** відкрито
+- **Рішення власника 2026-11-22:** Мінімум без міграції: передавати userId (опція вже є) і не чистити dead_letter.
 - **Перевірка:** підтверджено · **Зусилля:** S · **Швидкий виграш** · **Область:** web: syncEngine + db-schema (purgeStaleTerminalOutbox)
 - **Де:** packages/db-schema/src/sqlite/syncOpOutboxPurgeStale.ts:136-210; apps/web/src/core/syncEngine/singleton.ts:448-460; apps/web/src/core/syncEngine/outboxPurgeNotice.ts
 - **Першопричина:** purgeStaleTerminalOutbox видаляє rejected і dead_letter за умовою вік від created_at понад 30 днів, без userId; колонки моменту переходу в термінальний статус немає, а markOutboxRetry created_at не оновлює.
@@ -4620,7 +4629,8 @@ purgeStaleTerminalOutbox(client, { olderThanDays: 30 }) без userId; пред�
 
 ### `data-59` [low] Евікція сховища (Safari 7-day cap, очищення даних) мовчки знищує офлайн-чергу: «13 в черзі» зникає без попередження
 
-- **Стан:** відкрито
+- **Стан:** закрито в гілці `backlog/data-59-60` (2026-11-21) у межах рішення власника: копія без повного pull (новий пристрій, евікція) показує в порожніх станах модулів «Завантажую з хмари…» замість заклику, а після вичерпаних повторів помилку з «Ще раз» (`FirstCloudPullGate`, разом із `data-60`). Серверний high-water mark черги, Background Sync і попередження «N офлайн-записів могли не дійти» свідомо не робимо
+- **Рішення власника 2026-11-21:** лише клієнтський стан «Завантажую з хмари» замість empty-state з повторами 2/5/15 с; серверний high-water mark черги (міграція) не робимо.
 - **Перевірка:** підтверджено · **Зусилля:** M · **Область:** web: durability (outbox, persistentStorage, sw)
 - **Де:** apps/web/src/core/syncEngine/outboxPurgeNotice.ts; apps/web/src/core/app/OfflineBanner.tsx; apps/web/src/core/db/persistentStorage.ts; apps/web/src/sw.ts
 - **Першопричина:** Незасинхронізовані оп-и живуть лише в OPFS (sync_op_outbox), Background Sync немає, а сервер нічого не знає про незавершену чергу, тож після евікції немає з чим звірити й про що попередити.
@@ -4666,7 +4676,9 @@ purgeStaleTerminalOutbox(client, { olderThanDays: 30 }) без userId; пред�
 
 ### `data-60` [low] Новий пристрій: якщо перший pull падає, модулі показують порожній стан із закликом «Додай першу…» без індикатора, а повтор лише через ~60 с
 
-- **Стан:** відкрито
+- **Стан:** закрито в гілці `backlog/data-59-60` (2026-11-21): reader повторює перший pull копії без `replicaBootstrap = done` через 2/5/15 с і веде фазу `idle`/`loading`/`failed` в `initialPullState.ts`; `ModuleEmptyState` і порожній список звичок `RoutineCalendarPanel` через `FirstCloudPullGate` показують «Завантажую з хмари…», після останнього повтору помилку з «Ще раз» (`requestCloudPull`). Наповнена копія лишається на звичайному порожньому стані й інтервалі 60 с (`syncEngineReader.firstPull.test.ts`, `EmptyState.firstCloudPull.test.tsx`). Залишок: помилки pull в OfflineBanner/SyncStatusSheet, комора й далі на власному `usePantryFirstPullPending`
+- **Рішення власника 2026-11-21:** лише клієнтський стан «перший pull» з повторами 2/5/15 с, без міграції (разом із `data-59`).
+- **Браузерна перевірка (`bv-first-pull-gaps`):** закрито в гілці `backlog/bv-first-pull-gaps` (2026-11-23): підзаголовок і «Останні тренування» Фізрука, «Загальний капітал» Активів і hero хаба «Витрати сьогодні» з нулем теж ідуть через `useFirstCloudPullPhase`/`FirstCloudPullGate` («Завантажую з хмари…», після повторів помилка з «Ще раз»), а 503 на першому pull більше не перечікується в тіку як рейт-ліміт: рахується в бюджет повторів (`failed` за 4 запити, як 500), `Retry-After` подовжує паузу повтору (`syncEngineReader.firstPull.test.ts` і тести поверхонь).
 - **Перевірка:** підтверджено · **Зусилля:** M · **Область:** web: syncEngine (syncEngineReader)
 - **Де:** apps/web/src/core/syncEngine/singleton.ts:243; apps/web/src/core/syncEngine/syncEngineReader.ts:287-293
 - **Першопричина:** syncEngineReader.start() робить один tick і далі чекає інтервал 60 с ±20% без короткого бекофу; стану «перший pull ще не вдався» немає, а індикатор синку відображає лише outbox.
@@ -4711,7 +4723,8 @@ Independent repro with v2-pullfail.mjs (fresh context, so empty OPFS for rop-mai
 
 ### `data-61` [low] Рутина: збереження застарілої форми редагування звички мовчки затирає свіжіші правки з іншого пристрою
 
-- **Стан:** відкрито
+- **Стан:** закрито в гілці `backlog/data-61` (2026-11-21): форма редагування (`HabitQuickCreateDialog`) запамʼятовує значення, з якими відкрилась, і на сабміті накладає на свіжий стан лише змінені поля (`changedHabitFields`), тож правки іншого пристрою, що приїхали pull-ом, переживають збереження; заодно чернетка засівається з полями лічильника, які раніше обнулялись. Залишок: якщо pull ще не приїхав до сабміту, рядок пушиться цілком і сервер робить per-row LWW (серверного поле-рівневого мержу немає)
+- **Рішення власника 2026-11-21:** пушити лише змінені поля (field-level merge), а не весь рядок форми.
 - **Перевірка:** підтверджено · **Зусилля:** M · **Область:** web: Рутина (HabitQuickCreateDialog) + sync LWW
 - **Де:** apps/web/src/modules/routine/components/HabitDetailSheet.tsx; apps/web/src/modules/routine/components/HabitQuickCreateDialog.tsx; apps/web/src/modules/routine/lib/sqliteWriter/adapter.ts:358-381
 - **Першопричина:** Чернетка засівається один раз на відкриття і не оновлюється при зміні звички під нею; handleSave застосовує патч з усіма полями поверх свіжого стану, рядок пушиться цілком, і сервер робить per-row LWW.
@@ -4757,7 +4770,7 @@ apps/web/src/modules/routine/components/HabitQuickCreateDialog.tsx:98-122 (seed 
 
 ### `data-62` [low] Фізрук «Записати заняття»: вага «75,5» стає 755 кг і без перевірки діапазону пишеться в журнал тіла
 
-- **Стан:** відкрито
+- **Стан:** виправлено в гілці `backlog/data-62` (PR ще не відкрито): поле ваги в «Записати заняття» і в біометрії профілю - `type="text"` + `inputMode="decimal"`, кома парситься `parseDecimalInput`; у формі заняття вага поза `WEIGHT_KG_RANGE` (20–400) не йде ні в ккал, ні в журнал тіла, «Записати» чекає виправлення, а біля поля помилка меж. Межі 20–300 у `BodyEntryForm` проти 20–400 не узгоджено, це лишається окремим кроком
 - **Перевірка:** підтверджено · **Зусилля:** S · **Швидкий виграш** · **Область:** web: Фізрук (LogPastWorkoutSheet) + профіль (BiometricsSection)
 - **Де:** apps/web/src/modules/fizruk/components/workouts/LogPastWorkoutSheet.tsx:217,264-270,328-330,624-633; apps/web/src/core/profile/BiometricsSection.tsx:524-536
 - **Першопричина:** Поле ваги має type=number, тож Chromium з українською локаллю викидає кому і заміна коми на крапку мертва; effectiveWeightKg перевіряє лише &gt; 0, а onRecordWeight пише в addDailyLogEntry в обхід меж 20–300 кг з BodyEntryForm.
@@ -4848,6 +4861,7 @@ psql: sync_op_log ops 19333/19388/19413/19439 мають fizruk_workout_sets rep
 ### `data-64` [low] Після скасування імпорту ті самі рядки неможливо імпортувати вдруге: вони tombstoned, а UI показує їх як дублікати
 
 - **Стан:** відкрито
+- **Рішення власника 2026-11-22:** Відроджувати їх на повторному commit (deleted_at = NULL).
 - **Перевірка:** підтверджено · **Зусилля:** M · **Область:** server: finyk import (commit, batches)
 - **Де:** apps/server/src/modules/finyk/import/commit.ts:243-256; apps/server/src/modules/finyk/import/batches.ts:110-119; packages/shared/src/schemas/import.ts:343-344
 - **Першопричина:** Id рядка імпорту детермінований і не залежить від батчу чи категорії, undo батчу soft-delete-ить рядки, а повторний commit через ON CONFLICT DO NOTHING дає tombstoned, що рахується як duplicate.
@@ -4939,7 +4953,7 @@ historyFetch.ts:196-203 makes a single await fetchAccountStatement(token, accoun
 
 ### `data-66` [low] Ретрай старої події Mono-вебхука перезаписує баланс рахунку застарілим значенням
 
-- **Стан:** відкрито
+- **Стан:** закрито в гілці `backlog/data-66` (2026-11-21): `UPDATE mono_account` у вебхуку бере `balance` лише коли в `mono_transaction` цього рахунку немає новішої за `item.time` події (без міграції, мірило - час транзакцій); `last_seen_at` бампається завжди. Тести: `webhook.test.ts` (форма умови) і `webhook.integration.test.ts` (A → B → ретрай A лишає баланс B).
 - **Перевірка:** підтверджено · **Зусилля:** S · **Швидкий виграш** · **Область:** server: mono (webhook)
 - **Де:** apps/server/src/modules/mono/webhook.ts:397-404
 - **Першопричина:** UPDATE mono_account SET balance виконується і на гілці ON CONFLICT (дубль чи ретрай) без порівняння item.time з часом уже застосованого балансу, а періодичної звірки client-info немає.
@@ -5027,7 +5041,7 @@ My script v12_norm.mts: keys after normalization = id,amount,date,categoryId,typ
 
 ### `data-68` [low] CSV-токенізатор: одна лапка посеред поля без лапок «зʼїдає» решту файлу в одну клітинку
 
-- **Стан:** відкрито
+- **Стан:** закрито в гілці `backlog/data-68` (2026-11-22): `tokenizeCsv` вмикає режим лапок лише на початку поля, лапка посеред незакавиченого поля (`5" screen`) лишається звичайним символом і не «зʼїдає» наступні рядки (`csvParser.test.ts`). Залишок: `detectDelimiter` досі рахує таку лапку як перемикач, тож на заголовку з нею роздільник може визначитись хибно
 - **Перевірка:** підтверджено · **Зусилля:** S · **Швидкий виграш** · **Область:** packages/tabular-import (csvParser)
 - **Де:** packages/tabular-import/src/csvParser.ts:56-75
 - **Першопричина:** tokenizeCsv перемикає режим лапок на будь-яку лапку поза лапками, навіть посеред поля, всупереч RFC 4180.
@@ -5725,6 +5739,7 @@ hrefs.mjs: js=true → hero_1ceqmsxxsfdcst8b / footer_2jtadonpi52tn3es; js=false
 ### `data-82` [info] Повтор idempotency_key з іншим payload мовчки звітує applied, а accepted рахує повтори
 
 - **Стан:** відкрито
+- **Рішення власника 2026-11-22:** Ні, закрити як задумане.
 - **Перевірка:** підтверджено · **Зусилля:** S · **Область:** server: sync (syncV2 push)
 - **Де:** apps/server/src/modules/sync/syncV2.ts:235-265,353-368
 - **Першопричина:** recordExistingOpLogRow на збіг ключа віддає збережений статус оригіналу без порівняння table, op і row, а accepted інкрементується і для повторів.

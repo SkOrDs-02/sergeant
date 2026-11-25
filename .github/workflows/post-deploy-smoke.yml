@@ -67,6 +67,9 @@ jobs:
             || github.event.deployment_status.environment_url
             || secrets.STAGING_BASE_URL }}
       STAGING_SESSION_COOKIE: ${{ secrets.STAGING_SESSION_COOKIE }}
+      # Bearer для `auth: metrics` (`/healthz`, `/health/workers`, sec-40).
+      # Секрет не задано → ці тести перевіряють, що гейт закритий (401).
+      SMOKE_METRICS_TOKEN: ${{ secrets.SMOKE_METRICS_TOKEN }}
       # Другий, незалежний від payload-у бар'єр: скрипт відмовиться слати
       # сесійну куку на хост поза цим списком.
       SMOKE_ALLOWED_HOSTS: >-

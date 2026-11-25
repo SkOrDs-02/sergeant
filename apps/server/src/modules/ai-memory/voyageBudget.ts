@@ -97,8 +97,8 @@ export function getVoyageUtcDayKey(now: number = Date.now()): string {
  * могли перевіряти fallback-семантику без `vi.resetModules()`.
  *
  * `VOYAGE_DAILY_BUDGET_USD_SOFT` env читається через `env.ts` — там
- * `floatFromEnv(1)` повертає `1` коли env-var unset/порожній/NaN.
- * Тут `<= 0` трактуємо як "вимкнено" (soft-gate no-op).
+ * `strictFloatFromEnv(…, 1)` дає `1` на unset/порожній, а на сміття чи
+ * від'ємне валить старт (ai-pipeline B16). `0` трактуємо як "вимкнено".
  */
 export function getVoyageSoftBudgetUsd(): number {
   const cap = env.VOYAGE_DAILY_BUDGET_USD_SOFT;

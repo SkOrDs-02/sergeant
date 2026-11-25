@@ -33,6 +33,18 @@ vi.mock("./ingestQueue.js", () => ({
   enqueueMemoryIngest: enqueueMock,
 }));
 
+// rel-34-r2: згода читається лише для обліку стелі ембеддингів. Дефолт —
+// обидві згоди є, тож решта тестів бачить ту саму поведінку, що й раніше.
+const { aiConsentMock, healthConsentMock } = vi.hoisted(() => ({
+  aiConsentMock: vi.fn<() => Promise<boolean>>(async () => true),
+  healthConsentMock: vi.fn<() => Promise<boolean>>(async () => true),
+}));
+
+vi.mock("./consent.js", () => ({
+  hasAiMemoryConsent: aiConsentMock,
+  hasHealthDataConsent: healthConsentMock,
+}));
+
 import { env } from "../../env.js";
 import { logger } from "../../obs/logger.js";
 import {
@@ -40,6 +52,7 @@ import {
   PROFILE_MEMORY_MAX_ENTRIES,
   mirrorProfileMemoryEntries,
 } from "./profileMirror.js";
+import { __resetProfileEmbedCapState } from "./profileEmbedCap.js";
 import type { RememberInput } from "./service.js";
 
 const warnMock = logger.warn as unknown as ReturnType<typeof vi.fn>;
@@ -68,6 +81,7 @@ function makeFakePool(
 }
 
 const savedAiMemoryEnabled = env.AI_MEMORY_ENABLED;
+const savedEmbedCap = env.AI_MEMORY_PROFILE_EMBED_DAILY_CAP;
 
 beforeEach(() => {
   env.AI_MEMORY_ENABLED = true;
@@ -81,10 +95,16 @@ beforeEach(() => {
     forgetSource: forgetSourceMock,
   });
   warnMock.mockClear();
+  aiConsentMock.mockReset();
+  aiConsentMock.mockResolvedValue(true);
+  healthConsentMock.mockReset();
+  healthConsentMock.mockResolvedValue(true);
+  __resetProfileEmbedCapState();
 });
 
 afterEach(() => {
   env.AI_MEMORY_ENABLED = savedAiMemoryEnabled;
+  env.AI_MEMORY_PROFILE_EMBED_DAILY_CAP = savedEmbedCap;
 });
 
 function memoryBankProfile(
@@ -111,6 +131,7 @@ describe("profileMirror — extraction: memoryBank відсутній vs пор�
       deleted: 0,
       skippedInvalid: 0,
       skippedOverCap: 0,
+      skippedUserCap: 0,
     });
     expect(pool.query).not.toHaveBeenCalled();
     expect(enqueueMock).not.toHaveBeenCalled();
@@ -301,6 +322,7 @@ describe("profileMirror — вимкнена фіча (AI_MEMORY_ENABLED=false)"
       deleted: 0,
       skippedInvalid: 0,
       skippedOverCap: 0,
+      skippedUserCap: 0,
     });
     expect(pool.query).not.toHaveBeenCalled();
   });
@@ -386,6 +408,8 @@ describe("profileMirror — захисна валідація (ПАСТКА 3)",
   });
 
   it("рубає кількість записів до PROFILE_MEMORY_MAX_ENTRIES, лишає найновіші", async () => {
+    // Добова стеля користувача (rel-34) тут ні до чого — піднімаємо її.
+    env.AI_MEMORY_PROFILE_EMBED_DAILY_CAP = PROFILE_MEMORY_MAX_ENTRIES * 2;
     const entries = Array.from(
       { length: PROFILE_MEMORY_MAX_ENTRIES + 10 },
       (_, i) => ({
@@ -452,5 +476,207 @@ describe("profileMirror — jobId черги мусить розрізняти �
     const first = await saltFor("тренується 3 рази на тиждень");
     const second = await saltFor("тренується 3 рази на тиждень");
     expect(first).toBe(second);
+  });
+});
+
+describe("profileMirror — добова стеля ембеддингів на користувача (rel-34)", () => {
+  function facts(prefix: string, n: number) {
+    return Array.from({ length: n }, (_, i) => ({
+      id: `fact-${i}`,
+      fact: `${prefix} ${i}`,
+    }));
+  }
+
+  it("скрипт, що щоразу міняє текст фактів, упирається в стелю; решта тихо пропускається", async () => {
+    env.AI_MEMORY_PROFILE_EMBED_DAILY_CAP = 5;
+    const first = await mirrorProfileMemoryEntries(
+      makeFakePool([]),
+      "user-1",
+      memoryBankProfile(facts("версія 1", 3)),
+    );
+    expect(first).toMatchObject({ ok: true, inserted: 3, skippedUserCap: 0 });
+
+    // Другий PUT: ті самі id, новий текст — кожен факт просить новий embed.
+    const second = await mirrorProfileMemoryEntries(
+      makeFakePool(
+        facts("версія 1", 3).map((f) => ({
+          source_ref: f.id,
+          content: f.fact,
+        })),
+      ),
+      "user-1",
+      memoryBankProfile(facts("версія 2", 3)),
+    );
+    expect(second).toMatchObject({ ok: true, updated: 2, skippedUserCap: 1 });
+    expect(enqueueMock).toHaveBeenCalledTimes(5);
+    // Пропущене оновлення НЕ видаляє стару версію: застарілий текст кращий
+    // за зниклий факт.
+    expect(forgetSourceMock).toHaveBeenCalledTimes(2);
+    expect(forgetSourceMock).not.toHaveBeenCalledWith(
+      "user-1",
+      "profile",
+      "fact-2",
+    );
+    expect(warnMock).toHaveBeenCalledWith(
+      expect.objectContaining({
+        msg: "ai_memory_profile_embed_user_cap",
+        userId: "user-1",
+        skipped: 1,
+        cap: 5,
+      }),
+    );
+    // Hard Rule #21: у лозі немає тексту фактів.
+    expect(JSON.stringify(warnMock.mock.calls)).not.toContain("версія");
+  });
+
+  it("стеля per-user: вичерпана в одного не зачіпає іншого", async () => {
+    env.AI_MEMORY_PROFILE_EMBED_DAILY_CAP = 2;
+    const a = await mirrorProfileMemoryEntries(
+      makeFakePool([]),
+      "user-a",
+      memoryBankProfile(facts("факт", 4)),
+    );
+    const b = await mirrorProfileMemoryEntries(
+      makeFakePool([]),
+      "user-b",
+      memoryBankProfile(facts("факт", 2)),
+    );
+    expect(a).toMatchObject({ inserted: 2, skippedUserCap: 2 });
+    expect(b).toMatchObject({ inserted: 2, skippedUserCap: 0 });
+  });
+
+  it("видалення фактів стелею не гейтиться", async () => {
+    env.AI_MEMORY_PROFILE_EMBED_DAILY_CAP = 1;
+    await mirrorProfileMemoryEntries(
+      makeFakePool([]),
+      "user-1",
+      memoryBankProfile(facts("факт", 1)),
+    );
+    const result = await mirrorProfileMemoryEntries(
+      makeFakePool([{ source_ref: "old", content: "старий факт" }]),
+      "user-1",
+      memoryBankProfile([]),
+    );
+    expect(result).toMatchObject({ ok: true, deleted: 1 });
+    expect(forgetSourceMock).toHaveBeenCalledWith("user-1", "profile", "old");
+  });
+});
+
+describe("profileMirror — стеля списує лише те, що дійде до Voyage (rel-34-r2)", () => {
+  const rows = (facts: Array<{ id: string; fact: string }>) =>
+    facts.map((f) => ({ source_ref: f.id, content: f.fact }));
+
+  it("health-факти без healthDataConsent не зʼїдають стелю справжнім фактам", async () => {
+    env.AI_MEMORY_PROFILE_EMBED_DAILY_CAP = 2;
+    healthConsentMock.mockResolvedValue(false);
+    const health = [1, 2, 3].map((i) => ({
+      id: `h-${i}`,
+      fact: `алергія ${i}`,
+      category: "allergy",
+    }));
+    const a = { id: "a", fact: "любить каву" };
+    const first = await mirrorProfileMemoryEntries(
+      makeFakePool([]),
+      "user-1",
+      memoryBankProfile([...health, a]),
+    );
+    // Health-факти однаково йдуть у чергу (там їх відсіче згода), але
+    // одиниць стелі не беруть.
+    expect(first).toMatchObject({ ok: true, inserted: 4, skippedUserCap: 0 });
+
+    // Наступний PUT: health-факти так і лишились незаписаними (згоди
+    // немає), «a» записаний, додано «b» — він мусить пройти.
+    const b = { id: "b", fact: "бігає зранку" };
+    const second = await mirrorProfileMemoryEntries(
+      makeFakePool(rows([a])),
+      "user-1",
+      memoryBankProfile([...health, a, b]),
+    );
+    expect(second).toMatchObject({ ok: true, inserted: 4, skippedUserCap: 0 });
+    expect(enqueueMock).toHaveBeenCalledWith(
+      expect.objectContaining({ sourceRef: "b" }),
+    );
+  });
+
+  it("без згоди ai_memory нічого не списується; після її появи стеля ціла", async () => {
+    env.AI_MEMORY_PROFILE_EMBED_DAILY_CAP = 2;
+    aiConsentMock.mockResolvedValue(false);
+    const facts = [1, 2, 3].map((i) => ({ id: `f-${i}`, fact: `факт ${i}` }));
+    for (let i = 0; i < 3; i += 1) {
+      const result = await mirrorProfileMemoryEntries(
+        makeFakePool([]),
+        "user-1",
+        memoryBankProfile(facts),
+      );
+      expect(result.skippedUserCap).toBe(0);
+    }
+    expect(healthConsentMock).not.toHaveBeenCalled();
+
+    aiConsentMock.mockResolvedValue(true);
+    const after = await mirrorProfileMemoryEntries(
+      makeFakePool([]),
+      "user-1",
+      memoryBankProfile(facts),
+    );
+    expect(after).toMatchObject({ inserted: 2, skippedUserCap: 1 });
+  });
+
+  it("факт у черзі, ще не записаний, повторно не списується", async () => {
+    env.AI_MEMORY_PROFILE_EMBED_DAILY_CAP = 2;
+    const x = { id: "x", fact: "факт x" };
+    const y = { id: "y", fact: "факт y" };
+    await mirrorProfileMemoryEntries(
+      makeFakePool([]),
+      "user-1",
+      memoryBankProfile([x, y]),
+    );
+    // Черга ще не дійшла: ai_memories порожня, ті самі факти знову «нові».
+    const again = await mirrorProfileMemoryEntries(
+      makeFakePool([]),
+      "user-1",
+      memoryBankProfile([x, y]),
+    );
+    expect(again).toMatchObject({ inserted: 2, skippedUserCap: 0 });
+
+    // Стеля при цьому вичерпана чесно: новий факт уже не проходить.
+    const z = { id: "z", fact: "факт z" };
+    const third = await mirrorProfileMemoryEntries(
+      makeFakePool(rows([x, y])),
+      "user-1",
+      memoryBankProfile([x, y, z]),
+    );
+    expect(third).toMatchObject({ inserted: 0, skippedUserCap: 1 });
+  });
+
+  it("чергування двох текстів одного факту списується щоразу", async () => {
+    env.AI_MEMORY_PROFILE_EMBED_DAILY_CAP = 3;
+    const v = (fact: string) => [{ id: "f", fact }];
+    const results = [];
+    let stored: Array<{ id: string; fact: string }> = [];
+    for (const text of ["A", "B", "A", "B"]) {
+      results.push(
+        await mirrorProfileMemoryEntries(
+          makeFakePool(rows(stored)),
+          "user-1",
+          memoryBankProfile(v(text)),
+        ),
+      );
+      stored = v(text);
+    }
+    expect(results.map((r) => r.skippedUserCap)).toEqual([0, 0, 0, 1]);
+  });
+
+  it("збій перевірки згоди — списуємо (обережний бік для бюджету)", async () => {
+    env.AI_MEMORY_PROFILE_EMBED_DAILY_CAP = 1;
+    aiConsentMock.mockRejectedValue(new Error("pg down"));
+    const result = await mirrorProfileMemoryEntries(
+      makeFakePool([]),
+      "user-1",
+      memoryBankProfile([
+        { id: "a", fact: "факт a" },
+        { id: "b", fact: "факт b" },
+      ]),
+    );
+    expect(result).toMatchObject({ ok: true, inserted: 1, skippedUserCap: 1 });
   });
 });

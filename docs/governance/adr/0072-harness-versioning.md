@@ -1,8 +1,9 @@
 # ADR-0072: Harness versioning and A/B evaluation
 
-> **Last touched:** 2026-09-20 by @Skords-01. **Next review:** 2027-01-13.
+> **Last touched:** 2026-11-21 by @claude (Amended: шлях реєстру `.agents/`); 2026-09-20 by @Skords-01. **Next review:** 2027-01-13.
 
 - **Status:** Accepted
+- **Amended 2026-11-21:** чинний шлях реєстру версій — `.agents/harness-versions.json` ([ADR-0088](./0088-devin-kilo-harness-retirement.md)); згадки `.kilo/harness-versions.json` у тілі історичні.
 - **Date:** 2026-06-29
 - **Deciders:** @Skords-01
 - **Supersedes:** —

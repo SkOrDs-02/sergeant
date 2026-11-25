@@ -227,6 +227,50 @@ describe("AuthContext — action catch paths (thrown errors)", () => {
     expect(result.current.authError).toMatch(/Забагато спроб/);
   });
 
+  it("sec-46: register без токена сесії повертає check-email і не кличе me", async () => {
+    setUser(undefined);
+    signUpEmail.mockResolvedValueOnce({
+      data: { token: null, user: { id: "x" } },
+      error: null,
+    } as unknown as AuthResult);
+    const { Wrapper, client } = makeWrapper();
+    const invalidate = vi.spyOn(client, "invalidateQueries");
+    const { result } = renderHook(() => useAuth(), { wrapper: Wrapper });
+    await act(async () => {
+      const outcome = await result.current.register("a@b.c", "pw", "A");
+      expect(outcome).toBe("check-email");
+    });
+    expect(result.current.authError).toBeNull();
+    expect(invalidate).not.toHaveBeenCalled();
+  });
+
+  it("register з токеном сесії повертає true (межу не задано)", async () => {
+    setUser(undefined);
+    signUpEmail.mockResolvedValueOnce({
+      data: { token: "t", user: { id: "x" } },
+      error: null,
+    } as unknown as AuthResult);
+    const { Wrapper } = makeWrapper();
+    const { result } = renderHook(() => useAuth(), { wrapper: Wrapper });
+    await act(async () => {
+      expect(await result.current.register("a@b.c", "pw", "A")).toBe(true);
+    });
+  });
+
+  it("register: 422 USER_ALREADY_EXISTS без межі дає false і текст помилки", async () => {
+    setUser(undefined);
+    signUpEmail.mockResolvedValueOnce({
+      data: null,
+      error: { status: 422, code: "USER_ALREADY_EXISTS_USE_ANOTHER_EMAIL" },
+    } as unknown as AuthResult);
+    const { Wrapper } = makeWrapper();
+    const { result } = renderHook(() => useAuth(), { wrapper: Wrapper });
+    await act(async () => {
+      expect(await result.current.register("a@b.c", "pw", "A")).toBe(false);
+    });
+    expect(result.current.authError).toBe(messages.auth.userAlreadyExists);
+  });
+
   it("register: thrown error sets authError via asAuthErrorLike", async () => {
     setUser(undefined);
     signUpEmail.mockRejectedValueOnce(

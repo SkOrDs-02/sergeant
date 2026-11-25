@@ -1,4 +1,5 @@
 import { test, expect, type Page } from "@playwright/test";
+import { completeSignUp, waitForSignUpOutcome } from "./smokeEmailVerification";
 
 // This file targets the signup flow itself, so override the default
 // `storageState` from `playwright.smoke.config.ts` (which logs in a
@@ -33,15 +34,7 @@ async function seedLocalStorage(page: Page) {
   }, SEEDED_LS);
 }
 
-test("@critical auth: sign-up leads to authenticated hub surface", async ({
-  page,
-}) => {
-  await seedLocalStorage(page);
-
-  const nonce = crypto.randomUUID();
-  const email = `smoke_${nonce}@example.com`;
-  const password = `pw_${nonce}_long_enough`;
-
+async function submitSignUp(page: Page, email: string, password: string) {
   await page.goto("/sign-in", { waitUntil: "domcontentloaded" });
 
   // Switch to register mode.
@@ -54,9 +47,58 @@ test("@critical auth: sign-up leads to authenticated hub surface", async ({
   await page.fill("#auth-password", password);
 
   await page.getByRole("button", { name: "Зареєструватися" }).click();
+}
 
-  // After successful sign-up, AuthContext invalidates `/api/v1/me` and the app
-  // should land on the hub shell (not the /sign-in form).
-  await expect(page).not.toHaveURL(/\/sign-in/);
+test("@critical auth: sign-up leads to authenticated hub surface", async ({
+  page,
+}) => {
+  await seedLocalStorage(page);
+
+  const nonce = crypto.randomUUID();
+  const email = `smoke_${nonce}@example.com`;
+  const password = `pw_${nonce}_long_enough`;
+
+  await submitSignUp(page, email, password);
+
+  // sec-46: з межею підтвердження сесію дає клік у листі. Посилання веде
+  // туди ж, куди й справжній лист (`/verify-email`), а сторінка сама
+  // відносить на хаб.
+  await completeSignUp(page, email, { callbackPath: "/verify-email" });
+  await expect(page).not.toHaveURL(/\/(sign-in|verify-email)/, {
+    timeout: 15_000,
+  });
   await expect(page.locator("main")).toBeVisible();
+});
+
+test("@critical auth: sec-46 повторна реєстрація зайнятої адреси виглядає як нова", async ({
+  page,
+  browser,
+}) => {
+  await seedLocalStorage(page);
+
+  const nonce = crypto.randomUUID();
+  const email = `smoke_dup_${nonce}@example.com`;
+  const password = `pw_${nonce}_long_enough`;
+
+  await submitSignUp(page, email, password);
+  const first = await waitForSignUpOutcome(page);
+  test.skip(
+    first === "session",
+    "EMAIL_VERIFICATION_REQUIRED_FROM не задано на smoke-сервері",
+  );
+
+  // Інший браузер, та сама адреса, інший пароль: відповідь та сама.
+  const other = await browser.newContext({
+    storageState: { cookies: [], origins: [] },
+  });
+  try {
+    const otherPage = await other.newPage();
+    await seedLocalStorage(otherPage);
+    await submitSignUp(otherPage, email, `${password}_other`);
+    expect(await waitForSignUpOutcome(otherPage)).toBe("check-email");
+    await expect(otherPage.getByText(email)).toBeVisible();
+    await expect(otherPage.getByText(/вже зареєстровано/i)).toHaveCount(0);
+  } finally {
+    await other.close();
+  }
 });

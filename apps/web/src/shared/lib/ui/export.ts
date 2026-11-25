@@ -3,12 +3,20 @@
  */
 import { formatDateNumeric } from "@shared/lib/time/formatDate";
 import { isIOSStandalonePWA } from "@shared/lib/platform/iosStandalone";
+import { neutralizeCsvFormula } from "@sergeant/shared";
 
 export interface ExportColumn<T> {
   key: keyof T | string;
   header: string;
   /** Custom value formatter */
   format?: (value: unknown, row: T) => string | number;
+  /**
+   * Колонка несе число (сума, кількість): формула-префікс `'` до неї не
+   * застосовується, інакше відʼємна сума `-123.45` стала б у таблиці
+   * текстом. Став лише там, де значення формує наш код, а не людина чи
+   * мерчант.
+   */
+  numeric?: boolean;
 }
 
 /**
@@ -21,9 +29,18 @@ export function arrayToCSV<T extends Record<string, unknown>>(
 ): string {
   const { separator = ",", includeHeader = true } = options;
 
-  const escapeCSV = (value: unknown): string => {
-    const str = String(value ?? "");
-    if (str.includes(separator) || str.includes('"') || str.includes("\n")) {
+  // AI-CONTEXT (sec-30): кожна текстова клітинка проходить
+  // `neutralizeCsvFormula`, бо опис операції задає мерчант, чек чи виписка,
+  // і `=HYPERLINK(...)` без префікса Excel виконав би як формулу.
+  const escapeCSV = (value: unknown, numeric = false): string => {
+    const raw = String(value ?? "");
+    const str = numeric ? raw : neutralizeCsvFormula(raw);
+    if (
+      str.includes(separator) ||
+      str.includes('"') ||
+      str.includes("\n") ||
+      str.includes("\r")
+    ) {
       return `"${str.replace(/"/g, '""')}"`;
     }
     return str;
@@ -39,9 +56,9 @@ export function arrayToCSV<T extends Record<string, unknown>>(
     const values = columns.map((col) => {
       const value = getColumnValue(row, col.key);
       if (col.format) {
-        return escapeCSV(col.format(value, row));
+        return escapeCSV(col.format(value, row), col.numeric);
       }
-      return escapeCSV(value);
+      return escapeCSV(value, col.numeric);
     });
     lines.push(values.join(separator));
   }

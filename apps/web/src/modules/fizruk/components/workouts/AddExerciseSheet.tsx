@@ -70,7 +70,7 @@ export function AddExerciseSheet({
   // taps «Зберегти» with the field empty. Without it the click was
   // silently swallowed (just `if (!nameUk) return;`) and the user was
   // left wondering whether the button was broken — see screenshot in
-  // dmytro.s.stakhov's PR feedback.
+  // the owner's PR feedback.
   const [nameError, setNameError] = useState<string | null>(null);
 
   const suggestedMuscles = useMemo(() => {

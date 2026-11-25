@@ -247,6 +247,22 @@ export function ResetPasswordPage() {
                 </div>
               )}
 
+              {/* Помилка сервера тут майже завжди про токен (INVALID_TOKEN,
+                  TOKEN_EXPIRED): повтор не допоможе, новий лист запитують на
+                  сторінці входу. Без кнопки людина лишалась у глухому куті
+                  (ux-49). */}
+              {serverError && (
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="md"
+                  className="w-full"
+                  onClick={() => navigate("/sign-in", { replace: true })}
+                >
+                  На сторінку входу
+                </Button>
+              )}
+
               <Button
                 type="submit"
                 variant="solid"

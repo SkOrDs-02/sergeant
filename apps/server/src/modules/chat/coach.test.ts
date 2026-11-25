@@ -49,6 +49,7 @@ import {
   getCoachCorrelationsBlock,
 } from "./coach.js";
 import { MAX_BLOB_SIZE } from "./coach.js";
+import { TRAINING_PRAISE_RULE } from "../../lib/trainingPraise.js";
 import { ExternalServiceError } from "../../obs/errors.js";
 import { logger as _logger } from "../../obs/logger.js";
 
@@ -732,6 +733,68 @@ describe("coachInsight", () => {
     expect(aiQuotaRefund).not.toHaveBeenCalled();
   });
 
+  // ── rel-46: битий `memory.weeklyDigests` не дає 500 і не зʼїдає квоту ──
+
+  it("weeklyDigests з null, числом і не-масивними полями → 200, битий тиждень відкинуто", async () => {
+    anthropicMessages.mockResolvedValueOnce({
+      response: { ok: true, status: 200 },
+      data: { content: [{ type: "text", text: "ok" }] },
+    });
+    const { req, aiQuotaRefund } = makeReqWithRefundSpy({
+      snapshot: {},
+      memory: {
+        weeklyDigests: [
+          null,
+          1,
+          { weekKey: "2026-W11", correlations: 5, overallRecommendations: 7 },
+          {
+            weekKey: "2026-W10",
+            finyk: { summary: "finyk summary" },
+            correlations: ["corr-ok"],
+          },
+        ],
+      },
+    });
+
+    const res = makeRes();
+    await coachInsight(req, res);
+
+    expect(res.statusCode).toBe(200);
+    expect(aiQuotaRefund).not.toHaveBeenCalled();
+    const [, payload] = anthropicMessages.mock.calls[0] as [
+      unknown,
+      { messages: { content: string }[] },
+    ];
+    const prompt = payload!.messages[0]!.content;
+    expect(prompt).toContain("finyk summary");
+    expect(prompt).toContain("corr-ok");
+  });
+
+  it("weeklyDigests лише з не-обʼєктів → памʼять вважається порожньою", () => {
+    const prompt = buildCoachInsightPrompt({
+      snapshot: {},
+      memory: {
+        weeklyDigests: [null, 1] as unknown as [],
+        lastInsightDate: null,
+        lastInsightText: null,
+      },
+    }).user;
+    expect(prompt).toContain("Памʼяті ще немає: це перший сеанс.");
+  });
+
+  it("виняток до upstream (згода не читається) повертає квоту", async () => {
+    resolveHealthConsentMock.mockRejectedValueOnce(new Error("db down"));
+    const { req, aiQuotaRefund } = makeReqWithRefundSpy({
+      snapshot: {},
+      memory: {},
+    });
+
+    await expect(coachInsight(req, makeRes())).rejects.toThrow("db down");
+
+    expect(aiQuotaRefund).toHaveBeenCalledTimes(1);
+    expect(anthropicMessages).not.toHaveBeenCalled();
+  });
+
   it("порожній snapshot → prompt містить 'Даних за поточний тиждень ще немає.'", async () => {
     anthropicMessages.mockResolvedValueOnce({
       response: { ok: true, status: 200 },
@@ -839,6 +902,34 @@ describe("buildCoachInsightPrompt — що можна просити в люди
     );
     expect(text).toContain(
       "віднести операції до категорій, записати їжу, тренування чи витрату, відмітити звичку",
+    );
+  });
+});
+
+describe("buildCoachInsightPrompt — хвалить відновлення, а не обʼєм (W4)", () => {
+  // Рішення founder-а (fizruk.md § Метрика похвали): «Recovery головний —
+  // хвалити розумне, не більше». До правила коуч не мав жодної інструкції
+  // про обʼєм і вітав «+20% кг» навіть при поганому відновленні.
+  const snapshot = {
+    fizruk: {
+      workoutsCount: 6,
+      totalVolume: 18000,
+      recoveryLabel: "Погане",
+    },
+  } as never;
+  const prompt = buildCoachInsightPrompt({ snapshot, memory: null }).user;
+
+  it("несе спільне правило похвали тренувань", () => {
+    expect(prompt).toContain(TRAINING_PRAISE_RULE);
+  });
+
+  it("подає відновлення першим у рядку тренувань", () => {
+    const line = prompt
+      .split("\n")
+      .find((l) => l.includes("[ТРЕНУВАННЯ ЦЬОГО ТИЖНЯ]"));
+    expect(line).toBeDefined();
+    expect(line!.indexOf("Відновлення: Погане")).toBeLessThan(
+      line!.indexOf("Обʼєм:"),
     );
   });
 });

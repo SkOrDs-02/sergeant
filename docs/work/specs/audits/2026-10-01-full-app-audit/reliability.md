@@ -1,9 +1,13 @@
 # Аудит 2026-10-01 · Надійність, продуктивність, експлуатація
 
 > **Status:** Active. 64 кластери (91 знахідка) за першопричиною. Загальний план, метод і обмеження — у [README](./README.md).
-> **Last validated:** 2026-10-02
-> **Next review:** 2026-11-02
+> **Last touched:** 2026-11-23 by @claude (rel-32: провал синку Сільпо лише на системному збої, не на битому чеку); 2026-11-23 by @claude (sec-53: IP прод-сервера прибрано з доказів rel-кластера про barcode); 2026-11-22 by @claude (rel-32: системний збій запису чеків більше не гасить плашку збою синку); 2026-11-22 by @claude (рішення власника по решті питань беклогу); 2026-11-21 by @claude (rel-34-r2: стеля ембеддингів профілю не списує факти без згоди і ті, що вже в черзі); 2026-11-21 by @claude (rel-62: advisory-lock раннера з дедлайном; раніше того ж дня рішення власника по кластерах, раунди 5–10); раніше перевірено 2026-10-02.
+> **Next review:** 2027-01-21
 > **Spec-lint:** skip. Реєстр знахідок аудиту, не специфікація реалізації.
+
+> **Рішення власника 2026-11-22** (решта питань беклогу, сторінка рішень; кожне чекає виконання, пункти не закрито):
+>
+> - `agent-doable-wave-2` — Після шести пунктів першої хвилі в коді лишаються ще 16 підтверджених дрібних пунктів, які агент може зробити сам: rel-30, 33, 36, 38, 39, 45, 50, 51, 52, 53, 55, 56, 58, 59, 60… **Рішення:** Спершу клієнтський синк і PWA (rel-55, 56, 58, 38, 39, 45, 59, 60, 61).
 
 Найгостріше місце теми — спільні точки відмови single-process бекенду. Одна отруєна звичка зупиняє серверні нагадування всім користувачам (high), а анонім чи будь-який зареєстрований клієнт може дешево зайняти event loop, пам'ять або диск: pre-auth gzip, ReDoS у PII-масці, SSE без стелі, sync_op_log без меж. Клієнтський синк працює, але марнотратно. Пуш на кожне натискання, перезаливка всієї історії Фізрука й O(n²) у коморі впираються в спільний бакет 60/хв, а один отруйний pulled-оп чи завислий push мовчки зупиняють синк пристрою. На краях бракує стійкості: не-401 помилка /me робить користувача гостем, вихід видаляє precache, а збій чанка чи оновлення SW лишає модуль або вкладку зламаними до ручного reload. Частина операційних гейтів лише створює видимість перевірки: down-drill нічого не порівнює, перевірка бекапу жодного разу не торкалася прод-даних, фонові полери після кожного деплою відкладаються. Більшість фіксів локальні (S), і лише retention та вотермарк синку, а також онлайн-міграції потребують зміни дизайну.
 
@@ -205,6 +209,7 @@ middleware.ts: `matcher: "/api/:path*"`; копіює `new Headers(request.heade
 ### `rel-04` [medium] Тіла запитів розпаковуються й парсяться до автентифікації: анонімна ампліфікація через gzip до 10 МБ
 
 - **Стан:** частково виправлено в #1347 (змерджено 2026-10-03) (inflate:false на default і всіх правилах понад 128 КБ; парсинг до requireSession лишається — довгострокове перенесення парсерів у роутери)
+- **Рішення власника 2026-11-22:** Ні: inflate:false достатньо, закрити як прийнятний ризик.
 - **Перевірка:** підтверджено · **Зусилля:** S · **Швидкий виграш** · **Область:** server: http body parsing
 - **Де:** apps/server/src/app.ts:147-169; apps/server/src/http/bodySizePolicy.ts:92-258
 - **Першопричина:** applyBodySizePolicy монтується в app.ts раніше за CORS, CSRF, rate-limit і requireSession. Фікс B28 вимкнув inflate лише на AI-правилах. Правила sync v1/v2 (6 МБ), statement/preview (10 МБ), import/commit (2 МБ), backup-upload (4 МБ) і default досі розпаковують gzip, хоча клієнти тіла не стискають.
@@ -1630,7 +1635,7 @@ plata.ts:305-313 `ON CONFLICT (user_id) DO UPDATE SET subscription_id = EXCLUDED
 
 ### `rel-26` [low] Некоректний ввід доходить до Postgres і повертає 500 з сирим SQLSTATE замість 400
 
-- **Стан:** відкрито
+- **Стан:** закрито в гілці `backlog/rel-26-rel-47-rel-48` (2026-11-21): SQLSTATE класу 22 мапиться на 400 VALIDATION без pg-коду ([`sec-39`](./security.md#sec-39), `http/errorClassification.ts`), тож кривий id, курсор чи NUL більше не дають 500 і Sentry-подію; `Last-Event-ID` у SSE обмежено `Number.isSafeInteger` (та сама межа, що в `since`), позамежне значення ігнорується до SQL (`syncV2Stream.handler.test.ts`). Залишок гігієни без 500: явні Zod-межі для id, from/to і курсорів, відсікання U+0000 і самотніх сурогатів у спільних схемах
 - **Перевірка:** підтверджено · **Зусилля:** M · **Область:** server: валідація вводу / errorHandler
 - **Та сама першопричина, що й** [`sec-39`](./security.md#sec-39): Той самий дефект: errorHandler перетворює помилки вводу, що дійшли до Postgres, на 500 і віддає клієнту SQLSTATE.
 - **Де:** apps/server/src/http/errorHandler.ts:48-57,94-101; apps/server/src/modules/finyk/receipts/get.ts:27; apps/server/src/modules/finyk/import/batches.ts:26-31; apps/server/src/modules/mono/read.ts:138-179; packages/shared/src/schemas/api.ts:1412-1418; apps/server/src/modules/silpo/receiptsRead.ts:52-75; apps/server/src/modules/sync/syncV2Stream.ts:194-200,237-238
@@ -1834,7 +1839,7 @@ r2/v1_nul.mjs, r2/v1b.mjs. Нюанс: feedback з самотнім сурога
 
 ### `rel-27` [low] Запити sync push і pull без таймауту: один завислий push блокує відправку змін на всю сесію
 
-- **Стан:** відкрито
+- **Стан:** виправлено в гілці backlog/rel-27 (pushV2 і pullV2 передають `timeoutMs` зі стелею `SYNC_V2_REQUEST_TIMEOUT_MS` 30 с, перевизначається через `opts.timeoutMs`; завислий запит падає `ApiError`, і планувальник повторює його з backoff; дефолтного таймауту в `createApiClient` і окремого стану таймауту в UI синку не додано)
 - **Перевірка:** підтверджено · **Зусилля:** S · **Швидкий виграш** · **Область:** api-client / web sync engine
 - **Де:** packages/api-client/src/endpoints/syncV2.ts:116-133; packages/api-client/src/httpClient.ts:184-193; packages/api-client/src/endpoints/syncV2.pushScheduler.ts; apps/web/src/core/syncEngine/singleton.ts:613
 - **Першопричина:** pushV2 і pullV2 не передають ні signal, ні timeoutMs, а httpClient не має дефолтного таймауту. Поки inflight !== null, push-планувальник пропускає тіки і повертає той самий promise.
@@ -2167,7 +2172,8 @@ scripts/migration-down-drill.mjs: `async function applyForward(client, files) { 
 
 ### `rel-32` [low] Один «отруйний» чек Сільпо (NUL-символ чи інша помилка БД) назавжди ламає синк користувача
 
-- **Стан:** відкрито
+- **Стан:** виправлено в гілці backlog/rel-32 (`sanitizeForPg` у `receiptsUpsert.ts` прибирає U+0000 і міняє одинокі сурогати на U+FFFD перед записом; `upsertReceiptsIsolated` пропускає чек, чий запис упав, з логом `silpo_receipt_upsert_skipped` (лише SQLSTATE) і метрикою `silpo_receipts_skipped_total{channel}`, решта синку і матчер ідуть далі; стелю розміру raw свідомо не додано). Доповнення 2026-11-23 (ревʼю PR #1722): слід провалу `SILPO_RECEIPTS_WRITE_FAILED` лишається лише тоді, коли хоч один чек упав із системної причини (не SQLSTATE класу 22/23); збій даних одного чека синк провалом не робить, навіть коли нових чеків нема
+- **Дочищено:** закрито в гілці `backlog/rv-server-misc` (2026-11-22, PR-рев'ю): `upsertReceiptsIsolated` повертає пропуски, і якщо хоч один чек упав не з SQLSTATE класу 22/23 або не записався жоден, синк пише `last_failed_at` з кодом `SILPO_RECEIPTS_WRITE_FAILED` замість `last_sync_at`, тож плашка збою не гасне при лежачій БД; заодно клас 23 у `errorHandler` іде в Sentry рівня `warning` ([`sec-39`](./security.md#sec-39)), а опис `GET /api/billing/providers` в OpenAPI більше не обіцяє Stripe за країною
 - **Перевірка:** підтверджено · **Зусилля:** S · **Швидкий виграш** · **Область:** server: Сільпо receipts
 - **Де:** apps/server/src/modules/silpo/receipts.ts:691-695,704-718; apps/server/src/modules/silpo/receiptsUpsert.ts:114-130
 - **Першопричина:** Цикл upsertReceipt у receipts.ts не має try/catch. Рядки з U+0000 перед записом у JSONB і TEXT не санітизуються. recordSyncFailure викликається лише на помилках MCP, тож виняток БД виходить як 500.
@@ -2256,7 +2262,8 @@ apps/server/src/env/env.ts:36 REQUEST_TIMEOUT_MS: intFromEnv(120_000); syncSched
 
 ### `rel-34` [low] Один користувач може вичерпати глобальний добовий бюджет Voyage і вимкнути пам'ять AI для всіх
 
-- **Стан:** відкрито
+- **Стан:** виправлено в гілці backlog/rel-34-r2 (стеля `AI_MEMORY_PROFILE_EMBED_DAILY_CAP`, дефолт 50 ембеддингів профілю на користувача за UTC-добу зі строгим розбором env, понад стелю запис тихо пропускається з warn-логом і `ai_memory_ingest_enqueued_total{mode="user_cap"}`; дзеркалення профілю дебаунситься per-user на 10 с, flush на SIGTERM; лічильник бюджету Voyage у спільне сховище НЕ виносили, поза рішенням власника; r2: стеля списує лише факти, що дійдуть до Voyage — без згоди `ai_memory` чи `healthDataConsent` не списуються, уже поставлені в чергу й не записані повторно не списуються)
+- **Рішення власника 2026-11-21:** стеля 50 ембеддингів профілю на користувача на добу плюс debounce дзеркалення профілю.
 - **Перевірка:** підтверджено · **Зусилля:** M · **Область:** server: ai-memory
 - **Де:** apps/server/src/routes/me.ts:229-257; apps/server/src/modules/ai-memory/profileMirror.ts:97,315-334; apps/server/src/modules/ai-memory/voyageBudget.ts; apps/server/src/modules/ai-memory/service.ts:201-213,331-337
 - **Першопричина:** PUT /api/me/profile (60 за 5 хв) дзеркалить memoryBank в ai_memories, і кожен змінений текст факту дає новий embed. Бюджет Voyage глобальний на процес (soft 1 USD, hard 5 USD), а per-user ліміту ембеддингів немає, хоча коментар у routes/ai-memory.ts його обіцяє.
@@ -2301,7 +2308,8 @@ embeddings.ts:274-288 (soft preflight before fetch, non-critical -> throw); serv
 
 ### `rel-35` [low] Анонімні /api/barcode і /api/food-search спалюють спільні добові квоти UPCitemdb і USDA DEMO_KEY
 
-- **Стан:** відкрито
+- **Стан:** закрито в гілці `backlog/rel-35-r2` (2026-11-21): глобальні бюджети на апстрім у спільному сторі лімітера (`modules/nutrition/upstreamBudget.ts`): UPCitemdb 90 на UTC-добу, USDA з ключем 450 на годину, DEMO_KEY 15 на годину і 45 на добу; апстрім, пропущений за бюджетом, неавторитетний, як упалий (G5): штрихкод без іншого збігу дає 503 `BARCODE_SOURCES_UNAVAILABLE` з `no-store` без miss-кешу, пошук без USDA віддає `no-store`, а порожній дає 503 (`upstreamBudget.test.ts`, `barcode.test.ts`, `food-search.test.ts`); ключі й `UPCITEMDB_DAILY_BUDGET`/`USDA_HOURLY_BUDGET` описані в `env-vars.md`; разом із `sec-24`. Не входило: sweep Postgres-бакетів (`logic-14`), який без Redis скидає добові бакети
+- **Рішення власника 2026-11-21:** власник ставить `USDA_FDC_API_KEY` і `UPCITEMDB_API_KEY` у Coolify, а код додає глобальні добові бакети на апстрім нижче стелі постачальника. Той самий кластер, що `sec-24`.
 - **Перевірка:** підтверджено · **Зусилля:** S · **Швидкий виграш** · **Область:** server: nutrition barcode / food-search
 - **Та сама першопричина, що й** [`sec-24`](./security.md#sec-24): Той самий дефект: анонімні /api/barcode і /api/food-search спалюють спільні добові квоти UPCitemdb і USDA.
 - **Де:** apps/server/src/routes/barcode.ts:21-36; apps/server/src/modules/nutrition/barcode.ts:331-380,444; apps/server/src/routes/food-search.ts:20-29
@@ -2336,13 +2344,13 @@ node xff.mjs — показує, що per-IP добовий лічильник b
 **Верифікатор:**
 
 ```text
-Підтверджено лише частково. Обхід per-IP через підробку X-Forwarded-For є артефактом локального середовища. Локально клієнт підключається напряму, і trust proxy=1 довіряє його XFF. У проді api.sergeant.com.ua резолвиться прямо на 167.233.98.92 (Hetzner/Coolify Traefik, CDN немає: ні cf-ray, ні via), TRUST_PROXY за замовчуванням 1 (config.ts, env-vars.md). Express бере крайній правий запис, який дописує Traefik, і клієнт на нього не впливає. Справжня частина така: анонімний добовий ліміт 300 на IP більший за спільну trial-квоту UPCitemdb 100/добу на весь проєкт. Одна адреса за ~100 випадкових штрихкодів, яких немає в OFF/USDA, вичерпує третє джерело. Після 429 isTransientHttpStatus→upstreamThrew дає 503, і результат не кешується. Наслідок відчують лише штрихкоди, яких немає в OFF/USDA, тобто помірний. Ризик trial-квоти вже позначено AI-DANGER у коді і зафіксовано в аудитах. До того ж органічний трафік і так її вичерпує, тож атака додає небагато.
+Підтверджено лише частково. Обхід per-IP через підробку X-Forwarded-For є артефактом локального середовища. Локально клієнт підключається напряму, і trust proxy=1 довіряє його XFF. У проді api.sergeant.com.ua резолвиться прямо на IP прод-сервера (Hetzner/Coolify Traefik, CDN немає: ні cf-ray, ні via), TRUST_PROXY за замовчуванням 1 (config.ts, env-vars.md). Express бере крайній правий запис, який дописує Traefik, і клієнт на нього не впливає. Справжня частина така: анонімний добовий ліміт 300 на IP більший за спільну trial-квоту UPCitemdb 100/добу на весь проєкт. Одна адреса за ~100 випадкових штрихкодів, яких немає в OFF/USDA, вичерпує третє джерело. Після 429 isTransientHttpStatus→upstreamThrew дає 503, і результат не кешується. Наслідок відчують лише штрихкоди, яких немає в OFF/USDA, тобто помірний. Ризик trial-квоти вже позначено AI-DANGER у коді і зафіксовано в аудитах. До того ж органічний трафік і так її вичерпує, тож атака додає небагато.
 ```
 
 **Додаткові докази верифікатора:**
 
 ```text
-verify-.../apidns.mjs: api.sergeant.com.ua A [167.233.98.92], CNAME/AAAA немає. GET /livez → 200, заголовків server/cf-ray/via немає. routes/barcode.ts:21-31: 30/хв і 300/добу per-IP, коментар визнає ліміт UPCitemdb 100/добу. modules/nutrition/barcode.ts:167-169 трактує 429 як transient. Шлях upstreamThrew → 503 описано в handler, приблизно рядки 509-533.
+verify-.../apidns.mjs: api.sergeant.com.ua A [IP прод-сервера], CNAME/AAAA немає. GET /livez → 200, заголовків server/cf-ray/via немає. routes/barcode.ts:21-31: 30/хв і 300/добу per-IP, коментар визнає ліміт UPCitemdb 100/добу. modules/nutrition/barcode.ts:167-169 трактує 429 як transient. Шлях upstreamThrew → 503 описано в handler, приблизно рядки 509-533.
 ```
 
 #### [low] Анонімний /api/barcode дозволяє одній IP вичерпати проектну квоту UPCitemdb (100/добу на весь продукт): добовий ліміт на IP — 300
@@ -2427,7 +2435,7 @@ verify-.../rl.mjs: POST /api/finyk/receipts/lookup з body {} → 400 VALIDATION
 
 ### `rel-37` [low] POST /api/auth/send-verification-email без власного ліміту і без стелі на акаунт
 
-- **Стан:** відкрито
+- **Стан:** виправлено в гілці backlog/rel-37 (`send-verification-email` входить у per-IP `authSensitiveRateLimit` (5/60 с) і в per-email бакет `api:auth:verification-email` (5 листів на годину на SHA-256 email, окремо від бюджету входу `api:auth:account`), обидва fail-closed і не залежать від NODE_ENV-лімітера Better Auth; change-email уже обмежено sec-06, решта catch-all шляхів `/api/auth` лишається поза app-лімітом)
 - **Перевірка:** підтверджено · **Зусилля:** S · **Швидкий виграш** · **Область:** server: auth (Better Auth)
 - **Та сама першопричина, що й** [`sec-25`](./security.md#sec-25): Той самий дефект: send-verification-email (і change-email) без app-ліміту і без стелі на акаунт.
 - **Де:** apps/server/src/routes/auth.ts:23-28; apps/server/src/auth.ts:345-409; node_modules/better-auth/dist/context/create-context.mjs:171
@@ -2563,6 +2571,7 @@ Script <scratch>/agents/verify-client-static-service-worker-pwa/v13-ready-hang.m
 ### `rel-40` [low] Вотермарк pull за кластерним xmin зв'язує синк усіх: будь-яка довга транзакція в кластері затримує доставку змін
 
 - **Стан:** відкрито
+- **Рішення власника 2026-11-22:** Поки що лише алерт на вік найстаршої xid і pg_prepared_xacts.
 - **Перевірка:** підтверджено · **Зусилля:** L · **Область:** server: sync v2 pull/stream
 - **Та сама першопричина, що й** [`data-12`](./data-integrity.md#data-12): Обидва наслідки вотермарка pull за кластерним xmin: пропуск оп-ів паралельних транзакцій і затримка доставки через довгі транзакції. Курсор (tx_id, id) або per-user серіалізація записів міняє той самий механізм.
 - **Де:** apps/server/src/modules/sync/syncV2-core.ts:40-41; apps/server/src/modules/sync/syncV2.ts:660; apps/server/src/modules/sync/syncV2Stream.ts:273
@@ -2868,7 +2877,7 @@ Not reproduced live: needs LLM tool_calls; verified by code. grep: `setHubStream
 
 ### `rel-46` [low] POST /api/coach/insight падає з 500 на некоректних weeklyDigests і не повертає списану квоту
 
-- **Стан:** відкрито
+- **Стан:** закрито в гілці `backlog/rel-46` (2026-11-21): `buildMemorySummary` відкидає не-обʼєкти з `weeklyDigests`, а `correlations`/`overallRecommendations`, що не є масивами, пропускає; згода, промпт, тир і `invokeLLM` тепер в одному `try` з `refundQuotaOnUpstreamFailure`, тож будь-який виняток до upstream повертає квоту (`coach.test.ts`). Схему `CoachMemoryEchoSchema` не чіпали
 - **Перевірка:** підтверджено · **Зусилля:** S · **Швидкий виграш** · **Область:** server: coach
 - **Де:** packages/shared/src/schemas/api.ts:1112-1117; apps/server/src/modules/chat/coach.ts:228-291,554-571,584
 - **Першопричина:** CoachMemoryEchoSchema приймає weeklyDigests як z.array(z.unknown()), а buildMemorySummary розіменовує елементи без перевірки (null, correlations, що не є масивом). Виняток виникає до invokeLLM, а refund обгортає лише сам виклик LLM.
@@ -2913,7 +2922,7 @@ Reproduced in the prompt builder. CoachMemoryEchoSchema accepts z.array(z.unknow
 
 ### `rel-47` [low] Рекурсивний depth-guard профілю сам падає зі stack overflow на глибоко вкладених масивах
 
-- **Стан:** відкрито
+- **Стан:** закрито в гілці `backlog/rel-26-rel-47-rel-48` (2026-11-21): `exceedsJsonNestingDepth` обходить профіль ітеративно з явним стеком і зупиняється на першому обʼєкті понад `USER_PROFILE_MAX_DEPTH`; 100 000 вкладених масивів не кидають RangeError, глибокі обʼєкти дають 400 (`me.test.ts`)
 - **Перевірка:** підтверджено · **Зусилля:** S · **Швидкий виграш** · **Область:** packages/shared schemas (PUT /api/me/profile)
 - **Де:** packages/shared/src/schemas/api.ts:346-358,390-392
 - **Першопричина:** jsonNestingDepth рекурсує через Array.map і spread Math.max без обмеження глибини, а другий .refine в UserProfilePayloadSchema не має try/catch. Масиви не враховуються в ліміті вкладеності 3, тож тіло ~10 КБ з 3000-5000 рівнями проходить byte-cap.
@@ -2959,7 +2968,7 @@ node .../agents/api-live-input-fuzz/r1_profile.mjs fuzz2 (PUT profile x=nested a
 
 ### `rel-48` [low] DELETE /api/me валідує тіло сирим .parse(): криве тіло дає 500 замість 400
 
-- **Стан:** відкрито
+- **Стан:** закрито разом із [`sec-39`](./security.md#sec-39): `DELETE /api/me` валідує тіло через `parseBody(MeDeleteBodySchema, req)`, криве тіло дає 400; перевірено ще раз у гілці `backlog/rel-26-rel-47-rel-48` (2026-11-21)
 - **Перевірка:** підтверджено · **Зусилля:** S · **Швидкий виграш** · **Область:** server: me
 - **Де:** apps/server/src/routes/me.ts:282
 - **Першопричина:** routes/me.ts викликає MeDeleteBodySchema.parse(req.body ?? {}) замість parseBody, тож ZodError не перетворюється на операційну 400.
@@ -3226,6 +3235,7 @@ Probe <scratch>/agents/verify-server-static-privacy-logging/v3/probe.mjs → `RE
 ### `rel-54` [low] Немає індексів на шляхах Better Auth verification і кількох FK, а частина індексів дублює PK
 
 - **Стан:** відкрито
+- **Рішення власника 2026-11-22:** Разом із наступною плановою міграцією.
 - **Перевірка:** підтверджено · **Зусилля:** S · **Область:** server: db-schema
 - **Де:** apps/server/src/migrations/003_baseline_schema.sql:41-48; apps/server/src/migrations/009_waitlist.sql:12; apps/server/src/migrations/028_openclaw.sql; apps/server/src/modules/logRetention/archivePoller.ts:74,294
 - **Першопричина:** Таблиця verification має лише PK(id), хоча Better Auth на кожен lookup робить findMany за identifier з сортуванням за createdAt і deleteMany за expiresAt. FK waitlist_entries.user_id і openclaw**.invocation_id не мають індексу. Таблиці finyk** мають індекси, що є префіксами PK.
@@ -3707,7 +3717,8 @@ v2-pantry-memory.mjs: 5170 рядків 'SQL TRACE' за 4 memory-заванта
 
 ### `rel-62` [low] Раннер міграцій не підтримує онлайн-міграцій: усе в одній транзакції, без CONCURRENTLY і NOT VALID, а таймаути конфліктують із healthcheck
 
-- **Стан:** відкрито
+- **Стан:** частково виправлено в гілці backlog/rel-62 (advisory-lock раннера береться опитуванням `pg_try_advisory_lock` з дедлайном `MIGRATE_LOCK_WAIT_MS`, 120 с, тож `lock_timeout` на нього не діє, а по дедлайну раннер пише `migration_lock_timeout` і виходить з кодом 1; онлайн-режим — `-- migrate:no-transaction`, лінт на `CREATE INDEX` без `CONCURRENTLY`, CHECK через `NOT VALID` — відкладено за рішенням власника до першої міграції на великій таблиці)
+- **Рішення власника 2026-11-21:** зараз лише `pg_try_advisory_lock` з дедлайном; онлайн-режим (`migrate:no-transaction`, лінт на `CREATE INDEX` без `CONCURRENTLY`) перед першою міграцією на великій таблиці.
 - **Перевірка:** підтверджено · **Зусилля:** L · **Область:** server: міграції / деплой
 - **Де:** apps/server/src/db.ts:73,399-402,463-475; apps/server/migrate.mjs:85-87; Dockerfile.api:321; apps/server/src/migrations/117_fizruk_workout_sets_user_idx.sql:32-35; apps/server/src/migrations/142_cascade_user_id_indexes.sql; apps/server/src/migrations/149_ai_usage_daily_week_buckets.sql:1-20; apps/server/src/migrations/150_ai_usage_daily_preset_buckets.sql; apps/server/src/migrations/144_ai_memories_prune_dead_sources.sql:6-12
 - **Першопричина:** runPendingSqlMigrations обгортає кожен файл у BEGIN/COMMIT без opt-out, тож CREATE INDEX CONCURRENTLY неможливий. CHECK на ai_usage_daily і ai_memories розширюють через DROP+ADD без NOT VALID, під ACCESS EXCLUSIVE. migrate.mjs ставить statement_timeout=0 і lock_timeout=10 с, який діє і на pg_advisory_lock, а самі міграції виконуються в ENTRYPOINT до старту сервера.

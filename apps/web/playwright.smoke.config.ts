@@ -52,6 +52,11 @@ const webServer = process.env["PW_SKIP_WEBSERVER"]
           // 32+ chars, deterministic but non-production.
           "smoke_test_better_auth_secret_32_chars_min",
         AI_QUOTA_DISABLED: process.env["AI_QUOTA_DISABLED"] || "1",
+        // sec-46: межа обовʼязкового підтвердження email, як у проді.
+        // Реєстрація дає «Перевір пошту», а клік у листі відтворює
+        // `tests/smoke/smokeEmailVerification.ts` smoke-секретом вище.
+        EMAIL_VERIFICATION_REQUIRED_FROM:
+          process.env["EMAIL_VERIFICATION_REQUIRED_FROM"] ?? "2026-01-01",
         VITE_API_BASE_URL:
           process.env["VITE_API_BASE_URL"] || "http://127.0.0.1:3000",
         ALLOWED_ORIGINS:

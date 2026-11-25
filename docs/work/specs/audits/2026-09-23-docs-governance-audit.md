@@ -1,7 +1,7 @@
 # Аудит документації та governance: правила, ієрархія, рішення, enforcement
 
-> **Status:** Active - Наступна дія: власник відповідає на відкриті рішення §11 (DG-4, DG-13, DG-14, DG-17, DG-23, DG-26, DG-30, ADR-0003/0044/0072, secondary reviewer), після відповідей документ стає Reference. §9 пп. 1-3 вирішено [ADR-0101](../../../governance/adr/0101-github-primary-host-ci-returns.md), п. 6 (архівний пуш) веде [dead-github-remotes](./2026-09-23-dead-github-remotes.md).
-> **Last touched:** 2026-10-26 by @claude (тріаж документації: шапка звужена до відкритих рішень власника, рев'ю: DG-6 знято зі списку «Чекає рішень власника»). Перший прогін 2026-09-23. **Next review:** 2026-12-23.
+> **Status:** Active - рішення власника 2026-11-21 закрили DG-4, DG-13, DG-14, DG-17, DG-23, DG-26, DG-30 і secondary reviewer (§11). ADR-0003/0044/0072 вирішено 2026-11-21 (0003 прийнято в нейтральній редакції, 0044 уже superseded ADR-0103, 0072 Amended). Відкритих рішень власника немає. Наступна дія: виконати follow-up-и §11 (переклад політик, шаблон ADR, Rule #6 і політика верифікації в доках, рядок соло-власності), потім Reference.
+> **Last touched:** 2026-11-21 by @claude (рішення власника 2026-11-21 по §9 і §11, ADR-0003/0044/0072); 2026-10-26 by @claude (тріаж документації: шапка звужена до відкритих рішень власника, рев'ю: DG-6 знято зі списку «Чекає рішень власника»). Перший прогін 2026-09-23. **Next review:** 2026-12-23.
 > **Spec-lint:** skip - реєстр знахідок аудиту, не специфікація реалізації.
 
 ## 1. Що перевірено і як
@@ -86,7 +86,7 @@
 
 ### DG-4. Hard Rule #6 (force push у main) спирається на неіснуючий GitHub-захист
 
-**Докази.** `hard-rules.json:130-134`, `rules/06-no-force-push-to-main.md:17`: «GitHub branch protection». `operations-runbook.md:37,378,384` і `hard-rules-matrix.md:44` так само. Про Bitbucket-обмеження є одне речення в `AGENTS.md` на `origin/main`, без правила й ADR. `origin` має **два** pushurl (Bitbucket і bare-дзеркало `167.233.98.92:/srv/git/sergeant.git`), і git пушить у кожен незалежно: force push, відхилений Bitbucket, може переписати `main` на дзеркалі, з якого Coolify збирає прод. Налаштування `receive.denyNonFastForwards` дзеркала з репо не видно, тому впевненість середня.
+**Докази.** `hard-rules.json:130-134`, `rules/06-no-force-push-to-main.md:17`: «GitHub branch protection». `operations-runbook.md:37,378,384` і `hard-rules-matrix.md:44` так само. Про Bitbucket-обмеження є одне речення в `AGENTS.md` на `origin/main`, без правила й ADR. `origin` має **два** pushurl (Bitbucket і bare-дзеркало `sergeant-mirror:/srv/git/sergeant.git`), і git пушить у кожен незалежно: force push, відхилений Bitbucket, може переписати `main` на дзеркалі, з якого Coolify збирає прод. Налаштування `receive.denyNonFastForwards` дзеркала з репо не видно, тому впевненість середня.
 
 **Що зробити.** Перевірити й увімкнути `receive.denyNonFastForwards=true` і `denyDeletes` на дзеркалі; записати обидва механізми в правило #6 з датою перевірки.
 
@@ -304,9 +304,9 @@
 1. **CI - РІШЕНО 2026-09-29:** GitHub знову основний хост, CI (GitHub Actions) повертається як гейт PR, Bitbucket - дзеркало ([ADR-0101](../../../governance/adr/0101-github-primary-host-ci-returns.md); закриває DG-1 у частині «CI не існує» і DG-6). Питання нижче збережено для історії. Bitbucket Pipelines, self-hosted runner на Hetzner, чи лише локальні гейти (`pre-push` + pre-flight у `deploy-api.mjs`)? Від цього залежить формулювання ADR про хостинг (DG-6) і `enforced_by` усіх правил.
 2. **Hard Rule #26.** (Знято з порядку денного 2026-09-29: воркфлоу `pr-backlinks.yml` знову на GitHub.) Зняти окремим ADR чи портувати писача ledger на Bitbucket API?
 3. **Стратегія merge у Bitbucket** (втратила актуальність 2026-09-29: PR знову на GitHub): squash за замовчуванням (тоді заголовок PR знову стає subject-ом на `main`) чи merge-коміти (тоді оновити § Commit and PR conventions)?
-4. **Англомовні політики (DG-17):** перекласти чи оформити виняток із Rule #15?
-5. **Secondary reviewer:** прийняти соло-власність явно чи дати дедлайн?
-6. **Архівний пуш** опорних комітів `d068c73a` і `d1a37e0b` у Bitbucket.
+4. **Англомовні політики (DG-17):** перекласти чи оформити виняток із Rule #15? **Рішення власника 2026-11-21: перекласти.**
+5. **Secondary reviewer:** прийняти соло-власність явно чи дати дедлайн? **Рішення власника 2026-11-21: соло-власність явно.**
+6. **Архівний пуш** опорних комітів `d068c73a` і `d1a37e0b` у Bitbucket. **Рішення власника 2026-11-21: не пушити, лишити локально.**
 
 ## 10. Межі аудиту і спростовані знахідки
 
@@ -325,7 +325,25 @@
 
 **Свідомо не додано:** `eslint-print-config-diff` у ланцюжок `pnpm lint` (2 хв 41 с на прогін), `docs:check-freshness-coverage` і `dead-code:files` (не заміряні).
 
-**Чекає рішень власника:** DG-4, DG-13, DG-14, DG-17, DG-23, DG-26, DG-30, ADR-0003/0044/0072, secondary reviewer. DG-6 закрито 2026-09-29 ([ADR-0101](../../../governance/adr/0101-github-primary-host-ci-returns.md)), у цьому списку його більше немає.
+**Чекає рішень власника:** нічого. ADR-0003/0044/0072 вирішено 2026-11-21: ADR-0003 прийнято (Accepted) в нейтральній до провайдера редакції з уточненням, що `reversed` не скасовує підписку; ADR-0044 уже superseded [ADR-0103](../../../governance/adr/0103-dependabot-only-dependency-updates.md) (2026-10-03); ADR-0072 позначено Amended 2026-11-21: шлях реєстру `.agents/harness-versions.json` (ADR-0088). DG-6 закрито 2026-09-29 ([ADR-0101](../../../governance/adr/0101-github-primary-host-ci-returns.md)).
+
+**Рішення власника 2026-11-21:**
+
+- **DG-4, DG-13:** гейт для `main` - захист гілки на GitHub (заборона force-push і видалення) плюс required CI-чеки; локально проганяються скоуповані перевірки, вердикт дає CI. Hetzner-дзеркало не чіпаємо (`receive.denyNonFastForwards` там не вмикаємо).
+- **DG-14 і архівний пуш:** не пушити. Опорні коміти `d068c73a` і `d1a37e0b` лишаються лише в локальних remote-ах `D:\Sergeant`; ризик втрати історії рішень разом із диском прийнято свідомо. Permalink-и на `github.com/Skords-01/Sergeant/blob/…` не переписуємо.
+- **DG-17:** перекласти англомовні політики українською, без винятку в Rule #15.
+- **DG-23:** перейти на squash за замовчуванням; перемикач у налаштуваннях репо GitHub робить власник. § Commit and PR conventions у `AGENTS.md` лишається як є.
+- **DG-26:** модель ADR - секція «Поточний стан» із рядком «Amended YYYY-MM-DD» і статусом «Partially superseded»; «Next review» прибрати з шаблону ADR.
+- **DG-30:** закрито, GitHub знову живий (ADR-0101), вимога issue для AI-LEGACY працює.
+- **Secondary reviewer:** соло-власність явно; рев'ю робить `sergeant-review-squad`.
+
+**Follow-up-и (ще не виконано):**
+
+1. Перекласти українською шість політик із DG-17.
+2. Шаблон ADR і `adr/README.md`, `sergeant-adr/SKILL.md`: модель «Поточний стан» + «Amended», без «Next review».
+3. Rule #6 (`hard-rules.json`, `rules/06-no-force-push-to-main.md`, `hard-rules-matrix.md`) і `docs/STATUS.md`: описати фактичний гейт (захист `main` на GitHub + required-чеки), прибрати «локальний `pnpm check` заблокований політикою».
+4. `AGENTS.md` § Module ownership map і `module-ownership.md`: замінити `TBD (<role>)` на явну соло-власність.
+5. Власник: увімкнути squash за замовчуванням у налаштуваннях репо GitHub.
 
 **Повний `pnpm lint` на гілці** зупиняється на кроках, які червоні на `main` і без цих змін (файли, що їх валять, у гілці не змінювались). Першим прогоном аудиту їх не зловлено, бо вони поза docs/governance-набором:
 

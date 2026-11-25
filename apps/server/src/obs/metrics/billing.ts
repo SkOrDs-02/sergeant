@@ -44,6 +44,19 @@ export const billingRecurringChargeTotal = new client.Counter({
 });
 
 /**
+ * Повернення одного платежу (LiqPay `status:reversed`: рефанд/chargeback).
+ * Підписку не скасовує (ADR-0003 Amended 2026-11-21), тож це сигнал для
+ * людини: розібрати повернення вручну. Будь-який приріст — привід глянути
+ * `billing_webhook_events` і лог `liqpay_payment_reversed`.
+ */
+export const billingPaymentReversedTotal = new client.Counter({
+  name: "billing_payment_reversed_total",
+  help: "Reversed (refunded/charged-back) payments by provider",
+  labelNames: ["provider"],
+  registers: [register],
+});
+
+/**
  * Скасування ЗАМІНЕНОЇ рекурентки у її провайдера (`supersede.ts`). `result` =
  * cancelled (провайдер підтвердив) | gone (підписки в провайдера вже нема) |
  * failed (відмова, рядок лишається в черзі на ретрай) | abandoned (вичерпано

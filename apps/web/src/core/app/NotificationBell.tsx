@@ -103,6 +103,9 @@ export function NotificationBell({ notifications }: NotificationBellProps) {
         </span>
       </button>
 
+      {/* AI-NOTE: `useBodyScrollLock` тут свідомо немає. Це поповер,
+          абсолютно позиційований під дзвіночком, без скриму, а не модалка
+          над сторінкою (frontend.md, п.4). */}
       {menuOpen && (
         <div
           ref={menuRef}

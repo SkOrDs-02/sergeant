@@ -202,9 +202,10 @@ export async function switchSqliteUser(
  * AI-CONTEXT: до 2026-11-18 тут була ще гілка kvvfs (одне спільне сховище
  * на всі партиції, тож стирання було рядковим `DELETE ... WHERE user_id`).
  * Її прибрано разом із копією sqlite-wasm на головному потоці (PR-T1).
- * Старе kvvfs-сховище при цьому лишається недоторканим: на вихід його не
- * чистили й раніше (див. `purgeLocalData.ts`), а при перелитті чужі
- * партиції з файлу вирізає `pruneForeignPartitionRows`.
+ * Старе kvvfs-сховище вихід не чистить (див. `purgeLocalData.ts`): при
+ * перелитті чужі партиції з файлу вирізає `pruneForeignPartitionRows`, а
+ * саме сховище стирається після перелиття, щойно в ньому не лишилось
+ * нічого незамінного (стадія 3, `canRemoveKvvfsStore`, priv-17).
  */
 export async function wipeSqliteDb(): Promise<void> {
   // Snapshot + reset synchronously so any concurrent getSqliteDb() re-opens a
@@ -418,9 +419,8 @@ async function initSqliteDb(
  * AI-DANGER: під цим прапорцем база ІНША — окремий файл в OPFS, а не
  * спільний localStorage-блоб. Від стадії 2 дані переїжджають разом із
  * двигуном: при першому відкритті стара база копіюється сюди цілком
- * (`kvvfsHandoff`). Старе сховище при цьому НЕ чіпається, тому вимикання
- * прапорця повертає все як було — але записи, зроблені під увімкненим,
- * лишаються тут.
+ * (`kvvfsHandoff`). Старе сховище під час копіювання НЕ чіпається; після
+ * нього його стирає стадія 3 (`canRemoveKvvfsStore`, priv-17).
  *
  * Від стадії 3 це БЕЗУМОВНИЙ основний шлях: прапорця більше немає.
  *
@@ -559,21 +559,45 @@ async function attemptWorkerBackedDb(
       : {}),
   });
   if (needsHandoff) {
+    // Перепис — ДО підчищання і лише на свіжо зібраному файлі: після
+    // підчищання чужих партицій у ньому вже не видно (стадія 3, priv-17).
+    const census = conn.imported
+      ? await handoff.takeKvvfsCensus(conn).catch(() => null)
+      : null;
     // Підчищаємо ЗАВЖДИ, а не лише після свіжого імпорту: попередня
     // спроба могла впасти саме між імпортом і підчищанням, і тоді файл
     // уже існує, але містить чужі партиції. На чистій базі це no-op.
     const prunedTables = await handoff.pruneForeignPartitionRows(
       conn,
       activeUserId,
+      {
+        keepKvStore:
+          activeUserId !== null &&
+          !handoff.isAnotherAccountHandoffDone(userKey, ANON_USER_KEY),
+      },
     );
     // Позначка ставиться ОСТАННЬОЮ. Доки її немає, перелиття вважається
     // таким, що не відбулось, і наступний запуск доробить його.
     handoff.markHandoffDone(userKey);
+    // Стадія 3: старе сховище стирається лише ПІСЛЯ позначки і лише коли
+    // КОЖНА партиція знімка вже має свою (`canRemoveKvvfsStore`). Інакше
+    // воно чекає перелиття наступної партиції.
+    const removedKeys =
+      census &&
+      handoff.canRemoveKvvfsStore(census, {
+        anonHandedOff: handoff.isHandoffDone(ANON_USER_KEY),
+        isAccountHandedOff: (id) => handoff.isHandoffDone(sanitizeUserKey(id)),
+        kvStoreDelivered:
+          activeUserId !== null ||
+          handoff.isAnotherAccountHandoffDone(userKey, ANON_USER_KEY),
+      })
+        ? handoff.removeKvvfsStore()
+        : 0;
     addSentryBreadcrumb({
       category: "storage",
       level: "info",
       message: "sqlite: kvvfs handoff completed",
-      data: { imported: conn.imported, prunedTables },
+      data: { imported: conn.imported, prunedTables, removedKeys },
     });
   }
   lastWorkerDiagnostics = await conn.diagnostics();

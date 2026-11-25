@@ -22,7 +22,7 @@ test.use({ serviceWorkers: "block" });
  *      server-contract plan id (`plan: "pro"` — the D3 "Premium" label
  *      is UI-only, the server enum is still `"plus" | "pro"`).
  *   2. The returned `checkout.url` passes the open-redirect allow-list
- *      guard (`assertAllowedCheckoutUrl`, audit F4) and the browser is
+ *      guard (`assertAllowedBillingUrl`, audit F4) and the browser is
  *      handed off to `checkout.stripe.com`.
  *
  * Why the API call is mocked: the smoke stack boots the real server
@@ -66,7 +66,10 @@ test("@critical billing: pricing Premium CTA creates a checkout session and redi
   // (VITE_API_BASE_URL → http://127.0.0.1:3000). Відповідь типізована
   // `BillingCheckoutResponse`, тож дрейф контракту ловить typecheck.
   await installWorld(page, getWorld("empty"), {
-    only: ["/billing/checkout"],
+    // `/billing/providers`: smoke-сервер без платіжних env віддає порожній
+    // список, і CTA показав би передзапусковий «Повідомити про запуск»
+    // (ux-29). Тут перевіряємо саме шлях до checkout-у.
+    only: ["/billing/checkout", "/billing/providers"],
     checkoutUrl: CHECKOUT_STUB_URL,
   });
 
@@ -97,7 +100,7 @@ test("@critical billing: pricing Premium CTA creates a checkout session and redi
 
   // ------------------------------------------------------------------
   // Redirect landed on the (stubbed) Stripe-hosted checkout page. This
-  // implicitly proves `assertAllowedCheckoutUrl` accepted the host —
+  // implicitly proves `assertAllowedBillingUrl` accepted the host —
   // a non-allow-listed URL would throw before `location.assign` and
   // surface the checkout-error state instead of navigating.
   // ------------------------------------------------------------------

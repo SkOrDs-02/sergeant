@@ -153,6 +153,20 @@ describe("DELETE /api/me — OAuth-only акаунт (sec-10, рішення 202
 });
 
 describe("DELETE /api/me — гварди живого шляху видалення", () => {
+  it("sec-39: невалідне тіло → 400 VALIDATION з details, а не 500", async () => {
+    const app = createApp();
+
+    const res = await request(app)
+      .delete("/api/me")
+      .set("X-Requested-With", "XMLHttpRequest")
+      .send({ password: 12345 });
+
+    expect(res.status).toBe(400);
+    expect(res.body.code).toBe("VALIDATION");
+    expect(Array.isArray(res.body.details)).toBe(true);
+    expect(requestDeletionMock).not.toHaveBeenCalled();
+  });
+
   it("невірний пароль → 400 INVALID_PASSWORD і відлік НЕ стартує", async () => {
     verifyPasswordMock.mockResolvedValueOnce({ ok: false });
     const app = createApp();

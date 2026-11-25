@@ -35,7 +35,7 @@ import {
 import { getUserProfile, upsertUserProfile } from "../modules/me/profile.js";
 import { reauthenticate, sessionCreatedAtOf } from "../modules/me/reauth.js";
 import { recordPasswordCheckFailure } from "../auth/passwordCheckFailures.js";
-import { mirrorProfileMemoryEntries } from "../modules/ai-memory/profileMirror.js";
+import { scheduleProfileMemoryMirror } from "../modules/ai-memory/profileMirrorDebounce.js";
 
 type AuthedUser = {
   id: string;
@@ -268,7 +268,7 @@ export function createMeRouter(): Router {
       );
       // L-8 Фаза 2 (2026-08-09): дзеркалимо `memoryBank`-факти в
       // `ai_memories` (source='profile') ПІСЛЯ успішного upsert-у профілю.
-      // Побічний ефект, best-effort — `mirrorProfileMemoryEntries` НІКОЛИ
+      // Побічний ефект, best-effort — дзеркалення НІКОЛИ
       // не кидає (Voyage down / circuit open / AI_MEMORY_ENABLED=false /
       // вимкнений консент усі no-op-ляться всередині), тож профіль уже
       // збережено і відповідь 200 не залежить від результату дзеркалення.
@@ -280,7 +280,12 @@ export function createMeRouter(): Router {
       // бачити те саме, що щойно збережено в `user_profile`, інакше
       // застарілий пристрій, чий пуш сервер відхилив, усе одно
       // воскрешав би вже видалений факт у `ai_memories`.
-      await mirrorProfileMemoryEntries(pool, user.id, payload.profile);
+      //
+      // rel-34: дзеркалення дебаунситься per-user
+      // (`profileMirrorDebounce.ts`), тож серія швидких правок дає одне
+      // дзеркалення фінального стану, а не по ембеддингу на кожну
+      // проміжну версію факту. Відповідь на нього більше не чекає.
+      scheduleProfileMemoryMirror(pool, user.id, payload.profile);
       res.json(payload);
     },
   );
@@ -310,7 +315,9 @@ export function createMeRouter(): Router {
       // сесію», і вкрадена сесія могла б запустити 30-денний відлік.
       // OAuth-only акаунт пароля не має: йому потрібна сесія ≤ 10 хв
       // (sec-10, рішення власника 2026-10-23; `modules/me/reauth.ts`).
-      const body = MeDeleteBodySchema.parse(req.body ?? {});
+      // sec-39: `parseBody`, а не `.parse()` — невалідне тіло має стати
+      // 400 `VALIDATION`, а не невловленим ZodError (500 + Sentry).
+      const body = parseBody(MeDeleteBodySchema, req);
       const reauth = await reauthenticate(user.id, body.password, () =>
         sessionCreatedAtOf(req.headers),
       );

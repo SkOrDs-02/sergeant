@@ -1,12 +1,16 @@
-import { patchNutritionPrefs } from "@nutrition/lib/nutritionStorage";
+import {
+  loadLatestNutritionPrefs,
+  patchNutritionPrefs,
+} from "@nutrition/lib/nutritionStorage";
 import type { ConvertUnitsAction, SetGoalAction } from "../types";
+import type { ChatActionResult } from "../types.result";
 import { formatNumberUk } from "@sergeant/shared";
 
 // rel-16 (рішення власника 2026-10-19/23): `set_goal` звужено до денної норми
 // калорій. Раніше тул писав у `hub_goals_v1`, який ніхто не читає, і
 // рапортував «створено»; тепер цей ключ не пишеться, а все, крім ккал, —
 // чесна відмова (серверну схему тулу не чіпаємо: касети tool-eval незмінні).
-export function setGoal(action: SetGoalAction): string {
+export function setGoal(action: SetGoalAction): ChatActionResult {
   const { target_weight_kg, target_date, daily_kcal, workouts_per_week } = (
     action as SetGoalAction
   ).input;
@@ -18,6 +22,9 @@ export function setGoal(action: SetGoalAction): string {
   // інакше застарілий/дефолтний blob стер би шаблони страв і нагадування.
   // Канонічне сховище Харчування (dual-write у SQLite); застарілий LS-ключ
   // `nutrition_prefs_v1` tombstoned.
+  // logic-03: знімок лише поля цілі до запису, як у `set_daily_plan`:
+  // «Повернути» відновлює саме його і не чіпає решту префів.
+  const prevKcal = loadLatestNutritionPrefs().dailyTargetKcal;
   if (!patchNutritionPrefs({ dailyTargetKcal: dk })) {
     return "Не вдалося зберегти ціль ккал у Їжі: дані Їжі ще завантажуються, спробуй за кілька секунд";
   }
@@ -28,7 +35,14 @@ export function setGoal(action: SetGoalAction): string {
   const note = dropped.length
     ? `. ${dropped.join(", ")} не збережено: поки зберігаю лише калорії`
     : "";
-  return `Ціль збережено: ${formatNumberUk(dk)} ккал/день${note}`;
+  return {
+    result: `Ціль збережено: ${formatNumberUk(dk)} ккал/день${note}`,
+    // Як у `set_daily_plan`: відкат через `patchNutritionPrefs` без origin
+    // лишає адаптивну ціль вимкненою (ручна зміна цілі її вимикає).
+    undo: () => {
+      patchNutritionPrefs({ dailyTargetKcal: prevKcal });
+    },
+  };
 }
 
 export function convertUnits(action: ConvertUnitsAction): string {

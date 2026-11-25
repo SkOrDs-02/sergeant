@@ -4,6 +4,7 @@ import { probeOpfs } from "../utils/opfs";
 import { seedFTUX } from "../utils/seedFTUX";
 import { waitForServiceWorkerActivated } from "../utils/serviceWorker";
 import { waitForSqliteRefreshAfter } from "../utils/sqliteRefresh";
+import { completeSignUp } from "./smokeEmailVerification";
 
 /**
  * Офлайн холодний старт залогіненого пристрою (знахідка A16 аудиту
@@ -42,7 +43,7 @@ async function register(page: Page): Promise<string> {
   await page
     .getByRole("button", { name: "Зареєструватися", exact: true })
     .click();
-  await expect(page).not.toHaveURL(/\/sign-in/, { timeout: 15_000 });
+  await completeSignUp(page, email);
   return email;
 }
 

@@ -39,6 +39,23 @@ export interface ExportCsvSection {
 export const CSV_BOM = "﻿";
 
 /**
+ * Знешкоджує formula injection в одній клітинці.
+ *
+ * Рядок, що починається з `=`, `+`, `-`, `@`, табуляції чи `\r`, Excel і
+ * Sheets виконують як формулу (`=HYPERLINK(...)`, `@SUM(...)`), а таб і `\r`
+ * на початку частина парсерів зрізає, відкриваючи той самий символ за ними.
+ * У наших даних це цілком реальне: опис транзакції «=1+1» задає мерчант чи
+ * чек, назва боргу «-Іван» — людина. Префікс `'` знешкоджує, лишаючись
+ * видимим.
+ *
+ * Чисел, які мають лишитись числами (відʼємна сума), сюди не передавай:
+ * `'-123.45` таблиця прочитає як текст.
+ */
+export function neutralizeCsvFormula(raw: string): string {
+  return /^[=+\-@\t\r]/.test(raw) ? `'${raw}` : raw;
+}
+
+/**
  * Екранує одне значення за RFC 4180.
  *
  * Лапки подвоюються, а обгортаються лише ті значення, що містять роздільник,
@@ -49,10 +66,7 @@ export function escapeCsvValue(value: unknown): string {
   if (value === null || value === undefined) return "";
   const raw = typeof value === "object" ? JSON.stringify(value) : String(value);
   if (raw === "") return "";
-  // Formula injection: рядок, що починається з = + - @, Excel виконує як
-  // формулу. У наших даних це цілком реальне — опис транзакції «=1+1» або
-  // назва боргу «-Іван». Префікс `'` знешкоджує, лишаючись видимим.
-  const safe = /^[=+\-@]/.test(raw) ? `'${raw}` : raw;
+  const safe = neutralizeCsvFormula(raw);
   return /[",\n\r]/.test(safe) ? `"${safe.replaceAll('"', '""')}"` : safe;
 }
 

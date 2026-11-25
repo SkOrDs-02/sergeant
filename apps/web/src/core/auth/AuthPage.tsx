@@ -13,6 +13,18 @@ import { useForgotPassword } from "./useForgotPassword";
 import { ANALYTICS_EVENTS, trackEvent } from "../observability/analytics";
 import { LegalLinks } from "../legal/LegalLinks";
 import { SessionExpiredNotice } from "./SessionExpiredNotice";
+import { CheckEmailNotice } from "./CheckEmailNotice";
+import { messages } from "@shared/i18n/uk";
+
+/**
+ * `?forgot=1` на сторінці входу одразу відкриває панель скидання пароля:
+ * туди веде лист «у тебе вже є акаунт» (sec-46). Читаємо `location`
+ * напряму, а не через роутер: сторінка рендериться і поза ним.
+ */
+function forgotRequestedInUrl(): boolean {
+  if (typeof window === "undefined") return false;
+  return new URLSearchParams(window.location.search).get("forgot") === "1";
+}
 
 interface AuthPageProps {
   onContinueWithoutAccount?: () => void;
@@ -41,14 +53,21 @@ export function AuthPage({ onContinueWithoutAccount }: AuthPageProps) {
   const appleLoginEnabled =
     import.meta.env["VITE_APPLE_LOGIN_ENABLED"] === "true";
   const [mode, setMode] = useState<"login" | "register">("login");
+  const [checkEmailFor, setCheckEmailFor] = useState<string | null>(null);
   const [googleLoading, setGoogleLoading] = useState(false);
   const [appleLoading, setAppleLoading] = useState(false);
-  const forgot = useForgotPassword();
+  const forgot = useForgotPassword({ initiallyOpen: forgotRequestedInUrl() });
 
   const switchMode = () => {
     setMode((m) => (m === "login" ? "register" : "login"));
     setAuthError(null);
     forgot.closePanel();
+  };
+
+  const backToSignIn = () => {
+    setCheckEmailFor(null);
+    setMode("login");
+    setAuthError(null);
   };
 
   // `surface` дозволяє PostHog розщепити drop-off між sign_in vs sign_up;
@@ -78,10 +97,6 @@ export function AuthPage({ onContinueWithoutAccount }: AuthPageProps) {
     setAppleLoading(true);
     await loginWithApple();
     setAppleLoading(false);
-  };
-
-  const onAlreadyRegistered = () => {
-    setMode("login");
   };
 
   return (
@@ -118,78 +133,90 @@ export function AuthPage({ onContinueWithoutAccount }: AuthPageProps) {
           >
             <div className="text-center">
               <h2 className="text-style-headline text-text text-balance">
-                {mode === "login" ? "Вхід в акаунт" : "Створити акаунт"}
+                {checkEmailFor !== null
+                  ? messages.auth.checkEmailTitle
+                  : mode === "login"
+                    ? "Вхід в акаунт"
+                    : "Створити акаунт"}
               </h2>
-              <p className="text-style-label text-subtle mt-2">
-                {mode === "login"
-                  ? appleLoginEnabled
-                    ? "Email і пароль, Google або Apple"
-                    : "Email і пароль або Google"
-                  : "Email і пароль: мінімум 10 символів"}
-              </p>
+              {checkEmailFor === null && (
+                <p className="text-style-label text-subtle mt-2">
+                  {mode === "login"
+                    ? appleLoginEnabled
+                      ? "Email і пароль, Google або Apple"
+                      : "Email і пароль або Google"
+                    : "Email і пароль: мінімум 10 символів"}
+                </p>
+              )}
             </div>
 
-            {/*
-              `key={mode}` re-mount-ить форму при зміні режиму. Це
-              надійніший шлях, ніж намагатися переключити schema на
-              льоту: `useApiForm` фіксує zod-resolver під час mount-у,
-              і RHF не перевалідовує існуючі поля при зміні
-              `defaultValues`. Зайвих ререндерів немає — користувач
-              перемикає режим явно через кнопку «Немає акаунту?».
-            */}
-            {mode === "login" ? (
-              <LoginForm
-                key="login"
-                onForgotPassword={forgot.openPanel}
-                showForgot={forgot.showForgot}
-              />
+            {checkEmailFor !== null ? (
+              <CheckEmailNotice email={checkEmailFor} onBack={backToSignIn} />
             ) : (
-              <RegisterForm
-                key="register"
-                onAlreadyRegistered={onAlreadyRegistered}
-              />
-            )}
-
-            {forgot.showForgot && mode === "login" && (
-              <ForgotPasswordPanel state={forgot} authError={authError} />
-            )}
-
-            {socialLoginEnabled && (
               <>
-                {/* Роздільник живе всередині гілки: без кнопок «або» веде
-                    в нікуди. */}
-                <div className="my-6 flex items-center gap-3 text-style-caption text-muted">
-                  <span className="flex-1 h-px bg-line" />
-                  або
-                  <span className="flex-1 h-px bg-line" />
-                </div>
-
-                <div className="space-y-3">
-                  <GoogleSignInButton
-                    loading={googleLoading}
-                    onClick={handleGoogleSignIn}
+                {/*
+                  `key={mode}` re-mount-ить форму при зміні режиму. Це
+                  надійніший шлях, ніж намагатися переключити schema на
+                  льоту: `useApiForm` фіксує zod-resolver під час mount-у,
+                  і RHF не перевалідовує існуючі поля при зміні
+                  `defaultValues`. Зайвих ререндерів немає — користувач
+                  перемикає режим явно через кнопку «Немає акаунту?».
+                */}
+                {mode === "login" ? (
+                  <LoginForm
+                    key="login"
+                    onForgotPassword={forgot.openPanel}
+                    showForgot={forgot.showForgot}
                   />
-                  {appleLoginEnabled && (
-                    <AppleSignInButton
-                      loading={appleLoading}
-                      onClick={handleAppleSignIn}
-                    />
-                  )}
+                ) : (
+                  <RegisterForm
+                    key="register"
+                    onCheckEmail={setCheckEmailFor}
+                  />
+                )}
+
+                {forgot.showForgot && mode === "login" && (
+                  <ForgotPasswordPanel state={forgot} authError={authError} />
+                )}
+
+                {socialLoginEnabled && (
+                  <>
+                    {/* Роздільник живе всередині гілки: без кнопок «або»
+                        веде в нікуди. */}
+                    <div className="my-6 flex items-center gap-3 text-style-caption text-muted">
+                      <span className="flex-1 h-px bg-line" />
+                      або
+                      <span className="flex-1 h-px bg-line" />
+                    </div>
+
+                    <div className="space-y-3">
+                      <GoogleSignInButton
+                        loading={googleLoading}
+                        onClick={handleGoogleSignIn}
+                      />
+                      {appleLoginEnabled && (
+                        <AppleSignInButton
+                          loading={appleLoading}
+                          onClick={handleAppleSignIn}
+                        />
+                      )}
+                    </div>
+                  </>
+                )}
+
+                <div className="text-center pt-1">
+                  <button
+                    type="button"
+                    onClick={switchMode}
+                    className="min-h-touch-target text-style-label text-brand-strong hover:underline px-3 py-2 rounded-lg focus:outline-none focus-visible:ring-2 focus-visible:ring-focus/45"
+                  >
+                    {mode === "login"
+                      ? "Немає акаунту? Зареєструватися"
+                      : "Вже є акаунт? Увійти"}
+                  </button>
                 </div>
               </>
             )}
-
-            <div className="text-center pt-1">
-              <button
-                type="button"
-                onClick={switchMode}
-                className="min-h-touch-target text-style-label text-brand-strong dark:text-brand-400 hover:underline px-3 py-2 rounded-lg focus:outline-none focus-visible:ring-2 focus-visible:ring-focus/45"
-              >
-                {mode === "login"
-                  ? "Немає акаунту? Зареєструватися"
-                  : "Вже є акаунт? Увійти"}
-              </button>
-            </div>
           </Card>
 
           {typeof onContinueWithoutAccount === "function" && (

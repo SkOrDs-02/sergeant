@@ -1,9 +1,13 @@
 # Аудит 2026-10-01 · Логіка доменів
 
-> **Status:** Active. 66 кластерів (89 знахідок) за першопричиною. Загальний план, метод і обмеження — у [README](./README.md).
-> **Last validated:** 2026-10-02
-> **Next review:** 2026-11-02
+> **Status:** Active. 67 кластерів (90 знахідок) за першопричиною. Загальний план, метод і обмеження — у [README](./README.md).
+> **Last touched:** 2026-11-23 by @claude (bv-chat-search-date закрито: київська доба в пошуку операцій чату, біля logic-60; logic-67: чат міняв категорію ручної витрати не там, виправлено); 2026-11-22 by @claude (logic-03 частково: undo для перезапису звички і set_goal, тест-інваріант undo/TOOL_RISK; consume_from_pantry лишився); 2026-11-22 by @claude (рішення власника по решті питань беклогу); 2026-11-21 by @claude (рішення власника по кластерах, раунди 5–10); раніше перевірено 2026-10-02.
+> **Next review:** 2027-01-21
 > **Spec-lint:** skip. Реєстр знахідок аудиту, не специфікація реалізації.
+
+> **Рішення власника 2026-11-22** (решта питань беклогу, сторінка рішень; кожне чекає виконання, пункти не закрито):
+>
+> - `overflow-agent-doable` — Окрім 6 пунктів у роботі є ще ~20 підтверджених у коді дрібних фіксів, які агент може зробити без твого рішення. **Рішення:** Білінг/сервер: logic-16 (тост «Premium уже діє» без перевірки оплати), logic-31 (internal upgrade не оживляє прострочений рядок), logic-32 (Plata grace 6 днів замість 3), logic-34 (Сільпо auth_required → schema_drift), logic-36 (sync audit enum v2), logic-30 (відписка на GET/HEAD).
 
 Доменна логіка здебільшого працює, але має системну хворобу: ті самі величини (витрати, ліміти, серії й відсоток звичок, межа доби) рахуються різними функціями на різних поверхнях, тож хаб, модулі й звіти показують різні числа про ті самі дані. Найсерйозніше — недосяжне відновлення акаунта у 30-денному вікні видалення (high) і обхід Free-квоти AI через квиток round_trip_ticket. Серед medium також ризикові для тіла розрахунки (старіння 1ПМ, адаптивний TDEE), незворотні чат-дії без підтвердження й undo, імпорт Дебет/Кредит навпаки і крос-модульні функції, мертві через читання localStorage-ключів після переходу на SQLite. Білінгові дефекти (LiqPay і Plata, тост checkout=success, гео-заголовок) латентні, бо оплати вимкнені, але їх треба закрити до запуску. Після аудиту виправлено лише частину: київську добу й верхню межу в денній картці темпу (889f028f) і одну з колізій категоризатора продуктів (e3009eb8).
 
@@ -13,7 +17,7 @@
 | ----------- | --------- |
 | critical    | 0         |
 | high        | 1         |
-| medium      | 11        |
+| medium      | 12        |
 | low         | 49        |
 | info        | 5         |
 
@@ -147,7 +151,7 @@ Code path (main @ c7c09607):
 
 ### `logic-03` [medium] Незворотні та перезаписні чат-дії виконуються без підтвердження і без undo
 
-- **Стан:** частково виправлено в [#1398](https://github.com/SkOrDs-02/sergeant/pull/1398) (змерджено 2026-10-08) і в [#1642](https://github.com/SkOrDs-02/sergeant/pull/1642) (змерджено 2026-10-23) (`update_budget(goal)` із `saved_amount` дописує різницю в лог поповнень, а не замінює його; рішення власника 2026-10-23) (лишилось: undo для consume_from_pantry (потребує компенсуючої події журналу комори, ADR-0077); set_goal, edit_habit, set_habit_schedule, pause_habit без undo; тест-інваріант «мутуючий тул або в TOOL_RISK, або з undo»)
+- **Стан:** частково виправлено. Частину виправлено в [#1398](https://github.com/SkOrDs-02/sergeant/pull/1398) (змерджено 2026-10-08) і в [#1642](https://github.com/SkOrDs-02/sergeant/pull/1642) (змерджено 2026-10-23) (`update_budget(goal)` із `saved_amount` дописує різницю в лог поповнень, а не замінює його; рішення власника 2026-10-23), решту закрито в гілці `backlog/logic-03` (2026-11-22): edit_habit, set_habit_schedule і pause_habit повертають undo, що відновлює лише записані тулом поля (field-level, як `data-61`), а `toolUndoInvariant.test.ts` вимагає від кожного мутуючого тула запису в TOOL_RISK або undo (свідомий виняток із причиною: consume_from_pantry чекає компенсуючої події журналу комори за ADR-0077). set_goal теж повертає undo: знімок лише `dailyTargetKcal`, як у `set_daily_plan`. Лишилось: undo для consume_from_pantry
 - **Перевірка:** підтверджено · **Зусилля:** M · **Область:** web: HubChat / виконавці дій
 - **Де:** packages/shared/src/lib/toolRisk.ts:54-116; apps/web/src/core/lib/chatActions/finykActions/debts.ts:72-123; .../finykActions/transactions.ts:95-158; .../finykActions/budgets.ts:182-201; .../nutritionActions.ts:261-416; .../crossActions/goalAndUtility.ts:179-189; .../routineActions.ts:397-556
 - **Першопричина:** Політика TOOL_RISK така: незворотне йде через confirm, решта має undo. Але частина мутуючих тулів не входить у TOOL_RISK і повертає звичайний рядок без undo. mark_debt_paid видаляє борг (splice), consume_from_pantry без qty прибирає позицію цілком. set_daily_plan і set_goal вимикають адаптивну ціль, edit_habit, set_habit_schedule і pause_habit (заднім числом) переписують звичку. split_transaction перезаписує спліти, а update_budget(goal) замінює історію поповнень цілі.
@@ -831,6 +835,17 @@ node s48-monday.mjs Europe/Kyiv 2026-10-05T09:00:00+03:00 kyiv-mon clkKyiv (ко
 Повʼязаний, але не той самий запис: docs/work/specs/audits/2026-10-01-full-app-audit/domain-logic.md:267 (buildRoutineRecs ігнорує розклад). Канонічні розрахунки: apps/web/src/core/hub/hubReports.aggregation.ts:302 і apps/web/src/core/insights/useWeeklyDigest.ts:377 (calcRoutinePeriodCompletion).
 ```
 
+<a id="logic-67"></a>
+
+### `logic-67` [medium] Чат «перенеси в Кафе» для ручної витрати каже «Категорію змінено», але категорія не змінюється
+
+- **Стан:** виправлено в гілці `backlog/bv-chat-category` (знахідка перевірки 2026-11-20, `bv-chat-category`; було й на `main` a685f5324): ручний запис міняє власне поле `category` з undo, override-и обох форм id знімаються.
+- **Перевірка:** підтверджено (браузер, PR #1722; тест) · **Зусилля:** S · **Область:** web: HubChat (finykActions), Фінік (категорії)
+- **Де:** apps/web/src/core/lib/chatActions/finykActions/search.ts (changeCategory, batchCategorize); apps/web/src/core/lib/chatActions/finykActions/manualCategory.ts
+- **Першопричина:** change_category і batch_categorize писали override у finyk_tx_categories під сирим id ручного запису (`mx_…`), а список, аркуш і Аналітика бачать запис як `manual_<id>` і беруть категорію з його поля `category`.
+
+Знахідок у кластері: 1.
+
 ## low
 
 <a id="logic-13"></a>
@@ -883,7 +898,7 @@ Verifier script <scratch>/agents/verify-api-live-gap-better-auth-catchall-subrou
 
 ### `logic-14` [low] Postgres-лімітер при прибиранні видаляє бакети всіх ключів за вікном короткого роуту: годинні й добові ліміти живуть ~2 хв
 
-- **Стан:** відкрито
+- **Стан:** закрито в гілці `backlog/logic-14` (2026-11-21): прибирання більше не бере вікно роуту, що його запустив, а тримає рядки 2 × найдовше вікно (мінімум 48 год, ширше, якщо в процесі трапилося довше вікно), тож 60-секундний роут не чіпає годинні й добові бакети; без міграції, тест «sweep від 60-секундного роуту» у `rateLimit.test.ts`
 - **Перевірка:** підтверджено · **Зусилля:** S · **Швидкий виграш** · **Область:** server: rate limit (Postgres-бекенд)
 - **Де:** apps/server/src/http/rateLimit.ts:516-530, 772
 - **Першопричина:** maybeSweepPgBuckets(windowMs) робить DELETE FROM rate_limit_buckets WHERE started_at &lt; NOW() − max(60 с, 2 × вікно поточного роуту) без фільтра за rl_key. Будь-який 60-секундний роут прибирає годинні й добові бакети інших ключів.
@@ -1121,7 +1136,8 @@ x17b.mjs: `success final url: http://127.0.0.1:4173/pricing toasts seen: ["Пі�
 
 ### `logic-17` [low] LiqPay-колбек грубо розбирає статуси: один reversed назавжди блокує order, а проміжні статуси ставлять активним платникам past_due
 
-- **Стан:** відкрито
+- **Стан:** виправлено в гілці `backlog/logic-17` (2026-11-21, ще не змерджено) (`reversed` лише warn-лог `liqpay_payment_reversed` + метрика `billing_payment_reversed_total` і більше не блокує order_id; проміжні й невідомі статуси = pending; `past_due` лише на `failure`/`error` з `action:regular`; лишилось: Prometheus-алерт на метрику)
+- **Рішення власника 2026-11-21:** `reversed` = повернення одного платежу: підписку не чіпати, лише алерт і запис; проміжні статуси (`3ds_verify`, `otp_verify`, `hold_wait` та невідомі) = pending, `past_due` лише на `failure`/`error`. Зафіксовано в ADR-0003 (Amended 2026-11-21).
 - **Перевірка:** підтверджено · **Зусилля:** M · **Область:** server: білінг / LiqPay
 - **Де:** apps/server/src/modules/billing/liqpay.ts:51-53, 295-348, 368-376
 - **Першопричина:** applyLiqPayCallback вважає reversed скасуванням усієї підписки: ставить canceled, але unsubscribe у LiqPay не викликає. hasCancellationEvent блокує будь-який наступний success цього order_id без огляду на payment_id чи час. PENDING_STATUSES знає лише wait_secure, wait_accept і processing, тож будь-який інший статус (3ds_verify, otp_verify, prepared, hold_wait…) стає past_due для всіх активних LiqPay-рядків юзера без перевірки order_id.
@@ -1323,6 +1339,7 @@ node s47-clock.mjs Europe/Kyiv 2026-10-04T23:58:00+03:00 4 kyiv-sun clkKyiv; nod
 ### `logic-20` [low] Огляд і Аналітика Фініка зараховують витрати, датовані на майбутні дні місяця, у фактичні місячні суми й темп
 
 - **Стан:** відкрито
+- **Рішення власника 2026-11-21:** витрати з датою на майбутні дні поточного місяця показувати окремим рядком «Заплановано» і не включати у факт і темп.
 - **Перевірка:** підтверджено · **Зусилля:** S · **Швидкий виграш** · **Область:** web: Фінік (Огляд, Аналітика)
 - **Де:** apps/web/src/modules/finyk/pages/overview/useOverviewData.ts:166-182, 390; apps/web/src/modules/finyk/pages/Analytics.tsx:420-433; apps/web/src/core/hub/hubReports.aggregation.ts:155
 - **Першопричина:** useOverviewData і Analytics обмежують вікно лише filterToKyivMonth, без верхньої межі «київське сьогодні». Звіти хабу натомість беруть reportWindows().money ≤ сьогодні. Форма ручної витрати дозволяє майбутні дати.
@@ -2118,7 +2135,8 @@ psql: `6 days`. plataSync.ts:240-247 (slow tick включає past_due), 166-17
 
 ### `logic-33` [low] Білінг вибирає провайдера за клієнтським заголовком x-vercel-ip-country і пропонує Stripe, навіть коли він вимкнений
 
-- **Стан:** відкрито
+- **Стан:** закрито в гілці `backlog/sec-33` (2026-11-21): API більше не читає `X-Vercel-IP-Country`, `getEnabledProviders()` однаковий для всіх (LiqPay і Plata за своїми прапорцями, Stripe лише за `STRIPE_ENABLED=true`), тож `provider=stripe` при вимкненому прапорці дає 400 `PROVIDER_UNAVAILABLE` (`provider.test.ts`, `billing.test.ts`); разом із `sec-33`
+- **Рішення власника 2026-11-21:** країну з заголовка не беремо: UA-провайдери всім, Stripe лише за `STRIPE_ENABLED` (як `sec-33`).
 - **Перевірка:** підтверджено · **Зусилля:** S · **Швидкий виграш** · **Область:** server: білінг (провайдери)
 - **Та сама першопричина, що й** [`sec-33`](./security.md#sec-33): Той самий дефект: провайдер оплати обирається за клієнтським X-Vercel-IP-Country, і Stripe пропонується попри STRIPE_ENABLED=false.
 - **Де:** apps/server/src/routes/billing.ts:60-64; apps/server/src/modules/billing/provider.ts:182-194
@@ -2209,6 +2227,7 @@ branchContext.ts: fetchFromCart і fetchFromBranches роблять `if (!x.ok) 
 ### `logic-35` [low] Відхилені пари чек↔транзакція відфільтровуються вже після матчингу, а relink дозволяє привʼязати чек до кількох транзакцій
 
 - **Стан:** відкрито
+- **Рішення власника 2026-11-22:** Без міграції: relink спершу знімає попередній лінк чека, а відхилення передаються в matcher до підрахунку неоднозначності.
 - **Перевірка:** підтверджено · **Зусилля:** M · **Область:** server+finyk-domain: Сільпо чеки
 - **Де:** apps/server/src/modules/silpo/receiptsMatch.ts:188-206; packages/finyk-domain/src/domain/receiptMatching.ts:146-182; apps/server/src/modules/silpo/receiptsRead.ts:270-292
 - **Першопричина:** matchAndLink викликає matchReceiptsToTransactions з повним набором кандидатів і лише потім відкидає відхилені пари, тож відхилена транзакція далі рахується конкурентом. relinkReceiptToTransaction вставляє лінк без перевірки, чи чек уже привʼязаний, а UNIQUE (user_id, receipt_id) у silpo_tx_receipt_links немає.
@@ -2470,6 +2489,7 @@ node --import tsx f6_kcal_streak.mts: 29 good days, nothing today → 29; breakf
 ### `logic-40` [low] «Жорстке застереження» про відновлення спрацьовує хибно, не називає мʼяз і діє не на всіх шляхах старту
 
 - **Стан:** відкрито
+- **Рішення власника 2026-11-22:** Hard-block лише для первинних мʼязів із високою втомою (fatigue) або травми, решта як мʼяке попередження.
 - **Перевірка:** підтверджено · **Зусилля:** M · **Область:** fizruk-domain / web: Фізрук
 - **Де:** packages/fizruk-domain/src/lib/recoveryCompute.ts:286-290; packages/fizruk-domain/src/lib/recoveryConflict.ts:66-75; apps/web/src/modules/fizruk/components/workouts/WorkoutsConfirmDialogs.tsx:61-70; apps/web/src/modules/fizruk/hooks/useWorkoutsOrchestrator.ts:389-395
 - **Першопричина:** recoveryCompute ставить status = 'red' будь-якому мʼязу з daysSince ≤ 1 незалежно від навантаження, а recoveryConflict рахує hasHardBlock і для вторинних мʼязів. Діалог не перелічує групи. Старт програми й «Повторити» перевірку оминають.
@@ -2590,6 +2610,7 @@ verify parse.mts: 'рис 99999999 кг' -> parsed {qty:null,unit:null} -> merge
 ### `logic-42` [low] «З комори» мовчки підставляє перший збіг пошуку: «молоко» стає «Молоко топлене 4%» або «згущене»
 
 - **Стан:** відкрито
+- **Рішення власника 2026-11-22:** Автопідбір лише за точним збігом canonicalFoodKey, інакше просити вибрати.
 - **Перевірка:** підтверджено · **Зусилля:** S · **Швидкий виграш** · **Область:** web: Їжа (додавання прийому)
 - **Де:** apps/web/src/modules/nutrition/components/meal-sheet/useSourceAutoPick.ts
 - **Першопричина:** useSourceAutoPick бере search.foodHits[0] ?? search.offHits[0]. Локальний пошук ранжує всі префіксні збіги однаково і розвʼязує нічию за updatedAt, тож перший результат фактично випадковий.
@@ -2678,7 +2699,8 @@ Code refs: apps/web/src/modules/nutrition/components/LogCard.tsx:39-50,85-87; Nu
 
 ### `logic-44` [low] Два різні «денні бюджети» для одного плану: Планування 1 049 ₴/день, Огляд 1 033 ₴
 
-- **Стан:** відкрито
+- **Стан:** закрито в гілці `backlog/logic-44` (2026-11-21): норму Планування вже рахував `getFinykDayPlan`, а підпис «· N дн.» брав дні без сьогодні з `getMonthlyPlanUsage`; тепер і норма, і дні, і розклад платежів ідуть із того самого селектора, що в Огляді (формула ADR-0079), паритет на даних аудиту стереже `Budgets.dayPlanParity.test.tsx`
+- **Рішення власника 2026-11-21:** єдина формула денного бюджету = формула Огляду з ADR-0079 (з регулярними потоками, дні разом із сьогодні); Планування переводимо на неї.
 - **Перевірка:** підтверджено · **Зусилля:** S · **Швидкий виграш** · **Область:** finyk-domain / web: Фінік
 - **Де:** packages/finyk-domain/src/domain/budget.ts:~595-617 (getMonthlyPlanUsage); apps/web/src/modules/finyk/pages/overview/useOverviewData.ts:431-446
 - **Першопричина:** getMonthlyPlanUsage рахує floor((план − факт) / днів*після*сьогодні) без регулярних потоків, а Огляд (ADR-0079) рахує (план − витрачено*до*сьогодні − recurringOut + recurringIn) / днів*разом*із_сьогодні. Двох формул ніхто не звів.
@@ -2991,6 +3013,7 @@ docs/product/modules/hub-coach.md:255-269 (канон: «Порожній тиж
 ### `logic-51` [low] Поза Києвом хаб змішує на одному екрані київську і пристроєву добу та тиждень
 
 - **Стан:** відкрито
+- **Рішення власника 2026-11-21:** усі блоки хабу за добою й тижнем пристрою (ADR-0078), гроші за київською датою.
 - **Перевірка:** підтверджено · **Зусилля:** M · **Область:** web: хаб (шапка, Тиждень у цифрах, Звіти)
 - **Де:** apps/web/src/modules/finyk/hooks/useFinykWeekReport.ts; apps/web/src/core/hub/hubReports.aggregation.ts (getPeriodRange); WeeklyDigestFooter (getWeekRange); HubHeader; apps/web/src/core/hub/now/closedToday.ts
 - **Першопричина:** Шапка й «Тиждень у цифрах» живуть за київським часом і тижнем, а «Закрито сьогодні» (крім грошей), Звіти й дайджест за тижнем пристрою. Єдиної осі доби для блоків одного екрана немає.
@@ -3081,6 +3104,7 @@ v12-order.ts (node --import tsx на src пакета): habitOrder [Медита
 ### `logic-53` [low] Build-id hard-floor порівнює SHA незалежно задеплоєних фронта й API: хибне «Доступна нова версія», а «Оновити» вантажить ту саму збірку
 
 - **Стан:** відкрито
+- **Рішення власника 2026-11-22:** /version.json з Vercel-деплою фронта (версія самого фронта).
 - **Перевірка:** спірне · **Зусилля:** M · **Область:** web: автооновлення / server: X-Server-Build-Id
 - **Де:** apps/web/src/core/app/autoUpdate.ts:274-330; apps/web/src/core/app/useSWUpdate.ts:74-93; apps/server/src/http/buildIdHeader.ts:24-41; apps/web/vite.config.js:84-89; apps/web/vercel.json; .github/workflows/deploy-api.yml:100-111; Dockerfile.api:248-254
 - **Першопричина:** Клієнт порівнює VITE_BUILD_ID (VERCEL_GIT_COMMIT_SHA) з X-Server-Build-Id (SENTRY_RELEASE → GIT_SHA → …), але фронт і бекенд деплояться за різними path-фільтрами (ignoreCommand Vercel, фільтр deploy-api.yml), тож SHA зазвичай різні. Без waiting-SW applyUpdate робить reload у ту саму збірку, а firedForBuildId живе лише в памʼяті.
@@ -3325,6 +3349,7 @@ rm2.mjs, anon: /finyk/nope лишає URL /finyk/nope і показує h1 «О�
 ### `logic-57` [low] Після входу немає повернення на вихідну сторінку: чат обіцяє «я повернусь до розмови», а людину кидає на /
 
 - **Стан:** відкрито
+- **Рішення власника 2026-11-22:** Додати безпечний returnTo (лише same-origin відносні шляхи) для чату, Pricing і Google callbackURL.
 - **Перевірка:** підтверджено · **Зусилля:** S · **Швидкий виграш** · **Область:** web: auth (вхід)
 - **Де:** apps/web/src/core/app/StandaloneRoutes.tsx:182-194; apps/web/src/core/hub/chat/ChatAuthGate.tsx:52; apps/web/src/core/auth/AuthContext.tsx:462, 495
 - **Першопричина:** Гілка SIGN_IN_PATH у StandaloneRoutes безумовно рендерить &lt;RedirectTo to='/' /&gt;, ChatAuthGate веде на голий /sign-in, а Google-вхід має callbackURL '/'. Механізму returnTo немає.
@@ -3492,6 +3517,7 @@ Computed with Intl Europe/Kyiv (dst.mjs): 2027-03-29T00:30+03:00 gives today 202
 ### `logic-60` [low] UTC-день замість дня користувача в дедупі нагадування про імпорт і в датах назв файлів експорту
 
 - **Стан:** відкрито
+- **Суміжне, закрито:** `bv-chat-search-date` (medium, HubChat-пошук Фініка) виправлено в гілці `backlog/bv-chat-search-date` (2026-11-23): `toIsoDay` у `chatActions/finykActions/search.ts` бере київську добу UTC-миті ручної витрати, як список Операцій, а не UTC-префікс, тож `find_transaction` і фільтр «вчора» більше не губляться в 00:00–03:00 за Києвом (тести опівночі взимку, влітку і в доби переходу часу); дефект був і на `main`.
 - **Перевірка:** підтверджено · **Зусилля:** S · **Швидкий виграш** · **Область:** web: Фінік, налаштування, бекап
 - **Де:** apps/web/src/modules/finyk/pages/overview/useImportReminder.ts:167; apps/web/src/core/settings/DataExportSection.tsx:15; apps/web/src/core/hub/HubBackupPanel.tsx:83; apps/web/src/core/profile/MemoryBankSection.tsx:127
 - **Першопричина:** Дату беруть як new Date(...).toISOString().slice(0, 10), тобто UTC-день, а не день пристрою чи Київ, як вимагає AGENTS.md.
@@ -3630,6 +3656,7 @@ read.test.ts:548 uses receiptId "XXXX-XXXX-XXXX-XXXX". analyze.ts:206 sets `fisc
 ### `logic-63` [info] cart/apply Сільпо не обмежує кількість: ні верхньої межі, ні кроку для штучних товарів, дублікати дозволені, lagerId не підписаний
 
 - **Стан:** відкрито
+- **Рішення власника 2026-11-22:** Лише межі кількості й дедуп, lagerId без підпису.
 - **Перевірка:** підтверджено · **Зусилля:** S · **Область:** server: Сільпо (кошик)
 - **Де:** packages/shared/src/schemas/silpo.ts:418-424; apps/server/src/modules/silpo/cartNormalize.ts:33-56; apps/server/src/modules/silpo/cart.ts:377-391
 - **Першопричина:** SilpoCartSelectionSchema має лише quantity: z.number().positive(), а makeApplySelections передає значення в silpo_add_or_update_cart_products як є. decodeLagerId декодує непідписаний токен.
@@ -3721,6 +3748,7 @@ epley1rm: 100x1=103.33, 100x2=106.67, 97x2=103.47. Тест exerciseDetail.test.
 ### `logic-65` [info] Переплата боргу поглинається без підказки: «Сплачено 1 200 з 1 000 ₴», залишок 0
 
 - **Стан:** відкрито
+- **Рішення власника 2026-11-22:** Показувати «Переплата N ₴» на картці боргу.
 - **Перевірка:** підтверджено · **Зусилля:** S · **Область:** finyk-domain (debtEngine)
 - **Де:** packages/finyk-domain/src/domain/debtEngine.ts:345-356
 - **Першопричина:** calcDebtRemaining клампить залишок через Math.max(0, …), а надлишок ніде не відображається і не стає дебіторкою.
@@ -3766,6 +3794,7 @@ DebtCard.tsx:67 has pct = Math.min(100, …). DebtCard.tsx:133-139 renders paid 
 ### `logic-66` [info] Відновлення історії чату з бекапу нічого не робить, хоча діалог обіцяє її перезаписати
 
 - **Стан:** відкрито
+- **Рішення власника 2026-11-22:** Прибрати chatHistory з restore і з переліку в діалозі.
 - **Перевірка:** підтверджено · **Зусилля:** S · **Область:** web: хаб (бекап)
 - **Де:** apps/web/src/core/hub/hubBackup.ts:173-181; apps/web/src/core/hub/hubChatSessions.ts:96-103, 141-158, 214-219; apps/web/src/core/hub/HubBackupPanel.tsx:30, 81
 - **Першопричина:** Restore пише лише legacy-ключ hub_chat_history, а loadSessions читає його тільки коли sessions порожні, і наступний saveSessions його перезаписує.

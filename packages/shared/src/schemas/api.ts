@@ -468,24 +468,31 @@ function isJsonContainer(
 }
 
 /**
- * Depth of OBJECT property nesting only. Arrays are transparent: their
- * elements are evaluated at the array's own depth, not depth+1 — so an
- * array of objects costs exactly as much depth as the objects it contains,
- * not one extra level for the array wrapper itself.
+ * Чи перевищує OBJECT-вкладеність `maxDepth`. Масиви прозорі: їхні елементи
+ * рахуються на глибині самого масиву, тож масив обʼєктів коштує рівно
+ * стільки, скільки самі обʼєкти, без зайвого рівня за обгортку.
+ *
+ * Обхід ітеративний, з явним стеком, і зупиняється на першому обʼєкті понад
+ * ліміт (rel-47): рекурсивна версія на тисячах вкладених масивів (вони в
+ * ліміт не входять) падала з RangeError, і refine віддавав 500 замість 400.
  */
-function jsonNestingDepth(value: unknown): number {
-  if (Array.isArray(value)) {
-    if (value.length === 0) return 0;
-    return Math.max(...value.map((item) => jsonNestingDepth(item)));
+function exceedsJsonNestingDepth(value: unknown, maxDepth: number): boolean {
+  const stack: Array<[unknown, number]> = [[value, 0]];
+  while (stack.length > 0) {
+    const [node, parentDepth] = stack.pop()!;
+    if (Array.isArray(node)) {
+      for (const item of node) {
+        if (isJsonContainer(item)) stack.push([item, parentDepth]);
+      }
+    } else if (node !== null && typeof node === "object") {
+      const depth = parentDepth + 1;
+      if (depth > maxDepth) return true;
+      for (const child of Object.values(node as Record<string, unknown>)) {
+        if (isJsonContainer(child)) stack.push([child, depth]);
+      }
+    }
   }
-  if (value !== null && typeof value === "object") {
-    const containerChildren = Object.values(
-      value as Record<string, unknown>,
-    ).filter(isJsonContainer);
-    if (containerChildren.length === 0) return 1;
-    return 1 + Math.max(...containerChildren.map(jsonNestingDepth));
-  }
-  return 0;
+  return false;
 }
 
 /**
@@ -517,7 +524,7 @@ export const UserProfilePayloadSchema = z
       message: `profile payload must be at most ${USER_PROFILE_MAX_BYTES} bytes`,
     },
   )
-  .refine((value) => jsonNestingDepth(value) <= USER_PROFILE_MAX_DEPTH, {
+  .refine((value) => !exceedsJsonNestingDepth(value, USER_PROFILE_MAX_DEPTH), {
     message: `profile payload must not nest more than ${USER_PROFILE_MAX_DEPTH} levels deep`,
   });
 export type UserProfilePayload = z.infer<typeof UserProfilePayloadSchema>;
@@ -1991,8 +1998,8 @@ export const BillingPlanSchema = z.enum(["plus", "pro"]);
 export type BillingPlan = z.infer<typeof BillingPlanSchema>;
 
 // Web payment providers (Phase 7 UA billing) — те, що юзер може ОБРАТИ на
-// checkout. `stripe` — dormant (ніколи не пропонується UA); `liqpay`
-// (ПриватБанк) + `plata` (monobank) — live UA.
+// checkout. `stripe` — dormant (пропонується лише за `STRIPE_ENABLED`);
+// `liqpay` (ПриватБанк) + `plata` (monobank) — live UA.
 export const BillingProviderIdSchema = z.enum(["stripe", "liqpay", "plata"]);
 export type BillingProviderId = z.infer<typeof BillingProviderIdSchema>;
 
@@ -2210,8 +2217,9 @@ export const BillingCancelResponseSchema = z.object({
 export type BillingCancelResponse = z.infer<typeof BillingCancelResponseSchema>;
 
 // `GET /api/billing/providers` — список payment-provider-ів, доступних
-// поточному юзеру (для кнопок на /pricing). UA → увімкнені liqpay/plata;
-// інші країни → stripe.
+// поточному юзеру (для кнопок на /pricing). Список один для всіх, країну не
+// враховуємо (sec-33): `liqpay` і `plata` кожен за своїм прапорцем, `stripe`
+// лише за `STRIPE_ENABLED=true`. Порядок фіксований: LiqPay, Plata, Stripe.
 export const BillingProvidersResponseSchema = z.object({
   providers: z.array(BillingProviderIdSchema),
 });

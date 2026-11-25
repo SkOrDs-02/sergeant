@@ -1,7 +1,7 @@
 # ADR-0003: Refund and dispute handling
 
-- **Status:** Proposed
-- **Last validated:** 2026-05-15 by Claude Sonnet 4.6 (external session — bulk freshness backfill, D4 audit). **Next review:** 2026-08-13.
+- **Status:** Accepted
+- **Last validated:** 2026-11-21 by @claude (Amended: рішення власника, прийнято в нейтральній редакції). **Next review:** 2027-05-21.
 - **Date:** 2026-04-27
 - **Reviewers:** @Skords-01
 - **Supersedes:** —
@@ -11,6 +11,12 @@
   - [`docs/work/specs/launch/business/06-monetization-architecture.md`](../../work/specs/launch/business/06-monetization-architecture.md) — risk register #8 («нічого про refund / proration»).
 
 ---
+
+## Поточний стан (Amended 2026-11-21)
+
+Рішення власника 2026-11-21: ADR прийнято в **нейтральній до провайдера** редакції. Політика повернень і спорів нижче діє для будь-якого платіжного провайдера: зараз це LiqPay і Plata, Stripe лише за `STRIPE_ENABLED`. Там, де тіло називає Stripe, читай «провайдер оплати».
+
+Уточнення до семантики статусів (аудит 2026-10-01, `logic-17`): статус `reversed` означає повернення одного платежу і **не скасовує підписку** (лише алерт і запис); проміжні статуси провайдера (`3ds_verify`, `otp_verify`, `hold_wait` і невідомі) вважаються pending, `past_due` ставиться лише на `failure`/`error`.
 
 > **Примітка (2026-07-10):** ціни «Pro ₴99/міс / ₴799/рік» і «$7/міс / $49/рік» у тілі — історичні. **Чинні тарифи — [ADR-0068](./0068-pricing-v4-uah-reverse-trial.md)** (₴199/₴1490). Аргумент про dispute-економіку лишається валідним (Stripe-комісія за dispute з'їдає кілька місяців оплати на будь-якому тарифі).
 

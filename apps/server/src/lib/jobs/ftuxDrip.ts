@@ -76,6 +76,18 @@ const state: FtuxDripModuleState = {
 export const FTUX_DRIP_QUEUE_NAME = "ftux-drip";
 
 /**
+ * Мʼякі skip-и диспетчера (`FtuxDripSkip.outcome`): job закривається як
+ * completed з цим outcome-ом, без ретраю. `skipped_unverified` — адреса ще
+ * не підтверджена (priv-22).
+ */
+const FTUX_DRIP_SKIP_OUTCOMES: ReadonlySet<string> = new Set([
+  "skipped_optout",
+  "skipped_already_sent",
+  "skipped_user_deleted",
+  "skipped_unverified",
+]);
+
+/**
  * Класифікує помилку Resend на retryable / non-retryable. Зеркало логіки
  * у `authMail.ts#isRetryableMailError`. 5xx, 429, network (без HTTP-status
  * у meaning-ʼу) — retry; 4xx — permanent.
@@ -182,11 +194,7 @@ export async function enqueueFtuxDripMail(
         err && typeof err === "object" && "outcome" in err
           ? String((err as { outcome?: unknown }).outcome)
           : null;
-      if (
-        skipOutcome === "skipped_optout" ||
-        skipOutcome === "skipped_already_sent" ||
-        skipOutcome === "skipped_user_deleted"
-      ) {
+      if (skipOutcome !== null && FTUX_DRIP_SKIP_OUTCOMES.has(skipOutcome)) {
         ftuxDripJobsProcessedTotal.inc({ outcome: skipOutcome, day: data.day });
         return;
       }
@@ -267,11 +275,7 @@ export async function processFtuxDripJob(
       err && typeof err === "object" && "outcome" in err
         ? String((err as { outcome?: unknown }).outcome)
         : null;
-    if (
-      skipOutcome === "skipped_optout" ||
-      skipOutcome === "skipped_already_sent" ||
-      skipOutcome === "skipped_user_deleted"
-    ) {
+    if (skipOutcome !== null && FTUX_DRIP_SKIP_OUTCOMES.has(skipOutcome)) {
       ftuxDripJobsProcessedTotal.inc({
         outcome: skipOutcome,
         day: job.data.day,

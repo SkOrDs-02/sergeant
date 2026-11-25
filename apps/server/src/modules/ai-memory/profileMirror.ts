@@ -59,8 +59,9 @@
  * помилці Postgres. Уся діф+apply-послідовність тут обгорнута в один
  * try/catch (дзеркалить `recordProductMemoryEvent` у `eventSync.ts`) —
  * `mirrorProfileMemoryEntries` НІКОЛИ не кидає назовні, лише повертає
- * `{ ok: false, ... }` + warn-лог. `routes/me.ts` викликає цю функцію
- * ПІСЛЯ успішного `upsertUserProfile` — сам факт збереження профілю від
+ * `{ ok: false, ... }` + warn-лог. `routes/me.ts` планує цю функцію
+ * (дебаунс `profileMirrorDebounce.ts`, rel-34) ПІСЛЯ успішного
+ * `upsertUserProfile` — сам факт збереження профілю від
  * цієї функції не залежить.
  *
  * Консент (`AI_MEMORY_ENABLED` + per-user `ai_memory`-preference) тут НЕ
@@ -70,6 +71,11 @@
  * для insert/update-частини, а `forgetSource()` (видалення) виконується
  * незалежно від консенту — право видалити власні дані consent-ом не
  * гейтиться.
+ *
+ * Єдине місце, де згоду тут читають (rel-34-r2), — облік добової стелі
+ * ембеддингів: факт, який черга через згоду однаково не пустить у Voyage,
+ * не списується зі стелі (`resolveChargeable`). Гейт самого запису від
+ * цього не змінюється.
  */
 
 import { createHash } from "node:crypto";
@@ -80,8 +86,11 @@ import { isHealthMemoryEntry } from "@sergeant/shared";
 import { env } from "../../env.js";
 import { runWithUserContext } from "../../dbContext.js";
 import { logger, serializeError } from "../../obs/logger.js";
+import { aiMemoryIngestEnqueuedTotal } from "../../obs/metrics.js";
 import { getAiMemory } from "./bootstrap.js";
+import { hasAiMemoryConsent, hasHealthDataConsent } from "./consent.js";
 import { enqueueMemoryIngest } from "./ingestQueue.js";
+import { grantProfileEmbeds, settleProfileEmbeds } from "./profileEmbedCap.js";
 import type { RememberInput } from "./service.js";
 import type { MemorySource } from "./types.js";
 
@@ -116,6 +125,12 @@ export interface ProfileMemoryMirrorResult {
   skippedInvalid: number;
   /** Вхідні записи, відкинуті через стелю `PROFILE_MEMORY_MAX_ENTRIES`. */
   skippedOverCap: number;
+  /**
+   * Нові/змінені факти, чий ембеддинг пропущено через добову стелю
+   * користувача (`AI_MEMORY_PROFILE_EMBED_DAILY_CAP`, rel-34). Дотягне
+   * перший PUT профілю наступної UTC-доби.
+   */
+  skippedUserCap: number;
 }
 
 const ZERO_RESULT: ProfileMemoryMirrorResult = {
@@ -125,6 +140,7 @@ const ZERO_RESULT: ProfileMemoryMirrorResult = {
   deleted: 0,
   skippedInvalid: 0,
   skippedOverCap: 0,
+  skippedUserCap: 0,
 };
 
 interface NormalizedProfileMemoryEntry {
@@ -358,6 +374,49 @@ function toRememberInput(
   };
 }
 
+/** Ключ змісту для стелі rel-34: той самий факт із тим самим текстом. */
+function embedKey(sourceRef: string, salt: string): string {
+  return `${sourceRef}:${salt}`;
+}
+
+/**
+ * Згода, яка вирішує, чи дійде факт до Voyage взагалі. Помилка перевірки
+ * тлумачиться як «згода є»: для стелі це обережний бік (одиницю
+ * списано даремно), а сам запис однаково вирішить `enqueueMemoryIngest`,
+ * який перевіряє згоду ще раз і на помилці не пише (fail-closed).
+ */
+async function consentOrAssumeYes(
+  check: () => Promise<boolean>,
+): Promise<boolean> {
+  try {
+    return await check();
+  } catch {
+    return true;
+  }
+}
+
+/**
+ * Які кандидати реально підуть у Voyage і тому мають списуватись зі стелі.
+ * `enqueueMemoryIngest` мовчки відкидає факти без згоди `ai_memory` і
+ * health-факти без `healthDataConsent` (за замовчуванням її немає), тож вони
+ * лишаються «відсутніми» в `ai_memories` назавжди — і, якби списувались,
+ * зʼїдали б стелю на кожному дзеркаленні (rel-34-r2).
+ */
+async function resolveChargeable(
+  pool: Pool,
+  userId: string,
+  inputs: ReadonlyArray<{ healthData: boolean }>,
+): Promise<boolean[]> {
+  if (inputs.length === 0) return [];
+  if (!(await consentOrAssumeYes(() => hasAiMemoryConsent(pool, userId)))) {
+    return inputs.map(() => false);
+  }
+  const healthOk = inputs.some((input) => input.healthData)
+    ? await consentOrAssumeYes(() => hasHealthDataConsent(pool, userId))
+    : true;
+  return inputs.map((input) => healthOk || !input.healthData);
+}
+
 interface ExistingProfileMemoryRow {
   source_ref: string | null;
   content: string;
@@ -417,23 +476,84 @@ export async function mirrorProfileMemoryEntries(
     // типом, тихо загубив би `dedupeSalt` — і повернув би баг дедупу BullMQ,
     // описаний вище, БЕЗ помилки типів.
     const toWrite: Array<ReturnType<typeof toRememberInput>> = [];
-    let inserted = 0;
-    let updated = 0;
+    const candidates: Array<{
+      entry: NormalizedProfileMemoryEntry;
+      input: ReturnType<typeof toRememberInput>;
+      isUpdate: boolean;
+    }> = [];
 
     for (const entry of entries) {
       const existingContent = existingBySourceRef.get(entry.id);
       if (existingContent === undefined) {
-        toWrite.push(toRememberInput(userId, entry));
-        inserted += 1;
+        const input = toRememberInput(userId, entry);
+        candidates.push({ entry, input, isUpdate: false });
       } else if (existingContent !== entry.fact) {
         // Текст факту змінився — видалити стару embedding-версію й
         // записати наново, інакше RAG підтягує застарілий текст (задача,
         // ПАСТКА "оновлення").
-        toForget.push(entry.id);
-        toWrite.push(toRememberInput(userId, entry));
-        updated += 1;
+        const input = toRememberInput(userId, entry);
+        candidates.push({ entry, input, isUpdate: true });
       }
       // else: незмінний факт — no-op (це і є idempotency, ПАСТКА 1).
+    }
+
+    // rel-34: кожен кандидат, що дійде до Voyage, — окремий ембеддинг, а
+    // бюджет Voyage спільний на всіх. Понад добову стелю користувача
+    // пропускаємо тихо: профіль уже збережено, а пропущене дотягне PUT
+    // наступної доби. Для пропущеного ОНОВЛЕННЯ стару версію не видаляємо:
+    // застарілий текст у RAG кращий, ніж зникнення факту до завтра.
+    //
+    // rel-34-r2: списується лише те, що справді піде у Voyage. Записані
+    // факти знімаються з «у дорозі» (`settleProfileEmbeds`), кандидати без
+    // згоди проходять без списання (до Voyage їх не пустить черга), а
+    // ключ, уже списаний і ще не записаний, — теж без списання.
+    settleProfileEmbeds(
+      userId,
+      [...existingBySourceRef].map(([ref, content]) =>
+        embedKey(ref, contentFingerprint(content)),
+      ),
+    );
+    const chargeable = await resolveChargeable(
+      pool,
+      userId,
+      candidates.map((c) => c.input),
+    );
+    const grantedCharged = grantProfileEmbeds(
+      userId,
+      candidates
+        .filter((_, i) => chargeable[i])
+        .map((c) => embedKey(c.entry.id, c.input.dedupeSalt)),
+    );
+    let chargedIdx = 0;
+    let skippedUserCap = 0;
+    let inserted = 0;
+    let updated = 0;
+    candidates.forEach(({ entry, input, isUpdate }, i) => {
+      const allowed = chargeable[i] ? grantedCharged[chargedIdx++] : true;
+      if (!allowed) {
+        skippedUserCap += 1;
+        return;
+      }
+      if (isUpdate) {
+        toForget.push(entry.id);
+        updated += 1;
+      } else {
+        inserted += 1;
+      }
+      toWrite.push(input);
+    });
+    if (skippedUserCap > 0) {
+      // Без вмісту фактів (Hard Rule #21): лише лічильники.
+      logger.warn({
+        msg: "ai_memory_profile_embed_user_cap",
+        userId,
+        skipped: skippedUserCap,
+        cap: env.AI_MEMORY_PROFILE_EMBED_DAILY_CAP,
+      });
+      aiMemoryIngestEnqueuedTotal.inc(
+        { mode: "user_cap", source: PROFILE_SOURCE },
+        skippedUserCap,
+      );
     }
 
     let deleted = 0;
@@ -481,6 +601,7 @@ export async function mirrorProfileMemoryEntries(
       deleted,
       skippedInvalid,
       skippedOverCap,
+      skippedUserCap,
     };
   } catch (err) {
     logger.warn({
@@ -495,6 +616,7 @@ export async function mirrorProfileMemoryEntries(
       deleted: 0,
       skippedInvalid,
       skippedOverCap,
+      skippedUserCap: 0,
     };
   }
 }

@@ -1,8 +1,8 @@
 # Аудит 2026-10-01 · Безпека та доступ
 
-> **Status:** Active. 62 кластери (96 знахідок) за першопричиною. Загальний план, метод і обмеження — у [README](./README.md).
-> **Last validated:** 2026-10-02
-> **Next review:** 2026-11-02
+> **Status:** Active. 63 кластери (97 знахідок) за першопричиною. Загальний план, метод і обмеження — у [README](./README.md).
+> **Last touched:** 2026-11-23 by @claude (sec-53: IP прод-сервера прибрано з доказів sec-01 і XFF); 2026-11-22 by @claude (sec-39: клас 23 іде в Sentry рівня warning); 2026-11-22 by @claude (рішення власника по решті питань беклогу); 2026-11-21 by @claude (рішення власника по кластерах, раунди 5–10); раніше перевірено 2026-10-02.
+> **Next review:** 2027-01-21
 > **Spec-lint:** skip. Реєстр знахідок аудиту, не специфікація реалізації.
 
 Безпека й доступ тримаються на кількох місцях, де одна помилка конфігурації дає повне захоплення акаунта. Головне з них: мертвий домен sergeant.2dmanager.com.ua досі дозволений у credentialed CORS (sec-01, critical, підтверджено на проді), а сирий session token із get-session і list-sessions працює як Bearer (sec-05). Друга системна вада в тому, що відкликання сесій не спрацьовує повністю. Cookie-кеш через update-user продовжується до 7 днів (sec-02), SSE-стрім живе після виходу (sec-09), невдалий офлайн-вихід лишає сесію живою (sec-07), а change-email без пароля дає непідтвердженим акаунтам шлях до захоплення (sec-06). PIN-блокування вебу фактично не захищає: воно вимикається після reload, знімається десятьма невдалими спробами і обходиться через Ctrl+K (sec-04, sec-12, sec-13). AI-квоти й пейвол обходяться ланцюжком round-trip-квитків і через refine-photo (sec-03, sec-14), а нативний auth-контур (expo(), sergeant://) лишається відкритим у проді, хоча мобільний розвиток на паузі (sec-08). Негативні тести показали, що тримаються межі тіла запиту, точний збіг CORS, JSON-парсер та ізоляція чужих даних на читанні. Станом на HEAD 7611f169 жодну знахідку теми не виправлено, лише розширено гейт ізоляції (PR #1308).
@@ -12,7 +12,7 @@
 | Серйозність | Кластерів |
 | ----------- | --------- |
 | critical    | 1         |
-| high        | 3         |
+| high        | 4         |
 | medium      | 15        |
 | low         | 30        |
 | info        | 13        |
@@ -57,7 +57,7 @@ PROD_ORIGINS = ["https://sergeant.vercel.app", "https://sergeant.2dmanager.com.u
 **Верифікатор:**
 
 ```text
-Відтворено повністю, і в коді, і наживо. cors.ts:23-27 тримає `https://sergeant.2dmanager.com.ua` у PROD_ORIGINS, тобто в проді він теж є. setCorsHeaders (cors.ts:129-132) відповідає на нього ACAO=origin і ACAC=true. Домен ніхто не контролює: dns.resolve дає ENOTFOUND для 2dmanager.com.ua, sergeant.2dmanager.com.ua і www, а dns.google і cloudflare-dns обидва повертають NXDOMAIN із SOA зони com.ua. WHOIS hostmaster.ua для 2dmanager.com.ua: «ДОМЕННЕ ІМ'Я ВІЛЬНЕ … доступне для реєстрації». Для порівняння, sergeant.com.ua зареєстровано 2026-08-27 з NS на vercel-dns, тобто це домен власника. У проді API на api.sergeant.com.ua (167.233.98.92), а BETTER_AUTH_URL там https, тож getAdvancedCookieOptions ставить SameSite=None; Secure, і cookie їде в cross-site credentialed fetch. Нейтралізатора не знайшов. Better Auth originCheck (getTrustedOrigins) покриває лише POST /api/auth/*, GET його не стосується. Глобальний CSRF-гейт знімається, бо preflight від цього origin проходить і X-Requested-With дозволено. Обмеження експлуатації: потрібен браузер, що шле third-party SameSite=None cookie, тобто Chrome або Edge за замовчуванням. Safari ITP такі cookie блокує, Firefox TCP їх партиціонує. Цього д …[обрізано]
+Відтворено повністю, і в коді, і наживо. cors.ts:23-27 тримає `https://sergeant.2dmanager.com.ua` у PROD_ORIGINS, тобто в проді він теж є. setCorsHeaders (cors.ts:129-132) відповідає на нього ACAO=origin і ACAC=true. Домен ніхто не контролює: dns.resolve дає ENOTFOUND для 2dmanager.com.ua, sergeant.2dmanager.com.ua і www, а dns.google і cloudflare-dns обидва повертають NXDOMAIN із SOA зони com.ua. WHOIS hostmaster.ua для 2dmanager.com.ua: «ДОМЕННЕ ІМ'Я ВІЛЬНЕ … доступне для реєстрації». Для порівняння, sergeant.com.ua зареєстровано 2026-08-27 з NS на vercel-dns, тобто це домен власника. У проді API на api.sergeant.com.ua (IP прод-сервера), а BETTER_AUTH_URL там https, тож getAdvancedCookieOptions ставить SameSite=None; Secure, і cookie їде в cross-site credentialed fetch. Нейтралізатора не знайшов. Better Auth originCheck (getTrustedOrigins) покриває лише POST /api/auth/*, GET його не стосується. Глобальний CSRF-гейт знімається, бо preflight від цього origin проходить і X-Requested-With дозволено. Обмеження експлуатації: потрібен браузер, що шле third-party SameSite=None cookie, тобто Chrome або Edge за замовчуванням. Safari ITP такі cookie блокує, Firefox TCP їх партиціонує. Цього д …[обрізано]
 ```
 
 **Додаткові докази верифікатора:**
@@ -435,6 +435,23 @@ Code path, traced end to end at HEAD c7c09607:
 1. `flagsStore` is created when `featureFlags.ts` is evaluated (featureFlags.ts:93-98). That happens in the eager graph, before `mountApp()`. At creation, `createTypedStore` immediately calls `webKVStore.onChange(key, reload)` (typedStore.ts:255-257). `webKVStore.onChange` resolves the backend at call time (storage.ts:170-172 → `resolveStore()` storage.ts:151-155). Before boot, `getActiveSqliteKvStore()` is null, so the subscription is bound to the localStorage adapter's DOM `storage` event. The SQLite adapter's `replaceCache` and writes never fire it.
 2. `get()` caches the first read permanently (`cachedLoaded = true`, typedStore.ts:193-200). Nothing ever calls `flagsStore.reload()`. A grep for `.reload()` and `flagsStore` across apps/web/src finds only tests, and there is no hook on `markStorageReady`.
 3. main.tsx:198-200 mounts React first. `bootstrapKvStore()` runs later, async (main.tsx:211-273). On top of that, boot opens the anon partition (sqlite.ts:102-109, kvStoreBoot.ts:176). The user partition, where `setFlag` wrote `app-lock-enabled`, is loaded only after auth resolves, via `switchSqliteUser` → `refreshKvWarmCache` → `store.replaceCache` (sqlite.ts:187, kvStoreBoot.ts:300). So even when the router's `HydrateFallback` delays the first render past boot, the first read of `useFlag('app-lock-enabled')` still lands before the user …[обрізано]
+```
+
+<a id="sec-63"></a>
+
+### `sec-63` [high] Сканер prompt-injection має кубічний регексп: один запит до /api/chat блокує event loop на години
+
+- **Стан:** виправлено в гілці `backlog/sec-63` (2026-11-21, PR ще не відкрито; кожен необовʼязковий роздільник у `<system>`/`<im_start>` несе свій `\s*` усередині групи, закінчення кирилічних патернів обмежене `{0,16}` (мова тегових патернів та сама, кирилічних звужена лише на закінченнях довших за 16 літер); тест проганяє весь список на 20 ворожих формах по 40 000 символів, кожна < 50 мс)
+- **Перевірка:** відтворено на регекспі напряму (2026-11-21, під час фіксу sec-31), через HTTP не проганялось; серйозність попередня · **Зусилля:** S · **Область:** server: AI-чат
+- **Де:** apps/server/src/modules/chat/toolOutputWrapping.ts, `PROMPT_INJECTION_PATTERNS` (`/<\s*\/?\s*\|?\s*im[_-]start\s*\|?\s*>/i`, також `/<\s*\/?\s*system\s*>/i`); виклики: promptCache.ts (`wrapAndScanUserContext(context)`), prepareToolResults.ts, coach.ts, digest/weeklyDigestPrompt.ts; ліміт `context` 40 000 символів (packages/shared/src/schemas/api.ts)
+- **Першопричина:** сусідні `\s*`, розділені лише необовʼязковими `\/?` і `\|?`, дають катастрофічний backtracking: на `<` і довгому ряду пробілів без закривального `>` патерн `im_start` кубічний, `system` квадратичний. Сканер біжить синхронно на кожному запиті, і `.some()` без збігу проганяє всі патерни.
+- **Вплив:** автентифікований користувач із квотою шле `context` = `<` + 39 999 пробілів, і Node-процес API зависає на години (екстраполяція кубу), разом з усіма іншими запитами. Tool_result-и після truncate (~2000 символів) дають ~1,5 с на блок, до 20 блоків на хід.
+- **Що зробити:** переписати патерни без сусідніх квантифікаторів (наприклад `<[\s/|]*(?:system|im[_-]start)[\s|]*>`) або різати пробіли до сканування; додати тест на час виконання для `<` + 40 000 пробілів.
+
+**Докази:**
+
+```text
+Node 22, `re.test("<" + " ".repeat(n))`: im_start n=1000 175 мс, n=2000 1 360 мс, n=4000 10 875 мс (×8 на подвоєння, куб); system n=8000 31 мс, n=20 000 213 мс, n=50 000 1 492 мс (квадрат). Валідатор sec-31 бачив зависання понад 2 хв і приписав його патерну `system`; за замірами повільний саме `im_start`, `system` на 40 000 символів займає близько секунди.
 ```
 
 ## medium
@@ -1865,7 +1882,7 @@ Bearer fail-closed (503 без INTERNAL_API_KEY, constant-time), це корек
 **Докази:**
 
 ```text
-Локально (прямий доступ, trust proxy=1) запит з X-Forwarded-For: 10.11.12.13 записано з іншим ipHash (551ddf8b5dff17e9 проти 12ca17b49af22894 у решти 267 node-запитів), тобто req.ip контролює клієнт. За Traefik, який дописує реальну IP, це безпечно. Але будь-який шлях до контейнера в обхід Traefik (опублікований порт 3000 на 167.233.98.92, помилковий TRUST_PROXY>фактичних hop-ів) дозволяє пройти IP-гейт /api/push/send і /api/internal з `X-Forwarded-For: 127.0.0.1` і обходити per-IP лімітери.
+Локально (прямий доступ, trust proxy=1) запит з X-Forwarded-For: 10.11.12.13 записано з іншим ipHash (551ddf8b5dff17e9 проти 12ca17b49af22894 у решти 267 node-запитів), тобто req.ip контролює клієнт. За Traefik, який дописує реальну IP, це безпечно. Але будь-який шлях до контейнера в обхід Traefik (опублікований порт 3000 на IP прод-сервера, помилковий TRUST_PROXY>фактичних hop-ів) дозволяє пройти IP-гейт /api/push/send і /api/internal з `X-Forwarded-For: 127.0.0.1` і обходити per-IP лімітери.
 ```
 
 **Відтворення:**
@@ -1980,7 +1997,8 @@ node .../agents/api-live-input-fuzz/r1_csrf.mjs (стовпець X-Api-Secret:a
 
 ### `sec-24` [low] Анонімні /api/barcode і /api/food-search дають вичерпати спільну зовнішню квоту власника з однієї IP
 
-- **Стан:** відкрито
+- **Стан:** закрито в гілці `backlog/rel-35-r2` (2026-11-21): глобальний бюджет на ключ апстріму нижче стелі (`modules/nutrition/upstreamBudget.ts`, UPCitemdb 90 на добу, USDA 450 на годину з ключем); вичерпаний бюджет не викликає апстрім і дає неавторитетну відповідь (503 з `no-store`, без miss-кешу), а не «немає в базі»; ключі в Coolify за рішенням власника; разом із `rel-35`
+- **Рішення власника 2026-11-21:** ключі постачальників у проді плюс глобальний добовий бакет на ключ апстріму нижче стелі (як `rel-35`).
 - **Перевірка:** підтверджено · **Зусилля:** S · **Швидкий виграш** · **Область:** server: nutrition / зовнішні API
 - **Де:** apps/server/src/routes/barcode.ts:17-33; apps/server/src/routes/food-search.ts:16-33; apps/server/src/modules/nutrition/barcode.ts:327-395,454-509
 - **Першопричина:** Роути без requireSession мають лише per-IP бакети, і добовий бакет barcode (300 на IP) вищий за стелю UPCitemdb trial (100 на добу на весь проєкт); food-search (600 на IP) так само спалює USDA-ключ власника. Глобального бакета на ключ апстріму немає.
@@ -2080,7 +2098,7 @@ verify-server-static-auth-session/v1.mjs + v1.log на окремому pool-к�
 
 ### `sec-26` [low] /api/privat/connect не вимагає підтвердженого email, хоча для Mono той самий вектор закрито
 
-- **Стан:** відкрито
+- **Стан:** виправлено в гілці `backlog/sec-26` (не змерджено): `requireVerifiedEmail()` стоїть після `requireFreshSession()` на `/api/privat/connect`, як на Mono; непідтверджений email дає 403 до виклику ПриватБанку (тест у `fresh-session.route.test.ts`); reverse trial для непідтверджених не чіпали, це окреме рішення власника
 - **Перевірка:** підтверджено · **Зусилля:** S · **Швидкий виграш** · **Область:** server: банки
 - **Де:** apps/server/src/routes/banks.ts:43-52; apps/server/src/routes/mono-webhook.ts:64-93; apps/server/src/auth.ts:500-510
 - **Першопричина:** requireVerifiedEmail() стоїть лише на /api/mono/connect; /api/privat/connect і privatConnection.ts перевірки emailVerified не мають, а reverse trial Pro видається кожній реєстрації, навіть непідтвердженій.
@@ -2169,7 +2187,7 @@ v1.log, той самий непідтверджений користувач: P
 
 ### `sec-28` [low] Перевірку same-origin у тапі по push обходить /\host: сповіщення відкриває чужий сайт
 
-- **Стан:** відкрито
+- **Стан:** виправлено: `safeNotificationPath` (`apps/web/src/sw/pushPayload.ts`) відкидає `\` і керівні символи, парсить рядок через `new URL` і пропускає лише шлях на тому самому origin-і, а канонічний шлях, що після згортання dot-сегментів почався з `//` (`/.//host`, `/a/..//host`, `/%2e//host`), теж відкидає; регресійні кейси й property-тест (вихід ніколи не починається з `//` і лишається на origin-і) у `pushPayload.test.ts`; серверний `PushTestRequestSchema.url` не звужено, бо native приймає `sergeant://`-схему
 - **Перевірка:** підтверджено · **Зусилля:** S · **Швидкий виграш** · **Область:** web: service worker / push
 - **Де:** apps/web/src/sw/pushPayload.ts:82-87; apps/web/src/sw.ts:65-110; packages/shared/src/schemas/api.ts:1336-1352; apps/server/src/modules/push/push.ts:388-397
 - **Першопричина:** safeNotificationPath перевіряє лише startsWith('/') і !startsWith('//'), а WHATWG URL трактує '\' як '/' і вирізає \t та \n, тож '/\evil.example' резолвиться в https://evil.example. client.navigate і clients.openWindow дозволяють cross-origin, а PushTestRequestSchema приймає довільні url, title і body.
@@ -2255,7 +2273,7 @@ node <scratch>/agents/client-static-web-xss-injection/urltest.mjs. Поточн�
 
 ### `sec-29` [low] Зовнішні URL з відповідей сервера йдуть у навігацію без перевірки схеми й хоста (портал білінгу в налаштуваннях, cartUrl Сільпо)
 
-- **Стан:** відкрито
+- **Стан:** закрито в гілці `backlog/sec-29` (2026-11-22): спільний `safeExternalHref` у `@sergeant/shared` (лише `https:`, без облікових даних і порту, хост з allow-list); білінг іде через `assertAllowedBillingUrl` (`core/billing/billingRedirect.ts`) і на `/pricing`, і в «Керувати підпискою» налаштувань; сервер віддає `cartUrl` лише https на `silpo.ua`/`*.silpo.ua`, інакше `null`, а `SilpoCartSheet` перевіряє ще раз і ховає кнопку (`safeExternalHref.test.ts`, `billingRedirect.test.ts`, `PlanSection.test.tsx`, `SilpoCartEntry.test.tsx`, `cartNormalize.test.ts`)
 - **Перевірка:** підтверджено · **Зусилля:** S · **Швидкий виграш** · **Область:** web: білінг / Сільпо
 - **Де:** apps/web/src/core/settings/PlanSection.tsx:118-128; apps/web/src/core/PricingPage.tsx:49-86,259-262; apps/web/src/modules/nutrition/components/SilpoCartSheet.tsx:327-336; apps/server/src/modules/silpo/cartNormalize.ts:301-302,372; packages/shared/src/schemas/silpo.ts:450
 - **Першопричина:** Немає спільного хелпера безпечного зовнішнього URL. PlanSection.handleManage робить location.assign(portal.url) без assertAllowedCheckoutUrl, який для того самого createPortal() викликає PricingPage; SilpoCartSheet рендерить cartUrl з upstream у href без перевірки схеми. Схеми відповіді лише z.string()/url(), що пропускає javascript: і будь-який хост.
@@ -2362,7 +2380,7 @@ PlanSection.tsx:123 `const portal = await billingApi.createPortal(); window.loca
 
 ### `sec-30` [low] CSV-експорт операцій Фініка не нейтралізує формули (=, +, -, @)
 
-- **Стан:** відкрито
+- **Стан:** виправлено (гілка `backlog/sec-30`): `arrayToCSV` пропускає кожну текстову клітинку через спільний `neutralizeCsvFormula` з `packages/shared` (regex `/^[=+\-@\t\r]/`, той самий у `escapeCsvValue`), а колонка суми Фініка позначена `numeric: true` і лишається відʼємним числом; тести на `=HYPERLINK`, `@SUM` і відʼємну суму
 - **Перевірка:** підтверджено · **Зусилля:** S · **Швидкий виграш** · **Область:** web: Фінік / експорт
 - **Де:** apps/web/src/shared/lib/ui/export.ts:24-30; apps/web/src/modules/finyk/pages/transactions/exportTransactionsCsv.ts:110-150; packages/shared/src/lib/exportCsv.ts:48-56
 - **Першопричина:** Фінік експортує через arrayToCSV/escapeCSV з shared/lib/ui/export.ts, який лише квотує роздільник, лапки й \n, а не через спільний escapeCsvValue з packages/shared, де префікс ' для формул уже є.
@@ -2441,7 +2459,7 @@ The finder's export agents/browser-surfaces-finyk-flows/r3-csvinj.csv contains u
 
 ### `sec-31` [low] Екранування огорожі &lt;user_data&gt;/&lt;tool_output&gt; у промпті ловить лише точний закривальний тег
 
-- **Стан:** відкрито
+- **Стан:** виправлено в гілці `backlog/sec-31-r2` (2026-11-21, PR ще не відкрито; обидві огорожі замінюють у недовірених даних кожен `<`, його NFKD-форми (`＜`, `﹤`, `≮`) і двійники з Unicode confusables та кутові дужки на `&lt;`, а `>` на `&gt;`, тож ні закривальний, ні відкривальний тег не утворюється; тест генерує кандидатів із властивостей Unicode, а не з продакшн-списку. Не покрито: літери поза переліком, що лише нагадують `<`. Перша спроба `backlog/sec-31` відхилена. Окрему ваду сканера знайдено при перевірці, див. [`sec-63`](#sec-63))
 - **Перевірка:** підтверджено · **Зусилля:** S · **Швидкий виграш** · **Область:** server: AI-чат
 - **Де:** apps/server/src/modules/chat/toolOutputWrapping.ts:98-102,116-118; apps/web/src/core/lib/hubChatContext/finance.ts:187-189
 - **Першопричина:** escapeUserDataClose/escapeToolOutputClose замінюють тільки буквальні '&lt;/user_data&gt;' і '&lt;/tool_output&gt;', тож варіанти з пробілом чи переносом ('&lt;/user_data &gt;', '&lt;/ user_data&gt;') проходять і візуально закривають огорожу.
@@ -2485,7 +2503,8 @@ Script <scratch>/agents/verify-server-static-ai-layer/fence-v3.mts output: "a</u
 
 ### `sec-32` [low] Premium-фіча «Пам'ять Сержанта» (ai.memoryRecall) доступна Free через RAG у чаті
 
-- **Стан:** відкрито
+- **Стан:** закрито в гілці `backlog/sec-32` (2026-11-21): реєстр дає `ai.memoryRecall.freeItems: 3` і `itemLimit()`, перший тур `/api/chat` урізає RAG-top-K через `featureItemLimit()` (Free до 3 спогадів, Premium і небілінговий режим повний), явний recall лишається Premium, `/pricing` пише «до 3 спогадів у чаті» (`chat.memoryRagTier.test.ts`, `ragContext.test.ts`, `requirePlan.test.ts`, `pricingTiers.test.ts`)
+- **Рішення власника 2026-11-21:** Free отримує урізаний RAG памʼяті в чаті (3 спогади), Premium повний; текст тарифів оновити під це.
 - **Перевірка:** підтверджено · **Зусилля:** S · **Область:** server: AI / billing
 - **Де:** apps/server/src/modules/chat/chat.ts:745-756; apps/server/src/modules/ai-memory/ragContext.ts:137-197; apps/server/src/routes/ai-memory.ts:84-91; packages/shared/src/billing/entitlements.ts:55
 - **Першопричина:** requireFeature('ai.memoryRecall') стоїть лише на POST /api/ai-memory/recall, а перший тур /api/chat викликає buildRagContext → recall для будь-якого користувача без перевірки плану.
@@ -2531,7 +2550,8 @@ chat.ts: grep 'getUserPlan|accessStateOf|hasFeature' порожній; єдин�
 
 ### `sec-33` [low] Країна для вибору платіжного провайдера береться з клієнтського X-Vercel-IP-Country, а Stripe пропонується попри STRIPE_ENABLED=false
 
-- **Стан:** відкрито
+- **Стан:** закрито в гілці `backlog/sec-33` (2026-11-21): API більше не читає `X-Vercel-IP-Country`, `getEnabledProviders()` однаковий для всіх (LiqPay і Plata за своїми прапорцями, Stripe лише за `STRIPE_ENABLED=true`), тож `provider=stripe` при вимкненому прапорці дає 400 `PROVIDER_UNAVAILABLE` (`provider.test.ts`, `billing.test.ts`); разом із `logic-33`
+- **Рішення власника 2026-11-21:** заголовок `X-Vercel-IP-Country` на API не читаємо; усім показуємо UA-провайдерів, Stripe лише за `STRIPE_ENABLED`. Той самий кластер, що `logic-33`.
 - **Перевірка:** підтверджено · **Зусилля:** S · **Швидкий виграш** · **Область:** server: billing
 - **Де:** apps/server/src/routes/billing.ts:62-66; apps/server/src/modules/billing/provider.ts:182-201
 - **Першопричина:** userCountry() читає X-Vercel-IP-Country, хоча перед бекендом на Hetzner/Coolify Vercel немає і заголовок повністю задає клієнт; getEnabledProviders() для не-UA безумовно повертає ['stripe'], не дивлячись на STRIPE_ENABLED.
@@ -2913,7 +2933,8 @@ v4-all.mjs і v4-nutr.mjs. routine_habits name з 100 000 символів => ap
 
 ### `sec-39` [low] errorHandler віддає клієнту SQLSTATE і системні коди та перетворює помилки вводу на 500 із Sentry-подією
 
-- **Стан:** відкрито
+- **Стан:** закрито в гілці `backlog/sec-39-r2` (ще не змерджено): non-operational 5xx віддає лише `INTERNAL`; pg SQLSTATE 22xxx дає 400 `VALIDATION`, 23xxx дає 409 `CONFLICT`, 40P01/40001 дають 503 `UNAVAILABLE` з `Retry-After`, усі без Sentry, бо `shouldHandleError` Sentry-хендлера бере той самий класифікатор (`http/errorClassification.ts`); ZodError на 400 лише на межі запиту (`DELETE /api/me` перейшов на `parseBody`), невловлений ZodError схеми відповіді лишається 500 `INTERNAL` із Sentry без деталей; не входило: санітизація NUL на рівні zod-схем
+- **Дочищено:** у гілці `backlog/rv-server-misc` (2026-11-22, PR-рев'ю): 23xxx і далі дає клієнту 409 `CONFLICT`, але `errorHandler` шле подію в Sentry рівня `warning` з тегом `sqlstate` (FK/unique найчастіше наш баг); Sentry-хендлер її не дублює, бо `shouldHandleError` бере той самий класифікатор
 - **Перевірка:** підтверджено · **Зусилля:** S · **Швидкий виграш** · **Область:** server: обробка помилок
 - **Де:** apps/server/src/http/errorHandler.ts:46-60,95-101,118-124; apps/server/src/app.ts:189-190; apps/server/src/routes/me.ts:282
 - **Першопричина:** Термінальний хендлер бере e.code для будь-якої помилки, включно з non-operational 5xx, і шле в Sentry кожен такий 5xx; мапінгу ZodError і pg SQLSTATE класів 22/23 на 4xx немає, а NUL і невалідний UTF-8 не відсікаються на рівні схем.
@@ -2961,7 +2982,8 @@ verify-server-static-reliability-ops/err-probe.mjs (pool-юзер audit_pool159)
 
 ### `sec-40` [low] Анонімні /healthz, /health/workers і /api/status без rate limit роблять SQL на кожен виклик і розкривають операційні дані
 
-- **Стан:** відкрито
+- **Стан:** закрито 2026-11-21: `/healthz` і `/health/workers` за Bearer `METRICS_TOKEN` (`http/requireMetricsToken.ts`, спільний з `/metrics`), анонім отримує 401 без запиту в БД; `/livez`, `/readyz`, `/health` лишились анонімними, smoke-тести переведено на `auth: "metrics"`. Кеш знімка і статус n8n у `/api/status` у рішення не входили
+- **Рішення власника 2026-11-21:** `/healthz` і `/health/workers` закрити `METRICS_TOKEN`-ом, як `/metrics`; анонімними лишаються лише `/livez` і `/readyz`, скрипти проб оновити. Той самий кластер, що `priv-30`.
 - **Перевірка:** підтверджено · **Зусилля:** S · **Швидкий виграш** · **Область:** server: health / observability
 - **Де:** apps/server/src/routes/health.ts:55-56; apps/server/src/http/health.ts:106-191,222-256; apps/server/src/modules/me/deletionPoller.ts:242-262; apps/server/src/modules/gdpr/cleanupPoller.ts:226-244; apps/server/src/http/status.ts:115-140
 - **Першопричина:** Діагностичні ендпоінти змонтовано без токена, ліміту й кешу: /health/workers на кожен виклик робить COUNT-запити (черга видалень, GDPR, mono), /healthz показує стан пулу й circuit breaker, а статус n8n рахується лише за таблицею помилок.
@@ -3005,7 +3027,8 @@ Script: <scratch>/agents/verify-server-static-reliability-ops/r2-probe.mjs. Resu
 
 ### `sec-41` [low] Креденшел PIN лишається після виходу, а «Змінити PIN» і вимкнення не питають поточний PIN
 
-- **Стан:** відкрито
+- **Стан:** виправлено в гілці `backlog/sec-41` (не змерджено): `logout()` стирає PIN-креденшел вийденого акаунта при будь-якому виході (`runLogoutHooks` у `logoutBeforeNavigate.ts`, чужі слоти не чіпає; тест `AuthContext.appLockWipe.test.tsx`); «Змінити PIN» спершу питає поточний PIN, а вимкнення йде через екран PIN, і `disablePin(currentPin)` стирає креденшел лише після правильного; хибна спроба йде в той самий лічильник перебору, на ліміті `lockedOut` (тести в `useAppLock.test.ts`, `AppLock.test.tsx`)
+- **Рішення власника 2026-11-21:** стирати PIN-креденшел при будь-якому виході з акаунта і вимагати поточний PIN для зміни чи вимкнення PIN.
 - **Перевірка:** підтверджено · **Зусилля:** S · **Швидкий виграш** · **Область:** web: блокування застосунку
 - **Де:** apps/web/src/core/security/lockStorage.ts:26-40,142-149; apps/web/src/core/security/useAppLock.ts:135-141; apps/web/src/core/security/AppLock.tsx:125-148; apps/web/src/core/auth/AuthContext.tsx:551-697; apps/web/src/shared/lib/storage/purgeLocalData.ts:125-141
 - **Першопричина:** logout() і purgeAppOwnedLocalData не чистять IndexedDB sergeant_app_lock, а startChange одразу відкриває PinSetupFlow без перевірки старого PIN; disablePin вимагає лише діалог підтвердження.
@@ -3330,7 +3353,9 @@ apps/server/src/dbContext.ts:99-115. Виклики: usdCap.ts:126-128 (`id ? \`
 
 ### `sec-46` [low] Реєстрація розкриває, чи існує акаунт з email, хоча вхід і «Забули пароль» нейтральні
 
-- **Стан:** відкрито
+- **Стан:** закрито в гілці `backlog/sec-46-r2` (2026-11-21): за межею `EMAIL_VERIFICATION_REQUIRED_FROM` (env, не задано = вимкнено, власник ставить дату деплою) реєстрація не логінить і на нову й зайняту адресу відповідає однаковим 200 `{ token: null }`, власнику зайнятої адреси йде лист «у тебе вже є акаунт» із входом і скиданням пароля (`onExistingUserSignUp`, не частіше разу на 15 хв); вхід паролем акаунта, створеного не раніше межі, без підтвердження дає 403 `EMAIL_NOT_VERIFIED` уже після перевірки пароля і новий лист, клік у листі відкриває сесію, старі акаунти входять як раніше, міграції немає (`auth/emailVerificationGate.ts`); веб і мобайл показують «Перевір пошту» замість гілки «вже зареєстровано», smoke E2E підтверджує адресу smoke-секретом (`tests/smoke/smokeEmailVerification.ts`); той самий фікс закриває `priv-29`
+- **Посилення після ревʼю PR (`rv-auth-hardening`):** закрито в гілці `backlog/rv-auth-hardening` (2026-11-22, PR ще не відкрито): (1) pre-account-takeover через неявне привʼязування Google/Apple до непідтвердженого email+пароль акаунта на better-auth 1.7.25 не відтворюється, бо `account.accountLinking.requireLocalEmailVerified` за замовчуванням `true` і `handleOAuthUserInfo` (`dist/oauth2/link-account.mjs`) відповідає «account not linked» без `emailVerified = true`; прапорець тепер записано в `auth.ts` явно (`accountLinkingOptions`), а `auth/oauthAccountLinking.test.ts` на справжньому `betterAuth()` тримає і контроль (з `false` пароль зловмисника стає входом), і наш конфіг; (2) троттл листів при переповненні витісняє найстаріші слоти замість `clear()`, тож флуд новими адресами не обнуляє троттл жертви; (3) прод не стартує із закоміченим smoke-секретом `BETTER_AUTH_SECRET` (`env/betterAuthEnv.ts`, коротші за 32 символи відкидались і раніше); (4) у проді без `EMAIL_VERIFICATION_REQUIRED_FROM` на старті пишеться warn `email_verification_cutoff_unset`
+- **Рішення власника 2026-11-21:** нейтральна відповідь реєстрації «перевір пошту» плюс лист власнику адреси «у тебе вже є акаунт»; верифікація email стає обовʼязковою. Той самий кластер, що `priv-29`.
 - **Перевірка:** підтверджено · **Зусилля:** M · **Область:** web+server: auth
 - **Де:** apps/server/src/auth.ts:368; apps/web/src/core/auth/RegisterForm.tsx; apps/web/src/core/auth/AuthContext.tsx:182-184,525-526
 - **Першопричина:** POST /api/auth/sign-up/email повертає 422 USER_ALREADY_EXISTS_USE_ANOTHER_EMAIL, а клієнт показує «Цей email вже зареєстровано»; нейтральна відповідь неможлива без обов'язкового підтвердження email (REQUIRE_EMAIL_VERIFICATION=false).
@@ -3721,10 +3746,11 @@ grep generatePDFReport|dataToHTMLTable: є лише HubReports.tsx:14/204, ре-
 
 ### `sec-53` [info] Публічне репо розкриває особисті email засновника, факт прод-акаунта з реальними фінансами й root-SSH адресу сервера
 
-- **Стан:** відкрито
+- **Стан:** закрито в гілці `backlog/sec-53` (2026-11-21): у `author-map.json` особисті адреси лишились тільки як sha256 (`emailSha256ToHandle`, гейт у `bump-last-validated.test.mjs`), адреси прибрано з `external-link-allowlist.json` і цього аудиту, абзац про реальні фінанси в `product-knowledge-backlog.md` переписано без них, `root@IP` у AGENTS.md замінено SSH-alias `sergeant-mirror` з `~/.ssh/config` власника; історію git не переписано, закриття SSH для root і пароля перевіряє власник на сервері
+- **Рішення власника 2026-11-21:** прибрати особисті email (`scripts/docs/author-map.json`) і згадку про реальні фінанси з поточних файлів, `root@IP` замінити SSH-alias; історію git не переписуємо.
 - **Перевірка:** підтверджено · **Зусилля:** S · **Область:** docs: публічне репо
 - **Де:** docs/work/specs/planning/product-knowledge-backlog.md:1722; scripts/docs/author-map.json:5-7; AGENTS.md:228; docs/governance/governance/external-link-allowlist.json:135
-- **Першопричина:** Після відкриття репо (2026-09-30) у відстежуваних доках лишились внутрішні деталі: gmail-адреси в product-knowledge-backlog.md і author-map.json, згадка про «справжні фінанси власника», root@167.233.98.92 в AGENTS.md.
+- **Першопричина:** Після відкриття репо (2026-09-30) у відстежуваних доках лишились внутрішні деталі: gmail-адреси в product-knowledge-backlog.md і author-map.json, згадка про «справжні фінанси власника», root@<IP сервера> в AGENTS.md.
 - **Вплив:** Полегшує таргетований фішинг і credential stuffing саме на акаунт із реальними банківськими підключеннями та розвідку SSH-поверхні сервера. Приріст малий: ті самі email уже є в метаданих git-комітів, ключів і токенів не знайдено.
 - **Що зробити:** Прибрати особисту адресу й згадку про реальні фінанси з публічних доків, замінити root@IP на SSH-alias і переконатися, що SSH для root і за паролем закрито.
 
@@ -3740,25 +3766,25 @@ grep generatePDFReport|dataToHTMLTable: є лише HubReports.tsx:14/204, ре-
 **Докази:**
 
 ```text
-product-knowledge-backlog.md:1722: «дозвіл на `<email власника>` є, але 11 тестових записів у справжніх фінансах власника...»; AGENTS.md:228: «bare-дзеркало `root@167.233.98.92:/srv/git/sergeant.git`». git grep по відстежуваних файлах і `git log -p --all -G` (396 комітів, shallow) на sk-ant-/sk-or-v1-/ghp_/AKIA/gsk_/re_/whsec_/Telegram-токени/Sentry DSN/postgres-URL з паролями — лише плейсхолдери й тестові фікстури.
+product-knowledge-backlog.md:1722: «дозвіл на `<email власника>` є, але 11 тестових записів у справжніх фінансах власника...»; AGENTS.md:228: «bare-дзеркало `root@<IP сервера>:/srv/git/sergeant.git`». git grep по відстежуваних файлах і `git log -p --all -G` (396 комітів, shallow) на sk-ant-/sk-or-v1-/ghp_/AKIA/gsk_/re_/whsec_/Telegram-токени/Sentry DSN/postgres-URL з паролями — лише плейсхолдери й тестові фікстури.
 ```
 
 **Відтворення:**
 
 ```text
-git grep -n -I -E 'gmail\.com|167\.233\.98\.92'
+git grep -n -I -E 'gmail\.com|<IP сервера>'
 ```
 
 **Верифікатор:**
 
 ```text
-Факти наявні у відстежуваних файлах. product-knowledge-backlog.md:1722 називає `<email власника>` і «справжні фінанси власника». scripts/docs/author-map.json:5-7 містить дві gmail-адреси засновника. AGENTS.md:228 містить `root@167.233.98.92:/srv/git/sergeant.git`. Репо публічне з 2026-09-30 (AGENTS.md, ADR-0101). Приріст розкриття малий. Ті самі адреси вже публічні в метаданих git-комітів: `git log --format=%ae` дає 86 комітів від <email власника> і 86 від ще однієї gmail-адреси. IP бекенд-хоста фактично видно з DNS API. Новим лишається лише контекст «цей акаунт підключений до реальних фінансів» і те, що SSH-користувач git-дзеркала — root. Перше суперечить власному правилу AGENTS.md «реальні user ID, фінансову топологію ... не комітьте». Секретів не знайдено. Severity info коректна.
+Факти наявні у відстежуваних файлах. product-knowledge-backlog.md:1722 називає `<email власника>` і «справжні фінанси власника». scripts/docs/author-map.json:5-7 містить дві gmail-адреси засновника. AGENTS.md:228 містить `root@<IP сервера>:/srv/git/sergeant.git`. Репо публічне з 2026-09-30 (AGENTS.md, ADR-0101). Приріст розкриття малий. Ті самі адреси вже публічні в метаданих git-комітів: `git log --format=%ae` дає 86 комітів від <email власника> і 86 від ще однієї gmail-адреси. IP бекенд-хоста фактично видно з DNS API. Новим лишається лише контекст «цей акаунт підключений до реальних фінансів» і те, що SSH-користувач git-дзеркала — root. Перше суперечить власному правилу AGENTS.md «реальні user ID, фінансову топологію ... не комітьте». Секретів не знайдено. Severity info коректна.
 ```
 
 **Додаткові докази верифікатора:**
 
 ```text
-git grep -n -I -E 'gmail\.com|167\.233\.98\.92' → AGENTS.md:228, product-knowledge-backlog.md:1722, scripts/docs/author-map.json:5,7 (+ тестова фікстура bump-last-validated.test.mjs:49). git log --format='%ae' | sort | uniq -c → 86 <email власника>, 86 dimastahov16012003@gmail.com. Ні в аудитах, ні в open-work.md це не зафіксовано (docs-governance-audit:89 лише цитує pushurl дзеркала в іншому контексті).
+git grep -n -I -E 'gmail\.com|<IP сервера>' → AGENTS.md:228, product-knowledge-backlog.md:1722, scripts/docs/author-map.json:5,7 (+ тестова фікстура bump-last-validated.test.mjs:49). git log --format='%ae' | sort | uniq -c → 86 <email власника>, 86 <ще одна адреса>. Ні в аудитах, ні в open-work.md це не зафіксовано (docs-governance-audit:89 лише цитує pushurl дзеркала в іншому контексті).
 ```
 
 <a id="sec-54"></a>
@@ -3857,6 +3883,7 @@ useGroqVoiceInput.ts:170-181 ('rate_limited' -> fixed copy, 'error' -> fixed cop
 ### `sec-56` [info] Юридичні сторінки публічно показують внутрішню примітку «Founder/lawyer review gate» і плейсхолдери реквізитів
 
 - **Стан:** відкрито
+- **Рішення власника 2026-11-22:** Прибрати внутрішню примітку, лишити бейдж «бета», заповнити реквізити.
 - **Перевірка:** підтверджено · **Зусилля:** S · **Область:** web: юридичні сторінки
 - **Де:** apps/web/src/core/legal/LegalDocumentView.tsx:47-50; apps/web/src/core/legal/legalShared.ts:20-21; apps/web/src/core/legal/offerDocument.ts:131-132
 - **Першопричина:** LegalDocumentView рендерить плашку review gate на всіх чотирьох документах, а контролер у політиці приватності й реквізити в оферті досі плейсхолдери ([ПІБ], [РНОКПП], IBAN UAxxx).

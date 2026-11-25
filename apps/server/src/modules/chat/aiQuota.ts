@@ -1,6 +1,7 @@
 import type { Request, Response } from "express";
 import { getSessionUser } from "../../auth.js";
 import pool, { withSubjectContext } from "../../db.js";
+import { parseNonNegIntRecord } from "../../env/envHelpers.js";
 import { getIp } from "../../http/rateLimit.js";
 import { logger } from "../../obs/logger.js";
 import {
@@ -239,27 +240,40 @@ function toolCost(): number {
  * дозволених викликів = `floor(limit / toolCost())`. Напр. limit=30, cost=3 →
  * 10 викликів tool-а на день.
  *
- * Битий JSON → fallback на default-ліміт + лог-попередження (advisory-фіча не
- * повинна блокувати запити; fail-open узгоджений із рештою модуля).
+ * Битий JSON чи нечислове значення валить сервер на старті
+ * (`jsonRecordOfNonNegIntFromEnv` у `env.ts`, аудит ai-pipeline B15). Якщо
+ * ран-тайм усе ж побачив биту мапу (env змінено в обхід схеми), ліміт
+ * fail-closed: `AI_QUOTA_TOOL_DEFAULT_LIMIT`, а без нього `0`, а не unlimited.
  */
 function toolLimit(toolName: string): number | null {
   const raw = process.env["AI_QUOTA_TOOL_LIMITS"];
-  if (!raw) {
+  if (!raw || raw.trim() === "") {
     return parseLimit("AI_QUOTA_TOOL_DEFAULT_LIMIT", null);
   }
-  try {
-    const parsed = JSON.parse(raw) as Record<string, unknown> | null;
-    if (parsed && typeof parsed === "object" && toolName in parsed) {
-      const v = parsed[toolName];
-      if (typeof v === "number" && Number.isFinite(v) && v >= 0) return v;
-    }
-  } catch (e: unknown) {
-    logger.warn({
-      msg: "ai_quota_tool_limits_parse_failed",
-      err: { message: (e as Error)?.message || String(e) },
+  const map = toolLimitsMap(raw);
+  if (map === null) return parseLimit("AI_QUOTA_TOOL_DEFAULT_LIMIT", 0);
+  const v = map[toolName];
+  if (v !== undefined) return v;
+  return parseLimit("AI_QUOTA_TOOL_DEFAULT_LIMIT", null);
+}
+
+// Мапа парситься один раз на значення env, а не на кожен tool-call.
+let toolLimitsCache: {
+  raw: string;
+  map: Record<string, number> | null;
+} | null = null;
+
+function toolLimitsMap(raw: string): Record<string, number> | null {
+  if (toolLimitsCache?.raw === raw) return toolLimitsCache.map;
+  const r = parseNonNegIntRecord(raw);
+  if (!r.ok) {
+    logger.error({
+      msg: "ai_quota_tool_limits_invalid",
+      err: { message: r.error },
     });
   }
-  return parseLimit("AI_QUOTA_TOOL_DEFAULT_LIMIT", null);
+  toolLimitsCache = { raw, map: r.ok ? r.value : null };
+  return toolLimitsCache.map;
 }
 
 async function safeSessionUser(req: Request): Promise<SessionUser> {

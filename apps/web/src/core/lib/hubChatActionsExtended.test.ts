@@ -253,9 +253,15 @@ describe("batch_categorize", () => {
     });
     expect(msg).toContain("змінено на «Продукти» (id:food)");
     expect(stripTechnicalIds(msg as string)).not.toMatch(/\bfood\b/);
-    expect(readLS<Record<string, string>>("finyk_tx_cats", {})).toEqual({
-      m_silpo_1: "food",
-    });
+    // Ручна витрата отримує категорію у власний запис, а не override під
+    // сирим id, якого жоден екран не читає (bv-chat-category).
+    expect(readLS<Record<string, string>>("finyk_tx_cats", {})).toEqual({});
+    const saved = readLS<Array<{ id: string; category?: string }>>(
+      "finyk_manual_expenses_v1",
+      [],
+    );
+    expect(saved.find((e) => e.id === "m_silpo_1")?.category).toBe("food");
+    expect(saved.find((e) => e.id === "m_taxi")?.category).toBeUndefined();
   });
 
   it("валідує pattern і category_id", () => {

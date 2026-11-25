@@ -10,16 +10,16 @@
  *   3. **Огорожа + сканер** (`wrapAndScanToolResults`) — M8, анти-інʼєкція.
  *
  * AI-DANGER: маска стоїть ПЕРЕД усіченням, і це не взаємозамінно.
- * `truncateToolResults` кладе ПОВНИЙ оригінал у Sentry-breadcrumb
- * (`data.full`), а `applyBeforeBreadcrumb` чистить `data` лише для
- * `category: "http"` — тобто при масці після усічення сирі імена контрагентів
- * та IBAN-и їхали в Sentry повз рішення founder-а #10. Sentry — теж «за
- * периметром». Маскуємо рівно один раз, до обох стоків.
- * Знахідка B2, `docs/work/specs/audits/ai-pipeline-2026-08-05.md`.
+ * Колись `truncateToolResults` клав ПОВНИЙ оригінал у Sentry-breadcrumb
+ * (`data.full`), і при масці після усічення сирі імена контрагентів та IBAN-и
+ * їхали в Sentry повз рішення founder-а #10 (знахідка B2,
+ * `docs/work/specs/audits/ai-pipeline-2026-08-05.md`). З priv-24 breadcrumb
+ * несе лише довжину і sha256-префікс, а `applyBeforeBreadcrumb` викидає
+ * `data.full`; порядок однаково тримаємо: маскуємо рівно один раз, до всіх
+ * стоків за периметром.
  *
  * Тест, що це стереже, дивиться саме на breadcrumb, а не на payload
- * (`chat.redaction.test.ts`): payload лишається чистим в обох порядках, тож
- * перевірка payload-у регресію не ловить.
+ * (`chat.redaction.test.ts`).
  *
  * Винесено з `chat.ts` під module-size cap (Hard Rule #18).
  */

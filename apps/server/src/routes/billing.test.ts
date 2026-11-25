@@ -147,16 +147,20 @@ describe("billing routes", () => {
     const query = vi.fn().mockResolvedValue({ rows: [] });
     const app = createTestApp(createQueryPool(query));
 
-    // Non-UA geo → resolver picks Stripe (dormant для UA лише); Stripe env
-    // відсутній у тесті → BillingConfigurationError → 503. Для UA-юзера з
-    // вимкненими флагами відповідь була б 400 PROVIDER_UNAVAILABLE.
-    const res = await request(app)
-      .post("/api/billing/checkout")
-      .set("x-vercel-ip-country", "US")
-      .send({ plan: "plus" });
+    // STRIPE_ENABLED=true → resolver пропонує Stripe; ключа в тесті нема →
+    // BillingConfigurationError → 503. З вимкненим прапорцем відповідь була
+    // б 400 PROVIDER_UNAVAILABLE.
+    setEnv("STRIPE_ENABLED", "true");
+    try {
+      const res = await request(app)
+        .post("/api/billing/checkout")
+        .send({ plan: "plus" });
 
-    expect(res.status).toBe(503);
-    expect(res.body).toMatchObject({ code: "BILLING_UNAVAILABLE" });
+      expect(res.status).toBe(503);
+      expect(res.body).toMatchObject({ code: "BILLING_UNAVAILABLE" });
+    } finally {
+      unsetEnv("STRIPE_ENABLED");
+    }
   });
 
   it("serializes active subscription ids as numbers", async () => {
@@ -426,17 +430,51 @@ describe("billing routes", () => {
   });
 
   // ── Phase 7 UA billing: multi-provider routes ──────────────────────
-  it("GET /providers lists enabled UA providers by geo", async () => {
+  it("GET /providers lists enabled UA providers", async () => {
     setEnv("LIQPAY_ENABLED", "true");
     setEnv("PLATA_ENABLED", "true");
     const app = createTestApp(createQueryPool(vi.fn()));
 
-    const res = await request(app)
-      .get("/api/billing/providers")
-      .set("x-vercel-ip-country", "UA");
+    const res = await request(app).get("/api/billing/providers");
 
     expect(res.status).toBe(200);
     expect(res.body).toEqual({ providers: ["liqpay", "plata"] });
+  });
+
+  // sec-33 / logic-33: `X-Vercel-IP-Country` на API задає клієнт (Vercel
+  // перед Hetzner/Coolify нема), тож `US` більше не відкриває «сплячий»
+  // Stripe при STRIPE_ENABLED=false.
+  describe("client geo header is ignored (sec-33)", () => {
+    beforeEach(() => {
+      setEnv("LIQPAY_ENABLED", "true");
+      setEnv("PLATA_ENABLED", "true");
+      unsetEnv("STRIPE_ENABLED");
+    });
+
+    it("GET /providers with X-Vercel-IP-Country: US still lists UA providers, no Stripe", async () => {
+      const app = createTestApp(createQueryPool(vi.fn()));
+
+      const res = await request(app)
+        .get("/api/billing/providers")
+        .set("x-vercel-ip-country", "US");
+
+      expect(res.status).toBe(200);
+      expect(res.body).toEqual({ providers: ["liqpay", "plata"] });
+    });
+
+    it("POST /checkout provider=stripe with X-Vercel-IP-Country: US → 400 PROVIDER_UNAVAILABLE", async () => {
+      const query = vi.fn().mockResolvedValue({ rows: [] });
+      const app = createTestApp(createQueryPool(query));
+
+      const res = await request(app)
+        .post("/api/billing/checkout")
+        .set("x-vercel-ip-country", "US")
+        .send({ plan: "pro", provider: "stripe" });
+
+      expect(res.status).toBe(400);
+      expect(res.body).toMatchObject({ code: "PROVIDER_UNAVAILABLE" });
+      expect(query).not.toHaveBeenCalled();
+    });
   });
 
   it("checkout with provider=liqpay returns a LiqPay checkout URL", async () => {
@@ -450,7 +488,6 @@ describe("billing routes", () => {
 
     const res = await request(app)
       .post("/api/billing/checkout")
-      .set("x-vercel-ip-country", "UA")
       .send({ plan: "pro", provider: "liqpay" });
 
     expect(res.status).toBe(200);
@@ -486,7 +523,6 @@ describe("billing routes", () => {
       );
       const res = await request(app)
         .post("/api/billing/checkout")
-        .set("x-vercel-ip-country", "UA")
         .send({ plan: "pro", provider: "liqpay" });
       expect(res.status).toBe(409);
       expect(res.body).toMatchObject({ code: "ALREADY_SUBSCRIBED" });
@@ -499,20 +535,18 @@ describe("billing routes", () => {
       );
       const res = await request(app)
         .post("/api/billing/checkout")
-        .set("x-vercel-ip-country", "UA")
         .send({ plan: "pro", provider: "liqpay" });
       expect(res.status).toBe(409);
       expect(res.body).toMatchObject({ code: "CHECKOUT_PENDING" });
     });
   });
 
-  it("rejects provider=stripe for a UA user with 400 PROVIDER_UNAVAILABLE", async () => {
+  it("rejects provider=stripe with 400 PROVIDER_UNAVAILABLE while STRIPE_ENABLED is off", async () => {
     setEnv("LIQPAY_ENABLED", "true");
     const app = createTestApp(createQueryPool(vi.fn()));
 
     const res = await request(app)
       .post("/api/billing/checkout")
-      .set("x-vercel-ip-country", "UA")
       .send({ plan: "pro", provider: "stripe" });
 
     expect(res.status).toBe(400);

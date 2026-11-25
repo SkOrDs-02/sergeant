@@ -75,7 +75,7 @@ function ResponseTier() {
     <Group label="Tier 2: Response (реакція на дію)">
       <div className="space-y-4">
         <div className="flex flex-wrap gap-2 mb-3">
-          <Button size="sm" variant="secondary" onClick={replay}>
+          <Button size="sm" variant="outline" onClick={replay}>
             Replay
           </Button>
         </div>
@@ -129,7 +129,7 @@ function ShakeDemo() {
             shaking ? "animate-shake" : ""
           }`}
         />
-        <Button size="sm" variant="danger" onClick={triggerShake}>
+        <Button size="sm" variant="soft" tone="danger" onClick={triggerShake}>
           Shake
         </Button>
       </div>
@@ -180,7 +180,7 @@ function CelebrateTier() {
           </div>
           <Button
             size="sm"
-            variant="secondary"
+            variant="outline"
             className="mt-3"
             onClick={() => setChecked((v) => !v)}
           >
@@ -214,14 +214,14 @@ function CelebrateTier() {
           <div className="flex gap-2 mt-3">
             <Button
               size="sm"
-              variant="secondary"
+              variant="outline"
               onClick={() => setAmount((v) => v + 1000)}
             >
               +1000
             </Button>
             <Button
               size="sm"
-              variant="secondary"
+              variant="outline"
               onClick={() => setAmount((v) => Math.max(0, v - 500))}
             >
               −500

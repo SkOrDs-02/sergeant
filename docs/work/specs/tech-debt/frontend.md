@@ -1,7 +1,15 @@
 # Frontend Tech Debt — Sergeant Web
 
-> **Last touched:** 2026-11-19 by @claude (сторож побічних ефектів верхнього рівня в `packages/shared/src`, `noTopLevelSideEffects.test.ts`). Раніше 2026-11-19 by @claude (закрито борг бареля `@sergeant/shared` в eager: 270.3 → 254.6 kB правилом `moduleSideEffects` у веб-білді). Раніше 2026-11-17 by @claude (звірка реєстру з HEAD: лічильники таблиці 2026-09-17 переміряно, §5 web 1 → 3, §14 — до `@removeBy 2026-12-01` два тижні). **Last validated:** 2026-11-17 by @claude (вибіркова звірка, перелік неперевіреного — у маркері нижче). **Next review:** 2026-12-16.
+> **Last touched:** 2026-11-22 by @claude (§14: `ButtonVariantLegacy` і проп `Button.module` знято); 2026-11-22 by @claude (рішення власника по решті питань беклогу); 2026-11-21 by @claude (§14: рішення власника — tombstone-и перенесено на 2027-03-01); 2026-11-21 by @claude (п.4: скрол-лок для `HubChatHistoryDrawer` і `PdfPreviewModal`, винятки поповерів зафіксовано `AI-NOTE`). Раніше 2026-11-19 by @claude (сторож побічних ефектів верхнього рівня в `packages/shared/src`, `noTopLevelSideEffects.test.ts`). Раніше 2026-11-19 by @claude (закрито борг бареля `@sergeant/shared` в eager: 270.3 → 254.6 kB правилом `moduleSideEffects` у веб-білді). Раніше 2026-11-17 by @claude (звірка реєстру з HEAD: лічильники таблиці 2026-09-17 переміряно, §5 web 1 → 3, §14 — до `@removeBy 2026-12-01` два тижні). **Last validated:** 2026-11-17 by @claude (вибіркова звірка, перелік неперевіреного — у маркері нижче). **Next review:** 2026-12-16.
 > **Status:** Active
+
+> **Рішення власника 2026-11-22** (решта питань беклогу, сторінка рішень; кожне чекає виконання, пункти не закрито):
+>
+> - `s10-r1-app-routing` — Hub досі живе на `/`, а не на `/app/` (S10-R1, router.tsx), і auth-гейт тримається на умовному рендері. **Рішення:** Лишити / і закрити пункт як «не робимо».
+> - `category-colors-custom-color` — Кастомна категорія показує обраний колір у діаграмі, а в чипі ні, бо getCatTiers ігнорує custom.color. **Рішення:** Замінити вільну піпетку вибором із 16 токенів категорій.
+> - `opfs-journal-in-localstorage` — Журнал записів, зроблених у режимі памʼяті (SQLite :memory:), лежить у localStorage, і друге очищення даних сайту його стирає. **Рішення:** Прийняти ризик і закрити пункт.
+> - `fizruk-exercise-svg` — ~60 вправ Фізрука без ілюстрацій (переважно кардіо та ізоляція сідниць). **Рішення:** Добрати з wger з атрибуцією CC BY-SA.
+> - `landing-F3-F7` — Лендінг: F3 (бандл по маршрутах) і F7 (мобільний Lighthouse як warn) чекають рішення в owner-decisions.md. **Рішення:** Лише F7 (warn-гейт).
 
 > **Оновлено 2026-11-17 (звірка реєстру з HEAD `b0e61055c`).** Вибірковий прохід: переміряно кожен рядок таблиці 2026-09-17 нижче і пункти з 🔴/🟡, повного аудиту не було. Методика лічби та сама, що в таблиці (команди в тілі відповідних пунктів).
 >
@@ -170,6 +178,19 @@
 >    а позиційовані поповери; для них «немає скрол-локу» майже напевно
 >    правильна поведінка, тож рішення для них — не «підключити хук», а
 >    зафіксувати виняток.
+>
+>    ~~**Підпункт design-audit-4 (`HubChatHistoryDrawer`, `PdfPreviewModal`,
+>    винятки поповерів)**~~ — **закрито 2026-11-21.** `HubChatHistoryDrawer`
+>    (скрим `bg-black/50`, `aria-modal`) і `PdfPreviewModal` (full-page
+>    takeover з `aria-modal`) підключили `useBodyScrollLock`; тести
+>    `HubChatHistoryDrawer.test.tsx` і `PdfPreviewModal.test.tsx` перевіряють
+>    лок на `body` і його зняття. Для `Popover.tsx`, `voice/PendingVoiceChip.tsx`
+>    і `core/app/NotificationBell.tsx` виняток зафіксовано `AI-NOTE` біля
+>    `role="dialog"`: це позиційовані поповери без скриму. Залишок без
+>    скрол-локу і без рішення: `FinykApp.tsx`, `BarcodeScanner.tsx`,
+>    `MacrosEditor.tsx`, `HabitGlyphPicker.tsx`, `WorkoutItemRecoveryChip.tsx`,
+>    `WorkoutFinishSheets.tsx`, `HubSearch.tsx`, `AppLock.tsx`,
+>    `core/profile/PendingDeletionScreen.tsx`.
 >
 > 5. **SubTabs → shared** як `bar`-варіант Segmented (зараз застряг у
 >    modules/nutrition, активний таб 40px).
@@ -2251,11 +2272,11 @@ legacy-проп `danger` у `apps/mobile` `ConfirmDialog` (2 call-site-и → `v
 
 **Перенесено на 2026-12-01 — і це не «ще трохи», а різні причини.** `pushApi.subscribe`/`unsubscribe` знято разом із серверним роутом 2026-09-23 ([backend.md § Legacy web-push HTTP](./backend.md)), звірено 2026-10-08:
 
-| Маркер                                                                                  | Чому не знято 2026-09-03                                                                                                                                                                       | Що розблокує                                |
-| --------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------- |
-| 30 tombstone-ключів у `packages/shared/src/lib/storageKeys.ts`                          | tombstone тримає residual-import drain у SQLite на boot; зняти — значить вирішити, що застарілі localStorage-дані бета-тестерів вже нікому не треба підбирати                                  | рішення власника про долю legacy LS-даних   |
-| `MONTHLY_PLAN_STORAGE_KEY` (`packages/fizruk-domain/src/constants.ts`)                  | той самий клас tombstone-ів, **31** жива згадка (переміряно 2026-09-17; було ~29) — drain + backup-ключі + тести                                                                               | те саме рішення                             |
-| `ButtonVariantLegacy` + проп `Button.module` (`shared/components/ui/Button.tsx:76,249`) | плоскі варіанти і `module` замінені парою `variant` × `tone`; `@removeBy 2026-12-01` стояв у коді, але трекер його не згадував (знайдено аудитом 2026-10-08, кількість call-site-ів не міряли) | міграція call-site-ів на `variant` × `tone` |
+| Маркер                                                                                                             | Чому не знято 2026-09-03                                                                                                                                                                       | Що розблокує                                |
+| ------------------------------------------------------------------------------------------------------------------ | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------- |
+| 30 tombstone-ключів у `packages/shared/src/lib/storageKeys.ts`                                                     | tombstone тримає residual-import drain у SQLite на boot; зняти — значить вирішити, що застарілі localStorage-дані бета-тестерів вже нікому не треба підбирати                                  | рішення власника про долю legacy LS-даних   |
+| `MONTHLY_PLAN_STORAGE_KEY` (`packages/fizruk-domain/src/constants.ts`)                                             | той самий клас tombstone-ів, **31** жива згадка (переміряно 2026-09-17; було ~29) — drain + backup-ключі + тести                                                                               | те саме рішення                             |
+| ~~`ButtonVariantLegacy` + проп `Button.module` (`shared/components/ui/Button.tsx:76,249`)~~ — **знято 2026-11-22** | плоскі варіанти і `module` замінені парою `variant` × `tone`; `@removeBy 2026-12-01` стояв у коді, але трекер його не згадував (знайдено аудитом 2026-10-08, кількість call-site-ів не міряли) | міграція call-site-ів на `variant` × `tone` |
 
 **Звірено 2026-11-17: до дати два тижні, і жодна умова зняття не виконана.**
 Маркерів `@removeBy 2026-12-01` у коді **33**: 30 у `storageKeys.ts`, два в
@@ -2263,6 +2284,21 @@ legacy-проп `danger` у `apps/mobile` `ConfirmDialog` (2 call-site-и → `v
 Рішення власника про legacy LS-дані в репо не записане, міграцію
 `ButtonVariantLegacy` не почато. Тобто 2026-12-01 повторить сценарій
 2026-09-01, якщо до того не вирішити: зняти, або перенести з новою умовою.
+
+**Рішення власника 2026-11-21:** 30 tombstone-ключів у `storageKeys.ts` і `MONTHLY_PLAN_STORAGE_KEY`
+перенесено на `@removeBy 2027-03-01` з умовою «після закриття бети (гейт до
+2027-02-28), коли тестери точно переїхали» (дати в коді оновлено тим самим
+кроком). `ButtonVariantLegacy` (`Button.tsx`, два маркери) рішенням не
+охоплено: його дата лишається 2026-12-01, і зняття залежить від міграції
+call-site-ів.
+
+**~~`ButtonVariantLegacy` і проп `Button.module`~~ — знято 2026-11-22.** Тип,
+проп, `MODULE_LEGACY_OVERRIDE` і легасі-гілку `resolveStyleKey` видалено,
+`ButtonVariant` = `ButtonEmphasis`, дефолт `solid`; ~90 легасі-тегів у
+DesignShowcase і stories, `ConfirmDialog` і `VerifyEmailPage` переведено на
+`variant` × `tone` (ратчет їх не бачив: він не сканує showcase, stories і
+вирази `variant={…}`), а `Button.test.tsx` тримає зняття через
+`@ts-expect-error`. Маркерів `@removeBy 2026-12-01` у коді лишилось нуль (`grep` по `apps`, `packages`, `scripts`).
 
 Урок для наступного разу той самий, що й у `_runner-report.md` (червень): маркер
 із датою без власника перетворюється на «September crunch». Перенесені дати тут

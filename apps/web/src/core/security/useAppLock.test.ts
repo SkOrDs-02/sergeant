@@ -44,6 +44,7 @@ import {
   readLockStatus,
   MAX_FAILED_UNLOCK_ATTEMPTS,
   __seedAttemptStateForTests,
+  __readRawCredForTests,
 } from "./lockStorage";
 import { useAppLock } from "./useAppLock";
 
@@ -483,9 +484,105 @@ describe("useAppLock", () => {
       expect(await hasPinSet("user-z")).toBe(true);
       expect(await hasPinSet(null)).toBe(false);
 
-      await result.current.disablePin();
+      await act(async () => {
+        expect(await result.current.disablePin("4242")).toBe(true);
+      });
       expect(await result.current.hasPin()).toBe(false);
       expect(await hasPinSet("user-z")).toBe(false);
+    }, 30_000);
+  });
+
+  // sec-41: зміна й вимкнення PIN вимагають поточний PIN.
+  describe("sec-41 — current PIN required to change or disable", () => {
+    beforeEach(() => {
+      mockUseAuth.mockReturnValue({ user: { id: "user-c" } });
+    });
+
+    afterEach(async () => {
+      await clearPinHash("user-c").catch(() => {});
+    });
+
+    it("disablePin rejects a wrong current PIN and keeps the credential and flag", async () => {
+      await savePinHash("1234", "user-c");
+      const { result } = renderHook(() => useAppLock());
+      await waitFor(() => expect(result.current.state).toBe("locked"));
+      act(() => result.current.startDisable());
+      expect(result.current.state).toBe("disable");
+
+      let ok = true;
+      await act(async () => {
+        ok = await result.current.disablePin("0000");
+      });
+      expect(ok).toBe(false);
+      expect(await hasPinSet("user-c")).toBe(true);
+      expect(setFlag).not.toHaveBeenCalledWith("app-lock-enabled", false);
+      expect(result.current.state).toBe("disable");
+    }, 30_000);
+
+    it("disablePin with the right current PIN clears the credential and the flag", async () => {
+      await savePinHash("1234", "user-c");
+      const { result } = renderHook(() => useAppLock());
+      await waitFor(() => expect(result.current.state).toBe("locked"));
+      act(() => result.current.startDisable());
+
+      let ok = false;
+      await act(async () => {
+        ok = await result.current.disablePin("1234");
+      });
+      expect(ok).toBe(true);
+      expect(await hasPinSet("user-c")).toBe(false);
+      expect(setFlag).toHaveBeenCalledWith("app-lock-enabled", false);
+      expect(result.current.state).toBe("idle");
+    }, 30_000);
+
+    it("cancelDisable leaves the PIN in place", async () => {
+      await savePinHash("1234", "user-c");
+      const { result } = renderHook(() => useAppLock());
+      await waitFor(() => expect(result.current.state).toBe("locked"));
+      act(() => result.current.startDisable());
+      act(() => result.current.cancelDisable());
+      expect(result.current.state).toBe("idle");
+      expect(await hasPinSet("user-c")).toBe(true);
+    });
+
+    it("verifyCurrentPin rejects a wrong PIN, counts it, and accepts the right one", async () => {
+      await savePinHash("1234", "user-c");
+      const { result } = renderHook(() => useAppLock());
+      await waitFor(() => expect(result.current.state).toBe("locked"));
+      act(() => result.current.startChange());
+
+      let ok = true;
+      await act(async () => {
+        ok = await result.current.verifyCurrentPin("9999");
+      });
+      expect(ok).toBe(false);
+      // Хибна спроба йде в той самий лічильник перебору, що й розблокування.
+      const raw = await __readRawCredForTests("user-c");
+      expect(raw?.failed).toBe(1);
+      expect(result.current.state).toBe("change");
+
+      await act(async () => {
+        ok = await result.current.verifyCurrentPin("1234");
+      });
+      expect(ok).toBe(true);
+      expect(result.current.state).toBe("change");
+    }, 30_000);
+
+    it("a wrong current PIN at the attempt limit switches to lockedOut", async () => {
+      await savePinHash("1234", "user-c");
+      await __seedAttemptStateForTests(
+        MAX_FAILED_UNLOCK_ATTEMPTS - 1,
+        undefined,
+        "user-c",
+      );
+      const { result } = renderHook(() => useAppLock());
+      await waitFor(() => expect(result.current.state).toBe("locked"));
+      act(() => result.current.startChange());
+
+      await act(async () => {
+        await result.current.verifyCurrentPin("0000");
+      });
+      expect(result.current.state).toBe("lockedOut");
     }, 30_000);
   });
 });

@@ -26,6 +26,7 @@ import { recordExternalHttp } from "../../lib/externalHttp.js";
 import { elapsedMs } from "../../lib/timing.js";
 import { searchCatalog } from "./productCatalog.js";
 import { searchGenericFoods } from "./genericFoods.js";
+import { tryConsumeUpstreamBudget } from "./upstreamBudget.js";
 
 /**
  * Best-effort session peek. `/api/food-search` is deliberately session-less
@@ -188,14 +189,17 @@ async function fetchOFF(
   return data?.products || [];
 }
 
+function usdaApiKey(): string {
+  return (
+    process.env["USDA_FDC_API_KEY"] || process.env["USDA_API_KEY"] || "DEMO_KEY"
+  );
+}
+
 async function fetchUSDA(
   query: string,
   signal: AbortSignal,
 ): Promise<USDASearchFood[]> {
-  const apiKey =
-    process.env["USDA_FDC_API_KEY"] ||
-    process.env["USDA_API_KEY"] ||
-    "DEMO_KEY";
+  const apiKey = usdaApiKey();
   const url = new URL(USDA_SEARCH);
   url.searchParams.set("query", query);
   url.searchParams.set("pageSize", "10");
@@ -206,6 +210,36 @@ async function fetchUSDA(
   if (!r.ok) throw upstreamHttpError("USDA", r.status);
   const data = (await r.json()) as { foods?: USDASearchFood[] };
   return data?.foods || [];
+}
+
+/** USDA пропущено за глобальним бюджетом (rel-35): «не питали», а не «порожньо». */
+const USDA_SKIPPED = "budget_exhausted";
+
+/**
+ * Спільний з barcode бюджет на ключ USDA (rel-35). Вичерпаний бюджет дає
+ * `USDA_SKIPPED` без виклику: handler рахує його неавторитетним, як збій
+ * апстріму, щоб пропуск не виглядав порожньою видачею і не кешувався
+ * публічно.
+ */
+async function searchUSDABudgeted(
+  query: string,
+  signal: AbortSignal,
+): Promise<USDASearchFood[] | null | typeof USDA_SKIPPED> {
+  const keyed = usdaApiKey() !== "DEMO_KEY";
+  if (!(await tryConsumeUpstreamBudget("usda", { keyed }))) return USDA_SKIPPED;
+  return trackedSearch("usda", () => fetchUSDA(query, signal));
+}
+
+/**
+ * «Бази лежать»: 503 і no-store, щоб повтор через хвилину пройшов каскад
+ * знову, а не віддавався з кешу (той самий принцип, що G5 у barcode).
+ */
+function sourcesUnavailable(res: Response): AppError {
+  res.setHeader("Cache-Control", "no-store");
+  return new AppError(
+    "Бази продуктів зараз не відповідають, це не означає, що продукту немає. Спробуй ще раз за хвилину або введи вручну.",
+    { status: 503, code: "UPSTREAM_UNAVAILABLE" },
+  );
 }
 
 /**
@@ -290,34 +324,36 @@ export default async function handler(
     const userId = env.SILPO_ENABLED ? await resolveOptionalUserId(req) : null;
     const silpoConnected = userId ? await isSilpoConnectedUser(userId) : false;
 
-    const [ukOffRaw, enOffRaw, usdaRawOrNull, silpoProducts] =
-      await Promise.all([
-        trackedSearch("off", () => fetchOFF(query, "uk", signal)),
-        enTerm
-          ? trackedSearch("off", () => fetchOFF(enTerm, "en", signal))
-          : Promise.resolve<OFFSearchProduct[] | null>([]),
-        enTerm
-          ? trackedSearch("usda", () => fetchUSDA(enTerm, signal))
-          : Promise.resolve<USDASearchFood[] | null>([]),
-        // Uses the original (Ukrainian) query, not `enTerm` — Silpo's catalog
-        // is a Ukrainian retailer, mirroring the OFF `uk` branch above.
-        // `searchSilpoProducts` never throws (see its docstring); `.catch` is
-        // defense-in-depth so a bug there can never break this cascade.
-        // Той самий 8-секундний дедлайн, що й в OFF/USDA (rel-22): сигнал
-        // іде до самого fetch у MCP-клієнті, а race гарантує, що відповідь не
-        // чекає на Сільпо довше за дедлайн.
-        silpoConnected
-          ? resolveEmptyOnAbort(
-              searchSilpoProducts(userId, query, { signal }).catch(
-                (): SilpoSearchProduct[] => [],
-              ),
-              signal,
-            )
-          : Promise.resolve<SilpoSearchProduct[]>([]),
-      ]);
+    const [ukOffRaw, enOffRaw, usdaResult, silpoProducts] = await Promise.all([
+      trackedSearch("off", () => fetchOFF(query, "uk", signal)),
+      enTerm
+        ? trackedSearch("off", () => fetchOFF(enTerm, "en", signal))
+        : Promise.resolve<OFFSearchProduct[] | null>([]),
+      enTerm
+        ? searchUSDABudgeted(enTerm, signal)
+        : Promise.resolve<USDASearchFood[] | null>([]),
+      // Uses the original (Ukrainian) query, not `enTerm` — Silpo's catalog
+      // is a Ukrainian retailer, mirroring the OFF `uk` branch above.
+      // `searchSilpoProducts` never throws (see its docstring); `.catch` is
+      // defense-in-depth so a bug there can never break this cascade.
+      // Той самий 8-секундний дедлайн, що й в OFF/USDA (rel-22): сигнал
+      // іде до самого fetch у MCP-клієнті, а race гарантує, що відповідь не
+      // чекає на Сільпо довше за дедлайн.
+      silpoConnected
+        ? resolveEmptyOnAbort(
+            searchSilpoProducts(userId, query, { signal }).catch(
+              (): SilpoSearchProduct[] => [],
+            ),
+            signal,
+          )
+        : Promise.resolve<SilpoSearchProduct[]>([]),
+    ]);
 
     // `null` = апстрім відповів збоєм (не-2xx, мережа, таймаут). Порожній
-    // масив = апстрім відповів «нічого немає». Ці два стани різні.
+    // масив = апстрім відповів «нічого немає». Ці два стани різні. USDA,
+    // пропущений за бюджетом, рахуємо як збій: його не питали.
+    const usdaSkipped = usdaResult === USDA_SKIPPED;
+    const usdaRawOrNull = usdaSkipped ? null : usdaResult;
     const attempted = enTerm ? 3 : 1;
     const failed = [ukOffRaw, enOffRaw, usdaRawOrNull].filter(
       (r) => r === null,
@@ -327,14 +363,7 @@ export default async function handler(
       ownProducts.length === 0 &&
       silpoProducts.length === 0
     ) {
-      // Той самий принцип, що G5 у barcode: «база лежить» ≠ «продукту
-      // немає». 503 і no-store, щоб повтор через хвилину пройшов каскад
-      // знову, а не віддавався з кешу.
-      res.setHeader("Cache-Control", "no-store");
-      throw new AppError(
-        "Бази продуктів зараз не відповідають, це не означає, що продукту немає. Спробуй ще раз за хвилину або введи вручну.",
-        { status: 503, code: "UPSTREAM_UNAVAILABLE" },
-      );
+      throw sourcesUnavailable(res);
     }
     const ukOff = ukOffRaw ?? [];
     const enOff = enOffRaw ?? [];
@@ -398,6 +427,14 @@ export default async function handler(
     // Каталог попереду: це вже перевірені воротами Атвотера картки, тоді
     // як upstream віддає сире.
     const products = [...ownFirst, ...upstreamFiltered].slice(0, limit);
+
+    if (usdaSkipped) {
+      // Пропуск за бюджетом (rel-35) робить видачу неповною: порожня — це не
+      // «нічого не знайдено», а непорожня не має жити в публічному кеші
+      // роутера (PERF-007) довше за вікно бюджету.
+      if (products.length === 0) throw sourcesUnavailable(res);
+      res.setHeader("Cache-Control", "no-store");
+    }
 
     if (silpoConnected) {
       // Overrides the router's `stale-while-revalidate, public` header

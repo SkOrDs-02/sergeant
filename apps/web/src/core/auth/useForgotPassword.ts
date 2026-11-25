@@ -1,5 +1,11 @@
 import { useEffect, useRef, useState } from "react";
+import { z } from "zod";
+import { messages } from "@shared/i18n/uk";
 import { useAuth } from "./AuthContext";
+
+// Той самий формат, що й у `loginSchema` (`authSchemas.ts`): без нього
+// «not-an-email» летів на сервер і панель мовчки показувала «лист надіслано».
+const forgotEmailSchema = z.string().email();
 
 type ForgotState = "idle" | "sending" | "sent";
 
@@ -18,10 +24,12 @@ export interface UseForgotPasswordResult {
 // separately from `ForgotPasswordPanel` so the parent (`AuthPage`) can
 // toggle the panel from the LoginForm's "Забули пароль?" button without
 // the panel itself driving its own lifecycle.
-export function useForgotPassword(): UseForgotPasswordResult {
+export function useForgotPassword(
+  options: { initiallyOpen?: boolean } = {},
+): UseForgotPasswordResult {
   const { requestPasswordReset, setAuthError } = useAuth();
 
-  const [showForgot, setShowForgot] = useState(false);
+  const [showForgot, setShowForgot] = useState(options.initiallyOpen === true);
   // "idle" → панель рендерить reset-форму; "sending" — кнопка
   // disabled під час запиту; "sent" — заміняє форму нейтральним
   // confirmation (без enumeration hint-у), щоб користувач знав
@@ -48,6 +56,11 @@ export function useForgotPassword(): UseForgotPasswordResult {
       setAuthError("Введи email, на який відправити лист.");
       return;
     }
+    if (!forgotEmailSchema.safeParse(target).success) {
+      setAuthError(messages.validation.emailInvalid);
+      return;
+    }
+    setAuthError(null);
     setForgotState("sending");
     const ok = await requestPasswordReset(target);
     setForgotState(ok ? "sent" : "idle");

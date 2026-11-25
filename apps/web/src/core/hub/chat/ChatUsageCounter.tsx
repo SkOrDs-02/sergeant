@@ -30,7 +30,11 @@ export function ChatUsageCounter() {
         // `min-w-0 truncate` замість `shrink-0 whitespace-nowrap`: на 393px
         // саме ця пігулка зʼїдала ширину заголовка шапки. Вона — підказка,
         // тож віддає простір першою (aria-label несе повне значення).
-        "min-w-0 truncate px-2 py-1 rounded-lg text-style-caption font-semibold",
+        // `w-0 grow max-w-max`: власної ширини в розкладку пігулка не
+        // заявляє, а займає те, що лишилось, і не ширше за свій текст. Без
+        // цього шапка (`flex-wrap`) рахувала б рядок за повним текстом
+        // лічильника і переносила кнопки вже на звичайному розмірі тексту.
+        "w-0 grow max-w-max min-w-0 truncate px-2 py-1 rounded-lg text-style-caption font-semibold",
         exhausted
           ? "bg-warning-soft text-warning-soft-fg"
           : "bg-panelHi text-muted",

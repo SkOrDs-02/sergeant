@@ -23,7 +23,11 @@ import {
 import { refreshCachesAfterPull } from "./refreshCachesAfterPull.js";
 import { classifyTickError, readOnlineStatus } from "./tickErrorReport.js";
 import {
+  getFirstPullPhase,
+  markFirstPullPending,
+  markFirstPullSettled,
   markInitialPullComplete,
+  noteFirstPullFailure,
   reconcileInitialPull,
   resetInitialPull,
 } from "./initialPullState.js";
@@ -35,6 +39,20 @@ export {
   hasCompletedInitialPull,
   subscribeInitialPull,
 } from "./initialPullState.js";
+
+/**
+ * Паузи між повторами першого pull (data-59/60, рішення власника 2026-11-21).
+ *
+ * AI-CONTEXT: без них невдалий перший pull на новому пристрої чекав
+ * наступного інтервалу (~60 с ±20%), а модулі тим часом показували заклик
+ * «Додай першу…», і людина вводила наново те, що вже є на сервері. Після
+ * останнього повтору фаза стає `failed`, і порожній стан модуля показує
+ * помилку з «Ще раз». Діє лише для копії, яку ще не наповнював повний pull:
+ * звичайний збій тіка, як і раніше, чекає інтервалу.
+ */
+export const FIRST_PULL_RETRY_DELAYS_MS: readonly number[] = [
+  2_000, 5_000, 15_000,
+];
 
 export interface SyncEnginePullResult {
   readonly pulled: number;
@@ -76,6 +94,9 @@ export interface SyncEngineReaderDeps {
   readonly originDeviceId: string;
   readonly setInterval: (handler: () => void, ms: number) => unknown;
   readonly clearInterval: (handle: unknown) => void;
+  /** Таймер повтору першого pull; за замовчуванням глобальний `setTimeout`. */
+  readonly setTimeout?: (handler: () => void, ms: number) => unknown;
+  readonly clearTimeout?: (handle: unknown) => void;
   readonly eventTarget: {
     addEventListener: (
       type: string,
@@ -252,6 +273,13 @@ function rateLimitWaitMs(error: unknown): number | null {
     retryAfterMs?: unknown;
   };
   if (status !== 429 && status !== 503) return null;
+  // AI-CONTEXT (bv-first-pull-gaps): на першому pull 503 не перечікуємо в
+  // тіку. Інакше кожен тік ковтав по три паузи, і до «Не вдалося» людина
+  // чекала ~16 запитів за хвилину з порожнім станом, а 500 давав це за 4.
+  // Тепер 503 одразу йде в бюджет повторів першого pull, а `Retry-After`
+  // шанує `scheduleFirstPullRetry`. 429 і далі перечікуємо: це справжній
+  // рейт-ліміт, і довгий догін має доходити до кінця.
+  if (status === 503 && getFirstPullPhase() === "loading") return null;
   const requested =
     typeof retryAfterMs === "number" && retryAfterMs > 0
       ? retryAfterMs
@@ -259,10 +287,19 @@ function rateLimitWaitMs(error: unknown): number | null {
   return Math.min(requested, MAX_RATE_LIMIT_WAIT_MS);
 }
 
+/** `Retry-After` з помилки (мс, зі стелею), або 0, якщо сервер його не дав. */
+function retryAfterFloorMs(error: unknown): number {
+  if (typeof error !== "object" || error === null) return 0;
+  const { retryAfterMs } = error as { retryAfterMs?: unknown };
+  if (typeof retryAfterMs !== "number" || retryAfterMs <= 0) return 0;
+  return Math.min(retryAfterMs, MAX_RATE_LIMIT_WAIT_MS);
+}
+
 export function createSyncEngineReaderRuntime(
   deps: SyncEngineReaderDeps,
 ): SyncEngineReaderRuntime {
   let intervalHandle: unknown = null;
+  let retryHandle: unknown = null;
   let inflight: Promise<SyncEnginePullResult> | null = null;
   let started = false;
   let pauses = 0;
@@ -295,6 +332,7 @@ export function createSyncEngineReaderRuntime(
       if (!userId) {
         // Немає сесії (logout): прапор попереднього користувача не чинний.
         reconcileInitialPull(null, null);
+        markFirstPullSettled();
         return {
           pulled: 0,
           applied: 0,
@@ -317,6 +355,11 @@ export function createSyncEngineReaderRuntime(
         await readPullSinceCursor(client, userId),
       );
       const bootstrap = resolved.mode === "bootstrap";
+      // data-59/60: копія без жодного повного pull (новий пристрій, евікція
+      // сховища) показує «Завантажую з хмари» замість порожнього стану.
+      // Примусовий повтор наповненої копії (`sync-lost-ops-repull`) — ні.
+      if (bootstrap && resolved.firstReplica) markFirstPullPending();
+      else markFirstPullSettled();
       const pullOriginId = bootstrap
         ? REPLICA_BOOTSTRAP_ORIGIN
         : deps.originDeviceId;
@@ -431,6 +474,7 @@ export function createSyncEngineReaderRuntime(
             userId,
             fetchSnapshot,
             isConstraintFailure,
+            healTombstoneTie: bootstrap,
             onRejected: (op, cause) => reportPullApplyFailure(deps, op, cause),
           });
           // Черга ще не доїхала: знімок перебив би правку. Тік закінчується
@@ -456,7 +500,9 @@ export function createSyncEngineReaderRuntime(
             continue;
           }
           try {
-            outcome = await applyPullOp(client, op, userId, pullOriginId);
+            outcome = await applyPullOp(client, op, userId, pullOriginId, {
+              healTombstoneTie: bootstrap,
+            });
           } catch (error) {
             // BUSY/IOERR/full disk/closed worker must retry this cursor.
             // Advancing it would permanently omit a valid server record.
@@ -533,6 +579,7 @@ export function createSyncEngineReaderRuntime(
         if (verdict.report) {
           deps.captureException?.(error, verdict.context);
         }
+        scheduleFirstPullRetry(error);
         throw error;
       })
       .finally(() => {
@@ -547,6 +594,28 @@ export function createSyncEngineReaderRuntime(
       /* errors routed via captureException */
     });
   };
+
+  const clearFirstPullRetry = (): void => {
+    if (retryHandle === null) return;
+    (deps.clearTimeout ?? ((h) => clearTimeout(h as number)))(retryHandle);
+    retryHandle = null;
+  };
+
+  /**
+   * Короткий повтор невдалого першого pull (2/5/15 с), далі фаза `failed`.
+   * Сервер, що попросив довшу паузу (`Retry-After`), її отримує.
+   */
+  function scheduleFirstPullRetry(error: unknown): void {
+    const failures = noteFirstPullFailure(FIRST_PULL_RETRY_DELAYS_MS.length);
+    const base = FIRST_PULL_RETRY_DELAYS_MS[failures - 1];
+    if (!started || base === undefined) return;
+    const delay = Math.max(base, retryAfterFloorMs(error));
+    clearFirstPullRetry();
+    retryHandle = (deps.setTimeout ?? ((h, ms) => setTimeout(h, ms)))(() => {
+      retryHandle = null;
+      scheduleTick();
+    }, delay);
+  }
 
   const onVisibility = (): void => {
     if (
@@ -569,6 +638,7 @@ export function createSyncEngineReaderRuntime(
       if (!started) return;
       started = false;
       pendingRefresh = null;
+      clearFirstPullRetry();
       resetInitialPull();
       if (intervalHandle !== null) {
         deps.clearInterval(intervalHandle);

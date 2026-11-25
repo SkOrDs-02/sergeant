@@ -72,8 +72,8 @@ export function A11ySection() {
     >
       <Group label="Focus rings: focus-visible only">
         <div className="flex flex-wrap gap-3 items-center">
-          <Button variant="primary">Primary</Button>
-          <Button variant="secondary">Secondary</Button>
+          <Button variant="solid">Primary</Button>
+          <Button variant="outline">Secondary</Button>
           <Button variant="ghost">Ghost</Button>
           <IconButton aria-label="Налаштування">
             <Icon name="settings" />

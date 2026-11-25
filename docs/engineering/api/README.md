@@ -61,9 +61,10 @@ node -e 'const s=require("./docs/engineering/api/openapi.json");console.log(Obje
 
 | Path                                                       | Чому                                                                             |
 | ---------------------------------------------------------- | -------------------------------------------------------------------------------- |
-| `/startupz`, `/health`, `/healthz`                         | Оркестратор/uptime probes (Coolify + external); дублюють `/livez` / `/readyz`.   |
+| `/startupz`, `/health`                                     | Оркестратор/uptime probes (Coolify + external); дублюють `/livez` / `/readyz`.   |
+| `/healthz`                                                 | Детальний ops-знімок залежностей, за Bearer `METRICS_TOKEN` (sec-40).            |
 | `/health/liveness`, `/health/readiness`, `/health/startup` | Альтернативні шляхи тих самих probe-ів. Семантично дублюються з `*z`-варіантами. |
-| `/health/workers`                                          | Внутрішня діагностика воркерів. Не для клієнтів.                                 |
+| `/health/workers`                                          | Внутрішня діагностика воркерів, за Bearer `METRICS_TOKEN` (sec-40).              |
 
 ### Відомі прогалини (треба додати у `packages/shared/src/openapi/routes.ts` і перегенерувати spec)
 

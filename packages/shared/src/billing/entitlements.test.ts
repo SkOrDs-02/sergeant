@@ -3,6 +3,7 @@ import {
   FEATURES,
   FEATURE_IDS,
   hasFeature,
+  itemLimit,
   nextWeekStartKyivMs,
   weekStartKyiv,
   weeklyLimit,
@@ -70,6 +71,19 @@ describe("FEATURES", () => {
         "nutrition.weekPlan",
       ].sort(),
     );
+  });
+
+  it("памʼять у чаті: Free до 3 спогадів, Premium без стелі", () => {
+    expect(itemLimit("free", "ai.memoryRecall")).toBe(3);
+    expect(itemLimit("pro", "ai.memoryRecall")).toBeNull();
+    // Явний recall лишається Premium: стеля стосується лише RAG чату.
+    expect(hasFeature("free", "ai.memoryRecall")).toBe(false);
+  });
+
+  it("itemLimit без `freeItems`: закрита фіча 0, відкрита без стелі", () => {
+    expect(itemLimit("free", "ai.voice")).toBe(0);
+    expect(itemLimit("free", "export.csv")).toBeNull();
+    expect(itemLimit("pro", "ai.voice")).toBeNull();
   });
 
   it("Mono-синк і хмарний синк лишаються у Free", () => {

@@ -101,6 +101,43 @@ describe("arrayToCSV", () => {
     expect(csv.split("\n")[1]).toBe(",");
   });
 
+  // sec-30: formula injection. Текст, що починається з = + - @ \t \r,
+  // отримує префікс `'`; колонка `numeric` лишається числом.
+  it("знешкоджує формули в текстових клітинках", () => {
+    const data = [
+      { a: '=HYPERLINK("https://evil.example","клік")', b: -10 },
+      { a: "+1+1", b: 5 },
+      { a: "-3+4", b: 0 },
+      { a: "@SUM(A1:A2)", b: 1 },
+      { a: "\t=1+1", b: 2 },
+      { a: "\r=1+1", b: 3 },
+    ];
+    const cols: ExportColumn<(typeof data)[number]>[] = [
+      { key: "a", header: "A" },
+      { key: "b", header: "B", numeric: true },
+    ];
+    const csv = arrayToCSV(data, cols, { includeHeader: false });
+
+    expect(csv).toBe(
+      [
+        `"'=HYPERLINK(""https://evil.example"",""клік"")",-10`,
+        "'+1+1,5",
+        "'-3+4,0",
+        "'@SUM(A1:A2),1",
+        "'\t=1+1,2",
+        `"'\r=1+1",3`,
+      ].join("\n"),
+    );
+  });
+
+  it("без `numeric` відʼємне число теж отримує префікс", () => {
+    const data = [{ b: -10 }];
+    const cols: ExportColumn<(typeof data)[number]>[] = [
+      { key: "b", header: "B" },
+    ];
+    expect(arrayToCSV(data, cols, { includeHeader: false })).toBe("'-10");
+  });
+
   it("порожній набір даних із заголовком — лише заголовковий рядок", () => {
     expect(arrayToCSV<Row>([], columns)).toBe("ID,Назва,Сума,Тег");
   });

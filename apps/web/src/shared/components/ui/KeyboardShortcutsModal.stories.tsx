@@ -17,7 +17,7 @@ function ControlledDemo(
   const [open, setOpen] = useState(false);
   return (
     <div className="flex flex-col items-center gap-4">
-      <Button onClick={() => setOpen(true)} variant="secondary">
+      <Button onClick={() => setOpen(true)} variant="outline">
         ? Відкрити shortcuts
       </Button>
       <KeyboardShortcutsModal

@@ -199,3 +199,45 @@ export function emailChangedNoticeMail(newEmail: string): AuthMailContent {
     html: `<p>Адресу акаунта Sergeant змінено на <strong>${escapeHtml(newEmail)}</strong>.</p><p>Якщо це зробив ти, більше нічого не треба.</p><p>Якщо це був не ти, акаунт могли перехопити. Напиши на support@sergeant.app з цієї адреси, щоб повернути його.</p>`,
   };
 }
+
+/**
+ * Сторінка входу у вебі. `?forgot=1` одразу відкриває панель «Забули
+ * пароль?» (`apps/web/src/core/auth/AuthPage.tsx`).
+ */
+export const SIGN_IN_CALLBACK_PATH = "/sign-in";
+export const FORGOT_PASSWORD_QUERY = "forgot=1";
+
+/**
+ * sec-46 / priv-29: лист на адресу, з якою спробували зареєструватись, хоча
+ * акаунт на неї вже є. Реєстрація при цьому відповідає так само, як для
+ * нової адреси («перевір пошту»), тож про наявність акаунта дізнається лише
+ * власник скриньки. Готового токена скидання тут немає: його видає
+ * `request-password-reset`, і це був би другий лист, тому посилання веде на
+ * вхід із відкритою панеллю скидання.
+ *
+ * Без web-origin (мисконфіг проду, див. `getWebAppOrigin`) посилань немає,
+ * а текст лишається правдивим.
+ */
+export function accountExistsMail(): AuthMailContent {
+  const origin = getWebAppOrigin();
+  const intro =
+    "Хтось, можливо ти, хотів зареєструватися в Sergeant з цією адресою. Акаунт на неї вже є, тож новий я не створював.";
+  const outro =
+    "Якщо це був не ти, просто проігноруй цей лист: без пароля чи доступу до цієї пошти в акаунт не увійти.";
+  if (!origin) {
+    const hint =
+      "Відкрий Sergeant і увійди. Якщо не памʼятаєш пароль, на сторінці входу натисни «Забули пароль?».";
+    return {
+      subject: "У тебе вже є акаунт · Sergeant",
+      text: `${intro}\n\n${hint}\n\n${outro}`,
+      html: `<p>${intro}</p><p>${hint}</p><p>${outro}</p>`,
+    };
+  }
+  const signIn = `${origin}${SIGN_IN_CALLBACK_PATH}`;
+  const reset = `${signIn}?${FORGOT_PASSWORD_QUERY}`;
+  return {
+    subject: "У тебе вже є акаунт · Sergeant",
+    text: `${intro}\n\nУвійти:\n${signIn}\n\nНе памʼятаєш пароль? Скинь його тут:\n${reset}\n\n${outro}`,
+    html: `<p>${intro}</p><p><a href="${escapeHtml(signIn)}">Увійти</a></p><p>Не памʼятаєш пароль? <a href="${escapeHtml(reset)}">Скинути пароль</a></p><p>${outro}</p>`,
+  };
+}

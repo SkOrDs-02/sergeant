@@ -45,7 +45,7 @@ const basicItems: DropdownMenuEntry[] = [
 export const Basic: Story = {
   args: {
     trigger: (
-      <Button variant="secondary">
+      <Button variant="outline">
         Меню
         <Icon name="chevron-down" />
       </Button>
@@ -116,7 +116,7 @@ export const WithSubmenu: Story = {
 /** Disabled-стан + tooltip-like description. */
 export const WithDisabled: Story = {
   args: {
-    trigger: <Button variant="secondary">Дії</Button>,
+    trigger: <Button variant="outline">Дії</Button>,
     items: [
       { type: "item", id: "save", label: "Зберегти", shortcut: "⌘ S" },
       {

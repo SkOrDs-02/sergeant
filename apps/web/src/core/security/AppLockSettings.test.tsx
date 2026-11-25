@@ -24,12 +24,15 @@ const appLock: UseAppLockReturn = {
   state: "idle",
   startSetup: vi.fn(),
   startChange: vi.fn(),
+  startDisable: vi.fn(),
+  cancelDisable: vi.fn(),
+  verifyCurrentPin: vi.fn().mockResolvedValue(true),
   unlock: vi.fn().mockResolvedValue(true),
   finishSetup: vi.fn(),
   lock: vi.fn(),
   savePin: vi.fn().mockResolvedValue(undefined),
   hasPin: vi.fn().mockResolvedValue(false),
-  disablePin: vi.fn().mockResolvedValue(undefined),
+  disablePin: vi.fn().mockResolvedValue(true),
   retryAt: null,
   signOut: vi.fn().mockResolvedValue(true),
   isGuest: false,
@@ -74,8 +77,9 @@ describe("AppLockSettings — audit F16 (per-user PIN scoping)", () => {
     vi.clearAllMocks();
     mockUseFlag.mockReturnValue(false);
     appLock.hasPin = vi.fn().mockResolvedValue(false);
-    appLock.disablePin = vi.fn().mockResolvedValue(undefined);
+    appLock.disablePin = vi.fn().mockResolvedValue(true);
     appLock.startSetup = vi.fn();
+    appLock.startDisable = vi.fn();
   });
 
   afterEach(() => {
@@ -126,7 +130,7 @@ describe("AppLockSettings — audit F16 (per-user PIN scoping)", () => {
     expect(appLock.startSetup).not.toHaveBeenCalled();
   });
 
-  it("disabling the lock clears the user-scoped credential (appLock.disablePin)", async () => {
+  it("disabling the lock asks for the current PIN instead of clearing the credential (sec-41)", async () => {
     // Finding #3 (2026-08-08 adversarial review): `beforeEach` на рівні
     // `describe` резолвить `appLock.hasPin()` у `false`, а це також живить
     // L-11 mount-реконсиляційний ефект у `PrivacySection` (audit F16 фікс,
@@ -150,8 +154,31 @@ describe("AppLockSettings — audit F16 (per-user PIN scoping)", () => {
     const confirm = await screen.findByRole("button", { name: "Вимкнути" });
     fireEvent.click(confirm);
 
-    await waitFor(() => expect(appLock.disablePin).toHaveBeenCalledTimes(1));
-    expect(mockSetFlag).toHaveBeenCalledWith("app-lock-enabled", false);
+    // sec-41: креденшел стирає лише `disablePin(currentPin)` з екрана PIN;
+    // діалог тільки відкриває цей екран і тумблер не гасить.
+    await waitFor(() => expect(appLock.startDisable).toHaveBeenCalledTimes(1));
+    expect(appLock.disablePin).not.toHaveBeenCalled();
+    expect(mockSetFlag).not.toHaveBeenCalledWith("app-lock-enabled", false);
+  });
+
+  it("turns the toggle off without a PIN check when no PIN is stored", async () => {
+    mockUseFlag.mockReturnValue(true);
+    renderSection();
+    await openSection();
+    // Після монтування (реконсиляція теж бачить «PIN-а нема») чистимо лічильник,
+    // щоб перевірити саме клік-flow.
+    await waitFor(() => expect(appLock.hasPin).toHaveBeenCalled());
+    mockSetFlag.mockClear();
+
+    fireEvent.click(
+      screen.getByRole("switch", { name: /Блокування застосунку/i }),
+    );
+    fireEvent.click(await screen.findByRole("button", { name: "Вимкнути" }));
+
+    await waitFor(() =>
+      expect(mockSetFlag).toHaveBeenCalledWith("app-lock-enabled", false),
+    );
+    expect(appLock.startDisable).not.toHaveBeenCalled();
   });
 
   it("does not produce an unhandled rejection when hasPin() rejects on mount (finding #6)", async () => {
@@ -231,7 +258,7 @@ describe("AppLockSettings — audit L-11 (lock toggle reflects a PIN-store wipe)
     mockUseFlag.mockReturnValue(true);
     appLock.state = "locked";
     appLock.startSetup = vi.fn();
-    appLock.disablePin = vi.fn().mockResolvedValue(undefined);
+    appLock.disablePin = vi.fn().mockResolvedValue(true);
   });
 
   afterEach(() => {

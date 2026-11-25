@@ -1,3 +1,4 @@
+import fc from "fast-check";
 import { describe, expect, it } from "vitest";
 
 import { normalizePushPayload, safeNotificationPath } from "./pushPayload";
@@ -83,8 +84,58 @@ describe("safeNotificationPath", () => {
     ["//evil.example", "protocol-relative URL"],
     ["javascript:alert(1)", "javascript-схема"],
     ["finyk", "відносний шлях без слеша"],
-  ])("відкидає %s (%s)", (input) => {
+    // sec-28: WHATWG URL трактує `\` як `/` і вирізає \t/\n/\r, тож ці
+    // рядки проходили префіксну перевірку й відкривали чужий origin.
+    ["/\\evil.example/x", "backslash після слеша"],
+    ["/\t/evil.example/", "таб між слешами"],
+    ["/\n/evil.example", "перенос рядка між слешами"],
+    ["/\r/evil.example", "повернення каретки між слешами"],
+    // sec-28 (r2): dot-сегменти згортаються в `//host`, тож канонічний
+    // pathname знову стає protocol-relative URL.
+    ["/.//evil.example/x", "dot-сегмент перед подвійним слешем"],
+    ["/a/..//evil.example", "parent-сегмент перед подвійним слешем"],
+    ["/%2e//evil.example", "percent-encoded dot-сегмент"],
+    ["/%2E%2E//evil.example", "percent-encoded parent-сегмент"],
+  ])("відкидає %j (%s)", (input) => {
     expect(safeNotificationPath(input)).toBeNull();
+  });
+
+  it("зберігає query і hash same-origin шляху", () => {
+    expect(safeNotificationPath("/?module=finyk#tx")).toBe("/?module=finyk#tx");
+  });
+
+  it("повертає шлях, що для будь-якого origin-у лишається на ньому ж", () => {
+    const origin = "https://app.example";
+    // Алфавіт навмисно кишить символами, що ламали перевірку: слеші,
+    // крапки, `%2e`, `\`, керівні символи.
+    const piece = fc.constantFrom(
+      "/",
+      "//",
+      ".",
+      "..",
+      "%2e",
+      "%2E",
+      "\\",
+      "\t",
+      "\n",
+      "\r",
+      "?",
+      "#",
+      "@",
+      ":",
+      "evil.example",
+      "a",
+    );
+    fc.assert(
+      fc.property(fc.array(piece, { maxLength: 12 }), (parts) => {
+        const out = safeNotificationPath(`/${parts.join("")}`);
+        if (out === null) return;
+        expect(out.startsWith("/")).toBe(true);
+        expect(out.startsWith("//")).toBe(false);
+        expect(new URL(out, origin).origin).toBe(origin);
+      }),
+      { numRuns: 2000 },
+    );
   });
 
   it("відкидає не-рядок", () => {

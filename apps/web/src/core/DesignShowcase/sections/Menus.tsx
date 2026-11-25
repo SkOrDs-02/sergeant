@@ -98,7 +98,7 @@ export function MenusSection() {
           ariaLabel="Дії з елементом"
           items={basicItems}
           trigger={
-            <Button variant="secondary" size="sm">
+            <Button variant="outline" size="sm">
               Меню
               <Icon name="chevron-down" size="sm" />
             </Button>
@@ -108,7 +108,7 @@ export function MenusSection() {
           ariaLabel="Налаштування акаунта"
           items={groupedItems}
           trigger={
-            <Button variant="secondary" size="sm">
+            <Button variant="outline" size="sm">
               Налаштування
               <Icon name="chevron-down" size="sm" />
             </Button>
@@ -121,7 +121,7 @@ export function MenusSection() {
           ariaLabel="Опції сортування"
           items={submenuItems}
           trigger={
-            <Button variant="secondary" size="sm">
+            <Button variant="outline" size="sm">
               Сортувати
               <Icon name="chevron-down" size="sm" />
             </Button>

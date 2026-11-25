@@ -1,4 +1,5 @@
 import { Card } from "@shared/components/ui/Card";
+import { FirstCloudPullGate } from "@shared/components/ui/EmptyState";
 import { pluralUa } from "@sergeant/shared";
 
 import { Money } from "@shared/components/ui/Money";
@@ -18,24 +19,19 @@ export function AssetsNetworthCard({
 }: Pick<State, "networth" | "totalAssets" | "totalDebt" | "showBalance"> & {
   nonUahManualAssetCount?: number;
 }) {
-  return (
-    <Card
-      prominence={totalAssets + totalDebt > 0 ? "hero" : "panel"}
-      tone="finyk"
-      padding="lg"
-      className="mb-3 text-text"
-    >
-      <div className="relative">
-        {/* H.2: число й підписи на тинті чорнилом; ієрархію несуть розмір і вага. */}
-        <div
-          className={cn(
-            "text-style-display tnum flex items-center gap-1.5",
-            "text-text",
-            !showBalance && "tracking-widest",
-          )}
-        >
-          {showBalance ? (
-            /*
+  const isEmpty = totalAssets + totalDebt === 0;
+  const body = (
+    <div className="relative">
+      {/* H.2: число й підписи на тинті чорнилом; ієрархію несуть розмір і вага. */}
+      <div
+        className={cn(
+          "text-style-display tnum flex items-center gap-1.5",
+          "text-text",
+          !showBalance && "tracking-widest",
+        )}
+      >
+        {showBalance ? (
+          /*
               AI-CONTEXT: до 2026-08-06 тут стояла САМОРОБНА обробка тирів —
               одометр для цілого плюс окремий `span` із власним кеглем і
               власним приглушеним кольором для ₴. Тобто дубль того, що
@@ -53,48 +49,59 @@ export function AssetsNetworthCard({
               (цифри, що крутяться, читались би як шум). Каскад — звичайний
               текст, і його читають як текст.
             */
-            <Money amount={networth} animate tone="inherit" />
-          ) : (
-            "\u2022\u2022\u2022\u2022\u2022\u2022"
-          )}
-        </div>
-        <p className="text-style-label text-text mt-1 inline-flex items-center gap-1.5">
-          Загальний капітал
-        </p>
-        {nonUahManualAssetCount > 0 && (
-          <p className="text-style-caption text-text mt-1">
-            {nonUahManualAssetCount}{" "}
-            {pluralUa(
-              nonUahManualAssetCount,
-              messages.finyk.nonUahAssetsExcluded,
-            )}
-          </p>
-        )}
-        {showBalance ? (
-          <div className="flex flex-wrap gap-x-4 gap-y-2 mt-4 pt-4 border-t border-line text-style-label">
-            <div>
-              <div className="font-semibold tabular-nums text-text">
-                <Money amount={totalAssets} signed tone="inherit" />
-              </div>
-              <div className="text-style-caption text-text mt-0.5">Активи</div>
-            </div>
-            <div className="w-px bg-line hidden sm:block self-stretch min-h-10" />
-            <div>
-              <div className="font-semibold tabular-nums text-text">
-                <Money amount={-totalDebt} tone="inherit" />
-              </div>
-              <div className="text-style-caption text-text mt-0.5">Пасиви</div>
-            </div>
-          </div>
+          <Money amount={networth} animate tone="inherit" />
         ) : (
-          <p className="text-style-caption text-text mt-3">Суми приховано</p>
-        )}
-        {/* Бар лише коли обидві частини ненульові: «100 % / 0 %» нічого не
-            каже (redesign v3.2, позиція 02). */}
-        {showBalance && totalAssets > 0 && totalDebt > 0 && (
-          <AssetsLiabilitiesBar assets={totalAssets} liabilities={totalDebt} />
+          "\u2022\u2022\u2022\u2022\u2022\u2022"
         )}
       </div>
+      <p className="text-style-label text-text mt-1 inline-flex items-center gap-1.5">
+        Загальний капітал
+      </p>
+      {nonUahManualAssetCount > 0 && (
+        <p className="text-style-caption text-text mt-1">
+          {nonUahManualAssetCount}{" "}
+          {pluralUa(
+            nonUahManualAssetCount,
+            messages.finyk.nonUahAssetsExcluded,
+          )}
+        </p>
+      )}
+      {showBalance ? (
+        <div className="flex flex-wrap gap-x-4 gap-y-2 mt-4 pt-4 border-t border-line text-style-label">
+          <div>
+            <div className="font-semibold tabular-nums text-text">
+              <Money amount={totalAssets} signed tone="inherit" />
+            </div>
+            <div className="text-style-caption text-text mt-0.5">Активи</div>
+          </div>
+          <div className="w-px bg-line hidden sm:block self-stretch min-h-10" />
+          <div>
+            <div className="font-semibold tabular-nums text-text">
+              <Money amount={-totalDebt} tone="inherit" />
+            </div>
+            <div className="text-style-caption text-text mt-0.5">Пасиви</div>
+          </div>
+        </div>
+      ) : (
+        <p className="text-style-caption text-text mt-3">Суми приховано</p>
+      )}
+      {/* Бар лише коли обидві частини ненульові: «100 % / 0 %» нічого не
+            каже (redesign v3.2, позиція 02). */}
+      {showBalance && totalAssets > 0 && totalDebt > 0 && (
+        <AssetsLiabilitiesBar assets={totalAssets} liabilities={totalDebt} />
+      )}
+    </div>
+  );
+  return (
+    <Card
+      prominence={isEmpty ? "panel" : "hero"}
+      tone="finyk"
+      padding="lg"
+      className="mb-3 text-text"
+    >
+      {/* bv-first-pull-gaps: «0 ₴ Загальний капітал» на новому пристрої
+          виглядав як правдивий нуль, поки рахунки ще їдуть з хмари. */}
+      {isEmpty ? <FirstCloudPullGate compact>{body}</FirstCloudPullGate> : body}
     </Card>
   );
 }

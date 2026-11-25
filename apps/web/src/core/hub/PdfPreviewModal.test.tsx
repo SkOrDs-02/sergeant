@@ -16,6 +16,18 @@ describe("PdfPreviewModal", () => {
     expect(iframe.getAttribute("srcdoc")).toBe(HTML);
   });
 
+  it("locks page scroll while open and releases it on unmount", () => {
+    const view = render(
+      <PdfPreviewModal html={HTML} onClose={() => undefined} />,
+    );
+    expect(document.body.style.overflow).toBe("hidden");
+    expect(document.body.style.position).toBe("fixed");
+
+    view.unmount();
+    expect(document.body.style.overflow).toBe("");
+    expect(document.body.style.position).toBe("");
+  });
+
   it("closes via the Назад button", () => {
     const onClose = vi.fn();
     render(<PdfPreviewModal html={HTML} onClose={onClose} />);

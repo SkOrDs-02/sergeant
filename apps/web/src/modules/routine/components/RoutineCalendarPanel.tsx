@@ -9,7 +9,10 @@ import { SectionHeading } from "@shared/components/ui/SectionHeading";
 import { Button } from "@shared/components/ui/Button";
 import { Input } from "@shared/components/ui/Input";
 import { messages } from "@shared/i18n/uk";
-import { EmptyState } from "@shared/components/ui/EmptyState";
+import {
+  EmptyState,
+  FirstCloudPullGate,
+} from "@shared/components/ui/EmptyState";
 import { HabitDetailSheet } from "./HabitDetailSheet";
 import { FizrukDayPlanSheet } from "@fizruk/components/planning/FizrukDayPlanSheet";
 import { SwipeToAction } from "@shared/components/ui/SwipeToAction";
@@ -256,7 +259,10 @@ export function RoutineCalendarPanel({
           />
         )}
         {listIsEmpty && !hasListFilter && hasNoHabits && (
-          <EmptyState className="py-7" title={messages.routine.emptyHabits} />
+          // data-59/60: поки копія не наздогнала акаунт, тут «Завантажую з хмари…».
+          <FirstCloudPullGate className="py-7">
+            <EmptyState className="py-7" title={messages.routine.emptyHabits} />
+          </FirstCloudPullGate>
         )}
         {listIsEmpty && !hasListFilter && !hasNoHabits && (
           <EmptyState

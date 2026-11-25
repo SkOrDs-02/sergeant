@@ -1,6 +1,11 @@
 import type { NextFunction, Request, RequestHandler, Response } from "express";
 import type { Pool } from "pg";
-import { hasFeature, type BillingPlan, type FeatureId } from "@sergeant/shared";
+import {
+  hasFeature,
+  itemLimit,
+  type BillingPlan,
+  type FeatureId,
+} from "@sergeant/shared";
 import { accessStateOf, getUserPlan, isFounderUser } from "./getUserPlan.js";
 import { isBillingEnforced } from "./provider.js";
 
@@ -75,4 +80,21 @@ export function requireFeature(pool: Pool, feature: FeatureId): RequestHandler {
     return (_req, _res, next) => next();
   }
   return requirePlan(pool, "pro");
+}
+
+/**
+ * Стеля елементів фічі для юзера (`itemLimit` реєстру доступу) з тими ж
+ * байпасами, що й {@link requirePlan}: білінг не запущено, founder або
+ * активний Premium дають `null` (без стелі), Free отримує Free-стелю.
+ * Для гейтів, що не відмовляють, а урізають (RAG памʼяті в чаті, sec-32).
+ */
+export async function featureItemLimit(
+  pool: Pool,
+  userId: string,
+  feature: FeatureId,
+): Promise<number | null> {
+  if (!isBillingEnforced() || isFounderUser(userId)) return null;
+  const planResult = await getUserPlan(pool, userId);
+  const tier = accessStateOf(planResult) === "free" ? "free" : "pro";
+  return itemLimit(tier, feature);
 }

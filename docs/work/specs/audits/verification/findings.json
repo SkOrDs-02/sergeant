@@ -405,12 +405,17 @@
       "title": "runbook велить смикати важіль, якого немає",
       "severity": "unrated",
       "source": "docs/work/specs/audits/ai-pipeline-2026-08-05.md",
-      "status": "open",
+      "status": "fixed-pending-verification",
       "history": [
         {
           "at": "2026-09-05",
           "event": "imported",
           "note": "Актуальність потребує тріажу; імпорт історичного спостереження, без нового відтворення."
+        },
+        {
+          "at": "2026-11-22",
+          "event": "fixed",
+          "note": "Тріаж кодом 2026-11-22: AI_DAILY_USER_LIMIT у схемі env більше немає (git grep по apps/** і packages/** порожній), ліміт іде з плану (billing/effectiveLimits.ts). Runbook § AiQuotaStoreDown і env-vars.md виправлено 2026-11-22: зріз ліміту лише правкою FREE_LIMITS/PRO_LIMITS і деплоєм."
         }
       ],
       "sourceAnchor": "B14 — runbook велить смикати важіль, якого немає"
@@ -421,12 +426,17 @@
       "title": "битий JSON у `AI_QUOTA_TOOL_LIMITS` знімає ліміти з найдорожчого шляху",
       "severity": "unrated",
       "source": "docs/work/specs/audits/ai-pipeline-2026-08-05.md",
-      "status": "open",
+      "status": "fixed-pending-verification",
       "history": [
         {
           "at": "2026-09-05",
           "event": "imported",
           "note": "Актуальність потребує тріажу; імпорт історичного спостереження, без нового відтворення."
+        },
+        {
+          "at": "2026-11-22",
+          "event": "fixed",
+          "note": "Фікс c89c4ec4d (2026-11-21): AI_QUOTA_TOOL_LIMITS парситься jsonRecordOfNonNegIntFromEnv, битий JSON валить старт (apps/server/src/env/env.ts:243, envHelpers.ts:139); toolLimit() на биту мапу fail-closed. Тести envHelpers.test.ts, aiQuota.test.ts."
         }
       ],
       "sourceAnchor": "B15 — битий JSON у `AI_QUOTA_TOOL_LIMITS` знімає ліміти з найдорожчого шляху"
@@ -459,6 +469,16 @@
           "at": "2026-09-05",
           "event": "imported",
           "note": "Актуальність потребує тріажу; імпорт історичного спостереження, без нового відтворення."
+        },
+        {
+          "at": "2026-11-22",
+          "event": "fixed",
+          "note": "Тріаж кодом 2026-11-22: закрито 2026-09-29. AI_QUOTA_FOUNDER_IDS валідується founderIdsFromEnv при парсингу env (apps/server/src/env/env.ts:247, envHelpers.ts:161); тест envHelpers.test.ts. Сам байпас лишається за задумом."
+        },
+        {
+          "at": "2026-11-23",
+          "event": "retriaged",
+          "note": "Рев'ю 2026-11-23: виправлено лише формат (founderIdsFromEnv). isFounderUser в apps/server/src/modules/chat/aiQuota.ts і getUserPlan.ts читають сирий process.env, строку дії байпасу немає, тож забутий id лишається вічним безлімітом. Частково виправлено, повернуто в open."
         }
       ],
       "sourceAnchor": "B17 — `AI_QUOTA_FOUNDER_IDS` — необмежений байпас без жодної перевірки"
@@ -538,12 +558,17 @@
       "title": "`/api/coach/insight` без огорожі, яку отримав `/api/chat`",
       "severity": "unrated",
       "source": "docs/work/specs/audits/ai-pipeline-2026-08-05.md",
-      "status": "open",
+      "status": "fixed-pending-verification",
       "history": [
         {
           "at": "2026-09-05",
           "event": "imported",
           "note": "Актуальність потребує тріажу; імпорт історичного спостереження, без нового відтворення."
+        },
+        {
+          "at": "2026-11-22",
+          "event": "fixed",
+          "note": "Тріаж кодом 2026-11-22: закрито 2026-09-29 (claude/ai-user-data-fencing). memorySummary і snapshotText у промпті коуча огороджені wrapAndScanUserContext (apps/server/src/modules/chat/coach.ts:539-542). Прогону eval-стенду після зміни промпту немає."
         }
       ],
       "sourceAnchor": "B3 — `/api/coach/insight` без огорожі, яку отримав `/api/chat`"
@@ -554,12 +579,17 @@
       "title": "деградацію моделі coach обходить fallback-ланцюг",
       "severity": "unrated",
       "source": "docs/work/specs/audits/ai-pipeline-2026-08-05.md",
-      "status": "open",
+      "status": "fixed-pending-verification",
       "history": [
         {
           "at": "2026-09-05",
           "event": "imported",
           "note": "Актуальність потребує тріажу; імпорт історичного спостереження, без нового відтворення."
+        },
+        {
+          "at": "2026-11-22",
+          "event": "fixed",
+          "note": "Тріаж кодом 2026-11-22: закрито 2026-09-29. opts.model коуча = coachAnthropicModel(tier.tier), тож fallback в Anthropic іде на модель свого тиру (apps/server/src/modules/chat/coach.ts:582, 640). Живого прогону fallback немає."
         }
       ],
       "sourceAnchor": "B4 — деградацію моделі coach обходить fallback-ланцюг"
@@ -602,12 +632,17 @@
       "title": "асиметрія екранування огорож",
       "severity": "unrated",
       "source": "docs/work/specs/audits/ai-pipeline-2026-08-05.md",
-      "status": "open",
+      "status": "fixed-pending-verification",
       "history": [
         {
           "at": "2026-09-05",
           "event": "imported",
           "note": "Актуальність потребує тріажу; імпорт історичного спостереження, без нового відтворення."
+        },
+        {
+          "at": "2026-11-22",
+          "event": "fixed",
+          "note": "Тріаж кодом 2026-11-22: закрито 2026-09-29 і посилено фіксом fc52a1f4f: у недовірених даних обох огорож кожен < стає &lt;, > стає &gt; (apps/server/src/modules/chat/toolOutputWrapping.ts:131). Юніт-тест є, живого прогону немає."
         }
       ],
       "sourceAnchor": "B8 — асиметрія екранування огорож"
@@ -618,12 +653,17 @@
       "title": "DLQ AI-пам'яті переживає видалення акаунта",
       "severity": "unrated",
       "source": "docs/work/specs/audits/ai-pipeline-2026-08-05.md",
-      "status": "open",
+      "status": "fixed-pending-verification",
       "history": [
         {
           "at": "2026-09-05",
           "event": "imported",
           "note": "Актуальність потребує тріажу; імпорт історичного спостереження, без нового відтворення."
+        },
+        {
+          "at": "2026-11-22",
+          "event": "fixed",
+          "note": "Тріаж кодом 2026-11-22: закрито 2026-09-29. DLQ ai_memory_ingest_failed чиститься при видаленні акаунта (apps/server/src/modules/me/dataRights.ts:635) і в deleteAllForUser (modules/ai-memory/vectorStore.ts:264). GDPR-експорт DLQ досі не включає."
         }
       ],
       "sourceAnchor": "B11 — DLQ AI-пам'яті переживає видалення акаунта"
@@ -634,12 +674,17 @@
       "title": "очищення пам'яті без tombstone: in-flight ingest повертає стерте",
       "severity": "unrated",
       "source": "docs/work/specs/audits/ai-pipeline-2026-08-05.md",
-      "status": "open",
+      "status": "fixed-pending-verification",
       "history": [
         {
           "at": "2026-09-05",
           "event": "imported",
           "note": "Актуальність потребує тріажу; імпорт історичного спостереження, без нового відтворення."
+        },
+        {
+          "at": "2026-11-22",
+          "event": "fixed",
+          "note": "Фікс 3171bb280 (2026-11-21): «Очистити памʼять» знімає задачі юзера з черги ingest (purgeQueuedIngestForUser, apps/server/src/modules/ai-memory/clearRoute.ts:23) і ставить мітку ai_memory:cleared_at:<userId> у Redis (ingestClearMarker.ts:45), воркер пропускає старші задачі. Тести ingestQueue.test.ts, clearRoute.test.ts. Лишається: відкладене дзеркалення на іншій репліці. Живого прогону немає."
         }
       ],
       "sourceAnchor": "B12 — очищення пам'яті без tombstone: in-flight ingest повертає стерте"
@@ -650,12 +695,22 @@
       "title": "`forget.ts` і `forgetCleanup.ts` — мертвий код",
       "severity": "unrated",
       "source": "docs/work/specs/audits/ai-pipeline-2026-08-05.md",
-      "status": "open",
+      "status": "fixed-pending-verification",
       "history": [
         {
           "at": "2026-09-05",
           "event": "imported",
           "note": "Актуальність потребує тріажу; імпорт історичного спостереження, без нового відтворення."
+        },
+        {
+          "at": "2026-11-21",
+          "event": "decision",
+          "note": "Рішення власника 2026-11-21: нічний крон hard-delete ai_memories з deleted_at старше 7 днів. Реалізація попереду."
+        },
+        {
+          "at": "2026-11-22",
+          "event": "fixed",
+          "note": "Тріаж кодом 2026-11-22: forget.ts і forgetCleanup.ts видалено (PR #928), forgetById/runForgetCleanup у коді немає. Мертві finyk-рядки міграції 090 прибрано DELETE у міграції 144 (apps/server/src/migrations/144_ai_memories_prune_dead_sources.sql:46-47), а писача ai_memories.deleted_at у ран-таймі не лишилось. Крон із рішення 2026-11-21 потрібен лише, якщо soft-delete повернеться."
         }
       ],
       "sourceAnchor": "B13 — `forget.ts` і `forgetCleanup.ts` — мертвий код"
@@ -682,12 +737,17 @@
       "title": "`ai_usage_daily` не переживає rollback: у 091 немає `.down.sql`",
       "severity": "unrated",
       "source": "docs/work/specs/audits/ai-pipeline-2026-08-05.md",
-      "status": "open",
+      "status": "fixed-pending-verification",
       "history": [
         {
           "at": "2026-09-05",
           "event": "imported",
           "note": "Актуальність потребує тріажу; імпорт історичного спостереження, без нового відтворення."
+        },
+        {
+          "at": "2026-11-22",
+          "event": "fixed",
+          "note": "Тріаж кодом 2026-11-22: закрито PR #627. Міграцію перенесено в 104_ai_usage_endpoint_and_cache.sql з парною 104_ai_usage_endpoint_and_cache.down.sql (apps/server/src/migrations/), гейт rollback-sanity.test.ts це покриває. Live-прогону drill у цьому тріажі немає."
         }
       ],
       "sourceAnchor": "B30 — `ai_usage_daily` не переживає rollback: у 091 немає `.down.sql`"
@@ -760,12 +820,17 @@
       "title": "сирий текст внутрішньої помилки тече в SSE-стрім",
       "severity": "unrated",
       "source": "docs/work/specs/audits/ai-testing-2026-08-25.md",
-      "status": "open",
+      "status": "fixed-pending-verification",
       "history": [
         {
           "at": "2026-09-05",
           "event": "imported",
           "note": "Актуальність потребує тріажу; імпорт історичного спостереження, без нового відтворення."
+        },
+        {
+          "at": "2026-11-22",
+          "event": "retriaged",
+          "note": "Тріаж кодом 2026-11-22: catch body-reader-а шле generic SSE_GENERIC_ERROR, сирий e.message лишається лише в streamErrorReason для логу (apps/server/src/modules/chat/chatStream.ts:247-252); тест chatStream.test.ts. Живого прогону немає."
         }
       ],
       "sourceAnchor": "B33 — сирий текст внутрішньої помилки тече в SSE-стрім"
@@ -776,12 +841,17 @@
       "title": "компресія стискає SSE: guard мертвий, heartbeat буферизується",
       "severity": "unrated",
       "source": "docs/work/specs/audits/ai-testing-2026-08-25.md",
-      "status": "open",
+      "status": "fixed-pending-verification",
       "history": [
         {
           "at": "2026-09-05",
           "event": "imported",
           "note": "Актуальність потребує тріажу; імпорт історичного спостереження, без нового відтворення."
+        },
+        {
+          "at": "2026-11-22",
+          "event": "retriaged",
+          "note": "Тріаж кодом 2026-11-22: compression пропускає відповідь за response Content-Type text/event-stream, а не за Accept запиту (apps/server/src/http/compression.ts:43-46). Живого заміру TTFT немає."
         }
       ],
       "sourceAnchor": "B34 — компресія стискає SSE: guard мертвий, heartbeat буферизується"
@@ -792,12 +862,17 @@
       "title": "`sanitizeMessages` лишає найстаріше з сусідніх user-повідомлень",
       "severity": "unrated",
       "source": "docs/work/specs/audits/ai-testing-2026-08-25.md",
-      "status": "open",
+      "status": "fixed-pending-verification",
       "history": [
         {
           "at": "2026-09-05",
           "event": "imported",
           "note": "Актуальність потребує тріажу; імпорт історичного спостереження, без нового відтворення."
+        },
+        {
+          "at": "2026-11-22",
+          "event": "retriaged",
+          "note": "Тріаж кодом 2026-11-22: на дублікаті ролі поспіль sanitizeMessages тримає новіше повідомлення (apps/server/src/modules/chat/chat.ts:938). Живого прогону немає."
         }
       ],
       "sourceAnchor": "B35 — `sanitizeMessages` лишає найстаріше з сусідніх user-повідомлень"
@@ -808,12 +883,17 @@
       "title": "прайс-таблиця не знає дефолтних chat-моделей",
       "severity": "unrated",
       "source": "docs/work/specs/audits/ai-testing-2026-08-25.md",
-      "status": "open",
+      "status": "fixed-pending-verification",
       "history": [
         {
           "at": "2026-09-05",
           "event": "imported",
           "note": "Актуальність потребує тріажу; імпорт історичного спостереження, без нового відтворення."
+        },
+        {
+          "at": "2026-11-22",
+          "event": "retriaged",
+          "note": "Тріаж кодом 2026-11-22: deepseek/deepseek-v4-flash і z-ai/glm-5.2 є в прайс-таблиці (apps/server/src/lib/aiPricing.ts:215, 228), тест покриття «кожна модель з chatModels/aiRoutingEnv має ціну» (aiPricing.test.ts:228). Звірки est_cost_usd з рахунком шлюзу немає."
         }
       ],
       "sourceAnchor": "B38 — прайс-таблиця не знає дефолтних chat-моделей"
@@ -824,12 +904,17 @@
       "title": "стенд друкує назви моделей для викликів, яких не було",
       "severity": "unrated",
       "source": "docs/work/specs/audits/ai-testing-2026-08-25.md",
-      "status": "open",
+      "status": "fixed-pending-verification",
       "history": [
         {
           "at": "2026-09-05",
           "event": "imported",
           "note": "Актуальність потребує тріажу; імпорт історичного спостереження, без нового відтворення."
+        },
+        {
+          "at": "2026-11-22",
+          "event": "retriaged",
+          "note": "Тріаж кодом 2026-11-22: стенд поза --dry-run фейлить прогін, коли резолвлений провайдер не збігся з оголошеним у кандидата (apps/server/scripts/eval/run.ts:62-80), --skip-unavailable називає відсіяних у звіті. Закомічені звіти 2026-08-25 не перезнято."
         }
       ],
       "sourceAnchor": "B44 — стенд друкує назви моделей для викликів, яких не було"
@@ -840,12 +925,17 @@
       "title": "прод-модель першого ходу точна, але повільна на порядок",
       "severity": "unrated",
       "source": "docs/work/specs/audits/ai-testing-2026-08-25.md",
-      "status": "open",
+      "status": "fixed-pending-verification",
       "history": [
         {
           "at": "2026-09-05",
           "event": "imported",
           "note": "Актуальність потребує тріажу; імпорт історичного спостереження, без нового відтворення."
+        },
+        {
+          "at": "2026-11-22",
+          "event": "retriaged",
+          "note": "Тріаж кодом 2026-11-22: перший хід чату знято з deepseek/deepseek-v4-flash за латентністю, зараз google/gemini-3.7-flash із замірами в коментарі (apps/server/src/env/chatModels.ts:90-142). p95 на проді дивись chat_first_turn_phase_ms; окремого живого прогону під цей запис немає."
         }
       ],
       "sourceAnchor": "B45 — прод-модель першого ходу точна, але повільна на порядок"
@@ -856,12 +946,17 @@
       "title": "транспортна помилка в зоровому стенді рахується як провал моделі",
       "severity": "unrated",
       "source": "docs/work/specs/audits/ai-testing-2026-08-25.md",
-      "status": "open",
+      "status": "fixed-pending-verification",
       "history": [
         {
           "at": "2026-09-05",
           "event": "imported",
           "note": "Актуальність потребує тріажу; імпорт історичного спостереження, без нового відтворення."
+        },
+        {
+          "at": "2026-11-22",
+          "event": "retriaged",
+          "note": "Тріаж кодом 2026-11-22: транспортна помилка позначається transportFailed і виключається зі знаменника точності, у звіті окрема колонка (apps/server/scripts/eval/vision.ts:455, 504; scripts/eval/report.ts:58-75). Закомічені звіти 2026-08-25 не перезнято."
         }
       ],
       "sourceAnchor": "B47 — транспортна помилка в зоровому стенді рахується як провал моделі"
@@ -872,12 +967,17 @@
       "title": "інʼєкція-детектор лише англійський",
       "severity": "unrated",
       "source": "docs/work/specs/audits/ai-testing-2026-08-25.md",
-      "status": "open",
+      "status": "fixed-pending-verification",
       "history": [
         {
           "at": "2026-09-05",
           "event": "imported",
           "note": "Актуальність потребує тріажу; імпорт історичного спостереження, без нового відтворення."
+        },
+        {
+          "at": "2026-11-22",
+          "event": "retriaged",
+          "note": "Тріаж кодом 2026-11-22: PROMPT_INJECTION_PATTERNS має UA/RU-патерни з лінійними регекспами (apps/server/src/modules/chat/toolOutputWrapping.ts:68-88). Живого прогону метрики немає."
         }
       ]
     },
@@ -887,12 +987,17 @@
       "title": "глобальний 120-с таймаут без SSE-винятку",
       "severity": "unrated",
       "source": "docs/work/specs/audits/ai-testing-2026-08-25.md",
-      "status": "open",
+      "status": "fixed-pending-verification",
       "history": [
         {
           "at": "2026-09-05",
           "event": "imported",
           "note": "Актуальність потребує тріажу; імпорт історичного спостереження, без нового відтворення."
+        },
+        {
+          "at": "2026-11-22",
+          "event": "retriaged",
+          "note": "Тріаж кодом 2026-11-22: глобальний таймаут не рве SSE-відповіді, для text/event-stream лише пише request_timeout_skipped_sse (apps/server/src/http/timeout.ts:37-56). Живого прогону немає."
         }
       ]
     },
@@ -902,12 +1007,17 @@
       "title": "немає сумарного дедлайну через retry",
       "severity": "unrated",
       "source": "docs/work/specs/audits/ai-testing-2026-08-25.md",
-      "status": "open",
+      "status": "fixed-pending-verification",
       "history": [
         {
           "at": "2026-09-05",
           "event": "imported",
           "note": "Актуальність потребує тріажу; імпорт історичного спостереження, без нового відтворення."
+        },
+        {
+          "at": "2026-11-22",
+          "event": "retriaged",
+          "note": "Тріаж кодом 2026-11-22: сумарний бюджет запиту через retry (за замовчуванням timeoutMs * 2) обмежує сон і спроби (apps/server/src/lib/anthropic.ts:59, 474). Живого прогону з 429 немає."
         }
       ]
     },
@@ -917,12 +1027,17 @@
       "title": "редакція структурно не покриває chat-контент",
       "severity": "unrated",
       "source": "docs/work/specs/audits/ai-testing-2026-08-25.md",
-      "status": "open",
+      "status": "fixed-pending-verification",
       "history": [
         {
           "at": "2026-09-05",
           "event": "imported",
           "note": "Актуальність потребує тріажу; імпорт історичного спостереження, без нового відтворення."
+        },
+        {
+          "at": "2026-11-22",
+          "event": "retriaged",
+          "note": "Тріаж кодом 2026-11-22: тіла AI-запитів (поля ChatRequestSchema/CoachRequest) додано в redactPaths шляхами, а не глобальними ключами (apps/server/src/obs/logger.ts:235-245). Живого прогону немає."
         }
       ]
     },
@@ -2917,12 +3032,17 @@
       "title": "Компрометований devDependency → auto-merge → секрети CI → `main` → прод",
       "severity": "unrated",
       "source": "docs/work/specs/audits/security-comprehensive-2026-08-04.md",
-      "status": "open",
+      "status": "fixed-pending-verification",
       "history": [
         {
           "at": "2026-09-05",
           "event": "imported",
           "note": "Джерело заявляє 26/50 виправлених без поіменної відповідності; стан цього кандидата невизначений. Open означає потребу тріажу, не підтверджену актуальну вразливість."
+        },
+        {
+          "at": "2026-11-22",
+          "event": "retriaged",
+          "note": "Тріаж кодом 2026-11-22: ланцюг розірвано в трьох ланках. Lifecycle-скрипти дозволено лише трьом пакетам (package.json:220 pnpm.onlyBuiltDependencies: better-sqlite3, esbuild, unrs-resolver), тож postinstall довільної devDependency не виконується. Автомерджу залежностей немає: Renovate прибрано (ADR-0103), .github/dependabot.yml:18 «Автомерджу немає», кожен PR мерджить людина. iOS-підписні секрети перенесено на step-level (.github/workflows/mobile-shell-ios-release.yml:61-64, 86). Живого прогону немає."
         }
       ],
       "sourceAnchor": "1.0 Компрометований devDependency → auto-merge → секрети CI → `main` → прод"
@@ -2939,6 +3059,11 @@
           "at": "2026-09-05",
           "event": "imported",
           "note": "Джерело заявляє 26/50 виправлених без поіменної відповідності; стан цього кандидата невизначений. Open означає потребу тріажу, не підтверджену актуальну вразливість."
+        },
+        {
+          "at": "2026-11-22",
+          "event": "retriaged",
+          "note": "Тріаж кодом 2026-11-22: досі відкрито. Middleware уже пробрасує перше значення x-forwarded-for з HMAC-підписом (apps/web/middleware.ts:70, 133), але довжину ланцюга проксі на проді (TRUST_PROXY за Traefik) не заміряно; без заміру закрити не можна."
         }
       ],
       "sourceAnchor": "1.1 Увесь per-IP rate-limit веб-трафіку схлопнутий в один бакет"
@@ -2949,12 +3074,17 @@
       "title": "CORS прода безумовно довіряє localhost із `Allow-Credentials: true`",
       "severity": "unrated",
       "source": "docs/work/specs/audits/security-comprehensive-2026-08-04.md",
-      "status": "open",
+      "status": "fixed-pending-verification",
       "history": [
         {
           "at": "2026-09-05",
           "event": "imported",
           "note": "Джерело заявляє 26/50 виправлених без поіменної відповідності; стан цього кандидата невизначений. Open означає потребу тріажу, не підтверджену актуальну вразливість."
+        },
+        {
+          "at": "2026-11-22",
+          "event": "retriaged",
+          "note": "Тріаж кодом 2026-11-22: localhost-origins додаються лише поза production (apps/server/src/http/cors.ts:62, getAllowedOrigins: NODE_ENV=production → лише PROD_ORIGINS). Живого прогону CORS на проді немає."
         }
       ],
       "sourceAnchor": "1.2 CORS прода безумовно довіряє localhost із `Allow-Credentials: true`"
@@ -2965,12 +3095,17 @@
       "title": "Неавтентифіковані платні ендпоінти",
       "severity": "unrated",
       "source": "docs/work/specs/audits/security-comprehensive-2026-08-04.md",
-      "status": "open",
+      "status": "fixed-pending-verification",
       "history": [
         {
           "at": "2026-09-05",
           "event": "imported",
           "note": "Джерело заявляє 26/50 виправлених без поіменної відповідності; стан цього кандидата невизначений. Open означає потребу тріажу, не підтверджену актуальну вразливість."
+        },
+        {
+          "at": "2026-11-22",
+          "event": "retriaged",
+          "note": "Тріаж кодом 2026-11-22: /api/chat і /api/weekly-digest стоять за requireSession() перед лімітером (apps/server/src/routes/chat.ts:37, routes/weekly-digest.ts:25), тож анонімної гілки resolveProTier на AI-шляху немає (ADR-0086). /api/barcode і /api/food-search лишаються без сесії свідомо, але мають добові бакети (routes/barcode.ts:27-31, routes/food-search.ts:25-29) і глобальний бюджет апстрімів (modules/nutrition/barcode.ts:28, upstreamBudget.ts, rel-35). Живого прогону немає."
         }
       ],
       "sourceAnchor": "1.3 Неавтентифіковані платні ендпоінти"
@@ -2981,12 +3116,17 @@
       "title": "Підписка ніколи не спливає",
       "severity": "unrated",
       "source": "docs/work/specs/audits/security-comprehensive-2026-08-04.md",
-      "status": "open",
+      "status": "fixed-pending-verification",
       "history": [
         {
           "at": "2026-09-05",
           "event": "imported",
           "note": "Джерело заявляє 26/50 виправлених без поіменної відповідності; стан цього кандидата невизначений. Open означає потребу тріажу, не підтверджену актуальну вразливість."
+        },
+        {
+          "at": "2026-11-22",
+          "event": "retriaged",
+          "note": "Тріаж кодом 2026-11-22: getUserPlan фільтрує AND (current_period_end IS NULL OR current_period_end > NOW()) з окремим grace-вікном для past_due (apps/server/src/modules/billing/getUserPlan.ts:86-89). Живого прогону немає."
         }
       ],
       "sourceAnchor": "1.4 Підписка ніколи не спливає"
@@ -3003,6 +3143,11 @@
           "at": "2026-09-05",
           "event": "imported",
           "note": "Джерело заявляє 26/50 виправлених без поіменної відповідності; стан цього кандидата невизначений. Open означає потребу тріажу, не підтверджену актуальну вразливість."
+        },
+        {
+          "at": "2026-11-21",
+          "event": "decision",
+          "note": "Рішення власника 2026-11-21: автосинк Mono стає безкоштовним (прибрати з Pro-переліку); решта Pro-поверхонь до запуску оплат як є. Реалізація попереду."
         }
       ],
       "sourceAnchor": "1.5 Серверного paywall у проді немає"
@@ -3013,12 +3158,17 @@
       "title": "Відновлювальний контур не відновлює",
       "severity": "unrated",
       "source": "docs/work/specs/audits/security-comprehensive-2026-08-04.md",
-      "status": "open",
+      "status": "fixed-pending-verification",
       "history": [
         {
           "at": "2026-09-05",
           "event": "imported",
           "note": "Джерело заявляє 26/50 виправлених без поіменної відповідності; стан цього кандидата невизначений. Open означає потребу тріажу, не підтверджену актуальну вразливість."
+        },
+        {
+          "at": "2026-11-22",
+          "event": "retriaged",
+          "note": "Тріаж кодом 2026-11-22: усі три дефекти закриті. revokeSessionsOnPasswordReset: true (apps/server/src/auth.ts:443); чутливі роути за requireFreshSession() з disableCookieCache (http/requireSession.ts:108, modules/me/reauth.ts:52); push upsert перезаписує власника лише для свого або видаленого рядка (modules/push/push.ts:88-90). Живого прогону немає."
         }
       ],
       "sourceAnchor": "1.6 Відновлювальний контур не відновлює"
@@ -3029,12 +3179,17 @@
       "title": "Coolify та ops-стек",
       "severity": "unrated",
       "source": "docs/work/specs/audits/security-comprehensive-2026-08-04.md",
-      "status": "open",
+      "status": "fixed-pending-verification",
       "history": [
         {
           "at": "2026-09-05",
           "event": "imported",
           "note": "Джерело заявляє 26/50 виправлених без поіменної відповідності; стан цього кандидата невизначений. Open означає потребу тріажу, не підтверджену актуальну вразливість."
+        },
+        {
+          "at": "2026-11-22",
+          "event": "retriaged",
+          "note": "Тріаж кодом 2026-11-22: Grafana без анонімного доступу і з fail-fast паролем (ops/docker-compose.ops.yml:46-47), порти Prometheus і Grafana привʼязані до 127.0.0.1 (:17, :44); у ops-home.json замість адреси VPS заглушка https://coolify.invalid.local (docs/operations/observability/dashboards/ops-home.json:522). TLS і firewall адмін-панелі Coolify з репо не перевіряються."
         }
       ],
       "sourceAnchor": "1.7 Coolify та ops-стек"
@@ -3051,6 +3206,11 @@
           "at": "2026-09-05",
           "event": "imported",
           "note": "Джерело заявляє 26/50 виправлених без поіменної відповідності; стан цього кандидата невизначений. Open означає потребу тріажу, не підтверджену актуальну вразливість."
+        },
+        {
+          "at": "2026-11-22",
+          "event": "retriaged",
+          "note": "Тріаж кодом 2026-11-22: досі відкрито частково. Деплой лише з main і в environment production (.github/workflows/deploy-api.yml:36-37), образу ghcr :latest більше немає (Coolify збирає з GitHub). Чи має environment production required reviewer, з репо не видно; workflow_dispatch лишається."
         }
       ]
     },
@@ -3060,12 +3220,17 @@
       "title": "`redactKeysRecursively` повертає нередаговане піддерево при повторному посиланні на той самий обʼєкт — обхід єдиного глибокого редактора Pino",
       "severity": "unrated",
       "source": "docs/work/specs/audits/security-comprehensive-2026-08-04.md",
-      "status": "open",
+      "status": "fixed-pending-verification",
       "history": [
         {
           "at": "2026-09-05",
           "event": "imported",
           "note": "Джерело заявляє 26/50 виправлених без поіменної відповідності; стан цього кандидата невизначений. Open означає потребу тріажу, не підтверджену актуальну вразливість."
+        },
+        {
+          "at": "2026-11-22",
+          "event": "retriaged",
+          "note": "Тріаж кодом 2026-11-22: redactKeysRecursively мемоізує вже відредаговані піддерева через WeakMap замість WeakSet-guard (apps/server/src/obs/logger.ts:127), повторне посилання отримує редаговану копію. Живого прогону немає."
         }
       ]
     },
@@ -3075,12 +3240,17 @@
       "title": "Telegram bot token у path вихідного URL не редагується нічим; `beforeSendTransaction` у Sentry відсутній, тож span/transaction-події взагалі не скрабляться",
       "severity": "unrated",
       "source": "docs/work/specs/audits/security-comprehensive-2026-08-04.md",
-      "status": "open",
+      "status": "fixed-pending-verification",
       "history": [
         {
           "at": "2026-09-05",
           "event": "imported",
           "note": "Джерело заявляє 26/50 виправлених без поіменної відповідності; стан цього кандидата невизначений. Open означає потребу тріажу, не підтверджену актуальну вразливість."
+        },
+        {
+          "at": "2026-11-22",
+          "event": "retriaged",
+          "note": "Тріаж кодом 2026-11-22: токен у path api.telegram.org/bot<token> редагується (apps/server/src/obs/sensitiveUrl.ts:58), Sentry має beforeSendTransaction (apps/server/src/sentry.ts:550). Живого прогону немає."
         }
       ]
     },
@@ -3090,12 +3260,17 @@
       "title": "CSRF-гейт блокує вебхуки LiqPay і Plata до перевірки підпису — код верифікації недосяжний",
       "severity": "unrated",
       "source": "docs/work/specs/audits/security-comprehensive-2026-08-04.md",
-      "status": "open",
+      "status": "fixed-pending-verification",
       "history": [
         {
           "at": "2026-09-05",
           "event": "imported",
           "note": "Джерело заявляє 26/50 виправлених без поіменної відповідності; стан цього кандидата невизначений. Open означає потребу тріажу, не підтверджену актуальну вразливість."
+        },
+        {
+          "at": "2026-11-22",
+          "event": "retriaged",
+          "note": "Тріаж кодом 2026-11-22: liqpay-callback, plata-charge і plata-status у EXEMPT_PATH_PREFIXES CSRF-гейта (apps/server/src/http/requireCsrfHeader.ts:90-92), підпис перевіряє сам обробник. Живого прогону немає."
         }
       ]
     },
@@ -3105,12 +3280,17 @@
       "title": "Prometheus label-cardinality DoS: сире `op.table` з тіла запиту потрапляє в лейбл на duplicate-гілці, до наявного cardinality-guard",
       "severity": "unrated",
       "source": "docs/work/specs/audits/security-comprehensive-2026-08-04.md",
-      "status": "open",
+      "status": "fixed-pending-verification",
       "history": [
         {
           "at": "2026-09-05",
           "event": "imported",
           "note": "Джерело заявляє 26/50 виправлених без поіменної відповідності; стан цього кандидата невизначений. Open означає потребу тріажу, не підтверджену актуальну вразливість."
+        },
+        {
+          "at": "2026-11-22",
+          "event": "retriaged",
+          "note": "Тріаж кодом 2026-11-22: лейбл table згортається в __unknown__ для таблиць поза реєстром (apps/server/src/modules/sync/syncV2.ts:258, syncV2-core.ts:96). Живого прогону немає."
         }
       ]
     },
@@ -3120,12 +3300,17 @@
       "title": "Автентифікований SSRF: push-endpoint приймає довільний URL, `/api/push/test` повертає сиру мережеву помилку як оракул",
       "severity": "unrated",
       "source": "docs/work/specs/audits/security-comprehensive-2026-08-04.md",
-      "status": "open",
+      "status": "fixed-pending-verification",
       "history": [
         {
           "at": "2026-09-05",
           "event": "imported",
           "note": "Джерело заявляє 26/50 виправлених без поіменної відповідності; стан цього кандидата невизначений. Open означає потребу тріажу, не підтверджену актуальну вразливість."
+        },
+        {
+          "at": "2026-11-22",
+          "event": "retriaged",
+          "note": "Тріаж кодом 2026-11-22: відправка ходить лише на https-хости з allowlist push-сервісів, перевірка стоїть на відправці, тож покриває й старі рядки БД (apps/server/src/lib/webpushSend.ts:119-127); поза списком результат invalid_endpoint. Чи віддає /api/push/test сиру мережеву помилку, цим тріажем не перевірено."
         }
       ]
     },
@@ -3135,12 +3320,17 @@
       "title": "Renovate автомержить dev-залежності без cooldown — нульове вікно на виявлення компрометованого релізу",
       "severity": "unrated",
       "source": "docs/work/specs/audits/security-comprehensive-2026-08-04.md",
-      "status": "open",
+      "status": "accepted",
       "history": [
         {
           "at": "2026-09-05",
           "event": "imported",
           "note": "Джерело заявляє 26/50 виправлених без поіменної відповідності; стан цього кандидата невизначений. Open означає потребу тріажу, не підтверджену актуальну вразливість."
+        },
+        {
+          "at": "2026-11-22",
+          "event": "retriaged",
+          "note": "Застаріло 2026-11-22: Renovate на репо не встановлено, renovate.json видалено (ADR-0103), автомерджу залежностей немає (.github/dependabot.yml:18). Вікна «автомердж без cooldown» більше не існує, кожен PR Dependabot мерджить людина."
         }
       ]
     },
@@ -3150,12 +3340,17 @@
       "title": "Відсутній `BETTER_AUTH_URL` у проді тихо знімає `Secure` з session-cookie; startup-гейт цього не ловить",
       "severity": "unrated",
       "source": "docs/work/specs/audits/security-comprehensive-2026-08-04.md",
-      "status": "open",
+      "status": "fixed-pending-verification",
       "history": [
         {
           "at": "2026-09-05",
           "event": "imported",
           "note": "Джерело заявляє 26/50 виправлених без поіменної відповідності; стан цього кандидата невизначений. Open означає потребу тріажу, не підтверджену актуальну вразливість."
+        },
+        {
+          "at": "2026-11-22",
+          "event": "retriaged",
+          "note": "Тріаж кодом 2026-11-22: assertStartupEnv кидає в production без BETTER_AUTH_URL і на не-https значення (apps/server/src/env/env.ts:851-860). Живого прогону немає."
         }
       ]
     },
@@ -3165,12 +3360,17 @@
       "title": "Видалення й експорт не охоплюють модульні дані",
       "severity": "unrated",
       "source": "docs/work/specs/audits/security-comprehensive-2026-08-04.md",
-      "status": "open",
+      "status": "fixed-pending-verification",
       "history": [
         {
           "at": "2026-09-05",
           "event": "imported",
           "note": "Джерело заявляє 26/50 виправлених без поіменної відповідності; стан цього кандидата невизначений. Open означає потребу тріажу, не підтверджену актуальну вразливість."
+        },
+        {
+          "at": "2026-11-22",
+          "event": "retriaged",
+          "note": "Тріаж кодом 2026-11-22: експорт віддає модульні таблиці (apps/server/src/modules/me/dataRights.ts:359-362, MODULE_EXPORT_TABLES з дрейф-тестом exportTables.drift.test.ts), видалення чистить таблиці без FK явно (ai_usage_daily :626, ai_memory_ingest_failed :635) і решту каскадом від DELETE FROM \"user\" (:648). Інтеграційний тест dataRights.integration.test.ts. Живого прогону немає."
         }
       ]
     },
@@ -3180,12 +3380,17 @@
       "title": "n8n: інтерполяція вебхуків у SQL",
       "severity": "unrated",
       "source": "docs/work/specs/audits/security-comprehensive-2026-08-04.md",
-      "status": "open",
+      "status": "accepted",
       "history": [
         {
           "at": "2026-09-05",
           "event": "imported",
           "note": "Джерело заявляє 26/50 виправлених без поіменної відповідності; стан цього кандидата невизначений. Open означає потребу тріажу, не підтверджену актуальну вразливість."
+        },
+        {
+          "at": "2026-11-22",
+          "event": "retriaged",
+          "note": "Застаріло 2026-11-22: n8n-шар виведено з репо комітом 31d3f8879 (ADR-0090), каталогу ops/n8n-workflows/ більше немає. Відтворювати нічого."
         }
       ]
     },
@@ -3195,12 +3400,17 @@
       "title": "n8n: неавтентифіковані вебхуки й auto-approve",
       "severity": "unrated",
       "source": "docs/work/specs/audits/security-comprehensive-2026-08-04.md",
-      "status": "open",
+      "status": "accepted",
       "history": [
         {
           "at": "2026-09-05",
           "event": "imported",
           "note": "Джерело заявляє 26/50 виправлених без поіменної відповідності; стан цього кандидата невизначений. Open означає потребу тріажу, не підтверджену актуальну вразливість."
+        },
+        {
+          "at": "2026-11-22",
+          "event": "retriaged",
+          "note": "Застаріло 2026-11-22: n8n-шар виведено з репо комітом 31d3f8879 (ADR-0090), вебхуків n8n у репо більше немає. Відтворювати нічого."
         }
       ]
     },
@@ -3216,6 +3426,11 @@
           "at": "2026-09-05",
           "event": "imported",
           "note": "Джерело заявляє 26/50 виправлених без поіменної відповідності; стан цього кандидата невизначений. Open означає потребу тріажу, не підтверджену актуальну вразливість."
+        },
+        {
+          "at": "2026-11-22",
+          "event": "retriaged",
+          "note": "Тріаж кодом 2026-11-22: досі відкрито частково. Широкий Bash(node *) звужено до node scripts/* і node tools/*, deny не порожній (.claude/settings.json:26-27, 34-36; Bash(cat *) і Bash(find *) лишились), але MCP у .mcp.json досі тягнуться через npx без пінінгу версій."
         }
       ]
     },
@@ -3225,12 +3440,17 @@
       "title": "Аудит залежностей і невідповідність overrides",
       "severity": "unrated",
       "source": "docs/work/specs/audits/security-comprehensive-2026-08-04.md",
-      "status": "open",
+      "status": "fixed-pending-verification",
       "history": [
         {
           "at": "2026-09-05",
           "event": "imported",
           "note": "Джерело заявляє 26/50 виправлених без поіменної відповідності; стан цього кандидата невизначений. Open означає потребу тріажу, не підтверджену актуальну вразливість."
+        },
+        {
+          "at": "2026-11-22",
+          "event": "retriaged",
+          "note": "Тріаж кодом 2026-11-22: три overrides з аудиту виправлено: tar ^7.5.21, dompurify ^3.4.17 (lock 3.4.18), protobufjs@>=7.0.0 <=7.6.4 → ^7.6.5 (lock 7.6.5) (package.json:228, 236, 254). Свіжого pnpm audit у цьому тріажі немає."
         }
       ]
     },
@@ -3240,12 +3460,17 @@
       "title": "Коміт 106b43d3 поверх мерджу: навігаційні підписи й low-vision тест",
       "severity": "unrated",
       "source": "docs/work/specs/audits/2026-08-05-lost-commits-audit.md",
-      "status": "open",
+      "status": "fixed-pending-verification",
       "history": [
         {
           "at": "2026-09-05",
           "event": "imported",
           "note": "Актуальність потребує тріажу; імпорт історичного спостереження, без нового відтворення."
+        },
+        {
+          "at": "2026-11-21",
+          "event": "fixed",
+          "note": "Звірено кодом main@87d592ad: лейбли навігації на leading-tight (apps/web/src/core/app/HubBottomNav.tsx:197, apps/web/src/shared/components/ui/ModuleBottomNav.tsx:307), у HubHeader.tsx leading-none більше немає; спек apps/web/tests/a11y/low-vision.spec.ts є, таймаут 90 с у apps/web/playwright.config.ts:33. Коміт 106b43d3 перенесено не дослівно, а наново; live-прогону спеку під цю знахідку немає."
         }
       ],
       "sourceAnchor": "3.1 Коміти поверх мерджу"
@@ -3293,6 +3518,11 @@
           "at": "2026-09-05",
           "event": "imported",
           "note": "Актуальність потребує тріажу; імпорт історичного спостереження, без нового відтворення."
+        },
+        {
+          "at": "2026-11-21",
+          "event": "retriaged",
+          "note": "Частково закрито, звірено з файлами коміту 25781ec9: 6 тестів є в main під тими самими іменами (apps/web/src/core/hub/HubHeroBlock.test.tsx, HubInsightsBlock, HubChatComposer, HubChatHeader, moduleConfigs, DashboardSection), ще 6 змінено в main за тим самим шляхом. З 8 джерел, яких тест так і не дійшов, 3 уже видалено (HubModulesGrid, BentoCard з двома тестами, AssistantCatalogueSection). Бракує 5 тестів на живі джерела: dashboardStore.ts, searchActions.ts, searchCache.ts, streamingStore.ts, hubPrefs.schema.ts (hubPrefs.ts частково покриває hubPrefs.migrate.test.ts). Лишається open."
         }
       ]
     },
@@ -3302,12 +3532,17 @@
       "title": "`cursor/web-coverage-wave20-nutrition-ab0a`: 13 тест-файлів (nutrition components + hooks)",
       "severity": "unrated",
       "source": "docs/work/specs/audits/2026-08-05-lost-commits-audit.md",
-      "status": "open",
+      "status": "fixed-pending-verification",
       "history": [
         {
           "at": "2026-09-05",
           "event": "imported",
           "note": "Актуальність потребує тріажу; імпорт історичного спостереження, без нового відтворення."
+        },
+        {
+          "at": "2026-11-21",
+          "event": "fixed",
+          "note": "Звірено з файлами коміту 5414574e: 12 з 13 втрачених тестів є в main як *.branches.test.* поруч із джерелом (apps/web/src/modules/nutrition/components/DailyPlanMacros.branches.test.tsx та ін., apps/web/src/modules/nutrition/lib/sqliteReadGate.branches.test.ts). Окремого модуля RecipesCard.ChevronIcon у main немає, тест не потрібен."
         }
       ]
     },
@@ -3317,12 +3552,17 @@
       "title": "`cursor/web-coverage-wave19-finyk-ab0a`: 8 тест-файлів (finyk lazy pages + hooks)",
       "severity": "unrated",
       "source": "docs/work/specs/audits/2026-08-05-lost-commits-audit.md",
-      "status": "open",
+      "status": "fixed-pending-verification",
       "history": [
         {
           "at": "2026-09-05",
           "event": "imported",
           "note": "Актуальність потребує тріажу; імпорт історичного спостереження, без нового відтворення."
+        },
+        {
+          "at": "2026-11-21",
+          "event": "fixed",
+          "note": "Звірено з файлами коміту bd59eb8b: 7 з 8 втрачених тестів є в main як *.branches.test.* поруч із джерелом (CategorySelector, useFinykManualExpenseConflicts, AssetsBars, FlowRow, NetworthSection, TransactionDayHeader; PlannedFlowsCard переїхав у apps/web/src/modules/finyk/pages/budgets/PlannedFlowsCard.branches.test.tsx). Джерела FirstInsightBanner у main немає, тест не потрібен."
         }
       ]
     },
@@ -3332,12 +3572,17 @@
       "title": "`cursor/web-coverage-wave21-fizruk-routine-ab0a`: 3 тест-файли (routine/fizruk shell)",
       "severity": "unrated",
       "source": "docs/work/specs/audits/2026-08-05-lost-commits-audit.md",
-      "status": "open",
+      "status": "fixed-pending-verification",
       "history": [
         {
           "at": "2026-09-05",
           "event": "imported",
           "note": "Актуальність потребує тріажу; імпорт історичного спостереження, без нового відтворення."
+        },
+        {
+          "at": "2026-11-21",
+          "event": "fixed",
+          "note": "Звірено з файлами коміту 23e834c8: ArchivedHabitsSection і HabitListItem переїхали в components/habits/ разом із тестами (apps/web/src/modules/routine/components/habits/ArchivedHabitsSection.test.tsx, HabitListItem.test.tsx); компонента DayProgressRing у main немає, тест не потрібен."
         }
       ]
     },
@@ -3347,12 +3592,17 @@
       "title": "`spike/pro-monthly-cap`: `feat(server): add monthly AI usage bucket` — міграція `077_ai_usage_daily_monthly_bucket`. Номер 077 у `main` вже зайнятий `077_ai_usage_daily_pro_tier_buckets`, тож гілка конфліктує з Hard Rule #4 і в поточному вигляді не застосовна",
       "severity": "unrated",
       "source": "docs/work/specs/audits/2026-08-05-lost-commits-audit.md",
-      "status": "open",
+      "status": "accepted",
       "history": [
         {
           "at": "2026-09-05",
           "event": "imported",
           "note": "Актуальність потребує тріажу; імпорт історичного спостереження, без нового відтворення."
+        },
+        {
+          "at": "2026-11-21",
+          "event": "retriaged",
+          "note": "Застаріло: місячного відра в main немає і не планується, квоти Free перейшли на тижневі відра (apps/server/src/migrations/149_ai_usage_daily_week_buckets.sql:1, спека access-tiers.md), номер 077 зайнятий. Спайк не переносимо; гілку видалить власник."
         }
       ]
     },
@@ -3735,6 +3985,11 @@
           "at": "2026-09-05",
           "event": "imported",
           "note": "Тематичний кластер із джерела; актуальність і членство потребують тріажу на поточному commit. Це не нове відтворення."
+        },
+        {
+          "at": "2026-11-21",
+          "event": "retriaged",
+          "note": "8 із 10 знято з ANALYTICS_EVENTS (BIOMETRIC_* ×3, ERROR_BOUNDARY_RETRIED, MODULE_LANDING_TAB_CLICKED, PERMISSIONS_SETTINGS_OPENED, PERMISSION_STATUS_CHANGED, SYNC_CONFLICT_RESOLVED), гілка backlog/9ab-dead-analytics-constants. Лишились hubchat_tool_invoked і landing_email_captured."
         }
       ],
       "sourceAnchor": "9а. Placeholder-и без call sites, вік 3+ місяці (10) — справжні never-wired"
@@ -3745,12 +4000,17 @@
       "title": "Consumer-removed: подія стріляла, споживача видалили, константа лишилась (5)",
       "severity": "unrated",
       "source": "docs/work/specs/audits/2026-08-05-orphaned-code-audit.md",
-      "status": "open",
+      "status": "fixed-pending-verification",
       "history": [
         {
           "at": "2026-09-05",
           "event": "imported",
           "note": "Тематичний кластер із джерела; актуальність і членство потребують тріажу на поточному commit. Це не нове відтворення."
+        },
+        {
+          "at": "2026-11-21",
+          "event": "fixed",
+          "note": "Усі 5 констант (SYNC_STARTED/SUCCEEDED/FAILED, HINT_CLICKED, HINT_COMPLETED) знято з ANALYTICS_EVENTS, гілка backlog/9ab-dead-analytics-constants; повернення ловить analyticsEvents.test.ts."
         }
       ],
       "sourceAnchor": "9б. Consumer-removed: подія стріляла, споживача видалили, константа лишилась (5)"
@@ -3877,6 +4137,11 @@
           "at": "2026-09-05",
           "event": "imported",
           "note": "Тріаж історичного security-кандидата; 26/50 закритих у header не зіставлено з ID, поточна вразливість не підтверджувалась."
+        },
+        {
+          "at": "2026-11-22",
+          "event": "retriaged",
+          "note": "Тріаж кодом 2026-11-22: досі відкрито. Dockerfile.api: builder node:22.16.0-alpine (:83, :150), runtime gcr.io/distroless/nodejs22-debian13:nonroot за плаваючим тегом без digest (:213)."
         }
       ]
     },
@@ -3892,6 +4157,11 @@
           "at": "2026-09-05",
           "event": "imported",
           "note": "Тріаж історичного security-кандидата; 26/50 закритих у header не зіставлено з ID, поточна вразливість не підтверджувалась."
+        },
+        {
+          "at": "2026-11-22",
+          "event": "decision",
+          "note": "Відкладено 2026-11-22: мобільний контур на паузі (ADR-0094), міграцію Expo SDK не плануємо до рішення власника про зняття паузи. Ризик лишається, статус open."
         }
       ]
     },
@@ -3901,12 +4171,17 @@
       "title": "audit-exceptions: fail-open при невалідному JSON",
       "severity": "unrated",
       "source": "docs/work/specs/audits/security-comprehensive-2026-08-04.md",
-      "status": "open",
+      "status": "fixed-pending-verification",
       "history": [
         {
           "at": "2026-09-05",
           "event": "imported",
           "note": "Тріаж історичного security-кандидата; 26/50 закритих у header не зіставлено з ID, поточна вразливість не підтверджувалась."
+        },
+        {
+          "at": "2026-11-22",
+          "event": "retriaged",
+          "note": "Тріаж кодом 2026-11-22: нерозпарсений вивід pnpm audit валить гейт exit 1 замість «чисто» (scripts/ci/audit-exceptions.mjs:236-245). Живого прогону CI на битому JSON немає."
         }
       ]
     },
@@ -3916,12 +4191,17 @@
       "title": "OSV nightly не зберігає справжній exit code",
       "severity": "unrated",
       "source": "docs/work/specs/audits/security-comprehensive-2026-08-04.md",
-      "status": "open",
+      "status": "fixed-pending-verification",
       "history": [
         {
           "at": "2026-09-05",
           "event": "imported",
           "note": "Тріаж історичного security-кандидата; 26/50 закритих у header не зіставлено з ID, поточна вразливість не підтверджувалась."
+        },
+        {
+          "at": "2026-11-22",
+          "event": "retriaged",
+          "note": "Тріаж кодом 2026-11-22: справжній exit code сканера зберігається і на збої валить джобу (.github/workflows/nightly-audit.yml:119, 173-174), вердикт дає scripts/ci/osv-gate.mjs з кодом виходу з PIPESTATUS (:181-187). Нічного прогону після фіксу в цьому тріажі не дивились."
         }
       ]
     },
@@ -3937,6 +4217,11 @@
           "at": "2026-09-05",
           "event": "imported",
           "note": "Тріаж історичного security-кандидата; 26/50 закритих у header не зіставлено з ID, поточна вразливість не підтверджувалась."
+        },
+        {
+          "at": "2026-11-22",
+          "event": "decision",
+          "note": "Відкладено 2026-11-22: мобільний контур на паузі (ADR-0094), шифрування мобільної SQLite не плануємо до рішення власника про зняття паузи. Ризик лишається, статус open."
         }
       ]
     },

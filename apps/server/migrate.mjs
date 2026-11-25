@@ -82,6 +82,9 @@ if (migrateUrl) {
 //    що став у чергу за довгим читачем, блокує КОЖЕН наступний запит до
 //    тієї таблиці на весь час очікування. Краще швидко впасти й
 //    повторити деплой, ніж покласти прод чергою блокувань.
+//    На advisory-lock раннера він НЕ діє: той береться опитуванням
+//    `pg_try_advisory_lock` з власним дедлайном `MIGRATE_LOCK_WAIT_MS`
+//    (`src/migrateLock.ts`, rel-62).
 process.env.PG_STATEMENT_TIMEOUT_MS = "0";
 process.env.PG_LOCK_TIMEOUT_MS = process.env.PG_LOCK_TIMEOUT_MS ?? "10000";
 delete process.env.DATABASE_URL_POOL;

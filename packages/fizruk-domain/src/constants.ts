@@ -23,7 +23,9 @@ export const PLAN_TEMPLATE_STORAGE_KEY = "fizruk_plan_template_v1";
  * tombstone-ів, що й у `packages/shared/src/lib/storageKeys.ts`; зняття
  * потребує рішення про долю legacy-даних, не рефакторингу
  * (`docs/work/specs/tech-debt/frontend.md` § «Прострочені `@removeBy` 2026-09-01»).
- * @removeBy 2026-12-01
+ * 2026-11-21 перенесено на 2027-03-01 рішенням власника: після закриття
+ * бети (гейт до 2027-02-28).
+ * @removeBy 2027-03-01
  */
 export const MONTHLY_PLAN_STORAGE_KEY = "fizruk_monthly_plan_v1";
 

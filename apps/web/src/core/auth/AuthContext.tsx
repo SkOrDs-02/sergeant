@@ -26,7 +26,7 @@ import { useSwControllerResync } from "./useSwControllerResync";
 import { logger } from "@shared/lib";
 import {
   navigateToSignIn,
-  runBeforeNavigate,
+  runLogoutHooks,
   type LogoutOptions,
 } from "./logoutBeforeNavigate";
 import { buildIdentifyTraits } from "../observability/identifyTraits";
@@ -356,15 +356,16 @@ interface AuthContextValue {
   loginWithGoogle: () => Promise<boolean>;
   loginWithApple: () => Promise<boolean>;
   /**
-   * `true` — акаунт створено; `"exists"` — email вже зареєстровано
-   * (форма перемикається на login синхронно, без читання `authError`,
-   * який на момент повернення ще stale); `false` — інша помилка.
+   * `true` — акаунт створено і сесія вже є; `"check-email"` — сервер сесії
+   * не видав (sec-46: межа `EMAIL_VERIFICATION_REQUIRED_FROM`), і та сама
+   * відповідь приходить і для нової, і для зайнятої адреси, тож далі лише
+   * «перевір пошту»; `false` — помилка (текст в `authError`).
    */
   register: (
     email: string,
     password: string,
     name: string,
-  ) => Promise<boolean | "exists">;
+  ) => Promise<boolean | "check-email">;
   /**
    * Вихід із акаунта з повним локальним teardown (включно зі стиранням
    * локальної SQLite).
@@ -759,17 +760,20 @@ export function AuthProvider({ children }: AuthProviderProps) {
           setAuthError(
             translateAuthError(result.error, messages.auth.registerFailure),
           );
-          const code = (result.error as { code?: string }).code;
-          return code === "USER_ALREADY_EXISTS" ||
-            code === "USER_ALREADY_EXISTS_USE_ANOTHER_EMAIL"
-            ? "exists"
-            : false;
+          return false;
         }
         // WF-60 growth funnel рахує цю подію як перехід
         // visit → signup. Fire-and-forget — `trackEvent` ловить власні
         // помилки і ніколи не кидає. Викликаємо до `invalidateMe`, щоб
         // ивент полетів навіть якщо рефетч `me` зависне.
         trackEvent(ANALYTICS_EVENTS.SIGNUP_COMPLETED, { method: "email" });
+        // sec-46: без токена сесії немає. Повторна реєстрація зайнятої
+        // адреси відповідає так само, тож нічого не розрізняємо і не
+        // кличемо `me`: людина входить кліком у листі. Анонімні дані
+        // лишаються на пристрої і переносяться при першому вході. Подія
+        // вище тут рахує і повтор зайнятої адреси: клієнт за задумом не
+        // відрізняє його від нової реєстрації.
+        if (!result?.data?.token) return "check-email";
         pendingSignOut.clearPendingSignOut();
         setSignedOut(false);
         await invalidateMe();
@@ -876,10 +880,10 @@ export function AuthProvider({ children }: AuthProviderProps) {
       //      up-front makes the UI transition unconditional; everything below is
       //      cleanup that must never gate it.
       queryClient.clear();
-      // Хук викликача (стирання PIN-замка) — ДО повільних кроків teardown і
-      // тим більше до навігації: `location.assign` вивантажує документ і
+      // PIN-креденшел акаунта (sec-41) і хук викликача — ДО повільних кроків
+      // teardown і тим більше до навігації: `location.assign` вивантажує документ і
       // переривало б IndexedDB-транзакцію, запущену після `await logout()`.
-      await runBeforeNavigate(options?.beforeNavigate);
+      await runLogoutHooks(user?.id ?? null, options?.beforeNavigate);
       // Audit 03 / Decision #2 (C): wipe SW caches on logout so user B
       // never resolves a stale cache entry that belonged to user A on
       // shared devices. Fire-and-forget — ignore SW failures since the
@@ -963,7 +967,7 @@ export function AuthProvider({ children }: AuthProviderProps) {
       navigateToSignIn();
       return true;
     },
-    [askUnsyncedLoss, queryClient],
+    [askUnsyncedLoss, queryClient, user?.id],
   );
 
   // Привʼязуємо/відвʼязуємо аналітику до userId. Ref тримає попередній

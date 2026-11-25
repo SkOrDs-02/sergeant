@@ -18,10 +18,9 @@
  * 2. Pattern-match по регекспах у contenті: на матч —
  *    `chat_prompt_injection_attempt_total{tool}.inc({tool})`. Лічильник
  *    fires один раз на tool_result, не за кожен матч (cardinality cap).
- * 3. Закриваючий тег `</tool_output>` усередині content екскейпимо, щоб
- *    шкідливий blob не міг "вистрибнути" зі своєї огорожі. Це ефективна
- *    лінія захисту проти найпростішого prompt-injection-вектора (тільки
- *    закриваючий-тег ламає envelope).
+ * 3. Усі `<` (і їхні двійники) усередині content стають `&lt;`, `>` стає
+ *    `&gt;`, тож шкідливий blob не може ні закрити свою огорожу, ні
+ *    відкрити нову: тегу без `<` не буває (sec-31, див. `neutralizeMarkup`).
  *
  * Розмірний cap (50KB hard upper bound з recommendation-секції) уже
  * закривається існуючими лініями: schema `ToolResult.content.max(8000)`
@@ -54,8 +53,14 @@ import { TOOLS } from "./tools.js";
 export const PROMPT_INJECTION_PATTERNS: ReadonlyArray<RegExp> = [
   /ignore\s+(?:all\s+)?(?:previous|prior|the\s+above)\s+(?:instructions|rules|prompts?)/i,
   /disregard\s+(?:all\s+)?(?:previous|prior|the\s+above)\s+(?:instructions|rules|prompts?)/i,
-  /<\s*\/?\s*system\s*>/i,
-  /<\s*\/?\s*\|?\s*im[_-]start\s*\|?\s*>/i,
+  // AI-DANGER: (sec-63) два квантифікатори пробілів не стоять поруч, кожен
+  // необовʼязковий роздільник несе свій `\s*` усередині групи:
+  // `(?:\/\s*)?`, а не `\/?\s*`. Стара форма `<\s*\/?\s*\|?\s*im_start`
+  // ділила ряд пробілів між трьома `\s*` у будь-якій пропорції, і
+  // `"<" + 39 999 пробілів` (ліміт `context`) вішав event loop на години
+  // (куб); `system` був квадратом. Мова патернів та сама, що й до sec-63.
+  /<\s*(?:\/\s*)?system\s*>/i,
+  /<\s*(?:\/\s*)?(?:\|\s*)?im[_-]start\s*(?:\|\s*)?>/i,
   /you\s+are\s+now\s+(?:a\s+different|in\s+(?:developer|debug|jailbreak)\s+mode)/i,
   /act\s+as\s+(?:if\s+you\s+are\s+)?(?:a\s+different|an?\s+evil)/i,
   /\bnew\s+(?:system\s+)?instructions\s*:/i,
@@ -75,12 +80,17 @@ export const PROMPT_INJECTION_PATTERNS: ReadonlyArray<RegExp> = [
   // Морфологію беремо суфіксом (`попередн…`, `інструкці…`), а не переліком
   // форм. Це навмисно ширше за англійські патерни вище: ціна хибного
   // спрацювання — лише лічильник, детектор нічого не ріже.
-  /(?:ігнор|игнор)[а-яёіїєґ]*\s+(?:(?:усі|всі|все|всех|всей)\s+)?(?:(?:попередн|предыдущ)[а-яёіїєґ]*\s+)?(?:інструкц|инструкц|правил|промпт)[а-яёіїєґ]*/i,
-  /(?:забудь(?:те)?|не\s+зважай|не\s+обращай\s+внимания)\s+(?:на\s+)?(?:(?:усі|всі|все)\s+)?(?:(?:попередн|предыдущ)[а-яёіїєґ]*\s+)?(?:інструкц|инструкц|правил)[а-яёіїєґ]*/i,
-  /(?:тепер|теперь)\s+(?:ти|ты)\s+(?:інш|друг|не\s+асистент|не\s+ассистент)[а-яёіїєґ]*/i,
-  /(?:ти|ты)\s+(?:тепер|теперь)\s+(?:інш|друг|не\s+асистент|не\s+ассистент)[а-яёіїєґ]*/i,
-  /(?:нов)[а-яёіїєґ]*\s+(?:(?:системн)[а-яёіїєґ]*\s+)?(?:інструкц|инструкц)[а-яёіїєґ]*\s*:/i,
-  /режим\s+(?:розробник|разработчик)[а-яёіїєґ]*/i,
+  //
+  // AI-DANGER: (sec-63) закінчення обмежене `{0,16}`, а не `*`. Префікс
+  // `ігнор`/`нов` сам складається з літер класу, тож на `"ігнор".repeat(8000)`
+  // кожна позиція старту з `*` проходила рядок до кінця: квадрат, сотні мс
+  // на один запит. Закінчення довше за 16 літер у цих словах не буває.
+  /(?:ігнор|игнор)[а-яёіїєґ]{0,16}\s+(?:(?:усі|всі|все|всех|всей)\s+)?(?:(?:попередн|предыдущ)[а-яёіїєґ]{0,16}\s+)?(?:інструкц|инструкц|правил|промпт)[а-яёіїєґ]{0,16}/i,
+  /(?:забудь(?:те)?|не\s+зважай|не\s+обращай\s+внимания)\s+(?:на\s+)?(?:(?:усі|всі|все)\s+)?(?:(?:попередн|предыдущ)[а-яёіїєґ]{0,16}\s+)?(?:інструкц|инструкц|правил)[а-яёіїєґ]{0,16}/i,
+  /(?:тепер|теперь)\s+(?:ти|ты)\s+(?:інш|друг|не\s+асистент|не\s+ассистент)[а-яёіїєґ]{0,16}/i,
+  /(?:ти|ты)\s+(?:тепер|теперь)\s+(?:інш|друг|не\s+асистент|не\s+ассистент)[а-яёіїєґ]{0,16}/i,
+  /(?:нов)[а-яёіїєґ]{0,16}\s+(?:(?:системн)[а-яёіїєґ]{0,16}\s+)?(?:інструкц|инструкц)[а-яёіїєґ]{0,16}\s*:/i,
+  /режим\s+(?:розробник|разработчик)[а-яёіїєґ]{0,16}/i,
 ];
 
 const KNOWN_TOOL_NAMES: ReadonlySet<string> = new Set(TOOLS.map((t) => t.name));
@@ -91,14 +101,34 @@ function safeName(name: string | undefined): string {
 }
 
 /**
- * Екранує закриваючий тег `</tool_output>` у контенті, щоб шкідливий
- * blob не міг закрити envelope передчасно. Інші теги лишаємо як є —
- * модель сприймає їх як data всередині `<tool_output>`.
+ * `<` і символи, які модель може прочитати як `<`.
+ *
+ * - NFKC/NFKD-форми з `<` усередині: `≮` (U+226E, канонічно `<` + U+0338),
+ *   малий `﹤` (U+FE64), повноширинний `＜` (U+FF1C). Інших у Unicode немає,
+ *   це перевіряє повний перебір кодових точок у тесті.
+ * - Візуальні двійники з Unicode confusables і кутові дужки: `˂` `ᐸ` `ᚲ` `‹`
+ *   `❬` `❮` `❰` `⟨` `〈` `〈` `⧼` `𝈶`.
+ *
+ * `«` (U+00AB) свідомо НЕ тут: це звичайні українські лапки в описах операцій.
  */
-function escapeToolOutputClose(s: string): string {
-  // Ентіті, як і в `escapeUserDataClose`: zero-width-варіант (B8) візуально
-  // лишався закривальним тегом, ентіті однозначні.
-  return s.replace(/<\/tool_output>/gi, "&lt;/tool_output&gt;");
+const LT_LIKE_RE =
+  /[<\u226E\uFE64\uFF1C\u02C2\u1438\u16B2\u2039\u276C\u276E\u2770\u27E8\u2329\u3008\u29FC\u{1D236}]/gu;
+
+/**
+ * Нейтралізує розмітку в недовірених даних перед тим, як покласти їх в
+ * огорожу `<tool_output>` чи `<user_data>`: кожен `<` (і двійник) стає
+ * `&lt;`, кожен `>` стає `&gt;`.
+ *
+ * AI-DANGER: не повертай сюди точковий регексп на `</user_data>` і схожі.
+ * Огорожу закривали варіанти тегу, які модель упізнає очима:
+ * пробіли, атрибути, zero-width і variation selectors, tag-символи U+E00xx,
+ * U+3164 і U+2800 між `<` і `/`, комбіновані знаки, жирні математичні
+ * літери, `<//user_data>`, `</user.data>`, `</user‗data>`, а ще відкривальний
+ * `<user_data>`, що вкладав фальшиву огорожу. Перелічити варіанти неможливо,
+ * а без `<` тег не утвориться взагалі. `>` екрануємо для парності ентіті.
+ */
+function neutralizeMarkup(s: string): string {
+  return s.replace(LT_LIKE_RE, "&lt;").replace(/>/g, "&gt;");
 }
 
 export interface NormalizedToolResult {
@@ -112,10 +142,6 @@ export interface NormalizedToolResult {
  * обмеженою реєстром інструментів плюс цим одним значенням.
  */
 const USER_CONTEXT_LABEL = "user_context";
-
-function escapeUserDataClose(s: string): string {
-  return s.replace(/<\/user_data>/gi, "&lt;/user_data&gt;");
-}
 
 /**
  * Те саме, що `wrapAndScanToolResults`, але для `context` із тіла `/api/chat`.
@@ -148,7 +174,7 @@ export function wrapAndScanUserContext(
       });
     inc({ tool: USER_CONTEXT_LABEL });
   }
-  return `<user_data>${escapeUserDataClose(context)}</user_data>`;
+  return `<user_data>${neutralizeMarkup(context)}</user_data>`;
 }
 
 export interface WrapToolResultsOptions {
@@ -196,7 +222,7 @@ export function wrapAndScanToolResults(
       inc({ tool });
     }
     opts.onScanned?.({ tool, content: r.content, matched });
-    const escaped = escapeToolOutputClose(r.content);
+    const escaped = neutralizeMarkup(r.content);
     const wrapped = `<tool_output tool="${tool}">${escaped}</tool_output>`;
     return { tool_use_id: r.tool_use_id, content: wrapped };
   });

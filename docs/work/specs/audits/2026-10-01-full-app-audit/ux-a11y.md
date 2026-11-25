@@ -1,8 +1,8 @@
 # Аудит 2026-10-01 · UX і доступність
 
-> **Status:** Active. 86 кластерів (121 знахідка) за першопричиною. Загальний план, метод і обмеження — у [README](./README.md).
-> **Last validated:** 2026-10-02
-> **Next review:** 2026-11-02
+> **Status:** Active. 87 кластерів (122 знахідки) за першопричиною. Загальний план, метод і обмеження — у [README](./README.md).
+> **Last touched:** 2026-11-23 by @claude (ux-87: чат при 200% тексту виносив «Надіслати» і «Закрити чат» за екран, виправлено; разом закрито ux-52); 2026-11-23 by @claude (rv-ui-csv закрито, § ux-33); 2026-11-22 by @claude (рішення власника по решті питань беклогу); 2026-11-21 by @claude (рішення власника по кластерах, раунди 5–10); раніше перевірено 2026-10-02.
+> **Next review:** 2027-01-21
 > **Spec-lint:** skip. Реєстр знахідок аудиту, не специфікація реалізації.
 
 UX і доступність — найбільша за кількістю знахідок тема: 122 кандидати після злиття дублікатів дали 86 кластерів, з них 17 medium, 65 low і 4 info; critical і high немає. Найширше впливають системні механізми. Гейт «Переношу дані в профіль…» блокує застосунок на кожному старті. Кастомні оверлеї не повʼязані з історією, тож Back на Android і в PWA закриває застосунок і губить введене. Фокус губиться після діалогів і невдалого входу, а DropdownMenu не працює з клавіатури. Окремо є зламані продуктові флоу з тихими або хибними повідомленнями: незворотне приховування ручних операцій, збереження проміжної суми цілі, нагадування звичок, вимкнені за замовчуванням, підключення Mono без підтвердженого email, імпорт понад 1000 рядків, аватар. У low-знахідках повторюються сирі англійські помилки й обіцянки неіснуючих фіч у планах і банерах, відсутні імена та стани в ручно зібраних віджетах, а також вузькі (≤360 px) і низькі вʼюпорти, яких мобільний гейт не міряє. Базовий рівень доступності при цьому високий, і більшість фіксів — локальні зміни розміру S. Жодну з medium-знахідок після аудиту (c7c09607) на HEAD не виправлено; після аудиту змінювались лише класи контрасту.
@@ -13,7 +13,7 @@ UX і доступність — найбільша за кількістю зн
 | ----------- | --------- |
 | critical    | 0         |
 | high        | 0         |
-| medium      | 17        |
+| medium      | 18        |
 | low         | 65        |
 | info        | 4         |
 
@@ -812,6 +812,7 @@ vb/05-list-typing.mjs, новий користувач. На старті «Ту
 ### `ux-13` [medium] У прийомі, доданому з бази продуктів, на іншому пристрої чи після очищення даних не можна змінити вагу, і він підписаний «Вручну»
 
 - **Стан:** частково виправлено в [#1474](https://github.com/SkOrDs-02/sergeant/pull/1474) (змерджено 2026-10-18) (старі рядки `productDb` із ручними КБЖВ, збережені до фіксу, на пристрої без локального продукту отримують масштабоване поле ваги: потрібне рішення власника, див. журнал рішень nutrition.md 2026-10-08)
+- **Рішення власника 2026-11-22:** Показувати такі записи лише для читання (без зміни ваги).
 - **Перевірка:** підтверджено · **Зусилля:** M · **Область:** web: Їжа / журнал
 - **Де:** apps/web/src/modules/nutrition/components/meal-sheet/useEditedFoodRehydration.ts; nutrition foodDb (makeFoodProduct, ensureSeedFoods); nutrition_meals.food_id
 - **Першопричина:** Seed-продукти отримують випадковий локальний id food\_&lt;uuid&gt; окремо на кожному пристрої. Прийом зберігає цей id без per100, а useEditedFoodRehydration шукає продукт лише в локальній IndexedDB. На іншому пристрої продукт не знаходиться, поля ваги немає, і запис показується як ручний.
@@ -1033,6 +1034,18 @@ node <scratch>/agents/browser-crosscut-a11y-keyboard/scanner.mjs ; скріни 
 v10.mjs: `1366x768 titleY:-84, xY:-96, panelTop:-117, panelH:885, wheelScrollable:false`, `844x390 xY:-180`, `390x844 xY:529 (ок)`; Tab ×4 → `Закрити сканер@y-96(dlg)`; status `{t:"Не вдалося відкрити камеру. Перевір дозволи.", live:false}`. Скрін v10-1366x768.png: видно лише чорне відео й червоний текст помилки, заголовка й кнопки закриття немає.
 ```
 
+<a id="ux-87"></a>
+
+### `ux-87` [medium] При тексті 200% у чаті «Надіслати» і «Закрити чат» виїжджають за екран
+
+- **Стан:** виправлено в гілці `backlog/bv-chat-large-text` (знахідка перевірки, `bv-chat-large-text`): поле композера стискається (`min-w-0`), кнопки-іконки тримають 44px у px, шапка переносить кнопки другим рядком; гейт — `tests/a11y/low-vision.spec.ts` (чат і шит на 320/390 px при 200%).
+- **Перевірка:** підтверджено (браузер, prod-білд з `VITE_E2E_SEED`) · **Зусилля:** S · **Область:** web: HubChat (шит і /chat), композер і шапка
+- **Де:** apps/web/src/core/components/ChatInput.tsx; apps/web/src/core/hub/chat/HubChatHeader.tsx; apps/web/src/core/hub/chat/ChatUsageCounter.tsx
+- **Першопричина:** Поле вводу мало `flex-1` без `min-w-0`, тож його нативна мінімальна ширина (~20 символів) росла з текстом, а кнопки `w-11 h-11` у rem при 200% ставали 88px. Рядок композера переповнювався («Надіслати» на x=449 при вʼюпорті 320-390), фокус у полі прокручував увесь чат убік, і шапка з «Закрити чат» теж їхала. Назва в шапці не стискається навмисно, а переносу шапка не мала.
+- **Примітка:** Підписи нижньої навігації і назва модуля при 200% на 320 px так само обрізаються до «Ог…», «Фі…», але це інші компоненти (п'ять колонок навбару), окремий фікс.
+
+Знахідок у кластері: 1.
+
 ## low
 
 <a id="ux-18"></a>
@@ -1087,6 +1100,7 @@ r2/second-tab.mjs output: 8/8 routes busy=true. r2/takeover.mjs: after «Пра�
 ### `ux-19` [low] Банер згоди на аналітику на /sign-in перекриває «Увійти через Google», «Зареєструватися» і «Пропустити», а на 375x667 навіть «Увійти»
 
 - **Стан:** відкрито
+- **Рішення власника 2026-11-22:** Не показувати на auth-маршрутах і /pricing, показати на хабі після входу.
 - **Перевірка:** підтверджено · **Зусилля:** S · **Швидкий виграш** · **Область:** web: згода на аналітику / вхід
 - **Де:** apps/web/src/core/observability/AnalyticsConsentGate.tsx:51-52
 - **Першопричина:** AnalyticsConsentGate робить виняток лише для onboarding і /legal, тож фіксований банер (z-40, низ екрана) показується на /sign-in і не резервує під собою місця. Прокрутка не допомагає.
@@ -1132,7 +1146,7 @@ v2-signin.mjs. At 390x844: bannerTop=514, Google/Зареєструватися/
 
 ### `ux-20` [low] Трей тостів перекриває головні дії й поле вводу: CTA «Додати прийом» в аркуші їжі, композер /chat, кнопки банера згоди
 
-- **Стан:** відкрито
+- **Стан:** частково виправлено в гілці `backlog/ux-20` (2026-11-22): AddMealSheet кладе «Додати прийом»/«Зберегти зміни» і «Скасувати» у слот `footer` Sheet на кроці заповнення, тож аркуш публікує `--sgt-sheet-footer-inset` і трей тостів стає над CTA (тест у `AddMealSheet.journeys.test.tsx`). Лишилось: інсет композера на /chat і в HubChat (`ChatInput.tsx`, нова інсет-змінна в Toast), CTA у тілі AddExerciseSheet, ExerciseDetailSheet, ItemEditSheet, MealTypeSheet, PantryManagerSheet, тост «offline ready» поверх активного вводу
 - **Перевірка:** підтверджено · **Зусилля:** S · **Швидкий виграш** · **Область:** web: тости
 - **Де:** apps/web/src/shared/components/ui/Toast.tsx:295,420-466; apps/web/src/shared/components/ui/Sheet.tsx:140; apps/web/src/modules/nutrition/components/AddMealSheet.tsx:614-620,795-812; apps/web/src/core/app/useSWUpdate.ts:193; apps/web/src/core/components/ChatInput.tsx
 - **Першопричина:** Трей тостів позиціюється лише через інсет-змінні bottom-nav, workout-banner і sheet-footer. AddMealSheet і ще кілька аркушів (AddExerciseSheet, ExerciseDetailSheet, ItemEditSheet, MealTypeSheet, PantryManagerSheet) тримають CTA в тілі аркуша, а не в слоті footer, а /chat і HubChat свого інсету не публікують, тож трей лягає поверх. Рядки тостів мають pointer-events:auto, а ToastRow має tabIndex=0 і ставиться на паузу при фокусі.
@@ -1627,6 +1641,7 @@ Finder screenshot chunk-hubpage-abort-direct.png (viewed): only the line 'Ця �
 ### `ux-26` [low] AI у модулі Їжа (фото страви, денний план) у нового користувача впирається в 403 через відсутню згоду на дані про здоровʼя, а «Спробувати ще раз» повторює ту саму помилку
 
 - **Стан:** відкрито
+- **Рішення власника 2026-11-22:** Інлайн-кнопка «Дати згоду» з поясненням, далі повтор аналізу на місці.
 - **Перевірка:** підтверджено · **Зусилля:** S · **Швидкий виграш** · **Область:** web: Їжа / AI і згода на дані здоровʼя
 - **Де:** apps/web/src/modules/nutrition/components/PhotoAnalyzeCard.tsx; apps/web/src/modules/nutrition/components/AddMealSheet.tsx (PhotoStep); apps/web/src/modules/nutrition/components/DailyPlanCard.tsx; apps/web/src/shared/lib/api/friendlyApiError.ts; apps/server/src/lib/healthConsent.ts
 - **Першопричина:** Новий користувач має healthDataConsent:false, а analyze-photo і day-plan вимагають згоди (HEALTH_CONSENT_REQUIRED). Клієнт не має для цього коду інлайн-дії: основна кнопка стає «Спробувати ще раз», а згоду можна ввімкнути лише тумблером у Налаштування → Додатково → Дані та приватність.
@@ -1763,7 +1778,8 @@ v2-pantry-memory.mjs: хаб під квотою 1e6 показує 'Запис�
 
 ### `ux-29` [low] Premium-CTA ведуть у глухий кут: checkout падає (провайдерів немає), а гостеві відповідь 401 показується як «Оплата тимчасово недоступна»
 
-- **Стан:** відкрито
+- **Стан:** виправлено в гілці `backlog/ux-29` (2026-11-21): поки `/api/billing/providers` порожній, Premium-CTA на /pricing і в `PaywallModal` стає «Повідомити про запуск» і одним тапом записує email сесії в лист очікування (`usePremiumLaunch.ts`), гість іде до форми листа замість checkout-у з 401; у catch checkout-у 401/403 ведуть на вхід, а `PROVIDER_UNAVAILABLE`/`BILLING_UNAVAILABLE` більше не йдуть у Sentry. Вхід із поверненням на /pricing для гостя після запуску оплати лишається за механізмом returnTo
+- **Рішення власника 2026-11-21:** поки провайдерів оплати нуль, Premium-CTA стає «Повідомити про запуск» (запис у лист очікування) замість checkout.
 - **Перевірка:** підтверджено · **Зусилля:** S · **Швидкий виграш** · **Область:** web: /pricing і пейволи
 - **Де:** apps/web/src/core/PricingPage.tsx:175-216; PaywallModal (handleCta → /pricing?source=paywall); apps/web/src/core/settings/PlanSection.tsx
 - **Першопричина:** PricingPage.handlePremiumCta безумовно викликає createCheckout, а catch не розрізняє коди: 401 для гостя, 400 PROVIDER_UNAVAILABLE і решта дають однаковий checkoutUnavailable, прокрутку до waitlist і captureException. Кнопка лишається активною, хоча сторінка вже знає, що enabledProviders=[].
@@ -1839,7 +1855,8 @@ w8-pricing.mjs (userA): providers=[] -> кнопка `disabled=false` -> 400 `Pr
 
 ### `ux-30` [low] Тексти про план суперечать реєстру фіч: Налаштування кажуть, що CloudSync, Mono і CSV є лише в Premium, а пейволи й /pricing продають вимкнений «Голосовий ввід»
 
-- **Стан:** відкрито
+- **Стан:** виправлено в гілці `backlog/ux-30` (2026-11-21): список «що додає Premium» у Налаштуваннях (PlanSection) тепер будується з реєстру `FEATURES` тим самим `premiumAdditions` (`core/pricing/pricingTiers.ts`), що й Premium-колонка /pricing, тож CloudSync, авто-Mono і CSV там більше не продаються; «денний ліміт» в AIDigestSection уже прибрано раніше. Лишилось: «Голосовий ввід» за вимкненим флагом (рішення власника) і «Legacy Stripe» у футері /pricing
+- **Рішення власника 2026-11-21:** правий реєстр entitlements: тексти в Налаштуваннях генерувати з нього (автосинк Mono також безкоштовний, див. SECURITY-20260804-1-5).
 - **Перевірка:** підтверджено · **Зусилля:** S · **Швидкий виграш** · **Область:** web: тексти про план
 - **Де:** apps/web/src/core/settings/PlanSection.tsx:249-253; apps/web/src/core/settings/AIDigestSection.tsx:67; apps/web/src/shared/i18n/uk.pricing.ts:100; pricingTiers.ts:42; apps/web/src/shared/i18n/uk.ts:815; apps/web/src/shared/components/ui/voice/resolveVoiceProvider.ts:56-57; packages/shared/src/billing/entitlements.ts:59-61
 - **Першопричина:** Описи планів у PlanSection, PaywallModal (uk.ts featureSync) і pricingTiers складено вручну, а не з реєстру entitlements і feature-флагів. Насправді Free має export.csv, bank.monoSync і sync.cloud = true, а ai.voice у список додається безумовно, хоча VITE_ENABLE_VOICE_INPUT вимкнено. Окремо: AIDigestSection пише «денний ліміт» замість тижневого, а футер /pricing — «Legacy Stripe-підписки».
@@ -2035,7 +2052,8 @@ Finder screenshot syncfail-500-sheet.png (viewed): 'Мережа Онлайн / 
 
 ### `ux-33` [low] Збій увімкнення push мовчазний: тумблер повертається у «вимкнено» без жодного повідомлення
 
-- **Стан:** відкрито
+- **Стан:** виправлено в гілці backlog/ux-33 (2026-11-22): `PushNotificationToggle` ловить відхилений `subscribe()` і показує `toast.error` з «Повторити»; текст розрізняє 503 або відсутній VAPID («Сповіщення тимчасово недоступні»), мережу, інший збій сервера і збій браузера (`pushSubscribeError.ts`)
+- **Після ревʼю (rv-ui-csv):** закрито в гілці backlog/rv-ui-csv (2026-11-23): тексти тосту переїхали в каталог (`coreMessages.pushSubscribe`); заодно «Повернутися до входу» на мобільній реєстрації отримав ціль 44 px, посилання входу у вебі втратили ручну пару `dark:text-brand-400` (колір тримає `text-brand-strong`), а лапка після пробілу в CSV (`a, "b,c"`) знову відкриває поле
 - **Перевірка:** підтверджено · **Зусилля:** S · **Швидкий виграш** · **Область:** web: push-сповіщення
 - **Де:** apps/web/src/shared/hooks/usePushNotifications.ts:188-194; apps/web/src/core/components/PushNotificationToggle.tsx:61-68
 - **Першопричина:** onError у subscribeMutation лише пише logger.warn, PushNotificationToggle не ловить відхилений mutateAsync, а глобального MutationCache.onError у вебі немає.
@@ -2081,6 +2099,7 @@ s46-notif-granted.out (permission=granted): 'Увімкнути push-спові�
 ### `ux-34` [low] Автопереходи в модулях: перший вхід у Їжу перекидає на «Меню» на кожному візиті, доки не закрито підказку, і перебиває legacy-хеші; автопереходи додають зайві кроки «Назад»
 
 - **Стан:** відкрито
+- **Рішення власника 2026-11-22:** Одразу після першого автопереходу.
 - **Перевірка:** підтверджено · **Зусилля:** S · **Швидкий виграш** · **Область:** web: Їжа і Рутина / автонавігація
 - **Де:** apps/web/src/modules/nutrition/hooks/useNutritionFirstRun.ts:90-121; apps/web/src/modules/nutrition/hooks/useNutritionRoute.ts:79-114; apps/web/src/modules/nutrition/NutritionApp.tsx:686-690; apps/web/src/core/onboarding/useModuleFirstRun.ts:17-21; apps/web/src/modules/routine/useRoutineAppState.ts:214; apps/web/src/modules/routine/hooks/useRoutineRoute.ts:63
 - **Першопричина:** useNutritionFirstRun позначає first-run побаченим лише при закритті підказки, хоча useModuleFirstRun документує markSeen і при редагуванні поля. Перехід на «Меню» робиться через navigate(replace:false) і спрацьовує після hash-шиму, тож перебиває /nutrition#log. Відновлення останньої вкладки Рутини теж робить push.
@@ -2442,6 +2461,7 @@ v9-tpl.mjs (vfy-smf-fiz3, 390×844 touch): toggles = [{name:null, pressed:null, 
 ### `ux-40` [low] Порожнє тренування (0 вправ) завершується й зберігається без підтвердження і рахується в історії, у лічильнику дня й на хабі
 
 - **Стан:** відкрито
+- **Рішення власника 2026-11-22:** Пропонувати «Видалити порожнє тренування» замість збереження.
 - **Перевірка:** підтверджено · **Зусилля:** S · **Швидкий виграш** · **Область:** web: Фізрук / тренування
 - **Де:** apps/web/src/modules/fizruk/components/workouts/WorkoutJournalSection.tsx:195-299; packages/fizruk-domain workoutUi.ts:17-28; useFizrukQuickStart
 - **Першопричина:** «Швидкий старт» навмисно одразу створює сесію, а onFinishClick викликає endWorkout, не перевіряючи, чи є хоч один підхід. summarizeWorkoutForFinish повертає підсумок для будь-якої сесії зі startedAt.
@@ -2529,7 +2549,7 @@ Scripts: <scratch>/agents/verify-browser-surfaces-fizruk-flows/v1.mjs (per-page 
 
 ### `ux-42` [low] Відʼємні суми у світлій темі мають контраст 3.76:1 (text-danger на білому)
 
-- **Стан:** відкрито
+- **Стан:** виправлено 2026-11-21 (`signedDeltaClass` для відʼємних значень віддає `text-danger-strong dark:text-danger`, тож `Delta`/`Money` у аналітиці, продавцях і дельтах категорій Фініка мають AA; ту саму пару отримали три підписи помилок у Фініку з голим `text-danger`; стан із відʼємним балансом у регресійному гейті контрасту не додано)
 - **Перевірка:** підтверджено · **Зусилля:** S · **Швидкий виграш** · **Область:** web: контраст / Фінік
 - **Де:** apps/web/src/shared/lib/ui/amountTone.ts:34; apps/web/src/modules/finyk/pages/Analytics.tsx:616; Money.tsx:201; finyk analytics/MerchantList.tsx; CategoryDeltaTable.tsx; finyk overview/pulseStyle.ts:37,83
 - **Першопричина:** signedDeltaClass для value&lt;0 повертає голий "text-danger", а для додатних значень пару text-success-strong dark:text-success. Токен danger-strong (8.31:1) існує, але тут не використовується.
@@ -3096,7 +3116,7 @@ v9.mjs: `label violations: [{impact:critical,n:2,...value="1"..., value="25"}]`;
 
 ### `ux-49` [low] Відновлення пароля: Enter у панелі «Забули пароль?» нічого не відправляє, а після невалідного чи протермінованого токена немає жодної дії
 
-- **Стан:** відкрито
+- **Стан:** виправлено в гілці `backlog/ux-49` (панель «Забули пароль?» стала окремою `<form>` з кнопкою type=submit, тож Enter відправляє лист; email перевіряється на формат до запиту; після помилки сервера на сторінці нового пароля з'являється кнопка «На сторінку входу»)
 - **Перевірка:** підтверджено · **Зусилля:** S · **Швидкий виграш** · **Область:** web: відновлення пароля
 - **Де:** apps/web/src/core/auth/ForgotPasswordPanel.tsx; apps/web/src/core/auth/useForgotPassword.ts; apps/web/src/core/auth/ResetPasswordPage.tsx; apps/web/src/core/auth/AuthPage.tsx:151-153
 - **Першопричина:** ForgotPasswordPanel рендериться поза &lt;form&gt;, кнопка має type=button, email не валідується. ResetPasswordPage для INVALID_TOKEN показує лише текст, а кнопка «На сторінку входу» є тільки в гілці без токена.
@@ -3327,7 +3347,7 @@ node <scratch>/agents/client-static-web-route-guards/sweep.mjs anon (sweep-anon.
 
 ### `ux-52` [low] Композер чату на ширині 320-340 px виштовхує кнопку «Надіслати» за край екрана (видно ~19 з 44 px)
 
-- **Стан:** відкрито
+- **Стан:** виправлено в гілці `backlog/bv-chat-large-text` разом з [`ux-87`](#ux-87): `min-w-0` на полі вводу; гейт — чат на 320 px у `tests/a11y/low-vision.spec.ts`.
 - **Перевірка:** підтверджено · **Зусилля:** S · **Швидкий виграш** · **Область:** web: чат / вузькі екрани
 - **Де:** apps/web/src/core/components/ChatInput.tsx:122-124,141-191
 - **Першопричина:** Інпут у ChatInput має flex-1 без min-w-0, тож нативна мінімальна ширина інпута (~227 px) не стискається.
@@ -4684,7 +4704,7 @@ v13.mjs: `200 application/manifest+json "orientation":"portrait"`, `<link rel="m
 
 ### `ux-79` [low] Фото продуктів з Open Food Facts у проді не показуються взагалі: COEP require-corp блокує &lt;img&gt; без crossOrigin
 
-- **Стан:** відкрито
+- **Стан:** виправлено в гілці `backlog/ux-79` (2026-11-22): `<img>` у `ProductThumb` вантажить фото OFF з `crossOrigin="anonymous"`, тож COEP require-corp пропускає його через CORS (OFF віддає ACAO \*); інших `<img>` з чужих хостів у вебі немає (фото вправ Фізрука same-origin); рядок «OFF photos» додано в COEP-матрицю `vercel.md`, регресійний тест у `ProductThumb.test.tsx`
 - **Перевірка:** підтверджено · **Зусилля:** S · **Швидкий виграш** · **Область:** web: Їжа / фото продуктів
 - **Де:** apps/web/src/modules/nutrition/components/meal-sheet/ProductThumb.tsx:53-63; apps/web/vercel.json:50-61; apps/web/vite.config.js:122-126
 - **Першопричина:** Прод (vercel.json) і preview віддають Cross-Origin-Embedder-Policy: require-corp, а ProductThumb рендерить &lt;img&gt; з images.openfoodfacts.org без атрибута crossOrigin. OFF не віддає CORP, тож браузер блокує завантаження, а onError тихо підставляє іконку.
@@ -4866,7 +4886,7 @@ apps/web/src/shared/i18n/uk.crossModuleLink.ts:99-100: коментар `«14 д
 
 ### `ux-83` [info] Невідомі /api/\* маршрути повертають HTML-сторінку Express «Cannot GET …» замість JSON-помилки
 
-- **Стан:** відкрито
+- **Стан:** виправлено 2026-11-21: після `registerRoutes` і до SPA-fallback стоїть `app.use("/api", …)` з `NotFoundError`, тож невідомий `/api/*` і `/api/v1/*` віддає JSON-404 `{error, message, code: "NOT_FOUND", requestId}` через `errorHandler`; тест у `routes/apiV1.test.ts`
 - **Перевірка:** підтверджено · **Зусилля:** S · **Швидкий виграш** · **Область:** server: маршрути /api
 - **Де:** apps/server/src/app.ts:169-190
 - **Першопричина:** У app.ts після registerRoutes немає JSON-обробника 404 для префікса /api, тож спрацьовує стандартний HTML-обробник Express.
@@ -4959,6 +4979,7 @@ v11.mjs (390 і 1280): `Налаштування|vis="Опції" w=30 op=1 cur=
 ### `ux-85` [info] Підписка не має поля суми: без операції-збігу вона показується як «сума невідома», а календар Рутини обіцяє «суму … вручну у Фініку»
 
 - **Стан:** відкрито
+- **Рішення власника 2026-11-22:** Додати необов'язкове поле «Сума» у форму підписки.
 - **Перевірка:** підтверджено · **Зусилля:** M · **Область:** web: Фінік / підписки
 - **Де:** apps/web/src/modules/finyk/pages/AssetsForm.tsx:45-180; packages/routine-domain/src/calendarEvents.ts:271-274; packages/finyk-domain/src/domain/subscriptionUtils.ts:49-60
 - **Першопричина:** SubscriptionForm має лише назву, ключове слово й день списання. expectedAmount записується тільки автодетекцією, а підпис події в календарі обіцяє ручну суму.

@@ -398,3 +398,85 @@ describe("buildRagContext — failure (graceful no-op)", () => {
     pendingResolve(); // cleanup
   });
 });
+
+describe("buildRagContext — стеля плану (sec-32)", () => {
+  it("Free: стеля 3 урізає top-K з 4 до 3", async () => {
+    recallMock.mockResolvedValue([]);
+    const resolveMaxItems = vi.fn().mockResolvedValue(3);
+    await buildRagContext({
+      userId: "u1",
+      baseContext: SHORT_CONTEXT,
+      messages: [userMsg(LONG_QUERY)],
+      resolveMaxItems,
+    });
+    expect(resolveMaxItems).toHaveBeenCalledWith("u1");
+    expect(recallMock).toHaveBeenCalledWith(
+      expect.objectContaining({ topK: 3, caller: "chat-rag" }),
+    );
+  });
+
+  it("Premium: стеля null лишає повний top-K з env", async () => {
+    recallMock.mockResolvedValue([]);
+    await buildRagContext({
+      userId: "u1",
+      baseContext: SHORT_CONTEXT,
+      messages: [userMsg(LONG_QUERY)],
+      resolveMaxItems: async () => null,
+    });
+    expect(recallMock).toHaveBeenCalledWith(
+      expect.objectContaining({ topK: 4 }),
+    );
+  });
+
+  it("стеля більша за env не розширює top-K", async () => {
+    recallMock.mockResolvedValue([]);
+    await buildRagContext({
+      userId: "u1",
+      baseContext: SHORT_CONTEXT,
+      messages: [userMsg(LONG_QUERY)],
+      resolveMaxItems: async () => 10,
+    });
+    expect(recallMock).toHaveBeenCalledWith(
+      expect.objectContaining({ topK: 4 }),
+    );
+  });
+
+  it("стеля 0 → no-op без recall", async () => {
+    const out = await buildRagContext({
+      userId: "u1",
+      baseContext: SHORT_CONTEXT,
+      messages: [userMsg(LONG_QUERY)],
+      resolveMaxItems: async () => 0,
+    });
+    expect(out).toBe(SHORT_CONTEXT);
+    expect(recallMock).not.toHaveBeenCalled();
+  });
+
+  it("памʼять вимкнена → план не запитується", async () => {
+    envMock.AI_MEMORY_ENABLED = false;
+    const resolveMaxItems = vi.fn();
+    await buildRagContext({
+      userId: "u1",
+      baseContext: SHORT_CONTEXT,
+      messages: [userMsg(LONG_QUERY)],
+      resolveMaxItems,
+    });
+    expect(resolveMaxItems).not.toHaveBeenCalled();
+  });
+
+  it("помилка запиту плану → no-op без recall", async () => {
+    const out = await buildRagContext({
+      userId: "u1",
+      baseContext: SHORT_CONTEXT,
+      messages: [userMsg(LONG_QUERY)],
+      resolveMaxItems: async () => {
+        throw new Error("db down");
+      },
+    });
+    expect(out).toBe(SHORT_CONTEXT);
+    expect(recallMock).not.toHaveBeenCalled();
+    expect(loggerMock.warn).toHaveBeenCalledWith(
+      expect.objectContaining({ msg: "ai_memory_rag_error" }),
+    );
+  });
+});

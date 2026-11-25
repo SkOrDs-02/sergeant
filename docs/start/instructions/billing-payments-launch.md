@@ -1,6 +1,6 @@
 # Runbook: запуск приймання платежів (Plata / LiqPay)
 
-> **Last touched:** 2026-10-23 by @claude (§ 4: свіжість звірки, rel-19); 2026-10-10 by @claude (§ 4а: скасування й повторний checkout). **Next review:** 2026-12-24.
+> **Last touched:** 2026-11-21 by @claude (§ 4: `reversed` і проміжні статуси LiqPay, logic-17); 2026-10-23 by @claude (§ 4: свіжість звірки, rel-19); 2026-10-10 by @claude (§ 4а: скасування й повторний checkout). **Next review:** 2026-12-24.
 > **Status:** Active
 > **Runtime-specific:** yes
 
@@ -47,6 +47,7 @@
 - Перша реальна оплата: у `subscriptions` зʼявився рядок `provider='plata'`, `status='active'`, `current_period_end` дорівнює `nextChargeDate`.
 - `billing_webhook_total{provider="plata",status="verified"}` росте — вебхуки доходять і підпис сходиться. Нуль тут при успішних оплатах означає, що працює лише полінг (див. `PUBLIC_WEB_BASE_URL` вище).
 - `billing_recurring_charge_total{provider="plata",result="past_due"}` — сигнал невдалих списань.
+- `billing_payment_reversed_total{provider="liqpay"}` і warn-лог `liqpay_payment_reversed` — повернення одного платежу LiqPay (`status:reversed`). Підписку він не скасовує (ADR-0003, Amended 2026-11-21): кожен приріст розбирай вручну за `billing_webhook_events`. Проміжні й невідомі статуси LiqPay підписку не чіпають (невідомі лишають warn `liqpay_callback_unknown_status`), `past_due` ставлять лише `failure`/`error` регулярного списання.
 - Звірка жива: `GET /health/workers` → `workers.plataSync.lastRunAt` не `null` за ~2 хв після старту (стартовий тік) і далі оновлюється щогодини. Алерт на застарілий тік — `PlataSyncSlowTickStale` в [`alert_rules.yml`](../../operations/observability/prometheus/alert_rules.yml); до вмикання залий його в Mimir (`mimirtool rules sync`), інакше він не діє (rel-19).
 
 ## 4а. Скасування й повторний checkout (аудит data-20, data-21)
@@ -57,7 +58,7 @@
 - **Другий checkout відхиляється.** `409 ALREADY_SUBSCRIBED` (є діючий платний ентайтлмент) і `409 CHECKOUT_PENDING` (непідтверджений Plata-checkout молодший за годину). Сторінка оплати monobank живе годину, тож людина, яка закрила її без оплати, може почекати до години, перш ніж отримає нову.
 - **Заміна підписки.** Якщо оплату підтверджено при вже живій іншій рекуренті (інший провайдер чи інший `subscriptionId`), активація нової комітиться завжди, а скасування старої у її провайдера іде ПІСЛЯ коміту і активацію не відкочує (стара могла вже бути мертвою: період і grace минули, `order_not_found` у LiqPay, 404 у Stripe, monobank 400/404). Намір скасувати лежить у `billing_pending_cancellation`; невдалі спроби добиває `SupersedeRetryPoller` раз на годину (пауза між спробами 30 хв, до 24 спроб). Ознаки: `billing_supersede_cancel_failed` (error-лог) і `billing_supersede_cancel_total{result="failed"}` - борг у черзі; `billing_supersede_cancel_abandoned` / `result="abandoned"` - ліміт спроб вичерпано, стара підписка може й далі списувати: розбирати вручну (`SELECT * FROM billing_pending_cancellation WHERE resolved_at IS NULL`) і скасувати в кабінеті провайдера.
 - **Непідтверджений Plata-checkout.** Повільний тік (щогодини) крім активних підписок підбирає й оплачені, але непідтверджені checkout-и, старші за годину й молодші за 3 доби: так нова підписка не лишається сиротою, якщо monobank був недоступний у першу годину. Покинуті checkout-и в цьому вікні коштують один GET `subscription/status` на тік.
-- **Події замінених підписок.** `customer.subscription.updated/deleted` Stripe, `unsubscribe`/`reversed`/`failure`/запізніле `success` LiqPay по СТАРОМУ `subscriptionId`/`order_id` не гасять і не підмінюють рядок нової підписки.
+- **Події замінених підписок.** `customer.subscription.updated/deleted` Stripe, `unsubscribe`/`failure`/запізніле `success` LiqPay по СТАРОМУ `subscriptionId`/`order_id` не гасять і не підмінюють рядок нової підписки.
 - Міграція `154` змінила `plata_subscription` на 1:N (PK `subscription_id`) і додала `superseded_at` і чергу `billing_pending_cancellation`; вона адитивна й застосовується з образом.
 
 ## 5. Відкладене, що варто закрити після першого місяця

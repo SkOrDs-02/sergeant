@@ -47,7 +47,11 @@ export function HubChatHeader({
   onClose,
 }: HubChatHeaderProps) {
   return (
-    <div className="flex items-center justify-between gap-2 px-3 pb-3 shrink-0 border-b border-line">
+    // `flex-wrap`: назва не стискається (див. нижче), тож коли назва і
+    // кнопки разом ширші за шит (200% кореневого тексту на 320-390px), правий
+    // кластер переноситься другим рядком, а не виштовхує «Закрити чат» за
+    // край (bv-chat-large-text). На звичайному тексті все вміщається в рядок.
+    <div className="flex flex-wrap items-center justify-between gap-x-2 gap-y-1 px-3 pb-3 shrink-0 border-b border-line">
       <Popover
         placement="bottom-start"
         open={detailsOpen}
@@ -139,13 +143,15 @@ export function HubChatHeader({
       </Popover>
       {/* `min-w-0` (а не `shrink-0`): переповнення поглинає пігулка
           лічильника, а кнопки лишаються цілими — вони інтерактивні й мають
-          тримати 44px floor. */}
-      <div className="flex items-center gap-1 min-w-0">
+          тримати 44px floor. `grow justify-end`: місце, що лишилось після
+          назви, дістається пігулці, а кнопки тримаються правого краю, і
+          в одному рядку, і перенесеними. */}
+      <div className="flex grow items-center justify-end gap-1 min-w-0">
         <ChatUsageCounter />
         <button
           type="button"
           onClick={onClearChat}
-          className="flex min-h-11 min-w-11 shrink-0 items-center px-2 text-style-label-lg font-semibold text-text focus-ring"
+          className="flex min-h-[44px] min-w-[44px] shrink-0 items-center px-2 text-style-label-lg font-semibold text-text focus-ring"
           aria-label="Нова бесіда"
         >
           Нова
@@ -153,7 +159,7 @@ export function HubChatHeader({
         <button
           type="button"
           onClick={onClose}
-          className="flex h-11 w-11 shrink-0 items-center justify-center rounded-lg text-text focus-ring"
+          className="flex size-[44px] shrink-0 items-center justify-center rounded-lg text-text focus-ring"
           aria-label="Закрити чат"
         >
           <Icon name="close" size="md" />

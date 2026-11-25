@@ -61,6 +61,8 @@ import { Sheet } from "@shared/components/ui/Sheet";
 import { TimeField } from "@shared/components/ui/TimeField";
 import { cn } from "@shared/lib/ui/cn";
 import { messages } from "@shared/i18n/uk";
+import { parseDecimalInput } from "@shared/lib/format/numberInput";
+import { WEIGHT_KG_RANGE } from "../../../../core/profile/biometrics";
 import { computeKcalBurned } from "@sergeant/fizruk-domain";
 import {
   ACTIVITIES,
@@ -170,6 +172,23 @@ const INTENSITY_ITEMS = (
   Object.keys(ACTIVITY_INTENSITIES_UK) as ActivityIntensity[]
 ).map((value) => ({ value, label: ACTIVITY_INTENSITIES_UK[value] }));
 
+/**
+ * Вага з поля форми: `null` - порожньо (запис іде без оцінки витрат),
+ * `"invalid"` - сміття або поза `WEIGHT_KG_RANGE`, інакше кілограми.
+ */
+function parseTypedWeight(raw: string): number | null | "invalid" {
+  if (raw.trim() === "") return null;
+  const parsed = parseDecimalInput(raw);
+  if (
+    !parsed.ok ||
+    parsed.value < WEIGHT_KG_RANGE.min ||
+    parsed.value > WEIGHT_KG_RANGE.max
+  ) {
+    return "invalid";
+  }
+  return parsed.value;
+}
+
 export function LogPastWorkoutSheet({
   open,
   onClose,
@@ -213,6 +232,7 @@ export function LogPastWorkoutSheet({
   const [zone, setZone] = useState<ActivityMuscleZone>("full");
   const [intensity, setIntensity] = useState<ActivityIntensity>("normal");
   const [weightInput, setWeightInput] = useState("");
+  const [weightTouched, setWeightTouched] = useState(false);
   const [newName, setNewName] = useState("");
   const [newCategory, setNewCategory] = useState<ActivityCategory>("strength");
   const [newEffort, setNewEffort] = useState("moderate");
@@ -259,11 +279,18 @@ export function LogPastWorkoutSheet({
   // Введена тут вага працює одразу: показувати «приблизно 0 ккал» до
   // натискання «Записати» означало б робити вигляд, що поле нічого не
   // змінює, поки воно вже заповнене.
-  const typedWeight = Number(weightInput.replace(",", "."));
+  //
+  // data-62: поле - `type="text"` + спільний парсер, бо `type="number"` у
+  // браузері з крапкою в локалі викидав кому, і «75,5» ставало 755 кг. Межі
+  // ті самі, що в біометрії: неможлива вага не йде ні в ккал, ні в журнал
+  // тіла, а «Записати» чекає виправлення (порожнє поле - дозволене).
+  const typedWeight = parseTypedWeight(weightInput);
+  const weightFieldShown = weightKg == null && selectedActivity !== null;
+  const weightInvalid = weightFieldShown && typedWeight === "invalid";
   const effectiveWeightKg =
     weightKg != null && weightKg > 0
       ? weightKg
-      : Number.isFinite(typedWeight) && typedWeight > 0
+      : typeof typedWeight === "number"
         ? typedWeight
         : null;
 
@@ -281,6 +308,7 @@ export function LogPastWorkoutSheet({
     times.inFuture ||
     times.implausiblyLong ||
     (selectedActivity !== null && !(durationValue > 0)) ||
+    weightInvalid ||
     // Поки відкрита форма створення, «Записати» означало б «записати БЕЗ
     // заняття» - тобто мовчки не те, чого людина щойно почала робити.
     creatingActivity;
@@ -617,15 +645,19 @@ export function LogPastWorkoutSheet({
                     </label>
                     <Input
                       id={weightId}
-                      type="number"
+                      type="text"
                       inputMode="decimal"
-                      min={20}
-                      max={400}
-                      step={0.1}
+                      autoComplete="off"
                       value={weightInput}
                       onChange={(e) => setWeightInput(e.target.value)}
-                      placeholder="75.5"
-                      helperText={t.weightHint}
+                      onBlur={() => setWeightTouched(true)}
+                      placeholder="75,5"
+                      error={weightInvalid && weightTouched}
+                      helperText={
+                        weightInvalid && weightTouched
+                          ? t.weightRangeError
+                          : t.weightHint
+                      }
                       className="mt-1 min-w-0 max-w-full"
                     />
                   </div>

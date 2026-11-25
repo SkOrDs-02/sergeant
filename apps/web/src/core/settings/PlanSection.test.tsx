@@ -17,6 +17,9 @@ import { ApiError } from "@sergeant/api-client";
 import type { BillingStatusResponse } from "@sergeant/shared";
 import { billingKeys } from "@shared/lib/api/queryKeys";
 import { accessFixture } from "../../test/helpers/billingAccess";
+import { FEATURES, type FeatureSpec } from "@sergeant/shared";
+import { messages } from "@shared/i18n/uk";
+import { PRICING_ROWS } from "../pricing/pricingTiers";
 
 const { statusMock, createPortalMock, cancelMock } = vi.hoisted(() => ({
   statusMock:
@@ -160,6 +163,45 @@ describe("PlanSection (audit P1-6 — Settings plan + manage subscription)", () 
     expect(screen.queryByTestId("plan-canceled-info")).not.toBeInTheDocument();
   });
 
+  it("ux-30: Free бачить, що додає Premium, за реєстром entitlements, без CloudSync, авто-Mono і CSV", async () => {
+    statusMock.mockResolvedValue(FREE_RESPONSE);
+    renderSection();
+    await openSection();
+
+    const list = await screen.findByTestId("plan-premium-features");
+    const items = within(list)
+      .getAllByRole("listitem")
+      .map((li) => li.textContent ?? "");
+    const t = messages.pricing;
+    const expected = PRICING_ROWS.filter(
+      ([id]) => FEATURES[id].free !== true,
+    ).map(([id, key]) => {
+      const spec: FeatureSpec = FEATURES[id];
+      if (typeof spec.free === "object")
+        return `${t.features[key]} (${t.limits.unlimited})`;
+      // Урізана на Free фіч (sec-32): Premium продає повну форму.
+      if (spec.freeItems !== undefined)
+        return `${t.features[key]} (${t.limits.fullMemory})`;
+      return t.features[key];
+    });
+    expect(items).toEqual(expected);
+    const section = list.parentElement!;
+    expect(section).not.toHaveTextContent(/CloudSync|Mono|CSV/);
+  });
+
+  it("ux-30: Premium не бачить списку «що додає Premium»", async () => {
+    statusMock.mockResolvedValue(PRO_ACTIVE_RESPONSE);
+    renderSection();
+    await openSection();
+
+    await waitFor(() =>
+      expect(screen.getByTestId("plan-badge")).toHaveTextContent("Premium"),
+    );
+    expect(
+      screen.queryByTestId("plan-premium-features"),
+    ).not.toBeInTheDocument();
+  });
+
   it("shows the Premium badge + Manage button + next-charge date when subscription is active", async () => {
     statusMock.mockResolvedValue(PRO_ACTIVE_RESPONSE);
     renderSection();
@@ -184,6 +226,26 @@ describe("PlanSection (audit P1-6 — Settings plan + manage subscription)", () 
       "https://billing.stripe.com/session/bps_test_42",
     );
   });
+
+  it.each([
+    ["javascript:alert(document.domain)"],
+    ["https://evil.example/phish"],
+    ["http://billing.stripe.com/session/bps_test_42"],
+  ])(
+    "не переходить на portal.url поза allow-list провайдерів (%s) — sec-29",
+    async (url) => {
+      statusMock.mockResolvedValue(PRO_ACTIVE_RESPONSE);
+      createPortalMock.mockResolvedValue({ ok: true, url });
+      renderSection();
+      await openSection();
+
+      fireEvent.click(await screen.findByTestId("plan-manage-button"));
+      expect(await screen.findByTestId("plan-portal-error")).toHaveTextContent(
+        /тимчасово недоступний/,
+      );
+      expect(window.location.assign).not.toHaveBeenCalled();
+    },
+  );
 
   it("shows the Premium badge + canceled warning with end date + Manage button when subscription is canceled but still in grace period", async () => {
     statusMock.mockResolvedValue(PRO_CANCELED_RESPONSE);

@@ -272,6 +272,24 @@ describe("normalizeCartDetail", () => {
     });
   });
 
+  it.each([
+    ["javascript:alert(document.domain)"],
+    ["https://evil.example/phish"],
+    ["http://silpo.ua/checkout/abc"],
+    ["https://evilsilpo.ua/checkout/abc"],
+    ["not a url"],
+  ])(
+    "sec-29: checkoutWebLink поза https-хостами Сільпо стає cartUrl null (%s)",
+    (checkoutWebLink) => {
+      const result = normalizeCartDetail({
+        cart: { shipments: [] },
+        checkoutWebLink,
+      });
+      expect(result).not.toBeNull();
+      expect(result?.cart.cartUrl).toBeNull();
+    },
+  );
+
   it("falls back to calculation.total when totalAfterDiscounts is absent", () => {
     const result = normalizeCartDetail({
       cart: { shipments: [], calculation: { total: 500 } },

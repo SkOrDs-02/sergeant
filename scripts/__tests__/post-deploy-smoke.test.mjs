@@ -13,6 +13,7 @@ import {
   normaliseTests,
   filterTests,
   renderMarkdown,
+  applyAuthMode,
 } from "../post-deploy-smoke.mjs";
 
 // ---------- matchShape ----------
@@ -321,4 +322,57 @@ test("renderMarkdown — header includes counts and base URL", () => {
   assert.match(md, /1 pass \/ 0 warn \/ 1 fail/);
   assert.match(md, /❌ `fail` \| `broken`/);
   assert.match(md, /Failures \(1\)/);
+});
+
+// ---------- applyAuthMode (sec-40) ----------
+
+test("applyAuthMode — auth=metrics з токеном шле Bearer і лишає форму", () => {
+  const [t] = normaliseTests({
+    tests: [
+      {
+        name: "diag:healthz",
+        path: "/healthz",
+        auth: "metrics",
+        shape: { status: "string" },
+      },
+    ],
+  });
+  const out = applyAuthMode(t, { metricsToken: "tok" });
+  assert.equal(out.headers.authorization, "Bearer tok");
+  assert.equal(out.expectedStatus, 200);
+  assert.deepEqual(out.shape, { status: "string" });
+});
+
+test("applyAuthMode — auth=metrics без токена очікує 401 unauthorized", () => {
+  const [t] = normaliseTests({
+    tests: [
+      {
+        name: "diag:healthz",
+        path: "/healthz",
+        auth: "metrics",
+        shape: { status: "string" },
+      },
+    ],
+  });
+  const out = applyAuthMode(t, {});
+  assert.equal(out.expectedStatus, 401);
+  assert.equal(out.shape, undefined);
+  assert.equal(out.expectedBodyContains, "unauthorized");
+  assert.equal(out.headers.authorization, undefined);
+});
+
+test("applyAuthMode — інші режими не чіпає", () => {
+  const [t] = normaliseTests({ tests: [{ name: "x", path: "/livez" }] });
+  assert.equal(applyAuthMode(t, { metricsToken: "tok" }), t);
+});
+
+test("smoke-tests.json — /healthz і /health/workers ідуть з auth=metrics", async () => {
+  const { readFile } = await import("node:fs/promises");
+  const cfg = JSON.parse(
+    await readFile(new URL("../smoke-tests.json", import.meta.url), "utf-8"),
+  );
+  for (const p of ["/healthz", "/health/workers"]) {
+    const entry = cfg.tests.find((x) => x.path === p);
+    assert.equal(entry?.auth, "metrics", p);
+  }
 });

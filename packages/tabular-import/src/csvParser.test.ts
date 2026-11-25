@@ -80,6 +80,24 @@ describe("tokenizeCsv", () => {
     ]);
   });
 
+  it("лапка посеред незакавиченого поля - звичайний символ", () => {
+    const rows = tokenizeCsv('a,5" screen,b\nc,d,e', ",");
+    expect(rows).toEqual([
+      ["a", '5" screen', "b"],
+      ["c", "d", "e"],
+    ]);
+  });
+
+  it("лапка після пробілу відкриває поле: кома в лапках не зсуває колонки", () => {
+    expect(tokenizeCsv('a, "b,c",d\n', ",")).toEqual([["a", "b,c", "d"]]);
+    expect(tokenizeCsv('a;  "b;c";d\n', ";")).toEqual([["a", "b;c", "d"]]);
+  });
+
+  it("лапка після пробілу посеред тексту лишається символом", () => {
+    const rows = tokenizeCsv('a,5 " screen,b\n', ",");
+    expect(rows).toEqual([["a", '5 " screen', "b"]]);
+  });
+
   it("зламаний рядок не кидає", () => {
     const rows = tokenizeCsv("a,b,c\n1,2\n", ",");
     expect(rows[1]).toEqual(["1", "2"]);

@@ -135,8 +135,8 @@ const NOT_USER_SCOPED: Record<string, string> = {
   "GET /health/liveness": "health-probe платформи",
   "GET /health/readiness": "health-probe платформи",
   "GET /health/startup": "health-probe платформи",
-  "GET /health/workers": "health-probe платформи",
-  "GET /healthz": "health-probe платформи",
+  "GET /health/workers": "ops-знімок воркерів, захищений METRICS_TOKEN",
+  "GET /healthz": "ops-знімок залежностей, захищений METRICS_TOKEN",
   "GET /livez": "health-probe платформи",
   "GET /readyz": "health-probe платформи",
   "GET /startupz": "health-probe платформи",
@@ -166,6 +166,8 @@ const NOT_USER_SCOPED: Record<string, string> = {
   "POST /api/feedback": "публічна форма зворотного зв'язку, лише запис",
   "POST /api/v1/feedback": "публічна форма зворотного зв'язку, лише запис",
   "GET /api/email/unsubscribe": "одноразове посилання з підписаним токеном",
+  "POST /api/email/unsubscribe":
+    "RFC 8058 one-click за тим самим підписаним токеном",
 };
 
 /** `/api/internal/*`: machine-to-machine, `requireInternalIp` + INTERNAL_API_KEY. */

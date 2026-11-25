@@ -40,6 +40,7 @@ interface ButtonUsage {
   file: string;
   line: number;
   variant: string;
+  tone: string;
   className: string;
 }
 
@@ -85,7 +86,8 @@ function collectButtonUsages(): ButtonUsage[] {
       usages.push({
         file: relative(WEB_SRC, file),
         line: src.slice(0, start).split("\n").length,
-        variant: /variant="([^"]*)"/.exec(tag)?.[1] ?? "(default:primary)",
+        variant: /variant="([^"]*)"/.exec(tag)?.[1] ?? "(default:solid)",
+        tone: /tone="([^"]*)"/.exec(tag)?.[1] ?? "(default:neutral)",
         className,
       });
     }
@@ -102,34 +104,16 @@ describe("Button — деструктивний вигляд", () => {
     expect(USAGES.length).toBeGreaterThan(100);
   });
 
-  /**
-   * Дефект 1. `secondary` на ховері ФАРБУЄТЬСЯ БРЕНДОМ.
-   *
-   * Варіант `secondary` несе `hover:border-brand-200`. `cn()` (twMerge)
-   * прибирає з нього базовий `text-text`, коли зверху кладуть
-   * `text-danger-strong`, але ховер-класи не чіпає — вони в іншій групі.
-   * Наслідок поміряний, не припущений:
-   *
-   *   cn(secondary, "text-danger-strong") →
-   *     "… hover:border-brand-200 … text-danger-strong"
-   *
-   * Тобто «Видалити» червоне, поки на нього не наводять, і стає брендовим
-   * рівно тієї миті, коли людина в нього цілиться. Для цього випадку існує
-   * `variant="danger"` — мʼякий червоний чип, у якого й ховер червоний.
-   */
-  it("не домальовує червоний текст поверх secondary — його ховер брендовий", () => {
-    const offenders = USAGES.filter(
-      (u) => u.variant === "secondary" && BASE_DANGER_TEXT.test(u.className),
-    );
-    expect(
-      offenders.map((o) => `${o.file}:${o.line} — ${o.className}`),
-    ).toEqual([]);
-  });
+  // Дефект 1 (`secondary` + `text-danger-*` фарбувався брендом на ховері
+  // через `hover:border-brand-200`) окремого тесту більше не має: імʼя
+  // `secondary` знято з `ButtonVariant` 2026-11-22, а канонічний `outline`
+  // брендового ховера не несе. Червоний текст на будь-якому варіанті
+  // однаково тримає дефект 2 нижче.
 
   /**
    * Дефект 2. Червоний текст без червоного ховера зникає під курсором.
    *
-   * `ghost` несе `hover:text-text`, `primary` — `text-white` тощо. Базовий
+   * `ghost` несе `hover:text-text`, `solid` — `text-bg` тощо. Базовий
    * `text-danger-strong` із className переживає merge, а ховер варіанта —
    * ні, тож:
    *
@@ -145,8 +129,7 @@ describe("Button — деструктивний вигляд", () => {
       (u) =>
         BASE_DANGER_TEXT.test(u.className) &&
         !HOVER_DANGER_TEXT.test(u.className) &&
-        u.variant !== "danger" &&
-        u.variant !== "destructive",
+        u.tone !== "danger",
     );
     expect(
       offenders.map((o) => `${o.file}:${o.line} — ${o.className}`),

@@ -8,7 +8,9 @@ import {
 // раніше, ніж у нього на екрані. Те саме з 2026-11-18 для вікон
 // `habit_stats` / `habit_trend`: відмітки лежать під ключами пристрою.
 import { anchoredCompletionBounds } from "../../../modules/routine/lib/dayAnchor";
+import type { Habit, RoutineState } from "../../../modules/routine/lib/types";
 import { persistRoutineState } from "./routinePersistence";
+import { habitFieldsUndo } from "./routineUndo";
 import {
   applyCreateHabit,
   applyPauseHabitBetween,
@@ -63,6 +65,16 @@ function removeCreatedHabit(createdId: string): void {
   const completions = { ...cur.completions };
   delete completions[createdId];
   saveRoutineState({ ...cur, habits, completions });
+}
+
+// Поля, які пише кожен тул: undo повертає рівно їх (`routineUndo.ts`).
+const EDIT_HABIT_FIELDS = ["name", "emoji", "recurrence", "weekdays"] as const;
+const SCHEDULE_FIELDS = ["recurrence", "weekdays"] as const;
+const PAUSE_FIELDS = ["pauseIntervals", "paused"] as const;
+
+function pauseUndo(id: string, habit: Habit, next: RoutineState): () => void {
+  const after = next.habits.find((h) => h.id === id) ?? habit;
+  return habitFieldsUndo(id, habit, after, PAUSE_FIELDS);
 }
 
 export function handleRoutineAction(
@@ -441,6 +453,7 @@ export function handleRoutineAction(
       return {
         result: `Звичку "${updated.name || id}" оновлено: ${changes.join(", ")}.${recNote}`,
         confirm,
+        undo: habitFieldsUndo(id, habit, updated, EDIT_HABIT_FIELDS),
       };
     }
     case "set_habit_schedule": {
@@ -471,16 +484,18 @@ export function handleRoutineAction(
       if (hIdx < 0) return `Звичку не знайдено (id:${id}).`;
       const habit = habits[hIdx];
       if (!habit) return `Звичку не знайдено (id:${id}).`;
-      habits[hIdx] = {
+      const scheduled = {
         ...habit,
-        recurrence: "weekly",
+        recurrence: "weekly" as const,
         weekdays: normalized,
       };
+      habits[hIdx] = scheduled;
       const confirm = persistRoutineState({ ...state, habits });
       const labels = normalized.map((n) => WEEKDAY_LABEL_UK[n]).join(", ");
       return {
         result: `Розклад звички "${habit.name || id}": ${labels}`,
         confirm,
+        undo: habitFieldsUndo(id, habit, scheduled, SCHEDULE_FIELDS),
       };
     }
     case "pause_habit": {
@@ -504,6 +519,7 @@ export function handleRoutineAction(
         return {
           result: `Звичку "${habitName}" повернуто з паузи від сьогодні.`,
           confirm: persistRoutineState(next),
+          undo: pauseUndo(id, habit, next),
         };
       }
 
@@ -523,6 +539,7 @@ export function handleRoutineAction(
             ? `Звичку "${habitName}" поставлено на паузу з ${fromKey}. Ці дні не рахуються, серія їх не помітить.`
             : `Звичку "${habitName}" поставлено на паузу ${fromKey} – ${toKey}. Ці дні не рахуються, серія їх не помітить.`,
         confirm,
+        undo: pauseUndo(id, habit, next),
       };
     }
     case "reorder_habits": {

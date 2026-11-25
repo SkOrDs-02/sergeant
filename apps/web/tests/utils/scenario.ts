@@ -5,6 +5,7 @@
  */
 import { expect, test, type Page, type Request } from "@playwright/test";
 import type { MonoBackfillProgress } from "@sergeant/api-client";
+import type { BillingProvidersResponse } from "@sergeant/shared";
 
 import type { ScenarioBridge } from "../../src/e2e/installScenarioBridge";
 import {
@@ -34,6 +35,7 @@ export type WorldEndpoint =
   | "/silpo/sync-state"
   | "/billing/status"
   | "/billing/checkout"
+  | "/billing/providers"
   | "/status"
   | "/push/vapid-public";
 
@@ -45,6 +47,12 @@ export interface InstallWorldOptions {
   readonly only?: readonly WorldEndpoint[];
   /** URL, який повертає `POST /billing/checkout`. */
   readonly checkoutUrl?: string;
+  /**
+   * Що віддає `GET /billing/providers`. Дефолт `["stripe"]`: оплата
+   * доступна, тож Premium-CTA веде в checkout. Порожній список дає
+   * передзапусковий стан «Повідомити про запуск» (ux-29).
+   */
+  readonly providers?: BillingProvidersResponse["providers"];
 }
 
 interface Reply {
@@ -113,6 +121,13 @@ function reply(
       return {
         status: 200,
         body: billingCheckout(options.checkoutUrl ?? DEFAULT_CHECKOUT_URL),
+      };
+    case "/billing/providers":
+      return {
+        status: 200,
+        body: {
+          providers: options.providers ?? ["stripe"],
+        } satisfies BillingProvidersResponse,
       };
     case "/status":
       return { status: 200, body: systemStatus() };

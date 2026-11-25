@@ -377,6 +377,37 @@ describe("webhookHandler", () => {
     expect(res2.statusCode).toBe(200);
   });
 
+  it("data-66: баланс оновлюється лише коли новішої події рахунку ще немає", async () => {
+    // Ретрай старої події (Monobank повторює через 60 і 600 с) не сміє
+    // перезаписати баланс з новішої транзакції. Умова живе в самому UPDATE:
+    // EXISTS новішої `mono_transaction` цього рахунку лишає баланс як є.
+    dbQuery.mockResolvedValueOnce({ rows: [{ user_id: "user_1" }] });
+    const client = makeClient();
+    queueHappyPathClient(client, { inserted: false });
+    pool.connect.mockResolvedValue(client);
+
+    const res = makeRes();
+    await webhookHandler(makeReq(VALID_SECRET), res);
+    expect(res.statusCode).toBe(200);
+
+    const balanceCall = client.query.mock.calls[4]!;
+    const sql = String(balanceCall[0]);
+    expect(sql).toMatch(/UPDATE mono_account/);
+    expect(sql).toMatch(/EXISTS\s*\(\s*SELECT 1 FROM mono_transaction/);
+    expect(sql).toMatch(/t\.time > \$4/);
+    expect(sql).toMatch(/t\.mono_tx_id <> \$5/);
+    expect(sql).toMatch(/THEN mono_account\.balance/);
+    // last_seen_at бампається незалежно від того, чи взято баланс.
+    expect(sql).toMatch(/last_seen_at = NOW\(\)/);
+    expect(balanceCall[1]).toEqual([
+      1500000,
+      "user_1",
+      "acc_uah",
+      new Date(1714000000 * 1000).toISOString(),
+      "tx_001",
+    ]);
+  });
+
   it("returns 400 when payload is missing statementItem.id", async () => {
     dbQuery.mockResolvedValueOnce({
       rows: [{ user_id: "user_1" }],

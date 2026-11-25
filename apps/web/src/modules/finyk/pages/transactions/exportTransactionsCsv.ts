@@ -80,11 +80,14 @@ interface CsvRow extends Record<string, unknown> {
   category: string;
 }
 
-const COLUMNS: ExportColumn<CsvRow>[] = [
+/** Колонки файла. Експортуються для тесту знешкодження формул (sec-30). */
+export const COLUMNS: ExportColumn<CsvRow>[] = [
   { key: "date", header: "Дата" },
   { key: "time", header: "Час" },
   { key: "description", header: "Опис" },
-  { key: "amount", header: "Сума, ₴" },
+  // `numeric`: сума — наше число, а не чужий текст; без префікса `'`,
+  // щоб витрата лишилась відʼємним числом (sec-30).
+  { key: "amount", header: "Сума, ₴", numeric: true },
   { key: "kind", header: "Тип" },
   { key: "category", header: "Категорія" },
 ];

@@ -25,6 +25,7 @@ import {
   traceMiddleware,
   withRequestContext,
 } from "./http/index.js";
+import { NotFoundError } from "./obs/errors.js";
 import { httpLogger } from "./obs/logger.js";
 import { registerRoutes } from "./routes/index.js";
 import { createFrontendMiddleware } from "./routes/frontend.js";
@@ -175,6 +176,16 @@ export function createApp({
   app.use("/api", requireCsrfHeader());
 
   registerRoutes(app, { pool });
+
+  // ux-83: невідомий `/api/*` (і `/api/v1/*` після rewrite) — це JSON-404 з
+  // тим самим конвертом `{error, message, code, requestId}`, що й решта API,
+  // а не HTML-сторінка Express «Cannot GET …». Стоїть ПІСЛЯ всіх роутерів і
+  // ДО SPA-fallback, тож `/api/*` ніколи не віддасть `index.html`. Probe-и
+  // (`/health`, `/livez`, `/readyz`, `/metrics`) живуть поза `/api` і цього
+  // не бачать.
+  app.use(API_PREFIX, (_req: Request, _res: Response, next: NextFunction) => {
+    next(new NotFoundError("Not found"));
+  });
 
   if (servesFrontend && distPath) {
     const fe = createFrontendMiddleware({ distPath }) as

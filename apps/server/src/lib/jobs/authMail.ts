@@ -47,12 +47,15 @@ export interface AuthMailJobData {
    * confirmation-листа означає, що юзер не може змінити пошту взагалі.
    * `email_change_notice` – сповіщення на СТАРУ адресу після зміни email
    * НЕпідтвердженим акаунтом (без кроку підтвердження, `sec-06`).
+   * `account_exists` – лист власнику адреси, з якою спробували
+   * зареєструватись повторно (`sec-46`, нейтральна відповідь реєстрації).
    */
   kind:
     | "password_reset"
     | "email_verification"
     | "email_change_confirmation"
-    | "email_change_notice";
+    | "email_change_notice"
+    | "account_exists";
   to: string;
   subject: string;
   text: string;

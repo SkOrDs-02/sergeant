@@ -120,9 +120,13 @@ export function ChatQuickActions({
     );
   };
 
+  // Стеля висоти з власним скролом: при 200% кореневого тексту чипи
+  // переносяться в ~600px, композер переростав вʼюпорт, і кліпер сторінки
+  // прокручував чат так, що шапка з «Закрити чат» ішла за верхній край
+  // (bv-chat-large-text). На звичайному тексті чипи вміщаються під стелею.
   return (
     <div
-      className="px-4 pt-2 pb-1 shrink-0"
+      className="px-4 pt-2 pb-1 shrink-0 max-h-[30dvh] overflow-y-auto overscroll-contain"
       role="group"
       aria-label={messages.hub.chatQuickActions}
     >

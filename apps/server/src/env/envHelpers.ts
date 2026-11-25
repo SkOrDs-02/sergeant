@@ -52,9 +52,36 @@ export const boolFromEnv = (defaultValue: boolean) =>
     });
 
 /**
- * Fail-loud варіант `boolFromEnv` для прапорців, що керують витратами
- * (`ANTHROPIC_BUDGET_*`). Тихий дефолт на `yes`/`on` під час інциденту витрат
- * лишає «справжню стелю» вимкненою без жодного сигналу (аудит ai-pipeline B15).
+ * Fail-loud варіант `floatFromEnv` для стель бюджету (`ANTHROPIC_BUDGET_*_USD`,
+ * `VOYAGE_DAILY_BUDGET_USD_*`, `*_MONTHLY_BUDGET_USD`; аудит ai-pipeline B16).
+ * `floatFromEnv` на `"5$"` дає `5`, на `"yes"` — дефолт, на `"-1"` — від'ємну
+ * стелю, і все це мовчки. Тут порожнє чи відсутнє значення дає дефолт, решта,
+ * що не є десятковим числом ≥ 0, — ZodIssue, тобто throw на старті. `0`
+ * лишається валідним: це задокументований kill-switch алярму.
+ */
+export const strictFloatFromEnv = (name: string, defaultValue: number) =>
+  z
+    .string()
+    .optional()
+    .transform((v, ctx) => {
+      if (v === undefined || v.trim() === "") return defaultValue;
+      const trimmed = v.trim();
+      const n = Number(trimmed);
+      if (/^(\d+(\.\d*)?|\.\d+)$/.test(trimmed) && Number.isFinite(n)) {
+        return n;
+      }
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        message: `${name} must be a decimal number >= 0 (got ${JSON.stringify(v)}) — refusing to guess on a cost-control limit`,
+      });
+      return z.NEVER;
+    });
+
+/**
+ * Fail-loud варіант `boolFromEnv` для прапорців, що керують витратами чи
+ * захистом (`ANTHROPIC_BUDGET_*`, `AI_TIERED_PRO_ENABLED`,
+ * `WEBHOOK_HMAC_REQUIRED`). Тихий дефолт на `yes`/`on` під час інциденту
+ * лишає «справжню стелю» вимкненою без жодного сигналу (аудит ai-pipeline B15/B16).
  * Приймає лише true/false/1/0 (регістр і крайні пробіли не важливі); порожнє
  * або відсутнє значення дає дефолт; решта — ZodIssue, тобто throw на старті.
  * Зразок — `STRIPE_ENABLED` в `env.ts`.
@@ -70,9 +97,85 @@ export const strictBoolFromEnv = (name: string, defaultValue: boolean) =>
       if (lower === "false" || lower === "0") return false;
       ctx.addIssue({
         code: z.ZodIssueCode.custom,
-        message: `${name} must be one of true/false/1/0 (got ${JSON.stringify(v)}) — refusing to guess on a cost-control flag`,
+        message: `${name} must be one of true/false/1/0 (got ${JSON.stringify(v)}) — refusing to guess on a cost/security flag`,
       });
       return z.NEVER;
+    });
+
+/**
+ * Fail-loud ціле ≥ 1 для лімітів, що стримують витрати (`AI_MEMORY_PROFILE_
+ * EMBED_DAILY_CAP`, rel-34). `intFromEnv` на `"5O"` чи `"-1"` тихо дав би
+ * дефолт або від'ємну стелю, тобто ліміт, якого ніхто не задавав. Тут
+ * порожнє чи відсутнє значення дає дефолт, решта, що не є цілим ≥ 1, — це
+ * ZodIssue, тобто throw на старті.
+ */
+export const strictPositiveIntFromEnv = (name: string, defaultValue: number) =>
+  z
+    .string()
+    .optional()
+    .transform((v, ctx) => {
+      if (v === undefined || v.trim() === "") return defaultValue;
+      const trimmed = v.trim();
+      const n = Number(trimmed);
+      if (/^\d+$/.test(trimmed) && Number.isSafeInteger(n) && n >= 1) return n;
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        message: `${name} must be an integer >= 1 (got ${JSON.stringify(v)}) — refusing to guess on a cost-control limit`,
+      });
+      return z.NEVER;
+    });
+
+/**
+ * Розбір JSON-мапи `{"key": nonNegInt}` (напр. `AI_QUOTA_TOOL_LIMITS`).
+ * Чиста функція без логів: її ділять Zod-схема env (fail на старті) і
+ * ран-тайм, який читає `process.env` напряму.
+ */
+export const parseNonNegIntRecord = (
+  raw: string,
+):
+  | { ok: true; value: Record<string, number> }
+  | { ok: false; error: string } => {
+  let parsed: unknown;
+  try {
+    parsed = JSON.parse(raw);
+  } catch (e: unknown) {
+    return { ok: false, error: `invalid JSON (${(e as Error).message})` };
+  }
+  if (!parsed || typeof parsed !== "object" || Array.isArray(parsed)) {
+    return { ok: false, error: "expected a JSON object" };
+  }
+  const value: Record<string, number> = {};
+  for (const [key, v] of Object.entries(parsed)) {
+    if (typeof v !== "number" || !Number.isInteger(v) || v < 0) {
+      return {
+        ok: false,
+        error: `value for ${JSON.stringify(key)} must be a non-negative integer (got ${JSON.stringify(v)})`,
+      };
+    }
+    value[key] = v;
+  }
+  return { ok: true, value };
+};
+
+/**
+ * Fail-loud JSON-мапа лімітів (аудит ai-pipeline B15): битий JSON або
+ * нечислове значення раніше тихо знімали всі tool-ліміти. Тепер — ZodIssue,
+ * тобто throw на старті. Порожнє чи відсутнє значення валідне. Значення
+ * повертається як є — ран-тайм читає `process.env` напряму.
+ */
+export const jsonRecordOfNonNegIntFromEnv = (name: string) =>
+  z
+    .string()
+    .optional()
+    .superRefine((v, ctx) => {
+      if (v === undefined || v.trim() === "") return;
+      const r = parseNonNegIntRecord(v);
+      if (!r.ok) {
+        ctx.addIssue({
+          code: z.ZodIssueCode.custom,
+          message: `${name}: ${r.error} — refusing to run with quota limits silently disabled`,
+        });
+      }
     });
 
 /**
@@ -172,3 +275,55 @@ export const optionalStrictBoolFromEnv = () =>
     .enum(["true", "false", "1", "0", ""])
     .default("")
     .transform((v) => (v === "" ? undefined : v === "true" || v === "1"));
+
+const ISO_INSTANT_RE =
+  /^(\d{4})-(\d{2})-(\d{2})(?:T(\d{2}):(\d{2})(?::(\d{2})(?:\.\d{1,3})?)?(Z|[+-]\d{2}:\d{2}))?$/;
+
+/**
+ * Строгий розбір моменту часу з env: `YYYY-MM-DD` (північ за UTC) або
+ * `YYYY-MM-DDTHH:MM[:SS[.mmm]]` з обовʼязковою зоною (`Z` чи `±HH:MM`).
+ * `null` на все інше, зокрема на неіснуючу дату (`2026-02-30`), яку
+ * `new Date()` мовчки перекотив би на 2 березня.
+ */
+export function parseIsoInstant(raw: string): Date | null {
+  const m = ISO_INSTANT_RE.exec(raw);
+  if (!m) return null;
+  const [, y, mo, d, hh, mm, ss] = m;
+  const year = Number(y);
+  const month = Number(mo);
+  const day = Number(d);
+  const calendar = new Date(Date.UTC(year, month - 1, day));
+  if (
+    calendar.getUTCFullYear() !== year ||
+    calendar.getUTCMonth() !== month - 1 ||
+    calendar.getUTCDate() !== day
+  ) {
+    return null;
+  }
+  if (hh === undefined) return calendar;
+  if (Number(hh) > 23 || Number(mm) > 59 || Number(ss ?? "0") > 59) {
+    return null;
+  }
+  const instant = new Date(raw);
+  return Number.isNaN(instant.getTime()) ? null : instant;
+}
+
+/**
+ * Опційний момент часу (`parseIsoInstant`): порожньо чи не задано дає
+ * `undefined`, кривий рядок валить парсинг env на старті, а не вимикає
+ * поведінку тихо. Зразок — `EMAIL_VERIFICATION_REQUIRED_FROM` в `env.ts`.
+ */
+export const optionalIsoInstantFromEnv = (name: string) =>
+  z
+    .string()
+    .optional()
+    .transform((v, ctx) => {
+      if (v === undefined || v.trim() === "") return undefined;
+      const instant = parseIsoInstant(v.trim());
+      if (instant) return instant;
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        message: `${name} must be YYYY-MM-DD or an ISO 8601 datetime with a zone (got ${JSON.stringify(v)})`,
+      });
+      return z.NEVER;
+    });

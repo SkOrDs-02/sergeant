@@ -1,8 +1,9 @@
-import { test as setup, expect } from "@playwright/test";
+import { test as setup } from "@playwright/test";
 // Re-exported for backward compatibility with any importer that referenced
 // it here; the canonical home is `./authState` (side-effect-free, so the
 // Playwright config can import the path without loading this test file).
 import { HUB_USER_AUTH_STATE } from "./authState";
+import { completeSignUp } from "./smokeEmailVerification";
 
 export { HUB_USER_AUTH_STATE };
 
@@ -61,10 +62,12 @@ setup("authenticate hub user", async ({ page }) => {
 
   await page.getByRole("button", { name: "Зареєструватися" }).click();
 
-  // After successful sign-up, AuthContext invalidates `/api/v1/me` and the
-  // router redirects out of /sign-in (to /welcome for fresh accounts; the
-  // exact destination doesn't matter here — only that the cookie is set).
-  await expect(page).not.toHaveURL(/\/sign-in/, { timeout: 15_000 });
+  // sec-46: з межею `EMAIL_VERIFICATION_REQUIRED_FROM` реєстрація показує
+  // «Перевір пошту», і сесію дає лише клік у листі; `completeSignUp`
+  // відтворює його smoke-секретом. Без межі AuthContext одразу виводить із
+  // /sign-in (на /welcome для свіжого акаунта; куди саме, тут байдуже,
+  // важить лише кука).
+  await completeSignUp(page, email);
 
   // Persist cookies + localStorage so subsequent projects start with the
   // session already established.

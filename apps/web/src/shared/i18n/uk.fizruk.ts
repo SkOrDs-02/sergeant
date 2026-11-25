@@ -91,6 +91,11 @@ export const fizrukPageMessages = {
     intensity: "Інтенсивність",
     weight: "Твоя вага, кг",
     weightHint: "Без ваги витрати не порахувати. Запис зберігається і без неї.",
+    /**
+     * Межі ті самі, що `WEIGHT_KG_RANGE` у `core/profile/biometrics.ts`
+     * (data-62): поле пише в журнал тіла, тож неможлива вага не проходить.
+     */
+    weightRangeError: "Вага має бути від 20 до 400 кг",
     kcalPreview: "Приблизно",
     kcalUnit: "ккал",
     /** Підпис зʼявляється лише коли кінець переповз за північ. */

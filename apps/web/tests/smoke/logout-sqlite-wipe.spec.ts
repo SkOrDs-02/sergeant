@@ -4,6 +4,7 @@ import { probeOpfs } from "../utils/opfs";
 import { seedFTUX } from "../utils/seedFTUX";
 import { waitForSqliteRefreshAfter } from "../utils/sqliteRefresh";
 import { collectPageErrors } from "./smokeHelpers";
+import { completeSignUp } from "./smokeEmailVerification";
 
 /**
  * Аудит 2026-10-01, priv-05: після виходу файл SQLite-партиції користувача в
@@ -36,12 +37,13 @@ async function register(page: Page) {
     .getByRole("button", { name: "Немає акаунту? Зареєструватися" })
     .click();
   await page.fill("#auth-name", "Wipe Smoke");
-  await page.fill("#auth-email", `wipe_${nonce}@example.com`);
+  const email = `wipe_${nonce}@example.com`;
+  await page.fill("#auth-email", email);
   await page.fill("#auth-password", `pw_${nonce}_long_enough`);
   await page
     .getByRole("button", { name: "Зареєструватися", exact: true })
     .click();
-  await expect(page).not.toHaveURL(/\/sign-in/, { timeout: 15_000 });
+  await completeSignUp(page, email);
 }
 
 async function addExpense(page: Page, title: string) {

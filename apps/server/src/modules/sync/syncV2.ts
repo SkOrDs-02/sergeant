@@ -12,6 +12,12 @@ import {
 } from "../../obs/metrics.js";
 import { notifySyncV2OpsApplied, type SyncV2StreamOp } from "./syncV2Stream.js";
 import { lockUserSyncOpLog } from "./serverOpLog.js";
+import {
+  clockSkewRetry,
+  createClientTsClamp,
+  exceedsForwardSkew,
+  storedClientTsField,
+} from "./clientClock.js";
 import { finykLimitPushNeeded } from "./finyk/limitPushTrigger.js";
 import { finykPushDbFromPool } from "../finyk/push/db.js";
 import { runFinykLimitPushQuietly } from "../finyk/push/limitPush.js";
@@ -125,9 +131,9 @@ interface SyncOpLogDuplicateRow {
   id: string;
   status: "applied" | "duplicate" | "rejected";
   reject_reason: string | null;
+  /** Записана (обрізана) мітка; повтор опа віддає її так само, як перший пуш. */
+  client_ts: Date | null;
 }
-
-const CLOCK_SKEW_FORWARD_MS = 60 * 60 * 1000;
 
 // Tables whose apply logic is identical bar the table name (and, for tx-scoped
 // jsonb arrays, the payload column) bind the shared implementation directly in
@@ -302,6 +308,8 @@ export async function syncV2Push(req: Request, res: Response): Promise<void> {
     idempotency_key: string;
     status: "applied" | "duplicate" | "rejected" | "retry";
     reason?: string;
+    /** data-51: записана мітка, якщо сервер її обрізав (`storedClientTsField`). */
+    client_ts?: string;
   };
   const results: OpResult[] = [];
   let acceptedCount = 0;
@@ -309,6 +317,8 @@ export async function syncV2Push(req: Request, res: Response): Promise<void> {
   let appliedCount = 0;
   let rejectedCount = 0;
   const newlyAppliedForStream: SyncV2StreamOp[] = [];
+  // data-51: `updated_at = min(client_ts, server_now)`, монотонно в межах пуша.
+  const clampClientTs = createClientTsClamp();
 
   /**
    * Оп уже лежить у журналі. Два шляхи сюди: дедуп-SELECT на початку
@@ -329,6 +339,9 @@ export async function syncV2Push(req: Request, res: Response): Promise<void> {
         : r.status === "duplicate"
           ? { reason: "duplicate" }
           : {}),
+      ...(r.status === "applied"
+        ? storedClientTsField(sourceOp.client_ts, r.client_ts)
+        : {}),
     });
     if (r.status === "applied") {
       acceptedCount++;
@@ -365,7 +378,7 @@ export async function syncV2Push(req: Request, res: Response): Promise<void> {
     const prior = await client.query<
       SyncOpLogDuplicateRow & { idempotency_key: string }
     >(
-      `SELECT id, status, reject_reason, idempotency_key
+      `SELECT id, status, reject_reason, client_ts, idempotency_key
          FROM sync_op_log
         WHERE user_id = $1 AND idempotency_key = ANY($2::text[])`,
       [user.id, ops.map((o) => o.idempotency_key)],
@@ -388,13 +401,20 @@ export async function syncV2Push(req: Request, res: Response): Promise<void> {
         continue;
       }
 
-      const clientTs = new Date(op.client_ts);
+      // data-51: годинник пристрою поза допуском наперед — `retry`, без
+      // журналу (запис чекає на пристрої, а не губиться). У межах допуску
+      // мітка обрізається до годинника сервера: пристрій, що поспішає, не
+      // «замикає» рядок проти пізнішої правки з правильним годинником. Далі
+      // (apply, журнал, SSE) їде лише обрізана мітка (`clientClock.ts`).
+      const nowMs = Date.now();
+      const rawClientTs = new Date(op.client_ts);
+      if (exceedsForwardSkew(rawClientTs, nowMs)) {
+        results.push(clockSkewRetry(op));
+        continue;
+      }
+      const clientTs = clampClientTs(rawClientTs, nowMs);
       let status: "applied" | "rejected" = "applied";
       let reason: RejectReason | null = null;
-      if (clientTs.getTime() - Date.now() > CLOCK_SKEW_FORWARD_MS) {
-        status = "rejected";
-        reason = "clock_skew";
-      }
 
       if (
         status === "applied" &&
@@ -523,7 +543,7 @@ export async function syncV2Push(req: Request, res: Response): Promise<void> {
         insertedRow = inserted.rows[0];
         if (!insertedRow) {
           const raced = await client.query<SyncOpLogDuplicateRow>(
-            `SELECT id, status, reject_reason
+            `SELECT id, status, reject_reason, client_ts
                FROM sync_op_log
               WHERE user_id = $1 AND idempotency_key = $2`,
             [user.id, op.idempotency_key],
@@ -598,6 +618,7 @@ export async function syncV2Push(req: Request, res: Response): Promise<void> {
         id: insertedRow.id,
         status,
         reject_reason: reason,
+        client_ts: clientTs,
       });
 
       const insertedId = Number(insertedRow.id);
@@ -609,6 +630,7 @@ export async function syncV2Push(req: Request, res: Response): Promise<void> {
         results.push({
           idempotency_key: op.idempotency_key,
           status: "applied",
+          ...storedClientTsField(op.client_ts, clientTs),
         });
         newlyAppliedForStream.push({
           id: insertedId,
@@ -697,7 +719,8 @@ export async function syncV2Push(req: Request, res: Response): Promise<void> {
     last_op_id: lastOpId,
     results,
     // Годинник сервера в момент відповіді. Сервер перевіряє лише годинник,
-    // що ВИПЕРЕДЖАЄ (`CLOCK_SKEW_FORWARD_MS`); відсталий годинник програє
+    // що ВИПЕРЕДЖАЄ (`CLOCK_SKEW_FORWARD_MS` у `clientClock.ts`; поза
+    // допуском `retry / clock_skew`, у межах обрізка); відсталий годинник програє
     // кожен LWW-конфлікт, і клієнт вважав це штатним `lww_conflict`. Це
     // поле дає клієнту прямий замір зсуву (`core/syncEngine/clockSkew.ts`),
     // без окремого round-trip-у й без довіри до `Date` header-а проксі

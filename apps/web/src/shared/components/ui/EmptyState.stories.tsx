@@ -71,7 +71,7 @@ export const WithIconAndAction: Story = {
     title: "Список звичок порожній",
     description: "Додай першу звичку — Sergeant нагадає про неї щодня.",
     action: (
-      <Button variant="primary" size="md">
+      <Button variant="solid" size="md">
         Створити звичку
       </Button>
     ),
@@ -88,7 +88,7 @@ export const WithIconOnlyAction: Story = {
     title: "Список порожній",
     description: "Натисни плюс, щоб додати перший запис.",
     action: (
-      <Button variant="primary" size="md" iconOnly aria-label="Додати">
+      <Button variant="solid" size="md" iconOnly aria-label="Додати">
         <Icon name="plus" size={18} />
       </Button>
     ),
@@ -107,7 +107,7 @@ export const Compact: Story = {
     description: "Спробуй інший запит.",
     compact: true,
     action: (
-      <Button variant="secondary" size="sm">
+      <Button variant="outline" size="sm">
         Очистити фільтр
       </Button>
     ),
@@ -131,7 +131,7 @@ export const AsPageHeading: Story = {
     description:
       "Здається, ця адреса вже не існує. Перевір посилання або повернись на головну.",
     primaryAction: (
-      <Button variant="primary" size="lg">
+      <Button variant="solid" size="lg">
         На головну
       </Button>
     ),
@@ -223,7 +223,7 @@ export const WithHintAndExample: Story = {
       "Додай ціль: і Sergeant порахує крок-за-кроком, як її досягти.",
     hint: "Ціль = сума + дата. Наприклад, «зекономити 50 000 грн до 31.12».",
     action: (
-      <Button variant="primary" size="md">
+      <Button variant="solid" size="md">
         Додати ціль
       </Button>
     ),

@@ -6,3 +6,4 @@ export * from "./ukApostrophe";
 export * from "./ukrainianPlural";
 export * from "./productSearchKey";
 export * from "./weeklyStreak";
+export * from "./safeExternalHref";

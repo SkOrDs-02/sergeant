@@ -329,8 +329,9 @@ longTaskCount, cacheHit}` — раз на перемикання вкладки,
 - **Скидання кешу PWA** видаляє рівно записи CacheStorage
   (`src/sw/cache.ts`), не торкаючись `sync_op_outbox` у SQLite/OPFS,
   IndexedDB Їжі й `localStorage` (`PWASection.tsx:132-143`).
-- Редиректи на оплату — `ALLOWED_CHECKOUT_HOSTS`, описано в
-  pricing-контракті.
+- Редиректи на оплату — «Керувати підпискою» йде через
+  `assertAllowedBillingUrl` (`core/billing/billingRedirect.ts`), той самий
+  гард, що й на `/pricing` (sec-29); allow-list описано в pricing-контракті.
 
 ## Чого не робити
 

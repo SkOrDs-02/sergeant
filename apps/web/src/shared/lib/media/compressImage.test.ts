@@ -261,3 +261,74 @@ describe("compressImageFile — decoded image paths", () => {
     expect(createBitmap).not.toHaveBeenCalled();
   });
 });
+
+describe("compressImageFile — EXIF не виходить з малих JPEG (priv-21)", () => {
+  afterEach(() => {
+    vi.restoreAllMocks();
+    vi.unstubAllGlobals();
+  });
+
+  /** JPEG з EXIF APP1 (GPS-рядок у payload) і мінімальним сканом. */
+  function jpegWithExif(): Uint8Array<ArrayBuffer> {
+    const gps = Array.from("Exif\0\0MM\0*GPS 50.4501N", (c) => c.charCodeAt(0));
+    const len = gps.length + 2;
+    return new Uint8Array([
+      0xff,
+      0xd8,
+      0xff,
+      0xe1,
+      len >> 8,
+      len & 0xff,
+      ...gps,
+      0xff,
+      0xda,
+      0x00,
+      0x02,
+      0x11,
+      0x22,
+      0xff,
+      0xd9,
+    ]);
+  }
+
+  async function hasApp1(file: File): Promise<boolean> {
+    const bytes = new Uint8Array(await file.arrayBuffer());
+    return bytes.some((b, i) => b === 0xff && bytes[i + 1] === 0xe1);
+  }
+
+  it("малий JPEG до 1,5 МБ повертається без маркера 0xFFE1", async () => {
+    const original = new File([jpegWithExif()], "dish.jpg", {
+      type: "image/jpeg",
+    });
+    expect(shouldAttemptCompression(original)).toBe(false);
+
+    const result = await compressImageFile(original);
+
+    expect(result).toMatchObject({ name: "dish.jpg", type: "image/jpeg" });
+    expect(await hasApp1(result!)).toBe(false);
+  });
+
+  it("JPEG, чиє перекодування не виграло в розмірі, теж іде без EXIF", async () => {
+    vi.spyOn(HTMLCanvasElement.prototype, "getContext").mockReturnValue({
+      drawImage: vi.fn(),
+    } as unknown as CanvasRenderingContext2D);
+    vi.spyOn(HTMLCanvasElement.prototype, "toBlob").mockImplementation((cb) =>
+      cb(new Blob([new Uint8Array(3_000_000)], { type: "image/jpeg" })),
+    );
+    vi.stubGlobal(
+      "createImageBitmap",
+      vi.fn().mockResolvedValue({ width: 800, height: 600, close: vi.fn() }),
+    );
+    const exif = jpegWithExif();
+    const padded = new Uint8Array(COMPRESS_SKIP_BELOW_BYTES + 10);
+    padded.set(exif.subarray(0, exif.length - 2));
+    padded.set([0xff, 0xd9], padded.length - 2);
+    const original = new File([padded], "receipt.jpg", { type: "image/jpeg" });
+
+    const result = await compressImageFile(original);
+
+    expect(result).not.toBeNull();
+    expect(result!.size).toBeLessThan(original.size);
+    expect(await hasApp1(result!)).toBe(false);
+  });
+});

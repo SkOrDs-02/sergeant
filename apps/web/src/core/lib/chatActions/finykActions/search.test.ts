@@ -5,6 +5,7 @@ import {
   toDisplayAmount,
   changeCategory,
   batchCategorize,
+  findTransaction,
 } from "./search";
 import type { FinykSearchTx } from "./search";
 import type { ChatActionUndoableResult } from "../types";
@@ -58,6 +59,9 @@ beforeEach(() => {
   mockWrite.mockImplementation((key: string, value: unknown) => {
     if (key === "finyk_tx_cats") {
       cacheState.txCategories = value as Record<string, string>;
+    }
+    if (key === "finyk_manual_expenses_v1") {
+      cacheState.manualExpenses = value as unknown[];
     }
     return Promise.resolve(true);
   });
@@ -129,8 +133,31 @@ describe("txSourceOf", () => {
 // --- toIsoDay ---
 
 describe("toIsoDay", () => {
-  it("slices a full ISO string to 10 chars", () => {
+  it("returns the Kyiv day of a midday ISO instant", () => {
     expect(toIsoDay("2026-06-15T12:00:00Z")).toBe("2026-06-15");
+  });
+
+  // Ручна витрата зберігає UTC-мить; день-ключ мусить бути київським, як у
+  // списку Операцій, а не UTC-префіксом рядка.
+  it("bv-chat-search-date: UTC-мить після київської опівночі (зима, UTC+2) дає київський день", () => {
+    expect(toIsoDay("2026-11-22T23:52:01Z")).toBe("2026-11-23");
+    expect(toIsoDay("2026-11-22T22:00:00Z")).toBe("2026-11-23");
+    expect(toIsoDay("2026-11-22T21:59:59Z")).toBe("2026-11-22");
+  });
+
+  it("bv-chat-search-date: літній час (UTC+3) зсуває межу доби на 21:00 UTC", () => {
+    expect(toIsoDay("2026-06-15T21:00:00Z")).toBe("2026-06-16");
+    expect(toIsoDay("2026-06-15T20:59:59Z")).toBe("2026-06-15");
+  });
+
+  it("bv-chat-search-date: доби переходу на літній і зимовий час", () => {
+    // 2026-03-29: о 01:00 UTC Київ переходить з UTC+2 на UTC+3.
+    expect(toIsoDay("2026-03-28T22:30:00Z")).toBe("2026-03-29");
+    expect(toIsoDay("2026-03-29T21:00:00Z")).toBe("2026-03-30");
+    // 2026-10-25: о 01:00 UTC Київ повертається з UTC+3 на UTC+2.
+    expect(toIsoDay("2026-10-24T21:30:00Z")).toBe("2026-10-25");
+    expect(toIsoDay("2026-10-25T21:59:00Z")).toBe("2026-10-25");
+    expect(toIsoDay("2026-10-25T22:00:00Z")).toBe("2026-10-26");
   });
 
   it("returns a bare YYYY-MM-DD unchanged", () => {
@@ -312,7 +339,7 @@ describe("data-08: категорії операцій з SQLite-кешу", () =
     });
   });
 
-  it("batchCategorize (dry_run=false) зберігає наявні override-и з UI", () => {
+  it("batchCategorize (dry_run=false) міняє поле ручного запису і не чіпає override-и з UI", () => {
     cacheState.txCategories = { m_other: "housing" };
     cacheState.manualExpenses = [
       { id: "m_1", date: "2026-04-22", description: "АТБ", amount: 10 },
@@ -321,10 +348,10 @@ describe("data-08: категорії операцій з SQLite-кешу", () =
       name: "batch_categorize",
       input: { pattern: "АТБ", category_id: "food", dry_run: false },
     });
-    expect(mockWrite).toHaveBeenCalledWith("finyk_tx_cats", {
-      m_other: "housing",
-      m_1: "food",
-    });
+    expect(cacheState.manualExpenses).toEqual([
+      expect.objectContaining({ id: "m_1", category: "food" }),
+    ]);
+    expect(cacheState.txCategories).toEqual({ m_other: "housing" });
   });
 
   it("холодний кеш: чесна відповідь замість запису", () => {
@@ -340,5 +367,127 @@ describe("data-08: категорії операцій з SQLite-кешу", () =
     expect(a).toContain("ще завантажуються");
     expect(b).toContain("ще завантажуються");
     expect(mockWrite).not.toHaveBeenCalled();
+  });
+});
+
+// --- bv-chat-category: ручний запис міняє власне поле, а не override ---
+
+describe("bv-chat-category: категорія ручного запису", () => {
+  const coffee = {
+    id: "mx_coffee",
+    date: "2026-11-20",
+    description: "Кава",
+    amount: 60,
+    category: "other",
+    kind: "expense",
+  };
+
+  it("change_category пише category у запис, а не override під сирим id", () => {
+    cacheState.manualExpenses = [{ ...coffee }];
+    const out = changeCategory({
+      name: "change_category",
+      input: { tx_id: "mx_coffee", category_id: "restaurant" },
+    });
+    expect(isUndoable(out)).toBe(true);
+    expect(cacheState.manualExpenses).toEqual([
+      expect.objectContaining({ id: "mx_coffee", category: "restaurant" }),
+    ]);
+    // Override під сирим id жоден екран не читає: його бути не мусить.
+    expect(cacheState.txCategories).toEqual({});
+    expect(mockWrite).not.toHaveBeenCalledWith(
+      "finyk_tx_cats",
+      expect.anything(),
+    );
+  });
+
+  it("знімає override-и обох форм id, які перебили б нову категорію", () => {
+    cacheState.manualExpenses = [{ ...coffee }];
+    cacheState.txCategories = {
+      mx_coffee: "transport",
+      manual_mx_coffee: "health",
+      bank_1: "food",
+    };
+    changeCategory({
+      name: "change_category",
+      input: { tx_id: "mx_coffee", category_id: "restaurant" },
+    });
+    expect(cacheState.txCategories).toEqual({ bank_1: "food" });
+  });
+
+  it("undo повертає категорію запису і зняті override-и", () => {
+    cacheState.manualExpenses = [{ ...coffee }];
+    cacheState.txCategories = { manual_mx_coffee: "health" };
+    const out = changeCategory({
+      name: "change_category",
+      input: { tx_id: "mx_coffee", category_id: "restaurant" },
+    });
+    if (!isUndoable(out)) throw new Error("expected an undoable result");
+    out.undo?.();
+    expect(cacheState.manualExpenses).toEqual([
+      expect.objectContaining({ id: "mx_coffee", category: "other" }),
+    ]);
+    expect(cacheState.txCategories).toEqual({ manual_mx_coffee: "health" });
+  });
+
+  it("приймає й id у формі списку Операцій (manual_<id>)", () => {
+    cacheState.manualExpenses = [{ ...coffee }];
+    changeCategory({
+      name: "change_category",
+      input: { tx_id: "manual_mx_coffee", category_id: "restaurant" },
+    });
+    expect(cacheState.manualExpenses).toEqual([
+      expect.objectContaining({ id: "mx_coffee", category: "restaurant" }),
+    ]);
+  });
+
+  it("batch_categorize: ручні в запис, банківські в override", () => {
+    cacheState.manualExpenses = [{ ...coffee }];
+    cacheState.txCategories = {};
+    // Банківських рядків у моку дзеркала немає; перевіряємо, що ручний
+    // рядок не потрапив у мапу override-ів.
+    batchCategorize({
+      name: "batch_categorize",
+      input: { pattern: "Кава", category_id: "restaurant", dry_run: false },
+    });
+    expect(cacheState.manualExpenses).toEqual([
+      expect.objectContaining({ id: "mx_coffee", category: "restaurant" }),
+    ]);
+    expect(cacheState.txCategories).toEqual({});
+  });
+});
+
+describe("bv-chat-search-date: find_transaction рахує день ручної витрати за Києвом", () => {
+  beforeEach(() => {
+    // 01:52 23 листопада за Києвом; список Операцій показує її в «Сьогодні».
+    cacheState.manualExpenses = [
+      {
+        id: "m_night",
+        date: "2026-11-22T23:52:01Z",
+        description: "Нічна аптека",
+        amount: 120,
+        type: "expense",
+      },
+    ];
+  });
+
+  it("віддає київську дату у виводі", () => {
+    const out = findTransaction({
+      name: "find_transaction",
+      input: { query: "аптека" },
+    });
+    expect(out).toContain("m_night: 2026-11-23");
+  });
+
+  it("фільтр дат звіряє київський день, а не UTC-префікс", () => {
+    const today = findTransaction({
+      name: "find_transaction",
+      input: { date_from: "2026-11-23", date_to: "2026-11-23" },
+    });
+    expect(today).toContain("m_night");
+    const yesterday = findTransaction({
+      name: "find_transaction",
+      input: { date_from: "2026-11-22", date_to: "2026-11-22" },
+    });
+    expect(yesterday).toBe("Операцій за цими фільтрами не знайдено.");
   });
 });

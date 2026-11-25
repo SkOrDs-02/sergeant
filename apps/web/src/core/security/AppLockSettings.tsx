@@ -105,9 +105,18 @@ export function AppLockSettings() {
 
   const handleDisableConfirm = async () => {
     setDisableConfirmOpen(false);
-    setFlag("app-lock-enabled", false);
-    // Audit F16: стираємо креденшел поточного користувача, а не слот `anon`.
-    await appLock.disablePin();
+    // sec-41: креденшел стирає лише `appLock.disablePin` після правильного
+    // поточного PIN (екран `disable` у `AppLock`), він же гасить прапорець.
+    // Якщо PIN-а нема (або IndexedDB недоступна), перевіряти нічого: просто
+    // вимикаємо тумблер, інакше він застряг би увімкненим.
+    let has = false;
+    try {
+      has = await appLock.hasPin();
+    } catch {
+      has = false;
+    }
+    if (has) appLock.startDisable();
+    else setFlag("app-lock-enabled", false);
   };
 
   return (

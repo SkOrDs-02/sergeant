@@ -2,10 +2,16 @@
 
 > **Поточні статуси перенесених знахідок:** [єдиний реєстр верифікації](verification/findings.json). Цей документ зберігає історичні результати; нові спроби та виправлення ведуться в реєстрі.
 
-> **Last touched:** 2026-10-26 by @claude (тріаж документації: шапка звірена: B30 неактуальна, B4-B29 на ревалідацію, рев'ю: B21 знято з пріоритетів - закрито 2026-09-29). **Next review:** 2027-12-24.
+> **Last touched:** 2026-11-23 by @claude (рев'ю: B17 лише частково виправлено, у реєстрі знову `open`); 2026-11-22 by @claude (REG-SYNC-ALL: реєстр звірено з кодом, B3, B4, B8, B11–B15, B17, B30 у `fixed-pending-verification`; runbook і env-vars більше не кажуть, що `AI_DAILY_USER_LIMIT` лежить у схемі env); 2026-11-22 by @claude (B16 закрито повністю: стелі бюджету й `WEBHOOK_HMAC_REQUIRED`/`AI_TIERED_PRO_ENABLED` fail-loud на старті); 2026-11-22 by @claude (рішення власника по решті питань беклогу); 2026-11-21 by @claude (B12 закрито: мітка очищення в Redis і чистка черги ingest перед `DELETE`; B15 закрито: `AI_QUOTA_TOOL_LIMITS` fail-loud на старті; B13: рішення власника — крон hard-delete через 7 днів); 2026-10-26 by @claude (тріаж документації: шапка звірена: B30 неактуальна, B4-B29 на ревалідацію, рев'ю: B21 знято з пріоритетів - закрито 2026-09-29). **Next review:** 2027-12-24.
 > **Status:** Active - Наступна дія: ревалідувати B4-B29 проти `main` і позначити закриті (пріоритет B26, B25, B27; B13 і B14, схоже, вже закриті; B21 закрито 2026-09-29, див. § B21).
 > B1 і B2 закрито кодом у гілці `claude/sergeant-security-review-h4s302` з регресійними тестами, B3 - 2026-09-29;
 > B30 неактуальна (міграції `104_ai_usage_endpoint_and_cache` і `105_rename_091_…` мають `.down.sql`). Знімок стану на момент аудиту.
+
+> **Рішення власника 2026-11-22** (решта питань беклогу, сторінка рішень; кожне чекає виконання, пункти не закрито):
+>
+> - `B10-rest` — Чи має /api/ai-memory/recall списувати AI-квоту (requireAiQuota)? **Рішення:** Ні, лишити як є: recall входить у вартість ходу.
+> - `B19` — У .mcp.json пароль до Postgres (SERGEANT_PG_READONLY_URL) передається через argv @modelcontextprotocol/server-postgres, тож його видно в ps. **Рішення:** Прибрати postgres MCP з .mcp.json і тримати його лише в локальному глобальному конфігу.
+> - `B28-rest` — Тіло до 10 МБ (уже без розпаковки gzip) парситься до requireSession. **Рішення:** Ні, inflate:false достатньо, ризик прийнятий.
 
 Питання, на яке відповідає документ: **чи коректно зроблений AI-шар Sergeant —
 чи немає вразливостей, чи правильно застосовані обгортки, і що потребує змін.**
@@ -367,7 +373,9 @@ LLM-ендпоінт `POST /api/internal/categorize` з будь-якої точ
 fire-and-forget пишеться в довгострокову AI-пам'ять (`:479-498`), звідки
 повертається в HubChat. Тобто самоотруєння перетинає межу персистентності.
 
-### B14 — runbook велить смикати важіль, якого немає
+### B14 — runbook велить смикати важіль, якого немає ✅ виправлено
+
+> **Закрито 2026-11-22:** `AI_DAILY_USER_LIMIT` зі схеми env прибрано (у `apps/**` і `packages/**` згадок немає), runbook § AiQuotaStoreDown і `env-vars.md` прямо кажуть, що env-важеля для ліміту залогіненого немає: лише правка `FREE_LIMITS`/`PRO_LIMITS` і деплой.
 
 Найнебезпечніша знахідка не в коді, а на стику коду й процесу.
 
@@ -405,7 +413,9 @@ free = 5, pro = `null` (безліміт).
 **Фікс:** або підключити змінну в `userDailyLimit()` як стелю поверх плану, або
 прибрати її з env-схеми й з усіх чотирьох документів.半-стан гірший за обидва.
 
-### B15 — битий JSON у `AI_QUOTA_TOOL_LIMITS` знімає ліміти з найдорожчого шляху
+### B15 — битий JSON у `AI_QUOTA_TOOL_LIMITS` знімає ліміти з найдорожчого шляху ✅ виправлено
+
+> **Закрито 2026-11-21:** `jsonRecordOfNonNegIntFromEnv` у [`envHelpers.ts`](../../../../apps/server/src/env/envHelpers.ts) кидає на старті на битий JSON, не-обʼєкт чи нечислове значення; ран-тайм `toolLimit()` парсить мапу раз на значення env і на биту мапу fail-closed (`AI_QUOTA_TOOL_DEFAULT_LIMIT`, без нього `0`). `env-vars.md` виправлено: дефолту `60` немає. Тести `envHelpers.test.ts`, `aiQuota.test.ts`.
 
 [`aiQuota.ts:314-332`](../../../../apps/server/src/modules/chat/aiQuota.ts): помилка
 `JSON.parse` ловиться, пишеться один `warn` — і повертається
@@ -424,9 +434,11 @@ tool-call коштує 3× звичайного повідомлення (`DEFAU
 unlimited) або валідувати JSON у Zod-схемі env, щоб битий конфіг не давав
 серверу піднятись.
 
-### B16 — env-прапорці мовчки дефолтяться, включно з аварійною стелею
+### B16 — env-прапорці мовчки дефолтяться, включно з аварійною стелею ✅ виправлено
 
 > **Закрито для `ANTHROPIC_BUDGET_*` 2026-09-29:** `strictBoolFromEnv` у [`envHelpers.ts`](../../../../apps/server/src/env/envHelpers.ts) кидає на старті для `ANTHROPIC_BUDGET_ALERT_ENABLED` / `ANTHROPIC_BUDGET_HARD_DEGRADE_ALL` (тест `envHelpers.test.ts`). Решта `boolFromEnv`/`floatFromEnv` без змін.
+>
+> **Закрито решту 2026-11-22:** `strictFloatFromEnv` (порожнє = дефолт, сміття чи від'ємне = throw на старті) на всіх стелях `*_BUDGET_*_USD`, винесених у [`costBudgetEnv.ts`](../../../../apps/server/src/env/costBudgetEnv.ts); `WEBHOOK_HMAC_REQUIRED` і `AI_TIERED_PRO_ENABLED` на `strictBoolFromEnv`. Тести `envHelpers.test.ts`, `costBudgetEnv.test.ts`; `env-vars.md` оновлено. Поріг `ANTHROPIC_BUDGET_HARD_USD=0` лишився задокументованим kill-switch-ем.
 
 [`env.ts:28-38`](../../../../apps/server/src/env/env.ts) (`boolFromEnv`): будь-що,
 крім `true|1|false|0`, повертає дефолт **без помилки й без попередження**. Те
@@ -446,9 +458,10 @@ unlimited) або валідувати JSON у Zod-схемі env, щоб бит
 ([`env.ts:387-392`](../../../../apps/server/src/env/env.ts)). Прапорці, що керують
 витратами, заслуговують на ту саму суворість.
 
-### B17 — `AI_QUOTA_FOUNDER_IDS` — необмежений байпас без жодної перевірки
+### B17 — `AI_QUOTA_FOUNDER_IDS` — необмежений байпас без жодної перевірки ⚠️ частково виправлено
 
-> **Закрито 2026-09-29:** `founderIdsFromEnv` валідує формат при парсингу env (запис без пробілів усередині; кінцеві коми дозволені). Тест `envHelpers.test.ts`.
+> **Частково закрито 2026-09-29:** `founderIdsFromEnv` валідує формат при парсингу env (запис без пробілів усередині; кінцеві коми дозволені). Тест `envHelpers.test.ts`.
+> **Ревізія 2026-11-23:** закрито лише формат. `isFounderUser` в [`aiQuota.ts`](../../../../apps/server/src/modules/chat/aiQuota.ts) і `getUserPlan.ts` читають сирий `process.env`, а не провалідоване env, і строку дії байпасу ніщо не обмежує: забутий id так і лишається вічним безлімітом поза метриками квоти. У реєстрі `AIP-20260805-B17` повернуто в `open`.
 
 [`env.ts:247`](../../../../apps/server/src/env/env.ts) — `z.string().optional()`,
 без валідації формату. Збіг за id знімає `assertAiQuota`, `consumeToolQuota` і
@@ -582,7 +595,7 @@ if (pricePerMTok != null) {
 
 ## Пріоритет 2
 
-### B3 — `/api/coach/insight` без огорожі, яку отримав `/api/chat`
+### B3 — `/api/coach/insight` без огорожі, яку отримав `/api/chat` ✅ виправлено
 
 > **Закрито 2026-09-29** (`claude/ai-user-data-fencing`): `memorySummary` і `snapshotText` в [`coach.ts`](../../../../apps/server/src/modules/chat/coach.ts) огороджені `wrapAndScanUserContext`, додано `DATA_FENCE_RULE` (єдине джерело в `systemPrompt.ts`, текст HubChat не змінено, кеш не інвалідовано). Прогін `eval` стенду не робився (платний).
 
@@ -616,7 +629,7 @@ founder свідомо поставив.
 той самий один виклик наявного коду, що вже зробили для чату. Ціна — прогін
 `eval` стенду, бо промпт зміниться.
 
-### B4 — деградацію моделі coach обходить fallback-ланцюг
+### B4 — деградацію моделі coach обходить fallback-ланцюг ✅ виправлено
 
 > **Закрито 2026-09-29** (`claude/ai-user-data-fencing`): `opts.model` тепер `coachAnthropicModel(tier.tier)`: premium → `COACH_MODEL_ANTHROPIC`, standard/floor → `claude-haiku-4-5-20251001`. Літеральне «передати tier-модель» не годилось: `tier.model` — OpenRouter-id, а Anthropic на нього відповість 404, тож tier мапиться на Claude-id.
 
@@ -674,7 +687,7 @@ mobile навмисно **не виконує** tool-и (`stubResultText` — «
 `cost` і робив висновок, що cost-шлях мертвий — що й сталося при появі гейта з
 B1. Поле додано.
 
-### B8 — асиметрія екранування огорож
+### B8 — асиметрія екранування огорож ✅ виправлено
 
 > **Закрито 2026-09-29** (`claude/ai-user-data-fencing`): `</tool_output>` тепер екранується тією ж ентіті (`&lt;/tool_output&gt;`), що й `</user_data>`; тест оновлено.
 
@@ -685,7 +698,7 @@ zero-width слабший: модель усе одно бачить послі�
 закривальному тегу, і в теорії може її так і прочитати. Ентіті — однозначні.
 Варто звести до одного (сильнішого) варіанта.
 
-### B11 — DLQ AI-пам'яті переживає видалення акаунта
+### B11 — DLQ AI-пам'яті переживає видалення акаунта ✅ виправлено
 
 > **Статус 2026-09-29:** закрито кодом. `ai_memory_ingest_failed` чиститься в
 > `dataRights.ts` (видалення акаунта) і в `vectorStore.deleteAllForUser`
@@ -709,10 +722,9 @@ GDPR-експорт ці рядки теж не включає — тобто д
 Ризик тим самим прапорцем відкладений (`AI_MEMORY_ENABLED=false`), але це
 пряма GDPR-експозиція, і фіксити її треба разом із B10.
 
-### B12 — очищення пам'яті без tombstone: in-flight ingest повертає стерте
+### B12 — очищення пам'яті без tombstone: in-flight ingest повертає стерте ✅ виправлено
 
-> **Статус 2026-09-29:** відкрито (свідомо не чіпали). DLQ-частина закрита в B11;
-> epoch/tombstone для задач BullMQ, що вже в Redis, не робили.
+> **Закрито 2026-11-21** (`backlog/b12`): «Очистити памʼять» глушить відкладене дзеркалення профілю, ставить у Redis мітку `ai_memory:cleared_at:<userId>` (TTL 24 год) і знімає задачі юзера з черги до `DELETE`; воркер пропускає задачі, старші за мітку, а рядок, записаний під час очищення, прибирає ([`ingestClearMarker.ts`](../../../../apps/server/src/modules/ai-memory/ingestClearMarker.ts)). Те саме робить добивач видалення акаунта. Без міграції; тести в `ingestQueue.test.ts`, `clearRoute.test.ts`, `profileMirrorDebounce.test.ts`, `deletionPoller.test.ts`. Лишається: відкладене дзеркалення на ІНШІЙ репліці так не скасувати.
 
 [`clearRoute.ts:16`](../../../../apps/server/src/modules/ai-memory/clearRoute.ts)
 робить простий `DELETE FROM ai_memories WHERE user_id = $1`. Задачі BullMQ, уже
@@ -726,7 +738,9 @@ GDPR-експорт ці рядки теж не включає — тобто д
 
 **Фікс:** epoch/tombstone на юзера, який воркер звіряє перед записом.
 
-### B13 — `forget.ts` і `forgetCleanup.ts` — мертвий код
+### B13 — `forget.ts` і `forgetCleanup.ts` — мертвий код ✅ виправлено
+
+> **Закрито 2026-11-22 (звірка кодом):** обидва файли видалено PR #928, мертві `finyk`-рядки міграції 090 прибрано `DELETE` у [`144_ai_memories_prune_dead_sources.sql`](../../../../apps/server/src/migrations/144_ai_memories_prune_dead_sources.sql), писача `ai_memories.deleted_at` у ран-таймі не лишилось. Крон із рішення 2026-11-21 потрібен, лише якщо soft-delete повернеться.
 
 Grep по всьому репо на `forgetById` / `previewForget` / `confirmForget` /
 `runForgetCleanup` дає лише самі ці файли та їхні тести: ні роута, ні крона, ні
@@ -738,6 +752,8 @@ Grep по всьому репо на `forgetById` / `previewForget` / `confirmFo
 `source='finyk'` (`deleted_at = NOW()`). Вони приховані від читань, але не
 чистяться ніколи — текст ретайрнутих транзакцій лежить у таблиці безстроково.
 
+**Рішення власника 2026-11-21:** нічний крон hard-delete рядків `ai_memories` з `deleted_at` старше 7 днів (разом із політикою ретенції аудиту 2026-10-01 `priv-20`).
+
 ### B9 — надлишкові резолви сесії на кожен чат-запит
 
 `getSessionUser` викликається щонайменше чотири рази за один `/api/chat`:
@@ -748,7 +764,7 @@ Grep по всьому репо на `forgetById` / `previewForget` / `confirmFo
 хоча значення вже є в скоупі. Не безпека — латентність і навантаження на
 Better Auth; але рядок 585 виправляється тривіально.
 
-### B30 — `ai_usage_daily` не переживає rollback: у 091 немає `.down.sql`
+### B30 — `ai_usage_daily` не переживає rollback: у 091 немає `.down.sql` ✅ виправлено
 
 Знайдено не читанням коду, а розбором червоного CI: `rollback-sanity.test.ts`
 падає на `main` і на цій гілці **однаковим** assertion-ом (не флейк — таймаут

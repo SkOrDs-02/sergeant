@@ -1,5 +1,6 @@
 import { ValidationError } from "../../obs/errors.js";
 import { ADVICE_BOUNDARY_RULE } from "../../lib/adviceBoundary.js";
+import { TRAINING_PRAISE_RULE } from "../../lib/trainingPraise.js";
 import {
   DATA_FENCE_RULE,
   PERSONA_RULE,
@@ -66,9 +67,9 @@ ${topCats}
             .join("\n")
         : "  Немає даних";
     sections.push(`[ТРЕНУВАННЯ (${weekRange || "тиждень"})]
-Тренувань завершено: ${fizruk.workoutsCount ?? 0}
-Загальний обʼєм: ${fizruk.totalVolume ?? 0} кг
 Стан відновлення: ${fizruk.recoveryLabel ?? "Немає даних"}
+Тренувань завершено: ${fizruk.workoutsCount ?? 0}
+Загальний обʼєм: ${fizruk.totalVolume ?? 0} кг (контекст, не досягнення)
 Топ вправи:
 ${exercises}`);
   }
@@ -123,7 +124,7 @@ ${habitsInfo}`);
   },
   "fizruk": {
     "summary": "1 речення: підсумок тренувань",
-    "comment": "2-3 речення: аналіз обʼєму, відновлення",
+    "comment": "2-3 речення: відновлення і регулярність, обʼєм лише як контекст",
     "recommendations": ["рекомендація 1", "рекомендація 2"]
   },
   "nutrition": {
@@ -144,6 +145,9 @@ ${habitsInfo}`);
 Зараз ти складаєш тижневий звіт за даними людини.
 
 ${ADVICE_BOUNDARY_RULE}
+
+${TRAINING_PRAISE_RULE}
+
 Відповідай ВИКЛЮЧНО валідним JSON: без markdown, без коментарів, без преамбули.
 Увесь текст українською. Числа бери з блоку даних.
 

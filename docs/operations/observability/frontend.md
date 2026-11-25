@@ -1,6 +1,6 @@
 # Frontend-observability — web і mobile
 
-> **Last touched:** 2026-09-17 by @claude (web-vitals 50/min; шлях емітера `subscription_started`). **Next review:** 2026-12-16.
+> **Last touched:** 2026-11-21 by @claude (CloudSync-події знято з реєстру `ANALYTICS_EVENTS`, емітера в v2 немає). **Next review:** 2026-12-16.
 > **Status:** Active
 
 Observability-стек для web- і mobile-клієнтів Sergeant: error tracking,
@@ -152,7 +152,7 @@ fire-and-forget, ніколи не кидає.
 
 **Event names** визначені в `@sergeant/shared` →
 `packages/shared/src/lib/analyticsEvents.ts` → `ANALYTICS_EVENTS` (~50 подій:
-onboarding, finyk, FTUX, auth, nudges, hints, hubchat, cloudsync, subscription).
+onboarding, finyk, FTUX, auth, nudges, hints, hubchat, subscription).
 Typo не компілюється.
 
 **Sentry зв'язок**: analytics не емітить breadcrumbs напряму, але
@@ -269,30 +269,13 @@ voice vs typed сценарії у funnels; `tool` — канонічне ім'�
 
 ### CloudSync-події
 
-**Історично** (до v1 sunset у [ADR-0047](../../governance/adr/0047-cloudsync-v1-410-gone.md))
-файл `cloudSync/hook/useSyncCallbacks.ts` (web v1 tree) обробляв
-lifecycle (start/success/fail), а файли `engine/push.ts` /
-`engine/initialSync.ts` — conflict-резолюцію. Усі ці модулі видалено у
-PR #052b разом із рештою v1 engine tree (storage-roadmap Stage 7).
-
-У v2 op-log тих самих події емітить writer / replayer:
-[`apps/web/src/core/syncEngine/syncEngineWriter.ts`](../../../apps/web/src/core/syncEngine/syncEngineWriter.ts)
-— intercepts SQLite mutations, пише у `sync_op_outbox`, fire-ить
-`sync_started` / `sync_succeeded` / `sync_failed` через ту саму PostHog
-обгортку.
-
-| Event                    | Коли                                                      | Payload                                        |
-| ------------------------ | --------------------------------------------------------- | ---------------------------------------------- |
-| `sync_started`           | `onStart` у `makeBoundCallbacks`                          | `{}`                                           |
-| `sync_succeeded`         | `onSuccess` — успішний прогін `runExclusive`              | `{ duration_ms }`                              |
-| `sync_failed`            | `onError` — після класифікації `toSyncError`              | `{ error_type, retryable, duration_ms }`       |
-| `sync_conflict_resolved` | `conflicted.length > 0` у `pushAll` / `initialSync.merge` | `{ kind: "push" \| "initial-merge", modules }` |
-
-`error_type` — категорія з `SyncError["type"]` (`network` / `auth` / `conflict`
-/ `validation` / `unknown`). `retryable` — boolean з того самого normalizer-а;
-дозволяє відокремити транзієнтні помилки від терміналу (4xx без авто-retry).
-`modules` у `sync_conflict_resolved` — лічильник, не імена модулів: кардинальність
-у PostHog залишається маленькою, але spike-и LWW-loss детектуються.
+Подій синхронізації в реєстрі немає. `sync_started` / `sync_succeeded` /
+`sync_failed` / `sync_conflict_resolved` емітив лише v1 engine, видалений
+разом із рештою v1 tree ([ADR-0047](../../governance/adr/0047-cloudsync-v1-410-gone.md),
+2026-05-06); op-log v2 (`apps/web/src/core/syncEngine/`) їх не шле. Константи
+знято з `ANALYTICS_EVENTS` 2026-11-21 (аудит сиріт 2026-08-05 § 9б), історичні
+події лишаються в PostHog. Нова sync-телеметрія приходить разом зі своїм
+емітером у v2.
 
 ### Subscription-події
 

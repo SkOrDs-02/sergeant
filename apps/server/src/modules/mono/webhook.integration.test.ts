@@ -311,6 +311,39 @@ describe("webhook.integration — real Postgres", () => {
   });
 
   /**
+   * data-66: ретрай старої події не перезаписує баланс з новішої.
+   *
+   * A (balance 1000) не доставлено → B (balance 800, пізніша) доставлено →
+   * Monobank ретраїть A. Баланс рахунку має лишитись 800.
+   */
+  it("retry of an older event keeps the balance from the newer one", async () => {
+    if (!dockerAvailable) {
+      console.log(`SKIP: ${skipReason ?? "Docker unavailable"}`);
+      return;
+    }
+
+    await seedIntegrationUser(testPool, USER_A);
+    await seedConnection(USER_A);
+    await seedAccount(USER_A, ACCOUNT_ID, 0);
+
+    const now = Math.floor(Date.now() / 1000);
+    const older = { id: "tx_old", time: now - 120, balance: 1000 };
+    const newer = { id: "tx_new", time: now - 60, balance: 800 };
+
+    for (const item of [older, newer, older]) {
+      const res = makeRes();
+      await webhookHandler(makeReq(WEBHOOK_SECRET, validPayload(item)), res);
+      expect(res.statusCode).toBe(200);
+    }
+
+    const acct = await testPool.query(
+      `SELECT balance FROM mono_account WHERE user_id = $1 AND mono_account_id = $2`,
+      [USER_A, ACCOUNT_ID],
+    );
+    expect(Number(acct.rows[0]!.balance)).toBe(800);
+  });
+
+  /**
    * Test 3: unknown webhook secret → 404.
    *
    * A request with an unrecognised secret must return 404 so Monobank does

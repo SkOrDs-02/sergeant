@@ -1,4 +1,5 @@
 import { useMinuteNow } from "@shared/hooks/useMinuteNow";
+import { useFirstCloudPullPhase } from "@shared/hooks/useFirstCloudPullPhase";
 /**
  * Hero хаба «Витрати сьогодні» (redesign v3, H.2): тинт Фініка, число дня
  * 40 px, «₴ · ще N» до плану дня і лінія накопичених витрат від 06:00 до
@@ -15,6 +16,7 @@ import { useMemo } from "react";
 import { STORAGE_KEYS, formatNumberUk } from "@sergeant/shared";
 import { Button } from "@shared/components/ui/Button";
 import { Card } from "@shared/components/ui/Card";
+import { FirstCloudPullGate } from "@shared/components/ui/EmptyState";
 import { Icon } from "@shared/components/ui/Icon";
 import { openHubModuleWithAction } from "@shared/lib/modules/hubNav";
 import { safeReadStringLS } from "@shared/lib/storage/storage";
@@ -76,8 +78,30 @@ export function HubSpendHero({ storageBump }: HubSpendHeroProps) {
       line: buildSpendLine(snap.todayPoints, nowMinute, snap.dayPlan),
     };
   }, [storageBump, nowMs]);
+  const firstPullPhase = useFirstCloudPullPhase();
 
   if (!view) return null;
+  // bv-first-pull-gaps: «0 ₴» на новому пристрої до кінця першого pull
+  // виглядав як правдивий нуль дня. Поки операції ще їдуть з хмари, hero
+  // показує той самий стан, що й порожні стани модулів.
+  if (firstPullPhase !== "idle" && view.todaySpent === 0) {
+    return (
+      <Card
+        as="section"
+        prominence="hero"
+        tone="finyk"
+        padding="none"
+        aria-label={t.label}
+        data-testid="hub-spend-hero"
+        className="px-4 py-3.5"
+      >
+        <div className="text-style-overline text-finyk-tint-label">
+          {t.label}
+        </div>
+        <FirstCloudPullGate compact>{null}</FirstCloudPullGate>
+      </Card>
+    );
+  }
   const left = view.dayPlan === null ? null : view.dayPlan - view.todaySpent;
 
   return (

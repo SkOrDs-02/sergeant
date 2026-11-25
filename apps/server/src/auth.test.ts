@@ -988,3 +988,131 @@ describe("auth config — sec-08: нативний контур вимкнени
     }
   });
 });
+
+/**
+ * sec-46 / priv-29: проводка межі `EMAIL_VERIFICATION_REQUIRED_FROM` у
+ * справжньому `auth.ts`. Поведінку проти живого Better Auth тримає
+ * `auth/emailVerificationGate.test.ts`; тут пін, що прод-конфіг її справді
+ * підключає і що без змінної нічого не змінюється.
+ */
+describe("auth config — sec-46: межа обовʼязкового підтвердження email", () => {
+  type GateOptions = {
+    options: {
+      emailAndPassword?: {
+        autoSignIn?: boolean;
+        onExistingUserSignUp?: unknown;
+      };
+      emailVerification?: {
+        autoSignInAfterVerification?: boolean;
+        sendOnSignIn?: boolean;
+      };
+      databaseHooks?: {
+        session?: {
+          create?: {
+            before?: (
+              data: Record<string, unknown>,
+              ctx?: unknown,
+            ) => Promise<unknown>;
+          };
+        };
+      };
+    };
+  };
+
+  const loadAuth = async (
+    env: Record<string, string>,
+  ): Promise<GateOptions> => {
+    vi.resetModules();
+    for (const [k, v] of Object.entries(env)) vi.stubEnv(k, v);
+    const mod = await import("./auth.js");
+    return mod.auth as unknown as GateOptions;
+  };
+
+  const cleanup = () => {
+    vi.unstubAllEnvs();
+    vi.resetModules();
+  };
+
+  it("без змінної: sign-up логінить як раніше, лист «акаунт уже є» не підключений", async () => {
+    try {
+      const a = await loadAuth({ EMAIL_VERIFICATION_REQUIRED_FROM: "" });
+      expect(a.options.emailAndPassword?.autoSignIn).not.toBe(false);
+      expect(a.options.emailAndPassword?.onExistingUserSignUp).toBeUndefined();
+      expect(a.options.emailVerification?.autoSignInAfterVerification).toBe(
+        false,
+      );
+    } finally {
+      cleanup();
+    }
+  });
+
+  it("із межею: sign-up без сесії (нейтральна відповідь), лист власнику, клік у листі логінить", async () => {
+    try {
+      const a = await loadAuth({
+        EMAIL_VERIFICATION_REQUIRED_FROM: "2026-11-21",
+      });
+      expect(a.options.emailAndPassword?.autoSignIn).toBe(false);
+      expect(typeof a.options.emailAndPassword?.onExistingUserSignUp).toBe(
+        "function",
+      );
+      expect(a.options.emailVerification?.autoSignInAfterVerification).toBe(
+        true,
+      );
+      expect(a.options.emailVerification?.sendOnSignIn).toBe(true);
+    } finally {
+      cleanup();
+    }
+  });
+
+  it("із межею: session.create.before на /sign-in/email не пускає новий непідтверджений акаунт", async () => {
+    try {
+      const a = await loadAuth({
+        EMAIL_VERIFICATION_REQUIRED_FROM: "2026-11-21",
+      });
+      const before = a.options.databaseHooks?.session?.create?.before;
+      const findUserById = vi.fn(async () => ({
+        id: "u-1",
+        email: "u@example.com",
+        emailVerified: false,
+        createdAt: new Date("2026-11-22T00:00:00Z"),
+      }));
+      await expect(
+        before!(
+          { userId: "u-1", ipAddress: "203.0.113.42" },
+          {
+            path: "/sign-in/email",
+            context: { internalAdapter: { findUserById } },
+          },
+        ),
+      ).rejects.toMatchObject({ body: { code: "EMAIL_NOT_VERIFIED" } });
+
+      findUserById.mockResolvedValueOnce({
+        id: "u-1",
+        email: "u@example.com",
+        emailVerified: false,
+        createdAt: new Date("2026-01-01T00:00:00Z"),
+      });
+      await expect(
+        before!(
+          { userId: "u-1", ipAddress: "203.0.113.42" },
+          {
+            path: "/sign-in/email",
+            context: { internalAdapter: { findUserById } },
+          },
+        ),
+      ).resolves.toBeTruthy();
+    } finally {
+      cleanup();
+    }
+  });
+
+  it("кривий EMAIL_VERIFICATION_REQUIRED_FROM валить старт, а не вимикає гейт тихо", async () => {
+    try {
+      await expect(
+        loadAuth({ EMAIL_VERIFICATION_REQUIRED_FROM: "21.11.2026" }),
+      ).rejects.toThrow(/EMAIL_VERIFICATION_REQUIRED_FROM/);
+    } finally {
+      cleanup();
+    }
+  });
+});

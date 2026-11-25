@@ -1,4 +1,5 @@
 import { test, expect, type Page } from "@playwright/test";
+import { completeSignUp } from "./smokeEmailVerification";
 
 // Override the default `storageState` from `playwright.smoke.config.ts`
 // (pre-baked logged-in user) — this file's whole point is to test
@@ -94,6 +95,8 @@ async function signUpFlow(
 
   await page.getByRole("button", { name: "Зареєструватися" }).click();
 
+  // sec-46: з межею підтвердження сесію дає клік у листі.
+  await completeSignUp(page, email, { timeout: LEAVE_SIGN_IN_TIMEOUT_MS });
   await expect(page).not.toHaveURL(/\/sign-in/, {
     timeout: LEAVE_SIGN_IN_TIMEOUT_MS,
   });

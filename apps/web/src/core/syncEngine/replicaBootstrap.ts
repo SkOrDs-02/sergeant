@@ -1,5 +1,5 @@
 /**
- * Last validated: 2026-11-19
+ * Last validated: 2026-11-21
  * Status: Active
  *
  * Локальна копія акаунта один раз отримує з сервера ВСЕ, включно з записами,
@@ -60,6 +60,18 @@
  * (`snapshotRestore.ts`), а позначку «готово» ставить сам знімок.
  * Неспушене («У черзі») при перевстановленні втрачається: його на сервері
  * немає.
+ *
+ * **Примусовий повтор за версією (`sync-lost-ops-repull`).** Позначка
+ * «готово» чинна лише разом із версією проходу {@link REPLICA_REPULL_VERSION}
+ * (ключ `sync_repull:<userId>`). Копія, що пройшла відновлення раніше
+ * (або ніколи), з тими самими запобіжниками проходить його ЩЕ РАЗ, від нуля.
+ * Рішення власника 2026-11-21: так лікуються пристрої з перестрибнутим до
+ * advisory-локу курсором (`data-12`, оп-и, яких pull не віддав ніколи) і
+ * рядки з tombstone, що лишився після «Повернути» до фіксу `data-02` (для
+ * них у цьому режимі `applyPullOp` бере рядок сервера і при рівному
+ * `updated_at`, див. `healTombstoneTie`). Черга не чіпається: старт лише з
+ * порожнім `pending`, тож неспушене спершу доїжджає на сервер. Наступний
+ * примусовий прохід = підняти версію.
  */
 import type { SqliteMigrationClient } from "@sergeant/db-schema/migrate/sqlite";
 import type { SyncV2PullOp } from "@sergeant/api-client";
@@ -79,9 +91,27 @@ export type PullMode = "normal" | "bootstrap";
 
 const STATE_IN_PROGRESS = 1;
 const STATE_DONE = 2;
+/**
+ * Примусовий повтор копії, яка вже колись відновилась повністю (старша
+ * версія проходу). Окремо від {@link STATE_IN_PROGRESS}, щоб обірваний
+ * повтор на наступному тіку не виглядав як перше відновлення порожньої
+ * копії і не вмикав «Завантажую з хмари» (data-59/60) на наповненому
+ * пристрої.
+ */
+const STATE_REPULL_IN_PROGRESS = 3;
+
+/**
+ * Версія примусового повного проходу. Позначка «готово» без цієї версії
+ * (копія до 2026-11-21) означає ще один прохід від нуля (див. шапку).
+ */
+export const REPLICA_REPULL_VERSION = 1;
 
 function stateKey(userId: string): string {
   return `replica_bootstrap:${userId}`;
+}
+
+function repullKey(userId: string): string {
+  return `sync_repull:${userId}`;
 }
 
 /** Чи є в черзі ще не відправлені записи цього користувача. */
@@ -111,24 +141,49 @@ export async function resolvePullMode(
   client: SqliteMigrationClient,
   userId: string,
   since: number,
-): Promise<{ mode: PullMode; since: number }> {
+): Promise<{ mode: PullMode; since: number; firstReplica: boolean }> {
   const state = await readCursorValue(client, stateKey(userId));
-  if (state === STATE_DONE) return { mode: "normal", since };
-  if (state === STATE_IN_PROGRESS) return { mode: "bootstrap", since };
-  if (await hasPendingOutbox(client, userId)) return { mode: "normal", since };
+  // Копія вже колись пройшла повне відновлення (зараз лише примусовий
+  // повтор за версією): дані на пристрої є, порожній стан не загрожує.
+  const firstReplica =
+    state !== STATE_DONE && state !== STATE_REPULL_IN_PROGRESS;
+  // Стан чинний лише для поточної версії проходу: «готово» чи «триває» зі
+  // старшої версії означає новий прохід від нуля.
+  const current =
+    (await readCursorValue(client, repullKey(userId))) >=
+    REPLICA_REPULL_VERSION;
+  if (current && state === STATE_DONE)
+    return { mode: "normal", since, firstReplica };
+  if (
+    current &&
+    (state === STATE_IN_PROGRESS || state === STATE_REPULL_IN_PROGRESS)
+  )
+    return { mode: "bootstrap", since, firstReplica };
+  if (await hasPendingOutbox(client, userId))
+    return { mode: "normal", since, firstReplica };
   // Позначка спершу, курсор потім: обірваний між ними старт лишає «триває»
   // зі старим курсором, і наступний тік бере відновлення з нього, а не
   // мовчки повертається до звичайного pull.
-  await writeCursorValue(client, stateKey(userId), STATE_IN_PROGRESS);
+  await writeCursorValue(
+    client,
+    stateKey(userId),
+    firstReplica ? STATE_IN_PROGRESS : STATE_REPULL_IN_PROGRESS,
+  );
+  await writeCursorValue(client, repullKey(userId), REPLICA_REPULL_VERSION);
   if (since !== 0) await writePullSinceCursor(client, userId, 0);
-  return { mode: "bootstrap", since: 0 };
+  return { mode: "bootstrap", since: 0, firstReplica };
 }
 
-/** Відновлення пройшло до кінця: далі звичайний pull із фільтром власних. */
+/**
+ * Відновлення пройшло до кінця: далі звичайний pull із фільтром власних.
+ * Версію проходу пишемо й тут: знімок (`snapshotRestore.ts`) відновлює
+ * копію цілком і так само закриває примусовий прохід.
+ */
 export async function markReplicaBootstrapDone(
   client: SqliteMigrationClient,
   userId: string,
 ): Promise<void> {
+  await writeCursorValue(client, repullKey(userId), REPLICA_REPULL_VERSION);
   await writeCursorValue(client, stateKey(userId), STATE_DONE);
 }
 

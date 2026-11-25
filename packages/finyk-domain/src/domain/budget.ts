@@ -646,6 +646,10 @@ export function calculateTotalExpenseFact(
 
 // Зведення по місячному плану для блоку «Фінплан на місяць».
 // Обчислює залишок / % виконання плану / «безпечно на день» в одному місці.
+// AI-NOTE: `safePerDay` і `daysLeft` тут — стара формула (без регулярних
+// потоків, дні без сьогодні), її ще читає лише заморожений mobile. Денна
+// норма модуля одна: `calculateFinykDayPlan` (ADR-0079, рішення власника
+// 2026-11-21, logic-44); веб бере і норму, і її дні звідти.
 export function getMonthlyPlanUsage(
   {
     planIncome = 0,

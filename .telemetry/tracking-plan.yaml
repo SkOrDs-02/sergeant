@@ -5,7 +5,7 @@ meta:
   product: Sergeant
   version: 1
   created: 2026-05-17
-  updated: 2026-08-05 # value_loop: +2 (advice_shown/advice_dismissed — cross-device advice_id)
+  updated: 2026-11-21 # -13 dead events (orphaned-code audit § 9а/9б), see SYNC section note
   owner: "@Skords-01"
   product_type: B2C
   destinations: [posthog]
@@ -109,14 +109,6 @@ entities:
           required: false,
           update: on_change,
           source: APP_LOCK_SETUP_COMPLETED / disable flow,
-          pii: false,
-        }
-      - {
-          name: biometric_enabled,
-          type: boolean,
-          required: false,
-          update: on_change,
-          source: BIOMETRIC_SETUP_COMPLETED,
           pii: false,
         }
       - {
@@ -1142,58 +1134,13 @@ events:
     }
 
   # ─────────────────────────────────────────────────────────────────────
-  # SYNC (CloudSync)
+  # SYNC (CloudSync) — sync_started/succeeded/failed/conflict_resolved знято
+  # 2026-11-21 разом із константами реєстру: емітер жив лише у v1 engine
+  # (ADR-0047), op-log v2 їх не шле. Те саме зроблено для never-wired
+  # biometric_*, permissions_settings_opened, permission_status_changed,
+  # module_landing_tab_clicked, error_boundary_retried і для hint_clicked /
+  # hint_completed (аудит сиріт 2026-08-05 § 9а/9б).
   # ─────────────────────────────────────────────────────────────────────
-  - {
-      name: sync_started,
-      category: sync,
-      source: frontend,
-      properties:
-        [
-          {
-            name: trigger,
-            type: string_enum,
-            required: false,
-            values: [manual, auto, initial],
-          },
-        ],
-    }
-  - {
-      name: sync_succeeded,
-      category: sync,
-      source: frontend,
-      properties:
-        [
-          { name: duration_ms, type: integer, required: true },
-          { name: modules, type: integer, required: false },
-        ],
-    }
-  - {
-      name: sync_failed,
-      category: sync,
-      source: frontend,
-      properties:
-        [
-          { name: error_type, type: string, required: true },
-          { name: retryable, type: boolean, required: true },
-          { name: duration_ms, type: integer, required: false },
-        ],
-    }
-  - {
-      name: sync_conflict_resolved,
-      category: sync,
-      source: frontend,
-      properties:
-        [
-          {
-            name: kind,
-            type: string_enum,
-            required: true,
-            values: [push, initial-merge],
-          },
-          { name: modules, type: integer, required: true },
-        ],
-    }
 
   # ─────────────────────────────────────────────────────────────────────
   # AI (HubChat) — counts only, no PII bodies
@@ -1374,19 +1321,7 @@ events:
       properties: [{ name: hint_id, type: string, required: true }],
     }
   - {
-      name: hint_clicked,
-      category: education,
-      source: frontend,
-      properties: [{ name: hint_id, type: string, required: true }],
-    }
-  - {
       name: hint_dismissed,
-      category: education,
-      source: frontend,
-      properties: [{ name: hint_id, type: string, required: true }],
-    }
-  - {
-      name: hint_completed,
       category: education,
       source: frontend,
       properties: [{ name: hint_id, type: string, required: true }],
@@ -1473,55 +1408,6 @@ events:
           { name: attempt, type: integer, required: true },
         ],
     }
-  - {
-      name: biometric_setup_completed,
-      category: security,
-      source: frontend,
-      properties:
-        [
-          {
-            name: kind,
-            type: string_enum,
-            required: true,
-            values: [face_id, touch_id, webauthn],
-          },
-        ],
-    }
-  - {
-      name: biometric_auth_success,
-      category: security,
-      source: frontend,
-      properties:
-        [
-          {
-            name: kind,
-            type: string_enum,
-            required: true,
-            values: [face_id, touch_id, webauthn],
-          },
-        ],
-    }
-  - {
-      name: biometric_auth_failed,
-      category: security,
-      source: frontend,
-      description: "RENAMED from biometric_auth_failed_fallback_pin. Encodes fallback via property.",
-      properties:
-        [
-          {
-            name: kind,
-            type: string_enum,
-            required: true,
-            values: [face_id, touch_id, webauthn],
-          },
-          {
-            name: fallback,
-            type: string_enum,
-            required: false,
-            values: [pin, none],
-          },
-        ],
-    }
 
   # ─────────────────────────────────────────────────────────────────────
   # PERMISSIONS
@@ -1569,31 +1455,6 @@ events:
           },
         ],
     }
-  - {
-      name: permissions_settings_opened,
-      category: permissions,
-      source: frontend,
-    }
-  - {
-      name: permission_status_changed,
-      category: permissions,
-      source: frontend,
-      properties:
-        [
-          {
-            name: type,
-            type: string_enum,
-            required: true,
-            values: [notifications, microphone, camera, geolocation],
-          },
-          {
-            name: status,
-            type: string_enum,
-            required: true,
-            values: [granted, denied, prompt],
-          },
-        ],
-    }
 
   # ─────────────────────────────────────────────────────────────────────
   # NAVIGATION (sparse — high-value only)
@@ -1612,16 +1473,6 @@ events:
             required: true,
             values: [module_header, settings_root, deeplink],
           },
-        ],
-    }
-  - {
-      name: module_landing_tab_clicked,
-      category: navigation,
-      source: frontend,
-      properties:
-        [
-          { name: module, type: string, required: true },
-          { name: tab_key, type: string, required: true },
         ],
     }
 
@@ -1660,20 +1511,6 @@ events:
             values: [hub, module],
           },
           { name: request_id, type: string, required: true },
-        ],
-    }
-  - {
-      name: error_boundary_retried,
-      category: error_recovery,
-      source: frontend,
-      properties:
-        [
-          {
-            name: scope,
-            type: string_enum,
-            required: true,
-            values: [hub, module],
-          },
         ],
     }
 

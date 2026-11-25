@@ -107,6 +107,13 @@ describe("maskUserText", () => {
     expect(masked).toContain("[phone]");
   });
 
+  it("телефон і IBAN у банківському написанні не йдуть до LLM у клірі (priv-19)", () => {
+    const masked = maskUserText(
+      "дзвони +38 (067) 123-45-67, переказ на UA21 3223 1300 0002 6007 2335 6600 1",
+    );
+    expect(masked).toBe("дзвони [phone], переказ на [iban]");
+  });
+
   it("друга адреса в ланцюжку через `.`/`-`/`+` не йде до LLM у клірі", () => {
     for (const text of [
       "a@x.com.b@y.org",

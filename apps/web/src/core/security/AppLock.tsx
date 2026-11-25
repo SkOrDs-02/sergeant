@@ -317,7 +317,15 @@ function SignOutAction({
 
 interface UnlockScreenProps {
   onUnlock: (pin: string) => Promise<boolean>;
-  onSignOut: () => Promise<boolean>;
+  /** Екран замка: дія «Забув PIN?». Без `onCancel` обовʼязкова. */
+  onSignOut?: () => Promise<boolean>;
+  /**
+   * sec-41: перевірка поточного PIN перед зміною чи вимкненням. Замість
+   * виходу з акаунта показуємо «Скасувати».
+   */
+  onCancel?: () => void;
+  subtitle?: string;
+  submitLabel?: string;
   retryAt?: number | null | undefined;
   isGuest?: boolean | undefined;
 }
@@ -325,6 +333,9 @@ interface UnlockScreenProps {
 function UnlockScreen({
   onUnlock,
   onSignOut,
+  onCancel,
+  subtitle,
+  submitLabel = m.open,
   retryAt,
   isGuest,
 }: UnlockScreenProps) {
@@ -372,6 +383,7 @@ function UnlockScreen({
 
   return (
     <div className="flex flex-col items-center gap-2 w-full">
+      {subtitle && <p className="text-style-body text-muted">{subtitle}</p>}
       <PinPad
         value={pin}
         onChange={handlePinChange}
@@ -397,15 +409,50 @@ function UnlockScreen({
         disabled={pin.length < PIN_MIN || busy || waiting}
         onClick={() => handleSubmit(pin)}
       >
-        {m.open}
+        {submitLabel}
       </Button>
-      <SignOutAction
-        onSignOut={onSignOut}
-        variant="ghost"
-        label={isGuest ? m.guestResetHint : m.recoveryHint}
-        className="mt-2 h-auto whitespace-normal text-center"
-      />
+      {onCancel ? (
+        <Button variant="ghost" size="sm" onClick={onCancel}>
+          {messages.actions.cancel}
+        </Button>
+      ) : onSignOut ? (
+        <SignOutAction
+          onSignOut={onSignOut}
+          variant="ghost"
+          label={isGuest ? m.guestResetHint : m.recoveryHint}
+          className="mt-2 h-auto whitespace-normal text-center"
+        />
+      ) : null}
     </div>
+  );
+}
+
+// ---- Change PIN: спершу поточний PIN (sec-41), далі новий ----------------
+
+interface ChangePinFlowProps extends PinSetupFlowProps {
+  onVerifyCurrent: (pin: string) => Promise<boolean>;
+  retryAt?: number | null | undefined;
+}
+
+function ChangePinFlow({
+  onVerifyCurrent,
+  retryAt,
+  ...setup
+}: ChangePinFlowProps) {
+  const [verified, setVerified] = useState(false);
+  if (verified) return <PinSetupFlow {...setup} />;
+  return (
+    <UnlockScreen
+      subtitle={m.currentPinSubtitle}
+      submitLabel={m.next}
+      retryAt={retryAt}
+      onCancel={setup.onCancel}
+      onUnlock={async (pin) => {
+        const ok = await onVerifyCurrent(pin);
+        if (ok) setVerified(true);
+        return ok;
+      }}
+    />
   );
 }
 
@@ -452,6 +499,12 @@ export interface AppLockProps {
   onChangeCancel: () => void;
   /** Persist a new PIN, scoped to the current user (audit F16). */
   onSavePin: (pin: string) => Promise<void>;
+  /** sec-41: поточний PIN перед зміною (той самий лічильник перебору). */
+  onVerifyCurrentPin: (pin: string) => Promise<boolean>;
+  /** sec-41: вимкнути PIN, лише якщо поточний PIN правильний. */
+  onDisablePin: (currentPin: string) => Promise<boolean>;
+  /** Скасувати вимкнення PIN: блокування лишається як було. */
+  onDisableCancel: () => void;
   /**
    * Вихід з акаунта з екрана замка: дія «Забув PIN?» і єдиний вихід зі
    * стану `lockedOut` (sec-12/priv-14). `false` – вихід скасовано.
@@ -470,6 +523,9 @@ export function AppLock({
   onSetupCancel,
   onChangeCancel,
   onSavePin,
+  onVerifyCurrentPin,
+  onDisablePin,
+  onDisableCancel,
   onSignOut,
   retryAt,
   isGuest,
@@ -479,11 +535,17 @@ export function AppLock({
     state === "locked" ||
     state === "lockedOut" ||
     state === "setup" ||
-    state === "change";
+    state === "change" ||
+    state === "disable";
   // "change" і "setup" скасовуються по-різному (audit L-6) — change лишає
   // блокування увімкненим і стару PIN недоторканою, setup-скасування вимикає
   // блокування, бо його ще не було. Обираємо правильний handler один раз.
-  const cancelHandler = state === "change" ? onChangeCancel : onSetupCancel;
+  const cancelHandler =
+    state === "change"
+      ? onChangeCancel
+      : state === "disable"
+        ? onDisableCancel
+        : onSetupCancel;
 
   // ESC intentionally disabled on locked / lockedOut — user cannot bypass
   // with keyboard.
@@ -524,7 +586,9 @@ export function AppLock({
         ? m.lockedOutTitle
         : state === "change"
           ? m.changeTitle
-          : m.setupTitle;
+          : state === "disable"
+            ? m.disableLabel
+            : m.setupTitle;
 
   return (
     <div
@@ -554,6 +618,22 @@ export function AppLock({
           />
         ) : state === "lockedOut" ? (
           <LockedOutScreen onSignOut={onSignOut} isGuest={isGuest} />
+        ) : state === "disable" ? (
+          <UnlockScreen
+            subtitle={m.currentPinSubtitle}
+            submitLabel={m.disableConfirmButton}
+            retryAt={retryAt}
+            onCancel={onDisableCancel}
+            onUnlock={onDisablePin}
+          />
+        ) : state === "change" ? (
+          <ChangePinFlow
+            onVerifyCurrent={onVerifyCurrentPin}
+            retryAt={retryAt}
+            onDone={onSetupDone}
+            onCancel={cancelHandler}
+            onSave={onSavePin}
+          />
         ) : (
           <PinSetupFlow
             onDone={onSetupDone}

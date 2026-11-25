@@ -50,6 +50,26 @@ describe("boundedDayKeySchema", () => {
     expect(boundedDayKeySchema.parse("2026-04-12")).toBe("2026-04-12");
   });
 
+  it("відхиляє неіснуючі календарні дати (data-55)", () => {
+    expect(boundedDayKeySchema.safeParse("2024-02-30").success).toBe(false);
+    expect(boundedDayKeySchema.safeParse("2024-13-45").success).toBe(false);
+    expect(boundedDayKeySchema.safeParse("2023-02-29").success).toBe(false);
+    expect(boundedDayKeySchema.safeParse("2026-04-31").success).toBe(false);
+    expect(boundedDayKeySchema.safeParse("2026-00-10").success).toBe(false);
+    expect(boundedDayKeySchema.safeParse("2026-01-00").success).toBe(false);
+  });
+
+  it("приймає 29 лютого високосного року", () => {
+    expect(boundedDayKeySchema.parse("2024-02-29")).toBe("2024-02-29");
+    expect(boundedDayKeySchema.parse("2000-02-29")).toBe("2000-02-29");
+  });
+
+  it("неправильний формат дає одну помилку, а не дві", () => {
+    const r = boundedDayKeySchema.safeParse("2026-4-12");
+    expect(r.success).toBe(false);
+    expect(r.error?.issues).toHaveLength(1);
+  });
+
   it("відхиляє дату поза жорстким діапазоном", () => {
     expect(boundedDayKeySchema.safeParse("1969-12-31").success).toBe(false);
     expect(boundedDayKeySchema.safeParse("2100-01-02").success).toBe(false);

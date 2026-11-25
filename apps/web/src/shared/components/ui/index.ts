@@ -20,7 +20,6 @@ export type {
   ButtonSize,
   ButtonTone,
   ButtonVariant,
-  ButtonVariantLegacy,
 } from "./Button";
 
 export { IconButton } from "./IconButton";

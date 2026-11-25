@@ -68,6 +68,21 @@ describe("useForgotPassword", () => {
     expect(requestPasswordResetMock).not.toHaveBeenCalled();
   });
 
+  it("rejects malformed email without calling the server (ux-49)", async () => {
+    const { result } = renderHook(() => useForgotPassword());
+
+    act(() => {
+      result.current.setForgotEmail("not-an-email");
+    });
+    await act(async () => {
+      await result.current.submit();
+    });
+
+    expect(setAuthErrorMock).toHaveBeenCalledWith("Некоректний формат email");
+    expect(requestPasswordResetMock).not.toHaveBeenCalled();
+    expect(result.current.forgotState).toBe("idle");
+  });
+
   it("transitions to sent on successful reset request", async () => {
     requestPasswordResetMock.mockResolvedValue(true);
     const { result } = renderHook(() => useForgotPassword());

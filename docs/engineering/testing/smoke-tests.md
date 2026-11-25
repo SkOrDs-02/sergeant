@@ -99,7 +99,7 @@ node scripts/post-deploy-smoke.mjs \
   --report /tmp/smoke-report.md
 ```
 
-Anonymous-критичні endpoints (`/livez`, `/readyz`, `/healthz`, `/api/status`, `/api/push/vapid-public`) мають бути зеленими одразу. `auth:me-session` буде або skip-нутий, або 401 без cookie — це нормально для dry-перевірки скрипту.
+Anonymous-критичні endpoints (`/livez`, `/readyz`, `/api/status`, `/api/push/vapid-public`) мають бути зеленими одразу. `/healthz` і `/health/workers` мають `auth: "metrics"`: із `SMOKE_METRICS_TOKEN` (= серверний `METRICS_TOKEN`, секрет репо `SMOKE_METRICS_TOKEN`) перевіряється форма, без нього тест чекає 401 `unauthorized`, тобто що гейт закритий (sec-40). `auth:me-session` буде або skip-нутий, або 401 без cookie — це нормально для dry-перевірки скрипту.
 
 ### Проти staging (як CI)
 

@@ -5,8 +5,8 @@
  *
  * Masked patterns:
  *  - Email addresses
- *  - Ukrainian / international phone numbers
- *  - IBAN (UA format)
+ *  - Ukrainian phone numbers (compact or with spaces/dashes/brackets, +38/+380)
+ *  - IBAN (UA format, compact or grouped with spaces)
  *  - Payment card numbers (4–19 digits separated by spaces/dashes)
  *  - Ukrainian tax IDs (РНОКПП, 10 digits)
  */
@@ -65,14 +65,39 @@ function maskEmails(text: string): string {
   return copiedUpTo === 0 ? text : out + text.slice(copiedUpTo);
 }
 
+/**
+ * Телефони й IBAN у тому вигляді, як їх пишуть люди й показують банки
+ * (аудит 2026-10-01, priv-19): з пробілами, нерозривними пробілами, дефісами,
+ * дужками навколо коду оператора.
+ *
+ * Роздільник між цифрами — максимум ОДИН символ `[ \t\u00a0-]`, і він
+ * не перетинається з `\d`, тож `(?:SEP?\d){N}` розбирається однозначно, без
+ * відкотів: кожна стартова позиція коштує O(1), увесь прохід лінійний
+ * (див. sec-63, rel-07). Перевід рядка роздільником свідомо НЕ вважається:
+ * інакше стовпчик сум на різних рядках склеювався б у «телефон».
+ *
+ * Телефон: `+38 (0xx) xxx-xx-xx`, `+380 xx xxx xx xx`, `0xx-xxx-xx-xx`,
+ * `(0xx) xxx xx xx` і компактні форми. Межі `(?<![\d+])` / `(?!\d)` не дають
+ * вирізати «телефон» із середини довшого числа.
+ */
+const PHONE_WITH_SEPARATORS =
+  /(?<![\d+])(?:(?:\+?38[ \t\u00a0-]?)?(?:\(0\d{2}\)|0\d{2})|\+?380[ \t\u00a0-]?(?:\(\d{2}\)|\d{2}))(?:[ \t\u00a0-]?\d){7}(?!\d)/g;
+
+/** IBAN UA: 27 цифр після `UA`, будь-яке групування (зазвичай по 4). */
+const IBAN_UA = /\bUA(?:[ \t\u00a0-]?\d){27}(?!\d)/gi;
+
+// Порядок важливий: IBAN до карток (група «4x4» сидить усередині IBAN
+// з пробілами), телефони до taxid (компактний `0xxxxxxxxx` — теж 10 цифр).
 const PATTERNS: [RegExp, string][] = [
-  // Ukrainian IBAN: UA + 27 digits
-  [/\bUA\d{27}\b/g, "[iban]"],
+  // Ukrainian IBAN: UA + 27 digits, optionally grouped with separators
+  [IBAN_UA, "[iban]"],
   // Card numbers: 4 groups of 4 digits (with spaces or dashes)
   [/\b\d{4}[\s-]\d{4}[\s-]\d{4}[\s-]\d{4}\b/g, "[card]"],
   // Card numbers written without separators: 13-19 contiguous digits (PAN).
   [/\b\d{13,19}\b/g, "[card]"],
-  // Phone: +380 / 0 prefix + 9 more digits
+  // Phone with separators / brackets / +38 prefix
+  [PHONE_WITH_SEPARATORS, "[phone]"],
+  // Phone: +380 / 0 prefix + 9 more digits (compact, incl. inside longer runs)
   [/(?:\+380|0)\d{9}\b/g, "[phone]"],
   // Ukrainian РНОКПП: standalone 10-digit number
   [/\b\d{10}\b/g, "[taxid]"],

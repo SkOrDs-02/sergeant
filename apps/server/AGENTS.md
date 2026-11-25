@@ -1,6 +1,6 @@
 # Agents in apps/server
 
-> **Last touched:** 2026-10-08 by @claude (§ Health & deploy: проби пишуть латентність, статус доставки алерту). Раніше: 2026-09-23 by @claude (деплой-рядок: без GitHub Actions/`ghcr.io`, `pnpm deploy:api`). **Next review:** 2027-01-17.
+> **Last touched:** 2026-11-21 by @claude (rel-62: advisory-lock міграцій з дедлайном). Раніше: 2026-10-08 by @claude (§ Health & deploy: проби пишуть латентність, статус доставки алерту). Раніше: 2026-09-23 by @claude (деплой-рядок: без GitHub Actions/`ghcr.io`, `pnpm deploy:api`). **Next review:** 2027-01-17.
 > **Status:** Active
 
 > **Single source of truth → root [`AGENTS.md`](../../AGENTS.md).** Цей файл — sub-tree quick reference для агентів, що працюють у `apps/server/`. Не дублюй repo policy: hard rules і CI matrix живуть у корені.
@@ -58,7 +58,7 @@ ENTRYPOINT ["/bin/sh", "-c", "node dist-server/migrate.js && exec node dist-serv
 
 Це нове ім'я того самого release-stage, лише прив'язане до образу, а не до платформи: процес окремий (тобто `statement_timeout = 0`, `lock_timeout` і обхід pgBouncer з `migrate.mjs` лишаються в силі й не течуть у runtime-пул), але код у ньому вже НОВИЙ. Три причини з doc-string при цьому не порушені, і `ensureSchema()` у бут web-процесу **як і раніше не повертається**.
 
-Розбір, чому саме так, а не міграція при старті процесу: причини 1 і 2 закриває `pg_advisory_lock` у [`db.ts`](./src/db.ts) (`MIGRATIONS_ADVISORY_LOCK_KEY`, другий процес спить і потім no-op-ить), а причина 3 непереборна — runtime-пулу потрібен `statement_timeout`, міграціям потрібен його нуль, і один пул обидва набори дати не може.
+Розбір, чому саме так, а не міграція при старті процесу: причини 1 і 2 закриває advisory-lock у [`db.ts`](./src/db.ts) (`MIGRATIONS_ADVISORY_LOCK_KEY`; другий процес опитує `pg_try_advisory_lock` до `MIGRATE_LOCK_WAIT_MS`, 120 с, і потім no-op-ить, а по дедлайну виходить з `migration_lock_timeout`, rel-62), а причина 3 непереборна — runtime-пулу потрібен `statement_timeout`, міграціям потрібен його нуль, і один пул обидва набори дати не може.
 
 Наслідки, які варто тримати в голові:
 
@@ -128,7 +128,7 @@ old container`. Джоба при цьому лишалась зеленою. Т
 
 **І окремо про те, чому це не спіймалось локально.** Без Docker живі лейни скіпаються, а ручна перевірка на своєму Postgres створювала леджер сама — бо перевіряли ПОВЕДІНКУ міграції, а не шлях гарнеса. Перевіряй обидва: `for f in $(ls *.sql | grep -v down | sort); do psql -v ON_ERROR_STOP=1 -f $f; done` по чистій базі ловить рівно цей клас за секунди.
 
-**Схему після деплою перевіряй, а не припускай.** `/health` (readyz) зелений, поки відповідає БД — він нічого не знає про міграції. Розбіжність «образ ↔ база» показує `/healthz`: він порівнює накочені міграції з тими, що є в образі, і на pending віддає `503` зі списком. Саме так знайшлось, що після редеплою 08-24 накотилась 123, а 124 — ні. Той самий чек є в [`smoke-tests.json`](../../scripts/smoke-tests.json) як `diag:healthz` (tier `critical`), але спрацьовує він рідко: [`post-deploy-smoke.yml`](../../.github/workflows/post-deploy-smoke.yml) тригериться на `deployment_status`, якого Coolify не шле, тож після деплою не запускається — лишається нічний cron і ручний `workflow_dispatch`.
+**Схему після деплою перевіряй, а не припускай.** `/health` (readyz) зелений, поки відповідає БД — він нічого не знає про міграції. Розбіжність «образ ↔ база» показує `/healthz`: він порівнює накочені міграції з тими, що є в образі, і на pending віддає `503` зі списком. Саме так знайшлось, що після редеплою 08-24 накотилась 123, а 124 — ні. З 2026-11-21 `/healthz` і `/health/workers` за Bearer `METRICS_TOKEN` (sec-40), тож `curl` без токена дасть 401. Той самий чек є в [`smoke-tests.json`](../../scripts/smoke-tests.json) як `diag:healthz` (tier `critical`, `auth: "metrics"`: без секрету `SMOKE_METRICS_TOKEN` він перевіряє лише закритість гейта), але спрацьовує він рідко: [`post-deploy-smoke.yml`](../../.github/workflows/post-deploy-smoke.yml) тригериться на `deployment_status`, якого Coolify не шле, тож після деплою не запускається — лишається нічний cron і ручний `workflow_dispatch`.
 
 **І цей чек сам був зламаний — третій випадок «завжди червоне = вимкнений гейт» поспіль.** Оголошені форми відповідей розійшлися з фактичними: пʼять probe-ів (`/livez`, `/health/liveness`, `/readyz`, `/health`, `/startupz`) віддають ПЛАЙН-ТЕКСТ `ok`, а конфіг чекав JSON `{ok: boolean}` — тобто ловив `json_parse_error` замість перевірки; `/healthz`, `/health/workers` і `/api/status` віддають `{status, timestamp, …}`, а конфіг чекав `{ok, db}`. Заміряно на живому проді 2026-08-24: зі старим конфігом **8 із 15 тестів падали з `shape_mismatch` на цілком здоровому сервісі**, з новим ті самі 8 зелені. Для текстових probe-ів тепер `expectedBodyContains`, а не `shape` — `shape` на не-JSON тілі не може дати нічого, крім помилки розбору. Правиш ендпоінт — став форму сюди тим самим заміром, а не з памʼяті.
 

@@ -69,6 +69,31 @@ vi.mock("./productCatalog.js", () => ({
   upsertIntoCatalog: upsertIntoCatalogMock,
 }));
 
+/**
+ * Глобальний бюджет апстрімів (rel-35) мокається тут: ці тести перевіряють
+ * каскад, а логіку лічильника тримає `upstreamBudget.test.ts`. Дефолт
+ * «бюджет є», тож наявні сценарії читаються без змін.
+ */
+const budgetMock = vi.hoisted(() =>
+  vi.fn<(upstream: string, opts: { keyed: boolean }) => Promise<boolean>>(
+    async () => true,
+  ),
+);
+vi.mock("./upstreamBudget.js", () => ({
+  tryConsumeUpstreamBudget: budgetMock,
+  // Та сама семантика, що в модулі: вичерпаний бюджет кидає помилку з
+  // іменем, за яким її відрізняє каскад.
+  consumeUpstreamBudgetOrThrow: async (
+    upstream: string,
+    opts: { keyed: boolean },
+  ) => {
+    if (await budgetMock(upstream, opts)) return;
+    const error = new Error(`${upstream} upstream budget exhausted`);
+    error.name = "UpstreamBudgetExhaustedError";
+    throw error;
+  },
+}));
+
 const handlerModule = await import("./barcode.js");
 const { errorHandler } = await import("../../http/errorHandler.js");
 const rawHandler = handlerModule.default;
@@ -210,6 +235,7 @@ describe("barcode handler", () => {
     silpoMocks.isSilpoConnectedUser.mockReset().mockResolvedValue(false);
     silpoMocks.lookupSilpoBarcode.mockReset().mockResolvedValue(null);
     silpoMocks.envOverrides.SILPO_ENABLED = true;
+    budgetMock.mockReset().mockResolvedValue(true);
   });
 
   afterEach(() => {
@@ -355,6 +381,55 @@ describe("barcode handler", () => {
       vi.resetModules();
     });
 
+    it("вичерпаний глобальний бюджет UPCitemdb: апстрім не викликається, відповідь 503 без кешу, а не 404 (rel-35, G5)", async () => {
+      budgetMock.mockImplementation(
+        async (upstream) => upstream !== "upcitemdb",
+      );
+      global.fetch = vi
+        .fn()
+        .mockResolvedValueOnce(OFF_MISS)
+        .mockResolvedValueOnce(USDA_MISS);
+      const res1 = mockRes();
+      await handler(asReq({ barcode: "1234567890123" }), res1);
+      // «Не питали» не означає «немає в базі»: той самий 503, що й збій
+      // джерела, і без публічного кешу роутера.
+      expect(res1.statusCode).toBe(503);
+      expect(res1.body).toMatchObject({ code: "BARCODE_SOURCES_UNAVAILABLE" });
+      expect(res1.headers["Cache-Control"]).toBe("no-store");
+      const urls = vi.mocked(global.fetch).mock.calls.map((c) => String(c[0]));
+      expect(urls).toHaveLength(2);
+      expect(urls.some((u) => u.includes("upcitemdb"))).toBe(false);
+      expect(budgetMock).toHaveBeenCalledWith("upcitemdb", { keyed: false });
+
+      // Бюджет оновився: miss-sentinel не записаний, тож каскад іде знову і
+      // знаходить продукт, а не віддає з кешу 404 ще 30 хвилин.
+      budgetMock.mockResolvedValue(true);
+      (global.fetch as ReturnType<typeof vi.fn>)
+        .mockResolvedValueOnce(OFF_MISS)
+        .mockResolvedValueOnce(USDA_MISS)
+        .mockResolvedValueOnce(UPCITEMDB_HIT);
+      const res2 = mockRes();
+      await handler(asReq({ barcode: "1234567890123" }), res2);
+      expect(res2.statusCode).toBe(200);
+      expect(res2.body).toMatchObject({ product: { source: "upcitemdb" } });
+      expect(global.fetch).toHaveBeenCalledTimes(5);
+    });
+
+    it("вичерпаний бюджет USDA: каскад іде одразу в UPCitemdb (rel-35)", async () => {
+      budgetMock.mockImplementation(async (upstream) => upstream !== "usda");
+      global.fetch = vi
+        .fn()
+        .mockResolvedValueOnce(OFF_MISS)
+        .mockResolvedValueOnce(UPCITEMDB_HIT);
+      const res = mockRes();
+      await handler(asReq({ barcode: "1234567890123" }), res);
+      expect(res.statusCode).toBe(200);
+      expect(res.body).toMatchObject({ product: { source: "upcitemdb" } });
+      const urls = vi.mocked(global.fetch).mock.calls.map((c) => String(c[0]));
+      expect(urls.some((u) => u.includes("api.nal.usda.gov"))).toBe(false);
+      expect(budgetMock).toHaveBeenCalledWith("usda", { keyed: false });
+    });
+
     it("всі три upstream miss → 404 без crash", async () => {
       global.fetch = vi
         .fn()
@@ -466,7 +541,8 @@ describe("barcode handler", () => {
       expect(global.fetch).toHaveBeenCalledTimes(3);
     });
 
-    it("USDA hit falls back to the first food when gtinUpc is not an exact barcode match", async () => {
+    it("USDA без збігу gtinUpc — miss: чужий foods[0] не віддається і не пишеться в каталог (data-56)", async () => {
+      upsertIntoCatalogMock.mockClear();
       global.fetch = vi
         .fn()
         .mockResolvedValueOnce(OFF_MISS)
@@ -475,9 +551,9 @@ describe("barcode handler", () => {
             body: {
               foods: [
                 {
-                  description: "Fallback Yogurt",
-                  brandOwner: "Fallback Dairy",
-                  gtinUpc: "0000000000000",
+                  description: "Unrelated Yogurt",
+                  brandOwner: "Other Dairy",
+                  gtinUpc: "070038000563",
                   foodNutrients: [
                     { nutrientId: 1008, value: 61 },
                     { nutrientId: 1003, value: 9 },
@@ -485,22 +561,58 @@ describe("barcode handler", () => {
                     { nutrientId: 1005, value: 4 },
                   ],
                 },
+                {
+                  // Відсутній gtinUpc не має «збігатися» з кодом із нулів.
+                  description: "No Gtin Food",
+                  foodNutrients: [{ nutrientId: 1008, value: 10 }],
+                },
               ],
             },
           }),
-        );
-      const req = asReq({ barcode: "0818290015938" });
+        )
+        .mockResolvedValueOnce(UPCITEMDB_MISS);
+      const req = asReq({ barcode: "4820000000017" });
       const res = mockRes();
       await handler(req, res);
+      expect(res.statusCode).toBe(404);
+      expect(global.fetch).toHaveBeenCalledTimes(3);
+      expect(upsertIntoCatalogMock).not.toHaveBeenCalled();
+    });
+
+    it("USDA: код із самих нулів не збігається з food без gtinUpc", async () => {
+      global.fetch = vi
+        .fn()
+        .mockResolvedValueOnce(OFF_MISS)
+        .mockResolvedValueOnce(
+          mockFetchResponse({
+            body: {
+              foods: [
+                {
+                  description: "Chicken Nuggets",
+                  foodNutrients: [{ nutrientId: 1008, value: 250 }],
+                },
+              ],
+            },
+          }),
+        )
+        .mockResolvedValueOnce(UPCITEMDB_MISS);
+      const res = mockRes();
+      await handler(asReq({ barcode: "00000000" }), res);
+      expect(res.statusCode).toBe(404);
+    });
+
+    it("USDA: збіг gtinUpc не залежить від провідних нулів (UPC-A ↔ EAN-13)", async () => {
+      global.fetch = vi
+        .fn()
+        .mockResolvedValueOnce(OFF_MISS)
+        .mockResolvedValueOnce(USDA_HIT);
+      const res = mockRes();
+      // USDA_HIT має gtinUpc 0818290015938; скан UPC-A без провідного нуля.
+      await handler(asReq({ barcode: "818290015938" }), res);
       expect(res.statusCode).toBe(200);
       expect(res.body).toMatchObject({
-        product: {
-          name: "Fallback Yogurt",
-          brand: "Fallback Dairy",
-          source: "usda",
-        },
+        product: { name: "Greek Yogurt", source: "usda" },
       });
-      expect(global.fetch).toHaveBeenCalledTimes(2);
     });
 
     it("OFF повертає продукт без жодного макроса — нормалізатор віддає null, cascade продовжує", async () => {

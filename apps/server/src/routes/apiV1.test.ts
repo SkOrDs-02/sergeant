@@ -125,6 +125,35 @@ describe("api versioning — /api/v1/* дзеркалить /api/*", () => {
     expect(res.status).toBe(404);
   });
 
+  it("невідомий /api/* віддає JSON-конверт помилки, а не HTML Express-а (ux-83)", async () => {
+    const app = createApp();
+    for (const path of [
+      "/api/this-does-not-exist",
+      "/api/v1/this-does-not-exist",
+    ]) {
+      const res = await request(app).get(path).set("X-Request-Id", "req-ux-83");
+      expect(res.status, path).toBe(404);
+      expect(res.headers["content-type"], path).toMatch(/application\/json/);
+      expect(res.body, path).toEqual({
+        error: "Not found",
+        message: "Not found",
+        code: "NOT_FOUND",
+        requestId: res.headers["x-request-id"],
+      });
+      expect(res.text, path).not.toMatch(/Cannot GET/);
+    }
+  });
+
+  it("JSON-404 для /api/* не зачіпає службові ендпоінти поза /api", async () => {
+    const app = createApp();
+    const res = await request(app).get("/livez");
+    expect(res.status).toBe(200);
+    // Невідомий шлях поза /api лишається на стандартному обробнику.
+    const outside = await request(app).get("/not-api/unknown");
+    expect(outside.status).toBe(404);
+    expect(outside.body).not.toHaveProperty("code", "NOT_FOUND");
+  });
+
   it("не переписує /api/* без v1 (не ламає існуючий веб)", async () => {
     const app = createApp();
     const res = await request(app).get("/api/push/vapid-public");

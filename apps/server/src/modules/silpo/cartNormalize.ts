@@ -1,5 +1,5 @@
 import { z } from "zod";
-import { foldApostrophes } from "@sergeant/shared";
+import { foldApostrophes, safeSilpoHref } from "@sergeant/shared";
 
 /**
  * Pure (no I/O, no logger) parsing/normalization for the "build a Silpo cart
@@ -369,7 +369,10 @@ export function normalizeCartDetail(
     cart: {
       items,
       totalKop: totalUah !== undefined ? uahToKop(totalUah) : null,
-      cartUrl: envelope.data.checkoutWebLink ?? null,
+      // sec-29: upstream-рядок іде клієнту в `<a href>`. Лише https на
+      // хостах Сільпо; `javascript:`, чужий хост чи сміття — `null`
+      // (кнопку «Відкрити кошик» клієнт тоді ховає), а не помилка кошика.
+      cartUrl: safeSilpoHref(envelope.data.checkoutWebLink),
     },
     itemsDropped,
   };

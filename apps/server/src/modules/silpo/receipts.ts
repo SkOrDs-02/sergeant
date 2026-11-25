@@ -27,7 +27,9 @@ import {
 } from "./receiptsWipe.js";
 import {
   defaultWithTransaction,
+  isReceiptWriteDegraded,
   upsertReceipt,
+  upsertReceiptsIsolated,
   type ParsedItem,
   type ParsedReceipt,
   type SilpoTransactionRunner,
@@ -671,6 +673,27 @@ async function recordSyncFailure(
 }
 
 /**
+ * Персистить факт УСПІШНОГО завершення синку: sync без нових чеків теж
+ * оновлює «Останнє оновлення» в UI (MAX(created_at) по чеках цього не вміє).
+ *
+ * Тим самим запитом ГАСИТЬ слід останнього провалу. Без цього плашка
+ * «синк зламано» лишалась би висіти після того, як усе полагодилось —
+ * а хибна тривога знецінює сигнал швидше, ніж його відсутність.
+ */
+async function touchLastSync(userId: string, queryFn: QueryFn): Promise<void> {
+  await queryFn(
+    `UPDATE silpo_connection
+        SET last_sync_at = NOW(),
+            last_failed_at = NULL,
+            last_error_code = NULL,
+            updated_at = NOW()
+      WHERE user_id = $1`,
+    [userId],
+    { op: "silpo_connection_touch_last_sync" },
+  );
+}
+
+/**
  * `POST /api/silpo/sync` ("Оновити чеки") entry point. Pulls both order
  * lists, upserts new receipts/items (existing ones are immutable — never
  * re-fetched/re-written), then runs the deterministic matcher over
@@ -715,37 +738,35 @@ export async function pullAndSyncReceipts(
     wipedAtMs,
   );
 
-  let receiptsInserted = 0;
-  let itemsInserted = 0;
-  for (const receipt of offlineParsed) {
-    const r = await upsertReceipt(userId, "offline", receipt, withTransaction);
-    if (r.inserted) receiptsInserted++;
-    itemsInserted += r.itemsInserted;
-  }
-  for (const receipt of onlineParsed) {
-    const r = await upsertReceipt(userId, "online", receipt, withTransaction);
-    if (r.inserted) receiptsInserted++;
-    itemsInserted += r.itemsInserted;
-  }
+  // Збій запису одного чека не валить синк: чек пропускається з логом і
+  // метрикою, решта пишеться, матчер біжить (аудит 2026-10-01, rel-32).
+  const offlineRes = await upsertReceiptsIsolated(
+    userId,
+    "offline",
+    offlineParsed,
+    withTransaction,
+  );
+  const onlineRes = await upsertReceiptsIsolated(
+    userId,
+    "online",
+    onlineParsed,
+    withTransaction,
+  );
+  const receiptsInserted =
+    offlineRes.receiptsInserted + onlineRes.receiptsInserted;
+  const itemsInserted = offlineRes.itemsInserted + onlineRes.itemsInserted;
 
   const { matched, ambiguous, unmatched } = await matchAndLink(userId, queryFn);
 
-  // Персистимо факт УСПІШНОГО завершення: sync без нових чеків теж оновлює
-  // «Останнє оновлення» в UI (MAX(created_at) по чеках цього не вміє).
-  //
-  // Тим самим запитом ГАСИМО слід останнього провалу. Без цього плашка
-  // «синк зламано» лишалась би висіти після того, як усе полагодилось —
-  // а хибна тривога знецінює сигнал швидше, ніж його відсутність.
-  await queryFn(
-    `UPDATE silpo_connection
-        SET last_sync_at = NOW(),
-            last_failed_at = NULL,
-            last_error_code = NULL,
-            updated_at = NOW()
-      WHERE user_id = $1`,
-    [userId],
-    { op: "silpo_connection_touch_last_sync" },
-  );
+  if (isReceiptWriteDegraded([offlineRes, onlineRes])) {
+    // Чеки не записались через збій бази (або не записався жоден): це
+    // провал, а не успіх, тож `last_sync_at` не чіпаємо, а слід провалу
+    // лишаємо — інакше плашка «синк зламано» гасла б саме тоді, коли синк
+    // зламаний (PR-рев'ю rel-32).
+    await recordSyncFailure(userId, "SILPO_RECEIPTS_WRITE_FAILED", queryFn);
+  } else {
+    await touchLastSync(userId, queryFn);
+  }
 
   logger.info({
     msg: "silpo.sync.completed",

@@ -60,13 +60,27 @@ describe("change_category", () => {
     seedTransactions("tx1");
     const out = call({
       name: "change_category",
-      input: { tx_id: "tx1", category_id: "food" },
+      input: { tx_id: "tx1", category_id: "transport" },
     });
     expect(typeof out).toBe("string");
     expect(out).toContain("tx1");
     expect(out).toMatch(/категорію|food/i);
-    const cats = JSON.parse(localStorage.getItem("finyk_tx_cats")!);
-    expect(cats.tx1).toBe("food");
+    // bv-chat-category: ручний запис міняє власне поле `category`, а не
+    // override під сирим id, якого не читає жоден екран.
+    const rows = JSON.parse(localStorage.getItem("finyk_manual_expenses_v1")!);
+    expect(rows[0]).toMatchObject({ id: "tx1", category: "transport" });
+    expect(localStorage.getItem("finyk_tx_cats")).toBeNull();
+  });
+
+  it("bv-chat-category: id у формі списку (manual_<id>) теж міняє запис", () => {
+    seedTransactions("tx1");
+    const out = call({
+      name: "change_category",
+      input: { tx_id: "manual_tx1", category_id: "transport" },
+    });
+    expect(out).toContain("(id:tx1)");
+    const rows = JSON.parse(localStorage.getItem("finyk_manual_expenses_v1")!);
+    expect(rows[0]).toMatchObject({ id: "tx1", category: "transport" });
   });
 
   it("error: missing tx_id still produces a string (no throw)", () => {

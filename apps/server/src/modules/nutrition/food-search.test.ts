@@ -8,7 +8,10 @@ const silpoMocks = vi.hoisted(() => ({
   // Mutable env override: `SILPO_ENABLED=true` by default so the existing
   // Silpo-cascade tests exercise the session-peek path; the kill-switch test
   // flips it to false per-test.
-  envOverrides: { SILPO_ENABLED: true },
+  envOverrides: { SILPO_ENABLED: true } as {
+    SILPO_ENABLED: boolean;
+    USDA_HOURLY_BUDGET?: number | undefined;
+  },
 }));
 
 // `food-search.ts` only imports `getSessionUser` from `../../auth.js` — the
@@ -25,8 +28,8 @@ vi.mock("../../env.js", async (importOriginal) => {
     ...actual,
     env: new Proxy(actual.env, {
       get: (target, prop) =>
-        prop === "SILPO_ENABLED"
-          ? silpoMocks.envOverrides.SILPO_ENABLED
+        prop === "SILPO_ENABLED" || prop === "USDA_HOURLY_BUDGET"
+          ? silpoMocks.envOverrides[prop]
           : Reflect.get(target, prop),
     }),
   };
@@ -74,12 +77,25 @@ import {
   normalizeUSDAProduct,
 } from "./food-search.js";
 import handler from "./food-search.js";
+import { tryConsumeUpstreamBudget } from "./upstreamBudget.js";
+import { __resetRateLimitMemoryForTests } from "../../http/rateLimit.js";
 import { externalHttpRequestsTotal } from "../../obs/metrics.js";
 import express from "express";
 import request from "supertest";
 import { errorHandler } from "../../http/errorHandler.js";
 import { cachingMiddleware } from "../../http/cacheMiddleware.js";
 import { FoodSearchSuccessSchema } from "@sergeant/shared/schemas";
+
+/**
+ * Вичерпати справжній глобальний бюджет USDA (rel-35) без моку модуля:
+ * стеля 1 на годину через env, і одна спроба її забирає. Ключ USDA
+ * потрібен, бо env-стеля діє лише для власного ключа (DEMO_KEY має сталі).
+ */
+async function exhaustUsdaBudget(): Promise<void> {
+  vi.stubEnv("USDA_FDC_API_KEY", "fdc-key");
+  silpoMocks.envOverrides.USDA_HOURLY_BUDGET = 1;
+  await tryConsumeUpstreamBudget("usda", { keyed: true });
+}
 
 interface TestRes {
   statusCode: number;
@@ -154,6 +170,10 @@ beforeEach(() => {
   silpoMocks.isSilpoConnectedUser.mockReset().mockResolvedValue(false);
   silpoMocks.searchSilpoProducts.mockReset().mockResolvedValue([]);
   silpoMocks.envOverrides.SILPO_ENABLED = true;
+  silpoMocks.envOverrides.USDA_HOURLY_BUDGET = undefined;
+  // Справжній бюджет апстрімів (rel-35) рахує через in-memory лімітер:
+  // без скидання DEMO_KEY-стеля (15/год) вичерпалась би посеред файлу.
+  __resetRateLimitMemoryForTests();
   externalHttpRequestsTotal.reset();
 });
 
@@ -456,6 +476,41 @@ describe("food-search handler", () => {
     expect(String(fetchMock.mock.calls[2]?.[0])).toContain(
       "api_key=test-usda-key",
     );
+  });
+
+  it("вичерпаний бюджет USDA: апстрім не викликається, видача OFF без публічного кешу (rel-35)", async () => {
+    await exhaustUsdaBudget();
+    const fetchMock = vi.mocked(global.fetch);
+    fetchMock
+      .mockResolvedValueOnce(jsonResponse(true, { products: [offPear] }))
+      .mockResolvedValueOnce(jsonResponse(true, { products: [] }));
+
+    const res = mockRes();
+    await handler(asReq({ q: "груша", limit: "5" }), res);
+
+    expect(res.statusCode).toBe(200);
+    expect(products(res.body).map((p) => p["source"])).toEqual(["off"]);
+    const urls = fetchMock.mock.calls.map((call) => String(call[0]));
+    expect(urls).toHaveLength(2);
+    expect(urls.some((u) => u.includes("api.nal.usda.gov"))).toBe(false);
+    // Видача неповна: публічний кеш роутера тримав би її після оновлення
+    // бюджету.
+    expect(res.headers["Cache-Control"]).toBe("no-store");
+  });
+
+  it("вичерпаний бюджет USDA і порожній OFF → 503 no-store, а не 200 {products:[]} (rel-35)", async () => {
+    await exhaustUsdaBudget();
+    vi.mocked(global.fetch).mockResolvedValue(
+      jsonResponse(true, { products: [] }),
+    );
+
+    const res = mockRes();
+    await expect(
+      handler(asReq({ q: "груша", limit: "5" }), res),
+    ).rejects.toMatchObject({ status: 503, code: "UPSTREAM_UNAVAILABLE" });
+    expect(res.headers["Cache-Control"]).toBe("no-store");
+    const urls = vi.mocked(global.fetch).mock.calls.map((c) => String(c[0]));
+    expect(urls.some((u) => u.includes("api.nal.usda.gov"))).toBe(false);
   });
 
   it("prefers USDA_FDC_API_KEY over the legacy USDA_API_KEY env var", async () => {

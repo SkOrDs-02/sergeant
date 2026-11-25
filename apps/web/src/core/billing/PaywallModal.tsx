@@ -7,6 +7,10 @@ import { paywallManualAccessMessages as REQUEST_COPY } from "@shared/i18n/uk.man
 import type { PaywallSurface } from "@sergeant/shared";
 import { ANALYTICS_EVENTS, trackEvent } from "../observability/analytics";
 import { useManualAccessRequest } from "./useManualAccessRequest";
+import {
+  usePremiumCheckoutAvailability,
+  usePremiumLaunchNotify,
+} from "./usePremiumLaunch";
 
 /**
  * Premium-gate modal (initiative 0010 Phase 4.1).
@@ -55,6 +59,7 @@ export interface PaywallModalProps {
 // акаунту і лише за прапорцем `BILLING_REVERSE_TRIAL_ENABLED`, тож людина
 // перед пейволом його вже або має, або не отримає.
 const COPY = messages.paywallModal;
+const PRICING_CTA = messages.pricing.cta;
 
 // Порядок булетів — тут: каталог тримає плоскі ключі, бо `MessageCatalog`
 // не допускає масивів (див. коментар над групою в `uk.ts`).
@@ -77,6 +82,23 @@ export function PaywallModal({
   const navigate = useNavigate();
   const prevOpen = useRef(false);
   const manual = useManualAccessRequest(surface);
+  // ux-29 (рішення власника 2026-11-21): поки провайдерів оплати нуль,
+  // «Дивитися плани» вела на /pricing до checkout-у, який гарантовано падає.
+  // Тоді CTA — «Повідомити про запуск»: one-tap запис email сесії в лист
+  // очікування. Провайдерів питаємо лише при відкритому пейволі — він
+  // змонтований закритим на багатьох екранах.
+  const availability = usePremiumCheckoutAvailability({ enabled: open });
+  const launch = usePremiumLaunchNotify("paywall");
+  const notifyInPlace =
+    availability.state === "prelaunch" && launch.email !== null;
+  const primaryLabel = notifyInPlace
+    ? launch.done
+      ? PRICING_CTA.notifyLaunchDone
+      : launch.busy
+        ? PRICING_CTA.notifyLaunchBusy
+        : PRICING_CTA.notifyLaunch
+    : ctaLabel;
+  const primaryDisabled = notifyInPlace && (launch.done || launch.busy);
 
   useEffect(() => {
     // Fire once per open false→true transition. Surface swaps while the
@@ -89,6 +111,10 @@ export function PaywallModal({
   }, [open, surface]);
 
   function handleCta() {
+    if (notifyInPlace) {
+      launch.notify();
+      return;
+    }
     navigate(`/pricing?source=paywall`);
     onClose();
   }
@@ -119,9 +145,10 @@ export function PaywallModal({
               variant="ghost"
               size="md"
               onClick={handleCta}
+              disabled={primaryDisabled}
               {...(manual.sent ? { "data-autofocus": true } : {})}
             >
-              {ctaLabel}
+              {primaryLabel}
             </Button>
             <Button
               variant="solid"
@@ -148,9 +175,10 @@ export function PaywallModal({
               variant="solid"
               size="md"
               onClick={handleCta}
+              disabled={primaryDisabled}
               data-autofocus
             >
-              {ctaLabel}
+              {primaryLabel}
             </Button>
           </div>
         )
@@ -166,6 +194,18 @@ export function PaywallModal({
           </li>
         ))}
       </ul>
+      {notifyInPlace && launch.message ? (
+        <p
+          className={
+            launch.done
+              ? "mt-3 text-style-label text-success-strong"
+              : "mt-3 text-style-label text-danger-strong"
+          }
+          role={launch.done ? "status" : "alert"}
+        >
+          {launch.message}
+        </p>
+      ) : null}
       {manual.available && manual.failed ? (
         <p className="mt-3 text-style-label text-danger-strong" role="alert">
           {REQUEST_COPY.requestFailed}

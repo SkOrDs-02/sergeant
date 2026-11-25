@@ -2,10 +2,18 @@
 
 > **Поточні статуси перенесених знахідок:** [єдиний реєстр верифікації](verification/findings.json). Цей документ зберігає історичні результати; нові спроби та виправлення ведуться в реєстрі.
 
-> **Last touched:** 2026-11-11 by @claude. **Next review:** 2027-12-29.
+> **Last touched:** 2026-11-22 by @claude (рішення власника по решті питань беклогу); 2026-11-21 by @claude (§ 9а/9б: мертві константи аналітики знято; `check:dualwrite-residue` у CI). **Next review:** 2027-12-29.
 > **Status:** Active
 >
 > **Звірка 2026-10-22:** `routes/internal/seo.ts`, `marketing.ts` і `growth.ts` з § 3а вже видалені (#1310, #1536); `strategic.ts`, `debug-window.ts`, `email.ts` та неспожиті хуки api-client лишаються.
+
+> **Рішення власника 2026-11-22** (решта питань беклогу, сторінка рішень; кожне чекає виконання, пункти не закрито):
+>
+> - `3ab-internal-routes-after-n8n-openclaw` — Після виводу n8n (ADR-0090) і OpenClaw (ADR-0075) internal-роути strategic (6 шт.), prompts, categorize (HTTP-обгортка), ai-usage, email/sent, users/cohort, alerts/history і ale… **Рішення:** Видалити всі разом із тестами (in-process функції лишити).
+> - `4a-strategic-mode` — Strategic mode: StrategyPage не змонтована з PR-34 (@nextStep PR-35+), strategicKeys.goalsForWeek і internal-роути живуть заради неї. **Рішення:** Видалити UI-сторінку і ключ, серверну половину лишити.
+> - `2v-openclaw-mute-state` — Таблицю openclaw_mute_state читає alerts-guard (modules/alerts/mute-state.ts), але писача немає, тож мут увімкнути неможливо. **Рішення:** Прибрати guard і дропнути таблицю двофазною міграцією.
+> - `2v-growth-funnel-acquisition-tables` — growth_funnel_daily і growth_acquisition_daily писали n8n WF-60/63; n8n виведено, писачів і читачів у коді нема, у фазу 2 DROP вони не ввійшли. **Рішення:** Двофазний DROP за зразком 152/167.
+> - `4d-KeyboardAccessory-OptimizedImage` — KeyboardAccessory (лише демо в DesignShowcase) і OptimizedImage (@scaffolded без дедлайну з 2026-04-28) досі без споживачів. **Рішення:** Видалити обидва зараз.
 
 > **Governing skill:** `sergeant-tech-debt` · **Playbook:** [`cleanup-dead-code.md`](../../../start/instructions/cleanup-dead-code.md).
 > Це read-only аудит: у цьому PR нічого не видаляється. Кожна знахідка отримує клас, докази («чому воно осиротіло») і рекомендацію. Самі видалення — окремими PR-ами за класами боргу (політика skill-у: не змішувати dead-code, lint-cleanup і декомпозицію в одному PR).
@@ -61,15 +69,15 @@
 
 ## 1. Стан механічних гейтів і їхні сліпі зони
 
-| Гейт                                | Результат                        | Сліпа зона                                                                                                                                                                                                                          |
-| ----------------------------------- | -------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `pnpm knip` (CI «Dead Code (Knip)») | ✅ чисто                         | `knip.json` exclude-ить категорії `exports`, `types`, `duplicates`, `unresolved` → 28 експортів і 16 типів (§ 7–8) невидимі для CI                                                                                                  |
-| `pnpm dead-code:files`              | ✅ «No unmarked unused files»    | поважає `@scaffolded` — навмисно; але не бачить mobile (нижче)                                                                                                                                                                      |
-| knip для `apps/mobile`              | —                                | `knip.json` оголошує `"entry": ["app/**", "src/**"]` → **кожен src-файл є entry, сирітські файли в mobile принципово невидимі** (~35 файлів у § 5)                                                                                  |
-| `check:dualwrite-residue`           | ✅ clean (1613 files)            | **не підключений ні до CI, ні до turbo** — лише ручний npm-script (грепи по `.github/workflows` і `turbo.json` — нуль збігів)                                                                                                       |
-| `docs:check-links`                  | ✅ 5161 internal + 1480 external | не ловить посилання код→док (напр. docstring-и на видалені доки, § 4–5)                                                                                                                                                             |
-| `lint:ai-legacy`                    | ✅ 3 маркери, всі fresh          | усі 3 без issue-ref `#NNN` (сам гейт це і показує warn-ом): `scripts/billing/grant-beta-pro.mjs`, `scripts/telegram/broadcast-waitlist.mjs`, `scripts/telegram/send-survey.mjs` — тимчасова інфра закритої бети, expires 2026-10-31 |
-| Конфіг-залишок                      | —                                | `knip.json` → `apps/landing` entry `middleware.ts` **не існує** (слід минулого стека; єдиний configuration hint у прогоні)                                                                                                          |
+| Гейт                                | Результат                        | Сліпа зона                                                                                                                                                                                                                                                                                                                   |
+| ----------------------------------- | -------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `pnpm knip` (CI «Dead Code (Knip)») | ✅ чисто                         | `knip.json` exclude-ить категорії `exports`, `types`, `duplicates`, `unresolved` → 28 експортів і 16 типів (§ 7–8) невидимі для CI                                                                                                                                                                                           |
+| `pnpm dead-code:files`              | ✅ «No unmarked unused files»    | поважає `@scaffolded` — навмисно; але не бачить mobile (нижче)                                                                                                                                                                                                                                                               |
+| knip для `apps/mobile`              | —                                | `knip.json` оголошує `"entry": ["app/**", "src/**"]` → **кожен src-файл є entry, сирітські файли в mobile принципово невидимі** (~35 файлів у § 5)                                                                                                                                                                           |
+| `check:dualwrite-residue`           | ✅ clean (1613 files)            | ~~**не підключений ні до CI, ні до turbo** — лише ручний npm-script (грепи по `.github/workflows` і `turbo.json` — нуль збігів)~~ ✅ Закрито 2026-11-21: крок `pnpm check:dualwrite-residue` у джобі `check` (`ci.yml`) до «Format, lint, test, build»; форму стереже `scripts/__tests__/ci-dualwrite-residue-gate.test.mjs` |
+| `docs:check-links`                  | ✅ 5161 internal + 1480 external | не ловить посилання код→док (напр. docstring-и на видалені доки, § 4–5)                                                                                                                                                                                                                                                      |
+| `lint:ai-legacy`                    | ✅ 3 маркери, всі fresh          | усі 3 без issue-ref `#NNN` (сам гейт це і показує warn-ом): `scripts/billing/grant-beta-pro.mjs`, `scripts/telegram/broadcast-waitlist.mjs`, `scripts/telegram/send-survey.mjs` — тимчасова інфра закритої бети, expires 2026-10-31                                                                                          |
+| Конфіг-залишок                      | —                                | `knip.json` → `apps/landing` entry `middleware.ts` **не існує** (слід минулого стека; єдиний configuration hint у прогоні)                                                                                                                                                                                                   |
 
 Окремо: `scripts/check-schema-drift.mjs` (гейт Drizzle↔SQL↔SQLite) має allowlist `SQL_ONLY_TABLES` на ~60 server-only таблиць — **усі 6 повних таблиць-сиріт із § 2 значаться саме там**, тож гейт їх легалізує, а не ловить.
 
@@ -139,7 +147,7 @@ if (relPath.startsWith("docs/work/specs/audits/archive/")) return true;
 
 ### 2д. Dual-write residue — закритий
 
-«Dual-write era» — це **клієнтська** міграція LS/MMKV → SQLite (ADR-0073), не Postgres. `packages/dualwrite-core` — живий і спожитий усіма 4 модулями web+mobile. Postgres-слід ери закритий повністю (`module_data` → DROP у 046, v1-ендпоінти → 410 Gone). Гвард `scripts/dualwrite-residue.ts` тримає baseline (~35 файлів «Phase 5 teardown» в allowlist), але — див. § 1 — **у CI не підключений**.
+«Dual-write era» — це **клієнтська** міграція LS/MMKV → SQLite (ADR-0073), не Postgres. `packages/dualwrite-core` — живий і спожитий усіма 4 модулями web+mobile. Postgres-слід ери закритий повністю (`module_data` → DROP у 046, v1-ендпоінти → 410 Gone). Гвард `scripts/dualwrite-residue.ts` тримає baseline (~35 файлів «Phase 5 teardown» в allowlist), але — див. § 1 — **у CI не підключений**. ✅ Закрито 2026-11-21: крок у джобі `check`.
 
 ## 3. API-ендпоінти і контрактний шар
 
@@ -433,6 +441,8 @@ Vite + React (не Next), 17 файлів, повністю підключени
 | `hint_clicked`, `hint_completed`                | 2026-06-02  | `7b26a8f32` 2026-07-17 «founder feedback remediation (#303)»    |
 
 Рекомендація: видалити константи (плюс `SYNC_CONFLICT_RESOLVED` з 9а — та сама cloudSync-ера).
+
+> ✅ **Закрито 2026-11-21 (гілка `backlog/9ab-dead-analytics-constants`):** з `ANALYTICS_EVENTS` знято 13 констант — усі 5 із 9б (`SYNC_STARTED/SUCCEEDED/FAILED`, `HINT_CLICKED`, `HINT_COMPLETED`) і 8 із 9а (`BIOMETRIC_*` ×3, `ERROR_BOUNDARY_RETRIED`, `MODULE_LANDING_TAB_CLICKED`, `PERMISSIONS_SETTINGS_OPENED`, `PERMISSION_STATUS_CHANGED`, `SYNC_CONFLICT_RESOLVED`); повторний grep по `apps/**` і `packages/**` (ключ і рядкове значення) дав 0 call sites, у mobile лишилась тільки згадка `HINT_COMPLETED` у коментарі `useHints.ts`. Тест `analyticsEvents.test.ts` тепер падає, якщо котрусь повернуть; прибрано також записи в `.telemetry/tracking-plan.yaml`, секцію CloudSync у `frontend.md` і рядок `hint_completed` у `posthog-ftux-dashboards.md`. З 9а лишились `hubchat_tool_invoked` і `landing_email_captured` — поза скоупом.
 
 ### 9в. Call sites живі, у прод не досяжні (~20)
 

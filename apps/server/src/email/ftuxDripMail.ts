@@ -42,6 +42,13 @@ import {
  *   - Перевірка `user`-ряду перед send-ом: якщо юзера видалено між Day 0
  *     та Day 3 (cascade), drip-job помічається `skipped_user_deleted`.
  *
+ * Згода (priv-22, рішення власника 2026-11-21): серія — онбординг з opt-out,
+ * не маркетинг. Тому лист іде лише на ПІДТВЕРДЖЕНУ адресу
+ * (`"emailVerified" = true`, інакше `skipped_unverified`): реєстрація на
+ * чужий email не повинна запускати серію третій особі. Кожен лист несе
+ * посилання «відписатись» і заголовки `List-Unsubscribe` +
+ * `List-Unsubscribe-Post` (RFC 8058, one-click через POST на той самий URL).
+ *
  * Спостережуваність:
  *   - Метрики `ftux_drip_jobs_processed_total{outcome,day}` + duration.
  *   - Лог-event `ftux_drip_email_sent` після успішного send-у з email-hash-ем
@@ -56,7 +63,7 @@ import {
 // знати, чи людина взагалі може отримати нагадування (спека
 // `reward-loop-and-reminders.md`, дірка з новачками).
 const FTUX_DRIP_LOOKUP_USER_QUERY = `
-  SELECT u.id, u.email, u.name,
+  SELECT u.id, u.email, u.name, u."emailVerified" AS email_verified,
          (EXISTS (SELECT 1 FROM push_subscriptions s
                    WHERE s.user_id = u.id AND s.deleted_at IS NULL)
           OR EXISTS (SELECT 1 FROM push_devices d
@@ -87,6 +94,7 @@ interface UserRow {
   id: string;
   email: string;
   name: string | null;
+  email_verified?: boolean;
   has_push?: boolean;
 }
 
@@ -262,11 +270,29 @@ class ResendHttpError extends Error {
   }
 }
 
+/**
+ * RFC 8058 one-click: поштовик шле `POST <url>` з тілом
+ * `List-Unsubscribe=One-Click`, і `POST /api/email/unsubscribe` відписує за
+ * тим самим HMAC-токеном, що й посилання у футері. Без валідного токена
+ * (немає `BETTER_AUTH_SECRET`) заголовків не ставимо: битий URL у
+ * `List-Unsubscribe` гірший, ніж його відсутність.
+ */
+export function buildListUnsubscribeHeaders(
+  unsubscribeUrl: string | null,
+): Record<string, string> {
+  if (!unsubscribeUrl) return {};
+  return {
+    "List-Unsubscribe": `<${unsubscribeUrl}>`,
+    "List-Unsubscribe-Post": "List-Unsubscribe=One-Click",
+  };
+}
+
 async function sendViaResend(args: {
   to: string;
   subject: string;
   text: string;
   html: string;
+  headers: Record<string, string>;
 }): Promise<{ providerMessageId: string | null }> {
   const key = process.env["RESEND_API_KEY"]?.trim();
   if (!key) {
@@ -299,6 +325,9 @@ async function sendViaResend(args: {
       subject: args.subject,
       text: args.text,
       html: args.html,
+      ...(Object.keys(args.headers).length > 0
+        ? { headers: args.headers }
+        : {}),
     }),
     // Без `signal` undici чекає на заголовки до 300 с — один завислий
     // drip-лист тримав би воркер черги п'ять хвилин.
@@ -324,7 +353,10 @@ async function sendViaResend(args: {
  */
 export class FtuxDripSkip extends Error {
   readonly outcome:
-    "skipped_optout" | "skipped_already_sent" | "skipped_user_deleted";
+    | "skipped_optout"
+    | "skipped_already_sent"
+    | "skipped_user_deleted"
+    | "skipped_unverified";
   constructor(outcome: FtuxDripSkip["outcome"], message: string) {
     super(message);
     this.outcome = outcome;
@@ -353,6 +385,15 @@ async function dispatchFtuxDripEmail(data: FtuxDripJobData): Promise<void> {
     throw new FtuxDripSkip(
       "skipped_user_deleted",
       `user ${data.userId} not found at drip dispatch time`,
+    );
+  }
+
+  // priv-22: лише підтверджена адреса. Перевіряємо на кожному дні, а не
+  // тільки при enqueue: адресу могли змінити на ще не підтверджену.
+  if (user.email_verified !== true) {
+    throw new FtuxDripSkip(
+      "skipped_unverified",
+      `user ${data.userId} has no verified email at drip dispatch time`,
     );
   }
 
@@ -391,9 +432,11 @@ async function dispatchFtuxDripEmail(data: FtuxDripJobData): Promise<void> {
 
   const token = signUnsubscribeToken({ userId: data.userId });
   const appUrl = getAppUrl();
-  const unsubscribeUrl = token
+  const signedUnsubscribeUrl = token
     ? buildUnsubscribeUrl({ appUrl, token })
-    : `${appUrl}/api/email/unsubscribe?u=missing-secret`;
+    : null;
+  const unsubscribeUrl =
+    signedUnsubscribeUrl ?? `${appUrl}/api/email/unsubscribe?u=missing-secret`;
 
   const tpl = buildFtuxDripTemplate(data.day, {
     recipientName: user.name?.trim() || null,
@@ -416,6 +459,7 @@ async function dispatchFtuxDripEmail(data: FtuxDripJobData): Promise<void> {
       subject: tpl.subject,
       text: tpl.text,
       html: tpl.html,
+      headers: buildListUnsubscribeHeaders(signedUnsubscribeUrl),
     }));
   } catch (err) {
     if (err instanceof ResendHttpError) {
@@ -500,7 +544,8 @@ export function classifyDispatchOutcome(err: unknown): {
     | "permanent_fail"
     | "skipped_optout"
     | "skipped_already_sent"
-    | "skipped_user_deleted";
+    | "skipped_user_deleted"
+    | "skipped_unverified";
 } {
   if (err instanceof FtuxDripSkip) return { outcome: err.outcome };
   if (!err) return { outcome: "ok" };

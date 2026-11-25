@@ -36,6 +36,17 @@ describe("AppError hierarchy", () => {
     expect(isOperationalError(null)).toBe(false);
   });
 
+  it("isOperationalError розпізнає AppError з іншого екземпляра модуля (бренд Symbol.for)", () => {
+    // vi.resetModules / дубль модуля: `instanceof` хибить, бренд — ні.
+    const foreign = Object.assign(new Error("x"), {
+      status: 503,
+      code: "DPS_TOKEN_MISSING",
+      [Symbol.for("sergeant.AppError")]: true,
+    });
+    expect(foreign instanceof AppError).toBe(false);
+    expect(isOperationalError(foreign)).toBe(true);
+  });
+
   it("передає cause", () => {
     const cause = new Error("root");
     const e = new ValidationError("wrap", { cause });

@@ -3,6 +3,7 @@ import {
   rateLimitExpress,
   requireFreshSession,
   requireSession,
+  requireVerifiedEmail,
   setModule,
 } from "../http/index.js";
 import privatHandler from "../modules/mono/privat.js";
@@ -32,6 +33,13 @@ import {
  * привʼязкою банку (аудит 2026-08-05 § 7а). Тому `requireSession()` тут не
  * blanket-`use` на весь префікс, а явно на кожному роуті, який лишається
  * на кешованому варіанті — інакше connect резолвив би сесію двічі.
+ *
+ * `connect` додатково гейтиться `requireVerifiedEmail()` (H6, аудит
+ * 2026-10-01 sec-26), так само як `/api/mono/connect`: інакше squat-акаунт
+ * на чужий email привʼязав би свій мерчант ПриватБанку. Порядок
+ * `requireFreshSession()` → `requireVerifiedEmail()` → лімітер → handler:
+ * непідтверджений запит відсікається до виклику ПриватБанку і шифрування.
+ * `disconnect` і `status` гейта не мають — anti-lock-in, як у Mono.
  */
 export function createBanksRouter(): Router {
   const r = Router();
@@ -43,6 +51,7 @@ export function createBanksRouter(): Router {
   r.post(
     "/api/privat/connect",
     requireFreshSession(),
+    requireVerifiedEmail(),
     rateLimitExpress({
       key: "api:privat:connect",
       limit: 10,

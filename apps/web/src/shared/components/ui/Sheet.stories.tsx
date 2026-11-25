@@ -53,7 +53,7 @@ export const WithFooter: Story = {
         <Button variant="ghost" className="w-full">
           Скасувати
         </Button>
-        <Button variant="primary" className="w-full">
+        <Button variant="solid" className="w-full">
           Зберегти
         </Button>
       </div>

@@ -3,6 +3,7 @@
 // transactions now come from the Mono mirror reader.
 import { getKyivDayKey } from "@shared/lib/time/kyivTime";
 import { finykChatWrite } from "./dualWriteBridge";
+import { applyManualCategory, resolveManualExpenseId } from "./manualCategory";
 import { FINYK_COLD_CACHE_MESSAGE, warmFinykCache } from "./warmCache";
 import {
   finykCategoryExists,
@@ -71,6 +72,14 @@ export function hasFinykTxKey(
 
 export function toIsoDay(value: unknown): string {
   if (typeof value === "string" && /^\d{4}-\d{2}-\d{2}/.test(value)) {
+    // Голий `YYYY-MM-DD` уже є календарним ключем.
+    if (value.length === 10) return value;
+    // Ручна витрата зберігає UTC-мить ("2026-11-22T23:52:01Z" = 01:52
+    // 23-го за Києвом). UTC-префікс дав би вчорашній день, тож беремо
+    // київську добу миті, як список Операцій (`manualExpenseToTransaction`
+    // → `time` → `getKyivDayKey`), інакше чат і список розходяться.
+    const ms = Date.parse(value);
+    if (Number.isFinite(ms)) return getKyivDayKey(new Date(ms));
     return value.slice(0, 10);
   }
   if (typeof value === "number" && Number.isFinite(value)) {
@@ -139,7 +148,8 @@ function readSearchTransactions(): FinykSearchTx[] {
       date: toIsoDay(tx.date),
       amount: Number.isFinite(amount) ? amount : 0,
       description: String(tx.description || ""),
-      category: txCategories[id] || tx.category || "",
+      // Як у списку Операцій: override живе під `manual_<id>`, інакше поле запису.
+      category: txCategories[manualLinkKey(id)] || tx.category || "",
       type: tx.type,
       source: "manual",
     };
@@ -209,16 +219,26 @@ function formatTxList(items: FinykSearchTx[]): string {
 }
 
 export function changeCategory(action: ChangeCategoryAction): ChatActionResult {
-  const txId = normalizeFinykId(action.input.tx_id);
+  const rawTxId = normalizeFinykId(action.input.tx_id);
   const categoryId = normalizeFinykId(action.input.category_id);
   const cache = warmFinykCache();
   if (!cache) return FINYK_COLD_CACHE_MESSAGE;
+  const manualId = resolveManualExpenseId(cache, rawTxId);
+  const txId = manualId ?? rawTxId;
   // Validate before writing: an override keyed by a hallucinated tx id is
   // invisible in every screen, so the model would report a success that
   // never happened.
   if (!finykTransactionExists(txId)) return unknownTransactionMessage(txId);
   if (!finykCategoryExists(categoryId))
     return unknownCategoryMessage(categoryId);
+  const cat = resolveExpenseCategoryMeta(categoryId, cache.customCategories);
+  const label = finykTransactionLabel(txId);
+  const result = `Категорію операції${label ? ` ${label}` : ""} змінено на ${cat?.label || categoryId} (id:${txId})`;
+  // bv-chat-category: ручний запис тримає категорію у власному полі, override
+  // під сирим id жоден екран не читає (`manualCategory.ts`).
+  if (manualId) {
+    return { result, undo: applyManualCategory(cache, [txId], categoryId) };
+  }
   // data-08: база — канонічні override-и з SQLite, а не порожній kv (інакше
   // undo не знав попереднього override-у й видаляв його замість відновлення).
   const cats = { ...cache.txCategories } as Record<string, string>;
@@ -229,9 +249,6 @@ export function changeCategory(action: ChangeCategoryAction): ChatActionResult {
   const prevCategoryId = cats[txId];
   cats[txId] = categoryId;
   void finykChatWrite("finyk_tx_cats", cats);
-  const cat = resolveExpenseCategoryMeta(categoryId, cache.customCategories);
-  const label = finykTransactionLabel(txId);
-  const result = `Категорію операції${label ? ` ${label}` : ""} змінено на ${cat?.label || categoryId} (id:${txId})`;
   return {
     result,
     undo: () => {
@@ -327,8 +344,19 @@ export function batchCategorize(
   if (input.dry_run !== false) {
     return `Dry-run: ${matches.length} операц. буде перенесено в ${target}: ${preview}`;
   }
-  const cats = { ...cache.txCategories } as Record<string, string>;
-  for (const tx of matches) cats[tx.id] = categoryId;
-  void finykChatWrite("finyk_tx_cats", cats);
+  const manualIds = matches
+    .filter((tx) => txSourceOf(tx) === "manual")
+    .map((tx) => tx.id);
+  const bankIds = matches
+    .filter((tx) => txSourceOf(tx) !== "manual")
+    .map((tx) => tx.id);
+  if (manualIds.length > 0) applyManualCategory(cache, manualIds, categoryId);
+  if (bankIds.length > 0) {
+    // Кеш уже пропатчено записом ручних (`finykChatWrite`), тож беремо свіжий.
+    const base = warmFinykCache()?.txCategories ?? cache.txCategories;
+    const cats = { ...base } as Record<string, string>;
+    for (const id of bankIds) cats[id] = categoryId;
+    void finykChatWrite("finyk_tx_cats", cats);
+  }
   return `Категорію ${matches.length} операц. змінено на ${target}: ${preview}`;
 }

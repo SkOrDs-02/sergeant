@@ -1,6 +1,8 @@
 import { useState } from "react";
 import {
   Button,
+  type ButtonEmphasis,
+  type ButtonTone,
   FormField,
   Input,
   Select,
@@ -20,8 +22,8 @@ const SAMPLE_USAGE = `// Inputs use focus-visible only (gated by check-design-co
   <Input id="email" variant="default" size="md" placeholder="hi@example.com" />
 </FormField>
 
-// Submit button defaults to brand-strong + text-white (-strong companion)
-<Button size="md" variant="primary">Зберегти</Button>`;
+// Головна дія — чорнило на сторінці (solid × neutral, дефолт)
+<Button size="md" variant="solid">Зберегти</Button>`;
 
 export function FormsSection() {
   return (
@@ -107,7 +109,7 @@ export function FormsSection() {
             },
             {
               label: "Submit",
-              good: <code>&lt;Button variant=&quot;primary&quot; /&gt;</code>,
+              good: <code>&lt;Button variant=&quot;solid&quot; /&gt;</code>,
               bad: (
                 <code>&lt;button className=&quot;bg-green-500&quot; /&gt;</code>
               ),
@@ -134,27 +136,40 @@ export function FormsSection() {
   );
 }
 
+// Ті самі п'ять рядків, що до 2026-11-22 стояли легасі-іменами
+// (`primary`, `secondary`, `ghost`, `danger`, `success`), у каноні
+// `variant` × `tone`.
+const BUTTON_MATRIX_ROWS: ReadonlyArray<{
+  label: string;
+  variant: ButtonEmphasis;
+  tone: ButtonTone;
+}> = [
+  { label: "solid", variant: "solid", tone: "neutral" },
+  { label: "outline", variant: "outline", tone: "neutral" },
+  { label: "ghost", variant: "ghost", tone: "neutral" },
+  { label: "soft danger", variant: "soft", tone: "danger" },
+  { label: "soft success", variant: "soft", tone: "success" },
+];
+
 function ButtonsMatrix() {
   return (
     <div className="space-y-3">
-      {(["primary", "secondary", "ghost", "danger", "success"] as const).map(
-        (variant) => (
-          <div key={variant} className="flex flex-wrap items-end gap-3">
-            <span className="w-20 text-style-code text-subtle">{variant}</span>
-            {(["sm", "md", "lg"] as const).map((size) => (
-              <Button key={size} variant={variant} size={size}>
-                {variant}
-              </Button>
-            ))}
-            <Button variant={variant} size="md" disabled>
-              disabled
+      {BUTTON_MATRIX_ROWS.map(({ label, variant, tone }) => (
+        <div key={label} className="flex flex-wrap items-end gap-3">
+          <span className="w-20 text-style-code text-subtle">{label}</span>
+          {(["sm", "md", "lg"] as const).map((size) => (
+            <Button key={size} variant={variant} tone={tone} size={size}>
+              {label}
             </Button>
-            <Button variant={variant} size="md" loading>
-              loading
-            </Button>
-          </div>
-        ),
-      )}
+          ))}
+          <Button variant={variant} tone={tone} size="md" disabled>
+            disabled
+          </Button>
+          <Button variant={variant} tone={tone} size="md" loading>
+            loading
+          </Button>
+        </div>
+      ))}
     </div>
   );
 }

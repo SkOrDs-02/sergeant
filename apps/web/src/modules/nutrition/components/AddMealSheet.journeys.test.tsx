@@ -171,6 +171,23 @@ describe("AddMealSheet — complete edit and photo journeys", () => {
     ).toBeVisible();
   });
 
+  // ux-20: CTA у слоті footer — лише тоді Sheet публікує
+  // `--sgt-sheet-footer-inset`, і трей тостів не лягає на «Зберегти».
+  it("тримає кнопки збереження у слоті footer, а на кроці джерела footer не показує", async () => {
+    renderJourney({ initialMeal: original });
+    const save = await screen.findByRole("button", { name: "Зберегти зміни" });
+    expect(save.closest("[data-sheet-footer]")).not.toBeNull();
+    expect(
+      screen
+        .getByRole("button", { name: "Скасувати" })
+        .closest("[data-sheet-footer]"),
+    ).not.toBeNull();
+    fireEvent.click(
+      screen.getByRole("button", { name: "Обрати інший продукт" }),
+    );
+    expect(document.querySelector("[data-sheet-footer]")).toBeNull();
+  });
+
   it("keeps an unknown barcode replacement within single-meal paths", async () => {
     renderJourney({ initialMeal: original });
     await screen.findByRole("button", { name: "Обрати інший продукт" });

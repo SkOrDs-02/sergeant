@@ -35,6 +35,11 @@ import {
 } from "./auth/pushSessionBinding.js";
 import { queueAuthTransactionalEmail } from "./email/authTransactionalMail.js";
 import {
+  accountLinkingOptions,
+  emailVerificationGateOptions,
+  guardEmailVerifiedSignIn,
+} from "./auth/emailVerificationGate.js";
+import {
   changeEmailConfirmationMail,
   getWebAppOrigin,
   passwordResetMail,
@@ -291,9 +296,32 @@ const tokenKeyRing = parseKeyRing({
   legacyKey: env.BETTER_AUTH_TOKEN_ENC_KEY,
   envName: "BETTER_AUTH_TOKEN_ENC_KEY",
 });
+/** sec-46 / priv-29: межа обовʼязкового підтвердження email. */
+const verificationCutoff = env.EMAIL_VERIFICATION_REQUIRED_FROM;
+const verificationGate = emailVerificationGateOptions(verificationCutoff);
+
 const databaseConfig = tokenKeyRing
   ? createEncryptingAdapter(tokenKeyRing)
   : drizzleAdapter(db, { provider: "pg" });
+
+/**
+ * Ставить FTUX-серію в чергу, не валячи auth-flow: помилка enqueue лише
+ * логується (без plaintext email).
+ */
+function startFtuxDrip(user: { id: string; email: string }): void {
+  try {
+    queueFtuxDripForNewUser({ userId: user.id, email: user.email });
+  } catch (err) {
+    logger.error(
+      {
+        event: "auth.user.ftux_drip.enqueue_error",
+        email_hash: emailFingerprint(user.email),
+        err: err instanceof Error ? err.message : String(err),
+      },
+      "queueFtuxDripForNewUser threw while starting the FTUX drip",
+    );
+  }
+}
 
 export const auth = betterAuth({
   database: databaseConfig,
@@ -383,6 +411,8 @@ export const auth = betterAuth({
     },
   },
   ...(socialProviders ? { socialProviders } : {}),
+  // sec-46: соцвхід не привʼязується до непідтвердженого email+пароль акаунта.
+  account: { accountLinking: accountLinkingOptions },
   emailAndPassword: {
     enabled: true,
     // NIST SP 800-63B рекомендує мінімум 8 символів; 10 — розумний trade-off,
@@ -414,6 +444,10 @@ export const auth = betterAuth({
      * форсує те саме для `/change-password`.
      */
     revokeSessionsOnPasswordReset: true,
+    // sec-46 / priv-29: за межею `EMAIL_VERIFICATION_REQUIRED_FROM` sign-up не
+    // логінить і на зайняту адресу відповідає так само, як на нову, а
+    // власнику адреси йде лист «у тебе вже є акаунт».
+    ...verificationGate.emailAndPassword,
     // Не await-имо відправку — зменшує ризик timing enumeration (див. Better Auth docs).
     sendResetPassword: async ({ user, url }) => {
       queueAuthTransactionalEmail({
@@ -434,6 +468,13 @@ export const auth = betterAuth({
      */
     sendOnSignUp: true,
     /**
+     * sec-46: непідтверджений вхід (гейт межі чи `REQUIRE_EMAIL_VERIFICATION`)
+     * повторно шле лист, тож «перевір пошту» у відповіді правдиве. Клік у
+     * листі за активної межі одразу відкриває сесію.
+     */
+    sendOnSignIn: true,
+    autoSignInAfterVerification: verificationGate.autoSignInAfterVerification,
+    /**
      * `url` від Better Auth має вигляд
      * `{baseURL}/api/auth/verify-email?token=…&callbackURL=/`, тобто після
      * підтвердження редиректить у корінь **API**-домену. API не роздає SPA
@@ -447,6 +488,15 @@ export const auth = betterAuth({
         to: user.email,
         ...verificationMail(url),
       });
+    },
+    /**
+     * priv-22 — FTUX-серія стартує з підтвердження адреси, а не з
+     * реєстрації. Спрацьовує і на підтвердження нової адреси при зміні
+     * email: повторного листа не буде, дедуп тримає `email_campaigns_log`.
+     */
+    afterEmailVerification: async (user) => {
+      if (user.emailVerified !== true) return;
+      startFtuxDrip({ id: user.id, email: user.email });
     },
   },
   /**
@@ -524,7 +574,9 @@ export const auth = betterAuth({
           return { data: result.data };
         },
         /**
-         * S4.3 — FTUX email drip (Day 0 / 1 / 3) через Resend.
+         * S4.3 — FTUX email drip (Day 0 / 1 / 3) через Resend. З priv-22
+         * тут стартує лише вже підтверджена адреса (соцвхід); решта — з
+         * `emailVerification.afterEmailVerification`.
          *
          * Триггер свідомо у `.after`, а не у `.before`: до `.after`-моменту
          * у нас уже є реальний `user.id`, потрібний для unsubscribe-токена,
@@ -553,17 +605,11 @@ export const auth = betterAuth({
           // Reverse trial (за прапорцем); сам ловить свої помилки, тож
           // реєстрацію не валить навіть при збої вставки.
           await grantReverseTrial(pool, user.id);
-          try {
-            queueFtuxDripForNewUser({ userId: user.id, email: user.email });
-          } catch (err) {
-            logger.error(
-              {
-                event: "auth.user.ftux_drip.enqueue_error",
-                email_hash: emailFingerprint(user.email),
-                err: err instanceof Error ? err.message : String(err),
-              },
-              "queueFtuxDripForNewUser threw during user.create.after hook",
-            );
+          // priv-22: лише підтверджена адреса (Google/Apple приходять уже
+          // з `emailVerified`). Email+пароль стартує серію з
+          // `emailVerification.afterEmailVerification`.
+          if (user.emailVerified === true) {
+            startFtuxDrip({ id: user.id, email: user.email });
           }
         },
       },
@@ -614,7 +660,7 @@ export const auth = betterAuth({
      */
     session: {
       create: {
-        before: async (data) => {
+        before: async (data, context) => {
           // AI-LEGACY: expires 2027-02-28 — друга половина рубильника;
           // прибирання — https://github.com/SkOrDs-02/sergeant/blob/97e477e90b711b210184ff2b9426b4452c1cd43f/docs/work/specs/beta-launch/README.md § Що прибрати.
           // Блокування `user.create` зупиняє лише НОВИХ; сесію ж отримує
@@ -627,6 +673,9 @@ export const auth = betterAuth({
               message: "Доступ зараз закритий.",
             });
           }
+          // sec-46: новий акаунт за межею входить паролем лише з
+          // підтвердженим email (після перевірки пароля, без енумерації).
+          await guardEmailVerifiedSignIn(data, context, verificationCutoff);
           if (!data.ipAddress) return undefined;
           const truncated = ipPrefix(data.ipAddress);
           if (truncated && truncated !== data.ipAddress) {

@@ -1,7 +1,9 @@
 # Аудит мертвих GitHub-remote · 2026-09-23
 
-> **Last touched:** 2026-09-29 by @claude (рішення «GitHub повернувся», [ADR-0101](../../../governance/adr/0101-github-primary-host-ci-returns.md)). **Next review:** 2027-10-01.
-> **Status:** Active - архівний пуш не зроблено, чекає рішення власника.
+> **Last touched:** 2026-11-21 by @claude (рішення власника 2026-11-21: архів не пушити, документ став Reference); 2026-09-29 by @claude (рішення «GitHub повернувся», [ADR-0101](../../../governance/adr/0101-github-primary-host-ci-returns.md)). **Next review:** 2027-10-01.
+> **Status:** Reference - рішення власника 2026-11-21: архівний пуш не робимо, refs лишаються лише в локальних remote-ах `oldgh` і `deadgh-zaebal` у `D:\Sergeant` (ризик втрати разом із диском прийнято свідомо). Заборона видаляти ці remote лишається чинною.
+>
+> **Рішення власника 2026-11-21:** не пушити архів ні в GitHub, ні в Bitbucket, ні в дзеркало Hetzner. Те саме рішення закриває DG-14 у [аудиті docs/governance](./2026-09-23-docs-governance-audit.md) §11.
 >
 > **Рішення 2026-09-29:** GitHub знову основний хост коду ([ADR-0101](../../../governance/adr/0101-github-primary-host-ci-returns.md)), Bitbucket став дзеркалом. Формулювання «акаунти заблоковані» і «на GitHub їх не дістати» нижче описують стан на 2026-09-23. Refs у `oldgh` і `deadgh-zaebal` як і раніше існують лише локально, тож заборона видаляти ці remote і питання архівного пуша лишаються чинними; пуш можна вести і в Bitbucket, і в GitHub.
 

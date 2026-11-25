@@ -254,6 +254,38 @@ describe("SilpoCartEntry", () => {
     ).toHaveAttribute("href", "https://silpo.ua/cart");
   });
 
+  it.each([
+    ["javascript:alert(document.domain)"],
+    ["https://evil.example/phish"],
+    ["http://silpo.ua/cart"],
+  ])(
+    "success stage ховає посилання на кошик поза https-хостами Сільпо (%s) — sec-29",
+    async (cartUrl) => {
+      syncStateMock.mockReturnValue({ status: "connected" });
+      cartPreviewMock.mockResolvedValue(previewResponse());
+      cartApplyMock.mockResolvedValue({ items: [], totalKop: null, cartUrl });
+      const user = userEvent.setup();
+
+      renderWithClient(<SilpoCartEntry shoppingList={SHOPPING_LIST} />);
+      await user.click(screen.getByRole("button", { name: /У кошик Сільпо/i }));
+      await waitFor(() =>
+        expect(
+          screen.getByRole("checkbox", { name: /Молоко Яготинське/i }),
+        ).toBeInTheDocument(),
+      );
+      await user.click(
+        screen.getByRole("button", { name: /Додати в кошик Сільпо/i }),
+      );
+
+      await waitFor(() =>
+        expect(screen.getByText("Додано в кошик Сільпо")).toBeInTheDocument(),
+      );
+      expect(
+        screen.queryByRole("link", { name: /Відкрити кошик у Сільпо/i }),
+      ).toBeNull();
+    },
+  );
+
   it("success stage without cartUrl renders no cart link", async () => {
     syncStateMock.mockReturnValue({ status: "connected" });
     cartPreviewMock.mockResolvedValue(previewResponse());

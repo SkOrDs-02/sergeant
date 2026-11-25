@@ -2,7 +2,7 @@
 
 # Дизайн-контракт: тарифи й paywall
 
-> **Last touched:** 2026-09-19 by @claude. **Next review:** 2027-04-05.
+> **Last touched:** 2026-11-22 by @claude. **Next review:** 2027-06-08.
 > **Status:** Active — контракт as-built: описує `PricingPage.tsx`, `core/billing/PaywallModal.tsx`, `useFeatureGate.ts`, `core/access/featureAccess.ts`, `core/settings/PlanSection.tsx` станом на 2026-09-16 (рішення власника по аудиту дизайн-доків, пункт 4, варіант A: повні контракти для pricing/paywall і onboarding). Усі розбіжності з кодом, які контракт вимагав закрити, закриті 2026-09-16; 2026-09-17 знайдено один новий **[борг]** — копі `PlanSection.tsx` (див. § Копі).
 
 Поверхня, на якій продукт просить гроші: `/pricing` (окремий маршрут поза
@@ -141,9 +141,13 @@ no-cyrillic-jsx-literal` у `HubChat.tsx` знято разом із приво�
 
 ## Безпека
 
-Redirect на оплату лише в `ALLOWED_CHECKOUT_HOSTS` (`checkout.stripe.com`,
+Redirect на оплату лише по `https:` у `BILLING_PROVIDER_HOSTS`
+(`packages/shared/src/utils/safeExternalHref.ts`: `checkout.stripe.com`,
 `billing.stripe.com`, `www.liqpay.ua`, `pay.mbnk.biz`, `pay.monobank.ua`)
-або same-origin. Нового провайдера додають у список, а не обходять його.
+або same-origin. Перевіряє `assertAllowedBillingUrl`
+(`core/billing/billingRedirect.ts`) на кожному вході: checkout і портал на
+`/pricing`, «Керувати підпискою» в налаштуваннях. Нового провайдера додають
+у список, а не обходять його.
 
 ## Чого не робити
 

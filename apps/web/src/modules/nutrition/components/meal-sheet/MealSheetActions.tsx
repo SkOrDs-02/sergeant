@@ -45,7 +45,7 @@ export function MealSaveButtons({
   onCancel: () => void;
 }) {
   return (
-    <div className="mt-5 grid grid-cols-1 sm:grid-cols-2 gap-2">
+    <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
       <Button
         type="button"
         variant="solid"

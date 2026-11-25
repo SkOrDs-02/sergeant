@@ -401,6 +401,7 @@ async function checkRateLimitPgBySubject(
   { key, limit, windowMs }: { key: string; limit: number; windowMs: number },
   cost: number,
 ): Promise<RateLimitResult> {
+  if (windowMs > pgMaxWindowSeenMs) pgMaxWindowSeenMs = windowMs;
   const sql = `
     INSERT INTO rate_limit_buckets (rl_key, subject, count, started_at)
     VALUES ($1, $2, $4::int, NOW())
@@ -474,6 +475,11 @@ export function __resetRateLimitPgWarnForTests(): void {
   pgUndefinedTableLogged = false;
 }
 
+/** Тести: очистити in-memory бакети (фолбек без Redis і Postgres). */
+export function __resetRateLimitMemoryForTests(): void {
+  buckets.clear();
+}
+
 interface PgErrorLike {
   code?: string;
   message?: string;
@@ -515,17 +521,34 @@ async function tryCheckRateLimitPg(
   }
 }
 
-async function maybeSweepPgBuckets(maxWindowMs: number): Promise<void> {
+/**
+ * Retention for Postgres bucket rows. `rate_limit_buckets` has no window
+ * column and the sweep below has no key filter, so the TTL must cover the
+ * longest window of **any** key, not the window of the route that happened
+ * to trigger the sweep: a 60-second route must not wipe 1h/24h buckets
+ * (upstream daily budgets, `finyk` daily caps). 2× the longest configured
+ * window (24h) is the floor; a longer window seen at runtime widens it.
+ */
+const PG_BUCKET_MIN_TTL_MS = 2 * 24 * 60 * 60 * 1000;
+
+// Process-wide max of every `windowMs` that reached the Postgres limiter.
+let pgMaxWindowSeenMs = 0;
+
+/** Exposed for tests: TTL the next Postgres sweep will use. */
+export function pgBucketSweepTtlMs(): number {
+  return Math.max(PG_BUCKET_MIN_TTL_MS, pgMaxWindowSeenMs * 2);
+}
+
+async function maybeSweepPgBuckets(): Promise<void> {
   if (Math.random() >= PG_SWEEP_PROBABILITY) return;
-  // Keep rows for 2× the longest configured window so we never evict
-  // a still-live bucket out from under a concurrent request that hasn't
-  // yet read it back. The application path always re-rotates a bucket
-  // on access, so a stale row is at worst a one-window over-count.
-  const ttlMs = Math.max(60_000, maxWindowMs * 2);
+  // Keep rows for 2× the longest window across all keys so we never evict
+  // a still-live bucket of another (longer-window) key. The application
+  // path always re-rotates a bucket on access, so a stale row is at worst
+  // a one-window over-count.
   try {
     await pool.query(
       "DELETE FROM rate_limit_buckets WHERE started_at < NOW() - ($1::bigint || ' milliseconds')::interval",
-      [String(ttlMs)],
+      [String(pgBucketSweepTtlMs())],
     );
   } catch {
     /* sweep is best-effort */
@@ -771,7 +794,7 @@ export function rateLimitExpress({
 
     // Best-effort sweep of stale rows; runs ~1/256 calls so the table
     // doesn't grow under churning IPs. No-op when Postgres is degraded.
-    void maybeSweepPgBuckets(windowMs);
+    void maybeSweepPgBuckets();
     try {
       // RFC-9239 (draft-ietf-httpapi-ratelimit-headers) `RateLimit-*`
       // headers — це сучасний стандарт; lib-cli (better-fetch / axios-

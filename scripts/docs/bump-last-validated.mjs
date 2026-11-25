@@ -19,8 +19,9 @@
 //   3. Skip if today's date is already in the header (idempotent).
 //   4. Replace the date with today (UTC ISO).
 //   5. Replace the `by @handle` with the current committer's handle (resolved
-//      via `scripts/docs/author-map.json` → email → @handle, falling back to
-//      the email's local-part if unmapped).
+//      via `scripts/docs/author-map.json` → email → @handle; personal
+//      addresses live there only as sha256 hashes, because the repo is
+//      public; falls back to the email's local-part if unmapped).
 //   6. Replace `Next review:` with today + cadenceDays from
 //      `freshness-config.json` (default 90).
 //
@@ -42,6 +43,7 @@ import {
   writeSync,
 } from "node:fs";
 import { execSync } from "node:child_process";
+import { createHash } from "node:crypto";
 import { resolve, dirname, isAbsolute, relative, sep } from "node:path";
 import { performance } from "node:perf_hooks";
 import { fileURLToPath } from "node:url";
@@ -90,8 +92,16 @@ export function addDays(isoDate, days) {
   return d.toISOString().slice(0, 10);
 }
 
+/** Key under which a hashed (personal) address is stored in the merged map. */
+export function hashedEmailKey(email) {
+  const hex = createHash("sha256").update(email.toLowerCase()).digest("hex");
+  return `sha256:${hex}`;
+}
+
 /**
  * Resolve a git committer email to a GitHub @handle via the author-map.
+ * The map holds plain keys for public noreply/bot addresses and
+ * `sha256:<hex>` keys for personal ones (see `hashedEmailKey`).
  * Falls back to the email's local-part if no mapping exists.
  *
  * Pure: takes the map and email as args; never reads disk.
@@ -99,7 +109,9 @@ export function addDays(isoDate, days) {
 export function resolveHandle(emailToHandle, email) {
   if (!email) return null;
   const lower = email.toLowerCase();
-  if (lower in emailToHandle) return emailToHandle[lower];
+  if (Object.hasOwn(emailToHandle, lower)) return emailToHandle[lower];
+  const hashed = hashedEmailKey(lower);
+  if (Object.hasOwn(emailToHandle, hashed)) return emailToHandle[hashed];
   // Fallback: local-part. Strips bot suffixes like `158243933+`.
   const local = lower.split("@")[0].replace(/^[0-9]+\+/, "");
   return local || null;
@@ -188,7 +200,23 @@ export function bumpHeader({
 
 // ── Side-effectful entry points ──────────────────────────────────────────────
 
-function loadAuthorMap(path = AUTHOR_MAP_PATH) {
+/**
+ * Merge the two author-map sections into one lookup for `resolveHandle`:
+ * `emailToHandle` keys are lowercased, `emailSha256ToHandle` keys become
+ * `sha256:<hex>`. Pure, exported for tests.
+ */
+export function mergeAuthorMap(raw) {
+  const merged = {};
+  for (const [k, v] of Object.entries(raw?.emailToHandle || {})) {
+    merged[k.toLowerCase()] = v;
+  }
+  for (const [k, v] of Object.entries(raw?.emailSha256ToHandle || {})) {
+    merged[`sha256:${k.toLowerCase()}`] = v;
+  }
+  return merged;
+}
+
+export function loadAuthorMap(path = AUTHOR_MAP_PATH) {
   // Читаємо одразу, без `existsSync`: перевірка й читання — дві операції
   // над іменем, і між ними файл може зникнути (js/file-system-race).
   let text;
@@ -197,13 +225,7 @@ function loadAuthorMap(path = AUTHOR_MAP_PATH) {
   } catch {
     return {};
   }
-  const raw = JSON.parse(text);
-  return Object.fromEntries(
-    Object.entries(raw.emailToHandle || {}).map(([k, v]) => [
-      k.toLowerCase(),
-      v,
-    ]),
-  );
+  return mergeAuthorMap(JSON.parse(text));
 }
 
 function getCommitterEmail() {

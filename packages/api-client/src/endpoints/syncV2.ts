@@ -54,7 +54,9 @@ export interface SyncV2PushOp {
  * `retry` (data-18) - сервер не зміг застосувати оп через транзієнтну помилку
  * Postgres (`reason`: `deadlock_detected` | `lock_not_available` |
  * `query_canceled`) або `reason: "unknown_table"` (data-48: таблиці ще немає
- * на сервері, а клієнт новіший за нього - вікно деплою) і НЕ записав його в
+ * на сервері, а клієнт новіший за нього - вікно деплою), або
+ * `reason: "clock_skew"` (data-51: `client_ts` випереджає годинник сервера
+ * більш ніж на 2 хв; доти це був термінальний `rejected`) і НЕ записав його в
  * журнал: той самий `idempotency_key` можна повторити. Клієнти до цього статусу трактують його як невідомий
  * (`unknown_status:retry`) і теж повторюють.
  */
@@ -65,6 +67,14 @@ export interface SyncV2OpResult {
   idempotency_key: string;
   status: SyncV2OpResultStatus;
   reason?: string;
+  /**
+   * Лише на `applied`: мітка, яку сервер записав у `updated_at` і журнал,
+   * коли вона відрізняється від надісланого `client_ts` (data-51: годинник
+   * пристрою, що поспішає, обрізається до `server_now`). Клієнт переписує на
+   * неї локальну мітку рядка, інакше відкидав би пізніші чужі правки як
+   * старіші за свою. Сервери до цієї зміни поля не шлють.
+   */
+  client_ts?: string;
 }
 
 /**
@@ -115,18 +125,31 @@ export interface SyncV2PullResponse {
   next_cursor: number | null;
 }
 
+/**
+ * rel-27: стеля одного запиту push/pull. Без неї завислий TCP (перемикання
+ * Wi-Fi/LTE, black-holed з'єднання) тримав `inflight` push-планувальника
+ * хвилинами, і жодна наступна зміна не йшла на сервер до кінця сесії.
+ * Таймаут дає `ApiError` (`aborted`/`network`), який рушій трактує як
+ * транзієнтну помилку й повторює з backoff.
+ */
+export const SYNC_V2_REQUEST_TIMEOUT_MS = 30_000;
+
 export interface SyncV2PushOptions {
   /**
    * Опціональний `X-Origin-Device-Id`-заголовок, що дозволить
    * `pull` із того ж пристрою виключати власні записи.
    */
   originDeviceId?: string;
+  /** Стеля запиту в мс; дефолт {@link SYNC_V2_REQUEST_TIMEOUT_MS}. */
+  timeoutMs?: number;
 }
 
 export interface SyncV2PullOptions {
   /** Серверний default — 100, max — 500. */
   limit?: number;
   originDeviceId?: string;
+  /** Стеля запиту в мс; дефолт {@link SYNC_V2_REQUEST_TIMEOUT_MS}. */
+  timeoutMs?: number;
 }
 
 export interface SyncV2Endpoints {
@@ -160,6 +183,7 @@ export function createSyncV2Endpoints(http: HttpClient): SyncV2Endpoints {
           // заголовок: старий бекенд ігнорує query, а невідомий заголовок
           // завалив би CORS preflight (див. `protocolVersion.ts`).
           query: { [SYNC_PROTOCOL_QUERY_PARAM]: SYNC_PROTOCOL_VERSION },
+          timeoutMs: opts?.timeoutMs ?? SYNC_V2_REQUEST_TIMEOUT_MS,
           ...(opts?.originDeviceId
             ? { headers: { "X-Origin-Device-Id": opts.originDeviceId } }
             : {}),
@@ -171,6 +195,7 @@ export function createSyncV2Endpoints(http: HttpClient): SyncV2Endpoints {
           since,
           ...(opts?.limit != null ? { limit: opts.limit } : {}),
         },
+        timeoutMs: opts?.timeoutMs ?? SYNC_V2_REQUEST_TIMEOUT_MS,
         ...(opts?.originDeviceId
           ? { headers: { "X-Origin-Device-Id": opts.originDeviceId } }
           : {}),

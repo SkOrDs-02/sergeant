@@ -41,6 +41,7 @@ export const authMailQueueDepth = new client.Gauge({
 //   - `skipped_optout` — opt-out зафіксований у `email_unsubscribes`
 //   - `skipped_already_sent` — `email_campaigns_log` уже має row
 //   - `skipped_user_deleted` — юзера вже немає (3-day-ге очікування)
+//   - `skipped_unverified` — email ще не підтверджений (priv-22)
 //   - `retry` / `permanent_fail` — як і в auth-mail.
 export const ftuxDripJobsEnqueuedTotal = new client.Counter({
   name: "ftux_drip_jobs_enqueued_total",
@@ -53,7 +54,7 @@ export const ftuxDripJobsProcessedTotal = new client.Counter({
   name: "ftux_drip_jobs_processed_total",
   help: "FTUX drip mail processor outcomes",
   labelNames: ["outcome", "day"],
-  // outcome: ok|retry|permanent_fail|skipped_optout|skipped_already_sent|skipped_user_deleted
+  // outcome: ok|retry|permanent_fail|skipped_optout|skipped_already_sent|skipped_user_deleted|skipped_unverified
   registers: [register],
 });
 
@@ -88,12 +89,13 @@ export const ftuxDripUnsubscribesTotal = new client.Counter({
 export const aiMemoryIngestEnqueuedTotal = new client.Counter({
   name: "ai_memory_ingest_enqueued_total",
   help: "AI memory ingest enqueue attempts by mode and source",
-  // mode: queued|fallback|enqueue_error|disabled|source_disabled
+  // mode: queued|fallback|enqueue_error|disabled|source_disabled|user_cap
   //   queued          — job pushed to BullMQ successfully
   //   fallback        — Redis unavailable; in-process direct dispatch
   //   enqueue_error   — Redis push failed (network / serialization / invalid source)
   //   disabled        — master AI_MEMORY_ENABLED=false (kills all sources)
   //   source_disabled — per-source flag off (e.g. DIGEST_AI_MEMORY_INGEST_ENABLED=false)
+  //   user_cap        — per-user daily embed cap hit, write skipped (rel-34, source=profile)
   labelNames: ["mode", "source"],
   registers: [register],
 });
@@ -111,6 +113,9 @@ export const aiMemoryIngestProcessedTotal = new client.Counter({
   //                    so dashboards can distinguish "wrote to DLQ" from
   //                    "final fail outcome".
   //   skipped        — pre-flight skip (legacy; kept for back-compat).
+  //   cleared        — job created before «Очистити памʼять» (B12 tombstone,
+  //                    `ingestClearMarker.ts`): skipped, or the row it just
+  //                    wrote was removed again.
   labelNames: ["outcome", "source"],
   registers: [register],
 });

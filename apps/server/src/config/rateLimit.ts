@@ -93,6 +93,22 @@ export const PASSWORD_CHECK_USER_RATE_LIMIT: RateLimitOptions = {
 };
 
 /**
+ * Повторний лист підтвердження (`POST /api/auth/send-verification-email`,
+ * rel-37): не більше 5 листів на годину на цільовий email. Ключ той самий
+ * SHA-256 email-а, що й в `api:auth:account`, але бакет окремий: розсилка
+ * листів не має з'їдати бюджет входу жертви, а стеля на адресу не має
+ * залежати від NODE_ENV-дефолтів лімітера Better Auth (той увімкнений лише в
+ * production). Без цього скрипт з багатьох IP засипав би чужу скриньку і
+ * палив квоту Resend.
+ */
+export const AUTH_VERIFICATION_EMAIL_RATE_LIMIT: RateLimitOptions = {
+  key: "api:auth:verification-email",
+  limit: 5,
+  windowMs: 60 * 60 * 1000,
+  failMode: "closed",
+};
+
+/**
  * Зміна email: не більше 3 запитів на добу на користувача (sec-06, рішення
  * власника 2026-10-23). Рахуються лише запити, що пройшли повторну
  * автентифікацію (`http/changeEmailReauth.ts`): невірний пароль цей бюджет не

@@ -1,6 +1,7 @@
 /** @vitest-environment jsdom */
 import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
-import { useState } from "react";
+import { useEffect, useState } from "react";
+import type { Dispatch, SetStateAction } from "react";
 import {
   render,
   screen,
@@ -8,6 +9,7 @@ import {
   cleanup,
   waitFor,
   within,
+  act,
 } from "@testing-library/react";
 import { defaultRoutineState } from "@sergeant/routine-domain";
 import { ToastProvider } from "@shared/hooks/useToast";
@@ -224,5 +226,75 @@ describe("HabitQuickCreateDialog", () => {
     const cancel = screen.getByRole("button", { name: "Скасувати" });
     fireEvent.click(cancel);
     expect(onClose).toHaveBeenCalled();
+  });
+});
+
+/**
+ * Регресія data-61: форма редагування засівається на відкритті й не бачить
+ * змін під собою. Повний патч на сабміті відкочував правки з іншого пристрою,
+ * що приїхали pull-ом, поки аркуш був відкритий.
+ */
+describe("HabitQuickCreateDialog — застаріла форма (data-61)", () => {
+  it("зберігає лише змінені поля і не затирає свіжі правки з іншого пристрою", async () => {
+    const habit = {
+      ...makeHabit("h1", "Пошта"),
+      reminderTimes: [],
+      endDate: null,
+    } as unknown as Habit;
+    const initial: RoutineState = {
+      ...defaultRoutineState(),
+      habits: [habit],
+    };
+    const states: RoutineState[] = [];
+    const setters: Array<Dispatch<SetStateAction<RoutineState>>> = [];
+
+    function StaleHarness() {
+      const [routine, setRoutine] = useState(initial);
+      useEffect(() => {
+        setters.push(setRoutine);
+      }, []);
+      useEffect(() => {
+        states.push(routine);
+      }, [routine]);
+      return (
+        <ToastProvider>
+          <HabitQuickCreateDialog
+            open
+            routine={routine}
+            setRoutine={setRoutine}
+            onClose={vi.fn()}
+            editingId="h1"
+          />
+        </ToastProvider>
+      );
+    }
+
+    render(<StaleHarness />);
+    expect(screen.getByDisplayValue("Пошта")).toBeInTheDocument();
+
+    // Pull приніс правки іншого пристрою: нагадування і дату кінця.
+    act(() => {
+      setters[0]!((s) => ({
+        ...s,
+        habits: s.habits.map((h) =>
+          h.id === "h1"
+            ? { ...h, reminderTimes: ["08:00"], endDate: "2026-12-31" }
+            : h,
+        ),
+      }));
+    });
+
+    // Тут людина змінює лише назву і зберігає.
+    fireEvent.change(screen.getByDisplayValue("Пошта"), {
+      target: { value: "Пошта і листи" },
+    });
+    fireEvent.click(screen.getByRole("button", { name: "Зберегти зміни" }));
+
+    await waitFor(() => {
+      expect(states.at(-1)?.habits[0]?.name).toBe("Пошта і листи");
+    });
+    const saved = states.at(-1)!.habits[0]!;
+    expect(saved.reminderTimes).toEqual(["08:00"]);
+    expect(saved.endDate).toBe("2026-12-31");
   });
 });

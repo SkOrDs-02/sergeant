@@ -6,7 +6,7 @@
  *   2. `checkVoyageSoftBudget()` — allow/skip-логіка по criticality.
  *   3. Idempotent Sentry alert — один warning на (day, threshold).
  *   4. Soft-cap = 0 → gate no-op (allow=true завжди).
- *   5. Negative/NaN env → fallback на default ($1) через `floatFromEnv`.
+ *   5. Negative/NaN env → помилка на старті (`strictFloatFromEnv`, B16).
  */
 import { describe, it, expect, beforeEach, afterEach, vi } from "vitest";
 
@@ -57,20 +57,15 @@ describe("getVoyageSoftBudgetUsd() — PR-38", () => {
     expect(getVoyageSoftBudgetUsd()).toBe(0);
   });
 
-  it("повертає 0 для негативних значень (захист від інверсії логіки в alert-expr)", async () => {
-    process.env["VOYAGE_DAILY_BUDGET_USD_SOFT"] = "-2";
-    const { getVoyageSoftBudgetUsd } = await import("./voyageBudget.js");
-    // env.ts:floatFromEnv(1) пропускає -2, бо isFinite. У budget-функції
-    // ми нормалізуємо <= 0 → 0 (вимкнено).
-    expect(getVoyageSoftBudgetUsd()).toBe(0);
-  });
-
-  it("fallback-ить коли env-значення не парситься як float", async () => {
-    process.env["VOYAGE_DAILY_BUDGET_USD_SOFT"] = "not-a-number";
-    const { getVoyageSoftBudgetUsd } = await import("./voyageBudget.js");
-    // floatFromEnv → NaN → defaultValue=1.
-    expect(getVoyageSoftBudgetUsd()).toBe(1);
-  });
+  it.each(["-2", "not-a-number"])(
+    "битий env %j валить boot env, а не дає тихий дефолт (ai-pipeline B16)",
+    async (raw) => {
+      process.env["VOYAGE_DAILY_BUDGET_USD_SOFT"] = raw;
+      await expect(import("./voyageBudget.js")).rejects.toThrow(
+        /VOYAGE_DAILY_BUDGET_USD_SOFT/,
+      );
+    },
+  );
 });
 
 describe("getVoyageDailyUsageUsd() — PR-38", () => {

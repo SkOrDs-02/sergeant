@@ -66,6 +66,7 @@ import { getCounterpartyNames } from "../../lib/counterpartyNames.js";
 import { maskMachineText, maskUserText } from "../../lib/llmRedaction.js";
 import { replaceLongDash } from "../../lib/modelText.js";
 import { buildRagContext } from "../ai-memory/ragContext.js";
+import { featureItemLimit } from "../billing/requirePlan.js";
 import { getCoachCorrelationsBlock } from "./coach.js";
 import { getUserPreferences } from "../me/dataRights.js";
 import { resolveHealthConsent } from "../../lib/healthConsent.js";
@@ -689,6 +690,8 @@ export default async function handler(
         userId: sessionUser?.id ?? null,
         baseContext: contextWithCorrelations,
         messages: cleaned,
+        // sec-32: Free отримує урізаний RAG (стеля з реєстру доступу).
+        resolveMaxItems: (id) => featureItemLimit(pool, id, "ai.memoryRecall"),
       }),
     ),
     knownValues,

@@ -66,10 +66,12 @@ export function A11yStatesSection() {
       <Group label="Focus rings (Tab/Shift+Tab, keyboard only)">
         <div className="space-y-4">
           <div className="flex flex-wrap items-center gap-3">
-            <Button variant="primary">Primary</Button>
-            <Button variant="secondary">Secondary</Button>
+            <Button variant="solid">Primary</Button>
+            <Button variant="outline">Secondary</Button>
             <Button variant="ghost">Ghost</Button>
-            <Button variant="danger">Danger</Button>
+            <Button variant="soft" tone="danger">
+              Danger
+            </Button>
           </div>
           <div className="flex flex-wrap items-center gap-3">
             <a

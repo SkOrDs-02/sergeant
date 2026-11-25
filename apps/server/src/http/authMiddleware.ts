@@ -4,6 +4,7 @@ import { rateLimitExpress } from "./rateLimit.js";
 import {
   AUTH_ACCOUNT_RATE_LIMIT,
   AUTH_SENSITIVE_RATE_LIMIT,
+  AUTH_VERIFICATION_EMAIL_RATE_LIMIT,
 } from "../config/rateLimit.js";
 import { env } from "../env.js";
 import { AppError, ValidationError } from "../obs/errors.js";
@@ -14,7 +15,8 @@ import { getClientIp } from "./clientIp.js";
 import { normaliseUserAgent } from "../lib/uaNormalise.js";
 
 /**
- * Жорсткіший ліміт на sign-in / sign-up / reset (POST).
+ * Жорсткіший ліміт на sign-in / sign-up / reset / повторний лист
+ * підтвердження (POST).
  *
  * Fail-closed (controlled by `RATE_LIMIT_FAIL_CLOSED_AUTH`, default `true`):
  * якщо і Redis, і Postgres недоступні, middleware повертає 503 замість
@@ -36,7 +38,10 @@ export function authSensitiveRateLimit(
       url.includes("/sign-up") ||
       url.includes("forget-password") ||
       url.includes("request-password-reset") ||
-      url.includes("reset-password"));
+      url.includes("reset-password") ||
+      // rel-37: кожен виклик шле лист, а лімітер Better Auth живе лише при
+      // NODE_ENV=production.
+      url.includes("send-verification-email"));
   if (!sensitive) {
     next();
     return;
@@ -83,7 +88,9 @@ function hasRequestBody(req: Request): boolean {
  * **цільовому email-і**, тож стеля перестає залежати від мережі атакера.
  *
  * Свідомі обмеження:
- *   - Тільки sign-in і password-reset. Sign-up сюди НЕ входить: там email
+ *   - Тільки sign-in, password-reset і повторний лист підтвердження (rel-37,
+ *     окремий бакет `AUTH_VERIFICATION_EMAIL_RATE_LIMIT`: розсилка листів не
+ *     з'їдає бюджет входу). Sign-up сюди НЕ входить: там email
  *     ще нікому не належить, і бакет по ньому не захищає акаунт, зате дає
  *     стороннім спосіб зайняти адресу.
  *   - Немає email у тілі (напр. `reset-password` з токеном) — пропускаємо:
@@ -108,7 +115,8 @@ export function authAccountRateLimit(
     (path.includes("/sign-in") ||
       path.includes("forget-password") ||
       path.includes("request-password-reset") ||
-      path.includes("reset-password"));
+      path.includes("reset-password") ||
+      path.includes("send-verification-email"));
   if (!targeted) {
     next();
     return;
@@ -148,7 +156,9 @@ export function authAccountRateLimit(
   }
 
   rateLimitExpress({
-    ...AUTH_ACCOUNT_RATE_LIMIT,
+    ...(path.includes("send-verification-email")
+      ? AUTH_VERIFICATION_EMAIL_RATE_LIMIT
+      : AUTH_ACCOUNT_RATE_LIMIT),
     failMode: env.RATE_LIMIT_FAIL_CLOSED_AUTH ? "closed" : "open",
     // Повний SHA-256, не 12-символьний лог-фінгерпринт: той призначений
     // для кореляції в логах, де колізія лише зашумить тріаж, а тут вона

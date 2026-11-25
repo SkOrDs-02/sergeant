@@ -120,8 +120,8 @@ export function createHealthzHandler(pool: DbPool): RequestHandler {
       };
     } catch (e) {
       overallHealthy = false;
-      // `/healthz` анонімний і без rate-limit (щоб probe платформи не
-      // голодували), а `e.message` від `pg` носить внутрішній хост, порт і
+      // `/healthz` без rate-limit і за одним лише `METRICS_TOKEN` (sec-40;
+      // токен може витекти зі скрапера), а `e.message` від `pg` носить внутрішній хост, порт і
       // імʼя DB-користувача — `password authentication failed for user
       // "sergeant_app"`. Назовні йде лише клас помилки, повний текст —
       // у лог, де його читає ops. Контракт: `obs/errorCode.ts`.
@@ -210,7 +210,8 @@ export function createHealthzHandler(pool: DbPool): RequestHandler {
  * (L7 audit `docs/security/hardening/L7-health-endpoint-info-leak.md` —
  * ті самі invariants, що й для `/healthz`), і **не включає текст помилки
  * воркера**: на фейлі sample-функції поле зветься `errorCode` і несе лише
- * клас (`ECONNREFUSED`, `28P01`). Роут анонімний і без rate-limit, а
+ * клас (`ECONNREFUSED`, `28P01`). Роут без rate-limit і за одним лише
+ * `METRICS_TOKEN` (sec-40), а
  * `pg`/`ioredis` кладуть у `message` внутрішній хост, порт і імʼя
  * DB-користувача — повний текст лишається в логах воркера
  * (`obs/errorCode.ts`). Регресію стереже `routes/health.infoleak.test.ts`,

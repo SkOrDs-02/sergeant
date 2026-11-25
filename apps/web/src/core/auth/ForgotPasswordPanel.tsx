@@ -2,7 +2,7 @@
  * Last validated: 2026-05-14
  * Status: Active
  */
-import type { SyntheticEvent } from "react";
+import type { FormEvent } from "react";
 import { Button } from "@shared/components/ui/Button";
 import { Input } from "@shared/components/ui/Input";
 import type { UseForgotPasswordResult } from "./useForgotPassword";
@@ -19,7 +19,7 @@ export function ForgotPasswordPanel({
   const { forgotState, forgotEmail, setForgotEmail, closePanel, submit } =
     state;
 
-  const handleSubmit = (e: SyntheticEvent) => {
+  const handleSubmit = (e: FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     void submit();
   };
@@ -48,7 +48,9 @@ export function ForgotPasswordPanel({
           </Button>
         </div>
       ) : (
-        <>
+        // Окрема `<form>`: панель рендериться поза формою логіну (сусід у
+        // `AuthPage`), тож без неї Enter у полі нічого не відправляв (ux-49).
+        <form onSubmit={handleSubmit} noValidate className="space-y-2">
           <p>
             Введи email акаунту, пришлю посилання для скидання пароля. Локальні
             дані на пристрої залишаються без змін.
@@ -81,16 +83,15 @@ export function ForgotPasswordPanel({
             </p>
           )}
           <Button
-            type="button"
+            type="submit"
             variant="outline"
             size="md"
             loading={forgotState === "sending"}
-            onClick={handleSubmit}
             className="w-full"
           >
             {forgotState === "sending" ? "Надсилаю…" : "Надіслати лист"}
           </Button>
-        </>
+        </form>
       )}
     </div>
   );

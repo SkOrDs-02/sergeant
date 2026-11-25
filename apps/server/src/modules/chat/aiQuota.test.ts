@@ -548,13 +548,27 @@ describe("consumeToolQuota (tool buckets, Pro only)", () => {
     expect(r.remaining).toBe(0);
   });
 
-  it("returns ok on broken AI_QUOTA_TOOL_LIMITS JSON (advisory fail-open)", async () => {
+  // B15: битий JSON раніше тихо давав unlimited на всі tool-відра.
+  it("fail-closed на битий AI_QUOTA_TOOL_LIMITS JSON: ліміт 0, а не unlimited", async () => {
     process.env["AI_QUOTA_TOOL_LIMITS"] = "{not valid";
     delete process.env["AI_QUOTA_TOOL_DEFAULT_LIMIT"];
+    process.env["AI_QUOTA_TOOL_COST"] = "3";
+    mockProUser({ rows: [], rowCount: 0 });
     const r = await consumeToolQuota(makeReq(), "change_category");
-    expect(r.ok).toBe(true);
-    expect(r.limit).toBeNull();
-    expect(pool.query).not.toHaveBeenCalled();
+    expect(r.ok).toBe(false);
+    expect(r.limit).toBe(0);
+  });
+
+  it("fail-closed на нечислове значення в мапі: бере AI_QUOTA_TOOL_DEFAULT_LIMIT", async () => {
+    process.env["AI_QUOTA_TOOL_LIMITS"] = JSON.stringify({
+      change_category: "30",
+    });
+    process.env["AI_QUOTA_TOOL_DEFAULT_LIMIT"] = "9";
+    process.env["AI_QUOTA_TOOL_COST"] = "3";
+    mockProUser({ rows: [{ request_count: 3 }], rowCount: 1 });
+    const r = await consumeToolQuota(makeReq(), "create_debt");
+    expect(r.limit).toBe(9);
+    expect(toolUpsert()![1]![5]).toBe(9);
   });
 
   it("does NOT consume from default bucket (separate quota)", async () => {

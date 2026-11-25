@@ -1,4 +1,4 @@
-import { Router } from "express";
+import { Router, type RequestHandler } from "express";
 import type { Pool } from "pg";
 
 import { FTUX_DRIP_CAMPAIGN_FAMILY } from "../email/ftuxDripCopy.js";
@@ -9,7 +9,13 @@ import { ftuxDripUnsubscribesTotal } from "../obs/metrics.js";
 /**
  * Public-side unsubscribe endpoint, який рендерять footer-и у FTUX-drip-листах.
  *
- *   GET /api/email/unsubscribe?u=<userId>.<hmac>
+ *   GET  /api/email/unsubscribe?u=<userId>.<hmac>  — посилання у футері
+ *   POST /api/email/unsubscribe?u=<userId>.<hmac>  — RFC 8058 one-click
+ *        (`List-Unsubscribe-Post: List-Unsubscribe=One-Click`, priv-22)
+ *
+ * POST відписує за тим самим HMAC-токеном із query; тіло
+ * (`List-Unsubscribe=One-Click`) не читаємо. Сесії й cookie тут немає, тому
+ * шлях у CSRF-exempt-списку (`http/requireCsrfHeader.ts`).
  *
  * Контракт:
  *   - 200 + HTML "Готово, листи більше не приходитимуть" — токен валідний
@@ -29,7 +35,7 @@ import { ftuxDripUnsubscribesTotal } from "../obs/metrics.js";
 export function createEmailUnsubscribeRouter({ pool }: { pool: Pool }): Router {
   const r = Router();
 
-  r.get("/api/email/unsubscribe", async (req, res) => {
+  const handle: RequestHandler = async (req, res) => {
     const raw = typeof req.query["u"] === "string" ? req.query["u"] : "";
 
     const verdict = verifyUnsubscribeToken(raw);
@@ -74,7 +80,10 @@ export function createEmailUnsubscribeRouter({ pool }: { pool: Pool }): Router {
     });
 
     res.status(200).type("text/html").send(renderSuccessPage());
-  });
+  };
+
+  r.get("/api/email/unsubscribe", handle);
+  r.post("/api/email/unsubscribe", handle);
 
   return r;
 }

@@ -91,6 +91,8 @@ vi.mock("./../modules/ai-memory/bootstrap.js", () => ({
 }));
 
 import { createApp } from "./../app.js";
+import { flushPendingProfileMirrors } from "./../modules/ai-memory/profileMirrorDebounce.js";
+import { __resetProfileEmbedCapState } from "./../modules/ai-memory/profileEmbedCap.js";
 
 const SAVED_ENABLED = process.env["AI_MEMORY_ENABLED"];
 
@@ -148,6 +150,7 @@ beforeEach(() => {
   enqueueMock.mockReset();
   enqueueMock.mockResolvedValue(undefined);
   process.env["AI_MEMORY_ENABLED"] = "true";
+  __resetProfileEmbedCapState();
 });
 
 afterAll(() => {
@@ -162,6 +165,8 @@ describe("PUT /api/me/profile — happy path", () => {
       .put("/api/me/profile")
       .set("X-Requested-With", "XMLHttpRequest")
       .send({ profile: STORED_PROFILE });
+    // rel-34: дзеркалення дебаунситься — виконуємо відкладене одразу.
+    await flushPendingProfileMirrors();
 
     expect(res.status).toBe(200);
     expect(res.body.profile).toEqual(STORED_PROFILE);
@@ -189,6 +194,8 @@ describe("PUT /api/me/profile — ПАСТКА 4: шлях дзеркаленн�
       .put("/api/me/profile")
       .set("X-Requested-With", "XMLHttpRequest")
       .send({ profile: STORED_PROFILE });
+    // rel-34: дзеркалення дебаунситься — виконуємо відкладене одразу.
+    await flushPendingProfileMirrors();
 
     expect(res.status).toBe(200);
     expect(res.body.profile).toEqual(STORED_PROFILE);
@@ -208,6 +215,8 @@ describe("PUT /api/me/profile — консент не ламає збереже�
       .put("/api/me/profile")
       .set("X-Requested-With", "XMLHttpRequest")
       .send({ profile: STORED_PROFILE });
+    // rel-34: дзеркалення дебаунситься — виконуємо відкладене одразу.
+    await flushPendingProfileMirrors();
 
     expect(res.status).toBe(200);
     expect(res.body.profile).toEqual(STORED_PROFILE);
@@ -253,6 +262,8 @@ describe("PUT /api/me/profile - LWW-guard памʼяті: застарілий �
       .put("/api/me/profile")
       .set("X-Requested-With", "XMLHttpRequest")
       .send({ profile: staleIncoming });
+    // rel-34: дзеркалення дебаунситься — виконуємо відкладене одразу.
+    await flushPendingProfileMirrors();
 
     expect(res.status).toBe(200);
     // Біометрія - з вхідного (новіша), memoryBank - зі збереженого
@@ -267,6 +278,40 @@ describe("PUT /api/me/profile - LWW-guard памʼяті: застарілий �
   });
 });
 
+describe("PUT /api/me/profile — rel-34: швидкі правки коалесуються", () => {
+  it("два PUT поспіль із різним текстом факту → один ембеддинг фінальної версії", async () => {
+    const app = createApp();
+    const edited = {
+      ...STORED_PROFILE,
+      memoryBank: {
+        ...STORED_PROFILE.memoryBank,
+        entries: [
+          {
+            ...STORED_PROFILE.memoryBank.entries[0],
+            fact: "алергія на арахіс",
+          },
+        ],
+      },
+    };
+    for (const profile of [STORED_PROFILE, edited]) {
+      const res = await request(app)
+        .put("/api/me/profile")
+        .set("X-Requested-With", "XMLHttpRequest")
+        .send({ profile });
+      expect(res.status).toBe(200);
+    }
+    await flushPendingProfileMirrors();
+
+    expect(enqueueMock).toHaveBeenCalledTimes(1);
+    expect(enqueueMock.mock.calls[0]?.[0]).toEqual(
+      expect.objectContaining({
+        sourceRef: "fact-1",
+        content: "алергія на арахіс",
+      }),
+    );
+  });
+});
+
 describe("PUT /api/me/profile — auth guard", () => {
   it("→ 401 без сесії, mirror не викликається", async () => {
     getSessionUserMock.mockResolvedValue(null);
@@ -275,6 +320,8 @@ describe("PUT /api/me/profile — auth guard", () => {
       .put("/api/me/profile")
       .set("X-Requested-With", "XMLHttpRequest")
       .send({ profile: STORED_PROFILE });
+    // rel-34: дзеркалення дебаунситься — виконуємо відкладене одразу.
+    await flushPendingProfileMirrors();
 
     expect(res.status).toBe(401);
     expect(enqueueMock).not.toHaveBeenCalled();

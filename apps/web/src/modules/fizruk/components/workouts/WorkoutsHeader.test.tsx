@@ -1,8 +1,20 @@
 // @vitest-environment jsdom
 import { describe, it, expect, vi, beforeEach } from "vitest";
-import { render, screen, fireEvent, cleanup } from "@testing-library/react";
+import {
+  act,
+  render,
+  screen,
+  fireEvent,
+  cleanup,
+} from "@testing-library/react";
 import type { Workout } from "@sergeant/fizruk-domain";
 import { WorkoutsHeader } from "./WorkoutsHeader";
+import {
+  __resetInitialPullStateForTests,
+  markFirstPullPending,
+  noteFirstPullFailure,
+} from "../../../../core/syncEngine/initialPullState";
+import { coreMessages } from "@shared/i18n/uk.core";
 
 function baseWorkout(overrides: Partial<Workout> = {}): Workout {
   return {
@@ -150,5 +162,50 @@ describe("WorkoutsHeader", () => {
       />,
     );
     expect(screen.queryByText(/Завершено: 7/)).not.toBeInTheDocument();
+  });
+});
+
+describe("WorkoutsHeader під час першого pull (bv-first-pull-gaps)", () => {
+  beforeEach(() => {
+    cleanup();
+    __resetInitialPullStateForTests();
+  });
+
+  function renderHome(finishedCount = 0) {
+    return render(
+      <WorkoutsHeader
+        view="home"
+        activeWorkout={null}
+        finishedCount={finishedCount}
+        onBack={vi.fn()}
+        onAddCatalog={vi.fn()}
+      />,
+    );
+  }
+
+  it("журнал ще їде з хмари: замість «Перше тренування – попереду» стан завантаження", () => {
+    renderHome();
+    act(() => markFirstPullPending());
+    expect(
+      screen.getByText(coreMessages.firstCloudPull.loadingTitle),
+    ).toBeInTheDocument();
+    expect(screen.queryByText("Перше тренування – попереду")).toBeNull();
+  });
+
+  it("вичерпані повтори: підзаголовок каже про збій", () => {
+    renderHome();
+    act(() => {
+      markFirstPullPending();
+      for (let i = 0; i < 4; i += 1) noteFirstPullFailure(3);
+    });
+    expect(
+      screen.getByText(coreMessages.firstCloudPull.failedTitle),
+    ).toBeInTheDocument();
+  });
+
+  it("уже є завершені: лічильник лишається", () => {
+    renderHome(2);
+    act(() => markFirstPullPending());
+    expect(screen.getByText("Завершено: 2")).toBeInTheDocument();
   });
 });

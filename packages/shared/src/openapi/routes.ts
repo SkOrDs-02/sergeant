@@ -437,7 +437,7 @@ export const paths: ZodOpenApiPathsObject = {
       responses: {
         "200": {
           description:
-            "Результат по кожному op-у (`applied` / `duplicate` / `rejected` / `retry` + `reason`; `retry` - транзієнтна помилка БД, оп не в журналі, повтори його). `last_op_id` — number; `server_now` — годинник сервера для виміру clock skew.",
+            "Результат по кожному op-у (`applied` / `duplicate` / `rejected` / `retry` + `reason`; `retry` - транзієнтна помилка БД, оп не в журналі, повтори його; `client_ts` на `applied` - записана обрізана мітка). `last_op_id` — number; `server_now` — годинник сервера для виміру clock skew.",
           content: {
             "application/json": {
               schema: z.object({
@@ -453,6 +453,10 @@ export const paths: ZodOpenApiPathsObject = {
                       "retry",
                     ]),
                     reason: z.string().optional(),
+                    client_ts: z.string().optional().meta({
+                      description:
+                        "Лише на `applied`: мітка, яку сервер записав, якщо вона відрізняється від надісланого `client_ts` (годинник пристрою обрізано до `server_now`). Клієнт переписує на неї локальний `updated_at` рядка.",
+                    }),
                   }),
                 ),
                 server_now: z.string(),
@@ -1891,7 +1895,8 @@ export const paths: ZodOpenApiPathsObject = {
       security: cookieOrBearer,
       responses: {
         "200": {
-          description: "UA → увімкнені liqpay/plata; інші країни → stripe.",
+          description:
+            "Один список для всіх (країну не враховуємо): liqpay і plata, кожен за своїм прапорцем; stripe лише за STRIPE_ENABLED.",
           content: {
             "application/json": {
               schema: namedSchemas.BillingProvidersResponse,
@@ -2205,6 +2210,20 @@ export const paths: ZodOpenApiPathsObject = {
       summary: "Відписка від листів за HMAC-токеном із футера",
       description:
         "Публічний лінк із листа: `?u=<userId>.<hmac>`. Повертає HTML-сторінку (успіх або «недійсне посилання»).",
+      tags: ["email"],
+      requestParams: { query: z.object({ u: z.string() }) },
+      responses: {
+        "200": {
+          description: "HTML-сторінка (успіх або невалідний токен).",
+          content: { "text/html": { schema: { type: "string" } } },
+        },
+        "503": { description: "Секрет підпису не налаштовано." },
+      },
+    },
+    post: {
+      summary: "One-click відписка (RFC 8058) за HMAC-токеном",
+      description:
+        "Викликає поштовий клієнт за заголовком `List-Unsubscribe-Post: List-Unsubscribe=One-Click`. Токен — у query `?u=<userId>.<hmac>`, тіло (`List-Unsubscribe=One-Click`) не читається. Без сесії й CSRF-заголовка.",
       tags: ["email"],
       requestParams: { query: z.object({ u: z.string() }) },
       responses: {

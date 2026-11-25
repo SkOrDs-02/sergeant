@@ -330,7 +330,11 @@ describe("Pact provider replay — consumer=sergeant-api-client, provider=sergea
     // manual-premium-request.md) - `access.manualAccess` на вже покритому
     // `GET /billing/status` і дві на НОВОМУ маршруті
     // `POST /billing/manual-access` (200 і 409), тож росте й `expectedRoutes`.
-    expect(pact.interactions).toHaveLength(96);
+    // 97, не 96: +1 інтеракція на вже покритому `POST /api/v2/sync/push`
+    // (data-51): `client_ts` у результаті `applied`, коли сервер обрізав
+    // годинник пристрою. `expectedRoutes` не росте; поведінку тримає
+    // `modules/sync/syncV2.test.ts`.
+    expect(pact.interactions).toHaveLength(97);
     const expectedRoutes = new Set([
       // PR-42 baseline (5)
       "GET /api/v1/me",

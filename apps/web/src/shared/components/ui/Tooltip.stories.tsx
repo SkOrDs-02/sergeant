@@ -64,7 +64,7 @@ type Story = StoryObj<typeof Tooltip>;
 export const Default: Story = {
   render: (args) => (
     <Tooltip {...args}>
-      <Button variant="primary">Hover or focus me</Button>
+      <Button variant="solid">Hover or focus me</Button>
     </Tooltip>
   ),
 };
@@ -74,31 +74,31 @@ export const Placements: Story = {
   render: () => (
     <div className="grid grid-cols-3 gap-12 p-12">
       <Tooltip content="top-start" placement="top-start">
-        <Button variant="secondary">top-start</Button>
+        <Button variant="outline">top-start</Button>
       </Tooltip>
       <Tooltip content="top" placement="top">
-        <Button variant="secondary">top</Button>
+        <Button variant="outline">top</Button>
       </Tooltip>
       <Tooltip content="top-end" placement="top-end">
-        <Button variant="secondary">top-end</Button>
+        <Button variant="outline">top-end</Button>
       </Tooltip>
 
       <Tooltip content="left" placement="left">
-        <Button variant="secondary">left</Button>
+        <Button variant="outline">left</Button>
       </Tooltip>
       <span />
       <Tooltip content="right" placement="right">
-        <Button variant="secondary">right</Button>
+        <Button variant="outline">right</Button>
       </Tooltip>
 
       <Tooltip content="bottom-start" placement="bottom-start">
-        <Button variant="secondary">bottom-start</Button>
+        <Button variant="outline">bottom-start</Button>
       </Tooltip>
       <Tooltip content="bottom" placement="bottom">
-        <Button variant="secondary">bottom</Button>
+        <Button variant="outline">bottom</Button>
       </Tooltip>
       <Tooltip content="bottom-end" placement="bottom-end">
-        <Button variant="secondary">bottom-end</Button>
+        <Button variant="outline">bottom-end</Button>
       </Tooltip>
     </div>
   ),
@@ -109,13 +109,13 @@ export const Sizes: Story = {
   render: () => (
     <div className="flex items-center gap-6">
       <Tooltip content="Compact tooltip (default)" size="sm">
-        <Button variant="secondary">size=sm</Button>
+        <Button variant="outline">size=sm</Button>
       </Tooltip>
       <Tooltip
         content="Більше повітря для довшого пояснення з кількома рядками."
         size="md"
       >
-        <Button variant="secondary">size=md</Button>
+        <Button variant="outline">size=md</Button>
       </Tooltip>
     </div>
   ),
@@ -140,7 +140,7 @@ export const LongContent: Story = {
   },
   render: (args) => (
     <Tooltip {...args}>
-      <Button variant="primary">Force sync</Button>
+      <Button variant="solid">Force sync</Button>
     </Tooltip>
   ),
 };

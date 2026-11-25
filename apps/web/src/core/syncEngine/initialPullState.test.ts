@@ -5,8 +5,12 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import {
   __resetInitialPullStateForTests,
+  getFirstPullPhase,
   getInitialPullVersion,
   hasCompletedInitialPull,
+  markFirstPullPending,
+  markFirstPullSettled,
+  noteFirstPullFailure,
   markInitialPullComplete,
   reconcileInitialPull,
   resetInitialPull,
@@ -82,5 +86,46 @@ describe("initialPullState", () => {
     subscribeInitialPull(good);
     expect(() => markInitialPullComplete("u1", clientA)).not.toThrow();
     expect(good).toHaveBeenCalledTimes(1);
+  });
+});
+
+describe("initialPullState — фаза першого pull (data-59/60)", () => {
+  it("за замовчуванням idle; збій поза першим pull не рахується", () => {
+    expect(getFirstPullPhase()).toBe("idle");
+    expect(noteFirstPullFailure(3)).toBe(0);
+    expect(getFirstPullPhase()).toBe("idle");
+  });
+
+  it("pending → loading; після maxRetries повторів → failed", () => {
+    const listener = vi.fn();
+    subscribeInitialPull(listener);
+    markFirstPullPending();
+    expect(getFirstPullPhase()).toBe("loading");
+    expect(listener).toHaveBeenCalledTimes(1);
+    expect(noteFirstPullFailure(2)).toBe(1);
+    expect(noteFirstPullFailure(2)).toBe(2);
+    expect(getFirstPullPhase()).toBe("loading");
+    expect(noteFirstPullFailure(2)).toBe(3);
+    expect(getFirstPullPhase()).toBe("failed");
+    expect(listener).toHaveBeenCalledTimes(2);
+  });
+
+  it("завершений pull, settled і reset повертають idle й обнуляють лічильник", () => {
+    markFirstPullPending();
+    noteFirstPullFailure(0);
+    expect(getFirstPullPhase()).toBe("failed");
+    markInitialPullComplete("u1", clientA);
+    expect(getFirstPullPhase()).toBe("idle");
+
+    markFirstPullPending();
+    markFirstPullSettled();
+    expect(getFirstPullPhase()).toBe("idle");
+
+    markFirstPullPending();
+    expect(noteFirstPullFailure(5)).toBe(1);
+    resetInitialPull();
+    expect(getFirstPullPhase()).toBe("idle");
+    markFirstPullPending();
+    expect(noteFirstPullFailure(5)).toBe(1);
   });
 });

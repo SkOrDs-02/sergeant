@@ -65,7 +65,7 @@ function DefaultDemo({
   const [open, setOpen] = useState(false);
   return (
     <div className="p-4">
-      <Button variant="primary" onClick={() => setOpen(true)}>
+      <Button variant="solid" onClick={() => setOpen(true)}>
         Відкрити модал
       </Button>
       <Modal
@@ -81,7 +81,7 @@ function DefaultDemo({
             <Button variant="ghost" onClick={() => setOpen(false)}>
               Скасувати
             </Button>
-            <Button variant="primary" onClick={() => setOpen(false)}>
+            <Button variant="solid" onClick={() => setOpen(false)}>
               Підтвердити
             </Button>
           </div>
@@ -114,7 +114,7 @@ function SizesDemo() {
   return (
     <div className="flex flex-wrap gap-2 p-4">
       {(["sm", "md", "lg", "xl"] as const).map((s) => (
-        <Button key={s} variant="secondary" onClick={() => setSize(s)}>
+        <Button key={s} variant="outline" onClick={() => setSize(s)}>
           {s.toUpperCase()}
         </Button>
       ))}
@@ -143,7 +143,7 @@ function ForceConfirmDemo() {
   const [open, setOpen] = useState(false);
   return (
     <div className="p-4">
-      <Button variant="danger" onClick={() => setOpen(true)}>
+      <Button variant="soft" tone="danger" onClick={() => setOpen(true)}>
         Видалити акаунт
       </Button>
       <Modal
@@ -158,7 +158,7 @@ function ForceConfirmDemo() {
             <Button variant="ghost" onClick={() => setOpen(false)}>
               Скасувати
             </Button>
-            <Button variant="danger" onClick={() => setOpen(false)}>
+            <Button variant="soft" tone="danger" onClick={() => setOpen(false)}>
               Так, видалити
             </Button>
           </div>
@@ -197,7 +197,7 @@ function BodyOnlyDemo() {
       >
         <div className="flex flex-col items-center gap-3 py-4">
           <p className="text-sm">Мінімальний контейнер без chrome.</p>
-          <Button variant="secondary" onClick={() => setOpen(false)}>
+          <Button variant="outline" onClick={() => setOpen(false)}>
             Закрити
           </Button>
         </div>

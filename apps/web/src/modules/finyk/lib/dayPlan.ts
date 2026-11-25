@@ -77,16 +77,21 @@ export function getFinykDayPlan({
   const daysInMonth = new Date(
     Date.UTC(parts.year, parts.month, 0),
   ).getUTCDate();
+  // Знаменник ADR-0079: сьогодні входить у решту днів. Повертаємо його
+  // разом із нормою, щоб підпис «· N дн.» у Плануванні рахував ті самі
+  // дні, на які поділено план (logic-44: було «29 дн.» при діленні на 30).
+  const remainingDays = daysInMonth - parts.day + 1;
   const dayPlanMinor = calculateFinykDayPlan({
     planExpenseMinor: Math.round(planExpense * 100),
     spentBeforeTodayMinor:
       Math.round(spent * 100) - Math.round(todaySpent * 100),
     recurringOutMinor: outflowsMinor,
     recurringInMinor: inflowsMinor,
-    remainingDays: daysInMonth - parts.day + 1,
+    remainingDays,
   });
   return {
     dayPlan: dayPlanMinor === null ? null : dayPlanMinor / 100,
     todaySpent,
+    remainingDays,
   };
 }

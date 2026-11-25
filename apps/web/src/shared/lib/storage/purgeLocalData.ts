@@ -41,9 +41,12 @@
  *     `DELETE ... WHERE user_id = ?` ONLY when the open connection is
  *     `kvvfs` (after the hand-off it is OPFS, which merely unlinks the
  *     user's file), so the kvvfs rows are NOT erased on logout. The store
- *     waits for stage 3 (removal after confirmed outbox delivery, owner
- *     decision, audit priv-17). It is a single physical store shared by every
- *     partition, so a blind key-removal here would also erase the anonymous
+ *     is removed by the hand-off itself (stage 3, `canRemoveKvvfsStore` in
+ *     `core/db/kvvfsHandoff.ts`, audit priv-17), once its outbox is empty
+ *     and every partition in it, anonymous and each account, has its own
+ *     hand-off marker. It is a single
+ *     physical store shared by every partition, so a blind key-removal
+ *     here would also erase the anonymous
  *     visitor's rows and the only copy of undelivered `sync_op_outbox` ops —
  *     see `docs/work/specs/anonymous-local-first-persistence.md`
  *     § «Відомий залишковий ризик»;
