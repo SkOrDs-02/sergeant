@@ -238,17 +238,35 @@ export function createSyncEngineWriterRuntime(
     flushAndReport("sync-v2-push-on-enqueue");
   };
 
+  // Згорнута вкладка або заблокований телефон заморожують таймери, тож
+  // запис, зроблений за мить до цього, чекав у черзі до наступного
+  // відкриття сайту. Поки сторінка ще жива, відкладений push іде одразу.
+  const onVisibilityChange = (): void => {
+    if (
+      debounceTimer !== null &&
+      typeof document !== "undefined" &&
+      document.visibilityState === "hidden"
+    ) {
+      fireEnqueueFlush();
+    }
+  };
+
   return {
     start(): void {
       if (started) return;
       started = true;
       ensureScheduler().start();
       ensureReconnect();
+      deps.eventTarget.addEventListener("visibilitychange", onVisibilityChange);
       if (deps.flushOnStart) flushAndReport("sync-v2-push-on-start");
     },
     stop(): void {
       if (!started) return;
       started = false;
+      deps.eventTarget.removeEventListener(
+        "visibilitychange",
+        onVisibilityChange,
+      );
       clearEnqueueTimers();
       scheduler?.stop();
       reconnect?.dispose();

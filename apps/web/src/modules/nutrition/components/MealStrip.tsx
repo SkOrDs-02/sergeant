@@ -323,11 +323,16 @@ export function MealStrip({
             <li key={m.label} className="flex flex-col gap-1">
               <div className="flex flex-wrap items-baseline justify-between gap-x-1 text-style-caption text-text tabular-nums">
                 <span>{m.label}</span>
-                <span className="whitespace-nowrap">
-                  {m.consumed}
-                  {m.goal > 0 ? ` / ${m.goal}` : ""} {unit}
+                {/* Перевищення — окремим nowrap-шматком: у колонці третини
+                    картки на 360px або зі збільшеним шрифтом «350 / 200 г
+                    +150 г» одним nowrap-рядком вилазив за край картки. */}
+                <span className="flex flex-wrap gap-x-1">
+                  <span className="whitespace-nowrap">
+                    {m.consumed}
+                    {m.goal > 0 ? ` / ${m.goal}` : ""} {unit}
+                  </span>
                   {over > 0 && (
-                    <span className="ml-1 font-semibold">
+                    <span className="whitespace-nowrap font-semibold">
                       +{formatNumberUk(Math.round(over))} {unit}
                     </span>
                   )}
