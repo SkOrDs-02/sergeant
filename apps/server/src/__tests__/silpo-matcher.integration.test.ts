@@ -98,14 +98,23 @@ async function seedManualExpense(
   );
 }
 
+// Дата чека відносна, а не літерал: matcher бере лише чеки за останні
+// MATCH_WINDOW_DAYS (90) днів від NOW(), тож зашита «2026-08-24» тихо
+// випала з вікна 2026-11-22, і тижневий інтеграційний прогін почервонів
+// без жодної зміни коду. Полудень UTC, щоб день не залежав від поясу.
+const PURCHASE_DAY = new Date(Date.now() - 10 * 86_400_000)
+  .toISOString()
+  .slice(0, 10);
+const PURCHASED_AT = `${PURCHASE_DAY}T12:00:00Z`;
+
 describe("matchAndLink — реальний Postgres", () => {
   it(
     "звʼязує чек із РУЧНОЮ витратою (скрін банкінгу, не mono)",
     async (ctx) => {
       if (!dockerAvailable || !pool) return ctx.skip();
       const p = pool;
-      await seedReceipt(p, 74_784, "2026-08-24T18:09:00Z");
-      await seedManualExpense(p, "manual-1", 747.84, "2026-08-24");
+      await seedReceipt(p, 74_784, PURCHASED_AT);
+      await seedManualExpense(p, "manual-1", 747.84, PURCHASE_DAY);
 
       const result = await matchAndLink(USER_ID, poolQueryFn(p));
 
@@ -126,8 +135,8 @@ describe("matchAndLink — реальний Postgres", () => {
       // `finyk_manual_expenses` — soft-delete. Без фільтра `deleted_at`
       // чек чіплявся б до витрати, якої для користувача вже не існує.
       const p = pool;
-      await seedReceipt(p, 74_784, "2026-08-24T18:09:00Z");
-      await seedManualExpense(p, "manual-dead", 747.84, "2026-08-24");
+      await seedReceipt(p, 74_784, PURCHASED_AT);
+      await seedManualExpense(p, "manual-dead", 747.84, PURCHASE_DAY);
       await p.query(
         `UPDATE finyk_manual_expenses SET deleted_at = NOW() WHERE user_id = $1`,
         [USER_ID],
@@ -145,8 +154,8 @@ describe("matchAndLink — реальний Postgres", () => {
     async (ctx) => {
       if (!dockerAvailable || !pool) return ctx.skip();
       const p = pool;
-      await seedReceipt(p, 74_784, "2026-08-24T18:09:00Z");
-      await seedManualExpense(p, "manual-income", 747.84, "2026-08-24", {
+      await seedReceipt(p, 74_784, PURCHASED_AT);
+      await seedManualExpense(p, "manual-income", 747.84, PURCHASE_DAY, {
         kind: "income",
       });
 
