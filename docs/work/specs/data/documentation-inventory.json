@@ -4288,133 +4288,133 @@
       "canonical_owner": "docs/work/specs/audits/verification/runs/full-2026-11-20/walk-anon-diag.json"
     },
     {
-      "old_path": null,
+      "old_path": "docs/work/specs/audits/verification/runs/full-2026-11-25/ai-chat.png",
       "new_path": "docs/work/specs/audits/verification/runs/full-2026-11-25/ai-chat.png",
       "action": "keep",
       "genre": "active-work",
       "canonical_owner": "docs/work/specs/audits/verification/runs/full-2026-11-25/ai-chat.png"
     },
     {
-      "old_path": null,
+      "old_path": "docs/work/specs/audits/verification/runs/full-2026-11-25/ai-confirm.png",
       "new_path": "docs/work/specs/audits/verification/runs/full-2026-11-25/ai-confirm.png",
       "action": "keep",
       "genre": "active-work",
       "canonical_owner": "docs/work/specs/audits/verification/runs/full-2026-11-25/ai-confirm.png"
     },
     {
-      "old_path": null,
+      "old_path": "docs/work/specs/audits/verification/runs/full-2026-11-25/ai.json",
       "new_path": "docs/work/specs/audits/verification/runs/full-2026-11-25/ai.json",
       "action": "keep",
       "genre": "active-work",
       "canonical_owner": "docs/work/specs/audits/verification/runs/full-2026-11-25/ai.json"
     },
     {
-      "old_path": null,
+      "old_path": "docs/work/specs/audits/verification/runs/full-2026-11-25/durability.jsonl",
       "new_path": "docs/work/specs/audits/verification/runs/full-2026-11-25/durability.jsonl",
       "action": "keep",
       "genre": "active-work",
       "canonical_owner": "docs/work/specs/audits/verification/runs/full-2026-11-25/durability.jsonl"
     },
     {
-      "old_path": null,
+      "old_path": "docs/work/specs/audits/verification/runs/full-2026-11-25/finyk-heavy-desktop.png",
       "new_path": "docs/work/specs/audits/verification/runs/full-2026-11-25/finyk-heavy-desktop.png",
       "action": "keep",
       "genre": "active-work",
       "canonical_owner": "docs/work/specs/audits/verification/runs/full-2026-11-25/finyk-heavy-desktop.png"
     },
     {
-      "old_path": null,
+      "old_path": "docs/work/specs/audits/verification/runs/full-2026-11-25/handoff.md",
       "new_path": "docs/work/specs/audits/verification/runs/full-2026-11-25/handoff.md",
       "action": "keep",
       "genre": "active-work",
       "canonical_owner": "docs/work/specs/audits/verification/runs/full-2026-11-25/handoff.md"
     },
     {
-      "old_path": null,
+      "old_path": "docs/work/specs/audits/verification/runs/full-2026-11-25/health.json",
       "new_path": "docs/work/specs/audits/verification/runs/full-2026-11-25/health.json",
       "action": "keep",
       "genre": "active-work",
       "canonical_owner": "docs/work/specs/audits/verification/runs/full-2026-11-25/health.json"
     },
     {
-      "old_path": null,
+      "old_path": "docs/work/specs/audits/verification/runs/full-2026-11-25/insights-error-boundary.png",
       "new_path": "docs/work/specs/audits/verification/runs/full-2026-11-25/insights-error-boundary.png",
       "action": "keep",
       "genre": "active-work",
       "canonical_owner": "docs/work/specs/audits/verification/runs/full-2026-11-25/insights-error-boundary.png"
     },
     {
-      "old_path": null,
+      "old_path": "docs/work/specs/audits/verification/runs/full-2026-11-25/isolation.json",
       "new_path": "docs/work/specs/audits/verification/runs/full-2026-11-25/isolation.json",
       "action": "keep",
       "genre": "active-work",
       "canonical_owner": "docs/work/specs/audits/verification/runs/full-2026-11-25/isolation.json"
     },
     {
-      "old_path": null,
+      "old_path": "docs/work/specs/audits/verification/runs/full-2026-11-25/lanes.txt",
       "new_path": "docs/work/specs/audits/verification/runs/full-2026-11-25/lanes.txt",
       "action": "keep",
       "genre": "active-work",
       "canonical_owner": "docs/work/specs/audits/verification/runs/full-2026-11-25/lanes.txt"
     },
     {
-      "old_path": null,
+      "old_path": "docs/work/specs/audits/verification/runs/full-2026-11-25/mass-accounts.json",
       "new_path": "docs/work/specs/audits/verification/runs/full-2026-11-25/mass-accounts.json",
       "action": "keep",
       "genre": "active-work",
       "canonical_owner": "docs/work/specs/audits/verification/runs/full-2026-11-25/mass-accounts.json"
     },
     {
-      "old_path": null,
+      "old_path": "docs/work/specs/audits/verification/runs/full-2026-11-25/nutrition-mobile.png",
       "new_path": "docs/work/specs/audits/verification/runs/full-2026-11-25/nutrition-mobile.png",
       "action": "keep",
       "genre": "active-work",
       "canonical_owner": "docs/work/specs/audits/verification/runs/full-2026-11-25/nutrition-mobile.png"
     },
     {
-      "old_path": null,
+      "old_path": "docs/work/specs/audits/verification/runs/full-2026-11-25/relogin-empty.png",
       "new_path": "docs/work/specs/audits/verification/runs/full-2026-11-25/relogin-empty.png",
       "action": "keep",
       "genre": "active-work",
       "canonical_owner": "docs/work/specs/audits/verification/runs/full-2026-11-25/relogin-empty.png"
     },
     {
-      "old_path": null,
+      "old_path": "docs/work/specs/audits/verification/runs/full-2026-11-25/repro-relogin-same-device.txt",
       "new_path": "docs/work/specs/audits/verification/runs/full-2026-11-25/repro-relogin-same-device.txt",
       "action": "keep",
       "genre": "active-work",
       "canonical_owner": "docs/work/specs/audits/verification/runs/full-2026-11-25/repro-relogin-same-device.txt"
     },
     {
-      "old_path": null,
+      "old_path": "docs/work/specs/audits/verification/runs/full-2026-11-25/repro-restore-account.txt",
       "new_path": "docs/work/specs/audits/verification/runs/full-2026-11-25/repro-restore-account.txt",
       "action": "keep",
       "genre": "active-work",
       "canonical_owner": "docs/work/specs/audits/verification/runs/full-2026-11-25/repro-restore-account.txt"
     },
     {
-      "old_path": null,
+      "old_path": "docs/work/specs/audits/verification/runs/full-2026-11-25/restore-empty.png",
       "new_path": "docs/work/specs/audits/verification/runs/full-2026-11-25/restore-empty.png",
       "action": "keep",
       "genre": "active-work",
       "canonical_owner": "docs/work/specs/audits/verification/runs/full-2026-11-25/restore-empty.png"
     },
     {
-      "old_path": null,
+      "old_path": "docs/work/specs/audits/verification/runs/full-2026-11-25/run.json",
       "new_path": "docs/work/specs/audits/verification/runs/full-2026-11-25/run.json",
       "action": "keep",
       "genre": "active-work",
       "canonical_owner": "docs/work/specs/audits/verification/runs/full-2026-11-25/run.json"
     },
     {
-      "old_path": null,
+      "old_path": "docs/work/specs/audits/verification/runs/full-2026-11-25/security.json",
       "new_path": "docs/work/specs/audits/verification/runs/full-2026-11-25/security.json",
       "action": "keep",
       "genre": "active-work",
       "canonical_owner": "docs/work/specs/audits/verification/runs/full-2026-11-25/security.json"
     },
     {
-      "old_path": null,
+      "old_path": "docs/work/specs/audits/verification/runs/full-2026-11-25/unit-summary.txt",
       "new_path": "docs/work/specs/audits/verification/runs/full-2026-11-25/unit-summary.txt",
       "action": "keep",
       "genre": "active-work",
