@@ -12,26 +12,26 @@ const MODULES: ReadonlyArray<{
   {
     id: "finyk",
     icon: "wallet",
-    title: "Побачити гроші без шуму",
-    body: "Додай першу витрату або підключи Mono, щоб Сержант показав тижневий патерн.",
+    title: "Витрати",
+    body: "Додай першу витрату або підключи Monobank.",
   },
   {
     id: "fizruk",
     icon: "dumbbell",
-    title: "Зібрати ритм тренувань",
-    body: "Запиши перше тренування, і наступна підказка вже буде відштовхуватись від факту.",
+    title: "Тренування",
+    body: "Запиши перше тренування.",
   },
   {
     id: "nutrition",
     icon: "utensils",
-    title: "Зрозуміти харчування",
-    body: "Перший прийом їжі запускає простий денний контекст без складного трекінгу.",
+    title: "Харчування",
+    body: "Запиши перший прийом їжі.",
   },
   {
     id: "routine",
     icon: "calendar-check",
-    title: "Втримати день",
-    body: "Одна задача або звичка дає основу для спокійнішого плану на завтра.",
+    title: "Звички",
+    body: "Додай першу звичку.",
   },
 ];
 const DEFAULT_MODULE = MODULES[0] as (typeof MODULES)[number];
@@ -64,11 +64,10 @@ export function OutcomeCard({
             id="ftux-outcome-card-title"
             className="text-style-title text-text"
           >
-            Почни з одного живого запису
+            Почни з одного запису
           </h2>
           <p className="text-style-body text-muted leading-relaxed">
-            Обери модуль, де найпростіше зробити першу дію. Після цього хаб
-            замінить стартові підказки на персональний фокус дня.
+            Обери модуль. Після першого запису тут зʼявиться фокус дня.
           </p>
         </div>
         <Button

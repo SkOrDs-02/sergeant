@@ -35,7 +35,7 @@ export function NutritionSlide({ slide }: { slide: NutritionSlideData }) {
           />
         </div>
         <div className="text-style-caption text-white/75 mt-1">
-          {kcalPct}% від цілі · залоговано {agg?.daysLogged ?? 0} / 7 днів
+          {kcalPct}% від цілі · записано {agg?.daysLogged ?? 0} / 7 днів
         </div>
       </div>
 

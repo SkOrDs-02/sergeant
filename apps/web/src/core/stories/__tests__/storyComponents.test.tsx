@@ -152,7 +152,7 @@ describe("story slide components", () => {
     const { container } = render(<>{renderSlide(slide)}</>);
 
     expect(
-      screen.getByText("140% від цілі · залоговано 5 / 7 днів"),
+      screen.getByText("140% від цілі · записано 5 / 7 днів"),
     ).toBeInTheDocument();
     expect(screen.getByText("Білки")).toBeInTheDocument();
     expect(screen.getByText("Жири")).toBeInTheDocument();

@@ -211,9 +211,6 @@ export function InlineAiRail({
 
         {state.status === "aborted" && (
           <div className="flex items-center justify-between gap-3">
-            <p className="text-style-body text-muted">
-              Запит скасовано, натисни «Запитати знову», щоб спробувати ще раз.
-            </p>
             <button
               type="button"
               onClick={() => onRetry(state.question)}

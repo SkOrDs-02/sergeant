@@ -33,9 +33,8 @@ export function ForgotPasswordPanel({
       {forgotState === "sent" ? (
         <div className="space-y-3">
           <p>
-            Якщо такий email зареєстровано, лист із посиланням для скидання
-            пароля вже надіслано. Перевір вхідні та папку «Спам». Локальні дані
-            на пристрої залишаються без змін.
+            Якщо такий email зареєстровано, лист уже надіслано. Перевір і папку
+            «Спам».
           </p>
           <Button
             type="button"
@@ -52,8 +51,7 @@ export function ForgotPasswordPanel({
         // `AuthPage`), тож без неї Enter у полі нічого не відправляв (ux-49).
         <form onSubmit={handleSubmit} noValidate className="space-y-2">
           <p>
-            Введи email акаунту, пришлю посилання для скидання пароля. Локальні
-            дані на пристрої залишаються без змін.
+            Пришлю посилання для скидання пароля. Дані на пристрої не зміняться.
           </p>
           <label
             htmlFor="auth-forgot-email"

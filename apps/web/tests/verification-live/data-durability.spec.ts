@@ -486,7 +486,7 @@ test("P2 анонім → реєстрація: дані переносятьс�
   // Усередині трею: той самий текст дублюється в sr-only регіоні анонсера.
   const toast = p
     .getByTestId("toast-tray")
-    .getByText("Дані перенесено й безпечно збережено у профілі.", {
+    .getByText("Дані перенесено в профіль.", {
       exact: true,
     });
   const toastSeen = toast.waitFor({ state: "visible", timeout: 60_000 }).then(

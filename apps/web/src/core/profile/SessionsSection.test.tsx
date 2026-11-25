@@ -163,9 +163,7 @@ describe("SessionsSection — revoke flow", () => {
     const revokeButton = await screen.findByRole("button", {
       name: /Завершити/i,
     });
-    expect(
-      screen.getByText(/Не вдалося визначити сесію цього пристрою/),
-    ).toBeTruthy();
+    expect(screen.getByText(/Не вдалося визначити цей пристрій/)).toBeTruthy();
     expect(revokeButton).toBeDisabled();
 
     fireEvent.click(revokeButton);

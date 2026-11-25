@@ -131,7 +131,7 @@ export const coreMessages = {
       network: "Не вдалось підключитися. Перевір зʼєднання.",
       serverDown: "Сервер тимчасово недоступний. Спробуй пізніше.",
       retry: "Спробуй ще раз",
-      timeout: "Перевищено час очікування. Спробуй ще раз.",
+      timeout: "Сервер довго не відповідає. Спробуй ще раз.",
       unknown: "Щось пішло не так. Спробуй ще раз.",
       // Аудит копі 2026-09-23 §2.6: один шаблон на всі фолбеки збою за
       // каноном §3 «що сталось + що зробити». Підставляє `failedCopy()` з
@@ -141,7 +141,7 @@ export const coreMessages = {
       // Аудит копі 2026-09-23 §2.5: сира причина (`QuotaExceededError`,
       // «quota exceeded») лишається в події й телеметрії, людині один рядок.
       storageSaveFailed:
-        "Не вдалося зберегти дані. Звільни місце в сховищі браузера або збережи резервну копію.",
+        "Не вдалося зберегти. Звільни місце на пристрої або збережи резервну копію.",
 
       // Round 16 — short error labels та section-failure messages.
       // `title` — bare "Помилка" як заголовок банера/тулбара.
@@ -154,11 +154,12 @@ export const coreMessages = {
       title: "Помилка",
       somethingWrong: "Щось пішло не так",
       cannotRenderPage: "Не вдалось показати сторінку",
-      sectionFailed: "Ця секція впала, але інші частини модуля працюють.",
+      sectionFailed: "Цей блок не відкрився, решта модуля працює.",
       moduleFailed: "Помилка в модулі",
       backToModulePicker: "До вибору модуля",
+      requestIdLabel: "Код помилки:",
       copyRequestId: "Копіювати",
-      copyRequestIdAria: "Скопіювати requestId",
+      copyRequestIdAria: "Скопіювати код помилки",
       // `OptimizedImage`: aria-label заглушки, коли картинка не завантажилась
       // і `alt` порожній. До 2026-09-17 — англійський літерал поза каталогом.
       imageFailed: "Зображення не завантажилось",
@@ -166,21 +167,19 @@ export const coreMessages = {
   },
 
   sync: {
-    anonymousMigrationProgress:
-      "Переношу дані в профіль і зберігаю на сервері…",
+    anonymousMigrationProgress: "Переношу дані в профіль…",
     anonymousMigrationFailure:
-      "Не вдалося завершити перенесення. Дані на цьому пристрої не видалено й вони ще не захищені синхронізацією.",
+      "Не вдалося перенести дані. Вони лишились на цьому пристрої, але ще не синхронізуються.",
     anonymousMigrationFailureOffline:
-      "Немає звʼязку, тож перенести дані в профіль не вийшло. Вони лишились на цьому пристрої. Повтори, коли зʼявиться мережа.",
+      "Немає звʼязку. Дані лишились на цьому пристрої, повтори, коли зʼявиться мережа.",
     anonymousMigrationRetry: "Повторити",
-    anonymousMigrationDefer: "Продовжити, перенесу пізніше",
+    anonymousMigrationDefer: "Перенести пізніше",
     anonymousMigrationDeferredToast:
-      "Гаразд. Дані лишаються на цьому пристрої, спробую перенести їх при наступному запуску.",
+      "Спробую перенести дані при наступному запуску.",
     anonymousMigrationDeferredNotice:
       "Дані ще не перенесено в профіль, вони лише на цьому пристрої.",
     anonymousMigrationDeferredRetry: "Спробувати зараз",
-    anonymousMigrationSuccess:
-      "Дані перенесено й безпечно збережено у профілі.",
+    anonymousMigrationSuccess: "Дані перенесено в профіль.",
     // Reserved legacy sync error copy. Historical retry cycle:
     //   network                → перевір зʼєднання
     //   server retryable       → 5xx → invite-retry
@@ -188,7 +187,7 @@ export const coreMessages = {
     //   unknown                → fallback
     errorNetwork: "Не вдалось синхронізувати, перевір зʼєднання.",
     errorServerRetryable: "Сервер тимчасово не відповідає. Спробуй ще раз.",
-    errorServerNonRetryable: "Помилка синхронізації. Передивись введення.",
+    errorServerNonRetryable: "Не вдалось синхронізувати. Перевір введені дані.",
     retryCta: "Спробувати ще",
 
     // Reserved для майбутніх migration-round-ів — narrative-strings, які
@@ -220,7 +219,7 @@ export const coreMessages = {
     // каталогу, бо `HubDashboard` — eager-поверхня.
     nowPile: {
       heading: "Зараз",
-      empty: "Сьогодні все закрито, нічого не просить уваги.",
+      empty: "На сьогодні все закрито.",
       more: "ще",
       open: "Відкрити",
       // Тижнева картка про темп веде не в модуль, а в «Звіт тижня» на
@@ -289,7 +288,7 @@ export const coreMessages = {
       bankFactsWhen: "Одразу після підключення Monobank",
       weekReportWhat: "Звіт тижня",
       // Те саме формулювання, що в порожньому стані `WeeklyDigestCard`.
-      weekReportWhen: "Коли тиждень завершиться і ти вперше відкриєш головну",
+      weekReportWhen: "Коли завершиться тиждень",
       linksWhat: "Звʼязки між сферами",
       linksWhen: "Після {days} {unit} із записами у двох сферах",
       linksProgress: "{value} з {max} {unit}",
@@ -308,13 +307,13 @@ export const coreMessages = {
     },
     weeklyDigestTitle: "Щотижневий дайджест: сторіс",
     chatOfflineNotice:
-      "Сержант недоступний без інтернету. Дані модулів видно офлайн, але відповіді Сержанта потребують підключення.",
+      "Сержант відповідає лише з інтернетом. Записи модулів доступні й офлайн.",
 
     // Розкриття «це AI» — вимога EU AI Act ст. 50(1), чинна з 2026-08-02:
     // людину повідомляють, що вона взаємодіє з AI, не пізніше першого
     // контакту, тож рядок стоїть над стрічкою чату безумовно (`HubChatBody`).
     chatEmptyAiDisclosure:
-      "Відповідає AI, а не людина. Може помилятися, тож важливе перевіряй.",
+      "Відповідає AI, не людина. Може помилятися, важливе перевіряй.",
 
     // HubReports per-domain cards (NutritionCard / RoutineCard) — shared
     // inline labels for the lazy-loaded report charts.
@@ -363,13 +362,10 @@ export const coreMessages = {
     // значення тут лишається дзеркалом каталогу, щоб не зʼявлялось друге
     // джерело правди для тексту. КОПІЯ ДЛЯ ЗАТВЕРДЖЕННЯ ВЛАСНИКОМ.
     title: "Експериментальні функції",
-    intro:
-      "Тут зібрані функції, які ще перевіряються. У кожного перемикача є коротке пояснення, навіщо він потрібен.",
-    warningBanner:
-      "Ці можливості можуть змінюватися або працювати нестабільно. Увімкни їх лише якщо готовий швидко вимкнути назад.",
+    intro: "Функції, які ще допрацьовуються.",
+    warningBanner: "Можуть змінюватися або збоїти. Вимкнути можна будь-коли.",
     optInLabel: "Я розумію, що це ранні можливості",
-    optInHint:
-      "Після підтвердження перемикачі стануть активними. Налаштування зберігається тільки на цьому пристрої.",
+    optInHint: "Діє лише на цьому пристрої.",
   },
 
   /**
@@ -388,7 +384,7 @@ export const coreMessages = {
   onboarding: {
     // Пікер модулів: усі чотири увімкнені за замовчуванням, тому тап
     // знімає вибір, а не додає — підпис робить це чесним.
-    pickerAllOnHint: "Увімкнено все, зніми те, чим не користуватимешся.",
+    pickerAllOnHint: "Обери потрібні.",
     // Round 16 — onboarding-specific labels.
 
     // Пресет-шит FTUX: запис не дійшов до сховища. Спека
@@ -409,15 +405,14 @@ export const coreMessages = {
     // повтор привітання, а не розповідь про можливості. Тепер веде на
     // `/capabilities`, і назва це відображає.
     tourLaunchLabel: "Що вміє застосунок",
-    appCapabilitiesHint:
-      "Що вміє кожен розділ і як вони працюють разом. Дані не зміняться.",
+    appCapabilitiesHint: "Огляд розділів, дані не зміняться.",
 
     // PR-13 / S5.1 goal-first wizard A/B copy. The headline + body
     // frame the outcome-first variant of the welcome screen, and
     // `goalFirstSkipLabel` is the tertiary escape hatch back to the
     // legacy module-checklist welcome.
     goalFirstHeading: "Головна ціль",
-    goalFirstSubtitle: "Обери головне, Сержант підбере розділ, з якого почати.",
+    goalFirstSubtitle: "Сержант підкаже, з чого почати.",
     goalFirstSkipLabel: "Подивитись усе",
     goalFirstAriaLabel: "Цілі онбордингу",
   },
@@ -473,8 +468,7 @@ export const coreMessages = {
    */
   firstCloudPull: {
     loadingTitle: "Завантажую з хмари…",
-    loadingDescription:
-      "Дані з інших пристроїв зʼявляться тут за кілька секунд.",
+    loadingDescription: "Записи з інших пристроїв зʼявляться тут.",
     failedTitle: "Не вдалося завантажити дані з хмари",
     failedDescription: "Перевір зʼєднання і спробуй ще раз.",
     retry: "Ще раз",
@@ -502,14 +496,13 @@ export const coreMessages = {
     // Better Auth canonical error-codes:
     invalidEmailOrPassword: "Неправильний email або пароль.",
     invalidToken:
-      "Посилання для скидання пароля невалідне або вже використане. Запроси новий лист на сторінці входу.",
+      "Посилання недійсне або вже використане. Запроси новий лист на сторінці входу.",
     userAlreadyExists: "Цей email вже зареєстровано. Спробуй увійти.",
     invalidEmail: "Неправильний формат email.",
     invalidPassword: "Неправильний пароль.",
     passwordTooShort: "Пароль занадто короткий.",
     passwordTooLong: "Пароль занадто довгий.",
-    emailNotVerified:
-      "Email ще не підтверджено. Відкрий посилання з листа, який я надіслав на цю адресу.",
+    emailNotVerified: "Email ще не підтверджено. Відкрий посилання з листа.",
     // sec-46: екран після реєстрації. Однаковий для нової і зайнятої адреси:
     // у другому випадку лист пояснює, що акаунт уже є.
     checkEmailTitle: "Перевір пошту",
@@ -517,8 +510,7 @@ export const coreMessages = {
     checkEmailBody: "Відкрий посилання з нього, щоб продовжити.",
     checkEmailSpamHint: "Листа немає за кілька хвилин? Зазирни в «Спам».",
     checkEmailBack: "Повернутися до входу",
-    providerNotFound:
-      "Цей провайдер входу не налаштовано. Спробуй інший спосіб входу.",
+    providerNotFound: "Цей спосіб входу недоступний. Спробуй інший.",
     sessionFailure: "Не вдалося завершити вхід. Спробуй ще раз.",
 
     // Серверні errors (rate-limiter, error handler):
@@ -537,6 +529,6 @@ export const coreMessages = {
     // sec-18: екран входу після завершеної сесії (замість анонімного хаба).
     sessionExpiredTitle: "Сесія завершилась",
     sessionExpiredBody:
-      "Увійди ще раз. Усе, що ти записав на цьому пристрої, збережено і синхронізується після входу.",
+      "Записи з цього пристрою збережено, вони синхронізуються після входу.",
   },
 } as const;

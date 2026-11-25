@@ -37,9 +37,7 @@ test("@critical paywall: free-user PDF export opens paywall and leads to pricing
   const paywall = page.getByRole("dialog", { name: "PDF-звіти – у Premium" });
   await expect(paywall).toBeVisible();
   await expect(
-    paywall.getByText(
-      "Експорт звітів у PDF входить у Premium. Самі звіти й CSV лишаються безкоштовними.",
-    ),
+    paywall.getByText("Самі звіти й CSV лишаються безкоштовними."),
   ).toBeVisible();
 
   await paywall.getByRole("button", { name: "Дивитися плани" }).click();

@@ -238,8 +238,9 @@ export const messagesEn: Partial<{
       moduleFailed: "Module error",
       backToModulePicker: "Back to module picker",
       imageFailed: "Image failed to load",
+      requestIdLabel: "Error code:",
       copyRequestId: "Copy",
-      copyRequestIdAria: "Copy requestId",
+      copyRequestIdAria: "Copy error code",
     },
   },
 

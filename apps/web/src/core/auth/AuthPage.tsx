@@ -231,8 +231,7 @@ export function AuthPage({ onContinueWithoutAccount }: AuthPageProps) {
                 Поки що пропустити
               </Button>
               <p className="text-center text-style-body text-subtle leading-relaxed px-2">
-                Все працює локально. Акаунт потрібен лише для синхронізації між
-                пристроями.
+                Без акаунта все працює на цьому пристрої.
               </p>
             </div>
           )}

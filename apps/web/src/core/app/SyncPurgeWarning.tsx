@@ -23,8 +23,8 @@ import { getSyncEngineWriter } from "../syncEngine/singleton";
 
 const COPY = {
   title: "Записи скоро зникнуть з пристрою",
-  hintRetry: "Натисни «Повторити синхронізацію», поки вони ще тут.",
-  hintRejected: "Перепиши їх зі списку вище, поки вони ще тут.",
+  hintRetry: "Натисни «Повторити синхронізацію».",
+  hintRejected: "Перепиши їх зі списку вище.",
 } as const;
 
 const EMPTY: StaleTerminalOutboxPurgeForecast = {
@@ -63,7 +63,7 @@ export function purgeWarningBody(
       ? "Під час наступного запуску"
       : `Після ${formatDayMonth(purgeAt)}`;
   const hint = canRetry ? COPY.hintRetry : COPY.hintRejected;
-  return `${lead} ${when} застосунок прибере їх із пристрою, і ці зміни буде втрачено. ${hint}`;
+  return `${lead} ${when} вони зникнуть з пристрою. ${hint}`;
 }
 
 export interface SyncPurgeWarningProps {

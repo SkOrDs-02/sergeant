@@ -47,7 +47,7 @@ describe("PushNotificationToggle", () => {
 
     expect(screen.getByText("Push-сповіщення")).toBeTruthy();
     expect(screen.queryByRole("button")).toBeNull();
-    expect(screen.getByText(/не підтримує push-сповіщення/i)).toBeTruthy();
+    expect(screen.getByText(/не підтримує сповіщення/i)).toBeTruthy();
   });
 
   it("tells iOS users to install the app to the home screen", () => {

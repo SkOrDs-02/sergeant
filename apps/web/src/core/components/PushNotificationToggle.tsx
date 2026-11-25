@@ -55,8 +55,8 @@ export function PushNotificationToggle({
         <div className="text-style-label text-text">Push-сповіщення</div>
         <p className="text-style-caption text-subtle mt-0.5">
           {isIosLike()
-            ? "На iPhone та iPad сповіщення працюють лише у застосунку з початкового екрана: «Поділитися» → «На початковий екран», потім відкрий Sergeant звідти."
-            : "Цей браузер не підтримує push-сповіщення. Спробуй Chrome, Edge або Firefox. Нагадування всередині застосунку працюють і без них."}
+            ? "На iPhone та iPad сповіщення працюють лише з початкового екрана: «Поділитися» → «На початковий екран»."
+            : "Цей браузер не підтримує сповіщення. Спробуй Chrome, Edge або Firefox."}
         </p>
       </div>
     );

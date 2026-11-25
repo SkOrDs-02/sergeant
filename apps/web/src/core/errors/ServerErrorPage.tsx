@@ -37,7 +37,7 @@ export function ServerErrorPage({ onReset }: ServerErrorPageProps) {
         aria-atomic="true"
         className="sr-only"
       >
-        Помилка сервера. Щось пішло не так, спробуй оновити сторінку.
+        Помилка сервера. Спробуй оновити сторінку.
       </p>
       <EmptyState
         size="lg"
@@ -47,7 +47,7 @@ export function ServerErrorPage({ onReset }: ServerErrorPageProps) {
         // the page heading — otherwise this route ships with no heading at
         // all (same reasoning as `NotFoundPage`).
         titleAs="h1"
-        description="Сервер тимчасово не зміг обробити запит. Спробуй оновити сторінку, зазвичай це допомагає."
+        description="Сервер не зміг обробити запит. Спробуй оновити сторінку."
         primaryAction={
           <Button type="button" variant="solid" size="lg" onClick={reload}>
             Оновити сторінку

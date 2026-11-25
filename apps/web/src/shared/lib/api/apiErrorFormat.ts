@@ -61,7 +61,7 @@ export function formatApiError(
       // Типовий кейс на Vercel: rewrite перехоплює `/api/*` і повертає index.html.
       if (/<!doctype html/i.test(err.bodyText || "")) {
         const base =
-          "Сервер відповів сторінкою замість даних. Онови сторінку, а якщо не допоможе, спробуй пізніше.";
+          "Сервер повернув неочікувану відповідь. Онови сторінку або спробуй пізніше.";
         return base;
       }
       // «Unexpected token <» і сире тіло відповіді людині ні про що.

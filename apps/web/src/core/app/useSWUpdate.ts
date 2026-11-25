@@ -48,7 +48,7 @@ const DEFERRED_RELOAD_COPY: Record<ReloadDeferredReason, string> = {
   // chunk-recovery (`chunkReload.ts`) не став тихо перезавантажувати вкладку
   // з незбереженим вводом.
   "stale-chunk":
-    "Частину застосунку не вдалося завантажити: вийшла нова версія. Перезавантаж, коли збережеш введене",
+    "Частину застосунку не вдалося завантажити. Перезавантаж, коли збережеш введене",
 };
 
 export function useSWUpdate() {

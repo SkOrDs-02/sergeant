@@ -47,7 +47,9 @@ describe("OfflinePage", () => {
     render(<OfflinePage />);
     expect(screen.getByText("Офлайн")).toBeInTheDocument();
     expect(screen.getByText("Немає зʼєднання")).toBeInTheDocument();
-    expect(screen.getByText(/Зараз немає інтернету/)).toBeInTheDocument();
+    expect(
+      screen.getByText(/Записи збережуться на пристрої/),
+    ).toBeInTheDocument();
   });
 
   it("після повернення мережі жоден підпис не заперечує решти", () => {
@@ -55,9 +57,9 @@ describe("OfflinePage", () => {
     render(<OfflinePage />);
     expect(screen.getByText("Онлайн")).toBeInTheDocument();
     expect(screen.getByText("Зʼєднання відновлено")).toBeInTheDocument();
-    expect(screen.getByText(/Мережа знову є/)).toBeInTheDocument();
+    expect(screen.getByText(/^Натисни «Спробувати ще»\.$/)).toBeInTheDocument();
     expect(screen.queryByText("Немає зʼєднання")).toBeNull();
-    expect(screen.queryByText(/Зараз немає інтернету/)).toBeNull();
+    expect(screen.queryByText(/Записи збережуться на пристрої/)).toBeNull();
     // Жива область для читача екрана — те саме твердження, що й видиме.
     // `getAllByRole`, бо `EmptyState` під variant="success" має власний
     // `role="status"`; нас цікавить саме sr-only-абзац сторінки.
