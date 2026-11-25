@@ -26,6 +26,7 @@ async function putInline(
 
 import { isHandoffDone, markHandoffDone } from "../../../core/db/kvvfsHandoff";
 import { ORIGIN_DEVICE_RESET_MARKER } from "../../../core/syncEngine/originDeviceReset";
+import { ANON_PARTITION_STATE_KEY } from "../../../core/durability/anonPartitionState";
 import {
   isAppOwnedLocalStorageKey,
   purgeAppOwnedLocalData,
@@ -171,6 +172,12 @@ describe("purgeAppOwnedLocalData", () => {
 
     purgeAppOwnedLocalStorage();
     expect(localStorage.getItem(ORIGIN_DEVICE_RESET_MARKER)).toBe("1");
+  });
+
+  it("лишає прапорець чистоти анонімної партиції (anonymous-migration-fast-path)", () => {
+    localStorage.setItem(ANON_PARTITION_STATE_KEY, "dirty:x");
+    purgeAppOwnedLocalStorage();
+    expect(localStorage.getItem(ANON_PARTITION_STATE_KEY)).toBe("dirty:x");
   });
 });
 

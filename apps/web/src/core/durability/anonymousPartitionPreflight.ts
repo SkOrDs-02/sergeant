@@ -1,5 +1,5 @@
 /**
- * Last validated: 2026-10-23
+ * Last validated: 2026-11-25
  * Status: Active
  *
  * Preflight розвідки анонімної партиції перед переносом у профіль
@@ -99,4 +99,25 @@ export async function preflightAnonymousRows(
   } catch {
     return "probe";
   }
+}
+
+/** Доганяє клієнтські схеми чотирьох модулів на відкритій партиції. */
+export async function migrateModuleSchemas(
+  client: SqliteMigrationClient,
+): Promise<void> {
+  const [
+    { migrateRoutine },
+    { migrateFizruk },
+    { migrateNutrition },
+    { migrateFinyk },
+  ] = await Promise.all([
+    import("../../modules/routine/lib/clientMigrate.js"),
+    import("../../modules/fizruk/lib/clientMigrate.js"),
+    import("../../modules/nutrition/lib/clientMigrate.js"),
+    import("../../modules/finyk/lib/clientMigrate.js"),
+  ]);
+  await migrateRoutine(client);
+  await migrateFizruk(client);
+  await migrateNutrition(client);
+  await migrateFinyk(client);
 }

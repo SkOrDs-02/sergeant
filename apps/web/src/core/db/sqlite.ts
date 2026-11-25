@@ -26,6 +26,10 @@ import {
 } from "./sqliteOrphanCleanup.js";
 import { markKvAnonPartition, refreshKvWarmCache } from "./kvStoreBoot.js";
 import type { SqliteConnection } from "./sqliteConnection.js";
+import {
+  markAnonPartitionDirty,
+  sqlMayWriteAnonData,
+} from "../durability/anonPartitionState.js";
 
 /**
  * Lazy-loaded SQLite-WASM client for `apps/web` (PR #015 in
@@ -366,7 +370,13 @@ async function initSqliteDb(
   const driver =
     (persistent ? await openWorkerBackedDb(userKey) : null) ??
     (await openMemoryDb());
-  const proxy = makeProxyDriver(driver.conn);
+  // Анонімна партиція: кожен запис, що може створити дані для переносу,
+  // спершу ставить DIRTY (спека anonymous-migration-fast-path, інваріант 3).
+  const conn =
+    userKey === ANON_USER_KEY
+      ? markAnonDirtyBeforeWrites(driver.conn)
+      : driver.conn;
+  const proxy = makeProxyDriver(conn);
   const drizzleDb = drizzle<SqliteSchema>(proxy, { schema: sqliteSchema });
 
   // AI-DANGER: рівно ОДИН клієнт на хендл, а не новий на кожен виклик.
@@ -376,7 +386,7 @@ async function initSqliteDb(
   // nutrition) ділять цей `oo1.DB` і без спільного ключа знову
   // перетинали б `BEGIN`, валячи бут із «cannot start a transaction
   // within a transaction».
-  const sharedMigrationClient = makeMigrationClient(driver.conn);
+  const sharedMigrationClient = makeMigrationClient(conn);
 
   // Який VFS реально дістався пристрою — тег на всю сесію.
   //
@@ -706,6 +716,37 @@ function warnIfNotCrossOriginIsolated(): boolean {
   });
 
   return false;
+}
+
+/**
+ * Зʼєднання анонімної партиції, яке СИНХРОННО ставить прапорець DIRTY перед
+ * кожним SQL, що може записати дані для переносу в профіль
+ * ({@link sqlMayWriteAnonData}).
+ *
+ * AI-DANGER: хук стоїть тут, на шарі виконання SQL, а не в модульних
+ * писачах: так його не обійде жоден писач, про якого ми не знаємо (хуки
+ * дуалрайту чотирьох модулів, HubChat, імпорт Strong, міграції схем). Запис
+ * прапорця мусить іти ДО `conn.*`, не після: обрив між ними має лишити
+ * DIRTY, а не рядок без DIRTY.
+ */
+function markAnonDirtyBeforeWrites(conn: SqliteConnection): SqliteConnection {
+  return {
+    exec(sql) {
+      if (sqlMayWriteAnonData(sql)) markAnonPartitionDirty();
+      return conn.exec(sql);
+    },
+    run(sql, bind) {
+      if (sqlMayWriteAnonData(sql)) markAnonPartitionDirty();
+      return conn.run(sql, bind);
+    },
+    all(sql, bind, rowMode) {
+      if (sqlMayWriteAnonData(sql)) markAnonPartitionDirty();
+      return conn.all(sql, bind, rowMode);
+    },
+    close() {
+      return conn.close();
+    },
+  };
 }
 
 /**

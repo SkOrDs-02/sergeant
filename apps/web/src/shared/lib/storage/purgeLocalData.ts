@@ -76,6 +76,7 @@ import {
   ORIGIN_DEVICE_RESET_MARKER,
   requestOriginDeviceReset,
 } from "../../../core/syncEngine/originDeviceReset";
+import { ANON_PARTITION_STATE_KEY } from "../../../core/durability/anonPartitionState";
 
 /**
  * Prefix families for app-owned `localStorage` keys whose exact names are
@@ -118,6 +119,10 @@ const PRESERVED_LS_PREFIXES = [
   // чистка (див. кінець `purgeAppOwnedLocalData`); повторна чистка до старту
   // не має його з'їсти. Даних користувача в ньому немає.
   ORIGIN_DEVICE_RESET_MARKER,
+  // Прапорець чистоти анонімної партиції: чистка анонімних рядків не
+  // створює, а скинутий ключ дав би порівнянню-і-запису хибний збіг
+  // (`anonPartitionState.ts`). Даних користувача в ньому немає.
+  ANON_PARTITION_STATE_KEY,
 ] as const;
 
 /**

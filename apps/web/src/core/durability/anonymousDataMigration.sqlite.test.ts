@@ -13,6 +13,11 @@ import { migrateAnonymousDataToProfile } from "./anonymousDataMigration.js";
 import { preflightAnonymousRows } from "./anonymousPartitionPreflight.js";
 import { FIZRUK_CLIENT_MIGRATIONS } from "@sergeant/db-schema/sqlite/migrations";
 import { createClientMigrator } from "@shared/lib/db/clientMigrator";
+import {
+  __resetAnonPartitionStateForTests,
+  markAnonPartitionDirty,
+  readAnonPartitionState,
+} from "./anonPartitionState.js";
 
 // Only the browser partition manager and network runtime are replaced.
 // Migrations, row application, outbox enqueue and cleanup use real SQLite.
@@ -156,6 +161,7 @@ describe("anonymous migration — persistent SQLite boundaries", () => {
     });
     await expect(migrateAnonymousDataToProfile(USER)).resolves.toEqual({
       migratedRows: 2,
+      sourceRows: 2,
     });
     expect(habits()).toEqual([
       { id: "foreign-row", user_id: OTHER, name: "name-foreign-row" },
@@ -182,6 +188,7 @@ describe("anonymous migration — persistent SQLite boundaries", () => {
     reopen();
     await expect(migrateAnonymousDataToProfile(USER)).resolves.toEqual({
       migratedRows: 1,
+      sourceRows: 1,
     });
     expect(claim()["batch_id"]).toBe(batch);
     expect(deliveries).toEqual([key]);
@@ -211,6 +218,7 @@ describe("anonymous migration — persistent SQLite boundaries", () => {
     });
     await expect(migrateAnonymousDataToProfile(USER)).resolves.toEqual({
       migratedRows: 1,
+      sourceRows: 1,
     });
     expect(boundary.writer.flushNow).toHaveBeenCalledTimes(2);
     expect(habits()).toEqual([]);
@@ -236,6 +244,7 @@ describe("anonymous migration — persistent SQLite boundaries", () => {
       reopen();
       await expect(migrateAnonymousDataToProfile(USER)).resolves.toEqual({
         migratedRows: 1,
+        sourceRows: 1,
       });
       expect(claim()).toMatchObject({ batch_id: batch, status: "completed" });
       expect(new Set(deliveries).size).toBe(1);
@@ -275,6 +284,7 @@ describe("anonymous migration — persistent SQLite boundaries", () => {
     });
     await expect(migrateAnonymousDataToProfile(USER)).resolves.toEqual({
       migratedRows: 2,
+      sourceRows: 2,
     });
     expect(
       rows("SELECT user_id, skip_key FROM routine_habit_skips", USER),
@@ -310,6 +320,7 @@ describe("anonymous migration — persistent SQLite boundaries", () => {
     });
     await expect(migrateAnonymousDataToProfile(USER)).resolves.toEqual({
       migratedRows: 1,
+      sourceRows: 1,
     });
     expect(habits()).toEqual([]);
     expect(rows("SELECT id, deleted_at FROM routine_habits", USER)).toEqual([
@@ -341,6 +352,7 @@ describe("anonymous migration — persistent SQLite boundaries", () => {
       reopen();
       await expect(migrateAnonymousDataToProfile(USER)).resolves.toEqual({
         migratedRows: 2,
+        sourceRows: 2,
       });
       expect(claim()["batch_id"]).toBe(batch);
       expect(deliveries).toHaveLength(2);
@@ -374,6 +386,7 @@ describe("anonymous migration — persistent SQLite boundaries", () => {
       reopen();
       await expect(migrateAnonymousDataToProfile(USER)).resolves.toEqual({
         migratedRows: 2,
+        sourceRows: 2,
       });
       expect(claim()).toMatchObject({ batch_id: batch, status: "completed" });
       expect(deliveries.slice(2)).toEqual(firstDelivery);
@@ -392,7 +405,7 @@ describe("anonymous migration — persistent SQLite boundaries", () => {
     reopen();
     await expect(
       migrateAnonymousDataToProfile(OTHER, { onTransferStart }),
-    ).resolves.toEqual({ migratedRows: 0 });
+    ).resolves.toEqual({ migratedRows: 0, sourceRows: 1 });
     expect(claim()).toEqual(pending);
     expect(habits()).toHaveLength(1);
     expect(habits(OTHER)).toEqual([]);
@@ -400,6 +413,7 @@ describe("anonymous migration — persistent SQLite boundaries", () => {
     expect(boundary.current).toBe(OTHER);
     await expect(migrateAnonymousDataToProfile(USER)).resolves.toEqual({
       migratedRows: 1,
+      sourceRows: 1,
     });
     expect(habits(USER)).toHaveLength(1);
   });
@@ -449,6 +463,7 @@ describe("anonymous migration — persistent SQLite boundaries", () => {
       });
     await expect(migrateAnonymousDataToProfile(USER)).resolves.toEqual({
       migratedRows: 1,
+      sourceRows: 1,
     });
     expect(habits()).toEqual([]);
     expect(habits(USER)[0]!["name"]).toBe("server winner");
@@ -529,6 +544,7 @@ describe("anonymous migration — preflight", () => {
     await expect(preflightAnonymousRows(fresh.client)).resolves.toBe("empty");
     await expect(migrateAnonymousDataToProfile(USER)).resolves.toEqual({
       migratedRows: 0,
+      sourceRows: 0,
     });
     // Без preflight розвідка прогнала б міграції 4 модулів на цьому файлі.
     expect(tables()).toEqual(["kv_store"]);
@@ -588,5 +604,75 @@ describe("anonymous migration — preflight", () => {
       },
     };
     await expect(preflightAnonymousRows(client)).resolves.toBe("probe");
+  });
+});
+
+describe("anonymous partition state flag (fast path PR2)", () => {
+  beforeEach(() => {
+    __resetAnonPartitionStateForTests();
+    const ls = new Map<string, string>();
+    vi.stubGlobal("localStorage", {
+      getItem: (key: string) => ls.get(key) ?? null,
+      setItem: (key: string, value: string) => void ls.set(key, value),
+      removeItem: (key: string) => void ls.delete(key),
+      key: (index: number) => [...ls.keys()][index] ?? null,
+      get length() {
+        return ls.size;
+      },
+      clear: () => ls.clear(),
+    });
+  });
+
+  it("marks the partition clean when the probe proves it empty", async () => {
+    expect(readAnonPartitionState()).toBe("unknown");
+    await migrateAnonymousDataToProfile(USER);
+    expect(readAnonPartitionState()).toBe("clean");
+  });
+
+  it("marks clean only after the source rows are deleted and the claim completed", async () => {
+    markAnonPartitionDirty();
+    seed();
+    boundary.writer.flushNow.mockImplementation(async () => {
+      expect(readAnonPartitionState()).toBe("dirty");
+      await acknowledge();
+    });
+    await migrateAnonymousDataToProfile(USER);
+    expect(habits()).toEqual([]);
+    expect(claim()["status"]).toBe("completed");
+    expect(readAnonPartitionState()).toBe("clean");
+  });
+
+  it("stays dirty when an anonymous write lands during the transfer", async () => {
+    markAnonPartitionDirty();
+    seed();
+    boundary.writer.flushNow.mockImplementation(async () => {
+      markAnonPartitionDirty();
+      await acknowledge();
+    });
+    await migrateAnonymousDataToProfile(USER);
+    expect(readAnonPartitionState()).toBe("dirty");
+  });
+
+  it("stays dirty when the transfer fails midway", async () => {
+    markAnonPartitionDirty();
+    seed();
+    boundary.writer.flushNow.mockRejectedValueOnce(new Error("offline"));
+    await expect(migrateAnonymousDataToProfile(USER)).rejects.toMatchObject({
+      step: "push",
+    });
+    expect(readAnonPartitionState()).toBe("dirty");
+  });
+
+  it("stays dirty while another account's pending claim holds the rows", async () => {
+    markAnonPartitionDirty();
+    seed();
+    boundary.writer.flushNow.mockRejectedValueOnce(new Error("offline"));
+    await expect(migrateAnonymousDataToProfile(USER)).rejects.toBeTruthy();
+    reopen();
+    await expect(migrateAnonymousDataToProfile(OTHER)).resolves.toEqual({
+      migratedRows: 0,
+      sourceRows: 1,
+    });
+    expect(readAnonPartitionState()).toBe("dirty");
   });
 });

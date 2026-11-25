@@ -50,6 +50,11 @@ vi.mock("@shared/hooks/useToast", () => ({
 }));
 
 import {
+  __resetAnonPartitionStateForTests,
+  markAnonPartitionCleanIfUnchanged,
+  markAnonPartitionDirty,
+} from "./anonPartitionState";
+import {
   AnonymousDataMigrationProvider,
   PROBE_GRACE_MS,
   useAnonymousDataMigrationReady,
@@ -76,7 +81,24 @@ describe("AnonymousDataMigrationProvider", () => {
     switchSqliteUser.mockClear();
     bootOrder.length = 0;
     localStorage.clear();
+    performance.clearMarks();
+    __resetAnonPartitionStateForTests();
     __resetAnonymousMigrationSingleFlightForTests();
+  });
+
+  it("shadow mode: judges the flag read BEFORE the probe, without changing behaviour", async () => {
+    markAnonPartitionCleanIfUnchanged(null);
+    migrate.mockImplementation(async () => {
+      // Розвідка сама міняє прапорець; прогноз мусить бути знятий ДО неї.
+      markAnonPartitionDirty();
+      return { migratedRows: 0, sourceRows: 0 } as { migratedRows: number };
+    });
+    renderAt("/", <p>app</p>);
+    expect(await screen.findByText("app")).toBeTruthy();
+    expect(migrate).toHaveBeenCalledTimes(1);
+    expect(
+      performance.getEntriesByName("anon-gate:shadow-would-skip"),
+    ).toHaveLength(1);
   });
 
   it("blocks module children and runs one migration under StrictMode", async () => {

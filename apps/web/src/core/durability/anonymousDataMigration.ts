@@ -17,7 +17,11 @@ import {
 import { enqueueOutboxUpsert } from "../syncEngine/enqueueOutboxUpsert.js";
 import { NON_SYNCABLE_USER_IDS } from "../syncEngine/syncableUserId.js";
 import { notifyOutboxEnqueued } from "../syncEngine/outboxNudge.js";
-import { preflightAnonymousRows } from "./anonymousPartitionPreflight.js";
+import {
+  migrateModuleSchemas,
+  preflightAnonymousRows,
+} from "./anonymousPartitionPreflight.js";
+import * as anonState from "./anonPartitionState.js";
 
 interface MigrationClaim extends Record<string, unknown> {
   readonly target_user_id: string;
@@ -34,6 +38,8 @@ interface SnapshotRow {
 
 export interface AnonymousMigrationResult {
   readonly migratedRows: number;
+  /** Знайдені розвідкою анонімні рядки, і під чужим claim; для тіньового режиму. */
+  readonly sourceRows: number;
 }
 
 export interface AnonymousMigrationOptions {
@@ -48,26 +54,6 @@ export interface AnonymousMigrationOptions {
 }
 
 const MIGRATION_ORIGIN_DEVICE_ID = "anonymous-profile-migration";
-
-async function migrateModuleSchemas(
-  client: SqliteMigrationClient,
-): Promise<void> {
-  const [
-    { migrateRoutine },
-    { migrateFizruk },
-    { migrateNutrition },
-    { migrateFinyk },
-  ] = await Promise.all([
-    import("../../modules/routine/lib/clientMigrate.js"),
-    import("../../modules/fizruk/lib/clientMigrate.js"),
-    import("../../modules/nutrition/lib/clientMigrate.js"),
-    import("../../modules/finyk/lib/clientMigrate.js"),
-  ]);
-  await migrateRoutine(client);
-  await migrateFizruk(client);
-  await migrateNutrition(client);
-  await migrateFinyk(client);
-}
 
 async function tableExists(
   client: SqliteMigrationClient,
@@ -829,14 +815,19 @@ async function runMigration(
   const sourceClient = (await sqlite.getSqliteDb()).migrationClient();
   tracker.step = "preflight";
   let snapshot: SnapshotRow[] = [];
+  // Токен ДО доказу: анонімний запис посеред розвідки зірве CLEAN нижче.
+  let stateToken = anonState.readAnonPartitionToken();
   // «empty» лише з доказом; будь-яка невизначеність = повна розвідка.
   if ((await preflightAnonymousRows(sourceClient)) !== "empty") {
     tracker.step = "migrate-source-schemas";
     await migrateModuleSchemas(sourceClient);
+    // Міграції схем самі ставлять DIRTY; доказ - snapshot після них.
+    stateToken = anonState.readAnonPartitionToken();
     tracker.step = "snapshot";
     snapshot = await snapshotAnonymousRows(sourceClient);
   }
   if (snapshot.length === 0) {
+    anonState.markAnonPartitionCleanIfUnchanged(stateToken);
     await sqlite.switchSqliteUser(targetUserId);
     // Переносити нічого, але привиди від спроб ДО стадії 2.4 могли
     // лишитись — саме сюди потрапляє пристрій із уже завершеним переносом.
@@ -844,7 +835,7 @@ async function runMigration(
       (await sqlite.getSqliteDb()).migrationClient(),
       targetUserId,
     );
-    return { migratedRows: 0 };
+    return { migratedRows: 0, sourceRows: 0 };
   }
   tracker.step = "claim";
   const claim = await getOrCreateClaim(sourceClient, targetUserId);
@@ -853,7 +844,7 @@ async function runMigration(
     // Нічого не копіюємо й не чіпаємо claim: просто пускаємо цього
     // користувача в його власну партицію (див. `getOrCreateClaim`).
     await sqlite.switchSqliteUser(targetUserId);
-    return { migratedRows: 0 };
+    return { migratedRows: 0, sourceRows: snapshot.length };
   }
   // Після claim, а не до: у «чужому» випадку справжнього переносу нема, і
   // провайдер не мусить на мить показати панель «переношу дані».
@@ -929,12 +920,13 @@ async function runMigration(
   await sqlite.switchSqliteUser(null);
   const cleanupClient = (await sqlite.getSqliteDb()).migrationClient();
   await deleteSourceRows(cleanupClient, snapshot, claim.batch_id);
+  anonState.markAnonPartitionCleanIfUnchanged(stateToken);
   await sqlite.switchSqliteUser(targetUserId);
   await rekeyStuckOutboxRows(
     (await sqlite.getSqliteDb()).migrationClient(),
     targetUserId,
   );
-  return { migratedRows: snapshot.length };
+  return { migratedRows: snapshot.length, sourceRows: snapshot.length };
 }
 
 /** Test-only seams for deterministic retry and acknowledgement invariants. */
