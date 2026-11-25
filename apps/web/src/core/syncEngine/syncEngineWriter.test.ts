@@ -151,6 +151,29 @@ describe("createSyncEngineWriterRuntime", () => {
       expect(scheduler.flushNow).toHaveBeenCalledTimes(1);
     });
 
+    it("згортання вкладки відправляє відкладений push одразу", async () => {
+      vi.useFakeTimers();
+      const target = new EventTarget();
+      const deps = { ...makeDeps(), eventTarget: target };
+      const runtime = createSyncEngineWriterRuntime(deps);
+      runtime.start();
+      const scheduler = firstMockResult(vi.mocked(deps.createScheduler));
+      vi.stubGlobal("document", { visibilityState: "hidden" });
+
+      // Без відкладеного запису згортання нічого не шле.
+      target.dispatchEvent(new Event("visibilitychange"));
+      expect(scheduler.flushNow).not.toHaveBeenCalled();
+
+      runtime.notifyEnqueued();
+      target.dispatchEvent(new Event("visibilitychange"));
+      expect(scheduler.flushNow).toHaveBeenCalledTimes(1);
+
+      // Таймери серії скинуто: пізніше дубля немає.
+      await vi.advanceTimersByTimeAsync(10_000);
+      expect(scheduler.flushNow).toHaveBeenCalledTimes(1);
+      vi.unstubAllGlobals();
+    });
+
     it("stop() скасовує відкладений push", async () => {
       vi.useFakeTimers();
       const deps = makeDeps();
