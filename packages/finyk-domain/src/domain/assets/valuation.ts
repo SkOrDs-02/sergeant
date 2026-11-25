@@ -315,9 +315,36 @@ export function ovdpLots(
 }
 
 /**
- * ОВДП за амортизованою вартістю: ціна купівлі кожного лота лінійно
+ * Накопичений купон (НКД) однієї облігації на `day` за вирахуванням податку:
+ * частка купона від останньої купонної дати; у купонну дату й після
+ * погашення — 0.
+ */
+function ovdpAccruedPerBond(params: OvdpParams, day: number): number {
+  const window = ovdpCouponWindow(params, dateKeyFromDay(day));
+  if (!window) return 0;
+  const last = dayNumber(window.last) as number;
+  const next = dayNumber(window.next) as number;
+  if (next <= last) return 0;
+  const perYear =
+    Number(params.couponsPerYear) || DEFAULT_OVDP_COUPONS_PER_YEAR;
+  const coupon =
+    ((Number(params.nominalMinor) || 0) *
+      (Number(params.couponRatePct) / 100)) /
+    perYear;
+  const net = 1 - (Number(params.taxPct) || 0) / 100;
+  return (coupon * (day - last) * net) / (next - last);
+}
+
+/**
+ * ОВДП за амортизованою вартістю: чиста ціна кожного лота лінійно
  * наближається до номіналу до дати погашення, плюс купон, накопичений з
  * останньої купонної дати (мінус податок). Після погашення — номінал.
+ *
+ * Ціна купівлі вважається «брудною»: банк бере з покупця й НКД, накопичений
+ * продавцем від останньої купонної дати до дня купівлі. Тож чиста ціна лота
+ * = ціна − НКД на день купівлі, і в день купівлі вартість дорівнює сплаченому,
+ * а не ціні плюс купон, якого власник ще не заробив. Купівля в купонну дату
+ * нічого не віднімає (НКД = 0).
  */
 export function ovdpValueMinor(
   asset: Pick<ManualAsset, "events" | "ovdp">,
@@ -336,24 +363,18 @@ export function ovdpValueMinor(
   for (const lot of lots) {
     count += lot.count;
     const face = nominal * lot.count;
-    if (todayDay >= maturityDay || maturityDay <= lot.day) value += face;
-    else
-      value +=
-        lot.cost +
-        ((face - lot.cost) * (todayDay - lot.day)) / (maturityDay - lot.day);
+    if (todayDay >= maturityDay || maturityDay <= lot.day) {
+      value += face;
+      continue;
+    }
+    const clean = Math.max(
+      0,
+      lot.cost - lot.count * ovdpAccruedPerBond(params, lot.day),
+    );
+    value +=
+      clean + ((face - clean) * (todayDay - lot.day)) / (maturityDay - lot.day);
   }
-  const window = ovdpCouponWindow(params, today);
-  if (window && count > 0) {
-    const last = dayNumber(window.last) as number;
-    const next = dayNumber(window.next) as number;
-    const perYear =
-      Number(params.couponsPerYear) || DEFAULT_OVDP_COUPONS_PER_YEAR;
-    const coupon =
-      (count * nominal * (Number(params.couponRatePct) / 100)) / perYear;
-    const net = 1 - (Number(params.taxPct) || 0) / 100;
-    if (next > last)
-      value += (coupon * (todayDay - last) * net) / (next - last);
-  }
+  if (count > 0) value += count * ovdpAccruedPerBond(params, todayDay);
   return Math.round(value);
 }
 
