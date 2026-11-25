@@ -148,23 +148,41 @@ function ActionCard({ card }: { card: ChatActionCard }) {
 }
 
 /**
- * ConfirmCard — rendered inline in an assistant message when the AI
- * executed (or wants to confirm) a destructive action.
- * v1: post-action confirmation notice with visual emphasis.
- * Differs from ActionCard: full-width layout, danger colour scheme,
- * and a distinct icon that signals irreversibility.
+ * ConfirmCard — post-action confirmation for an action that needed the
+ * user's confirmation. Full-width layout.
+ *
+ * AI-CONTEXT (рішення власника 2026-11-25, FULL-20261125-UX-1): `risky`
+ * означає «потребувала підтвердження», а не «видалення». Danger-кольори й
+ * кошик лише для `card.destructive` (видалення); створення/зміна після
+ * підтвердження — нейтральна картка з галочкою.
  */
 function ConfirmCard({ card }: { card: ChatActionCard }) {
+  const destructive = card.destructive === true;
   return (
     <div
       data-testid={`chat-confirm-card-${card.toolName}`}
+      data-destructive={destructive ? "true" : undefined}
       role="status"
       aria-label={`Виконано: ${card.title}`}
-      className="mt-2 rounded-panel border border-danger/30 bg-danger/5 overflow-hidden"
+      className={cn(
+        "mt-2 rounded-panel border overflow-hidden",
+        destructive ? "border-danger/30 bg-danger/5" : "border-line bg-panel",
+      )}
     >
       {/* Header row */}
-      <div className="flex items-center gap-2 px-3 py-2 border-b border-danger/20">
-        <span className="shrink-0 text-danger" aria-hidden>
+      <div
+        className={cn(
+          "flex items-center gap-2 px-3 py-2 border-b",
+          destructive ? "border-danger/20" : "border-line",
+        )}
+      >
+        <span
+          className={cn(
+            "shrink-0",
+            destructive ? "text-danger" : "text-subtle",
+          )}
+          aria-hidden
+        >
           <svg
             width="14"
             height="14"
@@ -175,16 +193,34 @@ function ConfirmCard({ card }: { card: ChatActionCard }) {
             strokeLinecap="round"
             strokeLinejoin="round"
           >
-            <polyline points="3 6 5 6 21 6" />
-            <path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6" />
-            <path d="M10 11v6M14 11v6" />
-            <path d="M9 6V4h6v2" />
+            {destructive ? (
+              <>
+                <polyline points="3 6 5 6 21 6" />
+                <path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6" />
+                <path d="M10 11v6M14 11v6" />
+                <path d="M9 6V4h6v2" />
+              </>
+            ) : (
+              <polyline points="20 6 9 17 4 12" />
+            )}
           </svg>
         </span>
-        <span className="text-style-label font-semibold text-danger-strong dark:text-danger flex-1 truncate">
+        <span
+          className={cn(
+            "text-style-label font-semibold flex-1 truncate",
+            destructive ? "text-danger-strong dark:text-danger" : "text-text",
+          )}
+        >
           {card.title}
         </span>
-        <span className="shrink-0 text-style-caption font-semibold text-danger-strong dark:text-danger rounded-lg bg-danger/10 px-1.5 py-0.5">
+        <span
+          className={cn(
+            "shrink-0 text-style-caption font-semibold rounded-lg px-1.5 py-0.5",
+            destructive
+              ? "text-danger-strong dark:text-danger bg-danger/10"
+              : "text-subtle bg-panelHi",
+          )}
+        >
           Виконано
         </span>
       </div>
