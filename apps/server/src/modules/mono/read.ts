@@ -16,6 +16,7 @@ import {
   type MonoTransactionRow,
 } from "../../lib/normalizers/index.js";
 import { refreshJarsFromMono } from "./jars.js";
+import { fillMissingAmountUah } from "./amountUah.js";
 
 interface AuthedRequest extends Request {
   user?: { id: string };
@@ -144,19 +145,12 @@ export async function transactionsHandler(
   // рядки лежать у partial-індексі `mono_transaction_active_idx`, тому
   // умова не додає cost — план одразу йде по активному хвосту без
   // перегляду soft-deleted сторінок.
-  // Фінік UAH-only без FX: `t.amount` лежить у валюті РАХУНКУ, тож центи
-  // доларової картки клієнт склав би з гривневими копійками. Відсікаємо
-  // операції не-гривневих рахунків тут, де сходяться всі читачі.
-  const conditions: string[] = [
-    "t.user_id = $1",
-    "t.deleted_at IS NULL",
-    `NOT EXISTS (
-      SELECT 1 FROM mono_account a
-       WHERE a.user_id = t.user_id
-         AND a.mono_account_id = t.mono_account_id
-         AND a.currency_code <> 980
-    )`,
-  ];
+  // `t.amount` лежить у валюті РАХУНКУ. Операції не-гривневих рахунків
+  // віддаємо з гривневою сумою за курсом НБУ (`amountUah`, спека
+  // finyk-fx-nbu.md); без курсу `amountUah = null`, і клієнт не бере такий
+  // рядок у підсумки. Добір - на першій сторінці, а не на кожній.
+  if (!cursor) await fillMissingAmountUah(userId);
+  const conditions: string[] = ["t.user_id = $1", "t.deleted_at IS NULL"];
   const params: unknown[] = [userId];
   let paramIdx = 2;
 
@@ -216,8 +210,19 @@ export async function transactionsHandler(
       t.category_slug     AS "categorySlug",
       t.category_overridden AS "categoryOverridden",
       t.source,
-      t.received_at       AS "receivedAt"
+      t.received_at       AS "receivedAt",
+      a.currency_code     AS "accountCurrencyCode",
+      t.amount_uah        AS "amountUah",
+      r.uah_per_unit      AS "fxUahPerUnit",
+      r.source_date::text AS "fxDate"
     FROM mono_transaction t
+    LEFT JOIN mono_account a
+      ON a.user_id = t.user_id AND a.mono_account_id = t.mono_account_id
+    LEFT JOIN nbu_fx_rate r
+      ON a.currency_code <> 980
+     AND t.currency_code <> 980
+     AND r.currency_code = a.currency_code
+     AND r.rate_date = (t.time AT TIME ZONE 'Europe/Kyiv')::date
     WHERE ${where}
     ORDER BY t.time DESC, t.mono_tx_id DESC
     LIMIT $${paramIdx}
@@ -249,6 +254,10 @@ export async function transactionsHandler(
     categoryOverridden: boolean;
     source: string;
     receivedAt: Date | string;
+    accountCurrencyCode: number | null;
+    amountUah: number | string | null;
+    fxUahPerUnit: number | string | null;
+    fxDate: string | null;
   }
 
   const { rows } = await query<TxRow>(sql, params, {
