@@ -1160,6 +1160,70 @@
       }
     },
     {
+      "description": "a GET /api/v1/mono/transactions request for a USD-account transaction",
+      "providerStates": [
+        {
+          "name": "an authenticated session for user-pact-001 with a USD mono account and 1 transaction priced at the NBU rate"
+        }
+      ],
+      "request": {
+        "headers": {
+          "accept": "application/json"
+        },
+        "method": "GET",
+        "path": "/api/v1/mono/transactions",
+        "query": {
+          "limit": [
+            "1"
+          ]
+        }
+      },
+      "response": {
+        "body": {
+          "data": [
+            {
+              "accountCurrencyCode": 840,
+              "amount": -10000,
+              "amountUah": -415000,
+              "balance": 50000,
+              "cashbackAmount": null,
+              "categoryOverridden": false,
+              "categorySlug": "groceries",
+              "comment": null,
+              "commissionRate": null,
+              "counterEdrpou": null,
+              "counterIban": null,
+              "counterName": null,
+              "currencyCode": 840,
+              "description": "Shop",
+              "fxRate": {
+                "date": "2026-11-24",
+                "uahPerUnit": 41.5
+              },
+              "hold": false,
+              "invoiceId": null,
+              "mcc": 5411,
+              "monoAccountId": "acct-pact-usd",
+              "monoTxId": "tx-pact-usd-0001",
+              "operationAmount": -10000,
+              "originalMcc": 5411,
+              "receiptId": null,
+              "receivedAt": "2026-11-24T10:00:01.000Z",
+              "source": "webhook",
+              "time": "2026-11-24T10:00:00.000Z",
+              "userId": "user-pact-001"
+            }
+          ],
+          "nextCursor": null
+        },
+        "headers": {
+          "Content-Type": "application/json",
+          "content-type": "application/json"
+        },
+        "status": 200
+      }
+    },
+    {
       "description": "a GET /api/v1/mono/transactions request with limit=2 and a date range",
       "providerStates": [
         {

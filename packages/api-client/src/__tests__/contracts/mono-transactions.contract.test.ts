@@ -130,5 +130,70 @@ describe(
           expect(page.nextCursor).toBe("2026-05-11T09:14:00.000Z:tx-pact-0002");
         });
     });
+
+    // Спека finyk-fx-nbu.md: операція валютної картки йде з валютою
+    // рахунку, гривневою сумою за курсом НБУ (копійки, `number` за Hard
+    // Rule #1) і самим курсом. `amount` лишається у валюті рахунку.
+    it("returns a USD-account transaction priced at the NBU rate (finyk persona)", async () => {
+      await pact
+        .addInteraction()
+        .given(
+          "an authenticated session for user-pact-001 with a USD mono account and 1 transaction priced at the NBU rate",
+        )
+        .uponReceiving(
+          "a GET /api/v1/mono/transactions request for a USD-account transaction",
+        )
+        .withRequest("GET", "/api/v1/mono/transactions", (req) => {
+          req.headers({ accept: "application/json" });
+          req.query({ limit: "1" });
+        })
+        .willRespondWith(200, (res) => {
+          res.headers({ "content-type": "application/json" });
+          res.jsonBody({
+            data: [
+              {
+                userId: "user-pact-001",
+                monoAccountId: "acct-pact-usd",
+                monoTxId: "tx-pact-usd-0001",
+                time: "2026-11-24T10:00:00.000Z",
+                amount: -10000,
+                operationAmount: -10000,
+                currencyCode: 840,
+                mcc: 5411,
+                originalMcc: 5411,
+                hold: false,
+                description: "Shop",
+                comment: null,
+                cashbackAmount: null,
+                commissionRate: null,
+                balance: 50000,
+                receiptId: null,
+                invoiceId: null,
+                counterEdrpou: null,
+                counterIban: null,
+                counterName: null,
+                categorySlug: "groceries",
+                categoryOverridden: false,
+                source: "webhook",
+                receivedAt: "2026-11-24T10:00:01.000Z",
+                accountCurrencyCode: 840,
+                amountUah: -415000,
+                fxRate: { uahPerUnit: 41.5, date: "2026-11-24" },
+              },
+            ],
+            nextCursor: null,
+          });
+        })
+        .executeTest(async (mockServer) => {
+          const http = createHttpClient({ baseUrl: mockServer.url });
+          const mono = createMonoWebhookEndpoints(http);
+          const page = await mono.transactions({ limit: 1 });
+          const tx = page.data[0]!;
+          expect(tx.accountCurrencyCode).toBe(840);
+          expect(typeof tx.amountUah).toBe("number");
+          expect(tx.amountUah).toBe(-415000);
+          expect(tx.fxRate).toEqual({ uahPerUnit: 41.5, date: "2026-11-24" });
+        });
+    });
   },
 );
