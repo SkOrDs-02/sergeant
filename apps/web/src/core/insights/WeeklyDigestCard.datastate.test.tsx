@@ -94,9 +94,7 @@ describe("WeeklyDigestCard — DataState routing", () => {
     // С-3 (а), рішення власника 2026-11-18: звіт догенеровується при першому
     // відкритті головної після завершення тижня, а не лише в понеділок.
     expect(
-      screen.getByText(
-        "Звіт зʼявиться сам, коли тиждень завершиться і ти вперше відкриєш головну.",
-      ),
+      screen.getByText("Звіт зʼявиться, коли тиждень завершиться."),
     ).toBeInTheDocument();
     expect(screen.queryByText(/у понеділок/i)).toBeNull();
     expect(screen.queryByLabelText(/генерую звіт тижня/i)).toBeNull();
@@ -141,9 +139,7 @@ describe("WeeklyDigestCard — DataState routing", () => {
     render(<WeeklyDigestCard />);
 
     expect(
-      screen.getByText(
-        "Звіт зʼявиться сам, коли тиждень завершиться і ти вперше відкриєш головну.",
-      ),
+      screen.getByText("Звіт зʼявиться, коли тиждень завершиться."),
     ).toBeInTheDocument();
     expect(screen.queryByText(/Збираю звіт/)).toBeNull();
   });
@@ -162,7 +158,7 @@ describe("WeeklyDigestCard — DataState routing", () => {
     render(<WeeklyDigestCard />);
 
     expect(
-      screen.getByText("Звіт за цей тиждень ще не зібрано."),
+      screen.getByText("Звіт за цей тиждень ще не готовий."),
     ).toBeInTheDocument();
     expect(screen.queryByText(/коли тиждень завершиться/i)).toBeNull();
     expect(

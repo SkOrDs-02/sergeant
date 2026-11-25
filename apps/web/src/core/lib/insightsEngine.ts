@@ -198,7 +198,7 @@ function activeWeeksSpendingInsight(): Insight | null {
       iconName: "lightbulb",
       title: `У тижні з 3+ тренуваннями ти витрачаєш на ${diffPct}% менше`,
       stat: `−${diffPct}%`,
-      detail: `${formatNumberUk(Math.round(avgActive))} ₴ vs ${formatNumberUk(Math.round(avgRest))} ₴ витрат/тиж.`,
+      detail: `${formatNumberUk(Math.round(avgActive))} ₴ проти ${formatNumberUk(Math.round(avgRest))} ₴ витрат/тиж.`,
     };
   }
 
@@ -208,7 +208,7 @@ function activeWeeksSpendingInsight(): Insight | null {
     iconName: "lightbulb",
     title: `У активні тижні ти витрачаєш на ${morePct}% більше`,
     stat: `+${morePct}%`,
-    detail: `${formatNumberUk(Math.round(avgActive))} ₴ vs ${formatNumberUk(Math.round(avgRest))} ₴ витрат/тиж.`,
+    detail: `${formatNumberUk(Math.round(avgActive))} ₴ проти ${formatNumberUk(Math.round(avgRest))} ₴ витрат/тиж.`,
   };
 }
 
@@ -369,7 +369,7 @@ export function workoutKcalInsight(
         ? `У дні тренувань ти їси на ${formatNumberUk(diff)} ккал більше`
         : `У дні тренувань ти їси на ${formatNumberUk(Math.abs(diff))} ккал менше`,
     stat: `${sign}${formatNumberUk(diff)} ккал`,
-    detail: `${formatNumberUk(avgWorkout)} vs ${formatNumberUk(avgRest)} ккал/день`,
+    detail: `${formatNumberUk(avgWorkout)} проти ${formatNumberUk(avgRest)} ккал/день`,
   };
 }
 
@@ -452,7 +452,7 @@ function habitWeeksKcalInsight(): Insight | null {
         ? `У тижні з 70%+ звичок ти їси на ${formatNumberUk(Math.abs(diff))} ккал більше`
         : `У тижні з 70%+ звичок ти їси на ${formatNumberUk(Math.abs(diff))} ккал менше`,
     stat: `${sign}${formatNumberUk(diff)} ккал`,
-    detail: `${formatNumberUk(avgKcalHigh)} vs ${formatNumberUk(avgKcalLow)} ккал/день`,
+    detail: `${formatNumberUk(avgKcalHigh)} проти ${formatNumberUk(avgKcalLow)} ккал/день`,
   };
 }
 

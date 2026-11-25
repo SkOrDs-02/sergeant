@@ -357,7 +357,7 @@ function buildNutritionRecs(): Rec[] {
         priority: 70,
         icon: "zap",
         title: `Лише ${Math.round(kcal)} ккал з ${targetKcal} ккал цілі`,
-        body: "Недостатнє споживання калорій може уповільнити відновлення.",
+        body: "Додай прийом їжі, щоб добрати до цілі.",
         action: "nutrition",
         pwaAction: "add_meal",
       });
@@ -376,7 +376,7 @@ function buildNutritionRecs(): Rec[] {
         priority: 68,
         icon: "utensils",
         title: `Лише ${Math.round(protein)}г білка з ${targetProtein}г`,
-        body: "Додай протеїновий прийом їжі, це важливо для мʼязів.",
+        body: "Додай прийом їжі з білком.",
         action: "nutrition",
         pwaAction: "add_meal",
       });
@@ -398,7 +398,7 @@ function buildNutritionRecs(): Rec[] {
           priority: 88,
           icon: "award",
           title: "Після тренування час на білок",
-          body: "У тебе є ~30 хвилин на протеїновий прийом для кращого відновлення.",
+          body: "Найкраще поїсти з білком протягом ~30 хвилин.",
           action: "nutrition",
           pwaAction: "add_meal",
         });

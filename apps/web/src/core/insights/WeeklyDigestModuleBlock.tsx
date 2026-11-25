@@ -41,7 +41,7 @@ export interface DigestPayload {
 }
 
 /**
- * «залоговано 2/7» біля назви модуля Харчування.
+ * «записано 2/7» біля назви модуля Харчування.
  *
  * Для ПОТОЧНОГО тижня знаменник не проговорюється: «2/7» у середу читалось
  * би як провал там, де минуло лише три дні — тобто фікс проти хибного
@@ -54,8 +54,8 @@ export function coverageBadge(
 ): string | undefined {
   if (!coverage || coverage.total <= 0) return undefined;
   return isCurrentWeek
-    ? `· залоговано днів: ${coverage.logged}`
-    : `· залоговано ${coverage.logged}/${coverage.total}`;
+    ? `· записано днів: ${coverage.logged}`
+    : `· записано ${coverage.logged}/${coverage.total}`;
 }
 
 interface ModuleBlockProps {
