@@ -85,7 +85,7 @@ describe("FinykWebhookServiceSection — L-15 network-error vs disconnected", ()
     renderSection();
 
     expect(
-      await screen.findByText(/Не вдалося перевірити стан підключення/i),
+      await screen.findByText(/Не вдалося перевірити підключення/i),
     ).toBeInTheDocument();
     expect(
       screen.getByRole("button", { name: /Спробувати ще раз/i }),
@@ -132,7 +132,7 @@ describe("FinykWebhookServiceSection — L-15 network-error vs disconnected", ()
       screen.getByPlaceholderText("Токен Monobank API"),
     ).toBeInTheDocument();
     expect(
-      screen.queryByText(/Не вдалося перевірити стан підключення/i),
+      screen.queryByText(/Не вдалося перевірити підключення/i),
     ).not.toBeInTheDocument();
   });
 
@@ -189,9 +189,9 @@ describe("FinykWebhookServiceSection — L-15 network-error vs disconnected", ()
         }),
       );
       const dialog = await screen.findByRole("alertdialog");
-      expect(dialog).toHaveTextContent("із сервера Sergeant");
+      expect(dialog).toHaveTextContent("із сервера заново");
       expect(dialog).toHaveTextContent(
-        "Збережена історія, ручні записи та категорії залишаться",
+        "Історія, ручні записи й категорії залишаться",
       );
       expect(dialog).not.toHaveTextContent("зникнуть");
       fireEvent.click(
@@ -287,7 +287,7 @@ describe("FinykWebhookServiceSection — L-15 network-error vs disconnected", ()
       screen.getByPlaceholderText("Токен Monobank API"),
     ).toBeInTheDocument();
     expect(
-      screen.queryByText(/Не вдалося перевірити стан підключення/i),
+      screen.queryByText(/Не вдалося перевірити підключення/i),
     ).not.toBeInTheDocument();
   });
 
@@ -424,7 +424,7 @@ describe("FinykWebhookServiceSection — відкликаний токен (stat
     // І це не «збій перевірки» — сервер відповів успішно, просто банк
     // сказав «ні». Банер про мережу тут був би хибним діагнозом.
     expect(
-      screen.queryByText(/Не вдалося перевірити стан підключення/i),
+      screen.queryByText(/Не вдалося перевірити підключення/i),
     ).not.toBeInTheDocument();
   });
 

@@ -52,9 +52,7 @@ describe("FinykPrivatBankSection", () => {
       screen.getByRole("button", { name: "Відʼєднати ПриватБанк" }),
     );
     expect(
-      screen.getByText(
-        "Збережені облікові дані ПриватБанку буде видалено з твого акаунта.",
-      ),
+      screen.getByText("Облікові дані ПриватБанку буде видалено з акаунта."),
     ).toBeInTheDocument();
     disconnectMock.mockResolvedValue(undefined);
     fireEvent.click(screen.getByRole("button", { name: "Відʼєднати" }));

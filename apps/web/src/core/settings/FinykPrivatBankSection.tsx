@@ -19,14 +19,12 @@ interface FinykPrivatBankSectionProps {
 const COPY = {
   title: "ПриватБанк (Приват24 для підприємців)",
   disconnectTitle: "Відʼєднати ПриватБанк?",
-  disconnectBody:
-    "Збережені облікові дані ПриватБанку буде видалено з твого акаунта.",
+  disconnectBody: "Облікові дані ПриватБанку буде видалено з акаунта.",
   disconnectLabel: "Відʼєднати",
   connected: "ПриватБанк підключено",
   disconnect: "Відʼєднати ПриватБанк",
-  help: "API Приват24 для підприємців. Merchant ID та токен знаходяться у Приват24 Бізнес → Налаштування → API.",
-  storageNote:
-    "Токен зберігається зашифрованим на сервері й привʼязаний до твого акаунта, у браузері він не лишається.",
+  help: "Merchant ID і токен: Приват24 Бізнес → Налаштування → API.",
+  storageNote: "Токен зберігається зашифрованим на сервері, не в браузері.",
   merchantId: "Merchant ID",
   merchantIdPlaceholder: "Твій Merchant ID",
   tokenLabel: "Токен / пароль",

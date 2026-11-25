@@ -178,20 +178,20 @@ export function MemoryBankSection() {
         try {
           const parsed = JSON.parse(reader.result as string);
           if (!Array.isArray(parsed)) {
-            toast.error("Невалідний формат файлу", undefined, pickAnother);
+            toast.error("Цей файл не підходить", undefined, pickAnother);
             return;
           }
           const preview = buildMemoryImportPreview(entries, parsed);
           if (preview.validCount === 0) {
             toast.error(
-              "Файл не містить валідних записів",
+              "У файлі немає придатних записів",
               undefined,
               pickAnother,
             );
             return;
           }
           setPendingImport({ ...preview, fileName: file.name });
-          toast.success("JSON прочитано. Перевір підсумок і підтвердь імпорт.");
+          toast.success("Перевір підсумок і підтвердь імпорт.");
         } catch {
           toast.error("Не вдалося прочитати файл", undefined, pickAnother);
         }
@@ -209,7 +209,7 @@ export function MemoryBankSection() {
     if (pendingImport.newEntries.length === 0) {
       // Не помилка: файл валідний, просто всі записи вже є. `info` без
       // дії — користувачу нема що «повторювати» чи виправляти.
-      toast.info("Немає нових записів, усі вже в памʼяті");
+      toast.info("Усі записи вже в памʼяті");
       return;
     }
     saveEntries([...entries, ...pendingImport.newEntries]);
@@ -289,7 +289,7 @@ export function MemoryBankSection() {
             <EmptyState
               size="sm"
               title="Банк памʼяті порожній"
-              description="Сержант поставить кілька запитань, щоб дізнатися про твої алергії, цілі, уподобання та рівень активності"
+              description="Сержант спитає про алергії, цілі, уподобання й активність"
               action={
                 <Button
                   variant="solid"
@@ -469,8 +469,7 @@ export function MemoryBankSection() {
               placeholder={manualStep.placeholder}
             />
             <p className="mt-2 text-style-body text-muted">
-              Цей шлях додає тільки записи профілю/памʼяті. Можна пропустити
-              будь-яке питання.
+              Будь-яке питання можна пропустити.
             </p>
             <div className="mt-3 flex flex-wrap justify-end gap-2">
               <Button variant="ghost" size="sm" onClick={saveManualStep}>
@@ -514,7 +513,7 @@ export function MemoryBankSection() {
               <EmptyState
                 size="sm"
                 title="Нових записів немає"
-                description="Існуюча памʼять не буде перезаписана."
+                description="Наявна памʼять лишиться як є."
                 className="mt-2"
               />
             )}

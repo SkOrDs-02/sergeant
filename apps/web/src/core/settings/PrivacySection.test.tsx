@@ -726,7 +726,7 @@ describe("PrivacySection — V-12 (SettingsSubGroup primitive)", () => {
       await openSection();
 
       expect(
-        screen.getByText(/Видалити акаунт разом з усіма даними/),
+        screen.getByText(/Видалити акаунт з усіма даними/),
       ).toBeInTheDocument();
       const open = screen.getByRole("button", { name: /Видалення акаунта/ });
       fireEvent.click(open);

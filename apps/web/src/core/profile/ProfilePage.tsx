@@ -146,7 +146,7 @@ export function ProfilePage({ scrollContainer }: ProfilePageProps = {}) {
       <h1 className="sr-only">{messages.nav.profile}</h1>
       {!online && (
         <Notice tone="ink">
-          Офлайн. Редагувати профіль можна буде, щойно зʼявиться мережа.
+          Немає мережі. Профіль можна буде редагувати, щойно вона зʼявиться.
         </Notice>
       )}
 
@@ -187,7 +187,7 @@ export function ProfilePage({ scrollContainer }: ProfilePageProps = {}) {
           title="Активні сесії"
           defaultOpen={false}
           headingSize="md"
-          collapsedSubtitle="Пристрої з доступом до акаунта"
+          collapsedSubtitle="Пристрої з доступом"
         >
           <SessionsSection online={online} />
         </CollapsibleSection>
@@ -197,7 +197,7 @@ export function ProfilePage({ scrollContainer }: ProfilePageProps = {}) {
           title="Блокування застосунку"
           defaultOpen={false}
           headingSize="md"
-          collapsedSubtitle="PIN при відкритті на цьому пристрої"
+          collapsedSubtitle="PIN на цьому пристрої"
         >
           <Card padding="md">
             <AppLockSettings />
@@ -217,7 +217,7 @@ export function ProfilePage({ scrollContainer }: ProfilePageProps = {}) {
           // V-11 (2026-08-09): підпис називає ДЖЕРЕЛО фактів; серверний
           // список тепер стоїть у цій же секції нижче, тож двох входів
           // більше немає.
-          collapsedSubtitle="Твої факти й усе, що запамʼятав Сержант"
+          collapsedSubtitle="Твої факти й памʼять Сержанта"
         >
           <MemoryBankSection />
           <Card padding="md">
@@ -230,7 +230,7 @@ export function ProfilePage({ scrollContainer }: ProfilePageProps = {}) {
           title="Біометрія"
           defaultOpen={false}
           headingSize="md"
-          collapsedSubtitle="Зріст, вага, активність для розрахунку калорій"
+          collapsedSubtitle="Зріст, вага, активність"
         >
           <BiometricsSection online={online} />
         </CollapsibleSection>
@@ -273,8 +273,8 @@ export function ProfilePage({ scrollContainer }: ProfilePageProps = {}) {
         title="Вийти з акаунта?"
         description={
           online
-            ? "Дані з цього пристрою зітруться, а після наступного входу завантажаться з сервера. Синхронізовані записи не зникнуть."
-            : "Зараз немає мережі, тож увійти назад не вийде, доки вона не зʼявиться. Дані з цього пристрою зітруться одразу, а повернуться лише після входу."
+            ? "Дані з цього пристрою зітруться. Синхронізоване повернеться після входу."
+            : "Немає мережі, тож увійти назад поки не вийде. Дані з пристрою зітруться одразу, а повернуться лише після входу."
         }
         confirmLabel="Вийти"
         cancelLabel="Залишитись"

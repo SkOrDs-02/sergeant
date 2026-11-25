@@ -147,9 +147,7 @@ describe("DashboardSection", () => {
     expect(lastChecked).toBeChecked();
     expect(getActiveModules(webKVStore)).toHaveLength(1);
 
-    const toastMsg = screen.getByText(
-      "Щонайменше один модуль має бути активним",
-    );
+    const toastMsg = screen.getByText("Залиш увімкненим хоча б один модуль");
     expect(toastMsg.closest('[data-toast-type="warning"]')).toBeTruthy();
   });
 

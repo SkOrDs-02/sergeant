@@ -369,7 +369,7 @@ export function PersonalInfoSection({
         {!user.emailVerified && user.email && (
           <div className="px-4 py-3 flex items-center gap-3">
             <p className="text-style-label font-semibold text-text flex-1">
-              Email не підтверджено, перевір свою поштову скриньку
+              Email не підтверджено. Перевір пошту
             </p>
             <Button
               variant="ghost"
@@ -518,9 +518,9 @@ export function PersonalInfoSection({
               )}
               {/* AI-NOTE: підказка під полями форми email (sec-06), тож caption-кегль свідомий. */}
               <p className="text-style-caption text-muted">
-                Введи поточний пароль. Якщо входиш лише через Google, пароль не
-                потрібен, але вхід має бути не давніше 10 хвилин. Адреса
-                зміниться після підтвердження з листа.
+                Входиш лише через Google? Тоді пароль не потрібен, якщо вхід був
+                за останні 10 хвилин. Адреса зміниться після підтвердження з
+                листа.
               </p>
             </div>
           )}

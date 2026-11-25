@@ -457,9 +457,7 @@ describe("SessionsSection — L-19 offline before first successful load", () => 
   it("shows an offline 'could not load' message instead of the empty state", () => {
     renderSection(false);
 
-    expect(
-      screen.getByText(/не вдалося завантажити активні сесії/i),
-    ).toBeTruthy();
+    expect(screen.getByText(/сесії не завантажились/i)).toBeTruthy();
     // The dishonest empty-state copy must NOT appear in its place.
     expect(screen.queryByText("Немає сесій")).toBeNull();
     // And listSessions() must never have been called offline.
@@ -509,9 +507,7 @@ describe("SessionsSection — L-19 offline before first successful load", () => 
         <SessionsSection online={false} />
       </MemoryRouter>,
     );
-    expect(
-      screen.getByText(/не вдалося завантажити активні сесії/i),
-    ).toBeTruthy();
+    expect(screen.getByText(/сесії не завантажились/i)).toBeTruthy();
 
     rerender(
       <MemoryRouter>
@@ -523,9 +519,7 @@ describe("SessionsSection — L-19 offline before first successful load", () => 
     // The fetch triggered by the transition is still pending — neither
     // the offline message NOR the dishonest "Немає сесій" empty state
     // may show while we wait for it.
-    expect(
-      screen.queryByText(/не вдалося завантажити активні сесії/i),
-    ).toBeNull();
+    expect(screen.queryByText(/сесії не завантажились/i)).toBeNull();
     expect(screen.queryByText("Немає сесій")).toBeNull();
     expect(screen.getByText("Завантаження…")).toBeTruthy();
 

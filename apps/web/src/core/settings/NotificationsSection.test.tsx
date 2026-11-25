@@ -387,22 +387,24 @@ describe("NotificationsSection", () => {
       .mockResolvedValueOnce(zero)
       .mockResolvedValueOnce(zero);
     renderSettingsSection(<NotificationsSection />);
-    expect(await screen.findByText(/Нагадування вимкнені/)).toBeInTheDocument();
+    expect(
+      await screen.findByText(/Усі нагадування вимкнено/),
+    ).toBeInTheDocument();
   });
 
   it("не обіцяє фонову доставку без push-підписки", () => {
     renderSettingsSection(<NotificationsSection />);
     expect(
-      screen.getAllByText(/увімкни push-сповіщення вище/).length,
+      screen.getAllByText(/увімкни push вище/).length,
     ).toBeGreaterThanOrEqual(3);
-    expect(screen.queryByText(/навіть коли застосунок закрито/)).toBeNull();
+    expect(screen.queryByText(/Працює й при закритому застосунку/)).toBeNull();
   });
 
   it("обіцяє фонову доставку, коли підписка є", () => {
     pushState.subscribed = true;
     renderSettingsSection(<NotificationsSection />);
     expect(
-      screen.getAllByText(/навіть коли застосунок закрито/).length,
+      screen.getAllByText(/Працює й при закритому застосунку/).length,
     ).toBeGreaterThanOrEqual(3);
   });
 

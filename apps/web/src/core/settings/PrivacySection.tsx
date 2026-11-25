@@ -204,10 +204,8 @@ export function PrivacySection() {
     >
       <SettingsSubGroup variant="bounded" title="Згода та дані">
         <p className="text-style-body text-subtle leading-relaxed">
-          Обери, що Sergeant може використовувати для якості продукту та
-          персоналізації. Дані для входу, безпеки й оплати залишаються
-          потрібними для роботи застосунку. Сповіщення налаштовуються в окремому
-          розділі.
+          Обери, що Sergeant може використовувати. Дані для входу, безпеки й
+          оплати потрібні завжди. Сповіщення – в окремому розділі.
         </p>
         {preferencesLoaded ? (
           <>
@@ -216,7 +214,7 @@ export function PrivacySection() {
               description={
                 savingPreferences.analytics
                   ? "Зберігаю…"
-                  : "Допомагає бачити, де інтерфейс незручний або ламається."
+                  : "Показує, де інтерфейс незручний або ламається."
               }
               checked={preferences.analytics}
               disabled={savingPreferences.analytics === true}
@@ -229,7 +227,7 @@ export function PrivacySection() {
               description={
                 savingPreferences.aiMemory
                   ? "Зберігаю…"
-                  : "Дозволяє Сержанту памʼятати корисні факти між сесіями, щоб відповіді були точнішими. Вимкнення не видаляє вже збережене."
+                  : "Сержант памʼятає корисні факти між розмовами. Вимкнення не видаляє збережене."
               }
               checked={preferences.aiMemory}
               disabled={savingPreferences.aiMemory === true}
@@ -250,7 +248,7 @@ export function PrivacySection() {
               description={
                 savingPreferences.healthDataConsent
                   ? "Зберігаю…"
-                  : "Дозволяє Сержанту бачити й запамʼятовувати тренування, вагу, самопочуття та харчування: у чаті, повідомленнях дня, тижневих звітах і при аналізі фото страв. Без згоди він цього не бачить і скаже, що потрібен дозвіл; фінанси й звички працюють як завжди. Вимкнення не видаляє вже збережене."
+                  : "Сержант бачить і памʼятає тренування, вагу, самопочуття й харчування: у чаті, повідомленнях дня, тижневих звітах і аналізі фото страв. Без згоди не бачить, фінанси й звички працюють як завжди. Вимкнення не видаляє збережене."
               }
               checked={preferences.healthDataConsent}
               disabled={savingPreferences.healthDataConsent === true}
@@ -278,7 +276,7 @@ export function PrivacySection() {
           <>
             <ToggleRow
               label="Аналітика продукту"
-              description="Допомагає бачити, де інтерфейс незручний або ламається. Вибір зберігається на цьому пристрої, а після входу піде в акаунт."
+              description="Показує, де інтерфейс незручний або ламається. Вибір живе на пристрої, після входу перейде в акаунт."
               checked={localAnalyticsConsent}
               onChange={(checked) =>
                 setAnalyticsConsent(checked, { pendingServerSync: true })
@@ -288,8 +286,8 @@ export function PrivacySection() {
               className="text-style-body text-subtle leading-relaxed"
               role="status"
             >
-              Памʼять для Сержанта і дані про здоровʼя зберігаються в акаунті.
-              Керувати ними можна після входу.
+              Памʼять і дані про здоровʼя живуть в акаунті, керувати ними можна
+              після входу.
             </p>
           </>
         ) : preferencesError ? (
@@ -332,8 +330,7 @@ export function PrivacySection() {
           <ContentGroup>
             <ContentRow className="flex flex-col items-start gap-1">
               <p className="text-style-body text-subtle leading-relaxed">
-                Що саме Сержант памʼятає і як це стерти: у Профілі, поруч із
-                твоїми фактами.
+                Що Сержант памʼятає і як це стерти.
               </p>
               <Button
                 type="button"
@@ -361,8 +358,7 @@ export function PrivacySection() {
             памʼять вище. */}
             <ContentRow className="flex flex-col items-start gap-1">
               <p className="text-style-body text-subtle leading-relaxed">
-                Видалити акаунт разом з усіма даними можна в Профілі, у розділі
-                «Видалення акаунта».
+                Видалити акаунт з усіма даними.
               </p>
               <Button
                 type="button"

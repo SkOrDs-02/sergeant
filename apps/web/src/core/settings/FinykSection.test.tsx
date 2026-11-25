@@ -163,7 +163,7 @@ describe("FinykSection", () => {
     renderWithProviders();
 
     await waitFor(() => {
-      expect(screen.getByText(/Токен відправляється на сервер/)).toBeTruthy();
+      expect(screen.getByText(/Токен зберігається на сервері/)).toBeTruthy();
     });
     expect(screen.getByPlaceholderText("Токен Monobank API")).toBeTruthy();
     expect(screen.getByText("Підключити Monobank")).toBeTruthy();
@@ -240,7 +240,7 @@ describe("FinykSection", () => {
     renderWithProviders();
 
     await waitFor(() => {
-      expect(screen.getByText(/Токен відправляється на сервер/)).toBeTruthy();
+      expect(screen.getByText(/Токен зберігається на сервері/)).toBeTruthy();
     });
 
     // Legacy info-cache should never reach the UI in webhook-only mode.
@@ -272,7 +272,7 @@ describe("FinykSection", () => {
     );
     expect(screen.getByText("Правил поки немає")).toBeInTheDocument();
     await waitFor(() => {
-      expect(screen.getByText(/Токен відправляється на сервер/)).toBeTruthy();
+      expect(screen.getByText(/Токен зберігається на сервері/)).toBeTruthy();
     });
   });
 
@@ -300,7 +300,7 @@ describe("FinykSection", () => {
     fireEvent.click(toggle);
     expect(storageState.setShowBalance).toHaveBeenCalledWith(false);
     await waitFor(() => {
-      expect(screen.getByText(/Токен відправляється на сервер/)).toBeTruthy();
+      expect(screen.getByText(/Токен зберігається на сервері/)).toBeTruthy();
     });
   });
 });

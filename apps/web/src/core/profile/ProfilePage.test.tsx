@@ -301,7 +301,7 @@ describe("ProfilePage", () => {
       renderPage();
       expect(
         screen.getByText(
-          "Офлайн. Редагувати профіль можна буде, щойно зʼявиться мережа.",
+          "Немає мережі. Профіль можна буде редагувати, щойно вона зʼявиться.",
         ),
       ).toBeInTheDocument();
     });
@@ -311,7 +311,7 @@ describe("ProfilePage", () => {
       renderPage();
       expect(
         screen.queryByText(
-          "Офлайн. Редагувати профіль можна буде, щойно зʼявиться мережа.",
+          "Немає мережі. Профіль можна буде редагувати, щойно вона зʼявиться.",
         ),
       ).not.toBeInTheDocument();
     });
@@ -488,7 +488,7 @@ describe("ProfilePage", () => {
         name: "Вийти з акаунта?",
       });
       expect(
-        within(gate).getByText(/увійти назад не вийде/),
+        within(gate).getByText(/увійти назад поки не вийде/),
       ).toBeInTheDocument();
     });
 
