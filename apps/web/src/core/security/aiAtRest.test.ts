@@ -1,4 +1,4 @@
-import { beforeEach, describe, expect, it } from "vitest";
+import { beforeEach, describe, expect, it, vi } from "vitest";
 import { IDBFactory } from "fake-indexeddb";
 
 import {
@@ -17,6 +17,26 @@ const PLAIN = JSON.stringify([{ id: "s1", note: "борг 12 000 грн" }]);
 /** Дає асинхронному шифруванню і запису завершитись. */
 async function flush(): Promise<void> {
   for (let i = 0; i < 20; i++) await new Promise((r) => setTimeout(r, 0));
+}
+
+/**
+ * Чекає, поки в сховищі ляже конверт. Фіксованих 20 тіків `flush()` не
+ * вистачало під інструментацією покриття: WebCrypto в Node шифрує в
+ * threadpool, і тижневий `Test coverage (vitest)` падав на міграції при
+ * читанні (2026-11-23), хоча звичайний прогін зелений. Міграцію при
+ * читанні не дочекатись і через `slot.flush()`: розбір сирого значення
+ * не входить у його облік записів.
+ */
+async function sealedIn(key: string): Promise<string> {
+  return vi.waitFor(
+    () => {
+      const stored = safeReadStringLS(key);
+      expect(stored).not.toBeNull();
+      expect(JSON.parse(stored as string).v).toBe(1);
+      return stored as string;
+    },
+    { timeout: 5_000, interval: 10 },
+  );
 }
 
 async function freshProfile(): Promise<void> {
@@ -38,10 +58,8 @@ describe("aiAtRest", () => {
     void chatSessionsSlot.write(PLAIN);
     // синхронне читання з кешу одразу після запису
     expect(chatSessionsSlot.read()).toBe(PLAIN);
-    await flush();
 
-    const stored = safeReadStringLS(KEY);
-    expect(stored).not.toBeNull();
+    const stored = await sealedIn(KEY);
     expect(stored).not.toContain("борг");
     const env = JSON.parse(stored as string);
     expect(env.v).toBe(1);
@@ -53,8 +71,7 @@ describe("aiAtRest", () => {
   it("після «перезавантаження» (новий кеш) гідратація розшифровує збережене", async () => {
     await hydrateAtRest();
     void chatSessionsSlot.write(PLAIN);
-    await flush();
-    const stored = safeReadStringLS(KEY) as string;
+    const stored = await sealedIn(KEY);
 
     // імітуємо холодний старт: кеш слота порожній, сховище те саме
     chatSessionsSlot.remove();
@@ -67,26 +84,22 @@ describe("aiAtRest", () => {
   it("міграція: відкритий легасі-текст читається і перезаписується конвертом", async () => {
     webKVStore.setString(KEY, PLAIN);
     await hydrateAtRest();
-    await flush();
+    const stored = await sealedIn(KEY);
     expect(chatSessionsSlot.read()).toBe(PLAIN);
-    const stored = safeReadStringLS(KEY) as string;
     expect(stored).not.toContain("борг");
-    expect(JSON.parse(stored).v).toBe(1);
   });
 
   it("міграція також працює для читання без попередньої гідратації", async () => {
     await hydrateAtRest(); // ключ готовий
     webKVStore.setString("hub_user_profile_v1", '[{"id":"m1"}]');
     expect(memoryBankSlot.read()).toBe('[{"id":"m1"}]');
-    await flush();
-    expect(safeReadStringLS("hub_user_profile_v1")).not.toContain("m1");
+    expect(await sealedIn("hub_user_profile_v1")).not.toContain("m1");
   });
 
   it("нечитний шифртекст (ключ втрачено) → порожньо, без винятку", async () => {
     await hydrateAtRest();
     void chatSessionsSlot.write(PLAIN);
-    await flush();
-    const stored = safeReadStringLS(KEY) as string;
+    const stored = await sealedIn(KEY);
 
     // IDB очищено: новий профіль → новий ключ
     await freshProfile();
@@ -117,8 +130,7 @@ describe("aiAtRest", () => {
   it("AAD привʼязує шифртекст до слота", async () => {
     await hydrateAtRest();
     void chatSessionsSlot.write(PLAIN);
-    await flush();
-    const stored = safeReadStringLS(KEY) as string;
+    const stored = await sealedIn(KEY);
     // підсовуємо конверт чату під ключ Memory Bank
     memoryBankSlot.remove();
     webKVStore.setString("hub_user_profile_v1", stored);
@@ -130,6 +142,9 @@ describe("aiAtRest", () => {
     await hydrateAtRest();
     void chatSessionsSlot.write(PLAIN);
     chatSessionsSlot.remove();
+    // Запис, що летить, мусить ДОЛЕТІТИ, інакше перевірка «не воскрес»
+    // зелена лише тому, що шифрування ще не закінчилось.
+    await chatSessionsSlot.flush();
     await flush();
     expect(chatSessionsSlot.read()).toBeNull();
     expect(safeReadStringLS(KEY)).toBeNull();
@@ -140,6 +155,9 @@ describe("aiAtRest", () => {
     void chatSessionsSlot.write(PLAIN);
     webKVStore.remove(KEY);
     bumpAtRestWipeEpoch();
+    // Запис, що летить, мусить ДОЛЕТІТИ, інакше перевірка «не воскрес»
+    // зелена лише тому, що шифрування ще не закінчилось.
+    await chatSessionsSlot.flush();
     await flush();
     expect(chatSessionsSlot.read()).toBeNull();
     expect(safeReadStringLS(KEY)).toBeNull();

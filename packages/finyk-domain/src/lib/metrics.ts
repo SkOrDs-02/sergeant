@@ -26,6 +26,7 @@
  */
 
 import { INTERNAL_TRANSFER_ID } from "../constants";
+import { isForeignAccountTx } from "./foreignAccountTx";
 import {
   findCashTransferTxIds,
   type CashOnHandState,
@@ -52,6 +53,8 @@ export interface FinykUniverseTx extends SpendingTxLike {
   accountId?: string | null | undefined;
   _accountId?: string | null | undefined;
   currencyCode?: number | undefined;
+  /** Сума у валюті операції; разом із `amount` видає не-гривневий рахунок. */
+  operationAmount?: number | undefined;
 }
 
 /** Запис отримуваного боргу; важливі лише привʼязані транзакції. */
@@ -134,6 +137,9 @@ export function buildFinykExcludedTxIds(
 
   for (const tx of input.transactions ?? []) {
     if (tx?.id && isTxLevelTransfer(tx)) out.add(String(tx.id));
+    // Операція не-гривневого рахунку: `amount` там у центах/євроцентах, а не
+    // в копійках (UAH-only без FX, Журнал рішень 2026-11-25).
+    if (tx?.id && isForeignAccountTx(tx)) out.add(String(tx.id));
   }
 
   // «Uklon −189» і «Скасування. Uklon +189» — обидві ноги: ні витрата, ні

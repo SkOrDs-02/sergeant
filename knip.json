@@ -97,7 +97,10 @@
       "ignoreDependencies": [
         "@fontsource-variable/manrope",
         "@fontsource/unbounded"
-      ]
+      ],
+      // fc-match — системна утиліта fontconfig, яку `scripts/subset-fonts.mjs`
+      // кличе через execFile, щоб знайти шрифт-донор; npm-пакета в неї немає.
+      "ignoreBinaries": ["fc-match"]
     },
     "apps/server": {
       "project": ["src/**/*.{js,ts}"],

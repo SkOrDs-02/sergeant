@@ -46,6 +46,8 @@ type RawTxInput = {
   accountId?: string | null | undefined;
   _accountId?: string | null | undefined;
   raw?: unknown;
+  currencyCode?: number | string | undefined;
+  operationAmount?: number | string | undefined;
 } & Record<string, unknown>;
 
 // Внутрішні category ids, які трактуються як переказ між власними рахунками.
@@ -241,6 +243,17 @@ export function normalizeTransaction(
     manual,
     manualId: manualId == null ? undefined : String(manualId),
     raw: tx.raw || undefined,
+
+    // Валюта операції й сума в ній (Monobank). Без цих полів рядок показував
+    // `amount` у валюті РАХУНКУ як гривню, а `foreignAccountTx` не мав чого
+    // порівнювати (Журнал рішень finyk 2026-11-25).
+    ...(Number.isFinite(Number(tx.currencyCode)) && tx.currencyCode != null
+      ? { currencyCode: Number(tx.currencyCode) }
+      : {}),
+    ...(Number.isFinite(Number(tx.operationAmount)) &&
+    tx.operationAmount != null
+      ? { operationAmount: Math.round(Number(tx.operationAmount)) }
+      : {}),
 
     _source: legacySource,
     _accountId: accountId == null ? null : String(accountId),

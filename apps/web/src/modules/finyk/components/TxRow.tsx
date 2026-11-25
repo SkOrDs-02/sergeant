@@ -11,6 +11,7 @@ import { CURRENCY, CURRENCY_SYMBOL } from "../constants";
 import type { CustomCategoryInput } from "@sergeant/finyk-domain/constants";
 import type { MonoAccount } from "@sergeant/finyk-domain/lib/accounts";
 import type { TxSplitsMap } from "@sergeant/finyk-domain/domain/types";
+import { foreignAccountCurrencyCode } from "@sergeant/finyk-domain/lib/foreignAccountTx";
 import { txSplitsFor } from "@sergeant/finyk-domain/domain/debtLinkKeys";
 import { cn } from "@shared/lib/ui/cn";
 import { getAccountShortName, type TxRowTx } from "./txRowHelpers";
@@ -72,6 +73,9 @@ function TxRowImpl({
   divider = true,
 }: TxRowProps) {
   const isIncome = tx.amount > 0;
+  // Картка не в гривні: `amount` там у валюті рахунку (центи), тож показуємо
+  // його з символом рахунку, а не з ₴ (Журнал рішень finyk 2026-11-25).
+  const foreignCode = foreignAccountCurrencyCode(tx);
   const cat = isIncome
     ? getIncomeCategoryForTransaction(
         tx,
@@ -220,26 +224,36 @@ function TxRowImpl({
                 signed
                 kopecks
                 tone={isIncome ? "inherit" : "muted"}
+                {...(foreignCode !== null
+                  ? { symbol: CURRENCY_SYMBOL[foreignCode] ?? "¤" }
+                  : {})}
               />
             </MaskedAmount>
           </div>
-          {tx.currencyCode !== CURRENCY.UAH && tx.operationAmount && (
-            <div className="text-style-caption text-muted tabular-nums">
-              <MaskedAmount masked={hideAmount}>
-                <Money
-                  amount={tx.operationAmount / 100}
-                  signed
-                  kopecks
-                  // `?? CURRENCY.UAH` відтворює дефолт параметра `fmtAmt`,
-                  // який тут був: `currencyCode` опційний у `TxRowTx`, і
-                  // гілка `!== CURRENCY.UAH` не звужує `undefined`.
-                  symbol={
-                    CURRENCY_SYMBOL[tx.currencyCode ?? CURRENCY.UAH] ?? "₴"
-                  }
-                />
-              </MaskedAmount>
+          {foreignCode !== null && (
+            <div className="text-style-caption text-muted">
+              Не враховано: картка не в гривні
             </div>
           )}
+          {foreignCode === null &&
+            tx.currencyCode !== CURRENCY.UAH &&
+            tx.operationAmount && (
+              <div className="text-style-caption text-muted tabular-nums">
+                <MaskedAmount masked={hideAmount}>
+                  <Money
+                    amount={tx.operationAmount / 100}
+                    signed
+                    kopecks
+                    // `?? CURRENCY.UAH` відтворює дефолт параметра `fmtAmt`,
+                    // який тут був: `currencyCode` опційний у `TxRowTx`, і
+                    // гілка `!== CURRENCY.UAH` не звужує `undefined`.
+                    symbol={
+                      CURRENCY_SYMBOL[tx.currencyCode ?? CURRENCY.UAH] ?? "₴"
+                    }
+                  />
+                </MaskedAmount>
+              </div>
+            )}
         </div>
       </div>
     </div>

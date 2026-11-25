@@ -343,10 +343,15 @@ async function probe(express: Express, route: RouteSpec): Promise<string> {
 
 describe("session-protection — every sensitive route goes through requireSession*", () => {
   beforeEach(() => {
-    // Probe the live protected surface, including opt-in routes. With the
-    // stream disabled its 404 guard intentionally runs before session lookup,
-    // so CORP alone cannot measure auth coverage in that state.
+    // Probe the live protected surface, including opt-in routes. With a
+    // flag off, its 404 guard intentionally runs before session lookup,
+    // so CORP alone cannot measure auth coverage in that state. Every
+    // flag-gated sync route goes here: snapshot (ADR-0105) and state-hash
+    // (ADR-0106) were added without it, and the weekly integration run
+    // reported them as unprotected although both sit behind requireSession().
     vi.stubEnv("SYNC_V2_STREAM_ENABLED", "true");
+    vi.stubEnv("SYNC_SNAPSHOT_ENABLED", "true");
+    vi.stubEnv("SYNC_STATE_HASH_ENABLED", "true");
   });
 
   afterEach(() => {
