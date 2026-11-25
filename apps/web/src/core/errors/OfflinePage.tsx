@@ -55,6 +55,7 @@ export function OfflinePage() {
         {statusMsg}
       </p>
       <EmptyState
+        ariaLive="off"
         size="lg"
         eyebrow={copy.eyebrow}
         title={copy.title}

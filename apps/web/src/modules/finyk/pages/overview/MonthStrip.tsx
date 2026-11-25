@@ -176,7 +176,7 @@ const MonthStripImpl = function MonthStrip({
               <div
                 key={day.dayKey}
                 aria-hidden="true"
-                className="flex-1 min-w-0 h-full rounded-[1px] bg-line/50"
+                className="flex-1 min-w-0 h-full rounded-[1px] border border-dashed border-line bg-transparent"
               />
             );
           }
@@ -206,7 +206,7 @@ const MonthStripImpl = function MonthStrip({
                 // аудиту контрасту 2026-10-01). Чорнило hero-картки тримає ≥4.7:1
                 // проти кожної зупинки в обох темах.
                 "focus-visible:outline focus-visible:outline-2 focus-visible:outline-hero-ink",
-                isToday && "ring-1 ring-text",
+                isToday && "ring-2 ring-text ring-offset-1 ring-offset-bg",
               )}
             >
               {/* Трек — окремий шар з `overflow-hidden` лише для скруглення
@@ -220,6 +220,13 @@ const MonthStripImpl = function MonthStrip({
                   )}
                   style={{ height: `${fillPct}%` }}
                 />
+                {day.over120 && (
+                  <span
+                    aria-hidden="true"
+                    data-testid="over-budget-cap"
+                    className="absolute inset-x-0 top-0 h-[3px] bg-danger-strong"
+                  />
+                )}
               </span>
             </button>
           );

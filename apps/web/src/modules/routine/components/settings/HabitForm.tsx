@@ -195,7 +195,7 @@ export function HabitForm({
         {errors?.name && (
           <p
             id={nameErrId}
-            className="text-style-label text-danger-strong mt-1 dark:text-danger"
+            className="text-style-label text-danger-strong mt-1"
           >
             {errors.name}
           </p>
@@ -245,7 +245,7 @@ export function HabitForm({
           {errors?.weekdays && (
             <p
               id={weekdaysErrId}
-              className="text-style-label text-danger-strong mt-2 dark:text-danger"
+              className="text-style-label text-danger-strong mt-2"
             >
               {errors.weekdays}
             </p>
@@ -342,7 +342,7 @@ export function HabitForm({
           </div>
           {/* Мʼяке вікно: зберігати дозволено, попереджаємо про рік. */}
           {dateWarning ? (
-            <p className="text-style-label text-warning-strong dark:text-warning">
+            <p className="text-style-label text-warning-strong">
               {dateWarning}
             </p>
           ) : null}

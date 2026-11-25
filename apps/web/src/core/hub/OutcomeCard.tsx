@@ -1,36 +1,32 @@
 import { Button } from "@shared/components/ui/Button";
-import { type IconName } from "@shared/components/ui/Icon";
+import { DASHBOARD_MODULE_LABELS } from "@sergeant/shared";
+import { Icon, type IconName } from "@shared/components/ui/Icon";
 import { cn } from "@shared/lib/ui/cn";
 import type { DashboardModuleId } from "./hub.types";
 
 const MODULES: ReadonlyArray<{
   id: DashboardModuleId;
   icon: IconName;
-  title: string;
   body: string;
 }> = [
   {
     id: "finyk",
     icon: "wallet",
-    title: "Витрати",
     body: "Додай першу витрату або підключи Monobank.",
   },
   {
     id: "fizruk",
     icon: "dumbbell",
-    title: "Тренування",
     body: "Запиши перше тренування.",
   },
   {
     id: "nutrition",
     icon: "utensils",
-    title: "Харчування",
     body: "Запиши перший прийом їжі.",
   },
   {
     id: "routine",
     icon: "calendar-check",
-    title: "Звички",
     body: "Додай першу звичку.",
   },
 ];
@@ -75,7 +71,7 @@ export function OutcomeCard({
           variant="solid"
           size="sm"
           onClick={() => onOpenModule(preferred.id)}
-          aria-label={`Відкрити: ${preferred.title}`}
+          aria-label={`Відкрити: ${DASHBOARD_MODULE_LABELS[preferred.id]}`}
         >
           Відкрити
         </Button>
@@ -89,21 +85,27 @@ export function OutcomeCard({
               key={module.id}
               type="button"
               onClick={() => onOpenModule(module.id)}
-              aria-label={`${module.title}: ${module.body}`}
+              aria-label={`${DASHBOARD_MODULE_LABELS[module.id]}: ${module.body}`}
               // Обраний модуль - той, що відкриє «Відкрити» вгорі; досі це
-              // було видно лише кольором рамки.
+              // тепер це сильніша рамка й заливка.
               aria-current={selected ? "true" : undefined}
               className={cn(
                 "text-left rounded-lg border p-3 transition-colors focus-ring",
                 selected
-                  ? "border-line bg-panel"
+                  ? "border-line-strong-v2 bg-panelHi"
                   : "border-line bg-bg hover:bg-panelHi",
               )}
             >
               <span className="flex items-start gap-3">
+                <Icon
+                  name={module.icon}
+                  size="md"
+                  className="mt-0.5 shrink-0 text-muted"
+                  aria-hidden
+                />
                 <span className="space-y-1">
                   <span className="block text-style-label font-semibold text-text">
-                    {module.title}
+                    {DASHBOARD_MODULE_LABELS[module.id]}
                   </span>
                   <span className="block text-style-caption text-muted leading-relaxed">
                     {module.body}

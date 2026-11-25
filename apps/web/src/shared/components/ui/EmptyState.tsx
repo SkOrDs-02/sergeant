@@ -19,7 +19,9 @@
  * Sizes (`size: sm | md | lg`):
  * - `sm` (compact): in-card / inline empty placeholder
  * - `md` (default): full-page empty states inside Card or page bodies
- * - `lg`: error pages (`/404`, `/500`, `/offline`)
+ * - `lg`: error pages (`/404`, `/500`, `/offline`): опис видимий за
+ *   замовчуванням, а `primaryAction` НЕ перефарбовується в outline (рішення
+ *   власника 2026-11-25). У `sm`/`md` головна `Button` знижується до outline.
  *
  * Backward compat:
  * - `compact: true` keeps working — maps to `size="sm"`.
@@ -59,7 +61,8 @@ export interface EmptyStateProps {
   description?: ReactNode | undefined;
   /**
    * Видимий контекст для first-run станів. У компактних списках опис за
-   * замовчуванням лишається доступним лише скрінрідеру.
+   * замовчуванням лишається доступним лише скрінрідеру; для `size="lg"`
+   * (сторінки помилок) за замовчуванням видимий.
    */
   showDescription?: boolean | undefined;
   /**
@@ -115,7 +118,7 @@ export function EmptyState({
   title,
   titleAs: TitleTag = "p",
   description,
-  showDescription = false,
+  showDescription: showDescriptionProp,
   action,
   primaryAction,
   secondaryAction,
@@ -127,13 +130,17 @@ export function EmptyState({
 }: EmptyStateProps) {
   const resolvedSize = resolveSize(size, compact);
   const primary = primaryAction ?? action;
+  // Рішення власника 2026-11-25: сторінки помилок (`size="lg"`: /404, /500,
+  // /offline) показують опис і лишають solid-варіант головної дії.
+  const isPage = resolvedSize === "lg";
+  const showDescription = showDescriptionProp ?? isPage;
   const id = useId();
   const describedBy =
     [description && `${id}-description`, hint && `${id}-hint`]
       .filter(Boolean)
       .join(" ") || undefined;
   const primaryControl =
-    isValidElement<ButtonProps>(primary) && primary.type === Button
+    !isPage && isValidElement<ButtonProps>(primary) && primary.type === Button
       ? cloneElement(primary, { variant: "outline" })
       : primary;
   return (

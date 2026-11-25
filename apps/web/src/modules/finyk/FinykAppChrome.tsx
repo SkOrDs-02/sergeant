@@ -107,7 +107,7 @@ export function AuthErrorBanner({
             <button
               type="button"
               onClick={onOpenAuth}
-              className="touch-target focus-ring rounded-lg text-style-caption text-text mt-2 hover:underline"
+              className="touch-target focus-ring rounded-lg text-style-label font-semibold text-text underline mt-2"
             >
               Увійти
             </button>
@@ -116,7 +116,7 @@ export function AuthErrorBanner({
               <button
                 type="button"
                 onClick={onOpenSettings}
-                className="touch-target focus-ring rounded-lg text-style-caption text-text mt-2 hover:underline"
+                className="touch-target focus-ring rounded-lg text-style-label font-semibold text-text underline mt-2"
               >
                 Оновити токен у Налаштуваннях
               </button>

@@ -165,7 +165,7 @@ export function SettingsGroup({
   // скрінрідера несе `aria-expanded`.
 
   return (
-    <section className="-mt-px border-y border-line first:mt-0">
+    <section className="-mt-px border-y border-line">
       {/* Дефект №5 (адверсарне ревʼю 2026-08-08): найближчий заголовок вище
           — sr-only `<h1>Налаштування</h1>` на рівні сторінки; сама секція
           малювала заголовок як `<span>` усередині кнопки, тобто не
@@ -456,7 +456,7 @@ export function SectionSkeleton({
   const style: CSSProperties = { minHeight: `${minH}px` };
   return (
     <div
-      className="-mt-px flex items-center border-y border-line first:mt-0"
+      className="-mt-px flex items-center border-y border-line"
       role="status"
       aria-label={ariaLabel ?? messages.loaders.loadingSection}
       aria-busy="true"

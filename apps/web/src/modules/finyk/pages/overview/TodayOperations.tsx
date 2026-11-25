@@ -1,6 +1,7 @@
 import type { Transaction } from "@sergeant/finyk-domain/domain/types";
 import { Card } from "@shared/components/ui/Card";
 import { SectionHeading } from "@shared/components/ui/SectionHeading";
+import { Icon } from "@shared/components/ui/Icon";
 import { Money } from "@shared/components/ui/Money";
 import { messages } from "@shared/i18n";
 import { formatTimeHm } from "@shared/lib/time/formatDate";
@@ -31,9 +32,10 @@ export function TodayOperations({
             type="button"
             onClick={onOpenToday}
             aria-label={messages.finyk.todaySummary.openAria}
-            className="focus-ring touch-target text-style-label text-muted"
+            className="focus-ring touch-target inline-flex items-center gap-1 text-style-label text-text"
           >
             {messages.finyk.todaySummary.operations}
+            <Icon name="chevron-right" size="sm" aria-hidden />
           </button>
         }
       >

@@ -528,7 +528,9 @@ describe("RoutineCalendarPanel", () => {
     render(<RoutineCalendarPanel />);
     expect(screen.getByText("Звички дня")).toBeInTheDocument();
     expect(screen.getByText("Пити воду")).toBeInTheDocument();
-    fireEvent.click(screen.getByRole("button", { name: "Виконано" }));
+    fireEvent.click(
+      screen.getByRole("button", { name: "Виконано: Пити воду" }),
+    );
     expect(onToggleHabit).toHaveBeenCalledWith("h1", "2026-06-23");
   });
 
