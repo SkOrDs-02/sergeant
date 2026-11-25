@@ -17,7 +17,10 @@
 # §«Project / environment»), not a credential. Follow-up commit 2ce3ad40
 # replaced the snippet with `$SERVICE_ID` placeholders so future commits
 # don't carry the pattern.
-fcd3c267e1ef00467d1de18d64bbc5b2adb2fba2:docs/03-operations/deploy/monorepo-deploy-filtering.md:generic-api-key:134
+# УВАГА: відбиток містить шлях файлу В ТОМУ КОМІТІ. Масове перейменування шляхів
+# у доках (e47d3fa966, 03-operations/) переписало й цей рядок, і виняток мовчки
+# перестав діяти: тижневий повний скан історії почервонів. Шляхи тут не чіпай.
+fcd3c267e1ef00467d1de18d64bbc5b2adb2fba2:docs/deploy/monorepo-deploy-filtering.md:generic-api-key:134
 
 # apps/mobile/e2e/auth-flows.e2e.ts (commit 18a6dcab) introduced a static
 # Detox sign-up fixture password constant (`SIGN_UP_PASSWORD`). It is a
@@ -50,3 +53,19 @@ decc1928a6b2e2e4f9949835d9b17863318befb5:apps/web/src/modules/finyk/pages/overvi
 # (Саме значення тут навмисно не повторене, щоб цей коментар не тригерив
 # ту саму евристику.)
 a50be17c99b85ec3c21584ab1f8731f0b0762c8c:packages/shared/src/lib/streakMilestones.ts:generic-api-key:62
+
+# Тижневий повний скан історії, 2026-11-23: хибні спрацювання, яких тут бракувало.
+#
+# docs/90-work/planning/specs/plata-recurring.md: приклад відповіді API
+# Plata by mono з їхньої документації (дати 2024 року, вигаданий cardToken
+# поряд із вигаданим walletId), не токен картки.
+2cbc0366236037205a492d71803714063bfaa143:docs/90-work/planning/specs/plata-recurring.md:generic-api-key:64
+#
+# ops/.env.ops.example: значення порожнє, правило схопило назву наступного
+# рядка як «значення» через перенос.
+d730a6f78ef681e416fddaf5b6201aa4b4e9d77c:ops/.env.ops.example:generic-api-key:17
+#
+# .gitleaksignore у коміті fb6496d5: тоді коментар повторював пароль
+# Detox-фікстури SIGN_UP_PASSWORD (див. запис 18a6dcab вище); прибрано
+# в 5ec7533b. Тестове значення, не облікові дані.
+fb6496d52033bfea39ac4e83cda6eb8496453977:.gitleaksignore:generic-api-key:23
