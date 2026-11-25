@@ -169,6 +169,49 @@ describe("Sheet", () => {
     expect(root.style.getPropertyValue("--sgt-sheet-footer-inset")).toBe("");
   });
 
+  it("trayAbovePanel публікує смугу всієї панелі замість футера", () => {
+    const root = document.documentElement;
+    const originalRect = HTMLElement.prototype.getBoundingClientRect;
+    const spy = vi
+      .spyOn(HTMLElement.prototype, "getBoundingClientRect")
+      .mockImplementation(function (this: HTMLElement) {
+        if (this.getAttribute("role") === "dialog") {
+          return new DOMRect(0, window.innerHeight - 420, 390, 420);
+        }
+        if (this.hasAttribute("data-sheet-footer")) {
+          return new DOMRect(0, window.innerHeight - 80, 390, 80);
+        }
+        return originalRect.call(this);
+      });
+    try {
+      const view = render(
+        <Sheet open onClose={() => {}} title="Джерело" trayAbovePanel>
+          body
+        </Sheet>,
+      );
+      expect(root.style.getPropertyValue("--sgt-sheet-footer-inset")).toBe(
+        "420px",
+      );
+      view.rerender(
+        <Sheet
+          open
+          onClose={() => {}}
+          title="Джерело"
+          footer={<button type="button">Зберегти</button>}
+        >
+          body
+        </Sheet>,
+      );
+      expect(root.style.getPropertyValue("--sgt-sheet-footer-inset")).toBe(
+        "80px",
+      );
+      view.unmount();
+      expect(root.style.getPropertyValue("--sgt-sheet-footer-inset")).toBe("");
+    } finally {
+      spy.mockRestore();
+    }
+  });
+
   it("applies a slide-up animation class on the panel", () => {
     const { getByRole } = render(
       <Sheet open onClose={() => {}} title="T">

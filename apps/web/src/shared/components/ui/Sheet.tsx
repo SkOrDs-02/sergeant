@@ -58,6 +58,16 @@ export interface SheetProps {
   children?: ReactNode | undefined;
   /** Sticky footer (e.g. action buttons). Rendered inside the panel, outside the scroll area. */
   footer?: ReactNode | undefined;
+  /**
+   * Трей тостів стає над усією панеллю, а не лише над футером.
+   *
+   * Для аркушів, чиє тіло саме є вибором дії (список джерел «Додати»,
+   * крок джерела в «Додати прийом їжі»): CTA-футера там немає, тож без
+   * цього тост лягав на поля й рядки вибору внизу аркуша (аудит ux-20,
+   * тост «Застосунок готовий до роботи офлайн»). Публікує ту саму
+   * `--sgt-sheet-footer-inset`, замість футера.
+   */
+  trayAbovePanel?: boolean | undefined;
   /** Slot rendered in the header row to the left of the close button (e.g. extra action). */
   headerRight?: ReactNode | undefined;
   /** Hide the drag-handle pill. */
@@ -110,6 +120,7 @@ export function Sheet({
   description,
   children,
   footer,
+  trayAbovePanel = false,
   headerRight,
   hideHandle = false,
   hideHeader = false,
@@ -130,7 +141,13 @@ export function Sheet({
   // а не на ньому. Виміряно, не пораховано: `innerHeight - rect.top` уже
   // включає клавіатурний `marginBottom` панелі, тож тост підіймається і над
   // клавіатурою. Без футера змінна знімається (`active = false`).
-  useBottomInsetVar(footerRef, SHEET_FOOTER_INSET_VAR, open && Boolean(footer));
+  // `trayAbovePanel` міряє натомість усю панель.
+  useBottomInsetVar(
+    footerRef,
+    SHEET_FOOTER_INSET_VAR,
+    open && Boolean(footer) && !trayAbovePanel,
+  );
+  useBottomInsetVar(panelRef, SHEET_FOOTER_INSET_VAR, open && trayAbovePanel);
   const detectedKbInsetPx = useVisualKeyboardInset(open);
   const resolvedKbInsetPx = kbInsetPx ?? detectedKbInsetPx;
   useDialogFocusTrap(open, panelRef, {
