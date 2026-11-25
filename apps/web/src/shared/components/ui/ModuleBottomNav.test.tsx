@@ -145,11 +145,13 @@ describe("ModuleBottomNav", () => {
     expect(inactivePill.className).toContain("h-full");
   });
 
-  // Стеля вище — реальна межа, тож підпис, який у неї не вліз, мусить
-  // обриватись трьома крапками, а не посеред слова: саме так виглядав
-  // «Прогрес і замір» у Фізруку (QA-аудит 2026-08-04 «кліп лейбла без
-  // ellipsis»). Сам той підпис уже вкорочено, але запобіжник лишається.
-  it("truncates an over-long label with an ellipsis instead of cutting mid-word", () => {
+  // Підпис, що не влазить у колонку, переноситься, а не ріжеться. Колись
+  // його обрізало посеред слова без жодного знаку («Прогрес і замір» у
+  // Фізруку, QA-аудит 2026-08-04), потім — трьома крапками, і при 200%
+  // тексту від підписів лишалось «Ог…», «Фі…» без способу прочитати повний
+  // (bv-a11y-forced-colors-200). Перенос показує текст цілком; на 100% він
+  // не спрацьовує, бо підписи влазять в один рядок (`nav-label-fit.spec.ts`).
+  it("wraps an over-long label instead of clipping or ellipsising it", () => {
     render(
       <ModuleBottomNav
         items={items}
@@ -163,8 +165,10 @@ describe("ModuleBottomNav", () => {
     const activeVisualLabel = screen.getByText("Overview", {
       selector: "span:not(.sr-only)",
     });
-    expect(activeVisualLabel.className).toContain("text-ellipsis");
-    expect(activeVisualLabel.className).toContain("overflow-hidden");
+    expect(activeVisualLabel.className).toContain("[overflow-wrap:anywhere]");
+    expect(activeVisualLabel.className).not.toContain("text-ellipsis");
+    expect(activeVisualLabel.className).not.toContain("whitespace-nowrap");
+    expect(activeVisualLabel.className).not.toContain("overflow-hidden");
   });
 
   it("calls onChange when a nav item is clicked", () => {
