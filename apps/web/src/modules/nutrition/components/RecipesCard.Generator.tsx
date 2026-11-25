@@ -277,7 +277,7 @@ export function GeneratorCard({
             {import.meta.env.DEV && recipesRaw && (
               <details className="mt-3">
                 <summary className="cursor-pointer text-style-caption text-muted hover:text-text">
-                  Показати діагностику (raw відповідь AI)
+                  Показати діагностику (сира відповідь ШІ)
                 </summary>
                 <pre className="mt-2 whitespace-pre-wrap text-style-caption leading-snug text-muted border border-line rounded-panel p-3 max-h-64 overflow-auto">
                   {recipesRaw}

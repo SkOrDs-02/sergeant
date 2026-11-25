@@ -57,7 +57,7 @@ export async function recallMemoryHandler(
   res: Response,
 ): Promise<void> {
   if (!env.AI_MEMORY_ENABLED) {
-    throw new AppError("AI memory вимкнено на сервері", {
+    throw new AppError("Памʼять ШІ вимкнено на сервері", {
       status: 503,
       code: "AI_MEMORY_DISABLED",
     });

@@ -166,7 +166,7 @@ describe("DataExportSection", () => {
   it("PR-S4: розділ більше не несе декларацій про дані — вони в приватності", () => {
     render(<DataExportSection />);
     expect(
-      screen.queryByText("Куди їдуть дані для AI"),
+      screen.queryByText("Куди їдуть дані для ШІ"),
     ).not.toBeInTheDocument();
     expect(
       screen.queryByText(/Якщо Sergeant колись закриється/),

@@ -21,7 +21,7 @@ import {
 export const FINYK_PHOTO_PRIVACY_ACK_KEY = "sergeant.finyk.photoPrivacyAck.v1";
 
 const FINYK_PHOTO_NOTICE_TEXT =
-  "Щоб розпізнати чек чи скрін банку, фото відправляється до зовнішнього AI-сервісу. Їде весь кадр: адреса магазину, цифри картки, баланс, імена. Частину приховати не вийде. Перевір, що в кадрі немає зайвого.";
+  "Щоб розпізнати чек чи скрін банку, фото відправляється до зовнішнього сервісу ШІ. Їде весь кадр: адреса магазину, цифри картки, баланс, імена. Частину приховати не вийде. Перевір, що в кадрі немає зайвого.";
 
 export function readFinykPhotoPrivacyAck(): boolean {
   return readPhotoPrivacyAck(FINYK_PHOTO_PRIVACY_ACK_KEY);

@@ -85,7 +85,7 @@ test("@critical nutrition: photo preview stays inside a 390px viewport", async (
     .click();
   const photoSheet = page.getByRole("dialog", { name: "Додати прийом їжі" });
   await expect(photoSheet).toBeVisible({ timeout: 10_000 });
-  await expect(photoSheet).toContainText("AI визначить КБЖВ");
+  await expect(photoSheet).toContainText("ШІ визначить КБЖВ");
 
   await photoSheet
     .locator('input[type="file"]')
