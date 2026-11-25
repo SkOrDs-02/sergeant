@@ -53,6 +53,13 @@ async function bootstrap(
     .locator("main, [role='main'], [data-a11y-root], #root > *")
     .first()
     .waitFor({ state: "visible", timeout: 10_000 });
+  // Поки замок застосунку перевіряє PIN (`app-lock-checking`), гарячі
+  // клавіші навмисно вимкнені (sec-13). У цьому лейні бекенду немає, і
+  // `me` перепитує сервер ~3 с, тож `Ctrl+K` у це вікно губився, а
+  // overlay-reflow падав без зміни коду (тижневий axe 2026-11-23).
+  await page
+    .locator('[data-testid="app-lock-checking"]')
+    .waitFor({ state: "detached", timeout: 15_000 });
 }
 
 /** Два кадри поспіль: reflow після зміни розміру шрифту вже відбувся. */
