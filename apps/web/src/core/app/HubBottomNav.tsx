@@ -194,7 +194,7 @@ function HubBottomNavTab({
         <span
           data-nav-label
           className={cn(
-            "max-w-full text-style-caption font-medium leading-tight overflow-hidden whitespace-nowrap text-ellipsis",
+            "max-w-full text-style-caption font-medium leading-tight text-center hyphens-auto [overflow-wrap:anywhere]",
           )}
         >
           {visibleLabel ?? label}

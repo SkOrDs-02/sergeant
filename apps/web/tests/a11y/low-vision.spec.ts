@@ -23,9 +23,10 @@ import { settleAnimations } from "../utils/settleAnimations";
  * пристрою: він рухає лише rem-типографіку, тож ~800 сирих px-утиліт
  * лишаються на місці. Але він ловить саме той клас дефектів, про який
  * спека: текст росте всередині контейнера, що не може рости разом із ним.
- * Горизонтальну обрізку (три крапки) тут не міряємо — її вже стереже
- * `tests/mobile/nav-label-fit.spec.ts`; тут — вертикальна: зрізані виносні
- * елементи, текст, що вилазить за фіксовану висоту.
+ * Горизонтальну обрізку на 100% стереже `tests/mobile/nav-label-fit.spec.ts`;
+ * тут — вертикальна (зрізані виносні елементи, текст, що вилазить за
+ * фіксовану висоту), а горизонтальна лише для підписів навігації й назви
+ * модуля при 200% (розділ 6). Розділ 5 — вибраний стан у forced-colors.
  */
 const AXE_TAGS = ["wcag2a", "wcag2aa", "wcag21a", "wcag21aa", "best-practice"];
 
@@ -380,6 +381,159 @@ for (const { name, open } of [
         offscreen: [],
         clipped: [],
       });
+    });
+  }
+}
+
+// ── 5. Вибраний сегмент у forced-colors ─────────────────────────────────
+// Windows High Contrast (forced-colors) підміняє фон на `Canvas` і знімає
+// тіні, тож вибір, переданий лише `bg-segment` + `shadow-segment`, зникав:
+// «Тиждень / Місяць / …» у статистиці Рутини чи групи налаштувань виглядали
+// однаково, і вибраний сегмент читався тільки скрінрідером
+// (bv-a11y-forced-colors-200, браузерна перевірка 2026-11-23). Міряємо
+// ЕФЕКТИВНИЙ фон (перший непрозорий у предків): прозорий невибраний таб на
+// треку `Canvas` і вибраний із фоном `Canvas` — та сама картинка.
+const FORCED_COLORS_ROUTES: ReadonlyArray<{ name: string; path: string }> = [
+  { name: "hub-root", path: "/" },
+  { name: "routine-stats", path: "/routine/stats" },
+  { name: "settings", path: "/settings" },
+];
+
+for (const { name, path } of FORCED_COLORS_ROUTES) {
+  test(`forced-colors: ${name} keeps the selected segment distinguishable`, async ({
+    page,
+  }) => {
+    await page.emulateMedia({ forcedColors: "active" });
+    await bootstrap(page, path);
+    await expect
+      .poll(() => page.locator('[role="tab"][aria-selected="true"]').count())
+      .toBeGreaterThan(0);
+    await settleAnimations(page);
+
+    const report = await page.evaluate(() => {
+      function effectiveBg(el: Element | null): string {
+        for (let node = el; node; node = node.parentElement) {
+          const bg = getComputedStyle(node).backgroundColor;
+          const alpha = /rgba\([^)]*,\s*([\d.]+)\)/.exec(bg)?.[1];
+          if (alpha === undefined || Number(alpha) > 0) return bg;
+        }
+        return "canvas";
+      }
+      const groups = Array.from(
+        document.querySelectorAll('[role="tablist"], [role="toolbar"]'),
+      );
+      const checked: string[] = [];
+      const merged: string[] = [];
+      for (const group of groups) {
+        const items = Array.from(
+          group.querySelectorAll<HTMLElement>(
+            '[role="tab"], button[data-pill]',
+          ),
+        ).filter((el) => el.offsetParent !== null);
+        const isSelected = (el: HTMLElement) =>
+          el.getAttribute("aria-selected") === "true" ||
+          el.getAttribute("aria-pressed") === "true";
+        const selected = items.filter(isSelected);
+        const rest = items.filter((el) => !isSelected(el));
+        if (selected.length === 0 || rest.length === 0) continue;
+        const label =
+          group.getAttribute("aria-label") ??
+          group.closest("nav")?.getAttribute("aria-label") ??
+          "unlabelled";
+        checked.push(label);
+        for (const sel of selected) {
+          const selBg = effectiveBg(sel);
+          // Свій фон без `forced-color-adjust: none` не рятує: Chromium
+          // кладе під текст підкладку `Canvas`, і `HighlightText` на ній
+          // зникає (білий на білому), хоча обчислені кольори «різні».
+          if (getComputedStyle(sel).forcedColorAdjust !== "none") {
+            merged.push(
+              `${label}: «${sel.textContent?.trim()}» text sits on the Canvas backplate`,
+            );
+          }
+          for (const other of rest) {
+            if (effectiveBg(other) === selBg) {
+              merged.push(
+                `${label}: «${sel.textContent?.trim()}» = «${other.textContent?.trim()}» (${selBg})`,
+              );
+              break;
+            }
+          }
+        }
+      }
+      return { checked, merged: merged.slice(0, 5) };
+    });
+
+    expect(
+      report.checked.length,
+      `no tab group with a selected item on ${path}`,
+    ).toBeGreaterThan(0);
+    expect(
+      report.merged,
+      `selected segment blends into its siblings under forced colors on ${path}`,
+    ).toEqual([]);
+  });
+}
+
+// ── 6. Підписи навігації й назва модуля при 200% не ріжуться ────────────
+// Розділ 2 міряє вертикальну обрізку і лише на 320px; три крапки по
+// горизонталі він не бачить, а `nav-label-fit.spec.ts` міряє їх на 100%.
+// При 200% нижня навігація показувала «Ог…», «Фі…», а шапка модуля замість
+// «Фінік» — «Ф» (кнопки `w-11` у rem ставали 88px і забирали рядок).
+// Тепер підписи й назва переносяться, а не ріжуться: тут гейт на це.
+const TEXT_FIT_ROUTES = ["/", "/finyk", "/nutrition", "/fizruk", "/routine"];
+
+for (const path of TEXT_FIT_ROUTES) {
+  for (const width of [320, 390]) {
+    test(`text-scale: nav labels and module title on ${path} are not truncated under 200% text at ${width}px`, async ({
+      page,
+    }) => {
+      await page.setViewportSize({ width, height: 700 });
+      await page.addInitScript(() => {
+        document.addEventListener("DOMContentLoaded", () => {
+          document.documentElement.style.fontSize = "200%";
+        });
+      });
+      await bootstrap(page, path);
+      await page.evaluate(() => {
+        document.documentElement.style.fontSize = "200%";
+      });
+      await waitForNavLabelsExpanded(page);
+      await nextFrames(page);
+      await settleAnimations(page);
+
+      const truncated = await page.evaluate(() => {
+        const roots = Array.from(
+          document.querySelectorAll<HTMLElement>(
+            '[data-nav-label], [data-testid="module-header-title"]',
+          ),
+        );
+        const out: string[] = [];
+        for (const root of roots) {
+          for (const el of [
+            root,
+            ...Array.from(root.querySelectorAll<HTMLElement>("*")),
+          ]) {
+            if (!el.textContent?.trim()) continue;
+            const style = getComputedStyle(el);
+            if (style.display === "none" || Number(style.opacity) === 0) {
+              continue;
+            }
+            if (el.scrollWidth > el.clientWidth + 1) {
+              out.push(
+                `«${el.textContent.trim()}» ${el.scrollWidth}px in ${el.clientWidth}px`,
+              );
+            }
+          }
+        }
+        return { count: roots.length, out };
+      });
+
+      expect(truncated.count, `no nav labels on ${path}`).toBeGreaterThan(0);
+      expect(
+        truncated.out,
+        `text truncated under 200% text on ${path} at ${width}px`,
+      ).toEqual([]);
     });
   }
 }

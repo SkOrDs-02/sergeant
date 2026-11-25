@@ -42,8 +42,14 @@ export interface ModuleHeaderProps {
   className?: string | undefined;
 }
 
+// Розміри кнопок, бокові відступи й проміжок рядка шапки — у px, не в rem:
+// при 200% кореневого тексту `w-11` ставав 88 px, і дві такі кнопки разом із
+// rem-відступами лишали назві модуля 24 px на 320 px («Фінік» → «Ф»). Іконки
+// всередині й так фіксовані (20 px), а 44 px — поріг дотику, не типографіка.
+// Назва при цьому не ріжеться трьома крапками, а переноситься: текст росте,
+// рядок шапки (`min-h-[68px]`) росте разом із ним (bv-a11y-forced-colors-200).
 const ICON_BUTTON =
-  "shrink-0 w-11 h-11 min-w-[44px] min-h-[44px] flex items-center justify-center rounded-lg text-text hover:bg-panel transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-focus/45 focus-visible:ring-offset-2 focus-visible:ring-offset-bg";
+  "shrink-0 w-[44px] h-[44px] flex items-center justify-center rounded-lg text-text hover:bg-panel transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-focus/45 focus-visible:ring-offset-2 focus-visible:ring-offset-bg";
 
 export function ModuleHeader({
   title,
@@ -64,7 +70,7 @@ export function ModuleHeader({
         module ? { viewTransitionName: `sgt-module-${module}` } : undefined
       }
     >
-      <div className="flex min-h-[68px] items-center px-3 py-2 sm:px-4 gap-2">
+      <div className="flex min-h-[68px] items-center px-[12px] py-2 sm:px-[16px] gap-[8px]">
         {left}
         <div className="min-w-0 flex-1">
           {titleSlot ?? (
@@ -82,9 +88,11 @@ export function ModuleHeader({
                     hapticTap();
                     setSwitcherOpen(true);
                   }}
-                  className="-ml-1 flex min-h-[44px] max-w-full items-center gap-1 rounded-lg px-1 text-style-headline text-text focus-ring"
+                  className="-ml-1 flex min-h-[44px] max-w-full items-center gap-1 rounded-lg px-1 text-left text-style-headline text-text focus-ring"
                 >
-                  <span className="truncate">{title}</span>
+                  <span className="min-w-0 hyphens-auto [overflow-wrap:anywhere]">
+                    {title}
+                  </span>
                   <svg
                     width="16"
                     height="16"
@@ -103,7 +111,7 @@ export function ModuleHeader({
               ) : title ? (
                 <p
                   data-testid="module-header-title"
-                  className="text-style-headline text-text truncate"
+                  className="text-style-headline text-text hyphens-auto [overflow-wrap:anywhere]"
                 >
                   {title}
                 </p>

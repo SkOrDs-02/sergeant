@@ -1,7 +1,7 @@
 # Аудит 2026-10-01 · UX і доступність
 
-> **Status:** Active. 87 кластерів (122 знахідки) за першопричиною. Загальний план, метод і обмеження — у [README](./README.md).
-> **Last touched:** 2026-11-23 by @claude (ux-87: чат при 200% тексту виносив «Надіслати» і «Закрити чат» за екран, виправлено; разом закрито ux-52); 2026-11-23 by @claude (rv-ui-csv закрито, § ux-33); 2026-11-22 by @claude (рішення власника по решті питань беклогу); 2026-11-21 by @claude (рішення власника по кластерах, раунди 5–10); раніше перевірено 2026-10-02.
+> **Status:** Active. 89 кластерів (125 знахідок) за першопричиною. Загальний план, метод і обмеження — у [README](./README.md).
+> **Last touched:** 2026-11-25 by @claude (bv-search-duplicates закрито: дублікат «Почати тренування» в ⌘K, біля ux-08; ux-89: форма листа очікування підставляє email сесії залогіненому, виправлено; ux-20: тост на кроці джерела аркуша прийому їжі, `bv-offline-toast-meal-sheet`, виправлено; ux-88: вибраний сегмент у forced-colors і обрізані підписи навігації й назва модуля при 200% тексту, виправлено); 2026-11-23 by @claude (ux-87: чат при 200% тексту виносив «Надіслати» і «Закрити чат» за екран, виправлено; разом закрито ux-52); 2026-11-23 by @claude (rv-ui-csv закрито, § ux-33); 2026-11-22 by @claude (рішення власника по решті питань беклогу); 2026-11-21 by @claude (рішення власника по кластерах, раунди 5–10); раніше перевірено 2026-10-02.
 > **Next review:** 2027-01-21
 > **Spec-lint:** skip. Реєстр знахідок аудиту, не специфікація реалізації.
 
@@ -13,8 +13,8 @@ UX і доступність — найбільша за кількістю зн
 | ----------- | --------- |
 | critical    | 0         |
 | high        | 0         |
-| medium      | 18        |
-| low         | 65        |
+| medium      | 19        |
+| low         | 66        |
 | info        | 4         |
 
 ## medium
@@ -527,6 +527,7 @@ Live API (v8-v9-api.mjs). Preview of f3-mono-2000.csv returns 200, profile=mono,
 ### `ux-08` [medium] Фокус падає на &lt;body&gt; після закриття діалогів і дій: глобальний пошук, створення першої звички, readiness-аркуш, крок аркуша їжі, видалення запису, невдалий вхід
 
 - **Стан:** виправлено в [#1492](https://github.com/SkOrDs-02/sergeant/pull/1492) (змерджено 2026-10-09) і в [#1604](https://github.com/SkOrDs-02/sergeant/pull/1604) (змерджено 2026-10-22) (запасні цілі фокуса `returnFocusFallback` для HabitQuickCreate, ReadinessSheet, кроку AddMealSheet і видалення запису; «Забули пароль?» перенесено в DOM після поля пароля)
+- **Суміжне, закрито:** `bv-search-duplicates` (low, глобальний пошук ⌘K) виправлено в гілці `backlog/bv-search-duplicates` (2026-11-25): дія «Почати тренування» і однойменна можливість Сержанта стояли у видачі двома рядками; `performSearch` тепер зливає хіти за ключем «тип + id» в одному місці (`searchDedupe.ts`), виграє дія; тест `searchDedupe.test.ts`.
 - **Перевірка:** підтверджено · **Зусилля:** M · **Область:** web: a11y / керування фокусом
 - **Де:** apps/web/src/shared/hooks/useDialogFocusTrap.ts:89-91,195-205; apps/web/src/core/hub/search/HubSearch.tsx:55-58; apps/web/src/core/hub/search/useSearchEngine.ts:85-87; apps/web/src/core/auth/LoginForm.tsx:58-111; apps/web/src/modules/fizruk/pages/Workouts.tsx:472; routine HabitQuickCreate
 - **Першопричина:** useDialogFocusTrap запамʼятовує «попередній фокус» в ефекті, який виконується після власних автофокусів компонента. У HubSearch ефект useSearchEngine фокусує інпут раніше, тож пастка запамʼятовує сам інпут, який потім розмонтовується. Якщо тригер розмонтовано (порожній стан звичок, видалений запис), запасної цілі для фокуса немає. LoginForm на час сабміту робить сфокусовані поля disabled, тож після помилки фокус губиться.
@@ -1046,6 +1047,18 @@ v10.mjs: `1366x768 titleY:-84, xY:-96, panelTop:-117, panelH:885, wheelScrollabl
 
 Знахідок у кластері: 1.
 
+<a id="ux-88"></a>
+
+### `ux-88` [medium] Вибраний сегмент не видно у forced-colors, а при 200% тексту ріжуться підписи навігації й назва модуля
+
+- **Стан:** виправлено в гілці `backlog/bv-a11y-forced-colors-200` (знахідка перевірки, `bv-a11y-forced-colors-200`): вибраний таб чи пігулка у forced-colors малюється `Highlight`/`HighlightText` з `forced-color-adjust: none` (правило в `theme.css` за ARIA-станом), підписи нижньої навігації й назва `ModuleHeader` переносяться замість трьох крапок, кнопки шапки тримають 44px у px; гейт — розділи 5 і 6 `tests/a11y/low-vision.spec.ts`.
+- **Перевірка:** підтверджено (браузер, prod-білд з `VITE_E2E_SEED`, `emulateMedia({ forcedColors: "active" })`, корінь 200% на 320 і 390 px) · **Зусилля:** S · **Область:** web: `Segmented`, `Tabs`, `HubBottomNav`, `ModuleBottomNav`, `ModuleHeader`
+- **Де:** apps/web/src/styles/theme.css; apps/web/src/shared/components/ui/ModuleBottomNav.tsx; apps/web/src/core/app/HubBottomNav.tsx; apps/web/src/shared/components/layout/ModuleHeader.tsx
+- **Першопричина:** (1) Вибір у `Segmented` і сегменті налаштувань передавали лише `bg-segment` і `shadow-segment`, а forced-colors підміняє фон на `Canvas` і знімає тіні: ефективний фон вибраного й сусідніх сегментів однаковий (білий на білому треку). Сам лише `background: Highlight` не рятує: Chromium кладе під текст підкладку `Canvas`, і `HighlightText` на ній зникає. (2) Підписи навігації мали `whitespace-nowrap text-ellipsis`, а колонка 52-72 px при 200% не вміщує жодного слова («Ог…», «Тре…»). Кнопки шапки `w-11` у rem ставали 88 px і разом із rem-відступами лишали назві 24 px («Фінік» → «Ф», «Рутина» → «Р»).
+- **Примітка:** На 100% тексту висота навів і шапки не змінилась (68 px трек разом із рамкою до і після); однорядковість підписів на 100% і далі стереже `nav-label-fit.spec.ts`, тепер із примусовим `nowrap` у замірі. Підзаголовки шапки (`subtitle`) і рядки карток, що теж ріжуться при 200%, лишились поза цим фіксом.
+
+Знахідок у кластері: 2.
+
 ## low
 
 <a id="ux-18"></a>
@@ -1146,7 +1159,7 @@ v2-signin.mjs. At 390x844: bannerTop=514, Google/Зареєструватися/
 
 ### `ux-20` [low] Трей тостів перекриває головні дії й поле вводу: CTA «Додати прийом» в аркуші їжі, композер /chat, кнопки банера згоди
 
-- **Стан:** частково виправлено в гілці `backlog/ux-20` (2026-11-22): AddMealSheet кладе «Додати прийом»/«Зберегти зміни» і «Скасувати» у слот `footer` Sheet на кроці заповнення, тож аркуш публікує `--sgt-sheet-footer-inset` і трей тостів стає над CTA (тест у `AddMealSheet.journeys.test.tsx`). Лишилось: інсет композера на /chat і в HubChat (`ChatInput.tsx`, нова інсет-змінна в Toast), CTA у тілі AddExerciseSheet, ExerciseDetailSheet, ItemEditSheet, MealTypeSheet, PantryManagerSheet, тост «offline ready» поверх активного вводу
+- **Стан:** частково виправлено в гілці `backlog/ux-20` (2026-11-22): AddMealSheet кладе «Додати прийом»/«Зберегти зміни» і «Скасувати» у слот `footer` Sheet на кроці заповнення, тож аркуш публікує `--sgt-sheet-footer-inset` і трей тостів стає над CTA (тест у `AddMealSheet.journeys.test.tsx`). Закрито в гілці `backlog/bv-offline-toast-meal-sheet` (знахідка перевірки, `bv-offline-toast-meal-sheet`, 2026-11-25): на кроці джерела AddMealSheet футера немає, і тост «Застосунок готовий до роботи офлайн» лягав на поле пошуку й «На 100 г»; тепер аркуш ставить `trayAbovePanel` і трей стає над усією панеллю, а вкладений аркуш на закритті більше не стирає смугу нижнього (тести в `AddMealSheet.journeys.test.tsx`, `Sheet.test.tsx`, `useBottomInsetVar.test.tsx`). Лишилось: інсет композера на /chat і в HubChat (`ChatInput.tsx`, нова інсет-змінна в Toast), CTA у тілі AddExerciseSheet, ExerciseDetailSheet, ItemEditSheet, MealTypeSheet, PantryManagerSheet, тост «offline ready» поверх активного вводу
 - **Перевірка:** підтверджено · **Зусилля:** S · **Швидкий виграш** · **Область:** web: тости
 - **Де:** apps/web/src/shared/components/ui/Toast.tsx:295,420-466; apps/web/src/shared/components/ui/Sheet.tsx:140; apps/web/src/modules/nutrition/components/AddMealSheet.tsx:614-620,795-812; apps/web/src/core/app/useSWUpdate.ts:193; apps/web/src/core/components/ChatInput.tsx
 - **Першопричина:** Трей тостів позиціюється лише через інсет-змінні bottom-nav, workout-banner і sheet-footer. AddMealSheet і ще кілька аркушів (AddExerciseSheet, ExerciseDetailSheet, ItemEditSheet, MealTypeSheet, PantryManagerSheet) тримають CTA в тілі аркуша, а не в слоті footer, а /chat і HubChat свого інсету не публікують, тож трей лягає поверх. Рядки тостів мають pointer-events:auto, а ToastRow має tabIndex=0 і ставиться на паузу при фокусі.
@@ -4879,6 +4892,17 @@ s49 після першої витрати: «Фінік · 85 ₴ за день
 ```text
 apps/web/src/shared/i18n/uk.crossModuleLink.ts:99-100: коментар `«14 днів із записом»`, значення `smallDataDaysNote: "днів із записом"`.
 ```
+
+<a id="ux-89"></a>
+
+### `ux-89` [low] Форма листа очікування на /pricing показує залогіненому порожнє поле email
+
+- **Стан:** виправлено в гілці `backlog/bv-waitlist-email-prefill` (знахідка перевірки, `bv-waitlist-email-prefill`): `WaitlistForm` підставляє email сесії (поле редаговане, гість бачить порожнє), а сесію, що прийшла після першого render-у, доливає лише в порожнє поле; гейт — `WaitlistForm.test.tsx`.
+- **Перевірка:** підтверджено кодом · **Зусилля:** S · **Швидкий виграш** · **Область:** web: /pricing, лист очікування Premium
+- **Де:** apps/web/src/core/pricing/WaitlistForm.tsx
+- **Першопричина:** `defaultValues.email` був жорстко `""`, а форма сесію не читала. One-tap «Повідомити про запуск» ([`ux-29`](#ux-29)) бере email сесії, але форма під картками, куди CTA веде гостя і куди людина гортає сама, вимагала вводити вже відому адресу вручну.
+
+Знахідок у кластері: 1.
 
 ## info
 

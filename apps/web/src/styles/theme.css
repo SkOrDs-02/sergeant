@@ -1684,3 +1684,33 @@ html.hc .focus-visible\:inset-ring:focus-visible,
     border-color: rgb(var(--c-control));
   }
 }
+
+/* Вибраний сегмент / таб у forced-colors (Windows High Contrast). Там браузер
+   підміняє фон на `Canvas` і знімає тіні, тож `bg-segment` + `shadow-segment`
+   (`Segmented`, сегмент налаштувань у `Tabs`) і пігулка вибраного табу
+   нижньої навігації зливались із сусідами: вибір читався лише з ARIA-стану
+   (браузерна перевірка 2026-11-23, bv-a11y-forced-colors-200). Вибраний стан
+   малюємо парою `Highlight`/`HighlightText`, як нативні списки Windows.
+   Ключ — ARIA-стан, а не класи компонентів: так правило доходить до кожного
+   таблиста й фільтра-пігулки разом із майбутніми.
+
+   `forced-color-adjust: none` обовʼязковий: без нього Chromium малює під
+   текстом підкладку кольору `Canvas`, і `HighlightText` (білий у світлій
+   схемі) стоїть на білому — підпис вибраного сегмента зникає зовсім
+   (перевірено скріном). Тому й межа та колір нащадків задані явно, бо
+   примусових кольорів у цьому піддереві більше немає. Поза `@layer`:
+   усередині шару правило програло б `aria-selected:bg-segment` з
+   `utilities` незалежно від специфічності. Гейт —
+   `tests/a11y/low-vision.spec.ts`, розділ forced-colors. */
+@media (forced-colors: active) {
+  :is([role="tab"][aria-selected="true"], [data-pill][aria-pressed="true"]) {
+    forced-color-adjust: none;
+    background-color: Highlight;
+    border-color: Highlight;
+    color: HighlightText;
+  }
+  :is([role="tab"][aria-selected="true"], [data-pill][aria-pressed="true"]) * {
+    color: HighlightText;
+    border-color: HighlightText;
+  }
+}
