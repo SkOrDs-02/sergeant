@@ -45,7 +45,8 @@ describe("mergeItems", () => {
       [{ name: "огірок", qty: null, unit: null, notes: null }],
     );
     expect(out).toHaveLength(1);
-    expect(out[0]).toMatchObject({ qty: 5, unit: "шт" });
+    // Гола назва нічого не додає до наявної кількості (раніше було 5).
+    expect(out[0]).toMatchObject({ qty: 4, unit: "шт" });
   });
 
   it("upgrades existing entry without qty/unit when incoming has qty/unit", () => {
@@ -66,7 +67,18 @@ describe("mergeItems", () => {
       ],
     );
     expect(out).toHaveLength(1);
-    expect(out[0]).toMatchObject({ qty: 5, unit: "шт" });
+    expect(out[0]).toMatchObject({ qty: 4, unit: "шт" });
+  });
+
+  it("гола назва не отримує підставлену кількість «1 шт» (2026-11-25)", () => {
+    const out = mergeItems([], [{ name: "молоко", qty: null, unit: null }]);
+    expect(out).toHaveLength(1);
+    expect(out[0]).toMatchObject({ name: "молоко", qty: null, unit: null });
+  });
+
+  it("явне «1 шт» зберігається як є", () => {
+    const out = mergeItems([], [{ name: "молоко", qty: 1, unit: "шт" }]);
+    expect(out[0]).toMatchObject({ qty: 1, unit: "шт" });
   });
 
   it("same product with incompatible units (г vs уп): second entry is skipped by dedup policy", () => {
