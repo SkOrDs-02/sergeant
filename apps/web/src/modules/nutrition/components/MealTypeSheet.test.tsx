@@ -102,7 +102,7 @@ describe("MealTypeSheet", () => {
         onRemoveMeal={vi.fn()}
       />,
     );
-    fireEvent.click(screen.getByLabelText("Редагувати запис"));
+    fireEvent.click(screen.getByRole("button", { name: /^Курка з рисом/ }));
     expect(onEditMeal).toHaveBeenCalledWith("2026-09-15", m);
   });
 
@@ -119,7 +119,7 @@ describe("MealTypeSheet", () => {
         onRemoveMeal={onRemoveMeal}
       />,
     );
-    fireEvent.click(screen.getByLabelText("Видалити запис"));
+    fireEvent.click(screen.getByLabelText("Видалити Курка з рисом"));
     expect(onRemoveMeal).toHaveBeenCalledWith("2026-09-15", m);
   });
 });

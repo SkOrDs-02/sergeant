@@ -68,15 +68,17 @@ describe("MealRow", () => {
     render(
       <MealRow meal={baseMeal as never} onEdit={onEdit} onRemove={onRemove} />,
     );
-    fireEvent.click(screen.getByLabelText("Редагувати запис"));
+    fireEvent.click(screen.getByRole("button", { name: /^Гречка з куркою/ }));
     expect(onEdit).toHaveBeenCalled();
-    fireEvent.click(screen.getByLabelText("Видалити запис"));
+    fireEvent.click(screen.getByLabelText("Видалити Гречка з куркою"));
     expect(onRemove).toHaveBeenCalled();
   });
 
   it("disables the edit affordance when onEdit is absent", () => {
     render(<MealRow meal={baseMeal as never} />);
-    expect(screen.queryByLabelText("Редагувати запис")).not.toBeInTheDocument();
+    expect(
+      screen.getByRole("button", { name: /^Гречка з куркою/ }),
+    ).toBeDisabled();
   });
 
   it("omits macro chips that are null", () => {

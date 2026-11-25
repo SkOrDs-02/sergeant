@@ -19,10 +19,9 @@ describe("WelcomeModulePicker — preset grid shell", () => {
       screen.getByRole("heading", { name: copy.heading }),
     ).toBeInTheDocument();
     for (const label of Object.values(MODULE_LABELS)) {
-      expect(screen.getByRole("button", { name: label })).toHaveAttribute(
-        "aria-pressed",
-        "true",
-      );
+      expect(
+        screen.getByRole("button", { name: new RegExp(`^${label}`) }),
+      ).toHaveAttribute("aria-pressed", "true");
     }
     expect(screen.getByRole("button", { name: copy.cta })).toBeEnabled();
   });
@@ -32,7 +31,9 @@ describe("WelcomeModulePicker — preset grid shell", () => {
     render(<WelcomeModulePicker onComplete={vi.fn()} onOpenAuth={vi.fn()} />);
     const copy = messages.welcomeModulePicker;
     for (const label of Object.values(MODULE_LABELS)) {
-      await user.click(screen.getByRole("button", { name: label }));
+      await user.click(
+        screen.getByRole("button", { name: new RegExp(`^${label}`) }),
+      );
     }
     expect(screen.getByRole("button", { name: copy.cta })).toBeDisabled();
     expect(screen.getByText(copy.emptyHint)).toBeInTheDocument();
@@ -45,10 +46,14 @@ describe("WelcomeModulePicker — preset grid shell", () => {
       <WelcomeModulePicker onComplete={onComplete} onOpenAuth={vi.fn()} />,
     );
     await user.click(
-      screen.getByRole("button", { name: MODULE_LABELS.routine }),
+      screen.getByRole("button", {
+        name: new RegExp(`^${MODULE_LABELS.routine}`),
+      }),
     );
     await user.click(
-      screen.getByRole("button", { name: MODULE_LABELS.nutrition }),
+      screen.getByRole("button", {
+        name: new RegExp(`^${MODULE_LABELS.nutrition}`),
+      }),
     );
     await user.click(
       screen.getByRole("button", { name: messages.welcomeModulePicker.cta }),
@@ -59,7 +64,9 @@ describe("WelcomeModulePicker — preset grid shell", () => {
   it("вибір показаний нейтральним чекбоксом і зберігає aria-pressed", async () => {
     const user = userEvent.setup();
     render(<WelcomeModulePicker onComplete={vi.fn()} onOpenAuth={vi.fn()} />);
-    const finyk = screen.getByRole("button", { name: MODULE_LABELS.finyk });
+    const finyk = screen.getByRole("button", {
+      name: new RegExp(`^${MODULE_LABELS.finyk}`),
+    });
     expect(finyk).toHaveAttribute("aria-pressed", "true");
     expect(finyk.querySelector("[aria-hidden]")?.className).toContain("bg-ink");
     await user.click(finyk);

@@ -1,7 +1,7 @@
 /**
  * Fizruk Dashboard — persistent PR badge (Phase 6.7).
  *
- * Mounts on the hero card at the top-right corner (mirroring where
+ * Mounts at the top of the hero card, right-aligned (mirroring where
  * Routine's `StreakFlame` lives on its hero) and surfaces the user's
  * most-recent personal record as a short pill: «PR · {вправа} ·
  * {вага} кг». Pure presentational — `usePrLatest` does the
@@ -62,10 +62,8 @@ export function isPrBadgeVisible(pr: PrLatest | null): pr is PrLatest {
 
 /**
  * Renders nothing when the PR is missing or stale; otherwise emits a
- * compact soft-tone pill positioned absolutely at the top-right of
- * the hero card. The wrapper carries a 44×44 touch-target box (per
- * the design system's touch-target convention even for read-only
- * chrome) and `aria-hidden` because the badge is a decorative
+ * compact right-aligned caption line at the top of the hero card.
+ * It is `aria-hidden` because the badge is a decorative
  * summary — the underlying PR data is reachable through Progress.
  */
 export function PrBadge({ pr }: PrBadgeProps) {
@@ -77,7 +75,7 @@ export function PrBadge({ pr }: PrBadgeProps) {
   const weightLabel = fmtLoose(pr.weightKg);
 
   return (
-    <p aria-hidden className="text-style-body text-muted">
+    <p aria-hidden className="text-style-caption text-muted text-right">
       PR · {exerciseShort} · {weightLabel} {messages.fizruk.kgUnit}
     </p>
   );

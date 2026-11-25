@@ -214,7 +214,7 @@ export function InlineAiRail({
             <button
               type="button"
               onClick={() => onRetry(state.question)}
-              className="text-style-label text-brand-strong dark:text-brand-300 hover:underline focus:outline-none focus-visible:ring-2 focus-visible:ring-focus/45 rounded px-2 py-1"
+              className="text-style-label text-brand-strong hover:underline focus:outline-none focus-visible:ring-2 focus-visible:ring-focus/45 rounded px-2 py-1"
             >
               Запитати знову
             </button>
@@ -223,7 +223,7 @@ export function InlineAiRail({
 
         {state.status === "error" && (
           <div className="space-y-2">
-            <p className="text-style-body text-danger-strong dark:text-red-200">
+            <p className="text-style-body text-danger-strong">
               {state.message}
             </p>
             <div className="flex flex-wrap items-center gap-2">

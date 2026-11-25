@@ -21,6 +21,8 @@ import { NutritionStartPage } from "./pages/NutritionStartPage";
 import { NutritionPantryPage } from "./pages/NutritionPantryPage";
 import { NutritionLogPage } from "./pages/NutritionLogPage";
 import { NutritionMenuPage } from "./pages/NutritionMenuPage";
+import { Button } from "@shared/components/ui/Button";
+import { Icon } from "@shared/components/ui/Icon";
 import { Notice } from "@shared/components/ui/Notice";
 import { NutritionAddAction } from "./components/NutritionAddAction";
 import type { SourceTabId } from "./components/meal-sheet/SourceTabs";
@@ -548,7 +550,11 @@ export default function NutritionApp({
                 state), so this banner only carries the flows without an
                 in-place anchor: pantry list parsing, recipe/day-plan
                 fetches, … */}
-              {statusText && <Notice className="mb-4">{statusText}</Notice>}
+              {statusText && (
+                <Notice role="status" className="mb-4">
+                  {statusText}
+                </Notice>
+              )}
               {denial && (
                 <AccessDenialNotice
                   denial={denial}
@@ -563,14 +569,16 @@ export default function NutritionApp({
                   role="alert"
                 >
                   <span>{err}</span>
-                  <button
-                    type="button"
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    iconOnly
                     onClick={() => setErr("")}
                     aria-label="Закрити повідомлення про помилку"
-                    className="min-h-11 min-w-11 shrink-0 rounded-lg text-lg leading-none hover:bg-line/40 focus-ring"
+                    className="shrink-0"
                   >
-                    ×
-                  </button>
+                    <Icon name="close" size="sm" aria-hidden />
+                  </Button>
                 </Notice>
               )}
               {storageBanner && (

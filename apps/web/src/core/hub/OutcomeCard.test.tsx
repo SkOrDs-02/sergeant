@@ -17,15 +17,13 @@ describe("OutcomeCard", () => {
     expect(
       screen.getByRole("heading", { level: 2, name: /одного запису/i }),
     ).toBeInTheDocument();
-    const selected = screen.getByLabelText(/^Харчування:/i);
+    const selected = screen.getByLabelText(/^Їжа:/i);
     expect(selected).toHaveAttribute("aria-current", "true");
 
-    fireEvent.click(
-      screen.getByRole("button", { name: "Відкрити: Харчування" }),
-    );
+    fireEvent.click(screen.getByRole("button", { name: "Відкрити: Їжа" }));
     expect(onOpenModule).toHaveBeenCalledWith("nutrition");
 
-    fireEvent.click(screen.getByLabelText(/^Витрати:/i));
+    fireEvent.click(screen.getByLabelText(/^Фінік:/i));
     expect(onOpenModule).toHaveBeenCalledWith("finyk");
   });
 

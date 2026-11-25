@@ -384,7 +384,7 @@ export const coreMessages = {
   onboarding: {
     // Пікер модулів: усі чотири увімкнені за замовчуванням, тому тап
     // знімає вибір, а не додає — підпис робить це чесним.
-    pickerAllOnHint: "Обери потрібні.",
+    pickerAllOnHint: "Залиш потрібні.",
     // Round 16 — onboarding-specific labels.
 
     // Пресет-шит FTUX: запис не дійшов до сховища. Спека

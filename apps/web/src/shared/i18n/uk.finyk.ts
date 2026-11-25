@@ -127,6 +127,10 @@ export const finykPageMessages = {
     addGoalDescription: "Накопичення на конкретну суму",
     addSubscriptionDescription: "Регулярний щомісячний платіж",
   },
+  networthSection: {
+    title: "Динаміка капіталу",
+    monthsSuffix: "міс.",
+  },
   monthStrip: {
     groupAriaPrefix: "Витрати за днями",
     openDaySuffix: "Відкрити операції",

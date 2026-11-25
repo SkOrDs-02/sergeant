@@ -40,8 +40,8 @@ function HeroShell({
       aria-label={ariaLabel}
       className="space-y-3"
     >
-      {children}
       {cornerSlot}
+      {children}
     </Card>
   );
 }
@@ -258,8 +258,7 @@ export function TodayState({
       />
       <p className="text-style-body text-muted">{metaParts.join(" · ")}</p>
       <Button
-        variant="outline"
-        tone="neutral"
+        variant="solid"
         onClick={onStartToday}
         aria-label={`Почати тренування: ${state.label}`}
       >
@@ -401,11 +400,7 @@ export function EmptyState({
         onOpenAtlas={body.onOpenAtlas}
       />
       <div className="flex flex-wrap gap-2">
-        <Button
-          variant="outline"
-          tone="neutral"
-          onClick={onQuickStart ?? onOpenTemplates}
-        >
+        <Button variant="solid" onClick={onQuickStart ?? onOpenTemplates}>
           {onQuickStart ? messages.fizruk.hero.quickStart : templatesLabel}
         </Button>
         {onQuickStart && (

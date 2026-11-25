@@ -7,6 +7,7 @@ import { cn } from "@shared/lib/ui/cn";
 import { RoutineMomentLine } from "./RoutineMomentLine";
 import { SectionHeading } from "@shared/components/ui/SectionHeading";
 import { Button } from "@shared/components/ui/Button";
+import { Icon } from "@shared/components/ui/Icon";
 import { Input } from "@shared/components/ui/Input";
 import { messages } from "@shared/i18n/uk";
 import {
@@ -328,9 +329,9 @@ export function RoutineCalendarPanel({
                         : undefined
                     }
                     leftLabel="Виконано"
-                    leftColor="bg-text"
+                    leftColor="bg-success-strong"
                     rightLabel="Скасувати"
-                    rightColor="bg-muted"
+                    rightColor="bg-brand-strong"
                   >
                     <div className="border-b border-line py-1.5 flex flex-col gap-2">
                       <div className="flex items-start justify-between gap-3 sm:gap-2">
@@ -423,9 +424,7 @@ export function RoutineCalendarPanel({
                               completed={e.completed === true}
                               futureDay={e.date > todayKey}
                               onClick={() => onToggleHabit(habitId, e.date)}
-                              aria-label={
-                                e.completed ? "Скасувати виконання" : "Виконано"
-                              }
+                              aria-label={`Виконано: ${e.title}`}
                             />
                           )}
                         </div>
@@ -457,13 +456,14 @@ export function RoutineCalendarPanel({
         )}
         {/* Вхід «нова звичка» рядком у кінці списку (redesign v3, PR4b),
             замість смуги над tab bar. Він же єдина дія порожнього стану. */}
-        <button
-          type="button"
-          className="flex min-h-14 w-full items-center border-y border-line text-left text-style-body font-semibold text-text focus-ring"
+        <Button
+          variant="outline"
+          className="mt-3 w-full"
           onClick={() => onOpenQuickAddHabit()}
         >
+          <Icon name="plus" size={16} aria-hidden />
           {messages.routine.newHabit}
-        </button>
+        </Button>
       </section>
 
       {/* Інсайт майже-рекорду стоїть під списком, бо список дня головний
