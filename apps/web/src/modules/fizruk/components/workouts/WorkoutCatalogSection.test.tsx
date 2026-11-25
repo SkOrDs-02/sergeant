@@ -266,7 +266,7 @@ describe("WorkoutCatalogSection — empty state", () => {
       />,
     );
     expect(screen.getByText("Нічого не знайшлось")).toBeInTheDocument();
-    expect(screen.getByText(/фільтри/)).toBeInTheDocument();
+    expect(screen.getByText(/фільтрами/)).toBeInTheDocument();
   });
 
   it("treats a location filter alone as narrowing", () => {

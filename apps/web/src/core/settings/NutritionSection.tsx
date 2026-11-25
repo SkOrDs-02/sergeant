@@ -121,14 +121,13 @@ export function NutritionSection() {
 
       {!hydrated && (
         <p className="text-style-body text-subtle leading-snug">
-          Налаштування Їжі ще завантажуються з акаунта. Зміни стануть доступні
-          за кілька секунд.
+          Налаштування Їжі ще завантажуються.
         </p>
       )}
 
       <SettingsSubGroup variant="bounded" title="Вода">
         <p className="text-style-body text-subtle leading-snug">
-          Денна норма для трекера води в картці дня Їжі.
+          Для трекера води в Їжі.
         </p>
         <NumberField
           label="Денна норма"
@@ -147,7 +146,7 @@ export function NutritionSection() {
       <SettingsSubGroup variant="bounded" title="Автокалібрування цілі">
         <ToggleRow
           label="Автокалібрування"
-          description="Щотижня уточнює ціль за журналом їжі та зміною ваги. Ручна правка полів денного плану призупиняє його."
+          description="Щотижня уточнює ціль за журналом їжі й вагою. Ручна правка денного плану ставить його на паузу."
           checked={prefs.adaptiveGoalEnabled}
           disabled={!hydrated}
           onChange={(checked) =>
@@ -166,12 +165,11 @@ export function NutritionSection() {
             Модуль називає їх «місця зберігання» (холодильник, морозилка,
             комора), тож «усі комори» читалось би як одне з трьох місць. */}
         <p className="text-style-body text-subtle leading-snug">
-          У діалозі «Додати прийом їжі» поряд з пошуком і штрихкодом показуються
-          продукти з усіх місць зберігання, їх можна вибрати одним тапом.
+          У «Додати прийом їжі» продукти з усіх місць зберігання можна вибрати
+          одним тапом.
         </p>
         <p className="text-style-body text-subtle">
-          Продукти й місця зберігання (холодильник, морозилка, комора і власні)
-          – у менеджері комори всередині модуля Їжі.
+          Продукти й місця зберігання редагуються в менеджері комори.
         </p>
         <Button
           type="button"

@@ -95,7 +95,9 @@ export function useVoiceInput({
       setListening(false);
       recRef.current = null;
       if (e.error === "not-allowed") {
-        onError?.("Немає дозволу на використання мікрофону.");
+        onError?.(
+          "Немає дозволу на мікрофон. Дай його в налаштуваннях браузера.",
+        );
       } else if (e.error === "no-speech") {
         onError?.("Не вдалося розпізнати мову. Спробуй ще раз.");
       } else if (e.error !== "aborted") {

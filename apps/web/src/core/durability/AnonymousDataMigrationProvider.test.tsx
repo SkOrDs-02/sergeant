@@ -276,7 +276,7 @@ describe("AnonymousDataMigrationProvider", () => {
     renderAt("/", <div>module content</div>);
 
     const defer = await screen.findByRole("button", {
-      name: "Продовжити, перенесу пізніше",
+      name: "Перенести пізніше",
     });
     await userEvent.click(defer);
 
@@ -292,7 +292,7 @@ describe("AnonymousDataMigrationProvider", () => {
     const first = renderAt("/", <div>module content</div>);
     await userEvent.click(
       await screen.findByRole("button", {
-        name: "Продовжити, перенесу пізніше",
+        name: "Перенести пізніше",
       }),
     );
     await screen.findByText("module content");
@@ -317,7 +317,7 @@ describe("AnonymousDataMigrationProvider", () => {
     renderAt("/", <div>module content</div>);
     await userEvent.click(
       await screen.findByRole("button", {
-        name: "Продовжити, перенесу пізніше",
+        name: "Перенести пізніше",
       }),
     );
     const content = await screen.findByText("module content");

@@ -95,7 +95,7 @@ export function useDemoCommands({
       {
         id: "nav.hub",
         title: "Перейти на головну",
-        description: "Hub: стрічка модулів і центральний дашборд",
+        description: "Усі модулі на одному екрані",
         group: "Навігація",
         keywords: ["hub", "home", "головна", "дашборд"],
         run: () => navigate("/"),
@@ -135,7 +135,7 @@ export function useDemoCommands({
       {
         id: "settings.toggle-dark",
         title: isDark ? "Світла тема" : "Темна тема",
-        description: "Перемкнути візуальну схему інтерфейсу",
+        description: "Змінити тему",
         group: "Налаштування",
         shortcut: "⇧ T",
         keywords: ["theme", "dark", "light", "тема"],
@@ -144,7 +144,7 @@ export function useDemoCommands({
       {
         id: "settings.open",
         title: "Відкрити налаштування",
-        description: "Профіль, конфіденційність, експериментальні фічі",
+        description: "Профіль, конфіденційність, експериментальні функції",
         group: "Налаштування",
         keywords: ["settings", "preferences", "налаштування"],
         run: () => {
@@ -159,7 +159,7 @@ export function useDemoCommands({
             {
               id: "session.sign-out",
               title: "Вийти з акаунту",
-              description: "Завершити сесію та повернутися на екран входу",
+              description: "Завершити сесію на цьому пристрої",
               group: "Сесія",
               keywords: ["logout", "sign out", "вийти"],
               run: () => {

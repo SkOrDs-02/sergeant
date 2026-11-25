@@ -505,7 +505,7 @@ describe("PlanSection (audit P1-6 — Settings plan + manage subscription)", () 
     fireEvent.click(screen.getByTestId("plan-cancel-confirm-button"));
 
     expect(await screen.findByTestId("plan-cancel-error")).toHaveTextContent(
-      "Активної підписки, яку можна скасувати, немає.",
+      "Активної підписки немає.",
     );
     expect(
       screen.queryByTestId("plan-cancel-confirm-button"),
@@ -523,7 +523,7 @@ describe("PlanSection (audit P1-6 — Settings plan + manage subscription)", () 
     fireEvent.click(screen.getByTestId("plan-cancel-confirm-button"));
 
     expect(await screen.findByTestId("plan-cancel-error")).toHaveTextContent(
-      /Платіжний сервіс не підтвердив скасування.*спробуй ще раз/,
+      /Платіжний сервіс не підтвердив скасування.*Спробуй/,
     );
     expect(
       screen.getByTestId("plan-cancel-confirm-button"),

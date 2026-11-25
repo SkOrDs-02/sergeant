@@ -917,7 +917,9 @@ export default async function handler(
         .map((m) => m.content),
     }),
   });
-  const textBody = { text: textParts || "Немає відповіді від AI." };
+  const textBody = {
+    text: textParts || "Сержант не відповів. Спробуй ще раз.",
+  };
   setCachedChatResponse(cacheKey, { status: 200, body: textBody });
   deliver(textBody);
 }

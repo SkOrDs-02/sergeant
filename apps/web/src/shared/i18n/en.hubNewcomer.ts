@@ -42,8 +42,7 @@ export const hubNewcomerEn: Pick<
   searchClear: "Clear search",
   searchHabitWeeklyTarget: "{count} {unit} a week",
   welcomeLinkExamplePhrase: "on workout days you spend less",
-  welcomeLinkExample:
-    "Example of a link: “{phrase}”. Sergeant finds links like this by itself once two modules have enough days with entries.",
+  welcomeLinkExample: "Sergeant will notice that {phrase}.",
   newcomerTimeline: newcomerTimelineEn,
   bankFacts: bankFactsEn,
 };

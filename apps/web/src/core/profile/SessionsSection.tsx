@@ -236,8 +236,7 @@ export function SessionsSection({ online }: { online: boolean }) {
           // саме, що "сервер підтвердив: сесій нема". Показуємо чесний
           // "не вдалося завантажити", а не COPY.empty.
           <p className="text-style-body text-muted text-center py-4">
-            Офлайн, не вдалося завантажити активні сесії. Підключись до мережі й
-            онови список.
+            Немає мережі, сесії не завантажились. Підключись і онови список.
           </p>
         ) : sessions.length === 0 ? (
           <p className="text-style-body text-muted text-center py-4">
@@ -334,9 +333,8 @@ export function SessionsSection({ online }: { online: boolean }) {
               "записи",
               "записів",
             )}{" "}
-            ще не збережено на сервері. Якщо завершити цю сесію зараз, вони
-            зникнуть назавжди. Підключися до мережі й зачекай кілька секунд, або
-            завершуй, якщо ці записи не потрібні.
+            ще не збережено на сервері. Якщо завершити сесію зараз, вони
+            зникнуть назавжди. Підключись до мережі й зачекай кілька секунд.
             {(unsyncedPrompt?.anonymous ?? 0) > 0 &&
               ` ${messages.unsyncedLoss.anonymousHint}`}
           </>

@@ -14,14 +14,14 @@ export const pricingMessages = {
   backLabel: "Назад",
   plansAriaLabel: "Плани",
   hero: {
-    headlineLine1: "Sergeant безкоштовний для базового користування.",
+    headlineLine1: "Основне в Sergeant безкоштовне.",
     headlineLine2: "Premium, коли треба все одразу.",
     // B4 (браузерний аудит 2026-08-05): прибрано обіцянку «натиснеш Premium —
     // відкриється оплата». Premium ще не запущений, оплати немає, а нижче на
     // тій самій сторінці стоїть waitlist — обіцянка суперечила формі.
     // Обіцянку «без trial-таймера» знято: новий акаунт може стартувати з
     // 7 днів Premium (спека access-tiers, ADR про пакетування Free/Premium).
-    subtitle: "Один платний план. Без рівнів і без довічної підписки.",
+    subtitle: "Один платний план. Без рівнів і довічної підписки.",
   },
   tiers: {
     freeName: "Free",
@@ -34,17 +34,17 @@ export const pricingMessages = {
     // суперечила waitlist-у «Один лист, коли Premium стартує».
     premiumPrice: "Скоро",
     premiumCadence: "Ціну оголошу на запуску",
-    premiumTagline: "Усе розблоковано. Один план, без рівнів і доплат.",
+    premiumTagline: "Усе розблоковано, без доплат.",
   },
   // Рядки таблиці: доступ і ліміти кожного бере `core/pricing/pricingTiers.ts`
   // з реєстру `@sergeant/shared` FEATURES, тут лише підписи.
   features: {
     manualTracking: "Ручний трекінг без числових лімітів",
     aiActions: "Дії Сержанта: чат, порада, план дня, рецепти",
-    aiPhotoFoodShort: "Фото їжі від Сержанта",
-    finykVision: "AI-скан чека без QR і скрінів банку",
-    monoAutoSync: "Авто-синхронізація з Monobank",
-    cloudSync: "CloudSync між пристроями",
+    aiPhotoFoodShort: "Аналіз фото їжі",
+    finykVision: "Скан чека без QR і скрінів банку",
+    monoAutoSync: "Автосинхронізація з Monobank",
+    cloudSync: "Синхронізація між пристроями",
     csvExport: "Експорт CSV",
     voice: "Голосовий ввід",
     memoryRecall: "Памʼять Сержанта",
@@ -89,7 +89,7 @@ export const pricingMessages = {
   },
   errors: {
     checkoutUnavailable:
-      "Оплата тимчасово недоступна. Можеш залишити email нижче, напишу, коли можна буде оплатити.",
+      "Оплата тимчасово недоступна. Залиш email нижче, напишу, щойно вона запрацює.",
     // 409 ALREADY_SUBSCRIBED: підписка вже діє (інша вкладка чи застарілий кеш).
     checkoutAlreadySubscribed: "Підписка вже діє. Керуй нею в налаштуваннях.",
     // 409 CHECKOUT_PENDING: сторінка оплати живе до години, її ще можуть оплатити.
@@ -103,9 +103,9 @@ export const pricingMessages = {
       "Не вдалося відкрити керування підпискою. Перевір звʼязок і спробуй ще раз.",
   },
   toast: {
-    subscriptionActive: "Підписку активовано, Premium уже діє.",
+    subscriptionActive: "Premium активовано.",
     subscriptionActiveCta: "Перейти у налаштування",
-    paymentCanceled: "Оплату скасовано. Підписка не оформлена.",
+    paymentCanceled: "Оплату скасовано, підписку не оформлено.",
   },
   // Тости one-tap запису в лист очікування (`usePremiumLaunch`).
   launchNotify: {
@@ -117,8 +117,8 @@ export const pricingMessages = {
   },
   waitlist: {
     headline: "Повідомити про запуск Premium",
-    subtitle: "Один лист, коли Premium стартує. Без спаму, без авто-списань.",
+    subtitle: "Один лист на старт Premium. Без спаму й автосписань.",
   },
   footer:
-    "Ціни у гривні. Оплата через українські провайдери (LiqPay / Plata). Legacy Stripe-підписки керуються окремим платіжним порталом.",
+    "Ціни в гривнях. Оплата через LiqPay або Plata. Старими підписками Stripe керують в окремому платіжному порталі.",
 };

@@ -342,9 +342,9 @@ export function titleFor(name: string, status: "completed" | "failed"): string {
       return `Звіт згенеровано${failedSuffix}`;
     // Nutrition
     case "log_meal":
-      return `Прийом їжі залоговано${failedSuffix}`;
+      return `Прийом їжі записано${failedSuffix}`;
     case "log_water":
-      return `Воду залоговано${failedSuffix}`;
+      return `Воду записано${failedSuffix}`;
     case "add_recipe":
       return `Рецепт збережено${failedSuffix}`;
     case "add_to_shopping_list":
@@ -356,7 +356,7 @@ export function titleFor(name: string, status: "completed" | "failed"): string {
     case "set_daily_plan":
       return `Щоденний план оновлено${failedSuffix}`;
     case "suggest_meal":
-      return `Пораду щодо їжі${failedSuffix}`;
+      return `Порада щодо їжі${failedSuffix}`;
     case "copy_meal_from_date":
       return `Прийом їжі скопійовано${failedSuffix}`;
     case "plan_meals_for_day":
@@ -430,12 +430,12 @@ export function titleFor(name: string, status: "completed" | "failed"): string {
     case "habit_trend":
       return `Тренд звичок${failedSuffix}`;
     case "get_daily_series":
-      return `Ряди метрик за днями${failedSuffix}`;
+      return `Метрики за днями${failedSuffix}`;
     // Utility
     case "calculate_1rm":
       return `1RM розраховано${failedSuffix}`;
     case "convert_units":
-      return `Конвертацію одиниць${failedSuffix}`;
+      return `Конвертація одиниць${failedSuffix}`;
     case "save_note":
       return `Нотатку збережено${failedSuffix}`;
     case "list_notes":

@@ -161,7 +161,7 @@ export function Exercise({ exerciseId, onNavigate }: ExerciseProps) {
           <Card padding="lg">
             <EmptyState
               title="Неправильний ID вправи"
-              description="Посилання пошкоджене або застаріле. Повернись до журналу тренувань і обери вправу зі списку."
+              description="Посилання пошкоджене або застаріле. Обери вправу зі списку."
               action={
                 <Button
                   variant="solid"
@@ -218,7 +218,7 @@ export function Exercise({ exerciseId, onNavigate }: ExerciseProps) {
           <Card padding="lg">
             <EmptyState
               title="Вправу не знайдено"
-              description="Можливо, її видалили з каталогу. Повернись до журналу і обери зі списку."
+              description="Її видалено з каталогу. Обери іншу зі списку."
               action={
                 onNavigate ? (
                   <Button

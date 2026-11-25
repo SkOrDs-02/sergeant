@@ -97,13 +97,13 @@ describe("AIDigestSection: усе, що Сержант робить сам (PR-S
     stubNotification("granted");
     pushState.subscribed = false;
     renderSettingsSection(<AIDigestSection />);
-    expect(screen.getByText(/увімкни push у «Сповіщеннях»/)).toBeTruthy();
+    expect(screen.getByText(/Увімкни його у «Сповіщеннях»/)).toBeTruthy();
   });
 
   it("з push-підпискою підказки про push немає", () => {
     stubNotification("granted");
     renderSettingsSection(<AIDigestSection />);
-    expect(screen.queryByText(/увімкни push у «Сповіщеннях»/)).toBeNull();
+    expect(screen.queryByText(/Увімкни його у «Сповіщеннях»/)).toBeNull();
   });
 });
 
@@ -125,7 +125,7 @@ describe("AIDigestSection — текст автогенерації", () => {
     expect(screen.getByText("Автогенерація звіту")).toBeInTheDocument();
     expect(
       screen.getByText(
-        "Перше відкриття головної після завершення тижня само збирає звіт за тиждень, що минув. Звіт не витрачає ліміт дій Сержанта.",
+        "Звіт збирається при першому відкритті головної після кінця тижня. Ліміт дій Сержанта не витрачає.",
       ),
     ).toBeInTheDocument();
     expect(screen.queryByText(/щопонеділка/)).toBeNull();
@@ -137,7 +137,7 @@ describe("AIDigestSection — текст автогенерації", () => {
     renderSettingsSection(<AIDigestSection />);
     expect(
       screen.getByText(
-        "Тижневий аналіз прогресу від Сержанта по всіх модулях: фінанси, тренування, харчування та звички. Звіт за тиждень, що минув, збирається сам при першому відкритті головної. Він чекає там у блоці «Звіт тижня», там же його можна оновити.",
+        "Підсумок тижня від Сержанта: фінанси, тренування, харчування й звички. Шукай його на головній, у блоці «Звіт тижня».",
       ),
     ).toBeInTheDocument();
   });

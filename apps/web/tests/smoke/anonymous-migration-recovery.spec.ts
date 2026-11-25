@@ -21,7 +21,7 @@ import {
 // Only the interrupted-push case injects a transport failure, never an ACK.
 // Acceptance: docs/work/specs/anonymous-local-first-persistence.md.
 test.use({ storageState: { cookies: [], origins: [] } });
-const SUCCESS = "Дані перенесено й безпечно збережено у профілі.";
+const SUCCESS = "Дані перенесено в профіль.";
 const API = process.env["VITE_API_BASE_URL"] ?? "http://127.0.0.1:3000";
 
 async function showExpense(page: Page, title: string) {

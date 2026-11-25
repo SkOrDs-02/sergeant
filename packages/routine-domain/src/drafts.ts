@@ -355,7 +355,7 @@ export function validateHabitDraft(draft: HabitDraft): HabitFormErrors {
     target !== undefined &&
     (!Number.isInteger(target) || target < 1)
   ) {
-    errors.countTarget = "Ціль лічильника — ціле число від 1.";
+    errors.countTarget = "Ціль лічильника: ціле число від 1.";
   }
   return errors;
 }

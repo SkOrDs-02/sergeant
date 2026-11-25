@@ -88,9 +88,7 @@ export function PWASection() {
         title={messages.collection.pwaFilesTitle}
       >
         <p className="text-style-body text-subtle leading-snug">
-          Якщо після оновлення щось «застрягло» (стара версія або дивні дані),
-          можна скинути збережені на пристрої файли застосунку й перезавантажити
-          його.
+          Якщо після оновлення щось застрягло, скинь файли застосунку.
         </p>
         <Button
           type="button"
@@ -124,8 +122,7 @@ export function PWASection() {
         </summary>
         <div className="space-y-2 px-3 pb-3">
           <p className="text-style-body text-subtle">
-            Потрібно, лише якщо підтримка попросить технічні дані про
-            застосунок.
+            Знадобиться, якщо попросить підтримка.
           </p>
           <Button
             type="button"
@@ -188,7 +185,7 @@ export function PWASection() {
       <ConfirmDialog
         open={confirmOpen}
         title="Скинути файли застосунку?"
-        description="Застосунок видалить свої кеші, і сторінка перезавантажиться. Твої дані й офлайн-черга лишаються на місці, а файли інтерфейсу застосунок дотягне заново, тож роби це при інтернеті."
+        description="Сторінка перезавантажиться. Дані й офлайн-черга лишаться, а файли інтерфейсу завантажаться заново, тож потрібен інтернет."
         confirmLabel="Скинути та перезавантажити"
         cancelLabel="Скасувати"
         danger

@@ -84,7 +84,7 @@ describe("ExercisePhotoViewer", () => {
     expect(
       screen.queryByRole("button", { name: "Рух" }),
     ).not.toBeInTheDocument();
-    expect(screen.getByText(/лише один кадр/)).toBeInTheDocument();
+    expect(screen.getByText(/один кадр/)).toBeInTheDocument();
   });
 
   describe("autoplay", () => {

@@ -273,7 +273,7 @@ export function PantryManagerSheet({
           </SectionHeading>
           <p className="text-style-body text-subtle leading-relaxed mt-1">
             {redistributePlan.length} позицій лежать не там, де їх очікує
-            автовизначення. Нічого не переїде, поки не натиснеш.
+            автовизначення. Без твого підтвердження нічого не переїде.
           </p>
           <ul className="mt-3 divide-y divide-line">
             {redistributePlan.slice(0, 12).map((move, i) => (

@@ -93,7 +93,7 @@ export function buildRoutineRecs(): Rec[] {
       priority: 80,
       icon: "flame",
       title: `${streak} ${pluralDays(streak)} поспіль`,
-      body: "Усі звички виконано щодня без пропусків.",
+      body: "Без жодного пропуску.",
       action: "routine",
     });
   }

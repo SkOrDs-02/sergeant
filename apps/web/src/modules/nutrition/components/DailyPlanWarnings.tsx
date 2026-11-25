@@ -143,9 +143,9 @@ export function MissingMacrosHint({
       data-testid="missing-macros-hint"
     >
       <p className="leading-snug">
-        Задано лише <strong>{kcal} ккал</strong>, але без макро AI не зрозуміє
-        що тобі важливо: білок, жир чи вуглеводи. Підстав середні стартові
-        значення й відредагуй під себе.
+        Задано лише <strong>{kcal} ккал</strong>. Без макро Сержант не знає, що
+        тобі важливо: білок, жир чи вуглеводи. Підстав середні значення й
+        відредагуй.
       </p>
       <div className="flex flex-wrap gap-2">
         <button

@@ -140,7 +140,7 @@ export default class ModuleErrorBoundary extends Component<
               data-testid="module-error-request-id"
             >
               <span className="text-style-caption text-muted shrink-0">
-                requestId:
+                {messages.errors.generic.requestIdLabel}
               </span>
               <code className="text-style-code text-text font-mono truncate flex-1">
                 {requestId}

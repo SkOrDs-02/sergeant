@@ -272,7 +272,7 @@ describe("MemoryBankSection — import", () => {
     importFile(JSON.stringify({ not: "an array" }));
     await vi.waitFor(() => {
       expect(toastErrorMock).toHaveBeenCalledWith(
-        "Невалідний формат файлу",
+        "Цей файл не підходить",
         undefined,
         expect.objectContaining({ label: "Обрати інший" }),
       );

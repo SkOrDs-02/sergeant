@@ -192,7 +192,7 @@ export function DayReportSheet({
             ))}
           </ul>
           <p className="text-style-body text-muted mt-2">
-            Заявлений пропуск не рахується провалом і не ламає серію.
+            Заявлений пропуск не ламає серію.
           </p>
         </div>
       )}

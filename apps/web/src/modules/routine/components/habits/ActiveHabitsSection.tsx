@@ -116,7 +116,7 @@ export function ActiveHabitsSection({
       {hasActive && filteredActiveHabits.length === 0 && (
         <EmptyState
           title="Нічого не знайшов"
-          description={`Серед активних звичок немає жодної за запитом «${habitListQuery.trim()}».`}
+          description={`Звичок за запитом «${habitListQuery.trim()}» немає.`}
           action={
             <Button
               tone="neutral"

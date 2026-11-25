@@ -112,7 +112,7 @@ describe("CrossModuleLinkCard — перевірка доказів", () => {
     expect(screen.getByText("2 серп")).toBeInTheDocument();
     expect(screen.getByText("380")).toBeInTheDocument();
     // Підпис пояснює, чому днів саме стільки, а не 60.
-    expect(screen.getByText("Дні, за якими я порівнював")).toBeInTheDocument();
+    expect(screen.getByText("Дні порівняння")).toBeInTheDocument();
   });
 
   it("довгий список обрізається, і про це сказано, а не приховано", async () => {

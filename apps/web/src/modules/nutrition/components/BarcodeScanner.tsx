@@ -222,8 +222,7 @@ function WebBarcodeScanner({
           ) : noRead ? (
             <div role="status" className="space-y-2">
               <p className="text-style-body text-muted text-center">
-                Не зчитується? Помʼятий або затертий код камера не візьме.
-                Знайди продукт за назвою або введи КБЖВ сам.
+                Не зчитується? Знайди продукт за назвою або введи КБЖВ сам.
               </p>
               {onManualEntry && (
                 <Button

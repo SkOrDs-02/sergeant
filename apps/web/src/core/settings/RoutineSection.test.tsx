@@ -42,9 +42,7 @@ describe("RoutineSection", () => {
 
   it("renders the calendar toggles and the tags/categories subgroup", () => {
     renderSettingsSection(<RoutineSection />);
-    expect(
-      screen.getByText("Показувати тренування з Фізрука в календарі"),
-    ).toBeInTheDocument();
+    expect(screen.getByText("Тренування з Фізрука")).toBeInTheDocument();
     expect(screen.getByTestId("tags-section")).toBeInTheDocument();
     expect(screen.getByTestId("categories-section")).toBeInTheDocument();
   });

@@ -20,9 +20,7 @@ describe("MonthlyTrendBars", () => {
     );
     expect(screen.getAllByRole("listitem")).toHaveLength(2);
     expect(
-      screen.getByText(
-        /Ведеш з серпня: тренд стане корисним після трьох місяців/,
-      ),
+      screen.getByText(/Ведеш з серпня: динаміка видна від трьох місяців/),
     ).toBeInTheDocument();
     expect(
       screen.getByRole("button", { name: /місяць ще триває/ }),

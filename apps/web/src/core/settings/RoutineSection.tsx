@@ -38,14 +38,14 @@ export function RoutineSection() {
       <div className="space-y-7 [&_[data-row]]:mx-0 [&_[data-row]]:px-0">
         <SettingsSubGroup variant="bounded" title="Календар">
           <ToggleRow
-            label="Показувати тренування з Фізрука в календарі"
-            description="Заплановані тренування з Фізрука зʼявляться у місячному календарі поряд зі звичками."
+            label="Тренування з Фізрука"
+            description="Заплановані тренування поруч зі звичками."
             checked={routine.prefs?.showFizrukInCalendar !== false}
             onChange={(checked) => updatePref("showFizrukInCalendar", checked)}
           />
           <ToggleRow
-            label="Показувати планові платежі підписок Фініка в календарі"
-            description="Майбутні списання за підписками зʼявлятимуться у календарі рутини поруч із завданнями дня."
+            label="Підписки з Фініка"
+            description="Майбутні списання поруч із завданнями дня."
             checked={routine.prefs?.showFinykSubscriptionsInCalendar !== false}
             onChange={(checked) =>
               updatePref("showFinykSubscriptionsInCalendar", checked)

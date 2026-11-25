@@ -86,7 +86,7 @@ type Stage = "choose" | "camera" | "processing" | "review" | "batch";
  * №5, 2026-08-18). Тепер кожна реальна фаза має свій рядок. */
 const PREPARING: ScanStatusState = {
   label: "Готую фото…",
-  hint: "Ще працюю. Що більше позицій у чеку, то довше розпізнавання.",
+  hint: "Ще працюю. Довгі чеки читаються довше.",
 };
 const RECOGNIZING: ScanStatusState = {
   label: "Розпізнаю чек…",
@@ -259,7 +259,7 @@ export function ReceiptScanSheet({
     // відкинуті 5 лише перерахувавши список (бета-фідбек 2026-08-18).
     setBatchCapNote(
       files.length > BATCH_RECEIPTS_MAX_FILES
-        ? `Взято перші ${BATCH_RECEIPTS_MAX_FILES} фото з ${files.length}, решту докинь наступною пачкою після збереження цієї.`
+        ? `Взято перші ${BATCH_RECEIPTS_MAX_FILES} фото з ${files.length}. Решту додай наступною пачкою.`
         : null,
     );
     setEditingItemId(null);

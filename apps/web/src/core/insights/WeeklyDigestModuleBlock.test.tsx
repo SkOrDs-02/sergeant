@@ -16,7 +16,7 @@ describe("WeeklyDigestModuleBlock", () => {
     const { container } = render(
       <ModuleBlock
         moduleKey="nutrition"
-        badge="· залоговано 2/7"
+        badge="· записано 2/7"
         data={{
           summary: "Два дні записів",
           comment: "Середнє лише за записані дні: 1900 ккал.",
@@ -34,7 +34,7 @@ describe("WeeklyDigestModuleBlock", () => {
     expect(container.querySelectorAll("svg")).toHaveLength(1);
     expect(toggle.querySelector("svg")).toHaveAttribute("aria-hidden", "true");
     expect(screen.getByText("Два дні записів")).toBeInTheDocument();
-    expect(screen.getByText("· залоговано 2/7")).toBeInTheDocument();
+    expect(screen.getByText("· записано 2/7")).toBeInTheDocument();
     fireEvent.click(toggle);
     expect(toggle).toHaveAttribute("aria-expanded", "true");
     expect(within(body).getByRole("paragraph")).toHaveTextContent(

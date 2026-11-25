@@ -253,12 +253,12 @@ describe("BulkImportSheet — нарізка commit-у на частини (ux-0
     await waitFor(() =>
       expect(
         screen.getByText(
-          "Імпортовано рядків: 3 з 5. Решта не пішла: network down. Натисни «Імпортувати» ще раз, щоб дослати решту.",
+          "Імпортовано рядків: 3 з 5. Решта не пішла: network down. Натисни «Імпортувати», щоб дослати решту.",
         ),
       ).toBeInTheDocument(),
     );
     expect(
-      screen.getByText(/network down\. Натисни «Імпортувати» ще раз/),
+      screen.getByText(/network down\. Натисни «Імпортувати», щоб/),
     ).toBeInTheDocument();
     expect(screen.queryByDisplayValue("BIG-0")).not.toBeInTheDocument();
     expect(screen.getByDisplayValue("BIG-3")).toBeInTheDocument();

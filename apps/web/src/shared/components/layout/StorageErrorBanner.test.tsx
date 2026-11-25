@@ -34,14 +34,14 @@ describe("StorageErrorBanner", () => {
     // Сира причина лишається в події для телеметрії, людині її не показуємо
     // (аудит копі 2026-09-23 §2.5).
     expect(alert.textContent).not.toContain("QuotaExceededError");
-    expect(alert.textContent).toContain("Не вдалося зберегти дані");
+    expect(alert.textContent).toContain("Не вдалося зберегти. Звільни місце");
   });
 
   it("shows the same catalog copy when the event has no detail", () => {
     render(<StorageErrorBanner eventName={EVENT} />);
     dispatchError(undefined);
     const text = screen.getByRole("alert").textContent ?? "";
-    expect(text).toContain("Не вдалося зберегти дані");
+    expect(text).toContain("Не вдалося зберегти. Звільни місце");
     expect(text).not.toContain("невідома помилка");
   });
 

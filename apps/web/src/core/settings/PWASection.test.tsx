@@ -150,10 +150,8 @@ describe("PWASection", () => {
     render(<PWASection />);
     fireEvent.click(screen.getByText("Скинути файли застосунку"));
     expect(screen.queryByText(/офлайн-черзі можуть бути втрачені/)).toBeNull();
-    expect(
-      screen.getByText(/офлайн-черга лишаються на місці/),
-    ).toBeInTheDocument();
-    expect(screen.getByText(/дотягне заново/)).toBeInTheDocument();
+    expect(screen.getByText(/офлайн-черга лишаться/)).toBeInTheDocument();
+    expect(screen.getByText(/завантажаться заново/)).toBeInTheDocument();
   });
 
   it("clears caches and schedules a reload on confirm", async () => {

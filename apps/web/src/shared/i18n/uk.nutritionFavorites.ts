@@ -19,5 +19,5 @@ export const nutritionFavoritesMessages = {
     few: "{n} продукти",
     many: "{n} продуктів",
   },
-  moreInSearch: "Решту улюблених знайдеш пошуком: вони там стоять першими.",
+  moreInSearch: "Решта улюблених – у пошуку, вони там першими.",
 } as const;

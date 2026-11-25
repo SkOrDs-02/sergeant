@@ -2,6 +2,8 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 import express from "express";
 import request from "supertest";
 
+import { START_REPLY_NEW } from "../modules/telegram/betaTexts.js";
+
 /**
  * Гейт `/stats` за `chat_id` — єдине, що відділяє власника від будь-кого, хто
  * знає юзернейм бота. Тест саме про це: невідповідний chat_id мусить не
@@ -209,9 +211,9 @@ describe("POST /api/telegram/webhook — гейт /stats", () => {
 
     const text = String(sendMessageMock.mock.calls[0]?.[0]?.text);
     expect(text).toContain("36-й у черзі");
-    // Ознака — саме обіцянка з відповіді «ти в хвилі», а не слово «Готово»:
-    // з ним тепер починаються обидві гілки, і розрізняти по ньому крихко.
-    expect(text).not.toContain("щойно доступ відкриється");
+    // Ознака — обіцянка з відповіді «ти в хвилі», а не окреме слово:
+    // розрізняти гілки по спільній лексиці крихко.
+    expect(text).not.toContain("щойно відкрию доступ");
   });
 
   it("35-й ще потрапляє в хвилю", async () => {
@@ -226,7 +228,7 @@ describe("POST /api/telegram/webhook — гейт /stats", () => {
       .send(startUpdate(777000222));
 
     const text = String(sendMessageMock.mock.calls[0]?.[0]?.text);
-    expect(text).toContain("Готово");
+    expect(text).toBe(START_REPLY_NEW);
     expect(text).not.toContain("черзі");
   });
 

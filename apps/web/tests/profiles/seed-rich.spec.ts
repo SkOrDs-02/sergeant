@@ -103,7 +103,7 @@ async function dismissMigrationAlert(
   hits: number[],
 ): Promise<void> {
   const alert = page.getByRole("button", {
-    name: "Продовжити, перенесу пізніше",
+    name: "Перенести пізніше",
   });
   if (!(await alert.isVisible().catch(() => false))) return;
   hits.push(daysBack);

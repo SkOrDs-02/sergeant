@@ -225,19 +225,19 @@ describe("ExerciseDetailSheet – honest empty detail (QA 2026-08-23)", () => {
     // Опис має кожна вправа вбудованого каталогу; порожньою лишається
     // тільки вправа, яку людина додала сама.
     render(<ExerciseDetailSheet {...baseProps()} />);
-    expect(screen.getByText(/Опису для цієї вправи немає/)).toBeInTheDocument();
+    expect(screen.getByText(/Опису немає/)).toBeInTheDocument();
   });
 
   it("stays quiet when the exercise actually has a description", () => {
     const ex = makeExercise({ description: "Класична базова вправа" });
     render(<ExerciseDetailSheet {...baseProps({ selected: ex })} />);
-    expect(screen.queryByText(/Опису для цієї вправи немає/)).toBeNull();
+    expect(screen.queryByText(/Опису немає/)).toBeNull();
   });
 
   it("stays quiet when the exercise has photos", () => {
     const ex = makeExercise({ id: ILLUSTRATED_ID });
     render(<ExerciseDetailSheet {...baseProps({ selected: ex })} />);
-    expect(screen.queryByText(/Опису для цієї вправи немає/)).toBeNull();
+    expect(screen.queryByText(/Опису немає/)).toBeNull();
   });
 });
 

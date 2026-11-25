@@ -46,10 +46,10 @@ const BILLING_STATUS_FAILED =
 const BILLING_CANCEL_FAILED =
   "Не вдалося скасувати. Спробуй ще раз за хвилину.";
 // 409 NO_ACTIVE_SUBSCRIPTION: стан у кеші застарів, активної підписки вже нема.
-const BILLING_CANCEL_NOTHING = "Активної підписки, яку можна скасувати, немає.";
+const BILLING_CANCEL_NOTHING = "Активної підписки немає.";
 // 502 PROVIDER_CANCEL_FAILED: платіжний сервіс відмовив, підписка лишилась.
 const BILLING_CANCEL_PROVIDER_FAILED =
-  "Платіжний сервіс не підтвердив скасування. Підписка лишається активною, спробуй ще раз за хвилину.";
+  "Платіжний сервіс не підтвердив скасування, підписка ще діє. Спробуй за хвилину.";
 
 /** Текст помилки скасування за статусом відповіді сервера (`POST /api/billing/cancel`). */
 function cancelErrorMessage(err: unknown): string {
@@ -73,7 +73,7 @@ function manualGrantText(
   premiumName: string,
   periodEnd: string | null,
 ): string {
-  return `${premiumName} надано без підписки, тож скасовувати нічого.${
+  return `${premiumName} надано без підписки, скасовувати нічого.${
     periodEnd ? ` Діє до ${periodEnd}.` : ""
   }`;
 }
@@ -196,8 +196,8 @@ export function PlanSection() {
             <div data-testid="plan-trial-info" className="space-y-1">
               <span className="text-style-label block">Пробний період</span>
               <p className="text-style-body text-text leading-snug">
-                Закінчується {periodEnd}. Після цього підписка стане платною за
-                планом з чекауту, скасуй до цієї дати, якщо передумаєш.
+                Закінчується {periodEnd}, далі підписка стане платною за обраним
+                планом. Скасуй до цієї дати, якщо передумаєш.
               </p>
             </div>
           )}
@@ -291,8 +291,7 @@ export function PlanSection() {
             className="text-style-body text-warning-strong leading-snug"
           >
             Підписка {premiumName} завершилася
-            {periodEnd ? ` ${periodEnd}` : ""}. Можеш поновити її в будь-який
-            момент.
+            {periodEnd ? ` ${periodEnd}` : ""}.
           </p>
         )}
 

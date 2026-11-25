@@ -183,10 +183,9 @@ export function WorkoutTemplatesSection({
   return (
     <div className="space-y-3">
       <div className="text-style-body text-muted leading-relaxed">
-        Шаблони – лише твої: додай назву й послідовність вправ з каталогу. План
-        на головній будується з цих шаблонів. Щоб стартувати тренування зі
-        списку нижче, натисни «Почати» біля шаблону (відкриється журнал з
-        активним тренуванням).
+        Шаблон – це назва й послідовність вправ з каталогу. План на головній
+        береться з шаблонів. «Почати» біля шаблону відкриває журнал з активним
+        тренуванням.
       </div>
 
       {!editingId && (
@@ -430,7 +429,7 @@ export function WorkoutTemplatesSection({
           <EmptyState
             compact
             title="Поки немає шаблонів"
-            description="Створи свій перший, кнопка вище."
+            description="Створи перший кнопкою вище."
           />
         ) : (
           (templates || []).map((t) => (
@@ -490,7 +489,7 @@ export function WorkoutTemplatesSection({
       <ConfirmDialog
         open={confirmDeleteId != null}
         title="Видалити шаблон?"
-        description="Натисни «Повернути» у тості, якщо це була випадкова дія."
+        description="Випадково? Натисни «Повернути» в тості."
         confirmLabel="Видалити"
         cancelLabel="Скасувати"
         danger

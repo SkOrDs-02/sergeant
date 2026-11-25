@@ -171,7 +171,7 @@ export function QuickStartSheet({
         open={open}
         onClose={onClose}
         title="Почати тренування"
-        description="Обери, з чого почати: таймер запуститься після вибору."
+        description="Обери, з чого почати."
         closeLabel="Закрити вибір"
         panelClassName="fizruk-sheet"
         zIndex={90}
@@ -209,7 +209,7 @@ export function QuickStartSheet({
               <div className="flex-1 min-w-0">
                 <div className="text-style-label text-text">За шаблоном</div>
                 <div className="text-style-caption text-subtle mt-0.5">
-                  Готовий набір вправ, старт із заповненим списком.
+                  Готовий набір вправ.
                 </div>
               </div>
             </div>
@@ -226,7 +226,7 @@ export function QuickStartSheet({
                   Підібрати вправи
                 </div>
                 <div className="text-style-caption text-subtle mt-0.5">
-                  Обери вправи зараз і почни, без збереження шаблону.
+                  Обери вправи й почни без шаблону.
                 </div>
               </div>
             </div>
@@ -244,7 +244,7 @@ export function QuickStartSheet({
       description={
         selectedCount > 0
           ? `Позначено: ${selectedCount} · натисни «Почати», щоб запустити таймер.`
-          : "Познач хоча б одну вправу, таймер запуститься після старту."
+          : "Познач хоча б одну вправу."
       }
       closeLabel="Закрити підбір"
       panelClassName="fizruk-sheet"
@@ -305,11 +305,11 @@ export function QuickStartSheet({
         {totalCount === 0 ? (
           <EmptyState
             compact
-            title={q.trim() ? "Нічого не знайшов" : "Каталог поки що порожній"}
+            title={q.trim() ? "Нічого не знайшов" : "Каталог порожній"}
             description={
               q.trim()
                 ? "Спробуй іншу назву або очисти пошук."
-                : "Додай першу вправу кнопкою вище."
+                : "Додай вправу кнопкою вище."
             }
           />
         ) : (

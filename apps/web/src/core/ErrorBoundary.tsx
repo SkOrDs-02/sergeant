@@ -138,7 +138,7 @@ export class ErrorBoundary extends Component<
           </div>
           <h1 className="text-style-title text-text mb-1">Щось пішло не так</h1>
           <p className="text-style-body text-muted mb-4 text-center max-w-xs">
-            Виникла непередбачена помилка. Спробуй перезавантажити сторінку.
+            Перезавантаж сторінку.
           </p>
           {import.meta.env.DEV && (
             <pre className="text-style-code text-danger-strong dark:text-danger mb-4 max-w-lg w-full overflow-auto whitespace-pre-wrap wrap-break-word bg-panel rounded-panel p-3 border border-line">
@@ -151,7 +151,7 @@ export class ErrorBoundary extends Component<
               data-testid="error-request-id"
             >
               <span className="text-style-caption text-muted shrink-0">
-                requestId:
+                Код помилки:
               </span>
               <code className="text-style-code text-text font-mono truncate flex-1">
                 {requestId}
@@ -159,7 +159,7 @@ export class ErrorBoundary extends Component<
               <button
                 type="button"
                 onClick={this.copyRequestId}
-                aria-label="Скопіювати requestId"
+                aria-label="Скопіювати код помилки"
                 className="text-style-label px-2 py-1 rounded-md bg-bg border border-line text-text hover:bg-panel/60 transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-focus/45"
               >
                 {copied ? "Скопійовано" : "Копіювати"}

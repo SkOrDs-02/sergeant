@@ -39,7 +39,7 @@ describe("ServerErrorPage", () => {
   it("renders the description text about reloading", () => {
     render(<ServerErrorPage />);
     expect(
-      screen.getByText(/Сервер тимчасово не зміг обробити запит/i),
+      screen.getByText(/Сервер не зміг обробити запит/i),
     ).toBeInTheDocument();
   });
 

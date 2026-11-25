@@ -171,7 +171,7 @@ describe("useMerchantRuleActions", () => {
     expect(ok).toBe(false);
     expect(result.current.api.merchantRules).toHaveLength(MERCHANT_RULES_LIMIT);
     expect(warning).toHaveBeenCalledWith(
-      `Забагато правил, ліміт ${MERCHANT_RULES_LIMIT}. Прибери зайві в Налаштуваннях, розділ Фінік.`,
+      `Забагато правил (ліміт ${MERCHANT_RULES_LIMIT}). Прибери непотрібні в Налаштуваннях, розділ Фінік.`,
     );
   });
 

@@ -50,7 +50,7 @@ describe("NotFoundPage", () => {
   it("renders the description about the missing page", () => {
     renderNotFound();
     expect(
-      screen.getByText(/Здається, ця адреса вже не існує/i),
+      screen.getByText(/Перевір посилання або повернись на головну/i),
     ).toBeInTheDocument();
   });
 
@@ -79,7 +79,7 @@ describe("NotFoundPage", () => {
   it("renders the hint text about external links", () => {
     renderNotFound();
     expect(
-      screen.getByText(/Якщо ти перейшов сюди із зовнішнього посилання/i),
+      screen.getByText(/Прийшов за зовнішнім посиланням/i),
     ).toBeInTheDocument();
   });
 

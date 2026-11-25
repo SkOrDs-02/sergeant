@@ -238,8 +238,9 @@ export const messagesEn: Partial<{
       moduleFailed: "Module error",
       backToModulePicker: "Back to module picker",
       imageFailed: "Image failed to load",
+      requestIdLabel: "Error code:",
       copyRequestId: "Copy",
-      copyRequestIdAria: "Copy requestId",
+      copyRequestIdAria: "Copy error code",
     },
   },
 
@@ -399,7 +400,7 @@ export const messagesEn: Partial<{
     gridAriaLabel: "Starter modules",
     cta: "Get started",
     emptyHint: "Select at least one module to continue.",
-    lateHint: "You can add more later in settings.",
+    lateHint: "You can change this in settings.",
     haveAccount: "I already have an account",
     taglines: {
       finyk: "Expenses, budgets and trends",

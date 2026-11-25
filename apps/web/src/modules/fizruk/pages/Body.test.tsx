@@ -155,7 +155,7 @@ describe("Body page", () => {
 
   it("shows the trends-collecting placeholder when there are <2 points", () => {
     render(<Body />);
-    expect(screen.getByText("Тренди ще збираються")).toBeInTheDocument();
+    expect(screen.getByText("Графіки ще збираються")).toBeInTheDocument();
   });
 
   // V-10 (fizruk deep audit, 2026-08-07): «Відновлення й фокус» is the

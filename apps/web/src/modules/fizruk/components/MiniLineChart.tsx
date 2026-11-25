@@ -113,7 +113,7 @@ export function MiniLineChart({
         compact
         className="rounded-panel border border-dashed border-line bg-panelHi/50"
         title="Немає числових даних"
-        description={`Додай записи в розділі «Заміри», щоб відстежувати ${metricLabel}.`}
+        description={`Додай записи в розділі «Заміри» і відстежуй ${metricLabel}.`}
       />
     );
   }
@@ -123,7 +123,7 @@ export function MiniLineChart({
         compact
         className="rounded-panel border border-dashed border-line bg-panelHi/50"
         title="Замало точок для лінії"
-        description={`Щоб відстежувати ${metricLabel}, потрібні щонайменше два заміри.`}
+        description={`Для графіка потрібні щонайменше два заміри.`}
       />
     );
   }

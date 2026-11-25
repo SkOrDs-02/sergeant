@@ -128,7 +128,7 @@ export function WeeklyVolumeChart({
           compact
           className="rounded-panel border border-dashed border-line bg-panelHi/50"
           title="Поки без обʼєму за тиждень"
-          description="Заверши тренування з силовими підходами, тут зʼявиться сумарний обʼєм (кг×повторення) по днях."
+          description="Заверши тренування з силовими підходами, і тут зʼявиться обʼєм (кг×повт) по днях."
         />
       </div>
     );

@@ -51,7 +51,7 @@ describe("PendingDeletionScreen", () => {
   // тут, а не з'ясовуватись після відновлення.
   it("попереджає, що відновлення не повертає підписку", () => {
     renderScreen();
-    expect(screen.getByText(/підписку вже скасовано/i)).toBeInTheDocument();
+    expect(screen.getByText(/Підписку скасовано/i)).toBeInTheDocument();
   });
 
   it("«Відновити акаунт» кличе restore і повідомляє про успіх", async () => {

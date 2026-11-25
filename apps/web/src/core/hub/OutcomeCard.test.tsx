@@ -15,17 +15,17 @@ describe("OutcomeCard", () => {
     );
 
     expect(
-      screen.getByRole("heading", { level: 2, name: /живого запису/i }),
+      screen.getByRole("heading", { level: 2, name: /одного запису/i }),
     ).toBeInTheDocument();
-    const selected = screen.getByLabelText(/^Зрозуміти харчування:/i);
+    const selected = screen.getByLabelText(/^Харчування:/i);
     expect(selected).toHaveAttribute("aria-current", "true");
 
     fireEvent.click(
-      screen.getByRole("button", { name: "Відкрити: Зрозуміти харчування" }),
+      screen.getByRole("button", { name: "Відкрити: Харчування" }),
     );
     expect(onOpenModule).toHaveBeenCalledWith("nutrition");
 
-    fireEvent.click(screen.getByLabelText(/Побачити гроші/i));
+    fireEvent.click(screen.getByLabelText(/^Витрати:/i));
     expect(onOpenModule).toHaveBeenCalledWith("finyk");
   });
 

@@ -67,8 +67,8 @@ export function NotificationsSection() {
   const { subscribed: pushSubscribed } = usePushNotifications();
   const backgroundHint = (base: string): string =>
     pushSubscribed
-      ? `${base} Приходить навіть коли застосунок закрито.`
-      : `${base} Щоб приходило при закритому застосунку, увімкни push-сповіщення вище.`;
+      ? `${base} Працює й при закритому застосунку.`
+      : `${base} Щоб працювало при закритому застосунку, увімкни push вище.`;
 
   const { routine, updatePref: updateRoutinePref } = useRoutineState();
 
@@ -147,9 +147,7 @@ export function NotificationsSection() {
       const r = await Notification.requestPermission();
       setPermStatus(r);
       if (r !== "granted") {
-        toastWarning(
-          "Дозволь сповіщення в налаштуваннях браузера, щоб отримувати нагадування.",
-        );
+        toastWarning("Дозволь сповіщення в налаштуваннях браузера.");
       }
     } catch {
       setPermStatus("denied");
@@ -175,9 +173,7 @@ export function NotificationsSection() {
       }
       setPermStatus(perm);
       if (perm !== "granted") {
-        toastWarning(
-          "Без дозволу на сповіщення нагадування не надсилатимуться.",
-        );
+        toastWarning("Без дозволу браузера нагадування не прийдуть.");
         return;
       }
     }
@@ -193,9 +189,7 @@ export function NotificationsSection() {
       }
       setPermStatus(perm);
       if (perm !== "granted") {
-        toastWarning(
-          "Без дозволу на сповіщення нагадування не надсилатимуться.",
-        );
+        toastWarning("Без дозволу браузера нагадування не прийдуть.");
         return;
       }
     }
@@ -274,8 +268,8 @@ export function NotificationsSection() {
           </p>
           <p className="text-style-caption text-muted mt-0.5">
             {pushDailyCap.value === 0
-              ? "Нагадування вимкнені: ні звички, ні тренування, ні Сержант не надсилатимуть сповіщень."
-              : "Якщо приводів більше, обʼєдную їх в одне сповіщення. Жоден не загубиться."}
+              ? "Усі нагадування вимкнено, і від Сержанта теж."
+              : "Якщо приводів більше, обʼєдную їх в одне сповіщення."}
           </p>
           <ChoiceGroup
             size="sm"
@@ -309,9 +303,7 @@ export function NotificationsSection() {
       <SettingsSubGroup variant="bounded" title="Рутина (звички)">
         <ToggleRow
           label="Нагадування про звички"
-          description={backgroundHint(
-            "Спрацьовує у час, вказаний у кожній звичці.",
-          )}
+          description={backgroundHint("У час, заданий у звичці.")}
           checked={routine.prefs?.routineRemindersEnabled === true}
           onChange={handleRoutineToggle}
         />
@@ -322,7 +314,7 @@ export function NotificationsSection() {
         <ToggleRow
           label="Нагадування про тренування"
           description={backgroundHint(
-            "Надсилається о вказаній годині, якщо на сьогодні призначено тренування.",
+            "О вказаній годині, якщо сьогодні є тренування.",
           )}
           checked={monthlyPlan.reminderEnabled}
           onChange={handleFizrukToggle}

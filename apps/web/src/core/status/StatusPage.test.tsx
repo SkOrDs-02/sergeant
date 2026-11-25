@@ -92,7 +92,7 @@ describe("StatusPage", () => {
       expect(row.getAttribute("data-status")).toBe("operational");
     }
     const lastIncident = screen.getByTestId("status-last-incident");
-    expect(lastIncident.textContent).toContain("не зафіксовано");
+    expect(lastIncident.textContent).toContain("інцидентів не було");
   });
 
   it("paints overall degraded when one component is degraded", async () => {
@@ -116,7 +116,9 @@ describe("StatusPage", () => {
       expect(screen.getByTestId("status-ready")).toBeTruthy(),
     );
     const overall = screen.getByTestId("status-overall");
-    expect(overall.textContent).toContain("Часткова деградація");
+    expect(overall.textContent).toContain(
+      "Частина сервісів працює з перебоями",
+    );
     const n8nRow = screen.getByTestId("status-row-n8n");
     expect(n8nRow.getAttribute("data-status")).toBe("degraded");
     const lastIncident = screen.getByTestId("status-last-incident");
@@ -142,7 +144,7 @@ describe("StatusPage", () => {
       expect(screen.getByTestId("status-ready")).toBeTruthy(),
     );
     const overall = screen.getByTestId("status-overall");
-    expect(overall.textContent).toContain("Серйозна проблема");
+    expect(overall.textContent).toContain("Сервіс не працює");
     expect(
       screen.getByTestId("status-row-database").getAttribute("data-status"),
     ).toBe("down");

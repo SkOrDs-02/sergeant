@@ -252,9 +252,9 @@ describe("HabitDetailSheet", () => {
         onClose={vi.fn()}
       />,
     );
-    // The "% за 7 / 30 / 90 д" card collapses to an em-dash when no data.
+    // The "% за 7 / 30 / 90 д" card collapses to an dash when no data.
     const pctLabel = screen.getByText("% за 7 / 30 / 90 д");
-    expect(pctLabel.parentElement!.textContent).toContain("—");
+    expect(pctLabel.parentElement!.textContent).toContain("–");
   });
 
   it("navigates the calendar cursor across a month boundary", () => {

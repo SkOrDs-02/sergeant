@@ -101,9 +101,8 @@ export function DataExportSection() {
   return (
     <SettingsGroup title={settingsSectionTitle("dataExport")}>
       <p className="text-style-body text-subtle leading-snug">
-        Збережи всі свої локальні дані у файл, його потім можна імпортувати
-        назад. Для залогінених користувачів нижче є окремий експорт із серверних
-        даних акаунта.
+        Збережи локальні дані у файл, щоб потім імпортувати назад. Експорт даних
+        акаунта нижче.
       </p>
       <HubBackupPanel className="" />
 
@@ -115,8 +114,8 @@ export function DataExportSection() {
           примітиву: заголовок, пояснення й дії експорту в одній групі. */}
       <SettingsSubGroup variant="bounded" title="Права на дані">
         <p className="text-style-body text-subtle leading-relaxed">
-          Серверний експорт не включає сирі секрети й токени. Видалити акаунт
-          можна у профілі, там зібрані всі дії керування акаунтом.
+          Серверний експорт не включає секрети й токени. Видалити акаунт можна в
+          профілі.
         </p>
         {/* PR-S14: дві кнопки б'ють у `meApi.exportAccount`, який для гостя
               завжди 401. Доти гість натискав їх і отримував помилку — тобто

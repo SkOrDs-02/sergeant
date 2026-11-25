@@ -229,11 +229,13 @@ export function useGroqVoiceInput({
     } catch (err) {
       const name = (err as { name?: string })?.name || "";
       if (name === "NotAllowedError" || name === "SecurityError") {
-        onError?.("Немає дозволу на використання мікрофону.");
+        onError?.(
+          "Немає дозволу на мікрофон. Дай його в налаштуваннях браузера.",
+        );
       } else if (name === "NotFoundError") {
         onError?.("Мікрофон не знайдено.");
       } else {
-        onError?.("Не вдалося отримати доступ до мікрофону.");
+        onError?.("Не вдалося отримати доступ до мікрофона.");
       }
       return;
     }

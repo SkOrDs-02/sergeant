@@ -93,5 +93,5 @@ export function partialCommitMessage(
 ): string {
   const trimmed = reason.trim();
   const sentence = /[.!?…]$/.test(trimmed) ? trimmed : `${trimmed}.`;
-  return `Імпортовано рядків: ${formatNumberUk(committedRows)} з ${formatNumberUk(totalRows)}. Решта не пішла: ${sentence} Натисни «Імпортувати» ще раз, щоб дослати решту.`;
+  return `Імпортовано рядків: ${formatNumberUk(committedRows)} з ${formatNumberUk(totalRows)}. Решта не пішла: ${sentence} Натисни «Імпортувати», щоб дослати решту.`;
 }

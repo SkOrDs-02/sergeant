@@ -53,7 +53,7 @@ describe("BarcodeLookupNotice", () => {
       />,
     );
     expect(screen.getByText("Джерела тимчасово не відповідають")).toBeTruthy();
-    expect(screen.getByText(/не означає, що продукту немає/)).toBeTruthy();
+    expect(screen.getByText(/Продукт може бути в базі/)).toBeTruthy();
     expect(
       screen.queryByRole("button", { name: /Сфотографувати страву/ }),
     ).toBeNull();

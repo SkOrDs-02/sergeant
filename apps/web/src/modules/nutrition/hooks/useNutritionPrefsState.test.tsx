@@ -99,7 +99,7 @@ describe("useNutritionPrefsState", () => {
     expect(patchNutritionPrefs).not.toHaveBeenCalled();
     expect(result.current.prefs).toEqual(INITIAL);
     expect(result.current.prefsStorageErr).toBe(
-      "Дані Їжі ще завантажуються. Спробуй за кілька секунд.",
+      "Дані ще завантажуються, спробуй за мить.",
     );
   });
 

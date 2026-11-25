@@ -97,7 +97,7 @@ describe("RoutineTimeline", () => {
     );
 
     expect(screen.getByRole("alert")).toHaveTextContent(
-      "Не вдалося зберегти дані",
+      "Не вдалося зберегти. Звільни місце",
     );
     expect(screen.getByRole("alert")).not.toHaveTextContent("quota exceeded");
     fireEvent.click(

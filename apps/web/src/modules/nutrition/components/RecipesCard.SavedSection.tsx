@@ -121,9 +121,9 @@ export function SavedSection({
             </div>
           ) : saved.length === 0 ? (
             <div className="text-style-body text-muted">
-              Тут зʼявляться збережені рецепти. Склади страву з продуктів
-              кнопкою «Нова страва» або згенеруй рецепти нижче й натисни
-              «Зберегти».
+              {
+                "Збережені рецепти зʼявляться тут. Склади страву кнопкою «Нова страва» або згенеруй рецепти нижче й натисни «Зберегти»."
+              }
             </div>
           ) : (
             <div className="divide-y divide-line border-y border-line">
@@ -341,7 +341,7 @@ export function SavedSection({
                         {!Array.isArray(r.ingredients) &&
                           !Array.isArray(r.steps) && (
                             <div className="text-style-caption text-muted">
-                              Деталі цього рецепту не збережені.
+                              Деталей рецепта немає.
                             </div>
                           )}
                       </div>

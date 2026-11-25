@@ -60,7 +60,7 @@ describe("ManualExpenseAccountSection: підказка про дату до с�
     render(<ManualExpenseAccountSection {...base} date="2026-10-19" />);
     expect(
       screen.getByText(
-        "Ця витрата раніше за момент, від якого рахується готівка, баланс не зміниться.",
+        "Витрата раніше за початок обліку готівки, баланс не зміниться.",
       ),
     ).toBeInTheDocument();
   });

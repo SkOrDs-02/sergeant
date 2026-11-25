@@ -165,8 +165,8 @@ export function RecoveryFocusCard({
             <div className="mb-3 px-3 py-2 rounded-panel bg-panelHi border border-line flex items-start gap-2">
               <p className="text-style-body text-text leading-snug">
                 {rec.wellbeingMult >= 1.3
-                  ? "Поганий сон або дуже низька енергія, відновлення значно сповільнене."
-                  : "Недостатній сон або низька енергія, відновлення сповільнене."}{" "}
+                  ? "Поганий сон чи дуже низька енергія: відновлення значно повільніше."
+                  : "Мало сну чи низька енергія: відновлення повільніше."}{" "}
                 Мʼязи потребують більше часу перед наступним навантаженням.
               </p>
             </div>

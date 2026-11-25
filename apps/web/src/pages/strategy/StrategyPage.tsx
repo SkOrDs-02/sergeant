@@ -95,9 +95,10 @@ class StrategyApiError extends Error {
 }
 
 function strategyErrorMessage(status: number): string {
-  if (status === 401 || status === 403) return "Сесія завершилась";
-  if (status >= 500) return "Сервер тимчасово недоступний";
-  return "Не вдалося зберегти ціль";
+  if (status === 401 || status === 403)
+    return "Сесія завершилась. Увійди ще раз.";
+  if (status >= 500) return "Сервер тимчасово недоступний. Спробуй пізніше.";
+  return "Не вдалося зберегти ціль. Спробуй ще раз.";
 }
 
 async function fetchGoals(weekStart: string): Promise<StrategicGoal[]> {
@@ -183,7 +184,7 @@ export function StrategyPage({ founderUserId }: StrategyPageProps) {
         setSubmitError(strategyErrorMessage(err.status));
         return;
       }
-      setSubmitError("Не вдалося зберегти ціль");
+      setSubmitError("Не вдалося зберегти ціль. Спробуй ще раз.");
     },
   });
 

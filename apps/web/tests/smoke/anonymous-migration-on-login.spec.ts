@@ -46,7 +46,7 @@ import { completeSignUp } from "./smokeEmailVerification";
 test.use({ storageState: { cookies: [], origins: [] } });
 
 const EXPENSE_TITLE = `ANON→акаунт ${crypto.randomUUID().slice(0, 8)}`;
-const SUCCESS_TOAST_TEXT = "Дані перенесено й безпечно збережено у профілі.";
+const SUCCESS_TOAST_TEXT = "Дані перенесено в профіль.";
 
 /**
  * Розгортає день-групу «Сьогодні» і чекає на текст усередині. Копія

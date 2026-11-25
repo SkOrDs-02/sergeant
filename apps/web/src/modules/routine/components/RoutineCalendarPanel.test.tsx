@@ -305,19 +305,19 @@ describe("RoutineCalendarPanel", () => {
 
     it("припис про один день висить лише в режимі 'day'", () => {
       render(<RoutineCalendarPanel />);
-      expect(screen.queryByText(/Обрано один день/)).not.toBeInTheDocument();
+      expect(screen.queryByText(/Один день\./)).not.toBeInTheDocument();
       cleanup();
 
       dataFixture.mockReturnValue(baseData({ timeMode: "today" }));
       render(<RoutineCalendarPanel />);
-      expect(screen.queryByText(/Обрано один день/)).not.toBeInTheDocument();
+      expect(screen.queryByText(/Один день\./)).not.toBeInTheDocument();
       cleanup();
 
       dataFixture.mockReturnValue(
         baseData({ timeMode: "day", selectedDay: "2026-06-26" }),
       );
       render(<RoutineCalendarPanel />);
-      expect(screen.getByText(/Обрано один день/)).toBeInTheDocument();
+      expect(screen.getByText(/Один день\./)).toBeInTheDocument();
     });
   });
 

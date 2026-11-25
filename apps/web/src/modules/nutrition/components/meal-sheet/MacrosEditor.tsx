@@ -159,8 +159,8 @@ export function MacrosEditor({
           поля, які воно пояснює. */}
       {isLinked && !pendingUnlink && (
         <p className="mt-2 text-style-caption text-subtle leading-relaxed">
-          Рахується з картки продукту на 100 г і масштабується під вагу. Зміни
-          будь-яке поле, і значення зафіксуються для цього запису.
+          Рахується з картки продукту на 100 г за вагою. Зміниш поле, і значення
+          зафіксуються для запису.
         </p>
       )}
       {/*
@@ -174,8 +174,7 @@ export function MacrosEditor({
       {!pickedFood && hasAnyMacro && (
         <p className="mt-2 text-style-caption text-subtle leading-relaxed">
           <span className="text-text font-medium">Вручну</span>: підсумок
-          порції. Значення зафіксовані для цього запису й не масштабуються під
-          вагу.
+          порції. Значення не залежать від ваги.
         </p>
       )}
       {pendingUnlink && (
@@ -189,8 +188,8 @@ export function MacrosEditor({
             Редагувати КБЖВ для «{pickedFood?.name || "продукт"}» вручну?
           </p>
           <p className="text-muted">
-            Значення стануть підсумком порції: зафіксуються для цього запису й
-            більше не масштабуватимуться під вагу чи картку продукту.
+            Значення стануть підсумком порції й більше не залежатимуть від ваги
+            чи картки продукту.
           </p>
           <div className="flex gap-2 pt-1">
             <Button

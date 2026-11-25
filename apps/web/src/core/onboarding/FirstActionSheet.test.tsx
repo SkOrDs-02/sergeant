@@ -3,6 +3,7 @@ import { cleanup, fireEvent, render, screen } from "@testing-library/react";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 import { FirstActionHeroCard } from "./FirstActionSheet";
+import { messages } from "@shared/i18n/uk";
 import { ANALYTICS_EVENTS, trackEvent } from "../observability/analytics";
 import { isFirstActionPending, markFirstActionPending } from "./vibePicks";
 
@@ -62,7 +63,7 @@ describe("FirstActionHeroCard", () => {
 
     expect(screen.getByText("Перший запис")).toBeInTheDocument();
     expect(
-      screen.getByText(/Routine не відкриється автоматично/),
+      screen.getByText(messages.firstAction.subtitleSingle),
     ).toBeInTheDocument();
     expect(screen.getByRole("button", { name: /Рутина/ })).toBeInTheDocument();
     expect(screen.getByRole("button", { name: /Фінік/ })).toBeInTheDocument();
@@ -81,7 +82,9 @@ describe("FirstActionHeroCard", () => {
     render(<FirstActionHeroCard />);
 
     expect(screen.getByText("Перший запис")).toBeInTheDocument();
-    expect(screen.getByText(/порядок не важить/i)).toBeInTheDocument();
+    expect(
+      screen.getByText(messages.firstAction.subtitleMulti),
+    ).toBeInTheDocument();
     expect(screen.getByRole("button", { name: /Фінік/ })).toBeInTheDocument();
   });
 

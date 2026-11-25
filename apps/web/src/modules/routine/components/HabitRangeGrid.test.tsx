@@ -137,7 +137,7 @@ describe("HabitRangeGrid", () => {
         hint="останні 7 днів"
       />,
     );
-    expect(screen.getByText(/немає запланованих звичок/)).toBeInTheDocument();
+    expect(screen.getByText(/Запланованих звичок немає/)).toBeInTheDocument();
     expect(screen.queryByRole("img")).not.toBeInTheDocument();
   });
   it("distinguishes a dated pause from off-schedule days without changing totals", () => {

@@ -111,7 +111,7 @@ describe("NowPile", () => {
   it("порожня купа: один рядок факту без кнопок", () => {
     renderPile([]);
     expect(screen.getByTestId("now-empty")).toHaveTextContent(
-      "Сьогодні все закрито",
+      "На сьогодні все закрито",
     );
     expect(screen.queryByRole("button")).toBeNull();
   });

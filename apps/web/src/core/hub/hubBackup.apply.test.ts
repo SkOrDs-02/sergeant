@@ -366,7 +366,7 @@ describe("applyHubBackupPayload — режими і чесний результ�
     blockKind = "sync";
     await expect(
       applyHubBackupPayload(validPayload({ finyk: {} })),
-    ).rejects.toThrow(/Чекаю на синхронізацію з акаунтом/);
+    ).rejects.toThrow(/Спершу потрібна синхронізація з акаунтом/);
     expect(persistFinykNormalizedToSqlite).not.toHaveBeenCalled();
     expect(applyFizrukFullBackupPayload).not.toHaveBeenCalled();
   });

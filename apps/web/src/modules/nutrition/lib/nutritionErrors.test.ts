@@ -19,14 +19,14 @@ describe("nutritionErrors", () => {
 
     it("maps 413 to the oversized-photo instruction", () => {
       expect(nutritionFriendlyApiError(413)).toBe(
-        "Занадто велике фото. Стисни/обріж і спробуй ще раз.",
+        "Фото завелике. Обріж або стисни і спробуй ще раз.",
       );
     });
 
     it("maps 401 to a friendly sign-in prompt instead of the generic access-denied text", () => {
       const msg = nutritionFriendlyApiError(401, "nope");
       expect(msg).not.toBe(friendlyApiError(401, "nope"));
-      expect(msg).toMatch(/обліковим записом/);
+      expect(msg).toMatch(/обліковий запис/);
     });
 
     it("delegates other statuses to the shared friendly mapper", () => {
@@ -44,7 +44,7 @@ describe("nutritionErrors", () => {
         body: { error: "payload too large" },
       });
       expect(formatNutritionError(err, "Помилка аналізу фото")).toMatch(
-        /Занадто велике фото/,
+        /Фото завелике/,
       );
     });
 

@@ -39,7 +39,7 @@ export function DashboardSection() {
           // Не помилка, а заблокована дія: користувач нічого не зламав і
           // нічого не «повторює» — він просто впорядковує дашборд далі.
           // `warning` без дії, за tone-таблицею toast-policy.
-          toast.warning("Щонайменше один модуль має бути активним");
+          toast.warning("Залиш увімкненим хоча б один модуль");
           return prev;
         }
         const next = isActive
@@ -72,16 +72,15 @@ export function DashboardSection() {
         </div>
         <ToggleRow
           label="Порада й тиждень"
-          description="Згорнутий блок із порадою Сержанта та звітом тижня внизу головної."
+          description="Порада Сержанта і звіт тижня внизу головної."
           checked={showInsights !== false}
           onChange={setShowInsights}
         />
       </SettingsSubGroup>
       <SettingsSubGroup variant="bounded" title="Розділи на головній">
         <p className="text-style-body text-subtle leading-snug">
-          Які розділи показувати на головній. Неактивні розділи лишаються в
-          панелі модулів приглушеними і не потрапляють у «Закрито сьогодні».
-          Принаймні один має залишатися активним.
+          Вимкнені лишаються в панелі модулів, але не потрапляють у «Закрито
+          сьогодні».
         </p>
         {/* Огляд 2026-09-04: тут стояв нативний чекбокс 16px, тоді як
             решта «увімкнути/вимкнути» на сторінці — `Switch`. Один

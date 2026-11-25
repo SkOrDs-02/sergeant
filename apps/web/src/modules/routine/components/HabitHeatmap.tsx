@@ -290,8 +290,7 @@ export function HabitHeatmap({
       </SectionHeading>
 
       <div className="mb-2 text-style-body text-subtle">
-        {caption ??
-          `Відкривається на сьогодні, гортай ліворуч, щоб побачити історію за ${historyLabel}.`}
+        {caption ?? `Сьогодні праворуч, історія за ${historyLabel} ліворуч.`}
       </div>
 
       <div ref={viewportRef} className="overflow-x-auto -mx-1 px-1 pb-1">

@@ -209,7 +209,7 @@ describe("titleFor", () => {
     expect(titleFor("create_transaction", "completed")).toBe(
       "Операцію записано",
     );
-    expect(titleFor("log_water", "completed")).toBe("Воду залоговано");
+    expect(titleFor("log_water", "completed")).toBe("Воду записано");
     expect(titleFor("start_workout", "completed")).toBe(
       "Тренування стартувало",
     );

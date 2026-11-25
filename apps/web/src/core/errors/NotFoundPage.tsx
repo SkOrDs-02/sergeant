@@ -37,7 +37,7 @@ export function NotFoundPage({ homePath = "/" }: NotFoundPageProps) {
         // The empty state is the entire 404 surface, so it has to carry the
         // page heading — otherwise this route ships with no heading at all.
         titleAs="h1"
-        description="Здається, ця адреса вже не існує. Перевір посилання або повернись на головну, звідти можна знайти потрібний модуль."
+        description="Перевір посилання або повернись на головну."
         primaryAction={
           <Button
             type="button"
@@ -65,7 +65,7 @@ export function NotFoundPage({ homePath = "/" }: NotFoundPageProps) {
         // §2 забороняє «ми», але тут це не голос застосунку, а жива команда,
         // до якої людину і просять написати. 1-а однини («напиши мені, я
         // полагоджу») обіцяла б, що битий лінк лагодить сам застосунок.
-        hint="Якщо ти перейшов сюди із зовнішнього посилання, напиши нам, ми його полагодимо."
+        hint="Прийшов за зовнішнім посиланням? Напиши нам, ми його полагодимо."
       />
     </main>
   );

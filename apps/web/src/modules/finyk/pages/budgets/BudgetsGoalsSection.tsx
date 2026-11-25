@@ -108,7 +108,7 @@ export function BudgetsGoalsSection({
         <EmptyState
           compact
           title="Поки немає цілей"
-          description="Постав ціль накопичення і стеж за прогресом."
+          description="Постав ціль накопичення."
         />
       )}
       {goalsOpen &&

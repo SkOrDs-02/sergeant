@@ -372,7 +372,7 @@ describe("PricingPage (Phase 7 D3 — Free + Premium)", () => {
       });
 
       const [msg, duration, action] = toastSuccessMock.mock.calls[0]!;
-      expect(String(msg)).toMatch(/Підписку активовано/i);
+      expect(String(msg)).toMatch(/Premium активовано/i);
       expect(duration).toBeUndefined();
       expect(action).toEqual(
         expect.objectContaining({

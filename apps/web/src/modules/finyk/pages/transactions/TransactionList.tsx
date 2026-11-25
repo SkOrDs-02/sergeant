@@ -346,8 +346,8 @@ export function TransactionList({
             // "За", where Ukrainian accusative matches the nominative form for
             // masculine inanimate nouns, so no declension juggling is needed.
             monthLabel
-              ? `За ${monthLabel} операцій поки немає. Попередні місяці на місці, гортай назад або додай запис вручну.`
-              : "Операцій за цей місяць поки немає. Попередні місяці на місці, гортай назад або додай запис вручну."
+              ? `За ${monthLabel} операцій немає. Гортай назад або додай запис вручну.`
+              : "За цей місяць операцій немає. Гортай назад або додай запис вручну."
           }
           action={
             onGoPreviousMonth ? (
@@ -373,7 +373,7 @@ export function TransactionList({
       <div className="rounded-panel border border-dashed border-line bg-panel">
         <EmptyState
           title="Немає операцій"
-          description="Зміни місяць, фільтр або переключи «приховані», якщо вони є."
+          description="Зміни місяць чи фільтр або покажи приховані."
         />
       </div>
     );

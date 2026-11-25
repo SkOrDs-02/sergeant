@@ -2,7 +2,7 @@ import type { ButtonHTMLAttributes } from "react";
 import { cn } from "@shared/lib/ui/cn";
 
 /** Доступне імʼя заблокованого кружка майбутнього дня. */
-export const FUTURE_DAY_LABEL = "Відмітити можна в сам день, він ще попереду";
+export const FUTURE_DAY_LABEL = "Відмітити можна в сам день";
 
 /** Кружок — стан звички; 22px всередині зони натиску 44×44. */
 export function HabitStateButton({

@@ -57,7 +57,7 @@ describe("MyFoodsSheet", () => {
     db.listUserFoods.mockResolvedValue([]);
     renderSheet();
     expect(
-      await screen.findByText(/Створити продукт можна/),
+      await screen.findByText(/Створи при записі прийому/),
     ).toBeInTheDocument();
   });
 
@@ -66,9 +66,7 @@ describe("MyFoodsSheet", () => {
     fireEvent.click(
       await screen.findByRole("button", { name: "Редагувати Тестовий хліб" }),
     );
-    expect(
-      screen.getByText("Записи, які вже є, не зміняться."),
-    ).toBeInTheDocument();
+    expect(screen.getByText("Наявні записи не зміняться.")).toBeInTheDocument();
     fireEvent.change(screen.getByLabelText("Ккал / 100 г"), {
       target: { value: "300" },
     });
@@ -99,9 +97,7 @@ describe("MyFoodsSheet", () => {
       await screen.findByRole("button", { name: "Видалити Тестовий хліб" }),
     );
     expect(db.deleteFood).not.toHaveBeenCalled();
-    expect(
-      screen.getByText(/Записи в щоденнику лишаться з їхніми числами/),
-    ).toBeInTheDocument();
+    expect(screen.getByText(/Записи в щоденнику лишаться/)).toBeInTheDocument();
     fireEvent.click(screen.getByRole("button", { name: "Видалити" }));
     await waitFor(() => expect(db.deleteFood).toHaveBeenCalledWith("food_1"));
   });

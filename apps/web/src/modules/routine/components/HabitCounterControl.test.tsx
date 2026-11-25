@@ -90,7 +90,9 @@ describe("HabitCounterControl", () => {
     expect(
       screen.getByRole("button", { name: "Відняти: Вода" }),
     ).toBeDisabled();
-    expect(screen.getByRole("button", { name: /ще попереду/ })).toBeDisabled();
+    expect(
+      screen.getByRole("button", { name: /Відмітити можна в сам день/ }),
+    ).toBeDisabled();
   });
 });
 

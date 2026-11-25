@@ -46,7 +46,7 @@ export function useRoutineRemindersToggle(
       if (perm === "install-required") return perm;
       if (perm !== "granted") {
         toastWarning(
-          "Без дозволу на сповіщення нагадування не надсилатимуться. Дозволь сповіщення у налаштуваннях браузера.",
+          "Нагадування не прийдуть без дозволу. Дозволь сповіщення в налаштуваннях браузера.",
         );
         return perm;
       }

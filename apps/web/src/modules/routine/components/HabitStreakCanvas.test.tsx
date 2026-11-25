@@ -201,7 +201,7 @@ describe("HabitStreakCanvas", () => {
         todayKey={TODAY}
       />,
     );
-    expect(screen.getByText(/Серія ще не почалась/)).toBeInTheDocument();
+    expect(screen.getByText(/Серії ще немає/)).toBeInTheDocument();
     // Відступ до легенди такий самий, як після полотна (`mb-4`).
     expect(screen.getByText(/Відміток ще немає/).className).toContain("mb-4");
   });
@@ -286,7 +286,7 @@ describe("HabitStreakCanvas: заморозки в запасі", () => {
     );
     expect(
       screen.getByText(
-        "Заморозка зберігає серію: 1 на старті і ще 1 за кожні 7 виконань, до 4. Два дні поспіль не прощаються.",
+        "Заморозка рятує серію: 1 на старті, ще 1 за кожні 7 виконань, до 4. Два дні поспіль не прощаються.",
       ),
     ).toBeInTheDocument();
   });

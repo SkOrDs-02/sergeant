@@ -144,7 +144,7 @@ export const SearchResults = forwardRef<HTMLDivElement, SearchResultsProps>(
         {!showRecents && query.trim().length < 2 && results.length === 0 && (
           <EmptyState
             title="Глобальний пошук"
-            description={`Операції, тренування, звички, їжа. Все в одному місці. ${modK}, щоб відкрити звідусіль.`}
+            description={`Операції, тренування, звички, їжа. ${modK} відкриває пошук звідусіль.`}
           />
         )}
 

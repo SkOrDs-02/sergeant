@@ -214,7 +214,7 @@ export function WorkoutFinishSheets({
                 id="fizruk-wellbeing-hint"
                 className="text-style-caption text-subtle leading-relaxed"
               >
-                Оціни від 1 до 5, можна пропустити.
+                Оціни від 1 до 5.
               </p>
               <div>
                 <div

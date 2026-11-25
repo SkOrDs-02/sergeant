@@ -156,9 +156,7 @@ describe("ModuleErrorBoundary", () => {
       // модуля працюють» (sectionFailed) тут бути не може.
       expect(screen.getByText("Помилка в модулі")).toBeInTheDocument();
       expect(
-        screen.queryByText(
-          "Ця секція впала, але інші частини модуля працюють.",
-        ),
+        screen.queryByText("Цей блок не відкрився, решта модуля працює."),
       ).not.toBeInTheDocument();
       expect(screen.getByText("До вибору модуля")).toBeInTheDocument();
 

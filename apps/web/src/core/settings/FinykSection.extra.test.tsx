@@ -346,7 +346,7 @@ describe("FinykSection extra branches", () => {
     fireEvent.click(screen.getByText("Підключити Monobank"));
     expect(
       await screen.findByText(
-        "Токен Monobank недійсний або закінчився. Онови токен.",
+        "Токен Monobank недійсний або прострочений. Встав новий.",
       ),
     ).toBeInTheDocument();
   });

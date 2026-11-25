@@ -242,7 +242,7 @@ export function RoutineCalendarPanel({
         {listIsEmpty && hasListFilter && (
           <EmptyState
             title="Нічого не знайшов"
-            description={`За цим фільтром подій немає${hasNoHabits ? " (і звичок ще немає)" : ""}.`}
+            description={`Подій за цим фільтром немає${hasNoHabits ? " (і звичок ще немає)" : ""}.`}
             action={
               <Button
                 tone="neutral"

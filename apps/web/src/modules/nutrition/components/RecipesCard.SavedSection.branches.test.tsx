@@ -62,7 +62,7 @@ describe("SavedSection", () => {
       />,
     );
     expect(screen.getByRole("alert")).toBeTruthy();
-    expect(screen.queryByText(/Тут зʼявляться/)).toBeNull();
+    expect(screen.queryByText(/зʼявляться тут/)).toBeNull();
     fireEvent.click(screen.getByRole("button", { name: "Спробувати ще раз" }));
     expect(onRetry).toHaveBeenCalled();
   });

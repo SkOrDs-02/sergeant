@@ -134,7 +134,7 @@ export function BudgetsLimitsSection({
         <EmptyState
           compact
           title="Поки немає лімітів"
-          description="Встанови ліміт витрат на категорію, щоб не виходити за бюджет."
+          description="Встанови ліміт витрат на категорію."
         />
       )}
       {limitsOpen &&
