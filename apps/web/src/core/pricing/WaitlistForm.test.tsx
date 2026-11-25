@@ -61,6 +61,15 @@ vi.mock("../observability/analytics", async () => {
   };
 });
 
+// Сесія за замовчуванням відсутня (гість); тести prefill-у підставляють
+// залогіненого користувача через `authState.value`.
+const authState: {
+  value: { status: string; user: { id: string; email: string } | null } | null;
+} = { value: null };
+vi.mock("../auth/AuthContext", () => ({
+  useAuthOptional: () => authState.value,
+}));
+
 import { WaitlistForm } from "./WaitlistForm";
 
 beforeEach(() => {
@@ -69,6 +78,7 @@ beforeEach(() => {
   toastErrorMock.mockReset();
   toastInfoMock.mockReset();
   trackEventMock.mockReset();
+  authState.value = null;
 });
 
 afterEach(() => {
@@ -254,5 +264,61 @@ describe("WaitlistForm — server error mapping", () => {
     // top-level банер не повинен зʼявитись (`bound > 0 && topLevel === null`
     // у `applyServerError`).
     expect(screen.queryByTestId("waitlist-server-error")).toBeNull();
+  });
+});
+
+describe("WaitlistForm — email сесії (bv-waitlist-email-prefill)", () => {
+  function emailInput(): HTMLInputElement {
+    return screen.getByLabelText("Email") as HTMLInputElement;
+  }
+
+  it("гість бачить порожнє поле email", () => {
+    authState.value = { status: "unauthenticated", user: null };
+    render(<WaitlistForm source="pricing_page" />);
+    expect(emailInput().value).toBe("");
+  });
+
+  it("залогіненому підставляє email сесії, поле редаговане, submit бере його", async () => {
+    authState.value = {
+      status: "authenticated",
+      user: { id: "u1", email: "me@example.com" },
+    };
+    submitMock.mockResolvedValue({ ok: true, created: true });
+    render(<WaitlistForm source="pricing_page" />);
+
+    expect(emailInput().value).toBe("me@example.com");
+    expect(emailInput().disabled).toBe(false);
+
+    fireEvent.click(screen.getByRole("button", { name: /Підписатись/ }));
+    await waitFor(() => expect(submitMock).toHaveBeenCalledTimes(1));
+    expect(submitMock.mock.calls[0]?.[0]).toMatchObject({
+      email: "me@example.com",
+    });
+  });
+
+  it("сесія, що прийшла після першого render-у, доливає email у порожнє поле", async () => {
+    authState.value = { status: "loading", user: null };
+    const { rerender } = render(<WaitlistForm source="pricing_page" />);
+    expect(emailInput().value).toBe("");
+
+    authState.value = {
+      status: "authenticated",
+      user: { id: "u1", email: "late@example.com" },
+    };
+    rerender(<WaitlistForm source="pricing_page" />);
+    await waitFor(() => expect(emailInput().value).toBe("late@example.com"));
+  });
+
+  it("не перезаписує email, який людина вже ввела до приходу сесії", async () => {
+    authState.value = { status: "loading", user: null };
+    const { rerender } = render(<WaitlistForm source="pricing_page" />);
+    fillEmail("typed@example.com");
+
+    authState.value = {
+      status: "authenticated",
+      user: { id: "u1", email: "me@example.com" },
+    };
+    rerender(<WaitlistForm source="pricing_page" />);
+    await waitFor(() => expect(emailInput().value).toBe("typed@example.com"));
   });
 });
