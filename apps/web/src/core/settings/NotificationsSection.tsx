@@ -203,9 +203,9 @@ export function NotificationsSection() {
     unsupported: "Не підтримується",
   };
   const permColors: Record<PermStatus, string> = {
-    granted: "text-success-strong dark:text-success",
-    denied: "text-danger-strong dark:text-danger",
-    default: "text-warning-strong dark:text-warning",
+    granted: "text-success-strong",
+    denied: "text-danger-strong",
+    default: "text-warning-strong",
     unsupported: "text-muted",
   };
   const permLabel = permLabels[permStatus] ?? "Невідомо";
@@ -284,7 +284,7 @@ export function NotificationsSection() {
           <p
             className={
               pushDailyCap.loaded
-                ? "text-style-caption text-danger-strong dark:text-danger"
+                ? "text-style-caption text-danger-strong"
                 : "text-style-caption text-muted"
             }
             role={pushDailyCap.loaded ? "alert" : "status"}

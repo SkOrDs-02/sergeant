@@ -40,10 +40,7 @@ export function MonoPushSetting({
         />
       )}
       {showMono && pref.loaded && pref.error && (
-        <p
-          className="text-style-caption text-danger-strong dark:text-danger"
-          role="alert"
-        >
+        <p className="text-style-caption text-danger-strong" role="alert">
           {pref.error}
         </p>
       )}
@@ -56,10 +53,7 @@ export function MonoPushSetting({
         />
       )}
       {showAlerts && alertsPref?.loaded && alertsPref.error && (
-        <p
-          className="text-style-caption text-danger-strong dark:text-danger"
-          role="alert"
-        >
+        <p className="text-style-caption text-danger-strong" role="alert">
           {alertsPref.error}
         </p>
       )}
