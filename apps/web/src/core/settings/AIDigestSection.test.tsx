@@ -97,13 +97,13 @@ describe("AIDigestSection: усе, що Сержант робить сам (PR-S
     stubNotification("granted");
     pushState.subscribed = false;
     renderSettingsSection(<AIDigestSection />);
-    expect(screen.getByText(/увімкни push у «Сповіщеннях»/)).toBeTruthy();
+    expect(screen.getByText(/Увімкни його у «Сповіщеннях»/)).toBeTruthy();
   });
 
   it("з push-підпискою підказки про push немає", () => {
     stubNotification("granted");
     renderSettingsSection(<AIDigestSection />);
-    expect(screen.queryByText(/увімкни push у «Сповіщеннях»/)).toBeNull();
+    expect(screen.queryByText(/Увімкни його у «Сповіщеннях»/)).toBeNull();
   });
 });
 

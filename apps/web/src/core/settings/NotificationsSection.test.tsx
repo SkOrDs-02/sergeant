@@ -677,9 +677,7 @@ describe("NotificationsSection", () => {
         const toggle = await screen.findByRole("switch", { name: NAME });
         fireEvent.click(toggle);
         expect(
-          await screen.findByText(
-            "Не вдалося зберегти налаштування. Спробуй ще раз.",
-          ),
+          await screen.findByText("Не вдалося зберегти. Спробуй ще раз."),
         ).toBeInTheDocument();
         expect(screen.getByRole("switch", { name: NAME })).toBeChecked();
       });

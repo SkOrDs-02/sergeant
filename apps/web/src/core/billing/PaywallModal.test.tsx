@@ -144,9 +144,7 @@ describe("PaywallModal", () => {
     expect(screen.queryByText(/trial/i)).toBeNull();
     expect(screen.queryByText(/привʼязки картки/i)).toBeNull();
     // Решта дефолтних булітів лишається на місці.
-    expect(
-      screen.getByText(/Сержант без тижневого ліміту/),
-    ).toBeInTheDocument();
+    expect(screen.getByText(/Сержант без ліміту/)).toBeInTheDocument();
     expect(screen.getByText(/PDF-звіти/)).toBeInTheDocument();
   });
 

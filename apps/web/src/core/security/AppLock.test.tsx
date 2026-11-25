@@ -218,7 +218,7 @@ describe("AppLock", () => {
     "1234".split("").forEach(pressDigit);
     fireEvent.click(screen.getByRole("button", { name: "Далі" }));
     // confirm step
-    await screen.findByText("Введи PIN ще раз для підтвердження");
+    await screen.findByText("Введи PIN ще раз");
     "1234".split("").forEach(pressDigit);
     fireEvent.click(screen.getByRole("button", { name: "Підтвердити" }));
     await waitFor(() => expect(onSavePin).toHaveBeenCalledWith("1234"));
@@ -233,7 +233,7 @@ describe("AppLock", () => {
     renderLock({ state: "setup", onSavePin, onSetupDone });
     "1234".split("").forEach(pressDigit);
     fireEvent.click(screen.getByRole("button", { name: "Далі" }));
-    await screen.findByText("Введи PIN ще раз для підтвердження");
+    await screen.findByText("Введи PIN ще раз");
     "1234".split("").forEach(pressDigit);
     fireEvent.click(screen.getByRole("button", { name: "Підтвердити" }));
     await waitFor(() =>
@@ -248,7 +248,7 @@ describe("AppLock", () => {
     renderLock({ state: "setup" });
     "1234".split("").forEach(pressDigit);
     fireEvent.click(screen.getByRole("button", { name: "Далі" }));
-    await screen.findByText("Введи PIN ще раз для підтвердження");
+    await screen.findByText("Введи PIN ще раз");
     "9999".split("").forEach(pressDigit);
     fireEvent.click(screen.getByRole("button", { name: "Підтвердити" }));
     await waitFor(() =>
@@ -276,7 +276,7 @@ describe("AppLock", () => {
     renderLock({ state: "setup" });
     "1234".split("").forEach(pressDigit);
     fireEvent.click(screen.getByRole("button", { name: "Далі" }));
-    await screen.findByText("Введи PIN ще раз для підтвердження");
+    await screen.findByText("Введи PIN ще раз");
     fireEvent.click(screen.getByRole("button", { name: "Назад" }));
     await screen.findByText("Введи 4–6 цифр");
   });
@@ -297,7 +297,7 @@ describe("AppLock", () => {
     renderLock({ state: "setup", onSetupCancel });
     "1234".split("").forEach(pressDigit);
     fireEvent.click(screen.getByRole("button", { name: "Далі" }));
-    await screen.findByText("Введи PIN ще раз для підтвердження");
+    await screen.findByText("Введи PIN ще раз");
     fireEvent.click(screen.getByRole("button", { name: "Скасувати" }));
     expect(onSetupCancel).toHaveBeenCalled();
   });

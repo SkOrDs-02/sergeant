@@ -94,7 +94,7 @@ describe("FizrukSection", () => {
       expect(toggle).toBeDisabled();
       expect(toggle).not.toBeChecked();
       expect(
-        screen.getByText(/Цей браузер не вміє тримати екран увімкненим/),
+        screen.getByText(/Браузер не тримає екран увімкненим/),
       ).toBeInTheDocument();
     });
   });
