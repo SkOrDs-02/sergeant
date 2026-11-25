@@ -216,7 +216,7 @@ describe("GeneratorCard", () => {
     );
 
     expect(
-      screen.getByText("Показати діагностику (raw відповідь AI)"),
+      screen.getByText("Показати діагностику (сира відповідь ШІ)"),
     ).toBeInTheDocument();
     expect(screen.getByText("raw ai payload")).toBeInTheDocument();
   });
@@ -241,7 +241,7 @@ describe("GeneratorCard", () => {
         />,
       );
       expect(
-        screen.queryByText("Показати діагностику (raw відповідь AI)"),
+        screen.queryByText("Показати діагностику (сира відповідь ШІ)"),
       ).toBeNull();
       expect(screen.queryByText("raw ai payload")).toBeNull();
       // Сам порожній стан лишається — ховаємо діагностику, не підказку.

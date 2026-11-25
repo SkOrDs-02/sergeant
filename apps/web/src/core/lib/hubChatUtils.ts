@@ -159,7 +159,7 @@ export function friendlyApiError(
   if (status === 429 && code === "AI_QUOTA_PRESET" && m) {
     return m;
   }
-  if (status === 429 && /ліміт AI|AI_QUOTA|квот/i.test(m)) {
+  if (status === 429 && /ліміт (?:AI|ШІ)|AI_QUOTA|квот/i.test(m)) {
     return "Тижневий ліміт Сержанта вичерпано. Оновиться в понеділок.";
   }
   // Шлюзові збої приходять від проксі, а не від застосунку, тож тіла з

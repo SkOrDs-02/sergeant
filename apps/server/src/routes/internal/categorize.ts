@@ -206,7 +206,7 @@ export function createCategorizeInternalRouter(): Router {
       !providerUpstreamReady("readonly")
     ) {
       throw new AppError(
-        "AI-помічник тимчасово недоступний. Спробуй пізніше.",
+        "ШІ-помічник тимчасово недоступний. Спробуй пізніше.",
         { status: 503, code: "ANTHROPIC_KEY_MISSING" },
       );
     }

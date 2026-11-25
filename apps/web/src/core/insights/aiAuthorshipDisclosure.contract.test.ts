@@ -61,10 +61,12 @@ describe("розкриття авторства AI", () => {
       sergeantMessages.weeklyDigestAiSignature,
       coreMessages.hub.chatEmptyAiDisclosure,
     ];
+    // Рішення власника 2026-11-25: у копії термін «ШІ», не «AI». Регекс
+    // приймає обидва, щоб пін тримав зміст (автор названий), а не написання.
     for (const line of disclosures) {
-      expect(line).toMatch(/AI/);
+      expect(line).toMatch(/ШІ|AI/);
     }
     // Бейдж впевненості — інша вісь; він не має підмінити собою розкриття.
-    expect(sergeantMessages.insightAssumptionBadge).not.toMatch(/AI/);
+    expect(sergeantMessages.insightAssumptionBadge).not.toMatch(/ШІ|AI/);
   });
 });

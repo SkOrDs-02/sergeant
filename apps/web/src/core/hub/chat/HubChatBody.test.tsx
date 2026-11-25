@@ -70,12 +70,12 @@ describe("HubChatBody", () => {
         msg("greet", "assistant", "Привіт! Я твій особистий асистент."),
       ],
     });
-    expect(screen.getByText(/Відповідає AI, не людина/)).toBeInTheDocument();
+    expect(screen.getByText(/Відповідає ШІ, не людина/)).toBeInTheDocument();
   });
 
   it("shows the AI disclosure while the assistant is answering", () => {
     renderBody({ messages: [msg("1", "user", "Питання")], loading: true });
-    expect(screen.getByText(/Відповідає AI, не людина/)).toBeInTheDocument();
+    expect(screen.getByText(/Відповідає ШІ, не людина/)).toBeInTheDocument();
   });
 
   // Регресія з browser-QA 2026-09-02: стрічка лежить у статичному

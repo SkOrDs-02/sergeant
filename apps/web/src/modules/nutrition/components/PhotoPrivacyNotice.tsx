@@ -17,7 +17,7 @@ import { PhotoPrivacyNotice as SharedPhotoPrivacyNotice } from "@shared/componen
 export const PHOTO_PRIVACY_ACK_KEY = "sergeant.nutrition.photoPrivacyAck.v1";
 
 const NUTRITION_PHOTO_NOTICE_TEXT =
-  "Щоб визначити КБЖВ, фото відправляється на розпізнавання до зовнішнього AI-сервісу. На відміну від тексту, фото приховати частково не вийде: їде весь кадр. Перевір, що в нього не потрапило зайве.";
+  "Щоб визначити КБЖВ, фото відправляється на розпізнавання до зовнішнього сервісу ШІ. На відміну від тексту, фото приховати частково не вийде: їде весь кадр. Перевір, що в нього не потрапило зайве.";
 
 export function PhotoPrivacyNotice({
   onAck,

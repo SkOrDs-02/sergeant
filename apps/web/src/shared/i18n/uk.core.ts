@@ -313,7 +313,7 @@ export const coreMessages = {
     // людину повідомляють, що вона взаємодіє з AI, не пізніше першого
     // контакту, тож рядок стоїть над стрічкою чату безумовно (`HubChatBody`).
     chatEmptyAiDisclosure:
-      "Відповідає AI, не людина. Може помилятися, важливе перевіряй.",
+      "Відповідає ШІ, не людина. Може помилятися, важливе перевіряй.",
 
     // HubReports per-domain cards (NutritionCard / RoutineCard) — shared
     // inline labels for the lazy-loaded report charts.

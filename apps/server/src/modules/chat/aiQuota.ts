@@ -384,7 +384,7 @@ export async function assertAiQuota(
       /* ignore */
     }
     res.status(429).json({
-      error: "AI-квота вимкнена для цього типу доступу.",
+      error: "Квота ШІ вимкнена для цього типу доступу.",
       code: "AI_QUOTA",
     });
     return false;
@@ -430,7 +430,7 @@ export async function assertAiQuota(
         isPresetBudget
           ? {
               error:
-                "Ліміт AI-заповнення профілю на цей тиждень вичерпано. Дозаповни вручну в Профілі, це безкоштовно.",
+                "Ліміт заповнення профілю через ШІ на цей тиждень вичерпано. Дозаповни вручну в Профілі, це безкоштовно.",
               code: "AI_QUOTA_PRESET",
               limit: result.limit,
             }
@@ -836,7 +836,7 @@ function rejectCircuitOpen(res: Response): boolean {
     /* ignore */
   }
   res.status(503).json({
-    error: "Сховище AI-квоти тимчасово недоступне. Спробуй пізніше.",
+    error: "Сховище квоти ШІ тимчасово недоступне. Спробуй пізніше.",
     code: "AI_QUOTA_DB_DOWN",
     retryAfterSec,
   });

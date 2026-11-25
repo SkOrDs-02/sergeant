@@ -247,7 +247,7 @@ export default async function analyzeReceiptHandler(
     !canUseAnthropic
   ) {
     throw new ExternalServiceError(
-      "AI-розпізнавання чеків тимчасово недоступне. Спробуй пізніше.",
+      "Розпізнавання чеків через ШІ тимчасово недоступне. Спробуй пізніше.",
       { status: 503, code: "RECEIPT_VISION_UNAVAILABLE" },
     );
   }

@@ -99,7 +99,7 @@ export function ModulesSection() {
         >
           <p className={`${label} text-nutrition`}>модуль Харчування</p>
           <h3 className={`${title} group-hover:underline`}>Їжа</h3>
-          <p className={body}>КБЖВ, коли половини продуктів немає в базах.</p>
+          <p className={body}>КБЖВ, навіть коли продукту немає в базі.</p>
           <p className="mt-3 text-xs leading-relaxed">
             У звʼязках: їжа і виконання звичок
           </p>
@@ -188,8 +188,7 @@ export function ConnectionsSection() {
         Звʼязки, які він помічає
       </h2>
       <p className="mt-4 max-w-2xl leading-relaxed text-muted">
-        Окремі трекери показують цифри. Застосунок порівнює записи з усіх сфер і
-        показує звʼязки між ними. Коли даних замало, мовчить.
+        Він порівнює записи з усіх чотирьох сфер. Коли даних замало, мовчить.
       </p>
 
       <ConnectionExamples />
