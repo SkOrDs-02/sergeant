@@ -17,6 +17,8 @@ import { webhookSecretHash } from "./crypto.js";
 import { emitSecurityEvent } from "../../obs/securityEvents.js";
 import { elapsedMs } from "../../lib/timing.js";
 import { formatNumberUk } from "@sergeant/shared";
+import { CURRENCY } from "@sergeant/finyk-domain/constants";
+import { foreignAccountCurrencyCode } from "@sergeant/finyk-domain/lib/foreignAccountTx";
 
 /**
  * POST /api/mono/webhook/:secret? — public Monobank delivery endpoint.
@@ -60,6 +62,28 @@ import { formatNumberUk } from "@sergeant/shared";
  * the BIGINT columns (Postgres would coerce them to text and pgcrypto
  * helpers downstream would explode).
  */
+/**
+ * Валюта рахунку для stub-запису, створюваного вебхуком (`mono_account` ще
+ * немає). `item.currencyCode` це валюта ОПЕРАЦІЇ, а не рахунку: покупка в
+ * гривневому магазині доларовою карткою приходить із `currencyCode = 980`,
+ * тож stub із цим кодом рахувався гривневим, а центи йшли в статистику як
+ * копійки (баг 2026-11-25). Валюту рахунку видно лише з порівняння сум:
+ * `amount === operationAmount` -> вона дорівнює `currencyCode`; гривнева
+ * операція з різними сумами -> рахунок не гривневий, код невідомий (`0`,
+ * його доб'є наступний `/connect`); валютна операція з різними сумами ->
+ * гривневий рахунок. `0 <> 980`, тож `/api/mono/transactions` відсіче stub.
+ */
+export function stubAccountCurrencyCode(item: {
+  amount: number;
+  operationAmount: number;
+  currencyCode: number;
+}): number {
+  const foreign = foreignAccountCurrencyCode(item);
+  if (foreign !== null) return foreign;
+  if (item.amount === item.operationAmount) return item.currencyCode;
+  return CURRENCY.UAH;
+}
+
 const StatementItemSchema = z.object({
   id: z.string().min(1).max(64),
   time: z.number().int().nonnegative().finite(),
@@ -388,7 +412,12 @@ export async function webhookHandler(
                          WHERE j.user_id = $1 AND j.mono_jar_id = $2),
                 NOW()
          ON CONFLICT (user_id, mono_account_id) DO NOTHING`,
-        [userId, monoAccountId, item.currencyCode, item.balance ?? null],
+        [
+          userId,
+          monoAccountId,
+          stubAccountCurrencyCode(item),
+          item.balance ?? null,
+        ],
       );
       upsertResult = await client.query<{ inserted: boolean }>(
         txUpsertSql,
