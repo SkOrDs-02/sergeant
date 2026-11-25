@@ -138,6 +138,22 @@ describe("getNbuRates", () => {
     expect(queryMock).toHaveBeenCalledTimes(1);
   });
 
+  it("stops calling the NBU after the first failure in a call", async () => {
+    const { fetchImpl, calls } = nbu({
+      "20261120": "fail",
+      "20261118": [[840, 41]],
+    });
+    const rates = await getNbuRates(
+      [
+        { currencyCode: 840, date: "2026-11-20" },
+        { currencyCode: 840, date: "2026-11-18" },
+      ],
+      { fetchImpl, today: TODAY },
+    );
+    expect(calls).toEqual(["20261120"]);
+    expect(rates.size).toBe(0);
+  });
+
   it("caps NBU requests per call", async () => {
     const days: Record<string, Array<[number, number]>> = {};
     const pairs = Array.from(

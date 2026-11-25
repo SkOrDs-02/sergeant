@@ -143,14 +143,18 @@ export async function getNbuRates(
 
   const days = new Map<string, Map<number, number> | null>();
   let fetches = 0;
+  // Після першого збою НБУ за цей виклик більше туди не ходимо: інакше
+  // недоступний НБУ коштував би читанню до 14 таймаутів поспіль.
+  let nbuDown = false;
   const loadDay = async (
     date: string,
   ): Promise<Map<number, number> | null | "budget"> => {
     if (days.has(date)) return days.get(date) ?? null;
-    if (fetches >= NBU_MAX_FETCHES_PER_CALL) return "budget";
+    if (nbuDown || fetches >= NBU_MAX_FETCHES_PER_CALL) return "budget";
     fetches += 1;
     const day = await fetchNbuDay(date, fetchImpl);
     days.set(date, day);
+    if (day === null) nbuDown = true;
     return day;
   };
 
