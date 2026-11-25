@@ -419,3 +419,48 @@ describe("filterTransferSuggestions", () => {
     ).toEqual(suggestions);
   });
 });
+
+describe("обмін валютної картки на гривневу (finyk-fx-nbu)", () => {
+  function usdLeg(id: string, amountUah: number, time: number): Transaction {
+    return {
+      ...tx(id, amountUah, "usd", time, "Продаж валюти", 840),
+      accountCurrencyCode: 840,
+      accountAmount: -10_000,
+      amountUah,
+      fxRate: { uahPerUnit: 41.5, date: "2026-11-24" },
+    };
+  }
+
+  it("пропонує пару, коли гривнева нога в межах 3% від курсу НБУ", () => {
+    const out = usdLeg("usd-out", -415_000, 1_000);
+    // Банк дав за курсом 41,0 замість 41,5 НБУ: різниця ~1,2%.
+    const incoming = tx(
+      "uah-in",
+      410_000,
+      "black",
+      1_030,
+      "З доларової картки",
+    );
+    const result = findInternalTransferSuggestions([out, incoming]);
+    expect(result).toHaveLength(1);
+    expect(result[0]!.outgoing.id).toBe("usd-out");
+  });
+
+  it("не пропонує, коли різниця понад 3%", () => {
+    const out = usdLeg("usd-out", -415_000, 1_000);
+    const incoming = tx(
+      "uah-in",
+      380_000,
+      "black",
+      1_030,
+      "З доларової картки",
+    );
+    expect(findInternalTransferSuggestions([out, incoming])).toEqual([]);
+  });
+
+  it("гривневі ноги без курсу НБУ далі вимагають точного збігу", () => {
+    const out = tx("out", -125_000, "black", 1_000);
+    const incoming = tx("in", 124_000, "white", 1_060, "З картки на картку");
+    expect(findInternalTransferSuggestions([out, incoming])).toEqual([]);
+  });
+});

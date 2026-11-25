@@ -1,7 +1,8 @@
-import { INTERNAL_TRANSFER_ID } from "../constants";
+import { CURRENCY, INTERNAL_TRANSFER_ID } from "../constants";
 import type { Transaction, TxCategoriesMap } from "./types";
 
 const DEFAULT_MAX_TIME_DELTA_SECONDS = 6 * 60 * 60;
+const UAH_CODE = CURRENCY.UAH as number;
 
 /**
  * Фрази, якими Monobank сам описує рух між власними рахунками.
@@ -55,9 +56,35 @@ function timeSecondsOf(tx: Transaction): number | null {
   return value > 10_000_000_000 ? Math.floor(value / 1000) : Math.floor(value);
 }
 
+/**
+ * Нога валютної картки, перерахована в гривню за курсом НБУ
+ * (`normalizeTransaction`, спека finyk-fx-nbu.md): її `amount` уже гривні.
+ */
+function isNbuConverted(tx: Transaction): boolean {
+  return typeof tx["amountUah"] === "number" && tx["fxRate"] != null;
+}
+
 function currencyCodeOf(tx: Transaction): number | null {
+  // Гривневий еквівалент валютної ноги порівнюємо з гривневою ногою.
+  if (typeof tx["amountUah"] === "number") return UAH_CODE;
   const value = Number(tx["currencyCode"]);
   return Number.isFinite(value) && value > 0 ? value : null;
+}
+
+/**
+ * Обмін «валютна картка -> гривнева»: банк міняє за своїм курсом, а
+ * валютну ногу ми рахуємо за курсом НБУ, тож суми збігаються лише
+ * приблизно. Для такої ноги допуск {@link FX_AMOUNT_TOLERANCE}, для решти
+ * сума має збігтися точно.
+ */
+const FX_AMOUNT_TOLERANCE = 0.03;
+
+function amountsMatch(left: Transaction, right: Transaction): boolean {
+  const a = Math.abs(left.amount);
+  const b = Math.abs(right.amount);
+  if (a === b) return true;
+  if (!isNbuConverted(left) && !isNbuConverted(right)) return false;
+  return Math.abs(a - b) <= Math.max(a, b) * FX_AMOUNT_TOLERANCE;
 }
 
 function descriptionOf(tx: Transaction): string {
@@ -111,7 +138,8 @@ function bestUnambiguousEdge(
 /**
  * Finds high-confidence internal-transfer pairs without changing any data.
  *
- * A suggestion needs opposite signs, exactly equal absolute minor units,
+ * A suggestion needs opposite signs, equal absolute minor units (within 3%
+ * when one leg is converted at the NBU rate, see `amountsMatch`),
  * different account ids, compatible currency, a transfer marker (a
  * transfer-like description on either leg, or one leg living on a known
  * jar — see `jarAccountIds`), and a short time distance. The edge must be
@@ -158,7 +186,7 @@ export function findInternalTransferSuggestions(
       ) {
         continue;
       }
-      if (Math.abs(left.amount) !== Math.abs(right.amount)) continue;
+      if (!amountsMatch(left, right)) continue;
 
       const leftAccountId = accountIdOf(left);
       const rightAccountId = accountIdOf(right);

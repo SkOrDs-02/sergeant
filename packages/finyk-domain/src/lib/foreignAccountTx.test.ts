@@ -86,3 +86,71 @@ describe("normalizeTransaction + excluded-set", () => {
     expect(out.has("uah1")).toBe(false);
   });
 });
+
+describe("курс НБУ з сервера (finyk-fx-nbu)", () => {
+  const usdBuy = {
+    id: "usd-buy",
+    time: 1_795_550_000,
+    amount: -10_000,
+    operationAmount: -10_000,
+    currencyCode: 840,
+    accountCurrencyCode: 840,
+  };
+
+  it("з курсом: amount стає гривневим еквівалентом, валютна сума окремо", () => {
+    const tx = normalizeTransaction(
+      {
+        ...usdBuy,
+        amountUah: -415_000,
+        fxRate: { uahPerUnit: 41.5, date: "2026-11-24" },
+      },
+      { source: "monobank", accountId: "usd" },
+    );
+    expect(tx.amount).toBe(-415_000);
+    expect(tx["accountAmount"]).toBe(-10_000);
+    expect(tx["fxRate"]).toEqual({ uahPerUnit: 41.5, date: "2026-11-24" });
+    expect(isForeignAccountTx(tx)).toBe(false);
+    expect(buildFinykExcludedTxIds({ transactions: [tx] }).has("usd-buy")).toBe(
+      false,
+    );
+  });
+
+  it("повторна нормалізація не перераховує суму вдруге", () => {
+    const once = normalizeTransaction(
+      { ...usdBuy, amountUah: -415_000 },
+      { source: "monobank" },
+    );
+    const twice = normalizeTransaction(once, { source: "monobank" });
+    expect(twice.amount).toBe(-415_000);
+    expect(twice["accountAmount"]).toBe(-10_000);
+  });
+
+  it("без курсу: валютне число НЕ стає гривнями, рядок поза підсумками", () => {
+    const tx = normalizeTransaction(
+      { ...usdBuy, amountUah: null },
+      { source: "monobank" },
+    );
+    expect(tx.amount).toBe(-10_000);
+    expect(foreignAccountCurrencyCode(tx)).toBe(840);
+    expect(buildFinykExcludedTxIds({ transactions: [tx] }).has("usd-buy")).toBe(
+      true,
+    );
+  });
+
+  it("гривневий рахунок з полями сервера: нічого не змінюється", () => {
+    const tx = normalizeTransaction(
+      {
+        id: "uah",
+        amount: -5000,
+        operationAmount: -5000,
+        currencyCode: 980,
+        accountCurrencyCode: 980,
+        amountUah: null,
+      },
+      { source: "monobank" },
+    );
+    expect(tx.amount).toBe(-5000);
+    expect(tx["accountAmount"]).toBeUndefined();
+    expect(isForeignAccountTx(tx)).toBe(false);
+  });
+});
