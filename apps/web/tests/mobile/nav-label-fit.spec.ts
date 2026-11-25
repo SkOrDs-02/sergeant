@@ -17,7 +17,10 @@ import { mockApi } from "./audit";
  * Що робить гейт. Для кожного нава: вмикає підпис усіх табів так, як його
  * бачить активний (`max-width: 100%`, `opacity: 1` — неактивні згорнуті в
  * `max-w-0` за задумом і без цього завжди «переповнювали» б), і порівнює
- * `scrollWidth` із `clientWidth`. Різниця > 1px = три крапки на екрані.
+ * `scrollWidth` із `clientWidth` в один рядок (`nowrap`). Різниця > 1px =
+ * підпис не влазить: з 2026-11-25 він не ріжеться трьома крапками, а
+ * переноситься (так при 200% тексту його видно повністю), тож на 100% такий
+ * підпис дає другий рядок і нав вищий за 60px.
  *
  * Поріг 1px, не 0: subpixel-округлення `getBoundingClientRect` дає ±0.5px на
  * дробових ширинах колонки, і нульовий поріг червонив би від зміни шрифтового
@@ -82,7 +85,14 @@ test.describe("nav labels fit their column", () => {
               opacity: el.style.opacity,
               transition: el.style.transition,
               dir: pill?.style.flexDirection ?? "",
+              wrap: el.style.whiteSpace,
             };
+            // Підпис переноситься (`overflow-wrap: anywhere`), щоб при 200%
+            // тексту не різатись трьома крапками. Без `nowrap` тут він би
+            // ніколи не «переповнював» колонку — переносився б у другий
+            // рядок, і гейт мовчав би, хоча на 100% другий рядок теж дефект:
+            // нав росте понад 60px. Тож міряємо однорядкову ширину.
+            el.style.whiteSpace = "nowrap";
             el.style.transition = "none";
             el.style.maxWidth = "100%";
             el.style.opacity = "1";
@@ -91,6 +101,7 @@ test.describe("nav labels fit their column", () => {
             el.style.maxWidth = prev.max;
             el.style.opacity = prev.opacity;
             el.style.transition = prev.transition;
+            el.style.whiteSpace = prev.wrap;
             if (pill) pill.style.flexDirection = prev.dir;
             if (scrollWidth - clientWidth > tolerance) {
               found.push({
