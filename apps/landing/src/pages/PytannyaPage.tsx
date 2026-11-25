@@ -31,8 +31,7 @@ export default function PytannyaPage() {
         Питання
       </h1>
       <p className="mt-5 max-w-xl leading-relaxed text-muted">
-        Коротко про те, що питають найчастіше. Якщо твого питання тут немає,
-        напиши в Telegram.
+        Те, що питають найчастіше.
       </p>
       <p className="mt-3 text-sm text-subtle">
         Оновлено{" "}
