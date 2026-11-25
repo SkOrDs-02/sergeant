@@ -89,7 +89,7 @@ describe("незавершений claim іншого акаунта (data-46)",
 
     await expect(
       migrateAnonymousDataToProfile("user-b", { onTransferStart }),
-    ).resolves.toEqual({ migratedRows: 0 });
+    ).resolves.toEqual({ migratedRows: 0, sourceRows: 1 });
 
     // Жодного запису: ні апдейту claim, ні видалення анонімних рядків.
     expect(writes).toEqual([]);

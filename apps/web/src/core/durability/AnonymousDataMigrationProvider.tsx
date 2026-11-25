@@ -32,8 +32,17 @@ import {
   STATUS_PATH,
 } from "../app/appPaths";
 import { useAuth } from "../auth/AuthContext";
-import { migrateAnonymousDataToProfile } from "./anonymousDataMigration.js";
+import {
+  migrateAnonymousDataToProfile,
+  type AnonymousMigrationResult,
+} from "./anonymousDataMigration.js";
 import { trackAnonymousHandoff } from "./anonymousLeftoversOnLogout";
+import { readAnonPartitionState } from "./anonPartitionState";
+import {
+  ANON_PEEK_DELAY_MS,
+  peekAnonymousPartition,
+  reportAnonPartitionShadow,
+} from "./anonPartitionShadow";
 
 interface MigrationGateValue {
   readonly isReady: boolean;
@@ -44,7 +53,7 @@ const MigrationGateContext = createContext<MigrationGateValue>({
 });
 
 interface MigrationRun {
-  promise: Promise<{ migratedRows: number }>;
+  promise: Promise<AnonymousMigrationResult>;
   /** Розвідка вже знайшла рядки — перенос справді триває. */
   transferring: boolean;
   /** Підписники, що чекають на перехід у фазу переносу. */
@@ -192,7 +201,7 @@ async function bootSyncForUser(userId: string): Promise<void> {
 function runSingleFlight(
   userId: string,
   onTransferStart?: () => void,
-): Promise<{ migratedRows: number }> {
+): Promise<AnonymousMigrationResult> {
   const existing = inFlightByUser.get(userId);
   if (existing) {
     // Прогін уже йде (StrictMode-подвійний маунт, повторний рендер). Або
@@ -204,7 +213,7 @@ function runSingleFlight(
     return existing.promise;
   }
   const run: MigrationRun = {
-    promise: Promise.resolve({ migratedRows: 0 }),
+    promise: Promise.resolve({ migratedRows: 0, sourceRows: 0 }),
     transferring: false,
     listeners: new Set(onTransferStart ? [onTransferStart] : []),
   };
@@ -235,6 +244,7 @@ export function AnonymousDataMigrationProvider({
     return (
       <MigrationGateContext.Provider value={{ isReady: true }}>
         {children}
+        {status === "unauthenticated" && <AnonymousPartitionPeek />}
       </MigrationGateContext.Provider>
     );
   }
@@ -247,6 +257,21 @@ export function AnonymousDataMigrationProvider({
       {children}
     </AuthenticatedMigrationGate>
   );
+}
+
+/**
+ * Поки людина без акаунта, анонімна партиція й так відкрита: тихо
+ * перевіряємо її й ставимо CLEAN, щоб наступний вхід мав доказ
+ * (`anonPartitionShadow.ts`). Нічого не рендерить.
+ */
+function AnonymousPartitionPeek() {
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      void peekAnonymousPartition();
+    }, ANON_PEEK_DELAY_MS);
+    return () => clearTimeout(timer);
+  }, []);
+  return null;
 }
 
 function AuthenticatedMigrationGate({
@@ -284,6 +309,12 @@ function AuthenticatedMigrationGate({
   const [deferred, setDeferred] = useState(() => readDeferred(userId));
   const [transferring, setTransferring] = useState(false);
   const [probeGraceElapsed, setProbeGraceElapsed] = useState(false);
+  /**
+   * Прогноз прапорця ДО розвідки (тіньовий режим, PR2 спеки
+   * `anonymous-migration-fast-path.md`): поведінку не змінює, лише
+   * звіряється з результатом нижче.
+   */
+  const [predictedState] = useState(() => readAnonPartitionState());
 
   // Свідомо БЕЗ синхронного setState — інакше `react-hooks/set-state-in-effect`
   // ловить каскадний ререндер на маунті. Початковий стан уже `"running"`, тож
@@ -292,6 +323,7 @@ function AuthenticatedMigrationGate({
   const kickoff = useCallback(() => {
     void runSingleFlight(userId, () => setTransferring(true))
       .then((result) => {
+        reportAnonPartitionShadow(predictedState, result.sourceRows);
         setState("ready");
         if (result.migratedRows > 0 && !successToastUsers.has(userId)) {
           successToastUsers.add(userId);
@@ -326,7 +358,7 @@ function AuthenticatedMigrationGate({
       .finally(() => {
         void bootSyncForUser(userId);
       });
-  }, [success, userId]);
+  }, [predictedState, success, userId]);
 
   useEffect(() => {
     kickoff();

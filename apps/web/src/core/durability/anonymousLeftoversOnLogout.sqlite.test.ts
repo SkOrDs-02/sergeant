@@ -179,6 +179,7 @@ describe("анонімні рядки незавершеного перенос�
     // Наступний акаунт: переносити нічого, жодного чужого claim.
     await expect(migrateAnonymousDataToProfile(OTHER)).resolves.toEqual({
       migratedRows: 0,
+      sourceRows: 0,
     });
     expect(rows("SELECT * FROM routine_habits", OTHER)).toEqual([]);
   });

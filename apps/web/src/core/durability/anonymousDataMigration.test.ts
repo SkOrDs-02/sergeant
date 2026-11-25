@@ -98,7 +98,7 @@ describe("anonymous data migration invariants", () => {
     const onTransferStart = vi.fn();
     await expect(
       migrateAnonymousDataToProfile("user-a", { onTransferStart }),
-    ).resolves.toEqual({ migratedRows: 0 });
+    ).resolves.toEqual({ migratedRows: 0, sourceRows: 0 });
     expect(onTransferStart).not.toHaveBeenCalled();
   });
 
@@ -153,7 +153,7 @@ describe("anonymous data migration invariants", () => {
     const onTransferStart = vi.fn();
     await expect(
       migrateAnonymousDataToProfile("user-a", { onTransferStart }),
-    ).resolves.toEqual({ migratedRows: 1 });
+    ).resolves.toEqual({ migratedRows: 1, sourceRows: 1 });
     expect(onTransferStart).toHaveBeenCalledOnce();
     expect(migration.applyPullOp).toHaveBeenCalledWith(
       migration.target,
