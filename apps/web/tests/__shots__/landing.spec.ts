@@ -24,6 +24,20 @@ async function dropAnonymousBanner(page: Page) {
     .evaluateAll((els) => els.forEach((el) => el.remove()));
 }
 
+/**
+ * Сід світу пишеться в чергу синхронізації, а бекенду в знімальному прогоні
+ * немає, тож у шапці висить кнопка «Синхронізація · N в черзі». У живого
+ * користувача черга порожня, і кнопки там немає.
+ */
+async function dropSyncQueueButton(page: Page) {
+  // Стилем, а не видаленням вузла: шапка перемальовує кнопку при кожному
+  // тіку черги, і видалений вузол повертається ще до кадру.
+  await page.addStyleTag({
+    content:
+      'button[aria-label^="Синхронізація"] { display: none !important; }',
+  });
+}
+
 /** Огляд Фініка із заданим планом: без плану hero показує «Денний бюджет не задано». */
 async function finykWithPlan(page: Page) {
   await applyScenario(page, "landing-world", "/finyk/budgets");
@@ -51,6 +65,7 @@ for (const [name, open] of FRAMES) {
     const decline = page.getByRole("button", { name: "Ні, дякую" });
     if (await decline.isVisible().catch(() => false)) await decline.click();
     await dropAnonymousBanner(page);
+    await dropSyncQueueButton(page);
     await page.waitForTimeout(1500);
     const png = await page.screenshot();
     await sharp(png).webp({ quality: 82 }).toFile(`${OUT}/${name}.webp`);
