@@ -1,0 +1,162 @@
+[
+  {
+    "name": "анонім GET /api/v1/me",
+    "ok": true,
+    "detail": "HTTP 401 {\"error\":\"Потрібна автентифікація\",\"message\":\"Потрібна автентифікація\",\"code\":\"U"
+  },
+  {
+    "name": "анонім GET /api/v2/sync/pull?since=0",
+    "ok": true,
+    "detail": "HTTP 401 {\"error\":\"Потрібна автентифікація\",\"message\":\"Потрібна автентифікація\",\"code\":\"U"
+  },
+  {
+    "name": "анонім GET /api/v1/billing/status",
+    "ok": true,
+    "detail": "HTTP 401 {\"error\":\"Потрібна автентифікація\",\"message\":\"Потрібна автентифікація\",\"code\":\"U"
+  },
+  {
+    "name": "анонім GET /api/v1/me/preferences",
+    "ok": true,
+    "detail": "HTTP 401 {\"error\":\"Потрібна автентифікація\",\"message\":\"Потрібна автентифікація\",\"code\":\"U"
+  },
+  {
+    "name": "анонім GET /api/v1/chat/usage",
+    "ok": true,
+    "detail": "HTTP 401 {\"error\":\"Потрібна автентифікація\",\"message\":\"Потрібна автентифікація\",\"code\":\"U"
+  },
+  {
+    "name": "анонім GET /api/v1/finyk/receipts/1",
+    "ok": true,
+    "detail": "HTTP 401 {\"error\":\"Потрібна автентифікація\",\"message\":\"Потрібна автентифікація\",\"code\":\"U"
+  },
+  {
+    "name": "анонім GET /api/v1/finyk/import/batches/1",
+    "ok": true,
+    "detail": "HTTP 401 {\"error\":\"Потрібна автентифікація\",\"message\":\"Потрібна автентифікація\",\"code\":\"U"
+  },
+  {
+    "name": "анонім GET /api/v1/coach/memory",
+    "ok": true,
+    "detail": "HTTP 401 {\"error\":\"Потрібна автентифікація\",\"message\":\"Потрібна автентифікація\",\"code\":\"U"
+  },
+  {
+    "name": "анонім GET /api/v1/push/subscriptions",
+    "ok": true,
+    "detail": "HTTP 404 {\"error\":\"Not found\",\"message\":\"Not found\",\"code\":\"NOT_FOUND\",\"requestId\":\"0ae27"
+  },
+  {
+    "name": "анонім GET /api/v1/me/export",
+    "ok": true,
+    "detail": "HTTP 401 {\"error\":\"Потрібна автентифікація\",\"message\":\"Потрібна автентифікація\",\"code\":\"U"
+  },
+  {
+    "name": "анонім GET /api/v1/weekly-digest",
+    "ok": true,
+    "detail": "HTTP 404 {\"error\":\"Not found\",\"message\":\"Not found\",\"code\":\"NOT_FOUND\",\"requestId\":\"14ac5"
+  },
+  {
+    "name": "анонім GET /api/metrics",
+    "ok": true,
+    "detail": "HTTP 404 {\"error\":\"Not found\",\"message\":\"Not found\",\"code\":\"NOT_FOUND\",\"requestId\":\"025d5"
+  },
+  {
+    "name": "анонім POST /api/v2/sync/push",
+    "ok": true,
+    "detail": "HTTP 401 {\"error\":\"Потрібна автентифікація\",\"message\":\"Потрібна автентифікація\",\"code\":\"U"
+  },
+  {
+    "name": "анонім POST /api/chat",
+    "ok": true,
+    "detail": "HTTP 401 {\"error\":\"Потрібна автентифікація\",\"message\":\"Потрібна автентифікація\",\"code\":\"U"
+  },
+  {
+    "name": "анонім POST /api/v1/weekly-digest",
+    "ok": true,
+    "detail": "HTTP 401 {\"error\":\"Потрібна автентифікація\",\"message\":\"Потрібна автентифікація\",\"code\":\"U"
+  },
+  {
+    "name": "анонім POST /api/v1/me/delete",
+    "ok": true,
+    "detail": "HTTP 404 {\"error\":\"Not found\",\"message\":\"Not found\",\"code\":\"NOT_FOUND\",\"requestId\":\"1d9bb"
+  },
+  {
+    "name": "анонім POST /api/v1/feedback",
+    "ok": true,
+    "detail": "HTTP 400 {\"error\":\"Некоректні дані запиту\",\"message\":\"Некоректні дані запиту\",\"code\":\"VAL"
+  },
+  {
+    "name": "B пише рядок із чужим user_id",
+    "ok": true,
+    "detail": "HTTP 200 {\"accepted\":0,\"last_op_id\":126,\"results\":[{\"idempotency_key\":\"5487c9e2-7b88-45e2-a922-97a25b5f3446\",\"status\":\"rejected\",\"reason\":\"user_id_mismatch\"}],\"server_now\":\"2026-11-25T20:00:38.308Z\"}"
+  },
+  {
+    "name": "B видаляє id запису A: рядок A живий",
+    "ok": true,
+    "detail": "HTTP 200 {\"accepted\":0,\"last_op_id\":127,\"results\":[{\"idempotency_key\":\"1df98720-2ee6-4325-a834-750d5bcb20ea\",\"status\":\"rejected\", | A alive=1"
+  },
+  {
+    "name": "pull B без даних A",
+    "ok": true,
+    "detail": "HTTP 200"
+  },
+  {
+    "name": "битий JSON → 400",
+    "ok": true,
+    "detail": "HTTP 400 {\"error\":\"Expected property name or '}' in JSON at position 1 (line 1 column 2)\",\"message\":\"Expected property name or '}"
+  },
+  {
+    "name": "push у несинковану таблицю user відхилено",
+    "ok": true,
+    "detail": "HTTP 200 {\"accepted\":0,\"last_op_id\":0,\"results\":[{\"idempotency_key\":\"52870774-c22a-4e18-9c22-ae17a00cf7b8\",\"status\":\"rejected\",\"reason\":\"table_not_allowed\"}],\"server_now\":\"2026-11-25T20:00:38.495Z\"}"
+  },
+  {
+    "name": "push у subscriptions відхилено (самопідвищення до Pro)",
+    "ok": true,
+    "detail": "HTTP 200 {\"accepted\":0,\"last_op_id\":0,\"results\":[{\"idempotency_key\":\"bf14b6c7-af56-46ec-8578-4235d412fc1f\",\"status\":\"rejected\",\"reason\":\"table_not_allowed\"}],\"server_now\":\"2026-11-25T20:00:38.506Z\"}"
+  },
+  {
+    "name": "A після спроби лишився free",
+    "ok": true,
+    "detail": "{\"subscription\":{\"id\":null,\"provider\":null,\"plan\":null,\"status\":null,\"active\":false,\"currentPeriodEnd\":null,\"cancelAtPer"
+  },
+  {
+    "name": "SQL у назві таблиці відхилено",
+    "ok": true,
+    "detail": "HTTP 200 {\"accepted\":0,\"last_op_id\":0,\"results\":[{\"idempotency_key\":\"2cbee067-9c03-4752-a182-80daf69211c5\",\"status\":\"rejected\",\"reason\":\"table_not_allowed\"}],\"server_now"
+  },
+  {
+    "name": "client_ts з майбутнього (+400 днів) відхилено",
+    "ok": true,
+    "detail": "HTTP 200 {\"accepted\":0,\"last_op_id\":0,\"results\":[{\"idempotency_key\":\"b646533a-7a49-4c00-9baf-675b2bc7a3be\",\"status\":\"retry\",\"reason\":\"clock_skew\"}],\"server_now\":\"2026-11-25T20:00:38.537Z\"}"
+  },
+  {
+    "name": "тіло 3 МБ → 413/400",
+    "ok": true,
+    "detail": "HTTP 400 {\"error\":\"Некоректні дані запиту\",\"message\":\"Некоректні дані запиту\",\"code\":\"VALIDATION\",\"requestId\":\"bbb90b5f-fe79-47af"
+  },
+  {
+    "name": "2000 оп-ів в одному push обмежено",
+    "ok": true,
+    "detail": "HTTP 400 {\"error\":\"Некоректні дані запиту\",\"message\":\"Некоректні дані запиту\",\"code\":\"VALIDATION\",\"requestId\":\"f4c0d133-77a9-43ea"
+  },
+  {
+    "name": "Чужий Origin: preflight без Access-Control-Allow-Origin (браузер блокує); non-browser клієнт із заголовком проходить до валідації, як і задумано",
+    "ok": true,
+    "detail": "OPTIONS від https://evil.example → 200 без ACAO; від 127.0.0.1:4173 → ACAO+credentials. Без X-Requested-With → 403 CSRF_HEADER_REQUIRED"
+  },
+  {
+    "name": "невірний пароль → 401 без деталей",
+    "ok": true,
+    "detail": "HTTP 401 {\"message\":\"Invalid email or password\",\"code\":\"INVALID_EMAIL_OR_PASSWORD\"}"
+  },
+  {
+    "name": "неіснуючий email → та сама відповідь (без перебору акаунтів)",
+    "ok": true,
+    "detail": "HTTP 401 {\"message\":\"Invalid email or password\",\"code\":\"INVALID_EMAIL_OR_PASSWORD\"}"
+  },
+  {
+    "name": "/metrics, /healthz, /health/workers відкриті на стенді",
+    "ok": true,
+    "detail": "METRICS_TOKEN на стенді не задано; у проді сервер без нього не стартує (assertStartupEnv, sec-40). Не перевірялось на проді."
+  }
+]

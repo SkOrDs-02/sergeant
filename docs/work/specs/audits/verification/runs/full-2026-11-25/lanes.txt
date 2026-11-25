@@ -1,0 +1,11 @@
+# Лейни прогону full-2026-11-25 (main 1e707fa365, стенд: docker pgvector/pg17, API :3000, vite preview :4173)
+static: turbo typecheck+test 35/35 задач; web 1585 файлів / 16133 pass; server 543 / 8141 pass; packages і landing зелені (unit-summary.txt)
+smoke (chromium, API з межею підтвердження email і без AI-ключа): 63/66; фейли: live-chat (очікувано без ключа), auth sec-46 і offline-cold-start. Обидва останні впираються в ліміт 5 auth-запитів/60 с на IP: повтор наодинці зелений, але тоді падає сусідній тест із тією ж причиною (TOOL-1)
+smoke на білді з фіксами (API з AI-ключем, без межі email): 63/65; фейли: hub-chat «degraded 503» (очікувано з ключем) і anonymous-migration-recovery:219 на тому ж auth-ліміті
+a11y: 103/103 (і до, і після фіксів); mobile 44px: 41/41 (до і після); sweep: 70/70; ledger: 48/48; audit контрасту: 4/4
+profiles (Pro = персона M7): 17 pass, 6 skipped, 2 fail. P4 CRUD: хелпер addPantryItem не вміє непорожню комору (акаунт M7 уже мав продукт), хиба харнеса. P2 PDF-експорт: /insights показав «Цей блок не відкрився» (BOOT-1); повтор P2 наодинці 6/6
+data-durability P1-P9 + boot-watchdog: 11/11 тестів, 97 перевірок
+mass-accounts (7 тимчасових акаунтів, 266 сторінок, 390x844 і 1280x800, світла й темна): 0 overflow, 0 порожніх #root, 0 «undefined/NaN/Invalid Date», 1 сторінка з console-помилкою (зірваний чанк), дані всіх персон доїхали на новий пристрій, ізоляція 7/7 без витоків
+budgets (білд із фіксами): JS 1.58/1.60 MB, CSS 32.02/40 kB, eager 257.1/259 kB
+/health p95 3.9 мс (n=300, локально); Lighthouse не запускався
+pnpm lint: зелений, крім check-ui-canon-ratchet (handRolledFocusRing 129 > 128, numericIconSize 1 > 0 у RoutineCalendarPanel.tsx:464); той самий результат на чистому main, тож не від правок прогону. pnpm format:check зелений.
