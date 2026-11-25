@@ -153,10 +153,9 @@ export interface HeroCardProps {
    */
   readonly onQuickStart?: (() => void) | undefined;
   /**
-   * Optional top-right slot — Phase 6.7 mounts the persistent PR badge
-   * here. Positioned by the slot itself (`absolute top-3 right-3`); the
-   * shell only provides the relative wrapper. Pass `null` to keep the
-   * corner empty.
+   * Optional top slot — Phase 6.7 mounts the persistent PR badge
+   * here. The shell renders it first, above the kicker, right-aligned by
+   * the slot itself. Pass `null` to keep it empty.
    */
   readonly cornerSlot?: ReactNode;
 }

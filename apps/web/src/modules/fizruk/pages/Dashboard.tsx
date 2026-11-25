@@ -613,16 +613,6 @@ export function Dashboard({
                         onClick={() => tryStartPlan(picks, tpl.id)}
                         disabled={!picks.length}
                       >
-                        {/* Зелений «play» на шаблоні без вправ обіцяв старт,
-                            якого не буде: вимкнений рядок його не показує. */}
-                        <span
-                          className={
-                            picks.length
-                              ? "text-text shrink-0"
-                              : "text-muted shrink-0"
-                          }
-                          aria-hidden
-                        ></span>
                         <div className="min-w-0 flex-1">
                           <div className="text-style-label text-text truncate">
                             {tpl.name}
