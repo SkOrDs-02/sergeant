@@ -1,4 +1,5 @@
 import { Suspense, memo } from "react";
+import { messages } from "@shared/i18n";
 import { Card } from "@shared/components/ui/Card";
 import { NetworthChart } from "../../components/charts/lazy";
 import { ChartFallback } from "../../components/charts/ChartFallback";
@@ -18,11 +19,12 @@ const NetworthSectionImpl = function NetworthSection({
     return (
       <Card padding="none" className="px-5 pt-4 pb-3">
         <div className="flex items-center justify-between mb-3">
-          <span className="text-style-caption text-subtle">
-            Динаміка капіталу
+          <span className="text-style-label text-text">
+            {messages.finyk.networthSection.title}
           </span>
           <span className="text-style-caption text-muted">
-            {networthHistory.length} міс.
+            {networthHistory.length}{" "}
+            {messages.finyk.networthSection.monthsSuffix}
           </span>
         </div>
         <Suspense fallback={<ChartFallback className="h-20" />}>

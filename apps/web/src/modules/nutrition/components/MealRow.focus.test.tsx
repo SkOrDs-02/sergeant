@@ -52,14 +52,13 @@ afterEach(cleanup);
 describe("MealRow: фокус після видалення", () => {
   it("переходить на сусідній рядок, потім на контейнер журналу", () => {
     render(<Harness />);
-    const remove = () =>
-      screen.getAllByRole("button", { name: "Видалити запис" });
+    const remove = () => screen.getAllByRole("button", { name: /^Видалити / });
 
     remove()[0]!.focus();
     fireEvent.click(remove()[0]!);
     expect(document.activeElement).not.toBe(document.body);
     expect(document.activeElement).toBe(
-      screen.getByRole("button", { name: "Редагувати запис" }),
+      screen.getByRole("button", { name: /^Кава/ }),
     );
 
     remove()[0]!.focus();

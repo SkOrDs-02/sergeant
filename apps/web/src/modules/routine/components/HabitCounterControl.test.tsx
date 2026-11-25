@@ -27,8 +27,8 @@ describe("HabitCounterControl", () => {
         onStep={onStep}
       />,
     );
-    expect(screen.getByLabelText("Вода: 2 з 3 склянки")).toHaveTextContent(
-      "2 з 3",
+    expect(screen.getByText("2 з 3").closest("[aria-live]")).toHaveTextContent(
+      "Вода: 2 з 3",
     );
     fireEvent.click(screen.getByRole("button", { name: "Додати: Вода" }));
     fireEvent.click(screen.getByRole("button", { name: "Відняти: Вода" }));

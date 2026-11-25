@@ -90,14 +90,14 @@ export function WelcomeModulePicker({
         >
           {copy.heading}
         </h2>
-        <p className="text-style-body text-muted leading-relaxed max-w-xs mx-auto">
+        <p className="text-style-body text-muted leading-relaxed text-balance max-w-xs mx-auto">
           {copy.subtitle}
         </p>
         {/* Один приклад звʼязку між сферами (С-4 (а)): вітання більше не
             мовчить про те, що продукт бачить згори. Без чисел: перший екран
             не показує цифр до першого запису. */}
         <p
-          className="text-style-caption text-muted leading-relaxed max-w-xs mx-auto"
+          className="text-style-body text-muted leading-relaxed text-balance max-w-xs mx-auto"
           data-testid="welcome-link-example"
         >
           {coreMessages.hub.welcomeLinkExample.replace(
@@ -120,12 +120,10 @@ export function WelcomeModulePicker({
               type="button"
               onClick={() => togglePick(id)}
               aria-pressed={active}
-              aria-label={MODULE_LABELS[id]}
               className={cn(
                 "relative w-full min-h-11 py-3 text-left pr-9",
                 "transition-colors",
                 "focus:outline-none focus-visible:ring-2 focus-visible:ring-focus/45",
-                active ? "text-text" : "text-muted",
               )}
             >
               <span
@@ -133,7 +131,7 @@ export function WelcomeModulePicker({
                 className={cn(
                   "absolute top-3 right-0 w-[22px] h-[22px] rounded-check border border-control",
                   "flex items-center justify-center",
-                  "transition-opacity",
+                  "transition-colors",
                   active
                     ? "bg-ink text-bg border-ink"
                     : "bg-bg text-transparent",
@@ -141,7 +139,12 @@ export function WelcomeModulePicker({
               >
                 <Icon name="check" size="xs" strokeWidth={3} />
               </span>
-              <span className="block text-style-label text-text">
+              <span
+                className={cn(
+                  "block text-style-label transition-colors",
+                  active ? "text-text" : "text-muted",
+                )}
+              >
                 {MODULE_LABELS[id]}
               </span>
               <span className="mt-1 block text-style-caption text-muted leading-snug">
@@ -183,7 +186,7 @@ export function WelcomeModulePicker({
         onClick={onOpenAuth}
         variant="outline"
         size="md"
-        className="w-full h-11 min-h-[44px] rounded-lg border-line bg-panel text-style-label text-text hover:bg-panelHi hover:border-brand-500/40"
+        className="w-full h-11 min-h-[44px] rounded-lg border-line bg-panel text-style-label text-text hover:bg-panelHi hover:border-control"
       >
         <span>{copy.haveAccount}</span>
       </Button>

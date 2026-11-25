@@ -287,7 +287,7 @@ export function PersonalInfoSection({
             <div
               className={cn(
                 "absolute inset-0 flex items-center justify-center bg-black/40",
-                "opacity-0 group-hover:opacity-100 transition-opacity duration-fast",
+                "opacity-0 group-hover:opacity-100 group-focus-within:opacity-100 [@media(pointer:coarse)]:opacity-100 transition-opacity duration-fast",
                 uploadingAvatar && "opacity-100",
               )}
             >
@@ -429,12 +429,21 @@ export function PersonalInfoSection({
 
         {/* Email row */}
         <div className="px-4 py-4 space-y-2">
-          <label
-            htmlFor="profile-email"
-            className="text-style-caption block text-muted"
-          >
-            Email
-          </label>
+          {editingEmail ? (
+            <label
+              htmlFor="profile-email"
+              className="text-style-caption block text-muted"
+            >
+              Email
+            </label>
+          ) : (
+            <p
+              id="profile-email-caption"
+              className="text-style-caption block text-muted"
+            >
+              Email
+            </p>
+          )}
           {!editingEmail ? (
             <div className="flex items-center gap-2">
               <p className="text-style-body text-text flex-1 truncate">
@@ -443,6 +452,7 @@ export function PersonalInfoSection({
               <Button
                 variant="ghost"
                 size="xs"
+                aria-describedby="profile-email-caption"
                 disabled={!online}
                 onClick={() => {
                   emailForm.reset({ email: user.email ?? "", password: "" });

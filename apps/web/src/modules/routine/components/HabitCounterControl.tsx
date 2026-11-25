@@ -58,10 +58,8 @@ export function HabitCounterControl({
       <span
         className="flex min-w-[3.5rem] max-w-[5.5rem] flex-col items-center"
         aria-live="polite"
-        aria-label={M.progressAria
-          .replace("{name}", name)
-          .replace("{progress}", unit ? `${progress} ${unit}` : progress)}
       >
+        <span className="sr-only">{name}: </span>
         <span
           className={cn(
             "tabular-nums text-style-label text-text",

@@ -3966,6 +3966,13 @@
       "canonical_owner": "docs/work/specs/audits/2026-10-23-redesign-v3-2-review.md"
     },
     {
+      "old_path": null,
+      "new_path": "docs/work/specs/audits/2026-11-25-copy-visual-audit.md",
+      "action": "keep",
+      "genre": "active-work",
+      "canonical_owner": "docs/work/specs/audits/2026-11-25-copy-visual-audit.md"
+    },
+    {
       "old_path": "docs/work/specs/audits/ai-abuse-2026-08-05.md",
       "new_path": "docs/work/specs/audits/ai-abuse-2026-08-05.md",
       "action": "keep",

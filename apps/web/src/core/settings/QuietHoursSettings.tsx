@@ -98,10 +98,7 @@ export function QuietHoursSettings({
         </div>
       )}
       {saveError && (
-        <p
-          className="text-style-caption text-danger-strong dark:text-danger"
-          role="alert"
-        >
+        <p className="text-style-caption text-danger-strong" role="alert">
           {saveError.error}
         </p>
       )}

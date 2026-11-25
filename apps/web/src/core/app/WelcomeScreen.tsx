@@ -164,7 +164,7 @@ export function WelcomeScreen({ onDone, onOpenAuth }: WelcomeScreenProps) {
       tabIndex={-1}
       className="relative h-app-dvh overflow-y-auto overscroll-contain bg-mesh text-text outline-none"
     >
-      <div className="relative min-h-full flex items-center justify-center p-4 pb-safe">
+      <div className="relative min-h-full flex items-center justify-center px-4 pt-[max(1rem,env(safe-area-inset-top))] pb-[max(1rem,env(safe-area-inset-bottom))]">
         <h1 className="sr-only">{messages.nav.welcome}</h1>
         <div className="w-full max-w-md space-y-3">
           {/* Phase 7 D4: preset picker is the canonical cold-start surface. */}

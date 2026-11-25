@@ -96,7 +96,7 @@ export function CrossModulePreview({
         <Icon name="close" size="md" />
       </button>
 
-      <div className="flex items-start gap-3 pr-6">
+      <div className="flex items-start gap-3 pr-12">
         <div className="flex-1 min-w-0 space-y-2">
           <div className="space-y-1">
             <h3 className="text-style-label text-text">{copy.title}</h3>

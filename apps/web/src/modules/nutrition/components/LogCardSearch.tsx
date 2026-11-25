@@ -9,6 +9,7 @@ import { Input } from "@shared/components/ui/Input";
 import { Measure } from "@shared/components/ui/Measure";
 import { searchFieldProps } from "@shared/lib/ui/searchFieldProps";
 import { searchMealsByName } from "../lib/nutritionStorage";
+import { formatLogDateSubline } from "../lib/formatLogDateSubline";
 import type { Meal, NutritionLog } from "@sergeant/nutrition-domain";
 
 interface LogCardSearchProps {
@@ -82,7 +83,9 @@ export function LogCardSearch({
                     {meal.name}
                   </div>
                   <div className="flex gap-1.5 mt-0.5 flex-wrap text-style-caption text-muted">
-                    <span className="tabular-nums">{date}</span>
+                    <span className="tabular-nums">
+                      {formatLogDateSubline(date)}
+                    </span>
                     {mac.kcal != null && (
                       <Measure
                         value={Math.round(mac.kcal)}
@@ -99,6 +102,16 @@ export function LogCardSearch({
                             Той самий факт трьома наборами — рівно те, проти
                             чого П4. */}
                         Б <Measure value={Math.round(mac.protein_g)} unit="г" />
+                      </span>
+                    )}
+                    {mac.fat_g != null && (
+                      <span>
+                        Ж <Measure value={Math.round(mac.fat_g)} unit="г" />
+                      </span>
+                    )}
+                    {mac.carbs_g != null && (
+                      <span>
+                        В <Measure value={Math.round(mac.carbs_g)} unit="г" />
                       </span>
                     )}
                   </div>

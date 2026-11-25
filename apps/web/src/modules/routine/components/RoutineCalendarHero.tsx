@@ -71,6 +71,7 @@ export function RoutineCalendarHero({
   timeMode,
   headlineDate,
   dayProgress,
+  activeHabitsCount,
   currentStreak,
   onOpenDayReport,
 }: RoutineCalendarHeroProps) {
@@ -82,7 +83,10 @@ export function RoutineCalendarHero({
       ? `Найкраща серія ${currentStreak} ${pluralDays(currentStreak)}`
       : "";
   const metaText = [
-    dayProgress.scheduled > 0 ? "" : DAY_PROGRESS_EMPTY_LABEL[timeMode],
+    // Без жодної звички порожній стан уже показує список нижче, дубль не потрібен.
+    dayProgress.scheduled > 0 || activeHabitsCount === 0
+      ? ""
+      : DAY_PROGRESS_EMPTY_LABEL[timeMode],
     streakText,
   ]
     .filter(Boolean)

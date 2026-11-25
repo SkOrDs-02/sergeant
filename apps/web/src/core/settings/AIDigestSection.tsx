@@ -159,7 +159,7 @@ export function AIDigestSection() {
           <p
             className={
               sergeantNudges.loaded
-                ? "text-style-caption text-danger-strong dark:text-danger"
+                ? "text-style-caption text-danger-strong"
                 : "text-style-caption text-muted"
             }
             role={sergeantNudges.loaded ? "alert" : "status"}
