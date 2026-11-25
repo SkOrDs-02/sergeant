@@ -1,8 +1,9 @@
 // @vitest-environment jsdom
 /**
- * Операція з не-гривневої картки показується у валюті рахунку, а не з ₴ на
- * тому самому числі, і має позначку «не враховано» (Журнал рішень finyk
- * 2026-11-25).
+ * Операція з не-гривневої картки (спека finyk-fx-nbu.md): з курсом НБУ
+ * показується в гривні з валютною сумою підписом і курсом у підказці; без
+ * курсу - у валюті рахунку, не з ₴ на тому самому числі, з позначкою
+ * «Курс ще не підтягнувся».
  */
 import { describe, it, expect } from "vitest";
 import { render, screen } from "@testing-library/react";
@@ -22,11 +23,33 @@ function mkTx(overrides: Partial<TxRowTx> = {}): TxRowTx {
 }
 
 describe("TxRow: картка не в гривні", () => {
-  it("−100,00 $ без знака гривні й з поясненням", () => {
+  it("без курсу: −100,00 $ без знака гривні й з поясненням", () => {
     const { container } = render(<TxRow tx={mkTx()} />);
     expect(container.textContent).toContain("$");
     expect(container.textContent).not.toContain("₴");
-    expect(screen.getByText(/Не враховано: картка не в гривні/)).toBeTruthy();
+    expect(screen.getByText(/Курс ще не підтягнувся/)).toBeTruthy();
+  });
+
+  it("з курсом НБУ: гривня в сумі, долари підписом, курс у підказці", () => {
+    const { container } = render(
+      <TxRow
+        tx={mkTx({
+          amount: -415_000,
+          accountAmount: -10_000,
+          accountCurrencyCode: 840,
+          amountUah: -415_000,
+          fxRate: { uahPerUnit: 41.5, date: "2026-11-24" },
+        })}
+      />,
+    );
+    const text = container.textContent ?? "";
+    expect(text).toContain("₴");
+    expect(text).toContain("$");
+    expect(text.replace(/\s/g, "")).toContain("4150,00");
+    expect(screen.queryByText(/Курс ще не підтягнувся/)).toBeNull();
+    expect(
+      container.querySelector('[title="за курсом НБУ 41,50 ₴ на 24.11.2026"]'),
+    ).toBeTruthy();
   });
 
   it("гривнева картка лишається в ₴ без пояснення", () => {
@@ -40,6 +63,6 @@ describe("TxRow: картка не в гривні", () => {
       />,
     );
     expect(container.textContent).toContain("₴");
-    expect(screen.queryByText(/Не враховано: картка/)).toBeNull();
+    expect(screen.queryByText(/Курс ще не підтягнувся/)).toBeNull();
   });
 });

@@ -22,6 +22,11 @@ export function webhookTxToNormalized(dto: MonoTransactionDto): Transaction {
       hold: dto.hold ?? undefined,
       operationAmount: dto.operationAmount,
       currencyCode: dto.currencyCode,
+      // Валюта рахунку і гривнева сума за курсом НБУ (finyk-fx-nbu.md):
+      // `normalizeTransaction` ставить гривневий еквівалент в `amount`.
+      accountCurrencyCode: dto.accountCurrencyCode,
+      amountUah: dto.amountUah,
+      fxRate: dto.fxRate,
       commissionRate: dto.commissionRate ?? undefined,
       cashbackAmount: dto.cashbackAmount ?? undefined,
       balance: dto.balance ?? undefined,

@@ -73,9 +73,22 @@ function TxRowImpl({
   divider = true,
 }: TxRowProps) {
   const isIncome = tx.amount > 0;
-  // Картка не в гривні: `amount` там у валюті рахунку (центи), тож показуємо
-  // його з символом рахунку, а не з ₴ (Журнал рішень finyk 2026-11-25).
+  // Картка не в гривні без курсу НБУ: `amount` там у валюті рахунку (центи),
+  // тож показуємо його з символом рахунку, а не з ₴, і поза підсумками.
   const foreignCode = foreignAccountCurrencyCode(tx);
+  // Картка не в гривні з курсом НБУ: `amount` уже гривневий еквівалент
+  // (`normalizeTransaction`), а валютна сума їде підписом (finyk-fx-nbu.md).
+  const converted =
+    foreignCode === null &&
+    typeof tx.amountUah === "number" &&
+    typeof tx.accountAmount === "number" &&
+    typeof tx.accountCurrencyCode === "number"
+      ? {
+          amount: tx.accountAmount,
+          symbol: CURRENCY_SYMBOL[tx.accountCurrencyCode] ?? "¤",
+          rateNote: fxRateNote(tx.fxRate),
+        }
+      : null;
   const cat = isIncome
     ? getIncomeCategoryForTransaction(
         tx,
@@ -232,10 +245,29 @@ function TxRowImpl({
           </div>
           {foreignCode !== null && (
             <div className="text-style-caption text-muted">
-              Не враховано: картка не в гривні
+              Курс ще не підтягнувся
+            </div>
+          )}
+          {converted !== null && (
+            <div
+              className="text-style-caption text-muted tabular-nums"
+              title={converted.rateNote ?? undefined}
+            >
+              <MaskedAmount masked={hideAmount}>
+                <Money
+                  amount={converted.amount / 100}
+                  signed
+                  kopecks
+                  symbol={converted.symbol}
+                />
+              </MaskedAmount>
+              {converted.rateNote !== null && (
+                <span className="sr-only">, {converted.rateNote}</span>
+              )}
             </div>
           )}
           {foreignCode === null &&
+            converted === null &&
             tx.currencyCode !== CURRENCY.UAH &&
             tx.operationAmount && (
               <div className="text-style-caption text-muted tabular-nums">
@@ -258,6 +290,19 @@ function TxRowImpl({
       </div>
     </div>
   );
+}
+
+/** «за курсом НБУ 41,50 ₴ на 24.11.2026», або `null` без курсу (операція в гривні). */
+function fxRateNote(
+  fxRate: { uahPerUnit: number; date: string } | null | undefined,
+): string | null {
+  if (!fxRate) return null;
+  const rate = fxRate.uahPerUnit.toLocaleString("uk-UA", {
+    minimumFractionDigits: 2,
+    maximumFractionDigits: 2,
+  });
+  const [y, m, d] = fxRate.date.split("-");
+  return `за курсом НБУ ${rate} ₴ на ${d}.${m}.${y}`;
 }
 
 export const TxRow = memo(TxRowImpl);
