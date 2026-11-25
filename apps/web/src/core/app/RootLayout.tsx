@@ -1,6 +1,5 @@
 import {
   Suspense,
-  lazy,
   useCallback,
   useEffect,
   useRef,
@@ -8,6 +7,7 @@ import {
   type ReactNode,
 } from "react";
 import { Outlet, useLocation, useNavigate } from "react-router-dom";
+import { lazyDefault, lazyImport } from "../lib/lazyImport";
 import { useTheme } from "@shared/hooks/useTheme";
 import { useKeyboardShortcutsModal } from "@shared/components/ui/KeyboardShortcutsModal";
 import { useCommandPaletteControls } from "@shared/components/ui/CommandPalette";
@@ -61,16 +61,16 @@ import { useRestoreWebPush } from "./useRestoreWebPush";
 // `drizzle-orm` — який `manualChunks` склеює в ОДИН чанк `vendor-sqlite`.
 // Через це рівно одне eager-ребро звідси клало ~69 kB brotli на критичний
 // шлях. Розбір: `docs/work/specs/tech-debt/frontend.md` § eager-бюджет.
-const NutritionBootCluster = lazy(
+const NutritionBootCluster = lazyDefault(
   () => import("../../modules/nutrition/hooks/NutritionBootCluster"),
 );
-const FinykBootCluster = lazy(
+const FinykBootCluster = lazyDefault(
   () => import("../../modules/finyk/hooks/FinykBootCluster"),
 );
-const FizrukBootCluster = lazy(
+const FizrukBootCluster = lazyDefault(
   () => import("../../modules/fizruk/hooks/FizrukBootCluster"),
 );
-const RoutineBootCluster = lazy(
+const RoutineBootCluster = lazyDefault(
   () => import("../../modules/routine/hooks/RoutineBootCluster"),
 );
 import { useProfileWriteThroughBoot } from "../profile/useProfileWriteThroughBoot";
@@ -149,20 +149,18 @@ function BootGate({ children }: { children: ReactNode }) {
  * (`size:eager`). Статичний імпорт звідси затягнув би його до першого
  * кадру всім.
  */
-const PendingDeletionScreen = lazy(() =>
-  import("../profile/PendingDeletionScreen").then((mod) => ({
-    default: mod.PendingDeletionScreen,
-  })),
+const PendingDeletionScreen = lazyImport(
+  () => import("../profile/PendingDeletionScreen"),
+  "PendingDeletionScreen",
 );
 
 /**
  * Ліниво з тієї ж причини: екран потрібен лише під час збою `me`, а в
  * eager-бюджеті кожен кілобайт на рахунку.
  */
-const AuthUnavailableScreen = lazy(() =>
-  import("./AuthUnavailableScreen").then((mod) => ({
-    default: mod.AuthUnavailableScreen,
-  })),
+const AuthUnavailableScreen = lazyImport(
+  () => import("./AuthUnavailableScreen"),
+  "AuthUnavailableScreen",
 );
 
 function AppShell({ children }: { children: React.ReactNode }) {
