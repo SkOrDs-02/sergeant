@@ -163,16 +163,12 @@ export function WelcomeModulePicker({
         {copy.cta}
       </Button>
 
-      {/* Підказка лише на порожньому виборі: «додати можна пізніше» під
-          активною кнопкою прибрано 2026-11-25 (власник: текст другорядний,
-          стан показують галочки). Живий регіон стоїть завжди, щоб
-          скрінрідер озвучив появу підказки. */}
       <p
-        className="text-style-caption text-muted -mt-2 empty:hidden"
-        role="status"
-        aria-live="polite"
+        className="text-style-caption text-muted -mt-2"
+        role={ctaDisabled ? "status" : undefined}
+        aria-live={ctaDisabled ? "polite" : undefined}
       >
-        {ctaDisabled ? copy.emptyHint : null}
+        {ctaDisabled ? copy.emptyHint : copy.lateHint}
       </p>
 
       {/* До 2026-09-16 це був ручний `<button>` із власною фокус-рамкою і
