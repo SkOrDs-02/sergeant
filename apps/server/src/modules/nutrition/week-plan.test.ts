@@ -217,7 +217,7 @@ describe("week-plan handler", () => {
       handler(makeReq({ pantry: ["гречка"], locale: "uk-UA" }), makeRes()),
     ).rejects.toMatchObject({
       name: "ExternalServiceError",
-      message: "Асистент тимчасово недоступний. Спробуй пізніше.",
+      message: "Сержант тимчасово недоступний. Спробуй пізніше.",
       status: 502,
       code: "ANTHROPIC_ERROR",
     });

@@ -224,7 +224,7 @@ describe("useChatSend — стрім першого ходу", () => {
   it("обрив після видимого тексту: написане лишається, «Ще раз» несе питання", async () => {
     firstTurnMock.mockImplementation(async (_p: unknown, o: FirstTurnOpts) => {
       o.onText?.("Цього тижня ти витратив ");
-      throw new ChatStreamError("Асистент тимчасово недоступний");
+      throw new ChatStreamError("Сержант тимчасово недоступний");
     });
 
     const { result } = renderHook(useHarness, { wrapper });
@@ -243,7 +243,7 @@ describe("useChatSend — стрім першого ходу", () => {
     firstTurnMock.mockImplementationOnce(
       async (_p: unknown, o: FirstTurnOpts) => {
         o.onText?.("Цього тижня ");
-        throw new ChatStreamError("Асистент тимчасово недоступний");
+        throw new ChatStreamError("Сержант тимчасово недоступний");
       },
     );
     firstTurnMock.mockResolvedValueOnce({ text: "960 грн." });

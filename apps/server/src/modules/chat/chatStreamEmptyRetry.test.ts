@@ -108,7 +108,7 @@ function frames(writes: string[]): string[] {
     .map((w) => w.slice("data: ".length).replace(/\n\n$/, ""));
 }
 
-const GENERIC_ERR = JSON.stringify({ err: "Асистент тимчасово недоступний" });
+const GENERIC_ERR = JSON.stringify({ err: "Сержант тимчасово недоступний" });
 
 const PAYLOAD = {
   model: "deepseek/deepseek-v4-flash",

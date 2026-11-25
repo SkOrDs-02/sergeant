@@ -670,7 +670,7 @@ describe("coachInsight", () => {
     expect(caught).toMatchObject({
       status: 502,
       code: "ANTHROPIC_ERROR",
-      message: "Асистент тимчасово недоступний. Спробуй пізніше.",
+      message: "Сержант тимчасово недоступний. Спробуй пізніше.",
     });
   });
 
@@ -693,7 +693,7 @@ describe("coachInsight", () => {
     expect(caught).toMatchObject({
       status: 502,
       code: "ANTHROPIC_ERROR",
-      message: "Асистент тимчасово недоступний. Спробуй пізніше.",
+      message: "Сержант тимчасово недоступний. Спробуй пізніше.",
     });
   });
 

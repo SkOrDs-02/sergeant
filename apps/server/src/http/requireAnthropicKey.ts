@@ -41,7 +41,7 @@ export function requireChatUpstreamKey(): RequestHandler {
   return (req, res, next) => {
     if (!chatViaOpenRouter() && !env.ANTHROPIC_API_KEY) {
       res.status(503).json({
-        error: "ШІ-помічник тимчасово недоступний. Спробуй пізніше.",
+        error: "Сержант тимчасово недоступний. Спробуй пізніше.",
         code: "ANTHROPIC_KEY_MISSING",
       });
       return;
@@ -107,7 +107,7 @@ export function requireLlmUpstream(path: LlmPath): RequestHandler {
       // Формулювання й `code` спільні з рештою гейтів: назву env-змінної
       // клієнту не світимо (вона їде у `formatApiError` дослівно).
       res.status(503).json({
-        error: "ШІ-помічник тимчасово недоступний. Спробуй пізніше.",
+        error: "Сержант тимчасово недоступний. Спробуй пізніше.",
         code: "ANTHROPIC_KEY_MISSING",
       });
       return;

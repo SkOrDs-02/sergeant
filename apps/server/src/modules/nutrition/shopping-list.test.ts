@@ -245,7 +245,7 @@ describe("shopping-list handler", () => {
       ),
     ).rejects.toMatchObject({
       name: "ExternalServiceError",
-      message: "Асистент тимчасово недоступний. Спробуй пізніше.",
+      message: "Сержант тимчасово недоступний. Спробуй пізніше.",
       status: 503,
       code: "ANTHROPIC_ERROR",
     });
