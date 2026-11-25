@@ -602,7 +602,10 @@ export function AddMealSheet({
         zIndex={120}
         // CTA живе у слоті footer: лише тоді Sheet публікує
         // `--sgt-sheet-footer-inset` і трей тостів піднімається над
-        // кнопками, а не лягає на «Додати прийом» (аудит ux-20).
+        // кнопками, а не лягає на «Додати прийом» (аудит ux-20). На кроці
+        // джерела футера немає, а тіло і є вибором (поле пошуку, «На 100 г»),
+        // тож трей стає над усім аркушем.
+        trayAbovePanel={step === "source"}
         footer={
           step === "source" ? undefined : (
             <MealSaveButtons

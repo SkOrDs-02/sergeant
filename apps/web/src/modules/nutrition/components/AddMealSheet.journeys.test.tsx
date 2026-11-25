@@ -188,6 +188,34 @@ describe("AddMealSheet — complete edit and photo journeys", () => {
     expect(document.querySelector("[data-sheet-footer]")).toBeNull();
   });
 
+  // Тост «Застосунок готовий до роботи офлайн» лягав на поле пошуку й
+  // рядки «На 100 г»/«За всю порцію»: на кроці джерела футера немає, тож
+  // трей мусить стати над усім аркушем, а не над нулем.
+  it("на кроці джерела піднімає трей тостів над усім аркушем", async () => {
+    const originalRect = HTMLElement.prototype.getBoundingClientRect;
+    vi.spyOn(HTMLElement.prototype, "getBoundingClientRect").mockImplementation(
+      function (this: HTMLElement) {
+        if (this.getAttribute("role") === "dialog") {
+          return new DOMRect(0, window.innerHeight - 300, 390, 300);
+        }
+        return originalRect.call(this);
+      },
+    );
+    const root = document.documentElement;
+    try {
+      renderJourney({ initialMeal: original });
+      await screen.findByRole("button", { name: "Зберегти зміни" });
+      fireEvent.click(
+        screen.getByRole("button", { name: "Обрати інший продукт" }),
+      );
+      expect(root.style.getPropertyValue("--sgt-sheet-footer-inset")).toBe(
+        "300px",
+      );
+    } finally {
+      vi.mocked(HTMLElement.prototype.getBoundingClientRect).mockRestore();
+    }
+  });
+
   it("keeps an unknown barcode replacement within single-meal paths", async () => {
     renderJourney({ initialMeal: original });
     await screen.findByRole("button", { name: "Обрати інший продукт" });

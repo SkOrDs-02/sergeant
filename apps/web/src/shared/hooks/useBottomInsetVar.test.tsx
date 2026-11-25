@@ -65,6 +65,44 @@ describe("useBottomInsetVar", () => {
     expect(document.documentElement.style.getPropertyValue(VAR)).toBe("100px");
   });
 
+  it("вкладений власник на закритті повертає смугу нижнього, а не стирає її", () => {
+    window.innerHeight = 800;
+    const view = render(<Probe top={500} />);
+    view.rerender(
+      <>
+        <Probe top={500} />
+        <Probe top={700} />
+      </>,
+    );
+    expect(document.documentElement.style.getPropertyValue(VAR)).toBe("100px");
+    view.rerender(
+      <>
+        <Probe top={500} />
+        <Probe top={700} active={false} />
+      </>,
+    );
+    expect(document.documentElement.style.getPropertyValue(VAR)).toBe("300px");
+  });
+
+  it("нижній власник не перетирає верхнього своїм перевиміром", () => {
+    window.innerHeight = 800;
+    const view = render(
+      <section>
+        <Probe top={500} />
+      </section>,
+    );
+    view.rerender(
+      <>
+        <section>
+          <Probe top={500} />
+        </section>
+        <Probe top={700} />
+      </>,
+    );
+    fireEvent.animationEnd(view.container.querySelector("section")!);
+    expect(document.documentElement.style.getPropertyValue(VAR)).toBe("100px");
+  });
+
   it("елемент за межами вʼюпорта дає 0, а не відʼємне значення", () => {
     window.innerHeight = 800;
     render(<Probe top={900} />);

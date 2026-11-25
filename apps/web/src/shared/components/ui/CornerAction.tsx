@@ -1,17 +1,10 @@
-import {
-  useCallback,
-  useLayoutEffect,
-  useRef,
-  useState,
-  type ReactNode,
-} from "react";
+import { useLayoutEffect, useRef, useState, type ReactNode } from "react";
 import { useVisualKeyboardInset } from "@sergeant/shared";
 import { cn } from "../../lib/ui/cn";
 import { hapticTap } from "../../lib/adapters/haptic";
 import {
   FAB_INSET_VAR,
   FAB_WIDTH_VAR,
-  SHEET_FOOTER_INSET_VAR,
   useBottomInsetVar,
 } from "@shared/hooks/useBottomInsetVar";
 import { messages } from "@shared/i18n/uk";
@@ -133,23 +126,21 @@ export function AddAction({
   lead?: ((close: () => void) => ReactNode) | undefined;
 }) {
   const [open, setOpen] = useState(false);
-  const sourcesDialogRef = useRef<HTMLElement | null>(null);
-  const attachSources = useCallback((node: HTMLUListElement | null) => {
-    sourcesDialogRef.current =
-      node?.closest<HTMLElement>('[role="dialog"]') ?? null;
-  }, []);
-  // Тут усе тіло — список дій, а не звичайний контент аркуша. Тост має
-  // стояти над джерелами навіть без footer, щоб не перекривати вибір.
-  useBottomInsetVar(sourcesDialogRef, SHEET_FOOTER_INSET_VAR, open);
   const title = messages.actions.add;
 
   return (
     <>
       <CornerAction label={title} plus onClick={() => setOpen(true)} />
-      <Sheet open={open} onClose={() => setOpen(false)} title={title}>
+      {/* Тут усе тіло — список дій, а не звичайний контент аркуша. Тост має
+          стояти над джерелами навіть без footer, щоб не перекривати вибір. */}
+      <Sheet
+        open={open}
+        onClose={() => setOpen(false)}
+        title={title}
+        trayAbovePanel
+      >
         {lead?.(() => setOpen(false))}
         <ul
-          ref={attachSources}
           data-testid="add-sources"
           className="divide-y divide-line border-y border-line"
         >

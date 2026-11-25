@@ -1,6 +1,14 @@
 import { useLayoutEffect, type RefObject } from "react";
 
 /**
+ * Власники кожної змінної в порядку активації: пише лише останній, а коли він
+ * іде, змінну перевимірює попередній. Без цього вкладений аркуш з футером
+ * (рецепт поверх кроку джерела в «Додати прийом їжі») на закритті стирав
+ * значення нижнього аркуша, і трей тостів лягав на його тіло.
+ */
+const owners = new Map<string, Array<() => void>>();
+
+/**
  * Публікує «скільки пікселів знизу вʼюпорта займає цей елемент» у CSS-змінну
  * на `<html>`, щоб її бачили **fixed**-шари з іншої гілки дерева.
  *
@@ -38,12 +46,15 @@ export function useBottomInsetVar(
     // змінна спільна на `<html>`, і зняття тут стирало значення ІНШОГО,
     // відкритого власника (закритий `Sheet`, що змонтувався поруч, скидав
     // футер відкритого аркуша, і тост лягав на його CTA). Перехід
-    // active → false прибирає cleanup попереднього запуску.
-    // ponytail: два одночасно активні власники однієї змінної досі
-    // перетирають одне одного; лічильник власників, якщо таке зʼявиться.
+    // active → false прибирає cleanup попереднього запуску. Кілька
+    // одночасно активних власників ділять змінну через `owners`.
     if (!active || !el) return;
 
+    const stack = owners.get(varName) ?? [];
+    owners.set(varName, stack);
+
     const publish = () => {
+      if (stack[stack.length - 1] !== publish) return;
       const rect = el.getBoundingClientRect();
       // На поверненні після клавіатури translate ще завершується:
       // активний нав уже займає свою повну смугу, навіть якщо rect.top
@@ -57,6 +68,7 @@ export function useBottomInsetVar(
       root.style.setProperty(varName, `${occupied}px`);
     };
 
+    stack.push(publish);
     publish();
     // CSS translation змінює top без ResizeObserver. Аркуш анімує
     // предка списку джерел, тому слухаємо capture також на предках.
@@ -89,7 +101,10 @@ export function useBottomInsetVar(
       document.removeEventListener("animationcancel", settled, true);
       window.removeEventListener("resize", publish);
       window.visualViewport?.removeEventListener("resize", publish);
-      root.style.removeProperty(varName);
+      stack.splice(stack.indexOf(publish), 1);
+      const previous = stack[stack.length - 1];
+      if (previous) previous();
+      else root.style.removeProperty(varName);
     };
   }, [ref, varName, active]);
 }
