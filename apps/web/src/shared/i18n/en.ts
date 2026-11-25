@@ -399,7 +399,6 @@ export const messagesEn: Partial<{
     gridAriaLabel: "Starter modules",
     cta: "Get started",
     emptyHint: "Select at least one module to continue.",
-    lateHint: "You can add more later in settings.",
     haveAccount: "I already have an account",
     taglines: {
       finyk: "Expenses, budgets and trends",

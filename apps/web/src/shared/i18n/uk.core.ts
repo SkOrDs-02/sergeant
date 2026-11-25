@@ -280,8 +280,7 @@ export const coreMessages = {
     // числа порогу: перший екран не показує цифр до першого запису
     // (інваріант `WelcomeScreen.test.tsx`); число несе картка хаба нижче.
     welcomeLinkExamplePhrase: "у дні тренувань ти витрачаєш менше",
-    welcomeLinkExample:
-      "Коли записів набереться достатньо, Сержант знайде звʼязки між модулями. Наприклад: «{phrase}».",
+    welcomeLinkExample: "Сержант помітить, що {phrase}.",
     // Картка порожнього хаба на місці смуги «Модулів увімкнено: N з 4»
     // (С-4 (а), П-20 (А), спека `hub-newcomer-card-and-insights.md`).
     newcomerTimeline: {
