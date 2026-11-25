@@ -9,8 +9,9 @@
  * via `@core/errors/NotFoundPage` (was previously a re-export shim at
  * `apps/web/src/core/NotFoundPage.tsx` — deleted 2026-05-21).
  */
-import { useNavigate } from "react-router-dom";
+import { useLocation, useNavigate } from "react-router-dom";
 import { Button, EmptyState } from "@shared/components/ui";
+import { SUPPORT_EMAIL } from "../legal/legalShared";
 
 export interface NotFoundPageProps {
   /**
@@ -23,6 +24,7 @@ export interface NotFoundPageProps {
 
 export function NotFoundPage({ homePath = "/" }: NotFoundPageProps) {
   const navigate = useNavigate();
+  const location = useLocation();
   return (
     <main
       id="main"
@@ -37,6 +39,20 @@ export function NotFoundPage({ homePath = "/" }: NotFoundPageProps) {
         // The empty state is the entire 404 surface, so it has to carry the
         // page heading — otherwise this route ships with no heading at all.
         titleAs="h1"
+        ariaLive="off"
+        // Рішення власника 2026-11-25: підказка видима, з реальним каналом.
+        // «Ми» тут доречне: це жива команда, а не голос застосунку.
+        tertiaryLink={
+          <p className="text-style-caption text-subtle">
+            Прийшов за зовнішнім посиланням?{" "}
+            <a
+              href={`mailto:${SUPPORT_EMAIL}`}
+              className="inline-flex min-h-[44px] items-center text-brand-strong underline rounded-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-focus/45"
+            >
+              Напиши нам
+            </a>
+          </p>
+        }
         description="Перевір посилання або повернись на головну."
         primaryAction={
           <Button
@@ -56,16 +72,15 @@ export function NotFoundPage({ homePath = "/" }: NotFoundPageProps) {
             variant="outline"
             size="lg"
             onClick={() => {
-              navigate(-1);
+              // Перший запис історії (зовнішнє посилання, набрана адреса):
+              // `navigate(-1)` нікуди б не привів або вивів би з застосунку.
+              if (location.key !== "default") navigate(-1);
+              else navigate(homePath, { replace: true });
             }}
           >
             Назад
           </Button>
         }
-        // §2 забороняє «ми», але тут це не голос застосунку, а жива команда,
-        // до якої людину і просять написати. 1-а однини («напиши мені, я
-        // полагоджу») обіцяла б, що битий лінк лагодить сам застосунок.
-        hint="Прийшов за зовнішнім посиланням? Напиши нам, ми його полагодимо."
       />
     </main>
   );

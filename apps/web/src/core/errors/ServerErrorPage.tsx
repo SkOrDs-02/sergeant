@@ -40,6 +40,7 @@ export function ServerErrorPage({ onReset }: ServerErrorPageProps) {
         Помилка сервера. Спробуй оновити сторінку.
       </p>
       <EmptyState
+        ariaLive="off"
         size="lg"
         eyebrow="500"
         title="Щось пішло не так"

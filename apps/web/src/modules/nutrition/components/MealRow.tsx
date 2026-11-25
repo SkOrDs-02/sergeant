@@ -13,6 +13,7 @@ import {
   focusRowProps,
   focusRowTargetProps,
 } from "@shared/lib/ui/focusFallback";
+import { messages } from "@shared/i18n/uk";
 import { getMealThumbnailBlob } from "../lib/mealPhotoStorage";
 
 function MealThumb({ mealId }: { mealId: string }) {
@@ -89,7 +90,6 @@ export function MealRow({ meal, onRemove, onEdit }: MealRowProps) {
           "flex flex-1 min-w-0 items-baseline gap-3 rounded-lg text-left focus-ring",
           onEdit ? "cursor-pointer" : "cursor-default",
         )}
-        aria-label={onEdit ? "Редагувати запис" : undefined}
       >
         <span className="flex min-w-0 flex-1 flex-col">
           <span className="text-style-body font-semibold text-text truncate">
@@ -140,8 +140,11 @@ export function MealRow({ meal, onRemove, onEdit }: MealRowProps) {
           focusNeighborRow(e.currentTarget);
           onRemove?.();
         }}
-        aria-label="Видалити запис"
-        className="text-muted hover:text-danger-strong sm:opacity-0 sm:group-hover:opacity-100 sm:focus-visible:opacity-100 focus-visible:ring-2 focus-visible:ring-focus/45"
+        aria-label={messages.nutrition.mealRow.deleteAria.replace(
+          "{name}",
+          meal.name,
+        )}
+        className="text-muted hover:text-danger-strong pointer-fine:opacity-0 pointer-fine:group-hover:opacity-100 pointer-fine:focus-visible:opacity-100 focus-visible:ring-2 focus-visible:ring-focus/45"
       >
         <Icon name="close" size="sm" aria-hidden />
       </Button>

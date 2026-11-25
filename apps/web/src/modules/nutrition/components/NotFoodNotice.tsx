@@ -49,7 +49,7 @@ export function NotFoodNotice({
       <div className="text-style-body font-semibold text-text">
         {copy.title}
       </div>
-      <p className="mt-1 text-style-caption text-muted leading-relaxed">
+      <p className="mt-1 text-style-body text-muted">
         {what
           ? `На фото схоже на «${what}», порахувати КБЖВ немає з чого.`
           : copy.unnamed}{" "}

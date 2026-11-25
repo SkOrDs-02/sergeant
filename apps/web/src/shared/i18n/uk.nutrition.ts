@@ -9,6 +9,9 @@
  * Спредиться в `messages.nutrition` з `uk.ts`.
  */
 export const nutritionPageMessages = {
+  mealRow: {
+    deleteAria: "Видалити {name}",
+  },
   journalEmpty: {
     title: "Поки немає записів",
     description: "Сьогодні 0 записів",

@@ -266,7 +266,7 @@ describe("WelcomeScreen — крок згоди на аналітику післ
     render(<WelcomeScreen onDone={onDone} onOpenAuth={() => {}} />);
 
     // Знімаємо один модуль: вибір має пережити крок згоди.
-    fireEvent.click(screen.getByRole("button", { name: "Рутина" }));
+    fireEvent.click(screen.getByRole("button", { name: /^Рутина/ }));
     fireEvent.click(screen.getByRole("button", { name: "Почати" }));
     fireEvent.click(screen.getByRole("button", { name: consent.accept }));
 
