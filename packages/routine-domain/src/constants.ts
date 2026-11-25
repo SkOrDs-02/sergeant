@@ -46,10 +46,10 @@ export const RECURRENCE_OPTIONS: readonly RecurrenceOption[] = [
   },
   {
     value: "monthly",
-    label: "Щомісяця (число; лютий - останній день)",
+    label: "Щомісяця",
     shortLabel: "Щомісяця",
   },
-  { value: "once", label: "Одноразово (одна дата)", shortLabel: "Одноразово" },
+  { value: "once", label: "Одноразово", shortLabel: "Одноразово" },
 ];
 
 /** Weekday labels (Ukrainian, Monday first). */

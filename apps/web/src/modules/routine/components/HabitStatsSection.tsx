@@ -182,7 +182,7 @@ export function HabitStatsSection({
               </span>
             )}
             {pct7 === null && pct30 === null && pct90 === null && (
-              <span className="text-style-label text-muted">—</span>
+              <span className="text-style-label text-muted">–</span>
             )}
           </p>
         )}

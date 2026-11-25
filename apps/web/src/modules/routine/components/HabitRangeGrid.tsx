@@ -192,7 +192,7 @@ export function HabitRangeGrid({
                       {row.scheduled > 0 ? (
                         <Measure value={Math.round(row.rate * 100)} unit="%" />
                       ) : (
-                        "—"
+                        "–"
                       )}
                     </span>
                   </div>

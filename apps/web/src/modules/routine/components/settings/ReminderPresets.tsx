@@ -124,7 +124,7 @@ export function ReminderPresets({
         >
           <p className="text-style-label text-muted min-w-0 flex-1">
             {prefEnabled
-              ? "Браузер не дозволяє сповіщення, тож нагадування не прийдуть"
+              ? "Браузер блокує сповіщення, нагадування не прийдуть"
               : "Нагадування вимкнені в налаштуваннях"}
           </p>
           <Button
