@@ -45,7 +45,7 @@ describe("privacyDocument: потоки даних Monobank", () => {
     // Публічна політика цього не обіцяє, опис реалізації лишається в
     // docs/governance/security/llm-subprocessors.md.
     const aiSection = privacyDocument.sections.find((section) =>
-      section.title.startsWith("AI: що саме виходить"),
+      section.title.startsWith("ШІ: що саме виходить"),
     );
     expect(aiSection).toBeDefined();
     const masking = aiSection?.body.find((line) =>
@@ -84,7 +84,7 @@ describe("privacyDocument: чеки й скриншоти виписок іду�
 
   it("розділ про AI каже, що кадр чека чи виписки їде цілком і не маскується", () => {
     const aiSection = privacyDocument.sections.find((section) =>
-      section.title.startsWith("AI: що саме виходить"),
+      section.title.startsWith("ШІ: що саме виходить"),
     );
     const receipt = aiSection?.body.find((line) =>
       line.startsWith("Фото чека чи скриншот банківської виписки"),

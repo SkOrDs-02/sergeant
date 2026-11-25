@@ -59,10 +59,10 @@ describe("LegalPage", () => {
   // OpenAI для чеків і скриншотів виписок 2026-11-19 змінив лише політику
   // приватності, cookies лишаються з датою 11 листопада.
   it.each([
-    [LEGAL_PRIVACY_PATH, "19 листопада 2026"],
-    [LEGAL_COOKIES_PATH, "11 листопада 2026"],
-    [LEGAL_TERMS_PATH, "31 липня 2026"],
-    [LEGAL_OFFER_PATH, "31 липня 2026"],
+    [LEGAL_PRIVACY_PATH, "25 листопада 2026"],
+    [LEGAL_COOKIES_PATH, "25 листопада 2026"],
+    [LEGAL_TERMS_PATH, "25 листопада 2026"],
+    [LEGAL_OFFER_PATH, "25 листопада 2026"],
   ] as const)("%s показує власну дату оновлення: %s", (pathname, date) => {
     render(
       <MemoryRouter>
