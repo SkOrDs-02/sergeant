@@ -15,6 +15,7 @@ import {
   type WaitlistSubmitResponse,
   WaitlistTierSchema,
 } from "@sergeant/shared";
+import { useAuthOptional } from "../auth/AuthContext";
 import { ANALYTICS_EVENTS, trackEvent } from "../observability/analytics";
 
 // User-facing labels follow the locked Free + Premium scheme (Phase 7 D3).
@@ -91,6 +92,11 @@ export function WaitlistForm({
   className,
 }: WaitlistFormProps) {
   const toast = useToast();
+  // Залогіненому підставляємо email сесії (поле лишається редагованим):
+  // вводити вручну адресу, яку застосунок уже знає, — зайвий крок. Гість
+  // (і юніт-тести без `AuthProvider`) отримує порожнє поле.
+  const auth = useAuthOptional();
+  const sessionEmail = auth?.user?.email ?? "";
   // 429 — rate-limit ловимо окремим toast-ом і прибираємо top-level
   // serverError-банер (інакше дублюємо повідомлення). Цей ref ставиться
   // у `onSubmit` при rate-limit і скидається на наступному успішному
@@ -115,7 +121,7 @@ export function WaitlistForm({
   } = useApiForm<WaitlistFormValues, WaitlistSubmitResponse>({
     schema: waitlistFormSchema,
     defaultValues: {
-      email: "",
+      email: sessionEmail,
       tier_interest: defaultTier ?? "unsure",
     },
     onSubmit: async (values) => {
@@ -145,7 +151,7 @@ export function WaitlistForm({
       } else {
         toast.info("Цей email уже в списку.");
       }
-      reset({ email: "", tier_interest: values.tier_interest });
+      reset({ email: sessionEmail, tier_interest: values.tier_interest });
       onSuccess?.(res.created);
     },
   });
@@ -160,6 +166,16 @@ export function WaitlistForm({
       clearServerError();
     }
   }, [serverError, clearServerError]);
+
+  // Сесія часто приходить уже після першого render-у (`/api/me` ще в
+  // польоті), а RHF бере `defaultValues` лише один раз. Тож email сесії
+  // доливаємо пізніше — але тільки в порожнє поле, щоб не перезаписати
+  // те, що людина вже почала вводити.
+  useEffect(() => {
+    if (!sessionEmail) return;
+    if (watch("email")) return;
+    setValue("email", sessionEmail);
+  }, [sessionEmail, setValue, watch]);
 
   // Якщо preset tier змінився ззовні (батьківський компонент перерендерив
   // форму з іншим defaultTier — напр. користувач клікнув іншу tier-картку
