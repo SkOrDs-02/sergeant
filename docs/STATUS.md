@@ -33,11 +33,11 @@
 - [#78](https://bitbucket.org/skords01/sergeant/pull-requests/78) — fix(web): копі сайту за аудитом: глосарій, жаргон, факт у Політиці приватності _(2026-09-26)_
 - [#61](https://bitbucket.org/skords01/sergeant/pull-requests/61) — docs(docs): синк реєстру PR (#41-#64) _(2026-09-26)_
 
-## 🔵 В роботі — 51 відкритий документ
+## 🔵 В роботі — 44 відкриті документи
 
 | Трекер        | Відкрито |
 | ------------- | -------- |
-| Активні спеки | 51       |
+| Активні спеки | 44       |
 
 **Найактивніше (8, за останніми PR):**
 
@@ -45,10 +45,10 @@
 - [`work/specs/tech-debt/frontend.md`](./work/specs/tech-debt/frontend.md) — Frontend Tech Debt — Sergeant Web — Active _(Активні спеки)_
 - [`work/specs/tech-debt/backend.md`](./work/specs/tech-debt/backend.md) — Backend Tech Debt Inventory — Active _(Активні спеки)_
 - [`work/specs/launch/product-os/ftux-master-tracker.md`](./work/specs/launch/product-os/ftux-master-tracker.md) — FTUX Master Tracker — стан, проблеми, план — Active — **single source of truth** для First-Time User Experience. _(Активні спеки)_
+- [`work/specs/finyk-investment-suggestions.md`](./work/specs/finyk-investment-suggestions.md) — SPEC: Фінік - підказки «Схоже на відкладення» для інвестицій і депозитів — Draft _(Активні спеки)_
 - [`work/specs/audits/2026-11-25-copy-visual-audit.md`](./work/specs/audits/2026-11-25-copy-visual-audit.md) — Візуальний аудит тексту після вичитки копії (PR #1724) — Draft _(Активні спеки)_
 - [`work/specs/audits/2026-10-01-full-app-audit/domain-logic.md`](./work/specs/audits/2026-10-01-full-app-audit/domain-logic.md) — Аудит 2026-10-01 · Логіка доменів — Active. 67 кластерів (90 знахідок) за першопричиною. Загальний план, метод і обмеження — у _(Активні спеки)_
 - [`work/specs/audits/2026-10-01-full-app-audit/reliability.md`](./work/specs/audits/2026-10-01-full-app-audit/reliability.md) — Аудит 2026-10-01 · Надійність, продуктивність, експлуатація — Active. 64 кластери (91 знахідка) за першопричиною. Загальний план, метод і обмеження — у _(Активні спеки)_
-- [`work/specs/audits/2026-10-01-full-app-audit/data-integrity.md`](./work/specs/audits/2026-10-01-full-app-audit/data-integrity.md) — Аудит 2026-10-01 · Цілісність даних і синхронізація — Active. 82 кластери (129 знахідок) за першопричиною. Загальний план, метод і обмеження — у _(Активні спеки)_
 
 ## ⏭️ Наступний крок / заблоковано
 

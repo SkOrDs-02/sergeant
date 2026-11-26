@@ -1,7 +1,7 @@
 # SPEC: Відновлення локальної копії зі знімка сервера (клієнт)
 
-> **Last touched:** 2026-11-20 by @claude. **Next review:** 2027-06-06.
-> **Status:** Active
+> **Last touched:** 2026-11-26 by @claude. **Next review:** 2027-06-12.
+> **Status:** Implemented - `snapshotRestore.ts`, `snapshotRestoreState.ts`, обробка `isSyncCursorExpiredError` у `syncEngineReader.ts`, `snapshotV2` у `singleton.ts`, «Відновлення з сервера» в `SyncStatusSheet.tsx`; коміт `0612ba267`. Ручна перевірка власника після деплою з `SYNC_SNAPSHOT_ENABLED=true` (§ Верифікація п. 3) не виконана, прапорець за замовчуванням вимкнено.
 
 ## Проблема
 

@@ -187,8 +187,25 @@ export function useHubDashboardState(props: {
   // LOG-8: `entryCount` doubles as the celebration's "is this genuinely the
   // FIRST entry, or a returning device whose 60-day-old account just synced
   // down" guard — see the doc-comment on `useFirstEntryCelebration`.
-  const celebration = useFirstEntryCelebration(hasRealEntry, entryCount);
   const [sessionDays] = useState(() => recordSessionDay() || getSessionDays());
+  // AI-CONTEXT: the FTUX window is anchored to the ACCOUNT, not to this
+  // device. `sessionDays` comes from `recordSessionDay()` in
+  // localStorage, so a reinstall / cleared storage / second browser
+  // restarts it at 1 and resurrected this checklist for long-standing
+  // users (their data syncs back down, so `hasRealEntry` flips true
+  // again and every other term of the gate passes). Better Auth's
+  // server-stamped `user.createdAt` cannot be reset that way; the device
+  // counter is kept only as the pre-auth fallback, where it is also the
+  // correct signal because there is no account yet.
+  const inFirstWeek = isWithinChecklistWindow({
+    accountCreatedAt: user?.createdAt ?? null,
+    sessionDays,
+  });
+  const celebration = useFirstEntryCelebration(
+    hasRealEntry,
+    entryCount,
+    inFirstWeek,
+  );
 
   const [reengagement, setReengagement] = useState(() =>
     shouldShowReengagement(localStorageStore),
@@ -284,19 +301,6 @@ export function useHubDashboardState(props: {
 
   const primaryModule = activeModules[0] as
     "finyk" | "fizruk" | "routine" | "nutrition" | undefined;
-  // AI-CONTEXT: the FTUX window is anchored to the ACCOUNT, not to this
-  // device. `sessionDays` comes from `recordSessionDay()` in
-  // localStorage, so a reinstall / cleared storage / second browser
-  // restarts it at 1 and resurrected this checklist for long-standing
-  // users (their data syncs back down, so `hasRealEntry` flips true
-  // again and every other term of the gate passes). Better Auth's
-  // server-stamped `user.createdAt` cannot be reset that way; the device
-  // counter is kept only as the pre-auth fallback, where it is also the
-  // correct signal because there is no account yet.
-  const inFirstWeek = isWithinChecklistWindow({
-    accountCreatedAt: user?.createdAt ?? null,
-    sessionDays,
-  });
   const showChecklist =
     primaryModule &&
     hasRealEntry &&

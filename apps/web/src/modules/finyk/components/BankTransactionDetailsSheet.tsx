@@ -48,6 +48,8 @@ import { SilpoReceiptSection } from "./SilpoReceiptSection";
 import { TxRowCategoryPicker } from "./TxRowCategoryPicker";
 import { TxRowSplitEditor } from "./TxRowSplitEditor";
 import { ReceiptItemsSection } from "./ReceiptItemsSection";
+import { fxConversion } from "./txRowHelpers";
+import { foreignAccountCurrencyCode } from "@sergeant/finyk-domain/lib/foreignAccountTx";
 import {
   KYIV_TIME_ZONE,
   formatDateTimeShort,
@@ -243,6 +245,17 @@ export function BankTransactionDetailsSheet({
   );
   const remaining = Math.round((totalAmount - splitTotal) * 100) / 100;
   const account = accounts.find((item) => item.id === transaction._accountId);
+  // Курс НБУ тут видимим текстом: у рядку списку він лише в `title`, а
+  // на сенсорному екрані підказки немає.
+  const conversion =
+    foreignAccountCurrencyCode(transaction) === null
+      ? fxConversion({
+          accountAmount: transaction["accountAmount"],
+          accountCurrencyCode: transaction["accountCurrencyCode"],
+          amountUah: transaction["amountUah"],
+          fxRate: transaction["fxRate"],
+        })
+      : null;
   const accountLabel = account?.type
     ? (ACCOUNT_LABELS[account.type] ?? account.type)
     : null;
@@ -328,6 +341,22 @@ export function BankTransactionDetailsSheet({
                 </MaskedAmount>
               </p>
             </div>
+            {conversion && (
+              <p
+                data-testid="finyk-tx-fx-rate"
+                className="mt-2 text-style-caption text-muted tabular-nums"
+              >
+                <MaskedAmount masked={hideAmount}>
+                  <Money
+                    amount={conversion.amount / 100}
+                    signed
+                    kopecks
+                    symbol={conversion.symbol}
+                  />
+                </MaskedAmount>
+                {conversion.rateNote && <>, {conversion.rateNote}</>}
+              </p>
+            )}
           </section>
         </div>
 

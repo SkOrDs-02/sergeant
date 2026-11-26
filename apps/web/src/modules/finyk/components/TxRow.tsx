@@ -14,7 +14,11 @@ import type { TxSplitsMap } from "@sergeant/finyk-domain/domain/types";
 import { foreignAccountCurrencyCode } from "@sergeant/finyk-domain/lib/foreignAccountTx";
 import { txSplitsFor } from "@sergeant/finyk-domain/domain/debtLinkKeys";
 import { cn } from "@shared/lib/ui/cn";
-import { getAccountShortName, type TxRowTx } from "./txRowHelpers";
+import {
+  fxConversion,
+  getAccountShortName,
+  type TxRowTx,
+} from "./txRowHelpers";
 import { TxRowMetaChips } from "./TxRowMetaChips";
 import { MaskedAmount } from "@shared/components/ui/MaskedAmount";
 import { Money } from "@shared/components/ui/Money";
@@ -78,17 +82,7 @@ function TxRowImpl({
   const foreignCode = foreignAccountCurrencyCode(tx);
   // Картка не в гривні з курсом НБУ: `amount` уже гривневий еквівалент
   // (`normalizeTransaction`), а валютна сума їде підписом (finyk-fx-nbu.md).
-  const converted =
-    foreignCode === null &&
-    typeof tx.amountUah === "number" &&
-    typeof tx.accountAmount === "number" &&
-    typeof tx.accountCurrencyCode === "number"
-      ? {
-          amount: tx.accountAmount,
-          symbol: CURRENCY_SYMBOL[tx.accountCurrencyCode] ?? "¤",
-          rateNote: fxRateNote(tx.fxRate),
-        }
-      : null;
+  const converted = foreignCode === null ? fxConversion(tx) : null;
   const cat = isIncome
     ? getIncomeCategoryForTransaction(
         tx,
@@ -290,21 +284,6 @@ function TxRowImpl({
       </div>
     </div>
   );
-}
-
-const UAH_RATE_FORMAT = new Intl.NumberFormat("uk-UA", {
-  minimumFractionDigits: 2,
-  maximumFractionDigits: 2,
-});
-
-/** «за курсом НБУ 41,50 ₴ на 24.11.2026», або `null` без курсу (операція в гривні). */
-function fxRateNote(
-  fxRate: { uahPerUnit: number; date: string } | null | undefined,
-): string | null {
-  if (!fxRate) return null;
-  const rate = UAH_RATE_FORMAT.format(fxRate.uahPerUnit);
-  const [y, m, d] = fxRate.date.split("-");
-  return `за курсом НБУ ${rate} ₴ на ${d}.${m}.${y}`;
 }
 
 export const TxRow = memo(TxRowImpl);

@@ -1,7 +1,7 @@
 # SPEC: Програми з планом «підходи × повтори» і наступною сесією
 
-> **Last touched:** 2026-11-20 by @claude. **Next review:** 2027-05-22.
-> **Status:** Active
+> **Last touched:** 2026-11-26 by @claude. **Next review:** 2027-05-28.
+> **Status:** Implemented - етап 1 (`programs/plan.ts`, `plannedSets.ts`, `buildPlannedSets` у `useFizrukProgramStart.ts`) і етап 2 (`programs/cursor.ts`, міграція 171); коміти `14a40ef97`, `521c14acf`.
 
 ## Проблема
 
