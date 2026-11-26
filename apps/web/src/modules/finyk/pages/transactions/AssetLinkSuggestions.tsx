@@ -48,12 +48,15 @@ function draftFromTx(s: AssetLinkSuggestion): Partial<SavingsAssetDraft> {
     : Math.abs(Math.round(Number(s.tx.amount) || 0));
   return {
     name: String(s.tx.description ?? ""),
-    invested: (minor / 100).toFixed(2),
+    // Кома, як у полях, які людина заповнює сама (`parseDecimal` її приймає).
+    invested: (minor / 100).toFixed(2).replace(".", ","),
     ...(date ? { date } : {}),
     ...(account
       ? {
           currency: account.currency as SavingsCurrency,
-          fxRate: account.uahPerUnit ? String(account.uahPerUnit) : "",
+          fxRate: account.uahPerUnit
+            ? String(account.uahPerUnit).replace(".", ",")
+            : "",
         }
       : {}),
   };

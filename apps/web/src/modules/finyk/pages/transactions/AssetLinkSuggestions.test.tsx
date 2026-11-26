@@ -63,7 +63,7 @@ describe("AssetLinkSuggestions", () => {
       "true",
     );
     expect(document.getElementById("savings-asset-fxRate")).toHaveValue(
-      "50.4823",
+      "50,4823",
     );
   });
 
