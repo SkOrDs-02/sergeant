@@ -292,15 +292,17 @@ function TxRowImpl({
   );
 }
 
+const UAH_RATE_FORMAT = new Intl.NumberFormat("uk-UA", {
+  minimumFractionDigits: 2,
+  maximumFractionDigits: 2,
+});
+
 /** «за курсом НБУ 41,50 ₴ на 24.11.2026», або `null` без курсу (операція в гривні). */
 function fxRateNote(
   fxRate: { uahPerUnit: number; date: string } | null | undefined,
 ): string | null {
   if (!fxRate) return null;
-  const rate = fxRate.uahPerUnit.toLocaleString("uk-UA", {
-    minimumFractionDigits: 2,
-    maximumFractionDigits: 2,
-  });
+  const rate = UAH_RATE_FORMAT.format(fxRate.uahPerUnit);
   const [y, m, d] = fxRate.date.split("-");
   return `за курсом НБУ ${rate} ₴ на ${d}.${m}.${y}`;
 }
