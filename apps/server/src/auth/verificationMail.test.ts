@@ -166,7 +166,7 @@ describe("шаблони листів", () => {
     const mail = m.verificationMail(
       "https://api.example.com/api/auth/verify-email?token=t&callbackURL=%2F",
     );
-    expect(mail.subject).toContain("Підтвердження email");
+    expect(mail.subject).toContain("Підтверди пошту");
     expect(mail.text).toContain(
       "callbackURL=https%3A%2F%2Fapp.example.com%2Fverify-email",
     );
@@ -207,7 +207,7 @@ describe("шаблони листів", () => {
       '"><script>alert(1)</script>@example.com',
     );
     expect(mail.text).toContain("@example.com");
-    expect(mail.text).toContain("Якщо це був не ти");
+    expect(mail.text).toContain("Якщо ні, акаунт могли перехопити");
     expect(mail.html).not.toContain("<script>");
     expect(mail.html).toContain("&lt;script&gt;");
   });
@@ -226,7 +226,7 @@ describe("accountExistsMail (sec-46)", () => {
     expect(mail.html).toContain(
       'href="https://app.example.com/sign-in?forgot=1"',
     );
-    expect(mail.text).toContain("Якщо це був не ти");
+    expect(mail.text).toContain("Якщо це не ти");
     expect(mail.text).not.toContain("—");
   });
 

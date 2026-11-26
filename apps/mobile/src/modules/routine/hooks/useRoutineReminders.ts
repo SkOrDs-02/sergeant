@@ -190,7 +190,7 @@ async function scheduleHabit(h: Habit): Promise<string[]> {
         const id = await Notifications.scheduleNotificationAsync({
           content: {
             title,
-            body: "Нагадування про звичку",
+            body: "Час для звички",
             data: { habitId: h.id, routineWeekday: rw, time: hm },
           },
           // Layer Expo's `WeeklyTriggerInput` discriminator on top of

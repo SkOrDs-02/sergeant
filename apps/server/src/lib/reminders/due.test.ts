@@ -87,7 +87,7 @@ describe("routineDueNow", () => {
     // обійти явну відмову показувати назву на локскріні.
     const row = habitRow();
     const due = routine([{ ...row, privacyMinimal: true }]);
-    expect(due[0]?.title).toBe("Нагадування");
+    expect(due[0]?.title).toBe("Рутина");
     expect(JSON.stringify(due[0])).not.toContain("Зарядка");
   });
 

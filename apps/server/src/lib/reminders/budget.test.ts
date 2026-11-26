@@ -12,7 +12,7 @@ function reason(over: Partial<DueReminder> = {}): DueReminder {
     module: "routine",
     dedupKey: "routine_notify_hab_1_08:00_2026-08-03",
     title: "Зарядка",
-    body: "Нагадування про звичку",
+    body: "Час для звички",
     url: "/?module=routine",
     at: "08:00",
     label: "Зарядка",
