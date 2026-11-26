@@ -312,7 +312,7 @@ describe("стрім першого ходу: збої", () => {
     expect(anthropicMessagesStream).toHaveBeenCalledTimes(1);
     expect(frames(res.writes)).toEqual([
       { t: "Цього тижня – " },
-      { err: "Асистент тимчасово недоступний" },
+      { err: "Сержант тимчасово недоступний" },
       "[DONE]",
     ]);
     expect(req.aiQuotaRefund).not.toHaveBeenCalled();

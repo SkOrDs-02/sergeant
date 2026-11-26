@@ -152,15 +152,15 @@ export default function ZvyazkyPage() {
         <figure className="mt-6 max-w-[320px]">
           <img
             src="/screens/zvyazky.webp"
-            alt="Вкладка «Звʼязки»: звички й самопочуття на рівні «тримається стабільно» за 46 спостережень, тренування і їжа на рівні «поки що збіг»"
-            width={414}
-            height={896}
+            alt="Вкладка «Звʼязки»: витрати у Фініку і звички в Рутині на рівні «поки що збіг» за 24 спостереження, коли тримаєш звички, витрачаєш менше, і найпослідовніший місяць за звичками, 85 %"
+            width={390}
+            height={844}
             loading="lazy"
             className="paper-shadow w-full rounded-[var(--radius-card)] border border-cardline-strong bg-card"
           />
           <figcaption className="mt-2.5 text-xs text-subtle">
-            Вкладка «Звʼязки»: два звʼязки з різними рівнями впевненості. Екран
-            бети з демо-даними.
+            Вкладка «Звʼязки»: звʼязок між витратами і звичками та
+            закономірність за весь час. Екран бети з демо-даними.
           </figcaption>
         </figure>
       </section>

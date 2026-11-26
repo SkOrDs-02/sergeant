@@ -201,9 +201,9 @@ export default function TrenuvanniaPage() {
         <figure className="mt-6 max-w-[320px]">
           <img
             src="/screens/fizruk.webp"
-            alt="Завершене тренування у Фізруку: девʼять вправ, 25 підходів, обʼєм 11 702 кг×повторення, самопочуття і нотатка до тренування"
-            width={414}
-            height={896}
+            alt="Завершене тренування у Фізруку: пʼять вправ, 15 підходів, обʼєм 7 500 кг×повторення і підходи кожної вправи"
+            width={390}
+            height={844}
             loading="lazy"
             className="paper-shadow w-full rounded-[var(--radius-card)] border border-cardline-strong bg-card"
           />

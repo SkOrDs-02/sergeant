@@ -574,7 +574,7 @@ describe("weekly-digest handler · response & errors (strict mode)", () => {
       name: "ExternalServiceError",
       status: 502,
       code: "ANTHROPIC_ERROR",
-      message: "Асистент тимчасово недоступний. Спробуй пізніше.",
+      message: "Сержант тимчасово недоступний. Спробуй пізніше.",
     });
   });
 
@@ -594,7 +594,7 @@ describe("weekly-digest handler · response & errors (strict mode)", () => {
       name: "ExternalServiceError",
       status: 502,
       code: "ANTHROPIC_ERROR",
-      message: "Асистент тимчасово недоступний. Спробуй пізніше.",
+      message: "Сержант тимчасово недоступний. Спробуй пізніше.",
     });
   });
 
@@ -1317,7 +1317,7 @@ describe("weekly-digest · prod regression — provider failure must not return 
       status: 502,
       code: "ANTHROPIC_ERROR",
       // Safe UA message — raw provider text must NOT appear in the message
-      message: "Асистент тимчасово недоступний. Спробуй пізніше.",
+      message: "Сержант тимчасово недоступний. Спробуй пізніше.",
     });
     // Response must not have been sent with 200
     expect(res.statusCode).toBe(200); // unchanged sentinel — res.json was never called
@@ -1347,7 +1347,7 @@ describe("weekly-digest · prod regression — provider failure must not return 
       name: "ExternalServiceError",
       status: 502,
       code: "ANTHROPIC_ERROR",
-      message: "Асистент тимчасово недоступний. Спробуй пізніше.",
+      message: "Сержант тимчасово недоступний. Спробуй пізніше.",
     });
   });
 

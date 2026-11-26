@@ -110,7 +110,7 @@ export function makeAiProviderError(opts: {
   // провайдер, спробуй пізніше), усе інше — 502 Bad Gateway.
   const status = opts.status === 429 ? 503 : 502;
   const err = new ExternalServiceError(
-    "Асистент тимчасово недоступний. Спробуй пізніше.",
+    "Сержант тимчасово недоступний. Спробуй пізніше.",
     {
       status,
       code: "ANTHROPIC_ERROR",

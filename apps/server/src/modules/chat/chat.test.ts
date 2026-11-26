@@ -604,7 +604,7 @@ describe("chat handler — tool_use parsing", () => {
       name: "ExternalServiceError",
       status: 503,
       code: "ANTHROPIC_ERROR",
-      message: "Асистент тимчасово недоступний. Спробуй пізніше.",
+      message: "Сержант тимчасово недоступний. Спробуй пізніше.",
     });
   });
 
@@ -636,7 +636,7 @@ describe("chat handler — tool_use parsing", () => {
     expect(caught).toMatchObject({
       status: 502,
       code: "ANTHROPIC_ERROR",
-      message: "Асистент тимчасово недоступний. Спробуй пізніше.",
+      message: "Сержант тимчасово недоступний. Спробуй пізніше.",
     });
   });
 });

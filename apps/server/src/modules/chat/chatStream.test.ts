@@ -207,7 +207,7 @@ describe("streamAnthropicToSse — basic SSE framing", () => {
     await streamAnthropicToSse(makeReq(refund), res, "sk-test", PAYLOAD);
 
     expect(dataPayloads(res.writes)).toEqual([
-      JSON.stringify({ err: "Асистент тимчасово недоступний" }),
+      JSON.stringify({ err: "Сержант тимчасово недоступний" }),
       "[DONE]",
     ]);
     expect(refund).toHaveBeenCalledTimes(1);
@@ -552,7 +552,7 @@ describe("streamAnthropicToSse — auto-continuation", () => {
 
     expect(anthropicMessagesStream).toHaveBeenCalledTimes(1);
     expect(dataPayloads(res.writes)).toEqual([
-      JSON.stringify({ err: "Асистент тимчасово недоступний" }),
+      JSON.stringify({ err: "Сержант тимчасово недоступний" }),
       "[DONE]",
     ]);
   });
