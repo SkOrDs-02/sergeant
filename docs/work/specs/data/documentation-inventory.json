@@ -3231,6 +3231,13 @@
       "canonical_owner": "docs/start/instructions/run-squad-review.md"
     },
     {
+      "old_path": "docs/start/instructions/run-squad-verify.md",
+      "new_path": "docs/start/instructions/run-squad-verify.md",
+      "action": "keep",
+      "genre": "instruction",
+      "canonical_owner": "docs/start/instructions/run-squad-verify.md"
+    },
+    {
       "old_path": "docs/start/instructions/run-weekly-operator-digest.md",
       "new_path": "docs/start/instructions/run-weekly-operator-digest.md",
       "action": "keep",
