@@ -9,7 +9,11 @@ import { Card } from "@shared/components/ui/Card";
 import { Input } from "@shared/components/ui/Input";
 import { searchFieldProps } from "@shared/lib/ui/searchFieldProps";
 import { focusFallbackProps } from "@shared/lib/ui/focusFallback";
-import { EmptyState, ModuleEmptyState } from "@shared/components/ui/EmptyState";
+import {
+  EmptyState,
+  FirstCloudPullGate,
+  ModuleEmptyState,
+} from "@shared/components/ui/EmptyState";
 import { messages } from "@shared/i18n/uk";
 import { sortHabitsByOrder } from "../../lib/habitOrder";
 import {
@@ -98,13 +102,17 @@ export function ActiveHabitsSection({
         </>
       )}
       {!hasActive && (
-        <ModuleEmptyState
-          module="routine"
-          title={messages.routine.emptyHabits}
-          description={messages.routine.emptyHabitsDescription}
-          onAction={onCreateHabit}
-          actionLabel={messages.routine.createHabit}
-        />
+        // data-59/60 (FULL-20261126-ROUTINE-6): поки копія не наздогнала
+        // акаунт, замість порожнього стану «Завантажую з хмари…».
+        <FirstCloudPullGate>
+          <ModuleEmptyState
+            module="routine"
+            title={messages.routine.emptyHabits}
+            description={messages.routine.emptyHabitsDescription}
+            onAction={onCreateHabit}
+            actionLabel={messages.routine.createHabit}
+          />
+        </FirstCloudPullGate>
       )}
       {/* Порожній РЕЗУЛЬТАТ ПОШУКУ — не те саме, що порожній список. Вище
           `ModuleEmptyState` ловить лише `!hasActive` («звичок ще немає»), тож при

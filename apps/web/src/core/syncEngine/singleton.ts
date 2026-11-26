@@ -40,6 +40,7 @@ import { requeueFkViolationRejected } from "./requeueFkViolationRejected";
 import { createSyncStreamConsumer } from "./syncStreamConsumer";
 import { readPullSinceCursor } from "./syncOpCursor";
 import { observeSyncSession } from "./syncSessionSignal";
+import { settleSyncBootPending } from "./initialPullState";
 
 type RuntimeFactory = () => Promise<SyncEngineWriterRuntime>;
 type ReaderRuntimeFactory = () => Promise<SyncEngineReaderRuntime>;
@@ -271,7 +272,11 @@ export function bootSyncEngineReader(
   readerInFlight = claimDbOwnership()
     .then((owner) => (owner === "follower" ? null : createRuntime()))
     .then((created) => {
-      if (!created) return null;
+      if (!created) {
+        // Вкладка-послідовник: pull робить лідер, тут «Завантажую…» не буде.
+        settleSyncBootPending();
+        return null;
+      }
       readerRuntime = created;
       // Пауза, взята, поки reader бутився, має діяти і на нього — до start().
       if (readerPauses > 0) pauseRuntime(created);
@@ -281,6 +286,7 @@ export function bootSyncEngineReader(
     })
     .catch((error: unknown) => {
       captureException?.(error, { scope: "sync-v2-reader-boot" });
+      settleSyncBootPending();
       return null;
     })
     .finally(() => {

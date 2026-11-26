@@ -33,6 +33,7 @@ import {
   habitCountsTowardMetrics,
   habitScheduledOnDate,
 } from "./schedule.js";
+import { maxStreakAllTime, streakForHabit } from "./streaks.js";
 import type { Habit, HabitSkip } from "./types.js";
 import { isFlexibleHabit, weekDoneCountExcludingDate } from "./weeklyTarget.js";
 
@@ -506,6 +507,62 @@ export function flexibleMaxStreakAllTimeAcrossHabits(
     m = Math.max(
       m,
       flexibleMaxStreakAllTime(h, completions[h.id] || [], {
+        skipsForHabit: skips[h.id],
+      }),
+    );
+  }
+  return m;
+}
+
+/**
+ * Найдовша серія однієї звички за ТИМ САМИМ правилом, що й поточна на тій
+ * самій картці (FULL-20261126-ROUTINE-1): «Поточна серія 13 · Найдовша 10»
+ * з'являлось, бо поточна йшла гнучким правилом (прощені пропуски), а найдовша
+ * жорстким `maxStreakAllTime`, яке рве серію на першому порожньому дні.
+ *
+ * Одиниці як у поточної: денна звичка — дні (`flexibleMaxStreakAllTime`),
+ * гнучка «N разів на тиждень» — тижні (`maxStreakAllTime` → тижнева серія,
+ * поточна для неї — `streakForHabit`). Поверх цього стоїть підлога «не менше
+ * за поточну на `todayKey`»: інваріант «найдовша >= поточна» гарантується
+ * побудовою, а не лише тим, що якорі по виконаних днях зазвичай її покривають.
+ */
+export function longestStreakForHabit(
+  habit: Habit,
+  completionsForHabit: string[] | undefined,
+  todayKey: string,
+  opts: FlexibleStreakOptions = {},
+): number {
+  if (!habitCountsTowardMetrics(habit)) return 0;
+  if (isFlexibleHabit(habit)) {
+    return Math.max(
+      maxStreakAllTime(habit, completionsForHabit),
+      streakForHabit(habit, completionsForHabit, todayKey),
+    );
+  }
+  return Math.max(
+    flexibleMaxStreakAllTime(habit, completionsForHabit, opts),
+    flexibleStreakBreakdown(habit, completionsForHabit, todayKey, opts).days,
+  );
+}
+
+/**
+ * `longestStreakForHabit` по всіх неархівних звичках, у парі з
+ * `flexibleMaxActiveStreak` (той самий денний агрегат: гнучкі «N на тиждень»
+ * виключені, одиниці не змішуються). За побудовою не менше за нього.
+ */
+export function longestStreakAcrossHabits(
+  habits: Habit[],
+  completions: Record<string, string[]>,
+  todayKey: string,
+  skips: Record<string, Record<string, HabitSkip>> = {},
+): number {
+  let m = 0;
+  for (const h of habits) {
+    if (h.archived) continue;
+    if (isFlexibleHabit(h)) continue;
+    m = Math.max(
+      m,
+      longestStreakForHabit(h, completions[h.id] || [], todayKey, {
         skipsForHabit: skips[h.id],
       }),
     );

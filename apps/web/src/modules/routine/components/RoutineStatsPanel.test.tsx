@@ -61,7 +61,7 @@ const completionRateForRange = vi.fn(() => ({
 vi.mock("../lib/streaks", () => ({
   completionRateForRange: (...args: unknown[]) =>
     completionRateForRange(...(args as [])),
-  flexibleMaxStreakAllTimeAcrossHabits: () => 5,
+  longestStreakAcrossHabits: () => 5,
 }));
 
 import { RoutineStatsPanel } from "./RoutineStatsPanel";
@@ -138,12 +138,12 @@ describe("RoutineStatsPanel", () => {
   it("renders every range chip and defaults to Місяць", () => {
     render(<RoutineStatsPanel routine={makeRoutine()} currentStreak={0} />);
     const chips = screen.getByRole("tablist", { name: "Діапазон статистики" });
-    for (const label of ["Тиждень", "Місяць", "Квартал", "Рік"]) {
+    for (const label of ["7 днів", "30 днів", "90 днів", "Рік"]) {
       expect(screen.getByRole("tab", { name: label })).toBeInTheDocument();
     }
     expect(
       chips.querySelector('[aria-selected="true"]')?.textContent,
-    ).toContain("Місяць");
+    ).toContain("30 днів");
     // Default month slice = rolling 30 days ending today.
     expect(lastRateWindow()).toEqual(["2026-06-11", "2026-07-10"]);
     expect(screen.getByText("Виконання · останні 30 днів")).toBeInTheDocument();
@@ -152,11 +152,11 @@ describe("RoutineStatsPanel", () => {
   it("re-scopes the summary window when the range changes", () => {
     render(<RoutineStatsPanel routine={makeRoutine()} currentStreak={0} />);
 
-    fireEvent.click(screen.getByRole("tab", { name: "Тиждень" }));
+    fireEvent.click(screen.getByRole("tab", { name: "7 днів" }));
     // Тижневий зріз має збігтися зі старим числом під підписом «7 днів».
     expect(lastRateWindow()).toEqual(["2026-07-04", "2026-07-10"]);
 
-    fireEvent.click(screen.getByRole("tab", { name: "Квартал" }));
+    fireEvent.click(screen.getByRole("tab", { name: "90 днів" }));
     expect(lastRateWindow()).toEqual(["2026-04-12", "2026-07-10"]);
 
     fireEvent.click(screen.getByRole("tab", { name: "Рік" }));
@@ -173,13 +173,13 @@ describe("RoutineStatsPanel", () => {
     );
     expect(screen.queryByTestId("habit-heatmap")).not.toBeInTheDocument();
 
-    fireEvent.click(screen.getByRole("tab", { name: "Тиждень" }));
+    fireEvent.click(screen.getByRole("tab", { name: "7 днів" }));
     expect(screen.getByTestId("habit-range-grid")).toHaveAttribute(
       "data-days",
       "7",
     );
 
-    fireEvent.click(screen.getByRole("tab", { name: "Квартал" }));
+    fireEvent.click(screen.getByRole("tab", { name: "90 днів" }));
     expect(screen.queryByTestId("habit-range-grid")).not.toBeInTheDocument();
     expect(screen.getByTestId("habit-heatmap")).toHaveAttribute(
       "data-history-weeks",
@@ -204,7 +204,7 @@ describe("RoutineStatsPanel", () => {
     });
     render(<RoutineStatsPanel routine={routine} currentStreak={0} />);
 
-    fireEvent.click(screen.getByRole("tab", { name: "Квартал" }));
+    fireEvent.click(screen.getByRole("tab", { name: "90 днів" }));
     expect(screen.getByTestId("habit-heatmap")).toHaveAttribute(
       "data-skip-keys",
       "h1",
@@ -249,7 +249,7 @@ describe("RoutineStatsPanel", () => {
   });
 
   it("computes max streak across active habits", () => {
-    // maxStreakAllTime is stubbed to return 5 per habit.
+    // longestStreakAcrossHabits is stubbed to return 5 per habit.
     // Two active habits → still 5 (max of [5,5]).
     const routine = makeRoutine({
       habits: [
