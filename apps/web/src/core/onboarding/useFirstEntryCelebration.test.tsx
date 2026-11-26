@@ -21,19 +21,23 @@ describe("useFirstEntryCelebration", () => {
   });
 
   it("does not open when the user already had real data on mount", () => {
-    const { result } = renderHook(() => useFirstEntryCelebration(true, 1));
+    const { result } = renderHook(() =>
+      useFirstEntryCelebration(true, 1, true),
+    );
     expect(result.current.open).toBe(false);
     expect(getTtvMock).not.toHaveBeenCalled();
   });
 
   it("stays closed while there is no real entry", () => {
-    const { result } = renderHook(() => useFirstEntryCelebration(false, 0));
+    const { result } = renderHook(() =>
+      useFirstEntryCelebration(false, 0, true),
+    );
     expect(result.current.open).toBe(false);
   });
 
   it("opens once when the flag flips from false to true with a genuine single entry", () => {
     const { result, rerender } = renderHook(
-      ({ has, count }) => useFirstEntryCelebration(has, count),
+      ({ has, count }) => useFirstEntryCelebration(has, count, true),
       { initialProps: { has: false, count: 0 } },
     );
     expect(result.current.open).toBe(false);
@@ -46,7 +50,7 @@ describe("useFirstEntryCelebration", () => {
 
   it("fires exactly once — closing then re-flipping does not reopen", () => {
     const { result, rerender } = renderHook(
-      ({ has, count }) => useFirstEntryCelebration(has, count),
+      ({ has, count }) => useFirstEntryCelebration(has, count, true),
       { initialProps: { has: false, count: 0 } },
     );
     rerender({ has: true, count: 1 });
@@ -69,7 +73,7 @@ describe("useFirstEntryCelebration", () => {
   // The account's real total entry count tells them apart.
   it("does NOT open when the false→true flip is a returning device's history syncing in, not a first entry", () => {
     const { result, rerender } = renderHook(
-      ({ has, count }) => useFirstEntryCelebration(has, count),
+      ({ has, count }) => useFirstEntryCelebration(has, count, true),
       { initialProps: { has: false, count: 0 } },
     );
     expect(result.current.open).toBe(false);
@@ -82,5 +86,17 @@ describe("useFirstEntryCelebration", () => {
     // Further renders (more data trickling in) must not retroactively open it.
     rerender({ has: true, count: 90 });
     expect(result.current.open).toBe(false);
+  });
+
+  it("does NOT open for an account older than the first week, even with a single warmed entry", () => {
+    // Після виходу прапорець `hub_*` стерто, кеш першого модуля прогрівся
+    // з одним записом: лічильник ≤1 пропускає, вік акаунта ні.
+    const { result, rerender } = renderHook(
+      ({ has, count }) => useFirstEntryCelebration(has, count, false),
+      { initialProps: { has: false, count: 0 } },
+    );
+    rerender({ has: true, count: 1 });
+    expect(result.current.open).toBe(false);
+    expect(getTtvMock).not.toHaveBeenCalled();
   });
 });

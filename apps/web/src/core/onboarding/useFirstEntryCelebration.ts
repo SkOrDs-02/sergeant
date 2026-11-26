@@ -42,6 +42,14 @@ export function useFirstEntryCelebration(
    * `docs/work/specs/audits/2026-09-01-product-audit/findings.md` § LOG-8.
    */
   realEntryCount: number,
+  /**
+   * Акаунт у вікні першого тижня (`isWithinChecklistWindow`, вік за
+   * серверним `user.createdAt`). Лічильник вище не рятує, коли кеші модулів
+   * теплішають по черзі: перший прогрітий модуль із ≤1 записом проходить
+   * `realEntryCount <= 1`, а прапорець `hub_first_real_entry_done_v1`
+   * стирається при виході й втраті сесії. Вік акаунта так не скидається.
+   */
+  isNewAccount: boolean,
 ): CelebrationState {
   const [open, setOpen] = useState(false);
   const [ttvMs, setTtvMs] = useState<number | null>(null);
@@ -57,7 +65,8 @@ export function useFirstEntryCelebration(
     !hadEntryAtMount &&
     hasRealEntry &&
     !celebrationFired &&
-    realEntryCount <= 1
+    realEntryCount <= 1 &&
+    isNewAccount
   ) {
     setCelebrationFired(true);
     setTtvMs(getTimeToValueMs());
