@@ -19,6 +19,7 @@
  * параметр на web-origin. Якщо тут щось зламати — верифікація все одно
  * спрацює (рядок у БД оновиться), але користувач побачить білу сторінку.
  */
+import { mailButton, mailNote, wrapMailHtml } from "../email/mailLayout.js";
 import { env } from "../env/env.js";
 
 /**
@@ -149,20 +150,44 @@ export interface AuthMailContent {
   html: string;
 }
 
+/**
+ * Службові листи входу. Верстка спільна з листами першого тижня
+ * (`email/mailLayout.ts`): привітання, одне речення контексту, кнопка і
+ * сірий рядок про строк дії та «якщо це не ти». Рід нейтральний («якщо це
+ * не ти»), бо адресат невідомий. Строк дії токенів — дефолт Better Auth,
+ * година (`createEmailVerificationToken`, `resetPasswordTokenExpiresIn`).
+ * Голос команди «ми» в листах дозволено (style-guide §2, TXT-5).
+ */
+const HELLO = "Привіт.";
+const LINK_LIFETIME = "Посилання діє годину.";
+
 export function verificationMail(url: string): AuthMailContent {
   const link = withWebCallbackURL(url);
+  const lead =
+    "Підтверди цю адресу, щоб завершити реєстрацію в Sergeant. Кнопка одразу відкриє застосунок.";
+  const note = "Якщо це не ти, проігноруй цей лист.";
   return {
-    subject: "Підтвердження email · Sergeant",
-    text: `Підтверди email:\n\n${link}\n\nЯкщо це був не ти, проігноруй цей лист.`,
-    html: `<p>Підтверди email:</p><p><a href="${escapeHtml(link)}">Підтвердити</a></p><p>Якщо це був не ти, проігноруй цей лист.</p>`,
+    subject: "Підтверди пошту · Sergeant",
+    text: `${HELLO}\n\n${lead}\n\nПідтвердити пошту:\n${link}\n\n${LINK_LIFETIME} ${note}`,
+    html: wrapMailHtml(
+      `<p>${HELLO}</p><p>${lead}</p>` +
+        mailButton(link, "Підтвердити пошту") +
+        mailNote(`${LINK_LIFETIME} ${note}`),
+    ),
   };
 }
 
 export function passwordResetMail(url: string): AuthMailContent {
+  const lead = "Задай новий пароль для свого акаунта Sergeant.";
+  const note = "Якщо це не ти, проігноруй цей лист: старий пароль працює далі.";
   return {
-    subject: "Скидання пароля · Sergeant",
-    text: `Задай новий пароль за посиланням, воно діє обмежений час:\n\n${url}\n\nЯкщо це був не ти, проігноруй цей лист.`,
-    html: `<p>Задай новий пароль за посиланням:</p><p><a href="${escapeHtml(url)}">Скинути пароль</a></p><p>Якщо це був не ти, проігноруй цей лист.</p>`,
+    subject: "Новий пароль · Sergeant",
+    text: `${HELLO}\n\n${lead}\n\nЗадати новий пароль:\n${url}\n\n${LINK_LIFETIME} ${note}`,
+    html: wrapMailHtml(
+      `<p>${HELLO}</p><p>${lead}</p>` +
+        mailButton(url, "Задати новий пароль") +
+        mailNote(`${LINK_LIFETIME} ${note}`),
+    ),
   };
 }
 
@@ -178,10 +203,17 @@ export function changeEmailConfirmationMail(
   url: string,
 ): AuthMailContent {
   const link = withWebCallbackURL(url);
+  const after = "Після підтвердження лист для перевірки прийде на нову адресу.";
+  const warn =
+    "Якщо це не ти, не натискай кнопку і зміни пароль у профілі: хтось намагається перепривʼязати акаунт.";
   return {
-    subject: "Підтвердження зміни email · Sergeant",
-    text: `Ти попросив змінити адресу акаунта на ${newEmail}.\n\nПідтверди зміну:\n\n${link}\n\nЯкщо це був не ти, НЕ переходь за посиланням і зміни пароль: адресу акаунта намагаються перепривʼязати.`,
-    html: `<p>Ти попросив змінити адресу акаунта на <strong>${escapeHtml(newEmail)}</strong>.</p><p><a href="${escapeHtml(link)}">Підтвердити зміну</a></p><p>Якщо це був не ти, НЕ переходь за посиланням і зміни пароль: адресу акаунта намагаються перепривʼязати.</p>`,
+    subject: "Підтверди зміну пошти · Sergeant",
+    text: `${HELLO}\n\nДля акаунта Sergeant попросили змінити пошту на ${newEmail}. ${after}\n\nПідтвердити зміну:\n${link}\n\n${warn}`,
+    html: wrapMailHtml(
+      `<p>${HELLO}</p><p>Для акаунта Sergeant попросили змінити пошту на <strong>${escapeHtml(newEmail)}</strong>. ${after}</p>` +
+        mailButton(link, "Підтвердити зміну") +
+        mailNote(warn),
+    ),
   };
 }
 
@@ -189,14 +221,18 @@ export function changeEmailConfirmationMail(
  * Сповіщення на СТАРУ адресу, коли непідтверджений акаунт уже змінив email
  * (`sec-06`). Підтвердження тут не просимо: зміна відбулась, і це єдиний
  * сигнал власнику скриньки, що акаунт можуть перехоплювати. Тому в тексті
- * є нова адреса і шлях повернення акаунта. Листи пишуться від першої особи
- * однини, без «ми» (style-guide § 2).
+ * є нова адреса і шлях повернення акаунта.
  */
 export function emailChangedNoticeMail(newEmail: string): AuthMailContent {
+  const ok = "Якщо це ти, нічого робити не треба.";
+  const bad =
+    "Якщо ні, акаунт могли перехопити. Напиши з цієї адреси на support@sergeant.app, і ми допоможемо його повернути.";
   return {
-    subject: "Адресу акаунта змінено · Sergeant",
-    text: `Адресу акаунта Sergeant змінено на ${newEmail}.\n\nЯкщо це зробив ти, більше нічого не треба.\n\nЯкщо це був не ти, акаунт могли перехопити. Напиши на support@sergeant.app з цієї адреси, щоб повернути його.`,
-    html: `<p>Адресу акаунта Sergeant змінено на <strong>${escapeHtml(newEmail)}</strong>.</p><p>Якщо це зробив ти, більше нічого не треба.</p><p>Якщо це був не ти, акаунт могли перехопити. Напиши на support@sergeant.app з цієї адреси, щоб повернути його.</p>`,
+    subject: "Пошту акаунта змінено · Sergeant",
+    text: `${HELLO}\n\nПошту акаунта Sergeant змінено на ${newEmail}.\n\n${ok}\n\n${bad}`,
+    html: wrapMailHtml(
+      `<p>${HELLO}</p><p>Пошту акаунта Sergeant змінено на <strong>${escapeHtml(newEmail)}</strong>.</p><p>${ok}</p><p>${bad}</p>`,
+    ),
   };
 }
 
@@ -221,23 +257,30 @@ export const FORGOT_PASSWORD_QUERY = "forgot=1";
 export function accountExistsMail(): AuthMailContent {
   const origin = getWebAppOrigin();
   const intro =
-    "Хтось, можливо ти, хотів зареєструватися в Sergeant з цією адресою. Акаунт на неї вже є, тож новий я не створював.";
+    "Цю адресу щойно вказали під час реєстрації в Sergeant. Акаунт на неї вже є, тож новий ми не створювали.";
   const outro =
-    "Якщо це був не ти, проігноруй цей лист: без пароля чи доступу до цієї пошти в акаунт не увійти.";
+    "Якщо це не ти, проігноруй цей лист: без пароля чи доступу до цієї пошти в акаунт не увійти.";
   if (!origin) {
     const hint =
-      "Відкрий Sergeant і увійди. Якщо не памʼятаєш пароль, на сторінці входу натисни «Забули пароль?».";
+      "Відкрий Sergeant і увійди. Не памʼятаєш пароль? На сторінці входу натисни «Забули пароль?».";
     return {
       subject: "У тебе вже є акаунт · Sergeant",
-      text: `${intro}\n\n${hint}\n\n${outro}`,
-      html: `<p>${intro}</p><p>${hint}</p><p>${outro}</p>`,
+      text: `${HELLO}\n\n${intro}\n\n${hint}\n\n${outro}`,
+      html: wrapMailHtml(
+        `<p>${HELLO}</p><p>${intro}</p><p>${hint}</p>` + mailNote(outro),
+      ),
     };
   }
   const signIn = `${origin}${SIGN_IN_CALLBACK_PATH}`;
   const reset = `${signIn}?${FORGOT_PASSWORD_QUERY}`;
   return {
     subject: "У тебе вже є акаунт · Sergeant",
-    text: `${intro}\n\nУвійти:\n${signIn}\n\nНе памʼятаєш пароль? Скинь його тут:\n${reset}\n\n${outro}`,
-    html: `<p>${intro}</p><p><a href="${escapeHtml(signIn)}">Увійти</a></p><p>Не памʼятаєш пароль? <a href="${escapeHtml(reset)}">Скинути пароль</a></p><p>${outro}</p>`,
+    text: `${HELLO}\n\n${intro}\n\nУвійти:\n${signIn}\n\nНе памʼятаєш пароль? Скинь його тут:\n${reset}\n\n${outro}`,
+    html: wrapMailHtml(
+      `<p>${HELLO}</p><p>${intro}</p>` +
+        mailButton(signIn, "Увійти") +
+        `<p>Не памʼятаєш пароль? <a href="${escapeHtml(reset)}">Скинути пароль</a></p>` +
+        mailNote(outro),
+    ),
   };
 }

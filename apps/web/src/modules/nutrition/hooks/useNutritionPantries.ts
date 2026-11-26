@@ -128,11 +128,22 @@ export function useNutritionPantries({
 
   const sqliteCacheTick = useNutritionSqliteReadTick();
   const [prevSqliteTick, setPrevSqliteTick] = useState(sqliteCacheTick);
+  // Масив, що прийшов із кешу, а не з дії користувача. Ефект збереження
+  // нижче його пропускає: інакше кожен pull (тік кешу) знову ставив комору
+  // в outbox, і пристрої перекидали одне одному ті самі позиції без кінця
+  // (прод 2026-11-26: тисячі `nutrition_pantry_items` на годину без жодної
+  // дії; знімок попереднього тіку проти новішого кешу ще й повертав старі
+  // значення як «зміни»).
+  const [pantriesFromCache, setPantriesFromCache] = useState<
+    typeof pantries | null
+  >(null);
   if (sqliteCacheTick !== prevSqliteTick) {
     setPrevSqliteTick(sqliteCacheTick);
     const cache = getCachedNutritionSqliteState();
     if (cache.refreshedAt !== null) {
-      setPantries(ensureStoragePlaces(cache.pantries));
+      const hydrated = ensureStoragePlaces(cache.pantries);
+      setPantries(hydrated);
+      setPantriesFromCache(hydrated);
     }
   }
 
@@ -185,11 +196,18 @@ export function useNutritionPantries({
   // never fire. Real mutations and the overlay hydration re-run the
   // effect with meaningful state.
   const pantriesHydratedRef = useRef(false);
+  // Оголошений ДО ефекту збереження: ефекти одного коміту йдуть у порядку
+  // оголошення, тож ref уже вказує на свіжий масив із кешу.
+  const pantriesFromCacheRef = useRef<typeof pantries | null>(null);
+  useEffect(() => {
+    pantriesFromCacheRef.current = pantriesFromCache;
+  }, [pantriesFromCache]);
   useEffect(() => {
     if (!pantriesHydratedRef.current) {
       pantriesHydratedRef.current = true;
       return;
     }
+    if (pantries === pantriesFromCacheRef.current) return;
     // `null` замість активного місця: активної комори більше немає, а
     // збережене значення лишається недоторканим (persistPantries падає на
     // попереднє). Переписати його тут означало б зафіксувати фільтр у

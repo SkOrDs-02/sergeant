@@ -40,22 +40,22 @@ describe("reminderNotificationContent", () => {
   it("full mode carries the habit name in the title", () => {
     expect(reminderNotificationContent(habit, "full")).toEqual({
       title: "Терапія",
-      body: "Нагадування про звичку",
+      body: "Час для звички",
     });
   });
 
   it("full mode never prefixes a glyph (slug would leak into push copy)", () => {
     expect(reminderNotificationContent({ name: "Біг" }, "full")).toEqual({
       title: "Біг",
-      body: "Нагадування про звичку",
+      body: "Час для звички",
     });
   });
 
   it("minimal mode withholds the habit name from both title and body", () => {
     const content = reminderNotificationContent(habit, "minimal");
     expect(content).toEqual({
-      title: "Нагадування",
-      body: "Час для запланованої звички",
+      title: "Рутина",
+      body: "Час для звички",
     });
     expect(content.title).not.toContain("Терапія");
     expect(content.body).not.toContain("Терапія");

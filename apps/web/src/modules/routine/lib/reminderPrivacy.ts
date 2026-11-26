@@ -57,12 +57,12 @@ export function reminderNotificationContent(
 ): ReminderNotificationContent {
   if (privacy === "minimal") {
     return {
-      title: "Нагадування",
-      body: "Час для запланованої звички",
+      title: "Рутина",
+      body: "Час для звички",
     };
   }
   return {
     title: habit.name,
-    body: "Нагадування про звичку",
+    body: "Час для звички",
   };
 }
