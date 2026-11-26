@@ -8,8 +8,12 @@
  *   отримує категорію `in_assets` і лишається доходом.
  * - Подія несе `txId` і ключ отримувача; одна операція привʼязана щонайбільше
  *   до одного активу (нова привʼязка знімає стару).
- * - Пропозиції: банківські списання поточного списку з тим самим ключем
- *   отримувача, що й попередній внесок, ще не привʼязані й не відхилені.
+ * - Пропозиції (ще не привʼязані, не відхилені, не в парі переказу):
+ *   операції з тим самим ключем отримувача, що й попередній внесок (списання
+ *   → внесок, надходження → повернення), і операції, які `investmentSignalOf`
+ *   впізнає як купівлю ОВДП, відкриття депозиту чи дохід з облігацій (спека
+ *   `docs/work/specs/finyk-investment-suggestions.md`). Без активу потрібного
+ *   типу внесок пропонує створити актив з операції.
  *   «Ні» памʼятається на пристрої (`FINYK_ASSET_LINK_SUGGESTION_REJECTED_TX_KEY`).
  *   Як і в `useTransferSuggestions.ts`, відповіді перечитуються, щойно
  *   сховище прогрілось (`useStorageReady`), а до того пропозицій немає.
@@ -20,7 +24,9 @@ import { safeReadLS, safeWriteLS } from "@shared/lib/storage/storage";
 import {
   assetLinkByTxId,
   contributionMerchantIndex,
+  investmentSignalOf,
   localTodayKey,
+  type InvestmentKind,
   type AssetEvent,
   type AssetEventType,
 } from "@sergeant/finyk-domain/domain/assets";
@@ -34,9 +40,11 @@ import { withCachedAmount } from "../../lib/savingsAssetDraft";
 
 export interface AssetLinkSuggestion {
   tx: Transaction;
-  asset: ManualAsset;
-  /** Сума внеску у валюті активу. */
-  amountMinor: number;
+  type: AssetEventType;
+  /** Активи, до яких можна привʼязати; порожньо — лише «Створити актив». */
+  assets: ManualAsset[];
+  /** Тип активу за сигналом операції: для «Створити актив». */
+  kind: InvestmentKind | null;
 }
 
 export interface AssetLinkApi {
@@ -64,12 +72,41 @@ function merchantKeyOf(tx: Transaction): string | undefined {
 }
 
 /** Сума операції (копійки UAH) у валюті активу; `null` без курсу. */
+const CURRENCY_BY_CODE: Readonly<Record<number, string>> = {
+  840: "USD",
+  978: "EUR",
+};
+
+/**
+ * Валюта рахунку операції, перерахованої за курсом НБУ (`accountCurrencyCode`
+ * + `accountAmount`, спека finyk-fx-nbu), або `null` для гривневої.
+ */
+export function txAccountCurrency(
+  tx: Transaction,
+): { currency: string; amountMinor: number; uahPerUnit: number | null } | null {
+  const code = tx["accountCurrencyCode"];
+  const amount = tx["accountAmount"];
+  const currency = typeof code === "number" ? CURRENCY_BY_CODE[code] : null;
+  if (!currency || typeof amount !== "number") return null;
+  const rate = (tx["fxRate"] as { uahPerUnit?: unknown } | null | undefined)
+    ?.uahPerUnit;
+  return {
+    currency,
+    amountMinor: Math.abs(Math.round(amount)),
+    uahPerUnit: typeof rate === "number" && rate > 0 ? rate : null,
+  };
+}
+
 export function txAmountInAsset(
   tx: Transaction,
   asset: ManualAsset,
 ): number | null {
   const uah = Math.abs(Math.round(Number(tx.amount) || 0));
   if ((asset.currency ?? "UAH") === "UAH") return uah;
+  // Операція з картки у валюті активу: сума рахунку точна, курс не потрібен.
+  const account = txAccountCurrency(tx);
+  if (account && account.currency === asset.currency)
+    return account.amountMinor;
   const rate = Number(toDomainAsset(asset).fxRate?.uahPerUnit);
   return Number.isFinite(rate) && rate > 0 ? Math.round(uah / rate) : null;
 }
@@ -79,6 +116,7 @@ export function useAssetLinks({
   activeTx,
   hiddenTxIds,
   excludedTxIds,
+  transferTxIds,
   manualAssets,
   setManualAssets,
   overrideCategory,
@@ -87,6 +125,8 @@ export function useAssetLinks({
   activeTx: readonly Transaction[];
   hiddenTxIds: readonly string[];
   excludedTxIds: ReadonlySet<string>;
+  /** Ноги ще не підтверджених пар «схоже на переказ»: їх веде та картка. */
+  transferTxIds?: ReadonlySet<string> | undefined;
   manualAssets: readonly ManualAsset[] | undefined;
   setManualAssets:
     ((updater: (assets: ManualAsset[]) => ManualAsset[]) => void) | undefined;
@@ -187,21 +227,43 @@ export function useAssetLinks({
   const suggestions = useMemo<AssetLinkSuggestion[]>(() => {
     if (!storageReady || !readWithKv || !setManualAssets) return [];
     const byMerchant = contributionMerchantIndex(assets);
-    if (byMerchant.size === 0) return [];
     const hidden = new Set(hiddenTxIds);
+    const ofKind = (kind: InvestmentKind) =>
+      activeAssets.filter((a) => toDomainAsset(a).kind === kind);
     const out: AssetLinkSuggestion[] = [];
     for (const tx of activeTx) {
-      if (tx.manual || Number(tx.amount) >= 0) continue;
+      const amount = Number(tx.amount);
+      if (tx.manual || !amount) continue;
       if (hidden.has(tx.id) || excludedTxIds.has(tx.id)) continue;
+      if (transferTxIds?.has(tx.id)) continue;
       if (linkIndex.has(tx.id) || rejected.has(tx.id)) continue;
       const key = merchantKeyOf(tx);
       const assetId = key ? byMerchant.get(key) : undefined;
-      const asset = assetId
+      const known = assetId
         ? activeAssets.find((a) => a.id === assetId)
         : undefined;
-      if (!asset) continue;
-      const amountMinor = txAmountInAsset(tx, asset);
-      if (amountMinor) out.push({ tx, asset, amountMinor });
+      if (known && txAmountInAsset(tx, known)) {
+        out.push({
+          tx,
+          type: amount < 0 ? "contribution" : "withdrawal",
+          assets: [known],
+          kind: null,
+        });
+        continue;
+      }
+      const signal = investmentSignalOf(tx);
+      if (!signal) continue;
+      const candidates = ofKind(signal.kind).filter(
+        (a) => txAmountInAsset(tx, a) !== null,
+      );
+      // Дохід без активу лишається доходом: привʼязати його нема куди.
+      if (signal.direction === "income" && candidates.length === 0) continue;
+      out.push({
+        tx,
+        type: signal.direction,
+        assets: candidates,
+        kind: signal.kind,
+      });
     }
     return out;
   }, [
@@ -213,18 +275,45 @@ export function useAssetLinks({
     activeTx,
     hiddenTxIds,
     excludedTxIds,
+    transferTxIds,
     linkIndex,
     rejected,
   ]);
 
-  const accept = (s: AssetLinkSuggestion) =>
-    link(s.tx, s.asset.id, "contribution", s.amountMinor);
+  const accept = (s: AssetLinkSuggestion, assetId?: string) => {
+    const asset = s.assets.find((a) => a.id === assetId) ?? s.assets[0];
+    if (!asset) return;
+    const amountMinor = txAmountInAsset(s.tx, asset);
+    if (amountMinor) link(s.tx, asset.id, s.type, amountMinor);
+  };
   const reject = (s: AssetLinkSuggestion) => {
     const next = new Set(rejected);
     next.add(s.tx.id);
     setRejected(next);
     safeWriteLS(FINYK_ASSET_LINK_SUGGESTION_REJECTED_TX_KEY, [...next]);
   };
+  /**
+   * Актив, створений з операції: його перший внесок і є цією операцією
+   * (`txId` і ключ отримувача, щоб наступні списання тому ж отримувачу
+   * пропонувались уже до нього).
+   */
+  const createFrom = (s: AssetLinkSuggestion, asset: ManualAsset) => {
+    if (!setManualAssets) return;
+    const d = toDomainAsset(asset);
+    const [first, ...rest] = d.events ?? [];
+    const key = merchantKeyOf(s.tx);
+    const events = first
+      ? [
+          { ...first, txId: s.tx.id, ...(key ? { merchantKey: key } : {}) },
+          ...rest,
+        ]
+      : [];
+    const linked = fromDomainAsset(
+      withCachedAmount({ ...d, events }, localTodayKey()),
+      asset,
+    );
+    setManualAssets((list) => [...list, linked]);
+  };
 
-  return { linkFor, suggestions, accept, reject };
+  return { linkFor, suggestions, accept, reject, createFrom };
 }

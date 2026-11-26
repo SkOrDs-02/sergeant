@@ -105,9 +105,23 @@ export const finykSavingsMessages = {
   },
   assetSuggestion: {
     title: "Схоже на внесок у «{name}»",
+    titleWithdrawal: "Схоже на повернення з «{name}»",
+    titleIncome: "Схоже на дохід з «{name}»",
+    titleNew: {
+      ovdp: "Схоже на купівлю ОВДП",
+      deposit: "Схоже на відкриття депозиту",
+    },
     accept: "Так, внесок",
+    acceptWithdrawal: "Так, повернення",
+    acceptIncome: "Так, дохід",
+    acceptInto: "У «{name}»",
+    create: "Створити актив",
+    createTitle: "Новий актив з операції",
+    createHint:
+      "Операція стане першим внеском. Параметри (ставку, купон, погашення) введи сам.",
     reject: "Ні",
-    rejectAria: "Ні, «{tx}» не внесок у «{name}»",
+    rejectAria: "Ні, «{tx}» не повʼязана з «{name}»",
+    rejectNewAria: "Ні, «{tx}» не відкладення",
   },
   monthlySaved: {
     label: "Відкладено",
