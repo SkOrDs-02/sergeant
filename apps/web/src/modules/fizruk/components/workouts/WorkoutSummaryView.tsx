@@ -91,6 +91,11 @@ export interface WorkoutSummaryViewProps {
   onUpdateItemSets?: (itemId: string, sets: WorkoutSet[]) => void;
   /** Знімок підходів до видалення — батько показує тост із поверненням. */
   onDeleteSet?: (itemId: string, snapshot: WorkoutSet[]) => void;
+  /**
+   * Явне «Видалити вправу» в правці (рішення власника 2026-11-26): прибирає
+   * вправу з тренування разом із підходами. Батько показує тост із поверненням.
+   */
+  onRemoveItem?: (itemId: string) => void;
 }
 
 /** One-line "what happened" caption for a single exercise entry. */
@@ -138,6 +143,7 @@ export function WorkoutSummaryView({
   onUpdateTimes,
   onUpdateItemSets,
   onDeleteSet,
+  onRemoveItem,
 }: WorkoutSummaryViewProps) {
   const copy = messages.fizruk.workoutSummary;
   const editCopy = messages.fizruk.editFinishedSets;
@@ -292,6 +298,24 @@ export function WorkoutSummaryView({
                           onDeleteSet?.(item.id, snapshot)
                         }
                       />
+                      {onRemoveItem ? (
+                        <Button
+                          variant="outline"
+                          tone="danger"
+                          className="mt-2 min-h-[44px]"
+                          aria-label={editCopy.removeItemAria.replace(
+                            "{name}",
+                            item.nameUk,
+                          )}
+                          onClick={() => {
+                            setEditingItemId(null);
+                            onRemoveItem(item.id);
+                          }}
+                        >
+                          <Icon name="trash" size="md" aria-hidden />
+                          {editCopy.removeItem}
+                        </Button>
+                      ) : null}
                     </>
                   ) : null}
                 </li>

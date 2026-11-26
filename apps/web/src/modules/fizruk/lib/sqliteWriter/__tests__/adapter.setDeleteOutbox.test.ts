@@ -19,12 +19,13 @@ const silent = () => {};
 const workout = (
   setWeights: number[],
   itemIds: string[] = ["i1"],
+  endedAt: string | null = null,
 ): FizrukDualWriteOp => ({
   kind: "workout-upsert",
   workout: {
     id: "w1",
     startedAt: "2026-05-01T10:00:00Z",
-    endedAt: null,
+    endedAt,
     items: itemIds.map((id) => ({
       id,
       exerciseId: "bench",
@@ -109,6 +110,25 @@ describe("видалення підходів і вправ іде в outbox", (
       logger: silent,
     });
     expect(await deletesFor("fizruk_workout_items")).toEqual(["i2"]);
+  });
+
+  it("завершене тренування: видалена вправа тягне delete для себе і своїх підходів", async () => {
+    const ENDED = "2026-05-01T11:00:00Z";
+    await applyFizrukDualWriteOps(
+      handle.client,
+      [workout([50, 40], ["i1", "i2"], ENDED)],
+      { userId: UID, clientTs: TS1, logger: silent },
+    );
+    await applyFizrukDualWriteOps(
+      handle.client,
+      [workout([50, 40], ["i1"], ENDED)],
+      { userId: UID, clientTs: TS2, logger: silent },
+    );
+    expect(await deletesFor("fizruk_workout_items")).toEqual(["i2"]);
+    expect((await deletesFor("fizruk_workout_sets")).sort()).toEqual([
+      "i2:s0",
+      "i2:s1",
+    ]);
   });
 
   it("реплей старішого знімка не штовхає tombstone-ів", async () => {

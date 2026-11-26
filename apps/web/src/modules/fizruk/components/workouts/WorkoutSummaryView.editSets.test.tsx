@@ -53,9 +53,11 @@ let latest: Workout | null = null;
 function Harness({
   initial,
   onDeleteSet,
+  onRemoveItem,
 }: {
   initial: Workout;
   onDeleteSet?: (itemId: string, snapshot: WorkoutSet[]) => void;
+  onRemoveItem?: (itemId: string) => void;
 }) {
   const [w, setW] = useState(initial);
   useEffect(() => {
@@ -78,6 +80,13 @@ function Harness({
         }))
       }
       onDeleteSet={onDeleteSet ?? vi.fn()}
+      onRemoveItem={(itemId) => {
+        onRemoveItem?.(itemId);
+        setW((prev) => ({
+          ...prev,
+          items: prev.items.filter((it) => it.id !== itemId),
+        }));
+      }}
     />
   );
 }
@@ -148,6 +157,26 @@ describe("WorkoutSummaryView — правка підходів завершен�
     expect(latest?.items[0]?.sets).toEqual([{ weightKg: 60, reps: 10 }]);
     expect(onDeleteSet).toHaveBeenCalledWith("i1", sets);
     expect(tileValue("Підходів")).toBe("1");
+  });
+
+  it("«Видалити вправу» є в правці завершеного тренування і прибирає вправу", () => {
+    const onRemoveItem = vi.fn();
+    render(
+      <Harness
+        initial={makeWorkout([bench([{ weightKg: 60, reps: 10 }])])}
+        onRemoveItem={onRemoveItem}
+      />,
+    );
+    expect(
+      screen.queryByRole("button", { name: /^Видалити вправу/ }),
+    ).toBeNull();
+    fireEvent.click(screen.getByRole("button", { name: /Виправити підходи/ }));
+    fireEvent.click(
+      screen.getByRole("button", { name: "Видалити вправу: Жим лежачи" }),
+    );
+    expect(onRemoveItem).toHaveBeenCalledWith("i1");
+    expect(latest?.items).toEqual([]);
+    expect(latest?.endedAt).toBe(ENDED);
   });
 
   it("підхід на час виправляється полем секунд (тип виміру вправи)", () => {
