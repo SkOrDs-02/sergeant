@@ -4687,7 +4687,7 @@
       "canonical_owner": "docs/work/specs/finyk-import-reminders.md"
     },
     {
-      "old_path": null,
+      "old_path": "docs/work/specs/finyk-investment-suggestions.md",
       "new_path": "docs/work/specs/finyk-investment-suggestions.md",
       "action": "keep",
       "genre": "active-work",
