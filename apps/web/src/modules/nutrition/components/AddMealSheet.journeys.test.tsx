@@ -281,7 +281,8 @@ describe("AddMealSheet — complete edit and photo journeys", () => {
     fireEvent.click(screen.getByRole("button", { name: "Зберегти зміни" }));
     expect(onSave.mock.calls[0]![0]).toMatchObject({
       amount_g: 150.5,
-      macros: original.macros,
+      // Ккал у формі цілі (рішення 2026-11-26): 150.5 -> 151, Б/Ж/В як були.
+      macros: { ...original.macros, kcal: 151 },
     });
   });
 

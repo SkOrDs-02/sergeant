@@ -106,7 +106,7 @@ describe("PickedFoodCard", () => {
     // фіксувала баг: продукт затирав перейменовану страву.
     expect(updater(form({ name: "" }))).toMatchObject({
       name: "Курка Наша Ряба",
-      kcal: "60.6",
+      kcal: "61",
       protein_g: "10.1",
       fat_g: "2.5",
       carbs_g: "5.1",
@@ -221,8 +221,8 @@ describe("PickedFoodCard", () => {
     const updater = setForm.mock.calls[0]?.[0] as (
       state: MealFormState,
     ) => MealFormState;
-    // 110 ккал / 100 г × 12.5 г = 13.75 → 13.8
-    expect(updater(form())).toMatchObject({ kcal: "13.8" });
+    // 110 ккал / 100 г × 12.5 г = 13.75 → 14 (ккал у формі цілі)
+    expect(updater(form())).toMatchObject({ kcal: "14" });
     // jsdom — fine pointer, тож рендериться степер, а не колесо.
     expect(screen.getByLabelText("Грами")).toHaveValue("12.5");
   });
