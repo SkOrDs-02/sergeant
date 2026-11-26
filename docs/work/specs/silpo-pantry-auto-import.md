@@ -2,6 +2,7 @@
 
 > **Last touched:** 2026-10-26 by @claude (тріаж документації: закрито як Implemented, залишок винесено, рев'ю: п. 3 Верифікації позначено перенесеним). **Next review:** 2026-12-29.
 > **Status:** Implemented - міграція `151_silpo_pantry_import`, `apps/web/src/modules/nutrition/hooks/useSilpoPantryAutoImport.ts`, `silpoReplenish.ts`, роут `pantry-claim` у `routes/silpo.ts`; click-through із живим акаунтом винесено, див. § Стан виконання.
+> **Змінено:** 2026-11-26 спекою [`silpo-pantry-confirm.md`](./silpo-pantry-confirm.md): мовчазний автоімпорт і тост «Повернути» прибрано, чеки пропонуються карткою в огляді Харчування і йдуть у комору лише після «Додати». Хук `useSilpoPantryAutoImport` видалено; позначка «вже в коморі» і бронювання лишились.
 
 ## Проблема
 
