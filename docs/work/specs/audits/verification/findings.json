@@ -4928,6 +4928,86 @@
           "note": "Живий чат на стенді (OpenRouter, z-ai/glm-5.2): 4 з 5 ходів із remember / my_profile закінчились «Не вдалося отримати відповідь. Спробуй ще раз.», хоча дія виконана (картка «Памʼять оновлено · Виконано · Пояснення не дійшло»). У лозі сервера chat_stream_empty_retry і chat_stream_empty_ok: модель повернула порожній синтез і після перезапиту. Чотири ходи Фініка в тих самих сесіях відповіли нормально. Причину не встановлено; чи факт лишається в памʼяті після такого ходу, не перевірено. Обхід 6 ходів/хв дотримано."
         }
       ]
+    },
+    {
+      "id": "FULL-20261126-FIZRUK-1",
+      "legacyId": "fizruk-set-delete-not-synced",
+      "title": "Видалений підхід не синхронізується і воскресає на новому пристрої",
+      "severity": "major",
+      "source": "docs/work/specs/audits/verification/runs/full-2026-11-25/handoff.md",
+      "sourceAnchor": "CALC-cross-module-oracles",
+      "status": "open",
+      "history": [
+        {
+          "at": "2026-11-26",
+          "event": "observed",
+          "note": "Оракул Фізрука (робітник) і незалежне відтворення перевіряльником на новому акаунті, локальний стенд. Жим 50x5, 40x5, 30x5; видалено третій підхід; у сесії 2 підходи й 450, але на сервері рядок s2 шість хвилин лишався з deleted_at = NULL, хоча s0 і s1 за цей час перезаписались. Після свіжого входу: 3 підходи, обсяг 600. Причина за кодом: softDeleteRemovedChildren (apps/web/src/modules/fizruk/lib/sqliteWriter/adapter.sql.ts:339) робить лише локальний UPDATE і не ставить delete в outbox; виклики з adapter.ts:417 (підходи) і :338 (вправи тренування). Id підходів позиційні, тож після видалення не останнього підходу воскресає копія останнього. Для прибраної вправи висновок лише з коду."
+        }
+      ]
+    },
+    {
+      "id": "FULL-20261126-NUTR-1",
+      "legacyId": "nutrition-goals-never-reach-server",
+      "title": "Цілі КБЖВ нового акаунта не доходять на сервер",
+      "severity": "major",
+      "source": "docs/work/specs/audits/verification/runs/full-2026-11-25/handoff.md",
+      "sourceAnchor": "CALC-cross-module-oracles",
+      "status": "open",
+      "history": [
+        {
+          "at": "2026-11-26",
+          "event": "observed",
+          "note": "Оракул Їжі і незалежне відтворення перевіряльником на новому акаунті. Кожен push nutrition_prefs іде патчем (prefs_merge:true), сервер відповідає retry / prefs_patch_without_base з першого до останнього; таблиця nutrition_prefs порожня, у sync_op_log записів для неї немає, а в nutrition_goal_periods рядки є. Після свіжого входу поля цілей порожні й огляд пропонує «Задати ціль», а графік тижня показує «ціль 2 000». Причина за кодом: computePrefsPatch (apps/web/src/modules/nutrition/lib/sqliteWriter/diff.prefsPatch.ts:74-78) повертає патч, щойно є локальний prev, а applyPrefs.ts:84-91 на сервері без базового рядка відповідає retry без кінця. Outbox ганяє ці оп-и постійно."
+        }
+      ]
+    },
+    {
+      "id": "FULL-20261126-ROUTINE-1",
+      "legacyId": "routine-longest-streak-below-current",
+      "title": "У деталях звички найдовша серія менша за поточну",
+      "severity": "minor",
+      "source": "docs/work/specs/audits/verification/runs/full-2026-11-25/handoff.md",
+      "sourceAnchor": "CALC-cross-module-oracles",
+      "status": "open",
+      "history": [
+        {
+          "at": "2026-11-26",
+          "event": "observed",
+          "note": "Перевіряльник на акаунті робітника: звичка з одним прощеним пропуском показує «Поточна серія 13 · Найдовша серія 10». Поточна рахується гнучким правилом (flexibleStreakBreakdown), найдовша жорстким (maxStreakAllTime, packages/routine-domain/src/streaks.ts:63; HabitStatsSection.tsx:102). Статистика «за весь час» уже на гнучкому. Жорстку «найкращу» беруть також useStreakRecordPendingInsight.ts:53 і chatActions/routineActions.ts:602. Робітник цього не знайшов: деталі звички не відкривав, а його оракул серій повторював алгоритм коду."
+        }
+      ]
+    },
+    {
+      "id": "FULL-20261126-ROUTINE-2",
+      "legacyId": "routine-milestone-toast-on-cold-start",
+      "title": "Після свіжого входу тост «Найкраща серія: 7 днів» при серії 13",
+      "severity": "minor",
+      "source": "docs/work/specs/audits/verification/runs/full-2026-11-25/handoff.md",
+      "sourceAnchor": "CALC-cross-module-oracles",
+      "status": "open",
+      "history": [
+        {
+          "at": "2026-11-26",
+          "event": "observed",
+          "note": "Перевіряльник бачив тост на акаунті робітника; герой при цьому показує 13 днів. Причина виведена з коду, не перевірена: віха засівається на холодному старті, коли серія ще 0, а не null (useStreakMilestoneCelebration.ts), і з приходом даних «досягається» 7."
+        }
+      ]
+    },
+    {
+      "id": "FULL-20261126-UX-1",
+      "legacyId": "oracle-run-inconsistencies",
+      "title": "Неузгодженості з оракулів: тиждень, округлення, холодний старт, журнал цілей",
+      "severity": "minor",
+      "source": "docs/work/specs/audits/verification/runs/full-2026-11-25/handoff.md",
+      "sourceAnchor": "CALC-cross-module-oracles",
+      "status": "open",
+      "history": [
+        {
+          "at": "2026-11-26",
+          "event": "observed",
+          "note": "Підтверджено перевіряльником. (1) «Журнал за тиждень» Їжі і «Статистика → Тиждень» Рутини рахують останні 7 днів, а огляд і звіти хаба тиждень Пн-Нд; числа сусідніх екранів не сходяться. (2) Обсяг 247,5 показано як «248» у підсумку тренування й на огляді, але «247,5» на Прогресі (Math.round у WorkoutSummaryView.tsx:216 і finishConfirm.ts:42). (3) Холодний старт після входу: Фізрук 12-18 с показує «Історії тренувань ще немає» без індикатора, Їжа до 3,4 с «0 прийомів їжі», Рутина ~0,9 с «Звичок ще немає», далі «Завантажую з хмари…». (4) Кожне натискання клавіші в полі цілі пише рядок у nutrition_goal_periods (1, 18, 180, 1800): дебаунсу немає (DailyPlanCard.tsx:151, diff.ts:518). (5) Тост «Денну ціль виконано» поруч із «70 ккал понад ціль» (вікно 95-105% задумане, суперечність текстова). (6) Зміна у звіті хаба відносна (-8,3% при 69% проти 75%), знак «%» читається двозначно. Спростовано: «планка на час додає підходи м'язам» є задуманою поведінкою за записом канону 2026-11-19; рядок 783 fizruk.md не оновлено."
+        }
+      ]
     }
   ]
 }
