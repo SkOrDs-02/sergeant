@@ -194,7 +194,9 @@ import { brotliCompressSync, constants } from "node:zlib";
 // `@sergeant/shared` більше не тягне в eager модулі лінивих екранів
 // (`treeshake.moduleSideEffects` у `apps/web/vite.config.js`), факт
 // 254 565 B + 1.7% запасу. Деталі — bundle-budget-ratchet-log.md § 2026-11-19.
-const DEFAULT_LIMIT_BYTES = 259_000;
+// Ратчет 2026-11-26 угору 259 → 262 kB (рішення власника): факт 258.6 kB
+// лишав 0.4 kB запасу. Деталі: bundle-budget-ratchet-log.md § 2026-11-26.
+const DEFAULT_LIMIT_BYTES = 262_000;
 
 const DEFAULT_DIST = "apps/server/dist";
 
