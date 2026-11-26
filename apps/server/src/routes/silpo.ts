@@ -51,6 +51,8 @@ import {
 import {
   pantryClaimHandler,
   pantryReleaseHandler,
+  pantrySkipsHandler,
+  pantrySkipsRecordHandler,
   settingsHandler,
 } from "./silpoPantry.js";
 
@@ -615,6 +617,25 @@ export function createSilpoRouter(): Router {
       windowMs: 60_000,
     }),
     pantryReleaseHandler,
+  );
+  r.get(
+    "/api/silpo/pantry-skips",
+    rateLimitExpress({
+      key: "api:silpo:pantry-skips",
+      limit: 60,
+      windowMs: 60_000,
+    }),
+    pantrySkipsHandler,
+  );
+  r.post(
+    "/api/silpo/pantry-skips",
+    // Один запит на «Додати» в аркуші чека - те саме відро, що й бронювання.
+    rateLimitExpress({
+      key: "api:silpo:pantry-skips-record",
+      limit: 30,
+      windowMs: 60_000,
+    }),
+    pantrySkipsRecordHandler,
   );
   r.post(
     "/api/silpo/cart/preview",

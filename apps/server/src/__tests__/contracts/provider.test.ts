@@ -285,7 +285,7 @@ afterAll(() => {
 const pact = loadPact();
 
 describe("Pact provider replay — consumer=sergeant-api-client, provider=sergeant-server", () => {
-  it("pact file has 87 expected consumer interactions across 53 routes", () => {
+  it("pact file has 101 expected consumer interactions across 58 routes", () => {
     expect(pact.consumer.name).toBe("sergeant-api-client");
     expect(pact.provider.name).toBe("sergeant-server");
     // 75, не 73: +2 інтеракції 2026-08-25 на ВЖЕ покритих маршрутах
@@ -337,7 +337,11 @@ describe("Pact provider replay — consumer=sergeant-api-client, provider=sergea
     // 98, не 97: +1 інтеракція на вже покритому `GET /mono/transactions`
     // (finyk-fx-nbu.md): операція валютної картки з `amountUah` і курсом
     // НБУ. `expectedRoutes` не росте.
-    expect(pact.interactions).toHaveLength(98);
+    // 101, не 98: +3 інтеракції спеки silpo-pantry-confirm.md - пара на
+    // НОВОМУ маршруті `/silpo/pantry-skips` (GET і POST, росте
+    // `expectedRoutes`) і `pantry-release` з порожнім `itemIds` на вже
+    // покритому маршруті.
+    expect(pact.interactions).toHaveLength(101);
     const expectedRoutes = new Set([
       // PR-42 baseline (5)
       "GET /api/v1/me",
@@ -424,6 +428,9 @@ describe("Pact provider replay — consumer=sergeant-api-client, provider=sergea
       "PUT /api/v1/silpo/settings",
       "POST /api/v1/silpo/receipts/rcpt-pact-0001/pantry-claim",
       "POST /api/v1/silpo/receipts/rcpt-pact-0001/pantry-release",
+      // «зазвичай не додаєш» (silpo-pantry-confirm.md): 2 інтеракції / 2 маршрути
+      "GET /api/v1/silpo/pantry-skips",
+      "POST /api/v1/silpo/pantry-skips",
       // хеш стану sync (ADR-0106, крок 1): 1 інтеракція / 1 маршрут
       "GET /api/v2/sync/state-hash",
       // ручний Premium з пейволу: 2 інтеракції / 1 новий маршрут
