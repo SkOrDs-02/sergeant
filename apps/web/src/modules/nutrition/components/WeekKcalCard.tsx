@@ -23,6 +23,7 @@ import { useMemo, useState } from "react";
 import { Card } from "@shared/components/ui/Card";
 import { SectionHeading } from "@shared/components/ui/SectionHeading";
 import { messages } from "@shared/i18n/uk";
+import { coreMessages } from "@shared/i18n/uk.core";
 import { cn } from "@shared/lib/ui/cn";
 import { getKyivMondayIndex, parseKyivDate } from "@shared/lib/time/kyivTime";
 import {
@@ -67,6 +68,11 @@ export interface WeekKcalCardProps {
    * намір; посилання його передає.
    */
   onGoToLog?: ((dateIso?: string) => void) | undefined;
+  /**
+   * Перший pull ще йде: порожній тиждень замість «Ще немає записів» каже
+   * «Завантажую з хмари…», бо записи просто не доїхали (data-59/60).
+   */
+  loadingFromCloud?: boolean | undefined;
 }
 
 export function WeekKcalCard({
@@ -74,6 +80,7 @@ export function WeekKcalCard({
   goalsByDay,
   todayIso,
   onGoToLog,
+  loadingFromCloud = false,
 }: WeekKcalCardProps) {
   const model = useMemo(
     // `todayIso` — межа факту: день після сьогодні малюється, але в суму й
@@ -96,6 +103,8 @@ export function WeekKcalCard({
     summaryText = `${fmtKcal(model.totalKcal)} ${t.kcalUnit} · ${
       t.avgPrefix
     } ${fmtKcal(model.avgKcal)}${t.avgSuffix}`;
+  } else if (loadingFromCloud) {
+    summaryText = coreMessages.firstCloudPull.loadingTitle;
   } else {
     summaryText = t.emptyWeek;
   }

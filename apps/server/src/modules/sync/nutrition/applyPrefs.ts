@@ -82,13 +82,15 @@ export async function applyNutritionPrefs(
     if (existing!.rows[0]!.updated_at.getTime() >= clientTs.getTime()) {
       return { status: "rejected", reason: "lww_conflict" };
     }
-  } else if (patch) {
-    // Патчу нема на що лягти: повний знімок цього ж пристрою ще в бекофі або
-    // відхилений. INSERT із самим патчем пішов би в журнал як повний знімок,
-    // і pull обрізав би prefs на всіх пристроях. Клієнт повторить патч, коли
-    // базовий рядок з'явиться.
-    return { status: "retry", reason: "prefs_patch_without_base" };
   }
+  // FULL-20261126-NUTR-1: патч без серверного рядка створює його (раніше тут
+  // було `retry: prefs_patch_without_base`). Клієнт шле патч, щойно має
+  // локальний `prev` (навіть дефолтний кеш нового акаунта), і повного знімка
+  // не надсилає ніколи, тож «клієнт повторить, коли базовий рядок зʼявиться»
+  // не збувалось: ціль нового акаунта не доходила до сервера, а outbox
+  // ганяв оп вічно. Рядка немає = жоден пристрій ще не доніс prefs, зливати
+  // нема з чим, тож патч і є перший знімок. Журнал отримує його як повний
+  // знімок без прапорця (див. `rewriteRowAsFullSnapshot` нижче).
 
   const prefsJson = patch
     ? JSON.stringify(patch)
@@ -105,6 +107,7 @@ export async function applyNutritionPrefs(
        VALUES ($1, $2::jsonb, $3, $4, $5)`,
       [userId, prefsJson, activePantryId, clientTs, clientTs],
     );
+    if (patch) rewriteRowAsFullSnapshot(row, prefsJson);
     return { status: "applied" };
   }
 

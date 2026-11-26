@@ -5,11 +5,26 @@
 /* eslint-disable sergeant-design/no-cyrillic-jsx-literal -- pre-existing i18n tech debt; strings moved from LogCard.tsx during T3 decomposition */
 import { MorphChevron } from "@shared/components/ui/MorphChevron";
 import { useMemo, useState } from "react";
-import { getMacrosForDateRange } from "../lib/nutritionStorage";
-import type { NutritionLog } from "@sergeant/nutrition-domain";
+import { messages } from "@shared/i18n/uk";
+import { addDaysISODate, getMacrosForDateRange } from "../lib/nutritionStorage";
+import {
+  deviceWeekStartKey,
+  type NutritionLog,
+} from "@sergeant/nutrition-domain";
 
 /** Сталий id керованого регіону для `aria-controls` тогла. */
 const WEEK_TABLE_ID = "nutrition-week-log-table";
+
+/** «Пн, 17 лист.»: день тижня й дата людською мовою, а не `11-17`. */
+function formatDayLabel(dayKey: string): string {
+  const [y, m, d] = dayKey.split("-").map(Number);
+  const date = new Date(y ?? 1970, (m ?? 1) - 1, d ?? 1);
+  return new Intl.DateTimeFormat("uk-UA", {
+    weekday: "short",
+    day: "numeric",
+    month: "short",
+  }).format(date);
+}
 
 interface LogCardWeeklyTableProps {
   log: NutritionLog;
@@ -22,10 +37,16 @@ export function LogCardWeeklyTable({
 }: LogCardWeeklyTableProps) {
   const [weekOpen, setWeekOpen] = useState(false);
 
-  const weekRows = useMemo(
-    () => getMacrosForDateRange(log, selectedDate, 7),
-    [log, selectedDate],
-  );
+  // Календарний тиждень Пн-Нд обраного дня, а не ковзні 7 днів до нього:
+  // так само рахують огляд Їжі і звіти хаба (канон: тиждень з понеділка,
+  // ISO 8601; FULL-20261126-UX-1). `getMacrosForDateRange` ставить найстарший
+  // першим, тож кінець у неділю дає Пн…Нд.
+  const weekRows = useMemo(() => {
+    const [y, m, d] = selectedDate.split("-").map(Number);
+    const anchor = new Date(y ?? 1970, (m ?? 1) - 1, d ?? 1);
+    const weekEnd = addDaysISODate(deviceWeekStartKey(anchor), 6);
+    return getMacrosForDateRange(log, weekEnd, 7);
+  }, [log, selectedDate]);
 
   return (
     <div className="border-y border-line">
@@ -61,11 +82,21 @@ export function LogCardWeeklyTable({
             <tbody>
               {weekRows.map((r) => (
                 <tr key={r.date} className="border-t border-line text-text">
-                  <td className="py-1.5 pr-2">{r.date.slice(5)}</td>
-                  <td className="py-1 pr-2">{Math.round(r.kcal)}</td>
-                  <td className="py-1 pr-2">{Math.round(r.protein_g)}</td>
-                  <td className="py-1 pr-2">{Math.round(r.fat_g)}</td>
-                  <td className="py-1">{Math.round(r.carbs_g)}</td>
+                  <td className="py-1.5 pr-2">{formatDayLabel(r.date)}</td>
+                  {r.kcal <= 0 ? (
+                    // Порожній день це неповні дані, а не нульове
+                    // споживання (канон §5.2).
+                    <td colSpan={4} className="py-1 text-subtle">
+                      {messages.nutrition.weekKcal.emptyDay}
+                    </td>
+                  ) : (
+                    <>
+                      <td className="py-1 pr-2">{Math.round(r.kcal)}</td>
+                      <td className="py-1 pr-2">{Math.round(r.protein_g)}</td>
+                      <td className="py-1 pr-2">{Math.round(r.fat_g)}</td>
+                      <td className="py-1">{Math.round(r.carbs_g)}</td>
+                    </>
+                  )}
                 </tr>
               ))}
             </tbody>
