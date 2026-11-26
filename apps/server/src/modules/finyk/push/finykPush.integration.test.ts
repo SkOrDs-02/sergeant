@@ -168,6 +168,38 @@ describe("push ліміту Фініка", () => {
     ]);
   });
 
+  // Спека finyk-fx-nbu.md: витрата доларовою карткою йде в ліміт гривневою
+  // сумою за курсом НБУ (`amount_uah`); без курсу не рахується зовсім, а
+  // центи не стають копійками.
+  it("валютна картка: у ліміт іде amount_uah, рядок без курсу не рахується", async () => {
+    await seedUser(USER_A);
+    await pool.query(
+      `INSERT INTO mono_account (user_id, mono_account_id, currency_code)
+       VALUES ($1, 'acct-usd', 840)`,
+      [USER_A],
+    );
+    await seedLimit(USER_A, 1000);
+    await spend(USER_A, 500);
+    const usd = async (amountUah: number | null) =>
+      pool.query(
+        `INSERT INTO mono_transaction
+           (user_id, mono_account_id, mono_tx_id, time, amount, operation_amount,
+            currency_code, mcc, description, raw, source, category_slug, amount_uah)
+         VALUES ($1, 'acct-usd', $2, $3, -100000, -100000, 840, 5411, 'Shop',
+                 '{}'::jsonb, 'webhook', 'food', $4)`,
+        [USER_A, randomUUID(), new Date(NOON.getTime() - 60_000), amountUah],
+      );
+    // $1000 без курсу: якби центи рахувались копійками, це 1000 ₴ і 150 %.
+    await usd(null);
+    expect(await runFinykLimitPush(db, USER_A, NOON, "sync")).toBe("nothing");
+    // 350 ₴ за курсом НБУ: 500 + 350 = 85 % ліміту.
+    await usd(-35_000);
+    expect(await runFinykLimitPush(db, USER_A, NOON, "sync")).toBe("sent");
+    expect(sendToUserQuietly.mock.calls[0]![1].title).toBe(
+      "Ліміт «Продукти» майже вичерпано",
+    );
+  });
+
   it("100 % після 80 %, а далі тиша", async () => {
     await seedUser(USER_A);
     await seedLimit(USER_A, 1000);
