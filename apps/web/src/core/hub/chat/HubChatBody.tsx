@@ -5,6 +5,7 @@
 import { useEffect, useRef } from "react";
 import { Tooltip } from "@shared/components/ui/Tooltip";
 import { ChatMessage, TypingIndicator } from "../../components/ChatMessage";
+import { cleanTextForSpeech } from "../../lib/hubChatSpeech";
 import type { HubChatSession } from "../hubChatSessions";
 import { messages as uiCopy } from "@shared/i18n/uk";
 
@@ -70,7 +71,7 @@ export function HubChatBody({
   const last = messages[messages.length - 1];
   const announcedReply =
     !loading && last && last.role === "assistant" && last.error !== true
-      ? last.text
+      ? cleanTextForSpeech(last.text)
       : "";
 
   return (

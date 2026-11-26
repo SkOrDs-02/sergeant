@@ -33,6 +33,7 @@ import {
   createSyncEngineReaderRuntime,
   type SyncEngineReaderRuntime,
 } from "./syncEngineReader";
+import { ensureModuleSchemas } from "./moduleSchemas";
 import { recordOutboxPurgeNotice } from "./outboxPurgeNotice";
 import { requeueFkViolationRejected } from "./requeueFkViolationRejected";
 import { createSyncStreamConsumer } from "./syncStreamConsumer";
@@ -301,7 +302,13 @@ async function createDefaultReaderRuntime(): Promise<SyncEngineReaderRuntime> {
     // прапорцем `SYNC_SNAPSHOT_ENABLED`; 410 буває лише за увімкненої чистки
     // журналу (`SYNC_OP_LOG_APPLIED_RETENTION_DAYS`, ADR-0105 §2).
     snapshot: (opts) => shared.apiClient.syncV2.snapshotV2(opts),
-    resolveClient: shared.resolveClient,
+    // Схеми модулів до першого pull: без них оп у ще не створену таблицю
+    // губився назавжди (`moduleSchemas.ts`).
+    resolveClient: async () => {
+      const client = await shared.resolveClient();
+      await ensureModuleSchemas(client);
+      return client;
+    },
     // data-04: `null` тут означає «вийшов», а reader на `null` скидає прапор
     // «початковий pull завершено». Тимчасовий збій `getSession` (офлайн, 5xx)
     // теж дає `data: null`, але виходом не є: кидаємо, тож тік падає, а прапор

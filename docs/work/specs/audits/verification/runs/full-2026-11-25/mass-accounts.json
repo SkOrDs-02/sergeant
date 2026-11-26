@@ -1,0 +1,270 @@
+{
+  "pages": 266,
+  "personas": [
+    "M1-empty",
+    "M2-finyk-heavy",
+    "M3-routine",
+    "M4-nutrition",
+    "M5-fizruk",
+    "M6-edge",
+    "M7-pro-mixed"
+  ],
+  "routesPerPersona": 38,
+  "overflowPages": 0,
+  "rootEmptyPages": 0,
+  "badTextPages": 0,
+  "pageErrorsOrConsole": [
+    {
+      "persona": "M1-empty",
+      "route": "/fizruk/progress",
+      "errors": [
+        "console: TypeError: Failed to fetch dynamically imported module: http://127.0.0.1:4173/assets/FinykBootCluster-hihKrKw7.js",
+        "console: TypeError: Cannot read properties of undefined (reading 'default')\n    at N (http://127.0.0.1:4173/assets/vendor-DCRRH1pI.js:1:3556)\n    at Ul (http://127.0.0.1:4173/assets/vendor-react-CwIGoL1n.js:8:43958)\n    at Nl (http://127.0."
+      ]
+    }
+  ],
+  "unexpectedHttp": [],
+  "expectedStandHttp": {
+    "404 GET /api/v1/mono/sync-state": 266,
+    "404 GET /api/v2/sync/stream": 266,
+    "503 GET /api/v1/push/vapid-public": 196,
+    "429 POST /api/v1/metrics/web-vitals": 141,
+    "503 GET /api/v1/silpo/sync-state": 49
+  },
+  "clippedText": [
+    {
+      "persona": "M1-empty",
+      "route": "/?tab=profile",
+      "clipped": ["P.text-style-body text-text flex-1 truncate +44"]
+    },
+    {
+      "persona": "M1-empty",
+      "route": "/pricing",
+      "clipped": [
+        "INPUT.box-border w-full text-text placeholder:text-subtle outline- +30"
+      ]
+    },
+    {
+      "persona": "M3-routine",
+      "route": "/?tab=profile",
+      "clipped": ["P.text-style-body text-text flex-1 truncate +53"]
+    },
+    {
+      "persona": "M3-routine",
+      "route": "/pricing",
+      "clipped": [
+        "INPUT.box-border w-full text-text placeholder:text-subtle outline- +41"
+      ]
+    },
+    {
+      "persona": "M4-nutrition",
+      "route": "/?tab=profile",
+      "clipped": ["P.text-style-body text-text flex-1 truncate +64"]
+    },
+    {
+      "persona": "M4-nutrition",
+      "route": "/pricing",
+      "clipped": [
+        "INPUT.box-border w-full text-text placeholder:text-subtle outline- +52"
+      ]
+    },
+    {
+      "persona": "M6-edge",
+      "route": "/",
+      "clipped": [
+        "SPAN.block text-style-caption text-muted mt-0.5 truncate +99"
+      ]
+    },
+    {
+      "persona": "M6-edge",
+      "route": "/?tab=profile",
+      "clipped": ["P.text-style-body text-text flex-1 truncate +39"]
+    },
+    {
+      "persona": "M6-edge",
+      "route": "/finyk/transactions",
+      "clipped": ["DIV.text-style-body font-semibold text-text truncate +1383"]
+    },
+    {
+      "persona": "M6-edge",
+      "route": "/finyk/analytics",
+      "clipped": ["SPAN.text-style-label text-text truncate pr-2 +1192"]
+    },
+    {
+      "persona": "M6-edge",
+      "route": "/pricing",
+      "clipped": [
+        "INPUT.box-border w-full text-text placeholder:text-subtle outline- +26"
+      ]
+    }
+  ],
+  "navErrors": [],
+  "seed": [
+    {
+      "kind": "seed",
+      "persona": "M1-empty",
+      "needles": 0,
+      "ms": 0
+    },
+    {
+      "kind": "seed",
+      "persona": "M2-finyk-heavy",
+      "needles": 12,
+      "ms": 32935
+    },
+    {
+      "kind": "seed",
+      "persona": "M3-routine",
+      "needles": 5,
+      "ms": 12049
+    },
+    {
+      "kind": "seed",
+      "persona": "M4-nutrition",
+      "needles": 6,
+      "ms": 17433
+    },
+    {
+      "kind": "seed",
+      "persona": "M5-fizruk",
+      "needles": 0,
+      "ms": 2725
+    },
+    {
+      "kind": "seed",
+      "persona": "M6-edge",
+      "needles": 7,
+      "ms": 61956
+    },
+    {
+      "kind": "seed",
+      "persona": "M7-pro-mixed",
+      "needles": 4,
+      "ms": 11410
+    }
+  ],
+  "device2": [
+    {
+      "kind": "device2",
+      "persona": "M1-empty",
+      "where": "/finyk/transactions",
+      "expected": 0,
+      "missing": []
+    },
+    {
+      "kind": "device2",
+      "persona": "M2-finyk-heavy",
+      "where": "/finyk/transactions",
+      "expected": 12,
+      "missing": []
+    },
+    {
+      "kind": "device2",
+      "persona": "M3-routine",
+      "where": "/routine/habits",
+      "expected": 5,
+      "missing": []
+    },
+    {
+      "kind": "device2",
+      "persona": "M4-nutrition",
+      "where": "/nutrition/pantry",
+      "expected": 6,
+      "missing": []
+    },
+    {
+      "kind": "device2",
+      "persona": "M5-fizruk",
+      "where": "/finyk/transactions",
+      "expected": 0,
+      "missing": []
+    },
+    {
+      "kind": "device2",
+      "persona": "M6-edge",
+      "where": "/finyk/transactions",
+      "expected": 7,
+      "missing": []
+    },
+    {
+      "kind": "device2",
+      "persona": "M7-pro-mixed",
+      "where": "/finyk/transactions",
+      "expected": 4,
+      "missing": ["M7iw9x7 медитація", "M7iw9x7рис"]
+    }
+  ],
+  "edgeExpense": [
+    {
+      "amount": "100",
+      "title": "M6iw9x7 дуже-довга-назва-дуже-довга-назва-дуже-дов",
+      "outcome": "saved (поле=«100»)"
+    },
+    {
+      "amount": "99.99",
+      "title": "M6iw9x7 🍕🔥 емодзі",
+      "outcome": "saved (поле=«99.99»)"
+    },
+    {
+      "amount": "10",
+      "title": "M6iw9x7 <script>alert(1)</script>",
+      "outcome": "saved (поле=«10»)"
+    },
+    {
+      "amount": "11",
+      "title": "M6iw9x7 '; DROP TABLE x;--",
+      "outcome": "saved (поле=«11»)"
+    },
+    {
+      "amount": "12",
+      "title": "M6iw9x7 مرحبا RTL",
+      "outcome": "saved (поле=«12»)"
+    },
+    {
+      "amount": "12,50",
+      "title": "M6iw9x7 кома",
+      "outcome": "saved (поле=«12,50»)"
+    },
+    {
+      "amount": "999999999",
+      "title": "M6iw9x7 мільярд",
+      "outcome": "rejected (поле=«999 999 999», )"
+    },
+    {
+      "amount": "99999999999999",
+      "title": "M6iw9x7 більше-ніж-мільярд",
+      "outcome": "rejected (поле=«99 999 999 999 999», )"
+    },
+    {
+      "amount": "-5",
+      "title": "M6iw9x7 мінус",
+      "outcome": "rejected (поле=«-5», )"
+    },
+    {
+      "amount": "0",
+      "title": "M6iw9x7 нуль",
+      "outcome": "rejected (поле=«0», )"
+    },
+    {
+      "amount": "1.999",
+      "title": "M6iw9x7 три знаки",
+      "outcome": "saved (поле=«1.999»)"
+    },
+    {
+      "amount": "abc",
+      "title": "M6iw9x7 літери",
+      "outcome": "rejected (поле=«abc», )"
+    },
+    {
+      "amount": "1e5",
+      "title": "M6iw9x7 експонента",
+      "outcome": "rejected (поле=«1e5», )"
+    },
+    {
+      "amount": "50",
+      "title": "   ",
+      "outcome": "saved (поле=«50»)"
+    }
+  ],
+  "note": "M7 device2 missing = хиба сценарію (звичку й продукт шукав на екрані операцій); виправлено, повтор M7 на білді з фіксами зелений. Перший прогін M1 (до правки зонда) дав одну білу сторінку /status, врятовану reload-ом."
+}

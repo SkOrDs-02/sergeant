@@ -865,3 +865,30 @@ test("P9 вихід і інший користувач на тому ж прис
     expect(Number(sql(SERVER_ROW["finyk"]!(userId, T("F2"))))).toBe(1);
   });
 });
+
+// `FULL-20261125-DATA-1`: P9 перевіряв лише ІНШОГО користувача на тому ж
+// пристрої. Той самий користувач після виходу й входу отримував порожній
+// застосунок: читач синку тягнув журнал у партицію, де модулі ще не створили
+// таблиці, оп-и відхилялись, а курсор ішов далі (`moduleSchemas.ts`).
+test("P10 той самий користувач: вихід і вхід на тому ж пристрої повертають дані", async () => {
+  const ph = "P10-relogin-same-device";
+  const b = B.page;
+  shotPage = b;
+  await syncIdle(b).catch(() => undefined);
+  await goto(b, "/profile");
+  await b.getByRole("button", { name: "Вийти" }).first().click();
+  const confirm = b
+    .getByRole("alertdialog")
+    .or(b.getByRole("dialog", { name: "Вийти з акаунта?" }));
+  await confirm.getByRole("button", { name: "Вийти" }).click();
+  await check(ph, "перехід на /sign-in", async () => {
+    await expect(b).toHaveURL(/sign-in/, { timeout: 20_000 });
+  });
+  await signInAndWait(b, email);
+  await check(ph, "Фінік: F2 повернувся", () => seeExpense(b, T("F2")));
+  await check(ph, "Рутина: R4 повернулась", () => seeHabit(b, T("R4")));
+  await check(ph, "після reload F2 на місці", async () => {
+    await reload(b);
+    await seeExpense(b, T("F2"));
+  });
+});

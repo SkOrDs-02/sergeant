@@ -187,6 +187,7 @@ describe("ChatMessage — assistant messages", () => {
       summary: "Назавжди видалено звичку 'Біг'",
       status: "completed" as const,
       risky: true,
+      destructive: true,
       data: undefined,
       icon: "alert",
       module: "routine" as const,
@@ -200,9 +201,40 @@ describe("ChatMessage — assistant messages", () => {
         })}
       />,
     );
-    expect(
-      screen.getByTestId("chat-confirm-card-delete_habit"),
-    ).toBeInTheDocument();
+    const el = screen.getByTestId("chat-confirm-card-delete_habit");
+    expect(el).toBeInTheDocument();
+    expect(el.className).toContain("border-danger/30");
+    expect(el).toHaveAttribute("data-destructive", "true");
+    expect(el.querySelector("path")).not.toBeNull(); // кошик
+  });
+
+  it("підтверджене СТВОРЕННЯ (risky, не destructive) — нейтральна картка без danger і кошика", () => {
+    const card = {
+      id: "card-4",
+      toolName: "create_transaction",
+      title: "Операцію записано",
+      summary: "−150 ₴ кава",
+      status: "completed" as const,
+      risky: true,
+      data: undefined,
+      icon: "credit-card",
+      module: "finyk" as const,
+    };
+    renderInRouter(
+      <ChatMessage
+        message={makeMessage({
+          role: "assistant",
+          text: "Готово",
+          cards: [card],
+        })}
+      />,
+    );
+    const el = screen.getByTestId("chat-confirm-card-create_transaction");
+    expect(el).toHaveAttribute("aria-label", "Виконано: Операцію записано");
+    expect(el).not.toHaveAttribute("data-destructive");
+    expect(el.outerHTML).not.toContain("danger");
+    expect(el.querySelector("path")).toBeNull(); // немає кошика
+    expect(el.querySelector("polyline")).not.toBeNull(); // галочка
   });
 });
 

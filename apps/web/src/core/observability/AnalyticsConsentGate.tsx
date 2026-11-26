@@ -2,7 +2,8 @@
  * @status Active
  * @owner @Skords-01
  */
-import { lazy, Suspense, useSyncExternalStore } from "react";
+import { Suspense, useSyncExternalStore } from "react";
+import { lazyDefault } from "../lib/lazyImport";
 import { useLocation } from "react-router-dom";
 import { useAuth } from "../auth/AuthContext";
 import { isLegalRoutePath, isOnboardingPath } from "../app/appPaths";
@@ -17,7 +18,9 @@ import {
  * критичному шляху, стеля якого гейтиться окремо (`size:eager`). Тут лишається
  * лише крихітна перевірка «чи вже відповідав».
  */
-const AnalyticsConsentBanner = lazy(() => import("./AnalyticsConsentBanner"));
+const AnalyticsConsentBanner = lazyDefault(
+  () => import("./AnalyticsConsentBanner"),
+);
 
 /**
  * Показує банер згоди, доки на цьому пристрої немає рішення. Залогіненому

@@ -199,6 +199,18 @@ describe("HubChatBody", () => {
     expect(liveRegion).toHaveTextContent("");
   });
 
+  it("оголошує завершену відповідь без markdown-розмітки", () => {
+    // Жива область отримувала сирий текст моделі: скрінрідер диктував
+    // «зірочка зірочка 2 011,56 грн» (прогін full-2026-11-25).
+    const messages = [
+      msg("a1", "assistant", "Сьогодні **2 011,56 грн**:\n- `кава`\n## Разом"),
+    ];
+    const { container } = renderBody({ loading: false, messages });
+    const live = container.querySelector('[aria-live="polite"]');
+    expect(live?.textContent).toContain("2 011,56 грн");
+    expect(live?.textContent).not.toMatch(/[*`#]/);
+  });
+
   // С-1 (а): «Ще раз» на обірваній відповіді діє лише поза ходом у польоті.
   it("передає onRetry бульбашкам лише коли хід не в польоті", () => {
     const onRetry = vi.fn();

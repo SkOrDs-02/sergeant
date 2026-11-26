@@ -52,6 +52,12 @@ const webServer = process.env["PW_SKIP_WEBSERVER"]
           // 32+ chars, deterministic but non-production.
           "smoke_test_better_auth_secret_32_chars_min",
         AI_QUOTA_DISABLED: process.env["AI_QUOTA_DISABLED"] || "1",
+        // Лейн реєструє й логінить десятки акаунтів з однієї адреси, а
+        // продовий ліміт 5 чутливих auth-запитів за 60 с на IP рахує їх усі.
+        // На швидкій машині три різні тести по черзі падали на «Забагато
+        // спроб» (прогін full-2026-11-25); CI проходив лише тому, що
+        // повільніший. Сам ліміт стережуть серверні тести, не цей лейн.
+        AUTH_RATE_LIMIT_MAX: process.env["AUTH_RATE_LIMIT_MAX"] || "200",
         // sec-46: межа обовʼязкового підтвердження email, як у проді.
         // Реєстрація дає «Перевір пошту», а клік у листі відтворює
         // `tests/smoke/smokeEmailVerification.ts` smoke-секретом вище.

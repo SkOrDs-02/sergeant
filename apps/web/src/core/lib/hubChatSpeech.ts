@@ -1,6 +1,7 @@
 export const VOICE_KEYWORDS = /голосом|вголос|скажи|озвуч|прочитай/i;
 
-function cleanTextForSpeech(text: string): string {
+/** Знімає markdown-розмітку і службові маркери: те саме чує і TTS, і жива область скрінрідера. */
+export function cleanTextForSpeech(text: string): string {
   return (
     text
       // `✓` (U+2713) — статус-маркер tool-call-ів у транскрипті чату;

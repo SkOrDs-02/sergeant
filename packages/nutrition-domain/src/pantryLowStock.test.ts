@@ -32,3 +32,17 @@ describe("isPantryItemLowStock", () => {
     expect(isPantryItemLowStock({ qty: 1, unit: null })).toBe(false);
   });
 });
+
+describe("щойно додана гола назва (2026-11-25)", () => {
+  it("не дає low-stock: кількість не підставляється за замовчуванням", async () => {
+    const { mergeItems } = await import("./mergeItems.js");
+    const [item] = mergeItems([], [{ name: "молоко", qty: null, unit: null }]);
+    expect(isPantryItemLowStock(item!)).toBe(false);
+  });
+
+  it("явне «1 шт» лишається low-stock", async () => {
+    const { mergeItems } = await import("./mergeItems.js");
+    const [item] = mergeItems([], [{ name: "яйце", qty: 1, unit: "шт" }]);
+    expect(isPantryItemLowStock(item!)).toBe(true);
+  });
+});

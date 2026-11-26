@@ -107,6 +107,14 @@ function isStaleLocal(updatedAt: string | null, incomingMs: number): boolean {
   return localMs >= incomingMs;
 }
 
+/** Таблиця з реєстру синку ще не створена в цій SQLite-партиції. */
+export class SyncTableNotReadyError extends Error {
+  constructor(readonly table: string) {
+    super(`sync table ${table} is not created in this SQLite partition yet`);
+    this.name = "SyncTableNotReadyError";
+  }
+}
+
 export async function getTableColumns(
   client: SqliteMigrationClient,
   table: string,
@@ -118,7 +126,9 @@ export async function getTableColumns(
     [table],
   );
   const cols = info.map((row) => row.name);
-  columnCache.set(table, cols);
+  // Порожньо = таблиці ще немає. Кешувати це не можна: мігратор модуля
+  // створить її пізніше, а кеш тримав би «немає» до кінця сесії.
+  if (cols.length > 0) columnCache.set(table, cols);
   return cols;
 }
 
@@ -136,7 +146,7 @@ export async function getPrimaryKeyColumns(
     .filter((row) => row.pk > 0)
     .sort((a, b) => a.pk - b.pk)
     .map((row) => row.name);
-  pkCache.set(table, pk);
+  if (pk.length > 0) pkCache.set(table, pk);
   return pk;
 }
 
@@ -286,6 +296,11 @@ async function applyGenericRegistryRow(
   if (safeTable === undefined) return "rejected";
 
   const columns = await getTableColumns(client, safeTable);
+  // Відома таблиця без колонок = схема модуля ще не доїхала до цієї партиції.
+  // Це не вердикт про оп: кидаємо, тік падає, курсор лишається на місці, і
+  // наступний тік застосує оп у вже створену таблицю. «rejected» тут зсунув
+  // би курсор і назавжди лишив пристрій без рядка (`FULL-20261125-DATA-1`).
+  if (columns.length === 0) throw new SyncTableNotReadyError(table);
   const pkColumns = await getPrimaryKeyColumns(client, safeTable);
   if (pkColumns.length === 0) return "rejected";
 

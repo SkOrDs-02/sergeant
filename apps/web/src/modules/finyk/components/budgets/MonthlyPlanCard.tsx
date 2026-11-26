@@ -199,7 +199,9 @@ function MonthlyPlanCardComponent({
           {showBalance && ` · ${pctExpense}%`}
         </p>
       )}
-      {factSavings < 0 && (
+      {/* Без плану й доходу «дефіцит» нічого не означає: це просто витрати
+          людини, яка ще нічого не планувала (рішення власника 2026-11-25). */}
+      {factSavings < 0 && (hasPlan || factIncome > 0) && (
         <p className="px-5 pb-3 text-style-caption text-text">
           {messages.finykRedesign.savingsDeficit}
         </p>

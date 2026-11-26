@@ -4579,6 +4579,11 @@
           "at": "2026-11-20",
           "event": "observed",
           "note": "1 сторінка на ~80 у трьох обходах (різні маршрути, ERR_ABORTED чанків, #root порожній через 1.2 с після networkidle). Не відтворено: 0/88 у цільовій пробі, 0/160 у двох інструментованих обходах (жодного повторного load). Ймовірно, таймінг сервіс-воркера при навігаціях кожні ~2 с; реальні користувачі так не навігують."
+        },
+        {
+          "at": "2026-11-25",
+          "event": "retested",
+          "note": "Прогін full-2026-11-25: одна біла сторінка /status (reload врятував) і один екран помилки /insights на ~400 повних завантажень. Частину причини закриває FULL-20261125-BOOT-1."
         }
       ]
     },
@@ -4651,6 +4656,211 @@
           "at": "2026-11-20",
           "event": "retriaged",
           "note": "Відтворення на проді (анонім, SW заблоковано, чанки dualWriteBoot-* затримано на 25 с): Рутина губить звичку (контроль, фікс DATA-2 ще не задеплоєно), Фізрук запис журналу тіла зберігає — його контекст реєструється статичним імпортом у FizrukApp у тому ж рендері, що й інтерфейс. Фінік весь час затримки показує скелетон без кнопки «Додати», тож записати рано неможливо. Кодовий розрив у хуках лишається, але з інтерфейсу недосяжний; стереже apps/web/tests/verification-live/prod-anon-early-write.spec.ts."
+        }
+      ]
+    },
+    {
+      "id": "FULL-20261125-DATA-1",
+      "legacyId": "relogin-same-device-empty",
+      "title": "Після виходу й повторного входу того самого користувача на тому ж пристрої дані не повертаються",
+      "severity": "major",
+      "source": "docs/work/specs/audits/verification/runs/full-2026-11-25/handoff.md",
+      "sourceAnchor": "DATA-durability-live",
+      "status": "fixed-pending-verification",
+      "history": [
+        {
+          "at": "2026-11-25",
+          "event": "observed",
+          "note": "main 1e707fa365, локальний стенд, Chromium. Реєстрація, ручна витрата, пауза до push, «Вийти» з підтвердженням, вхід тим самим email. GET /api/v2/sync/pull?since=0 повертає оп витрати, наступний pull іде вже з since=<id>, а екран «Операції» показує «Операцій ще немає» 60 с і після reload. Сервер запис віддає. Пауза 30 с після виходу не допомагає. Свіжий контекст (інший пристрій) показує запис за 2 с. Перевірено лише на ручних витратах Фініка. Лейн durability цього шляху не має: P9 перевіряє іншого користувача на тому ж пристрої. Скрипт: repro-relogin-same-device.txt."
+        },
+        {
+          "at": "2026-11-25",
+          "event": "fixed",
+          "note": "Корінь: читач синку застосовував оп-и в таблиці модулів, яких у свіжій SQLite-партиції ще не було. pragma_table_info повертав порожньо, applyPullOp давав rejected, курсор ішов далі; порожня схема ще й кешувалась на сесію. Фікс 7b0b2a194b: читач перед pull доводить схеми чотирьох модулів (moduleSchemas.ts), відома таблиця без колонок кидає SyncTableNotReadyError (курсор лишається), порожній результат pragma не кешується. Локально на прод-білді: вихід і вхід показують запис за 1,1 с; після відновлення акаунта рядок у SQLite через 6 с і тримається після виходу й входу. Лейн durability отримав фазу P10, 10/10, 101 перевірка. На проді не перевірено."
+        }
+      ]
+    },
+    {
+      "id": "FULL-20261125-DATA-2",
+      "legacyId": "restore-account-empty-device",
+      "title": "Після «Відновити акаунт» пристрій не показує дані акаунта",
+      "severity": "major",
+      "source": "docs/work/specs/audits/verification/runs/full-2026-11-25/handoff.md",
+      "sourceAnchor": "DATA-durability-live",
+      "status": "fixed-pending-verification",
+      "history": [
+        {
+          "at": "2026-11-25",
+          "event": "observed",
+          "note": "Акаунт із витратою позначено до видалення, вхід у свіжому контексті, «Відновити акаунт». pull since=0 повертає оп, курсор зсувається, список операцій порожній 120 с і після reload; після виходу й входу на цьому ж пристрої зникає й запис, зроблений після відновлення (pull since=<id> порожній). Нова витрата після відновлення створюється й синхронізується. Імовірно той самий корінь, що й DATA-1 (застосування pull на пристрої з непервинним локальним станом). Скрипт: repro-restore-account.txt."
+        },
+        {
+          "at": "2026-11-25",
+          "event": "fixed",
+          "note": "Корінь: читач синку застосовував оп-и в таблиці модулів, яких у свіжій SQLite-партиції ще не було. pragma_table_info повертав порожньо, applyPullOp давав rejected, курсор ішов далі; порожня схема ще й кешувалась на сесію. Фікс 7b0b2a194b: читач перед pull доводить схеми чотирьох модулів (moduleSchemas.ts), відома таблиця без колонок кидає SyncTableNotReadyError (курсор лишається), порожній результат pragma не кешується. Локально на прод-білді: вихід і вхід показують запис за 1,1 с; після відновлення акаунта рядок у SQLite через 6 с і тримається після виходу й входу. Лейн durability отримав фазу P10, 10/10, 101 перевірка. На проді не перевірено."
+        }
+      ]
+    },
+    {
+      "id": "FULL-20261125-BOOT-1",
+      "legacyId": "bare-lazy-bypasses-chunk-recovery",
+      "title": "Голий lazy(() => import()) обходить відновлення після зірваного чанка",
+      "severity": "minor",
+      "source": "docs/work/specs/audits/verification/runs/full-2026-11-25/handoff.md",
+      "sourceAnchor": "JRN-route-contract",
+      "status": "fixed-pending-verification",
+      "history": [
+        {
+          "at": "2026-11-25",
+          "event": "observed",
+          "note": "Лейн profiles, P2: /insights показав «Цей блок не відкрився, решта модуля працює» на 90 с; повтор зелений. В обході M1 на /fizruk/progress той самий слід у консолі: «Failed to fetch dynamically imported module FinykBootCluster», далі «Cannot read properties of undefined (reading default)». Десять місць вантажили чанки голим lazy(), повз lazyDefault/lazyImport з їхнім ChunkLoadError і reloadOnceForChunkError. Суміжне з FULL-20261120-OBS-3."
+        },
+        {
+          "at": "2026-11-25",
+          "event": "fixed",
+          "note": "RootLayout (чотири boot-кластери, PendingDeletionScreen, AuthUnavailableScreen), HubReports (чотири картки й CrossModuleLinksSection), AnalyticsConsentGate переведено на lazyDefault/lazyImport. AuthContext (UnsyncedLossDialog) не чіпав: правка імпортів там ризикує бутом. Зірваний чанк наживо після фіксу не відтворювався, тож доказ лише регресійний: a11y 103/103, mobile 41/41, smoke 63/65."
+        }
+      ]
+    },
+    {
+      "id": "FULL-20261125-COPY-1",
+      "legacyId": "days-note-not-declined",
+      "title": "«1 днів із записом» у блоці «Звʼязки»",
+      "severity": "minor",
+      "source": "docs/work/specs/audits/verification/runs/full-2026-11-25/handoff.md",
+      "sourceAnchor": "EXP-a11y-interaction-copy",
+      "status": "fixed-pending-verification",
+      "history": [
+        {
+          "at": "2026-11-25",
+          "event": "observed",
+          "note": "Персона M2, /?tab=reports: «Фінік · 26 257 ₴ за день · 1 днів із записом». Рядок smallDataDaysNote ніс готову форму «днів»."
+        },
+        {
+          "at": "2026-11-25",
+          "event": "fixed",
+          "note": "Число відмінює pluralDays, у каталозі лишився хвіст «із записом»; тест у linkEvidenceStandard.test.ts."
+        }
+      ]
+    },
+    {
+      "id": "FULL-20261125-A11Y-1",
+      "legacyId": "chat-live-region-raw-markdown",
+      "title": "Жива область чату диктує сирий markdown",
+      "severity": "minor",
+      "source": "docs/work/specs/audits/verification/runs/full-2026-11-25/handoff.md",
+      "sourceAnchor": "EXP-a11y-interaction-copy",
+      "status": "fixed-pending-verification",
+      "history": [
+        {
+          "at": "2026-11-25",
+          "event": "observed",
+          "note": "Живий чат, персона M7: sr-only role=status містить «Сьогодні ти витратив **2 011,56 грн** … - **777 грн**». Озвучення кнопкою markdown знімало, жива область ні."
+        },
+        {
+          "at": "2026-11-25",
+          "event": "fixed",
+          "note": "HubChatBody оголошує cleanTextForSpeech(last.text); тест у HubChatBody.test.tsx."
+        }
+      ]
+    },
+    {
+      "id": "FULL-20261125-COPY-2",
+      "legacyId": "pending-deletion-double-period",
+      "title": "«25 грудня 2026 р.. До того дня» на екрані відновлення акаунта",
+      "severity": "polish",
+      "source": "docs/work/specs/audits/verification/runs/full-2026-11-25/handoff.md",
+      "sourceAnchor": "EXP-a11y-interaction-copy",
+      "status": "fixed-pending-verification",
+      "history": [
+        {
+          "at": "2026-11-25",
+          "event": "observed",
+          "note": "Екран «Акаунт готується до видалення»: дата uk-UA закінчується крапкою, шаблон додавав другу."
+        },
+        {
+          "at": "2026-11-25",
+          "event": "fixed",
+          "note": "PendingDeletionScreen знімає кінцеву крапку дати; тест поруч."
+        }
+      ]
+    },
+    {
+      "id": "FULL-20261125-UX-1",
+      "legacyId": "mass-run-product-questions",
+      "title": "Чотири продуктові питання з масового прогону",
+      "severity": "minor",
+      "source": "docs/work/specs/audits/verification/runs/full-2026-11-25/handoff.md",
+      "sourceAnchor": "EXP-anti-slop-review",
+      "status": "fixed-pending-verification",
+      "history": [
+        {
+          "at": "2026-11-25",
+          "event": "observed",
+          "note": "(1) План Фініка показує «Дефіцит заощаджень» користувачу без плану й доходу, щойно є витрати. (2) Щойно доданий продукт «1 шт» одразу має підпис «Закінчується» і потрапляє в «Закінчується вдома». (3) Картка підтвердженої дії чату «Операцію записано · Виконано» червона, з іконкою кошика. (4) На формі зміни пароля помилка «Неправильний поточний пароль» лишається при наступній спробі; загальний текст 429 «Спробуй через хвилину» показується й там, де вікно ліміту 15 хв (видалення акаунта). Потрібне рішення власника, не дефекти коду."
+        },
+        {
+          "at": "2026-11-25",
+          "event": "fixed",
+          "note": "Рішення власника через інструмент із варіантами. (1) «Дефіцит заощаджень» лише з планом або доходом (MonthlyPlanCard). (2) Гола назва продукту більше не отримує штучне «1 шт» у mergeItems: позиція лишається без кількості й не дає low-stock; у браузері «молоко» без бейджа, «яйця 1 шт» із бейджем. Побічно гола назва не додає +1 до наявної позиції; уже збережені позиції зі штучним «1 шт» лишаються з бейджем. (3) Картка підтвердженої дії чату нейтральна, danger лише для delete_transaction, forget, clear_pantry; перевірено юніт-тестами, не в браузері. (4) Тексти помилок (стара помилка на формі пароля, «через хвилину» при 15-хвилинному вікні) не чіпались."
+        }
+      ]
+    },
+    {
+      "id": "FULL-20261125-DATA-3",
+      "legacyId": "push-waits-30s-after-hard-navigation",
+      "title": "Запис перед повним переходом сторінки їде на сервер лише через ~30 с",
+      "severity": "minor",
+      "source": "docs/work/specs/audits/verification/runs/full-2026-11-25/handoff.md",
+      "sourceAnchor": "DATA-durability-live",
+      "status": "open",
+      "history": [
+        {
+          "at": "2026-11-25",
+          "event": "observed",
+          "note": "Витрата, після якої за <1 с іде повне завантаження іншої сторінки, локально збережена, але push настає через ~30 с після останнього завантаження (замір 30,8 с); серія повних переходів кожні ~2,5 с відкладає його далі (персони M5, M6: «8 в черзі» 100 с, на сервер нічого не доїхало до закриття контексту). SPA-переходи таймер не скидають. Окремо: перший візит комори шле дефолтні місця двічі, другий комплект сервер відкидає як lww_conflict (3 оп-и на акаунт)."
+        }
+      ]
+    },
+    {
+      "id": "FULL-20261125-SEC-1",
+      "legacyId": "sessions-survive-password-change",
+      "title": "Після зміни пароля інші сесії лишаються активними",
+      "severity": "minor",
+      "source": "docs/work/specs/audits/verification/runs/full-2026-11-25/handoff.md",
+      "sourceAnchor": "DATA-api-security-integrations",
+      "status": "duplicate",
+      "history": [
+        {
+          "at": "2026-11-25",
+          "event": "observed",
+          "note": "Зміна пароля в профілі: старий пароль більше не пускає, але пристрій, що був залогінений раніше, і далі працює. Свідомий вибір чи ні, не зафіксовано; у Better Auth це параметр revokeOtherSessions. Решта перевірок безпеки зелені (security.json, isolation.json)."
+        },
+        {
+          "at": "2026-11-25",
+          "event": "retriaged",
+          "note": "Хиба методики: у першій перевірці другої сесії на момент зміни пароля не існувало. Повтор із двома сесіями: change-password лишає в таблиці session одну (хук H3 в auth.ts примусово ставить revokeOtherSessions), а стара кукі другого пристрою ще відповідає 200 у вікні cookieCache. Це вже прийняте FULL-20261120-OBS-2 (ADR-0017). Рішення власника «завершувати інші» вже реалізоване."
+        }
+      ]
+    },
+    {
+      "id": "FULL-20261125-TOOL-1",
+      "legacyId": "smoke-lane-auth-rate-limit-timing",
+      "title": "Smoke-лейн залежить від таймінгу auth-ліміту 5/60 с",
+      "severity": "minor",
+      "source": "docs/work/specs/audits/verification/runs/full-2026-11-25/handoff.md",
+      "sourceAnchor": "TECH-test-matrix-and-flakes",
+      "status": "open",
+      "history": [
+        {
+          "at": "2026-11-25",
+          "event": "observed",
+          "note": "Три прогони smoke на швидкій машині дали три різні фейли з однією причиною: «Забагато спроб» на реєстрації (auth sec-46, offline-cold-start:191, anonymous-migration-recovery:219). CI не задає AUTH_RATE_LIMIT_MAX і проходить, бо повільніший. Окремо: на main 1e707fa365 похідні docs/open-work.md і docs/STATUS.md відставали від джерела (51 проти 52 документів), pre-commit це блокував; перегенеровано в цій гілці. Хелпер addPantryItem лейну profiles не вміє непорожню комору."
+        },
+        {
+          "at": "2026-11-25",
+          "event": "observed",
+          "note": "pnpm lint на main 1e707fa365 червоний: check-ui-canon-ratchet рахує handRolledFocusRing 129 при стелі 128 і numericIconSize 1 при стелі 0 (RoutineCalendarPanel.tsx:464, size={16}). Без правок прогону результат той самий."
         }
       ]
     }
