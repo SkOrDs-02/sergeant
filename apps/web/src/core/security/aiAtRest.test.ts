@@ -91,9 +91,10 @@ describe("aiAtRest", () => {
 
   it("міграція також працює для читання без попередньої гідратації", async () => {
     await hydrateAtRest(); // ключ готовий
-    webKVStore.setString("hub_user_profile_v1", '[{"id":"m1"}]');
-    expect(memoryBankSlot.read()).toBe('[{"id":"m1"}]');
-    expect(await sealedIn("hub_user_profile_v1")).not.toContain("m1");
+    // Кирилиця не трапляється в base64, тож маркер не збіжеться з випадковим IV.
+    webKVStore.setString("hub_user_profile_v1", '[{"id":"памʼять"}]');
+    expect(memoryBankSlot.read()).toBe('[{"id":"памʼять"}]');
+    expect(await sealedIn("hub_user_profile_v1")).not.toContain("памʼять");
   });
 
   it("нечитний шифртекст (ключ втрачено) → порожньо, без винятку", async () => {
