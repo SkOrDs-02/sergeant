@@ -7,7 +7,7 @@
  */
 import { pluralUa } from "@sergeant/shared";
 import { messages } from "@shared/i18n/uk";
-import { fmt } from "../../lib/numberFmt";
+import { fmtVolume } from "../../lib/numberFmt";
 import { formatWorkoutItemsCount } from "../../lib/workoutItemsLabel";
 
 /** Скільки після завершення можна повернутись у сесію (рішення OD-28). */
@@ -39,7 +39,7 @@ export function buildFinishConfirmSummary(f: FinishConfirmFacts): string {
   ];
   if (f.tonnageKg > 0) {
     parts.push(
-      `${fmt(Math.round(f.tonnageKg))} ${messages.fizruk.workoutSummary.kgUnit}`,
+      `${fmtVolume(f.tonnageKg)} ${messages.fizruk.workoutSummary.kgUnit}`,
     );
   }
   return parts.join(" · ");

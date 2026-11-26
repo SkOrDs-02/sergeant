@@ -21,6 +21,7 @@ import {
   upsertExercisePref,
 } from "./adapter.exercisePrefs.js";
 import { setPrograms } from "./adapter.programs.js";
+import { reconcileRemovedChildren } from "./adapter.reconcile.js";
 import type {
   FizrukCustomExerciseSnapshot,
   FizrukDualWriteOp,
@@ -35,7 +36,6 @@ import {
   MEASUREMENT_UPSERT_SQL,
   setMonthlyPlan,
   softDeleteDailyLog,
-  softDeleteRemovedChildren,
   softDeleteInjury,
   softDeleteWorkoutTemplate,
   upsertDailyLog,
@@ -335,7 +335,7 @@ async function upsertWorkout(
   }
 
   const itemIds = items.map((it) => it.id);
-  await softDeleteRemovedChildren(
+  await reconcileRemovedChildren(
     client,
     "fizruk_workout_items",
     "workout_id",
@@ -414,7 +414,7 @@ async function upsertWorkoutItem(
   }
 
   const setIds = sets.map((_, s) => `${item.id}:s${s}`);
-  await softDeleteRemovedChildren(
+  await reconcileRemovedChildren(
     client,
     "fizruk_workout_sets",
     "workout_item_id",

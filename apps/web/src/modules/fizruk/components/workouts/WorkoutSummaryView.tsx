@@ -61,7 +61,7 @@ import {
 } from "@sergeant/fizruk-domain/domain";
 import { messages } from "@shared/i18n/uk";
 import { WorkoutStatTile } from "./WorkoutStatTile";
-import { fmtLoose } from "../../lib/numberFmt";
+import { fmtLoose, volumeFractionDigits } from "../../lib/numberFmt";
 import { formatMeasureSets } from "../../lib/measureFormat";
 import { WorkoutMomentLine } from "./WorkoutMomentLine";
 import { WorkoutSummaryTimeEditor } from "./WorkoutSummaryTimeEditor";
@@ -213,7 +213,11 @@ export function WorkoutSummaryView({
             label={copy.volumeLabel}
             value={
               tonnageKg > 0 ? (
-                <Measure value={Math.round(tonnageKg)} unit={copy.kgUnit} />
+                <Measure
+                  value={tonnageKg}
+                  unit={copy.kgUnit}
+                  fractionDigits={volumeFractionDigits(tonnageKg)}
+                />
               ) : (
                 "—"
               )
