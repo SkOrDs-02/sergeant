@@ -4470,6 +4470,41 @@
       "canonical_owner": "docs/work/specs/audits/verification/runs/prod-2026-11-21/run.json"
     },
     {
+      "old_path": null,
+      "new_path": "docs/work/specs/audits/verification/runs/prod-2026-11-26/handoff.md",
+      "action": "keep",
+      "genre": "active-work",
+      "canonical_owner": "docs/work/specs/audits/verification/runs/prod-2026-11-26/handoff.md"
+    },
+    {
+      "old_path": null,
+      "new_path": "docs/work/specs/audits/verification/runs/prod-2026-11-26/relogin-restore.json",
+      "action": "keep",
+      "genre": "active-work",
+      "canonical_owner": "docs/work/specs/audits/verification/runs/prod-2026-11-26/relogin-restore.json"
+    },
+    {
+      "old_path": null,
+      "new_path": "docs/work/specs/audits/verification/runs/prod-2026-11-26/relogin.png",
+      "action": "keep",
+      "genre": "active-work",
+      "canonical_owner": "docs/work/specs/audits/verification/runs/prod-2026-11-26/relogin.png"
+    },
+    {
+      "old_path": null,
+      "new_path": "docs/work/specs/audits/verification/runs/prod-2026-11-26/restored.png",
+      "action": "keep",
+      "genre": "active-work",
+      "canonical_owner": "docs/work/specs/audits/verification/runs/prod-2026-11-26/restored.png"
+    },
+    {
+      "old_path": null,
+      "new_path": "docs/work/specs/audits/verification/runs/prod-2026-11-26/run.json",
+      "action": "keep",
+      "genre": "active-work",
+      "canonical_owner": "docs/work/specs/audits/verification/runs/prod-2026-11-26/run.json"
+    },
+    {
       "old_path": "docs/work/specs/audits/verification/runs/sync-audit-2026-10-13/fresh-device.png",
       "new_path": "docs/work/specs/audits/verification/runs/sync-audit-2026-10-13/fresh-device.png",
       "action": "keep",

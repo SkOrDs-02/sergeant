@@ -4666,7 +4666,7 @@
       "severity": "major",
       "source": "docs/work/specs/audits/verification/runs/full-2026-11-25/handoff.md",
       "sourceAnchor": "DATA-durability-live",
-      "status": "fixed-pending-verification",
+      "status": "verified",
       "history": [
         {
           "at": "2026-11-25",
@@ -4677,8 +4677,17 @@
           "at": "2026-11-25",
           "event": "fixed",
           "note": "Корінь: читач синку застосовував оп-и в таблиці модулів, яких у свіжій SQLite-партиції ще не було. pragma_table_info повертав порожньо, applyPullOp давав rejected, курсор ішов далі; порожня схема ще й кешувалась на сесію. Фікс 7b0b2a194b: читач перед pull доводить схеми чотирьох модулів (moduleSchemas.ts), відома таблиця без колонок кидає SyncTableNotReadyError (курсор лишається), порожній результат pragma не кешується. Локально на прод-білді: вихід і вхід показують запис за 1,1 с; після відновлення акаунта рядок у SQLite через 6 с і тримається після виходу й входу. Лейн durability отримав фазу P10, 10/10, 101 перевірка. На проді не перевірено."
+        },
+        {
+          "at": "2026-11-26",
+          "event": "retested",
+          "note": "Формальний live-прогін prod-2026-11-26 на проді з PR #1731: 13/13 перевірок, доказ runs/prod-2026-11-26/relogin-restore.json. Статус → verified."
         }
-      ]
+      ],
+      "verification": {
+        "runId": "prod-2026-11-26",
+        "attemptId": "prod1126-DATA-durability-live"
+      }
     },
     {
       "id": "FULL-20261125-DATA-2",
@@ -4687,7 +4696,7 @@
       "severity": "major",
       "source": "docs/work/specs/audits/verification/runs/full-2026-11-25/handoff.md",
       "sourceAnchor": "DATA-durability-live",
-      "status": "fixed-pending-verification",
+      "status": "verified",
       "history": [
         {
           "at": "2026-11-25",
@@ -4698,8 +4707,17 @@
           "at": "2026-11-25",
           "event": "fixed",
           "note": "Корінь: читач синку застосовував оп-и в таблиці модулів, яких у свіжій SQLite-партиції ще не було. pragma_table_info повертав порожньо, applyPullOp давав rejected, курсор ішов далі; порожня схема ще й кешувалась на сесію. Фікс 7b0b2a194b: читач перед pull доводить схеми чотирьох модулів (moduleSchemas.ts), відома таблиця без колонок кидає SyncTableNotReadyError (курсор лишається), порожній результат pragma не кешується. Локально на прод-білді: вихід і вхід показують запис за 1,1 с; після відновлення акаунта рядок у SQLite через 6 с і тримається після виходу й входу. Лейн durability отримав фазу P10, 10/10, 101 перевірка. На проді не перевірено."
+        },
+        {
+          "at": "2026-11-26",
+          "event": "retested",
+          "note": "Формальний live-прогін prod-2026-11-26 на проді з PR #1731: 13/13 перевірок, доказ runs/prod-2026-11-26/relogin-restore.json. Статус → verified."
         }
-      ]
+      ],
+      "verification": {
+        "runId": "prod-2026-11-26",
+        "attemptId": "prod1126-DATA-durability-live"
+      }
     },
     {
       "id": "FULL-20261125-BOOT-1",
