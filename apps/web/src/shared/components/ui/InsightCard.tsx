@@ -224,7 +224,11 @@ export function InsightCard({
       className={cn(
         // Мова H (redesign v3): нейтральна панель без тіні й без гліфа
         // в тонованому квадраті; «від Сержанта» несе кнопка-іконка дії.
-        "flex items-center gap-2 rounded-panel bg-panel py-2 pl-4 pr-2",
+        // `min-w-0`: заголовок і підзаголовок — `truncate` (nowrap), тож без
+        // нього мінімальна ширина картки дорівнює всьому тексту в рядок, і
+        // в grid-і огляду Їжі довга підказка розпирала колонку разом з усіма
+        // картками за межу екрана телефона.
+        "flex min-w-0 items-center gap-2 rounded-panel bg-panel py-2 pl-4 pr-2",
         className,
       )}
     >
