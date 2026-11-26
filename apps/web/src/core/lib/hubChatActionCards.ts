@@ -36,6 +36,13 @@ export interface ChatActionCard {
    */
   risky?: boolean | undefined;
   /**
+   * Дія ВИДАЛИЛА дані (рішення власника 2026-11-25, FULL-20261125-UX-1).
+   * `risky` означає «потребувала підтвердження» і охоплює також створення
+   * (`create_transaction`, `remember`); danger-стиль й іконка кошика
+   * належать лише `destructive`.
+   */
+  destructive?: boolean | undefined;
+  /**
    * Маркер "data result" — read-only query/analytics tool ("talk to
    * your data", PR4). UI (`ChatMessage`) рендерить таку картку через
    * `DataResultCard` (структурований розбір `summary`), а не звичайний
@@ -64,6 +71,17 @@ const QUERY_TOOLS: ReadonlySet<string> = new Set([
   "habit_correlation",
   "query_nutrition",
   "nutrition_averages",
+]);
+
+/**
+ * Інструменти, що видаляють дані. Окремо від `TOOL_RISK`: там `destructive`
+ * означає «гейт підтвердження» і включає створення (`create_transaction`,
+ * `remember`) та перезапис (`batch_categorize`), які не є видаленням.
+ */
+const DELETION_TOOLS: ReadonlySet<string> = new Set([
+  "delete_transaction",
+  "forget",
+  "clear_pantry",
 ]);
 
 /**
@@ -213,6 +231,7 @@ export function buildActionCard(input: CardInput): ChatActionCard | null {
     module,
     icon,
     ...(risky ? { risky: true } : {}),
+    ...(DELETION_TOOLS.has(input.name) ? { destructive: true } : {}),
     ...(data ? { data: true } : {}),
   };
 }

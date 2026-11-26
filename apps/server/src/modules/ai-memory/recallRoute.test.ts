@@ -67,7 +67,7 @@ describe("recallMemoryHandler", () => {
     await expect(recallMemoryHandler(req, res)).rejects.toMatchObject({
       status: 503,
       code: "AI_MEMORY_DISABLED",
-      message: "AI memory вимкнено на сервері",
+      message: "Памʼять ШІ вимкнено на сервері",
     });
     expect(recallMock).not.toHaveBeenCalled();
   });

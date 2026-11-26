@@ -13,7 +13,8 @@ import { useFinykMonoMirrorTick } from "../../modules/finyk/lib/monoMirrorGate";
  * separate lazy chunk so the page renders skeletons immediately and each
  * card loads independently without blocking the others.
  */
-import { useState, useMemo, useCallback, lazy, Suspense } from "react";
+import { useState, useMemo, useCallback, Suspense } from "react";
+import { lazyDefault } from "../lib/lazyImport";
 import { SectionHeading } from "@shared/components/ui/SectionHeading";
 import { Button } from "@shared/components/ui/Button";
 import { Segmented } from "@shared/components/ui/Segmented";
@@ -42,11 +43,11 @@ import { PdfPreviewModal } from "./PdfPreviewModal";
 
 // ── Lazy card chunks ──────────────────────────────────────────────────
 
-const FitnessCard = lazy(() => import("./FitnessCard"));
-const ExpensesCard = lazy(() => import("./ExpensesCard"));
-const RoutineCard = lazy(() => import("./RoutineCard"));
-const NutritionCard = lazy(() => import("./NutritionCard"));
-const CrossModuleLinksSection = lazy(
+const FitnessCard = lazyDefault(() => import("./FitnessCard"));
+const ExpensesCard = lazyDefault(() => import("./ExpensesCard"));
+const RoutineCard = lazyDefault(() => import("./RoutineCard"));
+const NutritionCard = lazyDefault(() => import("./NutritionCard"));
+const CrossModuleLinksSection = lazyDefault(
   () => import("../insights/CrossModuleLinksSection"),
 );
 

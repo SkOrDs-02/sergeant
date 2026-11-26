@@ -1,0 +1,62 @@
+[
+  {
+    "persona": "M1-empty",
+    "status": 200,
+    "bytes": 29,
+    "ownTag": false,
+    "leaks": []
+  },
+  {
+    "persona": "M2-finyk-heavy",
+    "status": 200,
+    "bytes": 5933,
+    "ownTag": true,
+    "leaks": []
+  },
+  {
+    "persona": "M3-routine",
+    "status": 200,
+    "bytes": 5739,
+    "ownTag": true,
+    "leaks": []
+  },
+  {
+    "persona": "M4-nutrition",
+    "status": 200,
+    "bytes": 4400,
+    "ownTag": true,
+    "leaks": []
+  },
+  {
+    "persona": "M5-fizruk",
+    "status": 200,
+    "bytes": 29,
+    "ownTag": false,
+    "leaks": []
+  },
+  {
+    "persona": "M6-edge",
+    "status": 200,
+    "bytes": 3690,
+    "ownTag": true,
+    "leaks": []
+  },
+  {
+    "persona": "M7-pro-mixed",
+    "status": 200,
+    "bytes": 4429,
+    "ownTag": true,
+    "leaks": []
+  },
+  {
+    "persona": "anonymous",
+    "status": 401,
+    "bytes": 93
+  },
+  {
+    "billing_pro": "{\"subscription\":{\"id\":1,\"provider\":\"manual\",\"plan\":\"pro\",\"status\":\"active\",\"active\":true,\"currentPeriodEnd\":\"2026-12-25T19:47:29.696Z\",\"cancelAtPeriodEnd\":false},\"access\":{\"state\":\"pro\",\"trialEndsAt\":null,\"graceEndsAt\":null,\"features\":{\"ai.actions\":true,\"ai.photo\":true,\"ai.finykVision\":true,\"ai.voic"
+  },
+  {
+    "billing_free": "{\"subscription\":{\"id\":null,\"provider\":null,\"plan\":null,\"status\":null,\"active\":false,\"currentPeriodEnd\":null,\"cancelAtPeriodEnd\":false},\"access\":{\"state\":\"free\",\"trialEndsAt\":null,\"graceEndsAt\":null,\"features\":{\"ai.actions\":true,\"ai.photo\":true,\"ai.finykVision\":true,\"ai.voice\":false,\"ai.memoryRecall\""
+  }
+]

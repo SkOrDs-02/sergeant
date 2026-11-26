@@ -17,6 +17,7 @@ import { useDeviceDayKey } from "@shared/hooks/useDeviceDayKey";
  * канон §6 забороняє.
  */
 import { useMemo } from "react";
+import { pluralDays } from "@sergeant/shared";
 import { SectionHeading } from "@shared/components/ui/SectionHeading";
 import { messages } from "@shared/i18n/uk";
 import { useHubStorageBump } from "../hub/useHubStorageBump";
@@ -249,7 +250,7 @@ export default function CrossModuleLinksSection() {
               <span className={MODULE_TEXT_CLASS[smallData.pole.module]}>
                 {smallData.pole.label}
               </span>
-              {` · ${smallData.pole.value} ${smallData.pole.unit} · ${smallData.observations} ${messages.crossModuleLink.smallDataDaysNote}`}
+              {` · ${smallData.pole.value} ${smallData.pole.unit} · ${smallData.observations} ${pluralDays(smallData.observations)} ${messages.crossModuleLink.smallDataDaysNote}`}
             </p>
           ) : null}
         </div>

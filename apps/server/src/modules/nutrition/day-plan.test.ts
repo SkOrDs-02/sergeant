@@ -217,7 +217,7 @@ describe("nutrition day-plan handler", () => {
       handler(makeReq({ pantry: [], locale: "uk-UA" }), makeRes()),
     ).rejects.toMatchObject({
       name: "ExternalServiceError",
-      message: "Асистент тимчасово недоступний. Спробуй пізніше.",
+      message: "Сержант тимчасово недоступний. Спробуй пізніше.",
       status: 503,
       code: "ANTHROPIC_ERROR",
     });

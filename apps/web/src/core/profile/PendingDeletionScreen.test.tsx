@@ -49,6 +49,12 @@ describe("PendingDeletionScreen", () => {
 
   // Рішення 5 спеки: наслідок «підписка не повернеться» має бути видимим
   // тут, а не з'ясовуватись після відновлення.
+  it("після дати стоїть одна крапка, а не «р..»", () => {
+    renderScreen();
+    expect(document.body.textContent).not.toContain("..");
+    expect(document.body.textContent).toMatch(/2026 р\. До того дня/);
+  });
+
   it("попереджає, що відновлення не повертає підписку", () => {
     renderScreen();
     expect(screen.getByText(/Підписку скасовано/i)).toBeInTheDocument();

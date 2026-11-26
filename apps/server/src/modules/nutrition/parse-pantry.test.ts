@@ -151,7 +151,7 @@ describe("nutrition parse-pantry handler", () => {
       handler(makeReq({ text: "яблука", locale: "uk-UA" }), makeRes()),
     ).rejects.toMatchObject({
       name: "ExternalServiceError",
-      message: "Асистент тимчасово недоступний. Спробуй пізніше.",
+      message: "Сержант тимчасово недоступний. Спробуй пізніше.",
       status: 502,
       code: "ANTHROPIC_ERROR",
     });

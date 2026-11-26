@@ -97,7 +97,9 @@ export function PendingDeletionScreen({
         </h1>
 
         <p className="text-style-body text-muted mb-2">
-          {`${m.blockerBodyPrefix} ${purgeDate}. ${m.blockerBodyTail}`}
+          {/* Дата в uk-UA вже закінчується крапкою («25 грудня 2026 р.»):
+              друга давала «р.. До того дня» (прогін full-2026-11-25). */}
+          {`${m.blockerBodyPrefix} ${purgeDate.replace(/\.$/, "")}. ${m.blockerBodyTail}`}
         </p>
         <p className="text-style-caption text-subtle mb-6">
           {m.blockerSubscription}

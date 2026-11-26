@@ -272,7 +272,7 @@ describe("PhotoStep — auto-analyze gating", () => {
     // OpenRouter, а не напряму до Anthropic — назва вендора в копії була
     // просто неправдою для дефолтного деплою.
     expect(screen.queryByText(/Anthropic/)).toBeNull();
-    expect(screen.getByText(/до зовнішнього\s+AI-сервісу/)).toBeInTheDocument();
+    expect(screen.getByText(/до зовнішнього\s+сервісу ШІ/)).toBeInTheDocument();
   });
 
   it("does NOT auto-run for a Free user — the paywall stays on the explicit tap", () => {

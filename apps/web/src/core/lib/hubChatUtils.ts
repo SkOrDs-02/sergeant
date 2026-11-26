@@ -145,7 +145,7 @@ export function friendlyApiError(
   // Ключ upstream-у відсутній. Гейти `requireChatUpstreamKey` /
   // `requireLlmUpstream` (`apps/server/src/http/requireAnthropicKey.ts`)
   // віддають **503** з маркером у `body.code`, а `body.error` — навмисно
-  // нейтральне «AI-помічник тимчасово недоступний» без назви env-змінної.
+  // нейтральне «Сержант тимчасово недоступний» без назви env-змінної.
   // До 2026-09-03 тут стояло `status === 500 && /ANTHROPIC|key/.test(m)` —
   // обидві умови хибні для реальної відповіді, тож гілка була недосяжна, і
   // розробник із незаповненим ключем бачив користувацький текст і шукав
@@ -159,7 +159,7 @@ export function friendlyApiError(
   if (status === 429 && code === "AI_QUOTA_PRESET" && m) {
     return m;
   }
-  if (status === 429 && /ліміт AI|AI_QUOTA|квот/i.test(m)) {
+  if (status === 429 && /ліміт (?:AI|ШІ)|AI_QUOTA|квот/i.test(m)) {
     return "Тижневий ліміт Сержанта вичерпано. Оновиться в понеділок.";
   }
   // Шлюзові збої приходять від проксі, а не від застосунку, тож тіла з

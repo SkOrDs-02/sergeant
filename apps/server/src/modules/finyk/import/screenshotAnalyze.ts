@@ -292,7 +292,7 @@ export default async function screenshotAnalyzeHandler(
     !canUseAnthropic
   ) {
     throw new ExternalServiceError(
-      "AI-розпізнавання скрінів тимчасово недоступне. Спробуй пізніше.",
+      "Розпізнавання скрінів через ШІ тимчасово недоступне. Спробуй пізніше.",
       { status: 503, code: "IMPORT_VISION_UNAVAILABLE" },
     );
   }

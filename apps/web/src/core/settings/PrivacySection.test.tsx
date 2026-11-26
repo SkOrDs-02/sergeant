@@ -704,7 +704,7 @@ describe("PrivacySection — V-12 (SettingsSubGroup primitive)", () => {
     it("несе декларацію субпроцесорів разом зі згодами", async () => {
       renderSection();
       await openSection();
-      expect(screen.getByText("Куди їдуть дані для AI")).toBeInTheDocument();
+      expect(screen.getByText("Куди їдуть дані для ШІ")).toBeInTheDocument();
       // Назви з `legal/legalShared.ts` (2026-11-19): шлюз, моделі за ним,
       // без сирих плейсхолдерів каталогу.
       const ai = screen.getByText(/Anthropic/);

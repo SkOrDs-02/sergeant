@@ -76,7 +76,7 @@ describe("createCategorizeInternalRouter", () => {
 
     expect(res.status).toBe(503);
     expect(res.body).toMatchObject({
-      error: "AI-помічник тимчасово недоступний. Спробуй пізніше.",
+      error: "Сержант тимчасово недоступний. Спробуй пізніше.",
       code: "ANTHROPIC_KEY_MISSING",
     });
     expect(getLLMProviderMock).not.toHaveBeenCalled();

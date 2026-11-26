@@ -132,7 +132,7 @@ interface StreamIterationResult {
  * провайдерний рядок назовні не йде ніколи. Тримаємо константою, щоб гілки
  * не розʼїхались формулюваннями (як розʼїхались до B33).
  */
-export const SSE_GENERIC_ERROR = "Асистент тимчасово недоступний";
+export const SSE_GENERIC_ERROR = "Сержант тимчасово недоступний";
 
 /**
  * Читає одну upstream-відповідь Anthropic (SSE) і форвардить text-дельти у `res`.

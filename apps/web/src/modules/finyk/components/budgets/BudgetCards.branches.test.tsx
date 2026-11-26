@@ -257,6 +257,25 @@ describe("LimitBudgetCard: єдина шкала порогів (PR-F8)", () => 
 });
 
 describe("MonthlyPlanCard", () => {
+  // Рішення власника 2026-11-25: без плану й доходу «Дефіцит заощаджень»
+  // нічого не означає (прогін full-2026-11-25, персона лише з витратами).
+  it("не показує «Дефіцит заощаджень» людині без плану й доходу", () => {
+    renderMonthlyPlan({
+      monthlyPlan: { income: 0, expense: 0, savings: 0 },
+      planIncome: 0,
+      planExpense: 0,
+      planSavings: 0,
+      factIncome: 0,
+      factSavings: -26257,
+    });
+    expect(screen.queryByText("Дефіцит заощаджень")).not.toBeInTheDocument();
+  });
+
+  it("показує «Дефіцит заощаджень», коли є план або дохід", () => {
+    renderMonthlyPlan({ factSavings: -100 });
+    expect(screen.getByText("Дефіцит заощаджень")).toBeInTheDocument();
+  });
+
   it("opens the plan body, toggles edit mode, and updates each plan input", () => {
     const { onChangeMonthlyPlan } = renderMonthlyPlan();
 

@@ -46,7 +46,7 @@ describe("попередження про фото", () => {
     // кадр іде через OpenRouter, а не напряму до Anthropic, тож будь-яке
     // імʼя в копії було б правдою лише для частини деплоїв.
     expect(screen.queryByText(/Anthropic/)).toBeNull();
-    expect(screen.getByText(/до зовнішнього\s+AI-сервісу/)).toBeTruthy();
+    expect(screen.getByText(/до зовнішнього\s+сервісу ШІ/)).toBeTruthy();
   });
 
   it("зникає після «Зрозуміло» і не повертається при наступному відкритті", () => {

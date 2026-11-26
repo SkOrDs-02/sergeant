@@ -393,6 +393,25 @@ describe("query / analytics tools (talk-to-your-data PR4)", () => {
   });
 });
 
+describe("ChatActionCard.destructive (лише видалення)", () => {
+  it.each(["delete_transaction", "forget", "clear_pantry"])(
+    "%s — destructive",
+    (name) => {
+      const card = buildActionCard({ name, input: {}, result: "ok" });
+      expect(card?.risky).toBe(true);
+      expect(card?.destructive).toBe(true);
+    },
+  );
+
+  it.each(["create_transaction", "remember", "batch_categorize", "log_meal"])(
+    "%s — не destructive",
+    (name) => {
+      const card = buildActionCard({ name, input: {}, result: "ok" });
+      expect(card?.destructive).toBeUndefined();
+    },
+  );
+});
+
 describe("isRiskyTool", () => {
   it("розпізнає risky tools", () => {
     expect(isRiskyTool("batch_categorize")).toBe(true);

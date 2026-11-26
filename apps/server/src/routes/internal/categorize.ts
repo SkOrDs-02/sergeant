@@ -205,10 +205,10 @@ export function createCategorizeInternalRouter(): Router {
       lookupMccCategory(body.mcc) === null &&
       !providerUpstreamReady("readonly")
     ) {
-      throw new AppError(
-        "AI-помічник тимчасово недоступний. Спробуй пізніше.",
-        { status: 503, code: "ANTHROPIC_KEY_MISSING" },
-      );
+      throw new AppError("Сержант тимчасово недоступний. Спробуй пізніше.", {
+        status: 503,
+        code: "ANTHROPIC_KEY_MISSING",
+      });
     }
     try {
       const result = await categorizeTransaction({

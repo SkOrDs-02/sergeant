@@ -548,7 +548,7 @@ describe("chat handler — SSE first-call upstream errors", () => {
     expect(caught).toMatchObject({
       status: 503,
       code: "ANTHROPIC_ERROR",
-      message: "Асистент тимчасово недоступний. Спробуй пізніше.",
+      message: "Сержант тимчасово недоступний. Спробуй пізніше.",
     });
     // Жодного запису у SSE-стрім (заголовки і body не задіяні).
     expect(res.writes).toHaveLength(0);
@@ -580,7 +580,7 @@ describe("chat handler — SSE first-call upstream errors", () => {
     expect(caught).toMatchObject({
       status: 502,
       code: "ANTHROPIC_ERROR",
-      message: "Асистент тимчасово недоступний. Спробуй пізніше.",
+      message: "Сержант тимчасово недоступний. Спробуй пізніше.",
     });
     // SSE-заголовки НЕ виставлені (помилкова гілка йде через errorHandler, а не event-stream).
     expect(res.headers["Content-Type"]).toBeUndefined();

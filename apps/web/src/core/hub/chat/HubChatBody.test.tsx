@@ -70,12 +70,12 @@ describe("HubChatBody", () => {
         msg("greet", "assistant", "Привіт! Я твій особистий асистент."),
       ],
     });
-    expect(screen.getByText(/Відповідає AI, не людина/)).toBeInTheDocument();
+    expect(screen.getByText(/Відповідає ШІ, не людина/)).toBeInTheDocument();
   });
 
   it("shows the AI disclosure while the assistant is answering", () => {
     renderBody({ messages: [msg("1", "user", "Питання")], loading: true });
-    expect(screen.getByText(/Відповідає AI, не людина/)).toBeInTheDocument();
+    expect(screen.getByText(/Відповідає ШІ, не людина/)).toBeInTheDocument();
   });
 
   // Регресія з browser-QA 2026-09-02: стрічка лежить у статичному
@@ -197,6 +197,18 @@ describe("HubChatBody", () => {
     const { container } = renderBody({ loading: false });
     const liveRegion = container.querySelector('[role="status"]');
     expect(liveRegion).toHaveTextContent("");
+  });
+
+  it("оголошує завершену відповідь без markdown-розмітки", () => {
+    // Жива область отримувала сирий текст моделі: скрінрідер диктував
+    // «зірочка зірочка 2 011,56 грн» (прогін full-2026-11-25).
+    const messages = [
+      msg("a1", "assistant", "Сьогодні **2 011,56 грн**:\n- `кава`\n## Разом"),
+    ];
+    const { container } = renderBody({ loading: false, messages });
+    const live = container.querySelector('[aria-live="polite"]');
+    expect(live?.textContent).toContain("2 011,56 грн");
+    expect(live?.textContent).not.toMatch(/[*`#]/);
   });
 
   // С-1 (а): «Ще раз» на обірваній відповіді діє лише поза ходом у польоті.
