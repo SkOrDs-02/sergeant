@@ -172,6 +172,29 @@ describe("useSilpoPantryAutoImport", () => {
     );
   });
 
+  it("звичайні ререндери не запускають нових проходів по чеках", async () => {
+    syncStateMock.mockReturnValue({
+      status: "connected",
+      data: { pantryAutoImportSince: "2026-09-20T00:00:00.000Z" },
+    });
+    // Той самий масив щоразу: список чеків не змінився.
+    const receipts = [RECEIPT];
+    receiptsMock.mockReturnValue({ receipts });
+    receiptsApiMock.mockRejectedValue(new Error("429"));
+
+    const { rerender } = renderAutoImport();
+    for (let i = 0; i < 5; i += 1) rerender();
+    await act(async () => {
+      await new Promise((r) => setTimeout(r, 0));
+    });
+    for (let i = 0; i < 5; i += 1) rerender();
+    await act(async () => {
+      await new Promise((r) => setTimeout(r, 0));
+    });
+
+    expect(receiptsApiMock).toHaveBeenCalledTimes(1);
+  });
+
   it("вимкнений тумблер - жодного запиту чеків", () => {
     syncStateMock.mockReturnValue({
       status: "connected",
