@@ -377,3 +377,165 @@ describe("mono/read — integration (real Postgres)", () => {
     });
   });
 });
+
+// Спека finyk-fx-nbu.md: SQL добору `amount_uah`, джойн курсу за київською
+// датою і кеш курсів НБУ на справжньому Postgres. Курс сідається в
+// `nbu_fx_rate` заздалегідь, тож мережі тест не потребує.
+describe("mono/read — валютні рахунки і курс НБУ (real Postgres)", () => {
+  beforeEach(async () => {
+    await truncateAll();
+    await seedTestUser();
+  });
+
+  async function seedAccount(id: string, currencyCode: number): Promise<void> {
+    await testQuery(
+      `INSERT INTO mono_account
+         (user_id, mono_account_id, type, currency_code, cashback_type,
+          masked_pan, iban, balance, credit_limit, last_seen_at)
+       VALUES ($1, $2, 'black', $3, 'None', $4, NULL, 0, 0, now())`,
+      [TEST_USER_ID, id, currencyCode, ["5375****0000"]],
+    );
+  }
+
+  async function seedTx(
+    id: string,
+    account: string,
+    time: string,
+    amount: number,
+    operationAmount: number,
+    currencyCode: number,
+  ): Promise<void> {
+    await testQuery(
+      `INSERT INTO mono_transaction
+         (user_id, mono_account_id, mono_tx_id, time, amount, operation_amount,
+          currency_code, description, source, raw)
+       VALUES ($1, $2, $3, $4, $5, $6, $7, 'Shop', 'webhook', '{}'::jsonb)`,
+      [
+        TEST_USER_ID,
+        account,
+        id,
+        new Date(time),
+        amount,
+        operationAmount,
+        currencyCode,
+      ],
+    );
+  }
+
+  it("добирає amount_uah, віддає курс і не чіпає гривневі й нерозпізнані рахунки", async () => {
+    await seedAccount("acct_usd", 840);
+    await seedAccount("acct_uah", 980);
+    await seedAccount("acct_stub", 0);
+    await testQuery(
+      `INSERT INTO nbu_fx_rate (currency_code, rate_date, uah_per_unit, source_date)
+       VALUES (840, '2026-11-24', 41.5, '2026-11-24')`,
+    );
+    await seedTx(
+      "usd_buy",
+      "acct_usd",
+      "2026-11-24T10:00:00Z",
+      -10_000,
+      -10_000,
+      840,
+    );
+    // 23:30 UTC 23-го = 01:30 24-го в Києві; операція в гривні - курс не потрібен.
+    await seedTx(
+      "usd_card_uah_op",
+      "acct_usd",
+      "2026-11-23T23:30:00Z",
+      -250,
+      -10_000,
+      980,
+    );
+    await seedTx(
+      "stub_op",
+      "acct_stub",
+      "2026-11-24T09:00:00Z",
+      -700,
+      -700,
+      840,
+    );
+    await seedTx(
+      "uah_op",
+      "acct_uah",
+      "2026-11-24T08:00:00Z",
+      -5_000,
+      -5_000,
+      980,
+    );
+
+    const res = makeRes();
+    await transactionsHandler(makeReq({ limit: "10" }), res);
+
+    expect(res.statusCode).toBe(200);
+    const byId = new Map(
+      (res.body as { data: Array<Record<string, unknown>> }).data.map((t) => [
+        t["monoTxId"],
+        t,
+      ]),
+    );
+    expect(byId.get("usd_buy")).toMatchObject({
+      amount: -10_000,
+      accountCurrencyCode: 840,
+      amountUah: -415_000,
+      fxRate: { uahPerUnit: 41.5, date: "2026-11-24" },
+    });
+    expect(byId.get("usd_card_uah_op")).toMatchObject({
+      accountCurrencyCode: 840,
+      amountUah: -10_000,
+      fxRate: null,
+    });
+    expect(byId.get("stub_op")).toMatchObject({
+      accountCurrencyCode: 0,
+      amountUah: null,
+      fxRate: null,
+    });
+    expect(byId.get("uah_op")).toMatchObject({
+      accountCurrencyCode: 980,
+      amountUah: null,
+      fxRate: null,
+    });
+
+    const { rows } = await testQuery<{
+      mono_tx_id: string;
+      amount_uah: string | null;
+    }>(
+      `SELECT mono_tx_id, amount_uah FROM mono_transaction ORDER BY mono_tx_id`,
+    );
+    expect(
+      Object.fromEntries(rows.map((r) => [r.mono_tx_id, r.amount_uah])),
+    ).toEqual({
+      stub_op: null,
+      uah_op: null,
+      usd_buy: "-415000",
+      usd_card_uah_op: "-10000",
+    });
+  });
+
+  it("курс НБУ пишеться в кеш раз і не перезаписується", async () => {
+    const { getNbuRates } = await import("../fx/nbuRate.js");
+    const answer = (rate: number) => async () => ({
+      ok: true,
+      json: async () => [{ r030: 978, rate }],
+    });
+
+    await getNbuRates([{ currencyCode: 978, date: "2026-11-20" }], {
+      fetchImpl: answer(44.1),
+      today: "2026-11-25",
+    });
+    // Друга відповідь з іншим курсом: кеш уже має рядок, НБУ не питаємо.
+    const second = await getNbuRates(
+      [{ currencyCode: 978, date: "2026-11-20" }],
+      { fetchImpl: answer(99), today: "2026-11-25" },
+    );
+
+    expect(second.get("978:2026-11-20")).toEqual({
+      uahPerUnit: 44.1,
+      sourceDate: "2026-11-20",
+    });
+    const { rows } = await testQuery<{ n: string }>(
+      `SELECT count(*) AS n FROM nbu_fx_rate`,
+    );
+    expect(rows[0]!.n).toBe("1");
+  });
+});

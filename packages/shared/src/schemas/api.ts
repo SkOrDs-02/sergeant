@@ -1794,6 +1794,27 @@ export const MonoTransactionDtoSchema = z.object({
   categoryOverridden: z.boolean(),
   source: MonoTransactionSourceSchema,
   receivedAt: z.string().min(1),
+  /**
+   * Currency of the ACCOUNT (`mono_account.currency_code`); `amount` is
+   * denominated in it. Optional: absent on older servers. Spec
+   * `docs/work/specs/finyk-fx-nbu.md`.
+   */
+  accountCurrencyCode: z.number().int().optional(),
+  /**
+   * UAH equivalent in kopecks for a non-UAH account: `operationAmount` when
+   * the operation itself is in UAH, otherwise `amount` × the official NBU
+   * rate on the Kyiv date of the operation. `null` for UAH accounts and
+   * while the rate is not fetched yet (such rows stay out of totals).
+   */
+  amountUah: z.number().nullable().optional(),
+  /** NBU rate used for `amountUah` (UAH per unit, date the rate is set for). */
+  fxRate: z
+    .object({
+      uahPerUnit: z.number().positive(),
+      date: z.string().regex(/^\d{4}-\d{2}-\d{2}$/),
+    })
+    .nullable()
+    .optional(),
 });
 export type MonoTransactionDto = z.infer<typeof MonoTransactionDtoSchema>;
 

@@ -81,6 +81,11 @@ export interface TxRowTx {
   time?: number | undefined;
   currencyCode?: number | undefined;
   operationAmount?: number | undefined;
+  /** Валюта рахунку і сума в ній; `amount` тоді гривневий еквівалент (finyk-fx-nbu). */
+  accountCurrencyCode?: number | undefined;
+  accountAmount?: number | null | undefined;
+  amountUah?: number | null | undefined;
+  fxRate?: { uahPerUnit: number; date: string } | null | undefined;
   _accountId?: string | null | undefined;
   _source?: string | undefined;
   _manual?: boolean | undefined;

@@ -72,8 +72,10 @@ function manualFromDayKey(fromMs: number): string {
 
 /**
  * Банк + ручні записи від `fromMs`, плюс банківські операції з `extraIds`
- * (привʼязані до боргів і підписок, старші за вікно). Гривневі рахунки
- * лише: Фінік UAH-only без FX, так само як `GET /api/mono/transactions`.
+ * (привʼязані до боргів і підписок, старші за вікно). Операції
+ * не-гривневих рахунків ідуть гривневою сумою за курсом НБУ (`amount_uah`,
+ * спека finyk-fx-nbu.md); поки курсу немає, рядок у розрахунок не йде.
+ * Добирає `amount_uah` читання `GET /api/mono/transactions`, не цей прохід.
  */
 export async function loadFinykTransactions(
   db: FinykPushDb,
@@ -82,17 +84,20 @@ export async function loadFinykTransactions(
   extraIds: readonly string[] = [],
 ): Promise<Transaction[]> {
   const { rows } = await db.query<MonoTxRow & { manual: unknown }>(
-    `SELECT t.mono_tx_id, t.mono_account_id, t.time, t.amount, t.mcc,
-            t.description, t.currency_code, t.category_slug, NULL AS manual
+    `SELECT t.mono_tx_id, t.mono_account_id, t.time,
+            CASE WHEN a.currency_code <> 980 THEN t.amount_uah
+                 ELSE t.amount END AS amount,
+            t.mcc, t.description,
+            CASE WHEN a.currency_code <> 980 THEN 980
+                 ELSE t.currency_code END AS currency_code,
+            t.category_slug, NULL AS manual
        FROM mono_transaction t
+       JOIN mono_account a
+         ON a.user_id = t.user_id AND a.mono_account_id = t.mono_account_id
       WHERE t.user_id = $1
         AND t.deleted_at IS NULL
         AND (t.time >= $2 OR t.mono_tx_id = ANY($3::text[]))
-        AND NOT EXISTS (
-              SELECT 1 FROM mono_account a
-               WHERE a.user_id = t.user_id
-                 AND a.mono_account_id = t.mono_account_id
-                 AND a.currency_code <> 980)
+        AND (a.currency_code = 980 OR t.amount_uah IS NOT NULL)
      UNION ALL
      SELECT NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL,
             m.data_json || jsonb_build_object('id', m.id::text)

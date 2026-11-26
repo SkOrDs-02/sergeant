@@ -220,6 +220,14 @@ async function upsertTransaction(
      )
      ON CONFLICT (user_id, mono_tx_id)
      DO UPDATE SET
+       -- Гривнева сума рахувалась від старих сум: інші суми - перерахувати
+       -- на наступному читанні (finyk-fx-nbu.md).
+       amount_uah = CASE
+         WHEN mono_transaction.amount IS DISTINCT FROM EXCLUDED.amount
+           OR mono_transaction.operation_amount IS DISTINCT FROM EXCLUDED.operation_amount
+         THEN NULL
+         ELSE mono_transaction.amount_uah
+       END,
        amount = EXCLUDED.amount,
        operation_amount = EXCLUDED.operation_amount,
        hold = EXCLUDED.hold,

@@ -10,7 +10,7 @@
  * очікує саме такий формат, тож одиниці зберігаємо, а нові поля лише додаємо.
  */
 
-import { CASH_ACCOUNT_ID, INTERNAL_TRANSFER_ID } from "../constants";
+import { CASH_ACCOUNT_ID, CURRENCY, INTERNAL_TRANSFER_ID } from "../constants";
 import { txTimeMs } from "../lib/transactions.js";
 import type { Transaction, TransactionSource, TransactionType } from "./types";
 
@@ -48,7 +48,15 @@ type RawTxInput = {
   raw?: unknown;
   currencyCode?: number | string | undefined;
   operationAmount?: number | string | undefined;
+  /** Валюта РАХУНКУ (Monobank), у ній лежить `amount`. */
+  accountCurrencyCode?: number | undefined;
+  /** Гривнева сума операції валютного рахунку за курсом НБУ, копійки. */
+  amountUah?: number | null | undefined;
+  /** Курс НБУ, за яким рахувалась `amountUah`. */
+  fxRate?: { uahPerUnit: number; date: string } | null | undefined;
 } & Record<string, unknown>;
+
+const UAH_CODE = CURRENCY.UAH as number;
 
 // Внутрішні category ids, які трактуються як переказ між власними рахунками.
 const TRANSFER_CATEGORY_IDS = new Set([INTERNAL_TRANSFER_ID, "transfer"]);
@@ -199,7 +207,36 @@ export function normalizeTransaction(
   const manual = Boolean(tx.manual ?? tx._manual ?? source === "manual");
   const manualId = tx.manualId ?? tx._manualId;
   const accountId = tx.accountId ?? tx._accountId ?? defaults.accountId ?? null;
-  const normalizedAmount = toSafeAmountMinorUnits(tx.amount);
+  // Операція не-гривневого рахунку (спека finyk-fx-nbu.md): `amount` у
+  // валюті РАХУНКУ, тож канонічною сумою стає гривневий еквівалент за
+  // курсом НБУ, а валютна сума їде окремо в `accountAmount`. Так усі
+  // підсумки (ліміти, бюджети, аналітика, чат) рахують гривні без латок у
+  // споживачах. Без курсу `amount` лишається валютним, і `foreignAccountTx`
+  // виключає рядок із підсумків.
+  const accountCurrencyCode =
+    typeof tx.accountCurrencyCode === "number" &&
+    Number.isInteger(tx.accountCurrencyCode)
+      ? tx.accountCurrencyCode
+      : null;
+  const foreignAccount =
+    accountCurrencyCode !== null && accountCurrencyCode !== UAH_CODE;
+  const amountUah =
+    foreignAccount &&
+    typeof tx.amountUah === "number" &&
+    Number.isFinite(tx.amountUah)
+      ? Math.round(tx.amountUah)
+      : null;
+  const fxRate =
+    foreignAccount &&
+    tx.fxRate &&
+    Number.isFinite(tx.fxRate.uahPerUnit) &&
+    typeof tx.fxRate.date === "string"
+      ? { uahPerUnit: tx.fxRate.uahPerUnit, date: tx.fxRate.date }
+      : null;
+  const accountAmount = foreignAccount
+    ? toSafeAmountMinorUnits(tx["accountAmount"] ?? tx.amount)
+    : null;
+  const normalizedAmount = amountUah ?? toSafeAmountMinorUnits(tx.amount);
   const time = toSafeTimestampSeconds(tx.time ?? tx.date ?? tx.createdAt);
   const date = new Date(time * 1000).toISOString();
 
@@ -254,6 +291,8 @@ export function normalizeTransaction(
     tx.operationAmount != null
       ? { operationAmount: Math.round(Number(tx.operationAmount)) }
       : {}),
+    ...(accountCurrencyCode !== null ? { accountCurrencyCode } : {}),
+    ...(foreignAccount ? { accountAmount, amountUah, fxRate } : {}),
 
     _source: legacySource,
     _accountId: accountId == null ? null : String(accountId),

@@ -15,11 +15,12 @@
  * - `currencyCode !== 980` і суми різні → найчастіше гривневий рахунок із
  *   валютною покупкою (`amount` уже в гривні), тож це НЕ чужий рахунок.
  *
- * Гривнева сума операції з чужого рахунку (`operationAmount` при
- * `currencyCode === 980`) свідомо НЕ рахується: сервер взагалі не віддає
- * операцій валютних рахунків (`GET /api/mono/transactions`), баланс цього
- * рахунку в капітал не йде, і порахована лише одна нога дала б розбіжність
- * між поверхнями. Операція лишається видимою, але поза гривневим обліком.
+ * Від спеки `finyk-fx-nbu.md` (2026-11-25) сервер віддає валюту рахунку
+ * (`accountCurrencyCode`) і гривневу суму за курсом НБУ (`amountUah`), а
+ * `normalizeTransaction` ставить її в `amount`. Тоді операція входить у
+ * гривневий облік, і «чужою» лишається лише без курсу. Евристика за сумами
+ * нижче працює для операцій без цих полів (вебхук у реальному часі, старий
+ * сервер): поза обліком, доки читання не принесе курс.
  */
 
 import { CURRENCY } from "../constants";
@@ -28,6 +29,8 @@ interface ForeignAccountTxLike {
   amount?: number | undefined;
   operationAmount?: number | undefined;
   currencyCode?: number | undefined;
+  accountCurrencyCode?: unknown;
+  amountUah?: unknown;
 }
 
 const UAH = CURRENCY.UAH as number;
@@ -41,6 +44,16 @@ export function foreignAccountCurrencyCode(
   tx: ForeignAccountTxLike | null | undefined,
 ): number | null {
   if (!tx) return null;
+  if (
+    typeof tx.accountCurrencyCode === "number" &&
+    Number.isInteger(tx.accountCurrencyCode)
+  ) {
+    const converted =
+      typeof tx.amountUah === "number" && Number.isFinite(tx.amountUah);
+    return tx.accountCurrencyCode === UAH || converted
+      ? null
+      : tx.accountCurrencyCode;
+  }
   const { amount, operationAmount, currencyCode } = tx;
   if (
     typeof amount !== "number" ||

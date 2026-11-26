@@ -13,6 +13,9 @@ vi.mock("./jars.js", () => ({
   refreshJarsFromMono: vi.fn().mockResolvedValue(undefined),
 }));
 
+const fillMissingAmountUah = vi.hoisted(() => vi.fn(async () => {}));
+vi.mock("./amountUah.js", () => ({ fillMissingAmountUah }));
+
 import { query as _query } from "../../db.js";
 import { accountsHandler, jarsHandler, transactionsHandler } from "./read.js";
 
@@ -450,17 +453,67 @@ describe("transactionsHandler", () => {
     expect(sql).toContain("t.mono_account_id =");
   });
 
-  it("відсікає операції не-гривневих рахунків (UAH-only без FX)", async () => {
-    queryMock.mockResolvedValueOnce({ rows: [] });
+  it("віддає операції валютних рахунків з гривневою сумою і курсом НБУ (finyk-fx-nbu)", async () => {
+    queryMock.mockResolvedValueOnce({
+      rows: [
+        {
+          userId: "user_1",
+          monoAccountId: "usd1",
+          monoTxId: "tx-usd",
+          time: new Date("2026-11-24T10:00:00Z"),
+          amount: "-10000",
+          operationAmount: "-10000",
+          currencyCode: 840,
+          mcc: 5411,
+          originalMcc: 5411,
+          hold: false,
+          description: "Shop",
+          comment: null,
+          cashbackAmount: null,
+          commissionRate: null,
+          balance: "50000",
+          receiptId: null,
+          invoiceId: null,
+          counterEdrpou: null,
+          counterIban: null,
+          counterName: null,
+          categorySlug: "groceries",
+          categoryOverridden: false,
+          source: "webhook",
+          receivedAt: new Date("2026-11-24T10:00:01Z"),
+          accountCurrencyCode: 840,
+          amountUah: "-415000",
+          fxUahPerUnit: "41.500000",
+          fxDate: "2026-11-24",
+        },
+      ],
+    });
 
     const res = makeRes();
     await transactionsHandler(makeReq({}), res);
 
     expect(res.statusCode).toBe(200);
+    expect(fillMissingAmountUah).toHaveBeenCalledWith("user_1");
     const sql = (queryMock!.mock.calls[0]![0] as string).replace(/\s+/g, " ");
-    expect(sql).toContain("NOT EXISTS ( SELECT 1 FROM mono_account a");
-    expect(sql).toContain("a.mono_account_id = t.mono_account_id");
-    expect(sql).toContain("a.currency_code <> 980");
+    expect(sql).not.toContain("NOT EXISTS");
+    expect(sql).toContain("LEFT JOIN nbu_fx_rate r");
+    const body = res.body as { data: Array<Record<string, unknown>> };
+    expect(body.data[0]).toMatchObject({
+      amount: -10000,
+      accountCurrencyCode: 840,
+      amountUah: -415000,
+      fxRate: { uahPerUnit: 41.5, date: "2026-11-24" },
+    });
+  });
+
+  it("не добирає курс на наступних сторінках", async () => {
+    queryMock.mockResolvedValueOnce({ rows: [] });
+    const res = makeRes();
+    await transactionsHandler(
+      makeReq({ cursor: "2026-11-24T10:00:00.000Z:tx-1" }),
+      res,
+    );
+    expect(fillMissingAmountUah).not.toHaveBeenCalled();
   });
 
   it("applies cursor filter", async () => {

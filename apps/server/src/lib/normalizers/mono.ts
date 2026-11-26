@@ -130,6 +130,14 @@ export interface MonoTransactionRow {
   categoryOverridden: boolean;
   source: string;
   receivedAt: Date | string;
+  /** Валюта рахунку (`mono_account.currency_code`), якщо запит її джойнив. */
+  accountCurrencyCode?: number | null;
+  /** `mono_transaction.amount_uah` (BIGINT), спека finyk-fx-nbu.md. */
+  amountUah?: unknown;
+  /** `nbu_fx_rate.uah_per_unit` (NUMERIC) курсу, за яким рахувалась `amountUah`. */
+  fxUahPerUnit?: unknown;
+  /** `nbu_fx_rate.source_date`, YYYY-MM-DD. */
+  fxDate?: string | null;
 }
 
 export interface NormalizedMonoTransaction {
@@ -157,13 +165,27 @@ export interface NormalizedMonoTransaction {
   categoryOverridden: boolean;
   source: string;
   receivedAt: string;
+  accountCurrencyCode?: number;
+  amountUah?: number | null;
+  fxRate?: { uahPerUnit: number; date: string } | null;
 }
 
 export function normalizeMonoTransaction(
   row: MonoTransactionRow,
 ): NormalizedMonoTransaction {
+  const { accountCurrencyCode, amountUah, fxUahPerUnit, fxDate, ...base } = row;
+  const uahPerUnit = toNumberOrNull(fxUahPerUnit);
   return {
-    ...row,
+    ...base,
+    ...(accountCurrencyCode == null
+      ? {}
+      : {
+          accountCurrencyCode: Number(accountCurrencyCode),
+          // Hard Rule #1: BIGINT приходить рядком.
+          amountUah: toNumberOrNull(amountUah),
+          fxRate:
+            uahPerUnit !== null && fxDate ? { uahPerUnit, date: fxDate } : null,
+        }),
     amount: toNumberOrNull(row.amount) ?? 0,
     operationAmount: toNumberOrNull(row.operationAmount) ?? 0,
     cashbackAmount: toNumberOrNull(row.cashbackAmount),

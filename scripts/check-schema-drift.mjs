@@ -758,6 +758,10 @@ const SQL_ONLY_TABLES = [
   "mono_connection",
   "mono_jar",
   "mono_transaction",
+  // Кеш офіційних курсів НБУ (міграція 177, спека finyk-fx-nbu.md): пише й
+  // читає лише серверний `modules/fx/nbuRate.ts` сирим pg; клієнт бачить
+  // курс полем `fxRate` у `/api/mono/transactions`, не через Drizzle.
+  "nbu_fx_rate",
   // ПриватБанк merchant-креденшели під AES-256-GCM (міграція 091). Той самий
   // контур, що й `mono_connection`: секрет читає лише серверний банк-проксі,
   // у Drizzle його свідомо немає.

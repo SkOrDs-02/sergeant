@@ -334,7 +334,10 @@ describe("Pact provider replay — consumer=sergeant-api-client, provider=sergea
     // (data-51): `client_ts` у результаті `applied`, коли сервер обрізав
     // годинник пристрою. `expectedRoutes` не росте; поведінку тримає
     // `modules/sync/syncV2.test.ts`.
-    expect(pact.interactions).toHaveLength(97);
+    // 98, не 97: +1 інтеракція на вже покритому `GET /mono/transactions`
+    // (finyk-fx-nbu.md): операція валютної картки з `amountUah` і курсом
+    // НБУ. `expectedRoutes` не росте.
+    expect(pact.interactions).toHaveLength(98);
     const expectedRoutes = new Set([
       // PR-42 baseline (5)
       "GET /api/v1/me",
@@ -770,10 +773,11 @@ describe("Pact provider replay — consumer=sergeant-api-client, provider=sergea
   // `normalizeMonoTransaction` coercion + Zod parse are actually exercised
   // — Hard Rule #1 sibling-test for the transactions path.
   it("GET /api/v1/mono/transactions replays against the real handler (finyk persona)", async () => {
-    const interaction = findInteraction(
+    const interaction = findInteractionByDescription(
       pact,
       "GET",
       "/api/v1/mono/transactions",
+      "with limit=2 and a date range",
     );
     interface PactTx {
       userId: string;
@@ -850,6 +854,9 @@ describe("Pact provider replay — consumer=sergeant-api-client, provider=sergea
       source: tx.source,
       receivedAt: tx.receivedAt,
     }));
+    // Перший запит - добір `amount_uah` (finyk-fx-nbu.md): валютних рядків
+    // без гривневої суми немає.
+    queryMock.mockResolvedValueOnce({ rows: [] });
     queryMock.mockResolvedValueOnce({ rows: sqlRows });
 
     const app = createApp();
@@ -863,6 +870,53 @@ describe("Pact provider replay — consumer=sergeant-api-client, provider=sergea
     // Coercion didn't fall through to "stringified number".
     expect(typeof res.body.data[0].amount).toBe("number");
     expect(typeof res.body.data[0].balance).toBe("number");
+  });
+
+  // Операція USD-картки з гривневою сумою за курсом НБУ (finyk-fx-nbu.md):
+  // `amount_uah` (BIGINT) і `uah_per_unit` (NUMERIC) `pg` віддає рядками,
+  // тож перевіряємо і коерсію, і зборку `fxRate` нормалізатором.
+  it("GET /api/v1/mono/transactions replays the USD-account row priced at the NBU rate", async () => {
+    const interaction = findInteractionByDescription(
+      pact,
+      "GET",
+      "/api/v1/mono/transactions",
+      "for a USD-account transaction",
+    );
+    const expected = interaction.response.body as {
+      data: Array<
+        Record<string, unknown> & {
+          userId: string;
+          amount: number;
+          operationAmount: number;
+          balance: number;
+          amountUah: number;
+          fxRate: { uahPerUnit: number; date: string };
+        }
+      >;
+      nextCursor: string | null;
+    };
+    getSessionUserMock.mockResolvedValue({ id: expected.data[0]!.userId });
+    const sqlRows = expected.data.map(({ fxRate, ...tx }) => ({
+      ...tx,
+      amount: String(tx.amount),
+      operationAmount: String(tx.operationAmount),
+      balance: String(tx.balance),
+      amountUah: String(tx.amountUah),
+      fxUahPerUnit: fxRate.uahPerUnit.toFixed(6),
+      fxDate: fxRate.date,
+    }));
+    queryMock.mockResolvedValueOnce({ rows: [] });
+    queryMock.mockResolvedValueOnce({ rows: sqlRows });
+
+    const app = createApp();
+    const res = await request(app)
+      .get(interaction.request.path)
+      .query({ limit: "1" })
+      .set("Authorization", "Bearer pact-replay");
+
+    expect(res.status).toBe(interaction.response.status);
+    expect(res.body).toEqual(expected);
+    expect(typeof res.body.data[0].amountUah).toBe("number");
   });
 
   // ── GET /api/v1/coach/memory ───────────────────────────────────────────────
