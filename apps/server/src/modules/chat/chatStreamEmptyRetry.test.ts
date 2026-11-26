@@ -22,7 +22,10 @@ import { env } from "../../env.js";
 import { register } from "../../obs/metrics.js";
 import { streamAnthropicToSse } from "./chatStream.js";
 import type { GivenSources } from "./numberVerify/givenCorpus.js";
-import { withoutReasoning } from "./chatStreamEmptyRetry.js";
+import {
+  synthesisToolChoiceFields,
+  withoutReasoning,
+} from "./chatStreamEmptyRetry.js";
 import { shadowVerifyNumbers as _shadow } from "./numberVerify/shadow.js";
 
 const {
@@ -126,7 +129,11 @@ async function retryCount(outcome: string): Promise<number> {
 }
 
 async function run(
-  opts: { signal?: AbortSignal; given?: () => GivenSources } = {},
+  opts: {
+    signal?: AbortSignal;
+    given?: () => GivenSources;
+    fallback?: string;
+  } = {},
 ) {
   const refund = vi.fn().mockResolvedValue(undefined);
   const req = { aiQuotaRefund: refund } as unknown as Request;
@@ -142,6 +149,7 @@ async function run(
     undefined,
     undefined,
     opts.given,
+    opts.fallback,
   );
   return { refund, res };
 }
@@ -168,6 +176,17 @@ describe("withoutReasoning", () => {
       messages: PAYLOAD.messages,
       thinking: { type: "disabled" },
     });
+  });
+});
+
+describe("synthesisToolChoiceFields", () => {
+  it("на шлюзі забороняє новий виклик інструмента, на прямому Anthropic порожньо", () => {
+    vi.stubEnv("CHAT_VIA_OPENROUTER", "true");
+    expect(synthesisToolChoiceFields()).toEqual({
+      tool_choice: { type: "none" },
+    });
+    vi.stubEnv("CHAT_VIA_OPENROUTER", "false");
+    expect(synthesisToolChoiceFields()).toEqual({});
   });
 });
 
@@ -219,6 +238,23 @@ describe("streamAnthropicToSse — empty synthesis retry", () => {
     expect(frames(res.writes)).toEqual([GENERIC_ERR, "[DONE]"]);
     expect(refund).toHaveBeenCalledTimes(1);
     expect(await retryCount("still_empty")).toBe(before + 1);
+  });
+
+  it("(б2) empty after retry + fallback → deterministic text, quota kept, no err", async () => {
+    streamMock
+      .mockResolvedValueOnce(stub(THINKING_ONLY))
+      .mockResolvedValueOnce(stub(THINKING_ONLY));
+
+    const { refund, res } = await run({
+      fallback: "Запамʼятав: Не їсть глютен",
+    });
+
+    expect(streamMock).toHaveBeenCalledTimes(2);
+    expect(frames(res.writes)).toEqual([
+      JSON.stringify({ t: "Запамʼятав: Не їсть глютен" }),
+      "[DONE]",
+    ]);
+    expect(refund).not.toHaveBeenCalled();
   });
 
   it("retry call throws → refund + one generic err, counted as error", async () => {

@@ -16,6 +16,8 @@ import {
 import { streamAnthropicToSse } from "./chatStream.js";
 import { callAnthropicWithContinuation } from "./chatUpstream.js";
 import { callSynthesisJson } from "./chatSynthesisJson.js";
+import { deterministicSynthesisFallback } from "./synthesisFallback.js";
+import { synthesisToolChoiceFields } from "./chatStreamEmptyRetry.js";
 import {
   isSecondRoundEligible,
   requestSecondToolRound,
@@ -615,7 +617,14 @@ export default async function handler(
       // Глибина синтезу Premium (`CHAT_SYNTHESIS_PREMIUM_REASONING_EFFORT`):
       // за замовчуванням полів немає; standard і floor їх не отримують.
       ...synthesisReasoningPayload(proTier.tier),
+      // Синтез не викликає інструментів (`synthesisToolChoiceFields`).
+      ...synthesisToolChoiceFields(),
     };
+    // Порожній синтез після перезапиту: дію вже виконано, тож людина отримує
+    // текст із результату інструмента, а не «Не вдалося отримати відповідь».
+    const emptyFallbackText = deterministicSynthesisFallback(
+      toolResultMessages.map((m) => m.content),
+    );
 
     if (stream) {
       await streamAnthropicToSse(
@@ -629,6 +638,7 @@ export default async function handler(
         ledgerUserId,
         toolTraceId,
         synthesisGiven,
+        emptyFallbackText,
       );
       return;
     }
@@ -643,6 +653,7 @@ export default async function handler(
       signal: clientAbort.signal,
       promptVersion: SYSTEM_PROMPT_VERSION,
       traceId: toolTraceId,
+      emptyFallbackText,
       ...(ledgerUserId !== undefined ? { userId: ledgerUserId } : {}),
     });
     shadowVerifyNumbers({

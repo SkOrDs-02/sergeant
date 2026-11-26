@@ -189,6 +189,8 @@ describe("тур синтезу Premium: глибина міркувань у т
     expect(payload["model"]).toBe("z-ai/glm-5.2");
     expect(payload).not.toHaveProperty("thinking");
     expect(payload).not.toHaveProperty("output_config");
+    // Синтез не викликає інструментів (FULL-20261126-AI-2).
+    expect(payload["tool_choice"]).toEqual({ type: "none" });
   });
 
   it("JSON, `none`: `thinking: disabled`", async () => {

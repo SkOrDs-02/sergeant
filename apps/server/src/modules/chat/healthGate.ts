@@ -44,6 +44,19 @@ import type { CoachMemory, CoachSnapshot } from "./coach.js";
 export const HEALTH_CONSENT_TOOL_NOTICE = HEALTH_CONSENT_REQUIRED_MESSAGE;
 
 /**
+ * Заміна результату `remember` health-категорії без згоди. Клієнт цей факт уже
+ * записав у памʼять на пристрої, тож загальний текст «потрібна згода»
+ * збивав модель: вона вважала запис невдалим і викликала `remember` ще раз,
+ * а хід лишався без тексту (FULL-20261126-AI-2). Тут і правда (збережено), і
+ * наказ не повторювати; сам факт у результат не повертаємо.
+ */
+export const HEALTH_CONSENT_REMEMBER_SAVED_NOTICE =
+  "Факт збережено в профілі на пристрої. Без згоди на дані про здоровʼя я не користуюся такими фактами в порадах: її вмикають в Налаштування → Дані та приватність. Скажи це людині одним-двома реченнями. Не викликай інструменти повторно.";
+
+/** Результат `remember`, який клієнт виконав успішно (`memoryHandlers.ts`). */
+const REMEMBER_SAVED_RESULT = /^(?:Запамʼятав|Оновив): /;
+
+/**
  * Інструкція моделі, коли згоди немає (`buildSystem`, після cached-префікса).
  * Наш власний текст, тож без `<user_data>`-огорожі.
  */
@@ -324,7 +337,16 @@ export function redactHealthToolResults<
     const verdict = classifyToolUse(use.name, use.input);
     if (verdict === "pass") return r;
     if (verdict === "block") {
-      return { ...r, content: HEALTH_CONSENT_TOOL_NOTICE };
+      const saved =
+        use.name === "remember" &&
+        typeof r.content === "string" &&
+        REMEMBER_SAVED_RESULT.test(r.content);
+      return {
+        ...r,
+        content: saved
+          ? HEALTH_CONSENT_REMEMBER_SAVED_NOTICE
+          : HEALTH_CONSENT_TOOL_NOTICE,
+      };
     }
     return typeof r.content === "string"
       ? { ...r, content: filterHealthLines(use.name, r.content) }

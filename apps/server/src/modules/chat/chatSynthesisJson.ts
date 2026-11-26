@@ -43,9 +43,11 @@ export async function callSynthesisJson(
     promptVersion?: string;
     traceId?: string;
     userId?: string;
+    /** Детермінована відповідь замість 502, коли синтез порожній і після перезапиту. */
+    emptyFallbackText?: string;
   },
 ): Promise<string> {
-  const { endpoint, userId, ...rest } = opts;
+  const { endpoint, userId, emptyFallbackText, ...rest } = opts;
   const call = (p: Record<string, unknown>, ep: string) =>
     callAnthropicWithContinuation(apiKey, p, {
       ...rest,
@@ -99,9 +101,16 @@ export async function callSynthesisJson(
     }
   }
 
-  await refundQuotaOnUpstreamFailure(req);
   // Без тексту відповіді й чисел користувача (Hard Rule #21).
-  logger.warn({ msg: "chat_json_empty_ok", endpoint, model, retry });
+  logger.warn({
+    msg: "chat_json_empty_ok",
+    endpoint,
+    model,
+    retry,
+    fallback: !!emptyFallbackText,
+  });
+  if (emptyFallbackText) return emptyFallbackText;
+  await refundQuotaOnUpstreamFailure(req);
   throw makeAiProviderError({
     rawProviderMessage: `empty synthesis (retry: ${retry})`,
     status: response.status,

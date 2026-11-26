@@ -296,6 +296,11 @@ export async function streamAnthropicToSse(
    * збирати. Не впливає на фрейми, які бачить клієнт.
    */
   numberVerifyGiven?: () => GivenSources,
+  /**
+   * Детермінована відповідь на випадок, коли синтез порожній і після
+   * перезапиту (`synthesisFallback.ts`). Без неї людина отримує помилку.
+   */
+  emptyFallbackText?: string,
 ): Promise<void> {
   let firstStream: AnthropicStreamResult;
   try {
@@ -613,7 +618,6 @@ export async function streamAnthropicToSse(
     !abortSignal?.aborted &&
     !res.writableEnded
   ) {
-    await refundQuotaOnUpstreamFailure(req);
     logger.warn({
       msg: "chat_stream_empty_ok",
       endpoint,
@@ -621,8 +625,16 @@ export async function streamAnthropicToSse(
       // Розрізняє «порожньо й після перезапиту» від «перезапит упав» і
       // «перезапиту не було» (прямий Anthropic, вимикач `off`).
       retry: emptyRetryOutcome ?? "none",
+      fallback: !!emptyFallbackText,
     });
-    res.write(`data: ${JSON.stringify({ err: SSE_GENERIC_ERROR })}\n\n`);
+    if (emptyFallbackText) {
+      // Дію виконано, людина отримує детермінований текст: це відповідь, тож
+      // квоту не повертаємо (відмінність від гілки помилки нижче).
+      res.write(`data: ${JSON.stringify({ t: emptyFallbackText })}\n\n`);
+    } else {
+      await refundQuotaOnUpstreamFailure(req);
+      res.write(`data: ${JSON.stringify({ err: SSE_GENERIC_ERROR })}\n\n`);
+    }
   }
 
   if (!res.writableEnded) {
