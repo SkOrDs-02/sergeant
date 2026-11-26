@@ -1,7 +1,7 @@
 # SPEC: Рахунки-активи поза Моно (депозити, ОВДП, фонди) і «Відкладено за місяць»
 
 > **Last touched:** 2026-11-25 by @claude (ОВДП: ціна купівлі містить НКД, у день купівлі вартість = сплачене); 2026-11-20 by @claude. **Next review:** 2027-05-27.
-> **Status:** Active
+> **Status:** Implemented - домен `packages/finyk-domain/src/domain/assets/{valuation,savings}.ts`, `AssetLinkSection.tsx`, `assetTransferTxIds` у `lib/metrics.ts`, категорія `in_assets`; коміти `b98be9819`, фікс ОВДП `4aa296bbf`/`2208a2a6d`. Назви файлів UI розійшлися зі спекою: `AssetKindChoice.tsx`, `SavingsAssetForm.tsx`, `AssetsMonthlySaved.tsx`, тексти в `uk.finykSavings.ts`.
 
 ## Проблема
 

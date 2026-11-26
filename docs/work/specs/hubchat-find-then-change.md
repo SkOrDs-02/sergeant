@@ -1,7 +1,7 @@
 # SPEC: Чат «знайди, потім зміни ту» і квиток раунду
 
 > **Last touched:** 2026-11-18 by @claude (усі модулі зі згодою: записи Фізрука, Харчування й памʼяті в блоці, серверне вирізання без згоди, кейс tool-eval для тренування); раніше 2026-11-18 by @claude. **Next review:** 2027-02-18.
-> **Status:** Active
+> **Status:** Implemented - `turnRefs.ts` у web і `packages/shared`, `NON_HEALTH_REF_TOOL_NAMES` у `healthGate.ts`, `hasTechnicalIds` у `chatDisplayText.ts`, кейси `toolSelectionCases/followUp.ts` і `--follow-up` в `tool-selection-eval.ts`; коміт `fa9862ce6`, PR #1700.
 
 ## Проблема
 

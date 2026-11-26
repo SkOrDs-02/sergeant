@@ -1,7 +1,7 @@
 # SPEC: Тип виміру вправи за замовчуванням, який людина може змінити
 
 > **Last touched:** 2026-11-20 by @claude. **Next review:** 2027-07-01.
-> **Status:** Active
+> **Status:** Implemented - зрізи 1-5 і 7 (зріз 6 знято самою спекою): міграції 172 і 173, `invalid_measure` у `syncV2-types.ts`, `setMeasureFields.ts`, `WorkoutItemTypeSwitcher.tsx`, `log_set`/`plan_workout` у `toolDefs/fizruk.ts`; коміти `831f5fd64`, `064ee752a`, `bb4985552`. `measureRecords.ts` живе в `domain/workouts/`, не в `lib/`.
 
 > **Стан на 2026-11-18.** Продуктових питань не лишилось: Б-1 і Б-2
 > закрито відповідями founder-а (§ 11.9 розбору, блок «Уточнення»).
