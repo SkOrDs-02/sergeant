@@ -5,6 +5,7 @@ import { useDeviceDayKey } from "@shared/hooks/useDeviceDayKey";
  * Reads its own localStorage shard and aggregates independently.
  */
 import { ReportSheet } from "./ReportSheet";
+import { ReportPreviousLine } from "./ReportPreviousLine";
 import { useMemo, useState } from "react";
 import { messages } from "@shared/i18n/uk";
 import { cn } from "@shared/lib/ui/cn";
@@ -310,12 +311,9 @@ export default function ExpensesCard({ period, offset }: ExpensesCardProps) {
             )}
             <SpendingDelta cur={cur.total} prev={prev.total} hidden={hidden} />
           </div>
-          <p className="text-style-caption text-muted">
-            {partial
-              ? messages.hub.reportPreviousToDate
-              : messages.hub.reportPrevious}{" "}
+          <ReportPreviousLine partial={partial} period={period}>
             {hidden ? HIDDEN_AMOUNT_MASK : <Money amount={prev.total} />}
-          </p>
+          </ReportPreviousLine>
           <BarChart
             key={`${period}-${offset}`}
             data={cur.daily}

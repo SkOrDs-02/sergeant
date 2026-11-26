@@ -5,6 +5,7 @@ import { useDeviceDayKey } from "@shared/hooks/useDeviceDayKey";
  * the Reports page can show this card without blocking on other domains.
  */
 import { ReportSheet } from "./ReportSheet";
+import { ReportPreviousLine } from "./ReportPreviousLine";
 import { useMemo, useState } from "react";
 import { cn } from "@shared/lib/ui/cn";
 import { DeltaChip } from "@shared/components/ui/DeltaChip";
@@ -158,7 +159,7 @@ export default function FitnessCard({ period, offset }: FitnessCardProps) {
   // запису у сховище (та сама діра, що в ExpensesCard).
   const sqliteTick = useFizrukSqliteReadTick();
 
-  const { cur, prev, prevAny, dates } = useMemo(() => {
+  const { cur, prev, prevAny, dates, partial } = useMemo(() => {
     void dayKey;
     void bump; // storage-write tick
     void sqliteTick; // module SQLite cache tick (CALC-4) — forces re-read without calling getCached* inside deps
@@ -182,6 +183,7 @@ export default function FitnessCard({ period, offset }: FitnessCardProps) {
       prev: aggregateWorkouts(rawWorkouts, w.prev),
       prevAny: aggregateWorkouts(rawWorkouts, w.prevAll).count > 0,
       dates: w.dates,
+      partial: w.partial,
     };
   }, [period, offset, bump, sqliteTick, dayKey]);
 
@@ -233,9 +235,9 @@ export default function FitnessCard({ period, offset }: FitnessCardProps) {
               higherIsBetter={true}
             />
           </div>
-          <p className="text-style-caption text-muted">
-            Минулий: {formattedPrev} трен.
-          </p>
+          <ReportPreviousLine partial={partial} period={period}>
+            {formattedPrev} трен.
+          </ReportPreviousLine>
           <BarChart
             key={`${period}-${offset}`}
             data={cur.daily}

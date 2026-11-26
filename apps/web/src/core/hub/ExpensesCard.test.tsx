@@ -154,6 +154,10 @@ describe("ExpensesCard", () => {
     expect(toggle).toHaveAttribute("aria-expanded", "true");
     // Середа: тиждень ще йде, тож порівняння з тими ж днями минулого.
     expect(screen.getByText(/Минулий за ті ж дні/)).toBeInTheDocument();
+    // Пояснення, з чим саме порівняно (FULL-20261126).
+    expect(screen.getByTestId("report-partial-note")).toHaveTextContent(
+      /Тиждень ще не скінчився/,
+    );
   });
 
   it("«Приховувати суми»: у згорнутому й розгорнутому стані «••••», без ₴", () => {
