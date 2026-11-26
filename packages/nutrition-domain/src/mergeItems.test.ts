@@ -45,8 +45,26 @@ describe("mergeItems", () => {
       [{ name: "огірок", qty: null, unit: null, notes: null }],
     );
     expect(out).toHaveLength(1);
-    // Гола назва нічого не додає до наявної кількості (раніше було 5).
-    expect(out[0]).toMatchObject({ qty: 4, unit: "шт" });
+    // Позиція вже порахована в штуках: гола назва означає «ще один».
+    expect(out[0]).toMatchObject({ qty: 5, unit: "шт" });
+  });
+
+  it("гола назва не чіпає позицію в грамах чи літрах", () => {
+    const out = mergeItems(
+      [{ name: "молоко", qty: 1, unit: "л", notes: null }],
+      [{ name: "молоко", qty: null, unit: null, notes: null }],
+    );
+    expect(out).toHaveLength(1);
+    expect(out[0]).toMatchObject({ qty: 1, unit: "л" });
+  });
+
+  it("гола назва поверх голої не вигадує кількість", () => {
+    const out = mergeItems(
+      [{ name: "молоко", qty: null, unit: null, notes: null }],
+      [{ name: "молоко", qty: null, unit: null, notes: null }],
+    );
+    expect(out).toHaveLength(1);
+    expect(out[0]?.qty ?? null).toBeNull();
   });
 
   it("upgrades existing entry without qty/unit when incoming has qty/unit", () => {

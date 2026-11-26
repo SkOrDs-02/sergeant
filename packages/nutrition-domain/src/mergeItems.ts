@@ -171,8 +171,25 @@ export function mergeItems(
     // колонки чи sync-поля це не потребує. Гола назва до наявної позиції
     // нічого не додає (кількість лишається), а позиція без кількості
     // «апґрейдиться» першою явною (гілка нижче).
-    const incomingQty: number | null = rawQty;
-    const incomingUnit: string | null = rawUnit;
+    //
+    // Виняток: позиція з цим продуктом уже лежить у штуках із відомою
+    // кількістю. Тоді гола назва означає «купив ще один» і додає 1 шт, як
+    // було до рішення: «огірок» поверх «огірок 4 шт» дає 5. Сигналу
+    // low-stock це не створює, бо кількість лише росте.
+    const bare = rawQty == null && !rawUnit;
+    const addsToCountedPieces =
+      bare &&
+      merged.some(
+        (x) =>
+          canonicalFoodKey(x?.name) === key &&
+          x?.qty != null &&
+          (x.qty as unknown) !== "" &&
+          Number.isFinite(Number(x.qty)) &&
+          Number(x.qty) > 0 &&
+          normalizeUnit(x?.unit ?? "") === "шт",
+      );
+    const incomingQty: number | null = addsToCountedPieces ? 1 : rawQty;
+    const incomingUnit: string | null = addsToCountedPieces ? "шт" : rawUnit;
 
     // Гібрид: сумуємо лише якщо є qty+unit і одиниці сумісні (або однакові)
     if (incomingQty != null && incomingUnit) {
