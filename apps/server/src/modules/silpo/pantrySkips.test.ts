@@ -41,9 +41,7 @@ function makeFakeDb() {
       }
       const threshold = p[1] as number;
       const rows = [...counts.entries()]
-        .filter(
-          ([k, n]) => k.startsWith(`${userId}\u0000`) && n >= threshold,
-        )
+        .filter(([k, n]) => k.startsWith(`${userId}\u0000`) && n >= threshold)
         .map(([k]) => ({ product_key: k.split("\u0000")[1] }))
         .sort((a, b) => a.product_key!.localeCompare(b.product_key!));
       return { rows, rowCount: rows.length };

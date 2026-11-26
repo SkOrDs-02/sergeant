@@ -236,7 +236,11 @@ describe("releasePantryItems", () => {
 
   it("порожній itemIds з decline відхиляє чек цілим, позицій не чіпає («Вже не актуальний»)", async () => {
     const sqls: string[] = [];
-    const { queryFn: inner, items, declined } = makeFakeDb({
+    const {
+      queryFn: inner,
+      items,
+      declined,
+    } = makeFakeDb({
       items: [{ id: 1, claimedAt: "2026-09-25T10:00:00.000Z" }],
       purchasedAt: "2026-09-25T10:00:00.000Z",
       autoDeclinedAt: null,

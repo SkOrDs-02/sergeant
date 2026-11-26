@@ -136,7 +136,10 @@ export async function pantrySkipsRecordHandler(
   const userId = getUserId(req as AuthedRequest, res);
   if (!userId) return;
 
-  const { skipped, added } = parseBody(SilpoPantrySkipsRecordRequestSchema, req);
+  const { skipped, added } = parseBody(
+    SilpoPantrySkipsRecordRequestSchema,
+    req,
+  );
   await recordPantrySkips(userId, skipped, added);
   res
     .status(200)
