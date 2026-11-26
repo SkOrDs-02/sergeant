@@ -109,6 +109,27 @@ function renderSheet(
 afterEach(cleanup);
 
 describe("BankTransactionDetailsSheet", () => {
+  it("показує курс НБУ видимим текстом для перерахованої валютної операції", () => {
+    renderSheet({
+      transaction: {
+        ...TRANSACTION,
+        amount: -415_000,
+        accountAmount: -10_000,
+        accountCurrencyCode: 840,
+        amountUah: -415_000,
+        fxRate: { uahPerUnit: 41.5, date: "2026-11-24" },
+      },
+    });
+    const line = screen.getByTestId("finyk-tx-fx-rate");
+    expect(line.textContent).toContain("$");
+    expect(line.textContent).toContain("за курсом НБУ 41,50 ₴ на 24.11.2026");
+  });
+
+  it("не показує рядок курсу для гривневої операції", () => {
+    renderSheet();
+    expect(screen.queryByTestId("finyk-tx-fx-rate")).toBeNull();
+  });
+
   it("shows immutable bank facts and all user-owned overlays in one dialog", () => {
     renderSheet();
 

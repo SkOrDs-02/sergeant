@@ -11,6 +11,7 @@ import {
 } from "@sergeant/finyk-domain/lib/categoryIcons";
 import type { IconName } from "@shared/components/ui/Icon";
 import type { MonoAccount } from "@sergeant/finyk-domain/lib/accounts";
+import { CURRENCY_SYMBOL } from "../constants";
 
 export const SPLIT_INPUT_CLASS =
   "input-focus-finyk flex-1 text-xs h-9 rounded-lg border border-line bg-panelHi px-2 text-text";
@@ -91,4 +92,62 @@ export interface TxRowTx {
   _manual?: boolean | undefined;
   _manualId?: string | undefined;
   [k: string]: unknown;
+}
+
+const UAH_RATE_FORMAT = new Intl.NumberFormat("uk-UA", {
+  minimumFractionDigits: 2,
+  maximumFractionDigits: 2,
+});
+
+/** «за курсом НБУ 41,50 ₴ на 24.11.2026», або `null` без курсу (операція в гривні). */
+export function fxRateNote(
+  fxRate: { uahPerUnit: number; date: string } | null | undefined,
+): string | null {
+  if (!fxRate) return null;
+  const rate = UAH_RATE_FORMAT.format(fxRate.uahPerUnit);
+  const [y, m, d] = fxRate.date.split("-");
+  return `за курсом НБУ ${rate} ₴ на ${d}.${m}.${y}`;
+}
+
+function isFxRate(
+  value: unknown,
+): value is { uahPerUnit: number; date: string } {
+  return (
+    typeof value === "object" &&
+    value !== null &&
+    typeof (value as { uahPerUnit?: unknown }).uahPerUnit === "number" &&
+    typeof (value as { date?: unknown }).date === "string"
+  );
+}
+
+export interface FxConversion {
+  /** Сума у валюті рахунку, мінорні одиниці. */
+  amount: number;
+  symbol: string;
+  rateNote: string | null;
+}
+
+/**
+ * Операція картки не в гривні, перерахована за курсом НБУ: `amount` уже
+ * гривневий еквівалент (`normalizeTransaction`), валютна сума окремо
+ * (finyk-fx-nbu.md). `null` для гривневих рахунків і ще не перерахованих.
+ */
+export function fxConversion(tx: {
+  readonly accountAmount?: unknown;
+  readonly accountCurrencyCode?: unknown;
+  readonly amountUah?: unknown;
+  readonly fxRate?: unknown;
+}): FxConversion | null {
+  if (
+    typeof tx.amountUah !== "number" ||
+    typeof tx.accountAmount !== "number" ||
+    typeof tx.accountCurrencyCode !== "number"
+  ) {
+    return null;
+  }
+  return {
+    amount: tx.accountAmount,
+    symbol: CURRENCY_SYMBOL[tx.accountCurrencyCode] ?? "¤",
+    rateNote: fxRateNote(isFxRate(tx.fxRate) ? tx.fxRate : null),
+  };
 }
