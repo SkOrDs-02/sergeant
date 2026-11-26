@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "current": "8.15.5",
+  "current": "8.15.6",
   "versions": {
     "0.1.0": {
       "releasedAt": "2026-06-29",
@@ -950,6 +950,14 @@
       "releasedAt": "2026-11-21",
       "changes": [
         "AGENTS.md § Де живе код: bare-дзеркало через SSH-alias `sergeant-mirror` з ~/.ssh/config власника замість root@IP (sec-53)"
+      ],
+      "agentsTestedWith": [],
+      "passRateBaseline": null
+    },
+    "8.15.6": {
+      "releasedAt": "2026-11-26",
+      "changes": [
+        "bump from 8.15.5 -> 8.15.6: typo / link / freshness-only change"
       ],
       "agentsTestedWith": [],
       "passRateBaseline": null
