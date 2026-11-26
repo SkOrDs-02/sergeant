@@ -1,0 +1,221 @@
+{
+  "schemaVersion": 1,
+  "id": "prod-2026-11-26",
+  "status": "closed",
+  "createdAt": "2026-11-26T17:15:51.343Z",
+  "kind": "live",
+  "metadata": {
+    "executor": "Claude Code",
+    "deployment": "production: web on Vercel (entry assets/index-CA4YGY_6.js; bundle contains SyncTableNotReadyError from PR #1731), API on Coolify reached through the app origin",
+    "environment": "Linux cloud container; Node 22 / pnpm 9.15.1; one disposable account on the owner's mailbox alias, email verified by the owner",
+    "baseUrl": "https://app.sergeant.com.ua",
+    "browser": "Playwright Chromium, 390x844 emulation, not real iOS",
+    "viewport": "390x844",
+    "timezone": "Europe/Kyiv",
+    "flags": {
+      "externalIntegrations": false,
+      "coopCoep": true,
+      "e2eSeed": false
+    },
+    "seedRevision": "one manual Finyk expense created through the UI; account left in the 30-day deletion window after the run",
+    "accounts": ["prod-disposable-owner-alias"],
+    "ai": {
+      "mode": "none",
+      "model": "none",
+      "configuration": "AI not exercised in this run",
+      "budgetUsd": 0
+    },
+    "baseline": "full-2026-11-25",
+    "commit": "23900960150c7e8e080cdf64e319d54a79ee581a",
+    "dirty": true
+  },
+  "scenarios": [
+    {
+      "id": "SYNC-fresh-device-pull",
+      "revision": 1,
+      "title": "Pull на новому пристрої",
+      "suite": "data",
+      "modules": ["sync", "finyk"],
+      "modes": ["full", "pilot"],
+      "profiles": ["sync-same-user-device-a", "sync-same-user-device-b"],
+      "source": "docs/work/specs/audits/2026-09-01-product-audit/accounts.md#6-пастка-storagestate--новий-пристрій",
+      "preconditions": "Той самий одноразовий користувач; витрата створена у чистому context A; підтверджено успішний push до входу у context B.",
+      "steps": [
+        "Відкрити новий browser context без storageState.",
+        "Увійти тим самим логіном у чистому context B без storageState.",
+        "Дочекатися pull та відкрити транзакції."
+      ],
+      "expected": ["Витрата відображається один раз; outbox не зростає."],
+      "evidence": ["screenshot другого контексту", "мережевий trace sync"],
+      "cleanup": "Видалити disposable акаунти.",
+      "pitfalls": "storageState не моделює інший пристрій."
+    },
+    {
+      "id": "SYNC-offline-conflict-isolation",
+      "revision": 1,
+      "title": "Offline queue, LWW conflict, logout purge й user isolation",
+      "suite": "data",
+      "modules": ["sync", "web", "server"],
+      "modes": ["full"],
+      "profiles": [
+        "sync-same-user-device-a",
+        "sync-same-user-device-b",
+        "isolation-user-a",
+        "isolation-user-b"
+      ],
+      "source": "docs/engineering/architecture/domain-invariants.md",
+      "preconditions": "Два contexts одного user для conflict; два окремих users для isolation; контроль мережі.",
+      "steps": [
+        "Offline створити три доменні записи, повернути online й дочекатися drain.",
+        "Змінити ту саму сутність з двох devices з контрольними timestamps.",
+        "Перевірити cross-user IDOR, logout purge, stale session 401 і fresh login."
+      ],
+      "expected": [
+        "Outbox переходить pending→0 без дубля; server і обидва devices сходяться.",
+        "LWW результат відповідає контракту й не губить сторонні поля.",
+        "User B не читає дані A; logout очищає локальні дані/keys."
+      ],
+      "evidence": [
+        "sync push/pull traces",
+        "op/timestamp table",
+        "local storage/OPFS inventory без секретів",
+        "401/404 statuses"
+      ],
+      "cleanup": "Видалити disposable users/contexts після збереження redacted evidence.",
+      "pitfalls": "Cross-device — один user; isolation — два users. Не стартувати B до підтвердженого push A."
+    },
+    {
+      "id": "DATA-durability-live",
+      "revision": 1,
+      "title": "Живучість записів: reload, перенос аноніма, офлайн, пристрої, вкладки, вихід",
+      "suite": "data",
+      "modules": [
+        "sync",
+        "web",
+        "finyk",
+        "nutrition",
+        "routine",
+        "fizruk",
+        "ai-memory"
+      ],
+      "modes": ["full"],
+      "profiles": [
+        "sync-same-user-device-a",
+        "sync-same-user-device-b",
+        "isolation-user-a",
+        "isolation-user-b"
+      ],
+      "source": "apps/web/tests/verification-live/data-durability.spec.ts",
+      "preconditions": "Локальний API на :3000 з окремою БД, прод-білд web (VERCEL=1, VITE_API_BASE_URL=http://127.0.0.1:3000) через vite preview на :4173; див. local-environment.md.",
+      "steps": [
+        "Запустити `pnpm -C apps/web exec playwright test -c playwright.verify.config.ts data-durability` з VERIFY_RESULTS і PW_VERIFY_OUT.",
+        "Фази P1-P9: reload аноніма, перенос в акаунт, новий пристрій, офлайн-черга, правки з B, LWW-конфлікт, дві вкладки, вихід із незбереженим, ізоляція користувачів.",
+        "Звести результати скриптом-зведенням JSONL (кожна перевірка = рядок pass/fail з деталлю)."
+      ],
+      "expected": [
+        "Кожен запис у чотирьох модулях і памʼяті профілю переживає reload, доїжджає на сервер і на другий пристрій рівно один раз.",
+        "Після виходу інший користувач не бачить ні локальних, ні серверних даних попереднього."
+      ],
+      "evidence": [
+        "verify-results JSONL",
+        "скріншоти fail-*.png",
+        "SQL-лічильники рядків на сервері"
+      ],
+      "cleanup": "Тимчасова БД перевірки видаляється або лишається ізольованою; прод не зачіпається.",
+      "pitfalls": "P7: Playwright емулює фокус для кожної сторінки, тож повернення до вкладки харнес моделює подією focus, а не bringToFront. Рідкісний білий екран (B1) на одній навігації каскадом валить наступні кроки фази; дивись fail-*.png перед висновками. Прод-варіанти: prod-anon-smoke без акаунта; prod-account-smoke створює акаунт, тож його запускає лише людина."
+    },
+    {
+      "id": "DATA-api-security-integrations",
+      "revision": 1,
+      "title": "API contracts, auth/security і зовнішні інтеграції",
+      "suite": "data",
+      "modules": ["server", "api-client", "integrations", "billing", "push"],
+      "modes": ["full"],
+      "profiles": ["edge", "isolation-user-a", "isolation-user-b"],
+      "source": "docs/engineering/architecture/domain-invariants.md",
+      "preconditions": "Локальний/test стенд; destructive probes заборонені production; зовнішні secrets або explicit blocked.",
+      "steps": [
+        "Звірити serializer↔api-client↔contract test, bigint coercion і invalid payloads.",
+        "Перевірити auth lifecycle, revoked session, cross-user IDs, stored/reflected text і sensitive log redaction.",
+        "Для Mono/Silpo/push/email/webhooks перевірити success, disabled, timeout, rate-limit, retry й idempotency."
+      ],
+      "expected": [
+        "Response shape стабільний, помилки структуровані, bigint не витікає.",
+        "Немає IDOR/XSS/secret logs; revoked session не працює.",
+        "Інтеграція деградує чесно, не дублює side effects і не показує фальшивий success."
+      ],
+      "evidence": [
+        "contract test log",
+        "redacted request/response",
+        "security probe table",
+        "provider correlation IDs"
+      ],
+      "cleanup": "Відкликати тестові sessions/webhooks і видалити disposable дані.",
+      "pitfalls": "Не підставляти production PAT; disabled integration записувати blocked/not-applicable з причиною."
+    }
+  ],
+  "attempts": [
+    {
+      "id": "prod1126-DATA-durability-live",
+      "scenarioId": "DATA-durability-live",
+      "status": "pass",
+      "actual": "Прод, одноразовий акаунт. Вихід і вхід на тому ж пристрої: витрата на місці через 1,3 с і після reload. Видалення акаунта, вхід у свіжому контексті, «Відновити акаунт»: витрата на місці через 1,1 с після переходу, після reload і після ще одного виходу й входу. 13/13 перевірок.",
+      "evidence": [
+        {
+          "path": "docs/work/specs/audits/verification/runs/prod-2026-11-26/relogin-restore.json",
+          "type": "structured-result",
+          "sha256": "073dbbdedf89feffed0a8e26498bfb93cdd4b1bf5f74cc479a6f6a8fb18315a7"
+        },
+        {
+          "path": "docs/work/specs/audits/verification/runs/prod-2026-11-26/relogin.png",
+          "type": "screenshot",
+          "sha256": "ac055001f983a95b9897b506600928303d86c5b203fcf394043421c7ce02121e"
+        },
+        {
+          "path": "docs/work/specs/audits/verification/runs/prod-2026-11-26/restored.png",
+          "type": "screenshot",
+          "sha256": "345d445b1419f5c7bb904b35fb08429f5102e4e8f94b857d11f47d8e07d31047"
+        }
+      ],
+      "findingIds": ["FULL-20261125-DATA-1", "FULL-20261125-DATA-2"],
+      "reason": "",
+      "at": "2026-11-26T17:15:56.411Z",
+      "metrics": {}
+    },
+    {
+      "id": "prod1126-SYNC-fresh-device-pull",
+      "scenarioId": "SYNC-fresh-device-pull",
+      "status": "not-run",
+      "actual": "Поза скоупом.",
+      "evidence": [],
+      "findingIds": [],
+      "reason": "Точковий прогін двох знахідок; свіжий пристрій перевірено лише як крок сценарію відновлення.",
+      "at": "2026-11-26T17:15:56.487Z",
+      "metrics": {}
+    },
+    {
+      "id": "prod1126-SYNC-offline-conflict-isolation",
+      "scenarioId": "SYNC-offline-conflict-isolation",
+      "status": "not-run",
+      "actual": "Поза скоупом.",
+      "evidence": [],
+      "findingIds": [],
+      "reason": "Точковий прогін двох знахідок.",
+      "at": "2026-11-26T17:15:56.558Z",
+      "metrics": {}
+    },
+    {
+      "id": "prod1126-DATA-api-security-integrations",
+      "scenarioId": "DATA-api-security-integrations",
+      "status": "not-run",
+      "actual": "Поза скоупом.",
+      "evidence": [],
+      "findingIds": [],
+      "reason": "Точковий прогін двох знахідок.",
+      "at": "2026-11-26T17:15:56.630Z",
+      "metrics": {}
+    }
+  ],
+  "closedAt": "2026-11-26T17:15:57.820Z",
+  "outcome": "incomplete"
+}
