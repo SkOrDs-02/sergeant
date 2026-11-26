@@ -91,8 +91,10 @@ export function useSilpoPantryAutoImport({
     { limit: RECEIPTS_LIMIT },
     { enabled },
   );
-  const claim = usePantryClaim();
-  const release = usePantryRelease();
+  // Функції, а не обʼєкти хуків: обʼєкт новий на кожен рендер, і в
+  // залежностях ефекту він запускав прохід по чеках на кожен рендер.
+  const { claim: claimItems } = usePantryClaim();
+  const { release: releaseItems } = usePantryRelease();
 
   // Захист від повторного входу: одночасно працює один прохід (ref-замок).
   const runningRef = useRef(false);
@@ -108,6 +110,10 @@ export function useSilpoPantryAutoImport({
   const pantryItemsRef = useRef(pantryItems);
   const upsertRef = useRef(upsertItemForAutoImport);
   const revertRef = useRef(revertReplenish);
+  // Тост теж через реф: значення контексту тостів нове при кожному показі
+  // чи закритті будь-якого тосту, і в залежностях ефекту воно запускало б
+  // новий прохід по чеках.
+  const toastRef = useRef(toast);
   // Рефи оновлюються ПІСЛЯ коміту, не в тілі рендера (react-hooks/refs) -
   // ефект нижче все одно читає їх лише всередині асинхронного проходу, тож
   // затримка на один реренедер нешкідлива.
@@ -115,6 +121,7 @@ export function useSilpoPantryAutoImport({
     pantryItemsRef.current = pantryItems;
     upsertRef.current = upsertItemForAutoImport;
     revertRef.current = revertReplenish;
+    toastRef.current = toast;
   });
 
   useEffect(() => {
@@ -157,13 +164,11 @@ export function useSilpoPantryAutoImport({
             continue;
           }
 
-          const claimedItemIds = await claim
-            .claim(
-              receipt.receiptId,
-              groceryItems.map((i) => i.id),
-              "auto",
-            )
-            .catch(() => null);
+          const claimedItemIds = await claimItems(
+            receipt.receiptId,
+            groceryItems.map((i) => i.id),
+            "auto",
+          ).catch(() => null);
           if (claimedItemIds == null) continue;
           if (claimedItemIds.length === 0) {
             processedRef.current.add(receipt.receiptId);
@@ -195,9 +200,9 @@ export function useSilpoPantryAutoImport({
             // `upsertItem` кинув помилку, знімаємо бронювання без
             // відхилення чека - позиції лишаються звичайним «ще не в
             // коморі» для ручного повтору.
-            await release
-              .release(receipt.receiptId, claimedItemIds, false)
-              .catch(() => undefined);
+            await releaseItems(receipt.receiptId, claimedItemIds, false).catch(
+              () => undefined,
+            );
           }
         }
       } finally {
@@ -211,16 +216,16 @@ export function useSilpoPantryAutoImport({
       const addedCount = imported.reduce((n, r) => n + r.lines.length, 0);
       if (addedCount === 0) return;
 
-      showUndoToast(toast, {
+      showUndoToast(toastRef.current, {
         msg: buildSilpoAutoImportToastMessage(addedCount, imported.length),
         onUndo: () => {
           // Один виклик на всі чеки: відкат рахує від знімка комори, і
           // окремі виклики на той самий продукт перезаписували б один одного.
           revertRef.current(imported.flatMap((r) => r.lines));
           for (const r of imported) {
-            void release
-              .release(r.receiptId, r.claimedItemIds, true)
-              .catch(() => undefined);
+            void releaseItems(r.receiptId, r.claimedItemIds, true).catch(
+              () => undefined,
+            );
           }
         },
       });
@@ -234,8 +239,7 @@ export function useSilpoPantryAutoImport({
     syncState?.pantryAutoImportSince,
     receiptsQuery.receipts,
     rerunTick,
-    claim,
-    release,
-    toast,
+    claimItems,
+    releaseItems,
   ]);
 }

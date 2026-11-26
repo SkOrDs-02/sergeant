@@ -9,6 +9,7 @@ import {
   useQuery,
   useQueryClient,
 } from "@tanstack/react-query";
+import { useCallback } from "react";
 import {
   isApiError,
   silpoApi,
@@ -179,11 +180,16 @@ export function usePantryClaim() {
         .then((r) => r.claimedItemIds),
     onSuccess: () => invalidateReceiptCaches(queryClient),
   });
-  return {
-    claim: (receiptId: string, itemIds: number[], mode: SilpoPantryClaimMode) =>
-      mutation.mutateAsync({ receiptId, itemIds, mode }),
-    isPending: mutation.isPending,
-  };
+  // Стабільна функція: автоімпорт тримає її в залежностях ефекту, і нова
+  // функція на кожен рендер перезапускала прохід по чеках безперервно
+  // (прод 2026-11-26: ~6 запитів чеків на секунду, переважно 429).
+  const { mutateAsync } = mutation;
+  const claim = useCallback(
+    (receiptId: string, itemIds: number[], mode: SilpoPantryClaimMode) =>
+      mutateAsync({ receiptId, itemIds, mode }),
+    [mutateAsync],
+  );
+  return { claim, isPending: mutation.isPending };
 }
 
 /**
@@ -205,8 +211,11 @@ export function usePantryRelease() {
         .then(() => undefined),
     onSuccess: () => invalidateReceiptCaches(queryClient),
   });
-  return {
-    release: (receiptId: string, itemIds: number[], decline: boolean) =>
-      mutation.mutateAsync({ receiptId, itemIds, decline }),
-  };
+  const { mutateAsync } = mutation;
+  const release = useCallback(
+    (receiptId: string, itemIds: number[], decline: boolean) =>
+      mutateAsync({ receiptId, itemIds, decline }),
+    [mutateAsync],
+  );
+  return { release };
 }
