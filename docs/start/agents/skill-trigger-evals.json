@@ -1256,6 +1256,39 @@
       "expectedSkills": ["sergeant-start-here", "sergeant-spec"],
       "forbiddenSkills": [],
       "complianceChecks": ["start-here-first", "exactly-one-specialist"]
+    },
+    {
+      "id": "sergeant-verify-squad-trigger-oracle",
+      "skill": "sergeant-verify-squad",
+      "kind": "trigger",
+      "prompt": "Build independent calculation oracles for nutrition, routine and fizruk on the running stand and have a separate verifier agent confirm every claimed defect.",
+      "expectedSkills": ["sergeant-start-here", "sergeant-verify-squad"],
+      "forbiddenSkills": []
+    },
+    {
+      "id": "sergeant-verify-squad-trigger-worker-verifier",
+      "skill": "sergeant-verify-squad",
+      "kind": "trigger",
+      "prompt": "Зроби оракул розрахунків: робітник вводить дані й рахує очікуване, а окремий перевіряльник незалежно підтверджує знахідки.",
+      "expectedSkills": ["sergeant-start-here", "sergeant-verify-squad"],
+      "forbiddenSkills": []
+    },
+    {
+      "id": "sergeant-verify-squad-anti-unit-tests",
+      "skill": "sergeant-verify-squad",
+      "kind": "anti-trigger",
+      "prompt": "Run full QA across all surfaces in parallel: tests and typecheck for server, web, mobile and packages.",
+      "expectedSkills": ["sergeant-start-here", "sergeant-qa-squad"],
+      "forbiddenSkills": ["sergeant-verify-squad"]
+    },
+    {
+      "id": "sergeant-verify-squad-workflow-coordinator",
+      "skill": "sergeant-verify-squad",
+      "kind": "workflow",
+      "prompt": "Load start-here first, then only verify-squad before dispatching oracle workers and the independent verifier.",
+      "expectedSkills": ["sergeant-start-here", "sergeant-verify-squad"],
+      "forbiddenSkills": [],
+      "complianceChecks": ["start-here-first", "exactly-one-specialist"]
     }
   ]
 }

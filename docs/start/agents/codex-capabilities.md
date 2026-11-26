@@ -1,6 +1,6 @@
 # Codex capabilities у Sergeant
 
-> **Last touched:** 2026-09-11 by @claude. **Next review:** 2027-01-07.
+> **Last touched:** 2026-11-26 by @claude. **Next review:** 2027-03-24.
 > **Status:** Active
 
 Цей документ пояснює простими словами, що Codex у цьому репо вже вміє, як це викликати, і що потребує явної команди від тебе.
@@ -28,13 +28,14 @@
 
 Ролі, у яких у front matter немає write-інструментів, отримують у згенерованому файлі перший рядок `READ-ONLY ROLE` — це переносить обмеження, якого в схемі `.toml` немає.
 
-Групи (27 агентів):
+Групи (29 агентів):
 
 - **Delivery (крос-поверхневий ланцюг):** `migration-agent` → `server-agent` → `api-client-agent` → `web-agent` / `mobile-agent`.
 - **Module owners (одна фіча в межах одного модуля, всі поверхні):** `finyk-owner`, `nutrition-owner`, `fizruk-owner`, `routine-owner`, `ai-owner`.
 - **Spec execution:** `spec-executor` — виконує готову спеку з `docs/work/specs/`.
 - **QA:** `qa-server`, `qa-web`, `qa-mobile`, `qa-packages`. (`qa-openclaw` видалено разом із поверхнею — ADR-0075.)
 - **Review:** `contract-reviewer`, `design-reviewer`, `security-reviewer`, `docs-reviewer`.
+- **Verify (незалежний доказ про живий застосунок):** `oracle-worker`, `oracle-verifier`.
 - **Audit / history:** `docs-governance-auditor`, `canon-drift-auditor`, `product-historian`.
 - **Council:** `council-critic`, `council-growth-advisor`, `council-product-strategist`, `council-tech-architect`, `council-ux-advocate`.
 

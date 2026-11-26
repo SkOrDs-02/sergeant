@@ -46,26 +46,27 @@
 
 ### Власні агенти репо
 
-Субагенти з наперед описаною роллю: файл `.claude/agents/<name>.md`. У нас їх 27; ці файли є канонічним визначенням ролей для обох харнесів (для Codex з них генеруються `.codex/agents/*.toml`).
+Субагенти з наперед описаною роллю: файл `.claude/agents/<name>.md`. У нас їх 29; ці файли є канонічним визначенням ролей для обох харнесів (для Codex з них генеруються `.codex/agents/*.toml`).
 
 Поля шапки, які ми використовуємо: `name`, `description` (за ним Claude вирішує, кому делегувати, тож там мають бути тригер і межа), `tools`, `model`. Документація знає ще `disallowedTools`, `permissionMode`, `maxTurns`, `skills`, `effort`, `isolation`, `hooks`, `background`, `memory`. Невідомі поля мовчки ігноруються, тож одруківка в назві поля не дасть помилки.
 
 Наші групи:
 
-| Група            | Агенти                                                                                                                    | Модель і права          |
-| ---------------- | ------------------------------------------------------------------------------------------------------------------------- | ----------------------- |
-| Власники модулів | `finyk-owner`, `nutrition-owner`, `fizruk-owner`, `routine-owner`, `ai-owner`                                             | пишуть код у своїй зоні |
-| Стадії доставки  | `migration-agent`, `server-agent`, `api-client-agent`, `web-agent`, `mobile-agent`                                        | пишуть код свого шару   |
-| QA               | `qa-server`, `qa-web`, `qa-mobile`, `qa-packages`                                                                         | лише запуск і читання   |
-| Ревʼюери         | `contract-reviewer`, `design-reviewer`, `security-reviewer`, `docs-reviewer`                                              | лише читання            |
-| Рада             | `council-critic`, `council-growth-advisor`, `council-product-strategist`, `council-tech-architect`, `council-ux-advocate` | лише читання            |
-| Допоміжні        | `spec-executor`, `canon-drift-auditor`, `docs-governance-auditor`, `product-historian`                                    | за описом агента        |
+| Група            | Агенти                                                                                                                    | Модель і права                                       |
+| ---------------- | ------------------------------------------------------------------------------------------------------------------------- | ---------------------------------------------------- |
+| Власники модулів | `finyk-owner`, `nutrition-owner`, `fizruk-owner`, `routine-owner`, `ai-owner`                                             | пишуть код у своїй зоні                              |
+| Стадії доставки  | `migration-agent`, `server-agent`, `api-client-agent`, `web-agent`, `mobile-agent`                                        | пишуть код свого шару                                |
+| QA               | `qa-server`, `qa-web`, `qa-mobile`, `qa-packages`                                                                         | лише запуск і читання                                |
+| Ревʼюери         | `contract-reviewer`, `design-reviewer`, `security-reviewer`, `docs-reviewer`                                              | лише читання                                         |
+| Рада             | `council-critic`, `council-growth-advisor`, `council-product-strategist`, `council-tech-architect`, `council-ux-advocate` | лише читання                                         |
+| Перевірка        | `oracle-worker`, `oracle-verifier`                                                                                        | запуск і читання; файли результатів пишуть через шел |
+| Допоміжні        | `spec-executor`, `canon-drift-auditor`, `docs-governance-auditor`, `product-historian`                                    | за описом агента                                     |
 
 Правило з [`AGENTS.md`](../../../AGENTS.md): код в `apps/**` і `packages/**` правлять лише ці агенти і specialist-скіли, а не загальні інженерні ролі харнеса.
 
 ### Сквади
 
-Сквад у нас це **скіл, який описує склад, порядок і зведення результату**, плюс власні агенти як учасники. Скіли: `sergeant-qa-squad`, `sergeant-review-squad`, `sergeant-deliver-squad`, `sergeant-council`, `sergeant-planning-batch`.
+Сквад у нас це **скіл, який описує склад, порядок і зведення результату**, плюс власні агенти як учасники. Скіли: `sergeant-qa-squad`, `sergeant-review-squad`, `sergeant-deliver-squad`, `sergeant-verify-squad`, `sergeant-council`, `sergeant-planning-batch`.
 
 **Як викликати.** Назвати задачу своїми словами («повний QA по всіх поверхнях», «ревʼю цього PR сквадом») або назвати скіл. Скіли Sergeant лежать у `.agents/skills/`, тому агент читає `SKILL.md` файлом, а не через реєстр скілів Claude.
 
@@ -110,7 +111,7 @@ JavaScript-скрипт, який веде багато субагентів з�
 
 ## Робітник і перевіряльник
 
-Зв'язка, якої в наших сквадах досі не було як окремого рецепта. Вперше зібрана вручну 2026-11-26 для оракулів розрахунків (три робітники на Sonnet, перевіряльник на Opus).
+Оформлена як сквад `sergeant-verify-squad` (скіл [`SKILL.md`](../../../.agents/skills/sergeant-verify-squad/SKILL.md), ролі `oracle-worker` на Sonnet і `oracle-verifier` на Opus). Уперше зібрана вручну 2026-11-26 для оракулів розрахунків.
 
 **Коли брати.** Результат є твердженням про стан системи («розрахунки сходяться», «дефект є», «регресії немає»), і помилка в ньому коштує дорого.
 
@@ -155,7 +156,7 @@ JavaScript-скрипт, який веде багато субагентів з�
 5. **Для Codex:** `pnpm codex:sync-agents`, дрейф ловить `pnpm lint:codex-agents`.
 6. **Якщо порядок кроків має бути жорстким і відтворюваним,** рецепт стає скриптом у `.claude/workflows/`, а скіл лише каже, коли його запускати.
 
-Кандидат на такий рецепт: `sergeant-verify-squad` з ролями `oracle-worker` (вводить дані, рахує очікуване, порівнює) і `oracle-verifier` (перераховує, відтворює знахідки, ставить вердикт). Зараз це ручна зв'язка з § Робітник і перевіряльник; оформлення в скіл потребує рішення власника.
+Так оформлено `sergeant-verify-squad` (2026-11-26): ролі `oracle-worker` і `oracle-verifier`, скіл, вузли графа, рядки роутингу і playbook [`run-squad-verify.md`](../instructions/run-squad-verify.md).
 
 ## Не перевірено
 
