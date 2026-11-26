@@ -19,6 +19,11 @@ const { sendMock, streamMock, executeActionsMock, consumeSseMock } = vi.hoisted(
   }),
 );
 
+vi.mock("../../lib/chatActions/finykActions/entityLookup", () => ({
+  finykTransactionLabel: () => "«Кава» на 150 грн",
+  normalizeFinykId: (raw: unknown) => String(raw ?? "").trim(),
+}));
+
 vi.mock("../../lib/hubChatUtils", async () => {
   const actual = await vi.importActual<typeof import("../../lib/hubChatUtils")>(
     "../../lib/hubChatUtils",
@@ -594,7 +599,7 @@ describe("useChatSend — підтвердження незворотних ді
 
     await waitFor(() =>
       expect(result.current.confirmDestructive.pending?.items).toEqual([
-        { name: "delete_transaction", summary: "операція m_42" },
+        { name: "delete_transaction", summary: "операція «Кава» на 150 грн" },
       ]),
     );
 

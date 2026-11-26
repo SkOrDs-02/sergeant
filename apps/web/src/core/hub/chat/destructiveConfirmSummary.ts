@@ -21,6 +21,10 @@
  */
 
 import { categoryLabelFor } from "../../lib/hubChatActionCardsHelpers";
+import {
+  finykTransactionLabel,
+  normalizeFinykId,
+} from "../../lib/chatActions/finykActions/entityLookup";
 
 const BATCH_CATEGORIZE_DEFAULT_LIMIT = 20;
 
@@ -63,7 +67,12 @@ export function summarizeDestructiveToolInput(
     case "delete_transaction": {
       const rawTxId = input["tx_id"];
       const txId = typeof rawTxId === "string" ? rawTxId.trim() : "";
-      return txId ? `операція ${txId}` : undefined;
+      // Людині показуємо підпис операції («Кава» на 150 грн), а не id:
+      // діалог питав дозволу видалити «операція d23f22e8-7406-…» (прогін
+      // full-2026-11-25). Це читання прогрітого кешу, а не повтор логіки
+      // виконавця; операції немає в кеші → рядка немає, id не показуємо.
+      const label = txId ? finykTransactionLabel(normalizeFinykId(txId)) : "";
+      return label ? `операція ${label}` : undefined;
     }
     case "forget": {
       const rawFactId = input["fact_id"];

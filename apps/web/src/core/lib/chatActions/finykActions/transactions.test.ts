@@ -31,6 +31,7 @@ vi.mock("./entityLookup", async (importOriginal) => ({
 
 import { stripTechnicalIds } from "../../chatDisplayText";
 import { finykChatWrite } from "./dualWriteBridge";
+import * as entityLookup from "./entityLookup";
 import { resolveExpenseCategoryMeta } from "../../../../modules/finyk/utils";
 import {
   triggerHiddenTransactionSqliteMirror,
@@ -325,14 +326,13 @@ describe("deleteTransaction", () => {
 
   it("returns an error when the manual tx is not found", () => {
     seedFinykCache({ manualExpenses: [] });
+    vi.mocked(entityLookup.finykTransactionExists).mockReturnValueOnce(false);
     const out = deleteTransaction({
       name: "delete_transaction",
       input: { tx_id: "m_ghost" },
     });
-    expect(out).toContain("не знайдено");
-    expect(stripTechnicalIds(String(out))).toBe(
-      "Операцію не знайдено, вже видалена.",
-    );
+    expect(out).toContain("Не знайшов операцію (id:m_ghost)");
+    expect(stripTechnicalIds(String(out))).not.toContain("m_ghost");
     expect(mockWrite).not.toHaveBeenCalled();
   });
 

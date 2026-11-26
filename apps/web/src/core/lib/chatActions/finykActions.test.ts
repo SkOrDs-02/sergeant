@@ -427,13 +427,40 @@ describe("delete_transaction", () => {
     expect(out).toContain("видалено");
   });
 
-  it("error: non-manual tx returns structured error (no throw)", () => {
+  // Прогін full-2026-11-25: перевірка префікса `m_` відхиляла ручні записи
+  // з форми (`mx_…`) і з сервера (голий UUID), тож Сержант не міг видалити
+  // витрату, яку сам щойно записав.
+  it.each(["mx_form-entry", "d23f22e8-7406-43f3-ba14-92f39980a8e0"])(
+    "видаляє ручний запис із будь-яким форматом id (%s)",
+    (id) => {
+      seedFinykCache({
+        manualExpenses: [{ id, amount: 150, date: "2026-11-26" }],
+      });
+      const out = call({ name: "delete_transaction", input: { tx_id: id } });
+      expect(out).toContain("видалено");
+      expect(out).not.toContain("не видалено");
+    },
+  );
+
+  it("приймає id з префіксом «id:», який модель копіює з результату", () => {
+    seedFinykCache({
+      manualExpenses: [{ id: "mx_1", amount: 150, date: "2026-11-26" }],
+    });
+    const out = call({
+      name: "delete_transaction",
+      input: { tx_id: "id:mx_1" },
+    });
+    expect(out).toContain("видалено");
+    expect(out).not.toContain("не видалено");
+  });
+
+  it("невідомий id: людська відмова з підказкою моделі, без throw", () => {
     const out = call({
       name: "delete_transaction",
       input: { tx_id: "bank_123" },
     });
     expect(typeof out).toBe("string");
-    expect(out).toContain("hide_transaction");
+    expect(out).toContain("Не знайшов операцію");
   });
 
   it("error: empty tx_id returns error", () => {
