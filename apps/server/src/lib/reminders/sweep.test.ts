@@ -316,7 +316,7 @@ describe("runReminderSweep", () => {
     await runReminderSweep(pool, NOW);
 
     expect(sendToUserQuietly.mock.calls[0]?.[1]).toMatchObject({
-      title: "Нагадування",
+      title: "Рутина",
     });
   });
 

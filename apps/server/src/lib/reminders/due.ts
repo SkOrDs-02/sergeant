@@ -139,10 +139,9 @@ export function routineDueNow({
       dedupKey: reminderNotifyKey(habit.id, hm, dayKey),
       // Гліф звички з 2026-08-03 — icon-slug (`@sergeant/routine-domain`
       // → `glyphs.ts`), не emoji: префікс дав би «droplet Пити воду».
-      title: privacyMinimal ? "Нагадування" : habit.name,
-      body: privacyMinimal
-        ? "Час для запланованої звички"
-        : "Нагадування про звичку",
+      title: privacyMinimal ? "Рутина" : habit.name,
+      // Тіло однакове в обох режимах: назву звички ховає лише заголовок.
+      body: "Час для звички",
       url: "/?module=routine",
       at: hm,
       label: privacyMinimal ? "звичка" : habit.name,
@@ -188,8 +187,8 @@ export function fizrukDueNow(
       userId: row.userId,
       module: "fizruk",
       dedupKey: `fizruk_notify_${dayKey}`,
-      title: "Фізрук: тренування",
-      body: "Заплановане тренування на сьогодні.",
+      title: "Фізрук",
+      body: "Сьогодні за планом тренування",
       url: "/?module=fizruk",
       at: hm,
       label: "тренування",
@@ -228,7 +227,7 @@ export function nutritionDueNow(
       module: "nutrition",
       dedupKey: `nutrition_notify_${dayKey}`,
       title: "Їжа",
-      body: "Час відмітити прийом їжі.",
+      body: "Час записати прийом їжі",
       url: "/?module=nutrition",
       at: hm,
       label: "запис їжі",

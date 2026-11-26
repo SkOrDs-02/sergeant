@@ -12,6 +12,8 @@
  * іншу копію — точкові правки тут, без зачіпання dispatcher-у.
  */
 
+import { mailButton, wrapMailHtml } from "./mailLayout.js";
+
 export type FtuxDripDay = "day_0" | "day_1" | "day_3";
 
 export interface FtuxDripTemplateInput {
@@ -77,23 +79,8 @@ function textFooter(unsubscribeUrl: string): string {
   return FOOTER_TEXT_TEMPLATE.replace("{unsubscribeUrl}", unsubscribeUrl);
 }
 
-function wrapHtml(bodyHtml: string): string {
-  // Inline-styles only — більшість email-клієнтів стрипає <style> теги.
-  return (
-    `<div style="font-family:-apple-system,BlinkMacSystemFont,Segoe UI,sans-serif;` +
-    `font-size:15px;line-height:1.6;color:#0f172a;max-width:560px;margin:0 auto;padding:24px">` +
-    bodyHtml +
-    `</div>`
-  );
-}
-
-function ctaButton(href: string, label: string): string {
-  return (
-    `<p style="margin:20px 0"><a href="${escapeAttr(href)}" ` +
-    `style="display:inline-block;padding:10px 18px;background:#0f172a;color:#fff;` +
-    `text-decoration:none;border-radius:8px;font-weight:600">${escapeHtml(label)}</a></p>`
-  );
-}
+const wrapHtml = wrapMailHtml;
+const ctaButton = mailButton;
 
 function notificationsUrl(appUrl: string): string {
   return `${appUrl}/?tab=settings#settings-notifications`;
