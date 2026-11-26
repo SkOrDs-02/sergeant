@@ -2734,6 +2734,13 @@
       "canonical_owner": "docs/start/agents/onboarding.md"
     },
     {
+      "old_path": "docs/start/agents/orchestration-guide.md",
+      "new_path": "docs/start/agents/orchestration-guide.md",
+      "action": "keep",
+      "genre": "reference",
+      "canonical_owner": "docs/start/agents/orchestration-guide.md"
+    },
+    {
       "old_path": "docs/start/agents/playbook-routing-evals.json",
       "new_path": "docs/start/agents/playbook-routing-evals.json",
       "action": "keep",
