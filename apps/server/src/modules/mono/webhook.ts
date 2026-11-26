@@ -306,6 +306,14 @@ export async function webhookHandler(
              $15, $16, $17, $18, $19, $20, $21, 'webhook',
              $22)
      ON CONFLICT (user_id, mono_tx_id) DO UPDATE SET
+       -- Гривнева сума рахувалась від старих сум: інші суми - перерахувати
+       -- на наступному читанні (finyk-fx-nbu.md).
+       amount_uah = CASE
+         WHEN mono_transaction.amount IS DISTINCT FROM EXCLUDED.amount
+           OR mono_transaction.operation_amount IS DISTINCT FROM EXCLUDED.operation_amount
+         THEN NULL
+         ELSE mono_transaction.amount_uah
+       END,
        amount = EXCLUDED.amount,
        operation_amount = EXCLUDED.operation_amount,
        hold = EXCLUDED.hold,

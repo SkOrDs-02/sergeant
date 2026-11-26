@@ -310,6 +310,52 @@ describe("webhook.integration — real Postgres", () => {
     expect(result.rows[0]!.cnt).toBe(1);
   });
 
+  // finyk-fx-nbu.md: гривнева сума рахувалась від старих сум. Повтор з
+  // іншою сумою мусить її скинути (наступне читання перерахує), повтор з
+  // тією самою сумою - лишити.
+  it("повтор із іншою сумою скидає amount_uah, з тією самою лишає", async () => {
+    if (!dockerAvailable) {
+      console.log(`SKIP: ${skipReason ?? "Docker unavailable"}`);
+      return;
+    }
+
+    await seedIntegrationUser(testPool, USER_A);
+    await seedConnection(USER_A);
+    await seedAccount(USER_A);
+
+    await webhookHandler(makeReq(WEBHOOK_SECRET), makeRes());
+    const setUah = () =>
+      testPool.query(
+        `UPDATE mono_transaction SET amount_uah = -6500
+          WHERE user_id = $1 AND mono_tx_id = 'tx_int_001'`,
+        [USER_A],
+      );
+    const readUah = async () =>
+      (
+        await testPool.query<{ amount_uah: string | null }>(
+          `SELECT amount_uah FROM mono_transaction
+            WHERE user_id = $1 AND mono_tx_id = 'tx_int_001'`,
+          [USER_A],
+        )
+      ).rows[0]!.amount_uah;
+
+    await setUah();
+    await webhookHandler(
+      makeReq(WEBHOOK_SECRET, validPayload({ description: "Кава (retry)" })),
+      makeRes(),
+    );
+    expect(await readUah()).toBe("-6500");
+
+    await webhookHandler(
+      makeReq(
+        WEBHOOK_SECRET,
+        validPayload({ amount: -7000, operationAmount: -7000 }),
+      ),
+      makeRes(),
+    );
+    expect(await readUah()).toBeNull();
+  });
+
   /**
    * data-66: ретрай старої події не перезаписує баланс з новішої.
    *

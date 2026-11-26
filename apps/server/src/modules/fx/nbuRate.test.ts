@@ -138,6 +138,27 @@ describe("getNbuRates", () => {
     expect(queryMock).toHaveBeenCalledTimes(1);
   });
 
+  it("a malformed NBU entry fails the day instead of falling back to an older rate", async () => {
+    const calls: string[] = [];
+    const fetchImpl: FetchLike = async (url) => {
+      calls.push(/date=(\d{8})/.exec(url)?.[1] ?? "");
+      return {
+        ok: true,
+        json: async () => [
+          { r030: 840, rate: "n/a" },
+          { r030: 978, rate: 44 },
+        ],
+      };
+    };
+    const rates = await getNbuRates(
+      [{ currencyCode: 840, date: "2026-11-20" }],
+      { fetchImpl, today: TODAY },
+    );
+    expect(calls).toEqual(["20261120"]);
+    expect(rates.size).toBe(0);
+    expect(queryMock).toHaveBeenCalledTimes(1);
+  });
+
   it("stops calling the NBU after the first failure in a call", async () => {
     const { fetchImpl, calls } = nbu({
       "20261120": "fail",

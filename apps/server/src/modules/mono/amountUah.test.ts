@@ -124,12 +124,20 @@ describe("fillMissingAmountUah", () => {
       { currencyCode: 840, date: "2026-11-24" },
       { currencyCode: 840, date: "2026-11-20" },
     ]);
+    const select = queryMock.mock.calls[0]!;
+    // Лише конвертовані рахунки: stub із кодом 0 не займає ліміт.
+    expect(select[1]).toEqual(["user_1", 500, [840, 978, 985, 826, 756, 203]]);
     const update = queryMock.mock.calls[1]!;
     expect(update[0]).toContain("AND t.amount_uah IS NULL");
+    // Пишемо лише якщо суми не змінились, поки чекали на НБУ.
+    expect(update[0]).toContain("AND t.amount = v.amount");
+    expect(update[0]).toContain("AND t.operation_amount = v.operation_amount");
     expect(update[1]).toEqual([
       "user_1",
       ["usd-buy", "uah-op"],
       [-415_000, -10_000],
+      [-10_000, -250],
+      [-10_000, -10_000],
     ]);
   });
 

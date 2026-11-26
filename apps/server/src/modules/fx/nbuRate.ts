@@ -100,9 +100,12 @@ async function fetchNbuDay(
     for (const item of body) {
       const code = Number((item as { r030?: unknown }).r030);
       const rate = Number((item as { rate?: unknown }).rate);
-      if (Number.isInteger(code) && Number.isFinite(rate) && rate > 0) {
-        out.set(code, rate);
+      // Зіпсований запис = збій дня, а не «валюти немає»: інакше фолбек
+      // на попередній день заморозив би під цією датою не той курс.
+      if (!Number.isInteger(code) || !Number.isFinite(rate) || rate <= 0) {
+        throw new Error("nbu_invalid_entry");
       }
+      out.set(code, rate);
     }
     return out;
   } catch (err) {

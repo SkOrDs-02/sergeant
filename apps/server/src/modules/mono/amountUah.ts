@@ -96,9 +96,13 @@ export async function fillMissingAmountUah(
           AND t.deleted_at IS NULL
           AND t.amount_uah IS NULL
           AND a.currency_code <> 980
+          -- Лише рядки, які можна перерахувати: інакше назавжди
+          -- неконвертовані (stub з кодом 0) займали б ліміт першими й
+          -- витісняли старіші доларові операції.
+          AND (t.currency_code = 980 OR a.currency_code = ANY($3::int[]))
         ORDER BY t.time DESC
         LIMIT $2`,
-      [userId, AMOUNT_UAH_FILL_LIMIT],
+      [userId, AMOUNT_UAH_FILL_LIMIT, [...TWO_DECIMAL_ACCOUNT_CURRENCIES]],
       { op: "mono_amount_uah_pending" },
     );
     if (rows.length === 0) return;
@@ -127,22 +131,31 @@ export async function fillMissingAmountUah(
 
     const ids: string[] = [];
     const amounts: number[] = [];
+    const pricedAmounts: number[] = [];
+    const pricedOperationAmounts: number[] = [];
     for (const { row, input, date } of items) {
       const rate = rates.get(nbuRateKey(input.accountCurrencyCode, date));
       const amountUah = computeAmountUah(input, rate?.uahPerUnit ?? null);
       if (amountUah === null) continue;
       ids.push(row.mono_tx_id);
       amounts.push(amountUah);
+      pricedAmounts.push(input.amount);
+      pricedOperationAmounts.push(input.operationAmount);
     }
     if (ids.length === 0) return;
     await query(
       `UPDATE mono_transaction t
           SET amount_uah = v.amount_uah
-         FROM unnest($2::text[], $3::bigint[]) AS v(mono_tx_id, amount_uah)
+         FROM unnest($2::text[], $3::bigint[], $4::bigint[], $5::bigint[])
+              AS v(mono_tx_id, amount_uah, amount, operation_amount)
         WHERE t.user_id = $1
           AND t.mono_tx_id = v.mono_tx_id
-          AND t.amount_uah IS NULL`,
-      [userId, ids, amounts],
+          AND t.amount_uah IS NULL
+          -- Поки чекали на НБУ, вебхук міг переписати суми: тоді ця
+          -- гривнева сума від старих сум, не пишемо її.
+          AND t.amount = v.amount
+          AND t.operation_amount = v.operation_amount`,
+      [userId, ids, amounts, pricedAmounts, pricedOperationAmounts],
       { op: "mono_amount_uah_fill" },
     );
   } catch (err) {
