@@ -18,6 +18,7 @@ import { SectionErrorBoundary } from "@shared/components/ui/SectionErrorBoundary
 import { Skeleton } from "@shared/components/ui/Skeleton";
 import { useLocale } from "@shared/i18n/useLocale";
 import { NutritionDashboard } from "../components/NutritionDashboard";
+import type { SilpoPantryOffersCardProps } from "../components/SilpoPantryOffersCard";
 import type { useNutritionLog } from "../hooks/useNutritionLog";
 import { isNutritionReadCacheSettled } from "../hooks/useNutritionSqliteReadBoot";
 import type { NutritionPage } from "../lib/nutritionRouter";
@@ -30,6 +31,8 @@ interface NutritionStartPageProps {
   setActivePageAndHash: (page: NutritionPage) => void;
   /** Тап по сегменту hero — аркуш прийому з уже обраним типом. */
   onPickMeal: (type: MealTypeId) => void;
+  /** Комора для картки нових чеків Сільпо в огляді. */
+  pantry?: SilpoPantryOffersCardProps | undefined;
 }
 
 export function NutritionStartPage({
@@ -37,6 +40,7 @@ export function NutritionStartPage({
   prefs,
   setActivePageAndHash,
   onPickMeal,
+  pantry,
 }: NutritionStartPageProps) {
   const { messages } = useLocale();
   // Поки бут читання не завершився, а кеш ще порожній, малюємо скелетон:
@@ -64,6 +68,7 @@ export function NutritionStartPage({
             log={log.nutritionLog}
             prefs={prefs}
             onPickMeal={onPickMeal}
+            pantry={pantry}
             onGoToLog={(dateIso) => {
               // Порядок важливий: спершу день, потім навігація. Журнал
               // читає `log.selectedDate` на рендері, тож зворотний порядок

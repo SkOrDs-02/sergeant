@@ -1,13 +1,18 @@
 /**
- * `silpoReplenish.ts` - чисті функції, спільні для ручного
- * (`useSilpoPantryReplenish`) і автоматичного (`useSilpoPantryAutoImport`)
- * потоків (спека `docs/work/specs/silpo-pantry-auto-import.md` §
- * «Логіку рядків виносимо в чисті функції»).
+ * `silpoReplenish.ts` - чисті функції аркуша чека Сільпо (спеки
+ * `docs/work/specs/silpo-pantry-auto-import.md` § «Логіку рядків виносимо в
+ * чисті функції» і `docs/work/specs/silpo-pantry-confirm.md`).
  */
 import { describe, expect, it } from "vitest";
 import { buildPantryIndex } from "@sergeant/nutrition-domain";
 import type { SilpoReceiptItemDto } from "@shared/api";
-import { buildSilpoReplenishRows, rowsToPantryItems } from "./silpoReplenish";
+import {
+  buildPantrySkipUpdate,
+  buildSilpoReplenishRows,
+  isStaleReceipt,
+  pantryProductKey,
+  rowsToPantryItems,
+} from "./silpoReplenish";
 
 function item(overrides: Partial<SilpoReceiptItemDto>): SilpoReceiptItemDto {
   return {
@@ -132,5 +137,138 @@ describe("rowsToPantryItems", () => {
     });
     const out = rowsToPantryItems(rows, "2026-08-17T10:00:00.000Z");
     expect(out[0]?.name).toBe("Молоко Яготинське 2.6% 900г");
+  });
+});
+
+describe("галочки за замовчуванням: давність і «зазвичай не додаєш»", () => {
+  const base = {
+    pantryIndex: buildPantryIndex([]),
+    checkedState: {},
+    keepFullState: {},
+  };
+
+  it("продукт із лічильником 3 без галочки і з підписом", () => {
+    const rows = buildSilpoReplenishRows({
+      ...base,
+      items: [
+        item({ id: 1, name: "Молоко Галичина 2,5% 900г" }),
+        item({ id: 2, name: "Хліб Київхліб" }),
+      ],
+      skippedKeys: new Set([pantryProductKey("Молоко Яготинське 2,6% 900г")]),
+    });
+    expect(rows[0]).toMatchObject({ checked: false, usuallySkipped: true });
+    expect(rows[1]).toMatchObject({ checked: true, usuallySkipped: false });
+  });
+
+  it("чек старший за 7 днів дає всі рядки без галочки", () => {
+    const rows = buildSilpoReplenishRows({
+      ...base,
+      items: [item({ id: 1, name: "Курка гомілка" }), item({ id: 2 })],
+      stale: true,
+    });
+    expect(rows.map((r) => r.checked)).toEqual([false, false]);
+    expect(rows.every((r) => !r.usuallySkipped)).toBe(true);
+  });
+
+  it("хімія без галочки, як і раніше, і підпису «зазвичай не додаєш» не має", () => {
+    const rows = buildSilpoReplenishRows({
+      ...base,
+      items: [item({ id: 1, name: "Пральний порошок Persil" })],
+      skippedKeys: new Set([pantryProductKey("Пральний порошок Persil")]),
+    });
+    expect(rows[0]).toMatchObject({ checked: false, usuallySkipped: false });
+  });
+
+  it("isStaleReceipt: поріг рівно 7 днів", () => {
+    const now = Date.parse("2026-11-26T12:00:00.000Z");
+    expect(isStaleReceipt("2026-11-19T12:00:00.000Z", now)).toBe(false);
+    expect(isStaleReceipt("2026-11-19T11:59:00.000Z", now)).toBe(true);
+  });
+});
+
+describe("pantryProductKey", () => {
+  it("один продукт різних брендів дає один ключ", () => {
+    expect(pantryProductKey("Молоко Галичина 2,5% 900г")).toBe(
+      pantryProductKey("Молоко Яготинське 2,6% 900г"),
+    );
+  });
+
+  it("різні сири лишаються різними ключами", () => {
+    expect(pantryProductKey("Сир кисломолочний Галичина 9%")).not.toBe(
+      pantryProductKey("Сир твердий Гауда Пирятин 45%"),
+    );
+  });
+});
+
+describe("buildPantrySkipUpdate", () => {
+  const base = {
+    pantryIndex: buildPantryIndex([]),
+    keepFullState: {},
+  };
+
+  it("знята дефолтна галочка - skipped, додане - added", () => {
+    const rows = buildSilpoReplenishRows({
+      ...base,
+      items: [
+        item({ id: 1, name: "Молоко Галичина 900г" }),
+        item({ id: 2, name: "Хліб Київхліб" }),
+      ],
+      checkedState: { 1: false },
+    });
+    expect(buildPantrySkipUpdate(rows, new Set([2]))).toEqual({
+      skipped: [pantryProductKey("Молоко Галичина 900г")],
+      added: [pantryProductKey("Хліб Київхліб")],
+    });
+  });
+
+  it("рядки без дефолтної галочки, яких не чіпали, не рахуються", () => {
+    const stale = buildSilpoReplenishRows({
+      ...base,
+      items: [item({ id: 1, name: "Курка гомілка" })],
+      checkedState: {},
+      stale: true,
+    });
+    const chem = buildSilpoReplenishRows({
+      ...base,
+      items: [item({ id: 2, name: "Пральний порошок Persil" })],
+      checkedState: {},
+    });
+    const learned = buildSilpoReplenishRows({
+      ...base,
+      items: [item({ id: 3, name: "Молоко Галичина 900г" })],
+      checkedState: {},
+      skippedKeys: new Set([pantryProductKey("Молоко Галичина 900г")]),
+    });
+    expect(
+      buildPantrySkipUpdate([...stale, ...chem, ...learned], new Set()),
+    ).toEqual({ skipped: [], added: [] });
+  });
+
+  it("додавання рядка зі старого чека скидає лічильник", () => {
+    const rows = buildSilpoReplenishRows({
+      ...base,
+      items: [item({ id: 1, name: "Курка гомілка" })],
+      checkedState: { 1: true },
+      stale: true,
+    });
+    expect(buildPantrySkipUpdate(rows, new Set([1]))).toEqual({
+      skipped: [],
+      added: [pantryProductKey("Курка гомілка")],
+    });
+  });
+
+  it("продукт і знятий, і доданий в одному «Додати» - лише added", () => {
+    const rows = buildSilpoReplenishRows({
+      ...base,
+      items: [
+        item({ id: 1, name: "Молоко Галичина 900г" }),
+        item({ id: 2, name: "Молоко Яготинське 900г" }),
+      ],
+      checkedState: { 1: false },
+    });
+    expect(buildPantrySkipUpdate(rows, new Set([2]))).toEqual({
+      skipped: [],
+      added: [pantryProductKey("Молоко Галичина 900г")],
+    });
   });
 });
