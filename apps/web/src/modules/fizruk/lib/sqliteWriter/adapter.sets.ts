@@ -22,6 +22,7 @@ import type { SqliteMigrationClient } from "@sergeant/db-schema/migrate/sqlite";
 import { enqueueOutboxUpsert } from "../../../../core/syncEngine/enqueueOutboxUpsert.js";
 import type { WorkoutSet } from "./adapter.js";
 import { WORKOUT_SET_UPSERT_SQL } from "./adapter.sql.js";
+import { liveRowUnchanged } from "./adapter.unchanged.js";
 
 function intOrNull(v: unknown): number | null {
   const n = Number(v);
@@ -63,6 +64,22 @@ export async function upsertWorkoutSet(
   const distanceM = intOrNull(set["distanceM"]);
   const done = setDoneValue(set);
   const setType = setTypeColumn(set);
+  // Незмінений підхід не чіпаємо (B7a): ні нового `updated_at`, ні outbox-оп.
+  if (
+    await liveRowUnchanged(client, "fizruk_workout_sets", setId, userId, {
+      workout_item_id: workoutItemId,
+      weight_kg: set.weightKg ?? 0,
+      reps: set.reps ?? 0,
+      rpe: set.rpe ?? null,
+      sort_order: sortOrder,
+      duration_sec: durationSec,
+      distance_m: distanceM,
+      done,
+      set_type: setType,
+    })
+  ) {
+    return;
+  }
   await client.run(WORKOUT_SET_UPSERT_SQL, [
     setId,
     workoutItemId,

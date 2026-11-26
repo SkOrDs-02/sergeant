@@ -5,7 +5,10 @@
 import { useMemo, useState } from "react";
 import type { FizrukPage } from "../shell/fizrukRoute";
 import { Button } from "@shared/components/ui/Button";
-import { EmptyState } from "@shared/components/ui/EmptyState";
+import {
+  EmptyState,
+  FirstCloudPullGate,
+} from "@shared/components/ui/EmptyState";
 import { Skeleton } from "@shared/components/ui/Skeleton";
 import { messages } from "@shared/i18n/uk";
 import { useDailyLog } from "../hooks/useDailyLog";
@@ -363,21 +366,25 @@ export function Progress({ onNavigate }: ProgressProps) {
               an empty profile shows exactly ONE state with ONE action.
             */}
             {!hasAny && (
-              <EmptyState
-                compact
-                title={messages.fizruk.progress.emptyTitle}
-                description={messages.fizruk.progress.emptyDescription}
-                primaryAction={
-                  <Button
-                    variant="solid"
-                    tone="neutral"
-                    size="sm"
-                    onClick={() => onNavigate("workouts")}
-                  >
-                    {messages.fizruk.startWorkoutFab}
-                  </Button>
-                }
-              />
+              // A4: на свіжому пристрої дані ще їдуть з хмари — не «Даних
+              // ще немає» з закликом почати, а «Завантажую з хмари…».
+              <FirstCloudPullGate compact>
+                <EmptyState
+                  compact
+                  title={messages.fizruk.progress.emptyTitle}
+                  description={messages.fizruk.progress.emptyDescription}
+                  primaryAction={
+                    <Button
+                      variant="solid"
+                      tone="neutral"
+                      size="sm"
+                      onClick={() => onNavigate("workouts")}
+                    >
+                      {messages.fizruk.startWorkoutFab}
+                    </Button>
+                  }
+                />
+              </FirstCloudPullGate>
             )}
 
             {/*

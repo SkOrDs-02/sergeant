@@ -20,6 +20,7 @@
  * style nit.
  */
 import { Card } from "@shared/components/ui/Card";
+import { FirstCloudPullGate } from "@shared/components/ui/EmptyState";
 import { Button } from "@shared/components/ui/Button";
 import { SectionHeading } from "@shared/components/ui/SectionHeading";
 import { injurySiteLabelUk } from "@sergeant/fizruk-domain/data";
@@ -56,7 +57,11 @@ export function InjurySection({ onOpenBody }: InjurySectionProps = {}) {
       </SectionHeading>
 
       {active.length === 0 ? (
-        <p className="text-style-body text-muted mt-2">{t.empty}</p>
+        // Позначки травм їдуть з хмари: «Немає активних» до першого pull —
+        // хибне запевнення на safety-поверхні.
+        <FirstCloudPullGate compact>
+          <p className="text-style-body text-muted mt-2">{t.empty}</p>
+        </FirstCloudPullGate>
       ) : (
         <ul className="mt-3 space-y-2">
           {active.map((m) => (

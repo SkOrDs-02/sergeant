@@ -1,7 +1,6 @@
 import {
   createApplyOps,
   toIntOrNull,
-  toRealOrNull,
   type ApplyDualWriteOptions,
   type ApplyDualWriteResult,
   type DualWriteLogger,
@@ -21,19 +20,20 @@ import {
   upsertExercisePref,
 } from "./adapter.exercisePrefs.js";
 import { setPrograms } from "./adapter.programs.js";
+import {
+  softDeleteMeasurement,
+  upsertMeasurement,
+} from "./adapter.measurements.js";
 import { reconcileRemovedChildren } from "./adapter.reconcile.js";
 import type {
   FizrukCustomExerciseSnapshot,
   FizrukDualWriteOp,
   FizrukItemSnapshot,
-  FizrukMeasurementSnapshot,
   FizrukWorkoutSnapshot,
 } from "./diff/index.js";
 import {
   CUSTOM_EXERCISE_DELETE_SQL,
   CUSTOM_EXERCISE_UPSERT_SQL,
-  MEASUREMENT_DELETE_SQL,
-  MEASUREMENT_UPSERT_SQL,
   setMonthlyPlan,
   softDeleteDailyLog,
   softDeleteInjury,
@@ -47,6 +47,7 @@ import {
   WORKOUT_UPSERT_SQL,
 } from "./adapter.sql.js";
 import { itemMeasureColumn, upsertWorkoutSet } from "./adapter.sets.js";
+import { liveRowUnchanged } from "./adapter.unchanged.js";
 
 /**
  * Async SQLite-side adapter for the Fizruk dual-write layer.
@@ -285,30 +286,12 @@ async function upsertWorkout(
   const programId = w.programRef?.programId ?? null;
   const programSlot = w.programRef ? w.programRef.slot : null;
 
-  await client.run(WORKOUT_UPSERT_SQL, [
+  const workoutUnchanged = await liveRowUnchanged(
+    client,
+    "fizruk_workouts",
     w.id,
     userId,
-    w.startedAt,
-    w.endedAt ?? null,
-    w.note ?? "",
-    groupsJson,
-    warmupJson,
-    cooldownJson,
-    wellbeingJson,
-    kcalBurned,
-    programId,
-    programSlot,
-    clientTs,
-    clientTs,
-  ]);
-
-  await enqueueOutboxUpsert(client, {
-    userId,
-    table: "fizruk_workouts",
-    op: "insert",
-    row: {
-      id: w.id,
-      user_id: userId,
+    {
       started_at: w.startedAt,
       ended_at: w.endedAt ?? null,
       note: w.note ?? "",
@@ -317,17 +300,56 @@ async function upsertWorkout(
       cooldown_json: cooldownJson,
       wellbeing_json: wellbeingJson,
       kcal_burned: kcalBurned,
-      // AI-CONTEXT: старий сервер (до 171) невідомі поля рядка ігнорує, тож
-      // тренування доходить, а привʼязка доїде наступним upsert-ом після
-      // його оновлення. Новий сервер читає явні null як «поза програмою».
       program_id: programId,
       program_slot: programSlot,
-      created_at: clientTs,
-      deleted_at: null,
     },
-    clientTs,
-    idempotencyKey: crypto.randomUUID(),
-  }).catch(() => {});
+  );
+
+  if (!workoutUnchanged) {
+    await client.run(WORKOUT_UPSERT_SQL, [
+      w.id,
+      userId,
+      w.startedAt,
+      w.endedAt ?? null,
+      w.note ?? "",
+      groupsJson,
+      warmupJson,
+      cooldownJson,
+      wellbeingJson,
+      kcalBurned,
+      programId,
+      programSlot,
+      clientTs,
+      clientTs,
+    ]);
+
+    await enqueueOutboxUpsert(client, {
+      userId,
+      table: "fizruk_workouts",
+      op: "insert",
+      row: {
+        id: w.id,
+        user_id: userId,
+        started_at: w.startedAt,
+        ended_at: w.endedAt ?? null,
+        note: w.note ?? "",
+        groups_json: groupsJson,
+        warmup_json: warmupJson,
+        cooldown_json: cooldownJson,
+        wellbeing_json: wellbeingJson,
+        kcal_burned: kcalBurned,
+        // AI-CONTEXT: старий сервер (до 171) невідомі поля рядка ігнорує, тож
+        // тренування доходить, а привʼязка доїде наступним upsert-ом після
+        // його оновлення. Новий сервер читає явні null як «поза програмою».
+        program_id: programId,
+        program_slot: programSlot,
+        created_at: clientTs,
+        deleted_at: null,
+      },
+      clientTs,
+      idempotencyKey: crypto.randomUUID(),
+    }).catch(() => {});
+  }
 
   const items = w.items ?? [];
   for (const [i, item] of items.entries()) {
@@ -357,35 +379,12 @@ async function upsertWorkoutItem(
   const musclesPrimary = JSON.stringify(item.musclesPrimary ?? []);
   const musclesSecondary = JSON.stringify(item.musclesSecondary ?? []);
 
-  await client.run(WORKOUT_ITEM_UPSERT_SQL, [
+  const itemUnchanged = await liveRowUnchanged(
+    client,
+    "fizruk_workout_items",
     item.id,
-    workoutId,
     userId,
-    item.exerciseId ?? "",
-    item.nameUk ?? "",
-    item.primaryGroup ?? "",
-    musclesPrimary,
-    musclesSecondary,
-    item.type ?? "strength",
-    item.durationSec ?? null,
-    item.distanceM ?? null,
-    // Той самий рядок, якого бракувало `wellbeing` (див. AI-DANGER у
-    // sqliteReader): пропустиш його — вибір варіанта не переживе
-    // перезавантаження, а типи й тести цього не помітять.
-    (item["chosenVariant"] as string | undefined) ?? null,
-    sortOrder,
-    clientTs,
-    clientTs,
-    itemMeasureColumn(item),
-  ]);
-
-  await enqueueOutboxUpsert(client, {
-    userId,
-    table: "fizruk_workout_items",
-    op: "insert",
-    row: {
-      id: item.id,
-      user_id: userId,
+    {
       workout_id: workoutId,
       exercise_id: item.exerciseId ?? "",
       name_uk: item.nameUk ?? "",
@@ -396,16 +395,62 @@ async function upsertWorkoutItem(
       duration_sec: item.durationSec ?? null,
       distance_m: item.distanceM ?? null,
       chosen_variant: (item["chosenVariant"] as string | undefined) ?? null,
-      // Тип виміру (міграції 172 / 010). Ключ є завжди: старий сервер його
-      // ігнорує, а op-log зберігає повний рядок (спека, § Сумісність).
       measure: itemMeasureColumn(item),
       sort_order: sortOrder,
-      created_at: clientTs,
-      deleted_at: null,
     },
-    clientTs,
-    idempotencyKey: crypto.randomUUID(),
-  }).catch(() => {});
+  );
+
+  if (!itemUnchanged) {
+    await client.run(WORKOUT_ITEM_UPSERT_SQL, [
+      item.id,
+      workoutId,
+      userId,
+      item.exerciseId ?? "",
+      item.nameUk ?? "",
+      item.primaryGroup ?? "",
+      musclesPrimary,
+      musclesSecondary,
+      item.type ?? "strength",
+      item.durationSec ?? null,
+      item.distanceM ?? null,
+      // Той самий рядок, якого бракувало `wellbeing` (див. AI-DANGER у
+      // sqliteReader): пропустиш його — вибір варіанта не переживе
+      // перезавантаження, а типи й тести цього не помітять.
+      (item["chosenVariant"] as string | undefined) ?? null,
+      sortOrder,
+      clientTs,
+      clientTs,
+      itemMeasureColumn(item),
+    ]);
+
+    await enqueueOutboxUpsert(client, {
+      userId,
+      table: "fizruk_workout_items",
+      op: "insert",
+      row: {
+        id: item.id,
+        user_id: userId,
+        workout_id: workoutId,
+        exercise_id: item.exerciseId ?? "",
+        name_uk: item.nameUk ?? "",
+        primary_group: item.primaryGroup ?? "",
+        muscles_primary: musclesPrimary,
+        muscles_secondary: musclesSecondary,
+        type: item.type ?? "strength",
+        duration_sec: item.durationSec ?? null,
+        distance_m: item.distanceM ?? null,
+        chosen_variant: (item["chosenVariant"] as string | undefined) ?? null,
+        // Тип виміру (міграції 172 / 010). Ключ є завжди: старий сервер його
+        // ігнорує, а op-log зберігає повний рядок (спека, § Сумісність).
+        measure: itemMeasureColumn(item),
+        sort_order: sortOrder,
+        created_at: clientTs,
+        deleted_at: null,
+      },
+      clientTs,
+      idempotencyKey: crypto.randomUUID(),
+    }).catch(() => {});
+  }
 
   const sets = item.sets ?? [];
   for (const [s, set] of sets.entries()) {
@@ -558,104 +603,6 @@ async function softDeleteCustomExercise(
     table: "fizruk_custom_exercises",
     op: "delete",
     row: { id: exerciseId, user_id: userId },
-    clientTs,
-    idempotencyKey: crypto.randomUUID(),
-  }).catch(() => {});
-}
-
-// -----------------------------------------------------------------------
-// Measurements
-// -----------------------------------------------------------------------
-
-async function upsertMeasurement(
-  client: SqliteMigrationClient,
-  m: FizrukMeasurementSnapshot,
-  { userId, clientTs }: DualWriteRuntime,
-): Promise<void> {
-  await client.run(MEASUREMENT_UPSERT_SQL, [
-    m.id,
-    userId,
-    m.at,
-    // AI-DANGER: ці шість полів — REAL і в Postgres (`029_fizruk_tables.sql`),
-    // і в SQLite-дзеркалі. Ганяти їх через `toIntOrNull` не можна: 81.4 кг
-    // ставало 81, а 7.5 год сну — 8. Пара (локальний рядок, outbox-рядок)
-    // МАЄ використовувати ту саму функцію — інакше пристрій пише в базу одне
-    // значення, а на сервер шле інше, і LWW починає фліпати вагу між
-    // пристроями. `energyLevel` і `mood` лишаються INTEGER — так у PG.
-    toRealOrNull(m["weightKg"]),
-    toRealOrNull(m["waistCm"]),
-    toRealOrNull(m["chestCm"]),
-    toRealOrNull(m["hipsCm"]),
-    toRealOrNull(m["bicepCm"]),
-    // Решта полів веб-форми. До міграції 008 колонок під них не було, і
-    // введене користувачем зникало після перезавантаження.
-    toRealOrNull(m["bodyFatPct"]),
-    toRealOrNull(m["neckCm"]),
-    toRealOrNull(m["bicepLCm"]),
-    toRealOrNull(m["bicepRCm"]),
-    toRealOrNull(m["forearmLCm"]),
-    toRealOrNull(m["forearmRCm"]),
-    toRealOrNull(m["thighLCm"]),
-    toRealOrNull(m["thighRCm"]),
-    toRealOrNull(m["calfLCm"]),
-    toRealOrNull(m["calfRCm"]),
-    toRealOrNull(m["sleepHours"]),
-    toIntOrNull(m["energyLevel"]),
-    toIntOrNull(m["mood"]),
-    clientTs,
-    clientTs,
-  ]);
-  await enqueueOutboxUpsert(client, {
-    userId,
-    table: "fizruk_measurements",
-    op: "insert",
-    row: {
-      id: m.id,
-      user_id: userId,
-      measured_at: m.at,
-      weight_kg: toRealOrNull(m["weightKg"]),
-      waist_cm: toRealOrNull(m["waistCm"]),
-      chest_cm: toRealOrNull(m["chestCm"]),
-      hips_cm: toRealOrNull(m["hipsCm"]),
-      bicep_cm: toRealOrNull(m["bicepCm"]),
-      body_fat_pct: toRealOrNull(m["bodyFatPct"]),
-      neck_cm: toRealOrNull(m["neckCm"]),
-      bicep_l_cm: toRealOrNull(m["bicepLCm"]),
-      bicep_r_cm: toRealOrNull(m["bicepRCm"]),
-      forearm_l_cm: toRealOrNull(m["forearmLCm"]),
-      forearm_r_cm: toRealOrNull(m["forearmRCm"]),
-      thigh_l_cm: toRealOrNull(m["thighLCm"]),
-      thigh_r_cm: toRealOrNull(m["thighRCm"]),
-      calf_l_cm: toRealOrNull(m["calfLCm"]),
-      calf_r_cm: toRealOrNull(m["calfRCm"]),
-      sleep_hours: toRealOrNull(m["sleepHours"]),
-      energy_level: toIntOrNull(m["energyLevel"]),
-      mood: toIntOrNull(m["mood"]),
-      created_at: clientTs,
-      deleted_at: null,
-    },
-    clientTs,
-    idempotencyKey: crypto.randomUUID(),
-  }).catch(() => {});
-}
-
-async function softDeleteMeasurement(
-  client: SqliteMigrationClient,
-  measurementId: string,
-  { userId, clientTs }: DualWriteRuntime,
-): Promise<void> {
-  await client.run(MEASUREMENT_DELETE_SQL, [
-    clientTs,
-    clientTs,
-    measurementId,
-    userId,
-    clientTs,
-  ]);
-  await enqueueOutboxUpsert(client, {
-    userId,
-    table: "fizruk_measurements",
-    op: "delete",
-    row: { id: measurementId, user_id: userId },
     clientTs,
     idempotencyKey: crypto.randomUUID(),
   }).catch(() => {});

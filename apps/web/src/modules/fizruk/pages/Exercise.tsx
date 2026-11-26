@@ -6,7 +6,10 @@ import { formatMeasureSets } from "../lib/measureFormat";
 import { useMemo, useState } from "react";
 import type { FizrukPage } from "../shell/fizrukRoute";
 import { SectionHeading } from "@shared/components/ui/SectionHeading";
-import { EmptyState } from "@shared/components/ui/EmptyState";
+import {
+  EmptyState,
+  FirstCloudPullGate,
+} from "@shared/components/ui/EmptyState";
 import { Measure } from "@shared/components/ui/Measure";
 import { Button } from "@shared/components/ui/Button";
 import { Skeleton } from "@shared/components/ui/Skeleton";
@@ -457,11 +460,13 @@ export function Exercise({ exerciseId, onNavigate }: ExerciseProps) {
             Історія підходів
           </SectionHeading>
           {history.length === 0 ? (
-            <EmptyState
-              compact
-              title="Поки немає записів"
-              description="Заверши хоча б один підхід, історія зʼявиться тут."
-            />
+            <FirstCloudPullGate compact>
+              <EmptyState
+                compact
+                title="Поки немає записів"
+                description="Заверши хоча б один підхід, історія зʼявиться тут."
+              />
+            </FirstCloudPullGate>
           ) : (
             <div className="space-y-2">
               {history

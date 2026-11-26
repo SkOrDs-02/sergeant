@@ -8,7 +8,10 @@ import { Label } from "@shared/components/ui/FormField";
 import { Button } from "@shared/components/ui/Button";
 import { Card } from "@shared/components/ui/Card";
 import { ConfirmDialog } from "@shared/components/ui/ConfirmDialog";
-import { EmptyState } from "@shared/components/ui/EmptyState";
+import {
+  EmptyState,
+  FirstCloudPullGate,
+} from "@shared/components/ui/EmptyState";
 import { Icon } from "@shared/components/ui/Icon";
 import { Tooltip } from "@shared/components/ui/Tooltip";
 import { useToast } from "@shared/hooks/useToast";
@@ -426,11 +429,13 @@ export function WorkoutTemplatesSection({
           </SectionHeading>
         </div>
         {(templates || []).length === 0 ? (
-          <EmptyState
-            compact
-            title="Поки немає шаблонів"
-            description="Створи перший кнопкою вище."
-          />
+          <FirstCloudPullGate compact>
+            <EmptyState
+              compact
+              title="Поки немає шаблонів"
+              description="Створи перший кнопкою вище."
+            />
+          </FirstCloudPullGate>
         ) : (
           (templates || []).map((t) => (
             <div

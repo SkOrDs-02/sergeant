@@ -62,4 +62,36 @@ export async function reconcileRemovedChildren(
       idempotencyKey: crypto.randomUUID(),
     }).catch(() => {});
   }
+
+  // Прибрана вправа тягне за собою свої підходи (A2): інакше вони лишаються
+  // осиротілими живими рядками і локально, і на сервері.
+  if (tableName === "fizruk_workout_items" && doomed.length > 0) {
+    const ph = doomed.map(() => "?").join(",");
+    const doomedIds = doomed.map((d) => d.id);
+    const orphanSets = await client.all<{ id: string }>(
+      `SELECT id FROM fizruk_workout_sets
+        WHERE workout_item_id IN (${ph}) AND user_id = ?
+          AND deleted_at IS NULL AND updated_at < ?`,
+      [...doomedIds, userId, clientTs],
+    );
+    if (orphanSets.length > 0) {
+      await client.run(
+        `UPDATE fizruk_workout_sets
+            SET deleted_at = ?, updated_at = ?
+          WHERE workout_item_id IN (${ph}) AND user_id = ?
+            AND deleted_at IS NULL AND updated_at < ?`,
+        [clientTs, clientTs, ...doomedIds, userId, clientTs],
+      );
+    }
+    for (const { id } of orphanSets) {
+      await enqueueOutboxUpsert(client, {
+        userId,
+        table: "fizruk_workout_sets",
+        op: "delete",
+        row: { id, user_id: userId },
+        clientTs,
+        idempotencyKey: crypto.randomUUID(),
+      }).catch(() => {});
+    }
+  }
 }
