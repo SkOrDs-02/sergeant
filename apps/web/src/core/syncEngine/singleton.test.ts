@@ -57,6 +57,39 @@ beforeEach(() => {
 });
 
 describe("bootSyncEngineWriter", () => {
+  // `FULL-20261125-DATA-3`: рядок, що ліг у чергу до реєстрації нуджа
+  // (реплей журналу після перезавантаження), чекав першого тіку ~30 с.
+  it("після старту штовхає чергу, якщо в ній уже є рядки", async () => {
+    vi.useFakeTimers();
+    try {
+      const created = makeRuntime();
+      vi.mocked(created.getStatus)
+        .mockResolvedValueOnce({ pending: 0 } as never)
+        .mockResolvedValueOnce({ pending: 2 } as never);
+      await bootSyncEngineWriter({ createRuntime: async () => created });
+      await vi.advanceTimersByTimeAsync(1_500);
+      expect(created.notifyEnqueued).not.toHaveBeenCalled();
+      await vi.advanceTimersByTimeAsync(3_500);
+      expect(created.notifyEnqueued).toHaveBeenCalledTimes(1);
+    } finally {
+      vi.useRealTimers();
+    }
+  });
+
+  it("порожня черга на старті нічого не штовхає", async () => {
+    vi.useFakeTimers();
+    try {
+      const created = makeRuntime();
+      vi.mocked(created.getStatus).mockResolvedValue({ pending: 0 } as never);
+      await bootSyncEngineWriter({ createRuntime: async () => created });
+      await vi.advanceTimersByTimeAsync(6_000);
+      expect(created.getStatus).toHaveBeenCalledTimes(2);
+      expect(created.notifyEnqueued).not.toHaveBeenCalled();
+    } finally {
+      vi.useRealTimers();
+    }
+  });
+
   it("starts once and returns the same runtime on repeated boot", async () => {
     const runtime = makeRuntime();
     const createRuntime = vi.fn().mockResolvedValue(runtime);

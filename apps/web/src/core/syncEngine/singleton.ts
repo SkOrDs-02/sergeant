@@ -34,6 +34,7 @@ import {
   type SyncEngineReaderRuntime,
 } from "./syncEngineReader";
 import { ensureModuleSchemas } from "./moduleSchemas";
+import { scheduleBootBacklogNudge } from "./bootBacklogNudge";
 import { recordOutboxPurgeNotice } from "./outboxPurgeNotice";
 import { requeueFkViolationRejected } from "./requeueFkViolationRejected";
 import { createSyncStreamConsumer } from "./syncStreamConsumer";
@@ -154,6 +155,8 @@ export function bootSyncEngineWriter(
       // очікування ~30-секундного тіку. Реєструємо ПІСЛЯ `start()`, щоб
       // нудж ніколи не прилетів у неармований scheduler.
       setOutboxEnqueueNudge(() => created.notifyEnqueued());
+      // Черга, що вже чекає на старті, їде одразу (`bootBacklogNudge.ts`).
+      scheduleBootBacklogNudge(created, () => runtime === created);
       return runtime;
     })
     .catch((error: unknown) => {
