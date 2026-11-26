@@ -84,6 +84,11 @@ const DELETION_TOOLS: ReadonlySet<string> = new Set([
   "clear_pantry",
 ]);
 
+/** Чи інструмент справді щось видаляє (червона кнопка лише для таких). */
+export function isDeletionTool(name: string): boolean {
+  return DELETION_TOOLS.has(name);
+}
+
 /**
  * Розширений сабсет tool names, для яких v1 малює картку.
  * Ціль: покрити всі tools з action cards.

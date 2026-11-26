@@ -1,3 +1,4 @@
+import { rateLimitCopy } from "./rateLimitCopy";
 import {
   createContext,
   useContext,
@@ -235,7 +236,8 @@ export function translateAuthError(
   // Status / serverний код мають пріоритет над англійським `message` —
   // 429 від нашого rate-limiter-а й 5xx від errorHandler-а не несуть
   // Better Auth-ового коду, тільки `code: "RATE_LIMIT" | "INTERNAL"`.
-  if (status === 429 || code === "RATE_LIMIT") return messages.auth.rateLimited;
+  if (status === 429 || code.startsWith("RATE_LIMIT"))
+    return rateLimitCopy(message);
   if (status >= 500 || code === "INTERNAL") return messages.auth.serverDown;
 
   // Better Auth canonical error-codes — стабільніше за parsing message.
