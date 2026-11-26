@@ -52,6 +52,23 @@ describe("TxRow: картка не в гривні", () => {
     ).toBeTruthy();
   });
 
+  it("злотова картка з курсом називає валюту, а не ¤", () => {
+    const { container } = render(
+      <TxRow
+        tx={mkTx({
+          amount: -105_000,
+          accountAmount: -10_000,
+          accountCurrencyCode: 985,
+          currencyCode: 985,
+          amountUah: -105_000,
+          fxRate: { uahPerUnit: 10.5, date: "2026-11-24" },
+        })}
+      />,
+    );
+    expect(container.textContent).toContain("zł");
+    expect(container.textContent).not.toContain("¤");
+  });
+
   it("гривнева картка лишається в ₴ без пояснення", () => {
     const { container } = render(
       <TxRow

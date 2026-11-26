@@ -640,10 +640,16 @@ export const CURRENCY = {
 };
 
 /** ISO-4217 numeric currency code → display symbol. Unknown codes are the
- *  caller's responsibility to fall back (defaults to `₴` in practice —
- *  every currency the app supports is one of the three keys above). */
+ *  caller's responsibility to fall back. Besides the three app currencies
+ *  above, it covers every Monobank account currency the server converts at
+ *  the NBU rate (`apps/server/src/modules/mono/amountUah.ts`), so a converted
+ *  row names its original currency. */
 export const CURRENCY_SYMBOL: Record<number, string> = {
   [CURRENCY.UAH]: "₴",
   [CURRENCY.USD]: "$",
   [CURRENCY.EUR]: "€",
+  985: "zł",
+  826: "£",
+  756: "CHF",
+  203: "Kč",
 };

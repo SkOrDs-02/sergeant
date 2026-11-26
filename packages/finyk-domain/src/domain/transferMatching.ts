@@ -64,9 +64,17 @@ function isNbuConverted(tx: Transaction): boolean {
   return typeof tx["amountUah"] === "number" && tx["fxRate"] != null;
 }
 
+/**
+ * Валюта, у якій лежить `amount` ноги. Гривневий еквівалент валютної ноги
+ * це гривня; інакше валюта РАХУНКУ, якщо сервер її дав (`currencyCode` це
+ * валюта операції, і для гривневої ноги доларової покупки він 840). Без
+ * поля рахунку лишається старий фолбек на `currencyCode`.
+ */
 function currencyCodeOf(tx: Transaction): number | null {
-  // Гривневий еквівалент валютної ноги порівнюємо з гривневою ногою.
   if (typeof tx["amountUah"] === "number") return UAH_CODE;
+  const account = tx["accountCurrencyCode"];
+  if (typeof account === "number" && Number.isInteger(account) && account > 0)
+    return account;
   const value = Number(tx["currencyCode"]);
   return Number.isFinite(value) && value > 0 ? value : null;
 }

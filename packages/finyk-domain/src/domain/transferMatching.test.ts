@@ -458,6 +458,25 @@ describe("обмін валютної картки на гривневу (finyk-
     expect(findInternalTransferSuggestions([out, incoming])).toEqual([]);
   });
 
+  it("гривнева нога доларової операції (currencyCode 840) збігається за валютою рахунку", () => {
+    const out = usdLeg("usd-out", -415_000, 1_000);
+    const incoming = {
+      ...tx("uah-in", 415_000, "black", 1_030, "З доларової картки", 840),
+      accountCurrencyCode: 980,
+    };
+    expect(findInternalTransferSuggestions([out, incoming])).toHaveLength(1);
+  });
+
+  it("неперерахована доларова нога не порівнюється з гривневою", () => {
+    const out = usdLeg("usd-out", -415_000, 1_000);
+    // Доларова нога без курсу: `amount` у центах, хоч операція в гривні.
+    const usdRaw = {
+      ...tx("usd-raw", 410_000, "usd2", 1_030, "З картки на картку", 980),
+      accountCurrencyCode: 840,
+    };
+    expect(findInternalTransferSuggestions([out, usdRaw])).toEqual([]);
+  });
+
   it("гривневі ноги без курсу НБУ далі вимагають точного збігу", () => {
     const out = tx("out", -125_000, "black", 1_000);
     const incoming = tx("in", 124_000, "white", 1_060, "З картки на картку");
