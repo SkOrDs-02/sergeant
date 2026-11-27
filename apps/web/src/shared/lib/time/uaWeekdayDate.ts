@@ -85,3 +85,19 @@ export function uaWeekdayName(mondayIndex: number): string {
   const idx = ((Math.trunc(mondayIndex) % 7) + 7) % 7;
   return WEEKDAY_NAME_FORMAT.format(new Date(Date.UTC(2024, 0, 1 + idx)));
 }
+
+const SHORT_WEEKDAY_DATE = new Intl.DateTimeFormat("uk-UA", {
+  weekday: "short",
+  day: "numeric",
+  month: "short",
+});
+
+/**
+ * `new Date(2026, 6, 6)` → `пн, 6 лип.`: короткий день тижня з датою для
+ * щільних рядків (таблиця тижня). Скорочення дня не відмінюється, тож збирати
+ * підпис із частин, як у `formatUaWeekdayDate`, не треба. Порожній рядок на
+ * невалідній даті.
+ */
+export function formatUaShortWeekdayDate(date: Date): string {
+  return Number.isNaN(date.getTime()) ? "" : SHORT_WEEKDAY_DATE.format(date);
+}

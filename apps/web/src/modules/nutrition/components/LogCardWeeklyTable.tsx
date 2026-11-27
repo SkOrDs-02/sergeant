@@ -3,6 +3,7 @@
  * Status: Active
  */
 /* eslint-disable sergeant-design/no-cyrillic-jsx-literal -- pre-existing i18n tech debt; strings moved from LogCard.tsx during T3 decomposition */
+import { formatUaShortWeekdayDate } from "@shared/lib/time/uaWeekdayDate";
 import { MorphChevron } from "@shared/components/ui/MorphChevron";
 import { useMemo, useState } from "react";
 import { messages } from "@shared/i18n/uk";
@@ -19,11 +20,7 @@ const WEEK_TABLE_ID = "nutrition-week-log-table";
 function formatDayLabel(dayKey: string): string {
   const [y, m, d] = dayKey.split("-").map(Number);
   const date = new Date(y ?? 1970, (m ?? 1) - 1, d ?? 1);
-  return new Intl.DateTimeFormat("uk-UA", {
-    weekday: "short",
-    day: "numeric",
-    month: "short",
-  }).format(date);
+  return formatUaShortWeekdayDate(date);
 }
 
 interface LogCardWeeklyTableProps {
