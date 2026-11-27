@@ -28,39 +28,48 @@ test("@critical finyk: cold-load mounts module shell", async ({ page }) => {
   expect(errors, "Uncaught page errors on finyk cold load").toEqual([]);
 });
 
-test("@critical finyk: empty transactions → add-expense CTA opens sheet", async ({
-  page,
-}) => {
-  await seedFTUX(page, "post-ftux", {
-    extra: { finyk_manual_only_v1: "1" },
+// Порожній список гарантовано порожній лише без акаунта: smoke-лейн ділить
+// один акаунт на всі спеки, і витрата з `deep-module-crud` приїжджає сюди
+// першим pull-ом (apps/web/AGENTS.md § E2E smoke, п. 8). Доки порожній стан
+// встигав блимнути до pull-у, тест проходив на таймінгу; тепер поки тягнеться
+// хмара, стоїть стан завантаження, і гонку видно. Анонімний режим хмари не має.
+test.describe("finyk: порожній список без акаунта", () => {
+  test.use({ storageState: { cookies: [], origins: [] } });
+
+  test("@critical finyk: empty transactions → add-expense CTA opens sheet", async ({
+    page,
+  }) => {
+    await seedFTUX(page, "post-ftux", {
+      extra: { finyk_manual_only_v1: "1" },
+    });
+    const errors = await collectPageErrors(page);
+
+    await page.goto("/finyk/transactions", { waitUntil: "domcontentloaded" });
+    await waitForInitialSqliteRefresh(page, "finyk");
+
+    // Порожній перший вхід у «Операції» більше НЕ повторює герой Огляду:
+    // поставка F2/F1 (founder-UX audit round 2) дала Транзакціям власну
+    // list-scoped заглушку, бо два порожні екрани поспіль казали те саме
+    // слово в слово. Герой `ModuleEmptyState module="finyk"` лишився за
+    // Оглядом. Місяць-порожній і фільтр-порожній стани тут не при ділі:
+    // перший вимагає історії в інших місяцях, другий — рядків під фільтром.
+    await expect(page.getByText("Операцій ще немає")).toBeVisible({
+      timeout: 10_000,
+    });
+
+    // «+ Додати» в куті, далі рядок «Вручну» в аркуші джерел.
+    await page
+      .getByTestId("corner-action")
+      .getByRole("button", { name: "Додати" })
+      .click();
+    await page
+      .getByTestId("add-sources")
+      .getByRole("button", { name: /^Вручну/ })
+      .click();
+    await expect(
+      page.getByRole("dialog", { name: "Додати витрату" }),
+    ).toBeVisible();
+
+    expect(errors, "Uncaught page errors on finyk CTA happy path").toEqual([]);
   });
-  const errors = await collectPageErrors(page);
-
-  await page.goto("/finyk/transactions", { waitUntil: "domcontentloaded" });
-  await waitForInitialSqliteRefresh(page, "finyk");
-
-  // Порожній перший вхід у «Операції» більше НЕ повторює герой Огляду:
-  // поставка F2/F1 (founder-UX audit round 2) дала Транзакціям власну
-  // list-scoped заглушку, бо два порожні екрани поспіль казали те саме
-  // слово в слово. Герой `ModuleEmptyState module="finyk"` лишився за
-  // Оглядом. Місяць-порожній і фільтр-порожній стани тут не при ділі:
-  // перший вимагає історії в інших місяцях, другий — рядків під фільтром.
-  await expect(page.getByText("Операцій ще немає")).toBeVisible({
-    timeout: 10_000,
-  });
-
-  // «+ Додати» в куті, далі рядок «Вручну» в аркуші джерел.
-  await page
-    .getByTestId("corner-action")
-    .getByRole("button", { name: "Додати" })
-    .click();
-  await page
-    .getByTestId("add-sources")
-    .getByRole("button", { name: /^Вручну/ })
-    .click();
-  await expect(
-    page.getByRole("dialog", { name: "Додати витрату" }),
-  ).toBeVisible();
-
-  expect(errors, "Uncaught page errors on finyk CTA happy path").toEqual([]);
 });
