@@ -5380,7 +5380,7 @@
       "canonical_owner": "docs/work/specs/silpo-pantry-auto-import.md"
     },
     {
-      "old_path": null,
+      "old_path": "docs/work/specs/silpo-pantry-confirm.md",
       "new_path": "docs/work/specs/silpo-pantry-confirm.md",
       "action": "keep",
       "genre": "active-work",
