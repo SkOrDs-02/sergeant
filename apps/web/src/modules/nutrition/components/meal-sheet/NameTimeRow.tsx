@@ -12,6 +12,7 @@ import { parseMealSpeech } from "@sergeant/shared";
 import { NAME_MAX_LEN } from "@shared/lib/text/limits";
 import {
   currentTime,
+  kcalToFieldString,
   macroToFieldString,
   type MealFormState,
 } from "./mealFormUtils";
@@ -60,7 +61,7 @@ export function NameTimeRow({
         parsed.grams != null ? ` ${Math.round(parsed.grams)} г` : "";
       const spokenName = parsed.name ? `${parsed.name}${portionSuffix}` : "";
       if (spokenName) field("name")(spokenName);
-      if (parsed.kcal != null) field("kcal")(macroToFieldString(parsed.kcal));
+      if (parsed.kcal != null) field("kcal")(kcalToFieldString(parsed.kcal));
       if (parsed.protein != null)
         field("protein_g")(macroToFieldString(parsed.protein));
     },

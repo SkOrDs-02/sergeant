@@ -66,6 +66,8 @@ export const fizrukSessionMessages = {
     done: "Готово",
     addSet: "+ Підхід",
     setDeleted: "Підхід видалено",
+    removeItem: "Видалити вправу",
+    removeItemAria: "Видалити вправу: {name}",
     hint: "Числа тренування перерахуються, час завершення лишиться.",
   },
 };

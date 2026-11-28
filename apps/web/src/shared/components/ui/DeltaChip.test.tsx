@@ -88,4 +88,39 @@ describe("DeltaChip", () => {
       expect(screen.getByText("—")).toBeInTheDocument();
     });
   });
+
+  describe("percentPoints (відсоткові метрики)", () => {
+    const text = () => screen.getByTestId("delta-chip").textContent;
+
+    it("69% проти 75% — «−6 п.п.», а не відносне «−8%»", () => {
+      render(<DeltaChip cur={69} prev={75} percentPoints />);
+      expect(text()).toBe("\u22126\u202Fп.п.");
+      expect(screen.queryByText(/%/)).toBeNull();
+      expect(screen.getByTestId("delta-chip")).toHaveAttribute(
+        "aria-label",
+        "\u22126 процентних пунктів",
+      );
+    });
+
+    it("зростання з 75 до 94 — «+19 п.п.», а не «+25%»", () => {
+      render(<DeltaChip cur={94} prev={75} percentPoints />);
+      expect(text()).toBe("+19\u202Fп.п.");
+    });
+
+    it("різниця рахується між округленими значеннями, які бачить людина", () => {
+      render(<DeltaChip cur={69.4} prev={75.4} percentPoints />);
+      expect(text()).toBe("\u22126\u202Fп.п.");
+    });
+
+    it("однакові округлені значення — «без змін»; нульова база — «—»", () => {
+      const { rerender } = render(
+        <DeltaChip cur={69.2} prev={68.8} percentPoints />,
+      );
+      expect(screen.getByTestId("delta-chip-flat")).toHaveTextContent(
+        "без змін",
+      );
+      rerender(<DeltaChip cur={40} prev={0} percentPoints />);
+      expect(screen.getByText("—")).toBeInTheDocument();
+    });
+  });
 });

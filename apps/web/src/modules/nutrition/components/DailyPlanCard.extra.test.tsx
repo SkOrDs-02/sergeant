@@ -37,12 +37,16 @@ vi.mock("@shared/components/ui/Input", () => ({
     "aria-label": ariaLabel,
     value,
     onChange,
+    onBlur,
+    onKeyDown,
     disabled,
     placeholder,
   }: {
     "aria-label"?: string;
     value: string;
     onChange: (e: React.ChangeEvent<HTMLInputElement>) => void;
+    onBlur?: () => void;
+    onKeyDown?: (e: React.KeyboardEvent<HTMLInputElement>) => void;
     disabled?: boolean;
     placeholder?: string;
   }) => (
@@ -50,6 +54,8 @@ vi.mock("@shared/components/ui/Input", () => ({
       aria-label={ariaLabel}
       value={value}
       onChange={onChange}
+      onBlur={onBlur}
+      onKeyDown={onKeyDown}
       disabled={disabled}
       placeholder={placeholder}
       data-testid={`input-${ariaLabel}`}
@@ -227,6 +233,8 @@ describe("DailyPlanCard — macro inputs and kcal recalc", () => {
     fireEvent.change(screen.getByLabelText("Білки (г)"), {
       target: { value: "100" },
     });
+    // Значення завершене лише на blur (FULL-20261126-UX-1, п. 2).
+    fireEvent.blur(screen.getByLabelText("Білки (г)"));
     expect(setPrefs).toHaveBeenCalled();
     // Invoke the setter callback to verify kcal recalc: 100g protein = 400 kcal
     const updater = setPrefs.mock.calls[0]![0] as (
@@ -255,6 +263,7 @@ describe("DailyPlanCard — macro inputs and kcal recalc", () => {
     fireEvent.change(screen.getByLabelText("Білки (г)"), {
       target: { value: "" },
     });
+    fireEvent.blur(screen.getByLabelText("Білки (г)"));
     expect(setPrefs).toHaveBeenCalled();
     const updater = setPrefs.mock.calls[0]![0] as (
       p: NutritionPrefs,
@@ -467,5 +476,20 @@ describe("DailyPlanCard — dayPlan meals section", () => {
     });
     fireEvent.click(regenButtons[0]!);
     expect(defaultHandlers.regenMeal).toHaveBeenCalledTimes(1);
+  });
+});
+
+describe("DailyPlanCard — холодний старт (data-59/60)", () => {
+  it("поки перший pull іде, поля цілей не приймають ввід", async () => {
+    const { markFirstPullPending, markFirstPullSettled } =
+      await import("../../../core/syncEngine/initialPullState");
+    markFirstPullPending();
+    try {
+      render(<DailyPlanCard prefs={EMPTY_PREFS} {...defaultHandlers} />);
+      expect(screen.getByLabelText("Ккал/день")).toBeDisabled();
+      expect(screen.getByLabelText("Білки (г)")).toBeDisabled();
+    } finally {
+      markFirstPullSettled();
+    }
   });
 });

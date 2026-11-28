@@ -20,7 +20,8 @@ import { Card } from "@shared/components/ui/Card";
 import { SectionHeading } from "@shared/components/ui/SectionHeading";
 import { formatDayKeyUk } from "@shared/lib/time/dayKeyLabel";
 import type { DashboardRecentWorkout } from "@sergeant/fizruk-domain/domain";
-import { deviceDayKey, formatNumberUk } from "@sergeant/shared";
+import { deviceDayKey } from "@sergeant/shared";
+import { fmtVolume } from "../../lib/numberFmt";
 
 export interface RecentWorkoutsSectionProps {
   readonly recent: readonly DashboardRecentWorkout[];
@@ -64,7 +65,7 @@ function formatDuration(sec: number): string {
  */
 function formatTonnage(kg: number): string {
   if (!Number.isFinite(kg) || kg <= 0) return "—";
-  return `${formatNumberUk(Math.round(kg))} кг×повт`;
+  return `${fmtVolume(kg)} кг×повт`;
 }
 
 export function RecentWorkoutsSection({

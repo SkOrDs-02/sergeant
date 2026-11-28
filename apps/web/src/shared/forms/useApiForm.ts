@@ -229,8 +229,14 @@ export function useApiForm<TValues extends FieldValues, TResponse = unknown>({
   );
 
   const submit = useCallback(
-    (e?: React.BaseSyntheticEvent) =>
-      handleSubmit(handle as Parameters<typeof handleSubmit>[0])(e),
+    (e?: React.BaseSyntheticEvent) => {
+      // Вердикт сервера стосується ПОПЕРЕДНЬОЇ спроби. Скидаємо його тут, а
+      // не лише в `handle`: спроба, яку зупинила клієнтська валідація, до
+      // `handle` не доходить, і «Неправильний поточний пароль» лишався висіти
+      // над уже іншою помилкою (прогін full-2026-11-25).
+      setServerError(null);
+      return handleSubmit(handle as Parameters<typeof handleSubmit>[0])(e);
+    },
     [handleSubmit, handle],
   );
 

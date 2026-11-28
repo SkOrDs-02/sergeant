@@ -37,6 +37,20 @@ export function withoutReasoning(
   return { ...next, ...firstTurnReasoningFields("none") };
 }
 
+/**
+ * Тур синтезу не має права на нові виклики інструментів: `tool_use` звідси
+ * нікуди не доїжджає (стрім форвардить лише `text_delta`, JSON віддає лише
+ * текст), тож хід, який модель закрила викликом, для людини порожній
+ * (FULL-20261126-AI-2: `remember` без згоди на дані про здоровʼя, 8 з 8
+ * відповідей glm-5.2 були `stop_reason: tool_use` без тексту, перезапит без
+ * міркувань теж). `tool_choice: none` лишає схеми в запиті (розмова несе
+ * `tool_use`/`tool_result`), але забороняє новий виклик; заміряно на шлюзі
+ * 2026-11-26. Лише шлюз: прямий Anthropic цим шляхом не перевірявся.
+ */
+export function synthesisToolChoiceFields(): Record<string, unknown> {
+  return chatViaOpenRouter() ? { tool_choice: { type: "none" } } : {};
+}
+
 export type EmptyRetryOutcome = "recovered" | "still_empty" | "error";
 
 /**

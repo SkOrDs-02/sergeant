@@ -5,7 +5,13 @@ import {
   getDayMacros,
 } from "@sergeant/nutrition-domain";
 import { macrosForGrams } from "../../lib/foodDb/foodDb";
-import { currentTime, emptyForm, macroToFieldString } from "./mealFormUtils";
+import {
+  currentTime,
+  emptyForm,
+  kcalToFieldString,
+  macroToFieldString,
+  macrosToFormFields,
+} from "./mealFormUtils";
 
 // mealTypeByNow comes from @sergeant/nutrition-domain via the mealTypes re-export.
 // We stub it so tests are not hour-sensitive.
@@ -81,9 +87,9 @@ describe("emptyForm", () => {
     expect(form.name).toBe("");
   });
 
-  it("populates kcal from photoResult.macros (до 0.1)", () => {
+  it("populates kcal from photoResult.macros (ціле)", () => {
     const form = emptyForm({ macros: { kcal: 312.7 } });
-    expect(form.kcal).toBe("312.7");
+    expect(form.kcal).toBe("313");
   });
 
   it("populates protein_g from photoResult.macros (до 0.1)", () => {
@@ -163,5 +169,20 @@ describe("macroToFieldString: сума позицій = підсумок дня"
       .map((g) => Math.round(macrosForGrams(per100, g).protein_g))
       .reduce((a, b) => a + b, 0);
     expect(roundedSum).not.toBe(Math.round(day.protein_g * 10) / 10);
+  });
+});
+
+describe("ккал у формі = збережене (рішення 2026-11-26)", () => {
+  it("33 ккал/100 г x 50 г = 16.5 показується як 17", () => {
+    const mac = macrosForGrams({ kcal: 33 }, 50);
+    expect(mac.kcal).toBe(16.5);
+    expect(kcalToFieldString(mac.kcal)).toBe("17");
+    expect(macrosToFormFields(mac).kcal).toBe("17");
+  });
+
+  it("Б/Ж/В лишаються з точністю 0.1", () => {
+    expect(macrosToFormFields({ kcal: 16.5, protein_g: 3.25 }).protein_g).toBe(
+      "3.3",
+    );
   });
 });

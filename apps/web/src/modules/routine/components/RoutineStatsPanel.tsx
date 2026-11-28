@@ -9,7 +9,7 @@ import { HabitRangeGrid } from "./HabitRangeGrid";
 import { HabitLeadersBlock } from "./HabitLeadersBlock";
 import {
   completionRateForRange,
-  flexibleMaxStreakAllTimeAcrossHabits,
+  longestStreakAcrossHabits,
 } from "../lib/streaks";
 import { dateKeyMinusDays } from "@sergeant/routine-domain";
 import { anchoredTodayKey } from "../lib/dayAnchor";
@@ -57,9 +57,10 @@ export function RoutineStatsPanel({
     // показувати БІЛЬШЕ, ніж «Макс. серія» (unification audit 2026-08-31,
     // finding 1.22): жорсткий рекорд не бачив прощених пропусків, які
     // гнучка поточна серія вже пережила.
-    const maxAllTime = flexibleMaxStreakAllTimeAcrossHabits(
+    const maxAllTime = longestStreakAcrossHabits(
       habits,
       completions,
+      todayKey,
       routine.skips ?? {},
     );
     // `pausedFrom: todayKey` — заморозка минулого (ADR-0079 §2). Саме тут вона
@@ -148,7 +149,7 @@ export function RoutineStatsPanel({
 
         {/* Обидва числа — крос-звичкові МАКСИМУМИ, не «тримаю все N днів»:
             `currentStreak` приходить як `streakMax` (`flexibleMaxActiveStreak`
-            по всіх звичках), `maxAllTime` — `flexibleMaxStreakAllTimeAcrossHabits`.
+            по всіх звичках), `maxAllTime` — `longestStreakAcrossHabits`.
             Доти підписи казали «Серія сьогодні» й «Макс. серія», тобто людина
             читала агрегат як власну суцільну серію (знахідка PR-R10).
 

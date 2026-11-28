@@ -25,6 +25,10 @@ vi.mock("@shared/hooks/useToast", () => ({
 }));
 
 import { NutritionDashboard } from "./NutritionDashboard";
+import {
+  markFirstPullPending,
+  markFirstPullSettled,
+} from "../../../core/syncEngine/initialPullState";
 import { todayISODate } from "@sergeant/nutrition-domain";
 
 // ADR-0078: NutritionDashboard's "today" macros card is device-local.
@@ -95,6 +99,7 @@ beforeEach(() => {
 });
 
 afterEach(() => {
+  markFirstPullSettled();
   vi.clearAllMocks();
   vi.useRealTimers();
 });
@@ -218,6 +223,50 @@ describe("NutritionDashboard", () => {
       />,
     );
     expect(toastSuccess).toHaveBeenCalledWith("Денну ціль виконано");
+  });
+
+  it("тост не суперечить підпису «понад ціль», коли сума трохи вище норми", () => {
+    render(
+      <NutritionDashboard
+        onPickMeal={vi.fn()}
+        log={logWith(2070, 120, 60, 200)}
+        prefs={GOAL_PREFS}
+      />,
+    );
+    expect(toastSuccess).toHaveBeenCalledWith(
+      "Ціль дня виконано, трохи вище норми: +70 ккал",
+    );
+    expect(toastSuccess).not.toHaveBeenCalledWith("Денну ціль виконано");
+  });
+
+  it("поки перший pull іде, не показує «0 прийомів» і порожній тиждень", () => {
+    markFirstPullPending();
+    render(
+      <NutritionDashboard
+        onPickMeal={vi.fn()}
+        log={{} as never}
+        prefs={GOAL_PREFS}
+      />,
+    );
+    expect(screen.queryByText(/0 прийомів/)).toBeNull();
+    expect(screen.queryByText("Ще немає записів цього тижня")).toBeNull();
+    expect(screen.getAllByText("Завантажую з хмари…").length).toBeGreaterThan(
+      0,
+    );
+  });
+
+  it("після першого pull порожній стан повертається", () => {
+    markFirstPullSettled();
+    render(
+      <NutritionDashboard
+        onPickMeal={vi.fn()}
+        log={{} as never}
+        prefs={GOAL_PREFS}
+      />,
+    );
+    expect(
+      screen.getByText("Ще немає записів цього тижня"),
+    ).toBeInTheDocument();
   });
 
   it("shows an honest 'записано N із 4' note on an incomplete day (canon §5.2)", () => {

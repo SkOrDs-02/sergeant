@@ -5,7 +5,8 @@
 import type { Dispatch, SetStateAction } from "react";
 import { Button } from "@shared/components/ui/Button";
 import { Card } from "@shared/components/ui/Card";
-import { Input } from "@shared/components/ui/Input";
+import { GoalNumberInput } from "./GoalNumberInput";
+import { useFirstCloudPullPhase } from "@shared/hooks/useFirstCloudPullPhase";
 import { Measure } from "@shared/components/ui/Measure";
 import { SectionHeading } from "@shared/components/ui/SectionHeading";
 import { openHubSettingsSection } from "@shared/lib/modules/hubNav";
@@ -84,6 +85,9 @@ export function DailyPlanCard({
   fetchWeekPlan,
 }: DailyPlanCardProps) {
   const hasTargets = prefs.dailyTargetKcal != null;
+  // Холодний старт: поки перший pull іде, набране в полі цілі зітреться
+  // приходом prefs з хмари, тож ввід не приймаємо (data-59/60).
+  const firstPullLoading = useFirstCloudPullPhase() === "loading";
 
   const sortedMeals: PlanMeal[] = dayPlan?.meals
     ? [...(dayPlan.meals as PlanMeal[])].sort(
@@ -144,14 +148,9 @@ export function DailyPlanCard({
                   {label}
                   {unit && ` (${unit})`}
                 </div>
-                <Input
-                  type="number"
-                  inputMode="numeric"
-                  value={prefs[key] != null ? String(prefs[key]) : ""}
-                  onChange={(e) => {
-                    const raw = e.target.value;
-                    const v =
-                      raw === "" ? null : Number(raw) > 0 ? Number(raw) : null;
+                <GoalNumberInput
+                  value={prefs[key] ?? null}
+                  onCommit={(v) =>
                     setPrefs((p) => {
                       const next = {
                         ...p,
@@ -193,11 +192,10 @@ export function DailyPlanCard({
                         }
                       }
                       return next;
-                    });
-                  }}
+                    })
+                  }
                   aria-label={unit ? `${label} (${unit})` : label}
-                  placeholder="—"
-                  disabled={busy || dayPlanBusy}
+                  disabled={busy || dayPlanBusy || firstPullLoading}
                 />
               </div>
             ))}

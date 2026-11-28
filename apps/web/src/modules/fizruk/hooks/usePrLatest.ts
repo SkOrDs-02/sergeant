@@ -26,6 +26,7 @@
  */
 
 import { useMemo } from "react";
+import { isWorkingSet } from "@sergeant/fizruk-domain";
 import type { Workout } from "@sergeant/fizruk-domain/domain";
 import { deviceDayKey } from "@sergeant/shared";
 
@@ -106,6 +107,9 @@ function collectPrSets(workouts: readonly Workout[]): PrCandidate[] {
       const exerciseName = nameUk ?? item.exerciseId;
       let bestThisSession: number | null = null;
       for (const s of item.sets ?? []) {
+        // Те саме правило, що й рекорди на «Прогресі» (`topPRs`): лише
+        // робочі підходи (є повторення, не `done: false`, не розминка).
+        if (!isWorkingSet(s)) continue;
         const kg = Number(s.weightKg);
         if (!Number.isFinite(kg) || kg <= 0) continue;
         if (bestThisSession === null || kg > bestThisSession) {

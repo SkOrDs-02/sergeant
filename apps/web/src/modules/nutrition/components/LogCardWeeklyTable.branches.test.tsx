@@ -43,4 +43,26 @@ describe("LogCardWeeklyTable", () => {
     // обіцянка без адресата.
     expect(document.getElementById(controls!)).not.toBeNull();
   });
+
+  it("рахує календарний тиждень Пн-Нд обраного дня з людськими датами", () => {
+    // 2026-07-09 — четвер: тиждень 06.07 (Пн) … 12.07 (Нд), а не 03.07–09.07.
+    render(<LogCardWeeklyTable log={LOG} selectedDate="2026-07-09" />);
+    fireEvent.click(screen.getByRole("button", { name: /Журнал за тиждень/ }));
+    const rows = screen.getAllByRole("row").slice(1);
+    expect(rows).toHaveLength(7);
+    expect(rows[0]!.textContent).toMatch(/^пн, 6 лип/);
+    expect(rows[6]!.textContent).toMatch(/^нд, 12 лип/);
+    // Сирий ключ «07-06» більше не показується.
+    expect(screen.queryByText("07-06")).toBeNull();
+  });
+
+  it("порожній день каже «немає записів», а не «0»", () => {
+    render(<LogCardWeeklyTable log={LOG} selectedDate="2026-07-09" />);
+    fireEvent.click(screen.getByRole("button", { name: /Журнал за тиждень/ }));
+    const rows = screen.getAllByRole("row").slice(1);
+    expect(rows[0]!.textContent).toContain("немає записів");
+    expect(rows[0]!.textContent).not.toMatch(/\b0\b/);
+    // Четвер із записом: числа на місці.
+    expect(rows[3]!.textContent).toContain("400");
+  });
 });

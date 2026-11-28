@@ -142,18 +142,32 @@ describe("applyNutritionPrefs: prefs_merge (data-04)", () => {
     expect(fake.queries).toHaveLength(0);
   });
 
-  it("першого рядка немає: патч не вставляється, клієнт повторить його пізніше", async () => {
+  it("FULL-20261126-NUTR-1: першого рядка немає, патч створює його, а журнал бачить повний знімок", async () => {
     const fake = new FakeClient(null);
     const o = op({
       user_id: "u1",
-      prefs_json: { waterGoalMl: 2500 },
+      prefs_json: { dailyTargetKcal: 1800 },
+      active_pantry_id: "home",
       prefs_merge: true,
     });
     await expect(
       applyNutritionPrefs(asClient(fake), o, "u1", TS),
-    ).resolves.toEqual({ status: "retry", reason: "prefs_patch_without_base" });
-    expect(fake.queries).toHaveLength(1);
-    expect(o.row["prefs_merge"]).toBe(true);
+    ).resolves.toEqual({ status: "applied" });
+    const ins = fake.queries[fake.queries.length - 1]!;
+    expect(ins.sql).toContain("INSERT INTO nutrition_prefs");
+    expect(ins.params[1]).toBe('{"dailyTargetKcal":1800}');
+    expect(ins.params[2]).toBe("home");
+    expect(o.row["prefs_json"]).toBe('{"dailyTargetKcal":1800}');
+    expect(o.row).not.toHaveProperty("prefs_merge");
+  });
+
+  it("патч без рядка, але з непридатним JSON, відхиляється до SQL", async () => {
+    const fake = new FakeClient(null);
+    const o = op({ user_id: "u1", prefs_json: "[1]", prefs_merge: true });
+    await expect(
+      applyNutritionPrefs(asClient(fake), o, "u1", TS),
+    ).resolves.toEqual({ status: "rejected", reason: "invalid_prefs_patch" });
+    expect(fake.queries).toHaveLength(0);
   });
 
   it("першого рядка немає: повний знімок вставляється як є", async () => {

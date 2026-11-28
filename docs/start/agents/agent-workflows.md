@@ -101,6 +101,17 @@ OpenClaw runtime прибрано з репо (2026-07-20). Якщо задач�
 7. For any failures: load `sergeant-bugfix-and-regression` + `fix-failing-ci.md`.
 8. Out of scope for this squad: e2e/Playwright (`sergeant-e2e-testing`), Detox (needs a device), bundle/Lighthouse budgets (CI gates).
 
+## 9a. Squad Verify (independent evidence: oracle workers + adversarial verifier)
+
+1. Start with `sergeant-start-here`.
+2. Load `sergeant-verify-squad`.
+3. Bring the stand up and check it yourself first; the agents do not start or rebuild it.
+4. Parallel: spawn one `oracle-worker` per module or flow, each with its own output directory and account.
+5. Wait for all worker reports. A worker that re-sends the same report is looping on its own background task: stop it.
+6. Sequential: spawn `oracle-verifier` with the output directories and the claimed defects as claims to test.
+7. Synthesize: per-module table, every claimed finding with the verifier's ruling, and what was not covered.
+8. Record only `CONFIRMED` findings; fixing goes to the module owner or `sergeant-bugfix-and-regression`.
+
 ## 10. Docs Governance Audit / Dedup
 
 1. Start with `sergeant-start-here`.

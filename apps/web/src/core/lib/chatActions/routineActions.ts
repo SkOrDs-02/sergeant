@@ -18,12 +18,11 @@ import {
   applySetHabitSkip,
   applyToggleHabitCompletion,
   dateKeyMinusDays,
-  flexibleMaxStreakAllTime,
   flexibleStreakBreakdown,
   habitCompletionRate,
   habitScheduledOnDate,
   isFlexibleHabit,
-  maxStreakAllTime,
+  longestStreakForHabit,
   resolveHabitGlyph,
   streakForHabit,
   upgradeHabitGlyph,
@@ -598,11 +597,13 @@ export function handleRoutineAction(
         : flexibleStreakBreakdown(habit, completionsForHabit, todayKey, {
             skipsForHabit,
           }).days;
-      const maxStreak = isFlex
-        ? maxStreakAllTime(habit, completionsForHabit)
-        : flexibleMaxStreakAllTime(habit, completionsForHabit, {
-            skipsForHabit,
-          });
+      // Одне правило з `currentStreak` вище (FULL-20261126-ROUTINE-1).
+      const maxStreak = longestStreakForHabit(
+        habit,
+        completionsForHabit,
+        todayKey,
+        { skipsForHabit },
+      );
       const streakUnit = isFlex ? "тижнів поспіль" : "днів";
       const missedDates: string[] = [];
       // Для гнучкої звички «пропущеного дня» немає: вона не називає днів.

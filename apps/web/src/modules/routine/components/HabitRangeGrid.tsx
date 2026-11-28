@@ -28,6 +28,7 @@ import type { HabitRangeCellState } from "@sergeant/routine-domain";
 import { formatDayKeyUk } from "@shared/lib/time/dayKeyLabel";
 import { cn } from "@shared/lib/ui/cn";
 import { Card } from "@shared/components/ui/Card";
+import { FirstCloudPullGate } from "@shared/components/ui/EmptyState";
 import { Measure } from "@shared/components/ui/Measure";
 import { SectionHeading } from "@shared/components/ui/SectionHeading";
 import { messages } from "@shared/i18n/uk";
@@ -145,9 +146,15 @@ export function HabitRangeGrid({
       </p>
 
       {rows.length === 0 ? (
-        <p className="text-style-body text-subtle">
-          {(habits?.length ?? 0) === 0 ? M.emptyNoHabits : M.empty}
-        </p>
+        (habits?.length ?? 0) === 0 ? (
+          // data-59/60 (FULL-20261126-ROUTINE-6): без цього «Звичок ще немає.»
+          // блимало до «Завантажую з хмари…».
+          <FirstCloudPullGate compact>
+            <p className="text-style-body text-subtle">{M.emptyNoHabits}</p>
+          </FirstCloudPullGate>
+        ) : (
+          <p className="text-style-body text-subtle">{M.empty}</p>
+        )
       ) : (
         <>
           {showWeekdayLabels && firstRowCells && (

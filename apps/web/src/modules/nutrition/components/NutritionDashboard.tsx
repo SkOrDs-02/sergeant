@@ -12,6 +12,7 @@ import { useStreakSevenDaysInsight } from "../hooks/useStreakSevenDaysInsight";
 import { Card } from "@shared/components/ui/Card";
 import { MealStrip, type MealStripSegment } from "./MealStrip";
 import { messages } from "@shared/i18n/uk";
+import { coreMessages } from "@shared/i18n/uk.core";
 import { pluralUa } from "@sergeant/shared";
 import {
   MEAL_META,
@@ -19,6 +20,7 @@ import {
   WEEK_KCAL_OVER_TOLERANCE,
   countKcalStreakDays,
   deviceWeekStartKey,
+  resolveEffectiveGoal,
   resolveKcalGoalsForDays,
   type MealTypeId,
   type NutritionLog,
@@ -41,6 +43,7 @@ import { safeReadStringLS, safeWriteLS } from "@shared/lib/storage/storage";
 import { useNutritionGoalPeriods } from "../hooks/useNutritionGoalPeriods";
 import { useAdaptiveNutritionGoal } from "../hooks/useAdaptiveNutritionGoal";
 import { AdaptiveGoalCard } from "./AdaptiveGoalCard";
+import { useFirstCloudPullPhase } from "@shared/hooks/useFirstCloudPullPhase";
 import {
   SilpoPantryOffersCard,
   type SilpoPantryOffersCardProps,
@@ -101,7 +104,20 @@ export function NutritionDashboard({
     [goalPeriods, weekRows],
   );
 
-  const hasGoal = (prefs.dailyTargetKcal || 0) > 0;
+  // Одне джерело цілі для hero і графіка тижня (FULL-20261126-UX-1/NUTR-1):
+  // графік читає журнал цілей, тож hero бере норму сьогодні звідти ж, коли
+  // prefs цього пристрою ще (або вже) її не мають. Явна норма в prefs
+  // лишається першою: журнал її й записав.
+  const todayGoal = useMemo(
+    () => resolveEffectiveGoal(goalPeriods, today),
+    [goalPeriods, today],
+  );
+
+  // Холодний старт: поки перший pull іде, порожній тиждень і «0 прийомів» не
+  // правда, а ще не доїхали дані (data-59/60, як у Рутині).
+  const firstPullLoading = useFirstCloudPullPhase() === "loading";
+
+  const hasGoal = (prefs.dailyTargetKcal || todayGoal.kcal || 0) > 0;
 
   // ponytail: honesty threshold for "incomplete day" (canon §5.2 — a
   // partial log must not read as a deficit). The canon's own example is
@@ -126,7 +142,7 @@ export function NutritionDashboard({
     summary.estimatedKcalShare > ESTIMATED_KCAL_SHARE_THRESHOLD;
 
   const kcalConsumed = Math.round(macros.kcal || 0);
-  const kcalGoal = prefs.dailyTargetKcal || 0;
+  const kcalGoal = prefs.dailyTargetKcal || todayGoal.kcal || 0;
 
   // Hero стрічка дня (спека nutrition-hero-day-strip.md) — чотири сегменти
   // за MEAL_ORDER, не за фактичним порядком запису.
@@ -175,20 +191,28 @@ export function NutritionDashboard({
 
     toastFiredRef.current = true;
     safeWriteLS(LS_KEY, today);
-    toast.success("Денну ціль виконано");
+    const over = Math.round(kcalConsumed - kcalGoal);
+    toast.success(
+      over > 0
+        ? messages.nutrition.goalToast.metSlightlyOver.replace(
+            "{kcal}",
+            String(over),
+          )
+        : messages.nutrition.goalToast.met,
+    );
   }, [kcalConsumed, kcalGoal, hasGoal, today, toast]);
 
   const protein = {
     consumed: Math.round(macros.protein_g || 0),
-    goal: prefs.dailyTargetProtein_g || 0,
+    goal: prefs.dailyTargetProtein_g || todayGoal.proteinG || 0,
   };
   const fat = {
     consumed: Math.round(macros.fat_g || 0),
-    goal: prefs.dailyTargetFat_g || 0,
+    goal: prefs.dailyTargetFat_g || todayGoal.fatG || 0,
   };
   const carbs = {
     consumed: Math.round(macros.carbs_g || 0),
-    goal: prefs.dailyTargetCarbs_g || 0,
+    goal: prefs.dailyTargetCarbs_g || todayGoal.carbsG || 0,
   };
 
   // Phase 5d — nutrition insight triggers.
@@ -244,13 +268,12 @@ export function NutritionDashboard({
         className="min-w-0 text-text"
       >
         <p className="text-style-overline text-nutrition-tint-label">
-          Сьогодні · {summary.loggedMealTypesCount}{" "}
-          {pluralUa(summary.loggedMealTypesCount, {
-            one: "прийом",
-            few: "прийоми",
-            many: "прийомів",
-          })}{" "}
-          їжі
+          {firstPullLoading && summary.loggedMealTypesCount === 0
+            ? coreMessages.firstCloudPull.loadingTitle
+            : `Сьогодні · ${summary.loggedMealTypesCount} ${pluralUa(
+                summary.loggedMealTypesCount,
+                { one: "прийом", few: "прийоми", many: "прийомів" },
+              )} їжі`}
         </p>
         <div className="mt-2 flex flex-col gap-2">
           {hasGoal && isMostlyEstimated && (
@@ -333,6 +356,9 @@ export function NutritionDashboard({
         rows={weekRows}
         goalsByDay={weekGoals}
         todayIso={today}
+        loadingFromCloud={
+          firstPullLoading && weekRows.every((row) => !(row.kcal > 0))
+        }
         onGoToLog={onGoToLog}
       />
 

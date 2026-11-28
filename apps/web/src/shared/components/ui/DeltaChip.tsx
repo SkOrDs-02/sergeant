@@ -20,6 +20,14 @@ export interface DeltaChipProps {
    * попередня сума ≥ 10 % поточної). Без неї поведінка незмінна.
    */
   absoluteUnit?: string;
+  /**
+   * `cur`/`prev` самі відсотки (0-100), напр. виконання звичок. Тоді чип
+   * показує різницю в процентних пунктах («+6 п.п.»), а не відносну зміну:
+   * «−8%» між 75% і 69% двозначне. Різницю беремо між округленими значеннями,
+   * тобто між тими числами, що людина бачить на картці. Нульова база, як і
+   * раніше, дає «—».
+   */
+  percentPoints?: boolean;
   className?: string;
 }
 
@@ -47,6 +55,7 @@ export function DeltaChip({
   prev,
   higherIsBetter = true,
   absoluteUnit,
+  percentPoints,
   className,
 }: DeltaChipProps) {
   if (prev === 0 && cur === 0) return null;
@@ -54,7 +63,7 @@ export function DeltaChip({
     return (
       <span className={cn("text-style-caption text-muted", className)}>—</span>
     );
-  const diff = cur - prev;
+  const diff = percentPoints ? Math.round(cur) - Math.round(prev) : cur - prev;
   if (diff === 0) {
     return (
       <span
@@ -68,9 +77,12 @@ export function DeltaChip({
   const pct = Math.round((diff / prev) * 100);
   const positive = higherIsBetter ? diff > 0 : diff < 0;
   const trendingUp = diff > 0;
-  const label = absoluteUnit
-    ? `${trendingUp ? "+" : "\u2212"}${formatNumberUk(Math.abs(Math.round(diff)))}${NARROW_NBSP}${absoluteUnit}`
-    : `${trendingUp ? "+" : ""}${pct}%`;
+  const ppLabel = `${trendingUp ? "+" : "\u2212"}${Math.abs(diff)}${NARROW_NBSP}${messages.hub.reportDeltaPercentPoints}`;
+  const label = percentPoints
+    ? ppLabel
+    : absoluteUnit
+      ? `${trendingUp ? "+" : "\u2212"}${formatNumberUk(Math.abs(Math.round(diff)))}${NARROW_NBSP}${absoluteUnit}`
+      : `${trendingUp ? "+" : ""}${pct}%`;
   return (
     <span
       className={cn(
@@ -81,6 +93,12 @@ export function DeltaChip({
         className,
       )}
       data-testid="delta-chip"
+      {...(percentPoints
+        ? {
+            title: `${messages.hub.reportDeltaPercentPointsFull}`,
+            "aria-label": `${trendingUp ? "+" : "\u2212"}${Math.abs(diff)} ${messages.hub.reportDeltaPercentPointsFull}`,
+          }
+        : {})}
     >
       <svg
         width="10"

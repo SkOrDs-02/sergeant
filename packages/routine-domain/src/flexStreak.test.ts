@@ -9,8 +9,10 @@ import {
   flexibleMaxStreakAllTimeAcrossHabits,
   flexibleStreakBreakdown,
   flexibleStreakForHabit,
+  longestStreakAcrossHabits,
+  longestStreakForHabit,
 } from "./flexStreak.js";
-import { streakForHabit } from "./streaks.js";
+import { maxStreakAllTime, streakForHabit } from "./streaks.js";
 import type { Habit, HabitSkip } from "./types.js";
 
 const TODAY = "2026-08-02";
@@ -468,5 +470,124 @@ describe("flexibleStreakBreakdown × recurrence: flexible", () => {
   it("сьогодні не висить «в очікуванні», коли тижневу ціль уже добрано", () => {
     const b = flexibleStreakBreakdown(flexible(), WEEK_DONE_3, TODAY);
     expect(b.todayPending).toBe(false);
+  });
+});
+
+describe("longestStreakForHabit: найдовша >= поточної (FULL-20261126-ROUTINE-1)", () => {
+  it("відтворення: 1 прощений пропуск, поточна 13, жорстка найдовша менша", () => {
+    // 6 днів, один пропуск (07-27), 6 днів до сьогодні включно: поточна 12.
+    const done = [...runOfDays("2026-07-26", 6), ...runOfDays(TODAY, 6)];
+    const current = flexibleStreakForHabit(daily(), done, TODAY);
+    expect(current).toBe(12);
+    // Жорсткий рахунок рве серію на пропуску й дає менше за поточну.
+    expect(maxStreakAllTime(daily(), done)).toBeLessThan(current);
+    expect(longestStreakForHabit(daily(), done, TODAY)).toBeGreaterThanOrEqual(
+      current,
+    );
+  });
+
+  it("матриця: для будь-якої історії з пропусками, паузою й причинами longest >= current", () => {
+    // Детермінований LCG: стабільна «випадкова» матриця без зовнішніх залежностей.
+    let seed = 20261126;
+    const rnd = () => {
+      seed = (seed * 1664525 + 1013904223) % 4294967296;
+      return seed / 4294967296;
+    };
+    const days = Array.from({ length: 60 }, (_, i) => {
+      const d = new Date("2026-06-04T12:00:00");
+      d.setDate(d.getDate() + i);
+      return d.toISOString().slice(0, 10);
+    });
+    for (let round = 0; round < 300; round++) {
+      const doneP = 0.4 + rnd() * 0.55;
+      const done: string[] = [];
+      const skips: Record<string, HabitSkip> = {};
+      for (const k of days) {
+        const r = rnd();
+        if (r < doneP) done.push(k);
+        else if (r < doneP + 0.08) skips[k] = skip();
+      }
+      const habit = daily({
+        startDate: "2026-06-04",
+        ...(round % 3 === 0
+          ? { pauseIntervals: [{ from: "2026-07-01", to: "2026-07-05" }] }
+          : {}),
+      });
+      for (const todayKey of [days[days.length - 1]!, days[40]!]) {
+        const current = flexibleStreakBreakdown(habit, done, todayKey, {
+          skipsForHabit: skips,
+        }).days;
+        const longest = longestStreakForHabit(habit, done, todayKey, {
+          skipsForHabit: skips,
+        });
+        expect(longest).toBeGreaterThanOrEqual(current);
+        expect(
+          longestStreakAcrossHabits([habit], { h1: done }, todayKey, {
+            h1: skips,
+          }),
+        ).toBeGreaterThanOrEqual(
+          flexibleMaxActiveStreak([habit], { h1: done }, todayKey, {
+            h1: skips,
+          }),
+        );
+      }
+    }
+  });
+
+  it("гнучка «N на тиждень»: одиниці тижні, найдовша >= поточної", () => {
+    const habit = daily({
+      recurrence: "flexible",
+      weeklyTargetHistory: [{ from: "2026-06-01", target: 2 }],
+      startDate: "2026-06-01",
+    });
+    const done = ["2026-07-06", "2026-07-08", "2026-07-13", "2026-07-15"];
+    const today = "2026-07-16";
+    expect(longestStreakForHabit(habit, done, today)).toBeGreaterThanOrEqual(
+      streakForHabit(habit, done, today),
+    );
+  });
+
+  it("once не має серії", () => {
+    const once = daily({ recurrence: "once", startDate: TODAY });
+    expect(longestStreakForHabit(once, [TODAY], TODAY)).toBe(0);
+  });
+});
+
+describe("flexibleStreakBreakdown: пропуск перед подвійним пропуском (аудит 3)", () => {
+  it("пропуск, що стоїть перед обривом, не потрапляє у вікно й не витрачає заморозку", () => {
+    // Від сьогодні назад: 5 виконаних, потім ДВА порожні поспіль (обрив) і
+    // ще давніші виконані. Перший із двох порожніх (А) у вікно не входить.
+    const done = [
+      ...runOfDays(TODAY, 5),
+      ...runOfDays("2026-07-20", 4), // давніше за подвійний пропуск
+    ];
+    const b = flexibleStreakBreakdown(daily(), done, TODAY);
+    expect(b.days).toBe(5);
+    expect(b.graceUsed).toBe(0);
+    expect(b.window.every((c) => c.kind !== "miss")).toBe(true);
+    expect(b.brokenOn).not.toBeNull();
+  });
+
+  it("реальний прощений пропуск усередині серії рахується рівно один раз", () => {
+    const done = [...runOfDays(TODAY, 3), ...runOfDays("2026-07-29", 3)];
+    // 08-02,01,07-31 виконано; 07-30 порожній; 07-29,28,27 виконано;
+    // 07-26 і 07-25 порожні поспіль (обрив).
+    const b = flexibleStreakBreakdown(daily(), done, TODAY);
+    expect(b.days).toBe(6);
+    expect(b.graceUsed).toBe(1);
+  });
+
+  it("прощений пропуск + пропуск перед обривом: заморозка витрачена одна, серія не коротшає", () => {
+    // 3 виконані, пропуск M (07-30), 3 виконані (07-27..07-29), потім ДВА
+    // порожні (07-26 = А, 07-25 = обрив), ще давніше виконані.
+    const done = [
+      ...runOfDays(TODAY, 3),
+      ...runOfDays("2026-07-29", 3),
+      ...runOfDays("2026-07-24", 3),
+    ];
+    const b = flexibleStreakBreakdown(daily(), done, TODAY);
+    expect(b.days).toBe(6);
+    expect(b.graceUsed).toBe(1);
+    expect(b.window.filter((c) => c.kind === "miss")).toHaveLength(1);
   });
 });

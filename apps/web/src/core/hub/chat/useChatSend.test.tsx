@@ -594,7 +594,9 @@ describe("useChatSend — підтвердження незворотних ді
 
     await waitFor(() =>
       expect(result.current.confirmDestructive.pending?.items).toEqual([
-        { name: "delete_transaction", summary: "операція m_42" },
+        // Підпис операції покриває destructiveConfirmSummary.test: тут сховище
+        // порожнє, тож рядка-підсумку немає.
+        { name: "delete_transaction" },
       ]),
     );
 

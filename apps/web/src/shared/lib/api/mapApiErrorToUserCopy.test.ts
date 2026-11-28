@@ -135,6 +135,22 @@ describe("mapApiErrorToUserCopy", () => {
     );
   });
 
+  it("429 показує час очікування, який назвав сервер", () => {
+    expect(
+      mapApiErrorToUserCopy({
+        code: "rate_limited",
+        status: 429,
+        message: "Забагато запитів. Спробуй через 12 хвилин.",
+      }),
+    ).toBe("Забагато запитів. Спробуй через 12 хвилин.");
+  });
+
+  it("429 з чужим англійським текстом лишається на загальній фразі", () => {
+    expect(
+      mapApiErrorToUserCopy({ status: 429, message: "Too many requests" }),
+    ).toBe("Забагато запитів. Спробуй через хвилину.");
+  });
+
   it("мапить rate_limited (lowercase) у людську копію", () => {
     expect(mapApiErrorToUserCopy({ code: "rate_limited", status: 429 })).toBe(
       "Забагато запитів. Спробуй через хвилину.",

@@ -20,4 +20,6 @@ export {
   flexibleMaxStreakAllTimeAcrossHabits,
   flexibleStreakBreakdown,
   flexibleStreakForHabit,
+  longestStreakAcrossHabits,
+  longestStreakForHabit,
 } from "@sergeant/routine-domain";

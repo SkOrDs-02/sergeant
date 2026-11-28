@@ -27,7 +27,6 @@ vi.mock("./numberVerify/shadow.js", () => ({ shadowVerifyNumbers: vi.fn() }));
 
 import { anthropicMessages as _anthropicMessages } from "../../lib/anthropic.js";
 import { env } from "../../env.js";
-import { ExternalServiceError } from "../../obs/errors.js";
 import { register } from "../../obs/metrics.js";
 import { shadowVerifyNumbers as _shadow } from "./numberVerify/shadow.js";
 import handler from "./chat.js";
@@ -149,7 +148,7 @@ describe("JSON synthesis turn — empty model answer", () => {
     expect(await retryCount("recovered")).toBe(before + 1);
   });
 
-  it("both attempts empty → no «Готово.», 502, quota refunded, exactly one retry", async () => {
+  it("both attempts empty → deterministic text from the tool result, 200, quota kept, exactly one retry", async () => {
     const before = await retryCount("still_empty");
     anthropicMessages
       .mockResolvedValueOnce(THINKING_ONLY)
@@ -158,32 +157,32 @@ describe("JSON synthesis turn — empty model answer", () => {
     const { req, aiQuotaRefund } = synthesisReq();
     const res = makeRes();
 
-    const err = await handler(req, res).catch((e: unknown) => e);
+    await handler(req, res);
 
-    expect(err).toBeInstanceOf(ExternalServiceError);
-    expect(err).toMatchObject({ status: 502, code: "ANTHROPIC_ERROR" });
-    expect(res.body).toBeUndefined();
-    expect(aiQuotaRefund).toHaveBeenCalledTimes(1);
+    // Дію виконано на клієнті: людина бачить результат інструмента (FULL-20261126-AI-2).
+    expect(res.statusCode).toBe(200);
+    expect(res.body).toEqual({ text: "видалено" });
+    expect(aiQuotaRefund).not.toHaveBeenCalled();
     expect(anthropicMessages).toHaveBeenCalledTimes(2);
-    expect(shadowMock).not.toHaveBeenCalled();
     expect(await retryCount("still_empty")).toBe(before + 1);
   });
 
-  it("retry throws → 502, quota refunded, counted as error", async () => {
+  it("retry throws → deterministic text, counted as error", async () => {
     const before = await retryCount("error");
     anthropicMessages
       .mockResolvedValueOnce(THINKING_ONLY)
       .mockRejectedValueOnce(new Error("socket hang up"));
     const { req, aiQuotaRefund } = synthesisReq();
+    const res = makeRes();
 
-    const err = await handler(req, makeRes()).catch((e: unknown) => e);
+    await handler(req, res);
 
-    expect(err).toMatchObject({ status: 502, code: "ANTHROPIC_ERROR" });
-    expect(aiQuotaRefund).toHaveBeenCalledTimes(1);
+    expect(res.body).toEqual({ text: "видалено" });
+    expect(aiQuotaRefund).not.toHaveBeenCalled();
     expect(await retryCount("error")).toBe(before + 1);
   });
 
-  it("direct Anthropic (no gateway) → no retry, no stub, quota refunded", async () => {
+  it("direct Anthropic (no gateway) → no retry, deterministic text", async () => {
     vi.stubEnv("CHAT_VIA_OPENROUTER", "false");
     anthropicMessages
       .mockResolvedValueOnce(THINKING_ONLY)
@@ -191,27 +190,27 @@ describe("JSON synthesis turn — empty model answer", () => {
     const { req, aiQuotaRefund } = synthesisReq();
     const res = makeRes();
 
-    const err = await handler(req, res).catch((e: unknown) => e);
+    await handler(req, res);
 
     expect(anthropicMessages).toHaveBeenCalledTimes(1);
-    expect(err).toMatchObject({ status: 502, code: "ANTHROPIC_ERROR" });
-    expect(res.body).toBeUndefined();
-    expect(aiQuotaRefund).toHaveBeenCalledTimes(1);
+    expect(res.body).toEqual({ text: "видалено" });
+    expect(aiQuotaRefund).not.toHaveBeenCalled();
   });
 
-  it("kill switch off → no retry, no stub, quota refunded", async () => {
+  it("kill switch off → no retry, deterministic text", async () => {
     (env as { CHAT_SYNTHESIS_EMPTY_RETRY: string }).CHAT_SYNTHESIS_EMPTY_RETRY =
       "off";
     anthropicMessages
       .mockResolvedValueOnce(THINKING_ONLY)
       .mockResolvedValueOnce(TEXT_ANSWER);
     const { req, aiQuotaRefund } = synthesisReq();
+    const res = makeRes();
 
-    const err = await handler(req, makeRes()).catch((e: unknown) => e);
+    await handler(req, res);
 
     expect(anthropicMessages).toHaveBeenCalledTimes(1);
-    expect(err).toMatchObject({ status: 502, code: "ANTHROPIC_ERROR" });
-    expect(aiQuotaRefund).toHaveBeenCalledTimes(1);
+    expect(res.body).toEqual({ text: "видалено" });
+    expect(aiQuotaRefund).not.toHaveBeenCalled();
   });
 
   it("text on the first attempt → no retry, plain 200", async () => {

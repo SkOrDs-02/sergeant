@@ -15,7 +15,7 @@ import {
 import {
   flexibleStreakBreakdown,
   habitCompletionRate,
-  maxStreakAllTime,
+  longestStreakForHabit,
 } from "../lib/streaks";
 import type { Habit } from "../lib/types";
 
@@ -100,8 +100,14 @@ export function HabitStatsSection({
   // заміняє — одне число плюс текстове виправдання під ним
   // (`docs/design/design/anti-slop-strategy.md` §5 P3).
   const bestStreak = useMemo(
-    () => maxStreakAllTime(habit, completions),
-    [habit, completions],
+    // Те саме правило, що й «Поточна серія» вище: гнучкий стрік для денних,
+    // тижні для «N разів на тиждень». Жорсткий `maxStreakAllTime` тут давав
+    // «Поточна 13 · Найдовша 10» (FULL-20261126-ROUTINE-1).
+    () =>
+      longestStreakForHabit(habit, completions, todayKey, {
+        skipsForHabit: skips,
+      }),
+    [habit, completions, todayKey, skips],
   );
   const totalDone = completions.length;
 

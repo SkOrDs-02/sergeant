@@ -220,6 +220,12 @@
       "path": ".agents/skills/sergeant-review-squad/SKILL.md"
     },
     {
+      "id": "sergeant-verify-squad",
+      "kind": "skill",
+      "role": "squad",
+      "path": ".agents/skills/sergeant-verify-squad/SKILL.md"
+    },
+    {
       "id": "sergeant-security-audit",
       "kind": "skill",
       "role": "specialist",
@@ -406,10 +412,22 @@
       "path": ".claude/agents/qa-web.md"
     },
     {
+      "id": "oracle-worker",
+      "kind": "agent",
+      "role": "runner",
+      "path": ".claude/agents/oracle-worker.md"
+    },
+    {
       "id": "security-reviewer",
       "kind": "agent",
       "role": "reviewer",
       "path": ".claude/agents/security-reviewer.md"
+    },
+    {
+      "id": "oracle-verifier",
+      "kind": "agent",
+      "role": "reviewer",
+      "path": ".claude/agents/oracle-verifier.md"
     },
     {
       "id": "server-agent",
@@ -548,6 +566,16 @@
     {
       "from": "sergeant-qa-squad",
       "to": "qa-packages",
+      "rel": "dispatches"
+    },
+    {
+      "from": "sergeant-verify-squad",
+      "to": "oracle-worker",
+      "rel": "dispatches"
+    },
+    {
+      "from": "sergeant-verify-squad",
+      "to": "oracle-verifier",
       "rel": "dispatches"
     },
     {

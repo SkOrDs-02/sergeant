@@ -7,7 +7,17 @@
  * інструментів Фініка/Нутриції, і що невідомі/порожні аргументи не
  * ламають модал (`undefined`, а не throw).
  */
-import { describe, expect, it } from "vitest";
+import { describe, expect, it, vi } from "vitest";
+
+const labelMock = vi.hoisted(() => vi.fn<(id: string) => string>(() => ""));
+vi.mock("../../lib/chatActions/finykActions/entityLookup", () => ({
+  finykTransactionLabel: labelMock,
+  normalizeFinykId: (raw: unknown) =>
+    String(raw ?? "")
+      .trim()
+      .replace(/^id:\s*/i, "")
+      .trim(),
+}));
 
 import { summarizeDestructiveToolInput } from "./destructiveConfirmSummary";
 
@@ -45,10 +55,19 @@ describe("summarizeDestructiveToolInput", () => {
     ).toBe("до 5 операцій");
   });
 
-  it("delete_transaction: показує tx_id", () => {
+  it("delete_transaction: показує підпис операції, а не id", () => {
+    labelMock.mockReturnValueOnce("«Кава» на 150 грн");
+    expect(
+      summarizeDestructiveToolInput("delete_transaction", { tx_id: "id:m_42" }),
+    ).toBe("операція «Кава» на 150 грн");
+    expect(labelMock).toHaveBeenCalledWith("m_42");
+  });
+
+  it("delete_transaction: операції немає в кеші → без рядка, id не показуємо", () => {
+    labelMock.mockReturnValueOnce("");
     expect(
       summarizeDestructiveToolInput("delete_transaction", { tx_id: "m_42" }),
-    ).toBe("операція m_42");
+    ).toBeUndefined();
   });
 
   it("forget: показує fact_id", () => {

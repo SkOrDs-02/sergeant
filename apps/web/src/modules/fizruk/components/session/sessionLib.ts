@@ -13,6 +13,7 @@ import type {
 import { pluralUa } from "@sergeant/shared";
 import { itemUsesSetRows } from "@sergeant/fizruk-domain/domain";
 import { messages } from "@shared/i18n/uk";
+import { isWorkingSet } from "@sergeant/fizruk-domain";
 import { isSetDone } from "../workouts/WorkoutSetRow";
 
 export type SessionItemState = "done" | "current" | "todo";
@@ -25,6 +26,16 @@ export type SessionItemState = "done" | "current" | "todo";
 export function countDoneSets(it: WorkoutItem): number {
   if (!itemUsesSetRows(it)) return 0;
   return (it.sets || []).filter((s) => isSetDone(s, it)).length;
+}
+
+/**
+ * Робочі підходи вправи (без розминки) — для «Підходів» у шапці сесії:
+ * канон виключає розминку з цього числа (П-Фз3-1, А). Розминка лишається в
+ * `countDoneSets` (рядок «X з Y» вправи рахує всі рядки вправи).
+ */
+export function countWorkingSets(it: WorkoutItem): number {
+  if (!itemUsesSetRows(it)) return 0;
+  return (it.sets || []).filter((s) => isWorkingSet(s, it)).length;
 }
 
 /**
@@ -74,7 +85,7 @@ export function sessionProgress(w: Workout): SessionProgress {
   return {
     exercisesDone: items.filter(isItemDone).length,
     exercisesTotal: items.length,
-    setsDone: items.reduce((n, it) => n + countDoneSets(it), 0),
+    setsDone: items.reduce((n, it) => n + countWorkingSets(it), 0),
   };
 }
 

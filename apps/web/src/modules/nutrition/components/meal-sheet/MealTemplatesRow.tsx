@@ -11,7 +11,11 @@ import { ConfirmDialog } from "@shared/components/ui/ConfirmDialog";
 import { useToast } from "@shared/hooks/useToast";
 import { showUndoToast } from "@shared/lib/ui/undoToast";
 import type { MealTemplate, NutritionPrefs } from "@sergeant/nutrition-domain";
-import { macroToFieldString, type MealFormState } from "./mealFormUtils";
+import {
+  kcalToFieldString,
+  macroToFieldString,
+  type MealFormState,
+} from "./mealFormUtils";
 import { messages } from "@shared/i18n/uk";
 
 interface MealTemplatesRowProps {
@@ -32,7 +36,7 @@ function fillFormFromTemplate(
     ...s,
     name: t.name,
     mealType: t.mealType || "snack",
-    kcal: t.macros?.kcal != null ? macroToFieldString(t.macros.kcal) : "",
+    kcal: t.macros?.kcal != null ? kcalToFieldString(t.macros.kcal) : "",
     protein_g:
       t.macros?.protein_g != null ? macroToFieldString(t.macros.protein_g) : "",
     fat_g: t.macros?.fat_g != null ? macroToFieldString(t.macros.fat_g) : "",

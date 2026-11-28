@@ -85,6 +85,7 @@ The script is zero-dep and offline-safe (`[gh unavailable: ...]` for sections th
 | PR review що торкається 3+ governed surfaces                     | `sergeant-review-squad`            |
 | Фіча через 2+ surfaces з contract dependencies (DB→server→web)  | `sergeant-deliver-squad`           |
 | Повний QA по всіх surfaces паралельно                            | `sergeant-qa-squad`                |
+| Незалежний доказ про живий застосунок: оракул розрахунків, робітник і перевіряльник | `sergeant-verify-squad` |
 | Валідація ідеї / рішення з кількох точок зору, «гублюсь»        | `sergeant-council`                 |
 | Батч N тасків з `docs/work/specs/planning/*` через паралельні агенти       | `sergeant-planning-batch`          |
 

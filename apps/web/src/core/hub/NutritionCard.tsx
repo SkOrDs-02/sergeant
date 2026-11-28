@@ -4,6 +4,7 @@ import { useDeviceDayKey } from "@shared/hooks/useDeviceDayKey";
  * Reads its own localStorage shard and aggregates independently.
  */
 import { ReportSheet } from "./ReportSheet";
+import { ReportPreviousLine } from "./ReportPreviousLine";
 import { useMemo, useState } from "react";
 import { cn } from "@shared/lib/ui/cn";
 import { DeltaChip } from "@shared/components/ui/DeltaChip";
@@ -235,12 +236,9 @@ export default function NutritionCard({ period, offset }: NutritionCardProps) {
             </span>
             <DeltaChip cur={cur.avg} prev={prev.avg} higherIsBetter={true} />
           </div>
-          <p className="text-style-caption text-muted">
-            {partial
-              ? messages.hub.reportPreviousToDate
-              : messages.hub.reportPrevious}{" "}
+          <ReportPreviousLine partial={partial} period={period}>
             {formattedPrev} {messages.nutrition.kcalUnit}
-          </p>
+          </ReportPreviousLine>
           <BarChart
             key={`${period}-${offset}`}
             data={cur.daily}

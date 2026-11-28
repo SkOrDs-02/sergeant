@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "current": "8.15.6",
+  "current": "8.16.0",
   "versions": {
     "0.1.0": {
       "releasedAt": "2026-06-29",
@@ -958,6 +958,14 @@
       "releasedAt": "2026-11-26",
       "changes": [
         "bump from 8.15.5 -> 8.15.6: typo / link / freshness-only change"
+      ],
+      "agentsTestedWith": [],
+      "passRateBaseline": null
+    },
+    "8.16.0": {
+      "releasedAt": "2026-11-26",
+      "changes": [
+        "bump from 8.15.6 -> 8.16.0: новий сквад `sergeant-verify-squad` (робітники `oracle-worker` і незалежний перевіряльник `oracle-verifier`), рядок у таблиці роутингу AGENTS.md і sergeant-start-here, playbook run-squad-verify.md, довідник orchestration-guide.md"
       ],
       "agentsTestedWith": [],
       "passRateBaseline": null

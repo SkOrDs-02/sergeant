@@ -25,6 +25,7 @@ import { ASSISTANT_CAPABILITIES } from "@sergeant/shared";
 
 import { ConfirmDialog } from "@shared/components/ui/ConfirmDialog";
 import { messages } from "@shared/i18n/uk";
+import { isDeletionTool } from "../../lib/hubChatActionCards";
 import type { DestructiveConfirmItem } from "./useDestructiveConfirm";
 
 const m = messages.hub.destructiveConfirm;
@@ -79,7 +80,9 @@ export function DestructiveConfirmModal({
       }
       confirmLabel={m.confirm}
       cancelLabel={m.cancel}
-      danger
+      // Червона кнопка лише коли в батчі є видалення: підтвердження створення
+      // чи зміни нейтральне (рішення власника 2026-11-25).
+      danger={!!items && items.some((item) => isDeletionTool(item.name))}
       onConfirm={onConfirm}
       onCancel={onCancel}
     />

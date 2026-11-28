@@ -678,6 +678,19 @@ describe("translateAuthError", () => {
     ).toBe("Неправильний email або пароль.");
   });
 
+  it("429 з конкретним часом очікування від сервера показує текст сервера", () => {
+    expect(
+      translateAuthError(
+        {
+          status: 429,
+          code: "RATE_LIMIT_USER",
+          error: "Забагато запитів. Спробуй через 891 секунду.",
+        },
+        "fallback",
+      ),
+    ).toBe("Забагато запитів. Спробуй через 891 секунду.");
+  });
+
   it("мапить 429 (status або code=RATE_LIMIT) у людське повідомлення", () => {
     // Це root cause скріна `Помилка входу` — наш rate-limiter і
     // errorHandler не пишуть `message`, лише `error`, тож Better Auth

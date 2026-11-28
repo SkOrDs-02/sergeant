@@ -297,12 +297,15 @@ describe("delete_transaction", () => {
     expect(arr.map((t) => t.id)).toEqual(["m_keep"]);
   });
 
-  it("відмовляє для монобанк-операцій (не m_)", () => {
+  // Банківську операцію, якої немає в дзеркалі цього тесту, виконавець не
+  // може відрізнити від вигаданого id: відмова та сама. Гілку «є в банку,
+  // можна лише приховати» покриває `finykActions/transactions.test.ts`.
+  it("відмовляє для id, якого немає серед ручних записів", () => {
     const msg = executeAction({
       name: "delete_transaction",
       input: { tx_id: "mono_xyz" },
     });
-    expect(msg).toContain("hide_transaction");
+    expect(msg).toContain("Не знайшов операцію");
   });
 
   it("повертає повідомлення коли id не знайдено (ідемпотентність)", () => {
@@ -310,7 +313,7 @@ describe("delete_transaction", () => {
       name: "delete_transaction",
       input: { tx_id: "m_missing" },
     });
-    expect(msg).toContain("не знайдено");
+    expect(msg).toContain("Не знайшов операцію");
   });
 });
 

@@ -158,7 +158,7 @@ describe("NameTimeRow", () => {
       render(<NameTimeRow form={makeForm()} field={field} setForm={vi.fn()} />);
       fireEvent.click(screen.getByRole("button", { name: "mic" }));
       expect(setters.name).toHaveBeenCalledWith(expectedName);
-      expect(setters.kcal).toHaveBeenCalledWith(String(kcal));
+      expect(setters.kcal).toHaveBeenCalledWith(String(Math.round(kcal)));
       if (protein != null)
         expect(setters.protein_g).toHaveBeenCalledWith(String(protein));
       else expect(setters.protein_g).not.toHaveBeenCalled();

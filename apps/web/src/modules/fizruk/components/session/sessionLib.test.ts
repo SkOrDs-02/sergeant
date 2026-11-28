@@ -30,6 +30,20 @@ function strength(id: string, sets: Array<[number, number]>): WorkoutItem {
 }
 
 describe("sessionLib", () => {
+  it("шапка сесії: розминка не входить у «Підходи» (канон П-Фз3-1)", () => {
+    const it = {
+      ...strength("a", []),
+      sets: [
+        { weightKg: 20, reps: 10, done: true, setType: "warmup" },
+        { weightKg: 60, reps: 8, done: true },
+        { weightKg: 60, reps: 8, done: true },
+      ],
+    } as WorkoutItem;
+    expect(sessionProgress({ items: [it] } as never).setsDone).toBe(2);
+    // рядок вправи «X з Y» лишає розминку (усі рядки вправи).
+    expect(countDoneSets(it)).toBe(3);
+  });
+
   it("counts done sets by the reps>0 criterion (bodyweight counts)", () => {
     expect(
       countDoneSets(

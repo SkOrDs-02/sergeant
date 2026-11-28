@@ -3,7 +3,10 @@ import { cn } from "@shared/lib/ui/cn";
 import { messages } from "@shared/i18n/uk";
 import { measurementGuideRows } from "@shared/i18n/uk.fizrukMeasurementGuide";
 import { SectionHeading } from "@shared/components/ui/SectionHeading";
-import { EmptyState } from "@shared/components/ui/EmptyState";
+import {
+  EmptyState,
+  FirstCloudPullGate,
+} from "@shared/components/ui/EmptyState";
 import { DataTable } from "@shared/components/ui/DataTable";
 import {
   MEASURE_FIELDS,
@@ -424,11 +427,13 @@ export function Measurements() {
             );
           })}
           {(entries || []).length === 0 && (
-            <EmptyState
-              compact
-              title={messages.fizruk.measurements.emptyTitle}
-              description={messages.fizruk.measurements.emptyDescription}
-            />
+            <FirstCloudPullGate compact>
+              <EmptyState
+                compact
+                title={messages.fizruk.measurements.emptyTitle}
+                description={messages.fizruk.measurements.emptyDescription}
+              />
+            </FirstCloudPullGate>
           )}
         </Card>
 

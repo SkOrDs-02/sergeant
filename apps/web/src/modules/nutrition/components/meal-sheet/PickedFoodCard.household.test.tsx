@@ -65,7 +65,7 @@ describe("PickedFoodCard: побутова порція корпусу", () => {
     expect(grams()).toBe("50");
     expect(screen.getByRole("radio", { name: "яйце, 50 г" })).toBeChecked();
     expect(screen.getByText("яйце")).toBeInTheDocument();
-    expect(lastForm.current?.kcal).toBe("71.5");
+    expect(lastForm.current?.kcal).toBe("72");
   });
 
   it("кількість змінює вагу, а назва одиниці узгоджується з числом", () => {

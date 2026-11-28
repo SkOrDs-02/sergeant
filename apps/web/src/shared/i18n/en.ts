@@ -367,6 +367,12 @@ export const messagesEn: Partial<{
     reportEmptyExpenses: "No expenses yet. Add the first one in Finyk.",
     reportEmptyMeals: "No meals logged yet. Add the first one in Nutrition.",
     reportDeltaFlat: "no change",
+    reportDeltaPercentPoints: "pp",
+    reportDeltaPercentPointsFull: "percentage points",
+    reportPartialNoteWeek:
+      "The week is not over yet: I compare it with the same number of first days of last week.",
+    reportPartialNoteMonth:
+      "The month is not over yet: I compare it with the same number of first days of last month.",
 
     overlayTitle: "AI assistant",
     closeChat: "Close chat",

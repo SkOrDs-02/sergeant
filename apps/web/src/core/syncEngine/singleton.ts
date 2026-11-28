@@ -34,11 +34,13 @@ import {
   type SyncEngineReaderRuntime,
 } from "./syncEngineReader";
 import { ensureModuleSchemas } from "./moduleSchemas";
+import { scheduleBootBacklogNudge } from "./bootBacklogNudge";
 import { recordOutboxPurgeNotice } from "./outboxPurgeNotice";
 import { requeueFkViolationRejected } from "./requeueFkViolationRejected";
 import { createSyncStreamConsumer } from "./syncStreamConsumer";
 import { readPullSinceCursor } from "./syncOpCursor";
 import { observeSyncSession } from "./syncSessionSignal";
+import { settleSyncBootPending } from "./initialPullState";
 
 type RuntimeFactory = () => Promise<SyncEngineWriterRuntime>;
 type ReaderRuntimeFactory = () => Promise<SyncEngineReaderRuntime>;
@@ -154,6 +156,8 @@ export function bootSyncEngineWriter(
       // очікування ~30-секундного тіку. Реєструємо ПІСЛЯ `start()`, щоб
       // нудж ніколи не прилетів у неармований scheduler.
       setOutboxEnqueueNudge(() => created.notifyEnqueued());
+      // Черга, що вже чекає на старті, їде одразу (`bootBacklogNudge.ts`).
+      scheduleBootBacklogNudge(created, () => runtime === created);
       return runtime;
     })
     .catch((error: unknown) => {
@@ -268,7 +272,11 @@ export function bootSyncEngineReader(
   readerInFlight = claimDbOwnership()
     .then((owner) => (owner === "follower" ? null : createRuntime()))
     .then((created) => {
-      if (!created) return null;
+      if (!created) {
+        // Вкладка-послідовник: pull робить лідер, тут «Завантажую…» не буде.
+        settleSyncBootPending();
+        return null;
+      }
       readerRuntime = created;
       // Пауза, взята, поки reader бутився, має діяти і на нього — до start().
       if (readerPauses > 0) pauseRuntime(created);
@@ -278,6 +286,7 @@ export function bootSyncEngineReader(
     })
     .catch((error: unknown) => {
       captureException?.(error, { scope: "sync-v2-reader-boot" });
+      settleSyncBootPending();
       return null;
     })
     .finally(() => {

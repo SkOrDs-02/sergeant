@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { fmt, fmtLoose } from "./numberFmt";
+import { fmt, fmtLoose, fmtVolume, volumeFractionDigits } from "./numberFmt";
 
 /**
  * Роздільник дробової частини в uk-UA — КОМА. Регресія, яку ловлять ці
@@ -69,5 +69,20 @@ describe("fmtLoose", () => {
   it("returns '—' for non-numbers", () => {
     expect(fmtLoose(undefined)).toBe("—");
     expect(fmtLoose(Number.NaN)).toBe("—");
+  });
+});
+
+describe("fmtVolume (обʼєм «кг×повт», FULL-20261126-UX-1)", () => {
+  it("не губить половину: 247,5, а не 248", () => {
+    expect(fmtVolume(247.5)).toBe("247,5");
+  });
+  it("ціле лишається цілим, тисячі групуються", () => {
+    expect(fmtVolume(600)).toBe("600");
+    expect(fmtVolume(12345)).toMatch(/^12\s?345$/u);
+  });
+  it("volumeFractionDigits: скільки знаків треба Measure", () => {
+    expect(volumeFractionDigits(600)).toBe(0);
+    expect(volumeFractionDigits(247.5)).toBe(1);
+    expect(volumeFractionDigits(247.25)).toBe(2);
   });
 });

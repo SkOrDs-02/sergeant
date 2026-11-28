@@ -222,6 +222,9 @@ export function WorkoutJournalSection({
         onUpdateItemSets={(itemId, sets) =>
           updateItem(activeWorkout.id, itemId, { sets })
         }
+        // Рішення власника 2026-11-26: явне «Видалити вправу» — той самий
+        // `removeItem` з undo-тостом, що й «Прибрати з тренування» в сесії.
+        onRemoveItem={(itemId) => removeItem(activeWorkout.id, itemId)}
         onDeleteSet={(itemId, snapshot) => {
           const wid = activeWorkout.id;
           showUndoToast(toast, {

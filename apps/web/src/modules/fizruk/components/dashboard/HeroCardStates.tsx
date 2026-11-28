@@ -15,6 +15,8 @@ import type { HeroRecoveryRow } from "@sergeant/fizruk-domain";
 import { Button } from "@shared/components/ui/Button";
 import { Card } from "@shared/components/ui/Card";
 import { messages } from "@shared/i18n/uk";
+import { coreMessages } from "@shared/i18n/uk.core";
+import { useFirstCloudPullPhase } from "@shared/hooks/useFirstCloudPullPhase";
 import { useAnnounce } from "@shared/components/ui/ScreenReaderAnnouncer";
 import { HeroRecoveryBars } from "./HeroRecoveryBars";
 import type { HeroCardState } from "./HeroCard";
@@ -384,6 +386,15 @@ export function EmptyState({
   const templatesLabel = state.hasTemplates
     ? messages.fizruk.hero.chooseTemplate
     : messages.fizruk.hero.createTemplate;
+  // FULL-20261126-UX-1: поки перший pull іде, «нічого не заплановано»
+  // неправда: план ще їде з хмари (data-59/60).
+  const firstPullPhase = useFirstCloudPullPhase();
+  const noPlanText =
+    firstPullPhase === "loading"
+      ? coreMessages.firstCloudPull.loadingTitle
+      : firstPullPhase === "failed"
+        ? coreMessages.firstCloudPull.failedTitle
+        : messages.fizruk.hero.noPlan;
   return (
     <HeroShell
       ariaLabel="План на сьогодні порожній"
@@ -391,9 +402,7 @@ export function EmptyState({
       tinted={body.recoveryRows.length > 0}
     >
       <HeroKicker {...kicker} />
-      <h2 className="text-style-title font-bold text-text">
-        {messages.fizruk.hero.noPlan}
-      </h2>
+      <h2 className="text-style-title font-bold text-text">{noPlanText}</h2>
       <HeroRecoveryBars
         rows={body.recoveryRows}
         recoverByDate={body.recoverByDate}

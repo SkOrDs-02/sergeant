@@ -10,6 +10,7 @@ import { HEALTH_CONSENT_REQUIRED_MESSAGE } from "@sergeant/shared";
 import {
   HEALTH_CONSENT_SYSTEM_NOTE,
   redactHealthToolCalls,
+  HEALTH_CONSENT_REMEMBER_SAVED_NOTICE,
   redactHealthToolResults,
   stripHealthContext,
   stripHealthFromCoachInput,
@@ -291,9 +292,11 @@ describe("redactHealthToolResults / redactHealthToolCalls", () => {
   const byId = new Map(out.map((r) => [r.tool_use_id, r.content]));
 
   it("health-only і health-параметризовані результати замінюються текстом-дією", () => {
-    for (const id of ["t1", "t3", "t5", "t9", "t10", "t11"]) {
+    for (const id of ["t1", "t3", "t5", "t9", "t11"]) {
       expect(byId.get(id)).toBe(HEALTH_CONSENT_REQUIRED_MESSAGE);
     }
+    // `remember` уже виконано клієнтом: «збережено», не «потрібна згода».
+    expect(byId.get("t10")).toBe(HEALTH_CONSENT_REMEMBER_SAVED_NOTICE);
   });
 
   it("не-health результати лишаються дослівно", () => {
@@ -368,8 +371,19 @@ describe("redactHealthToolResults: health-категорії профілю (pri
     "категорія %s",
     (category) => {
       it("remember блокується", () => {
+        // Клієнт факт уже записав: модель отримує «збережено» і наказ не
+        // повторювати (FULL-20261126-AI-2), а не «потрібна згода».
         expect(
           redactOne("remember", { fact: "щось", category }, "Запамʼятав: щось"),
+        ).toBe(HEALTH_CONSENT_REMEMBER_SAVED_NOTICE);
+      });
+      it("remember, який клієнт не зміг виконати, дає загальну відмову", () => {
+        expect(
+          redactOne(
+            "remember",
+            { fact: "щось", category },
+            "Памʼять ще завантажується. Спробуй ще раз за мить.",
+          ),
         ).toBe(HEALTH_CONSENT_REQUIRED_MESSAGE);
       });
       it("my_profile з фільтром категорії блокується (будь-який регістр)", () => {
@@ -432,7 +446,7 @@ describe("redactHealthToolResults: health-категорії профілю (pri
         { fact: "схуднути до 70 кг", category: "goal" },
         "Запамʼятав: схуднути до 70 кг",
       ),
-    ).toBe(HEALTH_CONSENT_REQUIRED_MESSAGE);
+    ).toBe(HEALTH_CONSENT_REMEMBER_SAVED_NOTICE);
     expect(
       redactOne(
         "remember",

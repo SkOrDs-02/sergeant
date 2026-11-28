@@ -123,6 +123,20 @@ export function mapApiErrorToUserCopy(
   if (!error) return fallback;
 
   const code = typeof error.code === "string" ? error.code : null;
+
+  // 429: сервер (`rateLimitExpress`) сам називає час очікування («Спробуй
+  // через 12 хвилин»). Фіксоване «через хвилину» з мапи кодів обіцяло
+  // хвилину й там, де вікно ліміту 15 хв (видалення акаунта, прогін
+  // full-2026-11-25), і кнопка «Повторити» знову впиралась у 429. Чужий
+  // (не український) текст не показуємо: тоді лишається загальна фраза.
+  if (error.status === 429 || code === "rate_limited") {
+    const serverCopy =
+      typeof error.message === "string" && /[а-яіїєґ]/i.test(error.message)
+        ? error.message
+        : null;
+    return friendlyApiError(429, serverCopy);
+  }
+
   if (code) {
     const mapped = CODE_TO_UA_COPY[code];
     if (mapped) return mapped;

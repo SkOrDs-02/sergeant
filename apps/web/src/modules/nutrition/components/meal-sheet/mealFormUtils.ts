@@ -6,7 +6,7 @@ import type {
   MealSource,
   MealTemplate,
 } from "@sergeant/nutrition-domain";
-import { deviceTimeOfDay } from "@sergeant/nutrition-domain";
+import { deviceTimeOfDay, fmtMacro } from "@sergeant/nutrition-domain";
 import type { NutritionPhotoItem, NutritionPhotoResult } from "@shared/api";
 import { clampText } from "@shared/lib/text/limits";
 import { parseDecimalInput } from "@shared/lib/format/numberInput";
@@ -181,6 +181,16 @@ export function macroToFieldString(n: number): string {
   return String(Math.round(n * 10) / 10);
 }
 
+/**
+ * Значення ккал для поля форми: ціле, те саме округлення (`fmtMacro`), що й
+ * на показі в журналі. Поле показує рівно те, що збережеться (рішення
+ * власника 2026-11-26): 33 ккал/100 г x 50 г = 16.5 -> "17". Макроси Б/Ж/В
+ * лишаються з точністю 0.1 (`macroToFieldString`).
+ */
+export function kcalToFieldString(n: number): string {
+  return String(fmtMacro(n));
+}
+
 /** Чотири поля КБЖВ форми з nullable-макросів; `null` -> порожнє поле. */
 export function macrosToFormFields(mac: {
   kcal?: number | null;
@@ -191,7 +201,7 @@ export function macrosToFormFields(mac: {
   const f = (n: number | null | undefined) =>
     n != null ? macroToFieldString(n) : "";
   return {
-    kcal: f(mac.kcal),
+    kcal: mac.kcal != null ? kcalToFieldString(mac.kcal) : "",
     protein_g: f(mac.protein_g),
     fat_g: f(mac.fat_g),
     carbs_g: f(mac.carbs_g),
@@ -234,7 +244,7 @@ export function emptyForm(
     // лізти в пікер і перемикати тип перед збереженням.
     mealType: mealType ?? mealTypeByNow(),
     time: currentTime(),
-    kcal: macros.kcal != null ? macroToFieldString(macros.kcal) : "",
+    kcal: macros.kcal != null ? kcalToFieldString(macros.kcal) : "",
     protein_g:
       macros.protein_g != null ? macroToFieldString(macros.protein_g) : "",
     fat_g: macros.fat_g != null ? macroToFieldString(macros.fat_g) : "",

@@ -231,6 +231,32 @@ describe("useApiForm", () => {
     expect(screen.queryByTestId("password-error")).not.toBeInTheDocument();
   });
 
+  it("спроба, зупинена клієнтською валідацією, знімає попередній вердикт сервера", async () => {
+    const onSubmit = vi.fn().mockRejectedValue(
+      new ApiError({
+        kind: "http",
+        status: 500,
+        message: "Internal Server Error",
+        url: "/api/auth/login",
+        body: { error: "Сервер тимчасово недоступний" },
+      }),
+    );
+
+    render(<TestForm onSubmit={onSubmit} />);
+
+    fillField("Email", "test@example.com");
+    fillField("Пароль", "secret123");
+    clickSubmit();
+    expect(await screen.findByTestId("server-error")).toBeInTheDocument();
+
+    fillField("Email", "не-email");
+    clickSubmit();
+
+    expect(await screen.findByTestId("email-error")).toBeInTheDocument();
+    expect(screen.queryByTestId("server-error")).not.toBeInTheDocument();
+    expect(onSubmit).toHaveBeenCalledTimes(1);
+  });
+
   it("server: details із пустим path → top-level serverError", async () => {
     const onSubmit = vi.fn().mockRejectedValue(
       new ApiError({

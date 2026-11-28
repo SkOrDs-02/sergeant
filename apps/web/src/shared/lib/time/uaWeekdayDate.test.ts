@@ -3,7 +3,11 @@
  * Status: Active
  */
 import { describe, expect, it } from "vitest";
-import { formatUaWeekdayDate, uaWeekdayName } from "./uaWeekdayDate";
+import {
+  formatUaShortWeekdayDate,
+  formatUaWeekdayDate,
+  uaWeekdayName,
+} from "./uaWeekdayDate";
 
 const SEPT_2 = new Date(2026, 8, 2); // середа
 
@@ -65,5 +69,16 @@ describe("uaWeekdayName", () => {
   it("індекс поза тижнем загортається", () => {
     expect(uaWeekdayName(7)).toBe("понеділок");
     expect(uaWeekdayName(-1)).toBe("неділя");
+  });
+});
+
+describe("formatUaShortWeekdayDate", () => {
+  it("короткий день тижня з датою", () => {
+    const label = formatUaShortWeekdayDate(new Date(2026, 6, 6));
+    expect(label).toMatch(/^пн, 6 лип/);
+  });
+
+  it("порожній рядок на невалідній даті", () => {
+    expect(formatUaShortWeekdayDate(new Date(Number.NaN))).toBe("");
   });
 });

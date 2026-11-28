@@ -5,6 +5,8 @@ import {
 } from "@sergeant/shared";
 import { webKVStore } from "@shared/lib/storage/storage";
 import { hapticTap } from "@shared/lib/adapters/haptic";
+import { useStorageReady } from "../../core/db/storageReady";
+import { useFirstCloudPullPhase } from "./useFirstCloudPullPhase";
 import { useToast, type ToastApi } from "./useToast";
 
 const modalOpen = () =>
@@ -96,9 +98,19 @@ export function useStreakMilestoneCelebration(
   // внутрішнього `api`, який стабільний.
   const { success } = useToast();
 
+  // FULL-20261126-ROUTINE-2: тост не від гідрації. Поки сховище ще бутиться
+  // або перший pull не наздогнав акаунт, число серії — не результат дій
+  // людини, а напівзавантажений стан (0 → 13 на свіжому вході). Таке значення
+  // читаємо як «ще не порахували» (`null`): засів відбудеться вже на
+  // справжньому числі. Нуль додатково не засіває сам `claimStreakMilestone`.
+  const storageReady = useStorageReady();
+  const pullPhase = useFirstCloudPullPhase();
+  const hydrating = !storageReady || pullPhase === "loading";
+  const effective = hydrating ? null : streak;
+
   useEffect(() => {
-    if (streak === null) return;
-    celebrateStreakMilestone(scope, streak, template, success);
+    if (effective === null) return;
+    celebrateStreakMilestone(scope, effective, template, success);
 
     // AI-DANGER: цей хук НЕ емітить `streak_milestone_reached` — і це не
     // недогляд. Подію вже емітить детектор у хабі
@@ -112,5 +124,5 @@ export function useStreakMilestoneCelebration(
     // Набори при цьому різні навмисно: хаб міряє вісім порогів
     // (`TRACKED_STREAK_MILESTONES`), святкуємо три. Тобто 14/21/60/90/365
     // лишаються у воронці, але людина їх не бачить.
-  }, [scope, streak, success, template]);
+  }, [scope, effective, success, template]);
 }

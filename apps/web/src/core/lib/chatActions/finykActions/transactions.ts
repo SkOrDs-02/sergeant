@@ -158,17 +158,22 @@ export function hideTransaction(
 export function deleteTransaction(
   action: DeleteTransactionAction,
 ): ChatActionResult {
-  const { tx_id } = action.input;
-  const id = String(tx_id || "").trim();
+  const id = normalizeFinykId(action.input.tx_id);
   if (!id) return "Потрібен tx_id для видалення.";
-  if (!id.startsWith("m_")) {
-    return `Операцію${labelPart(id)} не видалено (id:${id}): можна видаляти лише ручні записи. Для операцій Monobank використай hide_transaction.`;
-  }
   const cache = warmFinykCache();
   if (!cache) return FINYK_COLD_CACHE_MESSAGE;
   const list = cache.manualExpenses;
-  const idx = list.findIndex((t) => t.id === id);
-  if (idx < 0) return `Операцію не знайдено, вже видалена (id:${id}).`;
+  const idx = list.findIndex((t) => String(t.id ?? "") === id);
+  if (idx < 0) {
+    // «Ручний» визначає сховище, а не префікс id. Перевірка `m_` пускала
+    // лише записи офлайн-шляху чату: ручні записи з форми (`mx_…`) і з
+    // сервера (голий UUID) відхилялись як «не ручні», тож Сержант не міг
+    // видалити витрату, яку сам щойно записав (прогін full-2026-11-25).
+    if (finykTransactionExists(id)) {
+      return `Операцію${labelPart(id)} не видалено (id:${id}): це операція з банку, її можна лише приховати. (для моделі: запропонуй hide_transaction)`;
+    }
+    return unknownTransactionMessage(id);
+  }
   // Підпис рахуємо до запису: після нього операції в кеші вже немає.
   const label = labelPart(id);
   const next = list.slice();

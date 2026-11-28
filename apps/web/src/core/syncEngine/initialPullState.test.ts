@@ -12,8 +12,10 @@ import {
   markFirstPullSettled,
   noteFirstPullFailure,
   markInitialPullComplete,
+  markSyncBootPending,
   reconcileInitialPull,
   resetInitialPull,
+  settleSyncBootPending,
   subscribeInitialPull,
 } from "./initialPullState";
 
@@ -127,5 +129,54 @@ describe("initialPullState — фаза першого pull (data-59/60)", () =>
     expect(getFirstPullPhase()).toBe("idle");
     markFirstPullPending();
     expect(noteFirstPullFailure(5)).toBe(1);
+  });
+
+  // FULL-20261126-ROUTINE-6: між стартом синку і рішенням reader-а (сесія,
+  // база, `resolvePullMode`) фаза була `idle`, і модулі малювали порожній стан
+  // раніше за «Завантажую з хмари…».
+  describe("вікно старту синку (boot pending)", () => {
+    it("до рішення reader-а фаза loading, не idle", () => {
+      markSyncBootPending();
+      expect(getFirstPullPhase()).toBe("loading");
+    });
+
+    it("рішення reader-а знімає вікно: settled -> idle, pending -> loading без блимання", () => {
+      const seen: string[] = [];
+      subscribeInitialPull(() => seen.push(getFirstPullPhase()));
+      markSyncBootPending();
+      markFirstPullPending();
+      expect(getFirstPullPhase()).toBe("loading");
+      markFirstPullSettled();
+      expect(getFirstPullPhase()).toBe("idle");
+      expect(seen).not.toContain("failed");
+      // idle не з'являється між двома loading.
+      expect(seen.slice(0, 2)).toEqual(["loading", "loading"]);
+    });
+
+    it("збій тіка до рішення (офлайн-сесія) повертає правдивий idle і не рахує невдачі", () => {
+      markSyncBootPending();
+      expect(noteFirstPullFailure(2)).toBe(0);
+      expect(getFirstPullPhase()).toBe("idle");
+    });
+
+    it("завершений pull не повертається в loading", () => {
+      markInitialPullComplete("u1", clientA);
+      markSyncBootPending();
+      expect(getFirstPullPhase()).toBe("idle");
+    });
+
+    it("settleSyncBootPending і стеля часу не дають застрягти", () => {
+      vi.useFakeTimers();
+      try {
+        markSyncBootPending();
+        settleSyncBootPending();
+        expect(getFirstPullPhase()).toBe("idle");
+        markSyncBootPending();
+        vi.advanceTimersByTime(8_001);
+        expect(getFirstPullPhase()).toBe("idle");
+      } finally {
+        vi.useRealTimers();
+      }
+    });
   });
 });

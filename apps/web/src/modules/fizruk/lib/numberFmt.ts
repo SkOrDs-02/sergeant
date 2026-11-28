@@ -46,3 +46,20 @@ export function fmtLoose(
   if (!Number.isFinite(x)) return "—";
   return withMinusSign(formatNumberUk(x, { maximumFractionDigits: digits }));
 }
+
+/**
+ * Обʼєм тренування (`вага_кг × повторення`) на всіх екранах: без округлення
+ * до цілого, максимум три знаки, як у `WeeklyVolumeChart` (`formatNumberUk`
+ * без опцій). `Math.round` показував 247,5 як «248» у підсумку й на Огляді,
+ * а на графіку Прогресу лишалось «247,5» (FULL-20261126-UX-1).
+ */
+export function fmtVolume(n: number | string | null | undefined): string {
+  return fmtLoose(n, 3);
+}
+
+/** Скільки знаків після коми потрібно, щоб `Measure` показав обʼєм без втрат. */
+export function volumeFractionDigits(n: number): number {
+  const x = Math.round(Math.abs(n) * 1000) / 1000;
+  if (!Number.isFinite(x) || Number.isInteger(x)) return 0;
+  return Number.isInteger(x * 10) ? 1 : Number.isInteger(x * 100) ? 2 : 3;
+}

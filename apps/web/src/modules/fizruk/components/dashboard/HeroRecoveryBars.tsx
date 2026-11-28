@@ -10,6 +10,8 @@
  * дизайну, пункти 1 і 5.
  */
 import { messages } from "@shared/i18n/uk";
+import { coreMessages } from "@shared/i18n/uk.core";
+import { useFirstCloudPullPhase } from "@shared/hooks/useFirstCloudPullPhase";
 import type { HeroRecoveryRow } from "@sergeant/fizruk-domain";
 import { fatiguePercent } from "../../lib/atlasHeat";
 
@@ -145,11 +147,16 @@ function RecoveryRowButton({
  * відкинуто).
  */
 function EmptyBody() {
-  return (
-    <p className="mt-4 text-style-body text-text">
-      {messages.fizruk.hero.noHistory}
-    </p>
-  );
+  // FULL-20261126-UX-1: на холодному старті «Історії немає» неправда —
+  // журнал ще їде з хмари (data-59/60).
+  const phase = useFirstCloudPullPhase();
+  const text =
+    phase === "loading"
+      ? coreMessages.firstCloudPull.loadingTitle
+      : phase === "failed"
+        ? coreMessages.firstCloudPull.failedTitle
+        : messages.fizruk.hero.noHistory;
+  return <p className="mt-4 text-style-body text-text">{text}</p>;
 }
 
 export function HeroRecoveryBars({

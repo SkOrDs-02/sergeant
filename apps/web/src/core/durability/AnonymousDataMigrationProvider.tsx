@@ -38,6 +38,7 @@ import {
 } from "./anonymousDataMigration.js";
 import { trackAnonymousHandoff } from "./anonymousLeftoversOnLogout";
 import { readAnonPartitionState } from "./anonPartitionState";
+import { markSyncBootPending } from "../syncEngine/initialPullState";
 import {
   ANON_PEEK_DELAY_MS,
   peekAnonymousPartition,
@@ -321,6 +322,9 @@ function AuthenticatedMigrationGate({
   // ефекту досить просто запустити роботу; перехід у `"running"` потрібен лише
   // на повторі, і живе він у `retry`.
   const kickoff = useCallback(() => {
+    // Синк для цього користувача вже вирішено стартувати: до першого рішення
+    // reader-а модулі не малюють порожній стан (FULL-20261126-ROUTINE-1/6).
+    markSyncBootPending();
     void runSingleFlight(userId, () => setTransferring(true))
       .then((result) => {
         reportAnonPartitionShadow(predictedState, result.sourceRows);

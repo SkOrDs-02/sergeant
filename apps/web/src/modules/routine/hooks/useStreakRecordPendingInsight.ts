@@ -1,7 +1,9 @@
 import { useMemo } from "react";
-import { isFlexibleHabit } from "@sergeant/routine-domain";
 import { pluralDays } from "@sergeant/shared";
-import { flexibleMaxActiveStreak, maxStreakAllTime } from "../lib/streaks";
+import {
+  flexibleMaxActiveStreak,
+  longestStreakAcrossHabits,
+} from "../lib/streaks";
 import { useDeviceDayKey } from "@shared/hooks/useDeviceDayKey";
 import type { RoutineState } from "../lib/types";
 import type { Insight } from "@shared/lib/insights/types";
@@ -18,8 +20,8 @@ import type { Insight } from "@shared/lib/insights/types";
  * `currentStreak` = `flexibleMaxActiveStreak` across all active habits
  * (today's date, device-local anchor per ADR-0078) — гнучкий стрік, тож
  * заявлена пауза чи пропуск із причиною рекорд не обнуляють.
- * `longestStreak` = max of `maxStreakAllTime` per active habit — purely local,
- * derived from completion history.
+ * `longestStreak` = `longestStreakAcrossHabits` (той самий гнучкий рахунок) —
+ * purely local, derived from completion history.
  *
  * Returns `null` when the condition is not met, or when either value is 0:
  * без живої серії (`currentStreak <= 0`) «рекорд поруч» не має змісту — це
@@ -42,18 +44,19 @@ export function useStreakRecordPendingInsight(
     [routine.habits, routine.completions, routine.skips, todayKey],
   );
 
-  const longestStreak = useMemo(() => {
-    let best = 0;
-    for (const h of routine.habits) {
-      if (h.archived) continue;
-      // Гнучка звичка міряє `maxStreakAllTime` ТИЖНЯМИ, а `currentStreak`
-      // вище — дні, і гнучкі звички з нього виключені (logic-11): рекорд
-      // у тижнях порівнювався б із серією в днях.
-      if (isFlexibleHabit(h)) continue;
-      best = Math.max(best, maxStreakAllTime(h, routine.completions[h.id]));
-    }
-    return best;
-  }, [routine.habits, routine.completions]);
+  // Той самий гнучкий рахунок, що й у `currentStreak` (і ті самі виключені
+  // гнучкі «N на тиждень»): жорсткий `maxStreakAllTime` давав рекорд МЕНШИЙ
+  // за поточну серію (FULL-20261126-ROUTINE-1).
+  const longestStreak = useMemo(
+    () =>
+      longestStreakAcrossHabits(
+        routine.habits,
+        routine.completions,
+        todayKey,
+        routine.skips ?? {},
+      ),
+    [routine.habits, routine.completions, routine.skips, todayKey],
+  );
 
   return useMemo((): Insight | null => {
     if (longestStreak <= 0 || currentStreak <= 0) return null;

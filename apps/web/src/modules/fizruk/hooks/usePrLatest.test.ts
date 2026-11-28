@@ -162,4 +162,32 @@ describe("usePrLatest", () => {
     expect(result.current).not.toBeNull();
     expect(result.current!.weightKg).toBe(130);
   });
+
+  it("не рахує підхід без ✓ (done: false) і розминку", () => {
+    const item: WorkoutItem = {
+      ...mkStrengthItem("row", "Тяга", 80),
+      sets: [
+        { weightKg: 80, reps: 5, done: true },
+        { weightKg: 100, reps: 5, done: false },
+        { weightKg: 120, reps: 5, done: true, setType: "warmup" },
+      ],
+    };
+    const w = mkWorkout("w1", "2026-06-03T10:00:00Z", [item]);
+    const { result } = renderHook(() =>
+      usePrLatest({ workouts: [w], loaded: true }),
+    );
+    expect(result.current!.weightKg).toBe(80);
+  });
+
+  it("повертає null, коли робочих підходів немає", () => {
+    const item: WorkoutItem = {
+      ...mkStrengthItem("row", "Тяга", 80),
+      sets: [{ weightKg: 100, reps: 5, done: false }],
+    };
+    const w = mkWorkout("w1", "2026-06-03T10:00:00Z", [item]);
+    const { result } = renderHook(() =>
+      usePrLatest({ workouts: [w], loaded: true }),
+    );
+    expect(result.current).toBeNull();
+  });
 });

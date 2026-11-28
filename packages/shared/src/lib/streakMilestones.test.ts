@@ -47,7 +47,7 @@ describe("claimStreakMilestone", () => {
 
   it("новачок отримує кожну віху рівно один раз", () => {
     const store = memoryStore();
-    expect(claimStreakMilestone(store, "routine", 0)).toBeNull(); // засів
+    expect(claimStreakMilestone(store, "routine", 1)).toBeNull(); // засів
     expect(claimStreakMilestone(store, "routine", 6)).toBeNull();
     expect(claimStreakMilestone(store, "routine", 7)).toBe(7);
     expect(claimStreakMilestone(store, "routine", 7)).toBeNull();
@@ -61,7 +61,7 @@ describe("claimStreakMilestone", () => {
   // ламали б порівняння з попереднім значенням, але не зайняття.
   it("падіння і повернення до тієї самої віхи не святкується двічі", () => {
     const store = memoryStore();
-    claimStreakMilestone(store, "routine", 0);
+    claimStreakMilestone(store, "routine", 1);
     expect(claimStreakMilestone(store, "routine", 7)).toBe(7);
     expect(claimStreakMilestone(store, "routine", 5)).toBeNull();
     expect(claimStreakMilestone(store, "routine", 7)).toBeNull();
@@ -69,7 +69,7 @@ describe("claimStreakMilestone", () => {
 
   it("стрибок через кілька віх гасить нижчі, щоб вони не вистрелили потім", () => {
     const store = memoryStore();
-    claimStreakMilestone(store, "routine", 0);
+    claimStreakMilestone(store, "routine", 1);
     expect(claimStreakMilestone(store, "routine", 45)).toBe(30);
     // 7 зайнята разом із 30 — інакше вона вистрелила б наступним рендером.
     expect(claimStreakMilestone(store, "routine", 45)).toBeNull();
@@ -77,10 +77,20 @@ describe("claimStreakMilestone", () => {
 
   it("scope розділяє модулі", () => {
     const store = memoryStore();
-    claimStreakMilestone(store, "routine", 0);
-    claimStreakMilestone(store, "nutrition", 0);
+    claimStreakMilestone(store, "routine", 1);
+    claimStreakMilestone(store, "nutrition", 1);
     expect(claimStreakMilestone(store, "routine", 7)).toBe(7);
     // Їжа свою сімку ще не брала.
     expect(claimStreakMilestone(store, "nutrition", 7)).toBe(7);
+  });
+
+  // FULL-20261126-ROUTINE-2: свіжий вхід віддавав 0 на холодному старті, засів
+  // на нулі потім святкував гідрацію 0 → 13 як «віху 7».
+  it("нуль не засіває: гідрація 0 → 13 не святкується, а засіває", () => {
+    const store = memoryStore();
+    expect(claimStreakMilestone(store, "routine", 0)).toBeNull();
+    expect(claimStreakMilestone(store, "routine", 13)).toBeNull(); // засів
+    expect(claimStreakMilestone(store, "routine", 13)).toBeNull();
+    expect(claimStreakMilestone(store, "routine", 30)).toBe(30);
   });
 });

@@ -4,6 +4,7 @@ import { useDeviceDayKey } from "@shared/hooks/useDeviceDayKey";
  * Reads its own localStorage shard and aggregates independently.
  */
 import { ReportSheet } from "./ReportSheet";
+import { ReportPreviousLine } from "./ReportPreviousLine";
 import { useMemo } from "react";
 import { cn } from "@shared/lib/ui/cn";
 import { DeltaChip } from "@shared/components/ui/DeltaChip";
@@ -180,7 +181,12 @@ export default function RoutineCard({ period, offset }: RoutineCardProps) {
               {empty ? "–" : `${formattedCurrent}%`}
             </span>
             {!empty && (
-              <DeltaChip cur={cur.pct} prev={prev.pct} higherIsBetter={true} />
+              <DeltaChip
+                cur={cur.pct}
+                prev={prev.pct}
+                higherIsBetter={true}
+                percentPoints
+              />
             )}
           </span>
         )}
@@ -196,14 +202,16 @@ export default function RoutineCard({ period, offset }: RoutineCardProps) {
             <span className="text-style-headline text-text">
               {formattedCurrent}%
             </span>
-            <DeltaChip cur={cur.pct} prev={prev.pct} higherIsBetter={true} />
+            <DeltaChip
+              cur={cur.pct}
+              prev={prev.pct}
+              higherIsBetter={true}
+              percentPoints
+            />
           </div>
-          <p className="text-style-caption text-muted">
-            {partial
-              ? messages.hub.reportPreviousToDate
-              : messages.hub.reportPrevious}{" "}
+          <ReportPreviousLine partial={partial} period={period}>
             {formattedPrev}%
-          </p>
+          </ReportPreviousLine>
           <HabitHeatmap
             key={`${period}-${offset}`}
             data={cur.daily}

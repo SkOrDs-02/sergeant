@@ -7,13 +7,16 @@ import { useStreakRecordPendingInsight } from "./useStreakRecordPendingInsight";
 vi.mock("../lib/streaks", () => ({
   // Хук перейшов на гнучкий стрік (Хвиля 4) — мок іде за ним.
   flexibleMaxActiveStreak: vi.fn(),
-  maxStreakAllTime: vi.fn(),
+  longestStreakAcrossHabits: vi.fn(),
 }));
 
-import { flexibleMaxActiveStreak, maxStreakAllTime } from "../lib/streaks";
+import {
+  flexibleMaxActiveStreak,
+  longestStreakAcrossHabits,
+} from "../lib/streaks";
 
 const mockActive = vi.mocked(flexibleMaxActiveStreak);
-const mockAllTime = vi.mocked(maxStreakAllTime);
+const mockAllTime = vi.mocked(longestStreakAcrossHabits);
 
 function makeHabit(overrides: Partial<Habit> = {}): Habit {
   return { id: "h1", name: "Вода", recurrence: "daily", ...overrides };
@@ -35,7 +38,7 @@ function makeState(habits: Habit[]): RoutineState {
 beforeEach(() => {
   // `todayKey` (`lib/dayAnchor.ts`) is now device-local (ADR-0078) and reads
   // the real system clock here — irrelevant to these assertions since
-  // `flexibleMaxActiveStreak`/`maxStreakAllTime` are fully mocked below and
+  // `flexibleMaxActiveStreak`/`longestStreakAcrossHabits` are fully mocked below and
   // ignore the key argument's value.
   vi.useFakeTimers();
   vi.setSystemTime(new Date("2026-07-19T12:00:00.000Z"));
@@ -118,33 +121,20 @@ describe("useStreakRecordPendingInsight", () => {
     expect(result.current).toBeNull();
   });
 
-  it("skips archived habits when computing the all-time record", () => {
+  it("рекорд рахується тим самим гнучким агрегатом, що й поточна серія (ROUTINE-1)", () => {
+    // Архівні й гнучкі «N на тиждень» відсіює сам доменний агрегат
+    // (`longestStreakAcrossHabits`, тести в `routine-domain`); хук лише
+    // передає йому стан і день пристрою.
     mockActive.mockReturnValue(2);
-    // Two habits: only the non-archived one should feed maxStreakAllTime.
-    mockAllTime.mockImplementation((habit) =>
-      habit.id === "archived-habit" ? 99 : 3,
-    );
-    const state = makeState([
-      makeHabit({ id: "archived-habit", archived: true }),
-      makeHabit({ id: "active-habit" }),
-    ]);
-    const { result } = renderHook(() => useStreakRecordPendingInsight(state));
-    // longestStreak should be 3 (from active-habit), not 99 — so
-    // currentStreak=2 === longestStreak-1=2 fires the insight.
-    expect(result.current?.subtitle).toBe("Ще день, і повториш рекорд 3 дні");
-  });
-
-  it("не бере гнучку звичку в рекорд: тижні не порівнюються з днями (logic-11)", () => {
-    mockActive.mockReturnValue(2);
-    // `maxStreakAllTime` гнучкої звички міряє ТИЖНІ — 99 тут не має вплинути.
-    mockAllTime.mockImplementation((habit) =>
-      habit.id === "flex-habit" ? 99 : 3,
-    );
-    const state = makeState([
-      makeHabit({ id: "flex-habit", recurrence: "flexible" }),
-      makeHabit({ id: "daily-habit" }),
-    ]);
+    mockAllTime.mockReturnValue(3);
+    const state = makeState([makeHabit({ id: "active-habit" })]);
     const { result } = renderHook(() => useStreakRecordPendingInsight(state));
     expect(result.current?.subtitle).toBe("Ще день, і повториш рекорд 3 дні");
+    expect(mockAllTime).toHaveBeenCalledWith(
+      state.habits,
+      state.completions,
+      expect.stringMatching(/^\d{4}-\d{2}-\d{2}$/),
+      {},
+    );
   });
 });

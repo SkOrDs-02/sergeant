@@ -10,13 +10,38 @@
  * flag — registration is now `userId`-gated only.
  */
 
-import { useEffect } from "react";
+import { useEffect, useSyncExternalStore } from "react";
 import { useLocalUserId } from "../../../core/auth/useLocalUserId";
 import { logger } from "@shared/lib";
 import { addSentryBreadcrumb } from "../../../core/observability/sentry";
+import {
+  getInitialPullVersion,
+  subscribeInitialPull,
+} from "../../../core/syncEngine/initialPullState.js";
+import { isInitialSyncSettled } from "../lib/nutritionStorage";
+import { isSyncableUserId } from "../../../core/syncEngine/syncableUserId.js";
 
 export function useNutritionDualWriteBoot(): void {
   const userId = useLocalUserId();
+  // Перерендер, коли перший pull завершився: `isInitialSyncSettled()` не
+  // реактивний сам по собі.
+  useSyncExternalStore(
+    subscribeInitialPull,
+    getInitialPullVersion,
+    getInitialPullVersion,
+  );
+  const pullSettled = isInitialSyncSettled();
+
+  // FULL-20261126-NUTR-1: одноразово донести базу prefs на сервер для
+  // акаунтів, чиї патчі застрягли (див. `lib/prefsBaseResync.ts`).
+  useEffect(() => {
+    if (!userId || !pullSettled || !isSyncableUserId(userId)) return;
+    void import("../lib/prefsBaseResync.js")
+      .then((mod) => mod.resyncNutritionPrefsBaseOnce(userId))
+      .catch((err: unknown) => {
+        logger.warn("[nutrition] prefs base resync failed", err);
+      });
+  }, [userId, pullSettled]);
 
   useEffect(() => {
     if (!userId) return;

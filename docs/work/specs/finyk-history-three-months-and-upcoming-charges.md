@@ -1,6 +1,6 @@
 # SPEC: Фінік — три місяці історії Monobank і дані рядка «спишеться»
 
-> **Last touched:** 2026-11-20 by @claude. **Next review:** 2027-07-15.
+> **Last touched:** 2026-11-26 by @claude. **Next review:** 2027-07-21.
 > **Status:** Implemented - вікна виписок `statementWindows.ts`, `dueCharges.ts` і `useFinykDueCharges.ts`, `bankHistory.ts`, поріг 80% у `budgetLimits.ts`; коміт `e7182afc0`, доповнення в PR #1700.
 
 Пункти OD-26 Ф-3 (а) і Ф-4 (а) розбору
