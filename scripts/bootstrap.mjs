@@ -74,8 +74,13 @@ function fail(label, hint) {
   }
 }
 
+// pnpm на Windows - це `pnpm.cmd`, а `spawnSync` без shell запускає лише
+// `.exe`, тож без цього `--check` бачив «pnpm не знайдено» при робочому pnpm.
+// Аргументи тут константні, shell нічого чужого не інтерпретує.
+const SHELL = process.platform === "win32";
+
 function tryExec(cmd, args = []) {
-  const r = spawnSync(cmd, args, { encoding: "utf8" });
+  const r = spawnSync(cmd, args, { encoding: "utf8", shell: SHELL });
   return {
     ok: r.status === 0,
     stdout: (r.stdout || "").trim(),
@@ -181,7 +186,8 @@ function checkDocker() {
   }
   // Try `docker info` to verify daemon is running.
   const info = tryExec("docker", ["info", "--format", "{{.ServerVersion}}"]);
-  if (!info.ok) {
+  // Docker Desktop, що не зміг стартувати, віддає код 0 і порожню версію.
+  if (!info.ok || !info.stdout) {
     // Same contract as above: a stopped daemon must not fail `--check`
     // (e.g. CI lanes without a Docker socket) — it comes up at `pnpm dev:db`.
     if (CHECK_ONLY) {
@@ -240,7 +246,7 @@ function nodeModulesFresh() {
 
 function runStream(cmd, args, label) {
   step(`${label} (${cmd} ${args.join(" ")})`);
-  const r = spawnSync(cmd, args, { stdio: "inherit", cwd: ROOT });
+  const r = spawnSync(cmd, args, { stdio: "inherit", cwd: ROOT, shell: SHELL });
   return r.status === 0;
 }
 
