@@ -233,4 +233,26 @@ describe("releasePantryItems", () => {
     expect(items.get(1)?.claimedAt).toBeNull();
     expect(declined()).toBeNull();
   });
+
+  it("порожній itemIds з decline відхиляє чек цілим, позицій не чіпає («Вже не актуальний»)", async () => {
+    const sqls: string[] = [];
+    const {
+      queryFn: inner,
+      items,
+      declined,
+    } = makeFakeDb({
+      items: [{ id: 1, claimedAt: "2026-09-25T10:00:00.000Z" }],
+      purchasedAt: "2026-09-25T10:00:00.000Z",
+      autoDeclinedAt: null,
+      autoImportSince: null,
+    });
+    const queryFn = (async (sql: string, params?: unknown[]) => {
+      sqls.push(sql);
+      return inner(sql, params);
+    }) as unknown as QueryFn;
+    await releasePantryItems("u1", "r1", [], true, queryFn);
+    expect(declined()).not.toBeNull();
+    expect(items.get(1)?.claimedAt).not.toBeNull();
+    expect(sqls).toHaveLength(1);
+  });
 });

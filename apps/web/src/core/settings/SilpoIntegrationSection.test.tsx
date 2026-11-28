@@ -319,7 +319,7 @@ describe("SilpoIntegrationSection", () => {
     renderSection();
 
     const toggle = await screen.findByRole("switch", {
-      name: "Додавати продукти з чеків у комору автоматично",
+      name: "Пропонувати нові чеки для комори",
     });
     expect(toggle).toHaveAttribute("aria-checked", "false");
 
@@ -333,7 +333,7 @@ describe("SilpoIntegrationSection", () => {
   });
 
   describe("тумблер автоімпорту: причина відмови в тості", () => {
-    const TOGGLE_NAME = "Додавати продукти з чеків у комору автоматично";
+    const TOGGLE_NAME = "Пропонувати нові чеки для комори";
 
     async function clickToggleExpectingFailure(error: unknown) {
       mockedSyncState.mockResolvedValue({

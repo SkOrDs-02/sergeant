@@ -4673,6 +4673,13 @@
       "canonical_owner": "docs/work/specs/finyk-import-reminders.md"
     },
     {
+      "old_path": "docs/work/specs/finyk-investment-suggestions.md",
+      "new_path": "docs/work/specs/finyk-investment-suggestions.md",
+      "action": "keep",
+      "genre": "active-work",
+      "canonical_owner": "docs/work/specs/finyk-investment-suggestions.md"
+    },
+    {
       "old_path": "docs/work/specs/finyk-limit-and-recurring-push.md",
       "new_path": "docs/work/specs/finyk-limit-and-recurring-push.md",
       "action": "keep",
@@ -5357,6 +5364,13 @@
       "action": "keep",
       "genre": "active-work",
       "canonical_owner": "docs/work/specs/silpo-pantry-auto-import.md"
+    },
+    {
+      "old_path": "docs/work/specs/silpo-pantry-confirm.md",
+      "new_path": "docs/work/specs/silpo-pantry-confirm.md",
+      "action": "keep",
+      "genre": "active-work",
+      "canonical_owner": "docs/work/specs/silpo-pantry-confirm.md"
     },
     {
       "old_path": "docs/work/specs/site-ia/page-hroshi.md",

@@ -1507,6 +1507,33 @@
       }
     },
     {
+      "description": "a GET /api/v1/silpo/pantry-skips request",
+      "providerStates": [
+        {
+          "name": "user-pact-001 skipped milk three times in a row"
+        }
+      ],
+      "request": {
+        "headers": {
+          "accept": "application/json"
+        },
+        "method": "GET",
+        "path": "/api/v1/silpo/pantry-skips"
+      },
+      "response": {
+        "body": {
+          "productKeys": [
+            "молоко"
+          ]
+        },
+        "headers": {
+          "Content-Type": "application/json",
+          "content-type": "application/json"
+        },
+        "status": 200
+      }
+    },
+    {
       "description": "a GET /api/v1/silpo/receipts request filtered by transactionId",
       "providerStates": [
         {
@@ -3773,6 +3800,41 @@
       }
     },
     {
+      "description": "a POST /api/v1/silpo/pantry-skips request",
+      "providerStates": [
+        {
+          "name": "user-pact-001 has a connected Silpo account"
+        }
+      ],
+      "request": {
+        "body": {
+          "added": [
+            "хліб"
+          ],
+          "skipped": [
+            "молоко"
+          ]
+        },
+        "headers": {
+          "Content-Type": "application/json",
+          "accept": "application/json",
+          "content-type": "application/json"
+        },
+        "method": "POST",
+        "path": "/api/v1/silpo/pantry-skips"
+      },
+      "response": {
+        "body": {
+          "ok": true
+        },
+        "headers": {
+          "Content-Type": "application/json",
+          "content-type": "application/json"
+        },
+        "status": 200
+      }
+    },
+    {
       "description": "a POST /api/v1/silpo/receipts/link/mono-tx-1 request with a receiptId",
       "providerStates": [
         {
@@ -3850,6 +3912,37 @@
           "itemIds": [
             501
           ]
+        },
+        "headers": {
+          "Content-Type": "application/json",
+          "accept": "application/json",
+          "content-type": "application/json"
+        },
+        "method": "POST",
+        "path": "/api/v1/silpo/receipts/rcpt-pact-0001/pantry-release"
+      },
+      "response": {
+        "body": {
+          "ok": true
+        },
+        "headers": {
+          "Content-Type": "application/json",
+          "content-type": "application/json"
+        },
+        "status": 200
+      }
+    },
+    {
+      "description": "a POST /api/v1/silpo/receipts/rcpt-pact-0001/pantry-release request (decline, no items)",
+      "providerStates": [
+        {
+          "name": "user-pact-001 owns receipt rcpt-pact-0001 with unclaimed item 501"
+        }
+      ],
+      "request": {
+        "body": {
+          "decline": true,
+          "itemIds": []
         },
         "headers": {
           "Content-Type": "application/json",

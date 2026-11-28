@@ -31,6 +31,9 @@ vi.mock("@finyk/hooks/useSilpoReceipts", () => ({
   useSilpoReceipts: (...args: unknown[]) => receiptsMock(...args),
   useSilpoReceiptDetail: (...args: unknown[]) => receiptDetailMock(...args),
   usePantryClaim: () => ({ claim: pantryClaimMock, isPending: false }),
+  usePantryRelease: () => ({ release: vi.fn() }),
+  usePantrySkips: () => new Set<string>(),
+  useRecordPantrySkips: () => vi.fn(() => Promise.resolve()),
 }));
 
 import { PantrySourceTabs } from "./PantrySourceTabs";

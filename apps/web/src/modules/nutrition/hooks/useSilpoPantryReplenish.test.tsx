@@ -17,14 +17,22 @@ import type { SilpoReceiptDetailDto } from "@shared/api";
 const receiptsMock = vi.fn();
 const receiptDetailMock = vi.fn();
 const pantryClaimMock = vi.fn();
+const pantryReleaseMock = vi.fn();
+const recordSkipsMock = vi.fn();
+let skippedKeys: ReadonlySet<string> = new Set();
 
 vi.mock("@finyk/hooks/useSilpoReceipts", () => ({
   useSilpoReceipts: (...args: unknown[]) => receiptsMock(...args),
   useSilpoReceiptDetail: (...args: unknown[]) => receiptDetailMock(...args),
   usePantryClaim: () => ({ claim: pantryClaimMock, isPending: false }),
+  usePantryRelease: () => ({ release: pantryReleaseMock }),
+  usePantrySkips: () => skippedKeys,
+  useRecordPantrySkips: () => recordSkipsMock,
 }));
 
 import { useSilpoPantryReplenish } from "./useSilpoPantryReplenish";
+import { pantryProductKey } from "../lib/silpoReplenish";
+import type { SilpoPantryOffer } from "./useSilpoPantryOffers";
 
 const RECEIPT_SUMMARY = {
   receiptId: "rcpt-1",
@@ -44,6 +52,22 @@ function detailWithItems(
   return { ...RECEIPT_SUMMARY, items };
 }
 
+function GROCERY(
+  id: number,
+  name: string,
+): SilpoReceiptDetailDto["items"][number] {
+  return {
+    id,
+    name,
+    qty: 1,
+    unit: "шт",
+    priceKop: 3000,
+    categorySlug: null,
+    barcode: null,
+    pantryClaimedAt: null,
+  };
+}
+
 function mockReceipts(receipts: (typeof RECEIPT_SUMMARY)[]) {
   receiptsMock.mockReturnValue({
     receipts,
@@ -60,6 +84,9 @@ describe("useSilpoPantryReplenish", () => {
     receiptsMock.mockReset();
     receiptDetailMock.mockReset();
     pantryClaimMock.mockReset();
+    pantryReleaseMock.mockReset().mockResolvedValue(undefined);
+    recordSkipsMock.mockReset().mockResolvedValue(undefined);
+    skippedKeys = new Set();
     // Дефолт: сервер бронює РІВНО те, що запросили - тести, які цікавляться
     // частковим бронюванням, перевизначають це самі.
     pantryClaimMock.mockImplementation(
@@ -275,6 +302,7 @@ describe("useSilpoPantryReplenish", () => {
   });
 
   it("сусідні продуктові рядки дістають РІЗНІ іконки", async () => {
+    mockReceipts([RECEIPT_SUMMARY]);
     mockDetail(
       detailWithItems([
         {
@@ -706,5 +734,105 @@ describe("useSilpoPantryReplenish", () => {
     rerender({ enabled: false });
     act(() => result.current.reset());
     expect(result.current.selectedReceiptId).toBeNull();
+  });
+
+  it("ручний аркуш теж пише лічильники: знята дефолтна галочка - skipped, додане - added", async () => {
+    mockReceipts([RECEIPT_SUMMARY]);
+    mockDetail(
+      detailWithItems([
+        GROCERY(1, "Хліб Київхліб"),
+        GROCERY(2, "Молоко Галичина 900г"),
+      ]),
+    );
+    const { result } = renderHook(() =>
+      useSilpoPantryReplenish({
+        enabled: true,
+        pantryItems: [],
+        upsertItem: vi.fn(),
+      }),
+    );
+    await waitFor(() => expect(result.current.rows).toHaveLength(2));
+    act(() => result.current.toggleItem(2));
+    await act(async () => {
+      await result.current.confirm();
+    });
+    expect(recordSkipsMock).toHaveBeenCalledWith(
+      [pantryProductKey("Молоко Галичина 900г")],
+      [pantryProductKey("Хліб Київхліб")],
+    );
+    // Ручний режим чеків не відхиляє.
+    expect(pantryReleaseMock).not.toHaveBeenCalled();
+  });
+
+  it("ручний аркуш показує «зазвичай не додаєш» з тим самим правилом галочок", async () => {
+    skippedKeys = new Set([pantryProductKey("Молоко Яготинське 900г")]);
+    mockReceipts([RECEIPT_SUMMARY]);
+    mockDetail(detailWithItems([GROCERY(1, "Молоко Галичина 900г")]));
+    const { result } = renderHook(() =>
+      useSilpoPantryReplenish({
+        enabled: true,
+        pantryItems: [],
+        upsertItem: vi.fn(),
+      }),
+    );
+    await waitFor(() => expect(result.current.rows).toHaveLength(1));
+    expect(result.current.rows[0]).toMatchObject({
+      checked: false,
+      usuallySkipped: true,
+    });
+  });
+
+  it("нові чеки: відхилений чек не потрапляє в лічильники, чек без доданого відхиляється", async () => {
+    const offer = (
+      receiptId: string,
+      items: SilpoReceiptDetailDto["items"],
+    ): SilpoPantryOffer => ({
+      summary: { ...RECEIPT_SUMMARY, receiptId },
+      items,
+      groceryCount: items.length,
+      stale: false,
+      ageDays: 1,
+    });
+    const offers = [
+      offer("keep", [GROCERY(1, "Хліб Київхліб")]),
+      offer("declined", [GROCERY(2, "Молоко Галичина 900г")]),
+      offer("nothing", [GROCERY(3, "Сир кисломолочний Галичина")]),
+    ];
+    const upsertItem = vi.fn();
+    const { result } = renderHook(() =>
+      useSilpoPantryReplenish({
+        enabled: true,
+        pantryItems: [],
+        upsertItem,
+        offers,
+      }),
+    );
+    expect(result.current.sections.map((s) => s.receiptId)).toEqual([
+      "keep",
+      "declined",
+      "nothing",
+    ]);
+    await act(async () => {
+      await result.current.declineReceipt("declined");
+    });
+    expect(pantryReleaseMock).toHaveBeenCalledWith("declined", [], true);
+    expect(result.current.sections.map((s) => s.receiptId)).toEqual([
+      "keep",
+      "nothing",
+    ]);
+    act(() => result.current.toggleItem(3));
+    await act(async () => {
+      await result.current.confirm();
+    });
+
+    expect(upsertItem).toHaveBeenCalledTimes(1);
+    expect(pantryClaimMock).toHaveBeenCalledTimes(1);
+    expect(pantryClaimMock).toHaveBeenCalledWith("keep", [1], "manual");
+    // Молоко з відхиленого чека не рахується як зняте.
+    expect(recordSkipsMock).toHaveBeenCalledWith(
+      [pantryProductKey("Сир кисломолочний Галичина")],
+      [pantryProductKey("Хліб Київхліб")],
+    );
+    expect(pantryReleaseMock).toHaveBeenCalledWith("nothing", [], true);
   });
 });

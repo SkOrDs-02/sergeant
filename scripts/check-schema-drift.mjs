@@ -806,6 +806,11 @@ const SQL_ONLY_TABLES = [
   // disconnect його не стирав. Читає і пише лише сервер (синк, auto-claim
   // комори, wipe-хендлер).
   "silpo_wipe_marker",
+  // silpo_pantry_skip_counts (міграція 178, спека silpo-pantry-confirm.md) -
+  // скільки разів поспіль людина зняла галочку з продукту в аркуші чека.
+  // Читає і пише лише сервер (`/api/silpo/pantry-skips`), клієнт бачить
+  // лише список ключів продуктів через REST.
+  "silpo_pantry_skip_counts",
   // Integration webhooks / failure journals (n8n) — server-only журнали.
   "n8n_failure_events",
   "n8n_webhook_events",

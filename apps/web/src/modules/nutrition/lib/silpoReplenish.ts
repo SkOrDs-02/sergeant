@@ -2,27 +2,29 @@
  * Last validated: 2026-09-29
  * Status: Active
  *
- * Чисті функції побудови рядків «З чека» і перетворення підтверджених
- * рядків на `PantryItem[]` - винесені з `useSilpoPantryReplenish.ts` (спека
- * `docs/work/specs/silpo-pantry-auto-import.md` § Рішення дизайну, «Логіку
- * рядків виносимо в чисті функції»), щоб ручний і автоматичний потоки писали
- * в комору однаково. `useSilpoPantryReplenish` (ручний потік, аркуш «З
- * чека») і `useSilpoPantryAutoImport` (автоімпорт) обидва викликають
- * `buildSilpoReplenishRows` + `rowsToPantryItems` замість дублювання логіки.
+ * Чисті функції побудови рядків аркуша чека і перетворення підтверджених
+ * рядків на `PantryItem[]` (спека `docs/work/specs/silpo-pantry-auto-import.md`
+ * § «Логіку рядків виносимо в чисті функції»). Галочки за замовчуванням
+ * враховують давність чека і вивчене «зазвичай не додаєш», а
+ * `buildPantrySkipUpdate` рахує, що з цього записати в лічильники (спека
+ * `docs/work/specs/silpo-pantry-confirm.md`). Обидва режими аркуша (один
+ * чек у «З чека» і нові чеки з картки в огляді) будують рядки тут.
  */
 import { mapReceiptItemToCategory } from "@sergeant/finyk-domain/domain";
 import {
   buildPantryIndex,
+  canonicalFoodKey,
   categorizeFood,
   displayFoodName,
   findPantryMatch,
   genericFoodName,
   matchFoodName,
+  normalizeReceiptItemName,
   receiptQtyToBase,
   receiptPackCount,
   type PantryItemSource,
 } from "@sergeant/nutrition-domain";
-import { pluralUa, toKyivISODate, type UaPluralForms } from "@sergeant/shared";
+import { toKyivISODate } from "@sergeant/shared";
 import type { SilpoReceiptItemDto } from "@shared/api";
 import type { PantryItem } from "./pantryTextParser";
 import { receiptQtyToGrams } from "@shared/lib/format/receiptQty";
@@ -60,6 +62,12 @@ export interface SilpoReplenishRow {
    */
   locked: boolean;
   checked: boolean;
+  /** Галочка, яку рядок мав би без втручання людини. */
+  defaultChecked: boolean;
+  /** Ключ продукту для лічильника «зазвичай не додаєш» ({@link pantryProductKey}). */
+  productKey: string;
+  /** Людина тричі поспіль знімала з цього продукту галочку: рядок без неї. */
+  usuallySkipped: boolean;
 }
 
 export interface BuildSilpoReplenishRowsParams {
@@ -68,17 +76,38 @@ export interface BuildSilpoReplenishRowsParams {
   /** Явний вибір людини (toggle) - має пріоритет над дефолтом `groceries`. */
   checkedState: Readonly<Record<number, boolean>>;
   keepFullState: Readonly<Record<number, boolean>>;
+  /** Чек старший за {@link STALE_RECEIPT_DAYS} днів: усі рядки без галочки. */
+  stale?: boolean;
+  /** Ключі продуктів, які людина зазвичай не додає (`GET /api/silpo/pantry-skips`). */
+  skippedKeys?: ReadonlySet<string>;
+}
+
+/** Поріг давності чека, після якого аркуш не ставить жодної галочки. */
+export const STALE_RECEIPT_DAYS = 7;
+const DAY_MS = 86_400_000;
+
+export function isStaleReceipt(purchasedAt: string, nowMs: number): boolean {
+  return nowMs - Date.parse(purchasedAt) > STALE_RECEIPT_DAYS * DAY_MS;
+}
+
+/** Повні дні від покупки до `nowMs`: «куплено 9 днів тому». */
+export function receiptAgeDays(purchasedAt: string, nowMs: number): number {
+  return Math.floor((nowMs - Date.parse(purchasedAt)) / DAY_MS);
 }
 
 /**
- * Дефолт чекбокса: `checkedState` перемикає явний вибір людини; коли його
- * ще немає - «вже в коморі» (`pantryClaimedAt != null`) залишається БЕЗ
- * галочки (спека § Рішення дизайну, «Вигляд позначки»), інакше дефолт -
- * `groceries`.
+ * Ключ продукту для лічильника «зазвичай не додаєш» - та сама родова назва,
+ * під якою рядок ляже в комору (`categorizeFood(...).collapseBrand` +
+ * `genericFoodName`), у формі ключа злиття комори. «Молоко Галичина 2,5%» і
+ * «Молоко Яготинське» дають один ключ, «Сир кисломолочний» і «Сир твердий
+ * Гауда» різні. Напої й снеки бренд не згортають, тож там ключ - назва без
+ * пакувального шуму.
  */
-function defaultChecked(item: SilpoReceiptItemDto): boolean {
-  if (item.pantryClaimedAt != null) return false;
-  return mapReceiptItemToCategory(item) === "groceries";
+export function pantryProductKey(itemName: string): string {
+  const name = categorizeFood(itemName).collapseBrand
+    ? genericFoodName(itemName)
+    : normalizeReceiptItemName(itemName);
+  return canonicalFoodKey(name);
 }
 
 export function buildSilpoReplenishRows({
@@ -86,6 +115,8 @@ export function buildSilpoReplenishRows({
   pantryIndex,
   checkedState,
   keepFullState,
+  stale = false,
+  skippedKeys,
 }: BuildSilpoReplenishRowsParams): SilpoReplenishRow[] {
   return items.map((item) => {
     // `findPantryMatch` бере на себе і точний збіг ключів, і випадок
@@ -98,6 +129,15 @@ export function buildSilpoReplenishRows({
     const finykCategory = mapReceiptItemToCategory(item);
     const isGrocery = finykCategory === "groceries";
     const locked = item.pantryClaimedAt != null && match != null;
+    const productKey = pantryProductKey(item.name);
+    const usuallySkipped =
+      isGrocery &&
+      item.pantryClaimedAt == null &&
+      (skippedKeys?.has(productKey) ?? false);
+    // Без явного вибору людини: «вже в коморі», хімія, старий чек і вивчене
+    // «зазвичай не додаєш» без галочки, решта продуктів з галочкою.
+    const defaultChecked =
+      isGrocery && item.pantryClaimedAt == null && !stale && !usuallySkipped;
     return {
       item,
       category: finykCategory,
@@ -109,9 +149,37 @@ export function buildSilpoReplenishRows({
           : null,
       keepFull: keepFullState[item.id] ?? false,
       locked,
-      checked: !locked && (checkedState[item.id] ?? defaultChecked(item)),
+      checked: !locked && (checkedState[item.id] ?? defaultChecked),
+      defaultChecked,
+      productKey,
+      usuallySkipped,
     };
   });
+}
+
+/**
+ * Що записати в лічильники «зазвичай не додаєш» після «Додати». `skipped` -
+ * рядки, де галочка стояла за замовчуванням і людина її зняла; `added` -
+ * рядки, які реально лягли в комору (`claimedItemIds`). Рядки без галочки за
+ * замовчуванням (хімія, старий чек, вже вивчене), які людина не чіпала, не
+ * рахуються. Продукт, що є в обох списках, лишається лише в `added`.
+ */
+export function buildPantrySkipUpdate(
+  rows: readonly SilpoReplenishRow[],
+  claimedItemIds: ReadonlySet<number>,
+): { skipped: string[]; added: string[] } {
+  const added = new Set<string>();
+  const skipped = new Set<string>();
+  for (const r of rows) {
+    if (r.checked && claimedItemIds.has(r.item.id)) added.add(r.productKey);
+    else if (!r.locked && r.defaultChecked && !r.checked) {
+      skipped.add(r.productKey);
+    }
+  }
+  return {
+    skipped: [...skipped].filter((k) => !added.has(k)),
+    added: [...added],
+  };
 }
 
 /**
@@ -154,39 +222,4 @@ export function rowsToPantryItems(
       sources: [source],
     };
   });
-}
-
-const PRODUCT_FORMS: UaPluralForms = {
-  one: "продукт",
-  few: "продукти",
-  many: "продуктів",
-};
-const RECEIPT_FORMS: UaPluralForms = {
-  one: "чека",
-  few: "чеків",
-  many: "чеків",
-};
-// `few`/`many` тут навмисно однакові («чеків»), а не «чеки»: фраза «з 2
-// чеків Сільпо» (родовий відмінок після прийменника «з»), не «з 2 чеки»
-// (називний, як було б у голому лічильнику «2 чеки»). `one` не
-// використовується цим викликом (галузь `receiptCount > 1`), лишений
-// заради повноти форми.
-
-/**
- * Текст тосту одного проходу автоімпорту (спека § Рішення дизайну, «Тост і
- * «Повернути»»): «Додано N продуктів з чека Сільпо» для одного чека,
- * «...з K чеків Сільпо» для кількох. Функція, не запис у `messages` -
- * каталог i18n типізований як дерево рядків без функцій
- * (`MessageCatalog` constraint, `@shared/i18n/uk.ts`).
- */
-export function buildSilpoAutoImportToastMessage(
-  addedCount: number,
-  receiptCount: number,
-): string {
-  const productWord = pluralUa(addedCount, PRODUCT_FORMS);
-  if (receiptCount > 1) {
-    const receiptWord = pluralUa(receiptCount, RECEIPT_FORMS);
-    return `Додано ${addedCount} ${productWord} з ${receiptCount} ${receiptWord} Сільпо`;
-  }
-  return `Додано ${addedCount} ${productWord} з чека Сільпо`;
 }

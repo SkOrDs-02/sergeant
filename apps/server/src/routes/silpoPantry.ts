@@ -7,6 +7,9 @@ import {
   SilpoPantryClaimResponseSchema,
   SilpoPantryReleaseRequestSchema,
   SilpoPantryReleaseResponseSchema,
+  SilpoPantrySkipsRecordRequestSchema,
+  SilpoPantrySkipsRecordResponseSchema,
+  SilpoPantrySkipsResponseSchema,
   SilpoSettingsRequestSchema,
   SilpoSettingsResponseSchema,
 } from "../http/schemas.js";
@@ -15,6 +18,10 @@ import {
   releasePantryItems,
   setPantryAutoImport,
 } from "../modules/silpo/pantryClaim.js";
+import {
+  listSkippedProductKeys,
+  recordPantrySkips,
+} from "../modules/silpo/pantrySkips.js";
 import {
   assertSilpoEnabled,
   getUserId,
@@ -101,4 +108,40 @@ export async function pantryReleaseHandler(
   const { itemIds, decline } = parseBody(SilpoPantryReleaseRequestSchema, req);
   await releasePantryItems(userId, receiptId, itemIds, decline);
   res.status(200).json(SilpoPantryReleaseResponseSchema.parse({ ok: true }));
+}
+
+/**
+ * `GET /api/silpo/pantry-skips` - продукти, з яких людина тричі поспіль
+ * зняла галочку в аркуші чека (спека `docs/work/specs/silpo-pantry-confirm.md`
+ * § «Навчання "зазвичай не додаєш"»). Спільне для всіх пристроїв.
+ */
+export async function pantrySkipsHandler(
+  req: Request,
+  res: Response,
+): Promise<void> {
+  if (!assertSilpoEnabled(res)) return;
+  const userId = getUserId(req as AuthedRequest, res);
+  if (!userId) return;
+
+  const productKeys = await listSkippedProductKeys(userId);
+  res.status(200).json(SilpoPantrySkipsResponseSchema.parse({ productKeys }));
+}
+
+/** `POST /api/silpo/pantry-skips` - результат одного «Додати» в аркуші. */
+export async function pantrySkipsRecordHandler(
+  req: Request,
+  res: Response,
+): Promise<void> {
+  if (!assertSilpoEnabled(res)) return;
+  const userId = getUserId(req as AuthedRequest, res);
+  if (!userId) return;
+
+  const { skipped, added } = parseBody(
+    SilpoPantrySkipsRecordRequestSchema,
+    req,
+  );
+  await recordPantrySkips(userId, skipped, added);
+  res
+    .status(200)
+    .json(SilpoPantrySkipsRecordResponseSchema.parse({ ok: true }));
 }

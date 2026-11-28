@@ -468,6 +468,7 @@ describe("buildMeExport — contract fixture (Hard Rule #3)", () => {
       "authSessions",
       "billingProviderIds",
       "integrationSecrets",
+      "silpoPantryLearning",
       "serviceQueues",
     ]);
     for (const item of result.data.excluded) {
