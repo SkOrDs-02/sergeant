@@ -90,6 +90,16 @@ function git(args) {
 // їх не можна - їх треба звести злиттям, і скрипт зупиняється, щоб це зробили.
 function syncMirror() {
   git(["fetch", "origin", "--quiet"]);
+
+  // Деплой від дзеркала не залежить (див. нижче), тож машина без remote
+  // `hetzner` (новий ноут без SSH-alias `sergeant-mirror`) деплоїть далі.
+  if (!git(["remote"]).split(/\r?\n/).includes("hetzner")) {
+    console.warn(
+      "Remote `hetzner` не налаштовано, дзеркало не синхронізовано. Деплой від нього не залежить.",
+    );
+    return false;
+  }
+
   git(["fetch", "hetzner", "--quiet"]);
 
   const behind = Number(
@@ -113,11 +123,12 @@ function syncMirror() {
 
   if (behind === 0) {
     console.log("Дзеркало вже збігається з main.");
-    return;
+    return true;
   }
 
   console.log(`Дзеркало відстає на ${behind} комітів, підтягую.`);
   git(["push", "hetzner", "origin/main:main"]);
+  return true;
 }
 
 async function json(url, init) {
@@ -139,12 +150,12 @@ async function json(url, init) {
 // гілки, але не результат злиття). Дзеркало тихо відставало, Coolify збирав
 // попередній стан і чесно рапортував "finished" за 17 секунд - виглядало це як
 // успішний деплой. Того дня так сталося двічі поспіль, поки не звірили дзеркало.
-syncMirror();
+const mirrorSynced = syncMirror();
 
 // `--sync-only` існує, щоб синхронізацію можна було перевірити, не викочуючи прод.
 if (args.syncOnly) {
   console.log("Зупиняюсь: --sync-only.");
-  process.exit(0);
+  process.exit(mirrorSynced ? 0 : 1);
 }
 
 // Саме POST. GET віддає 405 «This endpoint has changed to a POST request»:
