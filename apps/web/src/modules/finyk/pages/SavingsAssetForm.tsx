@@ -31,17 +31,22 @@ const CURRENCIES: readonly SavingsCurrency[] = ["UAH", "USD", "EUR"];
 export function SavingsAssetForm({
   kind,
   today,
+  initial,
   onAdd,
   onCancel,
 }: {
   kind: SavingsKind;
   today: string;
+  /** Підставлене з банківської операції (спека finyk-investment-suggestions). */
+  initial?: Partial<SavingsAssetDraft> | undefined;
   onAdd: (asset: ManualAsset) => void;
   onCancel: () => void;
 }) {
-  const [draft, setDraft] = useState<SavingsAssetDraft>(() =>
-    emptySavingsDraft(kind, today),
-  );
+  const [draft, setDraft] = useState<SavingsAssetDraft>(() => ({
+    ...emptySavingsDraft(kind, today),
+    ...initial,
+    kind,
+  }));
   // Тип перемикають згори: зберігаємо введене, міняємо лише дефолт податку.
   if (draft.kind !== kind) {
     setDraft(() => ({
