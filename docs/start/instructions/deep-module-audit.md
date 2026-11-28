@@ -100,9 +100,9 @@
 ## Verification
 
 ```bash
-SERGEANT_HEAVY_OK=1 pnpm format:check && SERGEANT_HEAVY_OK=1 pnpm lint
-SERGEANT_HEAVY_OK=1 pnpm check:typecheck-and-test
-SERGEANT_HEAVY_OK=1 pnpm build
+pnpm format:check && pnpm lint
+pnpm check:typecheck-and-test
+pnpm build
 # + браузерна верифікація на 390×844 із замірами (не «подивився — ок»)
 ```
 

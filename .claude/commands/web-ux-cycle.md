@@ -102,7 +102,6 @@ Live-verifying a **write-flow** is historically flaky, і причина не в
 ### The recipe (do this)
 
 1. **Bring-up (each trap already cost a session):**
-   - `SERGEANT_HEAVY_OK=1` prefix — `pnpm dev`/`build` are blocked by the heavy-guard hook.
    - `pnpm --filter @sergeant/db-schema build` **before** vite, or `@sergeant/db-schema/sqlite` fails to resolve → kvvfs never boots → **blank page**.
    - `.npmrc` is `node-linker=hoisted`: vite lives in **root** `node_modules/.bin`, and `pnpm --filter @sergeant/web dev` may not put it on PATH ("vite is not recognized"). Run the root bin directly: `cd apps/web && ../../node_modules/.bin/vite --port 5173 --host 127.0.0.1`.
    - After building a workspace package vite depends on, **clear `node_modules/.vite` and restart** — vite caches the failed resolve.

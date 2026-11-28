@@ -57,15 +57,6 @@
             "command": "node scripts/claude-hooks/block-protected-paths.mjs"
           }
         ]
-      },
-      {
-        "matcher": "Bash",
-        "hooks": [
-          {
-            "type": "command",
-            "command": "node scripts/claude-hooks/guard-heavy-commands.mjs"
-          }
-        ]
       }
     ]
   }
